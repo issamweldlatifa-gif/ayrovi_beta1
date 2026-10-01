@@ -3,8 +3,19 @@ import sharp from 'sharp';
 import type { AyrovixCandidate } from '../types';
 import { parsePublicHttpUrl, readLimitedText } from '../../services/safeUrl';
 import { fetchRemoteImage } from '../../services/imageIsolation';
+import { linksFromVisualMatches, linkToStub } from '../linkFirst/linkSource';
 
 /**
+ * TRANSPORT SERPAPI (Google Lens) — deux lectures de la MÊME réponse :
+ *
+ *  • `serpApiVisualLinks`  — « liens d'abord » (défaut) : ne garde que les LIENS
+ *    des pages marchandes. Prix, photos, stock et options sont lus ensuite sur
+ *    ces pages (`linkFirst/`) ;
+ *  • `serpApiVisualSearch` / `serpApiVisualSearchUrl` — ANCIEN système
+ *    (`legacy/`, `AYROVI_LENS_SOURCE=legacy`) : prix, miniatures et `in_stock`
+ *    repris tels que SerpApi les rapporte. Les appelants hors `legacy/` n'y
+ *    touchent plus que par cet interrupteur.
+ *
  * Google Lens product discovery through SerpApi.
  * Images are resized in memory, uploaded directly to SerpApi's temporary Image
  * API, and referenced by an image_id that expires server-side. No public image
@@ -166,9 +177,10 @@ function collectCandidates(rows: any[], limit: number, strict: boolean): Ayrovix
   return results;
 }
 
-async function runSerpApiVisualSearch(image: Buffer, limit: number): Promise<AyrovixCandidate[]> {
+/** Téléverse l'image, interroge Google Lens et rend le JSON brut (ou null). */
+async function fetchVisualMatchesPayload(image: Buffer): Promise<any | null> {
   const key = serpApiKey();
-  if (!key) return [];
+  if (!key) return null;
   const deadline = Date.now() + timeoutMs();
   try {
     const prepared = await prepareImageForSerpApi(image);
@@ -181,13 +193,13 @@ async function runSerpApiVisualSearch(image: Buffer, limit: number): Promise<Ayr
     });
     if (!upload.ok) {
       console.warn(`[AYROVIX serpapi-lens] image upload HTTP ${upload.status}`);
-      return [];
+      return null;
     }
     const uploadPayload: any = await responseJson(upload, 256 * 1024);
     const imageId = String(uploadPayload?.image_id || '').trim();
     if (!imageId || deadline - Date.now() < 500) {
       console.warn('[AYROVIX serpapi-lens] image upload returned no usable image_id');
-      return [];
+      return null;
     }
 
     const configuredCountry = (process.env.AYROVIX_LENS_COUNTRY || '').trim().toLowerCase();
@@ -205,23 +217,37 @@ async function runSerpApiVisualSearch(image: Buffer, limit: number): Promise<Ayr
     });
     if (!response.ok) {
       console.warn(`[AYROVIX serpapi-lens] search HTTP ${response.status}`);
-      return [];
+      return null;
     }
     const payload: any = await responseJson(response);
     if (payload?.error) {
       console.warn('[AYROVIX serpapi-lens] search returned an API error');
-      return [];
+      return null;
     }
-    const results = toCandidates(payload, limit);
-    if (results.length === 0 && Array.isArray(payload?.visual_matches) && payload.visual_matches.length > 0) {
-      console.warn(`[AYROVIX serpapi-lens] strict filter removed ${payload.visual_matches.length} matches (no price>0) — WebSearch fallback will trigger (D2-10 lenient pending)`);
-    }
-    console.log(`[AYROVIX serpapi-lens] ${results.length} visual product matches`);
-    return results;
+    return payload;
   } catch (error: any) {
     console.warn(`[AYROVIX serpapi-lens] ${error?.name === 'TimeoutError' ? 'timeout' : 'unavailable'}`);
-    return [];
+    return null;
   }
+}
+
+async function runSerpApiVisualSearch(image: Buffer, limit: number): Promise<AyrovixCandidate[]> {
+  const payload = await fetchVisualMatchesPayload(image);
+  if (!payload) return [];
+  const results = toCandidates(payload, limit);
+  if (results.length === 0 && Array.isArray(payload?.visual_matches) && payload.visual_matches.length > 0) {
+    console.warn(`[AYROVIX serpapi-lens] strict filter removed ${payload.visual_matches.length} matches (no price>0) — WebSearch fallback will trigger (D2-10 lenient pending)`);
+  }
+  console.log(`[AYROVIX serpapi-lens] ${results.length} visual product matches`);
+  return results;
+}
+
+async function runSerpApiVisualLinks(image: Buffer, limit: number): Promise<AyrovixCandidate[]> {
+  const payload = await fetchVisualMatchesPayload(image);
+  if (!payload) return [];
+  const links = linksFromVisualMatches(payload?.visual_matches, limit);
+  console.log(`[AYROVIX serpapi-lens] ${links.length} merchant links (links-only mode)`);
+  return links.map((link, index) => linkToStub(link, index));
 }
 
 export async function serpApiVisualSearchUrl(imageUrl: string, limit = 8): Promise<AyrovixCandidate[]> {
@@ -262,6 +288,34 @@ export async function serpApiVisualSearch(image: Buffer, limit = 8): Promise<Ayr
   if (inFlight.size >= MAX_IN_FLIGHT) return [];
 
   const task = runSerpApiVisualSearch(image, safeLimit);
+  inFlight.set(cacheKey, task);
+  try {
+    const results = await task;
+    if (results.length) cacheResults(cacheKey, results);
+    return results.map((item) => ({ ...item }));
+  } finally {
+    inFlight.delete(cacheKey);
+  }
+}
+
+/**
+ * LIENS SEULEMENT (mode par défaut). Rend des candidats-lien : adresse de la
+ * page marchande + boutique + titre-indice, sans prix, sans image, sans stock.
+ * On en demande davantage que le budget de lecture : certaines pages seront
+ * illisibles ou ne parleront pas du bon produit.
+ */
+export async function serpApiVisualLinks(image: Buffer, limit = 12): Promise<AyrovixCandidate[]> {
+  if (!serpApiVisualReady() || !image.length || image.length > 8 * 1024 * 1024) return [];
+  const safeLimit = boundedLimit(limit);
+  const cacheKey = `links|${createHash('sha256').update(image).digest('hex')}|${safeLimit}`;
+  const cached = cache.get(cacheKey);
+  if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.results.map((item) => ({ ...item }));
+  if (cached) cache.delete(cacheKey);
+  const existing = inFlight.get(cacheKey);
+  if (existing) return (await existing).map((item) => ({ ...item }));
+  if (inFlight.size >= MAX_IN_FLIGHT) return [];
+
+  const task = runSerpApiVisualLinks(image, safeLimit);
   inFlight.set(cacheKey, task);
   try {
     const results = await task;

@@ -20,6 +20,14 @@ export interface ParsedProductPage {
 
 const SIZE_NAME = /(?:^|\b)(?:size|sizes|taille|tailles|pointure|pointures|größe|shoe size)(?:\b|$)/i;
 const COLOR_NAME = /(?:^|\b)(?:colou?r|couleur|couleurs|farbe)(?:\b|$)/i;
+/* Options PRIMAIRES qui ne sont pas des tailles de vêtement : contenance d'un
+   flacon, stockage d'un appareil, type/variante d'un produit. Le marchand les
+   publie comme n'importe quelle option ; sans règle, la valeur « 50 ml » n'a
+   l'air ni d'une taille ni d'une couleur et était rangée parmi les COULEURS —
+   le client ne voyait alors aucun bouton de contenance. */
+const CAPACITY_NAME = /(?:^|\b)(?:volume|contenance|capacit[ée]|capacity|stockage|storage|m[ée]moire|memory|format|poids|weight|quantit[ée]|quantity)(?:\b|$)/i;
+const TYPE_NAME = /(?:^|\b)(?:type|style|mod[èe]le|model|version|variante?|variant|finition|finish|edition|[ée]dition|parfum|fragrance|scent|saveur|flavou?r|teinte|shade|forme|mati[èe]re|material)(?:\b|$)/i;
+const CAPACITY_VALUE = /^\d+(?:[.,]\d+)?\s?(?:ml|cl|l|g|kg|oz|fl\.?\s?oz|gb|go|tb|to|mb|mo)\b/i;
 const PLACEHOLDER = /^(?:select|choose|choisir|sélectionner|selectionner|taille|size|couleur|color|default title|please select|—|-)?$/i;
 const UNAVAILABLE = /(?:sold\s*out|out\s*of\s*stock|épuis|indisponible|unavailable|rupture)/i;
 
@@ -224,6 +232,19 @@ function looksLikeSize(value: string): boolean {
     || /^(?:EU|US|UK)\s*[0-9]{1,3}(?:[.,][0-9])?$/i.test(value);
 }
 
+function looksLikeCapacity(value: string): boolean {
+  return CAPACITY_VALUE.test(value.trim());
+}
+
+/** Nom que le marchand donne à son option primaire (« Contenance », « Type »…), s'il en a une. */
+export function primaryOptionName(product: any): string | null {
+  for (const name of optionNames(product)) {
+    if (SIZE_NAME.test(name) || COLOR_NAME.test(name)) continue;
+    if (CAPACITY_NAME.test(name) || TYPE_NAME.test(name)) return name;
+  }
+  return null;
+}
+
 function rawVariantValues(variant: any): string[] {
   if (Array.isArray(variant?.options)) return variant.options.map(cleanLabel).filter(Boolean);
   const explicit = [variant?.option1, variant?.option2, variant?.option3].map(cleanLabel).filter(Boolean);
@@ -252,11 +273,15 @@ function variantsFromProduct(product: any): ProductVariantDetail[] {
       const name = names[index] || '';
       if (SIZE_NAME.test(name)) size = value;
       else if (COLOR_NAME.test(name)) color = value;
+      // Contenance / stockage / type : l'option PRIMAIRE du produit, rangée comme
+      // une taille (c'est le champ que tout le reste de la chaîne affiche en boutons).
+      else if (!size && (CAPACITY_NAME.test(name) || looksLikeCapacity(value))) size = value;
+      else if (!size && TYPE_NAME.test(name)) size = value;
       else if (!size && looksLikeSize(value)) size = value;
       else if (!color && values.length > 1) color = value;
     });
     if (!size && !color && values.length === 1 && !PLACEHOLDER.test(values[0])) {
-      if (looksLikeSize(values[0])) size = values[0];
+      if (looksLikeSize(values[0]) || looksLikeCapacity(values[0])) size = values[0];
       else color = values[0];
     }
     if (!size && !color) continue;
@@ -487,7 +512,14 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
       collectNamedStrings(productState, /^(?:color|colour|couleur|couleurs)$/i, namedColors);
     }
 
-    const sizes = unique([...details.map((detail) => detail.size), ...namedSizes, ...domSizes].filter((value) => !value || looksLikeSize(value)), 40);
+    // Les valeurs rangées en `size` par une OPTION NOMMÉE (contenance, type…) sont
+    // des faits du marchand : seules les valeurs ramassées « à l'aveugle » dans la
+    // page (JSON libre, DOM) doivent encore ressembler à une taille ou une contenance.
+    const sizes = unique([
+      ...details.map((detail) => detail.size),
+      ...[...namedSizes, ...domSizes].filter((value) => !value || looksLikeSize(value) || looksLikeCapacity(value)),
+    ], 40);
+    const optionLabel = primaryOptionName(embeddedProduct);
     const colors = unique([...details.map((detail) => detail.color), ...namedColors, ...domColors], 20);
     if (colors.length === 1) {
       for (const detail of details) if (!detail.color) detail.color = colors[0];
@@ -616,7 +648,7 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
       images,
       colorImages,
       externalId: String(productLd?.sku || productLd?.productID || embeddedProduct?.id || embeddedProduct?.sku || ''),
-      variants: { sizes, colors, details },
+      variants: { sizes, colors, details, ...(optionLabel ? { optionLabel } : {}) },
       availability: availabilityFrom(productLd, embeddedProduct),
       priceSource,
     };

@@ -21,7 +21,12 @@
  */
 import type { AyrovixCandidate, AyrovixIdentification } from '../types';
 import { identifyProduct } from './ai';
-import { serpApiVisualSearch } from './visualSearch';
+import { serpApiVisualLinks, serpApiVisualSearch } from './visualSearch';
+import type { QatafoDatabase } from '../../db/database';
+import { lensSourceMode, type LensSourceMode } from '../lensSource';
+import { resolveLinks, type LinkEngineReport, type PageFetcher } from '../linkFirst/linkEngine';
+import { stubToLink } from '../linkFirst/linkSource';
+import { defaultPageFetcher } from '../linkFirst/pageFetcher';
 import { lensImageKey, readLensCache, writeLensCache } from './lensRecognitionCache';
 import { EMPTY_SIGNALS, readLensSignals, type LensSignals } from './lensSignals';
 
@@ -31,7 +36,11 @@ export interface LensRecognition {
   identificationError: unknown;
   matches: AyrovixCandidate[];
   signals: LensSignals;
-  timings: { visionMs: number; matchesMs: number; signalsMs: number };
+  timings: { visionMs: number; matchesMs: number; signalsMs: number; linksMs?: number };
+  /** Mode « liens d'abord » : ce qui a été lu derrière les liens, et ce qui a été écarté. */
+  linkReport?: LinkEngineReport;
+  /** D'où viennent les correspondances : liens lus sur les pages (`links`) ou SerpApi tel quel (`legacy`). */
+  source?: LensSourceMode;
   /** Étapes abandonnées sur échéance — visibles dans le journal, jamais silencieuses. */
   timedOut: Array<'vision' | 'matches'>;
   /** Ce que le cache a réellement servi : 'none' | 'identification' | 'matches' | 'both'. */
@@ -45,6 +54,14 @@ export interface RecognizeOptions {
   withSignals?: boolean;
   /** Utiliser le cache de reconnaissance (défaut : oui). */
   useCache?: boolean;
+  /** Forcer la source des fiches (défaut : `AYROVI_LENS_SOURCE`, soit « liens d'abord »). */
+  source?: LensSourceMode;
+  /**
+   * Mode « liens d'abord » : de quoi LIRE les pages derrière les liens et chiffrer
+   * le résultat (base des règles de prix + lecteur de page). Sans base, les liens
+   * restent nus : aucune carte ne peut être chiffrée, donc aucune n'est rendue.
+   */
+  linkResolver?: { db: QatafoDatabase; fetcher?: PageFetcher };
 }
 
 /** Mesure une promesse sans changer son issue. */
@@ -101,8 +118,12 @@ export async function recognizeImage(
   options: RecognizeOptions = {},
 ): Promise<LensRecognition> {
   const { matchLimit = 8, withSignals = true, useCache = true } = options;
+  const source = options.source ?? lensSourceMode();
+  // Mode « liens d'abord » : on demande plus de liens que de fiches voulues — certaines
+  // pages seront illisibles ou ne parleront pas du bon produit.
+  const linkCount = Math.min(20, Math.max(matchLimit + 4, 12));
 
-  const key = lensImageKey(image);
+  const key = lensImageKey(image, source === 'links' ? 'links' : undefined);
   const cached = useCache
     ? readLensCache<AyrovixIdentification, AyrovixCandidate, LensSignals>(key)
     : { identification: null, matches: null, signals: null, hit: 'none' as const };
@@ -121,7 +142,11 @@ export async function recognizeImage(
     cached.matches
       ? Promise.resolve(cached.matches)
       : timed(
-          withDeadline(serpApiVisualSearch(image, matchLimit), deadlineMs('MATCHES', 14_000), 'matches'),
+          withDeadline(
+            source === 'links' ? serpApiVisualLinks(image, linkCount) : serpApiVisualSearch(image, matchLimit),
+            deadlineMs('MATCHES', 14_000),
+            'matches',
+          ),
           (ms) => { matchesMs = ms; },
         ),
     !withSignals
@@ -132,7 +157,7 @@ export async function recognizeImage(
   ]);
 
   const identification = visionResult.status === 'fulfilled' ? visionResult.value : null;
-  const matches = matchesResult.status === 'fulfilled' ? matchesResult.value : [];
+  let matches = matchesResult.status === 'fulfilled' ? matchesResult.value : [];
   const signals = signalsResult.status === 'fulfilled' ? signalsResult.value : EMPTY_SIGNALS;
 
   if (useCache) {
@@ -141,6 +166,26 @@ export async function recognizeImage(
       matches: cached.matches ? undefined : matches,
       signals: cached.signals || signals === EMPTY_SIGNALS ? undefined : signals,
     });
+  }
+
+  /*
+   * LIENS D'ABORD : ce qui précède n'a rapporté que des LIENS (et c'est ce qu'on
+   * met en cache, 30 min). Les pages sont lues MAINTENANT — le cache de faits
+   * garde un prix une heure, pas plus — puis chiffrées par le moteur AYROVI.
+   */
+  let linksMs = 0;
+  let linkReport: LinkEngineReport | undefined;
+  if (source === 'links' && options.linkResolver && matches.length) {
+    const startedLinks = Date.now();
+    const links = matches.map(stubToLink).filter((link): link is NonNullable<typeof link> => Boolean(link));
+    const resolved = await resolveLinks(links, {
+      db: options.linkResolver.db,
+      fetcher: options.linkResolver.fetcher ?? defaultPageFetcher,
+    });
+    matches = resolved.candidates;
+    linkReport = resolved.report;
+    linksMs = Date.now() - startedLinks;
+    console.log(`[AYROVIX link-engine] ${resolved.report.verified}/${resolved.report.links} liens → fiches (lus ${resolved.report.fetched}, cache ${resolved.report.cacheHits}, écartés ${JSON.stringify(resolved.report.rejected)})`);
   }
 
   const timedOut: Array<'vision' | 'matches'> = [];
@@ -153,7 +198,9 @@ export async function recognizeImage(
     identificationError: visionResult.status === 'rejected' ? visionResult.reason : null,
     matches,
     signals,
-    timings: { visionMs, matchesMs, signalsMs },
+    timings: { visionMs, matchesMs, signalsMs, ...(linkReport ? { linksMs } : {}) },
+    ...(linkReport ? { linkReport } : {}),
+    source,
     timedOut,
     cacheHit: cached.hit,
   };

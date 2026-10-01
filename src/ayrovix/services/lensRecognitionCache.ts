@@ -86,8 +86,13 @@ function ttl(name: 'RECOGNITION' | 'MATCHES'): number {
 }
 
 /** Empreinte de l'image RÉELLEMENT analysée (après normalisation et recadrage). */
-export function lensImageKey(buffer: Buffer): string {
-  return crypto.createHash('sha256').update(buffer).digest('hex').slice(0, 40);
+export function lensImageKey(buffer: Buffer, salt?: string): string {
+  // `salt` sépare ce que deux sources différentes ont mis en cache pour la MÊME
+  // image : des liens nus (mode « liens d'abord ») ne doivent jamais être servis
+  // à l'ancien système, qui attend des prix — ni l'inverse. Sans sel : clé historique.
+  const hash = crypto.createHash('sha256').update(buffer);
+  if (salt) hash.update(`|${salt}`);
+  return hash.digest('hex').slice(0, 40);
 }
 
 function entryFile(key: string): string {

@@ -7,7 +7,7 @@ import { calculatePrice } from '../services/pricing';
 import { createAyrovixPriceToken, type AyrovixQuoteStatus } from '../ayrovix/priceQuote';
 import { extractProductFromUrl, sanitizeProductUrl } from '../ayrovix/services/product';
 import { externalProductSearch, catalogSearch, scoreCandidate } from '../ayrovix/services/search';
-import { serpApiVisualSearch, serpApiVisualSearchUrl } from '../ayrovix/services/visualSearch';
+import { visualMatchesForImage, visualMatchesForImageUrl } from '../ayrovix/linkFirst/visualMatches';
 import { identifyProduct } from '../ayrovix/services/ai';
 import { runLensPipeline, type LensStandardResult } from '../ayrovix/services/lensPipeline';
 import { recordLearningEvent } from './learning';
@@ -39,6 +39,11 @@ export interface AssistantConversationLine {
   role: 'user' | 'assistant';
   text: string;
   attachments?: AssistantImageAttachment[];
+}
+
+/** Lecteur de page de l'assistant : le scraper déjà fourni au contexte, jamais un second. */
+function pageFetcherOf(context: AssistantToolContext) {
+  return (url: string) => context.scraper.scrapeParsedPage(url).then((result) => result.data);
 }
 
 export interface AssistantToolContext {
@@ -462,16 +467,16 @@ async function lensSearch(input: any, context: AssistantToolContext): Promise<As
       context.db,
       Buffer.from(attachment.data, 'base64'),
       attachment.mediaType,
-      { executionLane: context.executionLane },
+      { executionLane: context.executionLane, pageFetcher: pageFetcherOf(context) },
     ).catch(() => null)
     : null;
   const lens: LensStandardResult | null = lensRun?.canonicalValue() ?? null;
   const visual = lens
     ? (lens.visual_matches || [])
     : attachment?.data
-      ? await serpApiVisualSearch(Buffer.from(attachment.data, 'base64'), 8).catch(() => [])
+      ? await visualMatchesForImage(Buffer.from(attachment.data, 'base64'), context.db, 8, pageFetcherOf(context)).catch(() => [])
       : attachment?.url
-        ? await serpApiVisualSearchUrl(attachment.url, 8).catch(() => [])
+        ? await visualMatchesForImageUrl(attachment.url, context.db, 8, pageFetcherOf(context)).catch(() => [])
         : [];
   const query = rawQuery;
   const local = query.length >= 2
@@ -644,9 +649,9 @@ async function matchProductSkill(input: any, context: AssistantToolContext): Pro
     || latestUser?.attachments?.at(-1);
   const query = cleanText(input?.query, 200);
   const visual = attachment?.data
-    ? await serpApiVisualSearch(Buffer.from(attachment.data, 'base64'), 6).catch(() => [])
+    ? await visualMatchesForImage(Buffer.from(attachment.data, 'base64'), context.db, 6, pageFetcherOf(context)).catch(() => [])
     : attachment?.url
-      ? await serpApiVisualSearchUrl(attachment.url, 6).catch(() => [])
+      ? await visualMatchesForImageUrl(attachment.url, context.db, 6, pageFetcherOf(context)).catch(() => [])
       : [];
   const local = query ? catalogSearch(context.db, null, query, 4).map((c) => ({ ...c, match: scoreCandidate(null, query, c) })) : [];
   const allCandidates = filterDisplayableCandidates([...visual, ...local], 6).map((c) => quoteCandidate(withCalculatedTnd(c, context.db)));

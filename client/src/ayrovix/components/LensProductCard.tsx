@@ -104,7 +104,12 @@ export function LensProductCard({ candidate, onChoose, saved, busy, onFavorite }
 
   const availability = live?.availability ?? candidate.availability;
   const sizes = live && live.sizes.length ? live.sizes : (candidate.sizes || []);
-  const variants = live?.variants;
+  /* Sans relecture demandée, les états viennent de la page lue par le serveur
+     (mode « liens d'abord ») : une option épuisée est barrée, une inconnue reste neutre. */
+  const variants = live?.variants ?? candidate.variantOptions
+    ?.filter((option) => option.size || option.label)
+    .map((option) => ({ value: option.size || option.label, color: option.color, availability: option.availability ?? 'unknown' as const }));
+  const fromPage = candidate.dataSource === 'merchant-page' && Boolean(candidate.checkedAt);
   const canVerify = /^https?:\/\//i.test(candidate.sourceUrl || '');
 
   const verify = async () => {
@@ -151,6 +156,11 @@ export function LensProductCard({ candidate, onChoose, saved, busy, onFavorite }
         <RefreshCw size={13} />
         <span>{verifying ? tr('Vérification…', 'جارٍ التحقّق…') : tr('Vérifier le stock', 'تحقّق من التوفر')}</span>
       </button>
+    ) : null}
+    {fromPage && !live ? (
+      <p className="lens-card-verified-at" data-source="merchant-page">
+        {tr('Prix et stock lus sur la page du marchand à', 'السعر والمخزون من صفحة المتجر في')} {checkedAtLabel(candidate.checkedAt as string)}
+      </p>
     ) : null}
     {live && !failed && live.checkedAt ? (
       <p className="lens-card-verified-at">

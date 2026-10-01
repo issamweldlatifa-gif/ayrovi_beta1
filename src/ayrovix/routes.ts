@@ -5,9 +5,10 @@ import type { QatafoDatabase } from '../db/database';
 import type { SmartLinkScraper } from '../scraper/scraper';
 import { identifyProduct, buildSearchQuery, AyrovixUnavailableError, ayrovixAiReady, fallbackIdentification } from './services/ai';
 import { catalogSearch, externalProductSearch, groupOffers, scoreCandidate, searchCandidates } from './services/search';
-import { serpApiVisualReady, serpApiVisualSearch } from './services/visualSearch';
+import { serpApiVisualReady } from './services/visualSearch';
 import { recognizeImage } from './services/lensEngine';
-import { enrichCandidateDescriptions } from './services/lensEnrichment';
+import { legacyEnrichDescriptions } from './legacy';
+import { isLegacyLensSource } from './lensSource';
 import { enrichCandidatesLiveStock, refreshLiveStock } from './services/lensLiveStock';
 import { generateOptimizedSearch, analyzeResultRelevance, deduplicateCandidates, understandCustomerIntent } from './services/aiLensIntelligence';
 import { extractProductFromUrl, ExtractionFailedError, InvalidUrlError, sanitizeProductUrl } from './services/product';
@@ -117,6 +118,12 @@ function tokenizedCandidate(candidate: AyrovixCandidate): AyrovixCandidate {
     ...normalized,
     priceVerificationStatus: status,
     priceToken: quoteToken(candidate.price, candidate.currency, candidate.title, candidate.sourceUrl, status),
+    // Un prix propre à une option se signe comme celui de la fiche : sans jeton, la
+    // grande carte ne pourrait pas commander cette option à son prix.
+    variantOptions: candidate.variantOptions?.map((option) => ({
+      ...option,
+      priceToken: quoteToken(option.price, option.currency, candidate.title, candidate.sourceUrl, status),
+    })),
   };
 }
 
@@ -267,7 +274,11 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
        * l'image — et c'est le seul endroit qui le sait. La route ne garde que ce
        * qui lui appartient : le format de la réponse et le calcul du prix.
        */
-      const recognition = await recognizeImage(effectiveBuffer, effectiveMime);
+      const recognition = await recognizeImage(effectiveBuffer, effectiveMime, {
+        // « Liens d'abord » : SerpApi ne rend que des liens ; les pages sont lues avec le
+        // scraper du serveur (même chaîne de confiance que « coller un lien »).
+        linkResolver: { db, fetcher: (url) => scraper.scrapeParsedPage(url).then((result) => result.data) },
+      });
       res.setHeader('X-Ayrovix-Cache', recognition.cacheHit);
       /* Le rapport d'exploitation (p50/p95) doit pouvoir répondre à « combien de
          requêtes ont évité un appel payant ? ». Le champ existait dans le contrat
@@ -281,6 +292,13 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       mark(trace, 'anthropicVisionMs', recognition.timings.visionMs);
       mark(trace, 'serpApiTotalMs', recognition.timings.matchesMs);
       mark(trace, 'imageSignalsMs', recognition.timings.signalsMs);
+      if (recognition.linkReport) {
+        mark(trace, 'linksMs', recognition.timings.linksMs ?? 0);
+        mark(trace, 'linksTotal', recognition.linkReport.links);
+        mark(trace, 'linksFetched', recognition.linkReport.fetched);
+        mark(trace, 'linksCacheHits', recognition.linkReport.cacheHits);
+        mark(trace, 'linksVerified', recognition.linkReport.verified);
+      }
 
       /*
        * L'OCR NE TOUCHE PAS AU PRIX (règle client du 25/09/2026).
@@ -437,7 +455,8 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
        * de sept jours et échéance stricte : l'enrichissement ne retarde jamais la
        * réponse, et un texte n'est retenu que s'il décrit BIEN ce produit-là.
        */
-      const candidates = await enrichCandidateDescriptions(deduped);
+      // Ancien système uniquement : en « liens d'abord » la description vient de la page.
+      const candidates = await legacyEnrichDescriptions(deduped);
       /*
        * STOCK ET TAILLES VIVANTS (01/10/2026) — le lien SerpApi est la meilleure
        * source du catalogue : on lit la page produit derrière les premiers liens,
@@ -445,9 +464,13 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
        * (budget + échéance + cache, comme l'enrichissement descriptif).
        */
       const tLiveStock = Date.now();
-      const { candidates: liveCandidates, report: liveStock } = await enrichCandidatesLiveStock(candidates, {
-        fetcher: (url) => scraper.scrapeParsedPage(url).then((result) => result.data),
-      });
+      // En « liens d'abord » le stock, les tailles et les photos sont DÉJÀ lus à la
+      // source pour chaque fiche : cette surcouche ne sert plus que l'ancien système.
+      const { candidates: liveCandidates, report: liveStock } = isLegacyLensSource()
+        ? await enrichCandidatesLiveStock(candidates, {
+          fetcher: (url) => scraper.scrapeParsedPage(url).then((result) => result.data),
+        })
+        : { candidates, report: { fetched: 0, cacheHits: 0, applied: 0, budget: 0, deadlineMs: 0 } };
       mark(trace, 'liveStockMs', Date.now() - tLiveStock);
       mark(trace, 'liveStockFetched', liveStock.fetched);
       mark(trace, 'liveStockCacheHits', liveStock.cacheHits);

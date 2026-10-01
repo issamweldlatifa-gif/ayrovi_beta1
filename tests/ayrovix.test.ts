@@ -4,6 +4,7 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { app, db } from '../src/server';
+import { SmartLinkScraper } from '../src/scraper/scraper';
 import { buildSearchQuery } from '../src/ayrovix/services/ai';
 import { catalogSearch, providerWebSearch, scoreCandidate, searchCandidates } from '../src/ayrovix/services/search';
 import { serpApiVisualSearch } from '../src/ayrovix/services/visualSearch';
@@ -457,7 +458,80 @@ describe('AYROVIX Lens', () => {
     }
   });
 
-  test('analyze-image continue avec Google Lens si Claude Vision échoue', async () => {
+  test('LEGACY — analyze-image continue avec Google Lens si Claude Vision échoue (prix SerpApi, ancien système)', async () => {
+    process.env.AYROVI_LENS_SOURCE = 'legacy';
+    try {
+      await analyzeImageContinuesWithLens();
+    } finally {
+      delete process.env.AYROVI_LENS_SOURCE;
+    }
+  });
+
+  test('LIENS D\'ABORD — SerpApi ne donne que le lien : prix, photos, stock et options viennent de la page', async () => {
+    const previousAnthropic = process.env.ANTHROPIC_API_KEY;
+    const previousSerp = process.env.SERPAPI_KEY;
+    process.env.ANTHROPIC_API_KEY = 'test-anthropic-links';
+    process.env.SERPAPI_KEY = 'test-serpapi-key';
+    const fetchMock = vi.fn(async (url: string) => {
+      if (String(url).includes('api.anthropic.com')) return new Response(JSON.stringify({ content: [{ type: 'text', text: JSON.stringify(NIKE_ID) }] }), { status: 200 });
+      if (String(url).startsWith('https://serpapi.com/image?')) return new Response(JSON.stringify({ image_id: 'temporary-image-id' }), { status: 200 });
+      if (String(url).startsWith('https://serpapi.com/search.json?')) {
+        return new Response(JSON.stringify({
+          visual_matches: [{
+            title: 'Nike Air Max 95 Navy',
+            link: 'https://shop.example.com/nike-air-max-95-navy',
+            source: 'Example Shop',
+            thumbnail: 'https://encrypted-tbn.example.com/nike-navy.jpg',
+            // Un prix SerpApi volontairement FAUX : s'il apparaît, l'ancien système a fuité.
+            price: { extracted_value: 9.99, currency: '€' },
+          }],
+        }), { status: 200 });
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const read = vi.spyOn(SmartLinkScraper.prototype, 'scrapeParsedPage').mockResolvedValue({
+      data: {
+        title: 'Nike Air Max 95 Navy', brand: 'Nike', description: 'Baskets Air Max 95', price: 129.99, currency: 'EUR',
+        images: ['https://cdn.example.com/a.jpg', 'https://cdn.example.com/b.jpg'], colorImages: {}, externalId: 'x',
+        variants: {
+          sizes: ['42', '43'], colors: [], optionLabel: 'Pointure',
+          details: [
+            { id: 'v42', label: '42', size: '42', color: null, stock: true, price: null },
+            { id: 'v43', label: '43', size: '43', color: null, stock: false, price: null },
+          ],
+        } as any,
+        availability: 'in_stock', priceSource: 'json_ld',
+      },
+      verified: true, provider: 'direct', method: 'http', failureCode: null,
+    } as any);
+    try {
+      const response = await request(app)
+        .post('/api/ayrovix/analyze-image')
+        .attach('image', PNG_1PX, { filename: 'sneakers.png', contentType: 'image/png' });
+      expect(response.status).toBe(200);
+      const first = response.body.data.candidates.find((candidate: any) => String(candidate.sourceUrl).startsWith('https://shop.example.com/'));
+      expect(first).toBeTruthy();
+      expect(read).toHaveBeenCalled();
+      expect(first.dataSource).toBe('merchant-page');
+      expect(first.price).toBe(129.99);               // le prix de la PAGE, pas 9.99
+      expect(first.currency).toBe('EUR');
+      expect(first.priceTnd).toBeGreaterThan(0);
+      expect(first.images).toContain('https://cdn.example.com/a.jpg');
+      expect(first.sizes).toEqual(['42', '43']);
+      expect(first.optionLabel).toBe('Pointure');
+      expect(first.availability).toBe('in_stock');
+      expect(first.variantOptions.map((option: any) => [option.size, option.availability])).toEqual([['42', 'available'], ['43', 'unavailable']]);
+      expect(first.priceToken).toBeTruthy();
+      expect(first.priceVerificationStatus).toBe('PENDING_MANUAL');
+    } finally {
+      read.mockRestore();
+      restoreEnv('ANTHROPIC_API_KEY', previousAnthropic);
+      restoreEnv('SERPAPI_KEY', previousSerp);
+    }
+  });
+
+  async function analyzeImageContinuesWithLens() {
     const previousAnthropic = process.env.ANTHROPIC_API_KEY;
     const previousSerp = process.env.SERPAPI_KEY;
     process.env.ANTHROPIC_API_KEY = 'test-anthropic-down';
@@ -496,7 +570,7 @@ describe('AYROVIX Lens', () => {
       restoreEnv('ANTHROPIC_API_KEY', previousAnthropic);
       restoreEnv('SERPAPI_KEY', previousSerp);
     }
-  });
+  }
 
   test('Claude lit le prix visible dans la même requête structurée que Vision', async () => {
     const previousKey = process.env.ANTHROPIC_API_KEY;

@@ -1,7 +1,7 @@
 import { isSelectableVariant, reportedVariantStock } from '../../../shared/variantPolicy';
 import { recordVariantContract } from './variantAvailability';
 import type { QatafoDatabase } from '../../db/database';
-import { enrichProduct } from './productEnrichment';
+import { legacyEnrichProduct } from '../legacy';
 import { createHash } from 'node:crypto';
 import type { SmartLinkScraper } from '../../scraper/scraper';
 import type { ScrapedProduct } from '../../types';
@@ -72,6 +72,7 @@ function toAyrovixProduct(db: QatafoDatabase, scraped: ScrapedProduct): AyrovixP
     promo: tnd?.promo ?? null,
     colors: scraped.variants?.colors || [],
     sizes: scraped.variants?.sizes || [],
+    optionLabel: scraped.variants?.optionLabel || null,
     variantOptions,
     availability: scraped.availability || 'unknown',
     availabilityCheckedAt: scraped.scrapedAt || new Date().toISOString(),
@@ -90,7 +91,9 @@ function toAyrovixProduct(db: QatafoDatabase, scraped: ScrapedProduct): AyrovixP
 /** Enriches only the opened page and only with same-merchant, title-matched data. */
 async function enrichSparseProduct(product: AyrovixProduct, url: string): Promise<void> {
   if (product.images.length >= 4 && product.sizes.length > 0) return;
-  const extra = await enrichProduct(product.title, { cacheScope: url });
+  // Ancien système uniquement : en « liens d'abord » la fiche ouverte n'est complétée
+  // par AUCUN appel SerpApi — ce que la page du marchand ne publie pas reste absent.
+  const extra = await legacyEnrichProduct(product.title, { cacheScope: url });
   if (!product.optionLabel && extra.optionLabel) product.optionLabel = extra.optionLabel;
   if (extra.images.length) {
     product.images = [...new Set([...product.images, ...extra.images])];

@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { readFileSync } from 'node:fs';
-import { enrichProduct, readImages, readSizes } from '../src/ayrovix/services/productEnrichment';
+import { enrichProduct, readImages, readSizes } from '../src/ayrovix/legacy/productEnrichment';
 
 let dir = '';
 beforeEach(() => {
@@ -163,7 +163,7 @@ describe('opened-page enrichment wiring', () => {
   const source = readFileSync('src/ayrovix/services/product.ts', 'utf8');
   it('enriches only a sparse opened page and scopes cache by its merchant URL', () => {
     expect(source).toContain('if (product.images.length >= 4 && product.sizes.length > 0) return;');
-    expect(source).toContain('enrichProduct(product.title, { cacheScope: url })');
+    expect(source).toContain('legacyEnrichProduct(product.title, { cacheScope: url })');
     expect(source).toContain('await enrichSparseProduct(product, url);');
   });
   it('preserves direct merchant data and uses source-only prices for variants', () => {

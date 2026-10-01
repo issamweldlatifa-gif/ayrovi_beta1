@@ -29,8 +29,8 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { normalizeTitle, titleOverlap } from './lensEnrichment';
-import { buildProductCard } from './productVariants';
+import { normalizeTitle, titleOverlap } from '../linkFirst/titleMatch';
+import { buildProductCard } from '../services/productVariants';
 
 export interface EnrichedVariant {
   /** Literal value published by the merchant: clothing size, volume, storage, etc. */

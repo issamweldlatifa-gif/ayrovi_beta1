@@ -30,7 +30,7 @@ import path from 'node:path';
 import { pruneDiskCache } from '../../services/diskCache';
 import { allowsMerchantVariantChoice } from '../../../shared/variantPolicy';
 import type { AyrovixCandidate } from '../types';
-import { titleOverlap } from './lensEnrichment';
+import { titleOverlap } from '../linkFirst/titleMatch';
 import { recordVariantContract } from './variantAvailability';
 import type { ParsedProductPage } from '../../scraper/productPageParser';
 import { hostAllowsProbe, recordProbeFailure, recordProbeSuccess } from '../../scraper/hostCircuit';

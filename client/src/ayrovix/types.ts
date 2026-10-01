@@ -84,6 +84,19 @@ export interface AyrovixCandidate {
    * vaut mieux que ce que nous devinons dans son titre.
    */
   sourceCondition?: string | null;
+  /**
+   * D'OÙ VIENNENT LES FAITS DE LA FICHE (01/10/2026).
+   *  • `link-only`     — seul le LIEN vient de SerpApi ; aucun fait marchand lu.
+   *  • `merchant-page` — prix, photos, stock et options lus sur la page du marchand.
+   * Absent = ancien système (`legacy/`), faits repris de SerpApi.
+   */
+  dataSource?: 'link-only' | 'merchant-page';
+  /** Nom de l'option principale lue sur la page (« Pointure », « Contenance », « Type »…). */
+  optionLabel?: string | null;
+  /** Options (taille / contenance / type) avec leur stock PUBLIÉ par le marchand. */
+  variantOptions?: AyrovixVariantOption[];
+  /** Horodatage ISO de la lecture de la page marchande qui fonde ces faits. */
+  checkedAt?: string | null;
   rating?: number | null;
   ratingCount?: number | null;
   ratingKind?: 'merchant' | 'match';

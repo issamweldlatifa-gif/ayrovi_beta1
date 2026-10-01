@@ -28,6 +28,8 @@ export interface ProductVariants {
   colors?: string[];
   styles?: string[];
   options?: string[];
+  /** Nom que le marchand donne à son option primaire non vestimentaire (« Contenance », « Type »…). */
+  optionLabel?: string;
   details?: ProductVariantDetail[];
 }
 

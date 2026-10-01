@@ -101,14 +101,17 @@ export function productToView(product: AyrovixProduct, activeColor?: string | nu
   const values = sourceSaysStorage || (productClass === 'electronics' && storageOptions.length)
     ? storageOptions
     : capacityBased || sourceSaysVolume
-      ? volumeOptions
+      ? (volumeOptions.length ? volumeOptions : presented.options)
       : productClass === 'shoes' || productClass === 'clothing' || productClass === 'accessory'
         ? presented.options
-        : [];
+        // Toute option PUBLIÉE par le marchand devient un bouton, quelle que soit la
+        // classe devinée du produit (type, parfum, modèle…) : on ne la devine pas, on la lit.
+        : product.sizes?.length ? presented.options : [];
   const optionLabel = suppliedLabel || (capacityBased ? 'Contenance'
     : productClass === 'shoes' ? 'Pointure'
       : productClass === 'clothing' ? 'Taille'
         : storageOptions.length ? 'Stockage' : volumeOptions.length ? 'Volume' : values.length ? 'Option' : null);
+  const clothingLike = productClass === 'clothing' || productClass === 'accessory';
 
   const sizes: SizeOption[] = values.map((value) => {
     const forSize = options.filter((option) => option.size === value && (!activeColor || !option.color || option.color.toLocaleLowerCase() === activeColor.toLocaleLowerCase()));

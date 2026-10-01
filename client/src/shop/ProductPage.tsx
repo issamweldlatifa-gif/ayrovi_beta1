@@ -265,6 +265,26 @@ export const ProductPage: React.FC<ProductPageProps> = ({
             </>
           )}
 
+          {currentSizes.length > 0 && currentSizes.length <= 10 && (
+            <div className="s-options" role="group" aria-label={optionLabel} data-product-options>
+              <span className="s-options__label">{optionLabel}</span>
+              <div className="s-options__row">
+                {currentSizes.map((size) => (
+                  <button
+                    key={size.value}
+                    type="button"
+                    className="s-option"
+                    data-state={size.state}
+                    aria-pressed={chosen?.value === size.value}
+                    disabled={size.state !== 'available'}
+                    title={size.state === 'unavailable' ? tr('En rupture chez la source', 'مفقود عند المصدر') : size.state === 'unknown' ? tr('Disponibilité à confirmer', 'التوفّر غير مؤكّد') : undefined}
+                    onClick={() => pickSize(size)}
+                  >{size.value}</button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <details className="s-details">
             <summary>{tr('Lien et note (facultatif)', 'الرابط والملاحظة (اختياري)')}</summary>
             <label><span>{tr('Lien du produit chez le marchand', 'رابط المنتج عند التاجر')}</span><input value={link} onChange={(event) => setLink(event.target.value)} inputMode="url" placeholder="https://" aria-invalid={link.trim().length > 0 && !/^https?:\/\/\S+$/i.test(link.trim())} /></label>

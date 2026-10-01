@@ -16,6 +16,7 @@ data/*.sqlite*
 # prochain `git add -A` les emporte dans l'historique.
 data/lens-descriptions/
 data/lens-live-stock/
+data/lens-link-facts/
 data/variant-availability/
 # documents privés (P0) : factures, justificatifs, fichiers employés —
 # ne doivent jamais atterrir dans l’historique git, même en résidu de tests.

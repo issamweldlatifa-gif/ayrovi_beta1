@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { enrichCandidateDescriptions, titleOverlap, normalizeTitle } from '../src/ayrovix/services/lensEnrichment';
+import { enrichCandidateDescriptions, titleOverlap, normalizeTitle } from '../src/ayrovix/legacy/lensEnrichment';
 import type { AyrovixCandidate } from '../src/ayrovix/types';
 
 const candidate = (over: Partial<AyrovixCandidate>): AyrovixCandidate => ({

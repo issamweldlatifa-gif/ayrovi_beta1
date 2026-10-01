@@ -326,7 +326,8 @@ describe('AYROVI Claude assistant', () => {
     expect(code).toMatchObject({ kind: 'url', value: 'https://shop.example.org/products/qr-product' });
   });
 
-  test('lens_search reuses Google Lens and returns real presentation cards without exposing quote tokens to the model', async () => {
+  test('LEGACY — lens_search reuses Google Lens and returns real presentation cards without exposing quote tokens to the model', async () => {
+    process.env.AYROVI_LENS_SOURCE = 'legacy';
     process.env.SERPAPI_KEY = 'serpapi-assistant-test-key';
     delete process.env.ANTHROPIC_API_KEY;
     const fetchMock = vi.fn(async (url: any) => {
@@ -359,6 +360,48 @@ describe('AYROVI Claude assistant', () => {
     expect(result.presentation?.product.priceTnd).toBeGreaterThan(0);
     expect(result.modelResult.products[0].priceToken).toBeUndefined();
     expect(fetchMock).toHaveBeenCalledTimes(2);
+    delete process.env.AYROVI_LENS_SOURCE;
+  });
+
+  test('LIENS D\'ABORD — lens_search ne présente que des prix lus sur la page marchande, jamais le prix SerpApi', async () => {
+    delete process.env.AYROVI_LENS_SOURCE;
+    process.env.SERPAPI_KEY = 'serpapi-assistant-test-key';
+    delete process.env.ANTHROPIC_API_KEY;
+    const fetchMock = vi.fn(async (url: any) => {
+      if (String(url).startsWith('https://serpapi.com/image?')) {
+        return new Response(JSON.stringify({ image_id: 'image_test_id_links' }), { status: 200, headers: { 'content-type': 'application/json' } });
+      }
+      return new Response(JSON.stringify({
+        visual_matches: [{
+          title: 'Nike Air Max Links Test',
+          link: 'https://shop.example.org/products/nike-air-max-links-test',
+          source: 'Shop Test',
+          thumbnail: 'https://images.example.org/nike-links.jpg',
+          price: { extracted_value: 1, currency: 'EUR' },
+        }],
+      }), { status: 200, headers: { 'content-type': 'application/json' } });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const read = vi.spyOn(testScraper, 'scrapeParsedPage').mockResolvedValue({
+      data: {
+        title: 'Nike Air Max Links Test', price: 120, currency: 'EUR', images: ['https://cdn.example.org/n.jpg'], colorImages: {},
+        externalId: 'n', variants: { sizes: [], colors: [], details: [] } as any, availability: 'in_stock', priceSource: 'json_ld',
+      },
+      verified: true, provider: 'direct', method: 'http', failureCode: null,
+    } as any);
+    const imageData = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
+    const toolContext = context(null);
+    toolContext.imageAttachments = [{ id: 'image_test_links', mediaType: 'image/png', data: imageData.toString('base64') }];
+    try {
+      const result = await executeAssistantTool('lens_search', { image_attachment_id: 'image_test_links' }, toolContext);
+      expect(result.modelResult.success).toBe(true);
+      expect(read).toHaveBeenCalled();
+      expect(result.presentation?.product.title).toBe('Nike Air Max Links Test');
+      expect(result.presentation?.product.price).toBe(120);   // page, pas 1 (SerpApi)
+      expect(result.presentation?.product.priceToken).toBeTruthy();
+    } finally {
+      read.mockRestore();
+    }
   });
 
   test('voice endpoint validates audio and returns Groq Whisper transcription', async () => {

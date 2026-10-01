@@ -44,6 +44,10 @@ export function mergeProductEnrichment(
     colors: current.colors.length ? current.colors : full.colors || [],
     brand: current.brand || full.brand || null,
     availability: full.availability && full.availability !== 'unknown' ? full.availability : current.availability,
+    // La date de lecture suit la source du stock affiché : celle de la fiche ouverte,
+    // sauf si la carte arrivait déjà avec la sienne (page lue par la grille).
+    availabilityCheckedAt: current.availabilityCheckedAt ?? full.availabilityCheckedAt ?? null,
+    availabilityExpiresAt: current.availabilityCheckedAt ? current.availabilityExpiresAt ?? null : full.availabilityExpiresAt ?? null,
     variantOptions: current.variantOptions?.length ? current.variantOptions
       : signedContextMatches ? full.variantOptions : current.variantOptions,
   };

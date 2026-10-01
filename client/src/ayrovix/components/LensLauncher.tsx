@@ -87,6 +87,12 @@ function candidateToProduct(candidate: AyrovixCandidate): AyrovixProduct {
     colors: candidate.colors,
     sizes: candidate.sizes,
     availability: candidate.availability || 'unknown',
+    // « Liens d'abord » : la grille a déjà lu la page — la grande carte part de ces
+    // faits (options, prix par option, photos par couleur) au lieu de repartir de zéro.
+    optionLabel: candidate.optionLabel ?? null,
+    variantOptions: candidate.variantOptions,
+    availabilityCheckedAt: candidate.checkedAt ?? null,
+    availabilityExpiresAt: candidate.checkedAt ? new Date(Date.parse(candidate.checkedAt) + 6 * 60 * 60_000).toISOString() : null,
   };
 }
 

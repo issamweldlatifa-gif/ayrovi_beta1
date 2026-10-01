@@ -26,6 +26,11 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { AyrovixCandidate } from '../types';
+import { normalizeTitle, titleOverlap } from '../linkFirst/titleMatch';
+
+/* La correspondance de titres est neutre (aucune source SerpApi) : elle vit dans
+   `linkFirst/titleMatch` et est ré-exportée ici pour les appelants historiques. */
+export { normalizeTitle, titleOverlap };
 
 const DEFAULT_BUDGET = 4;
 const DEFAULT_DEADLINE_MS = 3500;
@@ -51,27 +56,6 @@ function envInt(name: string, fallback: number, min: number, max: number): numbe
 
 function cacheDir(): string {
   return process.env.AYROVI_LENS_ENRICH_CACHE_DIR || path.resolve(process.cwd(), 'data', 'lens-descriptions');
-}
-
-/* ── Correspondance : on ne décrit un produit qu'avec SON texte ───────────── */
-
-export function normalizeTitle(title: string): string {
-  return title
-    .toLocaleLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9\u0600-\u06ff\s]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-export function titleOverlap(a: string, b: string): number {
-  const left = new Set(normalizeTitle(a).split(' ').filter((word) => word.length > 2));
-  const right = new Set(normalizeTitle(b).split(' ').filter((word) => word.length > 2));
-  if (!left.size || !right.size) return 0;
-  let shared = 0;
-  for (const word of left) if (right.has(word)) shared += 1;
-  return shared / left.size;
 }
 
 /* ── Cache disque ─────────────────────────────────────────────────────────── */

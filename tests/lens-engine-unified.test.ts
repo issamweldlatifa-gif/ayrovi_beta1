@@ -19,14 +19,14 @@ const engine = readFileSync('src/ayrovix/services/lensEngine.ts', 'utf8');
 describe('une seule orchestration', () => {
   it('la route publique n’appelle plus les moteurs elle-même', () => {
     const block = routes.split("router.post('/analyze-image'")[1].split("router.post('/analyze-url'")[0];
-    expect(block).toContain('recognizeImage(effectiveBuffer, effectiveMime)');
+    expect(block).toContain('recognizeImage(effectiveBuffer, effectiveMime, {');
     expect(block).not.toContain('identifyProduct(effectiveBuffer');
     expect(block).not.toContain('serpApiVisualSearch(effectiveBuffer');
     expect(block).not.toContain('readLensSignals(effectiveBuffer');
   });
 
   it('le pipeline interne non plus — il garde son cache et sa fusion, rien d’autre', () => {
-    expect(pipeline).toContain('recognizeImage(image, mime)');
+    expect(pipeline).toContain('recognizeImage(image, mime, { linkResolver: { db, fetcher: options.pageFetcher } })');
     expect(pipeline).not.toMatch(/identifyProduct\(image/);
     expect(pipeline).not.toMatch(/serpApiVisualSearch\(image/);
     expect(pipeline).not.toMatch(/ocrRecognize\(/);
@@ -66,10 +66,11 @@ describe('moteur — comportement réel', () => {
   beforeEach(() => {
     dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lens-engine-'));
     process.env.AYROVI_LENS_CACHE_DIR = dir;
+    process.env.AYROVI_LENS_SOURCE = 'legacy'; // ces tests parlent de l'orchestration, pas de la source des fiches
     delete process.env.AYROVI_LENS_CACHE;
     vi.resetModules();
   });
-  afterEach(() => { fs.rmSync(dir, { recursive: true, force: true }); vi.restoreAllMocks(); vi.resetModules(); });
+  afterEach(() => { fs.rmSync(dir, { recursive: true, force: true }); delete process.env.AYROVI_LENS_SOURCE; vi.restoreAllMocks(); vi.resetModules(); });
 
   async function loadEngine(vision: any, matches: any) {
     vi.doMock('../src/ayrovix/services/ai', () => ({ identifyProduct: vision }));
@@ -157,10 +158,12 @@ describe('échéance de reconnaissance', () => {
   beforeEach(() => {
     dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lens-deadline-'));
     process.env.AYROVI_LENS_CACHE_DIR = dir;
+    process.env.AYROVI_LENS_SOURCE = 'legacy';
     vi.resetModules();
   });
   afterEach(() => {
     fs.rmSync(dir, { recursive: true, force: true });
+    delete process.env.AYROVI_LENS_SOURCE;
     delete process.env.AYROVI_LENS_VISION_DEADLINE_MS;
     delete process.env.AYROVI_LENS_MATCHES_DEADLINE_MS;
     vi.restoreAllMocks();

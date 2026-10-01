@@ -38,6 +38,12 @@ export interface LensTrace {
   liveStockFetched?: number;
   liveStockCacheHits?: number;
   liveStockApplied?: number;
+  /** Mode « liens d'abord » : lecture des pages marchandes derrière les liens SerpApi. */
+  linksMs?: number;
+  linksTotal?: number;
+  linksFetched?: number;
+  linksCacheHits?: number;
+  linksVerified?: number;
   pricingMs?: number;
   totalBackendMs?: number;
   // Frontend render (يُقاس في LensLauncher بعد setCandidatesView)

@@ -3,6 +3,10 @@ import type { QatafoDatabase } from '../../db/database';
 import type { OcrPriceReport } from './ocrPrices';
 import type { AyrovixScannedCode } from './codeScanner';
 import { recognizeImage } from './lensEngine';
+import { resolveLinks, type PageFetcher } from '../linkFirst/linkEngine';
+import { stubToLink } from '../linkFirst/linkSource';
+import { defaultPageFetcher } from '../linkFirst/pageFetcher';
+import { lensSourceMode } from '../lensSource';
 import type { AyrovixCandidate, AyrovixIdentification } from '../types';
 import type { AiExecutionLane } from '../../ai-core/contracts';
 import { AiLaneBoundResult } from '../../ai-core/execution';
@@ -133,19 +137,34 @@ export async function runLensPipeline(
   db: QatafoDatabase,
   image: Buffer,
   mime: string,
-  options: { executionLane: AiExecutionLane },
+  options: { executionLane: AiExecutionLane; /** Lecteur de page déjà configuré par l'appelant (mode « liens d'abord »). */ pageFetcher?: PageFetcher },
 ): Promise<AiLaneBoundResult<LensStandardResult>> {
   const imageHash = hashImage(image);
+  const linksMode = lensSourceMode() === 'links';
+  // Clé de cache séparée : un résultat bâti sur des prix SerpApi (ancien système) ne doit
+  // jamais être resservi comme s'il avait été lu sur les pages marchandes, ni l'inverse.
+  const cacheKey = linksMode ? `${imageHash}~links` : imageHash;
 
   const cached = readCanonicalLensCache<LensStandardResult>(
     db,
-    imageHash,
+    cacheKey,
     options.executionLane,
   );
   if (cached) {
+    let visualMatches = cached.visual_matches || [];
+    if (linksMode && visualMatches.length) {
+      /*
+       * Le résultat est gardé 24 h, un prix lu sur une page ne vaut qu'une heure : on
+       * garde l'identification, on RELIT les pages (le cache de faits évite les
+       * relectures de moins d'une heure). Une page devenue illisible disparaît.
+       */
+      const links = visualMatches.map(stubToLink).filter((link): link is NonNullable<typeof link> => Boolean(link));
+      visualMatches = (await resolveLinks(links, { db, fetcher: options.pageFetcher ?? defaultPageFetcher })).candidates;
+    }
     return new AiLaneBoundResult(options.executionLane, {
       ...cached,
-      visual_matches: cached.visual_matches || [],
+      visual_matches: visualMatches,
+      sources: { ...cached.sources, visual_matches: visualMatches.length },
       cache_hit: true,
     });
   }
@@ -159,7 +178,7 @@ export async function runLensPipeline(
    * désormais dans `lensEngine`, ici comme là-bas. Ce pipeline garde ce qui lui
    * appartient : son cache en base, sa fusion et son format standard.
    */
-  const recognition = await recognizeImage(image, mime);
+  const recognition = await recognizeImage(image, mime, { linkResolver: { db, fetcher: options.pageFetcher } });
   const vision = recognition.identification;
   const code = recognition.signals.code;
   const visualCandidates = recognition.matches;
@@ -205,7 +224,7 @@ export async function runLensPipeline(
   try {
     const visionModel = getAyroviAiCore().responses().resolveModel('vision', 'fast');
     writeCanonicalLensCache(db, {
-      imageHash,
+      imageHash: cacheKey,
       result,
       model: visionModel,
       createdAt: new Date(started).toISOString(),
