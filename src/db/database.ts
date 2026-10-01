@@ -16,7 +16,62 @@ import { ensureInventorySchema } from '../inventory/bootstrap';
 import { ensurePurchasingSchema } from '../purchasing/bootstrap';
 import { ensureCrmSchema } from '../crm/bootstrap';
 
-export type PaymentMethodCode = 'PENDING_SELECTION' | 'COD' | 'D17' | 'FLOUCI' | 'CARD' | 'BANK_TRANSFER' | 'POSTE';
+/**
+ * MOYENS DE PAIEMENT — SOURCE UNIQUE DES CODES.
+ *
+ * Pourquoi tout est ici et nulle part ailleurs : le code du checkout, le
+ * validateur de l'Admin et la valeur semée par défaut décrivaient chacun leur
+ * propre liste. Elles avaient divergé. L'Admin refusait `["CARD","FLOUCI",
+ * "BANK_TRANSFER","POSTE"]` — c'est-à-dire exactement la valeur que la
+ * plateforme sème elle-même — parce que son validateur ne connaissait que
+ * `COD`/`D17`/`FLOUCI` : le seul enregistrement possible retirait donc le
+ * paiement par carte, dont la passerelle Konnect est configurée.
+ *
+ * Une liste unique rend la divergence impossible : ajouter un moyen ici l'ajoute
+ * au checkout, au formulaire Admin et à la valeur par défaut en même temps.
+ */
+export const SELECTABLE_PAYMENT_METHODS = ['COD', 'CARD', 'FLOUCI', 'D17', 'BANK_TRANSFER', 'POSTE'] as const;
+export type SelectablePaymentMethodCode = (typeof SELECTABLE_PAYMENT_METHODS)[number];
+/** Tous les codes compris par le serveur (`PENDING_SELECTION` = « pas encore choisi »). */
+export const PAYMENT_METHOD_CODES = ['PENDING_SELECTION', ...SELECTABLE_PAYMENT_METHODS] as const;
+export type PaymentMethodCode = (typeof PAYMENT_METHOD_CODES)[number];
+
+/**
+ * Ce qu'une installation neuve propose. Le paiement à la livraison est en tête :
+ * c'est le seul moyen qui n'exige AUCUNE passerelle, donc le seul qui permette
+ * d'encaisser une commande le jour de l'ouverture. L'omettre — ce que faisait le
+ * seed — laissait une boutique neuve sans aucun moyen réellement encaissable.
+ *
+ * Cette valeur n'est appliquée qu'à la création (`INSERT OR IGNORE`) : un Admin
+ * qui a volontairement retiré un moyen ne le voit jamais revenir au redémarrage.
+ */
+export const DEFAULT_PAYMENT_METHODS: readonly SelectablePaymentMethodCode[] =
+  ['COD', 'CARD', 'FLOUCI', 'BANK_TRANSFER', 'POSTE'];
+
+/**
+ * La liste RÉELLEMENT appliquée, à partir de la valeur stockée.
+ *
+ * Le checkout et la configuration publique lisaient chacun la même ligne de
+ * réglages puis appliquaient leur propre repli. Deux lectures d'une même donnée
+ * finissent toujours par diverger : le client annonçait un moyen que la caisse
+ * refusait ensuite, après saisie complète de l'adresse — le pire moment.
+ *
+ * Ici, une seule fonction décide, et ce qu'elle rend est à la fois ce que le
+ * checkout accepte et ce que le site publie. Une entrée inconnue est ignorée et
+ * une liste vide ou illisible retombe sur les valeurs par défaut : une
+ * configuration commerciale cassée ne doit jamais laisser le client sans aucun
+ * moyen de payer.
+ */
+export function resolveAcceptedPaymentMethods(rawSetting: unknown): SelectablePaymentMethodCode[] {
+  let candidate: unknown = rawSetting;
+  if (typeof candidate === 'string') {
+    try { candidate = JSON.parse(candidate); } catch { candidate = null; }
+  }
+  if (!Array.isArray(candidate)) return [...DEFAULT_PAYMENT_METHODS];
+  const selectable = new Set<string>(SELECTABLE_PAYMENT_METHODS);
+  const valid = [...new Set(candidate.map((value) => String(value).trim().toUpperCase()).filter((value) => selectable.has(value)))];
+  return valid.length ? (valid as SelectablePaymentMethodCode[]) : [...DEFAULT_PAYMENT_METHODS];
+}
 export type DepositStatus = 'NONE' | 'PENDING' | 'SUBMITTED' | 'PAID' | 'REJECTED';
 
 export interface CheckoutInput {
@@ -2712,7 +2767,7 @@ export class QatafoDatabase {
         'Ariana','Béja','Ben Arous','Bizerte','Gabès','Gafsa','Jendouba','Kairouan','Kasserine','Kébili','Le Kef','Mahdia','La Manouba','Médenine','Monastir','Nabeul','Sfax','Sidi Bouzid','Siliana','Sousse','Tataouine','Tozeur','Tunis','Zaghouan',
       ]), 'JSON', 'Gouvernorats desservis'],
       ['setting_delivery_delay', 'DELIVERY', 'delivery_delay', '5 à 8 jours ouvrés', 'STRING', 'Délai indicatif'],
-      ['setting_payment_methods', 'PAYMENT', 'payment_methods', JSON.stringify(['CARD','FLOUCI','BANK_TRANSFER','POSTE']), 'JSON', 'Méthodes de paiement de l’acompte'],
+      ['setting_payment_methods', 'PAYMENT', 'payment_methods', JSON.stringify(DEFAULT_PAYMENT_METHODS), 'JSON', 'Méthodes de paiement de l’acompte'],
       ['setting_deposit_percent', 'PAYMENT', 'deposit_percent', '20', 'NUMBER', 'Pourcentage de l’acompte de confirmation (%)'],
       ['setting_deposit_review_delay', 'PAYMENT', 'deposit_review_delay', 'Sous 1 jour ouvré après réception du justificatif', 'STRING', 'Délai indicatif de vérification de l’acompte'],
       ['setting_unavailable_refund', 'PAYMENT', 'unavailable_refund_policy', 'Acompte remboursé si AYROVI ne peut pas valider ou acheter l’article demandé', 'STRING', 'Politique si l’article ne peut pas être validé'],

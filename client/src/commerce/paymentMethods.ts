@@ -232,5 +232,15 @@ export const availablePaymentMethods = (policy: CommercePolicy): PaymentMethodDe
  * C'est la liste de la caisse et du panier — le paiement à la livraison en fait
  * partie, et il permet d'éprouver la chaîne complète sans aucune passerelle.
  */
-export const availableAtCheckout = (policy: CommercePolicy): PaymentMethodDefinition[] =>
-  PAYMENT_METHODS.filter((method) => method.available(policy));
+export const availableAtCheckout = (policy: CommercePolicy): PaymentMethodDefinition[] => {
+  // Un moyen doit être BOTH techniquement disponible ET accepté par la boutique.
+  // La seconde condition manquait : le serveur refuse toute commande dont le
+  // moyen ne figure pas dans sa liste configurée, donc proposer un moyen absent
+  // de cette liste menait droit à un refus après avoir tout saisi. Liste vide =
+  // le serveur n'en publie pas : on ne restreint rien (comportement historique).
+  // `?? []` : une politique incomplète (appelant ancien) ne doit jamais faire
+  // planter la caisse — elle ne restreint simplement rien, comme avant.
+  const accepted = policy.acceptedPaymentMethods ?? [];
+  return PAYMENT_METHODS.filter((method) =>
+    method.available(policy) && (!accepted.length || accepted.includes(method.id)));
+};

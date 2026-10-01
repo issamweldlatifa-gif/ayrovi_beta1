@@ -748,7 +748,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   const productIsFavorite = favoriteCandidate ? productFavorites.isSaved(favoriteCandidate) : false;
 
   return (
-    <div className={`ayrovix-theme-scope fixed inset-0 z-[75] flex flex-col ${darkMode ? 'bg-white text-ink' : 'bg-white text-ink'}`} dir={direction} role="dialog" aria-modal="true" aria-label={tr('AYROVIX Lens', 'عدسة AYROVIX')}>
+    <div className="ayrovix-theme-scope fixed inset-0 z-[75] flex flex-col bg-white text-ink" dir={direction} role="dialog" aria-modal="true" aria-label={tr('AYROVIX Lens', 'عدسة AYROVIX')}>
       <div className="ayrovix-sheet flex h-full flex-col bg-white">
         {['home', 'error', 'barcode'].includes(stage) && (
           <AppHeader

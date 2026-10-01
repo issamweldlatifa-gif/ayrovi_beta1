@@ -1,17 +1,22 @@
 // @vitest-environment jsdom
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { LiveVisionRuntime } from '../client/src/ayrovix/services/liveVisionRuntime';
-const mocks=vi.hoisted(()=>({analyze:vi.fn(),load:vi.fn(),signature:vi.fn(()=> 'same-frame')}));
+const mocks=vi.hoisted(()=>({analyze:vi.fn(),signature:vi.fn(()=> 'same-frame')}));
 vi.mock('../client/src/ayrovix/services/lensApi',()=>({analyzeImage:mocks.analyze}));
-vi.mock('../client/src/ayrovix/services/localDetector',()=>({loadLocalDetector:mocks.load}));
 vi.mock('../client/src/ayrovix/services/liveScanner',()=>({frameSignature:mocks.signature,signatureDistance:(a:string,b:string)=>a===b?0:1,liveObjectId:(s:string)=>s}));
 function deferred<T=any>(){let resolve!:(v:T)=>void,reject!:(e:unknown)=>void;const promise=new Promise<T>((a,b)=>{resolve=a;reject=b;});return {promise,resolve,reject};}
 const result=(title='New product')=>({identification:{description:title,confidence:.9},candidates:[{id:title,title,match:90}],detectedPrice:null});
+// Une scène multi-produits AVEC boîte : c'est la forme que le provider renvoie réellement,
+// et c'est elle qui déclenche le crop matching. Depuis la suppression du détecteur local
+// (mort sous `script-src 'self'`), le crop matching se teste donc sur le vrai chemin
+// fournisseur au lieu d'un stub on-device — même couverture, chemin plus fidèle.
+const sceneWithBox=(label='Bag')=>({identification:{description:'Scene',confidence:.9,products:[{label,box:[.1,.1,.3,.4]}]},candidates:[],detectedPrice:null});
+const isCrop=(file:any)=>String(file?.name||'').includes('crop');
 let runtime:LiveVisionRuntime,states:any[],events:string[],encode:BlobCallback[];
 const flush=async()=>{await Promise.resolve();await Promise.resolve();await Promise.resolve();};
 beforeEach(()=>{
  vi.useFakeTimers();vi.resetAllMocks();states=[];events=[];encode=[];
- mocks.signature.mockReturnValue('same-frame');mocks.load.mockResolvedValue(null);mocks.analyze.mockResolvedValue(result());
+ mocks.signature.mockReturnValue('same-frame');mocks.analyze.mockResolvedValue(result());
  vi.spyOn(HTMLCanvasElement.prototype,'getContext').mockReturnValue({drawImage:vi.fn(),getImageData:()=>({data:new Uint8ClampedArray(32*32*4)})} as any);
  vi.spyOn(HTMLCanvasElement.prototype,'toDataURL').mockReturnValue('data:image/jpeg;base64,TEST');
  vi.spyOn(HTMLCanvasElement.prototype,'toBlob').mockImplementation(cb=>{encode.push(cb);});
@@ -48,20 +53,18 @@ describe('Live runtime sessions — real scheduler with controlled media/provide
   expect(states.at(-1).objects.some((o:any)=>o.label==='New product'&&o.status!=='lost')).toBe(true);
   expect(mocks.analyze).toHaveBeenCalledTimes(1);
  });
- it('a detector resolving from an older session cannot replace the current detector',async()=>{
-  const old=deferred(),fresh=deferred();mocks.load.mockReturnValueOnce(old.promise).mockReturnValueOnce(fresh.promise);
-  runtime.start();runtime.stop();runtime.start();const active={detect:vi.fn()};fresh.resolve(active);await flush();old.resolve({detect:vi.fn()});await flush();expect((runtime as any).detector).toBe(active);
- });
- it('an old local inference cannot publish detections after restart',async()=>{
-  const pending=deferred();mocks.load.mockResolvedValue({detect:()=>pending.promise});runtime.start();await flush();await vi.advanceTimersByTimeAsync(2200);
-  runtime.stop();runtime.start();const count=states.length;pending.resolve([{label:'Old local product',category:'object',score:.9,bbox:[0,0,20,20]}]);await flush();
-  expect(states).toHaveLength(count);expect((runtime as any).objects).toEqual([]);
- });
  it('crop matching gets an abort signal and cannot survive stop',async()=>{
-  mocks.load.mockResolvedValue({detect:async()=>[{label:'Bag',category:'bag',score:.9,bbox:[10,10,100,100]}]});
-  const pending=deferred();mocks.analyze.mockReturnValue(pending.promise);runtime.start();await flush();await vi.advanceTimersByTimeAsync(2200);expect(encode.length).toBeGreaterThan(0);
-  deliver();await flush();const signal=mocks.analyze.mock.calls[0][1] as AbortSignal;expect(signal).toBeInstanceOf(AbortSignal);
-  runtime.stop();expect(signal.aborted).toBe(true);expect((runtime as any).matchingIds.size).toBe(0);const count=states.length;pending.resolve(result());await flush();expect(states).toHaveLength(count);
+  const pending=deferred();
+  mocks.analyze.mockImplementation((file:any)=>isCrop(file)?pending.promise:Promise.resolve(sceneWithBox()));
+  runtime.start();await flush();await vi.advanceTimersByTimeAsync(2200);expect(encode.length).toBeGreaterThan(0);
+  // deliver(0) libère la scène entière, ce qui arme le recadrage (encode[1]) ; deliver(1)
+  // déclenche réellement l'appel de recadrage — deux encodages, comme en production.
+  deliver(0);await flush();await flush();deliver(1);await flush();
+  // appel 0 = scène entière ; appel 1 = recadrage du produit détecté, avec son signal
+  expect(mocks.analyze).toHaveBeenCalledTimes(2);
+  const signal=mocks.analyze.mock.calls[1][1] as AbortSignal;expect(signal).toBeInstanceOf(AbortSignal);
+  runtime.stop();expect(signal.aborted).toBe(true);expect((runtime as any).matchingIds.size).toBe(0);
+  const count=states.length;pending.resolve(result());await flush();expect(states).toHaveLength(count);
  });
  it('repeated start creates no duplicate scheduler, stop releases scheduled work',async()=>{
   runtime.start();runtime.start();expect(vi.getTimerCount()).toBe(1);runtime.stop();expect(vi.getTimerCount()).toBe(0);await vi.advanceTimersByTimeAsync(10000);expect(encode).toHaveLength(0);
@@ -85,9 +88,13 @@ describe('Live runtime sessions — real scheduler with controlled media/provide
   deliver(1);await flush();await vi.advanceTimersByTimeAsync(8799);expect(encode).toHaveLength(2);await vi.advanceTimersByTimeAsync(1);expect(encode).toHaveLength(3);
  });
  it('backs off failed crop matching and resets retry bookkeeping on stop',async()=>{
-  mocks.load.mockResolvedValue({detect:async()=>[{label:'Bag',category:'bag',score:.9,bbox:[10,10,100,100]}]});mocks.analyze.mockRejectedValue(new Error('provider failure'));
-  runtime.start();await vi.advanceTimersByTimeAsync(0);deliver();await flush();await vi.advanceTimersByTimeAsync(2200);expect(encode).toHaveLength(1);
-  await vi.advanceTimersByTimeAsync(2200);expect(encode).toHaveLength(2);runtime.stop();expect((runtime as any).matchRetry.size).toBe(0);
+  mocks.analyze.mockImplementation((file:any)=>isCrop(file)?Promise.reject(new Error('provider failure')):Promise.resolve(sceneWithBox()));
+  runtime.start();await flush();await vi.advanceTimersByTimeAsync(2200);
+  deliver(0);await flush();await flush();deliver(1);await flush();
+  // le recadrage a échoué : il est planifié en repli, jamais martelé à chaque tick
+  expect((runtime as any).matchRetry.size).toBe(1);
+  await vi.advanceTimersByTimeAsync(2200);expect(encode.length).toBeGreaterThan(1);
+  runtime.stop();expect((runtime as any).matchRetry.size).toBe(0);expect((runtime as any).matchingIds.size).toBe(0);
  });
 
 });

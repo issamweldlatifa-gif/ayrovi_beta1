@@ -110,6 +110,20 @@
 .admin-arrival-summary strong { font-size: 30px; }
 .admin-arrival-summary svg { position: absolute; inset-inline-end: 18px; width: 46px; height: 46px; opacity: .2; }
 .admin-dashboard-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(300px, .6fr); gap: 15px; }
+
+/* Parcours d'achat : quatre chiffres puis les causes de refus. Filets décoratifs
+   (`--admin-line`) entre les cellules — ce sont des séparateurs, pas des frontières de
+   contrôle, donc pas de `--admin-line-control` ici. */
+.admin-funnel-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 15px; margin-bottom: 15px; }
+.admin-funnel-stats article { display: flex; flex-direction: column; gap: 10px; padding: 18px 20px; background: var(--admin-surface-card); border: 1px solid var(--admin-line); }
+.admin-funnel-stats span { color: var(--admin-ink-muted); font-size: 11px; font-weight: 700; }
+.admin-funnel-stats strong { font-size: clamp(20px, 2vw, 28px); line-height: 1; letter-spacing: -.03em; }
+.admin-funnel-failures { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding-top: 14px; border-top: 1px solid var(--admin-line); }
+.admin-funnel-failures > span { color: var(--admin-ink-muted); font-size: 11px; font-weight: 700; }
+.admin-funnel-failures > div { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border: 1px solid var(--admin-line); }
+.admin-funnel-failures em { font-style: normal; font-size: 11px; letter-spacing: .04em; }
+.admin-funnel-failures b { font-size: 13px; }
+.admin-funnel-failures small { color: var(--admin-ink-muted); font-size: 11px; }
 .admin-card { background: var(--admin-surface-card); border: 1px solid var(--admin-line); padding: 22px; }
 .admin-card--wide { grid-column: 1 / -1; }
 .admin-card-title { display: flex; justify-content: space-between; margin-bottom: 22px; }
@@ -132,7 +146,7 @@
 
 .admin-list-card { border: 1px solid var(--admin-line); background: var(--admin-surface-card); }
 .admin-list-toolbar { min-height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 13px 16px; border-bottom: 1px solid var(--admin-line); }
-.admin-search { width: min(360px, 100%); height: 40px; display: flex; align-items: center; gap: 9px; padding: 0 12px; border: 1px solid var(--admin-line); background: var(--admin-surface-sunken); color: var(--admin-tone-898491); }
+.admin-search { width: min(360px, 100%); height: 40px; display: flex; align-items: center; gap: 9px; padding: 0 12px; border: 1px solid var(--admin-line-control); background: var(--admin-surface-sunken); color: var(--admin-tone-898491); }
 .admin-search:focus-within { border-color: var(--admin-ink-strong); background: var(--admin-surface-card); }
 .admin-search input { width: 100%; border: 0; outline: 0; background: transparent; font-size: 12px; }
 .admin-search button { border: 0; background: none; color: var(--admin-tone-9994a0); cursor: pointer; }
@@ -181,7 +195,7 @@
 .admin-field { display: flex; min-width: 0; flex-direction: column; gap: 7px; color: var(--admin-ink); font-size: 11px; font-weight: 750; }
 .admin-field--full { grid-column: 1 / -1; }
 .admin-field > span em { color: var(--admin-danger-strong); font-style: normal; margin-inline-start: 3px; }
-.admin-field input:not([type='checkbox']), .admin-field textarea, .admin-field select { width: 100%; box-sizing: border-box; border: 1px solid var(--admin-line); border-radius: 0; outline: 0; color: var(--admin-ink); background: var(--admin-surface-card); font-size: 12px; font-weight: 500; }
+.admin-field input:not([type='checkbox']), .admin-field textarea, .admin-field select { width: 100%; box-sizing: border-box; border: 1px solid var(--admin-line-control); border-radius: 0; outline: 0; color: var(--admin-ink); background: var(--admin-surface-card); font-size: 12px; font-weight: 500; }
 .admin-field input:not([type='checkbox']), .admin-field select { height: 42px; padding: 0 11px; }
 .admin-field textarea { min-height: 82px; padding: 11px; resize: vertical; line-height: 1.6; }
 .admin-field input:focus, .admin-field textarea:focus, .admin-field select:focus { border-color: var(--admin-ink-strong); box-shadow: 0 0 0 2px var(--admin-tone-rgba-254-112-3-12); }
@@ -195,7 +209,7 @@
 .admin-date-input svg { position: absolute; inset-inline-start: 11px; top: 12px; color: var(--admin-ink-strong); }
 .admin-date-input input { padding-inline-start: 38px !important; }
 .admin-form-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; padding-top: 8px; border-top: 1px solid var(--admin-line); }
-.admin-switch { width: 100%; height: 42px; display: flex; align-items: center; gap: 10px; padding: 0 11px; border: 1px solid var(--admin-line); background: var(--admin-surface-card); cursor: pointer; }
+.admin-switch { width: 100%; height: 42px; display: flex; align-items: center; gap: 10px; padding: 0 11px; border: 1px solid var(--admin-line-control); background: var(--admin-surface-card); cursor: pointer; }
 .admin-switch i { width: 34px; height: 18px; padding: 2px; display: flex; background: var(--admin-tone-ccc8d1); }
 .admin-switch i::after { content: ''; width: 14px; height: 14px; background: var(--admin-surface-card); }
 .admin-switch.is-on i { justify-content: flex-end; background: var(--admin-ink-strong); }
@@ -244,7 +258,7 @@
 .admin-table code { font-size: 9px; color: var(--admin-ink-strong); }
 
 @media (max-width: 1180px) {
-  .admin-metrics { grid-template-columns: repeat(2, 1fr); }
+  .admin-metrics, .admin-funnel-stats { grid-template-columns: repeat(2, 1fr); }
   .admin-pricing-grid { grid-template-columns: repeat(2, 1fr); }
   .admin-login-brand { padding: 60px; }
 }
@@ -279,7 +293,7 @@
   .admin-page-header h1 { font-size: 31px; }
   .admin-page-header > :last-child:not(:first-child) { width: 100%; }
   .admin-page-header .admin-button, .admin-page-header .admin-select { width: 100%; }
-  .admin-metrics { grid-template-columns: 1fr; gap: 9px; }
+  .admin-metrics, .admin-funnel-stats { grid-template-columns: 1fr; gap: 9px; }
   .admin-metric { min-height: 118px; }
   .admin-arrival-summary { grid-template-columns: 1fr; gap: 9px; }
   .admin-list-toolbar { align-items: stretch; flex-direction: column; }
@@ -680,7 +694,7 @@ input[type="color"]{width:100%;height:40px;border:1px solid var(--admin-tone-e5e
 .admin-cell-num.is-negative { color: var(--admin-danger-strong); }
 .admin-cell-num small { color: var(--admin-ink-muted); font-weight: 600; }
 /* Saisie d'un comptage dans la ligne elle-même : le champ épouse la cellule, pas l'inverse. */
-.admin-cell-input { width: 92px; padding: 5px 8px; border: 1px solid var(--admin-line); background: var(--admin-surface-card); text-align: end;
+.admin-cell-input { width: 92px; padding: 5px 8px; border: 1px solid var(--admin-line-control); background: var(--admin-surface-card); text-align: end;
   font-variant-numeric: tabular-nums; font-weight: 700; }
 .admin-cell-input:focus { outline: 2px solid var(--admin-ink-strong); outline-offset: 1px; }
 
@@ -772,7 +786,7 @@ input[type="color"]{width:100%;height:40px;border:1px solid var(--admin-tone-e5e
 .arrival-store-select > span { color: var(--admin-ink-muted); font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; }
 .arrival-store-select select,
 .arrival-inline-fields select,
-.arrival-inline-fields input { width: 100%; min-height: 39px; padding: 0 10px; border: 1px solid var(--admin-line); border-radius: 0; background: var(--admin-surface-card); color: var(--admin-ink); }
+.arrival-inline-fields input { width: 100%; min-height: 39px; padding: 0 10px; border: 1px solid var(--admin-line-control); border-radius: 0; background: var(--admin-surface-card); color: var(--admin-ink); }
 .arrival-client-metrics { display: grid; grid-template-columns: repeat(3, 1fr); margin: 0 17px 16px; border: 1px solid var(--admin-line); }
 .arrival-client-metrics > div { padding: 11px; }
 .arrival-client-metrics > div + div { border-inline-start: 1px solid var(--admin-line); }
@@ -1083,8 +1097,8 @@ input[type="color"]{width:100%;height:40px;border:1px solid var(--admin-tone-e5e
 .interface-color-head span{color:var(--admin-ink);font-size:9px;font-weight:850}
 .interface-color-head code{color:var(--admin-ink-muted);font-size:8px;font-weight:750}
 .interface-color-inputs{display:grid;grid-template-columns:38px minmax(0,1fr);gap:7px}
-.interface-color-inputs input[type=color]{width:38px;height:34px;border:1px solid var(--admin-line);padding:2px;background:var(--admin-surface-card);cursor:pointer}
-.interface-color-inputs input:not([type=color]){width:100%;height:34px;border:1px solid var(--admin-line);padding:0 9px;color:var(--admin-ink);background:var(--admin-surface-card);font:800 10px/1 var(--ay-font-stack);text-transform:uppercase;outline:none}
+.interface-color-inputs input[type=color]{width:38px;height:34px;border:1px solid var(--admin-line-control);padding:2px;background:var(--admin-surface-card);cursor:pointer}
+.interface-color-inputs input:not([type=color]){width:100%;height:34px;border:1px solid var(--admin-line-control);padding:0 9px;color:var(--admin-ink);background:var(--admin-surface-card);font:800 10px/1 var(--ay-font-stack);text-transform:uppercase;outline:none}
 .interface-color-inputs input:focus{border-color:var(--admin-ink-strong)}
 .interface-shades{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-top:7px}
 .interface-shades button{height:20px;border:1px solid var(--admin-tone-rgba-0-0-0-08);cursor:pointer}
@@ -1182,7 +1196,7 @@ input[type="color"]{width:100%;height:40px;border:1px solid var(--admin-tone-e5e
 .bo-notice button:hover { border-color: var(--bo-accent); color: var(--admin-tone-6f3a10); }
 
 /* Recherche globale — un seul champ pour tout le back office. */
-.bo-search { position: relative; display: flex; align-items: center; gap: 8px; width: min(360px, 34vw); height: 38px; padding: 0 12px; border: 1px solid var(--admin-line); border-radius: 10px; background: var(--admin-surface-card); color: var(--admin-ink-muted); }
+.bo-search { position: relative; display: flex; align-items: center; gap: 8px; width: min(360px, 34vw); height: 38px; padding: 0 12px; border: 1px solid var(--admin-line-control); border-radius: 10px; background: var(--admin-surface-card); color: var(--admin-ink-muted); }
 .bo-search input { flex: 1; min-width: 0; border: 0; background: none; font: inherit; font-size: 13px; color: var(--admin-ink); }
 .bo-search input:focus { outline: none; }
 .bo-search:focus-within { border-color: var(--bo-accent); box-shadow: 0 0 0 3px var(--admin-tone-rgba-254-112-3-14); }

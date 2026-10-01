@@ -1,6 +1,5 @@
 import { analyzeImage } from './lensApi';
 import { frameSignature, signatureDistance, liveObjectId } from './liveScanner';
-import { loadLocalDetector, type LocalDetector } from './localDetector';
 import type { AyrovixCandidate, AyrovixDetectedPrice } from '../types';
 
 /**
@@ -10,9 +9,17 @@ import type { AyrovixCandidate, AyrovixDetectedPrice } from '../types';
  * PREDICT→UPDATE) → Confidence(EMA) → Temporal Update → Live Overlay.
  *
  * - Adaptive inference FPS منفصل عن preview FPS (لا يُحجب الـ rendering).
- * - Offline: الكاميرا والـ tracking المحلي يستمران، والـ cloud matching يتأجل حتى العودة.
+ * - Offline: الكاميرا والـ tracking يستمران على الكائنات المعروفة، والـ cloud matching
+ *   يتأجل حتى العودة.
  * - Analytics: أحداث مجهولة عبر onEvent (لا صورة/لا IP/لا بيانات شخصية).
  * - Graceful degradation: فشل الـ AI لا يُسقط الـ Live.
+ *
+ * ملاحظة (2026-10-01): كان هنا مسار «كشف محلي» يحمّل TensorFlow + COCO-SSD من
+ * `cdn.jsdelivr.net` عبر <script>. سياسة CSP في هذا المستودع تعلن `script-src 'self'`
+ * دائمًا (تطويرًا وإنتاجًا)، فكان المتصفح يحجب السكريبت حتمًا والمسار لا يمكن أن
+ * ينجح أبدًا — كود ميت يستهلك محاولتَي شبكة فاشلتين عند كل فتح. حُذف بدل إضعاف
+ * السياسة؛ والكشف يُؤدّى عبر مسار الخادم (AI Core Vision) الذي يغطي فئات المنتجات
+ * فعلًا، بينما فئات COCO العامة (سيارة، كلب، كرسي) لا تخدم عدسة متجر.
  */
 
 export interface LiveBox { x: number; y: number; w: number; h: number; }
@@ -187,7 +194,6 @@ export class LiveVisionRuntime {
   private matchingRequests = new Map<string, AbortController>();
   private generation = 0;
   private matchRetry = new Map<string, { failures: number; at: number }>();
-  private detector: LocalDetector | null = null;
   private inflight = false;
   private abort: AbortController | null = null;
   private aiFailures = 0;
@@ -205,8 +211,6 @@ export class LiveVisionRuntime {
     this.online = typeof navigator === 'undefined' || navigator.onLine !== false;
     this.objects = []; this.aiFailures = 0; this.lastSig = ''; this.lastDetectionAt = 0;
     if (typeof window !== 'undefined') { window.addEventListener('online', this.onOnline); window.addEventListener('offline', this.onOffline); }
-    // كشف محلي خفيف (اختياري): إن تعذّر تحميله يبقى مسار الـ fallback شغّالًا
-    loadLocalDetector().then((d) => { if (this.isCurrent(generation)) this.detector = d; }).catch(() => { if (this.isCurrent(generation)) this.detector = null; });
     this.opts.onEvent?.('live_opened');
     this.emit();
     // First ready frame has no artificial polling delay. Later frames stay adaptive.
@@ -222,7 +226,6 @@ export class LiveVisionRuntime {
     for (const controller of this.matchingRequests.values()) controller.abort();
     this.matchingRequests.clear(); this.matchingIds.clear(); this.matchRetry.clear();
     this.lastCanvas = null; this.lastSig = '';
-    this.detector = null;
     this.objects = [];
     this.opts.onState({ objects: [], status: 'idle' });
   }
@@ -412,31 +415,6 @@ export class LiveVisionRuntime {
         this.objects = this.objects.filter(o => o.status !== 'lost');
         this.matchPending(canvas, generation);
         this.emit(); this.schedule(generation); return;
-      }
-      // كشف محلي خفيف (on-device) عند توفّره: boxes/classes محليًا + AI Core Vision انتقائيًا للمطابقة
-      if (!this.inflight && this.detector) {
-        this.inflight = true;
-        try {
-          const preds = await this.detector.detect(canvas);
-          if (!this.isCurrent(generation)) return;
-          const raw = preds.map((p) => {
-            const box = { x: p.bbox[0] / canvas.width, y: p.bbox[1] / canvas.height, w: p.bbox[2] / canvas.width, h: p.bbox[3] / canvas.height };
-            return {
-              label: p.label, category: p.category, subcategory: null, brand: null,
-              confidence: Math.round(p.score * 100), box,
-              visualFeatures: computeVisualFeatures(canvas, box),
-              color: [] as string[], pattern: null, material: null, candidates: [] as AyrovixCandidate[],
-            };
-          });
-          this.lastDetectionAt = Date.now();
-          this.objects = trackObjects(this.objects, raw, Date.now());
-          this.objects.filter((o) => o.status === 'locked').forEach((o) => this.opts.onEvent?.('object_locked', { confidence: o.confidence }));
-          if (this.objects.length) this.opts.onEvent?.('object_detected', { count: this.objects.length });
-          this.matchPending(canvas, generation);
-          this.emit();
-        } catch { if (this.isCurrent(generation)) this.detector = null; }
-        finally { if (this.isCurrent(generation)) { this.inflight = false; this.schedule(generation); } }
-        return;
       }
       if (!this.inflight && this.online) {
         this.inflight = true;

@@ -3,7 +3,7 @@ import { publicNavDestination } from '../../shared/publicNavigation';
 import { createHash, randomUUID } from 'node:crypto';
 import { Router } from 'express';
 import { cardGatewayAvailable } from '../services/paymentGateway';
-import { QatafoDatabase } from '../db/database';
+import { QatafoDatabase, resolveAcceptedPaymentMethods } from '../db/database';
 import { calculatePrice } from '../services/pricing';
 import { quoteCartLine } from '../services/cartQuote';
 import { resolvePromoForQuote, tunisIsoDay } from '../services/promotions';
@@ -92,7 +92,11 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       // appliquée sur le prix produit converti — les cartes l'affichent en badge.
       promo: (() => { const day = resolvePromoForQuote(db); return day ? { percent: day.percent, label: day.label, day: tunisIsoDay() } : null; })(),
       governorates: Array.isArray(facts.governorates) ? facts.governorates : [],
-      paymentMethods: Array.isArray(facts.payment_methods) ? facts.payment_methods : [],
+      // La liste EFFECTIVE, résolue par la même fonction que le checkout : ce que
+      // la caisse affiche est exactement ce que POST /api/checkout acceptera.
+      // Publier la valeur brute laissait le client deviner, et proposer un moyen
+      // que le serveur refusait ensuite — une commande perdue à la dernière étape.
+      paymentMethods: resolveAcceptedPaymentMethods(facts.payment_methods),
       deliveryDelay: String(facts.delivery_delay || ''),
       capabilities: { cardGateway: cardGatewayAvailable() },
       // Feature flags — LIVE multi-product vision. مفعّل افتراضيًا؛ عطّله بـ AYROVIX_LENS_LIVE_ENABLED=false

@@ -1,10 +1,11 @@
 import { readFileSync } from 'node:fs';
+import { execSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 import request from 'supertest';
 import { app } from '../src/server';
 import { frameSignature, signatureDistance, liveObjectId } from '../client/src/ayrovix/services/liveScanner';
 import { iou, trackObjects, adaptiveNextInterval, computeCropRect, LOCK_THRESHOLD, PREDICT_FRAMES } from '../client/src/ayrovix/services/liveVisionRuntime';
-import { loadLocalDetector } from '../client/src/ayrovix/services/localDetector';
+
 import { grayToFeatures } from '../client/src/ayrovix/services/liveVisionRuntime';
 
 const liveSource = readFileSync('client/src/ayrovix/components/LiveCamera.tsx', 'utf8');
@@ -109,9 +110,27 @@ describe('AYROVIX LENS — LIVE multi-product vision (flag-gated, reuses existin
     expect(tiny.h).toBeGreaterThanOrEqual(32);
   });
 
-  it('local on-device detector degrades gracefully when unavailable (no DOM/CDN)', async () => {
-    // في بيئة بدون window (Node) يجب أن يرفض التحميل بأناقة دون انهيار
-    await expect(loadLocalDetector()).rejects.toThrow();
+  it('no client module reaches for an external script origin (the invariant `script-src self` rests on)', () => {
+    // يحل محل اختبار «الكشف المحلي يتدهور بأناقة». كان ذلك المسار يحمّل TensorFlow من
+    // jsdelivr عبر <script>، وسياسة CSP تعلن `script-src 'self'` دائمًا (تطويرًا
+    // وإنتاجًا) — أي أن المتصفح كان يحجب السكريبت حتمًا، فالاختبار كان يثبّت فشلًا لا
+    // قدرة. الضمانة التي تستحق الحماية هي «لا يوجد طلب سكريبت خارجي من الأساس»، وهي
+    // هنا أوسع من الملف الواحد: تفحص كامل مصادر الواجهة، فلا يمكن إعادة إدخال الصنف
+    // نفسه من أي وحدة أخرى.
+    const sources = execSync("find client/src -type f \\( -name '*.ts' -o -name '*.tsx' \\)", { encoding: 'utf8' })
+      .split('\n').filter(Boolean);
+    // Le scan porte sur le CODE, pas sur la prose : un commentaire qui documente la règle
+    // (comme celui laissé dans liveVisionRuntime) ne doit pas la déclencher.
+    const withoutComments = (source: string) => source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+    const offenders: string[] = [];
+    for (const file of sources) {
+      const source = withoutComments(readFileSync(file, 'utf8'));
+      if (/cdn\.jsdelivr|unpkg\.com|cdnjs\.cloudflare|googletagmanager|google-analytics/.test(source)) offenders.push(`${file} (CDN)`);
+      if (/createElement\(\s*['"]script['"]\s*\)/.test(source)) offenders.push(`${file} (injected <script>)`);
+    }
+    expect(offenders).toEqual([]);
+    // والملف الذي كان يكسرها لم يعد موجودًا.
+    expect(() => readFileSync('client/src/ayrovix/services/localDetector.ts', 'utf8')).toThrow();
   });
 
   it('multi-product intelligence: tracks multiple independent product instances in one scene', () => {

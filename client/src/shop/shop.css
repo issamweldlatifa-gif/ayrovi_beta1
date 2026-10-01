@@ -20,6 +20,11 @@
   --s-info: var(--ay-e-info, #595959);
   --s-info-soft: var(--ay-e-info-soft, #f5f5f5);
   --s-line: var(--ay-e-line, #d9d9d9);
+  /* Frontière des CONTRÔLES sélectionnables (radio de moyen de paiement, vignettes,
+     pastilles, pas-de-quantité). `--s-line` reste le filet décoratif : à 1,41:1 il ne
+     peut pas identifier un composant (WCAG 1.4.11 exige 3:1), mais il suffit pour un
+     séparateur. La valeur vient de l'identité générée. */
+  --s-line-control: var(--ay-e-line-control, #909090);
   --s-cta-radius: var(--ay-e-cta-radius, 999px);
   --s-control-radius: var(--ay-e-control-radius, 12px);
   --s-card-radius: var(--ay-e-card-radius, 16px);
@@ -199,7 +204,7 @@
   .s-gallery-nav { position: absolute; inset-inline-start: 12px; bottom: 56px; z-index: 7; display: flex; gap: 8px; }
   .s-gallery-nav .s-rail__btn { width: 40px; height: 40px; }
   .s-gallery-thumbs { position: absolute; inset-inline: 0; bottom: 16px; z-index: 7; display: flex; gap: 8px; overflow-x: auto; padding: 0 12px; scrollbar-width: none; }
-  .s-gallery-thumbs button { flex: 0 0 56px; width: 56px; height: 64px; border: 1px solid var(--s-line)!important; background: var(--s-canvas)!important; }
+  .s-gallery-thumbs button { flex: 0 0 56px; width: 56px; height: 64px; border: 1px solid var(--s-line-control)!important; background: var(--s-canvas)!important; }
   .s-gallery-thumbs button[aria-current="true"] { outline: 2px solid var(--s-ink); outline-offset: -2px; }
   .s-gallery-thumbs img { display: block; width: 100%; height: 100%; object-fit: contain; }
 }
@@ -603,7 +608,7 @@
 .s-payment-strip__heading small { color: var(--s-muted); font-size: .625rem; }
 .s-payment-strip__marks { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; overflow: visible; padding: 0; }
 .s-payment-strip__marks::-webkit-scrollbar { display: none; }
-.s-payment-mark { display: grid; place-items: center; flex: 0 0 auto; min-width: 52px; height: 34px; padding: 0 8px; border: 1px solid var(--s-line); background: var(--s-canvas); }
+.s-payment-mark { display: grid; place-items: center; flex: 0 0 auto; min-width: 52px; height: 34px; padding: 0 8px; border: 1px solid var(--s-line-control); background: var(--s-canvas); }
 .s-payment-mark img { display: block; max-width: 46px; max-height: 20px; object-fit: contain; }
 .s-payment-mark small { font-size: .5625rem; font-weight: 700; white-space: nowrap; }
 
@@ -643,7 +648,7 @@
   .s-bag-stock strong { color: var(--s-ink); font-size: .6875rem; font-weight: 700; }
   .s-bag-stock small { font-size: .625rem; }
   .s-bag-stock[data-state="available"] { display: grid; border-inline-start-color: var(--s-ink); }
-  .s-bag-quantity { display: inline-flex; align-items: center; flex: 1; gap: 5px; margin-top: 7px; border: 1px solid var(--s-line); border-radius: var(--s-control-radius); padding: 0 3px; font-size: .8125rem; font-weight: 700; }
+  .s-bag-quantity { display: inline-flex; align-items: center; flex: 1; gap: 5px; margin-top: 7px; border: 1px solid var(--s-line-control); border-radius: var(--s-control-radius); padding: 0 3px; font-size: .8125rem; font-weight: 700; }
   .s-bag-quantity .s-iconbtn { width: 34px; height: 34px; }
   .s-bag-quantity .s-iconbtn:disabled { opacity: .4; cursor: default; }
   .s-bag-summary { flex: none; position: relative; padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -10px 24px rgb(0 0 0 / 7%); }
@@ -663,7 +668,7 @@
   .s-payment-strip__heading small { color: var(--s-muted); font-size: .625rem; }
   .s-payment-strip__marks { display: flex; flex-wrap: nowrap; align-items: center; gap: 6px; overflow-x: auto; padding: 1px 0 3px; scrollbar-width: none; }
   .s-payment-strip__marks::-webkit-scrollbar { display: none; }
-  .s-payment-mark { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; gap: 5px; min-width: 52px; min-height: 34px; padding: 4px 8px; border: 1px solid var(--s-line); border-radius: 8px; background: var(--s-canvas); }
+  .s-payment-mark { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; gap: 5px; min-width: 52px; min-height: 34px; padding: 4px 8px; border: 1px solid var(--s-line-control); border-radius: 8px; background: var(--s-canvas); }
   .s-payment-mark img { display: block; max-width: 52px; max-height: 23px; object-fit: contain; }
   .s-payment-mark small { font-size: .5625rem; font-weight: 700; white-space: nowrap; }
 
@@ -695,16 +700,16 @@
   .s-payment-options { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
   .s-payment-option { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 64px; padding: 10px 16px; border-bottom: 1px solid var(--s-line)!important; border-radius: 0!important; text-align: start; }
   .s-payment-option[aria-disabled="true"] { opacity: .56; cursor: not-allowed; }
-  .s-payment-option__mark { flex: 0 0 56px; height: 36px; display: grid; place-items: center; border: 1px solid var(--s-line); border-radius: 8px; background: var(--s-canvas); }
+  .s-payment-option__mark { flex: 0 0 56px; height: 36px; display: grid; place-items: center; border: 1px solid var(--s-line-control); border-radius: 8px; background: var(--s-canvas); }
   .s-payment-option__mark img { display: block; max-width: 48px; max-height: 25px; object-fit: contain; }
   .s-payment-option__copy { flex: 1; min-width: 0; }
   .s-payment-option__copy b { display: block; font-size: .90625rem; }
   .s-payment-option__copy small { display: block; color: var(--s-muted); font-size: .75rem; line-height: 1.25; }
-  .s-payment-option__radio { position: relative; flex: none; width: 20px; height: 20px; border: 1.5px solid var(--s-line); border-radius: 50%; }
+  .s-payment-option__radio { position: relative; flex: none; width: 20px; height: 20px; border: 1.5px solid var(--s-line-control); border-radius: 50%; }
   .s-payment-option__radio[data-selected="true"] { border-color: var(--s-ink); }
   .s-payment-option__radio > span { position: absolute; inset: 3px; border-radius: 50%; background: var(--s-ink); }
   .s-card-networks { display: flex; gap: 8px; padding: 12px 16px; }
-  .s-card-network { display: grid; place-items: center; min-width: 46px; height: 30px; padding: 0 8px; border: 1px solid var(--s-line); border-radius: 7px; }
+  .s-card-network { display: grid; place-items: center; min-width: 46px; height: 30px; padding: 0 8px; border: 1px solid var(--s-line-control); border-radius: 7px; }
   .s-card-network img { max-width: 40px; max-height: 17px; object-fit: contain; }
   .s-payment-empty { margin: 12px 16px; }
   .s-payment-total { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 8px; font-size: 1.0625rem; font-weight: 800; }

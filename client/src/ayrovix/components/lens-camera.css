@@ -29,7 +29,7 @@
 .lens-panel:lang(ar) { line-height:1.85; }
 .lens-panel-header { display:flex; align-items:center; gap:12px; flex:none; padding:12px 16px; border-bottom:1px solid var(--ay-e-line); }
 .lens-panel-header h2 { flex:1; margin:0; font-size:1.25rem; font-weight:500; line-height:1.4; }
-.lens-panel-icon { display:grid; place-items:center; flex:none; min-width:44px; min-height:44px; padding:0; border:1px solid var(--ay-e-line); color:#000; background:#fff; cursor:pointer; }
+.lens-panel-icon { display:grid; place-items:center; flex:none; min-width:44px; min-height:44px; padding:0; border:1px solid var(--ay-e-line-control); color:#000; background:#fff; cursor:pointer; }
 .lens-panel-body { overflow-y:auto; overscroll-behavior:contain; padding:20px 20px max(20px,env(safe-area-inset-bottom)); min-height:0; }
 .lens-panel-lead { margin:0 0 20px; font-size:1.0625rem; font-weight:400; }
 .lens-guide details { border-top:1px solid var(--ay-e-line); padding:14px 0; }
@@ -38,13 +38,13 @@
 .lens-guide ul { margin:8px 0; padding-inline-start:22px; }
 .lens-guide li { margin-block:8px; }
 .lens-guide a { color:#000; text-decoration:underline; text-underline-offset:3px; display:inline-block; padding-block:10px; }
-.lens-methods button { display:flex; align-items:center; gap:16px; width:100%; min-height:88px; padding:16px; margin-top:12px; border:1px solid var(--ay-e-line); background:#fff; color:#000; text-align:start; cursor:pointer; }
+.lens-methods button { display:flex; align-items:center; gap:16px; width:100%; min-height:88px; padding:16px; margin-top:12px; border:1px solid var(--ay-e-line-control); background:#fff; color:#000; text-align:start; cursor:pointer; }
 .lens-methods button svg { flex:none; }
 .lens-methods strong { display:block; font-size:1.0rem; font-weight:700; }
 .lens-methods small { display:block; margin-top:4px; color:#595959; font-size:0.8125rem; }
 .lens-link-form { display:flex; flex-direction:column; gap:12px; }
 .lens-link-form label { font-weight:700; }
-.lens-link-form input { width:100%; min-height:48px; border:1px solid var(--ay-e-line); background:var(--ay-e-canvas); color:var(--ay-e-ink); padding:12px; font:inherit; font-size:1rem; border-radius:var(--ay-e-control-radius); }
+.lens-link-form input { width:100%; min-height:48px; border:1px solid var(--ay-e-line-control); background:var(--ay-e-canvas); color:var(--ay-e-ink); padding:12px; font:inherit; font-size:1rem; border-radius:var(--ay-e-control-radius); }
 .lens-link-form p { margin:0; font-size:0.8125rem; }
 .lens-panel-primary,.lens-panel-secondary { min-height:48px; width:100%; padding:10px 16px; border:1px solid #000; background:#000; color:#fff; font:inherit; font-weight:700; cursor:pointer; }
 .lens-panel-secondary { background:#fff; color:#000; }

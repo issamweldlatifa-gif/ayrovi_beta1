@@ -115,6 +115,7 @@ html[data-theme='dark'] {
   --admin-surface-tint:var(--admin-surface-card);
   --admin-surface-soft:var(--admin-surface-card);
   --admin-line:#2a2735;
+  --admin-line-control:var(--ay-e-line-control); /* frontière des contrôles — voir la note du thème clair */
   --admin-line-soft:#221f2c;
   --admin-line-firm:#322e40;
   --admin-danger-strong:#f0716b;
@@ -349,6 +350,14 @@ html[data-theme='dark'] {
      ───────────────────────────────────────────────────────────────────────── */
   --admin-ink:var(--ayrovi-text-primary); /* déplacé depuis admin.css — jamais renommé ni retouché */
   --admin-line:#d9d9d9; /* déplacé depuis admin.css — jamais renommé ni retouché */
+  /* Frontière des CONTRÔLES (champs, listes déroulantes) : un rôle distinct de `--admin-line`,
+     qui reste le filet décoratif des séparateurs. `--admin-line` vaut 1,41:1 sur blanc, sous le
+     seuil 3:1 que WCAG 1.4.11 demande pour identifier un composant ; les séparateurs, eux, ne
+     portent aucune information d'identification et restent donc inchangés. La valeur vient de
+     l'identité générée (`--ay-e-line-control`), pas d'un littéral ajouté ici : 3,28:1 sur blanc
+     et 3,00:1 sur la surface du thème clair, donc un seul nom couvre les deux thèmes de la console.
+     Les valeurs sont mesurées par `tests/color-contrast.test.ts`, pas affirmées ici. */
+  --admin-line-control:var(--ay-e-line-control);
   --admin-surface-sunken:#f5f5f5; /* surface en creux des panneaux */
   --admin-surface-tint:var(--admin-surface-sunken); /* surface teintée (fonds de groupe) */
   --admin-surface-soft:var(--admin-surface-sunken); /* surface adoucie (encadrés, listes) */
