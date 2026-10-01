@@ -44,6 +44,7 @@
     "verify:public-additions": "esbuild verify/public-additions-runner.ts --bundle --platform=node --format=cjs --packages=external --outfile=.cache/public-additions-runner.cjs && node .cache/public-additions-runner.cjs",
     "verify:public-nav": "node verify/public-navigation.mjs",
     "verify:footer-payments": "node verify/footer-payments.mjs",
+    "verify:lens-probe": "esbuild verify/lens-probe.ts --bundle --platform=node --format=cjs --packages=external --outfile=.cache/lens-probe.cjs --log-level=error && node .cache/lens-probe.cjs",
     "verify:customer-auth": "esbuild verify/customer-auth-functional.ts --bundle --platform=node --packages=external --outfile=.cache/auth-functional.cjs --log-level=error && node .cache/auth-functional.cjs"
   },
   "keywords": [
