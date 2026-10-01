@@ -3,6 +3,8 @@ import React, { Suspense, lazy, useState, useEffect, useRef } from 'react';
 import './styles/public-discovery.css';
 import { PublicPageLinks } from './components/PublicPageLinks';
 import { publicPageForPath } from './navigation/publicPages';
+import { isKnownPagePath } from '../../shared/publicSeo';
+import { NotFoundPage } from './components/NotFoundPage';
 import { TopAnnouncementBar } from './components/TopAnnouncementBar';
 import { Navbar } from './components/Navbar';
 import { EvergreenHero } from './components/EvergreenHero';
@@ -70,6 +72,9 @@ const ManagedSectionFrame: React.FC<{ section: InterfaceSectionConfig; children:
 export const App: React.FC = () => {
   const navigation = useNavigationHistory();
   const publicPage = publicPageForPath(window.location.pathname);
+  // Une adresse que le serveur a déjà refusée en 404 (page-like et inconnue) : le client le
+  // sait sans le demander, parce qu'il lit la même liste — `shared/publicSeo.ts`.
+  const unknownPath = !publicPage && !isKnownPagePath(window.location.pathname);
   const { tr, locale } = useLocale();
   const appView = navigation.stack[0]?.id || 'home';
   const isProductDrawerOpen = appView === 'app:product';
@@ -448,7 +453,7 @@ export const App: React.FC = () => {
       <Navbar
         onOpenMenuDrawer={() => openAppView('app:menu')}
         onGoHome={() => {
-          if (publicPage) { window.location.assign('/'); return; }
+          if (publicPage || unknownPath) { window.location.assign('/'); return; }
           navigation.goHome();
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
@@ -465,7 +470,7 @@ export const App: React.FC = () => {
       />
       </div>
 
-      {!publicPage && <><TopAnnouncementBar /><PublicPageLinks /></>}
+      {!publicPage && !unknownPath && <><TopAnnouncementBar /><PublicPageLinks /></>}
 
       {appView === 'app:about' && <Suspense fallback={null}><AboutPage section={interfaceConfig.sections.find(section => section.id === 'about')} onClose={closeAppView} /></Suspense>}
 
@@ -490,12 +495,14 @@ export const App: React.FC = () => {
       {/* Sections publiques — visibilité, ordre, médias et contenu pilotés depuis Admin → واجهتي. */}
       {/* Les pages plein écran (Arrivage, Gift & Cards, Magazine) n'affichent plus de copie du
           pied de page : décision produit du 2026-09-22. Le pied de page appartient à l'accueil. */}
-      {publicPage
-        ? <PublicCmsSections standalonePage={publicPage} homepageVisible={false} isAuthenticated={Boolean(customerSession)} onOpenAccount={() => { setAccountInitialSection('home'); openAppView('app:account'); }} onOpenProduct={openCatalogProduct} />
-        : <div className="managed-public-sections">{publicSections}</div>}
+      {unknownPath
+        ? <NotFoundPage />
+        : publicPage
+          ? <PublicCmsSections standalonePage={publicPage} homepageVisible={false} isAuthenticated={Boolean(customerSession)} onOpenAccount={() => { setAccountInitialSection('home'); openAppView('app:account'); }} onOpenProduct={openCatalogProduct} />
+          : <div className="managed-public-sections">{publicSections}</div>}
       {/* Le pied de page appartient à l'accueil : les pages plein écran (Arrivage, Gift & Cards,
           Magazine) n'en affichent plus de copie — décision produit du 2026-09-22. */}
-      {!publicPage && <Footer logoUrl={interfaceConfig.logoUrl}
+      {!publicPage && !unknownPath && <Footer logoUrl={interfaceConfig.logoUrl}
         introTitle={interfaceConfig.sections.find(section => section.id === 'footer')?.title}
         introText={interfaceConfig.sections.find(section => section.id === 'footer')?.subtitle}
         onOpenAccount={() => { setAccountInitialSection('home'); openAppView('app:account'); }}

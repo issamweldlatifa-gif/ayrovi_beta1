@@ -408,7 +408,13 @@ describe('back office shell (P2.0)', () => {
     });
 
     test('les permissions legacy restent le plancher : aucune chaîne nouvelle ajoutée au Set', () => {
-      expect(ALL_ADMIN_PERMISSIONS).toHaveLength(15);
+      // 16 depuis la frontière d'exploitation du 2026-10-01 : `settings:read` a rejoint la
+      // liste. Comme ses trois prédécesseurs de la closure gate P1, il nomme un accès déjà
+      // exercé (les détenteurs de `settings:write`) au lieu d'en créer un — la vérification
+      // d'étroitesse est portée par `tests/admin-permission-boundaries.test.ts`. Ce que ce
+      // test protège ici reste inchangé : aucune chaîne `back-office:*` n'entre dans le Set.
+      expect(ALL_ADMIN_PERMISSIONS).toHaveLength(16);
+      expect(ALL_ADMIN_PERMISSIONS).toContain('settings:read');
       expect(ALL_ADMIN_PERMISSIONS.filter((permission) => permission.startsWith('back-office'))).toEqual([]);
     });
   });

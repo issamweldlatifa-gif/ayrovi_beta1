@@ -52,6 +52,11 @@ const LEGACY_PERMISSION_MAP: Record<string, { module: string; action: string }> 
   'pricing:write': { module: 'catalog', action: 'write' },
   'payments:write': { module: 'finance', action: 'write' },
   'settings:write': { module: 'settings', action: 'write' },
+  // Le pendant lecture du module réglages. Il existe pour que `GET /settings` et les
+  // surfaces d'exploitation aient un gate nommé, au lieu d'emprunter `content:read`
+  // (qui ouvrait la configuration à CONTENT_MANAGER) ou `dashboard:read` (détenu par
+  // les quatre rôles, donc sans valeur de séparation).
+  'settings:read': { module: 'settings', action: 'read' },
   'users:write': { module: 'users', action: 'write' },
   // P1 closure gate: `GET /users` était gated users:write (un droit d'écriture pour
   // une lecture) et `ai-knowledge` settings:write (droit du module réglages pour une

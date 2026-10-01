@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import { SmartLinkScraper } from '../scraper/scraper';
-import { QatafoDatabase as AyroviDatabase } from '../db/database';
+import { QatafoDatabase as AyroviDatabase, PAYMENT_METHOD_CODES, resolveAcceptedPaymentMethods } from '../db/database';
 import type { PaymentMethodCode } from '../db/database';
 import { VisualProductExtractor } from '../services/vision';
 import { ownerHashOf, recordLearningEvent } from '../assistant/learning';
@@ -16,17 +16,11 @@ import { isUnsafeHostname, parsePublicHttpUrl, UnsafeUrlError } from '../service
 import { verifyAyrovixPriceToken } from '../ayrovix/priceQuote';
 import { attachOcerexExtractionsToOrder } from '../ocerex/store';
 import { recordOcerexEvent } from '../ocerex/analytics';
+import { funnelVisitorKey, recordFunnelEvent } from '../analytics/funnel';
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_IMAGE_SIZE, files: 1 } });
-const PAYMENT_METHODS = new Set<PaymentMethodCode>(['PENDING_SELECTION', 'COD', 'D17', 'FLOUCI', 'CARD', 'BANK_TRANSFER', 'POSTE']);
-/*
- * Le paiement à la livraison fait partie des moyens par défaut : il n'exige
- * aucune passerelle, l'argent change de main devant le client. L'omettre
- * signifiait qu'une boutique fraîchement installée ne pouvait encaisser
- * ABSOLUMENT RIEN tant qu'une intégration n'était pas configurée.
- */
-const DEFAULT_PAYMENT_METHODS: PaymentMethodCode[] = ['COD', 'CARD', 'FLOUCI', 'BANK_TRANSFER', 'POSTE'];
+const PAYMENT_METHODS = new Set<PaymentMethodCode>(PAYMENT_METHOD_CODES);
 
 
 export function createApiRouter(
@@ -298,6 +292,9 @@ export function createApiRouter(
     try {
       const accountId = cartAccountId(req, sessionId);
       const cartItem = db.addItem(sessionId, normalizedItem, accountId);
+      // Le haut de l'entonnoir : jusqu'ici, un panier rempli puis abandonné ne laissait
+      // aucune trace exploitable, donc le taux de conversion n'avait pas de dénominateur.
+      recordFunnelEvent(db, 'cart_item_added', { locale: null, visitorKey: funnelVisitorKey(sessionId) });
       const summary = cartSummary()(db.getItems(sessionId, accountId));
       return res.status(201).json({
         success: true,
@@ -473,23 +470,24 @@ export function createApiRouter(
     const paymentCode = String(paymentMethod || 'PENDING_SELECTION').trim().toUpperCase();
     const paymentSetting = db.get<any>("SELECT setting_value FROM settings WHERE setting_key='payment_methods'");
     const governorateSetting = db.get<any>("SELECT setting_value FROM settings WHERE setting_key='governorates'");
-    let configuredPayments: PaymentMethodCode[] = DEFAULT_PAYMENT_METHODS;
+    // La même fonction que celle publiée au client par /api/public/commerce-config :
+    // le moyen annoncé dans la caisse est donc toujours un moyen que cette route
+    // accepte. Les deux lectures séparées avaient fini par diverger.
+    const configuredPayments = resolveAcceptedPaymentMethods(paymentSetting?.setting_value);
     let configuredGovernorates: string[] = [];
     try {
-      const parsedPayments = JSON.parse(paymentSetting?.setting_value || '[]');
       const parsedGovernorates = JSON.parse(governorateSetting?.setting_value || '[]');
-      if (Array.isArray(parsedPayments) && parsedPayments.length) {
-        const validPayments = parsedPayments
-          .map((value) => String(value).trim().toUpperCase())
-          .filter((value): value is PaymentMethodCode => PAYMENT_METHODS.has(value as PaymentMethodCode));
-        if (validPayments.length) configuredPayments = [...new Set(validPayments)];
-      }
       if (Array.isArray(parsedGovernorates)) configuredGovernorates = parsedGovernorates.map(String);
     } catch {
       return res.status(500).json({ success: false, error: 'La configuration commerciale est invalide.' });
     }
-    if (!PAYMENT_METHODS.has(paymentCode as PaymentMethodCode)
-      || (paymentCode !== 'PENDING_SELECTION' && !configuredPayments.includes(paymentCode as PaymentMethodCode))) {
+    const requestedMethod = paymentCode as PaymentMethodCode;
+    if (!PAYMENT_METHODS.has(requestedMethod)) {
+      return res.status(400).json({ success: false, error: 'Ce moyen de paiement n’est pas disponible.' });
+    }
+    // `PENDING_SELECTION` n'est pas un moyen : il décrit une commande dont le
+    // paiement reste à choisir, et ne se compare donc jamais à la liste configurée.
+    if (requestedMethod !== 'PENDING_SELECTION' && !configuredPayments.includes(requestedMethod)) {
       return res.status(400).json({ success: false, error: 'Ce moyen de paiement n’est pas disponible.' });
     }
     if (configuredGovernorates.length && !configuredGovernorates.includes(city.trim())) {
@@ -567,6 +565,15 @@ export function createApiRouter(
         paymentMethod: normalizedPaymentMethod,
         governorate: city.trim(),
         itemCount: Number((result as { itemCount?: number }).itemCount ?? 0) || undefined,
+      });
+      // Bas de l'entonnoir, enregistré ici parce que c'est ici que le MONTANT est connu :
+      // l'observateur de la caisse voit la réponse, mais pas la valeur d'une commande.
+      recordFunnelEvent(db, 'order_created', {
+        method: normalizedPaymentMethod,
+        deliveryMode,
+        locale: checkoutLocale,
+        valueTnd: Number(result.totalTND ?? 0),
+        visitorKey: funnelVisitorKey(sessionId),
       });
       return res.json({
         success: true,

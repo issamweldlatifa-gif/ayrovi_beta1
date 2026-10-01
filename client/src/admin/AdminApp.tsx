@@ -322,12 +322,46 @@ const DashboardPage: React.FC<{ navigate: (section: string, request?: string) =>
       <section className="admin-card admin-chart-card"><CardTitle title="Revenu journalier" subtitle={`Sur ${days} jours`} /><div className="admin-bar-chart">{data.daily.length ? data.daily.map((row: any) => <div key={row.date} title={`${formatDate(row.date)} · ${formatMoney(row.revenue)}`}><span style={{ height: `${Math.max((Number(row.revenue) / maxRevenue) * 100, 3)}%` }} /><small>{row.date.slice(5)}</small></div>) : <ChartEmpty />}</div></section>
       <section className="admin-card"><CardTitle title="Statuts des commandes" subtitle="Répartition actuelle" /><div className="admin-status-chart">{data.statuses.length ? data.statuses.map((row: any) => <div key={row.status}><span><StatusBadge status={row.status} /><b>{row.count}</b></span><i><em style={{ width: `${(Number(row.count) / maxStatus) * 100}%` }} /></i></div>) : <ChartEmpty />}</div></section>
       <section className="admin-card"><CardTitle title="Plateformes sources" subtitle="Commandes & revenu" /><div className="admin-source-list">{data.sources.length ? data.sources.map((row: any) => <div key={row.source}><span>{row.source}</span><strong>{row.orders} commande{row.orders === 1 ? '' : 's'}</strong><b>{formatMoney(row.revenue)}</b></div>) : <ChartEmpty />}</div></section>
+      <FunnelCard funnel={data.funnel} days={days} />
       <section className="admin-card admin-card--wide"><CardTitle title="Dernières commandes" subtitle="Flux opérationnel" /><DataTable rows={data.recentOrders} columns={[
         { key: 'order_number', label: 'Référence', render: (row: any) => <strong>{row.order_number}</strong> }, { key: 'customer_name', label: 'Client' }, { key: 'status', label: 'Statut', render: (row: any) => <StatusBadge status={row.status} /> },
         { key: 'total_tnd', label: 'Total', render: (row: any) => formatMoney(row.total_tnd) }, { key: 'created_at', label: 'Date', render: (row: any) => formatDate(row.created_at, true) },
       ]} /></section>
     </div>
   </>;
+};
+
+/**
+ * Le parcours d'achat, montré là où le commerçant regarde déjà ses chiffres. Deux règles
+ * tenues par cette carte : un taux sans dénominateur s'affiche « — » et jamais « 0 % »
+ * (aucune tentative n'est pas un échec), et les refus sont montrés AVEC leur cause — c'est
+ * la cause qui rend le chiffre actionnable.
+ */
+const FunnelCard: React.FC<{ funnel: any; days: number }> = ({ funnel, days }) => {
+  const percent = (value: unknown) => (typeof value === 'number' ? `${value} %` : '—');
+  const attempted = Number(funnel?.counts?.checkout_started ?? 0);
+  const refused = Number(funnel?.counts?.checkout_failed ?? 0);
+  const failures: Array<{ code: string; count: number }> = Array.isArray(funnel?.failures) ? funnel.failures.slice(0, 4) : [];
+  const stats = [
+    { label: 'Visiteurs au panier', value: String(funnel?.visitors?.carts ?? 0) },
+    { label: 'Visiteurs en caisse', value: String(funnel?.visitors?.checkouts ?? 0) },
+    { label: 'Paniers → caisse', value: percent(funnel?.cartToCheckoutRate) },
+    { label: 'Caisse → commande', value: percent(funnel?.conversionRate) },
+  ];
+  return <section className="admin-card admin-card--wide admin-funnel">
+    <CardTitle title="Parcours d’achat" subtitle={`Entonnoir mesuré sur ${days} jours`} />
+    {attempted === 0
+      ? <div className="admin-chart-empty">Aucune entrée en caisse sur la période. Un taux vide reste vide : il n’y avait rien à mesurer.</div>
+      : <>
+          <div className="admin-funnel-stats">{stats.map(({ label, value }) => <article key={label}><span>{label}</span><strong>{value}</strong></article>)}</div>
+          <div className="admin-funnel-failures">
+            <span>Refus en caisse : {refused}</span>
+            {failures.length
+              ? failures.map((row) => <div key={row.code}><em>{row.code}</em><b>{row.count}</b></div>)
+              : <small>Aucun refus sur la période.</small>}
+          </div>
+        </>}
+  </section>;
 };
 
 const PageLoading: React.FC<{ error?: string }> = ({ error }) => <div className="admin-page-loading">{error ? <><AlertCircle /><strong>{error}</strong></> : <><span /><p>Chargement des données…</p></>}</div>;

@@ -12,6 +12,7 @@ import { getAyroviAiCore } from '../ai-core/core';
 import type { QatafoDatabase } from '../db/database';
 import type { AdminIdentity } from '../admin/auth';
 import { requireAdmin } from '../admin/auth';
+import { OPERATIONAL_PERMISSION_FOR } from '../admin/permissions';
 import { moduleRegistryPayload, ERP_MODULES } from './modules';
 import { auditCoverage, listAuditEvents, writeAuditEvent, fieldDiff, resourceTypeForModule } from './audit';
 import {
@@ -89,7 +90,10 @@ export function createErpCoreRouter(db: QatafoDatabase): Router {
     res.json({ success: true, data: { sections: moduleRegistryPayload(), total: ERP_MODULES.length } });
   });
 
-  router.get('/environment', requireAdmin(db, 'dashboard:read'), (_req, res) => {
+  // Exploitation : cette réponse décrit l'installation (racines de stockage, répertoire de
+  // données, disponibilité des fournisseurs). `dashboard:read` la laissait lire à tout
+  // compte connecté; `settings:read` la réserve à qui peut déjà écrire les réglages.
+  router.get('/environment', requireAdmin(db, OPERATIONAL_PERMISSION_FOR.environment), (_req, res) => {
     res.json({
       success: true,
       data: {
@@ -111,7 +115,7 @@ export function createErpCoreRouter(db: QatafoDatabase): Router {
   });
 
   // Self-check used by the security test and by the admin screen.
-  router.get('/environment/self-test', requireAdmin(db, 'dashboard:read'), (_req, res) => {
+  router.get('/environment/self-test', requireAdmin(db, OPERATIONAL_PERMISSION_FOR.environment), (_req, res) => {
     const probes = [
       `${dataDirectory()}/uploads/invoices/probe.pdf`,
       `${dataDirectory()}/uploads/deposits/probe.png`,
@@ -239,14 +243,16 @@ export function createErpCoreRouter(db: QatafoDatabase): Router {
     res.json({ success: true, data: { ...auditCoverage(db, Number(req.query.days) || 30), resourceTypeFor: (module: string) => resourceTypeForModule(module) } });
   });
 
-  router.get('/events', requireAdmin(db, 'dashboard:read'), (req, res) => {
+  // Le journal d'événements porte des lignes financières (`finance`, `payment_proof`).
+  // Il appartient au gate d'audit, pas au droit « ouvre la console » que tous détiennent.
+  router.get('/events', requireAdmin(db, OPERATIONAL_PERMISSION_FOR.events), (req, res) => {
     res.json({ success: true, data: listErpEvents(db, Number(req.query.limit) || 50, typeof req.query.module === 'string' ? req.query.module : undefined) });
   });
 
   // E8 — résumé des événements ERP pour le tableau de bord : top événements et
   // courbe des 14 derniers jours. Agrégations purement additives, aucune donnée
   // brute exportée hors du `WHERE module_key` demandé.
-  router.get('/events/summary', requireAdmin(db, 'dashboard:read'), (req, res) => {
+  router.get('/events/summary', requireAdmin(db, OPERATIONAL_PERMISSION_FOR.events), (req, res) => {
     const moduleKey = typeof req.query.module === 'string' && req.query.module ? req.query.module : null;
     const where = moduleKey ? 'WHERE module_key = ?' : '';
     const params: string[] = moduleKey ? [moduleKey] : [];
@@ -269,7 +275,9 @@ export function createErpCoreRouter(db: QatafoDatabase): Router {
   });
 
   // ---------- Sequences (numbering foundation) ----------
-  router.get('/sequences', requireAdmin(db, 'settings:write'), (_req, res) => {
+  // Lecture d'une ressource de réglages : elle exigeait `settings:write`, un droit
+  // d'écriture pour une lecture. `settings:read` dit exactement ce que la route fait.
+  router.get('/sequences', requireAdmin(db, 'settings:read'), (_req, res) => {
     res.json({ success: true, data: listSequences(db) });
   });
 

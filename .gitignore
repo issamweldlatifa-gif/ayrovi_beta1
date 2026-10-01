@@ -10,6 +10,12 @@ dist/
 data/uploads/
 data/backups/
 data/*.sqlite*
+# Caches d'exécution (reconstruits à la demande, jamais une source) :
+# descriptions Lens enrichies et contrats de disponibilité des variantes.
+# Sans ces lignes, `npm test` laisse des fichiers non suivis dans data/ et le
+# prochain `git add -A` les emporte dans l'historique.
+data/lens-descriptions/
+data/variant-availability/
 # documents privés (P0) : factures, justificatifs, fichiers employés —
 # ne doivent jamais atterrir dans l’historique git, même en résidu de tests.
 data/private/

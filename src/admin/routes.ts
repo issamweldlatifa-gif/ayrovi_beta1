@@ -4,7 +4,7 @@ import { Router, Request, Response } from 'express';
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { QatafoDatabase } from '../db/database';
+import { QatafoDatabase, SELECTABLE_PAYMENT_METHODS } from '../db/database';
 import multer from 'multer';
 import {
   deleteHeroVisualFiles,
@@ -66,6 +66,7 @@ import {
   updateAyrovixReview,
 } from '../ayrovix/reviews';
 import { lensPerformanceReport } from '../ayrovix/services/lensPerformanceTrace';
+import { funnelSummary } from '../analytics/funnel';
 import {
   GenerateMagazineInput,
   MagazineAgentProviderError,
@@ -970,7 +971,16 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
         activeStandardArrivals: Number(arrivals.find((row) => row.type === 'STANDARD')?.count || 0),
         activeExpressArrivals: Number(arrivals.find((row) => row.type === 'EXPRESS')?.count || 0),
       }, statuses, daily, sources, recentOrders,
+      // Le parcours d'achat, posé sur le même écran que les chiffres de vente : c'est la
+      // seule façon qu'une fuite (caisse ouverte / commande non conclue) soit vue au moment
+      // où l'on regarde les résultats, plutôt que découverte par un client mécontent.
+      funnel: funnelSummary(db, range),
     } });
+  });
+
+  /** Le parcours seul, pour être lu sans charger tout le tableau de bord. */
+  router.get('/funnel', requireAdmin(db, 'commerce:read'), (req, res) => {
+    res.json({ success: true, data: funnelSummary(db, Math.min(Math.max(Number(req.query.days) || 30, 1), 365)) });
   });
 
   router.get('/ayrovix-reviews', requireAdmin(db, 'commerce:read'), (req, res) => {
@@ -2064,7 +2074,11 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     } });
   });
 
-  router.get('/settings', requireAdmin(db, 'content:read'), (req, res) => {
+  // Lire la configuration n'est pas lire le contenu. Cette route renvoie TOUTES les lignes
+  // de `settings`, y compris `payment_methods` : gardée par `content:read`, elle était donc
+  // ouverte à CONTENT_MANAGER. `settings:read` nomme l'accès réel et le réserve aux rôles
+  // qui pouvaient déjà écrire ces mêmes lignes.
+  router.get('/settings', requireAdmin(db, 'settings:read'), (req, res) => {
     const category = typeof req.query.category === 'string' ? req.query.category : '';
     const rows = category ? db.all<any>('SELECT * FROM settings WHERE category=? ORDER BY label', category) : db.all<any>('SELECT * FROM settings ORDER BY category,label');
     res.json({ success: true, data: rows.map((row) => ({ ...row, setting_value: row.value_type === 'JSON' ? (row.setting_key === 'interface_config' ? enforceBrandIdentity(JSON.parse(row.setting_value)) : row.setting_key === 'site_theme' ? enforceLegacyTheme(JSON.parse(row.setting_value)) : JSON.parse(row.setting_value)) : row.value_type === 'NUMBER' ? Number(row.setting_value) : row.value_type === 'BOOLEAN' ? row.setting_value === 'true' : row.setting_value })) });
@@ -2075,8 +2089,18 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     if (!current) return res.status(404).json({ success: false, error: 'Paramètre introuvable.' });
     let received = req.body?.value;
     if (current.setting_key === 'payment_methods') {
-      if (!Array.isArray(received) || !received.length || received.some((method: unknown) => !['COD','D17','FLOUCI'].includes(String(method)))) {
-        return res.status(400).json({ success: false, error: 'Les paiements autorisés sont COD, D17 et FLOUCI.' });
+      // The accepted codes come from the shared list, NOT from a copy written here.
+      // A local list had drifted below the ones the checkout understands, so this
+      // endpoint refused the very value the platform seeds by default — and the only
+      // accepted alternative silently dropped card payments. Accepting exactly what
+      // the checkout can honour keeps the Admin honest in both directions.
+      const selectable = new Set<string>(SELECTABLE_PAYMENT_METHODS);
+      if (!Array.isArray(received) || !received.length || received.some((method: unknown) => !selectable.has(String(method)))) {
+        return res.status(400).json({
+          success: false,
+          code: 'PAYMENT_METHODS_INVALID',
+          error: `Moyens de paiement invalides. Valeurs acceptées : ${SELECTABLE_PAYMENT_METHODS.join(', ')}.`,
+        });
       }
     }
     if (current.setting_key === 'governorates') {

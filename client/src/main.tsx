@@ -5,6 +5,7 @@ import './styles/journey.css';
 import { NavigationHistoryProvider } from './navigation/NavigationHistory';
 import { CustomerIdentity } from './design/editorial/CustomerIdentity';
 import { LocaleProvider } from './i18n/LocaleContext';
+import { RouteMeta } from './navigation/RouteMeta';
 
 const isRecoveryPath = window.location.pathname === '/reset-password';
 const PasswordRecovery = lazy(() => import('./components/CustomerPasswordRecovery').then(module => ({ default: module.CustomerPasswordRecovery })));
@@ -31,6 +32,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <LocaleProvider>
       <NavigationHistoryProvider>
+        <RouteMeta />
         <Suspense fallback={loading}>
           {isAdminPath ? <AdminApp /> : <CustomerIdentity>{isRecoveryPath ? <PasswordRecovery reset /> : <PublicApp />}</CustomerIdentity>}
         </Suspense>

@@ -4,6 +4,7 @@ import cors from 'cors';
 import compression from 'compression';
 import path from 'path';
 import fs from 'fs';
+import { KNOWN_PAGE_PATHS, isKnownPagePath, sitemapRoutes } from '../shared/publicSeo';
 import { createHash, randomUUID } from 'node:crypto';
 import type { Server } from 'node:http';
 import { spawn } from 'node:child_process';
@@ -11,6 +12,7 @@ import { QatafoDatabase as AyroviDatabase } from './db/database';
 import { SmartLinkScraper } from './scraper/scraper';
 import { VisualProductExtractor } from './services/vision';
 import { createApiRouter } from './api/routes';
+import { observeCheckoutFunnel } from './analytics/funnel';
 import { createAyrovixRouter } from './ayrovix/routes';
 import { createAdminRouter } from './admin/routes';
 import { createPublicRouter } from './public/routes';
@@ -248,6 +250,22 @@ app.use('/reset-password', (_req, res, next) => {
   res.setHeader('X-Robots-Tag', 'noindex, nofollow');
   next();
 });
+// Sitemap : engendré depuis le contrat partagé `shared/publicSeo.ts`, jamais depuis un fichier
+// statique recopié à la main (l'ancien `public/sitemap.xml` ne listait qu'une seule URL et
+// pouvait diverger sans que rien ne le signale).
+app.get('/sitemap.xml', (_req, res) => {
+  const urls = sitemapRoutes().map((route) => [
+    '  <url>',
+    `    <loc>https://ayrovi.tn${route.path}</loc>`,
+    `    <changefreq>${route.changeFrequency}</changefreq>`,
+    `    <priority>${route.priority.toFixed(1)}</priority>`,
+    '  </url>',
+  ].join('\n')).join('\n');
+  res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  res.send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`);
+});
+
 app.use(express.static(publicDir, {
   setHeaders: (res, filePath) => {
     if (filePath.endsWith('.html')) {
@@ -284,6 +302,10 @@ app.use('/api', (_req, res, next) => {
   res.setHeader('Cache-Control', 'no-store');
   next();
 });
+// L'observateur du parcours d'achat est monté AVANT les routeurs : il voit la réponse réelle
+// de la caisse, donc il compte chaque refus — celui qu'on a prévu comme celui qu'on ajoutera
+// demain sans y penser. C'est la seule mesure de ce fichier qui ne dépend d'aucune liste.
+app.use('/api/checkout', observeCheckoutFunnel(db));
 app.use('/api/admin', createAdminRouter(db));
 app.use('/api/ayrovix', createAyrovixRouter(db, scraper));
 app.use('/api/ocerex', createOcerexRouter(db, scraper));
@@ -340,15 +362,34 @@ app.use('/api', (req, res) => {
   res.status(404).json({ success: false, code: 'API_NOT_FOUND', error: `Route API introuvable: ${req.method} ${req.originalUrl}` });
 });
 
-// Single Page Application (SPA) Fallback Route
-app.get('*', (_req, res) => {
+/*
+ * Repli SPA — mais plus de faux « 200 » pour une page qui n'existe pas.
+ *
+ * Une adresse de PAGE (sans extension, hors médias) qui n'est pas au contrat
+ * `shared/publicSeo.ts` n'existe pas : le serveur répond 404 ET renvoie l'application, pour
+ * que le visiteur voie une page « introuvable » honnête au lieu d'une accueil trompeuse.
+ * Les requêtes de type fichier (médias absents, `/uploads/...`) gardent leur comportement
+ * historique, documenté par les tests de la politique d'uploads : ce sont des ressources,
+ * pas des pages, et le 404 du garde-fou documentaire ne doit pas changer leur absence.
+ */
+const looksLikeAssetRequest = (pathname: string): boolean =>
+  pathname.startsWith('/uploads/') || path.extname(pathname) !== '';
+
+app.get('*', (req, res) => {
   const indexPath = path.join(publicDir, 'index.html');
-  if (fs.existsSync(indexPath)) {
-    res.setHeader('Cache-Control', 'no-store');
-    res.sendFile(indexPath);
-  } else {
+  if (!fs.existsSync(indexPath)) {
     res.status(404).send('AYROVI Frontend build not found.');
+    return;
   }
+  const pathname = req.path.replace(/\/+$/, '') || '/';
+  const knownPage = isKnownPagePath(pathname) || KNOWN_PAGE_PATHS.includes(pathname);
+  const missingPage = !knownPage && !looksLikeAssetRequest(pathname);
+  res.setHeader('Cache-Control', 'no-store');
+  if (missingPage) {
+    res.status(404);
+    res.setHeader('X-Robots-Tag', 'noindex, follow');
+  }
+  res.sendFile(indexPath);
 });
 
 // Nettoyage périodique : sessions clients expirées + défis OTP consommés/périmés.

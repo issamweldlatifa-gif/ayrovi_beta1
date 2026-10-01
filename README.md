@@ -32,10 +32,14 @@ En développement, si `ADMIN_PASSWORD` n’est pas défini, un compte local `adm
 
 ## Validation
 
+L’ordre compte : plusieurs tests décrivent le contrat HTTP/SPA et lisent
+`public/index.html`, produit par `npm run build`. Lancer les tests avant la
+construction échoue sur une copie neuve (c’est aussi l’ordre de la CI).
+
 ```bash
 npm run typecheck
-npm test
 npm run build
+npm test
 ```
 
 La suite automatisée couvre notamment l’authentification, CSRF, RBAC, le CMS, l’OMS, les snapshots tarifaires, les paiements configurés, les 24 gouvernorats, les quantités, les dates, le CORS et les API publiques.
