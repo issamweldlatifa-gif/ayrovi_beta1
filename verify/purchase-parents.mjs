@@ -95,8 +95,14 @@ try {
     await size.waitFor();
     check(`${mode}: fresh variant stock evidence enables the source size`, await size.isEnabled());
     await size.click();
+    // Choisir la couleur change le prix source (variante 24 € ≠ 20 €) : l'écran
+    // redemande un devis serveur et ferme le bouton le temps de la réponse. On
+    // attend donc ce second devis, puis l'état FINAL du bouton d'ajout lui-même —
+    // sinon on photographie l'instant transitoire entre le clic et la requête.
+    const requote = page.waitForResponse((response) => response.url().includes('/api/public/pricing/cart-line'), { timeout: 15000 }).catch(() => null);
     await screen.getByRole('button', { name: 'Bleu', exact: true }).click();
-    await screen.locator('.s-buybar--product .s-cta:not(.s-cta--ghost):not(:disabled)').waitFor();
+    await requote;
+    await screen.locator('.s-buybar--product .s-cta:not(.s-cta--ghost):not(:disabled)', { hasText: 'Ajouter au panier' }).waitFor();
     check(`${mode}: valid size and color expose the current add action`, await screen.getByRole('button', { name: 'Ajouter au panier', exact: true }).isEnabled());
     check(`${mode}: product screen remains mounted under the same production parent`, await screen.getByRole('heading', { name: title, exact: true }).count(), 1);
     await page.screenshot({ path: `${output}/${mode}-product.png` });
