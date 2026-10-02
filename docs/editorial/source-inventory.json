@@ -4,7 +4,7 @@
   "totals": {
     "files": 246,
     "customerAndSharedFiles": 194,
-    "controls": 456,
+    "controls": 455,
     "iconAliases": 101,
     "uniqueGlyphs": 98
   },
@@ -10848,8 +10848,8 @@
     {
       "file": "client/src/ayrovix/components/InteractiveLensResults.tsx",
       "domain": "lens",
-      "sha256": "2c38ea65f3ba2fd97e76754ca02859da373478b307f8ce472382e87438e21555",
-      "lines": 206,
+      "sha256": "7ea1812a248e224c60e38b737ccc6987aa25e3f5db1f60d48525da6df1f48781",
+      "lines": 200,
       "imports": [
         "./LensProductCard",
         "./useLensFavorites",
@@ -10869,7 +10869,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 123,
+          "line": 122,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -10879,7 +10879,7 @@
         },
         {
           "tag": "button",
-          "line": 135,
+          "line": 134,
           "className": "{`lens-selection-corner lens-corner-${corner}`}",
           "type": "\"button\"",
           "role": null,
@@ -10889,7 +10889,7 @@
         },
         {
           "tag": "button",
-          "line": 143,
+          "line": 142,
           "className": "\"lens-product-dot\"",
           "type": "\"button\"",
           "role": null,
@@ -10899,7 +10899,7 @@
         },
         {
           "tag": "button",
-          "line": 151,
+          "line": 150,
           "className": "\"lens-sheet-handle\"",
           "type": "\"button\"",
           "role": null,
@@ -10909,17 +10909,7 @@
         },
         {
           "tag": "button",
-          "line": 179,
-          "className": "\"mt-2 w-full rounded-control bg-ink py-2 text-xs font-bold text-white\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => onCommandDetected(detected)}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 188,
+          "line": 181,
           "className": "\"rounded-control bg-ink px-5 py-2 text-xs font-bold text-white\"",
           "type": "\"button\"",
           "role": null,
@@ -10929,7 +10919,7 @@
         },
         {
           "tag": "LensProductCard",
-          "line": 195,
+          "line": 189,
           "className": null,
           "type": null,
           "role": null,
@@ -11308,8 +11298,8 @@
     {
       "file": "client/src/ayrovix/components/LensLauncher.tsx",
       "domain": "lens",
-      "sha256": "9aaab5466b0f2c70e3c2b0492da076c26d0dc2ffea57277b153a4e66ba8744f0",
-      "lines": 1015,
+      "sha256": "9f487a35acae876117ba7844660090722a83c35cde7082d0fb2084b23d17cd10",
+      "lines": 985,
       "imports": [
         "../../types",
         "./LensHelp",
@@ -11346,7 +11336,7 @@
       "controls": [
         {
           "tag": "AppHeader",
-          "line": 754,
+          "line": 726,
           "className": "{stage === 'product' ? 'border-b-0 bg-transparent' : ''}",
           "type": null,
           "role": null,
@@ -11356,7 +11346,7 @@
         },
         {
           "tag": "button",
-          "line": 760,
+          "line": 732,
           "className": "\"relative grid h-11 w-11 place-items-center rounded-full bg-transparent text-ink hover:bg-surface transition\"",
           "type": "\"button\"",
           "role": null,
@@ -11366,7 +11356,7 @@
         },
         {
           "tag": "input",
-          "line": 776,
+          "line": 748,
           "className": "\"hidden\"",
           "type": "\"file\"",
           "role": null,
@@ -11376,7 +11366,7 @@
         },
         {
           "tag": "button",
-          "line": 802,
+          "line": 774,
           "className": "\"lens-drop\"",
           "type": "\"button\"",
           "role": null,
@@ -11386,7 +11376,7 @@
         },
         {
           "tag": "form",
-          "line": 820,
+          "line": 792,
           "className": "\"bg-white p-4\"",
           "type": null,
           "role": null,
@@ -11396,7 +11386,7 @@
         },
         {
           "tag": "input",
-          "line": 836,
+          "line": 808,
           "className": "\"min-h-[46px] min-w-0 flex-1 rounded-control border border-line bg-surface px-3.5 text-sm text-ink placeholder:text-muted focus:border-line focus:outline-none\"",
           "type": "\"search\"",
           "role": null,
@@ -11406,7 +11396,7 @@
         },
         {
           "tag": "button",
-          "line": 848,
+          "line": 820,
           "className": "\"ay-btn-primary flex-none text-xs disabled:opacity-40\"",
           "type": "\"submit\"",
           "role": null,
@@ -11416,7 +11406,7 @@
         },
         {
           "tag": "form",
-          "line": 853,
+          "line": 825,
           "className": "\"bg-white p-4\"",
           "type": null,
           "role": null,
@@ -11426,7 +11416,7 @@
         },
         {
           "tag": "input",
-          "line": 868,
+          "line": 840,
           "className": "\"min-h-[46px] min-w-0 flex-1 rounded-control border border-line bg-surface px-3.5 text-sm text-ink placeholder:text-muted focus:border-line focus:outline-none\"",
           "type": "\"url\"",
           "role": null,
@@ -11436,7 +11426,7 @@
         },
         {
           "tag": "button",
-          "line": 870,
+          "line": 842,
           "className": "\"ay-btn-primary flex-none text-xs\"",
           "type": "\"submit\"",
           "role": null,
@@ -11446,7 +11436,7 @@
         },
         {
           "tag": "button",
-          "line": 879,
+          "line": 851,
           "className": "\"text-xs font-bold text-ink underline\"",
           "type": "\"button\"",
           "role": null,
@@ -11456,7 +11446,7 @@
         },
         {
           "tag": "button",
-          "line": 883,
+          "line": 855,
           "className": "\"max-w-full truncate rounded-full border border-line bg-white px-3 py-1.5 text-left text-xs font-semibold text-ink hover:border-line/30\"",
           "type": "\"button\"",
           "role": null,
@@ -11466,7 +11456,7 @@
         },
         {
           "tag": "ShopProductScreen",
-          "line": 943,
+          "line": 913,
           "className": null,
           "type": null,
           "role": null,
@@ -11476,7 +11466,7 @@
         },
         {
           "tag": "button",
-          "line": 972,
+          "line": 942,
           "className": "\"ay-btn-secondary text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -11486,7 +11476,7 @@
         },
         {
           "tag": "button",
-          "line": 975,
+          "line": 945,
           "className": "\"ay-btn-primary text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -11496,7 +11486,7 @@
         },
         {
           "tag": "button",
-          "line": 994,
+          "line": 964,
           "className": "\"ay-btn-secondary text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -11506,7 +11496,7 @@
         },
         {
           "tag": "button",
-          "line": 997,
+          "line": 967,
           "className": "\"ay-btn-secondary text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -11516,7 +11506,7 @@
         },
         {
           "tag": "button",
-          "line": 1000,
+          "line": 970,
           "className": "\"ay-btn-secondary text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -11526,7 +11516,7 @@
         },
         {
           "tag": "button",
-          "line": 1002,
+          "line": 972,
           "className": "\"ay-btn-secondary text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -11536,7 +11526,7 @@
         },
         {
           "tag": "button",
-          "line": 1003,
+          "line": 973,
           "className": "\"ay-btn-primary text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -11548,7 +11538,7 @@
       "icons": [
         {
           "module": "../../components/QatafoIcons",
-          "bindings": "{ Type, ExternalLink, Barcode, Check, Image as GalleryIcon, Percent, Search, ShieldCheck, Sparkles, ShoppingBag }",
+          "bindings": "{ Type, ExternalLink, Barcode, Image as GalleryIcon, Percent, Search, ShieldCheck, ShoppingBag }",
           "line": 29
         }
       ],
@@ -11710,8 +11700,8 @@
     {
       "file": "client/src/ayrovix/components/LensProductCard.tsx",
       "domain": "lens",
-      "sha256": "2a4f377bcc645bfcf4b4c0254b4d100489f8fbc6e19b8028cf97d4ef3db24f9d",
-      "lines": 167,
+      "sha256": "7fdb676d39f6c27532caad7384871c0c96d5550f44eb32fbb7204a47c90d7d62",
+      "lines": 180,
       "imports": [
         "react",
         "../../components/QatafoIcons",
@@ -11730,7 +11720,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 126,
+          "line": 139,
           "className": "\"lens-card-open\"",
           "type": "\"button\"",
           "role": null,
@@ -11740,7 +11730,7 @@
         },
         {
           "tag": "button",
-          "line": 143,
+          "line": 156,
           "className": "\"lens-card-favorite\"",
           "type": "\"button\"",
           "role": null,
@@ -11750,7 +11740,7 @@
         },
         {
           "tag": "button",
-          "line": 149,
+          "line": 162,
           "className": "\"lens-card-verify\"",
           "type": "\"button\"",
           "role": null,
@@ -12320,8 +12310,8 @@
     {
       "file": "client/src/ayrovix/services/lensApi.ts",
       "domain": "lens",
-      "sha256": "50802d0afcd89d888854289a2db239c9b17e16ec77e04fe86edb54d6ed7ecf9c",
-      "lines": 146,
+      "sha256": "9c89778d06176f1bca3f50ff6f34a381ac383ce6c7b65429897e5ee6a3f9bea1",
+      "lines": 152,
       "imports": [
         "../types",
         "../../utils/session"
@@ -12456,8 +12446,8 @@
     {
       "file": "client/src/ayrovix/services/productAttributes.ts",
       "domain": "lens",
-      "sha256": "b7208abfd0a06abd322d1f8f306fe0dff80cc9e2239744afc6438676562b807b",
-      "lines": 146,
+      "sha256": "e3be179ac9954f432d5d76f26fffddde26e130d330d063de7135734926133974",
+      "lines": 150,
       "imports": [],
       "exports": [
         "classifyProduct",
@@ -12477,8 +12467,8 @@
     {
       "file": "client/src/ayrovix/services/productEnrichment.ts",
       "domain": "lens",
-      "sha256": "23eda6481d2f9c73516a29f957b9303289a64f20c9cff634158a32f82ffec14f",
-      "lines": 51,
+      "sha256": "26b68675d029a9f78c475ee2a186d0be4baf4b25ee0a497bd4d054eecc2a3888",
+      "lines": 73,
       "imports": [
         "../types"
       ],
@@ -12558,8 +12548,8 @@
     {
       "file": "client/src/ayrovix/types.ts",
       "domain": "lens",
-      "sha256": "680194908c4295d14e415e3e15fe67b457342b03a1fed686e93939c9c7390333",
-      "lines": 247,
+      "sha256": "14a831fb29be8a3d9ecd6a325293f4da3a124ff86ea1b5d4e66fce4a13fd3f9d",
+      "lines": 268,
       "imports": [],
       "exports": [],
       "controls": [],
@@ -19568,8 +19558,8 @@
     {
       "file": "client/src/shop/adapter.ts",
       "domain": "shell-content",
-      "sha256": "b5e570999054bfd4f8498baf2792e427681f6b3746c314c1293a06749e72ff86",
-      "lines": 165,
+      "sha256": "d9475302dc309e2c630a3e900389fd5ebe53f19b9355661f54339742926982f5",
+      "lines": 194,
       "imports": [
         "../ayrovix/types",
         "../ayrovix/services/mediaIsolation",
@@ -19988,8 +19978,8 @@
     {
       "file": "client/src/shop/ProductPage.tsx",
       "domain": "shell-content",
-      "sha256": "b07b098cd8878ba410ab1095a18dc609e28234eb224ad45deaf31a263c06a251",
-      "lines": 315,
+      "sha256": "5644f20491bc466bdd2dc6b235cd777d7d755286ae50d9ba0709a15a62b65c36",
+      "lines": 317,
       "imports": [
         "react",
         "../design/editorial/Icon",
@@ -20032,7 +20022,7 @@
         },
         {
           "tag": "button",
-          "line": 149,
+          "line": 151,
           "className": "\"s-iconbtn\"",
           "type": "\"button\"",
           "role": null,
@@ -20042,7 +20032,7 @@
         },
         {
           "tag": "button",
-          "line": 157,
+          "line": 159,
           "className": "\"s-iconbtn\"",
           "type": "\"button\"",
           "role": null,
@@ -20052,7 +20042,7 @@
         },
         {
           "tag": "button",
-          "line": 187,
+          "line": 189,
           "className": "\"s-media__open\"",
           "type": "\"button\"",
           "role": null,
@@ -20062,7 +20052,7 @@
         },
         {
           "tag": "button",
-          "line": 217,
+          "line": 219,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -20072,7 +20062,7 @@
         },
         {
           "tag": "button",
-          "line": 227,
+          "line": 229,
           "className": "\"s-rail__btn\"",
           "type": "\"button\"",
           "role": null,
@@ -20082,7 +20072,7 @@
         },
         {
           "tag": "button",
-          "line": 228,
+          "line": 230,
           "className": "\"s-rail__btn\"",
           "type": "\"button\"",
           "role": null,
@@ -20092,7 +20082,7 @@
         },
         {
           "tag": "button",
-          "line": 231,
+          "line": 233,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -20102,7 +20092,7 @@
         },
         {
           "tag": "button",
-          "line": 241,
+          "line": 243,
           "className": "\"s-swatch\"",
           "type": "\"button\"",
           "role": null,
@@ -20112,26 +20102,6 @@
         },
         {
           "tag": "summary",
-          "line": 269,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 270,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
           "line": 271,
           "className": null,
           "type": null,
@@ -20141,8 +20111,28 @@
           "disabled": null
         },
         {
+          "tag": "input",
+          "line": 272,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 273,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
           "tag": "button",
-          "line": 286,
+          "line": 288,
           "className": "\"s-select\"",
           "type": "\"button\"",
           "role": null,
@@ -20152,7 +20142,7 @@
         },
         {
           "tag": "button",
-          "line": 294,
+          "line": 296,
           "className": "\"s-iconbtn\"",
           "type": "\"button\"",
           "role": null,
@@ -20162,7 +20152,7 @@
         },
         {
           "tag": "button",
-          "line": 296,
+          "line": 298,
           "className": "\"s-iconbtn\"",
           "type": "\"button\"",
           "role": null,
@@ -20172,7 +20162,7 @@
         },
         {
           "tag": "button",
-          "line": 298,
+          "line": 300,
           "className": "\"s-cta\"",
           "type": "\"button\"",
           "role": null,
@@ -20182,7 +20172,7 @@
         },
         {
           "tag": "button",
-          "line": 301,
+          "line": 303,
           "className": "\"s-cta s-cta--ghost\"",
           "type": "\"button\"",
           "role": null,
@@ -20192,7 +20182,7 @@
         },
         {
           "tag": "button",
-          "line": 307,
+          "line": 309,
           "className": "\"s-zoom__close s-iconbtn\"",
           "type": "\"button\"",
           "role": null,
