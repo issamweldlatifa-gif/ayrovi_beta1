@@ -291,6 +291,16 @@ export function createApiRouter(
 
     try {
       const accountId = cartAccountId(req, sessionId);
+      const existingItem = normalizedItem.externalId
+        ? db.getItems(sessionId, accountId).find((candidate) =>
+            candidate.store === normalizedItem.store
+            && candidate.externalId === normalizedItem.externalId
+            && candidate.sourceUrl === normalizedItem.url
+            && (candidate.variant || '') === (normalizedItem.variant || '')
+            && candidate.requestedSize === (normalizedItem.requestedSize || '')
+            && candidate.requestedColor === (normalizedItem.requestedColor || '')
+            && candidate.customerNote === (normalizedItem.customerNote || '')) || null
+        : null;
       const cartItem = db.addItem(sessionId, normalizedItem, accountId);
       // Le haut de l'entonnoir : jusqu'ici, un panier rempli puis abandonné ne laissait
       // aucune trace exploitable, donc le taux de conversion n'avait pas de dénominateur.
@@ -299,6 +309,8 @@ export function createApiRouter(
       return res.status(201).json({
         success: true,
         cartItem,
+        duplicate: Boolean(existingItem),
+        message: existingItem ? 'Cet article était déjà dans le panier ; sa quantité a été mise à jour.' : 'Article ajouté au panier.',
         totalItemsCount: summary.items.reduce((sum, current) => sum + current.quantity, 0),
         totalTND: summary.totalTND,
         deliveryTND: summary.deliveryTND,

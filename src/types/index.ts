@@ -33,6 +33,8 @@ export interface ProductVariants {
 
 export interface ScrapedProduct {
   id: string;
+  /** Present when the product entered through the AyWebs capture pipeline. */
+  captureId?: string;
   store: StoreType;
   storeName: string;
   url: string;

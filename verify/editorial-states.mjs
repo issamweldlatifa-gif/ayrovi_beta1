@@ -132,7 +132,7 @@ try{
  }
  // All imports also work in the ordinary document, not only the selected screens.
  const ctx=await browser.newContext({viewport:{width:1000,height:900}}),p=await ctx.newPage();p.on('pageerror',e=>errors.push(e.message));await p.goto(base+'/__verify/states');await p.locator('.editorial-voice').waitFor();await p.evaluate(()=>window.setEditorialFixture({kind:'icons'}));await p.locator('[data-icon-gallery]').waitFor();
- const gallery=await inspectEditorialIcons(p,'[data-icon-gallery]');check('101 public icon imports match reference drawings',gallery.count===101&&!gallery.errors.length,gallery);await p.screenshot({path:output+'/all-icons.png',fullPage:true});
+ const gallery=await inspectEditorialIcons(p,'[data-icon-gallery]');check('102 public icon imports match reference drawings',gallery.count===102&&!gallery.errors.length,gallery);await p.screenshot({path:output+'/all-icons.png',fullPage:true});
  await p.route('**/api/public/pricing/cart-line',route=>route.fulfill({status:503,contentType:'application/json',body:'{}'}));await p.evaluate(()=>window.setEditorialFixture({kind:'product',product:{sourceUrl:'https://example.com/quote-failure'}}));await p.locator('.s-product-page .s-price--pending').waitFor();
  check('failed quote never invents a payment percentage',!(await p.locator('.s-product-page').innerText()).includes('20%'));
  check('failed quote disables addition',await p.locator('.s-product-page .s-buybar--product .s-cta:not(.s-cta--ghost)').isDisabled());

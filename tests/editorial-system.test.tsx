@@ -29,8 +29,8 @@ describe('editorial identity, generated from one versioned source', () => {
     // porte d'entrée unique. Un dessin orphelin n'est pas un ajout, c'est un doublon en puissance.
     const published = new Set([...aliases.matchAll(/export const \w+ = I\.Ayrovi(\w+);/g)].map(m => m[1]));
     expect(names.filter(name => !published.has(name))).toEqual([]);
-    // 98 = 96 concepts d'origine + Bank (virement) + Mail (transfert postal), ajoutés et exportés.
-    expect(names).toHaveLength(98);
+    // 99 = 96 concepts d'origine + Bank + Mail + l'identité fonctionnelle AyWebs.
+    expect(names).toHaveLength(99);
   });
   it('defines the area budget, semantic customer geometry, and touch target', () => {
     expect(identity.orangeAreaLimit).toBe(.03);

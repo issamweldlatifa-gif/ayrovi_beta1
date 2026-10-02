@@ -194,7 +194,7 @@ export class SmartLinkScraper {
       }
 
       if (store === 'amazon') {
-        const asinMatch = path.match(/(?:dp|gp\/product|product)\/([A-Z0-9]{10})/i);
+        const asinMatch = path.match(/(?:dp|gp\/(?:product|aw\/d)|product)\/([A-Z0-9]{10})/i);
         const asin = asinMatch ? asinMatch[1] : ('B0' + Math.floor(Math.random() * 89999999 + 10000000));
 
         let titleSlug = '';
@@ -217,28 +217,44 @@ export class SmartLinkScraper {
       }
 
       if (store === 'temu') {
-        const match = path.match(/goods-([a-z0-9-]+)-([0-9]+)\.html/i) || path.match(/-([0-9]{6,})\.html/i);
-        const id = match ? match[2] || match[1] : ('TM-' + Math.floor(Math.random() * 899999 + 100000));
+        const match = path.match(/goods-([a-z0-9-]+)-([0-9]+)\.html/i) || path.match(/(?:g-|[-/])([0-9]{6,})\.html/i);
+        const id = url.searchParams.get('goods_id') || url.searchParams.get('goodsId') || (match ? match[2] || match[1] : '');
 
-        let slug = parts[parts.length - 1]
+        let slug = (parts[parts.length - 1] || '')
           .replace(/goods-/i, '')
           .replace(/-\d+\.html.*/i, '')
           .replace(/\.html.*/i, '')
           .replace(/-/g, ' ');
 
-        const title = slug.length > 3
+        const title = slug.length > 3 && slug.toLowerCase() !== 'goods'
           ? slug.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
-          : 'Offre TEMU';
+          : 'Produit TEMU';
 
         return {
           title: `TEMU — ${title}`,
           brand: 'TEMU',
           price: 0,
-          externalId: `TEMU-${id}`,
+          externalId: id ? `TEMU-${id}` : '',
           variants: {
             sizes: [],
             colors: []
           }
+        };
+      }
+
+      if (store === 'aliexpress') {
+        const match = path.match(/\/(?:item|i)\/(\d{6,})\.html/i);
+        const id = url.searchParams.get('productId') || match?.[1] || '';
+        const slugPart = parts.find((part) => !/^(?:item|i|\d+\.html)$/i.test(part) && !/^\d+$/.test(part));
+        const title = slugPart
+          ? decodeURIComponent(slugPart).replace(/\.html.*/i, '').replace(/-/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())
+          : 'Produit AliExpress';
+        return {
+          title: `AliExpress — ${title}`,
+          brand: 'AliExpress',
+          price: 0,
+          externalId: id ? `AE-${id}` : '',
+          variants: { sizes: [], colors: [], details: [] },
         };
       }
     } catch {}

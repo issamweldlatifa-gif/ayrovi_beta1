@@ -605,10 +605,11 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
     const domPrice = parsePrice(selectorPrice);
     const variantFloor = detailPrices.length ? Math.min(...detailPrices) : 0;
     const regexPrice = contextualPrice(document.body?.textContent || '');
-    // Prix courant = le plus bas publié (promo 216 vs liste 309), jamais le plus cher.
-    const priced = [jsonLdPrice, metaPrice, variantFloor].filter((value) => value > 0);
-    const saleHint = priced.length ? Math.min(...priced) : 0;
-    const price = saleHint || jsonLdPrice || metaPrice || domPrice || variantFloor || regexPrice?.price || 0;
+    /* Structured product offers are the authoritative source. Do not compare
+       unrelated page numbers and pick the smallest one: meta/DOM values can be
+       instalments, accessories or stale theme data. Fall through only when the
+       stronger source is absent. */
+    const price = jsonLdPrice || metaPrice || domPrice || variantFloor || regexPrice?.price || 0;
     const priceSource: ParsedProductPage['priceSource'] = jsonLdPrice && price === jsonLdPrice ? 'json_ld'
       : metaPrice && price === metaPrice ? 'meta'
         : jsonLdPrice ? 'json_ld'

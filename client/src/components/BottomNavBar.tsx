@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Vision, LensBox, Sonim, ScanSearch } from './QatafoIcons';
+import { AyWebs, Vision, LensBox, Sonim, ScanSearch } from './QatafoIcons';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { useNavigationHistory } from '../navigation/NavigationHistory';
 import { useLocale } from '../i18n/LocaleContext';
@@ -10,16 +10,19 @@ interface BottomNavBarProps {
   isAiDrawerOpen: boolean;
   onToggleAiDrawer: () => void;
   onOpenLens: () => void;
+  onOpenAyWebs: () => void;
+  ayWebsEnabled?: boolean;
   config: PublicInterfaceConfig['navigation'];
   iconConfig: PublicInterfaceConfig['icons'];
 }
 
 const NAV_ITEM = 'relative flex min-w-0 flex-col items-center justify-center gap-2.5 rounded-control text-xs font-extrabold text-ink transition duration-200 hover:bg-ink-deep/5 active:scale-[0.96]';
 
-export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onToggleAiDrawer, onOpenLens, config, iconConfig }) => {
+export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onToggleAiDrawer, onOpenLens, onOpenAyWebs, ayWebsEnabled = true, config, iconConfig }) => {
   const navigation = useNavigationHistory();
   const { tr, direction } = useLocale();
   const isVisionOpen = navigation.stack[0]?.id === 'app:vision';
+  const isAyWebsOpen = navigation.stack[0]?.id === 'app:aywebs';
   const isOcerexOpen = navigation.stack[0]?.id === 'app:ocerex';
   const [isVisible, setIsVisible] = useState(true);
   const lastScrollY = useRef(0);
@@ -81,7 +84,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onTo
         aria-hidden={!isVisible}
         inert={isVisible ? undefined : true}
       >
-        <nav className="mx-auto grid max-w-lg grid-cols-4 gap-1" style={{ minHeight: Math.min(config.height, 56) }} aria-label={tr('Navigation principale', 'التنقل الرئيسي')} dir={direction}>
+        <nav className={`mx-auto grid max-w-lg gap-1 ${ayWebsEnabled ? 'grid-cols-5' : 'grid-cols-4'}`} style={{ minHeight: Math.min(config.height, 56) }} aria-label={tr('Navigation principale', 'التنقل الرئيسي')} dir={direction}>
           <button type="button" onClick={onOpenLens} className={NAV_ITEM} aria-label={tr('Lens — recherche par image', 'Lens — البحث بالصورة')}>
             <LensBox className="interface-runtime-icon" style={iconStyle(false)} />
             {config.showLabels && <span className="max-w-full truncate">{config.lensLabel}</span>}
@@ -90,6 +93,12 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onTo
             <Sonim className="interface-runtime-icon" style={iconStyle(isAiDrawerOpen)} />
             {config.showLabels && <span className={`max-w-full truncate ${isAiDrawerOpen ? 'text-cta' : ''}`}>{config.aiLabel}</span>}
           </button>
+          {ayWebsEnabled && (
+            <button type="button" onClick={onOpenAyWebs} className={NAV_ITEM} aria-label={tr('AyWebs — shopping depuis le web', 'AyWebs — التسوق من الويب')} aria-current={isAyWebsOpen ? 'page' : undefined}>
+              <AyWebs className="interface-runtime-icon" style={iconStyle(isAyWebsOpen)} />
+              {config.showLabels && <span className={`max-w-full truncate ${isAyWebsOpen ? 'text-cta' : ''}`}>{config.aywebsLabel}</span>}
+            </button>
+          )}
           <button type="button" onClick={() => navigation.navigate([{ id: 'app:vision' }])} className={NAV_ITEM} aria-label={tr('Vision — bientôt disponible', 'Vision — قريبًا')} aria-current={isVisionOpen ? 'page' : undefined}>
             <Vision className="interface-runtime-icon" style={iconStyle(isVisionOpen)} />
             {config.showLabels && <span className={`max-w-full truncate ${isVisionOpen ? 'text-cta' : ''}`}>{config.visionLabel}</span>}

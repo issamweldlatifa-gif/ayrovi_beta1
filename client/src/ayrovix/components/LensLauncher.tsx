@@ -68,7 +68,7 @@ function candidateToProduct(candidate: AyrovixCandidate): AyrovixProduct {
     brand: candidate.brand,
     model: candidate.model,
     // P1 : la description produite par nos moteurs (AI/SerpAPI) arrive enfin à la carte.
-    description: (candidate.description || candidate.model || '').slice(0, 180),
+    description: candidate.description || candidate.model || '',
     image: candidate.image,
     images: candidate.images?.length ? candidate.images : candidate.image ? [candidate.image] : [],
     colorImages: candidate.colorImages || null,

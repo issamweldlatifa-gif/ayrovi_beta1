@@ -45,7 +45,7 @@ import { recordVariantContract } from './variantAvailability';
 import type { ParsedProductPage } from '../../scraper/productPageParser';
 import { hostAllowsProbe, recordProbeFailure, recordProbeSuccess } from '../../scraper/hostCircuit';
 
-const DEFAULT_BUDGET = 16;
+const DEFAULT_BUDGET = 8;
 const DEFAULT_DEADLINE_MS = 15000;
 const DEFAULT_TTL_MS = 6 * 60 * 60 * 1000;
 const DEFAULT_CONCURRENCY = 8;
@@ -324,6 +324,7 @@ export function applyLiveStock(candidate: AyrovixCandidate, entry: LiveStockEntr
   candidate.sourceRead = {
     at: new Date(entry.at).toISOString(),
     variantsAvailable: entry.variants.filter((variant) => variant.availability === 'available').length,
+    variantsAvailableWithColor: entry.variants.filter((variant) => variant.availability === 'available' && Boolean(variant.color)).length,
     variantsUnavailable: entry.variants.filter((variant) => variant.availability === 'unavailable').length,
     variantsUnknown: entry.variants.filter((variant) => variant.availability === 'unknown').length,
   };
@@ -485,8 +486,13 @@ export function purchaseBlocker(candidate: AyrovixCandidate): PurchaseBlocker | 
   if (!candidate.sourceRead) return 'page_non_lue';
   if (candidate.priceOrigin !== 'merchant' || !(candidate.price! > 0) || !candidate.currency) return 'prix_non_lu';
   if (candidate.availability === 'out_of_stock') return 'rupture';
-  const variantsPositive = candidate.sourceRead.variantsAvailable > 0;
-  const variantsAllNegative = !variantsPositive && candidate.sourceRead.variantsUnavailable > 0 && candidate.sourceRead.variantsUnknown === 0;
+  /* A size-level positive cannot prove a colour combination. If the merchant
+     exposes a colour axis, at least one positive source row must name its
+     colour; otherwise stock for the actual choice remains unknown. */
+  const variantsPositive = candidate.sourceRead.variantsAvailable > 0
+    && (!(candidate.colors || []).length || (candidate.sourceRead.variantsAvailableWithColor ?? 0) > 0);
+  const variantsAllNegative = candidate.sourceRead.variantsAvailable === 0
+    && candidate.sourceRead.variantsUnavailable > 0 && candidate.sourceRead.variantsUnknown === 0;
   if (variantsAllNegative) return 'rupture';
   const productPositive = candidate.availability === 'in_stock' || candidate.availability === 'limited';
   if (!productPositive && !variantsPositive) return 'stock_inconnu';

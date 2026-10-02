@@ -36,6 +36,7 @@ const ShopCheckoutScreen = lazy(() => import('./shop').then((module) => ({ defau
 const OrderSuccessModal = lazy(() => import('./components/OrderSuccessModal').then((module) => ({ default: module.OrderSuccessModal })));
 const CustomerAccountPage = lazy(() => import('./components/CustomerAccountPage').then((module) => ({ default: module.CustomerAccountPage })));
 const OcerexScreen = lazy(() => import('./features/ocerex/OcerexScreen').then((module) => ({ default: module.OcerexScreen })));
+const AyWebsScreen = lazy(() => import('./features/aywebs/AyWebsScreen').then((module) => ({ default: module.AyWebsScreen })));
 
 /** كتل الصفحة الرئيسية — الترتيب الافتراضي حتى وصول إعداد الـ Dashboard */
 /**
@@ -72,11 +73,12 @@ const ManagedSectionFrame: React.FC<{ section: InterfaceSectionConfig; children:
 export const App: React.FC = () => {
   const navigation = useNavigationHistory();
   const publicPage = publicPageForPath(window.location.pathname);
+  const isAyWebsPath = window.location.pathname.replace(/\/+$/, '').toLowerCase() === '/aywebs';
   // Une adresse que le serveur a déjà refusée en 404 (page-like et inconnue) : le client le
   // sait sans le demander, parce qu'il lit la même liste — `shared/publicSeo.ts`.
   const unknownPath = !publicPage && !isKnownPagePath(window.location.pathname);
   const { tr, locale } = useLocale();
-  const appView = navigation.stack[0]?.id || 'home';
+  const appView = navigation.stack[0]?.id || (isAyWebsPath ? 'app:aywebs' : 'home');
   const isProductDrawerOpen = appView === 'app:product';
   const isLensOpen = appView === 'app:lens';
   const isAiDrawerOpen = appView === 'app:assistant';
@@ -86,11 +88,13 @@ export const App: React.FC = () => {
   const isAccountOpen = appView === 'app:account';
   const isOrderSuccessOpen = appView === 'app:order-success';
   const isOcerexOpen = appView === 'app:ocerex';
+  const isAyWebsOpen = appView === 'app:aywebs';
   const openAppView = (id: string, replace = false) => navigation.navigate([{ id }], { replace });
   const closeAppView = () => navigation.back();
 
   const [extractedProduct, setExtractedProduct] = useState<ScrapedProduct | null>(null);
   const [interfaceConfig, setInterfaceConfig] = useState<PublicInterfaceConfig>(() => structuredClone(DEFAULT_INTERFACE_CONFIG));
+  const [ayWebsEnabled, setAyWebsEnabled] = useState(true);
   // ترتيب كتل الصفحة الرئيسية (transition/discovery/brands/lens) — يُدار من Admin → Sections
 
   // Cart & Checkout State
@@ -139,12 +143,21 @@ export const App: React.FC = () => {
 
   // تطبيق ثيم المنصة من طلب configuration مشترك واحد.
   useEffect(() => {
+    if (isAyWebsPath && navigation.stack.length === 0) {
+      navigation.navigate([{ id: 'app:aywebs' }], { replace: true });
+    }
+  }, [isAyWebsPath, navigation.navigate, navigation.stack.length]);
+
+  useEffect(() => {
     let active = true;
     getCommerceConfig()
       .then((payload) => {
         if (!active) return;
         // CMS retains content/layout/navigation. Customer presentation is isolated below.
         setInterfaceConfig(normalizeInterfaceConfig(payload?.data?.interfaceConfig));
+        if (typeof payload?.data?.features?.aywebsEnabled === 'boolean') {
+          setAyWebsEnabled(payload.data.features.aywebsEnabled);
+        }
       })
       .catch(() => undefined);
     return () => { active = false; };
@@ -297,6 +310,22 @@ export const App: React.FC = () => {
     else openAppView('app:assistant');
   };
 
+  const handleOpenAyWebs = () => {
+    if (isAyWebsOpen) return;
+    navigation.navigate([{ id: 'app:aywebs' }]);
+    replaceUrlPreservingNavigation('/aywebs');
+    window.dispatchEvent(new Event('ayrovi:urlchange'));
+  };
+
+  const handleCloseAyWebs = () => {
+    if (navigation.entry.depth > 0) {
+      navigation.back();
+      return;
+    }
+    // A direct /aywebs visit has no in-app history entry to restore.
+    window.location.assign('/');
+  };
+
   const handleAddToCart = async (itemData: AddToCartPayload): Promise<AddToCartResult | null> => {
     try {
       const res = await fetch('/api/cart/items', {
@@ -318,7 +347,7 @@ export const App: React.FC = () => {
         throw new Error(data.error || data.code || "Impossible d'ajouter l'article au panier.");
       }
       await fetchCart();
-      return { totalTND: data.totalTND, itemCount: data.totalItemsCount };
+      return { totalTND: data.totalTND, itemCount: data.totalItemsCount, duplicate: data.duplicate === true };
     } catch (err) {
       console.error('[Add to Cart Error]', err);
       throw err;
@@ -520,10 +549,27 @@ export const App: React.FC = () => {
         isAiDrawerOpen={isAiDrawerOpen}
         onToggleAiDrawer={handleToggleAiDrawer}
         onOpenLens={handleOpenLens}
+        onOpenAyWebs={handleOpenAyWebs}
+        ayWebsEnabled={ayWebsEnabled}
         config={interfaceConfig.navigation}
         iconConfig={interfaceConfig.icons}
       />
       </div>
+
+      {isAyWebsOpen && (
+        <Suspense fallback={null}>
+          <AyWebsScreen
+            onClose={handleCloseAyWebs}
+            onOpenCart={() => openAppView('app:cart')}
+            onCaptured={handleExtracted}
+            onUploadScreenshot={() => {
+              setExtractedProduct(null);
+              navigation.navigate([{ id: 'app:product' }, { id: 'product:input' }]);
+            }}
+            cartCount={totalCartCount}
+          />
+        </Suspense>
+      )}
 
       {/* DRAWER 1: Complete 100% Height Product Flow Drawer (Lens Button) */}
       {isProductDrawerOpen && (

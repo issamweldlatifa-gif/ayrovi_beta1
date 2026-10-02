@@ -6,7 +6,7 @@ import { refreshLiveStock } from '../ayrovix/services/lensApi';
 import type { AyrovixVariantOption } from '../ayrovix/types';
 import { ProductPage } from './ProductPage';
 import { productToView } from './adapter';
-import type { SizeOption } from './types';
+import type { AddToBagResult, SizeOption } from './types';
 
 /**
  * CONTENEUR DE LA FICHE v2 — le seul endroit qui relie l'écran aux données.
@@ -37,7 +37,7 @@ export interface ShopProductScreenProps {
     customerNote: string;
     /** Nom exact du contrat de commande existant : `manualUrl`, pas autre chose. */
     manualUrl: string;
-  }) => void | Promise<void>;
+  }) => void | AddToBagResult | Promise<void | AddToBagResult>;
   onBack?: () => void;
   onCalculateAnother?: () => void;
   onOpenCart?: () => void;
@@ -66,17 +66,10 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
   const [sourceReading, setSourceReading] = useState(Boolean(product.sourceUrl) && !alreadyReady);
   const [activeColor, setActiveColor] = useState<string | null>(() => product.colors.length === 1 ? product.colors[0] : null);
   const [chosenSize, setChosenSize] = useState('');
-  const [quote, setQuote] = useState<CartLineQuote | null>(() => (
-    typeof product.priceTnd === 'number' && product.priceTnd > 0
-      ? {
-          lineTotalTND: product.priceTnd,
-          originalLineTotalTND: product.originalPriceTnd ?? null,
-          promo: product.promo && product.promo.percent
-            ? { percent: product.promo.percent, label: product.promo.label, discountTND: 0 }
-            : null,
-        }
-      : null
-  ));
+  /* A merchant-side conversion is never a sale quote. Keep the response bound
+     to its request key so changing products cannot flash a stale amount while
+     the new authoritative quote is still in flight. */
+  const [quoted, setQuoted] = useState<{ key: string; data: CartLineQuote } | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
   const selection = useMemo(() => resolveProductSelection(liveProduct, chosenSize, activeColor ?? ''), [liveProduct, chosenSize, activeColor]);
   const selectedSource = selection.kind === 'matched' && selection.offer.fromVariant && selection.offer.price && selection.offer.currency
@@ -94,12 +87,12 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
   useEffect(() => {
     setActiveColor(product.colors.length === 1 ? product.colors[0] : null);
     setChosenSize('');
-  }, [liveProduct.sourceUrl]);
+  }, [product]);
 
 
   useEffect(() => {
     setLiveProduct(product);
-  }, [product.sourceUrl]);
+  }, [product]);
 
   useEffect(() => {
     const url = product.sourceUrl?.trim();
@@ -162,7 +155,8 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
     return () => controller.abort();
   }, [product.sourceUrl]);
 
-  const quoteKey = `${liveProduct.sourceUrl}|${selectedSource?.amount ?? ''}|${selectedSource?.currency ?? ''}`;
+  const quoteKey = `${liveProduct.sourceUrl}|${liveProduct.title}|${selectedSource?.amount ?? ''}|${selectedSource?.currency ?? ''}`;
+  const quote = quoted?.key === quoteKey ? quoted.data : null;
 
   /*
    * Le prix affiché vient du serveur, jamais d'un calcul dans l'écran : droits,
@@ -172,7 +166,10 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
    */
   useEffect(() => {
     const source = selectedSource;
-    if (!source || !Number.isFinite(source.amount) || source.amount <= 0) return;
+    if (!source || !Number.isFinite(source.amount) || source.amount <= 0) {
+      setQuoteLoading(false);
+      return;
+    }
     const price = source.amount;
     const controller = new AbortController();
     setQuoteLoading(true);
@@ -189,7 +186,7 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
         }
         return payload.data as CartLineQuote;
       })
-      .then((data) => { if (!controller.signal.aborted) setQuote(data); })
+      .then((data) => { if (!controller.signal.aborted) setQuoted({ key: quoteKey, data }); })
       .catch(() => { /* l'écran affichera « prix à confirmer » — jamais un montant inventé */ })
       .finally(() => { if (!controller.signal.aborted) setQuoteLoading(false); });
     return () => controller.abort();
@@ -224,7 +221,7 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
 
   const addToBag = async (size: SizeOption | null, quantity: number, details: { note: string; link: string }) => {
     if (ordering) return;
-    await onOrder({
+    return onOrder({
       size: size?.value ?? '',
       color: activeColor ?? '',
       option: null,
@@ -234,7 +231,7 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
       // de commande attend. Sous un autre nom, il serait silencieusement perdu.
       // Un champ vidé par le client ne doit pas produire une ligne de panier sans
       // adresse : on retombe sur le lien marchand connu, comme l'ancienne fiche.
-      manualUrl: details.link.trim() || liveProduct.sourceUrl || '',
+      manualUrl: details.link.trim() || product.sourceUrl || liveProduct.sourceUrl || '',
     });
   };
 
@@ -244,7 +241,7 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
       tr={tr}
       formatMoney={formatMoney}
       direction={direction === 'rtl' ? 'rtl' : 'ltr'}
-      priceChecking={!quote && (quoteLoading || sourceReading)}
+      priceChecking={!quote && quoteLoading}
       canAdd={!awaitingQuote}
       onChosenSize={setChosenSize}
       selectionNotice={selectionNotice}

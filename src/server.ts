@@ -22,6 +22,7 @@ import { startFxRatesScheduler } from './services/fxRates';
 import { startPriceWatchScheduler } from './ayrovix/services/priceWatch';
 import { createAssistantRouter } from './assistant/routes';
 import { createOcerexRouter } from './ocerex/routes';
+import { createAyWebsRouter } from './aywebs/routes';
 import { ERP_MODULES } from './erp-core/modules';
 import { bootstrapErpCore } from './erp-core/bootstrap';
 import { isPublicUploadPath } from './erp-core/storage';
@@ -161,6 +162,9 @@ app.use('/api/customer/payments/konnect/webhook', rateLimit('konnect-webhook', p
 app.use('/api/extract-image', rateLimit('vision', 25, 10 * 60_000));
 app.use('/api/ocerex', rateLimit('ocerex', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000));
 app.use('/api/scrape', rateLimit('scrape', 30, 10 * 60_000));
+app.use('/api/v1/aywebs/capture', rateLimit('aywebs-capture', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000));
+app.use('/api/v1/aywebs/price-quote', rateLimit('aywebs-quote', process.env.NODE_ENV === 'test' ? 1_000 : 60, 10 * 60_000));
+app.use('/api/v1/aywebs/events', rateLimit('aywebs-events', process.env.NODE_ENV === 'test' ? 1_000 : 120, 10 * 60_000));
 app.use('/api/public/assistant-feedback', rateLimit('assistant-feedback', process.env.NODE_ENV === 'test' ? 1_000 : 40, 10 * 60_000));
 app.use('/api/assistant/chat', rateLimit('assistant-chat', process.env.NODE_ENV === 'test' ? 1_000 : 25, 10 * 60_000));
 app.use('/api/assistant/transcribe', rateLimit('assistant-voice', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000));
@@ -313,6 +317,7 @@ app.use('/api/customer', createCustomerRouter(db));
 app.use('/api/assistant', createAssistantRouter(db, scraper));
 app.use('/api/voice', createAssistantRouter(db, scraper));
 app.use('/api/public', createPublicRouter(db));
+app.use('/api/v1/aywebs', createAyWebsRouter(db, scraper));
 app.use('/api', createApiRouter(db, scraper, visionExtractor));
 
 // Liveness: le processus HTTP répond. Readiness: SQLite est réellement lisible;

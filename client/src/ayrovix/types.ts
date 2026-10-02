@@ -89,7 +89,7 @@ export interface AyrovixCandidate {
    * dit-elle du stock par variante ? Une fiche sans cette preuve n'atteint pas
    * le client : on ne montre pas ce qu'on ne peut pas acheter.
    */
-  sourceRead?: { at: string; variantsAvailable: number; variantsUnavailable: number; variantsUnknown: number } | null;
+  sourceRead?: { at: string; variantsAvailable: number; variantsAvailableWithColor?: number; variantsUnavailable: number; variantsUnknown: number } | null;
   priceToken?: string | null;
   priceVerificationStatus?: 'VERIFIED' | 'PENDING_MANUAL';
   /** Preuve de disponibilité marchand (niveaux de confiance 24/09/2026). */

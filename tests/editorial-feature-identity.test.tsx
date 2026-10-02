@@ -13,16 +13,16 @@ let host:HTMLDivElement,root:Root;
 beforeEach(()=>{host=document.createElement('div');document.body.append(host);root=createRoot(host);window.history.replaceState(null,'','/');});
 afterEach(async()=>{await act(async()=>root.unmount());host.remove();vi.useRealTimers();});
 describe('feature identity is consistent, not a brand exception',()=>{
- it('has distinct canonical SONIM, Vision and Lens geometry, not generic sparkle/eye aliases',()=>{
-  expect(glyphs.Sonim).not.toEqual(glyphs.Sparkles);expect(glyphs.Vision).not.toEqual(glyphs.Eye);
-  expect(new Set([glyphs.Lens,glyphs.Vision,glyphs.Sonim].map(x=>JSON.stringify(x))).size).toBe(3);
-  expect([glyphs.Lens,glyphs.Vision,glyphs.Sonim].every(g=>!g.mirrorRtl)).toBe(true);
+ it('has distinct canonical SONIM, Vision, Lens and AyWebs geometry, not generic aliases',()=>{
+  expect(glyphs.Sonim).not.toEqual(glyphs.Sparkles);expect(glyphs.Vision).not.toEqual(glyphs.Eye);expect(glyphs.AyWebs).not.toEqual(glyphs.Globe);
+  expect(new Set([glyphs.Lens,glyphs.Vision,glyphs.Sonim,glyphs.AyWebs].map(x=>JSON.stringify(x))).size).toBe(4);
+  expect([glyphs.Lens,glyphs.Vision,glyphs.Sonim,glyphs.AyWebs].every(g=>!g.mirrorRtl)).toBe(true);
  });
- it('preserves the navigation destinations/callbacks while using the three feature icons',async()=>{
-  const lens=vi.fn(),sonim=vi.fn();await act(async()=>root.render(<LocaleProvider><NavigationHistoryProvider><BottomNavBar isAiDrawerOpen={false} onOpenLens={lens} onToggleAiDrawer={sonim} config={DEFAULT_INTERFACE_CONFIG.navigation} iconConfig={DEFAULT_INTERFACE_CONFIG.icons}/></NavigationHistoryProvider></LocaleProvider>));
-  expect([...host.querySelectorAll('nav [data-editorial-icon]')].map(el=>el.getAttribute('data-editorial-icon'))).toEqual(['Lens','Sonim','Vision','Scan']);
-  const buttons=host.querySelectorAll<HTMLButtonElement>('nav button');await act(async()=>{buttons[0].click();buttons[1].click();});expect(lens).toHaveBeenCalledOnce();expect(sonim).toHaveBeenCalledOnce();
-  await act(async()=>buttons[2].click());expect(host.querySelector('[role="dialog"] [data-editorial-icon="Vision"]')).not.toBeNull();
+ it('preserves the navigation destinations/callbacks while using distinct feature icons',async()=>{
+  const lens=vi.fn(),sonim=vi.fn(),aywebs=vi.fn();await act(async()=>root.render(<LocaleProvider><NavigationHistoryProvider><BottomNavBar isAiDrawerOpen={false} onOpenLens={lens} onToggleAiDrawer={sonim} onOpenAyWebs={aywebs} config={DEFAULT_INTERFACE_CONFIG.navigation} iconConfig={DEFAULT_INTERFACE_CONFIG.icons}/></NavigationHistoryProvider></LocaleProvider>));
+  expect([...host.querySelectorAll('nav [data-editorial-icon]')].map(el=>el.getAttribute('data-editorial-icon'))).toEqual(['Lens','Sonim','AyWebs','Vision','Scan']);
+  const buttons=host.querySelectorAll<HTMLButtonElement>('nav button');await act(async()=>{buttons[0].click();buttons[1].click();buttons[2].click();});expect(lens).toHaveBeenCalledOnce();expect(sonim).toHaveBeenCalledOnce();expect(aywebs).toHaveBeenCalledOnce();
+  await act(async()=>buttons[3].click());expect(host.querySelector('[role="dialog"] [data-editorial-icon="Vision"]')).not.toBeNull();
   expect(host.textContent).toContain('Bientôt disponible'); // No fictional new backend capability.
  });
  it('uses SONIM in every activity state, settles and cleans up without old geometry',async()=>{

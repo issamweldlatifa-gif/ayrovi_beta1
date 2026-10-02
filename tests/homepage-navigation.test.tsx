@@ -60,10 +60,10 @@ describe('homepage close, sticky header and scroll-aware navigation', () => {
     expect(lensLauncherSource).toContain('ayrovix-url');
     expect(navbarSource).toContain('onClick={onGoHome}');
     expect(navbarSource).toContain('onOpenCart');
-    expect(bottomNavSource).toContain('grid-cols-4');
+    expect(bottomNavSource).toContain('grid-cols-5');
+    expect(bottomNavSource).toContain('app:aywebs');
     expect(bottomNavSource).toContain('app:vision');
     expect(bottomNavSource).toContain('app:ocerex');
-    expect(bottomNavSource).not.toContain('grid-cols-5');
   });
 
   it('uses a white glass bottom navigation with muted icons that hides down and returns up', () => {

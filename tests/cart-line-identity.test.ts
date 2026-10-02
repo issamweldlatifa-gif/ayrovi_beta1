@@ -85,6 +85,29 @@ describe('the product quote is exactly the cart line and checkout pricing source
     }
   });
 
+  it('updates an existing product/variant line and reports the duplicate instead of creating another row', async () => {
+    const duplicateSession = `${session}-duplicate`;
+    const headers = { 'x-session-id': duplicateSession };
+    const item = {
+      store: 'amazon', externalId: 'B0DEDUP123', url: 'https://www.amazon.com/dp/B0DEDUP123',
+      title: 'Produit AyWebs sans variante', imageUrl: 'https://images.example/product.jpg',
+      sourcePrice: 20, sourceCurrency: 'USD', priceTND: 0, quantity: 1,
+    };
+    try {
+      const first = await request(app).post('/api/cart/items').set(headers).send(item);
+      const second = await request(app).post('/api/cart/items').set(headers).send(item);
+      expect(first.status).toBe(201);
+      expect(first.body.duplicate).toBe(false);
+      expect(second.status).toBe(201);
+      expect(second.body.duplicate).toBe(true);
+      const cart = await request(app).get('/api/cart/items').set(headers);
+      expect(cart.body.items).toHaveLength(1);
+      expect(cart.body.items[0].quantity).toBe(2);
+    } finally {
+      db.clearCart(duplicateSession);
+    }
+  });
+
   it('empty carts have neither a fabricated total nor a delivery charge', async () => {
     db.clearCart(session);
     const empty = await request(app).get('/api/cart/items').set(sessionHeaders);

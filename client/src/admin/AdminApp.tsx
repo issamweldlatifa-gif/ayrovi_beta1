@@ -323,12 +323,37 @@ const DashboardPage: React.FC<{ navigate: (section: string, request?: string) =>
       <section className="admin-card"><CardTitle title="Statuts des commandes" subtitle="Répartition actuelle" /><div className="admin-status-chart">{data.statuses.length ? data.statuses.map((row: any) => <div key={row.status}><span><StatusBadge status={row.status} /><b>{row.count}</b></span><i><em style={{ width: `${(Number(row.count) / maxStatus) * 100}%` }} /></i></div>) : <ChartEmpty />}</div></section>
       <section className="admin-card"><CardTitle title="Plateformes sources" subtitle="Commandes & revenu" /><div className="admin-source-list">{data.sources.length ? data.sources.map((row: any) => <div key={row.source}><span>{row.source}</span><strong>{row.orders} commande{row.orders === 1 ? '' : 's'}</strong><b>{formatMoney(row.revenue)}</b></div>) : <ChartEmpty />}</div></section>
       <FunnelCard funnel={data.funnel} days={days} />
+      <AyWebsOperationsCard summary={data.aywebs} days={days} />
       <section className="admin-card admin-card--wide"><CardTitle title="Dernières commandes" subtitle="Flux opérationnel" /><DataTable rows={data.recentOrders} columns={[
         { key: 'order_number', label: 'Référence', render: (row: any) => <strong>{row.order_number}</strong> }, { key: 'customer_name', label: 'Client' }, { key: 'status', label: 'Statut', render: (row: any) => <StatusBadge status={row.status} /> },
         { key: 'total_tnd', label: 'Total', render: (row: any) => formatMoney(row.total_tnd) }, { key: 'created_at', label: 'Date', render: (row: any) => formatDate(row.created_at, true) },
       ]} /></section>
     </div>
   </>;
+};
+
+const AyWebsOperationsCard: React.FC<{ summary: any; days: number }> = ({ summary, days }) => {
+  const rate = (value: unknown) => typeof value === 'number' ? `${value} %` : '—';
+  const counts = summary?.counts || {};
+  const stores: Array<{ store: string; captures: number; succeeded: number; failed: number; successRate: number | null }> = Array.isArray(summary?.stores) ? summary.stores : [];
+  const failures: Array<{ code: string; count: number }> = Array.isArray(summary?.failures) ? summary.failures.slice(0, 5) : [];
+  const stats = [
+    { label: 'Ouvertures AyWebs', value: String(counts.aywebs_open ?? 0) },
+    { label: 'Captures réussies', value: String(counts.capture_succeeded ?? 0) },
+    { label: 'Taux de capture', value: rate(summary?.captureSuccessRate) },
+    { label: 'Capture → panier', value: rate(summary?.captureToCartRate) },
+  ];
+  return <section className="admin-card admin-card--wide admin-funnel">
+    <CardTitle title="AyWebs · opérations" subtitle={`Capture multi-boutiques sur ${days} jours`} />
+    <div className="admin-funnel-stats">{stats.map(({ label, value }) => <article key={label}><span>{label}</span><strong>{value}</strong></article>)}</div>
+    {stores.length
+      ? <div className="admin-source-list">{stores.map((store) => <div key={store.store}><span>{store.store}</span><strong>{store.succeeded}/{store.succeeded + store.failed} captures décidées</strong><b>{rate(store.successRate)}</b></div>)}</div>
+      : <div className="admin-chart-empty">Les premières captures AyWebs apparaîtront ici.</div>}
+    <div className="admin-funnel-failures">
+      <span>Échecs principaux</span>
+      {failures.length ? failures.map((failure) => <div key={failure.code}><em>{failure.code}</em><b>{failure.count}</b></div>) : <small>Aucun échec enregistré.</small>}
+    </div>
+  </section>;
 };
 
 /**

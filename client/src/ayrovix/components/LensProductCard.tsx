@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState, useId } from 'react';
-import { Heart, HeartFilled, Image as ImageIcon } from '../../components/QatafoIcons';
+import { Heart, HeartFilled, Image as ImageIcon, RefreshCw } from '../../components/QatafoIcons';
 import { useLocale } from '../../i18n/LocaleContext';
 import type { AyrovixCandidate } from '../types';
+import { refreshLiveStock, type LiveStockResult } from '../services/lensApi';
 import { MerchantRating } from './MerchantRating';
 import { QuietPromoPrice } from './quiet-card';
 import { isComposedUrl, withIsolation } from '../services/mediaIsolation';
@@ -48,20 +49,26 @@ function ColorChips({ colors }: { colors: string[] }) {
   return (
     <span className="lens-card-sizes" aria-label={tr('Couleurs publiées par le marchand', 'الألوان التي نشرها المتجر')}>
       {colors.slice(0, 4).map((color) => (
-        <span key={color} className="lens-card-size">{color}</span>
+        <span key={color} className="lens-card-color">{color}</span>
       ))}
     </span>
   );
 }
 
-function SizeChips({ sizes }: { sizes: string[] }) {
+function SizeChips({ sizes, variants = [] }: { sizes: string[]; variants?: LiveStockResult['variants'] }) {
   const { tr } = useLocale();
   if (!sizes.length) return null;
+  const stateOf = (size: string) => {
+    const rows = variants.filter((variant) => variant.value === size);
+    if (!rows.length || rows.some((row) => row.availability === 'unknown')) return 'unknown';
+    return rows.some((row) => row.availability === 'available') ? 'in' : 'out';
+  };
   return (
     <span className="lens-card-sizes" aria-label={tr('Tailles publiées par le marchand', 'المقاسات التي نشرها المتجر')}>
-      {sizes.slice(0, 8).map((size) => (
-        <span key={size} className="lens-card-size">{size}</span>
-      ))}
+      {sizes.slice(0, 8).map((size) => {
+        const state = stateOf(size);
+        return <span key={size} className="lens-card-size" data-state={state} aria-disabled={state === 'out' ? true : undefined}>{size}</span>;
+      })}
       {sizes.length > 8 ? <span className="lens-card-size">+{sizes.length - 8}</span> : null}
     </span>
   );
@@ -86,9 +93,46 @@ export function LensProductCard({ candidate, onChoose, saved, busy, onFavorite }
 }) {
   const { tr } = useLocale();
   const priceId = useId();
+  const [fresh, setFresh] = useState<LiveStockResult | null>(null);
+  const [checking, setChecking] = useState(false);
+  const [checkFailed, setCheckFailed] = useState(false);
+  useEffect(() => {
+    setFresh(null);
+    setChecking(false);
+    setCheckFailed(false);
+  }, [candidate.id, candidate.sourceUrl]);
+
   const { heading, description } = lensCardCopy(candidate);
-  const availability = candidate.availability;
-  const sizes = candidate.sizes || [];
+  const availability = fresh?.availability ?? candidate.availability;
+  const sizes = fresh ? fresh.sizes : candidate.sizes || [];
+  const colors = fresh ? fresh.colors : candidate.colors || [];
+  const variants = fresh?.variants || [];
+  const sourceUrlIsPublic = (() => {
+    try {
+      const parsed = new URL(candidate.sourceUrl);
+      return parsed.protocol === 'https:' || parsed.protocol === 'http:';
+    } catch { return false; }
+  })();
+  const verifyStock = async () => {
+    if (!sourceUrlIsPublic || checking) return;
+    setChecking(true);
+    setCheckFailed(false);
+    try {
+      const rows = await refreshLiveStock([candidate.sourceUrl]);
+      const result = rows.find((row) => row.url === candidate.sourceUrl) || rows[0];
+      if (!result) {
+        setFresh(null);
+        setCheckFailed(true);
+        return;
+      }
+      setFresh(result);
+    } catch {
+      setFresh(null);
+      setCheckFailed(true);
+    } finally {
+      setChecking(false);
+    }
+  };
   const priceTnd = candidate.priceTnd;
   const sourceAmount = candidate.price;
   const originalAmount = candidate.originalPrice ?? null;
@@ -116,13 +160,23 @@ export function LensProductCard({ candidate, onChoose, saved, busy, onFavorite }
           : tr('Prix à confirmer', 'السعر قيد التأكيد')}
       </div>
       <StockBadge availability={availability} />
-      <SizeChips sizes={sizes} />
-      <ColorChips colors={candidate.colors || []} />
+      <SizeChips sizes={sizes} variants={variants} />
+      <ColorChips colors={colors} />
+      {fresh ? <span className="lens-card-verified-at" data-failed={fresh.availability === 'unknown' ? 'true' : undefined}>
+        {fresh.availability === 'unknown'
+          ? tr('Stock non confirmé', 'المخزون غير مؤكد')
+          : tr(`Vérifié à ${new Date(fresh.checkedAt).toLocaleTimeString('fr-TN', { hour: '2-digit', minute: '2-digit' })}`, `تم التحقق ${new Date(fresh.checkedAt).toLocaleTimeString('ar-TN', { hour: '2-digit', minute: '2-digit' })}`)}
+      </span> : checkFailed ? <span className="lens-card-verified-at" data-failed="true">{tr('Stock non confirmé', 'المخزون غير مؤكد')}</span> : null}
     </button>
     <button type="button" className="lens-card-favorite" aria-pressed={saved} disabled={busy} aria-busy={busy}
       aria-label={saved
         ? tr(`Retirer des favoris : ${candidate.title}`, `إزالة من المفضلة: ${candidate.title}`)
         : tr(`Ajouter aux favoris : ${candidate.title}`, `إضافة إلى المفضلة: ${candidate.title}`)}
       onClick={() => onFavorite(candidate)}>{saved ? <HeartFilled size={20} /> : <Heart size={20} />}</button>
+    {sourceUrlIsPublic ? <button type="button" className="lens-card-verify" onClick={() => void verifyStock()} disabled={checking} aria-busy={checking}
+      aria-label={tr(`Vérifier le stock : ${candidate.title}`, `التحقق من المخزون: ${candidate.title}`)}>
+      <RefreshCw size={16} />
+      <span>{checking ? tr('Vérification…', 'جارٍ التحقق…') : tr('Vérifier le stock', 'تحقق من المخزون')}</span>
+    </button> : null}
   </article>;
 }
