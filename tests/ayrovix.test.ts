@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
-import { app, db } from '../src/server';
+import { app, db, scraper } from '../src/server';
 import { buildSearchQuery } from '../src/ayrovix/services/ai';
 import { catalogSearch, providerWebSearch, scoreCandidate, searchCandidates } from '../src/ayrovix/services/search';
 import { serpApiVisualSearch } from '../src/ayrovix/services/visualSearch';
@@ -507,16 +507,31 @@ describe('AYROVIX Lens', () => {
       throw new Error(`Unexpected request: ${url}`);
     });
     vi.stubGlobal('fetch', fetchMock);
+    // Le lien SerpApi est ensuite SCRAPÉ (via le vrai parseur) : la fiche n'est
+    // affichée que si la page marchande prouve prix + stock + image.
+    const merchantHtml = `<!doctype html><html><head>
+      <meta property="og:title" content="Nike Air Max 95 Navy">
+      <meta property="og:image" content="https://shop.example.com/media/nike-air-max-95-navy.jpg">
+      <script type="application/ld+json">{"@type":"Product","name":"Nike Air Max 95 Navy","image":"https://shop.example.com/media/nike-air-max-95-navy.jpg","offers":{"price":"129.99","priceCurrency":"EUR","availability":"https://schema.org/InStock"}}</script>
+    </head><body><h1>Nike Air Max 95 Navy</h1></body></html>`;
+    const scrapeSpy = vi.spyOn(scraper, 'scrapeParsedPage').mockImplementation(async (url: string) => {
+      expect(url).toBe('https://shop.example.com/nike-air-max-95-navy');
+      return { data: parseProductPageHtml(merchantHtml, url, 'generic'), verified: true, provider: 'direct', method: 'json_ld', failureCode: null };
+    });
     try {
       const response = await request(app)
         .post('/api/ayrovix/analyze-image')
         .attach('image', PNG_1PX, { filename: 'sneakers.png', contentType: 'image/png' });
       expect(response.status).toBe(200);
+      expect(scrapeSpy).toHaveBeenCalled();
       expect(response.body.data.candidates.length).toBeGreaterThan(0);
       expect(response.body.data.candidates[0].title).toContain('Nike Air Max 95');
       expect(response.body.data.candidates[0].price).toBe(129.99);
+      expect(response.body.data.candidates[0].sourceRead).toBeTruthy();
+      expect(response.body.data.excluded.count).toBe(0);
       expect(response.body.data.identification.description).toContain('Nike');
     } finally {
+      scrapeSpy.mockRestore();
       restoreEnv('ANTHROPIC_API_KEY', previousAnthropic);
       restoreEnv('SERPAPI_KEY', previousSerp);
     }

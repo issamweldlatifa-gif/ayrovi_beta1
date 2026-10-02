@@ -12,7 +12,7 @@ const product = (over: Partial<AyrovixProduct> = {}): AyrovixProduct => ({
 });
 
 describe('client product enrichment merge', () => {
-  it('merges same-page source facts but never borrows a candidate price', () => {
+  it('merges same-page source facts and lets the VERIFIED merchant-page price replace the grid extract', () => {
     const current = product();
     const full = product({
       description: 'A much longer merchant description with verified details.',
@@ -20,15 +20,30 @@ describe('client product enrichment merge', () => {
       sizes: ['128 GB', '256 GB'],
       optionLabel: 'Stockage',
       variantOptions: [{ id: 'v256', label: '256 GB', size: '256 GB', color: null, available: true, availability: 'available', price: null, currency: null, priceTnd: null }],
-      price: 1, currency: 'TND', priceTnd: 1, availability: 'out_of_stock',
+      price: 780, currency: 'EUR', priceTnd: 2640, availability: 'out_of_stock',
     });
     const merged = mergeProductEnrichment(current, full, 'https://shop.example/item?campaign=one')!;
     expect(merged.images).toContain('https://shop.example/item/side.jpg');
     expect(merged.optionLabel).toBe('Stockage');
     expect(merged.variantOptions).toEqual(full.variantOptions);
-    expect(merged.price).toBe(800);
-    expect(merged.priceTnd).toBe(2700);
+    // Prix lu sur la page marchande (VERIFIED) : il prime sur l'extrait SerpApi.
+    expect(merged.price).toBe(780);
+    expect(merged.priceTnd).toBe(2640);
+    expect(merged.priceVerificationStatus).toBe('VERIFIED');
     expect(merged.availability).toBe('out_of_stock');
+  });
+
+  it('never borrows a price that the merchant page did not verify', () => {
+    const current = product();
+    const full = product({
+      description: 'A much longer merchant description.',
+      price: 1, currency: 'TND', priceTnd: 1, priceVerificationStatus: 'PENDING_MANUAL',
+    });
+    const merged = mergeProductEnrichment(current, full, 'https://shop.example/item?campaign=one')!;
+    expect(merged.description).toBe('A much longer merchant description.');
+    expect(merged.price).toBe(800);
+    expect(merged.currency).toBe('EUR');
+    expect(merged.priceTnd).toBe(2700);
   });
 
   it('rejects a different merchant and a different product path', () => {
