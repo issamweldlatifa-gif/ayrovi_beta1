@@ -76,6 +76,9 @@ function candidateToProduct(candidate: AyrovixCandidate): AyrovixProduct {
     price: candidate.price,
     currency: candidate.currency,
     priceTnd: candidate.priceTnd,
+    // Prix barré du marchand (02/10/2026) — lu sur sa page, jamais déduit.
+    originalPrice: candidate.originalPrice ?? null,
+    originalPriceTnd: candidate.originalPriceTnd ?? null,
     rating: candidate.rating ?? null,
     ratingCount: candidate.ratingCount ?? null,
     ratingKind: candidate.ratingKind || 'match',

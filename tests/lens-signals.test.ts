@@ -32,10 +32,13 @@ describe('l’OCR ne touche jamais au prix (règle client du 25/09/2026)', () =>
     expect(contract).not.toContain('price');
   });
 
-  it('le prix garde son origine unique : l’offre marchande, puis notre formule', () => {
+  it('le prix garde son origine unique : la page marchande, puis notre formule', () => {
     const block = routes.split("router.post('/analyze-image'")[1].split("router.post('/analyze-url'")[0];
-    expect(block).toContain('calculatePrice(');
-    expect(block).toContain('getCachedPricingRules(db)');
+    // 02/10/2026 : plus de calcul sur un montant lu dans l'image ; le prix de la
+    // page marchande repasse par le calculateur AYROVI (`reprice`).
+    expect(block).not.toContain('calculatePrice(');
+    expect(block).toContain('estimateWithDb(db, price, currency)');
+    expect(block).toContain('detectedPrice: null');
   });
 });
 
@@ -53,7 +56,8 @@ describe('câblage sur la route client', () => {
   });
 
   it('ils sont mesurés et mis en cache avec la photo, jamais avec le marché', () => {
-    expect(routes).toContain("mark(trace, 'imageSignalsMs', recognition.timings.signalsMs)");
+    // Le chemin client ne lit plus les signaux (02/10/2026) : `withSignals: false`.
+    expect(routes).toContain('withSignals: false');
     expect(engine).toContain('signals: cached.signals || signals === EMPTY_SIGNALS ? undefined : signals');
   });
 

@@ -97,6 +97,7 @@ export class SmartLinkScraper {
       colorImages: liveData?.colorImages || {},
       mainImage: images.length > 0 ? images[0] : '',
       sourcePrice: Math.round(price * 100) / 100,
+      sourceOriginalPrice: liveData?.originalPrice && liveData.originalPrice > price ? Math.round(liveData.originalPrice * 100) / 100 : undefined,
       sourceCurrency: currency,
       convertedPriceTND,
       serviceFeeTND,

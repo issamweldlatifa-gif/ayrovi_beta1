@@ -131,6 +131,8 @@ export const ProductPage: React.FC<ProductPageProps> = ({
     : /^(?:pointure|shoe size)$/i.test(rawOptionLabel) ? tr('Pointure', 'المقاس')
       : /^(?:stockage|storage|memory|mémoire)$/i.test(rawOptionLabel) ? tr('Stockage', 'التخزين')
         : /^(?:volume|contenance|capacity)$/i.test(rawOptionLabel) ? tr('Contenance', 'السعة')
+          : /^(?:référence|reference|ref)$/i.test(rawOptionLabel) ? tr('Référence', 'المرجع')
+            : /^(?:modèle|model)$/i.test(rawOptionLabel) ? tr('Modèle', 'الموديل')
           : rawOptionLabel || (product.sizeKind === 'shoes' ? tr('Pointure', 'المقاس')
             : product.sizeKind === 'clothing' ? tr('Taille', 'المقاس')
               : product.sizeKind === 'capacity' ? tr('Contenance', 'السعة')

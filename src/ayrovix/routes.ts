@@ -3,19 +3,18 @@ import type { NextFunction, Request, Response } from 'express';
 import multer from 'multer';
 import type { QatafoDatabase } from '../db/database';
 import type { SmartLinkScraper } from '../scraper/scraper';
-import { identifyProduct, buildSearchQuery, AyrovixUnavailableError, ayrovixAiReady, fallbackIdentification } from './services/ai';
+import { buildSearchQuery, AyrovixUnavailableError, ayrovixAiReady, fallbackIdentification } from './services/ai';
 import { catalogSearch, externalProductSearch, groupOffers, scoreCandidate, searchCandidates } from './services/search';
-import { serpApiVisualReady, serpApiVisualSearch } from './services/visualSearch';
+import { serpApiVisualReady } from './services/visualSearch';
 import { recognizeImage } from './services/lensEngine';
-import { enrichCandidateDescriptions } from './services/lensEnrichment';
 import { enrichCandidatesLiveStock, refreshLiveStock } from './services/lensLiveStock';
-import { generateOptimizedSearch, analyzeResultRelevance, deduplicateCandidates, understandCustomerIntent } from './services/aiLensIntelligence';
+import { deduplicateCandidates } from './services/aiLensIntelligence';
+import { estimateWithDb } from './services/currency';
 import { extractProductFromUrl, ExtractionFailedError, InvalidUrlError, sanitizeProductUrl } from './services/product';
 import { markAyrovixChosen, recordAyrovixEvent } from './events';
 import { createAyrovixReviewRequest, getAyrovixReviewForOwner } from './reviews';
 import { resolveCustomer } from '../customer/auth';
-import type { AyrovixCandidate, AyrovixChannel, AyrovixDetectedPrice, AyrovixProduct } from './types';
-import { calculatePrice } from '../services/pricing';
+import type { AyrovixCandidate, AyrovixChannel, AyrovixIdentification, AyrovixProduct } from './types';
 import { InvalidImageError, normalizeUploadedImage } from '../services/imageValidation';
 import { createAyrovixPriceToken, type AyrovixQuoteStatus } from './priceQuote';
 import { listAyrovixHistory, recordAyrovixHistory, type AyrovixHistoryInput } from './history';
@@ -139,14 +138,6 @@ function tokenizedProduct(product: AyrovixProduct): AyrovixProduct {
   };
 }
 
-function tokenizedDetectedPrice(price: AyrovixDetectedPrice | null): AyrovixDetectedPrice | null {
-  if (!price) return null;
-  return {
-    ...price,
-    priceToken: quoteToken(price.sourcePrice, price.sourceCurrency, price.title, '', 'PENDING_MANUAL'),
-  };
-}
-
 function rememberAuthenticatedHistory(
   db: QatafoDatabase,
   req: Request,
@@ -254,100 +245,56 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
         } catch { /* ignore malformed roi — fallback to full image */ }
       }
       mark(trace, 'imageBytesIn', effectiveBuffer.length);
-      if (!ayrovixAiReady() && !serpApiVisualReady()) {
+      if (!serpApiVisualReady() && !ayrovixAiReady()) {
         return res.status(503).json({ success: false, code: 'AYROVIX_UNAVAILABLE', error: "AYROVIX n'est pas encore activé. Réessayez bientôt." });
       }
 
-      // Vision and reverse-image must not take each other down. A provider
-      // timeout/schema error used to abort the whole Lens request even when
-      // Google Lens had already found priced matches.
       /*
-       * UNE SEULE ORCHESTRATION (25/09/2026) : `recognizeImage` sait dans quel
-       * ordre interroger la vision, la recherche visuelle et les signaux de
-       * l'image — et c'est le seul endroit qui le sait. La route ne garde que ce
-       * qui lui appartient : le format de la réponse et le calcul du prix.
+       * UN SEUL CHEMIN (décision produit du 02/10/2026).
+       *
+       *   photo → SerpApi (liens) → pages marchandes (vérité) → calculateur,
+       *   promo, isolation → compréhension produit → écran adapté.
+       *
+       * Tout ce qui DEVINAIT a été retiré de ce chemin : prix lu sur l'image,
+       * OCR, requête IA « optimisée », re-scoring IA de pertinence, recherche
+       * web textuelle. SerpApi ne sert qu'à trouver les pages ; ce qui s'affiche
+       * vient des pages. La vision IA ne reste qu'en DERNIER RECOURS, quand
+       * SerpApi ne rend aucun lien : elle fournit alors un intitulé de recherche
+       * (catalogue + web), jamais un prix.
        */
-      const recognition = await recognizeImage(effectiveBuffer, effectiveMime);
+      const recognition = await recognizeImage(effectiveBuffer, effectiveMime, { withVision: false, withSignals: false });
       res.setHeader('X-Ayrovix-Cache', recognition.cacheHit);
-      /* Le rapport d'exploitation (p50/p95) doit pouvoir répondre à « combien de
-         requêtes ont évité un appel payant ? ». Le champ existait dans le contrat
-         de trace et n'était jamais renseigné sur ce chemin. */
       mark(trace, 'cacheHit', {
-        vision: recognition.cacheHit === 'identification' || recognition.cacheHit === 'both',
+        vision: false,
         serpApi: recognition.cacheHit === 'matches' || recognition.cacheHit === 'both',
         query: false,
         relevance: false,
       });
-      mark(trace, 'anthropicVisionMs', recognition.timings.visionMs);
       mark(trace, 'serpApiTotalMs', recognition.timings.matchesMs);
-      mark(trace, 'imageSignalsMs', recognition.timings.signalsMs);
-
-      /*
-       * L'OCR NE TOUCHE PAS AU PRIX (règle client du 25/09/2026).
-       *
-       * Le texte lu sur une photo sert à RECONNAÎTRE le produit — marque,
-       * modèle, code-barres — jamais à en fixer le montant. Le prix a une seule
-       * origine : l'offre marchande rapportée par SerpApi, à laquelle notre
-       * formule (conversion, droits, TVA, frais) est appliquée ensuite. Un
-       * chiffre mal lu sur une image serait un prix que personne n'a jamais
-       * proposé, et c'est le client qui le paierait.
-       */
       const visualCandidates = recognition.matches;
-      const signals = recognition.signals;
-      let identification = recognition.identification;
 
-      if (!identification) {
-        const visionError = recognition.identificationError;
-        if (visionError instanceof AyrovixUnavailableError && visualCandidates.length === 0) throw visionError;
-        if (visualCandidates.length === 0) throw visionError || new Error('IDENTIFICATION_FAILED');
-        identification = fallbackIdentification(visualCandidates[0]?.title);
-        console.warn('[AYROVIX analyze-image] vision failed — continuing with visual matches');
+      let identification: AyrovixIdentification;
+      if (visualCandidates.length) {
+        // L'intitulé de la grille est celui de la meilleure page trouvée — pas une devinette.
+        identification = fallbackIdentification(visualCandidates[0].title);
+      } else {
+        if (!ayrovixAiReady()) throw new Error('IDENTIFICATION_FAILED');
+        const lastResort = await recognizeImage(effectiveBuffer, effectiveMime, { withMatches: false, withSignals: false });
+        mark(trace, 'anthropicVisionMs', lastResort.timings.visionMs);
+        if (!lastResort.identification) {
+          throw lastResort.identificationError || new Error('IDENTIFICATION_FAILED');
+        }
+        identification = lastResort.identification;
+        console.warn('[AYROVIX analyze-image] SerpApi sans lien — vision en dernier recours (intitulé seulement)');
       }
+      // Aucun prix ne vient de l'image : ni de la vision, ni de l'OCR.
+      identification.detected_price = { amount: 0, currency: '', label: 'none', confidence: 0 };
+      identification.pricing = { sale_price: null, original_price: null, shipping_price: null, total_price: null, currency: null, discount_percent: null };
       if (identification.products?.length) {
-        const tPricing = Date.now();
-        const rules = getCachedPricingRules(db);
-        identification.products = identification.products.map((p) => {
-          if (p.price != null && p.price > 0 && p.currency) {
-            const calc = calculatePrice(rules, p.price, p.currency);
-            return {
-              ...p,
-              priceTnd: calc?.totalTND ?? null,
-            };
-          }
-          return p;
-        });
-        mark(trace, 'pricingMs', Date.now() - tPricing);
+        identification.products = identification.products.map((product) => ({ ...product, price: null, currency: null }));
       }
 
-      const visiblePrice = identification.detected_price;
-      const usablePrice = visiblePrice.confidence >= 0.65
-        && visiblePrice.amount > 0
-        && Boolean(visiblePrice.currency)
-        && (visiblePrice.label === 'product_price' || visiblePrice.label === 'cart_total');
-      const calculated = usablePrice
-        ? calculatePrice(getCachedPricingRules(db), visiblePrice.amount, visiblePrice.currency)
-        : null;
-      const isCartScreenshot = identification.input_kind === 'cart_screenshot'
-        || visiblePrice.label === 'cart_total';
-      const title = [identification.brand, identification.model].filter(Boolean).join(' ')
-        || identification.description
-        || 'Produit détecté par AYROVIX';
-      const priceResult = usablePrice ? {
-        sourcePrice: visiblePrice.amount,
-        sourceCurrency: visiblePrice.currency,
-        convertedPriceTND: calculated?.convertedPriceTND ?? null,
-        serviceFeeTND: calculated?.serviceFeeTND ?? null,
-        estimatedShippingTND: calculated?.shippingFeeTND ?? null,
-        totalPriceTND: calculated?.totalTND ?? null,
-        title,
-        brand: identification.brand,
-        isCartScreenshot,
-        imageUrl: null,
-      } : null;
-
-      // AI Search Intelligence — GOOGLE LENS LEVEL: cached, race with 2.5s, visual shortcut (skip cache in tests — 1px PNG collides)
-      const customerIntentText: string | null = String((req.body as any)?.customerIntent || (req.body as any)?.intent || req.query?.intent || '').trim().slice(0,200) || null;
-      const pKey = pipelineKey(effectiveBuffer, customerIntentText);
+      const pKey = pipelineKey(effectiveBuffer, null);
       const isTest = !!(process.env.VITEST || process.env.NODE_ENV === 'test');
       // D3-13: ETag for 304 Not Modified — same image hash → no re-download
       const etag = `W/"${createHash('sha1').update(pKey).digest('hex').slice(0, 16)}"`;
@@ -360,105 +307,54 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       }
       const pCached = isTest ? null : pipelineCache.get(pKey);
       if (pCached && Date.now() - pCached.at < PIPELINE_TTL_MS) {
-        // instant repeat for 1000+ users — same image hash
         mark(trace, 'pipelineCacheHit', true);
         mark(trace, 'candidatesCount', (pCached.data?.candidates?.length ?? 0));
         endTrace(trace);
-        // ETag already set — client cache hit
         return res.json({ success: true, data: pCached.data });
       }
       mark(trace, 'pipelineCacheHit', false);
-      const baseQuery = buildSearchQuery(identification);
-      // ULTRA-FAST: baseQuery instantly — no 2.2s block. AI warms cache in background for next time.
-      let effectiveQuery = baseQuery;
-      if (!isTest && visualCandidates.length < 6) {
-        // Fire-and-forget AI optimize (650ms race) — do NOT block search, just warm cache
-        const tOpt = Date.now();
-        Promise.race([
-          generateOptimizedSearch(identification, customerIntentText ? understandCustomerIntent(identification, customerIntentText) : null, customerIntentText),
-          new Promise<null>((_, rej) => setTimeout(() => rej(new Error('ai-timeout')), 650)),
-        ]).then((opt:any)=> {
-          if (opt?.primaryQuery) console.log('[AYROVIX] AI query warmed:', opt.primaryQuery.slice(0,40));
-          mark(trace, 'anthropicOptimizeMs', Date.now() - tOpt);
-        }).catch(()=>{ mark(trace, 'anthropicOptimizeMs', Date.now() - tOpt); });
-      }
+
+      const effectiveQuery = buildSearchQuery(identification);
       const tSearch = Date.now();
-      const rawCandidates = (identification.confidence >= 0.35 || visualCandidates.length > 0) && effectiveQuery
+      // Avec des liens SerpApi, `searchCandidates` n'appelle AUCUNE recherche web :
+      // il note, convertit (calculateur AYROVI) et regroupe les offres, puis
+      // ajoute le catalogue AYROVI (données réelles elles aussi).
+      const rawCandidates = (visualCandidates.length > 0 || identification.confidence >= 0.35) && effectiveQuery
         ? await searchCandidates(db, identification, effectiveQuery, visualCandidates)
         : [];
       mark(trace, 'searchCandidatesMs', Date.now() - tSearch);
-      // Relevance: D2-7 streaming — في الإنتاج لا ننتظر، نعيد فوراً ونُدفّئ Cache في الخلفية (يوفر 750ms إدراكياً)
-      // في الاختبارات ننتظر 750ms للتأكد من صحة heuristic/AI
-      let relevanceMap: Map<string, any> | null = null;
-      if (rawCandidates.length) {
-        if (isTest) {
-          const tRel = Date.now();
-          try {
-            relevanceMap = await Promise.race([
-              analyzeResultRelevance(identification, rawCandidates, effectiveQuery),
-              new Promise<null>((_, rej) => setTimeout(() => rej(new Error('rel-timeout')), 750)),
-            ]) as any;
-          } catch { relevanceMap = null; }
-          mark(trace, 'anthropicRelevanceMs', Date.now() - tRel);
-        } else {
-          // fire-and-forget warm: لا يوقف الاستجابة، يُحسب في الخلفية للـ Cache التالي
-          const tRelBg = Date.now();
-          analyzeResultRelevance(identification, rawCandidates, effectiveQuery)
-            .then((map:any) => {
-              mark(trace, 'anthropicRelevanceMs', Date.now() - tRelBg);
-              // optional: could update pipelineCache entry with rescored version for next hit
-            })
-            .catch(() => mark(trace, 'anthropicRelevanceMs', Date.now() - tRelBg));
-          // نبقي relevanceMap null → نعرض raw match (scoreCandidate) فوراً، لا فلترة irrelevant في أول ضربة
-          relevanceMap = null;
-        }
-      }
-      let rescoredCandidates = rawCandidates.map((c) => {
-        if (relevanceMap && relevanceMap.has(c.id)) {
-          const entry = relevanceMap.get(c.id);
-          // never falsely claim exact match: cap strong at 94 if confidence low
-          let adj = entry.adjustedMatch;
-          if (entry.relevance === 'strong' && identification.confidence < 0.55) adj = Math.min(adj, 86);
-          return { ...c, match: adj, relevance: entry.relevance } as any;
-        }
-        return c;
-      });
-      // filter irrelevant (below threshold) but keep at least 2 if all irrelevant
-      if (relevanceMap) {
-        const filtered = rescoredCandidates.filter((c:any) => c.relevance !== 'irrelevant');
-        if (filtered.length >= 2 || filtered.length === rescoredCandidates.length) rescoredCandidates = filtered;
-      }
+
       const tDedup = Date.now();
-      const deduped = deduplicateCandidates(rescoredCandidates);
+      const candidates = deduplicateCandidates(rawCandidates);
       mark(trace, 'dedupMs', Date.now() - tDedup);
+
       /*
-       * LIGNE DESCRIPTIVE (25/09/2026) — Google Lens ne rend aucune description.
-       * Nous la DEMANDONS donc, pour les premiers résultats seulement, avec cache
-       * de sept jours et échéance stricte : l'enrichissement ne retarde jamais la
-       * réponse, et un texte n'est retenu que s'il décrit BIEN ce produit-là.
-       */
-      const candidates = await enrichCandidateDescriptions(deduped);
-      /*
-       * STOCK ET TAILLES VIVANTS (01/10/2026) — le lien SerpApi est la meilleure
-       * source du catalogue : on lit la page produit derrière les premiers liens,
-       * pour les premières fiches seulement, sans JAMAIS retarder la réponse
-       * (budget + échéance + cache, comme l'enrichissement descriptif).
+       * VÉRITÉ MARCHANDE — la page produit derrière CHAQUE lien SerpApi (budget
+       * 8 = toute la grille) : prix du jour, prix barré, stock, tailles,
+       * couleurs, photos, description. Le prix lu repasse par le calculateur
+       * AYROVI ; l'extrait SerpApi n'est qu'un repli en attendant la page.
        */
       const tLiveStock = Date.now();
       const { candidates: liveCandidates, report: liveStock } = await enrichCandidatesLiveStock(candidates, {
         fetcher: (url) => scraper.scrapeParsedPage(url).then((result) => result.data),
+        reprice: (price, currency) => {
+          const estimate = estimateWithDb(db, price, currency);
+          return estimate ? { priceTnd: estimate.priceTnd, promo: estimate.promo } : null;
+        },
       });
       mark(trace, 'liveStockMs', Date.now() - tLiveStock);
       mark(trace, 'liveStockFetched', liveStock.fetched);
       mark(trace, 'liveStockCacheHits', liveStock.cacheHits);
       mark(trace, 'liveStockApplied', liveStock.applied);
+      const title = [identification.brand, identification.model].filter(Boolean).join(' ')
+        || identification.description
+        || 'Produit détecté par AYROVIX';
       const query = effectiveQuery;
       const securedCandidates = tokenizedCandidates(liveCandidates);
       // Chauffe le cache d'isolation/redimensionnement pendant que le client lit la grille.
       const candidateMedia = [...securedCandidates.map((item) => item.image), ...securedCandidates.flatMap((item) => item.images || [])];
       warmIsolation(candidateMedia, 8);
       warmComposition(candidateMedia, 8);
-      const securedPrice = tokenizedDetectedPrice(priceResult);
       const eventId = recordAyrovixEvent(db, {
         channel: 'image',
         brand: identification.brand,
@@ -470,12 +366,12 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
         eventId,
         kind: 'image',
         queryLabel: query || identification.description,
-        title: historyMatch?.title || securedPrice?.title || title,
-        imageUrl: historyMatch?.image || securedPrice?.imageUrl || '',
+        title: historyMatch?.title || title,
+        imageUrl: historyMatch?.image || '',
         sourceUrl: historyMatch?.sourceUrl || '',
         source: historyMatch?.source || 'AYROVIX Vision',
-        price: historyMatch?.price ?? securedPrice?.sourcePrice ?? null,
-        currency: historyMatch?.currency ?? securedPrice?.sourceCurrency ?? null,
+        price: historyMatch?.price ?? null,
+        currency: historyMatch?.currency ?? null,
         verificationStatus: historyMatch?.priceVerificationStatus || 'PENDING_MANUAL',
         resultsCount: candidates.length,
       });
@@ -485,12 +381,9 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
         query,
         candidates: securedCandidates,
         eventId,
-        detectedPrice: securedPrice,
-        message: securedPrice
-          ? isCartScreenshot
-            ? `Total visible détecté: ${priceResult.sourcePrice} ${priceResult.sourceCurrency}. Un lien produit reste obligatoire avant commande.`
-            : `Prix visible détecté: ${priceResult.sourcePrice} ${priceResult.sourceCurrency}. Le lien marchand permettra de le vérifier.`
-          : undefined,
+        // Plus aucun prix ne vient de l'image (02/10/2026) : le champ reste pour le contrat client.
+        detectedPrice: null,
+        liveStock: { fetched: liveStock.fetched, cacheHits: liveStock.cacheHits, applied: liveStock.applied, budget: liveStock.budget },
       };
       if (!isTest) {
         if (pipelineCache.size > 300) pipelineCache.delete(pipelineCache.keys().next().value as string);
@@ -763,6 +656,10 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
     try {
       const { results } = await refreshLiveStock(urls, {
         fetcher: (url) => scraper.scrapeParsedPage(url).then((result) => result.data),
+        reprice: (price, currency) => {
+          const estimate = estimateWithDb(db, price, currency);
+          return estimate ? { priceTnd: estimate.priceTnd, promo: estimate.promo } : null;
+        },
       });
       return res.json({ success: true, data: { results } });
     } catch (error: any) {

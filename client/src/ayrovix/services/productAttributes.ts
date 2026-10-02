@@ -17,6 +17,7 @@ export type ProductClass =
   | 'bag'
   | 'accessory'
   | 'electronics'
+  | 'vehicle'
   | 'home'
   | 'other';
 
@@ -30,6 +31,8 @@ const CLASS_RULES: Array<{ cls: ProductClass; patterns: RegExp[] }> = [
   { cls: 'bag', patterns: [/\bsac [àa] dos\b/i, /\bsacs? (?:àa]? main|bandouli[èe]re|seau|voyage|cabas)\b/i, /\bbackpacks?\b/i, /\bsatchel\b/i, /\btote\b/i, /\bclutch\b/i, /\bvalise\b/i, /\bساك\b/, /\bمحفظة يد\b/] },
   // — vêtements —
   { cls: 'clothing', patterns: [/\bt-?shirts?\b/i, /\bpulls?\b/i, /\bsweats?\b/i, /\bhoodie\b/i, /\bveste\b/i, /\bmanteau\b/i, /\bpantalon\b/i, /\bjean\b/i, /\bchemise\b/i, /\brobe\b/i, /\bjuppe\b/i, /\bshort\b/i, /\bcombinaison\b/i, /\bleggings?\b/i, /\bpyjama\b/i, /\bmaillot\b/i, /\bchemisier\b/i, /\bgilet\b/i, /\bبلوزة\b/, /\bقميص\b/, /\bسروال\b/, /\bفستان\b/] },
+  // — véhicules & pièces (auto, moto, vélo, trottinette) : option = référence / compatibilité —
+  { cls: 'vehicle', patterns: [/\bpi[èe]ces? (?:auto|moto|d[ée]tach[ée]es?)\b/i, /\bplaquettes? de frein\b/i, /\bdisques? de frein\b/i, /\bfiltre [àa] (?:huile|air|carburant|habitacle)\b/i, /\bamortisseurs?\b/i, /\bpneus?\b/i, /\bjantes?\b/i, /\bbatterie (?:auto|moto|voiture|12v)\b/i, /\bbougies? d'allumage\b/i, /\bcourroie\b/i, /\bembrayage\b/i, /\bessuie-glaces?\b/i, /\br[ée]troviseur\b/i, /\bpare-chocs?\b/i, /\bphares?\b/i, /\bcasque (?:moto|v[ée]lo|jet|int[ée]gral)\b/i, /\bv[ée]lo\b/i, /\bbicyclette\b/i, /\btrottinette\b/i, /\bvtt\b/i, /\bd[ée]railleur\b/i, /\bcha[îi]ne de v[ée]lo\b/i, /\bselle\b/i, /\bguidon\b/i, /\bp[ée]dales?\b/i, /\bmoto\b/i, /\bscooter\b/i, /\bbrake pads?\b/i, /\bcar parts?\b/i, /\bbike\b/i, /\bقطع (?:غيار|سيارة)\b/, /\bدراجة\b/, /\bإطار\b/] },
   // — électronique —
   { cls: 'electronics', patterns: [/\b(?:casque|[ée]couteurs?)\b/i, /\bheadphones?\b/i, /\bmontre (?:connect[ée]e|intelligente)\b/i, /\bsmartwatch\b/i, /\benceinte\b/i, /\bchargeur\b/i, /\bc[âa]ble\b/i, /\bpower ?bank\b/i, /\bt[ée]l[ée]phone\b/i, /\b(?:smart)?phones?\b/i, /\biphone\b/i, /\bmacbook\b/i, /\bordinateurs?\b/i, /\bnotebook\b/i, /\blaptop\b/i, /\b[ée]cran\b/i, /\bconsole\b/i, /\bسماعة\b/, /\bهاتف\b/] },
   // — maison —
@@ -46,6 +49,7 @@ const CLASS_LABELS: Record<ProductClass, { fr: string; ar: string }> = {
   bag: { fr: 'Sacs', ar: 'حقائب' },
   accessory: { fr: 'Accessoires', ar: 'إكسسوارات' },
   electronics: { fr: 'Électronique', ar: 'إلكترونيات' },
+  vehicle: { fr: 'Auto, moto & vélo', ar: 'سيارات ودراجات' },
   home: { fr: 'Maison', ar: 'منزل' },
   other: { fr: 'Produit', ar: 'منتج' },
 };

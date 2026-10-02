@@ -68,6 +68,11 @@ function toAyrovixProduct(db: QatafoDatabase, scraped: ScrapedProduct): AyrovixP
     price: scraped.sourcePrice > 0 ? scraped.sourcePrice : null,
     currency: scraped.sourcePrice > 0 ? scraped.sourceCurrency : null,
     priceTnd: tnd?.priceTnd ?? (Number.isFinite(scraped.totalPriceTND) && scraped.totalPriceTND > 0 ? scraped.totalPriceTND : null),
+    // Prix barré du marchand, passé par le MÊME calculateur (jamais déduit).
+    originalPrice: scraped.sourceOriginalPrice && scraped.sourceOriginalPrice > scraped.sourcePrice ? scraped.sourceOriginalPrice : null,
+    originalPriceTnd: scraped.sourceOriginalPrice && scraped.sourceOriginalPrice > scraped.sourcePrice
+      ? estimateWithDb(db, scraped.sourceOriginalPrice, scraped.sourceCurrency)?.priceTnd ?? null
+      : null,
     exchangeRate: tnd?.exchangeRate ?? null,
     promo: tnd?.promo ?? null,
     colors: scraped.variants?.colors || [],

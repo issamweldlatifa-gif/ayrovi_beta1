@@ -19,7 +19,9 @@ const engine = readFileSync('src/ayrovix/services/lensEngine.ts', 'utf8');
 describe('une seule orchestration', () => {
   it('la route publique n’appelle plus les moteurs elle-même', () => {
     const block = routes.split("router.post('/analyze-image'")[1].split("router.post('/analyze-url'")[0];
-    expect(block).toContain('recognizeImage(effectiveBuffer, effectiveMime)');
+    // 02/10/2026 : SerpApi d'abord (vision coupée) ; la vision ne revient qu'en dernier recours.
+    expect(block).toContain('recognizeImage(effectiveBuffer, effectiveMime, { withVision: false, withSignals: false })');
+    expect(block).toContain('recognizeImage(effectiveBuffer, effectiveMime, { withMatches: false, withSignals: false })');
     expect(block).not.toContain('identifyProduct(effectiveBuffer');
     expect(block).not.toContain('serpApiVisualSearch(effectiveBuffer');
     expect(block).not.toContain('readLensSignals(effectiveBuffer');
@@ -49,14 +51,14 @@ describe('une seule orchestration', () => {
 
   it('l’erreur de vision est transmise, pas avalée : l’appelant décide s’il continue', () => {
     expect(engine).toContain('identificationError');
-    expect(routes).toContain('const visionError = recognition.identificationError;');
+    expect(routes).toContain('throw lastResort.identificationError || new Error(\'IDENTIFICATION_FAILED\');');
   });
 
   it('chaque moteur est mesuré séparément', () => {
     expect(engine).toContain('visionMs');
     expect(engine).toContain('matchesMs');
     expect(engine).toContain('signalsMs');
-    expect(routes).toContain("mark(trace, 'anthropicVisionMs', recognition.timings.visionMs)");
+    expect(routes).toContain("mark(trace, 'anthropicVisionMs', lastResort.timings.visionMs)");
     expect(routes).toContain("mark(trace, 'serpApiTotalMs', recognition.timings.matchesMs)");
   });
 });
@@ -142,7 +144,7 @@ describe('télémétrie Lens', () => {
 
   it('le rapport d’exploitation sait enfin si l’appel payant a été évité', () => {
     expect(routes).toContain("mark(trace, 'cacheHit', {");
-    expect(routes).toContain("vision: recognition.cacheHit === 'identification'");
+    expect(routes).toContain("serpApi: recognition.cacheHit === 'matches' || recognition.cacheHit === 'both'");
   });
 });
 

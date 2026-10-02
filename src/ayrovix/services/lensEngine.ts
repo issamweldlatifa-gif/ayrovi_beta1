@@ -41,6 +41,15 @@ export interface LensRecognition {
 export interface RecognizeOptions {
   /** Nombre de correspondances marchandes demandées. */
   matchLimit?: number;
+  /**
+   * Interroger la vision IA (défaut : oui). Le chemin CLIENT la coupe : depuis
+   * le 02/10/2026, la fiche se construit UNIQUEMENT à partir des pages
+   * marchandes derrière les liens SerpApi — la vision n'y sert plus qu'en
+   * dernier recours, pour un intitulé de recherche quand SerpApi ne rend rien.
+   */
+  withVision?: boolean;
+  /** Interroger la recherche visuelle SerpApi (défaut : oui). */
+  withMatches?: boolean;
   /** Lire le texte et les codes de l'image (défaut : oui). */
   withSignals?: boolean;
   /** Utiliser le cache de reconnaissance (défaut : oui). */
@@ -100,7 +109,7 @@ export async function recognizeImage(
   mime: string,
   options: RecognizeOptions = {},
 ): Promise<LensRecognition> {
-  const { matchLimit = 8, withSignals = true, useCache = true } = options;
+  const { matchLimit = 8, withSignals = true, useCache = true, withVision = true, withMatches = true } = options;
 
   const key = lensImageKey(image);
   const cached = useCache
@@ -112,13 +121,17 @@ export async function recognizeImage(
   let signalsMs = 0;
 
   const [visionResult, matchesResult, signalsResult] = await Promise.allSettled([
-    cached.identification
+    !withVision
+      ? Promise.resolve(null)
+      : cached.identification
       ? Promise.resolve(cached.identification)
       : timed(
           withDeadline(identifyProduct(image, mime), deadlineMs('VISION', 18_000), 'vision'),
           (ms) => { visionMs = ms; },
         ),
-    cached.matches
+    !withMatches
+      ? Promise.resolve([] as AyrovixCandidate[])
+      : cached.matches
       ? Promise.resolve(cached.matches)
       : timed(
           withDeadline(serpApiVisualSearch(image, matchLimit), deadlineMs('MATCHES', 14_000), 'matches'),
@@ -137,8 +150,8 @@ export async function recognizeImage(
 
   if (useCache) {
     writeLensCache<AyrovixIdentification, AyrovixCandidate, LensSignals>(key, {
-      identification: cached.identification ? undefined : identification,
-      matches: cached.matches ? undefined : matches,
+      identification: cached.identification || !withVision ? undefined : identification,
+      matches: cached.matches || !withMatches ? undefined : matches,
       signals: cached.signals || signals === EMPTY_SIGNALS ? undefined : signals,
     });
   }

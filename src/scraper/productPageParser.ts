@@ -8,6 +8,13 @@ export interface ParsedProductPage {
   description?: string;
   price: number;
   currency: string;
+  /**
+   * PRIX AVANT REMISE DU MARCHAND (02/10/2026) — le prix barré que la page
+   * affiche elle-même (JSON-LD ListPrice, Shopify `compare_at_price`, balise
+   * <del>/<s>). Absent (`undefined`) quand la page n'en publie pas ou quand il
+   * n'est pas strictement supérieur au prix courant : jamais déduit.
+   */
+  originalPrice?: number;
   images: string[];
   /** Images PAR COULEUR (24/09/2026) : chaque variante de couleur possède son propre
    *  jeu de photos (référence Zalando). Clé = nom de couleur en minuscules. */
@@ -150,6 +157,80 @@ function moneyValue(raw: any, shopifyCents = false): number {
   const value = parsePrice(raw);
   if (shopifyCents && Number.isInteger(value) && value >= 1_000) return value / 100;
   return value;
+}
+
+/**
+ * Le prix barré, TEL QUE LE MARCHAND LE PUBLIE. Sources, par fiabilité :
+ *   1. JSON-LD : `offers.priceSpecification[]` dont le `priceType` est un prix
+ *      de liste / barré (schema.org ListPrice, StrikethroughPrice, RRP) ;
+ *   2. Shopify / produit embarqué : `compare_at_price` (centimes ou texte) ;
+ *   3. meta `product:original_price:amount` ;
+ *   4. DOM : <del>, <s>, classes « compare / old / was / regular / strike »,
+ *      Amazon `.a-text-price .a-offscreen`.
+ * Un prix barré qui n'est pas STRICTEMENT supérieur au prix courant est rejeté :
+ * ce serait soit une erreur de lecture, soit une « remise » qui n'en est pas une.
+ */
+function originalPriceFrom(input: {
+  offers: any;
+  embeddedProduct: any;
+  details: ProductVariantDetail[];
+  price: number;
+  meta: (selector: string) => string;
+  text: (selector: string) => string;
+}): number | undefined {
+  const { offers, embeddedProduct, price, meta, text } = input;
+  if (!(price > 0)) return undefined;
+  const accept = (value: number): number | undefined => (value > price && value < price * 20 ? value : undefined);
+
+  const specs = Array.isArray(offers?.priceSpecification) ? offers.priceSpecification
+    : offers?.priceSpecification ? [offers.priceSpecification] : [];
+  for (const spec of specs) {
+    const type = String(spec?.priceType || spec?.['@type'] || '').toLowerCase();
+    if (/listprice|strikethrough|rrp|regular|msrp|was/.test(type)) {
+      const found = accept(parsePrice(spec?.price));
+      if (found) return found;
+    }
+  }
+
+  const variants = Array.isArray(embeddedProduct?.variants) ? embeddedProduct.variants : [];
+  const shopifyCents = variants.some((variant: any) => typeof variant?.price === 'number'
+    && ('requires_shipping' in (variant || {}) || 'public_title' in (variant || {})));
+  const compareCandidates = [
+    embeddedProduct?.compare_at_price,
+    embeddedProduct?.compareAtPrice,
+    embeddedProduct?.compare_at_price_max,
+    embeddedProduct?.compare_at_price_min,
+    ...variants.slice(0, 300).map((variant: any) => variant?.compare_at_price ?? variant?.compareAtPrice),
+  ];
+  for (const raw of compareCandidates) {
+    if (raw == null || raw === '' || raw === 0) continue;
+    const found = accept(moneyValue(raw, shopifyCents));
+    if (found) return found;
+  }
+
+  const metaOriginal = accept(parsePrice(
+    meta('meta[property="product:original_price:amount"]') || meta('meta[property="og:original_price:amount"]'),
+  ));
+  if (metaOriginal) return metaOriginal;
+
+  const domOriginal = text([
+    '.a-text-price .a-offscreen',
+    '[class*="compare-at" i]:not([class*="label" i])',
+    '[class*="compare_at" i]',
+    '[class*="price--compare" i]',
+    '[class*="price__compare" i]',
+    '[class*="old-price" i]',
+    '[class*="oldprice" i]',
+    '[class*="was-price" i]',
+    '[class*="regular-price" i]',
+    '[class*="price-strike" i]',
+    '[class*="price" i] del',
+    '[class*="price" i] s',
+    'del[class*="price" i]',
+    's[class*="price" i]',
+    '[style*="line-through"]',
+  ].join(', '));
+  return accept(parsePrice(domOriginal));
 }
 
 function flattenJsonLd(raw: any, output: any[] = []): any[] {
@@ -468,6 +549,7 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
       none: String(metaCurrency || offers?.priceCurrency || embeddedProduct?.currency || ''),
     };
     const currency = currencyCode(currencyBySource[priceSource]) || String(currencyBySource[priceSource]).trim().toUpperCase();
+    const originalPrice = originalPriceFrom({ offers, embeddedProduct, details, price, meta, text });
 
     const domSizes = Array.from(document.querySelectorAll(
       'select[name*="size" i] option, select[name*="taille" i] option, select[data-id*="size" i] option, #variation_size_name option, [data-testid*="size" i] button',
@@ -613,6 +695,7 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
       description: description || undefined,
       price,
       currency,
+      originalPrice,
       images,
       colorImages,
       externalId: String(productLd?.sku || productLd?.productID || embeddedProduct?.id || embeddedProduct?.sku || ''),

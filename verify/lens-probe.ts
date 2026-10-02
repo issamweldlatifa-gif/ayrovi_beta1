@@ -33,8 +33,10 @@ function fail(message: string): never {
 
 function fmtPrice(c: AyrovixCandidate): string {
   if (c.price == null || !c.currency) return 'prix à confirmer';
-  const tnd = c.priceTnd != null ? ` (≈ ${c.priceTnd.toFixed(3)} TND)` : '';
-  return `${c.price} ${c.currency}${tnd}`;
+  const tnd = c.priceTnd != null ? ` (≈ ${(c.priceTnd as number).toFixed(3)} TND)` : '';
+  const origin = c.priceOrigin === 'merchant' ? ' · lu sur la page marchande' : ' · extrait SerpApi (page non lue)';
+  const barred = c.originalPrice ? ` — barré ${c.originalPrice} ${c.currency}` : '';
+  return `${c.price} ${c.currency}${tnd}${barred}${origin}`;
 }
 
 function printCard(index: number, c: AyrovixCandidate): void {
@@ -100,8 +102,10 @@ async function main(): Promise<void> {
   // 4. Stock & tailles vivants — lecture réelle des pages marchandes (budget 4, échéance 2,5 s, cache 6 h).
   const scraper = new SmartLinkScraper();
   const t1 = Date.now();
+  // Sans base de données ici : le recalcul TND utilise le taux de secours du scraper (4,00) — indicatif.
   const { candidates, report } = await enrichCandidatesLiveStock(displayable, {
     fetcher: (url) => scraper.scrapeParsedPage(url).then((r) => r.data),
+    reprice: (price, currency) => ({ priceTnd: Math.round(price * (SmartLinkScraper.RATES_TO_TND[currency] || 4) * 1000) / 1000 }),
   });
   console.log(`[4] Pages marchandes     : visitées=${report.fetched} cache=${report.cacheHits} enrichies=${report.applied} (budget ${report.budget}, échéance ${report.deadlineMs} ms) en ${Date.now() - t1} ms`);
 
@@ -116,7 +120,8 @@ async function main(): Promise<void> {
   const withSizes = candidates.filter((c) => c.sizes.length).length;
   const withPrice = candidates.filter((c) => c.price != null).length;
   const withStock = candidates.filter((c) => c.availability && c.availability !== 'unknown').length;
-  console.log(`\nBilan : ${candidates.length} fiches · ${withPrice} avec prix · ${withSizes} avec tailles · ${withStock} avec stock prouvé`);
+  const merchantPriced = candidates.filter((c) => c.priceOrigin === 'merchant').length;
+  console.log(`\nBilan : ${candidates.length} fiches · ${withPrice} avec prix (${merchantPriced} lus sur la page marchande) · ${withSizes} avec tailles · ${withStock} avec stock prouvé`);
   console.log('Une fiche sans tailles/stock signifie que la page marchande n’a pas été lue (budget/échéance) ou ne publie pas ces faits — jamais une invention.\n');
 }
 

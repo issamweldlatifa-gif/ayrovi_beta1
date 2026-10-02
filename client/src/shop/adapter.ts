@@ -36,16 +36,32 @@ function priceOf(
   promo: { percent: number; priceTnd: number; originalPriceTnd: number } | null | undefined,
   source: { amount: number | null; currency: string | null } | null,
   verified: boolean,
+  /** Prix barré DU MARCHAND, déjà passé par le calculateur (02/10/2026). */
+  merchantOriginal?: { tnd: number | null | undefined; amount: number | null | undefined } | null,
 ): PriceView | null {
   const current = promo?.priceTnd ?? priceTnd;
   if (!Number.isFinite(current as number) || (current as number) <= 0) return null;
   const sourceMoney = source && Number.isFinite(source.amount as number) && source.currency
     ? { amount: source.amount as number, currency: source.currency }
     : null;
+  /*
+   * Deux remises possibles, jamais additionnées ni confondues :
+   *  • la promo AYROVI du jour (serveur) — prioritaire, car c'est notre prix ;
+   *  • sinon la remise que le marchand affiche lui-même (prix barré de sa page).
+   */
+  const promoReference = promo && promo.originalPriceTnd > promo.priceTnd ? { tnd: promo.originalPriceTnd } : null;
+  const merchantTnd = merchantOriginal?.tnd;
+  const merchantReference = !promoReference && Number.isFinite(merchantTnd as number) && (merchantTnd as number) > (current as number)
+    ? { tnd: merchantTnd as number }
+    : null;
+  const merchantPercent = merchantReference && source?.amount && merchantOriginal?.amount && merchantOriginal.amount > source.amount
+    ? Math.round((1 - source.amount / merchantOriginal.amount) * 100)
+    : null;
   return {
     current: { tnd: current as number, source: sourceMoney },
-    reference: promo && promo.originalPriceTnd > promo.priceTnd ? { tnd: promo.originalPriceTnd } : null,
-    discountPercent: promo && Number.isFinite(promo.percent) && promo.percent > 0 ? Math.round(promo.percent) : null,
+    reference: promoReference ?? merchantReference,
+    discountPercent: promo && Number.isFinite(promo.percent) && promo.percent > 0 ? Math.round(promo.percent)
+      : merchantPercent && merchantPercent > 0 ? merchantPercent : null,
     verifiedAtSource: verified,
   };
 }
@@ -63,7 +79,8 @@ export function candidateToView(candidate: AyrovixCandidate): ProductView {
       candidate.priceTnd,
       candidate.promo ?? null,
       { amount: candidate.price ?? null, currency: candidate.currency ?? null },
-      false,
+      candidate.priceOrigin === 'merchant' || candidate.priceVerificationStatus === 'VERIFIED',
+      { tnd: candidate.originalPriceTnd, amount: candidate.originalPrice },
     ),
     sizes: [],
     sizeScaleLabel: null,
@@ -98,17 +115,27 @@ export function productToView(product: AyrovixProduct, activeColor?: string | nu
   const suppliedLabel = product.optionLabel?.trim() || '';
   const sourceSaysStorage = /stockage|storage|mémoire|memory/i.test(suppliedLabel);
   const sourceSaysVolume = /volume|contenance|capacity/i.test(suppliedLabel);
+  /*
+   * COMPRÉHENSION PRODUIT (02/10/2026) — l'écran s'adapte à ce qu'EST le produit :
+   *   vêtement → Taille · chaussure → Pointure · parfum/soin → Contenance (ml)
+   *   électronique → Stockage (Go) ou Modèle · auto/moto/vélo → Référence
+   * Les valeurs restent celles que le MARCHAND publie : on choisit le mot et la
+   * mise en page, jamais les options. Une option publiée n'est plus jetée parce
+   * que la classe n'est ni « vêtement » ni « chaussure ».
+   */
+  const merchantOptions = presented.options;
   const values = sourceSaysStorage || (productClass === 'electronics' && storageOptions.length)
     ? storageOptions
     : capacityBased || sourceSaysVolume
       ? volumeOptions
-      : productClass === 'shoes' || productClass === 'clothing' || productClass === 'accessory'
-        ? presented.options
-        : [];
+      : merchantOptions;
   const optionLabel = suppliedLabel || (capacityBased ? 'Contenance'
     : productClass === 'shoes' ? 'Pointure'
       : productClass === 'clothing' ? 'Taille'
-        : storageOptions.length ? 'Stockage' : volumeOptions.length ? 'Volume' : values.length ? 'Option' : null);
+        : storageOptions.length ? 'Stockage' : volumeOptions.length ? 'Volume'
+          : productClass === 'vehicle' && values.length ? 'Référence'
+            : productClass === 'electronics' && values.length ? 'Modèle'
+              : values.length ? 'Option' : null);
 
   const sizes: SizeOption[] = values.map((value) => {
     const forSize = options.filter((option) => option.size === value && (!activeColor || !option.color || option.color.toLocaleLowerCase() === activeColor.toLocaleLowerCase()));
@@ -139,12 +166,14 @@ export function productToView(product: AyrovixProduct, activeColor?: string | nu
       product.promo ?? null,
       { amount: product.price ?? null, currency: product.currency ?? null },
       product.priceVerificationStatus === 'VERIFIED' || product.priceVerified === true,
+      { tnd: product.originalPriceTnd, amount: product.originalPrice },
     ),
     sizes,
     sizeScaleLabel: null,
     sizeKind: capacityBased || sourceSaysVolume ? 'capacity' : productClass === 'shoes' ? 'shoes'
       : sourceSaysStorage || (productClass === 'electronics' && storageOptions.length) ? 'storage'
-        : values.length ? 'clothing' : 'none',
+        : (productClass === 'clothing' || productClass === 'accessory') && values.length ? 'clothing'
+          : values.length ? 'generic' : 'none',
     optionLabel,
     availability: product.availability === 'in_stock' || product.availability === 'limited' ? 'available' : product.availability === 'out_of_stock' ? 'unavailable' : 'unknown',
     availabilitySource: product.source?.trim() || null,

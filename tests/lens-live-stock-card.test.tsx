@@ -26,6 +26,7 @@ const candidate: AyrovixCandidate = {
 
 const fresh = (over: Partial<LiveStockResult> = {}): LiveStockResult => ({
   url: 'https://shop.example/hoody', availability: 'in_stock',
+  price: null, currency: null, originalPrice: null, priceTnd: null, originalPriceTnd: null,
   sizes: ['8 (XS)', '10 (S)'], colors: ['Noir'], images: [], variants: [],
   checkedAt: new Date('2026-10-01T10:30:00Z').toISOString(), reason: 'page marchande (json_ld)', ...over,
 });

@@ -75,6 +75,12 @@ export async function getManualReview(id: string, signal?: AbortSignal): Promise
 export interface LiveStockResult {
   url: string;
   availability: 'in_stock' | 'limited' | 'out_of_stock' | 'unknown';
+  /** Prix FRAIS lus sur la page marchande, déjà passés par le calculateur (null si non publiés). */
+  price: number | null;
+  currency: string | null;
+  originalPrice: number | null;
+  priceTnd: number | null;
+  originalPriceTnd: number | null;
   sizes: string[];
   colors: string[];
   images: string[];

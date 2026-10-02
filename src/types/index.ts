@@ -44,6 +44,8 @@ export interface ScrapedProduct {
   colorImages?: Record<string, string[]>;
   mainImage: string;
   sourcePrice: number;
+  /** Prix barré publié par le marchand (strictement > sourcePrice), sinon absent. */
+  sourceOriginalPrice?: number;
   sourceCurrency: string;
   convertedPriceTND: number;
   estimatedShippingTND: number;

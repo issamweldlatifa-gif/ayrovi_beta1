@@ -363,3 +363,84 @@ describe('applyLiveStock — pose des faits, jamais des suppositions', () => {
     expect(target.images).toEqual(['https://cdn.tn/a.jpg', 'https://cdn.tn/b.jpg']);
   });
 });
+
+/*
+ * VÉRITÉ MARCHANDE (02/10/2026) — SerpApi trouve la page, la page fait la fiche.
+ * Le prix lu remplace l'extrait et repasse par le calculateur ; le prix barré
+ * voyage avec lui ; le budget couvre TOUTE la grille.
+ */
+describe('vérité marchande — le prix de la page remplace l’extrait SerpApi', () => {
+  const route = readFileSync('src/ayrovix/routes.ts', 'utf8');
+  const reprice = (price: number, currency: string) => ({ priceTnd: Math.round(price * 4 * 1000) / 1000, promo: null });
+
+  it('couvre les 8 fiches de la grille par défaut, plus seulement 4', async () => {
+    const fetcher = vi.fn<LiveStockFetcher>(async () => page({ availability: 'in_stock' }));
+    const list = Array.from({ length: 8 }, (_, index) => candidate({ id: `c${index}`, sourceUrl: `https://shop.tn/p${index}` }));
+    const { report } = await enrichCandidatesLiveStock(list, { fetcher });
+    expect(report.budget).toBe(8);
+    expect(fetcher).toHaveBeenCalledTimes(8);
+  });
+
+  it('remplace le prix SerpApi par le prix structuré de la page et le recalcule', () => {
+    const item = candidate({ price: 309.95, currency: 'EUR', priceTnd: 1239.8 });
+    const entry = entryFromPage(page({ price: 228.95, currency: 'EUR', originalPrice: 309.95, priceSource: 'json_ld' }), Date.now());
+    expect(applyLiveStock(item, entry, reprice)).toBe(true);
+    expect(item.price).toBe(228.95);
+    expect(item.priceOrigin).toBe('merchant');
+    expect(item.priceTnd).toBe(915.8);
+    expect(item.originalPrice).toBe(309.95);
+    expect(item.originalPriceTnd).toBe(1239.8);
+    expect(item.priceVerificationStatus).toBe('VERIFIED');
+  });
+
+  it('un prix lu par simple regex n’écrase pas un extrait existant — il ne comble qu’un vide', () => {
+    const withPrice = candidate({ price: 35.95, currency: 'EUR' });
+    applyLiveStock(withPrice, entryFromPage(page({ price: 12, priceSource: 'context_regex' }), Date.now()), reprice);
+    expect(withPrice.price).toBe(35.95);
+    expect(withPrice.priceOrigin).toBeUndefined();
+
+    const without = candidate({ price: null, currency: null });
+    applyLiveStock(without, entryFromPage(page({ price: 12, priceSource: 'context_regex' }), Date.now()), reprice);
+    expect(without.price).toBe(12);
+    expect(without.priceOrigin).toBe('merchant');
+    expect(without.priceVerificationStatus).toBeUndefined();
+  });
+
+  it('ne retient un prix barré que s’il est STRICTEMENT supérieur au prix courant', () => {
+    expect(entryFromPage(page({ price: 50, originalPrice: 50 }), 1).originalPrice).toBeNull();
+    expect(entryFromPage(page({ price: 50, originalPrice: 40 }), 1).originalPrice).toBeNull();
+    expect(entryFromPage(page({ price: 50, originalPrice: 69.9 }), 1).originalPrice).toBe(69.9);
+  });
+
+  it('ne touche jamais au prix du catalogue AYROVI', () => {
+    const own = candidate({ kind: 'catalog', price: 80, currency: 'TND' });
+    applyLiveStock(own, entryFromPage(page({ price: 20, currency: 'EUR' }), 1), reprice);
+    expect(own.price).toBe(80);
+  });
+
+  it('la description et la marque de la page complètent une fiche muette', () => {
+    const item = candidate({ description: null, brand: null });
+    applyLiveStock(item, entryFromPage(page({ description: 'Pantalon ouvert en molleton, taille élastiquée, logo brodé.', brand: 'Champion' }), 1));
+    expect(item.description).toContain('molleton');
+    expect(item.brand).toBe('Champion');
+  });
+
+  it('la relecture fraîche rend aussi le prix du jour, recalculé', async () => {
+    const fetcher = vi.fn<LiveStockFetcher>(async () => page({ price: 228.95, originalPrice: 309.95, availability: 'in_stock' }));
+    const { results } = await refreshLiveStock(['https://shop.tn/pants'], { fetcher, reprice });
+    expect(results[0]).toMatchObject({ price: 228.95, currency: 'EUR', originalPrice: 309.95, priceTnd: 915.8, originalPriceTnd: 1239.8 });
+  });
+
+  it('la route passe le calculateur AYROVI au lecteur de pages (grille ET relecture)', () => {
+    expect(route.split('reprice: (price, currency) =>').length - 1).toBe(2);
+    expect(route).toContain('estimateWithDb(db, price, currency)');
+  });
+
+  it('plus aucun prix ne vient de l’image : ni vision, ni OCR, ni requête IA', () => {
+    expect(route).toContain("recognizeImage(effectiveBuffer, effectiveMime, { withVision: false, withSignals: false })");
+    expect(route).toContain('detectedPrice: null');
+    expect(route).not.toContain('generateOptimizedSearch(');
+    expect(route).not.toContain('analyzeResultRelevance(');
+    expect(route).not.toContain('tokenizedDetectedPrice(');
+  });
+});

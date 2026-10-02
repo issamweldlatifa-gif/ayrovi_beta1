@@ -1,6 +1,16 @@
 /**
  * STOCK ET TAILLES VIVANTS — le lien SerpApi devient une source (01/10/2026).
  *
+ * VÉRITÉ MARCHANDE (02/10/2026) — décision produit : le lien est la SEULE
+ * source de la fiche. SerpApi ne sert qu'à trouver les pages ; ce qui s'affiche
+ * (prix, prix barré, stock, tailles, couleurs, photos, description) vient de la
+ * page lue. Conséquences :
+ *   • le budget couvre TOUTE la grille (8 fiches, plus 4) — c'est le cœur de la
+ *     recherche, pas un bonus ;
+ *   • le prix lu remplace l'extrait SerpApi et repasse par le calculateur
+ *     AYROVI (`reprice`) : un prix affiché a toujours sa date et sa source ;
+ *   • le prix barré du marchand est transmis tel quel (jamais déduit).
+ *
  * Constat : Google Lens rend un titre, une boutique, un prix parfois, et un
  * LIEN. La grille affichait donc `sizes: []` et une disponibilité devinée,
  * parce que personne n'allait voir ce qu'il y avait derrière le lien. Le lien
@@ -35,10 +45,10 @@ import { recordVariantContract } from './variantAvailability';
 import type { ParsedProductPage } from '../../scraper/productPageParser';
 import { hostAllowsProbe, recordProbeFailure, recordProbeSuccess } from '../../scraper/hostCircuit';
 
-const DEFAULT_BUDGET = 4;
-const DEFAULT_DEADLINE_MS = 2500;
+const DEFAULT_BUDGET = 8;
+const DEFAULT_DEADLINE_MS = 4000;
 const DEFAULT_TTL_MS = 6 * 60 * 60 * 1000;
-const DEFAULT_CONCURRENCY = 2;
+const DEFAULT_CONCURRENCY = 4;
 const DEFAULT_MATCH_THRESHOLD = 0.6;
 const MAX_IMAGES = 12;
 const MAX_SIZES = 40;
@@ -53,9 +63,27 @@ export interface LiveStockVariant {
   availability: 'available' | 'unavailable' | 'unknown';
 }
 
+/** Sources de prix structurées : assez sûres pour REMPLACER l'extrait SerpApi. */
+const TRUSTED_PRICE_SOURCES: ReadonlySet<ParsedProductPage['priceSource']> = new Set(['json_ld', 'meta', 'embedded_variant', 'dom']);
+
+/** Recalcul « tout inclus » d'un prix marchand — injecté par l'appelant (il a la base). */
+export type LiveStockRepricer = (price: number, currency: string) => {
+  priceTnd: number;
+  promo?: AyrovixCandidate['promo'];
+} | null;
+
 /** Ce qu'une page marchande nous a appris, mémorisé tel quel (preuve datée). */
 export interface LiveStockEntry {
   availability: NonNullable<AyrovixCandidate['availability']>;
+  /** Prix courant publié par la page (0 = non lu). */
+  price?: number;
+  currency?: string;
+  /** Prix barré publié par la page, strictement supérieur au prix courant. */
+  originalPrice?: number | null;
+  priceSource?: ParsedProductPage['priceSource'];
+  /** Description marchande nettoyée, quand la page en publie une. */
+  description?: string | null;
+  brand?: string | null;
   sizes: string[];
   colors: string[];
   images: string[];
@@ -69,6 +97,12 @@ export interface LiveStockEntry {
 export interface LiveStockResult {
   url: string;
   availability: NonNullable<AyrovixCandidate['availability']>;
+  /** Prix FRAIS lus sur la page (null si la page ne les publie pas). */
+  price: number | null;
+  currency: string | null;
+  originalPrice: number | null;
+  priceTnd: number | null;
+  originalPriceTnd: number | null;
   sizes: string[];
   colors: string[];
   images: string[];
@@ -193,8 +227,18 @@ export function entryFromPage(page: ParsedProductPage, now: number): LiveStockEn
     if (variants.some((variant) => variant.value.toLocaleLowerCase('fr') === key)) continue;
     variants.push({ value: size, color: null, availability: 'unknown' });
   }
+  const price = Number(page.price);
+  const currency = String(page.currency || '').trim().toUpperCase();
+  const priceOk = Number.isFinite(price) && price > 0 && /^[A-Z]{3}$/.test(currency);
+  const original = Number(page.originalPrice);
   return {
     availability: page.availability,
+    price: priceOk ? price : 0,
+    currency: priceOk ? currency : undefined,
+    originalPrice: priceOk && Number.isFinite(original) && original > price ? original : null,
+    priceSource: page.priceSource,
+    description: page.description && page.description.trim().length >= 20 ? page.description.trim().slice(0, 1400) : null,
+    brand: page.brand ? String(page.brand).trim().slice(0, 60) || null : null,
     sizes: cleanList([...details.map((detail) => detail.size), ...(page.variants?.sizes || [])], MAX_SIZES),
     colors: cleanList([...details.map((detail) => detail.color), ...(page.variants?.colors || [])], 20),
     images: cleanList(page.images, MAX_IMAGES),
@@ -217,6 +261,7 @@ export function toContractAvailability(availability: LiveStockEntry['availabilit
 /** Une page qui ne dit RIEN ne mérite ni une ligne de cache ni une promesse. */
 function hasAnyFact(entry: LiveStockEntry): boolean {
   return entry.availability !== 'unknown'
+    || (entry.price ?? 0) > 0
     || entry.sizes.length > 0
     || entry.colors.length > 0
     || entry.images.length > 0
@@ -230,8 +275,47 @@ function hasAnyFact(entry: LiveStockEntry): boolean {
  * un fait déjà présent (le catalogue interne, par exemple) n'est jamais écrasé
  * par une source externe.
  */
-export function applyLiveStock(candidate: AyrovixCandidate, entry: LiveStockEntry): boolean {
+export function applyLiveStock(candidate: AyrovixCandidate, entry: LiveStockEntry, reprice?: LiveStockRepricer): boolean {
   let applied = false;
+  /*
+   * LE PRIX DU MARCHAND PRIME (02/10/2026). L'extrait SerpApi est un index,
+   * parfois vieux de semaines ; la page est le prix d'aujourd'hui. Il remplace
+   * donc l'extrait, repasse par le calculateur AYROVI, et le prix barré de la
+   * page voyage avec lui. Un prix lu par simple regex de contexte n'est pas
+   * assez sûr pour écraser l'extrait : il ne s'applique que si l'extrait manque.
+   */
+  const price = entry.price ?? 0;
+  const trustedPrice = price > 0 && Boolean(entry.currency)
+    && (TRUSTED_PRICE_SOURCES.has(entry.priceSource as ParsedProductPage['priceSource']) || candidate.price == null);
+  if (trustedPrice && candidate.kind === 'external') {
+    candidate.price = price;
+    candidate.currency = entry.currency!;
+    candidate.priceOrigin = 'merchant';
+    candidate.originalPrice = entry.originalPrice ?? null;
+    if (entry.priceSource && entry.priceSource !== 'context_regex' && entry.priceSource !== 'none') {
+      candidate.priceVerificationStatus = 'VERIFIED';
+    }
+    if (reprice) {
+      const current = reprice(price, entry.currency!);
+      if (current) {
+        candidate.priceTnd = current.promo?.priceTnd ?? current.priceTnd;
+        candidate.promo = current.promo ?? null;
+      }
+      const original = entry.originalPrice ? reprice(entry.originalPrice, entry.currency!) : null;
+      candidate.originalPriceTnd = original ? original.priceTnd : null;
+    } else {
+      candidate.originalPriceTnd = null;
+    }
+    applied = true;
+  }
+  if (entry.description && entry.description.length > (candidate.description || '').trim().length) {
+    candidate.description = entry.description;
+    applied = true;
+  }
+  if (entry.brand && !candidate.brand) {
+    candidate.brand = entry.brand;
+    applied = true;
+  }
   if (entry.availability && entry.availability !== 'unknown') {
     candidate.availability = entry.availability;
     applied = true;
@@ -276,7 +360,7 @@ async function fetchUrl(
 
 export async function enrichCandidatesLiveStock(
   candidates: AyrovixCandidate[],
-  options: { fetcher?: LiveStockFetcher; now?: number } = {},
+  options: { fetcher?: LiveStockFetcher; now?: number; reprice?: LiveStockRepricer } = {},
 ): Promise<{ candidates: AyrovixCandidate[]; report: LiveStockReport }> {
   const budget = envInt('AYROVI_LENS_LIVE_BUDGET', DEFAULT_BUDGET, 0, 10);
   const deadline = envInt('AYROVI_LENS_LIVE_DEADLINE_MS', DEFAULT_DEADLINE_MS, 500, 15_000);
@@ -317,7 +401,7 @@ export async function enrichCandidatesLiveStock(
         if (entry) recordProbeSuccess(url);
         if (cached) report.cacheHits += 1;
         else if (entry) report.fetched += 1;
-        if (entry && applyLiveStock(output[next.index], entry)) report.applied += 1;
+        if (entry && applyLiveStock(output[next.index], entry, options.reprice)) report.applied += 1;
       } catch {
         recordProbeFailure(url);
         // Un échec n'est PAS mémorisé : la recherche suivante réessaiera.
@@ -365,10 +449,11 @@ export function liveStockReason(entry: LiveStockEntry, page: ParsedProductPage):
  */
 export async function refreshLiveStock(
   urls: string[],
-  options: { fetcher?: LiveStockFetcher; now?: number } = {},
+  options: { fetcher?: LiveStockFetcher; now?: number; reprice?: LiveStockRepricer } = {},
 ): Promise<{ results: LiveStockResult[] }> {
   const empty = (url: string): LiveStockResult => ({
-    url, availability: 'unknown', sizes: [], colors: [], images: [], variants: [],
+    url, availability: 'unknown', price: null, currency: null, originalPrice: null, priceTnd: null, originalPriceTnd: null,
+    sizes: [], colors: [], images: [], variants: [],
     checkedAt: new Date().toISOString(), reason: 'Page illisible ou sans lien exploitable.',
   });
   const fetcher = options.fetcher;
@@ -412,9 +497,17 @@ export async function refreshLiveStock(
               : 'Aucune disponibilité par variante publiée par la source.',
         })),
       }, now);
+      const freshPrice = (entry.price ?? 0) > 0 && entry.currency ? entry.price! : null;
+      const repriced = freshPrice && options.reprice ? options.reprice(freshPrice, entry.currency!) : null;
+      const repricedOriginal = freshPrice && entry.originalPrice && options.reprice ? options.reprice(entry.originalPrice, entry.currency!) : null;
       return {
         url,
         availability: entry.availability,
+        price: freshPrice,
+        currency: freshPrice ? entry.currency! : null,
+        originalPrice: freshPrice ? entry.originalPrice ?? null : null,
+        priceTnd: repriced ? repriced.promo?.priceTnd ?? repriced.priceTnd : null,
+        originalPriceTnd: repricedOriginal ? repricedOriginal.priceTnd : null,
         sizes: entry.sizes,
         colors: entry.colors,
         images: entry.images,

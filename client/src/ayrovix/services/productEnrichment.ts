@@ -33,8 +33,30 @@ export function mergeProductEnrichment(
     && full.sourceUrl === current.sourceUrl
     && full.priceVerificationStatus === current.priceVerificationStatus;
 
+  /*
+   * LE PRIX DE LA PAGE MARCHANDE PRIME (02/10/2026). La grille portait l'extrait
+   * SerpApi (ou déjà le prix lu par le serveur) ; la fiche complète vient de la
+   * page elle-même, prix vérifié à la source, passé par le calculateur. Elle
+   * remplace donc l'extrait — et emporte le prix barré du marchand avec elle.
+   */
+  const merchantPrice = full.price != null && full.price > 0 && full.currency
+    && (full.priceVerificationStatus === 'VERIFIED' || full.priceVerified === true);
+  const priceFields = merchantPrice ? {
+    price: full.price,
+    currency: full.currency,
+    priceTnd: full.priceTnd ?? current.priceTnd,
+    promo: full.promo ?? null,
+    exchangeRate: full.exchangeRate ?? current.exchangeRate,
+    originalPrice: full.originalPrice ?? null,
+    originalPriceTnd: full.originalPriceTnd ?? null,
+    priceToken: full.priceToken ?? current.priceToken ?? null,
+    priceVerified: true,
+    priceVerificationStatus: 'VERIFIED' as const,
+  } : {};
+
   return {
     ...current,
+    ...priceFields,
     description,
     images,
     colorImages: Object.keys(colorImages).length ? colorImages : current.colorImages ?? null,

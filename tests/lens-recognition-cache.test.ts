@@ -99,7 +99,7 @@ describe('route Lens — usage du cache et mesure', () => {
 
   it('chaque moteur est mesuré séparément — plus deux fois la même durée', () => {
     expect(routes).not.toContain("Date.now() - tParallel");
-    expect(routes).toContain("mark(trace, 'anthropicVisionMs', recognition.timings.visionMs)");
+    expect(routes).toContain("mark(trace, 'anthropicVisionMs', lastResort.timings.visionMs)");
     expect(routes).toContain("mark(trace, 'serpApiTotalMs', recognition.timings.matchesMs)");
   });
 
@@ -110,7 +110,9 @@ describe('route Lens — usage du cache et mesure', () => {
 
   it('le prix reste recalculé à chaque requête : il ne sort jamais du cache', () => {
     const block = routes.split("router.post('/analyze-image'")[1].split("router.post('/analyze-url'")[0];
-    expect(block).toContain('getCachedPricingRules(db)');
+    // Le prix est recalculé par `searchCandidates` (estimateWithDb) et par le
+    // lecteur de pages (`reprice`) à chaque requête — jamais lu depuis le cache de reconnaissance.
+    expect(block).toContain('estimateWithDb(db, price, currency)');
     expect(block).not.toMatch(/writeLensCache\([^)]*priceTnd/);
   });
 });

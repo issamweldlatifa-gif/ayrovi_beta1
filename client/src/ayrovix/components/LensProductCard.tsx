@@ -94,7 +94,7 @@ export function LensProductCard({ candidate, onChoose, saved, busy, onFavorite }
   const { tr } = useLocale();
   const priceId = useId();
   const { heading, description } = lensCardCopy(candidate);
-  const hasPrice = typeof candidate.priceTnd === 'number' && Number.isFinite(candidate.priceTnd) && candidate.priceTnd > 0;
+
   /* Preuve fraîche demandée par le client : elle remplace ce que la grille savait,
      et elle porte sa date. Sans elle, on affiche ce que la grille a rapporté. */
   const [live, setLive] = useState<LiveStockResult | null>(null);
@@ -104,6 +104,19 @@ export function LensProductCard({ candidate, onChoose, saved, busy, onFavorite }
 
   const availability = live?.availability ?? candidate.availability;
   const sizes = live && live.sizes.length ? live.sizes : (candidate.sizes || []);
+  /* Le prix suit la même règle que le stock : la relecture fraîche remplace ce
+     que la grille savait. Et quand le marchand affiche lui-même un prix barré,
+     il s'affiche barré ici — sans promo AYROVI par-dessus, jamais additionnées. */
+  const priceTnd = live?.priceTnd ?? candidate.priceTnd;
+  const sourceAmount = live?.price ?? candidate.price;
+  const originalAmount = live ? live.originalPrice : (candidate.originalPrice ?? null);
+  const originalTnd = live ? live.originalPriceTnd : (candidate.originalPriceTnd ?? null);
+  const merchantPromo = !candidate.promo && originalTnd != null && priceTnd != null && originalTnd > priceTnd
+    && sourceAmount != null && originalAmount != null && originalAmount > sourceAmount
+    ? { percent: Math.round((1 - sourceAmount / originalAmount) * 100), label: tr('Remise marchand', 'تخفيض المتجر'), priceTnd, originalPriceTnd: originalTnd }
+    : null;
+  const promo = candidate.promo ?? merchantPromo;
+  const hasPrice = typeof priceTnd === 'number' && Number.isFinite(priceTnd) && priceTnd > 0;
   const variants = live?.variants;
   const canVerify = /^https?:\/\//i.test(candidate.sourceUrl || '');
 
@@ -126,7 +139,7 @@ export function LensProductCard({ candidate, onChoose, saved, busy, onFavorite }
     <button type="button" className="lens-card-open" onClick={() => onChoose(candidate)} aria-describedby={priceId} aria-label={tr(`Voir le produit : ${candidate.title}`, `عرض المنتج: ${candidate.title}`)}>
       <div className="lens-card-media">
         <CardImage candidate={candidate} />
-        {candidate.promo ? <span className="lens-card-promo-badge">Promo</span> : null}
+        {promo ? <span className="lens-card-promo-badge">{candidate.promo ? 'Promo' : `-${promo.percent}%`}</span> : null}
       </div>
       <h4 className="lens-card-title" dir="auto">{heading}</h4>
       {description ? <p className="lens-card-description" dir="auto">{description}</p> : null}
@@ -134,7 +147,7 @@ export function LensProductCard({ candidate, onChoose, saved, busy, onFavorite }
       {/* Quiet Card v2 : promo rouge (barré + remisé + badge) quand elle existe. */}
       <div id={priceId} className="lens-card-price">
         {hasPrice
-          ? <QuietPromoPrice priceTnd={candidate.priceTnd} promo={candidate.promo ?? null} format={(value) => `${value.toFixed(2)} DT`} variant="grid" />
+          ? <QuietPromoPrice priceTnd={priceTnd} promo={promo} format={(value) => `${value.toFixed(2)} DT`} variant="grid" />
           : tr('Prix à confirmer', 'السعر قيد التأكيد')}
       </div>
       <StockBadge availability={availability} />

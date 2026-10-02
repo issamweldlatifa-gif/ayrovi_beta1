@@ -247,6 +247,30 @@ describe('AYROVIX Lens', () => {
     ]);
   });
 
+  test('prix barré du marchand : lu tel quel (compare_at, ListPrice, <del>), jamais déduit', () => {
+    const shopify = `<!doctype html><html><head><title>Alphafly 3</title>
+      <script type="application/json">{"product":{"id":9,"title":"Alphafly 3","options":["Pointure"],"variants":[
+        {"id":1,"option1":"42","available":true,"price":22895,"compare_at_price":30995,"public_title":"42","requires_shipping":true}
+      ]}}</script></head><body><h1>Alphafly 3</h1></body></html>`;
+    expect(parseProductPageHtml(shopify, 'https://shop.example.org/alphafly', 'generic')).toMatchObject({ price: 228.95, originalPrice: 309.95 });
+
+    const jsonLd = `<!doctype html><html><head><title>Veste</title>
+      <script type="application/ld+json">{"@type":"Product","name":"Veste","offers":{"price":"59.00","priceCurrency":"EUR","priceSpecification":[{"@type":"UnitPriceSpecification","priceType":"https://schema.org/ListPrice","price":"89.00"}]}}</script>
+      </head><body><h1>Veste</h1></body></html>`;
+    expect(parseProductPageHtml(jsonLd, 'https://shop.example.org/veste', 'generic')).toMatchObject({ price: 59, originalPrice: 89 });
+
+    const dom = `<!doctype html><html><head><title>Sac</title>
+      <meta property="product:price:amount" content="40.00"><meta property="product:price:currency" content="EUR">
+      </head><body><h1>Sac</h1><div class="price"><del>55,00 €</del> <span>40,00 €</span></div></body></html>`;
+    expect(parseProductPageHtml(dom, 'https://shop.example.org/sac', 'generic')).toMatchObject({ price: 40, originalPrice: 55 });
+
+    // Un « ancien prix » égal ou inférieur n'est pas une remise : absent.
+    const fake = `<!doctype html><html><head><title>Tee</title>
+      <meta property="product:price:amount" content="20.00"><meta property="product:price:currency" content="EUR">
+      </head><body><h1>Tee</h1><s class="old-price">20,00 €</s></body></html>`;
+    expect(parseProductPageHtml(fake, 'https://shop.example.org/tee2', 'generic').originalPrice).toBeUndefined();
+  });
+
   test('images PAR COULEUR : le scraper regroupe les photos de chaque couleur (référence Zalando)', () => {
     const html = `<!doctype html><html><head><title>Tee multi</title>
       <script type="application/json">{"product":{"id":7,"title":"Tee multi","options":["Couleur","Taille"],"variants":[
@@ -498,7 +522,7 @@ describe('AYROVIX Lens', () => {
     }
   });
 
-  test('Claude lit le prix visible dans la même requête structurée que Vision', async () => {
+  test('un prix visible sur l’image n’est plus jamais proposé (vision = intitulé seulement)', async () => {
     const previousKey = process.env.ANTHROPIC_API_KEY;
     process.env.ANTHROPIC_API_KEY = 'test-anthropic-price';
     const fetchMock = stubAnthropic(JSON.stringify({
@@ -512,13 +536,10 @@ describe('AYROVIX Lens', () => {
         .post('/api/ayrovix/analyze-image')
         .attach('image', PNG_1PX, { filename: 'capture-produit.png', contentType: 'image/png' });
       expect(response.status).toBe(200);
-      expect(response.body.data.detectedPrice).toMatchObject({
-        sourcePrice: 49.99,
-        sourceCurrency: 'EUR',
-        isCartScreenshot: false,
-      });
-      expect(response.body.data.detectedPrice.totalPriceTND).toBeGreaterThan(0);
-      expect(response.body.data.detectedPrice.priceToken).toMatch(/^[^.]+\.[^.]+$/);
+      // 02/10/2026 : un prix lu sur l'image n'est plus jamais proposé — seule la
+      // page marchande derrière un lien fait foi.
+      expect(response.body.data.detectedPrice).toBeNull();
+      expect(response.body.data.identification.detected_price.amount).toBe(0);
       const requestBody = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
       expect(requestBody.output_config.format.type).toBe('json_schema');
       const schemaJson = JSON.stringify(requestBody.output_config.format.schema);

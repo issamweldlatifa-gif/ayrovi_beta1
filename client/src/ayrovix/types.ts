@@ -74,6 +74,16 @@ export interface AyrovixCandidate {
   price: number | null;
   currency: string | null;
   priceTnd: number | null;
+  /**
+   * VÉRITÉ MARCHANDE (02/10/2026) — d'où vient `price` :
+   *  'merchant' : lu sur la page produit derrière le lien (JSON-LD, meta, variante) ;
+   *  'search'   : extrait SerpApi, en attendant la lecture de la page.
+   */
+  priceOrigin?: 'merchant' | 'search';
+  /** Prix barré publié par le marchand (strictement > price), jamais déduit. */
+  originalPrice?: number | null;
+  /** Le même prix barré, passé par le calculateur AYROVI (tout inclus). */
+  originalPriceTnd?: number | null;
   priceToken?: string | null;
   priceVerificationStatus?: 'VERIFIED' | 'PENDING_MANUAL';
   /** Preuve de disponibilité marchand (niveaux de confiance 24/09/2026). */
@@ -136,6 +146,9 @@ export interface AyrovixProduct {
   currency: string | null;
   priceTnd: number | null;
   exchangeRate: number | null;
+  /** Prix barré publié par le marchand sur sa fiche (strictement > price). */
+  originalPrice?: number | null;
+  originalPriceTnd?: number | null;
   promo?: AyrovixPromo | null;
   colors: string[];
   sizes: string[];
