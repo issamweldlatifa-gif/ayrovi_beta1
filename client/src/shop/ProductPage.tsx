@@ -246,7 +246,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
           {product.brand && <div className="s-brand">{product.brand}</div>}
           <h1 className="s-title">{product.title}</h1>
           {product.merchant?.name && <p className="s-merchant">{tr('Source : ', 'المصدر: ')}{product.merchant.name}</p>}
-          {product.description && <p className="s-desc">{product.description}</p>}
+          {product.description && <p className="s-desc">{product.description.length > 180 ? `${product.description.slice(0, 180).trim()}…` : product.description}</p>}
           {product.capacity && <p className="s-capacity">{product.capacity}</p>}
 
           {!product.price && (
@@ -277,10 +277,10 @@ export const ProductPage: React.FC<ProductPageProps> = ({
         <section className="s-buybar s-buybar--product" aria-label={tr('Choix et achat', 'الاختيار والشراء')}>
           <div className="s-availability" data-state={purchaseAvailability} role="status" aria-live="polite">
             <strong>{purchaseAvailability === 'available'
-              ? tr('Disponibilité confirmée par la source', 'المصدر أكّد التوفّر')
+              ? tr('En stock', 'متوفر')
               : purchaseAvailability === 'unavailable'
-                ? tr('Rupture signalée par la source', 'المصدر أفاد بنفاد المخزون')
-                : tr(availabilityFresh ? 'Stock non publié par le marchand — vous pouvez commander, on confirmera' : 'Lecture du marchand en cours ou indisponible', availabilityFresh ? 'المتجر ما نشرش المخزون — تنجم تطلب ونأكدوه' : 'قراءة المتجر جارية أو غير متاحة')}</strong>
+                ? tr('Épuisé', 'نفدت الكمية')
+                : tr('Choisissez une taille', 'اختار المقاس')}</strong>
             <small>{[product.availabilitySource ? `${tr('Source', 'المصدر')} : ${product.availabilitySource}` : '', checkedAt ? `${availabilityFresh ? tr('Vérifié', 'آخر تثبّت') : tr('Dernière vérification', 'آخر تثبّت')} : ${checkedAt}` : ''].filter(Boolean).join(' · ') || tr('Aucune date de vérification disponible', 'تاريخ التثبّت غير متوفر')}</small>
           </div>
           {product.sizes.length > 0 && <span className="s-select__label">{optionLabel}</span>}

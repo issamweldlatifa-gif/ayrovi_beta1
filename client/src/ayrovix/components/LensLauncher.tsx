@@ -68,7 +68,7 @@ function candidateToProduct(candidate: AyrovixCandidate): AyrovixProduct {
     brand: candidate.brand,
     model: candidate.model,
     // P1 : la description produite par nos moteurs (AI/SerpAPI) arrive enfin à la carte.
-    description: candidate.description || candidate.model || '',
+    description: (candidate.description || candidate.model || '').slice(0, 180),
     image: candidate.image,
     images: candidate.images?.length ? candidate.images : candidate.image ? [candidate.image] : [],
     colorImages: candidate.colorImages || null,
@@ -91,6 +91,24 @@ function candidateToProduct(candidate: AyrovixCandidate): AyrovixProduct {
     colors: candidate.colors,
     sizes: candidate.sizes,
     availability: candidate.availability || 'unknown',
+    availabilityCheckedAt: candidate.sourceRead?.at || null,
+    availabilityExpiresAt: candidate.sourceRead?.at
+      ? new Date(Date.parse(candidate.sourceRead.at) + 6 * 60 * 60 * 1000).toISOString()
+      : null,
+    variantOptions: (candidate.sizes || []).map((size, index) => ({
+      id: `${size}-${index}`,
+      label: size,
+      size,
+      color: null,
+      available: candidate.availability !== 'out_of_stock',
+      availability: candidate.availability === 'out_of_stock' ? 'unavailable' as const
+        : candidate.availability === 'in_stock' || candidate.availability === 'limited' ? 'available' as const
+          : 'unknown' as const,
+      price: candidate.price,
+      currency: candidate.currency,
+      priceTnd: candidate.priceTnd,
+      priceToken: candidate.priceToken || null,
+    })),
   };
 }
 

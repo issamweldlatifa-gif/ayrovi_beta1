@@ -327,11 +327,11 @@ export function applyLiveStock(candidate: AyrovixCandidate, entry: LiveStockEntr
     variantsUnavailable: entry.variants.filter((variant) => variant.availability === 'unavailable').length,
     variantsUnknown: entry.variants.filter((variant) => variant.availability === 'unknown').length,
   };
-  if (entry.sizes.length && !candidate.sizes?.length) {
+  if (entry.sizes.length) {
     candidate.sizes = entry.sizes;
     applied = true;
   }
-  if (entry.colors.length && !candidate.colors?.length) {
+  if (entry.colors.length) {
     candidate.colors = entry.colors;
     applied = true;
   }
@@ -342,6 +342,24 @@ export function applyLiveStock(candidate: AyrovixCandidate, entry: LiveStockEntr
     applied = true;
   }
   return applied;
+}
+
+function signVariantContract(url: string, entry: LiveStockEntry, now: number): void {
+  recordVariantContract(url, {
+    attribute: entry.variants.length ? 'taille' : 'option',
+    productAvailability: toContractAvailability(entry.availability),
+    source: null,
+    variants: entry.variants.map((variant) => ({
+      value: variant.value,
+      color: variant.color,
+      availability: variant.availability,
+      reason: variant.availability === 'available'
+        ? 'Disponibilité positive publiée par la source.'
+        : variant.availability === 'unavailable'
+          ? 'Indisponibilité publiée par la source.'
+          : 'Aucune disponibilité par variante publiée par la source.',
+    })),
+  }, now);
 }
 
 /* ── Appel réseau, isolé pour être remplaçable dans les tests ────────────── */
@@ -360,6 +378,7 @@ async function fetchUrl(
   // Un échec n'est PAS mémorisé : la recherche suivante réessaiera. Une page
   // muette non plus — mieux vaut rejouer la sonde que servir un silence vieux.
   writeCache(url, entry);
+  signVariantContract(url, entry, now);
   return entry;
 }
 
@@ -408,7 +427,10 @@ export async function enrichCandidatesLiveStock(
       try {
         const cached = readCache(url, now);
         const entry = cached ?? await fetchUrl(url, next.candidate.title, fetcher, now);
-        if (entry) recordProbeSuccess(url);
+        if (entry) {
+          recordProbeSuccess(url);
+          signVariantContract(url, entry, entry.at || now);
+        }
         if (cached) report.cacheHits += 1;
         else if (entry) report.fetched += 1;
         if (entry && applyLiveStock(output[next.index], entry, options.reprice)) report.applied += 1;
@@ -549,22 +571,7 @@ export async function refreshLiveStock(
       }
       recordProbeSuccess(url);
       writeCache(url, entry);
-      // Le contrat de commande : c'est lui qui autorisera « ajouter au panier ».
-      recordVariantContract(url, {
-        attribute: entry.variants.length ? 'taille' : 'option',
-        productAvailability: toContractAvailability(entry.availability),
-        source: null,
-        variants: entry.variants.map((variant) => ({
-          value: variant.value,
-          color: variant.color,
-          availability: variant.availability,
-          reason: variant.availability === 'available'
-            ? 'Disponibilité positive publiée par la source.'
-            : variant.availability === 'unavailable'
-              ? 'Indisponibilité publiée par la source.'
-              : 'Aucune disponibilité par variante publiée par la source.',
-        })),
-      }, now);
+      signVariantContract(url, entry, now);
       const freshPrice = (entry.price ?? 0) > 0 && entry.currency ? entry.price! : null;
       const repriced = freshPrice && options.reprice ? options.reprice(freshPrice, entry.currency!) : null;
       const repricedOriginal = freshPrice && entry.originalPrice && options.reprice ? options.reprice(entry.originalPrice, entry.currency!) : null;

@@ -107,7 +107,7 @@ export function LensProductCard({ candidate, onChoose, saved, busy, onFavorite }
         {promo ? <span className="lens-card-promo-badge">{candidate.promo ? 'Promo' : `-${promo.percent}%`}</span> : null}
       </div>
       <h4 className="lens-card-title" dir="auto">{heading}</h4>
-      {description ? <p className="lens-card-description" dir="auto">{description}</p> : null}
+      {description ? <p className="lens-card-description" dir="auto">{description.length > 72 ? description.slice(0, 72).trim() + "…" : description}</p> : null}
       <MerchantRating value={candidate} stars />
       {/* Quiet Card v2 : promo rouge (barré + remisé + badge) quand elle existe. */}
       <div id={priceId} className="lens-card-price">

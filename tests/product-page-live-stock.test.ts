@@ -3,10 +3,11 @@ import { describe, expect, it } from 'vitest';
 import { displayProductTitle } from '../client/src/shop/adapter';
 
 describe('fiche produit — lecture marchande à l\'ouverture', () => {
-  it('relit le lien via /live-stock dès l\'ouverture de la fiche', () => {
+  it('n attends pas un second kacht si la grille a deja tailles et prix', () => {
     const screen = readFileSync('client/src/shop/ShopProductScreen.tsx', 'utf8');
+    expect(screen).toContain('alreadyReady');
     expect(screen).toContain('refreshLiveStock([');
-    expect(screen).toContain('setLiveProduct');
+    expect(screen).toContain('if (alreadyReady)');
   });
 
   it('n\'exige plus une dispo confirmée pour activer le panier — seule la rupture bloque', () => {

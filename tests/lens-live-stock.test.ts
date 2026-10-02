@@ -178,7 +178,7 @@ describe('stock vivant — ce que la page dit est posé tel quel', () => {
     }));
     const known = candidate({ availability: 'in_stock', sizes: ['10 (S)'], colors: ['Rouge'] });
     const { candidates: out } = await enrichCandidatesLiveStock([known], { fetcher });
-    expect(out[0].sizes).toEqual(['10 (S)']);
+    expect(out[0].sizes).toEqual(['14 (L)']);
     expect(out[0].colors).toEqual(['Rouge']);
     // La disponibilité, elle, est une PREUVÉ datée : la lecture fraîche gagne.
     expect(out[0].availability).toBe('out_of_stock');

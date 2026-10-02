@@ -55,11 +55,28 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
   onNotify, onFavorite, favorite = false, onHydrated,
 }) => {
   const { tr, direction, formatMoney } = useLocale();
+  const alreadyReady = Boolean(
+    product.sourceUrl
+    && (product.sizes?.length || product.colors?.length)
+    && Number(product.price) > 0
+    && product.availability
+    && product.availability !== 'unknown',
+  );
   const [liveProduct, setLiveProduct] = useState(product);
-  const [sourceReading, setSourceReading] = useState(Boolean(product.sourceUrl));
+  const [sourceReading, setSourceReading] = useState(Boolean(product.sourceUrl) && !alreadyReady);
   const [activeColor, setActiveColor] = useState<string | null>(() => product.colors.length === 1 ? product.colors[0] : null);
   const [chosenSize, setChosenSize] = useState('');
-  const [quote, setQuote] = useState<CartLineQuote | null>(null);
+  const [quote, setQuote] = useState<CartLineQuote | null>(() => (
+    typeof product.priceTnd === 'number' && product.priceTnd > 0
+      ? {
+          lineTotalTND: product.priceTnd,
+          originalLineTotalTND: product.originalPriceTnd ?? null,
+          promo: product.promo && product.promo.percent
+            ? { percent: product.promo.percent, label: product.promo.label, discountTND: 0 }
+            : null,
+        }
+      : null
+  ));
   const [quoteLoading, setQuoteLoading] = useState(false);
   const selection = useMemo(() => resolveProductSelection(liveProduct, chosenSize, activeColor ?? ''), [liveProduct, chosenSize, activeColor]);
   const selectedSource = selection.kind === 'matched' && selection.offer.fromVariant && selection.offer.price && selection.offer.currency
@@ -87,6 +104,10 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
   useEffect(() => {
     const url = product.sourceUrl?.trim();
     if (!url || !/^https?:\/\//i.test(url)) {
+      setSourceReading(false);
+      return;
+    }
+    if (alreadyReady) {
       setSourceReading(false);
       return;
     }
@@ -154,7 +175,6 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
     if (!source || !Number.isFinite(source.amount) || source.amount <= 0) return;
     const price = source.amount;
     const controller = new AbortController();
-    setQuote(null);
     setQuoteLoading(true);
     fetch('/api/public/pricing/cart-line', {
       method: 'POST',
@@ -224,7 +244,7 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
       tr={tr}
       formatMoney={formatMoney}
       direction={direction === 'rtl' ? 'rtl' : 'ltr'}
-      priceChecking={quoteLoading || sourceReading}
+      priceChecking={!quote && (quoteLoading || sourceReading)}
       canAdd={!awaitingQuote}
       onChosenSize={setChosenSize}
       selectionNotice={selectionNotice}
