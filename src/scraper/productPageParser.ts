@@ -257,7 +257,10 @@ function collectEmbeddedProducts(root: any, output: any[], seen: Set<any>, budge
     for (const item of root.slice(0, 300)) collectEmbeddedProducts(item, output, seen, budget, depth + 1);
     return;
   }
-  if (Array.isArray(root.variants) && root.variants.length && (root.title || root.name || root.handle || root.options)) {
+  if (Array.isArray(root.variants) && root.variants.length && (
+    root.title || root.name || root.handle || root.options
+    || root.variants.some((variant: any) => variant?.title || variant?.sku || variant?.price)
+  )) {
     output.push(root);
   }
   for (const [key, value] of Object.entries(root)) {
@@ -300,9 +303,22 @@ function optionNames(product: any): string[] {
 }
 
 function looksLikeSize(value: string): boolean {
-  return /^(?:XXS|XS|S|M|L|XL|XXL|XXXL|[2-5]?XL|ONE SIZE|TU)$/i.test(value)
-    || /^(?:[0-9]{1,3}(?:[.,][0-9])?)(?:\s*(?:EU|US|UK|FR|IT|CM))?$/i.test(value)
-    || /^(?:EU|US|UK)\s*[0-9]{1,3}(?:[.,][0-9])?$/i.test(value);
+  const token = String(value || '').trim();
+  return /^(?:XXS|XS|S|M|L|XL|XXL|XXXL|[2-5]?XL|ONE SIZE|TU)$/i.test(token)
+    || /^(?:[0-9]{1,3}(?:[.,][0-9])?)(?:\s*(?:EU|US|UK|FR|IT|CM))?$/i.test(token)
+    || /^(?:EU|US|UK)\s*[0-9]{1,3}(?:[.,][0-9])?$/i.test(token)
+    || /^[0-9]{1,2}(?:[.,][0-9])?\s*(?:EU|USA|US)$/i.test(token);
+}
+
+/** « blau, koralle / 41 » (Shopify Running Point) — couleur + pointure dans un seul titre. */
+function splitComboLabel(label: string): { size: string | null; color: string | null } {
+  const parts = cleanLabel(label).split(/\s*[\/|]\s*/).map((part) => part.trim()).filter(Boolean);
+  if (parts.length < 2) return { size: looksLikeSize(label) ? cleanLabel(label) : null, color: null };
+  const last = parts[parts.length - 1];
+  const head = parts.slice(0, -1).join(' / ');
+  if (looksLikeSize(last)) return { size: cleanLabel(last.replace(/\s*EU$/i, '')), color: head };
+  if (looksLikeSize(parts[0])) return { size: cleanLabel(parts[0].replace(/\s*EU$/i, '')), color: parts.slice(1).join(' / ') };
+  return { size: null, color: null };
 }
 
 function rawVariantValues(variant: any): string[] {
@@ -337,8 +353,15 @@ function variantsFromProduct(product: any): ProductVariantDetail[] {
       else if (!color && values.length > 1) color = value;
     });
     if (!size && !color && values.length === 1 && !PLACEHOLDER.test(values[0])) {
-      if (looksLikeSize(values[0])) size = values[0];
+      const combo = splitComboLabel(values[0]);
+      if (combo.size) { size = combo.size; color = combo.color; }
+      else if (looksLikeSize(values[0])) size = values[0];
       else color = values[0];
+    }
+    if (!size && values.length) {
+      const combo = splitComboLabel(values.join(' / '));
+      if (combo.size) size = size || combo.size;
+      if (combo.color) color = color || combo.color;
     }
     if (!size && !color) continue;
     const price = variantPrice(variant);
@@ -570,8 +593,12 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
     }
 
     const widgetSizes = Array.from(document.querySelectorAll(
-      '[class*="size" i] button, [class*="taille" i] button, [class*="pointure" i] button, [class*="Size" i] [role="option"], [data-testid*="size" i] button, [data-testid*="size" i] li',
-    )).map((node: any) => cleanLabel(node.getAttribute?.('data-size') || node.getAttribute?.('value') || node.textContent));
+      '[class*="size" i] button, [class*="taille" i] button, [class*="pointure" i] button, [class*="Size" i] [role="option"], [data-testid*="size" i] button, [data-testid*="size" i] li, [data-size-equivalence], [data-size-text], [data-size-id]',
+    )).map((node: any) => {
+      const equivalence = String(node.getAttribute?.('data-size-equivalence') || '');
+      const eu = equivalence.match(/(\d{2}(?:[.,]\d)?)\s*EU/i);
+      return cleanLabel(eu ? eu[1] : node.getAttribute?.('data-size') || node.getAttribute?.('data-size-text') || node.getAttribute?.('value') || node.textContent);
+    });
     const htmlBlob = document.documentElement?.innerHTML || '';
     const jsonSizes: string[] = [];
     const jsonColors: string[] = [];
