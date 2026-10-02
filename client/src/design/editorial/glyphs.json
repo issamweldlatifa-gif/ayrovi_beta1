@@ -1566,6 +1566,41 @@
       }
     ]
   },
+  "AyWebs": {
+    "mirrorRtl": false,
+    "shapes": [
+      {
+        "tag": "path",
+        "attrs": {
+          "d": "M3 4h18v16H3ZM3 8h18"
+        }
+      },
+      {
+        "tag": "circle",
+        "attrs": {
+          "cx": 6,
+          "cy": 6,
+          "r": 0.65,
+          "fill": "currentColor",
+          "stroke": "none"
+        }
+      },
+      {
+        "tag": "circle",
+        "attrs": {
+          "cx": 12,
+          "cy": 14,
+          "r": 4
+        }
+      },
+      {
+        "tag": "path",
+        "attrs": {
+          "d": "M8 14h8M12 10c2 2.2 2 5.8 0 8-2-2.2-2-5.8 0-8Z"
+        }
+      }
+    ]
+  },
   "Bank": {
     "mirrorRtl": false,
     "shapes": [

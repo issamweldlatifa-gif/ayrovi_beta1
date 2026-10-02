@@ -46,6 +46,17 @@ export const PUBLIC_SEO_ROUTES: readonly PublicSeoRoute[] = [
     priority: 1,
   },
   {
+    path: '/aywebs',
+    titleFr: 'AyWebs — shopping depuis le web avec AYROVI',
+    titleAr: 'AyWebs — التسوق من الويب عبر أيروفي',
+    descriptionFr: 'AyWebs est le point d’entrée AYROVI pour parcourir des boutiques externes et préparer des produits pour le panier AYROVI.',
+    descriptionAr: 'AyWebs هي بوابة أيروفي لتصفح المتاجر الخارجية وتجهيز المنتجات لإضافتها إلى سلة أيروفي.',
+    indexable: false,
+    inSitemap: false,
+    changeFrequency: 'weekly',
+    priority: 0.1,
+  },
+  {
     path: '/arrivage',
     titleFr: 'Arrivage — nouvelles trouvailles AYROVI',
     titleAr: 'وصلات جديدة — أحدث اكتشافات أيروفي',

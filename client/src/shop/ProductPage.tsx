@@ -46,6 +46,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
   const [refusal, setRefusal] = useState<'unavailable' | 'unknown' | null>(null);
   const [adding, setAdding] = useState(false);
   const [added, setAdded] = useState(false);
+  const [duplicateUpdated, setDuplicateUpdated] = useState(false);
   const [orderError, setOrderError] = useState('');
   const [shake, setShake] = useState(false);
   const touchStart = useRef<number | null>(null);
@@ -107,9 +108,10 @@ export const ProductPage: React.FC<ProductPageProps> = ({
     setAdding(true);
     setOrderError('');
     try {
-      await actions.onAddToBag(chosen, quantity, { note: note.trim(), link: link.trim() });
+      const result = await actions.onAddToBag(chosen, quantity, { note: note.trim(), link: link.trim() });
       setAdded(true);
-      window.setTimeout(() => setAdded(false), 1800);
+      setDuplicateUpdated(Boolean(result && typeof result === 'object' && result.duplicate));
+      window.setTimeout(() => { setAdded(false); setDuplicateUpdated(false); }, 2400);
     } catch (error) {
       setOrderError(error instanceof Error ? error.message : tr('Le devis de cette sélection est incomplet.', 'عرض سعر هذا الاختيار غير مكتمل.'));
     } finally {
@@ -298,8 +300,9 @@ export const ProductPage: React.FC<ProductPageProps> = ({
             <button type="button" className="s-iconbtn" aria-label={tr('Augmenter la quantité', 'زيد الكمية')} onClick={() => setQuantity((value) => Math.min(99, value + 1))}><EditorialIcon name="Plus" size={18} /></button>
           </div>
           <button type="button" className="s-cta" data-done={added || undefined} onClick={add} disabled={adding || sizeMissing || colorMissing || availabilityBlocked || !canAdd || !actions?.onAddToBag}>
-            {added ? <><EditorialIcon name="Check" size={18} />{tr('Ajouté au panier', 'تزاد للسلة')}</> : adding ? tr('Ajout…', 'جارٍ الإضافة…') : tr('Ajouter au panier', 'أضف إلى السلة')}
+            {added ? <><EditorialIcon name="Check" size={18} />{duplicateUpdated ? tr('Déjà au panier · quantité mise à jour', 'موجود في السلة · تم تحديث الكمية') : tr('Ajouté au panier', 'تزاد للسلة')}</> : adding ? tr('Ajout…', 'جارٍ الإضافة…') : tr('Ajouter au panier', 'أضف إلى السلة')}
           </button>
+          {duplicateUpdated && <p className="s-refusal" role="status">{tr('Aucune ligne en double n’a été créée.', 'لم تتم إضافة سطر مكرر إلى السلة.')}</p>}
           {onCalculateAnother && <button type="button" className="s-cta s-cta--ghost" onClick={onCalculateAnother}>{tr('Calculer un autre article', 'احسب منتجًا آخر')}</button>}
         </section>
       </main>

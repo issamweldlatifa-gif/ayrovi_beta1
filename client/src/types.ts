@@ -19,6 +19,8 @@ export interface ProductVariants {
 
 export interface ScrapedProduct {
   id: string;
+  /** Present when the product entered through the AyWebs capture pipeline. */
+  captureId?: string;
   store: StoreType;
   storeName: string;
   url: string;
@@ -47,6 +49,8 @@ export interface ScrapedProduct {
 export interface AddToCartResult {
   totalTND: number;
   itemCount: number;
+  /** The line already existed; the server updated its quantity instead of creating another line. */
+  duplicate?: boolean;
 }
 
 export interface AddToCartPayload {

@@ -15,7 +15,11 @@ export const RouteMeta: React.FC = () => {
     sync();
     // Le client navigue sans recharger : chaque retour/avancée doit remettre le `<head>` en accord.
     window.addEventListener('popstate', sync);
-    return () => window.removeEventListener('popstate', sync);
+    window.addEventListener('ayrovi:urlchange', sync);
+    return () => {
+      window.removeEventListener('popstate', sync);
+      window.removeEventListener('ayrovi:urlchange', sync);
+    };
   }, [locale]);
 
   return null;

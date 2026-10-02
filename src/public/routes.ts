@@ -102,6 +102,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       // Feature flags — LIVE multi-product vision. مفعّل افتراضيًا؛ عطّله بـ AYROVIX_LENS_LIVE_ENABLED=false
       features: {
         ayrovixLensLive: process.env.AYROVIX_LENS_LIVE_ENABLED !== 'false',
+        aywebsEnabled: !['0', 'false', 'off', 'disabled'].includes(String(process.env.AYWEBS_ENABLED ?? 'true').trim().toLowerCase()),
       },
       // تعليمات دفع العربون المعروضة في نموذج الطلب (قابلة للتحرير من لوحة الأدمن)
       deposit: {

@@ -85,6 +85,11 @@ export interface ProductView {
   merchant: { name: string; url: string } | null;
 }
 
+export interface AddToBagResult {
+  /** Existing cart line was updated instead of creating a duplicate line. */
+  duplicate?: boolean;
+}
+
 /** Ce que la fiche a le droit de faire, injecté par l'hôte — jamais deviné. */
 export interface ProductActions {
   onBack?: () => void;
@@ -93,7 +98,7 @@ export interface ProductActions {
     size: SizeOption | null,
     quantity: number,
     details: { note: string; link: string },
-  ) => Promise<void> | void;
+  ) => Promise<void | AddToBagResult> | void | AddToBagResult;
   onSelectColor?: (name: string) => void;
   /** Suivre ce produit (retour en stock, baisse de prix) — absent = pas de bouton. */
   onNotify?: () => void;

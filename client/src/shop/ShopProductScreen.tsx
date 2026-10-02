@@ -6,7 +6,7 @@ import { refreshLiveStock } from '../ayrovix/services/lensApi';
 import type { AyrovixVariantOption } from '../ayrovix/types';
 import { ProductPage } from './ProductPage';
 import { productToView } from './adapter';
-import type { SizeOption } from './types';
+import type { AddToBagResult, SizeOption } from './types';
 
 /**
  * CONTENEUR DE LA FICHE v2 — le seul endroit qui relie l'écran aux données.
@@ -37,7 +37,7 @@ export interface ShopProductScreenProps {
     customerNote: string;
     /** Nom exact du contrat de commande existant : `manualUrl`, pas autre chose. */
     manualUrl: string;
-  }) => void | Promise<void>;
+  }) => void | AddToBagResult | Promise<void | AddToBagResult>;
   onBack?: () => void;
   onCalculateAnother?: () => void;
   onOpenCart?: () => void;
@@ -224,7 +224,7 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
 
   const addToBag = async (size: SizeOption | null, quantity: number, details: { note: string; link: string }) => {
     if (ordering) return;
-    await onOrder({
+    return onOrder({
       size: size?.value ?? '',
       color: activeColor ?? '',
       option: null,

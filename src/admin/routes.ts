@@ -67,6 +67,7 @@ import {
 } from '../ayrovix/reviews';
 import { lensPerformanceReport } from '../ayrovix/services/lensPerformanceTrace';
 import { funnelSummary } from '../analytics/funnel';
+import { ayWebsAnalyticsSummary } from '../aywebs/analytics';
 import {
   GenerateMagazineInput,
   MagazineAgentProviderError,
@@ -975,7 +976,12 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
       // seule façon qu'une fuite (caisse ouverte / commande non conclue) soit vue au moment
       // où l'on regarde les résultats, plutôt que découverte par un client mécontent.
       funnel: funnelSummary(db, range),
+      aywebs: ayWebsAnalyticsSummary(db, range),
     } });
+  });
+
+  router.get('/aywebs/analytics', requireAdmin(db, 'commerce:read'), (req, res) => {
+    res.json({ success: true, data: ayWebsAnalyticsSummary(db, Math.min(Math.max(Number(req.query.days) || 30, 1), 365)) });
   });
 
   /** Le parcours seul, pour être lu sans charger tout le tableau de bord. */

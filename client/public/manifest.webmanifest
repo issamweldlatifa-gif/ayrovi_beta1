@@ -9,6 +9,16 @@
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#673de6",
+  "share_target": {
+    "action": "/aywebs",
+    "method": "GET",
+    "enctype": "application/x-www-form-urlencoded",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
   "icons": [
     {
       "src": "/media/logo-ayrovi-192.png",

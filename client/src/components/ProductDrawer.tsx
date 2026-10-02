@@ -6,6 +6,7 @@ import { useNavigationHistory } from '../navigation/NavigationHistory';
 import { ShopProductScreen } from '../shop';
 import { resolveProductSelection } from '../ayrovix/services/productSelection';
 import type { AyrovixProduct } from '../ayrovix/types';
+import { trackAyWebsEvent } from '../features/aywebs/api';
 
 interface ProductDrawerProps {
   isOpen: boolean;
@@ -420,6 +421,8 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                   if (offer.price == null || !offer.currency) throw new Error('Le devis de cette sélection est incomplet.');
                   setIsAddingToCart(true);
                   setErrorMsg(null);
+                  const fromAyWebs = navigation.stack.some((layer) => layer.id === 'app:aywebs');
+                  if (fromAyWebs) trackAyWebsEvent('add_to_cart_clicked', { store: product?.store || 'generic', capture_id: product?.captureId });
                   try {
                     const result = await onAddToCart({
                       store: product?.store || 'generic',
@@ -437,6 +440,8 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                       quantity: selection.quantity,
                     });
                     if (!result) throw new Error("L'article n'a pas pu être ajouté. Réessayez.");
+                    if (fromAyWebs) trackAyWebsEvent('add_to_cart_succeeded', { store: product?.store || 'generic', capture_id: product?.captureId });
+                    return { duplicate: Boolean(result.duplicate) };
                   } finally {
                     setIsAddingToCart(false);
                   }
