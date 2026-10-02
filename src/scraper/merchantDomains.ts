@@ -41,11 +41,18 @@ export function detectMerchantStore(input: string): StoreType {
  * rendu payant : un lien Lens vers une autre boutique retombait alors sur le
  * fetch direct seul, et échouait devant un bot-wall.
  */
+const DEFAULT_RENDER_ROOTS = [
+  'zalando.fr', 'zalando.de', 'zalando.co.uk', 'zalando.it', 'zalando.es', 'zalando.nl',
+  'alltricks.fr', 'alltricks.com',
+  'running-point.com',
+];
+
 function extraRenderRoots(): string[] {
-  return String(process.env.AYROVI_TRUSTED_RENDER_HOSTS || '')
+  const extra = String(process.env.AYROVI_TRUSTED_RENDER_HOSTS || '')
     .split(',')
     .map((value) => value.trim().toLowerCase().replace(/^www\./, ''))
     .filter((value) => /^[a-z0-9.-]+\.[a-z]{2,}$/.test(value));
+  return [...DEFAULT_RENDER_ROOTS, ...extra];
 }
 
 /** Only send HTTPS pages on verified merchant domains to a third-party renderer. */

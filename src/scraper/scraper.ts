@@ -7,7 +7,7 @@ import { detectMerchantStore } from './merchantDomains';
 export interface MerchantScrapeResult {
   data: ParsedProductPage | null;
   verified: boolean;
-  provider: 'direct' | 'none' | 'scraperapi' | 'scrapingbee' | 'brightdata';
+  provider: 'direct' | 'none' | 'jina' | 'scraperapi' | 'scrapingbee' | 'brightdata';
   method: ParsedProductPage['priceSource'] | 'none';
   failureCode: string | null;
 }
@@ -276,6 +276,37 @@ export class SmartLinkScraper {
       }
     } catch (error: any) {
       directFailure = String(error?.message || error?.code || 'DIRECT_UNAVAILABLE').slice(0, 80);
+    }
+
+    // Zalando/Alltricks coupent l'IP Render (timeout 0 octet / 403 Akamai).
+    // r.jina.ai lit la page comme un navigateur et rend le HTML+JSON-LD.
+    // Coupure : AYROVI_JINA_READER=false
+    if (process.env.AYROVI_JINA_READER !== 'false') {
+      try {
+        const reader = `https://r.jina.ai/${url}`;
+        const response = await fetchSafeRemote(reader, {
+          signal: AbortSignal.timeout(18_000),
+          headers: {
+            Accept: 'text/html,application/xhtml+xml,text/plain',
+            'X-Return-Format': 'html',
+            'User-Agent': 'Mozilla/5.0 (compatible; AYROVI-reader/1.0)',
+          },
+        });
+        if (response.ok) {
+          const html = await readLimitedText(response, 2_000_000);
+          if (html.trim() && /<(?:html|body|script|meta)\b/i.test(html)) {
+            const parsed = parseProductPageHtml(html, url, storeType);
+            if (parsed.price > 0) {
+              return { data: parsed, verified: true, provider: 'jina', method: parsed.priceSource, failureCode: null };
+            }
+            if (!directResult && (parsed.title || parsed.images.length)) directResult = parsed;
+          }
+        } else {
+          await response.body?.cancel().catch(() => undefined);
+        }
+      } catch {
+        // Le rendu payant reste le filet suivant.
+      }
     }
 
     try {

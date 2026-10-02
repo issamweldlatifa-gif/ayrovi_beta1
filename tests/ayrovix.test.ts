@@ -362,6 +362,8 @@ describe('AYROVIX Lens', () => {
     expect(isTrustedRenderTarget('https://amazon.evil.example/dp/TEST')).toBe(false);
     // Rendu étendu par l'exploitant (01/10/2026) : sans cette liste, un lien Lens
     // vers sportsdirect.fr retombait sur le fetch direct seul et échouait.
+    expect(isTrustedRenderTarget('https://www.zalando.fr/nike-alphafly')).toBe(true);
+    expect(isTrustedRenderTarget('https://www.alltricks.fr/p/x')).toBe(true);
     expect(isTrustedRenderTarget('https://www.sportsdirect.fr/hoody-991631')).toBe(false);
     vi.stubEnv('AYROVI_TRUSTED_RENDER_HOSTS', 'sportsdirect.fr, zalando.fr');
     expect(isTrustedRenderTarget('https://www.sportsdirect.fr/hoody-991631')).toBe(true);

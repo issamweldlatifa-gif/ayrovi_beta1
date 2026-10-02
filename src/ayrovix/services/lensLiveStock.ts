@@ -46,7 +46,7 @@ import type { ParsedProductPage } from '../../scraper/productPageParser';
 import { hostAllowsProbe, recordProbeFailure, recordProbeSuccess } from '../../scraper/hostCircuit';
 
 const DEFAULT_BUDGET = 8;
-const DEFAULT_DEADLINE_MS = 4000;
+const DEFAULT_DEADLINE_MS = 12000;
 const DEFAULT_TTL_MS = 6 * 60 * 60 * 1000;
 const DEFAULT_CONCURRENCY = 4;
 const DEFAULT_MATCH_THRESHOLD = 0.6;
@@ -370,7 +370,7 @@ export async function enrichCandidatesLiveStock(
   options: { fetcher?: LiveStockFetcher; now?: number; reprice?: LiveStockRepricer } = {},
 ): Promise<{ candidates: AyrovixCandidate[]; report: LiveStockReport }> {
   const budget = envInt('AYROVI_LENS_LIVE_BUDGET', DEFAULT_BUDGET, 0, 10);
-  const deadline = envInt('AYROVI_LENS_LIVE_DEADLINE_MS', DEFAULT_DEADLINE_MS, 500, 15_000);
+  const deadline = envInt('AYROVI_LENS_LIVE_DEADLINE_MS', DEFAULT_DEADLINE_MS, 500, 25_000);
   const concurrency = envInt('AYROVI_LENS_LIVE_CONCURRENCY', DEFAULT_CONCURRENCY, 1, 8);
   const report: LiveStockReport = { fetched: 0, cacheHits: 0, applied: 0, budget, deadlineMs: deadline };
 
