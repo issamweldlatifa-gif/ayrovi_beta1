@@ -45,8 +45,8 @@ import { recordVariantContract } from './variantAvailability';
 import type { ParsedProductPage } from '../../scraper/productPageParser';
 import { hostAllowsProbe, recordProbeFailure, recordProbeSuccess } from '../../scraper/hostCircuit';
 
-const DEFAULT_BUDGET = 24;
-const DEFAULT_DEADLINE_MS = 25000;
+const DEFAULT_BUDGET = 16;
+const DEFAULT_DEADLINE_MS = 15000;
 const DEFAULT_TTL_MS = 6 * 60 * 60 * 1000;
 const DEFAULT_CONCURRENCY = 8;
 const DEFAULT_MATCH_THRESHOLD = 0.6;
@@ -396,8 +396,8 @@ export async function enrichCandidatesLiveStock(
   // Plancher dur hors tests : un dashboard Render resté à budget=4 / 2500ms
   // ne doit plus couper le kacht. Les tests gardent des bornes basses.
   const isTest = Boolean(process.env.VITEST || process.env.NODE_ENV === 'test');
-  const budget = envInt('AYROVI_LENS_LIVE_BUDGET', DEFAULT_BUDGET, isTest ? 0 : 16, 32);
-  const deadline = envInt('AYROVI_LENS_LIVE_DEADLINE_MS', DEFAULT_DEADLINE_MS, isTest ? 50 : 12_000, 45_000);
+  const budget = envInt('AYROVI_LENS_LIVE_BUDGET', DEFAULT_BUDGET, isTest ? 0 : 12, 24);
+  const deadline = envInt('AYROVI_LENS_LIVE_DEADLINE_MS', DEFAULT_DEADLINE_MS, isTest ? 50 : 8_000, 25_000);
   const concurrency = envInt('AYROVI_LENS_LIVE_CONCURRENCY', DEFAULT_CONCURRENCY, isTest ? 1 : 6, 10);
   const report: LiveStockReport = { fetched: 0, cacheHits: 0, applied: 0, budget, deadlineMs: deadline };
 
@@ -448,7 +448,7 @@ export async function enrichCandidatesLiveStock(
           && item.availability !== 'out_of_stock'
           && ((item.sizes || []).length > 0 || (item.colors || []).length > 0)
           && (item.image || (item.images || []).length)).length;
-        if (!isTest && ready >= 10) closed = true;
+        if (!isTest && ready >= 8) closed = true;
       } catch {
         recordProbeFailure(url);
       }

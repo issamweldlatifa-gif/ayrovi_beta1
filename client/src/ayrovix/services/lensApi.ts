@@ -30,7 +30,7 @@ export async function analyzeImage(
   body.append('image', file, file.name || 'ayrovix.jpg');
   if (customerIntent) body.append('customerIntent', String(customerIntent).slice(0,200));
   if (extra?.roi) body.append('roi', JSON.stringify(extra.roi));
-  const headers: Record<string, string> = { Accept: 'text/event-stream' };
+  const headers: Record<string, string> = extra?.onCard ? { Accept: 'text/event-stream' } : {};
   if (extra?.cropMs != null) headers['X-Lens-Crop-Ms'] = String(Math.round(extra.cropMs));
   if (extra?.uploadMs != null) headers['X-Lens-Upload-Ms'] = String(Math.round(extra.uploadMs));
   const response = await fetch('/api/ayrovix/analyze-image', { method: 'POST', body, headers, signal });
@@ -52,7 +52,8 @@ export async function analyzeImage(
       else if (line.startsWith('data:')) raw += line.slice(5).trim();
     }
     if (!raw) return;
-    const payload = JSON.parse(raw);
+    let payload: any;
+    try { payload = JSON.parse(raw); } catch { return; }
     if (event === 'error') {
       throw new AyrovixApiError(String(payload?.code || 'IDENTIFICATION_FAILED'), String(payload?.error || 'IDENTIFICATION_FAILED'), 422);
     }

@@ -27,7 +27,7 @@ export interface ParsedProductPage {
 
 const SIZE_NAME = /(?:^|\b)(?:size|sizes|taille|tailles|pointure|pointures|größe|shoe size|capacity|capacit[eé]|volume|contenanc|storage|stockage|m[eé]moire|memory|ram|ssd|watt|puissance|poids|weight|dimension|format|mod[eè]le|model|style|coupe|fit|voltage|version)(?:\b|$)/i;
 const COLOR_NAME = /(?:^|\b)(?:colou?r|couleur|couleurs|farbe|finish|finition|teinte)(?:\b|$)/i;
-const PLACEHOLDER = /^(?:select|choose|choisir|sélectionner|selectionner|taille|size|couleur|color|default title|please select|—|-)?$/i;
+const PLACEHOLDER = /^(?:select|choose|choisir|sélectionner|selectionner|taille|size|couleur|color|default title|please select|see\s+\d+\s+options.*|—|-)?$/i;
 const UNAVAILABLE = /(?:sold\s*out|out\s*of\s*stock|épuis|indisponible|unavailable|rupture)/i;
 
 function cleanLabel(raw: unknown): string {
@@ -508,6 +508,19 @@ function availabilityFrom(productLd: any, embeddedProduct: any): ParsedProductPa
   return schemaStock; // In particular, keep an explicit limited-stock report.
 }
 
+function amazonAvailability(
+  parsed: ParsedProductPage['availability'],
+  bodyText: string,
+  storeType: StoreType,
+): ParsedProductPage['availability'] {
+  if (storeType !== 'amazon') return parsed;
+  const slice = String(bodyText || '').slice(0, 80_000);
+  if (/currently unavailable|actuellement indisponible|derzeit nicht verfügbar|temporarily out of stock/i.test(slice)) {
+    return 'out_of_stock';
+  }
+  return parsed;
+}
+
 export function parseProductPageHtml(html: string, baseUrl: string, storeType: StoreType): ParsedProductPage {
   const virtualConsole = new VirtualConsole();
   // Merchant CSS can contain browser-only syntax that jsdom does not parse.
@@ -697,7 +710,7 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
      * scripts JSON, filtrées par une liste de REJET du bruit (icônes, logos,
      * bannières, pixels de tracking, placeholders). */
     const scriptImages: string[] = [];
-    const JSON_IMAGE_NOISE = /sprite|logo|icone?|icon|banner|banniere|paiement|payment|paypal|visa|mastercard|flag|picto|badge|newsletter|favicon|placeholder|tracking|pixel|avatar|emoji|loader|spinner|arrow|chevron|social|facebook|instagram|tiktok|pinterest|youtube|twitter|breadcrumb|livraison|delivery\.(?:jpe?g|png|webp)/i;
+    const JSON_IMAGE_NOISE = /sprite|logo|icone?|icon|banner|banniere|paiement|payment|paypal|visa|mastercard|flag|picto|badge|newsletter|favicon|placeholder|tracking|pixel|avatar|emoji|loader|spinner|arrow|chevron|social|facebook|instagram|tiktok|pinterest|youtube|twitter|breadcrumb|livraison|SWMStatic|EU-Deals|PBDD|_CB\d{5,}|delivery\.(?:jpe?g|png|webp)/i;
     for (const node of Array.from(document.querySelectorAll('script#__NEXT_DATA__, script[type="application/json"]'))) {
       const textContent = node.textContent || '';
       if (!textContent || textContent.length > 2_000_000) continue;
@@ -781,7 +794,11 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
       colorImages,
       externalId: String(productLd?.sku || productLd?.productID || embeddedProduct?.id || embeddedProduct?.sku || ''),
       variants: { sizes, colors, details },
-      availability: availabilityFrom({ ...productLd, offers: (ldOffers.length ? ldOffers : productLd?.offers) }, embeddedProduct),
+      availability: amazonAvailability(
+        availabilityFrom({ ...productLd, offers: (ldOffers.length ? ldOffers : productLd?.offers) }, embeddedProduct),
+        document.body?.textContent || '',
+        storeType,
+      ),
       priceSource,
     };
   } finally {

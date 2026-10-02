@@ -308,7 +308,9 @@ export const App: React.FC = () => {
         },
         body: JSON.stringify(itemData),
       });
-      const data = await res.json();
+      const raw = await res.text();
+      let data: any = {};
+      try { data = raw ? JSON.parse(raw) : {}; } catch { data = {}; }
       if (
         !res.ok || !data.success ||
         !Number.isFinite(data.totalTND) || !Number.isInteger(data.totalItemsCount)

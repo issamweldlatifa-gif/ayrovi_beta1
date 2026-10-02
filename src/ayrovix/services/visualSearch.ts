@@ -216,20 +216,21 @@ async function runSerpApiVisualSearch(image: Buffer, limit: number): Promise<Ayr
       }
       return toCandidates(payload, limit);
     };
-    const [products, visual, exact] = await Promise.all([
+    // Deux onglets en parallèle — un troisième (exact) allongeait à 20–30 s
+    // et se faisait souvent refuser (quota) : la grille tombait à 1–2 fiches.
+    const [products, visual] = await Promise.all([
       searchType('products'),
       searchType('visual_matches'),
-      searchType('exact_matches'),
     ]);
     const merged: AyrovixCandidate[] = [];
     const seen = new Set<string>();
-    for (const item of [...products, ...exact, ...visual]) {
+    for (const item of [...products, ...visual]) {
       if (seen.has(item.sourceUrl)) continue;
       seen.add(item.sourceUrl);
       merged.push(item);
       if (merged.length >= limit) break;
     }
-    console.log(`[AYROVIX serpapi-lens] ${merged.length} matches (products=${products.length} exact=${exact.length} visual=${visual.length})`);
+    console.log(`[AYROVIX serpapi-lens] ${merged.length} matches (products=${products.length} visual=${visual.length})`);
     return merged;
   } catch (error: any) {
     console.warn(`[AYROVIX serpapi-lens] ${error?.name === 'TimeoutError' ? 'timeout' : 'unavailable'}`);
