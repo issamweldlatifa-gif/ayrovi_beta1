@@ -88,6 +88,7 @@ export interface LiveStockResult {
   /** Horodatage ISO de la lecture qui fonde ce résultat. */
   checkedAt: string;
   reason: string;
+  priceToken?: string | null;
 }
 
 /**
@@ -96,11 +97,11 @@ export interface LiveStockResult {
  * le résultat porte sa date. Une page illisible rend `unknown` — jamais une
  * disponibilité inventée.
  */
-export async function refreshLiveStock(urls: string[], signal?: AbortSignal): Promise<LiveStockResult[]> {
+export async function refreshLiveStock(urls: string[], signal?: AbortSignal, title?: string): Promise<LiveStockResult[]> {
   const response = await fetch('/api/ayrovix/live-stock', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ urls: urls.slice(0, 8) }),
+    body: JSON.stringify({ urls: urls.slice(0, 8), title: title || undefined }),
     signal,
   });
   const data = await parseResponse<{ results: LiveStockResult[] }>(response);

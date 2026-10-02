@@ -914,6 +914,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
                   product={product}
                   ordering={ordering}
                   priceVerified={verifiedPriceUrl}
+                  onHydrated={(next) => { setProduct(next); if (next.priceVerificationStatus === 'VERIFIED') setVerifiedPriceUrl(true); }}
                   onOrder={handleOrder}
                   onOpenCart={onOpenCart}
                   onFavorite={favoriteCandidate?.sourceUrl ? () => void productFavorites.toggle(favoriteCandidate) : undefined}

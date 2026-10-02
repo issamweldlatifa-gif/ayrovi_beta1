@@ -41,6 +41,7 @@ export interface ShopProductScreenProps {
   onBack?: () => void;
   onCalculateAnother?: () => void;
   onOpenCart?: () => void;
+  onHydrated?: (product: AyrovixProduct) => void;
 }
 
 interface CartLineQuote {
@@ -51,7 +52,7 @@ interface CartLineQuote {
 
 export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
   product, ordering = false, priceVerified = false, onOrder, onBack, onOpenCart, onCalculateAnother,
-  onNotify, onFavorite, favorite = false,
+  onNotify, onFavorite, favorite = false, onHydrated,
 }) => {
   const { tr, direction, formatMoney } = useLocale();
   const [liveProduct, setLiveProduct] = useState(product);
@@ -91,7 +92,7 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
     }
     const controller = new AbortController();
     setSourceReading(true);
-    refreshLiveStock([url], controller.signal)
+    refreshLiveStock([url], controller.signal, product.title)
       .then((rows) => {
         const live = rows.find((row) => row.url === url) || rows[0];
         if (!live || controller.signal.aborted) return;
@@ -105,13 +106,14 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
           price: live.price,
           currency: live.currency,
           priceTnd: live.priceTnd,
+          priceToken: live.priceToken || null,
         }));
         const expires = Number.isFinite(Date.parse(live.checkedAt))
           ? new Date(Date.parse(live.checkedAt) + 6 * 60 * 60 * 1000).toISOString()
           : null;
-        setLiveProduct((current) => ({
+        setLiveProduct((current) => {
+          const next = {
           ...current,
-          title: live.reason && current.title ? current.title : current.title,
           sizes: live.sizes.length ? live.sizes : current.sizes,
           colors: live.colors.length ? live.colors : current.colors,
           images: live.images.length ? live.images : current.images,
@@ -125,10 +127,14 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
           availabilityCheckedAt: live.checkedAt || current.availabilityCheckedAt,
           availabilityExpiresAt: expires || current.availabilityExpiresAt,
           priceVerified: Boolean(live.price) || current.priceVerified,
-          priceVerificationStatus: live.price ? 'VERIFIED' : current.priceVerificationStatus,
+          priceVerificationStatus: (live.price ? 'VERIFIED' : current.priceVerificationStatus) as AyrovixProduct['priceVerificationStatus'],
+          priceToken: live.priceToken || current.priceToken,
           variantOptions: variantOptions.length ? variantOptions : current.variantOptions,
           description: /v[ée]rification manuelle/i.test(current.description || '') ? '' : current.description,
-        }));
+          };
+          onHydrated?.(next);
+          return next;
+        });
       })
       .catch(() => { /* la fiche reste sur les données Lens ; pas de mensonge stock */ })
       .finally(() => { if (!controller.signal.aborted) setSourceReading(false); });

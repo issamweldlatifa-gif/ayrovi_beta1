@@ -43,3 +43,19 @@ describe('lecteur Jina — repli quand Zalando coupe le fetch direct', () => {
     expect(live).toMatch(/DEFAULT_DEADLINE_MS = 12000/);
   });
 });
+
+it('extrait les pointures Zalando depuis le sélecteur et le JSON embarqué', async () => {
+  const { parseProductPageHtml } = await import('../src/scraper/productPageParser');
+  const html = `<html><body>
+    <h1>Alphafly</h1>
+    <div class="pdp-size-picker">
+      <button type="button">40</button>
+      <button type="button">41</button>
+      <button type="button">42.5</button>
+    </div>
+    <script type="application/json">{"size":"43","color":"fuchsia glow"}</script>
+  </body></html>`;
+  const parsed = parseProductPageHtml(html, 'https://www.zalando.fr/nike-alphafly.html', 'generic');
+  expect(parsed.variants.sizes).toEqual(expect.arrayContaining(['40', '41', '42.5', '43']));
+  expect(parsed.variants.colors.map((c) => c.toLowerCase())).toEqual(expect.arrayContaining(['fuchsia glow']));
+});

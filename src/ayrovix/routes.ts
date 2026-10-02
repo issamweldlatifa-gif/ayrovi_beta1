@@ -655,6 +655,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       return res.status(400).json({ success: false, code: 'INVALID_REQUEST', error: 'Au moins un lien produit est requis.' });
     }
     try {
+      const titleHint = String(req.body?.title || '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 500);
       const { results } = await refreshLiveStock(urls, {
         fetcher: (url) => scraper.scrapeParsedPage(url).then((result) => result.data),
         reprice: (price, currency) => {
@@ -662,7 +663,13 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
           return estimate ? { priceTnd: estimate.priceTnd, promo: estimate.promo } : null;
         },
       });
-      return res.json({ success: true, data: { results } });
+      const signed = results.map((row) => ({
+        ...row,
+        priceToken: row.price && row.currency
+          ? quoteToken(row.price, row.currency, titleHint || row.url, row.url, 'VERIFIED')
+          : null,
+      }));
+      return res.json({ success: true, data: { results: signed } });
     } catch (error: any) {
       console.warn(`[AYROVIX live-stock] ${String(error?.message || error).slice(0, 120)}`);
       return res.status(502).json({ success: false, code: 'LIVE_STOCK_FAILED', error: 'Vérification du stock impossible pour le moment.' });

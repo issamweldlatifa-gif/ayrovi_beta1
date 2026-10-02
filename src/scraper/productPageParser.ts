@@ -569,8 +569,18 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
       collectNamedStrings(productState, /^(?:color|colour|couleur|couleurs)$/i, namedColors);
     }
 
-    const sizes = unique([...details.map((detail) => detail.size), ...namedSizes, ...domSizes].filter((value) => !value || looksLikeSize(value)), 40);
-    const colors = unique([...details.map((detail) => detail.color), ...namedColors, ...domColors], 20);
+    const widgetSizes = Array.from(document.querySelectorAll(
+      '[class*="size" i] button, [class*="taille" i] button, [class*="pointure" i] button, [class*="Size" i] [role="option"], [data-testid*="size" i] button, [data-testid*="size" i] li',
+    )).map((node: any) => cleanLabel(node.getAttribute?.('data-size') || node.getAttribute?.('value') || node.textContent));
+    const htmlBlob = document.documentElement?.innerHTML || '';
+    const jsonSizes: string[] = [];
+    const jsonColors: string[] = [];
+    const sizeJson = htmlBlob.matchAll(/"(?:size|sizeName|size_name|taille|pointure)"\s*:\s*"([^"]{1,24})"/gi);
+    for (const match of sizeJson) jsonSizes.push(cleanLabel(match[1].replace(/^EU\s*/i, '')));
+    const colorJson = htmlBlob.matchAll(/"(?:color|colour|colorName|couleur)"\s*:\s*"([^"]{2,80})"/gi);
+    for (const match of colorJson) jsonColors.push(cleanLabel(match[1]));
+    const sizes = unique([...details.map((detail) => detail.size), ...namedSizes, ...domSizes, ...widgetSizes, ...jsonSizes].filter((value) => !value || looksLikeSize(value)), 40);
+    const colors = unique([...details.map((detail) => detail.color), ...namedColors, ...domColors, ...jsonColors].filter((value) => value && !PLACEHOLDER.test(value) && !looksLikeSize(value)), 20);
     if (colors.length === 1) {
       for (const detail of details) if (!detail.color) detail.color = colors[0];
     }

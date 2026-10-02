@@ -289,7 +289,7 @@ export const App: React.FC = () => {
 
   const handleAyrovixOrder = async (payload: AyrovixOrderPayload) => {
     const summary = await handleAddToCart({ ...payload, priceTND: payload.priceTND ?? 0 });
-    if (!summary) throw new Error('AYROVIX_ADD_TO_CART_FAILED');
+    if (!summary) throw new Error("Impossible d'ajouter l'article au panier.");
   };
 
   const handleToggleAiDrawer = () => {
@@ -313,13 +313,13 @@ export const App: React.FC = () => {
         !res.ok || !data.success ||
         !Number.isFinite(data.totalTND) || !Number.isInteger(data.totalItemsCount)
       ) {
-        throw new Error(data.error || "Impossible d'ajouter l'article au panier.");
+        throw new Error(data.error || data.code || "Impossible d'ajouter l'article au panier.");
       }
       await fetchCart();
       return { totalTND: data.totalTND, itemCount: data.totalItemsCount };
     } catch (err) {
       console.error('[Add to Cart Error]', err);
-      return null;
+      throw err;
     }
   };
 
