@@ -114,11 +114,25 @@ export function withDisplayRating(candidate: AyrovixCandidate): AyrovixCandidate
   };
 }
 
-export function filterDisplayableCandidates(items: AyrovixCandidate[], limit = 8): AyrovixCandidate[] {
+/** Carte « le client peut choisir » : photo + prix + pas de rupture, avec options si le marchand les a publiées. */
+export function shopperScore(candidate: AyrovixCandidate): number {
+  if (candidate.availability === 'out_of_stock') return -1;
+  let score = 0;
+  if (candidate.image || (candidate.images || []).length) score += 2;
+  if ((candidate.price || 0) > 0 && candidate.currency) score += 2;
+  if ((candidate.sizes || []).length) score += 4;
+  if ((candidate.colors || []).length) score += 3;
+  if (candidate.availability === 'in_stock' || candidate.availability === 'limited') score += 2;
+  if (candidate.kind === 'catalog') score += 3;
+  return score;
+}
+
+export function filterDisplayableCandidates(items: AyrovixCandidate[], limit = 16): AyrovixCandidate[] {
   const seen = new Set<string>();
   return items
     .filter(isDisplayableCandidate)
     .filter(notUsed)
+    .filter((item) => item.availability !== 'out_of_stock')
     .map(withDisplayRating)
     .filter((item) => {
       const key = `${item.sourceUrl}|${item.title.toLowerCase()}`;
@@ -126,11 +140,14 @@ export function filterDisplayableCandidates(items: AyrovixCandidate[], limit = 8
       seen.add(key);
       return true;
     })
-    .sort(byTrustThenMatch)
+    .sort((left, right) => {
+      const delta = shopperScore(right) - shopperScore(left);
+      return delta !== 0 ? delta : byTrustThenMatch(left, right);
+    })
     .slice(0, limit);
 }
 
-export function filterLenientCandidates(items: AyrovixCandidate[], limit = 8): AyrovixCandidate[] {
+export function filterLenientCandidates(items: AyrovixCandidate[], limit = 16): AyrovixCandidate[] {
   const seen = new Set<string>();
   return items
     .filter(isLenientCandidate)
@@ -146,7 +163,7 @@ export function filterLenientCandidates(items: AyrovixCandidate[], limit = 8): A
     .slice(0, limit);
 }
 
-export function filterWithFallback(items: AyrovixCandidate[], limit = 8): AyrovixCandidate[] {
+export function filterWithFallback(items: AyrovixCandidate[], limit = 16): AyrovixCandidate[] {
   const strict = filterDisplayableCandidates(items, limit);
   if (strict.length > 0) return strict;
   const lenient = filterLenientCandidates(items, limit);

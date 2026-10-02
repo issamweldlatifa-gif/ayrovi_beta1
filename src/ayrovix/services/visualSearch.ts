@@ -129,8 +129,8 @@ function collectCandidates(rows: any[], limit: number, strict: boolean): Ayrovix
       brand: typeof row?.brand === 'string' ? row.brand.trim().slice(0, 100) || null : null,
       description: typeof (row?.description ?? row?.snippet) === 'string' ? String(row.description ?? row.snippet).trim().slice(0, 500) || null : null,
       model: null,
-      colors: [],
-      sizes: [],
+      colors: Array.isArray(row?.colors) ? row.colors.map((value: unknown) => String(value || '').trim()).filter(Boolean).slice(0, 12) : [],
+      sizes: Array.isArray(row?.sizes) ? row.sizes.map((value: unknown) => String(value || '').trim()).filter(Boolean).slice(0, 24) : [],
       source: String(row?.source || 'Google Lens').trim().slice(0, 80) || 'Google Lens',
       sourceUrl,
       image: images[0] || '',
@@ -224,7 +224,7 @@ async function runSerpApiVisualSearch(image: Buffer, limit: number): Promise<Ayr
   }
 }
 
-export async function serpApiVisualSearchUrl(imageUrl: string, limit = 8): Promise<AyrovixCandidate[]> {
+export async function serpApiVisualSearchUrl(imageUrl: string, limit = 24): Promise<AyrovixCandidate[]> {
   if (!serpApiVisualReady()) return [];
   let normalized: string;
   try { normalized = parsePublicHttpUrl(imageUrl).toString(); } catch { return []; }
@@ -250,7 +250,7 @@ export async function serpApiVisualSearchUrl(imageUrl: string, limit = 8): Promi
   }
 }
 
-export async function serpApiVisualSearch(image: Buffer, limit = 8): Promise<AyrovixCandidate[]> {
+export async function serpApiVisualSearch(image: Buffer, limit = 24): Promise<AyrovixCandidate[]> {
   if (!serpApiVisualReady() || !image.length || image.length > 8 * 1024 * 1024) return [];
   const safeLimit = boundedLimit(limit);
   const cacheKey = `${createHash('sha256').update(image).digest('hex')}|${safeLimit}`;

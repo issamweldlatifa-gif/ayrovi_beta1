@@ -40,7 +40,7 @@ describe('lecteur Jina — repli quand Zalando coupe le fetch direct', () => {
 
   it('Lens laisse assez de temps au lecteur (défaut ≥ 12 s)', () => {
     const live = readFileSync('src/ayrovix/services/lensLiveStock.ts', 'utf8');
-    expect(live).toMatch(/DEFAULT_DEADLINE_MS = 12000/);
+    expect(live).toMatch(/DEFAULT_DEADLINE_MS = 20000/);
   });
 });
 

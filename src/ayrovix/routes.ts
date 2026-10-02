@@ -110,7 +110,7 @@ function tokenizedCandidate(candidate: AyrovixCandidate): AyrovixCandidate {
 
 function tokenizedCandidates(items: AyrovixCandidate[]): AyrovixCandidate[] {
   // D2-10: strict first, lenient PENDING fallback — never 0 when lens has matches without price
-  const filtered = filterWithFallback(items, 8);
+  const filtered = filterWithFallback(items, 16);
   return filtered.map(tokenizedCandidate);
 }
 

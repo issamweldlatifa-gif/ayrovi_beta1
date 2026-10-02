@@ -5,7 +5,7 @@
 // Le registre est volontairement en mémoire par process : la preuve se
 // ré-accumule depuis les profiles crawlés — aucune liste figée sans historique.
 import { describe, expect, it } from 'vitest';
-import { filterDisplayableCandidates, isTrustedMerchantHost, merchantTrust, registerTrustedMerchantHost, type MerchantTrust } from '../src/ayrovix/services/candidatePolicy';
+import { filterDisplayableCandidates, isTrustedMerchantHost, merchantTrust, registerTrustedMerchantHost, shopperScore, type MerchantTrust } from '../src/ayrovix/services/candidatePolicy';
 import type { AyrovixCandidate } from '../src/ayrovix/types';
 
 function candidate(overrides: Partial<AyrovixCandidate>): AyrovixCandidate {
@@ -71,5 +71,15 @@ describe('merchantTrust — la preuve avant la priorité', () => {
     const ranked = filterDisplayableCandidates([unknown, trusted]);
     expect(ranked[0].id).toBe('trusted');
     expect(ranked[1].id).toBe('unknown');
+  });
+});
+
+describe('cartes client : stock + options avant le clic', () => {
+  it('une rupture passe derrière une fiche avec pointures', () => {
+    const ready = candidate({ id: 'ready', sizes: ['41', '42'], availability: 'in_stock', image: 'https://cdn.tn/a.jpg', images: ['https://cdn.tn/a.jpg'] });
+    const oos = candidate({ id: 'oos', availability: 'out_of_stock', match: 99, image: 'https://cdn.tn/b.jpg' });
+    expect(shopperScore(ready)).toBeGreaterThan(shopperScore(oos));
+    const ranked = filterDisplayableCandidates([oos, ready], 8);
+    expect(ranked.map((item) => item.id)).toEqual(['ready']);
   });
 });

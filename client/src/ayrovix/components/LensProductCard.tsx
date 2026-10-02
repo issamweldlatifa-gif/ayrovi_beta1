@@ -158,7 +158,7 @@ export function LensProductCard({ candidate, onChoose, saved, busy, onFavorite }
         ? tr(`Retirer des favoris : ${candidate.title}`, `إزالة من المفضلة: ${candidate.title}`)
         : tr(`Ajouter aux favoris : ${candidate.title}`, `إضافة إلى المفضلة: ${candidate.title}`)}
       onClick={() => onFavorite(candidate)}>{saved ? <HeartFilled size={20} /> : <Heart size={20} />}</button>
-    {canVerify ? (
+    {canVerify && sizes.length === 0 ? (
       <button type="button" className="lens-card-verify" onClick={verify} disabled={verifying} aria-busy={verifying}
         aria-label={tr(`Vérifier le stock : ${candidate.title}`, `تحقّق من التوفر: ${candidate.title}`)}>
         <RefreshCw size={13} />

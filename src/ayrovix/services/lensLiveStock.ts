@@ -45,10 +45,10 @@ import { recordVariantContract } from './variantAvailability';
 import type { ParsedProductPage } from '../../scraper/productPageParser';
 import { hostAllowsProbe, recordProbeFailure, recordProbeSuccess } from '../../scraper/hostCircuit';
 
-const DEFAULT_BUDGET = 8;
-const DEFAULT_DEADLINE_MS = 12000;
+const DEFAULT_BUDGET = 16;
+const DEFAULT_DEADLINE_MS = 20000;
 const DEFAULT_TTL_MS = 6 * 60 * 60 * 1000;
-const DEFAULT_CONCURRENCY = 4;
+const DEFAULT_CONCURRENCY = 6;
 const DEFAULT_MATCH_THRESHOLD = 0.6;
 const MAX_IMAGES = 12;
 const MAX_SIZES = 40;
