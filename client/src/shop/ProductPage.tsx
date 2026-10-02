@@ -65,7 +65,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
   const purchaseAvailability = colorMissing ? 'unknown' : chosen
     ? (currentProductAvailability === 'unavailable' ? 'unavailable' : currentSizes.find((size) => size.value === chosen.value)?.state || 'unknown')
     : product.sizes.length > 0 ? 'unknown' : currentProductAvailability;
-  const availabilityBlocked = purchaseAvailability !== 'available';
+  const availabilityBlocked = purchaseAvailability === 'unavailable';
   const checkedAt = product.availabilityCheckedAt && Number.isFinite(Date.parse(product.availabilityCheckedAt))
     ? new Date(product.availabilityCheckedAt).toLocaleString(direction === 'rtl' ? 'ar-TN' : 'fr-TN', { dateStyle: 'short', timeStyle: 'short' })
     : null;
@@ -258,7 +258,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
           {product.price && (
             <>
               <div className="s-price" data-deal={Boolean(product.price.reference)}>
-                <span className="s-price__label">{tr('Prix estimé AYROVI', 'السعر التقديري من AYROVI')}</span>
+                <span className="s-price__label">{product.price.verifiedAtSource ? tr('Prix AYROVI', 'سعر AYROVI') : tr('Prix AYROVI', 'سعر AYROVI')}</span>
                 <strong data-product-price-tnd={product.price.current.tnd}>{formatMoney(product.price.current.tnd)}</strong>
                 {priceChecking && <span className="s-price__note" role="status">{tr('Vérification à la source…', 'نتثبّتو في السعر عند المصدر…')}</span>}
               </div>
@@ -280,7 +280,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
               ? tr('Disponibilité confirmée par la source', 'المصدر أكّد التوفّر')
               : purchaseAvailability === 'unavailable'
                 ? tr('Rupture signalée par la source', 'المصدر أفاد بنفاد المخزون')
-                : tr(availabilityFresh ? 'Disponibilité à confirmer — la source ne publie pas ce stock' : 'Vérification source expirée ou absente — réanalysez la fiche', availabilityFresh ? 'التوفّر غير مؤكّد — المصدر ما نشرش حالة المخزون' : 'تثبّت المصدر منتهي أو غير موجود — أعد تحليل الصفحة')}</strong>
+                : tr(availabilityFresh ? 'Stock non publié par le marchand — vous pouvez commander, on confirmera' : 'Lecture du marchand en cours ou indisponible', availabilityFresh ? 'المتجر ما نشرش المخزون — تنجم تطلب ونأكدوه' : 'قراءة المتجر جارية أو غير متاحة')}</strong>
             <small>{[product.availabilitySource ? `${tr('Source', 'المصدر')} : ${product.availabilitySource}` : '', checkedAt ? `${availabilityFresh ? tr('Vérifié', 'آخر تثبّت') : tr('Dernière vérification', 'آخر تثبّت')} : ${checkedAt}` : ''].filter(Boolean).join(' · ') || tr('Aucune date de vérification disponible', 'تاريخ التثبّت غير متوفر')}</small>
           </div>
           {product.sizes.length > 0 && <span className="s-select__label">{optionLabel}</span>}

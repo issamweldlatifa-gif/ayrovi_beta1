@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useLocale } from '../i18n/LocaleContext';
 import type { AyrovixProduct } from '../ayrovix/types';
 import { completeProductOffer, productSelectionLabels, resolveProductSelection } from '../ayrovix/services/productSelection';
+import { refreshLiveStock } from '../ayrovix/services/lensApi';
+import type { AyrovixVariantOption } from '../ayrovix/types';
 import { ProductPage } from './ProductPage';
 import { productToView } from './adapter';
 import type { SizeOption } from './types';
@@ -52,15 +54,17 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
   onNotify, onFavorite, favorite = false,
 }) => {
   const { tr, direction, formatMoney } = useLocale();
+  const [liveProduct, setLiveProduct] = useState(product);
+  const [sourceReading, setSourceReading] = useState(Boolean(product.sourceUrl));
   const [activeColor, setActiveColor] = useState<string | null>(() => product.colors.length === 1 ? product.colors[0] : null);
   const [chosenSize, setChosenSize] = useState('');
   const [quote, setQuote] = useState<CartLineQuote | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
-  const selection = useMemo(() => resolveProductSelection(product, chosenSize, activeColor ?? ''), [product, chosenSize, activeColor]);
+  const selection = useMemo(() => resolveProductSelection(liveProduct, chosenSize, activeColor ?? ''), [liveProduct, chosenSize, activeColor]);
   const selectedSource = selection.kind === 'matched' && selection.offer.fromVariant && selection.offer.price && selection.offer.currency
     ? { amount: selection.offer.price, currency: selection.offer.currency }
-    : Number.isFinite(product.price as number) && (product.price as number) > 0 && product.currency
-      ? { amount: product.price as number, currency: product.currency }
+    : Number.isFinite(liveProduct.price as number) && (liveProduct.price as number) > 0 && liveProduct.currency
+      ? { amount: liveProduct.price as number, currency: liveProduct.currency }
       : null;
   const selectionBlocked = selection.kind === 'matched' && selection.offer.fromVariant && !completeProductOffer(selection.offer);
   const selectionNotice = !(chosenSize || activeColor) ? null
@@ -72,9 +76,66 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
   useEffect(() => {
     setActiveColor(product.colors.length === 1 ? product.colors[0] : null);
     setChosenSize('');
+  }, [liveProduct.sourceUrl]);
+
+
+  useEffect(() => {
+    setLiveProduct(product);
   }, [product.sourceUrl]);
 
-  const quoteKey = `${product.sourceUrl}|${selectedSource?.amount ?? ''}|${selectedSource?.currency ?? ''}`;
+  useEffect(() => {
+    const url = product.sourceUrl?.trim();
+    if (!url || !/^https?:\/\//i.test(url)) {
+      setSourceReading(false);
+      return;
+    }
+    const controller = new AbortController();
+    setSourceReading(true);
+    refreshLiveStock([url], controller.signal)
+      .then((rows) => {
+        const live = rows.find((row) => row.url === url) || rows[0];
+        if (!live || controller.signal.aborted) return;
+        const variantOptions: AyrovixVariantOption[] = (live.variants || []).map((variant, index) => ({
+          id: `${variant.value}-${variant.color || index}`,
+          label: variant.color ? `${variant.value} · ${variant.color}` : variant.value,
+          size: variant.value,
+          color: variant.color,
+          available: variant.availability !== 'unavailable',
+          availability: variant.availability,
+          price: live.price,
+          currency: live.currency,
+          priceTnd: live.priceTnd,
+        }));
+        const expires = Number.isFinite(Date.parse(live.checkedAt))
+          ? new Date(Date.parse(live.checkedAt) + 6 * 60 * 60 * 1000).toISOString()
+          : null;
+        setLiveProduct((current) => ({
+          ...current,
+          title: live.reason && current.title ? current.title : current.title,
+          sizes: live.sizes.length ? live.sizes : current.sizes,
+          colors: live.colors.length ? live.colors : current.colors,
+          images: live.images.length ? live.images : current.images,
+          image: live.images[0] || current.image,
+          price: live.price ?? current.price,
+          currency: live.currency ?? current.currency,
+          priceTnd: live.priceTnd ?? current.priceTnd,
+          originalPrice: live.originalPrice ?? current.originalPrice,
+          originalPriceTnd: live.originalPriceTnd ?? current.originalPriceTnd,
+          availability: live.availability || current.availability,
+          availabilityCheckedAt: live.checkedAt || current.availabilityCheckedAt,
+          availabilityExpiresAt: expires || current.availabilityExpiresAt,
+          priceVerified: Boolean(live.price) || current.priceVerified,
+          priceVerificationStatus: live.price ? 'VERIFIED' : current.priceVerificationStatus,
+          variantOptions: variantOptions.length ? variantOptions : current.variantOptions,
+          description: /v[ée]rification manuelle/i.test(current.description || '') ? '' : current.description,
+        }));
+      })
+      .catch(() => { /* la fiche reste sur les données Lens ; pas de mensonge stock */ })
+      .finally(() => { if (!controller.signal.aborted) setSourceReading(false); });
+    return () => controller.abort();
+  }, [product.sourceUrl]);
+
+  const quoteKey = `${liveProduct.sourceUrl}|${selectedSource?.amount ?? ''}|${selectedSource?.currency ?? ''}`;
 
   /*
    * Le prix affiché vient du serveur, jamais d'un calcul dans l'écran : droits,
@@ -92,7 +153,7 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
     fetch('/api/public/pricing/cart-line', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: product.title, sourcePrice: price, sourceCurrency: source.currency, quantity: 1 }),
+      body: JSON.stringify({ title: liveProduct.title, sourcePrice: price, sourceCurrency: source.currency, quantity: 1 }),
       signal: controller.signal,
     })
       .then(async (response) => {
@@ -106,7 +167,7 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
       .catch(() => { /* l'écran affichera « prix à confirmer » — jamais un montant inventé */ })
       .finally(() => { if (!controller.signal.aborted) setQuoteLoading(false); });
     return () => controller.abort();
-  }, [quoteKey, product.title]);
+  }, [quoteKey, liveProduct.title]);
 
   /* Un prix marchand brut n'est pas un prix de vente : il ignore droits, TVA et
      frais. Tant que le devis serveur n'est pas là, l'écran n'affiche AUCUN
@@ -116,7 +177,7 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
   const awaitingQuote = quotable && !quote;
 
   const view = useMemo(() => {
-    const base = productToView(product, activeColor);
+    const base = productToView(liveProduct, activeColor);
     if (!quote) return { ...base, price: quotable ? null : base.price };
     // Le devis serveur remplace le prix brut : un seul montant fait autorité.
     return {
@@ -130,10 +191,10 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
           ? { tnd: quote.originalLineTotalTND }
           : null,
         discountPercent: quote.promo?.percent ? Math.round(quote.promo.percent) : null,
-        verifiedAtSource: priceVerified || product.priceVerificationStatus === 'VERIFIED',
+        verifiedAtSource: priceVerified || liveProduct.priceVerificationStatus === 'VERIFIED',
       },
     };
-  }, [product, activeColor, quote, priceVerified, quotable]);
+  }, [liveProduct, activeColor, quote, priceVerified, quotable]);
 
   const addToBag = async (size: SizeOption | null, quantity: number, details: { note: string; link: string }) => {
     if (ordering) return;
@@ -147,7 +208,7 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
       // de commande attend. Sous un autre nom, il serait silencieusement perdu.
       // Un champ vidé par le client ne doit pas produire une ligne de panier sans
       // adresse : on retombe sur le lien marchand connu, comme l'ancienne fiche.
-      manualUrl: details.link.trim() || product.sourceUrl || '',
+      manualUrl: details.link.trim() || liveProduct.sourceUrl || '',
     });
   };
 
@@ -157,12 +218,12 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
       tr={tr}
       formatMoney={formatMoney}
       direction={direction === 'rtl' ? 'rtl' : 'ltr'}
-      priceChecking={quoteLoading}
+      priceChecking={quoteLoading || sourceReading}
       canAdd={!awaitingQuote}
       onChosenSize={setChosenSize}
       selectionNotice={selectionNotice}
       onCalculateAnother={onCalculateAnother}
-      defaultLink={product.sourceUrl || ''}
+      defaultLink={liveProduct.sourceUrl || ''}
       actions={{
         onBack,
         onOpenBag: onOpenCart,
@@ -176,12 +237,12 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
          * ne circule. On passe par le partage natif du téléphone quand il
          * existe, sinon par le presse-papiers — jamais un bouton qui ne fait rien.
          */
-        onShare: product.sourceUrl
+        onShare: liveProduct.sourceUrl
           ? () => {
-              const payload = { title: product.title, url: product.sourceUrl };
+              const payload = { title: liveProduct.title, url: liveProduct.sourceUrl };
               const share = (navigator as Navigator & { share?: (data: ShareData) => Promise<void> }).share;
               if (share) void share.call(navigator, payload).catch(() => undefined);
-              else void navigator.clipboard?.writeText(product.sourceUrl).catch(() => undefined);
+              else void navigator.clipboard?.writeText(liveProduct.sourceUrl).catch(() => undefined);
             }
           : undefined,
       }}

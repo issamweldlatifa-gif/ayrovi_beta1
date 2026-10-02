@@ -92,7 +92,7 @@ export class SmartLinkScraper {
         ? merchantResult.data.description
         : (merchantResult.verified
           ? `Article extrait depuis ${storeName}. Prix confirmé automatiquement par AYROVI.`
-          : `Article extrait depuis ${storeName}. Prix en attente de vérification manuelle.`),
+          : `Article extrait depuis ${storeName}. Prix lu automatiquement par AYROVI.`),
       images,
       colorImages: liveData?.colorImages || {},
       mainImage: images.length > 0 ? images[0] : '',

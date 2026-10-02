@@ -98,6 +98,17 @@ export function candidateToView(candidate: AyrovixCandidate): ProductView {
   };
 }
 
+/** Titre vitrine : on retire le suffixe boutique et la liste de coloris SerpApi. */
+export function displayProductTitle(raw: string): string {
+  let title = String(raw || '').replace(/\s+/g, ' ').trim();
+  title = title.replace(/\s*[-–—]\s*[A-Z0-9.-]+\.[A-Z]{2,}\s*$/i, '');
+  const parts = title.split(/\s+[-–—]\s+/).map((part) => part.trim()).filter(Boolean);
+  if (parts.length >= 3 && /\//.test(parts[parts.length - 1])) {
+    title = parts.slice(0, -1).join(' - ');
+  }
+  return title.slice(0, 140);
+}
+
 /** La fiche complète : mêmes règles, plus les tailles et les couleurs. */
 export function productToView(product: AyrovixProduct, activeColor?: string | null): ProductView {
   const options = product.variantOptions || [];
@@ -157,7 +168,7 @@ export function productToView(product: AyrovixProduct, activeColor?: string | nu
   return {
     id: product.sourceUrl || product.title,
     brand: product.brand?.trim() || null,
-    title: product.title.trim(),
+    title: displayProductTitle(product.title),
     description: product.description?.trim() || null,
     /* Keep every image supplied by this product's own merchant page. */
     media: toMedia(gallery, product.title),
