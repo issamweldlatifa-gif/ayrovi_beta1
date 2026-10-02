@@ -386,7 +386,12 @@ async function fetchUrl(
 
 export async function enrichCandidatesLiveStock(
   candidates: AyrovixCandidate[],
-  options: { fetcher?: LiveStockFetcher; now?: number; reprice?: LiveStockRepricer } = {},
+  options: {
+    fetcher?: LiveStockFetcher;
+    now?: number;
+    reprice?: LiveStockRepricer;
+    onReady?: (candidate: AyrovixCandidate) => void;
+  } = {},
 ): Promise<{ candidates: AyrovixCandidate[]; report: LiveStockReport }> {
   // Plancher dur hors tests : un dashboard Render resté à budget=4 / 2500ms
   // ne doit plus couper le kacht. Les tests gardent des bornes basses.
@@ -433,7 +438,12 @@ export async function enrichCandidatesLiveStock(
         }
         if (cached) report.cacheHits += 1;
         else if (entry) report.fetched += 1;
-        if (entry && applyLiveStock(output[next.index], entry, options.reprice)) report.applied += 1;
+        if (entry && applyLiveStock(output[next.index], entry, options.reprice)) {
+          report.applied += 1;
+          if (options.onReady && !purchaseBlocker(output[next.index])) {
+            options.onReady({ ...output[next.index] });
+          }
+        }
         const ready = output.filter((item) => item.priceOrigin === 'merchant'
           && item.availability !== 'out_of_stock'
           && ((item.sizes || []).length > 0 || (item.colors || []).length > 0)

@@ -187,6 +187,19 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
     const trace = startTrace(requestId);
     // expose requestId for client correlation (no PII)
     res.setHeader('X-Ayrovix-Request-Id', requestId);
+    const stream = String(req.headers.accept || '').includes('text/event-stream');
+    const streamedUrls = new Set<string>();
+    const emit = (event: string, data: unknown) => {
+      if (!stream || res.writableEnded) return;
+      res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+    };
+    if (stream) {
+      res.status(200);
+      res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-cache, no-transform');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('X-Accel-Buffering', 'no');
+    }
     const tStart = Date.now();
     // Frontend may send crop timing via header
     const headerCrop = Number(req.headers['x-lens-crop-ms']);
@@ -330,6 +343,11 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
           const estimate = estimateWithDb(db, price, currency);
           return estimate ? { priceTnd: estimate.priceTnd, promo: estimate.promo } : null;
         },
+        onReady: (candidate) => {
+          if (streamedUrls.has(candidate.sourceUrl)) return;
+          streamedUrls.add(candidate.sourceUrl);
+          emit('card', tokenizedCandidate(candidate));
+        },
       });
       mark(trace, 'liveStockMs', Date.now() - tLiveStock);
       mark(trace, 'liveStockFetched', liveStock.fetched);
@@ -393,8 +411,21 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       mark(trace, 'candidatesCount', securedCandidates.length);
       mark(trace, 'totalBackendMs', Date.now() - tStart);
       endTrace(trace);
+      if (stream) {
+        for (const candidate of securedCandidates) {
+          if (streamedUrls.has(candidate.sourceUrl)) continue;
+          streamedUrls.add(candidate.sourceUrl);
+          emit('card', candidate);
+        }
+        emit('done', { eventId, query, identification, excluded: responseData.excluded, liveStock: responseData.liveStock });
+        return res.end();
+      }
       return res.json({ success: true, data: responseData });
     } catch (error: any) {
+      if (stream && !res.writableEnded) {
+        emit('error', { code: error?.code || 'IDENTIFICATION_FAILED', error: error?.message || 'IDENTIFICATION_FAILED' });
+        return res.end();
+      }
       if (error instanceof InvalidImageError || error?.code === 'INVALID_IMAGE') {
         return res.status(415).json({ success: false, code: 'INVALID_IMAGE', error: error.message });
       }

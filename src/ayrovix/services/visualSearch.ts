@@ -191,32 +191,40 @@ async function runSerpApiVisualSearch(image: Buffer, limit: number): Promise<Ayr
 
     const configuredCountry = (process.env.AYROVIX_LENS_COUNTRY || '').trim().toLowerCase();
     const country = /^[a-z]{2}$/.test(configuredCountry) ? configuredCountry : 'fr';
-    const params = new URLSearchParams({
-      engine: 'google_lens',
-      type: 'products',
-      image_id: imageId,
-      hl: 'fr',
-      country,
-      api_key: key,
-    });
-    const response = await fetch(`https://serpapi.com/search.json?${params.toString()}`, {
-      signal: AbortSignal.timeout(remainingMs(deadline, 10_000)),
-    });
-    if (!response.ok) {
-      console.warn(`[AYROVIX serpapi-lens] search HTTP ${response.status}`);
-      return [];
+    const searchType = async (type: 'products' | 'visual_matches'): Promise<AyrovixCandidate[]> => {
+      const params = new URLSearchParams({
+        engine: 'google_lens',
+        type,
+        image_id: imageId,
+        hl: 'fr',
+        country,
+        api_key: key,
+      });
+      const response = await fetch(`https://serpapi.com/search.json?${params.toString()}`, {
+        signal: AbortSignal.timeout(remainingMs(deadline, 12_000)),
+      });
+      if (!response.ok) {
+        console.warn(`[AYROVIX serpapi-lens] ${type} HTTP ${response.status}`);
+        return [];
+      }
+      const payload: any = await responseJson(response);
+      if (payload?.error) {
+        console.warn(`[AYROVIX serpapi-lens] ${type} API error`);
+        return [];
+      }
+      return toCandidates(payload, limit);
+    };
+    const [products, visual] = await Promise.all([searchType('products'), searchType('visual_matches')]);
+    const merged: AyrovixCandidate[] = [];
+    const seen = new Set<string>();
+    for (const item of [...products, ...visual]) {
+      if (seen.has(item.sourceUrl)) continue;
+      seen.add(item.sourceUrl);
+      merged.push(item);
+      if (merged.length >= limit) break;
     }
-    const payload: any = await responseJson(response);
-    if (payload?.error) {
-      console.warn('[AYROVIX serpapi-lens] search returned an API error');
-      return [];
-    }
-    const results = toCandidates(payload, limit);
-    if (results.length === 0 && Array.isArray(payload?.visual_matches) && payload.visual_matches.length > 0) {
-      console.warn(`[AYROVIX serpapi-lens] strict filter removed ${payload.visual_matches.length} matches (no price>0) — WebSearch fallback will trigger (D2-10 lenient pending)`);
-    }
-    console.log(`[AYROVIX serpapi-lens] ${results.length} visual product matches`);
-    return results;
+    console.log(`[AYROVIX serpapi-lens] ${merged.length} matches (products=${products.length} visual=${visual.length})`);
+    return merged;
   } catch (error: any) {
     console.warn(`[AYROVIX serpapi-lens] ${error?.name === 'TimeoutError' ? 'timeout' : 'unavailable'}`);
     return [];

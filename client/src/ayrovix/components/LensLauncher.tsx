@@ -370,7 +370,19 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
     if (!candidatesView) setCandidatesView({ queryLabel: null, list: [], eventId: '' });
     setError(null);
     try {
-      const result = await analyzeImage(file, controller.signal, null, { ...(cropMs != null ? { cropMs } : {}), ...(roi ? { roi } : {}) });
+      const result = await analyzeImage(file, controller.signal, null, {
+        ...(cropMs != null ? { cropMs } : {}),
+        ...(roi ? { roi } : {}),
+        onCard: (candidate) => {
+          if (abortRef.current !== token) return;
+          setIsAnalyzing(false);
+          setCandidatesView((current) => {
+            const list = current?.list || [];
+            if (list.some((item) => item.sourceUrl === candidate.sourceUrl || item.id === candidate.id)) return current || { queryLabel: null, list, eventId: '' };
+            return { queryLabel: current?.queryLabel || candidate.title || null, list: [...list, candidate], eventId: current?.eventId || '', excludedCount: current?.excludedCount };
+          });
+        },
+      });
       // uploadMs could be measured as tUpload diff but fetch includes network; cropMs is primary
       if (abortRef.current !== token) return;
       const usable = result.identification.confidence > 0 && result.identification.description !== 'PRODUIT_NON_IDENTIFIE';

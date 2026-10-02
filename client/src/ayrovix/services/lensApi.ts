@@ -20,16 +20,67 @@ async function parseResponse<T>(response: Response): Promise<T> {
   return payload.data as T;
 }
 
-export async function analyzeImage(file: File, signal?: AbortSignal, customerIntent?: string | null, extra?: { cropMs?: number; uploadMs?: number; roi?: { x:number; y:number; w:number; h:number } }): Promise<AyrovixImageResult> {
+export async function analyzeImage(
+  file: File,
+  signal?: AbortSignal,
+  customerIntent?: string | null,
+  extra?: { cropMs?: number; uploadMs?: number; roi?: { x:number; y:number; w:number; h:number }; onCard?: (candidate: AyrovixImageResult['candidates'][number]) => void },
+): Promise<AyrovixImageResult> {
   const body = new FormData();
   body.append('image', file, file.name || 'ayrovix.jpg');
   if (customerIntent) body.append('customerIntent', String(customerIntent).slice(0,200));
   if (extra?.roi) body.append('roi', JSON.stringify(extra.roi));
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = { Accept: 'text/event-stream' };
   if (extra?.cropMs != null) headers['X-Lens-Crop-Ms'] = String(Math.round(extra.cropMs));
   if (extra?.uploadMs != null) headers['X-Lens-Upload-Ms'] = String(Math.round(extra.uploadMs));
-  const response = await fetch('/api/ayrovix/analyze-image', { method: 'POST', body, headers: Object.keys(headers).length ? headers : undefined, signal });
-  return parseResponse<AyrovixImageResult>(response);
+  const response = await fetch('/api/ayrovix/analyze-image', { method: 'POST', body, headers, signal });
+  const ctype = response.headers.get('content-type') || '';
+  if (!ctype.includes('event-stream')) return parseResponse<AyrovixImageResult>(response);
+  if (!response.ok || !response.body) {
+    throw new AyrovixApiError('IDENTIFICATION_FAILED', "Impossible d'identifier le produit. Essayez une photo plus nette et centrée.", response.status);
+  }
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  const candidates: AyrovixImageResult['candidates'] = [];
+  let doneMeta: Partial<AyrovixImageResult> = {};
+  const consume = (block: string) => {
+    let event = 'message';
+    let raw = '';
+    for (const line of block.split('\n')) {
+      if (line.startsWith('event:')) event = line.slice(6).trim();
+      else if (line.startsWith('data:')) raw += line.slice(5).trim();
+    }
+    if (!raw) return;
+    const payload = JSON.parse(raw);
+    if (event === 'error') {
+      throw new AyrovixApiError(String(payload?.code || 'IDENTIFICATION_FAILED'), String(payload?.error || 'IDENTIFICATION_FAILED'), 422);
+    }
+    if (event === 'card' && payload?.sourceUrl) {
+      if (!candidates.some((item) => item.sourceUrl === payload.sourceUrl)) {
+        candidates.push(payload);
+        extra?.onCard?.(payload);
+      }
+    }
+    if (event === 'done') doneMeta = payload || {};
+  };
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const parts = buffer.split('\n\n');
+    buffer = parts.pop() || '';
+    for (const block of parts) consume(block);
+  }
+  if (buffer.trim()) consume(buffer);
+  return {
+    identification: doneMeta.identification || { input_kind: 'product_photo', category: '', brand: null, model: null, color: [], visible_text: [], possible_model_codes: [], description: candidates[0]?.title || '', confidence: 0.7, detected_price: { amount: 0, currency: '', label: 'none', confidence: 0 } } as AyrovixImageResult['identification'],
+    query: String(doneMeta.query || candidates[0]?.title || ''),
+    candidates,
+    eventId: String(doneMeta.eventId || ''),
+    detectedPrice: null,
+    excluded: doneMeta.excluded || null,
+  };
 }
 
 export async function analyzeUrl(url: string, channel: 'url' | 'qr', signal?: AbortSignal, recordHistory = true): Promise<AyrovixUrlResult> {
