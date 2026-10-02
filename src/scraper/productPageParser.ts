@@ -25,8 +25,8 @@ export interface ParsedProductPage {
   priceSource: 'json_ld' | 'meta' | 'dom' | 'embedded_variant' | 'context_regex' | 'none';
 }
 
-const SIZE_NAME = /(?:^|\b)(?:size|sizes|taille|tailles|pointure|pointures|größe|shoe size)(?:\b|$)/i;
-const COLOR_NAME = /(?:^|\b)(?:colou?r|couleur|couleurs|farbe)(?:\b|$)/i;
+const SIZE_NAME = /(?:^|\b)(?:size|sizes|taille|tailles|pointure|pointures|größe|shoe size|capacity|capacit[eé]|volume|contenanc|storage|stockage|m[eé]moire|memory|ram|ssd|watt|puissance|poids|weight|dimension|format|mod[eè]le|model|style|coupe|fit|voltage|version)(?:\b|$)/i;
+const COLOR_NAME = /(?:^|\b)(?:colou?r|couleur|couleurs|farbe|finish|finition|teinte)(?:\b|$)/i;
 const PLACEHOLDER = /^(?:select|choose|choisir|sélectionner|selectionner|taille|size|couleur|color|default title|please select|—|-)?$/i;
 const UNAVAILABLE = /(?:sold\s*out|out\s*of\s*stock|épuis|indisponible|unavailable|rupture)/i;
 
@@ -337,10 +337,12 @@ function optionNames(product: any): string[] {
 
 function looksLikeSize(value: string): boolean {
   const token = String(value || '').trim();
-  return /^(?:XXS|XS|S|M|L|XL|XXL|XXXL|[2-5]?XL|ONE SIZE|TU)$/i.test(token)
+  return /^(?:XXS|XS|S|M|L|XL|XXL|XXXL|[2-5]?XL|ONE SIZE|TU|unique)$/i.test(token)
     || /^(?:[0-9]{1,3}(?:[.,][0-9])?)(?:\s*(?:EU|US|UK|FR|IT|CM))?$/i.test(token)
     || /^(?:EU|US|UK)\s*[0-9]{1,3}(?:[.,][0-9])?$/i.test(token)
-    || /^[0-9]{1,2}(?:[.,][0-9])?\s*(?:EU|USA|US)$/i.test(token);
+    || /^[0-9]{1,2}(?:[.,][0-9])?\s*(?:EU|USA|US)$/i.test(token)
+    || /^(?:\d+[.,]?\d*)\s*(?:ml|cl|l|g|kg|go|gb|tb|mo|mb|w|v|mah|oz|fl\.?\s*oz)$/i.test(token)
+    || /^\d+\s*(?:x\s*\d+){0,2}\s*(?:cm|mm)$/i.test(token);
 }
 
 /** « blau, koralle / 41 » (Shopify Running Point) — couleur + pointure dans un seul titre. */
@@ -615,7 +617,7 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
     const originalPrice = originalPriceFrom({ offers, embeddedProduct, details, price, meta, text });
 
     const domSizes = Array.from(document.querySelectorAll(
-      'select[name*="size" i] option, select[name*="taille" i] option, select[data-id*="size" i] option, #variation_size_name option, [data-testid*="size" i] button',
+      'select[name*="size" i] option, select[name*="taille" i] option, select[name*="capacit" i] option, select[name*="volume" i] option, select[name*="storage" i] option, select[name*="stockage" i] option, select[name*="memory" i] option, select[data-id*="size" i] option, #variation_size_name option, [data-testid*="size" i] button, [data-testid*="capacit" i] button, [data-testid*="storage" i] button',
     )).filter((node: any) => !node.disabled && !UNAVAILABLE.test(node.textContent || ''))
       .map((node: any) => cleanLabel(node.getAttribute?.('data-value') || node.value || node.textContent));
     const domColors = Array.from(document.querySelectorAll(
@@ -625,15 +627,15 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
 
     const namedSizes: string[] = [];
     const namedColors: string[] = [];
-    collectNamedStrings(productLd, /^(?:size|sizes)$/i, namedSizes);
+    collectNamedStrings(productLd, /^(?:size|sizes|capacity|volume|storage)$/i, namedSizes);
     collectNamedStrings(productLd, /^(?:color|colour)$/i, namedColors);
     for (const productState of embeddedProducts.slice(0, 12)) {
-      collectNamedStrings(productState, /^(?:size|sizes|taille|tailles|pointure|pointures)$/i, namedSizes);
-      collectNamedStrings(productState, /^(?:color|colour|couleur|couleurs)$/i, namedColors);
+      collectNamedStrings(productState, /^(?:size|sizes|taille|tailles|pointure|pointures|capacity|capacit[eé]|volume|storage|stockage|m[eé]moire)$/i, namedSizes);
+      collectNamedStrings(productState, /^(?:color|colour|couleur|couleurs|finish|finition)$/i, namedColors);
     }
 
     const widgetSizes = Array.from(document.querySelectorAll(
-      '[class*="size" i] button, [class*="taille" i] button, [class*="pointure" i] button, [class*="Size" i] [role="option"], [data-testid*="size" i] button, [data-testid*="size" i] li, [data-size-equivalence], [data-size-text], [data-size-id]',
+      '[class*="size" i] button, [class*="taille" i] button, [class*="pointure" i] button, [class*="capacit" i] button, [class*="volume" i] button, [class*="storage" i] button, [class*="stockage" i] button, [class*="Size" i] [role="option"], [data-testid*="size" i] button, [data-testid*="size" i] li, [data-size-equivalence], [data-size-text], [data-size-id]',
     )).map((node: any) => {
       const equivalence = String(node.getAttribute?.('data-size-equivalence') || '');
       const eu = equivalence.match(/(\d{2}(?:[.,]\d)?)\s*EU/i);

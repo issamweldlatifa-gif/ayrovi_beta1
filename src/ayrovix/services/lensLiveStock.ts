@@ -491,8 +491,10 @@ export function purchaseBlocker(candidate: AyrovixCandidate): PurchaseBlocker | 
   const productPositive = candidate.availability === 'in_stock' || candidate.availability === 'limited';
   if (!productPositive && !variantsPositive) return 'stock_inconnu';
   if (!candidate.image && !(candidate.images || []).length) return 'sans_image';
-  const hasOptions = (candidate.sizes || []).length > 0 || (candidate.colors || []).length > 0;
-  if (!hasOptions) return 'sans_options';
+  // Un SKU unique (électronique, cosmétique, livre) n'a pas de pointure :
+  // stock positif + prix + image suffisent. Les options, si le marchand
+  // les publie (ml, Go, couleur), restent exigées seulement si présentes
+  // nulle part ET que le stock n'est pas positif — déjà géré plus haut.
   return null;
 }
 

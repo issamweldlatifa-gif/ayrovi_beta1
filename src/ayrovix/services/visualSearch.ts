@@ -86,7 +86,9 @@ async function prepareImageForSerpApi(image: Buffer): Promise<Buffer> {
 }
 
 function toCandidates(payload: any, limit: number): AyrovixCandidate[] {
-  const rows = Array.isArray(payload?.visual_matches) ? payload.visual_matches : [];
+  const rows = Array.isArray(payload?.visual_matches) ? payload.visual_matches
+    : Array.isArray(payload?.exact_matches) ? payload.exact_matches
+      : [];
   const priced = collectCandidates(rows, limit, true);
   const all = collectCandidates(rows, Math.max(limit, 40), false);
   const seen = new Set(priced.map((item) => item.sourceUrl));
@@ -191,7 +193,7 @@ async function runSerpApiVisualSearch(image: Buffer, limit: number): Promise<Ayr
 
     const configuredCountry = (process.env.AYROVIX_LENS_COUNTRY || '').trim().toLowerCase();
     const country = /^[a-z]{2}$/.test(configuredCountry) ? configuredCountry : 'fr';
-    const searchType = async (type: 'products' | 'visual_matches'): Promise<AyrovixCandidate[]> => {
+    const searchType = async (type: 'products' | 'visual_matches' | 'exact_matches'): Promise<AyrovixCandidate[]> => {
       const params = new URLSearchParams({
         engine: 'google_lens',
         type,
@@ -214,16 +216,20 @@ async function runSerpApiVisualSearch(image: Buffer, limit: number): Promise<Ayr
       }
       return toCandidates(payload, limit);
     };
-    const [products, visual] = await Promise.all([searchType('products'), searchType('visual_matches')]);
+    const [products, visual, exact] = await Promise.all([
+      searchType('products'),
+      searchType('visual_matches'),
+      searchType('exact_matches'),
+    ]);
     const merged: AyrovixCandidate[] = [];
     const seen = new Set<string>();
-    for (const item of [...products, ...visual]) {
+    for (const item of [...products, ...exact, ...visual]) {
       if (seen.has(item.sourceUrl)) continue;
       seen.add(item.sourceUrl);
       merged.push(item);
       if (merged.length >= limit) break;
     }
-    console.log(`[AYROVIX serpapi-lens] ${merged.length} matches (products=${products.length} visual=${visual.length})`);
+    console.log(`[AYROVIX serpapi-lens] ${merged.length} matches (products=${products.length} exact=${exact.length} visual=${visual.length})`);
     return merged;
   } catch (error: any) {
     console.warn(`[AYROVIX serpapi-lens] ${error?.name === 'TimeoutError' ? 'timeout' : 'unavailable'}`);

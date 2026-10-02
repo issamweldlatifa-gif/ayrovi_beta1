@@ -519,8 +519,8 @@ describe('achetabilité — seules les fiches prouvées atteignent le client', (
     expect(report).toEqual({ kept: 1, excluded: 2, reasons: { page_non_lue: 1, rupture: 1 } });
   });
 
-  it('écarte une page lue sans taille ni couleur', () => {
-    expect(purchaseBlocker(proven({}, { variants: { sizes: [], colors: [], details: [] } }))).toBe('sans_options');
+  it('un SKU unique en stock (sans taille) reste achetable', () => {
+    expect(purchaseBlocker(proven({}, { variants: { sizes: [], colors: [], details: [] } }))).toBeNull();
   });
 
   it('AYROVI_LENS_REQUIRE_PROOF=true réactive le filtre strict', () => {
