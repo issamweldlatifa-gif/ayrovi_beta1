@@ -237,16 +237,49 @@ function flattenJsonLd(raw: any, output: any[] = []): any[] {
   if (!raw) return output;
   if (Array.isArray(raw)) {
     for (const item of raw) flattenJsonLd(item, output);
-  } else if (typeof raw === 'object') {
+    return output;
+  }
+  if (typeof raw === 'object') {
     if (Array.isArray(raw['@graph'])) flattenJsonLd(raw['@graph'], output);
-    else output.push(raw);
+    output.push(raw);
+    // Zalando : ProductGroup → hasVariant[] → Product → offers (Offer.price).
+    for (const key of ['hasVariant', 'offers', 'isVariantOf', 'mainEntity', 'itemListElement']) {
+      if (raw[key]) flattenJsonLd(raw[key], output);
+    }
   }
   return output;
 }
 
 function isProductNode(node: any): boolean {
   const type = node?.['@type'];
-  return type === 'Product' || (Array.isArray(type) && type.includes('Product'));
+  return type === 'Product' || type === 'ProductGroup' || (Array.isArray(type) && (type.includes('Product') || type.includes('ProductGroup')));
+}
+
+function isOfferNode(node: any): boolean {
+  const type = node?.['@type'];
+  return type === 'Offer' || type === 'AggregateOffer' || (Array.isArray(type) && (type.includes('Offer') || type.includes('AggregateOffer')));
+}
+
+/** Tous les Offer JSON-LD (y compris imbriqués), pour un prix Zalando qui n'est pas sur le ProductGroup. */
+function collectJsonLdOffers(nodes: any[]): any[] {
+  const offers: any[] = [];
+  for (const node of nodes) {
+    if (isOfferNode(node)) offers.push(node);
+    const nested = node?.offers;
+    if (Array.isArray(nested)) offers.push(...nested);
+    else if (nested && typeof nested === 'object') offers.push(nested);
+  }
+  return offers;
+}
+
+function saleFromOffers(offers: any[]): { price: number; currency: string } {
+  const priced = offers.map((offer) => ({
+    price: parsePrice(offer?.price ?? offer?.lowPrice),
+    currency: String(offer?.priceCurrency || '').trim().toUpperCase(),
+  })).filter((row) => row.price > 0);
+  if (!priced.length) return { price: 0, currency: '' };
+  const cheapest = priced.reduce((a, b) => (a.price <= b.price ? a : b));
+  return cheapest;
 }
 
 function collectEmbeddedProducts(root: any, output: any[], seen: Set<any>, budget: { value: number }, depth = 0): void {
@@ -488,7 +521,7 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
     for (const node of Array.from(document.querySelectorAll('script[type="application/ld+json"]')).slice(0, 30)) {
       try { flattenJsonLd(JSON.parse(node.textContent || 'null'), jsonLd); } catch { /* malformed merchant JSON-LD */ }
     }
-    const productLd = jsonLd.find(isProductNode) || {};
+    const productLd = jsonLd.find((node) => isProductNode(node) && (node.offers || node.hasVariant)) || jsonLd.find(isProductNode) || {};
 
     const embeddedProducts: any[] = [];
     for (const node of Array.from(document.querySelectorAll('script[type="application/json"]')).slice(0, 40)) {
@@ -540,7 +573,9 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
       }
     }
 
-    const offers = Array.isArray(productLd?.offers) ? productLd.offers[0] : productLd?.offers;
+    const ldOffers = collectJsonLdOffers(jsonLd);
+    const offers = ldOffers[0] || (Array.isArray(productLd?.offers) ? productLd.offers[0] : productLd?.offers);
+    const ldSale = saleFromOffers(ldOffers);
     const selectorPrice = storeType === 'amazon'
       ? text('.apexPriceToPay .a-offscreen, #corePriceDisplay_desktop_feature_div .a-price:not(.a-text-price) .a-offscreen, #priceblock_dealprice, #newBuyBoxPrice')
       : storeType === 'shein'
@@ -548,15 +583,20 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
         : text('[itemprop="price"], [data-price], [class*="price"]');
     const details = variantsFromProduct(embeddedProduct);
     const detailPrices = details.map((detail) => detail.price || 0).filter((value) => value > 0);
-    const jsonLdPrice = parsePrice(offers?.price || offers?.lowPrice);
+    const jsonLdPrice = ldSale.price || parsePrice(offers?.price || offers?.lowPrice);
     const metaPrice = parsePrice(
       meta('meta[property="product:price:amount"]') || meta('meta[property="og:price:amount"]') || meta('meta[itemprop="price"]'),
     );
     const domPrice = parsePrice(selectorPrice);
     const variantFloor = detailPrices.length ? Math.min(...detailPrices) : 0;
     const regexPrice = contextualPrice(document.body?.textContent || '');
-    const price = jsonLdPrice || metaPrice || domPrice || variantFloor || regexPrice?.price || 0;
-    const priceSource: ParsedProductPage['priceSource'] = jsonLdPrice ? 'json_ld'
+    // Prix courant = le plus bas publié (promo 216 vs liste 309), jamais le plus cher.
+    const priced = [jsonLdPrice, metaPrice, variantFloor].filter((value) => value > 0);
+    const saleHint = priced.length ? Math.min(...priced) : 0;
+    const price = saleHint || jsonLdPrice || metaPrice || domPrice || variantFloor || regexPrice?.price || 0;
+    const priceSource: ParsedProductPage['priceSource'] = jsonLdPrice && price === jsonLdPrice ? 'json_ld'
+      : metaPrice && price === metaPrice ? 'meta'
+        : jsonLdPrice ? 'json_ld'
       : metaPrice ? 'meta'
         : domPrice ? 'dom'
           : variantFloor ? 'embedded_variant'
@@ -564,7 +604,7 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
               : 'none';
     const metaCurrency = meta('meta[property="product:price:currency"]') || meta('meta[property="og:price:currency"]');
     const currencyBySource: Record<ParsedProductPage['priceSource'], string> = {
-      json_ld: String(offers?.priceCurrency || metaCurrency || ''),
+      json_ld: String(ldSale.currency || offers?.priceCurrency || metaCurrency || ''),
       meta: String(metaCurrency || offers?.priceCurrency || ''),
       dom: String(currencyCode(selectorPrice) || metaCurrency || offers?.priceCurrency || ''),
       embedded_variant: String(embeddedProduct?.currency || metaCurrency || offers?.priceCurrency || ''),
@@ -606,7 +646,9 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
     for (const match of sizeJson) jsonSizes.push(cleanLabel(match[1].replace(/^EU\s*/i, '')));
     const colorJson = htmlBlob.matchAll(/"(?:color|colour|colorName|couleur)"\s*:\s*"([^"]{2,80})"/gi);
     for (const match of colorJson) jsonColors.push(cleanLabel(match[1]));
-    const sizes = unique([...details.map((detail) => detail.size), ...namedSizes, ...domSizes, ...widgetSizes, ...jsonSizes].filter((value) => !value || looksLikeSize(value)), 40);
+    const rawSizes = unique([...details.map((detail) => detail.size), ...namedSizes, ...domSizes, ...widgetSizes, ...jsonSizes].filter((value) => !value || looksLikeSize(value)), 40);
+    const euSizes = rawSizes.filter((value) => !/\bUSA?\b/i.test(value));
+    const sizes = euSizes.length ? euSizes : rawSizes;
     const colors = unique([...details.map((detail) => detail.color), ...namedColors, ...domColors, ...jsonColors].filter((value) => value && !PLACEHOLDER.test(value) && !looksLikeSize(value)), 20);
     if (colors.length === 1) {
       for (const detail of details) if (!detail.color) detail.color = colors[0];
@@ -737,7 +779,7 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
       colorImages,
       externalId: String(productLd?.sku || productLd?.productID || embeddedProduct?.id || embeddedProduct?.sku || ''),
       variants: { sizes, colors, details },
-      availability: availabilityFrom(productLd, embeddedProduct),
+      availability: availabilityFrom({ ...productLd, offers: (ldOffers.length ? ldOffers : productLd?.offers) }, embeddedProduct),
       priceSource,
     };
   } finally {

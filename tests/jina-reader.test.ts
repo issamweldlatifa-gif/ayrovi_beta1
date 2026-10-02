@@ -85,3 +85,21 @@ it('lit le tableau Running Emotion data-size-equivalence="41 EU"', () => {
   expect(parsed.variants.sizes).toEqual(expect.arrayContaining(['41', '42']));
   expect(parsed.price).toBe(216.99);
 });
+
+it('Zalando ProductGroup : prix et stock lus sur les Offer imbriqués', () => {
+  const html = `<html><head><script type="application/ld+json">${JSON.stringify([
+    {
+      '@type': 'ProductGroup',
+      name: 'Alphafly',
+      hasVariant: [{
+        '@type': 'Product',
+        name: 'Alphafly',
+        offers: { '@type': 'Offer', price: '247.95', priceCurrency: 'EUR', availability: 'https://schema.org/InStock' },
+      }],
+    },
+  ])}</script></head><body><h1>Alphafly</h1></body></html>`;
+  const parsed = parseProductPageHtml(html, 'https://www.zalando.fr/x.html', 'generic');
+  expect(parsed.price).toBe(247.95);
+  expect(parsed.currency).toBe('EUR');
+  expect(parsed.availability).toBe('in_stock');
+});
