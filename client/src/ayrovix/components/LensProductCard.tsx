@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState, useId } from 'react';
-import { Heart, HeartFilled, Image as ImageIcon, RefreshCw } from '../../components/QatafoIcons';
+import { Heart, HeartFilled, Image as ImageIcon } from '../../components/QatafoIcons';
 import { useLocale } from '../../i18n/LocaleContext';
 import type { AyrovixCandidate } from '../types';
 import { MerchantRating } from './MerchantRating';
 import { QuietPromoPrice } from './quiet-card';
 import { isComposedUrl, withIsolation } from '../services/mediaIsolation';
-import { refreshLiveStock, type LiveStockResult } from '../services/lensApi';
 import './lens-product-card.css';
 
 export function lensCardCopy(candidate: AyrovixCandidate) {
@@ -43,35 +42,29 @@ function StockBadge({ availability }: { availability: AyrovixCandidate['availabi
   );
 }
 
-function SizeChips({ sizes, variants }: { sizes: string[]; variants?: LiveStockResult['variants'] }) {
+function ColorChips({ colors }: { colors: string[] }) {
   const { tr } = useLocale();
-  if (!sizes.length) return null;
+  if (!colors.length) return null;
   return (
-    <span className="lens-card-sizes" aria-label={tr('Tailles publiées par le marchand', 'المقاسات التي نشرها المتجر')}>
-      {sizes.slice(0, 8).map((size) => {
-        const known = variants?.find((variant) => variant.value.toLocaleLowerCase('fr') === size.toLocaleLowerCase('fr'));
-        const state = known?.availability;
-        return (
-          <span
-            key={size}
-            className="lens-card-size"
-            data-state={state === 'unavailable' ? 'out' : state === 'available' ? 'in' : undefined}
-            aria-disabled={state === 'unavailable' ? true : undefined}
-            title={state === 'unavailable' ? tr('Indisponible chez le marchand', 'غير متوفر عند المتجر') : undefined}
-          >
-            {size}
-          </span>
-        );
-      })}
-      {sizes.length > 8 ? <span className="lens-card-size">+{sizes.length - 8}</span> : null}
+    <span className="lens-card-sizes" aria-label={tr('Couleurs publiées par le marchand', 'الألوان التي نشرها المتجر')}>
+      {colors.slice(0, 4).map((color) => (
+        <span key={color} className="lens-card-size">{color}</span>
+      ))}
     </span>
   );
 }
 
-function checkedAtLabel(iso: string): string {
-  const at = new Date(iso);
-  if (Number.isNaN(at.getTime())) return '';
-  return at.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+function SizeChips({ sizes }: { sizes: string[] }) {
+  const { tr } = useLocale();
+  if (!sizes.length) return null;
+  return (
+    <span className="lens-card-sizes" aria-label={tr('Tailles publiées par le marchand', 'المقاسات التي نشرها المتجر')}>
+      {sizes.slice(0, 8).map((size) => (
+        <span key={size} className="lens-card-size">{size}</span>
+      ))}
+      {sizes.length > 8 ? <span className="lens-card-size">+{sizes.length - 8}</span> : null}
+    </span>
+  );
 }
 
 function CardImage({ candidate }: { candidate: AyrovixCandidate }) {
@@ -94,46 +87,18 @@ export function LensProductCard({ candidate, onChoose, saved, busy, onFavorite }
   const { tr } = useLocale();
   const priceId = useId();
   const { heading, description } = lensCardCopy(candidate);
-
-  /* Preuve fraîche demandée par le client : elle remplace ce que la grille savait,
-     et elle porte sa date. Sans elle, on affiche ce que la grille a rapporté. */
-  const [live, setLive] = useState<LiveStockResult | null>(null);
-  const [verifying, setVerifying] = useState(false);
-  const [failed, setFailed] = useState(false);
-  useEffect(() => { setLive(null); setFailed(false); }, [candidate.id, candidate.sourceUrl]);
-
-  const availability = live?.availability ?? candidate.availability;
-  const sizes = live && live.sizes.length ? live.sizes : (candidate.sizes || []);
-  /* Le prix suit la même règle que le stock : la relecture fraîche remplace ce
-     que la grille savait. Et quand le marchand affiche lui-même un prix barré,
-     il s'affiche barré ici — sans promo AYROVI par-dessus, jamais additionnées. */
-  const priceTnd = live?.priceTnd ?? candidate.priceTnd;
-  const sourceAmount = live?.price ?? candidate.price;
-  const originalAmount = live ? live.originalPrice : (candidate.originalPrice ?? null);
-  const originalTnd = live ? live.originalPriceTnd : (candidate.originalPriceTnd ?? null);
+  const availability = candidate.availability;
+  const sizes = candidate.sizes || [];
+  const priceTnd = candidate.priceTnd;
+  const sourceAmount = candidate.price;
+  const originalAmount = candidate.originalPrice ?? null;
+  const originalTnd = candidate.originalPriceTnd ?? null;
   const merchantPromo = !candidate.promo && originalTnd != null && priceTnd != null && originalTnd > priceTnd
     && sourceAmount != null && originalAmount != null && originalAmount > sourceAmount
     ? { percent: Math.round((1 - sourceAmount / originalAmount) * 100), label: tr('Remise marchand', 'تخفيض المتجر'), priceTnd, originalPriceTnd: originalTnd }
     : null;
   const promo = candidate.promo ?? merchantPromo;
   const hasPrice = typeof priceTnd === 'number' && Number.isFinite(priceTnd) && priceTnd > 0;
-  const variants = live?.variants;
-  const canVerify = /^https?:\/\//i.test(candidate.sourceUrl || '');
-
-  const verify = async () => {
-    if (verifying || !canVerify) return;
-    setVerifying(true);
-    setFailed(false);
-    try {
-      const [result] = await refreshLiveStock([candidate.sourceUrl]);
-      setLive(result ?? null);
-      if (!result || result.availability === 'unknown') setFailed(true);
-    } catch {
-      setFailed(true);
-    } finally {
-      setVerifying(false);
-    }
-  };
 
   return <article className="lens-product-card" data-candidate-id={candidate.id}>
     <button type="button" className="lens-card-open" onClick={() => onChoose(candidate)} aria-describedby={priceId} aria-label={tr(`Voir le produit : ${candidate.title}`, `عرض المنتج: ${candidate.title}`)}>
@@ -151,29 +116,13 @@ export function LensProductCard({ candidate, onChoose, saved, busy, onFavorite }
           : tr('Prix à confirmer', 'السعر قيد التأكيد')}
       </div>
       <StockBadge availability={availability} />
-      <SizeChips sizes={sizes} variants={variants} />
+      <SizeChips sizes={sizes} />
+      <ColorChips colors={candidate.colors || []} />
     </button>
     <button type="button" className="lens-card-favorite" aria-pressed={saved} disabled={busy} aria-busy={busy}
       aria-label={saved
         ? tr(`Retirer des favoris : ${candidate.title}`, `إزالة من المفضلة: ${candidate.title}`)
         : tr(`Ajouter aux favoris : ${candidate.title}`, `إضافة إلى المفضلة: ${candidate.title}`)}
       onClick={() => onFavorite(candidate)}>{saved ? <HeartFilled size={20} /> : <Heart size={20} />}</button>
-    {canVerify && sizes.length === 0 ? (
-      <button type="button" className="lens-card-verify" onClick={verify} disabled={verifying} aria-busy={verifying}
-        aria-label={tr(`Vérifier le stock : ${candidate.title}`, `تحقّق من التوفر: ${candidate.title}`)}>
-        <RefreshCw size={13} />
-        <span>{verifying ? tr('Vérification…', 'جارٍ التحقّق…') : tr('Vérifier le stock', 'تحقّق من التوفر')}</span>
-      </button>
-    ) : null}
-    {live && !failed && live.checkedAt ? (
-      <p className="lens-card-verified-at">
-        {tr('Vérifié à', 'تم التحقّق في')} {checkedAtLabel(live.checkedAt)}
-      </p>
-    ) : null}
-    {failed ? (
-      <p className="lens-card-verified-at" data-failed="true">
-        {tr('Stock non confirmé par le marchand', 'لم يؤكّد المتجر التوفر')}
-      </p>
-    ) : null}
   </article>;
 }

@@ -369,9 +369,12 @@ export async function enrichCandidatesLiveStock(
   candidates: AyrovixCandidate[],
   options: { fetcher?: LiveStockFetcher; now?: number; reprice?: LiveStockRepricer } = {},
 ): Promise<{ candidates: AyrovixCandidate[]; report: LiveStockReport }> {
-  const budget = envInt('AYROVI_LENS_LIVE_BUDGET', DEFAULT_BUDGET, 0, 10);
-  const deadline = envInt('AYROVI_LENS_LIVE_DEADLINE_MS', DEFAULT_DEADLINE_MS, 500, 25_000);
-  const concurrency = envInt('AYROVI_LENS_LIVE_CONCURRENCY', DEFAULT_CONCURRENCY, 1, 8);
+  // Plancher dur hors tests : un dashboard Render resté à budget=4 / 2500ms
+  // ne doit plus couper le kacht. Les tests gardent des bornes basses.
+  const isTest = Boolean(process.env.VITEST || process.env.NODE_ENV === 'test');
+  const budget = envInt('AYROVI_LENS_LIVE_BUDGET', DEFAULT_BUDGET, isTest ? 0 : 12, 24);
+  const deadline = envInt('AYROVI_LENS_LIVE_DEADLINE_MS', DEFAULT_DEADLINE_MS, isTest ? 50 : 12_000, 45_000);
+  const concurrency = envInt('AYROVI_LENS_LIVE_CONCURRENCY', DEFAULT_CONCURRENCY, isTest ? 1 : 4, 8);
   const report: LiveStockReport = { fetched: 0, cacheHits: 0, applied: 0, budget, deadlineMs: deadline };
 
   const fetcher = options.fetcher;
@@ -431,18 +434,15 @@ export async function enrichCandidatesLiveStock(
 
 /* ── Filtre d'achetabilité : seules les fiches ACHETABLES atteignent le client ── */
 
-export type PurchaseBlocker = 'page_non_lue' | 'prix_non_lu' | 'rupture' | 'stock_inconnu' | 'sans_image';
+export type PurchaseBlocker = 'page_non_lue' | 'prix_non_lu' | 'rupture' | 'stock_inconnu' | 'sans_image' | 'sans_options';
 
 /**
  * Diagnostic de preuve d'achat (page lue / prix / stock / image).
  * Le catalogue AYROVI porte sa propre preuve et n'est jamais bloqué.
  *
- * Affichage (filterPurchasable) : par défaut on N'ÉCARTE que la rupture
- * CONFIRMÉE. SerpApi timeout / page illisible / stock muet ≠ « on ne peut
- * pas acheter » — c'est une limite d'infra. Sinon la grille se vide
- * (8/8 écartés) dès que les sites marchands bloquent le scrape Render.
- *
- * `AYROVI_LENS_REQUIRE_PROOF=true` réactive le filtre strict (preuve complète).
+ * Affichage (filterPurchasable) : par défaut seules les fiches avec page lue,
+ * prix marchand, stock et tailles/couleurs arrivent au client.
+ * `AYROVI_LENS_REQUIRE_PROOF=false` désactive (debug).
  */
 export function purchaseBlocker(candidate: AyrovixCandidate): PurchaseBlocker | null {
   if (candidate.kind !== 'external') return null;
@@ -455,6 +455,8 @@ export function purchaseBlocker(candidate: AyrovixCandidate): PurchaseBlocker | 
   const productPositive = candidate.availability === 'in_stock' || candidate.availability === 'limited';
   if (!productPositive && !variantsPositive) return 'stock_inconnu';
   if (!candidate.image && !(candidate.images || []).length) return 'sans_image';
+  const hasOptions = (candidate.sizes || []).length > 0 || (candidate.colors || []).length > 0;
+  if (!hasOptions) return 'sans_options';
   return null;
 }
 
@@ -468,6 +470,7 @@ const STRICT_PROOF = () => process.env.AYROVI_LENS_REQUIRE_PROOF === 'true';
 
 export function filterPurchasable(candidates: AyrovixCandidate[]): { candidates: AyrovixCandidate[]; report: PurchasableReport } {
   const report: PurchasableReport = { kept: 0, excluded: 0, reasons: {} };
+  // Opt-out explicite seulement. Défaut = cartes prêtes (page lue + prix + stock + options).
   if (process.env.AYROVI_LENS_REQUIRE_PROOF === 'false') {
     report.kept = candidates.length;
     return { candidates, report };
@@ -475,10 +478,7 @@ export function filterPurchasable(candidates: AyrovixCandidate[]): { candidates:
   const kept: AyrovixCandidate[] = [];
   for (const candidate of candidates) {
     const blocker = purchaseBlocker(candidate);
-    // Défaut : cacher uniquement la rupture prouvée. Le reste (page non lue,
-    // prix/stock muets) reste visible — sinon Lens affiche une grille vide
-    // dès que le scrape Render est bloqué.
-    const hide = blocker === 'rupture' || (STRICT_PROOF() && blocker !== null);
+    const hide = blocker !== null;
     if (hide) {
       report.excluded += 1;
       report.reasons[blocker!] = (report.reasons[blocker!] || 0) + 1;

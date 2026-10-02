@@ -19,7 +19,7 @@ const cache = new Map<string, { at: number; results: AyrovixCandidate[] }>();
 const inFlight = new Map<string, Promise<AyrovixCandidate[]>>();
 
 function boundedLimit(value: number): number {
-  return Number.isFinite(value) ? Math.max(1, Math.min(20, Math.floor(value))) : 8;
+  return Number.isFinite(value) ? Math.max(8, Math.min(40, Math.floor(value))) : 24;
 }
 
 function cacheResults(key: string, results: AyrovixCandidate[]): void {
@@ -43,7 +43,7 @@ export function serpApiVisualReady(): boolean {
 
 function timeoutMs(): number {
   const configured = Number(process.env.AYROVIX_VISUAL_SEARCH_TIMEOUT_MS);
-  return Number.isFinite(configured) ? Math.min(20_000, Math.max(6_000, configured)) : 10_000;
+  return Number.isFinite(configured) ? Math.min(25_000, Math.max(10_000, configured)) : 14_000;
 }
 
 function remainingMs(deadline: number, cap: number): number {

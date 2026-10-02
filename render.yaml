@@ -78,6 +78,14 @@ services:
         sync: false
       - key: MAIL_FROM
         sync: false
+      - key: AYROVI_LENS_LIVE_STOCK
+        value: 'true'
+      - key: AYROVI_LENS_LIVE_BUDGET
+        value: '16'
+      - key: AYROVI_LENS_LIVE_CONCURRENCY
+        value: '6'
+      - key: AYROVI_LENS_LIVE_DEADLINE_MS
+        value: '20000'
       - key: BACKUP_INTERVAL_HOURS
         value: 24
       - key: BACKUP_RETENTION_DAYS

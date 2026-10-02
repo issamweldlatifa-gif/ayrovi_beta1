@@ -75,7 +75,6 @@ describe('stock vivant — la dépense est bornée', () => {
     expect(fetcher).toHaveBeenCalledTimes(2);
     expect(report.fetched).toBe(2);
     expect(out.filter((item) => item.availability === 'in_stock').length).toBe(2);
-    // Les autres restent tels quels : jamais inventés.
     expect(out.slice(2).every((item) => item.availability === undefined)).toBe(true);
   });
 
@@ -457,7 +456,11 @@ describe('achetabilité — seules les fiches prouvées atteignent le client', (
   const reprice = (price: number, currency: string) => ({ priceTnd: price * 4, promo: null });
   const proven = (over: Partial<AyrovixCandidate> = {}, pageOver: Partial<ParsedProductPage> = {}) => {
     const item = candidate({ image: 'https://img/1.jpg', ...over });
-    applyLiveStock(item, entryFromPage(page({ availability: 'in_stock', ...pageOver }), Date.now()), reprice);
+    applyLiveStock(item, entryFromPage(page({
+      availability: 'in_stock',
+      variants: { sizes: ['M'], colors: ['noir'], details: [{ ...sizeDetail('M'), stock: true }] },
+      ...pageOver,
+    }), Date.now()), reprice);
     return item;
   };
 
@@ -506,14 +509,18 @@ describe('achetabilité — seules les fiches prouvées atteignent le client', (
     expect(purchaseBlocker(candidate({ kind: 'catalog' }))).toBeNull();
   });
 
-  it('par défaut montre les fiches non lues — n\'écarte que la rupture confirmée', () => {
+  it('par défaut n\'affiche que les fiches prêtes (page + prix + stock + options)', () => {
     const { candidates: kept, report } = filterPurchasable([
       proven({ id: 'ok' }),
       candidate({ id: 'unread', image: 'x' }),
       proven({ id: 'out' }, { availability: 'out_of_stock' }),
     ]);
-    expect(kept.map((item) => item.id)).toEqual(['ok', 'unread']);
-    expect(report).toEqual({ kept: 2, excluded: 1, reasons: { rupture: 1 } });
+    expect(kept.map((item) => item.id)).toEqual(['ok']);
+    expect(report).toEqual({ kept: 1, excluded: 2, reasons: { page_non_lue: 1, rupture: 1 } });
+  });
+
+  it('écarte une page lue sans taille ni couleur', () => {
+    expect(purchaseBlocker(proven({}, { variants: { sizes: [], colors: [], details: [] } }))).toBe('sans_options');
   });
 
   it('AYROVI_LENS_REQUIRE_PROOF=true réactive le filtre strict', () => {
