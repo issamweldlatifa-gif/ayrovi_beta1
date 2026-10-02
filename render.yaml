@@ -81,11 +81,11 @@ services:
       - key: AYROVI_LENS_LIVE_STOCK
         value: 'true'
       - key: AYROVI_LENS_LIVE_BUDGET
-        value: '16'
+        value: '24'
       - key: AYROVI_LENS_LIVE_CONCURRENCY
-        value: '6'
+        value: '8'
       - key: AYROVI_LENS_LIVE_DEADLINE_MS
-        value: '20000'
+        value: '25000'
       - key: BACKUP_INTERVAL_HOURS
         value: 24
       - key: BACKUP_RETENTION_DAYS

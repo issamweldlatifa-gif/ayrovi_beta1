@@ -87,12 +87,11 @@ async function prepareImageForSerpApi(image: Buffer): Promise<Buffer> {
 
 function toCandidates(payload: any, limit: number): AyrovixCandidate[] {
   const rows = Array.isArray(payload?.visual_matches) ? payload.visual_matches : [];
-  // D2-10: strict pass first (price>0 auditable), lenient fallback (PENDING) if strict empty — avoids zero results
-  const strict = collectCandidates(rows, limit, true);
-  if (strict.length > 0) return strict;
-  const lenient = collectCandidates(rows, limit, false);
-  if (lenient.length) console.warn(`[AYROVIX serpapi-lens] strict 0 → lenient fallback ${lenient.length} PENDING (no price) — client shows "Prix à confirmer"`);
-  return lenient;
+  const priced = collectCandidates(rows, limit, true);
+  const all = collectCandidates(rows, Math.max(limit, 40), false);
+  const seen = new Set(priced.map((item) => item.sourceUrl));
+  const extra = all.filter((item) => !seen.has(item.sourceUrl));
+  return [...priced, ...extra].slice(0, limit);
 }
 
 function collectCandidates(rows: any[], limit: number, strict: boolean): AyrovixCandidate[] {

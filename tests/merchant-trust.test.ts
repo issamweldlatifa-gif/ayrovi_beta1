@@ -5,7 +5,7 @@
 // Le registre est volontairement en mémoire par process : la preuve se
 // ré-accumule depuis les profiles crawlés — aucune liste figée sans historique.
 import { describe, expect, it } from 'vitest';
-import { filterDisplayableCandidates, isTrustedMerchantHost, merchantTrust, registerTrustedMerchantHost, shopperScore, type MerchantTrust } from '../src/ayrovix/services/candidatePolicy';
+import { filterDisplayableCandidates, isTrustedMerchantHost, merchantTrust, registerTrustedMerchantHost, shopperScore, harvestForScrape, type MerchantTrust } from '../src/ayrovix/services/candidatePolicy';
 import type { AyrovixCandidate } from '../src/ayrovix/types';
 
 function candidate(overrides: Partial<AyrovixCandidate>): AyrovixCandidate {
@@ -81,5 +81,14 @@ describe('cartes client : stock + options avant le clic', () => {
     expect(shopperScore(ready)).toBeGreaterThan(shopperScore(oos));
     const ranked = filterDisplayableCandidates([oos, ready], 8);
     expect(ranked.map((item) => item.id)).toEqual(['ready']);
+  });
+});
+
+describe('harvest : plus de liens à kachter', () => {
+  it('garde les URLs sans prix SerpApi derrière les fiches tarifées', () => {
+    const priced = candidate({ id: 'p', sourceUrl: 'https://a.tn/p', image: 'https://cdn.tn/a.jpg' });
+    const bare = candidate({ id: 'b', sourceUrl: 'https://b.tn/p', price: null as any, currency: null as any, image: 'https://cdn.tn/b.jpg' });
+    const harvested = harvestForScrape([priced, bare], 8);
+    expect(harvested.map((item) => item.id)).toEqual(['p', 'b']);
   });
 });

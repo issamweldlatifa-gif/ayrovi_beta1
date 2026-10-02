@@ -1,7 +1,7 @@
 import type { QatafoDatabase } from '../../db/database';
 import type { AyrovixCandidate, AyrovixIdentification } from '../types';
 import { estimateWithDb } from './currency';
-import { filterDisplayableCandidates, filterWithFallback } from './candidatePolicy';
+import { filterDisplayableCandidates, filterWithFallback, harvestForScrape } from './candidatePolicy';
 import { getAyroviAiCore } from '../../ai-core/core';
 import { isAiFeatureEnabled } from '../../ai-core/config';
 
@@ -240,11 +240,13 @@ export async function searchCandidates(
       match: Math.max(candidate.match, scoreCandidate(identification, query, candidate)),
     };
   });
-  // D2-10: strict first, lenient PENDING fallback — never return 0 when lens/web has matches
-  return filterWithFallback(
-    groupOffers([...catalog, ...rescored].filter((candidate) => candidate.match >= 20)),
-    8,
-  );
+  const pool = [...catalog, ...rescored].filter((candidate) => candidate.match >= 20);
+  // Lens : chaque marchand reste une carte. groupOffers collapsait Zalando FR/DE/UK
+  // en une fiche — d'où une grille pauvre. Le texte web garde le regroupement.
+  if (visualCandidates.length) {
+    return harvestForScrape(pool, 32);
+  }
+  return filterWithFallback(groupOffers(pool), 8);
 }
 
 /**

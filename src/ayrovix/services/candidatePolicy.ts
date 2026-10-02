@@ -170,3 +170,12 @@ export function filterWithFallback(items: AyrovixCandidate[], limit = 16): Ayrov
   if (lenient.length) console.warn(`[AYROVIX candidatePolicy] strict filter empty — lenient fallback ${lenient.length} PENDING candidates`);
   return lenient;
 }
+
+/** Filet de kacht : prix d'abord, puis les URLs sans prix SerpApi (la page les remplira). */
+export function harvestForScrape(items: AyrovixCandidate[], limit = 32): AyrovixCandidate[] {
+  const priced = filterDisplayableCandidates(items, limit).filter((item) => item.availability !== 'out_of_stock');
+  if (priced.length >= limit) return priced;
+  const seen = new Set(priced.map((item) => item.sourceUrl));
+  const extra = filterLenientCandidates(items, limit).filter((item) => !seen.has(item.sourceUrl) && item.availability !== 'out_of_stock');
+  return [...priced, ...extra].slice(0, limit);
+}
