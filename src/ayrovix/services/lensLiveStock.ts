@@ -434,19 +434,15 @@ export async function enrichCandidatesLiveStock(
 export type PurchaseBlocker = 'page_non_lue' | 'prix_non_lu' | 'rupture' | 'stock_inconnu' | 'sans_image';
 
 /**
- * UNE FICHE = UN ACHAT POSSIBLE (décision produit du 02/10/2026).
+ * Diagnostic de preuve d'achat (page lue / prix / stock / image).
+ * Le catalogue AYROVI porte sa propre preuve et n'est jamais bloqué.
  *
- * SerpApi rapporte des liens ; seule la page derrière le lien prouve qu'on peut
- * acheter. Une fiche n'est montrée que si cette page a été lue ET publie :
- *   • un prix structuré (c'est lui qui devient le prix AYROVI) ;
- *   • une disponibilité positive — produit en stock, ou au moins une variante
- *     annoncée disponible ;
- *   • au moins une image.
- * Tout le reste est ÉCARTÉ, et compté : le client voit « N résultats écartés »,
- * jamais une carte qu'il ne pourra pas commander. Le catalogue AYROVI porte sa
- * propre preuve de stock et passe tel quel.
+ * Affichage (filterPurchasable) : par défaut on N'ÉCARTE que la rupture
+ * CONFIRMÉE. SerpApi timeout / page illisible / stock muet ≠ « on ne peut
+ * pas acheter » — c'est une limite d'infra. Sinon la grille se vide
+ * (8/8 écartés) dès que les sites marchands bloquent le scrape Render.
  *
- * `AYROVI_LENS_REQUIRE_PROOF=false` relâche le filtre sans redéploiement.
+ * `AYROVI_LENS_REQUIRE_PROOF=true` réactive le filtre strict (preuve complète).
  */
 export function purchaseBlocker(candidate: AyrovixCandidate): PurchaseBlocker | null {
   if (candidate.kind !== 'external') return null;
@@ -468,6 +464,8 @@ export interface PurchasableReport {
   reasons: Partial<Record<PurchaseBlocker, number>>;
 }
 
+const STRICT_PROOF = () => process.env.AYROVI_LENS_REQUIRE_PROOF === 'true';
+
 export function filterPurchasable(candidates: AyrovixCandidate[]): { candidates: AyrovixCandidate[]; report: PurchasableReport } {
   const report: PurchasableReport = { kept: 0, excluded: 0, reasons: {} };
   if (process.env.AYROVI_LENS_REQUIRE_PROOF === 'false') {
@@ -477,9 +475,13 @@ export function filterPurchasable(candidates: AyrovixCandidate[]): { candidates:
   const kept: AyrovixCandidate[] = [];
   for (const candidate of candidates) {
     const blocker = purchaseBlocker(candidate);
-    if (blocker) {
+    // Défaut : cacher uniquement la rupture prouvée. Le reste (page non lue,
+    // prix/stock muets) reste visible — sinon Lens affiche une grille vide
+    // dès que le scrape Render est bloqué.
+    const hide = blocker === 'rupture' || (STRICT_PROOF() && blocker !== null);
+    if (hide) {
       report.excluded += 1;
-      report.reasons[blocker] = (report.reasons[blocker] || 0) + 1;
+      report.reasons[blocker!] = (report.reasons[blocker!] || 0) + 1;
       continue;
     }
     kept.push(candidate);

@@ -336,9 +336,9 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       mark(trace, 'liveStockCacheHits', liveStock.cacheHits);
       mark(trace, 'liveStockApplied', liveStock.applied);
       /*
-       * FILTRE D'ACHETABILITÉ — une fiche sans page lue, sans prix structuré ou
-       * sans stock positif n'atteint pas le client. On ne montre pas ce qu'on ne
-       * peut pas acheter ; on dit combien ont été écartées, et pourquoi.
+       * FILTRE D'ACHETABILITÉ — on cache la rupture CONFIRMÉE. Page illisible
+       * ou stock muet reste visible (sinon 8/8 écartés dès que Render est bloqué).
+       * Preuve stricte : AYROVI_LENS_REQUIRE_PROOF=true.
        */
       const purchasable = filterPurchasable(liveCandidates);
       mark(trace, 'purchasableKept', purchasable.report.kept);

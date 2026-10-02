@@ -506,14 +506,27 @@ describe('achetabilité — seules les fiches prouvées atteignent le client', (
     expect(purchaseBlocker(candidate({ kind: 'catalog' }))).toBeNull();
   });
 
-  it('compte ce qui est écarté, et pourquoi', () => {
+  it('par défaut montre les fiches non lues — n\'écarte que la rupture confirmée', () => {
     const { candidates: kept, report } = filterPurchasable([
       proven({ id: 'ok' }),
       candidate({ id: 'unread', image: 'x' }),
       proven({ id: 'out' }, { availability: 'out_of_stock' }),
     ]);
-    expect(kept.map((item) => item.id)).toEqual(['ok']);
-    expect(report).toEqual({ kept: 1, excluded: 2, reasons: { page_non_lue: 1, rupture: 1 } });
+    expect(kept.map((item) => item.id)).toEqual(['ok', 'unread']);
+    expect(report).toEqual({ kept: 2, excluded: 1, reasons: { rupture: 1 } });
+  });
+
+  it('AYROVI_LENS_REQUIRE_PROOF=true réactive le filtre strict', () => {
+    process.env.AYROVI_LENS_REQUIRE_PROOF = 'true';
+    try {
+      const { candidates: kept, report } = filterPurchasable([
+        proven({ id: 'ok' }),
+        candidate({ id: 'unread', image: 'x' }),
+        proven({ id: 'out' }, { availability: 'out_of_stock' }),
+      ]);
+      expect(kept.map((item) => item.id)).toEqual(['ok']);
+      expect(report).toEqual({ kept: 1, excluded: 2, reasons: { page_non_lue: 1, rupture: 1 } });
+    } finally { delete process.env.AYROVI_LENS_REQUIRE_PROOF; }
   });
 
   it('se relâche sans redéploiement', () => {
