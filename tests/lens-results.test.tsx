@@ -38,11 +38,10 @@ const view = {
     candidate({ id: 'c', match: 91, source: 'ASOS' }),
   ],
   eventId: 'ev1',
-  detectedPrice: null,
 };
 
 const render = () => renderToStaticMarkup(
-  <LocaleProvider><InteractiveLensResults view={view as any} previewUrl={'/preview.jpg'} fallbackImage={null} onChoose={() => {}} onReset={() => {}} onCommandDetected={() => {}} /></LocaleProvider>,
+  <LocaleProvider><InteractiveLensResults view={view as any} previewUrl={'/preview.jpg'} fallbackImage={null} onChoose={() => {}} onReset={() => {}} /></LocaleProvider>,
 );
 
 describe('AYROVIX LENS results screen (post-analysis, real-data shape)', () => {

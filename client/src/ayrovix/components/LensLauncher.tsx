@@ -6,7 +6,7 @@ import { AppHeader } from '../../design/AppHeader';
 import React, { useEffect, useRef, useState } from 'react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import type {
-  AyrovixCandidate, AyrovixDetectedPrice, AyrovixHistoryItem, AyrovixOrderPayload, AyrovixProduct, AyrovixUrlResult,
+  AyrovixCandidate, AyrovixHistoryItem, AyrovixOrderPayload, AyrovixProduct, AyrovixUrlResult,
 } from '../types';
 import { analyzeBarcode, analyzeCode, analyzeImage, analyzeText, analyzeUrl, markChosen, AyrovixApiError } from '../services/lensApi';
 import { prepareImage } from '../services/imagePrep';
@@ -24,9 +24,9 @@ import type { AyrovixOrderSelection } from '../../shop';
 import { ShopProductScreen } from '../../shop';
 import { useNavigationHistory } from '../../navigation/NavigationHistory';
 import { isDisplayableProduct } from '../services/resultPolicy';
-import { LensContextHeader, LensMoreMenu } from './LensNavigation';
+import { LensMoreMenu } from './LensNavigation';
 import { InteractiveLensResults } from './InteractiveLensResults';
-import { Type, ExternalLink, Barcode, Check, Image as GalleryIcon, Percent, Search, ShieldCheck, Sparkles, ShoppingBag } from '../../components/QatafoIcons';
+import { Type, ExternalLink, Barcode, Image as GalleryIcon, Percent, Search, ShieldCheck, ShoppingBag } from '../../components/QatafoIcons';
 import { classifyProduct, productClassLabel } from '../services/productAttributes';
 import { useLensFavorites } from './useLensFavorites';
 
@@ -49,7 +49,6 @@ interface CandidatesView {
   queryLabel: string | null;
   list: AyrovixCandidate[];
   eventId: string;
-  detectedPrice?: AyrovixDetectedPrice | null;
   /** Fiches écartées côté serveur faute de preuve d'achat (page marchande). */
   excludedCount?: number;
 }
@@ -181,7 +180,6 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   const [ordering, setOrdering] = useState(false);
   const [copied, setCopied] = useState(false);
   const [verifiedPriceUrl, setVerifiedPriceUrl] = useState(false);
-  const [analysisProgress, setAnalysisProgress] = useState(0);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [liveEnabled, setLiveEnabled] = useState(false);
@@ -235,12 +233,6 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
     previousStageRef.current = stage;
   }, [stage]);
 
-  useEffect(() => {
-    if (!isAnalyzing) { setAnalysisProgress(0); return undefined; }
-    setAnalysisProgress(0);
-    const timer = window.setInterval(() => setAnalysisProgress((current) => Math.min(current + 1, 3)), 1400);
-    return () => window.clearInterval(timer);
-  }, [isAnalyzing]);
 
   // Recent searches for home — local only, no secrets
   useEffect(() => {
@@ -357,35 +349,34 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
     setIsAnalyzing(true);
     // Google Lens style: no separate analyzing page, image stays visible + bottom sheet shows loading
     if (stage !== 'candidates') enterStage('candidates');
-    if (!candidatesView) setCandidatesView({ queryLabel: null, list: [], eventId: '', detectedPrice: null });
+    if (!candidatesView) setCandidatesView({ queryLabel: null, list: [], eventId: '' });
     setError(null);
     try {
       const result = await analyzeImage(file, controller.signal, null, { ...(cropMs != null ? { cropMs } : {}), ...(roi ? { roi } : {}) });
       // uploadMs could be measured as tUpload diff but fetch includes network; cropMs is primary
       if (abortRef.current !== token) return;
       const usable = result.identification.confidence > 0 && result.identification.description !== 'PRODUIT_NON_IDENTIFIE';
-      if (!usable && !result.detectedPrice) { fail('IDENTIFICATION_FAILED', NEW_SCAN_MESSAGE); return; }
+      if (!usable) { fail('IDENTIFICATION_FAILED', NEW_SCAN_MESSAGE); return; }
       const historyMatch = result.candidates[0];
       rememberAyrovixHistory({
         id: result.eventId,
         kind: 'image',
         inputValue: '',
-        queryLabel: result.query || result.detectedPrice?.title || '',
-        title: historyMatch?.title || result.detectedPrice?.title || result.identification.description || 'Recherche par photo',
+        queryLabel: result.query || '',
+        title: historyMatch?.title || result.identification.description || 'Recherche par photo',
         imageUrl: historyMatch?.image || '',
         sourceUrl: historyMatch?.sourceUrl || '',
         source: historyMatch?.source || 'AYROVIX Vision',
-        price: historyMatch?.price ?? result.detectedPrice?.sourcePrice ?? null,
-        currency: historyMatch?.currency ?? result.detectedPrice?.sourceCurrency ?? null,
+        price: historyMatch?.price ?? null,
+        currency: historyMatch?.currency ?? null,
         verificationStatus: historyMatch?.priceVerificationStatus || 'PENDING_MANUAL',
         resultsCount: result.candidates.length,
         createdAt: new Date().toISOString(),
       }, historyScope);
       setCandidatesView({
-        queryLabel: result.query || result.detectedPrice?.title || null,
+        queryLabel: result.query || null,
         list: result.candidates,
         eventId: result.eventId,
-        detectedPrice: result.detectedPrice || null,
         excludedCount: result.excluded?.count || 0,
       });
       // ROI responses describe a padded crop, not the original preview coordinates.
@@ -408,7 +399,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
     const { controller, token } = startRequest();
     setIsAnalyzing(true);
     if (stage !== 'candidates' && stage !== 'product') enterStage('candidates');
-    if (!candidatesView) setCandidatesView({ queryLabel: url.slice(0,40), list: [], eventId: '', detectedPrice: null });
+    if (!candidatesView) setCandidatesView({ queryLabel: url.slice(0,40), list: [], eventId: '' });
     setError(null);
     try {
       const result = await analyzeUrl(url, channel, controller.signal);
@@ -458,7 +449,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
     const { controller, token } = startRequest();
     setIsAnalyzing(true);
     if (stage !== 'candidates') enterStage('candidates');
-    setCandidatesView({ queryLabel: clean, list: [], eventId: '', detectedPrice: null });
+    setCandidatesView({ queryLabel: clean, list: [], eventId: '' });
     setError(null);
     try {
       const result = await analyzeText(clean, controller.signal);
@@ -495,7 +486,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
     const { controller, token } = startRequest();
     setIsAnalyzing(true);
     if (stage !== 'candidates') enterStage('candidates');
-    setCandidatesView({ queryLabel: value.slice(0,30), list: [], eventId: '', detectedPrice: null });
+    setCandidatesView({ queryLabel: value.slice(0,30), list: [], eventId: '' });
     setError(null);
     try {
       const result = await analyzeCode(value, controller.signal);
@@ -532,7 +523,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
     const { controller, token } = startRequest();
     setIsAnalyzing(true);
     if (stage !== 'candidates') enterStage('candidates');
-    setCandidatesView({ queryLabel: code, list: [], eventId: '', detectedPrice: null });
+    setCandidatesView({ queryLabel: code, list: [], eventId: '' });
     setError(null);
     try {
       const result = await analyzeBarcode(code, controller.signal);
@@ -637,30 +628,6 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   };
 
 
-  const commandDetectedPrice = (detected: AyrovixDetectedPrice) => {
-    setProduct({
-      title: detected.title || 'Produit détecté par AYROVIX',
-      brand: detected.brand,
-      model: null,
-      description: detected.isCartScreenshot ? `Panier: ${detected.sourcePrice} ${detected.sourceCurrency} - ${detected.title}` : `${detected.title} — Prix repéré ${detected.sourcePrice} ${detected.sourceCurrency}`,
-      image: detected.imageUrl || previewUrl || '',
-      images: detected.imageUrl ? [detected.imageUrl] : previewUrl ? [previewUrl] : [],
-      source: 'Collection AYROVI',
-      sourceUrl: '',
-      price: detected.sourcePrice,
-      currency: detected.sourceCurrency,
-      priceTnd: detected.totalPriceTND,
-      priceToken: detected.priceToken || null,
-      priceVerified: false,
-      priceVerificationStatus: 'PENDING_MANUAL',
-      exchangeRate: null,
-      colors: [],
-      sizes: [],
-      availability: 'unknown',
-    });
-    setVerifiedPriceUrl(false);
-    enterStage('product');
-  };
 
   const repeatHistoryItem = (item: AyrovixHistoryItem) => {
     if (item.kind === 'text' && item.inputValue) { void runTextAnalysis(item.inputValue); return; }
@@ -726,12 +693,11 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
               customerSession={customerSession}
               onOpenFavorites={onOpenFavorites}
               shell
-              view={candidatesView || { queryLabel: null, list: [], eventId: '', detectedPrice: null }}
+              view={candidatesView || { queryLabel: null, list: [], eventId: '' }}
               previewUrl={previewUrl}
               fallbackImage={previewUrl}
               onChoose={handleChooseCandidate}
               onReset={closeImage}
-              onCommandDetected={commandDetectedPrice}
               isLoading={isAnalyzing}
               onRoiSearch={handleRoiSearch}
               onLassoSearch={(file, cropMs) => void runImageAnalysis(file, cropMs)}
@@ -913,12 +879,11 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
             <InteractiveLensResults
               customerSession={customerSession}
               onOpenFavorites={onOpenFavorites}
-              view={candidatesView || { queryLabel: null, list: [], eventId: '', detectedPrice: null }}
+              view={candidatesView || { queryLabel: null, list: [], eventId: '' }}
               previewUrl={previewUrl}
               fallbackImage={previewUrl}
               onChoose={handleChooseCandidate}
               onReset={reset}
-              onCommandDetected={commandDetectedPrice}
               isLoading={true}
               onRoiSearch={handleRoiSearch}
               onLassoSearch={(file,cropMs)=> void runImageAnalysis(file,cropMs)}
@@ -935,7 +900,6 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
               fallbackImage={previewUrl}
               onChoose={handleChooseCandidate}
               onReset={reset}
-              onCommandDetected={commandDetectedPrice}
               isLoading={isAnalyzing}
               onRoiSearch={handleRoiSearch}
               onLassoSearch={(file,cropMs)=> void runImageAnalysis(file,cropMs)}

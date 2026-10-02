@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useId } from 'react';
+import { useEffect, useMemo, useState, useId } from 'react';
 import { Heart, HeartFilled, Image as ImageIcon, RefreshCw } from '../../components/QatafoIcons';
 import { useLocale } from '../../i18n/LocaleContext';
 import type { AyrovixCandidate } from '../types';

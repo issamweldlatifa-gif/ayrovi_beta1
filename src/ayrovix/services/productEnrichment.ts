@@ -29,7 +29,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { normalizeTitle, titleOverlap } from './lensEnrichment';
+import { normalizeTitle, titleOverlap } from './titleMatch';
 import { buildProductCard } from './productVariants';
 
 export interface EnrichedVariant {

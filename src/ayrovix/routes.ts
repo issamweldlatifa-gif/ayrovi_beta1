@@ -8,7 +8,7 @@ import { catalogSearch, externalProductSearch, groupOffers, scoreCandidate, sear
 import { serpApiVisualReady } from './services/visualSearch';
 import { recognizeImage } from './services/lensEngine';
 import { enrichCandidatesLiveStock, filterPurchasable, refreshLiveStock } from './services/lensLiveStock';
-import { deduplicateCandidates } from './services/aiLensIntelligence';
+import { deduplicateCandidates } from './services/candidateDedup';
 import { estimateWithDb } from './services/currency';
 import { extractProductFromUrl, ExtractionFailedError, InvalidUrlError, sanitizeProductUrl } from './services/product';
 import { markAyrovixChosen, recordAyrovixEvent } from './events';
@@ -18,7 +18,7 @@ import type { AyrovixCandidate, AyrovixChannel, AyrovixIdentification, AyrovixPr
 import { InvalidImageError, normalizeUploadedImage } from '../services/imageValidation';
 import { createAyrovixPriceToken, type AyrovixQuoteStatus } from './priceQuote';
 import { listAyrovixHistory, recordAyrovixHistory, type AyrovixHistoryInput } from './history';
-import { filterDisplayableCandidates, filterWithFallback, withDisplayRating } from './services/candidatePolicy';
+import { filterWithFallback, withDisplayRating } from './services/candidatePolicy';
 import { startTrace, mark, endTrace } from './services/lensPerformanceTrace';
 import { warmIsolation } from '../services/imageIsolation';
 import { warmComposition } from '../services/imageComposition';
@@ -46,17 +46,6 @@ export function pipelineKey(buf: Buffer, intent: string | null): string {
     .update(Buffer.from([0]))
     .update(intent || '')
     .digest('hex');
-}
-// D1-9: pricing rules cache 5min — avoids 7× DB read per Lens request (disabled in tests: VITEST uses fresh DB per test)
-let pricingCache: { at: number; rules: ReturnType<QatafoDatabase['getPricingRules']> | null } = { at: 0, rules: null };
-const PRICING_CACHE_TTL_MS = 5 * 60_000;
-function getCachedPricingRules(db: QatafoDatabase) {
-  const isTest = !!(process.env.VITEST || process.env.NODE_ENV === 'test');
-  if (isTest) return db.getPricingRules();
-  if (pricingCache.rules && Date.now() - pricingCache.at < PRICING_CACHE_TTL_MS) return pricingCache.rules;
-  const rules = db.getPricingRules();
-  pricingCache = { at: Date.now(), rules };
-  return rules;
 }
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const CHANNELS = new Set<AyrovixChannel>(['image', 'url', 'qr']);

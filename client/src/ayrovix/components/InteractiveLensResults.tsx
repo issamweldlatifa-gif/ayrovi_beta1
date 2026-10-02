@@ -3,7 +3,7 @@ import { useLensFavorites } from './useLensFavorites';
 import type { CustomerSession } from '../../types';
 import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
 import { ArrowLeft, ScanSearch, Loader2, Image as ImageIcon } from '../../components/QatafoIcons';
-import type { AyrovixCandidate, AyrovixDetectedPrice } from '../types';
+import type { AyrovixCandidate } from '../types';
 import { isDisplayableCandidate, isLenientCandidate } from '../services/resultPolicy';
 import { useLocale } from '../../i18n/LocaleContext';
 
@@ -15,7 +15,6 @@ export interface InteractiveLensView {
   queryLabel: string | null;
   list: AyrovixCandidate[];
   eventId: string;
-  detectedPrice?: AyrovixDetectedPrice | null;
   /** Fiches écartées côté serveur : on ne montre pas ce qu'on ne peut pas acheter. */
   excludedCount?: number;
 }
@@ -28,7 +27,6 @@ interface Props {
   fallbackImage: string | null;
   onChoose: (candidate: AyrovixCandidate) => void;
   onReset: () => void;
-  onCommandDetected?: (detected: AyrovixDetectedPrice) => void;
   onRoiSearch?: (roi: { x: number; y: number; w: number; h: number }) => void;
   onLassoSearch?: (file: File, cropMs?: number) => void;
   isLoading?: boolean;
@@ -38,7 +36,7 @@ interface Props {
   shell?: boolean;
 }
 
-export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fallbackImage, onChoose, onReset, onCommandDetected, onRoiSearch, onLassoSearch, isLoading, detectedProducts, shell, customerSession, onOpenFavorites }) => {
+export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fallbackImage, onChoose, onReset, onRoiSearch, onLassoSearch, isLoading, detectedProducts, shell, customerSession, onOpenFavorites }) => {
   const { tr, direction } = useLocale();
   const favorites = useLensFavorites(customerSession, onOpenFavorites);
   const visible = useMemo(() => {
@@ -46,7 +44,6 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
     return strict.length ? strict : view.list.filter(isLenientCandidate).sort((a, b) => (b.match || 0) - (a.match || 0));
   }, [view.list]);
   const name = view.queryLabel || visible[0]?.title || tr('Votre image', 'صورتك');
-  const detected = view.detectedPrice;
   const drawer = useLensResultsSheet(Boolean(previewUrl));
   const imageRef = useRef<HTMLImageElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -173,14 +170,6 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
             </div>
           ) : (
             <>
-              {detected && detected.sourcePrice > 0 && (
-                <div className="mb-3 bg-white p-3">
-                  <p className="text-xs font-extrabold uppercase tracking-wide text-muted">{tr('Prix repéré', 'سعر مكتشف')}</p>
-                  <p className="text-sm font-bold text-ink line-clamp-2">{detected.title || name}</p>
-                  <p className="text-lg font-black text-ink">{detected.totalPriceTND?.toFixed(2) || '—'} DT <span className="text-xs font-medium text-muted">{detected.sourcePrice.toFixed(2)} {detected.sourceCurrency}</span></p>
-                  {onCommandDetected && <button type="button" onClick={() => onCommandDetected(detected)} className="mt-2 w-full rounded-control bg-ink py-2 text-xs font-bold text-white">{tr('Commander avec ce prix', 'الطلب بهذا السعر')}</button>}
-                </div>
-              )}
               {visible.length === 0 ? (
                 <div className="py-8 text-center">
                   <div className="mx-auto grid h-12 w-12 place-items-center rounded-control bg-surface text-muted"><ImageIcon size={22} /></div>

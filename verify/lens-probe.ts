@@ -20,7 +20,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { serpApiVisualReady, serpApiVisualSearch } from '../src/ayrovix/services/visualSearch';
-import { deduplicateCandidates } from '../src/ayrovix/services/aiLensIntelligence';
+import { deduplicateCandidates } from '../src/ayrovix/services/candidateDedup';
 import { filterWithFallback } from '../src/ayrovix/services/candidatePolicy';
 import { enrichCandidatesLiveStock, filterPurchasable, purchaseBlocker } from '../src/ayrovix/services/lensLiveStock';
 import { SmartLinkScraper } from '../src/scraper/scraper';

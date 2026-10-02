@@ -48,10 +48,9 @@ describe('Lens Phase 0 UI improvements', () => {
       queryLabel: 'Requête sans image',
       list: [candidate({ id:'x', image:'', images:[], source:'Zalando', sourceUrl:'https://zalando.example/p' })],
       eventId:'ev1',
-      detectedPrice:null,
     };
     const html = renderToStaticMarkup(
-      <LocaleProvider><InteractiveLensResults view={view as any} previewUrl={null} fallbackImage={null} onChoose={()=>{}} onReset={()=>{}} onCommandDetected={()=>{}} /></LocaleProvider>
+      <LocaleProvider><InteractiveLensResults view={view as any} previewUrl={null} fallbackImage={null} onChoose={()=>{}} onReset={()=>{}} /></LocaleProvider>
     );
     // Should NOT contain invented product image but should show merchant source name
     expect(html).toContain('Zalando');
@@ -66,10 +65,9 @@ describe('Lens Phase 0 UI improvements', () => {
       queryLabel:'Test variants',
       list:[candidate({ id:'v1', colors:[], sizes:[], source:'SHEIN', sourceUrl:'https://shein.com/p' })],
       eventId:'ev2',
-      detectedPrice:null,
     };
     const html = renderToStaticMarkup(
-      <LocaleProvider><InteractiveLensResults view={view as any} previewUrl={null} fallbackImage={null} onChoose={()=>{}} onReset={()=>{}} onCommandDetected={()=>{}} /></LocaleProvider>
+      <LocaleProvider><InteractiveLensResults view={view as any} previewUrl={null} fallbackImage={null} onChoose={()=>{}} onReset={()=>{}} /></LocaleProvider>
     );
     expect(html).not.toContain('Tailles/couleurs');
     expect(html).toContain('Voir le produit');
@@ -80,19 +78,18 @@ describe('Lens Phase 0 UI improvements', () => {
       queryLabel:'Prix test',
       list:[candidate({ id:'p1', price:84, currency:'EUR', priceTnd:598, source:'Courir' })],
       eventId:'ev3',
-      detectedPrice:null,
     };
     const html = renderToStaticMarkup(
-      <LocaleProvider><InteractiveLensResults view={view as any} previewUrl={null} fallbackImage={null} onChoose={()=>{}} onReset={()=>{}} onCommandDetected={()=>{}} /></LocaleProvider>
+      <LocaleProvider><InteractiveLensResults view={view as any} previewUrl={null} fallbackImage={null} onChoose={()=>{}} onReset={()=>{}} /></LocaleProvider>
     );
     expect(html).toContain('598.00 DT');
     for (const text of ['Prix final estimé','Prix boutique','Estimation tout inclus','84 EUR']) expect(html).not.toContain(text);
   });
 
   it('empty state offers a real retry without a misleading history action', () => {
-    const view = { queryLabel:'Introuvable XYZ', list:[], eventId:'ev4', detectedPrice:null };
+    const view = { queryLabel:'Introuvable XYZ', list:[], eventId:'ev4' };
     const html = renderToStaticMarkup(
-      <LocaleProvider><InteractiveLensResults view={view as any} previewUrl={null} fallbackImage={null} onChoose={()=>{}} onReset={()=>{}} onCommandDetected={()=>{}} /></LocaleProvider>
+      <LocaleProvider><InteractiveLensResults view={view as any} previewUrl={null} fallbackImage={null} onChoose={()=>{}} onReset={()=>{}} /></LocaleProvider>
     );
     expect(html).toContain('Aucune correspondance');
     expect(html).toContain('Nouvelle recherche');

@@ -78,7 +78,6 @@ export function catalogSearch(
   query: string,
   limit = 6,
 ): AyrovixCandidate[] {
-  const rules = db.getPricingRules();
   const rows = db.all<any>(
     `SELECT id, name, brand_name, image, source_url, source_platform, stock_status,
             original_price, currency, final_price
@@ -231,7 +230,6 @@ export async function searchCandidates(
   const external = visualCandidates.length
     ? visualCandidates
     : await externalProductSearch(query, 6, deadline);
-  const rules = db.getPricingRules();
   const rescored = external.map((candidate) => {
     const estimated = candidate.price != null ? estimateWithDb(db, candidate.price, candidate.currency || 'EUR') : null;
     return {

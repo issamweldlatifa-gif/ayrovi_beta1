@@ -1,62 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { deduplicateCandidates, understandSelectedProduct, understandCustomerIntent } from './aiLensIntelligence';
-import type { AyrovixCandidate, AyrovixIdentification } from '../types';
-
-function mockId(overrides: Partial<AyrovixIdentification> = {}): AyrovixIdentification {
-  return {
-    input_kind: 'product_photo',
-    category: 'shoes',
-    brand: 'Nike',
-    model: 'Air Max 270',
-    color: ['white', 'black'],
-    visible_text: ['NIKE'],
-    possible_model_codes: ['270'],
-    description: 'Sneakers Nike Air Max 270 blanches',
-    confidence: 0.82,
-    detected_price: { amount: 0, currency: '', label: 'none', confidence: 0 },
-    pricing: { sale_price: null, original_price: null, shipping_price: null, total_price: null, currency: null, discount_percent: null },
-    products: [
-      { name: 'Sneakers Nike Air Max', brand: 'Nike', category: 'shoes', subcategory: 'sneakers', price: null, currency: null, box: [0.2,0.3,0.5,0.4], color: ['white'], pattern: null, material: 'mesh' },
-      { name: 'T-shirt oversize', brand: null, category: 'clothing', subcategory: 't-shirt', price: null, currency: null, box: [0.1,0.05,0.3,0.4], color: ['black'], pattern: 'logo-print', material: 'coton' },
-    ],
-    url: null,
-    seller: null,
-    ...overrides,
-  };
-}
-
-describe('AI product understanding', () => {
-  it('separates visible vs inferred, no invention when brand null', () => {
-    const id = mockId({ brand: null, products: [{ name: 'Sac cuir', brand: null, category: 'bags', subcategory: 'handbag', price: null, currency: null, box: null, color: ['brown'], pattern: null, material: 'cuir' }] });
-    const u = understandSelectedProduct(id, 0);
-    expect(u.selectedProduct.brand).toBeNull();
-    expect(u.selectedProduct.attributesVisible).not.toContain('brand:');
-    expect(u.selectedProduct.attributesInferred).toContain('brand:unknown');
-    expect(u.selectedProduct.material).toBe('cuir');
-  });
-  it('detects multi-products count', () => {
-    const id = mockId();
-    const u = understandSelectedProduct(id);
-    expect(u.multiProductsDetected).toBe(2);
-  });
-});
-
-describe('Customer intent', () => {
-  it('merges selected object + optional text + context', () => {
-    const id = mockId();
-    const intent = understandCustomerIntent(id, 'cherche taille 42', 'Sneakers Nike Air Max');
-    expect(intent.selectedObject).toBe('Sneakers Nike Air Max');
-    expect(intent.customerIntent).toContain('cherche taille 42');
-    expect(intent.context).toContain('product_photo');
-    expect(intent.optionalText).toBe('cherche taille 42');
-  });
-  it('handles no optional text', () => {
-    const id = mockId();
-    const intent = understandCustomerIntent(id, null);
-    expect(intent.optionalText).toBeNull();
-    expect(intent.customerIntent).toBeTruthy();
-  });
-});
+import { deduplicateCandidates } from './candidateDedup';
+import type { AyrovixCandidate } from '../types';
 
 describe('Deduplicate', () => {
   function cand(overrides: Partial<AyrovixCandidate> = {}): AyrovixCandidate {
@@ -115,7 +59,6 @@ describe('Deduplicate', () => {
 
 describe('Performance guard', () => {
   it('no AI per touch — only confirm triggers AI (checking that deduplicate is sync, not async per move)', () => {
-    // deduplicate is sync local, generateOptimizedSearch is async only on confirm
     const cands = Array.from({length:5}, (_,i)=> ({
       id: `id_${i}`,
       kind: 'external' as const,
