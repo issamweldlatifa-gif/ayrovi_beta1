@@ -4,7 +4,7 @@
   "totals": {
     "files": 248,
     "customerAndSharedFiles": 196,
-    "controls": 466,
+    "controls": 467,
     "iconAliases": 102,
     "uniqueGlyphs": 99
   },
@@ -11010,7 +11010,7 @@
     {
       "file": "client/src/ayrovix/components/lens-product-card.css",
       "domain": "lens",
-      "sha256": "8054eb59e63d8402af02cdbb11ff718969afe1929d814296db8670e4282c8f72",
+      "sha256": "7b8eadf025a9fdbbfb7f77a474af932c92dd86e29bf90f9e9c87d30bc49085db",
       "lines": 57,
       "imports": [],
       "exports": [],
@@ -11342,7 +11342,7 @@
     {
       "file": "client/src/ayrovix/components/LensLauncher.tsx",
       "domain": "lens",
-      "sha256": "332ca6b1313772372c599281848fecd5b55b5c56b3721eb1d8bb93712bf6844c",
+      "sha256": "86a705964d47047e33f7b749678aa21445066ae029452b470d6c1bcd449fc176",
       "lines": 1007,
       "imports": [
         "../../types",
@@ -11744,13 +11744,14 @@
     {
       "file": "client/src/ayrovix/components/LensProductCard.tsx",
       "domain": "lens",
-      "sha256": "c0fc682c21937f9e7ae97d669b638088430e41321168e316608ae7143c45c149",
-      "lines": 129,
+      "sha256": "54a8bc87abb096b98f73e385d2f4196e7e884d6e5bc082cd4b94dd5ba3deb549",
+      "lines": 183,
       "imports": [
         "react",
         "../../components/QatafoIcons",
         "../../i18n/LocaleContext",
         "../types",
+        "../services/lensApi",
         "./MerchantRating",
         "./quiet-card",
         "../services/mediaIsolation",
@@ -11763,7 +11764,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 104,
+          "line": 148,
           "className": "\"lens-card-open\"",
           "type": "\"button\"",
           "role": null,
@@ -11773,19 +11774,29 @@
         },
         {
           "tag": "button",
-          "line": 122,
+          "line": 171,
           "className": "\"lens-card-favorite\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": "{saved\n        ? tr(`Retirer des favoris : ${candidate.title}`, `إزالة من المفضلة: ${candidate.title}`)\n        : tr(`Ajouter aux favoris : ${candidate.title}`, `إضافة إلى المفضلة: ${candidate.title}`)}",
           "onClick": "{() => onFavorite(candidate)}",
           "disabled": "{busy}"
+        },
+        {
+          "tag": "button",
+          "line": 176,
+          "className": "\"lens-card-verify\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr(`Vérifier le stock : ${candidate.title}`, `التحقق من المخزون: ${candidate.title}`)}",
+          "onClick": "{() => void verifyStock()}",
+          "disabled": "{checking}"
         }
       ],
       "icons": [
         {
           "module": "../../components/QatafoIcons",
-          "bindings": "{ Heart, HeartFilled, Image as ImageIcon }",
+          "bindings": "{ Heart, HeartFilled, Image as ImageIcon, RefreshCw }",
           "line": 2
         }
       ],
@@ -12581,7 +12592,7 @@
     {
       "file": "client/src/ayrovix/types.ts",
       "domain": "lens",
-      "sha256": "14a831fb29be8a3d9ecd6a325293f4da3a124ff86ea1b5d4e66fce4a13fd3f9d",
+      "sha256": "183b59b613594e54a4659e7f2aa4dbced8cc06ae23c2c991173356725ce19d3b",
       "lines": 268,
       "imports": [],
       "exports": [],
@@ -20184,7 +20195,7 @@
     {
       "file": "client/src/shop/ProductPage.tsx",
       "domain": "shell-content",
-      "sha256": "093a54036f0763149124fd559a50f4aaa281a255a7a8d26d4c225a981c68ed4c",
+      "sha256": "a8080b56a385d02ee74e0328d5cae1b9fdd988b42ede65913ef3103a4f2a63a6",
       "lines": 320,
       "imports": [
         "react",
@@ -20502,8 +20513,8 @@
     {
       "file": "client/src/shop/ShopProductScreen.tsx",
       "domain": "shell-content",
-      "sha256": "e7e5f6bee1b5a1a87c258e017e5f4aab9cd849caffc9c0efc028b898b5479e33",
-      "lines": 278,
+      "sha256": "d064a12e3b145d8b3817c32c645796dacc9c0cc81fc7d45c3932e4882cff267a",
+      "lines": 275,
       "imports": [
         "react",
         "../i18n/LocaleContext",

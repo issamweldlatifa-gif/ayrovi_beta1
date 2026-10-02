@@ -216,22 +216,13 @@ async function runSerpApiVisualSearch(image: Buffer, limit: number): Promise<Ayr
       }
       return toCandidates(payload, limit);
     };
-    // Deux onglets en parallèle — un troisième (exact) allongeait à 20–30 s
-    // et se faisait souvent refuser (quota) : la grille tombait à 1–2 fiches.
-    const [products, visual] = await Promise.all([
-      searchType('products'),
-      searchType('visual_matches'),
-    ]);
-    const merged: AyrovixCandidate[] = [];
-    const seen = new Set<string>();
-    for (const item of [...products, ...visual]) {
-      if (seen.has(item.sourceUrl)) continue;
-      seen.add(item.sourceUrl);
-      merged.push(item);
-      if (merged.length >= limit) break;
-    }
-    console.log(`[AYROVIX serpapi-lens] ${merged.length} matches (products=${products.length} visual=${visual.length})`);
-    return merged;
+    /* One Lens query is enough: SerpApi's `products` response already exposes
+       its rows through the supported product/visual result collections. A
+       second unconditional tab query doubled quota use and made one customer
+       action produce an avoidable third network request after image upload. */
+    const products = await searchType('products');
+    console.log(`[AYROVIX serpapi-lens] ${products.length} matches`);
+    return products;
   } catch (error: any) {
     console.warn(`[AYROVIX serpapi-lens] ${error?.name === 'TimeoutError' ? 'timeout' : 'unavailable'}`);
     return [];

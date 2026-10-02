@@ -40,7 +40,7 @@
 .lens-card-stock[data-stock="limited"]{background:#fdf1dd;color:#8a5300}
 .lens-card-stock[data-stock="out_of_stock"]{background:#fdeaea;color:#a01b1b}
 .lens-card-sizes{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
-.lens-card-size{display:inline-flex;align-items:center;justify-content:center;min-width:26px;padding:2px 6px;border:1px solid #d9d9d9;border-radius:6px;background:#fff;color:#000;font-size:.6875rem;font-weight:600;line-height:1.5;font-family:var(--ay-font-stack)}
+.lens-card-size,.lens-card-color{display:inline-flex;align-items:center;justify-content:center;min-width:26px;padding:2px 6px;border:1px solid #d9d9d9;border-radius:6px;background:#fff;color:#000;font-size:.6875rem;font-weight:600;line-height:1.5;font-family:var(--ay-font-stack)}
 .lens-card-size[data-state="out"]{border-color:#e6c9c9;background:#faf3f3;color:#a01b1b;text-decoration:line-through}
 .lens-card-size[data-state="in"]{border-color:#bcdcc7;background:#f4fbf6;color:#12683a}
 /* Le bouton de vérification vit HORS du bouton d'ouverture (boutons imbriqués

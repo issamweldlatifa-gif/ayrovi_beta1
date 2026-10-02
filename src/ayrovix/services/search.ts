@@ -1,7 +1,7 @@
 import type { QatafoDatabase } from '../../db/database';
 import type { AyrovixCandidate, AyrovixIdentification } from '../types';
 import { estimateWithDb } from './currency';
-import { filterDisplayableCandidates, filterWithFallback, harvestForScrape } from './candidatePolicy';
+import { filterDisplayableCandidates, filterWithFallback, harvestForScrape, withDisplayRating } from './candidatePolicy';
 import { getAyroviAiCore } from '../../ai-core/core';
 import { isAiFeatureEnabled } from '../../ai-core/config';
 
@@ -111,7 +111,15 @@ export function catalogSearch(
       match,
     } satisfies AyrovixCandidate;
   }).filter((candidate) => candidate.match >= 35);
-  return filterDisplayableCandidates(candidates, limit);
+  const displayable = filterDisplayableCandidates(candidates, limit);
+  /* Keep recorded stock truth available to callers of the catalogue reader.
+     Presentation-level filters may hide sold-out rows later, but this boundary
+     must not turn an explicit OUT_OF_STOCK record into a missing product. */
+  const soldOut = candidates
+    .filter((candidate) => candidate.availability === 'out_of_stock')
+    .map(withDisplayRating)
+    .sort((left, right) => right.match - left.match);
+  return [...displayable, ...soldOut].slice(0, limit);
 }
 
 function merchantLabel(sourceUrl: string): string {
