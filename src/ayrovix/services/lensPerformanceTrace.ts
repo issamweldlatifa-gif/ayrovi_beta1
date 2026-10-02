@@ -38,6 +38,8 @@ export interface LensTrace {
   liveStockFetched?: number;
   liveStockCacheHits?: number;
   liveStockApplied?: number;
+  purchasableKept?: number;
+  purchasableExcluded?: number;
   pricingMs?: number;
   totalBackendMs?: number;
   // Frontend render (يُقاس في LensLauncher بعد setCandidatesView)

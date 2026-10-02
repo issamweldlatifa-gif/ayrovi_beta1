@@ -50,6 +50,8 @@ interface CandidatesView {
   list: AyrovixCandidate[];
   eventId: string;
   detectedPrice?: AyrovixDetectedPrice | null;
+  /** Fiches écartées côté serveur faute de preuve d'achat (page marchande). */
+  excludedCount?: number;
 }
 
 function toStoreKey(sourceUrl: string): AyrovixOrderPayload['store'] {
@@ -384,6 +386,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
         list: result.candidates,
         eventId: result.eventId,
         detectedPrice: result.detectedPrice || null,
+        excludedCount: result.excluded?.count || 0,
       });
       // ROI responses describe a padded crop, not the original preview coordinates.
       // Keep the full-image detections so subsequent taps cannot drift to another item.

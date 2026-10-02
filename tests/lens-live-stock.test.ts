@@ -16,6 +16,8 @@ import {
   applyLiveStock,
   enrichCandidatesLiveStock,
   entryFromPage,
+  filterPurchasable,
+  purchaseBlocker,
   refreshLiveStock,
   toContractAvailability,
   type LiveStockFetcher,
@@ -217,11 +219,12 @@ describe('câblage — le lien SerpApi est bien lu dans le pipeline Lens', () =>
   const scraper = readFileSync('src/scraper/scraper.ts', 'utf8');
 
   it('la grille Lens passe par l’enrichissement stock avant réponse', () => {
-    expect(route).toContain("import { enrichCandidatesLiveStock, refreshLiveStock } from './services/lensLiveStock'");
+    expect(route).toContain("import { enrichCandidatesLiveStock, filterPurchasable, refreshLiveStock } from './services/lensLiveStock'");
     expect(route).toContain("router.post('/live-stock'");
     expect(route).toContain('fetcher: (url) => scraper.scrapeParsedPage(url).then((result) => result.data)');
     expect(route).toContain('await enrichCandidatesLiveStock(candidates');
-    expect(route).toContain('tokenizedCandidates(liveCandidates)');
+    expect(route).toContain('filterPurchasable(liveCandidates)');
+    expect(route).toContain('tokenizedCandidates(purchasable.candidates)');
   });
 
   it('le scraper est réutilisé, jamais recòpié : même chaîne de confiance', () => {
@@ -442,5 +445,89 @@ describe('vérité marchande — le prix de la page remplace l’extrait SerpApi
     expect(route).not.toContain('generateOptimizedSearch(');
     expect(route).not.toContain('analyzeResultRelevance(');
     expect(route).not.toContain('tokenizedDetectedPrice(');
+  });
+});
+
+/*
+ * FILTRE D'ACHETABILITÉ (02/10/2026) — on ne montre pas ce qu'on ne peut pas
+ * acheter. Une fiche atteint le client seulement si SA page a été lue et publie
+ * prix structuré + stock positif + image. Le reste est écarté et compté.
+ */
+describe('achetabilité — seules les fiches prouvées atteignent le client', () => {
+  const reprice = (price: number, currency: string) => ({ priceTnd: price * 4, promo: null });
+  const proven = (over: Partial<AyrovixCandidate> = {}, pageOver: Partial<ParsedProductPage> = {}) => {
+    const item = candidate({ image: 'https://img/1.jpg', ...over });
+    applyLiveStock(item, entryFromPage(page({ availability: 'in_stock', ...pageOver }), Date.now()), reprice);
+    return item;
+  };
+
+  it('garde une fiche dont la page publie prix, stock positif et image', () => {
+    expect(purchaseBlocker(proven())).toBeNull();
+  });
+
+  it('écarte une fiche dont la page n’a pas été lue (délai, blocage, autre produit)', () => {
+    expect(purchaseBlocker(candidate({ image: 'https://img/1.jpg' }))).toBe('page_non_lue');
+  });
+
+  it('écarte une page lue sans prix structuré', () => {
+    const item = proven({ price: null, currency: null }, { price: 0 });
+    expect(purchaseBlocker(item)).toBe('prix_non_lu');
+  });
+
+  it('écarte une rupture annoncée, ou toutes les tailles indisponibles', () => {
+    expect(purchaseBlocker(proven({}, { availability: 'out_of_stock' }))).toBe('rupture');
+    // Les tailles explicitement indisponibles sont déjà retirées par le parseur :
+    // il ne reste aucune preuve positive → écartée (stock inconnu), jamais montrée.
+    const allOut = proven({}, { availability: 'unknown', variants: { sizes: [], colors: [], details: [sizeDetail('M', false), sizeDetail('L', false)] } });
+    expect(purchaseBlocker(allOut)).not.toBeNull();
+    // Stock publié négatif par variante (drapeau `stock: false`) → rupture.
+    const flagged = proven({}, { availability: 'unknown', variants: { sizes: [], colors: [], details: [{ ...sizeDetail('M'), stock: false }] } });
+    expect(purchaseBlocker(flagged)).toBe('rupture');
+  });
+
+  it('écarte un stock que la page ne confirme pas — un silence n’est pas un oui', () => {
+    expect(purchaseBlocker(proven({}, { availability: 'unknown' }))).toBe('stock_inconnu');
+  });
+
+  it('accepte une variante au stock PUBLIÉ positif même si le produit ne dit rien', () => {
+    const oneSize = proven({}, { availability: 'unknown', variants: { sizes: [], colors: [], details: [{ ...sizeDetail('M'), stock: true }, { ...sizeDetail('L'), stock: false }] } });
+    expect(purchaseBlocker(oneSize)).toBeNull();
+    expect(oneSize.sourceRead).toMatchObject({ variantsAvailable: 1, variantsUnavailable: 1 });
+    // Une taille listée SANS drapeau de stock n'est pas une preuve.
+    const silent = proven({}, { availability: 'unknown', variants: { sizes: [], colors: [], details: [sizeDetail('M')] } });
+    expect(purchaseBlocker(silent)).toBe('stock_inconnu');
+  });
+
+  it('écarte une fiche sans aucune image', () => {
+    expect(purchaseBlocker(proven({ image: '' }, { images: [] }))).toBe('sans_image');
+  });
+
+  it('le catalogue AYROVI passe tel quel : il porte sa propre preuve de stock', () => {
+    expect(purchaseBlocker(candidate({ kind: 'catalog' }))).toBeNull();
+  });
+
+  it('compte ce qui est écarté, et pourquoi', () => {
+    const { candidates: kept, report } = filterPurchasable([
+      proven({ id: 'ok' }),
+      candidate({ id: 'unread', image: 'x' }),
+      proven({ id: 'out' }, { availability: 'out_of_stock' }),
+    ]);
+    expect(kept.map((item) => item.id)).toEqual(['ok']);
+    expect(report).toEqual({ kept: 1, excluded: 2, reasons: { page_non_lue: 1, rupture: 1 } });
+  });
+
+  it('se relâche sans redéploiement', () => {
+    process.env.AYROVI_LENS_REQUIRE_PROOF = 'false';
+    try {
+      expect(filterPurchasable([candidate()]).candidates).toHaveLength(1);
+    } finally { delete process.env.AYROVI_LENS_REQUIRE_PROOF; }
+  });
+
+  it('la route filtre APRÈS la lecture des pages et AVANT la réponse, et dit combien', () => {
+    const route = readFileSync('src/ayrovix/routes.ts', 'utf8');
+    const block = route.split("router.post('/analyze-image'")[1].split("router.post('/analyze-url'")[0];
+    expect(block.indexOf('await enrichCandidatesLiveStock(')).toBeLessThan(block.indexOf('filterPurchasable(liveCandidates)'));
+    expect(block).toContain('tokenizedCandidates(purchasable.candidates)');
+    expect(block).toContain('excluded: { count: purchasable.report.excluded');
   });
 });

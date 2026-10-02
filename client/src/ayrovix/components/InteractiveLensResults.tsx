@@ -16,6 +16,8 @@ export interface InteractiveLensView {
   list: AyrovixCandidate[];
   eventId: string;
   detectedPrice?: AyrovixDetectedPrice | null;
+  /** Fiches écartées côté serveur : on ne montre pas ce qu'on ne peut pas acheter. */
+  excludedCount?: number;
 }
 
 interface Props {
@@ -183,13 +185,16 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
                 <div className="py-8 text-center">
                   <div className="mx-auto grid h-12 w-12 place-items-center rounded-control bg-surface text-muted"><ImageIcon size={22} /></div>
 
-                  <p className="mt-2 text-sm font-bold text-ink">{tr('Aucune correspondance trouvée', 'لا توجد مطابقة')}</p>
-                  <p className="mx-auto mt-1 max-w-[28ch] text-xs text-muted">{tr('Essayez une autre zone ou une image plus nette.', 'جرّب منطقة أخرى أو صورة أوضح.')}</p>
+                  <p className="mt-2 text-sm font-bold text-ink">{view.excludedCount ? tr('Aucune fiche achetable pour le moment', 'لا توجد بطاقة قابلة للشراء حالياً') : tr('Aucune correspondance trouvée', 'لا توجد مطابقة')}</p>
+                  <p className="mx-auto mt-1 max-w-[30ch] text-xs text-muted">{view.excludedCount
+                    ? tr(`${view.excludedCount} résultat(s) écarté(s) : page marchande illisible, prix ou stock non confirmés.`, `تم استبعاد ${view.excludedCount} نتيجة: صفحة المتجر غير مقروءة أو السعر/التوفر غير مؤكد.`)
+                    : tr('Essayez une autre zone ou une image plus nette.', 'جرّب منطقة أخرى أو صورة أوضح.')}</p>
                   <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-center"><button type="button" onClick={() => { clearSelection(); onReset(); }} className="rounded-control bg-ink px-5 py-2 text-xs font-bold text-white">{tr('Nouvelle recherche', 'بحث جديد')}</button></div>
                   <p className="mt-2 text-xs font-medium text-muted">{tr('Astuce : touchez directement le produit pour affiner la recherche.', 'نصيحة: المس المنتج مباشرة لتحسين البحث.')}</p>
                 </div>
               ) : (
                 <>
+                  {view.excludedCount ? <p className="lens-favorite-notice" role="status">{tr(`${view.excludedCount} résultat(s) écarté(s) — stock ou prix non confirmés par le marchand.`, `تم استبعاد ${view.excludedCount} نتيجة — المتجر لم يؤكد السعر أو التوفر.`)}</p> : null}
                   {favorites.message && <p className="lens-favorite-notice" role="status">{favorites.message === 'auth' ? tr('Connectez-vous à votre compte pour enregistrer vos favoris.', 'سجّل الدخول إلى حسابك لحفظ المفضلة.') : tr('Impossible de mettre à jour les favoris. Réessayez avec le cœur.', 'تعذر تحديث المفضلة. أعد المحاولة من زر القلب.')}</p>}
                   <div className="lens-result-grid grid grid-cols-2 md:grid-cols-3 gap-x-3 gap-y-6">
                     {visible.slice(0, 12).map(candidate => <LensProductCard key={candidate.id} candidate={candidate} onChoose={onChoose} saved={favorites.isSaved(candidate)} busy={favorites.busy} onFavorite={favorites.toggle} />)}

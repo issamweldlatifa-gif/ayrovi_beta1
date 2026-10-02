@@ -320,6 +320,13 @@ export function applyLiveStock(candidate: AyrovixCandidate, entry: LiveStockEntr
     candidate.availability = entry.availability;
     applied = true;
   }
+  // La preuve que la page a été lue, avec le stock par variante tel que publié.
+  candidate.sourceRead = {
+    at: new Date(entry.at).toISOString(),
+    variantsAvailable: entry.variants.filter((variant) => variant.availability === 'available').length,
+    variantsUnavailable: entry.variants.filter((variant) => variant.availability === 'unavailable').length,
+    variantsUnknown: entry.variants.filter((variant) => variant.availability === 'unknown').length,
+  };
   if (entry.sizes.length && !candidate.sizes?.length) {
     candidate.sizes = entry.sizes;
     applied = true;
@@ -421,6 +428,65 @@ export async function enrichCandidatesLiveStock(
   return { candidates: output.map((candidate) => ({ ...candidate })), report };
 }
 
+
+/* ── Filtre d'achetabilité : seules les fiches ACHETABLES atteignent le client ── */
+
+export type PurchaseBlocker = 'page_non_lue' | 'prix_non_lu' | 'rupture' | 'stock_inconnu' | 'sans_image';
+
+/**
+ * UNE FICHE = UN ACHAT POSSIBLE (décision produit du 02/10/2026).
+ *
+ * SerpApi rapporte des liens ; seule la page derrière le lien prouve qu'on peut
+ * acheter. Une fiche n'est montrée que si cette page a été lue ET publie :
+ *   • un prix structuré (c'est lui qui devient le prix AYROVI) ;
+ *   • une disponibilité positive — produit en stock, ou au moins une variante
+ *     annoncée disponible ;
+ *   • au moins une image.
+ * Tout le reste est ÉCARTÉ, et compté : le client voit « N résultats écartés »,
+ * jamais une carte qu'il ne pourra pas commander. Le catalogue AYROVI porte sa
+ * propre preuve de stock et passe tel quel.
+ *
+ * `AYROVI_LENS_REQUIRE_PROOF=false` relâche le filtre sans redéploiement.
+ */
+export function purchaseBlocker(candidate: AyrovixCandidate): PurchaseBlocker | null {
+  if (candidate.kind !== 'external') return null;
+  if (!candidate.sourceRead) return 'page_non_lue';
+  if (candidate.priceOrigin !== 'merchant' || !(candidate.price! > 0) || !candidate.currency) return 'prix_non_lu';
+  if (candidate.availability === 'out_of_stock') return 'rupture';
+  const variantsPositive = candidate.sourceRead.variantsAvailable > 0;
+  const variantsAllNegative = !variantsPositive && candidate.sourceRead.variantsUnavailable > 0 && candidate.sourceRead.variantsUnknown === 0;
+  if (variantsAllNegative) return 'rupture';
+  const productPositive = candidate.availability === 'in_stock' || candidate.availability === 'limited';
+  if (!productPositive && !variantsPositive) return 'stock_inconnu';
+  if (!candidate.image && !(candidate.images || []).length) return 'sans_image';
+  return null;
+}
+
+export interface PurchasableReport {
+  kept: number;
+  excluded: number;
+  reasons: Partial<Record<PurchaseBlocker, number>>;
+}
+
+export function filterPurchasable(candidates: AyrovixCandidate[]): { candidates: AyrovixCandidate[]; report: PurchasableReport } {
+  const report: PurchasableReport = { kept: 0, excluded: 0, reasons: {} };
+  if (process.env.AYROVI_LENS_REQUIRE_PROOF === 'false') {
+    report.kept = candidates.length;
+    return { candidates, report };
+  }
+  const kept: AyrovixCandidate[] = [];
+  for (const candidate of candidates) {
+    const blocker = purchaseBlocker(candidate);
+    if (blocker) {
+      report.excluded += 1;
+      report.reasons[blocker] = (report.reasons[blocker] || 0) + 1;
+      continue;
+    }
+    kept.push(candidate);
+  }
+  report.kept = kept.length;
+  return { candidates: kept, report };
+}
 
 /* ── Relecture fraîche : le bouton « vérifier le stock » ─────────────────── */
 

@@ -22,7 +22,7 @@ import path from 'node:path';
 import { serpApiVisualReady, serpApiVisualSearch } from '../src/ayrovix/services/visualSearch';
 import { deduplicateCandidates } from '../src/ayrovix/services/aiLensIntelligence';
 import { filterWithFallback } from '../src/ayrovix/services/candidatePolicy';
-import { enrichCandidatesLiveStock } from '../src/ayrovix/services/lensLiveStock';
+import { enrichCandidatesLiveStock, filterPurchasable, purchaseBlocker } from '../src/ayrovix/services/lensLiveStock';
 import { SmartLinkScraper } from '../src/scraper/scraper';
 import type { AyrovixCandidate } from '../src/ayrovix/types';
 
@@ -109,13 +109,21 @@ async function main(): Promise<void> {
   });
   console.log(`[4] Pages marchandes     : visitées=${report.fetched} cache=${report.cacheHits} enrichies=${report.applied} (budget ${report.budget}, échéance ${report.deadlineMs} ms) en ${Date.now() - t1} ms`);
 
+  // 5. Filtre d'achetabilité — exactement celui de la route : on ne montre pas ce qu'on ne peut pas acheter.
+  const gate = filterPurchasable(candidates);
+  console.log(`[5] Achetabilité         : ${gate.report.kept} gardée(s), ${gate.report.excluded} écartée(s) ${gate.report.excluded ? JSON.stringify(gate.report.reasons) : ''}`);
+  for (const c of candidates) {
+    const blocker = purchaseBlocker(c);
+    if (blocker) console.log(`    ✗ écartée (${blocker}) : ${c.title.slice(0, 70)} — ${c.sourceUrl}`);
+  }
+
   if (asJson) {
     console.log(JSON.stringify({ serpMs, raw: raw.length, deduped: deduped.length, displayable: displayable.length, liveStock: report, candidates }, null, 2));
     return;
   }
 
-  console.log(`\n=== ${candidates.length} fiche(s) produit — ce que le client verrait ===`);
-  candidates.forEach((c, i) => printCard(i, c));
+  console.log(`\n=== ${gate.candidates.length} fiche(s) produit — ce que le client verrait ===`);
+  gate.candidates.forEach((c, i) => printCard(i, c));
 
   const withSizes = candidates.filter((c) => c.sizes.length).length;
   const withPrice = candidates.filter((c) => c.price != null).length;

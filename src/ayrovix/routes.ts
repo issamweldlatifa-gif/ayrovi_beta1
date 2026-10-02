@@ -7,7 +7,7 @@ import { buildSearchQuery, AyrovixUnavailableError, ayrovixAiReady, fallbackIden
 import { catalogSearch, externalProductSearch, groupOffers, scoreCandidate, searchCandidates } from './services/search';
 import { serpApiVisualReady } from './services/visualSearch';
 import { recognizeImage } from './services/lensEngine';
-import { enrichCandidatesLiveStock, refreshLiveStock } from './services/lensLiveStock';
+import { enrichCandidatesLiveStock, filterPurchasable, refreshLiveStock } from './services/lensLiveStock';
 import { deduplicateCandidates } from './services/aiLensIntelligence';
 import { estimateWithDb } from './services/currency';
 import { extractProductFromUrl, ExtractionFailedError, InvalidUrlError, sanitizeProductUrl } from './services/product';
@@ -346,11 +346,22 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       mark(trace, 'liveStockFetched', liveStock.fetched);
       mark(trace, 'liveStockCacheHits', liveStock.cacheHits);
       mark(trace, 'liveStockApplied', liveStock.applied);
+      /*
+       * FILTRE D'ACHETABILITÉ — une fiche sans page lue, sans prix structuré ou
+       * sans stock positif n'atteint pas le client. On ne montre pas ce qu'on ne
+       * peut pas acheter ; on dit combien ont été écartées, et pourquoi.
+       */
+      const purchasable = filterPurchasable(liveCandidates);
+      mark(trace, 'purchasableKept', purchasable.report.kept);
+      mark(trace, 'purchasableExcluded', purchasable.report.excluded);
+      if (purchasable.report.excluded) {
+        console.info(`[AYROVIX analyze-image] ${purchasable.report.excluded} fiche(s) écartée(s) : ${JSON.stringify(purchasable.report.reasons)}`);
+      }
       const title = [identification.brand, identification.model].filter(Boolean).join(' ')
         || identification.description
         || 'Produit détecté par AYROVIX';
       const query = effectiveQuery;
-      const securedCandidates = tokenizedCandidates(liveCandidates);
+      const securedCandidates = tokenizedCandidates(purchasable.candidates);
       // Chauffe le cache d'isolation/redimensionnement pendant que le client lit la grille.
       const candidateMedia = [...securedCandidates.map((item) => item.image), ...securedCandidates.flatMap((item) => item.images || [])];
       warmIsolation(candidateMedia, 8);
@@ -359,7 +370,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
         channel: 'image',
         brand: identification.brand,
         query: query || identification.description,
-        candidatesCount: candidates.length,
+        candidatesCount: securedCandidates.length,
       });
       const historyMatch = securedCandidates[0];
       rememberAuthenticatedHistory(db, req, {
@@ -384,12 +395,13 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
         // Plus aucun prix ne vient de l'image (02/10/2026) : le champ reste pour le contrat client.
         detectedPrice: null,
         liveStock: { fetched: liveStock.fetched, cacheHits: liveStock.cacheHits, applied: liveStock.applied, budget: liveStock.budget },
+        excluded: { count: purchasable.report.excluded, reasons: purchasable.report.reasons },
       };
       if (!isTest) {
         if (pipelineCache.size > 300) pipelineCache.delete(pipelineCache.keys().next().value as string);
         pipelineCache.set(pKey, { at: Date.now(), data: responseData });
       }
-      mark(trace, 'candidatesCount', candidates.length);
+      mark(trace, 'candidatesCount', securedCandidates.length);
       mark(trace, 'totalBackendMs', Date.now() - tStart);
       endTrace(trace);
       return res.json({ success: true, data: responseData });
