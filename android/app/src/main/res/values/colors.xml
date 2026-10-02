@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- AYWEBs §9 — teintes de la couche de navigation marchande interne. -->
+<resources>
+    <color name="aywebs_surface">#FFFFFFFF</color>
+    <color name="aywebs_ink">#FF111827</color>
+    <color name="aywebs_accent">#FFF97316</color>
+    <color name="aywebs_notice_background">#FFFFF7ED</color>
+    <color name="aywebs_notice_text">#FF9A3412</color>
+</resources>

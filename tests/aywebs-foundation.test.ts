@@ -1,7 +1,23 @@
-import { readFileSync } from 'node:fs';
+/**
+ * AyWebs — contrat V1 du socle (registre, adaptateurs, garde de domaine,
+ * partage Android/PWA, drapeaux runtime).
+ *
+ * Depuis le Master Order AYWEBs, `/capture` délègue au Product Engine : il
+ * persiste le produit, sa preuve et son contrat de variantes. Le fixture
+ * utilise donc une VRAIE base `:memory:` (comme les autres suites) au lieu
+ * d'un objet partiel — les assertions de contrat, elles, restent identiques.
+ */
+import { mkdtempSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import express from 'express';
 import request from 'supertest';
-import { describe, expect, test, vi } from 'vitest';
+import { beforeAll, describe, expect, test, vi } from 'vitest';
+
+// Le contrat de variantes est un cache disque : isolé par suite, jamais dans data/.
+process.env.AYROVI_VARIANT_CACHE_DIR = join(mkdtempSync(join(tmpdir(), 'aywebs-variant-')), 'cache');
+
+import { QatafoDatabase } from '../src/db/database';
 import { AYWEBS_STORES, detectAyWebsStore } from '../shared/aywebsStores';
 import { createAyWebsRouter } from '../src/aywebs/routes';
 import { DEFAULT_CUSTOMS_CATEGORIES, type PricingRules } from '../src/services/pricing';
@@ -38,12 +54,17 @@ function fixture() {
     cleanPastedUrl: (value: string) => value.trim(),
     scrapeProduct,
   };
-  const db = { getPricingRules: () => pricingRules() };
+  const db = new QatafoDatabase(':memory:');
+  // Le moteur tarifaire de test : mêmes règles que la production de référence.
+  vi.spyOn(db, 'getPricingRules').mockImplementation(() => pricingRules());
   const app = express();
   app.use(express.json());
-  app.use('/api/v1/aywebs', createAyWebsRouter(db as any, scraper as any));
-  return { app, scrapeProduct };
+  app.use((req, _res, next) => { (req as any).requestId = 'test-request'; next(); });
+  app.use('/api/v1/aywebs', createAyWebsRouter(db, scraper as any));
+  return { app, scrapeProduct, db };
 }
+
+const SESSION = { 'x-session-id': 'aywebs-foundation-session-0001' };
 
 describe('AyWebs V1 foundation', () => {
   test('keeps all supported store names, domains and adapters in one registry', () => {
@@ -55,7 +76,7 @@ describe('AyWebs V1 foundation', () => {
 
   test('publishes the registry and runtime capture support', async () => {
     const { app } = fixture();
-    const response = await request(app).get('/api/v1/aywebs/stores');
+    const response = await request(app).get('/api/v1/aywebs/stores').set(SESSION);
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
     expect(response.body.data.find((store: any) => store.id === 'amazon').capture_supported).toBe(true);
@@ -64,7 +85,7 @@ describe('AyWebs V1 foundation', () => {
     const previous = process.env.AYWEBS_CAPTURE_ENABLED;
     process.env.AYWEBS_CAPTURE_ENABLED = 'false';
     try {
-      const disabled = await request(app).get('/api/v1/aywebs/stores');
+      const disabled = await request(app).get('/api/v1/aywebs/stores').set(SESSION);
       expect(disabled.body.features.capture_enabled).toBe(false);
       expect(disabled.body.data.every((store: any) => !store.capture_supported)).toBe(true);
     } finally {
@@ -75,7 +96,7 @@ describe('AyWebs V1 foundation', () => {
 
   test('rejects unregistered domains before any server-side fetch', async () => {
     const { app, scrapeProduct } = fixture();
-    const response = await request(app).post('/api/v1/aywebs/capture').send({
+    const response = await request(app).post('/api/v1/aywebs/capture').set(SESSION).send({
       store: 'amazon', url: 'https://amazon.com.evil.com/dp/B0ABCDEFGH',
     });
     expect(response.status).toBe(400);
@@ -85,14 +106,14 @@ describe('AyWebs V1 foundation', () => {
 
   test('requires an exact Amazon product page and returns a normalized priced product', async () => {
     const { app, scrapeProduct } = fixture();
-    const listing = await request(app).post('/api/v1/aywebs/capture').send({
+    const listing = await request(app).post('/api/v1/aywebs/capture').set(SESSION).send({
       store: 'amazon', url: 'https://www.amazon.com/s?k=nike',
     });
     expect(listing.status).toBe(422);
     expect(listing.body.code).toBe('PRODUCT_PAGE_REQUIRED');
     expect(scrapeProduct).not.toHaveBeenCalled();
 
-    const captured = await request(app).post('/api/v1/aywebs/capture').send({
+    const captured = await request(app).post('/api/v1/aywebs/capture').set(SESSION).send({
       store: 'amazon', url: 'https://www.amazon.com/dp/B0ABCDEFGH',
     });
     expect(captured.status).toBe(201);
@@ -115,11 +136,30 @@ describe('AyWebs V1 foundation', () => {
       ['aliexpress', 'https://www.aliexpress.com/item/1005007777777777.html'],
     ] as const;
     for (const [store, url] of cases) {
-      const response = await request(app).post('/api/v1/aywebs/capture').send({ store, url });
+      const response = await request(app).post('/api/v1/aywebs/capture').set(SESSION).send({ store, url });
       expect(response.status, `${store}: ${JSON.stringify(response.body)}`).toBe(201);
       expect(response.body).toMatchObject({ success: true, status: 'READY', product: { store } });
     }
     expect(scrapeProduct).toHaveBeenCalledTimes(3);
+  });
+
+  test('classifie les liens marchands réels, y compris les URL longues (§10)', async () => {
+    const { app } = fixture();
+    const cases = [
+      ['https://www.shein.com/fr/Robe-fleurie-p-382460229-cat-2030.html', 'shein', 'PRODUCT', true],
+      ['https://www.shein.com/example-p-382460229.html', 'shein', 'PRODUCT', true],
+      ['https://www.amazon.fr/dp/B0CHX3QBCH', 'amazon', 'PRODUCT', true],
+      ['https://www.temu.com/fr/product.html?goods_id=601099999999999', 'temu', 'PRODUCT', true],
+      ['https://fr.shein.com/pdsearch/robe/', 'shein', 'SEARCH', false],
+      ['https://shop.example.tn/p/9', null, 'UNKNOWN', false],
+    ] as const;
+    for (const [url, storeId, pageType, isProduct] of cases) {
+      const response = await request(app).post('/api/v1/aywebs/page/analyze').set(SESSION).send({ url });
+      expect(response.status, `${url}: ${JSON.stringify(response.body)}`).toBe(200);
+      expect(response.body.data, url).toMatchObject({
+        store_id: storeId, page_type: pageType, is_product_page: isProduct, product_detected: isProduct,
+      });
+    }
   });
 
   test('registers AyWebs as the installed mobile share target', () => {
@@ -135,9 +175,9 @@ describe('AyWebs V1 foundation', () => {
     process.env.AYWEBS_SHEIN_CAPTURE_ENABLED = 'false';
     try {
       const { app, scrapeProduct } = fixture();
-      const stores = await request(app).get('/api/v1/aywebs/stores');
+      const stores = await request(app).get('/api/v1/aywebs/stores').set(SESSION);
       expect(stores.body.data.find((store: any) => store.id === 'shein')).toMatchObject({ enabled: true, capture_supported: false });
-      const response = await request(app).post('/api/v1/aywebs/capture').send({
+      const response = await request(app).post('/api/v1/aywebs/capture').set(SESSION).send({
         store: 'shein', url: 'https://www.shein.com/example-p-382460229.html',
       });
       expect(response.status).toBe(422);

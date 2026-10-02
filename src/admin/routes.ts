@@ -68,6 +68,7 @@ import {
 import { lensPerformanceReport } from '../ayrovix/services/lensPerformanceTrace';
 import { funnelSummary } from '../analytics/funnel';
 import { ayWebsAnalyticsSummary } from '../aywebs/analytics';
+import { createAyWebsAdminRouter } from '../aywebs/adminRoutes';
 import {
   GenerateMagazineInput,
   MagazineAgentProviderError,
@@ -481,6 +482,8 @@ export function createAdminRouter(
   // `purchasing:*`. Le lien avec `arrival-ingestion` se fait par mes propres colonnes
   // (`purchase_orders.arrival_id`, `goods_receipts.arrival_id`) : aucune table du CRM n'est modifiée.
   router.use('/purchasing', createPurchasingRouter(db));
+  // AYWEBs (§31) : section du back-office existant, jamais une seconde console.
+  router.use('/aywebs', createAyWebsAdminRouter(db));
   // CRM 360 (E1/E2) : fiches relationnelles, contacts, relations, activités, tâches &
   // follow-ups, notes, issues/support, communications, timeline et tableau de bord —
   // surface additive `/api/admin/crm/*`, gardée par la matrice `crm360:*`.

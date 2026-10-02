@@ -55,6 +55,11 @@ export const ERP_MODULES: readonly ErpModuleDefinition[] = [
   { key: 'inventory', label: 'Stock', section: 'OPERATIONS', status: 'active', basePermission: 'commerce:read', apiPrefix: '/inventory', adminSection: 'inventory', description: 'P2.2 — lignes de stock par emplacement, journal de mouvements append-only, inventaires physiques avec validation' },
   { key: 'purchasing', label: 'Achats', section: 'OPERATIONS', status: 'active', basePermission: 'commerce:read', apiPrefix: '/purchasing', adminSection: 'purchasing', description: 'P2.3 — fournisseurs, commandes d’achat avec approbation, réceptions partielles et mouvements de stock' },
   { key: 'shipping', label: 'Expéditions', section: 'OPERATIONS', status: 'legacy', basePermission: 'commerce:read', adminSection: 'orders', description: 'Livraisons client + cartons CRM' },
+  // AYWEBs (Master Order §31) : domaine de premier niveau, rattaché au back-office
+  // existant. `active` = ce qui est pilotable aujourd'hui (boutiques, adaptateurs,
+  // commandes, demandes, exceptions, paiements, audit) ; l'entrepôt, le groupement
+  // et l'expédition internationale arrivent en phases 6-8 et le disent (§48).
+  { key: 'aywebs', label: 'AYWEBs', section: 'OPERATIONS', status: 'active', basePermission: 'commerce:read', apiPrefix: '/aywebs', adminSection: 'dashboard', description: 'Achat sur le web mondial : boutiques, adaptateurs, panier AYWEBs, commandes, demandes avec URL, exceptions, paiements, audit' },
 
   { key: 'finance', label: 'Finance', section: 'FINANCE', status: 'legacy', basePermission: 'payments:write', adminSection: 'reports', description: 'Paiements, transactions, justificatifs, factures, dépenses' },
   { key: 'accounting', label: 'Comptabilité', section: 'FINANCE', status: 'planned', basePermission: 'reports:read', description: 'Plan comptable, écritures, périodes — P10' },

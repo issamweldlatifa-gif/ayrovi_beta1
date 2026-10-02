@@ -567,6 +567,19 @@ export const App: React.FC = () => {
               navigation.navigate([{ id: 'app:product' }, { id: 'product:input' }]);
             }}
             cartCount={totalCartCount}
+            /* AYWEBs réutilise la session AYROVI : aucun second compte, aucun
+               second jeton. Le CSRF existant protège aussi ses écritures. */
+            authenticated={Boolean(customerSession)}
+            customerCsrfToken={customerSession?.csrfToken || ''}
+            onRequireSignIn={() => {
+              setAccountMessage(tr(
+                'Connectez-vous pour finaliser votre achat AyWebs : votre panier vous suit.',
+                'سجّل الدخول لإتمام عملية الشراء عبر AyWebs: سلّتك ستتبعك.',
+              ));
+              handleCloseAyWebs();
+              setAccountInitialSection('home');
+              openAppView('app:account', true);
+            }}
           />
         </Suspense>
       )}

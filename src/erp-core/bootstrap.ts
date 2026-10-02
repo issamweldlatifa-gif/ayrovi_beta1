@@ -13,6 +13,7 @@ import { ensureAuditSchema } from './audit';
 import { ensureEventsSchemaIfMissing } from './events';
 import { ensurePermissionSchema, seedLegacyPermissions } from './permissions';
 import { ensureNotificationSchema } from './notifications';
+import { ensureAyWebsSchema } from '../aywebs/schema';
 
 export interface ErpCoreBootReport {
   employeesCreated: number;
@@ -30,6 +31,13 @@ export function ensureErpCoreSchema(db: QatafoDatabase): void {
   ensureAuditSchema(db);
   ensurePermissionSchema(db);
   ensureNotificationSchema(db);
+  // AYWEBs (Master Order §42) : tables `ayweb_*`, numérotation AYW- et grants
+  // `aywebs:*` dans le moteur ERP. Additif, idempotent, jamais bloquant.
+  try {
+    ensureAyWebsSchema(db);
+  } catch (error: any) {
+    console.warn('[erp-core] aywebs schema skipped:', error?.message || error);
+  }
 }
 
 export function bootstrapErpCore(db: QatafoDatabase): ErpCoreBootReport {

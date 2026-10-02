@@ -4,4 +4,14 @@
     <string name="title_activity_main">AYROVI</string>
     <string name="package_name">app.ayrovi.mobile</string>
     <string name="custom_url_scheme">app.ayrovi.mobile</string>
+
+    <!-- AYWEBs §9 — navigateur marchand interne (français, langue par défaut) -->
+    <string name="aywebs_browser_title">AYWEBs</string>
+    <string name="aywebs_add_to_cart">Ajouter au panier AyWebs</string>
+    <string name="aywebs_cart">Panier AyWebs</string>
+    <string name="aywebs_back">Précédent</string>
+    <string name="aywebs_forward">Suivant</string>
+    <string name="aywebs_refresh">Actualiser</string>
+    <string name="aywebs_close">Fermer</string>
+    <string name="aywebs_action_required">La boutique exige une action de votre part (connexion, vérification). AYROVI ne la contourne jamais.</string>
 </resources>

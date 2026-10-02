@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- AYWEBs §9 — navigateur marchand interne (arabe) -->
+<resources>
+    <string name="aywebs_browser_title">AYWEBs</string>
+    <string name="aywebs_add_to_cart">أضف إلى سلة AyWebs</string>
+    <string name="aywebs_cart">سلة AyWebs</string>
+    <string name="aywebs_back">السابق</string>
+    <string name="aywebs_forward">التالي</string>
+    <string name="aywebs_refresh">تحديث</string>
+    <string name="aywebs_close">إغلاق</string>
+    <string name="aywebs_action_required">المتجر يطلب إجراءً من جانبك (تسجيل دخول، تحقق). AYROVI لا يتجاوزه أبداً.</string>
+</resources>

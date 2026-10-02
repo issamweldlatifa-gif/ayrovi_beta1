@@ -2,15 +2,29 @@ import { randomUUID } from 'node:crypto';
 import type { QatafoDatabase } from '../db/database';
 import { funnelVisitorKey } from '../analytics/funnel';
 
+/**
+ * Événements de funnel (§39, §46). Les huit événements V1 sont conservés tels
+ * quels — les tests et le Dashboard Admin en dépendent — et le parcours complet
+ * du Master Order s'y ajoute : navigation boutique, variantes, panier AYWEBs,
+ * checkout, commande, demande d'achat avec URL et demande de boutique.
+ */
 export const AYWEBS_EVENTS = [
   'aywebs_open',
   'store_selected',
+  'store_opened',
   'product_page_detected',
   'capture_started',
   'capture_succeeded',
   'capture_failed',
+  'variant_selected',
   'add_to_cart_clicked',
   'add_to_cart_succeeded',
+  'cart_opened',
+  'checkout_previewed',
+  'order_created',
+  'order_submitted',
+  'purchase_request_submitted',
+  'store_request_submitted',
 ] as const;
 
 export type AyWebsEvent = (typeof AYWEBS_EVENTS)[number];

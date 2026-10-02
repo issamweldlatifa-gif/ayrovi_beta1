@@ -23,6 +23,7 @@ import { startPriceWatchScheduler } from './ayrovix/services/priceWatch';
 import { createAssistantRouter } from './assistant/routes';
 import { createOcerexRouter } from './ocerex/routes';
 import { createAyWebsRouter } from './aywebs/routes';
+import { ensureAyWebsSchema } from './aywebs/schema';
 import { ERP_MODULES } from './erp-core/modules';
 import { bootstrapErpCore } from './erp-core/bootstrap';
 import { isPublicUploadPath } from './erp-core/storage';
@@ -163,8 +164,18 @@ app.use('/api/extract-image', rateLimit('vision', 25, 10 * 60_000));
 app.use('/api/ocerex', rateLimit('ocerex', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000));
 app.use('/api/scrape', rateLimit('scrape', 30, 10 * 60_000));
 app.use('/api/v1/aywebs/capture', rateLimit('aywebs-capture', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000));
+app.use('/api/v1/aywebs/product/resolve', rateLimit('aywebs-resolve', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000));
+app.use('/api/v1/aywebs/product/variants', rateLimit('aywebs-variants', process.env.NODE_ENV === 'test' ? 1_000 : 40, 10 * 60_000));
+app.use('/api/v1/aywebs/page/analyze', rateLimit('aywebs-analyze', process.env.NODE_ENV === 'test' ? 1_000 : 120, 10 * 60_000));
 app.use('/api/v1/aywebs/price-quote', rateLimit('aywebs-quote', process.env.NODE_ENV === 'test' ? 1_000 : 60, 10 * 60_000));
 app.use('/api/v1/aywebs/events', rateLimit('aywebs-events', process.env.NODE_ENV === 'test' ? 1_000 : 120, 10 * 60_000));
+// Écritures propriétaires du domaine AYWEBs : panier, commande, paiement, demandes.
+app.use('/api/v1/aywebs/cart', rateLimit('aywebs-cart', process.env.NODE_ENV === 'test' ? 1_000 : 60, 10 * 60_000));
+app.use('/api/v1/aywebs/checkout', rateLimit('aywebs-checkout', process.env.NODE_ENV === 'test' ? 1_000 : 30, 10 * 60_000));
+app.use('/api/v1/aywebs/orders', rateLimit('aywebs-orders', process.env.NODE_ENV === 'test' ? 1_000 : 30, 10 * 60_000));
+app.use('/api/v1/aywebs/payments', rateLimit('aywebs-payments', process.env.NODE_ENV === 'test' ? 1_000 : 30, 10 * 60_000));
+app.use('/api/v1/aywebs/purchase-requests', rateLimit('aywebs-purchase-requests', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000));
+app.use('/api/v1/aywebs/store-requests', rateLimit('aywebs-store-requests', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000));
 app.use('/api/public/assistant-feedback', rateLimit('assistant-feedback', process.env.NODE_ENV === 'test' ? 1_000 : 40, 10 * 60_000));
 app.use('/api/assistant/chat', rateLimit('assistant-chat', process.env.NODE_ENV === 'test' ? 1_000 : 25, 10 * 60_000));
 app.use('/api/assistant/transcribe', rateLimit('assistant-voice', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000));
@@ -240,6 +251,14 @@ if (process.env.NODE_ENV === 'production' && databasePath && !path.isAbsolute(da
 // ERP Core foundation (P1): sequences, employees, audit columns, permission grants,
 // event log, notification payload columns. Idempotent, additive only, never drops anything.
 const erpCoreBoot = bootstrapErpCore(db);
+// AYWEBs (Master Order §42) : fondation additive au démarrage — tables `ayweb_*`
+// et clés de numérotation AYW-/AYWITEM-/AYWREQ- dans le moteur erp_sequences.
+try {
+  ensureAyWebsSchema(db);
+} catch (error: any) {
+  console.error('[aywebs] schema initialization failed:', error?.message || error);
+  console.error('[aywebs] shopping layer unavailable until this is fixed');
+}
 if (process.env.NODE_ENV !== 'test') {
   console.info(`[erp-core] employés créés=${erpCoreBoot.employeesCreated} grants miroir=${erpCoreBoot.permissionGrantsSeeded} modules=${ERP_MODULES.length}`);
 }

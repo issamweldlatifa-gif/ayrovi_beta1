@@ -94,6 +94,13 @@ const MODULE_RESOURCES: Record<string, string[]> = {
   // P2.3 — même raison que le stock : déclarer les ressources du module ici, c'est ce qui fait
   // that the SUPER_ADMIN mirror (legacy parity) covers the new ERP-only verbs `approve` and `write`.
   purchasing: ['supplier', 'purchase_order', 'purchase_order_line', 'goods_receipt'],
+  // AYWEBs (Master Order §31/§45) — même raison que le stock et les achats :
+  // déclarer les ressources ici, c'est ce qui fait que le miroir SUPER_ADMIN
+  // couvre les verbes ERP-only (`approve`, `write`) sur le domaine AYWEBs.
+  aywebs: [
+    'store', 'store_adapter', 'order', 'order_item', 'purchase_request',
+    'store_request', 'payment', 'exception', 'audit', 'warehouse', 'package', 'shipping',
+  ],
 };
 
 export const ERP_ACTIONS = ['read', 'write', 'create', 'update', 'delete', 'approve', 'export', 'assign', 'manage'] as const;
