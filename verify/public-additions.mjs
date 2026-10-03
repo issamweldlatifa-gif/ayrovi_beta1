@@ -34,7 +34,27 @@ try {
         const sels = ['.public-site-header', '.public-campaign', '.public-page-links', '[data-public-section=hero]'];
         const boxes = sels.map(s => document.querySelector(s).getBoundingClientRect()); return boxes.every((b, i) => !i || b.top >= boxes[i - 1].bottom - 1);
       }));
-      check(`${locale}/${width}: approved ad color and white type`, await page.locator('.public-campaign').evaluate(e => getComputedStyle(e).backgroundColor === 'rgb(211, 69, 31)' && getComputedStyle(e).color === 'rgb(255, 255, 255)'));
+      // 2026-10-03 : arbitrage charte. L'ancien contrôle verrouillait une surface pleine
+      // #D3451F (vermillon) sur toute la largeur : 29 % d'un écran, contre un plafond
+      // documenté de 3 % (verify/zalando-audit.mjs). Le bandeau garde son statut
+      // publicitaire « approuvé », mais l'orange redevient un filet (3 px) et non une surface.
+      // Le contrôle est désormais piloté par le JETON, pas par un littéral : c'est le
+      // littéral codé en dur qui avait créé le conflit avec la charte.
+      check(`${locale}/${width}: approved ad treatment and white type`, await page.evaluate(() => {
+        const el = document.querySelector('.public-campaign');
+        if (!el) return false;
+        const s = getComputedStyle(el);
+        const probe = document.createElement('span');
+        probe.style.color = 'var(--ayrovi-color-brand-orange)';
+        // Le jeton est surchargé sur `.ay-customer-root` (customerTheme) : la sonde doit
+        // vivre DANS le même contexte de cascade que le bandeau, sinon elle lit la valeur
+        // de :root et le contrôle échoue pour une mauvaise raison.
+        el.appendChild(probe);
+        const orange = getComputedStyle(probe).color;
+        probe.remove();
+        return s.backgroundColor === 'rgb(0, 0, 0)' && s.color === 'rgb(255, 255, 255)'
+          && s.borderBottomColor === orange && parseFloat(s.borderBottomWidth) === 3;
+      }));
       check(`${locale}/${width}: footer is black`, await page.locator('[data-site-footer]').evaluate(e => getComputedStyle(e).backgroundColor) === 'rgb(0, 0, 0)');
       const names = await page.locator('.stories-showcase').innerText();
       check(`${locale}/${width}: showcase still uses original CMS title`, names.includes(showcase.data.title));

@@ -1,5 +1,10 @@
 /* Additive public navigation, real destinations, and approved advertising/footer treatment. */
-.public-campaign{background:#D3451F;color:#FFFFFF;border-bottom:3px solid #9E3317}
+/* Bandeau campagne — arbitrage charte (2026-10-03) : la charte plafonne l'orange de
+   marque à 3 % de la surface d'un écran ; une surface pleine #D3451F en occupait 29 %
+   (mesuré). Le bandeau reste sombre et premium via l'encre canonique (--ayrovi-ink-deep,
+   documentée « Hero, announcement, … ») et garde son identité par un filet orange de
+   3 px : l'orange redevient un signal, pas une surface. */
+.public-campaign{background:var(--ayrovi-ink-deep);color:var(--ayrovi-white);border-bottom:3px solid var(--ayrovi-color-brand-orange)}
 .public-campaign-inner{position:relative;max-width:1280px;margin:auto;padding:24px 16px 12px}
 .public-campaign h2,.public-campaign p{padding-inline-end:40px;margin:0;font-size:clamp(24px,3vw,36px);line-height:1.18;font-weight:500;overflow-wrap:anywhere}
 .public-campaign p{margin-top:4px}

@@ -44,6 +44,46 @@ npm test
 
 La suite automatisée couvre notamment l’authentification, CSRF, RBAC, le CMS, l’OMS, les snapshots tarifaires, les paiements configurés, les 24 gouvernorats, les quantités, les dates, le CORS et les API publiques.
 
+### Vérificateurs de navigateur — à lire avant le premier lancement
+
+**Étape obligatoire, une seule fois par machine :**
+
+```bash
+npm run verify:setup     # npx playwright install --with-deps chromium firefox
+```
+
+Certains vérificateurs pilotent **Firefox**, pas Chromium. Sans cette étape ils
+échouent sur `Executable doesn't exist at …/firefox/firefox` — un message qui ne
+dit pas quel vérificateur ni pourquoi, et qui fait croire à une régression alors
+que seule la machine est incomplète. La CI installe déjà les deux navigateurs.
+
+Ensuite, chaque vérificateur de navigateur se lance **avec un serveur réel en
+cours** et la variable d’adresse :
+
+```bash
+AYROVI_BASE_URL=http://localhost:3000 npm run audit:design
+AYROVI_BASE_URL=http://localhost:3000 npm run verify:public-nav
+AYROVI_BASE_URL=http://localhost:3000 npm run verify:footer-payments
+```
+
+Sinon ils s’arrêtent sur `AYROVI_BASE_URL est requis.` Les runners
+`verify:public-additions`, `verify:lens-*` et `verify:sonim-*` hébergent en
+revanche leur propre fixture et n’ont besoin de rien.
+
+### Vérificateurs automatiques et outils manuels
+
+Deux natures d’outils coexistent dans `verify/` — ne les confondez pas :
+
+- **Vérificateurs automatiques** (porte de qualité, échec = code de sortie non
+  nul) : `audit:design`, `verify:public-nav`, `verify:footer-payments`,
+  `verify:customer-auth`, `verify:product-variants`, `verify:image-composition`,
+  `design:browser` et les suites `sonim-*` / `lens-*` / `editorial-*`.
+- **Outils manuels** : `verify:lens-probe` a besoin d’une vraie clé SerpApi et
+  consomme du quota —
+  `SERPAPI_KEY=xxx npm run verify:lens-probe -- photo.jpg [--json]`. Il sort en
+  erreur si aucun fichier n’est fourni : ce n’est pas une panne, c’est un mode
+  d’emploi. Ne le branchez pas tel quel sur une porte automatique.
+
 ## البريد والترحيب واسترجاع كلمة المرور
 
 تمت إضافة رسائل ترحيب وطابور بريد مشفّر واسترجاع كلمة المرور بروابط مؤقتة. الإرسال يحتاج إعداد مزوّد بريد. دليل التفعيل والأزرار والاختبارات: [AUTH_EMAIL_SETUP_AR.md](./docs/AUTH_EMAIL_SETUP_AR.md).

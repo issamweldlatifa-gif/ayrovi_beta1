@@ -53,7 +53,19 @@ async function measureLensScreen(page, tag) {
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(400);
   await cta.click();
+  await page.waitForTimeout(1200);
+
+  // P4/T2 : Lens est protégé par une porte de consentement explicite (âge ≥ 18,
+  // règles d'usage, transfert de l'image au fournisseur IA et à SerpApi). Sans la
+  // franchir, cette fonction déclarait « absent » un écran qui existe bel et bien —
+  // c'était un faux négatif, pas une absence. On coche donc les trois cases, puis
+  // on emprunte le bouton primaire (désactivé tant que les trois ne sont pas cochées).
+  const boxes = page.locator('.lens-consent input[type=checkbox]');
+  for (let i = 0; i < await boxes.count(); i += 1) await boxes.nth(i).check();
+  const gate = page.locator('.lens-panel-primary').first();
+  if ((await gate.count()) && (await gate.isEnabled())) await gate.click();
   await page.waitForTimeout(2500);
+
   const opened = await page.locator('.lens-home, .lens-drop').count();
   if (!opened) return { label: `écran LENS — ${tag}`, absent: true };
   const file = `${OUT}/zalando-lens-screen-${tag}.png`;

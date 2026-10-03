@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { ScrapedProduct, StoreType, ProductVariants } from '../types';
 import { fetchSafeRemote, readLimitedText, resolveSafeHttpUrl } from '../services/safeUrl';
 import { parseProductPageHtml, type ParsedProductPage } from './productPageParser';
@@ -257,13 +258,27 @@ export class SmartLinkScraper {
           variants: { sizes: [], colors: [], details: [] },
         };
       }
-    } catch {}
+    } catch (error: any) {
+      // Avant : `catch {}`. L'échec d'extraction disparaissait totalement et l'appelant
+      // recevait une fiche d'apparence valide — le pire des deux mondes : ni donnée, ni
+      // trace. Le repli subsiste (l'appelant doit pouvoir continuer) mais il est
+      // désormais TRACÉ, avec l'url et la boutique concernées.
+      console.warn('[scraper] extraction depuis l’URL échouée', { url: rawUrl, store, message: error?.message });
+    }
 
     return {
       title: 'Article Boutique Internationale',
       brand: 'Boutique',
       price: 0,
-      externalId: 'ITEM-' + Math.floor(Math.random() * 899999 + 100000),
+      // Avant : 'ITEM-' + Math.floor(Math.random() * 899999 + 100000).
+      // Deux défauts réels et démontrables :
+      //  (1) l'identité changeait à CHAQUE appel, donc ré-analyser la MÊME url créait une
+      //      nouvelle ligne au lieu de rapprocher la même (`if (item.externalId)` dans
+      //      database.ts s'appuie sur cette clé pour la déduplication) ;
+      //  (2) rien ne distinguait un identifiant marchand réel d'un numéro inventé.
+      // Désormais l'identité est DÉTERMINISTE (sha1 de l'url, rejouable) et préfixée pour
+      // dire la vérité : aucun identifiant marchand n'a été extrait.
+      externalId: `UNRESOLVED-${createHash('sha1').update(rawUrl).digest('hex').slice(0, 12)}`,
       variants: {
         sizes: [],
         colors: []
