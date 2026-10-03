@@ -7,6 +7,7 @@
  * utilise donc une VRAIE base `:memory:` (comme les autres suites) au lieu
  * d'un objet partiel — les assertions de contrat, elles, restent identiques.
  */
+import { isKnownPagePath } from '../shared/publicSeo';
 import { mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -152,6 +153,10 @@ describe('AyWebs V1 foundation', () => {
       ['https://www.temu.com/fr/product.html?goods_id=601099999999999', 'temu', 'PRODUCT', true],
       ['https://fr.shein.com/pdsearch/robe/', 'shein', 'SEARCH', false],
       ['https://shop.example.tn/p/9', null, 'UNKNOWN', false],
+      // Jetons de suivi hostiles dans la requête : la fiche reste un produit (§10).
+      ['https://www.amazon.fr/dp/B0CHX3QBCH?ref=sr_1_1&login=1&cart=abc&auth=xyz', 'amazon', 'PRODUCT', true],
+      // Connexion marchande : chemin /ap/signin → LOGIN, action client requise (§27).
+      ['https://www.amazon.com/ap/signin?ref=nav_signin', 'amazon', 'LOGIN', false],
     ] as const;
     for (const [url, storeId, pageType, isProduct] of cases) {
       const response = await request(app).post('/api/v1/aywebs/page/analyze').set(SESSION).send({ url });
@@ -160,6 +165,16 @@ describe('AyWebs V1 foundation', () => {
         store_id: storeId, page_type: pageType, is_product_page: isProduct, product_detected: isProduct,
       });
     }
+  });
+
+  test('les routes profondes AYWEBs sont des pages connues du serveur et du client (§25)', () => {
+    // Serveur (repli SPA) et client (garde-fou 404) lisent LA MÊME liste :
+    // shared/publicSeo.ts — un lien profond natif ne doit jamais finir en 404.
+    for (const target of ['/aywebs', '/aywebs/product', '/aywebs/cart', '/aywebs/order/AYW-000456', '/aywebs/checkout', '/aywebs/request']) {
+      expect(isKnownPagePath(target), target).toBe(true);
+    }
+    expect(isKnownPagePath('/aywebscart')).toBe(false);
+    expect(isKnownPagePath('/page-totalement-inventee')).toBe(false);
   });
 
   test('registers AyWebs as the installed mobile share target', () => {

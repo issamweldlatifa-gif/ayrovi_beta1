@@ -73,7 +73,8 @@ const ManagedSectionFrame: React.FC<{ section: InterfaceSectionConfig; children:
 export const App: React.FC = () => {
   const navigation = useNavigationHistory();
   const publicPage = publicPageForPath(window.location.pathname);
-  const isAyWebsPath = window.location.pathname.replace(/\/+$/, '').toLowerCase() === '/aywebs';
+  const ayWebsPathname = window.location.pathname.replace(/\/+$/, '').toLowerCase();
+  const isAyWebsPath = ayWebsPathname === '/aywebs' || ayWebsPathname.startsWith('/aywebs/');
   // Une adresse que le serveur a déjà refusée en 404 (page-like et inconnue) : le client le
   // sait sans le demander, parce qu'il lit la même liste — `shared/publicSeo.ts`.
   const unknownPath = !publicPage && !isKnownPagePath(window.location.pathname);

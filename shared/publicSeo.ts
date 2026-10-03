@@ -127,6 +127,11 @@ export function seoRouteFor(pathname: string): PublicSeoRoute | undefined {
 
 /** Vrai pour toute page réellement servie par le client — y compris les pages non indexables. */
 export function isKnownPagePath(pathname: string): boolean {
+  const normalized = normalizePath(pathname);
+  // AYWEBs §25 : l'hôte de navigation sert /aywebs ET ses routes profondes
+  // (/aywebs/product?url=…, /cart, /order/AYW-000456…) — le serveur ne doit pas
+  // les refuser en 404, sinon le lien profond natif tombe sur « page introuvable ».
+  if (normalized === '/aywebs' || normalized.startsWith('/aywebs/')) return true;
   return Boolean(seoRouteFor(pathname));
 }
 

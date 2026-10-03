@@ -71,7 +71,12 @@ export abstract class BaseStoreAdapter implements AyWebsStoreAdapter {
       return { pageType: 'ERROR', storeId: null, isProductPage: false, reason: 'url_invalide', customerActionRequired: 'NONE' };
     }
     const storeId = (this.canHandle(parsed) ? this.id : null) as AyWebsAdapterId | null;
-    const haystack = `${parsed.pathname}${parsed.search}`;
+    // Indices sur le CHEMIN seul : les marchands placent connexion/panier/captcha
+    // dans le chemin (/ap/signin, /gp/cart, /errors/validateCaptcha), tandis que
+    // les paramètres de suivi des fiches produit charrient des jetons opaques
+    // contenant « auth », « cart », « login » — les lire produisait un faux
+    // LOGIN/CAPTCHA qui verrouillait une fiche produit saine (§10, §27).
+    const haystack = parsed.pathname;
 
     for (const hint of AYWEBS_URL_PAGE_HINTS) {
       if (hint.pattern.test(haystack)) {
