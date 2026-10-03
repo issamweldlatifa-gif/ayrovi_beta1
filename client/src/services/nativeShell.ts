@@ -5,6 +5,28 @@ import { getSessionId } from '../utils/session';
  * Coque native (APK Capacitor) — un seul point de détection pour tout l'app.
  * Le web ignore ces helpers ; l'UI est identique dans les deux modes.
  */
+const NATIVE_TOKEN_KEY = 'ayrovi_native_session_token';
+
+/**
+ * Application native (paquet embarqué) : le jeton de session client est gardé
+ * hors cookie (origins croisés Capacitor → API) et rejoué en en-tête Bearer
+ * par le pont nativeApiOrigin. Le web n'écrit jamais cette clé.
+ */
+export function rememberNativeSessionToken(token: string | undefined | null): void {
+  if (!isNativeApp() || !token) return;
+  try { window.localStorage.setItem(NATIVE_TOKEN_KEY, String(token)); } catch { /* silencieux */ }
+}
+
+export function getNativeSessionToken(): string {
+  if (!isNativeApp()) return '';
+  try { return window.localStorage.getItem(NATIVE_TOKEN_KEY) || ''; } catch { return ''; }
+}
+
+export function clearNativeSessionToken(): void {
+  if (!isNativeApp()) return;
+  try { window.localStorage.removeItem(NATIVE_TOKEN_KEY); } catch { /* silencieux */ }
+}
+
 export const isNativeApp = (): boolean => {
   try {
     return typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform();
@@ -12,41 +34,6 @@ export const isNativeApp = (): boolean => {
     return false;
   }
 };
-
-interface AyWebsBrowseBridge {
-  open(options: { url: string; sessionId: string }): Promise<{ opened: boolean }>;
-}
-
-/**
- * §9 — navigation marchande DANS l'app (expérience type Buyee) sur Android :
- * la coque ouvre une WebView native avec barre d'outils et bouton d'ajout
- * injecté ; la classification de la page et le panier restent serveurs (§11,
- * §16). Hors coque native : false, et le web garde l'onglet externe (§2).
- */
-export async function openAyWebsNativeBrowser(url: string): Promise<boolean> {
-  if (!isNativeApp()) return false;
-  try {
-    const plugin = registerPlugin<AyWebsBrowseBridge>('AyWebsBrowse');
-    await plugin.open({ url, sessionId: getSessionId() });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Ouvre une page marchande : WebView interne sur Android, onglet externe sur
- * le web. Le repli est SYNCHRONE pour préserver le comportement historique.
- */
-export function openMerchantPage(url: string): void {
-  if (!isNativeApp()) {
-    window.open(url, '_blank', 'noopener,noreferrer');
-    return;
-  }
-  void openAyWebsNativeBrowser(url).then((handled) => {
-    if (!handled) window.open(url, '_blank', 'noopener,noreferrer');
-  });
-}
 
 /**
  * Barre système : icônes claires sur les surfaces sombres (Lens/caméra),

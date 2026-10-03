@@ -113,8 +113,27 @@ export function clearCustomerCookie(res: Response) {
   appendCookie(res, cookieValue('', 0));
 }
 
+/**
+ * Jeton de session client : cookie (web, same-origin) OU Bearer (application
+ * native en mode paquet embarqué — les cookies tiers SameSite=Lax ne circulent
+ * pas entre l'origine Capacitor et l'origine API). Le Bearer est un en-tête
+ * secret non automatique : insensible au CSRF, aucun changement de modèle de
+ * sécurité pour le web.
+ */
+export function sessionTokenFromRequest(req: Request): string {
+  const cookie = parseCookie(req.headers.cookie, COOKIE_NAME);
+  if (cookie) return cookie;
+  const header = String(req.headers.authorization || '');
+  return header.startsWith('Bearer ') ? header.slice(7).trim() : '';
+}
+
+/** Champ de réponse remis uniquement à un client native déclaré (§app réelle). */
+export function nativeSessionField(req: Request, token: string): Record<string, string> {
+  return String(req.headers['x-ayrovi-native'] || '') === '1' ? { native_session_token: token } : {};
+}
+
 export function resolveCustomer(db: QatafoDatabase, req: Request): ResolvedCustomer | null {
-  const token = parseCookie(req.headers.cookie, COOKIE_NAME);
+  const token = sessionTokenFromRequest(req);
   if (!token) return null;
   const session = db.get<any>(`SELECT s.id session_id,s.account_id,s.expires_at,
       a.display_name,a.email,a.phone,a.avatar_url,a.email_verified_at,a.phone_verified_at,
@@ -127,7 +146,7 @@ export function resolveCustomer(db: QatafoDatabase, req: Request): ResolvedCusto
 }
 
 export function rotateCustomerCsrf(db: QatafoDatabase, req: Request): string | null {
-  const token = parseCookie(req.headers.cookie, COOKIE_NAME);
+  const token = sessionTokenFromRequest(req);
   if (!token) return null;
   const csrfToken = randomBytes(24).toString('base64url');
   const result = db.run(`UPDATE customer_sessions SET csrf_token=?,last_seen_at=?
@@ -146,7 +165,7 @@ export function requireCustomer(db: QatafoDatabase, options: { verifiedPhone?: b
       return res.status(403).json({ success: false, code: 'PHONE_VERIFICATION_REQUIRED', error: 'Vérifiez votre numéro de téléphone avant de confirmer la commande.' });
     }
     if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
-      const token = parseCookie(req.headers.cookie, COOKIE_NAME);
+      const token = sessionTokenFromRequest(req);
       const session = db.get<any>('SELECT csrf_token FROM customer_sessions WHERE id=?', hashToken(token));
       const supplied = String(req.headers['x-csrf-token'] || '');
       if (!session || !supplied || hashToken(supplied) !== session.csrf_token) {

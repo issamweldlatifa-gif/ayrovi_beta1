@@ -27,6 +27,7 @@ import {
   rotateCustomerCsrf,
   safeEqualHash,
   setCustomerCookie,
+  nativeSessionField,
 } from './auth';
 import { deliverOtp, otpProviderName, phoneOtpAvailable, verifyProviderOtp } from './otp';
 
@@ -480,6 +481,7 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
         csrfToken: session.csrfToken,
         expiresAt: session.expiresAt,
         linkedHistoricalOrders: linked,
+        ...nativeSessionField(req, session.token),
       } });
     } catch (error: any) {
       if (error?.message === 'PHONE_CHANGE_NOT_SUPPORTED') return res.status(409).json({ success: false, error: 'Ce compte possède déjà un autre numéro vérifié.' });
@@ -522,6 +524,7 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
         account: publicAccount(accountRow(db, accountId)),
         csrfToken: session.csrfToken,
         expiresAt: session.expiresAt,
+        ...nativeSessionField(req, session.token),
       } });
     } catch (error) {
       console.error('[Customer Email Register]', error);
@@ -549,6 +552,7 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
       account: publicAccount(accountRow(db, account.id)),
       csrfToken: session.csrfToken,
       expiresAt: session.expiresAt,
+      ...nativeSessionField(req, session.token),
     } });
   });
 

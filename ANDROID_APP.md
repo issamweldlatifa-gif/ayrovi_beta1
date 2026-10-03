@@ -17,15 +17,23 @@ Aucun chemin dupliqué — `isNativeApp()` garde les ponts natifs hors du web.
 | CI : debug APK à chaque push utile, AAB signé si secrets présents | `.github/workflows/android-apk.yml` |
 | Contrat testé (config, permissions, pont, gradle) | `tests/android-shell.test.ts` |
 
-## Mode de chargement : coque vivante (décision verrouillée par test)
+## Mode de chargement : application réelle à paquet embarqué (décision 2026-10-03)
 
-L'app charge **le site en direct** depuis `https://ayrovi-beta1.onrender.com` (page et API même origine →
-**aucune config CORS requise**, et chaque push sur main est dans l'app sans rebuild).
-Le client appelle l'API en chemins relatifs (`fetch('/api/…', credentials:'same-origin')`) — c'est
-pourquoi un bundle local seul afficherait une page vide : ne pas retirer `server.url` sans ajouter
-avant un `apiBase` absolu côté client (palier offline éventuel, voir plus bas).
+Le mode « coque vivante » (`server.url` pointant sur Render) est **supprimé** :
+c'était un wrapper WebView, pas une application. Désormais l'UI Vite (`public/`)
+est **embarquée dans l'APK** ; l'app s'ouvre hors-ligne avec les interfaces du
+site. Un seul pont d'origine (`client/src/services/nativeApiOrigin.ts`, appelé
+une fois dans `main.tsx`) réécrit les chemins relatifs `/api/…`, `/uploads/…`,
+`/media/…` vers l'origine API — même code, même UI, une seule voie (§2).
 
-À l'ouverture hors connexion : l'app affiche l'écran de chargement du réseau — comportement voulu pour une beta.
+Session client dans l'app : jeton **Bearer** (`x-ayrovi-native: 1` à la
+connexion → `native_session_token` rejoué en en-tête), les cookies SameSite=Lax
+ne circulant pas entre l'origine Capacitor et l'origine API. Le web garde ses
+cookies : aucune régression.
+
+Les écrans AyWebs V1 (web + activité native AyWebsBrowse) sont **déposés** pour
+reconstruction proxy-shopping type Add-to-Buyee ; l'icône de navigation reste
+vivante sur un état transitoire honnête (`AyWebsPlaceholder`).
 
 ## Build local (Android Studio)
 

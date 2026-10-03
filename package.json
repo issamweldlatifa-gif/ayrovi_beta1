@@ -7,7 +7,7 @@
     "start": "node dist/server.js",
     "dev": "npm run build && node dist/server.js",
     "build:client": "vite build",
-    "build:server": "node -e 'require(\"esbuild\").buildSync({entryPoints:[\"src/server.ts\"],bundle:true,platform:\"node\",target:\"node20\",outfile:\"dist/server.js\",external:[\"better-sqlite3\",\"jsdom\",\"express\",\"compression\",\"cors\",\"dotenv\",\"tesseract.js\",\"multer\",\"sharp\",\"pdf-to-img\",\"mailparser\"]})'",
+    "build:server": "node -e 'require(\"esbuild\").buildSync({entryPoints:[\"src/server.ts\"],bundle:true,platform:\"node\",target:\"node20\",outfile:\"dist/server.js\",external:[\"better-sqlite3\",\"jsdom\",\"express\",\"compression\",\"cors\",\"dotenv\",\"multer\",\"sharp\",\"pdf-to-img\",\"tesseract.js\",\"mailparser\"]})'",
     "build": "npm run build:client && npm run build:server",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.client.json --noEmit",
     "test": "vitest run",
@@ -61,7 +61,6 @@
   "license": "ISC",
   "dependencies": {
     "@capacitor/android": "^7.6.9",
-    "@capacitor/app": "^7.1.2",
     "@capacitor/core": "^7.6.9",
     "@capacitor/status-bar": "^7.0.6",
     "@pdf-lib/fontkit": "^1.1.1",
@@ -91,9 +90,9 @@
     "react-dom": "^19.2.8",
     "react-icons": "^5.7.0",
     "sharp": "^0.35.4",
+    "tesseract.js": "^5.1.1",
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.3.3",
-    "tesseract.js": "^5.1.1",
     "typescript": "^5.9.3",
     "vite": "^8.2.1"
   },

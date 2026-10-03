@@ -37,6 +37,7 @@ import {
 } from '../types';
 import { customerApi } from '../customer/api';
 import { getSessionId } from '../utils/session';
+import { clearNativeSessionToken, rememberNativeSessionToken } from '../services/nativeShell';
 import { useNavigationHistory } from '../navigation/NavigationHistory';
 import { useLocale } from '../i18n/LocaleContext';
 import { CustomerPasswordRecovery } from './CustomerPasswordRecovery';
@@ -321,6 +322,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
         ? { displayName: emailName.trim(), email: emailAddress.trim(), password: emailPassword, locale: isArabic ? 'ar' : 'fr', cartSessionId: getSessionId() }
         : { email: emailAddress.trim(), password: emailPassword, locale: isArabic ? 'ar' : 'fr', cartSessionId: getSessionId() };
       const result = await customerApi<any>(endpoint, { method: 'POST', body: JSON.stringify(payload) });
+      rememberNativeSessionToken(result.data.native_session_token);
       onSession({ account: result.data.account, csrfToken: result.data.csrfToken });
       setEmailAddress('');
       setEmailPassword('');
@@ -355,6 +357,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
       const result = await customerApi<any>('/api/customer/auth/otp/verify', {
         method: 'POST', body: JSON.stringify({ challengeId, code, cartSessionId: getSessionId() }),
       });
+      rememberNativeSessionToken(result.data.native_session_token);
       onSession({ account: result.data.account, csrfToken: result.data.csrfToken });
       setChallengeId('');
       if (phoneLinkOpen) {
@@ -372,6 +375,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
     setBusyId('logout');setError('');
     try {
       await customerApi('/api/customer/auth/logout', { method: 'POST', body: '{}' }, session.csrfToken);
+      clearNativeSessionToken();
       onLoggedOut(); navigation.navigate([{id:'app:account'}],{replace:true});
     } catch(reason:any) {
       if(reason.status===401){onLoggedOut();navigation.navigate([{id:'app:account'}],{replace:true});}

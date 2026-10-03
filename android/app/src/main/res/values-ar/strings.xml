@@ -1,20 +1,4 @@
 <?xml version='1.0' encoding='utf-8'?>
 <!-- AYWEBs §9 — navigateur marchand interne (arabe) -->
 <resources>
-    <string name="aywebs_browser_title">AYWEBs</string>
-    <string name="aywebs_add_to_cart">أضف إلى السلة</string>
-    <string name="aywebs_loading">جارٍ التحميل…</string>
-    <string name="aywebs_select_item">اختر نسختك</string>
-    <string name="aywebs_quantity">الكمية</string>
-    <string name="aywebs_added">تمت الإضافة إلى سلة AyWebs</string>
-    <string name="aywebs_continue_shopping">مواصلة التسوق</string>
-    <string name="aywebs_proceed_checkout">إتمام الدفع</string>
-    <string name="aywebs_out_of_stock">نافد لدى المتجر: لا استبدال تلقائي.</string>
-    <string name="aywebs_retry_later">تعذّرت الإضافة حالياً. أعد المحاولة من صفحة المنتج.</string>
-    <string name="aywebs_cart">سلة AyWebs</string>
-    <string name="aywebs_back">السابق</string>
-    <string name="aywebs_forward">التالي</string>
-    <string name="aywebs_refresh">تحديث</string>
-    <string name="aywebs_close">إغلاق</string>
-    <string name="aywebs_action_required">المتجر يطلب إجراءً من جانبك (تسجيل دخول، تحقق). AYROVI لا يتجاوزه أبداً.</string>
 </resources>

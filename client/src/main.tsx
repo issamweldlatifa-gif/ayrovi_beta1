@@ -2,10 +2,15 @@ import React, { Suspense, lazy } from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import './styles/journey.css';
+import { installNativeApiOrigin } from './services/nativeApiOrigin';
 import { NavigationHistoryProvider } from './navigation/NavigationHistory';
 import { CustomerIdentity } from './design/editorial/CustomerIdentity';
 import { LocaleProvider } from './i18n/LocaleContext';
 import { RouteMeta } from './navigation/RouteMeta';
+
+// التطبيق الأصلي: سطر واحد يوحّد المسار — كل طلب نسبي يوجّه إلى أصل الـ API.
+// على الويب: no-op مطلق (same-origin).
+installNativeApiOrigin();
 
 const isRecoveryPath = window.location.pathname === '/reset-password';
 const PasswordRecovery = lazy(() => import('./components/CustomerPasswordRecovery').then(module => ({ default: module.CustomerPasswordRecovery })));

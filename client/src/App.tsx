@@ -36,7 +36,7 @@ const ShopCheckoutScreen = lazy(() => import('./shop').then((module) => ({ defau
 const OrderSuccessModal = lazy(() => import('./components/OrderSuccessModal').then((module) => ({ default: module.OrderSuccessModal })));
 const CustomerAccountPage = lazy(() => import('./components/CustomerAccountPage').then((module) => ({ default: module.CustomerAccountPage })));
 const OcerexScreen = lazy(() => import('./features/ocerex/OcerexScreen').then((module) => ({ default: module.OcerexScreen })));
-const AyWebsScreen = lazy(() => import('./features/aywebs/AyWebsScreen').then((module) => ({ default: module.AyWebsScreen })));
+const AyWebsPlaceholder = lazy(() => import('./features/aywebs/AyWebsPlaceholder').then((module) => ({ default: module.AyWebsPlaceholder })));
 
 /** كتل الصفحة الرئيسية — الترتيب الافتراضي حتى وصول إعداد الـ Dashboard */
 /**
@@ -559,24 +559,7 @@ export const App: React.FC = () => {
 
       {isAyWebsOpen && (
         <Suspense fallback={null}>
-          <AyWebsScreen
-            onClose={handleCloseAyWebs}
-            onOpenCart={() => openAppView('app:cart')}
-            cartCount={totalCartCount}
-            /* AYWEBs réutilise la session AYROVI : aucun second compte, aucun
-               second jeton. Le CSRF existant protège aussi ses écritures. */
-            authenticated={Boolean(customerSession)}
-            customerCsrfToken={customerSession?.csrfToken || ''}
-            onRequireSignIn={() => {
-              setAccountMessage(tr(
-                'Connectez-vous pour finaliser votre achat AyWebs : votre panier vous suit.',
-                'سجّل الدخول لإتمام عملية الشراء عبر AyWebs: سلّتك ستتبعك.',
-              ));
-              handleCloseAyWebs();
-              setAccountInitialSection('home');
-              openAppView('app:account', true);
-            }}
-          />
+          <AyWebsPlaceholder onClose={handleCloseAyWebs} />
         </Suspense>
       )}
 

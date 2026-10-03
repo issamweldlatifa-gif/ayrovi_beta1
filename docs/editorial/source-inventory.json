@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "scope": "Recursive static inventory of all client TypeScript/TSX/CSS; manual review tracked separately",
   "totals": {
-    "files": 248,
-    "customerAndSharedFiles": 196,
-    "controls": 467,
+    "files": 257,
+    "customerAndSharedFiles": 205,
+    "controls": 569,
     "iconAliases": 102,
     "uniqueGlyphs": 99
   },
@@ -10760,8 +10760,8 @@
     {
       "file": "client/src/App.tsx",
       "domain": "shell-content",
-      "sha256": "769bf414c05a2476e4b9e9b7fb52868f1a877a52ca8a0b3cc233fb34ca0681a4",
-      "lines": 724,
+      "sha256": "b5ad049cd69f50dc1af45ad3f35bcc63ed130780ccd1ecbf10f7efcc4a262ca2",
+      "lines": 733,
       "imports": [
         "./design/editorial/customerTheme",
         "react",
@@ -10798,7 +10798,7 @@
       "controls": [
         {
           "tag": "MenuDrawer",
-          "line": 511,
+          "line": 512,
           "className": null,
           "type": null,
           "role": null,
@@ -10808,7 +10808,7 @@
         },
         {
           "tag": "AyWebsScreen",
-          "line": 561,
+          "line": 562,
           "className": null,
           "type": null,
           "role": null,
@@ -10818,7 +10818,7 @@
         },
         {
           "tag": "ProductDrawer",
-          "line": 577,
+          "line": 586,
           "className": null,
           "type": null,
           "role": null,
@@ -10828,7 +10828,7 @@
         },
         {
           "tag": "AiAssistantDrawer",
-          "line": 592,
+          "line": 601,
           "className": null,
           "type": null,
           "role": null,
@@ -10838,7 +10838,7 @@
         },
         {
           "tag": "OcerexScreen",
-          "line": 618,
+          "line": 627,
           "className": null,
           "type": null,
           "role": null,
@@ -10848,7 +10848,7 @@
         },
         {
           "tag": "ShopBagScreen",
-          "line": 649,
+          "line": 658,
           "className": null,
           "type": null,
           "role": null,
@@ -10858,7 +10858,7 @@
         },
         {
           "tag": "ShopCheckoutScreen",
-          "line": 669,
+          "line": 678,
           "className": null,
           "type": null,
           "role": null,
@@ -10868,7 +10868,7 @@
         },
         {
           "tag": "OrderSuccessModal",
-          "line": 712,
+          "line": 721,
           "className": null,
           "type": null,
           "role": null,
@@ -14681,8 +14681,8 @@
     {
       "file": "client/src/components/CustomerAccountPage.tsx",
       "domain": "account-auth",
-      "sha256": "dab061986f22a0f5adbd76d5f431b6bc61381a231a3213c5797d2fe75828ce71",
-      "lines": 858,
+      "sha256": "cd43190ae7c5253b7c9f11fd88eb84d75dceca578464338ff0cb8982cdc2e987",
+      "lines": 862,
       "imports": [
         "react",
         "./account/AccountHome",
@@ -14696,6 +14696,7 @@
         "../types",
         "../customer/api",
         "../utils/session",
+        "../services/nativeShell",
         "../navigation/NavigationHistory",
         "../i18n/LocaleContext",
         "./CustomerPasswordRecovery",
@@ -14710,7 +14711,7 @@
       "controls": [
         {
           "tag": "Button",
-          "line": 117,
+          "line": 118,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -14720,7 +14721,7 @@
         },
         {
           "tag": "form",
-          "line": 594,
+          "line": 598,
           "className": "\"flex flex-1 flex-col\"",
           "type": null,
           "role": null,
@@ -14730,7 +14731,7 @@
         },
         {
           "tag": "button",
-          "line": 595,
+          "line": 599,
           "className": "\"mb-4 flex items-center gap-1.5 self-start text-xs font-black text-muted transition hover:text-ink\"",
           "type": "\"button\"",
           "role": null,
@@ -14740,7 +14741,7 @@
         },
         {
           "tag": "Field",
-          "line": 603,
+          "line": 607,
           "className": null,
           "type": null,
           "role": null,
@@ -14750,7 +14751,7 @@
         },
         {
           "tag": "input",
-          "line": 604,
+          "line": 608,
           "className": "{`${inputClass} text-center text-2xl font-black tracking-[0.35em]`}",
           "type": null,
           "role": null,
@@ -14760,7 +14761,7 @@
         },
         {
           "tag": "button",
-          "line": 607,
+          "line": 611,
           "className": "\"mt-3 w-full border border-line bg-surface p-3 text-xs font-bold text-ink\"",
           "type": "\"button\"",
           "role": null,
@@ -14770,7 +14771,7 @@
         },
         {
           "tag": "button",
-          "line": 608,
+          "line": 612,
           "className": "\"ay-btn-primary mt-5 w-full text-sm\"",
           "type": null,
           "role": null,
@@ -14780,7 +14781,7 @@
         },
         {
           "tag": "form",
-          "line": 613,
+          "line": 617,
           "className": "\"flex flex-1 flex-col\"",
           "type": null,
           "role": null,
@@ -14790,7 +14791,7 @@
         },
         {
           "tag": "button",
-          "line": 614,
+          "line": 618,
           "className": "\"mb-4 flex items-center gap-1.5 self-start text-xs font-black text-muted transition hover:text-ink\"",
           "type": "\"button\"",
           "role": null,
@@ -14800,7 +14801,7 @@
         },
         {
           "tag": "Field",
-          "line": 622,
+          "line": 626,
           "className": null,
           "type": null,
           "role": null,
@@ -14810,7 +14811,7 @@
         },
         {
           "tag": "input",
-          "line": 625,
+          "line": 629,
           "className": "{`${inputClass} pl-11 text-base`}",
           "type": "\"tel\"",
           "role": null,
@@ -14820,7 +14821,7 @@
         },
         {
           "tag": "button",
-          "line": 629,
+          "line": 633,
           "className": "\"ay-btn-primary mt-5 w-full text-sm\"",
           "type": null,
           "role": null,
@@ -14830,7 +14831,7 @@
         },
         {
           "tag": "Button",
-          "line": 637,
+          "line": 641,
           "className": null,
           "type": null,
           "role": null,
@@ -14840,7 +14841,7 @@
         },
         {
           "tag": "Button",
-          "line": 658,
+          "line": 662,
           "className": null,
           "type": null,
           "role": null,
@@ -14850,7 +14851,7 @@
         },
         {
           "tag": "a",
-          "line": 663,
+          "line": 667,
           "className": "{buttonClasses('secondary', 'md', 'ay-auth__provider')}",
           "type": null,
           "role": null,
@@ -14860,7 +14861,7 @@
         },
         {
           "tag": "a",
-          "line": 666,
+          "line": 670,
           "className": "{buttonClasses('secondary', 'md', 'ay-auth__provider')}",
           "type": null,
           "role": null,
@@ -14870,7 +14871,7 @@
         },
         {
           "tag": "a",
-          "line": 669,
+          "line": 673,
           "className": "{buttonClasses('secondary', 'md', 'ay-auth__provider')}",
           "type": null,
           "role": null,
@@ -14880,7 +14881,7 @@
         },
         {
           "tag": "form",
-          "line": 679,
+          "line": 683,
           "className": null,
           "type": null,
           "role": null,
@@ -14890,7 +14891,7 @@
         },
         {
           "tag": "button",
-          "line": 696,
+          "line": 700,
           "className": "\"ay-auth__password-toggle\"",
           "type": "\"button\"",
           "role": null,
@@ -14900,7 +14901,7 @@
         },
         {
           "tag": "Button",
-          "line": 707,
+          "line": 711,
           "className": "\"ay-auth__submit\"",
           "type": "\"submit\"",
           "role": null,
@@ -14910,7 +14911,7 @@
         },
         {
           "tag": "button",
-          "line": 711,
+          "line": 715,
           "className": "\"ay-auth__recovery-link\"",
           "type": "\"button\"",
           "role": null,
@@ -14920,7 +14921,7 @@
         },
         {
           "tag": "a",
-          "line": 718,
+          "line": 722,
           "className": null,
           "type": null,
           "role": null,
@@ -14930,7 +14931,7 @@
         },
         {
           "tag": "a",
-          "line": 719,
+          "line": 723,
           "className": null,
           "type": null,
           "role": null,
@@ -14940,7 +14941,7 @@
         },
         {
           "tag": "Button",
-          "line": 722,
+          "line": 726,
           "className": "\"ay-auth__phone\"",
           "type": null,
           "role": null,
@@ -14950,7 +14951,7 @@
         },
         {
           "tag": "button",
-          "line": 728,
+          "line": 732,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -14960,7 +14961,7 @@
         },
         {
           "tag": "a",
-          "line": 741,
+          "line": 745,
           "className": null,
           "type": null,
           "role": null,
@@ -14970,7 +14971,7 @@
         },
         {
           "tag": "a",
-          "line": 742,
+          "line": 746,
           "className": null,
           "type": null,
           "role": null,
@@ -14980,7 +14981,7 @@
         },
         {
           "tag": "input",
-          "line": 757,
+          "line": 761,
           "className": null,
           "type": "\"file\"",
           "role": null,
@@ -14990,7 +14991,7 @@
         },
         {
           "tag": "button",
-          "line": 757,
+          "line": 761,
           "className": "\"ac-text-button ac-danger-text\"",
           "type": "\"button\"",
           "role": null,
@@ -15000,7 +15001,7 @@
         },
         {
           "tag": "form",
-          "line": 759,
+          "line": 763,
           "className": "\"ac-panel ac-form-stack\"",
           "type": null,
           "role": null,
@@ -15010,7 +15011,7 @@
         },
         {
           "tag": "input",
-          "line": 765,
+          "line": 769,
           "className": null,
           "type": "\"checkbox\"",
           "role": null,
@@ -15020,7 +15021,7 @@
         },
         {
           "tag": "Button",
-          "line": 766,
+          "line": 770,
           "className": null,
           "type": "\"submit\"",
           "role": null,
@@ -15030,7 +15031,7 @@
         },
         {
           "tag": "Button",
-          "line": 769,
+          "line": 773,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -15040,7 +15041,7 @@
         },
         {
           "tag": "button",
-          "line": 770,
+          "line": 774,
           "className": "\"ac-text-button ac-danger-text\"",
           "type": "\"button\"",
           "role": null,
@@ -15050,7 +15051,7 @@
         },
         {
           "tag": "button",
-          "line": 773,
+          "line": 777,
           "className": "\"ay-btn-primary text-sm\"",
           "type": null,
           "role": null,
@@ -15060,7 +15061,7 @@
         },
         {
           "tag": "button",
-          "line": 773,
+          "line": 777,
           "className": "\"px-3 py-2 text-xs font-black text-ink\"",
           "type": null,
           "role": null,
@@ -15070,7 +15071,7 @@
         },
         {
           "tag": "button",
-          "line": 773,
+          "line": 777,
           "className": "\"px-3 py-2 text-xs font-black text-danger\"",
           "type": null,
           "role": null,
@@ -15080,7 +15081,7 @@
         },
         {
           "tag": "button",
-          "line": 775,
+          "line": 779,
           "className": "\"grid w-full min-w-0 grid-cols-[52px_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-line bg-white p-3 text-start sm:p-4\"",
           "type": null,
           "role": null,
@@ -15090,7 +15091,7 @@
         },
         {
           "tag": "button",
-          "line": 780,
+          "line": 784,
           "className": "\"ay-btn-secondary text-xs\"",
           "type": null,
           "role": null,
@@ -15100,7 +15101,7 @@
         },
         {
           "tag": "button",
-          "line": 785,
+          "line": 789,
           "className": "\"text-xs font-black text-ink\"",
           "type": null,
           "role": null,
@@ -15110,7 +15111,7 @@
         },
         {
           "tag": "a",
-          "line": 788,
+          "line": 792,
           "className": "\"ay-btn-secondary shrink-0 px-3 text-xs\"",
           "type": null,
           "role": null,
@@ -15120,7 +15121,7 @@
         },
         {
           "tag": "a",
-          "line": 790,
+          "line": 794,
           "className": "\"ay-btn-secondary mt-4 w-full text-xs\"",
           "type": null,
           "role": null,
@@ -15130,7 +15131,7 @@
         },
         {
           "tag": "button",
-          "line": 798,
+          "line": 802,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -15140,7 +15141,7 @@
         },
         {
           "tag": "Button",
-          "line": 802,
+          "line": 806,
           "className": null,
           "type": null,
           "role": null,
@@ -15150,7 +15151,7 @@
         },
         {
           "tag": "Button",
-          "line": 802,
+          "line": 806,
           "className": null,
           "type": null,
           "role": null,
@@ -15160,7 +15161,7 @@
         },
         {
           "tag": "a",
-          "line": 803,
+          "line": 807,
           "className": "\"flex min-h-14 items-center justify-between rounded-2xl border border-line bg-white px-5 font-black\"",
           "type": null,
           "role": null,
@@ -15170,7 +15171,7 @@
         },
         {
           "tag": "a",
-          "line": 803,
+          "line": 807,
           "className": "\"flex min-h-14 items-center justify-between rounded-2xl border border-line bg-white px-5 font-black\"",
           "type": null,
           "role": null,
@@ -15180,7 +15181,7 @@
         },
         {
           "tag": "button",
-          "line": 814,
+          "line": 818,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -15190,7 +15191,7 @@
         },
         {
           "tag": "button",
-          "line": 815,
+          "line": 819,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -15200,7 +15201,7 @@
         },
         {
           "tag": "form",
-          "line": 820,
+          "line": 824,
           "className": "\"max-h-[92dvh] w-full overflow-y-auto bg-white p-5 sm:max-w-xl sm:rounded-card sm:p-7\"",
           "type": null,
           "role": "\"dialog\"",
@@ -15210,7 +15211,7 @@
         },
         {
           "tag": "button",
-          "line": 820,
+          "line": 824,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -15220,7 +15221,7 @@
         },
         {
           "tag": "Field",
-          "line": 820,
+          "line": 824,
           "className": null,
           "type": null,
           "role": null,
@@ -15230,7 +15231,7 @@
         },
         {
           "tag": "input",
-          "line": 820,
+          "line": 824,
           "className": "{inputClass}",
           "type": null,
           "role": null,
@@ -15240,7 +15241,7 @@
         },
         {
           "tag": "Field",
-          "line": 820,
+          "line": 824,
           "className": null,
           "type": null,
           "role": null,
@@ -15250,7 +15251,7 @@
         },
         {
           "tag": "input",
-          "line": 820,
+          "line": 824,
           "className": "{inputClass}",
           "type": null,
           "role": null,
@@ -15260,7 +15261,7 @@
         },
         {
           "tag": "Field",
-          "line": 820,
+          "line": 824,
           "className": null,
           "type": null,
           "role": null,
@@ -15270,7 +15271,7 @@
         },
         {
           "tag": "input",
-          "line": 820,
+          "line": 824,
           "className": "{inputClass}",
           "type": null,
           "role": null,
@@ -15280,7 +15281,7 @@
         },
         {
           "tag": "Field",
-          "line": 820,
+          "line": 824,
           "className": null,
           "type": null,
           "role": null,
@@ -15290,7 +15291,7 @@
         },
         {
           "tag": "input",
-          "line": 820,
+          "line": 824,
           "className": "{inputClass}",
           "type": null,
           "role": null,
@@ -15300,7 +15301,7 @@
         },
         {
           "tag": "Field",
-          "line": 820,
+          "line": 824,
           "className": null,
           "type": null,
           "role": null,
@@ -15310,7 +15311,7 @@
         },
         {
           "tag": "input",
-          "line": 820,
+          "line": 824,
           "className": "{inputClass}",
           "type": null,
           "role": null,
@@ -15320,7 +15321,7 @@
         },
         {
           "tag": "Field",
-          "line": 820,
+          "line": 824,
           "className": null,
           "type": null,
           "role": null,
@@ -15330,7 +15331,7 @@
         },
         {
           "tag": "input",
-          "line": 820,
+          "line": 824,
           "className": "{inputClass}",
           "type": null,
           "role": null,
@@ -15340,7 +15341,7 @@
         },
         {
           "tag": "Field",
-          "line": 820,
+          "line": 824,
           "className": null,
           "type": null,
           "role": null,
@@ -15350,7 +15351,7 @@
         },
         {
           "tag": "textarea",
-          "line": 820,
+          "line": 824,
           "className": "{inputClass}",
           "type": null,
           "role": null,
@@ -15360,7 +15361,7 @@
         },
         {
           "tag": "Field",
-          "line": 820,
+          "line": 824,
           "className": null,
           "type": null,
           "role": null,
@@ -15370,7 +15371,7 @@
         },
         {
           "tag": "textarea",
-          "line": 820,
+          "line": 824,
           "className": "{inputClass}",
           "type": null,
           "role": null,
@@ -15380,7 +15381,7 @@
         },
         {
           "tag": "input",
-          "line": 820,
+          "line": 824,
           "className": null,
           "type": "\"checkbox\"",
           "role": null,
@@ -15390,7 +15391,7 @@
         },
         {
           "tag": "button",
-          "line": 820,
+          "line": 824,
           "className": "\"ay-btn-primary flex-1 text-sm\"",
           "type": null,
           "role": null,
@@ -15400,7 +15401,7 @@
         },
         {
           "tag": "button",
-          "line": 820,
+          "line": 824,
           "className": "\"ay-btn-secondary text-sm\"",
           "type": "\"button\"",
           "role": null,
@@ -15410,7 +15411,7 @@
         },
         {
           "tag": "AppHeader",
-          "line": 822,
+          "line": 826,
           "className": null,
           "type": null,
           "role": null,
@@ -15420,7 +15421,7 @@
         },
         {
           "tag": "CreditCard",
-          "line": 832,
+          "line": 836,
           "className": "\"h-7 w-7 text-ink\"",
           "type": null,
           "role": null,
@@ -15430,7 +15431,7 @@
         },
         {
           "tag": "button",
-          "line": 832,
+          "line": 836,
           "className": "\"ay-btn-primary mt-3 w-full text-xs\"",
           "type": null,
           "role": null,
@@ -15440,7 +15441,7 @@
         },
         {
           "tag": "button",
-          "line": 833,
+          "line": 837,
           "className": "\"ay-btn-secondary mt-3 w-full text-xs\"",
           "type": null,
           "role": null,
@@ -15450,7 +15451,7 @@
         },
         {
           "tag": "Field",
-          "line": 843,
+          "line": 847,
           "className": null,
           "type": null,
           "role": null,
@@ -15460,7 +15461,7 @@
         },
         {
           "tag": "input",
-          "line": 843,
+          "line": 847,
           "className": "{inputClass}",
           "type": null,
           "role": null,
@@ -15470,7 +15471,7 @@
         },
         {
           "tag": "input",
-          "line": 844,
+          "line": 848,
           "className": "\"block w-full min-w-0 text-xs\"",
           "type": "\"file\"",
           "role": null,
@@ -15480,7 +15481,7 @@
         },
         {
           "tag": "button",
-          "line": 845,
+          "line": 849,
           "className": "\"ay-btn-primary w-full text-xs\"",
           "type": null,
           "role": null,
@@ -15490,7 +15491,7 @@
         },
         {
           "tag": "a",
-          "line": 852,
+          "line": 856,
           "className": "\"ay-btn-secondary mt-4 w-full text-xs\"",
           "type": null,
           "role": null,
@@ -15500,7 +15501,7 @@
         },
         {
           "tag": "a",
-          "line": 852,
+          "line": 856,
           "className": "\"mt-3 inline-flex items-center gap-1 font-black text-ink\"",
           "type": null,
           "role": null,
@@ -18923,8 +18924,8 @@
     {
       "file": "client/src/features/aywebs/api.ts",
       "domain": "shell-content",
-      "sha256": "9ed585bdad2c459c3d340e64ae6e7416865ae467c26e549344bfaffd5b979a1d",
-      "lines": 127,
+      "sha256": "95ecf3d7ffab5b4b414db57d4498d025244847c3adc758d5c27743d7c45e76c2",
+      "lines": 599,
       "imports": [
         "../../../../shared/aywebsStores",
         "../../types",
@@ -18934,7 +18935,33 @@
         "AyWebsApiError",
         "getAyWebsStores",
         "trackAyWebsEvent",
-        "captureAyWebsProduct"
+        "captureAyWebsProduct",
+        "AyWebsRequestError",
+        "setAyWebsCsrfToken",
+        "getAyWebsHome",
+        "analyzeAyWebsPage",
+        "resolveAyWebsProduct",
+        "getAyWebsVariants",
+        "getAyWebsCart",
+        "addAyWebsCartItem",
+        "updateAyWebsCartItem",
+        "removeAyWebsCartItem",
+        "acceptAyWebsCartPrice",
+        "verifyAyWebsCart",
+        "bridgeAyWebsCartToAyrovi",
+        "previewAyWebsCheckout",
+        "createAyWebsOrder",
+        "listAyWebsOrders",
+        "getAyWebsOrder",
+        "submitAyWebsOrder",
+        "getAyWebsPaymentMethods",
+        "createAyWebsPaymentIntent",
+        "confirmAyWebsPayment",
+        "uploadAyWebsTransferProof",
+        "listAyWebsPurchaseRequests",
+        "createAyWebsPurchaseRequest",
+        "createAyWebsStoreRequest",
+        "trackAyWebsShoppingEvent"
       ],
       "controls": [],
       "icons": [],
@@ -18944,31 +18971,40 @@
       "apiReferences": [
         "/api/v1/aywebs/stores",
         "/api/v1/aywebs/events",
-        "/api/v1/aywebs/capture"
+        "/api/v1/aywebs/capture",
+        "/api/v1/aywebs/events"
       ]
     },
     {
       "file": "client/src/features/aywebs/AyWebsScreen.tsx",
       "domain": "shell-content",
-      "sha256": "e0c351c56a6e4f79bda54a58f00ec8fd83083aeb95392d339095d2402ca94d63",
-      "lines": 411,
+      "sha256": "5b81ebe9a599884b32416440b257dfcfbc4e425a75bba895cfcb6e45acc53490",
+      "lines": 454,
       "imports": [
         "react",
         "../../design/AppHeader",
         "../../components/QatafoIcons",
         "../../hooks/useBodyScrollLock",
         "../../i18n/LocaleContext",
-        "../../types",
         "../../../../shared/aywebsStores",
-        "./api"
+        "./api",
+        "./components/AyWebsHome",
+        "./components/AyWebsStoreBrowser",
+        "./components/AyWebsProductSheet",
+        "../../services/nativeShell",
+        "./components/AyWebsCartScreen",
+        "./components/AyWebsCheckoutScreen",
+        "./components/AyWebsOrdersScreen",
+        "./components/AyWebsRequestForm"
       ],
       "exports": [
+        "resolveAyWebsDeepLink",
         "AyWebsScreen"
       ],
       "controls": [
         {
           "tag": "AppHeader",
-          "line": 250,
+          "line": 328,
           "className": null,
           "type": null,
           "role": null,
@@ -18978,7 +19014,17 @@
         },
         {
           "tag": "button",
-          "line": 257,
+          "line": 336,
+          "className": "\"relative grid h-11 w-11 place-items-center rounded-control text-ink transition hover:bg-ink-deep/5 active:scale-[0.96]\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Ouvrir le panier AyWebs', 'فتح سلة AyWebs')}",
+          "onClick": "{() => go('cart')}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 350,
           "className": "\"relative grid h-11 w-11 place-items-center rounded-control text-ink transition hover:bg-ink-deep/5 active:scale-[0.96]\"",
           "type": "\"button\"",
           "role": null,
@@ -18987,29 +19033,277 @@
           "disabled": null
         },
         {
+          "tag": "AyWebsProductSheet",
+          "line": 396,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "AyWebsCartScreen",
+          "line": 406,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "AyWebsCheckoutScreen",
+          "line": 417,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "AyWebsOrdersScreen",
+          "line": 427,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        }
+      ],
+      "icons": [
+        {
+          "module": "../../components/QatafoIcons",
+          "bindings": "{\n  AlertCircle,\n  AyWebs,\n  Camera,\n  CheckCircle2,\n  ExternalLink,\n  Loader2,\n  RefreshCw,\n  Search,\n  ShoppingBag,\n}",
+          "line": 3
+        }
+      ],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/features/aywebs/components/AyWebsCartScreen.tsx",
+      "domain": "commerce",
+      "sha256": "b6137ac0ec90edf0d89d9d1cf3c555ca5a0f565d340d37a360d6b59b96d5f6da",
+      "lines": 366,
+      "imports": [
+        "react",
+        "../../../components/QatafoIcons",
+        "../../../i18n/LocaleContext",
+        "../api",
+        "./AyWebsStates"
+      ],
+      "exports": [
+        "AyWebsCartScreen"
+      ],
+      "controls": [
+        {
           "tag": "button",
-          "line": 310,
-          "className": "{`min-w-32 shrink-0 rounded-card border p-3 text-start transition ${active ? 'border-ink bg-ink text-white' : 'border-line bg-white text-ink hover:border-ink/40'}`}",
+          "line": 156,
+          "className": "\"ay-btn-secondary flex min-h-11 items-center justify-center gap-2 px-4 text-xs font-black\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
-          "onClick": "{() => {\n                    setSelectedStoreId(store.id);\n                    trackAyWebsEvent('store_selected', { store: store.id });\n                  }}",
+          "onClick": "{onBack}",
           "disabled": null
         },
         {
           "tag": "button",
-          "line": 339,
-          "className": "\"flex min-h-11 items-center gap-2 rounded-control px-3 text-xs font-black text-ink hover:bg-surface\"",
+          "line": 180,
+          "className": "\"ay-btn-cta flex min-h-11 items-center justify-center gap-2 px-5 text-xs font-black\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
-          "onClick": "{() => openExternal(selectedStore.home_url)}",
+          "onClick": "{onBack}",
           "disabled": null
         },
         {
-          "tag": "form",
-          "line": 347,
-          "className": "\"flex flex-col gap-2 sm:flex-row\"",
+          "tag": "button",
+          "line": 184,
+          "className": "\"ay-btn-secondary flex min-h-11 items-center justify-center gap-2 px-4 text-xs font-black\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{onOpenOrders}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 204,
+          "className": "\"ay-btn-secondary flex min-h-11 items-center justify-center gap-2 px-3 text-xs font-black disabled:opacity-50\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => void verify(false)}",
+          "disabled": "{verifying}"
+        },
+        {
+          "tag": "button",
+          "line": 208,
+          "className": "\"ay-btn-secondary flex min-h-11 items-center justify-center gap-2 px-3 text-xs font-black disabled:opacity-50\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => void verify(true)}",
+          "disabled": "{verifying}"
+        },
+        {
+          "tag": "button",
+          "line": 247,
+          "className": "\"text-start\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => onOpenProduct(item.source_url, item.store_id)}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 265,
+          "className": "\"grid h-9 w-9 place-items-center rounded-control border border-line bg-white text-ink transition disabled:opacity-40\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Diminuer', 'إنقاص')}",
+          "onClick": "{() => void changeQuantity(item, -1)}",
+          "disabled": "{busy === `qty-${item.id}`}"
+        },
+        {
+          "tag": "button",
+          "line": 269,
+          "className": "\"grid h-9 w-9 place-items-center rounded-control border border-line bg-white text-ink transition disabled:opacity-40\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Augmenter', 'زيادة')}",
+          "onClick": "{() => void changeQuantity(item, 1)}",
+          "disabled": "{busy === `qty-${item.id}`}"
+        },
+        {
+          "tag": "button",
+          "line": 273,
+          "className": "\"flex min-h-9 items-center gap-1 rounded-control px-2 text-micro font-black uppercase tracking-[0.1em] text-muted transition hover:text-danger disabled:opacity-40\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => void remove(item)}",
+          "disabled": "{busy === `remove-${item.id}`}"
+        },
+        {
+          "tag": "button",
+          "line": 287,
+          "className": "\"ay-btn-primary flex min-h-9 items-center justify-center gap-2 px-3 text-micro font-black disabled:opacity-50\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => void acceptPrice(item)}",
+          "disabled": "{busy === `accept-${item.id}`}"
+        },
+        {
+          "tag": "button",
+          "line": 291,
+          "className": "\"ay-btn-secondary flex min-h-9 items-center justify-center gap-2 px-3 text-micro font-black disabled:opacity-50\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => void remove(item)}",
+          "disabled": "{busy === `remove-${item.id}`}"
+        },
+        {
+          "tag": "button",
+          "line": 318,
+          "className": "\"ay-btn-cta flex min-h-12 items-center justify-center gap-2 px-5 text-sm font-black disabled:cursor-not-allowed disabled:opacity-45\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => { trackAyWebsShoppingEvent('checkout_previewed'); onCheckout(); }}",
+          "disabled": "{!totals?.checkout_ready}"
+        },
+        {
+          "tag": "button",
+          "line": 327,
+          "className": "\"ay-btn-secondary flex min-h-12 items-center justify-center gap-2 px-5 text-sm font-black disabled:cursor-not-allowed disabled:opacity-45\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => void bridge()}",
+          "disabled": "{bridging || !totals?.checkout_ready}"
+        }
+      ],
+      "icons": [
+        {
+          "module": "../../../components/QatafoIcons",
+          "bindings": "{\n  AlertCircle, ArrowRightLeft, CheckCircle2, Loader2, Minus, Plus, RefreshCw,\n  ShoppingBag, Trash2,\n}",
+          "line": 2
+        }
+      ],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/features/aywebs/components/AyWebsCheckoutScreen.tsx",
+      "domain": "commerce",
+      "sha256": "5c3c17cbd856cd3c87b2b1b5a98c09dcdcfe9e99616ac1f4373e9b19c990e34e",
+      "lines": 480,
+      "imports": [
+        "react",
+        "../../../components/QatafoIcons",
+        "../../../i18n/LocaleContext",
+        "../api",
+        "./AyWebsStates"
+      ],
+      "exports": [
+        "AyWebsCheckoutScreen"
+      ],
+      "controls": [
+        {
+          "tag": "button",
+          "line": 205,
+          "className": "\"ay-btn-secondary flex min-h-11 items-center justify-center gap-2 px-4 text-xs font-black\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{onOpenCart}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 210,
+          "className": "\"ay-btn-primary flex min-h-11 items-center justify-center gap-2 px-4 text-xs font-black\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{onRequireSignIn}",
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 283,
+          "className": "\"mt-1 h-4 w-4 accent-current\"",
+          "type": "\"checkbox\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 290,
+          "className": "\"mt-1 h-4 w-4 accent-current\"",
+          "type": "\"checkbox\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 300,
+          "className": "\"mt-1 h-11 w-full rounded-control border border-line bg-surface px-3 text-xs font-semibold text-ink outline-none transition focus:border-ink focus:bg-white\"",
           "type": null,
           "role": null,
           "ariaLabel": null,
@@ -19018,60 +19312,1062 @@
         },
         {
           "tag": "input",
-          "line": 351,
-          "className": "\"h-12 w-full rounded-control border border-line bg-surface pe-4 ps-12 text-sm font-semibold text-ink outline-none transition placeholder:text-muted focus:border-ink focus:bg-white disabled:opacity-60\"",
+          "line": 309,
+          "className": "\"mt-1 h-11 w-full rounded-control border border-line bg-surface px-3 text-xs font-semibold text-ink outline-none transition focus:border-ink focus:bg-white\"",
           "type": null,
           "role": null,
           "ariaLabel": null,
           "onClick": null,
-          "disabled": "{busy || !features.enabled}"
+          "disabled": null
         },
         {
-          "tag": "button",
-          "line": 363,
-          "className": "\"ay-btn-cta flex h-12 min-w-40 items-center justify-center gap-2 px-5 text-sm disabled:cursor-not-allowed disabled:opacity-45\"",
-          "type": "\"submit\"",
+          "tag": "input",
+          "line": 319,
+          "className": "\"mt-1 h-11 w-full rounded-control border border-line bg-surface px-3 text-xs font-semibold text-ink outline-none transition focus:border-ink focus:bg-white\"",
+          "type": null,
           "role": null,
           "ariaLabel": null,
           "onClick": null,
-          "disabled": "{busy || !features.enabled || !input.trim()}"
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 328,
+          "className": "\"mt-1 h-11 w-full rounded-control border border-line bg-surface px-3 text-xs font-semibold text-ink outline-none transition focus:border-ink focus:bg-white\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "textarea",
+          "line": 338,
+          "className": "\"mt-2 w-full rounded-control border border-line bg-surface p-3 text-xs font-semibold text-ink outline-none transition focus:border-ink focus:bg-white\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "CreditCard",
+          "line": 379,
+          "className": "\"h-4 w-4\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 385,
+          "className": "\"h-4 w-4 accent-current\"",
+          "type": "\"radio\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": "{disabled}"
         },
         {
           "tag": "button",
-          "line": 386,
-          "className": "\"ay-btn-primary flex min-h-11 items-center justify-center gap-2 px-4 text-xs font-black\"",
+          "line": 420,
+          "className": "\"ay-btn-cta flex min-h-12 items-center justify-center gap-2 px-5 text-sm font-black\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
-          "onClick": "{retry}",
+          "onClick": "{() => void submitOrder()}",
+          "disabled": null
+        },
+        {
+          "tag": "CreditCard",
+          "line": 421,
+          "className": "\"h-5 w-5\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
           "disabled": null
         },
         {
           "tag": "button",
-          "line": 387,
+          "line": 426,
+          "className": "\"ay-btn-primary flex min-h-11 items-center justify-center gap-2 px-4 text-xs font-black disabled:opacity-50\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => void confirmPayment()}",
+          "disabled": "{confirming}"
+        },
+        {
+          "tag": "button",
+          "line": 436,
           "className": "\"ay-btn-secondary flex min-h-11 items-center justify-center gap-2 px-4 text-xs font-black\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
-          "onClick": "{() => inputRef.current?.focus()}",
+          "onClick": "{onOpenOrders}",
           "disabled": null
         },
         {
           "tag": "button",
-          "line": 388,
+          "line": 442,
+          "className": "\"ay-btn-cta flex min-h-12 items-center justify-center gap-2 px-5 text-sm font-black disabled:cursor-not-allowed disabled:opacity-45\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => (authenticated ? void placeOrder() : onRequireSignIn())}",
+          "disabled": "{!preview || preview.blockers.length > 0 || phase === 'placing'}"
+        },
+        {
+          "tag": "button",
+          "line": 454,
           "className": "\"ay-btn-secondary flex min-h-11 items-center justify-center gap-2 px-4 text-xs font-black\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
-          "onClick": "{onUploadScreenshot}",
+          "onClick": "{onOpenCart}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 458,
+          "className": "\"flex min-h-11 items-center justify-center gap-2 px-4 text-xs font-black text-muted transition hover:text-ink\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{onBack}",
           "disabled": null
         }
       ],
       "icons": [
         {
-          "module": "../../components/QatafoIcons",
-          "bindings": "{\n  AlertCircle,\n  AyWebs,\n  Camera,\n  CheckCircle2,\n  ExternalLink,\n  Link2,\n  Loader2,\n  RefreshCw,\n  Search,\n  ShoppingBag,\n}",
-          "line": 3
+          "module": "../../../components/QatafoIcons",
+          "bindings": "{\n  AlertCircle, CheckCircle2, CreditCard, Loader2, ReceiptText, ShieldCheck, ShoppingBag,\n}",
+          "line": 2
+        }
+      ],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/features/aywebs/components/AyWebsHome.tsx",
+      "domain": "shell-content",
+      "sha256": "6cafd199b3ecf980803c35d012ca6ce13d4eee5af9b6d0137df0513ab5895e7b",
+      "lines": 362,
+      "imports": [
+        "react",
+        "../../../components/QatafoIcons",
+        "../../../i18n/LocaleContext",
+        "../api",
+        "./AyWebsStates"
+      ],
+      "exports": [
+        "AyWebsHome"
+      ],
+      "controls": [
+        {
+          "tag": "button",
+          "line": 91,
+          "className": "\"ay-btn-secondary flex min-h-11 items-center justify-center gap-2 px-4 text-xs font-black\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => onOpenRequestForm({})}",
+          "disabled": null
+        },
+        {
+          "tag": "form",
+          "line": 103,
+          "className": "\"flex flex-col gap-2 sm:flex-row\"",
+          "type": null,
+          "role": "\"search\"",
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 107,
+          "className": "\"h-12 w-full rounded-control border border-line bg-surface pe-4 ps-12 text-sm font-semibold text-ink outline-none transition placeholder:text-muted focus:border-ink focus:bg-white\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 116,
+          "className": "\"ay-btn-cta flex h-12 min-w-40 items-center justify-center gap-2 px-5 text-sm disabled:cursor-not-allowed disabled:opacity-45\"",
+          "type": "\"submit\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": "{!query.trim() || searching}"
+        },
+        {
+          "tag": "button",
+          "line": 130,
+          "className": "\"flex items-center gap-3 rounded-card border border-line bg-white p-4 text-start transition hover:border-ink/40\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{onOpenCart}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 147,
+          "className": "\"flex items-center gap-3 rounded-card border border-line bg-white p-4 text-start transition hover:border-ink/40\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{onOpenOrders}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 155,
+          "className": "\"flex items-center gap-3 rounded-card border border-line bg-white p-4 text-start transition hover:border-ink/40\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => onOpenBrowser(null)}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 169,
+          "className": "{`shrink-0 rounded-control border px-3 py-2 text-xs font-black transition ${category === null ? 'border-ink bg-ink text-white' : 'border-line bg-white text-ink hover:border-ink/40'}`}",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => setCategory(null)}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 180,
+          "className": "{`shrink-0 rounded-control border px-3 py-2 text-xs font-black transition ${active ? 'border-ink bg-ink text-white' : 'border-line bg-white text-ink hover:border-ink/40'}`}",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => setCategory(active ? null : item.id)}",
+          "disabled": null
+        },
+        {
+          "tag": "StoreCard",
+          "line": 205,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "StoreCard",
+          "line": 222,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 238,
+          "className": "\"flex w-full items-center justify-between gap-3 rounded-control border border-line bg-white px-3 py-2 text-start transition hover:border-ink/40\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => {\n                        const store = home.stores.find((candidate) => candidate.id === recent.storeId);\n                        if (store) onOpenStore(store);\n                      }}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 263,
+          "className": "\"flex w-full items-center gap-3 rounded-control border border-line bg-white p-2 text-start transition hover:border-ink/40\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => onOpenProduct(product.source_url || product.product_id, product.store_id)}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 300,
+          "className": "\"ay-btn-primary flex min-h-11 items-center justify-center gap-2 px-4 text-xs font-black\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => onOpenRequestForm({ url: '' })}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 304,
+          "className": "\"ay-btn-secondary flex min-h-11 items-center justify-center gap-2 px-4 text-xs font-black\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => onOpenRequestForm({ storeName: query.trim() })}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 326,
+          "className": "\"flex h-full flex-col gap-2 rounded-card border border-line bg-white p-4 text-start transition hover:border-ink/40\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => {\n        trackAyWebsEvent('store_selected', { store: store.id });\n        trackAyWebsShoppingEvent('store_opened', { store: store.id });\n        onOpen();\n      }}",
+          "disabled": null
+        }
+      ],
+      "icons": [
+        {
+          "module": "../../../components/QatafoIcons",
+          "bindings": "{\n  ChevronRight, ExternalLink, Hourglass, Package, ReceiptText, Search, ShoppingBag,\n}",
+          "line": 2
+        }
+      ],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/features/aywebs/components/AyWebsOrdersScreen.tsx",
+      "domain": "shell-content",
+      "sha256": "37f4c31da6960d4a083a177f8de489c61a01abfa24653118b57ced00d209989e",
+      "lines": 396,
+      "imports": [
+        "react",
+        "../../../components/QatafoIcons",
+        "../../../i18n/LocaleContext",
+        "../api",
+        "./AyWebsStates"
+      ],
+      "exports": [
+        "AyWebsOrdersScreen"
+      ],
+      "controls": [
+        {
+          "tag": "button",
+          "line": 124,
+          "className": "\"ay-btn-cta flex min-h-11 items-center justify-center gap-2 px-5 text-xs font-black\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{onRequireSignIn}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 125,
+          "className": "\"ay-btn-secondary flex min-h-11 items-center justify-center gap-2 px-4 text-xs font-black\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{onBack}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 134,
+          "className": "\"ay-btn-secondary flex min-h-11 items-center justify-center gap-2 px-4 text-xs font-black\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{onBack}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 145,
+          "className": "\"ay-btn-secondary flex min-h-11 items-center justify-center gap-2 px-3 text-xs font-black\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => void load()}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 160,
+          "className": "\"ay-btn-cta mt-5 flex min-h-11 items-center justify-center gap-2 px-5 text-xs font-black\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{onBack}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 168,
+          "className": "\"flex w-full flex-wrap items-center justify-between gap-3 px-4 py-3 text-start transition hover:bg-surface\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => toggleOrder(order.id)}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 212,
+          "className": "\"text-start\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => onOpenProduct(item.source_url, item.store_id)}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 225,
+          "className": "\"flex min-h-9 items-center gap-1 rounded-control border border-line px-2 text-micro font-black text-ink transition hover:border-ink/40\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => window.open(item.source_url, '_blank', 'noopener,noreferrer')}",
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 256,
+          "className": "\"h-11 w-full rounded-control border border-line bg-surface px-3 text-xs font-semibold text-ink outline-none transition placeholder:text-muted focus:border-ink focus:bg-white\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 264,
+          "className": "\"min-w-0 flex-1 text-xs font-semibold text-muted file:me-2 file:rounded-control file:border file:border-line file:bg-surface file:px-3 file:py-2 file:text-xs file:font-black file:text-ink\"",
+          "type": "\"file\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 271,
+          "className": "\"ay-btn-primary flex min-h-11 items-center justify-center gap-2 px-4 text-xs font-black disabled:cursor-not-allowed disabled:opacity-45\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => proofFile && void uploadProof(detail, proofFile, transferReference.trim())}",
+          "disabled": "{uploading || !proofFile || !transferReference.trim()}"
+        }
+      ],
+      "icons": [
+        {
+          "module": "../../../components/QatafoIcons",
+          "bindings": "{\n  AlertCircle, CheckCircle2, ExternalLink, Loader2, Package, ReceiptText, RefreshCw,\n}",
+          "line": 2
+        }
+      ],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/features/aywebs/components/AyWebsProductSheet.tsx",
+      "domain": "shell-content",
+      "sha256": "5f0a6c625a8d23d927247d622877aaa14a585f8949085974390e5c3194f47ce9",
+      "lines": 449,
+      "imports": [
+        "react",
+        "../../../components/QatafoIcons",
+        "../../../i18n/LocaleContext",
+        "../../../types",
+        "../api",
+        "../../../services/nativeShell",
+        "./AyWebsStates"
+      ],
+      "exports": [
+        "AyWebsProductSheet"
+      ],
+      "controls": [
+        {
+          "tag": "button",
+          "line": 158,
+          "className": "\"ay-btn-secondary flex min-h-11 items-center justify-center gap-2 px-4 text-xs font-black\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{onBack}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 163,
+          "className": "\"ay-btn-primary flex min-h-11 items-center justify-center gap-2 px-4 text-xs font-black\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => onOpenRequestForm({ url })}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 180,
+          "className": "\"ay-btn-secondary flex min-h-11 items-center justify-center gap-2 px-3 text-xs font-black\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{onBack}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 187,
+          "className": "\"ay-btn-secondary flex min-h-11 items-center justify-center gap-2 px-3 text-xs font-black\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => openMerchantPage(product.source_url)}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 202,
+          "className": "{`h-14 w-14 shrink-0 overflow-hidden rounded-control border transition ${index === imageIndex ? 'border-ink' : 'border-line hover:border-ink/40'}`}",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr(`Image ${index + 1}`, `الصورة ${index + 1}`)}",
+          "onClick": "{() => setImageIndex(index)}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 272,
+          "className": "{`flex min-h-11 items-center gap-2 rounded-control border px-3 text-xs font-black transition ${active ? 'border-ink bg-ink text-white' : 'border-line bg-white text-ink hover:border-ink/40'}`}",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => chooseVariant(group.attribute, value)}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 297,
+          "className": "\"grid h-9 w-9 place-items-center rounded-control border border-line bg-white text-ink transition disabled:opacity-35\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Diminuer', 'إنقاص')}",
+          "onClick": "{() => changeQuantity(-1)}",
+          "disabled": "{quantity <= 1}"
+        },
+        {
+          "tag": "button",
+          "line": 301,
+          "className": "\"grid h-9 w-9 place-items-center rounded-control border border-line bg-white text-ink transition disabled:opacity-35\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Augmenter', 'زيادة')}",
+          "onClick": "{() => changeQuantity(1)}",
+          "disabled": "{quantity >= 99}"
+        },
+        {
+          "tag": "textarea",
+          "line": 309,
+          "className": "\"mt-2 w-full rounded-control border border-line bg-surface p-3 text-xs font-semibold text-ink outline-none transition placeholder:text-muted focus:border-ink focus:bg-white\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 321,
+          "className": "\"ay-btn-cta flex min-h-12 items-center justify-center gap-2 px-5 text-sm font-black disabled:cursor-not-allowed disabled:opacity-45\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => void addToCart()}",
+          "disabled": "{!canAdd}"
+        },
+        {
+          "tag": "button",
+          "line": 333,
+          "className": "\"ay-btn-secondary flex min-h-11 items-center justify-center gap-2 px-4 text-xs font-black\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => { setAddState('IDLE'); setAddedItemNumber(''); }}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 337,
+          "className": "\"ay-btn-primary flex min-h-11 items-center justify-center gap-2 px-4 text-xs font-black\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{onOpenCart}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 345,
+          "className": "\"ay-btn-secondary flex min-h-11 items-center justify-center gap-2 px-4 text-xs font-black\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => void load(selected, quantity)}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 383,
+          "className": "\"ay-btn-secondary flex min-h-11 items-center justify-center gap-2 px-4 text-xs font-black\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => onOpenRequestForm({ url: product.source_url, storeName: product.store_name })}",
+          "disabled": null
+        }
+      ],
+      "icons": [
+        {
+          "module": "../../../components/QatafoIcons",
+          "bindings": "{\n  AlertCircle, AyWebs, CheckCircle2, ChevronLeft, ExternalLink, Loader2, Minus, Plus,\n  ReceiptText, RefreshCw, ShoppingBag, ShieldCheck,\n}",
+          "line": 2
+        }
+      ],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/features/aywebs/components/AyWebsRequestForm.tsx",
+      "domain": "shell-content",
+      "sha256": "c089947ca869373b6a901a1833a37b9c3ad2999d8db768f87dcdb1cee7284363",
+      "lines": 402,
+      "imports": [
+        "react",
+        "../../../components/QatafoIcons",
+        "../../../i18n/LocaleContext",
+        "../api",
+        "./AyWebsStates"
+      ],
+      "exports": [
+        "AyWebsRequestForm"
+      ],
+      "controls": [
+        {
+          "tag": "button",
+          "line": 143,
+          "className": "\"ay-btn-secondary flex min-h-11 items-center justify-center gap-2 px-3 text-xs font-black\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => onSwitchMode(mode === 'purchase' ? 'store' : 'purchase')}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 147,
+          "className": "\"ay-btn-secondary flex min-h-11 items-center justify-center gap-2 px-3 text-xs font-black\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{onBack}",
+          "disabled": null
+        },
+        {
+          "tag": "form",
+          "line": 164,
+          "className": "\"grid gap-4 rounded-card border border-line bg-white p-5\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 167,
+          "className": "\"mt-2 h-12 w-full rounded-control border border-line bg-surface px-3 text-sm font-semibold text-ink outline-none transition placeholder:text-muted focus:border-ink focus:bg-white\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 184,
+          "className": "\"mt-2 h-12 w-full rounded-control border border-line bg-surface px-3 text-sm font-semibold text-ink outline-none transition placeholder:text-muted focus:border-ink focus:bg-white\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 194,
+          "className": "\"mt-2 h-12 w-full rounded-control border border-line bg-surface px-3 text-sm font-semibold text-ink outline-none transition focus:border-ink focus:bg-white\"",
+          "type": "\"number\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 211,
+          "className": "\"mt-1 h-11 w-full rounded-control border border-line bg-surface px-3 text-xs font-semibold text-ink outline-none transition placeholder:text-muted focus:border-ink focus:bg-white\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 228,
+          "className": "\"mt-2 h-11 w-full rounded-control border border-line bg-surface px-3 text-xs font-semibold text-ink outline-none transition focus:border-ink focus:bg-white\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "textarea",
+          "line": 239,
+          "className": "\"mt-2 w-full rounded-control border border-line bg-surface p-3 text-xs font-semibold text-ink outline-none transition focus:border-ink focus:bg-white\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 250,
+          "className": "\"ay-btn-cta flex min-h-12 items-center justify-center gap-2 px-5 text-sm font-black disabled:cursor-not-allowed disabled:opacity-45\"",
+          "type": "\"submit\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": "{phase === 'sending' || !productUrl.trim()}"
+        },
+        {
+          "tag": "form",
+          "line": 261,
+          "className": "\"grid gap-4 rounded-card border border-line bg-white p-5\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 264,
+          "className": "\"mt-2 h-12 w-full rounded-control border border-line bg-surface px-3 text-sm font-semibold text-ink outline-none transition placeholder:text-muted focus:border-ink focus:bg-white\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 276,
+          "className": "\"mt-2 h-12 w-full rounded-control border border-line bg-surface px-3 text-sm font-semibold text-ink outline-none transition focus:border-ink focus:bg-white\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "textarea",
+          "line": 285,
+          "className": "\"mt-2 w-full rounded-control border border-line bg-surface p-3 text-xs font-semibold text-ink outline-none transition focus:border-ink focus:bg-white\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 295,
+          "className": "\"ay-btn-cta flex min-h-12 w-fit items-center justify-center gap-2 px-5 text-sm font-black disabled:cursor-not-allowed disabled:opacity-45\"",
+          "type": "\"submit\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": "{phase === 'sending' || !storeUrl.trim() || !intent.trim()}"
+        }
+      ],
+      "icons": [
+        {
+          "module": "../../../components/QatafoIcons",
+          "bindings": "{\n  AlertCircle, CheckCircle2, ExternalLink, Hourglass, Loader2, Plus, ReceiptText,\n}",
+          "line": 2
+        }
+      ],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/features/aywebs/components/AyWebsStates.tsx",
+      "domain": "shell-content",
+      "sha256": "3b526183c30f7ad7a917fbdc1e172f04e64858d703b1a585ab9b1911124862a2",
+      "lines": 131,
+      "imports": [
+        "react",
+        "../../../components/QatafoIcons",
+        "../../../design/ui",
+        "../../../i18n/LocaleContext",
+        "../api"
+      ],
+      "exports": [
+        "AyWebsLoading",
+        "AyWebsOffline",
+        "AyWebsErrorState",
+        "AyWebsNotice",
+        "AyWebsPrice"
+      ],
+      "controls": [
+        {
+          "tag": "button",
+          "line": 39,
+          "className": "\"ay-btn-secondary flex min-h-11 items-center justify-center gap-2 px-4 text-xs font-black\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{onRetry}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 76,
+          "className": "\"ay-btn-primary flex min-h-11 items-center justify-center gap-2 px-4 text-xs font-black\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{onRetry}",
+          "disabled": null
+        }
+      ],
+      "icons": [
+        {
+          "module": "../../../components/QatafoIcons",
+          "bindings": "{ AlertCircle, Globe2, Loader2, RefreshCw }",
+          "line": 2
+        }
+      ],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/features/aywebs/components/AyWebsStoreBrowser.tsx",
+      "domain": "shell-content",
+      "sha256": "1115628ae2d0f6c3f95929c5a9c064767486860b5d139cb17b4380fe06ded06a",
+      "lines": 363,
+      "imports": [
+        "react",
+        "../../../components/QatafoIcons",
+        "../../../i18n/LocaleContext",
+        "../../../../../shared/aywebsStores",
+        "../api",
+        "../../../services/nativeShell",
+        "./AyWebsStates"
+      ],
+      "exports": [
+        "AyWebsStoreBrowser"
+      ],
+      "controls": [
+        {
+          "tag": "button",
+          "line": 151,
+          "className": "\"grid h-11 w-11 place-items-center rounded-control text-ink transition hover:bg-surface\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Retour aux boutiques', 'العودة إلى المتاجر')}",
+          "onClick": "{onBack}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 154,
+          "className": "\"grid h-11 w-11 place-items-center rounded-control text-ink transition hover:bg-surface disabled:opacity-35\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Précédent', 'السابق')}",
+          "onClick": "{() => go(-1)}",
+          "disabled": "{cursor <= 0}"
+        },
+        {
+          "tag": "button",
+          "line": 157,
+          "className": "\"grid h-11 w-11 place-items-center rounded-control text-ink transition hover:bg-surface disabled:opacity-35\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Suivant', 'التالي')}",
+          "onClick": "{() => go(1)}",
+          "disabled": "{cursor < 0 || cursor >= entries.length - 1}"
+        },
+        {
+          "tag": "button",
+          "line": 160,
+          "className": "\"grid h-11 w-11 place-items-center rounded-control text-ink transition hover:bg-surface disabled:opacity-35\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Actualiser l’analyse', 'تحديث التحليل')}",
+          "onClick": "{() => void analyze(current?.url || input)}",
+          "disabled": "{state === 'analyzing' || !(current || input.trim())}"
+        },
+        {
+          "tag": "form",
+          "line": 164,
+          "className": "\"relative min-w-0 flex-1\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 167,
+          "className": "\"h-11 w-full rounded-control border border-line bg-surface pe-3 ps-10 text-xs font-semibold text-ink outline-none transition placeholder:text-muted focus:border-ink focus:bg-white\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 178,
+          "className": "\"ay-btn-secondary flex h-11 items-center justify-center gap-2 px-3 text-xs font-black\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => openExternal(current?.url || input || homeUrl)}",
+          "disabled": "{opening}"
+        },
+        {
+          "tag": "button",
+          "line": 182,
+          "className": "\"relative grid h-11 w-11 place-items-center rounded-control text-ink transition hover:bg-surface\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Panier AyWebs', 'سلة AyWebs')}",
+          "onClick": "{onOpenCart}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 206,
+          "className": "\"ay-btn-secondary flex min-h-11 items-center justify-center gap-2 px-4 text-xs font-black\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => onOpenRequestForm({ url: current?.url || input })}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 224,
+          "className": "\"ay-btn-cta flex min-h-11 items-center justify-center gap-2 px-4 text-xs font-black\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => onOpenProduct(analysis.url, analysis.store_id)}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 228,
+          "className": "\"ay-btn-secondary flex min-h-11 items-center justify-center gap-2 px-4 text-xs font-black\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => openExternal(analysis.url)}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 246,
+          "className": "\"ay-btn-primary flex min-h-11 items-center justify-center gap-2 px-4 text-xs font-black\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => openExternal(analysis.url)}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 251,
+          "className": "\"ay-btn-secondary flex min-h-11 items-center justify-center gap-2 px-4 text-xs font-black\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => onOpenRequestForm({ url: analysis.url, storeName: analysis.store_name })}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 292,
+          "className": "\"ay-btn-primary flex min-h-11 items-center justify-center gap-2 px-4 text-xs font-black\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => { setInput(homeUrl); void analyze(homeUrl); }}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 297,
+          "className": "\"ay-btn-secondary flex min-h-11 items-center justify-center gap-2 px-4 text-xs font-black\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{onOpenCart}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 321,
+          "className": "{`flex w-full items-center gap-3 rounded-control border px-3 py-2 text-start transition ${active ? 'border-ink bg-ink text-white' : 'border-line bg-white text-ink hover:border-ink/40'}`}",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => { setCursor(position); setInput(entry.url); setAnalysis(null); setState('idle'); }}",
+          "disabled": null
+        }
+      ],
+      "icons": [
+        {
+          "module": "../../../components/QatafoIcons",
+          "bindings": "{\n  AlertCircle, ArrowLeft, ArrowRight, AyWebs, CheckCircle2, ExternalLink, Link2, Loader2,\n  ReceiptText, RefreshCw, Search, ShoppingBag,\n}",
+          "line": 2
         }
       ],
       "inlineSvg": [],
@@ -19634,13 +20930,14 @@
     {
       "file": "client/src/main.tsx",
       "domain": "shell-content",
-      "sha256": "149dd5a410095e714fd07d7503f950403fba458fb33300c90ef9e20474c2df27",
-      "lines": 43,
+      "sha256": "404085327e9b77732eccd599c4d10d3d252c5668d5762c6a317039e83953d7ff",
+      "lines": 48,
       "imports": [
         "react",
         "react-dom/client",
         "./index.css",
         "./styles/journey.css",
+        "./services/nativeApiOrigin",
         "./navigation/NavigationHistory",
         "./design/editorial/CustomerIdentity",
         "./i18n/LocaleContext",
@@ -19733,15 +21030,40 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/services/nativeShell.ts",
+      "file": "client/src/services/nativeApiOrigin.ts",
       "domain": "shell-content",
-      "sha256": "48f46db17566696dc88c28c73655417dee5d035e222286a7d84d7e9e75f88bc7",
-      "lines": 28,
+      "sha256": "b1ea506324c7b3d40533e8188d98a2d16e2b00136d6a08a8cfbec906c6b5394e",
+      "lines": 64,
       "imports": [
-        "@capacitor/core"
+        "./nativeShell"
       ],
       "exports": [
+        "AYROVI_API_ORIGIN",
+        "installNativeApiOrigin"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/services/nativeShell.ts",
+      "domain": "shell-content",
+      "sha256": "13a0f3d2227d69742a06e8f3458cbdea9e69965606624a7779c620f1662d9ece",
+      "lines": 86,
+      "imports": [
+        "@capacitor/core",
+        "../utils/session"
+      ],
+      "exports": [
+        "rememberNativeSessionToken",
+        "getNativeSessionToken",
+        "clearNativeSessionToken",
         "isNativeApp",
+        "openAyWebsNativeBrowser",
+        "openMerchantPage",
         "setNativeStatusBarForSurface"
       ],
       "controls": [],

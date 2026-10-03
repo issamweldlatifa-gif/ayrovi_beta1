@@ -3,7 +3,7 @@ import multer from 'multer';
 import sharp from 'sharp';
 import { randomUUID } from 'node:crypto';
 import { QatafoDatabase } from '../db/database';
-import { customerFromRequest, requireCustomer, createCustomerSession, setCustomerCookie } from './auth';
+import { customerFromRequest, requireCustomer, createCustomerSession, setCustomerCookie, nativeSessionField } from './auth';
 import { customerAuthRateAllowed } from './passwordRecovery';
 import { hashPassword, verifyPassword } from './passwords';
 import { authMailTemplate, enqueueAuthMail } from './accountMail';
@@ -62,7 +62,7 @@ export function createAccountSettingsRouter(db: QatafoDatabase, publicAccount: (
       return createCustomerSession(db,account.id,req);
     });
     setCustomerCookie(res,session.token);
-    return res.json({success:true,data:{account:publicAccount(db.get('SELECT * FROM customer_accounts WHERE id=?',account.id)),csrfToken:session.csrfToken}});
+    return res.json({success:true,data:{account:publicAccount(db.get('SELECT * FROM customer_accounts WHERE id=?',account.id)),csrfToken:session.csrfToken,...nativeSessionField(req,session.token)}});
   });
   return router;
 }

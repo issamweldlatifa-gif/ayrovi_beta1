@@ -218,12 +218,18 @@ app.use('/api/public/social', (req, res, next) => {
   return socialMutationIpRateLimit(req, res, () => socialMutationRateLimit(req, res, next));
 });
 
-const allowedOrigins = new Set((process.env.CORS_ORIGINS || '').split(',').map((origin) => origin.trim()).filter(Boolean));
+// أصول Capacitor القياسية (التطبيق الأصلي بوضع الحزمة المضمّنة) مسموحة دائمًا مع
+// credentials: الواجهة المحلية تستدعي الـ API عبر الجسر الوحيد nativeApiOrigin.
+const NATIVE_SHELL_ORIGINS = ['https://localhost', 'capacitor://localhost', 'http://localhost'];
+const allowedOrigins = new Set([
+  ...NATIVE_SHELL_ORIGINS,
+  ...(process.env.CORS_ORIGINS || '').split(',').map((origin) => origin.trim()).filter(Boolean),
+]);
 app.use(cors({
   origin: (origin, callback) => callback(null, !origin || allowedOrigins.has(origin)),
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-session-id', 'x-requested-with', 'x-csrf-token'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-session-id', 'x-requested-with', 'x-csrf-token', 'x-ayrovi-native'],
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
