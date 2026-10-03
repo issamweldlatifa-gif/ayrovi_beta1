@@ -138,13 +138,22 @@ jobs:
         env:
           AYROVI_BASE_URL: http://127.0.0.1:3210
         run: |
-          npm run verify:public-nav
-          npm run verify:footer-payments
-          npm run verify:customer-auth
-          npm run verify:product-variants
-          npm run verify:image-composition
-          # Budget de charte : échoue si l'orange dépasse 3 % d'une surface.
-          npm run audit:design
+          # 2026-10-03 : chaque garde est NOMMÉE. Avant, un échec n'affichait que
+          # « Process completed with exit code 1 » — le nom du garde fautif n'était
+          # ni dans l'annotation, ni dans le résumé, et la boucle se terminait sans
+          # dire lequel des six avait parlé. Diagnostiquer demandait de rejouer les
+          # six à l'aveugle.
+          for guard in verify:public-nav verify:footer-payments verify:customer-auth \
+                       verify:product-variants verify:image-composition audit:design; do
+            echo "::group::$guard"
+            if npm run "$guard"; then
+              echo "::notice title=Garde de charte OK::$guard"
+            else
+              echo "::error title=Garde de charte en échec::$guard"
+              exit 1
+            fi
+            echo "::endgroup::"
+          done
 
       - name: Upload charter guard evidence
         if: always()

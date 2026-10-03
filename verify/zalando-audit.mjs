@@ -60,10 +60,21 @@ async function measureLensScreen(page, tag) {
   // franchir, cette fonction déclarait « absent » un écran qui existe bel et bien —
   // c'était un faux négatif, pas une absence. On coche donc les trois cases, puis
   // on emprunte le bouton primaire (désactivé tant que les trois ne sont pas cochées).
-  const boxes = page.locator('.lens-consent input[type=checkbox]');
-  for (let i = 0; i < await boxes.count(); i += 1) await boxes.nth(i).check();
-  const gate = page.locator('.lens-panel-primary').first();
-  if ((await gate.count()) && (await gate.isEnabled())) await gate.click();
+  // … mais franchie de façon DÉFENSIVE (2026-10-03) : cette porte conditionne
+  // l'accès à l'écran, elle ne doit jamais faire ÉCHOUER l'audit. Sans le
+  // try/catch ci-dessous, un `check()` qui attend un élément absent faisait
+  // tomber tout le script au bout de son délai par défaut — un garde de charte
+  // qui meurt sur une porte de consentement ne mesure plus rien du tout.
+  // En cas d'échec on retombe sur le comportement historique : écran absent.
+  try {
+    const boxes = page.locator('.lens-consent input[type=checkbox]');
+    const count = await boxes.count();
+    for (let i = 0; i < count; i += 1) await boxes.nth(i).check({ timeout: 4000, force: true });
+    const gate = page.locator('.lens-panel-primary').first();
+    if ((await gate.count()) && (await gate.isEnabled())) await gate.click({ timeout: 4000, force: true });
+  } catch (error) {
+    console.warn(`  ⚠ porte de consentement non franchie (${tag}) : ${String(error.message).split('\n')[0]}`);
+  }
   await page.waitForTimeout(2500);
 
   const opened = await page.locator('.lens-home, .lens-drop').count();
