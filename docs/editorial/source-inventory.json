@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "scope": "Recursive static inventory of all client TypeScript/TSX/CSS; manual review tracked separately",
   "totals": {
-    "files": 250,
-    "customerAndSharedFiles": 198,
+    "files": 251,
+    "customerAndSharedFiles": 199,
     "controls": 464,
     "iconAliases": 102,
     "uniqueGlyphs": 99
@@ -19754,15 +19754,31 @@
       "apiReferences": []
     },
     {
+      "file": "client/src/services/apiOrigin.ts",
+      "domain": "shell-content",
+      "sha256": "a143fc56a6ceefab7c2f907217d857fe19ba7df8504736be9beb42ea4185caf5",
+      "lines": 20,
+      "imports": [],
+      "exports": [
+        "AYROVI_API_ORIGIN"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
       "file": "client/src/services/nativeApiOrigin.ts",
       "domain": "shell-content",
-      "sha256": "6bbfc8eb9a568771c546a521f23df7aabdd604a531b553d8bdc16d5f06d2567a",
-      "lines": 65,
+      "sha256": "c3baec7d34bc3922bcddb3023e5c1f35a7126e1af3f02e9d19b2eb2711193c56",
+      "lines": 67,
       "imports": [
-        "./nativeShell"
+        "./nativeShell",
+        "./apiOrigin"
       ],
       "exports": [
-        "AYROVI_API_ORIGIN",
         "installNativeApiOrigin"
       ],
       "controls": [],
@@ -19775,10 +19791,11 @@
     {
       "file": "client/src/services/nativeShell.ts",
       "domain": "shell-content",
-      "sha256": "08f1ba0a25a23553e8dd1218139b4123a0c4e8c06c08f2e958d407885c6928f3",
-      "lines": 82,
+      "sha256": "f8bfdd439b1f87f168c90eb1277bce05f9a7416d52d8b71ebc8360d59e9a3c5d",
+      "lines": 87,
       "imports": [
         "@capacitor/core",
+        "./apiOrigin",
         "../utils/session"
       ],
       "exports": [
