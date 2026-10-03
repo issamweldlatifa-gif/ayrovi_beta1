@@ -562,11 +562,6 @@ export const App: React.FC = () => {
           <AyWebsScreen
             onClose={handleCloseAyWebs}
             onOpenCart={() => openAppView('app:cart')}
-            onCaptured={handleExtracted}
-            onUploadScreenshot={() => {
-              setExtractedProduct(null);
-              navigation.navigate([{ id: 'app:product' }, { id: 'product:input' }]);
-            }}
             cartCount={totalCartCount}
             /* AYWEBs réutilise la session AYROVI : aucun second compte, aucun
                second jeton. Le CSRF existant protège aussi ses écritures. */

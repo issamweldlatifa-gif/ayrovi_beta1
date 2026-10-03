@@ -95,6 +95,7 @@ export interface AyWebsOrder {
   paidAt: string | null;
   submittedAt: string | null;
   notes: string;
+  shippingAddress: Record<string, unknown>;
   items: AyWebsOrderItem[];
   timeline: Array<{ key: string; state: 'done' | 'current' | 'pending' }>;
   createdAt: string;
@@ -109,9 +110,20 @@ export interface CreateAyWebsOrderInput {
   requestId?: string | null;
   express?: boolean;
   includeLocalDelivery?: boolean;
+  /** Adresse de livraison saisie au checkout (§21) — conservée telle quelle. */
+  shippingAddress?: { name: string; phone: string; city: string; line: string } | null;
 }
 
 const round2 = (value: number): number => Math.round((Number(value) || 0) * 100) / 100;
+
+const parseJsonObject = (raw: unknown): Record<string, unknown> => {
+  try {
+    const parsed = JSON.parse(String(raw || '{}'));
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as Record<string, unknown> : {};
+  } catch {
+    return {};
+  }
+};
 
 /* ------------------------------------------------------------------ *
  * Création
@@ -156,13 +168,13 @@ export function createAyWebsOrder(db: QatafoDatabase, input: CreateAyWebsOrderIn
     db.run(
       `INSERT INTO ayweb_orders (id,order_number,cart_id,account_id,customer_id,status,master_stage,exception_state,exception_reason,
          currency,product_subtotal_tnd,service_fee_tnd,import_fee_tnd,shipping_estimate_tnd,other_fee_tnd,payable_tnd,
-         fees_snapshot,pricing_version,payment_reference,payment_status,paid_at,submitted_at,notes,created_at,updated_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+         fees_snapshot,pricing_version,payment_reference,payment_status,paid_at,submitted_at,notes,shipping_address,created_at,updated_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       orderId, orderNumber, lockedCart.id, input.accountId, input.customerId || null, 'DRAFT', 'CHECKOUT', null, '',
       'TND', preview.totals.productSubtotalTnd, preview.totals.serviceFeeTnd, preview.totals.importFeeTnd,
       preview.totals.shippingEstimateTnd, preview.totals.otherFeeTnd, preview.totals.payableTnd,
       JSON.stringify(preview.fees), preview.pricingVersion, '', 'PENDING', null, null,
-      sanitizeNotes(input.notes), now, now,
+      sanitizeNotes(input.notes), JSON.stringify(input.shippingAddress || {}), now, now,
     );
 
     for (const [index, line] of preview.lines.entries()) {
@@ -955,6 +967,7 @@ function hydrateOrder(db: QatafoDatabase, row: any): AyWebsOrder {
     paidAt: row.paid_at ? String(row.paid_at) : null,
     submittedAt: row.submitted_at ? String(row.submitted_at) : null,
     notes: String(row.notes || ''),
+    shippingAddress: parseJsonObject(row.shipping_address),
     items: itemRows.map((item) => hydrateOrderItem(item)),
     timeline: ayWebsCustomerTimeline(status),
     createdAt: String(row.created_at),

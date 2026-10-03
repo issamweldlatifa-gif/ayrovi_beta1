@@ -836,6 +836,7 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
       notes: req.body?.notes ? String(req.body.notes) : '',
       express: req.body?.express === true,
       includeLocalDelivery: req.body?.include_local_delivery !== false,
+      shippingAddress: readShippingAddress(req.body?.shipping_address),
       requestId: requestIdOf(req),
     });
     trackAyWebsFunnel(ctx, 'order_created', {}, identity.sessionId);
@@ -1222,6 +1223,15 @@ function cartPayload(view: ReturnType<typeof readAyWebsCartView>) {
   };
 }
 
+/** Adresse de livraison du checkout (§21) : recopiée telle quelle, sinon null. */
+function readShippingAddress(raw: unknown): { name: string; phone: string; city: string; line: string } | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const value = raw as Record<string, unknown>;
+  const pick = (key: string): string => (typeof value[key] === 'string' ? String(value[key]).trim() : '');
+  const address = { name: pick('name'), phone: pick('phone'), city: pick('city'), line: pick('line') };
+  return address.name || address.phone || address.city || address.line ? address : null;
+}
+
 function orderPayload(order: ReturnType<typeof listAyWebsOrders>[number]) {
   return {
     id: order.id,
@@ -1231,6 +1241,7 @@ function orderPayload(order: ReturnType<typeof listAyWebsOrders>[number]) {
     exception_state: order.exceptionState,
     exception_reason: order.exceptionReason,
     currency: order.currency,
+    shipping_address: order.shippingAddress || {},
     totals: {
       product_subtotal_tnd: order.totals.productSubtotalTnd,
       service_fee_tnd: order.totals.serviceFeeTnd,

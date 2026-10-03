@@ -46,6 +46,8 @@ export const AyWebsCheckoutScreen: React.FC<AyWebsCheckoutScreenProps> = ({
   const [express, setExpress] = useState(false);
   const [localDelivery, setLocalDelivery] = useState(true);
   const [notes, setNotes] = useState('');
+  /** §21 — adresse de livraison : saisie cliente, conservée avec la commande. */
+  const [address, setAddress] = useState({ name: '', phone: '', city: '', line: '' });
   const [methods, setMethods] = useState<string[]>([]);
   const [cardAvailable, setCardAvailable] = useState(false);
   const [method, setMethod] = useState('');
@@ -81,15 +83,27 @@ export const AyWebsCheckoutScreen: React.FC<AyWebsCheckoutScreenProps> = ({
 
   useEffect(() => { void load(); }, [load]);
 
+  const addressComplete = Boolean(address.name.trim() && address.phone.trim() && address.city.trim() && address.line.trim());
+
   const placeOrder = async () => {
     if (!preview || preview.blockers.length) return;
-    setPhase('placing');
     setNotice(null);
+    if (!addressComplete) {
+      setNotice({ tone: 'info', text: tr('Complétez l’adresse de livraison avant de créer la commande.', 'أكمل عنوان التوصيل قبل إنشاء الطلب.') });
+      return;
+    }
+    setPhase('placing');
     try {
       const result = await createAyWebsOrder({
         ...(notes.trim() ? { notes: notes.trim() } : {}),
         express,
         include_local_delivery: localDelivery,
+        shipping_address: {
+          name: address.name.trim(),
+          phone: address.phone.trim(),
+          city: address.city.trim(),
+          line: address.line.trim(),
+        },
       });
       setOrder(result.order);
       trackAyWebsShoppingEvent('order_created');
@@ -279,6 +293,46 @@ export const AyWebsCheckoutScreen: React.FC<AyWebsCheckoutScreenProps> = ({
                 <span className="block text-micro font-semibold text-muted">{tr('Décochez pour un retrait en bureau.', 'ألغِ التحديد للاستلام من المكتب.')}</span>
               </span>
             </label>
+            <fieldset className="mt-4 grid gap-3 rounded-control border border-line p-3 sm:grid-cols-2">
+              <legend className="px-1 text-xs font-black text-ink">{tr('Adresse de livraison', 'عنوان التوصيل')}</legend>
+              <label className="block">
+                <span className="text-micro font-black text-ink">{tr('Nom complet', 'الاسم الكامل')}</span>
+                <input
+                  value={address.name}
+                  onChange={(event) => setAddress({ ...address, name: event.target.value })}
+                  className="mt-1 h-11 w-full rounded-control border border-line bg-surface px-3 text-xs font-semibold text-ink outline-none transition focus:border-ink focus:bg-white"
+                  placeholder={tr('Nom et prénom', 'الاسم واللقب')}
+                />
+              </label>
+              <label className="block">
+                <span className="text-micro font-black text-ink">{tr('Téléphone', 'الهاتف')}</span>
+                <input
+                  value={address.phone}
+                  onChange={(event) => setAddress({ ...address, phone: event.target.value })}
+                  inputMode="tel"
+                  className="mt-1 h-11 w-full rounded-control border border-line bg-surface px-3 text-xs font-semibold text-ink outline-none transition focus:border-ink focus:bg-white"
+                  placeholder="+216 …"
+                />
+              </label>
+              <label className="block">
+                <span className="text-micro font-black text-ink">{tr('Ville / Gouvernorat', 'المدينة / الولاية')}</span>
+                <input
+                  value={address.city}
+                  onChange={(event) => setAddress({ ...address, city: event.target.value })}
+                  className="mt-1 h-11 w-full rounded-control border border-line bg-surface px-3 text-xs font-semibold text-ink outline-none transition focus:border-ink focus:bg-white"
+                  placeholder={tr('Tunis', 'تونس')}
+                />
+              </label>
+              <label className="block">
+                <span className="text-micro font-black text-ink">{tr('Adresse précise', 'العنوان الدقيق')}</span>
+                <input
+                  value={address.line}
+                  onChange={(event) => setAddress({ ...address, line: event.target.value })}
+                  className="mt-1 h-11 w-full rounded-control border border-line bg-surface px-3 text-xs font-semibold text-ink outline-none transition focus:border-ink focus:bg-white"
+                  placeholder={tr('Rue, numéro, complément…', 'الشارع، الرقم، تفاصيل…')}
+                />
+              </label>
+            </fieldset>
             <label className="mt-4 block">
               <span className="text-xs font-black text-ink">{tr('Notes pour AYROVI (facultatif)', 'ملاحظات لـ AYROVI (اختياري)')}</span>
               <textarea

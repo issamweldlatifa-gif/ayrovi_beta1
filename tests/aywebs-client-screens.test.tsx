@@ -469,7 +469,23 @@ describe('AYWEBs — devis et paiement', () => {
     ));
     await render(<AyWebsCheckoutScreen {...checkoutProps} />);
 
+    // §21 — l'adresse de livraison est requise avant la création de commande.
     await act(async () => buttonByLabel('Créer la commande AyWebs')!.click());
+    expect(vi.mocked(api.createAyWebsOrder)).not.toHaveBeenCalled();
+    expect(text()).toContain('Complétez l’adresse de livraison');
+
+    for (const placeholder of ['Nom et prénom', '+216 …', 'Tunis', 'Rue, numéro, complément…']) {
+      const field = inputs().find((input) => input.placeholder === placeholder)!;
+      expect(field, placeholder).toBeDefined();
+      await act(async () => {
+        setNativeValue(field, placeholder === '+216 …' ? '+216 20 000 000' : `Test ${placeholder}`);
+        field.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+    }
+    await act(async () => buttonByLabel('Créer la commande AyWebs')!.click());
+    expect(vi.mocked(api.createAyWebsOrder)).toHaveBeenCalledWith(expect.objectContaining({
+      shipping_address: expect.objectContaining({ city: 'Test Tunis', phone: '+216 20 000 000' }),
+    }));
     expect(text()).toContain('AYW-000456');
     // L'intégration d'achat est annoncée comme en attente, jamais comme exécutée.
     expect(text()).toMatch(/intégration|revue AYROVI/i);
@@ -666,13 +682,15 @@ describe('AYWEBs — accueil (§6)', () => {
     expect(buttonByLabel('Demander un achat avec URL')).toBeDefined();
   });
 
-  it('un lien collé part au pont de détection ; un nom de boutique ouvre la boutique', async () => {
+  it('la recherche ouvre une boutique ; plus de détournement « lien collé » (§6)', async () => {
     vi.mocked(api.getAyWebsHome).mockResolvedValue({ data: homeFixture(), features: featuresFixture });
     await render(<AyWebsHome {...homeProps} />);
 
-    const search = inputs().find((input) => (input.placeholder || '').includes('lien exact'))!;
+    const search = inputs().find((input) => (input.placeholder || '').includes('Rechercher une boutique'))!;
     expect(search).toBeDefined();
 
+    // Un lien collé dans la recherche n'ouvre plus une fiche produit fantôme :
+    // l'entrée marchande passe par la carte boutique ou la barre du navigateur (§9).
     await act(async () => {
       setNativeValue(search, 'https://www.nike.com/fr/dp/1');
       search.dispatchEvent(new Event('input', { bubbles: true }));
@@ -680,8 +698,17 @@ describe('AYWEBs — accueil (§6)', () => {
     await act(async () => {
       host.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
     });
-    expect(homeProps.onOpenProduct).toHaveBeenCalledWith('https://www.nike.com/fr/dp/1');
+    expect(homeProps.onOpenProduct).not.toHaveBeenCalled();
     expect(homeProps.onOpenStore).not.toHaveBeenCalled();
+
+    await act(async () => {
+      setNativeValue(search, 'nike');
+      search.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await act(async () => {
+      host.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    });
+    expect(homeProps.onOpenStore).toHaveBeenCalled();
 
     await act(async () => {
       setNativeValue(search, 'nike');
@@ -806,8 +833,6 @@ describe('AYWEBs — hôte de navigation (§5, §25)', () => {
   const hostProps = {
     onClose: vi.fn(),
     onOpenCart: vi.fn(),
-    onCaptured: vi.fn(),
-    onUploadScreenshot: vi.fn(),
     cartCount: 2,
     authenticated: true,
     customerCsrfToken: 'csrf-ayrovi-1',
@@ -838,8 +863,8 @@ describe('AYWEBs — hôte de navigation (§5, §25)', () => {
     // Badge AyWebs = 1 unité (serveur), badge AYROVI = 2 articles (app) : pas de fusion.
     expect(host.querySelector('[aria-label="Ouvrir le panier AyWebs"]')?.textContent).toContain('1');
     expect(host.querySelector('[aria-label="Ouvrir le panier AYROVI"]')?.textContent).toContain('2');
-    // Le flux historique de capture par lien reste accessible (§2 non destructif).
-    expect(host.querySelector('[aria-label="Capture par lien"]')).not.toBeNull();
+    // Plus de vue « capture par lien » parasite : l'ajout passe par Add to Cart (§13, §15).
+    expect(host.querySelector('[aria-label="Capture par lien"]')).toBeNull();
   });
 
   it('ayrovi://aywebs/cart ouvre le panier AyWebs (§25)', async () => {

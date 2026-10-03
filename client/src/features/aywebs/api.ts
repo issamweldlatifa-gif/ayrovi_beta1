@@ -470,7 +470,14 @@ export async function previewAyWebsCheckout(body: { express?: boolean; include_l
   return payload.data as AyWebsCheckoutPayload;
 }
 
-export async function createAyWebsOrder(body: { notes?: string; express?: boolean; include_local_delivery?: boolean } = {}) {
+export interface AyWebsShippingAddress { name: string; phone: string; city: string; line: string }
+
+export async function createAyWebsOrder(body: {
+  notes?: string;
+  express?: boolean;
+  include_local_delivery?: boolean;
+  shipping_address?: AyWebsShippingAddress;
+} = {}) {
   const payload = await ayWebsRequest<any>('/orders', { method: 'POST', body });
   return {
     order: payload.data as AyWebsOrderPayload,

@@ -534,6 +534,16 @@ export function ensureAyWebsSchema(db: QatafoDatabase): void {
   if (initialized.has(db)) return;
   db.runSchema(AYWEBS_SCHEMA_SQL);
   try {
+    // Additif uniquement (§42) : colonne d'adresse de livraison du client,
+    // collectée au checkout (§21) — jamais déduite, jamais inventée.
+    const columns = db.all<{ name: string }>("PRAGMA table_info(ayweb_orders)").map((row) => row.name);
+    if (!columns.includes('shipping_address')) {
+      db.run("ALTER TABLE ayweb_orders ADD COLUMN shipping_address TEXT NOT NULL DEFAULT '{}'");
+    }
+  } catch (error) {
+    console.error('[AyWebs] shipping_address migration failed:', error instanceof Error ? error.message : error);
+  }
+  try {
     syncAyWebsStoreRegistry(db);
   } catch (error) {
     console.error('[AyWebs] store registry mirror failed:', error instanceof Error ? error.message : error);

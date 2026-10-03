@@ -174,10 +174,11 @@ describe('AYWEBs native entry — liens profonds (§25)', () => {
     expect(routeOf(`${SHELL_ORIGIN}/aywebs/product`)).toEqual({ view: 'home' });
   });
 
-  it('le flux historique de capture par lien reste accessible (§2 non destructif)', () => {
-    expect(routeOf(`${SHELL_ORIGIN}/aywebs/capture`)).toEqual({ view: 'capture' });
-    expect(aywebsHost).toContain('AyWebsCapturePanel');
-    expect(aywebsHost).toContain('captureAyWebsProduct');
+  it('le lien historique /aywebs/capture atterrit dans le navigateur AYWEBs (§9)', () => {
+    // Plus de vue « capture par lien » : l'adresse du navigateur fait ce travail,
+    // et l'ajout passe par le flux Add to Cart natif (§13, §15).
+    expect(routeOf(`${SHELL_ORIGIN}/aywebs/capture`)).toEqual({ view: 'browser' });
+    expect(aywebsHost).not.toContain('AyWebsCapturePanel');
   });
 });
 
@@ -234,8 +235,40 @@ describe('AYWEBs §9 — navigateur marchand interne (expérience type Buyee)', 
     expect(browseActivity).not.toContain('onrender.com');
     expect(browseActivity).not.toContain('"https://');
     expect(browsePlugin).not.toContain('onrender.com');
-    // L'ajout au panier est un renvoi §25 vers la session web, seule détentrice (§45).
+    // L’ajout au panier est réel dans la coque via /cart/items (§13) ; la seule
+    // sortie « Voir le panier » est un renvoi §25 vers la session web, seule
+    // détentrice des montants (§45) — jamais une fiche produit native.
     expect(browseActivity).toContain('ayrovi://aywebs/');
-    expect(browseActivity).toContain('handoff("product"');
+    expect(browseActivity).toContain('handoff("cart"');
+    expect(browseActivity).not.toContain('handoff("product"');
+  });
+});
+describe('AYWEBs §13/§15 — Add to Cart natif sans quitter le marchand', () => {
+  const browse = readFileSync('android/app/src/main/java/app/ayrovi/mobile/AyWebsBrowseActivity.java', 'utf8');
+  const sheet = readFileSync('android/app/src/main/res/layout/dialog_aywebs_variant_sheet.xml', 'utf8');
+
+  it('Add to Cart = ajout réel : resolve serveur puis POST /cart/items, aucune fiche produit', () => {
+    expect(browse).toContain('/product/resolve');
+    expect(browse).toContain('/cart/items');
+    expect(browse).toContain('AyWebsBridge');
+    // Aucun renvoi vers une fiche produit plein écran : le contexte marchand est conservé.
+    expect(browse).not.toContain('handoff("product"');
+    expect(browse).toContain('Add to Cart');
+  });
+
+  it('feuille de variantes AU-DESSUS du marchand : groupes, quantité, confirmation (§13)', () => {
+    for (const id of ['aywebs_sheet_groups', 'aywebs_sheet_qty', 'aywebs_sheet_add', 'aywebs_sheet_added', 'aywebs_sheet_continue', 'aywebs_sheet_open_cart']) {
+      expect(sheet, id).toContain(`@+id/${id}`);
+    }
+    expect(stringsFr).toContain('>Ajouter au panier<');
+    expect(stringsFr).toContain('aywebs_continue_shopping');
+    expect(stringsAr).toContain('aywebs_continue_shopping');
+    expect(stringsFr).toContain('aywebs_proceed_checkout');
+  });
+
+  it('versions indisponibles : désactivées et jamais sélection par défaut (§13, §14)', () => {
+    expect(browse).toContain('isValueUnavailable');
+    expect(browse).toContain('firstLive');
+    expect(browse).toContain('OUT_OF_STOCK');
   });
 });

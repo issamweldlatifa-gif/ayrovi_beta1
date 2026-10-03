@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  AyWebs, ChevronRight, ExternalLink, Hourglass, Package, ReceiptText, Search, ShoppingBag,
+  ChevronRight, ExternalLink, Hourglass, Package, ReceiptText, Search, ShoppingBag,
 } from '../../../components/QatafoIcons';
 import { useLocale } from '../../../i18n/LocaleContext';
 import {
@@ -68,18 +68,12 @@ export const AyWebsHome: React.FC<AyWebsHomeProps> = ({
       || (store.domains || []).some((domain) => domain.includes(needle)));
   }, [category, home, query]);
 
-  const isUrl = /^https?:\/\//i.test(query.trim()) || /^[a-z0-9.-]+\.[a-z]{2,}(\/|$)/i.test(query.trim());
+
 
   const submitSearch = (event: React.FormEvent) => {
     event.preventDefault();
     const value = query.trim();
     if (!value) return;
-    if (isUrl) {
-      // Le lien part au pont de détection : c'est le serveur qui décide (§10, §11).
-      setSearching(true);
-      onOpenProduct(value.startsWith('http') ? value : `https://${value}`);
-      return;
-    }
     const match = stores[0];
     if (match) {
       trackAyWebsEvent('store_selected', { store: match.id });
@@ -113,15 +107,15 @@ export const AyWebsHome: React.FC<AyWebsHomeProps> = ({
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder={tr('Boutique, ou lien exact d’un produit', 'متجر، أو رابط المنتج المباشر')}
+            placeholder={tr('Rechercher une boutique', 'ابحث عن متجر')}
             className="h-12 w-full rounded-control border border-line bg-surface pe-4 ps-12 text-sm font-semibold text-ink outline-none transition placeholder:text-muted focus:border-ink focus:bg-white"
             autoCapitalize="none"
             autoCorrect="off"
           />
         </label>
         <button type="submit" disabled={!query.trim() || searching} className="ay-btn-cta flex h-12 min-w-40 items-center justify-center gap-2 px-5 text-sm disabled:cursor-not-allowed disabled:opacity-45">
-          {isUrl ? <AyWebs className="h-5 w-5" /> : <Search className="h-5 w-5" />}
-          {isUrl ? tr('Détecter le produit', 'اكتشف المنتج') : tr('Ouvrir la boutique', 'افتح المتجر')}
+          <Search className="h-5 w-5" />
+          {tr('Ouvrir la boutique', 'افتح المتجر')}
         </button>
       </form>
 
@@ -273,7 +267,7 @@ export const AyWebsHome: React.FC<AyWebsHomeProps> = ({
                     >
                       {product.image
                         ? <img src={product.image} alt="" className="h-12 w-12 shrink-0 rounded-control border border-line object-cover" loading="lazy" />
-                        : <span className="grid h-12 w-12 shrink-0 place-items-center rounded-control border border-line bg-surface text-muted"><AyWebs className="h-5 w-5" /></span>}
+                        : <span className="grid h-12 w-12 shrink-0 place-items-center rounded-control border border-line bg-surface text-muted"><Package className="h-5 w-5" /></span>}
                       <span className="min-w-0 flex-1">
                         <strong className="block truncate text-xs font-black text-ink">{product.title}</strong>
                         <span className="block truncate text-micro font-semibold text-muted">
@@ -303,7 +297,7 @@ export const AyWebsHome: React.FC<AyWebsHomeProps> = ({
           )}
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
-          <button type="button" onClick={() => onOpenRequestForm({ url: isUrl ? query.trim() : '' })} className="ay-btn-primary flex min-h-11 items-center justify-center gap-2 px-4 text-xs font-black">
+          <button type="button" onClick={() => onOpenRequestForm({ url: '' })} className="ay-btn-primary flex min-h-11 items-center justify-center gap-2 px-4 text-xs font-black">
             <ReceiptText className="h-4 w-4" />
             {tr('Demander un achat avec URL', 'اطلب الشراء بالرابط')}
           </button>
