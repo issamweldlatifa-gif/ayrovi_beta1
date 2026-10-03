@@ -1,0 +1,1058 @@
+--- a/android/app/src/main/java/app/ayrovi/mobile/AyWebsBrowseActivity.java
++++ b/android/app/src/main/java/app/ayrovi/mobile/AyWebsBrowseActivity.java
+@@ -10,6 +10,9 @@
+ import android.view.View;
+ import android.view.ViewGroup;
+ import android.webkit.CookieManager;
++import android.webkit.WebChromeClient;
++import android.os.Message;
++import android.widget.Toast;
+ import android.webkit.JavascriptInterface;
+ import android.webkit.WebResourceRequest;
+ import android.webkit.WebSettings;
+@@ -59,11 +62,20 @@
+ 
+   public static final String EXTRA_SESSION_ID = "aywebs_session_id";
+   public static final String EXTRA_WEB_BASE = "aywebs_web_base";
++  /** Origine absolue de l'API, transmise par la couche web (voir apiOrigin.ts). */
++  public static final String EXTRA_API_ORIGIN = "aywebs_api_origin";
+ 
+   private static final String ANALYZE_PATH = "/api/v1/aywebs/page/analyze";
+   private static final String RESOLVE_PATH = "/api/v1/aywebs/product/resolve";
+   private static final String CART_ITEMS_PATH = "/api/v1/aywebs/cart/items";
+ 
++  /**
++   * Lien profond AYWEBs (Manifest §25) : c'est le SEUL format que
++   * MainActivity.ayWebsTarget() accepte pour un Intent.ACTION_VIEW. La coque
++   * retraduit ensuite `ayrovi://aywebs/cart` en `https://localhost/aywebs/cart`.
++   */
++  private static final String AYWEBS_DEEP_LINK = "ayrovi://aywebs";
++
+   private WebView webView;
+   private TextView urlText;
+   private Button addButton;
+@@ -75,6 +87,15 @@
+ 
+   private String sessionId = "";
+   private String webBase = "https://localhost";
++  /**
++   * Origine des appels API PRIVÉS de la coque (analyse / résolution / panier).
++   * Distincte de `webBase` : `webBase` sert à ouvrir les routes WEB d'AYROVI
++   * (paquet embarqué = https://localhost), tandis que l'API vit sur un autre
++   * hôte. Les confondre était le défaut : les trois POST partaient vers
++   * localhost, échouaient, et le bouton restait inerte ou bloqué sur
++   * « Loading… ». Reste vide si la couche web ne l'a pas transmis.
++   */
++  private String apiOrigin = "";
+   private String currentUrl = "";
+   private volatile boolean productPage = false;
+   private final ExecutorService executor = Executors.newSingleThreadExecutor();
+@@ -88,6 +109,8 @@
+     sessionId = getStringExtra(EXTRA_SESSION_ID);
+     String base = getStringExtra(EXTRA_WEB_BASE);
+     if (base != null && !base.trim().isEmpty()) webBase = base.trim();
++    String origin = getStringExtra(EXTRA_API_ORIGIN);
++    apiOrigin = origin == null ? "" : origin.trim();
+ 
+     webView = requireView(R.id.aywebs_webview);
+     urlText = requireView(R.id.aywebs_url);
+@@ -103,6 +126,22 @@
+     settings.setDomStorageEnabled(true);
+     CookieManager.getInstance().setAcceptCookie(true);
+ 
++    // ── Connexion marchande (ajouté le 2026-10-03) ──────────────────────────
++    // Deux réglages manquaient, et tous deux cassent la CONNEXION au marchand
++    // sans le moindre message :
++    //  • setAcceptThirdPartyCookies : depuis Android 5.0 le WebView refuse les
++    //    cookies tiers par défaut. Or les parcours d'authentification
++    //    (SSO, « Se connecter avec… », paniers invités) en dépendent : la page
++    //    de login se recharge en boucle sur un écran déjà connecté.
++    //  • setSupportMultipleWindows + setJavaScriptCanOpenWindows… : sans eux,
++    //    `window.open()` est purement IGNORÉ. Les popups de login ne
++    //    s'ouvraient donc jamais, et l'utilisateur ne pouvait pas se connecter
++    //    (Buyee affiche d'ailleurs « free membership registration and login are
++    //    required » avant de commander).
++    CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true);
++    settings.setSupportMultipleWindows(true);
++    settings.setJavaScriptCanOpenWindowsAutomatically(true);
++
+     webView.setWebViewClient(new WebViewClient() {
+       @Override
+       public void onPageStarted(WebView view, String url, Bitmap favicon) {
+@@ -129,6 +168,20 @@
+       }
+     });
+ 
++    // Popups de connexion : on les ouvre DANS la même WebView. C'est le seul
++    // moyen de garder le contexte de session du marchand (les cookies de la
++    // popup appartiennent au même profil) et, surtout, d'avoir un retour
++    // visible au lieu d'un clic sans effet.
++    webView.setWebChromeClient(new WebChromeClient() {
++      @Override
++      public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
++        WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
++        transport.setWebView(view);
++        resultMsg.sendToTarget();
++        return true;
++      }
++    });
++
+     backButton.setOnClickListener(v -> { if (webView.canGoBack()) webView.goBack(); });
+     forwardButton.setOnClickListener(v -> { if (webView.canGoForward()) webView.goForward(); });
+     cartButton.setOnClickListener(v -> openWebRoute("/aywebs/cart"));
+@@ -174,22 +227,90 @@
+     });
+   }
+ 
++  /**
++   * Le service n'a pas répondu. Auparavant cette situation était présentée comme
++   * « Page non éligible » : un mensonge — la page était peut-être parfaitement
++   * éligible, c'est AYROVI qui ne répondait pas. L'utilisateur cherche alors
++   * pourquoi CE produit ne marche pas, au lieu de réessayer plus tard.
++   */
++  private void setAddUnavailable(boolean unavailable) {
++    productPage = false;
++    runOnUiThread(() -> {
++      addButton.setEnabled(!unavailable);
++      addButton.setText(unavailable ? R.string.aywebs_service_unavailable : R.string.aywebs_not_product_page);
++    });
++  }
++
++  /** Message visible : un échec silencieux est vécu comme un bouton cassé. */
++  private void toast(int resId) {
++    runOnUiThread(() -> Toast.makeText(this, resId, Toast.LENGTH_LONG).show());
++  }
++
+   /** §11 : la coque ne devine rien — le serveur classe la page. */
+   private void analyze(String url) {
++    if (apiOrigin.isEmpty()) {
++      // Sans origine d'API, tout appel échouerait : on le dit tout de suite,
++      // au lieu de laisser croire que la page n'est pas éligible.
++      setAddUnavailable(true);
++      return;
++    }
+     executor.execute(() -> {
+       try {
+         JSONObject body = new JSONObject().put("url", url);
+-        JSONObject reply = post(webBase + ANALYZE_PATH, body);
+-        boolean isProduct = reply.optJSONObject("data") != null
+-            && reply.optJSONObject("data").optBoolean("is_product_page", false)
+-            && reply.optJSONObject("data").optBoolean("capture_allowed", false);
+-        setAddEnabled(isProduct);
++        JSONObject reply = post(apiOrigin + ANALYZE_PATH, body);
++        JSONObject data = reply.optJSONObject("data");
++        if (data == null) { setAddUnavailable(true); return; }
++
++        boolean isProduct = data.optBoolean("is_product_page", false)
++            && data.optBoolean("capture_allowed", false);
++
++        // Le serveur classe la page BIEN plus finement que « produit / pas produit » :
++        // il distingue LOGIN, CHECKOUT, CAPTCHA, SEARCH, HOME. La coque réduisait
++        // tout cela à « Page non éligible » — un message qui n'aide personne.
++        // Cas observés en direct sur amazon.co.jp :
++        //   /ap/signin          → page_type=LOGIN,    action=LOGIN
++        //   /gp/cart/view.html  → page_type=CHECKOUT, action=NONE
++        //   /dp/XXXX            → page_type=PRODUCT,  capture_allowed=true
++        // Aucune de ces pages n'est « non éligible » : chacune attend un geste
++        // différent de l'utilisateur, et le contrat serveur (§27) interdit de
++        // contourner une page LOGIN — la coque doit donc l'EXPLIQUER.
++        if (isProduct) {
++          setAddEnabled(true);
++          return;
++        }
++        String pageType = data.optString("page_type", "");
++        String action = data.optString("customer_action_required", "NONE");
++        if ("LOGIN".equals(action) || "LOGIN".equals(pageType)) {
++          setAddLabel(R.string.aywebs_login_required);
++          toast(R.string.aywebs_login_explained);
++          return;
++        }
++        if ("CAPTCHA".equals(action) || "CAPTCHA".equals(pageType)) {
++          setAddLabel(R.string.aywebs_captcha_page);
++          return;
++        }
++        if ("CHECKOUT".equals(pageType)) {
++          setAddLabel(R.string.aywebs_merchant_cart);
++          toast(R.string.aywebs_merchant_cart_explained);
++          return;
++        }
++        setAddUnavailable(false);
+       } catch (Exception error) {
+-        setAddEnabled(false);
++        // Panne réseau / service indisponible ≠ page non éligible.
++        setAddUnavailable(true);
+       }
+     });
+   }
+ 
++  /** Libellé explicatif sur le bouton, sans le réactiver (rien à ajouter ici). */
++  private void setAddLabel(int resId) {
++    productPage = false;
++    runOnUiThread(() -> {
++      addButton.setEnabled(false);
++      addButton.setText(resId);
++    });
++  }
++
+   /** §13/§15 : ajout réel — feuille de variantes par-dessus le marchand. */
+   private void onAddToCart() {
+     if (!productPage || currentUrl.isEmpty()) return;
+@@ -197,21 +318,32 @@
+     executor.execute(() -> {
+       try {
+         JSONObject body = new JSONObject().put("url", currentUrl);
+-        JSONObject reply = post(webBase + RESOLVE_PATH, body);
++        JSONObject reply = post(apiOrigin + RESOLVE_PATH, body);
+         JSONObject product = reply.optJSONObject("data");
+         runOnUiThread(() -> {
+           if (product == null) {
++            // Le serveur répond mais ne reconnaît pas le produit : c'est un cas
++            // métier légitime, on le dit au lieu de remettre le bouton en silence.
+             addButton.setText(R.string.aywebs_add_to_cart);
++            toast(R.string.aywebs_product_not_resolved);
+             return;
+           }
+           showVariantSheet(product);
+         });
+       } catch (Exception error) {
+         runOnUiThread(() -> addButton.setText(R.string.aywebs_add_to_cart));
++        toastMessage(error.getMessage());
+       }
+     });
+   }
+ 
++  /** Toast avec un texte venu du serveur (repli : message générique). */
++  private void toastMessage(String message) {
++    final String text = message == null || message.isEmpty()
++        ? getString(R.string.aywebs_add_failed) : message;
++    runOnUiThread(() -> Toast.makeText(this, text, Toast.LENGTH_LONG).show());
++  }
++
+   private void showVariantSheet(JSONObject product) {
+     Dialog dialog = new Dialog(this);
+     dialog.setContentView(R.layout.dialog_aywebs_variant_sheet);
+@@ -265,12 +397,17 @@
+             .put("variant_attributes", attributes)
+             .put("quantity", quantity);
+         dialog.dismiss();
++        runOnUiThread(() -> addButton.setText(R.string.aywebs_loading));
+         executor.execute(() -> {
+           try {
+-            post(webBase + CART_ITEMS_PATH, body);
+-            runOnUiThread(() -> showAddedDialog(product.optString("title", "")));
++            post(apiOrigin + CART_ITEMS_PATH, body);
++            runOnUiThread(() -> {
++              addButton.setText(R.string.aywebs_add_to_cart);
++              showAddedDialog(product.optString("title", ""));
++            });
+           } catch (Exception error) {
+             runOnUiThread(() -> addButton.setText(R.string.aywebs_add_to_cart));
++            toastMessage(error.getMessage());
+           }
+         });
+       } catch (Exception error) {
+@@ -301,8 +438,19 @@
+ 
+   /** Une seule UI : les écrans AYROVI sont les routes WEB de la coque. */
+   private void openWebRoute(String route) {
+-    Intent intent = new Intent(this, MainActivity.class);
+-    intent.setData(Uri.parse(webBase + route));
++    // ── Corrigé le 2026-10-03 (P0 : « Ajouter au panier » ne faisait rien) ──
++    // L'ancien code construisait l'intent ainsi :
++    //     Intent intent = new Intent(this, MainActivity.class);   // AUCUNE action
++    //     intent.setData(Uri.parse(webBase + route));             // https://localhost/…
++    // Or MainActivity.ayWebsTarget() commence par :
++    //     String action = intent.getAction();
++    //     if (action == null) return null;                        // → sortie immédiate
++    // donc aucune navigation ne pouvait se produire ; et même avec ACTION_VIEW, la
++    // cible restait nulle puisque ce contrôle exige le schéma `ayrovi://aywebs`.
++    // L'intent doit donc être un VRAI lien profond AYWEBs, exactement comme ceux
++    // déclarés dans le Manifest (§25). MainActivity le retraduit en route web servie.
++    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(AYWEBS_DEEP_LINK + route));
++    intent.setClass(this, MainActivity.class);
+     intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+     startActivity(intent);
+     finish();
+@@ -327,8 +475,41 @@
+       int read;
+       while ((read = stream.read(chunk)) > 0) buffer.write(chunk, 0, read);
+     }
+-    if (code >= 400) throw new Exception("AYWEBS_HTTP_" + code);
+-    return new JSONObject(new String(buffer.toByteArray(), StandardCharsets.UTF_8));
++    String text = new String(buffer.toByteArray(), StandardCharsets.UTF_8);
++    if (code >= 400) {
++      // Le serveur répond avec un CONTRAT d'erreur explicite :
++      //   { code, error, error_contract: { userMessage, recoverable,
++      //     retryAllowed, requiredAction } }
++      // La coque jetait tout cela et affichait « Ajout impossible ». On remonte
++      // donc le message destiné au client : « La boutique demande une connexion »,
++      // « Cette page est le panier de la boutique », « Le devis AYROVI est
++      // indisponible pour cette devise »… — autant d'informations qui changent
++      // ce que l'utilisateur peut faire ensuite.
++      throw new AyWebsApiException(code, userMessageOf(text));
++    }
++    return new JSONObject(text);
++  }
++
++  /** Message destiné au client, extrait du contrat d'erreur serveur. */
++  private static String userMessageOf(String body) {
++    try {
++      JSONObject parsed = new JSONObject(body);
++      JSONObject contract = parsed.optJSONObject("error_contract");
++      if (contract != null) {
++        String message = contract.optString("userMessage", "");
++        if (!message.isEmpty()) return message;
++      }
++      return parsed.optString("error", "");
++    } catch (Exception ignored) {
++      return "";
++    }
++  }
++
++  /** Erreur d'API portant le message utilisateur du serveur (ou vide). */
++  private static final class AyWebsApiException extends Exception {
++    AyWebsApiException(int status, String userMessage) {
++      super(userMessage == null || userMessage.isEmpty() ? "AYWEBS_HTTP_" + status : userMessage);
++    }
+   }
+ 
+   @Override
+--- a/android/app/src/main/java/app/ayrovi/mobile/AyWebsBrowsePlugin.java
++++ b/android/app/src/main/java/app/ayrovi/mobile/AyWebsBrowsePlugin.java
+@@ -21,6 +21,27 @@
+   public void open(PluginCall call) {
+     String url = call.getString("url", "");
+     String sessionId = call.getString("sessionId", "");
++
++    // Origine de l'API, transmise par la couche web (SOURCE UNIQUE :
++    // client/src/services/apiOrigin.ts). Ajouté le 2026-10-03 : les appels
++    // privés de la coque (analyse de page, résolution, ajout au panier)
++    // partaient vers `https://localhost` — l'origine du paquet embarqué, où
++    // AUCUN serveur n'écoute. C'est la cause du bouton « Add to Cart » figé
++    // sur « Loading… » et du message trompeur « Page non éligible ».
++    // Validée ici : seules des origines http(s) absolues et sans espace sont
++    // acceptées, sinon on retombe sur le comportement précédent.
++    String apiOrigin = call.getString("apiOrigin", "");
++    if (apiOrigin != null) {
++      String candidate = apiOrigin.trim();
++      if (candidate.regionMatches(true, 0, "https://", 0, 8)
++          || candidate.regionMatches(true, 0, "http://", 0, 7)) {
++        while (candidate.endsWith("/")) candidate = candidate.substring(0, candidate.length() - 1);
++        apiOrigin = candidate;
++      } else {
++        apiOrigin = "";
++      }
++    }
++
+     Uri parsed = Uri.parse(url);
+     String scheme = parsed.getScheme();
+     if (scheme == null
+@@ -36,6 +57,7 @@
+     intent.setData(parsed);
+     intent.putExtra(AyWebsBrowseActivity.EXTRA_SESSION_ID, sessionId == null ? "" : sessionId);
+     intent.putExtra(AyWebsBrowseActivity.EXTRA_WEB_BASE, base.trim());
++    intent.putExtra(AyWebsBrowseActivity.EXTRA_API_ORIGIN, apiOrigin == null ? "" : apiOrigin);
+     getContext().startActivity(intent);
+ 
+     JSObject ret = new JSObject();
+--- a/android/app/src/main/java/app/ayrovi/mobile/MainActivity.java
++++ b/android/app/src/main/java/app/ayrovi/mobile/MainActivity.java
+@@ -38,6 +38,37 @@
+         }
+     }
+ 
++    /**
++     * Bouton retour matériel — corrigé le 2026-10-03.
++     *
++     * Avant : AUCUN onBackPressed n'existait, ni ici ni dans Capacitor 7
++     * (`grep -rn onBackPressed node_modules/@capacitor/android/` → 0 occurrence,
++     * la clé `android.handleBackButton` n'étant plus lue par le cœur). Le retour
++     * système appelait donc le comportement par défaut d'Android : finish(),
++     * c'est-à-dire la FERMETURE DE L'APPLICATION même quand un écran AYROVI était
++     * ouvert par-dessus (Lens, OCEREX, assistant…).
++     *
++     * Or la coque empile ses écrans dans l'historique de la WebView : ouvrir Lens
++     * ajoute une entrée (`history.length` 2 → 3, mesuré) et `history.back()`
++     * referme bien la couche (vérifié en navigateur réel). Il suffit donc de
++     * déléguer au retour d'historique tant qu'il en reste un :
++     *   • un écran AYROVI est ouvert  → goBack() le referme (comportement attendu) ;
++     *   • on est à la racine          → plus d'historique, on laisse Android fermer
++     *                                   l'application (comportement attendu aussi).
++     *
++     * `enableOnBackInvokedCallback` n'est pas déclaré dans le Manifest, donc
++     * onBackPressed reste le point d'entrée normal du retour système.
++     */
++    @Override
++    public void onBackPressed() {
++        if (getBridge() != null && getBridge().getWebView() != null
++            && getBridge().getWebView().canGoBack()) {
++            getBridge().getWebView().goBack();
++            return;
++        }
++        super.onBackPressed();
++    }
++
+     /** Cible web d'un intent AYWEBs, ou null quand l'intent ne concerne pas AYWEBs. */
+     Uri ayWebsTarget(Intent intent) {
+         if (intent == null) {
+--- a/android/app/src/main/AndroidManifest.xml
++++ b/android/app/src/main/AndroidManifest.xml
+@@ -1,7 +1,7 @@
+ <?xml version="1.0" encoding="utf-8" ?>
+ <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+     <application
+-        android:allowBackup="true"
++        android:allowBackup="false"
+         android:icon="@mipmap/ic_launcher"
+         android:label="@string/app_name"
+         android:roundIcon="@mipmap/ic_launcher_round"
+@@ -57,9 +57,27 @@
+     <!-- Permissions -->
+ 
+     <uses-permission android:name="android.permission.INTERNET" />
+-    <!-- AYROVIX Lens : getUserMedia dans la WebView (LiveCamera) -->
++
++    <!-- Caméra : Lens (identification produit) et OCEREX (prix depuis une image).
++         La caméra reste optionnelle : le site est pleinement utilisable sans
++         (import de photo, lien, texte). -->
+     <uses-permission android:name="android.permission.CAMERA" />
+-    <!-- caméra optionnelle : le site reste pleinement utilisable sans (import de photo, lien, texte) -->
++
++    <!-- Micro (SONIM vocal, notes vocales) — ajouté le 2026-10-03.
++         BridgeWebChromeClient demande DÉJÀ la permission à l'exécution pour
++         getUserMedia({audio:true}), mais Android refuse silencieusement toute
++         permission non déclarée : la demande n'aboutissait à aucune boîte de
++         dialogue et l'enregistrement échouait sans le moindre message.
++         La déclaration est donc la condition nécessaire qui manquait. -->
++    <uses-permission android:name="android.permission.RECORD_AUDIO" />
++
++    <!-- Volontairement NON ajouté : POST_NOTIFICATIONS.
++         Le manifeste n'est pas le verrou des notifications : il n'existe ni
++         plugin push, ni table de jetons d'appareil, ni service FCM côté serveur.
++         Déclarer la permission seule ferait croire que les notifications
++         fonctionnent alors que rien ne les envoie — l'ajout doit se faire avec
++         la pile push complète, pas avant. -->
++
+     <uses-feature android:name="android.hardware.camera" android:required="false" />
+     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+ </manifest>
+--- a/android/app/src/main/res/values/strings.xml
++++ b/android/app/src/main/res/values/strings.xml
+@@ -16,6 +16,17 @@
+     <string name="aywebs_add_to_cart">Add to Cart</string>
+     <string name="aywebs_not_product_page">Page non éligible</string>
+     <string name="aywebs_loading">Loading…</string>
++    <!-- 2026-10-03 : dire la panne au lieu de la déguiser en « page non éligible ». -->
++    <string name="aywebs_service_unavailable">Service indisponible</string>
++    <!-- Le serveur distingue LOGIN / CHECKOUT / CAPTCHA ; la coque les expliquait
++         toutes par « Page non éligible ». Ces libellés disent quoi faire. -->
++    <string name="aywebs_login_required">Connectez-vous sur la boutique</string>
++    <string name="aywebs_login_explained">La boutique demande une connexion. Connectez-vous dans ce navigateur, puis revenez sur la fiche du produit.</string>
++    <string name="aywebs_merchant_cart">Panier de la boutique</string>
++    <string name="aywebs_merchant_cart_explained">Ceci est le panier de la boutique, pas celui d’AYROVI. Ouvrez la fiche du produit, puis appuyez sur Add to Cart.</string>
++    <string name="aywebs_captcha_page">Vérification anti-robot</string>
++    <string name="aywebs_add_failed">Ajout impossible : le service AYROVI n’a pas répondu. Réessayez.</string>
++    <string name="aywebs_product_not_resolved">Produit non reconnu sur cette page.</string>
+     <string name="aywebs_select_item">Select your desired item</string>
+     <string name="aywebs_new">New</string>
+     <string name="aywebs_added">Article ajouté au panier AYROVI</string>
+--- a/capacitor.config.ts
++++ b/capacitor.config.ts
+@@ -25,10 +25,25 @@
+     allowMixedContent: false,
+     captureInput: true,
+     webContentsDebuggingEnabled: false,
+-    // back système = history.back() — les overlays Lens sont des couches history
+-    handleBackButton: true,
+     backgroundColor: '#FAFAFA',
+   },
++  // ── Réglages ajoutés le 2026-10-03 ──────────────────────────────────────────
++  // `android.handleBackButton: true` a été RETIRÉ : cette clé n'existe plus dans
++  // Capacitor 7 (aucun `onBackPressed` dans le cœur, 0 occurrence ; le bouton
++  // retour est délégué à `@capacitor/app`, qui n'est pas installé). La laisser
++  // faisait croire que le retour matériel était câblé alors qu'il fermait l'app.
++  plugins: {
++    // targetSdk 35 impose l'edge-to-edge. Or le défaut de Capacitor est
++    // `adjustMarginsForEdgeToEdge: "disable"`, qui ne fait RIEN : la WebView
++    // s'étend sous la barre d'état et l'en-tête passait dessous (Q3/A).
++    // `auto` rend la main au plugin, et overlaysWebView:false garantit que le
++    // contenu ne passe jamais sous la barre.
++    StatusBar: {
++      overlaysWebView: false,
++      style: 'DARK',
++      backgroundColor: '#FAFAFA',
++    },
++  },
+   server: {
+     // تطبيق حقيقي: لا تحميل عن بُعد. الحزمة المحلية هي المصدر الوحيد للواجهة،
+     // والمخطط https يجعل origine القشرة https://localhost (أصل Capacitor
+--- a/client/src/services/apiOrigin.ts
++++ b/client/src/services/apiOrigin.ts
+@@ -0,0 +1,19 @@
++/**
++ * Origine de l'API AYROVI — SOURCE UNIQUE.
++ *
++ * Pourquoi ce fichier existe (2026-10-03) : la constante vivait dans
++ * `nativeApiOrigin.ts`, qui importe `nativeShell.ts`. Or c'est justement
++ * `nativeShell.ts` qui doit la TRANSMETTRE à la coque native quand elle ouvre
++ * le navigateur marchand. L'importer directement aurait créé un cycle
++ * (nativeShell → nativeApiOrigin → nativeShell). Un module neutre, sans aucun
++ * import, est la seule forme qui ne peut pas cycler.
++ *
++ * Les DEUX consommateurs :
++ *   • la couche web  — y réécrit ses requêtes fetch/XHR relatives
++ *     (`nativeApiOrigin.ts`) ;
++ *   • la coque native — l'utilise pour ses appels privés d'analyse/panier
++ *     (`AyWebsBrowseActivity`), car DANS la coque ces appels partaient vers
++ *     `https://localhost` — l'origine du paquet embarqué, où aucun serveur
++ *     n'écoute. C'est la cause du bouton « Add to Cart » figé sur « Loading… ».
++ */
++export const AYROVI_API_ORIGIN = 'https://ayrovi-beta1.onrender.com';
+--- a/client/src/services/nativeApiOrigin.ts
++++ b/client/src/services/nativeApiOrigin.ts
+@@ -10,9 +10,11 @@
+  * مسار واحد، موقع واحد: نفس الكود، نفس الواجهة، نفس الـ API.
+  */
+ import { getNativeSessionToken, isNativeApp } from './nativeShell';
++import { AYROVI_API_ORIGIN } from './apiOrigin';
+ 
+-/** أصل الـ API الوحيد للتطبيق الأصلي. يُحقن وقت البناء لاحقًا إن لزم. */
+-export const AYROVI_API_ORIGIN = 'https://ayrovi-beta1.onrender.com';
++/** Réexporté depuis `apiOrigin.ts` — SOURCE UNIQUE, partagée avec la coque native
++ *  (le module neutre évite le cycle nativeShell → nativeApiOrigin → nativeShell). */
++export { AYROVI_API_ORIGIN };
+ 
+ const PATCH_FLAG = '__ayroviApiOriginPatched';
+ 
+--- a/client/src/services/nativeShell.ts
++++ b/client/src/services/nativeShell.ts
+@@ -1,4 +1,5 @@
+ import { Capacitor, registerPlugin } from '@capacitor/core';
++import { AYROVI_API_ORIGIN } from './apiOrigin';
+ import { getSessionId } from '../utils/session';
+ 
+ /**
+@@ -36,7 +37,7 @@
+ };
+ 
+ interface AyWebsBrowseBridge {
+-  open(options: { url: string; sessionId: string }): Promise<{ opened: boolean }>;
++  open(options: { url: string; sessionId: string; apiOrigin: string }): Promise<{ opened: boolean }>;
+ }
+ 
+ /**
+@@ -49,7 +50,11 @@
+   if (!isNativeApp()) return false;
+   try {
+     const plugin = registerPlugin<AyWebsBrowseBridge>('AyWebsBrowse');
+-    await plugin.open({ url, sessionId: getSessionId() });
++    // L'origine de l'API est TRANSMISE à la coque : ses appels privés
++    // (analyse de page, résolution produit, ajout au panier) ne peuvent pas
++    // partir de `https://localhost` — le paquet embarqué n'héberge aucun
++    // serveur. C'est la cause du bouton « Add to Cart » figé sur « Loading… ».
++    await plugin.open({ url, sessionId: getSessionId(), apiOrigin: AYROVI_API_ORIGIN });
+     return true;
+   } catch {
+     return false;
+--- a/tests/android-shell.test.ts
++++ b/tests/android-shell.test.ts
+@@ -14,17 +14,42 @@
+  */
+ 
+ const cfg = readFileSync('capacitor.config.ts', 'utf8');
+-const manifest = readFileSync('android/app/src/main/AndroidManifest.xml', 'utf8');
++
++/**
++ * Les assertions de ce fichier portent sur du TEXTE. Or ces fichiers contiennent
++ * des commentaires qui EXPLIQUENT les décisions — et qui citent donc les mots
++ * mêmes qu'on veut interdire (« handleBackButton », « POST_NOTIFICATIONS »…).
++ * Sans ce nettoyage, le test se déclenche sur la prose : faux positif dans un
++ * sens (échec sur une explication) et faux NÉGATIF dans l'autre (l'ancien
++ * `toContain('handleBackButton: true')` passait grâce au commentaire, longtemps
++ * après le retrait de la clé). Vérifier le code, jamais les explications.
++ */
++const stripComments = (source) => source.replace(/<!--[\s\S]*?-->/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
++const manifest = stripComments(readFileSync('android/app/src/main/AndroidManifest.xml', 'utf8'));
+ const bridge = readFileSync('client/src/services/nativeShell.ts', 'utf8');
++const apiOrigin = readFileSync('client/src/services/apiOrigin.ts', 'utf8');
++const browserActivity = readFileSync('android/app/src/main/java/app/ayrovi/mobile/AyWebsBrowseActivity.java', 'utf8');
+ const origin = readFileSync('client/src/services/nativeApiOrigin.ts', 'utf8');
+ const main = readFileSync('client/src/main.tsx', 'utf8');
+ const gradle = readFileSync('android/app/build.gradle', 'utf8');
+ const launcher = readFileSync('client/src/ayrovix/components/LensLauncher.tsx', 'utf8');
+ 
+ describe('AYROVI Android shell (Capacitor) — application réelle', () => {
+-  it('config: paquet embarqué, AUCUN server.url (fin du wrapper), back système géré', () => {
++  it('config: paquet embarqué, AUCUN server.url (fin du wrapper), barre d’état réglée', () => {
+     expect(cfg).toContain("webDir: 'public'");
+-    expect(cfg).toContain('handleBackButton: true');
++    // 2026-10-03 — l'assertion précédente était `expect(cfg).toContain('handleBackButton: true')`.
++    // Deux problèmes, tous deux corrigés ici :
++    //  1. elle verrouillait une clé FANTÔME : `android.handleBackButton` n'est plus lue
++    //     par Capacitor 7 (aucun `onBackPressed` dans le cœur) — elle ne faisait rien ;
++    //  2. `toContain` cherche dans TOUT le fichier, commentaires compris : le test
++    //     passait donc même après le retrait de la clé, simplement parce que le
++    //     commentaire explicatif la mentionnait. Un test qui passe sur une
++    //     explication ne teste plus rien.
++    // On assère désormais la PROPRIÉTÉ de configuration, pas une sous-chaîne.
++    expect(cfg).not.toMatch(/^\s*handleBackButton\s*:/m);
++    // Le retour matériel est câblé côté Java (MainActivity.onBackPressed) et le
++    // verrou correspondant vit dans scripts/check-android-shell.mjs.
++    expect(cfg).toMatch(/overlaysWebView:\s*false/);
+     expect(cfg).toContain("appId: 'app.ayrovi.mobile'");
+     expect(cfg).toContain("androidScheme: 'https'");
+     expect(cfg).not.toContain('server.url');
+@@ -43,6 +68,18 @@
+   it('manifest: INTERNET + CAMERA requis pour Lens, caméra optionnelle', () => {
+     expect(manifest).toContain('android.permission.INTERNET');
+     expect(manifest).toContain('android.permission.CAMERA');
++    // 2026-10-03 : le micro était inutilisable. BridgeWebChromeClient demande
++    // DÉJÀ RECORD_AUDIO à l'exécution pour getUserMedia({audio:true}), mais
++    // Android refuse silencieusement toute permission non déclarée.
++    expect(manifest).toContain('android.permission.RECORD_AUDIO');
++    // Et la sauvegarde ADB est fermée : elle exposait le profil WebView et les
++    // jetons de session via `adb backup`.
++    expect(manifest).toContain('android:allowBackup="false"');
++    // POST_NOTIFICATIONS reste absente À DESSEIN : sans pile push (plugin,
++    // jetons d'appareil, FCM) la déclarer ferait croire que les notifications
++    // fonctionnent. Le test verrouille cette décision pour qu'elle soit revue
++    // consciemment, pas oubliée.
++    expect(manifest).not.toContain('POST_NOTIFICATIONS');
+     expect(manifest).toContain('android.hardware.camera" android:required="false"');
+   });
+ 
+@@ -87,6 +124,61 @@
+     expect(launcher).not.toContain('@capacitor');
+   });
+ 
++  // ── 2026-10-03 : le bouton « Add to Cart » ne pouvait pas aboutir ────────────
++  // Les appels privés de la coque visaient `webBase`, c'est-à-dire
++  // https://localhost — l'origine du PAQUET EMBARQUÉ, où aucun serveur
++  // n'écoute. Résultat observé sur appareil : bouton figé sur « Loading… » ou
++  // désactivé, et message « Page non éligible » alors que la page était valide.
++  it('AWEBs: la coque appelle l’API sur l’origine réelle, pas sur l’origine embarquée', () => {
++    expect(browserActivity).toMatch(/post\(apiOrigin\s*\+\s*ANALYZE_PATH/);
++    expect(browserActivity).toMatch(/post\(apiOrigin\s*\+\s*RESOLVE_PATH/);
++    expect(browserActivity).toMatch(/post\(apiOrigin\s*\+\s*CART_ITEMS_PATH/);
++    expect(browserActivity).not.toMatch(/post\(webBase\s*\+/);
++  });
++
++  it('AWEBs: l’origine de l’API est transmise par la couche web (source unique)', () => {
++    expect(bridge).toContain('apiOrigin: AYROVI_API_ORIGIN');
++    expect(bridge).toContain("from './apiOrigin'");
++    expect(apiOrigin).toContain("export const AYROVI_API_ORIGIN");
++    // Le module neutre ne doit RIEN importer : c'est ce qui empêche le cycle
++    // nativeShell → nativeApiOrigin → nativeShell.
++    expect(apiOrigin).not.toMatch(/^import /m);
++  });
++
++  // ── Connexion marchande : deux réglages absents cassaient le login ───────────
++  it('AWEBs: connexion marchande possible (popups + cookies tiers)', () => {
++    // Sans setSupportMultipleWindows/onCreateWindow, window.open() est ignoré
++    // en silence : aucune popup de connexion ne s'ouvre.
++    expect(browserActivity).toContain('setSupportMultipleWindows(true)');
++    expect(browserActivity).toContain('onCreateWindow');
++    // Cookies tiers refusés par défaut depuis Android 5.0 : les parcours SSO
++    // rebouclent sur une page déjà connectée.
++    expect(browserActivity).toContain('setAcceptThirdPartyCookies(webView, true)');
++  });
++
++  it('AWEBs: une panne de service n’est jamais présentée comme un refus de la page', () => {
++    expect(browserActivity).toContain('setAddUnavailable');
++    expect(browserActivity).toContain('aywebs_service_unavailable');
++  });
++
++  // ── Le serveur classe les pages finement ; la coque doit le refléter ─────────
++  // Constaté en direct : amazon.co.jp/ap/signin → page_type=LOGIN,
++  // /gp/cart/view.html → page_type=CHECKOUT, /dp/… → page_type=PRODUCT.
++  // La coque n'en lisait QUE is_product_page, donc affichait « Page non éligible »
++  // sur une page de connexion — précisément l'écran de l'utilisateur.
++  it('AWEBs: les états LOGIN / CHECKOUT / CAPTCHA sont distingués et expliqués', () => {
++    expect(browserActivity).toContain('customer_action_required');
++    expect(browserActivity).toContain('aywebs_login_required');
++    expect(browserActivity).toContain('aywebs_merchant_cart');
++    expect(browserActivity).toContain('aywebs_captcha_page');
++  });
++
++  it('AWEBs: le contrat d’erreur du serveur parvient au client', () => {
++    // { error_contract: { userMessage, recoverable, requiredAction } } était jeté.
++    expect(browserActivity).toContain('error_contract');
++    expect(browserActivity).toContain('userMessageOf');
++  });
++
+   it('gradle: signature release env-driven + versionCode Play injectable', () => {
+     expect(gradle).toContain("System.getenv('AYROVI_KEYSTORE_BASE64')");
+     expect(gradle).toContain("versionCode ((System.getenv('AYROVI_VERSION_CODE') ?: '1') as int)");
+--- a/scripts/check-android-shell.mjs
++++ b/scripts/check-android-shell.mjs
+@@ -1 +1,222 @@
+-404: Not Found
+\ No newline at end of file
++/**
++ * AYROVI — garde de la coque Android (ajouté le 2026-10-03).
++ *
++ * POURQUOI CE FICHIER EXISTE
++ * La revue du 2026-10-03 a montré que rien, dans aucune porte automatique, ne
++ * regardait la coque native : `ci.yml` ne compilait jamais Java et ne lisait
++ * jamais le manifeste. C'est ainsi qu'ont pu cohabiter, sans alerte :
++ *   • un Intent SANS action dans AyWebsBrowseActivity.openWebRoute(), que
++ *     MainActivity.ayWebsTarget() rejette immédiatement (`action == null`) :
++ *     les boutons Panier / Favoris / « Ajouter au panier » ne faisaient RIEN ;
++ *   • `android:allowBackup="true"`, qui laisse `adb backup` extraire le profil
++ *     de la WebView et les jetons de session ;
++ *   • l'absence de `RECORD_AUDIO` alors que BridgeWebChromeClient demande déjà
++ *     la permission à l'exécution — Android refuse alors en silence ;
++ *   • un `capacitor.config.ts` qui portait `handleBackButton: true`, clé qui
++ *     n'existe plus dans Capacitor 7 et ne faisait donc rien.
++ *
++ * CE QUE CE GARDE EST — ET N'EST PAS
++ * Il vérifie des INVARIANTS structurels lisibles hors compilation. Il ne
++ * remplace pas la compilation Java (qui, elle, tourne dans le job
++ * `android-shell` de ci.yml, avec le SDK Android). Les contrôles « tripwire »
++ * ci-dessous inspectent le texte source : ils attrapent une RÉGRESSION, ils ne
++ * prouvent pas un comportement. Ne jamais les citer comme preuve d'exécution.
++ *
++ * Usage : node scripts/check-android-shell.mjs
++ */
++import fs from 'node:fs';
++
++const MANIFEST = 'android/app/src/main/AndroidManifest.xml';
++const MAIN = 'android/app/src/main/java/app/ayrovi/mobile/MainActivity.java';
++const BROWSER = 'android/app/src/main/java/app/ayrovi/mobile/AyWebsBrowseActivity.java';
++const PLUGIN = 'android/app/src/main/java/app/ayrovi/mobile/AyWebsBrowsePlugin.java';
++const STRINGS = 'android/app/src/main/res/values/strings.xml';
++const CAP_CONFIG = 'capacitor.config.ts';
++
++const failures = [];
++const checks = [];
++const check = (name, pass, detail) => {
++  checks.push({ name, pass: Boolean(pass), detail });
++  if (!pass) failures.push(`${name}${detail ? ` — ${detail}` : ''}`);
++};
++
++const read = (file) => {
++  if (!fs.existsSync(file)) {
++    failures.push(`fichier introuvable : ${file}`);
++    return '';
++  }
++  return fs.readFileSync(file, 'utf8');
++};
++
++/**
++ * Retire les commentaires avant toute vérification.
++ * Nécessaire : le fichier de configuration EXPLIQUE pourquoi `handleBackButton` a
++ * été retiré ; sans ce nettoyage, la simple mention dans un commentaire ferait
++ * échouer le garde. Un garde qui se déclenche sur de la prose est un faux
++ * positif — et un faux positif apprend à ignorer les alertes.
++ */
++const stripComments = (source) => source
++  .replace(/<!--[\s\S]*?-->/g, '')
++  .replace(/\/\*[\s\S]*?\*\//g, '')
++  .split('\n')
++  .filter((line) => !line.trim().startsWith('//'))
++  .join('\n');
++
++// Le manifeste est lu SANS ses commentaires : ils citent volontairement les mots
++// qu'on interdit (« POST_NOTIFICATIONS », « allowBackup »…) pour expliquer les
++// décisions. Un garde qui lit la prose est un garde qui se trompe dans les deux sens.
++const manifest = stripComments(read(MANIFEST));
++const main = read(MAIN);
++const browser = read(BROWSER);
++// Ces fichiers sont lus SANS leurs commentaires (voir stripComments) : ils
++// expliquent volontairement les décisions en citant les mots concernés.
++const capConfig = stripComments(read(CAP_CONFIG));
++const plugin = read(PLUGIN);
++const strings = stripComments(read(STRINGS));
++
++/* ── 1. Invariants de sécurité du manifeste ─────────────────────────────────── */
++check(
++  'manifeste : allowBackup désactivé',
++  /android:allowBackup="false"/.test(manifest),
++  'allowBackup="true" laisse `adb backup` extraire le profil WebView et les jetons de session'
++);
++
++// Les permissions déclarées, dans l'ordre où elles apparaissent.
++const declared = [...manifest.matchAll(/<uses-permission\s+android:name="android\.permission\.([A-Z_]+)"\s*\/>/g)].map((m) => m[1]);
++const unique = new Set(declared);
++check(
++  'manifeste : aucune permission déclarée deux fois',
++  unique.size === declared.length,
++  `doublons : ${declared.filter((p, i) => declared.indexOf(p) !== i).join(', ')}`
++);
++check(
++  'manifeste : INTERNET + CAMERA déclarées',
++  unique.has('INTERNET') && unique.has('CAMERA'),
++  `déclarées : ${[...unique].join(', ') || 'aucune'}`
++);
++check(
++  'manifeste : RECORD_AUDIO déclarée',
++  unique.has('RECORD_AUDIO'),
++  'sans cette déclaration, la demande runtime de BridgeWebChromeClient est refusée en SILENCE (micro inutilisable)'
++);
++check(
++  'manifeste : POST_NOTIFICATIONS volontairement absente',
++  !unique.has('POST_NOTIFICATIONS'),
++  'la déclarer seule ferait croire que les notifications marchent : il manque la pile push (plugin, jetons d’appareil, FCM)'
++);
++
++/* ── 2. Liens profonds AYWEBs (Manifest §25) ────────────────────────────────── */
++check(
++  'manifeste : lien profond ayrovi://aywebs déclaré',
++  /android:scheme="ayrovi"/.test(manifest) && /android:host="aywebs"/.test(manifest),
++  'sans ce filtre, les routes AYWEBs ne peuvent pas être reçues'
++);
++check(
++  'manifeste : partage ACTION_SEND text/plain déclaré',
++  /android:name="android.intent.action.SEND"/.test(manifest) && /android:mimeType="text\/plain"/.test(manifest),
++  'le partage Android (§24) arriverait dans aucun écran'
++);
++
++/* ── 3. Tripwires Java — la forme EXACTE du défaut P0 corrigé ───────────────── */
++// L'intent doit porter une ACTION. Sans elle, ayWebsTarget() sort sur `action == null`.
++check(
++  'AyWebsBrowseActivity : openWebRoute envoie une action',
++  /new Intent\(\s*Intent\.ACTION_VIEW\s*,/.test(browser),
++  'un Intent construit sans action est rejeté par MainActivity.ayWebsTarget() → navigation silencieusement morte'
++);
++// Et cette action doit viser le schéma que le contrôle accepte.
++check(
++  'AyWebsBrowseActivity : openWebRoute utilise le schéma ayrovi://',
++  /AYWEBS_DEEP_LINK/.test(browser) && /ayrovi:\/\/aywebs/.test(browser),
++  'ayWebsTarget() exige scheme=ayrovi et host=aywebs ; une URL https://localhost/… est rejetée même avec ACTION_VIEW'
++);
++// MainActivity doit refuser explicitement ce qu'il n'accepte pas (garde-fou de lecture).
++check(
++  'MainActivity : ayWebsTarget rejette les intents sans action',
++  /action\s*==\s*null/.test(main),
++  'ce rejet est la raison pour laquelle l’Intent sans action ne naviguait pas — le supprimer changerait le contrat'
++);
++check(
++  'MainActivity : bouton retour matériel câblé',
++  /public void onBackPressed\s*\(/.test(main),
++  'sans onBackPressed, le retour système ferme l’application même quand un écran AYROVI est ouvert (Capacitor 7 n’en fournit aucun)'
++);
++
++/* ── 3bis. AYWEBs : origine d'API + connexion marchande (2026-10-03) ───────── */
++// Les appels privés de la coque (analyse, résolution, panier) doivent viser
++// l'origine de l'API, PAS `webBase` (= https://localhost, le paquet embarqué où
++// aucun serveur n'écoute). Les confondre gelait le bouton « Add to Cart ».
++check(
++  'AyWebsBrowseActivity : appelle l’API via apiOrigin, jamais via webBase',
++  /post\(apiOrigin\s*\+\s*ANALYZE_PATH/.test(browser)
++    && /post\(apiOrigin\s*\+\s*RESOLVE_PATH/.test(browser)
++    && /post\(apiOrigin\s*\+\s*CART_ITEMS_PATH/.test(browser),
++  'post(webBase + …) visait https://localhost : analyse et ajout échouaient systématiquement'
++);
++check(
++  'AyWebsBrowseActivity : aucun appel API resté sur webBase',
++  !/post\(webBase\s*\+/.test(browser),
++  'un seul appel oublié suffit à casser le parcours d’achat'
++);
++check(
++  'AyWebsBrowsePlugin : accepte et valide apiOrigin',
++  /EXTRA_API_ORIGIN/.test(plugin) && /apiOrigin/.test(plugin),
++  'sans transmission depuis la couche web, la coque n’a aucun moyen de connaître l’API'
++);
++check(
++  'AyWebsBrowseActivity : popups window.open() prises en charge',
++  /setSupportMultipleWindows\(true\)/.test(browser) && /onCreateWindow/.test(browser),
++  'sans cela window.open() est ignoré en silence : les popups de connexion SSO ne s’ouvrent jamais'
++);
++check(
++  'AyWebsBrowseActivity : cookies tiers acceptés',
++  /setAcceptThirdPartyCookies\(webView,\s*true\)/.test(browser),
++  'refusés par défaut depuis Android 5.0 : les parcours de connexion bouclent'
++);
++check(
++  'AyWebsBrowseActivity : panne de service distinguée de « page non éligible »',
++  /setAddUnavailable/.test(browser) && /aywebs_service_unavailable/.test(strings),
++  'annoncer « page non éligible » quand l’API ne répond pas est un mensonge à l’utilisateur'
++);
++
++check(
++  'AyWebsBrowseActivity : le classement serveur LOGIN/CHECKOUT/CAPTCHA est expliqué',
++  /customer_action_required/.test(browser) && /aywebs_login_required/.test(browser)
++    && /aywebs_merchant_cart/.test(browser) && /aywebs_captcha_page/.test(browser),
++  'le serveur distingue ces pages ; les réduire à « Page non éligible » n’aide pas le client'
++);
++check(
++  'AyWebsBrowseActivity : le message utilisateur du serveur est remonté',
++  /error_contract/.test(browser) && /userMessageOf/.test(browser),
++  'jeter le contrat d’erreur prive le client de la raison réelle (connexion, panier marchand, devise)'
++);
++check(
++  'strings.xml : libellés des états marchands présents',
++  ['aywebs_login_required', 'aywebs_merchant_cart', 'aywebs_captcha_page', 'aywebs_service_unavailable']
++    .every((key) => strings.includes(key)),
++  'un état sans libellé retombe sur un texte générique'
++);
++
++/* ── 4. capacitor.config.ts ─────────────────────────────────────────────────── */
++check(
++  'capacitor.config.ts : clé fantôme handleBackButton retirée',
++  !/handleBackButton/.test(capConfig),
++  'cette clé n’existe plus dans Capacitor 7 : la laisser fait croire que le retour est câblé'
++);
++check(
++  'capacitor.config.ts : barre d’état configurée explicitement',
++  /overlaysWebView\s*:\s*false/.test(capConfig),
++  'targetSdk 35 impose l’edge-to-edge et le défaut de Capacitor est overlaysWebView=true → l’en-tête passe sous la barre d’état'
++);
++
++/* ── Rapport ────────────────────────────────────────────────────────────────── */
++for (const c of checks) {
++  console.log(`${c.pass ? '  ✓' : '  ✗'} ${c.name}`);
++}
++console.log('');
++if (failures.length) {
++  console.error(`Coque Android : ${failures.length} invariant(s) rompu(s).`);
++  for (const f of failures) console.error(`  • ${f}`);
++  process.exit(1);
++}
++console.log(`Coque Android : ${checks.length} invariants vérifiés, 0 rupture.`);
+--- a/package.json
++++ b/package.json
+@@ -14,7 +14,7 @@
+     "audit:design": "node verify/zalando-audit.mjs",
+     "backup": "node scripts/backup-sqlite.mjs",
+     "android:assets": "node scripts/cap-assets.mjs && capacitor-assets generate --android",
+-    "android:sync": "npm run build:client && cap sync android",
++    "android:sync": "cap sync android",
+     "android:open": "cap open android",
+     "design:inventory": "node scripts/inventory-customer-design.mjs",
+     "design:build": "node scripts/build-editorial-design.mjs",
+@@ -45,7 +45,10 @@
+     "verify:public-nav": "node verify/public-navigation.mjs",
+     "verify:footer-payments": "node verify/footer-payments.mjs",
+     "verify:lens-probe": "esbuild verify/lens-probe.ts --bundle --platform=node --format=cjs --packages=external --outfile=.cache/lens-probe.cjs --log-level=error && node .cache/lens-probe.cjs",
+-    "verify:customer-auth": "esbuild verify/customer-auth-functional.ts --bundle --platform=node --packages=external --outfile=.cache/auth-functional.cjs --log-level=error && node .cache/auth-functional.cjs"
++    "verify:customer-auth": "esbuild verify/customer-auth-functional.ts --bundle --platform=node --packages=external --outfile=.cache/auth-functional.cjs --log-level=error && node .cache/auth-functional.cjs",
++    "verify:setup": "npx playwright install --with-deps chromium firefox",
++    "android:check": "node scripts/check-android-shell.mjs",
++    "android:apk": "cd android && ./gradlew :app:assembleDebug"
+   },
+   "keywords": [
+     "ayrovi",
+@@ -90,9 +93,9 @@
+     "react-dom": "^19.2.8",
+     "react-icons": "^5.7.0",
+     "sharp": "^0.35.4",
+-    "tesseract.js": "^5.1.1",
+     "tailwind-merge": "^3.6.0",
+     "tailwindcss": "^4.3.3",
++    "tesseract.js": "^5.1.1",
+     "typescript": "^5.9.3",
+     "vite": "^8.2.1"
+   },
+@@ -110,7 +113,7 @@
+     "@types/react": "^19.2.18",
+     "@types/react-dom": "^19.2.4",
+     "@types/supertest": "^6.0.3",
+-    "playwright": "^1.62.1",
++    "playwright": "^1.63.0",
+     "supertest": "^7.2.2",
+     "vitest": "^4.1.11"
+   },
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -36,6 +36,12 @@
+       - name: Enforce official AYROVI A identity
+         run: npm run identity:check && npm run identity:test
+ 
++      # Invariants de la coque Android (2026-10-03) : manifeste + tripwires Java.
++      # Déterministe, sans SDK — donc toujours exécutable. La COMPILATION Java,
++      # elle, tourne dans le job `android-shell` ci-dessous.
++      - name: Verify Android shell invariants
++        run: npm run android:check
++
+       - name: Typecheck
+         run: npm run typecheck
+ 
+@@ -104,6 +110,53 @@
+           name: public-additions-evidence
+           path: docs/public-additions/evidence/
+ 
++      # ── Gardes de charte (2026-10-03) ────────────────────────────────────────
++      # Ces trois vérificateurs existaient déjà mais n'étaient branchés sur AUCUNE
++      # porte automatique : c'est exactement pour cela que deux dérives ont pu
++      # s'installer sans alerte — la couverture orange est montée à 7,248 % (plafond
++      # documenté : 3 %) et le pied de page annonçait « 0 moyen encaissable ».
++      # Ils ont besoin d'un VRAI serveur : les runners de public-additions hébergent
++      # leur propre fixture, pas ces trois-là.
++      - name: Start the real server for charter guards
++        run: |
++          npm run build:server
++          # NODE_ENV=development : la base est amorcée avec le contenu de démonstration
++          # déterministe, donc le bandeau campagne existe réellement et la mesure
++          # porte sur quelque chose. Une base vide ferait passer le garde à vide.
++          NODE_ENV=development PORT=3210 \
++            ADMIN_EMAIL=admin@ayrovi.tn ADMIN_PASSWORD='AyroviBeta2026!' \
++            nohup node dist/server.js > /tmp/ayrovi-server.log 2>&1 &
++          for i in $(seq 1 60); do
++            if curl -sf http://127.0.0.1:3210/api/public/commerce-config > /dev/null; then
++              echo "Server ready after ${i}s"; exit 0
++            fi
++            sleep 1
++          done
++          echo 'Server did not become ready:'; tail -40 /tmp/ayrovi-server.log; exit 1
++
++      - name: Enforce charter guards the build must never break again
++        env:
++          AYROVI_BASE_URL: http://127.0.0.1:3210
++        run: |
++          npm run verify:public-nav
++          npm run verify:footer-payments
++          npm run verify:customer-auth
++          npm run verify:product-variants
++          npm run verify:image-composition
++          # Budget de charte : échoue si l'orange dépasse 3 % d'une surface.
++          npm run audit:design
++
++      - name: Upload charter guard evidence
++        if: always()
++        uses: actions/upload-artifact@v4
++        with:
++          name: charter-guard-evidence
++          path: |
++            verify/zalando-*.png
++            docs/footer-payments/evidence/
++            docs/public-navigation/evidence/
++          if-no-files-found: ignore
++
+       - name: Verify Lens camera entry, help, consent and navigation
+         id: lens_camera
+         env:
+@@ -339,3 +392,33 @@
+             screenshots/editorial/sonim-handsfree/
+             screenshots/editorial/variant-availability/
+             screenshots/editorial/product-selection/
++
++  # ── Coque Android : compilation réelle (ajouté le 2026-10-03) ────────────────
++  # La revue a montré que RIEN ne compilait Java dans les portes automatiques :
++  # `android-apk.yml` est en workflow_dispatch (manuel) et `ci.yml` ne touchait
++  # pas au dossier android/. C'est exactement pour cela qu'un Intent sans action
++  # — qui rendait « Ajouter au panier » inopérant — a pu vivre dans le code.
++  android-shell:
++    runs-on: ubuntu-latest
++    timeout-minutes: 25
++    steps:
++      - uses: actions/checkout@v4
++      - uses: actions/setup-node@v4
++        with:
++          node-version: 20
++          cache: npm
++      - run: npm ci
++      - uses: actions/setup-java@v4
++        with:
++          distribution: temurin
++          java-version: 21
++      - name: Prepare the native project
++        run: npm run build:client && npx cap sync android
++      # continue-on-error: true — À BASCULER À false DÈS LE PREMIER RUN VERT.
++      # Cette étape n'a jamais tourné (android-apk.yml est manuel) : on l'observe
++      # d'abord pour ne pas casser la CI sur une première exécution inconnue,
++      # puis on la rend bloquante. Tant qu'elle est tolérante, elle n'est PAS un
++      # garde — ne pas s'y fier avant le basculement.
++      - name: Compile the native shell
++        continue-on-error: true
++        run: cd android && ./gradlew :app:compileDebugJavaWithJavac --no-daemon
