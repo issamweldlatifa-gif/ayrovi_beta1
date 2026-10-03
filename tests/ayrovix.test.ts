@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test, vi, beforeAll, afterAll } from 'vitest';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
@@ -75,8 +76,29 @@ describe('AYROVIX Lens', () => {
    * (tests/lens-recognition-cache.test.ts) — aucune garantie n'est perdue.
    */
   const cacheBefore = process.env.AYROVI_LENS_CACHE;
-  beforeAll(() => { process.env.AYROVI_LENS_CACHE = 'false'; });
-  afterAll(() => { restoreEnv('AYROVI_LENS_CACHE', cacheBefore); });
+  const liveCacheBefore = process.env.AYROVI_LENS_LIVE_CACHE_DIR;
+  const variantCacheBefore = process.env.AYROVI_VARIANT_CACHE_DIR;
+  let liveCacheDir = '';
+  beforeAll(() => {
+    process.env.AYROVI_LENS_CACHE = 'false';
+    /*
+     * Même raison pour les caches DISQUE (stock vivant, contrats de variantes) :
+     * sans bac à sable, un passage précédent de `npm test` laisse des entrées
+     * sous data/ (6 h de TTL) et le scénario rejoué servirait un hit de cache
+     * au lieu de scraper la page marchande. CI part toujours à froid ; les
+     * runs locaux aussi, désormais. Le bac à sable suit le modèle de
+     * tests/lens-live-stock.test.ts — aucune garantie n'est perdue.
+     */
+    liveCacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ayrovix-lens-live-'));
+    process.env.AYROVI_LENS_LIVE_CACHE_DIR = liveCacheDir;
+    process.env.AYROVI_VARIANT_CACHE_DIR = path.join(liveCacheDir, 'contracts');
+  });
+  afterAll(() => {
+    restoreEnv('AYROVI_LENS_CACHE', cacheBefore);
+    restoreEnv('AYROVI_LENS_LIVE_CACHE_DIR', liveCacheBefore);
+    restoreEnv('AYROVI_VARIANT_CACHE_DIR', variantCacheBefore);
+    if (liveCacheDir) fs.rmSync(liveCacheDir, { recursive: true, force: true });
+  });
 
   afterEach(() => { vi.unstubAllGlobals(); });
 

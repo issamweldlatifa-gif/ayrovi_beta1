@@ -313,9 +313,7 @@ describe('budget orange — l’orange reste un déclencheur d’action', () => 
    */
   const ALLOWED = new Map<string, string>([
     ['client/src/design/Button.tsx', 'variante `cta` : le CTA principal'],
-    ['client/src/components/HeroSlider.tsx', 'CTA du slide = CTA principal du hero'],
     ['client/src/components/BottomNavBar.tsx', 'point et libellé de navigation actifs'],
-    ['client/src/components/assistant/AssistantVoiceOrb.tsx', 'pastille d’écoute, égaliseur et bouton « Terminer et envoyer »'],
     ['client/src/social/components/FullscreenActionRail.tsx', 'icône active du rail plein écran'],
     ['client/src/social/components/StoryFeed.tsx', 'cœur aimé (état actif)'],
     ['client/src/components/assistant/AssistantComposer.tsx', 'bouton d’envoi : CTA principal de l’écran conversation'],
