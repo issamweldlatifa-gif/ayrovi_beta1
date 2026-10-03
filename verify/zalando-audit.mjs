@@ -13,8 +13,35 @@ import { chromium } from 'playwright';
 import sharp from 'sharp';
 import fs from 'node:fs';
 
-const BASE = process.argv[2] || 'http://localhost:3000';
+// 2026-10-03 — BUG DE FOND, corrigé ici.
+// Ce script n'honorait PAS `AYROVI_BASE_URL`, la convention de TOUS ses frères
+// (public-navigation, footer-payments, admin-audit, lens-*… lisent tous
+// process.env.AYROVI_BASE_URL). Il ne connaissait que son argument positionnel,
+// avec `http://localhost:3000` en dur.
+// Conséquence en CI : le serveur y écoute sur 3210 et l'étape exporte
+// AYROVI_BASE_URL=http://127.0.0.1:3210 — les cinq autres gardes mesuraient donc
+// le bon serveur, et celui-ci partait sur localhost:3000, où personne n'écoute.
+// Il mourait sur son premier `goto` : le garde du budget orange était
+// INFIRANCHISSABLE par construction, et échouait avec un simple « exit code 1 »
+// sans jamais dire pourquoi. Ordre retenu : argument explicite, puis
+// environnement (la convention du dépôt), puis l'ancien défaut.
+const BASE = process.argv[2] || process.env.AYROVI_BASE_URL || 'http://localhost:3000';
 const OUT = 'verify';
+
+// ── Pourquoi ces deux gestionnaires (2026-10-03) ─────────────────────────────
+// Ce script tourne dans la porte CI « gardes de charte ». Quand il levait une
+// exception, le seul verdict public était « Process completed with exit code 1 » :
+// ni la surface fautive, ni le message. Les journaux d'une exécution ne sont
+// lisibles qu'avec des droits d'administration — l'équipe ne pouvait donc PAS
+// savoir pourquoi le garde était tombé. Le message d'erreur devient une
+// annotation publique, lisible sur la page de l'exécution.
+function publishFailure(error) {
+  const message = String((error && error.message) || error).split('\n')[0];
+  console.log(`::error title=audit:design a levé une exception::${message}`);
+  process.exit(1);
+}
+process.on('unhandledRejection', publishFailure);
+process.on('uncaughtException', publishFailure);
 
 /** Est-ce un pixel « orange de marque » ? Fenêtre large autour de #FF6900. */
 function isOrangePixel(r, g, b) {

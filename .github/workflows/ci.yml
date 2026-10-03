@@ -146,10 +146,19 @@ jobs:
           for guard in verify:public-nav verify:footer-payments verify:customer-auth \
                        verify:product-variants verify:image-composition audit:design; do
             echo "::group::$guard"
-            if npm run "$guard"; then
+            log="/tmp/guard-$(echo "$guard" | tr ':' '-').log"
+            if npm run "$guard" > "$log" 2>&1; then
+              tail -3 "$log"
               echo "::notice title=Garde de charte OK::$guard"
             else
-              echo "::error title=Garde de charte en échec::$guard"
+              echo "----- sortie de $guard (30 dernières lignes) -----"
+              tail -30 "$log"
+              # Annotation PUBLIQUE : les journaux d'une exécution ne sont lisibles
+              # qu'avec des droits d'administration, mais les annotations le sont
+              # par tout le monde. Sans elle, on ne saurait toujours pas POURQUOI
+              # le garde est tombé.
+              flattened=$(tail -12 "$log" | tr '\n' '|' | sed 's/%/%25/g')
+              echo "::error title=Garde de charte en échec ($guard)::$flattened"
               exit 1
             fi
             echo "::endgroup::"
