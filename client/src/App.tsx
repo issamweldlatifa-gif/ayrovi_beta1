@@ -36,7 +36,7 @@ const ShopCheckoutScreen = lazy(() => import('./shop').then((module) => ({ defau
 const OrderSuccessModal = lazy(() => import('./components/OrderSuccessModal').then((module) => ({ default: module.OrderSuccessModal })));
 const CustomerAccountPage = lazy(() => import('./components/CustomerAccountPage').then((module) => ({ default: module.CustomerAccountPage })));
 const OcerexScreen = lazy(() => import('./features/ocerex/OcerexScreen').then((module) => ({ default: module.OcerexScreen })));
-const AyWebsPlaceholder = lazy(() => import('./features/aywebs/AyWebsPlaceholder').then((module) => ({ default: module.AyWebsPlaceholder })));
+const AyWebsApp = lazy(() => import('./features/aywebs/AyWebsApp').then((module) => ({ default: module.AyWebsApp })));
 
 /** كتل الصفحة الرئيسية — الترتيب الافتراضي حتى وصول إعداد الـ Dashboard */
 /**
@@ -559,7 +559,14 @@ export const App: React.FC = () => {
 
       {isAyWebsOpen && (
         <Suspense fallback={null}>
-          <AyWebsPlaceholder onClose={handleCloseAyWebs} />
+          <AyWebsApp
+            onClose={handleCloseAyWebs}
+            onOpenCart={() => openAppView('app:cart')}
+            onOpenAccount={() => { setAccountInitialSection('home'); openAppView('app:account', true); }}
+            onOpenFavorites={() => { setAccountInitialSection('favorites'); openAppView('app:account', true); }}
+            cartCount={totalCartCount}
+            customerCsrfToken={customerSession?.csrfToken || ''}
+          />
         </Suspense>
       )}
 

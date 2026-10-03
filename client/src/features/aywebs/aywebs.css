@@ -1,0 +1,367 @@
+/* ==========================================================================
+   AYWEBs — parcours proxy-shopping (référence Add-to-Buyee, captures 1-6).
+   Une seule feuille de style, tokens AYROVI d'abord, replis explicites.
+   ========================================================================== */
+
+.ayw-screen {
+  min-height: 100%;
+  background: var(--ayrovi-surface, #f5f5f5);
+  padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+}
+
+.ayw-head {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.25rem;
+  background: var(--ayrovi-surface, #fff);
+  border-bottom: 1px solid var(--ayrovi-line, #e4e4e4);
+}
+
+.ayw-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ayrovi-ink, #101828);
+}
+
+/* --- recherche + chip boutique (capture 2) --- */
+.ayw-searchwrap {
+  position: relative;
+  margin: 1rem auto 0;
+  max-width: 40rem;
+  padding: 0 1rem;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.ayw-search {
+  width: 100%;
+  height: 2.9rem;
+  border: 1.5px solid var(--ayrovi-cta, #f18902);
+  border-radius: 999px;
+  background: var(--ayrovi-surface, #fff);
+  padding-inline: 2.4rem 1rem;
+  font: inherit;
+  color: var(--ayrovi-ink, #101828);
+}
+
+.ayw-search-icon {
+  position: absolute;
+  inset-inline-start: 1.7rem;
+  color: var(--ayrovi-cta, #f18902);
+  pointer-events: none;
+}
+
+.ayw-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--ayrovi-line, #ececec);
+  color: var(--ayrovi-ink, #101828);
+  padding: .3rem .7rem;
+  font: inherit;
+  font-size: .85rem;
+  cursor: pointer;
+}
+
+.ayw-section {
+  margin: 1.2rem 1rem .6rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ayrovi-ink, #101828);
+}
+
+/* --- cartes boutiques (capture 2) --- */
+.ayw-storegrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: 1rem;
+  padding: 0 1rem;
+}
+
+.ayw-storecard {
+  background: var(--ayrovi-surface, #fff);
+  border-radius: .5rem;
+  padding: .9rem;
+  box-shadow: 0 1px 2px rgb(16 24 40 / .06);
+}
+
+.ayw-storelogo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 4.2rem;
+  border: 0;
+  border-radius: .4rem;
+  background: var(--ayrovi-surface, #fafafa);
+  cursor: pointer;
+  padding: .5rem;
+}
+
+.ayw-storelogo img { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+.ayw-storerow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: .7rem;
+  gap: .5rem;
+}
+
+.ayw-storename { font-weight: 600; color: var(--ayrovi-ink, #101828); }
+
+.ayw-fav {
+  border: 0;
+  background: var(--ayrovi-line, #ececec);
+  border-radius: 999px;
+  width: 2rem;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ayrovi-ink-secondary, #667085);
+  cursor: pointer;
+}
+
+.ayw-fav.is-on { color: var(--ayrovi-cta, #f18902); background: rgb(241 137 2 / .12); }
+
+.ayw-storedesc {
+  margin-top: .5rem;
+  font-size: .82rem;
+  line-height: 1.45;
+  color: var(--ayrovi-ink-secondary, #475467);
+}
+
+/* --- barre d'onglets basse (capture 2) --- */
+.ayw-tabs {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 30;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  background: var(--ayrovi-surface, #fff);
+  border-top: 1px solid var(--ayrovi-line, #e4e4e4);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.ayw-tab {
+  border: 0;
+  background: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .15rem;
+  padding: .5rem 0 .45rem;
+  color: var(--ayrovi-ink, #101828);
+  font: inherit;
+  cursor: pointer;
+}
+
+.ayw-tab.is-active { color: var(--ayrovi-cta, #f18902); }
+
+.ayw-tab-icon { position: relative; }
+
+.ayw-tab-badge {
+  position: absolute;
+  top: -.35rem;
+  inset-inline-end: -.55rem;
+  min-width: 1rem;
+  height: 1rem;
+  border-radius: 999px;
+  background: var(--ayrovi-cta, #f18902);
+  color: #fff;
+  font-size: .68rem;
+  line-height: 1rem;
+  text-align: center;
+  padding-inline: .2rem;
+}
+
+.ayw-tab-label { font-size: .72rem; }
+
+/* --- feuille de variantes (captures 3-4) --- */
+.ayw-sheet-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgb(16 24 40 / .45);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.ayw-sheet {
+  position: relative;
+  width: min(34rem, 100%);
+  max-height: 88vh;
+  overflow-y: auto;
+  background: var(--ayrovi-surface, #fff);
+  border-radius: 1rem 1rem 0 0;
+  padding: 1.4rem 1.2rem calc(1.4rem + env(safe-area-inset-bottom));
+}
+
+.ayw-sheet-close {
+  position: absolute;
+  top: .9rem;
+  inset-inline-end: .9rem;
+  border: 0;
+  background: none;
+  color: var(--ayrovi-ink, #101828);
+  cursor: pointer;
+}
+
+.ayw-sheet-body { display: flex; flex-direction: column; gap: .9rem; }
+.ayw-center { align-items: center; justify-content: center; min-height: 9rem; text-align: center; }
+
+.ayw-sheet-title {
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--ayrovi-ink, #101828);
+}
+
+.ayw-sheet-product { display: flex; align-items: center; gap: .8rem; }
+.ayw-sheet-thumb { width: 4.6rem; height: 4.6rem; object-fit: cover; border-radius: .35rem; }
+.ayw-sheet-name { font-weight: 600; color: var(--ayrovi-ink, #101828); }
+
+.ayw-cond { border: 0; padding: 0; margin: 0; }
+.ayw-radio { display: inline-flex; align-items: center; gap: .5rem; cursor: pointer; color: var(--ayrovi-ink, #101828); }
+.ayw-radio input { accent-color: var(--ayrovi-cta, #f18902); width: 1.15rem; height: 1.15rem; }
+
+.ayw-selectwrap { display: block; }
+
+.ayw-select {
+  width: 100%;
+  height: 3rem;
+  border: 1.5px solid var(--ayrovi-ink, #101828);
+  border-radius: .35rem;
+  background: var(--ayrovi-surface, #fff);
+  padding-inline: .8rem;
+  font: inherit;
+  color: var(--ayrovi-ink, #101828);
+  appearance: auto;
+}
+
+.ayw-price { text-align: center; font-weight: 600; color: var(--ayrovi-ink, #101828); }
+.ayw-price-tnd { color: var(--ayrovi-ink-secondary, #475467); font-weight: 500; }
+
+.ayw-cta {
+  width: 100%;
+  min-height: 3.1rem;
+  border: 0;
+  border-radius: .4rem;
+  background: var(--ayrovi-cta, #f18902);
+  color: #fff;
+  font: inherit;
+  font-size: 1.02rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  cursor: pointer;
+}
+
+.ayw-cta:disabled { opacity: .55; cursor: not-allowed; }
+
+.ayw-cta-outline {
+  width: 100%;
+  min-height: 3.1rem;
+  border: 1.5px solid var(--ayrovi-ink-secondary, #475467);
+  border-radius: .4rem;
+  background: none;
+  color: var(--ayrovi-ink-secondary, #344054);
+  font: inherit;
+  font-size: 1.02rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* --- confirmation d'ajout (capture 4) --- */
+.ayw-added { align-items: stretch; }
+.ayw-added-icon { position: relative; align-self: center; color: var(--ayrovi-cta, #f18902); }
+.ayw-added-icon svg:last-child { position: absolute; top: -.5rem; inset-inline-end: -.6rem; color: var(--ayrovi-cta, #1d3f8f); }
+.ayw-added-sum { display: flex; gap: .9rem; align-items: center; border-block: 1px solid var(--ayrovi-line, #e4e4e4); padding: .9rem 0; }
+.ayw-added-thumb { width: 6.5rem; height: 8rem; object-fit: cover; }
+.ayw-added-title { font-weight: 700; color: var(--ayrovi-ink, #101828); }
+.ayw-added-meta { color: var(--ayrovi-ink-secondary, #475467); font-size: .9rem; margin-top: .3rem; }
+
+/* --- panier proxy (captures 5-6) --- */
+.ayw-cartline {
+  display: flex;
+  gap: .9rem;
+  background: var(--ayrovi-surface, #fff);
+  margin: .8rem 1rem;
+  border-radius: .5rem;
+  padding: .9rem;
+  box-shadow: 0 1px 2px rgb(16 24 40 / .06);
+}
+
+.ayw-cartline-img { width: 6rem; height: 7rem; object-fit: cover; border-radius: .3rem; flex: none; }
+.ayw-cartline-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .55rem; }
+.ayw-cartline-title { font-size: .98rem; font-weight: 700; color: var(--ayrovi-ink, #101828); }
+
+.ayw-cartline-meta { display: grid; gap: .3rem; margin: 0; }
+.ayw-cartline-meta div { display: flex; gap: .5rem; font-size: .85rem; }
+.ayw-cartline-meta dt { color: var(--ayrovi-ink-secondary, #475467); min-width: 6.5rem; }
+.ayw-cartline-meta dd { margin: 0; color: var(--ayrovi-ink, #101828); font-weight: 600; }
+
+.ayw-cartline-row { display: flex; flex-wrap: wrap; align-items: center; gap: .8rem; }
+
+.ayw-qty { display: flex; flex-direction: column; gap: .25rem; font-size: .8rem; color: var(--ayrovi-ink-secondary, #475467); }
+
+.ayw-qty input {
+  width: 4.2rem;
+  height: 2.4rem;
+  border: 1px solid var(--ayrovi-line, #d0d5dd);
+  border-radius: .3rem;
+  text-align: center;
+  font: inherit;
+  color: var(--ayrovi-ink, #101828);
+  background: var(--ayrovi-surface, #fff);
+}
+
+.ayw-subtotal { margin: 0; display: flex; flex-direction: column; font-size: .8rem; color: var(--ayrovi-ink-secondary, #475467); }
+.ayw-subtotal strong { font-size: 1.05rem; color: var(--ayrovi-ink, #101828); }
+
+.ayw-delete {
+  margin-inline-start: auto;
+  border: 1px solid var(--ayrovi-line, #d0d5dd);
+  border-radius: 999px;
+  background: var(--ayrovi-surface, #fff);
+  color: var(--ayrovi-ink-secondary, #344054);
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .4rem .8rem;
+  font: inherit;
+  font-size: .82rem;
+  cursor: pointer;
+}
+
+.ayw-carttotal {
+  background: var(--ayrovi-surface, #fff);
+  margin: .8rem 1rem;
+  border-radius: .5rem;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: .7rem;
+  box-shadow: 0 1px 2px rgb(16 24 40 / .06);
+}
+
+.ayw-carttotal-label { display: flex; flex-direction: column; gap: .2rem; color: var(--ayrovi-ink-secondary, #475467); font-size: .9rem; }
+.ayw-carttotal-value { font-size: 1.7rem; font-weight: 800; color: var(--ayrovi-ink, #101828); text-align: center; }
+.ayw-carttotal-value span { font-size: 1rem; font-weight: 600; }
+.ayw-carttotal-note { font-size: .82rem; color: var(--ayrovi-ink-secondary, #475467); text-align: center; }
+
+.ayw-notice { color: var(--ayrovi-ink-secondary, #475467); font-size: .88rem; }
+.ayw-pad { padding: 1.5rem 1rem; text-align: center; }
+.ayw-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

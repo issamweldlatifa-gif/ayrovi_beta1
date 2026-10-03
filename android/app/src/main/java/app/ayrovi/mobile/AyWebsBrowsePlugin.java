@@ -9,15 +9,10 @@ import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
 /**
- * Pont AYWEBs §9 — ouverture du navigateur marchand interne depuis le web.
- *
- * Le web demande, la coque exécute : aucune logique métier ici. On valide
- * uniquement que la cible est une URL http(s) affichable, puis on transmet
- * l'URL et l'identifiant de session WEB (la session du panier AYWEBs reste
- * celle du web, §45) à {@link AyWebsBrowseActivity}.
- *
- * Hors coque native le plugin n'existe pas : le web retombe sur un onglet
- * externe (comportement historique, §2 non destructif).
+ * Pont AYWEBs §9 — ouverture du navigateur marchand natif depuis le web.
+ * Aucune logique métier : validation http(s) puis transmission de l'URL et de
+ * la session WEB (le panier reste serveur, §45). Hors coque : repli onglet
+ * externe côté client (§2).
  */
 @CapacitorPlugin(name = "AyWebsBrowse")
 public class AyWebsBrowsePlugin extends Plugin {
@@ -35,10 +30,7 @@ public class AyWebsBrowsePlugin extends Plugin {
     }
 
     String base = getBridge() == null ? null : getBridge().getServerUrl();
-    if (base == null || base.trim().isEmpty()) {
-      call.reject("WEB_BASE_UNAVAILABLE");
-      return;
-    }
+    if (base == null || base.trim().isEmpty()) base = "https://localhost";
 
     Intent intent = new Intent(getContext(), AyWebsBrowseActivity.class);
     intent.setData(parsed);

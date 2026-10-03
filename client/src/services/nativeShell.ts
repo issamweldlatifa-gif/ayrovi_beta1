@@ -35,6 +35,37 @@ export const isNativeApp = (): boolean => {
   }
 };
 
+interface AyWebsBrowseBridge {
+  open(options: { url: string; sessionId: string }): Promise<{ opened: boolean }>;
+}
+
+/**
+ * §9 — navigation marchande DANS l'app (parcours proxy-shopping reconstruit) :
+ * la coque ouvre une WebView native avec barre flottante « Add to Cart » ;
+ * la classification et le panier restent serveurs (§11, §16). Hors coque :
+ * onglet externe (comportement web historique, §2 non destructif).
+ */
+export async function openAyWebsNativeBrowser(url: string): Promise<boolean> {
+  if (!isNativeApp()) return false;
+  try {
+    const plugin = registerPlugin<AyWebsBrowseBridge>('AyWebsBrowse');
+    await plugin.open({ url, sessionId: getSessionId() });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function openMerchantPage(url: string): void {
+  if (!isNativeApp()) {
+    window.open(url, '_blank', 'noopener,noreferrer');
+    return;
+  }
+  void openAyWebsNativeBrowser(url).then((handled) => {
+    if (!handled) window.open(url, '_blank', 'noopener,noreferrer');
+  });
+}
+
 /**
  * Barre système : icônes claires sur les surfaces sombres (Lens/caméra),
  * foncées sur le blanc marchand. Cosmétique → ne casse jamais l'UI.

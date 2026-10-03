@@ -1,4 +1,19 @@
 <?xml version='1.0' encoding='utf-8'?>
 <!-- AYWEBs §9 — navigateur marchand interne (arabe) -->
 <resources>
+    <string name="aywebs_browser_title">متصفح المتاجر</string>
+    <string name="aywebs_close">إغلاق</string>
+    <string name="aywebs_refresh">تحديث</string>
+    <string name="aywebs_back">رجوع</string>
+    <string name="aywebs_forward">تقدّم</string>
+    <string name="aywebs_cart">السلة</string>
+    <string name="aywebs_wish">المفضلة</string>
+    <string name="aywebs_add_to_cart">Add to Cart</string>
+    <string name="aywebs_not_product_page">الصفحة غير مؤهلة</string>
+    <string name="aywebs_loading">Loading…</string>
+    <string name="aywebs_select_item">اختر منتجك</string>
+    <string name="aywebs_new">جديد</string>
+    <string name="aywebs_added">تمت الإضافة إلى سلة AYROVI</string>
+    <string name="aywebs_proceed_checkout">متابعة الدفع</string>
+    <string name="aywebs_continue_shopping">مواصلة التسوق</string>
 </resources>

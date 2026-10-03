@@ -18,7 +18,32 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!-- AYWEBs §24 : partage Android (texte brut) — la détection est serveur. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+
+            <!-- AYWEBs §25 : liens profonds ayrovi://aywebs[…]. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="ayrovi" android:host="aywebs" />
+            </intent-filter>
         </activity>
+
+        <!-- AYWEBs V2 : navigateur marchand natif (barre flottante Add to Cart).
+             Non exporté : seule l'app l'ouvre via le pont AyWebsBrowse. -->
+        <activity
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation"
+            android:name=".AyWebsBrowseActivity"
+            android:label="@string/aywebs_browser_title"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:parentActivityName=".MainActivity"
+            android:exported="false" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

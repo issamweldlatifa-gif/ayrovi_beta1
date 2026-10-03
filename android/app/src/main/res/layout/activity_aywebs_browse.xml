@@ -1,72 +1,57 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- AYWEBs §9 — navigateur marchand interne : barre supérieure (fermer / URL /
-     actualiser), avis §27, WebView, barre inférieure (précédent / suivant /
-     panier / ajout au panier AyWebs). Aucun contenu marchand n'est dupliqué. -->
+<!-- AYWEBs V2 — navigateur marchand (capture 1) : barre haute (X, URL, refresh),
+     WebView marchand, barre flottante basse : retour, avant, Panier, Favoris,
+     bouton orange « Add to Cart ». Aucun montant, aucune logique en XML. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/aywebs_surface">
+    android:background="#FFFFFF">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="56dp"
+        android:layout_height="48dp"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:background="@color/aywebs_surface"
-        android:elevation="4dp"
-        android:paddingStart="4dp"
-        android:paddingEnd="4dp">
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:background="#FFFFFF">
 
         <ImageButton
             android:id="@+id/aywebs_close"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/aywebs_close"
-            android:src="@drawable/ic_aywebs_close"
-            android:tint="@color/aywebs_ink" />
+            android:src="@android:drawable/ic_menu_close_clear_cancel" />
 
         <TextView
             android:id="@+id/aywebs_url"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:layout_marginStart="8dp"
             android:ellipsize="middle"
-            android:maxLines="1"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"
-            android:textColor="@color/aywebs_ink"
+            android:singleLine="true"
+            android:textColor="#101828"
             android:textSize="14sp"
             android:textStyle="bold" />
 
         <ImageButton
             android:id="@+id/aywebs_refresh"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/aywebs_refresh"
-            android:src="@drawable/ic_aywebs_refresh"
-            android:tint="@color/aywebs_ink" />
+            android:src="@android:drawable/ic_menu_rotate" />
     </LinearLayout>
 
     <ProgressBar
         android:id="@+id/aywebs_progress"
         style="?android:attr/progressBarStyleHorizontal"
         android:layout_width="match_parent"
-        android:layout_height="3dp"
-        android:visibility="gone" />
-
-    <TextView
-        android:id="@+id/aywebs_notice"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/aywebs_notice_background"
-        android:padding="10dp"
-        android:text="@string/aywebs_action_required"
-        android:textColor="@color/aywebs_notice_text"
-        android:textSize="12sp"
-        android:textStyle="bold"
+        android:layout_height="4dp"
+        android:indeterminate="true"
         android:visibility="gone" />
 
     <WebView
@@ -77,74 +62,58 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="64dp"
+        android:layout_height="56dp"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:background="@color/aywebs_surface"
-        android:elevation="8dp"
-        android:paddingStart="4dp"
-        android:paddingEnd="8dp">
+        android:background="#FFFFFF"
+        android:elevation="8dp">
 
         <ImageButton
             android:id="@+id/aywebs_back"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="?android:attr/selectableItemBackground"
             android:contentDescription="@string/aywebs_back"
-            android:src="@drawable/ic_aywebs_back"
-            android:tint="@color/aywebs_ink" />
+            android:src="@android:drawable/ic_media_previous" />
 
         <ImageButton
             android:id="@+id/aywebs_forward"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="?android:attr/selectableItemBackground"
             android:contentDescription="@string/aywebs_forward"
-            android:src="@drawable/ic_aywebs_forward"
-            android:tint="@color/aywebs_ink" />
+            android:src="@android:drawable/ic_media_next" />
 
-        <FrameLayout
+        <Button
             android:id="@+id/aywebs_cart"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/aywebs_cart">
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1.4"
+            android:text="@string/aywebs_cart"
+            android:textColor="#1D3F8F"
+            android:textSize="12sp" />
 
-            <ImageButton
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_gravity="center"
-                android:background="@null"
-                android:clickable="false"
-                android:contentDescription="@string/aywebs_cart"
-                android:src="@drawable/ic_aywebs_cart"
-                android:tint="@color/aywebs_ink" />
-
-            <TextView
-                android:id="@+id/aywebs_cart_badge"
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:layout_gravity="top|end"
-                android:background="@drawable/aywebs_badge_background"
-                android:gravity="center"
-                android:textColor="@color/aywebs_surface"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                android:visibility="gone" />
-        </FrameLayout>
+        <Button
+            android:id="@+id/aywebs_wish"
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1.4"
+            android:text="@string/aywebs_wish"
+            android:textColor="#1D3F8F"
+            android:textSize="12sp" />
 
         <Button
             android:id="@+id/aywebs_add"
             android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:layout_weight="1"
-            android:layout_marginStart="8dp"
-            android:background="@drawable/aywebs_cta_background"
-            android:enabled="false"
-            android:alpha="0.45"
+            android:layout_height="match_parent"
+            android:layout_weight="2"
+            android:background="#F18902"
             android:text="@string/aywebs_add_to_cart"
-            android:textColor="@color/aywebs_surface"
-            android:textSize="14sp"
+            android:textColor="#FFFFFF"
             android:textStyle="bold" />
     </LinearLayout>
 </LinearLayout>

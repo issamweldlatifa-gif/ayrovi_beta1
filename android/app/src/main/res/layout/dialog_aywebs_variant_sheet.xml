@@ -1,207 +1,72 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- AYWEBs §13/§15 — feuille de sélection de version AU-DESSUS de la page
-     marchande (expérience type Buyee « Select your desired item ») : le client
-     ne quitte jamais le marchand, et l'ajout passe par la session web (§45). -->
+<!-- AYWEBs V2 — feuille de variantes PAR-DESSUS le marchand (capture 3). -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/aywebs_surface">
+    android:layout_height="wrap_content"
+    android:background="#FFFFFF"
+    android:padding="20dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp">
+        android:orientation="vertical">
 
-        <LinearLayout
+        <ImageButton
+            android:id="@+id/aywebs_sheet_close"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_gravity="end"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/aywebs_close"
+            android:src="@android:drawable/ic_menu_close_clear_cancel" />
+
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:gravity="center"
+            android:text="@string/aywebs_select_item"
+            android:textColor="#101828"
+            android:textSize="18sp"
+            android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/aywebs_sheet_title"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/aywebs_select_item"
-                android:textColor="@color/aywebs_ink"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <ImageButton
-                android:id="@+id/aywebs_sheet_close"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="?android:attr/selectableItemBackgroundBorderless"
-                android:contentDescription="@string/aywebs_close"
-                android:src="@drawable/ic_aywebs_close"
-                android:tint="@color/aywebs_ink" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/aywebs_sheet_selection"
+        <TextView
+            android:id="@+id/aywebs_sheet_product"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:layout_marginTop="12dp"
+            android:textColor="#101828"
+            android:textSize="15sp"
+            android:textStyle="bold" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginTop="12dp">
-
-                <ImageView
-                    android:id="@+id/aywebs_sheet_thumb"
-                    android:layout_width="72dp"
-                    android:layout_height="72dp"
-                    android:background="@color/aywebs_notice_background"
-                    android:contentDescription="@string/aywebs_select_item"
-                    android:scaleType="centerCrop" />
-
-                <TextView
-                    android:id="@+id/aywebs_sheet_product"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="12dp"
-                    android:maxLines="3"
-                    android:ellipsize="end"
-                    android:textColor="@color/aywebs_ink"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/aywebs_sheet_groups"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_marginTop="12dp" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginTop="12dp">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/aywebs_quantity"
-                    android:textColor="@color/aywebs_ink"
-                    android:textSize="14sp" />
-
-                <Button
-                    android:id="@+id/aywebs_sheet_qty_minus"
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
-                    android:text="−"
-                    android:textColor="@color/aywebs_ink"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/aywebs_sheet_qty"
-                    android:layout_width="48dp"
-                    android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:text="1"
-                    android:textColor="@color/aywebs_ink"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <Button
-                    android:id="@+id/aywebs_sheet_qty_plus"
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
-                    android:text="+"
-                    android:textColor="@color/aywebs_ink"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <TextView
-                android:id="@+id/aywebs_sheet_error"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:textColor="@color/aywebs_notice_text"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:visibility="gone" />
-
-            <Button
-                android:id="@+id/aywebs_sheet_add"
-                android:layout_width="match_parent"
-                android:layout_height="52dp"
-                android:layout_marginTop="14dp"
-                android:background="@drawable/aywebs_cta_background"
-                android:text="@string/aywebs_add_to_cart"
-                android:textColor="@color/aywebs_surface"
-                android:textSize="15sp"
-                android:textStyle="bold" />
-        </LinearLayout>
+        <RadioButton
+            android:id="@+id/aywebs_sheet_new"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checked="true"
+            android:text="@string/aywebs_new"
+            android:textColor="#101828" />
 
         <LinearLayout
-            android:id="@+id/aywebs_sheet_added"
+            android:id="@+id/aywebs_sheet_groups"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:gravity="center_horizontal"
-            android:visibility="gone">
+            android:orientation="vertical" />
 
-            <ImageView
-                android:layout_width="56dp"
-                android:layout_height="56dp"
-                android:layout_marginTop="18dp"
-                android:contentDescription="@string/aywebs_added"
-                android:src="@drawable/ic_aywebs_check"
-                android:tint="@color/aywebs_accent" />
+        <Spinner
+            android:id="@+id/aywebs_sheet_qty"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="12dp" />
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:gravity="center"
-                android:text="@string/aywebs_added"
-                android:textColor="@color/aywebs_ink"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/aywebs_sheet_added_ref"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:gravity="center"
-                android:textColor="@color/aywebs_notice_text"
-                android:textSize="12sp" />
-
-            <Button
-                android:id="@+id/aywebs_sheet_open_cart"
-                android:layout_width="match_parent"
-                android:layout_height="52dp"
-                android:layout_marginTop="20dp"
-                android:background="@drawable/aywebs_cta_background"
-                android:text="@string/aywebs_proceed_checkout"
-                android:textColor="@color/aywebs_surface"
-                android:textSize="15sp"
-                android:textStyle="bold" />
-
-            <Button
-                android:id="@+id/aywebs_sheet_continue"
-                android:layout_width="match_parent"
-                android:layout_height="52dp"
-                android:layout_marginTop="10dp"
-                android:background="@null"
-                android:text="@string/aywebs_continue_shopping"
-                android:textColor="@color/aywebs_ink"
-                android:textSize="15sp"
-                android:textStyle="bold" />
-        </LinearLayout>
+        <Button
+            android:id="@+id/aywebs_sheet_add"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginTop="16dp"
+            android:background="#F18902"
+            android:text="@string/aywebs_add_to_cart"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold" />
     </LinearLayout>
 </ScrollView>
