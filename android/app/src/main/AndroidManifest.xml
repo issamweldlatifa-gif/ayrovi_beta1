@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
@@ -57,9 +57,27 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <!-- AYROVIX Lens : getUserMedia dans la WebView (LiveCamera) -->
+
+    <!-- Caméra : Lens (identification produit) et OCEREX (prix depuis une image).
+         La caméra reste optionnelle : le site est pleinement utilisable sans
+         (import de photo, lien, texte). -->
     <uses-permission android:name="android.permission.CAMERA" />
-    <!-- caméra optionnelle : le site reste pleinement utilisable sans (import de photo, lien, texte) -->
+
+    <!-- Micro (SONIM vocal, notes vocales) — ajouté le 2026-10-03.
+         BridgeWebChromeClient demande DÉJÀ la permission à l'exécution pour
+         getUserMedia({audio:true}), mais Android refuse silencieusement toute
+         permission non déclarée : la demande n'aboutissait à aucune boîte de
+         dialogue et l'enregistrement échouait sans le moindre message.
+         La déclaration est donc la condition nécessaire qui manquait. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!-- Volontairement NON ajouté : POST_NOTIFICATIONS.
+         Le manifeste n'est pas le verrou des notifications : il n'existe ni
+         plugin push, ni table de jetons d'appareil, ni service FCM côté serveur.
+         Déclarer la permission seule ferait croire que les notifications
+         fonctionnent alors que rien ne les envoie — l'ajout doit se faire avec
+         la pile push complète, pas avant. -->
+
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
 </manifest>

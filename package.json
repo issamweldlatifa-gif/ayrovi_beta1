@@ -14,7 +14,7 @@
     "audit:design": "node verify/zalando-audit.mjs",
     "backup": "node scripts/backup-sqlite.mjs",
     "android:assets": "node scripts/cap-assets.mjs && capacitor-assets generate --android",
-    "android:sync": "npm run build:client && cap sync android",
+    "android:sync": "cap sync android",
     "android:open": "cap open android",
     "design:inventory": "node scripts/inventory-customer-design.mjs",
     "design:build": "node scripts/build-editorial-design.mjs",
@@ -45,7 +45,10 @@
     "verify:public-nav": "node verify/public-navigation.mjs",
     "verify:footer-payments": "node verify/footer-payments.mjs",
     "verify:lens-probe": "esbuild verify/lens-probe.ts --bundle --platform=node --format=cjs --packages=external --outfile=.cache/lens-probe.cjs --log-level=error && node .cache/lens-probe.cjs",
-    "verify:customer-auth": "esbuild verify/customer-auth-functional.ts --bundle --platform=node --packages=external --outfile=.cache/auth-functional.cjs --log-level=error && node .cache/auth-functional.cjs"
+    "verify:customer-auth": "esbuild verify/customer-auth-functional.ts --bundle --platform=node --packages=external --outfile=.cache/auth-functional.cjs --log-level=error && node .cache/auth-functional.cjs",
+    "verify:setup": "npx playwright install --with-deps chromium firefox",
+    "android:check": "node scripts/check-android-shell.mjs",
+    "android:apk": "cd android && ./gradlew :app:assembleDebug"
   },
   "keywords": [
     "ayrovi",
@@ -90,9 +93,9 @@
     "react-dom": "^19.2.8",
     "react-icons": "^5.7.0",
     "sharp": "^0.35.4",
-    "tesseract.js": "^5.1.1",
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.3.3",
+    "tesseract.js": "^5.1.1",
     "typescript": "^5.9.3",
     "vite": "^8.2.1"
   },
@@ -110,7 +113,7 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "@types/supertest": "^6.0.3",
-    "playwright": "^1.62.1",
+    "playwright": "^1.63.0",
     "supertest": "^7.2.2",
     "vitest": "^4.1.11"
   },

@@ -21,6 +21,27 @@ public class AyWebsBrowsePlugin extends Plugin {
   public void open(PluginCall call) {
     String url = call.getString("url", "");
     String sessionId = call.getString("sessionId", "");
+
+    // Origine de l'API, transmise par la couche web (SOURCE UNIQUE :
+    // client/src/services/apiOrigin.ts). Ajouté le 2026-10-03 : les appels
+    // privés de la coque (analyse de page, résolution, ajout au panier)
+    // partaient vers `https://localhost` — l'origine du paquet embarqué, où
+    // AUCUN serveur n'écoute. C'est la cause du bouton « Add to Cart » figé
+    // sur « Loading… » et du message trompeur « Page non éligible ».
+    // Validée ici : seules des origines http(s) absolues et sans espace sont
+    // acceptées, sinon on retombe sur le comportement précédent.
+    String apiOrigin = call.getString("apiOrigin", "");
+    if (apiOrigin != null) {
+      String candidate = apiOrigin.trim();
+      if (candidate.regionMatches(true, 0, "https://", 0, 8)
+          || candidate.regionMatches(true, 0, "http://", 0, 7)) {
+        while (candidate.endsWith("/")) candidate = candidate.substring(0, candidate.length() - 1);
+        apiOrigin = candidate;
+      } else {
+        apiOrigin = "";
+      }
+    }
+
     Uri parsed = Uri.parse(url);
     String scheme = parsed.getScheme();
     if (scheme == null
@@ -36,6 +57,7 @@ public class AyWebsBrowsePlugin extends Plugin {
     intent.setData(parsed);
     intent.putExtra(AyWebsBrowseActivity.EXTRA_SESSION_ID, sessionId == null ? "" : sessionId);
     intent.putExtra(AyWebsBrowseActivity.EXTRA_WEB_BASE, base.trim());
+    intent.putExtra(AyWebsBrowseActivity.EXTRA_API_ORIGIN, apiOrigin == null ? "" : apiOrigin);
     getContext().startActivity(intent);
 
     JSObject ret = new JSObject();

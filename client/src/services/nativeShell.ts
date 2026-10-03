@@ -1,4 +1,5 @@
 import { Capacitor, registerPlugin } from '@capacitor/core';
+import { AYROVI_API_ORIGIN } from './apiOrigin';
 import { getSessionId } from '../utils/session';
 
 /**
@@ -36,7 +37,7 @@ export const isNativeApp = (): boolean => {
 };
 
 interface AyWebsBrowseBridge {
-  open(options: { url: string; sessionId: string }): Promise<{ opened: boolean }>;
+  open(options: { url: string; sessionId: string; apiOrigin: string }): Promise<{ opened: boolean }>;
 }
 
 /**
@@ -49,7 +50,11 @@ export async function openAyWebsNativeBrowser(url: string): Promise<boolean> {
   if (!isNativeApp()) return false;
   try {
     const plugin = registerPlugin<AyWebsBrowseBridge>('AyWebsBrowse');
-    await plugin.open({ url, sessionId: getSessionId() });
+    // L'origine de l'API est TRANSMISE à la coque : ses appels privés
+    // (analyse de page, résolution produit, ajout au panier) ne peuvent pas
+    // partir de `https://localhost` — le paquet embarqué n'héberge aucun
+    // serveur. C'est la cause du bouton « Add to Cart » figé sur « Loading… ».
+    await plugin.open({ url, sessionId: getSessionId(), apiOrigin: AYROVI_API_ORIGIN });
     return true;
   } catch {
     return false;

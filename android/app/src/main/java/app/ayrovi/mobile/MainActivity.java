@@ -38,6 +38,37 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
+    /**
+     * Bouton retour matériel — corrigé le 2026-10-03.
+     *
+     * Avant : AUCUN onBackPressed n'existait, ni ici ni dans Capacitor 7
+     * (`grep -rn onBackPressed node_modules/@capacitor/android/` → 0 occurrence,
+     * la clé `android.handleBackButton` n'étant plus lue par le cœur). Le retour
+     * système appelait donc le comportement par défaut d'Android : finish(),
+     * c'est-à-dire la FERMETURE DE L'APPLICATION même quand un écran AYROVI était
+     * ouvert par-dessus (Lens, OCEREX, assistant…).
+     *
+     * Or la coque empile ses écrans dans l'historique de la WebView : ouvrir Lens
+     * ajoute une entrée (`history.length` 2 → 3, mesuré) et `history.back()`
+     * referme bien la couche (vérifié en navigateur réel). Il suffit donc de
+     * déléguer au retour d'historique tant qu'il en reste un :
+     *   • un écran AYROVI est ouvert  → goBack() le referme (comportement attendu) ;
+     *   • on est à la racine          → plus d'historique, on laisse Android fermer
+     *                                   l'application (comportement attendu aussi).
+     *
+     * `enableOnBackInvokedCallback` n'est pas déclaré dans le Manifest, donc
+     * onBackPressed reste le point d'entrée normal du retour système.
+     */
+    @Override
+    public void onBackPressed() {
+        if (getBridge() != null && getBridge().getWebView() != null
+            && getBridge().getWebView().canGoBack()) {
+            getBridge().getWebView().goBack();
+            return;
+        }
+        super.onBackPressed();
+    }
+
     /** Cible web d'un intent AYWEBs, ou null quand l'intent ne concerne pas AYWEBs. */
     Uri ayWebsTarget(Intent intent) {
         if (intent == null) {

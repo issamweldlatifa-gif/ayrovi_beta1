@@ -10,6 +10,9 @@ import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.CookieManager;
+import android.webkit.WebChromeClient;
+import android.os.Message;
+import android.widget.Toast;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
@@ -59,10 +62,19 @@ public class AyWebsBrowseActivity extends Activity {
 
   public static final String EXTRA_SESSION_ID = "aywebs_session_id";
   public static final String EXTRA_WEB_BASE = "aywebs_web_base";
+  /** Origine absolue de l'API, transmise par la couche web (voir apiOrigin.ts). */
+  public static final String EXTRA_API_ORIGIN = "aywebs_api_origin";
 
   private static final String ANALYZE_PATH = "/api/v1/aywebs/page/analyze";
   private static final String RESOLVE_PATH = "/api/v1/aywebs/product/resolve";
   private static final String CART_ITEMS_PATH = "/api/v1/aywebs/cart/items";
+
+  /**
+   * Lien profond AYWEBs (Manifest §25) : c'est le SEUL format que
+   * MainActivity.ayWebsTarget() accepte pour un Intent.ACTION_VIEW. La coque
+   * retraduit ensuite `ayrovi://aywebs/cart` en `https://localhost/aywebs/cart`.
+   */
+  private static final String AYWEBS_DEEP_LINK = "ayrovi://aywebs";
 
   private WebView webView;
   private TextView urlText;
@@ -75,6 +87,15 @@ public class AyWebsBrowseActivity extends Activity {
 
   private String sessionId = "";
   private String webBase = "https://localhost";
+  /**
+   * Origine des appels API PRIVÉS de la coque (analyse / résolution / panier).
+   * Distincte de `webBase` : `webBase` sert à ouvrir les routes WEB d'AYROVI
+   * (paquet embarqué = https://localhost), tandis que l'API vit sur un autre
+   * hôte. Les confondre était le défaut : les trois POST partaient vers
+   * localhost, échouaient, et le bouton restait inerte ou bloqué sur
+   * « Loading… ». Reste vide si la couche web ne l'a pas transmis.
+   */
+  private String apiOrigin = "";
   private String currentUrl = "";
   private volatile boolean productPage = false;
   private final ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -88,6 +109,8 @@ public class AyWebsBrowseActivity extends Activity {
     sessionId = getStringExtra(EXTRA_SESSION_ID);
     String base = getStringExtra(EXTRA_WEB_BASE);
     if (base != null && !base.trim().isEmpty()) webBase = base.trim();
+    String origin = getStringExtra(EXTRA_API_ORIGIN);
+    apiOrigin = origin == null ? "" : origin.trim();
 
     webView = requireView(R.id.aywebs_webview);
     urlText = requireView(R.id.aywebs_url);
@@ -102,6 +125,22 @@ public class AyWebsBrowseActivity extends Activity {
     settings.setJavaScriptEnabled(true);
     settings.setDomStorageEnabled(true);
     CookieManager.getInstance().setAcceptCookie(true);
+
+    // ── Connexion marchande (ajouté le 2026-10-03) ──────────────────────────
+    // Deux réglages manquaient, et tous deux cassent la CONNEXION au marchand
+    // sans le moindre message :
+    //  • setAcceptThirdPartyCookies : depuis Android 5.0 le WebView refuse les
+    //    cookies tiers par défaut. Or les parcours d'authentification
+    //    (SSO, « Se connecter avec… », paniers invités) en dépendent : la page
+    //    de login se recharge en boucle sur un écran déjà connecté.
+    //  • setSupportMultipleWindows + setJavaScriptCanOpenWindows… : sans eux,
+    //    `window.open()` est purement IGNORÉ. Les popups de login ne
+    //    s'ouvraient donc jamais, et l'utilisateur ne pouvait pas se connecter
+    //    (Buyee affiche d'ailleurs « free membership registration and login are
+    //    required » avant de commander).
+    CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true);
+    settings.setSupportMultipleWindows(true);
+    settings.setJavaScriptCanOpenWindowsAutomatically(true);
 
     webView.setWebViewClient(new WebViewClient() {
       @Override
@@ -126,6 +165,20 @@ public class AyWebsBrowseActivity extends Activity {
           return true; // aucune origine hors http(s) dans la coque
         }
         return false;
+      }
+    });
+
+    // Popups de connexion : on les ouvre DANS la même WebView. C'est le seul
+    // moyen de garder le contexte de session du marchand (les cookies de la
+    // popup appartiennent au même profil) et, surtout, d'avoir un retour
+    // visible au lieu d'un clic sans effet.
+    webView.setWebChromeClient(new WebChromeClient() {
+      @Override
+      public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
+        WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
+        transport.setWebView(view);
+        resultMsg.sendToTarget();
+        return true;
       }
     });
 
@@ -174,19 +227,87 @@ public class AyWebsBrowseActivity extends Activity {
     });
   }
 
+  /**
+   * Le service n'a pas répondu. Auparavant cette situation était présentée comme
+   * « Page non éligible » : un mensonge — la page était peut-être parfaitement
+   * éligible, c'est AYROVI qui ne répondait pas. L'utilisateur cherche alors
+   * pourquoi CE produit ne marche pas, au lieu de réessayer plus tard.
+   */
+  private void setAddUnavailable(boolean unavailable) {
+    productPage = false;
+    runOnUiThread(() -> {
+      addButton.setEnabled(!unavailable);
+      addButton.setText(unavailable ? R.string.aywebs_service_unavailable : R.string.aywebs_not_product_page);
+    });
+  }
+
+  /** Message visible : un échec silencieux est vécu comme un bouton cassé. */
+  private void toast(int resId) {
+    runOnUiThread(() -> Toast.makeText(this, resId, Toast.LENGTH_LONG).show());
+  }
+
   /** §11 : la coque ne devine rien — le serveur classe la page. */
   private void analyze(String url) {
+    if (apiOrigin.isEmpty()) {
+      // Sans origine d'API, tout appel échouerait : on le dit tout de suite,
+      // au lieu de laisser croire que la page n'est pas éligible.
+      setAddUnavailable(true);
+      return;
+    }
     executor.execute(() -> {
       try {
         JSONObject body = new JSONObject().put("url", url);
-        JSONObject reply = post(webBase + ANALYZE_PATH, body);
-        boolean isProduct = reply.optJSONObject("data") != null
-            && reply.optJSONObject("data").optBoolean("is_product_page", false)
-            && reply.optJSONObject("data").optBoolean("capture_allowed", false);
-        setAddEnabled(isProduct);
+        JSONObject reply = post(apiOrigin + ANALYZE_PATH, body);
+        JSONObject data = reply.optJSONObject("data");
+        if (data == null) { setAddUnavailable(true); return; }
+
+        boolean isProduct = data.optBoolean("is_product_page", false)
+            && data.optBoolean("capture_allowed", false);
+
+        // Le serveur classe la page BIEN plus finement que « produit / pas produit » :
+        // il distingue LOGIN, CHECKOUT, CAPTCHA, SEARCH, HOME. La coque réduisait
+        // tout cela à « Page non éligible » — un message qui n'aide personne.
+        // Cas observés en direct sur amazon.co.jp :
+        //   /ap/signin          → page_type=LOGIN,    action=LOGIN
+        //   /gp/cart/view.html  → page_type=CHECKOUT, action=NONE
+        //   /dp/XXXX            → page_type=PRODUCT,  capture_allowed=true
+        // Aucune de ces pages n'est « non éligible » : chacune attend un geste
+        // différent de l'utilisateur, et le contrat serveur (§27) interdit de
+        // contourner une page LOGIN — la coque doit donc l'EXPLIQUER.
+        if (isProduct) {
+          setAddEnabled(true);
+          return;
+        }
+        String pageType = data.optString("page_type", "");
+        String action = data.optString("customer_action_required", "NONE");
+        if ("LOGIN".equals(action) || "LOGIN".equals(pageType)) {
+          setAddLabel(R.string.aywebs_login_required);
+          toast(R.string.aywebs_login_explained);
+          return;
+        }
+        if ("CAPTCHA".equals(action) || "CAPTCHA".equals(pageType)) {
+          setAddLabel(R.string.aywebs_captcha_page);
+          return;
+        }
+        if ("CHECKOUT".equals(pageType)) {
+          setAddLabel(R.string.aywebs_merchant_cart);
+          toast(R.string.aywebs_merchant_cart_explained);
+          return;
+        }
+        setAddUnavailable(false);
       } catch (Exception error) {
-        setAddEnabled(false);
+        // Panne réseau / service indisponible ≠ page non éligible.
+        setAddUnavailable(true);
       }
+    });
+  }
+
+  /** Libellé explicatif sur le bouton, sans le réactiver (rien à ajouter ici). */
+  private void setAddLabel(int resId) {
+    productPage = false;
+    runOnUiThread(() -> {
+      addButton.setEnabled(false);
+      addButton.setText(resId);
     });
   }
 
@@ -197,19 +318,30 @@ public class AyWebsBrowseActivity extends Activity {
     executor.execute(() -> {
       try {
         JSONObject body = new JSONObject().put("url", currentUrl);
-        JSONObject reply = post(webBase + RESOLVE_PATH, body);
+        JSONObject reply = post(apiOrigin + RESOLVE_PATH, body);
         JSONObject product = reply.optJSONObject("data");
         runOnUiThread(() -> {
           if (product == null) {
+            // Le serveur répond mais ne reconnaît pas le produit : c'est un cas
+            // métier légitime, on le dit au lieu de remettre le bouton en silence.
             addButton.setText(R.string.aywebs_add_to_cart);
+            toast(R.string.aywebs_product_not_resolved);
             return;
           }
           showVariantSheet(product);
         });
       } catch (Exception error) {
         runOnUiThread(() -> addButton.setText(R.string.aywebs_add_to_cart));
+        toastMessage(error.getMessage());
       }
     });
+  }
+
+  /** Toast avec un texte venu du serveur (repli : message générique). */
+  private void toastMessage(String message) {
+    final String text = message == null || message.isEmpty()
+        ? getString(R.string.aywebs_add_failed) : message;
+    runOnUiThread(() -> Toast.makeText(this, text, Toast.LENGTH_LONG).show());
   }
 
   private void showVariantSheet(JSONObject product) {
@@ -265,12 +397,17 @@ public class AyWebsBrowseActivity extends Activity {
             .put("variant_attributes", attributes)
             .put("quantity", quantity);
         dialog.dismiss();
+        runOnUiThread(() -> addButton.setText(R.string.aywebs_loading));
         executor.execute(() -> {
           try {
-            post(webBase + CART_ITEMS_PATH, body);
-            runOnUiThread(() -> showAddedDialog(product.optString("title", "")));
+            post(apiOrigin + CART_ITEMS_PATH, body);
+            runOnUiThread(() -> {
+              addButton.setText(R.string.aywebs_add_to_cart);
+              showAddedDialog(product.optString("title", ""));
+            });
           } catch (Exception error) {
             runOnUiThread(() -> addButton.setText(R.string.aywebs_add_to_cart));
+            toastMessage(error.getMessage());
           }
         });
       } catch (Exception error) {
@@ -301,8 +438,19 @@ public class AyWebsBrowseActivity extends Activity {
 
   /** Une seule UI : les écrans AYROVI sont les routes WEB de la coque. */
   private void openWebRoute(String route) {
-    Intent intent = new Intent(this, MainActivity.class);
-    intent.setData(Uri.parse(webBase + route));
+    // ── Corrigé le 2026-10-03 (P0 : « Ajouter au panier » ne faisait rien) ──
+    // L'ancien code construisait l'intent ainsi :
+    //     Intent intent = new Intent(this, MainActivity.class);   // AUCUNE action
+    //     intent.setData(Uri.parse(webBase + route));             // https://localhost/…
+    // Or MainActivity.ayWebsTarget() commence par :
+    //     String action = intent.getAction();
+    //     if (action == null) return null;                        // → sortie immédiate
+    // donc aucune navigation ne pouvait se produire ; et même avec ACTION_VIEW, la
+    // cible restait nulle puisque ce contrôle exige le schéma `ayrovi://aywebs`.
+    // L'intent doit donc être un VRAI lien profond AYWEBs, exactement comme ceux
+    // déclarés dans le Manifest (§25). MainActivity le retraduit en route web servie.
+    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(AYWEBS_DEEP_LINK + route));
+    intent.setClass(this, MainActivity.class);
     intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
     startActivity(intent);
     finish();
@@ -327,8 +475,41 @@ public class AyWebsBrowseActivity extends Activity {
       int read;
       while ((read = stream.read(chunk)) > 0) buffer.write(chunk, 0, read);
     }
-    if (code >= 400) throw new Exception("AYWEBS_HTTP_" + code);
-    return new JSONObject(new String(buffer.toByteArray(), StandardCharsets.UTF_8));
+    String text = new String(buffer.toByteArray(), StandardCharsets.UTF_8);
+    if (code >= 400) {
+      // Le serveur répond avec un CONTRAT d'erreur explicite :
+      //   { code, error, error_contract: { userMessage, recoverable,
+      //     retryAllowed, requiredAction } }
+      // La coque jetait tout cela et affichait « Ajout impossible ». On remonte
+      // donc le message destiné au client : « La boutique demande une connexion »,
+      // « Cette page est le panier de la boutique », « Le devis AYROVI est
+      // indisponible pour cette devise »… — autant d'informations qui changent
+      // ce que l'utilisateur peut faire ensuite.
+      throw new AyWebsApiException(code, userMessageOf(text));
+    }
+    return new JSONObject(text);
+  }
+
+  /** Message destiné au client, extrait du contrat d'erreur serveur. */
+  private static String userMessageOf(String body) {
+    try {
+      JSONObject parsed = new JSONObject(body);
+      JSONObject contract = parsed.optJSONObject("error_contract");
+      if (contract != null) {
+        String message = contract.optString("userMessage", "");
+        if (!message.isEmpty()) return message;
+      }
+      return parsed.optString("error", "");
+    } catch (Exception ignored) {
+      return "";
+    }
+  }
+
+  /** Erreur d'API portant le message utilisateur du serveur (ou vide). */
+  private static final class AyWebsApiException extends Exception {
+    AyWebsApiException(int status, String userMessage) {
+      super(userMessage == null || userMessage.isEmpty() ? "AYWEBS_HTTP_" + status : userMessage);
+    }
   }
 
   @Override

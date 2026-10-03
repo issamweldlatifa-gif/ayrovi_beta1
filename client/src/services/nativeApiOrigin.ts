@@ -10,9 +10,11 @@
  * مسار واحد، موقع واحد: نفس الكود، نفس الواجهة، نفس الـ API.
  */
 import { getNativeSessionToken, isNativeApp } from './nativeShell';
+import { AYROVI_API_ORIGIN } from './apiOrigin';
 
-/** أصل الـ API الوحيد للتطبيق الأصلي. يُحقن وقت البناء لاحقًا إن لزم. */
-export const AYROVI_API_ORIGIN = 'https://ayrovi-beta1.onrender.com';
+/** Réexporté depuis `apiOrigin.ts` — SOURCE UNIQUE, partagée avec la coque native
+ *  (le module neutre évite le cycle nativeShell → nativeApiOrigin → nativeShell). */
+export { AYROVI_API_ORIGIN };
 
 const PATCH_FLAG = '__ayroviApiOriginPatched';
 

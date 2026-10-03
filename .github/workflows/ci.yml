@@ -36,6 +36,12 @@ jobs:
       - name: Enforce official AYROVI A identity
         run: npm run identity:check && npm run identity:test
 
+      # Invariants de la coque Android (2026-10-03) : manifeste + tripwires Java.
+      # Déterministe, sans SDK — donc toujours exécutable. La COMPILATION Java,
+      # elle, tourne dans le job `android-shell` ci-dessous.
+      - name: Verify Android shell invariants
+        run: npm run android:check
+
       - name: Typecheck
         run: npm run typecheck
 
@@ -103,6 +109,53 @@ jobs:
         with:
           name: public-additions-evidence
           path: docs/public-additions/evidence/
+
+      # ── Gardes de charte (2026-10-03) ────────────────────────────────────────
+      # Ces trois vérificateurs existaient déjà mais n'étaient branchés sur AUCUNE
+      # porte automatique : c'est exactement pour cela que deux dérives ont pu
+      # s'installer sans alerte — la couverture orange est montée à 7,248 % (plafond
+      # documenté : 3 %) et le pied de page annonçait « 0 moyen encaissable ».
+      # Ils ont besoin d'un VRAI serveur : les runners de public-additions hébergent
+      # leur propre fixture, pas ces trois-là.
+      - name: Start the real server for charter guards
+        run: |
+          npm run build:server
+          # NODE_ENV=development : la base est amorcée avec le contenu de démonstration
+          # déterministe, donc le bandeau campagne existe réellement et la mesure
+          # porte sur quelque chose. Une base vide ferait passer le garde à vide.
+          NODE_ENV=development PORT=3210 \
+            ADMIN_EMAIL=admin@ayrovi.tn ADMIN_PASSWORD='AyroviBeta2026!' \
+            nohup node dist/server.js > /tmp/ayrovi-server.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -sf http://127.0.0.1:3210/api/public/commerce-config > /dev/null; then
+              echo "Server ready after ${i}s"; exit 0
+            fi
+            sleep 1
+          done
+          echo 'Server did not become ready:'; tail -40 /tmp/ayrovi-server.log; exit 1
+
+      - name: Enforce charter guards the build must never break again
+        env:
+          AYROVI_BASE_URL: http://127.0.0.1:3210
+        run: |
+          npm run verify:public-nav
+          npm run verify:footer-payments
+          npm run verify:customer-auth
+          npm run verify:product-variants
+          npm run verify:image-composition
+          # Budget de charte : échoue si l'orange dépasse 3 % d'une surface.
+          npm run audit:design
+
+      - name: Upload charter guard evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: charter-guard-evidence
+          path: |
+            verify/zalando-*.png
+            docs/footer-payments/evidence/
+            docs/public-navigation/evidence/
+          if-no-files-found: ignore
 
       - name: Verify Lens camera entry, help, consent and navigation
         id: lens_camera
@@ -339,3 +392,33 @@ jobs:
             screenshots/editorial/sonim-handsfree/
             screenshots/editorial/variant-availability/
             screenshots/editorial/product-selection/
+
+  # ── Coque Android : compilation réelle (ajouté le 2026-10-03) ────────────────
+  # La revue a montré que RIEN ne compilait Java dans les portes automatiques :
+  # `android-apk.yml` est en workflow_dispatch (manuel) et `ci.yml` ne touchait
+  # pas au dossier android/. C'est exactement pour cela qu'un Intent sans action
+  # — qui rendait « Ajouter au panier » inopérant — a pu vivre dans le code.
+  android-shell:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Prepare the native project
+        run: npm run build:client && npx cap sync android
+      # continue-on-error: true — À BASCULER À false DÈS LE PREMIER RUN VERT.
+      # Cette étape n'a jamais tourné (android-apk.yml est manuel) : on l'observe
+      # d'abord pour ne pas casser la CI sur une première exécution inconnue,
+      # puis on la rend bloquante. Tant qu'elle est tolérante, elle n'est PAS un
+      # garde — ne pas s'y fier avant le basculement.
+      - name: Compile the native shell
+        continue-on-error: true
+        run: cd android && ./gradlew :app:compileDebugJavaWithJavac --no-daemon
