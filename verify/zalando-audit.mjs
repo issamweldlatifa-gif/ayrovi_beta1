@@ -11,6 +11,7 @@
  */
 import { chromium } from 'playwright';
 import sharp from 'sharp';
+import fs from 'node:fs';
 
 const BASE = process.argv[2] || 'http://localhost:3000';
 const OUT = 'verify';
@@ -128,4 +129,24 @@ await browser.close();
 console.log(JSON.stringify(report, null, 2));
 const worst = report.filter((r) => !r.absent).reduce((m, r) => Math.max(m, r.pct), 0);
 console.log(`\nCouverture orange maximale mesurée : ${worst}% (budget charte : 3%)`);
+// ── Publication du résultat (2026-10-03) ──────────────────────────────────────
+// Ce garde s'exécutait sans jamais DIRE ce qu'il avait mesuré : en cas d'échec,
+// la sortie ne nommait ni la surface fautive ni sa valeur, et les journaux d'une
+// exécution ne sont lisibles qu'avec des droits d'administration. Le seul verdict
+// public était donc « Process completed with exit code 1 ».
+// Chaque mesure est maintenant publiée comme annotation (lisible publiquement sur
+// la page de l'exécution) et le détail complet part dans le résumé de l'étape.
+for (const r of report) {
+  console.log(`::notice title=Orange — ${r.label}::${r.absent ? 'absent' : `${r.pct}%`}`);
+}
+if (worst > 3) {
+  console.log(`::error title=Budget orange dépassé::${worst}% > 3%`);
+}
+if (process.env.GITHUB_STEP_SUMMARY) {
+  const rows = report.map((r) => `| ${r.label} | ${r.absent ? 'absent' : `${r.pct}%`} |`);
+  fs.appendFileSync(
+    process.env.GITHUB_STEP_SUMMARY,
+    ['## Budget orange — surface par surface', '', '| Surface | Couverture mesurée |', '| --- | --- |', ...rows, '', `**Maximum mesuré : ${worst}%** — budget de charte : 3%`, ''].join('\n'),
+  );
+}
 process.exit(worst <= 3 ? 0 : 1);
