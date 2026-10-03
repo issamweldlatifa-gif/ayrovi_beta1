@@ -22,6 +22,12 @@ export interface ParsedProductPage {
   externalId: string;
   variants: ProductVariants;
   availability: 'in_stock' | 'limited' | 'out_of_stock' | 'unknown';
+  /**
+   * ÉTAT DU PRODUIT (03/10/2026) — neuf / occasion / reconditionné, lu dans les
+   * données structurées de la page (`offers.itemCondition`). `undefined` quand la
+   * source ne le publie pas : l'écran ne doit jamais écrire « New » par défaut.
+   */
+  condition?: 'new' | 'used' | 'refurbished';
   priceSource: 'json_ld' | 'meta' | 'dom' | 'embedded_variant' | 'context_regex' | 'none';
 }
 
@@ -370,6 +376,19 @@ function variantPrice(variant: any): number {
   return moneyValue(variant?.price ?? variant?.productPrice ?? variant?.salePrice, shopifyCents);
 }
 
+/**
+ * Clé d'attribut d'une option marchande libre (« Format » → `format`).
+ * L'option garde son nom : elle n'est ni traduite ni fusionnée avec une autre.
+ */
+function variantAttributeKey(raw: unknown): string {
+  return String(raw || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '_')
+    .replace(/[^a-z0-9_\-]/g, '')
+    .slice(0, 40);
+}
+
 function variantsFromProduct(product: any): ProductVariantDetail[] {
   if (!Array.isArray(product?.variants)) return [];
   const names = optionNames(product);
@@ -380,10 +399,18 @@ function variantsFromProduct(product: any): ProductVariantDetail[] {
     if (!values.length) continue;
     let size: string | null = null;
     let color: string | null = null;
+    // Options NOMMÉES par le marchand mais hors taille/couleur (Format, Type,
+    // Édition…) : conservées telles quelles au lieu d'être prises pour une
+    // couleur faute de mieux (03/10/2026 : « Kindle » n'est pas une couleur).
+    const attributes: Record<string, string> = {};
     values.forEach((value, index) => {
       const name = names[index] || '';
       if (SIZE_NAME.test(name)) size = value;
       else if (COLOR_NAME.test(name)) color = value;
+      else if (name) {
+        const key = variantAttributeKey(name);
+        if (key && value && !PLACEHOLDER.test(value)) attributes[key] = value;
+      }
       else if (!size && looksLikeSize(value)) size = value;
       else if (!color && values.length > 1) color = value;
     });
@@ -405,6 +432,7 @@ function variantsFromProduct(product: any): ProductVariantDetail[] {
       label: unique([size, color], 2).join(' · ') || values.join(' · '),
       size,
       color,
+      ...(Object.keys(attributes).length ? { attributes } : {}),
       available: true,
       // Le drapeau de stock PUBLIÉ, lu tel quel (booleén uniquement) : il
       // alimentera le contrat de commande. Un silence reste null.
@@ -414,7 +442,8 @@ function variantsFromProduct(product: any): ProductVariantDetail[] {
   }
   const seen = new Set<string>();
   return details.filter((detail) => {
-    const key = `${detail.size || ''}|${detail.color || ''}|${detail.price || ''}`.toLowerCase();
+    const extraKey = Object.entries(detail.attributes || {}).map(([k, v]) => `${k}=${v}`).join(',');
+    const key = `${detail.size || ''}|${detail.color || ''}|${detail.price || ''}|${extraKey}`.toLowerCase();
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -519,6 +548,28 @@ function amazonAvailability(
     return 'out_of_stock';
   }
   return parsed;
+}
+
+/**
+ * ÉTAT DU PRODUIT — neuf / occasion / reconditionné.
+ *
+ * Lu UNIQUEMENT dans les données structurées (`offers.itemCondition`), parce que
+ * c'est la seule forme vérifiable : `https://schema.org/NewCondition`,
+ * `UsedCondition`, `RefurbishedCondition`. Aucune déduction depuis un titre, un
+ * prix bas ou une photo — un « occasion » inventé ferait acheter à tort, un
+ * « neuf » inventé ferait payer trop cher. Offres contradictoires (`known.size > 1`)
+ * ⇒ `undefined` : on ne tranche pas.
+ */
+function conditionFrom(offers: any[]): ParsedProductPage['condition'] {
+  const known = new Set<'new' | 'used' | 'refurbished'>();
+  for (const offer of Array.isArray(offers) ? offers.slice(0, 300) : []) {
+    const raw = typeof offer?.itemCondition === 'string' ? offer.itemCondition.trim() : '';
+    const match = /^(?:https?:\/\/schema\.org\/)?(NewCondition|UsedCondition|RefurbishedCondition)$/i.exec(raw);
+    if (!match) continue;
+    const token = match[1].toLowerCase();
+    known.add(token.startsWith('new') ? 'new' : token.startsWith('used') ? 'used' : 'refurbished');
+  }
+  return known.size === 1 ? [...known][0] : undefined;
 }
 
 export function parseProductPageHtml(html: string, baseUrl: string, storeType: StoreType): ParsedProductPage {
@@ -795,12 +846,13 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
       colorImages,
       externalId: String(productLd?.sku || productLd?.productID || embeddedProduct?.id || embeddedProduct?.sku || ''),
       variants: { sizes, colors, details },
-      availability: amazonAvailability(
-        availabilityFrom({ ...productLd, offers: (ldOffers.length ? ldOffers : productLd?.offers) }, embeddedProduct),
-        document.body?.textContent || '',
-        storeType,
-      ),
-      priceSource,
+    availability: amazonAvailability(
+      availabilityFrom({ ...productLd, offers: (ldOffers.length ? ldOffers : productLd?.offers) }, embeddedProduct),
+      document.body?.textContent || '',
+      storeType,
+    ),
+    condition: conditionFrom(ldOffers.length ? ldOffers : (Array.isArray(productLd?.offers) ? productLd.offers : productLd?.offers ? [productLd.offers] : [])),
+    priceSource,
     };
   } finally {
     dom.window.close();

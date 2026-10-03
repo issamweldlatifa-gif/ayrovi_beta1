@@ -44,6 +44,12 @@ export interface AyWebsSourceProduct {
   }>;
   availability: AyWebsAvailabilityState;
   availabilityReason: string;
+  /**
+   * État du produit (neuf / occasion / reconditionné), quand la SOURCE le publie
+   * de façon structurée (JSON-LD `offers.itemCondition`). `null` sinon : la
+   * coque ne doit jamais afficher « New » par défaut.
+   */
+  condition: 'new' | 'used' | 'refurbished' | null;
   merchant: { name: string | null; url: string | null };
   /** Produit AYROVI historique conservé pour la compatibilité V1 (confirmation, panier). */
   scrapedProduct: ScrapedProduct;

@@ -111,6 +111,8 @@ CREATE TABLE IF NOT EXISTS ayweb_products (
   currency TEXT NOT NULL DEFAULT '',
   variant_groups TEXT NOT NULL DEFAULT '[]',
   variants TEXT NOT NULL DEFAULT '[]',
+  -- 03/10/2026 — état publié par la source : 'new' | 'used' | 'refurbished' | '' (inconnu).
+  condition TEXT NOT NULL DEFAULT '',
   availability TEXT NOT NULL DEFAULT 'UNKNOWN' CHECK(availability IN (${list(AYWEBS_AVAILABILITY_STATES)})),
   availability_reason TEXT NOT NULL DEFAULT '',
   availability_checked_at TEXT,
@@ -539,6 +541,11 @@ export function ensureAyWebsSchema(db: QatafoDatabase): void {
     const columns = db.all<{ name: string }>("PRAGMA table_info(ayweb_orders)").map((row) => row.name);
     if (!columns.includes('shipping_address')) {
       db.run("ALTER TABLE ayweb_orders ADD COLUMN shipping_address TEXT NOT NULL DEFAULT '{}'");
+    }
+    // 03/10/2026 — état produit (neuf/occasion) publié par la source.
+    const productColumns = db.all<{ name: string }>("PRAGMA table_info(ayweb_products)").map((row) => row.name);
+    if (!productColumns.includes('condition')) {
+      db.run("ALTER TABLE ayweb_products ADD COLUMN condition TEXT NOT NULL DEFAULT ''");
     }
   } catch (error) {
     console.error('[AyWebs] shipping_address migration failed:', error instanceof Error ? error.message : error);

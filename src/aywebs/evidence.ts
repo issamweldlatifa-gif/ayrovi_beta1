@@ -64,7 +64,19 @@ export function canonicalVariant(variant: AyWebsVariantSelection): Record<string
   for (const key of Object.keys(variant.attributes || {}).sort()) {
     attributes[key] = String(variant.attributes[key] ?? '').trim();
   }
-  return { variantId: variant.variantId, attributes, quantity: Number(variant.quantity) || 1 };
+  // La métadonnée de contexte (ex. `condition`) est figée avec la ligne pour la
+  // trace, mais reste SÉPARÉE des attributs qui identifient la variante (§16).
+  const metadata: Record<string, string> = {};
+  for (const key of Object.keys(variant.metadata || {}).sort()) {
+    const value = String((variant.metadata as Record<string, string>)[key] ?? '').trim();
+    if (value) metadata[key] = value;
+  }
+  return {
+    variantId: variant.variantId,
+    attributes,
+    quantity: Number(variant.quantity) || 1,
+    ...(Object.keys(metadata).length ? { metadata } : {}),
+  };
 }
 
 function canonicalExtra(parts: Record<string, unknown> = {}): Record<string, unknown> {

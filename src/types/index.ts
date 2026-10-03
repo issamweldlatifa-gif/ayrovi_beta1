@@ -12,6 +12,13 @@ export interface ProductVariantDetail {
   label: string;
   size?: string | null;
   color?: string | null;
+  /**
+   * Attributs publiés par le marchand au-delà de taille/couleur, clé normalisée
+   * (ex. `{ format: 'Kindle' }`) — lus tels quels sur la page, jamais déduits.
+   * Sans cette donnée, un marchand qui publie « Format » verrait cette option
+   * perdue (ou pire, prise pour une couleur).
+   */
+  attributes?: Record<string, string> | null;
   /** Eligible for a variant-specific choice; not a live stock guarantee. */
   available: boolean;
   /**
@@ -56,6 +63,11 @@ export interface ScrapedProduct {
   variants: ProductVariants;
   selectedVariant?: string | null;
   availability: 'in_stock' | 'limited' | 'out_of_stock' | 'unknown';
+  /**
+   * État publié par la source (JSON-LD `itemCondition`) : 'new' | 'used' |
+   * 'refurbished'. Absent quand la page ne le déclare pas — jamais déduit.
+   */
+  condition?: 'new' | 'used' | 'refurbished';
   brand: string | null;
   rating?: number | null;
   reviewsCount?: number | null;

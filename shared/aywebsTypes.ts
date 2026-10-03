@@ -454,8 +454,16 @@ export interface AyWebsVariant {
 
 export interface AyWebsVariantSelection {
   variantId: string;
+  /** Attributs PUBLIÉS par le marchand — seuls eux identifient la variante. */
   attributes: AyWebsVariantAttributes;
   quantity: number;
+  /**
+   * Métadonnées de contexte fournies par le client mais ABSENTES de l'offre
+   * marchand (ex. `condition: "new"` envoyé par la coque Android / la feuille
+   * web). Conservées pour la trace et l'affichage ; jamais utilisées pour
+   * décider qu'une combinaison existe ou non (régression du 03/10/2026).
+   */
+  metadata?: Record<string, string> | null;
 }
 
 export interface AyWebsAvailability {
@@ -497,6 +505,8 @@ export interface AyWebsResolvedProduct {
   variantGroups: Array<{ attribute: string; values: string[] }>;
   selectedVariant: AyWebsVariantSelection | null;
   availability: AyWebsAvailability;
+  /** État publié par la source (neuf / occasion / reconditionné) ou `null`. */
+  condition: 'new' | 'used' | 'refurbished' | null;
   merchant: { name: string | null; url: string | null };
   purchaseMode: AyWebsPurchaseMode;
   integrationType: AyWebsIntegrationType;

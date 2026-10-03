@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Loader2, Trash2 } from '../../../components/QatafoIcons';
 import { useLocale } from '../../../i18n/LocaleContext';
+import { openMerchantPage } from '../../../services/nativeShell';
 import {
   bridgeAyWebsCartToAyrovi, getAyWebsCart, removeAyWebsCartItem, trackAyWebsEvent,
   updateAyWebsCartItem, type AyWebsCartPayload,
@@ -64,7 +65,9 @@ export const AyWebsCartScreen: React.FC<AyWebsCartScreenProps> = ({ tab, onTab, 
     setNotice('');
     try {
       const result = await bridgeAyWebsCartToAyrovi();
-      trackAyWebsEvent('capture_succeeded', { code: `bridge:${result.moved.length}` });
+      // Le pont est une SYNCHRONISATION (idempotente) : ni doublon, ni perte.
+      const synced = result.moved.filter((line) => line.synced).length;
+      trackAyWebsEvent('capture_succeeded', { code: `bridge:${result.moved.length}:synced:${synced}` });
       onOpenAyroviCheckout();
     } catch (caught: any) {
       setNotice(String(caught?.message || caught));
@@ -96,9 +99,33 @@ export const AyWebsCartScreen: React.FC<AyWebsCartScreenProps> = ({ tab, onTab, 
           <div className="ayw-cartline-body">
             <h3 className="ayw-cartline-title">{item.title}</h3>
             <dl className="ayw-cartline-meta">
+              {/* Boutique + lien source : la traçabilité demandée, sans quitter le parcours. */}
+              <div>
+                <dt>{tr('Store', 'المتجر')}</dt>
+                <dd>{item.store_name}{' '}
+                  <button
+                    type="button"
+                    className="ayw-source-link"
+                    onClick={() => openMerchantPage(item.source_url)}
+                  >
+                    {tr('View on the store', 'عرض عند المتجر')}
+                  </button>
+                </dd>
+              </div>
               <div><dt>{tr('Price', 'السعر')}</dt><dd>{item.unit_price.toLocaleString()} {item.currency}</dd></div>
-              {item.variant_label && <div><dt>{tr('Format', 'المواصفات')}</dt><dd>{item.variant_label}</dd></div>}
-              <div><dt>{tr('Item Condition', 'حالة المنتج')}</dt><dd>{item.availability === 'in_stock' ? tr('New', 'جديد') : item.availability}</dd></div>
+              {item.variant_label && <div><dt>{tr('Options', 'الخيارات')}</dt><dd>{item.variant_label}</dd></div>}
+              {/* Disponibilité : affichée seulement quand elle est confirmée. */}
+              {item.availability !== 'UNKNOWN' && (
+                <div>
+                  <dt>{tr('Availability', 'التوفّر')}</dt>
+                  <dd>
+                    {item.availability === 'AVAILABLE' ? tr('In stock', 'متوفر')
+                      : item.availability === 'LOW_STOCK' ? tr('Low stock', 'كمية محدودة')
+                      : item.availability === 'OUT_OF_STOCK' ? tr('Out of stock', 'غير متوفر')
+                      : item.availability}
+                  </dd>
+                </div>
+              )}
             </dl>
             <div className="ayw-cartline-row">
               <label className="ayw-qty">
@@ -114,6 +141,10 @@ export const AyWebsCartScreen: React.FC<AyWebsCartScreenProps> = ({ tab, onTab, 
               <p className="ayw-subtotal">
                 <span>{tr('Sub total', 'المجموع الفرعي')}</span>
                 <strong>{(item.unit_price * item.quantity).toLocaleString()} {item.currency}</strong>
+                {/* Le montant AYROVI est TOUJOURS celui du serveur (jamais un calcul client). */}
+                {item.line_total_tnd > 0 && (
+                  <em className="ayw-line-tnd">≈ {item.line_total_tnd.toFixed(2)} {tr('DT', 'د.ت')}</em>
+                )}
               </p>
               <button type="button" className="ayw-delete" onClick={() => void remove(item.id)} aria-label={tr('Delete', 'حذف')}>
                 <Trash2 size={16} aria-hidden="true" /> {tr('Delete', 'حذف')}
@@ -137,6 +168,10 @@ export const AyWebsCartScreen: React.FC<AyWebsCartScreenProps> = ({ tab, onTab, 
           </p>
           <button type="button" className="ayw-cta" disabled={bridging} onClick={() => void proceed()}>
             {bridging ? <Loader2 className="animate-spin" size={18} aria-hidden="true" /> : tr('Proceed to order page', 'المتابعة إلى صفحة الطلب')}
+          </button>
+          {/* Rester dans le parcours : retour aux boutiques, sans quitter AYWEBs. */}
+          <button type="button" className="ayw-cta-outline" onClick={() => onTab('stores')}>
+            {tr('Continue shopping', 'مواصلة التسوق')}
           </button>
           <p className="ayw-carttotal-note">
             {tr(

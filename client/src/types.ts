@@ -5,6 +5,8 @@ export interface ProductVariantDetail {
   label: string;
   size?: string | null;
   color?: string | null;
+  /** Attributs marchands hors taille/couleur (ex. `{ format: 'Kindle' }`). */
+  attributes?: Record<string, string> | null;
   available: boolean;
   price?: number | null;
 }
@@ -39,6 +41,8 @@ export interface ScrapedProduct {
   variants: ProductVariants;
   selectedVariant?: string | null;
   availability: 'in_stock' | 'limited' | 'out_of_stock' | 'unknown';
+  /** État lu dans les données structurées de la source — jamais déduit (03/10/2026). */
+  condition?: 'new' | 'used' | 'refurbished' | null;
   brand: string | null;
   rating?: number | null;
   reviewsCount?: number | null;

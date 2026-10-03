@@ -234,7 +234,12 @@ export interface AyWebsProductPayload {
   currency: string;
   variants: AyWebsVariantOption[];
   variant_groups: Array<{ attribute: string; values: string[] }>;
-  selected_variant: { variantId: string; attributes: Record<string, string>; quantity: number } | null;
+  /**
+   * État publié par la source ('new' | 'used' | 'refurbished') ou `null`.
+   * Jamais « new » par défaut : l'écran n'affiche que ce que le marchand publie.
+   */
+  condition: 'new' | 'used' | 'refurbished' | null;
+  selected_variant: { variantId: string; attributes: Record<string, string>; quantity: number; metadata?: Record<string, string> | null } | null;
   availability: AyWebsAvailabilityPayload;
   merchant: Record<string, unknown>;
   purchase_mode: string;
@@ -429,7 +434,16 @@ export async function addAyWebsCartItem(body: {
   variant_attributes?: Record<string, string> | null; quantity?: number; customer_note?: string;
 }) {
   const payload = await ayWebsRequest<any>('/cart/items', { method: 'POST', body });
-  return { item: payload.data.item as AyWebsCartItemPayload, cart: payload.cart as AyWebsCartPayload };
+  return {
+    item: payload.data.item as AyWebsCartItemPayload,
+    cart: payload.cart as AyWebsCartPayload,
+    /**
+     * Liaison immédiate vers le panier AYROVI (point sûr : après persistance).
+     * `linked: true` ⇒ l'article figure déjà dans le panier AYROVI de l'app.
+     * `linked: false` ⇒ il reste dans le panier AYWEBs, la raison est donnée.
+     */
+    ayrovi: (payload.data.ayrovi || null) as { linked: boolean; cart_item_id: string | null; quantity: number | null; reason: string } | null,
+  };
 }
 
 export async function updateAyWebsCartItem(itemId: string, body: { quantity?: number; customer_note?: string; variant_attributes?: Record<string, string> | null }) {
@@ -459,7 +473,7 @@ export async function verifyAyWebsCart(recheckSource = false) {
 export async function bridgeAyWebsCartToAyrovi(itemIds?: string[]) {
   const payload = await ayWebsRequest<any>('/cart/bridge-to-ayrovi', { method: 'POST', body: { item_ids: itemIds || [] } });
   return payload.data as {
-    moved: Array<{ aywebsItemId: string; aywebsItemNumber: string; cartItemId: string; store: string; title: string; quantity: number; priceTnd: number; duplicate: boolean }>;
+    moved: Array<{ aywebsItemId: string; aywebsItemNumber: string; cartItemId: string; store: string; title: string; quantity: number; priceTnd: number; duplicate: boolean; synced: boolean }>;
     skipped: Array<{ aywebsItemId: string; code: string; message: string }>;
     totalItemsCount: number; totalTnd: number; deliveryTnd: number; message: string;
   };

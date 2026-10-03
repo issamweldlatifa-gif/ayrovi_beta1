@@ -22,6 +22,7 @@ import { AyWebsCaptureError, type AyWebsSourceProduct } from './adapters/contrac
 import {
   ayWebsAvailabilityRecord,
   ayWebsSourceProductFromScraped,
+  ayWebsSplitVariantSelection,
   ayWebsVariantGroupsFromScraped,
   ayWebsVariantKey,
   ayWebsVariantOptions,
@@ -132,7 +133,13 @@ export async function resolveAyWebsProduct(
   );
 
   const missing = missingProductFields(sourceProduct);
-  const availability = await adapter.checkAvailability(sourceProduct, input.selectedVariant || null);
+  // Le client peut joindre des métadonnées de contexte (ex. `condition`) : elles
+  // n'identifient pas la variante et ne doivent jamais la faire « disparaître ».
+  const { matching: matchingAttributes, metadata: variantMetadata } = ayWebsSplitVariantSelection(
+    { variantGroups: sourceProduct.variantGroups, variants: sourceProduct.variants },
+    input.selectedVariant || null,
+  );
+  const availability = await adapter.checkAvailability(sourceProduct, matchingAttributes);
 
   // Le prix AYROVI est recalculé ici, côté serveur (§45 : jamais de prix piloté client).
   const pricing = calculatePrice(deps.db.getPricingRules(), sourceProduct.price, sourceProduct.currency, {
@@ -140,11 +147,12 @@ export async function resolveAyWebsProduct(
     quantity: Math.max(1, Number(input.quantity) || 1),
   });
 
-  const selection: AyWebsVariantSelection | null = input.selectedVariant && Object.keys(input.selectedVariant).length
+  const selection: AyWebsVariantSelection | null = matchingAttributes
     ? {
-        variantId: ayWebsVariantKey(input.selectedVariant),
-        attributes: input.selectedVariant,
+        variantId: ayWebsVariantKey(matchingAttributes),
+        attributes: matchingAttributes,
         quantity: Math.max(1, Number(input.quantity) || 1),
+        ...(variantMetadata ? { metadata: variantMetadata } : {}),
       }
     : null;
 
@@ -314,6 +322,7 @@ function toResolvedProduct(input: {
     variants: options,
     variantGroups: groups,
     selectedVariant: selection,
+    condition: sourceProduct.condition || null,
     availability: ayWebsAvailabilityRecord(
       availability.state,
       availability.reason,
@@ -390,14 +399,14 @@ export function persistAyWebsProduct(
 
     if (existing) {
       db.run(
-        `UPDATE ayweb_products SET title=?, description=?, brand=?, images=?, price=?, currency=?, variant_groups=?, variants=?,
+        `UPDATE ayweb_products SET title=?, description=?, brand=?, images=?, price=?, currency=?, variant_groups=?, variants=?, condition=?,
            availability=?, availability_reason=?, availability_checked_at=?, purchase_mode=?, integration_type=?,
            pricing_tnd=?, pricing_version=?, pricing_breakdown=?, evidence_hash=?, capture_id=?, resolved_at=?, updated_at=?
          WHERE id=?`,
         sourceProduct.title.slice(0, 500), String(sourceProduct.description || '').slice(0, 4000), String(sourceProduct.brand || '').slice(0, 200),
         JSON.stringify(sourceProduct.images.slice(0, 20)), sourceProduct.price, sourceProduct.currency,
         JSON.stringify(sourceProduct.variantGroups), JSON.stringify(sourceProduct.variants.slice(0, 300)),
-        availability.state, availability.reason.slice(0, 200), availability.checkedAt, purchaseModeFor(store), store.integrationType,
+        String(sourceProduct.condition || ''), availability.state, availability.reason.slice(0, 200), availability.checkedAt, purchaseModeFor(store), store.integrationType,
         pricing && !pricing.restricted ? pricing.totalTND : 0, pricing?.pricingVersion || 0, JSON.stringify(pricingBreakdown),
         input.evidenceHash, input.captureId, sourceProduct.capturedAt, now, productId,
       );
@@ -405,15 +414,15 @@ export function persistAyWebsProduct(
     } else {
       db.run(
         `INSERT INTO ayweb_products (id,store_id,source_url,source_domain,source_product_id,title,description,brand,images,
-           price,currency,variant_groups,variants,availability,availability_reason,availability_checked_at,purchase_mode,
+           price,currency,variant_groups,variants,condition,availability,availability_reason,availability_checked_at,purchase_mode,
            integration_type,page_type,pricing_tnd,pricing_version,pricing_breakdown,evidence_hash,capture_id,resolved_at,created_at,updated_at)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         productId, store.id, sourceProduct.sourceUrl.slice(0, 4096), sourceProduct.sourceDomain,
         String(sourceProduct.sourceProductId || '').slice(0, 300), sourceProduct.title.slice(0, 500),
         String(sourceProduct.description || '').slice(0, 4000), String(sourceProduct.brand || '').slice(0, 200),
         JSON.stringify(sourceProduct.images.slice(0, 20)), sourceProduct.price, sourceProduct.currency,
         JSON.stringify(sourceProduct.variantGroups), JSON.stringify(sourceProduct.variants.slice(0, 300)),
-        availability.state, availability.reason.slice(0, 200), availability.checkedAt, purchaseModeFor(store),
+        String(sourceProduct.condition || ''), availability.state, availability.reason.slice(0, 200), availability.checkedAt, purchaseModeFor(store),
         store.integrationType, 'PRODUCT', pricing && !pricing.restricted ? pricing.totalTND : 0, pricing?.pricingVersion || 0,
         JSON.stringify(pricingBreakdown), input.evidenceHash, input.captureId, sourceProduct.capturedAt, now, now,
       );
@@ -501,6 +510,8 @@ export interface AyWebsStoredProduct {
     availabilityReason: string;
     image: string | null;
   }>;
+  /** État publié par la source (neuf / occasion / reconditionné) ou `null`. */
+  condition: 'new' | 'used' | 'refurbished' | null;
   availability: AyWebsAvailability;
   purchaseMode: AyWebsPurchaseMode;
   integrationType: AyWebsIntegrationType;
@@ -554,6 +565,9 @@ function hydrateStoredProduct(row: any): AyWebsStoredProduct {
     currency: String(row.currency || ''),
     variantGroups: parse(row.variant_groups, []),
     variants: parse(row.variants, []),
+    condition: ['new', 'used', 'refurbished'].includes(String(row.condition || ''))
+      ? String(row.condition) as 'new' | 'used' | 'refurbished'
+      : null,
     availability: ayWebsAvailabilityRecord(
       String(row.availability || 'UNKNOWN') as AyWebsAvailability['state'],
       String(row.availability_reason || ''),

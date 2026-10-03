@@ -331,6 +331,23 @@
 .ayw-subtotal { margin: 0; display: flex; flex-direction: column; font-size: .8rem; color: var(--ayrovi-ink-secondary, #475467); }
 .ayw-subtotal strong { font-size: 1.05rem; color: var(--ayrovi-ink, #101828); }
 
+/* --- équivalent TND sous le sous-total marchand : montant SERVEUR, jamais un calcul client --- */
+.ayw-line-tnd { font-style: normal; font-size: .8rem; color: var(--ayrovi-ink-secondary, #475467); }
+
+/* --- lien « voir chez le marchand » : ouvre la fiche source sans quitter AYWEBs --- */
+.ayw-source-link {
+  border: 0;
+  background: none;
+  padding: 0;
+  margin: 0;
+  color: var(--ayrovi-ink-secondary, #344054);
+  font: inherit;
+  font-size: .85rem;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .ayw-delete {
   margin-inline-start: auto;
   border: 1px solid var(--ayrovi-line, #d0d5dd);

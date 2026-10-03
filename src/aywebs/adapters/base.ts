@@ -12,7 +12,13 @@ import {
   type AyWebsSourceProduct,
   type AyWebsStoreAdapter,
 } from './contract';
-import { ayWebsAvailabilityFromMerchant, ayWebsSourceProductFromScraped, ayWebsVariantFromSelection, ayWebsVariantKey } from '../productNormalizer';
+import {
+  ayWebsAvailabilityFromMerchant,
+  ayWebsSourceProductFromScraped,
+  ayWebsSplitVariantSelection,
+  ayWebsVariantFromSelection,
+  ayWebsVariantKey,
+} from '../productNormalizer';
 
 /**
  * AYWEBs — base partagée de tous les adaptateurs.

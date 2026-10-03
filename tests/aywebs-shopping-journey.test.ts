@@ -80,14 +80,27 @@ function pricingRules(): PricingRules {
  */
 function fakeScraper(options: {
   availability?: string;
-  variantMode?: 'combinations' | 'lists';
+  variantMode?: 'combinations' | 'lists' | 'formats' | 'condition-options';
   prices?: { amazon?: number; shein?: number };
+  condition?: 'new' | 'used' | 'refurbished';
 } = {}) {
   const amazonCombinations = [
     { id: 'v-black-41', color: 'Black', size: '41', stock: true, price: 39.99 },
     { id: 'v-black-42', color: 'Black', size: '42', stock: true, price: 39.99 },
     { id: 'v-white-41', color: 'White', size: '41', stock: true, price: 41.99 },
     { id: 'v-white-42', color: 'White', size: '42', stock: false, price: 41.99 },
+  ];
+  // Marchand qui publie une option NOMMÉE hors taille/couleur (référence Buyee :
+  // « Format : Kindle / Magazine »), avec une valeur épuisée et une sans stock publié.
+  const amazonFormats = [
+    { id: 'v-format-kindle', label: 'Kindle', attributes: { format: 'Kindle' }, stock: true, available: true, price: 39.99 },
+    { id: 'v-format-magazine', label: 'Magazine', attributes: { format: 'Magazine' }, stock: false, available: false, price: 41.99 },
+  ];
+  // Marchand qui publie réellement un attribut « Condition » : c'est alors un
+  // attribut de variante comme un autre, opposable à la sélection du client.
+  const amazonConditionOptions = [
+    { id: 'v-cond-new', label: 'New', attributes: { condition: 'new' }, stock: true, available: true, price: 39.99 },
+    { id: 'v-cond-used', label: 'Used', attributes: { condition: 'used' }, stock: true, available: true, price: 29.99 },
   ];
   const scrapeProduct = vi.fn(async (url: string) => {
     const isAmazon = url.includes('amazon.');
@@ -108,9 +121,15 @@ function fakeScraper(options: {
       variants: isAmazon
         ? (options.variantMode === 'lists'
             ? { colors: ['Black', 'White'], sizes: ['41', '42'], details: [] }
-            : { colors: ['Black', 'White'], sizes: ['41', '42'], details: amazonCombinations })
+            : options.variantMode === 'formats'
+              ? { colors: [], sizes: [], details: amazonFormats }
+              : options.variantMode === 'condition-options'
+                ? { colors: [], sizes: [], details: amazonConditionOptions }
+                : { colors: ['Black', 'White'], sizes: ['41', '42'], details: amazonCombinations })
         : { colors: ['Beige'], sizes: ['M'], details: [{ id: 'shein-m-beige', color: 'Beige', size: 'M', stock: true, price }] },
       availability: (options.availability ?? 'in_stock') as any,
+      // État publié par la source : recopié tel quel, absent si la page se tait.
+      condition: options.condition,
       brand: isAmazon ? 'Nike' : 'SHEIN',
       priceVerified: true, verificationProvider: 'direct', verificationMethod: 'json_ld',
       verificationFailureCode: null, scrapedAt: new Date().toISOString(),
@@ -776,5 +795,270 @@ describe('AYWEBs — honnêteté des phases 6-8 et surface API (§43, §48)', ()
     expect(response.status).toBe(400);
     expect(response.body.code).toBe('SESSION_REQUIRED');
     expect(response.body.error_contract.retryAllowed).toBe(true);
+  });
+});
+
+/* ================================================================== *
+ * Q12 — « AYWEBs : réparer et développer l'expérience d'achat façon Buyee »
+ * ================================================================== *
+ * Les 12 cas exigés par le propriétaire, écrits avec deux règles :
+ *  • les charges utiles reproduisent EXACTEMENT ce que le Web et l'Android
+ *    envoient en production — donc AVEC `condition`, tant que l'injection
+ *    (AyWebsVariantSheet.tsx:33/71, AyWebsBrowseActivity.java:388) coexiste
+ *    avec des clients déjà installés. Un test qui omet `condition` ne prouve
+ *    plus rien : c'est ce que ce lot corrige ;
+ *  • aucune assertion ne s'appuie sur une donnée inventée : là où la source se
+ *    tait, le test exige `null` / `UNKNOWN`, jamais une valeur par défaut.
+ */
+
+/** Code d'erreur du contrat AYWEBs ('' si l'appel réussit). */
+async function failureCodeOf(promise: Promise<unknown>): Promise<string> {
+  try {
+    await promise;
+    return '';
+  } catch (error: any) {
+    return String(error?.code || error?.name || '');
+  }
+}
+
+/** Charge utile Web/Android telle qu'elle part aujourd'hui (condition incluse). */
+function legacyAddPayload(extra: Record<string, unknown> = {}) {
+  return {
+    source_url: AMAZON_URL,
+    variant_attributes: { color: 'Black', size: '42', condition: 'new' },
+    quantity: 1,
+    ...extra,
+  };
+}
+
+describe('AYWEBs — parcours d’achat façon Buyee : les 12 cas du lot Q12', () => {
+  test('1. extraction : titre, image, prix + devise source et les VRAIES options publiées', async () => {
+    const h = harness({ variantMode: 'formats' });
+    const result = await resolveAyWebsProduct(h.resolver, { url: AMAZON_URL, sessionId: SESSION_ID });
+
+    expect(result.product.title).toBe('Nike Air Max shoes');
+    expect(result.product.images[0]).toBe('https://images.example.test/product.jpg');
+    expect(result.product.price).toBe(39.99);
+    expect(result.product.currency).toBe('USD');
+    // L'option « Format » du marchand devient un groupe réel, avec ses deux valeurs…
+    expect(result.product.variantGroups).toEqual([{ attribute: 'format', values: ['Kindle', 'Magazine'] }]);
+    expect(result.product.variants.map((option) => option.attribute)).toEqual(['format', 'format']);
+    // …et « Kindle » n'est jamais pris pour une couleur (régression 03/10/2026).
+    expect(result.sourceProduct.variants.every((variant) => !variant.attributes.color)).toBe(true);
+    // Disponibilité par valeur, telle que publiée : Kindle en stock, Magazine épuisé.
+    expect(result.sourceProduct.variants[0].availability).toBe('AVAILABLE');
+    expect(result.sourceProduct.variants[1].availability).toBe('OUT_OF_STOCK');
+  });
+
+  test('2. extraction : l’état n’est affiché que s’il est publié — jamais « New » par défaut', async () => {
+    const used = await resolveAyWebsProduct(harness({ condition: 'used' }).resolver, { url: AMAZON_URL, sessionId: SESSION_ID });
+    expect(used.product.condition).toBe('used');
+
+    const silent = harness();
+    const unknown = await resolveAyWebsProduct(silent.resolver, { url: AMAZON_URL, sessionId: SESSION_ID });
+    expect(unknown.product.condition).toBeNull();
+
+    const http = await request(silent.app).post('/api/v1/aywebs/product/resolve').set(ANONYMOUS).send({ url: AMAZON_URL });
+    expect(http.status, JSON.stringify(http.body)).toBe(201);
+    expect(http.body.data.condition).toBeNull();
+  });
+
+  test('3. extraction : une disponibilité non prouvée reste UNKNOWN, jamais « disponible »', async () => {
+    const h = harness({ variantMode: 'lists' });
+    const result = await resolveAyWebsProduct(h.resolver, { url: AMAZON_URL, sessionId: SESSION_ID });
+    for (const variant of result.sourceProduct.variants) {
+      expect(variant.availability).toBe('UNKNOWN');
+      expect(variant.availabilityReason).toBe('merchant_option_lists_without_combination_stock');
+    }
+
+    // L'ajout reste possible (le marchand ne déclare rien d'épuisé), mais la ligne
+    // dit UNKNOWN — elle ne se prétend jamais disponible.
+    const added = await addAyWebsCartItem(h.resolver, {
+      sessionId: SESSION_ID, accountId: null, sourceUrl: AMAZON_URL,
+      variantAttributes: { color: 'Black', size: '41', condition: 'new' }, quantity: 1,
+    });
+    expect(added.item.availability).toBe('UNKNOWN');
+    expect(added.item.priceSnapshot?.availability).toBe('UNKNOWN');
+  });
+
+  test('4. variantes : la charge utile historique à `condition:new` (Android :388 / Web :33) aboutit', async () => {
+    const h = harness();
+    const android = await addAyWebsCartItem(h.resolver, {
+      sessionId: SESSION_ID, accountId: null, sourceUrl: AMAZON_URL,
+      variantAttributes: { color: 'Black', size: '42', condition: 'new' }, quantity: 1,
+    });
+    // L'identité ne retient que les attributs publiés ; `condition` devient métadonnée.
+    expect(android.item.variantSnapshot?.attributes).toEqual({ color: 'Black', size: '42' });
+    expect((android.item.variantSnapshot as any)?.metadata).toEqual({ condition: 'new' });
+
+    // Même contrat par HTTP (chemin exact du Web et de l'Android) : même ligne, pas une seconde.
+    const web = await request(h.app).post('/api/v1/aywebs/cart/items').set(ANONYMOUS).send(legacyAddPayload());
+    expect(web.status, JSON.stringify(web.body)).toBe(201);
+    expect(web.body.data.item.variant_label).toBe('Black · 42');
+    expect(web.body.data.duplicate).toBe(true);
+    expect(web.body.data.item.quantity).toBe(2);
+    expect(listAyWebsCartItems(h.db, readAyWebsCartView(h.db, SESSION_ID, null).cart!.id)).toHaveLength(1);
+  });
+
+  test('5. variantes : `condition` n’identifie que si le marchand publie cet attribut', async () => {
+    const h = harness({ variantMode: 'condition-options' });
+    const brandNew = await addAyWebsCartItem(h.resolver, {
+      sessionId: SESSION_ID, accountId: null, sourceUrl: AMAZON_URL, variantAttributes: { condition: 'new' }, quantity: 1,
+    });
+    const second = await addAyWebsCartItem(h.resolver, {
+      sessionId: SESSION_ID, accountId: null, sourceUrl: AMAZON_URL, variantAttributes: { condition: 'used' }, quantity: 1,
+    });
+    // Deux options réelles du marchand ⇒ deux lignes distinctes, aucune fusion :
+    // c'est la preuve que `condition` est bien un critère d'identité ICI, alors
+    // qu'il ne l'est pas sur un produit qui ne publie pas cet attribut (cas 4).
+    expect(brandNew.item.variantSnapshot?.attributes).toEqual({ condition: 'new' });
+    expect(second.item.variantSnapshot?.attributes).toEqual({ condition: 'used' });
+    expect(second.item.id).not.toBe(brandNew.item.id);
+
+    // Le prix PUBLIÉ par option est conservé dans le contrat source (preuve)…
+    const resolved = await resolveAyWebsProduct(h.resolver, { url: AMAZON_URL, sessionId: SESSION_ID });
+    expect(resolved.sourceProduct.variants.find((variant) => variant.attributes.condition === 'used')?.price).toBe(29.99);
+    // …tandis que le montant facturé reste celui du devis serveur, calculé sur le prix
+    // de la fiche (39.99). Aucune règle de prix nouvelle n'est introduite ici : ce
+    // constat est journalisé dans le rapport Q12 (prix par option ≠ prix fiche).
+    expect(brandNew.item.unitPrice).toBe(39.99);
+    expect(second.item.unitPrice).toBe(39.99);
+    // Une valeur que le marchand ne publie pas est refusée, jamais rapprochée d'une autre.
+    const refused = await failureCodeOf(addAyWebsCartItem(h.resolver, {
+      sessionId: SESSION_ID, accountId: null, sourceUrl: AMAZON_URL, variantAttributes: { condition: 'refurbished' }, quantity: 1,
+    }));
+    expect(refused).toBe('VARIANT_UNKNOWN');
+  });
+
+  test('6. variantes : une option épuisée est refusée net, sans ligne fantôme', async () => {
+    const h = harness({ variantMode: 'formats' });
+    const refused = await failureCodeOf(addAyWebsCartItem(h.resolver, {
+      sessionId: SESSION_ID, accountId: null, sourceUrl: AMAZON_URL, variantAttributes: { format: 'Magazine' }, quantity: 1,
+    }));
+    expect(refused).toBe('VARIANT_UNAVAILABLE');
+    expect(h.db.all('SELECT * FROM ayweb_cart_items')).toHaveLength(0);
+    expect(h.db.all('SELECT * FROM cart_items')).toHaveLength(0);
+  });
+
+  test('7. variantes : variante requise manquante = refus explicite, aucune substitution', async () => {
+    const h = harness();
+    expect(await failureCodeOf(addAyWebsCartItem(h.resolver, {
+      sessionId: SESSION_ID, accountId: null, sourceUrl: AMAZON_URL, variantAttributes: null, quantity: 1,
+    }))).toBe('VARIANT_REQUIRED');
+    expect(await failureCodeOf(addAyWebsCartItem(h.resolver, {
+      sessionId: SESSION_ID, accountId: null, sourceUrl: AMAZON_URL, variantAttributes: { color: 'Black', size: '99' }, quantity: 1,
+    }))).toBe('VARIANT_UNKNOWN');
+    expect(h.db.all('SELECT * FROM ayweb_cart_items')).toHaveLength(0);
+  });
+
+  test('8. ajout : aucun faux succès — une fiche non tarifable n’écrit rien et l’API le dit', async () => {
+    const h = harness({ prices: { amazon: 0 } });
+    const failed = await request(h.app).post('/api/v1/aywebs/cart/items').set(ANONYMOUS).send(legacyAddPayload());
+    expect(failed.status).toBeGreaterThanOrEqual(400);
+    expect(failed.body.success).toBe(false);
+    expect(['PRICE_UNAVAILABLE', 'OUT_OF_STOCK', 'PRODUCT_UNAVAILABLE']).toContain(failed.body.code);
+    expect(h.db.all('SELECT * FROM ayweb_cart_items')).toHaveLength(0);
+    expect(h.db.all('SELECT * FROM cart_items')).toHaveLength(0);
+    // Ce que l'écran affichera vient du serveur : ni 201, ni ligne à confirmer.
+    expect(failed.body.error_contract).toBeTruthy();
+  });
+
+  test('9. panier : la ligne n’existe qu’après persistance, et survit à la navigation et à la réouverture', async () => {
+    const h = harness();
+    const added = await request(h.app).post('/api/v1/aywebs/cart/items').set(ANONYMOUS).send(legacyAddPayload({ quantity: 2 }));
+    expect(added.status, JSON.stringify(added.body)).toBe(201);
+    const itemId = added.body.data.item.id;
+    const itemNumber = added.body.data.item.item_number;
+
+    // Persistée : une relecture neuve (autre chemin de code) la retrouve à l'identique.
+    const fresh = readAyWebsCartView(h.db, SESSION_ID, null);
+    expect(fresh.items.map((item) => item.id)).toContain(itemId);
+
+    // « Navigation » puis « réouverture » : le panier se relit depuis la session, sans perte.
+    await request(h.app).get('/api/v1/aywebs/stores').set(ANONYMOUS);
+    await request(h.app).get('/api/v1/aywebs/orders').set(ANONYMOUS);
+    const reopened = await request(h.app).get('/api/v1/aywebs/cart').set(ANONYMOUS);
+    expect(reopened.status).toBe(200);
+    expect(reopened.body.data.items).toHaveLength(1);
+    const line = reopened.body.data.items[0];
+    expect(line.item_number).toBe(itemNumber);
+    expect(line.quantity).toBe(2);
+    expect(line.unit_price).toBe(39.99);
+    expect(line.currency).toBe('USD');
+    expect(String(line.variant_label)).toContain('Black');
+    expect(line.line_total_tnd).toBeGreaterThan(0);
+  });
+
+  test('10. panier AYROVI : liaison = synchronisation — jamais deux fois le même article', async () => {
+    const h = harness();
+    const first = await request(h.app).post('/api/v1/aywebs/cart/items').set(ANONYMOUS).send(legacyAddPayload({ quantity: 1 }));
+    expect(first.status, JSON.stringify(first.body)).toBe(201);
+    expect(first.body.data.ayrovi.linked).toBe(true);
+
+    let lines = h.db.all<any>('SELECT * FROM cart_items WHERE session_id=?', SESSION_ID);
+    expect(lines).toHaveLength(1);
+    expect(Number(lines[0].quantity)).toBe(1);
+
+    // Deuxième ajout de la MÊME variante : la quantité AYWEBs passe à 2 et la ligne
+    // AYROVI est REMISE à 2 — elle ne devient pas 3 (c'était le double comptage).
+    const second = await request(h.app).post('/api/v1/aywebs/cart/items').set(ANONYMOUS).send(legacyAddPayload({ quantity: 1 }));
+    expect(second.status).toBe(201);
+    expect(second.body.data.item.quantity).toBe(2);
+    expect(second.body.data.ayrovi.reason).toBe('SYNCED');
+    lines = h.db.all<any>('SELECT * FROM cart_items WHERE session_id=?', SESSION_ID);
+    expect(lines).toHaveLength(1);
+    expect(Number(lines[0].quantity)).toBe(2);
+
+    // Le pont explicite (« Proceed to order page ») reste idempotent.
+    const bridge = bridgeAyWebsCartToAyrovi(h.db, { sessionId: SESSION_ID, accountId: null });
+    expect(bridge.moved[0].synced).toBe(true);
+    expect(h.db.all<any>('SELECT * FROM cart_items WHERE session_id=?', SESSION_ID)).toHaveLength(1);
+  });
+
+  test('11. panier : quantité et suppression suivent jusque dans le panier AYROVI, avec trace', async () => {
+    const h = harness();
+    const added = await request(h.app).post('/api/v1/aywebs/cart/items').set(ANONYMOUS).send(legacyAddPayload({ quantity: 1 }));
+    const itemId = added.body.data.item.id;
+
+    const patched = await request(h.app).patch(`/api/v1/aywebs/cart/items/${itemId}`).set(ANONYMOUS).send({ quantity: 3 });
+    expect(patched.status, JSON.stringify(patched.body)).toBe(200);
+    expect(patched.body.data.item.quantity).toBe(3);
+    expect(patched.body.data.ayrovi.quantity).toBe(3);
+    const afterPatch = h.db.all<any>('SELECT * FROM cart_items WHERE session_id=?', SESSION_ID);
+    expect(afterPatch).toHaveLength(1);
+    expect(Number(afterPatch[0].quantity)).toBe(3);
+
+    const removed = await request(h.app).delete(`/api/v1/aywebs/cart/items/${itemId}`).set(ANONYMOUS);
+    expect(removed.status).toBe(200);
+    expect(removed.body.data.removed).toBe(true);
+    // Aucun orphelin : la ligne quitte le panier AYROVI, et l'audit le prouve.
+    expect(h.db.all<any>('SELECT * FROM cart_items WHERE session_id=?', SESSION_ID)).toHaveLength(0);
+    const audit = h.db.all<any>(
+      `SELECT action, resource_id FROM ayweb_audit_logs WHERE resource_id=? AND action='cart.ayrovi_unlink'`, itemId,
+    );
+    expect(audit).toHaveLength(1);
+  });
+
+  test('12. prix : recalculé côté serveur, devise source intacte, montants client ignorés', async () => {
+    const h = harness();
+    const resolved = await request(h.app).post('/api/v1/aywebs/product/resolve').set(ANONYMOUS).send({ url: AMAZON_URL });
+    expect(resolved.status, JSON.stringify(resolved.body)).toBe(201);
+    const serverTotal = Number(resolved.body.data.ayrovi_pricing.total_tnd);
+    expect(serverTotal).toBeGreaterThan(0);
+
+    const added = await request(h.app).post('/api/v1/aywebs/cart/items').set(ANONYMOUS).send(legacyAddPayload({
+      quantity: 1,
+      // Un client hostile (ou une coque ancienne) ne peut pas imposer son prix.
+      unit_price: 0.01, price_tnd: 0.01, total_tnd: 0.01, pricing_tnd: 0.01, line_total_tnd: 0.01,
+      ayrovi_pricing: { total_tnd: 0.01, currency: 'TND' },
+    }));
+    expect(added.status, JSON.stringify(added.body)).toBe(201);
+    const item = added.body.data.item;
+    expect(item.unit_price).toBe(39.99);
+    expect(item.currency).toBe('USD');
+    expect(item.pricing_tnd).toBeCloseTo(serverTotal, 2);
+    expect(item.line_total_tnd).not.toBeCloseTo(0.01, 2);
+    // Le prix source reste dans sa devise d'origine : aucune confusion avec le TND.
+    expect(JSON.stringify(item)).not.toContain('"unit_price":0.01');
   });
 });

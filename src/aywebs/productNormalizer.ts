@@ -93,7 +93,12 @@ export function ayWebsVariantGroupsFromScraped(variants: ProductVariants | undef
   for (const detail of variants?.details || []) {
     if (detail?.size) push('size', [detail.size]);
     if (detail?.color) push('color', [detail.color]);
-    if (detail?.label && !detail.size && !detail.color) push('model', [detail.label]);
+    if (detail?.label && !detail.size && !detail.color && !Object.keys(detail?.attributes || {}).length) push('model', [detail.label]);
+    // Options publiées hors taille/couleur (Format, Type…) : un groupe par nom réel.
+    for (const [key, value] of Object.entries(detail?.attributes || {})) {
+      const attribute = normalizeAttributeName(key);
+      if (attribute && value) push(attribute, [value]);
+    }
   }
 
   return groups;
@@ -131,7 +136,14 @@ export function ayWebsVariantsFromScraped(product: ScrapedProduct): AyWebsSource
       const label = String(detail.label ?? '').trim();
       if (color) attributes.color = color;
       if (size) attributes.size = size;
-      if (!color && !size && label) attributes.model = label;
+      // Attributs libres publiés (Format, Type…) : conservés tels quels, donc
+      // opposables à la sélection du client au lieu d'être ignorés.
+      for (const [key, value] of Object.entries(detail.attributes || {})) {
+        const attribute = normalizeAttributeName(key);
+        const text = String(value ?? '').trim();
+        if (attribute && text) attributes[attribute] = text;
+      }
+      if (!color && !size && label && !Object.keys(attributes).length) attributes.model = label;
       const availability = ayWebsAvailabilityFromBoolean(detail.stock ?? (detail.available ? true : null),
         detail.available ? 'merchant_choice_eligible_stock_unspecified' : 'merchant_stock_unspecified');
       const image = color ? (product.colorImages?.[color.toLowerCase()]?.[0] || null) : null;
@@ -191,6 +203,9 @@ export function ayWebsSourceProductFromScraped(product: ScrapedProduct, storeNam
     variants,
     availability: availability.state,
     availabilityReason: availability.reason,
+    // État neuf/occasion : recopié TEL QUEL depuis la source, ou `null`.
+    // Jamais déduit d'un titre ou d'une photo (§14 : le silence ne devient pas une affirmation).
+    condition: product.condition ?? null,
     merchant: { name: storeName || product.storeName || null, url: ayWebsSourceDomain(product.url) ? `https://${ayWebsSourceDomain(product.url)}` : null },
     scrapedProduct: product,
     capturedAt: product.scrapedAt || new Date().toISOString(),
@@ -223,6 +238,54 @@ export function ayWebsVariantKey(attributes: Record<string, string> | null | und
     .sort()
     .map((key) => `${key}:${String(attributes[key] ?? '').trim().toLowerCase()}`)
     .join('|');
+}
+
+/**
+ * Sépare la sélection DEMANDÉE par le client en deux ensembles disjoints :
+ *
+ *  • `matching` — les attributs que le marchand publie réellement (groupes ou
+ *    variantes). Eux SEULS participent à la clé d'identité de la variante.
+ *  • `metadata` — tout le reste (ex. `condition: "new"` envoyé par la coque).
+ *    Conservé pour la trace et l'affichage, JAMAIS utilisé pour décider qu'une
+ *    combinaison « n'existe pas ».
+ *
+ * Pourquoi (régression du 2026-10-03, prouvée) : la coque Android et la feuille
+ * web ajoutaient `condition: "new"` à `variant_attributes`. La clé de variante
+ * étant une correspondance EXACTE (`ayWebsVariantKey`), aucune variante du
+ * marchand ne pouvait plus correspondre → `VARIANT_UNKNOWN`/`VARIANT_UNAVAILABLE`
+ * → l'article n'était jamais enregistré, alors que l'écran affichait un échec
+ * silencieux (le bouton revenait à « Add to Cart »).
+ *
+ * Ce que ce filtre ne fait PAS : il n'invente aucune valeur. Un attribut publié
+ * par le marchand avec une valeur inconnue échoue toujours. Un attribut publié
+ * mais absent de la sélection reste absent (l'appelant décide s'il l'exige).
+ */
+export function ayWebsSplitVariantSelection(
+  product: {
+    variantGroups?: Array<{ attribute: string; values: string[] }> | null;
+    variants?: AyWebsSourceProduct['variants'] | null;
+  },
+  attributes: Record<string, string> | null | undefined,
+): { matching: Record<string, string> | null; metadata: Record<string, string> | null } {
+  if (!attributes || !Object.keys(attributes).length) return { matching: null, metadata: null };
+  const published = new Set<string>();
+  for (const group of product.variantGroups || []) published.add(String(group.attribute || '').trim().toLowerCase());
+  for (const variant of product.variants || []) {
+    for (const key of Object.keys(variant.attributes || {})) published.add(String(key || '').trim().toLowerCase());
+  }
+  const matching: Record<string, string> = {};
+  const metadata: Record<string, string> = {};
+  for (const [rawKey, rawValue] of Object.entries(attributes)) {
+    const key = String(rawKey || '').trim().toLowerCase();
+    const value = String(rawValue ?? '').trim();
+    if (!key || !value) continue;
+    if (published.has(key)) matching[key] = value;
+    else metadata[key] = value;
+  }
+  return {
+    matching: Object.keys(matching).length ? matching : null,
+    metadata: Object.keys(metadata).length ? metadata : null,
+  };
 }
 
 export function ayWebsVariantFromSelection(

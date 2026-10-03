@@ -28,7 +28,14 @@
     <string name="aywebs_add_failed">Ajout impossible : le service AYROVI n’a pas répondu. Réessayez.</string>
     <string name="aywebs_product_not_resolved">Produit non reconnu sur cette page.</string>
     <string name="aywebs_select_item">Select your desired item</string>
-    <string name="aywebs_new">New</string>
+    <string name="aywebs_no_options">Sans option</string>
+    <string name="aywebs_added_line">Quantité %1$d · %2$s · %3$s TND</string>
+    <string name="aywebs_condition_new">État : Neuf (publié par la boutique)</string>
+    <string name="aywebs_condition_used">État : Occasion (publié par la boutique)</string>
+    <string name="aywebs_condition_refurbished">État : Reconditionné (publié par la boutique)</string>
+    <string name="aywebs_availability_in_stock">Disponible chez la boutique</string>
+    <string name="aywebs_availability_low">Stock limité chez la boutique</string>
+    <string name="aywebs_availability_out">Épuisé chez la boutique</string>
     <string name="aywebs_added">Article ajouté au panier AYROVI</string>
     <string name="aywebs_proceed_checkout">Proceed to Checkout</string>
     <string name="aywebs_continue_shopping">Return to Shopping</string>

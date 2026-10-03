@@ -6,7 +6,7 @@ import { findAyWebsStore } from '../../shared/aywebsStores';
 import { ensureAyWebsSchema } from './schema';
 import { AyWebsDomainError } from './errors';
 import { writeAyWebsAudit, emitAyWebsEvent } from './events';
-import { listAyWebsCartItems, readAyWebsCart, type AyWebsCartItem } from './cart';
+import { listAyWebsCartItems, readAyWebsCart, readAyWebsCartItem, type AyWebsCartItem } from './cart';
 
 /**
  * AYWEBs → AYROVI : le pont (§2, §16).
@@ -35,7 +35,14 @@ export interface AyWebsBridgeLine {
   title: string;
   quantity: number;
   priceTnd: number;
+  /** Une ligne AYROVI portant la MÊME identité existait déjà. */
   duplicate: boolean;
+  /**
+   * `true` = la ligne existante a été SYNCHRONISÉE (quantité remise à celle du
+   * panier AYWEBs). Jamais une seconde addition : transférer deux fois ne doit
+   * pas doubler la quantité (défaut corrigé le 04/10/2026).
+   */
+  synced: boolean;
 }
 
 export interface AyWebsBridgeResult {
@@ -152,12 +159,29 @@ function addAyWebsItemToAyroviCart(db: QatafoDatabase, item: AyWebsCartItem, inp
     });
   }
 
-  const existing = db.getItems(input.sessionId, input.accountId).find((candidate) =>
-    candidate.store === (store?.id || item.storeId)
-    && candidate.sourceUrl === item.sourceUrl
-    && (candidate.externalId || '') === (item.sourceProductId || '')
-    && (candidate.requestedSize || '') === requestedSize
-    && (candidate.requestedColor || '') === requestedColor) || null;
+  const existing = findAyroviCartLine(db, input.sessionId, input.accountId, item);
+  if (existing) {
+    // ── Idempotence du pont (04/10/2026) ──────────────────────────────────────
+    // Avant : chaque appel de `/cart/bridge-to-ayrovi` repassait par `db.addItem`,
+    // qui INCRÉMENTE la quantité d'une ligne identique → appuyer deux fois sur
+    // « Proceed to order page » doublait l'article. Désormais la ligne existante
+    // est REMISE au niveau du panier AYWEBs (synchronisation), jamais additionnée.
+    if (Number(existing.quantity) !== Number(item.quantity)) {
+      db.updateQuantity(existing.id, item.quantity, input.sessionId, input.accountId);
+    }
+    const syncedItem = db.getItemById(existing.id, input.sessionId, input.accountId) || existing;
+    return {
+      aywebsItemId: item.id,
+      aywebsItemNumber: item.itemNumber,
+      cartItemId: String(syncedItem.id),
+      store: store?.displayName || item.storeName,
+      title: item.title,
+      quantity: Number(syncedItem.quantity) || item.quantity,
+      priceTnd: Number(syncedItem.priceTND) || item.pricingTnd,
+      duplicate: true,
+      synced: true,
+    };
+  }
 
   const payload: AddToCartRequest = {
     store: store?.id || item.storeId,
@@ -190,8 +214,72 @@ function addAyWebsItemToAyroviCart(db: QatafoDatabase, item: AyWebsCartItem, inp
     title: item.title,
     quantity: item.quantity,
     priceTnd: item.pricingTnd,
-    duplicate: Boolean(existing),
+    duplicate: false,
+    synced: false,
   };
+}
+
+/**
+ * Clé d'identité d'une ligne AYWEBs dans le panier AYROVI.
+ *
+ * La note de ligne porte l'identité AYWEBs (`AyWebs AYWITEM-…`) : elle sert la
+ * revue opérationnelle, PAS la correspondance — sinon la moindre retouche de
+ * note créerait un doublon. L'identité est : boutique + URL source + identifiant
+ * marchand + taille + couleur demandées (et le titre en dernier recours quand le
+ * marchand ne publie aucun identifiant).
+ */
+function findAyroviCartLine(
+  db: QatafoDatabase,
+  sessionId: string,
+  accountId: string | null,
+  item: AyWebsCartItem,
+): ReturnType<QatafoDatabase['getItems']>[number] | null {
+  const store = findAyWebsStore(item.storeId);
+  const attributes = (item.variantSnapshot?.attributes || {}) as Record<string, string>;
+  const requestedColor = String(attributes.color || '').slice(0, 100);
+  const requestedSize = String(attributes.size || '').slice(0, 100);
+  const storeId = store?.id || item.storeId;
+  const externalId = item.sourceProductId || '';
+  return db.getItems(sessionId, accountId).find((candidate) =>
+    candidate.store.toUpperCase() === String(storeId).toUpperCase()
+    && candidate.sourceUrl === item.sourceUrl
+    && (candidate.externalId || '') === externalId
+    && (candidate.requestedSize || '') === requestedSize
+    && (candidate.requestedColor || '') === requestedColor
+    && (externalId ? true : candidate.title === item.title)) || null;
+}
+
+/**
+ * Synchronise UNE ligne AYWEBs vers le panier AYROVI après une action client
+ * (ajout confirmé, changement de quantité, retrait). C'est le SEUL point de
+ * liaison toléré par le §2 : le panier AYWEBs reste la source, le panier AYROVI
+ * n'est jamais deviné ni dupliqué.
+ */
+export function syncAyWebsItemToAyroviCart(
+  db: QatafoDatabase,
+  input: { sessionId: string; accountId: string | null; aywebsItemId: string; requestId?: string | null },
+): { linked: boolean; removed: boolean; cartItemId: string | null; quantity: number | null; reason: string } {
+  ensureAyWebsSchema(db);
+  const item = readAyWebsCartItem(db, input.aywebsItemId);
+  if (!item) return { linked: false, removed: false, cartItemId: null, quantity: null, reason: 'AYWEBS_ITEM_NOT_FOUND' };
+  const existing = findAyroviCartLine(db, input.sessionId, input.accountId, item);
+  if (!existing) return { linked: false, removed: false, cartItemId: null, quantity: null, reason: 'NOT_BRIDGED' };
+
+  if (item.status === 'REMOVED') {
+    db.removeItem(existing.id, input.sessionId, input.accountId);
+    writeAyWebsAudit(db, {
+      actorType: 'customer', actorId: input.accountId || input.sessionId, action: 'cart.ayrovi_unlink',
+      resourceType: 'cart_item', resourceId: item.id, beforeState: String(existing.quantity), afterState: 'REMOVED',
+      detail: { cartItemId: existing.id }, requestId: input.requestId || null,
+    });
+    return { linked: false, removed: true, cartItemId: String(existing.id), quantity: 0, reason: 'AYWEBS_ITEM_REMOVED' };
+  }
+
+  const target = Math.max(1, Math.min(99, Number(item.quantity) || 1));
+  if (Number(existing.quantity) !== target) {
+    db.updateQuantity(existing.id, target, input.sessionId, input.accountId);
+  }
+  return { linked: true, removed: false, cartItemId: String(existing.id), quantity: target, reason: 'SYNCED' };
 }
 
 function summarizeAyroviCart(db: QatafoDatabase, sessionId: string, accountId: string | null) {

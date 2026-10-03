@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.app.Dialog;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
@@ -20,11 +21,11 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.ArrayAdapter;
-import android.widget.RadioButton;
 import android.widget.TextView;
 
 import org.json.JSONArray;
@@ -344,16 +345,50 @@ public class AyWebsBrowseActivity extends Activity {
     runOnUiThread(() -> Toast.makeText(this, text, Toast.LENGTH_LONG).show());
   }
 
+  /**
+   * Feuille de variantes PAR-DESSUS la page marchand (capture 3 de la référence
+   * Buyee). Lot Q12 (04/10/2026) :
+   *   • plus aucun « New » écrit en dur — l'état vient de `condition`, publié par
+   *     la source, et il n'est jamais un critère de correspondance (§14) ;
+   *   • seules les options réellement publiées sont proposées ; un groupe à valeur
+   *     unique est une donnée affichée, pas un choix ;
+   *   • prix + devise d'origine et disponibilité CONFIRMÉE seulement ;
+   *   • la confirmation n'apparaît qu'après une réponse 2xx du serveur.
+   */
   private void showVariantSheet(JSONObject product) {
     Dialog dialog = new Dialog(this);
     dialog.setContentView(R.layout.dialog_aywebs_variant_sheet);
     TextView name = dialog.findViewById(R.id.aywebs_sheet_product);
+    ImageView thumb = dialog.findViewById(R.id.aywebs_sheet_image);
+    TextView conditionLine = dialog.findViewById(R.id.aywebs_sheet_condition);
+    TextView availabilityLine = dialog.findViewById(R.id.aywebs_sheet_availability);
+    TextView priceLine = dialog.findViewById(R.id.aywebs_sheet_price);
     LinearLayout groupsBox = dialog.findViewById(R.id.aywebs_sheet_groups);
     Spinner qty = dialog.findViewById(R.id.aywebs_sheet_qty);
     Button confirm = dialog.findViewById(R.id.aywebs_sheet_add);
     ImageButton close = dialog.findViewById(R.id.aywebs_sheet_close);
 
     name.setText(product.optString("title", ""));
+    JSONArray images = product.optJSONArray("images");
+    if (images != null && images.length() > 0) loadThumb(thumb, images.optString(0, ""));
+
+    String conditionText = conditionLabel(product.optString("condition", ""));
+    if (!conditionText.isEmpty()) {
+      conditionLine.setText(conditionText);
+      conditionLine.setVisibility(View.VISIBLE);
+    }
+    JSONObject availability = product.optJSONObject("availability");
+    String availabilityText = availabilityLabel(availability == null ? "" : availability.optString("state", ""));
+    if (!availabilityText.isEmpty()) {
+      availabilityLine.setText(availabilityText);
+      availabilityLine.setVisibility(View.VISIBLE);
+    }
+    double price = product.optDouble("price", 0);
+    if (price > 0) {
+      priceLine.setText(money(price) + " " + product.optString("currency", "").trim());
+      priceLine.setVisibility(View.VISIBLE);
+    }
+
     qty.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item,
         new String[] {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"}));
 
@@ -365,7 +400,15 @@ public class AyWebsBrowseActivity extends Activity {
         if (group == null) continue;
         String attribute = group.optString("attribute", "");
         JSONArray values = group.optJSONArray("values");
-        if (attribute.isEmpty() || values == null || values.length() < 2) continue;
+        if (attribute.isEmpty() || values == null || values.length() == 0) continue;
+        // Valeur unique = donnée publiée (ex. « Format : Kindle »), pas un choix.
+        if (values.length() == 1) {
+          TextView info = new TextView(this);
+          info.setText(attribute + " : " + values.optString(0, ""));
+          info.setPadding(0, 8, 0, 0);
+          groupsBox.addView(info);
+          continue;
+        }
         TextView label = new TextView(this);
         label.setText(attribute);
         label.setPadding(0, 12, 0, 4);
@@ -385,7 +428,8 @@ public class AyWebsBrowseActivity extends Activity {
     confirm.setOnClickListener(v -> {
       JSONObject attributes = new JSONObject();
       try {
-        attributes.put("condition", "new");
+        // Uniquement les attributs publiés par le marchand et choisis ici :
+        // la coque n'ajoute plus `condition` (cause racine de l'échec corrigé).
         for (Map.Entry<String, Spinner> entry : groupSpinners.entrySet()) {
           attributes.put(entry.getKey(), String.valueOf(entry.getValue().getSelectedItem()));
         }
@@ -400,10 +444,14 @@ public class AyWebsBrowseActivity extends Activity {
         runOnUiThread(() -> addButton.setText(R.string.aywebs_loading));
         executor.execute(() -> {
           try {
-            post(apiOrigin + CART_ITEMS_PATH, body);
+            // post() lève sur tout statut >= 400 : la confirmation ne peut donc
+            // pas apparaître sans une ligne réellement écrite (§15, aucun faux succès).
+            JSONObject response = post(apiOrigin + CART_ITEMS_PATH, body);
+            JSONObject data = response.optJSONObject("data");
+            JSONObject item = data == null ? null : data.optJSONObject("item");
             runOnUiThread(() -> {
               addButton.setText(R.string.aywebs_add_to_cart);
-              showAddedDialog(product.optString("title", ""));
+              showAddedDialog(item, product);
             });
           } catch (Exception error) {
             runOnUiThread(() -> addButton.setText(R.string.aywebs_add_to_cart));
@@ -418,13 +466,31 @@ public class AyWebsBrowseActivity extends Activity {
   }
 
   /** §15 : confirmation sans quitter le magasin, deux sorties honnêtes. */
-  private void showAddedDialog(String title) {
+  private void showAddedDialog(JSONObject item, JSONObject product) {
+    JSONObject line = item == null ? new JSONObject() : item;
     Dialog dialog = new Dialog(this);
     dialog.setContentView(R.layout.dialog_aywebs_added);
+    ImageView thumb = dialog.findViewById(R.id.aywebs_added_image);
     TextView addedTitle = dialog.findViewById(R.id.aywebs_added_title);
+    TextView addedOptions = dialog.findViewById(R.id.aywebs_added_options);
+    TextView addedTotals = dialog.findViewById(R.id.aywebs_added_totals);
     Button checkout = dialog.findViewById(R.id.aywebs_added_checkout);
     Button continueShopping = dialog.findViewById(R.id.aywebs_added_continue);
-    addedTitle.setText(title);
+
+    // Tout ce qui est affiché vient de la LIGNE renvoyée par le serveur : image,
+    // titre, options retenues, quantité et montant — jamais une intention locale.
+    addedTitle.setText(line.optString("title", product.optString("title", "")));
+    JSONArray images = line.optJSONArray("images");
+    if (images == null || images.length() == 0) images = product.optJSONArray("images");
+    if (images != null && images.length() > 0) loadThumb(thumb, images.optString(0, ""));
+    String variantLabel = line.optString("variant_label", "");
+    addedOptions.setText(variantLabel.isEmpty() ? getString(R.string.aywebs_no_options) : variantLabel);
+    int quantity = line.optInt("quantity", 1);
+    String currency = line.optString("currency", "").trim();
+    addedTotals.setText(getString(R.string.aywebs_added_line,
+        quantity, money(line.optDouble("unit_price", 0)) + " " + currency,
+        money(line.optDouble("line_total_tnd", 0))));
+
     checkout.setOnClickListener(v -> {
       dialog.dismiss();
       openWebRoute("/aywebs/cart");
@@ -434,6 +500,50 @@ public class AyWebsBrowseActivity extends Activity {
       setAddEnabled(productPage);
     });
     dialog.show();
+  }
+
+  /** Miniature de la fiche ; un échec réseau laisse simplement l'image vide. */
+  private void loadThumb(ImageView view, String url) {
+    if (view == null || url == null || url.isEmpty()) return;
+    executor.execute(() -> {
+      try {
+        HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+        connection.setConnectTimeout(8_000);
+        connection.setReadTimeout(12_000);
+        try (InputStream stream = connection.getInputStream()) {
+          Bitmap bitmap = BitmapFactory.decodeStream(stream);
+          if (bitmap != null) runOnUiThread(() -> view.setImageBitmap(bitmap));
+        }
+      } catch (Exception ignored) {
+        // Aucune image : l'écran reste utilisable et n'invente rien.
+      }
+    });
+  }
+
+  /** Montant lisible : 990 au lieu de 990.0, 41.99 inchangé. */
+  private static String money(double value) {
+    if (value == Math.rint(value)) return String.valueOf((long) value);
+    return String.format(java.util.Locale.US, "%.2f", value);
+  }
+
+  /** État publié par la source ; non publié ⇒ aucune ligne affichée. */
+  private String conditionLabel(String condition) {
+    switch (condition) {
+      case "new": return getString(R.string.aywebs_condition_new);
+      case "used": return getString(R.string.aywebs_condition_used);
+      case "refurbished": return getString(R.string.aywebs_condition_refurbished);
+      default: return "";
+    }
+  }
+
+  /** Disponibilité CONFIRMÉE uniquement : UNKNOWN n'est jamais montré comme dispo. */
+  private String availabilityLabel(String state) {
+    switch (state) {
+      case "AVAILABLE": return getString(R.string.aywebs_availability_in_stock);
+      case "LOW_STOCK": return getString(R.string.aywebs_availability_low);
+      case "OUT_OF_STOCK": return getString(R.string.aywebs_availability_out);
+      default: return "";
+    }
   }
 
   /** Une seule UI : les écrans AYROVI sont les routes WEB de la coque. */

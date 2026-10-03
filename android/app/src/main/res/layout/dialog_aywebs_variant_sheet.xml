@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- AYWEBs V2 — feuille de variantes PAR-DESSUS le marchand (capture 3). -->
+<!-- AYWEBs V2 — feuille de variantes PAR-DESSUS le marchand (capture 3).
+     Lot Q12 (04/10/2026) : plus de « New » écrit en dur ; image, état publié,
+     disponibilité confirmée et prix d'origine ne s'affichent que s'ils existent. -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -29,22 +31,51 @@
             android:textSize="18sp"
             android:textStyle="bold" />
 
+        <ImageView
+            android:id="@+id/aywebs_sheet_image"
+            android:layout_width="96dp"
+            android:layout_height="120dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="12dp"
+            android:contentDescription="@string/aywebs_select_item"
+            android:scaleType="centerCrop" />
+
         <TextView
             android:id="@+id/aywebs_sheet_product"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="8dp"
             android:textColor="#101828"
             android:textSize="15sp"
             android:textStyle="bold" />
 
-        <RadioButton
-            android:id="@+id/aywebs_sheet_new"
-            android:layout_width="wrap_content"
+        <TextView
+            android:id="@+id/aywebs_sheet_condition"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:checked="true"
-            android:text="@string/aywebs_new"
-            android:textColor="#101828" />
+            android:layout_marginTop="6dp"
+            android:textColor="#475467"
+            android:textSize="13sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/aywebs_sheet_availability"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textColor="#475467"
+            android:textSize="13sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/aywebs_sheet_price"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textColor="#101828"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
 
         <LinearLayout
             android:id="@+id/aywebs_sheet_groups"

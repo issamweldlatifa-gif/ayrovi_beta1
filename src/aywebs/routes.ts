@@ -60,7 +60,7 @@ import {
   listAyWebsStoreRequests,
   readAyWebsPurchaseRequest,
 } from './purchaseRequests';
-import { bridgeAyWebsCartToAyrovi, listAyWebsOrderLinks } from './ayroviBridge';
+import { bridgeAyWebsCartToAyrovi, listAyWebsOrderLinks, syncAyWebsItemToAyroviCart } from './ayroviBridge';
 import {
   createAyWebsContext,
   optionalAyWebsCustomer,
@@ -729,10 +729,47 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
       productId: result.item.productId,
       variant: result.item.variantSnapshot?.attributes || null,
     });
+
+    // ── POINT DE LIAISON SÛR (04/10/2026) ───────────────────────────────────
+    // La ligne est DÉJÀ écrite dans `ayweb_cart_items` : cette réponse ne part
+    // qu'après persistance. Elle est maintenant reflétée dans le panier AYROVI
+    // par SYNCHRONISATION — jamais une seconde addition (voir ayroviBridge).
+    // Un échec du pont ne fait JAMAIS échouer l'ajout : le panier AYWEBs reste
+    // la source, et « Proceed to order page » reprend la liaison.
+    let bridged: { linked: boolean; cart_item_id: string | null; quantity: number | null; reason: string } | null = null;
+    try {
+      // Le pont est IDEMPOTENT : première liaison = création de la ligne AYROVI,
+      // appels suivants = remise de la quantité au niveau AYWEBs. Jamais +1.
+      const bridge = bridgeAyWebsCartToAyrovi(db, {
+        sessionId: identity.sessionId,
+        accountId: identity.accountId,
+        itemIds: [result.item.id],
+        requestId: requestIdOf(req),
+      });
+      const line = bridge.moved[0];
+      if (line) {
+        bridged = {
+          linked: true,
+          cart_item_id: line.cartItemId,
+          quantity: line.quantity,
+          reason: line.synced ? 'SYNCED' : 'LINKED',
+        };
+      } else {
+        bridged = {
+          linked: false,
+          cart_item_id: null,
+          quantity: null,
+          reason: bridge.skipped[0]?.code || 'BRIDGE_SKIPPED',
+        };
+      }
+    } catch (bridgeError) {
+      console.error('[AyWebs][Bridge] liaison après ajout impossible:', bridgeError instanceof Error ? bridgeError.message : bridgeError);
+    }
+
     trackAyWebsFunnel(ctx, 'add_to_cart_succeeded', { store: result.item.storeId }, identity.sessionId);
     res.status(201).json({
       success: true,
-      data: { item: cartItemPayload(result.item), duplicate: result.duplicate, message: result.message },
+      data: { item: cartItemPayload(result.item), duplicate: result.duplicate, message: result.message, ayrovi: bridged },
       cart: cartPayload(result.view),
     });
   }));
@@ -751,9 +788,22 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
         : {}),
       requestId: requestIdOf(req),
     });
+    // La quantité du panier AYROVI suit celle du panier AYWEBs (synchronisation,
+    // jamais d'addition) — sans jamais faire échouer la mutation AYWEBs.
+    let bridged: { linked: boolean; removed: boolean; cartItemId: string | null; quantity: number | null; reason: string } | null = null;
+    try {
+      bridged = syncAyWebsItemToAyroviCart(db, {
+        sessionId: identity.sessionId,
+        accountId: identity.accountId,
+        aywebsItemId: String(req.params.id),
+        requestId: requestIdOf(req),
+      });
+    } catch (syncError) {
+      console.error('[AyWebs][Bridge] synchronisation de quantité impossible:', syncError instanceof Error ? syncError.message : syncError);
+    }
     res.json({
       success: true,
-      data: { item: result.item ? cartItemPayload(result.item) : null, removed: Boolean(result.removed) },
+      data: { item: result.item ? cartItemPayload(result.item) : null, removed: Boolean(result.removed), ayrovi: bridged },
       cart: cartPayload(result.view),
     });
   }));
@@ -767,7 +817,19 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
       accountId: identity.accountId,
       requestId: requestIdOf(req),
     });
-    res.json({ success: true, data: { removed: true }, cart: cartPayload(result.view) });
+    // Retirer chez AYWEBs retire la MÊME ligne du panier AYROVI (aucun orphelin).
+    let bridged: { linked: boolean; removed: boolean; cartItemId: string | null; quantity: number | null; reason: string } | null = null;
+    try {
+      bridged = syncAyWebsItemToAyroviCart(db, {
+        sessionId: identity.sessionId,
+        accountId: identity.accountId,
+        aywebsItemId: String(req.params.id),
+        requestId: requestIdOf(req),
+      });
+    } catch (syncError) {
+      console.error('[AyWebs][Bridge] retrait de la ligne liée impossible:', syncError instanceof Error ? syncError.message : syncError);
+    }
+    res.json({ success: true, data: { removed: true, ayrovi: bridged }, cart: cartPayload(result.view) });
   }));
 
   /** §29 : le client accepte explicitement le nouveau prix. Jamais automatique. */
@@ -1071,6 +1133,9 @@ function productPayload(product: Awaited<ReturnType<typeof resolveAyWebsProduct>
     currency: product.currency,
     variants: product.variants,
     variant_groups: product.variantGroups,
+    // État publié par la source ('' → null) : la coque ne doit jamais écrire
+    // « New » par défaut, seulement recopier une donnée vérifiable.
+    condition: product.condition || null,
     selected_variant: product.selectedVariant,
     availability: {
       state: product.availability.state,

@@ -14,7 +14,7 @@ import { ayWebsCartMachine } from './stateMachines';
 import { AyWebsDomainError } from './errors';
 import { ayWebsEvidenceHash, ayWebsVariantLabel, canonicalVariant, recordAyWebsEvidence } from './evidence';
 import { emitAyWebsEvent, logAyWebsOperation, writeAyWebsAudit } from './events';
-import { ayWebsVariantKey } from './productNormalizer';
+import { ayWebsSplitVariantSelection, ayWebsVariantKey } from './productNormalizer';
 import {
   purchaseModeFor,
   readAyWebsProduct,
@@ -493,8 +493,11 @@ export function selectVariant(
 ): AyWebsVariantDecision {
   const groups = product.variantGroups || [];
   const hasMeaningfulGroups = groups.some((group) => group.values.length > 0);
+  // Les attributs PUBLIÉS identifient la variante ; le reste (ex. `condition`)
+  // est conservé comme métadonnée d'affichage, jamais comme critère d'identité.
+  const { matching, metadata } = ayWebsSplitVariantSelection(product, attributes);
 
-  if (!attributes || !Object.keys(attributes).length) {
+  if (!matching) {
     if (hasMeaningfulGroups) {
       throw new AyWebsDomainError('VARIANT_REQUIRED', {
         technicalMessage: `groupes publiés : ${groups.map((group) => `${group.attribute}(${group.values.length})`).join(', ')}`,
@@ -504,7 +507,7 @@ export function selectVariant(
     return { selection: null, availability: product.availability.state, reason: product.availability.reason };
   }
 
-  const key = ayWebsVariantKey(attributes);
+  const key = ayWebsVariantKey(matching);
   const match = (product.variants || []).find((variant) => ayWebsVariantKey(variant.attributes) === key);
 
   if (!match) {
@@ -521,7 +524,12 @@ export function selectVariant(
   }
 
   return {
-    selection: { variantId: match.sourceVariantId || key, attributes: match.attributes, quantity },
+    selection: {
+      variantId: match.sourceVariantId || key,
+      attributes: match.attributes,
+      quantity,
+      ...(metadata ? { metadata } : {}),
+    },
     availability: match.availability,
     reason: match.availabilityReason || product.availability.reason,
   };

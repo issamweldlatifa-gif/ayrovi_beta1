@@ -12,8 +12,15 @@
     <string name="aywebs_not_product_page">الصفحة غير مؤهلة</string>
     <string name="aywebs_loading">Loading…</string>
     <string name="aywebs_select_item">اختر منتجك</string>
-    <string name="aywebs_new">جديد</string>
     <string name="aywebs_added">تمت الإضافة إلى سلة AYROVI</string>
     <string name="aywebs_proceed_checkout">متابعة الدفع</string>
     <string name="aywebs_continue_shopping">مواصلة التسوق</string>
+    <string name="aywebs_no_options">دون خيارات</string>
+    <string name="aywebs_added_line">الكمية %1$d · %2$s · %3$s د.ت</string>
+    <string name="aywebs_condition_new">الحالة: جديد (منشورة من المتجر)</string>
+    <string name="aywebs_condition_used">الحالة: مستعمل (منشورة من المتجر)</string>
+    <string name="aywebs_condition_refurbished">الحالة: مُجدَّد (منشورة من المتجر)</string>
+    <string name="aywebs_availability_in_stock">متوفّر عند المتجر</string>
+    <string name="aywebs_availability_low">الكمية محدودة عند المتجر</string>
+    <string name="aywebs_availability_out">غير متوفّر عند المتجر</string>
 </resources>
