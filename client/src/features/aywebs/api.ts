@@ -292,13 +292,15 @@ export interface AyWebsCartItemPayload {
   customer_note: string;
   purchase_mode: string;
   checkout_ready: boolean;
+  /** Panier unifié : la ligne vit déjà dans le panier AYROVI (synchronisée). */
+  linked_to_ayrovi?: boolean;
 }
 
 export interface AyWebsCartPayload {
   cart: { id: string; status: string; currency: string; items_count: number } | null;
   items: AyWebsCartItemPayload[];
   groups: Array<{ store_id: string; store_name: string; integration_type: string; subtotal_tnd: number; blocked_items: number; items: AyWebsCartItemPayload[] }>;
-  totals: { units: number; product_subtotal_tnd: number; currency: string; blocked_items: number; checkout_ready: boolean };
+  totals: { units: number; product_subtotal_tnd: number; currency: string; blocked_items: number; checkout_ready: boolean; unlinked_units?: number };
   blockers: Array<{ itemId: string; code: string; message: string; action: string }>;
   offline_notice: string | null;
 }

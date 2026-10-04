@@ -228,7 +228,7 @@ function addAyWebsItemToAyroviCart(db: QatafoDatabase, item: AyWebsCartItem, inp
  * marchand + taille + couleur demandées (et le titre en dernier recours quand le
  * marchand ne publie aucun identifiant).
  */
-function findAyroviCartLine(
+export function findAyroviCartLine(
   db: QatafoDatabase,
   sessionId: string,
   accountId: string | null,
@@ -327,4 +327,26 @@ export function listAyWebsOrderLinks(db: QatafoDatabase, aywebOrderId: string): 
       externalNumber: String(row.external_number || ''),
       createdAt: String(row.created_at),
     }));
+}
+
+/**
+ * Panier UNIFIÉ (04/10/2026) : pour chaque ligne AYWEBs, dit si elle est déjà
+ * présente dans le panier AYROVI (synchronisation à l'ajout). Le client somme
+ * alors `panier AYROVI + unités non liées` SANS jamais doubler les lignes
+ * synchronisées — c'est la fin du « deux paniers, deux compteurs ».
+ */
+export function ayWebsCartLinkedMap(
+  db: QatafoDatabase,
+  sessionId: string,
+  accountId: string | null,
+  items: AyWebsCartItem[],
+): { byId: Record<string, boolean>; unlinkedUnits: number } {
+  const byId: Record<string, boolean> = {};
+  let unlinkedUnits = 0;
+  for (const item of items) {
+    const linked = item.status !== 'REMOVED' && Boolean(findAyroviCartLine(db, sessionId, accountId, item));
+    byId[item.id] = linked;
+    if (!linked) unlinkedUnits += item.quantity;
+  }
+  return { byId, unlinkedUnits };
 }

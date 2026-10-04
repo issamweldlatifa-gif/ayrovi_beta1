@@ -60,7 +60,7 @@ import {
   listAyWebsStoreRequests,
   readAyWebsPurchaseRequest,
 } from './purchaseRequests';
-import { bridgeAyWebsCartToAyrovi, listAyWebsOrderLinks, syncAyWebsItemToAyroviCart } from './ayroviBridge';
+import { ayWebsCartLinkedMap, bridgeAyWebsCartToAyrovi, listAyWebsOrderLinks, syncAyWebsItemToAyroviCart } from './ayroviBridge';
 import {
   createAyWebsContext,
   optionalAyWebsCustomer,
@@ -701,7 +701,7 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
     if (!identity) return;
     const view = readAyWebsCartView(db, identity.sessionId, identity.accountId);
     trackAyWebsFunnel(ctx, 'cart_opened', {}, identity.sessionId);
-    res.json({ success: true, data: cartPayload(view) });
+    res.json({ success: true, data: cartPayload(view, linkedStateFor(db, identity, view)) });
   }));
 
   router.post('/cart/items', optionalAyWebsCustomer(db), handle(async (req, res) => {
@@ -770,7 +770,7 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
     res.status(201).json({
       success: true,
       data: { item: cartItemPayload(result.item), duplicate: result.duplicate, message: result.message, ayrovi: bridged },
-      cart: cartPayload(result.view),
+      cart: cartPayload(result.view, linkedStateFor(db, identity, result.view)),
     });
   }));
 
@@ -804,7 +804,7 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
     res.json({
       success: true,
       data: { item: result.item ? cartItemPayload(result.item) : null, removed: Boolean(result.removed), ayrovi: bridged },
-      cart: cartPayload(result.view),
+      cart: cartPayload(result.view, linkedStateFor(db, identity, result.view)),
     });
   }));
 
@@ -829,7 +829,7 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
     } catch (syncError) {
       console.error('[AyWebs][Bridge] retrait de la ligne liée impossible:', syncError instanceof Error ? syncError.message : syncError);
     }
-    res.json({ success: true, data: { removed: true, ayrovi: bridged }, cart: cartPayload(result.view) });
+    res.json({ success: true, data: { removed: true, ayrovi: bridged }, cart: cartPayload(result.view, linkedStateFor(db, identity, result.view)) });
   }));
 
   /** §29 : le client accepte explicitement le nouveau prix. Jamais automatique. */
@@ -842,7 +842,7 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
       accountId: identity.accountId,
       requestId: requestIdOf(req),
     });
-    res.json({ success: true, data: { item: cartItemPayload(result.item) }, cart: cartPayload(result.view) });
+    res.json({ success: true, data: { item: cartItemPayload(result.item) }, cart: cartPayload(result.view, linkedStateFor(db, identity, result.view)) });
   }));
 
   /** §18/§29/§30 : recontrôle prix + variantes avant checkout. */
@@ -854,7 +854,7 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
       accountId: identity.accountId,
       recheckSource: req.body?.recheck_source === true,
     });
-    res.json({ success: true, data: { changes: result.changes }, cart: cartPayload(result.view) });
+    res.json({ success: true, data: { changes: result.changes }, cart: cartPayload(result.view, linkedStateFor(db, identity, result.view)) });
   }));
 
   /** Pont vers le panier AYROVI existant (§2 : aucun second panier côté AYROVI). */
@@ -1254,7 +1254,17 @@ function cartItemPayload(item: ReturnType<typeof listAyWebsCartItems>[number]) {
   };
 }
 
-function cartPayload(view: ReturnType<typeof readAyWebsCartView>) {
+function cartPayload(
+  view: ReturnType<typeof readAyWebsCartView>,
+  linked?: { byId: Record<string, boolean>; unlinkedUnits: number } | null,
+) {
+  // Panier unifié : chaque ligne dit si elle vit déjà dans le panier AYROVI,
+  // et `unlinked_units` compte uniquement ce qui n'y est pas encore — le
+  // client somme les deux compteurs sans jamais doubler une ligne synchronisée.
+  const withLinked = (item: Parameters<typeof cartItemPayload>[0]) => ({
+    ...cartItemPayload(item),
+    linked_to_ayrovi: linked ? Boolean(linked.byId[item.id]) : undefined,
+  });
   return {
     cart: view.cart ? {
       id: view.cart.id,
@@ -1266,14 +1276,14 @@ function cartPayload(view: ReturnType<typeof readAyWebsCartView>) {
       created_at: view.cart.createdAt,
       updated_at: view.cart.updatedAt,
     } : null,
-    items: view.items.map(cartItemPayload),
+    items: view.items.map(withLinked),
     groups: view.groups.map((group) => ({
       store_id: group.storeId,
       store_name: group.storeName,
       integration_type: group.integrationType,
       subtotal_tnd: group.subtotalTnd,
       blocked_items: group.blockedItems,
-      items: group.items.map(cartItemPayload),
+      items: group.items.map(withLinked),
     })),
     totals: {
       units: view.totals.units,
@@ -1281,11 +1291,21 @@ function cartPayload(view: ReturnType<typeof readAyWebsCartView>) {
       currency: view.totals.currency,
       blocked_items: view.totals.blockedItems,
       checkout_ready: view.totals.checkoutReady,
+      unlinked_units: linked ? linked.unlinkedUnits : undefined,
     },
     blockers: view.blockers,
     /** §51 : prix, stock et achat exigent le réseau — le client le sait. */
     live_data_requires_network: true,
   };
+}
+
+/** État de liaison au panier AYROVI pour la vue courante (panier unifié). */
+function linkedStateFor(
+  database: AyroviDatabase,
+  identity: { sessionId: string; accountId: string | null },
+  view: ReturnType<typeof readAyWebsCartView>,
+) {
+  return ayWebsCartLinkedMap(database, identity.sessionId, identity.accountId, view.items);
 }
 
 /** Adresse de livraison du checkout (§21) : recopiée telle quelle, sinon null. */

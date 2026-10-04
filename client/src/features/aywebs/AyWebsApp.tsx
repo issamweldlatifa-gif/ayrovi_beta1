@@ -51,7 +51,9 @@ export const AyWebsApp: React.FC<AyWebsAppProps> = ({
   useEffect(() => {
     const controller = new AbortController();
     void getAyWebsCart(controller.signal)
-      .then((payload) => setAyWebsCount(payload.totals?.units || 0))
+      // Panier unifié : le compteur AYROVI (cartCount) inclut déjà les lignes
+      // synchronisées — on n'ajoute ici QUE les unités non liées, sans doublon.
+      .then((payload) => setAyWebsCount(Number(payload.totals?.unlinked_units ?? 0)))
       .catch(() => undefined);
     return () => controller.abort();
   }, []);

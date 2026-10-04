@@ -18690,8 +18690,8 @@
     {
       "file": "client/src/features/aywebs/api.ts",
       "domain": "shell-content",
-      "sha256": "850c447ada48a13964bc8ed2200c6bcbf09e9dce3e07a32dbb48ac3ec85ce899",
-      "lines": 613,
+      "sha256": "ffba263038b3111a4403065fc3435a81416a36cc15a7fa234b42646f17f3bf1e",
+      "lines": 615,
       "imports": [
         "../../../../shared/aywebsStores",
         "../../types",
@@ -18773,8 +18773,8 @@
     {
       "file": "client/src/features/aywebs/AyWebsApp.tsx",
       "domain": "shell-content",
-      "sha256": "a9ff2df865b01affed8245108a954473b3bc0074d9b39e378ec44e55e515aaf3",
-      "lines": 114,
+      "sha256": "87dd65b764896a9c0cd2fee44f80b5119383df8a123af077cf256bcd8a890481",
+      "lines": 116,
       "imports": [
         "react",
         "./aywebs.css",
@@ -18793,7 +18793,7 @@
       "controls": [
         {
           "tag": "AppHeader",
-          "line": 86,
+          "line": 88,
           "className": null,
           "type": null,
           "role": null,
@@ -18803,7 +18803,7 @@
         },
         {
           "tag": "AyWebsStoresScreen",
-          "line": 92,
+          "line": 94,
           "className": null,
           "type": null,
           "role": null,
@@ -18813,7 +18813,7 @@
         },
         {
           "tag": "AyWebsCartScreen",
-          "line": 101,
+          "line": 103,
           "className": null,
           "type": null,
           "role": null,
@@ -18823,7 +18823,7 @@
         },
         {
           "tag": "AyWebsVariantSheet",
-          "line": 104,
+          "line": 106,
           "className": null,
           "type": null,
           "role": null,
@@ -18841,8 +18841,8 @@
     {
       "file": "client/src/features/aywebs/components/AyWebsCartScreen.tsx",
       "domain": "commerce",
-      "sha256": "480a1e31d468ff71a1b14120240fd34fc6bcfeaf8a5dce1a155a80d3c245b8c7",
-      "lines": 218,
+      "sha256": "4c99da5764d7215c0bc421d061a3a80a6ea7f42af347f7eda2558495b9cc1e43",
+      "lines": 225,
       "imports": [
         "react",
         "../../../components/QatafoIcons",
@@ -18867,7 +18867,7 @@
         },
         {
           "tag": "input",
-          "line": 122,
+          "line": 129,
           "className": null,
           "type": "\"number\"",
           "role": null,
@@ -18877,7 +18877,7 @@
         },
         {
           "tag": "button",
-          "line": 138,
+          "line": 145,
           "className": "\"ayw-delete\"",
           "type": "\"button\"",
           "role": null,
@@ -18887,7 +18887,7 @@
         },
         {
           "tag": "button",
-          "line": 197,
+          "line": 204,
           "className": "\"ayw-cta\"",
           "type": "\"button\"",
           "role": null,
@@ -18897,7 +18897,7 @@
         },
         {
           "tag": "button",
-          "line": 201,
+          "line": 208,
           "className": "\"ayw-cta-outline\"",
           "type": "\"button\"",
           "role": null,

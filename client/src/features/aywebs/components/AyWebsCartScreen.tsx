@@ -40,7 +40,7 @@ export const AyWebsCartScreen: React.FC<AyWebsCartScreenProps> = ({ tab, onTab, 
     try {
       const payload = await getAyWebsCart();
       setCart(payload);
-      onCartChanged?.(payload.totals?.units || 0);
+      onCartChanged?.(Number(payload.totals?.unlinked_units ?? 0));
     } catch {
       setCart(null);
     } finally {
@@ -54,13 +54,13 @@ export const AyWebsCartScreen: React.FC<AyWebsCartScreenProps> = ({ tab, onTab, 
     if (!Number.isFinite(quantity) || quantity < 1) return;
     const result = await updateAyWebsCartItem(itemId, { quantity });
     setCart(result.cart);
-    onCartChanged?.(result.cart?.totals?.units || 0);
+    onCartChanged?.(Number(result.cart?.totals?.unlinked_units ?? 0));
   };
 
   const remove = async (itemId: string) => {
     const next = await removeAyWebsCartItem(itemId);
     setCart(next);
-    onCartChanged?.(next?.totals?.units || 0);
+    onCartChanged?.(Number(next?.totals?.unlinked_units ?? 0));
   };
 
   const proceed = async () => {
@@ -108,6 +108,13 @@ export const AyWebsCartScreen: React.FC<AyWebsCartScreenProps> = ({ tab, onTab, 
           </div>
           <div><dt>{tr('Price', 'السعر')}</dt><dd>{item.unit_price.toLocaleString()} {item.currency}</dd></div>
           {item.variant_label && <div><dt>{tr('Options', 'الخيارات')}</dt><dd>{item.variant_label}</dd></div>}
+          {/* Panier unifié : la ligne synchronisée vit déjà dans le panier AYROVI. */}
+          {item.linked_to_ayrovi && (
+            <div>
+              <dt>{tr('AYROVI cart', 'سلة AYROVI')}</dt>
+              <dd>{tr('Already in your AYROVI cart', 'موجود بالفعل في سلة AYROVI')}</dd>
+            </div>
+          )}
           {/* Disponibilité : affichée seulement quand elle est confirmée. */}
           {item.availability !== 'UNKNOWN' && (
             <div>
