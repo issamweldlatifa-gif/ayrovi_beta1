@@ -227,9 +227,12 @@ describe('câblage — le lien SerpApi est bien lu dans le pipeline Lens', () =>
   });
 
   it('le scraper est réutilisé, jamais recòpié : même chaîne de confiance', () => {
-    expect(scraper).toContain('public async scrapeParsedPage(rawUrl: string)');
+    // 04/10/2026 : la signature accepte désormais les options de lecture
+    // (`ScrapeOptions` — page fournie par le client AYWEBs). Le contrat protégé
+    // ici ne change pas : une SEULE chaîne, jamais dupliquée.
+    expect(scraper).toContain('public async scrapeParsedPage(rawUrl: string, options: ScrapeOptions = {})');
     // La nouvelle entrée délègue à la même sonde interne (direct puis rendu).
-    expect(scraper).toContain('return this.scrapeWithHttp(url, this.detectStore(url));');
+    expect(scraper).toContain('return this.scrapeWithHttp(url, this.detectStore(url), options);');
     // Et l'assainissement d'URL reste obligatoire avant tout fetch.
     expect(scraper).toContain('const safeTarget = await resolveSafeHttpUrl(cleaned);');
   });

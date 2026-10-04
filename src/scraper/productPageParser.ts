@@ -1,6 +1,7 @@
 import { allowsMerchantVariantChoice, reportedVariantStock } from '../../shared/variantPolicy';
 import { JSDOM, VirtualConsole } from 'jsdom';
 import type { ProductVariantDetail, ProductVariants, StoreType } from '../types';
+import { readAmazonAvailability, readAmazonExtras, readAmazonPrice, readAmazonVariants } from './amazonPage';
 
 export interface ParsedProductPage {
   title: string;
@@ -344,6 +345,11 @@ function optionNames(product: any): string[] {
 function looksLikeSize(value: string): boolean {
   const token = String(value || '').trim();
   return /^(?:XXS|XS|S|M|L|XL|XXL|XXXL|[2-5]?XL|ONE SIZE|TU|unique)$/i.test(token)
+    /* Tailles LONGUES (04/10/2026 — Amazon) : « X-Small », « Small », « Medium »,
+     * « Large », « X-Large », « XX-Large ». La liste d'abréviations ci-dessus ne
+     * les reconnaissait pas : les tailles publiées par Amazon étaient REJETÉES
+     * comme « pas une taille » et le sélecteur s'affichait sans aucune taille. */
+    || /^(?:(?:XX|X)-?(?:Small|Large)|Small|Medium|Large|Petite|Tall)$/i.test(token)
     || /^(?:[0-9]{1,3}(?:[.,][0-9])?)(?:\s*(?:EU|US|UK|FR|IT|CM))?$/i.test(token)
     || /^(?:EU|US|UK)\s*[0-9]{1,3}(?:[.,][0-9])?$/i.test(token)
     || /^[0-9]{1,2}(?:[.,][0-9])?\s*(?:EU|USA|US)$/i.test(token)
@@ -583,6 +589,23 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
     const meta = (selector: string) => document.querySelector(selector)?.getAttribute('content')?.trim() || '';
     const text = (selector: string) => document.querySelector(selector)?.textContent?.replace(/\s+/g, ' ').trim() || '';
 
+    /* AMAZON (04/10/2026) — lu AVANT le nettoyage DOM ci-dessous, et depuis le
+     * HTML ORIGINAL pour le twister : le nettoyage retire les <script> non-DATA,
+     * or les dimensions/valeurs (`sortedDimValuesForAllDims`,
+     * `dimensionValuesDisplayData`) vivent précisément dans ces scripts.
+     * La page Amazon ne publie ni JSON-LD ni meta prix : ces lectures sont la
+     * SEULE source de prix et d'options pour cette enseigne. */
+    const amazon = storeType === 'amazon'
+      ? (() => {
+          const price = readAmazonPrice(document, html);
+          const extras = readAmazonExtras(document, html, price.current);
+          const variants = readAmazonVariants(document, html);
+          const availability = readAmazonAvailability(document);
+          return { price, extras, variants, availability };
+        })()
+      : null;
+
+
     const jsonLd: any[] = [];
     for (const node of Array.from(document.querySelectorAll('script[type="application/ld+json"]')).slice(0, 30)) {
       try { flattenJsonLd(JSON.parse(node.textContent || 'null'), jsonLd); } catch { /* malformed merchant JSON-LD */ }
@@ -647,13 +670,25 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
       : storeType === 'shein'
         ? text('[class*="price"]:not([style*="line-through"])')
         : text('[itemprop="price"], [data-price], [class*="price"]');
+    // Amazon : la lecture dédiée remplace le sélecteur historique, qui ne pouvait
+    // pas voir un prix éclaté en spans `a-price-whole`/`a-price-fraction`.
+    const amazonPriceText = amazon?.price.current || '';
     const details = variantsFromProduct(embeddedProduct);
+    if (amazon?.variants.details.length) {
+      const seen = new Set(details.map((detail) => `${detail.size || ''}|${detail.color || ''}|${detail.label}`));
+      for (const detail of amazon.variants.details) {
+        const key = `${detail.size || ''}|${detail.color || ''}|${detail.label}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        details.push(detail);
+      }
+    }
     const detailPrices = details.map((detail) => detail.price || 0).filter((value) => value > 0);
     const jsonLdPrice = ldSale.price || parsePrice(offers?.price || offers?.lowPrice);
     const metaPrice = parsePrice(
       meta('meta[property="product:price:amount"]') || meta('meta[property="og:price:amount"]') || meta('meta[itemprop="price"]'),
     );
-    const domPrice = parsePrice(selectorPrice);
+    const domPrice = amazonPriceText ? parsePrice(amazonPriceText) : parsePrice(selectorPrice);
     const variantFloor = detailPrices.length ? Math.min(...detailPrices) : 0;
     const regexPrice = contextualPrice(document.body?.textContent || '');
     /* Structured product offers are the authoritative source. Do not compare
@@ -673,13 +708,16 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
     const currencyBySource: Record<ParsedProductPage['priceSource'], string> = {
       json_ld: String(ldSale.currency || offers?.priceCurrency || metaCurrency || ''),
       meta: String(metaCurrency || offers?.priceCurrency || ''),
-      dom: String(currencyCode(selectorPrice) || metaCurrency || offers?.priceCurrency || ''),
+      dom: String(currencyCode(selectorPrice) || currencyCode(amazonPriceText) || amazon?.price.currency || amazon?.extras.currency || metaCurrency || offers?.priceCurrency || ''),
       embedded_variant: String(embeddedProduct?.currency || metaCurrency || offers?.priceCurrency || ''),
       context_regex: String(regexPrice?.currency || metaCurrency || offers?.priceCurrency || ''),
       none: String(metaCurrency || offers?.priceCurrency || embeddedProduct?.currency || ''),
     };
     const currency = currencyCode(currencyBySource[priceSource]) || String(currencyBySource[priceSource]).trim().toUpperCase();
-    const originalPrice = originalPriceFrom({ offers, embeddedProduct, details, price, meta, text });
+    const amazonOriginalPrice = amazon?.extras.original ? parsePrice(amazon.extras.original) : 0;
+    const originalPrice = storeType === 'amazon' && amazonOriginalPrice > price
+      ? amazonOriginalPrice
+      : originalPriceFrom({ offers, embeddedProduct, details, price, meta, text });
 
     const domSizes = Array.from(document.querySelectorAll(
       'select[name*="size" i] option, select[name*="taille" i] option, select[name*="capacit" i] option, select[name*="volume" i] option, select[name*="storage" i] option, select[name*="stockage" i] option, select[name*="memory" i] option, select[data-id*="size" i] option, #variation_size_name option, [data-testid*="size" i] button, [data-testid*="capacit" i] button, [data-testid*="storage" i] button',
@@ -847,7 +885,11 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
       externalId: String(productLd?.sku || productLd?.productID || embeddedProduct?.id || embeddedProduct?.sku || ''),
       variants: { sizes, colors, details },
     availability: amazonAvailability(
-      availabilityFrom({ ...productLd, offers: (ldOffers.length ? ldOffers : productLd?.offers) }, embeddedProduct),
+      // Amazon publie son état dans `#availability` (« In Stock », « Only 3 left »).
+      // Quand la page ne dit RIEN, on garde la valeur calculée ailleurs : `null`
+      // n'écrase jamais une information, il signifie « non publié ».
+      amazon?.availability
+        || availabilityFrom({ ...productLd, offers: (ldOffers.length ? ldOffers : productLd?.offers) }, embeddedProduct),
       document.body?.textContent || '',
       storeType,
     ),

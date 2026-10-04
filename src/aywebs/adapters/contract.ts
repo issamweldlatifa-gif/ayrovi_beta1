@@ -1,4 +1,4 @@
-import type { SmartLinkScraper } from '../../scraper/scraper';
+import type { ScrapeOptions, SmartLinkScraper } from '../../scraper/scraper';
 import type { ScrapedProduct } from '../../types';
 import type { AyWebsAdapterId, AyWebsStoreDefinition } from '../../../shared/aywebsStores';
 import type {
@@ -93,7 +93,7 @@ export interface AyWebsStoreAdapter {
   /** Type de page : PRODUCT, SEARCH, CATEGORY, HOME, LOGIN, CHECKOUT, CAPTCHA… (§10) */
   classifyPage(url: string | URL): AyWebsPageClassification;
   /** Lecture et normalisation du produit source (§11). */
-  resolveProduct(url: string): Promise<AyWebsSourceProduct>;
+  resolveProduct(url: string, options?: ScrapeOptions): Promise<AyWebsSourceProduct>;
   /** Variantes d'un produit déjà résolu (§13). */
   resolveVariants(product: AyWebsSourceProduct): AyWebsSourceProduct['variants'];
   /** Disponibilité produit + variante exacte (§14). */

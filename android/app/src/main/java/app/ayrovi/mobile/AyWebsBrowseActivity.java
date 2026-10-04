@@ -72,6 +72,33 @@ public class AyWebsBrowseActivity extends Activity {
   private static final String CART_ITEMS_PATH = "/api/v1/aywebs/cart/items";
 
   /**
+   * HTML de la fiche TELLE QU'AFFICHÉE dans la WebView (04/10/2026).
+   *
+   * Pourquoi : Amazon sert aux IP de centre de données (Render) une coquille
+   * sans prix ni variantes ; la page affichée sur le téléphone du client, elle,
+   * publie le prix, les tailles et les couleurs. On envoie donc au serveur le
+   * HTML de CETTE page ; le serveur le relit avec SON parseur et calcule le prix
+   * — le client apporte une page, jamais un prix (§45).
+   *
+   * Les <script> sans données produit sont retirés avant envoi : ils constituent
+   * l'essentiel du poids (mesuré : page Amazon 1,3 Mo). Les blocs de données
+   * produit (données structurées, `sortedDimValuesForAllDims`,
+   * `dimensionValuesDisplayData`, `displayPrice`…) sont conservés tels quels.
+   */
+  private static final String PAGE_CAPTURE_JS =
+      "(function(){try{"
+      + "var doc=document.cloneNode(true);"
+      + "var keep=['sortedDimValuesForAllDims','dimensionValuesDisplayData','variationDisplayLabels','displayPrice','priceAmount','twister-js-init','a-state'];"
+      + "doc.querySelectorAll('script').forEach(function(s){"
+      + "var t=(s.getAttribute('type')||'').toLowerCase();"
+      + "if(t==='application/ld+json'||t==='application/json')return;"
+      + "var x=s.textContent||'';"
+      + "for(var i=0;i<keep.length;i++){if(x.indexOf(keep[i])>=0)return;}"
+      + "s.parentNode.removeChild(s);});"
+      + "return '<!doctype html>'+doc.documentElement.outerHTML;"
+      + "}catch(e){return '';}})()";
+
+  /**
    * Lien profond AYWEBs (Manifest §25) : c'est le SEUL format que
    * MainActivity.ayWebsTarget() accepte pour un Intent.ACTION_VIEW. La coque
    * retraduit ensuite `ayrovi://aywebs/cart` en `https://localhost/aywebs/cart`.
@@ -317,9 +344,21 @@ public class AyWebsBrowseActivity extends Activity {
   private void onAddToCart() {
     if (!productPage || currentUrl.isEmpty()) return;
     runOnUiThread(() -> addButton.setText(R.string.aywebs_loading));
-    executor.execute(() -> {
+    final String url = currentUrl;
+
+    /* 1. On lit d'abord la page AFFICHÉE (WebView), puis on la joint à la
+     *    requête de résolution. Le serveur relit ce HTML avec son propre
+     *    parseur : c'est ce qui fait apparaître le prix et les variantes là où
+     *    une lecture serveur se heurte au mur anti-robot du marchand.
+     * 2. Si la lecture échoue (page protégée, WebView occupée), on envoie la
+     *    requête SANS page : la chaîne serveur habituelle reprend, on ne
+     *    dégrade rien et on ne bloque jamais l'ajout pour cette seule raison. */
+    captureVisiblePage(html -> executor.execute(() -> {
       try {
-        JSONObject body = new JSONObject().put("url", currentUrl);
+        JSONObject body = new JSONObject().put("url", url);
+        if (html != null && !html.isEmpty()) {
+          body.put("page", new JSONObject().put("url", url).put("html", html));
+        }
         JSONObject reply = post(apiOrigin + RESOLVE_PATH, body);
         JSONObject product = reply.optJSONObject("data");
         runOnUiThread(() -> {
@@ -335,6 +374,31 @@ public class AyWebsBrowseActivity extends Activity {
       } catch (Exception error) {
         runOnUiThread(() -> addButton.setText(R.string.aywebs_add_to_cart));
         toastMessage(error.getMessage());
+      }
+    }));
+  }
+
+  /**
+   * Lit l'HTML de la page affichée dans la WebView. `evaluateJavascript` doit
+   * être appelé sur le fil UI et son rappel revient sur le fil UI ; le POST part
+   * ensuite sur l'executor, comme avant. Toute panne renvoie une chaîne vide —
+   * l'appelant retombe alors sur la chaîne serveur.
+   */
+  private void captureVisiblePage(java.util.function.Consumer<String> onReady) {
+    runOnUiThread(() -> {
+      try {
+        webView.evaluateJavascript(PAGE_CAPTURE_JS, value -> {
+          String html = "";
+          try {
+            Object decoded = new org.json.JSONTokener(value == null ? "" : value).nextValue();
+            if (decoded instanceof String) html = (String) decoded;
+          } catch (Exception ignored) {
+            // Résultat illisible → on continue sans page, jamais d'échec bloquant.
+          }
+          onReady.accept(html);
+        });
+      } catch (Exception error) {
+        onReady.accept("");
       }
     });
   }
