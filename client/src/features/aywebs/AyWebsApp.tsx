@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import './aywebs.css';
 import { useLocale } from '../../i18n/LocaleContext';
+import { APP_BUILD_STAMP } from '../../config/buildStamp';
 import { AppHeader } from '../../design/AppHeader';
 import { openMerchantPage } from '../../services/nativeShell';
 import { getAyWebsCart, setAyWebsCsrfToken, type AyWebsStore } from './api';
@@ -87,7 +88,7 @@ export const AyWebsApp: React.FC<AyWebsAppProps> = ({
     >
       <AppHeader
         title="AyWebs"
-        subtitle={tr('Proxy shopping — Add to Cart', 'التسوق بالوكالة — أضف إلى السلة')}
+        subtitle={`${tr('Proxy shopping — Add to Cart', 'التسوق بالوكالة — أضف إلى السلة')} · ${APP_BUILD_STAMP}`}
         onClose={onClose}
       />
       {tab === 'stores' && (

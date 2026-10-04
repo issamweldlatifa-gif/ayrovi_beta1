@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "scope": "Recursive static inventory of all client TypeScript/TSX/CSS; manual review tracked separately",
   "totals": {
-    "files": 251,
-    "customerAndSharedFiles": 199,
+    "files": 252,
+    "customerAndSharedFiles": 200,
     "controls": 467,
     "iconAliases": 102,
     "uniqueGlyphs": 99
@@ -16984,6 +16984,22 @@
       ]
     },
     {
+      "file": "client/src/config/buildStamp.ts",
+      "domain": "shell-content",
+      "sha256": "b8d878a3ca68c024a0d914436636d1b97814802aed1f5ac3d9f86c82e24bd160",
+      "lines": 14,
+      "imports": [],
+      "exports": [
+        "APP_BUILD_STAMP"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
       "file": "client/src/config/interfaceConfig.ts",
       "domain": "shell-content",
       "sha256": "454f7d3e9e808dde967040ba19dbb22d636edfe1bd399b2decfa523a38d5ae05",
@@ -18774,12 +18790,13 @@
     {
       "file": "client/src/features/aywebs/AyWebsApp.tsx",
       "domain": "shell-content",
-      "sha256": "87dd65b764896a9c0cd2fee44f80b5119383df8a123af077cf256bcd8a890481",
-      "lines": 116,
+      "sha256": "d4ed391c82f434b70924c992f6cbc7fa21095815e453e123320d7bd9848c066c",
+      "lines": 117,
       "imports": [
         "react",
         "./aywebs.css",
         "../../i18n/LocaleContext",
+        "../../config/buildStamp",
         "../../design/AppHeader",
         "../../services/nativeShell",
         "./api",
@@ -18794,7 +18811,7 @@
       "controls": [
         {
           "tag": "AppHeader",
-          "line": 88,
+          "line": 89,
           "className": null,
           "type": null,
           "role": null,
@@ -18804,7 +18821,7 @@
         },
         {
           "tag": "AyWebsStoresScreen",
-          "line": 94,
+          "line": 95,
           "className": null,
           "type": null,
           "role": null,
@@ -18814,7 +18831,7 @@
         },
         {
           "tag": "AyWebsCartScreen",
-          "line": 103,
+          "line": 104,
           "className": null,
           "type": null,
           "role": null,
@@ -18824,7 +18841,7 @@
         },
         {
           "tag": "AyWebsVariantSheet",
-          "line": 106,
+          "line": 107,
           "className": null,
           "type": null,
           "role": null,
