@@ -362,7 +362,15 @@ app.get('/api/ready', (_req, res) => {
     db.get('SELECT 1 AS ready');
     const arrivalMultistoreMigration = db.arrivalMultistoreMigrationReadiness();
     if (!arrivalMultistoreMigration.ready) throw new Error('Arrival multi-store migration is incomplete.');
-    res.json({ status: 'ready', database: 'ok' });
+    // Empreinte de déploiement (04/10/2026) : permet de vérifier depuis un
+    // téléphone QUEL code tourne réellement en production (déployé périmé ?).
+    // Render injecte RENDER_GIT_COMMIT_SHA au runtime ; npm injecte la version.
+    res.json({
+      status: 'ready',
+      database: 'ok',
+      version: process.env.npm_package_version || 'unknown',
+      commit: String(process.env.RENDER_GIT_COMMIT_SHA || process.env.AYROVI_BUILD_COMMIT || 'local').slice(0, 12),
+    });
   } catch (error: any) {
     console.error(`[ready] request=${( _req as any).requestId || 'unknown'}`, error?.message || 'dependency unavailable');
     res.status(503).json({ status: 'not_ready', database: 'error', code: 'SERVICE_NOT_READY', requestId: ( _req as any).requestId || null });
