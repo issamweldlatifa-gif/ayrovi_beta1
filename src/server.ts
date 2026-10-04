@@ -155,6 +155,14 @@ const otpRequestTargetRateLimit = rateLimit('otp-request-target', process.env.NO
 app.use('/api/customer/auth/otp/verify', rateLimit('otp-verify', 12, 5 * 60_000));
 app.use('/api/customer/auth/google', rateLimit('google-oauth', 30, 10 * 60_000));
 app.use('/api/customer/auth/facebook', rateLimit('facebook-oauth', 30, 10 * 60_000));
+// Remise de session native (04/10/2026) : l'application interroge en boucle
+// pendant que l'utilisateur termine Google dans le navigateur système. La
+// limite doit autoriser cette attente SANS ouvrir un oracle de devinette — le
+// code fait 32+ caractères aléatoires et vit dix minutes.
+app.use('/api/customer/auth/native/claim', rateLimit('native-handoff', process.env.NODE_ENV === 'test' ? 1_000 : 90, 10 * 60_000));
+// Connexion Google native : chaque appel déclenche une vérification chez
+// Google. Sans plafond, un tiers pourrait s'en servir comme amplificateur.
+app.use('/api/customer/auth/google/native', rateLimit('google-native', process.env.NODE_ENV === 'test' ? 1_000 : 30, 10 * 60_000));
 app.use('/api/checkout', rateLimit('checkout', process.env.NODE_ENV === 'test' ? 1_000 : 15, 5 * 60_000));
 app.use('/api/customer/account/orders', (req, res, next) => req.path.includes('/payments/card/')
   ? rateLimit('card-payment', process.env.NODE_ENV === 'test' ? 1_000 : 20, 5 * 60_000)(req, res, next)

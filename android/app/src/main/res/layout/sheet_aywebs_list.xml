@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ============================================================================
+     AYWEBs — tiroir « Panier » / « Favoris » INTERNE au navigateur marchand.
+
+     Remarque client du 04/10/2026 : « زر panier يكون زدا دراو داخل متجر … واي
+     حجا تم داخل متجر تقعد داخل متجر ». Les deux boutons de la barre basse
+     appelaient openWebRoute(), c'est-à-dire startActivity(deep link) + finish() :
+     la page marchande était DÉTRUITE et l'utilisateur éjecté de son achat.
+
+     Cette feuille s'ouvre PAR-DESSUS la WebView, sans la toucher : on la ferme,
+     on retrouve exactement la page et le défilement qu'on avait quittés. Aucun
+     montant, aucune logique ici — tout vient du serveur (voir l'activité).
+     ============================================================================ -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#FFFFFF">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="16dp"
+        android:paddingEnd="8dp">
+
+        <TextView
+            android:id="@+id/aywebs_sheet_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:singleLine="true"
+            android:textColor="#101828"
+            android:textSize="17sp"
+            android:textStyle="bold" />
+
+        <ImageButton
+            android:id="@+id/aywebs_sheet_close"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/aywebs_close"
+            android:src="@android:drawable/ic_menu_close_clear_cancel" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#E4E7EC" />
+
+    <ProgressBar
+        android:id="@+id/aywebs_sheet_progress"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        android:indeterminate="true" />
+
+    <TextView
+        android:id="@+id/aywebs_sheet_notice"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp"
+        android:textColor="#475467"
+        android:textSize="14sp"
+        android:visibility="gone" />
+
+    <!-- Défilement INTERNE : la feuille est plafonnée à 82 % de la hauteur par
+         l'activité, donc une longue liste défile ici sans jamais recouvrir la
+         barre du marchand ni déborder sous la barre système. -->
+    <ScrollView
+        android:id="@+id/aywebs_sheet_scroll"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:id="@+id/aywebs_sheet_list"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="8dp" />
+    </ScrollView>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#E4E7EC" />
+
+    <TextView
+        android:id="@+id/aywebs_sheet_total"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="10dp"
+        android:textColor="#101828"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <!-- Unique sortie assumée : payer (panier) ou se connecter (favoris). Le
+         client l'a explicitement autorisée : « الا اذا سكر هو بزر اغلاق او كان
+         يتعين تسجيل دخول او دفع ». -->
+    <Button
+        android:id="@+id/aywebs_sheet_cta"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_margin="12dp"
+        android:background="#F18902"
+        android:textColor="#FFFFFF"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <!-- Rester dans la boutique est le chemin PAR DÉFAUT, donc il est écrit. -->
+    <Button
+        android:id="@+id/aywebs_sheet_continue"
+        style="?android:attr/borderlessButtonStyle"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:text="@string/aywebs_sheet_continue"
+        android:textColor="#1D3F8F"
+        android:textSize="14sp" />
+</LinearLayout>

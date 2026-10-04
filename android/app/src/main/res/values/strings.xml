@@ -40,4 +40,27 @@
     <string name="aywebs_added">Article ajouté au panier AYROVI</string>
     <string name="aywebs_proceed_checkout">Proceed to Checkout</string>
     <string name="aywebs_continue_shopping">Return to Shopping</string>
+    <!-- Tiroirs internes au navigateur marchand (04/10/2026) : le panier et
+         les favoris s'ouvrent PAR-DESSUS la boutique, sans la quitter. -->
+    <string name="aywebs_sheet_continue">Continuer mes achats</string>
+    <string name="aywebs_sheet_empty_cart">Votre panier est vide.</string>
+    <string name="aywebs_sheet_empty_wish">Aucun favori pour l\'instant.</string>
+    <string name="aywebs_sheet_failed">Chargement impossible. Vérifiez votre connexion.</string>
+    <string name="aywebs_sheet_login_required">Connectez-vous pour retrouver les favoris de votre compte AYROVI.</string>
+    <string name="aywebs_sheet_login">Se connecter</string>
+    <string name="aywebs_sheet_checkout">Passer la commande</string>
+    <string name="aywebs_sheet_quantity">Quantité : %1$d</string>
+    <string name="aywebs_sheet_total">Sous-total : %1$s TND</string>
+    <string name="aywebs_login_stay">Vous restez dans la boutique : la page ne bouge pas.</string>
+    <string name="aywebs_login_email">Adresse e-mail</string>
+    <string name="aywebs_login_password">Mot de passe</string>
+    <string name="aywebs_login_failed">Identifiants refusés.</string>
+    <string name="aywebs_fav_add">Ajouter cette page aux favoris</string>
+    <string name="aywebs_fav_added">Ajouté aux favoris.</string>
+    <string name="aywebs_fav_not_product">Ouvrez une fiche produit pour l\'ajouter aux favoris.</string>
+    <!-- Identifiant client WEB du projet Google (fourni le 04/10/2026).
+         Android s'en sert comme « serverClientId » : c'est l'audience que le
+         serveur vérifiera sur le jeton d'identité. Ce n'est PAS un secret —
+         il voyage dans chaque requête OAuth publique. -->
+    <string name="google_web_client_id" translatable="false">917317804534-5v3d6fmlddpgrraj8bemu5tkju16066o.apps.googleusercontent.com</string>
 </resources>

@@ -82,6 +82,49 @@ function oauthBaseUrl(): string {
   return String(process.env.PUBLIC_BASE_URL || process.env.RENDER_EXTERNAL_URL || '').trim().replace(/\/$/, '');
 }
 
+/**
+ * Remise de session à l'APPLICATION NATIVE (04/10/2026) — pourquoi elle existe.
+ *
+ * Symptôme signalé : « connexion Google ⇒ erreur 404 dans l'application ».
+ * Cause réelle : dans l'APK, l'interface est servie depuis `https://localhost`
+ * (paquet Capacitor embarqué). Le bouton Google était un lien RELATIF
+ * (`/api/customer/auth/google/start`). Or le pont `nativeApiOrigin` ne réécrit
+ * que `fetch`/XHR : une NAVIGATION reste sur l'origine de la coque, où aucun
+ * serveur n'écoute → 404. Deux obstacles suivaient immédiatement :
+ *   • Google REFUSE les WebView embarquées (`disallowed_useragent`) ;
+ *   • le cookie de session posé sur l'origine de l'API n'atteindrait jamais
+ *     `https://localhost` (origines différentes).
+ *
+ * Donc : l'application ouvre le flux dans le NAVIGATEUR SYSTÈME avec un code de
+ * remise à usage unique qu'elle a générée, puis réclame son jeton. On conserve
+ * le HACHAGE du code, le jeton est remis UNE fois et la ligne est détruite.
+ */
+const NATIVE_HANDOFF_TTL_MS = 10 * 60 * 1000;
+
+/** Hachage du code transmis par l'app ; chaîne vide pour tout flux web. */
+function hashOptionalHandoff(value: unknown): string {
+  const handoff = validNativeHandoff(value);
+  return handoff ? hashToken(handoff) : '';
+}
+
+function validNativeHandoff(value: unknown): string {
+  const handoff = String(value || '').trim();
+  return /^[A-Za-z0-9_-]{32,128}$/.test(handoff) ? handoff : '';
+}
+
+function storeNativeHandoff(
+  db: QatafoDatabase,
+  handoffId: string,
+  accountId: string,
+  session: { token: string; csrfToken: string; expiresAt: string },
+): void {
+  const now = new Date();
+  db.run('DELETE FROM customer_native_handoffs WHERE id=? OR expires_at<=?', handoffId, now.toISOString());
+  db.run(`INSERT INTO customer_native_handoffs (id,account_id,session_token,csrf_token,session_expires_at,expires_at,created_at)
+    VALUES (?,?,?,?,?,?,?)`, handoffId, accountId, session.token, session.csrfToken, session.expiresAt,
+  new Date(now.getTime() + NATIVE_HANDOFF_TTL_MS).toISOString(), now.toISOString());
+}
+
 function googleConfig() {
   const clientId = String(process.env.GOOGLE_CLIENT_ID || '').trim();
   const clientSecret = String(process.env.GOOGLE_CLIENT_SECRET || '').trim();
@@ -574,9 +617,10 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
     const stateId = hashToken(state);
     const now = new Date();
     const current = resolveCustomer(db, req);
-    db.run(`INSERT INTO customer_oauth_states (id,account_id,provider,cart_session_id,return_to,expires_at,created_at)
-      VALUES (?,?,'APPLE',?,?,?,?)`, stateId, current?.id || null, validCartSession(req.query.cartSessionId), validReturnTo(req.query.returnTo),
-      new Date(now.getTime() + 10 * 60 * 1000).toISOString(), now.toISOString());
+    db.run(`INSERT INTO customer_oauth_states (id,account_id,provider,cart_session_id,return_to,native_handoff_id,expires_at,created_at)
+      VALUES (?,?,'APPLE',?,?,?,?,?)`, stateId, current?.id || null, validCartSession(req.query.cartSessionId), validReturnTo(req.query.returnTo),
+    hashOptionalHandoff(req.query.nativeHandoff),
+    new Date(now.getTime() + 10 * 60 * 1000).toISOString(), now.toISOString());
     const params = new URLSearchParams({
       client_id: apple.clientId,
       redirect_uri: apple.callbackUrl,
@@ -655,12 +699,74 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
       const session = createCustomerSession(db, accountId, req);
       setCustomerCookie(res, session.token);
       const returnTo = validReturnTo(state.return_to);
+      if (state.native_handoff_id) {
+        storeNativeHandoff(db, String(state.native_handoff_id), accountId, session);
+        return res.redirect('/auth/native-done.html');
+      }
       return res.redirect(`${returnTo}${returnTo.includes('?') ? '&' : '?'}customerAuth=success`);
     } catch (error) {
       console.error('[Customer Apple OAuth]', error);
       return failure();
     }
   });
+
+/**
+ * Rattachement d'un profil Google a un compte AYROVI.
+ *
+ * Extrait tel quel du callback OAuth (04/10/2026) pour etre reutilise par la
+ * connexion NATIVE : les deux chemins doivent fusionner les comptes, arbitrer
+ * les conflits d'adresse et adopter l'avatar EXACTEMENT de la meme maniere.
+ * Deux copies de cette logique divergeraient, et la divergence se paierait en
+ * comptes dedoubles — un defaut qu'on ne decouvre qu'une fois les clients
+ * dedans.
+ */
+function linkGoogleProfile(db: QatafoDatabase, profile: any, linkToAccountId?: string | null): string {
+  const subject = String(profile.sub || '');
+  const email = String(profile.email || '').trim().toLowerCase();
+  if (!subject || !email || profile.email_verified !== true) throw new Error('GOOGLE_IDENTITY_INVALID');
+  const now = new Date().toISOString();
+  const identityOwnerId = db.get<any>(`SELECT account_id FROM customer_auth_identities WHERE provider='GOOGLE' AND provider_subject=?`, subject)?.account_id as string | undefined;
+  const emailOwner = db.get<any>('SELECT id,email_verified_at FROM customer_accounts WHERE email=? COLLATE NOCASE', email);
+  const emailOwnerGoogleIdentity = emailOwner
+    ? db.get<any>(`SELECT provider_subject FROM customer_auth_identities WHERE account_id=? AND provider='GOOGLE' LIMIT 1`, emailOwner.id)
+    : null;
+  const verifiedLegacyEmailOwnerId = emailOwner?.email_verified_at && !emailOwnerGoogleIdentity ? emailOwner.id as string : undefined;
+  if (emailOwner && !emailOwner.email_verified_at && emailOwner.id !== linkToAccountId && emailOwner.id !== identityOwnerId) {
+    // An unverified profile address must never pre-hijack a later verified Google login.
+    db.run('UPDATE customer_accounts SET email=NULL,email_verified_at=NULL,updated_at=? WHERE id=? AND email_verified_at IS NULL', now, emailOwner.id);
+    notification(db, emailOwner.id, 'ACCOUNT', 'Adresse e-mail retirée', 'Une adresse e-mail non vérifiée a été retirée de votre profil car elle a été vérifiée sur un autre compte.', '/compte/profil');
+  }
+  if (emailOwner?.email_verified_at && emailOwnerGoogleIdentity && emailOwner.id !== identityOwnerId) {
+    throw new Error('GOOGLE_EMAIL_CONFLICT');
+  }
+  // A flow started while authenticated explicitly links into that account. For a
+  // normal sign-in, the stable Google subject takes precedence over a legacy email.
+  let accountId = (linkToAccountId || identityOwnerId || verifiedLegacyEmailOwnerId) as string | undefined;
+  if (!accountId) {
+    accountId = `account_${randomUUID()}`;
+    db.run(`INSERT INTO customer_accounts
+      (id,display_name,email,avatar_url,email_verified_at,status,last_login_at,created_at,updated_at)
+      VALUES (?,?,?,?,?,'ACTIVE',?,?,?)`, accountId, String(profile.name || 'Client AYROVI').slice(0, 100), email,
+    String(profile.picture || '').slice(0, 1000), now, now, now, now);
+    enqueueWelcomeMail(db, accountId);
+    notification(db, accountId, 'ACCOUNT', 'Bienvenue chez AYROVI', 'Votre compte Google est actif. Vérifiez votre téléphone avant votre première commande.', '/compte');
+  } else {
+    for (const ownerId of new Set([identityOwnerId, verifiedLegacyEmailOwnerId].filter((id): id is string => Boolean(id)))) {
+      if (ownerId !== accountId && accountRow(db, ownerId)) accountId = mergeAccounts(db, ownerId, accountId);
+    }
+    const currentAccount = accountRow(db, accountId);
+    if (!currentAccount) throw new Error('ACCOUNT_MERGE_FAILED');
+    const adoptGoogleEmail = !currentAccount.email || !currentAccount.email_verified_at || currentAccount.email.toLowerCase() === email;
+    db.run(`UPDATE customer_accounts SET display_name=CASE WHEN display_name='' OR display_name='Client AYROVI' THEN ? ELSE display_name END,
+      email=?,avatar_url=CASE WHEN avatar_source='provider' AND ?!='' THEN ? ELSE avatar_url END,email_verified_at=?,last_login_at=?,updated_at=? WHERE id=?`,
+    String(profile.name || 'Client AYROVI').slice(0, 100), adoptGoogleEmail ? email : currentAccount.email,
+    String(profile.picture || ''), String(profile.picture || '').slice(0, 1000),
+    adoptGoogleEmail ? now : currentAccount.email_verified_at, now, now, accountId);
+  }
+  db.run(`INSERT OR IGNORE INTO customer_auth_identities (id,account_id,provider,provider_subject,created_at)
+    VALUES (?,?,'GOOGLE',?,?)`, `identity_${randomUUID()}`, accountId, subject, now);
+  return accountId;
+}
 
   router.get('/auth/google/start', (req, res) => {
     const google = googleConfig();
@@ -669,8 +775,11 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
     const stateId = hashToken(state);
     const now = new Date();
     const current = resolveCustomer(db, req);
-    db.run(`INSERT INTO customer_oauth_states (id,account_id,provider,cart_session_id,return_to,expires_at,created_at)
-      VALUES (?,?,'GOOGLE',?,?,?,?)`, stateId, current?.id || null, validCartSession(req.query.cartSessionId), validReturnTo(req.query.returnTo),
+    // `nativeHandoff` n'est présent que dans l'application : le web l'ignore et
+    // garde EXACTEMENT son parcours par cookie (aucune régression).
+    db.run(`INSERT INTO customer_oauth_states (id,account_id,provider,cart_session_id,return_to,native_handoff_id,expires_at,created_at)
+      VALUES (?,?,'GOOGLE',?,?,?,?,?)`, stateId, current?.id || null, validCartSession(req.query.cartSessionId), validReturnTo(req.query.returnTo),
+    hashOptionalHandoff(req.query.nativeHandoff),
     new Date(now.getTime() + 10 * 60 * 1000).toISOString(), now.toISOString());
     const params = new URLSearchParams({
       client_id: google.clientId,
@@ -718,60 +827,126 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
       });
       if (!userResponse.ok) throw new Error('GOOGLE_USERINFO_FAILED');
       const profile: any = await userResponse.json();
-      const subject = String(profile.sub || '');
-      const email = String(profile.email || '').trim().toLowerCase();
-      if (!subject || !email || profile.email_verified !== true) throw new Error('GOOGLE_IDENTITY_INVALID');
-      const now = new Date().toISOString();
-      const identityOwnerId = db.get<any>(`SELECT account_id FROM customer_auth_identities WHERE provider='GOOGLE' AND provider_subject=?`, subject)?.account_id as string | undefined;
-      const emailOwner = db.get<any>('SELECT id,email_verified_at FROM customer_accounts WHERE email=? COLLATE NOCASE', email);
-      const emailOwnerGoogleIdentity = emailOwner
-        ? db.get<any>(`SELECT provider_subject FROM customer_auth_identities WHERE account_id=? AND provider='GOOGLE' LIMIT 1`, emailOwner.id)
-        : null;
-      const verifiedLegacyEmailOwnerId = emailOwner?.email_verified_at && !emailOwnerGoogleIdentity ? emailOwner.id as string : undefined;
-      if (emailOwner && !emailOwner.email_verified_at && emailOwner.id !== state.account_id && emailOwner.id !== identityOwnerId) {
-        // An unverified profile address must never pre-hijack a later verified Google login.
-        db.run('UPDATE customer_accounts SET email=NULL,email_verified_at=NULL,updated_at=? WHERE id=? AND email_verified_at IS NULL', now, emailOwner.id);
-        notification(db, emailOwner.id, 'ACCOUNT', 'Adresse e-mail retirée', 'Une adresse e-mail non vérifiée a été retirée de votre profil car elle a été vérifiée sur un autre compte.', '/compte/profil');
-      }
-      if (emailOwner?.email_verified_at && emailOwnerGoogleIdentity && emailOwner.id !== identityOwnerId) {
-        throw new Error('GOOGLE_EMAIL_CONFLICT');
-      }
-      // A flow started while authenticated explicitly links into that account. For a
-      // normal sign-in, the stable Google subject takes precedence over a legacy email.
-      let accountId = (state.account_id || identityOwnerId || verifiedLegacyEmailOwnerId) as string | undefined;
-      if (!accountId) {
-        accountId = `account_${randomUUID()}`;
-        db.run(`INSERT INTO customer_accounts
-          (id,display_name,email,avatar_url,email_verified_at,status,last_login_at,created_at,updated_at)
-          VALUES (?,?,?,?,?,'ACTIVE',?,?,?)`, accountId, String(profile.name || 'Client AYROVI').slice(0, 100), email,
-        String(profile.picture || '').slice(0, 1000), now, now, now, now);
-        enqueueWelcomeMail(db, accountId);
-        notification(db, accountId, 'ACCOUNT', 'Bienvenue chez AYROVI', 'Votre compte Google est actif. Vérifiez votre téléphone avant votre première commande.', '/compte');
-      } else {
-        for (const ownerId of new Set([identityOwnerId, verifiedLegacyEmailOwnerId].filter((id): id is string => Boolean(id)))) {
-          if (ownerId !== accountId && accountRow(db, ownerId)) accountId = mergeAccounts(db, ownerId, accountId);
-        }
-        const currentAccount = accountRow(db, accountId);
-        if (!currentAccount) throw new Error('ACCOUNT_MERGE_FAILED');
-        const adoptGoogleEmail = !currentAccount.email || !currentAccount.email_verified_at || currentAccount.email.toLowerCase() === email;
-        db.run(`UPDATE customer_accounts SET display_name=CASE WHEN display_name='' OR display_name='Client AYROVI' THEN ? ELSE display_name END,
-          email=?,avatar_url=CASE WHEN avatar_source='provider' AND ?!='' THEN ? ELSE avatar_url END,email_verified_at=?,last_login_at=?,updated_at=? WHERE id=?`,
-        String(profile.name || 'Client AYROVI').slice(0, 100), adoptGoogleEmail ? email : currentAccount.email,
-        String(profile.picture || ''), String(profile.picture || '').slice(0, 1000),
-        adoptGoogleEmail ? now : currentAccount.email_verified_at, now, now, accountId);
-      }
-      db.run(`INSERT OR IGNORE INTO customer_auth_identities (id,account_id,provider,provider_subject,created_at)
-        VALUES (?,?,'GOOGLE',?,?)`, `identity_${randomUUID()}`, accountId, subject, now);
+      const accountId = linkGoogleProfile(db, profile, state.account_id);
       if (state.cart_session_id) db.attachCartToAccount(state.cart_session_id, accountId);
       const prior = resolveCustomer(db, req) as any;
       if (prior?.sessionId) db.run('DELETE FROM customer_sessions WHERE id=?', prior.sessionId);
       const session = createCustomerSession(db, accountId, req);
       setCustomerCookie(res, session.token);
       const returnTo = validReturnTo(state.return_to);
+      // Flux natif : le navigateur système n'est pas l'application. On dépose
+      // la session sous le code de remise et on affiche une page de retour ;
+      // l'application la réclame et referme l'onglet côté utilisateur.
+      if (state.native_handoff_id) {
+        storeNativeHandoff(db, String(state.native_handoff_id), accountId, session);
+        return res.redirect('/auth/native-done.html');
+      }
       return res.redirect(`${returnTo}${returnTo.includes('?') ? '&' : '?'}customerAuth=success`);
     } catch (error) {
       console.error('[Customer Google OAuth]', error);
       return failure();
+    }
+  });
+
+  /**
+   * Réclamation du jeton par l'application native — UNE seule fois.
+   *
+   * Pas de session côté appelant (il n'en a pas encore) : l'autorisation est le
+   * code de remise lui-même, à usage unique, lié au flux OAuth qui vient de
+   * réussir et valable dix minutes. Tant que le flux n'a pas abouti, la réponse
+   * est 404 `HANDOFF_PENDING` — l'application continue d'attendre sans
+   * inventer d'état connecté.
+   */
+  router.post('/auth/native/claim', (req, res) => {
+    const handoff = validNativeHandoff(req.body?.handoff);
+    if (!handoff) return res.status(400).json({ success: false, code: 'HANDOFF_INVALID', error: 'Code de reprise invalide.' });
+    const id = hashToken(handoff);
+    const now = new Date().toISOString();
+    db.run('DELETE FROM customer_native_handoffs WHERE expires_at<=?', now);
+    const row = db.get<any>('SELECT * FROM customer_native_handoffs WHERE id=? AND expires_at>?', id, now);
+    if (!row) return res.status(404).json({ success: false, code: 'HANDOFF_PENDING', error: 'Connexion non terminée.' });
+    db.run('DELETE FROM customer_native_handoffs WHERE id=?', id);
+    const account = accountRow(db, row.account_id);
+    if (!account) return res.status(404).json({ success: false, code: 'HANDOFF_PENDING', error: 'Connexion non terminée.' });
+    setCustomerCookie(res, row.session_token);
+    return res.json({
+      success: true,
+      data: {
+        account: publicAccount(account),
+        csrfToken: row.csrf_token,
+        expiresAt: row.session_expires_at,
+        native_session_token: row.session_token,
+      },
+    });
+  });
+
+  /**
+   * Connexion Google NATIVE — sans navigateur, sans onglet, sans redirection.
+   *
+   * Pourquoi cette route existe : le flux OAuth par redirection suppose un
+   * navigateur. Dans l'application, ce navigateur est précisément ce que le
+   * client refuse de voir apparaître. Android sait afficher lui-même le
+   * sélecteur de compte (Credential Manager) et en rendre un jeton d'identité
+   * signé par Google ; il ne reste qu'à le VÉRIFIER ici.
+   *
+   * La vérification n'est pas une formalité : un jeton d'identité est public
+   * une fois émis. On exige donc de Google lui-même qu'il confirme la
+   * signature, puis on contrôle que `aud` est bien NOTRE client et que
+   * l'adresse est vérifiée. Sans ces trois contrôles, n'importe qui enverrait
+   * le jeton d'une autre application et prendrait le compte de son porteur.
+   */
+  router.post('/auth/google/native', async (req, res) => {
+    const google = googleConfig();
+    if (!customerAuthReady() || !google.clientId) {
+      return res.status(503).json({ success: false, code: 'GOOGLE_UNCONFIGURED', error: 'Connexion Google non configurée.' });
+    }
+    const idToken = String(req.body?.idToken || '').trim();
+    // Un jeton JWT fait trois segments ; au-delà de 4 Ko ce n'en est pas un.
+    if (!idToken || idToken.length > 4096 || idToken.split('.').length !== 3) {
+      return res.status(400).json({ success: false, code: 'ID_TOKEN_INVALID', error: 'Jeton Google invalide.' });
+    }
+    try {
+      const check = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`, {
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (!check.ok) throw new Error('ID_TOKEN_REJECTED');
+      const claims: any = await check.json();
+      // `aud` = le client À QUI Google a délivré ce jeton. S'il n'est pas le
+      // nôtre, le jeton appartient à une autre application : le refuser est la
+      // seule réponse correcte.
+      if (String(claims.aud || '') !== google.clientId) throw new Error('ID_TOKEN_AUDIENCE');
+      if (String(claims.iss || '').replace('https://', '') !== 'accounts.google.com') throw new Error('ID_TOKEN_ISSUER');
+      if (Number(claims.exp || 0) * 1000 <= Date.now()) throw new Error('ID_TOKEN_EXPIRED');
+      const profile = {
+        sub: String(claims.sub || ''),
+        email: String(claims.email || ''),
+        email_verified: claims.email_verified === true || claims.email_verified === 'true',
+        name: String(claims.name || ''),
+        picture: String(claims.picture || ''),
+      };
+      if (!profile.sub || !profile.email || !profile.email_verified) throw new Error('GOOGLE_IDENTITY_INVALID');
+      const current = resolveCustomer(db, req) as any;
+      const accountId = linkGoogleProfile(db, profile, current?.id || null);
+      const cartSessionId = validCartSession(req.body?.cartSessionId);
+      if (cartSessionId) db.attachCartToAccount(cartSessionId, accountId);
+      if (current?.sessionId) db.run('DELETE FROM customer_sessions WHERE id=?', current.sessionId);
+      const session = createCustomerSession(db, accountId, req);
+      setCustomerCookie(res, session.token);
+      const account = accountRow(db, accountId);
+      return res.json({
+        success: true,
+        data: {
+          account: account ? publicAccount(account) : null,
+          csrfToken: session.csrfToken,
+          expiresAt: session.expiresAt,
+          // La coque n'a pas de cookie exploitable : elle porte ce jeton en
+          // en-tête. Même contrat que /auth/native/claim.
+          native_session_token: session.token,
+        },
+      });
+    } catch (error) {
+      console.error('[Customer Google native]', error);
+      return res.status(401).json({ success: false, code: 'GOOGLE_NATIVE_FAILED', error: 'Connexion Google refusée.' });
     }
   });
 
@@ -782,8 +957,9 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
     const stateId = hashToken(state);
     const now = new Date();
     const current = resolveCustomer(db, req);
-    db.run(`INSERT INTO customer_oauth_states (id,account_id,provider,cart_session_id,return_to,expires_at,created_at)
-      VALUES (?,?,'FACEBOOK',?,?,?,?)`, stateId, current?.id || null, validCartSession(req.query.cartSessionId), validReturnTo(req.query.returnTo),
+    db.run(`INSERT INTO customer_oauth_states (id,account_id,provider,cart_session_id,return_to,native_handoff_id,expires_at,created_at)
+      VALUES (?,?,'FACEBOOK',?,?,?,?,?)`, stateId, current?.id || null, validCartSession(req.query.cartSessionId), validReturnTo(req.query.returnTo),
+    hashOptionalHandoff(req.query.nativeHandoff),
     new Date(now.getTime() + 10 * 60 * 1000).toISOString(), now.toISOString());
     const params = new URLSearchParams({
       client_id: facebook.appId,
@@ -896,6 +1072,10 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
       const session = createCustomerSession(db, accountId, req);
       setCustomerCookie(res, session.token);
       const returnTo = validReturnTo(state.return_to);
+      if (state.native_handoff_id) {
+        storeNativeHandoff(db, String(state.native_handoff_id), accountId, session);
+        return res.redirect('/auth/native-done.html');
+      }
       return res.redirect(`${returnTo}${returnTo.includes('?') ? '&' : '?'}customerAuth=facebook_success`);
     } catch (error) {
       console.error('[Customer Facebook OAuth]', error);

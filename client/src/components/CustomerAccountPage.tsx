@@ -37,7 +37,8 @@ import {
 } from '../types';
 import { customerApi } from '../customer/api';
 import { getSessionId } from '../utils/session';
-import { clearNativeSessionToken, rememberNativeSessionToken } from '../services/nativeShell';
+import { clearNativeSessionToken, isNativeApp, rememberNativeSessionToken } from '../services/nativeShell';
+import { claimNativeSession, createHandoffCode, oauthStartUrl, openProviderInAppTab, signInWithGoogleNatively, type OAuthProvider } from '../customer/nativeOAuth';
 import { useNavigationHistory } from '../navigation/NavigationHistory';
 import { useLocale } from '../i18n/LocaleContext';
 import { CustomerPasswordRecovery } from './CustomerPasswordRecovery';
@@ -150,6 +151,11 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
   const [config, setConfig] = useState<AuthConfig | null>(null);
   const [phone, setPhone] = useState('');
   const [emailMode, setEmailMode] = useState<'login' | 'register'>('login');
+  /**
+   * Divulgation progressive (04/10/2026) : étape 1 = l'adresse, étape 2 = ce
+   * qui la protège. Une seule décision par écran, comme dans les captures.
+   */
+  const [emailStep, setEmailStep] = useState<'email' | 'password'>('email');
   const [emailAddress, setEmailAddress] = useState('');
   const [emailPassword, setEmailPassword] = useState('');
   const [emailName, setEmailName] = useState('');
@@ -163,6 +169,8 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
   const [code, setCode] = useState('');
   const [developmentCode, setDevelopmentCode] = useState('');
   const [authBusy, setAuthBusy] = useState(false);
+  /** Fournisseur dont le flux est ouvert dans le navigateur système (app). */
+  const [providerPending, setProviderPending] = useState<OAuthProvider | ''>('');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState(initialMessage || '');
   const [overview, setOverview] = useState<CustomerAccountOverview | null>(null);
@@ -215,6 +223,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
       setShowPassword(false);
       setRecoveryOpen(false);
       setEmailMode('login');
+      setEmailStep('email');
       setAuthFormEpoch(epoch => epoch + 1);
     };
     clearCredentials();
@@ -312,6 +321,52 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
       setCode('');
     }
   }, [otpOpen]);
+
+  /**
+   * Connexion par fournisseur DANS l'application (voir customer/nativeOAuth.ts).
+   * Un ONGLET PERSONNALISÉ termine le flux par-dessus l'application — plus de
+   * bascule vers Chrome (remarque du 04/10/2026) — puis on réclame la session
+   * avec un code à usage unique. Aucun état « connecté » n'est affiché avant
+   * que le serveur ne l'ait réellement remis.
+   */
+  const startNativeProvider = async (provider: OAuthProvider) => {
+    if (providerPending) return;
+    setError(''); setNotice(''); setProviderPending(provider);
+    const handoff = createHandoffCode();
+    try {
+      // ── Google d'abord par le SÉLECTEUR NATIF (3e passe, 04/10/2026) ──────
+      // Si le téléphone sait afficher la feuille de comptes du système, aucune
+      // page ne se charge : c'est la connexion « sans sortir » littéralement.
+      // Le `null` n'est pas une erreur — c'est « cet appareil ne peut pas »
+      // (pas de services Google Play, SHA-1 pas encore déclaré, ou annulation)
+      // et l'onglet prend le relais juste en dessous.
+      if (provider === 'google') {
+        const nativeSession = await signInWithGoogleNatively(getSessionId());
+        if (nativeSession) {
+          rememberNativeSessionToken(nativeSession.native_session_token);
+          onSession({ account: nativeSession.account, csrfToken: nativeSession.csrfToken });
+          setNotice(tr('Content de vous revoir !', 'سعداء بعودتك!'));
+          onCartChanged();
+          return;
+        }
+      }
+      const query = `cartSessionId=${encodeURIComponent(getSessionId())}&returnTo=${encodeURIComponent('/')}`;
+      await openProviderInAppTab(oauthStartUrl(provider, query, handoff));
+      const result = await claimNativeSession(handoff);
+      if (!result) {
+        setError(tr('Connexion non terminée. Réessayez.', 'لم تكتمل عملية الدخول. أعد المحاولة.'));
+        return;
+      }
+      rememberNativeSessionToken(result.native_session_token);
+      onSession({ account: result.account, csrfToken: result.csrfToken });
+      setNotice(tr('Content de vous revoir !', 'سعداء بعودتك!'));
+      onCartChanged();
+    } catch {
+      setError(tr('Connexion impossible pour le moment.', 'تعذّر تسجيل الدخول حالياً.'));
+    } finally {
+      setProviderPending('');
+    }
+  };
 
   const submitEmailAuth = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -585,11 +640,11 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
   const facebookEnabled = Boolean(config?.facebook.enabled);
   const socialLoginEnabled = googleEnabled || facebookEnabled || Boolean(config?.apple.enabled);
   const oauthQuery = `cartSessionId=${encodeURIComponent(getSessionId())}&returnTo=${encodeURIComponent('/')}`;
-  const googleStartHref = `/api/customer/auth/google/start?${oauthQuery}`;
-  const facebookStartHref = `/api/customer/auth/facebook/start?${oauthQuery}`;
+  const googleStartHref = oauthStartUrl('google', oauthQuery);
+  const facebookStartHref = oauthStartUrl('facebook', oauthQuery);
 
   const appleEnabled = Boolean(config?.apple.enabled);
-  const appleStartHref = `/api/customer/auth/apple/start?${oauthQuery}`;
+  const appleStartHref = oauthStartUrl('apple', oauthQuery);
   const authPanel = recoveryOpen ? <CustomerPasswordRecovery initialEmail={emailAddress} onBack={() => setRecoveryOpen(false)} /> : (
     <div className="ay-auth relative flex min-h-full flex-col">
       <div className={`ay-auth__container ${otpOpen || phoneLoginOpen || phoneLinkOpen ? 'ay-auth__container--utility' : ''}`}>
@@ -636,22 +691,49 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
           </form>
         ) : (
           <div className="ay-auth__main">
+            {/* ══════════════════════════════════════════════════════════════
+                ÉCRAN DE CONNEXION — refondu le 04/10/2026 d'après les captures
+                fournies par le client.
+
+                Ce qui n'allait pas : tout arrivait d'un coup — nom, e-mail,
+                mot de passe, trois fournisseurs, SMS — soit jusqu'à six
+                champs et boutons avant d'avoir décidé quoi que ce soit. Sur un
+                téléphone, l'écran débordait et le mot de passe était réclamé
+                AVANT même de savoir si la personne a déjà un compte.
+
+                La refonte suit le modèle des captures : une seule décision à
+                l'écran. Étape 1 = l'adresse e-mail, ou un fournisseur, ou le
+                téléphone. Étape 2 = le mot de passe, une fois l'adresse
+                connue. Rien n'est retiré : l'inscription, la récupération et
+                les trois fournisseurs restent là où on les attend.
+                ══════════════════════════════════════════════════════════════ */}
             <header className="ay-auth__hero">
               <div className="ay-auth__header">
-                <Button variant="ghost" size="icon" onClick={onClose} aria-label={tr('Retour', 'رجوع')}>
+                <Button variant="ghost" size="icon" onClick={() => { if (emailStep === 'password') { setEmailStep('email'); setError(''); return; } onClose(); }} aria-label={tr('Retour', 'رجوع')}>
                   <ArrowLeft className={`h-5 w-5 ${isArabic ? 'rotate-180' : ''}`} aria-hidden />
                 </Button>
-                <div className="ay-auth__brand" dir="ltr">
-                  <img src="/media/logo-ayrovi-lockup-black-orange.svg" alt="AYROVI" className="ay-auth__logo ay-auth__logo--wordmark" />
-                </div>
+                <span aria-hidden />
                 <span aria-hidden />
               </div>
+              {/* La marque était collée à gauche, sous la flèche de retour :
+                  elle se lisait comme un bouton de plus. Centrée, elle
+                  redevient ce qu'elle est — une signature. */}
+              <div className="ay-auth__brand ay-auth__brand--centered" dir="ltr">
+                <img src="/media/logo-ayrovi-lockup-black-orange.svg" alt="AYROVI" className="ay-auth__logo ay-auth__logo--wordmark" />
+              </div>
               <div className="ay-auth__intro">
-                <h1 id="auth-title" tabIndex={-1}>{emailMode === 'login' ? tr('Connectez-vous.', 'تسجيل الدخول') : tr('Créez votre compte.', 'أنشئ حسابك.')}</h1>
-                {/* Le sous-titre ne répète plus le verbe du titre (« Connectez-vous. » / « Connectez-vous
-                    à votre univers… ») : il dit ce qu'il y a DERRIÈRE la porte, ce qui est la seule
-                    information utile à cet endroit. */}
-                <p>{emailMode === 'login' ? tr('Vos commandes, vos favoris et votre panier, au même endroit.', 'طلباتك، مفضّلاتك وسلّتك — في مكان واحد.') : tr('Le monde du shopping vous attend.', 'عالم من التسوّق بانتظارك.')}</p>
+                <h1 id="auth-title" tabIndex={-1}>
+                  {emailStep === 'password'
+                    ? (emailMode === 'login' ? tr('Votre mot de passe', 'كلمة المرور') : tr('Créez votre compte', 'أنشئ حسابك'))
+                    : tr('Se connecter ou s’inscrire', 'تسجيل الدخول أو إنشاء حساب')}
+                </h1>
+                {/* Le sous-titre ne répète pas le titre : il dit ce qu'il y a
+                    DERRIÈRE la porte — la seule information utile ici. */}
+                <p>
+                  {emailStep === 'password'
+                    ? <span dir="ltr">{emailAddress}</span>
+                    : tr('Vos commandes, vos favoris et votre panier, au même endroit.', 'طلباتك، مفضّلاتك وسلّتك — في مكان واحد.')}
+                </p>
               </div>
             </header>
             <div className="ay-auth__card">
@@ -663,39 +745,83 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
               </> : <><Loader2 className="h-5 w-5 animate-spin" aria-hidden /><span>{tr('Chargement…', 'جارٍ التحميل…')}</span></>}
             </div>}
 
-            {socialLoginEnabled && <div className="ay-auth__social" aria-label={tr('Autres moyens de connexion', 'وسائل دخول أخرى')}>
-              {googleEnabled && <a href={googleStartHref} className={buttonClasses('secondary', 'md', 'ay-auth__provider')} aria-label={tr('Continuer avec Google', 'المتابعة عبر Google')}>
-                <FcGoogle size={22} aria-hidden /><span>{!facebookEnabled && !appleEnabled ? tr('Continuer avec Google', 'المتابعة عبر Google') : 'Google'}</span>
-              </a>}
-              {facebookEnabled && <a href={facebookStartHref} className={buttonClasses('secondary', 'md', 'ay-auth__provider')} aria-label={tr('Continuer avec Facebook', 'المتابعة عبر Facebook')}>
-                <FaFacebookF size={20} aria-hidden /><span>Facebook</span>
-              </a>}
-              {appleEnabled && <a href={appleStartHref} className={buttonClasses('secondary', 'md', 'ay-auth__provider')} aria-label={tr('Continuer avec Apple', 'المتابعة عبر Apple')}>
-                <FaApple size={24} aria-hidden /><span>Apple</span>
-              </a>}
-            </div>}
-            {socialLoginEnabled && config?.email.enabled && <div className="ay-auth__divider"><span>{tr('ou par e-mail', 'أو بالبريد الإلكتروني')}</span></div>}
+            {error && <div id="auth-error" role="alert" className="ay-auth__message ay-auth__message--error">{error}</div>}
+            {notice && <div role="status" className="ay-auth__message">{notice}</div>}
 
-            {config?.email.enabled && <>
+            {emailStep === 'email' ? <>
+              {/* ÉTAPE 1 — l'adresse seule. Le mot de passe n'a rien à faire
+                  ici : on ne sait pas encore qui est la personne. */}
+              {config?.email.enabled && <form className="ay-auth__step" onSubmit={(event) => {
+                event.preventDefault();
+                const value = emailAddress.trim();
+                if (!value) return;
+                setError(''); setNotice(''); setEmailStep('password');
+              }}>
+                {/* Étiquette MASQUÉE visuellement, pas supprimée : le lecteur
+                    d'écran l'annonce, l'œil lit « Adresse e-mail » dans le
+                    champ. La règle maison interdit un placeholder qui RECOPIE
+                    une étiquette visible — ici il n'y en a aucune, donc rien
+                    n'est dit deux fois et rien n'est perdu à la saisie. */}
+                <label className="sr-only" htmlFor="auth-email">{tr('Adresse e-mail', 'البريد الإلكتروني')}</label>
+                <ManualAuthInput className="ay-auth__email" id="auth-email" name="email" type="email" inputMode="email" dir="ltr" autoCapitalize="none" spellCheck={false} maxLength={180} autoComplete="email" enterKeyHint="next" value={emailAddress} onChange={(e) => setEmailAddress(e.target.value)} placeholder={tr('Adresse e-mail', 'البريد الإلكتروني')} required />
+                <Button type="submit" className="ay-auth__submit" disabled={authBusy || !emailAddress.trim()}>{tr('Continuer', 'متابعة')}</Button>
+              </form>}
+
+              {config?.email.enabled && (socialLoginEnabled || config?.phoneOtp.enabled) && <div className="ay-auth__divider"><span>{tr('ou', 'أو')}</span></div>}
+
+              {/* Dans l'application, ces boutons ouvrent un ONGLET PERSONNALISÉ
+                  par-dessus AYROVI (voir customer/nativeOAuth.ts) : plus de
+                  bascule vers Chrome. Sur le web, un vrai lien same-origin —
+                  le cookie de session est conservé. */}
+              {socialLoginEnabled && <div className="ay-auth__social" aria-label={tr('Autres moyens de connexion', 'وسائل دخول أخرى')}>
+                {googleEnabled && (isNativeApp()
+                  ? <button type="button" disabled={Boolean(providerPending)} onClick={() => startNativeProvider('google')} className={buttonClasses('secondary', 'md', 'ay-auth__provider')} aria-label={tr('Continuer avec Google', 'المتابعة عبر Google')}>
+                      <FcGoogle size={22} aria-hidden /><span>{tr('Continuer avec Google', 'المتابعة عبر Google')}</span>
+                    </button>
+                  : <a href={googleStartHref} className={buttonClasses('secondary', 'md', 'ay-auth__provider')} aria-label={tr('Continuer avec Google', 'المتابعة عبر Google')}>
+                      <FcGoogle size={22} aria-hidden /><span>{tr('Continuer avec Google', 'المتابعة عبر Google')}</span>
+                    </a>)}
+                {facebookEnabled && (isNativeApp()
+                  ? <button type="button" disabled={Boolean(providerPending)} onClick={() => startNativeProvider('facebook')} className={buttonClasses('secondary', 'md', 'ay-auth__provider')} aria-label={tr('Continuer avec Facebook', 'المتابعة عبر Facebook')}>
+                      <FaFacebookF size={20} aria-hidden /><span>{tr('Continuer avec Facebook', 'المتابعة عبر Facebook')}</span>
+                    </button>
+                  : <a href={facebookStartHref} className={buttonClasses('secondary', 'md', 'ay-auth__provider')} aria-label={tr('Continuer avec Facebook', 'المتابعة عبر Facebook')}>
+                      <FaFacebookF size={20} aria-hidden /><span>{tr('Continuer avec Facebook', 'المتابعة عبر Facebook')}</span>
+                    </a>)}
+                {appleEnabled && (isNativeApp()
+                  ? <button type="button" disabled={Boolean(providerPending)} onClick={() => startNativeProvider('apple')} className={buttonClasses('secondary', 'md', 'ay-auth__provider')} aria-label={tr('Continuer avec Apple', 'المتابعة عبر Apple')}>
+                      <FaApple size={24} aria-hidden /><span>{tr('Continuer avec Apple', 'المتابعة عبر Apple')}</span>
+                    </button>
+                  : <a href={appleStartHref} className={buttonClasses('secondary', 'md', 'ay-auth__provider')} aria-label={tr('Continuer avec Apple', 'المتابعة عبر Apple')}>
+                      <FaApple size={24} aria-hidden /><span>{tr('Continuer avec Apple', 'المتابعة عبر Apple')}</span>
+                    </a>)}
+              </div>}
+
+              {config?.phoneOtp.enabled && <button type="button" disabled={authBusy} onClick={() => { setError(''); navigation.pushLayer({ id: 'account:phone-login' }); }} className={buttonClasses('secondary', 'md', 'ay-auth__provider')}>
+                <Phone className="h-5 w-5" aria-hidden /><span>{tr('Continuer avec un numéro de téléphone', 'المتابعة برقم الهاتف')}</span>
+              </button>}
+
+              {providerPending && <p className="ay-auth__message" role="status">
+                {tr('Connexion en cours… la fenêtre se referme toute seule.', 'جارٍ تسجيل الدخول… ستُغلق النافذة تلقائياً.')}
+              </p>}
+
+              {config && !config.email.enabled && !socialLoginEnabled && !config.phoneOtp.enabled && <p role="status" className="ay-auth__message">{tr('La connexion est momentanément indisponible. Veuillez réessayer plus tard.', 'تسجيل الدخول غير متاح حاليًا. يرجى المحاولة لاحقًا.')}</p>}
+            </> : <>
+              {/* ÉTAPE 2 — l'adresse est connue, on demande ce qui la protège.
+                  Aucun appel « cet e-mail existe-t-il ? » n'est fait : cela
+                  révélerait qui possède un compte chez AYROVI. C'est donc le
+                  serveur qui tranche à l'envoi, et le bascule ci-dessous reste
+                  disponible pour créer le compte. */}
               <section id="auth-email-panel" aria-labelledby="auth-title">
-                {error && <div id="auth-error" role="alert" className="ay-auth__message ay-auth__message--error">{error}</div>}
-                {notice && <div role="status" className="ay-auth__message">{notice}</div>}
                 <form key={`${emailMode}:${authFormEpoch}`} autoComplete="off" onSubmit={submitEmailAuth} aria-busy={authBusy} aria-describedby={error ? 'auth-error' : undefined}>
                   <fieldset disabled={authBusy} className="ay-auth__fields">
                     <legend className="sr-only">{emailMode === 'login' ? tr('Connexion par e-mail', 'الدخول بالبريد الإلكتروني') : tr('Créer un compte par e-mail', 'إنشاء حساب بالبريد الإلكتروني')}</legend>
                     {emailMode === 'register' && <FormField label={tr('Nom et prénom', 'الاسم واللقب')} htmlFor="auth-name">
-                      {/* Un placeholder qui recopie l'étiquette n'apprend rien. Celui-ci montre le FORMAT attendu. */}
                       <ManualAuthInput id="auth-name" name="name" maxLength={100} autoComplete="name" enterKeyHint="next" value={emailName} onChange={(e) => setEmailName(e.target.value)} placeholder={tr('Ex. Sarra Ben Ali', 'مثال: سارة بن علي')} required />
                     </FormField>}
-                    <FormField label={tr('Adresse e-mail', 'البريد الإلكتروني')} htmlFor="auth-email">
-                      <ManualAuthInput id="auth-email" name="email" type="email" inputMode="email" dir="ltr" autoCapitalize="none" spellCheck={false} maxLength={180} autoComplete="email" enterKeyHint="next" value={emailAddress} onChange={(e) => setEmailAddress(e.target.value)} placeholder={tr('vous@exemple.tn', 'you@example.tn')} required />
-                    </FormField>
                     <FormField label={tr('Mot de passe', 'كلمة المرور')} htmlFor="auth-password">
                       <div className="ay-auth__password">
                         <Lock className="ay-auth__lock h-5 w-5" aria-hidden />
-                        {/* Plus de placeholder ici : l'étiquette dit déjà « Mot de passe », et la règle de
-                            longueur s'affiche sous le champ à l'inscription. `minLength` ne s'applique donc
-                            qu'à l'inscription — à la connexion, c'est le serveur qui tranche (compte ancien). */}
                         <ManualAuthInput id="auth-password" name="password" type={showPassword ? 'text' : 'password'} minLength={emailMode === 'register' ? 8 : undefined} maxLength={100} autoComplete={emailMode === 'register' ? 'new-password' : 'current-password'} enterKeyHint="go" value={emailPassword} onChange={(e) => setEmailPassword(e.target.value)} aria-describedby={emailMode === 'register' ? 'auth-password-hint' : undefined} required />
                         <button type="button" onClick={() => setShowPassword(!showPassword)} aria-controls="auth-password" aria-pressed={showPassword} aria-label={showPassword ? tr('Masquer le mot de passe', 'إخفاء كلمة المرور') : tr('Afficher le mot de passe', 'إظهار كلمة المرور')} className="ay-auth__password-toggle">
                           {showPassword ? <EyeOff className="h-5 w-5" aria-hidden /> : <Eye className="h-5 w-5" aria-hidden />}
@@ -703,17 +829,11 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
                       </div>
                       {emailMode === 'register' && <p id="auth-password-hint" className="ay-auth__hint">{tr('Au moins 8 caractères.', '8 أحرف على الأقل.')}</p>}
                     </FormField>
-                    {/* Un bouton gris sans explication est un bouton mort : l'utilisateur ne sait pas
-                        s'il doit remplir quelque chose ou si le site est en panne. Le bouton reste donc
-                        ACTIF — les champs sont `required`, donc le navigateur guide la saisie et le
-                        serveur tranche. Seule l'attente réseau le désactive (et là, le curseur d'attente
-                        est légitime). */}
                     <Button type="submit" disabled={authBusy} className="ay-auth__submit">
                       {authBusy && <Loader2 className="h-5 w-5 animate-spin" aria-hidden />}
                       {authBusy ? tr('Veuillez patienter…', 'يرجى الانتظار…') : emailMode === 'login' ? tr('Se connecter', 'تسجيل الدخول') : tr('Créer mon compte', 'إنشاء حسابي')}
                     </Button>
                     {emailMode === 'login' && <button type="button" className="ay-auth__recovery-link" onClick={() => setRecoveryOpen(!recoveryOpen)}>{tr('Mot de passe oublié ?', 'نسيت كلمة المرور؟')}</button>}
-
                   </fieldset>
                 </form>
               </section>
@@ -722,30 +842,24 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
                 <a href="/terms.html" target="_blank" rel="noreferrer">{tr("Conditions d’utilisation", 'شروط الاستخدام')}</a>
                 {tr(' et notre ', ' و')}<a href="/privacy.html" target="_blank" rel="noreferrer">{tr('Politique de confidentialité', 'سياسة الخصوصية')}</a>.
               </p>}
+              <p className="ay-auth__switch">
+                <span>{emailMode === 'login' ? tr('Nouveau chez AYROVI ?', 'جديد في AYROVI؟') : tr('Déjà un compte ?', 'لديك حساب؟')}</span>
+                <button type="button" disabled={authBusy} aria-controls="auth-email-panel" onClick={() => {
+                  setEmailMode(emailMode === 'login' ? 'register' : 'login');
+                  setEmailName(''); setEmailPassword(''); setShowPassword(false); setRecoveryOpen(false); setError(''); setNotice('');
+                  document.getElementById('auth-title')?.focus();
+                }}>{emailMode === 'login' ? tr('Créer un compte', 'إنشاء حساب') : tr('Se connecter', 'تسجيل الدخول')}</button>
+              </p>
             </>}
-            {config?.phoneOtp.enabled && <Button variant="secondary" onClick={() => { setError(''); navigation.pushLayer({ id: 'account:phone-login' }); }} className="ay-auth__phone" disabled={authBusy}>
-              <Phone className="h-5 w-5" aria-hidden />{tr('Continuer par SMS', 'المتابعة عبر SMS')}
-            </Button>}
-            {config && !config.email.enabled && !socialLoginEnabled && !config.phoneOtp.enabled && <p role="status" className="ay-auth__message">{tr('La connexion est momentanément indisponible. Veuillez réessayer plus tard.', 'تسجيل الدخول غير متاح حاليًا. يرجى المحاولة لاحقًا.')}</p>}
-            {config?.email.enabled && <p className="ay-auth__switch">
-              <span>{emailMode === 'login' ? tr('Nouveau chez AYROVI ?', 'جديد في AYROVI؟') : tr('Déjà un compte ?', 'لديك حساب؟')}</span>
-              <button type="button" disabled={authBusy} aria-controls="auth-email-panel" onClick={() => {
-                setEmailMode(emailMode === 'login' ? 'register' : 'login');
-                setEmailAddress(''); setEmailName('');
-                setEmailPassword(''); setShowPassword(false); setRecoveryOpen(false); setError(''); setNotice('');
-                document.getElementById('auth-title')?.focus();
-              }}>{emailMode === 'login' ? tr('Créer un compte', 'إنشاء حساب') : tr('Se connecter', 'تسجيل الدخول')}</button>
-            </p>}
-            {/* Bloc légal. Ce qui a changé : les deux liens ne sont plus une seule phrase grise
-                indifférenciée — un filet de 1px les SÉPARE, un autre filet détache le bloc du CTA
-                au-dessus, et chaque lien porte un soulignement discret pour qu'on voie qu'il se clique.
-                (Le contrat est le même : mêmes URL, même ouverture en nouvel onglet, même texte.) */}
-            {emailMode === 'login' && <footer className="ay-auth__footer">
+
+            {/* Bloc légal : deux liens SÉPARÉS par un filet, soulignés, pour
+                qu'on voie qu'ils se cliquent. Mêmes URL qu'avant. */}
+            <footer className="ay-auth__footer">
               <nav className="ay-auth__legal" aria-label={tr('Informations légales', 'معلومات قانونية')}>
                 <a href="/terms.html" target="_blank" rel="noreferrer">{tr("Conditions d’utilisation", 'شروط الاستخدام')}</a>
                 <a href="/privacy.html" target="_blank" rel="noreferrer">{tr('Confidentialité', 'الخصوصية')}</a>
               </nav>
-            </footer>}
+            </footer>
             </div>
           </div>
         )}
