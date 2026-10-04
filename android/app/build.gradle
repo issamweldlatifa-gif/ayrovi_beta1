@@ -41,6 +41,18 @@ android {
         }
     }
     buildTypes {
+        debug {
+            // ── Empreinte SHA-1 STABLE (04/10/2026) ───────────────────────
+            // Google n'identifie pas « l'application » mais le CERTIFICAT qui
+            // la signe. Sans keystore fourni, Gradle en fabrique un au vol :
+            // chaque machine, chaque CI produit alors une empreinte
+            // différente, et le SHA-1 déclaré chez Google ne correspond plus
+            // à rien dès le build suivant. Signer aussi le debug avec le
+            // keystore officiel rend l'empreinte permanente.
+            if (hasReleaseKeystore) {
+                signingConfig signingConfigs.release
+            }
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
