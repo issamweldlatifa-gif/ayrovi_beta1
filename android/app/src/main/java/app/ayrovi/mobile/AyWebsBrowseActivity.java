@@ -66,10 +66,21 @@ public class AyWebsBrowseActivity extends Activity {
   public static final String EXTRA_WEB_BASE = "aywebs_web_base";
   /** Origine absolue de l'API, transmise par la couche web (voir apiOrigin.ts). */
   public static final String EXTRA_API_ORIGIN = "aywebs_api_origin";
+  /**
+   * Jeton de session CLIENT (04/10/2026). Le panier proxy suit `x-session-id`,
+   * mais les favoris appartiennent au COMPTE : sans ce jeton, le tiroir
+   * « Favoris » ne pourrait qu'afficher « connectez-vous », même connecté.
+   * Transmis par la couche web (rememberNativeSessionToken), vide sur le web.
+   */
+  public static final String EXTRA_CUSTOMER_TOKEN = "aywebs_customer_token";
 
   private static final String ANALYZE_PATH = "/api/v1/aywebs/page/analyze";
   private static final String RESOLVE_PATH = "/api/v1/aywebs/product/resolve";
   private static final String CART_ITEMS_PATH = "/api/v1/aywebs/cart/items";
+  /** Lecture du panier proxy pour le tiroir interne (04/10/2026). */
+  private static final String CART_PATH = "/api/v1/aywebs/cart";
+  /** Favoris du COMPTE : même magasin que « Mon compte » et que l'onglet web. */
+  private static final String FAVORITES_PATH = "/api/customer/account/favorites";
 
   /**
    * HTML de la fiche TELLE QU'AFFICHÉE dans la WebView (04/10/2026).
@@ -133,6 +144,7 @@ public class AyWebsBrowseActivity extends Activity {
    * « Loading… ». Reste vide si la couche web ne l'a pas transmis.
    */
   private String apiOrigin = "";
+  private String customerToken = "";
   private String currentUrl = "";
   private volatile boolean productPage = false;
   private final ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -148,6 +160,8 @@ public class AyWebsBrowseActivity extends Activity {
     if (base != null && !base.trim().isEmpty()) webBase = base.trim();
     String origin = getStringExtra(EXTRA_API_ORIGIN);
     apiOrigin = origin == null ? "" : origin.trim();
+    String token = getStringExtra(EXTRA_CUSTOMER_TOKEN);
+    customerToken = token == null ? "" : token.trim();
 
     webView = requireView(R.id.aywebs_webview);
     urlText = requireView(R.id.aywebs_url);
@@ -225,8 +239,16 @@ public class AyWebsBrowseActivity extends Activity {
     refreshButton.setOnClickListener(v -> webView.reload());
     backButton.setOnClickListener(v -> { if (webView.canGoBack()) webView.goBack(); });
     forwardButton.setOnClickListener(v -> { if (webView.canGoForward()) webView.goForward(); });
-    cartButton.setOnClickListener(v -> openWebRoute("/aywebs/cart"));
-    wishButton.setOnClickListener(v -> openWebRoute("/aywebs/wish"));
+    // ── Remarque client du 04/10/2026 ────────────────────────────────────────
+    // « زر panier يكون زدا دراو داخل متجر … واي حجا تم داخل متجر تقعد داخل متجر ».
+    // Ces deux lignes appelaient openWebRoute(), c'est-à-dire
+    // startActivity(deep link) + finish() : la page marchande était DÉTRUITE,
+    // l'utilisateur éjecté de sa boutique au milieu de ses achats, et son
+    // défilement perdu. Consulter son panier n'est pas quitter sa boutique.
+    // Les deux ouvrent désormais un TIROIR par-dessus la WebView, qui reste
+    // vivante dessous.
+    cartButton.setOnClickListener(v -> openListSheet(true));
+    wishButton.setOnClickListener(v -> openListSheet(false));
     addButton.setOnClickListener(v -> onAddToCart());
 
     Uri target = getIntent() == null ? null : getIntent().getData();
@@ -699,6 +721,199 @@ public class AyWebsBrowseActivity extends Activity {
     }
   }
 
+  // ══════════════════════════════════════════════════════════════════════════
+  // TIROIRS INTERNES — « Panier » et « Favoris » SANS quitter la boutique
+  //
+  // Règle posée par le client le 04/10/2026 : tout ce qui se passe dans une
+  // boutique RESTE dans la boutique. Trois sorties seulement sont légitimes,
+  // et elles sont toutes explicites : le bouton X, « se connecter », « payer ».
+  // Un tiroir n'est donc pas un raccourci cosmétique : c'est ce qui permet de
+  // vérifier son panier au milieu d'un achat sans perdre la page.
+  // ══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * @param cartMode true → panier proxy AYWEBs ; false → favoris du compte.
+   */
+  private void openListSheet(final boolean cartMode) {
+    final Dialog dialog = new Dialog(this);
+    dialog.setContentView(R.layout.sheet_aywebs_list);
+
+    final TextView title = dialog.findViewById(R.id.aywebs_sheet_title);
+    final ImageButton close = dialog.findViewById(R.id.aywebs_sheet_close);
+    final ProgressBar busy = dialog.findViewById(R.id.aywebs_sheet_progress);
+    final TextView notice = dialog.findViewById(R.id.aywebs_sheet_notice);
+    final LinearLayout list = dialog.findViewById(R.id.aywebs_sheet_list);
+    final TextView total = dialog.findViewById(R.id.aywebs_sheet_total);
+    final Button cta = dialog.findViewById(R.id.aywebs_sheet_cta);
+    final Button keepShopping = dialog.findViewById(R.id.aywebs_sheet_continue);
+
+    title.setText(cartMode ? R.string.aywebs_cart : R.string.aywebs_wish);
+    // Fermer le tiroir == revenir à la page marchande, jamais finish().
+    close.setOnClickListener(v -> dialog.dismiss());
+    keepShopping.setOnClickListener(v -> dialog.dismiss());
+
+    showAyWebsSheetDialog(dialog);
+    capSheetHeight(dialog);
+
+    if (apiOrigin.isEmpty()) {
+      busy.setVisibility(View.GONE);
+      notice.setText(R.string.aywebs_sheet_failed);
+      notice.setVisibility(View.VISIBLE);
+      return;
+    }
+
+    final String endpoint = apiOrigin + (cartMode ? CART_PATH : FAVORITES_PATH);
+    executor.execute(() -> {
+      try {
+        final JSONObject reply = get(endpoint, !cartMode);
+        runOnUiThread(() -> {
+          if (!dialog.isShowing()) return;
+          busy.setVisibility(View.GONE);
+          if (cartMode) renderCartSheet(dialog, reply, list, notice, total, cta);
+          else renderWishSheet(dialog, reply, list, notice);
+        });
+      } catch (final AyWebsApiException error) {
+        runOnUiThread(() -> {
+          if (!dialog.isShowing()) return;
+          busy.setVisibility(View.GONE);
+          // 401 : ce n'est pas une panne. Les favoris vivent dans un compte ;
+          // on le DIT, et on offre la seule sortie qui débloque la situation.
+          if (error.status == 401 || error.status == 403) {
+            notice.setText(R.string.aywebs_sheet_login_required);
+            notice.setVisibility(View.VISIBLE);
+            cta.setText(R.string.aywebs_sheet_login);
+            cta.setVisibility(View.VISIBLE);
+            cta.setOnClickListener(v -> { dialog.dismiss(); openWebRoute("/account"); });
+            return;
+          }
+          String message = error.getMessage();
+          notice.setText(message == null || message.isEmpty()
+              ? getString(R.string.aywebs_sheet_failed) : message);
+          notice.setVisibility(View.VISIBLE);
+        });
+      } catch (final Exception error) {
+        runOnUiThread(() -> {
+          if (!dialog.isShowing()) return;
+          busy.setVisibility(View.GONE);
+          notice.setText(R.string.aywebs_sheet_failed);
+          notice.setVisibility(View.VISIBLE);
+        });
+      }
+    });
+  }
+
+  /** §7 : un tiroir ne dépasse jamais 82 % de l'écran, il défile à l'intérieur. */
+  private void capSheetHeight(Dialog dialog) {
+    android.view.Window window = dialog.getWindow();
+    if (window == null) return;
+    int screen = getResources().getDisplayMetrics().heightPixels;
+    WindowManager.LayoutParams params = window.getAttributes();
+    params.height = (int) (screen * 0.82f);
+    window.setAttributes(params);
+  }
+
+  private void renderCartSheet(Dialog dialog, JSONObject reply, LinearLayout list,
+      TextView notice, TextView total, Button cta) {
+    JSONObject data = reply.optJSONObject("data");
+    JSONArray items = data == null ? null : data.optJSONArray("items");
+    if (items == null || items.length() == 0) {
+      notice.setText(R.string.aywebs_sheet_empty_cart);
+      notice.setVisibility(View.VISIBLE);
+      return;
+    }
+    for (int index = 0; index < items.length(); index++) {
+      JSONObject line = items.optJSONObject(index);
+      if (line == null) continue;
+      String variant = line.optString("variant_label", "");
+      int quantity = line.optInt("quantity", 1);
+      String subtitle = variant.isEmpty()
+          ? getString(R.string.aywebs_sheet_quantity, quantity)
+          : variant + " · " + getString(R.string.aywebs_sheet_quantity, quantity);
+      JSONArray images = line.optJSONArray("images");
+      addSheetRow(list,
+          line.optString("title", ""),
+          subtitle,
+          money(line.optDouble("price_tnd", line.optDouble("unit_price", 0))) + " TND",
+          images == null ? "" : images.optString(0, ""),
+          null);
+    }
+    JSONObject totals = data.optJSONObject("totals");
+    if (totals != null) {
+      total.setText(getString(R.string.aywebs_sheet_total,
+          money(totals.optDouble("product_subtotal_tnd", 0))));
+      total.setVisibility(View.VISIBLE);
+    }
+    // Payer EST une sortie assumée : le client l'a explicitement autorisée.
+    cta.setText(R.string.aywebs_sheet_checkout);
+    cta.setVisibility(View.VISIBLE);
+    cta.setOnClickListener(v -> { dialog.dismiss(); openWebRoute("/aywebs/cart"); });
+  }
+
+  private void renderWishSheet(Dialog dialog, JSONObject reply, LinearLayout list, TextView notice) {
+    JSONArray items = reply.optJSONArray("data");
+    if (items == null || items.length() == 0) {
+      notice.setText(R.string.aywebs_sheet_empty_wish);
+      notice.setVisibility(View.VISIBLE);
+      return;
+    }
+    for (int index = 0; index < items.length(); index++) {
+      JSONObject favorite = items.optJSONObject(index);
+      if (favorite == null) continue;
+      final String target = favorite.optString("source_url", "");
+      double price = favorite.optDouble("price_tnd", 0);
+      addSheetRow(list,
+          favorite.optString("title", ""),
+          Uri.parse(target).getHost() == null ? "" : Uri.parse(target).getHost(),
+          price > 0 ? money(price) + " TND" : "",
+          favorite.optString("image_url", ""),
+          // Ouvrir un favori recharge la WebView COURANTE : on change de page
+          // marchande sans jamais sortir du navigateur de la boutique.
+          target.isEmpty() ? null : v -> { dialog.dismiss(); webView.loadUrl(target); });
+    }
+  }
+
+  private void addSheetRow(LinearLayout list, String title, String subtitle, String amount,
+      String imageUrl, View.OnClickListener onClick) {
+    View row = getLayoutInflater().inflate(R.layout.row_aywebs_line, list, false);
+    ((TextView) row.findViewById(R.id.aywebs_line_title)).setText(title);
+    TextView subtitleView = row.findViewById(R.id.aywebs_line_subtitle);
+    subtitleView.setText(subtitle);
+    subtitleView.setVisibility(subtitle == null || subtitle.isEmpty() ? View.GONE : View.VISIBLE);
+    TextView amountView = row.findViewById(R.id.aywebs_line_amount);
+    amountView.setText(amount);
+    amountView.setVisibility(amount == null || amount.isEmpty() ? View.GONE : View.VISIBLE);
+    if (imageUrl != null && !imageUrl.isEmpty()) {
+      loadThumb(row.findViewById(R.id.aywebs_line_image), imageUrl);
+    }
+    if (onClick != null) row.setOnClickListener(onClick);
+    else row.setClickable(false);
+    list.addView(row);
+  }
+
+  /** Lecture simple ; `withCustomer` ajoute le porteur de session COMPTE. */
+  private JSONObject get(String endpoint, boolean withCustomer) throws Exception {
+    HttpURLConnection connection = (HttpURLConnection) new URL(endpoint).openConnection();
+    connection.setRequestMethod("GET");
+    connection.setConnectTimeout(12_000);
+    connection.setReadTimeout(20_000);
+    connection.setRequestProperty("accept", "application/json");
+    if (!sessionId.isEmpty()) connection.setRequestProperty("x-session-id", sessionId);
+    if (withCustomer && !customerToken.isEmpty()) {
+      connection.setRequestProperty("authorization", "Bearer " + customerToken);
+    }
+    int code = connection.getResponseCode();
+    InputStream stream = code >= 400 ? connection.getErrorStream() : connection.getInputStream();
+    ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+    if (stream != null) {
+      byte[] chunk = new byte[8192];
+      int read;
+      while ((read = stream.read(chunk)) > 0) buffer.write(chunk, 0, read);
+    }
+    String text = new String(buffer.toByteArray(), StandardCharsets.UTF_8);
+    if (code >= 400) throw new AyWebsApiException(code, userMessageOf(text));
+    return new JSONObject(text);
+  }
+
   /** Une seule UI : les écrans AYROVI sont les routes WEB de la coque. */
   private void openWebRoute(String route) {
     // ── Corrigé le 2026-10-03 (P0 : « Ajouter au panier » ne faisait rien) ──
@@ -770,8 +985,12 @@ public class AyWebsBrowseActivity extends Activity {
 
   /** Erreur d'API portant le message utilisateur du serveur (ou vide). */
   private static final class AyWebsApiException extends Exception {
+    /** Le STATUT est conservé : 401 n'est pas une panne, c'est « connectez-vous ». */
+    final int status;
+
     AyWebsApiException(int status, String userMessage) {
       super(userMessage == null || userMessage.isEmpty() ? "AYWEBS_HTTP_" + status : userMessage);
+      this.status = status;
     }
   }
 

@@ -1,3 +1,4 @@
+import { registerPlugin } from '@capacitor/core';
 import { AYROVI_API_ORIGIN } from '../services/apiOrigin';
 import { isNativeApp } from '../services/nativeShell';
 
@@ -93,11 +94,45 @@ export async function claimNativeSession(handoff: string, options: ClaimOptions 
   return null;
 }
 
+interface AuthTabBridge {
+  open(options: { url: string }): Promise<{ opened: boolean }>;
+}
+
 /**
- * Ouvre le flux dans le navigateur système. `window.open` suffit : la coque
- * déclare `allowNavigation: []`, donc Capacitor confie toute origine externe à
- * Android au lieu de la charger dans la WebView.
+ * Ouvre le flux du fournisseur SANS quitter l'application.
+ *
+ * ── Correction du 04/10/2026 (deuxième passe) ───────────────────────────────
+ * La première version appelait `window.open`, que la coque délègue à Android :
+ * l'utilisateur basculait dans Chrome, une AUTRE application, et devait
+ * revenir à la main. Le client l'a refusé : « تسجيل دخول بش ولي داخل تطبيق لا
+ * خروج من تطبيق ».
+ *
+ * On passe donc par un ONGLET PERSONNALISÉ, qui s'ouvre dans notre propre
+ * tâche et se referme seul. Ce n'est pas un détail cosmétique : c'est la seule
+ * voie qui satisfasse les deux contraintes à la fois —
+ *   • Google REFUSE les WebView embarquées (`disallowed_useragent`), donc on
+ *     ne peut pas afficher sa page dans notre WebView ;
+ *   • le navigateur système fait sortir de l'application.
+ * L'onglet personnalisé est le moteur de Chrome (agent utilisateur accepté,
+ * mot de passe invisible pour AYROVI) hébergé dans notre pile d'activités.
+ *
+ * Repli honnête : hors coque, ou si aucun navigateur compatible n'existe, on
+ * retombe sur l'ancien comportement plutôt que de ne rien faire.
  */
-export function openProviderInSystemBrowser(url: string): void {
+export async function openProviderInAppTab(url: string): Promise<void> {
+  if (isNativeApp()) {
+    try {
+      const plugin = registerPlugin<AuthTabBridge>('AyroviAuthTab');
+      const result = await plugin.open({ url });
+      if (result?.opened) return;
+    } catch {
+      /* plugin absent (ancienne coque) : repli ci-dessous */
+    }
+  }
   window.open(url, '_blank', 'noopener,noreferrer');
+}
+
+/** @deprecated conservé pour le web ; préférez openProviderInAppTab. */
+export function openProviderInSystemBrowser(url: string): void {
+  void openProviderInAppTab(url);
 }

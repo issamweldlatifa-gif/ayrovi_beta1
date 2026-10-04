@@ -25,6 +25,9 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(AyWebsBrowsePlugin.class);
+        // Connexion par fournisseur en onglet personnalisé : DANS l'app, sans
+        // bascule vers Chrome (remarque du 04/10/2026).
+        registerPlugin(AyroviAuthTabPlugin.class);
         super.onCreate(savedInstanceState);
     }
 

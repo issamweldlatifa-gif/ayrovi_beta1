@@ -54,8 +54,20 @@
 .ay-auth:lang(ar) .ay-auth__intro h1 { line-height: var(--ayrovi-arabic-heading-line-height, 1.42); }
 .ay-auth__intro p { font-size: var(--text-small); line-height: 1.5; margin-block-start: var(--ayrovi-space-2); }
 .ay-auth__card { position: relative; margin-block-start: 0; border-radius: var(--ayrovi-radius-sheet) var(--ayrovi-radius-sheet) 0 0; padding: var(--ayrovi-space-8) max(var(--ayrovi-space-6), env(safe-area-inset-right)) max(var(--ayrovi-space-6), env(safe-area-inset-bottom)) max(var(--ayrovi-space-6), env(safe-area-inset-left)); background: var(--ayrovi-bg-main); }
-.ay-auth__social { display: flex; flex-wrap: wrap; gap: var(--ayrovi-space-2); }
-.ay-auth__provider { flex: 1 1 100px; padding-inline: var(--ayrovi-space-3); min-height: var(--ayrovi-control-height); font-size: var(--text-small); box-shadow: none; }
+/* ── Écran de connexion refondu le 04/10/2026 ────────────────────────────────
+   Les boutons de fournisseur étaient disposés en RANGÉE (`flex: 1 1 100px`) :
+   avec trois fournisseurs, chacun tombait sous 110 px et le libellé était
+   amputé en « Goog… ». Ils passent en COLONNE, pleine largeur, un par ligne —
+   chacun dit enfin en entier ce qu'il fait. La pile verticale est aussi ce qui
+   rend l'écran lisible au pouce : une cible par ligne, jamais deux côte à côte.
+   ─────────────────────────────────────────────────────────────────────────── */
+.ay-auth__social { display: flex; flex-direction: column; gap: var(--ayrovi-space-3); }
+.ay-auth__provider { width: 100%; justify-content: center; gap: var(--ayrovi-space-3); padding-inline: var(--ayrovi-space-4); min-height: var(--ayrovi-control-height-lg, 52px); border-radius: var(--ayrovi-radius-pill, 999px); font-size: var(--text-body); box-shadow: none; }
+/* Le bouton « téléphone » suit les fournisseurs : même forme, même rythme. */
+.ay-auth__social + .ay-auth__provider { margin-block-start: var(--ayrovi-space-3); }
+/* Étape 1 : l'adresse et son bouton, rien d'autre à l'écran. */
+.ay-auth__step { display: flex; flex-direction: column; gap: var(--ayrovi-space-4); }
+.ay-auth__step .ay-auth__submit { min-height: var(--ayrovi-control-height-lg, 52px); border-radius: var(--ayrovi-radius-pill, 999px); }
 .ay-auth__provider svg { flex-shrink: 0; }
 .ay-auth__divider { display: flex; align-items: center; gap: var(--ayrovi-space-3); margin-block: var(--ayrovi-space-5); color: var(--ayrovi-text-secondary); font-size: var(--text-caption); }
 .ay-auth__divider::before, .ay-auth__divider::after { content: ''; flex: 1; height: 1px; background: var(--ayrovi-border-soft); }

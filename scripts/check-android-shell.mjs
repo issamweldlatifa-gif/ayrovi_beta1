@@ -192,6 +192,45 @@ check(
   /onClosePressed/.test(browser) && /isTaskRoot\(\)/.test(browser),
   'un finish() inconditionnel ferme l’application quand le navigateur est la racine de la tâche (lien profond, partage)'
 );
+/* ── 3quater. (04/10/2026) : Panier et Favoris RESTENT dans la boutique ───── */
+// Le défaut signalé : les deux boutons de la barre basse appelaient
+// openWebRoute(), c'est-à-dire startActivity(lien profond) + finish(). La page
+// marchande était DÉTRUITE et l'utilisateur éjecté de son achat pour la seule
+// raison qu'il voulait vérifier son panier. Ils ouvrent désormais un tiroir
+// par-dessus la WebView, qui reste vivante dessous.
+check(
+  'AyWebsBrowseActivity : Panier ouvre un tiroir interne',
+  /cartButton\.setOnClickListener\(v -> openListSheet\(true\)\)/.test(browser),
+  'openWebRoute() détruisait la page marchande : consulter son panier n’est pas quitter sa boutique'
+);
+check(
+  'AyWebsBrowseActivity : Favoris ouvre un tiroir interne',
+  /wishButton\.setOnClickListener\(v -> openListSheet\(false\)\)/.test(browser),
+  'même défaut que le panier : le favori éjectait de la boutique'
+);
+check(
+  'AyWebsBrowseActivity : fermer le tiroir rend la boutique, ne la ferme pas',
+  /private void openListSheet\(/.test(browser)
+    && /close\.setOnClickListener\(v -> dialog\.dismiss\(\)\)/.test(browser)
+    && /keepShopping\.setOnClickListener\(v -> dialog\.dismiss\(\)\)/.test(browser),
+  'un tiroir dont la croix appelle finish() est un tiroir qui ment : il ferme la boutique'
+);
+check(
+  'AyWebsBrowseActivity : les deux seules sorties du tiroir sont payer et se connecter',
+  /R\.string\.aywebs_sheet_checkout/.test(browser) && /R\.string\.aywebs_sheet_login/.test(browser),
+  'le client a autorisé exactement ces deux sorties, pas une de plus'
+);
+check(
+  'AyWebsBrowseActivity : tiroir plafonné à 82 % de l’écran',
+  /capSheetHeight/.test(browser) && /0\.82f/.test(browser),
+  'sans plafond, une longue liste recouvre la barre du marchand et déborde sous la barre système'
+);
+check(
+  'AyWebsBrowseActivity : les favoris portent le jeton du COMPTE',
+  /EXTRA_CUSTOMER_TOKEN/.test(browser) && /Bearer/.test(browser),
+  'sans lui, un utilisateur connecté verrait « connectez-vous » au milieu de ses achats'
+);
+
 check(
   'AyWebsBrowseActivity : retour matériel câblé',
   /public void onBackPressed\s*\(/.test(browser),
@@ -244,4 +283,31 @@ if (failures.length) {
   for (const f of failures) console.error(`  • ${f}`);
   process.exit(1);
 }
+/* ── 3quinquies. (04/10/2026) : la connexion ne sort plus de l'application ── */
+// « تسجيل دخول بش ولي داخل تطبيق لا خروج من تطبيق ». Le correctif précédent du
+// 404 Google ouvrait le NAVIGATEUR SYSTÈME : application différente, bascule
+// visible, retour manuel. L'onglet personnalisé est la seule voie qui soit à la
+// fois acceptée par Google (qui refuse les WebView embarquées) et sans sortie.
+const authTab = read('android/app/src/main/java/app/ayrovi/mobile/AyroviAuthTabPlugin.java');
+check(
+  'AyroviAuthTabPlugin : onglet personnalisé présent',
+  /CustomTabsIntent/.test(authTab) && /launchUrl/.test(authTab),
+  'sans lui, la connexion par fournisseur bascule vers Chrome et quitte AYROVI'
+);
+check(
+  'AyroviAuthTabPlugin : l’onglet reste dans NOTRE tâche',
+  !/FLAG_ACTIVITY_NEW_TASK/.test(authTab),
+  'avec NEW_TASK, l’onglet devient une fenêtre séparée dans le sélecteur d’applications'
+);
+check(
+  'AyroviAuthTabPlugin : https exigé pour une page de mot de passe',
+  /AUTH_TAB_URL_INVALID/.test(authTab),
+  'ouvrir un formulaire de connexion en http serait une faute'
+);
+check(
+  'MainActivity : le plugin d’onglet est enregistré',
+  /registerPlugin\(AyroviAuthTabPlugin\.class\)/.test(read('android/app/src/main/java/app/ayrovi/mobile/MainActivity.java')),
+  'un plugin non enregistré est invisible depuis le web : le repli navigateur reprendrait'
+);
+
 console.log(`Coque Android : ${checks.length} invariants vérifiés, 0 rupture.`);

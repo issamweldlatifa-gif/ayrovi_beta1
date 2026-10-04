@@ -215,3 +215,142 @@ describe('§8 — connexion Google dans l’application : fin du 404', () => {
     expect(page).not.toMatch(/token/i);
   });
 });
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Deuxième passe — remarques du 04/10/2026 (soir)
+
+   Le client a rouvert deux points que la première passe n'avait pas traités au
+   bon endroit :
+
+   §9  « تبويب aywebs favorite في شريط داخل متجر مزالت متصلحتش » — la première
+       passe avait rendu l'onglet « Favoris » interne à l'écran AyWebs en
+       React. Mais le reproche portait sur la BARRE DU NAVIGATEUR MARCHAND, en
+       Java : là, « Panier » et « Favoris » appelaient openWebRoute(), soit
+       startActivity(lien profond) + finish(). La page marchande était détruite
+       et l'utilisateur éjecté de son achat. Corriger l'un ne corrigeait pas
+       l'autre : ce sont deux interfaces distinctes.
+
+   §10 « تسجيل دخول بش ولي داخل تطبيق لا خروج من تطبيق » — le correctif du 404
+       Google ouvrait le navigateur système. C'est bien une sortie
+       d'application. L'onglet personnalisé la supprime sans retomber dans la
+       WebView embarquée, que Google refuse.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+const BROWSE_ACTIVITY = 'android/app/src/main/java/app/ayrovi/mobile/AyWebsBrowseActivity.java';
+const AUTH_TAB_PLUGIN = 'android/app/src/main/java/app/ayrovi/mobile/AyroviAuthTabPlugin.java';
+
+describe('§9 — Panier et Favoris restent DANS la boutique', () => {
+  test('les deux boutons de la barre marchande ouvrent un tiroir, plus une route', () => {
+    const activity = read(BROWSE_ACTIVITY);
+    expect(activity).toMatch(/cartButton\.setOnClickListener\(v -> openListSheet\(true\)\)/);
+    expect(activity).toMatch(/wishButton\.setOnClickListener\(v -> openListSheet\(false\)\)/);
+    // La régression exacte à interdire : le retour à openWebRoute sur ces deux
+    // boutons, qui détruisait la page marchande.
+    expect(activity).not.toMatch(/cartButton\.setOnClickListener\(v -> openWebRoute/);
+    expect(activity).not.toMatch(/wishButton\.setOnClickListener\(v -> openWebRoute/);
+  });
+
+  test('fermer le tiroir rend la boutique au lieu de la fermer', () => {
+    const activity = read(BROWSE_ACTIVITY);
+    expect(activity).toMatch(/close\.setOnClickListener\(v -> dialog\.dismiss\(\)\)/);
+    expect(activity).toMatch(/keepShopping\.setOnClickListener\(v -> dialog\.dismiss\(\)\)/);
+  });
+
+  test('les seules sorties sont payer et se connecter — les deux autorisées par le client', () => {
+    const activity = read(BROWSE_ACTIVITY);
+    expect(activity).toMatch(/cta\.setOnClickListener\(v -> \{ dialog\.dismiss\(\); openWebRoute\("\/aywebs\/cart"\); \}\)/);
+    expect(activity).toMatch(/cta\.setOnClickListener\(v -> \{ dialog\.dismiss\(\); openWebRoute\("\/account"\); \}\)/);
+  });
+
+  test('ouvrir un favori recharge la WebView courante, sans quitter le navigateur', () => {
+    const activity = read(BROWSE_ACTIVITY);
+    expect(activity).toMatch(/dialog\.dismiss\(\); webView\.loadUrl\(target\);/);
+  });
+
+  test('401 est traité comme « connectez-vous », pas comme une panne', () => {
+    const activity = read(BROWSE_ACTIVITY);
+    expect(activity).toMatch(/error\.status == 401 \|\| error\.status == 403/);
+    expect(activity).toMatch(/R\.string\.aywebs_sheet_login_required/);
+  });
+
+  test('le tiroir est plafonné à 82 % et défile à l’intérieur (§7)', () => {
+    expect(read(BROWSE_ACTIVITY)).toMatch(/0\.82f/);
+    expect(read('android/app/src/main/res/layout/sheet_aywebs_list.xml')).toMatch(/ScrollView/);
+  });
+
+  test('les favoris du COMPTE voyagent avec leur jeton', () => {
+    const activity = read(BROWSE_ACTIVITY);
+    expect(activity).toMatch(/EXTRA_CUSTOMER_TOKEN/);
+    expect(activity).toMatch(/"authorization", "Bearer " \+ customerToken/);
+    expect(read('client/src/services/nativeShell.ts')).toMatch(/customerToken: getNativeSessionToken\(\)/);
+  });
+
+  test('les libellés du tiroir existent dans les deux langues', () => {
+    for (const file of ['android/app/src/main/res/values/strings.xml',
+                        'android/app/src/main/res/values-ar/strings.xml']) {
+      const strings = read(file);
+      for (const key of ['aywebs_sheet_checkout', 'aywebs_sheet_login',
+                         'aywebs_sheet_empty_cart', 'aywebs_sheet_empty_wish']) {
+        expect(strings).toContain(key);
+      }
+    }
+  });
+});
+
+describe('§10 — la connexion ne sort plus de l’application', () => {
+  test('l’onglet personnalisé remplace le navigateur système', () => {
+    const plugin = read(AUTH_TAB_PLUGIN);
+    expect(plugin).toMatch(/CustomTabsIntent/);
+    expect(plugin).toMatch(/launchUrl\(getActivity\(\), parsed\)/);
+    // NEW_TASK ferait de l'onglet une fenêtre séparée : exactement la bascule
+    // d'application reprochée. Lecture SANS commentaires : le fichier explique
+    // justement pourquoi ce drapeau est absent, et une lecture naïve se
+    // déclencherait sur cette explication.
+    expect(readCode(AUTH_TAB_PLUGIN)).not.toMatch(/FLAG_ACTIVITY_NEW_TASK/);
+  });
+
+  test('une page de mot de passe n’est jamais ouverte en http', () => {
+    expect(read(AUTH_TAB_PLUGIN)).toMatch(/AUTH_TAB_URL_INVALID/);
+  });
+
+  test('le plugin est enregistré, sinon le repli navigateur reprendrait', () => {
+    expect(read('android/app/src/main/java/app/ayrovi/mobile/MainActivity.java'))
+      .toMatch(/registerPlugin\(AyroviAuthTabPlugin\.class\)/);
+  });
+
+  test('la couche web appelle l’onglet et garde un repli honnête', () => {
+    const module = read(NATIVE_OAUTH);
+    expect(module).toMatch(/export async function openProviderInAppTab/);
+    expect(module).toMatch(/registerPlugin<AuthTabBridge>\('AyroviAuthTab'\)/);
+    expect(module).toMatch(/window\.open\(url, '_blank', 'noopener,noreferrer'\)/);
+    expect(read(ACCOUNT_PAGE)).toMatch(/await openProviderInAppTab\(oauthStartUrl\(provider, query, handoff\)\)/);
+  });
+});
+
+describe('§11 — écran de connexion refondu d’après les captures', () => {
+  test('l’adresse d’abord, le mot de passe ensuite', () => {
+    const page = read(ACCOUNT_PAGE);
+    expect(page).toMatch(/const \[emailStep, setEmailStep\] = useState<'email' \| 'password'>\('email'\)/);
+    // Étape 1 : aucun champ mot de passe tant que l'adresse n'est pas saisie.
+    expect(page).toMatch(/\{emailStep === 'email' \? <>/);
+  });
+
+  test('les trois entrées des captures sont présentes', () => {
+    const page = read(ACCOUNT_PAGE);
+    expect(page).toMatch(/Se connecter ou s’inscrire/);
+    expect(page).toMatch(/Continuer avec Google/);
+    expect(page).toMatch(/Continuer avec un numéro de téléphone/);
+  });
+
+  test('les boutons de fournisseur sont empilés, pas comprimés en rangée', () => {
+    const css = read('client/src/styles/customer-auth.css');
+    expect(css).toMatch(/\.ay-auth__social \{ display: flex; flex-direction: column;/);
+    expect(css).toMatch(/\.ay-auth__provider \{ width: 100%;/);
+  });
+
+  test('aucune question « cet e-mail existe-t-il ? » n’est posée au serveur', () => {
+    // Elle révélerait qui possède un compte chez AYROVI. C'est le serveur qui
+    // tranche à l'envoi du mot de passe.
+    expect(read(ACCOUNT_PAGE)).not.toMatch(/auth\/email\/exists|checkEmailExists/);
+  });
+});
