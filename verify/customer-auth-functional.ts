@@ -42,12 +42,19 @@ async function run() {
   try {
     await page.goto(`${base}/?customerAuth=login`);
     await page.locator('#auth-email').waitFor();
-    check(await page.locator('.ay-auth__provider').count()===0, 'unconfigured social providers hidden');
+    // 04/10/2026 : `ay-auth__provider` désigne désormais TOUT bouton alternatif
+    // (Google, Facebook, Apple ET téléphone) — la présence du téléphone ne dit
+    // donc plus rien des réseaux sociaux. Le garde regarde le conteneur
+    // social lui-même : absent tant qu'aucun réseau n'est configuré.
+    check(await page.locator('.ay-auth__social').count()===0, 'unconfigured social providers hidden');
+    // Inscription en DEUX TEMPS (04/10/2026) : l'adresse seule à l'étape 1 ;
+    // la bascule « Créer un compte » et le mot de passe vivent à l'étape 2.
+    await page.locator('#auth-email').click();
+    await page.locator('#auth-email').fill('functional@example.com');
+    await page.locator('.ay-auth__submit').click();
     await page.locator('.ay-auth__switch button').click();
     await page.locator('#auth-name').click();
     await page.locator('#auth-name').fill('Client Test');
-    await page.locator('#auth-email').click();
-    await page.locator('#auth-email').fill('functional@example.com');
     await page.locator('#auth-password').click();
     await page.locator('#auth-password').fill('Original-password-1!');
     await page.locator('.ay-auth__submit').click();
@@ -60,6 +67,11 @@ async function run() {
     await page.getByRole('button',{name:'Se déconnecter',exact:true}).click();
     await page.locator('#auth-email').waitFor();
     check(await page.locator('#auth-email').inputValue()==='', 'logout clears credentials');
+    // Le lien « Mot de passe oublié » vit à l'étape 2 : l'adresse d'abord,
+    // puis « Continuer » — comme le ferait une personne réelle.
+    await page.locator('#auth-email').click();
+    await page.locator('#auth-email').fill('functional@example.com');
+    await page.locator('.ay-auth__submit').click();
     await page.locator('.ay-auth__recovery-link').click();
     await page.locator('#recovery-email').waitFor();
     await page.locator('#recovery-email').fill('functional@example.com');
@@ -94,6 +106,8 @@ async function run() {
     await page.locator('#auth-email').waitFor();
     await page.locator('#auth-email').click();
     await page.locator('#auth-email').fill('functional@example.com');
+    await page.locator('.ay-auth__submit').click();
+    await page.locator('#auth-password').waitFor();
     await page.locator('#auth-password').click();
     await page.locator('#auth-password').fill('Original-password-1!');
     await page.locator('.ay-auth__submit').click();
