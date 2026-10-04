@@ -167,6 +167,13 @@ export const AyWebsCartScreen: React.FC<AyWebsCartScreenProps> = ({ tab, onTab, 
         <div className="ayw-center"><Loader2 className="animate-spin" size={26} aria-hidden="true" /></div>
       )}
 
+      {/* Bandeau façon page panier Buyee (capture 6) : le compte exact, rien d'autre. */}
+      {!loading && items.length > 0 && (
+        <p className="ayw-cartbanner">
+          {tr('There are {n} items in your cart.', 'يوجد {n} منتجات في سلتك.').replace('{n}', String(units))}
+        </p>
+      )}
+
       {!loading && items.length === 0 && (
         <p className="ayw-notice ayw-pad">{tr('Your proxy cart is empty.', 'سلّة الوكالة فارغة.')}</p>
       )}

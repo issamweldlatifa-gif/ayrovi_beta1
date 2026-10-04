@@ -436,3 +436,14 @@
   font-size: .85rem;
   font-weight: 600;
 }
+
+/* --- bandeau compte du panier (capture Buyee 6, 04/10/2026) --- */
+.ayw-cartbanner {
+  margin: .8rem 1rem 0;
+  padding: .8rem 1rem;
+  border-radius: .5rem;
+  background: var(--ayrovi-surface-alt, #fdf6ec);
+  color: var(--ayrovi-ink, #101828);
+  font-size: .92rem;
+  font-weight: 600;
+}

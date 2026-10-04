@@ -18744,8 +18744,8 @@
     {
       "file": "client/src/features/aywebs/aywebs.css",
       "domain": "shell-content",
-      "sha256": "81f9abef956e657ba37fe1de2ec7dc15a5e68148933e18d1f486b1463ccb128d",
-      "lines": 439,
+      "sha256": "3d13f7c62b11b3794a3ea86d343bd3e16ded6c5ca52711680254f2e52d798713",
+      "lines": 450,
       "imports": [],
       "exports": [],
       "controls": [],
@@ -18765,6 +18765,7 @@
         "#f5f5f5",
         "#f8f9fa",
         "#fafafa",
+        "#fdf6ec",
         "#fff"
       ],
       "fontDeclarations": [],
@@ -18841,8 +18842,8 @@
     {
       "file": "client/src/features/aywebs/components/AyWebsCartScreen.tsx",
       "domain": "commerce",
-      "sha256": "4c99da5764d7215c0bc421d061a3a80a6ea7f42af347f7eda2558495b9cc1e43",
-      "lines": 225,
+      "sha256": "bf521a7cf15f76ae781199ea2f02856dfe0e74c6f80a87a8a3332f7ada49897c",
+      "lines": 232,
       "imports": [
         "react",
         "../../../components/QatafoIcons",
@@ -18887,7 +18888,7 @@
         },
         {
           "tag": "button",
-          "line": 204,
+          "line": 211,
           "className": "\"ayw-cta\"",
           "type": "\"button\"",
           "role": null,
@@ -18897,7 +18898,7 @@
         },
         {
           "tag": "button",
-          "line": 208,
+          "line": 215,
           "className": "\"ayw-cta-outline\"",
           "type": "\"button\"",
           "role": null,
