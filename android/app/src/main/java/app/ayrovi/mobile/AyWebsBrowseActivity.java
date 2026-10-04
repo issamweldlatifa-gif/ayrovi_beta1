@@ -8,8 +8,9 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.View;
-import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.webkit.CookieManager;
 import android.webkit.WebChromeClient;
 import android.os.Message;
@@ -346,14 +347,9 @@ public class AyWebsBrowseActivity extends Activity {
   }
 
   /**
-   * Feuille de variantes PAR-DESSUS la page marchand (capture 3 de la référence
-   * Buyee). Lot Q12 (04/10/2026) :
-   *   • plus aucun « New » écrit en dur — l'état vient de `condition`, publié par
-   *     la source, et il n'est jamais un critère de correspondance (§14) ;
-   *   • seules les options réellement publiées sont proposées ; un groupe à valeur
-   *     unique est une donnée affichée, pas un choix ;
-   *   • prix + devise d'origine et disponibilité CONFIRMÉE seulement ;
-   *   • la confirmation n'apparaît qu'après une réponse 2xx du serveur.
+   * Feuille de variantes PAR-DESSUS la page marchand. La vue native suit le
+   * panneau de sélection de la référence, sans quitter le magasin : contenu en
+   * ligne image/titre, options publiées, quantité et ajout.
    */
   private void showVariantSheet(JSONObject product) {
     Dialog dialog = new Dialog(this);
@@ -363,6 +359,7 @@ public class AyWebsBrowseActivity extends Activity {
     TextView conditionLine = dialog.findViewById(R.id.aywebs_sheet_condition);
     TextView availabilityLine = dialog.findViewById(R.id.aywebs_sheet_availability);
     TextView priceLine = dialog.findViewById(R.id.aywebs_sheet_price);
+    TextView errorLine = dialog.findViewById(R.id.aywebs_sheet_error);
     LinearLayout groupsBox = dialog.findViewById(R.id.aywebs_sheet_groups);
     Spinner qty = dialog.findViewById(R.id.aywebs_sheet_qty);
     Button confirm = dialog.findViewById(R.id.aywebs_sheet_add);
@@ -383,10 +380,23 @@ public class AyWebsBrowseActivity extends Activity {
       availabilityLine.setText(availabilityText);
       availabilityLine.setVisibility(View.VISIBLE);
     }
+
     double price = product.optDouble("price", 0);
+    JSONObject ayroviPricing = product.optJSONObject("ayrovi_pricing");
+    double estimateTnd = ayroviPricing == null ? 0 : ayroviPricing.optDouble("total_tnd", 0);
+    boolean quoteReady = price > 0 && estimateTnd > 0;
     if (price > 0) {
-      priceLine.setText(money(price) + " " + product.optString("currency", "").trim());
+      String sourcePrice = money(price) + " " + product.optString("currency", "").trim();
+      priceLine.setText(quoteReady
+          ? sourcePrice + "  ·  ≈ " + money(estimateTnd) + " TND"
+          : sourcePrice);
       priceLine.setVisibility(View.VISIBLE);
+    }
+    if (!quoteReady) {
+      errorLine.setText(R.string.aywebs_quote_unavailable);
+      errorLine.setVisibility(View.VISIBLE);
+      confirm.setEnabled(false);
+      confirm.setAlpha(0.55f);
     }
 
     qty.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item,
@@ -426,6 +436,7 @@ public class AyWebsBrowseActivity extends Activity {
 
     close.setOnClickListener(v -> dialog.dismiss());
     confirm.setOnClickListener(v -> {
+      if (!quoteReady) return;
       JSONObject attributes = new JSONObject();
       try {
         // Uniquement les attributs publiés par le marchand et choisis ici :
@@ -440,29 +451,62 @@ public class AyWebsBrowseActivity extends Activity {
             .put("store_id", product.optString("store_id", ""))
             .put("variant_attributes", attributes)
             .put("quantity", quantity);
-        dialog.dismiss();
+        confirm.setEnabled(false);
+        confirm.setText(R.string.aywebs_loading);
+        errorLine.setVisibility(View.GONE);
         runOnUiThread(() -> addButton.setText(R.string.aywebs_loading));
         executor.execute(() -> {
           try {
-            // post() lève sur tout statut >= 400 : la confirmation ne peut donc
-            // pas apparaître sans une ligne réellement écrite (§15, aucun faux succès).
+            // La feuille reste ouverte pendant la requête. Aucun faux succès :
+            // la confirmation n'apparaît qu'après une vraie réponse 2xx (§15).
             JSONObject response = post(apiOrigin + CART_ITEMS_PATH, body);
             JSONObject data = response.optJSONObject("data");
             JSONObject item = data == null ? null : data.optJSONObject("item");
             runOnUiThread(() -> {
               addButton.setText(R.string.aywebs_add_to_cart);
+              dialog.dismiss();
               showAddedDialog(item, product);
             });
           } catch (Exception error) {
-            runOnUiThread(() -> addButton.setText(R.string.aywebs_add_to_cart));
-            toastMessage(error.getMessage());
+            runOnUiThread(() -> {
+              addButton.setText(R.string.aywebs_add_to_cart);
+              confirm.setEnabled(true);
+              confirm.setText(R.string.aywebs_add_to_cart);
+              showSheetError(errorLine, error.getMessage());
+            });
           }
         });
       } catch (Exception error) {
-        dialog.dismiss();
+        showSheetError(errorLine, error.getMessage());
       }
     });
+    showAyWebsSheetDialog(dialog);
+  }
+
+  /** Erreur de devis ou d'ajout visible dans la feuille, pas perdue en toast. */
+  private void showSheetError(TextView errorLine, String message) {
+    if (errorLine == null) return;
+    String text = message == null || message.trim().isEmpty()
+        ? getString(R.string.aywebs_add_failed) : message.trim();
+    errorLine.setText(text);
+    errorLine.setVisibility(View.VISIBLE);
+  }
+
+  /** Dialog pleine largeur, ancrée en bas comme une feuille mobile. */
+  private void showAyWebsSheetDialog(Dialog dialog) {
     dialog.show();
+    android.view.Window window = dialog.getWindow();
+    if (window == null) return;
+    window.setBackgroundDrawableResource(android.R.color.transparent);
+    window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+    window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT);
+    window.setGravity(Gravity.BOTTOM);
+    WindowManager.LayoutParams params = window.getAttributes();
+    params.width = WindowManager.LayoutParams.MATCH_PARENT;
+    params.height = WindowManager.LayoutParams.WRAP_CONTENT;
+    params.gravity = Gravity.BOTTOM;
+    params.dimAmount = 0.45f;
+    window.setAttributes(params);
   }
 
   /** §15 : confirmation sans quitter le magasin, deux sorties honnêtes. */
@@ -470,6 +514,7 @@ public class AyWebsBrowseActivity extends Activity {
     JSONObject line = item == null ? new JSONObject() : item;
     Dialog dialog = new Dialog(this);
     dialog.setContentView(R.layout.dialog_aywebs_added);
+    ImageButton close = dialog.findViewById(R.id.aywebs_added_close);
     ImageView thumb = dialog.findViewById(R.id.aywebs_added_image);
     TextView addedTitle = dialog.findViewById(R.id.aywebs_added_title);
     TextView addedOptions = dialog.findViewById(R.id.aywebs_added_options);
@@ -491,6 +536,10 @@ public class AyWebsBrowseActivity extends Activity {
         quantity, money(line.optDouble("unit_price", 0)) + " " + currency,
         money(line.optDouble("line_total_tnd", 0))));
 
+    close.setOnClickListener(v -> {
+      dialog.dismiss();
+      setAddEnabled(productPage);
+    });
     checkout.setOnClickListener(v -> {
       dialog.dismiss();
       openWebRoute("/aywebs/cart");
@@ -499,7 +548,7 @@ public class AyWebsBrowseActivity extends Activity {
       dialog.dismiss();
       setAddEnabled(productPage);
     });
-    dialog.show();
+    showAyWebsSheetDialog(dialog);
   }
 
   /** Miniature de la fiche ; un échec réseau laisse simplement l'image vide. */

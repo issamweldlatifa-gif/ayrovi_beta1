@@ -12,6 +12,7 @@
     <string name="aywebs_not_product_page">الصفحة غير مؤهلة</string>
     <string name="aywebs_loading">Loading…</string>
     <string name="aywebs_select_item">اختر منتجك</string>
+    <string name="aywebs_quote_unavailable">تعذّر حساب سعر AYROVI لهذا المنتج. أعد فتح المنتج بعد استعادة التسعير.</string>
     <string name="aywebs_added">تمت الإضافة إلى سلة AYROVI</string>
     <string name="aywebs_proceed_checkout">متابعة الدفع</string>
     <string name="aywebs_continue_shopping">مواصلة التسوق</string>

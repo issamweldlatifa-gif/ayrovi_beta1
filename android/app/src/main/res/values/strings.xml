@@ -28,6 +28,7 @@
     <string name="aywebs_add_failed">Ajout impossible : le service AYROVI n’a pas répondu. Réessayez.</string>
     <string name="aywebs_product_not_resolved">Produit non reconnu sur cette page.</string>
     <string name="aywebs_select_item">Select your desired item</string>
+    <string name="aywebs_quote_unavailable">Le devis AYROVI est indisponible pour cet article. L’ajout reste bloqué jusqu’au rétablissement du prix.</string>
     <string name="aywebs_no_options">Sans option</string>
     <string name="aywebs_added_line">Quantité %1$d · %2$s · %3$s TND</string>
     <string name="aywebs_condition_new">État : Neuf (publié par la boutique)</string>

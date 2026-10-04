@@ -961,6 +961,10 @@ describe('AYWEBs — parcours d’achat façon Buyee : les 12 cas du lot Q12', (
     expect(h.db.all('SELECT * FROM cart_items')).toHaveLength(0);
     // Ce que l'écran affichera vient du serveur : ni 201, ni ligne à confirmer.
     expect(failed.body.error_contract).toBeTruthy();
+    if (failed.body.code === 'PRICE_UNAVAILABLE') {
+      expect(failed.body.error_contract.userMessage).toContain('cet article');
+      expect(failed.body.error_contract.userMessage).not.toContain('cette devise');
+    }
   });
 
   test('9. panier : la ligne n’existe qu’après persistance, et survit à la navigation et à la réouverture', async () => {

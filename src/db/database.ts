@@ -2742,6 +2742,7 @@ export class QatafoDatabase {
 
   private seedCoreData() {
     const now = new Date().toISOString();
+    const seedFx = { eur: 3.370911, usd: 2.943498, gbp: 3.929098, jpy: 0.018701 };
     // Graine = photo du marché au 23/09/2026 (EUR 3.370911 · USD 2.943498 ·
     // GBP 3.929098 · JPY 0.018701, source ExchangeRate-API). En production, le
     // service live (src/services/fxRates.ts) prend le relais au premier boot ;
@@ -2750,28 +2751,35 @@ export class QatafoDatabase {
     this.db.prepare(`
       INSERT OR IGNORE INTO pricing_config (
         id, version, rate_eur, rate_usd, rate_gbp, rate_jpy, express_fee_tnd, updated_at
-      ) VALUES ('default', 1, 3.370911, 2.943498, 3.929098, 0.018701, 15, ?)
-    `).run(now);
+      ) VALUES ('default', 1, ?, ?, ?, ?, 15, ?)
+    `).run(seedFx.eur, seedFx.usd, seedFx.gbp, seedFx.jpy, now);
 
-    // ── Auto-réparation des taux (correctif 04/10/2026) ─────────────────────
+    // ── Auto-réparation des taux (04/10/2026) ───────────────────────────────
     // `INSERT OR IGNORE` ne corrige JAMAIS une ligne déjà présente : une base
-    // ancienne (créée avant la graine marché, ou écrite à zéro par un bug)
-    // garde des taux nuls → getExchangeRate() renvoie null → calculatePrice()
-    // null → chaque ajout panier / résolution AYWEBs en devise (USD, EUR…)
-    // échoue en PRICE_UNAVAILABLE (« Le devis AYROVI est indisponible pour
-    // cette devise »), exactement le défaut observé en production. On remet
-    // donc les taux de repli marché dès qu'un taux est invalide ; un taux
-    // manuel ou live valide (> 0) n'est jamais touché.
+    // ancienne peut donc garder un taux nul → getExchangeRate() renvoie null →
+    // calculatePrice() renvoie null → PRICE_UNAVAILABLE. Répare chaque devise
+    // indépendamment : un taux EUR/GBP/JPY valide (y compris manuel ou live) ne
+    // doit pas être écrasé simplement parce que le taux USD est invalide.
+    // Si la ligne n'est manuelle, on invalide la provenance FX pour que le
+    // scheduler puisse rafraîchir les taux après le démarrage. Une configuration
+    // manuelle garde sa provenance et ses autres taux, même si un champ nul a dû
+    // recevoir une graine de secours.
     this.db.prepare(`
       UPDATE pricing_config
-      SET rate_eur = 3.370911, rate_usd = 2.943498, rate_gbp = 3.929098, rate_jpy = 0.018701,
-          fx_source = 'seed', fx_updated_at = '', updated_at = ?
+      SET rate_eur = CASE WHEN rate_eur IS NULL OR rate_eur <= 0 THEN ? ELSE rate_eur END,
+          rate_usd = CASE WHEN rate_usd IS NULL OR rate_usd <= 0 THEN ? ELSE rate_usd END,
+          rate_gbp = CASE WHEN rate_gbp IS NULL OR rate_gbp <= 0 THEN ? ELSE rate_gbp END,
+          rate_jpy = CASE WHEN rate_jpy IS NULL OR rate_jpy <= 0 THEN ? ELSE rate_jpy END,
+          version = version + 1,
+          fx_source = CASE WHEN lower(trim(COALESCE(fx_source, ''))) = 'manual' THEN 'manual' ELSE 'seed' END,
+          fx_updated_at = CASE WHEN lower(trim(COALESCE(fx_source, ''))) = 'manual' THEN fx_updated_at ELSE '' END,
+          updated_at = ?
       WHERE id = 'default'
         AND (rate_eur IS NULL OR rate_eur <= 0
           OR rate_usd IS NULL OR rate_usd <= 0
           OR rate_gbp IS NULL OR rate_gbp <= 0
           OR rate_jpy IS NULL OR rate_jpy <= 0)
-    `).run(now);
+    `).run(seedFx.eur, seedFx.usd, seedFx.gbp, seedFx.jpy, now);
 
     const insertSetting = this.db.prepare(`
       INSERT OR IGNORE INTO settings (id, category, setting_key, setting_value, value_type, label, updated_at)

@@ -309,7 +309,7 @@ export async function addAyWebsCartItem(
   // 4. Devis AYROVI recalculé ici — jamais celui fourni par le client.
   if (!(product.pricingTnd > 0)) {
     throw new AyWebsDomainError('PRICE_UNAVAILABLE', {
-      technicalMessage: 'aucun devis AYROVI exploitable pour ce produit (devise hors moteur ou catégorie restreinte)',
+      technicalMessage: 'pricingTnd <= 0 après résolution : vérifier le prix source, la devise, le taux de change et les restrictions produit',
     });
   }
 

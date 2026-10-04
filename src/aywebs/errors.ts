@@ -124,8 +124,8 @@ const DEFINITIONS: Record<string, ErrorDefinition> = {
   },
   PRICE_UNAVAILABLE: {
     httpStatus: 422, flowStatus: 'FAILED', recoverable: true, retryAllowed: true, requiredAction: 'RETRY',
-    userMessage: 'Le devis AYROVI est indisponible pour cette devise.',
-    technicalMessage: 'calculatePrice() sans résultat exploitable (devise hors moteur tarifaire).',
+    userMessage: 'Le devis AYROVI est indisponible pour cet article. Vérifiez son prix et sa devise, puis réessayez.',
+    technicalMessage: 'aucun devis exploitable : prix source absent ou invalide, devise non prise en charge, taux de change indisponible ou restriction produit.',
   },
   INVALID_QUOTE: {
     httpStatus: 400, flowStatus: 'FAILED', recoverable: true, retryAllowed: true, requiredAction: 'RETRY',

@@ -179,6 +179,27 @@ describe('AYROVI Android shell (Capacitor) — application réelle', () => {
     expect(browserActivity).toContain('userMessageOf');
   });
 
+  it('AYWEBs Android: devis exigé, feuille basse pleine largeur, erreurs conservées dans la feuille', () => {
+    const sheet = readFileSync('android/app/src/main/res/layout/dialog_aywebs_variant_sheet.xml', 'utf8');
+    const added = readFileSync('android/app/src/main/res/layout/dialog_aywebs_added.xml', 'utf8');
+    expect(sheet).toContain('aywebs_sheet_error');
+    expect(sheet).toContain('@drawable/bg_aywebs_sheet');
+    expect(added).toContain('aywebs_added_close');
+    expect(browserActivity).toContain('window.setGravity(Gravity.BOTTOM)');
+    expect(browserActivity).toContain('WindowManager.LayoutParams.MATCH_PARENT');
+    expect(browserActivity).toContain('if (!quoteReady) return;');
+    expect(browserActivity).toContain('showSheetError(errorLine, error.getMessage())');
+
+    // Le POST précède le dismiss : une réponse 4xx garde le contexte pour afficher
+    // le message dans la feuille au lieu de fermer l'écran et perdre la sélection.
+    const addHandler = browserActivity.indexOf('confirm.setOnClickListener(v -> {');
+    const cartPost = browserActivity.indexOf('post(apiOrigin + CART_ITEMS_PATH, body)', addHandler);
+    const dismiss = browserActivity.indexOf('dialog.dismiss();', addHandler);
+    expect(addHandler).toBeGreaterThanOrEqual(0);
+    expect(cartPost).toBeGreaterThan(addHandler);
+    expect(dismiss).toBeGreaterThan(cartPost);
+  });
+
   it('gradle: signature release env-driven + versionCode Play injectable', () => {
     expect(gradle).toContain("System.getenv('AYROVI_KEYSTORE_BASE64')");
     expect(gradle).toContain("versionCode ((System.getenv('AYROVI_VERSION_CODE') ?: '1') as int)");
