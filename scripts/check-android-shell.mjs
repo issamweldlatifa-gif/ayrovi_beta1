@@ -173,6 +173,31 @@ check(
   /setAcceptThirdPartyCookies\(webView,\s*true\)/.test(browser),
   'refusés par défaut depuis Android 5.0 : les parcours de connexion bouclent'
 );
+/* ── 3ter. §5 (04/10/2026) : boutons de la barre haute RÉELLEMENT câblés ───── */
+// Le défaut : `@+id/aywebs_close` et `@+id/aywebs_refresh` existaient dans le
+// XML mais n'étaient référencés nulle part en Java. Les appuis partaient dans
+// le vide. Un bouton présent et muet est pire qu'un bouton absent.
+check(
+  'AyWebsBrowseActivity : bouton X câblé',
+  /R\.id\.aywebs_close/.test(browser) && /closeButton\.setOnClickListener/.test(browser),
+  'le X du navigateur marchand ne faisait rien : aucun findViewById, aucun listener'
+);
+check(
+  'AyWebsBrowseActivity : bouton rafraîchir câblé',
+  /R\.id\.aywebs_refresh/.test(browser) && /refreshButton\.setOnClickListener/.test(browser),
+  'même défaut que le X : présent dans le XML, absent du Java'
+);
+check(
+  'AyWebsBrowseActivity : X revient à AYROVI sans tuer l’application',
+  /onClosePressed/.test(browser) && /isTaskRoot\(\)/.test(browser),
+  'un finish() inconditionnel ferme l’application quand le navigateur est la racine de la tâche (lien profond, partage)'
+);
+check(
+  'AyWebsBrowseActivity : retour matériel câblé',
+  /public void onBackPressed\s*\(/.test(browser),
+  'sans onBackPressed, le retour système quitte le navigateur marchand au lieu de remonter son historique'
+);
+
 check(
   'AyWebsBrowseActivity : panne de service distinguée de « page non éligible »',
   /setAddUnavailable/.test(browser) && /aywebs_service_unavailable/.test(strings),

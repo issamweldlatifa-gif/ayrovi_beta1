@@ -112,6 +112,14 @@ public class AyWebsBrowseActivity extends Activity {
   private Button wishButton;
   private ImageButton backButton;
   private ImageButton forwardButton;
+  /**
+   * §5 (04/10/2026) — ces deux boutons existaient dans le XML
+   * (`activity_aywebs_browse.xml`) mais n'étaient référencés NULLE PART en
+   * Java : zéro `findViewById`, zéro `setOnClickListener`. Les appuis sur X et
+   * sur ↻ partaient donc dans le vide, sans la moindre trace.
+   */
+  private ImageButton closeButton;
+  private ImageButton refreshButton;
   private ProgressBar progress;
 
   private String sessionId = "";
@@ -146,6 +154,8 @@ public class AyWebsBrowseActivity extends Activity {
     progress = requireView(R.id.aywebs_progress);
     backButton = requireView(R.id.aywebs_back);
     forwardButton = requireView(R.id.aywebs_forward);
+    closeButton = requireView(R.id.aywebs_close);
+    refreshButton = requireView(R.id.aywebs_refresh);
     cartButton = requireView(R.id.aywebs_cart);
     wishButton = requireView(R.id.aywebs_wish);
     addButton = requireView(R.id.aywebs_add);
@@ -211,6 +221,8 @@ public class AyWebsBrowseActivity extends Activity {
       }
     });
 
+    closeButton.setOnClickListener(v -> onClosePressed());
+    refreshButton.setOnClickListener(v -> webView.reload());
     backButton.setOnClickListener(v -> { if (webView.canGoBack()) webView.goBack(); });
     forwardButton.setOnClickListener(v -> { if (webView.canGoForward()) webView.goForward(); });
     cartButton.setOnClickListener(v -> openWebRoute("/aywebs/cart"));
@@ -220,6 +232,34 @@ public class AyWebsBrowseActivity extends Activity {
     Uri target = getIntent() == null ? null : getIntent().getData();
     String start = target != null ? target.toString() : "https://www.amazon.com/";
     webView.loadUrl(start);
+  }
+
+  /**
+   * §5 — « X » REVIENT à AYROVI, il ne tue jamais l'application.
+   *
+   * Deux situations réelles :
+   *  • le navigateur marchand a été ouvert PAR-DESSUS l'app (cas normal) :
+   *    `finish()` suffit, MainActivity est encore dessous, intacte ;
+   *  • le navigateur EST la racine de la tâche (arrivée par lien profond ou
+   *    par partage) : `finish()` fermerait l'application. On ouvre alors
+   *    AyWebs explicitement, par le même lien profond que Panier/Favoris.
+   */
+  private void onClosePressed() {
+    if (isTaskRoot()) {
+      openWebRoute("");
+      return;
+    }
+    finish();
+  }
+
+  /** Retour matériel : d'abord l'historique marchand, puis la même sortie que X. */
+  @Override
+  public void onBackPressed() {
+    if (webView != null && webView.canGoBack()) {
+      webView.goBack();
+      return;
+    }
+    onClosePressed();
   }
 
   private static String uriPath(String url) {

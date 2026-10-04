@@ -545,16 +545,23 @@ export const App: React.FC = () => {
       <ScrollToTopButton hidden={navigation.stack.length > 0} />
 
       {/* Compact RTL glass navigation: Ayvisi (left), Ayrovi (center), Ayrovix (right). */}
+      {/* §3 (04/10/2026) — JAMAIS deux barres. AyWebs s'ouvre dans une couche
+          `fixed inset-0 z-[25]`, mais cette barre-ci vit à la racine en z-30 :
+          elle RECOUVRAIT donc la barre AyWebs, qui devenait visible mais
+          intouchable. On la démonte pendant AyWebs ; la barre AyWebs
+          (z-40, hauteur fixe 3.4rem) est alors la seule à l'écran. */}
       <div data-preserved-navigation style={{ display: 'contents' }}>
-      <BottomNavBar
-        isAiDrawerOpen={isAiDrawerOpen}
-        onToggleAiDrawer={handleToggleAiDrawer}
-        onOpenLens={handleOpenLens}
-        onOpenAyWebs={handleOpenAyWebs}
-        ayWebsEnabled={ayWebsEnabled}
-        config={interfaceConfig.navigation}
-        iconConfig={interfaceConfig.icons}
-      />
+      {!isAyWebsOpen && (
+        <BottomNavBar
+          isAiDrawerOpen={isAiDrawerOpen}
+          onToggleAiDrawer={handleToggleAiDrawer}
+          onOpenLens={handleOpenLens}
+          onOpenAyWebs={handleOpenAyWebs}
+          ayWebsEnabled={ayWebsEnabled}
+          config={interfaceConfig.navigation}
+          iconConfig={interfaceConfig.icons}
+        />
+      )}
       </div>
 
       {isAyWebsOpen && (

@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Heart, Search, ShoppingBag, X } from '../../../components/QatafoIcons';
+import { Heart, HeartFilled, Search, ShoppingBag, X } from '../../../components/QatafoIcons';
 import { useLocale } from '../../../i18n/LocaleContext';
 import { getAyWebsHome, getAyWebsStores, trackAyWebsEvent, type AyWebsHomePayload, type AyWebsStore } from '../api';
 import { AyWebsTabBar, type AyWebsTab } from './AyWebsTabBar';
+import type { AyWebsFavoriteTarget } from '../useAyWebsFavorites';
 
 /**
  * AYWEBs — écran « Stores » (référence Add-to-Buyee, capture 2).
@@ -11,6 +12,11 @@ import { AyWebsTabBar, type AyWebsTab } from './AyWebsTabBar';
  * carte résultat (logo, nom, description, favori) et barre d'onglets basse.
  * Amazon en tête : magasin de test phase 1 (capture_supported=true).
  * Aucun magasin codé en dur ici : tout vient de GET /api/v1/aywebs/stores.
+ *
+ * §6 (04/10/2026) — les cœurs n'ont PLUS d'état local : ils ouvrent le tiroir
+ * « Favoris », qui écrit dans le compte AYROVI. L'ancien
+ * `useState<Set<string>>` ne survivait pas au démontage et n'était lié à aucun
+ * compte : un cœur décoratif.
  */
 export interface AyWebsStoresScreenProps {
   tab: AyWebsTab;
@@ -18,16 +24,21 @@ export interface AyWebsStoresScreenProps {
   onOpenStore: (store: AyWebsStore) => void;
   /** Une carte produit recentrée ouvre la feuille de variantes (§13). */
   onOpenProduct?: (url: string, storeId: string) => void;
+  /** §6 : ouvre le tiroir Favoris pour l'élément visé (magasin ou produit). */
+  onOpenFavorite: (target: AyWebsFavoriteTarget) => void;
+  /** §6 : vérité du compte AYROVI, jamais un état local d'écran. */
+  isFavorite: (sourceUrl: string) => boolean;
   cartCount: number;
 }
 
-export const AyWebsStoresScreen: React.FC<AyWebsStoresScreenProps> = ({ tab, onTab, onOpenStore, onOpenProduct, cartCount }) => {
+export const AyWebsStoresScreen: React.FC<AyWebsStoresScreenProps> = ({
+  tab, onTab, onOpenStore, onOpenProduct, onOpenFavorite, isFavorite, cartCount,
+}) => {
   const { tr } = useLocale();
   const [stores, setStores] = useState<AyWebsStore[]>([]);
   const [home, setHome] = useState<AyWebsHomePayload | null>(null);
   const [query, setQuery] = useState('');
   const [chosen, setChosen] = useState<AyWebsStore | null>(null);
-  const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [offline, setOffline] = useState(false);
 
   useEffect(() => {
@@ -50,15 +61,6 @@ export const AyWebsStoresScreen: React.FC<AyWebsStoresScreenProps> = ({ tab, onT
     if (!q) return active;
     return active.filter((store) => store.name.toLowerCase().includes(q) || store.domains.some((d) => d.includes(q)));
   }, [stores, query, chosen]);
-
-  const toggleFavorite = (id: string) => {
-    setFavorites((current) => {
-      const next = new Set(current);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
 
   return (
     <div className="ayw-screen" data-aywebs-screen="stores">
@@ -91,10 +93,26 @@ export const AyWebsStoresScreen: React.FC<AyWebsStoresScreenProps> = ({ tab, onT
           <h2 className="ayw-section">{tr('Recent products', 'منتجات حديثة')}</h2>
           <div className="ayw-cardrow ayw-pad-h">
             {home.recent_products.map((product) => (
+              <div className="ayw-prodwrap" key={product.product_id}>
+              <button
+                type="button"
+                className="ayw-prodfav"
+                aria-label={tr('Favorite', 'مفضلة')}
+                aria-pressed={isFavorite(product.source_url)}
+                onClick={() => onOpenFavorite({
+                  sourceUrl: product.source_url,
+                  title: product.title,
+                  image: product.image || '',
+                  priceTnd: product.pricing_tnd > 0 ? product.pricing_tnd : null,
+                })}
+              >
+                {isFavorite(product.source_url)
+                  ? <HeartFilled size={15} aria-hidden="true" />
+                  : <Heart size={15} aria-hidden="true" />}
+              </button>
               <button
                 type="button"
                 className="ayw-variantcard ayw-prodcard"
-                key={product.product_id}
                 onClick={() => onOpenProduct?.(product.source_url, product.store_id)}
               >
                 {product.image && <img className="ayw-variantcard-img" src={product.image} alt="" loading="lazy" />}
@@ -112,6 +130,7 @@ export const AyWebsStoresScreen: React.FC<AyWebsStoresScreenProps> = ({ tab, onT
                   <span className="ayw-variantcard-stock">{tr('Out of stock', 'غير متوفر')}</span>
                 )}
               </button>
+              </div>
             ))}
           </div>
         </>
@@ -141,12 +160,19 @@ export const AyWebsStoresScreen: React.FC<AyWebsStoresScreenProps> = ({ tab, onT
               <span className="ayw-storename">{store.display_name || store.name}</span>
               <button
                 type="button"
-                className={`ayw-fav${favorites.has(store.id) ? ' is-on' : ''}`}
+                className={`ayw-fav${isFavorite(store.home_url) ? ' is-on' : ''}`}
                 aria-label={tr('Favorite', 'مفضلة')}
-                aria-pressed={favorites.has(store.id)}
-                onClick={() => toggleFavorite(store.id)}
+                aria-pressed={isFavorite(store.home_url)}
+                onClick={() => onOpenFavorite({
+                  sourceUrl: store.home_url,
+                  title: store.display_name || store.name,
+                  image: store.logo || '',
+                  priceTnd: null,
+                })}
               >
-                <Heart size={17} aria-hidden="true" />
+                {isFavorite(store.home_url)
+                  ? <HeartFilled size={17} aria-hidden="true" />
+                  : <Heart size={17} aria-hidden="true" />}
               </button>
             </div>
             <p className="ayw-storedesc">

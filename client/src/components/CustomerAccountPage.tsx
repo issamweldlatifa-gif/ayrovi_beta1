@@ -37,7 +37,8 @@ import {
 } from '../types';
 import { customerApi } from '../customer/api';
 import { getSessionId } from '../utils/session';
-import { clearNativeSessionToken, rememberNativeSessionToken } from '../services/nativeShell';
+import { clearNativeSessionToken, isNativeApp, rememberNativeSessionToken } from '../services/nativeShell';
+import { claimNativeSession, createHandoffCode, oauthStartUrl, openProviderInSystemBrowser, type OAuthProvider } from '../customer/nativeOAuth';
 import { useNavigationHistory } from '../navigation/NavigationHistory';
 import { useLocale } from '../i18n/LocaleContext';
 import { CustomerPasswordRecovery } from './CustomerPasswordRecovery';
@@ -163,6 +164,8 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
   const [code, setCode] = useState('');
   const [developmentCode, setDevelopmentCode] = useState('');
   const [authBusy, setAuthBusy] = useState(false);
+  /** Fournisseur dont le flux est ouvert dans le navigateur système (app). */
+  const [providerPending, setProviderPending] = useState<OAuthProvider | ''>('');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState(initialMessage || '');
   const [overview, setOverview] = useState<CustomerAccountOverview | null>(null);
@@ -312,6 +315,35 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
       setCode('');
     }
   }, [otpOpen]);
+
+  /**
+   * Connexion par fournisseur DANS l'application (voir customer/nativeOAuth.ts).
+   * Le navigateur système termine le flux ; on réclame ensuite la session avec
+   * un code à usage unique. Aucun état « connecté » n'est affiché avant que le
+   * serveur ne l'ait réellement remis.
+   */
+  const startNativeProvider = async (provider: OAuthProvider) => {
+    if (providerPending) return;
+    setError(''); setNotice(''); setProviderPending(provider);
+    const handoff = createHandoffCode();
+    try {
+      const query = `cartSessionId=${encodeURIComponent(getSessionId())}&returnTo=${encodeURIComponent('/')}`;
+      openProviderInSystemBrowser(oauthStartUrl(provider, query, handoff));
+      const result = await claimNativeSession(handoff);
+      if (!result) {
+        setError(tr('Connexion non terminée. Réessayez.', 'لم تكتمل عملية الدخول. أعد المحاولة.'));
+        return;
+      }
+      rememberNativeSessionToken(result.native_session_token);
+      onSession({ account: result.account, csrfToken: result.csrfToken });
+      setNotice(tr('Content de vous revoir !', 'سعداء بعودتك!'));
+      onCartChanged();
+    } catch {
+      setError(tr('Connexion impossible pour le moment.', 'تعذّر تسجيل الدخول حالياً.'));
+    } finally {
+      setProviderPending('');
+    }
+  };
 
   const submitEmailAuth = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -585,11 +617,11 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
   const facebookEnabled = Boolean(config?.facebook.enabled);
   const socialLoginEnabled = googleEnabled || facebookEnabled || Boolean(config?.apple.enabled);
   const oauthQuery = `cartSessionId=${encodeURIComponent(getSessionId())}&returnTo=${encodeURIComponent('/')}`;
-  const googleStartHref = `/api/customer/auth/google/start?${oauthQuery}`;
-  const facebookStartHref = `/api/customer/auth/facebook/start?${oauthQuery}`;
+  const googleStartHref = oauthStartUrl('google', oauthQuery);
+  const facebookStartHref = oauthStartUrl('facebook', oauthQuery);
 
   const appleEnabled = Boolean(config?.apple.enabled);
-  const appleStartHref = `/api/customer/auth/apple/start?${oauthQuery}`;
+  const appleStartHref = oauthStartUrl('apple', oauthQuery);
   const authPanel = recoveryOpen ? <CustomerPasswordRecovery initialEmail={emailAddress} onBack={() => setRecoveryOpen(false)} /> : (
     <div className="ay-auth relative flex min-h-full flex-col">
       <div className={`ay-auth__container ${otpOpen || phoneLoginOpen || phoneLinkOpen ? 'ay-auth__container--utility' : ''}`}>
@@ -663,17 +695,37 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
               </> : <><Loader2 className="h-5 w-5 animate-spin" aria-hidden /><span>{tr('Chargement…', 'جارٍ التحميل…')}</span></>}
             </div>}
 
+            {/* Un LIEN sur le web (navigation same-origin, cookie conservé) ;
+                dans l'application, un BOUTON : l'URL doit être absolue et le
+                flux doit passer par le navigateur système, sans quoi on
+                atterrissait sur https://localhost/api/… → 404 (voir
+                customer/nativeOAuth.ts). */}
             {socialLoginEnabled && <div className="ay-auth__social" aria-label={tr('Autres moyens de connexion', 'وسائل دخول أخرى')}>
-              {googleEnabled && <a href={googleStartHref} className={buttonClasses('secondary', 'md', 'ay-auth__provider')} aria-label={tr('Continuer avec Google', 'المتابعة عبر Google')}>
-                <FcGoogle size={22} aria-hidden /><span>{!facebookEnabled && !appleEnabled ? tr('Continuer avec Google', 'المتابعة عبر Google') : 'Google'}</span>
-              </a>}
-              {facebookEnabled && <a href={facebookStartHref} className={buttonClasses('secondary', 'md', 'ay-auth__provider')} aria-label={tr('Continuer avec Facebook', 'المتابعة عبر Facebook')}>
-                <FaFacebookF size={20} aria-hidden /><span>Facebook</span>
-              </a>}
-              {appleEnabled && <a href={appleStartHref} className={buttonClasses('secondary', 'md', 'ay-auth__provider')} aria-label={tr('Continuer avec Apple', 'المتابعة عبر Apple')}>
-                <FaApple size={24} aria-hidden /><span>Apple</span>
-              </a>}
+              {googleEnabled && (isNativeApp()
+                ? <button type="button" disabled={Boolean(providerPending)} onClick={() => startNativeProvider('google')} className={buttonClasses('secondary', 'md', 'ay-auth__provider')} aria-label={tr('Continuer avec Google', 'المتابعة عبر Google')}>
+                    <FcGoogle size={22} aria-hidden /><span>{!facebookEnabled && !appleEnabled ? tr('Continuer avec Google', 'المتابعة عبر Google') : 'Google'}</span>
+                  </button>
+                : <a href={googleStartHref} className={buttonClasses('secondary', 'md', 'ay-auth__provider')} aria-label={tr('Continuer avec Google', 'المتابعة عبر Google')}>
+                    <FcGoogle size={22} aria-hidden /><span>{!facebookEnabled && !appleEnabled ? tr('Continuer avec Google', 'المتابعة عبر Google') : 'Google'}</span>
+                  </a>)}
+              {facebookEnabled && (isNativeApp()
+                ? <button type="button" disabled={Boolean(providerPending)} onClick={() => startNativeProvider('facebook')} className={buttonClasses('secondary', 'md', 'ay-auth__provider')} aria-label={tr('Continuer avec Facebook', 'المتابعة عبر Facebook')}>
+                    <FaFacebookF size={20} aria-hidden /><span>Facebook</span>
+                  </button>
+                : <a href={facebookStartHref} className={buttonClasses('secondary', 'md', 'ay-auth__provider')} aria-label={tr('Continuer avec Facebook', 'المتابعة عبر Facebook')}>
+                    <FaFacebookF size={20} aria-hidden /><span>Facebook</span>
+                  </a>)}
+              {appleEnabled && (isNativeApp()
+                ? <button type="button" disabled={Boolean(providerPending)} onClick={() => startNativeProvider('apple')} className={buttonClasses('secondary', 'md', 'ay-auth__provider')} aria-label={tr('Continuer avec Apple', 'المتابعة عبر Apple')}>
+                    <FaApple size={24} aria-hidden /><span>Apple</span>
+                  </button>
+                : <a href={appleStartHref} className={buttonClasses('secondary', 'md', 'ay-auth__provider')} aria-label={tr('Continuer avec Apple', 'المتابعة عبر Apple')}>
+                    <FaApple size={24} aria-hidden /><span>Apple</span>
+                  </a>)}
             </div>}
+            {providerPending && <p className="ay-auth__message" role="status">
+              {tr('Terminez la connexion dans le navigateur, puis revenez ici.', 'أكمل تسجيل الدخول في المتصفح ثم عد إلى هنا.')}
+            </p>}
             {socialLoginEnabled && config?.email.enabled && <div className="ay-auth__divider"><span>{tr('ou par e-mail', 'أو بالبريد الإلكتروني')}</span></div>}
 
             {config?.email.enabled && <>

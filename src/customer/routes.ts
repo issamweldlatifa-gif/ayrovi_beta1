@@ -82,6 +82,49 @@ function oauthBaseUrl(): string {
   return String(process.env.PUBLIC_BASE_URL || process.env.RENDER_EXTERNAL_URL || '').trim().replace(/\/$/, '');
 }
 
+/**
+ * Remise de session à l'APPLICATION NATIVE (04/10/2026) — pourquoi elle existe.
+ *
+ * Symptôme signalé : « connexion Google ⇒ erreur 404 dans l'application ».
+ * Cause réelle : dans l'APK, l'interface est servie depuis `https://localhost`
+ * (paquet Capacitor embarqué). Le bouton Google était un lien RELATIF
+ * (`/api/customer/auth/google/start`). Or le pont `nativeApiOrigin` ne réécrit
+ * que `fetch`/XHR : une NAVIGATION reste sur l'origine de la coque, où aucun
+ * serveur n'écoute → 404. Deux obstacles suivaient immédiatement :
+ *   • Google REFUSE les WebView embarquées (`disallowed_useragent`) ;
+ *   • le cookie de session posé sur l'origine de l'API n'atteindrait jamais
+ *     `https://localhost` (origines différentes).
+ *
+ * Donc : l'application ouvre le flux dans le NAVIGATEUR SYSTÈME avec un code de
+ * remise à usage unique qu'elle a générée, puis réclame son jeton. On conserve
+ * le HACHAGE du code, le jeton est remis UNE fois et la ligne est détruite.
+ */
+const NATIVE_HANDOFF_TTL_MS = 10 * 60 * 1000;
+
+/** Hachage du code transmis par l'app ; chaîne vide pour tout flux web. */
+function hashOptionalHandoff(value: unknown): string {
+  const handoff = validNativeHandoff(value);
+  return handoff ? hashToken(handoff) : '';
+}
+
+function validNativeHandoff(value: unknown): string {
+  const handoff = String(value || '').trim();
+  return /^[A-Za-z0-9_-]{32,128}$/.test(handoff) ? handoff : '';
+}
+
+function storeNativeHandoff(
+  db: QatafoDatabase,
+  handoffId: string,
+  accountId: string,
+  session: { token: string; csrfToken: string; expiresAt: string },
+): void {
+  const now = new Date();
+  db.run('DELETE FROM customer_native_handoffs WHERE id=? OR expires_at<=?', handoffId, now.toISOString());
+  db.run(`INSERT INTO customer_native_handoffs (id,account_id,session_token,csrf_token,session_expires_at,expires_at,created_at)
+    VALUES (?,?,?,?,?,?,?)`, handoffId, accountId, session.token, session.csrfToken, session.expiresAt,
+  new Date(now.getTime() + NATIVE_HANDOFF_TTL_MS).toISOString(), now.toISOString());
+}
+
 function googleConfig() {
   const clientId = String(process.env.GOOGLE_CLIENT_ID || '').trim();
   const clientSecret = String(process.env.GOOGLE_CLIENT_SECRET || '').trim();
@@ -574,9 +617,10 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
     const stateId = hashToken(state);
     const now = new Date();
     const current = resolveCustomer(db, req);
-    db.run(`INSERT INTO customer_oauth_states (id,account_id,provider,cart_session_id,return_to,expires_at,created_at)
-      VALUES (?,?,'APPLE',?,?,?,?)`, stateId, current?.id || null, validCartSession(req.query.cartSessionId), validReturnTo(req.query.returnTo),
-      new Date(now.getTime() + 10 * 60 * 1000).toISOString(), now.toISOString());
+    db.run(`INSERT INTO customer_oauth_states (id,account_id,provider,cart_session_id,return_to,native_handoff_id,expires_at,created_at)
+      VALUES (?,?,'APPLE',?,?,?,?,?)`, stateId, current?.id || null, validCartSession(req.query.cartSessionId), validReturnTo(req.query.returnTo),
+    hashOptionalHandoff(req.query.nativeHandoff),
+    new Date(now.getTime() + 10 * 60 * 1000).toISOString(), now.toISOString());
     const params = new URLSearchParams({
       client_id: apple.clientId,
       redirect_uri: apple.callbackUrl,
@@ -655,6 +699,10 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
       const session = createCustomerSession(db, accountId, req);
       setCustomerCookie(res, session.token);
       const returnTo = validReturnTo(state.return_to);
+      if (state.native_handoff_id) {
+        storeNativeHandoff(db, String(state.native_handoff_id), accountId, session);
+        return res.redirect('/auth/native-done.html');
+      }
       return res.redirect(`${returnTo}${returnTo.includes('?') ? '&' : '?'}customerAuth=success`);
     } catch (error) {
       console.error('[Customer Apple OAuth]', error);
@@ -669,8 +717,11 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
     const stateId = hashToken(state);
     const now = new Date();
     const current = resolveCustomer(db, req);
-    db.run(`INSERT INTO customer_oauth_states (id,account_id,provider,cart_session_id,return_to,expires_at,created_at)
-      VALUES (?,?,'GOOGLE',?,?,?,?)`, stateId, current?.id || null, validCartSession(req.query.cartSessionId), validReturnTo(req.query.returnTo),
+    // `nativeHandoff` n'est présent que dans l'application : le web l'ignore et
+    // garde EXACTEMENT son parcours par cookie (aucune régression).
+    db.run(`INSERT INTO customer_oauth_states (id,account_id,provider,cart_session_id,return_to,native_handoff_id,expires_at,created_at)
+      VALUES (?,?,'GOOGLE',?,?,?,?,?)`, stateId, current?.id || null, validCartSession(req.query.cartSessionId), validReturnTo(req.query.returnTo),
+    hashOptionalHandoff(req.query.nativeHandoff),
     new Date(now.getTime() + 10 * 60 * 1000).toISOString(), now.toISOString());
     const params = new URLSearchParams({
       client_id: google.clientId,
@@ -768,11 +819,50 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
       const session = createCustomerSession(db, accountId, req);
       setCustomerCookie(res, session.token);
       const returnTo = validReturnTo(state.return_to);
+      // Flux natif : le navigateur système n'est pas l'application. On dépose
+      // la session sous le code de remise et on affiche une page de retour ;
+      // l'application la réclame et referme l'onglet côté utilisateur.
+      if (state.native_handoff_id) {
+        storeNativeHandoff(db, String(state.native_handoff_id), accountId, session);
+        return res.redirect('/auth/native-done.html');
+      }
       return res.redirect(`${returnTo}${returnTo.includes('?') ? '&' : '?'}customerAuth=success`);
     } catch (error) {
       console.error('[Customer Google OAuth]', error);
       return failure();
     }
+  });
+
+  /**
+   * Réclamation du jeton par l'application native — UNE seule fois.
+   *
+   * Pas de session côté appelant (il n'en a pas encore) : l'autorisation est le
+   * code de remise lui-même, à usage unique, lié au flux OAuth qui vient de
+   * réussir et valable dix minutes. Tant que le flux n'a pas abouti, la réponse
+   * est 404 `HANDOFF_PENDING` — l'application continue d'attendre sans
+   * inventer d'état connecté.
+   */
+  router.post('/auth/native/claim', (req, res) => {
+    const handoff = validNativeHandoff(req.body?.handoff);
+    if (!handoff) return res.status(400).json({ success: false, code: 'HANDOFF_INVALID', error: 'Code de reprise invalide.' });
+    const id = hashToken(handoff);
+    const now = new Date().toISOString();
+    db.run('DELETE FROM customer_native_handoffs WHERE expires_at<=?', now);
+    const row = db.get<any>('SELECT * FROM customer_native_handoffs WHERE id=? AND expires_at>?', id, now);
+    if (!row) return res.status(404).json({ success: false, code: 'HANDOFF_PENDING', error: 'Connexion non terminée.' });
+    db.run('DELETE FROM customer_native_handoffs WHERE id=?', id);
+    const account = accountRow(db, row.account_id);
+    if (!account) return res.status(404).json({ success: false, code: 'HANDOFF_PENDING', error: 'Connexion non terminée.' });
+    setCustomerCookie(res, row.session_token);
+    return res.json({
+      success: true,
+      data: {
+        account: publicAccount(account),
+        csrfToken: row.csrf_token,
+        expiresAt: row.session_expires_at,
+        native_session_token: row.session_token,
+      },
+    });
   });
 
   router.get('/auth/facebook/start', (req, res) => {
@@ -782,8 +872,9 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
     const stateId = hashToken(state);
     const now = new Date();
     const current = resolveCustomer(db, req);
-    db.run(`INSERT INTO customer_oauth_states (id,account_id,provider,cart_session_id,return_to,expires_at,created_at)
-      VALUES (?,?,'FACEBOOK',?,?,?,?)`, stateId, current?.id || null, validCartSession(req.query.cartSessionId), validReturnTo(req.query.returnTo),
+    db.run(`INSERT INTO customer_oauth_states (id,account_id,provider,cart_session_id,return_to,native_handoff_id,expires_at,created_at)
+      VALUES (?,?,'FACEBOOK',?,?,?,?,?)`, stateId, current?.id || null, validCartSession(req.query.cartSessionId), validReturnTo(req.query.returnTo),
+    hashOptionalHandoff(req.query.nativeHandoff),
     new Date(now.getTime() + 10 * 60 * 1000).toISOString(), now.toISOString());
     const params = new URLSearchParams({
       client_id: facebook.appId,
@@ -896,6 +987,10 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
       const session = createCustomerSession(db, accountId, req);
       setCustomerCookie(res, session.token);
       const returnTo = validReturnTo(state.return_to);
+      if (state.native_handoff_id) {
+        storeNativeHandoff(db, String(state.native_handoff_id), accountId, session);
+        return res.redirect('/auth/native-done.html');
+      }
       return res.redirect(`${returnTo}${returnTo.includes('?') ? '&' : '?'}customerAuth=facebook_success`);
     } catch (error) {
       console.error('[Customer Facebook OAuth]', error);
