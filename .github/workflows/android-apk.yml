@@ -7,7 +7,19 @@ on:
         description: 'Play versionCode (incrémenter à chaque AAB)'
         required: false
         default: '1'
-  # Website-only delivery: Android builds require an explicit manual request.
+  # 04/10/2026 : à la demande explicite du propriétaire (« ابنِ تطبيقًا محدثًا »),
+  # chaque push sur main reconstruit l'APK de debug en artifact téléchargeable.
+  # Le dispatch manuel reste disponible pour les AAB signés Play Store.
+  push:
+    branches: [main]
+    paths:
+      - 'android/**'
+      - 'client/**'
+      - 'shared/**'
+      - 'capacitor.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/android-apk.yml'
 
 jobs:
   android:
@@ -36,7 +48,10 @@ jobs:
           cache: gradle
 
       - name: Debug APK (test direct sur téléphone)
-        run: cd android && ./gradlew assembleDebug --no-daemon
+        # `sh ./gradlew` (et non `./gradlew`) : l'échec CI du 03/10 (exit 126,
+        # « permission denied » à l'exécution directe du wrapper) ne peut plus
+        # se produire — l'interpréteur est invoqué explicitement.
+        run: cd android && sh ./gradlew assembleDebug --no-daemon
 
       - uses: actions/upload-artifact@v4
         with:
@@ -58,7 +73,7 @@ jobs:
           AYROVI_KEYSTORE_PASSWORD: ${{ secrets.AYROVI_KEYSTORE_PASSWORD }}
           AYROVI_KEY_ALIAS: ${{ secrets.AYROVI_KEY_ALIAS }}
           AYROVI_KEY_PASSWORD: ${{ secrets.AYROVI_KEY_PASSWORD }}
-        run: cd android && ./gradlew bundleRelease --no-daemon
+        run: cd android && sh ./gradlew bundleRelease --no-daemon
 
       - uses: actions/upload-artifact@v4
         if: steps.sign.outputs.available == 'true'
