@@ -89,7 +89,13 @@ export const AyWebsApp: React.FC<AyWebsAppProps> = ({
         onClose={onClose}
       />
       {tab === 'stores' && (
-        <AyWebsStoresScreen tab={tab} onTab={onTab} onOpenStore={openStore} cartCount={cartCount + ayWebsCount} />
+        <AyWebsStoresScreen
+          tab={tab}
+          onTab={onTab}
+          onOpenStore={openStore}
+          onOpenProduct={(url, storeId) => setSheet({ url, storeId })}
+          cartCount={cartCount + ayWebsCount}
+        />
       )}
       {tab === 'cart' && (
         <AyWebsCartScreen tab={tab} onTab={onTab} onOpenAyroviCheckout={openCheckout} onCartChanged={setAyWebsCount} />

@@ -2,22 +2,27 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, Loader2, ShoppingBag, X } from '../../../components/QatafoIcons';
 import { useLocale } from '../../../i18n/LocaleContext';
 import {
-  addAyWebsCartItem, resolveAyWebsProduct, trackAyWebsEvent,
+  addAyWebsCartItem, getAyWebsVariants, resolveAyWebsProduct, trackAyWebsEvent,
   type AyWebsCartItemPayload, type AyWebsProductPayload,
 } from '../api';
 
 /**
  * AYWEBs — feuille de variantes PAR-DESSUS l'expérience marchand
- * (référence Add-to-Buyee, captures 1 et 2) puis confirmation d'ajout.
+ * (référence Add-to-Buyee, captures 1 à 4) puis confirmation d'ajout.
  *
  * Contrat permanent (AYWEBS_ADD_TO_CART_ORDER.md) :
- *  • tout vient du serveur (resolve) : groupes de variantes libres, prix, dispo ;
+ *  • tout vient du serveur (resolve + variants) : groupes libres, prix, dispo ;
  *  • seules les options RÉELLEMENT publiées par le marchand sont affichées ;
  *  • aucun état « New » imposé : l'état du produit n'apparaît que si la source
  *    le publie (JSON-LD `itemCondition`), et il n'est JAMAIS un critère de
  *    correspondance de variante (régression du 03/10/2026 corrigée) ;
  *  • après ajout : confirmation avec la ligne réellement enregistrée, puis deux
  *    sorties — Proceed to Checkout (panier AYROVI) ou Return to Shopping.
+ *
+ * Cartes de variantes (04/10/2026, captures marchand 1-2) : quand le marchand
+ * publie une image ou un prix propre à chaque valeur d'un attribut (couleur…),
+ * les valeurs s'affichent en CARTES façon fiche Amazon — image, nom, prix,
+ * disponibilité, bordure de sélection — au lieu d'un menu déroulant anonyme.
  */
 export interface AyWebsVariantSheetProps {
   url: string;
@@ -27,6 +32,14 @@ export interface AyWebsVariantSheetProps {
 }
 
 type Phase = 'loading' | 'ready' | 'added' | 'error';
+
+interface VariantCard {
+  value: string;
+  image: string | null;
+  price: number | null;
+  currency: string | null;
+  availability: string;
+}
 
 export const AyWebsVariantSheet: React.FC<AyWebsVariantSheetProps> = ({ url, storeId, onClose, onCheckout }) => {
   const { tr } = useLocale();
@@ -38,14 +51,44 @@ export const AyWebsVariantSheet: React.FC<AyWebsVariantSheetProps> = ({ url, sto
   const [error, setError] = useState('');
   const [added, setAdded] = useState<AyWebsCartItemPayload | null>(null);
   const [linked, setLinked] = useState<{ linked: boolean; reason: string } | null>(null);
+  const [cardsByAttribute, setCardsByAttribute] = useState<Record<string, VariantCard[]>>({});
 
   useEffect(() => {
     const controller = new AbortController();
     setPhase('loading');
     resolveAyWebsProduct({ url, ...(storeId ? { store: storeId } : {}) }, controller.signal)
-      .then((payload) => {
-        setProduct(payload.product ?? payload);
+      .then(async (payload) => {
+        const resolved = payload.product ?? payload;
+        setProduct(resolved);
         setPhase('ready');
+        // Cartes marchand (image / prix / dispo par valeur) — meilleur effort :
+        // un échec de l'appel variantes laisse les menus déroulants (Buyee).
+        try {
+          const variants = await getAyWebsVariants({ product_id: resolved.product_id }, controller.signal);
+          const cards: Record<string, VariantCard[]> = {};
+          for (const group of resolved.variant_groups || []) {
+            if (group.values.length < 2) continue;
+            const perValue = group.values.map((value) => {
+              const match = (variants.variants || []).find(
+                (variant) => String(variant.attributes?.[group.attribute] || '') === value,
+              );
+              return {
+                value,
+                image: match?.image || null,
+                price: match?.price ?? null,
+                currency: match?.currency || null,
+                availability: String(match?.availability || ''),
+              };
+            });
+            // Une valeur sur deux au moins porte une image ou un prix propre :
+            // l'attribut mérite des cartes (couleur Amazon), sinon un select.
+            const rich = perValue.filter((card) => card.image || card.price != null).length;
+            if (rich >= 2) cards[group.attribute] = perValue;
+          }
+          setCardsByAttribute(cards);
+        } catch {
+          setCardsByAttribute({});
+        }
       })
       .catch((caught) => {
         setError(String(caught?.message || caught));
@@ -79,13 +122,12 @@ export const AyWebsVariantSheet: React.FC<AyWebsVariantSheetProps> = ({ url, sto
   );
 
   /** Disponibilité : affichée seulement quand le marchand (ou l'adaptateur) confirme. */
-  const availabilityLabel = useMemo(() => {
-    const state = product?.availability?.state;
-    if (state === 'AVAILABLE') return tr('In stock at the merchant', 'متوفّر عند التاجر');
-    if (state === 'LOW_STOCK') return tr('Low stock at the merchant', 'الكمية محدودة عند التاجر');
-    if (state === 'OUT_OF_STOCK') return tr('Out of stock at the merchant', 'غير متوفّر عند التاجر');
+  const availabilityLabel = (state: string | undefined, short = false): string => {
+    if (state === 'AVAILABLE') return short ? tr('In Stock', 'متوفر') : tr('In stock at the merchant', 'متوفّر عند التاجر');
+    if (state === 'LOW_STOCK') return short ? tr('Low stock', 'كمية محدودة') : tr('Low stock at the merchant', 'الكمية محدودة عند التاجر');
+    if (state === 'OUT_OF_STOCK') return short ? tr('Out of stock', 'غير متوفر') : tr('Out of stock at the merchant', 'غير متوفّر عند التاجر');
     return '';
-  }, [product, tr]);
+  };
 
   const conditionLabel = useMemo(() => {
     const condition = product?.condition;
@@ -151,14 +193,55 @@ export const AyWebsVariantSheet: React.FC<AyWebsVariantSheetProps> = ({ url, sto
             </div>
 
             {conditionLabel && <p className="ayw-added-meta">{conditionLabel}</p>}
-            {availabilityLabel && <p className="ayw-added-meta">{availabilityLabel}</p>}
+            {availabilityLabel(product.availability?.state) && (
+              <p className="ayw-added-meta">{availabilityLabel(product.availability?.state)}</p>
+            )}
 
-            {groups.map((group) => (
-              group.values.length === 1 ? (
-                <p className="ayw-added-meta" key={group.attribute}>
-                  {group.attribute} : <strong>{group.values[0]}</strong>
-                </p>
-              ) : (
+            {groups.map((group) => {
+              if (group.values.length === 1) {
+                return (
+                  <p className="ayw-added-meta" key={group.attribute}>
+                    {group.attribute} : <strong>{group.values[0]}</strong>
+                  </p>
+                );
+              }
+              const cards = cardsByAttribute[group.attribute];
+              if (cards?.length) {
+                // Cartes marchand façon fiche Amazon (captures 1-2) : image,
+                // nom de la valeur, prix, disponibilité, bordure de sélection.
+                return (
+                  <div className="ayw-cardgroup" key={group.attribute} role="radiogroup" aria-label={group.attribute}>
+                    <span className="ayw-cardgroup-label">{group.attribute}</span>
+                    <div className="ayw-cardrow">
+                      {cards.map((card) => {
+                        const isOn = selected[group.attribute] === card.value;
+                        return (
+                          <button
+                            type="button"
+                            key={card.value}
+                            role="radio"
+                            aria-checked={isOn}
+                            className={`ayw-variantcard${isOn ? ' is-on' : ''}`}
+                            onClick={() => setSelected((current) => ({ ...current, [group.attribute]: card.value }))}
+                          >
+                            <img className="ayw-variantcard-img" src={card.image || product.images[0] || ''} alt="" loading="lazy" />
+                            <span className="ayw-variantcard-name">{card.value}</span>
+                            {card.price != null && card.price > 0 && (
+                              <span className="ayw-variantcard-price">
+                                {card.price.toLocaleString()} {String(card.currency || product.currency || '').trim()}
+                              </span>
+                            )}
+                            {availabilityLabel(card.availability, true) && (
+                              <span className="ayw-variantcard-stock">{availabilityLabel(card.availability, true)}</span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              }
+              return (
                 <label className="ayw-selectwrap" key={group.attribute}>
                   <span className="ayw-sr">{group.attribute}</span>
                   <select
@@ -172,8 +255,8 @@ export const AyWebsVariantSheet: React.FC<AyWebsVariantSheetProps> = ({ url, sto
                     ))}
                   </select>
                 </label>
-              )
-            ))}
+              );
+            })}
 
             <label className="ayw-selectwrap">
               <span className="ayw-sr">{tr('Quantity', 'الكمية')}</span>

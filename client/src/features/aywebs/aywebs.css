@@ -382,3 +382,57 @@
 .ayw-notice { color: var(--ayrovi-ink-secondary, #475467); font-size: .88rem; }
 .ayw-pad { padding: 1.5rem 1rem; text-align: center; }
 .ayw-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* --- cartes de variantes façon fiche marchand (captures 1-2, 04/10/2026) --- */
+.ayw-cardgroup { display: flex; flex-direction: column; gap: .5rem; }
+.ayw-cardgroup-label { font-size: .9rem; color: var(--ayrovi-ink-secondary, #475467); font-weight: 600; }
+.ayw-cardrow { display: flex; gap: .7rem; overflow-x: auto; padding-bottom: .3rem; }
+.ayw-variantcard {
+  flex: 0 0 8.2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: .25rem;
+  border: 1.5px solid var(--ayrovi-line, #d0d5dd);
+  border-radius: .6rem;
+  background: var(--ayrovi-surface, #fff);
+  padding: .6rem;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.ayw-variantcard.is-on { border-color: var(--ayrovi-ink-secondary, #1d3f8f); box-shadow: 0 0 0 1.5px var(--ayrovi-ink-secondary, #1d3f8f); }
+.ayw-variantcard-img { width: 100%; height: 6.8rem; object-fit: cover; border-radius: .35rem; background: #f2f4f7; }
+.ayw-variantcard-name { font-weight: 700; color: var(--ayrovi-ink, #101828); font-size: .95rem; }
+.ayw-variantcard-price { color: var(--ayrovi-ink, #101828); font-size: .9rem; }
+.ayw-variantcard-stock { color: var(--ayrovi-ink-secondary, #475467); font-size: .8rem; }
+
+/* --- panier groupé par boutique (capture 6, 04/10/2026) --- */
+.ayw-cartgroup {
+  background: var(--ayrovi-surface, #fff);
+  margin: .8rem 1rem 0;
+  border-radius: .5rem;
+  box-shadow: 0 1px 2px rgb(16 24 40 / .06);
+  overflow: hidden;
+}
+.ayw-cartgroup-head {
+  padding: .8rem 1rem;
+  font-weight: 700;
+  color: var(--ayrovi-ink, #101828);
+  border-bottom: 1px solid var(--ayrovi-line, #e4e4e4);
+  background: var(--ayrovi-surface-alt, #f8f9fa);
+}
+.ayw-cartgroup .ayw-cartline { margin: 0; box-shadow: none; border-radius: 0; border-bottom: 1px solid var(--ayrovi-line, #e4e4e4); }
+.ayw-cartgroup .ayw-cartline:last-child { border-bottom: 0; }
+
+/* --- rangée de cartes produit de l'écran boutiques (04/10/2026) --- */
+.ayw-pad-h { padding-inline: 1rem; }
+.ayw-prodcard { flex: 0 0 9.5rem; }
+.ayw-prodcard .ayw-variantcard-name {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: .85rem;
+  font-weight: 600;
+}

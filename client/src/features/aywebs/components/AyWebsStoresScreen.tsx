@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Heart, Search, ShoppingBag, X } from '../../../components/QatafoIcons';
 import { useLocale } from '../../../i18n/LocaleContext';
-import { getAyWebsStores, trackAyWebsEvent, type AyWebsStore } from '../api';
+import { getAyWebsHome, getAyWebsStores, trackAyWebsEvent, type AyWebsHomePayload, type AyWebsStore } from '../api';
 import { AyWebsTabBar, type AyWebsTab } from './AyWebsTabBar';
 
 /**
@@ -16,12 +16,15 @@ export interface AyWebsStoresScreenProps {
   tab: AyWebsTab;
   onTab: (tab: AyWebsTab) => void;
   onOpenStore: (store: AyWebsStore) => void;
+  /** Une carte produit recentrée ouvre la feuille de variantes (§13). */
+  onOpenProduct?: (url: string, storeId: string) => void;
   cartCount: number;
 }
 
-export const AyWebsStoresScreen: React.FC<AyWebsStoresScreenProps> = ({ tab, onTab, onOpenStore, cartCount }) => {
+export const AyWebsStoresScreen: React.FC<AyWebsStoresScreenProps> = ({ tab, onTab, onOpenStore, onOpenProduct, cartCount }) => {
   const { tr } = useLocale();
   const [stores, setStores] = useState<AyWebsStore[]>([]);
+  const [home, setHome] = useState<AyWebsHomePayload | null>(null);
   const [query, setQuery] = useState('');
   const [chosen, setChosen] = useState<AyWebsStore | null>(null);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
@@ -35,6 +38,7 @@ export const AyWebsStoresScreen: React.FC<AyWebsStoresScreenProps> = ({ tab, onT
         setOffline(result.offline);
       })
       .catch(() => setOffline(true));
+    void getAyWebsHome(controller.signal).then((result) => setHome(result.data)).catch(() => undefined);
     return () => controller.abort();
   }, []);
 
@@ -79,6 +83,39 @@ export const AyWebsStoresScreen: React.FC<AyWebsStoresScreenProps> = ({ tab, onT
           </button>
         )}
       </div>
+
+      {/* Cartes produit façon fiche marchand (captures 1-2, 04/10/2026) :
+          image, titre, prix source, équivalent TND serveur, disponibilité. */}
+      {home && home.recent_products.length > 0 && (
+        <>
+          <h2 className="ayw-section">{tr('Recent products', 'منتجات حديثة')}</h2>
+          <div className="ayw-cardrow ayw-pad-h">
+            {home.recent_products.map((product) => (
+              <button
+                type="button"
+                className="ayw-variantcard ayw-prodcard"
+                key={product.product_id}
+                onClick={() => onOpenProduct?.(product.source_url, product.store_id)}
+              >
+                {product.image && <img className="ayw-variantcard-img" src={product.image} alt="" loading="lazy" />}
+                <span className="ayw-variantcard-name">{product.title}</span>
+                {product.price > 0 && (
+                  <span className="ayw-variantcard-price">{product.price.toLocaleString()} {product.currency}</span>
+                )}
+                {product.pricing_tnd > 0 && (
+                  <span className="ayw-variantcard-stock">≈ {product.pricing_tnd.toFixed(2)} {tr('DT', 'د.ت')}</span>
+                )}
+                {product.availability === 'AVAILABLE' && (
+                  <span className="ayw-variantcard-stock">{tr('In Stock', 'متوفر')}</span>
+                )}
+                {product.availability === 'OUT_OF_STOCK' && (
+                  <span className="ayw-variantcard-stock">{tr('Out of stock', 'غير متوفر')}</span>
+                )}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
 
       <h2 className="ayw-section">{tr('Search Results', 'نتائج البحث')}</h2>
 

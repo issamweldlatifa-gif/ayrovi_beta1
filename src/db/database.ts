@@ -2753,6 +2753,26 @@ export class QatafoDatabase {
       ) VALUES ('default', 1, 3.370911, 2.943498, 3.929098, 0.018701, 15, ?)
     `).run(now);
 
+    // ── Auto-réparation des taux (correctif 04/10/2026) ─────────────────────
+    // `INSERT OR IGNORE` ne corrige JAMAIS une ligne déjà présente : une base
+    // ancienne (créée avant la graine marché, ou écrite à zéro par un bug)
+    // garde des taux nuls → getExchangeRate() renvoie null → calculatePrice()
+    // null → chaque ajout panier / résolution AYWEBs en devise (USD, EUR…)
+    // échoue en PRICE_UNAVAILABLE (« Le devis AYROVI est indisponible pour
+    // cette devise »), exactement le défaut observé en production. On remet
+    // donc les taux de repli marché dès qu'un taux est invalide ; un taux
+    // manuel ou live valide (> 0) n'est jamais touché.
+    this.db.prepare(`
+      UPDATE pricing_config
+      SET rate_eur = 3.370911, rate_usd = 2.943498, rate_gbp = 3.929098, rate_jpy = 0.018701,
+          fx_source = 'seed', fx_updated_at = '', updated_at = ?
+      WHERE id = 'default'
+        AND (rate_eur IS NULL OR rate_eur <= 0
+          OR rate_usd IS NULL OR rate_usd <= 0
+          OR rate_gbp IS NULL OR rate_gbp <= 0
+          OR rate_jpy IS NULL OR rate_jpy <= 0)
+    `).run(now);
+
     const insertSetting = this.db.prepare(`
       INSERT OR IGNORE INTO settings (id, category, setting_key, setting_value, value_type, label, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?)

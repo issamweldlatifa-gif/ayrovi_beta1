@@ -4,18 +4,22 @@ import { useLocale } from '../../../i18n/LocaleContext';
 import { openMerchantPage } from '../../../services/nativeShell';
 import {
   bridgeAyWebsCartToAyrovi, getAyWebsCart, removeAyWebsCartItem, trackAyWebsEvent,
-  updateAyWebsCartItem, type AyWebsCartPayload,
+  updateAyWebsCartItem, type AyWebsCartItemPayload, type AyWebsCartPayload,
 } from '../api';
 import { AyWebsTabBar, type AyWebsTab } from './AyWebsTabBar';
 
 /**
- * AYWEBs — panier proxy (référence Add-to-Buyee, captures 5 et 6).
+ * AYWEBs — panier proxy UNIQUE (référence Add-to-Buyee, captures 5 à 7).
  *
- * Une ligne par élément : image, titre, prix source, variante/format, état,
- * quantité modifiable (serveur), sous-total, suppression. Bloc total :
- * « Total item amount (N Item(s)) » + total TND calculé SERVEUR uniquement.
- * « Proceed to order page » = pont §2 vers le panier/checkout AYROVI existant
- * (une seule voie de paiement, jamais un second checkout).
+ * Une seule lecture possible : les lignes sont GROUPÉES PAR BOUTIQUE comme sur
+ * la page panier Buyee (en-tête « Amazon », lignes article, sous-total), et le
+ * bloc total affiche LE montant AYROVI en dinars, recalculé par le moteur
+ * tarifaire côté serveur — c'est ce montant qui fait foi au checkout (§2 :
+ * une seule voie de paiement, jamais un second checkout).
+ *
+ * « Proceed to order page » = pont §2 vers le panier/checkout AYROVI existant :
+ * les lignes AYWEBs y sont synchronisées (idempotent), le client paie UNE seule
+ * commande mixte — les deux paniers ne font qu'un au moment du paiement.
  */
 export interface AyWebsCartScreenProps {
   tab: AyWebsTab;
@@ -76,6 +80,73 @@ export const AyWebsCartScreen: React.FC<AyWebsCartScreenProps> = ({ tab, onTab, 
     }
   };
 
+  const availabilityText = (state: string): string => {
+    if (state === 'AVAILABLE') return tr('In stock', 'متوفر');
+    if (state === 'LOW_STOCK') return tr('Low stock', 'كمية محدودة');
+    if (state === 'OUT_OF_STOCK') return tr('Out of stock', 'غير متوفر');
+    return state;
+  };
+
+  const renderItem = (item: AyWebsCartItemPayload) => (
+    <article className="ayw-cartline" key={item.id}>
+      {item.images[0] && <img className="ayw-cartline-img" src={item.images[0]} alt="" loading="lazy" />}
+      <div className="ayw-cartline-body">
+        <h3 className="ayw-cartline-title">{item.title}</h3>
+        <dl className="ayw-cartline-meta">
+          {/* Boutique + lien source : la traçabilité demandée, sans quitter le parcours. */}
+          <div>
+            <dt>{tr('Store', 'المتجر')}</dt>
+            <dd>{item.store_name}{' '}
+              <button
+                type="button"
+                className="ayw-source-link"
+                onClick={() => openMerchantPage(item.source_url)}
+              >
+                {tr('View on the store', 'عرض عند المتجر')}
+              </button>
+            </dd>
+          </div>
+          <div><dt>{tr('Price', 'السعر')}</dt><dd>{item.unit_price.toLocaleString()} {item.currency}</dd></div>
+          {item.variant_label && <div><dt>{tr('Options', 'الخيارات')}</dt><dd>{item.variant_label}</dd></div>}
+          {/* Disponibilité : affichée seulement quand elle est confirmée. */}
+          {item.availability !== 'UNKNOWN' && (
+            <div>
+              <dt>{tr('Availability', 'التوفّر')}</dt>
+              <dd>{availabilityText(item.availability)}</dd>
+            </div>
+          )}
+        </dl>
+        <div className="ayw-cartline-row">
+          <label className="ayw-qty">
+            {tr('Desired Quantity', 'الكمية المطلوبة')}
+            <input
+              type="number"
+              min={1}
+              max={99}
+              value={item.quantity}
+              onChange={(event) => void changeQty(item.id, Number(event.target.value))}
+            />
+          </label>
+          <p className="ayw-subtotal">
+            <span>{tr('Sub total', 'المجموع الفرعي')}</span>
+            <strong>{(item.unit_price * item.quantity).toLocaleString()} {item.currency}</strong>
+            {/* Le montant AYROVI est TOUJOURS celui du serveur (jamais un calcul client). */}
+            {item.line_total_tnd > 0 && (
+              <em className="ayw-line-tnd">≈ {item.line_total_tnd.toFixed(2)} {tr('DT', 'د.ت')}</em>
+            )}
+          </p>
+          <button type="button" className="ayw-delete" onClick={() => void remove(item.id)} aria-label={tr('Delete', 'حذف')}>
+            <Trash2 size={16} aria-hidden="true" /> {tr('Delete', 'حذف')}
+          </button>
+        </div>
+        {item.status !== 'READY' && item.status_reason && (
+          <p className="ayw-notice">{item.status_reason}</p>
+        )}
+      </div>
+    </article>
+  );
+
+  const groups = cart?.groups?.length ? cart.groups : null;
   const items = cart?.items || [];
   const units = cart?.totals?.units || items.length;
 
@@ -93,69 +164,19 @@ export const AyWebsCartScreen: React.FC<AyWebsCartScreenProps> = ({ tab, onTab, 
         <p className="ayw-notice ayw-pad">{tr('Your proxy cart is empty.', 'سلّة الوكالة فارغة.')}</p>
       )}
 
-      {!loading && items.map((item) => (
-        <article className="ayw-cartline" key={item.id}>
-          {item.images[0] && <img className="ayw-cartline-img" src={item.images[0]} alt="" loading="lazy" />}
-          <div className="ayw-cartline-body">
-            <h3 className="ayw-cartline-title">{item.title}</h3>
-            <dl className="ayw-cartline-meta">
-              {/* Boutique + lien source : la traçabilité demandée, sans quitter le parcours. */}
-              <div>
-                <dt>{tr('Store', 'المتجر')}</dt>
-                <dd>{item.store_name}{' '}
-                  <button
-                    type="button"
-                    className="ayw-source-link"
-                    onClick={() => openMerchantPage(item.source_url)}
-                  >
-                    {tr('View on the store', 'عرض عند المتجر')}
-                  </button>
-                </dd>
-              </div>
-              <div><dt>{tr('Price', 'السعر')}</dt><dd>{item.unit_price.toLocaleString()} {item.currency}</dd></div>
-              {item.variant_label && <div><dt>{tr('Options', 'الخيارات')}</dt><dd>{item.variant_label}</dd></div>}
-              {/* Disponibilité : affichée seulement quand elle est confirmée. */}
-              {item.availability !== 'UNKNOWN' && (
-                <div>
-                  <dt>{tr('Availability', 'التوفّر')}</dt>
-                  <dd>
-                    {item.availability === 'AVAILABLE' ? tr('In stock', 'متوفر')
-                      : item.availability === 'LOW_STOCK' ? tr('Low stock', 'كمية محدودة')
-                      : item.availability === 'OUT_OF_STOCK' ? tr('Out of stock', 'غير متوفر')
-                      : item.availability}
-                  </dd>
-                </div>
-              )}
-            </dl>
-            <div className="ayw-cartline-row">
-              <label className="ayw-qty">
-                {tr('Desired Quantity', 'الكمية المطلوبة')}
-                <input
-                  type="number"
-                  min={1}
-                  max={99}
-                  value={item.quantity}
-                  onChange={(event) => void changeQty(item.id, Number(event.target.value))}
-                />
-              </label>
-              <p className="ayw-subtotal">
-                <span>{tr('Sub total', 'المجموع الفرعي')}</span>
-                <strong>{(item.unit_price * item.quantity).toLocaleString()} {item.currency}</strong>
-                {/* Le montant AYROVI est TOUJOURS celui du serveur (jamais un calcul client). */}
-                {item.line_total_tnd > 0 && (
-                  <em className="ayw-line-tnd">≈ {item.line_total_tnd.toFixed(2)} {tr('DT', 'د.ت')}</em>
-                )}
-              </p>
-              <button type="button" className="ayw-delete" onClick={() => void remove(item.id)} aria-label={tr('Delete', 'حذف')}>
-                <Trash2 size={16} aria-hidden="true" /> {tr('Delete', 'حذف')}
-              </button>
-            </div>
-            {item.status !== 'READY' && item.status_reason && (
-              <p className="ayw-notice">{item.status_reason}</p>
+      {!loading && groups && groups.map((group) => (
+        <section className="ayw-cartgroup" key={group.store_id}>
+          <h2 className="ayw-cartgroup-head">
+            {group.store_name}
+            {group.blocked_items > 0 && (
+              <span> · {group.blocked_items} {tr('item(s) need attention', 'منتج يحتاج مراجعة')}</span>
             )}
-          </div>
-        </article>
+          </h2>
+          {group.items.map(renderItem)}
+        </section>
       ))}
+
+      {!loading && !groups && items.map(renderItem)}
 
       {!loading && items.length > 0 && (
         <section className="ayw-carttotal">
@@ -163,8 +184,15 @@ export const AyWebsCartScreen: React.FC<AyWebsCartScreenProps> = ({ tab, onTab, 
             {tr('Total item amount', 'إجمالي قيمة المنتجات')}
             <span>{'(' + units + ' ' + tr('Item(s)', 'منتج') + ')'}</span>
           </p>
+          {/* Le montant qui fait foi : dinars, moteur tarifaire AYROVI (serveur). */}
           <p className="ayw-carttotal-value">
             {Number(cart?.totals?.product_subtotal_tnd || 0).toFixed(2)} <span>{tr('DT', 'د.ت')}</span>
+          </p>
+          <p className="ayw-carttotal-note">
+            {tr(
+              'Final price computed by the AYROVI pricing engine (customs, freight, service).',
+              'السعر النهائي محسوب عبر محرك التسعير AYROVI (ديوانة، شحن، خدمة).',
+            )}
           </p>
           <button type="button" className="ayw-cta" disabled={bridging} onClick={() => void proceed()}>
             {bridging ? <Loader2 className="animate-spin" size={18} aria-hidden="true" /> : tr('Proceed to order page', 'المتابعة إلى صفحة الطلب')}

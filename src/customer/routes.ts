@@ -490,7 +490,7 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
     }
   });
 
-  router.post('/auth/email/register', (req, res) => {
+  const emailRegisterHandler = (req: any, res: any) => {
     if (!customerAuthReady()) return res.status(503).json({ success: false, error: 'Authentification client non configurée.' });
     if (!customerAuthRateAllowed(db, 'register-ip', req.ip || '', 10)) return res.status(429).json({ success: false, code: 'REGISTER_RATE_LIMITED', error: 'Trop de créations de compte. Réessayez dans 15 minutes.' });
     const displayName = String(req.body?.displayName || '').trim().slice(0, 100);
@@ -530,9 +530,17 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
       console.error('[Customer Email Register]', error);
       return res.status(500).json({ success: false, error: 'La création du compte a échoué.' });
     }
-  });
+  };
+  router.post('/auth/email/register', emailRegisterHandler);
+  router.post('/auth/register', emailRegisterHandler);
+  router.post('/register', emailRegisterHandler);
 
-  router.post('/auth/email/login', (req, res) => {
+  // Alias historiques (04/10/2026) : d'anciens APK embarqués appelaient
+  // `/api/customer/login` ou `/api/customer/auth/login` — routes supprimées ou
+  // jamais existantes → « تسجيل دخول يرجع خطأ 404 » sur téléphone. Le même
+  // gestionnaire est désormais servi sous les trois chemins : aucune version
+  // installée ne peut recevoir une 404 pour se connecter.
+  const emailLoginHandler = (req: any, res: any) => {
     if (!customerAuthReady()) return res.status(503).json({ success: false, error: 'Authentification client non configurée.' });
     const email = normalizedEmail(req.body?.email);
     const password = String(req.body?.password || '');
@@ -554,7 +562,10 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
       expiresAt: session.expiresAt,
       ...nativeSessionField(req, session.token),
     } });
-  });
+  };
+  router.post('/auth/email/login', emailLoginHandler);
+  router.post('/auth/login', emailLoginHandler);
+  router.post('/login', emailLoginHandler);
 
   router.get('/auth/apple/start', (req, res) => {
     const apple = appleConfig();
