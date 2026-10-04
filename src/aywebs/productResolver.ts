@@ -68,6 +68,16 @@ export interface AyWebsResolveInput {
   sessionId?: string | null;
   accountId?: string | null;
   captureId?: string | null;
+  /**
+   * SOURCE DE LECTURE CÔTÉ CLIENT (04/10/2026) — HTML de la fiche tel que rendu
+   * chez le client (WebView Android, navigateur). Amazon répond aux IP de centre
+   * de données par une page SANS prix ni variantes, alors que la page affichée
+   * chez le client les publie. Le serveur RELIT ce HTML avec son propre parseur
+   * et garde le calcul du prix (§45) : le client apporte la page, jamais un prix.
+   * Le domaine reste vérifié en amont (§10) et la provenance est tracée.
+   */
+  pageHtml?: string | null;
+  pageUrl?: string | null;
 }
 
 export interface AyWebsResolveResult {
@@ -119,7 +129,10 @@ export async function resolveAyWebsProduct(
     },
     async () => {
       try {
-        return await adapter.resolveProduct(url.toString());
+        return await adapter.resolveProduct(url.toString(), {
+          pageHtml: input.pageHtml || null,
+          pageUrl: input.pageUrl || null,
+        });
       } catch (error) {
         if (error instanceof AyWebsCaptureError) {
           throw new AyWebsDomainError(error.code === 'PRODUCT_PAGE_REQUIRED' ? 'PRODUCT_PAGE_REQUIRED' : 'STORE_MISMATCH', {

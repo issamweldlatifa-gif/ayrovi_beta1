@@ -100,6 +100,51 @@ const PROOF_SIGNATURES: Array<{ test: RegExp; ext: string; mime: string }> = [
   { test: /^%PDF-/, ext: 'pdf', mime: 'application/pdf' },
 ];
 
+/** Plafond dur du HTML client : la plus grosse fiche mesurée (Amazon 04/10/2026)
+ *  fait 1,3 Mo ; au-delà de 4 Mo c'est une pièce jointe, pas une page produit. */
+const MAX_PROVIDED_PAGE_BYTES = 4_000_000;
+
+/**
+ * PAGE FOURNIE PAR LE CLIENT (04/10/2026).
+ *
+ * Le client (WebView Android, navigateur) a sous les yeux la page RÉELLE du
+ * marchand ; le serveur, depuis une IP de centre de données, reçoit souvent une
+ * coquille sans prix (Amazon). On accepte donc le HTML de la page — mais avec
+ * trois garde-fous, car une entrée cliente n'est jamais digne de confiance :
+ *   1. l'URL de la page fournie doit avoir EXACTEMENT le même hôte que l'URL du
+ *      produit demandée (sinon on l'ignore : pas de page « apportée » d'ailleurs) ;
+ *   2. taille bornée, contenu ressemblant à du HTML ;
+ *   3. la page n'est jamais crue sur parole : elle est RELUE par le parseur du
+ *      serveur, qui en tire titre/prix/variantes, et le prix reste calculé ici
+ *      (§45). Le client apporte une page, jamais un prix.
+ */
+function readProvidedPage(raw: unknown, targetUrl: string): { html: string; url: string } | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const source = raw as { html?: unknown; url?: unknown };
+  const html = typeof source.html === 'string' ? source.html : '';
+  if (html.length < 200 || html.length > MAX_PROVIDED_PAGE_BYTES) return null;
+  if (!/<(?:html|body|head|div|span|script|meta)\b/i.test(html)) return null;
+
+  let targetHost = '';
+  try {
+    targetHost = new URL(targetUrl).hostname.toLowerCase().replace(/^www\./, '');
+  } catch {
+    return null;
+  }
+  const claimed = typeof source.url === 'string' ? source.url.trim() : '';
+  if (claimed) {
+    try {
+      const claimedHost = new URL(claimed).hostname.toLowerCase().replace(/^www\./, '');
+      // Hôte différent ⇒ page d'un autre site : refusée, on retombe sur la
+      // chaîne serveur habituelle au lieu de lire une page non pertinente.
+      if (claimedHost !== targetHost) return null;
+    } catch {
+      return null;
+    }
+  }
+  return { html, url: claimed || targetUrl };
+}
+
 export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper): Router {
   const router = Router();
   const ctx = createAyWebsContext(db, scraper);
@@ -450,6 +495,7 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
       : String(req.body.store ?? req.body.store_id);
     const variantAttributes = normalizeAttributes(req.body?.variant || req.body?.variant_attributes);
     const quantity = Number(req.body?.quantity ?? 1);
+    const providedPage = readProvidedPage(req.body?.page, rawUrl);
 
     trackAyWebsFunnel(ctx, 'capture_started', { store: storeId || undefined }, identity.sessionId);
     const startedAt = Date.now();
@@ -461,6 +507,8 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
         quantity: Number.isFinite(quantity) ? quantity : 1,
         sessionId: identity.sessionId,
         accountId: identity.accountId,
+        pageHtml: providedPage?.html || null,
+        pageUrl: providedPage?.url || null,
       });
       trackAyWebsNavigation(ctx, {
         sessionId: identity.sessionId,

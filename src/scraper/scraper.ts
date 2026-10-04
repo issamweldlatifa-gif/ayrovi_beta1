@@ -5,10 +5,29 @@ import { parseProductPageHtml, type ParsedProductPage } from './productPageParse
 import { fetchRenderedProductPage, RenderedPageError } from './renderedPageFetcher';
 import { detectMerchantStore } from './merchantDomains';
 
+/**
+ * Options de lecture d'une fiche. `pageHtml` : HTML de la fiche TEL QUE RENDU
+ * chez le client (WebView / navigateur), utilisé en priorité comme source de
+ * lecture. `pageUrl` : l'URL réellement ouverte chez le client, si elle diffère
+ * de l'URL demandée (redirections marchand).
+ */
+export interface ScrapeOptions {
+  pageHtml?: string | null;
+  pageUrl?: string | null;
+}
+
 export interface MerchantScrapeResult {
   data: ParsedProductPage | null;
   verified: boolean;
-  provider: 'direct' | 'none' | 'jina' | 'scraperapi' | 'scrapingbee' | 'brightdata';
+  /**
+   * Origine de la lecture. `webview` (04/10/2026) = HTML de la fiche fourni par
+   * le client, pris sur la page qu'il a RÉELLEMENT sous les yeux (WebView
+   * Android / navigateur). Amazon sert aux IP de centre de données une page
+   * sans prix ni variantes : la seule source fiable est alors la page rendue
+   * côté client, re-parsée ici par le MÊME parseur, et non une donnée fabriquée
+   * par le client. Le prix reste calculé côté serveur (§45).
+   */
+  provider: 'direct' | 'none' | 'jina' | 'scraperapi' | 'scrapingbee' | 'brightdata' | 'webview';
   method: ParsedProductPage['priceSource'] | 'none';
   failureCode: string | null;
 }
@@ -35,7 +54,7 @@ export class SmartLinkScraper {
     return input.trim();
   }
 
-  public async scrapeProduct(rawUrl: string): Promise<ScrapedProduct> {
+  public async scrapeProduct(rawUrl: string, options: ScrapeOptions = {}): Promise<ScrapedProduct> {
     const cleanedInput = this.cleanPastedUrl(rawUrl);
     if (!cleanedInput) {
       throw new Error('Veuillez fournir une URL de produit valide.');
@@ -49,7 +68,7 @@ export class SmartLinkScraper {
 
     const urlInfo = this.extractDeepUrlInfo(cleanUrl, store);
 
-    const merchantResult = await this.scrapeWithHttp(cleanUrl, store);
+    const merchantResult = await this.scrapeWithHttp(cleanUrl, store, options);
     const liveData = merchantResult.data;
     const detectedLiveCurrency = String(liveData?.currency || '').toUpperCase();
     if (detectedLiveCurrency && Object.hasOwn(SmartLinkScraper.RATES_TO_TND, detectedLiveCurrency)) {
@@ -125,11 +144,11 @@ export class SmartLinkScraper {
    * MÊME chaîne de confiance — URL assainie, direct 7 s, puis rendu chez le
    * fournisseur — sans la dupliquer ni la contourner.
    */
-  public async scrapeParsedPage(rawUrl: string): Promise<MerchantScrapeResult> {
+  public async scrapeParsedPage(rawUrl: string, options: ScrapeOptions = {}): Promise<MerchantScrapeResult> {
     const cleaned = this.cleanPastedUrl(rawUrl);
     const safeTarget = await resolveSafeHttpUrl(cleaned);
     const url = safeTarget.url.toString();
-    return this.scrapeWithHttp(url, this.detectStore(url));
+    return this.scrapeWithHttp(url, this.detectStore(url), options);
   }
 
   private isBotBlocked(title: string): boolean {
@@ -288,7 +307,7 @@ export class SmartLinkScraper {
     };
   }
 
-  private async scrapeWithHttp(url: string, storeType: StoreType): Promise<MerchantScrapeResult> {
+  private async scrapeWithHttp(url: string, storeType: StoreType, options: ScrapeOptions = {}): Promise<MerchantScrapeResult> {
     const headers = {
       'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 Version/17.4 Mobile/15E148 Safari/604.1',
       'Accept': 'text/html,application/xhtml+xml',
@@ -296,6 +315,27 @@ export class SmartLinkScraper {
     };
     let directResult: ParsedProductPage | null = null;
     let directFailure = 'DIRECT_PRICE_NOT_FOUND';
+
+    /* PAGE FOURNIE PAR LE CLIENT (04/10/2026) — chemin le plus court ET le plus
+     * fiable : l'HTML vient de la page que le client regarde, donc rendue par le
+     * marchand pour lui (prix, options, disponibilité publiés), alors que la même
+     * requête depuis l'IP d'un centre de données reçoit une page sans prix.
+     * Aucune confiance aveugle pour autant : le parseur du serveur relit ce HTML,
+     * le domaine est vérifié en amont, et la provenance est enregistrée
+     * (`provider: 'webview'`). Si la page fournie ne donne pas de prix, la chaîne
+     * habituelle reprend exactement comme avant. */
+    if (options.pageHtml && options.pageHtml.trim().length > 200) {
+      try {
+        const provided = parseProductPageHtml(options.pageHtml, options.pageUrl || url, storeType);
+        if (provided.price > 0) {
+          return { data: provided, verified: true, provider: 'webview', method: provided.priceSource, failureCode: null };
+        }
+        if (provided.title || provided.images.length) directResult = provided;
+      } catch (error: any) {
+        console.warn('[scraper] page client illisible', { url, message: String(error?.message || error).slice(0, 120) });
+      }
+    }
+
     try {
       const response = await fetchSafeRemote(url, { signal: AbortSignal.timeout(7_000), headers });
       if (!response.ok) throw new Error(`DIRECT_HTTP_${response.status}`);
@@ -309,6 +349,45 @@ export class SmartLinkScraper {
       }
     } catch (error: any) {
       directFailure = String(error?.message || error?.code || 'DIRECT_UNAVAILABLE').slice(0, 80);
+    }
+
+    /* SECONDE PASSE « navigateur de bureau » (04/10/2026).
+     * Mesuré le 04/10/2026 : sur la MÊME URL Amazon, selon l'IP de sortie,
+     * l'agent mobile reçoit la fiche complète et l'agent de bureau une coquille
+     * de 3,7 Ko — et l'inverse ailleurs. Le marchand décide par empreinte, pas
+     * par vérité. Deux tentatives bornées valent donc mieux qu'une seule :
+     * la seconde ne coûte que si la première n'a PAS donné de prix, et son
+     * échec est enregistré au lieu d'être silencieux. Elle ne réécrit jamais
+     * l'URL — c'est la même page marchande, seul l'agent change. */
+    if (!directResult || directResult.price <= 0) {
+      try {
+        const desktopHeaders = {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
+          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9,fr;q=0.8',
+          'Sec-Fetch-Dest': 'document',
+          'Sec-Fetch-Mode': 'navigate',
+          'Sec-Fetch-Site': 'none',
+          'Upgrade-Insecure-Requests': '1',
+        };
+        const response = await fetchSafeRemote(url, { signal: AbortSignal.timeout(6_000), headers: desktopHeaders });
+        if (response.ok) {
+          const parsed = parseProductPageHtml(await readLimitedText(response, 2_000_000), url, storeType);
+          if (parsed.price > 0) {
+            return { data: parsed, verified: true, provider: 'direct', method: parsed.priceSource, failureCode: null };
+          }
+          if (!directResult && (parsed.title || parsed.images.length)) directResult = parsed;
+        } else {
+          await response.body?.cancel().catch(() => undefined);
+          directFailure = `DIRECT_HTTP_${response.status}`;
+        }
+      } catch (error: any) {
+        // La première passe reste la référence : on ne remplace son diagnostic
+        // que si elle n'avait rien produit du tout.
+        if (!directResult || directResult.price <= 0) {
+          directFailure = String(error?.message || error?.code || directFailure).slice(0, 80);
+        }
+      }
     }
 
     // Zalando/Alltricks coupent l'IP Render (timeout 0 octet / 403 Akamai).

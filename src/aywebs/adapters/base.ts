@@ -1,4 +1,4 @@
-import type { SmartLinkScraper } from '../../scraper/scraper';
+import type { ScrapeOptions, SmartLinkScraper } from '../../scraper/scraper';
 import type { ScrapedProduct } from '../../types';
 import type { AyWebsAdapterId, AyWebsStoreDefinition } from '../../../shared/aywebsStores';
 import { ayWebsHostnameMatches, ayWebsSourceDomain, findAyWebsStore } from '../../../shared/aywebsStores';
@@ -113,8 +113,8 @@ export abstract class BaseStoreAdapter implements AyWebsStoreAdapter {
     return false;
   }
 
-  async resolveProduct(url: string): Promise<AyWebsSourceProduct> {
-    const product = await this.capture(url);
+  async resolveProduct(url: string, options: ScrapeOptions = {}): Promise<AyWebsSourceProduct> {
+    const product = await this.capture(url, options);
     return ayWebsSourceProductFromScraped(product, this.store?.displayName || this.store?.name || this.id);
   }
 
@@ -194,8 +194,8 @@ export abstract class BaseStoreAdapter implements AyWebsStoreAdapter {
 
   /* ---- Contrat V1 ---- */
 
-  async capture(url: string): Promise<ScrapedProduct> {
-    const product = await this.scraper.scrapeProduct(url);
+  async capture(url: string, options: ScrapeOptions = {}): Promise<ScrapedProduct> {
+    const product = await this.scraper.scrapeProduct(url, options);
     if (product.store !== this.id) {
       throw new AyWebsCaptureError('STORE_MISMATCH', `Le lien ne correspond pas à une fiche ${this.id} prise en charge.`);
     }
