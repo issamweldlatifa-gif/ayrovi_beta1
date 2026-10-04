@@ -7,19 +7,10 @@ on:
         description: 'Play versionCode (incrémenter à chaque AAB)'
         required: false
         default: '1'
-  # 04/10/2026 : à la demande explicite du propriétaire (« ابنِ تطبيقًا محدثًا »),
-  # chaque push sur main reconstruit l'APK de debug en artifact téléchargeable.
-  # Le dispatch manuel reste disponible pour les AAB signés Play Store.
-  push:
-    branches: [main]
-    paths:
-      - 'android/**'
-      - 'client/**'
-      - 'shared/**'
-      - 'capacitor.config.ts'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.github/workflows/android-apk.yml'
+  # Livraison site uniquement : les builds Android exigent une demande manuelle
+  # explicite (politique testée : tests/lens-reference-parity.test.ts interdit
+  # tout déclencheur `push:` ici). Le 04/10/2026, un déclencheur push ajouté
+  # pour « construire l'app automatiquement » a cassé la CI — retiré.
 
 jobs:
   android:
