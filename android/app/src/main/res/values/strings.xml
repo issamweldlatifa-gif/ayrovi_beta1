@@ -51,4 +51,11 @@
     <string name="aywebs_sheet_checkout">Passer la commande</string>
     <string name="aywebs_sheet_quantity">Quantité : %1$d</string>
     <string name="aywebs_sheet_total">Sous-total : %1$s TND</string>
+    <string name="aywebs_login_stay">Vous restez dans la boutique : la page ne bouge pas.</string>
+    <string name="aywebs_login_email">Adresse e-mail</string>
+    <string name="aywebs_login_password">Mot de passe</string>
+    <string name="aywebs_login_failed">Identifiants refusés.</string>
+    <string name="aywebs_fav_add">Ajouter cette page aux favoris</string>
+    <string name="aywebs_fav_added">Ajouté aux favoris.</string>
+    <string name="aywebs_fav_not_product">Ouvrez une fiche produit pour l\'ajouter aux favoris.</string>
 </resources>

@@ -283,6 +283,47 @@ if (failures.length) {
   for (const f of failures) console.error(`  • ${f}`);
   process.exit(1);
 }
+/* ── 3sexies. (04/10/2026, 3e passe) : attente, favoris, connexion ───────── */
+// Mesure : le service dort après inactivité et met ~60 s à se réveiller ; le
+// lecteur était à 20 s, donc le premier ajout au panier de chaque session ne
+// pouvait QUE expirer. Ce n'était ni Amazon ni le produit.
+check(
+  'AyWebsBrowseActivity : délais à la mesure d’un réveil à froid',
+  /setReadTimeout\(60_000\)/.test(browser) && !/setReadTimeout\(20_000\)/.test(browser),
+  '20 s ne suffisent pas à réveiller le service : le premier ajout expirait systématiquement'
+);
+check(
+  'AyWebsBrowseActivity : le service est réveillé dès l’ouverture du magasin',
+  /warmUpApi\(\)/.test(browser) && /HEALTH_PATH/.test(browser),
+  'sans réveil anticipé, c’est l’utilisateur qui paie le démarrage à froid, debout devant un bouton muet'
+);
+check(
+  'AyWebsBrowseActivity : une seule relance après expiration',
+  /SocketTimeoutException/.test(browser) && /postOnce/.test(browser),
+  'réessayer en boucle prolonge l’attente en silence ; ne pas réessayer du tout gaspille le réveil déjà payé'
+);
+check(
+  'AyWebsBrowseActivity : se connecter ne quitte plus la boutique',
+  /private void openLoginSheet\(/.test(browser)
+    && !/cta\.setOnClickListener\(v -> \{ dialog\.dismiss\(\); openWebRoute\("\/account"\); \}\)/.test(browser),
+  'le bouton renvoyait vers l’écran compte : se connecter détruisait la page marchande en plein achat'
+);
+check(
+  'AyWebsBrowseActivity : la connexion réclame le jeton natif',
+  /"x-ayrovi-native", "1"/.test(browser),
+  'sans cet en-tête le serveur n’émet aucun jeton natif : la coque resterait déconnectée après une connexion réussie'
+);
+check(
+  'AyWebsBrowseActivity : le tiroir Favoris sait AJOUTER la page courante',
+  /addFavoriteCurrentPageButton/.test(browser) && /R\.string\.aywebs_fav_add/.test(browser),
+  'on ouvre ses favoris en regardant un produit, justement pour l’y mettre'
+);
+check(
+  'AyWebsBrowseActivity : on ne propose pas d’ajouter une page qui n’est pas un produit',
+  /if \(!productPage \|\| currentUrl\.isEmpty\(\)\) \{\s*toast\(R\.string\.aywebs_fav_not_product\);/.test(browser),
+  'proposer d’ajouter une page d’accueil aux favoris est une promesse creuse'
+);
+
 /* ── 3quinquies. (04/10/2026) : la connexion ne sort plus de l'application ── */
 // « تسجيل دخول بش ولي داخل تطبيق لا خروج من تطبيق ». Le correctif précédent du
 // 404 Google ouvrait le NAVIGATEUR SYSTÈME : application différente, bascule

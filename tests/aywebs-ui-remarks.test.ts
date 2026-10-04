@@ -8,7 +8,7 @@
  *
  * Le huitième bloc couvre le 404 de la connexion Google dans l'application.
  */
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, test } from 'vitest';
 
 const read = (file: string) => readFileSync(file, 'utf8');
@@ -256,10 +256,20 @@ describe('§9 — Panier et Favoris restent DANS la boutique', () => {
     expect(activity).toMatch(/keepShopping\.setOnClickListener\(v -> dialog\.dismiss\(\)\)/);
   });
 
-  test('les seules sorties sont payer et se connecter — les deux autorisées par le client', () => {
+  test('payer est la SEULE sortie restante ; se connecter se fait sur place', () => {
     const activity = read(BROWSE_ACTIVITY);
+    // Payer doit sortir : le tunnel de commande est une page AYROVI, pas une
+    // page marchande. Se connecter, au contraire, n'a aucune raison de coûter
+    // la page qu'on est en train de regarder — c'était la remarque du client.
     expect(activity).toMatch(/cta\.setOnClickListener\(v -> \{ dialog\.dismiss\(\); openWebRoute\("\/aywebs\/cart"\); \}\)/);
-    expect(activity).toMatch(/cta\.setOnClickListener\(v -> \{ dialog\.dismiss\(\); openWebRoute\("\/account"\); \}\)/);
+    expect(activity).not.toMatch(/cta\.setOnClickListener\(v -> \{ dialog\.dismiss\(\); openWebRoute\("\/account"\); \}\)/);
+    expect(readCode(BROWSE_ACTIVITY)).toMatch(/cta\.setOnClickListener\(v -> openLoginSheet\(/);
+  });
+
+  test('le tiroir Favoris peut enregistrer le produit affiché à l’instant', () => {
+    const activity = readCode(BROWSE_ACTIVITY);
+    expect(activity).toMatch(/addFavoriteCurrentPageButton\(dialog, list, notice\)/);
+    expect(activity).toMatch(/new JSONObject\(\)\.put\("sourceUrl", target\)/);
   });
 
   test('ouvrir un favori recharge la WebView courante, sans quitter le navigateur', () => {
@@ -352,5 +362,33 @@ describe('§11 — écran de connexion refondu d’après les captures', () => {
     // Elle révélerait qui possède un compte chez AYROVI. C'est le serveur qui
     // tranche à l'envoi du mot de passe.
     expect(read(ACCOUNT_PAGE)).not.toMatch(/auth\/email\/exists|checkEmailExists/);
+  });
+});
+
+/* ── 3e passe (04/10/2026) : logos des boutiques et hôte de l’API ────────── */
+describe('Logos des boutiques et hôte de l’API', () => {
+  test('ne dépend plus d’un fournisseur de logos tiers', () => {
+    // clearbit a fermé son service de logos : chaque carte demandait une image
+    // à un serveur mort, d’où les vignettes vides — et chaque client exposait
+    // au passage son adresse à un tiers pour rien.
+    const catalogue = readCode('shared/aywebsStores.ts');
+    expect(catalogue).not.toContain('clearbit');
+    expect(catalogue).not.toMatch(/logo:\s*'https?:/);
+  });
+
+  test('sert les quatre logos depuis l’application elle-même', () => {
+    const catalogue = readCode('shared/aywebsStores.ts');
+    for (const id of ['amazon', 'shein', 'temu', 'aliexpress']) {
+      expect(catalogue).toContain(`/stores/${id}.png`);
+      expect(existsSync(`client/public/stores/${id}.png`)).toBe(true);
+    }
+  });
+
+  test('parle à l’hôte qui répond réellement', () => {
+    // Mesuré au curl : l’hôte sans « -1 » renvoie 404 sur les routes d’auth,
+    // et c’est l’hôte « -1 » que le serveur met lui-même dans son redirect_uri.
+    const origin = readCode('client/src/services/apiOrigin.ts');
+    expect(origin).toContain('https://ayrovi-beta1-1.onrender.com');
+    expect(origin).not.toMatch(/ayrovi-beta1\.onrender\.com/);
   });
 });

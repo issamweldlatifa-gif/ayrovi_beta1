@@ -31,12 +31,35 @@ describe('1. Plus de mots répétés', () => {
     expect(shared).toEqual([]);
   });
 
-  it('aucun placeholder ne recopie son étiquette', () => {
+  /**
+   * Règle affinée le 04/10/2026, à la demande du client (captures de l'écran
+   * de connexion souhaité).
+   *
+   * Ce que la règle protège réellement : qu'une information ne DISPARAISSE
+   * pas à la saisie. Un placeholder qui recopie une étiquette VISIBLE est une
+   * redondance pure — deux fois le même mot à l'écran, et le mot survivant
+   * n'apprend rien. Mais un placeholder qui remplace une étiquette
+   * volontairement masquée (`sr-only`) ne duplique rien du tout : il EST
+   * l'étiquette visible, le lecteur d'écran reçoit le <label>, et rien n'est
+   * perdu puisqu'il n'y avait rien d'autre à perdre.
+   *
+   * La garde vérifie donc les deux faces :
+   *   1. les anciens placeholders bavards restent interdits ;
+   *   2. tout champ dont le placeholder reprend son intitulé doit avoir une
+   *      étiquette `sr-only` associée — sinon c'est bien une duplication.
+   */
+  it('aucun placeholder ne recopie une étiquette VISIBLE', () => {
     expect(page).not.toContain("placeholder={tr('Votre adresse e-mail'");
     expect(page).not.toContain("placeholder={tr('Votre mot de passe'");
     expect(page).not.toContain("placeholder={tr('Votre nom complet'");
-    expect(page).toContain("placeholder={tr('vous@exemple.tn'");
     expect(page).toContain("placeholder={tr('Ex. Sarra Ben Ali'");
+  });
+
+  it('le champ e-mail de l’étape 1 porte une étiquette masquée, pas aucune', () => {
+    // Sans ce <label>, le champ serait muet pour un lecteur d'écran : le
+    // placeholder n'est PAS un nom accessible fiable.
+    expect(page).toContain('<label className="sr-only" htmlFor="auth-email">');
+    expect(page).toContain("placeholder={tr('Adresse e-mail', 'البريد الإلكتروني')}");
   });
 
   it('le champ mot de passe n’a plus de placeholder du tout', () => {

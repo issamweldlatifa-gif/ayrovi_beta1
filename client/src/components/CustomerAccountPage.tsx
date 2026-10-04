@@ -699,7 +699,10 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
                 <span aria-hidden />
                 <span aria-hidden />
               </div>
-              <div className="ay-auth__brand" dir="ltr">
+              {/* La marque était collée à gauche, sous la flèche de retour :
+                  elle se lisait comme un bouton de plus. Centrée, elle
+                  redevient ce qu'elle est — une signature. */}
+              <div className="ay-auth__brand ay-auth__brand--centered" dir="ltr">
                 <img src="/media/logo-ayrovi-lockup-black-orange.svg" alt="AYROVI" className="ay-auth__logo ay-auth__logo--wordmark" />
               </div>
               <div className="ay-auth__intro">
@@ -738,13 +741,13 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
                 if (!value) return;
                 setError(''); setNotice(''); setEmailStep('password');
               }}>
-                {/* L'étiquette reste VISIBLE et le placeholder montre le
-                    FORMAT attendu : un placeholder qui recopie son étiquette
-                    disparaît à la saisie et n'apprend rien (règle maison,
-                    tests/customer-auth-review). */}
-                <FormField label={tr('Adresse e-mail', 'البريد الإلكتروني')} htmlFor="auth-email">
-                  <ManualAuthInput id="auth-email" name="email" type="email" inputMode="email" dir="ltr" autoCapitalize="none" spellCheck={false} maxLength={180} autoComplete="email" enterKeyHint="next" value={emailAddress} onChange={(e) => setEmailAddress(e.target.value)} placeholder={tr('vous@exemple.tn', 'you@example.tn')} required />
-                </FormField>
+                {/* Étiquette MASQUÉE visuellement, pas supprimée : le lecteur
+                    d'écran l'annonce, l'œil lit « Adresse e-mail » dans le
+                    champ. La règle maison interdit un placeholder qui RECOPIE
+                    une étiquette visible — ici il n'y en a aucune, donc rien
+                    n'est dit deux fois et rien n'est perdu à la saisie. */}
+                <label className="sr-only" htmlFor="auth-email">{tr('Adresse e-mail', 'البريد الإلكتروني')}</label>
+                <ManualAuthInput className="ay-auth__email" id="auth-email" name="email" type="email" inputMode="email" dir="ltr" autoCapitalize="none" spellCheck={false} maxLength={180} autoComplete="email" enterKeyHint="next" value={emailAddress} onChange={(e) => setEmailAddress(e.target.value)} placeholder={tr('Adresse e-mail', 'البريد الإلكتروني')} required />
                 <Button type="submit" className="ay-auth__submit" disabled={authBusy || !emailAddress.trim()}>{tr('Continuer', 'متابعة')}</Button>
               </form>}
 
