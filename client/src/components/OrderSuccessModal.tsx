@@ -84,7 +84,7 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
 
         {/* Order Number Box */}
         <div className="bg-surface border border-line rounded-2xl p-4 flex items-center justify-between">
-          <div className="text-left">
+          <div className="text-start">
             <span className="text-xs text-muted uppercase font-bold block">{tr('Numéro de commande :', 'رقم الطلب:')}</span>
             <span className="text-lg ay-number font-black text-ink">{result.orderNumber}</span>
           </div>
@@ -101,7 +101,7 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
         {copyStatus && <p className="text-xs font-semibold text-muted" role="status">{copyStatus}</p>}
 
         {/* Details */}
-        <div className="bg-surface border border-line rounded-2xl p-3.5 text-xs text-muted space-y-1.5 text-left">
+        <div className="bg-surface border border-line rounded-2xl p-3.5 text-xs text-muted space-y-1.5 text-start">
           <div className="checkout-confirmation-row">
             <span className="text-muted">{tr('Client :', 'الحريف:')}</span>
             <span className="font-bold text-ink">{result.customer.name}</span>

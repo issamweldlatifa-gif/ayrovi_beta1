@@ -42,7 +42,7 @@ export const Modal: React.FC<ModalProps> = ({ open, onClose, labelledBy, childre
           type="button"
           onClick={onClose}
           aria-label="Fermer"
-          className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-icon text-muted transition-colors hover:bg-surface hover:text-ink focus-visible:outline-2 focus-visible:outline-ink"
+          className="absolute end-4 top-4 grid h-9 w-9 place-items-center rounded-icon text-muted transition-colors hover:bg-surface hover:text-ink focus-visible:outline-2 focus-visible:outline-ink"
         >
           <X className="h-5 w-5" />
         </button>

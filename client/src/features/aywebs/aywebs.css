@@ -192,10 +192,17 @@
 .ayw-tab-label { font-size: .72rem; white-space: nowrap; }
 
 /* --- feuille de variantes (captures 3-4) --- */
+/* ── Empilement (3e passe, 04/10/2026) ──────────────────────────────────────
+   Le voile des tiroirs partageait EXACTEMENT le z-index de la barre d'onglets
+   (40). À égalité, c'est l'ordre du DOM qui tranche : le tiroir ne passait
+   au-dessus que parce qu'il est écrit plus bas dans AyWebsApp.tsx. Déplacer
+   un bloc JSX aurait suffi à faire ressurgir la barre AU TRAVERS du voile —
+   deux écrans superposés, le défaut même que le client nous signale. On rend
+   la hiérarchie explicite : voile 60 > barre 40 > contenu 25. */
 .ayw-sheet-mask {
   position: fixed;
   inset: 0;
-  z-index: 40;
+  z-index: 60;
   background: rgb(16 24 40 / .45);
   display: flex;
   align-items: flex-end;

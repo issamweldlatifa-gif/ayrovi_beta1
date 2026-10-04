@@ -11332,7 +11332,7 @@
     {
       "file": "client/src/ayrovix/components/LensLauncher.tsx",
       "domain": "lens",
-      "sha256": "86a705964d47047e33f7b749678aa21445066ae029452b470d6c1bcd449fc176",
+      "sha256": "5cff544805385aa6ac2fc0fc1c675dc91e57eb9a998707dbcec54eb5274d2d8b",
       "lines": 1007,
       "imports": [
         "../../types",
@@ -11481,7 +11481,7 @@
         {
           "tag": "button",
           "line": 876,
-          "className": "\"max-w-full truncate rounded-full border border-line bg-white px-3 py-1.5 text-left text-xs font-semibold text-ink hover:border-line/30\"",
+          "className": "\"max-w-full truncate rounded-full border border-line bg-white px-3 py-1.5 text-start text-xs font-semibold text-ink hover:border-line/30\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
@@ -14580,7 +14580,7 @@
     {
       "file": "client/src/components/CustomerAccountPage.tsx",
       "domain": "account-auth",
-      "sha256": "273c39a0230d1c91552847bec862fc422b45587e916c37fc49721f81a405cf17",
+      "sha256": "0a5be5034548eb9c649640e98c9da11fb6bb632fc3e7854e958058f0a6b5fd07",
       "lines": 976,
       "imports": [
         "react",
@@ -14712,7 +14712,7 @@
         {
           "tag": "input",
           "line": 684,
-          "className": "{`${inputClass} pl-11 text-base`}",
+          "className": "{`${inputClass} ps-11 text-base`}",
           "type": "\"tel\"",
           "role": null,
           "ariaLabel": null,
@@ -16299,7 +16299,7 @@
     {
       "file": "client/src/components/OrderSuccessModal.tsx",
       "domain": "commerce",
-      "sha256": "7479d7dd8c9b4fd72db29625def575418514edebb8611976ad948b3ac1f200a8",
+      "sha256": "ca8afb73b84e975c1806cca7a941bc395c24f569af98b73fa51ea36fd463a61a",
       "lines": 191,
       "imports": [
         "react",
@@ -16437,7 +16437,7 @@
     {
       "file": "client/src/components/ProductDrawer.tsx",
       "domain": "commerce",
-      "sha256": "74a8cae8e6ad8729b84d03542a0261882158efeb700e9421293dc905eb5b87fe",
+      "sha256": "ffdf12e84f18b7ce0395b4e6f36cea04edefb6219acca65e611c9d6c1058b3c0",
       "lines": 459,
       "imports": [
         "react",
@@ -16487,7 +16487,7 @@
         {
           "tag": "button",
           "line": 291,
-          "className": "\"ay-dark-feature-card group relative flex min-h-[190px] w-full cursor-pointer flex-col justify-between overflow-hidden rounded-card p-6 text-left text-white disabled:cursor-wait disabled:opacity-90\"",
+          "className": "\"ay-dark-feature-card group relative flex min-h-[190px] w-full cursor-pointer flex-col justify-between overflow-hidden rounded-card p-6 text-start text-white disabled:cursor-wait disabled:opacity-90\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
@@ -18505,7 +18505,7 @@
     {
       "file": "client/src/design/ui/Field.tsx",
       "domain": "shared-design",
-      "sha256": "0ba352449b573ed33eaf1ed8f02fd199ddfd4e44f090da4462f4eacf5ea8386f",
+      "sha256": "40f1d8cd79f1297759e6da398cd2135dcf12c57795e1476c36357ccaf0b768b2",
       "lines": 75,
       "imports": [
         "react",
@@ -18532,7 +18532,7 @@
         {
           "tag": "select",
           "line": 59,
-          "className": "{twMerge(controlBase, 'appearance-none bg-[length:1.1rem] bg-[right_0.75rem_center] bg-no-repeat pr-9', invalid && fieldErrorClass, className)}",
+          "className": "{twMerge(controlBase, 'appearance-none bg-[length:1.1rem] bg-[right_0.75rem_center] bg-no-repeat pe-9 rtl:bg-[left_0.75rem_center]', invalid && fieldErrorClass, className)}",
           "type": null,
           "role": null,
           "ariaLabel": null,
@@ -18592,7 +18592,7 @@
     {
       "file": "client/src/design/ui/Modal.tsx",
       "domain": "shared-design",
-      "sha256": "3f2bb390ad9d8b38c1231cd1115fc2d13e36da4873af33a90831342eb3c3a010",
+      "sha256": "58349d7894474a1fe30eaa3b4ec66b3e979192884fdac5f92fa0d60149ee08e0",
       "lines": 54,
       "imports": [
         "react",
@@ -18606,7 +18606,7 @@
         {
           "tag": "button",
           "line": 41,
-          "className": "\"absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-icon text-muted transition-colors hover:bg-surface hover:text-ink focus-visible:outline-2 focus-visible:outline-ink\"",
+          "className": "\"absolute end-4 top-4 grid h-9 w-9 place-items-center rounded-icon text-muted transition-colors hover:bg-surface hover:text-ink focus-visible:outline-2 focus-visible:outline-ink\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": "\"Fermer\"",
@@ -18836,8 +18836,8 @@
     {
       "file": "client/src/features/aywebs/aywebs.css",
       "domain": "shell-content",
-      "sha256": "a65e354be4a5ee0b697af7576b322305f1dc49b778b4c8b0fcdca4a947bca097",
-      "lines": 540,
+      "sha256": "f54439a913a3ed22aa17f92c9ef1bb1090569b25c35e3c2d73bdc09038955d93",
+      "lines": 547,
       "imports": [],
       "exports": [],
       "controls": [],
@@ -19936,8 +19936,8 @@
     {
       "file": "client/src/index.css",
       "domain": "shell-content",
-      "sha256": "827b7f3f0a8c3e6324cbec5633ba34170968c58fd12e572743753e82edb2c77a",
-      "lines": 1244,
+      "sha256": "08f39319fdaaf876eeb6e5fb34374929f384e1dfc19fd1fd98ffb088cd3be0d3",
+      "lines": 1246,
       "imports": [],
       "exports": [],
       "controls": [],
@@ -21460,7 +21460,7 @@
     {
       "file": "client/src/social/StoryTab.tsx",
       "domain": "discovery-social",
-      "sha256": "c8cc8c1b8e3247cd183fb8bf94b2bfca61fd0fdddc2878de0ab3c794ed88cdb9",
+      "sha256": "f61a34c2eaa9972b17e86fbe56d49f796fec772ddbda277dd6683fc613264b95",
       "lines": 248,
       "imports": [
         "react",

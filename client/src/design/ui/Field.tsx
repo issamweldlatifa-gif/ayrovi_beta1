@@ -56,7 +56,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(function 
   { invalid = false, className, children, ...props }, ref,
 ) {
   return (
-    <select ref={ref} className={twMerge(controlBase, 'appearance-none bg-[length:1.1rem] bg-[right_0.75rem_center] bg-no-repeat pr-9', invalid && fieldErrorClass, className)}
+    <select ref={ref} className={twMerge(controlBase, 'appearance-none bg-[length:1.1rem] bg-[right_0.75rem_center] bg-no-repeat pe-9 rtl:bg-[left_0.75rem_center]', invalid && fieldErrorClass, className)}
       style={{ backgroundImage: "url(\"data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23666666' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M6.2 9 12 15.4 17.8 9'/%3E%3C/svg%3E\")" }}
       {...props}
     >{children}</select>

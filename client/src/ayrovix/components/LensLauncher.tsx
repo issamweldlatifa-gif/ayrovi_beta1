@@ -877,7 +877,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
                         key={item.id}
                         type="button"
                         onClick={() => repeatHistoryItem(item)}
-                        className="max-w-full truncate rounded-full border border-line bg-white px-3 py-1.5 text-left text-xs font-semibold text-ink hover:border-line/30"
+                        className="max-w-full truncate rounded-full border border-line bg-white px-3 py-1.5 text-start text-xs font-semibold text-ink hover:border-line/30"
                         title={item.queryLabel || item.title}
                       >
                         <span className="inline-flex items-center gap-1.5">

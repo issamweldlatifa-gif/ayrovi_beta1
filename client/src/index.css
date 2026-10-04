@@ -690,7 +690,9 @@
 /* الهيكل: Section → Heading block → Title → Subtitle → 32px → Full-width slider */
 .brands-section { width: 100%; background: var(--ayrovi-bg-main); padding-block: var(--ay-section-y) 12px; }
 
-.brands-heading { padding-inline: var(--ay-gutter); text-align: left; }
+/* `start` et non `left` : en arabe le document passe en RTL (LocaleContext),
+   et un titre arabe aligné à gauche flotte à l'opposé de son propre texte. */
+.brands-heading { padding-inline: var(--ay-gutter); text-align: start; }
 .brands-heading__title {
   margin: 0;
   max-width: 90%;

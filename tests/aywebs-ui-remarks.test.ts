@@ -25,6 +25,19 @@ const readCode = (file: string) => readFileSync(file, 'utf8')
   .filter((line) => !line.trim().startsWith('//'))
   .join('\n');
 
+
+/** Parcours récursif des sources de l'interface (hors fichiers générés). */
+function listSources(root: string): string[] {
+  const { readdirSync, statSync } = require('node:fs') as typeof import('node:fs');
+  const out: string[] = [];
+  for (const entry of readdirSync(root)) {
+    const full = `${root}/${entry}`;
+    if (statSync(full).isDirectory()) out.push(...listSources(full));
+    else if (/\.(tsx|ts)$/.test(entry)) out.push(full);
+  }
+  return out;
+}
+
 const CSS = 'client/src/features/aywebs/aywebs.css';
 const APP = 'client/src/features/aywebs/AyWebsApp.tsx';
 const ROOT_APP = 'client/src/App.tsx';
@@ -437,5 +450,34 @@ describe('Connexion Google sans navigateur', () => {
 
   test('la route native est plafonnée', () => {
     expect(readCode('src/server.ts')).toContain("rateLimit('google-native'");
+  });
+});
+
+/* ── Écrans « inversés ou superposés » (3e passe, 04/10/2026) ───────────── */
+describe('Direction arabe et empilement', () => {
+  test('le voile des tiroirs passe STRICTEMENT au-dessus de la barre d’onglets', () => {
+    // À z-index égal, seul l'ordre du DOM tranchait : déplacer un bloc JSX
+    // aurait fait réapparaître la barre à travers le tiroir.
+    const css = read(CSS);
+    const tabs = css.slice(css.indexOf('.ayw-tabs {'), css.indexOf('.ayw-tab {'));
+    const mask = css.slice(css.indexOf('.ayw-sheet-mask {'), css.indexOf('.ayw-sheet {'));
+    const value = (block: string) => Number((block.match(/z-index:\s*(\d+)/) || [])[1]);
+    expect(value(mask)).toBeGreaterThan(value(tabs));
+  });
+
+  test('aucun alignement de texte figé à gauche hors back-office', () => {
+    // Le document passe en RTL en arabe (LocaleContext) : un `text-left`
+    // laisse le texte arabe collé au bord opposé à sa propre lecture.
+    const files = listSources('client/src').filter((file) => !file.includes('/admin/'));
+    const guilty = files.filter((file) => /\btext-left\b/.test(read(file)));
+    expect(guilty).toEqual([]);
+  });
+
+  test('les éléments directionnels partagés suivent la direction', () => {
+    // Le bouton de fermeture et la flèche des listes déroulantes se posaient
+    // sur le texte arabe, qui commence à droite.
+    expect(read('client/src/design/ui/Modal.tsx')).toContain('absolute end-4 top-4');
+    expect(read('client/src/design/ui/Field.tsx')).toContain('rtl:bg-[left_0.75rem_center]');
+    expect(read('client/src/index.css')).toContain('.brands-heading { padding-inline: var(--ay-gutter); text-align: start; }');
   });
 });

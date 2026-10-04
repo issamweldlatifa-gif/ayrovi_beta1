@@ -680,8 +680,8 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
             <div className="mt-6">
               <Field label={tr('Numéro de téléphone tunisien', 'رقم الهاتف التونسي')}>
                 <div className="relative">
-                  <Phone className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
-                  <input autoFocus type="tel" inputMode="tel" autoComplete="tel" maxLength={24} pattern="[+0-9 ()-]{8,24}" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+216 98 123 456" className={`${inputClass} pl-11 text-base`} required />
+                  <Phone className="pointer-events-none absolute start-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
+                  <input autoFocus type="tel" inputMode="tel" autoComplete="tel" maxLength={24} pattern="[+0-9 ()-]{8,24}" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+216 98 123 456" className={`${inputClass} ps-11 text-base`} required />
                 </div>
               </Field>
             </div>
