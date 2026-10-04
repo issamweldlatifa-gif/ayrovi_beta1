@@ -19807,10 +19807,11 @@
     {
       "file": "client/src/services/apiOrigin.ts",
       "domain": "shell-content",
-      "sha256": "a143fc56a6ceefab7c2f907217d857fe19ba7df8504736be9beb42ea4185caf5",
-      "lines": 20,
+      "sha256": "b41f9833b79cd5f27ee2648b59adf5772a8912c62892daaed5b7690b30d0d15a",
+      "lines": 65,
       "imports": [],
       "exports": [
+        "normalizeApiOrigin",
         "AYROVI_API_ORIGIN"
       ],
       "controls": [],
