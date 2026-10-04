@@ -96,6 +96,57 @@ export async function claimNativeSession(handoff: string, options: ClaimOptions 
 
 interface AuthTabBridge {
   open(options: { url: string }): Promise<{ opened: boolean }>;
+  signInWithGoogle(): Promise<{ available: boolean; idToken?: string; reason?: string }>;
+}
+
+/**
+ * Connexion Google par le SÉLECTEUR DE COMPTE DU SYSTÈME (3e passe,
+ * 04/10/2026).
+ *
+ * ── Pourquoi aller plus loin que l'onglet personnalisé ──────────────────────
+ * L'onglet restait une page web qui se déplie par-dessus l'application : le
+ * client l'a lue comme « je sors ». Android sait faire mieux — Credential
+ * Manager affiche la liste des comptes déjà présents sur le téléphone, en
+ * feuille native, sans charger la moindre page. Aucun mot de passe à taper,
+ * aucune redirection, aucune bascule.
+ *
+ * ── Ce qu'on reçoit, et ce qu'on n'en fait PAS ──────────────────────────────
+ * Le système rend un jeton d'identité signé par Google. On ne l'interprète
+ * pas ici : un jeton lu côté client ne prouve rien, puisque le client est
+ * justement ce qu'on cherche à authentifier. Il part tel quel vers
+ * POST /auth/google/native, qui le fait valider par Google avant d'ouvrir une
+ * session.
+ *
+ * ── Repli ───────────────────────────────────────────────────────────────────
+ * Services Google Play absents, aucun compte sur l'appareil, SHA-1 non encore
+ * déclaré chez Google, ou simple annulation : on retourne `null` et l'appelant
+ * reprend l'onglet personnalisé. Pas d'écran de panne pour un chemin qui a un
+ * substitut qui marche.
+ */
+export async function signInWithGoogleNatively(cartSessionId = ''): Promise<NativeOAuthSession | null> {
+  if (!isNativeApp()) return null;
+  let idToken = '';
+  try {
+    const plugin = registerPlugin<AuthTabBridge>('AyroviAuthTab');
+    const picked = await plugin.signInWithGoogle();
+    if (!picked?.available || !picked.idToken) return null;
+    idToken = picked.idToken;
+  } catch {
+    return null; // coque antérieure : la méthode n'existe pas encore
+  }
+  try {
+    const response = await fetch(`${AYROVI_API_ORIGIN}/api/customer/auth/google/native`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-ayrovi-native': '1' },
+      body: JSON.stringify({ idToken, cartSessionId }),
+    });
+    if (!response.ok) return null;
+    const payload = await response.json().catch(() => null);
+    if (payload?.success && payload.data?.account) return payload.data as NativeOAuthSession;
+  } catch {
+    /* réseau : l'appelant retombera sur l'onglet */
+  }
+  return null;
 }
 
 /**

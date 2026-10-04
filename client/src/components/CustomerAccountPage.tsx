@@ -38,7 +38,7 @@ import {
 import { customerApi } from '../customer/api';
 import { getSessionId } from '../utils/session';
 import { clearNativeSessionToken, isNativeApp, rememberNativeSessionToken } from '../services/nativeShell';
-import { claimNativeSession, createHandoffCode, oauthStartUrl, openProviderInAppTab, type OAuthProvider } from '../customer/nativeOAuth';
+import { claimNativeSession, createHandoffCode, oauthStartUrl, openProviderInAppTab, signInWithGoogleNatively, type OAuthProvider } from '../customer/nativeOAuth';
 import { useNavigationHistory } from '../navigation/NavigationHistory';
 import { useLocale } from '../i18n/LocaleContext';
 import { CustomerPasswordRecovery } from './CustomerPasswordRecovery';
@@ -334,6 +334,22 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
     setError(''); setNotice(''); setProviderPending(provider);
     const handoff = createHandoffCode();
     try {
+      // ── Google d'abord par le SÉLECTEUR NATIF (3e passe, 04/10/2026) ──────
+      // Si le téléphone sait afficher la feuille de comptes du système, aucune
+      // page ne se charge : c'est la connexion « sans sortir » littéralement.
+      // Le `null` n'est pas une erreur — c'est « cet appareil ne peut pas »
+      // (pas de services Google Play, SHA-1 pas encore déclaré, ou annulation)
+      // et l'onglet prend le relais juste en dessous.
+      if (provider === 'google') {
+        const nativeSession = await signInWithGoogleNatively(getSessionId());
+        if (nativeSession) {
+          rememberNativeSessionToken(nativeSession.native_session_token);
+          onSession({ account: nativeSession.account, csrfToken: nativeSession.csrfToken });
+          setNotice(tr('Content de vous revoir !', 'سعداء بعودتك!'));
+          onCartChanged();
+          return;
+        }
+      }
       const query = `cartSessionId=${encodeURIComponent(getSessionId())}&returnTo=${encodeURIComponent('/')}`;
       await openProviderInAppTab(oauthStartUrl(provider, query, handoff));
       const result = await claimNativeSession(handoff);

@@ -14580,8 +14580,8 @@
     {
       "file": "client/src/components/CustomerAccountPage.tsx",
       "domain": "account-auth",
-      "sha256": "938e170e9bdce414e186c12335b70bae8ddc3e52cfe82f8e9ee40ccf474c0f94",
-      "lines": 960,
+      "sha256": "273c39a0230d1c91552847bec862fc422b45587e916c37fc49721f81a405cf17",
+      "lines": 976,
       "imports": [
         "react",
         "./account/AccountHome",
@@ -14621,7 +14621,7 @@
         },
         {
           "tag": "form",
-          "line": 637,
+          "line": 653,
           "className": "\"flex flex-1 flex-col\"",
           "type": null,
           "role": null,
@@ -14631,7 +14631,7 @@
         },
         {
           "tag": "button",
-          "line": 638,
+          "line": 654,
           "className": "\"mb-4 flex items-center gap-1.5 self-start text-xs font-black text-muted transition hover:text-ink\"",
           "type": "\"button\"",
           "role": null,
@@ -14641,7 +14641,7 @@
         },
         {
           "tag": "Field",
-          "line": 646,
+          "line": 662,
           "className": null,
           "type": null,
           "role": null,
@@ -14651,7 +14651,7 @@
         },
         {
           "tag": "input",
-          "line": 647,
+          "line": 663,
           "className": "{`${inputClass} text-center text-2xl font-black tracking-[0.35em]`}",
           "type": null,
           "role": null,
@@ -14661,7 +14661,7 @@
         },
         {
           "tag": "button",
-          "line": 650,
+          "line": 666,
           "className": "\"mt-3 w-full border border-line bg-surface p-3 text-xs font-bold text-ink\"",
           "type": "\"button\"",
           "role": null,
@@ -14671,7 +14671,7 @@
         },
         {
           "tag": "button",
-          "line": 651,
+          "line": 667,
           "className": "\"ay-btn-primary mt-5 w-full text-sm\"",
           "type": null,
           "role": null,
@@ -14681,7 +14681,7 @@
         },
         {
           "tag": "form",
-          "line": 656,
+          "line": 672,
           "className": "\"flex flex-1 flex-col\"",
           "type": null,
           "role": null,
@@ -14691,7 +14691,7 @@
         },
         {
           "tag": "button",
-          "line": 657,
+          "line": 673,
           "className": "\"mb-4 flex items-center gap-1.5 self-start text-xs font-black text-muted transition hover:text-ink\"",
           "type": "\"button\"",
           "role": null,
@@ -14701,7 +14701,7 @@
         },
         {
           "tag": "Field",
-          "line": 665,
+          "line": 681,
           "className": null,
           "type": null,
           "role": null,
@@ -14711,7 +14711,7 @@
         },
         {
           "tag": "input",
-          "line": 668,
+          "line": 684,
           "className": "{`${inputClass} pl-11 text-base`}",
           "type": "\"tel\"",
           "role": null,
@@ -14721,7 +14721,7 @@
         },
         {
           "tag": "button",
-          "line": 672,
+          "line": 688,
           "className": "\"ay-btn-primary mt-5 w-full text-sm\"",
           "type": null,
           "role": null,
@@ -14731,7 +14731,7 @@
         },
         {
           "tag": "Button",
-          "line": 696,
+          "line": 712,
           "className": null,
           "type": null,
           "role": null,
@@ -14741,7 +14741,7 @@
         },
         {
           "tag": "Button",
-          "line": 728,
+          "line": 744,
           "className": null,
           "type": null,
           "role": null,
@@ -14751,7 +14751,7 @@
         },
         {
           "tag": "form",
-          "line": 738,
+          "line": 754,
           "className": "\"ay-auth__step\"",
           "type": null,
           "role": null,
@@ -14761,7 +14761,7 @@
         },
         {
           "tag": "Button",
-          "line": 751,
+          "line": 767,
           "className": "\"ay-auth__submit\"",
           "type": "\"submit\"",
           "role": null,
@@ -14771,7 +14771,7 @@
         },
         {
           "tag": "button",
-          "line": 762,
+          "line": 778,
           "className": "{buttonClasses('secondary', 'md', 'ay-auth__provider')}",
           "type": "\"button\"",
           "role": null,
@@ -14781,7 +14781,7 @@
         },
         {
           "tag": "a",
-          "line": 765,
+          "line": 781,
           "className": "{buttonClasses('secondary', 'md', 'ay-auth__provider')}",
           "type": null,
           "role": null,
@@ -14791,7 +14791,7 @@
         },
         {
           "tag": "button",
-          "line": 769,
+          "line": 785,
           "className": "{buttonClasses('secondary', 'md', 'ay-auth__provider')}",
           "type": "\"button\"",
           "role": null,
@@ -14801,7 +14801,7 @@
         },
         {
           "tag": "a",
-          "line": 772,
+          "line": 788,
           "className": "{buttonClasses('secondary', 'md', 'ay-auth__provider')}",
           "type": null,
           "role": null,
@@ -14811,7 +14811,7 @@
         },
         {
           "tag": "button",
-          "line": 776,
+          "line": 792,
           "className": "{buttonClasses('secondary', 'md', 'ay-auth__provider')}",
           "type": "\"button\"",
           "role": null,
@@ -14821,7 +14821,7 @@
         },
         {
           "tag": "a",
-          "line": 779,
+          "line": 795,
           "className": "{buttonClasses('secondary', 'md', 'ay-auth__provider')}",
           "type": null,
           "role": null,
@@ -14831,7 +14831,7 @@
         },
         {
           "tag": "button",
-          "line": 784,
+          "line": 800,
           "className": "{buttonClasses('secondary', 'md', 'ay-auth__provider')}",
           "type": "\"button\"",
           "role": null,
@@ -14841,7 +14841,7 @@
         },
         {
           "tag": "form",
-          "line": 800,
+          "line": 816,
           "className": null,
           "type": null,
           "role": null,
@@ -14851,7 +14851,7 @@
         },
         {
           "tag": "button",
-          "line": 810,
+          "line": 826,
           "className": "\"ay-auth__password-toggle\"",
           "type": "\"button\"",
           "role": null,
@@ -14861,7 +14861,7 @@
         },
         {
           "tag": "Button",
-          "line": 816,
+          "line": 832,
           "className": "\"ay-auth__submit\"",
           "type": "\"submit\"",
           "role": null,
@@ -14871,7 +14871,7 @@
         },
         {
           "tag": "button",
-          "line": 820,
+          "line": 836,
           "className": "\"ay-auth__recovery-link\"",
           "type": "\"button\"",
           "role": null,
@@ -14881,33 +14881,13 @@
         },
         {
           "tag": "a",
-          "line": 826,
+          "line": 842,
           "className": null,
           "type": null,
           "role": null,
           "ariaLabel": null,
           "onClick": null,
           "disabled": null
-        },
-        {
-          "tag": "a",
-          "line": 827,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 831,
-          "className": null,
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => {\n                  setEmailMode(emailMode === 'login' ? 'register' : 'login');\n                  setEmailName(''); setEmailPassword(''); setShowPassword(false); setRecoveryOpen(false); setError(''); setNotice('');\n                  document.getElementById('auth-title')?.focus();\n                }}",
-          "disabled": "{authBusy}"
         },
         {
           "tag": "a",
@@ -14920,8 +14900,28 @@
           "disabled": null
         },
         {
+          "tag": "button",
+          "line": 847,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => {\n                  setEmailMode(emailMode === 'login' ? 'register' : 'login');\n                  setEmailName(''); setEmailPassword(''); setShowPassword(false); setRecoveryOpen(false); setError(''); setNotice('');\n                  document.getElementById('auth-title')?.focus();\n                }}",
+          "disabled": "{authBusy}"
+        },
+        {
           "tag": "a",
-          "line": 844,
+          "line": 859,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "a",
+          "line": 860,
           "className": null,
           "type": null,
           "role": null,
@@ -14931,7 +14931,7 @@
         },
         {
           "tag": "input",
-          "line": 859,
+          "line": 875,
           "className": null,
           "type": "\"file\"",
           "role": null,
@@ -14941,7 +14941,7 @@
         },
         {
           "tag": "button",
-          "line": 859,
+          "line": 875,
           "className": "\"ac-text-button ac-danger-text\"",
           "type": "\"button\"",
           "role": null,
@@ -14951,7 +14951,7 @@
         },
         {
           "tag": "form",
-          "line": 861,
+          "line": 877,
           "className": "\"ac-panel ac-form-stack\"",
           "type": null,
           "role": null,
@@ -14961,7 +14961,7 @@
         },
         {
           "tag": "input",
-          "line": 867,
+          "line": 883,
           "className": null,
           "type": "\"checkbox\"",
           "role": null,
@@ -14971,7 +14971,7 @@
         },
         {
           "tag": "Button",
-          "line": 868,
+          "line": 884,
           "className": null,
           "type": "\"submit\"",
           "role": null,
@@ -14981,7 +14981,7 @@
         },
         {
           "tag": "Button",
-          "line": 871,
+          "line": 887,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -14991,7 +14991,7 @@
         },
         {
           "tag": "button",
-          "line": 872,
+          "line": 888,
           "className": "\"ac-text-button ac-danger-text\"",
           "type": "\"button\"",
           "role": null,
@@ -15001,7 +15001,7 @@
         },
         {
           "tag": "button",
-          "line": 875,
+          "line": 891,
           "className": "\"ay-btn-primary text-sm\"",
           "type": null,
           "role": null,
@@ -15011,7 +15011,7 @@
         },
         {
           "tag": "button",
-          "line": 875,
+          "line": 891,
           "className": "\"px-3 py-2 text-xs font-black text-ink\"",
           "type": null,
           "role": null,
@@ -15021,7 +15021,7 @@
         },
         {
           "tag": "button",
-          "line": 875,
+          "line": 891,
           "className": "\"px-3 py-2 text-xs font-black text-danger\"",
           "type": null,
           "role": null,
@@ -15031,7 +15031,7 @@
         },
         {
           "tag": "button",
-          "line": 877,
+          "line": 893,
           "className": "\"grid w-full min-w-0 grid-cols-[52px_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-line bg-white p-3 text-start sm:p-4\"",
           "type": null,
           "role": null,
@@ -15041,7 +15041,7 @@
         },
         {
           "tag": "button",
-          "line": 882,
+          "line": 898,
           "className": "\"ay-btn-secondary text-xs\"",
           "type": null,
           "role": null,
@@ -15051,7 +15051,7 @@
         },
         {
           "tag": "button",
-          "line": 887,
+          "line": 903,
           "className": "\"text-xs font-black text-ink\"",
           "type": null,
           "role": null,
@@ -15061,7 +15061,7 @@
         },
         {
           "tag": "a",
-          "line": 890,
+          "line": 906,
           "className": "\"ay-btn-secondary shrink-0 px-3 text-xs\"",
           "type": null,
           "role": null,
@@ -15071,58 +15071,8 @@
         },
         {
           "tag": "a",
-          "line": 892,
+          "line": 908,
           "className": "\"ay-btn-secondary mt-4 w-full text-xs\"",
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 900,
-          "className": null,
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{()=>void loadSection(section)}",
-          "disabled": null
-        },
-        {
-          "tag": "Button",
-          "line": 904,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{()=>navigation.navigate([{id:'app:lens'},{id:'lens:home'}])}",
-          "disabled": null
-        },
-        {
-          "tag": "Button",
-          "line": 904,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{()=>navigation.navigate([{id:'app:assistant'}])}",
-          "disabled": null
-        },
-        {
-          "tag": "a",
-          "line": 905,
-          "className": "\"flex min-h-14 items-center justify-between rounded-2xl border border-line bg-white px-5 font-black\"",
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "a",
-          "line": 905,
-          "className": "\"flex min-h-14 items-center justify-between rounded-2xl border border-line bg-white px-5 font-black\"",
           "type": null,
           "role": null,
           "ariaLabel": null,
@@ -15135,13 +15085,63 @@
           "className": null,
           "type": "\"button\"",
           "role": null,
+          "ariaLabel": null,
+          "onClick": "{()=>void loadSection(section)}",
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 920,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{()=>navigation.navigate([{id:'app:lens'},{id:'lens:home'}])}",
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 920,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{()=>navigation.navigate([{id:'app:assistant'}])}",
+          "disabled": null
+        },
+        {
+          "tag": "a",
+          "line": 921,
+          "className": "\"flex min-h-14 items-center justify-between rounded-2xl border border-line bg-white px-5 font-black\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "a",
+          "line": 921,
+          "className": "\"flex min-h-14 items-center justify-between rounded-2xl border border-line bg-white px-5 font-black\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 932,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
           "ariaLabel": "{tr('Fermer le message','إغلاق الرسالة')}",
           "onClick": "{()=>setNotice('')}",
           "disabled": null
         },
         {
           "tag": "button",
-          "line": 917,
+          "line": 933,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -15151,7 +15151,7 @@
         },
         {
           "tag": "form",
-          "line": 922,
+          "line": 938,
           "className": "\"max-h-[92dvh] w-full overflow-y-auto bg-white p-5 sm:max-w-xl sm:rounded-card sm:p-7\"",
           "type": null,
           "role": "\"dialog\"",
@@ -15161,7 +15161,7 @@
         },
         {
           "tag": "button",
-          "line": 922,
+          "line": 938,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -15171,7 +15171,7 @@
         },
         {
           "tag": "Field",
-          "line": 922,
+          "line": 938,
           "className": null,
           "type": null,
           "role": null,
@@ -15181,7 +15181,7 @@
         },
         {
           "tag": "input",
-          "line": 922,
+          "line": 938,
           "className": "{inputClass}",
           "type": null,
           "role": null,
@@ -15191,7 +15191,7 @@
         },
         {
           "tag": "Field",
-          "line": 922,
+          "line": 938,
           "className": null,
           "type": null,
           "role": null,
@@ -15201,7 +15201,7 @@
         },
         {
           "tag": "input",
-          "line": 922,
+          "line": 938,
           "className": "{inputClass}",
           "type": null,
           "role": null,
@@ -15211,7 +15211,7 @@
         },
         {
           "tag": "Field",
-          "line": 922,
+          "line": 938,
           "className": null,
           "type": null,
           "role": null,
@@ -15221,7 +15221,7 @@
         },
         {
           "tag": "input",
-          "line": 922,
+          "line": 938,
           "className": "{inputClass}",
           "type": null,
           "role": null,
@@ -15231,7 +15231,7 @@
         },
         {
           "tag": "Field",
-          "line": 922,
+          "line": 938,
           "className": null,
           "type": null,
           "role": null,
@@ -15241,7 +15241,7 @@
         },
         {
           "tag": "input",
-          "line": 922,
+          "line": 938,
           "className": "{inputClass}",
           "type": null,
           "role": null,
@@ -15251,7 +15251,7 @@
         },
         {
           "tag": "Field",
-          "line": 922,
+          "line": 938,
           "className": null,
           "type": null,
           "role": null,
@@ -15261,7 +15261,7 @@
         },
         {
           "tag": "input",
-          "line": 922,
+          "line": 938,
           "className": "{inputClass}",
           "type": null,
           "role": null,
@@ -15271,7 +15271,7 @@
         },
         {
           "tag": "Field",
-          "line": 922,
+          "line": 938,
           "className": null,
           "type": null,
           "role": null,
@@ -15281,7 +15281,7 @@
         },
         {
           "tag": "input",
-          "line": 922,
+          "line": 938,
           "className": "{inputClass}",
           "type": null,
           "role": null,
@@ -15291,7 +15291,7 @@
         },
         {
           "tag": "Field",
-          "line": 922,
+          "line": 938,
           "className": null,
           "type": null,
           "role": null,
@@ -15301,7 +15301,7 @@
         },
         {
           "tag": "textarea",
-          "line": 922,
+          "line": 938,
           "className": "{inputClass}",
           "type": null,
           "role": null,
@@ -15311,7 +15311,7 @@
         },
         {
           "tag": "Field",
-          "line": 922,
+          "line": 938,
           "className": null,
           "type": null,
           "role": null,
@@ -15321,7 +15321,7 @@
         },
         {
           "tag": "textarea",
-          "line": 922,
+          "line": 938,
           "className": "{inputClass}",
           "type": null,
           "role": null,
@@ -15331,7 +15331,7 @@
         },
         {
           "tag": "input",
-          "line": 922,
+          "line": 938,
           "className": null,
           "type": "\"checkbox\"",
           "role": null,
@@ -15341,7 +15341,7 @@
         },
         {
           "tag": "button",
-          "line": 922,
+          "line": 938,
           "className": "\"ay-btn-primary flex-1 text-sm\"",
           "type": null,
           "role": null,
@@ -15351,7 +15351,7 @@
         },
         {
           "tag": "button",
-          "line": 922,
+          "line": 938,
           "className": "\"ay-btn-secondary text-sm\"",
           "type": "\"button\"",
           "role": null,
@@ -15361,7 +15361,7 @@
         },
         {
           "tag": "AppHeader",
-          "line": 924,
+          "line": 940,
           "className": null,
           "type": null,
           "role": null,
@@ -15371,7 +15371,7 @@
         },
         {
           "tag": "CreditCard",
-          "line": 934,
+          "line": 950,
           "className": "\"h-7 w-7 text-ink\"",
           "type": null,
           "role": null,
@@ -15381,7 +15381,7 @@
         },
         {
           "tag": "button",
-          "line": 934,
+          "line": 950,
           "className": "\"ay-btn-primary mt-3 w-full text-xs\"",
           "type": null,
           "role": null,
@@ -15391,7 +15391,7 @@
         },
         {
           "tag": "button",
-          "line": 935,
+          "line": 951,
           "className": "\"ay-btn-secondary mt-3 w-full text-xs\"",
           "type": null,
           "role": null,
@@ -15401,7 +15401,7 @@
         },
         {
           "tag": "Field",
-          "line": 945,
+          "line": 961,
           "className": null,
           "type": null,
           "role": null,
@@ -15411,7 +15411,7 @@
         },
         {
           "tag": "input",
-          "line": 945,
+          "line": 961,
           "className": "{inputClass}",
           "type": null,
           "role": null,
@@ -15421,7 +15421,7 @@
         },
         {
           "tag": "input",
-          "line": 946,
+          "line": 962,
           "className": "\"block w-full min-w-0 text-xs\"",
           "type": "\"file\"",
           "role": null,
@@ -15431,7 +15431,7 @@
         },
         {
           "tag": "button",
-          "line": 947,
+          "line": 963,
           "className": "\"ay-btn-primary w-full text-xs\"",
           "type": null,
           "role": null,
@@ -15441,7 +15441,7 @@
         },
         {
           "tag": "a",
-          "line": 954,
+          "line": 970,
           "className": "\"ay-btn-secondary mt-4 w-full text-xs\"",
           "type": null,
           "role": null,
@@ -15451,7 +15451,7 @@
         },
         {
           "tag": "a",
-          "line": 954,
+          "line": 970,
           "className": "\"mt-3 inline-flex items-center gap-1 font-black text-ink\"",
           "type": null,
           "role": null,
@@ -17105,8 +17105,8 @@
     {
       "file": "client/src/customer/nativeOAuth.ts",
       "domain": "account-auth",
-      "sha256": "4828ccded224149c63d2e4c069f92e73a325365821d77d879c7bcb9af77543c5",
-      "lines": 139,
+      "sha256": "a1c48391e9efad2337139ec2d669bba17d4c31625516fff54515aed227ef0b40",
+      "lines": 190,
       "imports": [
         "@capacitor/core",
         "../services/apiOrigin",
@@ -17116,6 +17116,7 @@
         "createHandoffCode",
         "oauthStartUrl",
         "claimNativeSession",
+        "signInWithGoogleNatively",
         "openProviderInAppTab",
         "openProviderInSystemBrowser"
       ],

@@ -58,4 +58,9 @@
     <string name="aywebs_fav_add">Ajouter cette page aux favoris</string>
     <string name="aywebs_fav_added">Ajouté aux favoris.</string>
     <string name="aywebs_fav_not_product">Ouvrez une fiche produit pour l\'ajouter aux favoris.</string>
+    <!-- Identifiant client WEB du projet Google (fourni le 04/10/2026).
+         Android s'en sert comme « serverClientId » : c'est l'audience que le
+         serveur vérifiera sur le jeton d'identité. Ce n'est PAS un secret —
+         il voyage dans chaque requête OAuth publique. -->
+    <string name="google_web_client_id" translatable="false">917317804534-5v3d6fmlddpgrraj8bemu5tkju16066o.apps.googleusercontent.com</string>
 </resources>

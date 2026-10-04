@@ -392,3 +392,50 @@ describe('Logos des boutiques et hôte de l’API', () => {
     expect(origin).not.toMatch(/ayrovi-beta1\.onrender\.com/);
   });
 });
+
+/* ── Connexion Google NATIVE (04/10/2026, identifiant fourni par le client) ─ */
+describe('Connexion Google sans navigateur', () => {
+  const PLUGIN = 'android/app/src/main/java/app/ayrovi/mobile/AyroviAuthTabPlugin.java';
+
+  test('le sélecteur de compte du système est demandé, pas une page web', () => {
+    const plugin = readCode(PLUGIN);
+    expect(plugin).toContain('GetGoogleIdOption');
+    expect(plugin).toContain('getCredentialAsync');
+    // Premier usage : aucun compte n'est encore « autorisé » pour l'app ;
+    // filtrer afficherait une feuille vide, lue comme une panne.
+    expect(plugin).toContain('setFilterByAuthorizedAccounts(false)');
+  });
+
+  test('l’identifiant client Web est une ressource, pas une constante perdue', () => {
+    expect(readCode(PLUGIN)).toContain('R.string.google_web_client_id');
+    expect(read('android/app/src/main/res/values/strings.xml'))
+      .toContain('917317804534-5v3d6fmlddpgrraj8bemu5tkju16066o.apps.googleusercontent.com');
+  });
+
+  test('un échec natif retombe sur l’onglet au lieu d’afficher une panne', () => {
+    const plugin = readCode(PLUGIN);
+    expect(plugin).toMatch(/onError\(GetCredentialException error\)/);
+    expect(plugin).toContain('unavailable.put("available", false)');
+    expect(readCode('client/src/customer/nativeOAuth.ts')).toContain('signInWithGoogleNatively');
+  });
+
+  test('le jeton d’identité est VÉRIFIÉ par Google côté serveur', () => {
+    const routes = readCode(CUSTOMER_ROUTES);
+    expect(routes).toContain("router.post('/auth/google/native'");
+    expect(routes).toContain('https://oauth2.googleapis.com/tokeninfo?id_token=');
+    // Sans contrôle d'audience, le jeton d'une AUTRE application ouvrirait
+    // une session ici : c'est le contrôle qui porte toute la sécurité.
+    expect(routes).toMatch(/claims\.aud[\s\S]{0,40}google\.clientId/);
+  });
+
+  test('les deux chemins Google partagent la même logique de compte', () => {
+    // Deux copies divergeraient et produiraient des comptes dédoublés.
+    const routes = readCode(CUSTOMER_ROUTES);
+    expect(routes).toContain('function linkGoogleProfile');
+    expect((routes.match(/linkGoogleProfile\(db, profile/g) || []).length).toBe(2);
+  });
+
+  test('la route native est plafonnée', () => {
+    expect(readCode('src/server.ts')).toContain("rateLimit('google-native'");
+  });
+});
