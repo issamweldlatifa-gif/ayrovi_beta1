@@ -14,7 +14,7 @@
 |---|---|---|
 | AY-26أ (صور Lens/الوكلاء) | **1 موضع خنق** | `client/src/ayrovix/services/mediaIsolation.ts` (مستورد من 4 ملفات فقط) |
 | AY-26ب (صور الواجهة) | ~6 مواضع عرض | `EvergreenHero.tsx:135` · `PartnerBrandsSlider.tsx:53` · `account/AccountCommerce.tsx:13` · `LensHistory.tsx:33` · `design/AppHeader.tsx:56,59` · `social/*` |
-| AY-01 (الدخول الاجتماعي) | **3 روابط** | `CustomerAccountPage.tsx:588-592` (بناء) و`:667/670/673` (عرض) |
+| AY-01 (الدخول الاجتماعي) | ~~3 روابط~~ **مُنفَّذ على `main`** | `nativeOAuth.ts` + `AyroviAuthTabPlugin.java` (PR #18) — لم يبقَ أي `<a href="/api` خارج الأدمن |
 | AY-02 (الخروج) | **دالة واحدة** | `src/customer/auth.ts:196-199` |
 | AY-12 (سلة AYWEBs) | 3 طبقات + قرار أمني | `nativeShell.ts` · `AyWebsBrowsePlugin.java` · `AyWebsBrowseActivity.java` · (+ قرار CSRF في `src/customer/auth.ts`) |
 | AY-19 / AY-13 (الطبقات) | 2 سطر CSS/طبقة | `OcerexScreen.tsx:141` · `AyWebsApp.tsx:82` |
@@ -75,7 +75,22 @@ export function nativeAssetUrl(url: string | null | undefined, origin = AYROVI_A
 
 ---
 
-## المهمة 2 — AY-01: الدخول الاجتماعي داخل التطبيق 🔴
+## المهمة 2 — AY-01: الدخول الاجتماعي داخل التطبيق 🔴 — **أُلغيت: نُفِّذت على `main`**
+
+> **تحديث 05-10-2026:** بينما كانت هذه الخطة قيد المراجعة، دُمج على `main` الالتزام
+> `23bcf1b` (PR #18) بعنوان «Google 404 fix and native Google sign-in». التحقق من الكود
+> (لا من العنوان) يُثبت أن الحل هو نفس النهج الموصى به هنا:
+> • `client/src/customer/nativeOAuth.ts` (جديد) — `oauthStartUrl(...)` + `createHandoffCode()` + `claimNativeSession(handoff)` لاسترجاع `native_session_token`؛
+> • مكوّن جافا `AyroviAuthTabPlugin.java` + صفحة `client/public/auth/native-done.html` (تبويب داخل التطبيق)؛
+> • `CustomerAccountPage.tsx:778-795` — في الحزمة: `<button onClick={startNativeProvider(...)}>` (لا رابط نسبي)، وعلى الويب: `<a href=...>` كما كان (صفر انحدار)؛
+> • `tests/customer-native-oauth-handoff.test.ts` — **7 اختبارات ناجحة**، وCI أخضر.
+>
+> **ما بقي غير مُتحقَّق منه:** التشغيل على جهاز حقيقي (إعادة توجيه الموفّر → الرمز → جلسة نشطة).
+> **مهمة المتابعة الوحيدة المقترحة:** فحص يدوي على APK تصحيح؛ فإن ظهرت أي ثغرة، تُفتح مهمة فرعية.
+>
+> **ترتيب المهام بعد الإلغاء:** 1 ← AY-26 ✅ · 2 ← **AY-02** · 3 ← AY-12 · 4 ← AY-19/AY-13 · 5 ← AY-27.
+>
+> النص الأصلي للمهمة محفوظ أدناه كمرجع تشخيصي (يبقى صحيحًا كوصف للمشكلة).
 
 ### الجذر (مؤكَّد)
 الأزرار **روابط HTML** (`<a href="/api/customer/auth/google/start?…">`) لا تمرّ بجسر `fetch`. داخل الحزمة المضمّنة: `WebViewLocalServer.java:425` (مع `html5mode=true`) يعيد `index.html`، فيُقلع التطبيق على مسار `/api/...` → `unknownPath` → **شاشة 404**. ولو صار المسار مطلقًا، `allowNavigation: []` يفتحه خارج التطبيق، والرد (`routes.ts:687-770`) ينتهي بكوكي على أصل API وتحويل إلى `returnTo` — فلا يصل `native_session_token` إلى التطبيق أبدًا.
