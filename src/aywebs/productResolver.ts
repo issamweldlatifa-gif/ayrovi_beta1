@@ -29,6 +29,12 @@ import {
   ayWebsVariantsFromScraped,
 } from './productNormalizer';
 import { assertAyWebsProductPage, type AyWebsPageAnalysis } from './browser';
+import {
+  ayWebsResolveCacheKey,
+  readAyWebsResolveCache,
+  runAyWebsResolveOnce,
+  writeAyWebsResolveCache,
+} from './resolveCache';
 import { AyWebsDomainError } from './errors';
 import { ayWebsEvidenceHash, canonicalVariant, recordAyWebsEvidence } from './evidence';
 import { emitAyWebsEvent, logAyWebsOperation, measureAyWebsOperation } from './events';
@@ -78,6 +84,13 @@ export interface AyWebsResolveInput {
    */
   pageHtml?: string | null;
   pageUrl?: string | null;
+  /**
+   * RELECTURE FRAÎCHE (05/10/2026) : ignore le cache de résolution et relit la
+   * fiche chez le marchand. Utilisé par la re-vérification du panier (§18/§29)
+   * — une vérification qui servirait une lecture en cache ne vérifierait rien.
+   * Les appels normaux (ouverture de fiche, feuille, ajout) ne le posent pas.
+   */
+  refresh?: boolean;
 }
 
 export interface AyWebsResolveResult {
@@ -92,6 +105,9 @@ export interface AyWebsResolveResult {
   evidenceHash: string;
   missing: string[];
   resolvedAt: string;
+  /** Lecture servie depuis le cache de résolution (âge réel fourni). */
+  fromCache: boolean;
+  cacheAgeMs: number | null;
 }
 
 /** Résolution complète d'un produit. Toute erreur sort en `AyWebsDomainError`. */
@@ -119,28 +135,60 @@ export async function resolveAyWebsProduct(
 
   const adapter = createAyWebsAdapter(store, deps.scraper);
 
-  const sourceProduct = await measureAyWebsOperation(
-    {
-      operation: 'product_resolve',
-      storeId: store.id,
-      adapter: adapter.id,
-      sessionId: input.sessionId || null,
-      customerId: input.accountId || null,
-    },
-    async () => {
-      try {
-        return await adapter.resolveProduct(url.toString());
-      } catch (error) {
-        if (error instanceof AyWebsCaptureError) {
-          throw new AyWebsDomainError(error.code === 'PRODUCT_PAGE_REQUIRED' ? 'PRODUCT_PAGE_REQUIRED' : 'STORE_MISMATCH', {
-            userMessage: error.message,
-            technicalMessage: `${adapter.id}: ${error.message}`,
-          });
+  /*
+   * CACHE DE RÉSOLUTION (05/10/2026).
+   *
+   * Une fiche déjà lue il y a quelques minutes — le client vient de l'ouvrir,
+   * rouvre la feuille de variantes, ou ajoute au panier depuis le même lien —
+   * n'est pas relue chez le marchand : la lecture mémorisée est réutilisée, et
+   * le prix AYROVI est TOUJOURS recalculé ci-dessous par le moteur tarifaire
+   * (§45 : le cache ne sert jamais un prix, seulement une lecture).
+   *
+   * `refresh: true` force une relecture fraîche : la re-vérification du panier
+   * (§18/§29) et toute demande explicite de vérification ne doivent jamais
+   * recevoir une lecture en cache — sinon un changement de prix marchand
+   * passerait inaperçu.
+   */
+  const cacheKey = ayWebsResolveCacheKey(store.id, url.toString());
+  const cacheAllowed = !input.refresh && !input.pageHtml;
+  const cached = cacheAllowed ? readAyWebsResolveCache(deps.scraper, cacheKey) : null;
+
+  let sourceProduct: AyWebsSourceProduct;
+  let fromCache = false;
+  let cacheAgeMs: number | null = null;
+  if (cached) {
+    sourceProduct = cached.sourceProduct;
+    fromCache = true;
+    cacheAgeMs = cached.ageMs;
+  } else {
+    sourceProduct = await measureAyWebsOperation(
+      {
+        operation: 'product_resolve',
+        storeId: store.id,
+        adapter: adapter.id,
+        sessionId: input.sessionId || null,
+        customerId: input.accountId || null,
+      },
+      // Single-flight : deux appels simultanés pour le même produit ne
+      // déclenchent qu'UNE lecture marchande (feuille + cartes de variantes,
+      // ou deux clients sur le même article).
+      () => runAyWebsResolveOnce(deps.scraper, cacheKey, async () => {
+        try {
+          return await adapter.resolveProduct(url.toString());
+        } catch (error) {
+          if (error instanceof AyWebsCaptureError) {
+            throw new AyWebsDomainError(error.code === 'PRODUCT_PAGE_REQUIRED' ? 'PRODUCT_PAGE_REQUIRED' : 'STORE_MISMATCH', {
+              userMessage: error.message,
+              technicalMessage: `${adapter.id}: ${error.message}`,
+            });
+          }
+          throw error;
         }
-        throw error;
-      }
-    },
-  );
+      }),
+    );
+    // Mémorisée seulement si elle est exploitable (prix lu) — voir resolveCache.
+    writeAyWebsResolveCache(deps.scraper, cacheKey, sourceProduct);
+  }
 
   const missing = missingProductFields(sourceProduct);
   // Le client peut joindre des métadonnées de contexte (ex. `condition`) : elles
@@ -272,6 +320,8 @@ export async function resolveAyWebsProduct(
     evidenceHash,
     missing,
     resolvedAt: sourceProduct.capturedAt,
+    fromCache,
+    cacheAgeMs,
   };
 }
 
@@ -625,6 +675,8 @@ export async function checkAyWebsProductAvailability(
       url: stored.sourceUrl,
       storeId: stored.storeId,
       selectedVariant: input.variantAttributes || null,
+      // Re-vérification : jamais servie depuis le cache (§18, §29).
+      refresh: true,
     });
     return {
       availability: result.product.availability,
