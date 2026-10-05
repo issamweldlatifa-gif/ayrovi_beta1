@@ -49,13 +49,50 @@
 .ay-auth__brand { display: flex; align-items: center; justify-self: center; gap: 8px; font-size: 16px; font-weight: 700; letter-spacing: .1em; }
 .ay-auth__logo { width: 32px; height: 32px; padding: 5px; object-fit: contain; background: var(--ayrovi-bg-main); border-radius: 0; flex-shrink: 0; }
 .ay-auth__logo--wordmark { width: auto; height: 22px; padding: 0; background: none; }
+.ay-auth__brand--centered { justify-content: center; margin-block-start: var(--ayrovi-space-5); }
+.ay-auth__brand--centered .ay-auth__logo--wordmark { height: 30px; }
 .ay-auth__intro { text-align: center; margin-block-start: var(--ayrovi-space-4); }
 .ay-auth__intro h1 { max-width: 280px; margin-inline: auto; font-family: var(--ayrovi-font-display); font-size: 32px; line-height: var(--ayrovi-heading-line-height, 1.18); font-weight: var(--ayrovi-heading-weight, 650); font-synthesis: none; letter-spacing: 0; }
 .ay-auth:lang(ar) .ay-auth__intro h1 { line-height: var(--ayrovi-arabic-heading-line-height, 1.42); }
 .ay-auth__intro p { font-size: var(--text-small); line-height: 1.5; margin-block-start: var(--ayrovi-space-2); }
 .ay-auth__card { position: relative; margin-block-start: 0; border-radius: var(--ayrovi-radius-sheet) var(--ayrovi-radius-sheet) 0 0; padding: var(--ayrovi-space-8) max(var(--ayrovi-space-6), env(safe-area-inset-right)) max(var(--ayrovi-space-6), env(safe-area-inset-bottom)) max(var(--ayrovi-space-6), env(safe-area-inset-left)); background: var(--ayrovi-bg-main); }
-.ay-auth__social { display: flex; flex-wrap: wrap; gap: var(--ayrovi-space-2); }
-.ay-auth__provider { flex: 1 1 100px; padding-inline: var(--ayrovi-space-3); min-height: var(--ayrovi-control-height); font-size: var(--text-small); box-shadow: none; }
+/* ── Écran de connexion refondu le 04/10/2026 ────────────────────────────────
+   Les boutons de fournisseur étaient disposés en RANGÉE (`flex: 1 1 100px`) :
+   avec trois fournisseurs, chacun tombait sous 110 px et le libellé était
+   amputé en « Goog… ». Ils passent en COLONNE, pleine largeur, un par ligne —
+   chacun dit enfin en entier ce qu'il fait. La pile verticale est aussi ce qui
+   rend l'écran lisible au pouce : une cible par ligne, jamais deux côte à côte.
+   ─────────────────────────────────────────────────────────────────────────── */
+.ay-auth__social { display: flex; flex-direction: column; gap: var(--ayrovi-space-3); }
+/* Pastilles pleine largeur, contour fin, coins ronds — la forme des captures.
+   Le fond reste blanc : ces boutons sont des ALTERNATIVES, pas l'action
+   principale ; un seul bouton plein par écran, sinon plus rien ne guide. */
+.ay-auth__provider { width: 100%; justify-content: center; gap: var(--ayrovi-space-3); padding-inline: var(--ayrovi-space-5); min-height: 56px; border-radius: 999px; border: 1px solid var(--ayrovi-border-soft); background: var(--ayrovi-bg-main); font-size: var(--text-body); font-weight: 600; box-shadow: none; }
+/* Le bouton « téléphone » suit les fournisseurs : même forme, même rythme. */
+.ay-auth__social + .ay-auth__provider { margin-block-start: var(--ayrovi-space-3); }
+/* Étape 1 : l'adresse et son bouton, rien d'autre à l'écran. */
+/* ── Étape 1, au format des captures (04/10/2026, 3e passe) ────────────────
+   Un seul champ, un seul bouton, et un vide assumé autour : c'est le vide qui
+   fait qu'on sait où regarder. Le champ n'a PAS d'étiquette flottante ici —
+   « Adresse e-mail » est écrit dans le champ lui-même, comme demandé. Ce
+   n'est pas une duplication puisque aucune étiquette visible ne le répète,
+   et le lecteur d'écran, lui, reçoit le <label> masqué. */
+.ay-auth__step { display: flex; flex-direction: column; gap: var(--ayrovi-space-4); }
+.ay-auth__step .ay-auth__email { width: 100%; min-height: 60px; padding-inline: var(--ayrovi-space-5); border: 1px solid var(--ayrovi-border-soft); border-radius: var(--ayrovi-radius-input, 12px); background: var(--ayrovi-bg-main); font-size: var(--text-body); }
+.ay-auth__step .ay-auth__submit { min-height: 56px; border-radius: 999px; font-size: var(--text-body); font-weight: 700; }
+/* Le bouton désactivé doit avoir l'air désactivé — et le redevenir actif dès
+   qu'une adresse est saisie. Un bouton gris permanent est un bouton mort. */
+.ay-auth__step .ay-auth__submit:disabled { background: var(--ayrovi-bg-subtle); color: var(--ayrovi-text-secondary); box-shadow: none; }
+/* Le point orange de la marque séparait le titre du formulaire : à cet
+   endroit il ressemblait à un défaut d'affichage. Il reste sur l'écran
+   d'accueil, pas ici. */
+.ay-auth .ay-auth__hero::after { display: none; }
+/* Bloc légal des captures : deux liens, une puce de séparation, rien d'autre
+   — ni cadre, ni lavis, qui en faisaient une boîte plus lourde que le
+   formulaire au-dessus. */
+.ay-auth__footer { border-top: 0; background: none; }
+.ay-auth__legal { justify-content: center; gap: var(--ayrovi-space-3); }
+.ay-auth__legal a + a { border-inline-start: 0; }
 .ay-auth__provider svg { flex-shrink: 0; }
 .ay-auth__divider { display: flex; align-items: center; gap: var(--ayrovi-space-3); margin-block: var(--ayrovi-space-5); color: var(--ayrovi-text-secondary); font-size: var(--text-caption); }
 .ay-auth__divider::before, .ay-auth__divider::after { content: ''; flex: 1; height: 1px; background: var(--ayrovi-border-soft); }

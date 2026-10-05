@@ -37,7 +37,7 @@ export const isNativeApp = (): boolean => {
 };
 
 interface AyWebsBrowseBridge {
-  open(options: { url: string; sessionId: string; apiOrigin: string }): Promise<{ opened: boolean }>;
+  open(options: { url: string; sessionId: string; apiOrigin: string; customerToken: string }): Promise<{ opened: boolean }>;
 }
 
 /**
@@ -54,7 +54,16 @@ export async function openAyWebsNativeBrowser(url: string): Promise<boolean> {
     // (analyse de page, résolution produit, ajout au panier) ne peuvent pas
     // partir de `https://localhost` — le paquet embarqué n'héberge aucun
     // serveur. C'est la cause du bouton « Add to Cart » figé sur « Loading… ».
-    await plugin.open({ url, sessionId: getSessionId(), apiOrigin: AYROVI_API_ORIGIN });
+    // Le jeton de session CLIENT accompagne l'ouverture : le tiroir
+    // « Favoris » du navigateur marchand lit l'API du compte, qui ne connaît
+    // pas la session panier. Vide tant que personne n'est connecté — le tiroir
+    // affiche alors « connectez-vous », ce qui est la vérité.
+    await plugin.open({
+      url,
+      sessionId: getSessionId(),
+      apiOrigin: AYROVI_API_ORIGIN,
+      customerToken: getNativeSessionToken(),
+    });
     return true;
   } catch {
     return false;

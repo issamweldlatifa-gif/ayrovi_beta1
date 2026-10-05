@@ -28,7 +28,17 @@ export interface AyWebsStoreDefinition {
   domains: readonly string[];
   country: string;
   currency: string;
-  /** Chemin d'un logo administrable ; vide = monogramme typographique. */
+  /**
+   * Chemin d'un logo administrable ; vide = monogramme typographique.
+   *
+   * ── Corrigé le 04/10/2026 ───────────────────────────────────────────────
+   * Les quatre logos pointaient vers `https://logo.clearbit.com/<domaine>`.
+   * Ce service a FERMÉ : chaque carte faisait une requête externe qui
+   * échouait, et toutes les boutiques retombaient sur le monogramme. Pire,
+   * c'était une fuite — l'adresse IP de chaque client partait chez un tiers
+   * au seul affichage de la liste. Les logos sont désormais SERVIS PAR NOUS
+   * depuis /stores/, donc hors ligne compris, sans requête tierce.
+   */
   logo: string;
   enabled: boolean;
   captureSupported: boolean;
@@ -66,7 +76,7 @@ export const AYWEBS_STORES: readonly AyWebsStoreDefinition[] = [
     ],
     country: 'US',
     currency: 'USD',
-    logo: 'https://logo.clearbit.com/amazon.com',
+    logo: '/stores/amazon.png',
     enabled: true,
     captureSupported: true,
     adapter: 'amazon',
@@ -87,7 +97,7 @@ export const AYWEBS_STORES: readonly AyWebsStoreDefinition[] = [
     domains: ['shein.com', 'shein.co.uk'],
     country: 'CN',
     currency: 'USD',
-    logo: 'https://logo.clearbit.com/shein.com',
+    logo: '/stores/shein.png',
     enabled: true,
     captureSupported: true,
     adapter: 'shein',
@@ -108,7 +118,7 @@ export const AYWEBS_STORES: readonly AyWebsStoreDefinition[] = [
     domains: ['temu.com'],
     country: 'CN',
     currency: 'USD',
-    logo: 'https://logo.clearbit.com/temu.com',
+    logo: '/stores/temu.png',
     enabled: true,
     captureSupported: true,
     adapter: 'temu',
@@ -129,7 +139,7 @@ export const AYWEBS_STORES: readonly AyWebsStoreDefinition[] = [
     domains: ['aliexpress.com'],
     country: 'CN',
     currency: 'USD',
-    logo: 'https://logo.clearbit.com/aliexpress.com',
+    logo: '/stores/aliexpress.png',
     enabled: true,
     captureSupported: true,
     adapter: 'aliexpress',

@@ -24,4 +24,20 @@
     <string name="aywebs_availability_in_stock">متوفّر عند المتجر</string>
     <string name="aywebs_availability_low">الكمية محدودة عند المتجر</string>
     <string name="aywebs_availability_out">غير متوفّر عند المتجر</string>
+    <string name="aywebs_sheet_continue">متابعة التسوّق</string>
+    <string name="aywebs_sheet_empty_cart">سلّتك فارغة.</string>
+    <string name="aywebs_sheet_empty_wish">لا توجد مفضّلة بعد.</string>
+    <string name="aywebs_sheet_failed">تعذّر التحميل. تحقّق من اتصالك.</string>
+    <string name="aywebs_sheet_login_required">سجّل الدخول لعرض مفضّلة حسابك في AYROVI.</string>
+    <string name="aywebs_sheet_login">تسجيل الدخول</string>
+    <string name="aywebs_sheet_checkout">إتمام الطلب</string>
+    <string name="aywebs_sheet_quantity">الكمية: %1$d</string>
+    <string name="aywebs_sheet_total">المجموع الجزئي: %1$s د.ت</string>
+    <string name="aywebs_login_stay">تبقى داخل المتجر: الصفحة لا تتحرّك.</string>
+    <string name="aywebs_login_email">البريد الإلكتروني</string>
+    <string name="aywebs_login_password">كلمة المرور</string>
+    <string name="aywebs_login_failed">بيانات الدخول مرفوضة.</string>
+    <string name="aywebs_fav_add">إضافة هذه الصفحة إلى المفضّلة</string>
+    <string name="aywebs_fav_added">أُضيفت إلى المفضّلة.</string>
+    <string name="aywebs_fav_not_product">افتح صفحة منتج لإضافته إلى المفضّلة.</string>
 </resources>

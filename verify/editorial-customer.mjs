@@ -34,10 +34,18 @@ try{
    }
    await p.getByRole('button',{name:locale==='ar'?'فتح فضائي':'Ouvrir mon espace',exact:true}).click();
    await inspect('auth','.ay-auth');
-   check(`${locale}/${width}: empty credential fields`,(await p.locator('.ay-auth input[type=email]').inputValue())===''&&(await p.locator('.ay-auth input[type=password]').inputValue())==='');
-   check(`${locale}/${width}: auth uses new glyphs`,await p.locator('.ay-auth [data-editorial-icon]').count()>0);
+   // Connexion en DEUX TEMPS (04/10/2026) : l'étape 1 n'affiche que l'adresse ;
+   // le mot de passe n'existe à l'écran qu'à l'étape 2, après « Continuer ».
+   // Le garde suit ce parcours réel au lieu d'attendre un champ unique.
+   check(`${locale}/${width}: empty credential fields (step 1: email)`,(await p.locator('.ay-auth input[type=email]').inputValue())==='');
    const inputRadius=await p.locator('.ay-auth input[type=email]').evaluate(e=>getComputedStyle(e).borderRadius);
    check(`${locale}/${width}: auth inputs use the editorial control radius`,inputRadius==='12px',{inputRadius});
+   await p.locator('.ay-auth input[type=email]').click();
+   await p.locator('.ay-auth input[type=email]').fill('sarra@example.com');
+   await p.locator('.ay-auth form.ay-auth__step button[type=submit]').click();
+   await p.locator('.ay-auth input[type=password]').waitFor();
+   check(`${locale}/${width}: empty credential fields (step 2: password)`,(await p.locator('.ay-auth input[type=password]').inputValue())==='');
+   check(`${locale}/${width}: auth uses new glyphs`,await p.locator('.ay-auth [data-editorial-icon]').count()>0);
    await p.goBack();await p.locator('.ay-auth').waitFor({state:'hidden'});
    await p.getByRole('button',{name:locale==='ar'?'فتح القائمة':'Ouvrir le menu',exact:true}).click();
    const menu=p.getByRole('dialog',{name:locale==='ar'?'قائمة AYROVI':'Menu AYROVI',exact:true});

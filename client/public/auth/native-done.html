@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="fr" dir="ltr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex" />
+  <title>AYROVI — Connexion terminée</title>
+  <link rel="stylesheet" href="/identity.css">
+  <style>
+    :root { color-scheme: light; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: #fafafa;
+      color: #101828;
+      font-family: var(--ay-font-stack);
+      padding: 1.5rem;
+      text-align: center;
+    }
+    .card {
+      max-width: 22rem;
+      background: #fff;
+      border: 1px solid #e4e4e4;
+      border-radius: .75rem;
+      padding: 2rem 1.5rem;
+    }
+    .mark { width: 3rem; height: 3rem; margin: 0 auto 1rem; border-radius: 999px; background: #f18902; display: grid; place-items: center; color: #fff; font-size: 1.5rem; font-weight: 700; }
+    h1 { font-size: 1.15rem; margin: 0 0 .5rem; }
+    p { margin: 0; font-size: .95rem; line-height: 1.6; color: #475467; }
+    p + p { margin-top: .75rem; }
+  </style>
+</head>
+<body>
+  <!--
+    Page de retour du flux OAuth ouvert dans le NAVIGATEUR SYSTÈME par
+    l'application Android (voir client/src/customer/nativeOAuth.ts et
+    src/customer/routes.ts → /auth/native/claim).
+
+    Elle ne contient aucun jeton et n'en affiche aucun : l'application réclame
+    sa session elle-même, avec un code à usage unique qu'elle seule détient.
+    Ce fichier est volontairement statique — il doit s'afficher même si
+    l'application a déjà repris la main.
+  -->
+  <main class="card">
+    <div class="mark" aria-hidden="true">✓</div>
+    <h1>Connexion terminée</h1>
+    <p>Revenez à l’application AYROVI : votre compte y est déjà actif.</p>
+    <p lang="ar" dir="rtl">تم تسجيل الدخول. عُد إلى تطبيق AYROVI — حسابك مفعّل هناك.</p>
+  </main>
+</body>
+</html>

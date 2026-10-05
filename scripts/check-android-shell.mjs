@@ -173,6 +173,70 @@ check(
   /setAcceptThirdPartyCookies\(webView,\s*true\)/.test(browser),
   'refusés par défaut depuis Android 5.0 : les parcours de connexion bouclent'
 );
+/* ── 3ter. §5 (04/10/2026) : boutons de la barre haute RÉELLEMENT câblés ───── */
+// Le défaut : `@+id/aywebs_close` et `@+id/aywebs_refresh` existaient dans le
+// XML mais n'étaient référencés nulle part en Java. Les appuis partaient dans
+// le vide. Un bouton présent et muet est pire qu'un bouton absent.
+check(
+  'AyWebsBrowseActivity : bouton X câblé',
+  /R\.id\.aywebs_close/.test(browser) && /closeButton\.setOnClickListener/.test(browser),
+  'le X du navigateur marchand ne faisait rien : aucun findViewById, aucun listener'
+);
+check(
+  'AyWebsBrowseActivity : bouton rafraîchir câblé',
+  /R\.id\.aywebs_refresh/.test(browser) && /refreshButton\.setOnClickListener/.test(browser),
+  'même défaut que le X : présent dans le XML, absent du Java'
+);
+check(
+  'AyWebsBrowseActivity : X revient à AYROVI sans tuer l’application',
+  /onClosePressed/.test(browser) && /isTaskRoot\(\)/.test(browser),
+  'un finish() inconditionnel ferme l’application quand le navigateur est la racine de la tâche (lien profond, partage)'
+);
+/* ── 3quater. (04/10/2026) : Panier et Favoris RESTENT dans la boutique ───── */
+// Le défaut signalé : les deux boutons de la barre basse appelaient
+// openWebRoute(), c'est-à-dire startActivity(lien profond) + finish(). La page
+// marchande était DÉTRUITE et l'utilisateur éjecté de son achat pour la seule
+// raison qu'il voulait vérifier son panier. Ils ouvrent désormais un tiroir
+// par-dessus la WebView, qui reste vivante dessous.
+check(
+  'AyWebsBrowseActivity : Panier ouvre un tiroir interne',
+  /cartButton\.setOnClickListener\(v -> openListSheet\(true\)\)/.test(browser),
+  'openWebRoute() détruisait la page marchande : consulter son panier n’est pas quitter sa boutique'
+);
+check(
+  'AyWebsBrowseActivity : Favoris ouvre un tiroir interne',
+  /wishButton\.setOnClickListener\(v -> openListSheet\(false\)\)/.test(browser),
+  'même défaut que le panier : le favori éjectait de la boutique'
+);
+check(
+  'AyWebsBrowseActivity : fermer le tiroir rend la boutique, ne la ferme pas',
+  /private void openListSheet\(/.test(browser)
+    && /close\.setOnClickListener\(v -> dialog\.dismiss\(\)\)/.test(browser)
+    && /keepShopping\.setOnClickListener\(v -> dialog\.dismiss\(\)\)/.test(browser),
+  'un tiroir dont la croix appelle finish() est un tiroir qui ment : il ferme la boutique'
+);
+check(
+  'AyWebsBrowseActivity : les deux seules sorties du tiroir sont payer et se connecter',
+  /R\.string\.aywebs_sheet_checkout/.test(browser) && /R\.string\.aywebs_sheet_login/.test(browser),
+  'le client a autorisé exactement ces deux sorties, pas une de plus'
+);
+check(
+  'AyWebsBrowseActivity : tiroir plafonné à 82 % de l’écran',
+  /capSheetHeight/.test(browser) && /0\.82f/.test(browser),
+  'sans plafond, une longue liste recouvre la barre du marchand et déborde sous la barre système'
+);
+check(
+  'AyWebsBrowseActivity : les favoris portent le jeton du COMPTE',
+  /EXTRA_CUSTOMER_TOKEN/.test(browser) && /Bearer/.test(browser),
+  'sans lui, un utilisateur connecté verrait « connectez-vous » au milieu de ses achats'
+);
+
+check(
+  'AyWebsBrowseActivity : retour matériel câblé',
+  /public void onBackPressed\s*\(/.test(browser),
+  'sans onBackPressed, le retour système quitte le navigateur marchand au lieu de remonter son historique'
+);
+
 check(
   'AyWebsBrowseActivity : panne de service distinguée de « page non éligible »',
   /setAddUnavailable/.test(browser) && /aywebs_service_unavailable/.test(strings),
@@ -258,4 +322,72 @@ if (failures.length) {
   for (const f of failures) console.error(`  • ${f}`);
   process.exit(1);
 }
+/* ── 3sexies. (04/10/2026, 3e passe) : attente, favoris, connexion ───────── */
+// Mesure : le service dort après inactivité et met ~60 s à se réveiller ; le
+// lecteur était à 20 s, donc le premier ajout au panier de chaque session ne
+// pouvait QUE expirer. Ce n'était ni Amazon ni le produit.
+check(
+  'AyWebsBrowseActivity : délais à la mesure d’un réveil à froid',
+  /setReadTimeout\(60_000\)/.test(browser) && !/setReadTimeout\(20_000\)/.test(browser),
+  '20 s ne suffisent pas à réveiller le service : le premier ajout expirait systématiquement'
+);
+check(
+  'AyWebsBrowseActivity : le service est réveillé dès l’ouverture du magasin',
+  /warmUpApi\(\)/.test(browser) && /HEALTH_PATH/.test(browser),
+  'sans réveil anticipé, c’est l’utilisateur qui paie le démarrage à froid, debout devant un bouton muet'
+);
+check(
+  'AyWebsBrowseActivity : une seule relance après expiration',
+  /SocketTimeoutException/.test(browser) && /postOnce/.test(browser),
+  'réessayer en boucle prolonge l’attente en silence ; ne pas réessayer du tout gaspille le réveil déjà payé'
+);
+check(
+  'AyWebsBrowseActivity : se connecter ne quitte plus la boutique',
+  /private void openLoginSheet\(/.test(browser)
+    && !/cta\.setOnClickListener\(v -> \{ dialog\.dismiss\(\); openWebRoute\("\/account"\); \}\)/.test(browser),
+  'le bouton renvoyait vers l’écran compte : se connecter détruisait la page marchande en plein achat'
+);
+check(
+  'AyWebsBrowseActivity : la connexion réclame le jeton natif',
+  /"x-ayrovi-native", "1"/.test(browser),
+  'sans cet en-tête le serveur n’émet aucun jeton natif : la coque resterait déconnectée après une connexion réussie'
+);
+check(
+  'AyWebsBrowseActivity : le tiroir Favoris sait AJOUTER la page courante',
+  /addFavoriteCurrentPageButton/.test(browser) && /R\.string\.aywebs_fav_add/.test(browser),
+  'on ouvre ses favoris en regardant un produit, justement pour l’y mettre'
+);
+check(
+  'AyWebsBrowseActivity : on ne propose pas d’ajouter une page qui n’est pas un produit',
+  /if \(!productPage \|\| currentUrl\.isEmpty\(\)\) \{\s*toast\(R\.string\.aywebs_fav_not_product\);/.test(browser),
+  'proposer d’ajouter une page d’accueil aux favoris est une promesse creuse'
+);
+
+/* ── 3quinquies. (04/10/2026) : la connexion ne sort plus de l'application ── */
+// « تسجيل دخول بش ولي داخل تطبيق لا خروج من تطبيق ». Le correctif précédent du
+// 404 Google ouvrait le NAVIGATEUR SYSTÈME : application différente, bascule
+// visible, retour manuel. L'onglet personnalisé est la seule voie qui soit à la
+// fois acceptée par Google (qui refuse les WebView embarquées) et sans sortie.
+const authTab = read('android/app/src/main/java/app/ayrovi/mobile/AyroviAuthTabPlugin.java');
+check(
+  'AyroviAuthTabPlugin : onglet personnalisé présent',
+  /CustomTabsIntent/.test(authTab) && /launchUrl/.test(authTab),
+  'sans lui, la connexion par fournisseur bascule vers Chrome et quitte AYROVI'
+);
+check(
+  'AyroviAuthTabPlugin : l’onglet reste dans NOTRE tâche',
+  !/FLAG_ACTIVITY_NEW_TASK/.test(authTab),
+  'avec NEW_TASK, l’onglet devient une fenêtre séparée dans le sélecteur d’applications'
+);
+check(
+  'AyroviAuthTabPlugin : https exigé pour une page de mot de passe',
+  /AUTH_TAB_URL_INVALID/.test(authTab),
+  'ouvrir un formulaire de connexion en http serait une faute'
+);
+check(
+  'MainActivity : le plugin d’onglet est enregistré',
+  /registerPlugin\(AyroviAuthTabPlugin\.class\)/.test(read('android/app/src/main/java/app/ayrovi/mobile/MainActivity.java')),
+  'un plugin non enregistré est invisible depuis le web : le repli navigateur reprendrait'
+);
+
 console.log(`Coque Android : ${checks.length} invariants vérifiés, 0 rupture.`);

@@ -1088,6 +1088,25 @@ export class QatafoDatabase {
       );
       CREATE INDEX IF NOT EXISTS idx_customer_oauth_expiry ON customer_oauth_states(expires_at);
 
+      /* Remise de session à l'application native après un OAuth ouvert dans le
+         navigateur système (04/10/2026). Dans l'APK, l'interface est servie
+         depuis https://localhost : le cookie de session posé sur l'origine de
+         l'API ne lui parvient jamais, et Google refuse de toute façon les
+         WebView embarquées. Le navigateur système termine donc le flux, et
+         l'application réclame UNE SEULE FOIS son jeton avec un code à usage
+         unique qu'elle a elle-même généré. On stocke le HACHAGE du code, jamais
+         le code. */
+      CREATE TABLE IF NOT EXISTS customer_native_handoffs (
+        id TEXT PRIMARY KEY,
+        account_id TEXT NOT NULL REFERENCES customer_accounts(id) ON DELETE CASCADE,
+        session_token TEXT NOT NULL,
+        csrf_token TEXT NOT NULL,
+        session_expires_at TEXT NOT NULL,
+        expires_at TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_customer_native_handoff_expiry ON customer_native_handoffs(expires_at);
+
       CREATE TABLE IF NOT EXISTS customer_addresses (
         id TEXT PRIMARY KEY,
         account_id TEXT NOT NULL REFERENCES customer_accounts(id) ON DELETE CASCADE,
@@ -1925,6 +1944,8 @@ export class QatafoDatabase {
     this.ensureColumn('order_items', 'ocerex_extraction_id', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('orders', 'account_id', 'TEXT REFERENCES customer_accounts(id) ON DELETE SET NULL');
     this.ensureColumn('customer_oauth_states', 'account_id', 'TEXT REFERENCES customer_accounts(id) ON DELETE SET NULL');
+    // Hachage du code de remise natif (04/10/2026) : vide = flux web habituel.
+    this.ensureColumn('customer_oauth_states', 'native_handoff_id', "TEXT NOT NULL DEFAULT ''");
     this.migrateOrdersToAccountLifecycle();
     this.ensureColumn('orders', 'contact_email', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('orders', 'delivery_latitude', 'REAL');

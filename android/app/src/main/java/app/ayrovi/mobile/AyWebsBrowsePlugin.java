@@ -21,6 +21,11 @@ public class AyWebsBrowsePlugin extends Plugin {
   public void open(PluginCall call) {
     String url = call.getString("url", "");
     String sessionId = call.getString("sessionId", "");
+    // Jeton de session CLIENT (04/10/2026) : le tiroir « Favoris » du
+    // navigateur marchand lit /api/customer/account/favorites, qui appartient
+    // au COMPTE et non à la session panier. Sans lui, un utilisateur pourtant
+    // connecté verrait « connectez-vous » au milieu de ses achats.
+    String customerToken = call.getString("customerToken", "");
 
     // Origine de l'API, transmise par la couche web (SOURCE UNIQUE :
     // client/src/services/apiOrigin.ts). Ajouté le 2026-10-03 : les appels
@@ -58,6 +63,7 @@ public class AyWebsBrowsePlugin extends Plugin {
     intent.putExtra(AyWebsBrowseActivity.EXTRA_SESSION_ID, sessionId == null ? "" : sessionId);
     intent.putExtra(AyWebsBrowseActivity.EXTRA_WEB_BASE, base.trim());
     intent.putExtra(AyWebsBrowseActivity.EXTRA_API_ORIGIN, apiOrigin == null ? "" : apiOrigin);
+    intent.putExtra(AyWebsBrowseActivity.EXTRA_CUSTOMER_TOKEN, customerToken == null ? "" : customerToken);
     getContext().startActivity(intent);
 
     JSObject ret = new JSObject();

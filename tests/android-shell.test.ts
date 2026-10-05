@@ -202,6 +202,9 @@ describe('AYROVI Android shell (Capacitor) — application réelle', () => {
 
   it('gradle: signature release env-driven + versionCode Play injectable', () => {
     expect(gradle).toContain("System.getenv('AYROVI_KEYSTORE_BASE64')");
-    expect(gradle).toContain("versionCode ((System.getenv('AYROVI_VERSION_CODE') ?: '1') as int)");
+    // Ce qui compte est l'INJECTION par l'environnement, pas la valeur de repli
+    // (qui suit la version courante du paquet : 1.0.3 / 3 au 04/10/2026).
+    expect(gradle).toMatch(/versionCode \(\(System\.getenv\('AYROVI_VERSION_CODE'\) \?: '\d+'\) as int\)/);
+    expect(gradle).toMatch(/versionName \(System\.getenv\('AYROVI_VERSION_NAME'\) \?: '\d+\.\d+(\.\d+)?'\)/);
   });
 });

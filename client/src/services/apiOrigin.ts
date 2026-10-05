@@ -28,7 +28,23 @@
  * La valeur de repli reste l'origine de production : sans variable, le
  * comportement est EXACTEMENT celui d'avant (aucune régression).
  */
-const PRODUCTION_ORIGIN = 'https://ayrovi-beta1.onrender.com';
+/**
+ * ── Corrigé le 04/10/2026 (deuxième passe) ─────────────────────────────────
+ * L'application visait `ayrovi-beta1.onrender.com`, mais le serveur déployé
+ * s'annonce lui-même sous `ayrovi-beta1-1.onrender.com` : c'est l'origine
+ * qu'il met dans le `redirect_uri` envoyé à Google. Vérifié en direct :
+ *
+ *   GET https://ayrovi-beta1.onrender.com/api/customer/auth/google/start…
+ *     → 302 accounts.google.com/…&redirect_uri=https%3A%2F%2Fayrovi-beta1-1
+ *       .onrender.com%2Fapi%2Fcustomer%2Fauth%2Fgoogle%2Fcallback
+ *
+ * Conséquence concrète : le parcours démarrait sur un hôte et se terminait
+ * sur un AUTRE. Le cookie de session était déposé sur le second, que
+ * l'application n'interrogeait jamais — d'où une connexion qui « réussit »
+ * dans l'onglet mais laisse l'application déconnectée. Les deux hôtes doivent
+ * être le même, et c'est celui que le serveur déclare qui fait foi.
+ */
+const PRODUCTION_ORIGIN = 'https://ayrovi-beta1-1.onrender.com';
 
 /** Normalise une origine : trim, sans barre finale, et HTTPS/HTTP valide seulement. */
 export function normalizeApiOrigin(raw: string | undefined | null): string {

@@ -1,13 +1,14 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import './aywebs.css';
 import { useLocale } from '../../i18n/LocaleContext';
-import { APP_BUILD_STAMP } from '../../config/buildStamp';
-import { AppHeader } from '../../design/AppHeader';
 import { openMerchantPage } from '../../services/nativeShell';
 import { getAyWebsCart, setAyWebsCsrfToken, type AyWebsStore } from './api';
 import { AyWebsStoresScreen } from './components/AyWebsStoresScreen';
 import { AyWebsCartScreen } from './components/AyWebsCartScreen';
-import { AyWebsVariantSheet, } from './components/AyWebsVariantSheet';
+import { AyWebsWishScreen } from './components/AyWebsWishScreen';
+import { AyWebsVariantSheet } from './components/AyWebsVariantSheet';
+import { AyWebsFavoriteSheet } from './components/AyWebsFavoriteSheet';
+import { useAyWebsFavorites, type AyWebsFavoriteTarget } from './useAyWebsFavorites';
 import type { AyWebsTab } from './components/AyWebsTabBar';
 
 /**
@@ -18,6 +19,17 @@ import type { AyWebsTab } from './components/AyWebsTabBar';
  * sur le backend /api/v1/aywebs existant. L'ouverture d'un magasin passe par
  * openMerchantPage : WebView native à barre flottante dans l'APK, onglet
  * externe sur le web — même contrat, aucune duplication d'UI (§2).
+ *
+ * ── Correctifs du 04/10/2026 (ملاحظات الواجهة السبع) ───────────────────────
+ * §4 — l'en-tête « AyWebs » a été SUPPRIMÉ. Il mangeait ~10 % de la hauteur
+ *      utile et dupliquait une sortie déjà présente : « Accueil », dans la
+ *      barre basse, EST le retour vers la boutique AYROVI. Chaque écran garde
+ *      son propre titre (Boutiques / Wish List / Panier).
+ * §2 — tous les onglets restent DANS AyWebs. Seul « Mon compte » ouvre
+ *      l'espace client, parce que commandes et adresses y vivent ; c'est une
+ *      sortie choisie, pas une fuite d'interface.
+ * §3 — la barre AYROVI est démontée pendant AyWebs (App.tsx) : une seule barre
+ *      est visible à tout instant.
  */
 export interface AyWebsAppProps {
   onClose: () => void;
@@ -31,10 +43,12 @@ export interface AyWebsAppProps {
 export const AyWebsApp: React.FC<AyWebsAppProps> = ({
   onClose, onOpenCart, onOpenAccount, onOpenFavorites, cartCount, customerCsrfToken = '',
 }) => {
-  const { tr, direction } = useLocale();
+  const { direction } = useLocale();
   const [tab, setTab] = useState<AyWebsTab>('stores');
   const [sheet, setSheet] = useState<{ url: string; storeId: string | null } | null>(null);
+  const [favoriteTarget, setFavoriteTarget] = useState<AyWebsFavoriteTarget | null>(null);
   const [ayWebsCount, setAyWebsCount] = useState(0);
+  const favorites = useAyWebsFavorites(customerCsrfToken);
 
   useEffect(() => { setAyWebsCsrfToken(customerCsrfToken || ''); }, [customerCsrfToken]);
 
@@ -43,11 +57,13 @@ export const AyWebsApp: React.FC<AyWebsAppProps> = ({
     const params = new URLSearchParams(window.location.search);
     const section = window.location.pathname.split('/').filter(Boolean)[1] || '';
     if (section === 'cart') { setTab('cart'); }
-    if (section === 'wish') { onOpenFavorites(); }
+    // §2 : « wish » est désormais un écran INTERNE — le lien profond ne sort
+    // plus vers l'espace compte.
+    if (section === 'wish') { setTab('wish'); }
     const shared = (params.get('url') || params.get('text') || '').trim();
     const match = shared.match(/https?:\/\/[^\s<>]+/i)?.[0];
     if (match) setSheet({ url: match, storeId: params.get('store') });
-  }, [onOpenFavorites]);
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -61,10 +77,9 @@ export const AyWebsApp: React.FC<AyWebsAppProps> = ({
 
   const onTab = useCallback((next: AyWebsTab) => {
     if (next === 'home') { onClose(); return; }
-    if (next === 'wish') { onOpenFavorites(); return; }
     if (next === 'account') { onOpenAccount(); return; }
     setTab(next);
-  }, [onClose, onOpenFavorites, onOpenAccount]);
+  }, [onClose, onOpenAccount]);
 
   const openStore = useCallback((store: AyWebsStore) => {
     // Navigateur marchand : natif dans l'APK (barre flottante Add to Cart),
@@ -77,6 +92,14 @@ export const AyWebsApp: React.FC<AyWebsAppProps> = ({
     onOpenCart();
   }, [onOpenCart]);
 
+  /** « Gérer depuis mon compte » : sortie explicite vers la page complète. */
+  const openAccountFavorites = useCallback(() => {
+    setFavoriteTarget(null);
+    onOpenFavorites();
+  }, [onOpenFavorites]);
+
+  const totalCartCount = cartCount + ayWebsCount;
+
   return (
     <section
       className="fixed inset-0 z-[25] overflow-y-auto bg-surface"
@@ -86,18 +109,25 @@ export const AyWebsApp: React.FC<AyWebsAppProps> = ({
       data-app-route="aywebs"
       dir={direction}
     >
-      <AppHeader
-        title="AyWebs"
-        subtitle={`${tr('Proxy shopping — Add to Cart', 'التسوق بالوكالة — أضف إلى السلة')} · ${APP_BUILD_STAMP}`}
-        onClose={onClose}
-      />
       {tab === 'stores' && (
         <AyWebsStoresScreen
           tab={tab}
           onTab={onTab}
           onOpenStore={openStore}
           onOpenProduct={(url, storeId) => setSheet({ url, storeId })}
-          cartCount={cartCount + ayWebsCount}
+          onOpenFavorite={setFavoriteTarget}
+          isFavorite={favorites.isSaved}
+          cartCount={totalCartCount}
+        />
+      )}
+      {tab === 'wish' && (
+        <AyWebsWishScreen
+          tab={tab}
+          onTab={onTab}
+          favorites={favorites}
+          onOpenProduct={(url) => setSheet({ url, storeId: null })}
+          onOpenAccount={openAccountFavorites}
+          cartCount={totalCartCount}
         />
       )}
       {tab === 'cart' && (
@@ -109,6 +139,14 @@ export const AyWebsApp: React.FC<AyWebsAppProps> = ({
           storeId={sheet.storeId}
           onClose={() => setSheet(null)}
           onCheckout={openCheckout}
+        />
+      )}
+      {favoriteTarget && (
+        <AyWebsFavoriteSheet
+          target={favoriteTarget}
+          favorites={favorites}
+          onClose={() => setFavoriteTarget(null)}
+          onOpenAccount={onOpenAccount}
         />
       )}
     </section>
