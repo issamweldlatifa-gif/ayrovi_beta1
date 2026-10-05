@@ -20024,7 +20024,7 @@
     {
       "file": "client/src/services/apiOrigin.ts",
       "domain": "shell-content",
-      "sha256": "b634d4d613a45d81a71b5b99adba259417e750a6f523549c82bd843e42784d27",
+      "sha256": "6f669ca14fc714e063b507d40d3128919e1c5b5bc2befc87cd31c6671a4902a1",
       "lines": 81,
       "imports": [],
       "exports": [
@@ -20041,13 +20041,14 @@
     {
       "file": "client/src/services/nativeApiOrigin.ts",
       "domain": "shell-content",
-      "sha256": "c3baec7d34bc3922bcddb3023e5c1f35a7126e1af3f02e9d19b2eb2711193c56",
-      "lines": 67,
+      "sha256": "e902b9912da505f5c65aa4be7985d6cf4432c3c061fa1d8f9dd286430e8f8ad4",
+      "lines": 49,
       "imports": [
         "./nativeShell",
         "./apiOrigin"
       ],
       "exports": [
+        "nativeTarget",
         "installNativeApiOrigin"
       ],
       "controls": [],
@@ -20060,8 +20061,8 @@
     {
       "file": "client/src/services/nativeShell.ts",
       "domain": "shell-content",
-      "sha256": "4ebb6b9460a3750909475cd22cca7fbd1a492618d244ce560dae01579033ea93",
-      "lines": 96,
+      "sha256": "a7af0a686fa8af84af1e4e0cd57c8f53c8640160a0727c4d94819d551a7443d4",
+      "lines": 97,
       "imports": [
         "@capacitor/core",
         "./apiOrigin",
@@ -20269,8 +20270,8 @@
     {
       "file": "client/src/shop/BagPage.tsx",
       "domain": "shell-content",
-      "sha256": "d9a8a6fd7231d1e855e037f4dd5d0dadb096a8fb981b546e030e6c79f0d77efc",
-      "lines": 185,
+      "sha256": "651657f43d9b15a0a3bd7939fbef9c5a412cd6e22d70d58cb355102dbaa3c15c",
+      "lines": 200,
       "imports": [
         "react",
         "../design/editorial/Icon",
@@ -20282,7 +20283,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 68,
+          "line": 73,
           "className": "\"s-iconbtn\"",
           "type": "\"button\"",
           "role": null,
@@ -20292,7 +20293,7 @@
         },
         {
           "tag": "button",
-          "line": 79,
+          "line": 84,
           "className": "\"s-cta s-cta--ghost\"",
           "type": "\"button\"",
           "role": null,
@@ -20302,7 +20303,7 @@
         },
         {
           "tag": "button",
-          "line": 120,
+          "line": 132,
           "className": "\"s-iconbtn\"",
           "type": "\"button\"",
           "role": null,
@@ -20312,7 +20313,7 @@
         },
         {
           "tag": "button",
-          "line": 124,
+          "line": 136,
           "className": "\"s-iconbtn\"",
           "type": "\"button\"",
           "role": null,
@@ -20322,7 +20323,7 @@
         },
         {
           "tag": "button",
-          "line": 128,
+          "line": 140,
           "className": "\"s-iconbtn s-bag-line__remove\"",
           "type": "\"button\"",
           "role": null,
@@ -20332,7 +20333,7 @@
         },
         {
           "tag": "button",
-          "line": 147,
+          "line": 159,
           "className": "\"s-cta s-cta--ghost\"",
           "type": "\"button\"",
           "role": null,
@@ -20342,7 +20343,7 @@
         },
         {
           "tag": "summary",
-          "line": 151,
+          "line": 163,
           "className": null,
           "type": null,
           "role": null,
@@ -20352,7 +20353,7 @@
         },
         {
           "tag": "button",
-          "line": 159,
+          "line": 174,
           "className": "\"s-cta s-bag-checkout\"",
           "type": "\"button\"",
           "role": null,
@@ -20370,8 +20371,8 @@
     {
       "file": "client/src/shop/checkoutOrder.ts",
       "domain": "shell-content",
-      "sha256": "3105b286e9b3ec4923fcf148c0b05a6dfcec7d0e32611aa3b313a59603a2a4fd",
-      "lines": 121,
+      "sha256": "edee10a6ef8d4e03454f7a2c8b4bc708eca4a7ca0175cbf295df518c309ffbbf",
+      "lines": 122,
       "imports": [],
       "exports": [
         "normalizeTunisianPhone",
@@ -20778,8 +20779,8 @@
     {
       "file": "client/src/shop/ShopBagScreen.tsx",
       "domain": "shell-content",
-      "sha256": "4cf9fe676dd1b2d0c94927f9b65468dc5d48b4eea232f4d0f629a1fbb7e7b1f5",
-      "lines": 138,
+      "sha256": "e0931cbac5503a4292c31a557da610d19786f9c49d0bc17f798a2ed10d7436cc",
+      "lines": 139,
       "imports": [
         "react",
         "../i18n/LocaleContext",
@@ -20797,7 +20798,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 115,
+          "line": 116,
           "className": "\"s-drape__backdrop\"",
           "type": "\"button\"",
           "role": null,
@@ -20815,8 +20816,8 @@
     {
       "file": "client/src/shop/ShopCheckoutScreen.tsx",
       "domain": "commerce",
-      "sha256": "273cf96911da5bed5841e81b6bbfd15c50da011b665d0c6f54bbedf8d8404530",
-      "lines": 261,
+      "sha256": "492e28b5551af2985d206922405ef812b1c715f0adefe3495cb3c3f13ea8e546",
+      "lines": 265,
       "imports": [
         "react",
         "../i18n/LocaleContext",
@@ -21826,8 +21827,8 @@
     {
       "file": "client/src/types.ts",
       "domain": "shell-content",
-      "sha256": "79993f005a7aaed3cbdeb620c460fa77e1d8961a4d0ce90ee3b02f34de5e5d67",
-      "lines": 411,
+      "sha256": "5266503adf091f5cfd64c2a45a299be5b751bce0f180d4e87341be6b16463b5a",
+      "lines": 415,
       "imports": [],
       "exports": [],
       "controls": [],
