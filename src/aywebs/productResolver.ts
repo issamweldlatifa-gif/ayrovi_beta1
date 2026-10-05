@@ -129,10 +129,7 @@ export async function resolveAyWebsProduct(
     },
     async () => {
       try {
-        return await adapter.resolveProduct(url.toString(), {
-          pageHtml: input.pageHtml || null,
-          pageUrl: input.pageUrl || null,
-        });
+        return await adapter.resolveProduct(url.toString());
       } catch (error) {
         if (error instanceof AyWebsCaptureError) {
           throw new AyWebsDomainError(error.code === 'PRODUCT_PAGE_REQUIRED' ? 'PRODUCT_PAGE_REQUIRED' : 'STORE_MISMATCH', {

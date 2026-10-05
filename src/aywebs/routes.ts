@@ -118,31 +118,15 @@ const MAX_PROVIDED_PAGE_BYTES = 4_000_000;
  *      serveur, qui en tire titre/prix/variantes, et le prix reste calculé ici
  *      (§45). Le client apporte une page, jamais un prix.
  */
-function readProvidedPage(raw: unknown, targetUrl: string): { html: string; url: string } | null {
-  if (!raw || typeof raw !== 'object') return null;
-  const source = raw as { html?: unknown; url?: unknown };
-  const html = typeof source.html === 'string' ? source.html : '';
-  if (html.length < 200 || html.length > MAX_PROVIDED_PAGE_BYTES) return null;
-  if (!/<(?:html|body|head|div|span|script|meta)\b/i.test(html)) return null;
-
-  let targetHost = '';
-  try {
-    targetHost = new URL(targetUrl).hostname.toLowerCase().replace(/^www\./, '');
-  } catch {
-    return null;
+/** Raw merchant pages are never accepted: they contain private account DOM
+ * and cannot provide independent evidence of price or availability. */
+export function rejectProvidedPage(raw: unknown): void {
+  if (raw !== undefined && raw !== null) {
+    throw new AyWebsDomainError('INVALID_URL', {
+      userMessage: 'La capture HTML n’est plus acceptée. Mettez l’application à jour et envoyez uniquement le lien produit.',
+      technicalMessage: 'RAW_PAGE_CAPTURE_DISABLED',
+    });
   }
-  const claimed = typeof source.url === 'string' ? source.url.trim() : '';
-  if (claimed) {
-    try {
-      const claimedHost = new URL(claimed).hostname.toLowerCase().replace(/^www\./, '');
-      // Hôte différent ⇒ page d'un autre site : refusée, on retombe sur la
-      // chaîne serveur habituelle au lieu de lire une page non pertinente.
-      if (claimedHost !== targetHost) return null;
-    } catch {
-      return null;
-    }
-  }
-  return { html, url: claimed || targetUrl };
 }
 
 export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper): Router {
@@ -495,7 +479,7 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
       : String(req.body.store ?? req.body.store_id);
     const variantAttributes = normalizeAttributes(req.body?.variant || req.body?.variant_attributes);
     const quantity = Number(req.body?.quantity ?? 1);
-    const providedPage = readProvidedPage(req.body?.page, rawUrl);
+    rejectProvidedPage(req.body?.page);
 
     trackAyWebsFunnel(ctx, 'capture_started', { store: storeId || undefined }, identity.sessionId);
     const startedAt = Date.now();
@@ -507,8 +491,6 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
         quantity: Number.isFinite(quantity) ? quantity : 1,
         sessionId: identity.sessionId,
         accountId: identity.accountId,
-        pageHtml: providedPage?.html || null,
-        pageUrl: providedPage?.url || null,
       });
       trackAyWebsNavigation(ctx, {
         sessionId: identity.sessionId,

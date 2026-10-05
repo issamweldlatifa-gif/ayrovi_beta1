@@ -137,7 +137,8 @@ describe('AYROVI Android shell (Capacitor) — application réelle', () => {
   });
 
   it('AWEBs: l’origine de l’API est transmise par la couche web (source unique)', () => {
-    expect(bridge).toContain('apiOrigin: AYROVI_API_ORIGIN');
+    expect(bridge).not.toContain('apiOrigin: AYROVI_API_ORIGIN');
+    expect(browserActivity).toContain('BuildConfig.AYROVI_API_ORIGIN');
     expect(bridge).toContain("from './apiOrigin'");
     expect(apiOrigin).toContain("export const AYROVI_API_ORIGIN");
     // Le module neutre ne doit RIEN importer : c'est ce qui empêche le cycle
@@ -153,7 +154,7 @@ describe('AYROVI Android shell (Capacitor) — application réelle', () => {
     expect(browserActivity).toContain('onCreateWindow');
     // Cookies tiers refusés par défaut depuis Android 5.0 : les parcours SSO
     // rebouclent sur une page déjà connectée.
-    expect(browserActivity).toContain('setAcceptThirdPartyCookies(webView, true)');
+    expect(browserActivity).toContain('setAcceptThirdPartyCookies(webView, false)');
   });
 
   it('AWEBs: une panne de service n’est jamais présentée comme un refus de la page', () => {

@@ -316,25 +316,8 @@ export class SmartLinkScraper {
     let directResult: ParsedProductPage | null = null;
     let directFailure = 'DIRECT_PRICE_NOT_FOUND';
 
-    /* PAGE FOURNIE PAR LE CLIENT (04/10/2026) — chemin le plus court ET le plus
-     * fiable : l'HTML vient de la page que le client regarde, donc rendue par le
-     * marchand pour lui (prix, options, disponibilité publiés), alors que la même
-     * requête depuis l'IP d'un centre de données reçoit une page sans prix.
-     * Aucune confiance aveugle pour autant : le parseur du serveur relit ce HTML,
-     * le domaine est vérifié en amont, et la provenance est enregistrée
-     * (`provider: 'webview'`). Si la page fournie ne donne pas de prix, la chaîne
-     * habituelle reprend exactement comme avant. */
-    if (options.pageHtml && options.pageHtml.trim().length > 200) {
-      try {
-        const provided = parseProductPageHtml(options.pageHtml, options.pageUrl || url, storeType);
-        if (provided.price > 0) {
-          return { data: provided, verified: true, provider: 'webview', method: provided.priceSource, failureCode: null };
-        }
-        if (provided.title || provided.images.length) directResult = provided;
-      } catch (error: any) {
-        console.warn('[scraper] page client illisible', { url, message: String(error?.message || error).slice(0, 120) });
-      }
-    }
+    // Client DOM cannot establish a merchant price. All evidence is fetched
+    // independently through the validated server transport.
 
     try {
       const response = await fetchSafeRemote(url, { signal: AbortSignal.timeout(7_000), headers });

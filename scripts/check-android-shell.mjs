@@ -138,7 +138,7 @@ check(
 );
 check(
   'MainActivity : bouton retour matériel câblé',
-  /public void onBackPressed\s*\(/.test(main),
+  /getOnBackPressedDispatcher\(\)/.test(main),
   'sans onBackPressed, le retour système ferme l’application même quand un écran AYROVI est ouvert (Capacitor 7 n’en fournit aucun)'
 );
 
@@ -169,8 +169,8 @@ check(
   'sans cela window.open() est ignoré en silence : les popups de connexion SSO ne s’ouvrent jamais'
 );
 check(
-  'AyWebsBrowseActivity : cookies tiers acceptés',
-  /setAcceptThirdPartyCookies\(webView,\s*true\)/.test(browser),
+  'AyWebsBrowseActivity : cookies tiers désactivés',
+  /setAcceptThirdPartyCookies\(webView,\s*false\)/.test(browser),
   'refusés par défaut depuis Android 5.0 : les parcours de connexion bouclent'
 );
 /* ── 3ter. §5 (04/10/2026) : boutons de la barre haute RÉELLEMENT câblés ───── */

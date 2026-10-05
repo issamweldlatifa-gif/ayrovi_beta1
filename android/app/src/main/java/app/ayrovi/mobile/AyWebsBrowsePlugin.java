@@ -19,6 +19,9 @@ public class AyWebsBrowsePlugin extends Plugin {
 
   @PluginMethod
   public void open(PluginCall call) {
+    if (android.os.Build.VERSION.SDK_INT < 28) {
+      call.reject("ISOLATED_WEBVIEW_REQUIRES_ANDROID_9"); return;
+    }
     String url = call.getString("url", "");
     String sessionId = call.getString("sessionId", "");
     // Jeton de session CLIENT (04/10/2026) : le tiroir « Favoris » du
@@ -27,33 +30,14 @@ public class AyWebsBrowsePlugin extends Plugin {
     // connecté verrait « connectez-vous » au milieu de ses achats.
     String customerToken = call.getString("customerToken", "");
 
-    // Origine de l'API, transmise par la couche web (SOURCE UNIQUE :
-    // client/src/services/apiOrigin.ts). Ajouté le 2026-10-03 : les appels
-    // privés de la coque (analyse de page, résolution, ajout au panier)
-    // partaient vers `https://localhost` — l'origine du paquet embarqué, où
-    // AUCUN serveur n'écoute. C'est la cause du bouton « Add to Cart » figé
-    // sur « Loading… » et du message trompeur « Page non éligible ».
-    // Validée ici : seules des origines http(s) absolues et sans espace sont
-    // acceptées, sinon on retombe sur le comportement précédent.
-    String apiOrigin = call.getString("apiOrigin", "");
-    if (apiOrigin != null) {
-      String candidate = apiOrigin.trim();
-      if (candidate.regionMatches(true, 0, "https://", 0, 8)
-          || candidate.regionMatches(true, 0, "http://", 0, 7)) {
-        while (candidate.endsWith("/")) candidate = candidate.substring(0, candidate.length() - 1);
-        apiOrigin = candidate;
-      } else {
-        apiOrigin = "";
-      }
+    String apiOrigin = BuildConfig.AYROVI_API_ORIGIN;
+    if (!ApiTrust.sameOrigin(apiOrigin, BuildConfig.AYROVI_API_ORIGIN)) {
+      call.reject("UNTRUSTED_API_ORIGIN"); return;
     }
-
+    if (!ApiTrust.browsable(url)) {
+      call.reject("HTTPS_MERCHANT_URL_REQUIRED"); return;
+    }
     Uri parsed = Uri.parse(url);
-    String scheme = parsed.getScheme();
-    if (scheme == null
-        || (!"https".equalsIgnoreCase(scheme) && !"http".equalsIgnoreCase(scheme))) {
-      call.reject("URL_NOT_BROWSABLE");
-      return;
-    }
 
     String base = getBridge() == null ? null : getBridge().getServerUrl();
     if (base == null || base.trim().isEmpty()) base = "https://localhost";
@@ -63,11 +47,20 @@ public class AyWebsBrowsePlugin extends Plugin {
     intent.putExtra(AyWebsBrowseActivity.EXTRA_SESSION_ID, sessionId == null ? "" : sessionId);
     intent.putExtra(AyWebsBrowseActivity.EXTRA_WEB_BASE, base.trim());
     intent.putExtra(AyWebsBrowseActivity.EXTRA_API_ORIGIN, apiOrigin == null ? "" : apiOrigin);
-    intent.putExtra(AyWebsBrowseActivity.EXTRA_CUSTOMER_TOKEN, customerToken == null ? "" : customerToken);
+    NativeSession.write(getContext(), customerToken);
     getContext().startActivity(intent);
 
     JSObject ret = new JSObject();
     ret.put("opened", true);
     call.resolve(ret);
   }
+  @PluginMethod
+  public void clearMerchantData(PluginCall call) {
+    NativeSession.logout(getContext());
+    if (android.os.Build.VERSION.SDK_INT >= 28) {
+      getContext().startService(new Intent(getContext(), MerchantDataService.class));
+    }
+    call.resolve();
+  }
+
 }

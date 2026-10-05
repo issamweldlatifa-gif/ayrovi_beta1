@@ -1,4 +1,6 @@
 import 'dotenv/config';
+import { validateQuoteSecret } from './ayrovix/priceQuote';
+validateQuoteSecret();
 import express, { NextFunction, Request, Response } from 'express';
 import cors from 'cors';
 import compression from 'compression';

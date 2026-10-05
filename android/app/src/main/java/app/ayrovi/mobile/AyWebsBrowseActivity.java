@@ -100,19 +100,6 @@ public class AyWebsBrowseActivity extends Activity {
    * produit (données structurées, `sortedDimValuesForAllDims`,
    * `dimensionValuesDisplayData`, `displayPrice`…) sont conservés tels quels.
    */
-  private static final String PAGE_CAPTURE_JS =
-      "(function(){try{"
-      + "var doc=document.cloneNode(true);"
-      + "var keep=['sortedDimValuesForAllDims','dimensionValuesDisplayData','variationDisplayLabels','displayPrice','priceAmount','twister-js-init','a-state'];"
-      + "doc.querySelectorAll('script').forEach(function(s){"
-      + "var t=(s.getAttribute('type')||'').toLowerCase();"
-      + "if(t==='application/ld+json'||t==='application/json')return;"
-      + "var x=s.textContent||'';"
-      + "for(var i=0;i<keep.length;i++){if(x.indexOf(keep[i])>=0)return;}"
-      + "s.parentNode.removeChild(s);});"
-      + "return '<!doctype html>'+doc.documentElement.outerHTML;"
-      + "}catch(e){return '';}})()";
-
   /**
    * Lien profond AYWEBs (Manifest §25) : c'est le SEUL format que
    * MainActivity.ayWebsTarget() accepte pour un Intent.ACTION_VIEW. La coque
@@ -157,15 +144,24 @@ public class AyWebsBrowseActivity extends Activity {
   @Override
   protected void onCreate(Bundle state) {
     super.onCreate(state);
+    if (android.os.Build.VERSION.SDK_INT < 28) { finish(); return; }
     setContentView(R.layout.activity_aywebs_browse);
+    View root = ((android.view.ViewGroup) findViewById(android.R.id.content)).getChildAt(0);
+    androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+      androidx.core.graphics.Insets bars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars() | androidx.core.view.WindowInsetsCompat.Type.ime());
+      v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+      return insets;
+    });
 
     sessionId = getStringExtra(EXTRA_SESSION_ID);
+    if (sessionId == null) sessionId = "";
     String base = getStringExtra(EXTRA_WEB_BASE);
-    if (base != null && !base.trim().isEmpty()) webBase = base.trim();
+    // Local navigation base is fixed; Intent data must not choose it.
+    webBase = "https://localhost";
     String origin = getStringExtra(EXTRA_API_ORIGIN);
-    apiOrigin = origin == null ? "" : origin.trim();
-    String token = getStringExtra(EXTRA_CUSTOMER_TOKEN);
-    customerToken = token == null ? "" : token.trim();
+    apiOrigin = BuildConfig.AYROVI_API_ORIGIN;
+    if (origin != null && !origin.isEmpty() && !ApiTrust.sameOrigin(origin, apiOrigin)) { finish(); return; }
+    customerToken = NativeSession.read(this);
 
     webView = requireView(R.id.aywebs_webview);
     urlText = requireView(R.id.aywebs_url);
@@ -180,6 +176,9 @@ public class AyWebsBrowseActivity extends Activity {
 
     WebSettings settings = webView.getSettings();
     settings.setJavaScriptEnabled(true);
+    settings.setAllowFileAccess(false);
+    settings.setAllowContentAccess(false);
+    settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
     settings.setDomStorageEnabled(true);
     CookieManager.getInstance().setAcceptCookie(true);
 
@@ -195,9 +194,9 @@ public class AyWebsBrowseActivity extends Activity {
     //    s'ouvraient donc jamais, et l'utilisateur ne pouvait pas se connecter
     //    (Buyee affiche d'ailleurs « free membership registration and login are
     //    required » avant de commander).
-    CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true);
+    CookieManager.getInstance().setAcceptThirdPartyCookies(webView, false);
     settings.setSupportMultipleWindows(true);
-    settings.setJavaScriptCanOpenWindowsAutomatically(true);
+    settings.setJavaScriptCanOpenWindowsAutomatically(false);
 
     webView.setWebViewClient(new WebViewClient() {
       @Override
@@ -218,7 +217,7 @@ public class AyWebsBrowseActivity extends Activity {
       @Override
       public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
         String scheme = request.getUrl().getScheme();
-        if (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme)) {
+        if (!ApiTrust.browsable(request.getUrl().toString())) {
           return true; // aucune origine hors http(s) dans la coque
         }
         return false;
@@ -232,10 +231,10 @@ public class AyWebsBrowseActivity extends Activity {
     webView.setWebChromeClient(new WebChromeClient() {
       @Override
       public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
-        WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
-        transport.setWebView(view);
-        resultMsg.sendToTarget();
-        return true;
+        // Merchant popup target is unknown here; fail closed. Users can use
+        // the merchant's normal in-page navigation instead.
+        Toast.makeText(AyWebsBrowseActivity.this, "Fenêtre bloquée : utilisez le lien dans la page.", Toast.LENGTH_SHORT).show();
+        return false;
       }
     });
 
@@ -263,7 +262,9 @@ public class AyWebsBrowseActivity extends Activity {
 
     Uri target = getIntent() == null ? null : getIntent().getData();
     String start = target != null ? target.toString() : "https://www.amazon.com/";
-    webView.loadUrl(start);
+    if (!ApiTrust.browsable(start)) { finish(); return; }
+    if (NativeSession.clearMarker(this).exists()) MerchantDataService.clear(this, () -> webView.loadUrl(start));
+    else webView.loadUrl(start);
   }
 
   /**
@@ -418,19 +419,10 @@ public class AyWebsBrowseActivity extends Activity {
     runOnUiThread(() -> addButton.setText(R.string.aywebs_loading));
     final String url = currentUrl;
 
-    /* 1. On lit d'abord la page AFFICHÉE (WebView), puis on la joint à la
-     *    requête de résolution. Le serveur relit ce HTML avec son propre
-     *    parseur : c'est ce qui fait apparaître le prix et les variantes là où
-     *    une lecture serveur se heurte au mur anti-robot du marchand.
-     * 2. Si la lecture échoue (page protégée, WebView occupée), on envoie la
-     *    requête SANS page : la chaîne serveur habituelle reprend, on ne
-     *    dégrade rien et on ne bloque jamais l'ajout pour cette seule raison. */
-    captureVisiblePage(html -> executor.execute(() -> {
+    // URL only. Never transmit the merchant DOM, scripts, account or form data.
+    executor.execute(() -> {
       try {
         JSONObject body = new JSONObject().put("url", url);
-        if (html != null && !html.isEmpty()) {
-          body.put("page", new JSONObject().put("url", url).put("html", html));
-        }
         JSONObject reply = post(apiOrigin + RESOLVE_PATH, body);
         JSONObject product = reply.optJSONObject("data");
         runOnUiThread(() -> {
@@ -446,31 +438,6 @@ public class AyWebsBrowseActivity extends Activity {
       } catch (Exception error) {
         runOnUiThread(() -> addButton.setText(R.string.aywebs_add_to_cart));
         toastMessage(error.getMessage());
-      }
-    }));
-  }
-
-  /**
-   * Lit l'HTML de la page affichée dans la WebView. `evaluateJavascript` doit
-   * être appelé sur le fil UI et son rappel revient sur le fil UI ; le POST part
-   * ensuite sur l'executor, comme avant. Toute panne renvoie une chaîne vide —
-   * l'appelant retombe alors sur la chaîne serveur.
-   */
-  private void captureVisiblePage(java.util.function.Consumer<String> onReady) {
-    runOnUiThread(() -> {
-      try {
-        webView.evaluateJavascript(PAGE_CAPTURE_JS, value -> {
-          String html = "";
-          try {
-            Object decoded = new org.json.JSONTokener(value == null ? "" : value).nextValue();
-            if (decoded instanceof String) html = (String) decoded;
-          } catch (Exception ignored) {
-            // Résultat illisible → on continue sans page, jamais d'échec bloquant.
-          }
-          onReady.accept(html);
-        });
-      } catch (Exception error) {
-        onReady.accept("");
       }
     });
   }
@@ -891,7 +858,7 @@ public class AyWebsBrowseActivity extends Activity {
           favorite.optString("image_url", ""),
           // Ouvrir un favori recharge la WebView COURANTE : on change de page
           // marchande sans jamais sortir du navigateur de la boutique.
-          target.isEmpty() ? null : v -> { dialog.dismiss(); webView.loadUrl(target); });
+          target.isEmpty() ? null : v -> { dialog.dismiss(); if (ApiTrust.browsable(target)) webView.loadUrl(target); });
     }
   }
 
@@ -978,6 +945,7 @@ public class AyWebsBrowseActivity extends Activity {
           String token = data == null ? "" : data.optString("native_session_token", "");
           if (token.isEmpty()) throw new AyWebsApiException(401, "");
           customerToken = token;
+          NativeSession.write(this, token);
           runOnUiThread(() -> { dialog.dismiss(); if (onSuccess != null) onSuccess.run(); });
         } catch (Exception failure) {
           runOnUiThread(() -> {
@@ -995,7 +963,7 @@ public class AyWebsBrowseActivity extends Activity {
 
   /** POST JSON ; `withCustomer` ajoute le porteur de session COMPTE. */
   private JSONObject postJson(String endpoint, JSONObject body, boolean withCustomer) throws Exception {
-    HttpURLConnection connection = (HttpURLConnection) new URL(endpoint).openConnection();
+    HttpURLConnection connection = ApiTrust.open(endpoint);
     connection.setRequestMethod("POST");
     connection.setConnectTimeout(15_000);
     connection.setReadTimeout(60_000);
@@ -1004,6 +972,7 @@ public class AyWebsBrowseActivity extends Activity {
     // resterait déconnectée après une connexion pourtant réussie.
     connection.setRequestProperty("x-ayrovi-native", "1");
     if (!sessionId.isEmpty()) connection.setRequestProperty("x-session-id", sessionId);
+    customerToken = NativeSession.read(this);
     if (withCustomer && !customerToken.isEmpty()) {
       connection.setRequestProperty("authorization", "Bearer " + customerToken);
     }
@@ -1017,10 +986,15 @@ public class AyWebsBrowseActivity extends Activity {
     if (stream != null) {
       byte[] chunk = new byte[8192];
       int read;
-      while ((read = stream.read(chunk)) > 0) buffer.write(chunk, 0, read);
+      while ((read = stream.read(chunk)) > 0) {
+        if (buffer.size() + read > 2_000_000) { connection.disconnect(); throw new java.io.IOException("RESPONSE_TOO_LARGE"); }
+        buffer.write(chunk, 0, read);
+      }
+      stream.close();
     }
+    connection.disconnect();
     String text = new String(buffer.toByteArray(), StandardCharsets.UTF_8);
-    if (code >= 400) throw new AyWebsApiException(code, userMessageOf(text));
+    if (code >= 300) throw new AyWebsApiException(code, userMessageOf(text));
     return new JSONObject(text);
   }
 
@@ -1052,7 +1026,7 @@ public class AyWebsBrowseActivity extends Activity {
     if (apiOrigin.isEmpty()) return;
     executor.execute(() -> {
       try {
-        HttpURLConnection connection = (HttpURLConnection) new URL(apiOrigin + HEALTH_PATH).openConnection();
+        HttpURLConnection connection = ApiTrust.open(apiOrigin + HEALTH_PATH);
         connection.setRequestMethod("GET");
         connection.setConnectTimeout(15_000);
         connection.setReadTimeout(60_000);
@@ -1066,12 +1040,13 @@ public class AyWebsBrowseActivity extends Activity {
 
   /** Lecture simple ; `withCustomer` ajoute le porteur de session COMPTE. */
   private JSONObject get(String endpoint, boolean withCustomer) throws Exception {
-    HttpURLConnection connection = (HttpURLConnection) new URL(endpoint).openConnection();
+    HttpURLConnection connection = ApiTrust.open(endpoint);
     connection.setRequestMethod("GET");
     connection.setConnectTimeout(15_000);
     connection.setReadTimeout(60_000);
     connection.setRequestProperty("accept", "application/json");
     if (!sessionId.isEmpty()) connection.setRequestProperty("x-session-id", sessionId);
+    customerToken = NativeSession.read(this);
     if (withCustomer && !customerToken.isEmpty()) {
       connection.setRequestProperty("authorization", "Bearer " + customerToken);
     }
@@ -1081,10 +1056,15 @@ public class AyWebsBrowseActivity extends Activity {
     if (stream != null) {
       byte[] chunk = new byte[8192];
       int read;
-      while ((read = stream.read(chunk)) > 0) buffer.write(chunk, 0, read);
+      while ((read = stream.read(chunk)) > 0) {
+        if (buffer.size() + read > 2_000_000) { connection.disconnect(); throw new java.io.IOException("RESPONSE_TOO_LARGE"); }
+        buffer.write(chunk, 0, read);
+      }
+      stream.close();
     }
+    connection.disconnect();
     String text = new String(buffer.toByteArray(), StandardCharsets.UTF_8);
-    if (code >= 400) throw new AyWebsApiException(code, userMessageOf(text));
+    if (code >= 300) throw new AyWebsApiException(code, userMessageOf(text));
     return new JSONObject(text);
   }
 
@@ -1133,7 +1113,7 @@ public class AyWebsBrowseActivity extends Activity {
   }
 
   private JSONObject postOnce(String endpoint, JSONObject body) throws Exception {
-    HttpURLConnection connection = (HttpURLConnection) new URL(endpoint).openConnection();
+    HttpURLConnection connection = ApiTrust.open(endpoint);
     connection.setRequestMethod("POST");
     connection.setConnectTimeout(15_000);
     connection.setReadTimeout(60_000);
@@ -1149,10 +1129,15 @@ public class AyWebsBrowseActivity extends Activity {
     if (stream != null) {
       byte[] chunk = new byte[8192];
       int read;
-      while ((read = stream.read(chunk)) > 0) buffer.write(chunk, 0, read);
+      while ((read = stream.read(chunk)) > 0) {
+        if (buffer.size() + read > 2_000_000) { connection.disconnect(); throw new java.io.IOException("RESPONSE_TOO_LARGE"); }
+        buffer.write(chunk, 0, read);
+      }
+      stream.close();
     }
+    connection.disconnect();
     String text = new String(buffer.toByteArray(), StandardCharsets.UTF_8);
-    if (code >= 400) {
+    if (code >= 300) {
       // Le serveur répond avec un CONTRAT d'erreur explicite :
       //   { code, error, error_contract: { userMessage, recoverable,
       //     retryAllowed, requiredAction } }

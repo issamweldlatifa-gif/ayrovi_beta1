@@ -12,7 +12,15 @@ if (hasReleaseKeystore) {
 android {
     namespace "app.ayrovi.mobile"
     compileSdk rootProject.ext.compileSdkVersion
+    buildFeatures { buildConfig true }
     defaultConfig {
+        def apiOrigin = System.getenv('VITE_AYROVI_API_ORIGIN') ?: 'https://ayrovi-beta1-1.onrender.com'
+        def apiUri = new URI(apiOrigin)
+        if (apiUri.scheme != 'https' || !apiUri.host || apiUri.userInfo || apiUri.query || apiUri.fragment || (apiUri.path && apiUri.path != '/') || (apiUri.port != -1 && apiUri.port != 443)) {
+            throw new GradleException('HTTPS_API_ORIGIN_REQUIRED')
+        }
+        buildConfigField 'String', 'AYROVI_API_ORIGIN', '"' + apiOrigin.replaceAll('/+$', '') + '"'
+
         applicationId "app.ayrovi.mobile"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
@@ -42,16 +50,7 @@ android {
     }
     buildTypes {
         debug {
-            // ── Empreinte SHA-1 STABLE (04/10/2026) ───────────────────────
-            // Google n'identifie pas « l'application » mais le CERTIFICAT qui
-            // la signe. Sans keystore fourni, Gradle en fabrique un au vol :
-            // chaque machine, chaque CI produit alors une empreinte
-            // différente, et le SHA-1 déclaré chez Google ne correspond plus
-            // à rien dès le build suivant. Signer aussi le debug avec le
-            // keystore officiel rend l'empreinte permanente.
-            if (hasReleaseKeystore) {
-                signingConfig signingConfigs.release
-            }
+            // Always use the Android debug certificate, never release credentials.
         }
         release {
             minifyEnabled false

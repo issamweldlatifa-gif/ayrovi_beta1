@@ -1,66 +1,48 @@
-/**
- * جسر أصل الـ API للتطبيق الأصلي (وضع الحزمة المضمّنة).
- *
- * داخل قشرة Capacitor بدون server.url تُقدَّم الواجهة من أصل القشرة
- * (https://localhost)، بينما تعيش الـ API على أصل النشر. هذا الملف هو
- * «السطر الواحد» الذي يوحد المسارين: يلتقط fetch/XHR النسبية ويعيد
- * كتابتها على أصل الـ API المطلق. على الويب لا يفعل شيئًا أبدًا
- * (same-origin) — aucune régression web (§2).
- *
- * مسار واحد، موقع واحد: نفس الكود، نفس الواجهة، نفس الـ API.
- */
 import { getNativeSessionToken, isNativeApp } from './nativeShell';
-import { AYROVI_API_ORIGIN } from './apiOrigin';
-
-/** Réexporté depuis `apiOrigin.ts` — SOURCE UNIQUE, partagée avec la coque native
- *  (le module neutre évite le cycle nativeShell → nativeApiOrigin → nativeShell). */
+import { AYROVI_API_ORIGIN, normalizeApiOrigin } from './apiOrigin';
 export { AYROVI_API_ORIGIN };
-
 const PATCH_FLAG = '__ayroviApiOriginPatched';
 
-function toAbsolute(url: string, origin: string): string {
-  return url.startsWith('/') ? origin + url : url;
+/** Only bundled API paths move to the API. Assets and third-party URLs do not. */
+export function nativeTarget(input: string | URL, base: string, origin: string): URL {
+  const url = new URL(String(input), base);
+  if (url.username || url.password) throw new TypeError('URL_CREDENTIALS_FORBIDDEN');
+  if (url.origin === new URL(base).origin && /^\/api(?:\/|$)/.test(url.pathname)) {
+    return new URL(url.pathname + url.search + url.hash, origin);
+  }
+  return url;
 }
 
-/** En-têtes natifs : déclaration + Bearer de session (login applicatif réel). */
-function nativeHeaders(init?: RequestInit): RequestInit | undefined {
-  const headers = new Headers(init?.headers as HeadersInit | undefined);
-  if (!headers.has('x-ayrovi-native')) headers.set('x-ayrovi-native', '1');
-  const token = getNativeSessionToken();
-  if (token && !headers.has('Authorization')) headers.set('Authorization', `Bearer ${token}`);
-  return { ...init, headers };
-}
-
-/**
- * يُستدعى مرة واحدة عند إقلاع التطبيق (main.tsx). على الويب: no-op مطلق.
- */
 export function installNativeApiOrigin(origin: string = AYROVI_API_ORIGIN): void {
   if (!isNativeApp()) return;
+  const trusted = normalizeApiOrigin(origin);
+  if (!trusted) throw new TypeError('HTTPS_API_ORIGIN_REQUIRED');
   const w = window as unknown as Record<string, unknown>;
   if (w[PATCH_FLAG]) return;
   w[PATCH_FLAG] = true;
-
   const originalFetch = window.fetch.bind(window);
   window.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
-    if (typeof input === 'string') return originalFetch(toAbsolute(input, origin), nativeHeaders(init));
-    if (input instanceof URL) {
-      const abs = toAbsolute(input.toString(), origin);
-      return originalFetch(abs, nativeHeaders(init));
-    }
-    if (input instanceof Request && input.url.startsWith('/')) {
-      return originalFetch(new Request(origin + input.url, input), nativeHeaders(init));
-    }
-    return originalFetch(input, nativeHeaders(init));
+    const url = nativeTarget(input instanceof Request ? input.url : input, location.href, trusted);
+    const targetTrusted = url.origin === trusted && url.protocol === 'https:';
+    if (!targetTrusted) return originalFetch(input, init);
+    // Clone instead of consuming/mutating the caller's Request. RequestInit has
+    // its standard override semantics, including replacement of headers.
+    const request = input instanceof Request
+      ? new Request(url.href, new Request(input.clone(), init))
+      : new Request(url.href, init);
+    const headers = new Headers(request.headers);
+    if (!headers.has('x-ayrovi-native')) headers.set('x-ayrovi-native', '1');
+    const token = getNativeSessionToken();
+    if (token && !headers.has('Authorization')) headers.set('Authorization', `Bearer ${token}`);
+    // Never forward custom session headers over a redirect, even same-site.
+    return originalFetch(new Request(request, { headers, redirect: 'error' }));
   }) as typeof window.fetch;
 
+  // XHR deliberately remains credential-free: it cannot reliably disable
+  // redirects. Authenticated native requests use fetch above.
   const originalOpen = XMLHttpRequest.prototype.open;
-  XMLHttpRequest.prototype.open = function (
-    this: XMLHttpRequest,
-    method: string,
-    url: string | URL,
-    ...rest: unknown[]
-  ) {
-    const target = typeof url === 'string' ? toAbsolute(url, origin) : url.toString().startsWith('/') ? toAbsolute(url.toString(), origin) : url;
-    return (originalOpen as unknown as (...args: unknown[]) => void).call(this, method, target, ...rest);
+  XMLHttpRequest.prototype.open = function (this: XMLHttpRequest, method: string, url: string | URL, ...rest: unknown[]) {
+    const target = nativeTarget(url, location.href, trusted);
+    return (originalOpen as unknown as (...args: unknown[]) => void).call(this, method, target.href, ...rest);
   } as typeof XMLHttpRequest.prototype.open;
 }

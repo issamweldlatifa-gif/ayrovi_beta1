@@ -274,7 +274,7 @@ describe('§9 — Panier et Favoris restent DANS la boutique', () => {
 
   test('ouvrir un favori recharge la WebView courante, sans quitter le navigateur', () => {
     const activity = read(BROWSE_ACTIVITY);
-    expect(activity).toMatch(/dialog\.dismiss\(\); webView\.loadUrl\(target\);/);
+    expect(activity).toMatch(/dialog\.dismiss\(\); if \(ApiTrust\.browsable\(target\)\) webView\.loadUrl\(target\);/);
   });
 
   test('401 est traité comme « connectez-vous », pas comme une panne', () => {

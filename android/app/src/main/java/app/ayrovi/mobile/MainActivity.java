@@ -4,6 +4,9 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import com.getcapacitor.BridgeActivity;
+import com.getcapacitor.WebViewListener;
+import android.webkit.WebView;
+import androidx.activity.OnBackPressedCallback;
 
 /**
  * Coque native AYROVI (Capacitor 7) — application réelle à paquet embarqué.
@@ -22,6 +25,9 @@ public class MainActivity extends BridgeActivity {
     private static final String AYWEBS_PATH = "/aywebs";
     private static final String BUNDLED_ORIGIN = "https://localhost";
 
+    private Uri pendingTarget;
+    private boolean pageReady;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(AyWebsBrowsePlugin.class);
@@ -29,6 +35,18 @@ public class MainActivity extends BridgeActivity {
         // bascule vers Chrome (remarque du 04/10/2026).
         registerPlugin(AyroviAuthTabPlugin.class);
         super.onCreate(savedInstanceState);
+        pendingTarget = savedInstanceState == null ? ayWebsTarget(getIntent())
+            : (savedInstanceState.getString("aywebsPending") == null ? null : Uri.parse(savedInstanceState.getString("aywebsPending")));
+        getBridge().addWebViewListener(new WebViewListener() {
+            @Override public void onPageStarted(WebView view) { pageReady = false; }
+            @Override public void onPageLoaded(WebView view) { pageReady = true; drainPending(); }
+        });
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override public void handleOnBackPressed() {
+                if (getBridge().getWebView().canGoBack()) getBridge().getWebView().goBack();
+                else { setEnabled(false); getOnBackPressedDispatcher().onBackPressed(); setEnabled(true); }
+            }
+        });
     }
 
     @Override
@@ -37,39 +55,21 @@ public class MainActivity extends BridgeActivity {
         setIntent(intent);
         Uri target = ayWebsTarget(intent);
         if (target != null) {
-            navigate(target);
+            pendingTarget = target;
+            drainPending();
         }
     }
 
-    /**
-     * Bouton retour matériel — corrigé le 2026-10-03.
-     *
-     * Avant : AUCUN onBackPressed n'existait, ni ici ni dans Capacitor 7
-     * (`grep -rn onBackPressed node_modules/@capacitor/android/` → 0 occurrence,
-     * la clé `android.handleBackButton` n'étant plus lue par le cœur). Le retour
-     * système appelait donc le comportement par défaut d'Android : finish(),
-     * c'est-à-dire la FERMETURE DE L'APPLICATION même quand un écran AYROVI était
-     * ouvert par-dessus (Lens, OCEREX, assistant…).
-     *
-     * Or la coque empile ses écrans dans l'historique de la WebView : ouvrir Lens
-     * ajoute une entrée (`history.length` 2 → 3, mesuré) et `history.back()`
-     * referme bien la couche (vérifié en navigateur réel). Il suffit donc de
-     * déléguer au retour d'historique tant qu'il en reste un :
-     *   • un écran AYROVI est ouvert  → goBack() le referme (comportement attendu) ;
-     *   • on est à la racine          → plus d'historique, on laisse Android fermer
-     *                                   l'application (comportement attendu aussi).
-     *
-     * `enableOnBackInvokedCallback` n'est pas déclaré dans le Manifest, donc
-     * onBackPressed reste le point d'entrée normal du retour système.
-     */
-    @Override
-    public void onBackPressed() {
-        if (getBridge() != null && getBridge().getWebView() != null
-            && getBridge().getWebView().canGoBack()) {
-            getBridge().getWebView().goBack();
-            return;
-        }
-        super.onBackPressed();
+    @Override public void onSaveInstanceState(Bundle state) {
+        if (pendingTarget != null) state.putString("aywebsPending", pendingTarget.toString());
+        super.onSaveInstanceState(state);
+    }
+
+    private void drainPending() {
+        if (!pageReady || pendingTarget == null) return;
+        Uri target = pendingTarget;
+        pendingTarget = null; // clear before navigation invokes lifecycle callbacks
+        navigate(target);
     }
 
     /** Cible web d'un intent AYWEBs, ou null quand l'intent ne concerne pas AYWEBs. */
@@ -89,7 +89,7 @@ public class MainActivity extends BridgeActivity {
             }
             CharSequence shared = intent.getCharSequenceExtra(Intent.EXTRA_TEXT);
             String text = shared == null ? "" : shared.toString().trim();
-            if (text.isEmpty()) {
+            if (text.isEmpty() || text.length() > 4096) {
                 return null;
             }
             return Uri.parse(base + AYWEBS_PATH + "?url=" + Uri.encode(text));
@@ -106,7 +106,9 @@ public class MainActivity extends BridgeActivity {
             if (path == null || path.isEmpty() || "/".equals(path)) {
                 return Uri.parse(base + AYWEBS_PATH);
             }
-            String query = data.getQuery();
+            if (!path.matches("/(cart|wish|product)/?")) return null;
+            String query = data.getEncodedQuery();
+            if (query != null && query.length() > 8192) return null;
             return Uri.parse(base + AYWEBS_PATH + path + (query == null ? "" : "?" + query));
         }
         return null;

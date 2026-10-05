@@ -26,6 +26,7 @@ export function getNativeSessionToken(): string {
 export function clearNativeSessionToken(): void {
   if (!isNativeApp()) return;
   try { window.localStorage.removeItem(NATIVE_TOKEN_KEY); } catch { /* silencieux */ }
+  void registerPlugin<AyWebsBrowseBridge>('AyWebsBrowse').clearMerchantData().catch(() => undefined);
 }
 
 export const isNativeApp = (): boolean => {
@@ -37,7 +38,8 @@ export const isNativeApp = (): boolean => {
 };
 
 interface AyWebsBrowseBridge {
-  open(options: { url: string; sessionId: string; apiOrigin: string; customerToken: string }): Promise<{ opened: boolean }>;
+  clearMerchantData(): Promise<void>;
+  open(options: { url: string; sessionId: string; customerToken: string }): Promise<{ opened: boolean }>;
 }
 
 /**
@@ -61,7 +63,6 @@ export async function openAyWebsNativeBrowser(url: string): Promise<boolean> {
     await plugin.open({
       url,
       sessionId: getSessionId(),
-      apiOrigin: AYROVI_API_ORIGIN,
       customerToken: getNativeSessionToken(),
     });
     return true;

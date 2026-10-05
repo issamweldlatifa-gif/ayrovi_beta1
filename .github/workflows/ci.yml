@@ -432,11 +432,11 @@ jobs:
           java-version: 21
       - name: Prepare the native project
         run: npm run build:client && npx cap sync android
-      # continue-on-error: true — À BASCULER À false DÈS LE PREMIER RUN VERT.
-      # Cette étape n'a jamais tourné (android-apk.yml est manuel) : on l'observe
-      # d'abord pour ne pas casser la CI sur une première exécution inconnue,
-      # puis on la rend bloquante. Tant qu'elle est tolérante, elle n'est PAS un
-      # garde — ne pas s'y fier avant le basculement.
-      - name: Compile the native shell
-        continue-on-error: true
-        run: cd android && ./gradlew :app:compileDebugJavaWithJavac --no-daemon
+      - uses: android-actions/setup-android@v3
+      - name: Install Android 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - name: Build and test the native shell (required)
+        run: cd android && sh ./gradlew :app:assembleDebug :app:testDebugUnitTest --no-daemon
+      - name: Verify debug certificate
+        run: |
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs android/app/build/outputs/apk/debug/app-debug.apk | grep 'CN=Android Debug'

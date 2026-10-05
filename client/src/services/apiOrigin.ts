@@ -52,7 +52,7 @@ export function normalizeApiOrigin(raw: string | undefined | null): string {
   if (!value) return '';
   try {
     const parsed = new URL(value);
-    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return '';
+    if (parsed.protocol !== 'https:' || parsed.username || parsed.password || parsed.search || parsed.hash) return '';
     if (parsed.pathname !== '/' && parsed.pathname !== '') return '';
     return parsed.origin;
   } catch {
@@ -73,8 +73,8 @@ export function normalizeApiOrigin(raw: string | undefined | null): string {
  */
 declare const __AYROVI_API_ORIGIN__: string | undefined;
 
-const configured = normalizeApiOrigin(
-  typeof __AYROVI_API_ORIGIN__ === 'undefined' ? '' : __AYROVI_API_ORIGIN__,
-);
+const rawOrigin = typeof __AYROVI_API_ORIGIN__ === 'undefined' ? '' : __AYROVI_API_ORIGIN__;
+const configured = normalizeApiOrigin(rawOrigin);
+if (rawOrigin && !configured) throw new Error('HTTPS_API_ORIGIN_REQUIRED');
 
 export const AYROVI_API_ORIGIN = configured || PRODUCTION_ORIGIN;

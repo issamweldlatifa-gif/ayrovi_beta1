@@ -12,12 +12,20 @@ interface QuoteClaims {
   expiresAt: number;
 }
 
-function secret(): string {
-  const configured = String(process.env.AYROVIX_QUOTE_SECRET || process.env.CUSTOMER_AUTH_SECRET || '').trim();
-  if (configured.length >= 32) return configured;
-  if (process.env.NODE_ENV === 'production') throw new Error('AYROVIX_QUOTE_SECRET_NOT_CONFIGURED');
+export function validateQuoteSecret(): string {
+  const configured = String(process.env.AYROVIX_QUOTE_SECRET || '').trim();
+  if (configured) {
+    if (Buffer.byteLength(configured) < 32 || /placeholder|change.?me|example|development/i.test(configured)
+        || configured === process.env.CUSTOMER_AUTH_SECRET) throw new Error('AYROVIX_QUOTE_SECRET_INVALID');
+    return configured;
+  }
+  if (!['development', 'test', undefined].includes(process.env.NODE_ENV)) {
+    throw new Error('AYROVIX_QUOTE_SECRET_NOT_CONFIGURED');
+  }
   return 'ayrovi-development-price-quote-secret-2026';
 }
+
+function secret(): string { return validateQuoteSecret(); }
 
 function sign(payload: string): string {
   return createHmac('sha256', secret()).update(payload).digest('base64url');
@@ -67,7 +75,9 @@ export function verifyAyrovixPriceToken(token: unknown, expected: {
   if (actual.length !== wanted.length || !timingSafeEqual(actual, wanted)) return false;
   let claims: QuoteClaims;
   try { claims = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')); } catch { return false; }
-  return claims.v === 1
+  return claims != null && typeof claims === 'object' && claims.v === 1
+    && Number.isFinite(claims.expiresAt) && Number.isFinite(claims.price) && claims.price > 0
+    && ['VERIFIED', 'PENDING_MANUAL'].includes(claims.status)
     && claims.expiresAt >= Date.now()
     && Math.abs(Number(claims.price) - Math.round(expected.price * 100) / 100) < 0.001
     && claims.currency === expected.currency
