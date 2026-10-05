@@ -137,6 +137,14 @@ check(
   'ce rejet est la raison pour laquelle l’Intent sans action ne naviguait pas — le supprimer changerait le contrat'
 );
 check(
+  'MainActivity : partage et lien profond traités au lancement à froid',
+  /Intent launchIntent = getIntent\(\)/.test(main)
+    && /savedInstanceState == null/.test(main)
+    && /Uri initialTarget = ayWebsTarget\(launchIntent\)/.test(main)
+    && /getWebView\(\)\.post\(\(\) -> navigate\(initialTarget\)\)/.test(main),
+  'onNewIntent() ne couvre que les intents reçus après la création de MainActivity'
+);
+check(
   'MainActivity : bouton retour matériel câblé',
   /public void onBackPressed\s*\(/.test(main),
   'sans onBackPressed, le retour système ferme l’application même quand un écran AYROVI est ouvert (Capacitor 7 n’en fournit aucun)'

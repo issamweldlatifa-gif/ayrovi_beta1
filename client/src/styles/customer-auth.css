@@ -167,3 +167,61 @@
 
 /* Read-only-until-focus prevents eager saved-credential fill, not manual editing. */
 .ay-auth__fields input[readonly] { cursor: text; opacity: 1; }
+
+/* ── Native Android login: compact layout from the approved prototype ────────
+   Keep the web layout untouched. On Android, use the available viewport more
+   deliberately: smaller brand/title, tighter form rhythm and legal links at
+   the bottom instead of a tall, loosely spaced page. */
+.ay-auth--native .ay-auth__container:not(.ay-auth__container--utility) {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  max-width: min(var(--ayrovi-form-max-width), 480px);
+}
+.ay-auth--native .ay-auth__main { flex: 1; }
+.ay-auth--native .ay-auth__hero {
+  padding-block-start: max(8px, env(safe-area-inset-top));
+  padding-block-end: 12px;
+}
+.ay-auth--native .ay-auth__brand--centered { margin-block-start: 13px; }
+.ay-auth--native .ay-auth__brand--centered .ay-auth__logo--wordmark { height: 25px; }
+.ay-auth--native .ay-auth__intro { margin-block-start: 14px; }
+.ay-auth--native .ay-auth__intro h1 {
+  max-width: 350px;
+  font-size: clamp(26px, 7vw, 30px);
+  line-height: 1.18;
+  letter-spacing: -.025em;
+}
+.ay-auth--native:lang(ar) .ay-auth__intro h1 { line-height: var(--ayrovi-arabic-heading-line-height, 1.42); }
+.ay-auth--native .ay-auth__intro p {
+  max-width: 340px;
+  margin: 8px auto 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.ay-auth--native .ay-auth__card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-block: clamp(18px, 3vh, 26px) max(18px, env(safe-area-inset-bottom));
+  padding-left: max(22px, env(safe-area-inset-left));
+  padding-right: max(22px, env(safe-area-inset-right));
+}
+.ay-auth--native .ay-auth__step .ay-auth__email { min-height: 56px; border-radius: 14px; font-size: 15px; }
+.ay-auth--native .ay-auth__step .ay-auth__submit { min-height: 54px; border-radius: 15px; }
+.ay-auth--native .ay-auth__divider { margin-block: 18px 16px; }
+.ay-auth--native .ay-auth__social { gap: 10px; }
+.ay-auth--native .ay-auth__provider { min-height: 54px; border-radius: 15px; font-size: 15px; }
+.ay-auth--native .ay-auth__social + .ay-auth__provider { margin-block-start: 10px; }
+.ay-auth--native .ay-auth__footer { margin-block-start: auto; padding-block-start: 14px; }
+@media (max-width: 359px) {
+  .ay-auth--native .ay-auth__card {
+    padding-left: max(var(--ayrovi-space-4), env(safe-area-inset-left));
+    padding-right: max(var(--ayrovi-space-4), env(safe-area-inset-right));
+  }
+}
+@media (max-height: 700px) {
+  .ay-auth--native .ay-auth__brand--centered { margin-block-start: 7px; }
+  .ay-auth--native .ay-auth__intro { margin-block-start: 9px; }
+  .ay-auth--native .ay-auth__card { padding-block-start: 13px; }
+}

@@ -323,33 +323,33 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
   }, [otpOpen]);
 
   /**
-   * Connexion par fournisseur DANS l'application (voir customer/nativeOAuth.ts).
-   * Un ONGLET PERSONNALISÉ termine le flux par-dessus l'application — plus de
-   * bascule vers Chrome (remarque du 04/10/2026) — puis on réclame la session
-   * avec un code à usage unique. Aucun état « connecté » n'est affiché avant
-   * que le serveur ne l'ait réellement remis.
+   * Google sur Android utilise exclusivement le sélecteur natif Credential
+   * Manager. En cas d'annulation, on reste sur cette page sans erreur ; si le
+   * sélecteur n'est pas disponible, on n'ouvre pas de navigateur par surprise.
+   * Les autres fournisseurs gardent leur flux Custom Tab + remise de session.
    */
   const startNativeProvider = async (provider: OAuthProvider) => {
     if (providerPending) return;
     setError(''); setNotice(''); setProviderPending(provider);
-    const handoff = createHandoffCode();
     try {
-      // ── Google d'abord par le SÉLECTEUR NATIF (3e passe, 04/10/2026) ──────
-      // Si le téléphone sait afficher la feuille de comptes du système, aucune
-      // page ne se charge : c'est la connexion « sans sortir » littéralement.
-      // Le `null` n'est pas une erreur — c'est « cet appareil ne peut pas »
-      // (pas de services Google Play, SHA-1 pas encore déclaré, ou annulation)
-      // et l'onglet prend le relais juste en dessous.
       if (provider === 'google') {
-        const nativeSession = await signInWithGoogleNatively(getSessionId());
-        if (nativeSession) {
-          rememberNativeSessionToken(nativeSession.native_session_token);
-          onSession({ account: nativeSession.account, csrfToken: nativeSession.csrfToken });
-          setNotice(tr('Content de vous revoir !', 'سعداء بعودتك!'));
-          onCartChanged();
+        const result = await signInWithGoogleNatively(getSessionId());
+        if (result.status === 'cancelled') return;
+        if (result.status === 'unavailable') {
+          setError(tr(
+            'La connexion Google sécurisée n’est pas disponible pour le moment. Réessayez ou utilisez votre adresse e-mail.',
+            'تسجيل الدخول الآمن عبر Google غير متاح حاليًا. أعد المحاولة أو استخدم بريدك الإلكتروني.',
+          ));
           return;
         }
+        rememberNativeSessionToken(result.session.native_session_token);
+        onSession({ account: result.session.account, csrfToken: result.session.csrfToken });
+        setNotice(tr('Content de vous revoir !', 'سعداء بعودتك!'));
+        onCartChanged();
+        return;
       }
+
+      const handoff = createHandoffCode();
       const query = `cartSessionId=${encodeURIComponent(getSessionId())}&returnTo=${encodeURIComponent('/')}`;
       await openProviderInAppTab(oauthStartUrl(provider, query, handoff));
       const result = await claimNativeSession(handoff);
@@ -646,7 +646,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
   const appleEnabled = Boolean(config?.apple.enabled);
   const appleStartHref = oauthStartUrl('apple', oauthQuery);
   const authPanel = recoveryOpen ? <CustomerPasswordRecovery initialEmail={emailAddress} onBack={() => setRecoveryOpen(false)} /> : (
-    <div className="ay-auth relative flex min-h-full flex-col">
+    <div className={`ay-auth ${isNativeApp() ? 'ay-auth--native' : ''} relative flex min-h-full flex-col`}>
       <div className={`ay-auth__container ${otpOpen || phoneLoginOpen || phoneLinkOpen ? 'ay-auth__container--utility' : ''}`}>
         {otpOpen && challengeId ? (
           /* ===== شاشة رمز التحقق ===== */
@@ -769,10 +769,9 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
 
               {config?.email.enabled && (socialLoginEnabled || config?.phoneOtp.enabled) && <div className="ay-auth__divider"><span>{tr('ou', 'أو')}</span></div>}
 
-              {/* Dans l'application, ces boutons ouvrent un ONGLET PERSONNALISÉ
-                  par-dessus AYROVI (voir customer/nativeOAuth.ts) : plus de
-                  bascule vers Chrome. Sur le web, un vrai lien same-origin —
-                  le cookie de session est conservé. */}
+              {/* Google ouvre le sélecteur natif Android. Les autres fournisseurs
+                  utilisent un Custom Tab ; sur le web, un lien same-origin
+                  conserve le parcours OAuth et son cookie. */}
               {socialLoginEnabled && <div className="ay-auth__social" aria-label={tr('Autres moyens de connexion', 'وسائل دخول أخرى')}>
                 {googleEnabled && (isNativeApp()
                   ? <button type="button" disabled={Boolean(providerPending)} onClick={() => startNativeProvider('google')} className={buttonClasses('secondary', 'md', 'ay-auth__provider')} aria-label={tr('Continuer avec Google', 'المتابعة عبر Google')}>
@@ -802,7 +801,9 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
               </button>}
 
               {providerPending && <p className="ay-auth__message" role="status">
-                {tr('Connexion en cours… la fenêtre se referme toute seule.', 'جارٍ تسجيل الدخول… ستُغلق النافذة تلقائياً.')}
+                {providerPending === 'google' && isNativeApp()
+                  ? tr('Choisissez votre compte Google dans la fenêtre sécurisée. Vous restez dans AYROVI.', 'اختر حساب Google من النافذة الآمنة. ستبقى داخل AYROVI.')
+                  : tr('Connexion en cours… la fenêtre se referme toute seule.', 'جارٍ تسجيل الدخول… ستُغلق النافذة تلقائياً.')}
               </p>}
 
               {config && !config.email.enabled && !socialLoginEnabled && !config.phoneOtp.enabled && <p role="status" className="ay-auth__message">{tr('La connexion est momentanément indisponible. Veuillez réessayer plus tard.', 'تسجيل الدخول غير متاح حاليًا. يرجى المحاولة لاحقًا.')}</p>}

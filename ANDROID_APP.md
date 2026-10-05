@@ -31,6 +31,21 @@ connexion → `native_session_token` rejoué en en-tête), les cookies SameSite=
 ne circulant pas entre l'origine Capacitor et l'origine API. Le web garde ses
 cookies : aucune régression.
 
+### Connexion Google sur Android
+
+Google utilise le **sélecteur natif Android Credential Manager** : sa feuille
+s'ouvre au-dessus d'AYROVI, le serveur vérifie le jeton d'identité, puis l'écran
+client se met à jour dans l'application. Il n'y a pas de page « Connexion
+terminée » ni de retour manuel. Une annulation ferme simplement la feuille ; si
+Credential Manager est indisponible, AYROVI reste à l'écran et propose les
+autres moyens de connexion — aucun Custom Tab Google n'est lancé en repli.
+
+Pour que le sélecteur fonctionne sur un appareil donné, le client OAuth Android
+doit déclarer `app.ayrovi.mobile` et le SHA-1 du certificat qui signe l'APK
+installé. Un certificat différent (debug local, CI ou release) peut donc
+empêcher le sélecteur de s'ouvrir. Les autres fournisseurs OAuth gardent le
+parcours Custom Tab.
+
 Les écrans AyWebs V1 (web + activité native AyWebsBrowse) sont **déposés** pour
 reconstruction proxy-shopping type Add-to-Buyee ; l'icône de navigation reste
 vivante sur un état transitoire honnête (`AyWebsPlaceholder`).
@@ -50,8 +65,9 @@ Debug USB complet : Chrome → `chrome://inspect` (WebView `webview/localhost:80
 
 ## Build via GitHub Actions (sans Android Studio)
 
-1. Push sur `main` → workflow **Android APK/AAB** → artefact `AYROVI-debug.apk`.
-2. AAB signé (Play Store) : créer le keystore une fois, puis stocker dans les secrets GitHub :
+1. Dans **Actions → Android APK/AAB → Run workflow**, lancer le build sur la branche voulue ; l'artefact `AYROVI-debug.apk` est toujours produit.
+2. Avec les quatre secrets de signature configurés, le workflow produit aussi `AYROVI-release.apk` et `AYROVI-release.aab`, signés par le keystore officiel. Installez le **release APK** pour que Credential Manager retrouve le SHA-1 Android enregistré chez Google ; le debug APK garde sa clé de test.
+3. Pour un AAB signé (Play Store), créer le keystore une fois puis stocker les valeurs dans les secrets GitHub :
 
 ```bash
 keytool -genkeypair -v -keystore ayrovi-release.keystore -alias ayrovi \

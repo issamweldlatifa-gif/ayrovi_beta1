@@ -83,6 +83,14 @@ describe('AYROVI Android shell (Capacitor) — application réelle', () => {
     expect(manifest).toContain('android.hardware.camera" android:required="false"');
   });
 
+  it('partage Android et liens profonds: intent initial traité au lancement à froid', () => {
+    const activity = readFileSync('android/app/src/main/java/app/ayrovi/mobile/MainActivity.java', 'utf8');
+    expect(activity).toContain('Intent launchIntent = getIntent();');
+    expect(activity).toContain('if (savedInstanceState == null)');
+    expect(activity).toContain('Uri initialTarget = ayWebsTarget(launchIntent);');
+    expect(activity).toContain('getWebView().post(() -> navigate(initialTarget))');
+  });
+
   it('manifest: deux activités vivantes — lanceur + navigateur marchand AYWEBs V2', () => {
     const activities = manifest.match(/<activity/g) || [];
     expect(activities.length).toBe(2);
@@ -202,9 +210,19 @@ describe('AYROVI Android shell (Capacitor) — application réelle', () => {
 
   it('gradle: signature release env-driven + versionCode Play injectable', () => {
     expect(gradle).toContain("System.getenv('AYROVI_KEYSTORE_BASE64')");
-    // Ce qui compte est l'INJECTION par l'environnement, pas la valeur de repli
-    // (qui suit la version courante du paquet : 1.0.3 / 3 au 04/10/2026).
+    // Ce qui compte est l'injection par l'environnement ; le repli local est 1.0.7 / 7.
     expect(gradle).toMatch(/versionCode \(\(System\.getenv\('AYROVI_VERSION_CODE'\) \?: '\d+'\) as int\)/);
     expect(gradle).toMatch(/versionName \(System\.getenv\('AYROVI_VERSION_NAME'\) \?: '\d+\.\d+(\.\d+)?'\)/);
+  });
+
+  it('la CI produit un APK release signé avec le certificat Android enregistré chez Google', () => {
+    const workflow = readFileSync('.github/workflows/android-apk.yml', 'utf8');
+    expect(workflow).toContain("default: '7'");
+    expect(workflow).toContain('name: Detect Android signing secrets');
+    expect(workflow).toContain("if: steps.sign.outputs.available == 'true'");
+    expect(workflow).toContain('name: Release APK + AAB signés');
+    expect(workflow).toContain('secrets.AYROVI_KEYSTORE_BASE64');
+    expect(workflow).toContain('app-release.apk');
+    expect(workflow).toContain('AYROVI_KEYSTORE_PASSWORD');
   });
 });

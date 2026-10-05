@@ -8,6 +8,7 @@ import androidx.credentials.CredentialManagerCallback;
 import androidx.credentials.CustomCredential;
 import androidx.credentials.GetCredentialRequest;
 import androidx.credentials.GetCredentialResponse;
+import androidx.credentials.exceptions.GetCredentialCancellationException;
 import androidx.credentials.exceptions.GetCredentialException;
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption;
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
@@ -20,30 +21,13 @@ import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
 /**
- * Connexion par fournisseur SANS quitter l'application (04/10/2026).
+ * Pont OAuth Android : Google utilise le sélecteur natif Credential Manager ;
+ * `open()` reste disponible pour les fournisseurs qui exigent une page OAuth.
  *
- * ── La remarque ─────────────────────────────────────────────────────────────
- * « تسجيل دخول بش ولي داخل تطبيق لا خروج من تطبيق » : se connecter doit se
- * faire DANS l'application. Le correctif précédent du 404 Google passait par
- * `window.open`, que Capacitor délègue à Android : l'utilisateur basculait
- * dans Chrome, application séparée, pile de tâches séparée — il quittait
- * visiblement AYROVI et devait revenir à la main.
- *
- * ── Pourquoi un onglet personnalisé, et pas une WebView ─────────────────────
- * Charger le flux Google dans notre propre WebView n'est PAS une option : le
- * serveur d'autorisation Google refuse explicitement les WebView embarquées
- * (`disallowed_useragent`), précisément parce qu'une application hôte peut y
- * lire le mot de passe. Toute solution de ce genre finirait par un écran
- * d'erreur Google.
- *
- * L'onglet personnalisé (Custom Tab) est la réponse prévue pour ce cas : c'est
- * le moteur de Chrome, donc un agent utilisateur accepté et un vrai bac à
- * sable (AYROVI ne voit RIEN de ce qui y est tapé), mais il s'ouvre DANS notre
- * tâche, aux couleurs de l'application, et se referme tout seul au retour. Pas
- * de bascule d'application, pas de retour manuel.
- *
- * Si aucun navigateur compatible n'est installé, on ne ment pas : on répond
- * `opened:false` et la couche web retombe sur son comportement précédent.
+ * Google refuse les WebView embarquées (`disallowed_useragent`). Son flux natif
+ * remet un jeton d'identité que le serveur vérifie avant d'ouvrir une session.
+ * Les autres flux web peuvent utiliser un Custom Tab dans la tâche AYROVI ;
+ * une erreur ou une annulation du sélecteur Google ne l'ouvre jamais en repli.
  */
 @CapacitorPlugin(name = "AyroviAuthTab")
 public class AyroviAuthTabPlugin extends Plugin {
@@ -61,9 +45,9 @@ public class AyroviAuthTabPlugin extends Plugin {
    * ── Ce que cette méthode ne peut pas faire seule ───────────────────────────
    * Elle exige un client OAuth de type Android déclaré chez Google avec le
    * SHA-1 du certificat de signature, et les services Google Play sur
-   * l'appareil. Quand l'une des deux conditions manque, on ne simule rien :
-   * on renvoie `available:false` et la couche web reprend l'onglet. Un échec
-   * silencieux déguisé en succès serait pire que l'absence de la méthode.
+   * l'appareil. Quand une condition manque, on renvoie `available:false` ; la
+   * couche web garde AYROVI à l'écran et propose ses autres moyens de connexion.
+   * Aucun navigateur n'est lancé automatiquement à la place de cette feuille.
    */
   @PluginMethod
   public void signInWithGoogle(PluginCall call) {
@@ -122,12 +106,13 @@ public class AyroviAuthTabPlugin extends Plugin {
 
           @Override
           public void onError(GetCredentialException error) {
-            // Pas de services Google Play, aucun compte sur l'appareil, SHA-1
-            // non déclaré, ou simple annulation : dans tous ces cas la couche
-            // web doit pouvoir retomber sur l'onglet, pas afficher une panne.
+            // Distinguer l'annulation volontaire d'une vraie indisponibilité :
+            // aucune des deux ne doit ouvrir un navigateur derrière le client.
             JSObject unavailable = new JSObject();
             unavailable.put("available", false);
-            unavailable.put("reason", error.getType());
+            unavailable.put("reason", error instanceof GetCredentialCancellationException
+                ? "USER_CANCELED"
+                : error.getType());
             call.resolve(unavailable);
           }
         });

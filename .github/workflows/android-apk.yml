@@ -6,7 +6,7 @@ on:
       versionCode:
         description: 'Play versionCode (incrémenter à chaque AAB)'
         required: false
-        default: '1'
+        default: '7'
   # Livraison site uniquement : les builds Android exigent une demande manuelle
   # explicite (politique testée : tests/lens-reference-parity.test.ts interdit
   # tout déclencheur `push:` ici). Le 04/10/2026, un déclencheur push ajouté
@@ -16,8 +16,8 @@ jobs:
   android:
     runs-on: ubuntu-latest
     env:
-      AYROVI_VERSION_CODE: ${{ github.event.inputs.versionCode || '1' }}
-      AYROVI_VERSION_NAME: ${{ github.event.inputs.versionCode && format('1.0.{0}', github.event.inputs.versionCode) || '1.0' }}
+      AYROVI_VERSION_CODE: ${{ github.event.inputs.versionCode || '7' }}
+      AYROVI_VERSION_NAME: ${{ github.event.inputs.versionCode && format('1.0.{0}', github.event.inputs.versionCode) || '1.0.7' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -38,10 +38,27 @@ jobs:
           java-version: 21
           cache: gradle
 
+      # Détecter le jeu complet avant le build : le keystore officiel signe aussi
+      # le debug APK afin que Credential Manager voie le SHA-1 déclaré chez Google.
+      # Les valeurs ne sont jamais imprimées dans les logs.
+      - name: Detect Android signing secrets
+        id: sign
+        env:
+          KS: ${{ secrets.AYROVI_KEYSTORE_BASE64 }}
+          KSP: ${{ secrets.AYROVI_KEYSTORE_PASSWORD }}
+          ALIAS: ${{ secrets.AYROVI_KEY_ALIAS }}
+          KEYP: ${{ secrets.AYROVI_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KS" ] && [ -n "$KSP" ] && [ -n "$ALIAS" ] && [ -n "$KEYP" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Debug APK (test direct sur téléphone)
-        # `sh ./gradlew` (et non `./gradlew`) : l'échec CI du 03/10 (exit 126,
-        # « permission denied » à l'exécution directe du wrapper) ne peut plus
-        # se produire — l'interpréteur est invoqué explicitement.
+        # `sh ./gradlew` : l'interpréteur est invoqué explicitement. Cet APK reste
+        # signé avec la clé debug standard ; utiliser le release APK ci-dessous
+        # pour le SHA-1 Google enregistré avec le keystore officiel.
         run: cd android && sh ./gradlew assembleDebug --no-daemon
 
       - uses: actions/upload-artifact@v4
@@ -49,22 +66,20 @@ jobs:
           name: AYROVI-debug.apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
 
-      # secrets ne sont PAS lisibles dans un `if` d'étape → drapeau via GITHUB_OUTPUT
-      - name: Detect release signing secrets
-        id: sign
-        env:
-          KS: ${{ secrets.AYROVI_KEYSTORE_BASE64 }}
-        run: |
-          if [ -n "$KS" ]; then echo "available=true" >> "$GITHUB_OUTPUT"; else echo "available=false" >> "$GITHUB_OUTPUT"; fi
-
-      - name: Release AAB signé (Play Store) — seulement si le keystore est configuré
+      - name: Release APK + AAB signés — seulement si le keystore est configuré
         if: steps.sign.outputs.available == 'true'
         env:
           AYROVI_KEYSTORE_BASE64: ${{ secrets.AYROVI_KEYSTORE_BASE64 }}
           AYROVI_KEYSTORE_PASSWORD: ${{ secrets.AYROVI_KEYSTORE_PASSWORD }}
           AYROVI_KEY_ALIAS: ${{ secrets.AYROVI_KEY_ALIAS }}
           AYROVI_KEY_PASSWORD: ${{ secrets.AYROVI_KEY_PASSWORD }}
-        run: cd android && sh ./gradlew bundleRelease --no-daemon
+        run: cd android && sh ./gradlew assembleRelease bundleRelease --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        if: steps.sign.outputs.available == 'true'
+        with:
+          name: AYROVI-release.apk
+          path: android/app/build/outputs/apk/release/app-release.apk
 
       - uses: actions/upload-artifact@v4
         if: steps.sign.outputs.available == 'true'

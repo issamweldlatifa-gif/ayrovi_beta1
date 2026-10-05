@@ -1,0 +1,573 @@
+<!doctype html>
+<html lang="fr" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="Prototype interactif de connexion Google native pour l’application AYROVI Android.">
+  <title>AYROVI — Prototype connexion Android</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #171717;
+      --muted: #686868;
+      --muted-2: #929292;
+      --line: #e8e7e5;
+      --surface: #fff;
+      --canvas: #f4f3f0;
+      --brand: #ff6900;
+      --brand-soft: #fff2e9;
+      --success: #16794b;
+      --shadow: 0 30px 90px rgba(20, 20, 20, .14);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    html, body { min-height: 100%; margin: 0; }
+    body { background: var(--canvas); color: var(--ink); }
+    button, input { font: inherit; }
+    button { color: inherit; }
+    button:focus-visible, input:focus-visible { outline: 3px solid rgba(255, 105, 0, .38); outline-offset: 3px; }
+    .workspace {
+      min-height: 100svh;
+      display: grid;
+      grid-template-columns: minmax(320px, 393px) minmax(300px, 460px);
+      align-items: center;
+      justify-content: center;
+      gap: clamp(38px, 7.5vw, 112px);
+      padding: 28px;
+    }
+    .device {
+      position: relative;
+      width: min(393px, calc(100vw - 32px));
+      height: min(852px, calc(100svh - 44px));
+      min-height: 610px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      isolation: isolate;
+      border: 1px solid #deddda;
+      border-radius: 34px;
+      background: #fff;
+      box-shadow: var(--shadow);
+    }
+    .status-bar {
+      height: 29px;
+      min-height: 29px;
+      padding: 0 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #fff;
+      color: #272727;
+      font-size: 12px;
+      font-weight: 650;
+      letter-spacing: .01em;
+    }
+    .status-icons { display: flex; gap: 5px; align-items: center; color: #333; }
+    .status-icons svg { display: block; }
+    .screen {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      background: #fff;
+      scrollbar-width: none;
+    }
+    .screen::-webkit-scrollbar { display: none; }
+    .screen-content {
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+      padding: 10px 25px max(20px, env(safe-area-inset-bottom));
+    }
+    .topbar {
+      height: 44px;
+      display: grid;
+      grid-template-columns: 44px 1fr 44px;
+      align-items: center;
+      margin-inline: -8px;
+    }
+    .icon-button, .language-button {
+      border: 0;
+      background: transparent;
+      min-width: 42px;
+      min-height: 42px;
+      border-radius: 50%;
+      display: inline-grid;
+      place-items: center;
+      cursor: pointer;
+    }
+    .icon-button:hover, .language-button:hover { background: #f5f5f5; }
+    .topbar-label { text-align: center; color: #7c7c7c; font-size: 11px; font-weight: 650; letter-spacing: .13em; text-transform: uppercase; }
+    .language-button { justify-self: end; width: 42px; height: 36px; min-width: 42px; border-radius: 999px; font-size: 11px; font-weight: 750; }
+    html[dir="rtl"] .topbar .icon-button svg { transform: rotate(180deg); }
+    .brand-lockup { display: block; width: 152px; height: 32px; object-fit: contain; margin: 25px auto 0; }
+    .intro { text-align: center; margin: 21px 0 0; }
+    .intro h1 { max-width: 320px; margin: 0 auto; font-size: clamp(25px, 7vw, 29px); line-height: 1.16; letter-spacing: -.045em; font-weight: 760; }
+    .intro p { max-width: 315px; margin: 10px auto 0; color: #5c5c5c; font-size: 14px; line-height: 1.55; }
+    .auth-form { margin-top: clamp(25px, 5vh, 43px); }
+    .email-label { display: block; margin: 0 0 8px 2px; font-size: 12px; font-weight: 650; color: #555; }
+    .email-input {
+      display: block;
+      width: 100%;
+      height: 55px;
+      padding: 0 16px;
+      border: 1px solid #d7d7d7;
+      border-radius: 14px;
+      color: var(--ink);
+      background: #fff;
+      font-size: 15px;
+      transition: border-color .16s ease, box-shadow .16s ease;
+    }
+    .email-input::placeholder { color: #8b8b8b; opacity: 1; }
+    .email-input:focus { border-color: #8c8c8c; outline: none; box-shadow: 0 0 0 3px rgba(0, 0, 0, .04); }
+    .continue-button, .google-button, .phone-button, .sheet-action, .return-button {
+      width: 100%;
+      min-height: 54px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      border-radius: 15px;
+      cursor: pointer;
+      font-weight: 680;
+      transition: transform .16s ease, background .16s ease, border-color .16s ease, opacity .16s ease;
+    }
+    .continue-button { margin-top: 11px; border: 1px solid #222; background: #202020; color: #fff; }
+    .continue-button:disabled { border-color: #e1e1e1; background: #e1e1e1; color: #858585; cursor: not-allowed; }
+    .google-divider { display: flex; align-items: center; gap: 14px; margin: 21px 0 17px; color: #777; font-size: 13px; }
+    .google-divider::before, .google-divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+    .google-button, .phone-button { background: #fff; border: 1px solid #d7d7d7; color: #191919; font-size: 15px; }
+    .google-button:hover, .phone-button:hover { border-color: #a9a9a9; background: #fcfcfc; }
+    .google-button:active, .phone-button:active, .continue-button:not(:disabled):active { transform: scale(.985); }
+    .google-mark { width: 22px; height: 22px; flex: 0 0 auto; }
+    .phone-button { margin-top: 10px; min-height: 49px; font-size: 13px; font-weight: 600; }
+    .legal { margin-top: auto; padding-top: 27px; display: flex; justify-content: center; align-items: center; gap: 11px; color: #777; font-size: 11px; }
+    .legal a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+    .legal-dot { color: #c5c5c5; }
+
+    .account-view { display: none; min-height: 100%; flex-direction: column; padding: 10px 22px max(22px, env(safe-area-inset-bottom)); }
+    .account-view.is-visible { display: flex; }
+    .account-view .topbar { margin-inline: -5px; }
+    .account-greeting { margin-top: 22px; }
+    .account-greeting h1 { margin: 0; font-size: 27px; letter-spacing: -.04em; line-height: 1.15; }
+    .account-greeting p { margin: 8px 0 0; color: var(--muted); font-size: 14px; line-height: 1.45; }
+    .signed-in-banner { display: flex; align-items: flex-start; gap: 11px; margin-top: 22px; padding: 13px; border: 1px solid #e8e4dd; border-radius: 15px; background: #fcfaf7; }
+    .signed-check { width: 27px; height: 27px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 50%; background: var(--brand); color: white; }
+    .signed-in-banner strong { display: block; font-size: 13px; line-height: 1.3; }
+    .signed-in-banner p { margin: 3px 0 0; color: #696969; font-size: 11px; line-height: 1.4; }
+    .profile-card { display: flex; align-items: center; gap: 13px; margin-top: 18px; padding: 17px; border: 1px solid var(--line); border-radius: 16px; }
+    .profile-avatar { width: 46px; height: 46px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 50%; color: #fff; background: #272727; font-size: 18px; font-weight: 750; }
+    .profile-card strong { display: block; font-size: 14px; }
+    .profile-card span { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; }
+    .section-label { margin: 24px 0 10px; color: #7a7a7a; font-size: 10px; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
+    .account-link { min-height: 55px; display: flex; align-items: center; gap: 13px; padding: 0 14px; border: 1px solid var(--line); border-radius: 13px; margin-top: 8px; color: var(--ink); text-decoration: none; font-size: 13px; font-weight: 650; }
+    .account-link .line-icon { width: 20px; height: 20px; display: grid; place-items: center; color: #555; }
+    .account-link .chevron { margin-inline-start: auto; color: #999; font-size: 19px; }
+    .reset-link { align-self: center; margin-top: 13px; padding: 7px 10px; border: 0; background: transparent; color: #747474; font-size: 11px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+
+    .sheet-layer { position: absolute; inset: 0; z-index: 10; display: flex; align-items: flex-end; background: rgba(16, 18, 20, .42); animation: fade-in .18s ease-out; }
+    .sheet-layer[hidden] { display: none; }
+    .sheet-backdrop { position: absolute; inset: 0; border: 0; background: transparent; cursor: default; }
+    .account-sheet {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-height: min(84%, 670px);
+      overflow-y: auto;
+      padding: 8px 20px max(24px, env(safe-area-inset-bottom));
+      border-radius: 26px 26px 0 0;
+      background: #fff;
+      box-shadow: 0 -12px 40px rgba(0, 0, 0, .12);
+      animation: sheet-up .24s cubic-bezier(.2,.8,.2,1);
+      scrollbar-width: none;
+    }
+    .account-sheet::-webkit-scrollbar { display: none; }
+    .sheet-grabber { width: 37px; height: 4px; margin: 0 auto 16px; border-radius: 99px; background: #d5d5d5; }
+    .sheet-head { min-height: 36px; display: flex; align-items: center; justify-content: space-between; }
+    .google-wordmark { display: inline-flex; align-items: center; gap: 9px; color: #5f6368; font-size: 16px; font-weight: 620; }
+    .sheet-close { width: 36px; height: 36px; border: 0; border-radius: 50%; background: transparent; display: grid; place-items: center; color: #626262; cursor: pointer; }
+    .sheet-close:hover { background: #f3f3f3; }
+    .sheet-eyebrow { margin: 21px 0 0; color: #6b6b6b; font-size: 11px; font-weight: 650; letter-spacing: .035em; }
+    .sheet-title { margin: 5px 0 0; font-size: 21px; font-weight: 670; line-height: 1.26; letter-spacing: -.035em; }
+    .sheet-subtitle { margin: 5px 0 14px; color: #5f6368; font-size: 13px; line-height: 1.4; }
+    .account-option { width: 100%; min-height: 67px; display: flex; align-items: center; gap: 12px; padding: 9px 10px; border: 0; border-top: 1px solid #eeeeee; background: transparent; text-align: start; cursor: pointer; }
+    .account-option:hover { background: #f8f9fa; }
+    .account-option:last-of-type { border-bottom: 1px solid #eeeeee; }
+    .account-avatar { width: 40px; height: 40px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 50%; background: #d9e5f5; color: #305178; font-weight: 700; font-size: 14px; }
+    .account-avatar.alt { background: #f4dfd7; color: #8b4429; }
+    .account-copy { min-width: 0; }
+    .account-copy strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #202124; font-size: 13px; font-weight: 630; }
+    .account-copy span { display: block; overflow: hidden; margin-top: 3px; color: #5f6368; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
+    .other-account { width: 100%; min-height: 57px; display: flex; align-items: center; gap: 13px; padding: 8px 10px; border: 0; background: #fff; text-align: start; color: #303134; font-size: 13px; font-weight: 590; cursor: pointer; }
+    .other-account:hover { background: #f8f9fa; }
+    .other-avatar { width: 40px; height: 40px; display: grid; place-items: center; color: #64686c; }
+    .sheet-foot { margin: 9px 0 0; text-align: center; color: #797979; font-size: 10px; line-height: 1.45; }
+    .sheet-foot b { color: #5f6368; font-weight: 600; }
+    .other-account-panel, .loading-panel { display: none; padding: 4px 1px 0; }
+    .other-account-panel.is-visible, .loading-panel.is-visible { display: block; }
+    .account-list.is-hidden, .account-intro.is-hidden { display: none; }
+    .other-description { margin: 10px 0 18px; color: #5f6368; font-size: 13px; line-height: 1.55; }
+    .sheet-action { min-height: 47px; margin-top: 16px; border: 0; border-radius: 999px; background: #202124; color: #fff; font-size: 13px; }
+    .sheet-back { border: 0; padding: 6px 0; margin-top: 5px; background: transparent; color: #5f6368; font-size: 12px; cursor: pointer; }
+    .loading-panel { padding: 29px 5px 34px; text-align: center; }
+    .loading-mark { width: 42px; height: 42px; display: grid; place-items: center; margin: 0 auto 16px; border-radius: 50%; background: #fff2e9; color: var(--brand); }
+    .loading-panel h3 { margin: 0; font-size: 17px; }
+    .loading-panel p { margin: 7px 0 0; color: #686868; font-size: 12px; line-height: 1.5; }
+    .spinner { width: 17px; height: 17px; margin: 15px auto 0; border: 2px solid #f4d2bd; border-top-color: var(--brand); border-radius: 50%; animation: spin .75s linear infinite; }
+    .prototype-notes { width: min(460px, 100%); }
+    .notes-kicker { display: inline-flex; align-items: center; gap: 8px; padding: 7px 10px; border: 1px solid #e8e5df; border-radius: 999px; background: rgba(255,255,255,.72); color: #6b625b; font-size: 11px; font-weight: 680; }
+    .notes-kicker::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--brand); }
+    .prototype-notes h1 { max-width: 420px; margin: 18px 0 10px; font-size: clamp(27px, 3.6vw, 39px); letter-spacing: -.055em; line-height: 1.09; }
+    .notes-lead { max-width: 420px; margin: 0; color: #62615e; font-size: 14px; line-height: 1.7; }
+    .flow { display: grid; gap: 0; margin: 27px 0 21px; }
+    .flow-step { display: grid; grid-template-columns: 34px minmax(0,1fr); gap: 12px; padding: 14px 0; border-top: 1px solid #e5e3df; }
+    .flow-number { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: #fff; border: 1px solid #e2ded8; color: #5f5a54; font-size: 11px; font-weight: 760; }
+    .flow-step strong { display: block; margin-top: 2px; font-size: 13px; }
+    .flow-step p { margin: 4px 0 0; color: #77746f; font-size: 12px; line-height: 1.55; }
+    .important-note { padding: 15px 16px; border: 1px solid #e8e4dc; border-radius: 16px; background: rgba(255,255,255,.62); }
+    .important-note strong { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+    .important-note strong svg { color: var(--brand); }
+    .important-note p { margin: 8px 0 0; color: #706d67; font-size: 11px; line-height: 1.65; }
+    .notes-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 13px; margin-top: 16px; }
+    .replay-button { min-height: 42px; padding: 0 15px; border: 1px solid #d9d5cf; border-radius: 999px; background: #fff; font-size: 12px; font-weight: 650; cursor: pointer; }
+    .replay-button:hover { border-color: #aaa49b; }
+    .prototype-caption { color: #88847e; font-size: 11px; }
+    .toast {
+      position: absolute;
+      z-index: 8;
+      inset-inline: 18px;
+      top: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      border: 1px solid #eadfd5;
+      border-radius: 13px;
+      background: rgba(255,255,255,.97);
+      box-shadow: 0 8px 24px rgba(0,0,0,.08);
+      opacity: 0;
+      transform: translateY(-8px);
+      pointer-events: none;
+      transition: opacity .22s ease, transform .22s ease;
+      color: #252525;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .toast.is-visible { opacity: 1; transform: translateY(0); }
+    .toast-check { width: 21px; height: 21px; display: grid; place-items: center; border-radius: 50%; background: var(--success); color: #fff; flex: 0 0 auto; }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
+    @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes sheet-up { from { transform: translateY(26px); opacity: .65; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (max-width: 800px) {
+      .workspace { grid-template-columns: minmax(0, 393px); gap: 25px; padding: 12px; }
+      .device { width: min(393px, calc(100vw - 24px)); height: min(852px, calc(100svh - 24px)); border-radius: 29px; }
+      .prototype-notes { width: min(393px, calc(100vw - 32px)); padding: 0 4px 25px; }
+      .prototype-notes h1 { font-size: 29px; }
+    }
+    @media (max-width: 440px) {
+      .workspace { display: block; min-height: 100svh; padding: 0; background: #fff; }
+      .device { width: 100%; height: 100svh; min-height: 610px; max-height: none; border: 0; border-radius: 0; box-shadow: none; }
+      .screen-content { padding-top: 5px; }
+      .brand-lockup { margin-top: 19px; }
+      .prototype-notes { width: 100%; padding: 24px 22px 30px; background: var(--canvas); }
+      .prototype-notes h1 { font-size: 28px; }
+    }
+    @media (max-height: 720px) and (min-width: 801px) {
+      .workspace { padding-block: 12px; }
+      .device { min-height: 0; height: calc(100svh - 24px); }
+      .brand-lockup { margin-top: 14px; }
+      .intro { margin-top: 13px; }
+      .auth-form { margin-top: 19px; }
+      .legal { padding-top: 15px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="workspace">
+    <section class="device" aria-label="Prototype mobile AYROVI">
+      <div class="status-bar" aria-hidden="true">
+        <span>9:41</span>
+        <span class="status-icons">
+          <svg width="16" height="13" viewBox="0 0 16 13" fill="none"><path d="M1 11.5h1.7V8.7H1v2.8Zm3.3 0h1.8V6.4H4.3v5.1Zm3.4 0h1.8V4.2H7.7v7.3Zm3.3 0h1.8V1.8H11v9.7Z" fill="currentColor"/><path d="M1 4.1c3.7-3.2 9.4-3.2 13.2 0" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          <svg width="18" height="13" viewBox="0 0 18 13" fill="none"><rect x=".7" y="1.1" width="14.5" height="10.2" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M16.3 4.1h1v4h-1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><rect x="2.5" y="2.8" width="9.4" height="6.8" rx="1" fill="currentColor"/></svg>
+        </span>
+      </div>
+      <div class="screen" id="screen">
+        <section class="screen-content" id="loginView" aria-labelledby="loginTitle">
+          <header class="topbar">
+            <button class="icon-button" type="button" id="backButton" aria-label="Retour" title="Retour">
+              <svg width="23" height="23" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19 12H5m0 0 7-7m-7 7 7 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <span class="topbar-label" data-i18n="topLabel">ESPACE CLIENT</span>
+            <button class="language-button" id="languageButton" type="button" aria-label="Changer de langue">AR</button>
+          </header>
+          <img class="brand-lockup" src="../client/public/media/logo-ayrovi-lockup-black-orange.svg" alt="AYROVI" onerror="this.style.display='none';document.getElementById('brandFallback').style.display='block'">
+          <div class="brand-fallback" id="brandFallback" style="display:none;text-align:center;margin-top:25px;font-weight:850;letter-spacing:-.05em;font-size:27px">AYROVI<span style="color:#ff6900">.</span></div>
+          <div class="intro">
+            <h1 id="loginTitle" data-i18n="title">Se connecter ou s’inscrire</h1>
+            <p data-i18n="subtitle">Vos commandes, vos favoris et votre panier, au même endroit.</p>
+          </div>
+          <form class="auth-form" id="emailForm">
+            <label class="email-label" for="email" data-i18n="emailLabel">Adresse e-mail</label>
+            <input class="email-input" id="email" type="email" inputmode="email" autocomplete="email" placeholder="nom@exemple.com" dir="ltr">
+            <button class="continue-button" id="continueButton" type="submit" disabled data-i18n="continue">Continuer</button>
+            <div class="google-divider"><span data-i18n="or">ou</span></div>
+            <button class="google-button" id="googleButton" type="button">
+              <svg class="google-mark" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5Z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.75 7.18l7.73 6C44.42 38.02 46.98 31.86 46.98 24.55Z"/><path fill="#FBBC05" d="M10.53 28.59A14.4 14.4 0 0 1 9.75 24c0-1.59.27-3.13.76-4.59l-7.98-6.2A23.98 23.98 0 0 0 0 24c0 3.89.93 7.56 2.56 10.78l7.97-6.19Z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.91-5.8l-7.73-6c-2.15 1.45-4.89 2.3-8.18 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.2C6.51 42.62 14.62 48 24 48Z"/></svg>
+              <span data-i18n="google">Continuer avec Google</span>
+            </button>
+            <button class="phone-button" id="phoneButton" type="button" data-i18n="phone">Continuer avec un numéro de téléphone</button>
+          </form>
+          <nav class="legal" aria-label="Informations légales">
+            <a href="#terms" data-i18n="terms">Conditions d’utilisation</a><span class="legal-dot">·</span><a href="#privacy" data-i18n="privacy">Confidentialité</a>
+          </nav>
+        </section>
+
+        <section class="account-view" id="accountView" aria-labelledby="accountTitle" aria-live="polite">
+          <header class="topbar">
+            <button class="icon-button" id="accountBack" type="button" aria-label="Retour à la page précédente">
+              <svg width="23" height="23" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19 12H5m0 0 7-7m-7 7 7 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <span class="topbar-label" data-i18n="accountTop">AYROVI</span>
+            <span></span>
+          </header>
+          <div class="account-greeting">
+            <h1 id="accountTitle" data-i18n="accountTitle">Votre espace client</h1>
+            <p data-i18n="accountSubtitle">Tout ce qui compte, au même endroit.</p>
+          </div>
+          <div class="signed-in-banner">
+            <span class="signed-check" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 20 20" fill="none"><path d="m4 10 4 4 8-8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <div><strong data-i18n="successTitle">Connexion confirmée</strong><p data-i18n="successText">Vous êtes de retour dans AYROVI. Aucun retour manuel nécessaire.</p></div>
+          </div>
+          <div class="profile-card">
+            <div class="profile-avatar" id="profileAvatar">D</div>
+            <div><strong id="profileName">Compte de démonstration</strong><span id="profileEmail">demo@example.com</span></div>
+          </div>
+          <p class="section-label" data-i18n="yourSpace">VOTRE ESPACE</p>
+          <a class="account-link" href="#orders"><span class="line-icon" aria-hidden="true">▤</span><span data-i18n="orders">Mes commandes</span><span class="chevron" aria-hidden="true">›</span></a>
+          <a class="account-link" href="#favorites"><span class="line-icon" aria-hidden="true">♡</span><span data-i18n="favorites">Mes favoris</span><span class="chevron" aria-hidden="true">›</span></a>
+          <a class="account-link" href="#cart"><span class="line-icon" aria-hidden="true">▱</span><span data-i18n="cart">Mon panier</span><span class="chevron" aria-hidden="true">›</span></a>
+          <button class="reset-link" id="resetFromAccount" type="button" data-i18n="replay">Rejouer la démonstration</button>
+        </section>
+      </div>
+      <div class="toast" id="toast" role="status" aria-live="polite"><span class="toast-check" aria-hidden="true">✓</span><span data-i18n="toastText">Connexion réussie — vous retrouvez votre espace.</span></div>
+
+      <div class="sheet-layer" id="sheetLayer" hidden>
+        <button class="sheet-backdrop" id="sheetBackdrop" type="button" aria-label="Fermer la fenêtre"></button>
+        <section class="account-sheet" id="accountSheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+          <div class="sheet-grabber" aria-hidden="true"></div>
+          <header class="sheet-head">
+            <span class="google-wordmark">
+              <svg width="25" height="25" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5Z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.75 7.18l7.73 6C44.42 38.02 46.98 31.86 46.98 24.55Z"/><path fill="#FBBC05" d="M10.53 28.59A14.4 14.4 0 0 1 9.75 24c0-1.59.27-3.13.76-4.59l-7.98-6.2A23.98 23.98 0 0 0 0 24c0 3.89.93 7.56 2.56 10.78l7.97-6.19Z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.91-5.8l-7.73-6c-2.15 1.45-4.89 2.3-8.18 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.2C6.51 42.62 14.62 48 24 48Z"/></svg>
+              <span>Google</span>
+            </span>
+            <button class="sheet-close" id="sheetClose" type="button" aria-label="Fermer">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            </button>
+          </header>
+          <div class="account-intro" id="accountIntro">
+            <p class="sheet-eyebrow" data-i18n="secureLabel">Connexion sécurisée</p>
+            <h2 class="sheet-title" id="sheetTitle" data-i18n="chooseTitle">Choisir un compte</h2>
+            <p class="sheet-subtitle"><span data-i18n="continueTo">pour continuer vers</span> <b>AYROVI</b></p>
+          </div>
+          <div class="account-list" id="accountList">
+            <button class="account-option" type="button" data-name="Compte de démonstration" data-email="demo@example.com" data-initial="D">
+              <span class="account-avatar">D</span><span class="account-copy"><strong>Compte de démonstration</strong><span>demo@example.com</span></span>
+            </button>
+            <button class="account-option" type="button" data-name="Compte client test" data-email="client.test@example.com" data-initial="C">
+              <span class="account-avatar alt">C</span><span class="account-copy"><strong>Compte client test</strong><span>client.test@example.com</span></span>
+            </button>
+            <button class="other-account" id="otherAccount" type="button">
+              <span class="other-avatar" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.3" stroke="currentColor" stroke-width="1.7"/><path d="M5 20c.3-3.2 3.1-5.4 7-5.4s6.7 2.2 7 5.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 2v2m0 12v2m-9-6h2m14 0h2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>
+              <span data-i18n="otherAccount">Utiliser un autre compte</span>
+            </button>
+          </div>
+          <div class="other-account-panel" id="otherAccountPanel">
+            <p class="sheet-eyebrow" data-i18n="otherSecureTitle">Ajouter un compte Google</p>
+            <h2 class="sheet-title" data-i18n="otherSecureHeading">Continuez en toute sécurité</h2>
+            <p class="other-description" data-i18n="otherSecureText">Google vous demandera de choisir ou d’ajouter un compte dans son interface sécurisée. AYROVI ne voit jamais votre mot de passe.</p>
+            <button class="sheet-action" id="simulateOtherAccount" type="button" data-i18n="simulateContinue">Simuler le retour après connexion</button>
+            <button class="sheet-back" id="backToAccounts" type="button" data-i18n="backToAccounts">Retour à la liste des comptes</button>
+          </div>
+          <div class="loading-panel" id="loadingPanel" aria-live="polite">
+            <span class="loading-mark" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="m5 12 4.3 4.3L19 6.8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <h3 data-i18n="verifying">Vérification auprès de Google…</h3>
+            <p data-i18n="returning">Nous vous ramenons dans AYROVI automatiquement.</p>
+            <span class="spinner" aria-hidden="true"></span>
+          </div>
+          <p class="sheet-foot" id="sheetFoot"><b>Prototype :</b> la vraie fenêtre de sélection sera fournie par Android / Google.</p>
+        </section>
+      </div>
+    </section>
+
+    <aside class="prototype-notes" aria-labelledby="notesTitle">
+      <span class="notes-kicker">Prototype interactif · Android</span>
+      <h1 id="notesTitle">دخول Google، من غير ما العميل يخرج من AYROVI</h1>
+      <p class="notes-lead">هذا تصور أولي لتصغير شاشة الدخول، ترتيبها، وإرجاع العميل تلقائيًا لنفس المكان بعد نجاح الدخول.</p>
+      <div class="flow" aria-label="تسلسل الدخول المقترح">
+        <div class="flow-step"><span class="flow-number">01</span><div><strong>شاشة دخول أخفّ</strong><p>شعار أصغر، مسافات موزونة، وحقل البريد وGoogle واضحين على حجم الهاتف.</p></div></div>
+        <div class="flow-step"><span class="flow-number">02</span><div><strong>اختيار حساب Google</strong><p>يفتح اختيار الحساب كنافذة Android فوق AYROVI؛ الإلغاء يرجّع العميل للشاشة نفسها.</p></div></div>
+        <div class="flow-step"><span class="flow-number">03</span><div><strong>رجوع تلقائي بعد التحقق</strong><p>تُغلق نافذة Google، تتحدّث الجلسة، ويرجع العميل لصفحته بدون صفحة «Connexion terminée» أو ضغطة سهم.</p></div></div>
+      </div>
+      <div class="important-note">
+        <strong><svg width="17" height="17" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.6"/><path d="M10 9v5m0-8v.3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>ملاحظة مهمّة على Google</strong>
+        <p>النافذة الحقيقية يوفّرها Android Credential Manager، موش HTML داخل التطبيق. النموذج يحاكي شكلها وتدفّقها فقط. الصور تبيّن أن النسخة الحالية تطيح للـ Custom Tab؛ بعد موافقتكم على التصميم نراجع سبب هذا الـ fallback ونصلّح الرجوع التلقائي.</p>
+      </div>
+      <div class="notes-actions">
+        <button class="replay-button" id="replayButton" type="button">↻ إعادة التجربة</button>
+        <span class="prototype-caption">اضغط «Continuer avec Google» داخل الهاتف.</span>
+      </div>
+    </aside>
+  </main>
+  <script>
+    (() => {
+      const translations = {
+        fr: {
+          topLabel: 'ESPACE CLIENT', title: 'Se connecter ou s’inscrire', subtitle: 'Vos commandes, vos favoris et votre panier, au même endroit.', emailLabel: 'Adresse e-mail', continue: 'Continuer', or: 'ou', google: 'Continuer avec Google', phone: 'Continuer avec un numéro de téléphone', terms: 'Conditions d’utilisation', privacy: 'Confidentialité', accountTop: 'AYROVI', accountTitle: 'Votre espace client', accountSubtitle: 'Tout ce qui compte, au même endroit.', successTitle: 'Connexion confirmée', successText: 'Vous êtes de retour dans AYROVI. Aucun retour manuel nécessaire.', yourSpace: 'VOTRE ESPACE', orders: 'Mes commandes', favorites: 'Mes favoris', cart: 'Mon panier', replay: 'Rejouer la démonstration', toastText: 'Connexion réussie — vous retrouvez votre espace.', secureLabel: 'Connexion sécurisée', chooseTitle: 'Choisir un compte', continueTo: 'pour continuer vers', otherAccount: 'Utiliser un autre compte', otherSecureTitle: 'Ajouter un compte Google', otherSecureHeading: 'Continuez en toute sécurité', otherSecureText: 'Google vous demandera de choisir ou d’ajouter un compte dans son interface sécurisée. AYROVI ne voit jamais votre mot de passe.', simulateContinue: 'Simuler le retour après connexion', backToAccounts: 'Retour à la liste des comptes', verifying: 'Vérification auprès de Google…', returning: 'Nous vous ramenons dans AYROVI automatiquement.', sheetFoot: '<b>Prototype :</b> la vraie fenêtre de sélection sera fournie par Android / Google.'
+        },
+        ar: {
+          topLabel: 'حساب العميل', title: 'تسجيل الدخول أو إنشاء حساب', subtitle: 'طلباتك ومفضّلاتك وسلّتك — في مكان واحد.', emailLabel: 'البريد الإلكتروني', continue: 'متابعة', or: 'أو', google: 'المتابعة عبر Google', phone: 'المتابعة برقم الهاتف', terms: 'شروط الاستخدام', privacy: 'الخصوصية', accountTop: 'AYROVI', accountTitle: 'حسابك في AYROVI', accountSubtitle: 'كل ما يخصّك في مكان واحد.', successTitle: 'تمّ تأكيد الدخول', successText: 'رجعت إلى AYROVI. ما يلزمكش تضغط رجوع يدويًا.', yourSpace: 'حسابك', orders: 'طلباتي', favorites: 'مفضّلاتي', cart: 'سلّتي', replay: 'إعادة تجربة النموذج', toastText: 'تم تسجيل الدخول — رجعناك إلى حسابك.', secureLabel: 'دخول آمن', chooseTitle: 'اختر حسابًا', continueTo: 'للمتابعة إلى', otherAccount: 'استخدام حساب آخر', otherSecureTitle: 'إضافة حساب Google', otherSecureHeading: 'تابع بأمان', otherSecureText: 'سيطلب منك Google اختيار حساب أو إضافته في واجهته الآمنة. AYROVI لا يطّلع على كلمة مرورك.', simulateContinue: 'محاكاة الرجوع بعد تسجيل الدخول', backToAccounts: 'العودة إلى قائمة الحسابات', verifying: 'جارٍ التحقق من Google…', returning: 'سنرجعك تلقائيًا إلى AYROVI.', sheetFoot: '<b>نموذج تجريبي:</b> نافذة اختيار الحساب الحقيقية يوفّرها Android وGoogle.'
+        }
+      };
+
+      const layer = document.getElementById('sheetLayer');
+      const accountList = document.getElementById('accountList');
+      const accountIntro = document.getElementById('accountIntro');
+      const otherPanel = document.getElementById('otherAccountPanel');
+      const loadingPanel = document.getElementById('loadingPanel');
+      const sheetFoot = document.getElementById('sheetFoot');
+      const loginView = document.getElementById('loginView');
+      const accountView = document.getElementById('accountView');
+      const email = document.getElementById('email');
+      const continueButton = document.getElementById('continueButton');
+      const toast = document.getElementById('toast');
+      let locale = 'fr';
+      let verifyTimer = null;
+      let toastTimer = null;
+
+      function setLocale(next) {
+        locale = next;
+        document.documentElement.lang = next === 'ar' ? 'ar' : 'fr';
+        document.documentElement.dir = next === 'ar' ? 'rtl' : 'ltr';
+        document.querySelectorAll('[data-i18n]').forEach((element) => {
+          const key = element.getAttribute('data-i18n');
+          if (translations[next][key]) element.innerHTML = translations[next][key];
+        });
+        document.getElementById('languageButton').textContent = next === 'fr' ? 'AR' : 'FR';
+        document.getElementById('languageButton').setAttribute('aria-label', next === 'fr' ? 'التبديل إلى العربية' : 'Passer en français');
+      }
+
+      function resetSheet() {
+        accountList.classList.remove('is-hidden');
+        accountIntro.classList.remove('is-hidden');
+        otherPanel.classList.remove('is-visible');
+        loadingPanel.classList.remove('is-visible');
+        sheetFoot.hidden = false;
+      }
+
+      function openSheet() {
+        resetSheet();
+        layer.hidden = false;
+        document.getElementById('sheetClose').focus({ preventScroll: true });
+      }
+
+      function closeSheet() {
+        window.clearTimeout(verifyTimer);
+        verifyTimer = null;
+        layer.hidden = true;
+        resetSheet();
+        document.getElementById('googleButton').focus({ preventScroll: true });
+      }
+
+      function finishSignIn(name, address, initial) {
+        window.clearTimeout(verifyTimer);
+        verifyTimer = null;
+        document.getElementById('profileName').textContent = name;
+        document.getElementById('profileEmail').textContent = address;
+        document.getElementById('profileAvatar').textContent = initial;
+        layer.hidden = true;
+        resetSheet();
+        loginView.hidden = true;
+        accountView.classList.add('is-visible');
+        accountView.scrollTop = 0;
+        toast.classList.add('is-visible');
+        window.clearTimeout(toastTimer);
+        toastTimer = window.setTimeout(() => toast.classList.remove('is-visible'), 2500);
+      }
+
+      function startVerify(account) {
+        window.clearTimeout(verifyTimer);
+        accountList.classList.add('is-hidden');
+        accountIntro.classList.add('is-hidden');
+        otherPanel.classList.remove('is-visible');
+        loadingPanel.classList.add('is-visible');
+        sheetFoot.hidden = true;
+        verifyTimer = window.setTimeout(() => {
+          finishSignIn(account.name, account.email, account.initial);
+        }, 1050);
+      }
+
+      document.getElementById('googleButton').addEventListener('click', openSheet);
+      document.getElementById('sheetClose').addEventListener('click', closeSheet);
+      document.getElementById('sheetBackdrop').addEventListener('click', closeSheet);
+      document.getElementById('accountSheet').addEventListener('click', (event) => event.stopPropagation());
+      document.querySelectorAll('.account-option').forEach((button) => {
+        button.addEventListener('click', () => startVerify({ name: button.dataset.name, email: button.dataset.email, initial: button.dataset.initial }));
+      });
+      document.getElementById('otherAccount').addEventListener('click', () => {
+        accountList.classList.add('is-hidden');
+        accountIntro.classList.add('is-hidden');
+        otherPanel.classList.add('is-visible');
+        sheetFoot.hidden = true;
+      });
+      document.getElementById('backToAccounts').addEventListener('click', resetSheet);
+      document.getElementById('simulateOtherAccount').addEventListener('click', () => startVerify({ name: 'Nouveau compte de démonstration', email: 'nouveau.compte@example.com', initial: 'N' }));
+      document.getElementById('sheetLayer').addEventListener('click', (event) => {
+        if (event.target === layer) closeSheet();
+      });
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !layer.hidden) closeSheet();
+      });
+      document.getElementById('languageButton').addEventListener('click', () => setLocale(locale === 'fr' ? 'ar' : 'fr'));
+
+      function replay() {
+        window.clearTimeout(verifyTimer);
+        verifyTimer = null;
+        layer.hidden = true;
+        loginView.hidden = false;
+        accountView.classList.remove('is-visible');
+        toast.classList.remove('is-visible');
+        email.value = '';
+        continueButton.disabled = true;
+        resetSheet();
+      }
+      document.getElementById('replayButton').addEventListener('click', replay);
+      document.getElementById('resetFromAccount').addEventListener('click', replay);
+      document.getElementById('accountBack').addEventListener('click', replay);
+      document.getElementById('backButton').addEventListener('click', () => {
+        const label = locale === 'ar' ? 'في التطبيق الحقيقي، يرجع هذا الزر إلى الصفحة السابقة.' : 'Dans l’application, ce bouton revient à la page précédente.';
+        window.alert(label);
+      });
+      email.addEventListener('input', () => { continueButton.disabled = !email.value.trim(); });
+      document.getElementById('emailForm').addEventListener('submit', (event) => {
+        event.preventDefault();
+        if (!email.value.trim()) return;
+        const label = locale === 'ar' ? 'نموذج تجريبي: هنا يتواصل مسار الدخول بالبريد.' : 'Prototype : le parcours e-mail continuerait ici.';
+        window.alert(label);
+      });
+      document.getElementById('phoneButton').addEventListener('click', () => {
+        const label = locale === 'ar' ? 'نموذج تجريبي: هنا يبدأ الدخول برقم الهاتف.' : 'Prototype : le parcours téléphone commencerait ici.';
+        window.alert(label);
+      });
+      setLocale('fr');
+    })();
+  </script>
+</body>
+</html>

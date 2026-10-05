@@ -25,10 +25,22 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(AyWebsBrowsePlugin.class);
-        // Connexion par fournisseur en onglet personnalisé : DANS l'app, sans
-        // bascule vers Chrome (remarque du 04/10/2026).
+        // Google utilise Credential Manager ; les autres fournisseurs gardent
+        // Custom Tabs sans ouvrir une tâche de navigateur séparée.
         registerPlugin(AyroviAuthTabPlugin.class);
+
+        // Le partage et les liens profonds arrivent ici au lancement à froid.
+        // onNewIntent() ne les couvre que si MainActivity existe déjà.
+        Intent launchIntent = getIntent();
         super.onCreate(savedInstanceState);
+        if (savedInstanceState == null) {
+            Uri initialTarget = ayWebsTarget(launchIntent);
+            if (initialTarget != null && getBridge() != null && getBridge().getWebView() != null) {
+                // Laisser d'abord Capacitor créer sa WebView et charger son shell,
+                // puis naviguer vers la route transmise par Android.
+                getBridge().getWebView().post(() -> navigate(initialTarget));
+            }
+        }
     }
 
     @Override

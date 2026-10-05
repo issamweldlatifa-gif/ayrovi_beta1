@@ -230,10 +230,10 @@ describe('§8 — connexion Google dans l’application : fin du 404', () => {
        et l'utilisateur éjecté de son achat. Corriger l'un ne corrigeait pas
        l'autre : ce sont deux interfaces distinctes.
 
-   §10 « تسجيل دخول بش ولي داخل تطبيق لا خروج من تطبيق » — le correctif du 404
-       Google ouvrait le navigateur système. C'est bien une sortie
-       d'application. L'onglet personnalisé la supprime sans retomber dans la
-       WebView embarquée, que Google refuse.
+   §10 « تسجيل دخول بش ولي داخل تطبيق لا خروج من تطبيق » — le Custom Tab
+       affichait encore une page de connexion distincte. Google passe désormais
+       par Credential Manager ; l'annulation ou l'indisponibilité ne lance plus
+       automatiquement le Custom Tab.
    ════════════════════════════════════════════════════════════════════════════ */
 
 const BROWSE_ACTIVITY = 'android/app/src/main/java/app/ayrovi/mobile/AyWebsBrowseActivity.java';
@@ -308,7 +308,7 @@ describe('§9 — Panier et Favoris restent DANS la boutique', () => {
 });
 
 describe('§10 — la connexion ne sort plus de l’application', () => {
-  test('l’onglet personnalisé remplace le navigateur système', () => {
+  test('les autres fournisseurs utilisent un Custom Tab dans la tâche AYROVI', () => {
     const plugin = read(AUTH_TAB_PLUGIN);
     expect(plugin).toMatch(/CustomTabsIntent/);
     expect(plugin).toMatch(/launchUrl\(getActivity\(\), parsed\)/);
@@ -356,6 +356,16 @@ describe('§11 — écran de connexion refondu d’après les captures', () => {
     const css = read('client/src/styles/customer-auth.css');
     expect(css).toMatch(/\.ay-auth__social \{ display: flex; flex-direction: column;/);
     expect(css).toMatch(/\.ay-auth__provider \{ width: 100%;/);
+  });
+
+  test('la coque Android applique la mise en page compacte approuvée', () => {
+    const page = read(ACCOUNT_PAGE);
+    const css = read('client/src/styles/customer-auth.css');
+    expect(page).toContain("isNativeApp() ? 'ay-auth--native' : ''");
+    expect(css).toContain('.ay-auth--native .ay-auth__hero');
+    expect(css).toContain('.ay-auth--native .ay-auth__card');
+    expect(css).toContain('font-size: clamp(26px, 7vw, 30px)');
+    expect(css).toContain('margin-block-start: auto; padding-block-start: 14px;');
   });
 
   test('aucune question « cet e-mail existe-t-il ? » n’est posée au serveur', () => {
@@ -412,11 +422,25 @@ describe('Connexion Google sans navigateur', () => {
       .toContain('917317804534-5v3d6fmlddpgrraj8bemu5tkju16066o.apps.googleusercontent.com');
   });
 
-  test('un échec natif retombe sur l’onglet au lieu d’afficher une panne', () => {
+  test('annulation ou panne du sélecteur natif ne lance jamais le Custom Tab Google', () => {
     const plugin = readCode(PLUGIN);
     expect(plugin).toMatch(/onError\(GetCredentialException error\)/);
-    expect(plugin).toContain('unavailable.put("available", false)');
-    expect(readCode('client/src/customer/nativeOAuth.ts')).toContain('signInWithGoogleNatively');
+    expect(plugin).toContain('GetCredentialCancellationException');
+    expect(plugin).toContain('"USER_CANCELED"');
+
+    const module = readCode('client/src/customer/nativeOAuth.ts');
+    expect(module).toContain("status: 'cancelled'");
+    expect(module).toContain("status: 'unavailable'");
+
+    const page = readCode(ACCOUNT_PAGE);
+    const branchStart = page.indexOf("if (provider === 'google') {");
+    const branchEnd = page.indexOf('const handoff = createHandoffCode();', branchStart);
+    const googleBranch = page.slice(branchStart, branchEnd);
+    expect(branchStart).toBeGreaterThanOrEqual(0);
+    expect(googleBranch).toContain("result.status === 'cancelled'");
+    expect(googleBranch).toContain("result.status === 'unavailable'");
+    expect(googleBranch).not.toContain('openProviderInAppTab');
+    expect(googleBranch).not.toContain('oauthStartUrl');
   });
 
   test('le jeton d’identité est VÉRIFIÉ par Google côté serveur', () => {

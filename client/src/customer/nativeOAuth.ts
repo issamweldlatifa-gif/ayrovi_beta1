@@ -3,30 +3,13 @@ import { AYROVI_API_ORIGIN } from '../services/apiOrigin';
 import { isNativeApp } from '../services/nativeShell';
 
 /**
- * Connexion par fournisseur (Google / Facebook / Apple) DANS l'application.
+ * Connexion fournisseur : Google natif via Android Credential Manager ; les
+ * autres fournisseurs utilisent le flux OAuth en Custom Tab avec une remise
+ * de session à usage unique. Le web conserve son OAuth same-origin.
  *
- * ── Le défaut corrigé (04/10/2026) : « erreur 404 à la connexion Google » ────
- * Le bouton était un lien RELATIF `/api/customer/auth/google/start`. Dans
- * l'APK, l'interface est servie depuis `https://localhost` (paquet Capacitor) ;
- * le pont `nativeApiOrigin` ne réécrit que `fetch` et XHR, jamais une
- * NAVIGATION. Le clic partait donc vers `https://localhost/api/customer/auth/
- * google/start`, où aucun serveur n'écoute → 404. Et même si l'URL avait été
- * absolue, deux murs suivaient :
- *   1. Google refuse les WebView embarquées (`disallowed_useragent`) ;
- *   2. le cookie de session déposé sur l'origine de l'API n'atteint jamais
- *      l'origine de la coque : l'utilisateur serait resté déconnecté.
- *
- * ── Ce que fait ce module ───────────────────────────────────────────────────
- * 1. il tire un code de remise aléatoire (32 octets) ;
- * 2. il ouvre `…/start?nativeHandoff=…` dans le NAVIGATEUR SYSTÈME (la coque
- *    n'autorise aucune navigation externe : Capacitor délègue à Android) ;
- * 3. il réclame ensuite le jeton de session à `POST /auth/native/claim`,
- *    endpoint à usage unique. Tant que l'utilisateur n'a pas fini, le serveur
- *    répond 404 `HANDOFF_PENDING` et on attend — sans jamais afficher un état
- *    « connecté » qui n'existe pas.
- *
- * Sur le WEB ce module n'est pas utilisé : le lien relatif reste le parcours
- * normal, cookie same-origin compris. Aucune régression.
+ * Google ne passe jamais en Custom Tab sur Android : annulation ou indisponibilité
+ * ramène simplement l'utilisateur à l'écran AYROVI. Le jeton d'identité n'est
+ * accepté qu'après vérification par le serveur.
  */
 export type OAuthProvider = 'google' | 'facebook' | 'apple';
 
@@ -54,6 +37,11 @@ export function oauthStartUrl(provider: OAuthProvider, query: string, handoff = 
   const path = `/api/customer/auth/${provider}/start?${query}${handoff ? `&nativeHandoff=${encodeURIComponent(handoff)}` : ''}`;
   return isNativeApp() ? `${AYROVI_API_ORIGIN}${path}` : path;
 }
+
+export type NativeGoogleSignInResult =
+  | { status: 'success'; session: NativeOAuthSession }
+  | { status: 'cancelled' }
+  | { status: 'unavailable'; reason: string };
 
 export interface ClaimOptions {
   /** Durée maximale d'attente ; au-delà, l'utilisateur a abandonné. */
@@ -117,58 +105,67 @@ interface AuthTabBridge {
  * POST /auth/google/native, qui le fait valider par Google avant d'ouvrir une
  * session.
  *
- * ── Repli ───────────────────────────────────────────────────────────────────
- * Services Google Play absents, aucun compte sur l'appareil, SHA-1 non encore
- * déclaré chez Google, ou simple annulation : on retourne `null` et l'appelant
- * reprend l'onglet personnalisé. Pas d'écran de panne pour un chemin qui a un
- * substitut qui marche.
+ * ── Échec ou annulation ─────────────────────────────────────────────────────
+ * Une annulation est un retour normal, sans message d'erreur. Si Credential
+ * Manager n'est pas configuré/disponible, on garde le client dans AYROVI et
+ * propose ses autres moyens de connexion — aucun basculement automatique vers
+ * une page Google en Custom Tab.
  */
-export async function signInWithGoogleNatively(cartSessionId = ''): Promise<NativeOAuthSession | null> {
-  if (!isNativeApp()) return null;
-  let idToken = '';
+function isGooglePickerCancellation(reason: unknown): boolean {
+  const value = String(reason || '').toLowerCase();
+  return value === 'user_canceled'
+    || value === 'user_cancelled'
+    || value.includes('type_user_canceled')
+    || value.includes('type_user_cancelled');
+}
+
+/**
+ * Ouvre le sélecteur Android Google, puis échange le jeton contre une session.
+ * L'annulation revient simplement à l'écran AYROVI. Une indisponibilité ne
+ * déclenche JAMAIS un Custom Tab : le client a demandé à ne pas quitter l'app.
+ */
+export async function signInWithGoogleNatively(cartSessionId = ''): Promise<NativeGoogleSignInResult> {
+  if (!isNativeApp()) return { status: 'unavailable', reason: 'NOT_NATIVE' };
+
+  let picked: { available: boolean; idToken?: string; reason?: string };
   try {
     const plugin = registerPlugin<AuthTabBridge>('AyroviAuthTab');
-    const picked = await plugin.signInWithGoogle();
-    if (!picked?.available || !picked.idToken) return null;
-    idToken = picked.idToken;
+    picked = await plugin.signInWithGoogle();
   } catch {
-    return null; // coque antérieure : la méthode n'existe pas encore
+    return { status: 'unavailable', reason: 'NATIVE_PLUGIN_UNAVAILABLE' };
   }
+
+  if (isGooglePickerCancellation(picked?.reason)) return { status: 'cancelled' };
+  if (!picked?.available || !picked.idToken) {
+    return { status: 'unavailable', reason: picked?.reason || 'CREDENTIAL_UNAVAILABLE' };
+  }
+
   try {
     const response = await fetch(`${AYROVI_API_ORIGIN}/api/customer/auth/google/native`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-ayrovi-native': '1' },
-      body: JSON.stringify({ idToken, cartSessionId }),
+      body: JSON.stringify({ idToken: picked.idToken, cartSessionId }),
     });
-    if (!response.ok) return null;
     const payload = await response.json().catch(() => null);
-    if (payload?.success && payload.data?.account) return payload.data as NativeOAuthSession;
+    if (!response.ok) {
+      return { status: 'unavailable', reason: String(payload?.code || 'GOOGLE_SESSION_REJECTED') };
+    }
+    if (payload?.success && payload.data?.account && payload.data?.native_session_token) {
+      return { status: 'success', session: payload.data as NativeOAuthSession };
+    }
+    return { status: 'unavailable', reason: 'GOOGLE_SESSION_INVALID' };
   } catch {
-    /* réseau : l'appelant retombera sur l'onglet */
+    return { status: 'unavailable', reason: 'GOOGLE_SESSION_NETWORK_ERROR' };
   }
-  return null;
 }
 
 /**
- * Ouvre le flux du fournisseur SANS quitter l'application.
+ * Flux OAuth en Custom Tab pour les fournisseurs qui n'utilisent pas le
+ * sélecteur système Google. Le Custom Tab reste dans la tâche AYROVI, mais
+ * présente une page web de fournisseur : le parcours Google natif ne doit pas
+ * appeler cette fonction.
  *
- * ── Correction du 04/10/2026 (deuxième passe) ───────────────────────────────
- * La première version appelait `window.open`, que la coque délègue à Android :
- * l'utilisateur basculait dans Chrome, une AUTRE application, et devait
- * revenir à la main. Le client l'a refusé : « تسجيل دخول بش ولي داخل تطبيق لا
- * خروج من تطبيق ».
- *
- * On passe donc par un ONGLET PERSONNALISÉ, qui s'ouvre dans notre propre
- * tâche et se referme seul. Ce n'est pas un détail cosmétique : c'est la seule
- * voie qui satisfasse les deux contraintes à la fois —
- *   • Google REFUSE les WebView embarquées (`disallowed_useragent`), donc on
- *     ne peut pas afficher sa page dans notre WebView ;
- *   • le navigateur système fait sortir de l'application.
- * L'onglet personnalisé est le moteur de Chrome (agent utilisateur accepté,
- * mot de passe invisible pour AYROVI) hébergé dans notre pile d'activités.
- *
- * Repli honnête : hors coque, ou si aucun navigateur compatible n'existe, on
- * retombe sur l'ancien comportement plutôt que de ne rien faire.
+ * Si le pont natif manque, le comportement web historique est conservé.
  */
 export async function openProviderInAppTab(url: string): Promise<void> {
   if (isNativeApp()) {

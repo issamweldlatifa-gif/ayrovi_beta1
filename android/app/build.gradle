@@ -1,6 +1,6 @@
 apply plugin: 'com.android.application'
 
-// Signing release uniquement quand la CI fournit le keystore (env), jamais en local/debug.
+// Le keystore n'est chargé que si des variables d'environnement sont explicitement fournies.
 def ksB64 = System.getenv('AYROVI_KEYSTORE_BASE64')
 def hasReleaseKeystore = ksB64 != null && !ksB64.trim().isEmpty()
 def ksFile = hasReleaseKeystore ? new File(buildDir, 'ayrovi-release.keystore') : null
@@ -16,13 +16,11 @@ android {
         applicationId "app.ayrovi.mobile"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        // Repli = version COURANTE du paquet (04/10/2026 : correctifs des sept
-        // remarques d'interface + connexion Google dans l'app). La CI continue
-        // d'imposer la sienne par AYROVI_VERSION_CODE / AYROVI_VERSION_NAME ;
-        // un build local produit désormais le même numéro que la release, donc
-        // s'installe PAR-DESSUS la 1.0.2 au lieu d'être refusé.
-        versionCode ((System.getenv('AYROVI_VERSION_CODE') ?: '6') as int)
-        versionName (System.getenv('AYROVI_VERSION_NAME') ?: '1.0.6')
+        // Repli = version courante de cette mise à jour (Google natif sans
+        // bascule vers Custom Tab + écran Android compact, 05/10/2026). La CI
+        // peut toujours injecter une version supérieure pour une publication.
+        versionCode ((System.getenv('AYROVI_VERSION_CODE') ?: '7') as int)
+        versionName (System.getenv('AYROVI_VERSION_NAME') ?: '1.0.7')
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -74,17 +72,14 @@ dependencies {
     implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
-    // Onglet personnalisé : connexion par fournisseur DANS l'application
-    // (04/10/2026). Google refuse les WebView embarquées, et le navigateur
-    // système fait sortir l'utilisateur ; l'onglet personnalisé est la seule
-    // voie qui soit à la fois acceptée par Google et sans bascule d'app.
+    // Custom Tabs pour les fournisseurs OAuth qui n'ont pas de sélecteur natif
+    // intégré. Le parcours Google Android passe par Credential Manager ci-dessous.
     implementation "androidx.browser:browser:1.8.0"
     // ── Sélecteur de compte NATIF (04/10/2026) ───────────────────────────────
     // Credential Manager affiche la feuille de comptes du système : aucune
-    // page web, aucun onglet, aucune bascule d'application. C'est la seule
-    // manière d'obtenir la connexion Google « sans sortir » que le client
-    // demande ; l'onglet personnalisé reste le repli quand les services Google
-    // Play sont absents de l'appareil.
+    // page web, aucun onglet, aucune bascule d'application. En cas d'annulation
+    // ou d'indisponibilité, l'app reste sur AYROVI — pas de repli automatique
+    // vers un Custom Tab Google.
     implementation "androidx.credentials:credentials:1.3.0"
     implementation "androidx.credentials:credentials-play-services-auth:1.3.0"
     implementation "com.google.android.libraries.identity.googleid:googleid:1.1.1"
