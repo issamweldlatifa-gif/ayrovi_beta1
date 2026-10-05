@@ -73,6 +73,22 @@ is strong.
   front-end build runs before the suite (eight tests depend on `dist/`, which is why they
   failed at baseline).
 
+## Published state
+
+- `main` = the work above, published directly (the owner's deploy key bypasses the
+  “changes must be made through a pull request” rule, as GitHub reports on push).
+- CI on `main` (run for `42209ff`): **`typecheck-test` success, `android-shell`
+  success, 0 failing steps** — the whole existing evidence pipeline (identity,
+  charter guards, Lens, customer screens, mobile purchase) plus the new required
+  Android build/test job.
+- The Android CI job no longer uses `android-actions/setup-android@v3`: that action
+  failed in 11 s on the current runner image (run #373); the job now locates
+  `cmdline-tools`, falls back to downloading them, makes `ANDROID_HOME` writable and
+  installs platform/build-tools 36 explicitly.
+- The design source inventory was regenerated (`docs/editorial/source-inventory.json`)
+  because the bag/checkout UI changed; `npm run design:check` — the first CI step that
+  failed on the first push — passes again.
+
 ## Evidence (this session)
 
 - `npm ci`: 0 audit vulnerabilities; `npm run build` (client + server) succeeds.
@@ -85,6 +101,7 @@ is strong.
   `:app:testDebugUnitTest` → 4 tests, 0 failures (`ApiTrustTest` covers origin pinning and
   malicious endpoints).
 - `npx cap sync android` succeeds after the front-end build.
+- CI (`main`): both jobs green, see “Published state”.
 
 ## Deliberately deferred
 
