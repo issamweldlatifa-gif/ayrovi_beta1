@@ -128,19 +128,33 @@ npx vitest run tests/scraper-probe-race.test.ts \
 npm run build                                       # بناء الخادم والعميل
 ```
 
-**قياس حيّ (بعد النشر):**
+**قياس حيّ على الخادم المنشور — سطر واحد (بلا اعتماديات):**
 
 ```bash
-# 1. افتح منتجًا ثم أعِد الطلب: الردّ الثاني يجب أن يحمل from_cache=true وبزمن أقل بكثير
+node scripts/aywebs-latency-probe.mjs \
+  --base https://ayrovi-beta1.onrender.com \
+  --url "https://www.amazon.com/dp/B0GYM3V9H5"
+# أو: npm run verify:aywebs-latency -- --base <origine> --url <رابط>
+```
+
+السبر تفعل ما يفعله العميل: `POST /product/resolve` مرتين على **نفس** الرابط ثم تقرأ عدّادات الذاكرة من
+`/api/v1/aywebs/health`. المخرجات المتوقّعة:
+
+```
+ 1.   8412 ms  http=201  LECTURE MARCHANDE     prix=109 USD  ≈ 412.55 TND
+ 2.     46 ms  http=201  CACHE (1200 ms)       prix=109 USD  ≈ 412.55 TND
+ ✅ Mémoire de lecture active : 8412 ms → 46 ms (aucune relecture marchande).
+```
+
+وإذا لم يُخدم الطلب الثاني من الذاكرة تُخرج السبر `❌` وتُرجع رمز خروج `1` (مناسب لأي بوابة CI).
+مرجع بديل بـ curl:
+
+```bash
 curl -s -X POST https://<host>/api/v1/aywebs/product/resolve \
   -H 'content-type: application/json' -H 'x-session-id: mesure-1' \
   -d '{"url":"https://www.amazon.com/dp/B0GYM3V9H5"}' | jq '{from_cache, cache_age_ms, price: .data.price}'
-
-# 2. إحصاءات الذاكرة (hits / misses / in_flight)
 curl -s https://<host>/api/v1/aywebs/health | jq '.data.resolve_cache'
 ```
-
-المتوقّع: طلب أول بـ `from_cache:false`، وطلب ثانٍ بـ `from_cache:true`، و`hits` يتزايد في `/health`.
 
 ---
 
@@ -155,3 +169,4 @@ curl -s https://<host>/api/v1/aywebs/health | jq '.data.resolve_cache'
 | `src/aywebs/routes.ts` | `refresh`، `from_cache`/`cache_age_ms`، إحصاءات في `/health` |
 | `android/.../AyWebsBrowseActivity.java` | القراءة المُسبقة + إعادة استخدام النتيجة عند الضغط |
 | `tests/scraper-probe-race.test.ts` · `tests/aywebs-resolve-cache.test.ts` | أقفال الانحدار على السلوكين |
+| `scripts/aywebs-latency-probe.mjs` | سبر القياس الحيّ: `npm run verify:aywebs-latency` |
