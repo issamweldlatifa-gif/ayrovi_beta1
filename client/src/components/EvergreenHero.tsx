@@ -3,6 +3,7 @@ import { buttonClasses } from '../design/Button';
 import { ArrowRight } from './QatafoIcons';
 import { useLocale } from '../i18n/LocaleContext';
 import { safePublicHref } from '../utils/publicLinks';
+import { nativeAssetUrl } from '../services/assetOrigin';
 
 /** Editorial composition. CMS owns copy, order, links, images and focal points.
  * Text lives on canvas rather than over media; historical overlay metadata stays in the API.
@@ -74,8 +75,12 @@ const FALLBACK_VISUAL: HeroVisual = {
   isDefault: true,
 };
 
+// AY-26 : le navigateur résout lui-même src/srcSet — hors du pont fetch/XHR,
+// un chemin serveur (`/uploads/…`) reste relatif à `https://localhost` dans la
+// coque native. `nativeAssetUrl` est l'identité sur le web et laisse `/media/…`
+// (fichiers du paquet, dont ce repli) strictement intact.
 const srcsetValue = (entries: Array<{ url: string; width: number }>): string | undefined =>
-  entries.length ? entries.map((entry) => `${entry.url} ${entry.width}w`).join(', ') : undefined;
+  entries.length ? entries.map((entry) => `${nativeAssetUrl(entry.url)} ${entry.width}w`).join(', ') : undefined;
 
 export const EvergreenHero: React.FC = () => {
   const { tr } = useLocale();
@@ -131,8 +136,8 @@ export const EvergreenHero: React.FC = () => {
       </div>}
       <div className="editorial-hero__media" style={position}>
         {imageFailed ? <p role="status">{tr('Image momentanément indisponible', 'الصورة غير متاحة مؤقتًا')}</p> : <picture>
-          {visual.mobileImageUrl && <source media="(max-width: 767px)" srcSet={srcsetValue(visual.mobileSrcset) || visual.mobileImageUrl} />}
-          <img src={visual.imageUrl} srcSet={srcsetValue(visual.srcset)} sizes="(min-width: 768px) 50vw, 100vw" width={visual.imageWidth || 1600} height={visual.imageHeight || 900}
+          {visual.mobileImageUrl && <source media="(max-width: 767px)" srcSet={srcsetValue(visual.mobileSrcset) || nativeAssetUrl(visual.mobileImageUrl)} />}
+          <img src={nativeAssetUrl(visual.imageUrl)} srcSet={srcsetValue(visual.srcset)} sizes="(min-width: 768px) 50vw, 100vw" width={visual.imageWidth || 1600} height={visual.imageHeight || 900}
             alt={visual.altText || ''} fetchPriority="high" decoding="async"
             onError={() => { if (!visual.isDefault) setVisual(FALLBACK_VISUAL); else setImageFailed(true); }} />
         </picture>}

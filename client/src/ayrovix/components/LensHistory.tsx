@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import type { AyrovixHistoryItem } from '../types';
 import { loadAyrovixHistory, readLocalAyrovixHistory } from '../services/history';
+import { nativeAssetUrl } from '../../services/assetOrigin';
 import { Loader2, ArrowLeft, History, LensBox } from '../../components/QatafoIcons';
 import { useLocale } from '../../i18n/LocaleContext';
 
@@ -30,7 +31,7 @@ const HistoryThumbnail: React.FC<{ item: AyrovixHistoryItem }> = ({ item }) => {
   const [failed, setFailed] = useState(false);
   useEffect(() => setFailed(false), [item.imageUrl]);
   if (item.imageUrl && !failed) {
-    return <img src={item.imageUrl} alt="" loading="lazy" decoding="async" draggable={false} referrerPolicy="no-referrer" onError={() => setFailed(true)} className="ayrovix-product-media-contain" />;
+    return <img src={nativeAssetUrl(item.imageUrl)} alt="" loading="lazy" decoding="async" draggable={false} referrerPolicy="no-referrer" onError={() => setFailed(true)} className="ayrovix-product-media-contain" />;
   }
   return <LensBox size={25} />;
 };

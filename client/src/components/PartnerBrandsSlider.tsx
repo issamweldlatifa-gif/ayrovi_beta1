@@ -16,6 +16,7 @@ import versaceLogo from '../assets/brands/versace.jpg';
 import yslLogo from '../assets/brands/ysl.jpg';
 import zaraLogo from '../assets/brands/zara.jpg';
 import { getPublicHome } from '../services/publicApi';
+import { nativeAssetUrl } from '../services/assetOrigin';
 
 interface BrandItem { id: string; name: string; category: string; logo: string; surface: 'dark' | 'light'; fallback: string; }
 const localLogos: Record<string, string> = {
@@ -50,7 +51,7 @@ export const PartnerBrandsSlider: React.FC<{ title?: string; subtitle?: string; 
   return (
     <section className="w-full bg-white py-16 sm:py-24">
       <div className="relative isolate mx-auto mb-10 w-full max-w-4xl overflow-hidden px-5 py-8 text-center sm:mb-14 sm:px-8 sm:py-12">
-        {coverImage && <><img src={coverImage} alt="" className="absolute inset-0 -z-20 h-full w-full object-cover" /><span className="absolute inset-0 -z-10 bg-white/88" /></>}
+        {coverImage && <><img src={nativeAssetUrl(coverImage)} alt="" className="absolute inset-0 -z-20 h-full w-full object-cover" /><span className="absolute inset-0 -z-10 bg-white/88" /></>}
         <div className="mb-4 inline-flex items-center gap-3 text-xs font-extrabold uppercase tracking-[0.2em] text-ink sm:text-sm"><span className="h-[2px] w-7 bg-ink/25" />Marques partenaires<span className="h-[2px] w-7 bg-ink/25" /></div>
         <h2 className="text-3xl font-black leading-tight tracking-[-0.045em] text-ink sm:text-5xl">{title || 'Vos marques préférées, réunies au même endroit.'}</h2>
         <p className="mx-auto mt-5 max-w-2xl text-sm font-medium leading-7 text-muted sm:text-base">{subtitle || 'Découvrez les enseignes disponibles avec AYROVI. Chaque carte présente le logo correspondant à la marque affichée.'}</p>

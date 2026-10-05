@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowLeft, X } from '../components/QatafoIcons';
 import { Button } from './Button';
 import { useLocale } from '../i18n/LocaleContext';
+import { nativeAssetUrl } from '../services/assetOrigin';
 
 interface AppHeaderProps {
   title: string;
@@ -53,10 +54,10 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           {backPlacement === 'leading' && actionButton}
           {showLogo && (onLogoClick ? (
             <button type="button" onClick={onLogoClick} className="shrink-0 bg-transparent" aria-label="AYROVI">
-              <img src={logoUrl} alt="" className="h-10 w-10 bg-transparent object-contain sm:h-11 sm:w-11" />
+              <img src={nativeAssetUrl(logoUrl)} alt="" className="h-10 w-10 bg-transparent object-contain sm:h-11 sm:w-11" />
             </button>
           ) : (
-            <img src={logoUrl} alt="AYROVI" className="h-10 w-10 shrink-0 bg-transparent object-contain sm:h-11 sm:w-11" />
+            <img src={nativeAssetUrl(logoUrl)} alt="AYROVI" className="h-10 w-10 shrink-0 bg-transparent object-contain sm:h-11 sm:w-11" />
           ))}
           <div className="min-w-0" dir={direction}>
             <strong className={`block truncate font-display text-base font-black sm:text-lg ${tone === 'dark' ? 'text-white' : 'text-ink'}`}>{title}</strong>

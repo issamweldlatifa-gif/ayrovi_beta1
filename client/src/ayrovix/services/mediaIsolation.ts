@@ -5,10 +5,14 @@
  * brute reste toujours en repli (cycle onError du cadre) — jamais d'image cassée.
  * Les chemins locaux (uploads, fixtures) ne sont jamais proxyfiés.
  */
+import { nativeAssetUrl } from '../../services/assetOrigin';
+
 export function isolatedMediaUrl(url: string | null | undefined): string | null {
   if (!url) return null;
   if (!/^https?:\/\//i.test(url)) return null;
-  return `/api/public/media/isolated?url=${encodeURIComponent(url)}`;
+  // AY-26 : dans la coque native, ce chemin relatif doit viser l'origine API —
+  // sinon le WebView le résout contre `https://localhost` (404, image brute).
+  return nativeAssetUrl(`/api/public/media/isolated?url=${encodeURIComponent(url)}`);
 }
 
 
@@ -24,19 +28,28 @@ export const COMPOSED_PREFIX = '/api/public/media/card';
 export function composedMediaUrl(url: string | null | undefined, width = 900): string | null {
   if (!url) return null;
   if (!/^https?:\/\//i.test(url)) return null;
-  return `${COMPOSED_PREFIX}?u=${encodeURIComponent(url)}&w=${width}`;
+  return nativeAssetUrl(`${COMPOSED_PREFIX}?u=${encodeURIComponent(url)}&w=${width}`);
 }
 
-/** Vrai si l'URL affichée est une composition AYROVI (cadrage déjà fait côté serveur). */
+/**
+ * Vrai si l'URL affichée est une composition AYROVI (cadrage déjà fait côté serveur).
+ *
+ * Tolère la forme ABSOLUE : dans la coque native, `composedMediaUrl` préfixe
+ * l'origine API (AY-26). Un simple `startsWith` rendait alors `false` et
+ * l'image perdait son traitement « composée » (contenu vs blend) — un détail
+ * visuel que seul un œil attentif voit, mais qui est exactement le genre de
+ * régression silencieuse que l'audit cherche.
+ */
 export function isComposedUrl(url: string | null | undefined): boolean {
-  return Boolean(url && url.startsWith(COMPOSED_PREFIX));
+  if (!url) return false;
+  return url.startsWith(COMPOSED_PREFIX) || url.includes(`${COMPOSED_PREFIX}?`);
 }
 
 /** REDIMENSIONNEMENT par NOTRE serveur (WebP) — plus léger et sans hotlink fragile. */
 export function proxiedMediaUrl(url: string | null | undefined, width = 760): string | null {
   if (!url) return null;
   if (!/^https?:\/\//i.test(url)) return null;
-  return `/api/public/media/img?u=${encodeURIComponent(url)}&w=${width}`;
+  return nativeAssetUrl(`/api/public/media/img?u=${encodeURIComponent(url)}&w=${width}`);
 }
 
 /**

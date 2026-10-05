@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "scope": "Recursive static inventory of all client TypeScript/TSX/CSS; manual review tracked separately",
   "totals": {
-    "files": 252,
-    "customerAndSharedFiles": 200,
+    "files": 253,
+    "customerAndSharedFiles": 201,
     "controls": 467,
     "iconAliases": 102,
     "uniqueGlyphs": 99
@@ -11263,12 +11263,13 @@
     {
       "file": "client/src/ayrovix/components/LensHistory.tsx",
       "domain": "lens",
-      "sha256": "09a6d92cd5e2f953629b88d46e805eb49e88fc6afa73b60e1a34c8a05b0608f8",
-      "lines": 122,
+      "sha256": "52964b5ed1e0044f2ee58428a18af256b0a11d8b13e39ae569e4a6b1dd9679f1",
+      "lines": 123,
       "imports": [
         "react",
         "../types",
         "../services/history",
+        "../../services/assetOrigin",
         "../../components/QatafoIcons",
         "../../i18n/LocaleContext"
       ],
@@ -11278,7 +11279,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 59,
+          "line": 60,
           "className": "\"inline-flex min-h-[44px] w-fit items-center gap-1 rounded-xl px-2 text-xs font-extrabold text-ink\"",
           "type": "\"button\"",
           "role": null,
@@ -11288,7 +11289,7 @@
         },
         {
           "tag": "button",
-          "line": 86,
+          "line": 87,
           "className": "\"ay-btn-primary mt-4 text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -11298,7 +11299,7 @@
         },
         {
           "tag": "button",
-          "line": 106,
+          "line": 107,
           "className": "\"ay-btn-primary min-h-11 px-3 py-1.5 text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -11308,7 +11309,7 @@
         },
         {
           "tag": "button",
-          "line": 108,
+          "line": 109,
           "className": "\"ay-btn-secondary min-h-11 px-3 py-1.5 text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -11321,7 +11322,7 @@
         {
           "module": "../../components/QatafoIcons",
           "bindings": "{ Loader2, ArrowLeft, History, LensBox }",
-          "line": 4
+          "line": 5
         }
       ],
       "inlineSvg": [],
@@ -12409,9 +12410,11 @@
     {
       "file": "client/src/ayrovix/services/mediaIsolation.ts",
       "domain": "lens",
-      "sha256": "04dbd28bc12592656e8bc875cd3184d7cf616c534b8fac5727e4d1d3e9517679",
-      "lines": 99,
-      "imports": [],
+      "sha256": "94293fe2b55ef0cf93f482282fedbfdc799c389b42f0d21d8b630e183a668f2d",
+      "lines": 112,
+      "imports": [
+        "../../services/assetOrigin"
+      ],
       "exports": [
         "isolatedMediaUrl",
         "COMPOSED_PREFIX",
@@ -12694,14 +12697,15 @@
     {
       "file": "client/src/components/account/AccountCommerce.tsx",
       "domain": "account-auth",
-      "sha256": "4699ac6e0d8281a0474d8a6bd618c88b43b8be1ae19a054e7f8c287355729af8",
-      "lines": 15,
+      "sha256": "86bd0f1924973ea18095d492a66e7d22bfcc5e2e1b7be071425810418af34805",
+      "lines": 16,
       "imports": [
         "react",
         "../../types",
         "../../i18n/LocaleContext",
         "../QatafoIcons",
-        "../../design/Button"
+        "../../design/Button",
+        "../../services/assetOrigin"
       ],
       "exports": [
         "safeAccountLink",
@@ -12711,7 +12715,7 @@
       "controls": [
         {
           "tag": "a",
-          "line": 9,
+          "line": 10,
           "className": "\"ac-product-media\"",
           "type": null,
           "role": null,
@@ -12721,7 +12725,7 @@
         },
         {
           "tag": "button",
-          "line": 9,
+          "line": 10,
           "className": "\"ac-text-button ac-danger-text\"",
           "type": "\"button\"",
           "role": null,
@@ -12731,7 +12735,7 @@
         },
         {
           "tag": "button",
-          "line": 13,
+          "line": 14,
           "className": "\"ac-icon-button ac-danger-text\"",
           "type": "\"button\"",
           "role": null,
@@ -12741,7 +12745,7 @@
         },
         {
           "tag": "button",
-          "line": 13,
+          "line": 14,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -12751,7 +12755,7 @@
         },
         {
           "tag": "button",
-          "line": 13,
+          "line": 14,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -12761,7 +12765,7 @@
         },
         {
           "tag": "Button",
-          "line": 13,
+          "line": 14,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -15612,14 +15616,15 @@
     {
       "file": "client/src/components/EvergreenHero.tsx",
       "domain": "shell-content",
-      "sha256": "30571cc40d0ab7a1c659839e51ac21c4e53701616788477232f977949058ef54",
-      "lines": 143,
+      "sha256": "09324159a9e37d908264e2a7e4fbc98df3372a6324849d49dae3acdb353257ea",
+      "lines": 148,
       "imports": [
         "react",
         "../design/Button",
         "./QatafoIcons",
         "../i18n/LocaleContext",
-        "../utils/publicLinks"
+        "../utils/publicLinks",
+        "../services/assetOrigin"
       ],
       "exports": [
         "EvergreenHero"
@@ -15627,7 +15632,7 @@
       "controls": [
         {
           "tag": "a",
-          "line": 129,
+          "line": 134,
           "className": "{buttonClasses('primary', 'md', 'editorial-hero__action')}",
           "type": null,
           "role": null,
@@ -16351,8 +16356,8 @@
     {
       "file": "client/src/components/PartnerBrandsSlider.tsx",
       "domain": "shell-content",
-      "sha256": "275f2241aa1d8b5ba32893846391c0a07934d7754c76aff79dbc03b7394f781e",
-      "lines": 72,
+      "sha256": "08311b83788637747b63342a28a9c1ec1fa5657e75f27bc8fae801c42b3a8969",
+      "lines": 73,
       "imports": [
         "react",
         "motion/react",
@@ -16371,7 +16376,8 @@
         "../assets/brands/versace.jpg",
         "../assets/brands/ysl.jpg",
         "../assets/brands/zara.jpg",
-        "../services/publicApi"
+        "../services/publicApi",
+        "../services/assetOrigin"
       ],
       "exports": [
         "PartnerBrandsSlider"
@@ -17774,13 +17780,14 @@
     {
       "file": "client/src/design/AppHeader.tsx",
       "domain": "shared-design",
-      "sha256": "ec3789eb0dbdc8a140d654756b652ea2349934763b93ebbb63ff87d43aa2132c",
-      "lines": 76,
+      "sha256": "6d76c9defbcd91d208c00ac86e7f00010d44e656cf90a2e81a06ebe0cac6dff4",
+      "lines": 77,
       "imports": [
         "react",
         "../components/QatafoIcons",
         "./Button",
-        "../i18n/LocaleContext"
+        "../i18n/LocaleContext",
+        "../services/assetOrigin"
       ],
       "exports": [
         "AppHeader"
@@ -17788,7 +17795,7 @@
       "controls": [
         {
           "tag": "Button",
-          "line": 44,
+          "line": 45,
           "className": "{tone === 'dark' ? 'text-white hover:bg-white/10' : ''}",
           "type": null,
           "role": null,
@@ -17798,7 +17805,7 @@
         },
         {
           "tag": "button",
-          "line": 55,
+          "line": 56,
           "className": "\"shrink-0 bg-transparent\"",
           "type": "\"button\"",
           "role": null,
@@ -19813,6 +19820,25 @@
       "exports": [
         "normalizeApiOrigin",
         "AYROVI_API_ORIGIN"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/services/assetOrigin.ts",
+      "domain": "shell-content",
+      "sha256": "8de5be562058793301857c903bb5fba74872535abf38defbc4e8640889766a87",
+      "lines": 45,
+      "imports": [
+        "./apiOrigin",
+        "./nativeShell"
+      ],
+      "exports": [
+        "nativeAssetUrl"
       ],
       "controls": [],
       "icons": [],
