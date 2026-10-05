@@ -273,6 +273,45 @@ check(
   'targetSdk 35 impose l’edge-to-edge et le défaut de Capacitor est overlaysWebView=true → l’en-tête passe sous la barre d’état'
 );
 
+/* ── 5. Origine des médias dans le paquet embarqué (AY-26, 04/10/2026) ─────────
+ * Le pont nativeApiOrigin réécrit fetch/XHR ; le navigateur résout SEUL `src`,
+ * `srcSet` et `poster`. Sans réécriture explicite, tout média servi par l'API
+ * (`/uploads/…`, `/api/public/media/…`) est demandé à `https://localhost` :
+ * 404 silencieux dans l'APK, alors que le web fonctionne. Inversement, une
+ * réécriture AVEUGLE casserait `/media/…` : ces fichiers n'existent QUE dans le
+ * paquet (le serveur n'a aucune route `/media`) — logo AYROVI et replis compris.
+ */
+const assetOrigin = stripComments(read('client/src/services/assetOrigin.ts'));
+const mediaIsolation = stripComments(read('client/src/ayrovix/services/mediaIsolation.ts'));
+const heroSrc = stripComments(read('client/src/components/EvergreenHero.tsx'));
+const headerSrc = stripComments(read('client/src/design/AppHeader.tsx'));
+
+check(
+  'AY-26 : nativeAssetUrl branche sur la coque native (pas une identité)',
+  /isNativeApp\(\)/.test(assetOrigin) && /normalizeApiOrigin\(origin\)/.test(assetOrigin),
+  'sans ce branchement, les médias serveur restent relatifs à https://localhost dans l’APK'
+);
+check(
+  'AY-26 : réécriture LIMITÉE aux préfixes serveur (/api, /uploads)',
+  /SERVER_OWNED\s*=\s*\/\^\\\/\(\?:api\|uploads\)/.test(assetOrigin) && !/value\.startsWith\('\/'\)/.test(assetOrigin),
+  'réécrire tout chemin relatif casserait /media, qui appartient au paquet et non au serveur'
+);
+check(
+  'AY-26 : mediaIsolation réécrit ses trois sorties (point de passage unique)',
+  (mediaIsolation.match(/nativeAssetUrl\(/g) || []).length === 3,
+  'les images Lens/produit passent toutes par isolated/composed/proxied'
+);
+check(
+  'AY-26 : le Hero réécrit src ET srcSet (le navigateur résout les deux)',
+  /src=\{nativeAssetUrl\(visual\.imageUrl\)\}/.test(heroSrc) && /nativeAssetUrl\(entry\.url\)/.test(heroSrc),
+  'srcSet non réécrit = mêmes images cassées en haute densité'
+);
+check(
+  'AY-26 : aucun src brut restant sur les médias serveur courants',
+  !/src=\{logoUrl\}/.test(headerSrc),
+  'AppHeader affiche le logo : un src brut y est le premier symptôme visible'
+);
+
 /* ── Rapport ────────────────────────────────────────────────────────────────── */
 for (const c of checks) {
   console.log(`${c.pass ? '  ✓' : '  ✗'} ${c.name}`);
