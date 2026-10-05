@@ -40,9 +40,32 @@ jobs:
           java-version: 21
           cache: gradle
 
-      - uses: android-actions/setup-android@v3
-      - name: Install SDK 36
-        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - name: Install Android SDK 36
+        # Pas d'action tierce : `android-actions/setup-android@v3` échoue sur
+        # l'image ubuntu-latest courante (étape en échec en 11 s le 05/10/2026).
+        # Le SDK est déjà présent ; on n'ajoute que les paquets manquants.
+        run: |
+          set -euo pipefail
+          export ANDROID_HOME="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          ls -la "$ANDROID_HOME" || true
+          ls -la "$ANDROID_HOME/cmdline-tools" || true
+          SDKMANAGER="$(ls -d "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager 2>/dev/null | head -1 || true)"
+          if [ -z "$SDKMANAGER" ]; then SDKMANAGER="$(command -v sdkmanager || true)"; fi
+          if [ -z "$SDKMANAGER" ]; then
+            # Dernier recours : installer cmdline-tools dans le SDK existant.
+            mkdir -p "$ANDROID_HOME/cmdline-tools"
+            curl -sSL -o /tmp/cmdtools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+            unzip -q /tmp/cmdtools.zip -d "$ANDROID_HOME/cmdline-tools"
+            mv "$ANDROID_HOME/cmdline-tools/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest"
+            SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          fi
+          echo "SDKMANAGER=$SDKMANAGER"
+          # L'image peut appartenir à un autre utilisateur : rendre le SDK inscriptible.
+          if [ ! -w "$ANDROID_HOME" ]; then sudo chown -R "$(id -u):$(id -g)" "$ANDROID_HOME"; fi
+          yes | "$SDKMANAGER" --sdk_root="$ANDROID_HOME" --licenses >/dev/null 2>&1 || true
+          "$SDKMANAGER" --sdk_root="$ANDROID_HOME" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
       - name: Validate release version
         env:
           LAST: ${{ github.event.inputs.lastPublishedVersionCode }}
