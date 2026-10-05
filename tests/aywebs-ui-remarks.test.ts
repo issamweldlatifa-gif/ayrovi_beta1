@@ -133,7 +133,8 @@ describe('§5 — le X du navigateur marchand fonctionne', () => {
 
   test('le retour matériel remonte l’historique marchand avant de sortir', () => {
     const java = read(BROWSER_ACTIVITY);
-    expect(java).toMatch(/public void onBackPressed\(\)/);
+    expect(java).toMatch(/getOnBackInvokedDispatcher\(\)/);
+    expect(java).toMatch(/handleBackPressed/);
     expect(java).toMatch(/webView\.canGoBack\(\)[\s\S]{0,80}webView\.goBack\(\)/);
   });
 });

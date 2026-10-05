@@ -233,8 +233,8 @@ check(
 
 check(
   'AyWebsBrowseActivity : retour matériel câblé',
-  /public void onBackPressed\s*\(/.test(browser),
-  'sans onBackPressed, le retour système quitte le navigateur marchand au lieu de remonter son historique'
+  /getOnBackInvokedDispatcher\(\)/.test(browser) && /handleBackPressed/.test(browser),
+  'sans dispatcher de retour, le geste système quitte le navigateur marchand au lieu de remonter son historique (onBackPressed est ignoré dès la navigation prédictive d’Android 13+)'
 );
 
 check(

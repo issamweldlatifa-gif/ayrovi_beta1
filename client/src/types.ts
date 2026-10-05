@@ -106,6 +106,10 @@ export interface CartItem {
   availabilityCheckedAt?: string | null;
   availabilitySource?: string | null;
   availabilityReason?: string | null;
+  /** Décision serveur sur la preuve signée du prix (05/10/2026). */
+  priceTrust?: 'FRESH' | 'MANUAL' | 'STALE' | null;
+  priceTrustReason?: string | null;
+  priceTrustExpiresAt?: string | null;
   /** Cargo lourd > 5 kg : fret international soumis à validation finale de l'équipe. */
   requiresWeightValidation?: boolean;
   /** Promo moteur (management 23/09/2026) : remise déjà appliquée au lineTotalTND. */

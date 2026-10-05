@@ -620,6 +620,9 @@ export class QatafoDatabase {
         customer_note TEXT NOT NULL DEFAULT '',
         reference_url TEXT NOT NULL DEFAULT '',
         price_verification_status TEXT NOT NULL DEFAULT 'VERIFIED',
+        /* Preuve signée du prix AVANCE : conservée pour être revérifiée à la
+           commande. Une ligne sans jeton ne peut pas prétendre à un prix vérifié. */
+        price_token TEXT NOT NULL DEFAULT '',
         quantity INTEGER NOT NULL DEFAULT 1,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
@@ -1911,6 +1914,7 @@ export class QatafoDatabase {
     this.ensureColumn('cart_items', 'customer_note', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('cart_items', 'reference_url', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('cart_items', 'price_verification_status', "TEXT NOT NULL DEFAULT 'VERIFIED'");
+    this.ensureColumn('cart_items', 'price_token', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('cart_items', 'ocerex_extraction_id', "TEXT NOT NULL DEFAULT ''");
     // دفتر الشروط Stories : قنوات الناشرين (Ayrovi Official / Style / Promos / Actus).
     this.ensureColumn('stories', 'category', "TEXT NOT NULL DEFAULT 'ARRIVAGE'");
@@ -3174,8 +3178,16 @@ export class QatafoDatabase {
       if (existing) {
         const newQty = Number(existing.quantity) + (item.quantity || 1);
         if (newQty > 99) throw new RangeError('CART_QUANTITY_LIMIT');
-        this.run(`UPDATE cart_items SET quantity = ?, updated_at = ? WHERE id = ? AND ${owner.clause}`,
-          newQty, now, existing.id, owner.value);
+        // Un jeton frais renouvelle la PREUVE, jamais le prix : si la nouvelle
+        // cotation diffère, elle ne correspondra plus au prix de la ligne et la
+        // revérification de commande la signalera — aucun changement silencieux.
+        if (typeof item.priceToken === 'string' && item.priceToken) {
+          this.run(`UPDATE cart_items SET quantity = ?, price_token = ?, updated_at = ? WHERE id = ? AND ${owner.clause}`,
+            newQty, item.priceToken.slice(0, 5000), now, existing.id, owner.value);
+        } else {
+          this.run(`UPDATE cart_items SET quantity = ?, updated_at = ? WHERE id = ? AND ${owner.clause}`,
+            newQty, now, existing.id, owner.value);
+        }
         return this.getItemById(existing.id, sessionId, accountId)!;
       }
     }
@@ -3184,12 +3196,27 @@ export class QatafoDatabase {
     this.run(`INSERT INTO cart_items (
       id, session_id, account_id, store, external_id, source_url, title, image_url,
       source_price, source_currency, price_tnd, variant, requested_size, requested_color, customer_note,
-      reference_url, price_verification_status, quantity, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      reference_url, price_verification_status, price_token, quantity, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     id, sessionId, accountId || null, item.store, item.externalId || null, item.url, item.title, item.imageUrl,
     item.sourcePrice, item.sourceCurrency, item.priceTND, item.variant || null, item.requestedSize || '', item.requestedColor || '',
-    item.customerNote || '', item.referenceUrl || '', item.priceVerificationStatus || 'VERIFIED', item.quantity || 1, now, now);
+    item.customerNote || '', item.referenceUrl || '', item.priceVerificationStatus || 'VERIFIED',
+    typeof item.priceToken === 'string' ? item.priceToken.slice(0, 5000) : '', item.quantity || 1, now, now);
     return this.getItemById(id, sessionId, accountId)!;
+  }
+
+  /**
+   * Preuves de prix stockées, lues uniquement par la vérification de commande.
+   * Volontairement séparé de `getItems`/`CartItem` : une preuve ne fait pas
+   * partie du modèle public du panier et ne peut donc pas fuiter vers le client.
+   */
+  public getCartLinePriceTokens(ids: string[]): Record<string, string> {
+    const proofs: Record<string, string> = {};
+    if (!ids.length) return proofs;
+    const rows = this.all<any>(
+      `SELECT id, price_token FROM cart_items WHERE id IN (${ids.map(() => '?').join(',')})`, ...ids);
+    for (const row of rows) proofs[String(row.id)] = String(row.price_token || '');
+    return proofs;
   }
 
   public getItems(sessionId: string, accountId?: string | null): CartItem[] {

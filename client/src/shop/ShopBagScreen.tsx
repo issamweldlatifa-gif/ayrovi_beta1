@@ -95,6 +95,7 @@ export const ShopBagScreen: React.FC<ShopBagScreenProps> = ({
       availabilitySource: item.availabilitySource || null,
       availabilityCheckedAt: item.availabilityCheckedAt || null,
       availabilityReason: item.availabilityReason || null,
+      priceTrust: item.priceTrust ?? null,
     };
   });
 

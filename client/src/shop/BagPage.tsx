@@ -19,6 +19,8 @@ export interface BagLine {
   availabilitySource?: string | null;
   availabilityCheckedAt?: string | null;
   availabilityReason?: string | null;
+  /** Preuve de prix : seule une ligne FRESH/MANUAL peut aller au paiement. */
+  priceTrust?: 'FRESH' | 'MANUAL' | 'STALE' | null;
 }
 
 export type PolicyState =
@@ -59,7 +61,10 @@ export const BagPage: React.FC<BagPageProps> = ({
   // Unknown is not a saleable state. It is distinct from a confirmed rupture,
   // but both must stop the final order until a source-backed result exists.
   const blockedLines = lines.filter((line) => line.stock !== 'available');
-  const blocked = blockedLines.length > 0 || policy.status !== 'ready' || loadError;
+  // Un prix dont la preuve signée a expiré n'est pas payable : la même décision
+  // que le serveur appliquera à la commande, montrée avant l'envoi.
+  const stalePriceLines = lines.filter((line) => line.priceTrust === 'STALE');
+  const blocked = blockedLines.length > 0 || stalePriceLines.length > 0 || policy.status !== 'ready' || loadError;
   const locale = direction === 'rtl' ? 'ar-TN' : 'fr-TN';
 
   return (
@@ -116,6 +121,13 @@ export const BagPage: React.FC<BagPageProps> = ({
                     || tr('Aucune confirmation récente de la source.', 'ما فماش تأكيد حديث من المصدر.')}</small>
                 </div>
 
+                {line.priceTrust === 'STALE' && (
+                  <div className="s-bag-stock" data-state="unknown" role="status">
+                    <strong>{tr('Prix à revérifier', 'السعر يستحق إعادة تثبّت')}</strong>
+                    <small>{tr('La vérification du prix a expiré : relancez-la avant de commander.', 'تثبّت السعر انتهت صلاحيته: أعد التحقّق قبل الطلب.')}</small>
+                  </div>
+                )}
+
                 <div className="s-bag-quantity" role="group" aria-label={tr('Quantité', 'الكمية')}>
                   <button type="button" className="s-iconbtn" aria-label={tr('Diminuer la quantité', 'إنقاص الكمية')} disabled={line.quantity <= 1} onClick={() => onChangeQuantity?.(line.id, line.quantity - 1)}>
                     <EditorialIcon name="Minus" size={18} />
@@ -155,6 +167,9 @@ export const BagPage: React.FC<BagPageProps> = ({
 
           {blockedLines.length > 0 && <p className="s-bag-blocked" role="status">
             {tr('Une ligne est en rupture ou sans confirmation de stock. Retirez-la ou vérifiez-la à la source avant de continuer.', 'ثمّة منتج مفقود أو مخزونه غير مؤكّد. احذفه أو تثبّت من المصدر قبل المواصلة.')}
+          </p>}
+          {stalePriceLines.length > 0 && <p className="s-bag-blocked" role="status">
+            {tr('Le prix vérifié d’un article a expiré. Relancez la vérification du prix (Lens), puis validez la commande.', 'صلاحية تثبّت سعر منتج انتهت. أعد التحقّق من السعر ثم واصل الطلب.')}
           </p>}
           <button type="button" className="s-cta s-bag-checkout" onClick={onCheckout} disabled={blocked || !onCheckout}>
             {tr('Continuer vers le paiement', 'المواصلة إلى الدفع')}

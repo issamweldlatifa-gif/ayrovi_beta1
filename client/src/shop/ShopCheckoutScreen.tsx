@@ -166,7 +166,11 @@ export const ShopCheckoutScreen: React.FC<ShopCheckoutScreenProps> = ({
       const data = await response.json();
       if (!response.ok || !data?.success) {
         // Un code inconnu reste visible : le support doit pouvoir le lire.
-        throw new Error(String(data?.code || data?.error || 'CHECKOUT_FAILED'));
+        const code = String(data?.code || data?.error || 'CHECKOUT_FAILED');
+        // Le prix périmé a une cause actionnable : on montre l'explication
+        // serveur plutôt qu'un code nu au client.
+        if (code === 'PRICE_VERIFICATION_REQUIRED') throw new Error(String(data?.error || code));
+        throw new Error(code);
       }
 
       const result = {

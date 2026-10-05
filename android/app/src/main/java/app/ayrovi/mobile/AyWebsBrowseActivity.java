@@ -146,6 +146,7 @@ public class AyWebsBrowseActivity extends Activity {
     super.onCreate(state);
     if (android.os.Build.VERSION.SDK_INT < 28) { finish(); return; }
     setContentView(R.layout.activity_aywebs_browse);
+    installBackNavigation();
     View root = ((android.view.ViewGroup) findViewById(android.R.id.content)).getChildAt(0);
     androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
       androidx.core.graphics.Insets bars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars() | androidx.core.view.WindowInsetsCompat.Type.ime());
@@ -285,14 +286,29 @@ public class AyWebsBrowseActivity extends Activity {
     finish();
   }
 
-  /** Retour matériel : d'abord l'historique marchand, puis la même sortie que X. */
-  @Override
-  public void onBackPressed() {
+  private void installBackNavigation() {
+    // API 33+ : le geste système passe par OnBackInvokedDispatcher dès que la
+    // navigation prédictive est active — `onBackPressed()` n'est alors plus
+    // appelé du tout. On enregistre le même comportement des deux côtés.
+    if (android.os.Build.VERSION.SDK_INT >= 33) {
+      getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+        android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT, this::handleBackPressed);
+    }
+  }
+
+  /** D'abord l'historique marchand, puis la même sortie que X. */
+  private void handleBackPressed() {
     if (webView != null && webView.canGoBack()) {
       webView.goBack();
       return;
     }
     onClosePressed();
+  }
+
+  /** API < 33 (cette activité hérite d'`Activity`, pas de `ComponentActivity`). */
+  @Override
+  public void onBackPressed() {
+    handleBackPressed();
   }
 
   private static String uriPath(String url) {

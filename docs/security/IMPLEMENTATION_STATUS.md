@@ -1,25 +1,113 @@
-# Android/security work in progress — 2026-10-05
+# Android / security readiness — state of the work (2026-10-05)
 
-Baseline: 23bcf1b. This is NOT a completed security remediation or Play release.
+Branch: `fix/android-security-readiness` → also published on `main` (per the owner's
+instruction). Baseline before this work: `23bcf1b`.
 
-Implemented: exact-origin native fetch credentials, Request cloning, credential-free XHR rewrite, HTTPS configuration, native pinned API and blocked redirects, no merchant DOM uploads or client-HTML pricing evidence, separate quote secret/startup validation, API 36 + AGP 8.10.1, debug/release signing separation, cold-intent queue and modern main-activity back callback, merchant process storage isolation on Android >=28 (external-browser fallback below), cookie clearing service on logout, bounded native API response bodies, restrictive merchant navigation, CI build gate and version input validation.
+This file records what is **verified**, what is **deliberately deferred**, and what is
+still missing. It is not a security certification and not a Google Play approval.
 
-Evidence:
-- npm ci: 0 audit vulnerabilities; typecheck passed.
-- Before changes: 2209 tests passed / 8 failed (before client build).
-- After build/changes: 2235 passed / 3 failed; these 3 were obsolete source assertions. Updated security contracts: both affected suites now pass all 65 tests.
-- New network/quote + existing safe URL suites: 29 passed.
-- android:check: 43 passed.
-- Android assembleDebug + testDebugUnitTest: successful. Debug certificate verified.
-- Combined release build daemon died; signed release not verified.
+## Implemented and verified
 
-Remaining blockers/work (do not merge as completed):
-- Full final test rerun and runtime Android testing. No KVM/device in workspace; no cold/warm Android performance evidence.
-- Checkout fresh-price validation/manual-review/payment gating requires coordinated DB/UI work; not completed.
-- Audit all SSRF callers, media lifecycle/privacy, retention/deletion, logging and provider disclosures; not completed.
-- Merchant URL query minimization, runtime redirect/popup compatibility and process-cookie reset tests still needed.
-- Merchant Activity still uses legacy back callback; API36 runtime behavior needs correction/testing.
-- Raw HTML input now rejects old clients explicitly; URL-only server fetch can fail where merchants block access. No bypass or false VERIFIED fallback added.
-- Production quote secret must exist independently before deploying server. render.yaml already lists it; configuration was NOT changed remotely. Main may auto-deploy, so do not push these incomplete server changes there.
-- No signing file in uploads (only two Markdown briefs). No passwords/alias or Play highest versionCode supplied. APK is DEBUG, not an update signed with the existing production certificate. Do not uninstall a production app without safeguarding data.
-- No Google Play approval, signed AAB or main-branch completion claimed.
+### 1. The verified price is now proven at checkout (closing the main trust hole)
+Before: the cart stored `price_verification_status = 'VERIFIED'` — a string — but not the
+signed quote itself. An order could therefore charge a price attested much earlier, or a
+line price edited after the fact.
+
+Now:
+- the server keeps the signed quote on the line (`cart_items.price_token`, migration
+  included; the token is **never** exposed through the public cart payload);
+- at checkout, `src/services/cartPriceTrust.ts` re-verifies the quote signature against
+  exactly the line's price, currency, title and reference URL, through the token's own
+  30-minute expiry;
+- an expired/altered quote returns **409 `PRICE_VERIFICATION_REQUIRED` before any order
+  row exists** — no stuck order, no stale amount collected;
+- lines written before quotes were persisted keep a 30-minute freshness window based on
+  the line itself (legacy path), and older ones must be re-quoted;
+- the manual Lens-less path (`PENDING_MANUAL`) is unchanged: it still follows the human
+  review flow;
+- the bag screen shows the same decision as the server (`priceTrust`, per line and as a
+  footer refusal) and disables the checkout button.
+
+Tests: `tests/cart-price-trust.test.ts` (8) — fresh quote orders, expired quote refused
+with no order created, tampered line refused, manual path still orders, cart read agrees
+with checkout, exact expiry boundary, legacy windows.
+
+### 2. Quote signing secret can no longer be the public development constant
+`validateQuoteSecret()`: a dedicated `AYROVIX_QUOTE_SECRET` wins when it is strong and
+different from `CUSTOMER_AUTH_SECRET`; otherwise a production key is **derived** from
+`CUSTOMER_AUTH_SECRET` with HKDF-SHA256 (domain-separated, no raw key reuse) and a warning
+asks for the dedicated variable; if nothing strong exists, the server refuses to start.
+This closes forged-price tokens *without* requiring an unverifiable change to the
+production environment (the earlier fail-stop version could have prevented the service
+from booting if the dashboard variable was never filled).
+
+Tests: `tests/quote-security.test.ts` — never the repository constant in production,
+derived key differs from the auth key, dedicated secret precedence, refusal when nothing
+is strong.
+
+### 3. Native trust boundary (previous commits, re-verified here)
+- Client credentials are attached to the API origin **only**, after URL normalisation
+  (`Request` objects are cloned, never consumed; caller headers/bodies preserved; XHR
+  stays credential-free; redirects are refused for authenticated calls).
+- Android pins its own API origin: nothing supplied by an Intent can redirect private
+  calls (`ApiTrust`, unit-tested), and merchant navigation refuses `http`, `file`,
+  `content`, `intent`, `javascript`, `data` and embedded credentials.
+- The merchant browser no longer uploads merchant HTML as price evidence; no client HTML
+  is accepted as evidence (`rejectProvidedPage`).
+- Merchant storage is isolated in a separate process on Android 9+ (dedicated WebView
+  data directory), cookies are cleared through a durable marker when the customer logs
+  out, and the session token is kept in app-private no-backup storage instead of Intent
+  extras (below Android 9 the merchant browser is not opened at all rather than sharing a
+  profile).
+- Merchant back navigation now uses `OnBackInvokedDispatcher` on API 33+
+  (`onBackPressed()` is deprecated and bypassed by predictive back) with the same
+  fallback for older releases.
+
+### 4. Build, signing and CI
+- API 36 toolchain: `compileSdk`/`targetSdk` 36, AGP 8.10.1, Gradle 8.11.1.
+- Debug builds use the debug certificate; release signing is only configured when the
+  release secrets exist, so a keystore can never leak into a debug artifact (CI verifies
+  the debug certificate and jarsigner output; version codes are validated against the
+  operator-supplied Play value).
+- CI now builds and unit-tests the Android shell as a **required** step, and the
+  front-end build runs before the suite (eight tests depend on `dist/`, which is why they
+  failed at baseline).
+
+## Evidence (this session)
+
+- `npm ci`: 0 audit vulnerabilities; `npm run build` (client + server) succeeds.
+- `tsc --noEmit` (server) and `tsc -p tsconfig.client.json --noEmit` (client): clean.
+- Full suite **after** the front-end build: **162 files / 2246 tests passed, 0 failed**
+  (baseline was 2209 passed / 8 failed because `dist/` was missing).
+- `npm run android:check`: 43 invariants, 0 broken.
+- Android: `:app:assembleDebug` **BUILD SUCCESSFUL** → `app-debug.apk` (8.4 MB, debug
+  certificate `CN=Android Debug`, verified with `apksigner`);
+  `:app:testDebugUnitTest` → 4 tests, 0 failures (`ApiTrustTest` covers origin pinning and
+  malicious endpoints).
+- `npx cap sync android` succeeds after the front-end build.
+
+## Deliberately deferred
+
+- **Release signing was waived for this delivery** (“دون توقيع اصدار”). The APK attached
+  is a **debug** build: it is not signed with the AYROVI production certificate, is not an
+  update for an installed production app, and is not a Play upload artifact. Delivering a
+  signed AAB still requires the existing production keystore (and its passwords/alias) or
+  an explicit decision to start a new signing key — plus the current Play `versionCode`,
+  which this workspace cannot read.
+- Pushing these server changes to `main` may trigger a production deploy; the deploy is
+  safe from a boot standpoint (see §2), but the derived-key warning should be replaced by
+  a real `AYROVIX_QUOTE_SECRET` in the dashboard as soon as possible.
+
+## Still missing (not started or not finished)
+
+- No runtime Android evidence: no device and no `/dev/kvm` in this workspace, so cold
+  start, merchant-session behaviour, back gesture and cookie clearing are unverified on a
+  real release build.
+- SSRF callers are audited only where this work touched them; a complete pass over every
+  fetcher is outstanding.
+- Media lifecycle/privacy (retention, deletion, EXIF, provider disclosures), logging and
+  the Data safety form have not been completed.
+- Merchant URL query-parameter minimisation and runtime popup/redirect compatibility
+  testing are outstanding.
+- No Google Play approval is claimed; `versionCode` must be confirmed against the current
+  Play Console value before any upload.

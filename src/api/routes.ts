@@ -8,6 +8,7 @@ import { ownerHashOf, recordLearningEvent } from '../assistant/learning';
 import { AddToCartRequest } from '../types';
 import { calculatePrice, orderLocalDelivery } from '../services/pricing';
 import { quoteCartLine } from '../services/cartQuote';
+import { CART_PRICE_TRUST_MESSAGE, verifyCartPriceTrust } from '../services/cartPriceTrust';
 import { inspectVariantOrder } from '../ayrovix/services/variantAvailability';
 import { notifyNewOrder } from '../services/orderNotification';
 import { customerFromRequest, requireCustomer, resolveCustomer } from '../customer/auth';
@@ -286,6 +287,7 @@ export function createApiRouter(
       customerNote,
       referenceUrl,
       priceVerificationStatus,
+      priceToken: typeof item.priceToken === 'string' ? item.priceToken : undefined,
       quantity,
     };
 
@@ -337,6 +339,9 @@ export function createApiRouter(
     try {
       const accountId = cartAccountId(req, sessionId);
       const summary = cartSummary()(db.getItems(sessionId, accountId));
+      // Une seule décision de confiance pour toute la lecture : c'est exactement
+      // celle que la caisse appliquera.
+      const priceTrust = verifyCartPriceTrust(db, summary.items);
 
       return res.json({
         success: true,
@@ -345,9 +350,16 @@ export function createApiRouter(
         totalItemsCount: summary.items.reduce((sum, item) => sum + item.quantity, 0),
         totalTND: summary.totalTND,
         deliveryTND: summary.deliveryTND,
+        priceVerification: priceTrust.lines,
         items: summary.items.map((item) => {
           const availability = inspectVariantOrder(item.sourceUrl, item.requestedSize || item.variant, item.requestedColor);
-          return { ...item, availability: availability.availability, availabilityCheckedAt: availability.checkedAt, availabilitySource: availability.source, availabilityReason: availability.message };
+          const trust = priceTrust.byId[item.id] || null;
+          return {
+            ...item,
+            availability: availability.availability, availabilityCheckedAt: availability.checkedAt,
+            availabilitySource: availability.source, availabilityReason: availability.message,
+            priceTrust: trust?.status || null, priceTrustReason: trust?.reason || null, priceTrustExpiresAt: trust?.expiresAt || null,
+          };
         }),
       });
     } catch (err: any) {
@@ -512,6 +524,18 @@ export function createApiRouter(
       return res.status(400).json({
         success: false,
         error: 'Votre panier est vide.'
+      });
+    }
+
+    // Le prix AVANT la disponibilité : un montant non prouvé ne doit jamais
+    // devenir une commande. Rien n'est créé ici — la ligne doit être recotée.
+    const priceTrust = verifyCartPriceTrust(db, items);
+    if (priceTrust.blocking.length) {
+      return res.status(409).json({
+        success: false,
+        code: 'PRICE_VERIFICATION_REQUIRED',
+        error: CART_PRICE_TRUST_MESSAGE,
+        items: priceTrust.blocking.map((line) => ({ itemId: line.itemId, reason: line.reason, expiresAt: line.expiresAt })),
       });
     }
 
