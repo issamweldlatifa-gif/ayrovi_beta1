@@ -246,6 +246,9 @@ export function findAyroviCartLine(
     && (candidate.externalId || '') === externalId
     && (candidate.requestedSize || '') === requestedSize
     && (candidate.requestedColor || '') === requestedColor
+    // `variant` is the complete human label AYWEBs builds from every published
+    // attribute (format/model/capacity included), not only color + size.
+    && (candidate.variant || '') === (item.variantLabel || '')
     && (externalId ? true : candidate.title === item.title)) || null;
 }
 

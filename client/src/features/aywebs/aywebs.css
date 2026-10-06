@@ -537,3 +537,22 @@
   text-decoration: underline;
   cursor: pointer;
 }
+
+.ayw-support-panel,
+.ayw-support-form { display: flex; flex-direction: column; gap: .8rem; text-align: start; }
+.ayw-support-form p,
+.ayw-support-panel p { margin: 0; color: var(--ayrovi-ink-secondary, #475467); font-size: .9rem; }
+.ayw-support-field { display: flex; flex-direction: column; gap: .35rem; font-size: .88rem; font-weight: 600; }
+.ayw-support-field input,
+.ayw-support-field textarea,
+.ayw-support-field select {
+  width: 100%;
+  min-height: 2.7rem;
+  border: 1px solid var(--ayrovi-border, #d0d5dd);
+  border-radius: .45rem;
+  padding: .55rem .7rem;
+  color: var(--ayrovi-ink, #101828);
+  background: var(--ayrovi-surface, #fff);
+  font: inherit;
+}
+.ayw-support-field textarea { min-height: 5.5rem; resize: vertical; }

@@ -1,5 +1,6 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import type { QatafoDatabase } from '../db/database';
+import { calculatePrice, type PricingRules } from '../services/pricing';
 import { nextSequenceNumber } from '../erp-core/sequences';
 import type { AyWebsStoreDefinition } from '../../shared/aywebsStores';
 import { findAyWebsStore } from '../../shared/aywebsStores';
@@ -120,6 +121,8 @@ export interface AddAyWebsCartItemInput {
   variantAttributes?: Record<string, string> | null;
   quantity?: number;
   customerNote?: string;
+  /** Stable caller key for retry-safe Add-to-Cart; distinct from per-HTTP requestId tracing. */
+  idempotencyKey?: string | null;
   requestId?: string | null;
 }
 
@@ -129,6 +132,10 @@ export interface AddAyWebsCartItemResult {
   duplicate: boolean;
   message: string;
   view: AyWebsCartView;
+  /** True when the exact stored outcome for this idempotency key was replayed. */
+  idempotentReplay: boolean;
+  /** Route-level AYROVI synchronization outcome, saved after the cart bridge. */
+  ayrovi?: { linked: boolean; cart_item_id: string | null; quantity: number | null; reason: string } | null;
 }
 
 const MAX_QUANTITY = 99;
@@ -161,10 +168,11 @@ export function readAyWebsCart(db: QatafoDatabase, sessionId: string, accountId:
 
 export function listAyWebsCartItems(db: QatafoDatabase, cartId: string): AyWebsCartItem[] {
   ensureAyWebsSchema(db);
+  const pricingRules = db.getPricingRules();
   return db.all<any>(
     `SELECT * FROM ayweb_cart_items WHERE cart_id=? AND status!='REMOVED' ORDER BY created_at ASC`,
     cartId,
-  ).map(hydrateCartItem);
+  ).map((row) => hydrateCartItem(row, pricingRules));
 }
 
 /** Vue complète du panier : lignes, groupes par boutique, totaux, bloqueurs. */
@@ -264,6 +272,23 @@ export async function addAyWebsCartItem(
   const quantity = normalizeQuantity(input.quantity);
   const customerNote = sanitizeNote(input.customerNote);
   const variantAttributes = normalizeAttributes(input.variantAttributes);
+  const idempotencyKey = normalizeAddIdempotencyKey(input.idempotencyKey);
+  const requestHash = idempotencyKey
+    ? addRequestFingerprint({
+        productId: input.productId || null,
+        sourceUrl: input.sourceUrl || null,
+        storeId: input.storeId || null,
+        variantAttributes,
+        quantity,
+        customerNote,
+      })
+    : '';
+
+  // Fast replay path: a retry must not re-resolve the merchant or touch quantity.
+  if (idempotencyKey) {
+    const replay = replayAddRequest(db, input, idempotencyKey, requestHash);
+    if (replay) return replay;
+  }
 
   // 1. Résolution serveur du produit : soit il est déjà résolu, soit on le relit.
   let product: AyWebsStoredProduct | null = input.productId ? readAyWebsProduct(db, input.productId) : null;
@@ -291,7 +316,8 @@ export async function addAyWebsCartItem(
   const decision = selectVariant(product, variantAttributes, quantity);
   const selection = decision.selection;
 
-  // 3. Disponibilité : OUT_OF_STOCK bloque, UNKNOWN reste incertain et le dit (§14).
+  // 3. Disponibilité exacte de la configuration sélectionnée. UNKNOWN reste
+  //    affiché comme incertain : seule une disponibilité réellement épuisée bloque.
   const availability = decision.availability;
   if (availability === 'OUT_OF_STOCK') {
     emitAyWebsEvent(db, {
@@ -299,177 +325,355 @@ export async function addAyWebsCartItem(
       resourceType: 'product',
       resourceId: product.productId,
       accountId: input.accountId,
-      payload: { storeId: store.id, variant: selection?.attributes || null, reason: product.availability.reason },
+      payload: { storeId: store.id, variant: selection?.attributes || null, reason: decision.reason },
     });
     throw new AyWebsDomainError('OUT_OF_STOCK', {
-      technicalMessage: `availability=OUT_OF_STOCK (${product.availability.reason})`,
+      technicalMessage: `availability=OUT_OF_STOCK (${decision.reason})`,
     });
   }
 
-  // 4. Devis AYROVI recalculé ici — jamais celui fourni par le client.
-  if (!(product.pricingTnd > 0)) {
+  // 4. Prix source : variante exacte, sinon prix produit; le devis reste celui du
+  //    moteur AYROVI partagé. Le client ne fournit jamais de montant.
+  const sourcePrice = decision.price ?? product.price;
+  const sourceCurrency = decision.price != null
+    ? (decision.currency || product.currency).trim().toUpperCase()
+    : product.currency.trim().toUpperCase();
+  const pricing = sourcePrice > 0 && sourceCurrency
+    ? calculatePrice(db.getPricingRules(), sourcePrice, sourceCurrency, { title: product.title })
+    : null;
+  if (!pricing || pricing.restricted || !(pricing.totalTND > 0)) {
     throw new AyWebsDomainError('PRICE_UNAVAILABLE', {
-      technicalMessage: 'pricingTnd <= 0 après résolution : vérifier le prix source, la devise, le taux de change et les restrictions produit',
+      technicalMessage: `aucun devis serveur pour la variante exacte (sourcePrice=${sourcePrice}, currency=${sourceCurrency || 'UNKNOWN'})`,
     });
   }
 
-  const cart = getOrCreateAyWebsCart(db, input.sessionId, input.accountId);
-  if (cart.status !== 'ACTIVE') {
-    throw new AyWebsDomainError('CART_LOCKED', { technicalMessage: `cart status=${cart.status}` });
-  }
-
-  const existingItems = listAyWebsCartItems(db, cart.id);
-  if (existingItems.length >= MAX_ITEMS_PER_CART) {
-    throw new AyWebsDomainError('CART_LOCKED', {
-      userMessage: 'Le panier AyWebs est plein. Validez une commande avant d’ajouter d’autres articles.',
-      technicalMessage: `limite de ${MAX_ITEMS_PER_CART} lignes atteinte`,
-    });
-  }
-
-  const evidenceHash = ayWebsEvidenceHash({
-    sourceUrl: product.sourceUrl,
-    sourceDomain: product.sourceDomain,
-    sourceProductId: product.sourceProductId,
-    title: product.title,
-    image: product.images[0] || null,
-    price: product.price,
-    currency: product.currency,
-    selectedVariant: selection,
-    availability,
-    adapter: store.adapter,
-    retrievedAt: product.resolvedAt,
-  });
-
-  const priceSnapshot: AyWebsPriceSnapshot = {
-    price: product.price,
-    currency: product.currency,
-    timestamp: product.resolvedAt || new Date().toISOString(),
-    sourceUrl: product.sourceUrl,
-    variant: selection,
-    availability,
-    pricingVersion: product.pricingVersion,
-    evidenceHash,
-  };
-
-  // 5. Déduplication : même produit + même variante + même note = mise à jour.
-  const variantKey = ayWebsVariantKey(selection?.attributes || null);
-  const duplicate = existingItems.find((item) =>
-    item.productId === product!.productId
-    && item.status !== 'REMOVED'
-    && ayWebsVariantKey(item.variantSnapshot?.attributes || null) === variantKey
-    && item.customerNote === customerNote) || null;
-
-  const now = new Date().toISOString();
-
-  if (duplicate) {
-    const nextQuantity = Math.min(MAX_QUANTITY, duplicate.quantity + quantity);
-    db.run(
-      `UPDATE ayweb_cart_items SET quantity=?, availability=?, price_snapshot=?, pricing_tnd=?, pricing_version=?,
-         evidence_hash=?, status='ACTIVE', status_reason='', updated_at=? WHERE id=?`,
-      nextQuantity, availability, JSON.stringify(priceSnapshot), product.pricingTnd, product.pricingVersion,
-      evidenceHash, now, duplicate.id,
-    );
-    refreshCartCounters(db, cart.id);
-    const item = readAyWebsCartItem(db, duplicate.id)!;
-    emitAyWebsEvent(db, {
-      event: 'AYWEB_CART_ITEM_UPDATED',
-      resourceType: 'cart_item',
-      resourceId: item.id,
-      accountId: input.accountId,
-      payload: { storeId: store.id, quantity: nextQuantity, duplicate: true, evidenceHash },
-    });
-    writeAyWebsAudit(db, {
-      actorType: 'customer', actorId: input.accountId || input.sessionId, action: 'cart_item.update',
-      resourceType: 'cart_item', resourceId: item.id, beforeState: String(duplicate.quantity), afterState: String(nextQuantity),
-      detail: { productId: product.productId, duplicate: true }, requestId: input.requestId || null,
-    });
-    return {
-      item,
-      cart: readAyWebsCart(db, input.sessionId, input.accountId) || cart,
-      duplicate: true,
-      message: 'Cet article était déjà dans votre panier AyWebs : la quantité a été mise à jour.',
-      view: readAyWebsCartView(db, input.sessionId, input.accountId),
-    };
-  }
-
-  const id = `aywci_${randomUUID()}`;
-  const itemNumber = nextAyWebsItemNumber(db);
-  db.run(
-    `INSERT INTO ayweb_cart_items (id,item_number,cart_id,product_id,store_id,source_url,source_product_id,title,images,unit_price,currency,
-       variant_snapshot,quantity,availability,price_snapshot,pricing_tnd,pricing_version,evidence_hash,status,status_reason,customer_note,created_at,updated_at)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-    id, itemNumber, cart.id, product.productId, store.id, product.sourceUrl, String(product.sourceProductId || ''),
-    product.title, JSON.stringify(product.images.slice(0, 10)), product.price, product.currency,
-    JSON.stringify(selection ? canonicalVariant(selection) : null), quantity, availability,
-    JSON.stringify(priceSnapshot), product.pricingTnd, product.pricingVersion, evidenceHash,
-    'ACTIVE', '', customerNote, now, now,
-  );
-  refreshCartCounters(db, cart.id);
-
+  let result: AddAyWebsCartItemResult;
   try {
-    recordAyWebsEvidence(db, {
-      productId: product.productId,
-      cartItemId: id,
-      sourceUrl: product.sourceUrl,
-      sourceDomain: product.sourceDomain,
-      sourceProductId: product.sourceProductId,
-      title: product.title,
-      image: product.images[0] || null,
-      price: product.price,
-      currency: product.currency,
-      selectedVariant: selection,
-      availability,
-      adapter: store.adapter,
-      retrievedAt: product.resolvedAt,
-      // Empreinte identique à celle de la ligne : la preuve est vérifiable.
-      evidenceHash,
+    result = db.transaction(() => {
+      // Recheck under the same write transaction. A concurrent retry either
+      // observes the first row or rolls back on the unique idempotency index.
+      if (idempotencyKey) {
+        const replay = replayAddRequest(db, input, idempotencyKey, requestHash);
+        if (replay) return replay;
+      }
+
+      const cart = getOrCreateAyWebsCart(db, input.sessionId, input.accountId);
+      if (cart.status !== 'ACTIVE') {
+        throw new AyWebsDomainError('CART_LOCKED', { technicalMessage: `cart status=${cart.status}` });
+      }
+
+      const existingItems = listAyWebsCartItems(db, cart.id);
+      if (existingItems.length >= MAX_ITEMS_PER_CART) {
+        throw new AyWebsDomainError('CART_LOCKED', {
+          userMessage: 'Le panier AyWebs est plein. Validez une commande avant d’ajouter d’autres articles.',
+          technicalMessage: `limite de ${MAX_ITEMS_PER_CART} lignes atteinte`,
+        });
+      }
+
+      const evidenceHash = ayWebsEvidenceHash({
+        sourceUrl: product!.sourceUrl,
+        sourceDomain: product!.sourceDomain,
+        sourceProductId: product!.sourceProductId,
+        title: product!.title,
+        image: product!.images[0] || null,
+        price: sourcePrice,
+        currency: sourceCurrency,
+        selectedVariant: selection,
+        availability,
+        adapter: store.adapter,
+        retrievedAt: product!.resolvedAt,
+      });
+
+      const priceSnapshot: AyWebsPriceSnapshot = {
+        price: sourcePrice,
+        currency: sourceCurrency,
+        timestamp: product!.resolvedAt || new Date().toISOString(),
+        sourceUrl: product!.sourceUrl,
+        variant: selection,
+        availability,
+        pricingVersion: pricing.pricingVersion,
+        evidenceHash,
+      };
+
+      // Une nouvelle action Add (nouvelle clé) garde le comportement historique :
+      // même produit + même variante + même note met à jour la quantité.
+      const variantKey = ayWebsVariantKey(selection?.attributes || null);
+      const duplicate = existingItems.find((item) =>
+        item.productId === product!.productId
+        && item.status !== 'REMOVED'
+        && ayWebsVariantKey(item.variantSnapshot?.attributes || null) === variantKey
+        && item.customerNote === customerNote) || null;
+
+      const now = new Date().toISOString();
+
+      if (duplicate) {
+        const nextQuantity = Math.min(MAX_QUANTITY, duplicate.quantity + quantity);
+        db.run(
+          `UPDATE ayweb_cart_items SET quantity=?, unit_price=?, currency=?, availability=?, price_snapshot=?, pricing_tnd=?, pricing_version=?,
+             evidence_hash=?, status='ACTIVE', status_reason='', updated_at=? WHERE id=?`,
+          nextQuantity, sourcePrice, sourceCurrency, availability, JSON.stringify(priceSnapshot), pricing.totalTND, pricing.pricingVersion,
+          evidenceHash, now, duplicate.id,
+        );
+        refreshCartCounters(db, cart.id);
+        const item = readAyWebsCartItem(db, duplicate.id)!;
+        emitAyWebsEvent(db, {
+          event: 'AYWEB_CART_ITEM_UPDATED',
+          resourceType: 'cart_item',
+          resourceId: item.id,
+          accountId: input.accountId,
+          payload: { storeId: store.id, quantity: nextQuantity, duplicate: true, evidenceHash },
+        });
+        writeAyWebsAudit(db, {
+          actorType: 'customer', actorId: input.accountId || input.sessionId, action: 'cart_item.update',
+          resourceType: 'cart_item', resourceId: item.id, beforeState: String(duplicate.quantity), afterState: String(nextQuantity),
+          detail: { productId: product!.productId, duplicate: true }, requestId: input.requestId || null,
+        });
+        const duplicateResult: AddAyWebsCartItemResult = {
+          item,
+          cart: readAyWebsCart(db, input.sessionId, input.accountId) || cart,
+          duplicate: true,
+          message: 'Cet article était déjà dans votre panier AyWebs : la quantité a été mise à jour.',
+          view: readAyWebsCartView(db, input.sessionId, input.accountId),
+          idempotentReplay: false,
+        };
+        if (idempotencyKey) saveAddRequest(db, input, idempotencyKey, requestHash, duplicateResult);
+        return duplicateResult;
+      }
+
+      const id = `aywci_${randomUUID()}`;
+      const itemNumber = nextAyWebsItemNumber(db);
+      db.run(
+        `INSERT INTO ayweb_cart_items (id,item_number,cart_id,product_id,store_id,source_url,source_product_id,title,images,unit_price,currency,
+           variant_snapshot,quantity,availability,price_snapshot,pricing_tnd,pricing_version,evidence_hash,status,status_reason,customer_note,created_at,updated_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        id, itemNumber, cart.id, product!.productId, store.id, product!.sourceUrl, String(product!.sourceProductId || ''),
+        product!.title, JSON.stringify(product!.images.slice(0, 10)), sourcePrice, sourceCurrency,
+        JSON.stringify(selection ? canonicalVariant(selection) : null), quantity, availability,
+        JSON.stringify(priceSnapshot), pricing.totalTND, pricing.pricingVersion, evidenceHash,
+        'ACTIVE', '', customerNote, now, now,
+      );
+      refreshCartCounters(db, cart.id);
+
+      try {
+        recordAyWebsEvidence(db, {
+          productId: product!.productId,
+          cartItemId: id,
+          sourceUrl: product!.sourceUrl,
+          sourceDomain: product!.sourceDomain,
+          sourceProductId: product!.sourceProductId,
+          title: product!.title,
+          image: product!.images[0] || null,
+          price: sourcePrice,
+          currency: sourceCurrency,
+          selectedVariant: selection,
+          availability,
+          adapter: store.adapter,
+          retrievedAt: product!.resolvedAt,
+          evidenceHash,
+        });
+      } catch (error) {
+        console.warn('[AyWebs Cart] evidence write failed', error instanceof Error ? error.message : error);
+      }
+
+      const item = readAyWebsCartItem(db, id)!;
+      emitAyWebsEvent(db, {
+        event: 'AYWEB_CART_ITEM_ADDED',
+        resourceType: 'cart_item',
+        resourceId: id,
+        accountId: input.accountId,
+        payload: {
+          storeId: store.id,
+          productId: product!.productId,
+          itemNumber,
+          quantity,
+          variant: selection?.attributes || null,
+          availability,
+          purchaseMode: purchaseModeFor(store),
+          evidenceHash,
+        },
+      });
+      writeAyWebsAudit(db, {
+        actorType: 'customer', actorId: input.accountId || input.sessionId, action: 'cart_item.add',
+        resourceType: 'cart_item', resourceId: id, afterState: 'ACTIVE',
+        detail: { productId: product!.productId, storeId: store.id, quantity, itemNumber }, requestId: input.requestId || null,
+      });
+
+      const message = availability === 'UNKNOWN'
+        ? 'Ajouté au panier AyWebs. Le stock de cette version n’est pas confirmé par le marchand et sera vérifié avant l’achat.'
+        : availability === 'LOW_STOCK'
+          ? 'Ajouté au panier AyWebs. Stock faible chez le marchand : commandez rapidement.'
+          : 'Ajouté au panier AyWebs.';
+      const addedResult: AddAyWebsCartItemResult = {
+        item: { ...item, itemNumber },
+        cart: readAyWebsCart(db, input.sessionId, input.accountId) || cart,
+        duplicate: false,
+        message,
+        view: readAyWebsCartView(db, input.sessionId, input.accountId),
+        idempotentReplay: false,
+      };
+      if (idempotencyKey) saveAddRequest(db, input, idempotencyKey, requestHash, addedResult);
+      return addedResult;
     });
   } catch (error) {
-    console.warn('[AyWebs Cart] evidence write failed', error instanceof Error ? error.message : error);
+    // Two app processes can race after resolution. The unique index wins, the
+    // losing transaction rolls back, and the committed first result is replayed.
+    if (idempotencyKey) {
+      const replay = replayAddRequest(db, input, idempotencyKey, requestHash);
+      if (replay) return replay;
+    }
+    throw error;
   }
 
-  const item = readAyWebsCartItem(db, id)!;
-  emitAyWebsEvent(db, {
-    event: 'AYWEB_CART_ITEM_ADDED',
-    resourceType: 'cart_item',
-    resourceId: id,
-    accountId: input.accountId,
-    payload: {
+  if (!result.idempotentReplay) {
+    logAyWebsOperation({
+      operation: 'cart_add',
       storeId: store.id,
       productId: product.productId,
-      itemNumber,
-      quantity,
-      variant: selection?.attributes || null,
-      availability,
-      purchaseMode: purchaseModeFor(store),
-      evidenceHash,
-    },
-  });
-  writeAyWebsAudit(db, {
-    actorType: 'customer', actorId: input.accountId || input.sessionId, action: 'cart_item.add',
-    resourceType: 'cart_item', resourceId: id, afterState: 'ACTIVE',
-    detail: { productId: product.productId, storeId: store.id, quantity, itemNumber }, requestId: input.requestId || null,
-  });
-  logAyWebsOperation({
-    operation: 'cart_add',
-    storeId: store.id,
-    productId: product.productId,
-    customerId: input.accountId,
-    sessionId: input.sessionId,
-    result: 'success',
-  });
+      customerId: input.accountId,
+      sessionId: input.sessionId,
+      requestId: input.requestId,
+      result: 'success',
+    });
+  }
+  return result;
+}
 
-  return {
-    item: { ...item, itemNumber },
-    cart: readAyWebsCart(db, input.sessionId, input.accountId) || cart,
-    duplicate: false,
-    message: availability === 'UNKNOWN'
-      ? 'Ajouté au panier AyWebs. Le marchand ne publie pas le stock de cette version : il sera vérifié avant l’achat.'
-      : availability === 'LOW_STOCK'
-        ? 'Ajouté au panier AyWebs. Stock faible chez le marchand : commandez rapidement.'
-        : 'Ajouté au panier AyWebs.',
-    view: readAyWebsCartView(db, input.sessionId, input.accountId),
-  };
+function normalizeAddIdempotencyKey(value: unknown): string | null {
+  const key = String(value ?? '').trim();
+  if (!key) return null;
+  if (key.length > 128) {
+    throw new AyWebsDomainError('IDEMPOTENCY_CONFLICT', {
+      technicalMessage: `Idempotency-Key too long (${key.length} > 128)`,
+    });
+  }
+  return key;
+}
+
+function addRequestFingerprint(input: {
+  productId: string | null;
+  sourceUrl: string | null;
+  storeId: string | null;
+  variantAttributes: Record<string, string> | null;
+  quantity: number;
+  customerNote: string;
+}): string {
+  const attributes = input.variantAttributes
+    ? Object.fromEntries(Object.entries(input.variantAttributes).sort(([left], [right]) => left.localeCompare(right)))
+    : null;
+  return createHash('sha256').update(JSON.stringify({
+    productId: input.productId?.trim() || null,
+    sourceUrl: input.sourceUrl?.trim() || null,
+    storeId: input.storeId?.trim().toLowerCase() || null,
+    variantAttributes: attributes,
+    quantity: input.quantity,
+    customerNote: input.customerNote,
+  })).digest('hex');
+}
+
+function idempotencyScopeKey(input: Pick<AddAyWebsCartItemInput, 'sessionId' | 'accountId'>): string {
+  return input.accountId ? `account:${input.accountId}` : `session:${input.sessionId}`;
+}
+
+function readAddRequestRow(
+  db: QatafoDatabase,
+  input: Pick<AddAyWebsCartItemInput, 'sessionId' | 'accountId'>,
+  idempotencyKey: string,
+): any | null {
+  const scopes = [...new Set([
+    idempotencyScopeKey(input),
+    `session:${input.sessionId}`,
+  ])];
+  const placeholders = scopes.map(() => '?').join(',');
+  return db.get<any>(
+    `SELECT * FROM ayweb_cart_add_requests WHERE scope_key IN (${placeholders}) AND idempotency_key=? ORDER BY created_at DESC LIMIT 1`,
+    ...scopes, idempotencyKey,
+  ) || null;
+}
+
+function replayAddRequest(
+  db: QatafoDatabase,
+  input: AddAyWebsCartItemInput,
+  idempotencyKey: string,
+  requestHash: string,
+): AddAyWebsCartItemResult | null {
+  const row = readAddRequestRow(db, input, idempotencyKey);
+  if (!row) return null;
+  if (String(row.request_hash) !== requestHash) {
+    throw new AyWebsDomainError('IDEMPOTENCY_CONFLICT', {
+      technicalMessage: `Idempotency-Key reused with different add payload (${idempotencyKey.slice(0, 24)})`,
+    });
+  }
+
+  try {
+    const snapshot = JSON.parse(String(row.result_json || '{}'));
+    if (!snapshot?.item || !snapshot?.cart) throw new Error('invalid add result snapshot');
+    return {
+      item: snapshot.item as AyWebsCartItem,
+      cart: snapshot.cart as AyWebsCart,
+      duplicate: Boolean(snapshot.duplicate),
+      message: String(snapshot.message || 'Ajout au panier AyWebs confirmé.'),
+      view: snapshot.view && typeof snapshot.view === 'object'
+        ? snapshot.view as AyWebsCartView
+        : readAyWebsCartView(db, input.sessionId, input.accountId),
+      idempotentReplay: true,
+      ayrovi: snapshot.ayrovi && typeof snapshot.ayrovi === 'object' ? snapshot.ayrovi : null,
+    };
+  } catch (error) {
+    if (error instanceof AyWebsDomainError) throw error;
+    throw new AyWebsDomainError('INTERNAL_ERROR', {
+      technicalMessage: `stored Add-to-Cart idempotency result is invalid: ${error instanceof Error ? error.message : String(error)}`,
+    });
+  }
+}
+
+function saveAddRequest(
+  db: QatafoDatabase,
+  input: AddAyWebsCartItemInput,
+  idempotencyKey: string,
+  requestHash: string,
+  result: AddAyWebsCartItemResult,
+): void {
+  db.run(
+    `INSERT INTO ayweb_cart_add_requests (id,scope_key,session_id,account_id,idempotency_key,request_hash,result_json,created_at)
+     VALUES (?,?,?,?,?,?,?,?)`,
+    `aywaddreq_${randomUUID()}`,
+    idempotencyScopeKey(input),
+    input.sessionId,
+    input.accountId,
+    idempotencyKey,
+    requestHash,
+    JSON.stringify({
+      item: result.item,
+      cart: result.cart,
+      view: result.view,
+      duplicate: result.duplicate,
+      message: result.message,
+      ayrovi: result.ayrovi ?? null,
+    }),
+    new Date().toISOString(),
+  );
+}
+
+/** Persist route-level bridge metadata so an HTTP retry replays its first response too. */
+export function saveAyWebsCartAddBridgeOutcome(
+  db: QatafoDatabase,
+  input: Pick<AddAyWebsCartItemInput, 'sessionId' | 'accountId'>,
+  idempotencyKeyValue: unknown,
+  outcome: NonNullable<AddAyWebsCartItemResult['ayrovi']>,
+): void {
+  const idempotencyKey = normalizeAddIdempotencyKey(idempotencyKeyValue);
+  if (!idempotencyKey) return;
+  ensureAyWebsSchema(db);
+  const row = readAddRequestRow(db, input, idempotencyKey);
+  if (!row) return;
+  try {
+    const snapshot = JSON.parse(String(row.result_json || '{}'));
+    if (!snapshot?.item || !snapshot?.cart) return;
+    snapshot.ayrovi = outcome;
+    db.run('UPDATE ayweb_cart_add_requests SET result_json=? WHERE id=?', JSON.stringify(snapshot), row.id);
+  } catch {
+    // A malformed snapshot will be surfaced by the idempotency replay path.
+  }
 }
 
 /**
@@ -484,6 +688,10 @@ export interface AyWebsVariantDecision {
   selection: AyWebsVariantSelection | null;
   availability: AyWebsAvailabilityState;
   reason: string;
+  /** Source variant price when published; null falls back to the product price. */
+  price: number | null;
+  /** Source variant currency when published; null falls back to the product currency. */
+  currency: string | null;
 }
 
 export function selectVariant(
@@ -504,7 +712,7 @@ export function selectVariant(
       });
     }
     // Produit sans attribut publié : la disponibilité produit s'applique telle quelle.
-    return { selection: null, availability: product.availability.state, reason: product.availability.reason };
+    return { selection: null, availability: product.availability.state, reason: product.availability.reason, price: null, currency: null };
   }
 
   const key = ayWebsVariantKey(matching);
@@ -532,13 +740,71 @@ export function selectVariant(
     },
     availability: match.availability,
     reason: match.availabilityReason || product.availability.reason,
+    price: Number.isFinite(Number(match.price)) && Number(match.price) > 0 ? Number(match.price) : null,
+    currency: match.currency ? String(match.currency).trim().toUpperCase() || null : null,
   };
+}
+
+interface AyWebsStoredSourceQuote {
+  variant: AyWebsStoredProduct['variants'][number] | null;
+  price: number;
+  currency: string;
+  availability: AyWebsAvailabilityState;
+}
+
+/** Resolve the server-stored exact variant price first, then the product price. */
+function storedSourceQuote(
+  product: AyWebsStoredProduct,
+  item: Pick<AyWebsCartItem, 'variantSnapshot'>,
+): AyWebsStoredSourceQuote {
+  const variantKey = ayWebsVariantKey(item.variantSnapshot?.attributes || null);
+  const variant = variantKey
+    ? (product.variants || []).find((candidate) => ayWebsVariantKey(candidate.attributes) === variantKey) || null
+    : null;
+  const hasVariantPrice = Boolean(variant && Number.isFinite(Number(variant.price)) && Number(variant.price) > 0);
+  return {
+    variant,
+    price: hasVariantPrice ? Number(variant!.price) : product.price,
+    currency: (hasVariantPrice ? variant!.currency || product.currency : product.currency).trim().toUpperCase(),
+    availability: variant?.availability || product.availability.state,
+  };
+}
+
+function sourceQuoteChanged(
+  item: Pick<AyWebsCartItem, 'unitPrice' | 'currency' | 'priceSnapshot'>,
+  quote: Pick<AyWebsStoredSourceQuote, 'price' | 'currency'>,
+): boolean {
+  const snapshotPrice = item.priceSnapshot?.price ?? item.unitPrice;
+  const snapshotCurrency = (item.priceSnapshot?.currency || item.currency).trim().toUpperCase();
+  return Math.abs(quote.price - snapshotPrice) > 0.001
+    || quote.currency.trim().toUpperCase() !== snapshotCurrency;
+}
+
+function storedSourceEvidenceHash(
+  product: AyWebsStoredProduct,
+  item: Pick<AyWebsCartItem, 'variantSnapshot'>,
+  quote: AyWebsStoredSourceQuote,
+): string {
+  const store = findAyWebsStore(product.storeId);
+  return ayWebsEvidenceHash({
+    sourceUrl: product.sourceUrl,
+    sourceDomain: product.sourceDomain,
+    sourceProductId: product.sourceProductId,
+    title: product.title,
+    image: product.images[0] || null,
+    price: quote.price,
+    currency: quote.currency,
+    selectedVariant: item.variantSnapshot,
+    availability: quote.availability,
+    adapter: store?.adapter || product.storeId,
+    retrievedAt: product.resolvedAt || new Date().toISOString(),
+  });
 }
 
 export function readAyWebsCartItem(db: QatafoDatabase, itemId: string): AyWebsCartItem | null {
   ensureAyWebsSchema(db);
   const row = db.get<any>(`SELECT * FROM ayweb_cart_items WHERE id=?`, itemId);
-  return row ? hydrateCartItem(row) : null;
+  return row ? hydrateCartItem(row, db.getPricingRules()) : null;
 }
 
 function assertItemOwnership(db: QatafoDatabase, itemId: string, sessionId: string, accountId: string | null): AyWebsCartItem {
@@ -575,6 +841,12 @@ export function updateAyWebsCartItem(
 
   let variantSnapshot = item.variantSnapshot;
   let availability = item.availability;
+  let unitPrice = item.unitPrice;
+  let currency = item.currency;
+  let priceSnapshot = item.priceSnapshot;
+  let pricingTnd = item.pricingTnd;
+  let pricingVersion = item.pricingVersion;
+  let evidenceHash = item.evidenceHash;
   let status: AyWebsCartItemStatus = item.status === 'PRICE_CHANGED' || item.status === 'VARIANT_UNAVAILABLE' ? item.status : 'ACTIVE';
   let statusReason = item.statusReason;
 
@@ -582,10 +854,70 @@ export function updateAyWebsCartItem(
   if (input.variantAttributes !== undefined) {
     const product = item.productId ? readAyWebsProduct(db, item.productId) : null;
     if (!product) throw new AyWebsDomainError('PRODUCT_NOT_FOUND');
+    const store = findAyWebsStore(product.storeId);
+    if (!store) throw new AyWebsDomainError('STORE_UNKNOWN');
     const attributes = normalizeAttributes(input.variantAttributes);
     const decision = selectVariant(product, attributes, quantity);
     variantSnapshot = decision.selection;
     availability = decision.availability;
+    unitPrice = decision.price ?? product.price;
+    currency = decision.price != null
+      ? (decision.currency || product.currency).trim().toUpperCase()
+      : product.currency.trim().toUpperCase();
+    const pricing = unitPrice > 0 && currency
+      ? calculatePrice(db.getPricingRules(), unitPrice, currency, { title: product.title })
+      : null;
+    if (!pricing || pricing.restricted || !(pricing.totalTND > 0)) {
+      throw new AyWebsDomainError('PRICE_UNAVAILABLE', {
+        technicalMessage: `aucun devis serveur pour la variante exacte (sourcePrice=${unitPrice}, currency=${currency || 'UNKNOWN'})`,
+      });
+    }
+    pricingTnd = pricing.totalTND;
+    pricingVersion = pricing.pricingVersion;
+    const timestamp = product.resolvedAt || now;
+    evidenceHash = ayWebsEvidenceHash({
+      sourceUrl: product.sourceUrl,
+      sourceDomain: product.sourceDomain,
+      sourceProductId: product.sourceProductId,
+      title: product.title,
+      image: product.images[0] || null,
+      price: unitPrice,
+      currency,
+      selectedVariant: variantSnapshot,
+      availability,
+      adapter: store.adapter,
+      retrievedAt: timestamp,
+    });
+    priceSnapshot = {
+      price: unitPrice,
+      currency,
+      timestamp,
+      sourceUrl: product.sourceUrl,
+      variant: variantSnapshot,
+      availability,
+      pricingVersion,
+      evidenceHash,
+    };
+    try {
+      recordAyWebsEvidence(db, {
+        productId: product.productId,
+        cartItemId: item.id,
+        sourceUrl: product.sourceUrl,
+        sourceDomain: product.sourceDomain,
+        sourceProductId: product.sourceProductId,
+        title: product.title,
+        image: product.images[0] || null,
+        price: unitPrice,
+        currency,
+        selectedVariant: variantSnapshot,
+        availability,
+        adapter: store.adapter,
+        retrievedAt: timestamp,
+        evidenceHash,
+      });
+    } catch (error) {
+      console.warn('[AyWebs Cart] variant evidence write failed', error instanceof Error ? error.message : error);
+    }
     if (availability === 'OUT_OF_STOCK') {
       status = 'OUT_OF_STOCK';
       statusReason = product.availability.reason || 'merchant_out_of_stock';
@@ -596,8 +928,11 @@ export function updateAyWebsCartItem(
   }
 
   db.run(
-    `UPDATE ayweb_cart_items SET quantity=?, customer_note=?, variant_snapshot=?, availability=?, status=?, status_reason=?, updated_at=? WHERE id=?`,
-    quantity, customerNote, JSON.stringify(variantSnapshot ? canonicalVariant(variantSnapshot) : null), availability, status, statusReason, now, item.id,
+    `UPDATE ayweb_cart_items SET quantity=?, customer_note=?, unit_price=?, currency=?, variant_snapshot=?, availability=?,
+       price_snapshot=?, pricing_tnd=?, pricing_version=?, evidence_hash=?, status=?, status_reason=?, updated_at=? WHERE id=?`,
+    quantity, customerNote, unitPrice, currency,
+    JSON.stringify(variantSnapshot ? canonicalVariant(variantSnapshot) : null), availability,
+    JSON.stringify(priceSnapshot), pricingTnd, pricingVersion, evidenceHash, status, statusReason, now, item.id,
   );
   refreshCartCounters(db, item.cartId);
 
@@ -607,12 +942,18 @@ export function updateAyWebsCartItem(
     resourceType: 'cart_item',
     resourceId: updated.id,
     accountId: input.accountId,
-    payload: { quantity, variant: updated.variantSnapshot?.attributes || null, availability, status },
+    payload: {
+      quantity, variant: updated.variantSnapshot?.attributes || null, availability, status,
+      unitPrice: updated.unitPrice, currency: updated.currency, pricingVersion: updated.pricingVersion,
+    },
   });
   writeAyWebsAudit(db, {
     actorType: 'customer', actorId: input.accountId || input.sessionId, action: 'cart_item.update',
     resourceType: 'cart_item', resourceId: updated.id, beforeState: item.status, afterState: updated.status,
-    detail: { quantity, from: item.quantity }, requestId: input.requestId || null,
+    detail: {
+      quantity, from: item.quantity, unitPrice, currency,
+      variant: updated.variantSnapshot?.attributes || null,
+    }, requestId: input.requestId || null,
   });
   return { item: updated, view: readAyWebsCartView(db, input.sessionId, input.accountId) };
 }
@@ -663,33 +1004,34 @@ export async function verifyAyWebsCart(
       continue;
     }
 
-    // Variante : comparaison au contrat source le plus récent, sans relecture réseau.
+    // Variante et prix : l'option exacte publiée par le marchand prime sur le produit.
     const variantKey = ayWebsVariantKey(item.variantSnapshot?.attributes || null);
-    if (variantKey) {
-      const match = (stored.variants || []).find((variant) => ayWebsVariantKey(variant.attributes) === variantKey);
-      if (!match) {
-        markItem(db, item.id, 'VARIANT_UNAVAILABLE', `variante_absente:${variantKey}`);
-        changes.push({
-          itemId: item.id, code: 'VARIANT_UNAVAILABLE',
-          message: 'La version choisie n’est plus publiée par le marchand. Choisissez-en une autre.',
-          before: item.variantSnapshot?.attributes, after: null,
-        });
-        continue;
-      }
-      if (match.availability === 'OUT_OF_STOCK') {
-        markItem(db, item.id, 'VARIANT_UNAVAILABLE', match.availabilityReason || 'merchant_variant_out_of_stock');
-        changes.push({ itemId: item.id, code: 'VARIANT_UNAVAILABLE', message: 'La version choisie est épuisée chez le marchand.' });
-        continue;
-      }
-    } else if (stored.availability.state === 'OUT_OF_STOCK') {
-      markItem(db, item.id, 'OUT_OF_STOCK', stored.availability.reason || 'merchant_out_of_stock');
-      changes.push({ itemId: item.id, code: 'OUT_OF_STOCK', message: 'Le marchand indique ce produit épuisé.' });
+    let latestQuote = storedSourceQuote(stored, item);
+    if (variantKey && !latestQuote.variant) {
+      markItem(db, item.id, 'VARIANT_UNAVAILABLE', `variante_absente:${variantKey}`);
+      changes.push({
+        itemId: item.id, code: 'VARIANT_UNAVAILABLE',
+        message: 'La version choisie n’est plus publiée par le marchand. Choisissez-en une autre.',
+        before: item.variantSnapshot?.attributes, after: null,
+      });
+      continue;
+    }
+    if (latestQuote.availability === 'OUT_OF_STOCK') {
+      markItem(
+        db, item.id, variantKey ? 'VARIANT_UNAVAILABLE' : 'OUT_OF_STOCK',
+        latestQuote.variant?.availabilityReason || stored.availability.reason || 'merchant_out_of_stock',
+      );
+      changes.push({
+        itemId: item.id,
+        code: variantKey ? 'VARIANT_UNAVAILABLE' : 'OUT_OF_STOCK',
+        message: variantKey ? 'La version choisie est épuisée chez le marchand.' : 'Le marchand indique ce produit épuisé.',
+      });
       continue;
     }
 
     // Prix : la dernière résolution fait foi. Une relecture réseau est optionnelle.
-    const latestPrice = stored.price;
     const snapshotPrice = item.priceSnapshot?.price ?? item.unitPrice;
+    const snapshotCurrency = (item.priceSnapshot?.currency || item.currency).trim().toUpperCase();
     if (input.recheckSource) {
       const store = findAyWebsStore(stored.storeId);
       if (store && deps.flags.storeCaptureEnabled(store)) {
@@ -704,12 +1046,42 @@ export async function verifyAyWebsCart(
           });
           const refreshed = readAyWebsProduct(db, resolved.productId);
           if (refreshed) {
-            applyRefreshedSource(db, item, refreshed);
-            if (Math.abs(refreshed.price - snapshotPrice) > 0.001) {
+            latestQuote = storedSourceQuote(refreshed, item);
+            if (variantKey && !latestQuote.variant) {
+              markItem(db, item.id, 'VARIANT_UNAVAILABLE', `variante_absente:${variantKey}`);
+              changes.push({
+                itemId: item.id, code: 'VARIANT_UNAVAILABLE',
+                message: 'La version choisie n’est plus publiée par le marchand. Choisissez-en une autre.',
+                before: item.variantSnapshot?.attributes, after: null,
+              });
+              continue;
+            }
+            if (latestQuote.availability === 'OUT_OF_STOCK') {
+              markItem(db, item.id, variantKey ? 'VARIANT_UNAVAILABLE' : 'OUT_OF_STOCK', 'merchant_out_of_stock');
+              changes.push({
+                itemId: item.id,
+                code: variantKey ? 'VARIANT_UNAVAILABLE' : 'OUT_OF_STOCK',
+                message: variantKey ? 'La version choisie est épuisée chez le marchand.' : 'Le marchand indique ce produit épuisé.',
+              });
+              continue;
+            }
+            const changed = sourceQuoteChanged(item, latestQuote);
+            applyRefreshedSource(db, item, refreshed, latestQuote);
+            if (changed) {
+              emitAyWebsEvent(db, {
+                event: 'AYWEB_PRICE_CHANGED',
+                resourceType: 'cart_item',
+                resourceId: item.id,
+                accountId: input.accountId,
+                payload: {
+                  before: snapshotPrice, beforeCurrency: snapshotCurrency,
+                  after: latestQuote.price, currency: latestQuote.currency, storeId: stored.storeId,
+                },
+              });
               changes.push({
                 itemId: item.id, code: 'PRICE_CHANGED',
                 message: 'Le prix marchand a changé depuis votre ajout.',
-                before: snapshotPrice, after: refreshed.price,
+                before: snapshotPrice, after: latestQuote.price,
               });
             }
             continue;
@@ -727,19 +1099,22 @@ export async function verifyAyWebsCart(
       }
     }
 
-    if (Math.abs(latestPrice - snapshotPrice) > 0.001) {
-      markItemPriceChanged(db, item, latestPrice, stored.currency);
+    if (sourceQuoteChanged(item, latestQuote)) {
+      markItemPriceChanged(db, item, latestQuote.price, latestQuote.currency);
       emitAyWebsEvent(db, {
         event: 'AYWEB_PRICE_CHANGED',
         resourceType: 'cart_item',
         resourceId: item.id,
         accountId: input.accountId,
-        payload: { before: snapshotPrice, after: latestPrice, currency: stored.currency, storeId: stored.storeId },
+        payload: {
+          before: snapshotPrice, beforeCurrency: snapshotCurrency,
+          after: latestQuote.price, currency: latestQuote.currency, storeId: stored.storeId,
+        },
       });
       changes.push({
         itemId: item.id, code: 'PRICE_CHANGED',
         message: 'Le prix marchand a changé depuis votre ajout.',
-        before: snapshotPrice, after: latestPrice,
+        before: snapshotPrice, after: latestQuote.price,
       });
     }
   }
@@ -747,24 +1122,70 @@ export async function verifyAyWebsCart(
   return { view: readAyWebsCartView(db, input.sessionId, input.accountId), changes };
 }
 
-function applyRefreshedSource(db: QatafoDatabase, item: AyWebsCartItem, stored: AyWebsStoredProduct): void {
-  const snapshot = item.priceSnapshot;
-  const changed = Math.abs(stored.price - (snapshot?.price ?? item.unitPrice)) > 0.001;
+function applyRefreshedSource(
+  db: QatafoDatabase,
+  item: AyWebsCartItem,
+  stored: AyWebsStoredProduct,
+  quote: AyWebsStoredSourceQuote,
+): void {
+  const changed = sourceQuoteChanged(item, quote);
+  const now = new Date().toISOString();
+  if (changed) {
+    // Keep the accepted source snapshot untouched until the customer accepts;
+    // only publish the current availability and an explicit price-change blocker.
+    db.run(
+      `UPDATE ayweb_cart_items SET availability=?, status='PRICE_CHANGED', status_reason=?, updated_at=? WHERE id=?`,
+      quote.availability,
+      `prix_source_actuel:${quote.price};devise:${quote.currency}`.slice(0, 200), now, item.id,
+    );
+    return;
+  }
+
+  const pricing = calculatePrice(db.getPricingRules(), quote.price, quote.currency, { title: stored.title });
+  if (!pricing || pricing.restricted || !(pricing.totalTND > 0)) {
+    // Do not replace a previously valid server quote with an invented amount.
+    db.run(`UPDATE ayweb_cart_items SET availability=?, updated_at=? WHERE id=?`, quote.availability, now, item.id);
+    return;
+  }
+  const timestamp = stored.resolvedAt || item.priceSnapshot?.timestamp || now;
+  const evidenceHash = storedSourceEvidenceHash(stored, item, quote);
   const nextSnapshot: AyWebsPriceSnapshot = {
-    price: snapshot?.price ?? item.unitPrice,
-    currency: snapshot?.currency ?? item.currency,
-    timestamp: snapshot?.timestamp ?? item.createdAt,
+    price: quote.price,
+    currency: quote.currency,
+    timestamp,
     sourceUrl: stored.sourceUrl,
     variant: item.variantSnapshot,
-    availability: stored.availability.state,
-    pricingVersion: stored.pricingVersion,
-    evidenceHash: stored.evidenceHash,
+    availability: quote.availability,
+    pricingVersion: pricing.pricingVersion,
+    evidenceHash,
   };
+  const store = findAyWebsStore(stored.storeId);
+  try {
+    recordAyWebsEvidence(db, {
+      productId: stored.productId,
+      cartItemId: item.id,
+      sourceUrl: stored.sourceUrl,
+      sourceDomain: stored.sourceDomain,
+      sourceProductId: stored.sourceProductId,
+      title: stored.title,
+      image: stored.images[0] || null,
+      price: quote.price,
+      currency: quote.currency,
+      selectedVariant: item.variantSnapshot,
+      availability: quote.availability,
+      adapter: store?.adapter || stored.storeId,
+      retrievedAt: timestamp,
+      evidenceHash,
+    });
+  } catch (error) {
+    console.warn('[AyWebs Cart] refreshed evidence write failed', error instanceof Error ? error.message : error);
+  }
   db.run(
-    `UPDATE ayweb_cart_items SET availability=?, price_snapshot=?, pricing_tnd=?, pricing_version=?, status=?, status_reason=?, updated_at=? WHERE id=?`,
-    stored.availability.state, JSON.stringify(nextSnapshot), stored.pricingTnd, stored.pricingVersion,
-    changed ? 'PRICE_CHANGED' : (item.status === 'PRICE_CHANGED' ? 'ACTIVE' : item.status),
-    changed ? `prix_source_actuel:${stored.price}` : '', new Date().toISOString(), item.id,
+    `UPDATE ayweb_cart_items SET unit_price=?, currency=?, availability=?, price_snapshot=?, pricing_tnd=?, pricing_version=?,
+       evidence_hash=?, status=?, status_reason=?, updated_at=? WHERE id=?`,
+    quote.price, quote.currency, quote.availability, JSON.stringify(nextSnapshot), pricing.totalTND, pricing.pricingVersion,
+    evidenceHash, item.status === 'PRICE_CHANGED' ? 'ACTIVE' : item.status,
+    item.status === 'PRICE_CHANGED' ? '' : item.statusReason, now, item.id,
   );
 }
 
@@ -783,22 +1204,61 @@ export function acceptAyWebsCartPriceChange(
   const stored = item.productId ? readAyWebsProduct(db, item.productId) : null;
   if (!stored) throw new AyWebsDomainError('PRODUCT_NOT_FOUND');
 
+  const quote = storedSourceQuote(stored, item);
+  const variantKey = ayWebsVariantKey(item.variantSnapshot?.attributes || null);
+  if ((variantKey && !quote.variant) || quote.availability === 'OUT_OF_STOCK') {
+    throw new AyWebsDomainError('VARIANT_UNAVAILABLE', {
+      userMessage: 'La version exacte choisie n’est plus disponible. Choisissez-en une autre avant de continuer.',
+      technicalMessage: `variant=${variantKey || 'product'}, availability=${quote.availability}`,
+    });
+  }
+  const pricing = quote.price > 0 && quote.currency
+    ? calculatePrice(db.getPricingRules(), quote.price, quote.currency, { title: stored.title })
+    : null;
+  if (!pricing || pricing.restricted || !(pricing.totalTND > 0)) {
+    throw new AyWebsDomainError('PRICE_UNAVAILABLE', {
+      technicalMessage: `aucun devis serveur pour la variante exacte (sourcePrice=${quote.price}, currency=${quote.currency || 'UNKNOWN'})`,
+    });
+  }
   const now = new Date().toISOString();
+  const timestamp = stored.resolvedAt || now;
+  const evidenceHash = storedSourceEvidenceHash(stored, item, quote);
   const acceptedSnapshot: AyWebsPriceSnapshot = {
-    price: stored.price,
-    currency: stored.currency,
-    timestamp: now,
+    price: quote.price,
+    currency: quote.currency,
+    timestamp,
     sourceUrl: stored.sourceUrl,
     variant: item.variantSnapshot,
-    availability: stored.availability.state,
-    pricingVersion: stored.pricingVersion,
-    evidenceHash: stored.evidenceHash,
+    availability: quote.availability,
+    pricingVersion: pricing.pricingVersion,
+    evidenceHash,
   };
+  const store = findAyWebsStore(stored.storeId);
+  try {
+    recordAyWebsEvidence(db, {
+      productId: stored.productId,
+      cartItemId: item.id,
+      sourceUrl: stored.sourceUrl,
+      sourceDomain: stored.sourceDomain,
+      sourceProductId: stored.sourceProductId,
+      title: stored.title,
+      image: stored.images[0] || null,
+      price: quote.price,
+      currency: quote.currency,
+      selectedVariant: item.variantSnapshot,
+      availability: quote.availability,
+      adapter: store?.adapter || stored.storeId,
+      retrievedAt: timestamp,
+      evidenceHash,
+    });
+  } catch (error) {
+    console.warn('[AyWebs Cart] accepted-price evidence write failed', error instanceof Error ? error.message : error);
+  }
   db.run(
     `UPDATE ayweb_cart_items SET unit_price=?, currency=?, price_snapshot=?, pricing_tnd=?, pricing_version=?, evidence_hash=?,
        availability=?, status='ACTIVE', status_reason='prix_accepte_par_le_client', updated_at=? WHERE id=?`,
-    stored.price, stored.currency, JSON.stringify(acceptedSnapshot), stored.pricingTnd, stored.pricingVersion,
-    stored.evidenceHash, stored.availability.state, now, item.id,
+    quote.price, quote.currency, JSON.stringify(acceptedSnapshot), pricing.totalTND, pricing.pricingVersion,
+    evidenceHash, quote.availability, now, item.id,
   );
   const updated = readAyWebsCartItem(db, item.id)!;
   emitAyWebsEvent(db, {
@@ -806,12 +1266,18 @@ export function acceptAyWebsCartPriceChange(
     resourceType: 'cart_item',
     resourceId: item.id,
     accountId: input.accountId,
-    payload: { priceAccepted: true, previousPrice: item.unitPrice, newPrice: stored.price },
+    payload: {
+      priceAccepted: true, previousPrice: item.unitPrice, newPrice: quote.price,
+      currency: quote.currency, variant: item.variantSnapshot?.attributes || null,
+    },
   });
   writeAyWebsAudit(db, {
     actorType: 'customer', actorId: input.accountId || input.sessionId, action: 'cart_item.accept_price',
     resourceType: 'cart_item', resourceId: item.id, beforeState: 'PRICE_CHANGED', afterState: 'ACTIVE',
-    detail: { previousPrice: item.unitPrice, acceptedPrice: stored.price }, requestId: input.requestId || null,
+    detail: {
+      previousPrice: item.unitPrice, acceptedPrice: quote.price, currency: quote.currency,
+      variant: item.variantSnapshot?.attributes || null,
+    }, requestId: input.requestId || null,
   });
   return { item: updated, view: readAyWebsCartView(db, input.sessionId, input.accountId) };
 }
@@ -940,7 +1406,7 @@ function hydrateCart(row: any): AyWebsCart {
   };
 }
 
-function hydrateCartItem(row: any): AyWebsCartItem {
+function hydrateCartItem(row: any, pricingRules?: PricingRules): AyWebsCartItem {
   const parse = <T,>(value: unknown, fallback: T): T => {
     try {
       const parsed = JSON.parse(String(value ?? ''));
@@ -953,6 +1419,16 @@ function hydrateCartItem(row: any): AyWebsCartItem {
   const status = String(row.status || 'ACTIVE') as AyWebsCartItemStatus;
   const pricingTnd = Number(row.pricing_tnd) || 0;
   const quantity = Number(row.quantity) || 1;
+  const unitPrice = Number(row.unit_price) || 0;
+  const currency = String(row.currency || '');
+  // Match checkoutFees: recalculate this line at its actual quantity and exclude
+  // order-level local delivery, which checkout charges once for the whole cart.
+  const linePricing = pricingRules && unitPrice > 0 && currency
+    ? calculatePrice(pricingRules, unitPrice, currency, {
+        title: String(row.title || ''), quantity, includeLocalDelivery: false,
+      })
+    : null;
+  const lineTotalTnd = linePricing ? round2(linePricing.totalTND) : round2(pricingTnd * quantity);
   return {
     id: String(row.id),
     itemNumber: String(row.item_number || ''),
@@ -964,8 +1440,8 @@ function hydrateCartItem(row: any): AyWebsCartItem {
     sourceProductId: String(row.source_product_id || '') || null,
     title: String(row.title || ''),
     images: parse<string[]>(row.images, []),
-    unitPrice: Number(row.unit_price) || 0,
-    currency: String(row.currency || ''),
+    unitPrice,
+    currency,
     variantSnapshot,
     variantLabel: ayWebsVariantLabel(variantSnapshot),
     quantity,
@@ -973,7 +1449,7 @@ function hydrateCartItem(row: any): AyWebsCartItem {
     priceSnapshot,
     pricingTnd,
     pricingVersion: Number(row.pricing_version) || 0,
-    lineTotalTnd: round2(pricingTnd * quantity),
+    lineTotalTnd,
     evidenceHash: String(row.evidence_hash || ''),
     status,
     statusReason: String(row.status_reason || ''),

@@ -139,7 +139,9 @@ export const AyWebsCartScreen: React.FC<AyWebsCartScreenProps> = ({ tab, onTab, 
             <strong>{(item.unit_price * item.quantity).toLocaleString()} {item.currency}</strong>
             {/* Le montant AYROVI est TOUJOURS celui du serveur (jamais un calcul client). */}
             {item.line_total_tnd > 0 && (
-              <em className="ayw-line-tnd">≈ {item.line_total_tnd.toFixed(2)} {tr('DT', 'د.ت')}</em>
+              <em className="ayw-line-tnd">
+              ≈ {item.line_total_tnd.toFixed(2)} {tr('DT', 'د.ت')} · {tr('before local delivery', 'قبل التوصيل المحلي')}
+            </em>
             )}
           </p>
           <button type="button" className="ayw-delete" onClick={() => void remove(item.id)} aria-label={tr('Delete', 'حذف')}>
@@ -195,7 +197,7 @@ export const AyWebsCartScreen: React.FC<AyWebsCartScreenProps> = ({ tab, onTab, 
       {!loading && items.length > 0 && (
         <section className="ayw-carttotal">
           <p className="ayw-carttotal-label">
-            {tr('Total item amount', 'إجمالي قيمة المنتجات')}
+            {tr('Estimated AYROVI amount before local delivery', 'تقدير AYROVI قبل التوصيل المحلي')}
             <span>{'(' + units + ' ' + tr('Item(s)', 'منتج') + ')'}</span>
           </p>
           {/* Le montant qui fait foi : dinars, moteur tarifaire AYROVI (serveur). */}
@@ -204,8 +206,8 @@ export const AyWebsCartScreen: React.FC<AyWebsCartScreenProps> = ({ tab, onTab, 
           </p>
           <p className="ayw-carttotal-note">
             {tr(
-              'Final price computed by the AYROVI pricing engine (customs, freight, service).',
-              'السعر النهائي محسوب عبر محرك التسعير AYROVI (ديوانة، شحن، خدمة).',
+              'Estimate from the AYROVI pricing engine (customs, freight, service); local delivery is added once at checkout.',
+              'تقدير من محرك تسعير AYROVI (الديوانة والشحن والخدمة)؛ تُضاف كلفة التوصيل المحلي مرة واحدة عند الدفع.',
             )}
           </p>
           <button type="button" className="ayw-cta" disabled={bridging} onClick={() => void proceed()}>
