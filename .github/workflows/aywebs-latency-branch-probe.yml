@@ -33,4 +33,18 @@ jobs:
           node scripts/aywebs-latency-probe.mjs \
             --base "https://ayrovi-beta1.onrender.com" \
             --url "https://www.amazon.com/dp/B0GYM3V9H5" \
-            --runs 2
+            --runs 2 | tee /tmp/probe.txt
+
+      # Le journal complet du job n'est pas lisible depuis toutes les machines
+      # (blob GitHub). Les chiffres qui comptent sont donc publiés en
+      # ANNOTATIONS, lisibles par l'API : une par ligne de mesure.
+      - name: Publier les chiffres en annotations
+        if: always()
+        run: |
+          set -euo pipefail
+          while IFS= read -r line; do
+            case "$line" in
+              *"ms  http="*|*"✅"*|*"❌"*|*"hits="*|*"présent"*)
+                echo "::error title=mesure::$(printf '%s' "$line" | sed 's/::/ /g' | cut -c1-200)";;
+            esac
+          done < /tmp/probe.txt
