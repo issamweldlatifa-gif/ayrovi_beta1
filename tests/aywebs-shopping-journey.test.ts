@@ -1092,9 +1092,10 @@ describe('AYWEBs — parcours d’achat façon Buyee : les 12 cas du lot Q12', (
   });
 
   test('8. ajout : aucun faux succès — sans prix produit ni prix de variante, l’API le dit', async () => {
-    // Les listes ne publient pas de prix pour la combinaison exacte : 0 sur la
-    // fiche + prix variante inconnu doit rester non tarifable.
-    const h = harness({ prices: { amazon: 0 }, variantMode: 'lists' });
+    // The exact combination is published, but both product and variant prices
+    // are zero. Isolate the price rejection rather than failing on an unknown
+    // combination before price validation.
+    const h = harness({ prices: { amazon: 0 }, variantMode: 'combinations' });
     const failed = await request(h.app).post('/api/v1/aywebs/cart/items').set(ANONYMOUS).send(legacyAddPayload());
     expect(failed.status).toBeGreaterThanOrEqual(400);
     expect(failed.body.success).toBe(false);

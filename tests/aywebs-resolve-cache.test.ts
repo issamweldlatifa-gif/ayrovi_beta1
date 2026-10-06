@@ -68,8 +68,13 @@ function fakeScraper(options: { price?: number; delayMs?: number } = {}) {
       sourcePrice: price,
       sourceCurrency: 'USD',
       convertedPriceTND: 0, estimatedShippingTND: 0, serviceFeeTND: 0, totalPriceTND: 0,
+      // Publish one exact source combination: the selected Black / 41 in the
+      // revalidation test is known and in stock, not inferred from option lists.
       variants: store === 'amazon'
-        ? { colors: ['Black', 'White'], sizes: ['41', '42'], details: [] }
+        ? {
+            colors: ['Black', 'White'], sizes: ['41', '42'],
+            details: [{ id: 'v-black-41', color: 'Black', size: '41', stock: true, price }],
+          }
         : { colors: [], sizes: [], details: [] },
       availability: 'in_stock' as const,
       brand: store === 'amazon' ? 'Nike' : 'SHEIN',
