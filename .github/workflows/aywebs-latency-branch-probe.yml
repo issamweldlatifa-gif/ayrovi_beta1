@@ -1,0 +1,36 @@
+name: AYWEBs — mesure de latence (déclencheur de branche, temporaire)
+
+# TEMPORAIRE — ce fichier n'existe que pour déclencher la sonde depuis une
+# branche de session quand le déclenchement manuel n'est pas disponible. Il est
+# supprimé dès la mesure lue ; la version permanente est
+# `.github/workflows/aywebs-latency.yml` (workflow_dispatch uniquement).
+
+on:
+  push:
+    branches: [arena/f0cb5a18-ayrovi-beta1]
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Déploiement publié contient-il le correctif ?
+        run: |
+          set -euo pipefail
+          echo "GET https://ayrovi-beta1.onrender.com/api/v1/aywebs/health"
+          curl -sS https://ayrovi-beta1.onrender.com/api/v1/aywebs/health \
+            | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{const h=JSON.parse(d);const c=h?.data?.resolve_cache;console.log("resolve_cache présent :", Boolean(c));if(c)console.log(JSON.stringify(c));})'
+
+      - name: Sonde de latence — deux passes sur le même produit
+        run: |
+          set -euo pipefail
+          node scripts/aywebs-latency-probe.mjs \
+            --base "https://ayrovi-beta1.onrender.com" \
+            --url "https://www.amazon.com/dp/B0GYM3V9H5" \
+            --runs 2
