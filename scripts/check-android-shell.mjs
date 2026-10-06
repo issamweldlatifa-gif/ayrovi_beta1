@@ -163,15 +163,22 @@ check(
   /EXTRA_API_ORIGIN/.test(plugin) && /apiOrigin/.test(plugin),
   'sans transmission depuis la couche web, la coque n’a aucun moyen de connaître l’API'
 );
+const popupHandler = browser.match(/public boolean onCreateWindow[\s\S]*?\n\s*}\n\s*}\);/);
 check(
-  'AyWebsBrowseActivity : popups window.open() prises en charge',
-  /setSupportMultipleWindows\(true\)/.test(browser) && /onCreateWindow/.test(browser),
-  'sans cela window.open() est ignoré en silence : les popups de connexion SSO ne s’ouvrent jamais'
+  'AyWebsBrowseActivity : politique popup fail-closed explicite',
+  Boolean(popupHandler && /\breturn false;/.test(popupHandler[0])),
+  'aucun WebView enfant/transport popup n’est implémenté; le SSO qui exige window.open reste une limitation'
 );
 check(
-  'AyWebsBrowseActivity : cookies tiers désactivés',
+  'AyWebsBrowseActivity : cookies tiers désactivés par choix explicite',
   /setAcceptThirdPartyCookies\(webView,\s*false\)/.test(browser),
-  'refusés par défaut depuis Android 5.0 : les parcours de connexion bouclent'
+  'choix de confidentialité; les parcours marchand qui exigent des cookies tiers restent à valider sur appareil'
+);
+check(
+  'AyWebsBrowseActivity : pause/resume du WebView marchand',
+  /protected void onPause\(\)[\s\S]*?webView\.onPause\(\)/.test(browser)
+    && /protected void onResume\(\)[\s\S]*?webView\.onResume\(\)/.test(browser),
+  'sans hooks de cycle de vie, la vue marchande ne reçoit pas la pause/reprise de son activité'
 );
 /* ── 3ter. §5 (04/10/2026) : boutons de la barre haute RÉELLEMENT câblés ───── */
 // Le défaut : `@+id/aywebs_close` et `@+id/aywebs_refresh` existaient dans le
@@ -259,6 +266,13 @@ check(
   ['aywebs_login_required', 'aywebs_merchant_cart', 'aywebs_captcha_page', 'aywebs_service_unavailable']
     .every((key) => strings.includes(key)),
   'un état sans libellé retombe sur un texte générique'
+);
+
+check(
+  'AyWebsBrowseActivity : Add bloque le stock inconnu',
+  /boolean stockConfirmed = "AVAILABLE"\.equals\(state\) \|\| "LOW_STOCK"\.equals\(state\)/.test(browser)
+    && /quoteReady\[0\] = sourcePrice > 0 && estimateTnd > 0 && stockConfirmed;/.test(browser),
+  'seules les disponibilités explicitement publiées comme AVAILABLE ou LOW_STOCK peuvent passer'
 );
 
 /* ── 4. capacitor.config.ts ─────────────────────────────────────────────────── */

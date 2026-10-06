@@ -85,7 +85,7 @@ const DEFINITIONS: Record<string, ErrorDefinition> = {
   CAPTURE_INCOMPLETE: {
     httpStatus: 422, flowStatus: 'NEEDS_SELECTION', recoverable: true, retryAllowed: true, requiredAction: 'PROVIDE_PRODUCT_URL',
     userMessage: 'Nous n’avons pas pu lire toutes les informations du produit.',
-    technicalMessage: 'Champs normalisés manquants (title/price/currency/image/verified_price).',
+    technicalMessage: 'Champs normalisés manquants (title/price/currency/image/verified_price/verified_currency).',
   },
   CAPTURE_FAILED: {
     httpStatus: 502, flowStatus: 'FAILED', recoverable: true, retryAllowed: true, requiredAction: 'RETRY',
@@ -108,7 +108,7 @@ const DEFINITIONS: Record<string, ErrorDefinition> = {
     technicalMessage: 'variantId absent de la résolution la plus récente : snapshot obsolète.',
   },
   STOCK_UNKNOWN: {
-    httpStatus: 200, flowStatus: 'NEEDS_SELECTION', recoverable: true, retryAllowed: true, requiredAction: 'SELECT_VARIANT',
+    httpStatus: 409, flowStatus: 'NEEDS_SELECTION', recoverable: true, retryAllowed: true, requiredAction: 'SELECT_VARIANT',
     userMessage: 'Le marchand ne publie pas le stock de cette version.',
     technicalMessage: 'availability=UNKNOWN : jamais converti en AVAILABLE (§14).',
   },
@@ -146,6 +146,11 @@ const DEFINITIONS: Record<string, ErrorDefinition> = {
     httpStatus: 409, flowStatus: 'FAILED', recoverable: true, retryAllowed: true, requiredAction: 'RETRY',
     userMessage: 'Le panier est verrouillé pendant la commande.',
     technicalMessage: 'Cart status=CHECKOUT/ORDERED : mutation refusée pour préserver le snapshot.',
+  },
+  IDEMPOTENCY_CONFLICT: {
+    httpStatus: 409, flowStatus: 'FAILED', recoverable: false, retryAllowed: false, requiredAction: 'CONTACT_SUPPORT',
+    userMessage: 'Cette tentative a déjà été utilisée avec des données différentes. Recommencez l’ajout.',
+    technicalMessage: 'Une même clé d’idempotence ne peut pas représenter deux charges utiles différentes.',
   },
   AUTH_REQUIRED: {
     httpStatus: 401, flowStatus: 'FAILED', recoverable: true, retryAllowed: false, requiredAction: 'AUTHENTICATE',

@@ -20,6 +20,7 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -42,6 +43,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -77,6 +79,7 @@ public class AyWebsBrowseActivity extends Activity {
   private static final String ANALYZE_PATH = "/api/v1/aywebs/page/analyze";
   private static final String RESOLVE_PATH = "/api/v1/aywebs/product/resolve";
   private static final String CART_ITEMS_PATH = "/api/v1/aywebs/cart/items";
+  private static final String PURCHASE_REQUESTS_PATH = "/api/v1/aywebs/purchase-requests";
   /** Lecture du panier proxy pour le tiroir interne (04/10/2026). */
   private static final String CART_PATH = "/api/v1/aywebs/cart";
   /** Favoris du COMPTE : même magasin que « Mon compte » et que l'onglet web. */
@@ -137,7 +140,10 @@ public class AyWebsBrowseActivity extends Activity {
   private String apiOrigin = "";
   private String customerToken = "";
   private String currentUrl = "";
+  /** Reused only while retrying the same Add payload after an ambiguous failure. */
+  private String pendingAddRequestId = "";
   private volatile boolean productPage = false;
+  private volatile boolean purchaseSupportPage = false;
   private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
   // ── PRÉ-RÉSOLUTION (05/10/2026) ───────────────────────────────────────────
@@ -201,18 +207,11 @@ public class AyWebsBrowseActivity extends Activity {
     settings.setDomStorageEnabled(true);
     CookieManager.getInstance().setAcceptCookie(true);
 
-    // ── Connexion marchande (ajouté le 2026-10-03) ──────────────────────────
-    // Deux réglages manquaient, et tous deux cassent la CONNEXION au marchand
-    // sans le moindre message :
-    //  • setAcceptThirdPartyCookies : depuis Android 5.0 le WebView refuse les
-    //    cookies tiers par défaut. Or les parcours d'authentification
-    //    (SSO, « Se connecter avec… », paniers invités) en dépendent : la page
-    //    de login se recharge en boucle sur un écran déjà connecté.
-    //  • setSupportMultipleWindows + setJavaScriptCanOpenWindows… : sans eux,
-    //    `window.open()` est purement IGNORÉ. Les popups de login ne
-    //    s'ouvraient donc jamais, et l'utilisateur ne pouvait pas se connecter
-    //    (Buyee affiche d'ailleurs « free membership registration and login are
-    //    required » avant de commander).
+    // ── Cookies marchands : choix de confidentialité explicite ──────────────
+    // Les cookies first-party restent actifs. Les cookies tiers restent
+    // désactivés dans cette version : certains SSO marchands pourraient en
+    // dépendre, mais ce comportement n'a pas été validé sur appareil et ne doit
+    // pas être élargi implicitement.
     CookieManager.getInstance().setAcceptThirdPartyCookies(webView, false);
     settings.setSupportMultipleWindows(true);
     settings.setJavaScriptCanOpenWindowsAutomatically(false);
@@ -243,15 +242,14 @@ public class AyWebsBrowseActivity extends Activity {
       }
     });
 
-    // Popups de connexion : on les ouvre DANS la même WebView. C'est le seul
-    // moyen de garder le contexte de session du marchand (les cookies de la
-    // popup appartiennent au même profil) et, surtout, d'avoir un retour
-    // visible au lieu d'un clic sans effet.
+    // Politique popup explicite : setSupportMultipleWindows est actif pour
+    // recevoir la demande, mais aucun WebView enfant n'est créé. On refuse donc
+    // window.open() sans geste visible et on avertit l'utilisateur au lieu de
+    // prétendre que la popup s'ouvre dans cette WebView. Les parcours marchand
+    // qui exigent une popup restent une limitation connue.
     webView.setWebChromeClient(new WebChromeClient() {
       @Override
       public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
-        // Merchant popup target is unknown here; fail closed. Users can use
-        // the merchant's normal in-page navigation instead.
         Toast.makeText(AyWebsBrowseActivity.this, "Fenêtre bloquée : utilisez le lien dans la page.", Toast.LENGTH_SHORT).show();
         return false;
       }
@@ -357,6 +355,7 @@ public class AyWebsBrowseActivity extends Activity {
 
   private void setAddEnabled(boolean enabled) {
     productPage = enabled;
+    purchaseSupportPage = false;
     runOnUiThread(() -> {
       addButton.setEnabled(enabled);
       addButton.setText(enabled ? R.string.aywebs_add_to_cart : R.string.aywebs_not_product_page);
@@ -371,8 +370,11 @@ public class AyWebsBrowseActivity extends Activity {
    */
   private void setAddUnavailable(boolean unavailable) {
     productPage = false;
+    purchaseSupportPage = false;
     runOnUiThread(() -> {
-      addButton.setEnabled(!unavailable);
+      // SEARCH/HOME/CHECKOUT are not an add action; only explicit product or
+      // purchase-support states re-enable this button.
+      addButton.setEnabled(false);
       addButton.setText(unavailable ? R.string.aywebs_service_unavailable : R.string.aywebs_not_product_page);
     });
   }
@@ -433,6 +435,11 @@ public class AyWebsBrowseActivity extends Activity {
           toast(R.string.aywebs_merchant_cart_explained);
           return;
         }
+        String fallback = data.optString("fallback", "");
+        if ("purchase_request".equals(fallback) || "store_request".equals(fallback)) {
+          setPurchaseSupportEnabled();
+          return;
+        }
         setAddUnavailable(false);
       } catch (Exception error) {
         // Panne réseau / service indisponible ≠ page non éligible.
@@ -444,15 +451,30 @@ public class AyWebsBrowseActivity extends Activity {
   /** Libellé explicatif sur le bouton, sans le réactiver (rien à ajouter ici). */
   private void setAddLabel(int resId) {
     productPage = false;
+    purchaseSupportPage = false;
     runOnUiThread(() -> {
       addButton.setEnabled(false);
       addButton.setText(resId);
     });
   }
 
+  private void setPurchaseSupportEnabled() {
+    productPage = false;
+    purchaseSupportPage = true;
+    runOnUiThread(() -> {
+      addButton.setEnabled(true);
+      addButton.setText(R.string.aywebs_purchase_support);
+    });
+  }
+
   /** §13/§15 : ajout réel — feuille de variantes par-dessus le marchand. */
   private void onAddToCart() {
-    if (!productPage || currentUrl.isEmpty()) return;
+    if (currentUrl.isEmpty()) return;
+    if (purchaseSupportPage) {
+      showPurchaseSupportSheet(currentUrl);
+      return;
+    }
+    if (!productPage) return;
     final String url = currentUrl;
 
     // 1) Pré-résolution fraîche pour CETTE url : la feuille s'ouvre tout de
@@ -533,12 +555,79 @@ public class AyWebsBrowseActivity extends Activity {
     runOnUiThread(() -> Toast.makeText(this, text, Toast.LENGTH_LONG).show());
   }
 
+  /** Unsupported/capture-disabled links always lead to a real human-review path. */
+  private void showPurchaseSupportSheet(final String url) {
+    if (apiOrigin.isEmpty()) { toast(R.string.aywebs_service_unavailable); return; }
+    final Dialog dialog = new Dialog(this);
+    dialog.setContentView(R.layout.sheet_aywebs_purchase_support);
+    final TextView message = dialog.findViewById(R.id.aywebs_support_message);
+    final TextView error = dialog.findViewById(R.id.aywebs_support_error);
+    final android.widget.EditText productName = dialog.findViewById(R.id.aywebs_support_product_name);
+    final android.widget.EditText requirements = dialog.findViewById(R.id.aywebs_support_requirements);
+    final Spinner quantity = dialog.findViewById(R.id.aywebs_support_quantity);
+    final Button submit = dialog.findViewById(R.id.aywebs_support_send);
+    dialog.findViewById(R.id.aywebs_support_close).setOnClickListener(v -> dialog.dismiss());
+    quantity.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item,
+        new String[] {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"}));
+
+    submit.setOnClickListener(v -> {
+      final String name = productName.getText().toString().trim();
+      final String details = requirements.getText().toString().trim();
+      if (name.isEmpty() && details.isEmpty()) {
+        error.setText(R.string.aywebs_support_required);
+        error.setVisibility(View.VISIBLE);
+        return;
+      }
+      final int count;
+      try { count = Integer.parseInt(String.valueOf(quantity.getSelectedItem())); }
+      catch (Exception ignored) { error.setText(R.string.aywebs_support_required); error.setVisibility(View.VISIBLE); return; }
+      final JSONObject body;
+      try {
+        body = new JSONObject()
+            .put("product_url", url)
+            .put("product_name", name)
+            .put("requirements", details)
+            .put("quantity", count);
+      } catch (Exception failure) {
+        error.setText(R.string.aywebs_add_failed);
+        error.setVisibility(View.VISIBLE);
+        return;
+      }
+      submit.setEnabled(false);
+      error.setVisibility(View.GONE);
+      executor.execute(() -> {
+        try {
+          JSONObject response = postOnce(apiOrigin + PURCHASE_REQUESTS_PATH, body);
+          JSONObject data = response.optJSONObject("data");
+          String requestNumber = data == null ? "" : data.optString("request_number", "");
+          String status = data == null ? "SUBMITTED" : data.optString("status", "SUBMITTED");
+          runOnUiThread(() -> {
+            message.setText(getString(R.string.aywebs_support_sent, requestNumber, status));
+            submit.setVisibility(View.GONE);
+            productName.setVisibility(View.GONE);
+            requirements.setVisibility(View.GONE);
+            quantity.setVisibility(View.GONE);
+          });
+        } catch (Exception failure) {
+          runOnUiThread(() -> {
+            submit.setEnabled(true);
+            showSheetError(error, failure.getMessage());
+          });
+        }
+      });
+    });
+    showAyWebsSheetDialog(dialog);
+  }
+
   /**
    * Feuille de variantes PAR-DESSUS la page marchand. La vue native suit le
    * panneau de sélection de la référence, sans quitter le magasin : contenu en
    * ligne image/titre, options publiées, quantité et ajout.
    */
   private void showVariantSheet(JSONObject product) {
+    // A new sheet is a new user intention. A failed post keeps this id in the
+    // sheet so a manual retry can replay the first result instead of adding twice.
+    pendingAddRequestId = "";
     Dialog dialog = new Dialog(this);
     dialog.setContentView(R.layout.dialog_aywebs_variant_sheet);
     TextView name = dialog.findViewById(R.id.aywebs_sheet_product);
@@ -568,26 +657,16 @@ public class AyWebsBrowseActivity extends Activity {
       availabilityLine.setVisibility(View.VISIBLE);
     }
 
-    double price = product.optDouble("price", 0);
-    JSONObject ayroviPricing = product.optJSONObject("ayrovi_pricing");
-    double estimateTnd = ayroviPricing == null ? 0 : ayroviPricing.optDouble("total_tnd", 0);
-    boolean quoteReady = price > 0 && estimateTnd > 0;
-    if (price > 0) {
-      String sourcePrice = money(price) + " " + product.optString("currency", "").trim();
-      priceLine.setText(quoteReady
-          ? sourcePrice + "  ·  ≈ " + money(estimateTnd) + " TND"
-          : sourcePrice);
-      priceLine.setVisibility(View.VISIBLE);
-    }
-    if (!quoteReady) {
-      errorLine.setText(R.string.aywebs_quote_unavailable);
-      errorLine.setVisibility(View.VISIBLE);
-      confirm.setEnabled(false);
-      confirm.setAlpha(0.55f);
-    }
+    final boolean[] quoteReady = {false};
 
     qty.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item,
         new String[] {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"}));
+    qty.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+      @Override public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+        pendingAddRequestId = "";
+      }
+      @Override public void onNothingSelected(AdapterView<?> parent) { }
+    });
 
     Map<String, Spinner> groupSpinners = new LinkedHashMap<>();
     JSONArray groups = product.optJSONArray("variant_groups");
@@ -612,27 +691,34 @@ public class AyWebsBrowseActivity extends Activity {
         groupsBox.addView(label);
         Spinner spinner = new Spinner(this);
         List<String> options = new ArrayList<>();
+        options.add(getString(R.string.aywebs_choose_option));
         for (int valueIndex = 0; valueIndex < values.length(); valueIndex++) {
           options.add(values.optString(valueIndex, ""));
         }
         spinner.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, options));
+        spinner.setSelection(0);
+        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+          @Override public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+            pendingAddRequestId = "";
+            refreshVariantQuote(product, groupSpinners, priceLine, availabilityLine, errorLine, confirm, quoteReady);
+          }
+          @Override public void onNothingSelected(AdapterView<?> parent) { }
+        });
         groupsBox.addView(spinner);
         groupSpinners.put(attribute, spinner);
       }
     }
 
+    refreshVariantQuote(product, groupSpinners, priceLine, availabilityLine, errorLine, confirm, quoteReady);
     close.setOnClickListener(v -> dialog.dismiss());
     confirm.setOnClickListener(v -> {
-      if (!quoteReady) return;
-      JSONObject attributes = new JSONObject();
+      if (!quoteReady[0]) return;
+      JSONObject attributes = selectedVariantAttributes(product, groupSpinners);
       try {
-        // Uniquement les attributs publiés par le marchand et choisis ici :
-        // la coque n'ajoute plus `condition` (cause racine de l'échec corrigé).
-        for (Map.Entry<String, Spinner> entry : groupSpinners.entrySet()) {
-          attributes.put(entry.getKey(), String.valueOf(entry.getValue().getSelectedItem()));
-        }
         int quantity = Integer.parseInt(String.valueOf(qty.getSelectedItem()));
+        if (pendingAddRequestId.isEmpty()) pendingAddRequestId = "aywebs-android-" + UUID.randomUUID();
         JSONObject body = new JSONObject()
+            .put("request_id", pendingAddRequestId)
             .put("product_id", product.optString("product_id", ""))
             .put("source_url", product.optString("source_url", currentUrl))
             .put("store_id", product.optString("store_id", ""))
@@ -650,6 +736,7 @@ public class AyWebsBrowseActivity extends Activity {
             JSONObject data = response.optJSONObject("data");
             JSONObject item = data == null ? null : data.optJSONObject("item");
             runOnUiThread(() -> {
+              pendingAddRequestId = "";
               addButton.setText(R.string.aywebs_add_to_cart);
               dialog.dismiss();
               showAddedDialog(item, product);
@@ -668,6 +755,150 @@ public class AyWebsBrowseActivity extends Activity {
       }
     });
     showAyWebsSheetDialog(dialog);
+  }
+
+  /** Read only explicit single-value attributes and choices made in each spinner. */
+  private JSONObject selectedVariantAttributes(JSONObject product, Map<String, Spinner> groupSpinners) {
+    JSONObject selected = new JSONObject();
+    JSONArray groups = product.optJSONArray("variant_groups");
+    if (groups == null) return selected;
+    for (int index = 0; index < groups.length(); index++) {
+      JSONObject group = groups.optJSONObject(index);
+      if (group == null) continue;
+      String attribute = group.optString("attribute", "");
+      JSONArray values = group.optJSONArray("values");
+      if (attribute.isEmpty() || values == null || values.length() == 0) continue;
+      try {
+        if (values.length() == 1) {
+          selected.put(attribute, values.optString(0, ""));
+          continue;
+        }
+        Spinner spinner = groupSpinners.get(attribute);
+        // Spinner row 0 is the non-selection placeholder, not the first variant.
+        if (spinner != null && spinner.getSelectedItemPosition() > 0) {
+          selected.put(attribute, String.valueOf(spinner.getSelectedItem()));
+        }
+      } catch (Exception ignored) { }
+    }
+    return selected;
+  }
+
+  /** Resolve and display price + availability for the exact current selection. */
+  private void refreshVariantQuote(
+      JSONObject product,
+      Map<String, Spinner> groupSpinners,
+      TextView priceLine,
+      TextView availabilityLine,
+      TextView errorLine,
+      Button confirm,
+      boolean[] quoteReady) {
+    JSONArray groups = product.optJSONArray("variant_groups");
+    boolean hasVariants = false;
+    boolean complete = true;
+    if (groups != null) {
+      for (int index = 0; index < groups.length(); index++) {
+        JSONObject group = groups.optJSONObject(index);
+        JSONArray values = group == null ? null : group.optJSONArray("values");
+        if (values == null || values.length() == 0) continue;
+        hasVariants = true;
+        if (values.length() > 1) {
+          String attribute = group.optString("attribute", "");
+          Spinner spinner = groupSpinners.get(attribute);
+          if (spinner == null || spinner.getSelectedItemPosition() <= 0) complete = false;
+        }
+      }
+    }
+
+    if (!complete) {
+      quoteReady[0] = false;
+      confirm.setEnabled(false);
+      confirm.setAlpha(0.55f);
+      priceLine.setVisibility(View.GONE);
+      availabilityLine.setText(R.string.aywebs_choose_variants);
+      availabilityLine.setVisibility(View.VISIBLE);
+      errorLine.setVisibility(View.GONE);
+      return;
+    }
+
+    JSONObject selected = selectedVariantAttributes(product, groupSpinners);
+    JSONObject selectedVariant = null;
+    if (hasVariants) {
+      JSONArray details = product.optJSONArray("variant_details");
+      if (details != null) {
+        for (int index = 0; index < details.length(); index++) {
+          JSONObject candidate = details.optJSONObject(index);
+          JSONObject candidateAttributes = candidate == null ? null : candidate.optJSONObject("attributes");
+          if (candidate != null && candidateAttributes != null && sameVariantAttributes(selected, candidateAttributes)) {
+            selectedVariant = candidate;
+            break;
+          }
+        }
+      }
+      if (selectedVariant == null) {
+        quoteReady[0] = false;
+        confirm.setEnabled(false);
+        confirm.setAlpha(0.55f);
+        priceLine.setVisibility(View.GONE);
+        availabilityLine.setText(R.string.aywebs_availability_unknown);
+        availabilityLine.setVisibility(View.VISIBLE);
+        errorLine.setText(R.string.aywebs_variant_not_found);
+        errorLine.setVisibility(View.VISIBLE);
+        return;
+      }
+    }
+
+    double sourcePrice = selectedVariant == null
+        ? product.optDouble("price", 0)
+        : selectedVariant.optDouble("quoted_price", 0);
+    String currency = selectedVariant == null
+        ? product.optString("currency", "").trim()
+        : selectedVariant.optString("quoted_currency", product.optString("currency", "")).trim();
+    JSONObject pricing = selectedVariant == null
+        ? product.optJSONObject("ayrovi_pricing")
+        : selectedVariant.optJSONObject("ayrovi_pricing");
+    double estimateTnd = pricing == null ? 0 : pricing.optDouble("total_tnd", 0);
+    String state = selectedVariant == null
+        ? (product.optJSONObject("availability") == null ? "UNKNOWN" : product.optJSONObject("availability").optString("state", "UNKNOWN"))
+        : selectedVariant.optString("availability", "UNKNOWN");
+
+    String availabilityText = availabilityLabel(state);
+    availabilityLine.setText(availabilityText.isEmpty() ? getString(R.string.aywebs_availability_unknown) : availabilityText);
+    availabilityLine.setVisibility(View.VISIBLE);
+
+    boolean stockConfirmed = "AVAILABLE".equals(state) || "LOW_STOCK".equals(state);
+    quoteReady[0] = sourcePrice > 0 && estimateTnd > 0 && stockConfirmed;
+    if (sourcePrice > 0) {
+      String source = money(sourcePrice) + (currency.isEmpty() ? "" : " " + currency);
+      priceLine.setText(estimateTnd > 0 ? source + "  ·  ≈ " + money(estimateTnd) + " TND" : source);
+      priceLine.setVisibility(View.VISIBLE);
+    } else {
+      priceLine.setVisibility(View.GONE);
+    }
+
+    if ("OUT_OF_STOCK".equals(state)) {
+      errorLine.setText(R.string.aywebs_availability_out);
+      errorLine.setVisibility(View.VISIBLE);
+    } else if (selectedVariant != null && "PRODUCT".equals(selectedVariant.optString("price_source", ""))) {
+      errorLine.setText(R.string.aywebs_price_fallback);
+      errorLine.setVisibility(View.VISIBLE);
+    } else if (!quoteReady[0]) {
+      errorLine.setText(R.string.aywebs_quote_unavailable);
+      errorLine.setVisibility(View.VISIBLE);
+    } else {
+      errorLine.setVisibility(View.GONE);
+    }
+    confirm.setEnabled(quoteReady[0]);
+    confirm.setAlpha(quoteReady[0] ? 1f : 0.55f);
+  }
+
+  private boolean sameVariantAttributes(JSONObject selected, JSONObject candidate) {
+    if (selected.length() != candidate.length()) return false;
+    java.util.Iterator<String> keys = selected.keys();
+    while (keys.hasNext()) {
+      String key = keys.next();
+      if (!selected.optString(key, "").equals(candidate.optString(key, ""))) return false;
+    }
+    return true;
   }
 
   /** Erreur de devis ou d'ajout visible dans la feuille, pas perdue en toast. */
@@ -772,12 +1003,13 @@ public class AyWebsBrowseActivity extends Activity {
     }
   }
 
-  /** Disponibilité CONFIRMÉE uniquement : UNKNOWN n'est jamais montré comme dispo. */
+  /** UNKNOWN est explicite et n'est jamais présenté comme disponible. */
   private String availabilityLabel(String state) {
     switch (state) {
       case "AVAILABLE": return getString(R.string.aywebs_availability_in_stock);
       case "LOW_STOCK": return getString(R.string.aywebs_availability_low);
       case "OUT_OF_STOCK": return getString(R.string.aywebs_availability_out);
+      case "UNKNOWN": return getString(R.string.aywebs_availability_unknown);
       default: return "";
     }
   }
@@ -1203,6 +1435,10 @@ public class AyWebsBrowseActivity extends Activity {
     connection.setReadTimeout(60_000);
     connection.setRequestProperty("content-type", "application/json");
     if (!sessionId.isEmpty()) connection.setRequestProperty("x-session-id", sessionId);
+    customerToken = NativeSession.read(this);
+    if (!customerToken.isEmpty()) {
+      connection.setRequestProperty("authorization", "Bearer " + customerToken);
+    }
     connection.setDoOutput(true);
     try (OutputStream out = connection.getOutputStream()) {
       out.write(body.toString().getBytes(StandardCharsets.UTF_8));
@@ -1259,6 +1495,18 @@ public class AyWebsBrowseActivity extends Activity {
       super(userMessage == null || userMessage.isEmpty() ? "AYWEBS_HTTP_" + status : userMessage);
       this.status = status;
     }
+  }
+
+  @Override
+  protected void onPause() {
+    super.onPause();
+    if (webView != null) webView.onPause();
+  }
+
+  @Override
+  protected void onResume() {
+    super.onResume();
+    if (webView != null) webView.onResume();
   }
 
   @Override

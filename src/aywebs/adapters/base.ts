@@ -147,8 +147,9 @@ export abstract class BaseStoreAdapter implements AyWebsStoreAdapter {
       };
     }
 
-    if (variantAttributes && Object.keys(variantAttributes).length && (product.variants || []).length) {
-      // La variante demandée n'existe plus chez le marchand : le client choisit (§30).
+    if (variantAttributes && Object.keys(variantAttributes).length) {
+      // Une sélection explicite non reconnue n'hérite jamais du stock produit :
+      // des listes d'options seules ne prouvent pas que cette variante existe.
       return {
         state: 'UNKNOWN',
         reason: `variante_absente_de_la_source:${ayWebsVariantKey(variantAttributes)}`,

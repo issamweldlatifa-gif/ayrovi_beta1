@@ -2,7 +2,7 @@ import { Router, type NextFunction, type Request, type Response } from 'express'
 import multer from 'multer';
 import type { QatafoDatabase as AyroviDatabase } from '../db/database';
 import type { SmartLinkScraper } from '../scraper/scraper';
-import { calculatePrice } from '../services/pricing';
+import { calculatePrice, type PricingRules } from '../services/pricing';
 import { cardGatewayAvailable } from '../services/paymentGateway';
 import { renderedProviderReady } from '../scraper/renderedPageFetcher';
 import { getAyroviAiCore } from '../ai-core/core';
@@ -16,7 +16,7 @@ import {
 } from '../../shared/aywebsStores';
 import { AYWEBS_FUNNEL_EVENTS } from '../../shared/aywebsTypes';
 import { AYWEBS_ADAPTER_DESCRIPTORS } from './adapters/registry';
-import { AyWebsCaptureError } from './adapters/contract';
+import { AyWebsCaptureError, type AyWebsSourceProduct } from './adapters/contract';
 import { AyWebsDomainError } from './errors';
 import { AYWEBS_EVENTS, recordAyWebsEvent } from './analytics';
 import { ayWebsMetrics, logAyWebsOperation, recordAyWebsMetric } from './events';
@@ -36,6 +36,7 @@ import {
 import {
   acceptAyWebsCartPriceChange,
   addAyWebsCartItem,
+  saveAyWebsCartAddBridgeOutcome,
   normalizeAttributes,
   readAyWebsCartView,
   removeAyWebsCartItem,
@@ -143,6 +144,15 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
   };
 
   const requestIdOf = (req: Request): string => String((req as any).requestId || '');
+  /** Idempotency key supplied by the caller; requestIdOf remains per-request tracing. */
+  const idempotencyKeyOf = (req: Request): string | null => {
+    const value = req.get('Idempotency-Key')
+      || req.body?.idempotency_key
+      || req.body?.idempotencyKey
+      || req.body?.request_id
+      || req.body?.requestId;
+    return value == null ? null : String(value);
+  };
 
   /** Enveloppe les gestionnaires : toute erreur devient un contrat (§44). */
   const handle = (fn: (req: Request, res: Response) => unknown) =>
@@ -477,9 +487,8 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
     if (!ctx.flags.captureEnabled) throw new AyWebsDomainError('CAPTURE_DISABLED');
 
     const rawUrl = scraper.cleanPastedUrl(String(req.body?.url || ''));
-    const storeId = req.body?.store == null || req.body?.store_id == null
-      ? null
-      : String(req.body.store ?? req.body.store_id);
+    const requestedStoreId = req.body?.store_id ?? req.body?.store;
+    const storeId = requestedStoreId == null ? null : String(requestedStoreId).slice(0, 40);
     const variantAttributes = normalizeAttributes(req.body?.variant || req.body?.variant_attributes);
     const quantity = Number(req.body?.quantity ?? 1);
     rejectProvidedPage(req.body?.page);
@@ -512,7 +521,13 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
         success: true,
         capture_id: result.captureId,
         status: result.missing.length ? 'NEEDS_SELECTION' : 'READY',
-        data: productPayload(result.product, { fromCache: result.fromCache, cacheAgeMs: result.cacheAgeMs }),
+        data: productPayload(
+          result.product,
+          { fromCache: result.fromCache, cacheAgeMs: result.cacheAgeMs },
+          result.sourceProduct.variants,
+          db.getPricingRules(),
+          { priceVerified: result.scrapedProduct.priceVerified === true, currencyVerified: result.scrapedProduct.currencyVerified === true },
+        ),
         // Honnêteté (§51) : le client sait si la fiche vient d'être relue ou
         // servie depuis la lecture mémorisée, et depuis combien de temps.
         from_cache: result.fromCache,
@@ -565,16 +580,9 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
         store_id: product.storeId,
         source_url: product.sourceUrl,
         variant_groups: product.variantGroups,
-        variants: product.variants.map((variant) => ({
-          source_variant_id: variant.sourceVariantId,
-          attributes: variant.attributes,
-          label: variant.label,
-          price: variant.price,
-          currency: variant.currency,
-          availability: variant.availability,
-          availability_reason: variant.availabilityReason,
-          image: variant.image,
-        })),
+        variants: ayWebsVariantPricingPayload(
+          product.variants, product, db.getPricingRules(), product.priceVerified && product.currencyVerified,
+        ),
         /** §13 : la sélection est exigée si le marchand publie des attributs. */
         selection_required: product.variantGroups.some((group) => group.values.length > 0),
         availability: product.availability.state,
@@ -655,7 +663,10 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
         return sendAyWebsError(res, new AyWebsDomainError('PRODUCT_UNAVAILABLE'), 409, {
           capture_id: result.captureId,
           status: 'NEEDS_SELECTION',
-          data: productPayload(result.product),
+          data: productPayload(result.product, null, result.sourceProduct.variants, db.getPricingRules(), {
+            priceVerified: result.scrapedProduct.priceVerified === true,
+            currencyVerified: result.scrapedProduct.currencyVerified === true,
+          }),
         });
       }
       if (!result.pricing || result.pricing.restricted) {
@@ -685,7 +696,13 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
         status: 'READY',
         product: result.scrapedProduct,
         normalized_product: normalizedProductV1(result),
-        data: productPayload(result.product, { fromCache: result.fromCache, cacheAgeMs: result.cacheAgeMs }),
+        data: productPayload(
+          result.product,
+          { fromCache: result.fromCache, cacheAgeMs: result.cacheAgeMs },
+          result.sourceProduct.variants,
+          db.getPricingRules(),
+          { priceVerified: result.scrapedProduct.priceVerified === true, currencyVerified: result.scrapedProduct.currencyVerified === true },
+        ),
         from_cache: result.fromCache,
         cache_age_ms: result.cacheAgeMs,
         product_id: result.productId,
@@ -753,6 +770,7 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
     if (!ctx.flags.enabled) throw new AyWebsDomainError('AYWEBS_DISABLED');
     trackAyWebsFunnel(ctx, 'add_to_cart_clicked', { store: req.body?.store }, identity.sessionId);
 
+    const idempotencyKey = idempotencyKeyOf(req);
     const result = await addAyWebsCartItem(ctx.resolver, {
       sessionId: identity.sessionId,
       accountId: identity.accountId,
@@ -762,10 +780,11 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
       variantAttributes: normalizeAttributes(req.body?.variant || req.body?.variant_attributes),
       quantity: Number(req.body?.quantity ?? 1),
       customerNote: req.body?.customer_note ? String(req.body.customer_note) : '',
+      idempotencyKey,
       requestId: requestIdOf(req),
     });
 
-    trackAyWebsNavigation(ctx, {
+    if (!result.idempotentReplay) trackAyWebsNavigation(ctx, {
       sessionId: identity.sessionId,
       accountId: identity.accountId,
       storeId: result.item.storeId,
@@ -780,39 +799,55 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
     // Un échec du pont ne fait JAMAIS échouer l'ajout : le panier AYWEBs reste
     // la source, et « Proceed to order page » reprend la liaison.
     let bridged: { linked: boolean; cart_item_id: string | null; quantity: number | null; reason: string } | null = null;
-    try {
-      // Le pont est IDEMPOTENT : première liaison = création de la ligne AYROVI,
-      // appels suivants = remise de la quantité au niveau AYWEBs. Jamais +1.
-      const bridge = bridgeAyWebsCartToAyrovi(db, {
-        sessionId: identity.sessionId,
-        accountId: identity.accountId,
-        itemIds: [result.item.id],
-        requestId: requestIdOf(req),
-      });
-      const line = bridge.moved[0];
-      if (line) {
-        bridged = {
-          linked: true,
-          cart_item_id: line.cartItemId,
-          quantity: line.quantity,
-          reason: line.synced ? 'SYNCED' : 'LINKED',
-        };
-      } else {
-        bridged = {
-          linked: false,
-          cart_item_id: null,
-          quantity: null,
-          reason: bridge.skipped[0]?.code || 'BRIDGE_SKIPPED',
-        };
+    if (result.idempotentReplay) {
+      // Replay the first bridge outcome verbatim; never repeat its side effect.
+      // If an older snapshot predates bridge metadata, report no claimed link.
+      bridged = result.ayrovi || { linked: false, cart_item_id: null, quantity: null, reason: 'NOT_BRIDGED' };
+    } else {
+      try {
+        // Le pont est IDEMPOTENT : première liaison = création de la ligne AYROVI,
+        // appels suivants = remise de la quantité au niveau AYWEBs. Jamais +1.
+        const bridge = bridgeAyWebsCartToAyrovi(db, {
+          sessionId: identity.sessionId,
+          accountId: identity.accountId,
+          itemIds: [result.item.id],
+          requestId: requestIdOf(req),
+        });
+        const line = bridge.moved[0];
+        if (line) {
+          bridged = {
+            linked: true,
+            cart_item_id: line.cartItemId,
+            quantity: line.quantity,
+            reason: line.synced ? 'SYNCED' : 'LINKED',
+          };
+        } else {
+          bridged = {
+            linked: false,
+            cart_item_id: null,
+            quantity: null,
+            reason: bridge.skipped[0]?.code || 'BRIDGE_SKIPPED',
+          };
+        }
+      } catch (bridgeError) {
+        console.error('[AyWebs][Bridge] liaison après ajout impossible:', bridgeError instanceof Error ? bridgeError.message : bridgeError);
+        bridged = { linked: false, cart_item_id: null, quantity: null, reason: 'BRIDGE_FAILED' };
       }
-    } catch (bridgeError) {
-      console.error('[AyWebs][Bridge] liaison après ajout impossible:', bridgeError instanceof Error ? bridgeError.message : bridgeError);
+      if (!bridged) bridged = { linked: false, cart_item_id: null, quantity: null, reason: 'BRIDGE_FAILED' };
+      result.ayrovi = bridged;
+      saveAyWebsCartAddBridgeOutcome(db, identity, idempotencyKey, bridged);
     }
 
-    trackAyWebsFunnel(ctx, 'add_to_cart_succeeded', { store: result.item.storeId }, identity.sessionId);
+    if (!result.idempotentReplay) trackAyWebsFunnel(ctx, 'add_to_cart_succeeded', { store: result.item.storeId }, identity.sessionId);
     res.status(201).json({
       success: true,
-      data: { item: cartItemPayload(result.item), duplicate: result.duplicate, message: result.message, ayrovi: bridged },
+      data: {
+        item: cartItemPayload(result.item),
+        duplicate: result.duplicate,
+        idempotent_replay: result.idempotentReplay,
+        message: result.message,
+        ayrovi: bridged,
+      },
       cart: cartPayload(result.view, linkedStateFor(db, identity, result.view)),
     });
   }));
@@ -901,9 +936,31 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
   }));
 
   /** Pont vers le panier AYROVI existant (§2 : aucun second panier côté AYROVI). */
-  router.post('/cart/bridge-to-ayrovi', optionalAyWebsCustomer(db), handle((req, res) => {
+  router.post('/cart/bridge-to-ayrovi', optionalAyWebsCustomer(db), handle(async (req, res) => {
     const identity = identityOf(req, res);
     if (!identity) return;
+
+    // The bridge is the final server-side gate, not a trusted continuation of
+    // the client cart screen. Force a fresh merchant read before issuing a
+    // verified AYROVI price token or syncing any line.
+    const verification = await verifyAyWebsCart(ctx.resolver, {
+      sessionId: identity.sessionId,
+      accountId: identity.accountId,
+      recheckSource: true,
+    });
+    if (!verification.view.cart || verification.view.items.length === 0) {
+      throw new AyWebsDomainError('CART_EMPTY');
+    }
+    if (!verification.view.totals.checkoutReady) {
+      return res.status(409).json({
+        success: false,
+        code: 'AYWEBS_SOURCE_VERIFICATION_REQUIRED',
+        error: verification.view.blockers[0]?.message || 'Vérifiez les articles AYWEBs avant de continuer.',
+        data: { changes: verification.changes, blockers: verification.view.blockers },
+        cart: cartPayload(verification.view, linkedStateFor(db, identity, verification.view)),
+      });
+    }
+
     const result = bridgeAyWebsCartToAyrovi(db, {
       sessionId: identity.sessionId,
       accountId: identity.accountId,
@@ -932,9 +989,26 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
     res.json({ success: true, data: ayWebsCheckoutPreviewPayload(preview) });
   }));
 
-  router.post('/orders', requireAyWebsCustomer(db), handle((req, res) => {
+  router.post('/orders', requireAyWebsCustomer(db), handle(async (req, res) => {
     const identity = identityOf(req, res);
     if (!identity) return;
+    const verification = await verifyAyWebsCart(ctx.resolver, {
+      sessionId: identity.sessionId,
+      accountId: identity.accountId,
+      recheckSource: true,
+    });
+    if (!verification.view.cart || verification.view.items.length === 0) {
+      throw new AyWebsDomainError('CART_EMPTY');
+    }
+    if (!verification.view.totals.checkoutReady) {
+      return res.status(409).json({
+        success: false,
+        code: 'AYWEBS_SOURCE_VERIFICATION_REQUIRED',
+        error: verification.view.blockers[0]?.message || 'Vérifiez les articles AYWEBs avant de continuer.',
+        data: { changes: verification.changes, blockers: verification.view.blockers },
+        cart: cartPayload(verification.view, linkedStateFor(db, identity, verification.view)),
+      });
+    }
     const { order, preview } = createAyWebsOrder(db, {
       sessionId: identity.sessionId,
       accountId: identity.accountId,
@@ -1160,9 +1234,50 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
  * Sérialisation HTTP stable (contrats consommés par le client)
  * ------------------------------------------------------------------ */
 
+/**
+ * Price only the exact source variant when the merchant published its price;
+ * otherwise use the product's server-stored price, never a client amount.
+ */
+function ayWebsVariantPricingPayload(
+  variants: AyWebsSourceProduct['variants'],
+  product: { title: string; price: number; currency: string },
+  rules: PricingRules,
+  quoteVerified: boolean,
+) {
+  return variants.map((variant) => {
+    const hasVariantPrice = Number.isFinite(Number(variant.price)) && Number(variant.price) > 0;
+    const quotedPrice = hasVariantPrice ? Number(variant.price) : Number(product.price);
+    const quotedCurrency = (hasVariantPrice ? variant.currency || product.currency : product.currency).trim().toUpperCase();
+    const quote = quoteVerified && quotedPrice > 0 && quotedCurrency
+      ? calculatePrice(rules, quotedPrice, quotedCurrency, { title: product.title })
+      : null;
+    const usableQuote = quote && !quote.restricted && quote.totalTND > 0 ? quote : null;
+    return {
+      source_variant_id: variant.sourceVariantId,
+      attributes: variant.attributes,
+      label: variant.label,
+      price: variant.price,
+      currency: variant.currency,
+      quoted_price: quoteVerified && quotedPrice > 0 ? quotedPrice : null,
+      quoted_currency: quoteVerified ? quotedCurrency || null : null,
+      price_source: !quoteVerified ? 'UNKNOWN' : hasVariantPrice ? 'VARIANT' : quotedPrice > 0 ? 'PRODUCT' : 'UNKNOWN',
+      availability: variant.availability,
+      availability_reason: variant.availabilityReason,
+      image: variant.image,
+      ayrovi_pricing: usableQuote ? {
+        total_tnd: usableQuote.totalTND,
+        pricing_version: usableQuote.pricingVersion,
+      } : null,
+    };
+  });
+}
+
 function productPayload(
   product: Awaited<ReturnType<typeof resolveAyWebsProduct>>['product'],
   cache: { fromCache: boolean; cacheAgeMs: number | null } | null = null,
+  sourceVariants: AyWebsSourceProduct['variants'] = [],
+  pricingRules?: PricingRules,
+  quoteEvidence: { priceVerified: boolean; currencyVerified: boolean } = { priceVerified: false, currencyVerified: false },
 ) {
   return {
     product_id: product.productId,
@@ -1180,7 +1295,17 @@ function productPayload(
     images: product.images,
     price: product.price,
     currency: product.currency,
+    price_verified: quoteEvidence.priceVerified,
+    currency_verified: quoteEvidence.currencyVerified,
     variants: product.variants,
+    // Full source combinations keep per-option price, currency and stock visible
+    // to the client; all AYROVI quotes are still calculated here on the server.
+    variant_details: pricingRules
+      ? ayWebsVariantPricingPayload(
+          sourceVariants, product, pricingRules,
+          quoteEvidence.priceVerified && quoteEvidence.currencyVerified,
+        )
+      : [],
     variant_groups: product.variantGroups,
     // État publié par la source ('' → null) : la coque ne doit jamais écrire
     // « New » par défaut, seulement recopier une donnée vérifiable.
@@ -1223,6 +1348,7 @@ function normalizedProductV1(result: Awaited<ReturnType<typeof resolveAyWebsProd
       captured_at: scrapedProduct.scrapedAt,
       extraction: {
         verified: scrapedProduct.priceVerified === true,
+        currency_verified: scrapedProduct.currencyVerified === true,
         provider: scrapedProduct.verificationProvider || null,
         method: scrapedProduct.verificationMethod || null,
         failure_code: scrapedProduct.verificationFailureCode || null,

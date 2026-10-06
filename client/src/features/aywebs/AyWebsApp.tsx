@@ -62,7 +62,9 @@ export const AyWebsApp: React.FC<AyWebsAppProps> = ({
     if (section === 'wish') { setTab('wish'); }
     const shared = (params.get('url') || params.get('text') || '').trim();
     const match = shared.match(/https?:\/\/[^\s<>]+/i)?.[0];
-    if (match) setSheet({ url: match, storeId: params.get('store') });
+    // Even malformed non-empty shares enter the sheet so the user sees the
+    // server's invalid-link guidance instead of being silently dropped.
+    if (shared) setSheet({ url: match || shared, storeId: match ? params.get('store') : null });
   }, []);
 
   useEffect(() => {

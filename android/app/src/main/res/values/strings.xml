@@ -15,6 +15,15 @@
     <string name="aywebs_wish">Favoris</string>
     <string name="aywebs_add_to_cart">Add to Cart</string>
     <string name="aywebs_not_product_page">Page non éligible</string>
+    <string name="aywebs_purchase_support">Purchase Support</string>
+    <string name="aywebs_purchase_support_title">Demande de soutien à l’achat</string>
+    <string name="aywebs_purchase_support_message">Ce lien ne peut pas être capturé. Votre demande sera examinée par l’équipe AYROVI. Elle n’ajoute rien au panier et ne déclenche aucun achat automatique chez le marchand.</string>
+    <string name="aywebs_support_product_name">Nom du produit (facultatif)</string>
+    <string name="aywebs_support_requirements">Version souhaitée ou détails de la demande</string>
+    <string name="aywebs_support_quantity">Quantité</string>
+    <string name="aywebs_support_send">Envoyer pour examen</string>
+    <string name="aywebs_support_required">Indiquez le produit ou ses exigences.</string>
+    <string name="aywebs_support_sent">Demande envoyée à l’équipe AYROVI. Référence : %1$s · État : %2$s. Aucun achat automatique n’a été effectué.</string>
     <string name="aywebs_loading">Loading…</string>
     <!-- 2026-10-03 : dire la panne au lieu de la déguiser en « page non éligible ». -->
     <string name="aywebs_service_unavailable">Service indisponible</string>
@@ -29,6 +38,11 @@
     <string name="aywebs_product_not_resolved">Produit non reconnu sur cette page.</string>
     <string name="aywebs_select_item">Select your desired item</string>
     <string name="aywebs_quote_unavailable">Le devis AYROVI est indisponible pour cet article. L’ajout reste bloqué jusqu’au rétablissement du prix.</string>
+    <string name="aywebs_choose_option">— Choisir —</string>
+    <string name="aywebs_choose_variants">Choisissez toutes les options pour vérifier le prix et le stock de cette configuration.</string>
+    <string name="aywebs_variant_not_found">Cette combinaison exacte n’est pas publiée par la boutique.</string>
+    <string name="aywebs_price_fallback">La boutique n’a pas publié de prix distinct pour cette option ; le prix produit est utilisé.</string>
+    <string name="aywebs_availability_unknown">Stock non confirmé par la boutique pour cette configuration.</string>
     <string name="aywebs_no_options">Sans option</string>
     <string name="aywebs_added_line">Quantité %1$d · %2$s · %3$s TND</string>
     <string name="aywebs_condition_new">État : Neuf (publié par la boutique)</string>

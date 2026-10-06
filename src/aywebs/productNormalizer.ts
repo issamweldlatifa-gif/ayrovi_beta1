@@ -119,10 +119,10 @@ export function ayWebsVariantOptions(groups: Array<{ attribute: string; values: 
 }
 
 /**
- * Combinaisons de variantes réellement publiées par le marchand. Quand le
- * marchand ne publie que des listes (tailles d'un côté, couleurs de l'autre),
- * le produit cartésien est marqué `available: null` / `UNKNOWN` : on ne prétend
- * jamais qu'une combinaison est en stock sans preuve.
+ * Variantes exactes reconnues par le marchand. `details` contient des options
+ * associées et peut donc justifier une vraie configuration. Des listes séparées
+ * (ex. tailles + couleurs) ne donnent PAS leurs combinaisons : on conserve les
+ * valeurs individuelles pour l'affichage, sans fabriquer de produit cartésien.
  */
 export function ayWebsVariantsFromScraped(product: ScrapedProduct): AyWebsSourceProduct['variants'] {
   const groups = ayWebsVariantGroupsFromScraped(product.variants);
@@ -144,7 +144,9 @@ export function ayWebsVariantsFromScraped(product: ScrapedProduct): AyWebsSource
         if (attribute && text) attributes[attribute] = text;
       }
       if (!color && !size && label && !Object.keys(attributes).length) attributes.model = label;
-      const availability = ayWebsAvailabilityFromBoolean(detail.stock ?? (detail.available ? true : null),
+      // `available` indique si le choix est sélectionnable, pas s'il est en stock.
+      // Seul le signal marchand `stock` tranche la disponibilité.
+      const availability = ayWebsAvailabilityFromBoolean(detail.stock,
         detail.available ? 'merchant_choice_eligible_stock_unspecified' : 'merchant_stock_unspecified');
       const image = color ? (product.colorImages?.[color.toLowerCase()]?.[0] || null) : null;
       return {
@@ -152,7 +154,9 @@ export function ayWebsVariantsFromScraped(product: ScrapedProduct): AyWebsSource
         attributes,
         label: label || Object.values(attributes).join(' · '),
         price: Number.isFinite(Number(detail.price)) && Number(detail.price) > 0 ? Number(detail.price) : null,
-        currency: Number.isFinite(Number(detail.price)) && Number(detail.price) > 0 ? product.sourceCurrency : null,
+        currency: Number.isFinite(Number(detail.price)) && Number(detail.price) > 0 && product.currencyVerified === true
+          ? product.sourceCurrency
+          : null,
         available: detail.stock ?? null,
         availability: availability.state,
         availabilityReason: availability.reason,
@@ -162,26 +166,21 @@ export function ayWebsVariantsFromScraped(product: ScrapedProduct): AyWebsSource
     }).filter((variant) => Object.keys(variant.attributes).length > 0);
   }
 
-  // Pas de détails : combinaison des groupes, sans revendication de stock.
-  const combinations = groups.reduce<Array<Record<string, string>>>((accumulator, group) => {
-    if (!accumulator.length) return group.values.map((value) => ({ [group.attribute]: value }));
-    return accumulator.flatMap((combination) => group.values.map((value) => ({ ...combination, [group.attribute]: value })));
-  }, []);
-
-  const productAvailability = ayWebsAvailabilityFromMerchant(product.availability);
-  return combinations.slice(0, 200).map((attributes, index) => ({
+  // Les listes prouvent chaque valeur individuelle, mais ni une combinaison,
+  // ni son stock. Les partielles ne peuvent correspondre à une sélection
+  // complète côté serveur et restent UNKNOWN jusqu'à une lecture plus précise.
+  return groups.flatMap((group, groupIndex) => group.values.map((value, valueIndex) => ({
     sourceVariantId: null,
-    attributes,
-    label: groups.map((group) => attributes[group.attribute]).filter(Boolean).join(' · '),
+    attributes: { [group.attribute]: value },
+    label: value,
     price: null,
     currency: null,
-    // La disponibilité PRODUIT ne prouve pas la disponibilité de chaque combinaison.
     available: null,
-    availability: groups.length > 1 ? ('UNKNOWN' as AyWebsAvailabilityState) : productAvailability.state,
-    availabilityReason: groups.length > 1 ? 'merchant_option_lists_without_combination_stock' : productAvailability.reason,
-    image: attributes.color ? (product.colorImages?.[attributes.color.toLowerCase()]?.[0] || null) : null,
-    sortOrder: index,
-  }));
+    availability: 'UNKNOWN' as AyWebsAvailabilityState,
+    availabilityReason: 'merchant_option_list_without_exact_variant_stock',
+    image: group.attribute === 'color' ? (product.colorImages?.[value.toLowerCase()]?.[0] || null) : null,
+    sortOrder: groupIndex * 100 + valueIndex,
+  })));
 }
 
 /** Projection `ScrapedProduct` → `AyWebsSourceProduct` (contrat §11). */
@@ -198,7 +197,8 @@ export function ayWebsSourceProductFromScraped(product: ScrapedProduct, storeNam
     brand: product.brand || null,
     images: [...(product.images || [])].filter(Boolean),
     price: Number(product.sourcePrice) || 0,
-    currency: String(product.sourceCurrency || '').toUpperCase(),
+    // URL geography is only a hint, not a merchant-published currency.
+    currency: product.currencyVerified === true ? String(product.sourceCurrency || '').toUpperCase() : '',
     variantGroups: groups,
     variants,
     availability: availability.state,
@@ -207,7 +207,7 @@ export function ayWebsSourceProductFromScraped(product: ScrapedProduct, storeNam
     // Jamais déduit d'un titre ou d'une photo (§14 : le silence ne devient pas une affirmation).
     condition: product.condition ?? null,
     merchant: { name: storeName || product.storeName || null, url: ayWebsSourceDomain(product.url) ? `https://${ayWebsSourceDomain(product.url)}` : null },
-    scrapedProduct: product,
+    scrapedProduct: product.currencyVerified === true ? product : { ...product, sourceCurrency: '' },
     capturedAt: product.scrapedAt || new Date().toISOString(),
   };
 }

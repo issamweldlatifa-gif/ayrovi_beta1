@@ -215,7 +215,7 @@ export function readAmazonPrice(document: Document, pageHtml: string): AmazonPri
 }
 
 /** السعر المشطوب + العملة: قراءتان مستقلتان عن السعر الحالي. */
-export function readAmazonExtras(document: Document, pageHtml: string, currentPriceText: string): { original: string; currency: string } {
+export function readAmazonExtras(document: Document, pageHtml: string, currentPriceText: string): { original: string; currency: string; currencyVerified: boolean } {
   let original = '';
   for (const selector of ORIGINAL_PRICE_SELECTORS) {
     const text = collapse(document.querySelector(selector)?.textContent);
@@ -237,11 +237,13 @@ export function readAmazonExtras(document: Document, pageHtml: string, currentPr
     || '';
   const symbol = currentPriceText.replace(/[0-9.,\s]/g, '').trim();
 
+  const explicitCurrency = collapse(currencyFromInput).toUpperCase()
+    || collapse(currencyFromJson).toUpperCase();
   return {
     original,
-    currency: collapse(currencyFromInput).toUpperCase()
-      || collapse(currencyFromJson).toUpperCase()
-      || symbol,
+    currency: explicitCurrency || symbol,
+    // Amazon's USD currencyCode field is unambiguous; a bare "$" is not.
+    currencyVerified: /^[A-Z]{3}$/.test(explicitCurrency),
   };
 }
 

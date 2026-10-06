@@ -170,6 +170,7 @@ function addAyWebsItemToAyroviCart(db: QatafoDatabase, item: AyWebsCartItem, inp
       db.updateQuantity(existing.id, item.quantity, input.sessionId, input.accountId);
     }
     const syncedItem = db.getItemById(existing.id, input.sessionId, input.accountId) || existing;
+    rememberAyWebsCartLink(db, item.id, String(syncedItem.id), input);
     return {
       aywebsItemId: item.id,
       aywebsItemNumber: item.itemNumber,
@@ -204,6 +205,7 @@ function addAyWebsItemToAyroviCart(db: QatafoDatabase, item: AyWebsCartItem, inp
   } as AddToCartRequest;
 
   const cartItem = db.addItem(input.sessionId, payload, input.accountId);
+  rememberAyWebsCartLink(db, item.id, String(cartItem.id), input);
   recordFunnelEvent(db, 'cart_item_added', { locale: null, visitorKey: funnelVisitorKey(input.sessionId) });
 
   return {
@@ -234,6 +236,16 @@ export function findAyroviCartLine(
   accountId: string | null,
   item: AyWebsCartItem,
 ): ReturnType<QatafoDatabase['getItems']>[number] | null {
+  const mapped = db.get<{ ayrovi_cart_item_id: string }>(
+    `SELECT ayrovi_cart_item_id FROM ayweb_cart_ayrovi_links WHERE aywebs_item_id=?`, item.id,
+  );
+  if (mapped?.ayrovi_cart_item_id) {
+    const linkedLine = db.getItemById(String(mapped.ayrovi_cart_item_id), sessionId, accountId);
+    if (linkedLine) return linkedLine;
+    // The AYROVI line was independently removed; discard only the stale mapping.
+    db.run(`DELETE FROM ayweb_cart_ayrovi_links WHERE aywebs_item_id=?`, item.id);
+  }
+
   const store = findAyWebsStore(item.storeId);
   const attributes = (item.variantSnapshot?.attributes || {}) as Record<string, string>;
   const requestedColor = String(attributes.color || '').slice(0, 100);
@@ -246,7 +258,53 @@ export function findAyroviCartLine(
     && (candidate.externalId || '') === externalId
     && (candidate.requestedSize || '') === requestedSize
     && (candidate.requestedColor || '') === requestedColor
+    // `variant` is the complete human label AYWEBs builds from every published
+    // attribute (format/model/capacity included), not only color + size.
+    && (candidate.variant || '') === (item.variantLabel || '')
     && (externalId ? true : candidate.title === item.title)) || null;
+}
+
+/** Resolve an AYROVI cart row back to its AYWEBs source using the durable link. */
+export function findAyWebsItemForAyroviCartLine(
+  db: QatafoDatabase,
+  cartItemId: string,
+  sessionId: string,
+  accountId: string | null,
+): AyWebsCartItem | null {
+  const mapped = db.get<{ aywebs_item_id: string }>(
+    `SELECT aywebs_item_id FROM ayweb_cart_ayrovi_links WHERE ayrovi_cart_item_id=?`, cartItemId,
+  );
+  if (mapped?.aywebs_item_id) {
+    const item = readAyWebsCartItem(db, String(mapped.aywebs_item_id));
+    if (item) return item;
+  }
+
+  // Backward compatibility for AYROVI rows created before durable links existed.
+  const cart = readAyWebsCart(db, sessionId, accountId);
+  if (!cart) return null;
+  return listAyWebsCartItems(db, cart.id).find((item) =>
+    findAyroviCartLine(db, sessionId, accountId, item)?.id === cartItemId,
+  ) || null;
+}
+
+function rememberAyWebsCartLink(
+  db: QatafoDatabase,
+  aywebsItemId: string,
+  ayroviCartItemId: string,
+  input: { sessionId: string; accountId: string | null },
+): void {
+  const now = new Date().toISOString();
+  db.run(
+    `DELETE FROM ayweb_cart_ayrovi_links WHERE ayrovi_cart_item_id=? AND aywebs_item_id<>?`,
+    ayroviCartItemId, aywebsItemId,
+  );
+  db.run(
+    `INSERT INTO ayweb_cart_ayrovi_links (aywebs_item_id,ayrovi_cart_item_id,session_id,account_id,created_at,updated_at)
+     VALUES (?,?,?,?,?,?)
+     ON CONFLICT(aywebs_item_id) DO UPDATE SET ayrovi_cart_item_id=excluded.ayrovi_cart_item_id,
+       session_id=excluded.session_id, account_id=excluded.account_id, updated_at=excluded.updated_at`,
+    aywebsItemId, ayroviCartItemId, input.sessionId, input.accountId, now, now,
+  );
 }
 
 /**

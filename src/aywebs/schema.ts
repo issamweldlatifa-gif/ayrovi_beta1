@@ -109,6 +109,8 @@ CREATE TABLE IF NOT EXISTS ayweb_products (
   images TEXT NOT NULL DEFAULT '[]',
   price REAL NOT NULL DEFAULT 0,
   currency TEXT NOT NULL DEFAULT '',
+  price_verified INTEGER NOT NULL DEFAULT 0,
+  currency_verified INTEGER NOT NULL DEFAULT 0,
   variant_groups TEXT NOT NULL DEFAULT '[]',
   variants TEXT NOT NULL DEFAULT '[]',
   -- 03/10/2026 — état publié par la source : 'new' | 'used' | 'refurbished' | '' (inconnu).
@@ -190,6 +192,36 @@ CREATE TABLE IF NOT EXISTS ayweb_cart_items (
 );
 CREATE INDEX IF NOT EXISTS idx_ayweb_cart_items_cart ON ayweb_cart_items(cart_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_ayweb_cart_items_status ON ayweb_cart_items(status);
+
+/* Stable identity for the AYWEBs → AYROVI cart bridge. The customer note remains
+ * presentation/audit text only; editing it must not detach checkout safety. */
+CREATE TABLE IF NOT EXISTS ayweb_cart_ayrovi_links (
+  aywebs_item_id TEXT PRIMARY KEY NOT NULL,
+  ayrovi_cart_item_id TEXT NOT NULL UNIQUE,
+  session_id TEXT NOT NULL DEFAULT '',
+  account_id TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_ayweb_cart_ayrovi_link_session
+  ON ayweb_cart_ayrovi_links(session_id, account_id);
+
+/* Stable Add-to-Cart retries: one durable result per caller key, independent of
+ * line-level duplicate merging. Stored snapshots replay the first outcome. */
+CREATE TABLE IF NOT EXISTS ayweb_cart_add_requests (
+  id TEXT PRIMARY KEY,
+  scope_key TEXT NOT NULL,
+  session_id TEXT NOT NULL,
+  account_id TEXT,
+  idempotency_key TEXT NOT NULL,
+  request_hash TEXT NOT NULL,
+  result_json TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_ayweb_cart_add_request_key
+  ON ayweb_cart_add_requests(scope_key,idempotency_key);
+CREATE INDEX IF NOT EXISTS idx_ayweb_cart_add_request_session
+  ON ayweb_cart_add_requests(session_id,created_at DESC);
 
 CREATE TABLE IF NOT EXISTS ayweb_orders (
   id TEXT PRIMARY KEY,
@@ -546,6 +578,12 @@ export function ensureAyWebsSchema(db: QatafoDatabase): void {
     const productColumns = db.all<{ name: string }>("PRAGMA table_info(ayweb_products)").map((row) => row.name);
     if (!productColumns.includes('condition')) {
       db.run("ALTER TABLE ayweb_products ADD COLUMN condition TEXT NOT NULL DEFAULT ''");
+    }
+    if (!productColumns.includes('price_verified')) {
+      db.run('ALTER TABLE ayweb_products ADD COLUMN price_verified INTEGER NOT NULL DEFAULT 0');
+    }
+    if (!productColumns.includes('currency_verified')) {
+      db.run('ALTER TABLE ayweb_products ADD COLUMN currency_verified INTEGER NOT NULL DEFAULT 0');
     }
   } catch (error) {
     console.error('[AyWebs] shipping_address migration failed:', error instanceof Error ? error.message : error);

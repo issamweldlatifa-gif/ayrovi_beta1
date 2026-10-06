@@ -9,6 +9,8 @@ export interface ParsedProductPage {
   description?: string;
   price: number;
   currency: string;
+  /** Whether the page states an unambiguous currency (not a URL or `$` guess). */
+  currencyVerified?: boolean;
   /**
    * PRIX AVANT REMISE DU MARCHAND (02/10/2026) — le prix barré que la page
    * affiche elle-même (JSON-LD ListPrice, Shopify `compare_at_price`, balise
@@ -131,15 +133,18 @@ export function cleanDescription(raw: string, maxLength = 1400): string {
 
 function currencyCode(raw: string): string {
   const value = raw.toUpperCase();
-  if (value.includes('€') || value.includes('EUR')) return 'EUR';
-  if (value.includes('£') || value.includes('GBP')) return 'GBP';
-  if (value.includes('د.ت') || value.includes('TND') || value.includes('DT')) return 'TND';
-  if (value.includes('¥') || value.includes('JPY')) return 'JPY';
-  if (value.includes('$') || value.includes('USD')) return 'USD';
+  // Explicit ISO codes outrank symbols: `CAD $` must not become USD.
+  const explicitCode = value.match(/\b([A-Z]{3})\b/)?.[1];
+  if (explicitCode) return explicitCode;
+  if (value.includes('€')) return 'EUR';
+  if (value.includes('£')) return 'GBP';
+  if (value.includes('د.ت') || value.includes('DT')) return 'TND';
+  if (value.includes('¥')) return 'JPY';
+  if (value.includes('$')) return 'USD';
   return '';
 }
 
-function contextualPrice(bodyText: string): { price: number; currency: string } | null {
+function contextualPrice(bodyText: string): { price: number; currency: string; currencyEvidence: string } | null {
   const text = bodyText.replace(/\s+/g, ' ').slice(0, 500_000);
   const patterns = [
     /(?:prix|price|sale\s*price|our\s*price|prezzo|preis|السعر)\s*[:\-]?\s*(?:from|à\s*partir\s*de)?\s*([€$£¥]|EUR|USD|GBP|JPY|TND|DT|د\.ت)?\s*([0-9][0-9\s.,]{0,14})\s*([€$£¥]|EUR|USD|GBP|JPY|TND|DT|د\.ت)?/gi,
@@ -150,8 +155,9 @@ function contextualPrice(bodyText: string): { price: number; currency: string } 
       const context = text.slice(Math.max(0, Number(match.index) - 35), Number(match.index) + match[0].length + 20);
       if (/(?:old|ancien|regular|list\s*price|was|before|barr[ée]|économisez|save\s+\d)/i.test(context)) continue;
       const price = parsePrice(match[2]);
-      const currency = currencyCode(`${match[1] || ''} ${match[3] || ''}`);
-      if (price > 0 && currency) return { price, currency };
+      const currencyEvidence = `${match[1] || ''} ${match[3] || ''}`.trim();
+      const currency = currencyCode(currencyEvidence);
+      if (price > 0 && currency) return { price, currency, currencyEvidence };
     }
   }
   return null;
@@ -705,15 +711,27 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
             : regexPrice ? 'context_regex'
               : 'none';
     const metaCurrency = meta('meta[property="product:price:currency"]') || meta('meta[property="og:price:currency"]');
-    const currencyBySource: Record<ParsedProductPage['priceSource'], string> = {
+    const currencyEvidenceBySource: Record<ParsedProductPage['priceSource'], string> = {
       json_ld: String(ldSale.currency || offers?.priceCurrency || metaCurrency || ''),
       meta: String(metaCurrency || offers?.priceCurrency || ''),
-      dom: String(currencyCode(selectorPrice) || currencyCode(amazonPriceText) || amazon?.price.currency || amazon?.extras.currency || metaCurrency || offers?.priceCurrency || ''),
+      // Prefer explicit ISO codes; a bare '$' or '¥' is ambiguous and is not a quote currency.
+      dom: String(metaCurrency || offers?.priceCurrency
+        || (amazon?.extras.currencyVerified ? amazon.extras.currency : '')
+        || selectorPrice || amazonPriceText || ''),
       embedded_variant: String(embeddedProduct?.currency || metaCurrency || offers?.priceCurrency || ''),
-      context_regex: String(regexPrice?.currency || metaCurrency || offers?.priceCurrency || ''),
+      context_regex: String(regexPrice?.currencyEvidence || metaCurrency || offers?.priceCurrency || ''),
       none: String(metaCurrency || offers?.priceCurrency || embeddedProduct?.currency || ''),
     };
-    const currency = currencyCode(currencyBySource[priceSource]) || String(currencyBySource[priceSource]).trim().toUpperCase();
+    const currencyEvidence = currencyEvidenceBySource[priceSource];
+    const normalizedCurrencyEvidence = String(currencyEvidence || '').trim().toUpperCase();
+    const parsedCurrencyCode = currencyCode(currencyEvidence);
+    const currencyVerified = /\b[A-Z]{3}\b/.test(normalizedCurrencyEvidence)
+      || (parsedCurrencyCode === 'EUR' && normalizedCurrencyEvidence.includes('€'))
+      || (parsedCurrencyCode === 'GBP' && normalizedCurrencyEvidence.includes('£'))
+      || (parsedCurrencyCode === 'TND' && normalizedCurrencyEvidence.includes('د.ت'));
+    // Return a currency code only when the source evidence is authoritative.
+    // In particular, `currencyCode('$') === 'USD'` is a guess, not evidence.
+    const currency = currencyVerified ? parsedCurrencyCode || normalizedCurrencyEvidence : '';
     const amazonOriginalPrice = amazon?.extras.original ? parsePrice(amazon.extras.original) : 0;
     const originalPrice = storeType === 'amazon' && amazonOriginalPrice > price
       ? amazonOriginalPrice
@@ -879,6 +897,7 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
       description: description || undefined,
       price,
       currency,
+      currencyVerified,
       originalPrice,
       images,
       colorImages,

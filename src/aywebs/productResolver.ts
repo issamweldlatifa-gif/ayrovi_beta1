@@ -85,10 +85,10 @@ export interface AyWebsResolveInput {
   pageHtml?: string | null;
   pageUrl?: string | null;
   /**
-   * RELECTURE FRAÎCHE (05/10/2026) : ignore le cache de résolution et relit la
-   * fiche chez le marchand. Utilisé par la re-vérification du panier (§18/§29)
-   * — une vérification qui servirait une lecture en cache ne vérifierait rien.
-   * Les appels normaux (ouverture de fiche, feuille, ajout) ne le posent pas.
+   * RELECTURE FRAÎCHE : ignore le cache de résolution et relit la fiche chez le
+   * marchand. Utilisé pour une nouvelle intention Add et les contrôles finaux
+   * panier/checkout ; une vérification servie du cache ne prouverait rien.
+   * L'ouverture de fiche et l'affichage initial de la feuille peuvent réutiliser le cache.
    */
   refresh?: boolean;
 }
@@ -138,16 +138,14 @@ export async function resolveAyWebsProduct(
   /*
    * CACHE DE RÉSOLUTION (05/10/2026).
    *
-   * Une fiche déjà lue il y a quelques minutes — le client vient de l'ouvrir,
-   * rouvre la feuille de variantes, ou ajoute au panier depuis le même lien —
-   * n'est pas relue chez le marchand : la lecture mémorisée est réutilisée, et
-   * le prix AYROVI est TOUJOURS recalculé ci-dessous par le moteur tarifaire
-   * (§45 : le cache ne sert jamais un prix, seulement une lecture).
+   * Une fiche déjà lue il y a quelques minutes — pendant l'ouverture ou
+   * l'affichage initial de la feuille de variantes — peut réutiliser la lecture
+   * mémorisée. Le prix AYROVI est TOUJOURS recalculé ci-dessous par le moteur
+   * tarifaire (§45 : le cache ne sert jamais un prix, seulement une lecture).
    *
-   * `refresh: true` force une relecture fraîche : la re-vérification du panier
-   * (§18/§29) et toute demande explicite de vérification ne doivent jamais
-   * recevoir une lecture en cache — sinon un changement de prix marchand
-   * passerait inaperçu.
+   * `refresh: true` force une relecture fraîche pour toute nouvelle intention
+   * Add et les contrôles panier/checkout : une vérification servie du cache ne
+   * détecterait pas un changement de prix ou de stock marchand.
    */
   const cacheKey = ayWebsResolveCacheKey(store.id, url.toString());
   const cacheAllowed = !input.refresh && !input.pageHtml;
@@ -199,11 +197,16 @@ export async function resolveAyWebsProduct(
   );
   const availability = await adapter.checkAvailability(sourceProduct, matchingAttributes);
 
-  // Le prix AYROVI est recalculé ici, côté serveur (§45 : jamais de prix piloté client).
-  const pricing = calculatePrice(deps.db.getPricingRules(), sourceProduct.price, sourceProduct.currency, {
-    title: sourceProduct.title,
-    quantity: Math.max(1, Number(input.quantity) || 1),
-  });
+  // Le prix AYROVI est recalculé côté serveur, uniquement si le marchand a
+  // confirmé le prix ET la devise. Une devise déduite de l'URL n'est pas un devis.
+  const quoteEvidenceComplete = sourceProduct.scrapedProduct.priceVerified === true
+    && sourceProduct.scrapedProduct.currencyVerified === true;
+  const pricing = quoteEvidenceComplete
+    ? calculatePrice(deps.db.getPricingRules(), sourceProduct.price, sourceProduct.currency, {
+        title: sourceProduct.title,
+        quantity: Math.max(1, Number(input.quantity) || 1),
+      })
+    : null;
 
   const selection: AyWebsVariantSelection | null = matchingAttributes
     ? {
@@ -332,6 +335,7 @@ export function missingProductFields(product: AyWebsSourceProduct): string[] {
     !(Number(product.price) > 0) ? 'price' : '',
     product.scrapedProduct?.priceVerified !== true ? 'verified_price' : '',
     !/^[A-Z]{3}$/.test(String(product.currency || '')) ? 'currency' : '',
+    product.scrapedProduct?.currencyVerified !== true ? 'verified_currency' : '',
     !(product.images?.length) ? 'image' : '',
   ].filter(Boolean);
 }
@@ -459,12 +463,14 @@ export function persistAyWebsProduct(
 
     if (existing) {
       db.run(
-        `UPDATE ayweb_products SET title=?, description=?, brand=?, images=?, price=?, currency=?, variant_groups=?, variants=?, condition=?,
+        `UPDATE ayweb_products SET title=?, description=?, brand=?, images=?, price=?, currency=?, price_verified=?, currency_verified=?, variant_groups=?, variants=?, condition=?,
            availability=?, availability_reason=?, availability_checked_at=?, purchase_mode=?, integration_type=?,
            pricing_tnd=?, pricing_version=?, pricing_breakdown=?, evidence_hash=?, capture_id=?, resolved_at=?, updated_at=?
          WHERE id=?`,
         sourceProduct.title.slice(0, 500), String(sourceProduct.description || '').slice(0, 4000), String(sourceProduct.brand || '').slice(0, 200),
         JSON.stringify(sourceProduct.images.slice(0, 20)), sourceProduct.price, sourceProduct.currency,
+        sourceProduct.scrapedProduct?.priceVerified === true ? 1 : 0,
+        sourceProduct.scrapedProduct?.currencyVerified === true ? 1 : 0,
         JSON.stringify(sourceProduct.variantGroups), JSON.stringify(sourceProduct.variants.slice(0, 300)),
         String(sourceProduct.condition || ''), availability.state, availability.reason.slice(0, 200), availability.checkedAt, purchaseModeFor(store), store.integrationType,
         pricing && !pricing.restricted ? pricing.totalTND : 0, pricing?.pricingVersion || 0, JSON.stringify(pricingBreakdown),
@@ -474,13 +480,15 @@ export function persistAyWebsProduct(
     } else {
       db.run(
         `INSERT INTO ayweb_products (id,store_id,source_url,source_domain,source_product_id,title,description,brand,images,
-           price,currency,variant_groups,variants,condition,availability,availability_reason,availability_checked_at,purchase_mode,
+           price,currency,price_verified,currency_verified,variant_groups,variants,condition,availability,availability_reason,availability_checked_at,purchase_mode,
            integration_type,page_type,pricing_tnd,pricing_version,pricing_breakdown,evidence_hash,capture_id,resolved_at,created_at,updated_at)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         productId, store.id, sourceProduct.sourceUrl.slice(0, 4096), sourceProduct.sourceDomain,
         String(sourceProduct.sourceProductId || '').slice(0, 300), sourceProduct.title.slice(0, 500),
         String(sourceProduct.description || '').slice(0, 4000), String(sourceProduct.brand || '').slice(0, 200),
         JSON.stringify(sourceProduct.images.slice(0, 20)), sourceProduct.price, sourceProduct.currency,
+        sourceProduct.scrapedProduct?.priceVerified === true ? 1 : 0,
+        sourceProduct.scrapedProduct?.currencyVerified === true ? 1 : 0,
         JSON.stringify(sourceProduct.variantGroups), JSON.stringify(sourceProduct.variants.slice(0, 300)),
         String(sourceProduct.condition || ''), availability.state, availability.reason.slice(0, 200), availability.checkedAt, purchaseModeFor(store),
         store.integrationType, 'PRODUCT', pricing && !pricing.restricted ? pricing.totalTND : 0, pricing?.pricingVersion || 0,
@@ -558,6 +566,8 @@ export interface AyWebsStoredProduct {
   images: string[];
   price: number;
   currency: string;
+  priceVerified: boolean;
+  currencyVerified: boolean;
   variantGroups: Array<{ attribute: string; values: string[] }>;
   variants: Array<{
     sourceVariantId: string | null;
@@ -623,6 +633,8 @@ function hydrateStoredProduct(row: any): AyWebsStoredProduct {
     images: parse<string[]>(row.images, []),
     price: Number(row.price) || 0,
     currency: String(row.currency || ''),
+    priceVerified: Number(row.price_verified) === 1,
+    currencyVerified: Number(row.currency_verified) === 1,
     variantGroups: parse(row.variant_groups, []),
     variants: parse(row.variants, []),
     condition: ['new', 'used', 'refurbished'].includes(String(row.condition || ''))
@@ -646,10 +658,23 @@ function hydrateStoredProduct(row: any): AyWebsStoredProduct {
   };
 }
 
+/** A failed live check cannot present an old positive stock signal as current. */
+export function ayWebsAvailabilityAfterFailedRecheck(
+  stored: AyWebsAvailability,
+  failureReason: string,
+): AyWebsAvailability {
+  const reason = [
+    String(failureReason || 'source_recheck_failed').slice(0, 80),
+    `last_known_state=${stored.state}`,
+    stored.reason ? `last_known_reason=${stored.reason}` : '',
+  ].filter(Boolean).join(';').slice(0, 400);
+  return { ...stored, state: 'UNKNOWN', reason };
+}
+
 /**
- * Disponibilité à la demande (§14) : relit la source quand c'est possible,
- * sinon répond depuis la dernière lecture en disant explicitement son âge.
- * `UNKNOWN` reste `UNKNOWN` — jamais promu `AVAILABLE`.
+ * Disponibilité à la demande (§14) : relit la source quand c'est possible.
+ * Si la lecture échoue ou est désactivée, l'ancien état est conservé comme
+ * contexte mais la disponibilité courante devient `UNKNOWN` (jamais AVAILABLE).
  */
 export async function checkAyWebsProductAvailability(
   deps: AyWebsResolverDependencies,
@@ -660,13 +685,14 @@ export async function checkAyWebsProductAvailability(
 
   const store = findAyWebsStore(stored.storeId);
   if (!store || !deps.flags.storeCaptureEnabled(store)) {
+    const availability = ayWebsAvailabilityAfterFailedRecheck(stored.availability, 'source_recheck_unavailable');
     return {
-      availability: stored.availability,
+      availability,
       variant: input.variantAttributes
         ? { variantId: ayWebsVariantKey(input.variantAttributes), attributes: input.variantAttributes, quantity: 1 }
         : null,
       fromCache: true,
-      product: stored,
+      product: { ...stored, availability },
     };
   }
 
@@ -693,13 +719,14 @@ export async function checkAyWebsProductAvailability(
       result: 'failure',
       errorCode: error instanceof AyWebsDomainError ? String(error.code) : 'CAPTURE_FAILED',
     });
+    const availability = ayWebsAvailabilityAfterFailedRecheck(stored.availability, 'source_reread_failed');
     return {
-      availability: { ...stored.availability, reason: `${stored.availability.reason || 'cached'};relecture_source_impossible` },
+      availability,
       variant: input.variantAttributes
         ? { variantId: ayWebsVariantKey(input.variantAttributes), attributes: input.variantAttributes, quantity: 1 }
         : null,
       fromCache: true,
-      product: stored,
+      product: { ...stored, availability },
     };
   }
 }

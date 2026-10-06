@@ -34,6 +34,7 @@ import {
 } from '../src/aywebs/resolveCache';
 
 const AMAZON_URL = 'https://www.amazon.com/dp/B0ABCDEFGH';
+const SHEIN_URL = 'https://www.shein.com/example-p-382460229.html';
 const SESSION_ID = 'aywebs-cache-session-000001';
 
 function pricingRules(): PricingRules {
@@ -72,7 +73,7 @@ function fakeScraper(options: { price?: number; delayMs?: number } = {}) {
         : { colors: [], sizes: [], details: [] },
       availability: 'in_stock' as const,
       brand: store === 'amazon' ? 'Nike' : 'SHEIN',
-      priceVerified: price > 0, verificationProvider: 'direct', verificationMethod: 'json_ld',
+      priceVerified: price > 0, currencyVerified: true, verificationProvider: 'direct', verificationMethod: 'json_ld',
       verificationFailureCode: price > 0 ? null : 'PRICE_NOT_FOUND',
       scrapedAt: new Date().toISOString(),
     };
@@ -178,6 +179,24 @@ describe('AYWEBs — cache de résolution : la fiche n’est pas relue pour rien
 });
 
 describe('AYWEBs — le cache ne sert jamais une vérification', () => {
+  test('un Add avec product_id revalide le prix marchand avant de créer la ligne', async () => {
+    const h = harness();
+    const initial = await resolveAyWebsProduct(h.resolver, { url: SHEIN_URL, sessionId: SESSION_ID });
+    expect(initial.product.price).toBe(39.99);
+
+    // Le prix change entre l'affichage de la fiche et le nouvel Add.
+    const currentSource = fakeScraper({ price: 59.99 });
+    h.scrapeProduct.mockResolvedValue(await currentSource.scrapeProduct(SHEIN_URL));
+    const added = await addAyWebsCartItem(h.resolver, {
+      sessionId: SESSION_ID, accountId: null,
+      productId: initial.productId, sourceUrl: SHEIN_URL, storeId: 'shein', quantity: 1,
+    });
+
+    expect(h.scrapeProduct).toHaveBeenCalledTimes(2);
+    expect(added.item.unitPrice).toBe(59.99);
+    expect(added.item.priceSnapshot?.price).toBe(59.99);
+  });
+
   test('la re-vérification du panier relit la source et voit le prix changé', async () => {
     const h = harness();
     const added = await addAyWebsCartItem(h.resolver, {
@@ -188,10 +207,12 @@ describe('AYWEBs — le cache ne sert jamais une vérification', () => {
 
     // Le marchand a augmenté son prix ; le cache détient encore l'ancienne lecture.
     const pricier = fakeScraper({ price: 59.99 });
+    h.scrapeProduct.mockResolvedValue(await pricier.scrapeProduct(AMAZON_URL));
     const verification = await verifyAyWebsCart(
-      { db: h.db, scraper: pricier.scraper as any, flags: h.ctx.resolver.flags },
+      h.resolver,
       { sessionId: SESSION_ID, accountId: null, recheckSource: true },
     );
+    expect(h.scrapeProduct).toHaveBeenCalledTimes(2);
     expect(verification.changes.map((change) => change.code)).toContain('PRICE_CHANGED');
   });
 });
