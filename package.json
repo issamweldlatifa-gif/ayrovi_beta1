@@ -48,7 +48,8 @@
     "verify:customer-auth": "esbuild verify/customer-auth-functional.ts --bundle --platform=node --packages=external --outfile=.cache/auth-functional.cjs --log-level=error && node .cache/auth-functional.cjs",
     "verify:setup": "npx playwright install --with-deps chromium firefox",
     "android:check": "node scripts/check-android-shell.mjs",
-    "android:apk": "cd android && ./gradlew :app:assembleDebug"
+    "android:apk": "cd android && ./gradlew :app:assembleDebug",
+    "verify:aywebs-latency": "node scripts/aywebs-latency-probe.mjs"
   },
   "keywords": [
     "ayrovi",

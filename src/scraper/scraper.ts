@@ -4,6 +4,14 @@ import { fetchSafeRemote, readLimitedText, resolveSafeHttpUrl } from '../service
 import { parseProductPageHtml, type ParsedProductPage } from './productPageParser';
 import { fetchRenderedProductPage, RenderedPageError } from './renderedPageFetcher';
 import { detectMerchantStore } from './merchantDomains';
+import { raceProbes, type ProbeAttempt } from './probeRace';
+
+/** Entier d'environnement borné : une valeur absurde ne doit pas geler une lecture. */
+function positiveIntEnv(key: string, fallback: number, min: number, max: number): number {
+  const configured = Number(process.env[key]);
+  if (!Number.isFinite(configured)) return fallback;
+  return Math.min(max, Math.max(min, Math.trunc(configured)));
+}
 
 /**
  * Options de lecture d'une fiche. `pageHtml` : HTML de la fiche TEL QUE RENDU
@@ -307,103 +315,97 @@ export class SmartLinkScraper {
     };
   }
 
+  /**
+   * Lecture d'une fiche : sondes PARALLÈLES (05/10/2026), plus de cascade.
+   *
+   * Mesure à l'origine du changement : la cascade séquentielle
+   * (mobile 7 s → bureau 6 s → Jina 18 s → rendu payant 18 s) faisait attendre
+   * le client jusqu'à ~49 s, et « plus de vingt secondes » avant l'affichage
+   * d'un produit chiffré. Les sondes sont indépendantes : elles partent
+   * maintenant ensemble, la première qui publie un prix gagne, les autres sont
+   * annulées.
+   *
+   * Budgets (surchargeables) : mobile/bureau `AYROVIX_DIRECT_TIMEOUT_MS` (6,5 s),
+   * lecteur Jina `AYROVIX_JINA_TIMEOUT_MS` (12 s), rendu payant
+   * `AYROVIX_RENDER_TIMEOUT_MS` (18 s, filet de sécurité inchangé).
+   *
+   * Le lecteur Jina part différé de ~1,2 s : sur une fiche que la lecture
+   * directe lit du premier coup, il n'est jamais appelé — aucun appel externe
+   * supplémentaire n'est dépensé pour rien.
+   */
   private async scrapeWithHttp(url: string, storeType: StoreType, options: ScrapeOptions = {}): Promise<MerchantScrapeResult> {
-    const headers = {
+    // ── 0. Page fournie par le client (WebView) : lecture locale, zéro réseau ──
+    // (le chemin AYWEBs reste « lien seul » ; cette entrée sert les parcours qui
+    // joignent la page réellement rendue sous les yeux du client).
+    const providedPage = typeof options.pageHtml === 'string' ? options.pageHtml.trim() : '';
+    if (providedPage) {
+      const parsed = parseProductPageHtml(providedPage, options.pageUrl || url, storeType);
+      if (parsed.price > 0 || parsed.title || parsed.images.length) {
+        return {
+          data: parsed,
+          verified: parsed.price > 0,
+          provider: 'webview',
+          method: parsed.priceSource,
+          failureCode: parsed.price > 0 ? null : 'PRICE_NOT_FOUND_IN_PROVIDED_PAGE',
+        };
+      }
+    }
+
+    const mobileHeaders = {
       'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 Version/17.4 Mobile/15E148 Safari/604.1',
       'Accept': 'text/html,application/xhtml+xml',
       'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.8',
     };
-    let directResult: ParsedProductPage | null = null;
-    let directFailure = 'DIRECT_PRICE_NOT_FOUND';
-
-    // Client DOM cannot establish a merchant price. All evidence is fetched
-    // independently through the validated server transport.
-
-    try {
-      const response = await fetchSafeRemote(url, { signal: AbortSignal.timeout(7_000), headers });
-      if (!response.ok) throw new Error(`DIRECT_HTTP_${response.status}`);
-      const contentType = response.headers.get('content-type') || '';
-      if (contentType && !contentType.includes('text/html') && !contentType.includes('application/xhtml+xml')) {
-        throw new Error('DIRECT_NOT_HTML');
-      }
-      directResult = parseProductPageHtml(await readLimitedText(response, 2_000_000), url, storeType);
-      if (directResult.price > 0) {
-        return { data: directResult, verified: true, provider: 'direct', method: directResult.priceSource, failureCode: null };
-      }
-    } catch (error: any) {
-      directFailure = String(error?.message || error?.code || 'DIRECT_UNAVAILABLE').slice(0, 80);
-    }
-
-    /* SECONDE PASSE « navigateur de bureau » (04/10/2026).
+    /*
+     * SECONDE PASSE « navigateur de bureau » (04/10/2026).
      * Mesuré le 04/10/2026 : sur la MÊME URL Amazon, selon l'IP de sortie,
      * l'agent mobile reçoit la fiche complète et l'agent de bureau une coquille
      * de 3,7 Ko — et l'inverse ailleurs. Le marchand décide par empreinte, pas
-     * par vérité. Deux tentatives bornées valent donc mieux qu'une seule :
-     * la seconde ne coûte que si la première n'a PAS donné de prix, et son
-     * échec est enregistré au lieu d'être silencieux. Elle ne réécrit jamais
-     * l'URL — c'est la même page marchande, seul l'agent change. */
-    if (!directResult || directResult.price <= 0) {
-      try {
-        const desktopHeaders = {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
-          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          'Accept-Language': 'en-US,en;q=0.9,fr;q=0.8',
-          'Sec-Fetch-Dest': 'document',
-          'Sec-Fetch-Mode': 'navigate',
-          'Sec-Fetch-Site': 'none',
-          'Upgrade-Insecure-Requests': '1',
-        };
-        const response = await fetchSafeRemote(url, { signal: AbortSignal.timeout(6_000), headers: desktopHeaders });
-        if (response.ok) {
-          const parsed = parseProductPageHtml(await readLimitedText(response, 2_000_000), url, storeType);
-          if (parsed.price > 0) {
-            return { data: parsed, verified: true, provider: 'direct', method: parsed.priceSource, failureCode: null };
-          }
-          if (!directResult && (parsed.title || parsed.images.length)) directResult = parsed;
-        } else {
-          await response.body?.cancel().catch(() => undefined);
-          directFailure = `DIRECT_HTTP_${response.status}`;
-        }
-      } catch (error: any) {
-        // La première passe reste la référence : on ne remplace son diagnostic
-        // que si elle n'avait rien produit du tout.
-        if (!directResult || directResult.price <= 0) {
-          directFailure = String(error?.message || error?.code || directFailure).slice(0, 80);
-        }
-      }
-    }
+     * par vérité : les deux agents sont donc essayés EN MÊME TEMPS, sans
+     * réécrire l'URL. Seul l'agent change.
+     */
+    const desktopHeaders = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
+      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.9,fr;q=0.8',
+      'Sec-Fetch-Dest': 'document',
+      'Sec-Fetch-Mode': 'navigate',
+      'Sec-Fetch-Site': 'none',
+      'Upgrade-Insecure-Requests': '1',
+    };
+    const directTimeoutMs = positiveIntEnv('AYROVIX_DIRECT_TIMEOUT_MS', 6_500, 250, 15_000);
+    const jinaTimeoutMs = positiveIntEnv('AYROVIX_JINA_TIMEOUT_MS', 12_000, 250, 30_000);
+
+    const attempts: ProbeAttempt<MerchantScrapeResult>[] = [
+      { id: 'direct_mobile', timeoutMs: directTimeoutMs, run: (signal) => this.probeDirectHtml(url, storeType, mobileHeaders, signal) },
+      { id: 'direct_desktop', timeoutMs: directTimeoutMs, run: (signal) => this.probeDirectHtml(url, storeType, desktopHeaders, signal) },
+    ];
 
     // Zalando/Alltricks coupent l'IP Render (timeout 0 octet / 403 Akamai).
     // r.jina.ai lit la page comme un navigateur et rend le HTML+JSON-LD.
     // Coupure : AYROVI_JINA_READER=false
     if (process.env.AYROVI_JINA_READER !== 'false') {
-      try {
-        const reader = `https://r.jina.ai/${url}`;
-        const response = await fetchSafeRemote(reader, {
-          signal: AbortSignal.timeout(18_000),
-          headers: {
-            Accept: 'text/html,application/xhtml+xml,text/plain',
-            'X-Return-Format': 'html',
-            'User-Agent': 'Mozilla/5.0 (compatible; AYROVI-reader/1.0)',
-          },
-        });
-        if (response.ok) {
-          const html = await readLimitedText(response, 2_000_000);
-          if (html.trim() && /<(?:html|body|script|meta)\b/i.test(html)) {
-            const parsed = parseProductPageHtml(html, url, storeType);
-            if (parsed.price > 0) {
-              return { data: parsed, verified: true, provider: 'jina', method: parsed.priceSource, failureCode: null };
-            }
-            if (!directResult && (parsed.title || parsed.images.length)) directResult = parsed;
-          }
-        } else {
-          await response.body?.cancel().catch(() => undefined);
-        }
-      } catch {
-        // Le rendu payant reste le filet suivant.
-      }
+      attempts.push({
+        id: 'jina',
+        timeoutMs: jinaTimeoutMs,
+        delayMs: positiveIntEnv('AYROVIX_JINA_HEADSTART_MS', 1_200, 0, 10_000),
+        run: (signal) => this.probeJinaReader(url, storeType, signal),
+      });
     }
 
+    // ── ÉTAPE A — course des sondes gratuites ─────────────────────────────────
+    const raced = await raceProbes(attempts, {
+      isWinner: (result) => Number(result.data?.price || 0) > 0,
+      budgetMs: attempts.reduce((max, attempt) => Math.max(max, (attempt.delayMs || 0) + attempt.timeoutMs), 0),
+    });
+    if (raced.winner) return raced.winner.value;
+
+    // Meilleur repli : ce qu'une sonde a su lire même sans prix (titre, images).
+    const partial = raced.fallback?.value ?? null;
+    const directFailure = raced.failures.find((failure) => failure.id.startsWith('direct_'))?.error
+      || (attempts.some((attempt) => attempt.id === 'direct_mobile') ? 'DIRECT_PRICE_NOT_FOUND' : 'DIRECT_UNAVAILABLE');
+
+    // ── ÉTAPE B — rendu payant, uniquement si l'étape A n'a pas donné de prix ──
     try {
       const rendered = await fetchRenderedProductPage(url);
       const parsed = parseProductPageHtml(rendered.html, url, storeType);
@@ -411,7 +413,7 @@ export class SmartLinkScraper {
         return { data: parsed, verified: true, provider: rendered.provider, method: parsed.priceSource, failureCode: null };
       }
       return {
-        data: parsed.title || parsed.images.length ? parsed : directResult,
+        data: parsed.title || parsed.images.length ? parsed : partial?.data ?? null,
         verified: false,
         provider: rendered.provider,
         method: 'none',
@@ -421,7 +423,7 @@ export class SmartLinkScraper {
       const code = error instanceof RenderedPageError ? error.code : 'RENDER_UPSTREAM_ERROR';
       const provider = error instanceof RenderedPageError && error.provider ? error.provider : 'none';
       return {
-        data: directResult,
+        data: partial?.data ?? null,
         verified: false,
         provider,
         method: 'none',
@@ -430,6 +432,61 @@ export class SmartLinkScraper {
           : code,
       };
     }
+  }
+
+  /** Sonde directe : GET la page marchande avec un agent donné. Jamais de prix inventé. */
+  private async probeDirectHtml(
+    url: string,
+    storeType: StoreType,
+    headers: Record<string, string>,
+    signal: AbortSignal,
+  ): Promise<MerchantScrapeResult | null> {
+    const response = await fetchSafeRemote(url, { signal, headers });
+    if (!response.ok) {
+      await response.body?.cancel().catch(() => undefined);
+      throw new Error(`DIRECT_HTTP_${response.status}`);
+    }
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType && !contentType.includes('text/html') && !contentType.includes('application/xhtml+xml')) {
+      throw new Error('DIRECT_NOT_HTML');
+    }
+    const parsed = parseProductPageHtml(await readLimitedText(response, 2_000_000), url, storeType);
+    if (parsed.price > 0) {
+      return { data: parsed, verified: true, provider: 'direct', method: parsed.priceSource, failureCode: null };
+    }
+    return parsed.title || parsed.images.length
+      ? { data: parsed, verified: false, provider: 'direct', method: 'none', failureCode: 'DIRECT_PRICE_NOT_FOUND' }
+      : null;
+  }
+
+  /** Lecteur Jina : lit la page comme un navigateur (HTML + JSON-LD rendus). */
+  private async probeJinaReader(
+    url: string,
+    storeType: StoreType,
+    signal: AbortSignal,
+  ): Promise<MerchantScrapeResult | null> {
+    const reader = `https://r.jina.ai/${url}`;
+    const response = await fetchSafeRemote(reader, {
+      signal,
+      headers: {
+        Accept: 'text/html,application/xhtml+xml,text/plain',
+        'X-Return-Format': 'html',
+        'User-Agent': 'Mozilla/5.0 (compatible; AYROVI-reader/1.0)',
+      },
+    });
+    if (!response.ok) {
+      await response.body?.cancel().catch(() => undefined);
+      throw new Error(`JINA_HTTP_${response.status}`);
+    }
+    const html = await readLimitedText(response, 2_000_000);
+    if (!html.trim() || !/<(?:html|body|script|meta)\b/i.test(html)) return null;
+    const parsed = parseProductPageHtml(html, url, storeType);
+    if (parsed.price > 0) {
+      return { data: parsed, verified: true, provider: 'jina', method: parsed.priceSource, failureCode: null };
+    }
+    return parsed.title || parsed.images.length
+      ? { data: parsed, verified: false, provider: 'jina', method: 'none', failureCode: 'JINA_PRICE_NOT_FOUND' }
+      : null;
   }
 
   private detectStore(url: string): StoreType {

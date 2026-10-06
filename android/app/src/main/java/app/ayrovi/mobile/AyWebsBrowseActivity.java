@@ -140,6 +140,24 @@ public class AyWebsBrowseActivity extends Activity {
   private volatile boolean productPage = false;
   private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
+  // ── PRÉ-RÉSOLUTION (05/10/2026) ───────────────────────────────────────────
+  // Plainte client : « le produit ajouté avec son prix met plus de vingt
+  // secondes à apparaître ». La lecture marchande est le seul poste coûteux du
+  // parcours ; or, dès que le serveur classe la page en fiche produit, on sait
+  // que l'utilisateur peut appuyer sur « Add to Cart » à tout moment. La
+  // résolution est donc payée PENDANT qu'il lit la fiche (agent d'exécution
+  // unique : elle ne concurrence aucun autre appel de la coque), et l'appui
+  // ouvre la feuille immédiatement.
+  //
+  // Fenêtre courte et honnête : le résultat pré-résolu n'est réutilisé que pour
+  // la MÊME URL et moins de deux minutes ; au-delà, la coque redemande la
+  // résolution (le serveur applique alors son propre cache de lecture et
+  // recalcule toujours le prix AYROVI, §45).
+  private static final long PREFETCH_FRESH_MS = 120_000L;
+  private volatile JSONObject prefetchedProduct;
+  private volatile String prefetchedUrl = "";
+  private volatile long prefetchedAtMs = 0L;
+
   @SuppressLint("SetJavaScriptEnabled")
   @Override
   protected void onCreate(Bundle state) {
@@ -394,6 +412,9 @@ public class AyWebsBrowseActivity extends Activity {
         // contourner une page LOGIN — la coque doit donc l'EXPLIQUER.
         if (isProduct) {
           setAddEnabled(true);
+          // Fiche produit confirmée par le serveur : on lance la résolution
+          // maintenant, en silence, plutôt que d'attendre l'appui.
+          prefetchResolve(url);
           return;
         }
         String pageType = data.optString("page_type", "");
@@ -432,30 +453,77 @@ public class AyWebsBrowseActivity extends Activity {
   /** §13/§15 : ajout réel — feuille de variantes par-dessus le marchand. */
   private void onAddToCart() {
     if (!productPage || currentUrl.isEmpty()) return;
-    runOnUiThread(() -> addButton.setText(R.string.aywebs_loading));
     final String url = currentUrl;
 
+    // 1) Pré-résolution fraîche pour CETTE url : la feuille s'ouvre tout de
+    //    suite, aucun aller-retour marchand n'est payé au moment de l'appui.
+    JSONObject ready = prefetchedProductFor(url);
+    if (ready != null) {
+      showVariantSheet(ready);
+      return;
+    }
+
+    runOnUiThread(() -> addButton.setText(R.string.aywebs_loading));
     // URL only. Never transmit the merchant DOM, scripts, account or form data.
     executor.execute(() -> {
       try {
-        JSONObject body = new JSONObject().put("url", url);
-        JSONObject reply = post(apiOrigin + RESOLVE_PATH, body);
-        JSONObject product = reply.optJSONObject("data");
+        // 2) L'agent d'exécution est unique : la pré-résolution lancée pendant
+        //    la navigation a pu aboutir entre-temps. On la réutilise (même url,
+        //    moins de deux minutes) au lieu de relancer une lecture.
+        JSONObject product = prefetchedProductFor(url);
+        if (product == null) {
+          JSONObject body = new JSONObject().put("url", url);
+          JSONObject reply = post(apiOrigin + RESOLVE_PATH, body);
+          product = reply.optJSONObject("data");
+        }
+        final JSONObject resolved = product;
         runOnUiThread(() -> {
-          if (product == null) {
+          if (resolved == null) {
             // Le serveur répond mais ne reconnaît pas le produit : c'est un cas
             // métier légitime, on le dit au lieu de remettre le bouton en silence.
             addButton.setText(R.string.aywebs_add_to_cart);
             toast(R.string.aywebs_product_not_resolved);
             return;
           }
-          showVariantSheet(product);
+          showVariantSheet(resolved);
         });
       } catch (Exception error) {
         runOnUiThread(() -> addButton.setText(R.string.aywebs_add_to_cart));
         toastMessage(error.getMessage());
       }
     });
+  }
+
+  /**
+   * Résolution anticipée d'une fiche produit, exécutée sur l'agent unique de la
+   * coque pendant que l'utilisateur lit la page. Silencieuse et non bloquante :
+   * un échec ne change rien au parcours, l'appui refera la demande normalement.
+   * Aucune donnée marchande n'est transmise : seulement l'URL (même contrat que
+   * `onAddToCart`), et le prix reste calculé par le serveur.
+   */
+  private void prefetchResolve(String url) {
+    if (apiOrigin.isEmpty() || url == null || url.isEmpty()) return;
+    if (prefetchedProductFor(url) != null) return;
+    executor.execute(() -> {
+      try {
+        JSONObject body = new JSONObject().put("url", url);
+        JSONObject reply = post(apiOrigin + RESOLVE_PATH, body);
+        JSONObject product = reply.optJSONObject("data");
+        if (product == null) return;
+        prefetchedProduct = product;
+        prefetchedUrl = url;
+        prefetchedAtMs = System.currentTimeMillis();
+      } catch (Exception ignored) {
+        /* la pré-résolution est un confort, jamais une condition */
+      }
+    });
+  }
+
+  /** Produit pré-résolu réutilisable pour cette url, ou null si trop ancien. */
+  private JSONObject prefetchedProductFor(String url) {
+    JSONObject product = prefetchedProduct;
+    if (product == null || url == null || !url.equals(prefetchedUrl)) return null;
+    return System.currentTimeMillis() - prefetchedAtMs <= PREFETCH_FRESH_MS ? product : null;
   }
 
   /** Toast avec un texte venu du serveur (repli : message générique). */

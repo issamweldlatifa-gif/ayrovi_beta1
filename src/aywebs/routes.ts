@@ -6,6 +6,7 @@ import { calculatePrice } from '../services/pricing';
 import { cardGatewayAvailable } from '../services/paymentGateway';
 import { renderedProviderReady } from '../scraper/renderedPageFetcher';
 import { getAyroviAiCore } from '../ai-core/core';
+import { ayWebsResolveCacheStats } from './resolveCache';
 import {
   AYWEBS_CATEGORIES,
   AYWEBS_STORES,
@@ -365,6 +366,8 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
         deterministic_extraction: true,
         jina_reader_enabled: process.env.AYROVI_JINA_READER !== 'false',
         rendered_provider_ready: renderedProviderReady(),
+        /** Cache de résolution : taux de réutilisation réellement mesuré. */
+        resolve_cache: ayWebsResolveCacheStats(),
         ai_fallback_enabled: flags.aiExtractionEnabled,
         ai_provider_ready: flags.aiExtractionEnabled && getAyroviAiCore().responses().isConfigured(),
         schema_ready: ayWebsSchemaReady(db),
@@ -491,6 +494,10 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
         quantity: Number.isFinite(quantity) ? quantity : 1,
         sessionId: identity.sessionId,
         accountId: identity.accountId,
+        // Relecture fraîche sur demande explicite. Le client ordinaire n'en a
+        // pas besoin : une fiche relue il y a moins de `AYWEBS_RESOLVE_CACHE_TTL_MS`
+        // est servie depuis la lecture mémorisée, et le prix reste recalculé ici.
+        refresh: req.body?.refresh === true,
       });
       trackAyWebsNavigation(ctx, {
         sessionId: identity.sessionId,
@@ -505,7 +512,11 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
         success: true,
         capture_id: result.captureId,
         status: result.missing.length ? 'NEEDS_SELECTION' : 'READY',
-        data: productPayload(result.product),
+        data: productPayload(result.product, { fromCache: result.fromCache, cacheAgeMs: result.cacheAgeMs }),
+        // Honnêteté (§51) : le client sait si la fiche vient d'être relue ou
+        // servie depuis la lecture mémorisée, et depuis combien de temps.
+        from_cache: result.fromCache,
+        cache_age_ms: result.cacheAgeMs,
         missing: result.missing,
         // Contrat V1 : le produit AYROVI historique reste disponible tel quel.
         product: result.scrapedProduct,
@@ -674,7 +685,9 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
         status: 'READY',
         product: result.scrapedProduct,
         normalized_product: normalizedProductV1(result),
-        data: productPayload(result.product),
+        data: productPayload(result.product, { fromCache: result.fromCache, cacheAgeMs: result.cacheAgeMs }),
+        from_cache: result.fromCache,
+        cache_age_ms: result.cacheAgeMs,
         product_id: result.productId,
       });
     } catch (error) {
@@ -1147,9 +1160,15 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
  * Sérialisation HTTP stable (contrats consommés par le client)
  * ------------------------------------------------------------------ */
 
-function productPayload(product: Awaited<ReturnType<typeof resolveAyWebsProduct>>['product']) {
+function productPayload(
+  product: Awaited<ReturnType<typeof resolveAyWebsProduct>>['product'],
+  cache: { fromCache: boolean; cacheAgeMs: number | null } | null = null,
+) {
   return {
     product_id: product.productId,
+    /** Lecture servie depuis la mémoire de résolution + âge réel de la lecture. */
+    from_cache: cache ? cache.fromCache : false,
+    cache_age_ms: cache ? cache.cacheAgeMs : null,
     store_id: product.storeId,
     store_name: product.storeName,
     source_url: product.sourceUrl,
