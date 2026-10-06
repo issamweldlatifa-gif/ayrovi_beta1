@@ -107,6 +107,9 @@ describe('AYROVI Android shell (Capacitor) — application réelle', () => {
     // la coque ne devine rien : classification serveur (§11)
     expect(activity).toContain('/api/v1/aywebs/page/analyze');
     expect(activity).toContain('/api/v1/aywebs/cart/items');
+    expect(activity).toContain('.put("request_id", pendingAddRequestId)');
+    expect(activity).toContain('if (pendingAddRequestId.isEmpty())');
+    expect(activity).toContain('variant_details');
     // feuille par-dessus le marchand + confirmation sans sortie (§13/§15)
     expect(sheet).toContain('aywebs_sheet_groups');
     expect(added).toContain('aywebs_added_checkout');
@@ -174,6 +177,16 @@ describe('AYROVI Android shell (Capacitor) — application réelle', () => {
     expect(browserActivity).toContain('aywebs_captcha_page');
   });
 
+  it('AWEBs: lien non supporté mène à une demande Purchase Support, pas à une impasse', () => {
+    const supportLayout = readFileSync('android/app/src/main/res/layout/sheet_aywebs_purchase_support.xml', 'utf8');
+    expect(browserActivity).toContain('data.optString("fallback"');
+    expect(browserActivity).toContain('setPurchaseSupportEnabled()');
+    expect(browserActivity).toContain('showPurchaseSupportSheet(currentUrl)');
+    expect(browserActivity).toContain('/api/v1/aywebs/purchase-requests');
+    expect(supportLayout).toContain('aywebs_support_requirements');
+    expect(supportLayout).toContain('aywebs_support_send');
+  });
+
   it('AWEBs: le contrat d’erreur du serveur parvient au client', () => {
     // { error_contract: { userMessage, recoverable, requiredAction } } était jeté.
     expect(browserActivity).toContain('error_contract');
@@ -188,7 +201,7 @@ describe('AYROVI Android shell (Capacitor) — application réelle', () => {
     expect(added).toContain('aywebs_added_close');
     expect(browserActivity).toContain('window.setGravity(Gravity.BOTTOM)');
     expect(browserActivity).toContain('WindowManager.LayoutParams.MATCH_PARENT');
-    expect(browserActivity).toContain('if (!quoteReady) return;');
+    expect(browserActivity).toContain('if (!quoteReady[0]) return;');
     expect(browserActivity).toContain('showSheetError(errorLine, error.getMessage())');
 
     // Le POST précède le dismiss : une réponse 4xx garde le contexte pour afficher

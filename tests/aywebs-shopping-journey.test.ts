@@ -38,7 +38,7 @@ import { createAyWebsContext } from '../src/aywebs/context';
 import { resolveAyWebsProduct } from '../src/aywebs/productResolver';
 import {
   acceptAyWebsCartPriceChange, addAyWebsCartItem, listAyWebsCartItems, readAyWebsCartView,
-  verifyAyWebsCart,
+  updateAyWebsCartItem, verifyAyWebsCart,
 } from '../src/aywebs/cart';
 import { computeAyWebsCheckoutPreview } from '../src/aywebs/checkoutFees';
 import {
@@ -84,23 +84,26 @@ function fakeScraper(options: {
   prices?: { amazon?: number; shein?: number };
   condition?: 'new' | 'used' | 'refurbished';
 } = {}) {
+  const amazonBasePrice = options.prices?.amazon ?? 39.99;
+  const amazonUsedPrice = Math.round((amazonBasePrice - 10) * 100) / 100;
+  const amazonWhitePrice = Math.round((amazonBasePrice + 2) * 100) / 100;
   const amazonCombinations = [
-    { id: 'v-black-41', color: 'Black', size: '41', stock: true, price: 39.99 },
-    { id: 'v-black-42', color: 'Black', size: '42', stock: true, price: 39.99 },
-    { id: 'v-white-41', color: 'White', size: '41', stock: true, price: 41.99 },
-    { id: 'v-white-42', color: 'White', size: '42', stock: false, price: 41.99 },
+    { id: 'v-black-41', color: 'Black', size: '41', stock: true, price: amazonBasePrice },
+    { id: 'v-black-42', color: 'Black', size: '42', stock: true, price: amazonBasePrice },
+    { id: 'v-white-41', color: 'White', size: '41', stock: true, price: amazonWhitePrice },
+    { id: 'v-white-42', color: 'White', size: '42', stock: false, price: amazonWhitePrice }
   ];
   // Marchand qui publie une option NOMMÉE hors taille/couleur (référence Buyee :
   // « Format : Kindle / Magazine »), avec une valeur épuisée et une sans stock publié.
   const amazonFormats = [
-    { id: 'v-format-kindle', label: 'Kindle', attributes: { format: 'Kindle' }, stock: true, available: true, price: 39.99 },
-    { id: 'v-format-magazine', label: 'Magazine', attributes: { format: 'Magazine' }, stock: false, available: false, price: 41.99 },
+    { id: 'v-format-kindle', label: 'Kindle', attributes: { format: 'Kindle' }, stock: true, available: true, price: amazonBasePrice },
+    { id: 'v-format-magazine', label: 'Magazine', attributes: { format: 'Magazine' }, stock: false, available: false, price: amazonWhitePrice },
   ];
   // Marchand qui publie réellement un attribut « Condition » : c'est alors un
   // attribut de variante comme un autre, opposable à la sélection du client.
   const amazonConditionOptions = [
-    { id: 'v-cond-new', label: 'New', attributes: { condition: 'new' }, stock: true, available: true, price: 39.99 },
-    { id: 'v-cond-used', label: 'Used', attributes: { condition: 'used' }, stock: true, available: true, price: 29.99 },
+    { id: 'v-cond-new', label: 'New', attributes: { condition: 'new' }, stock: true, available: true, price: amazonBasePrice },
+    { id: 'v-cond-used', label: 'Used', attributes: { condition: 'used' }, stock: true, available: true, price: amazonUsedPrice }
   ];
   const scrapeProduct = vi.fn(async (url: string) => {
     const isAmazon = url.includes('amazon.');
@@ -918,16 +921,48 @@ describe('AYWEBs — parcours d’achat façon Buyee : les 12 cas du lot Q12', (
     // Le prix PUBLIÉ par option est conservé dans le contrat source (preuve)…
     const resolved = await resolveAyWebsProduct(h.resolver, { url: AMAZON_URL, sessionId: SESSION_ID });
     expect(resolved.sourceProduct.variants.find((variant) => variant.attributes.condition === 'used')?.price).toBe(29.99);
-    // …tandis que le montant facturé reste celui du devis serveur, calculé sur le prix
-    // de la fiche (39.99). Aucune règle de prix nouvelle n'est introduite ici : ce
-    // constat est journalisé dans le rapport Q12 (prix par option ≠ prix fiche).
+    const response = await request(h.app).post('/api/v1/aywebs/product/resolve').set(ANONYMOUS).send({ url: AMAZON_URL });
+    expect(response.status, JSON.stringify(response.body)).toBe(201);
+    const usedQuote = response.body.data.variant_details.find((variant: any) => variant.attributes.condition === 'used');
+    expect(usedQuote.price).toBe(29.99);
+    expect(usedQuote.quoted_price).toBe(29.99);
+    expect(usedQuote.quoted_currency).toBe('USD');
+    expect(usedQuote.price_source).toBe('VARIANT');
+    expect(usedQuote.ayrovi_pricing.total_tnd).toBeGreaterThan(0);
+    // …le panier prend le prix source de la variante exacte quand il est publié,
+    // puis conserve le prix et la devise de cette variante dans le snapshot.
     expect(brandNew.item.unitPrice).toBe(39.99);
-    expect(second.item.unitPrice).toBe(39.99);
+    expect(brandNew.item.currency).toBe('USD');
+    expect(second.item.unitPrice).toBe(29.99);
+    expect(second.item.currency).toBe('USD');
+    const verified = await verifyAyWebsCart(h.resolver, { sessionId: SESSION_ID, accountId: null });
+    expect(verified.changes.map((change) => change.code)).not.toContain('PRICE_CHANGED');
+    expect(readAyWebsCartView(h.db, SESSION_ID, null).items.find((item) => item.id === second.item.id)?.status).toBe('ACTIVE');
     // Une valeur que le marchand ne publie pas est refusée, jamais rapprochée d'une autre.
     const refused = await failureCodeOf(addAyWebsCartItem(h.resolver, {
       sessionId: SESSION_ID, accountId: null, sourceUrl: AMAZON_URL, variantAttributes: { condition: 'refurbished' }, quantity: 1,
     }));
     expect(refused).toBe('VARIANT_UNKNOWN');
+  });
+
+  test('5b. re-vérification et acceptation conservent le nouveau prix de la variante, pas celui du produit', async () => {
+    const h = harness({ variantMode: 'condition-options' });
+    const added = await addToCart(h, { variant: { condition: 'used' } });
+    const productRow = h.db.get<any>('SELECT variants FROM ayweb_products WHERE id=?', added.item.productId);
+    const variants = JSON.parse(productRow.variants).map((variant: any) =>
+      variant.attributes.condition === 'used' ? { ...variant, price: 32.99, currency: 'USD' } : variant,
+    );
+    h.db.run('UPDATE ayweb_products SET variants=? WHERE id=?', JSON.stringify(variants), added.item.productId);
+
+    const verified = await verifyAyWebsCart(h.resolver, { sessionId: SESSION_ID, accountId: null });
+    expect(verified.changes.map((change) => change.code)).toContain('PRICE_CHANGED');
+    const accepted = acceptAyWebsCartPriceChange(h.db, {
+      itemId: added.item.id, sessionId: SESSION_ID, accountId: null,
+    });
+    expect(accepted.item.unitPrice).toBe(32.99);
+    expect(accepted.item.priceSnapshot?.price).toBe(32.99);
+    expect(accepted.item.currency).toBe('USD');
+    expect(accepted.item.priceSnapshot?.variant?.attributes).toEqual({ condition: 'used' });
   });
 
   test('6. variantes : une option épuisée est refusée net, sans ligne fantôme', async () => {
@@ -951,8 +986,10 @@ describe('AYWEBs — parcours d’achat façon Buyee : les 12 cas du lot Q12', (
     expect(h.db.all('SELECT * FROM ayweb_cart_items')).toHaveLength(0);
   });
 
-  test('8. ajout : aucun faux succès — une fiche non tarifable n’écrit rien et l’API le dit', async () => {
-    const h = harness({ prices: { amazon: 0 } });
+  test('8. ajout : aucun faux succès — sans prix produit ni prix de variante, l’API le dit', async () => {
+    // Les listes ne publient pas de prix pour la combinaison exacte : 0 sur la
+    // fiche + prix variante inconnu doit rester non tarifable.
+    const h = harness({ prices: { amazon: 0 }, variantMode: 'lists' });
     const failed = await request(h.app).post('/api/v1/aywebs/cart/items').set(ANONYMOUS).send(legacyAddPayload());
     expect(failed.status).toBeGreaterThanOrEqual(400);
     expect(failed.body.success).toBe(false);
@@ -965,6 +1002,50 @@ describe('AYWEBs — parcours d’achat façon Buyee : les 12 cas du lot Q12', (
       expect(failed.body.error_contract.userMessage).toContain('cet article');
       expect(failed.body.error_contract.userMessage).not.toContain('cette devise');
     }
+  });
+
+  test('8b. idempotency : le même request_id rejoue le premier résultat sans réajouter la quantité', async () => {
+    const h = harness();
+    const first = await request(h.app).post('/api/v1/aywebs/cart/items').set(ANONYMOUS)
+      .send(legacyAddPayload({ quantity: 2, request_id: 'mobile-add-0001' }));
+    expect(first.status, JSON.stringify(first.body)).toBe(201);
+    expect(first.body.data.idempotent_replay).toBe(false);
+    expect(first.body.data.item.quantity).toBe(2);
+
+    const replay = await request(h.app).post('/api/v1/aywebs/cart/items').set(ANONYMOUS)
+      .send(legacyAddPayload({ quantity: 2, request_id: 'mobile-add-0001' }));
+    expect(replay.status, JSON.stringify(replay.body)).toBe(201);
+    expect(replay.body.data.idempotent_replay).toBe(true);
+    expect(replay.body.data.item.id).toBe(first.body.data.item.id);
+    expect(replay.body.data.item.quantity).toBe(2);
+    expect(h.db.all('SELECT * FROM ayweb_cart_items')).toHaveLength(1);
+    expect(h.db.all('SELECT * FROM cart_items')).toHaveLength(1);
+
+    const conflict = await request(h.app).post('/api/v1/aywebs/cart/items').set(ANONYMOUS)
+      .send(legacyAddPayload({ quantity: 3, request_id: 'mobile-add-0001' }));
+    expect(conflict.status).toBe(409);
+    expect(conflict.body.code).toBe('IDEMPOTENCY_CONFLICT');
+    expect(h.db.all('SELECT * FROM ayweb_cart_items')).toHaveLength(1);
+
+    // Une nouvelle intention porte une nouvelle clé et garde l'ajout historique.
+    const deliberateAdd = await request(h.app).post('/api/v1/aywebs/cart/items').set(ANONYMOUS)
+      .send(legacyAddPayload({ quantity: 1, request_id: 'mobile-add-0002' }));
+    expect(deliberateAdd.status, JSON.stringify(deliberateAdd.body)).toBe(201);
+    expect(deliberateAdd.body.data.idempotent_replay).toBe(false);
+    expect(deliberateAdd.body.data.item.quantity).toBe(3);
+    expect(deliberateAdd.body.data.ayrovi.quantity).toBe(3);
+    expect(h.db.all('SELECT * FROM ayweb_cart_items')).toHaveLength(1);
+    expect(h.db.get<any>('SELECT quantity FROM cart_items')).toEqual({ quantity: 3 });
+
+    // Replaying the first key after a later intentional add returns its first
+    // response snapshot; neither the AYWEBs line nor its AYROVI bridge is re-added.
+    const replayAfterNewIntent = await request(h.app).post('/api/v1/aywebs/cart/items').set(ANONYMOUS)
+      .send(legacyAddPayload({ quantity: 2, request_id: 'mobile-add-0001' }));
+    expect(replayAfterNewIntent.status).toBe(201);
+    expect(replayAfterNewIntent.body.data.item.quantity).toBe(2);
+    expect(replayAfterNewIntent.body.data.ayrovi).toEqual(first.body.data.ayrovi);
+    expect(replayAfterNewIntent.body.cart.totals.units).toBe(2);
+    expect(h.db.get<any>('SELECT quantity FROM cart_items')).toEqual({ quantity: 3 });
   });
 
   test('9. panier : la ligne n’existe qu’après persistance, et survit à la navigation et à la réouverture', async () => {
@@ -1043,7 +1124,38 @@ describe('AYWEBs — parcours d’achat façon Buyee : les 12 cas du lot Q12', (
     expect(audit).toHaveLength(1);
   });
 
-  test('12. prix : recalculé côté serveur, devise source intacte, montants client ignorés', async () => {
+  test('12a. le total AYWEBs d’une ligne suit quantité et calcul checkout, sans multiplier les frais fixes', async () => {
+    const h = harness();
+    const added = await addToCart(h, { quantity: 2 });
+    const checkout = computeAyWebsCheckoutPreview(h.db, cartItemsOf(h).items);
+
+    expect(added.item.quantity).toBe(2);
+    expect(added.item.pricingTnd).toBeGreaterThan(0); // devis unitaire conservé pour le pont AYROVI
+    expect(added.item.lineTotalTnd).toBeCloseTo(checkout.lines[0].lineTotalTnd, 2);
+    expect(added.item.lineTotalTnd).not.toBeCloseTo(added.item.pricingTnd * 2, 2);
+    expect(added.view.totals.productSubtotalTnd).toBeCloseTo(checkout.lines[0].lineTotalTnd, 2);
+  });
+
+  test('12b. changer de variante met à jour le prix serveur et son snapshot de preuve', async () => {
+    const h = harness();
+    const added = await addToCart(h, { variant: { color: 'Black', size: '42' } });
+    expect(added.item.unitPrice).toBe(39.99);
+
+    const changed = updateAyWebsCartItem(h.db, {
+      itemId: added.item.id, sessionId: SESSION_ID, accountId: null,
+      variantAttributes: { color: 'White', size: '41' },
+    });
+    expect(changed.item?.unitPrice).toBe(41.99);
+    expect(changed.item?.currency).toBe('USD');
+    expect(changed.item?.priceSnapshot?.price).toBe(41.99);
+    expect(changed.item?.priceSnapshot?.variant?.attributes).toEqual({ color: 'White', size: '41' });
+    expect(changed.item?.priceSnapshot?.evidenceHash).toBe(changed.item?.evidenceHash);
+    const evidence = ayWebsEvidenceByHash(h.db, changed.item!.evidenceHash);
+    expect(evidence?.price).toBe(41.99);
+    expect(evidence?.selectedVariant?.attributes).toEqual({ color: 'White', size: '41' });
+  });
+
+  test('12c. prix : recalculé côté serveur, devise source intacte, montants client ignorés', async () => {
     const h = harness();
     const resolved = await request(h.app).post('/api/v1/aywebs/product/resolve').set(ANONYMOUS).send({ url: AMAZON_URL });
     expect(resolved.status, JSON.stringify(resolved.body)).toBe(201);

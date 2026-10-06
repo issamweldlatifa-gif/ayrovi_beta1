@@ -147,6 +147,11 @@ const DEFINITIONS: Record<string, ErrorDefinition> = {
     userMessage: 'Le panier est verrouillé pendant la commande.',
     technicalMessage: 'Cart status=CHECKOUT/ORDERED : mutation refusée pour préserver le snapshot.',
   },
+  IDEMPOTENCY_CONFLICT: {
+    httpStatus: 409, flowStatus: 'FAILED', recoverable: false, retryAllowed: false, requiredAction: 'CONTACT_SUPPORT',
+    userMessage: 'Cette tentative a déjà été utilisée avec des données différentes. Recommencez l’ajout.',
+    technicalMessage: 'Une même clé d’idempotence ne peut pas représenter deux charges utiles différentes.',
+  },
   AUTH_REQUIRED: {
     httpStatus: 401, flowStatus: 'FAILED', recoverable: true, retryAllowed: false, requiredAction: 'AUTHENTICATE',
     userMessage: 'Connectez-vous à votre compte AYROVI pour continuer.',

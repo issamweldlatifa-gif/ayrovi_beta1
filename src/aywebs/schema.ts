@@ -191,6 +191,23 @@ CREATE TABLE IF NOT EXISTS ayweb_cart_items (
 CREATE INDEX IF NOT EXISTS idx_ayweb_cart_items_cart ON ayweb_cart_items(cart_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_ayweb_cart_items_status ON ayweb_cart_items(status);
 
+/* Stable Add-to-Cart retries: one durable result per caller key, independent of
+ * line-level duplicate merging. Stored snapshots replay the first outcome. */
+CREATE TABLE IF NOT EXISTS ayweb_cart_add_requests (
+  id TEXT PRIMARY KEY,
+  scope_key TEXT NOT NULL,
+  session_id TEXT NOT NULL,
+  account_id TEXT,
+  idempotency_key TEXT NOT NULL,
+  request_hash TEXT NOT NULL,
+  result_json TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_ayweb_cart_add_request_key
+  ON ayweb_cart_add_requests(scope_key,idempotency_key);
+CREATE INDEX IF NOT EXISTS idx_ayweb_cart_add_request_session
+  ON ayweb_cart_add_requests(session_id,created_at DESC);
+
 CREATE TABLE IF NOT EXISTS ayweb_orders (
   id TEXT PRIMARY KEY,
   order_number TEXT NOT NULL UNIQUE,
