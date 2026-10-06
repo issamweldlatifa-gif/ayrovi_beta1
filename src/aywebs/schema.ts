@@ -565,8 +565,26 @@ export function syncAyWebsStoreRegistry(db: QatafoDatabase): { stores: number; c
 }
 
 export function ensureAyWebsSchema(db: QatafoDatabase): void {
-  if (initialized.has(db)) return;
+  if (initialized.has(db)) {
+    const bridgeLinksTable = db.get<{ name: string }>(
+      `SELECT name FROM sqlite_master WHERE type='table' AND name='ayweb_cart_ayrovi_links'`,
+    );
+    if (bridgeLinksTable) return;
+  }
   db.runSchema(AYWEBS_SCHEMA_SQL);
+  // This durable mapping is a checkout safety boundary. `runSchema` is best-effort
+  // for legacy migrations, so explicitly backfill it even if an earlier bootstrap
+  // marked this DB initialized before the table was introduced.
+  db.run(`CREATE TABLE IF NOT EXISTS ayweb_cart_ayrovi_links (
+    aywebs_item_id TEXT PRIMARY KEY NOT NULL,
+    ayrovi_cart_item_id TEXT NOT NULL UNIQUE,
+    session_id TEXT NOT NULL DEFAULT '',
+    account_id TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  )`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_ayweb_cart_ayrovi_link_session
+    ON ayweb_cart_ayrovi_links(session_id, account_id)`);
   try {
     // Additif uniquement (§42) : colonne d'adresse de livraison du client,
     // collectée au checkout (§21) — jamais déduite, jamais inventée.

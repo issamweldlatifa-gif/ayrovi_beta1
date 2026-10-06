@@ -271,6 +271,7 @@ export function findAyWebsItemForAyroviCartLine(
   sessionId: string,
   accountId: string | null,
 ): AyWebsCartItem | null {
+  ensureAyWebsSchema(db);
   const mapped = db.get<{ aywebs_item_id: string }>(
     `SELECT aywebs_item_id FROM ayweb_cart_ayrovi_links WHERE ayrovi_cart_item_id=?`, cartItemId,
   );

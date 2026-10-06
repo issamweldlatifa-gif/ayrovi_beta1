@@ -21,6 +21,7 @@ process.env.AYROVI_VARIANT_CACHE_DIR = join(mkdtempSync(join(tmpdir(), 'aywebs-v
 import { QatafoDatabase } from '../src/db/database';
 import { AYWEBS_STORES, detectAyWebsStore } from '../shared/aywebsStores';
 import { createAyWebsRouter } from '../src/aywebs/routes';
+import { ensureAyWebsSchema } from '../src/aywebs/schema';
 import { DEFAULT_CUSTOMS_CATEGORIES, type PricingRules } from '../src/services/pricing';
 
 function pricingRules(): PricingRules {
@@ -73,6 +74,20 @@ describe('AyWebs V1 foundation', () => {
     expect(AYWEBS_STORES.filter((store) => store.phase === 2).every((store) => store.captureSupported && store.status === 'beta')).toBe(true);
     expect(detectAyWebsStore('https://www.amazon.com/dp/B0ABCDEFGH')).toMatchObject({ id: 'amazon' });
     expect(detectAyWebsStore('https://amazon.com.evil.com/dp/B0ABCDEFGH')).toBeNull();
+  });
+
+  test('recreates the durable AYWEBs-to-AYROVI link table after an older initialized schema', () => {
+    const db = new QatafoDatabase(':memory:');
+    try {
+      ensureAyWebsSchema(db);
+      db.run('DROP TABLE ayweb_cart_ayrovi_links');
+      ensureAyWebsSchema(db);
+      expect(db.get<{ name: string }>(
+        `SELECT name FROM sqlite_master WHERE type='table' AND name='ayweb_cart_ayrovi_links'`,
+      )).toEqual({ name: 'ayweb_cart_ayrovi_links' });
+    } finally {
+      db.close();
+    }
   });
 
   test('publishes the registry and runtime capture support', async () => {
