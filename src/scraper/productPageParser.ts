@@ -2,6 +2,7 @@ import { allowsMerchantVariantChoice, reportedVariantStock } from '../../shared/
 import { JSDOM, VirtualConsole } from 'jsdom';
 import type { ProductVariantDetail, ProductVariants, StoreType } from '../types';
 import { readAmazonAvailability, readAmazonExtras, readAmazonPrice, readAmazonVariants } from './amazonPage';
+import { checkPriceText, priceFromText, priceRejectionOf, type PriceRejectionReason } from './priceIntegrity';
 
 export interface ParsedProductPage {
   title: string;
@@ -32,6 +33,13 @@ export interface ParsedProductPage {
    */
   condition?: 'new' | 'used' | 'refurbished';
   priceSource: 'json_ld' | 'meta' | 'dom' | 'embedded_variant' | 'context_regex' | 'none';
+  /**
+   * INTÉGRITÉ DU PRIX (Phase 0, 06/10/2026) — renseigné SEULEMENT quand aucun
+   * prix publiable n'a été trouvé et qu'un candidat a été rejeté par le verdict
+   * d'intégrité (`DUPLICATED_TEXT`, `MULTIPLE_AMOUNTS`, `MALFORMED_NUMBER`…).
+   * Sert la télémétrie et le support ; ne remplace jamais l'absence de prix.
+   */
+  priceRejection?: PriceRejectionReason | null;
 }
 
 const SIZE_NAME = /(?:^|\b)(?:size|sizes|taille|tailles|pointure|pointures|größe|shoe size|capacity|capacit[eé]|volume|contenanc|storage|stockage|m[eé]moire|memory|ram|ssd|watt|puissance|poids|weight|dimension|format|mod[eè]le|model|style|coupe|fit|voltage|version)(?:\b|$)/i;
@@ -63,27 +71,10 @@ function unique(values: Array<string | null | undefined>, limit = 40): string[] 
 }
 
 function parsePrice(raw: unknown): number {
-  if (typeof raw === 'number') return Number.isFinite(raw) && raw > 0 && raw < 1_000_000 ? raw : 0;
-  let normalized = String(raw || '').replace(/[\s\u00a0]/g, '').replace(/[^0-9,.-]/g, '');
-  if (!normalized) return 0;
-  const comma = normalized.lastIndexOf(',');
-  const dot = normalized.lastIndexOf('.');
-  if (comma >= 0 && dot >= 0) {
-    const decimalMark = comma > dot ? ',' : '.';
-    const thousandsMark = decimalMark === ',' ? /\./g : /,/g;
-    normalized = normalized.replace(thousandsMark, '').replace(decimalMark, '.');
-  } else {
-    const mark = comma >= 0 ? ',' : dot >= 0 ? '.' : '';
-    if (mark) {
-      const parts = normalized.split(mark);
-      const decimalDigits = parts[parts.length - 1].length;
-      normalized = decimalDigits === 3 && parts.length <= 2
-        ? parts.join('')
-        : `${parts.slice(0, -1).join('')}.${parts[parts.length - 1]}`;
-    }
-  }
-  const value = Number.parseFloat(normalized);
-  return Number.isFinite(value) && value > 0 && value < 1_000_000 ? value : 0;
+  // Phase 0 (06/10/2026) — l'ancienne version retirait tout sauf `[0-9,.-]`,
+  // ce qui transformait « $6.99$6.99 » (prix hors-écran + visible concaténés)
+  // en 6996.99. La lecture passe désormais par le verdict d'intégrité.
+  return priceFromText(raw);
 }
 
 
@@ -144,6 +135,20 @@ function currencyCode(raw: string): string {
   return '';
 }
 
+/**
+ * PHASE 0 (06/10/2026) — LECTURE CONTEXTUELLE HONNÊTE.
+ *
+ * L'audit a montré qu'en dernier recours (`context_regex`) la lecture prenait
+ * « Price €18.74 » — le prix d'une **publicité** pour un AUTRE ASIN — et le
+ * publiait avec `currency_verified=true`. Trois verrous désormais :
+ *   1. le texte d'entrée est déjà purgé des blocs publicitaires / ASIN tiers
+ *      (voir `contextualText`) ;
+ *   2. aucune correspondance dont le voisinage parle de publicité n'est admise ;
+ *   3. le montant doit être corroboré : code ISO explicite, OU présent deux fois.
+ * Sans ces preuves : `null` → prix UNKNOWN, jamais un chiffre inventé.
+ */
+const AD_CONTEXT = /(?:sponsored|sponsoris|anzeige|publicit[ée]|advertising|patrocinado|sponsorlu|annonce\s+pay[ée]e|\bshop\s+now\b|commander\s+maintenant)/i;
+
 function contextualPrice(bodyText: string): { price: number; currency: string; currencyEvidence: string } | null {
   const text = bodyText.replace(/\s+/g, ' ').slice(0, 500_000);
   const patterns = [
@@ -152,15 +157,56 @@ function contextualPrice(bodyText: string): { price: number; currency: string; c
   ];
   for (const pattern of patterns) {
     for (const match of text.matchAll(pattern)) {
-      const context = text.slice(Math.max(0, Number(match.index) - 35), Number(match.index) + match[0].length + 20);
+      const at = Number(match.index);
+      const context = text.slice(Math.max(0, at - 120), at + match[0].length + 120);
       if (/(?:old|ancien|regular|list\s*price|was|before|barr[ée]|économisez|save\s+\d)/i.test(context)) continue;
-      const price = parsePrice(match[2]);
+      if (AD_CONTEXT.test(context)) continue;
+      const check = checkPriceText(match[2]);
+      if (!check.ok) continue;
       const currencyEvidence = `${match[1] || ''} ${match[3] || ''}`.trim();
       const currency = currencyCode(currencyEvidence);
-      if (price > 0 && currency) return { price, currency, currencyEvidence };
+      if (!currency) continue;
+      /* NOTE (06/10/2026) — une règle « le montant doit apparaître deux fois » a
+         été essayée puis RETIRÉE : elle rejetait des fiches légitimes qui
+         n'affichent le prix qu'une fois (« Price: 49.99 € »), sans rien apporter
+         contre le cas Amazon.de — celui-ci est traité en amont, par la purge des
+         blocs publicitaires / ASIN tiers et par la fenêtre publicitaire
+         ci-dessus. On préfère un verrou STRUCTUREL à un comptage fragile. */
+      return { price: check.value, currency, currencyEvidence };
     }
   }
   return null;
+}
+
+/** Sélecteurs des blocs publicitaires / volets « autres ASIN ». */
+const AD_BLOCK_SELECTORS = [
+  '[data-avar]',
+  '[cel_widget_id*="sp_" i]',
+  '[cel_widget_id*="sponsored" i]',
+  '[data-component-type*="sp-sponsored" i]',
+  '[id*="sp-sponsored" i]',
+  '[class*="sponsored" i]',
+  '[aria-label*="sponsored" i]',
+  '[data-csa-c-content-id*="sponsored" i]',
+].join(', ');
+
+/**
+ * Texte servant à la lecture contextuelle : débarrassé des publicités et des
+ * blocs d'un AUTRE identifiant produit. Sur Amazon.de, `€18.74` vivait dans un
+ * volet `data-avar="deal"` portant `data-asin="B0CFQN45PF"` (accessoire) alors
+ * que la page concerne `B0D1XD1ZV3` : ces nœuds ne doivent jamais nourrir le prix.
+ */
+function contextualText(document: Document, pageAsin: string): string {
+  const clone = document.body ? (document.body.cloneNode(true) as HTMLElement) : null;
+  if (!clone) return '';
+  for (const node of Array.from(clone.querySelectorAll(AD_BLOCK_SELECTORS))) node.remove();
+  if (pageAsin) {
+    for (const node of Array.from(clone.querySelectorAll('[data-asin]'))) {
+      const asin = (node.getAttribute('data-asin') || '').trim().toUpperCase();
+      if (asin && asin !== pageAsin) node.remove();
+    }
+  }
+  return clone.textContent || '';
 }
 
 function moneyValue(raw: any, shopifyCents = false): number {
@@ -696,7 +742,8 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
     );
     const domPrice = amazonPriceText ? parsePrice(amazonPriceText) : parsePrice(selectorPrice);
     const variantFloor = detailPrices.length ? Math.min(...detailPrices) : 0;
-    const regexPrice = contextualPrice(document.body?.textContent || '');
+    const pageAsin = String(baseUrl || '').match(/\/(?:dp|gp\/product|gp\/aw\/d|product)\/([A-Z0-9]{10})/i)?.[1]?.toUpperCase() || '';
+    const regexPrice = contextualPrice(contextualText(document, pageAsin));
     /* Structured product offers are the authoritative source. Do not compare
        unrelated page numbers and pick the smallest one: meta/DOM values can be
        instalments, accessories or stale theme data. Fall through only when the
@@ -710,6 +757,15 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
           : variantFloor ? 'embedded_variant'
             : regexPrice ? 'context_regex'
               : 'none';
+    /* Télémétrie honnête (Phase 0) : quand aucun prix n'est publiable, garder
+       POURQUOI — un montant dupliqué/ambigu (« $6.99$6.99 ») n'est pas la même
+       panne qu'une page sans prix, et le support doit pouvoir le distinguer. */
+    const rejectedPriceCandidates = [amazonPriceText, selectorPrice].filter((candidate) => String(candidate || '').trim());
+    const priceRejection: PriceRejectionReason | null = price > 0
+      ? null
+      : rejectedPriceCandidates.length
+        ? priceRejectionOf(rejectedPriceCandidates[0])
+        : 'EMPTY';
     const metaCurrency = meta('meta[property="product:price:currency"]') || meta('meta[property="og:price:currency"]');
     const currencyEvidenceBySource: Record<ParsedProductPage['priceSource'], string> = {
       json_ld: String(ldSale.currency || offers?.priceCurrency || metaCurrency || ''),
@@ -914,6 +970,7 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
     ),
     condition: conditionFrom(ldOffers.length ? ldOffers : (Array.isArray(productLd?.offers) ? productLd.offers : productLd?.offers ? [productLd.offers] : [])),
     priceSource,
+    priceRejection,
     };
   } finally {
     dom.window.close();

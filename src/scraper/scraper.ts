@@ -119,11 +119,13 @@ export class SmartLinkScraper {
       url: cleanUrl,
       externalId,
       title: title.trim(),
+      // Phase 0 (06/10/2026) — plus AUCUNE description inventée. Une phrase
+      // générique (« Article extrait depuis Amazon… ») faisait passer un champ
+      // vide pour une donnée du marchand. Sans description publiée : vide, et
+      // l'interface écrit « non communiquée ».
       description: (merchantResult.data?.description && merchantResult.data.description.length > 5)
         ? merchantResult.data.description
-        : (merchantResult.verified
-          ? `Article extrait depuis ${storeName}. Prix confirmé automatiquement par AYROVI.`
-          : `Article extrait depuis ${storeName}. Prix lu automatiquement par AYROVI.`),
+        : '',
       images,
       colorImages: liveData?.colorImages || {},
       mainImage: images.length > 0 ? images[0] : '',
@@ -138,7 +140,13 @@ export class SmartLinkScraper {
       availability: liveData?.availability || 'unknown',
       // Recopié tel quel depuis les données structurées de la page ; absent sinon.
       condition: liveData?.condition,
-      brand: merchantResult.data?.brand || urlInfo.brand || storeName.split(' ')[0],
+      // Phase 0 — « pourquoi ce prix n'est pas publiable » remonte jusqu'au client
+      // (ex. `DUPLICATED_TEXT` pour « $6.99$6.99 »). Jamais un montant, juste un motif.
+      priceRejection: liveData?.priceRejection ?? null,
+      // Phase 0 (06/10/2026) — plus de marque inventée. Ni le nom de la boutique
+      // (« Amazon », « TEMU ») ni le slug de l'URL ne sont la marque du produit :
+      // seule la donnée publiée par le marchand fait foi, sinon le champ est vide.
+      brand: merchantResult.data?.brand || '',
       priceVerified: merchantResult.verified && price > 0,
       currencyVerified,
       verificationProvider: merchantResult.provider,

@@ -21,6 +21,7 @@
  * بدون دليل (`dimensionValueState`).
  */
 import type { ProductVariantDetail } from '../types';
+import { checkPriceText } from './priceIntegrity';
 
 export interface AmazonPriceReading {
   /** النص الخام للسعر الحالي كما نشرته الصفحة (« $109.00 »). */
@@ -50,6 +51,9 @@ function plausiblePriceText(text: string): boolean {
   if (!/\d/.test(text)) return false;
   // Instalments / abonnements / livraison ne sont pas le prix de l'article.
   if (/(?:\/|per\s|par\s)\s*(?:month|mois|week|semaine)|\bmonthly\b|\binstallment|\bpar mois\b/i.test(text)) return false;
+  // Phase 0 (06/10/2026) — verdict d'intégrité : « $6.99$6.99 » (hors-écran +
+  // visible concaténés) ne doit JAMAIS devenir 6996.99.
+  if (!checkPriceText(text).ok) return false;
   return true;
 }
 
@@ -187,8 +191,15 @@ export function readAmazonPrice(document: Document, pageHtml: string): AmazonPri
   for (const { selector, source } of CURRENT_PRICE_SELECTORS) {
     const element = document.querySelector(selector);
     if (!element) continue;
-    const text = collapse(element.textContent).match(/\d/) ? collapse(element.textContent) : spanPrice(element);
-    if (!plausiblePriceText(text)) continue;
+    // Phase 0 (06/10/2026) : la lecture ne se contente plus du premier candidat.
+    // `textContent` d'une grappe de prix vaut souvent « $6.99$6.99 » (prix
+    // hors-écran + prix visible) ; on essaie alors la RECONSTRUCTION par spans
+    // (`a-price-whole`/`a-price-fraction`), qui rend « $6.99 ». Avant ce
+    // correctif, la grappe était simplement sautée et la lecture continuait,
+    // laissant un prix absent — ou pire, un montant concaténé accepté plus tard.
+    const candidates = [collapse(element.textContent), spanPrice(element)].filter((candidate) => candidate);
+    const text = candidates.find((candidate) => plausiblePriceText(candidate));
+    if (!text) continue;
     return {
       current: text,
       original: '',
@@ -204,6 +215,17 @@ export function readAmazonPrice(document: Document, pageHtml: string): AmazonPri
   }
   const amount = pageHtml.match(/"priceAmount"\s*:\s*([0-9][0-9.,]*)/)?.[1];
   if (amount) {
+    // Phase 0 : plusieurs `priceAmount` divergents = page qui parle de plusieurs
+    // articles (publicités, accessoires, volets). Aucun ne peut être publié.
+    const allAmounts = [...pageHtml.matchAll(/"priceAmount"\s*:\s*([0-9][0-9.,]*)/g)]
+      .map((match) => checkPriceText(match[1]))
+      .filter((check) => check.ok)
+      .map((check) => check.value);
+    const distinct = [...new Set(allAmounts)];
+    if (distinct.length > 1) {
+      const ratio = Math.max(...distinct) / Math.min(...distinct);
+      if (!Number.isFinite(ratio) || ratio >= 20) return empty;
+    }
     const symbol = pageHtml.match(/"currencySymbol"\s*:\s*"([^"]{1,4})"/)?.[1] || '';
     const text = `${symbol}${amount}`;
     if (plausiblePriceText(text)) {

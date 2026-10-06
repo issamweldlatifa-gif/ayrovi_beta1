@@ -27,7 +27,6 @@ export interface AyWebsStore {
 export interface AyWebsFeatures {
   enabled: boolean;
   capture_enabled: boolean;
-  ocr_fallback_enabled: boolean;
   ai_extraction_enabled: boolean;
 }
 
@@ -84,7 +83,6 @@ export async function getAyWebsStores(signal?: AbortSignal): Promise<{ stores: A
       features: {
         enabled: true,
         capture_enabled: true,
-        ocr_fallback_enabled: true,
         ai_extraction_enabled: false,
       },
       offline: true,

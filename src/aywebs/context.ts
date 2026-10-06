@@ -28,7 +28,6 @@ import type { AyWebsResolverDependencies } from './productResolver';
 export interface AyWebsFeatureFlags {
   enabled: boolean;
   captureEnabled: boolean;
-  ocrFallbackEnabled: boolean;
   aiExtractionEnabled: boolean;
   /** Achat marchand automatisé : non connecté aujourd'hui, et l'API le dit (§48). */
   purchaseIntegrationEnabled: boolean;
@@ -60,7 +59,6 @@ export function ayWebsFeatureFlags(): AyWebsFeatureFlags {
   return {
     enabled: envFlag('AYWEBS_ENABLED', true),
     captureEnabled: envFlag('AYWEBS_CAPTURE_ENABLED', true),
-    ocrFallbackEnabled: envFlag('AYWEBS_OCR_FALLBACK_ENABLED', true),
     aiExtractionEnabled: envFlag('AYWEBS_AI_EXTRACTION_ENABLED', false),
     purchaseIntegrationEnabled: envFlag('AYWEBS_PURCHASE_INTEGRATION_ENABLED', false),
     warehouseEnabled: envFlag('AYWEBS_WAREHOUSE_ENABLED', false),

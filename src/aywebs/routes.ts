@@ -182,6 +182,26 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
       }
     };
 
+  /**
+   * PHASE 0 (06/10/2026) — VÉRITÉ OPÉRATIONNELLE PAR BOUTIQUE.
+   * Certaines enseignes ne servent qu'une page « coquille » (JS) au serveur :
+   * leur lecture dépend d'un fournisseur de rendu payant. Tant que celui-ci
+   * n'est pas configuré (`rendered_provider_ready=false`, l'état constaté en
+   * production le 06/10/2026), ces boutiques restent navigables mais AUCUN
+   * prix ne peut être lu. L'API le dit désormais au lieu de laisser le client
+   * découvrir un panier vide.
+   */
+  const renderDependentStores = new Set(['shein', 'temu', 'aliexpress']);
+  const operationalOf = (store: AyWebsStoreDefinition): { operational: boolean; operational_reason: string | null } => {
+    if (!store.enabled || !ctx.storeCaptureEnabled(store)) {
+      return { operational: false, operational_reason: 'CAPTURE_DISABLED_FOR_STORE' };
+    }
+    if (renderDependentStores.has(store.id) && !renderedProviderReady()) {
+      return { operational: false, operational_reason: 'RENDER_PROVIDER_NOT_CONFIGURED' };
+    }
+    return { operational: true, operational_reason: null };
+  };
+
   const publicStore = (store: AyWebsStoreDefinition) => ({
     id: store.id,
     name: store.name,
@@ -192,6 +212,8 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
     logo: store.logo,
     enabled: store.enabled,
     capture_supported: ctx.storeCaptureEnabled(store),
+    /** Opérationnel = la lecture produit fonctionne VRAIMENT aujourd'hui. */
+    ...operationalOf(store),
     adapter: store.adapter,
     status: store.status,
     integration_type: store.integrationType,
@@ -224,7 +246,9 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
       features: {
         enabled: flags.enabled,
         capture_enabled: flags.captureEnabled,
-        ocr_fallback_enabled: flags.ocrFallbackEnabled,
+        /* Phase 0 : `ocr_fallback_enabled` a été RETIRÉ. Le drapeau annonçait une
+           capacité inexistante (aucun code OCR dans le dépôt). Un client qui
+           s'y fiait lisait une promesse, pas un état. */
         ai_extraction_enabled: flags.aiExtractionEnabled,
         purchase_integration_enabled: flags.purchaseIntegrationEnabled,
         warehouse_enabled: flags.warehouseEnabled,
@@ -485,6 +509,7 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
     if (!identity) return;
     if (!ctx.flags.enabled) throw new AyWebsDomainError('AYWEBS_DISABLED');
     if (!ctx.flags.captureEnabled) throw new AyWebsDomainError('CAPTURE_DISABLED');
+    rejectProvidedPage(req.body?.page);
 
     const rawUrl = scraper.cleanPastedUrl(String(req.body?.url || ''));
     const requestedStoreId = req.body?.store_id ?? req.body?.store;
@@ -533,6 +558,10 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
         from_cache: result.fromCache,
         cache_age_ms: result.cacheAgeMs,
         missing: result.missing,
+        /* Phase 0 — transparence : quand un montant a été LU puis ÉCARTÉ par le
+           verdict d'intégrité (« $6.99$6.99 » → montant dupliqué), le client et
+           le support voient pourquoi. Rien n'est publié à la place du prix. */
+        price_rejection: result.scrapedProduct?.priceRejection ?? null,
         // Contrat V1 : le produit AYROVI historique reste disponible tel quel.
         product: result.scrapedProduct,
         normalized_product: normalizedProductV1(result),
@@ -558,6 +587,9 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
   router.post('/product/variants', handle(async (req, res) => {
     const identity = identityOf(req, res);
     if (!identity) return;
+    // Phase 0 : même garde que /product/resolve — aucune page marchande n'entre
+    // par cette porte (le HTML fourni par le client reste refusé, cf. §Capture).
+    rejectProvidedPage(req.body?.page);
     const productId = String(req.body?.product_id || req.body?.productId || '').trim();
     const url = String(req.body?.url || '').trim();
     if (!productId && !url) throw new AyWebsDomainError('PRODUCT_NOT_FOUND');
@@ -645,13 +677,18 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
       });
 
       if (result.missing.length) {
-        trackAyWebsFunnel(ctx, 'capture_failed', { store: result.product.storeId, code: 'CAPTURE_INCOMPLETE' }, identity.sessionId);
+        /* Phase 0 : « prix ambigu » n'est pas « capture incomplète ». Un montant a
+           été lu mais il est inexploitable → code dédié PRICE_AMBIGUOUS. */
+        const priceRejection = result.scrapedProduct?.priceRejection ?? null;
+        const failureCode = priceRejection ? 'PRICE_AMBIGUOUS' : 'CAPTURE_INCOMPLETE';
+        trackAyWebsFunnel(ctx, 'capture_failed', { store: result.product.storeId, code: failureCode }, identity.sessionId);
         return res.status(422).json({
           success: false,
           capture_id: result.captureId,
           status: 'NEEDS_SELECTION',
           outcome: 'needs_user_input',
-          code: 'CAPTURE_INCOMPLETE',
+          code: failureCode,
+          price_rejection: priceRejection,
           missing: result.missing,
           product: result.scrapedProduct,
           error: 'Nous n’avons pas pu lire toutes les informations du produit.',
@@ -768,6 +805,7 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
     const identity = identityOf(req, res);
     if (!identity) return;
     if (!ctx.flags.enabled) throw new AyWebsDomainError('AYWEBS_DISABLED');
+    rejectProvidedPage(req.body?.page);
     trackAyWebsFunnel(ctx, 'add_to_cart_clicked', { store: req.body?.store }, identity.sessionId);
 
     const idempotencyKey = idempotencyKeyOf(req);

@@ -127,6 +127,14 @@ const DEFINITIONS: Record<string, ErrorDefinition> = {
     userMessage: 'Le devis AYROVI est indisponible pour cet article. Vérifiez son prix et sa devise, puis réessayez.',
     technicalMessage: 'aucun devis exploitable : prix source absent ou invalide, devise non prise en charge, taux de change indisponible ou restriction produit.',
   },
+  PRICE_AMBIGUOUS: {
+    // Phase 0 (06/10/2026) : un montant a bien été LU mais il est inexploitable
+    // (« $6.99$6.99 » concaténé, plusieurs montants, séparateurs incohérents,
+    // devises contradictoires). Publier un chiffre serait pire que ne rien publier.
+    httpStatus: 422, flowStatus: 'NEEDS_SELECTION', recoverable: true, retryAllowed: true, requiredAction: 'RETRY',
+    userMessage: 'Le prix affiché par le marchand n’a pas pu être confirmé. Réessayez : nous ne publions jamais un montant approximatif.',
+    technicalMessage: 'verdict d’intégrité du prix : montant dupliqué, multiple, mal formé ou devise contradictoire (voir priceRejection sur la capture).',
+  },
   INVALID_QUOTE: {
     httpStatus: 400, flowStatus: 'FAILED', recoverable: true, retryAllowed: true, requiredAction: 'RETRY',
     userMessage: 'Données de devis AyWebs invalides.',

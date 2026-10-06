@@ -72,6 +72,14 @@ export interface ScrapedProduct {
   rating?: number | null;
   reviewsCount?: number | null;
   priceVerified?: boolean;
+  /**
+   * INTÉGRITÉ DU PRIX (Phase 0, 06/10/2026) — raison pour laquelle un montant
+   * lu sur la page a été ÉCARTÉ au lieu d'être publié (`DUPLICATED_TEXT`,
+   * `MULTIPLE_AMOUNTS`, `MALFORMED_NUMBER`, `REPEATED_SYMBOL`,
+   * `CURRENCY_CONFLICT`, `OUT_OF_RANGE`). `null`/absent quand aucun montant
+   * n'était présent ou quand le prix publié est sain.
+   */
+  priceRejection?: string | null;
   /** True only when the merchant page explicitly publishes a supported currency. */
   currencyVerified?: boolean;
   verificationProvider?: string;
