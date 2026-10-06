@@ -36,26 +36,26 @@ const ADAPTER_FACTORIES: Record<AyWebsAdapterId, AdapterFactory> = {
  */
 export const AYWEBS_ADAPTER_DESCRIPTORS: readonly AyWebsAdapterDescriptor[] = [
   {
-    id: 'amazon', label: 'Amazon', integrationType: 'SUPPORTED', purchaseMode: 'MANUAL_REVIEW',
+    id: 'amazon', label: 'Amazon', integrationType: 'PARTIALLY_SUPPORTED', purchaseMode: 'MANUAL_REVIEW',
     reads: ['product_page_url', 'title', 'price', 'currency', 'images', 'variants', 'availability'],
     implemented: true,
     pendingIntegration: 'Achat marchand automatisé non connecté : les commandes partent en revue humaine.',
   },
   {
     id: 'shein', label: 'SHEIN', integrationType: 'PARTIALLY_SUPPORTED', purchaseMode: 'MANUAL_REVIEW',
-    reads: ['product_page_url', 'title', 'price', 'currency', 'images', 'variants'],
+    reads: ['product_page_url', 'title', 'price', 'currency', 'images', 'variants', 'availability'],
     implemented: true,
     pendingIntegration: 'Bot-wall fréquent : rendered provider requis en production, achat en revue humaine.',
   },
   {
     id: 'temu', label: 'TEMU', integrationType: 'PARTIALLY_SUPPORTED', purchaseMode: 'MANUAL_REVIEW',
-    reads: ['product_page_url', 'title', 'price', 'currency', 'images', 'variants'],
+    reads: ['product_page_url', 'title', 'price', 'currency', 'images', 'variants', 'availability'],
     implemented: true,
     pendingIntegration: 'Bot-wall fréquent : rendered provider requis en production, achat en revue humaine.',
   },
   {
     id: 'aliexpress', label: 'AliExpress', integrationType: 'PARTIALLY_SUPPORTED', purchaseMode: 'MANUAL_REVIEW',
-    reads: ['product_page_url', 'title', 'price', 'currency', 'images', 'variants'],
+    reads: ['product_page_url', 'title', 'price', 'currency', 'images', 'variants', 'availability'],
     implemented: true,
     pendingIntegration: 'Variantes parfois incomplètes : achat en revue humaine.',
   },

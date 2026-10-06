@@ -55,12 +55,9 @@ export interface AyWebsStoreDefinition {
   phase: 1 | 2;
 }
 
-const FULL_CAPABILITIES: readonly AyWebsStoreCapability[] = [
-  'browse', 'search', 'product', 'variants', 'availability', 'purchase', 'tracking',
-] as const;
-/** Lecture fiable, achat exécuté avec revue : honnête tant que l'intégration d'achat n'existe pas. */
+/** Navigation et capture par adaptateur ; le stock dépend de la source et l'achat reste en revue humaine. */
 const REVIEW_PURCHASE_CAPABILITIES: readonly AyWebsStoreCapability[] = [
-  'browse', 'search', 'product', 'variants', 'availability', 'tracking',
+  'browse', 'search', 'product', 'variants', 'availability',
 ] as const;
 
 export const AYWEBS_STORES: readonly AyWebsStoreDefinition[] = [
@@ -81,8 +78,8 @@ export const AYWEBS_STORES: readonly AyWebsStoreDefinition[] = [
     captureSupported: true,
     adapter: 'amazon',
     status: 'active',
-    integrationType: 'SUPPORTED',
-    capabilities: FULL_CAPABILITIES,
+    integrationType: 'PARTIALLY_SUPPORTED',
+    capabilities: REVIEW_PURCHASE_CAPABILITIES,
     browserMode: 'external',
     homeUrl: 'https://www.amazon.com/',
     searchUrlTemplate: 'https://www.amazon.com/s?k={query}',

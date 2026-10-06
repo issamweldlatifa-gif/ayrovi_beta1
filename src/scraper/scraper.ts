@@ -73,14 +73,17 @@ export class SmartLinkScraper {
     const store = this.detectStore(cleanUrl);
     const storeName = this.getStoreDisplayName(store, cleanUrl);
     let currency = this.detectCurrencyFromUrl(cleanUrl);
+    let currencyVerified = false;
 
     const urlInfo = this.extractDeepUrlInfo(cleanUrl, store);
 
     const merchantResult = await this.scrapeWithHttp(cleanUrl, store, options);
     const liveData = merchantResult.data;
     const detectedLiveCurrency = String(liveData?.currency || '').toUpperCase();
-    if (detectedLiveCurrency && Object.hasOwn(SmartLinkScraper.RATES_TO_TND, detectedLiveCurrency)) {
+    if (liveData?.currencyVerified === true && detectedLiveCurrency
+      && Object.hasOwn(SmartLinkScraper.RATES_TO_TND, detectedLiveCurrency)) {
       currency = detectedLiveCurrency;
+      currencyVerified = true;
     }
 
     const title = (liveData && liveData.title && !this.isBotBlocked(liveData.title))
@@ -137,6 +140,7 @@ export class SmartLinkScraper {
       condition: liveData?.condition,
       brand: merchantResult.data?.brand || urlInfo.brand || storeName.split(' ')[0],
       priceVerified: merchantResult.verified && price > 0,
+      currencyVerified,
       verificationProvider: merchantResult.provider,
       verificationMethod: merchantResult.method,
       verificationFailureCode: merchantResult.failureCode,

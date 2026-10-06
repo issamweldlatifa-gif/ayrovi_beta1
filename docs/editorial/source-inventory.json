@@ -4,7 +4,7 @@
   "totals": {
     "files": 256,
     "customerAndSharedFiles": 204,
-    "controls": 481,
+    "controls": 487,
     "iconAliases": 102,
     "uniqueGlyphs": 99
   },
@@ -18752,8 +18752,8 @@
     {
       "file": "client/src/features/aywebs/api.ts",
       "domain": "shell-content",
-      "sha256": "ffba263038b3111a4403065fc3435a81416a36cc15a7fa234b42646f17f3bf1e",
-      "lines": 615,
+      "sha256": "acd6cca519ebca81fa5e6ba45c7f836843deffbc1537195fee7f943c5d3d4954",
+      "lines": 632,
       "imports": [
         "../../../../shared/aywebsStores",
         "../../types",
@@ -18806,8 +18806,8 @@
     {
       "file": "client/src/features/aywebs/aywebs.css",
       "domain": "shell-content",
-      "sha256": "a65e354be4a5ee0b697af7576b322305f1dc49b778b4c8b0fcdca4a947bca097",
-      "lines": 540,
+      "sha256": "0f9264d4bedd8a18d16208fbec1e5d492c7207a3020cc9bcf5e4e06434946819",
+      "lines": 559,
       "imports": [],
       "exports": [],
       "controls": [],
@@ -18836,8 +18836,8 @@
     {
       "file": "client/src/features/aywebs/AyWebsApp.tsx",
       "domain": "shell-content",
-      "sha256": "9cd6f147d67cced2a7279e01c59924801279c6b041f5ed9894c66474a62c0fea",
-      "lines": 155,
+      "sha256": "d9d553bdf7d0bd668979709b7c1c2c9719b09ede99ccad8297d8f5eea2fbb50b",
+      "lines": 157,
       "imports": [
         "react",
         "./aywebs.css",
@@ -18858,7 +18858,7 @@
       "controls": [
         {
           "tag": "AyWebsStoresScreen",
-          "line": 113,
+          "line": 115,
           "className": null,
           "type": null,
           "role": null,
@@ -18868,7 +18868,7 @@
         },
         {
           "tag": "AyWebsWishScreen",
-          "line": 124,
+          "line": 126,
           "className": null,
           "type": null,
           "role": null,
@@ -18878,7 +18878,7 @@
         },
         {
           "tag": "AyWebsCartScreen",
-          "line": 134,
+          "line": 136,
           "className": null,
           "type": null,
           "role": null,
@@ -18888,7 +18888,7 @@
         },
         {
           "tag": "AyWebsVariantSheet",
-          "line": 137,
+          "line": 139,
           "className": null,
           "type": null,
           "role": null,
@@ -18898,7 +18898,7 @@
         },
         {
           "tag": "AyWebsFavoriteSheet",
-          "line": 145,
+          "line": 147,
           "className": null,
           "type": null,
           "role": null,
@@ -18916,8 +18916,8 @@
     {
       "file": "client/src/features/aywebs/components/AyWebsCartScreen.tsx",
       "domain": "commerce",
-      "sha256": "bf521a7cf15f76ae781199ea2f02856dfe0e74c6f80a87a8a3332f7ada49897c",
-      "lines": 232,
+      "sha256": "ac4207e0ef7ae1be9d580da68b0132f418b79755192d72c978ce2e6bc17bc444",
+      "lines": 239,
       "imports": [
         "react",
         "../../../components/QatafoIcons",
@@ -18932,7 +18932,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 100,
+          "line": 102,
           "className": "\"ayw-source-link\"",
           "type": "\"button\"",
           "role": null,
@@ -18952,7 +18952,7 @@
         },
         {
           "tag": "button",
-          "line": 145,
+          "line": 147,
           "className": "\"ayw-delete\"",
           "type": "\"button\"",
           "role": null,
@@ -18962,7 +18962,7 @@
         },
         {
           "tag": "button",
-          "line": 211,
+          "line": 218,
           "className": "\"ayw-cta\"",
           "type": "\"button\"",
           "role": null,
@@ -18972,7 +18972,7 @@
         },
         {
           "tag": "button",
-          "line": 215,
+          "line": 222,
           "className": "\"ayw-cta-outline\"",
           "type": "\"button\"",
           "role": null,
@@ -19181,8 +19181,8 @@
     {
       "file": "client/src/features/aywebs/components/AyWebsVariantSheet.tsx",
       "domain": "shell-content",
-      "sha256": "5d40943f467b826bab5c5aa3b0600447174c62fb3015b9d9ca97653cc5b0b461",
-      "lines": 328,
+      "sha256": "51969531806ca13327b0b9cb98e247575ae4a1e431efe5c7085faed3007c2cac",
+      "lines": 487,
       "imports": [
         "react",
         "../../../components/QatafoIcons",
@@ -19195,7 +19195,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 170,
+          "line": 248,
           "className": "\"ayw-sheet-close\"",
           "type": "\"button\"",
           "role": null,
@@ -19205,17 +19205,77 @@
         },
         {
           "tag": "button",
-          "line": 219,
-          "className": "{`ayw-variantcard${isOn ? ' is-on' : ''}`}",
+          "line": 271,
+          "className": "\"ayw-cta\"",
           "type": "\"button\"",
-          "role": "\"radio\"",
+          "role": null,
           "ariaLabel": null,
-          "onClick": "{() => setSelected((current) => ({ ...current, [group.attribute]: card.value }))}",
+          "onClick": "{() => setPurchaseSupportOpen(true)}",
+          "disabled": null
+        },
+        {
+          "tag": "form",
+          "line": 277,
+          "className": "\"ayw-support-form\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 284,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "textarea",
+          "line": 288,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
           "disabled": null
         },
         {
           "tag": "select",
-          "line": 247,
+          "line": 292,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 297,
+          "className": "\"ayw-cta\"",
+          "type": "\"submit\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": "{supportSubmitting || (!supportProductName.trim() && !supportRequirements.trim())}"
+        },
+        {
+          "tag": "button",
+          "line": 356,
+          "className": "{`ayw-variantcard${isOn ? ' is-on' : ''}`}",
+          "type": "\"button\"",
+          "role": "\"radio\"",
+          "ariaLabel": null,
+          "onClick": "{() => selectAttribute(group.attribute, card.value)}",
+          "disabled": null
+        },
+        {
+          "tag": "select",
+          "line": 384,
           "className": "\"ayw-select\"",
           "type": null,
           "role": null,
@@ -19225,7 +19285,7 @@
         },
         {
           "tag": "select",
-          "line": 263,
+          "line": 400,
           "className": "\"ayw-select\"",
           "type": null,
           "role": null,
@@ -19235,17 +19295,17 @@
         },
         {
           "tag": "button",
-          "line": 279,
+          "line": 431,
           "className": "\"ayw-cta\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
           "onClick": "{() => void submit()}",
-          "disabled": "{missingRequired || adding}"
+          "disabled": "{!quoteEvidenceComplete || missingRequired || selectedVariantUnknown || selectedVariantUnavailable || selectedAvailabilityUnconfirmed || displayedPrice <= 0 || displayedPricingTnd == null || adding}"
         },
         {
           "tag": "button",
-          "line": 316,
+          "line": 475,
           "className": "\"ayw-cta\"",
           "type": "\"button\"",
           "role": null,
@@ -19255,7 +19315,7 @@
         },
         {
           "tag": "button",
-          "line": 319,
+          "line": 478,
           "className": "\"ayw-cta-outline\"",
           "type": "\"button\"",
           "role": null,

@@ -440,3 +440,52 @@ describe('Connexion Google sans navigateur', () => {
     expect(readCode('src/server.ts')).toContain("rateLimit('google-native'");
   });
 });
+
+/* ── Audit follow-up: variant truth, retries, and the unsupported-link exit ─ */
+describe('AYWEBs follow-up: variants, idempotent Add and Purchase Support', () => {
+  const VARIANT_SHEET = 'client/src/features/aywebs/components/AyWebsVariantSheet.tsx';
+  const API = 'client/src/features/aywebs/api.ts';
+  const ROUTES = 'src/aywebs/routes.ts';
+
+  test('Add retries keep one request id; changed selection or quantity creates a new intent', () => {
+    const sheet = readCode(VARIANT_SHEET);
+    const api = readCode(API);
+    const routes = readCode(ROUTES);
+    expect(sheet).toContain('useRef');
+    expect(sheet).toContain('request_id: requestId');
+    expect(sheet).toContain('pendingAddRequestId.current = requestId');
+    expect(sheet).toContain('pendingAddRequestId.current = \'\'');
+    expect(api).toContain('request_id?: string');
+    expect(routes).toContain('const idempotencyKey = idempotencyKeyOf(req);');
+    expect(routes).toContain('idempotencyKey,');
+    expect(routes).toContain('idempotent_replay: result.idempotentReplay');
+  });
+
+  test('unknown stock is explicit and missing exact variants cannot be added', () => {
+    const sheet = readCode(VARIANT_SHEET);
+    const activity = readCode('android/app/src/main/java/app/ayrovi/mobile/AyWebsBrowseActivity.java');
+    expect(sheet).toContain("displayedAvailability === 'AVAILABLE' || displayedAvailability === 'LOW_STOCK'");
+    expect(sheet).toContain('const selectedAvailabilityUnconfirmed = !selectedAvailabilityConfirmed;');
+    expect(sheet).toContain('selectedVariantUnknown');
+    expect(sheet).toContain('selectedVariantUnavailable');
+    expect(activity).toContain('aywebs_availability_unknown');
+    expect(activity).toContain('boolean stockConfirmed = "AVAILABLE".equals(state) || "LOW_STOCK".equals(state);');
+    expect(activity).toContain('&& stockConfirmed;');
+    expect(activity).toContain('sameVariantAttributes(selected, candidateAttributes)');
+  });
+
+  test('unsupported capture leads to human review, explicitly separate from cart and merchant purchase', () => {
+    const sheet = readCode(VARIANT_SHEET);
+    const api = readCode(API);
+    expect(sheet).toContain("fallback.includes('purchase_request')");
+    expect(sheet).toContain('createAyWebsPurchaseRequest({');
+    expect(sheet).toContain('does not add an item to your cart or buy from the merchant');
+    expect(api).toContain("'/purchase-requests'");
+  });
+
+  test('non-empty invalid Android share is shown instead of silently discarded', () => {
+    const app = readCode('client/src/features/aywebs/AyWebsApp.tsx');
+    expect(app).toContain('const match = shared.match(/https?:\\/\\/[^\\s<>]+/i)?.[0];');
+    expect(app).toContain('if (shared) setSheet({ url: match || shared, storeId: match ? params.get(\'store\') : null });');
+  });
+});

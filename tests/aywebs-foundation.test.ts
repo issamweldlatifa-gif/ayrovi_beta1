@@ -21,6 +21,7 @@ process.env.AYROVI_VARIANT_CACHE_DIR = join(mkdtempSync(join(tmpdir(), 'aywebs-v
 import { QatafoDatabase } from '../src/db/database';
 import { AYWEBS_STORES, detectAyWebsStore } from '../shared/aywebsStores';
 import { createAyWebsRouter } from '../src/aywebs/routes';
+import { ensureAyWebsSchema } from '../src/aywebs/schema';
 import { DEFAULT_CUSTOMS_CATEGORIES, type PricingRules } from '../src/services/pricing';
 
 function pricingRules(): PricingRules {
@@ -46,7 +47,7 @@ function fixture() {
       sourcePrice: 39.99, sourceCurrency: 'USD', convertedPriceTND: 0,
       estimatedShippingTND: 0, serviceFeeTND: 0, totalPriceTND: 0,
       variants: { colors: ['Black'], sizes: ['42'], details: [] },
-      availability: 'in_stock' as const, brand: 'Nike', priceVerified: true,
+      availability: 'in_stock' as const, brand: 'Nike', priceVerified: true, currencyVerified: true,
       verificationProvider: 'direct', verificationMethod: 'json_ld', verificationFailureCode: null,
       scrapedAt: '2026-10-02T12:00:00.000Z',
     };
@@ -73,6 +74,20 @@ describe('AyWebs V1 foundation', () => {
     expect(AYWEBS_STORES.filter((store) => store.phase === 2).every((store) => store.captureSupported && store.status === 'beta')).toBe(true);
     expect(detectAyWebsStore('https://www.amazon.com/dp/B0ABCDEFGH')).toMatchObject({ id: 'amazon' });
     expect(detectAyWebsStore('https://amazon.com.evil.com/dp/B0ABCDEFGH')).toBeNull();
+  });
+
+  test('recreates the durable AYWEBs-to-AYROVI link table after an older initialized schema', () => {
+    const db = new QatafoDatabase(':memory:');
+    try {
+      ensureAyWebsSchema(db);
+      db.run('DROP TABLE ayweb_cart_ayrovi_links');
+      ensureAyWebsSchema(db);
+      expect(db.get<{ name: string }>(
+        `SELECT name FROM sqlite_master WHERE type='table' AND name='ayweb_cart_ayrovi_links'`,
+      )).toEqual({ name: 'ayweb_cart_ayrovi_links' });
+    } finally {
+      db.close();
+    }
   });
 
   test('publishes the registry and runtime capture support', async () => {

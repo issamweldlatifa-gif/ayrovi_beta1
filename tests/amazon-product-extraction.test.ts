@@ -23,6 +23,7 @@ describe('Amazon — lecture du prix éclaté en spans', () => {
     const parsed = parseProductPageHtml(FIXTURE, URL, 'amazon');
     expect(parsed.price).toBe(109);
     expect(parsed.currency).toBe('USD');
+    expect(parsed.currencyVerified).toBe(true);
     expect(parsed.title).toContain('Vince Camuto');
     expect(parsed.availability).toBe('in_stock');
   });

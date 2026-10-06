@@ -219,6 +219,21 @@ export interface AyWebsVariantOption {
   image: string | null;
 }
 
+export interface AyWebsVariantPriceOption {
+  source_variant_id: string | null;
+  attributes: Record<string, string>;
+  label: string;
+  price: number | null;
+  currency: string | null;
+  quoted_price: number | null;
+  quoted_currency: string | null;
+  price_source: 'VARIANT' | 'PRODUCT' | 'UNKNOWN';
+  availability: string;
+  availability_reason: string;
+  image: string | null;
+  ayrovi_pricing: { total_tnd: number; pricing_version: number } | null;
+}
+
 export interface AyWebsProductPayload {
   product_id: string;
   store_id: string;
@@ -232,7 +247,10 @@ export interface AyWebsProductPayload {
   images: string[];
   price: number;
   currency: string;
+  price_verified?: boolean;
+  currency_verified?: boolean;
   variants: AyWebsVariantOption[];
+  variant_details: AyWebsVariantPriceOption[];
   variant_groups: Array<{ attribute: string; values: string[] }>;
   /**
    * État publié par la source ('new' | 'used' | 'refurbished') ou `null`.
@@ -417,11 +435,7 @@ export async function getAyWebsVariants(payload: { product_id?: string; url?: st
   return response.data as {
     product_id: string; store_id: string; source_url: string;
     variant_groups: Array<{ attribute: string; values: string[] }>;
-    variants: Array<{
-      source_variant_id: string | null; attributes: Record<string, string>; label: string;
-      price: number | null; currency: string | null; availability: string;
-      availability_reason: string; image: string | null;
-    }>;
+    variants: AyWebsVariantPriceOption[];
     selection_required: boolean; availability: string; availability_reason: string; resolved_at: string;
   };
 }
@@ -434,11 +448,14 @@ export async function getAyWebsCart(signal?: AbortSignal): Promise<AyWebsCartPay
 export async function addAyWebsCartItem(body: {
   source_url?: string; product_id?: string; store_id?: string;
   variant_attributes?: Record<string, string> | null; quantity?: number; customer_note?: string;
+  /** Stable across a retry of this one user intention; a later Add gets a new key. */
+  request_id?: string;
 }) {
   const payload = await ayWebsRequest<any>('/cart/items', { method: 'POST', body });
   return {
     item: payload.data.item as AyWebsCartItemPayload,
     cart: payload.cart as AyWebsCartPayload,
+    idempotentReplay: Boolean(payload.data.idempotent_replay),
     /**
      * Liaison immédiate vers le panier AYROVI (point sûr : après persistance).
      * `linked: true` ⇒ l'article figure déjà dans le panier AYROVI de l'app.

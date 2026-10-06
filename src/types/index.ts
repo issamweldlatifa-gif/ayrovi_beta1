@@ -72,6 +72,8 @@ export interface ScrapedProduct {
   rating?: number | null;
   reviewsCount?: number | null;
   priceVerified?: boolean;
+  /** True only when the merchant page explicitly publishes a supported currency. */
+  currencyVerified?: boolean;
   verificationProvider?: string;
   verificationMethod?: string;
   verificationFailureCode?: string | null;

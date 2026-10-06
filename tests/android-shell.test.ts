@@ -107,6 +107,9 @@ describe('AYROVI Android shell (Capacitor) — application réelle', () => {
     // la coque ne devine rien : classification serveur (§11)
     expect(activity).toContain('/api/v1/aywebs/page/analyze');
     expect(activity).toContain('/api/v1/aywebs/cart/items');
+    expect(activity).toContain('.put("request_id", pendingAddRequestId)');
+    expect(activity).toContain('if (pendingAddRequestId.isEmpty())');
+    expect(activity).toContain('variant_details');
     // feuille par-dessus le marchand + confirmation sans sortie (§13/§15)
     expect(sheet).toContain('aywebs_sheet_groups');
     expect(added).toContain('aywebs_added_checkout');
@@ -146,15 +149,24 @@ describe('AYROVI Android shell (Capacitor) — application réelle', () => {
     expect(apiOrigin).not.toMatch(/^import /m);
   });
 
-  // ── Connexion marchande : deux réglages absents cassaient le login ───────────
-  it('AWEBs: connexion marchande possible (popups + cookies tiers)', () => {
-    // Sans setSupportMultipleWindows/onCreateWindow, window.open() est ignoré
-    // en silence : aucune popup de connexion ne s'ouvre.
+  // ── Limites de connexion marchand : aucune promesse sans test appareil ──────
+  it('AWEBs: popup refusée explicitement; cookies tiers gardés désactivés', () => {
     expect(browserActivity).toContain('setSupportMultipleWindows(true)');
-    expect(browserActivity).toContain('onCreateWindow');
-    // Cookies tiers refusés par défaut depuis Android 5.0 : les parcours SSO
-    // rebouclent sur une page déjà connectée.
+    const popupStart = browserActivity.indexOf('public boolean onCreateWindow');
+    const popupEnd = browserActivity.indexOf('\n      }\n    });', popupStart);
+    expect(popupStart).toBeGreaterThanOrEqual(0);
+    expect(popupEnd).toBeGreaterThan(popupStart);
+    expect(browserActivity.slice(popupStart, popupEnd)).toContain('return false;');
+    // Ce test verrouille le choix de confidentialité, pas une preuve de SSO :
+    // les cookies tiers restent désactivés tant qu'un test produit/appareil ne
+    // justifie pas de les ouvrir.
     expect(browserActivity).toContain('setAcceptThirdPartyCookies(webView, false)');
+  });
+
+  it('AWEBs: la WebView native reçoit pause/resume puis destroy', () => {
+    expect(browserActivity).toMatch(/protected void onPause\(\)[\s\S]*?webView\.onPause\(\)/);
+    expect(browserActivity).toMatch(/protected void onResume\(\)[\s\S]*?webView\.onResume\(\)/);
+    expect(browserActivity).toMatch(/protected void onDestroy\(\)[\s\S]*?webView\.destroy\(\)/);
   });
 
   it('AWEBs: une panne de service n’est jamais présentée comme un refus de la page', () => {
@@ -174,6 +186,16 @@ describe('AYROVI Android shell (Capacitor) — application réelle', () => {
     expect(browserActivity).toContain('aywebs_captcha_page');
   });
 
+  it('AWEBs: lien non supporté mène à une demande Purchase Support, pas à une impasse', () => {
+    const supportLayout = readFileSync('android/app/src/main/res/layout/sheet_aywebs_purchase_support.xml', 'utf8');
+    expect(browserActivity).toContain('data.optString("fallback"');
+    expect(browserActivity).toContain('setPurchaseSupportEnabled()');
+    expect(browserActivity).toContain('showPurchaseSupportSheet(currentUrl)');
+    expect(browserActivity).toContain('/api/v1/aywebs/purchase-requests');
+    expect(supportLayout).toContain('aywebs_support_requirements');
+    expect(supportLayout).toContain('aywebs_support_send');
+  });
+
   it('AWEBs: le contrat d’erreur du serveur parvient au client', () => {
     // { error_contract: { userMessage, recoverable, requiredAction } } était jeté.
     expect(browserActivity).toContain('error_contract');
@@ -188,7 +210,9 @@ describe('AYROVI Android shell (Capacitor) — application réelle', () => {
     expect(added).toContain('aywebs_added_close');
     expect(browserActivity).toContain('window.setGravity(Gravity.BOTTOM)');
     expect(browserActivity).toContain('WindowManager.LayoutParams.MATCH_PARENT');
-    expect(browserActivity).toContain('if (!quoteReady) return;');
+    expect(browserActivity).toContain('if (!quoteReady[0]) return;');
+    expect(browserActivity).toContain('boolean stockConfirmed = "AVAILABLE".equals(state) || "LOW_STOCK".equals(state);');
+    expect(browserActivity).toContain('&& stockConfirmed;');
     expect(browserActivity).toContain('showSheetError(errorLine, error.getMessage())');
 
     // Le POST précède le dismiss : une réponse 4xx garde le contexte pour afficher

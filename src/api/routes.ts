@@ -18,6 +18,9 @@ import { verifyAyrovixPriceToken } from '../ayrovix/priceQuote';
 import { attachOcerexExtractionsToOrder } from '../ocerex/store';
 import { recordOcerexEvent } from '../ocerex/analytics';
 import { funnelVisitorKey, recordFunnelEvent } from '../analytics/funnel';
+import { attachAyWebsCartToAccount, readAyWebsCart, readAyWebsCartItem, verifyAyWebsCart } from '../aywebs/cart';
+import { createAyWebsContext } from '../aywebs/context';
+import { findAyWebsItemForAyroviCartLine } from '../aywebs/ayroviBridge';
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_IMAGE_SIZE, files: 1 } });
@@ -30,6 +33,9 @@ export function createApiRouter(
   visionExtractor: VisualProductExtractor
 ): Router {
   const router = Router();
+  // The shared AYROVI checkout performs a conditional guard only for cart lines
+  // that came through AYWEBs; all other cart flows keep their existing contract.
+  const ayWebsContext = createAyWebsContext(db, scraper);
 
   function cartSummary() {
     const rules = db.getPricingRules();
@@ -415,7 +421,7 @@ export function createApiRouter(
   /**
    * POST /api/checkout
    */
-  router.post('/checkout', requireCustomer(db), (req: Request, res: Response) => {
+  router.post('/checkout', requireCustomer(db), async (req: Request, res: Response) => {
     const sessionId = requireSessionId(req, res);
     if (!sessionId) return;
 
@@ -519,6 +525,14 @@ export function createApiRouter(
     }
 
     db.attachCartToAccount(sessionId, customer.id);
+    let ayWebsAttachFailed = false;
+    try {
+      attachAyWebsCartToAccount(db, sessionId, customer.id);
+    } catch (error) {
+      // AYWEBs' additive attach must never take down an unrelated AYROVI checkout.
+      ayWebsAttachFailed = true;
+      console.warn('[AYWEBs checkout attach]', error instanceof Error ? error.message : error);
+    }
     const items = db.getItems(sessionId, customer.id);
     if (items.length === 0) {
       return res.status(400).json({
@@ -537,6 +551,73 @@ export function createApiRouter(
         error: CART_PRICE_TRUST_MESSAGE,
         items: priceTrust.blocking.map((line) => ({ itemId: line.itemId, reason: line.reason, expiresAt: line.expiresAt })),
       });
+    }
+
+    // AYWEBs lines are re-resolved from the merchant at the final AYROVI order
+    // boundary. Their signed client price token is not a stock/variant proof.
+    const linkedAyWebsLines = items.map((line) => ({
+      ayroviLine: line,
+      sourceLine: findAyWebsItemForAyroviCartLine(db, line.id, sessionId, customer.id),
+    })).filter((entry): entry is {
+      ayroviLine: (typeof items)[number];
+      sourceLine: NonNullable<ReturnType<typeof findAyWebsItemForAyroviCartLine>>;
+    } => Boolean(entry.sourceLine));
+
+    if (linkedAyWebsLines.length) {
+      attachAyWebsCartToAccount(db, sessionId, customer.id);
+      let sourceCheckFailed = ayWebsAttachFailed;
+      try {
+        await verifyAyWebsCart(ayWebsContext.resolver, {
+          sessionId,
+          accountId: customer.id,
+          recheckSource: true,
+        });
+      } catch (error) {
+        sourceCheckFailed = true;
+        console.warn('[AYWEBs checkout verification]', error instanceof Error ? error.message : error);
+      }
+
+      const ayWebsCart = readAyWebsCart(db, sessionId, customer.id);
+      const blockedLines: Array<{ itemId: string; code: string; message: string }> = [];
+      for (const { ayroviLine, sourceLine } of linkedAyWebsLines) {
+        const currentSource = readAyWebsCartItem(db, sourceLine.id);
+        const currentAyroviLine = db.getItemById(ayroviLine.id, sessionId, customer.id);
+        if (sourceCheckFailed || !ayWebsCart || !currentSource || currentSource.cartId !== ayWebsCart.id) {
+          blockedLines.push({
+            itemId: ayroviLine.id,
+            code: 'AYWEBS_SOURCE_RECHECK_FAILED',
+            message: 'La source AYWEBs ne peut pas être vérifiée. Réessayez depuis le panier AYWEBs.',
+          });
+        } else if (currentSource.status === 'REMOVED') {
+          blockedLines.push({
+            itemId: ayroviLine.id,
+            code: 'AYWEBS_ITEM_REMOVED',
+            message: 'Cet article a été retiré du panier AYWEBs. Retirez-le du panier AYROVI avant de commander.',
+          });
+        } else if (!currentSource.checkoutReady) {
+          blockedLines.push({
+            itemId: ayroviLine.id,
+            code: currentSource.status === 'ACTIVE' ? 'AYWEBS_AVAILABILITY_UNCONFIRMED' : `AYWEBS_${currentSource.status}`,
+            message: currentSource.statusReason || 'Le prix ou la disponibilité de cet article exige une nouvelle validation AYWEBs.',
+          });
+        } else if (!currentAyroviLine
+          || Math.abs(Number(currentAyroviLine.sourcePrice) - currentSource.unitPrice) > 0.001
+          || String(currentAyroviLine.sourceCurrency || '').trim().toUpperCase() !== currentSource.currency.trim().toUpperCase()) {
+          blockedLines.push({
+            itemId: ayroviLine.id,
+            code: 'AYWEBS_QUOTE_MISMATCH',
+            message: 'Le devis de la ligne AYROVI ne correspond plus au devis source AYWEBs. Synchronisez-la avant de commander.',
+          });
+        }
+      }
+      if (blockedLines.length) {
+        return res.status(409).json({
+          success: false,
+          code: 'AYWEBS_SOURCE_VERIFICATION_REQUIRED',
+          error: blockedLines[0].message,
+          items: blockedLines,
+        });
+      }
     }
 
     // Re-lire le contrat source à la confirmation finale : une ancienne ligne

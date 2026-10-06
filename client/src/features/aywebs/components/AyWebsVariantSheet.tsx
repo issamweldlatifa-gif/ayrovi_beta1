@@ -1,9 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { CheckCircle2, Loader2, ShoppingBag, X } from '../../../components/QatafoIcons';
 import { useLocale } from '../../../i18n/LocaleContext';
 import {
-  addAyWebsCartItem, getAyWebsVariants, resolveAyWebsProduct, trackAyWebsEvent,
-  type AyWebsCartItemPayload, type AyWebsProductPayload,
+  addAyWebsCartItem, createAyWebsPurchaseRequest, getAyWebsVariants, resolveAyWebsProduct, trackAyWebsEvent,
+  type AyWebsCartItemPayload, type AyWebsProductPayload, type AyWebsPurchaseRequestPayload, type AyWebsVariantPriceOption,
 } from '../api';
 
 /**
@@ -49,22 +49,54 @@ export const AyWebsVariantSheet: React.FC<AyWebsVariantSheetProps> = ({ url, sto
   const [quantity, setQuantity] = useState(1);
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState('');
+  const [purchaseSupportAvailable, setPurchaseSupportAvailable] = useState(false);
+  const [purchaseSupportOpen, setPurchaseSupportOpen] = useState(false);
+  const [supportProductName, setSupportProductName] = useState('');
+  const [supportRequirements, setSupportRequirements] = useState('');
+  const [supportQuantity, setSupportQuantity] = useState(1);
+  const [supportSubmitting, setSupportSubmitting] = useState(false);
+  const [supportRequest, setSupportRequest] = useState<AyWebsPurchaseRequestPayload | null>(null);
   const [added, setAdded] = useState<AyWebsCartItemPayload | null>(null);
   const [linked, setLinked] = useState<{ linked: boolean; reason: string } | null>(null);
+  const [sourceVariants, setSourceVariants] = useState<AyWebsVariantPriceOption[]>([]);
   const [cardsByAttribute, setCardsByAttribute] = useState<Record<string, VariantCard[]>>({});
+  const pendingAddRequestId = useRef('');
+
+  const createAddRequestId = () => globalThis.crypto?.randomUUID?.()
+    || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+  const selectAttribute = (attribute: string, value: string) => {
+    // A changed payload is a new Add intention, not a retry of the old one.
+    pendingAddRequestId.current = '';
+    setSelected((current) => ({ ...current, [attribute]: value }));
+  };
 
   useEffect(() => {
     const controller = new AbortController();
+    pendingAddRequestId.current = '';
+    setPurchaseSupportAvailable(false);
+    setPurchaseSupportOpen(false);
+    setSupportRequest(null);
+    setSupportProductName('');
+    setSupportRequirements('');
+    setSupportQuantity(1);
+    setProduct(null);
+    setSelected({});
+    setSourceVariants([]);
+    setCardsByAttribute({});
+    setError('');
     setPhase('loading');
     resolveAyWebsProduct({ url, ...(storeId ? { store: storeId } : {}) }, controller.signal)
       .then(async (payload) => {
         const resolved = payload.product ?? payload;
         setProduct(resolved);
+        setSourceVariants(resolved.variant_details || []);
         setPhase('ready');
         // Cartes marchand (image / prix / dispo par valeur) — meilleur effort :
         // un échec de l'appel variantes laisse les menus déroulants (Buyee).
         try {
           const variants = await getAyWebsVariants({ product_id: resolved.product_id }, controller.signal);
+          setSourceVariants(variants.variants || []);
           const cards: Record<string, VariantCard[]> = {};
           for (const group of resolved.variant_groups || []) {
             if (group.values.length < 2) continue;
@@ -91,6 +123,8 @@ export const AyWebsVariantSheet: React.FC<AyWebsVariantSheetProps> = ({ url, sto
         }
       })
       .catch((caught) => {
+        const fallback = Array.isArray(caught?.fallback) ? caught.fallback.map(String) : [];
+        setPurchaseSupportAvailable(fallback.includes('purchase_request') || fallback.includes('store_request'));
         setError(String(caught?.message || caught));
         setPhase('error');
       });
@@ -116,16 +150,37 @@ export const AyWebsVariantSheet: React.FC<AyWebsVariantSheetProps> = ({ url, sto
     });
   }, [groups]);
 
+  const requiredGroups = useMemo(() => groups.filter((group) => group.values.length > 0), [groups]);
   const missingRequired = useMemo(
-    () => groups.some((group) => group.values.length > 1 && !selected[group.attribute]),
-    [groups, selected],
+    () => requiredGroups.some((group) => !selected[group.attribute]),
+    [requiredGroups, selected],
   );
+  const selectionComplete = requiredGroups.length === 0 || !missingRequired;
+  const selectedSourceVariant = useMemo(() => {
+    if (!requiredGroups.length || !selectionComplete) return null;
+    return sourceVariants.find((variant) => (
+      Object.keys(variant.attributes || {}).length === requiredGroups.length
+      && requiredGroups.every((group) => String(variant.attributes?.[group.attribute] || '') === selected[group.attribute])
+    )) || null;
+  }, [requiredGroups, selectionComplete, selected, sourceVariants]);
+  const selectedVariantUnknown = selectionComplete && requiredGroups.length > 0 && !selectedSourceVariant;
+  const selectedVariantUnavailable = selectedSourceVariant?.availability === 'OUT_OF_STOCK';
+  const displayedAvailability = selectedSourceVariant?.availability || product?.availability?.state;
+  const selectedAvailabilityConfirmed = displayedAvailability === 'AVAILABLE' || displayedAvailability === 'LOW_STOCK';
+  const selectedAvailabilityUnconfirmed = !selectedAvailabilityConfirmed;
+  const quoteEvidenceComplete = product?.price_verified === true && product?.currency_verified === true;
+  const displayedPrice = quoteEvidenceComplete ? (selectedSourceVariant?.quoted_price ?? product?.price ?? 0) : 0;
+  const displayedCurrency = quoteEvidenceComplete ? (selectedSourceVariant?.quoted_currency || product?.currency || '') : '';
+  const displayedPricingTnd = selectedSourceVariant
+    ? selectedSourceVariant.ayrovi_pricing?.total_tnd ?? null
+    : product?.ayrovi_pricing?.total_tnd ?? null;
 
-  /** Disponibilité : affichée seulement quand le marchand (ou l'adaptateur) confirme. */
+  /** Disponibilité : UNKNOWN est visible comme incertitude, jamais comme disponible. */
   const availabilityLabel = (state: string | undefined, short = false): string => {
     if (state === 'AVAILABLE') return short ? tr('In Stock', 'متوفر') : tr('In stock at the merchant', 'متوفّر عند التاجر');
     if (state === 'LOW_STOCK') return short ? tr('Low stock', 'كمية محدودة') : tr('Low stock at the merchant', 'الكمية محدودة عند التاجر');
     if (state === 'OUT_OF_STOCK') return short ? tr('Out of stock', 'غير متوفر') : tr('Out of stock at the merchant', 'غير متوفّر عند التاجر');
+    if (state === 'UNKNOWN') return short ? tr('Stock not confirmed', 'المخزون غير مؤكد') : tr('The merchant has not confirmed stock for this configuration', 'لم يؤكد التاجر توفر هذه التهيئة');
     return '';
   };
 
@@ -137,11 +192,32 @@ export const AyWebsVariantSheet: React.FC<AyWebsVariantSheetProps> = ({ url, sto
     return '';
   }, [product, tr]);
 
+  const submitPurchaseSupport = async () => {
+    if ((!supportProductName.trim() && !supportRequirements.trim()) || supportSubmitting || supportRequest) return;
+    setSupportSubmitting(true);
+    setError('');
+    try {
+      const result = await createAyWebsPurchaseRequest({
+        product_url: url,
+        quantity: supportQuantity,
+        product_name: supportProductName.trim(),
+        requirements: supportRequirements.trim(),
+      });
+      setSupportRequest(result);
+    } catch (caught: any) {
+      setError(String(caught?.message || caught));
+    } finally {
+      setSupportSubmitting(false);
+    }
+  };
+
   const submit = async () => {
-    if (!product || missingRequired || adding) return;
+    if (!product || !quoteEvidenceComplete || missingRequired || selectedVariantUnknown || selectedVariantUnavailable || selectedAvailabilityUnconfirmed || adding) return;
     setAdding(true);
     setError('');
     try {
+      const requestId = pendingAddRequestId.current || createAddRequestId();
+      pendingAddRequestId.current = requestId;
       const result = await addAyWebsCartItem({
         product_id: product.product_id,
         source_url: product.source_url,
@@ -150,8 +226,10 @@ export const AyWebsVariantSheet: React.FC<AyWebsVariantSheetProps> = ({ url, sto
         // plus `condition` : ce n'est pas un attribut de variante chez le marchand.
         variant_attributes: Object.keys(selected).length ? selected : null,
         quantity,
+        request_id: requestId,
       });
-      trackAyWebsEvent('add_to_cart_succeeded', { store: product.store_id });
+      if (!result.idempotentReplay) trackAyWebsEvent('add_to_cart_succeeded', { store: product.store_id });
+      pendingAddRequestId.current = '';
       setAdded(result.item ?? null);
       setLinked(result.ayrovi ? { linked: Boolean(result.ayrovi.linked), reason: String(result.ayrovi.reason || '') } : null);
       setPhase('added');
@@ -179,8 +257,56 @@ export const AyWebsVariantSheet: React.FC<AyWebsVariantSheetProps> = ({ url, sto
         )}
 
         {phase === 'error' && (
-          <div className="ayw-sheet-body ayw-center">
+          <div className="ayw-sheet-body">
+            <h2 className="ayw-sheet-title">{purchaseSupportAvailable
+              ? tr('Purchase Support', 'دعم الشراء')
+              : tr('Unable to read this product', 'تعذّرت قراءة هذا المنتج')}</h2>
             <p className="ayw-notice">{error || tr('Product unreadable on the merchant page.', 'تعذّرت قراءة المنتج من صفحة التاجر.')}</p>
+            {purchaseSupportAvailable && !purchaseSupportOpen && (
+              <div className="ayw-support-panel">
+                <p>{tr(
+                  'This link cannot be added through product capture. Purchase Support sends it to the AYROVI team for review; it does not add an item to your cart or buy from the merchant.',
+                  'لا يمكن إضافة هذا الرابط عبر التقاط المنتج. يرسل دعم الشراء الرابط إلى فريق AYROVI للمراجعة؛ ولا يضيفه إلى السلة أو يشتريه آلياً من التاجر.',
+                )}</p>
+                <button type="button" className="ayw-cta" onClick={() => setPurchaseSupportOpen(true)}>
+                  {tr('Request Purchase Support', 'طلب دعم الشراء')}
+                </button>
+              </div>
+            )}
+            {purchaseSupportAvailable && purchaseSupportOpen && !supportRequest && (
+              <form
+                className="ayw-support-form"
+                onSubmit={(event) => { event.preventDefault(); void submitPurchaseSupport(); }}
+              >
+                <p>{tr('Tell us what you want the team to review. No purchase is made automatically.', 'أخبرنا بما تريد من الفريق مراجعته. لا يتم الشراء تلقائياً.')}</p>
+                <label className="ayw-support-field">
+                  <span>{tr('Product name (optional)', 'اسم المنتج (اختياري)')}</span>
+                  <input value={supportProductName} onChange={(event) => setSupportProductName(event.target.value)} maxLength={300} />
+                </label>
+                <label className="ayw-support-field">
+                  <span>{tr('Variant or requirements', 'النسخة أو المتطلبات')}</span>
+                  <textarea value={supportRequirements} onChange={(event) => setSupportRequirements(event.target.value)} maxLength={1000} rows={3} />
+                </label>
+                <label className="ayw-support-field">
+                  <span>{tr('Quantity', 'الكمية')}</span>
+                  <select value={supportQuantity} onChange={(event) => setSupportQuantity(Number(event.target.value))}>
+                    {quantities.map((value) => <option key={value} value={value}>{value}</option>)}
+                  </select>
+                </label>
+                {error && <p className="ayw-notice">{error}</p>}
+                <button type="submit" className="ayw-cta" disabled={supportSubmitting || (!supportProductName.trim() && !supportRequirements.trim())}>
+                  {supportSubmitting ? tr('Sending…', 'جارٍ الإرسال…') : tr('Send for review', 'إرسال للمراجعة')}
+                </button>
+              </form>
+            )}
+            {supportRequest && (
+              <div className="ayw-support-panel" role="status">
+                <p><strong>{tr('Request sent for human review', 'تم إرسال الطلب للمراجعة البشرية')}</strong></p>
+                <p>{tr('Reference', 'المرجع')}: {supportRequest.request_number}</p>
+                <p>{tr('Status', 'الحالة')}: {supportRequest.status}</p>
+                <p>{tr('This request is separate from the AYROVI cart and is not an automated merchant purchase.', 'هذا الطلب منفصل عن سلة AYROVI ولا يمثل شراءً آلياً من التاجر.')}</p>
+              </div>
+            )}
           </div>
         )}
 
@@ -193,8 +319,19 @@ export const AyWebsVariantSheet: React.FC<AyWebsVariantSheetProps> = ({ url, sto
             </div>
 
             {conditionLabel && <p className="ayw-added-meta">{conditionLabel}</p>}
-            {availabilityLabel(product.availability?.state) && (
-              <p className="ayw-added-meta">{availabilityLabel(product.availability?.state)}</p>
+            {availabilityLabel(displayedAvailability) && (
+              <p className="ayw-added-meta">{availabilityLabel(displayedAvailability)}</p>
+            )}
+            {selectedVariantUnknown && (
+              <p className="ayw-notice">{tr('This exact option combination was not verified by the merchant.', 'لم يتحقق التاجر من هذه التهيئة المحددة.')}</p>
+            )}
+            {selectedAvailabilityUnconfirmed && (
+              <p className="ayw-notice">{tr('Stock is not confirmed, so this item cannot be added as available.', 'المخزون غير مؤكد، لذلك لا يمكن إضافة المنتج على أنه متوفر.')}</p>
+            )}
+            {!quoteEvidenceComplete && (
+              <p className="ayw-notice">
+                {tr('The merchant has not confirmed both the source price and currency. No AYROVI quote or cart addition is available yet.', 'لم يؤكد التاجر السعر وعملته معاً. لا يتوفر تقدير AYROVI أو إضافة إلى السلة حالياً.')}
+              </p>
             )}
 
             {groups.map((group) => {
@@ -222,7 +359,7 @@ export const AyWebsVariantSheet: React.FC<AyWebsVariantSheetProps> = ({ url, sto
                             role="radio"
                             aria-checked={isOn}
                             className={`ayw-variantcard${isOn ? ' is-on' : ''}`}
-                            onClick={() => setSelected((current) => ({ ...current, [group.attribute]: card.value }))}
+                            onClick={() => selectAttribute(group.attribute, card.value)}
                           >
                             <img className="ayw-variantcard-img" src={card.image || product.images[0] || ''} alt="" loading="lazy" />
                             <span className="ayw-variantcard-name">{card.value}</span>
@@ -247,7 +384,7 @@ export const AyWebsVariantSheet: React.FC<AyWebsVariantSheetProps> = ({ url, sto
                   <select
                     className="ayw-select"
                     value={selected[group.attribute] || ''}
-                    onChange={(event) => setSelected((current) => ({ ...current, [group.attribute]: event.target.value }))}
+                    onChange={(event) => selectAttribute(group.attribute, event.target.value)}
                   >
                     <option value="" disabled>{group.attribute}</option>
                     {group.values.map((value) => (
@@ -260,23 +397,43 @@ export const AyWebsVariantSheet: React.FC<AyWebsVariantSheetProps> = ({ url, sto
 
             <label className="ayw-selectwrap">
               <span className="ayw-sr">{tr('Quantity', 'الكمية')}</span>
-              <select className="ayw-select" value={quantity} onChange={(event) => setQuantity(Number(event.target.value))}>
+              <select
+                className="ayw-select"
+                value={quantity}
+                onChange={(event) => {
+                  pendingAddRequestId.current = '';
+                  setQuantity(Number(event.target.value));
+                }}
+              >
                 {quantities.map((value) => (
                   <option key={value} value={value}>{value}</option>
                 ))}
               </select>
             </label>
 
-            {product.price > 0 && (
+            {displayedPrice > 0 && !selectedVariantUnknown && (
               <p className="ayw-price">
-                {product.price.toLocaleString()} {product.currency}
-                {product.ayrovi_pricing && (
-                  <span className="ayw-price-tnd"> ≈ {product.ayrovi_pricing.total_tnd.toFixed(2)} {tr('DT', 'د.ت')}</span>
+                {displayedPrice.toLocaleString()} {displayedCurrency}
+                {displayedPricingTnd != null && (
+                  <span className="ayw-price-tnd"> ≈ {displayedPricingTnd.toFixed(2)} {tr('DT', 'د.ت')}</span>
                 )}
               </p>
             )}
+            {selectedSourceVariant?.price_source === 'PRODUCT' && (
+              <p className="ayw-added-meta">
+                {tr('No separate merchant price was published for this option; the product price is used.', 'لم ينشر التاجر سعراً منفصلاً لهذا الخيار؛ يُستخدم سعر المنتج.')}
+              </p>
+            )}
+            {displayedPricingTnd == null && !missingRequired && !selectedVariantUnknown && (
+              <p className="ayw-notice">{tr('An AYROVI quote is not available for this source price.', 'لا يتوفر تقدير AYROVI لهذا السعر المصدر.')}</p>
+            )}
 
-            <button type="button" className="ayw-cta" disabled={missingRequired || adding} onClick={() => void submit()}>
+            <button
+              type="button"
+              className="ayw-cta"
+              disabled={!quoteEvidenceComplete || missingRequired || selectedVariantUnknown || selectedVariantUnavailable || selectedAvailabilityUnconfirmed || displayedPrice <= 0 || displayedPricingTnd == null || adding}
+              onClick={() => void submit()}
+            >
               {adding ? <Loader2 className="animate-spin" size={18} aria-hidden="true" /> : tr('Add to Cart', 'أضف إلى السلة')}
             </button>
             {error && <p className="ayw-notice">{error}</p>}
@@ -304,7 +461,9 @@ export const AyWebsVariantSheet: React.FC<AyWebsVariantSheetProps> = ({ url, sto
                   </p>
                 ) : null}
                 {added?.line_total_tnd ? (
-                  <p className="ayw-added-meta">{added.line_total_tnd.toFixed(2)} {tr('DT', 'د.ت')}</p>
+                  <p className="ayw-added-meta">
+                    {added.line_total_tnd.toFixed(2)} {tr('DT', 'د.ت')} · {tr('before local delivery', 'قبل التوصيل المحلي')}
+                  </p>
                 ) : null}
                 {linked && !linked.linked && (
                   <p className="ayw-added-meta">
