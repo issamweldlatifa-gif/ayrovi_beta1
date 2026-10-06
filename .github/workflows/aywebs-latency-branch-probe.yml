@@ -33,7 +33,7 @@ jobs:
           node scripts/aywebs-latency-probe.mjs \
             --base "https://ayrovi-beta1.onrender.com" \
             --url "https://www.amazon.com/dp/B0GYM3V9H5" \
-            --runs 2 | tee /tmp/probe.txt
+            --runs 2 --cold | tee /tmp/probe.txt
 
       # Le journal complet du job n'est pas lisible depuis toutes les machines
       # (blob GitHub). Les chiffres qui comptent sont donc publiés en
