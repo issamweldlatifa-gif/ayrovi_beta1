@@ -268,3 +268,113 @@ export function clearAyWebsResolveCache(scope?: AyWebsResolveCacheScope): void {
   evictions = 0;
   staleEvictions = 0;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * MÉMO « FICHE ILLISIBLE » (Phase 1 — 06/10/2026)
+ *
+ * Le cache ci-dessus refuse volontairement de mémoriser une lecture sans prix :
+ * une fiche illisible ne doit pas être servie comme un succès. Mais une fiche
+ * illisible COÛTE CHER : mesures du 06/10/2026, 13–17 s de sondes vouées à
+ * l'échec à chaque appel, et un utilisateur qui réessaie paie ce prix à chaque
+ * fois. Ce mémo — séparé, à TTL court, et JAMAIS confondu avec le cache de
+ * lecture — réutilise la MÊME lecture ratée pendant `AYWEBS_RESOLVE_FAILURE_TTL_MS`
+ * (défaut 90 s ; 0 = désactivé) pour répondre vite et honnêtement « prix non lu »
+ * au lieu de relancer tout le chantier de sondes.
+ *
+ * Sécurité : seules les lectures SANS prix exploitable y entrent (garde
+ * `price <= 0`), la durée est courte, et le résultat reste marqué
+ * `cache_kind = "failure_memo"` côté API — jamais présenté comme une lecture fraîche.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+const DEFAULT_FAILURE_TTL_MS = 90_000;
+const MAX_FAILURE_TTL_MS = 10 * 60_000;
+const DEFAULT_FAILURE_MAX_ENTRIES = 200;
+
+const failureNamespaces = new WeakMap<object, Map<string, CacheEntry>>();
+const liveFailureNamespaces = new Set<Map<string, CacheEntry>>();
+let failureHits = 0;
+let failureWrites = 0;
+let failureEvictions = 0;
+
+export function ayWebsResolveFailureTtlMs(): number {
+  return integerEnv('AYWEBS_RESOLVE_FAILURE_TTL_MS', DEFAULT_FAILURE_TTL_MS, 0, MAX_FAILURE_TTL_MS);
+}
+
+function failureNamespaceOf(scope: AyWebsResolveCacheScope): Map<string, CacheEntry> {
+  const existing = failureNamespaces.get(scope);
+  if (existing) return existing;
+  const created = new Map<string, CacheEntry>();
+  failureNamespaces.set(scope, created);
+  liveFailureNamespaces.add(created);
+  return created;
+}
+
+/** Lecture mémorisée d'un ÉCHEC récent, ou null. */
+export function readAyWebsResolveFailureCache(scope: AyWebsResolveCacheScope, key: string): AyWebsResolveCacheHit | null {
+  const ttl = ayWebsResolveFailureTtlMs();
+  if (ttl <= 0) return null;
+  const entries = failureNamespaces.get(scope);
+  const entry = entries?.get(key);
+  if (!entry) return null;
+  const ageMs = Date.now() - entry.storedAt;
+  if (ageMs > ttl) {
+    entries!.delete(key);
+    return null;
+  }
+  failureHits += 1;
+  return { sourceProduct: entry.sourceProduct, ageMs, storedAt: entry.storedAt };
+}
+
+/** Mémorise un échec de lecture (prix non exploitable). Jamais un succès. */
+export function writeAyWebsResolveFailureCache(
+  scope: AyWebsResolveCacheScope,
+  key: string,
+  sourceProduct: AyWebsSourceProduct,
+): boolean {
+  if (ayWebsResolveFailureTtlMs() <= 0) return false;
+  if (Number(sourceProduct?.price) > 0) return false;
+  const entries = failureNamespaceOf(scope);
+  if (entries.size >= DEFAULT_FAILURE_MAX_ENTRIES) {
+    const oldest = entries.keys().next().value as string | undefined;
+    if (oldest !== undefined) {
+      entries.delete(oldest);
+      failureEvictions += 1;
+    }
+  }
+  try {
+    entries.set(key, { sourceProduct: structuredClone(sourceProduct), storedAt: Date.now() });
+  } catch {
+    return false;
+  }
+  failureWrites += 1;
+  return true;
+}
+
+export function ayWebsResolveFailureCacheStats(): {
+  enabled: boolean; ttl_ms: number; entries: number; hits: number; writes: number; evictions: number;
+} {
+  let entries = 0;
+  for (const namespace of [...liveFailureNamespaces]) {
+    if (!namespace.size) {
+      liveFailureNamespaces.delete(namespace);
+      continue;
+    }
+    entries += namespace.size;
+  }
+  return {
+    enabled: ayWebsResolveFailureTtlMs() > 0,
+    ttl_ms: ayWebsResolveFailureTtlMs(),
+    entries,
+    hits: failureHits,
+    writes: failureWrites,
+    evictions: failureEvictions,
+  };
+}
+
+export function clearAyWebsResolveFailureCache(scope?: AyWebsResolveCacheScope): void {
+  if (scope) {
+    failureNamespaces.get(scope)?.clear();
+    return;
+  }
+  for (const namespace of liveFailureNamespaces) namespace.clear();
+}

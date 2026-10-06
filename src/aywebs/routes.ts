@@ -5,8 +5,9 @@ import type { SmartLinkScraper } from '../scraper/scraper';
 import { calculatePrice, type PricingRules } from '../services/pricing';
 import { cardGatewayAvailable } from '../services/paymentGateway';
 import { renderedProviderReady } from '../scraper/renderedPageFetcher';
+import { ayWebsReadGateStats } from './readGate';
 import { getAyroviAiCore } from '../ai-core/core';
-import { ayWebsResolveCacheStats } from './resolveCache';
+import { ayWebsResolveCacheStats, ayWebsResolveFailureCacheStats } from './resolveCache';
 import {
   AYWEBS_CATEGORIES,
   AYWEBS_STORES,
@@ -402,6 +403,10 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
         rendered_provider_ready: renderedProviderReady(),
         /** Cache de résolution : taux de réutilisation réellement mesuré. */
         resolve_cache: ayWebsResolveCacheStats(),
+        /** Phase 1 — mémo court des fiches ILLISIBLES (réessais rapides). */
+        resolve_failure_cache: ayWebsResolveFailureCacheStats(),
+        /** Phase 1 — porte de lecture marchande (protection du processus partagé). */
+        read_gate: ayWebsReadGateStats(),
         ai_fallback_enabled: flags.aiExtractionEnabled,
         ai_provider_ready: flags.aiExtractionEnabled && getAyroviAiCore().responses().isConfigured(),
         schema_ready: ayWebsSchemaReady(db),
@@ -557,11 +562,17 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
         // servie depuis la lecture mémorisée, et depuis combien de temps.
         from_cache: result.fromCache,
         cache_age_ms: result.cacheAgeMs,
+        /** 'read' (cache de lecture), 'failure_memo' (fiche illisible mémorisée), null (fraîche). */
+        cache_kind: result.cacheKind,
         missing: result.missing,
         /* Phase 0 — transparence : quand un montant a été LU puis ÉCARTÉ par le
            verdict d'intégrité (« $6.99$6.99 » → montant dupliqué), le client et
            le support voient pourquoi. Rien n'est publié à la place du prix. */
         price_rejection: result.scrapedProduct?.priceRejection ?? null,
+        /* Phase 1 — devis signé : à renvoyer tel quel à POST /cart/items
+           (`quote_token`) pour un ajout sans relecture marchande. */
+        quote_token: result.quoteToken,
+        quote_expires_at: result.quoteExpiresAt,
         // Contrat V1 : le produit AYROVI historique reste disponible tel quel.
         product: result.scrapedProduct,
         normalized_product: normalizedProductV1(result),
@@ -733,6 +744,8 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
         status: 'READY',
         product: result.scrapedProduct,
         normalized_product: normalizedProductV1(result),
+        quote_token: result.quoteToken,
+        quote_expires_at: result.quoteExpiresAt,
         data: productPayload(
           result.product,
           { fromCache: result.fromCache, cacheAgeMs: result.cacheAgeMs },
@@ -820,6 +833,9 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
       customerNote: req.body?.customer_note ? String(req.body.customer_note) : '',
       idempotencyKey,
       requestId: requestIdOf(req),
+      // Phase 1 : devis signé émis par /product/resolve (évite la relecture
+      // marchande à l'ajout). Absent → relecture fraîche, comme avant.
+      quoteToken: req.body?.quote_token ? String(req.body.quote_token) : null,
     });
 
     if (!result.idempotentReplay) trackAyWebsNavigation(ctx, {
@@ -885,6 +901,11 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
         idempotent_replay: result.idempotentReplay,
         message: result.message,
         ayrovi: bridged,
+        /* Phase 1 — pourquoi cet ajout a été instantané (ou pas) : le support et
+           le client savent si le prix vient du devis signé ou d'une relecture. */
+        quote_used: result.quoteUsed,
+        source_reread: result.sourceReread,
+        reread_reason: result.rereadReason,
       },
       cart: cartPayload(result.view, linkedStateFor(db, identity, result.view)),
     });

@@ -9,8 +9,10 @@
  *  3. une relecture peut toujours être exigée (`refresh`), et la re-vérification
  *     du panier l'exige : un changement de prix marchand n'est jamais masqué
  *     (§18, §29) ;
- *  4. une lecture sans prix n'est jamais mémorisée : un incident passager ne
- *     bloque pas la fiche pendant toute la durée de vie du cache ;
+ *  4. une lecture sans prix n'est jamais mémorisée comme un SUCCÈS ; Phase 1
+ *     (06/10/2026) : elle entre dans un mémo d'échec séparé, à TTL court (90 s),
+ *     qui rend le réessai immédiat sans rien cacher — l'incident reste visible
+ *     (`cache_kind: "failure_memo"`, prix toujours manquant) ;
  *  5. deux résolutions simultanées du même produit ne déclenchent qu'UNE
  *     lecture marchande (single-flight).
  */
@@ -30,7 +32,9 @@ import { verifyAyWebsCart } from '../src/aywebs/cart';
 import {
   ayWebsResolveCacheKey,
   ayWebsResolveCacheStats,
+  ayWebsResolveFailureCacheStats,
   clearAyWebsResolveCache,
+  clearAyWebsResolveFailureCache,
 } from '../src/aywebs/resolveCache';
 
 const AMAZON_URL = 'https://www.amazon.com/dp/B0ABCDEFGH';
@@ -103,7 +107,9 @@ beforeEach(() => {
 afterEach(() => {
   if (originalTtl === undefined) delete process.env.AYWEBS_RESOLVE_CACHE_TTL_MS;
   else process.env.AYWEBS_RESOLVE_CACHE_TTL_MS = originalTtl;
+  delete process.env.AYWEBS_RESOLVE_FAILURE_TTL_MS;
   clearAyWebsResolveCache();
+  clearAyWebsResolveFailureCache();
 });
 
 describe('AYWEBs — cache de résolution : la fiche n’est pas relue pour rien', () => {
@@ -145,9 +151,28 @@ describe('AYWEBs — cache de résolution : la fiche n’est pas relue pour rien
     expect(refreshed.cacheAgeMs).toBeNull();
   });
 
-  test('une lecture sans prix n’est jamais mémorisée (un incident ne bloque pas la fiche)', async () => {
+  test('une lecture sans prix n’est jamais servie comme un succès (incident dit, réessai court)', async () => {
     const h = harness({ price: 0 });
-    await resolveAyWebsProduct(h.resolver, { url: AMAZON_URL, sessionId: SESSION_ID });
+    const first = await resolveAyWebsProduct(h.resolver, { url: AMAZON_URL, sessionId: SESSION_ID });
+    expect(h.scrapeProduct).toHaveBeenCalledTimes(1);
+    expect(first.missing).toContain('price');
+    expect(first.cacheKind).toBeNull(); // lecture fraîche, rien de mémorisé
+
+    /* Phase 1 (06/10/2026) — le réessai immédiat est servi par le mémo d'échec
+       (90 s) : on ne repaie pas 13–17 s de sondes vouées à l'échec, MAIS
+       l'incident reste DIT (prix toujours manquant, origine `failure_memo`) :
+       jamais un prix inventé, jamais un faux « produit prêt ». */
+    const second = await resolveAyWebsProduct(h.resolver, { url: AMAZON_URL, sessionId: SESSION_ID });
+    expect(h.scrapeProduct).toHaveBeenCalledTimes(1);
+    expect(second.cacheKind).toBe('failure_memo');
+    expect(second.fromCache).toBe(true);
+    expect(second.missing).toContain('price');
+    expect(ayWebsResolveFailureCacheStats().hits).toBeGreaterThan(0);
+
+    // Mémo désactivé ⇒ comportement historique : chaque appel resonde le marchand.
+    process.env.AYWEBS_RESOLVE_FAILURE_TTL_MS = '0';
+    clearAyWebsResolveCache();
+    clearAyWebsResolveFailureCache();
     await resolveAyWebsProduct(h.resolver, { url: AMAZON_URL, sessionId: SESSION_ID });
     expect(h.scrapeProduct).toHaveBeenCalledTimes(2);
   });

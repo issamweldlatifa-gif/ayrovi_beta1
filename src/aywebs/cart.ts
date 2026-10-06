@@ -17,6 +17,7 @@ import { ayWebsEvidenceHash, ayWebsVariantLabel, canonicalVariant, recordAyWebsE
 import { emitAyWebsEvent, logAyWebsOperation, writeAyWebsAudit } from './events';
 import { ayWebsSplitVariantSelection, ayWebsVariantKey } from './productNormalizer';
 import { ayWebsResolveCacheKey } from './resolveCache';
+import { inspectAyWebsQuoteToken, shouldReverifyAyWebsQuote } from './quoteToken';
 import {
   purchaseModeFor,
   readAyWebsProduct,
@@ -125,6 +126,14 @@ export interface AddAyWebsCartItemInput {
   /** Stable caller key for retry-safe Add-to-Cart; distinct from per-HTTP requestId tracing. */
   idempotencyKey?: string | null;
   requestId?: string | null;
+  /**
+   * DEVIS SIGNÉ (Phase 1, 06/10/2026) — jeton émis par `/product/resolve`.
+   * Fourni, il évite la relecture marchande complète à l'ajout (15–22 s en
+   * production) SANS faire confiance au client : le prix reste celui que le
+   * serveur a scellé, et il est confronté à la ligne produit qu'il a écrite.
+   * Absent/invalide/périmé → comportement d'avant : relecture fraîche.
+   */
+  quoteToken?: string | null;
 }
 
 export interface AddAyWebsCartItemResult {
@@ -137,6 +146,11 @@ export interface AddAyWebsCartItemResult {
   idempotentReplay: boolean;
   /** Route-level AYROVI synchronization outcome, saved after the cart bridge. */
   ayrovi?: { linked: boolean; cart_item_id: string | null; quantity: number | null; reason: string } | null;
+  /** Transparence (§51) : le prix ajouté venait-il du devis signé, ou d'une relecture ? */
+  quoteUsed: boolean;
+  sourceReread: boolean;
+  /** Motif de relecture quand elle a eu lieu (STALE, HIGH_VALUE, SAMPLE, NO_QUOTE…). */
+  rereadReason: string | null;
 }
 
 const MAX_QUANTITY = 99;
@@ -322,16 +336,78 @@ export async function addAyWebsCartItem(
 
   const sourceUrl = priorProduct?.sourceUrl || input.sourceUrl;
   if (!sourceUrl) throw new AyWebsDomainError('PRODUCT_NOT_FOUND');
-  const resolved = await resolveAyWebsProduct(deps, {
-    url: sourceUrl,
-    storeId: priorProduct?.storeId || input.storeId || null,
-    selectedVariant: variantAttributes,
-    quantity,
-    sessionId: input.sessionId,
-    accountId: input.accountId,
-    refresh: true,
-  });
-  const product = readAyWebsProduct(db, resolved.productId);
+
+  /* ── PHASE 1 (06/10/2026) — DEVIS SIGNÉ ────────────────────────────────────
+     Avant : relecture marchande SYSTÉMATIQUE (`refresh: true`) → 15,8 / 17,7 /
+     17,9 / 22,2 s mesurées en production pour un seul « Ajouter au panier »,
+     alors que la feuille venait de lire la même fiche.
+     Maintenant : si le client renvoie un devis signé par le serveur, valide, non
+     périmé, correspondant EXACTEMENT à la ligne que l'on s'apprête à facturer,
+     l'écriture se fait sans réseau. Sinon → relecture complète, comme avant.
+     Le client ne peut rien falsifier : le prix est scellé par HMAC côté serveur. */
+  const quote = inspectAyWebsQuoteToken(input.quoteToken);
+  /* Décision PRÉLIMINAIRE : elle sert uniquement à décider si le devis signé
+     couvre exactement ce qui va être facturé. Elle ne doit JAMAIS lever : le
+     chemin d'erreur opposable au client reste celui de la relecture complète
+     (ordre historique : prix non confirmé → PRICE_UNAVAILABLE, puis variante).
+     Un échec ici ⇒ pas de réutilisation du devis ⇒ relecture ⇒ mêmes erreurs. */
+  let preliminaryDecision: ReturnType<typeof selectVariant> | null = null;
+  try {
+    preliminaryDecision = priorProduct ? selectVariant(priorProduct, variantAttributes, quantity) : null;
+  } catch {
+    preliminaryDecision = null;
+  }
+  const preliminaryPrice = preliminaryDecision && priorProduct
+    ? (preliminaryDecision.price ?? priorProduct.price)
+    : 0;
+  const preliminaryCurrency = priorProduct
+    ? (preliminaryDecision?.price != null
+        ? String(preliminaryDecision.currency || priorProduct.currency)
+        : priorProduct.currency).trim().toUpperCase()
+    : '';
+  const preliminaryPricing = priorProduct && preliminaryPrice > 0 && preliminaryCurrency
+    ? calculatePrice(db.getPricingRules(), preliminaryPrice, preliminaryCurrency, { title: priorProduct.title })
+    : null;
+  const requestedVariantKey = priorProduct
+    ? ayWebsVariantKey(ayWebsSplitVariantSelection(priorProduct, variantAttributes).matching)
+    : '';
+  const quoteMatches = Boolean(
+    quote && priorProduct && preliminaryDecision && preliminaryPricing
+    && quote.productId === priorProduct.productId
+    && quote.storeId === priorProduct.storeId
+    && Math.abs(quote.price - preliminaryPrice) < 0.005
+    && quote.currency === preliminaryCurrency
+    /* Le devis scelle un PRIX, pas seulement un produit. Si le devis désigne
+       explicitement une variante (le client l'avait choisie à la résolution),
+       il faut la même variante. S'il désigne le produit entier, c'est
+       l'égalité de prix ci-dessus qui protège : un devis à 39,99 ne peut pas
+       couvrir une variante à 49,99 (mismatch → relecture). */
+    && (quote.variantKey ? quote.variantKey === requestedVariantKey : true)
+    // L'évidence doit désigner la fiche écrité par CE serveur (jamais un devis
+    // recyclé sur une autre fiche) — comparaison seulement si la ligne l'expose.
+    && (!quote.evidenceHash || !priorProduct.evidenceHash || quote.evidenceHash === priorProduct.evidenceHash)
+    && (!quote.availability || quote.availability === priorProduct.availability.state),
+  );
+  const rereadGate = quoteMatches && quote
+    ? shouldReverifyAyWebsQuote(quote, { totalTND: preliminaryPricing?.totalTND, seed: input.sessionId })
+    : { reverify: true, reason: quote ? 'QUOTE_MISMATCH' : 'NO_QUOTE' };
+  const quoteUsed = quoteMatches && !rereadGate.reverify;
+
+  let product = priorProduct;
+  let sourceReread = false;
+  if (!quoteUsed) {
+    const resolved = await resolveAyWebsProduct(deps, {
+      url: sourceUrl,
+      storeId: priorProduct?.storeId || input.storeId || null,
+      selectedVariant: variantAttributes,
+      quantity,
+      sessionId: input.sessionId,
+      accountId: input.accountId,
+      refresh: true,
+    });
+    product = readAyWebsProduct(db, resolved.productId);
+    sourceReread = true;
+  }
   if (!product) throw new AyWebsDomainError('PRODUCT_NOT_FOUND');
 
   const store = findAyWebsStore(product.storeId);
@@ -471,6 +547,9 @@ export async function addAyWebsCartItem(
           message: 'Cet article était déjà dans votre panier AyWebs : la quantité a été mise à jour.',
           view: readAyWebsCartView(db, input.sessionId, input.accountId),
           idempotentReplay: false,
+          quoteUsed,
+          sourceReread,
+          rereadReason: sourceReread ? rereadGate.reason : null,
         };
         if (idempotencyKey) saveAddRequest(db, input, idempotencyKey, requestHash, duplicateResult);
         return duplicateResult;
@@ -544,6 +623,9 @@ export async function addAyWebsCartItem(
         message,
         view: readAyWebsCartView(db, input.sessionId, input.accountId),
         idempotentReplay: false,
+        quoteUsed,
+        sourceReread,
+        rereadReason: sourceReread ? rereadGate.reason : null,
       };
       if (idempotencyKey) saveAddRequest(db, input, idempotencyKey, requestHash, addedResult);
       return addedResult;
@@ -651,6 +733,10 @@ function replayAddRequest(
         : readAyWebsCartView(db, input.sessionId, input.accountId),
       idempotentReplay: true,
       ayrovi: snapshot.ayrovi && typeof snapshot.ayrovi === 'object' ? snapshot.ayrovi : null,
+      // Un rejeu renvoie l'état exact enregistré : on ne rejuge pas l'origine du prix.
+      quoteUsed: Boolean(snapshot.quoteUsed),
+      sourceReread: Boolean(snapshot.sourceReread),
+      rereadReason: snapshot.rereadReason ? String(snapshot.rereadReason) : null,
     };
   } catch (error) {
     if (error instanceof AyWebsDomainError) throw error;

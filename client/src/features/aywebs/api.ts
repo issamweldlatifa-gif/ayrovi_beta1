@@ -424,6 +424,11 @@ export async function resolveAyWebsProduct(payload: {
     status: String(response.status || 'READY'),
     product: response.data as AyWebsProductPayload,
     missing: Array.isArray(response.missing) ? response.missing.map(String) : [],
+    /** Devis signé (Phase 1) — à renvoyer tel quel à `addAyWebsCartItem`. */
+    quoteToken: String(response.quote_token || ''),
+    /** Origine réelle de la lecture : cache, mémo d'échec, ou lecture fraîche. */
+    cacheKind: response.cache_kind ? String(response.cache_kind) : null,
+    quoteExpiresAt: Number(response.quote_expires_at || 0) || null,
     scrapedProduct: response.product as ScrapedProduct,
   };
 }
@@ -448,12 +453,22 @@ export async function addAyWebsCartItem(body: {
   variant_attributes?: Record<string, string> | null; quantity?: number; customer_note?: string;
   /** Stable across a retry of this one user intention; a later Add gets a new key. */
   request_id?: string;
+  /**
+   * Devis signé renvoyé par `/product/resolve` : l'ajout n'a plus à relire la
+   * fiche marchande (15–22 s → quelques ms). Le serveur reste seul juge : jeton
+   * invalide, périmé ou ne correspondant pas à la ligne ⇒ relecture complète.
+   */
+  quote_token?: string;
 }) {
   const payload = await ayWebsRequest<any>('/cart/items', { method: 'POST', body });
   return {
     item: payload.data.item as AyWebsCartItemPayload,
     cart: payload.cart as AyWebsCartPayload,
     idempotentReplay: Boolean(payload.data.idempotent_replay),
+    /** Transparence : l'ajout a-t-il utilisé le devis signé, ou relu le marchand ? */
+    quoteUsed: Boolean(payload.data.quote_used),
+    sourceReread: Boolean(payload.data.source_reread),
+    rereadReason: payload.data.reread_reason ? String(payload.data.reread_reason) : null,
     /**
      * Liaison immédiate vers le panier AYROVI (point sûr : après persistance).
      * `linked: true` ⇒ l'article figure déjà dans le panier AYROVI de l'app.

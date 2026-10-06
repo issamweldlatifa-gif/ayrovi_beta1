@@ -33,9 +33,10 @@ import {
   ayWebsResolveCacheKey,
   readAyWebsResolveCache,
   runAyWebsResolveOnce,
-  writeAyWebsResolveCache,
-} from './resolveCache';
+  writeAyWebsResolveCache, readAyWebsResolveFailureCache, writeAyWebsResolveFailureCache } from './resolveCache';
 import { AyWebsDomainError } from './errors';
+import { ayWebsQuoteTtlMs, createAyWebsQuoteToken } from './quoteToken';
+import { withAyWebsReadSlot } from './readGate';
 import { ayWebsEvidenceHash, canonicalVariant, recordAyWebsEvidence } from './evidence';
 import { emitAyWebsEvent, logAyWebsOperation, measureAyWebsOperation } from './events';
 import { ensureAyWebsSchema } from './schema';
@@ -108,6 +109,23 @@ export interface AyWebsResolveResult {
   /** Lecture servie depuis le cache de résolution (âge réel fourni). */
   fromCache: boolean;
   cacheAgeMs: number | null;
+  /**
+   * DEVIS SIGNÉ (Phase 1, 06/10/2026) — jeton HMAC scellant le prix source, la
+   * devise vérifiée, la variante et l'état de stock tels que le SERVEUR vient de
+   * les lire. Le client le renvoie à l'ajout au panier, qui n'a donc plus besoin
+   * de relire le marchand (15–22 s → quelques ms) sans jamais faire confiance au
+   * client : voir `quoteToken.ts`. `null` quand aucun devis n'est publiable
+   * (prix ou devise non confirmés).
+   */
+  quoteToken: string | null;
+  quoteExpiresAt: number | null;
+  /**
+   * ORIGINE RÉELLE DE LA LECTURE (Phase 1) — `'read'` : cache de lecture ;
+   * `'failure_memo'` : mémo court d'une fiche ILLISIBLE (voir resolveCache) ;
+   * `null` : lecture fraîche du marchand. Transparence §51 : le client ne doit
+   * jamais croire qu'une fiche vient d'être relue quand elle ne l'a pas été.
+   */
+  cacheKind: 'read' | 'failure_memo' | null;
 }
 
 /** Résolution complète d'un produit. Toute erreur sort en `AyWebsDomainError`. */
@@ -150,14 +168,25 @@ export async function resolveAyWebsProduct(
   const cacheKey = ayWebsResolveCacheKey(store.id, url.toString());
   const cacheAllowed = !input.refresh && !input.pageHtml;
   const cached = cacheAllowed ? readAyWebsResolveCache(deps.scraper, cacheKey) : null;
+  /* Mémo « fiche illisible » : une lecture SANS prix échoue en 13–17 s (sondes
+     vouées à l'échec). Le mémo, séparé et à TTL court (90 s), évite de repayer
+     ce coût à chaque réessai — sans jamais se faire passer pour un succès. */
+  const failedCached = cached ? null : readAyWebsResolveFailureCache(deps.scraper, cacheKey);
 
   let sourceProduct: AyWebsSourceProduct;
   let fromCache = false;
   let cacheAgeMs: number | null = null;
+  let cacheKind: 'read' | 'failure_memo' | null = null;
   if (cached) {
     sourceProduct = cached.sourceProduct;
     fromCache = true;
     cacheAgeMs = cached.ageMs;
+    cacheKind = 'read';
+  } else if (failedCached) {
+    sourceProduct = failedCached.sourceProduct;
+    fromCache = true;
+    cacheAgeMs = failedCached.ageMs;
+    cacheKind = 'failure_memo';
   } else {
     sourceProduct = await measureAyWebsOperation(
       {
@@ -170,7 +199,7 @@ export async function resolveAyWebsProduct(
       // Single-flight : deux appels simultanés pour le même produit ne
       // déclenchent qu'UNE lecture marchande (feuille + cartes de variantes,
       // ou deux clients sur le même article).
-      () => runAyWebsResolveOnce(deps.scraper, cacheKey, async () => {
+      () => runAyWebsResolveOnce(deps.scraper, cacheKey, () => withAyWebsReadSlot(async () => {
         try {
           return await adapter.resolveProduct(url.toString());
         } catch (error) {
@@ -182,13 +211,20 @@ export async function resolveAyWebsProduct(
           }
           throw error;
         }
-      }),
+      })),
     );
     // Mémorisée seulement si elle est exploitable (prix lu) — voir resolveCache.
     writeAyWebsResolveCache(deps.scraper, cacheKey, sourceProduct);
   }
 
   const missing = missingProductFields(sourceProduct);
+  /* Une lecture fraîche qui n'a pas su lire de prix est mémorisée 90 s : les
+     réessais suivants répondent « prix non lu » en quelques ms au lieu de
+     relancer 13–17 s de sondes. Le succès, lui, passe par le cache normal. */
+  const freshRead = !cached && !failedCached;
+  if (freshRead && missing.length) {
+    writeAyWebsResolveFailureCache(deps.scraper, cacheKey, sourceProduct);
+  }
   // Le client peut joindre des métadonnées de contexte (ex. `condition`) : elles
   // n'identifient pas la variante et ne doivent jamais la faire « disparaître ».
   const { matching: matchingAttributes, metadata: variantMetadata } = ayWebsSplitVariantSelection(
@@ -312,6 +348,22 @@ export async function resolveAyWebsProduct(
     errorCode: missing.length ? 'CAPTURE_INCOMPLETE' : null,
   });
 
+  /* Devis signé — émis ici, au seul endroit où le serveur connaît à la fois le
+     produit persisté, la variante retenue, la devise VÉRIFIÉE et l'empreinte
+     d'évidence. Sans prix + devise confirmés, aucun jeton : pas de promesse. */
+  const quoteToken = quoteEvidenceComplete
+    ? createAyWebsQuoteToken({
+        productId,
+        storeId: store.id,
+        variantKey: selection?.variantId || '',
+        price: sourceProduct.price,
+        currency: sourceProduct.currency.trim().toUpperCase(),
+        evidenceHash,
+        availability: availability.state,
+      })
+    : null;
+  const quoteExpiresAt = quoteToken ? Date.now() + ayWebsQuoteTtlMs() : null;
+
   return {
     captureId,
     productId,
@@ -325,6 +377,9 @@ export async function resolveAyWebsProduct(
     resolvedAt: sourceProduct.capturedAt,
     fromCache,
     cacheAgeMs,
+    quoteToken,
+    quoteExpiresAt,
+    cacheKind,
   };
 }
 

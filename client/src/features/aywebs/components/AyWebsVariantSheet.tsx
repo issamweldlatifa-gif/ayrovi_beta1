@@ -61,6 +61,9 @@ export const AyWebsVariantSheet: React.FC<AyWebsVariantSheetProps> = ({ url, sto
   const [sourceVariants, setSourceVariants] = useState<AyWebsVariantPriceOption[]>([]);
   const [cardsByAttribute, setCardsByAttribute] = useState<Record<string, VariantCard[]>>({});
   const pendingAddRequestId = useRef('');
+  /* Devis signé de la dernière résolution : réutilisé pour un ajout instantané.
+     Un nouveau jeton est émis à chaque résolution (y compris après erreur). */
+  const pendingQuoteToken = useRef('');
 
   const createAddRequestId = () => globalThis.crypto?.randomUUID?.()
     || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -89,6 +92,7 @@ export const AyWebsVariantSheet: React.FC<AyWebsVariantSheetProps> = ({ url, sto
     resolveAyWebsProduct({ url, ...(storeId ? { store: storeId } : {}) }, controller.signal)
       .then(async (payload) => {
         const resolved = payload.product ?? payload;
+        pendingQuoteToken.current = String(payload.quoteToken || '');
         setProduct(resolved);
         setSourceVariants(resolved.variant_details || []);
         setPhase('ready');
@@ -227,6 +231,7 @@ export const AyWebsVariantSheet: React.FC<AyWebsVariantSheetProps> = ({ url, sto
         variant_attributes: Object.keys(selected).length ? selected : null,
         quantity,
         request_id: requestId,
+        ...(pendingQuoteToken.current ? { quote_token: pendingQuoteToken.current } : {}),
       });
       if (!result.idempotentReplay) trackAyWebsEvent('add_to_cart_succeeded', { store: product.store_id });
       pendingAddRequestId.current = '';
