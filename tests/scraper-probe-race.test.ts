@@ -11,6 +11,13 @@
  *   3. un repli exploitable est conservé dans l'ordre de priorité ;
  *   4. une sonde différée ne démarre pas si une sonde rapide a déjà gagné ;
  *   5. le budget global borne l'attente, et l'appelant sait qu'il a été atteint.
+ *
+ * AJUSTEMENT DU 06/10/2026 (Phase 1, point 1.6) : les deux sondes directes
+ * (mobile + bureau) ne partent plus ENSEMBLE. Le plan vient de
+ * `readerFingerprint.ts` : une empreinte fixée par store part seule, l'autre
+ * n'est qu'un repli différé. Les assertions « source » ci-dessous ont donc été
+ * mises à jour pour vérifier ce câblage-là, et non l'ancien — sinon elles
+ * protégeraient un comportement qu'on a justement supprimé.
  */
 import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
@@ -119,8 +126,10 @@ describe('scraper — câblage de la course parallèle', () => {
   it('la lecture d’une fiche passe par la course de sondes', () => {
     expect(scraper).toContain("import { raceProbes, type ProbeAttempt } from './probeRace'");
     expect(scraper).toContain('const raced = await raceProbes(attempts');
-    expect(scraper).toContain("id: 'direct_mobile'");
-    expect(scraper).toContain("id: 'direct_desktop'");
+    // Phase 1 (06/10/2026) : les deux empreintes ne partent plus en parallèle.
+    expect(scraper).toContain('readerProbePlan(storeType)');
+    expect(scraper).toContain('readerHeaders(step.profile)');
+    expect(scraper).not.toContain('direct_mobile: {');
   });
 
   it('le lecteur Jina reste le repli documenté, avec son en-tête HTML', () => {
@@ -133,7 +142,9 @@ describe('scraper — câblage de la course parallèle', () => {
   it('les budgets de sonde sont réglables par environnement', () => {
     expect(scraper).toContain("positiveIntEnv('AYROVIX_DIRECT_TIMEOUT_MS'");
     expect(scraper).toContain("positiveIntEnv('AYROVIX_JINA_TIMEOUT_MS'");
-    expect(scraper).toContain("positiveIntEnv('AYROVIX_JINA_HEADSTART_MS'");
+    // Le départ de Jina est calculé APRÈS le repli gratuit (readerFingerprint.ts),
+    // et reste surchargeable par AYROVIX_JINA_HEADSTART_MS.
+    expect(scraper).toContain('readerJinaHeadstartMs()');
   });
 
   it('le rendu payant reste le dernier recours, jamais la première dépense', () => {

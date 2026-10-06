@@ -6,6 +6,7 @@ import { calculatePrice, type PricingRules } from '../services/pricing';
 import { cardGatewayAvailable } from '../services/paymentGateway';
 import { renderedProviderReady } from '../scraper/renderedPageFetcher';
 import { ayWebsReadGateStats } from './readGate';
+import { readerFingerprintReport } from '../scraper/readerFingerprint';
 import { getAyroviAiCore } from '../ai-core/core';
 import { ayWebsResolveCacheStats, ayWebsResolveFailureCacheStats } from './resolveCache';
 import {
@@ -407,6 +408,8 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
         resolve_failure_cache: ayWebsResolveFailureCacheStats(),
         /** Phase 1 — porte de lecture marchande (protection du processus partagé). */
         read_gate: ayWebsReadGateStats(),
+        /** Phase 1 — empreinte de lecteur réellement utilisée, par store (§46). */
+        reader_fingerprints: readerFingerprintReport(stores.map((store) => store.id)),
         ai_fallback_enabled: flags.aiExtractionEnabled,
         ai_provider_ready: flags.aiExtractionEnabled && getAyroviAiCore().responses().isConfigured(),
         schema_ready: ayWebsSchemaReady(db),

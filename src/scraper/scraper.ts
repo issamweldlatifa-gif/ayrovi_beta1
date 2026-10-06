@@ -5,6 +5,7 @@ import { parseProductPageHtml, type ParsedProductPage } from './productPageParse
 import { fetchRenderedProductPage, RenderedPageError } from './renderedPageFetcher';
 import { detectMerchantStore } from './merchantDomains';
 import { raceProbes, type ProbeAttempt } from './probeRace';
+import { readerHeaders, readerJinaHeadstartMs, readerProbePlan } from './readerFingerprint';
 
 /** Entier d'environnement borné : une valeur absurde ne doit pas geler une lecture. */
 function positiveIntEnv(key: string, fallback: number, min: number, max: number): number {
@@ -363,35 +364,32 @@ export class SmartLinkScraper {
       }
     }
 
-    const mobileHeaders = {
-      'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 Version/17.4 Mobile/15E148 Safari/604.1',
-      'Accept': 'text/html,application/xhtml+xml',
-      'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.8',
-    };
-    /*
-     * SECONDE PASSE « navigateur de bureau » (04/10/2026).
-     * Mesuré le 04/10/2026 : sur la MÊME URL Amazon, selon l'IP de sortie,
-     * l'agent mobile reçoit la fiche complète et l'agent de bureau une coquille
-     * de 3,7 Ko — et l'inverse ailleurs. Le marchand décide par empreinte, pas
-     * par vérité : les deux agents sont donc essayés EN MÊME TEMPS, sans
-     * réécrire l'URL. Seul l'agent change.
-     */
-    const desktopHeaders = {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
-      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      'Accept-Language': 'en-US,en;q=0.9,fr;q=0.8',
-      'Sec-Fetch-Dest': 'document',
-      'Sec-Fetch-Mode': 'navigate',
-      'Sec-Fetch-Site': 'none',
-      'Upgrade-Insecure-Requests': '1',
-    };
     const directTimeoutMs = positiveIntEnv('AYROVIX_DIRECT_TIMEOUT_MS', 6_500, 250, 15_000);
     const jinaTimeoutMs = positiveIntEnv('AYROVIX_JINA_TIMEOUT_MS', 12_000, 250, 30_000);
 
-    const attempts: ProbeAttempt<MerchantScrapeResult>[] = [
-      { id: 'direct_mobile', timeoutMs: directTimeoutMs, run: (signal) => this.probeDirectHtml(url, storeType, mobileHeaders, signal) },
-      { id: 'direct_desktop', timeoutMs: directTimeoutMs, run: (signal) => this.probeDirectHtml(url, storeType, desktopHeaders, signal) },
-    ];
+    /*
+     * EMPREINTE DE LECTEUR FIXÉE (Phase 1, 06/10/2026 — readerFingerprint.ts).
+     *
+     * Avant : l'agent mobile ET l'agent bureau partaient EN MÊME TEMPS, la
+     * première sonde qui lisait un prix gagnait. Mesures 04–06/10/2026 sur la
+     * même URL Amazon : le mobile a rendu une fiche lisible (693 Ko,
+     * `a-price-whole`), le bureau trois coquilles de 3,8 Ko puis une vraie page
+     * de 842 Ko contenant **aucune** ancre de prix. Deux requêtes marchandes par
+     * lecture dont une perdue, et un comportement qui changeait sans qu'une
+     * ligne ne bouge : ce n'était pas une stratégie, c'était un tirage au sort.
+     *
+     * Maintenant : l'empreinte fixée par store part SEULE ; l'autre n'est qu'un
+     * repli DIFFÉRÉ (readerFallbackDelayMs, 2,5 s par défaut) qui ne coûte rien
+     * quand la première lit. Réglable sans redéploiement :
+     *   AYROVIX_READER_PROFILE_AMAZON=mobile|desktop  (ou AYROVIX_READER_PROFILE)
+     *   AYROVIX_READER_FALLBACK_MS=2500
+     */
+    const attempts: ProbeAttempt<MerchantScrapeResult>[] = readerProbePlan(storeType).map((step) => ({
+      id: step.id,
+      timeoutMs: directTimeoutMs,
+      delayMs: step.delayMs,
+      run: (signal) => this.probeDirectHtml(url, storeType, readerHeaders(step.profile), signal),
+    }));
 
     // Zalando/Alltricks coupent l'IP Render (timeout 0 octet / 403 Akamai).
     // r.jina.ai lit la page comme un navigateur et rend le HTML+JSON-LD.
@@ -400,7 +398,7 @@ export class SmartLinkScraper {
       attempts.push({
         id: 'jina',
         timeoutMs: jinaTimeoutMs,
-        delayMs: positiveIntEnv('AYROVIX_JINA_HEADSTART_MS', 1_200, 0, 10_000),
+        delayMs: readerJinaHeadstartMs(),
         run: (signal) => this.probeJinaReader(url, storeType, signal),
       });
     }
