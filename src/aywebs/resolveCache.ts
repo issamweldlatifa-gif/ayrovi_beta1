@@ -40,10 +40,19 @@ export interface AyWebsResolveCacheHit {
   /** Âge réel de la lecture mémorisée (ms). */
   ageMs: number;
   storedAt: number;
+  /**
+   * SWR (Phase 1, 06/10/2026) : `true` quand la lecture mémorisée a dépassé son
+   * TTL mais reste dans la fenêtre de rattrapage. Elle est alors servie —
+   * marquée comme telle — pendant qu'une remise à jour se fait en arrière-plan.
+   */
+  stale: boolean;
 }
 
 const DEFAULT_TTL_MS = 300_000;
 const MAX_TTL_MS = 6 * 60 * 60 * 1000;
+/** Fenêtre de rattrapage SWR après expiration (0 = SWR désactivé). */
+const DEFAULT_STALE_MS = 30 * 60_000;
+const MAX_STALE_MS = 6 * 60 * 60 * 1000;
 const DEFAULT_MAX_ENTRIES = 400;
 const MAX_MAX_ENTRIES = 5_000;
 
@@ -84,6 +93,7 @@ function namespaceOf(scope: AyWebsResolveCacheScope): CacheNamespace {
 }
 
 let hits = 0;
+let staleHits = 0;
 let misses = 0;
 let writes = 0;
 let evictions = 0;
@@ -98,6 +108,15 @@ function integerEnv(key: string, fallback: number, min: number, max: number): nu
 /** TTL effectif (ms) ; 0 = cache désactivé. */
 export function ayWebsResolveCacheTtlMs(): number {
   return integerEnv('AYWEBS_RESOLVE_CACHE_TTL_MS', DEFAULT_TTL_MS, 0, MAX_TTL_MS);
+}
+
+/**
+ * Durée pendant laquelle une lecture expirée peut encore être servie (SWR).
+ * Le client reçoit alors `served_stale: true` : rien n'est caché, la fiche est
+ * simplement servie pendant qu'une relecture se fait derrière.
+ */
+export function ayWebsResolveStaleMs(): number {
+  return integerEnv('AYWEBS_RESOLVE_STALE_MS', DEFAULT_STALE_MS, 0, MAX_STALE_MS);
 }
 
 export function ayWebsResolveCacheMaxEntries(): number {
@@ -133,8 +152,18 @@ export function ayWebsResolveCacheKey(storeId: string, rawUrl: string): string {
   return `${String(storeId || '').toLowerCase()}|${normalized}`;
 }
 
-/** Lecture en cache, ou null si absent/expiré/désactivé. */
-export function readAyWebsResolveCache(scope: AyWebsResolveCacheScope, key: string): AyWebsResolveCacheHit | null {
+/**
+ * Lecture en cache, ou null si absent/expiré/désactivé.
+ * `allowStale: true` autorise la fenêtre de rattrapage SWR (voir
+ * `ayWebsResolveStaleMs`) : la valeur est rendue avec `stale: true` au lieu
+ * d'être jetée, ce qui évite au client d'attendre une lecture quand une autre
+ * est déjà possible — mais l'appelant DOIT relancer une relecture derrière.
+ */
+export function readAyWebsResolveCache(
+  scope: AyWebsResolveCacheScope,
+  key: string,
+  options: { allowStale?: boolean } = {},
+): AyWebsResolveCacheHit | null {
   const ttl = ayWebsResolveCacheTtlMs();
   if (ttl <= 0) {
     misses += 1;
@@ -148,6 +177,14 @@ export function readAyWebsResolveCache(scope: AyWebsResolveCacheScope, key: stri
   }
   const ageMs = Date.now() - entry.storedAt;
   if (ageMs > ttl) {
+    const staleMs = ayWebsResolveStaleMs();
+    if (options.allowStale && staleMs > 0 && ageMs <= ttl + staleMs) {
+      // SWR : servie périmée, mais étiquetée. L'appelant relance une lecture.
+      entries.delete(key);
+      entries.set(key, entry);
+      staleHits += 1;
+      return { sourceProduct: entry.sourceProduct, ageMs, storedAt: entry.storedAt, stale: true };
+    }
     entries.delete(key);
     staleEvictions += 1;
     misses += 1;
@@ -158,7 +195,7 @@ export function readAyWebsResolveCache(scope: AyWebsResolveCacheScope, key: stri
   entries.delete(key);
   entries.set(key, entry);
   hits += 1;
-  return { sourceProduct: entry.sourceProduct, ageMs, storedAt: entry.storedAt };
+  return { sourceProduct: entry.sourceProduct, ageMs, storedAt: entry.storedAt, stale: false };
 }
 
 /**
@@ -220,6 +257,8 @@ export function ayWebsResolveCacheStats(): {
   max_entries: number;
   in_flight: number;
   hits: number;
+  stale_hits: number;
+  stale_ttl_ms: number;
   misses: number;
   writes: number;
   evictions: number;
@@ -242,6 +281,8 @@ export function ayWebsResolveCacheStats(): {
     max_entries: ayWebsResolveCacheMaxEntries(),
     in_flight: inFlight,
     hits,
+    stale_hits: staleHits,
+    stale_ttl_ms: ayWebsResolveStaleMs(),
     misses,
     writes,
     evictions,
@@ -322,7 +363,7 @@ export function readAyWebsResolveFailureCache(scope: AyWebsResolveCacheScope, ke
     return null;
   }
   failureHits += 1;
-  return { sourceProduct: entry.sourceProduct, ageMs, storedAt: entry.storedAt };
+  return { sourceProduct: entry.sourceProduct, ageMs, storedAt: entry.storedAt, stale: false };
 }
 
 /** Mémorise un échec de lecture (prix non exploitable). Jamais un succès. */

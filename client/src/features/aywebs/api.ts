@@ -428,6 +428,8 @@ export async function resolveAyWebsProduct(payload: {
     quoteToken: String(response.quote_token || ''),
     /** Origine réelle de la lecture : cache, mémo d'échec, ou lecture fraîche. */
     cacheKind: response.cache_kind ? String(response.cache_kind) : null,
+    /** SWR : fiche servie périmée pendant qu'une relecture se fait derrière. */
+    servedStale: response.served_stale === true,
     quoteExpiresAt: Number(response.quote_expires_at || 0) || null,
     scrapedProduct: response.product as ScrapedProduct,
   };

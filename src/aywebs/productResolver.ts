@@ -17,6 +17,7 @@ import type {
   AyWebsVariantOption,
   AyWebsVariantSelection,
 } from '../../shared/aywebsTypes';
+import { hostAllowsProbe, recordProbeFailure, recordProbeSuccess } from '../scraper/hostCircuit';
 import { createAyWebsAdapter } from './adapters/registry';
 import { AyWebsCaptureError, type AyWebsSourceProduct } from './adapters/contract';
 import {
@@ -126,6 +127,33 @@ export interface AyWebsResolveResult {
    * jamais croire qu'une fiche vient d'être relue quand elle ne l'a pas été.
    */
   cacheKind: 'read' | 'failure_memo' | null;
+  /**
+   * SWR (Phase 1, 06/10/2026) : la fiche a été servie depuis une lecture dont le
+   * TTL était dépassé (mais qui reste dans la fenêtre de rattrapage). Une
+   * relecture est relancée en arrière-plan — le client ne l'attend pas, mais il
+   * sait que ce qu'il voit n'est pas tout frais.
+   */
+  servedStale: boolean;
+}
+
+/** Coupe-circuit AYWEBs : actif par défaut, désactivable (AYWEBS_HOST_CIRCUIT=off). */
+function ayWebsHostCircuitEnabled(): boolean {
+  const raw = String(process.env.AYWEBS_HOST_CIRCUIT ?? '').trim().toLowerCase();
+  return !(raw === '0' || raw === 'off' || raw === 'false' || raw === 'no');
+}
+
+/**
+ * L'hôte autorise-t-il encore une sonde ? Trois échecs consécutifs (403, mur
+ * anti-robot, page inutilisable) mettent l'hôte au repos 10 min : on ne paie
+ * plus 13–17 s de sondes vouées à l'échec. Un hôte inconnu est toujours permis.
+ */
+function hostCircuitAllows(rawUrl: string): boolean {
+  if (!ayWebsHostCircuitEnabled()) return true;
+  try {
+    return hostAllowsProbe(rawUrl);
+  } catch {
+    return true;
+  }
 }
 
 /** Résolution complète d'un produit. Toute erreur sort en `AyWebsDomainError`. */
@@ -167,7 +195,7 @@ export async function resolveAyWebsProduct(
    */
   const cacheKey = ayWebsResolveCacheKey(store.id, url.toString());
   const cacheAllowed = !input.refresh && !input.pageHtml;
-  const cached = cacheAllowed ? readAyWebsResolveCache(deps.scraper, cacheKey) : null;
+  const cached = cacheAllowed ? readAyWebsResolveCache(deps.scraper, cacheKey, { allowStale: true }) : null;
   /* Mémo « fiche illisible » : une lecture SANS prix échoue en 13–17 s (sondes
      vouées à l'échec). Le mémo, séparé et à TTL court (90 s), évite de repayer
      ce coût à chaque réessai — sans jamais se faire passer pour un succès. */
@@ -177,16 +205,65 @@ export async function resolveAyWebsProduct(
   let fromCache = false;
   let cacheAgeMs: number | null = null;
   let cacheKind: 'read' | 'failure_memo' | null = null;
+  let servedStale = false;
+
+  /** Relecture d'arrière-plan : jamais attendue par le client, jamais silencieuse. */
+  const scheduleStaleRefresh = (): void => {
+    const refreshStartedAt = Date.now();
+    void runAyWebsResolveOnce(deps.scraper, cacheKey, () => withAyWebsReadSlot(async () => {
+      try {
+        const fresh = await adapter.resolveProduct(url.toString());
+        recordProbeSuccess(url.toString());
+        writeAyWebsResolveCache(deps.scraper, cacheKey, fresh);
+        logAyWebsOperation({
+          operation: 'product_resolve_stale_refresh',
+          storeId: store.id,
+          adapter: adapter.id,
+          result: 'success',
+          durationMs: Date.now() - refreshStartedAt,
+        });
+        return fresh;
+      } catch (error) {
+        recordProbeFailure(url.toString());
+        logAyWebsOperation({
+          operation: 'product_resolve_stale_refresh',
+          storeId: store.id,
+          adapter: adapter.id,
+          result: 'failure',
+          errorCode: (error as any)?.code || 'READ_FAILED',
+          durationMs: Date.now() - refreshStartedAt,
+        });
+        throw error;
+      }
+    })).catch(() => {
+      /* Une remise à jour qui échoue ne change RIEN pour le client : la fiche
+         servie reste celle du cache (étiquetée périmée), et la prochaine
+         demande retentera. Aucune erreur ne remonte d'ici. */
+    });
+  };
+
   if (cached) {
     sourceProduct = cached.sourceProduct;
     fromCache = true;
     cacheAgeMs = cached.ageMs;
     cacheKind = 'read';
+    servedStale = cached.stale === true;
+    /* SWR : on sert la lecture périmée ET on relance une relecture derrière —
+       uniquement si l'hôte autorise encore une sonde ; sinon on économise
+       13–17 s de sondes vouées à l'échec, et la fiche reste servie telle quelle. */
+    if (servedStale && hostCircuitAllows(url.toString())) scheduleStaleRefresh();
   } else if (failedCached) {
     sourceProduct = failedCached.sourceProduct;
     fromCache = true;
     cacheAgeMs = failedCached.ageMs;
     cacheKind = 'failure_memo';
+  } else if (!hostCircuitAllows(url.toString())) {
+    /* L'hôte est au repos (échecs répétés récents). Répondre vite et
+       honnêtement vaut mieux que payer 13–17 s pour retomber sur le même mur. */
+    throw new AyWebsDomainError('STORE_UNAVAILABLE', {
+      userMessage: 'La boutique refuse temporairement nos lectures. Réessayez dans quelques minutes.',
+      technicalMessage: `host_circuit_open:${new URL(url.toString()).hostname}`,
+    });
   } else {
     sourceProduct = await measureAyWebsOperation(
       {
@@ -201,8 +278,11 @@ export async function resolveAyWebsProduct(
       // ou deux clients sur le même article).
       () => runAyWebsResolveOnce(deps.scraper, cacheKey, () => withAyWebsReadSlot(async () => {
         try {
-          return await adapter.resolveProduct(url.toString());
+          const read = await adapter.resolveProduct(url.toString());
+          recordProbeSuccess(url.toString());
+          return read;
         } catch (error) {
+          recordProbeFailure(url.toString());
           if (error instanceof AyWebsCaptureError) {
             throw new AyWebsDomainError(error.code === 'PRODUCT_PAGE_REQUIRED' ? 'PRODUCT_PAGE_REQUIRED' : 'STORE_MISMATCH', {
               userMessage: error.message,
@@ -380,6 +460,7 @@ export async function resolveAyWebsProduct(
     quoteToken,
     quoteExpiresAt,
     cacheKind,
+    servedStale,
   };
 }
 

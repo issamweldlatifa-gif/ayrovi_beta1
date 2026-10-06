@@ -564,6 +564,8 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
         cache_age_ms: result.cacheAgeMs,
         /** 'read' (cache de lecture), 'failure_memo' (fiche illisible mémorisée), null (fraîche). */
         cache_kind: result.cacheKind,
+        /** SWR : fiche servie périmée (une relecture est relancée derrière). */
+        served_stale: result.servedStale,
         missing: result.missing,
         /* Phase 0 — transparence : quand un montant a été LU puis ÉCARTÉ par le
            verdict d'intégrité (« $6.99$6.99 » → montant dupliqué), le client et
