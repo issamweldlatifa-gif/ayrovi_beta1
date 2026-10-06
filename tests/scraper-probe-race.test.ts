@@ -145,3 +145,26 @@ describe('scraper — câblage de la course parallèle', () => {
     expect(scraper).toContain('ÉTAPE A — course des sondes gratuites');
   });
 });
+
+describe('outillage — la mesure est reproductible, pas déclarative', () => {
+  it('une sonde de latence existe et interroge les deux mêmes points que le client', () => {
+    const probe = readFileSync('scripts/aywebs-latency-probe.mjs', 'utf8');
+    expect(probe).toContain('/api/v1/aywebs/product/resolve');
+    expect(probe).toContain('/api/v1/aywebs/health');
+    // Elle échoue quand la deuxième passe n'est PAS servie par la mémoire : c'est son objet.
+    expect(probe).toContain('process.exit(1)');
+    expect(probe).toContain('from_cache');
+  });
+
+  it('le workflow de mesure reste MANUEL (aucun déclencheur automatique)', () => {
+    const workflow = readFileSync('.github/workflows/aywebs-latency.yml', 'utf8');
+    expect(workflow).toMatch(/^  workflow_dispatch:/m);
+    expect(workflow).not.toMatch(/^  push:/m);
+    expect(workflow).toContain('scripts/aywebs-latency-probe.mjs');
+  });
+
+  it('la commande est exposée aux développeurs', () => {
+    const pkg = readFileSync('package.json', 'utf8');
+    expect(pkg).toContain('"verify:aywebs-latency"');
+  });
+});

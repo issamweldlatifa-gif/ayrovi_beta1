@@ -1,0 +1,66 @@
+name: AYWEBs — sonde de latence « Add to Cart »
+
+# Vérification à la demande du correctif du 05/10/2026 : la lecture marchande
+# n'est plus faite en cascade et une fiche déjà lue n'est plus relue avant
+# `AYWEBS_RESOLVE_CACHE_TTL_MS`. La sonde appelle DEUX FOIS le même produit sur
+# le serveur publié, puis lit les compteurs du cache dans `/health`.
+#
+# Elle échoue volontairement si la deuxième passe n'est pas servie par la
+# mémoire de lecture : c'est exactement le symptôme que ce lot corrige, et un
+# voyant rouge vaut mieux qu'un « ça a l'air plus rapide ».
+#
+# Déclenchement MANUEL uniquement (même politique que le build Android : aucune
+# mesure automatique ne part d'un simple push).
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: 'Origine du site à mesurer'
+        required: true
+        default: 'https://ayrovi-beta1.onrender.com'
+      product_url:
+        description: 'Lien produit à mesurer (fiche réelle)'
+        required: true
+        default: 'https://www.amazon.com/dp/B0GYM3V9H5'
+      store:
+        description: 'Boutique (optionnel : amazon, shein, temu, aliexpress)'
+        required: false
+        default: ''
+      runs:
+        description: 'Nombre de passes (2 = lecture puis mémoire de lecture)'
+        required: false
+        default: '2'
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Sonde de latence (deux passes sur la même URL)
+        env:
+          BASE: ${{ inputs.base_url }}
+          PRODUCT: ${{ inputs.product_url }}
+          STORE: ${{ inputs.store }}
+          RUNS: ${{ inputs.runs }}
+        run: |
+          set -euo pipefail
+          args=(--base "$BASE" --url "$PRODUCT" --runs "${RUNS:-2}")
+          if [ -n "${STORE:-}" ]; then args+=(--store "$STORE"); fi
+          node scripts/aywebs-latency-probe.mjs "${args[@]}"
+
+      - name: Compteurs du cache (second regard, hors sonde)
+        if: always()
+        env:
+          BASE: ${{ inputs.base_url }}
+        run: |
+          set -euo pipefail
+          echo "GET $BASE/api/v1/aywebs/health → resolve_cache :"
+          curl -sS "$BASE/api/v1/aywebs/health" \
+            | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const h=JSON.parse(d);console.log(JSON.stringify(h?.data?.resolve_cache??h,null,2));}catch{console.log(d.slice(0,400));}})'
