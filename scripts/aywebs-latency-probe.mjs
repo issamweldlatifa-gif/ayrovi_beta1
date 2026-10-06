@@ -21,6 +21,9 @@
  *   --base   origine du site (défaut : variable AYROVI_BASE_URL, sinon localhost:3000)
  *   --url    lien produit à mesurer (obligatoire, sauf si --self-test)
  *   --runs   nombre de passes (défaut 2)
+ *   --cold   force une LECTURE FRAÎCHE sur la première passe (`refresh:true`) :
+ *            mesure le coût réel de la première visite, sans dépendre de l'état
+ *            de la mémoire de lecture au moment de la sonde
  *   --store  identifiant boutique optionnel (ex. amazon)
  *   --session identifiant de session AYWEBs (défaut : sonde aléatoire)
  *
@@ -39,6 +42,7 @@ const base = (option('base', process.env.AYROVI_BASE_URL || 'http://localhost:30
 const productUrl = option('url', '');
 const runs = Math.max(1, Math.min(5, Number(option('runs', '2')) || 2));
 const store = option('store', '');
+const cold = args.includes('--cold');
 const session = option('session', `probe-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
 
 if (!productUrl) {
@@ -63,7 +67,13 @@ async function timed(label, run) {
 }
 
 async function resolveOnce(index) {
-  const body = { url: productUrl, ...(store ? { store } : {}) };
+  const body = {
+    url: productUrl,
+    ...(store ? { store } : {}),
+    // Première passe forcée : la mesure « à froid » ne dépend pas de ce que la
+    // mémoire contient déjà (utile juste après un déploiement, ou en CI).
+    ...(cold && index === 1 ? { refresh: true } : {}),
+  };
   const response = await fetch(`${base}/api/v1/aywebs/product/resolve`, {
     method: 'POST',
     headers,
@@ -113,6 +123,7 @@ async function main() {
   console.log(`\nAYWEBs — sonde de latence « Add to Cart »`);
   console.log(`  serveur : ${base}`);
   console.log(`  produit : ${productUrl}`);
+  if (cold) console.log('  mode    : première passe forcée à froid (refresh:true)');
   console.log(`  session : ${session}\n`);
 
   const before = await health();
