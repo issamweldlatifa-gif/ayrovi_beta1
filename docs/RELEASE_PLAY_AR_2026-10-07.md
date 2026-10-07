@@ -84,6 +84,21 @@ base64 -i ayrovi-release.jks -o ayrovi-release.jks.base64
 
 ## 3) بناء النسخة (AAB)
 
+> **قبل ما تضغط «Run workflow»**، شغّل جهوزية الإصدار — يشوفلك كل شي مرّة وحدة
+> بدل ما تكتشف النقص بعد البناء:
+>
+> ```bash
+> cd apps/mobile
+> npm run release:preflight -- --version-code 8 --version-name 2.0.1
+> ```
+>
+> (يزيد `--json` كان تحبّ تقريراً للآلة.) الطبع: `PASS` / `FAIL` / `WARN` /
+> `SKIP` على كل بند: الحزمة والإصدار، الخادم حيّ وجاهز وأي كود **منشور فعلاً**،
+> إعدادات الشراء، `assetlinks.json` والبصمات، الأسرار الأربعة، ورأس الفرع.
+> `FAIL` = ما تبنِش. `WARN` = تقرّر وانت عارف.
+
+
+
 من صفحة **Actions** → «Mobile — AAB signé (Play Store)» → **Run workflow**:
 
 | الحقل | القيمة |
