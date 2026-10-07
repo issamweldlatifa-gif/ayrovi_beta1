@@ -97,6 +97,10 @@ jobs:
           set -euo pipefail
           sed -i "s/applicationId 'app.ayrovi.mobile'/applicationId 'app.ayrovi.mobile.demo'/" app/build.gradle
           sed -i 's|<string name="app_name">AYROVI</string>|<string name="app_name">AYROVI Démo</string>|' app/src/main/res/values/strings.xml
+          # Vérification réelle : si le motif avait changé, on échoue AU LIEU de
+          # produire un APK qui écraserait l'application installée.
+          grep -q "applicationId 'app.ayrovi.mobile.demo'" app/build.gradle
+          grep -q '<string name="app_name">AYROVI Démo</string>' app/src/main/res/values/strings.xml
           grep -n "applicationId" app/build.gradle
           grep -n "app_name" app/src/main/res/values/strings.xml
 
