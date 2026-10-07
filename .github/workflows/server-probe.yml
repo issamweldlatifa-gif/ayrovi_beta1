@@ -47,9 +47,37 @@ jobs:
           READY_BODY=$(cat /tmp/body 2>/dev/null | head -c 400 || true)
           echo "- \`GET /api/ready\` → **$READY_CODE** — \`$READY_BODY\`" >> "$SUMMARY"
 
-          LINKS_CODE=$(code "$BASE/.well-known/assetlinks.json")
-          LINKS_BODY=$(cat /tmp/body 2>/dev/null | head -c 200 || true)
-          echo "- \`GET /.well-known/assetlinks.json\` → **$LINKS_CODE** — \`$LINKS_BODY\`" >> "$SUMMARY"
+          # App Links : la route n'existe QUE sur le branch. Sur `main`, le
+          # repli SPA répond 200 avec du HTML — d'où la lecture du TYPE et du
+          # premier caractère, pas seulement du code HTTP.
+          LINKS_CODE=$(curl -s -o /tmp/links -w '%{http_code}|%{content_type}' --max-time 25 "$BASE/.well-known/assetlinks.json" || echo "000|")
+          LINKS_BODY=$(cat /tmp/links 2>/dev/null | head -c 200 || true)
+          case "$LINKS_BODY" in
+            \[*|[[:space:]]*\[*) LINKS_KIND="JSON (route du branch présente)" ;;
+            \{*) LINKS_KIND="JSON d'erreur (route du branch, sans empreinte configurée)" ;;
+            *'<!DOCTYPE'*|*'<html'*) LINKS_KIND="HTML (repli SPA = code de main)" ;;
+            *) LINKS_KIND="inconnu" ;;
+          esac
+          echo "- \`GET /.well-known/assetlinks.json\` → **${LINKS_CODE%%|*}** \`${LINKS_CODE#*|}\` — ${LINKS_KIND} — \`$LINKS_BODY\`" >> "$SUMMARY"
+
+          # Discriminant le plus sûr entre `main` et le branch : le champ
+          # `stats` de /api/v1/aywebs/health n'existe QUE sur le branch.
+          AYWEBS_CODE=$(curl -s -o /tmp/aywebs -w '%{http_code}' --max-time 25 "$BASE/api/v1/aywebs/health" || echo "000")
+          if grep -q '"stats"' /tmp/aywebs 2>/dev/null; then
+            AYWEBS_KIND="branch (champ stats présent)"
+          elif [ "$AYWEBS_CODE" = "200" ]; then
+            AYWEBS_KIND="main (pas de champ stats)"
+          else
+            AYWEBS_KIND="indéterminé ($AYWEBS_CODE)"
+          fi
+          echo "- \`GET /api/v1/aywebs/health\` → **$AYWEBS_CODE** — ${AYWEBS_KIND}" >> "$SUMMARY"
+
+          # Existence réelle des points d'entrée dont l'application dépend.
+          for PATH_CHECK in /api/public/commerce-config /api/assistant/status /api/cart/items /api/ayrovix/config; do
+            ROUTE_CODE=$(curl -s -o /tmp/route -w '%{http_code}' --max-time 20 "$BASE$PATH_CHECK" || echo "000")
+            echo "- \`GET $PATH_CHECK\` → **$ROUTE_CODE**" >> "$SUMMARY"
+            ROUTE_LINE="$ROUTE_LINE $PATH_CHECK=$ROUTE_CODE"
+          done"
 
           DEPLOYED=$(printf '%s' "$READY_BODY" | sed -n 's/.*"commit":"\([^"]*\)".*/\1/p')
           MAIN_SHA=$(curl -s --max-time 25 "https://api.github.com/repos/$REPO/commits/main" | sed -n 's/.*"sha": *"\([a-f0-9]\{7,40\}\)".*/\1/p' | head -1 | cut -c1-12)
@@ -75,4 +103,4 @@ jobs:
 
           # Annotation lisible depuis l'API (`check-runs/.../annotations`) : le
           # journal d'exécution n'est pas toujours consultable, le verdict si.
-          echo "::notice title=Etat du serveur::publie=${DEPLOYED:-inconnu} main=${MAIN_SHA:-inconnu} branche=${BRANCH_SHA:-inconnu} health=${HEALTH_CODE} ready=${READY_CODE} assetlinks=${LINKS_CODE}"
+          echo "::notice title=Etat du serveur::publie=${DEPLOYED:-inconnu} main=${MAIN_SHA:-inconnu} branche=${BRANCH_SHA:-inconnu} health=${HEALTH_CODE} ready=${READY_CODE} assetlinks=${LINKS_CODE} kind=${LINKS_KIND} aywebs=${AYWEBS_KIND} routes:${ROUTE_LINE:-none}"
