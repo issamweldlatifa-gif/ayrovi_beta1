@@ -516,6 +516,18 @@ export interface AyWebsResolvedProduct {
   availability: AyWebsAvailability;
   /** État publié par la source (neuf / occasion / reconditionné) ou `null`. */
   condition: 'new' | 'used' | 'refurbished' | null;
+  /**
+   * CHAMPS ÉTENDUS (Phase 2.5, 07/10/2026) — publiés par la source ou `null`.
+   * `gtin` = code-barres produit ; `sku` = référence marchand ; `seller` =
+   * vendeur de l'offre (jamais la boutique) ; `rating`/`reviewCount` = note et
+   * nombre d'avis publiés. Absents quand la page ne les publie pas — c'est la
+   * règle de la Phase 0 appliquée aux champs qui manquaient le plus.
+   */
+  gtin: string | null;
+  sku: string | null;
+  seller: string | null;
+  rating: number | null;
+  reviewCount: number | null;
   merchant: { name: string | null; url: string | null };
   purchaseMode: AyWebsPurchaseMode;
   integrationType: AyWebsIntegrationType;

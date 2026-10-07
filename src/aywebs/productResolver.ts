@@ -770,6 +770,11 @@ function toResolvedProduct(input: {
     variantGroups: groups,
     selectedVariant: selection,
     condition: sourceProduct.condition || null,
+    gtin: sourceProduct.gtin || null,
+    sku: sourceProduct.sku || null,
+    seller: sourceProduct.seller || null,
+    rating: sourceProduct.rating ?? null,
+    reviewCount: sourceProduct.reviewCount ?? null,
     availability: ayWebsAvailabilityRecord(
       availability.state,
       availability.reason,
@@ -847,6 +852,7 @@ export function persistAyWebsProduct(
     if (existing) {
       db.run(
         `UPDATE ayweb_products SET title=?, description=?, brand=?, images=?, price=?, currency=?, price_verified=?, currency_verified=?, variant_groups=?, variants=?, condition=?,
+           gtin=?, sku=?, seller=?, rating=?, review_count=?,
            availability=?, availability_reason=?, availability_checked_at=?, purchase_mode=?, integration_type=?,
            pricing_tnd=?, pricing_version=?, pricing_breakdown=?, evidence_hash=?, capture_id=?, resolved_at=?, updated_at=?
          WHERE id=?`,
@@ -855,7 +861,13 @@ export function persistAyWebsProduct(
         sourceProduct.scrapedProduct?.priceVerified === true ? 1 : 0,
         sourceProduct.scrapedProduct?.currencyVerified === true ? 1 : 0,
         JSON.stringify(sourceProduct.variantGroups), JSON.stringify(sourceProduct.variants.slice(0, 300)),
-        String(sourceProduct.condition || ''), availability.state, availability.reason.slice(0, 200), availability.checkedAt, purchaseModeFor(store), store.integrationType,
+        String(sourceProduct.condition || ''),
+        // Champs étendus (mêmes bornes que la lecture) — dans l'ORDRE de la requête.
+        String(sourceProduct.gtin || '').slice(0, 32), String(sourceProduct.sku || '').slice(0, 64),
+        String(sourceProduct.seller || '').slice(0, 80),
+        Number(sourceProduct.rating) > 0 ? Number(sourceProduct.rating) : 0,
+        Number.isInteger(sourceProduct.reviewCount) ? Number(sourceProduct.reviewCount) : 0,
+        availability.state, availability.reason.slice(0, 200), availability.checkedAt, purchaseModeFor(store), store.integrationType,
         pricing && !pricing.restricted ? pricing.totalTND : 0, pricing?.pricingVersion || 0, JSON.stringify(pricingBreakdown),
         input.evidenceHash, input.captureId, sourceProduct.capturedAt, now, productId,
       );
@@ -863,9 +875,11 @@ export function persistAyWebsProduct(
     } else {
       db.run(
         `INSERT INTO ayweb_products (id,store_id,source_url,source_domain,source_product_id,title,description,brand,images,
-           price,currency,price_verified,currency_verified,variant_groups,variants,condition,availability,availability_reason,availability_checked_at,purchase_mode,
+           price,currency,price_verified,currency_verified,variant_groups,variants,condition,
+           gtin,sku,seller,rating,review_count,
+           availability,availability_reason,availability_checked_at,purchase_mode,
            integration_type,page_type,pricing_tnd,pricing_version,pricing_breakdown,evidence_hash,capture_id,resolved_at,created_at,updated_at)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         productId, store.id, sourceProduct.sourceUrl.slice(0, 4096), sourceProduct.sourceDomain,
         String(sourceProduct.sourceProductId || '').slice(0, 300), sourceProduct.title.slice(0, 500),
         String(sourceProduct.description || '').slice(0, 4000), String(sourceProduct.brand || '').slice(0, 200),
@@ -873,7 +887,12 @@ export function persistAyWebsProduct(
         sourceProduct.scrapedProduct?.priceVerified === true ? 1 : 0,
         sourceProduct.scrapedProduct?.currencyVerified === true ? 1 : 0,
         JSON.stringify(sourceProduct.variantGroups), JSON.stringify(sourceProduct.variants.slice(0, 300)),
-        String(sourceProduct.condition || ''), availability.state, availability.reason.slice(0, 200), availability.checkedAt, purchaseModeFor(store),
+        String(sourceProduct.condition || ''),
+        String(sourceProduct.gtin || '').slice(0, 32), String(sourceProduct.sku || '').slice(0, 64),
+        String(sourceProduct.seller || '').slice(0, 80),
+        Number(sourceProduct.rating) > 0 ? Number(sourceProduct.rating) : 0,
+        Number.isInteger(sourceProduct.reviewCount) ? Number(sourceProduct.reviewCount) : 0,
+        availability.state, availability.reason.slice(0, 200), availability.checkedAt, purchaseModeFor(store),
         store.integrationType, 'PRODUCT', pricing && !pricing.restricted ? pricing.totalTND : 0, pricing?.pricingVersion || 0,
         JSON.stringify(pricingBreakdown), input.evidenceHash, input.captureId, sourceProduct.capturedAt, now, now,
       );
@@ -965,6 +984,12 @@ export interface AyWebsStoredProduct {
   }>;
   /** État publié par la source (neuf / occasion / reconditionné) ou `null`. */
   condition: 'new' | 'used' | 'refurbished' | null;
+  /** Phase 2.5 — champs étendus (`null` = non publié, jamais deviné). */
+  gtin: string | null;
+  sku: string | null;
+  seller: string | null;
+  rating: number | null;
+  reviewCount: number | null;
   availability: AyWebsAvailability;
   purchaseMode: AyWebsPurchaseMode;
   integrationType: AyWebsIntegrationType;
@@ -1023,6 +1048,12 @@ function hydrateStoredProduct(row: any): AyWebsStoredProduct {
     condition: ['new', 'used', 'refurbished'].includes(String(row.condition || ''))
       ? String(row.condition) as 'new' | 'used' | 'refurbished'
       : null,
+    /* Phase 2.5 — champs étendus : '' / 0 signifient « non publié ». */
+    gtin: String(row.gtin || '') || null,
+    sku: String(row.sku || '') || null,
+    seller: String(row.seller || '') || null,
+    rating: Number(row.rating) > 0 ? Number(row.rating) : null,
+    reviewCount: Number(row.review_count) > 0 ? Number(row.review_count) : null,
     availability: ayWebsAvailabilityRecord(
       String(row.availability || 'UNKNOWN') as AyWebsAvailability['state'],
       String(row.availability_reason || ''),

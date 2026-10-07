@@ -115,6 +115,12 @@ CREATE TABLE IF NOT EXISTS ayweb_products (
   variants TEXT NOT NULL DEFAULT '[]',
   -- 03/10/2026 — état publié par la source : 'new' | 'used' | 'refurbished' | '' (inconnu).
   condition TEXT NOT NULL DEFAULT '',
+  -- Phase 2.5 (07/10/2026) — champs étendus publiés par la source, sinon vides.
+  gtin TEXT NOT NULL DEFAULT '',
+  sku TEXT NOT NULL DEFAULT '',
+  seller TEXT NOT NULL DEFAULT '',
+  rating REAL NOT NULL DEFAULT 0,
+  review_count INTEGER NOT NULL DEFAULT 0,
   availability TEXT NOT NULL DEFAULT 'UNKNOWN' CHECK(availability IN (${list(AYWEBS_AVAILABILITY_STATES)})),
   availability_reason TEXT NOT NULL DEFAULT '',
   availability_checked_at TEXT,
@@ -608,6 +614,20 @@ export function ensureAyWebsSchema(db: QatafoDatabase): void {
     }
     if (!productColumns.includes('currency_verified')) {
       db.run('ALTER TABLE ayweb_products ADD COLUMN currency_verified INTEGER NOT NULL DEFAULT 0');
+    }
+    // Phase 2.5 — champs étendus (code-barres, référence, vendeur, note, avis).
+    // Additif et idempotent : une base déjà en service garde ses lignes, les
+    // nouvelles colonnes valent '' ou 0 (⇒ « non publié », jamais un faux fait).
+    for (const [column, definition] of [
+      ['gtin', "TEXT NOT NULL DEFAULT ''"],
+      ['sku', "TEXT NOT NULL DEFAULT ''"],
+      ['seller', "TEXT NOT NULL DEFAULT ''"],
+      ['rating', 'REAL NOT NULL DEFAULT 0'],
+      ['review_count', 'INTEGER NOT NULL DEFAULT 0'],
+    ] as Array<[string, string]>) {
+      if (!productColumns.includes(column)) {
+        db.run(`ALTER TABLE ayweb_products ADD COLUMN ${column} ${definition}`);
+      }
     }
   } catch (error) {
     console.error('[AyWebs] shipping_address migration failed:', error instanceof Error ? error.message : error);

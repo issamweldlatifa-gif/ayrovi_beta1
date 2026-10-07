@@ -1436,6 +1436,12 @@ function productPayload(
     // État publié par la source ('' → null) : la coque ne doit jamais écrire
     // « New » par défaut, seulement recopier une donnée vérifiable.
     condition: product.condition || null,
+    /* Phase 2.5 — champs étendus publiés par la source (`null` = non publié). */
+    gtin: product.gtin,
+    sku: product.sku,
+    seller: product.seller,
+    rating: product.rating,
+    review_count: product.reviewCount,
     selected_variant: product.selectedVariant,
     availability: {
       state: product.availability.state,

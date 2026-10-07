@@ -206,6 +206,12 @@ export function ayWebsSourceProductFromScraped(product: ScrapedProduct, storeNam
     // État neuf/occasion : recopié TEL QUEL depuis la source, ou `null`.
     // Jamais déduit d'un titre ou d'une photo (§14 : le silence ne devient pas une affirmation).
     condition: product.condition ?? null,
+    /* Phase 2.5 — recopiés de la lecture, bornés par le parseur ; `null` sinon. */
+    gtin: product.gtin || null,
+    sku: product.sku || null,
+    seller: product.seller || null,
+    rating: typeof product.rating === 'number' && product.rating > 0 && product.rating <= 5 ? product.rating : null,
+    reviewCount: Number.isInteger(product.reviewsCount) && (product.reviewsCount as number) > 0 ? (product.reviewsCount as number) : null,
     merchant: { name: storeName || product.storeName || null, url: ayWebsSourceDomain(product.url) ? `https://${ayWebsSourceDomain(product.url)}` : null },
     scrapedProduct: product.currencyVerified === true ? product : { ...product, sourceCurrency: '' },
     capturedAt: product.scrapedAt || new Date().toISOString(),

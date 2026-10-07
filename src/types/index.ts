@@ -71,6 +71,15 @@ export interface ScrapedProduct {
   brand: string | null;
   rating?: number | null;
   reviewsCount?: number | null;
+  /**
+   * CHAMPS ÉTENDUS (Phase 2.5, 07/10/2026) — publiés par la page ou absents.
+   * `gtin` (code-barres), `sku` (référence marchand) et `seller` (vendeur de
+   * l'offre, ≠ boutique) servent la comparaison de prix et la traçabilité ; ils
+   * ne sont JAMAIS déduits d'un titre ou d'une URL.
+   */
+  gtin?: string | null;
+  sku?: string | null;
+  seller?: string | null;
   priceVerified?: boolean;
   /**
    * INTÉGRITÉ DU PRIX (Phase 0, 06/10/2026) — raison pour laquelle un montant

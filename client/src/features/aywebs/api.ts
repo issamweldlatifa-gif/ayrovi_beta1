@@ -255,6 +255,16 @@ export interface AyWebsProductPayload {
    * Jamais « new » par défaut : l'écran n'affiche que ce que le marchand publie.
    */
   condition: 'new' | 'used' | 'refurbished' | null;
+  /**
+   * CHAMPS ÉTENDUS (Phase 2.5, 07/10/2026) — publiés par la source ou `null`.
+   * L'écran n'affiche que ce que le marchand publie : `null` ⇒ ligne absente
+   * (jamais « 0 avis », jamais « Amazon » comme vendeur).
+   */
+  gtin: string | null;
+  sku: string | null;
+  seller: string | null;
+  rating: number | null;
+  review_count: number | null;
   selected_variant: { variantId: string; attributes: Record<string, string>; quantity: number; metadata?: Record<string, string> | null } | null;
   availability: AyWebsAvailabilityPayload;
   merchant: Record<string, unknown>;

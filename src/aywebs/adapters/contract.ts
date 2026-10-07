@@ -50,6 +50,13 @@ export interface AyWebsSourceProduct {
    * coque ne doit jamais afficher « New » par défaut.
    */
   condition: 'new' | 'used' | 'refurbished' | null;
+  /** CHAMPS ÉTENDUS (Phase 2.5) — publiés par la source, sinon `null`. */
+  gtin: string | null;
+  sku: string | null;
+  /** Vendeur de l'offre chez le marchand — jamais la boutique elle-même. */
+  seller: string | null;
+  rating: number | null;
+  reviewCount: number | null;
   merchant: { name: string | null; url: string | null };
   /** Produit AYROVI historique conservé pour la compatibilité V1 (confirmation, panier). */
   scrapedProduct: ScrapedProduct;

@@ -91,7 +91,10 @@ export const AyWebsVariantSheet: React.FC<AyWebsVariantSheetProps> = ({ url, sto
     setPhase('loading');
     resolveAyWebsProduct({ url, ...(storeId ? { store: storeId } : {}) }, controller.signal)
       .then(async (payload) => {
-        const resolved = payload.product ?? payload;
+        /* `product` est toujours renvoyé par l'API (corps imbriqué) ; le repli
+           `?? payload` couvre une réponse plate héritée. L'annotation garde les
+           deux projets TypeScript (client + serveur/tests) d'accord. */
+        const resolved: AyWebsProductPayload = (payload.product ?? payload) as AyWebsProductPayload;
         pendingQuoteToken.current = String(payload.quoteToken || '');
         setProduct(resolved);
         setSourceVariants(resolved.variant_details || []);
@@ -195,6 +198,26 @@ export const AyWebsVariantSheet: React.FC<AyWebsVariantSheetProps> = ({ url, sto
     if (condition === 'refurbished') return tr('Condition: Refurbished', 'الحالة: مُجدَّد');
     return '';
   }, [product, tr]);
+
+  /* Phase 2.5 — ce que la page publie EN PLUS du prix : note, avis, vendeur,
+     référence. Chaque ligne n'existe que si la valeur a été lue ; sinon elle
+     disparaît (aucun « 0 avis », aucun vendeur supposé). */
+  const publishedMeta = useMemo(() => {
+    const lines: string[] = [];
+    const rating = product?.rating ?? null;
+    const reviews = product?.review_count ?? null;
+    if (rating != null || reviews != null) {
+      const stars = rating != null ? `${rating.toFixed(1)} / 5` : '';
+      const count = reviews != null ? reviews.toLocaleString('fr-FR') : '';
+      if (stars && count) lines.push(tr(`${stars} — ${count} avis publiés`, `${stars} — ${count} تقييم منشور`));
+      else if (stars) lines.push(tr(`${stars} (note publiée)`, `${stars} (تقييم منشور)`));
+      else lines.push(tr(`${count} avis publiés`, `${count} تقييم منشور`));
+    }
+    if (product?.seller) lines.push(tr(`Vendu par ${product.seller}`, `يبيعه ${product.seller}`));
+    if (product?.sku) lines.push(tr(`Référence marchand : ${product.sku}`, `مرجع التاجر: ${product.sku}`));
+    if (product?.gtin) lines.push(tr(`Code-barres (GTIN) : ${product.gtin}`, `الرمز الشريطي (GTIN): ${product.gtin}`));
+    return lines;
+  }, [product?.rating, product?.review_count, product?.seller, product?.sku, product?.gtin]);
 
   const submitPurchaseSupport = async () => {
     if ((!supportProductName.trim() && !supportRequirements.trim()) || supportSubmitting || supportRequest) return;
@@ -324,6 +347,9 @@ export const AyWebsVariantSheet: React.FC<AyWebsVariantSheetProps> = ({ url, sto
             </div>
 
             {conditionLabel && <p className="ayw-added-meta">{conditionLabel}</p>}
+            {publishedMeta.map((line) => (
+              <p className="ayw-added-meta" key={line}>{line}</p>
+            ))}
             {availabilityLabel(displayedAvailability) && (
               <p className="ayw-added-meta">{availabilityLabel(displayedAvailability)}</p>
             )}

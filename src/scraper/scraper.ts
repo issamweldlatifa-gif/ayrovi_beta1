@@ -168,6 +168,13 @@ export class SmartLinkScraper {
       // (« Amazon », « TEMU ») ni le slug de l'URL ne sont la marque du produit :
       // seule la donnée publiée par le marchand fait foi, sinon le champ est vide.
       brand: merchantResult.data?.brand || '',
+      /* Phase 2.5 — recopiés depuis les données structurées de la page. Sans
+         publication : `null`, jamais une valeur reconstruite. */
+      gtin: liveData?.gtin || null,
+      sku: liveData?.sku || null,
+      seller: liveData?.seller || null,
+      rating: liveData?.rating ?? null,
+      reviewsCount: liveData?.reviewCount ?? null,
       priceVerified: merchantResult.verified && price > 0,
       currencyVerified,
       verificationProvider: merchantResult.provider,

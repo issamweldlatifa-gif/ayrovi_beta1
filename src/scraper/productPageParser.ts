@@ -32,6 +32,24 @@ export interface ParsedProductPage {
    * source ne le publie pas : l'écran ne doit jamais écrire « New » par défaut.
    */
   condition?: 'new' | 'used' | 'refurbished';
+  /**
+   * CHAMPS ÉTENDUS (Phase 2.5, 07/10/2026) — lus, jamais devinés.
+   *
+   * Ces quatre identités/qualités viennent des données structurées publiées par
+   * le marchand (JSON-LD en premier, microdata/meta ensuite). Absents quand la
+   * page ne les publie pas : l'audit a montré qu'ils n'existaient NULLE PART,
+   * et un champ vide est un progrès, un champ inventé une régression.
+   */
+  /** Code-barres produit publié (`gtin`/`gtin8|12|13|14`/`ean`/`isbn`) — chiffres seuls. */
+  gtin?: string;
+  /** Référence marchand (`sku`/`productID`/`mpn`) telle que publiée. */
+  sku?: string;
+  /** Vendeur de l'offre (`offers.seller.name`, `offeredBy`) — pas la boutique. */
+  seller?: string;
+  /** Note publiée (`aggregateRating.ratingValue`), bornée 0–5. */
+  rating?: number;
+  /** Nombre d'avis publié (`reviewCount`/`ratingCount`), entier positif. */
+  reviewCount?: number;
   priceSource: 'json_ld' | 'meta' | 'dom' | 'embedded_variant' | 'context_regex' | 'none';
   /**
    * INTÉGRITÉ DU PRIX (Phase 0, 06/10/2026) — renseigné SEULEMENT quand aucun
@@ -307,6 +325,77 @@ function flattenJsonLd(raw: any, output: any[] = []): any[] {
     }
   }
   return output;
+}
+
+/* ── CHAMPS ÉTENDUS (Phase 2.5) — lecture et bornage ─────────────────────── */
+
+/**
+ * GTIN : 8, 12, 13 ou 14 chiffres. Toute autre longueur est refusée — un
+ * « code-barres » de 6 ou 20 chiffres n'en est pas un, et le publier tel quel
+ * ferait croire à une identité produit vérifiable.
+ */
+export function normalizeGtin(raw: unknown): string {
+  const text = String(raw ?? '').trim();
+  // Seuls les chiffres et les séparateurs d'écriture sont admis : un champ qui
+  // contient des LETTRES (« A4006381333931 ») n'est pas un code-barres, et
+  // extraire les chiffres d'une chaîne quelconque fabriquerait une identité.
+  if (!text || !/^[0-9\s.-]+$/.test(text)) return '';
+  const digits = text.replace(/[^0-9]/g, '');
+  if (![8, 12, 13, 14].includes(digits.length)) return '';
+  return digits;
+}
+
+/** Référence marchand : bornée, sans espaces, sans valeur de gabarit. */
+export function normalizeMerchantSku(raw: unknown): string {
+  const value = String(raw ?? '').trim().replace(/\s+/g, ' ');
+  if (value.length < 2 || value.length > 64) return '';
+  if (/^(?:n\/?a|none|null|undefined|unknown|\{\{.*\}\}|-+)$/i.test(value)) return '';
+  return value;
+}
+
+/**
+ * Nom de vendeur publié par la page. On refuse explicitement les libellés qui
+ * ne désignent personne (« Other Sellers », « Voir les options ») : ils
+ * rempliraient le champ sans rien dire.
+ */
+export function normalizeSeller(raw: unknown): string {
+  const value = cleanLabel(raw);
+  if (value.length < 2 || value.length > 80) return '';
+  if (/^(?:other sellers?|vendeurs?|see (?:all|all options|options)|voir (?:tout|tous|les|les options|options)|n\/?a|unknown)$/i.test(value)) return '';
+  return value;
+}
+
+/**
+ * Note publiée : 0–5, arrondie au centième. Hors bornes ⇒ absente.
+ *
+ * Deux formes réelles : le nombre nu (`ratingValue: "4.6"`) et le libellé
+ * localisé affiché par l'enseigne — « 4.6 out of 5 stars » (capture Amazon DE
+ * du 06/10/2026), « 4,6 von 5 Sternen », « 4,6 étoiles sur 5 ». La virgule est
+ * un séparateur décimal, jamais de milliers : une note > 5 est refusée de toute
+ * façon, donc aucune ambiguïté ne peut produire un faux nombre.
+ */
+export function normalizeRating(raw: unknown): number | undefined {
+  const text = String(raw ?? '').replace(/\s+/g, ' ').trim();
+  if (!text) return undefined;
+  const match = /^([0-9]{1,2}(?:[.,][0-9]{1,2})?)(?:\s+\S+){0,2}?\s*(?:von|sur|de|out of|\/)\s*5(?:[.,]0)?\b/i.exec(text)
+    || /^([0-9]{1,2}(?:[.,][0-9]{1,2})?)$/.exec(text);
+  if (!match) return undefined;
+  const value = Number(match[1].replace(',', '.'));
+  if (!Number.isFinite(value) || value <= 0 || value > 5) return undefined;
+  return Math.round(value * 100) / 100;
+}
+
+/** Nombre d'avis : entier positif, borné à un milliard (au-delà = donnée cassée). */
+export function normalizeReviewCount(raw: unknown): number | undefined {
+  const text = String(raw ?? '').trim();
+  // Un signe négatif est une donnée cassée : le retirer (« -5 » → 5) publierait
+  // un nombre d'avis que la page n'a jamais annoncé.
+  if (!text || /[\-\u2212\u2013]/.test(text)) return undefined;
+  const normalized = text.replace(/[^0-9]/g, '');
+  if (!normalized) return undefined;
+  const value = Number(normalized);
+  if (!Number.isFinite(value) || value <= 0 || value > 1_000_000_000) return undefined;
+  return Math.trunc(value);
 }
 
 function isProductNode(node: any): boolean {
@@ -714,6 +803,106 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
       }
     }
 
+    /* ── CHAMPS ÉTENDUS (Phase 2.5, 07/10/2026) ─────────────────────────────
+       JSON-LD d'abord (donnée machine du marchand), puis microdata, puis meta.
+       Aucune de ces valeurs n'est déduite : absence ⇒ champ vide. */
+    const itemprop = (name: string) => document.querySelector(`[itemprop="${name}"]`)?.getAttribute('content')
+      ?? document.querySelector(`[itemprop="${name}"]`)?.getAttribute('value')
+      ?? document.querySelector(`[itemprop="${name}"]`)?.textContent
+      ?? '';
+    /* Un ProductGroup (Zalando, Shopify) publie ses identifiants sur le
+       VARIANTE, pas sur le groupe : on lit donc la liste ordonnée
+       [produit principal, …autres nœuds Product], premier champ publié gagnant.
+       Aucune fusion entre produits, aucune valeur prise à un autre article. */
+    const extendedLd: any[] = [productLd, ...jsonLd.filter((node) => isProductNode(node))];
+    const ldField = (keys: string[]): any => {
+      for (const node of extendedLd) {
+        for (const key of keys) {
+          const value = node?.[key];
+          if (value === undefined || value === null || value === '') continue;
+          if (Array.isArray(value)) return value.length ? value[0] : undefined;
+          return value;
+        }
+      }
+      return undefined;
+    };
+    const gtin = normalizeGtin(
+      ldField(['gtin', 'gtin13', 'gtin12', 'gtin8', 'gtin14', 'ean', 'isbn'])
+      || embeddedProduct?.barcode || embeddedProduct?.gtin
+      || itemprop('gtin13') || itemprop('gtin12') || itemprop('gtin') || itemprop('ean')
+      || meta('meta[property="product:gtin"]') || meta('meta[property="product:ean"]'),
+    );
+    const sku = normalizeMerchantSku(
+      ldField(['sku', 'mpn']) || embeddedProduct?.sku || embeddedProduct?.barcode
+      || itemprop('sku') || itemprop('mpn') || meta('meta[property="product:sku"]'),
+    );
+    /* Le vendeur de l'offre : `offers.seller` (JSON-LD), `offeredBy`, ou le
+       vendeur embarqué de Shopify. Ce n'est PAS la boutique elle-même — écrire
+       « Amazon » ici serait exactement la fabrication retirée en Phase 0. */
+    const rawOffers = extendedLd.flatMap((node: any) => (
+      Array.isArray(node?.offers) ? node.offers : node?.offers ? [node.offers] : []
+    ));
+    /* DEUX vendeurs distincts publiés (liste « Other Sellers ») ⇒ AUCUN : la
+       première offre n'est pas « le » vendeur, la choisir serait arbitraire.
+       Aucun vendeur dans les offres ⇒ on regarde `vendor` (Shopify), microdata
+       puis meta — jamais le nom de la boutique. */
+    const offerSellers = [...new Set(rawOffers
+      .map((offer: any) => normalizeSeller(offer?.seller?.name || (typeof offer?.seller === 'string' ? offer.seller : '') || offer?.offeredBy?.name))
+      .filter(Boolean))];
+    const seller = offerSellers.length > 1 ? '' : normalizeSeller(
+      offerSellers[0]
+      || embeddedProduct?.vendor
+      || itemprop('seller') || meta('meta[property="product:seller"]'),
+    );
+    const aggregate = extendedLd
+      .map((node: any) => (Array.isArray(node?.aggregateRating) ? node.aggregateRating[0] : node?.aggregateRating))
+      .find((value: any) => value && typeof value === 'object') || {};
+    const rating = normalizeRating(
+      aggregate?.ratingValue || itemprop('ratingValue') || meta('meta[property="product:rating:value"]'),
+    );
+    const reviewCount = normalizeReviewCount(
+      aggregate?.reviewCount || aggregate?.ratingCount || itemprop('reviewCount') || itemprop('ratingCount')
+      || meta('meta[property="product:rating:count"]'),
+    );
+
+    /* ── MARQUEURS PUBLIÉS (Phase 2.5, 07/10/2026) ──────────────────────────
+       Dernier recours, et SEULEMENT pour les enseignes qui publient ces valeurs
+       dans un élément stable au lieu de données structurées. Mesuré sur les
+       captures RÉELLES d'Amazon DE du 06/10/2026 (ASIN B0D1XD1ZV3) :
+         #acrPopover[title="4.6 out of 5 stars"]              → note 4.6
+         #acrCustomerReviewText[aria-label="46,196 Reviews"]   → 46 196 avis
+           (46 886 sur la seconde capture du même jour)
+         input[name="ASIN"][value="B0D1XD1ZV3"]                → référence
+         #merchant-info                                        → VIDE : le
+       vendeur reste donc ABSENT (jamais « Amazon »), et `[data-asin]` n'est pas
+       lu : 36 valeurs distinctes de carrousel dans la même capture — le lire
+       publierait la référence d'un produit sponsorisé voisin.
+       Règle d'unicité : deux valeurs distinctes ⇒ rien, on ne tranche pas. */
+    const markerText = (selectors: string[], attribute: string): string => {
+      const values = new Set<string>();
+      for (const selector of selectors) {
+        for (const node of Array.from(document.querySelectorAll(selector)).slice(0, 4)) {
+          const raw = attribute ? node.getAttribute(attribute) || '' : node.textContent || '';
+          const value = String(raw).replace(/\s+/g, ' ').trim();
+          if (value) values.add(value);
+        }
+      }
+      return values.size === 1 ? String([...values][0]) : '';
+    };
+    const markerSku = markerText(['input[name="ASIN"]', 'input[name="asin"]', 'input#asin'], 'value');
+    const markerRating = markerText(['#acrPopover', '#averageCustomerReviews .a-icon-alt'], 'title');
+    const markerReviewLabel = markerText(['#acrCustomerReviewText'], 'aria-label');
+    const markerReviewText = markerText(['#acrCustomerReviewText'], '');
+    const markerReview = /(?:reviews?|bewertungen|avis|évaluations)/i.test(markerReviewLabel) ? markerReviewLabel
+      : /^\(\s*[0-9][0-9.,\s]*\)$/.test(markerReviewText) ? markerReviewText : '';
+    const soldBy = /(?:verkauf durch|sold by|vendu par)\s*:?\s*([^,.;]+)/i.exec(markerText(['#merchant-info'], ''));
+    const markerSeller = [markerText(['#sellerProfileTriggerId'], ''), soldBy?.[1] || '']
+      .map((value) => normalizeSeller(value)).find((value) => value) || '';
+    const skuFinal = sku || normalizeMerchantSku(markerSku);
+    const sellerFinal = seller || markerSeller;
+    const ratingFinal = rating ?? normalizeRating(markerRating);
+    const reviewCountFinal = reviewCount ?? normalizeReviewCount(markerReview);
+
     const ldOffers = collectJsonLdOffers(jsonLd);
     const offers = ldOffers[0] || (Array.isArray(productLd?.offers) ? productLd.offers[0] : productLd?.offers);
     const ldSale = saleFromOffers(ldOffers);
@@ -958,6 +1147,12 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
       images,
       colorImages,
       externalId: String(productLd?.sku || productLd?.productID || embeddedProduct?.id || embeddedProduct?.sku || ''),
+      /* Phase 2.5 — les champs étendus sortent TELLS QUELS (ou absents). */
+      gtin: gtin || undefined,
+      sku: skuFinal || undefined,
+      seller: sellerFinal || undefined,
+      rating: ratingFinal,
+      reviewCount: reviewCountFinal,
       variants: { sizes, colors, details },
     availability: amazonAvailability(
       // Amazon publie son état dans `#availability` (« In Stock », « Only 3 left »).
