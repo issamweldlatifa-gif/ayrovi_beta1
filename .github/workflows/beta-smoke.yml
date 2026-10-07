@@ -63,6 +63,7 @@ jobs:
               exit 0 ;;
           esac
 
+          CAPS=""
           FAIL=0            # une fonction de l'appli manque vraiment
           WARN=0            # le serveur ne sait pas encore servir l'appli
           SMOKE=""
@@ -262,7 +263,7 @@ jobs:
             note "\`GET /.well-known/assetlinks.json\`" "$LINKS_CODE" "⚠️ pas un JSON (route absente) ⇒ liens profonds inertes"
           fi
 
-          SMOKE="{$BASE ready=$READY_CODE branch=${READY_BRANCH:-—} register=$REG_CODE token=$([ -n "$TOKEN" ] && echo oui || echo NON) me=$ME_CODE cart=$CART_CODE checkout=$CHECKOUT_CODE/$CHECKOUT_REF orders=$ORDERS_CODE links=$LINKS_CODE}"
+          SMOKE="{$BASE ready=$READY_CODE branch=${READY_BRANCH:-—} caps=${CAPS:-—} branch=${READY_BRANCH:-—} register=$REG_CODE token=$([ -n "$TOKEN" ] && echo oui || echo NON) me=$ME_CODE cart=$CART_CODE checkout=$CHECKOUT_CODE/$CHECKOUT_REF orders=$ORDERS_CODE links=$LINKS_CODE}$([ -n "${CHECKOUT_REF:-}" ] && echo " checkout_refusal=$CHECKOUT_REF")"
 
           if [ "$FAIL" = "1" ]; then
             VERDICT="❌ ÉCHEC — une fonction de l'appli ne répond pas sur ce serveur"
