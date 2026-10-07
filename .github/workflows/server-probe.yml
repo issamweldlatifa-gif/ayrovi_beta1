@@ -117,6 +117,7 @@ jobs:
           # 400 = exige un corps ; 404 = la route n'existe pas là ⇒ une fonction de l'app manque.
           FIRST_BASE=$(printf '%s' "$BASES" | tr ',' ' ' | awk '{print $1}')
           printf '\n**Points d entrée de l application sur `%s`**\n\n| Route | Code | Attendu sur un serveur sain | |\n|---|---|---|---|\n' "$FIRST_BASE" >> "$S"
+          ROUTE_LINE=""
           for PATH_CHECK in /api/public/hero-content /api/public/navigation /api/public/announcement-messages /api/public/commerce-config /api/customer/auth/config /api/v1/aywebs/health /api/v1/aywebs/stores /api/assistant/status /api/cart/items /api/customer/auth/me /api/customer/account/overview /api/customer/account/orders /api/ocerex/analyze; do
             ROUTE_CODE=$(http_code "$FIRST_BASE$PATH_CHECK" /tmp/route)
             case "$PATH_CHECK" in
@@ -132,7 +133,9 @@ jobs:
               *) MARK="⚠️" ;;
             esac
             printf '| `%s` | %s | %s | %s |\n' "$PATH_CHECK" "$ROUTE_CODE" "$EXPECT" "$MARK" >> "$S"
+            ROUTE_LINE="$ROUTE_LINE ${PATH_CHECK#/api/}=$ROUTE_CODE"
           done
+          echo "::notice title=Points d entree de l app::$FIRST_BASE$ROUTE_LINE"
           printf '\n' >> "$S"
 
           echo "::notice title=Etat des serveurs::main=${MAIN_SHA:-inconnu} branche=${BRANCH_SHA:-inconnu}${SUMMARY_LINE}"
