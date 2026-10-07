@@ -12,12 +12,22 @@ name: Mobile — APK Android (démo)
 # assumé tant que le keystore d'origine n'est pas disponible pour une mise à
 # jour en place.
 on:
+  # ⚠️ GitHub n'accepte `workflow_dispatch` que pour un workflow présent sur la
+  # branche PAR DÉFAUT. Tant que ce fichier n'est pas sur `main`, on déclenche
+  # donc la construction par un `push` sur la branche de travail (le push qui
+  # modifie l'application suffit). Une fois fusionné dans `main`, le bouton
+  # manuel ci-dessous devient disponible tel quel — rien à changer.
   workflow_dispatch:
     inputs:
       api_base_url:
         description: "Origine de l'API gravée dans l'application (`EXPO_PUBLIC_API_BASE_URL`)"
         required: true
         default: "https://ayrovi-beta1.onrender.com"
+  push:
+    branches: [arena/c0321e79-ayrovi-beta1]
+    paths:
+      - 'apps/mobile/**'
+      - '.github/workflows/mobile-android.yml'
 
 concurrency:
   group: mobile-apk-${{ github.ref }}
