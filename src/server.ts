@@ -31,6 +31,7 @@ import { bootstrapErpCore } from './erp-core/bootstrap';
 import { isPublicUploadPath } from './erp-core/storage';
 import { assertProductionConfiguration } from './config/productionConfig';
 import { pruneCanonicalLensCache } from './ayrovix/services/lensCache';
+import { clientRateLimitKey } from './services/rateKey';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -145,16 +146,39 @@ app.use('/api/admin/arrival-ingestion/sources', (req, res, next) => {
   }
   return next();
 });
-app.use('/api/customer/auth/otp/request', rateLimit('otp-request-ip', process.env.NODE_ENV === 'test' ? 1_000 : 20, 60_000));
+/*
+ * Connexion par SMS — dimensionnée pour la Tunisie.
+ *
+ * Le contrôle qui protège réellement du coût (et du harcèlement) est
+ * PAR NUMÉRO : 3 demandes / 15 min et 5 / minute, plus le plafond technique du
+ * fournisseur. Le plafond par IP n'est qu'un garde-fou de débit : à 20/min il
+ * punissait un opérateur entier (CGNAT) au lieu d'un attaquant. On le monte,
+ * et on ajoute un plafond GLOBAL au processus — lui seul borne la dépense SMS
+ * face à une attaque distribuée, qu'aucun compteur par IP ne peut arrêter.
+ */
+app.use('/api/customer/auth/otp/request', rateLimit('otp-request-global', process.env.NODE_ENV === 'test' ? 10_000 : 300, 15 * 60_000, () => 'process'));
+app.use('/api/customer/auth/otp/request', rateLimit('otp-request-ip', process.env.NODE_ENV === 'test' ? 1_000 : 120, 60_000));
+/**
+ * Clé du plafond PAR NUMÉRO — volontairement SANS l'IP.
+ *
+ * Avec l'IP dans la clé, un attaquant disposant de plusieurs adresses
+ * multipliait son quota contre la même victime ; et un abonné derrière un
+ * CGNAT partageait son quota avec ses voisins. Sans l'IP, le quota protège le
+ * numéro, d'où qu'on l'attaque — c'est la bonne dimension pour des SMS payants.
+ * Le téléphone n'est jamais stocké : seul un hachage tronqué sert de clé.
+ */
 export function otpRateLimitKey(req: Pick<Request, 'ip' | 'body'>): string {
   let digits = String(req.body?.phone || '').replace(/\D/g, '').slice(0, 20);
   if (digits.startsWith('00')) digits = digits.slice(2);
   if (digits.length === 8) digits = `216${digits}`; // local Tunisian notation → E.164 digits
-  const phoneHash = createHash('sha256').update(digits).digest('hex').slice(0, 16);
-  return `${req.ip || 'unknown'}:${phoneHash}`;
+  return `phone:${createHash('sha256').update(digits).digest('hex').slice(0, 16)}`;
 }
 const otpRequestTargetRateLimit = rateLimit('otp-request-target', process.env.NODE_ENV === 'test' ? 1_000 : 5, 60_000, otpRateLimitKey);
-app.use('/api/customer/auth/otp/verify', rateLimit('otp-verify', 12, 5 * 60_000));
+// Le garde-fou utile est PAR DÉFI (voir `otpVerifyChallengeRateLimit` plus bas,
+// enregistré après la lecture du corps) ; le compteur par IP ne sert qu'à
+// absorber une rafale. Le garder bas rendait la connexion impossible aux heures
+// de pointe derrière un même opérateur (une adresse = des milliers d'abonnés).
+app.use('/api/customer/auth/otp/verify', rateLimit('otp-verify-ip', process.env.NODE_ENV === 'test' ? 1_000 : 120, 5 * 60_000));
 app.use('/api/customer/auth/google', rateLimit('google-oauth', 30, 10 * 60_000));
 app.use('/api/customer/auth/facebook', rateLimit('facebook-oauth', 30, 10 * 60_000));
 // Remise de session native (04/10/2026) : l'application interroge en boucle
@@ -165,7 +189,7 @@ app.use('/api/customer/auth/native/claim', rateLimit('native-handoff', process.e
 // Connexion Google native : chaque appel déclenche une vérification chez
 // Google. Sans plafond, un tiers pourrait s'en servir comme amplificateur.
 app.use('/api/customer/auth/google/native', rateLimit('google-native', process.env.NODE_ENV === 'test' ? 1_000 : 30, 10 * 60_000));
-app.use('/api/checkout', rateLimit('checkout', process.env.NODE_ENV === 'test' ? 1_000 : 15, 5 * 60_000));
+app.use('/api/checkout', rateLimit('checkout', process.env.NODE_ENV === 'test' ? 1_000 : 15, 5 * 60_000, clientRateLimitKey));
 app.use('/api/customer/account/orders', (req, res, next) => req.path.includes('/payments/card/')
   ? rateLimit('card-payment', process.env.NODE_ENV === 'test' ? 1_000 : 20, 5 * 60_000)(req, res, next)
   : next());
@@ -173,28 +197,28 @@ app.use('/api/customer/payments/konnect/webhook', rateLimit('konnect-webhook', p
 app.use('/api/extract-image', rateLimit('vision', 25, 10 * 60_000));
 app.use('/api/ocerex', rateLimit('ocerex', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000));
 app.use('/api/scrape', rateLimit('scrape', 30, 10 * 60_000));
-app.use('/api/v1/aywebs/capture', rateLimit('aywebs-capture', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000));
-app.use('/api/v1/aywebs/product/resolve', rateLimit('aywebs-resolve', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000));
-app.use('/api/v1/aywebs/product/variants', rateLimit('aywebs-variants', process.env.NODE_ENV === 'test' ? 1_000 : 40, 10 * 60_000));
-app.use('/api/v1/aywebs/page/analyze', rateLimit('aywebs-analyze', process.env.NODE_ENV === 'test' ? 1_000 : 120, 10 * 60_000));
-app.use('/api/v1/aywebs/price-quote', rateLimit('aywebs-quote', process.env.NODE_ENV === 'test' ? 1_000 : 60, 10 * 60_000));
-app.use('/api/v1/aywebs/events', rateLimit('aywebs-events', process.env.NODE_ENV === 'test' ? 1_000 : 120, 10 * 60_000));
+app.use('/api/v1/aywebs/capture', rateLimit('aywebs-capture', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000, clientRateLimitKey));
+app.use('/api/v1/aywebs/product/resolve', rateLimit('aywebs-resolve', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000, clientRateLimitKey));
+app.use('/api/v1/aywebs/product/variants', rateLimit('aywebs-variants', process.env.NODE_ENV === 'test' ? 1_000 : 40, 10 * 60_000, clientRateLimitKey));
+app.use('/api/v1/aywebs/page/analyze', rateLimit('aywebs-analyze', process.env.NODE_ENV === 'test' ? 1_000 : 120, 10 * 60_000, clientRateLimitKey));
+app.use('/api/v1/aywebs/price-quote', rateLimit('aywebs-quote', process.env.NODE_ENV === 'test' ? 1_000 : 60, 10 * 60_000, clientRateLimitKey));
+app.use('/api/v1/aywebs/events', rateLimit('aywebs-events', process.env.NODE_ENV === 'test' ? 1_000 : 120, 10 * 60_000, clientRateLimitKey));
 // Écritures propriétaires du domaine AYWEBs : panier, commande, paiement, demandes.
-app.use('/api/v1/aywebs/cart', rateLimit('aywebs-cart', process.env.NODE_ENV === 'test' ? 1_000 : 60, 10 * 60_000));
-app.use('/api/v1/aywebs/checkout', rateLimit('aywebs-checkout', process.env.NODE_ENV === 'test' ? 1_000 : 30, 10 * 60_000));
-app.use('/api/v1/aywebs/orders', rateLimit('aywebs-orders', process.env.NODE_ENV === 'test' ? 1_000 : 30, 10 * 60_000));
-app.use('/api/v1/aywebs/payments', rateLimit('aywebs-payments', process.env.NODE_ENV === 'test' ? 1_000 : 30, 10 * 60_000));
-app.use('/api/v1/aywebs/purchase-requests', rateLimit('aywebs-purchase-requests', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000));
-app.use('/api/v1/aywebs/store-requests', rateLimit('aywebs-store-requests', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000));
+app.use('/api/v1/aywebs/cart', rateLimit('aywebs-cart', process.env.NODE_ENV === 'test' ? 1_000 : 60, 10 * 60_000, clientRateLimitKey));
+app.use('/api/v1/aywebs/checkout', rateLimit('aywebs-checkout', process.env.NODE_ENV === 'test' ? 1_000 : 30, 10 * 60_000, clientRateLimitKey));
+app.use('/api/v1/aywebs/orders', rateLimit('aywebs-orders', process.env.NODE_ENV === 'test' ? 1_000 : 30, 10 * 60_000, clientRateLimitKey));
+app.use('/api/v1/aywebs/payments', rateLimit('aywebs-payments', process.env.NODE_ENV === 'test' ? 1_000 : 30, 10 * 60_000, clientRateLimitKey));
+app.use('/api/v1/aywebs/purchase-requests', rateLimit('aywebs-purchase-requests', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000, clientRateLimitKey));
+app.use('/api/v1/aywebs/store-requests', rateLimit('aywebs-store-requests', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000, clientRateLimitKey));
 app.use('/api/public/assistant-feedback', rateLimit('assistant-feedback', process.env.NODE_ENV === 'test' ? 1_000 : 40, 10 * 60_000));
-app.use('/api/assistant/chat', rateLimit('assistant-chat', process.env.NODE_ENV === 'test' ? 1_000 : 25, 10 * 60_000));
-app.use('/api/assistant/transcribe', rateLimit('assistant-voice', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000));
+app.use('/api/assistant/chat', rateLimit('assistant-chat', process.env.NODE_ENV === 'test' ? 1_000 : 25, 10 * 60_000, clientRateLimitKey));
+app.use('/api/assistant/transcribe', rateLimit('assistant-voice', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000, clientRateLimitKey));
 app.use('/api/public/media', rateLimit('public-media-proxy', process.env.NODE_ENV === 'test' ? 1_000 : 300, 10 * 60_000));
-const ayrovixRateLimit = rateLimit('ayrovix', process.env.NODE_ENV === 'test' ? 1_000 : 12, 10 * 60_000);
+const ayrovixRateLimit = rateLimit('ayrovix', process.env.NODE_ENV === 'test' ? 1_000 : 12, 10 * 60_000, clientRateLimitKey);
 const configuredLensDailyLimit = Number(process.env.AYROVIX_LENS_IP_DAILY_LIMIT);
 const lensDailyLimit = process.env.NODE_ENV === 'test' ? 1_000
   : Number.isInteger(configuredLensDailyLimit) ? Math.max(5, Math.min(200, configuredLensDailyLimit)) : 40;
-const ayrovixDailyCostLimit = rateLimit('ayrovix-daily-cost', lensDailyLimit, 24 * 60 * 60_000);
+const ayrovixDailyCostLimit = rateLimit('ayrovix-daily-cost', lensDailyLimit, 24 * 60 * 60_000, clientRateLimitKey);
 const costlyAyrovixPaths = new Set(['/analyze-image', '/analyze-url', '/analyze-code', '/analyze-barcode', '/analyze-text']);
 app.use('/api/ayrovix', (req, res, next) => {
   // Reading compact history is free. Costly analyses also have a daily IP
@@ -246,6 +270,15 @@ app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 // Phone target is in the parsed body: enforce this second factor only after parsing,
 // while the independent IP ceiling above still runs before the request body is read.
 app.use('/api/customer/auth/otp/request', otpRequestTargetRateLimit);
+/*
+ * Balayage d'un même défi (le corps doit être lu : le défi en vient).
+ * Deviner le code d'un défi plus de dix fois en cinq minutes n'est pas une
+ * connexion ; le compteur en base coupe de toute façon à cinq essais.
+ * Une requête sans défi partage la clé « sans-defi » : on n'échappe pas au
+ * plafond en omettant simplement le champ.
+ */
+app.use('/api/customer/auth/otp/verify', rateLimit('otp-verify-challenge', 10, 5 * 60_000,
+  (req) => String(req.body?.challengeId || 'sans-defi').slice(0, 80)));
 
 // Database, Scraper & Vision Engine
 // Tests must always be hermetic: never let a local .env DATABASE_PATH hijack the test run.

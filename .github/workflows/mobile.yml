@@ -1,0 +1,53 @@
+name: Mobile — AYROVI app
+
+# Pipeline indépendant du site : il ne se déclenche que sur `apps/mobile/**`.
+# Une modification de la vitrine ne peut donc pas faire échouer la construction
+# de l'application, et inversement (règle de frontière, apps/mobile/PLAN.md §9).
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/mobile/**'
+      - '.github/workflows/mobile.yml'
+  pull_request:
+    paths:
+      - 'apps/mobile/**'
+      - '.github/workflows/mobile.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: mobile-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  app:
+    name: typecheck · tokens · tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+
+      # `.npmrc` de l'application active legacy-peer-deps : la résolution
+      # stricte d'npm 10 échoue sur le graphe de pairs Expo + vitest.
+      - name: Install
+        run: npm ci
+
+      # Les jetons de conception sont générés depuis l'identité du site : s'ils
+      # sont périmés, l'application affiche une palette qui n'est plus celle du
+      # produit. C'est le seul contrôle qui relie les deux dépôts.
+      - name: Design tokens up to date
+        run: npm run tokens:check
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Tests
+        run: npm test

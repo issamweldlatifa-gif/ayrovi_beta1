@@ -27,8 +27,8 @@ import {
   rotateCustomerCsrf,
   safeEqualHash,
   setCustomerCookie,
-  nativeSessionField,
 } from './auth';
+import { sessionExchangeFields } from './sessionExchange';
 import { deliverOtp, otpProviderName, phoneOtpAvailable, verifyProviderOtp } from './otp';
 
 const OTP_TTL_MS = 5 * 60 * 1000;
@@ -439,7 +439,14 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
     const cartSession = validCartSession(req.headers['x-session-id']);
     if (cartSession) db.attachCartToAccount(cartSession, customer.id);
     const csrfToken = rotateCustomerCsrf(db, req);
-    return res.json({ success: true, data: { account: publicAccount(accountRow(db, customer.id)), csrfToken } });
+    // `expiresAt` permet à l'application de savoir quand sa session mourra
+    // sans attendre un 401 : elle peut alors redemander une connexion au bon
+    // moment au lieu de faire échouer une commande en pleine confirmation.
+    return res.json({ success: true, data: {
+      account: publicAccount(accountRow(db, customer.id)),
+      csrfToken,
+      expiresAt: customer.expiresAt,
+    } });
   });
 
   router.post('/auth/otp/request', async (req, res) => {
@@ -452,7 +459,14 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
     const ip = req.ip || '';
     const phoneCount = Number(db.get<any>('SELECT COUNT(*) count FROM customer_otp_challenges WHERE phone=? AND created_at>=?', phone, phoneSince)?.count || 0);
     const ipCount = Number(db.get<any>('SELECT COUNT(*) count FROM customer_otp_challenges WHERE request_ip=? AND created_at>=?', ip, ipSince)?.count || 0);
-    if (phoneCount >= 3 || ipCount >= 10) return res.status(429).json({ success: false, error: 'Trop de demandes. Réessayez dans 15 minutes.' });
+    /*
+     * Le plafond par NUMÉRO reste serré (3 / 15 min) : c'est lui qui protège la
+     * personne et la facture SMS. Le plafond par IP passe à 100 / 15 min : à 10,
+     * une seule adresse d'opérateur (CGNAT) bloquait des centaines d'abonnés
+     * légitimes aux heures de pointe. Le plafond global du processus
+     * (`otp-request-global`) reste le garde-fou de dépense.
+     */
+    if (phoneCount >= 3 || ipCount >= 100) return res.status(429).json({ success: false, error: 'Trop de demandes. Réessayez dans 15 minutes.' });
 
     const challengeId = `otp_${randomUUID()}`;
     const code = String(randomInt(100000, 1000000));
@@ -524,7 +538,7 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
         csrfToken: session.csrfToken,
         expiresAt: session.expiresAt,
         linkedHistoricalOrders: linked,
-        ...nativeSessionField(req, session.token),
+        ...sessionExchangeFields(req, session),
       } });
     } catch (error: any) {
       if (error?.message === 'PHONE_CHANGE_NOT_SUPPORTED') return res.status(409).json({ success: false, error: 'Ce compte possède déjà un autre numéro vérifié.' });
@@ -567,7 +581,7 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
         account: publicAccount(accountRow(db, accountId)),
         csrfToken: session.csrfToken,
         expiresAt: session.expiresAt,
-        ...nativeSessionField(req, session.token),
+        ...sessionExchangeFields(req, session),
       } });
     } catch (error) {
       console.error('[Customer Email Register]', error);
@@ -603,7 +617,7 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
       account: publicAccount(accountRow(db, account.id)),
       csrfToken: session.csrfToken,
       expiresAt: session.expiresAt,
-      ...nativeSessionField(req, session.token),
+      ...sessionExchangeFields(req, session),
     } });
   };
   router.post('/auth/email/login', emailLoginHandler);
