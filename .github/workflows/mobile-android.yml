@@ -1,0 +1,93 @@
+name: Mobile — APK Android (démo)
+
+# Construit un APK RÉEL de l'application React Native sur les runners GitHub
+# (JDK 17 + SDK Android), parce que l'environnement de développement n'a ni Java
+# ni SDK Android.
+#
+# Ce n'est PAS l'APK de production : celui-ci viendra en P6 (keystore de
+# l'application dans GitHub Secrets, `app-bundle` pour le Play Store).
+#
+# L'APK de démo porte un identifiant DISTINCT (`app.ayrovi.mobile.demo`) : il
+# s'installe À CÔTÉ de l'application existante, sans la toucher. C'est le choix
+# assumé tant que le keystore d'origine n'est pas disponible pour une mise à
+# jour en place.
+on:
+  workflow_dispatch:
+    inputs:
+      api_base_url:
+        description: "Origine de l'API gravée dans l'application (`EXPO_PUBLIC_API_BASE_URL`)"
+        required: true
+        default: "https://ayrovi-beta1.onrender.com"
+
+concurrency:
+  group: mobile-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    name: APK démo (release, signé debug)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      # Outils en ligne de commande + acceptation des licences : AGP télécharge
+      # ensuite lui-même la plateforme et les build-tools exacts dont il a besoin
+      # (le projet ne les épingle pas — `expo-root-project` les définit).
+      - uses: android-actions/setup-android@v3
+
+      # `.npmrc` de l'application active legacy-peer-deps (graphe Expo + vitest).
+      - name: Install
+        run: npm ci
+
+      # Projet natif généré à la volée (CNG) : aucun fichier natif n'est versionné.
+      - name: Générer le projet Android
+        run: npx expo prebuild --platform android --no-install
+
+      - name: Identifiant + libellé de la démo (dans la CI uniquement)
+        working-directory: apps/mobile/android
+        run: |
+          set -euo pipefail
+          sed -i "s/applicationId 'app.ayrovi.mobile'/applicationId 'app.ayrovi.mobile.demo'/" app/build.gradle
+          sed -i 's|<string name="app_name">AYROVI</string>|<string name="app_name">AYROVI Démo</string>|' app/src/main/res/values/strings.xml
+          grep -n "applicationId" app/build.gradle
+          grep -n "app_name" app/src/main/res/values/strings.xml
+
+      # `assembleRelease` produit un APK AUTONOME (bundle JS embarqué), signé
+      # avec la clé debug du modèle — donc installable sur un téléphone.
+      # L'APK de production, lui, sera signé avec le vrai keystore (P6).
+      - name: Build APK
+        working-directory: apps/mobile/android
+        env:
+          EXPO_PUBLIC_API_BASE_URL: ${{ inputs.api_base_url }}
+          EXPO_PUBLIC_BUILD_STAMP: ${{ github.sha }}
+          EXPO_PUBLIC_APP_VERSION: "2.0.0"
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Vérifier la signature
+        working-directory: apps/mobile/android
+        run: |
+          set -euo pipefail
+          APK=app/build/outputs/apk/release/app-release.apk
+          ls -lh "$APK"
+          "$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs "$APK" | head -3
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AYROVI-demo-apk
+          path: apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+          retention-days: 30
