@@ -327,7 +327,7 @@ export function Screen({ tab, phase, children, onRefresh, refreshing = false }: 
         <AppText variant="body" color={theme.colors.secondary}>{body}</AppText>
         <View style={styles.badgeRow}>
           <PhaseBadge phase={phase} />
-          <AppText variant="caption" color={theme.colors.muted}>{t('common.soon')}</AppText>
+          <AppText variant="caption" color={theme.colors.muted}>{t('common.inThisVersion')}</AppText>
         </View>
       </View>
       {children}

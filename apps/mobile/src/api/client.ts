@@ -328,12 +328,7 @@ export async function apiGetText(path: string, options: RequestOptions = {}): Pr
  * يضيّع `capture.rejection` و`quote_token`، والشاشة تولّي ما تعرفش تحكي
  * الحقيقة. التحقّق هنا هو نفس عقد `unwrap` (لا غلاف = خطأ، لا نجاح صامت).
  */
-export async function apiSendEnvelope<T>(
-  method: 'POST' | 'PUT' | 'PATCH' | 'DELETE',
-  path: string,
-  options: SendOptions = {},
-): Promise<T> {
-  const payload = (await perform<unknown>(method, path, { ...options, envelope: true })).data;
+function readEnvelope<T>(payload: unknown, path: string): T {
   if (!isRecord(payload)) throw new ApiError('malformed', `Enveloppe absente (${path})`);
   if (payload.success === false) {
     const code = typeof payload.code === 'string' ? payload.code : '';
@@ -344,6 +339,23 @@ export async function apiSendEnvelope<T>(
   }
   if (payload.success !== true) throw new ApiError('malformed', `Enveloppe absente (${path})`);
   return payload as T;
+}
+
+export async function apiSendEnvelope<T>(
+  method: 'POST' | 'PUT' | 'PATCH' | 'DELETE',
+  path: string,
+  options: SendOptions = {},
+): Promise<T> {
+  return readEnvelope<T>((await perform<unknown>(method, path, { ...options, envelope: true })).data, path);
+}
+
+/**
+ * طلب GET يرجّع الغلاف كامل — لمسارات AYROVI (`/cart/items`، `/checkout`):
+ * حقولها في الجذر مع `success`، بلا `data`. فكّ `data` هنا كان يرجّع
+ * `undefined` ويولّي كل شي «مالفورمِ» بلا سبب حقيقي.
+ */
+export async function apiGetEnvelope<T>(path: string, options: SendOptions = {}): Promise<T> {
+  return readEnvelope<T>((await perform<unknown>('GET', path, { ...options, envelope: true })).data, path);
 }
 
 /** واجهة مختصرة: تعيد `data` فقط. */

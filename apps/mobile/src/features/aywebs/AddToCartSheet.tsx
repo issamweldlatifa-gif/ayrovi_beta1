@@ -239,7 +239,7 @@ export function AddToCartSheet({
                 <View style={styles.row}>
                   <Button
                     label={t('aywebs.goToCart')}
-                    onPress={() => { onClose(); router.push('/cart'); }}
+                    onPress={() => { onClose(); router.push('/aywebs/cart'); }}
                   />
                   <Button
                     label={t('aywebs.continueShopping')}

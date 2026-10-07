@@ -1,18 +1,22 @@
 /**
- * تبويب السلّة — P3، الشريحة 3: سلّة AYWEBs (الخادم هو صاحبها) + الجسر إلى سلّة AYROVI.
+ * تبويب السلّة — P5، الشريحة 1: **سلّة AYROVI** (سلّة الشراء).
  *
- * ما تعرضوش أرقاماً محسوبة هنا: المجموع، السطر، التوفّر، الحالة — الكل يجي من
- * `GET /cart`. والكمية **تُضبط** (رقم مطلق يبعث للخادم)، ما تتجمعش في الجهاز:
- * هكذا ما تصيرش مضاعفة كي يتبدّل الرقم في بلاصة أخرى.
+ * علاش تبدّلت السلّة في التبويب: هذي هي السلّة اللي منها يتكوّن الطلب — تدخلها
+ * سطور AYWEBs (بالجسر) وسطور OCEREX (بـ`commit`). سلّة AYWEBs ولّت شاشة فرعية
+ * (`/aywebs/cart`) لأنها **منبع**: أسعار المتاجر وتحقّقها.
  *
- * الجسر (`/cart/bridge-to-ayrovi`) يربط نفس السطور في سلّة AYROVI — مزامنة،
- * موش إضافة ثانية. والخادم يعيد التحقّق من المصادر قبل الربط: كان لقى تغييراً
- * يردّ `409`، وهنا نعرض السبب ونعاود نقرا السلّة — ما نكمّلوش على حالة قديمة.
+ * قواعد الصدق في الشاشة:
+ *  • كل رقم يجي من `GET /api/cart/items`: المجموع، التوصيل، سطر كل منتوج.
+ *  • الكمية **مطلقة** (رقم يبعث للخادم) ثم نعاود نقرا السلّة — ما نزيدوش في الجهاز.
+ *  • سطر `STALE` (تسعير فات وقتو) يتقال ويتلوّن، والخادم هو اللي يرفض الطلب:
+ *    هنا نقولوها قبل، باش المستعمل ما يوصلش لآخر خطوة ويكتشف.
+ *  • الدفع ما هوش في هذي الشريحة: ما فماش زر «خلّص» يدّعي وظيفة ما كايناش —
+ *    فماش شي في بلاصتو، والجملة تقول الحقيقة.
  */
 import { useCallback, useMemo, useState } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 
 import { AppText, Button, Card, KeyValue, Screen } from '@/design/ui';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
@@ -21,267 +25,213 @@ import { useI18n, useT } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import { isApiError, userMessage } from '@/api/errors';
 import {
-  AYWEBS_SOURCE_VERIFICATION_REQUIRED, acceptAyWebsCartPriceChange, bridgeAyWebsCartToAyrovi,
-  fetchAyWebsCart, removeAyWebsCartItem, updateAyWebsCartItem, verifyAyWebsCart,
-  type AyWebsBridgeOutcome, type AyWebsCartItem,
-} from '@/api/aywebs';
+  AYROVI_PRICE_TRUST_REASONS, ayroviCartReadiness, fetchAyroviCart, removeAyroviCartItem,
+  updateAyroviCartQuantity, type AyroviCartLine,
+} from '@/api/cart';
 import { useAyWebsSessionId } from '@/features/aywebs/session';
 
 const MAX_QUANTITY = 99;
 
-export default function AyWebsCartScreen() {
+export default function AyroviCartScreen() {
   const t = useT();
   const theme = useTheme();
   const { locale } = useI18n();
   const sessionId = useAyWebsSessionId();
-  const queryClient = useQueryClient();
-
-  /** رسالة واحدة للعمليات: الخادم يقولو، وإحنا نعرضوه كما هو. */
   const [note, setNote] = useState('');
-  const [bridge, setBridge] = useState<AyWebsBridgeOutcome | null>(null);
 
   const cartQuery = useQuery({
-    queryKey: ['aywebs', 'cart'],
+    queryKey: ['cart', 'ayrovi'],
     enabled: Boolean(sessionId),
-    queryFn: ({ signal }) => fetchAyWebsCart({ sessionId, signal }),
+    queryFn: ({ signal }) => fetchAyroviCart({ sessionId, signal }),
     staleTime: 0,
   });
 
-  const onNote = useCallback((error: unknown) => {
-    setNote(isApiError(error) ? userMessage(error)[locale] : t('aywebs.captureFailed'));
-  }, [locale, t]);
+  const reload = useCallback(() => { cartQuery.refetch(); }, [cartQuery]);
 
-  const adopt = useCallback((next: { cart: unknown }) => {
-    // الخادم رجّع السلّة كاملة: نعرضو هي، ما نعيدش نبنيو نسخة في الجهاز.
-    queryClient.setQueryData(['aywebs', 'cart'], next.cart);
-  }, [queryClient]);
+  const onNote = useCallback((error: unknown, fallbackKey: 'cart.failed' | 'cart.updateFailed' | 'cart.removeFailed') => {
+    setNote(isApiError(error) ? userMessage(error)[locale] : t(fallbackKey));
+  }, [locale, t]);
 
   const setQuantity = useMutation({
     mutationFn: (input: { itemId: string; quantity: number }) =>
-      updateAyWebsCartItem(input.itemId, { quantity: input.quantity }, { sessionId }),
-    onSuccess: (result) => { setNote(''); setBridge(null); adopt(result); },
-    onError: onNote,
+      updateAyroviCartQuantity({ ...input, sessionId }),
+    onSuccess: () => { setNote(''); reload(); },
+    onError: (error) => onNote(error, 'cart.updateFailed'),
   });
 
   const removeLine = useMutation({
-    mutationFn: (itemId: string) => removeAyWebsCartItem(itemId, { sessionId }),
-    onSuccess: (next) => { setNote(''); setBridge(null); queryClient.setQueryData(['aywebs', 'cart'], next); },
-    onError: onNote,
-  });
-
-  const acceptPrice = useMutation({
-    mutationFn: (itemId: string) => acceptAyWebsCartPriceChange(itemId, { sessionId }),
-    onSuccess: (result) => { setNote(t('aywebs.cartAccepted')); adopt(result); },
-    onError: onNote,
-  });
-
-  const verify = useMutation({
-    mutationFn: () => verifyAyWebsCart({ sessionId, recheckSource: true }),
-    onSuccess: (result) => {
-      // قراءة جديدة من التاجر: كل سطر تحقّق، والتغييرات من الخادم لا من عندنا.
-      setNote(result.changes.length
-        ? t('aywebs.cartVerifyChanges', { count: result.changes.length })
-        : t('aywebs.cartVerifyNone'));
-      adopt(result);
-    },
-    onError: onNote,
-  });
-
-  const linkToAyrovi = useMutation({
-    mutationFn: () => bridgeAyWebsCartToAyrovi({ sessionId }),
-    onSuccess: (result) => {
-      setNote('');
-      setBridge(result);
-      // الربط يبدّل `linked_to_ayrovi` على السطور: نعاود نقرا السلّة من الخادم.
-      cartQuery.refetch();
-    },
-    onError: (error) => {
-      onNote(error);
-      // 409 = المصدر تبدّل: نعرض السبب ونجيب الحالة الجديدة (blockers) من الخادم.
-      if (isApiError(error) && error.code === AYWEBS_SOURCE_VERIFICATION_REQUIRED) cartQuery.refetch();
-    },
+    mutationFn: (itemId: string) => removeAyroviCartItem({ itemId, sessionId }),
+    onSuccess: () => { setNote(''); reload(); },
+    onError: (error) => onNote(error, 'cart.removeFailed'),
   });
 
   const cart = cartQuery.data ?? null;
-  const blockers = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const blocker of cart?.blockers ?? []) map.set(blocker.itemId, blocker.message);
-    return map;
-  }, [cart?.blockers]);
+  const gate = useMemo(() => ayroviCartReadiness(cart), [cart]);
+  const busy = setQuantity.isPending || removeLine.isPending;
 
-  const busyLine = setQuantity.isPending || removeLine.isPending || acceptPrice.isPending;
+  /** سطور مجموعة حسب المتجر — كما يجي التقسيم في المفهوم، بلا اختراع. */
+  const groups = useMemo(() => {
+    const byStore = new Map<string, AyroviCartLine[]>();
+    for (const line of cart?.items ?? []) {
+      const key = line.store || '—';
+      byStore.set(key, [...(byStore.get(key) ?? []), line]);
+    }
+    return [...byStore.entries()];
+  }, [cart]);
 
-  const quantityRow = (item: AyWebsCartItem) => (
-    <View style={styles.quantityRow}>
-      <Button
-        label="−"
-        tone="quiet"
-        disabled={busyLine || item.quantity <= 1}
-        onPress={() => setQuantity.mutate({ itemId: item.id, quantity: Math.max(1, item.quantity - 1) })}
-      />
-      <AppText variant="lead" weight="bold">{String(item.quantity)}</AppText>
-      <Button
-        label="+"
-        tone="quiet"
-        disabled={busyLine || item.quantity >= MAX_QUANTITY}
-        onPress={() => setQuantity.mutate({ itemId: item.id, quantity: Math.min(MAX_QUANTITY, item.quantity + 1) })}
-      />
-    </View>
-  );
+  const trustLabel = useCallback((line: AyroviCartLine): string => {
+    if (line.priceTrust === 'STALE') return t('cart.trust.STALE');
+    if (line.priceTrust === 'MANUAL') return t('cart.trust.MANUAL');
+    if (line.priceTrust === 'FRESH') return t('cart.trust.FRESH');
+    return t('cart.trust.UNKNOWN');
+  }, [t]);
 
-  const lineBlock = (item: AyWebsCartItem) => (
-    <View key={item.id} style={[styles.line, { borderColor: theme.colors.line }]}>
-      {item.images[0] ? (
-        <Image source={{ uri: mediaUrl(item.images[0]) }} style={styles.image} resizeMode="contain" />
-      ) : null}
-      <AppText variant="label" weight="bold">{item.title}</AppText>
-      {item.variantLabel ? (
-        <KeyValue label={t('aywebs.variant')} value={item.variantLabel} />
-      ) : null}
-      <KeyValue
-        label={t('aywebs.sourcePrice')}
-        value={item.unitPrice != null ? `${item.unitPrice} ${item.currency}`.trim() : t('aywebs.noPrice')}
-      />
-      {item.lineTotalTnd != null ? (
-        <KeyValue label={t('aywebs.totalTnd')} value={`${item.lineTotalTnd.toFixed(2)} TND`} />
-      ) : null}
-      <KeyValue
-        label={t('aywebs.availability')}
-        value={item.availability === 'AVAILABLE'
-          ? t('aywebs.avail.AVAILABLE')
-          : item.availability === 'LOW_STOCK'
-            ? t('aywebs.avail.LOW_STOCK')
-            : item.availability === 'OUT_OF_STOCK'
-              ? t('aywebs.avail.OUT_OF_STOCK')
-              : t('aywebs.avail.UNKNOWN')}
-      />
-      {item.linkedToAyrovi === true ? (
-        <KeyValue label={t('aywebs.cartLinked')} value="✓" />
-      ) : item.linkedToAyrovi === false ? (
-        <KeyValue label={t('aywebs.cartNotLinked')} value="—" />
-      ) : null}
-      {blockers.get(item.id) ? (
-        <AppText variant="caption" color={theme.colors.danger}>{blockers.get(item.id)}</AppText>
-      ) : null}
-      {item.status === 'PRICE_CHANGED' ? (
-        <Button
-          label={t('aywebs.cartAcceptPrice')}
-          tone="quiet"
-          busy={acceptPrice.isPending}
-          onPress={() => acceptPrice.mutate(item.id)}
+  const trustReasonKey = (line: AyroviCartLine): string => {
+    const code = AYROVI_PRICE_TRUST_REASONS[line.priceTrustReason] ?? '';
+    switch (code) {
+      case 'QUOTE_EXPIRED': return t('cart.trustReason.QUOTE_EXPIRED');
+      case 'QUOTE_MISSING': return t('cart.trustReason.QUOTE_MISSING');
+      case 'MANUAL_REVIEW': return t('cart.trustReason.MANUAL_REVIEW');
+      default: return '';
+    }
+  };
+
+  const availabilityLabel = (value: string): string => {
+    switch (value) {
+      case 'in_stock': return t('lens.avail.in_stock');
+      case 'limited': return t('lens.avail.limited');
+      case 'out_of_stock': return t('lens.avail.out_of_stock');
+      default: return t('lens.avail.unknown');
+    }
+  };
+
+  const lineBlock = (line: AyroviCartLine) => {
+    const image = mediaUrl(line.imageUrl);
+    const blocked = line.priceTrust === 'STALE';
+    return (
+      <View key={line.id} style={[styles.line, { borderTopColor: theme.colors.line }]}>
+        {image ? <Image source={{ uri: image }} style={styles.image} resizeMode="contain" /> : null}
+        <AppText variant="label" weight="bold">{line.title}</AppText>
+        {line.variant ? <KeyValue label={t('cart.variant')} value={line.variant} /> : null}
+        <KeyValue
+          label={t('cart.sourcePrice')}
+          value={`${line.sourcePrice} ${line.sourceCurrency || '?'}`}
         />
-      ) : null}
-      {quantityRow(item)}
-      <Button
-        label={t('aywebs.cartRemove')}
-        tone="quiet"
-        disabled={busyLine}
-        onPress={() => removeLine.mutate(item.id)}
-      />
-    </View>
-  );
+        <KeyValue
+          label={t('cart.lineTotal')}
+          value={line.lineTotalTND != null ? `${line.lineTotalTND.toFixed(2)} TND` : t('cart.noLineTotal')}
+        />
+        {line.discountTND ? (
+          <AppText variant="caption" color={theme.colors.muted}>
+            {t('cart.promo', { percent: line.promoLabel, amount: line.discountTND.toFixed(2) })}
+          </AppText>
+        ) : null}
+        <KeyValue label={t('cart.availability')} value={availabilityLabel(line.availability)} />
+        <KeyValue label={t('cart.priceTrust')} value={trustLabel(line)} />
 
-  const reload = useCallback(() => { cartQuery.refetch(); }, [cartQuery]);
+        {blocked ? (
+          <AppText variant="caption" color={theme.colors.danger} accessibilityRole="alert">
+            {trustReasonKey(line) || t('cart.trustReason.default')}
+          </AppText>
+        ) : null}
+
+        <View style={styles.quantityRow}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('cart.decrease')}
+            disabled={busy || line.quantity <= 1}
+            onPress={() => setQuantity.mutate({ itemId: line.id, quantity: line.quantity - 1 })}
+            style={[styles.step, {
+              borderColor: theme.colors.line,
+              borderRadius: theme.radius.control,
+              minHeight: theme.geometry.minTarget,
+              minWidth: theme.geometry.minTarget,
+              opacity: busy || line.quantity <= 1 ? 0.4 : 1,
+            }]}
+          >
+            <AppText variant="title">−</AppText>
+          </Pressable>
+          <AppText variant="label" weight="bold">{String(line.quantity)}</AppText>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('cart.increase')}
+            disabled={busy || line.quantity >= MAX_QUANTITY}
+            onPress={() => setQuantity.mutate({ itemId: line.id, quantity: line.quantity + 1 })}
+            style={[styles.step, {
+              borderColor: theme.colors.line,
+              borderRadius: theme.radius.control,
+              minHeight: theme.geometry.minTarget,
+              minWidth: theme.geometry.minTarget,
+              opacity: busy || line.quantity >= MAX_QUANTITY ? 0.4 : 1,
+            }]}
+          >
+            <AppText variant="title">+</AppText>
+          </Pressable>
+          <Button
+            label={t('cart.remove')}
+            tone="quiet"
+            busy={removeLine.isPending && removeLine.variables === line.id}
+            disabled={busy}
+            onPress={() => removeLine.mutate(line.id)}
+          />
+        </View>
+      </View>
+    );
+  };
 
   return (
-    <Screen tab="cart" phase="P3" onRefresh={reload} refreshing={cartQuery.isFetching && !cartQuery.isPending}>
-      <Card title={t('aywebs.cartTitle')} hint={t('aywebs.cartHint')}>
+    <Screen tab="cart" phase="P5" onRefresh={reload} refreshing={cartQuery.isFetching && !cartQuery.isPending}>
+      <Card title={t('cart.title')} hint={t('cart.hint')}>
         {!sessionId || cartQuery.isPending ? (
           <LoadingBlock label={{ fr: 'Chargement du panier…', ar: 'جارٍ تحميل السلّة…' }} />
         ) : cartQuery.isError ? (
           <ErrorBlock error={cartQuery.error} onRetry={reload} />
-        ) : !cart || !cart.hasCart || cart.items.length === 0 ? (
-          <EmptyBlock>{t('aywebs.cartEmpty')}</EmptyBlock>
+        ) : !cart || cart.items.length === 0 ? (
+          <>
+            <EmptyBlock>{t('cart.empty')}</EmptyBlock>
+            {/* إجراء حقيقي: باب لمنتوجات AYWEBs (بلا زرّ ميّت). */}
+            <Button label={t('cart.emptyAction')} onPress={() => router.push('/aywebs')} />
+          </>
         ) : (
           <>
-            <KeyValue label={t('aywebs.cartUnits')} value={String(cart.totals.units)} />
-            {cart.totals.productSubtotalTnd != null ? (
-              <KeyValue
-                label={t('aywebs.cartSubtotal')}
-                value={`${cart.totals.productSubtotalTnd.toFixed(2)} ${cart.totals.currency || 'TND'}`}
-              />
+            <KeyValue label={t('cart.units')} value={String(cart.units)} />
+            <KeyValue label={t('cart.subtotalProducts')} value={`${cart.productSubtotalTND.toFixed(2)} TND`} />
+            <KeyValue label={t('cart.delivery')} value={`${cart.deliveryTND.toFixed(2)} TND`} />
+            <KeyValue label={t('cart.total')} value={`${cart.totalTND.toFixed(2)} TND`} />
+
+            {note ? (
+              <AppText variant="caption" color={theme.colors.danger} accessibilityRole="alert">{note}</AppText>
             ) : null}
-            <KeyValue label={t('aywebs.cartBlockers')} value={String(cart.totals.blockedItems)} />
-            <KeyValue
-              label={t('aywebs.cartReady')}
-              value={cart.totals.checkoutReady ? t('aywebs.cartReady') : t('aywebs.cartNotReady')}
-            />
-            {cart.totals.unlinkedUnits != null ? (
-              <AppText variant="caption" color={theme.colors.muted}>
-                {cart.totals.unlinkedUnits === 0
-                  ? t('aywebs.cartAllLinked')
-                  : t('aywebs.cartUnlinked', { count: cart.totals.unlinkedUnits })}
+
+            {gate.blockReason === 'PRICE_VERIFICATION_REQUIRED' ? (
+              <AppText variant="caption" color={theme.colors.danger}>
+                {t('cart.blockedBody', { count: gate.staleLines.length })}
               </AppText>
             ) : null}
 
-            {note ? (
-              <AppText variant="caption" color={theme.colors.ink} accessibilityRole="alert">{note}</AppText>
-            ) : null}
-
-            <View style={styles.actions}>
-              <Button
-                label={t('aywebs.cartVerify')}
-                tone="quiet"
-                busy={verify.isPending}
-                onPress={() => verify.mutate()}
-              />
-              <Button
-                label={t('aywebs.cartBridge')}
-                busy={linkToAyrovi.isPending}
-                onPress={() => linkToAyrovi.mutate()}
-              />
-            </View>
-
-            {bridge ? (
-              <View style={styles.bridge}>
-                <AppText variant="label" weight="bold">
-                  {t('aywebs.cartBridgeMoved', { count: bridge.moved.length })}
-                </AppText>
-                {bridge.message ? (
-                  <AppText variant="caption" color={theme.colors.muted}>{bridge.message}</AppText>
-                ) : null}
-                {bridge.skipped.length ? (
-                  <>
-                    <KeyValue label={t('aywebs.cartBridgeSkipped')} value={String(bridge.skipped.length)} />
-                    {bridge.skipped.map((line) => (
-                      <AppText key={line.aywebsItemId} variant="caption" color={theme.colors.danger}>
-                        {line.code}{line.message ? ` — ${line.message}` : ''}
-                      </AppText>
-                    ))}
-                  </>
-                ) : null}
-                {/* بصراحة: الربط صار فعلاً؛ صفحة الطلب نفسها مرحلة P5. */}
-                <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.cartBridgeLater')}</AppText>
-              </View>
-            ) : null}
+            {/* الدفع ما هوش هنا بعد: نقولوها بصراحة بدل زرّ ما يخدمش. */}
+            <AppText variant="caption" color={theme.colors.muted}>{t('cart.checkoutNext')}</AppText>
           </>
         )}
       </Card>
 
-      {cart?.groups.map((group) => (
-        <Card key={group.storeId} title={group.storeName || group.storeId} hint={group.integrationType}>
-          {group.subtotalTnd != null ? (
-            <KeyValue
-              label={t('aywebs.cartSubtotal')}
-              value={`${group.subtotalTnd.toFixed(2)} ${cart.totals.currency || 'TND'}`}
-            />
-          ) : null}
-          {group.items.map(lineBlock)}
+      {groups.map(([store, lines]) => (
+        <Card key={store} title={store}>
+          {lines.map(lineBlock)}
         </Card>
       ))}
 
-      {/* سلّة فارغة ⇒ إجراء حقيقي: نرجعو لتبويب AYWEBs (بلا زرّ ميّت). */}
-      {!cartQuery.isPending && !cartQuery.isError && (!cart || !cart.hasCart || cart.items.length === 0) ? (
-        <Button label={t('aywebs.cartEmptyAction')} onPress={() => router.push('/aywebs')} />
-      ) : null}
+      {/* سلّة AYWEBs (المصادر) — باب حقيقي من هنا. */}
+      <Card title={t('cart.aywebsTitle')} hint={t('cart.aywebsHint')}>
+        <Button label={t('cart.aywebsOpen')} tone="quiet" onPress={() => router.push('/aywebs/cart')} />
+      </Card>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  actions: { flexDirection: 'row', gap: 8, marginTop: 8, flexWrap: 'wrap' },
-  bridge: { gap: 4, marginTop: 8 },
   line: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 8, marginTop: 8, gap: 4 },
   image: { width: '100%', height: 140 },
-  quantityRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
+  quantityRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' },
+  step: { borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
 });
