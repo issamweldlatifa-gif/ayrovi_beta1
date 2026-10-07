@@ -89,7 +89,7 @@ jobs:
           READY_COMMIT=$(jget /tmp/ready commit)
           READY_BRANCH=$(jget /tmp/ready branch)
           if [ "$READY_CODE" = "200" ]; then
-            if [ -n "$READY_BRANCH" ]; then
+            if [ -n "$READY_BRANCH" ] && [ "$READY_BRANCH" != "unknown" ]; then
               note "\`GET /api/ready\`" "200" "commit \`${READY_COMMIT:-—}\` · branche \`${READY_BRANCH}\` — serveur de la branche"
             else
               WARN=1
@@ -98,6 +98,35 @@ jobs:
           else
             FAIL=1
             note "\`GET /api/ready\`" "$READY_CODE" "❌ le serveur ne répond pas"
+          fi
+
+          # 1bis) Que sait faire ce serveur ? (`/auth/config`) — c'est LUI qui décide
+          # ce que l'appli propose. Deux méthodes de contact comptent pour la caisse :
+          # une CONNEXION vérifiée (Google/Apple/Facebook → e-mail vérifié par le
+          # fournisseur) ou le SMS (téléphone vérifié). Sans aucune des deux, un compte
+          # e-mail ne peut PAS confirmer de commande — et le refus sera honnête.
+          CONFIG_CODE=$(http_code "$BASE/api/customer/auth/config" /tmp/authcfg)
+          if [ "$CONFIG_CODE" = "200" ]; then
+            CAPS=$(python3 -c 'import json,sys
+          try: d=json.load(open("/tmp/authcfg"))
+          except Exception: d={}
+          data=d.get("data",d) if isinstance(d,dict) else {}
+          def on(k):
+              v=data.get(k)
+              return "oui" if (v is True or (isinstance(v,dict) and v.get("enabled") is True)) else "non"
+          print("email=%s google=%s facebook=%s apple=%s sms=%s reset=%s" % (on("email"),on("google"),on("facebook"),on("apple"),on("phoneOtp"),on("passwordReset")))' 2>/dev/null)
+            note "\`GET /api/customer/auth/config\`" "200" "methodes offertes : \`${CAPS:-illisible}\`"
+            case "$CAPS" in
+              *google=oui*|*facebook=oui*|*apple=oui*|*sms=oui*)
+                :
+                ;;
+              *)
+                WARN=1
+                note "Vérification du contact" "—" "⚠️ ni fournisseur (Google/Apple/Facebook) ni SMS : un compte e-mail ne peut pas devenir **vérifié** ⇒ \`POST /api/checkout\` refusera \`CONTACT_VERIFICATION_REQUIRED\` (comportement voulu, pas une panne de l'appli)" ;;
+            esac
+          else
+            WARN=1
+            note "\`GET /api/customer/auth/config\`" "$CONFIG_CODE" "⚠️ illisible — impossible de savoir ce que le serveur propose"
           fi
 
           # 2) Créer un compte comme le fait l'APPLI (en-tête \`x-ayrovi-client\`).
@@ -128,7 +157,27 @@ jobs:
           if [ -n "$TOKEN" ]; then
             # الجلسة موجودة: نجرّبو نفس الاستدعاءات اللي يعملها التطبيق بالضبط
             # (Bearer + en-tête العميل + جلسة السلّة).
+            # `csrfToken`: التطبيق يبعثو مع كل كتابة (`x-csrf-token`)، والخادم
+            # **يبدّلو** في كل `GET /auth/me` — نعاودو نقراوه من بعد `/me`.
+            CSRF=$(jget /tmp/reg data.csrfToken)
             AUTH=(-H "Authorization: Bearer $TOKEN" -H "x-ayrovi-client: $CLIENT" -b /tmp/jar)
+            REPLAYED=0
+
+            # كتابة محميّة بالـCSRF — نفس التطبيق بالضبط: كي يرجع `INVALID_CSRF`
+            # (توكن قديم من بعد تدوير الخادم)، يجدّدو من `/auth/me` ويعاود **مرّة وحدة**.
+            write_code() {
+              local url="$1" out="$2"
+              shift 2
+              local code
+              code=$(http_code "$url" "$out" -H "x-csrf-token: ${CSRF:-absent}" "${AUTH[@]}" "$@")
+              if [ "$code" = "403" ] && [ "$(jget "$out" code)" = "INVALID_CSRF" ]; then
+                http_code "$BASE/api/customer/auth/me" /tmp/me-refresh "${AUTH[@]}" >/dev/null
+                CSRF=$(jget /tmp/me-refresh data.csrfToken)
+                code=$(http_code "$url" "$out" -H "x-csrf-token: ${CSRF:-absent}" "${AUTH[@]}" "$@")
+                REPLAYED=1
+              fi
+              printf '%s' "$code"
+            }
 
             # 4) Le jeton ouvre-t-il vraiment la session ? (même appel que l'écran Compte)
             ME_CODE=$(http_code "$BASE/api/customer/auth/me" /tmp/me "${AUTH[@]}")
@@ -136,6 +185,8 @@ jobs:
             case "$ME_CODE" in
               200)
                 if [ "$ME_EMAIL" = "$EMAIL" ]; then
+                  # الخادم دار تدوير للـCSRF هنا: نقراو الجديد.
+                  CSRF=$(jget /tmp/me data.csrfToken)
                   note "\`GET /api/customer/auth/me\` (Bearer)" "200" "✅ la session du compte \`$EMAIL\` est reconnue"
                 else
                   FAIL=1
@@ -151,15 +202,28 @@ jobs:
               *) FAIL=1; note "\`GET /api/cart/items\`" "$CART_CODE" "❌ le panier ne répond pas comme prévu" ;;
             esac
 
-            # 6) Caisse : sur un panier vide elle DOIT refuser proprement (\`EMPTY_CART\`).
-            #    Un 500 ou un 401 ici = le tunnel d'achat est cassé avant même le paiement.
-            CHECKOUT_CODE=$(http_code "$BASE/api/checkout" /tmp/co "${AUTH[@]}" \
-              -X POST -H 'Content-Type: application/json' -d '{}')
+            # 6) Caisse : sur un panier vide elle DOIT refuser proprement (`EMPTY_CART`).
+            #    Un 500, un 401 ou un `INVALID_CSRF` définitif ici = le tunnel d'achat
+            #    est cassé avant même le paiement.
+            # `x-session-id` إلزامي في الشراء (جلسة السلّة) + جسم كيف التطبيق بالضبط.
+            # حساب جديد ما عندوش إيميل ولا تلفون موثّق ⇒ الخادم يرفض **بالصريح**
+            # (`CONTACT_VERIFICATION_REQUIRED` 403) — وهذا ردّ صحيح ومقصود، موش عطب:
+            # معناه الجلسة والـCSRF والتحقّق كامل عدا، والرفض مبرّر وdocumenté.
+            CHECKOUT_BODY=$(printf '{"name":"Test Auto","email":"%s","phone":"20000000","city":"Tunis","address":"Rue de test 1","deliveryMode":"home","paymentMethod":"PENDING_SELECTION","locale":"ar-TN","termsAccepted":true}' "$EMAIL")
+            CHECKOUT_CODE=$(write_code "$BASE/api/checkout" /tmp/co -H "x-session-id: smoke-$STAMP" \
+              -X POST -H 'Content-Type: application/json' -d "$CHECKOUT_BODY")
             CHECKOUT_REF=$(jget /tmp/co code)
+            CHECKOUT_MSG=$(jget /tmp/co error)
             case "$CHECKOUT_CODE" in
-              400) note "\`POST /api/checkout\` (panier vide)" "400" "✅ refus honnête \`${CHECKOUT_REF:-EMPTY_CART}\` — le tunnel existe" ;;
-              401|403) FAIL=1; note "\`POST /api/checkout\` (panier vide)" "$CHECKOUT_CODE" "❌ la session ne passe pas jusqu'à la caisse" ;;
-              *) FAIL=1; note "\`POST /api/checkout\` (panier vide)" "$CHECKOUT_CODE" "❌ réponse inattendue (\`${CHECKOUT_REF:-—}\`)" ;;
+              200) note "\`POST /api/checkout\`" "200" "✅ commande créée (compte vérifié) — le tunnel va jusqu'au bout" ;;
+              400|403)
+                if [ -n "$CHECKOUT_REF" ]; then
+                  note "\`POST /api/checkout\`" "$CHECKOUT_CODE" "✅ refus honnête et documenté \`$CHECKOUT_REF\` (« ${CHECKOUT_MSG:-—} »)"
+                else
+                  WARN=1
+                  note "\`POST /api/checkout\`" "$CHECKOUT_CODE" "⚠️ refus sans code (« ${CHECKOUT_MSG:-—} ») — l'appli ne peut pas le traduire"
+                fi ;;
+              *) FAIL=1; note "\`POST /api/checkout\`" "$CHECKOUT_CODE" "❌ réponse inattendue (\`${CHECKOUT_REF:-—}\` ${CHECKOUT_MSG:-})" ;;
             esac
 
             # 7) Commandes du compte (onglet Compte)
@@ -170,8 +234,8 @@ jobs:
             esac
 
             # 9) Nettoyage : on referme la session de test (aucun compte réel touché).
-            LOGOUT_CODE=$(http_code "$BASE/api/customer/auth/logout" /tmp/out "${AUTH[@]}" -X POST)
-            note "\`POST /api/customer/auth/logout\`" "$LOGOUT_CODE" "nettoyage de la session de test"
+            LOGOUT_CODE=$(write_code "$BASE/api/customer/auth/logout" /tmp/out -X POST)
+            note "\`POST /api/customer/auth/logout\`" "$LOGOUT_CODE" "nettoyage de la session de test$([ "$REPLAYED" = "1" ] && echo ' (jeton CSRF renouvelé puis rejoué)')"
 
           else
             ME_CODE="-"; ME_EMAIL="-"; CART_CODE="-"; CHECKOUT_CODE="-"; CHECKOUT_REF="-"
