@@ -200,7 +200,15 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: ./gradlew bundleRelease --no-daemon
+        run: |
+          set -o pipefail
+          echo "--- machine ---"; df -h / | tail -1; free -m | head -2
+          if ./gradlew bundleRelease --no-daemon --console=plain 2>&1 | tee /tmp/gradle.log; then
+            exit 0
+          fi
+          # L'échec devient une annotation lisible (le journal complet ne l'est pas partout).
+          python3 ../../scripts/gradle-diagnose.py /tmp/gradle.log "AAB : Gradle a échoué"
+          exit 1
 
       - name: Vérifier la signature (et refuser la clé debug)
         run: |

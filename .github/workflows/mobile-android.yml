@@ -120,7 +120,19 @@ jobs:
           EXPO_PUBLIC_API_BASE_URL: ${{ inputs.api_base_url || 'https://ayrovi-beta1-1.onrender.com' }}
           EXPO_PUBLIC_BUILD_STAMP: ${{ github.sha }}
           EXPO_PUBLIC_APP_VERSION: "2.0.0"
-        run: ./gradlew assembleRelease --no-daemon
+        run: |
+          set -o pipefail
+          # Contexte de la machine : un échec de build vient souvent du disque
+          # ou de la mémoire, pas du code.
+          echo "--- machine ---"; df -h / | tail -1; free -m | head -2
+          echo "--- java ---"; java -version 2>&1 | head -2
+          if ./gradlew assembleRelease --no-daemon --console=plain 2>&1 | tee /tmp/gradle.log; then
+            exit 0
+          fi
+          # Le journal complet n'est pas consultable partout : l'échec est publié
+          # en annotation (dernières lignes + causes), lisible depuis l'API.
+          python3 ../../scripts/gradle-diagnose.py /tmp/gradle.log "APK démo : Gradle a échoué"
+          exit 1
 
       - name: Vérifier la signature
         working-directory: apps/mobile/android
