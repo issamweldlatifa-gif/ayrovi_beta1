@@ -109,6 +109,25 @@ describe('جهوزية الإصدار — الحكم', () => {
     expect(byId['secrets'].status).toBe('pass');
   });
 
+  it('الخادم منشور من فرع آخر ⇒ تحذير يسمّي الفرعين', async () => {
+    const stub = await startStub(baseRoutes({
+      '/api/ready': { body: { status: 'ready', database: 'ok', version: '3.10.4', commit: '4ee2a8af31e1', branch: 'main' } },
+    }));
+    openStubs.push(stub.close);
+
+    const { code, stdout } = await run([
+      '--api-base', stub.url, '--origin', stub.url, '--json',
+      '--version-code', '8', '--branch-commit', '4ae6c0d24e70', '--secrets', ALL_SECRETS,
+    ]);
+    const report = parse(stdout);
+    const byId = Object.fromEntries(report.checks.map((check) => [check.id, check]));
+
+    expect(code).toBe(0); // موش فشل قاتل: التطبيق يخدم جزئياً، والمعلومة صريحة
+    expect(byId['server-branch'].status).toBe('warn');
+    expect(byId['server-branch'].detail).toContain('main');
+    expect(byId['server-branch'].detail).toContain('arena/c0321e79-ayrovi-beta1');
+  });
+
   it('بصمة واحدة ⇒ تحذير (Play يعيد التوقيع) بلا فشل', async () => {
     const stub = await startStub(baseRoutes({
       '/.well-known/assetlinks.json': {

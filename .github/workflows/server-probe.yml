@@ -1,7 +1,7 @@
 name: Serveur — état du déploiement (diagnostic)
 
 # Répond à UNE question, avec des faits et pas des suppositions :
-#   « quel code tourne réellement sur le serveur publié ? »
+#   « quel code tourne réellement sur chaque serveur publié ? »
 #
 # Pourquoi ça compte : l'application mobile a besoin du serveur du BRANCH
 # (`x-ayrovi-client` → `session_token`). Sur un serveur de `main`, la connexion
@@ -15,10 +15,10 @@ name: Serveur — état du déploiement (diagnostic)
 on:
   workflow_dispatch:
     inputs:
-      base:
-        description: "Origine du serveur à interroger"
+      bases:
+        description: "Origines à interroger (séparées par des virgules)"
         required: true
-        default: "https://ayrovi-beta1-1.onrender.com"
+        default: "https://ayrovi-beta1-1.onrender.com, https://ayrovi-beta1.onrender.com"
   push:
     branches: [arena/c0321e79-ayrovi-beta1]
     paths:
@@ -26,13 +26,13 @@ on:
 
 jobs:
   probe:
-    name: État du serveur publié
+    name: État des serveurs publiés
     runs-on: ubuntu-latest
     env:
-      BASE: ${{ inputs.base || 'https://ayrovi-beta1-1.onrender.com' }}
+      BASES: ${{ inputs.bases || 'https://ayrovi-beta1-1.onrender.com, https://ayrovi-beta1.onrender.com' }}
       REPO: ${{ github.repository }}
     steps:
-      - name: Lire l'état du serveur et le comparer aux branches
+      - name: Lire chaque serveur et comparer au branch et à main
         run: |
           # GitHub lance `bash -e -o pipefail` : je reprends la main pour qu'un
           # curl qui échoue (serveur muet) ne fasse pas rougir un diagnostic —
@@ -41,76 +41,66 @@ jobs:
           set -u
 
           S="${GITHUB_STEP_SUMMARY:-/dev/null}"
-          printf '## État du serveur : `%s`\n\n' "$BASE" >> "$S"
+          printf '## État des serveurs publiés\n\n' >> "$S"
 
-          http_code() { curl -s -o /tmp/body -w '%{http_code}' --max-time 25 "$1" 2>/dev/null || echo "000"; }
-          # Récupère le SHA d'une référence GitHub (une seule commande, sans pipe :
-          # `sed` imprime la première correspondance puis quitte).
+          http_code() { curl -s -o "$2" -w '%{http_code}' --max-time 25 "$1" 2>/dev/null || echo "000"; }
+          # Une seule commande, sans pipe : `sed` imprime la première correspondance puis quitte.
           sha_of() {
             curl -s --max-time 25 "https://api.github.com/repos/$REPO/commits/$1" 2>/dev/null \
               | sed -n '/"sha"/{s/.*"sha": *"\([a-f0-9]\{7,40\}\)".*/\1/p;q;}' \
               | cut -c1-12
           }
+          json_field() { sed -n "s/.*\"$2\": *\"\([^\"]*\)\".*/\1/p" "$1" 2>/dev/null | head -1; }
 
-          HEALTH_CODE=$(http_code "$BASE/api/health"); HEALTH_BODY=$(head -c 300 /tmp/body 2>/dev/null)
-          READY_CODE=$(http_code "$BASE/api/ready");   READY_BODY=$(head -c 300 /tmp/body 2>/dev/null)
-
-          printf -- '- `GET /api/health` → **%s** — `%s`\n' "$HEALTH_CODE" "$HEALTH_BODY" >> "$S"
-          printf -- '- `GET /api/ready` → **%s** — `%s`\n' "$READY_CODE" "$READY_BODY" >> "$S"
-
-          # App Links : la route n'existe QUE sur le branch. Sur `main`, le repli
-          # SPA répond 200 avec du HTML — d'où la lecture du TYPE, pas du code.
-          LINKS_META=$(curl -s -o /tmp/links -w '%{http_code}|%{content_type}' --max-time 25 "$BASE/.well-known/assetlinks.json" 2>/dev/null || echo "000|")
-          LINKS_CODE="${LINKS_META%%|*}"; LINKS_TYPE="${LINKS_META#*|}"
-          LINKS_BODY=$(head -c 200 /tmp/links 2>/dev/null)
-          case "$LINKS_BODY" in
-            '<!DOCTYPE'*|'<html'*|'<!doctype'*) LINKS_KIND="HTML (repli SPA = code de main)" ;;
-            *'"error"'*) LINKS_KIND="JSON d'erreur (route du branch, empreinte absente)" ;;
-            '['*) LINKS_KIND="JSON (route du branch présente)" ;;
-            *) LINKS_KIND="indéterminé" ;;
-          esac
-          printf -- '- `GET /.well-known/assetlinks.json` → **%s** (`%s`) — %s — `%s`\n' "$LINKS_CODE" "$LINKS_TYPE" "$LINKS_KIND" "$LINKS_BODY" >> "$S"
-
-          # Discriminant le plus sûr entre `main` et le branch : le champ `stats`
-          # de /api/v1/aywebs/health n'existe QUE sur le branch.
-          AYWEBS_CODE=$(http_code "$BASE/api/v1/aywebs/health")
-          if grep -q '"stats"' /tmp/body 2>/dev/null; then
-            AYWEBS_KIND="branch (champ stats présent)"
-          elif [ "$AYWEBS_CODE" = "200" ]; then
-            AYWEBS_KIND="main (pas de champ stats)"
-          else
-            AYWEBS_KIND="indéterminé ($AYWEBS_CODE)"
-          fi
-          printf -- '- `GET /api/v1/aywebs/health` → **%s** — %s\n' "$AYWEBS_CODE" "$AYWEBS_KIND" >> "$S"
-
-          # Points d'entrée dont l'application dépend : présents ou absents.
-          ROUTES=""
-          for PATH_CHECK in /api/public/commerce-config /api/assistant/status /api/cart/items /api/ayrovix/config; do
-            ROUTE_CODE=$(http_code "$BASE$PATH_CHECK")
-            ROUTES="$ROUTES $PATH_CHECK=$ROUTE_CODE"
-            printf -- '- `GET %s` → **%s**\n' "$PATH_CHECK" "$ROUTE_CODE" >> "$S"
-          done
-
-          DEPLOYED=$(printf '%s' "$READY_BODY" | sed -n 's/.*"commit": *"\([^"]*\)".*/\1/p' | cut -c1-40)
           MAIN_SHA=$(sha_of main)
           BRANCH_SHA=$(sha_of arena/c0321e79-ayrovi-beta1)
+          printf 'Références : `main` = `%s`, branche = `%s`\n\n' "${MAIN_SHA:-inconnu}" "${BRANCH_SHA:-inconnu}" >> "$S"
 
-          printf '\n| Référence | Commit |\n|---|---|\n| Serveur publié | `%s` |\n| `main` | `%s` |\n| Branche de travail | `%s` |\n\n' \
-            "${DEPLOYED:-inconnu}" "${MAIN_SHA:-inconnu}" "${BRANCH_SHA:-inconnu}" >> "$S"
+          echo "| Serveur | /api/health | /api/ready (commit / branche) | assetlinks | aywebs/health | Code servi |" >> "$S"
+          echo "|---|---|---|---|---|---|" >> "$S"
 
-          if [ "${HEALTH_CODE}" = "000" ]; then
-            VERDICT="❌ Aucune réponse de $BASE — le serveur est éteint ou l'adresse est fausse."
-          elif [ -z "${DEPLOYED:-}" ] || [ "$DEPLOYED" = "local" ]; then
-            VERDICT="⚠️ Le serveur ne déclare aucun commit Git (déploiement hors Git) : impossible de savoir quel code il exécute. Déployez la branche pour que la connexion mobile fonctionne."
-          elif [ -n "${BRANCH_SHA}" ] && [ "${DEPLOYED}" = "${BRANCH_SHA:0:${#DEPLOYED}}" ]; then
-            VERDICT="✅ Le serveur tourne le code de la BRANCHE : connexion mobile, AYWEBs et App Links disponibles."
-          elif [ -n "${MAIN_SHA}" ] && [ "${DEPLOYED}" = "${MAIN_SHA:0:${#DEPLOYED}}" ]; then
-            VERDICT="⚠️ Le serveur tourne `main` : l'application s'ouvre mais **la connexion échoue** (pas de session mobile) et les correctifs AYWEBs de la branche manquent."
-          else
-            VERDICT="⚠️ Commit publié inconnu des deux références."
-          fi
-          printf '### Verdict\n%s\n' "$VERDICT" >> "$S"
+          SUMMARY_LINE=""
+          for BASE in $(printf '%s' "$BASES" | tr ',' ' '); do
+            HEALTH_CODE=$(http_code "$BASE/api/health" /tmp/health)
+            READY_CODE=$(http_code "$BASE/api/ready" /tmp/ready)
+            READY_COMMIT=$(json_field /tmp/ready commit)
+            READY_BRANCH=$(json_field /tmp/ready branch)
+            LINKS_CODE=$(http_code "$BASE/.well-known/assetlinks.json" /tmp/links)
+            LINK_TYPE=$(head -c 20 /tmp/links 2>/dev/null)
+            AYWEBS_CODE=$(http_code "$BASE/api/v1/aywebs/health" /tmp/aywebs)
+            if grep -q '"stats"' /tmp/aywebs 2>/dev/null; then AYWEBS_MARK="stats ✔"; else AYWEBS_MARK="—"; fi
 
-          echo "::notice title=Etat du serveur::base=$BASE publie=${DEPLOYED:-inconnu} main=${MAIN_SHA:-inconnu} branche=${BRANCH_SHA:-inconnu} health=${HEALTH_CODE} ready=${READY_CODE} assetlinks=${LINKS_CODE}(${LINKS_KIND}) aywebs=${AYWEBS_KIND} routes:${ROUTES:-none}"
-          echo "verdict: $VERDICT"
+            # Type de réponse assetlinks : la route n'existe QUE sur le branch.
+            case "$LINK_TYPE" in
+              '<!DOCTYPE'*|'<html'*|'<!doctype'*) LINKS_KIND="HTML (route absente)" ;;
+              '['*) LINKS_KIND="JSON ✔" ;;
+              '{"'*) LINKS_KIND="JSON d'erreur" ;;
+              *) LINKS_KIND="aucune réponse" ;;
+            esac
+
+            # Verdict par serveur, à partir de preuves de code (pas de config).
+            if [ "$HEALTH_CODE" = "000" ]; then
+              VERDICT="❌ aucune réponse"
+            elif [ "$AYWEBS_MARK" = "stats ✔" ] || [ "$LINKS_KIND" = "JSON ✔" ] || [ "$LINKS_KIND" = "JSON d'erreur" ]; then
+              if [ -n "${BRANCH_SHA:-}" ] && [ -n "${READY_COMMIT:-}" ] && [ "${READY_COMMIT}" != "local" ] && [ "${READY_COMMIT}" = "${BRANCH_SHA:0:${#READY_COMMIT}}" ]; then
+                VERDICT="✅ **branche** (commit = tête de branche)"
+              else
+                VERDICT="✅ **branche** (routes du branch présentes)"
+              fi
+            elif [ "$HEALTH_CODE" = "200" ] && [ "$AYWEBS_CODE" = "200" ]; then
+              VERDICT="⚠️ **main** (routes du branch absentes)"
+            elif [ "$HEALTH_CODE" = "200" ]; then
+              VERDICT="⚠️ répond mais code indéterminé"
+            else
+              VERDICT="⚠️ réponse $HEALTH_CODE"
+            fi
+
+            printf '| `%s` | %s | `%s` / `%s` | %s | %s (%s) | %s |\n' \
+              "$BASE" "$HEALTH_CODE" "${READY_COMMIT:-—}" "${READY_BRANCH:-—}" "$LINKS_KIND" "$AYWEBS_CODE" "$AYWEBS_MARK" "$VERDICT" >> "$S"
+            SUMMARY_LINE="$SUMMARY_LINE $BASE[h=$HEALTH_CODE commit=${READY_COMMIT:-?} branch=${READY_BRANCH:-?} aywebs=${AYWEBS_CODE}${AYWEBS_MARK:+:$AYWEBS_MARK}]"
+          done
+
+          printf '\n> « Code servi » se lit sur des preuves : la route `/.well-known/assetlinks.json`\n> et le champ `stats` de `/api/v1/aywebs/health` n existent QUE sur le branch.\n> `commit`/`branche` deviennent fiables dès qu un serveur déploie ce branch.\n' >> "$S"
+
+          echo "::notice title=Etat des serveurs::main=${MAIN_SHA:-inconnu} branche=${BRANCH_SHA:-inconnu}${SUMMARY_LINE}"
           exit 0

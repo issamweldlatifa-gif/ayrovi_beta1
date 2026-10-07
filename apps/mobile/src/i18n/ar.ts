@@ -697,6 +697,7 @@ export const ar = {
   'about.serverVersion': 'إصدار الخادم',
   'about.database': 'قاعدة البيانات',
   'about.serverCommit': 'كود الخادم المنشور',
+  'about.serverBranch': 'الفرع المنشور',
   'about.notDeployed': 'خادم محلي — موش منشور من Git',
   'about.unknown': 'ما نعرفش',
   'about.check': 'تحقّق توّا',

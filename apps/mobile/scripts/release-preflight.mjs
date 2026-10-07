@@ -216,9 +216,14 @@ async function main() {
     if (ready.status === 200 && ready.json?.status === 'ready') {
       deployedCommit = String(ready.json.commit || '');
       record('server-ready', 'قاعدة البيانات والجاهزية', 'pass', `commit=${deployedCommit || '?'}`);
+      const deployedBranch = String(ready.json.branch || '');
       if (!deployedCommit || deployedCommit === 'local') {
         record('server-deploy', 'كود الفرع منشور؟', 'warn',
           'الخادم يقول commit=local ⇒ موش منشور من Git. تعديلات الفرع (دخول التطبيق، AYWEBs) ما توصلش للتلفون.');
+      } else if (deployedBranch && deployedBranch !== 'unknown' && deployedBranch !== options.branch) {
+        // الخادم يعلن الفرع: نتحقّقو منو بالحرف بدل ما نخمّنو من الـSHA.
+        record('server-branch', 'فرع الخادم', 'warn',
+          `الخادم منشور من «${deployedBranch}» وموش من «${options.branch}» ⇒ كود الفرع هذا ما وصلوش.`);
       } else if (options.branchCommit) {
         const same = deployedCommit.startsWith(options.branchCommit.slice(0, 7));
         record('server-deploy', 'كود الفرع منشور؟', same ? 'pass' : 'warn',

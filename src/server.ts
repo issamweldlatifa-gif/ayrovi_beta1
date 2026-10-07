@@ -8,6 +8,7 @@ import path from 'path';
 import fs from 'fs';
 import { KNOWN_PAGE_PATHS, isKnownPagePath, sitemapRoutes } from '../shared/publicSeo';
 import { ANDROID_APP_LINK_ENV, appLinksFromEnv } from '../shared/appLinks';
+import { deploymentIdentity } from './services/deploymentIdentity';
 import { createHash, randomUUID } from 'node:crypto';
 import type { Server } from 'node:http';
 import { spawn } from 'node:child_process';
@@ -424,12 +425,17 @@ app.get('/api/ready', (_req, res) => {
     if (!arrivalMultistoreMigration.ready) throw new Error('Arrival multi-store migration is incomplete.');
     // Empreinte de déploiement (04/10/2026) : permet de vérifier depuis un
     // téléphone QUEL code tourne réellement en production (déployé périmé ?).
-    // Render injecte RENDER_GIT_COMMIT_SHA au runtime ; npm injecte la version.
+    // `deploymentIdentity` lit les variables Render RÉELLES (`RENDER_GIT_COMMIT`,
+    // `RENDER_GIT_BRANCH`) : l'ancien nom `RENDER_GIT_COMMIT_SHA` n'existe pas
+    // chez Render, d'où un `local` permanent qui rendait la question — « quelle
+    // branche tourne ? » — impossible à trancher de l'extérieur.
+    const deployment = deploymentIdentity();
     res.json({
       status: 'ready',
       database: 'ok',
       version: process.env.npm_package_version || 'unknown',
-      commit: String(process.env.RENDER_GIT_COMMIT_SHA || process.env.AYROVI_BUILD_COMMIT || 'local').slice(0, 12),
+      commit: deployment.commit,
+      branch: deployment.branch,
     });
   } catch (error: any) {
     console.error(`[ready] request=${( _req as any).requestId || 'unknown'}`, error?.message || 'dependency unavailable');

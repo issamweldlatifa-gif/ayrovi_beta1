@@ -74,6 +74,10 @@ export default function AboutScreen() {
               label={t('about.serverCommit')}
               value={notDeployed ? t('about.notDeployed') : commit.slice(0, 12)}
             />
+            <KeyValue
+              label={t('about.serverBranch')}
+              value={server?.branch && server.branch !== 'unknown' ? server.branch : t('about.unknown')}
+            />
           </>
         )}
       </Card>

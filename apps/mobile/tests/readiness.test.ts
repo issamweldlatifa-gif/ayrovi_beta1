@@ -9,12 +9,18 @@ import { describe, expect, it } from 'vitest';
 import { parseServerReadiness } from '../src/api/public';
 
 describe('قراءة /api/ready', () => {
-  it('يقرا الحقول الأربعة كما هي', () => {
+  it('يقرا الحقول كما هي، ومنها الفرع المنشور', () => {
     expect(parseServerReadiness({
       status: 'ready', database: 'ok', version: '3.10.4', commit: '4ae6c0d24e70',
+      branch: 'arena/c0321e79-ayrovi-beta1',
     })).toEqual({
       status: 'ready', database: 'ok', version: '3.10.4', commit: '4ae6c0d24e70',
+      branch: 'arena/c0321e79-ayrovi-beta1',
     });
+  });
+
+  it('خادم قديم بلا حقل `branch` ⇒ فراغ (الواجهة تقول «ما نعرفش»)', () => {
+    expect(parseServerReadiness({ status: 'ready', commit: '4ee2a8af31e1' })?.branch).toBe('');
   });
 
   it('`local` تبقى `local` (موش تتحوّل ولا تتخبّى)', () => {
@@ -30,6 +36,6 @@ describe('قراءة /api/ready', () => {
 
   it('الحقول الناقصة تولّي فراغاً، موش `undefined`', () => {
     const parsed = parseServerReadiness({ status: 'not_ready' });
-    expect(parsed).toEqual({ status: 'not_ready', database: '', version: '', commit: '' });
+    expect(parsed).toEqual({ status: 'not_ready', database: '', version: '', commit: '', branch: '' });
   });
 });

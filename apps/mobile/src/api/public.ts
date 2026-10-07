@@ -167,6 +167,8 @@ export interface ServerReadiness {
   database: string;
   version: string;
   commit: string;
+  /** الفرع المنشور (`unknown` كان الخادم ما يعلنش عليه) — «أي كود يخدم؟». */
+  branch: string;
 }
 
 export function parseServerReadiness(payload: unknown): ServerReadiness | null {
@@ -178,6 +180,7 @@ export function parseServerReadiness(payload: unknown): ServerReadiness | null {
     database: str(payload.database).trim(),
     version: str(payload.version).trim(),
     commit: str(payload.commit).trim(),
+    branch: str(payload.branch).trim(),
   };
 }
 

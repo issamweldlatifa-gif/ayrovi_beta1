@@ -697,6 +697,7 @@ export const fr = {
   'about.serverVersion': 'Version du serveur',
   'about.database': 'Base de données',
   'about.serverCommit': 'Commit du serveur déployé',
+  'about.serverBranch': 'Branche déployée',
   'about.notDeployed': 'Serveur local — pas déployé depuis Git',
   'about.unknown': 'Inconnu',
   'about.check': 'Vérifier maintenant',
