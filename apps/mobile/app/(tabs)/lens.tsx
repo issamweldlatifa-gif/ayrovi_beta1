@@ -235,6 +235,10 @@ export default function LensScreen() {
         <Button label={t('lens.watchOpen')} tone="quiet" onPress={() => router.push('/lens/watches')} />
       </Card>
 
+      <Card title={t('ocerex.title')} hint={t('ocerex.hint')}>
+        <Button label={t('ocerex.open')} onPress={() => router.push('/lens/ocerex')} />
+      </Card>
+
       <Card title={t('lens.historyTitle')}>
         {history.isPending ? (
           <LoadingBlock label={{ fr: 'Chargement…', ar: 'جارٍ التحميل…' }} />

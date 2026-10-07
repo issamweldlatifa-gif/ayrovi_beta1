@@ -274,7 +274,7 @@ export async function apiSend<T>(
  * طلب كاتب بجسم متعدّد الأجزاء (رفع صورة). الدالة منفصلة بالاسم لأن رفع ملف
  * قرار واضح، ولأن `Content-Type` يختلف اختلافاً جوهرياً.
  */
-export async function apiSendForm<T>(path: string, form: FormData, options: RequestOptions = {}): Promise<RequestResult<T>> {
+export async function apiSendForm<T>(path: string, form: FormData, options: SendOptions = {}): Promise<RequestResult<T>> {
   return perform<T>('POST', path, { ...options, form });
 }
 
