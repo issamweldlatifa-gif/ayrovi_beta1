@@ -336,7 +336,12 @@ export const fr = {
 
       'cart.checkout': 'Passer à la caisse',
   'cart.checkoutBlocked': 'Caisse bloquée : relancez la vérification du prix des lignes bloquées avant de commander.',
-    'assistant.title': 'Assistant',
+      'notFound.title': 'Ce lien n’a pas encore d’écran',
+  'notFound.hint': 'L’application a ouvert un lien du site dont l’écran natif n’existe pas encore.',
+  'notFound.path': 'Chemin reçu',
+  'notFound.openSite': 'Ouvrir dans le navigateur',
+  'notFound.home': 'Retour à l’accueil',
+'assistant.title': 'Assistant',
   'assistant.hint': 'Conversation en direct : le serveur travaille, l’application affiche sa réponse telle qu’elle arrive.',
   'assistant.empty': 'Demandez un produit, un prix, ou comment commander — l’assistant utilise les outils des marchands.',
   'assistant.emptyHint': 'Le texte s’écrit pendant qu’il arrive, pas après la fin de la réponse.',
