@@ -16407,8 +16407,8 @@
     {
       "file": "client/src/components/ProductDrawer.tsx",
       "domain": "commerce",
-      "sha256": "74a8cae8e6ad8729b84d03542a0261882158efeb700e9421293dc905eb5b87fe",
-      "lines": 459,
+      "sha256": "fa17be30ca4963a8fe4079c2b81eaa89102f3525475972d07af22ae89cad5727",
+      "lines": 462,
       "imports": [
         "react",
         "./QatafoIcons",
@@ -16426,7 +16426,7 @@
       "controls": [
         {
           "tag": "input",
-          "line": 230,
+          "line": 233,
           "className": "\"hidden\"",
           "type": "\"file\"",
           "role": null,
@@ -16436,7 +16436,7 @@
         },
         {
           "tag": "button",
-          "line": 258,
+          "line": 261,
           "className": "\"grid h-11 w-11 place-items-center rounded-full hover:bg-white\"",
           "type": "\"button\"",
           "role": null,
@@ -16446,7 +16446,7 @@
         },
         {
           "tag": "button",
-          "line": 259,
+          "line": 262,
           "className": "\"w-9 h-9 rounded-full bg-white border border-line text-muted hover:text-ink flex items-center justify-center transition-colors shadow-xs cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/10 focus-visible:ring-offset-2\"",
           "type": "\"button\"",
           "role": null,
@@ -16456,7 +16456,7 @@
         },
         {
           "tag": "button",
-          "line": 291,
+          "line": 294,
           "className": "\"ay-dark-feature-card group relative flex min-h-[190px] w-full cursor-pointer flex-col justify-between overflow-hidden rounded-card p-6 text-left text-white disabled:cursor-wait disabled:opacity-90\"",
           "type": "\"button\"",
           "role": null,
@@ -16466,7 +16466,7 @@
         },
         {
           "tag": "form",
-          "line": 361,
+          "line": 364,
           "className": "\"pt-2 space-y-2 relative z-10\"",
           "type": null,
           "role": null,
@@ -16476,7 +16476,7 @@
         },
         {
           "tag": "input",
-          "line": 363,
+          "line": 366,
           "className": "\"w-full bg-white/15 border border-white/25 focus:border-white rounded-xl px-3 py-2 text-xs text-white placeholder:text-purple-200/70 focus:outline-none ay-number\"",
           "type": "\"url\"",
           "role": null,
@@ -16486,7 +16486,7 @@
         },
         {
           "tag": "button",
-          "line": 372,
+          "line": 375,
           "className": "\"bg-white/20 hover:bg-white/30 disabled:cursor-not-allowed disabled:opacity-50 text-white text-xs font-bold px-2.5 py-1.5 rounded-xl transition-colors cursor-pointer\"",
           "type": "\"button\"",
           "role": null,
@@ -16496,7 +16496,7 @@
         },
         {
           "tag": "button",
-          "line": 383,
+          "line": 386,
           "className": "\"w-full bg-white text-ink hover:bg-yellow-300 disabled:opacity-50 font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer\"",
           "type": "\"submit\"",
           "role": null,
@@ -16506,7 +16506,7 @@
         },
         {
           "tag": "ShopProductScreen",
-          "line": 407,
+          "line": 410,
           "className": null,
           "type": null,
           "role": null,
@@ -18752,8 +18752,8 @@
     {
       "file": "client/src/features/aywebs/api.ts",
       "domain": "shell-content",
-      "sha256": "acd6cca519ebca81fa5e6ba45c7f836843deffbc1537195fee7f943c5d3d4954",
-      "lines": 632,
+      "sha256": "7ee5291ceca85f94092333c9c4a911ac937103b82bfea1475d1a6338a38d4b87",
+      "lines": 657,
       "imports": [
         "../../../../shared/aywebsStores",
         "../../types",
@@ -19181,8 +19181,8 @@
     {
       "file": "client/src/features/aywebs/components/AyWebsVariantSheet.tsx",
       "domain": "shell-content",
-      "sha256": "51969531806ca13327b0b9cb98e247575ae4a1e431efe5c7085faed3007c2cac",
-      "lines": 487,
+      "sha256": "9db253dc1aa51cd2a2d0130d7c92788bfb2eecc82df31aded4f7d13c43e815a4",
+      "lines": 518,
       "imports": [
         "react",
         "../../../components/QatafoIcons",
@@ -19195,7 +19195,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 248,
+          "line": 276,
           "className": "\"ayw-sheet-close\"",
           "type": "\"button\"",
           "role": null,
@@ -19205,7 +19205,7 @@
         },
         {
           "tag": "button",
-          "line": 271,
+          "line": 299,
           "className": "\"ayw-cta\"",
           "type": "\"button\"",
           "role": null,
@@ -19215,7 +19215,7 @@
         },
         {
           "tag": "form",
-          "line": 277,
+          "line": 305,
           "className": "\"ayw-support-form\"",
           "type": null,
           "role": null,
@@ -19225,7 +19225,7 @@
         },
         {
           "tag": "input",
-          "line": 284,
+          "line": 312,
           "className": null,
           "type": null,
           "role": null,
@@ -19235,7 +19235,7 @@
         },
         {
           "tag": "textarea",
-          "line": 288,
+          "line": 316,
           "className": null,
           "type": null,
           "role": null,
@@ -19245,7 +19245,7 @@
         },
         {
           "tag": "select",
-          "line": 292,
+          "line": 320,
           "className": null,
           "type": null,
           "role": null,
@@ -19255,7 +19255,7 @@
         },
         {
           "tag": "button",
-          "line": 297,
+          "line": 325,
           "className": "\"ayw-cta\"",
           "type": "\"submit\"",
           "role": null,
@@ -19265,7 +19265,7 @@
         },
         {
           "tag": "button",
-          "line": 356,
+          "line": 387,
           "className": "{`ayw-variantcard${isOn ? ' is-on' : ''}`}",
           "type": "\"button\"",
           "role": "\"radio\"",
@@ -19275,7 +19275,7 @@
         },
         {
           "tag": "select",
-          "line": 384,
+          "line": 415,
           "className": "\"ayw-select\"",
           "type": null,
           "role": null,
@@ -19285,7 +19285,7 @@
         },
         {
           "tag": "select",
-          "line": 400,
+          "line": 431,
           "className": "\"ayw-select\"",
           "type": null,
           "role": null,
@@ -19295,7 +19295,7 @@
         },
         {
           "tag": "button",
-          "line": 431,
+          "line": 462,
           "className": "\"ayw-cta\"",
           "type": "\"button\"",
           "role": null,
@@ -19305,7 +19305,7 @@
         },
         {
           "tag": "button",
-          "line": 475,
+          "line": 506,
           "className": "\"ayw-cta\"",
           "type": "\"button\"",
           "role": null,
@@ -19315,7 +19315,7 @@
         },
         {
           "tag": "button",
-          "line": 478,
+          "line": 509,
           "className": "\"ayw-cta-outline\"",
           "type": "\"button\"",
           "role": null,
