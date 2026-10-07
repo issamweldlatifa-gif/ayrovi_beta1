@@ -572,3 +572,39 @@ export const lensSendOptions = (options: SendOptions = {}): SendOptions => ({
   ...options,
   timeoutMs: options.timeoutMs ?? LENS_ANALYZE_TIMEOUT_MS,
 });
+
+/* ── تصنيف قيمة المسح (QR / باركود) ─────────────────────────────────────── */
+
+export type LensScanKind = 'barcode' | 'url' | 'code';
+
+export interface LensScanTarget {
+  kind: LensScanKind;
+  value: string;
+}
+
+/**
+ * شنوّة عملنا بالقيمة اللّي قراها المصوّر؟
+ *
+ *  • **6..14 رقم** ⇒ باركود (`/analyze-barcode`).
+ *  • **http/https** ⇒ رابط منتوج (`/analyze-url` بقناة `qr`) — فيه بلاصة،
+ *    ومحاذاة `https` تتصلّح هنا لأن الكاميرا ما ترجّعش بروتوكول موحّد.
+ *  • **الباقي** ⇒ رمز (`/analyze-code`): نصّ داخل QR.
+ *
+ * التصنيف هنا (في طبقة الـ API) موش في الشاشة: قاعدة واحدة، مختبَرة، وكل شاشة
+ * تستعملها — بلا نسختين تفترقا مع الوقت.
+ */
+export function classifyLensScan(raw: string): LensScanTarget | null {
+  const value = String(raw ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 2000);
+  if (!value) return null;
+  if (LENS_BARCODE_PATTERN.test(value)) return { kind: 'barcode', value };
+  if (/^https?:\/\//i.test(value)) {
+    return { kind: 'url', value: value.replace(/^http:\/\//i, 'https://') };
+  }
+  // `www.exemple.tn/produit` بلا بروتوكول: رابط كذلك، والخادم يتحقّق منو.
+  if (/^www\.[a-z0-9-]+(\.[a-z0-9-]+)+(\/|$)/i.test(value)) return { kind: 'url', value: `https://${value}` };
+  if (value.length < 2) return null;
+  return { kind: 'code', value };
+}
+
+/** أنواع الباركود اللّي نطلبها من الكاميرا (نفس ما يفهمو الخادم: رقمي). */
+export const LENS_BARCODE_TYPES = ['ean13', 'ean8', 'upc_a', 'upc_e', 'code128', 'code39', 'itf14', 'qr'] as const;

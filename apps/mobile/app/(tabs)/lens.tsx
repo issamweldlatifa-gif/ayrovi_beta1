@@ -27,9 +27,10 @@ import { useI18n } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import { isApiError, userMessage } from '@/api/errors';
 import {
-  LENS_MIN_TEXT, analyzeLensImage, analyzeLensText, chooseLensEvent, fetchLensHistory,
-  lensUploadInputFrom, type LensAnalysis, type LensCandidate,
+  LENS_MIN_TEXT, analyzeLensImage, analyzeLensText, chooseLensEvent, createLensWatch,
+  fetchLensHistory, lensUploadInputFrom, type LensAnalysis, type LensCandidate,
 } from '@/api/lens';
+import { CandidateCard } from '@/features/lens/CandidateCard';
 
 export default function LensScreen() {
   const theme = useTheme();
@@ -128,47 +129,23 @@ export default function LensScreen() {
     }
   };
 
-  const candidateCard = (candidate: LensCandidate, index: number) => (
-    <Pressable
-      key={candidate.id || `${candidate.sourceUrl}-${index}`}
-      accessibilityRole="button"
-      onPress={() => openCandidate(candidate)}
-      style={[styles.candidate, { borderColor: theme.colors.line, borderRadius: theme.radius.card }]}
-    >
-      {candidate.image ? (
-        <Image source={{ uri: mediaUrl(candidate.image) }} style={styles.candidateImage} resizeMode="contain" />
-      ) : null}
-      <AppText variant="label" weight="bold" numberOfLines={3}>{candidate.title}</AppText>
-      <KeyValue label={t('lens.source')} value={candidate.source || candidate.sourceUrl} />
-      {candidate.priceTnd != null ? (
-        <KeyValue label={t('aywebs.totalTnd')} value={`${candidate.priceTnd.toFixed(2)} TND`} />
-      ) : (
-        <KeyValue label={t('aywebs.totalTnd')} value={t('lens.noQuote')} />
-      )}
-      <KeyValue
-        label={t('aywebs.sourcePrice')}
-        value={candidate.price != null ? `${candidate.price} ${candidate.currency}`.trim() : t('aywebs.noPrice')}
-      />
-      <KeyValue label={t('aywebs.availability')} value={availabilityText(candidate.availability)} />
-      <KeyValue
-        label={t('lens.verification')}
-        value={candidate.verification === 'VERIFIED' ? t('lens.verified') : t('lens.pending')}
-      />
-      {candidate.originalPriceTnd != null && candidate.priceTnd != null && candidate.originalPriceTnd > candidate.priceTnd ? (
-        <AppText variant="caption" color={theme.colors.muted}>
-          {t('lens.wasPrice', { price: candidate.originalPriceTnd.toFixed(2) })}
-        </AppText>
-      ) : null}
-      {candidate.offerCount > 1 ? (
-        <AppText variant="caption" color={theme.colors.muted}>
-          {t('lens.offerCount', { count: candidate.offerCount })}
-        </AppText>
-      ) : null}
-      {candidate.priceOrigin === 'search' ? (
-        <AppText variant="caption" color={theme.colors.muted}>{t('lens.priceFromSearch')}</AppText>
-      ) : null}
-    </Pressable>
-  );
+  /** مراقبة سعر: تستلزم حساباً — 401 تُقال بصراحة مع باب للدخول. */
+  const watch = useMutation({
+    mutationFn: (candidate: LensCandidate) => createLensWatch({
+      url: candidate.sourceUrl,
+      title: candidate.title,
+      imageUrl: candidate.image,
+      source: candidate.source,
+    }),
+    onSuccess: () => setNote(t('lens.watchAdded')),
+    onError: (error) => {
+      if (isApiError(error) && (error.status === 401 || error.status === 403)) {
+        setNote(t('lens.watchSignIn'));
+        return;
+      }
+      setNote(isApiError(error) ? userMessage(error)[locale] : t('lens.failed'));
+    },
+  });
 
   const candidates = analysis?.candidates ?? textResults ?? [];
 
@@ -238,16 +215,24 @@ export default function LensScreen() {
 
       {candidates.length ? (
         <Card title={t('lens.resultsTitle')} hint={t('lens.resultsHint')}>
-          {candidates.map(candidateCard)}
+          {candidates.map((candidate, index) => (
+            <CandidateCard
+              key={candidate.id || `${candidate.sourceUrl}-${index}`}
+              candidate={candidate}
+              onOpen={openCandidate}
+              onWatch={(item) => watch.mutate(item)}
+              watchBusy={watch.isPending}
+            />
+          ))}
         </Card>
       ) : null}
 
-      <Card title={t('lens.scanTitle')}>
-        <AppText variant="caption" color={theme.colors.muted}>{t('lens.scanPending')}</AppText>
+      <Card title={t('lens.scanTitle')} hint={t('lens.scanHint')}>
+        <Button label={t('lens.scanOpen')} onPress={() => router.push('/lens/scan')} />
       </Card>
 
-      <Card title={t('lens.watchTitle')}>
-        <AppText variant="caption" color={theme.colors.muted}>{t('lens.watchPending')}</AppText>
+      <Card title={t('lens.watchTitle')} hint={t('lens.watchHint')}>
+        <Button label={t('lens.watchOpen')} tone="quiet" onPress={() => router.push('/lens/watches')} />
       </Card>
 
       <Card title={t('lens.historyTitle')}>

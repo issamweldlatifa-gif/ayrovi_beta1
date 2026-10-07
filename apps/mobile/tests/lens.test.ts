@@ -13,6 +13,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   LENS_ANALYZE_TIMEOUT_MS, LENS_BARCODE_PATTERN, LENS_MIN_TEXT,
   analyzeLensBarcode, analyzeLensCode, analyzeLensImage, analyzeLensText, analyzeLensUrl,
+  LENS_BARCODE_TYPES, classifyLensScan,
   fetchLensHistory, fetchLensWatches, isLensAllowedMime, lensLiveStock, lensUploadInputFrom,
   parseLensAnalysis, parseLensCandidate,
 } from '../src/api/lens';
@@ -316,5 +317,43 @@ describe('حدود الوحدة', () => {
   it('مهلة Lens أطول بوضوح من مهلة النداء العادي', async () => {
     const { DEFAULT_TIMEOUT_MS } = await import('../src/api/client');
     expect(LENS_ANALYZE_TIMEOUT_MS).toBeGreaterThan(DEFAULT_TIMEOUT_MS * 3);
+  });
+});
+
+/* ── تصنيف قيمة المسح (P4.2) ───────────────────────────────────────────── */
+
+describe('تصنيف الرمز المقروء', () => {
+  const cases: Array<[string, string]> = [
+    ['1234567890', 'barcode'],
+    ['123456', 'barcode'],
+    ['https://www.amazon.com/dp/B0GYM3V9H5', 'url'],
+    ['http://www.amazon.com/dp/B0GYM3V9H5', 'url'],   // تتصلّح إلى https
+    ['www.shein.com/x-p-1.html', 'url'],              // بلا بروتوكول
+    ['ECOUTEURS ANKER Q30', 'code'],
+    ['   ', 'skip'],
+    ['1', 'skip'],
+  ];
+
+  it('كل قيمة تمشي لقناتها الصحيحة', () => {
+    for (const [input, kind] of cases) {
+      const target = classifyLensScan(input);
+      if (kind === 'skip') {
+        expect(target, `« ${input} » ما لازمش تتقبل`).toBeNull();
+        continue;
+      }
+      expect(target?.kind, `« ${input} »`).toBe(kind);
+    }
+  });
+
+  it('الروابط بلا بروتوكول تتصلّح، والقيم الطويلة/المخفيّة تتنقّى', () => {
+    expect(classifyLensScan('http://x.test/a')?.value).toBe('https://x.test/a');
+    expect(classifyLensScan('www.x.test/a')?.value).toBe('https://www.x.test/a');
+    // محارف تحكّم + مسافات زايدة: تتنقّى قبل ما تتبعث.
+    expect(classifyLensScan('  ECOUTEURS\u0000  ANKER ')?.value).toBe('ECOUTEURS ANKER');
+    expect((classifyLensScan('A'.repeat(3000))?.value ?? '').length).toBe(2000);
+  });
+
+  it('أنواع الباركود المطلوبة من الكاميرا كلها يعرفها الخادم', () => {
+    expect([...LENS_BARCODE_TYPES]).toEqual(expect.arrayContaining(['ean13', 'ean8', 'upc_a', 'qr', 'code128']));
   });
 });
