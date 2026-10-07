@@ -20,9 +20,10 @@ import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import {
-  analyzeAyWebsPage, fetchAyWebsStores, resolveAyWebsProduct,
-  type AyWebsPageAnalysis, type AyWebsResolvedProduct,
+  analyzeAyWebsPage, fetchAyWebsStores, resolveAyWebsProductWithCapture,
+  type AyWebsPageAnalysis, type AyWebsResolveOutcome,
 } from '@/api/aywebs';
+import { AddToCartSheet } from '@/features/aywebs/AddToCartSheet';
 import { useAyWebsSessionId } from '@/features/aywebs/session';
 
 export default function AyWebsScreen() {
@@ -32,7 +33,8 @@ export default function AyWebsScreen() {
 
   const [url, setUrl] = useState('');
   const [analysis, setAnalysis] = useState<AyWebsPageAnalysis | null>(null);
-  const [product, setProduct] = useState<AyWebsResolvedProduct | null>(null);
+  const [outcome, setOutcome] = useState<AyWebsResolveOutcome | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const stores = useQuery({
     queryKey: ['aywebs', 'stores'],
@@ -46,17 +48,22 @@ export default function AyWebsScreen() {
       setAnalysis(result);
       // رابط جديد = منتوج جديد: نمسح نتيجة الرابط القديم باش ما يبقاش
       // سعر منتوج فوق تحليل منتوج آخر.
-      setProduct(null);
+      setOutcome(null);
     },
   });
 
+  /**
+   * النداء الوحيد للسعر: يرجّع البطاقة **وفاتورة السعر الموقّعة**
+   * (`quote_token`) — وهي اللي تخلي الإضافة للسلّة بلا إعادة قراءة التاجر.
+   */
   const resolve = useMutation({
-    mutationFn: (target: string) => resolveAyWebsProduct(target, {
+    mutationFn: (target: string) => resolveAyWebsProductWithCapture(target, {
       sessionId,
       storeId: analysis?.storeId || undefined,
     }),
-    onSuccess: setProduct,
+    onSuccess: setOutcome,
   });
+  const product = outcome?.product ?? null;
 
   const reload = useCallback(() => { stores.refetch(); }, [stores]);
 
@@ -192,10 +199,40 @@ export default function AyWebsScreen() {
             value={product.currencyVerified ? t('aywebs.verifiedYes') : t('aywebs.verifiedNo')}
           />
           <KeyValue label={t('aywebs.purchaseMode')} value={purchaseText(product.purchaseMode)} />
+          {product.variantGroups.map((group) => (
+            <KeyValue
+              key={group.attribute}
+              label={group.attribute}
+              value={group.values.join(' · ')}
+            />
+          ))}
           {product.fromCache ? (
             <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.fromCache')}</AppText>
           ) : null}
+          {outcome?.missing.length ? (
+            <AppText variant="caption" color={theme.colors.muted}>
+              {t('aywebs.serverNote')} : {outcome.missing.join(', ')}
+            </AppText>
+          ) : null}
+          {/* «Add to Cart»: يفتح ورقة الاختيار. الإضافة الحقيقية في الورقة —
+              نيّة فقط تخرج من الجهاز، والخادم هو اللي يكتب السطر ويحسب الثمن. */}
+          <Button
+            label={t('aywebs.addToCart')}
+            onPress={() => setSheetOpen(true)}
+            disabled={!sessionId}
+          />
         </Card>
+      ) : null}
+
+      {product ? (
+        <AddToCartSheet
+          visible={sheetOpen}
+          sessionId={sessionId}
+          product={product}
+          options={product.variantDetails}
+          quoteToken={outcome?.quoteToken}
+          onClose={() => setSheetOpen(false)}
+        />
       ) : null}
 
       <Card title={t('aywebs.storesTitle')} hint={t('aywebs.storesHint')}>

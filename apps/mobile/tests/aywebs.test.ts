@@ -11,17 +11,27 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   AYWEBS_RESOLVE_TIMEOUT_MS,
+  AYWEBS_SOURCE_VERIFICATION_REQUIRED,
+  addAyWebsCartItem,
   analyzeAyWebsPage,
+  ayWebsAddReadiness,
+  bridgeAyWebsCartToAyrovi,
   buildAyWebsCaptureInjection,
   fetchAyWebsCaptureScript,
+  fetchAyWebsCart,
   fetchAyWebsStores,
   parseAyWebsCaptureMessage,
+  parseAyWebsCart,
   parseAyWebsPageAnalysis,
   parseAyWebsResolvedProduct,
   parseAyWebsStores,
+  parseAyWebsVariantOption,
+  parseAyWebsVariants,
   resetAyWebsCaptureScriptCache,
   resolveAyWebsProduct,
   resolveAyWebsProductWithCapture,
+  updateAyWebsCartItem,
+  verifyAyWebsCart,
 } from '../src/api/aywebs';
 import { ApiError } from '../src/api/errors';
 import { API_BASE_URL } from '../src/api/config';
@@ -321,5 +331,300 @@ describe('قراءة المنتوج بكابتشر العميل', () => {
     expect(outcome.product.productId).toBe('ayweb_7');
     expect(outcome.capture).toMatchObject({ used: true, priceSource: 'dom', corroborated: false });
     expect(outcome.priceRejection).toBe('PRICE_AMBIGUOUS');
+  });
+});
+
+/* ══ P3.3 — الخيارات، الجاهزية، سلّة AYWEBs، والجسر ═════════════════════════ */
+
+const SESSION43 = 'ayw-3f2504e0-4f89-41d3-9a0c-0305e82c3301';
+
+const GROUPS = [
+  { attribute: 'color', values: ['Black', 'Blue'] },
+  { attribute: 'size', values: ['M', 'L'] },
+];
+
+const OPTIONS = [
+  { source_variant_id: 'v1', attributes: { color: 'Black', size: 'M' }, availability: 'AVAILABLE', ayrovi_pricing: { total_tnd: 412.55 } },
+  { source_variant_id: 'v2', attributes: { color: 'Black', size: 'L' }, availability: 'OUT_OF_STOCK', ayrovi_pricing: { total_tnd: 430 } },
+  { source_variant_id: 'v3', attributes: { color: 'Blue', size: 'M' }, availability: 'AVAILABLE' },
+].map(parseAyWebsVariantOption);
+
+const CART_ITEM = {
+  id: 'aywci_1',
+  item_number: 'AYWITEM-000001',
+  product_id: 'ayweb_42',
+  store_id: 'amazon',
+  store_name: 'Amazon',
+  source_url: 'https://www.amazon.com/dp/B0GYM3V9H5',
+  title: 'Écouteurs Bluetooth',
+  images: ['https://m.media-amazon.com/images/I/x.jpg'],
+  unit_price: 109,
+  currency: 'USD',
+  variant_label: 'color: Black · size: M',
+  quantity: 2,
+  availability: 'AVAILABLE',
+  status: 'ACTIVE',
+  status_reason: null,
+  customer_note: '',
+  purchase_mode: 'SUPPORTED',
+  checkout_ready: true,
+  line_total_tnd: 825.1,
+  linked_to_ayrovi: true,
+  created_at: '2026-10-07T10:00:00.000Z',
+  updated_at: '2026-10-07T10:00:00.000Z',
+};
+
+const cartPayload = () => ({
+  cart: { id: 'aywcart_1', status: 'ACTIVE', currency: 'TND', items_count: 1 },
+  items: [CART_ITEM],
+  groups: [{ store_id: 'amazon', store_name: 'Amazon', integration_type: 'PARTIALLY_SUPPORTED', subtotal_tnd: 825.1, blocked_items: 0, items: [CART_ITEM] }],
+  totals: { units: 2, product_subtotal_tnd: 825.1, currency: 'TND', blocked_items: 0, checkout_ready: true, unlinked_units: 0 },
+  blockers: [],
+  live_data_requires_network: true,
+});
+
+describe('جاهزية الإضافة (نفس شروط الخادم)', () => {
+  const base = {
+    groups: GROUPS,
+    options: OPTIONS,
+    productAvailability: 'AVAILABLE',
+    productQuotedTnd: 400 as number | null,
+    selection: {} as Record<string, string>,
+  };
+
+  it('الخصائص المنشورة إلزامية — والأسماء الناقصة تتقال', () => {
+    const readiness = ayWebsAddReadiness(base);
+    expect(readiness.ready).toBe(false);
+    expect(readiness.code).toBe('VARIANT_REQUIRED');
+    expect(readiness.missingAttributes).toEqual(['color', 'size']);
+    expect(ayWebsAddReadiness({ ...base, selection: { color: 'Black' } }).missingAttributes).toEqual(['size']);
+  });
+
+  it('اختيار كامل ⇒ جاهز بسعر الخيار من الخادم', () => {
+    const readiness = ayWebsAddReadiness({ ...base, selection: { color: 'Black', size: 'M' } });
+    expect(readiness.ready).toBe(true);
+    expect(readiness.code).toBe('');
+    expect(readiness.quotedTotalTnd).toBe(412.55); // رقم الخادم للخيار، موش سعر المنتوج
+    expect(readiness.availability).toBe('AVAILABLE');
+  });
+
+  it('خيار مفروغ ما يتخيّرش، وتركيبة غير منشورة ما تتخمّنش', () => {
+    expect(ayWebsAddReadiness({ ...base, selection: { color: 'Black', size: 'L' } }).code).toBe('VARIANT_UNAVAILABLE');
+    expect(ayWebsAddReadiness({ ...base, selection: { color: 'Red', size: 'M' } }).code).toBe('VARIANT_UNKNOWN');
+    expect(ayWebsAddReadiness({ ...base, selection: { color: 'Blue', size: 'L' } }).code).toBe('VARIANT_UNKNOWN');
+  });
+
+  it('بلا خيار منشور: التوفّر يقرّر — مجهول = ممنوع (كي ما يرفضوش الخادم)', () => {
+    const noGroups = { ...base, groups: [], options: [], selection: {} };
+    expect(ayWebsAddReadiness({ ...noGroups, productAvailability: 'UNKNOWN' }).code).toBe('STOCK_UNKNOWN');
+    expect(ayWebsAddReadiness({ ...noGroups, productAvailability: 'OUT_OF_STOCK' }).code).toBe('OUT_OF_STOCK');
+    expect(ayWebsAddReadiness({ ...noGroups, productAvailability: 'LOW_STOCK', productQuotedTnd: 825.1 }).ready).toBe(true);
+    // متوفّر بلا تسعير خادمي ⇒ ممنوع: ما فماش سطر بلا ثمن (§45).
+    expect(ayWebsAddReadiness({ ...noGroups, productQuotedTnd: null }).code).toBe('PRICE_UNAVAILABLE');
+  });
+
+  it('خيار بلا تسعير خاص يرجع لسعر المنتوج — نفس قاعدة الخادم', () => {
+    const readiness = ayWebsAddReadiness({ ...base, selection: { color: 'Blue', size: 'M' } });
+    expect(readiness.ready).toBe(true);
+    expect(readiness.quotedTotalTnd).toBe(400);
+  });
+});
+
+describe('شكل الخيارات والسلّة', () => {
+  it('variant_groups و variants يُقراوا، والعقد المكسور يُرمى بصوت عالي', () => {
+    const parsed = parseAyWebsVariants({
+      product_id: 'ayweb_42',
+      store_id: 'amazon',
+      source_url: 'https://www.amazon.com/dp/B0GYM3V9H5',
+      variant_groups: GROUPS,
+      variants: OPTIONS.map((option) => ({
+        source_variant_id: option.sourceVariantId,
+        attributes: option.attributes,
+        label: option.label,
+        price: option.price,
+        currency: option.currency,
+        quoted_price: option.quotedPrice,
+        quoted_currency: option.quotedCurrency,
+        price_source: option.priceSource,
+        availability: option.availability,
+        availability_reason: option.availabilityReason,
+        image: option.image,
+        ayrovi_pricing: option.totalTnd == null ? null : { total_tnd: option.totalTnd },
+      })),
+      selection_required: true,
+      availability: 'AVAILABLE',
+      availability_reason: 'merchant_stock',
+      resolved_at: '2026-10-07T10:00:00.000Z',
+    });
+    expect(parsed.variantGroups).toEqual(GROUPS);
+    expect(parsed.variants[0].attributes).toEqual({ color: 'Black', size: 'M' });
+    expect(parsed.variants[0].totalTnd).toBe(412.55);
+    expect(parsed.variants[2].totalTnd).toBeNull();
+    expect(parsed.selectionRequired).toBe(true);
+
+    expect(() => parseAyWebsVariants({ store_id: 'amazon' })).toThrow(/variantes/);
+    expect(() => parseAyWebsVariants({ product_id: 'x', variants: { a: 1 } })).toThrow(/variantes/);
+  });
+
+  it('السلة: المجموعات، المجاميع، العوائق، وحالة الربط', () => {
+    const cart = parseAyWebsCart(cartPayload());
+    expect(cart.hasCart).toBe(true);
+    expect(cart.totals.units).toBe(2);
+    expect(cart.totals.unlinkedUnits).toBe(0);
+    expect(cart.items[0].linkedToAyrovi).toBe(true);
+    expect(cart.groups[0].items[0].itemNumber).toBe('AYWITEM-000001');
+    expect(cart.blockers).toEqual([]);
+
+    // `linked_to_ayrovi` غايب = «ما نعرفوش» (null)، موش «موش مربوط».
+    const unknown = parseAyWebsCart({ ...cartPayload(), items: [{ ...CART_ITEM, linked_to_ayrovi: undefined }] });
+    expect(unknown.items[0].linkedToAyrovi).toBeNull();
+
+    expect(() => parseAyWebsCart({ items: { a: 1 } })).toThrow(/panier/);
+  });
+
+  it('سلّة ما فماش (جلسة جديدة) تفرق على سلّة فارغة', () => {
+    const fresh = parseAyWebsCart({ cart: null, items: [], groups: [], totals: { units: 0, checkout_ready: false }, blockers: [] });
+    expect(fresh.hasCart).toBe(false);
+    expect(fresh.items).toEqual([]);
+  });
+});
+
+describe('نداءات السلّة', () => {
+  it('الإضافة: نيّة فقط — بلا سعر ولا عملة ولا حالة', async () => {
+    const spy = stubFetch(() => json({
+      success: true,
+      data: {
+        item: CART_ITEM,
+        duplicate: false,
+        idempotent_replay: false,
+        message: 'Ajouté',
+        ayrovi: { linked: true, cart_item_id: 'cart_9', quantity: 2, reason: 'LINKED' },
+        quote_used: true,
+        source_reread: false,
+        reread_reason: null,
+      },
+      cart: cartPayload(),
+    }, 201));
+
+    const outcome = await addAyWebsCartItem({
+      productId: 'ayweb_42',
+      sourceUrl: 'https://www.amazon.com/dp/B0GYM3V9H5',
+      storeId: 'amazon',
+      variant: { color: 'Black', size: 'M' },
+      quantity: 2,
+      quoteToken: 'q'.repeat(40),
+      capture: { v: 1 },
+      requestId: 'aywadd-1',
+    }, { sessionId: SESSION43 });
+
+    const [url, init] = spy.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`${API_BASE_URL}/api/v1/aywebs/cart/items`);
+    expect(init.method).toBe('POST');
+    expect(headersOf(init)['x-session-id']).toBe(SESSION43);
+
+    const body = bodyOf(init);
+    expect(Object.keys(body).sort()).toEqual([
+      'capture', 'product_id', 'quantity', 'quote_token', 'request_id', 'source_url', 'store_id', 'variant_attributes',
+    ]);
+    for (const forbidden of ['price', 'currency', 'status', 'availability', 'unit_price', 'total_tnd', 'page']) {
+      expect(body).not.toHaveProperty(forbidden);
+    }
+
+    expect(outcome.item.itemNumber).toBe('AYWITEM-000001');
+    expect(outcome.ayrovi).toMatchObject({ linked: true, cartItemId: 'cart_9', quantity: 2 });
+    expect(outcome.quoteUsed).toBe(true);
+    expect(outcome.cart.totals.units).toBe(2);
+  });
+
+  it('تعديل الكمية: رقم مطلق — «3» تعني ثلاث قطع، موش +3', async () => {
+    const spy = stubFetch(() => json({
+      success: true,
+      data: { item: { ...CART_ITEM, quantity: 3 }, removed: false, ayrovi: { linked: true, cartItemId: 'cart_9', quantity: 3, reason: 'SYNCED' } },
+      cart: cartPayload(),
+    }));
+
+    await updateAyWebsCartItem('aywci_1', { quantity: 3 }, { sessionId: SESSION43 });
+
+    const [url, init] = spy.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`${API_BASE_URL}/api/v1/aywebs/cart/items/aywci_1`);
+    expect(init.method).toBe('PATCH');
+    // لا `+1` ولا `delta`: الرقم المطلق وحدو — هذا اللي يمنع المضاعفة.
+    expect(bodyOf(init)).toEqual({ quantity: 3 });
+  });
+
+  it('التحقّق: قراءة جديدة من التاجر مطلوبة صراحةً', async () => {
+    const spy = stubFetch(() => json({
+      success: true,
+      data: { changes: [{ itemId: 'aywci_1', code: 'PRICE_CHANGED', message: 'Prix changé' }] },
+      cart: cartPayload(),
+    }));
+
+    const result = await verifyAyWebsCart({ sessionId: SESSION43, recheckSource: true });
+    expect(bodyOf(spy.mock.calls[0][1] as RequestInit)).toEqual({ recheck_source: true });
+    expect(result.changes).toEqual([{ itemId: 'aywci_1', code: 'PRICE_CHANGED', message: 'Prix changé' }]);
+  });
+
+  it('الجسر: يرجّع ما تحرّك وما تُخطّي (camelCase متاع الخدمة)', async () => {
+    stubFetch(() => json({
+      success: true,
+      data: {
+        moved: [{ aywebsItemId: 'aywci_1', aywebsItemNumber: 'AYWITEM-000001', cartItemId: 'cart_9', store: 'amazon', title: 'Écouteurs', quantity: 2, priceTnd: 825.1, duplicate: false, synced: true }],
+        skipped: [{ aywebsItemId: 'aywci_2', code: 'NOT_CHECKOUT_READY', message: 'Stock inconnu' }],
+        totalItemsCount: 1,
+        totalTnd: 825.1,
+        message: '1 ligne synchronisée',
+      },
+    }));
+
+    const result = await bridgeAyWebsCartToAyrovi({ sessionId: SESSION43 });
+    expect(result.moved[0]).toMatchObject({ cartItemId: 'cart_9', synced: true, quantity: 2 });
+    expect(result.skipped[0].code).toBe('NOT_CHECKOUT_READY');
+    expect(result.totalTnd).toBe(825.1);
+  });
+
+  it('409 من الجسر: الكود يوصل كما هو — ما نكمّولوش على حالة قديمة', async () => {
+    stubFetch(() => json({
+      success: false,
+      code: 'AYWEBS_SOURCE_VERIFICATION_REQUIRED',
+      error: 'Vérifiez les articles AYWEBs avant de continuer.',
+    }, 409));
+
+    await expect(bridgeAyWebsCartToAyrovi({ sessionId: SESSION43 })).rejects.toMatchObject({
+      code: AYWEBS_SOURCE_VERIFICATION_REQUIRED,
+      status: 409,
+    });
+  });
+
+  it('قراءة السلّة: GET بجلسة AYWEBs', async () => {
+    const spy = stubFetch(() => json({ success: true, data: cartPayload() }));
+    const cart = await fetchAyWebsCart({ sessionId: SESSION43 });
+    const [url, init] = spy.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`${API_BASE_URL}/api/v1/aywebs/cart`);
+    expect(init.method ?? 'GET').toBe('GET');
+    expect(headersOf(init)['x-session-id']).toBe(SESSION43);
+    expect(cart.items).toHaveLength(1);
+  });
+
+  it('السعر: فاتورة السعر والحقول الناقصة توصل — والخيارات تتقرا', async () => {
+    stubFetch(() => json({
+      success: true,
+      data: {
+        product_id: 'ayweb_42',
+        title: 'Écouteurs',
+        store_id: 'amazon',
+        variant_groups: GROUPS,
+        variant_details: [{ source_variant_id: 'v1', attributes: { color: 'Black', size: 'M' }, availability: 'AVAILABLE', ayrovi_pricing: { total_tnd: 412.55 } }],
+      },
+      missing: ['size'],
+      quote_token: 'q'.repeat(40),
+      quote_expires_at: '2026-10-07T11:00:00.000Z',
+    }, 201));
+
+    const outcome = await resolveAyWebsProductWithCapture('https://www.amazon.com/dp/B0GYM3V9H5', { sessionId: SESSION43 });
+    expect(outcome.quoteToken).toBe('q'.repeat(40));
+    expect(outcome.missing).toEqual(['size']);
+    expect(outcome.product.variantGroups).toEqual(GROUPS);
+    expect(outcome.product.variantDetails[0].totalTnd).toBe(412.55);
+    expect(outcome.capture).toBeNull();
   });
 });

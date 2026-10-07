@@ -1,15 +1,19 @@
 /**
- * AYWEBs — P3، الشريحة 2: صفحة المتجر داخل WebView + الكابتشر.
+ * AYWEBs — P3، الشريحتان 2 و3: صفحة المتجر داخل WebView + الكابتشر + «Add to Cart».
  *
- * الرحلة كما في العقد: المستعمل يشوف الصفحة الحقيقية للمتجر (نفسها، بلا
- * وسيط)، ويضغط «اقرا هذه الصفحة» — السكريبت اللّي **يجي من الخادم** يقرا
- * وقائع نصّية (عنوان، نصوص أسعار، توفّر، صور) ويبعثها للجسر. الصفحة نفسها
- * (HTML) **ما تتبعثش أبداً**، والخادم وحدو يقبل/يرفض ويحسب السعر بالدينار.
+ * الرحلة كما في العقد: المستعمل يشوف الصفحة الحقيقية للمتجر (نفسها، بلا وسيط).
+ * الزرّان يفعلان ما هو مكتوب عليهما:
  *
- * الشاشة ما تدّعيش نجاحاً: كل نتيجة تتقال بالكلمات — «الكابتشر استُعمل» ولا
- * «الكابتشر مرفوض + السبب»، والقراءة بلا نتيجة تنتهي برسالة، موش بدوران.
+ *  • «اقرا هذه الصفحة» — يقراها بس: السكريبت الّلي **يجي من الخادم** يقرا وقائع
+ *    نصّية ويبعثها للجسر، والخادم يقبل/يرفض ويحسب الثمن، ونعرضو قراره.
+ *  • «Add to Cart» — نفس القراءة، ثم **ورقة الاختيار فوق هذه الصفحة**، ثم إضافة
+ *    حقيقية في سلّة AYWEBs على الخادم. المستعمل **ما يخرجش** من المتجر،
+ *    والصفحة (HTML) **ما تتبعثش أبداً**، ولا سعر ولا حالة تخرج من الجهاز.
+ *
+ * شرط تفعيل «Add to Cart» هو نفسه في العقد: **الخادم** صنّف الصفحة كصفحة
+ * منتوج. قبل التصنيف الزرّ معطّل والسبب مكتوب — زر ما ينجمش ينجح ما يتفعّلش.
  */
-import { useCallback, useRef, useState, type ComponentType, type Ref } from 'react';
+import { useCallback, useEffect, useRef, useState, type ComponentType, type Ref } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,11 +23,13 @@ import { WebView as RNWebView, type WebViewMessageEvent, type WebViewProps } fro
 import { AppText, Button, Card, KeyValue } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
-import { isApiError, userMessage } from '@/api/errors';
+import { ApiError, isApiError, userMessage } from '@/api/errors';
 import {
-  buildAyWebsCaptureInjection, fetchAyWebsCaptureScript, parseAyWebsCaptureMessage,
-  resolveAyWebsProductWithCapture, type AyWebsResolveOutcome,
+  analyzeAyWebsPage, buildAyWebsCaptureInjection, fetchAyWebsCaptureScript,
+  parseAyWebsCaptureMessage, resolveAyWebsProductWithCapture,
+  type AyWebsResolveOutcome,
 } from '@/api/aywebs';
+import { AddToCartSheet } from '@/features/aywebs/AddToCartSheet';
 import { useAyWebsSessionId } from '@/features/aywebs/session';
 
 /** كي الصفحة ما تبعثش شي: مانبقاوش نستنّوا بلا نهاية. */
@@ -39,6 +45,9 @@ const WebView = RNWebView as unknown as ComponentType<
   WebViewProps & { ref?: Ref<WebViewHandle> }
 >;
 
+/** كي الكابتشر ما يجيش في الوقت: سبب صريح، موش انتظار أبدي. */
+const captureTimeout = () => new ApiError('timeout', 'Capture : la page n’a rien renvoyé dans le délai.');
+
 export default function AyWebsBrowserScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -52,57 +61,132 @@ export default function AyWebsBrowserScreen() {
 
   const webRef = useRef<WebViewHandle>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** الوعد الجاري لقراءة الصفحة: يتفتح بالحقن ويتسدّ بالرسالة (ولا بالمهلة). */
+  const waiter = useRef<{ resolve: (capture: Record<string, unknown>) => void; reject: (error: unknown) => void } | null>(null);
 
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
   const [outcome, setOutcome] = useState<AyWebsResolveOutcome | null>(null);
+  /** تصنيف الخادم للصفحة: `null` = مازال، و`false` = موش صفحة منتوج. */
+  const [productPage, setProductPage] = useState<boolean | null>(null);
+  const [classified, setClassified] = useState(false);
+  /** الورقة: المنتوج + الكابتشر اللي بعثناه (باش الإضافة ما تعاودش تقرا التاجر). */
+  const [sheet, setSheet] = useState<{ outcome: AyWebsResolveOutcome; capture?: unknown } | null>(null);
 
   const stopTimer = () => {
     if (timer.current) { clearTimeout(timer.current); timer.current = null; }
   };
 
+  /** تصنيف الصفحة — شرط تفعيل «Add to Cart» (لا تخمين من الرابط). */
+  useEffect(() => {
+    if (!sessionId || !url) return;
+    let alive = true;
+    setClassified(false);
+    analyzeAyWebsPage(url, { sessionId })
+      .then((analysis) => {
+        if (!alive) return;
+        setProductPage(analysis.isProductPage);
+        setClassified(true);
+      })
+      .catch(() => {
+        if (!alive) return;
+        // ما نعرفوش: الزرّ يبقى معطّلاً والسبب يظهر — موش نفعّلوه بالتخمين.
+        setProductPage(null);
+        setClassified(true);
+      });
+    return () => { alive = false; };
+  }, [sessionId, url]);
+
+  /**
+   * يطلب قراءة الصفحة ويرجّع الوعد: يتفتح بالحقن، ويتسدّ بالرسالة اللي تجي من
+   * الجسر. كي ما تجي شي: مهلة 15 ثانية ثم سبب صريح.
+   */
+  const requestCapture = useCallback((): Promise<Record<string, unknown>> => {
+    return new Promise<Record<string, unknown>>((resolve, reject) => {
+      setBusy(true);
+      setNote('');
+      waiter.current = { resolve, reject };
+      fetchAyWebsCaptureScript()
+        .then((script) => {
+          webRef.current?.injectJavaScript(buildAyWebsCaptureInjection(script));
+          stopTimer();
+          timer.current = setTimeout(() => {
+            waiter.current = null;
+            setBusy(false);
+            reject(captureTimeout());
+          }, CAPTURE_TIMEOUT_MS);
+        })
+        .catch((error) => {
+          waiter.current = null;
+          setBusy(false);
+          reject(error);
+        });
+    });
+  }, []);
+
+  const fail = useCallback((error: unknown) => {
+    setBusy(false);
+    setNote(isApiError(error) ? userMessage(error)[locale] : t('aywebs.captureFailed'));
+  }, [locale, t]);
+
+  /** «اقرا هذه الصفحة»: قراءة + قرار الخادم، بلا أي إضافة. */
   const readPage = useCallback(async () => {
     if (!captureAllowed || !sessionId || !url) return;
-    setBusy(true);
-    setNote('');
     try {
-      const script = await fetchAyWebsCaptureScript();
-      webRef.current?.injectJavaScript(buildAyWebsCaptureInjection(script));
-      stopTimer();
-      timer.current = setTimeout(() => {
-        setBusy(false);
-        setNote(t('aywebs.captureTimeout'));
-      }, CAPTURE_TIMEOUT_MS);
-    } catch (error) {
-      stopTimer();
-      setBusy(false);
-      setNote(isApiError(error) ? userMessage(error)[locale] : t('aywebs.captureFailed'));
-    }
-  }, [captureAllowed, locale, sessionId, t, url]);
-
-  const onMessage = useCallback(async (event: WebViewMessageEvent) => {
-    stopTimer();
-    const parsed = parseAyWebsCaptureMessage(event.nativeEvent.data);
-    if (!parsed.ok) {
-      setBusy(false);
-      setNote(`${t('aywebs.captureFailed')} — ${parsed.reason}`);
-      return;
-    }
-    try {
+      const capture = await requestCapture();
       const result = await resolveAyWebsProductWithCapture(url, {
-        sessionId, storeId: storeId || undefined, capture: parsed.capture,
+        sessionId, storeId: storeId || undefined, capture,
       });
       setOutcome(result);
       setNote('');
     } catch (error) {
-      setNote(isApiError(error) ? userMessage(error)[locale] : t('aywebs.captureFailed'));
+      fail(error);
     } finally {
+      stopTimer();
       setBusy(false);
     }
-  }, [locale, sessionId, storeId, t, url]);
+  }, [captureAllowed, fail, requestCapture, sessionId, storeId, url]);
+
+  /**
+   * «Add to Cart»: يقرا (كي مسموح)، يحلّ المنتوج، ثم يفتح ورقة الاختيار
+   * **فوق هذه الصفحة** — الإضافة الحقيقية تجي في الورقة.
+   */
+  const addToCart = useCallback(async () => {
+    if (!sessionId || !url || productPage !== true) return;
+    try {
+      const capture = captureAllowed ? await requestCapture() : undefined;
+      const result = await resolveAyWebsProductWithCapture(url, {
+        sessionId, storeId: storeId || undefined, capture,
+      });
+      setOutcome(result);
+      setNote('');
+      setSheet({ outcome: result, capture });
+    } catch (error) {
+      fail(error);
+    } finally {
+      stopTimer();
+      setBusy(false);
+    }
+  }, [captureAllowed, fail, productPage, requestCapture, sessionId, storeId, url]);
+
+  const onMessage = useCallback((event: WebViewMessageEvent) => {
+    stopTimer();
+    const pending = waiter.current;
+    waiter.current = null;
+    const parsed = parseAyWebsCaptureMessage(event.nativeEvent.data);
+    if (!parsed.ok) {
+      setBusy(false);
+      setNote(`${t('aywebs.captureFailed')} — ${parsed.reason}`);
+      pending?.reject(new ApiError('malformed', `Capture refusée : ${parsed.reason}`));
+      return;
+    }
+    setBusy(false);
+    pending?.resolve(parsed.capture);
+  }, [t]);
 
   const verdict = outcome?.capture ?? null;
+  const addEnabled = productPage === true && !busy && Boolean(sessionId);
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.colors.canvas, paddingTop: insets.top + theme.space[2] }]}>
@@ -168,13 +252,41 @@ export default function AyWebsBrowserScreen() {
         {!captureAllowed ? (
           <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.readNotAllowed')}</AppText>
         ) : null}
-        <Button
-          label={t('aywebs.readPage')}
-          onPress={readPage}
-          busy={busy}
-          disabled={!captureAllowed || !loaded || !sessionId}
-        />
+        {/* السبب بالكلمات: تصنيف الخادم يقرّر إذا الزرّ يتفعّل ولا لا. */}
+        {!classified ? (
+          <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.classifying')}</AppText>
+        ) : productPage !== true ? (
+          <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.addNotProductPage')}</AppText>
+        ) : null}
+
+        <View style={styles.row}>
+          <Button
+            label={t('aywebs.readPage')}
+            tone="quiet"
+            onPress={readPage}
+            busy={busy && !addEnabled}
+            disabled={!captureAllowed || !loaded || !sessionId}
+          />
+          <Button
+            label={t('aywebs.addToCart')}
+            onPress={addToCart}
+            busy={busy && addEnabled}
+            disabled={!addEnabled}
+          />
+        </View>
       </View>
+
+      {sheet ? (
+        <AddToCartSheet
+          visible
+          sessionId={sessionId}
+          product={sheet.outcome.product}
+          options={sheet.outcome.product.variantDetails}
+          capture={sheet.capture}
+          quoteToken={sheet.outcome.quoteToken}
+          onClose={() => setSheet(null)}
+        />
+      ) : null}
     </View>
   );
 }
@@ -186,4 +298,5 @@ const styles = StyleSheet.create({
   web: { flex: 1, marginTop: 8 },
   loading: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   footer: { borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingTop: 8, gap: 6 },
+  row: { flexDirection: 'row', gap: 8, alignItems: 'center' },
 });
