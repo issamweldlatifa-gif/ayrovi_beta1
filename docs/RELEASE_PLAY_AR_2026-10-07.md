@@ -282,6 +282,51 @@ curl -s https://<عنوان-الخدمة>/api/ready
 | `GET /api/v1/aywebs/health` | 200 بلا حقل `stats` | نفس الاستنتاج: الكود طالع من `main`، موش من الفرع |
 | `/api/public/commerce-config` · `/api/assistant/status` | 200 · 200 | الخدمات الأساسية موجودة |
 
+### فحص كل نقطة دخول متاع التطبيق (نفس التاريخ، نفس الفحص)
+
+الفحص يجرّب **نفس المسارات ونفس الطرق (GET/POST)** اللي يستعملها التطبيق
+(`apps/mobile/src/api/`)، على `https://ayrovi-beta1-1.onrender.com`:
+
+| الطلب | الكود | القراءة |
+|---|---|---|
+| `GET /api/public/hero-content` | 200 | ✅ |
+| `GET /api/public/navigation` | 200 | ✅ |
+| `GET /api/public/announcement-messages` | 200 | ✅ |
+| `GET /api/public/commerce-config` | 200 | ✅ |
+| `GET /api/customer/auth/config` | 200 | ✅ |
+| `POST /api/customer/auth/email/login` | 401 | ✅ الطريق موجود (401 = محتاج بيانات حساب صحيحة) |
+| `POST /api/customer/auth/otp/request` | **503** | ⛔ `OTP_UNAVAILABLE` — **دخول بالـSMS موش مضبوط في الخادم** |
+| `GET /api/customer/auth/me` | 401 | ✅ (محتاج جلسة) |
+| `GET /api/customer/account/overview` | 401 | ✅ (محتاج جلسة) |
+| `GET /api/customer/account/orders` | 401 | ✅ (محتاج جلسة) |
+| `GET /api/cart/items` | 400 | ✅ (محتاج `x-session-id`) |
+| `GET /api/v1/aywebs/health` | 200 | ✅ |
+| `GET /api/v1/aywebs/stores` | 200 | ✅ |
+| `POST /api/v1/aywebs/cart/items` | 400 | ✅ (محتاج جسم الطلب) |
+| `GET /api/assistant/status` | 200 | ✅ |
+| `POST /api/ocerex/analyze` | 400 | ✅ (محتاج صورة/نص) |
+| `POST /api/checkout` | 401 | ✅ (محتاج جلسة) |
+
+**قاعدة القراءة**: `404` = الطريق ماكانش (خدمة ناقصة) · `401/400/403` =
+الطريق موجود ويطلب حساب/بيانات · `5xx` = الطريق موجود لكن الخدمة موش جاهزة.
+
+**النتيجة**: **التطبيق في الشكل هذا ما عندو حتى خدمة ناقصة على الخادم الحيّ،
+إلاّ الدخول بالـSMS.** الدخول بالإيميل حاضر (401 على طلب فارغ = الطريق يخدم)،
+والسلّة، والشراء، والـAYWEBs، والمُساعد، وOCEREX كاملين موجودين.
+
+**علاش الدخول بالـSMS يرجع 503**: الخادم يقبل دخول بالـSMS كان كان مزوّد
+مضبوط في البيئة. لازمو واحد من الثنيات هذي:
+
+- Twilio Verify: `CUSTOMER_OTP_PROVIDER=twilio_verify` + `TWILIO_ACCOUNT_SID`
+  + `TWILIO_AUTH_TOKEN` + `TWILIO_VERIFY_SERVICE_SID`؛
+- ولا ويب-هوك متاعك: `CUSTOMER_OTP_PROVIDER=webhook` +
+  `CUSTOMER_OTP_WEBHOOK_URL` (لازم `https://`) + `CUSTOMER_OTP_WEBHOOK_TOKEN`.
+
+**التطبيق ما يخبّيش هذا**: شاشة الدخول تقرأ `/api/customer/auth/config`،
+كي ترجع `phoneOtp.enabled = false` تظهر كارطة الهاتف **بالتفسير**
+(«طريقة الدخول هذي مازالت ما مفعّلةش في الخادم») والزر **مقفول** — ما فماش
+زر ميّت ولا رسالة كذب. الدخول بالإيميل يبقى مفتوح ويخدم.
+
 **الخلاصة**: الخادم يخدم بلا مشكلة، لكن يشغّل كود `main` **وينشر يدوياً بلا
 Git**. لهذا: الدخول من التطبيق ما يخدمش، وإصلاحات AYWEBs متاع الفرع ما موجودة.
 
@@ -309,6 +354,7 @@ Git**. لهذا: الدخول من التطبيق ما يخدمش، وإصلاح
 | خلاص بالكارطة | بوّابة الخادم موش مركّبة | مفاتيح Konnect في بيئة الخادم (`KONNECT_*`) — الكود في التطبيق موجود ويستنّاها |
 | Apple App Store | ما فماش حساب Apple Developer | حساب ($99/سنة) + شهادة + ملف AASA |
 | تبديل التطبيق القديم على التلفون | توقيع مختلف (ما فماش keystore قديم) | المستعمل يحذف القديم ويركّب الجديد، ولا نختارو معرّفاً جديداً في Play |
+| دخول بالـSMS (كود OTP) | الخادم بلا مزوّد SMS مضبوط (قياس: `503 OTP_UNAVAILABLE`) | `CUSTOMER_OTP_PROVIDER` + مفاتيح Twilio Verify، ولا ويب-هوك (شوف §6) — الدخول بالإيميل يخدم بلا هذا |
 
 ---
 
