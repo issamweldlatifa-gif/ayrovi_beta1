@@ -77,7 +77,7 @@ jobs:
             ROUTE_CODE=$(curl -s -o /tmp/route -w '%{http_code}' --max-time 20 "$BASE$PATH_CHECK" || echo "000")
             echo "- \`GET $PATH_CHECK\` → **$ROUTE_CODE**" >> "$SUMMARY"
             ROUTE_LINE="$ROUTE_LINE $PATH_CHECK=$ROUTE_CODE"
-          done"
+          done
 
           DEPLOYED=$(printf '%s' "$READY_BODY" | sed -n 's/.*"commit":"\([^"]*\)".*/\1/p')
           MAIN_SHA=$(curl -s --max-time 25 "https://api.github.com/repos/$REPO/commits/main" | sed -n 's/.*"sha": *"\([a-f0-9]\{7,40\}\)".*/\1/p' | head -1 | cut -c1-12)
