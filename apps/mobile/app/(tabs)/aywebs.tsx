@@ -11,6 +11,7 @@
  */
 import { useCallback, useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
+import { router } from 'expo-router';
 import { useMutation, useQuery } from '@tanstack/react-query';
 
 import { AppText, Button, Card, Field, KeyValue, Screen } from '@/design/ui';
@@ -61,6 +62,10 @@ export default function AyWebsScreen() {
 
   const trimmed = url.trim();
   const ready = Boolean(sessionId) && trimmed.length > 0;
+  /* فتح الصفحة داخل التطبيق: مفيد للتصفّح، وللكابتشر كي يسمح بيه الخادم
+     للتحليل (`capture_allowed` / `external_capture_allowed`). */
+  const canOpen = Boolean(analysis) && (analysis!.browseAllowed || analysis!.captureAllowed || analysis!.externalCaptureAllowed);
+  const canCapture = Boolean(analysis) && (analysis!.captureAllowed || analysis!.externalCaptureAllowed);
 
   const availabilityText = (state: string) => {
     if (state === 'AVAILABLE') return t('aywebs.avail.AVAILABLE');
@@ -131,6 +136,20 @@ export default function AyWebsScreen() {
             <AppText variant="caption" color={theme.colors.muted}>
               {t('aywebs.serverNote')} : {analysis.fallback}
             </AppText>
+          ) : null}
+          {canOpen ? (
+            <Button
+              label={t('aywebs.openBrowser')}
+              tone="quiet"
+              onPress={() => router.push({
+                pathname: '/aywebs/browser',
+                params: {
+                  url: analysis.url,
+                  storeId: analysis.storeId,
+                  capture: canCapture ? '1' : '0',
+                },
+              })}
+            />
           ) : null}
         </Card>
       ) : null}

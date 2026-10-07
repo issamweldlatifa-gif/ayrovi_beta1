@@ -158,6 +158,13 @@ export interface SendOptions extends RequestOptions {
    * كتابته يدوياً = خادم لا يفهم الحدود.
    */
   form?: FormData;
+  /**
+   * يرجّع الغلاف كامل (`{success, data, capture, quote_token…}`) بدل `data` وحدها.
+   * يحتاجو AYWEBs: قرار الخادم (`capture.used/rejection`) وفاتورة السعر
+   * (`quote_token`) حقول **جنب** `data`، وتضييعها يعني شاشة ما تعرفش تحكي
+   * الحقيقة. المغلّف يُتحقّق منو في `apiSendEnvelope`.
+   */
+  envelope?: boolean;
 }
 
 /**
@@ -230,10 +237,17 @@ async function attempt<T>(method: string, path: string, options: SendOptions = {
     throw error;
   }
 
-  const data = unwrap<T>(payload, { status: response.status, source: path });
   const serverTime = typeof (payload as { serverTime?: unknown } | null)?.serverTime === 'string'
     ? String((payload as { serverTime: string }).serverTime)
     : '';
+
+  /* الغلاف الكامل مطلوب (AYWEBs) : هنا ما نفكّوش `data` — `apiSendEnvelope`
+     يتولّى التحقّق من الغلاف، ويرمي بنفس معاني `unwrap` بالضبط. */
+  if (options.envelope === true) {
+    return { kind: 'ok', result: { data: payload as T, serverTime } };
+  }
+
+  const data = unwrap<T>(payload, { status: response.status, source: path });
   return { kind: 'ok', result: { data, serverTime } };
 }
 
@@ -262,6 +276,74 @@ export async function apiSend<T>(
  */
 export async function apiSendForm<T>(path: string, form: FormData, options: RequestOptions = {}): Promise<RequestResult<T>> {
   return perform<T>('POST', path, { ...options, form });
+}
+
+/* ── مسارات بخروج عن الغلاف ─────────────────────────────────────────────── */
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+/**
+ * طلب GET يرجّع نصّاً خاماً — لسكريبت الكابتشر.
+ *
+ * `GET /api/v1/aywebs/capture/script.js` يرجّع JavaScript، موش غلاف JSON:
+ * تمريرو على `unwrap` كان باش يفشل، وهذا **مقصود**: السكريبت يتصلّح من
+ * الخادم بلا تحديث للتطبيق. الفشل الوحيد المقبول: غير 2xx أو جسم فارغ.
+ */
+export async function apiGetText(path: string, options: RequestOptions = {}): Promise<string> {
+  const { signal, timeoutMs = DEFAULT_TIMEOUT_MS, headers } = options;
+  const gate = withTimeout(signal, timeoutMs);
+
+  let response: Response;
+  try {
+    response = await fetch(apiUrl(path), {
+      method: 'GET',
+      signal: gate.signal,
+      headers: { Accept: 'text/javascript, text/plain, */*', ...authHeaders('GET'), ...headers },
+    });
+  } catch (error) {
+    if (isAbort(error)) {
+      if (gate.timedOut()) {
+        throw new ApiError('timeout', `Délai dépassé (${timeoutMs} ms) : ${path}`, { cause: error });
+      }
+      throw new ApiError('aborted', `Requête annulée : ${path}`, { cause: error });
+    }
+    throw new ApiError('network', `Réseau injoignable : ${path}`, { cause: error });
+  } finally {
+    gate.dispose();
+  }
+
+  const raw = await response.text().catch(() => '');
+  if (!response.ok) {
+    throw failureFrom(response.status, null, parseRetryAfter(response.headers.get('retry-after')));
+  }
+  if (!raw.trim()) throw new ApiError('malformed', `Réponse vide : ${path}`, { status: response.status });
+  return raw;
+}
+
+/**
+ * طلب كاتب يرجّع الغلاف كامل (`{success, data, capture, quote_token…}`).
+ *
+ * AYWEBs يرجّع قرار الخادم وفاتورة السعر **جنب** `data`؛ فكّ `data` وحدها
+ * يضيّع `capture.rejection` و`quote_token`، والشاشة تولّي ما تعرفش تحكي
+ * الحقيقة. التحقّق هنا هو نفس عقد `unwrap` (لا غلاف = خطأ، لا نجاح صامت).
+ */
+export async function apiSendEnvelope<T>(
+  method: 'POST' | 'PUT' | 'PATCH' | 'DELETE',
+  path: string,
+  options: SendOptions = {},
+): Promise<T> {
+  const payload = (await perform<unknown>(method, path, { ...options, envelope: true })).data;
+  if (!isRecord(payload)) throw new ApiError('malformed', `Enveloppe absente (${path})`);
+  if (payload.success === false) {
+    const code = typeof payload.code === 'string' ? payload.code : '';
+    const message = typeof payload.error === 'string' && payload.error.trim()
+      ? payload.error
+      : `Réponse refusée (${path})`;
+    throw new ApiError('http', message, { code });
+  }
+  if (payload.success !== true) throw new ApiError('malformed', `Enveloppe absente (${path})`);
+  return payload as T;
 }
 
 /** واجهة مختصرة: تعيد `data` فقط. */

@@ -507,3 +507,30 @@ P6 الإصدار (توقيع `app.ayrovi.mobile`، EAS، مراجعة المت�
 
 **مازال في P3** (الشريحتين الجايتين): فتح صفحة المتجر في WebView + حقن سكريبت الكابتشر و`POST /capture`،
 ثم الخيارات (`/product/variants`) والسلّة (`/cart/*`) والجسر للسلّة الموحّدة، وطلب الشراء بالنيابة.
+
+### P3 — الشريحة 2: صفحة المتجر في WebView + الكابتشر (منجز 07/10/2026)
+
+| البند | الحالة | الدليل |
+|---|---|---|
+| شاشة WebView للمتجر مع زرّ «اقرا هذه الصفحة» | ✅ | `app/aywebs/browser.tsx` (تُفتح من شاشة AYWEBs بعد التحليل) |
+| السكريبت يجي من الخادم ويُحقن | ✅ | `fetchAyWebsCaptureScript` + `buildAyWebsCaptureInjection` (`src/api/aywebs.ts`) |
+| قراءة قرار الخادم (`capture`, `price_rejection`) | ✅ | `apiSendEnvelope` في `src/api/client.ts` + `resolveAyWebsProductWithCapture` |
+| رسائل صريحة: EMPTY/TOO_LARGE/NOT_JSON/NOT_OBJECT/SCRIPT_ERROR | ✅ | `parseAyWebsCaptureMessage` |
+| نصوص fr/ar + اختبارات | ✅ | مفاتيح جديدة؛ `tests/aywebs.test.ts` — 20 اختبار؛ الحزمة **7 ملفات / 123** |
+
+**قرارات وحدود:**
+
+- **HTML الصفحة ما يتبعثش أبداً**: الكابتشر = وقائع نصّية (عنوان، نصوص أسعار، توفّر، صور)؛
+  والحقل `page` ممنوع أصلاً في العقد. اللي يحكم في القبول والرفض والقاعدة = الخادم.
+- **السكريبت من الخادم، موش مدمج في التطبيق**: تصليح sélecteur = تحديث خادم بلا نسخة
+  تطبيق جديدة؛ ومخزّن 5 دقائق (نفس مهلة `Cache-Control` متاع الخادم).
+- **بلا دوران بلا نهاية**: كي الصفحة ما تبعثش شي في 15 ثانية، الشاشة تقول وتوقّف.
+- **باغ أنواع عند `react-native-webview` 13.17**: الصنف معلن `WebView<P = undefined>`
+  و`WebViewProps & undefined = never` ⇒ JSX يرفض كل خاصية. إصلاح محلي موثّق في الشاشة
+  (مرجع `injectJavaScript`)، موش تخبيت للمشكل.
+- **كائن حقيقي موش مصفوفة**: `typeof [] === 'object'` كانت باش تخلّي `[]` يعدّي كـ JSON
+  صالح في رسالة الجسر؛ تصلّحت (`!Array.isArray`).
+
+**التحقّق**: `typecheck` ✅، `tokens:check` ✅، الحزمة **123** ✅، وحزمة Metro متاع
+Android تخرج كاملة (Hermes 3.2 MB) — يعني الاستيراد الجديد (WebView) يتّبنى فعلاً.
+**موش متحقَّق منه (بصراحة)**: التجربة على جهاز/محاكي Android — ما فماش Android SDK هنا.

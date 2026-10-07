@@ -12,11 +12,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   AYWEBS_RESOLVE_TIMEOUT_MS,
   analyzeAyWebsPage,
+  buildAyWebsCaptureInjection,
+  fetchAyWebsCaptureScript,
   fetchAyWebsStores,
+  parseAyWebsCaptureMessage,
   parseAyWebsPageAnalysis,
   parseAyWebsResolvedProduct,
   parseAyWebsStores,
+  resetAyWebsCaptureScriptCache,
   resolveAyWebsProduct,
+  resolveAyWebsProductWithCapture,
 } from '../src/api/aywebs';
 import { ApiError } from '../src/api/errors';
 import { API_BASE_URL } from '../src/api/config';
@@ -239,5 +244,82 @@ describe('حدود الوحدات', () => {
       expect(source).not.toMatch(/from ['"]react-native['"]/);
       expect(source).not.toMatch(/from ['"]expo-/);
     }
+  });
+});
+
+
+/* ── الكابتشر: السكريبت، الحقن، ورسالة الجسر ─────────────────────────────── */
+
+describe('سكريبت الكابتشر', () => {
+  const SCRIPT = '(function () { return JSON.stringify({ v: 1 }); })();';
+
+  beforeEach(() => { resetAyWebsCaptureScriptCache(); });
+  afterEach(() => { resetAyWebsCaptureScriptCache(); });
+
+  it('يجي من الخادم ويُخزّن (نفس مهلة الـ cache متاع الخادم)', async () => {
+    const spy = stubFetch(() => new Response(SCRIPT, { status: 200 }));
+    const first = await fetchAyWebsCaptureScript();
+    const second = await fetchAyWebsCaptureScript();
+    expect(first).toBe(SCRIPT);
+    expect(second).toBe(SCRIPT);
+    expect(spy).toHaveBeenCalledTimes(1); // الطلب الثاني من الذاكرة
+    const [url] = spy.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`${API_BASE_URL}/api/v1/aywebs/capture/script.js`);
+  });
+
+  it('جسم فارغ = خطأ صريح، موش سكريبت صامت', async () => {
+    stubFetch(() => new Response('   ', { status: 200 }));
+    await expect(fetchAyWebsCaptureScript()).rejects.toMatchObject({ kind: 'malformed' });
+  });
+
+  it('الحقن يغلّف السكريبت ويبعث النتيجة للجسر — وغلاف فارغ يُرفض', () => {
+    const injection = buildAyWebsCaptureInjection(SCRIPT);
+    expect(injection).toContain(SCRIPT);
+    expect(injection).toContain('window.ReactNativeWebView.postMessage');
+    expect(injection).toContain('__aywebs_error');
+    expect(injection.trimEnd().endsWith('true;')).toBe(true);
+    expect(() => buildAyWebsCaptureInjection('  ')).toThrow(/vide/);
+  });
+});
+
+describe('رسالة الجسر', () => {
+  it('كائن JSON ⇒ ناجح، والمحتوى للخادم يحكم فيه', () => {
+    const result = parseAyWebsCaptureMessage('{"v":1,"priceCandidates":[]}');
+    expect(result).toEqual({ ok: true, capture: { v: 1, priceCandidates: [] } });
+  });
+
+  it('يفرّق بين الفراغ، الحجم، الصيغة، النوع، وغلطة السكريبت', () => {
+    expect(parseAyWebsCaptureMessage('')).toEqual({ ok: false, reason: 'EMPTY' });
+    expect(parseAyWebsCaptureMessage('x'.repeat(64_001))).toEqual({ ok: false, reason: 'TOO_LARGE' });
+    expect(parseAyWebsCaptureMessage('pas du json')).toEqual({ ok: false, reason: 'NOT_JSON' });
+    expect(parseAyWebsCaptureMessage('[1,2]')).toEqual({ ok: false, reason: 'NOT_OBJECT' });
+    expect(parseAyWebsCaptureMessage('{"__aywebs_error":"boom"}')).toEqual({ ok: false, reason: 'SCRIPT_ERROR' });
+  });
+});
+
+describe('قراءة المنتوج بكابتشر العميل', () => {
+  it('الصفحة ما تتبعثش: نبعثو الكابتشر كما هي ونقراو قرار الخادم', async () => {
+    const spy = stubFetch(() => json({
+      success: true,
+      data: { product_id: 'ayweb_7', title: 'Article', store_id: 'amazon', price: 109, currency: 'USD' },
+      capture: { used: true, fingerprint: 'f'.repeat(64), price_source: 'dom', corroborated: false, rejection: null },
+      price_rejection: 'PRICE_AMBIGUOUS',
+    }, 201));
+
+    const CAPTURE = { v: 1, url: 'https://www.amazon.com/dp/B0GYM3V9H5', priceCandidates: [{ text: '$109.00', source: 'dom' }] };
+    const outcome = await resolveAyWebsProductWithCapture('https://www.amazon.com/dp/B0GYM3V9H5', {
+      sessionId: 'ayw-3f2504e0-4f89-41d3-9a0c-0305e82c3301',
+      storeId: 'amazon',
+      capture: CAPTURE,
+    });
+
+    const [url, init] = spy.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`${API_BASE_URL}/api/v1/aywebs/product/resolve`);
+    const body = bodyOf(init);
+    expect(body.capture).toEqual(CAPTURE); // بلا أي تصرّف
+    expect(body.page).toBeUndefined();     // HTML ممنوع — حتى الحقل ما يتبعثش
+    expect(outcome.product.productId).toBe('ayweb_7');
+    expect(outcome.capture).toMatchObject({ used: true, priceSource: 'dom', corroborated: false });
+    expect(outcome.priceRejection).toBe('PRICE_AMBIGUOUS');
   });
 });
