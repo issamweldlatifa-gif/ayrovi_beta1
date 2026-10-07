@@ -7,6 +7,7 @@ import compression from 'compression';
 import path from 'path';
 import fs from 'fs';
 import { KNOWN_PAGE_PATHS, isKnownPagePath, sitemapRoutes } from '../shared/publicSeo';
+import { ANDROID_APP_LINK_ENV, appLinksFromEnv } from '../shared/appLinks';
 import { createHash, randomUUID } from 'node:crypto';
 import type { Server } from 'node:http';
 import { spawn } from 'node:child_process';
@@ -336,6 +337,22 @@ app.get('/sitemap.xml', (_req, res) => {
   res.setHeader('Content-Type', 'application/xml; charset=utf-8');
   res.setHeader('Cache-Control', 'public, max-age=3600');
   res.send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`);
+});
+
+// App Links (P6) : النصف الثاني لـ`android.intentFilters` في `apps/mobile/app.json`.
+// أندرويد ما يفتحش روابط النطاق في التطبيق كان ما لقاش هذا الملف وبصمة صحيحة فيه.
+// البصمات ما تتكتبش في الكود: تتقرا من البيئة (`ANDROID_APP_LINK_SHA256`)، لأنّ
+// صاحب المشروع هو اللي يولّد المفتاح، وكذلك لأنّ Google Play يعيد توقيع الحزمة
+// بمفتاح ثانٍ لازم يزاد هو أيضاً. متغيّر فارغ ⇒ 404 صريح: ملف غالط أسوأ من ملف
+// غايب، لأنه يوهم بالعمل ثم يُرفض بلا إشارة.
+app.get('/.well-known/assetlinks.json', (_req, res) => {
+  const statement = appLinksFromEnv(process.env);
+  if (!statement) {
+    res.status(404).json({ error: 'APP_LINK_FINGERPRINT_NOT_CONFIGURED', expectedEnv: ANDROID_APP_LINK_ENV });
+    return;
+  }
+  res.setHeader('Cache-Control', 'public, max-age=300');
+  res.json(statement);
 });
 
 app.use(express.static(publicDir, {

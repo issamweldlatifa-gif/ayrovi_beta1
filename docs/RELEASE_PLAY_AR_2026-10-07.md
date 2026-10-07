@@ -16,7 +16,7 @@
 | تطبيق React Native (`apps/mobile`) | ✅ 24 شاشة اصلية، يعمل على الخادم |
 | APK تجريبي (`app.ayrovi.mobile.demo` / «AYROVI Démo») | ✅ يتبنى في GitHub Actions — **موش** نسخة النشر |
 | AAB موقّع للنشر | ⏳ الملف موجود (`.github/workflows/mobile-release-aab.yml`) — **ناقص غير المفاتيح** |
-| روابط عميقة `https://ayrovi.tn` | ⏳ المضبوطات موجودة في `app.json` — **ناقص** `assetlinks.json` على الخادم |
+| روابط عميقة `https://ayrovi.tn` | ✅ التطبيق (`app.json`) + الخادم (`/.well-known/assetlinks.json`) جاهزين — **ناقص** غير بصمتك في متغيّر البيئة |
 | إشعارات FCM | ❌ ما بدتش: تستلزم مشروع Firebase متاعك + مفاتيح (تحت) |
 | بوابة الدفع بالكارطة | ❌ موش مركّبة على الخادم — الكود في التطبيق جاهز ويستنّاها |
 | متجر Play | ❌ ما فماش تطبيق مسجّل بعد (خطوة 5) |
@@ -125,33 +125,49 @@ base64 -i ayrovi-release.jks -o ayrovi-release.jks.base64
 
 ## 5) الروابط العميقة (`https://ayrovi.tn/...` تفتح التطبيق)
 
-المضبوطات في `app.json` (`intentFilters` مع `autoVerify: true`) — كفاية
-للنصف الأول. النصف الثاني على الخادم:
+النصف الأول جاهز في `app.json` (`intentFilters` + `autoVerify: true`).
+النصف الثاني **مكتوب وموجود في الخادم** (`src/server.ts` — الطريق
+`/.well-known/assetlinks.json`) ولا يستنّى كان **بصمتك**: البصمة ما تتكتبش في
+الكود، تتقرا من متغيّرات بيئة، لأنّ صاحب المشروع هو اللي يولّد المفتاح، وكذلك
+لأنّ Google Play يعيد التوقيع بمفتاح ثانٍ لازم يتزاد هو أيضاً.
 
-1. من مفتاح التوقيع، خذ **بصمة SHA-256**:
+### شنوّة تعمل (مرّة واحدة)
+
+1. خذ **بصمة SHA-256** من مفتاح التوقيع:
 
 ```bash
 keytool -list -v -keystore ayrovi-release.jks -alias ayrovi | grep SHA256
+# ⇒ SHA256:  C0:4A:9F:...   (32 بايت)
 ```
 
-2. انشر على الموقع الملف `/public/.well-known/assetlinks.json` (المضيف:
-   `ayrovi.tn`، و`applicationId`: `app.ayrovi.mobile`):
+2. في بيئة الخادم (نفس بلاصة باقي المتغيّرات)، زيد:
 
-```json
-[{
-  "relation": ["delegate_permission/common.handle_all_urls"],
-  "target": {
-    "namespace": "android_app",
-    "package_name": "app.ayrovi.mobile",
-    "sha256_cert_fingerprints": ["<البصمة من الخطوة 1>"]
-  }
-}]
+| المتغيّر | القيمة | إلزامي؟ |
+|---|---|---|
+| `ANDROID_APP_LINK_SHA256` | البصمة من الخطوة 1 — وبعدها **زيد بصمة Google Play** مفصولة بفاصلة (Play Console → App integrity → App signing key certificate) | ✅ |
+| `ANDROID_APP_LINK_PACKAGES` | `app.ayrovi.mobile` (افتراضي) + `app.ayrovi.mobile.demo` كان تحبّ العرض التجريبي يفتح الروابط هو أيضاً | ❌ (اختياري) |
+
+اللصقة تتقبل كما هي: `SHA256: C0:4A:...`، وكذلك 64 حرف بلا فواصل — الخادم
+ينظّم الكتابة (نفس البايتات) ويشيل التكرار.
+
+3. **بلا بصمة: الملف يرجع 404** مع `APP_LINK_FINGERPRINT_NOT_CONFIGURED` —
+بالعمد. ملف غالط أسوأ من ملف غايب: أندرويد يقعد يعاود بلا إشارة، والمستعمل
+يحسب «الروابط مكسورة». بصمة مغلوطة (حرف ناقص) ما تتنشرش أصلاً: الخادم يرفضها
+كلّها (`shared/appLinks.ts`).
+
+### كيفاش تتأكّد أنها نجحت
+
+```bash
+curl -s https://ayrovi.tn/.well-known/assetlinks.json | python3 -m json.tool
+# لازم تشوف package_name = app.ayrovi.mobile والبصمة صحيحة في القائمة
 ```
 
-3. **كيفاش تعرف أنها نجحت**: من التلفون، اكتب في Chrome رابط منتوج
-   `https://ayrovi.tn/...` — يفتح التطبيق مباشرة بلا ما يسألك. (كان Google
-   Play App Signing، زيد بصمة **Google** كذلك اللي تلقاها في Play Console →
-   App integrity.)
+ومن التلفون: اكتب في Chrome رابط `https://ayrovi.tn/...` ⇒ يفتح التطبيق
+مباشرة بلا ما يسألك. المسارات اللي مازال ما عندهاش شاشة في التطبيق ما تعطيش
+صفحة بيضاء: `app/+not-found.tsx` تعرض المسار وتفتحو في المتصفّح.
+
+> ملاحظة: الطريق هذا **ما يبدّل شي** في الموقع كان المتغيّر فارغ (سلوك اليوم).
+> الاختبارات: `npx vitest run tests/android-app-links.test.ts` (14 اختبار).
 
 ---
 
@@ -191,3 +207,4 @@ keytool -list -v -keystore ayrovi-release.jks -alias ayrovi | grep SHA256
 - [ ] الأسرار الأربعة موجودة (وما تبدّلتش من غير ما تعرف).
 - [ ] الـAAB المرفوع موقّع بالمفتاح متاعك (الـworkflow يقولها).
 - [ ] نسخة احتياطية جديدة من `ayrovi-release.jks` + كلمات السر.
+- [ ] `ANDROID_APP_LINK_SHA256` موجود في بيئة الخادم (وإلاّ الروابط ما تفتحش التطبيق).
