@@ -224,6 +224,10 @@ export const fr = {
   'security.same': 'Choisissez un mot de passe différent de l’actuel.',
   'security.changed': 'Mot de passe modifié — cette session a été renouvelée.',
   'security.submit': 'Modifier le mot de passe',
+  'security.verifyCard': 'Vérifiez votre compte pour confirmer une commande',
+  'security.verifyHint': 'Règle du serveur : une commande ne peut pas être confirmée sans e-mail ou téléphone vérifié.',
+  'security.verifyHow': 'La vérification vient de la connexion : Google, Apple ou Facebook (vérifient l’e-mail), ou la connexion par SMS (vérifie le téléphone). Si votre compte est un compte e-mail, connectez-vous avec la même adresse chez un fournisseur, ou par SMS.',
+  'security.verifyGo': 'Aller à la connexion pour vérifier',
   'security.noPassword': 'Ce compte se connecte par SMS ou par fournisseur : il n’a pas de mot de passe à changer.',
 
   'order.title': 'Commande',

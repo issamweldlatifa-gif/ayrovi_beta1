@@ -15,6 +15,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { changePassword, fetchSecurity } from '@/api/account';
 import { authMessage } from '@/api/authMessages';
 import { SubScreen } from '@/design/subScreen';
+import { router } from 'expo-router';
 import { useSession } from '@/state/session';
 
 export default function SecurityScreen() {
@@ -76,6 +77,20 @@ export default function SecurityScreen() {
               value={security.data.identities.map((identity) => identity.provider).join(' · ')}
             />
           ) : null}
+        </Card>
+      ) : null}
+
+      {/*
+        * Точно là où le bouton « vérifier » de la caisse atterrit : sans e-mail ni
+        * téléphone vérifié, la commande sera refusée par le serveur
+        * (`CONTACT_VERIFICATION_REQUIRED`). L'écran doit dire POURQUOI et offrir
+        * l'ACTION réelle (la connexion fournisseur / SMS) — un constat sans issue
+        * serait une impasse déguisée en information.
+        */}
+      {security.data && !security.data.emailVerified && !security.data.phoneVerified ? (
+        <Card title={t('security.verifyCard')} hint={t('security.verifyHint')}>
+          <AppText variant="body" color={theme.colors.secondary}>{t('security.verifyHow')}</AppText>
+          <Button label={t('security.verifyGo')} onPress={() => router.push('/sign-in')} />
         </Card>
       ) : null}
 
