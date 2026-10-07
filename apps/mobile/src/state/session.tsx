@@ -28,7 +28,7 @@ import {
   type AuthConfig, type CustomerAccount, type OtpChallenge, type SessionIssue,
 } from '@/api/account';
 import { fetchAuthConfig } from '@/api/account';
-import { isApiError } from '@/api/errors';
+import { ApiError, isApiError } from '@/api/errors';
 import {
   clearSession, isExpired, loadSession, openSecureBackend, saveSession,
   type SecureBackend, type StoredSession,
@@ -225,8 +225,22 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+/**
+ * الخادم جاوب على الدخول **بلا `session_token`**.
+ *
+ * هذا يصير كان الخادم ما يعرفش التطبيق: طريقة إعطاء الجلسة في جسم الردّ
+ * (`x-ayrovi-client: mobile/x.y.z`) موجودة في الخادم الجديد — خادم قديم
+ * يرجّع كوكي للمتصفّح وما يرجّعش توكِن للتطبيق. نرميو خطأ بكود، باش شاشة
+ * الدخول تقول السبب بالحرف بدل «فشل الطلب».
+ */
+const noSessionIssued = () => new ApiError(
+  'malformed',
+  'Le serveur n’a pas ouvert de session pour l’application (session_token absent).',
+  { code: 'SESSION_NOT_ISSUED' },
+);
+
   const adoptIssued = useCallback(async (issue: SessionIssue) => {
-    if (!issue.sessionToken) throw new Error('Le serveur n’a pas ouvert de session pour l’application.');
+    if (!issue.sessionToken) throw noSessionIssued();
     await adoptSession(backend(), issue);
     setAccount(issue.account);
     setVerified(true);
@@ -243,9 +257,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     if (!challenge) throw new Error('Aucun code demandé. Demandez d’abord un SMS.');
     const issue = await verifyOtp(challenge.challengeId, code.trim());
     if (!issue.sessionToken) {
-      // Le serveur ne nous a pas reconnu comme client mobile : continuer
-      // laisserait l'utilisateur « connecté » jusqu'au prochain démarrage.
-      throw new Error('Le serveur n’a pas ouvert de session pour l’application.');
+      // الخادم ما عرفناش كعميل موبايل: لو نكمّلو، المستعمل يقعد «مفصول»
+      // حتى يعاود يفتح التطبيق — خير نقولوها توّا.
+      throw noSessionIssued();
     }
     await adoptSession(backend(), issue);
     setAccount(issue.account);
@@ -257,7 +271,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const signInWithEmail = useCallback(async (email: string, password: string) => {
     const issue = await emailLogin(email.trim(), password);
-    if (!issue.sessionToken) throw new Error('Le serveur n’a pas ouvert de session pour l’application.');
+    if (!issue.sessionToken) throw noSessionIssued();
     await adoptSession(backend(), issue);
     setAccount(issue.account);
     setVerified(true);
@@ -273,7 +287,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       locale: input.locale,
       marketingOptIn: input.marketingOptIn,
     });
-    if (!issue.sessionToken) throw new Error('Le serveur n’a pas ouvert de session pour l’application.');
+    if (!issue.sessionToken) throw noSessionIssued();
     await adoptSession(backend(), issue);
     setAccount(issue.account);
     setVerified(true);

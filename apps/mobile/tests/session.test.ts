@@ -24,7 +24,8 @@ import {
   parseAuthConfig, parseOtpChallenge, parseOverview, parseRecentOrder, parseSessionIssue,
   requestOtp, verifyOtp,
 } from '../src/api/account';
-import { authMessage } from '../src/api/authMessages';
+import { authMessage, authMessageForCode } from '../src/api/authMessages';
+import { translate } from '../src/i18n/keys';
 import { ApiError } from '../src/api/errors';
 import {
   clearSession, isExpired, loadSession, memoryBackend, parseStoredSession, saveSession,
@@ -387,9 +388,27 @@ describe('messages d’erreur', () => {
     expect(authMessage(new ApiError('http', 'Refus', { status: 400 }))).toHaveProperty('fr');
   });
 
+  it('خادم قديم (بلا `session_token`) ⇒ السبب بالحرف، موش «فشل الطلب»', () => {
+    // هذا اللي يصير مع خادم ما يعرفش `x-ayrovi-client`: يرجّع كوكي للمتصفّح
+    // وما يرجّعش توكِن للتطبيق. المستعمل لازم يقرا السبب والعلاج.
+    const oldServer = new ApiError('malformed', 'session_token absent', { code: 'SESSION_NOT_ISSUED' });
+    expect(authMessageForCode('SESSION_NOT_ISSUED')).toBe('auth.error.noSession');
+    expect(authMessage(oldServer)).toEqual({ key: 'auth.error.noSession' });
+
+    const message = translate('ar', 'auth.error.noSession');
+    expect(message).toContain('الخادم');
+    expect(message).toContain('يتحدّث');
+  });
+
   it('parle de réseau quand le serveur n’a rien répondu', () => {
     const message = authMessage(new ApiError('network', 'offline'));
     expect(message).toHaveProperty('ar');
     expect((message as { fr: string }).fr).toMatch(/connexion/i);
+  });
+
+  it('حالة الجلسة ما ترمي خطأً عاماً بلا كود (السبب يضيع)', () => {
+    const source = readFileSync(fileURLToPath(new URL('../src/state/session.tsx', import.meta.url)), 'utf8');
+    expect(source).toContain("code: 'SESSION_NOT_ISSUED'");
+    expect(source).not.toContain("new Error('Le serveur n’a pas ouvert de session");
   });
 });

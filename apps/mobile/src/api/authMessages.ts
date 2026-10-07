@@ -56,6 +56,9 @@ export function authMessageForCode(code: string, status = 0): AuthMessageKey | n
     case 'OTP_RATE_LIMITED':
     case 'REGISTER_RATE_LIMITED':
       return 'auth.error.rateLimited';
+    // الخادم ما فتحش جلسة للتطبيق: نسخة ما تعرفش عميل الموبايل.
+    case 'SESSION_NOT_ISSUED':
+      return 'auth.error.noSession';
     case 'EMAIL_TAKEN':
       return 'auth.error.emailTaken';
 

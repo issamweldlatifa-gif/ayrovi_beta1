@@ -127,7 +127,7 @@ export const fr = {
   'auth.error.emailTaken': 'Un compte existe déjà avec cette adresse e-mail.',
   'auth.error.unavailable': 'Cette méthode de connexion n’est pas encore active sur le serveur.',
   'auth.error.register': 'Vérifiez le nom, l’adresse e-mail et le mot de passe (8 caractères minimum).',
-  'auth.error.noSession': 'Le serveur n’a pas ouvert de session pour l’application. Réessayez.',
+  'auth.error.noSession': 'Le serveur n’a pas ouvert de session pour l’application : sa version ne connaît pas l’application. Le serveur doit être mis à jour avant que la connexion fonctionne.',
 
   'account.guest.title': 'Aucun compte connecté',
   'account.guest.body': 'Connectez-vous pour retrouver vos commandes, vos adresses et vos favoris — les mêmes que sur le site.',
