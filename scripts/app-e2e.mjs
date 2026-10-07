@@ -120,7 +120,13 @@ async function main() {
   }
 
   // 2) Connexion par SMS (le seul moyen automatisable) → jeton de session.
-  const phone = '20123456';
+  /*
+   * Un numéro par exécution : le serveur plafonne les demandes par NUMÉRO
+   * (3 / 15 min) pour protéger la facture SMS. Un numéro fixe rendrait la
+   * deuxième exécution impossible — et un test qu'on ne peut pas relancer
+   * n'est pas un test.
+   */
+  const phone = `2${String(Math.floor(Math.random() * 1e7)).padStart(7, '0')}`;
   const otpRequest = await call('POST', '/api/customer/auth/otp/request', { body: { phone } });
   const challengeId = text(pick(otpRequest.data, 'data.challengeId'));
   const devCode = text(pick(otpRequest.data, 'data.developmentCode'));
