@@ -70,13 +70,15 @@ jobs:
           SUMMARY_LINE=""
           for BASE in $(printf '%s' "$BASES" | tr ',' ' '); do
             HEALTH_CODE=$(http_code "$BASE/api/health" /tmp/health)
+            HEALTH_VERSION=$(json_field /tmp/health version)
             READY_CODE=$(http_code "$BASE/api/ready" /tmp/ready)
             READY_COMMIT=$(json_field /tmp/ready commit)
             READY_BRANCH=$(json_field /tmp/ready branch)
             LINKS_CODE=$(http_code "$BASE/.well-known/assetlinks.json" /tmp/links)
             LINK_TYPE=$(head -c 20 /tmp/links 2>/dev/null)
             AYWEBS_CODE=$(http_code "$BASE/api/v1/aywebs/health" /tmp/aywebs)
-            if grep -q '"stats"' /tmp/aywebs 2>/dev/null; then AYWEBS_MARK="stats ✔"; else AYWEBS_MARK="—"; fi
+            # `stats` n'existe QUE sur le branch : c'est le discriminant le plus sûr.
+            if grep -q '"stats"' /tmp/aywebs 2>/dev/null; then AYWEBS_MARK="stats ✔ (branch)"; else AYWEBS_MARK="stats ✘ (main)"; fi
 
             # Type de réponse assetlinks : la route n'existe QUE sur le branch.
             case "$LINK_TYPE" in
@@ -105,7 +107,7 @@ jobs:
 
             printf '| `%s` | %s | `%s` / `%s` | %s | %s (%s) | %s |\n' \
               "$BASE" "$HEALTH_CODE" "${READY_COMMIT:-—}" "${READY_BRANCH:-—}" "$LINKS_KIND" "$AYWEBS_CODE" "$AYWEBS_MARK" "$VERDICT" >> "$S"
-            SUMMARY_LINE="$SUMMARY_LINE $BASE[h=$HEALTH_CODE ready=$READY_CODE commit=${READY_COMMIT:-—} branch=${READY_BRANCH:-—} links=$LINKS_KIND aywebs=$AYWEBS_CODE${AYWEBS_MARK:+ ⚑}]"
+            SUMMARY_LINE="$SUMMARY_LINE {$BASE h=$HEALTH_CODE v=${HEALTH_VERSION:-—} commit=${READY_COMMIT:-—} branch=${READY_BRANCH:-—} links=$LINKS_KIND aywebs=$AYWEBS_CODE $AYWEBS_MARK}"
           done
 
           printf '\n> « Code servi » se lit sur des preuves : la route `/.well-known/assetlinks.json`\n> et le champ `stats` de `/api/v1/aywebs/health` n existent QUE sur le branch.\n> `commit`/`branche` deviennent fiables dès qu un serveur déploie ce branch.\n' >> "$S"
