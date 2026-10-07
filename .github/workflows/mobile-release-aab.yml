@@ -1,0 +1,217 @@
+name: Mobile — AAB signé (Play Store)
+
+# Construit le **bundle de production signé** (`.aab`) pour Google Play.
+#
+# Pourquoi ce fichier existe : l'APK de démo (`mobile-android.yml`) est signé avec
+# la clé debug du gabarit — il sert à ESSAYER l'application, pas à la publier. Un
+# `.aab` publié doit être signé par la clé de l'application, et cette clé ne
+# transite jamais par le dépôt : elle vit dans les secrets GitHub.
+#
+# Secrets à créer AVANT de lancer ce workflow (Settings → Secrets and variables →
+# Actions → New repository secret). Aucun ne va dans le code :
+#   ANDROID_KEYSTORE_BASE64   → le fichier .jks encodé en base64 (une seule ligne)
+#   ANDROID_KEYSTORE_PASSWORD → mot de passe du magasin de clés
+#   ANDROID_KEY_ALIAS         → alias de la clé (celui passé à keytool)
+#   ANDROID_KEY_PASSWORD      → mot de passe de la clé
+#
+# Tant que ces secrets n'existent pas, le workflow s'arrête AVANT tout build avec
+# un message qui dit exactement quoi créer — il ne produit jamais un bundle non
+# signé qui aurait l'air publiable.
+#
+# Déclenchement : manuel (`workflow_dispatch`) après fusion dans `main`, ou par un
+# tag `v*`. GitHub n'expose le bouton manuel que lorsque ce fichier est présent sur
+# la branche par défaut — c'est la même contrainte que pour l'APK de démo.
+on:
+  workflow_dispatch:
+    inputs:
+      api_base_url:
+        description: "Origine de l'API gravée dans l'application"
+        required: true
+        default: "https://ayrovi.tn"
+      version_name:
+        description: "Nom de version publié (ex. 2.0.0)"
+        required: true
+        default: "2.0.0"
+      version_code:
+        description: "Code de version Play Store (entier, STRICTEMENT croissant)"
+        required: true
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: mobile-release-aab-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  bundle:
+    name: Bundle signé (.aab)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Vérifier les secrets de signature
+        # Contrôle AVANT tout le reste : mieux vaut un arrêt net et lisible qu'un
+        # bundle non signé qu'on croirait publiable.
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          missing=""
+          [ -n "${ANDROID_KEYSTORE_BASE64:-}" ] || missing="$missing ANDROID_KEYSTORE_BASE64"
+          [ -n "${ANDROID_KEYSTORE_PASSWORD:-}" ] || missing="$missing ANDROID_KEYSTORE_PASSWORD"
+          [ -n "${ANDROID_KEY_ALIAS:-}" ] || missing="$missing ANDROID_KEY_ALIAS"
+          [ -n "${ANDROID_KEY_PASSWORD:-}" ] || missing="$missing ANDROID_KEY_PASSWORD"
+          if [ -n "$missing" ]; then
+            echo "::error::Secrets de signature manquants :$missing"
+            echo "Ajoutez-les dans Settings → Secrets and variables → Actions."
+            echo "Procédure complète : docs/RELEASE_PLAY_AR_2026-10-07.md"
+            exit 1
+          fi
+          echo "Secrets présents."
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Installer le SDK Android (sans action tierce)
+        run: |
+          set -euo pipefail
+          export ANDROID_HOME="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$(ls -d "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager 2>/dev/null | head -1 || true)"
+          if [ -z "$SDKMANAGER" ]; then SDKMANAGER="$(command -v sdkmanager || true)"; fi
+          if [ -z "$SDKMANAGER" ]; then
+            mkdir -p "$ANDROID_HOME/cmdline-tools"
+            curl -sSL -o /tmp/cmdtools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+            unzip -q /tmp/cmdtools.zip -d "$ANDROID_HOME/cmdline-tools"
+            mv "$ANDROID_HOME/cmdline-tools/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest"
+            SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          fi
+          if [ ! -w "$ANDROID_HOME" ]; then sudo chown -R "$(id -u):$(id -g)" "$ANDROID_HOME"; fi
+          yes | "$SDKMANAGER" --sdk_root="$ANDROID_HOME" --licenses >/dev/null 2>&1 || true
+          "$SDKMANAGER" --sdk_root="$ANDROID_HOME" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> "$GITHUB_ENV"
+
+      - name: Install
+        run: npm ci
+
+      - name: Générer le projet Android
+        run: npx expo prebuild --platform android --no-install
+
+      - name: Écrire la clé de signature (depuis les secrets)
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          KEYSTORE="$RUNNER_TEMP/ayrovi-release.jks"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$KEYSTORE"
+          # Contrôle réel : un base64 tronqué donnerait un fichier vide, et un
+          # échec rouge incompréhensible trois étapes plus loin.
+          test -s "$KEYSTORE"
+          keytool -list -keystore "$KEYSTORE" -storepass "$ANDROID_KEYSTORE_PASSWORD" >/dev/null
+          echo "AYROVI_KEYSTORE_PATH=$KEYSTORE" >> "$GITHUB_ENV"
+          echo "Clé de signature lue et vérifiable."
+
+      - name: Version publiée (nom + code)
+        working-directory: apps/mobile/android
+        env:
+          VERSION_NAME: ${{ inputs.version_name || '2.0.0' }}
+          VERSION_CODE: ${{ inputs.version_code }}
+        run: |
+          set -euo pipefail
+          if [ -z "${VERSION_CODE:-}" ]; then
+            echo "::error::version_code obligatoire (déclenchement manuel) — un code Play ne recule jamais."
+            exit 1
+          fi
+          python3 - "$VERSION_NAME" "$VERSION_CODE" <<'PY'
+          import re, sys
+          name, code = sys.argv[1], sys.argv[2]
+          path = 'app/build.gradle'
+          source = open(path, encoding='utf-8').read()
+          source, n1 = re.subn(r'versionName\s+"[^"]*"', 'versionName "%s"' % name, source, count=1)
+          source, n2 = re.subn(r'versionCode\s+\d+', 'versionCode %s' % code, source, count=1)
+          if n1 != 1 or n2 != 1:
+              raise SystemExit('motif versionCode/versionName introuvable — gabarit Expo changé')
+          open(path, 'w', encoding='utf-8').write(source)
+          print('version %s (%s)' % (name, code))
+          PY
+          grep -n "versionCode\|versionName" app/build.gradle | head -4
+
+      - name: Configurer la signature release
+        working-directory: apps/mobile/android/app
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          import io
+          path = 'build.gradle'
+          source = io.open(path, encoding='utf-8').read()
+          if 'signingConfigs.release' in source:
+              print('signature release déjà configurée')
+          else:
+              lines = [
+                  '    release {',
+                  '        storeFile file(System.getenv("AYROVI_KEYSTORE_PATH"))',
+                  '        storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")',
+                  '        keyAlias System.getenv("ANDROID_KEY_ALIAS")',
+                  '        keyPassword System.getenv("ANDROID_KEY_PASSWORD")',
+                  '    }',
+                  '',
+              ]
+              index = source.index('signingConfigs {') + len('signingConfigs {') + 1
+              source = source[:index] + '\n'.join(lines) + source[index:]
+              # Le gabarit Expo signe debug ET release avec la clé debug : on ne
+              # remplace QUE la dernière (celle du buildType release) — sinon un
+              # build debug exigerait le keystore de publication.
+              marker = 'signingConfig signingConfigs.debug'
+              last = source.rfind(marker)
+              if last == -1:
+                  raise SystemExit('signingConfig debug introuvable — gabarit Expo changé')
+              source = source[:last] + 'signingConfig signingConfigs.release' + source[last + len(marker):]
+              io.open(path, 'w', encoding='utf-8').write(source)
+              print('signature release configurée')
+          PY
+          grep -n "signingConfig" build.gradle | head -8
+
+      - name: Build du bundle signé
+        working-directory: apps/mobile/android
+        env:
+          EXPO_PUBLIC_API_BASE_URL: ${{ inputs.api_base_url || 'https://ayrovi.tn' }}
+          EXPO_PUBLIC_BUILD_STAMP: ${{ github.sha }}
+          EXPO_PUBLIC_APP_VERSION: ${{ inputs.version_name || '2.0.0' }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./gradlew bundleRelease --no-daemon
+
+      - name: Vérifier la signature (et refuser la clé debug)
+        run: |
+          set -euo pipefail
+          AAB=android/app/build/outputs/bundle/release/app-release.aab
+          ls -lh "$AAB"
+          if keytool -printcert -jarfile "$AAB" | grep -qi "Android Debug"; then
+            echo "::error::Le bundle est signé avec la clé DEBUG — publication refusée."
+            exit 1
+          fi
+          keytool -printcert -jarfile "$AAB" | head -10
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AYROVI-release-aab
+          path: apps/mobile/android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 30

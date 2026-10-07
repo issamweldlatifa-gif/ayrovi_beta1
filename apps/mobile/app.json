@@ -16,7 +16,27 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#FAFAFA"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ],
+          "data": [
+            {
+              "scheme": "https",
+              "host": "ayrovi.tn"
+            },
+            {
+              "scheme": "https",
+              "host": "www.ayrovi.tn"
+            }
+          ]
+        }
+      ]
     },
     "ios": {
       "bundleIdentifier": "app.ayrovi.mobile",
