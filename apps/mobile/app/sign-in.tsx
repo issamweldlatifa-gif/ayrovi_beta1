@@ -12,6 +12,7 @@
 import { useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
+import { useQuery } from '@tanstack/react-query';
 import * as WebBrowser from 'expo-web-browser';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -19,6 +20,7 @@ import { AppText, Button, Card, Field, Segmented } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
 import { authMessage, type AuthMessageKey } from '@/api/authMessages';
+import { fetchServerReadiness, mobileSessionSupport } from '@/api/public';
 import { newHandoffCode, pollHandoff, providerStartUrl, type ProviderId } from '@/api/providers';
 import { closeProviderBrowser } from '@/features/auth/browser';
 import { useSession } from '@/state/session';
@@ -41,6 +43,19 @@ export default function SignInScreen() {
   const [busy, setBusy] = useState(false);
   const [waiting, setWaiting] = useState<ProviderId | null>(null);
   const [failure, setFailure] = useState<{ message: string } | null>(null);
+
+  /**
+   * هل الخادم اللي نحكي معه يعرف عميل الموبايل؟ (المعلومة هذي موش تفصيل تقني:
+   * خادم قديم = كل محاولة دخول غادي تفشل.) نسألو مرّة، وبلا إعادة محاولة:
+   * كان الخادم ما جاوبش، ما نعرضوش لافتة — الضغطة على «دخول» تقول الحقيقة.
+   */
+  const readiness = useQuery({
+    queryKey: ['server', 'ready'],
+    queryFn: ({ signal }) => fetchServerReadiness({ signal }),
+    staleTime: 5 * 60_000,
+    retry: 0,
+  });
+  const legacyServer = mobileSessionSupport(readiness.data) === 'legacy';
   // Arrêt de l'attente demandé par l'utilisateur : drapeau lu par la boucle.
   const cancelled = useRef(false);
 
@@ -173,6 +188,24 @@ export default function SignInScreen() {
             { value: 'register', label: t('auth.tabs.register') },
           ]}
         />
+
+        {legacyServer ? (
+          <View
+            accessibilityRole="alert"
+            style={[styles.alert, {
+              backgroundColor: theme.colors.surface,
+              borderColor: theme.colors.danger,
+              borderRadius: theme.radius.card,
+            }]}
+          >
+            <AppText variant="label" weight="bold" color={theme.colors.danger}>
+              {t('signin.serverLegacy.title')}
+            </AppText>
+            <AppText variant="caption" color={theme.colors.secondary}>
+              {t('signin.serverLegacy.body')}
+            </AppText>
+          </View>
+        ) : null}
 
         {failure ? (
           <View

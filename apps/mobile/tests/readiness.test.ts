@@ -6,7 +6,7 @@
  * مخترعاً، و`local` تبقى `local` باش تتقال الحقيقة «موش منشور من Git».
  */
 import { describe, expect, it } from 'vitest';
-import { parseServerReadiness } from '../src/api/public';
+import { mobileSessionSupport, parseServerReadiness } from '../src/api/public';
 
 describe('قراءة /api/ready', () => {
   it('يقرا الحقول كما هي، ومنها الفرع المنشور', () => {
@@ -37,5 +37,27 @@ describe('قراءة /api/ready', () => {
   it('الحقول الناقصة تولّي فراغاً، موش `undefined`', () => {
     const parsed = parseServerReadiness({ status: 'not_ready' });
     expect(parsed).toEqual({ status: 'not_ready', database: '', version: '', commit: '', branch: '' });
+  });
+});
+
+describe('دعم جلسة التطبيق على الخادم المنشور', () => {
+  it('الحقل `branch` موجود ⇒ الخادم فيه كود الفرع', () => {
+    expect(mobileSessionSupport(parseServerReadiness({
+      status: 'ready', commit: 'abc123', branch: 'arena/c0321e79-ayrovi-beta1',
+    }))).toBe('supported');
+    // حتى `unknown` تعني «كود الفرع» — الحقل نفسو هو العلامة.
+    expect(mobileSessionSupport(parseServerReadiness({ status: 'ready', commit: 'abc123', branch: 'unknown' })))
+      .toBe('supported');
+  });
+
+  it('الحقل غايب ⇒ خادم قديم: الدخول غادي يفشل (ولازم يتقال)', () => {
+    expect(mobileSessionSupport(parseServerReadiness({ status: 'ready', commit: 'local' }))).toBe('legacy');
+    expect(mobileSessionSupport(parseServerReadiness({ status: 'ready', commit: '4ee2a8af31e1' }))).toBe('legacy');
+  });
+
+  it('بلا ردّ ولا بردّ بلا حالة ⇒ ما نخمّنوش', () => {
+    expect(mobileSessionSupport(null)).toBe('unknown');
+    expect(mobileSessionSupport(undefined)).toBe('unknown');
+    expect(mobileSessionSupport(parseServerReadiness({ database: 'ok' }))).toBe('unknown');
   });
 });

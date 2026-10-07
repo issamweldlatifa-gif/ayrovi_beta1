@@ -704,4 +704,6 @@ export const fr = {
   'about.checkedAt': 'Dernière vérification',
   'about.why': 'La mise à jour de l’application arrive par le Play Store ; celle du serveur arrive seule. Cette information permet de distinguer les deux.',
   'account.menu.about': 'À propos',
+  'signin.serverLegacy.title': 'Le serveur déployé ne connaît pas l’application',
+  'signin.serverLegacy.body': 'La version en ligne est plus ancienne que l’application : la connexion va échouer. La branche qui prend en charge le client mobile doit être déployée avant de pouvoir se connecter.',
 } as const;

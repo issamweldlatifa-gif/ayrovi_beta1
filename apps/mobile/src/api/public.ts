@@ -184,6 +184,25 @@ export function parseServerReadiness(payload: unknown): ServerReadiness | null {
   };
 }
 
+/**
+ * هل الخادم هذا يعرف عميل الموبايل؟
+ *
+ * `x-ayrovi-client` (وإعطاء `session_token` في جسم الردّ) موجود في الفرع وحدو.
+ * الخادم القديم ما عندوش حتى حقل `branch` في `/api/ready` — يعني **حضور
+ * الحقل** هو العلامة: كان غايب، الدخول غادي يفشل برسالة `SESSION_NOT_ISSUED`.
+ *
+ * `unknown` = ما خواناش الخادم (طايح، ولا ما لمسناهش) — نسكتو، والضغطة على
+ * «دخول» تقول الحقيقة أحسن من لافتة مخمّنة.
+ */
+export type MobileSessionSupport = 'supported' | 'legacy' | 'unknown';
+
+export function mobileSessionSupport(readiness: ServerReadiness | null | undefined): MobileSessionSupport {
+  if (!readiness) return 'unknown';
+  if (!readiness.status) return 'unknown';
+  // الحقل موجود (حتى بـ`unknown`) ⇒ الخادم فيه كود الفرع ⇒ الدخول مدعوم.
+  return readiness.branch ? 'supported' : 'legacy';
+}
+
 /** `malformed` كان الخادم جاوب بلا الحقول اللي نعتمدوا عليها — بلا تخمين. */
 export async function fetchServerReadiness(options?: RequestOptions): Promise<ServerReadiness> {
   const payload = await apiGetEnvelope<unknown>('/api/ready', options);
