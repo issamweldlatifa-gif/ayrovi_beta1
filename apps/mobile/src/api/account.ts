@@ -168,6 +168,8 @@ export interface OrderDetail {
   tracking: { carrier: string; trackingNumber: string; trackingUrl: string; shippedAt: string };
   invoiceNumber: string;
   transfer: { companyName: string; bankRib: string; posteAccount: string; reviewDelay: string };
+  /** ما يسمح بيه الخادم فعلاً لهذا الطلب (`paymentOptions`). */
+  paymentOptions: { choices: string[]; cardGatewayAvailable: boolean };
 }
 
 export interface SecurityStatus {
@@ -462,6 +464,13 @@ export function parseOrderDetail(payload: unknown): OrderDetail {
       bankRib: str(transfer.bankRib),
       posteAccount: str(transfer.posteAccount),
       reviewDelay: str(transfer.reviewDelay),
+    },
+    paymentOptions: {
+      // القائمة المغلقة من الخادم؛ ما نزيدوش عليها وسيلة من عندنا.
+      choices: Array.isArray(options.choices)
+        ? options.choices.filter((value): value is string => typeof value === 'string')
+        : [],
+      cardGatewayAvailable: options.cardGatewayAvailable === true,
     },
   };
 }
