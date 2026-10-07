@@ -4,11 +4,13 @@ name: Serveur — état du déploiement (diagnostic)
 #   « quel code tourne réellement sur le serveur publié ? »
 #
 # Pourquoi ça compte : l'application mobile a besoin du serveur du BRANCH
-# (`x-ayrovi-client` → `session_token`). Sur le serveur de `main`, la connexion
+# (`x-ayrovi-client` → `session_token`). Sur un serveur de `main`, la connexion
 # échoue. Sans ce diagnostic, on cherche la panne dans l'application alors
 # qu'elle est dans le déploiement.
 #
-# Aucun secret, aucune écriture : uniquement des lectures HTTP.
+# Lecture seule : aucun secret, aucune écriture, toujours vert (c'est un
+# instrument de mesure, pas une barrière). Le résultat est aussi écrit en
+# « annotation » pour être lu depuis l'API.
 
 on:
   workflow_dispatch:
@@ -30,77 +32,85 @@ jobs:
       BASE: ${{ inputs.base || 'https://ayrovi-beta1-1.onrender.com' }}
       REPO: ${{ github.repository }}
     steps:
-      - name: Lire /api/health, /api/ready et le commit de chaque branche
+      - name: Lire l'état du serveur et le comparer aux branches
         run: |
-          set -uo pipefail
-          SUMMARY="${GITHUB_STEP_SUMMARY}"
-          echo "## État du serveur : \`${BASE}\`" >> "$SUMMARY"
-          echo "" >> "$SUMMARY"
+          # GitHub lance `bash -e -o pipefail` : je reprends la main pour qu'un
+          # curl qui échoue (serveur muet) ne fasse pas rougir un diagnostic —
+          # l'absence de réponse est une MESURE, pas une panne du workflow.
+          set +e +o pipefail
+          set -u
 
-          code() { curl -s -o /tmp/body -w '%{http_code}' --max-time 25 "$1" || echo "000"; }
+          S="${GITHUB_STEP_SUMMARY:-/dev/null}"
+          printf '## État du serveur : `%s`\n\n' "$BASE" >> "$S"
 
-          HEALTH_CODE=$(code "$BASE/api/health")
-          HEALTH_BODY=$(cat /tmp/body 2>/dev/null | head -c 400 || true)
-          echo "- \`GET /api/health\` → **$HEALTH_CODE** — \`$HEALTH_BODY\`" >> "$SUMMARY"
+          http_code() { curl -s -o /tmp/body -w '%{http_code}' --max-time 25 "$1" 2>/dev/null || echo "000"; }
+          # Récupère le SHA d'une référence GitHub (une seule commande, sans pipe :
+          # `sed` imprime la première correspondance puis quitte).
+          sha_of() {
+            curl -s --max-time 25 "https://api.github.com/repos/$REPO/commits/$1" 2>/dev/null \
+              | sed -n '/"sha"/{s/.*"sha": *"\([a-f0-9]\{7,40\}\)".*/\1/p;q;}' \
+              | cut -c1-12
+          }
 
-          READY_CODE=$(code "$BASE/api/ready")
-          READY_BODY=$(cat /tmp/body 2>/dev/null | head -c 400 || true)
-          echo "- \`GET /api/ready\` → **$READY_CODE** — \`$READY_BODY\`" >> "$SUMMARY"
+          HEALTH_CODE=$(http_code "$BASE/api/health"); HEALTH_BODY=$(head -c 300 /tmp/body 2>/dev/null)
+          READY_CODE=$(http_code "$BASE/api/ready");   READY_BODY=$(head -c 300 /tmp/body 2>/dev/null)
 
-          # App Links : la route n'existe QUE sur le branch. Sur `main`, le
-          # repli SPA répond 200 avec du HTML — d'où la lecture du TYPE et du
-          # premier caractère, pas seulement du code HTTP.
-          LINKS_CODE=$(curl -s -o /tmp/links -w '%{http_code}|%{content_type}' --max-time 25 "$BASE/.well-known/assetlinks.json" || echo "000|")
-          LINKS_BODY=$(cat /tmp/links 2>/dev/null | head -c 200 || true)
+          printf -- '- `GET /api/health` → **%s** — `%s`\n' "$HEALTH_CODE" "$HEALTH_BODY" >> "$S"
+          printf -- '- `GET /api/ready` → **%s** — `%s`\n' "$READY_CODE" "$READY_BODY" >> "$S"
+
+          # App Links : la route n'existe QUE sur le branch. Sur `main`, le repli
+          # SPA répond 200 avec du HTML — d'où la lecture du TYPE, pas du code.
+          LINKS_META=$(curl -s -o /tmp/links -w '%{http_code}|%{content_type}' --max-time 25 "$BASE/.well-known/assetlinks.json" 2>/dev/null || echo "000|")
+          LINKS_CODE="${LINKS_META%%|*}"; LINKS_TYPE="${LINKS_META#*|}"
+          LINKS_BODY=$(head -c 200 /tmp/links 2>/dev/null)
           case "$LINKS_BODY" in
-            \[*|[[:space:]]*\[*) LINKS_KIND="JSON (route du branch présente)" ;;
-            \{*) LINKS_KIND="JSON d'erreur (route du branch, sans empreinte configurée)" ;;
-            *'<!DOCTYPE'*|*'<html'*) LINKS_KIND="HTML (repli SPA = code de main)" ;;
-            *) LINKS_KIND="inconnu" ;;
+            '<!DOCTYPE'*|'<html'*|'<!doctype'*) LINKS_KIND="HTML (repli SPA = code de main)" ;;
+            *'"error"'*) LINKS_KIND="JSON d'erreur (route du branch, empreinte absente)" ;;
+            '['*) LINKS_KIND="JSON (route du branch présente)" ;;
+            *) LINKS_KIND="indéterminé" ;;
           esac
-          echo "- \`GET /.well-known/assetlinks.json\` → **${LINKS_CODE%%|*}** \`${LINKS_CODE#*|}\` — ${LINKS_KIND} — \`$LINKS_BODY\`" >> "$SUMMARY"
+          printf -- '- `GET /.well-known/assetlinks.json` → **%s** (`%s`) — %s — `%s`\n' "$LINKS_CODE" "$LINKS_TYPE" "$LINKS_KIND" "$LINKS_BODY" >> "$S"
 
-          # Discriminant le plus sûr entre `main` et le branch : le champ
-          # `stats` de /api/v1/aywebs/health n'existe QUE sur le branch.
-          AYWEBS_CODE=$(curl -s -o /tmp/aywebs -w '%{http_code}' --max-time 25 "$BASE/api/v1/aywebs/health" || echo "000")
-          if grep -q '"stats"' /tmp/aywebs 2>/dev/null; then
+          # Discriminant le plus sûr entre `main` et le branch : le champ `stats`
+          # de /api/v1/aywebs/health n'existe QUE sur le branch.
+          AYWEBS_CODE=$(http_code "$BASE/api/v1/aywebs/health")
+          if grep -q '"stats"' /tmp/body 2>/dev/null; then
             AYWEBS_KIND="branch (champ stats présent)"
           elif [ "$AYWEBS_CODE" = "200" ]; then
             AYWEBS_KIND="main (pas de champ stats)"
           else
             AYWEBS_KIND="indéterminé ($AYWEBS_CODE)"
           fi
-          echo "- \`GET /api/v1/aywebs/health\` → **$AYWEBS_CODE** — ${AYWEBS_KIND}" >> "$SUMMARY"
+          printf -- '- `GET /api/v1/aywebs/health` → **%s** — %s\n' "$AYWEBS_CODE" "$AYWEBS_KIND" >> "$S"
 
-          # Existence réelle des points d'entrée dont l'application dépend.
+          # Points d'entrée dont l'application dépend : présents ou absents.
+          ROUTES=""
           for PATH_CHECK in /api/public/commerce-config /api/assistant/status /api/cart/items /api/ayrovix/config; do
-            ROUTE_CODE=$(curl -s -o /tmp/route -w '%{http_code}' --max-time 20 "$BASE$PATH_CHECK" || echo "000")
-            echo "- \`GET $PATH_CHECK\` → **$ROUTE_CODE**" >> "$SUMMARY"
-            ROUTE_LINE="$ROUTE_LINE $PATH_CHECK=$ROUTE_CODE"
+            ROUTE_CODE=$(http_code "$BASE$PATH_CHECK")
+            ROUTES="$ROUTES $PATH_CHECK=$ROUTE_CODE"
+            printf -- '- `GET %s` → **%s**\n' "$PATH_CHECK" "$ROUTE_CODE" >> "$S"
           done
 
-          DEPLOYED=$(printf '%s' "$READY_BODY" | sed -n 's/.*"commit":"\([^"]*\)".*/\1/p')
-          MAIN_SHA=$(curl -s --max-time 25 "https://api.github.com/repos/$REPO/commits/main" | sed -n 's/.*"sha": *"\([a-f0-9]\{7,40\}\)".*/\1/p' | head -1 | cut -c1-12)
-          BRANCH_SHA=$(curl -s --max-time 25 "https://api.github.com/repos/$REPO/commits/arena/c0321e79-ayrovi-beta1" | sed -n 's/.*"sha": *"\([a-f0-9]\{7,40\}\)".*/\1/p' | head -1 | cut -c1-12)
+          DEPLOYED=$(printf '%s' "$READY_BODY" | sed -n 's/.*"commit": *"\([^"]*\)".*/\1/p' | cut -c1-40)
+          MAIN_SHA=$(sha_of main)
+          BRANCH_SHA=$(sha_of arena/c0321e79-ayrovi-beta1)
 
-          echo "" >> "$SUMMARY"
-          echo "| Référence | Commit |" >> "$SUMMARY"
-          echo "|---|---|" >> "$SUMMARY"
-          echo "| Serveur publié | \`${DEPLOYED:-inconnu}\` |" >> "$SUMMARY"
-          echo "| \`main\` | \`${MAIN_SHA:-inconnu}\` |" >> "$SUMMARY"
-          echo "| Branche de travail | \`${BRANCH_SHA:-inconnu}\` |" >> "$SUMMARY"
-          echo "" >> "$SUMMARY"
+          printf '\n| Référence | Commit |\n|---|---|\n| Serveur publié | `%s` |\n| `main` | `%s` |\n| Branche de travail | `%s` |\n\n' \
+            "${DEPLOYED:-inconnu}" "${MAIN_SHA:-inconnu}" "${BRANCH_SHA:-inconnu}" >> "$S"
 
-          if [ -z "${DEPLOYED:-}" ] || [ "$DEPLOYED" = "local" ]; then
-            echo "### ⚠️ Verdict — le serveur ne déclare pas de commit (déploiement local ou hors Git)." >> "$SUMMARY"
-          elif [ -n "${BRANCH_SHA:-}" ] && [ "${BRANCH_SHA#$DEPLOYED}" != "$BRANCH_SHA" ]; then
-            echo "### ✅ Verdict — le serveur tourne le code de la BRANCHE : connexion mobile, AYWEBs et App Links disponibles." >> "$SUMMARY"
-          elif [ -n "${MAIN_SHA:-}" ] && [ "${MAIN_SHA#$DEPLOYED}" != "$MAIN_SHA" ]; then
-            echo "### ⚠️ Verdict — le serveur tourne \`main\` : l'application se connecte mais **la connexion échoue** (pas de \`session_token\` pour un client mobile) et les correctifs AYWEBs de la branche manquent." >> "$SUMMARY"
+          if [ "${HEALTH_CODE}" = "000" ]; then
+            VERDICT="❌ Aucune réponse de $BASE — le serveur est éteint ou l'adresse est fausse."
+          elif [ -z "${DEPLOYED:-}" ] || [ "$DEPLOYED" = "local" ]; then
+            VERDICT="⚠️ Le serveur ne déclare aucun commit Git (déploiement hors Git) : impossible de savoir quel code il exécute. Déployez la branche pour que la connexion mobile fonctionne."
+          elif [ -n "${BRANCH_SHA}" ] && [ "${DEPLOYED}" = "${BRANCH_SHA:0:${#DEPLOYED}}" ]; then
+            VERDICT="✅ Le serveur tourne le code de la BRANCHE : connexion mobile, AYWEBs et App Links disponibles."
+          elif [ -n "${MAIN_SHA}" ] && [ "${DEPLOYED}" = "${MAIN_SHA:0:${#DEPLOYED}}" ]; then
+            VERDICT="⚠️ Le serveur tourne `main` : l'application s'ouvre mais **la connexion échoue** (pas de session mobile) et les correctifs AYWEBs de la branche manquent."
           else
-            echo "### ⚠️ Verdict — commit publié inconnu des deux références locales." >> "$SUMMARY"
+            VERDICT="⚠️ Commit publié inconnu des deux références."
           fi
+          printf '### Verdict\n%s\n' "$VERDICT" >> "$S"
 
-          # Annotation lisible depuis l'API (`check-runs/.../annotations`) : le
-          # journal d'exécution n'est pas toujours consultable, le verdict si.
-          echo "::notice title=Etat du serveur::publie=${DEPLOYED:-inconnu} main=${MAIN_SHA:-inconnu} branche=${BRANCH_SHA:-inconnu} health=${HEALTH_CODE} ready=${READY_CODE} assetlinks=${LINKS_CODE} kind=${LINKS_KIND} aywebs=${AYWEBS_KIND} routes:${ROUTE_LINE:-none}"
+          echo "::notice title=Etat du serveur::base=$BASE publie=${DEPLOYED:-inconnu} main=${MAIN_SHA:-inconnu} branche=${BRANCH_SHA:-inconnu} health=${HEALTH_CODE} ready=${READY_CODE} assetlinks=${LINKS_CODE}(${LINKS_KIND}) aywebs=${AYWEBS_KIND} routes:${ROUTES:-none}"
+          echo "verdict: $VERDICT"
+          exit 0
