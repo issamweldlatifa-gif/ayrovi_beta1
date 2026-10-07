@@ -18,6 +18,10 @@ on:
         description: "Adresse du serveur à tester"
         required: false
         default: "https://ayrovi-beta1-moo8.onrender.com"
+  # فحص يومي: متغيّرات Render تتبدّل **بلا** حتى push في الريبو، وهذا الفحص
+  # هو العين الوحيدة اللي تلقى التبديل وحدها (مثلاً GOOGLE_CALLBACK_URL).
+  schedule:
+    - cron: "0 5 * * *"
   push:
     paths:
       - ".github/workflows/beta-smoke.yml"
