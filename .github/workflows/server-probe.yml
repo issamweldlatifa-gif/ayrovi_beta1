@@ -43,7 +43,15 @@ jobs:
           S="${GITHUB_STEP_SUMMARY:-/dev/null}"
           printf '## État des serveurs publiés\n\n' >> "$S"
 
-          http_code() { curl -s -o "$2" -w '%{http_code}' --max-time 25 "$1" 2>/dev/null || echo "000"; }
+          # Un seul code en sortie : `curl -w` imprime « 000 » ET sort en erreur
+          # quand le serveur ne répond pas — le `|| echo` ajoutait un second
+          # « 000 » et faussait la lecture (« 000000 »).
+          http_code() {
+            local out
+            out=$(curl -s -o "$2" -w '%{http_code}' --max-time 45 "$1" 2>/dev/null)
+            if [ -z "$out" ]; then out="000"; fi
+            printf '%s' "$out"
+          }
           # Une seule commande, sans pipe : `sed` imprime la première correspondance puis quitte.
           sha_of() {
             curl -s --max-time 25 "https://api.github.com/repos/$REPO/commits/$1" 2>/dev/null \
@@ -97,7 +105,7 @@ jobs:
 
             printf '| `%s` | %s | `%s` / `%s` | %s | %s (%s) | %s |\n' \
               "$BASE" "$HEALTH_CODE" "${READY_COMMIT:-—}" "${READY_BRANCH:-—}" "$LINKS_KIND" "$AYWEBS_CODE" "$AYWEBS_MARK" "$VERDICT" >> "$S"
-            SUMMARY_LINE="$SUMMARY_LINE $BASE[h=$HEALTH_CODE commit=${READY_COMMIT:-?} branch=${READY_BRANCH:-?} aywebs=${AYWEBS_CODE}${AYWEBS_MARK:+:$AYWEBS_MARK}]"
+            SUMMARY_LINE="$SUMMARY_LINE $BASE[h=$HEALTH_CODE ready=$READY_CODE commit=${READY_COMMIT:-—} branch=${READY_BRANCH:-—} links=$LINKS_KIND aywebs=$AYWEBS_CODE${AYWEBS_MARK:+ ⚑}]"
           done
 
           printf '\n> « Code servi » se lit sur des preuves : la route `/.well-known/assetlinks.json`\n> et le champ `stats` de `/api/v1/aywebs/health` n existent QUE sur le branch.\n> `commit`/`branche` deviennent fiables dès qu un serveur déploie ce branch.\n' >> "$S"
