@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { QatafoDatabase } from '../db/database';
 import { parsePublicHttpUrl, UnsafeUrlError } from '../services/safeUrl';
-import { AYWEBS_STORES, detectAyWebsStore, findAyWebsStore, type AyWebsStoreDefinition } from '../../shared/aywebsStores';
+import { AYWEBS_EXTERNAL_STORE, AYWEBS_STORES, detectAyWebsStore, findAyWebsStore, type AyWebsStoreDefinition } from '../../shared/aywebsStores';
 import type { AyWebsPageType } from '../../shared/aywebsTypes';
 import { createAyWebsAdapter, resolveAyWebsAdapter } from './adapters/registry';
 import { AyWebsCaptureError, type AyWebsPageClassification } from './adapters/contract';
@@ -35,6 +35,16 @@ export interface AyWebsPageAnalysis {
   registered: boolean;
   browseAllowed: boolean;
   captureAllowed: boolean;
+  /**
+   * DOMAINE HORS REGISTRE : la capture du navigateur CLIENT est la seule lecture
+   * possible, et elle est autorisée (Phase 2.1 — modèle « Add-to-Buyee »).
+   *
+   * `captureAllowed` garde son sens historique (« le serveur peut lire cette
+   * boutique du registre ») ; ce champ dit l'autre chemin : la page est déjà
+   * ouverte chez le client, sa capture structurée est la preuve. Il est donc
+   * toujours FAUX pour une boutique du registre — jamais l'inverse.
+   */
+  externalCaptureAllowed: boolean;
   pageType: AyWebsPageType;
   isProductPage: boolean;
   customerActionRequired: AyWebsPageClassification['customerActionRequired'];
@@ -89,6 +99,16 @@ export function analyzeAyWebsUrl(
   const browseAllowed = registered && store?.capabilities.includes('browse') !== false;
   const captureAllowed = registered && captureEnabled && storeCapture && store?.capabilities.includes('product') === true;
 
+  /* Boutique externe : le MÊME robinet de flags que les boutiques nommées est
+     interrogé (`AYWEBS_GENERIC_CAPTURE_ENABLED`, via le gate du contexte), donc
+     un seul endroit coupe la capture pour tout le monde. Sans gate injecté, on
+     lit la capacité de la définition : la capture externe reste une capacité
+     DÉCLARÉE, jamais un comportement implicite. */
+  const externalStoreCapture = options.storeCaptureEnabled
+    ? options.storeCaptureEnabled(AYWEBS_EXTERNAL_STORE)
+    : AYWEBS_EXTERNAL_STORE.captureSupported === true;
+  const externalCaptureAllowed = !registered && captureEnabled && externalStoreCapture;
+
   let fallback: AyWebsPageAnalysis['fallback'] = 'product_capture';
   if (!registered) fallback = 'purchase_request';
   else if (!captureAllowed) fallback = store?.integrationType === 'BLOCKED' ? 'store_request' : 'purchase_request';
@@ -102,6 +122,7 @@ export function analyzeAyWebsUrl(
     registered,
     browseAllowed,
     captureAllowed,
+    externalCaptureAllowed,
     pageType: classification.pageType,
     isProductPage: classification.isProductPage,
     customerActionRequired: classification.customerActionRequired,
@@ -194,6 +215,90 @@ export function assertAyWebsProductPage(
   }
 
   return { analysis, store, url };
+}
+
+/**
+ * BOUTIQUE EXTERNE — autorisation de résolution sur CAPTURE CLIENTE (§23, 2.1).
+ *
+ * Le modèle « Add-to-Buyee » : la page produit est ouverte dans le WebView du
+ * client, donc ni l'IP du serveur ni un mur anti-robot ne décident de ce qui est
+ * lisible. En échange de cette commodité, le seuil est PLUS HAUT que pour une
+ * boutique du registre — un domaine inconnu ne peut pas être « deviné » :
+ *
+ *   1. HTTPS obligatoire (politique §45) ;
+ *   2. capture ACCEPTÉE par le crible serveur (`validateAyWebsCapturedPage`) :
+ *      textes bornés, verdict de la Phase 0 sur chaque montant, devise prouvée
+ *      par un code ISO, fraîcheur < 10 min, hôte identique à l'URL demandée ;
+ *   3. prix CORROBORÉ (JSON-LD du marchand, ou deux sources indépendantes
+ *      d'accord) — sur un domaine hors registre, une source unique ne suffit pas ;
+ *   4. titre non vide ;
+ *   5. capacité de capture externe active (flag runtime).
+ *
+ * Tant que ces conditions ne sont pas réunies, la réponse reste exactement celle
+ * d'avant : `DOMAIN_NOT_ALLOWED`, action attendue « Order with URL ». Rien n'est
+ * relâché en silence — et le motif du refus est journalisé.
+ *
+ * Un domaine DU REGISTRE ne passe jamais par ici : ses règles (capacités, flags,
+ * classification LOGIN/CAPTCHA/CHECKOUT) restent celles de `assertAyWebsProductPage`.
+ */
+export interface AyWebsExternalCaptureAuthorization {
+  /** `true` uniquement si le crible serveur a ACCEPTÉ la capture. */
+  accepted: boolean;
+  /** Corroboration du prix : JSON-LD du marchand ou ≥ 2 sources d'accord. */
+  corroborated: boolean;
+  /** Titre publié par la page : sans titre, il n'y a pas de produit à revendre. */
+  title: string;
+  /** Motif de refus du crible, recopié tel quel dans le diagnostic. */
+  rejection?: string | null;
+}
+
+export function assertAyWebsExternalCapturePage(
+  analysis: AyWebsPageAnalysis,
+  scraper: SmartLinkScraper,
+  authorization: AyWebsExternalCaptureAuthorization,
+  options: AyWebsPageAnalysisOptions = {},
+): { analysis: AyWebsPageAnalysis; store: AyWebsStoreDefinition; url: URL } {
+  if (analysis.registered) return assertAyWebsProductPage(analysis.normalizedUrl, scraper, options);
+
+  const url = new URL(analysis.normalizedUrl);
+  if (url.protocol !== 'https:') throw new AyWebsDomainError('HTTPS_REQUIRED');
+
+  if (!analysis.externalCaptureAllowed) {
+    throw new AyWebsDomainError('STORE_CAPTURE_UNSUPPORTED', {
+      technicalMessage: `capture externe désactivée (AYWEBS_GENERIC_CAPTURE_ENABLED ou AYWEBS_CAPTURE_ENABLED=false) pour ${url.hostname}`,
+    });
+  }
+
+  const refusal = authorization?.rejection
+    || (authorization?.accepted !== true ? 'CAPTURE_NOT_ACCEPTED'
+      : authorization?.corroborated !== true ? 'PRICE_NOT_CORROBORATED'
+        : !String(authorization?.title || '').trim() ? 'TITLE_ABSENT' : null);
+  if (refusal) {
+    /* Même contrat qu'avant (§23) : la boutique n'est pas intégrée, la commande
+       passe par « Order with URL ». Le motif technique dit à l'exploitation
+       POURQUOI la capture cliente n'a pas suffi. */
+    throw new AyWebsDomainError('DOMAIN_NOT_ALLOWED', {
+      technicalMessage: `domaine hors registre : capture cliente non concluante (${refusal}) — chemin « Order with URL » obligatoire.`,
+    });
+  }
+
+  return {
+    /* La capture CORROBORÉE est la preuve de fiche produit : le classifieur
+       d'URL ne peut rien dire d'un marchand qu'il ne connaît pas, mais le crible
+       serveur, lui, a vu un prix structuré et un titre. On le dit explicitement
+       au lieu de laisser `is_product_page:false` contredire le produit retourné. */
+    analysis: {
+      ...analysis,
+      storeId: AYWEBS_EXTERNAL_STORE.id,
+      storeName: AYWEBS_EXTERNAL_STORE.displayName,
+      integrationType: AYWEBS_EXTERNAL_STORE.integrationType,
+      isProductPage: true,
+      pageType: 'PRODUCT',
+      reason: 'capture_client_corroboree_hors_registre',
+    },
+    store: AYWEBS_EXTERNAL_STORE,
+    url,
+  };
 }
 
 /* ------------------------------------------------------------------ *

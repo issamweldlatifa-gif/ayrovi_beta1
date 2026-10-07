@@ -7,10 +7,14 @@ import { cardGatewayAvailable } from '../services/paymentGateway';
 import { renderedProviderReady } from '../scraper/renderedPageFetcher';
 import { ayWebsReadGateStats } from './readGate';
 import { readerFingerprintReport } from '../scraper/readerFingerprint';
+import { AYWEBS_CAPTURE_LIMITS, AYWEBS_CAPTURE_VERSION } from '../../shared/aywebsCapture';
+import { AYWEBS_CAPTURE_SCRIPT } from './captureScript';
+import { ayWebsWebviewVerifySample } from './webviewCapture';
 import { getAyroviAiCore } from '../ai-core/core';
 import { ayWebsResolveCacheStats, ayWebsResolveFailureCacheStats } from './resolveCache';
 import {
   AYWEBS_CATEGORIES,
+  AYWEBS_EXTERNAL_STORE,
   AYWEBS_STORES,
   ayWebsStoreCan,
   findAyWebsStore,
@@ -410,6 +414,25 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
         read_gate: ayWebsReadGateStats(),
         /** Phase 1 — empreinte de lecteur réellement utilisée, par store (§46). */
         reader_fingerprints: readerFingerprintReport(stores.map((store) => store.id)),
+        /** Phase 2.1 — capture WebView : état réel du dispositif de capture. */
+        webview_capture: {
+          enabled: true,
+          contract_version: AYWEBS_CAPTURE_VERSION,
+          verify_sample: ayWebsWebviewVerifySample(),
+          max_bytes: AYWEBS_CAPTURE_LIMITS.maxBytes,
+          /**
+           * Boutique externe (hors registre) : quel identifiant est écrit sur un
+           * produit capturé, et combien de domaines elle revendique. Zéro domaine,
+           * toujours : le serveur ne la devine jamais depuis une URL.
+           */
+          external_store: {
+            id: AYWEBS_EXTERNAL_STORE.id,
+            enabled: AYWEBS_EXTERNAL_STORE.enabled,
+            domains: AYWEBS_EXTERNAL_STORE.domains.length,
+            integration_type: AYWEBS_EXTERNAL_STORE.integrationType,
+            capture_supported: AYWEBS_EXTERNAL_STORE.captureSupported,
+          },
+        },
         ai_fallback_enabled: flags.aiExtractionEnabled,
         ai_provider_ready: flags.aiExtractionEnabled && getAyroviAiCore().responses().isConfigured(),
         schema_ready: ayWebsSchemaReady(db),
@@ -498,6 +521,12 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
         registered: analysis.registered,
         browse_allowed: analysis.browseAllowed,
         capture_allowed: analysis.captureAllowed,
+        /**
+         * Hors registre (Phase 2.1) : la capture du navigateur CLIENT est la
+         * seule lecture possible et elle est autorisée. Le serveur reste seul
+         * juge : la capture ne compte qu'une fois corroborée par le crible.
+         */
+        external_capture_allowed: analysis.externalCaptureAllowed,
         page_type: analysis.pageType,
         is_product_page: analysis.isProductPage,
         /** §11 : le pont de détection répond franchement « produit détecté ? ». */
@@ -511,6 +540,18 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
       },
     });
   }));
+
+  /**
+   * SCRIPT DE CAPTURE WebView (Phase 2.1). Public et sans état : c'est un
+   * LECTEUR de page côté client (voir `captureScript.ts`). Servi par le serveur
+   * pour qu'une correction de sélecteur ne dépende pas d'une publication
+   * d'application. Aucun secret, aucune donnée, aucun en-tête d'autorisation.
+   */
+  router.get('/capture/script.js', (req, res) => {
+    res.type('application/javascript');
+    res.setHeader('Cache-Control', 'public, max-age=300');
+    res.status(200).send(AYWEBS_CAPTURE_SCRIPT);
+  });
 
   router.post('/product/resolve', handle(async (req, res) => {
     const identity = identityOf(req, res);
@@ -536,6 +577,9 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
         quantity: Number.isFinite(quantity) ? quantity : 1,
         sessionId: identity.sessionId,
         accountId: identity.accountId,
+        /* Phase 2.1 — capture WebView : faits lus par le client (textes bornés),
+           jamais le HTML de la page (rejectProvidedPage ci-dessus). */
+        capture: req.body?.capture,
         // Relecture fraîche sur demande explicite. Le client ordinaire n'en a
         // pas besoin : une fiche relue il y a moins de `AYWEBS_RESOLVE_CACHE_TTL_MS`
         // est servie depuis la lecture mémorisée, et le prix reste recalculé ici.
@@ -570,6 +614,20 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
         /** SWR : fiche servie périmée (une relecture est relancée derrière). */
         served_stale: result.servedStale,
         missing: result.missing,
+        /**
+         * Phase 2.1 — issue de la capture WebView : `used`, `fingerprint`,
+         * `price_source`, `corroborated`, et `rejection` quand la capture a été
+         * refusée (la fiche vient alors d'une lecture serveur normale).
+         */
+        capture: result.capture
+          ? {
+            used: result.capture.used,
+            fingerprint: result.capture.fingerprint,
+            price_source: result.capture.priceSource,
+            corroborated: result.capture.corroborated,
+            rejection: result.capture.rejection,
+          }
+          : null,
         /* Phase 0 — transparence : quand un montant a été LU puis ÉCARTÉ par le
            verdict d'intégrité (« $6.99$6.99 » → montant dupliqué), le client et
            le support voient pourquoi. Rien n'est publié à la place du prix. */
@@ -841,6 +899,10 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
       // Phase 1 : devis signé émis par /product/resolve (évite la relecture
       // marchande à l'ajout). Absent → relecture fraîche, comme avant.
       quoteToken: req.body?.quote_token ? String(req.body.quote_token) : null,
+      // Phase 2.1 : la capture du WebView accompagne l'ajout. Elle ne sert que
+      // si le devis ne couvre pas la ligne — et pour un domaine hors registre,
+      // c'est la SEULE lecture possible.
+      capture: req.body?.capture,
     });
 
     if (!result.idempotentReplay) trackAyWebsNavigation(ctx, {

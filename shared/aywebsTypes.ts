@@ -320,6 +320,13 @@ export const AYWEBS_DOMAIN_EVENTS = [
   'AYWEB_SHIPPING_PAID',
   'AYWEB_DISPATCHED',
   'AYWEB_DELIVERED',
+  /**
+   * Phase 2.1 (06/10/2026) — la vérification par échantillon d'une capture
+   * WebView a trouvé un écart entre ce que le client a lu et ce que le serveur
+   * relit (prix, devise ou disponibilité). Événement d'EXPLOITATION : il ne
+   * change rien pour le client, il dit qu'une lecture cliente a dérivé.
+   */
+  'AYWEB_WEBVIEW_PRICE_MISMATCH',
   'AYWEB_PURCHASE_REQUEST_SUBMITTED',
   'AYWEB_PURCHASE_REQUEST_DECIDED',
   'AYWEB_STORE_REQUEST_SUBMITTED',

@@ -78,6 +78,20 @@ public class AyWebsBrowseActivity extends Activity {
 
   private static final String ANALYZE_PATH = "/api/v1/aywebs/page/analyze";
   private static final String RESOLVE_PATH = "/api/v1/aywebs/product/resolve";
+  /**
+   * LECTEUR DE PAGE SERVI PAR LE SERVEUR (Phase 2.1, 06/10/2026).
+   *
+   * Le client ne coder AUCUN sélecteur marchand : il télécharge ce script une
+   * fois, l'exécute DANS la WebView, et transmet le résultat. Conséquence
+   * voulue : la version du contrat de capture est celle du serveur déployé,
+   * jamais celle de l'application installée — corriger un sélecteur cassé ne
+   * demande pas une nouvelle version de l'app.
+   *
+   * Ce qui part au serveur n'est PAS la page : ce sont des textes bornés
+   * (prix, devise, disponibilité, options) que le serveur rejuge. Le DOM
+   * marchand, les scripts, les cookies et les données de compte ne sortent pas.
+   */
+  private static final String CAPTURE_SCRIPT_PATH = "/api/v1/aywebs/capture/script.js";
   private static final String CART_ITEMS_PATH = "/api/v1/aywebs/cart/items";
   private static final String PURCHASE_REQUESTS_PATH = "/api/v1/aywebs/purchase-requests";
   /** Lecture du panier proxy pour le tiroir interne (04/10/2026). */
@@ -111,6 +125,8 @@ public class AyWebsBrowseActivity extends Activity {
   private static final String AYWEBS_DEEP_LINK = "ayrovi://aywebs";
 
   private WebView webView;
+  /** Lecteur de page (script serveur) — vide tant qu'il n'a pas été récupéré. */
+  private volatile String captureScript = "";
   private TextView urlText;
   private Button addButton;
   private Button cartButton;
@@ -399,8 +415,15 @@ public class AyWebsBrowseActivity extends Activity {
         JSONObject data = reply.optJSONObject("data");
         if (data == null) { setAddUnavailable(true); return; }
 
-        boolean isProduct = data.optBoolean("is_product_page", false)
-            && data.optBoolean("capture_allowed", false);
+        /* Phase 2.1 : deux chemins mènent à la feuille —
+             • boutique du REGISTRE  : `is_product_page` + `capture_allowed` ;
+             • domaine HORS registre : `external_capture_allowed` (la capture du
+               WebView est la seule lecture possible, et le serveur la criblera).
+           Sans ce second chemin, le bouton restait mort sur tout marchand non
+           intégré — exactement le défaut que le modèle Add-to-Buyee évite. */
+        boolean isProduct = data.optBoolean("capture_allowed", false)
+            ? data.optBoolean("is_product_page", false)
+            : data.optBoolean("external_capture_allowed", false);
 
         // Le serveur classe la page BIEN plus finement que « produit / pas produit » :
         // il distingue LOGIN, CHECKOUT, CAPTCHA, SEARCH, HOME. La coque réduisait
@@ -486,8 +509,9 @@ public class AyWebsBrowseActivity extends Activity {
     }
 
     runOnUiThread(() -> addButton.setText(R.string.aywebs_loading));
-    // URL only. Never transmit the merchant DOM, scripts, account or form data.
-    executor.execute(() -> {
+    /* URL + CAPTURE de la page affichée. Jamais le DOM marchand, les scripts,
+       le compte ni un prix fourni : des textes bornés, criblés par le serveur. */
+    withPageCapture(capture -> executor.execute(() -> {
       try {
         // 2) L'agent d'exécution est unique : la pré-résolution lancée pendant
         //    la navigation a pu aboutir entre-temps. On la réutilise (même url,
@@ -495,6 +519,7 @@ public class AyWebsBrowseActivity extends Activity {
         JSONObject product = prefetchedProductFor(url);
         if (product == null) {
           JSONObject body = new JSONObject().put("url", url);
+          if (capture != null) body.put("capture", capture);
           JSONObject reply = post(apiOrigin + RESOLVE_PATH, body);
           product = reply.optJSONObject("data");
         }
@@ -513,7 +538,7 @@ public class AyWebsBrowseActivity extends Activity {
         runOnUiThread(() -> addButton.setText(R.string.aywebs_add_to_cart));
         toastMessage(error.getMessage());
       }
-    });
+    }));
   }
 
   /**
@@ -523,12 +548,13 @@ public class AyWebsBrowseActivity extends Activity {
    * Aucune donnée marchande n'est transmise : seulement l'URL (même contrat que
    * `onAddToCart`), et le prix reste calculé par le serveur.
    */
-  private void prefetchResolve(String url) {
+  private void prefetchResolve(final String url) {
     if (apiOrigin.isEmpty() || url == null || url.isEmpty()) return;
     if (prefetchedProductFor(url) != null) return;
-    executor.execute(() -> {
+    withPageCapture(capture -> executor.execute(() -> {
       try {
         JSONObject body = new JSONObject().put("url", url);
+        if (capture != null) body.put("capture", capture);
         JSONObject reply = post(apiOrigin + RESOLVE_PATH, body);
         JSONObject product = reply.optJSONObject("data");
         if (product == null) return;
@@ -538,7 +564,108 @@ public class AyWebsBrowseActivity extends Activity {
       } catch (Exception ignored) {
         /* la pré-résolution est un confort, jamais une condition */
       }
+    }));
+  }
+
+  /**
+   * Garantit la présence du lecteur de page, puis rend la main sur le fil UI.
+   * Une panne de téléchargement n'est PAS bloquante : on continue sans capture,
+   * et le serveur retombe sur sa propre lecture (ou sur « Order with URL »).
+   */
+  private void ensureCaptureScript(final Runnable next) {
+    if (!captureScript.isEmpty()) { runOnUiThread(next); return; }
+    if (apiOrigin.isEmpty()) { runOnUiThread(next); return; }
+    executor.execute(() -> {
+      try {
+        String script = getText(apiOrigin + CAPTURE_SCRIPT_PATH);
+        if (script != null && !script.trim().isEmpty()) captureScript = script;
+      } catch (Exception ignored) {
+        /* sans lecteur : chemin historique (URL seule), jamais un faux succès */
+      }
+      runOnUiThread(next);
     });
+  }
+
+  /**
+   * Exécute le lecteur DANS la page affichée et rend le JSON de capture, ou
+   * `null` (pas de lecteur, page vide, WebView absente). Toujours appelé sur le
+   * fil UI : c'est la WebView qui exécute le script.
+   */
+  private void captureDisplayedPage(final java.util.function.Consumer<String> onCapture) {
+    final String script = captureScript;
+    final WebView view = webView;
+    if (script.isEmpty() || view == null) { onCapture.accept(null); return; }
+    runOnUiThread(() -> {
+      try {
+        view.evaluateJavascript(script, value -> onCapture.accept(capturePayload(value)));
+      } catch (Exception error) {
+        onCapture.accept(null);
+      }
+    });
+  }
+
+  /**
+   * `evaluateJavascript` rend la valeur de retour ENCODÉE en JSON : le lecteur
+   * renvoie une CHAÎNE, donc on reçoit « "{\"url\":…}" ». On la décode une fois
+   * pour retrouver l'objet exact attendu par le serveur.
+   */
+  private static String capturePayload(String evaluated) {
+    if (evaluated == null) return null;
+    String text = evaluated.trim();
+    if (text.isEmpty() || "null".equals(text)) return null;
+    try {
+      Object value = new org.json.JSONTokener(text).nextValue();
+      if (!(value instanceof String)) return null;
+      String json = ((String) value).trim();
+      if (json.isEmpty()) return null;
+      new JSONObject(json);   // borne : ce qui n'est pas un objet JSON est écarté ici
+      return json;
+    } catch (Exception error) {
+      return null;
+    }
+  }
+
+  /**
+   * Raccourci utilisé par la résolution ET l'ajout au panier : la capture est
+   * prise AU MOMENT de la demande (fraîcheur < 10 min garantie par le serveur),
+   * puis rendue à `next` sur le fil UI — l'appel réseau part ensuite sur l'agent.
+   */
+  private void withPageCapture(final java.util.function.Consumer<JSONObject> next) {
+    ensureCaptureScript(() -> captureDisplayedPage(json -> {
+      JSONObject capture = null;
+      if (json != null) {
+        try {
+          capture = new JSONObject(json);
+        } catch (Exception ignored) {
+          capture = null;
+        }
+      }
+      next.accept(capture);
+    }));
+  }
+
+  /** GET texte (lecteur de page) — même frontière de confiance que les POST. */
+  private String getText(String endpoint) throws Exception {
+    HttpURLConnection connection = ApiTrust.open(endpoint);
+    connection.setRequestMethod("GET");
+    connection.setConnectTimeout(15_000);
+    connection.setReadTimeout(30_000);
+    int code = connection.getResponseCode();
+    if (code != 200) {
+      connection.disconnect();
+      throw new java.io.IOException("CAPTURE_SCRIPT_HTTP_" + code);
+    }
+    ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+    try (InputStream stream = connection.getInputStream()) {
+      byte[] chunk = new byte[8192];
+      int read;
+      while ((read = stream.read(chunk)) > 0) {
+        if (buffer.size() + read > 512_000) break;   // borne : le lecteur pèse ~10 Ko
+        buffer.write(chunk, 0, read);
+      }
+    }
+    connection.disconnect();
+    return new String(buffer.toByteArray(), StandardCharsets.UTF_8);
   }
 
   /** Produit pré-résolu réutilisable pour cette url, ou null si trop ancien. */
@@ -728,7 +855,19 @@ public class AyWebsBrowseActivity extends Activity {
         confirm.setText(R.string.aywebs_loading);
         errorLine.setVisibility(View.GONE);
         runOnUiThread(() -> addButton.setText(R.string.aywebs_loading));
-        executor.execute(() -> {
+        /* La capture accompagne l'ajout : sans devis signé, le serveur relit la
+           fiche avant d'écrire la ligne. Pour un marchand HORS REGISTRE, cette
+           relecture ne peut venir que du client — sans capture, l'ajout répond
+           honnêtement « Order with URL » au lieu de prétendre connaître le prix. */
+        withPageCapture(capture -> {
+          if (capture != null) {
+            try {
+              body.put("capture", capture);
+            } catch (Exception ignored) {
+              /* corps non modifiable : l'ajout retombe sur la relecture serveur */
+            }
+          }
+          executor.execute(() -> {
           try {
             // La feuille reste ouverte pendant la requête. Aucun faux succès :
             // la confirmation n'apparaît qu'après une vraie réponse 2xx (§15).
@@ -749,6 +888,7 @@ public class AyWebsBrowseActivity extends Activity {
               showSheetError(errorLine, error.getMessage());
             });
           }
+          });
         });
       } catch (Exception error) {
         showSheetError(errorLine, error.getMessage());

@@ -1,6 +1,6 @@
 import type { QatafoDatabase } from '../db/database';
 import { seedAyWebsPermissions } from './permissions';
-import { AYWEBS_STORES, type AyWebsStoreDefinition } from '../../shared/aywebsStores';
+import { AYWEBS_EXTERNAL_STORE, AYWEBS_STORES, type AyWebsStoreDefinition } from '../../shared/aywebsStores';
 import {
   AYWEBS_AVAILABILITY_STATES,
   AYWEBS_CART_ITEM_STATUSES,
@@ -533,7 +533,13 @@ export function syncAyWebsStoreRegistry(db: QatafoDatabase): { stores: number; c
   const now = new Date().toISOString();
   let capabilities = 0;
   let domains = 0;
-  for (const [index, store] of Array.from(AYWEBS_STORES.entries()) as Array<[number, AyWebsStoreDefinition]>) {
+  /* La boutique EXTERNE est miroitée elle aussi : un produit capturé hors
+     registre porte `store_id='generic'` et `findAyWebsStore` le résout. Le
+     miroir SQL doit contenir les mêmes identifiants que le code, sinon la ligne
+     référence une boutique absente. Elle n'apporte aucun domaine (par
+     construction) et n'entre PAS dans le compte des boutiques du registre. */
+  const mirrored: readonly AyWebsStoreDefinition[] = [...AYWEBS_STORES, AYWEBS_EXTERNAL_STORE];
+  for (const [index, store] of Array.from(mirrored.entries()) as Array<[number, AyWebsStoreDefinition]>) {
     db.run(
       `INSERT INTO ayweb_stores (id,name,display_name,domain,country,currency,logo,status,integration_type,home_url,search_url_template,browser_mode,popular,sort_order,created_at,updated_at)
        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)

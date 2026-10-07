@@ -3,7 +3,7 @@ import type { QatafoDatabase } from '../db/database';
 import { calculatePrice, type PricingRules } from '../services/pricing';
 import { nextSequenceNumber } from '../erp-core/sequences';
 import type { AyWebsStoreDefinition } from '../../shared/aywebsStores';
-import { findAyWebsStore } from '../../shared/aywebsStores';
+import { findAyWebsStore, isAyWebsExternalStoreId } from '../../shared/aywebsStores';
 import type {
   AyWebsAvailabilityState,
   AyWebsCartItemStatus,
@@ -134,6 +134,17 @@ export interface AddAyWebsCartItemInput {
    * Absent/invalide/périmé → comportement d'avant : relecture fraîche.
    */
   quoteToken?: string | null;
+  /**
+   * CAPTURE WebView FRAÎCHE (Phase 2.1) — même contrat que `/product/resolve`.
+   *
+   * Sans devis utilisable, l'ajout relit la fiche. Pour une boutique du
+   * REGISTRE cette relecture est serveur ; pour un domaine HORS REGISTRE, le
+   * seul moyen de relire est la capture du client : sans elle, l'ajout répond
+   * honnêtement `DOMAIN_NOT_ALLOWED` (« Order with URL ») au lieu de prétendre
+   * connaître un prix. La capture reste criblée par le serveur — elle ne
+   * remplace jamais le devis signé, elle remplace la LECTURE.
+   */
+  capture?: unknown;
 }
 
 export interface AddAyWebsCartItemResult {
@@ -391,7 +402,35 @@ export async function addAyWebsCartItem(
   const rereadGate = quoteMatches && quote
     ? shouldReverifyAyWebsQuote(quote, { totalTND: preliminaryPricing?.totalTND, seed: input.sessionId })
     : { reverify: true, reason: quote ? 'QUOTE_MISMATCH' : 'NO_QUOTE' };
-  const quoteUsed = quoteMatches && !rereadGate.reverify;
+  /* BOUTIQUE HORS REGISTRE + tirage d'audit (Phase 2.1).
+     Le tirage d'audit du devis demande une RELECTURE marchande (5 % des ajouts,
+     plus les gros montants). Sur un domaine hors registre cette relecture est
+     impossible côté serveur : la subir ferait échouer ~5 % des ajouts pour une
+     vérification que personne ne peut faire.
+       • si le client joint une capture FRAÎCHE, on l'utilise — l'intention de
+         l'audit est respectée sans réseau ;
+       • sinon on garde le devis (qui reste confronté au produit persisté, au
+         prix, à la devise, à la disponibilité et à l'empreinte d'évidence) et on
+         le JOURNALISE : la protection restante est la revue humaine de commande.
+     Un devis PÉRIMÉ ou en DÉSACCORD, lui, garde sa relecture obligatoire : c'est
+     un défaut d'intégrité, pas un audit de routine. */
+  const externalProductStore = Boolean(priorProduct && isAyWebsExternalStoreId(priorProduct.storeId));
+  const captureProvided = input.capture !== undefined && input.capture !== null;
+  const auditDrawSkippable = externalProductStore
+    && quoteMatches
+    && !captureProvided
+    && (rereadGate.reason === 'SAMPLE' || rereadGate.reason === 'HIGH_VALUE');
+  if (auditDrawSkippable) {
+    logAyWebsOperation({
+      operation: 'cart_quote_reverify_skipped',
+      storeId: priorProduct?.storeId || null,
+      productId: priorProduct?.productId || null,
+      sessionId: input.sessionId,
+      result: 'skipped',
+      errorCode: `EXTERNAL_STORE_NO_SERVER_READ:${rereadGate.reason}`,
+    });
+  }
+  const quoteUsed = quoteMatches && (!rereadGate.reverify || auditDrawSkippable);
 
   let product = priorProduct;
   let sourceReread = false;
@@ -404,6 +443,7 @@ export async function addAyWebsCartItem(
       sessionId: input.sessionId,
       accountId: input.accountId,
       refresh: true,
+      capture: input.capture,
     });
     product = readAyWebsProduct(db, resolved.productId);
     sourceReread = true;

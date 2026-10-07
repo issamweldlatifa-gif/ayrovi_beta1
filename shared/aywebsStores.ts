@@ -165,6 +165,55 @@ export const AYWEBS_CATEGORIES: ReadonlyArray<{ id: string; labelFr: string; lab
   { id: 'toys', labelFr: 'Jouets', labelAr: 'ألعاب' },
 ];
 
+/**
+ * BOUTIQUE EXTERNE — le chemin « Add-to-Buyee » (Phase 2.1, 06/10/2026).
+ *
+ * Elle est HORS du tableau `AYWEBS_STORES` À DESSEIN, et cette exclusion est le
+ * cœur de sa garantie :
+ *
+ *   • `domains: []` ⇒ `detectAyWebsStore()` ne la renvoie JAMAIS depuis une URL.
+ *     Une boutique hors registre reste hors registre : aucun domaine ne peut
+ *     « devenir » générique par accident, et la liste publique des boutiques
+ *     (`GET /stores`, accueil, catégories) ne l'affiche pas.
+ *   • elle n'est choisie que par le SERVEUR, et seulement quand une capture
+ *     WebView STRUCTURÉE et CORROBORÉE arrive pour un domaine absent du registre
+ *     (voir `assertAyWebsExternalCapturePage`). C'est le modèle Add-to-Buyee :
+ *     la page est déjà ouverte sous les yeux du client, sa lecture est la preuve.
+ *   • `findAyWebsStore('generic')` la résout pour que le reste du parcours
+ *     (panier, commande, revue humaine) fonctionne sans cas particulier.
+ *
+ * Mode d'achat : `PARTIALLY_SUPPORTED` sans capacité `purchase` ⇒ la commande
+ * part en revue humaine. Nous n'achetons jamais automatiquement chez un marchand
+ * qui n'a pas d'intégration — c'est la règle des §7 et §48, et c'est aussi ce
+ * que font Buyee/ZenMarket : l'extraction est cliente, l'achat est re-vérifié.
+ */
+export const AYWEBS_EXTERNAL_STORE: AyWebsStoreDefinition = {
+  id: 'generic',
+  name: 'Boutique externe',
+  displayName: 'Boutique externe',
+  domains: [],
+  country: '',
+  currency: '',
+  logo: '',
+  enabled: true,
+  captureSupported: true,
+  adapter: 'generic',
+  status: 'beta',
+  integrationType: 'PARTIALLY_SUPPORTED',
+  capabilities: ['browse', 'product', 'variants', 'availability'] as const,
+  browserMode: 'external',
+  homeUrl: '',
+  searchUrlTemplate: '',
+  categories: [],
+  popular: false,
+  phase: 2,
+};
+
+/** `true` si l'identifiant désigne la boutique externe (captures hors registre). */
+export function isAyWebsExternalStoreId(id: unknown): boolean {
+  return String(id || '').trim().toLowerCase() === AYWEBS_EXTERNAL_STORE.id;
+}
+
 export function ayWebsHostnameMatches(hostname: string, domains: readonly string[]): boolean {
   const normalized = hostname.trim().toLowerCase().replace(/\.+$/, '');
   return domains.some((domain) => normalized === domain || normalized.endsWith(`.${domain}`));
@@ -172,7 +221,11 @@ export function ayWebsHostnameMatches(hostname: string, domains: readonly string
 
 export function findAyWebsStore(id: unknown): AyWebsStoreDefinition | null {
   const normalized = String(id || '').trim().toLowerCase();
-  return AYWEBS_STORES.find((store) => store.id === normalized) || null;
+  const registered = AYWEBS_STORES.find((store) => store.id === normalized);
+  if (registered) return registered;
+  /* Le registre reste la vérité : la boutique externe n'est résolue qu'après
+     lui, donc jamais à la place d'une boutique nommée. */
+  return isAyWebsExternalStoreId(normalized) ? AYWEBS_EXTERNAL_STORE : null;
 }
 
 export function detectAyWebsStore(rawUrl: unknown): AyWebsStoreDefinition | null {

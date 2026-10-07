@@ -5,9 +5,11 @@ import type { ScrapedProduct } from '../types';
 import { calculatePrice, type PriceBreakdown, type PricingRules } from '../services/pricing';
 import type { AyWebsStoreDefinition } from '../../shared/aywebsStores';
 import {
+  AYWEBS_EXTERNAL_STORE,
   AYWEBS_STORES,
   detectAyWebsStore,
   findAyWebsStore,
+  isAyWebsExternalStoreId,
 } from '../../shared/aywebsStores';
 import type {
   AyWebsAvailability,
@@ -29,7 +31,12 @@ import {
   ayWebsVariantOptions,
   ayWebsVariantsFromScraped,
 } from './productNormalizer';
-import { assertAyWebsProductPage, type AyWebsPageAnalysis } from './browser';
+import {
+  analyzeAyWebsUrl,
+  assertAyWebsExternalCapturePage,
+  assertAyWebsProductPage,
+  type AyWebsPageAnalysis,
+} from './browser';
 import {
   ayWebsResolveCacheKey,
   readAyWebsResolveCache,
@@ -38,6 +45,13 @@ import {
 import { AyWebsDomainError } from './errors';
 import { ayWebsQuoteTtlMs, createAyWebsQuoteToken } from './quoteToken';
 import { withAyWebsReadSlot } from './readGate';
+import {
+  shouldVerifyWebviewCaptureInBackground,
+  validateAyWebsCapturedPage,
+  webviewCaptureDivergence,
+} from './webviewCapture';
+import type { AyWebsCaptureOutcome } from '../../shared/aywebsCapture';
+import type { AyWebsAvailabilityState } from '../../shared/aywebsTypes';
 import { ayWebsEvidenceHash, canonicalVariant, recordAyWebsEvidence } from './evidence';
 import { emitAyWebsEvent, logAyWebsOperation, measureAyWebsOperation } from './events';
 import { ensureAyWebsSchema } from './schema';
@@ -93,6 +107,14 @@ export interface AyWebsResolveInput {
    * L'ouverture de fiche et l'affichage initial de la feuille peuvent réutiliser le cache.
    */
   refresh?: boolean;
+  /**
+   * CAPTURE WebView (Phase 2.1) — faits LUS par le client sur la page réelle :
+   * textes de prix, preuve de devise, état du bouton d'achat, options choisies.
+   * JAMAIS de HTML : `rejectProvidedPage` refuse toujours le DOM brut. Le
+   * serveur applique ses propres règles d'intégrité sur ces textes et décide
+   * seul du montant, de la devise et de la disponibilité.
+   */
+  capture?: unknown;
 }
 
 export interface AyWebsResolveResult {
@@ -134,6 +156,13 @@ export interface AyWebsResolveResult {
    * sait que ce qu'il voit n'est pas tout frais.
    */
   servedStale: boolean;
+  /**
+   * Issue de la capture client : `null` si aucune capture n'a été fournie,
+   * sinon l'objet `{used, fingerprint, priceSource, corroborated, rejection}`.
+   * Quand `used` est faux, la fiche vient d'une lecture serveur normale et le
+   * motif (`rejection`) explique pourquoi la capture n'a pas servi.
+   */
+  capture: AyWebsCaptureOutcome | null;
 }
 
 /** Coupe-circuit AYWEBs : actif par défaut, désactivable (AYWEBS_HOST_CIRCUIT=off). */
@@ -164,10 +193,44 @@ export async function resolveAyWebsProduct(
   const captureId = input.captureId || `ayw_${randomUUID()}`;
   const startedAt = Date.now();
 
-  const { analysis, store, url } = assertAyWebsProductPage(input.url, deps.scraper, {
+  /* ── ORDRE DES GARDES (Phase 2.1) ────────────────────────────────────────
+     La capture cliente est jugée AVANT la garde du registre, parce qu'elle est
+     précisément le chemin d'un domaine QUI N'EST PAS au registre (« ouvert sous
+     les yeux du client »). Sans capture jointe, rien ne change : la garde
+     historique décide, et un domaine inconnu renvoie « Order with URL ».
+
+     `analyzeAyWebsUrl` n'est qu'une classification d'URL (aucune requête
+     réseau) ; la rejouer dans la garde coûte des microsecondes, pas une lecture. */
+  const preliminary = analyzeAyWebsUrl(input.url, deps.scraper, {
     captureEnabled: deps.flags.captureEnabled,
     storeCaptureEnabled: deps.flags.storeCaptureEnabled,
   });
+  const captureProvided = input.capture !== undefined && input.capture !== null;
+  const captureValidation = captureProvided
+    ? validateAyWebsCapturedPage(input.capture, preliminary.normalizedUrl, {
+        // Domaine hors registre : seuil plus haut (corroboration obligatoire).
+        requireCorroboration: !preliminary.registered,
+      })
+    : null;
+  const captureUsed = captureValidation?.ok === true;
+  const externalCapturePath = captureProvided && !preliminary.registered;
+
+  const { analysis, store, url } = externalCapturePath
+    ? assertAyWebsExternalCapturePage(
+      preliminary,
+      deps.scraper,
+      {
+        accepted: captureUsed,
+        corroborated: captureValidation?.corroborated === true,
+        title: captureValidation?.scraped?.title || '',
+        rejection: captureValidation?.rejection || null,
+      },
+      { captureEnabled: deps.flags.captureEnabled, storeCaptureEnabled: deps.flags.storeCaptureEnabled },
+    )
+    : assertAyWebsProductPage(input.url, deps.scraper, {
+      captureEnabled: deps.flags.captureEnabled,
+      storeCaptureEnabled: deps.flags.storeCaptureEnabled,
+    });
 
   if (input.storeId) {
     const requested = findAyWebsStore(input.storeId);
@@ -193,8 +256,32 @@ export async function resolveAyWebsProduct(
    * Add et les contrôles panier/checkout : une vérification servie du cache ne
    * détecterait pas un changement de prix ou de stock marchand.
    */
+  /* ── CAPTURE WebView (Phase 2.1, 06/10/2026) ──────────────────────────────
+     Le client apporte des TEXTES lus sur la page réelle (celle que ni l'IP du
+     serveur ni un mur anti-robot ne peuvent gâcher). Le serveur les passe au
+     crible (`webviewCapture.ts`) : verdict d'intégrité de la Phase 0 sur chaque
+     texte de prix, device prouvée par code ISO, disponibilité issue d'un
+     vocabulaire fermé.
+
+     - capture ACCEPTÉE  ⇒ AUCUNE requête marchande, aucun cache, aucune porte :
+       c'est le chemin « Add-to-Buyee » — la page est déjà ouverte chez le client.
+     - capture ABSENTE ou REFUSÉE ⇒ comportement historique intact (lecture
+       serveur), avec le motif de refus renvoyé au client pour qu'il sache.
+     Un refus de capture n'est jamais une erreur bloquante : c'est une
+     accélération qui n'a pas servi. */
+  if (captureValidation && !captureValidation.ok) {
+    logAyWebsOperation({
+      operation: 'webview_capture_rejected',
+      storeId: store.id,
+      adapter: adapter.id,
+      sessionId: input.sessionId || null,
+      result: 'failure',
+      errorCode: captureValidation.rejection,
+    });
+  }
+
   const cacheKey = ayWebsResolveCacheKey(store.id, url.toString());
-  const cacheAllowed = !input.refresh && !input.pageHtml;
+  const cacheAllowed = !input.refresh && !input.pageHtml && !captureUsed;
   const cached = cacheAllowed ? readAyWebsResolveCache(deps.scraper, cacheKey, { allowStale: true }) : null;
   /* Mémo « fiche illisible » : une lecture SANS prix échoue en 13–17 s (sondes
      vouées à l'échec). Le mémo, séparé et à TTL court (90 s), évite de repayer
@@ -242,7 +329,15 @@ export async function resolveAyWebsProduct(
     });
   };
 
-  if (cached) {
+  if (captureUsed) {
+    /* Lecture cliente ACCEPTÉE : on construit le produit avec le MÊME
+       normaliseur que le lecteur serveur. Rien n'est mis en cache : une lecture
+       cliente est ponctuelle et ne doit pas être servie à une autre session. */
+    sourceProduct = ayWebsSourceProductFromScraped(
+      captureValidation!.scraped!,
+      store.displayName || store.name || store.id,
+    );
+  } else if (cached) {
     sourceProduct = cached.sourceProduct;
     fromCache = true;
     cacheAgeMs = cached.ageMs;
@@ -311,7 +406,50 @@ export async function resolveAyWebsProduct(
     { variantGroups: sourceProduct.variantGroups, variants: sourceProduct.variants },
     input.selectedVariant || null,
   );
-  const availability = await adapter.checkAvailability(sourceProduct, matchingAttributes);
+  let availability = await adapter.checkAvailability(sourceProduct, matchingAttributes);
+
+  if (captureUsed) {
+    /* La capture prouve l'état du bouton d'achat POUR LA COMBINAISON AFFICHÉE
+       chez le client. Si l'écran demande une AUTRE combinaison, cette preuve ne
+       dit rien d'elle : on répond UNKNOWN (et le panier refusera) au lieu
+       d'étendre la preuve à une variante qu'on n'a pas vue. */
+    /* Toute valeur demandée doit avoir été VUE sur la page — y compris celles
+       que le produit ne publie pas comme options (métadonnées de contexte).
+       Pourquoi si large : une capture ne publie AUCUN stock par option, donc
+       rien ne permet de dire si une valeur demandée est un attribut de variante
+       ou une simple annotation. Le risque est asymétrique — un faux UNKNOWN
+       coûte un refus honnête (« impossible de confirmer »), un faux AVAILABLE
+       coûte une commande invendable sur un produit jamais affiché. */
+    const requestedSelection = { ...(matchingAttributes || {}), ...(variantMetadata || {}) };
+    const requestedValues = Object.values(requestedSelection).map((value) => String(value).trim().toLowerCase());
+    const observed = captureValidation!.selectedVariantTexts.map((value) => value.toLowerCase());
+    const selectionBacked = !requestedValues.length
+      || requestedValues.every((value) => observed.some((label) => label.includes(value)));
+    const checkedAt = new Date().toISOString();
+    if (selectionBacked) {
+      availability = {
+        ...ayWebsAvailabilityRecord(
+          captureValidation!.availability,
+          captureValidation!.availabilityReason,
+          'webview_client',
+          checkedAt,
+        ),
+        variantAvailable: availability.variantAvailable ?? null,
+      };
+      if (requestedValues.length) captureValidation!.notes.push('selection_matches_captured_page');
+    } else {
+      availability = {
+        ...ayWebsAvailabilityRecord(
+          'UNKNOWN',
+          `selection_not_verified_by_capture:${ayWebsVariantKey(requestedSelection)}`,
+          'webview_client',
+          checkedAt,
+        ),
+        variantAvailable: null,
+      };
+      captureValidation!.notes.push('selection_not_in_capture');
+    }
+  }
 
   // Le prix AYROVI est recalculé côté serveur, uniquement si le marchand a
   // confirmé le prix ET la devise. Une devise déduite de l'URL n'est pas un devis.
@@ -431,6 +569,37 @@ export async function resolveAyWebsProduct(
   /* Devis signé — émis ici, au seul endroit où le serveur connaît à la fois le
      produit persisté, la variante retenue, la devise VÉRIFIÉE et l'empreinte
      d'évidence. Sans prix + devise confirmés, aucun jeton : pas de promesse. */
+  /* Tirage d'audit : une capture acceptée est re-vérifiée de temps en temps par
+     une VRAIE lecture serveur, en arrière-plan. Le client n'attend jamais. */
+  const isExternalCapture = captureUsed && isAyWebsExternalStoreId(store.id);
+  if (isExternalCapture) {
+    /* Domaine hors registre : le serveur n'a AUCUN moyen de relire la page (c'est
+       tout l'intérêt du chemin client). Le tirage d'audit serait un échec
+       garanti, donc un journal menteur. On le dit, et la re-vérification a lieu
+       là où elle est possible : à la revue humaine de la commande. */
+    logAyWebsOperation({
+      operation: 'webview_capture_verify',
+      storeId: store.id,
+      adapter: adapter.id,
+      result: 'skipped',
+      errorCode: 'EXTERNAL_STORE_SERVER_READ_IMPOSSIBLE',
+    });
+  } else if (captureUsed && shouldVerifyWebviewCaptureInBackground(captureValidation!.fingerprint, input.sessionId || '')) {
+    const verificationInput = {
+      deps,
+      url: url.toString(),
+      storeId: store.id,
+      quantity: Math.max(1, Number(input.quantity) || 1),
+      sessionId: input.sessionId || null,
+      accountId: input.accountId || null,
+      capturePrice: captureValidation!.price,
+      captureCurrency: captureValidation!.currency,
+      captureAvailability: captureValidation!.availability,
+      fingerprint: captureValidation!.fingerprint,
+    };
+    void verifyWebviewCaptureInBackground(verificationInput).catch(() => undefined);
+  }
+
   const quoteToken = quoteEvidenceComplete
     ? createAyWebsQuoteToken({
         productId,
@@ -461,7 +630,85 @@ export async function resolveAyWebsProduct(
     quoteExpiresAt,
     cacheKind,
     servedStale,
+    capture: captureValidation
+      ? { ...captureValidation.outcome, used: captureUsed }
+      : null,
   };
+}
+
+/**
+ * VÉRIFICATION PAR ÉCHANTILLON D'UNE CAPTURE CLIENT (Phase 2.1).
+ *
+ * Une lecture cliente est acceptée pour sa structure, pas sur parole : sur un
+ * échantillon déterministe, le serveur RELIT la page par ses propres moyens et
+ * compare. Jamais bloquant pour le client, jamais silencieux : le résultat part
+ * dans les journaux d'opération et, en cas d'écart, un événement
+ * `AYWEB_WEBVIEW_PRICE_MISMATCH` est émis pour l'exploitation.
+ */
+async function verifyWebviewCaptureInBackground(input: {
+  deps: AyWebsResolverDependencies;
+  url: string;
+  storeId: string;
+  quantity: number;
+  sessionId?: string | null;
+  accountId?: string | null;
+  capturePrice: number;
+  captureCurrency: string;
+  captureAvailability: AyWebsAvailabilityState;
+  fingerprint: string;
+}): Promise<void> {
+  const startedAt = Date.now();
+  try {
+    const server = await resolveAyWebsProduct(input.deps, {
+      url: input.url,
+      storeId: input.storeId,
+      quantity: input.quantity,
+      sessionId: input.sessionId || null,
+      accountId: input.accountId || null,
+      refresh: true,
+    });
+    const divergence = webviewCaptureDivergence(
+      { price: input.capturePrice, currency: input.captureCurrency, availability: input.captureAvailability },
+      {
+        price: Number(server.sourceProduct.price) || 0,
+        currency: String(server.sourceProduct.currency || ''),
+        availability: server.sourceProduct.availability,
+      },
+    );
+    logAyWebsOperation({
+      operation: 'webview_capture_verify',
+      storeId: input.storeId,
+      result: divergence.diverged ? 'failure' : 'success',
+      errorCode: divergence.reason,
+      durationMs: Date.now() - startedAt,
+    });
+    if (divergence.diverged) {
+      emitAyWebsEvent(input.deps.db, {
+        event: 'AYWEB_WEBVIEW_PRICE_MISMATCH',
+        resourceType: 'product',
+        // Aucun produit AYROVI n'existe encore à ce stade (la lecture serveur
+        // peut échouer) : l'identité de l'événement est l'URL visée + l'empreinte.
+        resourceId: input.url.slice(0, 80),
+        accountId: input.accountId || null,
+        payload: {
+          fingerprint: input.fingerprint,
+          reason: divergence.reason,
+          capture_price: input.capturePrice,
+          server_price: Number(server.sourceProduct.price) || 0,
+          currency: input.captureCurrency,
+          delta_percent: divergence.deltaPercent,
+        },
+      });
+    }
+  } catch (error) {
+    logAyWebsOperation({
+      operation: 'webview_capture_verify',
+      storeId: input.storeId,
+      result: 'failure',
+      errorCode: (error as any)?.code || 'READ_FAILED',
+      durationMs: Date.now() - startedAt,
+    });
+  }
 }
 
 /** Champs normalisés manquants : la liste est renvoyée au client, jamais devinée. */
