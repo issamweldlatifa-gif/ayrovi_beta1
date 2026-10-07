@@ -14,10 +14,14 @@
  */
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { describe, expect, test } from 'vitest';
 
-const ROOT = fileURLToPath(new URL('..', import.meta.url));
+/**
+ * جذر المشروع = مجلد التشغيل (vitest يتشغّل من الجذر). ما نستعملوش
+ * `import.meta.url`: `tsconfig` الجذر `module: commonjs` وما يقبلهاش.
+ * نفس اللي يعملوه باقي اختبارات الجذر (`process.cwd()`).
+ */
+const ROOT = process.cwd();
 const SCHEMA = readFileSync(path.join(ROOT, 'src/db/database.ts'), 'utf8');
 const MIRROR = readFileSync(path.join(ROOT, 'apps/mobile/src/api/labels.ts'), 'utf8');
 
