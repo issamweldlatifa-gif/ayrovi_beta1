@@ -15,6 +15,7 @@ import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
 import { fetchOrders } from '@/api/account';
+import { statusText } from '@/api/labels';
 import { mediaUrl } from '@/api/client';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -65,13 +66,15 @@ export default function OrdersScreen() {
               <AppText variant="label" weight="bold" style={styles.orderNumber}>
                 {order.orderNumber || order.id}
               </AppText>
-              <AppText variant="caption" color={theme.colors.accentText}>{order.status}</AppText>
+              <AppText variant="caption" color={theme.colors.accentText}>
+                {statusText('order', order.status, t)}
+              </AppText>
             </View>
             <AppText variant="caption" color={theme.colors.muted}>
               {t('orders.items', { count: order.itemCount })} · {order.totalTnd.toFixed(2)} DT
             </AppText>
             <AppText variant="caption" color={theme.colors.muted}>
-              {t('orders.payment')} : {order.paymentStatus}
+              {t('orders.payment')} : {statusText('payment', order.paymentStatus, t)}
               {order.createdAt ? ` · ${order.createdAt.slice(0, 10)}` : ''}
             </AppText>
             {order.imageUrl ? (

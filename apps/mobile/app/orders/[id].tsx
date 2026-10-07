@@ -20,6 +20,7 @@ import { ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
 import { useI18n, useT } from '@/i18n';
 import { fetchOrderDetail } from '@/api/account';
+import { statusText } from '@/api/labels';
 import { mediaUrl } from '@/api/client';
 import { isApiError, userMessage } from '@/api/errors';
 import { initiateCardPayment } from '@/api/checkout';
@@ -123,7 +124,7 @@ export default function OrderDetailScreen() {
       {order.data ? (
         <>
           <Card title={t('order.summary')}>
-            <KeyValue label={t('order.status')} value={order.data.status} />
+            <KeyValue label={t('order.status')} value={statusText('order', order.data.status, t)} />
             <KeyValue label={t('order.paymentStatus')} value={order.data.paymentStatus || '—'} />
             {order.data.paymentMethod ? <KeyValue label={t('order.method')} value={order.data.paymentMethod} /> : null}
             <KeyValue label={t('orders.createdAt')} value={order.data.createdAt.slice(0, 10)} />
@@ -280,7 +281,7 @@ export default function OrderDetailScreen() {
                 <KeyValue
                   key={event.id || `${event.status}-${event.createdAt}`}
                   label={event.createdAt.slice(0, 16).replace('T', ' ')}
-                  value={event.status}
+                  value={statusText('order', event.status, t)}
                 />
               ))}
             </Card>

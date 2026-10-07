@@ -137,10 +137,14 @@ export default function CheckoutScreen() {
     },
     onError: (error) => {
       const refusal = checkoutRefusalText(error);
-      if (refusal.key) setNote(t(refusal.key as never));
-      else if (refusal.message) setNote(refusal.message);
-      else if (isApiError(error)) setNote(userMessage(error)[locale]);
-      else setNote(t('checkout.failed'));
+      if (refusal.key) {
+        setNote(t(refusal.key as never));
+        return;
+      }
+      // كود مجهول (الخادم سبق التطبيق): رسالة بلغة المستعمل + الكود للترصّد.
+      // نص الخادم فرنسي دائماً — ما نعرضوهش لمستعمل عربي.
+      const base = isApiError(error) ? userMessage(error)[locale] : t('checkout.failed');
+      setNote(refusal.code ? `${base} (${refusal.code})` : base);
     },
   });
 

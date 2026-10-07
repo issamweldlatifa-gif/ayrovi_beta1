@@ -19,12 +19,12 @@ import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { SubScreen } from '@/design/subScreen';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
-import { isApiError } from '@/api/errors';
+import { isApiError, userMessage } from '@/api/errors';
 import { fetchLensWatches, removeLensWatch } from '@/api/lens';
 
 export default function LensWatchesScreen() {
   const theme = useTheme();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [note, setNote] = useState('');
 
   const watches = useQuery({
@@ -38,7 +38,9 @@ export default function LensWatchesScreen() {
     mutationFn: (id: string) => removeLensWatch(id),
     onSuccess: () => { setNote(t('lens.watchRemoved')); watches.refetch(); },
     onError: (error) => {
-      setNote(isApiError(error) ? error.message : t('lens.failed'));
+      // نص الخطأ الداخلي فرنسي (رسالة الخادم ولا رسالة العميل) — نعرضو
+      // باللغة اللي اختارها المستعمل، ونخبّيو النص الخام.
+      setNote(isApiError(error) ? userMessage(error)[locale] : t('lens.failed'));
     },
   });
 

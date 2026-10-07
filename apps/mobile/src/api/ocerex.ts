@@ -197,18 +197,28 @@ export async function commitOcerexToCart(
 
 /* ── البوابة: نفس شروط الخادم، مقروءة محلياً قبل أي ضغطة ───────────────── */
 
-export type OcerexBlockCode =
-  | 'LOW_CONFIDENCE'
-  | 'NO_REFERENCE_PRICE'
-  | 'NO_PRICE_FOUND'
-  | 'UNSUPPORTED_SCREEN'
-  | 'PRICE_NOT_CALCULATED'
-  | 'EXTRACTION_EXPIRED'
-  | 'CURRENCY_UNCONFIRMED'
-  | 'CURRENCY_LOCKED'
-  | 'INVALID_URL'
-  | 'RESTRICTED'
-  | '';
+/**
+ * أكواد المنع — قائمة وقت التنفيذ، والأنواع مشتقّة منها. السبب: `t()` يتكوّن
+ * بالكود (`ocerex.block.${code}`)، وبلا قائمة حقيقية ما ينجّم حتى اختبار
+ * يتأكّد أن **كل** كود عندو نص — كان يتزاد كود جديد ونصّه ناقص، المستعمل يقرا
+ * `ocerex.block.XXX`.
+ */
+export const OCEREX_BLOCK_CODES = [
+  'LOW_CONFIDENCE',
+  'NO_REFERENCE_PRICE',
+  'NO_PRICE_FOUND',
+  'UNSUPPORTED_SCREEN',
+  'PRICE_NOT_CALCULATED',
+  'EXTRACTION_EXPIRED',
+  'CURRENCY_UNCONFIRMED',
+  'CURRENCY_LOCKED',
+  'INVALID_URL',
+  'RESTRICTED',
+  /** ما فماش منع. */
+  '',
+] as const;
+
+export type OcerexBlockCode = (typeof OCEREX_BLOCK_CODES)[number];
 
 export interface OcerexReadiness {
   canCalculate: boolean;
