@@ -93,6 +93,34 @@ Le cookie client `ayrovi_customer_session` est séparé du cookie Admin. La conf
 
 La route de liveness doit répondre avec `"status":"ok"`; la readiness vérifie en plus que SQLite est lisible et expose uniquement l’état configuré/non configuré des capacités externes. Connectez-vous ensuite à `/admin` avec `ADMIN_EMAIL` et `ADMIN_PASSWORD`.
 
+## Service Beta à partir de la BRANCHE (test de l’application mobile)
+
+Le service de production sert `main`. Pour tester l’application AYROVI (session
+mobile, panier, caisse) sans toucher à la production, créez un **second service**
+avec `Branch = arena/c0321e79-ayrovi-beta1` (voir `docs/RELEASE_PLAY_AR_2026-10-07.md`
+§6). Configuration minimale pour que la connexion de l’appli fonctionne :
+
+| Variable | Valeur | Pourquoi |
+|---|---|---|
+| `NODE_ENV` | `production` | comportement de production (cookies `Secure`, OTP réel) |
+| `CUSTOMER_AUTH_SECRET` | ≥ 32 caractères, **la même valeur que la production** | sans elle : `customerAuthReady()` = faux ⇒ toutes les routes de connexion répondent 503 |
+| `PUBLIC_BASE_URL` | l’adresse de la nouvelle service | liens, redirections, e-mails |
+| `DATABASE_PATH` | `/opt/render/project/src/data/qatafo.sqlite` | identique au disque monté (base neuve = test propre) |
+| `AYROVIX_QUOTE_SECRET` | une valeur ≥ 32 caractères | jetons de devis AYWEBs |
+| `ANDROID_APP_LINK_SHA256` | l’empreinte du keystore d’émission | sinon `/.well-known/assetlinks.json` répond 404 (liens profonds inertes) |
+| `CUSTOMER_OTP_PROVIDER` + (webhook ou Twilio) | voir ci-dessus | sinon `POST /api/customer/auth/otp/request` répond 503 `OTP_UNAVAILABLE` (la connexion par e-mail, elle, fonctionne) |
+
+Après le déploiement, la vérification en une commande :
+
+```bash
+curl -s https://VOTRE-SERVICE-BETA.onrender.com/api/ready
+# doit contenir "branch":"arena/c0321e79-ayrovi-beta1" et un "commit"
+```
+
+Puis lancez le workflow `Serveur — test de bout en bout (appli)` avec l’adresse de
+ce service : il crée un compte jetable et vérifie inscription → `session_token` →
+Bearer → panier → caisse → commandes → assetlinks.
+
 ## Domaine personnalisé
 
 Les appels du site et de l’Admin utilisent le même domaine. Aucun `CORS_ORIGINS` n’est nécessaire dans ce cas. Ajoutez cette variable uniquement si un client externe doit appeler l’API, sous forme d’une liste d’origines HTTPS séparées par des virgules.
