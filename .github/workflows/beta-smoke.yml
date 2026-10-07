@@ -64,6 +64,7 @@ jobs:
           esac
 
           CAPS=""
+          GOOGLE_STATE=""
           FAIL=0            # une fonction de l'appli manque vraiment
           WARN=0            # le serveur ne sait pas encore servir l'appli
           SMOKE=""
@@ -156,9 +157,9 @@ jobs:
           print(u.parse_qs(u.urlparse(sys.stdin.read()).query).get("redirect_uri",[""])[0])' 2>/dev/null)
                 BASE_HOST=$(printf '%s' "$BASE" | sed -e 's#^https\?://##' -e 's#/.*$##')
                 case "$GOOGLE_CB" in
-                  *"$BASE_HOST"*) note "Connexion Google (\`redirect_uri\`)" "—" "✅ \`${GOOGLE_CB:-—}\` — revient bien sur CE serveur" ;;
-                  '') WARN=1; note "Connexion Google" "—" "⚠️ aucune redirection renvoyée par \`/auth/google/start\` — vérifiez \`GOOGLE_CLIENT_ID\`/\`GOOGLE_CLIENT_SECRET\`" ;;
-                  *) WARN=1; note "Connexion Google (\`redirect_uri\`)" "—" "⚠️ Google renvoie vers **\`$GOOGLE_CB\`** (autre serveur) ⇒ mettez \`GOOGLE_CALLBACK_URL=$BASE/api/customer/auth/google/callback\` sur CE service, et déclarez cette URI dans Google Cloud Console" ;;
+                  *"$BASE_HOST"*) GOOGLE_STATE="ok" ; note "Connexion Google (\`redirect_uri\`)" "—" "✅ \`${GOOGLE_CB:-—}\` — revient bien sur CE serveur" ;;
+                  '') GOOGLE_STATE="absente"; WARN=1; note "Connexion Google" "—" "⚠️ aucune redirection renvoyée par \`/auth/google/start\` — vérifiez \`GOOGLE_CLIENT_ID\`/\`GOOGLE_CLIENT_SECRET\`" ;;
+                  *) GOOGLE_STATE="autre-serveur:$GOOGLE_CB"; WARN=1; note "Connexion Google (\`redirect_uri\`)" "—" "⚠️ Google renvoie vers **\`$GOOGLE_CB\`** (autre serveur) ⇒ mettez \`GOOGLE_CALLBACK_URL=$BASE/api/customer/auth/google/callback\` sur CE service, et déclarez cette URI dans Google Cloud Console" ;;
                 esac ;;
             esac
           fi
@@ -299,7 +300,7 @@ jobs:
             fi
           fi
 
-          SMOKE="{$BASE health=$HEALTH_CODE v=${HEALTH_VERSION:-—} ready=$READY_CODE branch=${READY_BRANCH:-—} caps=${CAPS:-—} branch=${READY_BRANCH:-—} register=$REG_CODE token=$([ -n "$TOKEN" ] && echo oui || echo NON) me=$ME_CODE cart=$CART_CODE checkout=$CHECKOUT_CODE/$CHECKOUT_REF orders=$ORDERS_CODE links=$LINKS_CODE}$([ -n "${CHECKOUT_REF:-}" ] && echo " checkout_refusal=$CHECKOUT_REF")"
+          SMOKE="{$BASE health=$HEALTH_CODE google_callback=${GOOGLE_STATE:-—} v=${HEALTH_VERSION:-—} ready=$READY_CODE branch=${READY_BRANCH:-—} caps=${CAPS:-—} branch=${READY_BRANCH:-—} register=$REG_CODE token=$([ -n "$TOKEN" ] && echo oui || echo NON) me=$ME_CODE cart=$CART_CODE checkout=$CHECKOUT_CODE/$CHECKOUT_REF orders=$ORDERS_CODE links=$LINKS_CODE}$([ -n "${CHECKOUT_REF:-}" ] && echo " checkout_refusal=$CHECKOUT_REF")"
 
           if [ "$FAIL" = "1" ]; then
             VERDICT="❌ ÉCHEC — une fonction de l'appli ne répond pas sur ce serveur"
