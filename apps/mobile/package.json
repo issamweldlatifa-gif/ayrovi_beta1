@@ -12,6 +12,7 @@
     "test": "vitest run",
     "copy:check": "vitest run tests/copy.test.ts",
     "release:preflight": "node scripts/release-preflight.mjs",
+    "release:set-api-base": "node scripts/set-api-base.mjs",
     "tokens:build": "node scripts/gen-tokens.mjs",
     "tokens:check": "node scripts/gen-tokens.mjs --check"
   },
