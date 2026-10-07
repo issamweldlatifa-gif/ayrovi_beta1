@@ -141,6 +141,28 @@ jobs:
             note "\`GET /api/customer/auth/config\`" "$CONFIG_CODE" "⚠️ illisible — impossible de savoir ce que le serveur propose"
           fi
 
+          # 1ter) Connexion Google : vers QUEL serveur Google renvoie-t-il l'utilisateur ?
+          # Le serveur construit son `callback` depuis `GOOGLE_CALLBACK_URL` (ou
+          # `PUBLIC_BASE_URL`). S'il pointe encore l'ANCIENNE adresse, Google
+          # ramènera la personne sur l'autre service, qui ne connaît pas le code de
+          # remise ⇒ « la connexion Google ne marche pas » sans aucune erreur lisible.
+          # On lit l'en-tête `Location` réel : c'est la preuve, pas la config.
+          if [ "$CONFIG_CODE" = "200" ]; then
+            case "$CAPS" in
+              *google=oui*)
+                GOOGLE_LOC=$(curl -s -o /dev/null -w '%{redirect_url}' --max-time 30 \
+                  "$BASE/api/customer/auth/google/start?nativeHandoff=smoke" 2>/dev/null)
+                GOOGLE_CB=$(printf '%s' "$GOOGLE_LOC" | python3 -c 'import sys,urllib.parse as u
+          print(u.parse_qs(u.urlparse(sys.stdin.read()).query).get("redirect_uri",[""])[0])' 2>/dev/null)
+                BASE_HOST=$(printf '%s' "$BASE" | sed -e 's#^https\?://##' -e 's#/.*$##')
+                case "$GOOGLE_CB" in
+                  *"$BASE_HOST"*) note "Connexion Google (\`redirect_uri\`)" "—" "✅ \`${GOOGLE_CB:-—}\` — revient bien sur CE serveur" ;;
+                  '') WARN=1; note "Connexion Google" "—" "⚠️ aucune redirection renvoyée par \`/auth/google/start\` — vérifiez \`GOOGLE_CLIENT_ID\`/\`GOOGLE_CLIENT_SECRET\`" ;;
+                  *) WARN=1; note "Connexion Google (\`redirect_uri\`)" "—" "⚠️ Google renvoie vers **\`$GOOGLE_CB\`** (autre serveur) ⇒ mettez \`GOOGLE_CALLBACK_URL=$BASE/api/customer/auth/google/callback\` sur CE service, et déclarez cette URI dans Google Cloud Console" ;;
+                esac ;;
+            esac
+          fi
+
           # 2) Créer un compte comme le fait l'APPLI (en-tête \`x-ayrovi-client\`).
           STAMP=$(date +%s)
           EMAIL="smoke.$STAMP.$RANDOM@ayrovi.test"
