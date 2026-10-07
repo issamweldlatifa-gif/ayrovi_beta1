@@ -46,9 +46,17 @@ jobs:
           # Un seul code en sortie : `curl -w` imprime « 000 » ET sort en erreur
           # quand le serveur ne répond pas — le `|| echo` ajoutait un second
           # « 000 » et faussait la lecture (« 000000 »).
+          # $3 = méthode (défaut GET). Certaines routes de l'app n'existent qu'en POST :
+          # un GET dessus renvoie 404 alors que la route EST là — mesurer la bonne méthode
+          # évite de conclure « fonction absente » à tort.
           http_code() {
             local out
-            out=$(curl -s -o "$2" -w '%{http_code}' --max-time 45 "$1" 2>/dev/null)
+            if [ "${3:-GET}" = "GET" ]; then
+              out=$(curl -s -o "$2" -w '%{http_code}' --max-time 45 "$1" 2>/dev/null)
+            else
+              out=$(curl -s -o "$2" -w '%{http_code}' --max-time 45 -X "${3:-GET}" \
+                -H 'Content-Type: application/json' -d '{}' "$1" 2>/dev/null)
+            fi
             if [ -z "$out" ]; then out="000"; fi
             printf '%s' "$out"
           }
@@ -118,22 +126,42 @@ jobs:
           FIRST_BASE=$(printf '%s' "$BASES" | tr ',' ' ' | awk '{print $1}')
           printf '\n**Points d entrée de l application sur `%s`**\n\n| Route | Code | Attendu sur un serveur sain | |\n|---|---|---|---|\n' "$FIRST_BASE" >> "$S"
           ROUTE_LINE=""
-          for PATH_CHECK in /api/public/hero-content /api/public/navigation /api/public/announcement-messages /api/public/commerce-config /api/customer/auth/config /api/v1/aywebs/health /api/v1/aywebs/stores /api/assistant/status /api/cart/items /api/customer/auth/me /api/customer/account/overview /api/customer/account/orders /api/ocerex/analyze; do
-            ROUTE_CODE=$(http_code "$FIRST_BASE$PATH_CHECK" /tmp/route)
+          for ENTRY in \
+            "GET /api/public/hero-content" \
+            "GET /api/public/navigation" \
+            "GET /api/public/announcement-messages" \
+            "GET /api/public/commerce-config" \
+            "GET /api/customer/auth/config" \
+            "POST /api/customer/auth/email/login" \
+            "POST /api/customer/auth/otp/request" \
+            "GET /api/customer/auth/me" \
+            "GET /api/customer/account/overview" \
+            "GET /api/customer/account/orders" \
+            "GET /api/cart/items" \
+            "GET /api/v1/aywebs/health" \
+            "GET /api/v1/aywebs/stores" \
+            "POST /api/v1/aywebs/cart/items" \
+            "GET /api/assistant/status" \
+            "POST /api/ocerex/analyze" \
+            "POST /api/checkout"; do
+            METHOD=${ENTRY%% *}
+            PATH_CHECK=${ENTRY#* }
+            ROUTE_CODE=$(http_code "$FIRST_BASE$PATH_CHECK" /tmp/route "$METHOD")
             case "$PATH_CHECK" in
               /api/customer/auth/me|/api/customer/account/*) EXPECT="200 / 401 / 403" ;;
-              /api/cart/items) EXPECT="200 / 400 / 401" ;;
-              /api/ocerex/*) EXPECT="400 / 401 / 405" ;;
+              /api/cart/items|/api/checkout) EXPECT="200 / 400 / 401" ;;
+              /api/ocerex/*) EXPECT="400 / 401" ;;
+              /api/customer/auth/*|/api/v1/aywebs/cart/*) EXPECT="400 / 401 / 403 / 429" ;;
               /api/assistant/status) EXPECT="200 / 503" ;;
               *) EXPECT="200" ;;
             esac
             case "$ROUTE_CODE" in
               404) MARK="❌ absente" ;;
-              200|400|401|403|405|503) MARK="✅" ;;
+              200|400|401|403|405|415|422|429|503) MARK="✅" ;;
               *) MARK="⚠️" ;;
             esac
-            printf '| `%s` | %s | %s | %s |\n' "$PATH_CHECK" "$ROUTE_CODE" "$EXPECT" "$MARK" >> "$S"
-            ROUTE_LINE="$ROUTE_LINE ${PATH_CHECK#/api/}=$ROUTE_CODE"
+            printf '| `%s %s` | %s | %s | %s |\n' "$METHOD" "$PATH_CHECK" "$ROUTE_CODE" "$EXPECT" "$MARK" >> "$S"
+            ROUTE_LINE="$ROUTE_LINE ${METHOD}:${PATH_CHECK#/api/}=$ROUTE_CODE"
           done
           echo "::notice title=Points d entree de l app::$FIRST_BASE$ROUTE_LINE"
           printf '\n' >> "$S"
