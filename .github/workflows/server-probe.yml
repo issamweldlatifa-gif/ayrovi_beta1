@@ -112,5 +112,28 @@ jobs:
 
           printf '\n> « Code servi » se lit sur des preuves : la route `/.well-known/assetlinks.json`\n> et le champ `stats` de `/api/v1/aywebs/health` n existent QUE sur le branch.\n> `commit`/`branche` deviennent fiables dès qu un serveur déploie ce branch.\n' >> "$S"
 
+          # Points d'entrée RÉELS de l'application (relevés dans apps/mobile/src/api) sur le
+          # PREMIER serveur de la liste. 200 = disponible ; 401/403 = exige une session ;
+          # 400 = exige un corps ; 404 = la route n'existe pas là ⇒ une fonction de l'app manque.
+          FIRST_BASE=$(printf '%s' "$BASES" | tr ',' ' ' | awk '{print $1}')
+          printf '\n**Points d entrée de l application sur `%s`**\n\n| Route | Code | Attendu sur un serveur sain | |\n|---|---|---|---|\n' "$FIRST_BASE" >> "$S"
+          for PATH_CHECK in /api/public/hero-content /api/public/navigation /api/public/announcement-messages /api/public/commerce-config /api/customer/auth/config /api/v1/aywebs/health /api/v1/aywebs/stores /api/assistant/status /api/cart/items /api/customer/auth/me /api/customer/account/overview /api/customer/account/orders /api/ocerex/analyze; do
+            ROUTE_CODE=$(http_code "$FIRST_BASE$PATH_CHECK" /tmp/route)
+            case "$PATH_CHECK" in
+              /api/customer/auth/me|/api/customer/account/*) EXPECT="200 / 401 / 403" ;;
+              /api/cart/items) EXPECT="200 / 400 / 401" ;;
+              /api/ocerex/*) EXPECT="400 / 401 / 405" ;;
+              /api/assistant/status) EXPECT="200 / 503" ;;
+              *) EXPECT="200" ;;
+            esac
+            case "$ROUTE_CODE" in
+              404) MARK="❌ absente" ;;
+              200|400|401|403|405|503) MARK="✅" ;;
+              *) MARK="⚠️" ;;
+            esac
+            printf '| `%s` | %s | %s | %s |\n' "$PATH_CHECK" "$ROUTE_CODE" "$EXPECT" "$MARK" >> "$S"
+          done
+          printf '\n' >> "$S"
+
           echo "::notice title=Etat des serveurs::main=${MAIN_SHA:-inconnu} branche=${BRANCH_SHA:-inconnu}${SUMMARY_LINE}"
           exit 0
