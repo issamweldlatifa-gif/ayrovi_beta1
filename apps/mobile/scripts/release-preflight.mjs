@@ -9,7 +9,7 @@
  * «يبدو جاهزاً».
  *
  * الاستعمال:
- *   node scripts/release-preflight.mjs --api-base https://ayrovi-beta1-1.onrender.com \
+ *   node scripts/release-preflight.mjs --api-base https://ayrovi-beta1-moo8.onrender.com \
  *        --version-name 2.0.1 --version-code 8
  *   node scripts/release-preflight.mjs --json          # تقرير للآلة
  *
@@ -23,8 +23,8 @@ import { execFileSync } from 'node:child_process';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULTS = {
-  apiBase: 'https://ayrovi-beta1-1.onrender.com',
-  origin: 'https://ayrovi-beta1-1.onrender.com',
+  apiBase: 'https://ayrovi-beta1-moo8.onrender.com',
+  origin: 'https://ayrovi-beta1-moo8.onrender.com',
   packageName: 'app.ayrovi.mobile',
   repo: 'issamweldlatifa-gif/ayrovi_beta1',
   branch: 'arena/c0321e79-ayrovi-beta1',
@@ -71,7 +71,7 @@ function usage() {
     'release-preflight — جهوزية الإصدار قبل بناء AAB',
     '',
     'المدخلات (كلها اختيارية):',
-    '  --api-base <url>     عنوان الخادم اللي يتچرى في الحزمة (افتراضي https://ayrovi-beta1-1.onrender.com)',
+    '  --api-base <url>     عنوان الخادم اللي يتچرى في الحزمة (افتراضي https://ayrovi-beta1-moo8.onrender.com)',
     '  --origin <url>       أصل الموقع اللي فيه assetlinks.json (افتراضي مثل الخادم)',
     '  --package <id>       اسم الحزمة (افتراضي app.ayrovi.mobile)',
     '  --version-name <s>   الإصدار اللي باش يتنشر (لازم ≥ متاع app.json)',

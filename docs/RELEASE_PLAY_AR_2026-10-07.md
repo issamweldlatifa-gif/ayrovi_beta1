@@ -322,6 +322,11 @@ curl -s https://<عنوان-الخدمة>/api/ready
 - ولا ويب-هوك متاعك: `CUSTOMER_OTP_PROVIDER=webhook` +
   `CUSTOMER_OTP_WEBHOOK_URL` (لازم `https://`) + `CUSTOMER_OTP_WEBHOOK_TOKEN`.
 
+**عنوان خدمة الـBeta الحالية**: `https://ayrovi-beta1-moo8.onrender.com`
+(خدمة `Ayrovi2` في Render، من الفرع `arena/c0321e79-ayrovi-beta1`). العنوان
+مسجّل في المواضع الكل بأمر `release:set-api-base` — الرمز، الورشتين، الجهوزية،
+فحص الـBeta، والروابط العميقة.
+
 ### أداة قياس: «Serveur — test de bout en bout (appli)»
 
 في `.github/workflows/beta-smoke.yml`: تشغيل واحد يجيب جواب قاطع — يخلق حساب

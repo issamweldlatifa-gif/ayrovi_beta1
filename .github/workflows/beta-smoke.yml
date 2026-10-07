@@ -16,7 +16,7 @@ on:
       base:
         description: "Adresse du serveur à tester"
         required: false
-        default: "https://ayrovi-beta1-1.onrender.com"
+        default: "https://ayrovi-beta1-moo8.onrender.com"
   push:
     paths:
       - ".github/workflows/beta-smoke.yml"

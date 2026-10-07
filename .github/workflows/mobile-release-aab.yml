@@ -27,7 +27,7 @@ on:
       api_base_url:
         description: "Origine de l'API gravée dans l'application"
         required: true
-        default: "https://ayrovi-beta1-1.onrender.com"
+        default: "https://ayrovi-beta1-moo8.onrender.com"
       version_name:
         description: "Nom de version publié (ex. 2.0.0)"
         required: true
@@ -194,7 +194,7 @@ jobs:
       - name: Build du bundle signé
         working-directory: apps/mobile/android
         env:
-          EXPO_PUBLIC_API_BASE_URL: ${{ inputs.api_base_url || 'https://ayrovi-beta1-1.onrender.com' }}
+          EXPO_PUBLIC_API_BASE_URL: ${{ inputs.api_base_url || 'https://ayrovi-beta1-moo8.onrender.com' }}
           EXPO_PUBLIC_BUILD_STAMP: ${{ github.sha }}
           EXPO_PUBLIC_APP_VERSION: ${{ inputs.version_name || '2.0.0' }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}

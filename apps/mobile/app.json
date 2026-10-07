@@ -37,6 +37,11 @@
             {
               "scheme": "https",
               "host": "ayrovi-beta1-1.onrender.com"
+            },
+            {
+              "scheme": "https",
+              "host": "ayrovi-beta1-moo8.onrender.com",
+              "pathPrefix": "/"
             }
           ]
         }

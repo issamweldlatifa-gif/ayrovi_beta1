@@ -93,6 +93,42 @@ Le cookie client `ayrovi_customer_session` est séparé du cookie Admin. La conf
 
 La route de liveness doit répondre avec `"status":"ok"`; la readiness vérifie en plus que SQLite est lisible et expose uniquement l’état configuré/non configuré des capacités externes. Connectez-vous ensuite à `/admin` avec `ADMIN_EMAIL` et `ADMIN_PASSWORD`.
 
+## Ce que la production REFUSE au démarrage (à connaître avant de déployer)
+
+Le serveur exécute `assertProductionConfiguration()` avant d’ouvrir le port. Si
+une seule de ces règles est violée, le service **quitte avec le code 1** et le
+journal affiche exactement :
+
+`Unsafe production configuration. Fix: <la liste>`
+
+| Variable | Règle exacte | Erreur typique |
+|---|---|---|
+| `NODE_ENV` | doit valoir `production` si `RENDER` est présent | service qui refuse de démarrer |
+| `DATABASE_PATH` | **chemin absolu** | `DATABASE_PATH (absolute persistent path)` |
+| `PUBLIC_BASE_URL` | origine **HTTPS seule** : pas de chemin, pas de `?`, pas de `#`, pas d’identifiants | `PUBLIC_BASE_URL (HTTPS origin only)` |
+| `ADMIN_EMAIL` | adresse e-mail valide | `ADMIN_EMAIL` |
+| `ADMIN_PASSWORD` | ≥ 12 caractères, sans `replace/placeholder/example/demo`, différent du mot de passe de démonstration | `ADMIN_PASSWORD` |
+| `CUSTOMER_AUTH_SECRET` | ≥ 32 caractères, sans `replace/placeholder/example/demo` | `CUSTOMER_AUTH_SECRET` |
+| `ADMIN_BOOTSTRAP_RESET` | si présent : ≥ 32 caractères | `ADMIN_BOOTSTRAP_RESET (one-time token, 32+ characters)` |
+| `TRUST_PROXY_HOPS` | si présent : entier entre 0 et 5 | `TRUST_PROXY_HOPS (integer 0..5)` |
+
+**Valeur à utiliser pour `DATABASE_PATH`** (identique à la production, et le
+dossier est créé automatiquement au démarrage) :
+
+```
+/opt/render/project/src/data/qatafo.sqlite
+```
+
+Deux conséquences à connaître :
+
+- **Avec un Disk** monté sur `/opt/render/project/src/data` (plan Starter ou
+  plus) : la base **survit** aux redéploiements — c’est ce qu’il faut pour un
+  test réaliste.
+- **Sans Disk** (plan Free) : le chemin fonctionne, mais le système de fichiers
+  est **éphémère** ⇒ les comptes et les commandes de test disparaissent à chaque
+  redéploiement/redémarrage. Suffisant pour un premier essai de bout en bout,
+  trompeur au-delà.
+
 ## Service Beta à partir de la BRANCHE (test de l’application mobile)
 
 Le service de production sert `main`. Pour tester l’application AYROVI (session

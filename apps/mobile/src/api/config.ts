@@ -16,7 +16,7 @@
  *
  * لمّا `ayrovi.tn` يولّي حيّ، التبديل = سطر واحد + بناء جديد — موش أكثر.
  */
-export const DEFAULT_API_BASE_URL = 'https://ayrovi-beta1-1.onrender.com';
+export const DEFAULT_API_BASE_URL = 'https://ayrovi-beta1-moo8.onrender.com';
 
 const configured = String(process.env.EXPO_PUBLIC_API_BASE_URL ?? '').trim();
 
