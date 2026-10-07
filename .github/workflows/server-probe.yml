@@ -1,0 +1,78 @@
+name: Serveur — état du déploiement (diagnostic)
+
+# Répond à UNE question, avec des faits et pas des suppositions :
+#   « quel code tourne réellement sur le serveur publié ? »
+#
+# Pourquoi ça compte : l'application mobile a besoin du serveur du BRANCH
+# (`x-ayrovi-client` → `session_token`). Sur le serveur de `main`, la connexion
+# échoue. Sans ce diagnostic, on cherche la panne dans l'application alors
+# qu'elle est dans le déploiement.
+#
+# Aucun secret, aucune écriture : uniquement des lectures HTTP.
+
+on:
+  workflow_dispatch:
+    inputs:
+      base:
+        description: "Origine du serveur à interroger"
+        required: true
+        default: "https://ayrovi-beta1-1.onrender.com"
+  push:
+    branches: [arena/c0321e79-ayrovi-beta1]
+    paths:
+      - '.github/workflows/server-probe.yml'
+
+jobs:
+  probe:
+    name: État du serveur publié
+    runs-on: ubuntu-latest
+    env:
+      BASE: ${{ inputs.base || 'https://ayrovi-beta1-1.onrender.com' }}
+      REPO: ${{ github.repository }}
+    steps:
+      - name: Lire /api/health, /api/ready et le commit de chaque branche
+        run: |
+          set -uo pipefail
+          SUMMARY="${GITHUB_STEP_SUMMARY}"
+          echo "## État du serveur : \`${BASE}\`" >> "$SUMMARY"
+          echo "" >> "$SUMMARY"
+
+          code() { curl -s -o /tmp/body -w '%{http_code}' --max-time 25 "$1" || echo "000"; }
+
+          HEALTH_CODE=$(code "$BASE/api/health")
+          HEALTH_BODY=$(cat /tmp/body 2>/dev/null | head -c 400 || true)
+          echo "- \`GET /api/health\` → **$HEALTH_CODE** — \`$HEALTH_BODY\`" >> "$SUMMARY"
+
+          READY_CODE=$(code "$BASE/api/ready")
+          READY_BODY=$(cat /tmp/body 2>/dev/null | head -c 400 || true)
+          echo "- \`GET /api/ready\` → **$READY_CODE** — \`$READY_BODY\`" >> "$SUMMARY"
+
+          LINKS_CODE=$(code "$BASE/.well-known/assetlinks.json")
+          LINKS_BODY=$(cat /tmp/body 2>/dev/null | head -c 200 || true)
+          echo "- \`GET /.well-known/assetlinks.json\` → **$LINKS_CODE** — \`$LINKS_BODY\`" >> "$SUMMARY"
+
+          DEPLOYED=$(printf '%s' "$READY_BODY" | sed -n 's/.*"commit":"\([^"]*\)".*/\1/p')
+          MAIN_SHA=$(curl -s --max-time 25 "https://api.github.com/repos/$REPO/commits/main" | sed -n 's/.*"sha": *"\([a-f0-9]\{7,40\}\)".*/\1/p' | head -1 | cut -c1-12)
+          BRANCH_SHA=$(curl -s --max-time 25 "https://api.github.com/repos/$REPO/commits/arena/c0321e79-ayrovi-beta1" | sed -n 's/.*"sha": *"\([a-f0-9]\{7,40\}\)".*/\1/p' | head -1 | cut -c1-12)
+
+          echo "" >> "$SUMMARY"
+          echo "| Référence | Commit |" >> "$SUMMARY"
+          echo "|---|---|" >> "$SUMMARY"
+          echo "| Serveur publié | \`${DEPLOYED:-inconnu}\` |" >> "$SUMMARY"
+          echo "| \`main\` | \`${MAIN_SHA:-inconnu}\` |" >> "$SUMMARY"
+          echo "| Branche de travail | \`${BRANCH_SHA:-inconnu}\` |" >> "$SUMMARY"
+          echo "" >> "$SUMMARY"
+
+          if [ -z "${DEPLOYED:-}" ] || [ "$DEPLOYED" = "local" ]; then
+            echo "### ⚠️ Verdict — le serveur ne déclare pas de commit (déploiement local ou hors Git)." >> "$SUMMARY"
+          elif [ -n "${BRANCH_SHA:-}" ] && [ "${BRANCH_SHA#$DEPLOYED}" != "$BRANCH_SHA" ]; then
+            echo "### ✅ Verdict — le serveur tourne le code de la BRANCHE : connexion mobile, AYWEBs et App Links disponibles." >> "$SUMMARY"
+          elif [ -n "${MAIN_SHA:-}" ] && [ "${MAIN_SHA#$DEPLOYED}" != "$MAIN_SHA" ]; then
+            echo "### ⚠️ Verdict — le serveur tourne \`main\` : l'application se connecte mais **la connexion échoue** (pas de \`session_token\` pour un client mobile) et les correctifs AYWEBs de la branche manquent." >> "$SUMMARY"
+          else
+            echo "### ⚠️ Verdict — commit publié inconnu des deux références locales." >> "$SUMMARY"
+          fi
+
+          echo ""
+          echo "--- récapitulatif console ---"
+          echo "publié=${DEPLOYED:-inconnu} main=${MAIN_SHA:-inconnu} branche=${BRANCH_SHA:-inconnu}"
