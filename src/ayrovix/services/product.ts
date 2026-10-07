@@ -67,7 +67,11 @@ function toAyrovixProduct(db: QatafoDatabase, scraped: ScrapedProduct): AyrovixP
     sourceUrl: scraped.url,
     price: scraped.sourcePrice > 0 ? scraped.sourcePrice : null,
     currency: scraped.sourcePrice > 0 ? scraped.sourceCurrency : null,
-    priceTnd: tnd?.priceTnd ?? (Number.isFinite(scraped.totalPriceTND) && scraped.totalPriceTND > 0 ? scraped.totalPriceTND : null),
+    /* Le prix TND vient du moteur tarifaire (`estimateWithDb`) — jamais du
+       scraper. Ce repli publiait les constantes du scraper (taux 4.00, service
+       8 %, port 25.00) dès que le moteur ne pouvait pas convertir, c'est-à-dire
+       précisément quand il fallait ne rien afficher. */
+    priceTnd: tnd?.priceTnd ?? null,
     // Prix barré du marchand, passé par le MÊME calculateur (jamais déduit).
     originalPrice: scraped.sourceOriginalPrice && scraped.sourceOriginalPrice > scraped.sourcePrice ? scraped.sourceOriginalPrice : null,
     originalPriceTnd: scraped.sourceOriginalPrice && scraped.sourceOriginalPrice > scraped.sourcePrice

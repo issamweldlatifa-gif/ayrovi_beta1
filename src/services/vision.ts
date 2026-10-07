@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import Tesseract from 'tesseract.js';
 import { ScrapedProduct, StoreType } from '../types';
 
@@ -110,15 +111,20 @@ export async function ocrRecognizeDetailed(imageBuffer: Buffer): Promise<{ text:
 }
 
 export class VisualProductExtractor {
-  public static readonly RATES_TO_TND: Record<string, number> = {
-    EUR: 4.00,
-    USD: 4.00,
-    JPY: 0.0265, // 100 JPY = 2.65 TND
-    GBP: 4.80,
-    CAD: 2.95,
-    CHF: 4.20,
-    TND: 1.0
-  };
+  /*
+   * ── PLUS AUCUN MONTANT CALCULÉ ICI (Phase 0, suite — 07/10/2026) ───────────
+   *
+   * Même table en dur que le scraper (`EUR 4.00 … || 4.00`) et mêmes constantes
+   * métier (`serviceFee = max(10, 8 %)`, `shipping = 25.00`) appliquées à un
+   * prix lu par OCR. Trois conséquences, toutes fausses : un taux inventé pour
+   * toute devise absente, un total qui contredisait le calculateur AYROVI
+   * versionné, et une description qui publiait ce total (« … = 122.5 DT »)
+   * comme un fait vérifié.
+   *
+   * Désormais : l'OCR publie ce qu'il a LU (prix + code ISO s'il est visible) ;
+   * la conversion et les frais sont calculés par le moteur tarifaire à la couche
+   * API. Les quatre champs monétaires restent à 0 : « pas calculé ».
+   */
 
   public async extractFromImage(imageBuffer: Buffer, _originalFilename?: string): Promise<ScrapedProduct> {
     // The image is decoded and normalized before reaching this method. OCR runs
@@ -137,37 +143,57 @@ export class VisualProductExtractor {
       ? `Panier d'achat ${storeName} (Total des articles)`
       : this.extractTitleFromText(text, storeName);
 
-    const rate = VisualProductExtractor.RATES_TO_TND[currency] || 4.00;
-    const convertedPriceTND = price > 0 ? Math.round(price * rate * 100) / 100 : 0;
-    const serviceFeeTND = price > 0 ? Math.round((Math.max(10, convertedPriceTND * 0.08)) * 100) / 100 : 0;
-    const estimatedShippingTND = price > 0 ? 25.00 : 0;
-    const totalPriceTND = price > 0 ? Math.round((convertedPriceTND + serviceFeeTND + estimatedShippingTND) * 100) / 100 : 0;
+    /* Ce que l'OCR a réellement lu, tel quel. */
+    const priceText = price > 0 ? `${price} ${currency}`.trim() : '';
 
     return {
       id: 'vision_' + Date.now(),
       store,
       storeName,
-      url: `https://www.${store}.com/`,
-      externalId: isCartScreenshot ? 'CART-TOTAL' : ('IMG-' + Math.floor(Math.random() * 899999 + 100000)),
+      /* L'URL n'est PAS connue : une capture d'écran ne contient pas d'adresse.
+         `https://www.<store>.com/` était une adresse INVENTÉE, présentée comme
+         la source du produit. Vide = « non communiquée ». */
+      url: '',
+      /* Identité : le total de panier est un cas nommé ; sinon l'empreinte
+         déterministe du texte OCR (même capture ⇒ même identité). */
+      externalId: isCartScreenshot
+        ? 'CART-TOTAL'
+        : `UNRESOLVED-${createHash('sha1').update(text).digest('hex').slice(0, 12)}`,
       title: title.trim(),
+      titleSource: title.trim() ? 'merchant' : 'none',
+      // Faits lus seulement — plus de total recalculé ici, plus de « Vérifié par
+      // AYROVI » (rien n'avait été vérifié : une capture n'est pas le marchand).
       description: isCartScreenshot
-        ? `Total réel de la commande extrait depuis la capture du panier (${price} ${currency} = ${totalPriceTND} DT).`
-        : `Article extrait avec le prix original (${price > 0 ? `${price} ${currency}` : 'À préciser'}). Vérifié par AYROVI.`,
+        ? 'Total de la commande lu sur la capture du panier.'
+        : (priceText
+          ? `Prix lu sur la capture : ${priceText}.`
+          : 'Aucun prix lisible sur la capture.'),
       // The client already owns a local preview. Do not persist or publish Lens uploads.
       images: [],
       mainImage: '',
       sourcePrice: price,
       sourceCurrency: currency,
-      convertedPriceTND,
-      serviceFeeTND,
-      estimatedShippingTND,
-      totalPriceTND,
+      // 0 = non calculé : le moteur tarifaire décide, sur les règles versionnées.
+      convertedPriceTND: 0,
+      serviceFeeTND: 0,
+      estimatedShippingTND: 0,
+      totalPriceTND: 0,
       variants: {
         sizes: [],
         colors: []
       },
-      availability: 'in_stock',
-      brand: storeName.split(' ')[0],
+      /* Le stock était `in_stock` EN DUR : une capture ne prouve aucun stock.
+         `unknown` dit la vérité, et le panier refusera tant que la fiche
+         marchande n'aura pas confirmé. */
+      availability: 'unknown',
+      /* La marque n'est pas le premier mot du nom de la boutique (c'était
+         « Amazon », « SHEIN »… exactement la fabrication retirée en Phase 0). */
+      brand: '',
+      priceVerified: false,
+      currencyVerified: false,
+      verificationProvider: 'ocr',
+      verificationMethod: 'ocr',
+      verificationFailureCode: 'OCR_NOT_A_MERCHANT_PAGE',
       scrapedAt: new Date().toISOString()
     };
   }
@@ -203,12 +229,21 @@ export class VisualProductExtractor {
   }
 
   private extractCartGrandTotal(text: string, _store: StoreType): { price: number; currency: string } {
-    let currency = 'EUR';
+    /* Devise VIDE par défaut : « EUR » était un choix par défaut jamais prouvé
+       par la capture. Un montant « 129,99 » sans symbole ni code était donc
+       converti au taux EUR et publié comme un prix AYROVI. Sans preuve de
+       devise, le prix reste lu mais aucun devis n'est possible — et le moteur
+       tarifaire, lui, répond `null` (jamais un taux inventé). */
+    let currency = '';
 
     if (text.includes('YEN') || text.includes('ven') || text.includes('¥') || text.includes('円') || text.includes('buyee.jp') || text.includes('amazon.co.jp')) {
       currency = 'JPY';
     } else if (text.includes('$') || text.includes('USD')) {
       currency = 'USD';
+    } else if (/\bEUR\b/.test(text) || text.includes('€')) {
+      currency = 'EUR';
+    } else if (/\bGBP\b/.test(text) || text.includes('£')) {
+      currency = 'GBP';
     }
 
     const totalMatch = text.match(/Total item amount[\s\S]*?\([0-9]+item\(s\)\)[\s\S]*?([0-9,.]+)\s*(?:YEN|ven|¥|€|\$|EUR|USD)?/i) ||
@@ -227,7 +262,8 @@ export class VisualProductExtractor {
   }
 
   private extractOriginalPriceFromText(text: string, _store: StoreType): { price: number; currency: string } {
-    let currency = 'EUR';
+    // Vid o par défaut : voir `extractCartGrandTotal`.
+    let currency = '';
 
     // 1) Prix en dinars tunisiens — autorité directe, aucune conversion
     const tndMatch = text.match(/([0-9]+[.,][0-9]{2,3})\s*(?:DT|TND|د\.?\s?ت)/i) || text.match(/(?:DT|TND|د\.?\s?ت)\s*([0-9]+[.,][0-9]{2,3})/i);
@@ -241,9 +277,10 @@ export class VisualProductExtractor {
     if (keywordMatch?.[1]) {
       const num = parseFloat(keywordMatch[1].replace(',', '.'));
       if (!Number.isNaN(num) && num > 0.5) {
-        if (text.includes('£')) currency = 'GBP';
-        else if (text.includes('$') || text.includes('USD')) currency = 'USD';
+        if (text.includes('£') || /\bGBP\b/.test(text)) currency = 'GBP';
+        else if (text.includes('$') || /\bUSD\b/.test(text)) currency = 'USD';
         else if (text.includes('¥') || text.includes('YEN')) currency = 'JPY';
+        else if (text.includes('€') || /\bEUR\b/.test(text)) currency = 'EUR';
         return { price: num, currency };
       }
     }

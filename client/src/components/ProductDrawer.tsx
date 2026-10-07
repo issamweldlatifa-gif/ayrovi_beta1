@@ -66,7 +66,10 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
       sourceUrl: product.url,
       price: product.sourcePrice,
       currency: product.sourceCurrency,
-      priceTnd: product.totalPriceTND,
+      /* 0 = le serveur n'a PAS calculé de prix TND (moteur sans taux, ou prix
+         non lu). On passe `null` : l'écran écrit « prix indisponible » au lieu
+         d'afficher « 0 DT », qui se lit comme une gratuité. */
+      priceTnd: product.totalPriceTND > 0 ? product.totalPriceTND : null,
       exchangeRate: null,
       colors: product.variants?.colors || [],
       sizes: product.variants?.sizes || [],

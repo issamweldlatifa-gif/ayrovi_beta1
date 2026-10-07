@@ -42,15 +42,28 @@ export interface MerchantScrapeResult {
 }
 
 export class SmartLinkScraper {
-  public static readonly RATES_TO_TND: Record<string, number> = {
-    EUR: 4.00,
-    USD: 4.00,
-    JPY: 0.0265, // 100 JPY = 2.65 TND
-    GBP: 4.80,
-    CAD: 2.95,
-    CHF: 4.20,
-    TND: 1.0
-  };
+  /*
+   * ── PLUS AUCUN TAUX DE CHANGE ICI (Phase 0, suite — 07/10/2026) ────────────
+   *
+   * Ce fichier portait une table EN DUR (EUR 4.00, USD 4.00, JPY 0.0265…) et
+   * convertissait lui-même : `RATES_TO_TND[currency] || 4.00`. Trois défauts,
+   * tous démontrables :
+   *   1. **Un taux inventé pour toute devise absente de la table** (le `|| 4.00`) :
+   *      un article en SEK ou en CAD non listé était converti à 4 dinars pour 1,
+   *      sans que rien ne le signale ;
+   *   2. **Deux vérités pour un même produit** : le calculateur AYROVI applique
+   *      le taux EFFECTIF de `pricing_config` (marché × buffer, versionné), la
+   *      table disait autre chose — l'écart exact que l'audit du 23/09 avait
+   *      déjà dû corriger ailleurs ;
+   *   3. **Un prix TND publié sans moteur** : `serviceFee = max(10, 8 %)` et
+   *      `shipping = 25.00` étaient des constantes, pas des règles métier.
+   *
+   * Désormais : le scraper publie le prix SOURCE et sa devise. Le prix AYROVI
+   * (`convertedPriceTND`/`serviceFeeTND`/`estimatedShippingTND`/`totalPriceTND`)
+   * est produit par `calculatePrice` sur les règles versionnées, à la couche qui
+   * a la base (API / panier / AYWEBs). Les quatre champs restent à 0 ici :
+   * 0 = « pas calculé », jamais un montant.
+   */
 
   public cleanPastedUrl(input: string): string {
     if (!input || typeof input !== 'string') return '';
@@ -80,16 +93,18 @@ export class SmartLinkScraper {
 
     const merchantResult = await this.scrapeWithHttp(cleanUrl, store, options);
     const liveData = merchantResult.data;
+    /* La devise est VÉRIFIÉE quand la page l'a publiée sous forme de code ISO.
+       Avant, la condition portait aussi sur l'appartenance à la table locale de
+       taux : une page publiant SEK était donc dite « devise non vérifiée » alors
+       que la page l'avait bel et bien publiée — et un article en SEK passait
+       ensuite par le taux de secours 4.00. Ce qui manque dans ce cas n'est pas
+       la PREUVE de la devise, c'est un TAUX : c'est le moteur tarifaire qui
+       répond (absent ⇒ aucun prix TND, jamais un prix inventé). */
     const detectedLiveCurrency = String(liveData?.currency || '').toUpperCase();
-    if (liveData?.currencyVerified === true && detectedLiveCurrency
-      && Object.hasOwn(SmartLinkScraper.RATES_TO_TND, detectedLiveCurrency)) {
+    if (liveData?.currencyVerified === true && /^[A-Z]{3}$/.test(detectedLiveCurrency)) {
       currency = detectedLiveCurrency;
       currencyVerified = true;
     }
-
-    const title = (liveData && liveData.title && !this.isBotBlocked(liveData.title))
-      ? liveData.title
-      : urlInfo.title;
 
     const price = (liveData && liveData.price && liveData.price > 0)
       ? liveData.price
@@ -107,11 +122,14 @@ export class SmartLinkScraper {
     );
     const variants: ProductVariants = hasLiveVariants ? liveVariants! : urlInfo.variants;
 
-    const rate = SmartLinkScraper.RATES_TO_TND[currency] || 4.00;
-    const convertedPriceTND = price > 0 ? Math.round(price * rate * 100) / 100 : 0;
-    const serviceFeeTND = price > 0 ? Math.round((Math.max(10, convertedPriceTND * 0.08)) * 100) / 100 : 0;
-    const estimatedShippingTND = price > 0 ? 25.00 : 0;
-    const totalPriceTND = price > 0 ? Math.round((convertedPriceTND + serviceFeeTND + estimatedShippingTND) * 100) / 100 : 0;
+    /* Le titre vient de la page, sinon du slug de l'URL — et on le DIT. */
+    const titleFromPage = (liveData && liveData.title && !this.isBotBlocked(liveData.title))
+      ? String(liveData.title).trim()
+      : '';
+    const title = titleFromPage || urlInfo.title;
+    const titleSource: 'merchant' | 'url_slug' | 'none' = titleFromPage
+      ? 'merchant'
+      : (urlInfo.title ? 'url_slug' : 'none');
 
     return {
       id: 'scraped_' + Date.now(),
@@ -120,6 +138,7 @@ export class SmartLinkScraper {
       url: cleanUrl,
       externalId,
       title: title.trim(),
+      titleSource,
       // Phase 0 (06/10/2026) — plus AUCUNE description inventée. Une phrase
       // générique (« Article extrait depuis Amazon… ») faisait passer un champ
       // vide pour une donnée du marchand. Sans description publiée : vide, et
@@ -133,10 +152,11 @@ export class SmartLinkScraper {
       sourcePrice: Math.round(price * 100) / 100,
       sourceOriginalPrice: liveData?.originalPrice && liveData.originalPrice > price ? Math.round(liveData.originalPrice * 100) / 100 : undefined,
       sourceCurrency: currency,
-      convertedPriceTND,
-      serviceFeeTND,
-      estimatedShippingTND,
-      totalPriceTND,
+      // 0 = non calculé ici. Le moteur tarifaire remplit ces quatre champs.
+      convertedPriceTND: 0,
+      serviceFeeTND: 0,
+      estimatedShippingTND: 0,
+      totalPriceTND: 0,
       variants,
       availability: liveData?.availability || 'unknown',
       // Recopié tel quel depuis les données structurées de la page ; absent sinon.
@@ -191,6 +211,18 @@ export class SmartLinkScraper {
     );
   }
 
+  /**
+   * Identité de repli : DÉTERMINISTE et qui dit la vérité.
+   *
+   * `UNRESOLVED-<sha1(url)[0..12]>` — deux appels sur la même URL donnent la
+   * même clé (la déduplication fonctionne), et le préfixe interdit de confondre
+   * ce numéro avec un identifiant marchand. Aucun aléatoire : un tirage rendrait
+   * la fiche irrapprochable et le résultat non rejouable.
+   */
+  private unresolvedExternalId(rawUrl: string): string {
+    return `UNRESOLVED-${createHash('sha1').update(rawUrl).digest('hex').slice(0, 12)}`;
+  }
+
   private extractDeepUrlInfo(rawUrl: string, store: StoreType): { title: string; brand: string; price: number; externalId: string; variants: ProductVariants } {
     try {
       const url = new URL(rawUrl);
@@ -199,7 +231,11 @@ export class SmartLinkScraper {
 
       if (store === 'shein') {
         const match = path.match(/-p-(\d+)\.html/i) || path.match(/\/(\d+)\.html/i) || url.search.match(/[?&]goods_id=(\d+)/i);
-        const goodsId = match ? match[1] : ('SH-' + Math.floor(Math.random() * 899999 + 100000));
+        /* Aucun identifiant dans l'URL ⇒ AUCUN identifiant inventé. Avant :
+           `'SH-' + Math.random()` produisait ensuite `SH-SH-482913` (double
+           préfixe) et une identité différente à chaque appel — donc une nouvelle
+           ligne au lieu de rapprocher la même fiche. */
+        const goodsId = match ? match[1] : '';
 
         let slug = parts[parts.length - 1]
           .replace(/-p-\d+\.html.*/i, '')
@@ -218,19 +254,14 @@ export class SmartLinkScraper {
 
         formatted = formatted.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
-        const words = formatted.split(' ');
-        let brand = 'SHEIN';
-        let title = formatted;
-        if (words.length > 2) {
-          brand = words[0];
-          title = `${brand} — ${words.slice(1).join(' ')}`;
-        }
-
+        /* Le slug est une PISTE de titre (il est publié par le marchand dans
+           l'URL), pas une marque : prendre son premier mot pour un `brand`
+           fabriquait une marque (« Women » pour un titre SHEIN courant). */
         return {
-          title,
-          brand,
+          title: formatted,
+          brand: '',
           price: 0,
-          externalId: `SH-${goodsId}`,
+          externalId: goodsId ? `SH-${goodsId}` : this.unresolvedExternalId(rawUrl),
           // Never infer variants from a URL slug. Only merchant-page values are shown.
           variants: { sizes: [], colors: [], details: [] },
         };
@@ -238,20 +269,25 @@ export class SmartLinkScraper {
 
       if (store === 'amazon') {
         const asinMatch = path.match(/(?:dp|gp\/(?:product|aw\/d)|product)\/([A-Z0-9]{10})/i);
-        const asin = asinMatch ? asinMatch[1] : ('B0' + Math.floor(Math.random() * 89999999 + 10000000));
+        /* Avant : `'B0' + Math.random()` fabriquait un ASIN **crédible** — lu
+           ensuite comme l'identité produit officielle d'Amazon. Un identifiant
+           inventé qui a la forme d'un vrai est le pire des deux mondes. */
+        const asin = asinMatch ? asinMatch[1] : '';
 
         let titleSlug = '';
         if (parts.length >= 2 && parts[0] !== 'dp') {
           titleSlug = decodeURIComponent(parts[0]).replace(/-/g, ' ');
         }
 
-        const title = titleSlug.length > 3 ? titleSlug : 'Produit Amazon';
+        /* Plus de « Produit Amazon » : sans slug exploitable, le titre est
+           VIDE et `titleSource` vaut `none`. */
+        const title = titleSlug.length > 3 ? titleSlug : '';
 
         return {
           title,
-          brand: 'Amazon',
+          brand: '',
           price: 0,
-          externalId: asin,
+          externalId: asin || this.unresolvedExternalId(rawUrl),
           variants: {
             sizes: [],
             colors: []
@@ -271,13 +307,15 @@ export class SmartLinkScraper {
 
         const title = slug.length > 3 && slug.toLowerCase() !== 'goods'
           ? slug.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
-          : 'Produit TEMU';
+          : '';
 
+        /* `TEMU — <titre>` : le nom de la boutique n'est pas une partie du titre
+           du produit (même correction que la marque en Phase 0). */
         return {
-          title: `TEMU — ${title}`,
-          brand: 'TEMU',
+          title,
+          brand: '',
           price: 0,
-          externalId: id ? `TEMU-${id}` : '',
+          externalId: id ? `TEMU-${id}` : this.unresolvedExternalId(rawUrl),
           variants: {
             sizes: [],
             colors: []
@@ -291,12 +329,12 @@ export class SmartLinkScraper {
         const slugPart = parts.find((part) => !/^(?:item|i|\d+\.html)$/i.test(part) && !/^\d+$/.test(part));
         const title = slugPart
           ? decodeURIComponent(slugPart).replace(/\.html.*/i, '').replace(/-/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())
-          : 'Produit AliExpress';
+          : '';
         return {
-          title: `AliExpress — ${title}`,
-          brand: 'AliExpress',
+          title,
+          brand: '',
           price: 0,
-          externalId: id ? `AE-${id}` : '',
+          externalId: id ? `AE-${id}` : this.unresolvedExternalId(rawUrl),
           variants: { sizes: [], colors: [], details: [] },
         };
       }
@@ -309,8 +347,11 @@ export class SmartLinkScraper {
     }
 
     return {
-      title: 'Article Boutique Internationale',
-      brand: 'Boutique',
+      /* Plus de « Article Boutique Internationale » ni de marque « Boutique » :
+         une chaîne de remplacement se lit comme une donnée du marchand. Sans
+         lecture, le titre est vide et `titleSource` = none. */
+      title: '',
+      brand: '',
       price: 0,
       // Avant : 'ITEM-' + Math.floor(Math.random() * 899999 + 100000).
       // Deux défauts réels et démontrables :
@@ -320,7 +361,7 @@ export class SmartLinkScraper {
       //  (2) rien ne distinguait un identifiant marchand réel d'un numéro inventé.
       // Désormais l'identité est DÉTERMINISTE (sha1 de l'url, rejouable) et préfixée pour
       // dire la vérité : aucun identifiant marchand n'a été extrait.
-      externalId: `UNRESOLVED-${createHash('sha1').update(rawUrl).digest('hex').slice(0, 12)}`,
+      externalId: this.unresolvedExternalId(rawUrl),
       variants: {
         sizes: [],
         colors: []

@@ -85,6 +85,18 @@ export interface ScrapedProduct {
   verificationProvider?: string;
   verificationMethod?: string;
   verificationFailureCode?: string | null;
+  /**
+   * PROVENANCE DU TITRE (Phase 0, suite — 07/10/2026).
+   *
+   * `merchant`  : le titre vient de la page marchande (JSON-LD, meta, h1…).
+   * `url_slug`  : le titre vient du SLUG de l'URL, faute de lecture de la page.
+   *               C'est une donnée déterministe et vérifiable (elle est dans
+   *               l'URL publiée par le marchand), mais ce n'est PAS le titre du
+   *               produit : elle doit être présentée comme une piste.
+   * `none`      : aucun titre publié — l'interface écrit « non communiqué »
+   *               au lieu d'inventer « Produit Amazon » (fabrication retirée).
+   */
+  titleSource?: 'merchant' | 'url_slug' | 'none';
   scrapedAt: string;
 }
 

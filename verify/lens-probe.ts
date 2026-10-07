@@ -102,10 +102,14 @@ async function main(): Promise<void> {
   // 4. Stock & tailles vivants — lecture réelle des pages marchandes (budget 4, échéance 2,5 s, cache 6 h).
   const scraper = new SmartLinkScraper();
   const t1 = Date.now();
-  // Sans base de données ici : le recalcul TND utilise le taux de secours du scraper (4,00) — indicatif.
+  /* Sans base de données, il n'y a AUCUN taux : la sonde ne reconvertit pas.
+     Avant, elle appliquait le taux de secours du scraper (4,00) et affichait un
+     prix TND inventé — dans l'outil censé vérifier ce que voit le client. Ici la
+     reprise à 0 prix laisse le prix TND tel que le moteur l'a produit. */
+  console.log('[!] Prix TND : non recalculés (aucun taux sans base) — lancez la route /analyze-image pour un devis réel.');
   const { candidates, report } = await enrichCandidatesLiveStock(displayable, {
     fetcher: (url) => scraper.scrapeParsedPage(url).then((r) => r.data),
-    reprice: (price, currency) => ({ priceTnd: Math.round(price * (SmartLinkScraper.RATES_TO_TND[currency] || 4) * 1000) / 1000 }),
+    reprice: () => null,
   });
   console.log(`[4] Pages marchandes     : visitées=${report.fetched} cache=${report.cacheHits} enrichies=${report.applied} (budget ${report.budget}, échéance ${report.deadlineMs} ms) en ${Date.now() - t1} ms`);
 
