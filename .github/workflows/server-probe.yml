@@ -73,6 +73,6 @@ jobs:
             echo "### ⚠️ Verdict — commit publié inconnu des deux références locales." >> "$SUMMARY"
           fi
 
-          echo ""
-          echo "--- récapitulatif console ---"
-          echo "publié=${DEPLOYED:-inconnu} main=${MAIN_SHA:-inconnu} branche=${BRANCH_SHA:-inconnu}"
+          # Annotation lisible depuis l'API (`check-runs/.../annotations`) : le
+          # journal d'exécution n'est pas toujours consultable, le verdict si.
+          echo "::notice title=Etat du serveur::publie=${DEPLOYED:-inconnu} main=${MAIN_SHA:-inconnu} branche=${BRANCH_SHA:-inconnu} health=${HEALTH_CODE} ready=${READY_CODE} assetlinks=${LINKS_CODE}"
