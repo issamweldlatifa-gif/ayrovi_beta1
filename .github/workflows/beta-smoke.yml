@@ -102,6 +102,16 @@ jobs:
             note "\`GET /api/ready\`" "$READY_CODE" "❌ le serveur ne répond pas"
           fi
 
+          # 0bis) Version servie : un déploiement réussi doit la montrer.
+          HEALTH_CODE=$(http_code "$BASE/api/health" /tmp/health)
+          HEALTH_VERSION=$(jget /tmp/health version)
+          if [ "$HEALTH_CODE" = "200" ]; then
+            note "\`GET /api/health\`" "200" "version \`${HEALTH_VERSION:-—}\` — le serveur est debout"
+          else
+            FAIL=1
+            note "\`GET /api/health\`" "$HEALTH_CODE" "❌ liveness muette"
+          fi
+
           # 1bis) Que sait faire ce serveur ? (`/auth/config`) — c'est LUI qui décide
           # ce que l'appli propose. Deux méthodes de contact comptent pour la caisse :
           # une CONNEXION vérifiée (Google/Apple/Facebook → e-mail vérifié par le
@@ -260,10 +270,14 @@ jobs:
             fi
           else
             WARN=1
-            note "\`GET /.well-known/assetlinks.json\`" "$LINKS_CODE" "⚠️ pas un JSON (route absente) ⇒ liens profonds inertes"
+            if [ "$LINKS_CODE" = "404" ]; then
+              note "\`GET /.well-known/assetlinks.json\`" "404" "⚠️ route présente mais **404** : \`ANDROID_APP_LINK_SHA256\` (empreinte du keystore) n'est pas définie sur ce serveur ⇒ liens profonds inertes"
+            else
+              note "\`GET /.well-known/assetlinks.json\`" "$LINKS_CODE" "⚠️ pas un JSON (route absente) ⇒ liens profonds inertes"
+            fi
           fi
 
-          SMOKE="{$BASE ready=$READY_CODE branch=${READY_BRANCH:-—} caps=${CAPS:-—} branch=${READY_BRANCH:-—} register=$REG_CODE token=$([ -n "$TOKEN" ] && echo oui || echo NON) me=$ME_CODE cart=$CART_CODE checkout=$CHECKOUT_CODE/$CHECKOUT_REF orders=$ORDERS_CODE links=$LINKS_CODE}$([ -n "${CHECKOUT_REF:-}" ] && echo " checkout_refusal=$CHECKOUT_REF")"
+          SMOKE="{$BASE health=$HEALTH_CODE v=${HEALTH_VERSION:-—} ready=$READY_CODE branch=${READY_BRANCH:-—} caps=${CAPS:-—} branch=${READY_BRANCH:-—} register=$REG_CODE token=$([ -n "$TOKEN" ] && echo oui || echo NON) me=$ME_CODE cart=$CART_CODE checkout=$CHECKOUT_CODE/$CHECKOUT_REF orders=$ORDERS_CODE links=$LINKS_CODE}$([ -n "${CHECKOUT_REF:-}" ] && echo " checkout_refusal=$CHECKOUT_REF")"
 
           if [ "$FAIL" = "1" ]; then
             VERDICT="❌ ÉCHEC — une fonction de l'appli ne répond pas sur ce serveur"
