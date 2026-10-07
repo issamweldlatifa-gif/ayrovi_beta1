@@ -53,6 +53,10 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
+          # تخزين مؤقّت لـGradle: بلا هذا، كل بناء يعاود ينزّل التوزيعة
+          # والاعتماديات من الصفر (~20 دقيقة للبناء الواحد). مع التخزين،
+          # البناء الجاي يمشي برشة أسرع.
+          cache: gradle
 
       - name: Installer le SDK Android (sans action tierce)
         # `android-actions/setup-android@v3` échoue sur l'image ubuntu-latest
