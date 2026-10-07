@@ -209,8 +209,15 @@ export default function AyroviCartScreen() {
               </AppText>
             ) : null}
 
-            {/* الدفع ما هوش هنا بعد: نقولوها بصراحة بدل زرّ ما يخدمش. */}
-            <AppText variant="caption" color={theme.colors.muted}>{t('cart.checkoutNext')}</AppText>
+            {/* باب الدفع: يتفتح كان كي الخادم يقبل — والسطر الموقوف يتقال بسببه. */}
+            <Button
+              label={t('cart.checkout')}
+              onPress={() => router.push('/checkout')}
+              disabled={!gate.canCheckout}
+            />
+            {!gate.canCheckout && gate.blockReason === 'PRICE_VERIFICATION_REQUIRED' ? (
+              <AppText variant="caption" color={theme.colors.danger}>{t('cart.checkoutBlocked')}</AppText>
+            ) : null}
           </>
         )}
       </Card>
