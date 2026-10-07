@@ -16,7 +16,7 @@ import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
 import { fetchPreferences, savePreferences, type Preferences } from '@/api/account';
 import { userMessage } from '@/api/errors';
-import { AccountScreen } from '@/features/account/SubScreen';
+import { SubScreen } from '@/design/subScreen';
 
 const CHANNELS: Array<{ key: keyof Preferences; label: string }> = [
   { key: 'orderUpdates', label: 'preferences.order' },
@@ -41,7 +41,7 @@ export default function PreferencesScreen() {
   });
 
   return (
-    <AccountScreen
+    <SubScreen
       title={t('preferences.title')}
       subtitle={t('preferences.subtitle')}
       onRefresh={() => preferences.refetch()}
@@ -76,6 +76,6 @@ export default function PreferencesScreen() {
           <AppText variant="caption" color={theme.colors.muted}>{t('preferences.note')}</AppText>
         </Card>
       ) : null}
-    </AccountScreen>
+    </SubScreen>
   );
 }

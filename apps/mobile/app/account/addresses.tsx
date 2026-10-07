@@ -20,7 +20,7 @@ import {
   createAddress, deleteAddress, fetchAddresses, type Address,
 } from '@/api/account';
 import { userMessage } from '@/api/errors';
-import { AccountScreen } from '@/features/account/SubScreen';
+import { SubScreen } from '@/design/subScreen';
 
 const GOVERNORATES = [
   'Ariana', 'Béja', 'Ben Arous', 'Bizerte', 'Gabès', 'Gafsa', 'Jendouba', 'Kairouan', 'Kasserine',
@@ -69,7 +69,7 @@ export default function AddressesScreen() {
   const complete = form.recipientName.trim() && form.phone.trim() && form.governorate.trim() && form.addressLine.trim();
 
   return (
-    <AccountScreen
+    <SubScreen
       title={t('addresses.title')}
       subtitle={t('addresses.subtitle')}
       onRefresh={() => addresses.refetch()}
@@ -109,7 +109,7 @@ export default function AddressesScreen() {
       ) : (
         <Button label={t('addresses.add')} onPress={() => setAdding(true)} />
       )}
-    </AccountScreen>
+    </SubScreen>
   );
 }
 

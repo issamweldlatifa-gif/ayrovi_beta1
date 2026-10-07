@@ -15,7 +15,7 @@ import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
 import { deleteAvatar, fetchOverview, updateProfile, uploadAvatar } from '@/api/account';
 import { authMessage } from '@/api/authMessages';
-import { AccountScreen } from '@/features/account/SubScreen';
+import { SubScreen } from '@/design/subScreen';
 import { useSession } from '@/state/session';
 
 export default function ProfileScreen() {
@@ -124,7 +124,7 @@ export default function ProfileScreen() {
   };
 
   return (
-    <AccountScreen title={t('profile.title')} subtitle={t('profile.subtitle')}>
+    <SubScreen title={t('profile.title')} subtitle={t('profile.subtitle')}>
       {overview.isLoading ? <LoadingBlock /> : null}
       {overview.isError ? <ErrorBlock error={overview.error} onRetry={() => overview.refetch()} /> : null}
 
@@ -183,7 +183,7 @@ export default function ProfileScreen() {
         <AppText variant="body">{account?.phone || '—'}</AppText>
         <AppText variant="caption" color={theme.colors.muted}>{t('profile.phoneLocked')}</AppText>
       </Card>
-    </AccountScreen>
+    </SubScreen>
   );
 }
 

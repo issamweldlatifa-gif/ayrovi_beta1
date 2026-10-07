@@ -14,7 +14,7 @@ import { useI18n } from '@/i18n';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { changePassword, fetchSecurity } from '@/api/account';
 import { authMessage } from '@/api/authMessages';
-import { AccountScreen } from '@/features/account/SubScreen';
+import { SubScreen } from '@/design/subScreen';
 import { useSession } from '@/state/session';
 
 export default function SecurityScreen() {
@@ -55,7 +55,7 @@ export default function SecurityScreen() {
   const canSubmit = current.length > 0 && next.length >= 8 && next !== current;
 
   return (
-    <AccountScreen
+    <SubScreen
       title={t('security.title')}
       subtitle={t('security.subtitle')}
       onRefresh={() => security.refetch()}
@@ -104,6 +104,6 @@ export default function SecurityScreen() {
           <AppText variant="body" color={theme.colors.muted}>{t('security.noPassword')}</AppText>
         </Card>
       )}
-    </AccountScreen>
+    </SubScreen>
   );
 }

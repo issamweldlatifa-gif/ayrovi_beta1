@@ -1086,3 +1086,185 @@ export async function bridgeAyWebsCartToAyrovi(
 
 /** رمز «التحقّق من المصدر مطلوب» (409) — العرض يعرضه بالكلمات، ما يكمّلش. */
 export const AYWEBS_SOURCE_VERIFICATION_REQUIRED = 'AYWEBS_SOURCE_VERIFICATION_REQUIRED';
+
+/* ══════════════════════════════════════════════════════════════════════════ *
+ * P3 — طلب شراء بالنيابة + طلب إضافة متجر (§37/§38).
+ *
+ * الفكرة كما في الموقع: كي المتجر ما يسمحش بالكابتشر ولا بالشراء المباشر،
+ * الطلب يوصـل للإنسان (المراجعة البشرية) ومعاه كل ما يلزم للقرار: الرابط،
+ * الاختيار، الشرط، والملاحظات. **ما فماش محاكاة نجاح**: الحالة تجي من الخادم
+ * (`status` + `next_action`)، والسيّد يقرّر.
+ * ══════════════════════════════════════════════════════════════════════════ */
+
+/** ما ينجّم يعملو العميل توّا — نفس القائمة المغلقة متاع العقد. */
+export type AyWebsNextAction = 'WAIT_FOR_REVIEW' | 'PROVIDE_MORE_DETAILS' | 'VIEW_ORDER' | 'CONTACT_SUPPORT' | '';
+
+export interface AyWebsPurchaseRequest {
+  id: string;
+  requestNumber: string;
+  storeId: string;
+  storeName: string;
+  registeredStore: boolean;
+  productUrl: string;
+  sourceDomain: string;
+  quantity: number;
+  productName: string;
+  variantAttributes: Record<string, string>;
+  requirements: string;
+  customerNotes: string;
+  status: string;
+  reason: string;
+  decisionNote: string;
+  decidedAt: string;
+  orderId: string;
+  nextAction: AyWebsNextAction;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const nextActionOf = (value: unknown): AyWebsNextAction => {
+  const text = str(value);
+  return text === 'WAIT_FOR_REVIEW' || text === 'PROVIDE_MORE_DETAILS' || text === 'VIEW_ORDER' || text === 'CONTACT_SUPPORT'
+    ? text
+    : '';
+};
+
+export function parseAyWebsPurchaseRequest(entry: unknown): AyWebsPurchaseRequest {
+  if (!isRecord(entry) || !str(entry.id) || !str(entry.request_number)) {
+    throw malformed('demande d’achat');
+  }
+  return {
+    id: str(entry.id),
+    requestNumber: str(entry.request_number),
+    storeId: str(entry.store_id),
+    storeName: str(entry.store_name),
+    registeredStore: bool(entry.registered_store),
+    productUrl: str(entry.product_url),
+    sourceDomain: str(entry.source_domain),
+    quantity: numOrNull(entry.quantity) ?? 0,
+    productName: str(entry.product_name),
+    variantAttributes: attributesOf(entry.variant_attributes),
+    requirements: str(entry.requirements),
+    customerNotes: str(entry.customer_notes),
+    status: str(entry.status),
+    reason: str(entry.reason),
+    decisionNote: str(entry.decision_note),
+    decidedAt: str(entry.decided_at),
+    orderId: str(entry.order_id),
+    nextAction: nextActionOf(entry.next_action),
+    createdAt: str(entry.created_at),
+    updatedAt: str(entry.updated_at),
+  };
+}
+
+export interface AyWebsStoreRequest {
+  id: string;
+  storeUrl: string;
+  storeName: string;
+  sourceDomain: string;
+  intent: string;
+  notes: string;
+  status: string;
+  decisionNote: string;
+  decidedAt: string;
+  promotedStoreId: string;
+  createdAt: string;
+}
+
+export function parseAyWebsStoreRequest(entry: unknown): AyWebsStoreRequest {
+  if (!isRecord(entry) || !str(entry.id) || !str(entry.store_url)) {
+    throw malformed('demande de boutique');
+  }
+  return {
+    id: str(entry.id),
+    storeUrl: str(entry.store_url),
+    storeName: str(entry.store_name),
+    sourceDomain: str(entry.source_domain),
+    intent: str(entry.intent),
+    notes: str(entry.notes),
+    status: str(entry.status),
+    decisionNote: str(entry.decision_note),
+    decidedAt: str(entry.decided_at),
+    promotedStoreId: str(entry.promoted_store_id),
+    createdAt: str(entry.created_at),
+  };
+}
+
+/**
+ * `POST /purchase-requests` — طلب شراء بالنيابة.
+ *
+ * الخادم يتحقّق من الرابط (HTTPS عمومي، بلا SSRF)، يطابق المتجر مع الدومين،
+ * ويرفض الطلب الفارغ (بلا اسم منتوج ولا اختيار ولا شرط) — لأن مراجعة بشرية
+ * بلا معطيات ما تنجّمش تقرّر. هنا نبعث المعطيات ونعرض الجواب كما هو.
+ */
+export async function createAyWebsPurchaseRequest(
+  input: {
+    productUrl: string;
+    productName?: string;
+    variant?: Record<string, string> | null;
+    quantity?: number;
+    requirements?: string;
+    customerNotes?: string;
+    storeId?: string;
+  },
+  options: AyWebsSessionOptions,
+): Promise<AyWebsPurchaseRequest> {
+  const body: Record<string, unknown> = { product_url: input.productUrl };
+  if (input.productName) body.product_name = input.productName;
+  if (input.variant && Object.keys(input.variant).length) body.variant_attributes = input.variant;
+  if (typeof input.quantity === 'number' && input.quantity > 0) body.quantity = input.quantity;
+  if (input.requirements) body.requirements = input.requirements;
+  if (input.customerNotes) body.customer_notes = input.customerNotes;
+  if (input.storeId) body.store_id = input.storeId;
+  const data = await apiSendData<unknown>('POST', `${AYWEBS_BASE}/purchase-requests`, {
+    body, headers: sessionHeaders(options.sessionId), signal: options.signal, timeoutMs: options.timeoutMs,
+  });
+  return parseAyWebsPurchaseRequest(data);
+}
+
+export async function fetchAyWebsPurchaseRequests(
+  options: AyWebsSessionOptions & { limit?: number },
+): Promise<AyWebsPurchaseRequest[]> {
+  const limit = options.limit && options.limit > 0 ? `?limit=${Math.min(200, Math.floor(options.limit))}` : '';
+  const data = await apiGetData<unknown>(`${AYWEBS_BASE}/purchase-requests${limit}`, {
+    headers: sessionHeaders(options.sessionId), signal: options.signal, timeoutMs: options.timeoutMs,
+  });
+  if (!Array.isArray(data)) throw malformed('demandes d’achat');
+  return data.map(parseAyWebsPurchaseRequest);
+}
+
+/** `POST /store-requests` — طلب إضافة متجر موش في القائمة. */
+export async function createAyWebsStoreRequest(
+  input: { storeUrl: string; storeName?: string; intent?: string; notes?: string },
+  options: AyWebsSessionOptions,
+): Promise<AyWebsStoreRequest> {
+  const body: Record<string, unknown> = { store_url: input.storeUrl };
+  if (input.storeName) body.store_name = input.storeName;
+  if (input.intent) body.intent = input.intent;
+  if (input.notes) body.notes = input.notes;
+  const data = await apiSendData<unknown>('POST', `${AYWEBS_BASE}/store-requests`, {
+    body, headers: sessionHeaders(options.sessionId), signal: options.signal, timeoutMs: options.timeoutMs,
+  });
+  return parseAyWebsStoreRequest(data);
+}
+
+export async function fetchAyWebsStoreRequests(
+  options: AyWebsSessionOptions & { limit?: number },
+): Promise<AyWebsStoreRequest[]> {
+  const limit = options.limit && options.limit > 0 ? `?limit=${Math.min(200, Math.floor(options.limit))}` : '';
+  const data = await apiGetData<unknown>(`${AYWEBS_BASE}/store-requests${limit}`, {
+    headers: sessionHeaders(options.sessionId), signal: options.signal, timeoutMs: options.timeoutMs,
+  });
+  if (!Array.isArray(data)) throw malformed('demandes de boutique');
+  return data.map(parseAyWebsStoreRequest);
+}
+
+/**
+ * هل الطلب «بالنيابة» مطلوب لهذا المنتوج؟
+ *
+ * الخادم ينشر `purchase_mode`: `SUPPORTED` (شراء مباشر) — وإلا الطلب يمرّ
+ * للمراجعة البشرية. نفس القراءة الّي في شاشة AYWEBs، مجموعـة هنا في سطر واحد
+ * باش ما تتفرّقش القاعدة بين الزوز شاشات.
+ */
+export const ayWebsNeedsHumanRequest = (purchaseMode: string): boolean =>
+  purchaseMode !== '' && purchaseMode !== 'SUPPORTED';

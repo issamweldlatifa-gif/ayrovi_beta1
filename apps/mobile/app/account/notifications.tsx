@@ -13,7 +13,7 @@ import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
 import { fetchNotifications, markNotificationsRead } from '@/api/account';
 import { userMessage } from '@/api/errors';
-import { AccountScreen } from '@/features/account/SubScreen';
+import { SubScreen } from '@/design/subScreen';
 
 export default function NotificationsScreen() {
   const theme = useTheme();
@@ -36,7 +36,7 @@ export default function NotificationsScreen() {
   const unread = notifications.data?.filter((item) => !item.readAt).length ?? 0;
 
   return (
-    <AccountScreen
+    <SubScreen
       title={t('notifications.title')}
       subtitle={t('notifications.subtitle')}
       onRefresh={() => notifications.refetch()}
@@ -68,7 +68,7 @@ export default function NotificationsScreen() {
           {item.message ? <AppText variant="body">{item.message}</AppText> : null}
         </Card>
       ))}
-    </AccountScreen>
+    </SubScreen>
   );
 }
 

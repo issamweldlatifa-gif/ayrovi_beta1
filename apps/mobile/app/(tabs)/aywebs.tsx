@@ -20,7 +20,7 @@ import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import {
-  analyzeAyWebsPage, fetchAyWebsStores, resolveAyWebsProductWithCapture,
+  analyzeAyWebsPage, ayWebsNeedsHumanRequest, fetchAyWebsStores, resolveAyWebsProductWithCapture,
   type AyWebsPageAnalysis, type AyWebsResolveOutcome,
 } from '@/api/aywebs';
 import { AddToCartSheet } from '@/features/aywebs/AddToCartSheet';
@@ -158,6 +158,17 @@ export default function AyWebsScreen() {
               })}
             />
           ) : null}
+          {/* متجر موش في القائمة: بدل «ما نعرفوش»، طلب إضافة متجر بعلّة واضحة. */}
+          {!analysis.registered ? (
+            <Button
+              label={t('aywebs.openStoreRequest')}
+              tone="quiet"
+              onPress={() => router.push({
+                pathname: '/aywebs/store-request',
+                params: { url: analysis.url, storeName: analysis.storeName },
+              })}
+            />
+          ) : null}
         </Card>
       ) : null}
 
@@ -216,11 +227,29 @@ export default function AyWebsScreen() {
           ) : null}
           {/* «Add to Cart»: يفتح ورقة الاختيار. الإضافة الحقيقية في الورقة —
               نيّة فقط تخرج من الجهاز، والخادم هو اللي يكتب السطر ويحسب الثمن. */}
-          <Button
-            label={t('aywebs.addToCart')}
-            onPress={() => setSheetOpen(true)}
-            disabled={!sessionId}
-          />
+          {product.purchaseMode === 'SUPPORTED' || product.purchaseMode === '' ? (
+            <Button
+              label={t('aywebs.addToCart')}
+              onPress={() => setSheetOpen(true)}
+              disabled={!sessionId}
+            />
+          ) : null}
+          {/* متجر ما يسمحش بالشراء المباشر: الطلب يمشي لمراجعة بشرية — بالكلمات،
+              بلا ما نوعدو بالمستحيل. */}
+          {ayWebsNeedsHumanRequest(product.purchaseMode) ? (
+            <>
+              <AppText variant="caption" color={theme.colors.muted}>
+                {t('aywebs.purchaseMode')} : {purchaseText(product.purchaseMode)}
+              </AppText>
+              <Button
+                label={t('aywebs.openPurchaseRequest')}
+                onPress={() => router.push({
+                  pathname: '/aywebs/request',
+                  params: { url: product.sourceUrl, title: product.title, storeId: product.storeId },
+                })}
+              />
+            </>
+          ) : null}
         </Card>
       ) : null}
 

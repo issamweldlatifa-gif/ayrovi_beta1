@@ -15,7 +15,7 @@ import { useI18n } from '@/i18n';
 import { fetchFavorites, removeFavorite } from '@/api/account';
 import { mediaUrl } from '@/api/client';
 import { userMessage } from '@/api/errors';
-import { AccountScreen } from '@/features/account/SubScreen';
+import { SubScreen } from '@/design/subScreen';
 
 export default function FavoritesScreen() {
   const theme = useTheme();
@@ -33,7 +33,7 @@ export default function FavoritesScreen() {
   });
 
   return (
-    <AccountScreen
+    <SubScreen
       title={t('favorites.title')}
       subtitle={t('favorites.subtitle')}
       onRefresh={() => favorites.refetch()}
@@ -79,7 +79,7 @@ export default function FavoritesScreen() {
           />
         </Card>
       ))}
-    </AccountScreen>
+    </SubScreen>
   );
 }
 

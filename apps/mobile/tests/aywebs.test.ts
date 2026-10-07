@@ -15,14 +15,21 @@ import {
   addAyWebsCartItem,
   analyzeAyWebsPage,
   ayWebsAddReadiness,
+  ayWebsNeedsHumanRequest,
   bridgeAyWebsCartToAyrovi,
   buildAyWebsCaptureInjection,
+  createAyWebsPurchaseRequest,
+  createAyWebsStoreRequest,
   fetchAyWebsCaptureScript,
   fetchAyWebsCart,
+  fetchAyWebsPurchaseRequests,
+  fetchAyWebsStoreRequests,
   fetchAyWebsStores,
   parseAyWebsCaptureMessage,
   parseAyWebsCart,
   parseAyWebsPageAnalysis,
+  parseAyWebsPurchaseRequest,
+  parseAyWebsStoreRequest,
   parseAyWebsResolvedProduct,
   parseAyWebsStores,
   parseAyWebsVariantOption,
@@ -626,5 +633,127 @@ describe('نداءات السلّة', () => {
     expect(outcome.product.variantGroups).toEqual(GROUPS);
     expect(outcome.product.variantDetails[0].totalTnd).toBe(412.55);
     expect(outcome.capture).toBeNull();
+  });
+});
+
+/* ══ P3.4 — طلب الشراء بالنيابة وطلب إضافة متجر ═══════════════════════════════ */
+
+const PURCHASE_REQUEST = {
+  id: 'aywpr_1',
+  request_number: 'AYWREQ-000042',
+  store_id: 'shein',
+  store_name: 'Shein',
+  registered_store: true,
+  product_url: 'https://www.shein.com/x-p-123.html',
+  source_domain: 'shein.com',
+  quantity: 2,
+  product_name: 'Veste en jean',
+  variant_attributes: { size: 'M' },
+  requirements: 'Couleur foncée',
+  customer_notes: 'Avant fin du mois',
+  status: 'SUBMITTED',
+  reason: null,
+  decision_note: '',
+  decided_at: null,
+  order_id: null,
+  next_action: 'WAIT_FOR_REVIEW',
+  created_at: '2026-10-07T12:00:00.000Z',
+  updated_at: '2026-10-07T12:00:00.000Z',
+};
+
+const STORE_REQUEST = {
+  id: 'aywsr_1',
+  store_url: 'https://www.zara.com/tn/',
+  store_name: 'zara.com',
+  source_domain: 'zara.com',
+  intent: 'Manteau d’hiver',
+  notes: '',
+  status: 'SUBMITTED',
+  decision_note: '',
+  decided_at: null,
+  promoted_store_id: null,
+  created_at: '2026-10-07T12:00:00.000Z',
+};
+
+describe('الطلبات (§37/§38)', () => {
+  it('طلب الشراء: الجسم فيه المعطيات بلا أي حقل سعر، والرد حالة الخادم', async () => {
+    const spy = stubFetch(() => json({ success: true, data: PURCHASE_REQUEST }, 201));
+
+    const request = await createAyWebsPurchaseRequest({
+      productUrl: PURCHASE_REQUEST.product_url,
+      productName: 'Veste en jean',
+      variant: { size: 'M' },
+      quantity: 2,
+      requirements: 'Couleur foncée',
+      customerNotes: 'Avant fin du mois',
+      storeId: 'shein',
+    }, { sessionId: SESSION43 });
+
+    const [url, init] = spy.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`${API_BASE_URL}/api/v1/aywebs/purchase-requests`);
+    expect(init.method).toBe('POST');
+    expect(headersOf(init)['x-session-id']).toBe(SESSION43);
+
+    const body = bodyOf(init);
+    expect(body).toMatchObject({ product_url: PURCHASE_REQUEST.product_url, quantity: 2 });
+    for (const forbidden of ['price', 'currency', 'total_tnd', 'status', 'page']) {
+      expect(body).not.toHaveProperty(forbidden);
+    }
+
+    expect(request.requestNumber).toBe('AYWREQ-000042');
+    expect(request.status).toBe('SUBMITTED');
+    expect(request.nextAction).toBe('WAIT_FOR_REVIEW');
+    expect(request.variantAttributes).toEqual({ size: 'M' });
+  });
+
+  it('what the client can do now يبقى من القائمة المغلقة، وإلا فراغ صريح', () => {
+    expect(parseAyWebsPurchaseRequest({ ...PURCHASE_REQUEST, next_action: 'PROVIDE_MORE_DETAILS' }).nextAction)
+      .toBe('PROVIDE_MORE_DETAILS');
+    // قيمة ما نعرفهاش ما تولّدش عبارة مخترعة.
+    expect(parseAyWebsPurchaseRequest({ ...PURCHASE_REQUEST, next_action: 'SOMETHING_NEW' }).nextAction).toBe('');
+    expect(parseAyWebsPurchaseRequest({ ...PURCHASE_REQUEST, next_action: undefined }).nextAction).toBe('');
+  });
+
+  it('العقد المكسور يُرمى: بلا رقم طلب ولا بلا رابط = خطأ بصوت عالي', () => {
+    expect(() => parseAyWebsPurchaseRequest({ id: 'aywpr_1' })).toThrow(/demande d’achat/);
+    expect(() => parseAyWebsPurchaseRequest({ request_number: 'AYWREQ-1' })).toThrow(/demande d’achat/);
+    expect(() => parseAyWebsStoreRequest({ store_name: 'zara.com' })).toThrow(/demande de boutique/);
+  });
+
+  it('طلب المتجر: POST بجسم المتجر، والرد حالة الخادم', async () => {
+    const spy = stubFetch(() => json({ success: true, data: STORE_REQUEST }, 201));
+    const request = await createAyWebsStoreRequest({
+      storeUrl: STORE_REQUEST.store_url,
+      storeName: 'zara.com',
+      intent: 'Manteau d’hiver',
+    }, { sessionId: SESSION43 });
+
+    const [url, init] = spy.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`${API_BASE_URL}/api/v1/aywebs/store-requests`);
+    expect(bodyOf(init)).toEqual({
+      store_url: STORE_REQUEST.store_url,
+      store_name: 'zara.com',
+      intent: 'Manteau d’hiver',
+    });
+    expect(request.status).toBe('SUBMITTED');
+    expect(request.sourceDomain).toBe('zara.com');
+  });
+
+  it('السجلّ يقرا من الخادم، والمصفوفة شرط', async () => {
+    const spy = stubFetch(() => json({ success: true, data: [PURCHASE_REQUEST] }));
+    const list = await fetchAyWebsPurchaseRequests({ sessionId: SESSION43, limit: 5 });
+    expect(String(spy.mock.calls[0][0])).toContain('/purchase-requests?limit=5');
+    expect(list[0].requestNumber).toBe('AYWREQ-000042');
+
+    stubFetch(() => json({ success: true, data: { not: 'an array' } }));
+    await expect(fetchAyWebsStoreRequests({ sessionId: SESSION43 })).rejects.toMatchObject({ kind: 'malformed' });
+  });
+
+  it('قاعدة «شراء بالنيابة؟» في بلاصة واحدة: SUPPORTED = مباشر، الباقي = مراجعة', () => {
+    expect(ayWebsNeedsHumanRequest('SUPPORTED')).toBe(false);
+    expect(ayWebsNeedsHumanRequest('URL_REQUEST')).toBe(true);
+    expect(ayWebsNeedsHumanRequest('MANUAL_REVIEW')).toBe(true);
+    // '' = الخادم ما قالش: ما نستنتجوش، وما نزيدوش شاشة ما يستحقّهاش.
+    expect(ayWebsNeedsHumanRequest('')).toBe(false);
   });
 });
