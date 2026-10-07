@@ -145,6 +145,7 @@ avec `Branch = arena/c0321e79-ayrovi-beta1` (voir `docs/RELEASE_PLAY_AR_2026-10-
 | `AYROVIX_QUOTE_SECRET` | une valeur ≥ 32 caractères | jetons de devis AYWEBs |
 | `ANDROID_APP_LINK_SHA256` | l’empreinte du keystore d’émission | sinon `/.well-known/assetlinks.json` répond 404 (liens profonds inertes) |
 | `CUSTOMER_OTP_PROVIDER` + (webhook ou Twilio) | voir ci-dessus | sinon `POST /api/customer/auth/otp/request` répond 503 `OTP_UNAVAILABLE` (la connexion par e-mail, elle, fonctionne) |
+| `GOOGLE_CALLBACK_URL` | `https://VOTRE-SERVICE-BETA.onrender.com/api/customer/auth/google/callback` | copiée de la production, elle renvoie vos utilisateurs vers l’ANCIEN serveur ⇒ la connexion Google échoue. La même URI doit être déclarée dans Google Cloud Console (Authorized redirect URIs). |
 
 Après le déploiement, la vérification en une commande :
 

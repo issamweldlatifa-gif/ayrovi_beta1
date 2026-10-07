@@ -351,6 +351,39 @@ Facebook، Apple، SMS، استرجاع كلمة السرّ. النتيجة تظ
 
 وكان ما فماش حتى واحد منهم، التطبيق **يقولها بصراحة** ولا يخترع نجاحاً كاذباً.
 
+### قياس الخدمة الجديدة (08/10/2026) — واللي ناقص بالضبط
+
+الخدمة `Ayrovi2` (`https://ayrovi-beta1-moo8.onrender.com`) من الفرع، والنشر
+نجح. القياس الآلي يقول:
+
+| القياس | النتيجة | القراءة |
+|---|---|---|
+| `/api/health` · `/api/ready` | 200 · 200 · `branch=arena/c0321e79-ayrovi-beta1` | ✅ الكود متاع الفرع راهو منشور |
+| تسجيل بالإيميل + `x-ayrovi-client` | 200 + **`session_token`** | ✅ الدخول متاع التطبيق يخدم |
+| `/auth/me` · السلّة · الطلبات | 200 · 200 · 200 | ✅ |
+| الدخول بـGoogle | مفعّل (`google=oui`) | ✅ الكارطة تظهر في التطبيق |
+| **`redirect_uri` متاع Google** | ⛔ **`https://ayrovi-beta1-1.onrender.com/…`** | **آخر حاجة لازم تتصلّح** (تحت) |
+| `assetlinks.json` | 404 | ⚠️ متوقّع: `ANDROID_APP_LINK_SHA256` ناقصة (بلا keystore) |
+| `otp/request` | 503 `OTP_UNAVAILABLE` | ℹ️ بلا مزوّد SMS — موش حاجز، Google كافي |
+
+**⛔ الإصلاح الأخير الإلزامي — `GOOGLE_CALLBACK_URL`**:
+
+الخدمة الجديدة **ورثت** `GOOGLE_CALLBACK_URL` من الإنتاج، يعني Google يرجع
+المستعمل على **العنوان القديم** ⇒ الخدمة القديمة ما تعرفش كود التسليم ⇒
+«دخول Google ما يخدمش» بلا حتى رسالة مفهومة. الإصلاح زوز خطوات:
+
+1. Render → خدمة `Ayrovi2` → Environment →
+
+   ```
+   GOOGLE_CALLBACK_URL = https://ayrovi-beta1-moo8.onrender.com/api/customer/auth/google/callback
+   ```
+
+   (نفس الشي `FACEBOOK_CALLBACK_URL` كان فعّلت Facebook.)
+2. Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client ID
+   → **Authorized redirect URIs** → زيد نفس العنوان بالضبط → Save.
+
+من بعد: Redeploy، والفحص الآلي يأكّد (`google_callback=ok`).
+
 **تبديل العنوان بأمر واحد**: كي تولّي عندك خدمة Beta، بدّل العنوان في كل
 المواضع (الرمز، الورشتين، الجهوزية، فحص الـBeta، الروابط العميقة) بأمر:
 
