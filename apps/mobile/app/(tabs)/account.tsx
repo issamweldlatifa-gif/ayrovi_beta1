@@ -89,6 +89,7 @@ function SignedIn({ overview, pending }: { overview: AccountOverview | null; pen
           onPress={() => router.push('/account/notifications')} />
         <LinkRow icon="options-outline" label={t('account.menu.preferences')} onPress={() => router.push('/account/preferences')} />
         <LinkRow icon="lock-closed-outline" label={t('account.menu.security')} onPress={() => router.push('/account/security')} />
+        <LinkRow icon="information-circle-outline" label={t('account.menu.about')} onPress={() => router.push('/account/about')} />
       </Card>
 
       {pending ? <LoadingBlock label={{ fr: t('account.loading'), ar: t('account.loading') }} /> : null}

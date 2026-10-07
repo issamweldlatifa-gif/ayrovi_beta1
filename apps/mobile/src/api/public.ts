@@ -4,7 +4,8 @@
  * كل دالة هِنا **تتحقّق من شكل البيانات** قبل ما ترجّعها: خادم يرجّع غلافاً
  * ناجحاً بمحتوى مغلوط لازم يفشل بصوت عالي، موش يرسم شاشة فارغة.
  */
-import { apiGet, type RequestOptions } from './client';
+import { apiGet, apiGetEnvelope, type RequestOptions } from './client';
+import { ApiError } from './errors';
 
 /* ── الأنواع (مطابقة لما يرسله `src/public/routes.ts`) ─────────────────────── */
 
@@ -152,4 +153,38 @@ export async function fetchNavigation(options?: RequestOptions): Promise<NavLink
 export async function fetchAnnouncements(options?: RequestOptions): Promise<Announcement[]> {
   const { data } = await apiGet<unknown>('/api/public/announcement-messages', options);
   return parseAnnouncements(data);
+}
+
+/* ── جاهزية الخادم: «أي كود قاعد يخدم فعلاً» ──────────────────────────────── */
+
+/**
+ * `/api/ready` **موش** داخل غلاف `{data:…}` (كيما AYWEBs): نقراوه بـ
+ * `apiGetEnvelope`. اللي يعنينا هنا: `commit` — الرقم اللي يفرّق بين «تحدّث
+ * التطبيق» و«تحدّث الخادم». `local` تعني خادم تشغيل محلي، موش منشور من Git.
+ */
+export interface ServerReadiness {
+  status: string;
+  database: string;
+  version: string;
+  commit: string;
+}
+
+export function parseServerReadiness(payload: unknown): ServerReadiness | null {
+  if (!isRecord(payload)) return null;
+  const status = str(payload.status).trim();
+  if (!status) return null;
+  return {
+    status,
+    database: str(payload.database).trim(),
+    version: str(payload.version).trim(),
+    commit: str(payload.commit).trim(),
+  };
+}
+
+/** `malformed` كان الخادم جاوب بلا الحقول اللي نعتمدوا عليها — بلا تخمين. */
+export async function fetchServerReadiness(options?: RequestOptions): Promise<ServerReadiness> {
+  const payload = await apiGetEnvelope<unknown>('/api/ready', options);
+  const parsed = parseServerReadiness(payload);
+  if (!parsed) throw new ApiError('malformed', 'GET /api/ready : réponse inattendue.');
+  return parsed;
 }
