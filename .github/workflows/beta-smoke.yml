@@ -5,9 +5,10 @@
 # recevoir `session_token` (que la branche sert et que `main` ne sert PAS),
 # puis utiliser ce jeton comme le fait l'application : profil, panier, caisse.
 #
-# Ce workflow ne touche JAMAIS la production : il faut lui donner l'adresse du
-# serveur à tester (par défaut le serveur Beta). Il crée un compte de test
-# jetable (`smoke.<horodatage>@ayrovi.test`) sur le serveur visé.
+# Ce workflow ne touche JAMAIS la production : par défaut il vise le serveur
+# Beta (`Ayrovi2`, branche), et tout déclenchement automatique sur une adresse de
+# PRODUCTION est arrêté net (garde plus bas). Il crée un compte de test jetable
+# (`smoke.<horodatage>@ayrovi.test`) sur le serveur visé.
 name: Serveur — test de bout en bout (appli)
 
 on:
@@ -30,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
-      BASE: ${{ github.event.inputs.base || 'https://beta-a-configurer.invalid' }}
+      BASE: ${{ github.event.inputs.base || 'https://ayrovi-beta1-moo8.onrender.com' }}
       CLIENT: mobile/2.0.0
     steps:
       - name: Test de bout en bout
