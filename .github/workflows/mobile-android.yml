@@ -22,7 +22,7 @@ on:
       api_base_url:
         description: "Origine de l'API gravée dans l'application (`EXPO_PUBLIC_API_BASE_URL`)"
         required: true
-        default: "https://ayrovi-beta1.onrender.com"
+        default: "https://ayrovi.tn"
   push:
     branches: [arena/c0321e79-ayrovi-beta1]
     paths:
@@ -54,10 +54,34 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      # Outils en ligne de commande + acceptation des licences : AGP télécharge
-      # ensuite lui-même la plateforme et les build-tools exacts dont il a besoin
-      # (le projet ne les épingle pas — `expo-root-project` les définit).
-      - uses: android-actions/setup-android@v3
+      - name: Installer le SDK Android (sans action tierce)
+        # `android-actions/setup-android@v3` échoue sur l'image ubuntu-latest
+        # actuelle (constaté ici le 07/10/2026 — étape en échec, la suite sautée ;
+        # déjà constaté le 05/10/2026 sur l'ancien pipeline Android). Le SDK est
+        # déjà présent sur l'image : on accepte les licences et on n'ajoute que
+        # les paquets utiles à ce projet — c'est ce qui a fonctionné jusqu'ici.
+        run: |
+          set -euo pipefail
+          export ANDROID_HOME="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          ls -la "$ANDROID_HOME" || true
+          SDKMANAGER="$(ls -d "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager 2>/dev/null | head -1 || true)"
+          if [ -z "$SDKMANAGER" ]; then SDKMANAGER="$(command -v sdkmanager || true)"; fi
+          if [ -z "$SDKMANAGER" ]; then
+            # Dernier recours : installer cmdline-tools dans le SDK existant.
+            mkdir -p "$ANDROID_HOME/cmdline-tools"
+            curl -sSL -o /tmp/cmdtools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+            unzip -q /tmp/cmdtools.zip -d "$ANDROID_HOME/cmdline-tools"
+            mv "$ANDROID_HOME/cmdline-tools/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest"
+            SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          fi
+          echo "SDKMANAGER=$SDKMANAGER"
+          # L'image peut appartenir à un autre utilisateur : rendre le SDK inscriptible.
+          if [ ! -w "$ANDROID_HOME" ]; then sudo chown -R "$(id -u):$(id -g)" "$ANDROID_HOME"; fi
+          yes | "$SDKMANAGER" --sdk_root="$ANDROID_HOME" --licenses >/dev/null 2>&1 || true
+          "$SDKMANAGER" --sdk_root="$ANDROID_HOME" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> "$GITHUB_ENV"
 
       # `.npmrc` de l'application active legacy-peer-deps (graphe Expo + vitest).
       - name: Install
@@ -82,7 +106,10 @@ jobs:
       - name: Build APK
         working-directory: apps/mobile/android
         env:
-          EXPO_PUBLIC_API_BASE_URL: ${{ inputs.api_base_url }}
+          # `inputs` est vide sur un déclenchement par `push` → origine par
+          # défaut. L'application exige une origine ABSOLUE : sans elle, le
+          # réseau échoue (pas de serveur Metro dans un APK autonome).
+          EXPO_PUBLIC_API_BASE_URL: ${{ inputs.api_base_url || 'https://ayrovi.tn' }}
           EXPO_PUBLIC_BUILD_STAMP: ${{ github.sha }}
           EXPO_PUBLIC_APP_VERSION: "2.0.0"
         run: ./gradlew assembleRelease --no-daemon
@@ -93,7 +120,8 @@ jobs:
           set -euo pipefail
           APK=app/build/outputs/apk/release/app-release.apk
           ls -lh "$APK"
-          "$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs "$APK" | head -3
+          APKSIGNER="$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)"
+          "$APKSIGNER" verify --print-certs "$APK" | head -3
 
       - uses: actions/upload-artifact@v4
         with:
