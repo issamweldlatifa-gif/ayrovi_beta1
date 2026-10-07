@@ -322,6 +322,19 @@ curl -s https://<عنوان-الخدمة>/api/ready
 - ولا ويب-هوك متاعك: `CUSTOMER_OTP_PROVIDER=webhook` +
   `CUSTOMER_OTP_WEBHOOK_URL` (لازم `https://`) + `CUSTOMER_OTP_WEBHOOK_TOKEN`.
 
+### أداة قياس: «Serveur — test de bout en bout (appli)»
+
+في `.github/workflows/beta-smoke.yml`: تشغيل واحد يجيب جواب قاطع — يخلق حساب
+تجريبي بعنوان `smoke.<وقت>@ayrovi.test` بنفس `en-tête` متاع التطبيق، ويتحقّق
+واحد واحد: `/api/ready` (فرع؟) · `session_token` في الجسم · `Bearer` يفتح
+الحساب · السلّة · `/api/checkout` يرفض `EMPTY_CART` (دليل أنّ التونيل موجود) ·
+قائمة الطلبات · `assetlinks.json`. النتيجة تظهر في **ملخّص + تعليق** التشغيل،
+بلا ما تحتاج تلفون.
+
+**حماية**: التشغيل الآلي ما يلمسش عناوين الإنتاج (يتوقّف ويقولها بالصريح)؛
+العنوان الافتراضي = `https://beta-a-configurer.invalid`. كي تولّي عندك خدمة
+Beta تحطّ عنوانها في الحقل `base`.
+
 **التطبيق ما يخبّيش هذا**: شاشة الدخول تقرأ `/api/customer/auth/config`،
 كي ترجع `phoneOtp.enabled = false` تظهر كارطة الهاتف **بالتفسير**
 («طريقة الدخول هذي مازالت ما مفعّلةش في الخادم») والزر **مقفول** — ما فماش

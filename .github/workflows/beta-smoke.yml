@@ -1,0 +1,215 @@
+# Test de bout en bout de l'APPLICATION contre un serveur, sans téléphone.
+#
+# Pourquoi : « l'appli ne marche pas » ne se diagnostique pas à l'œil. Le seul
+# juge, c'est la chaîne réelle — créer un compte avec l'en-tête de l'appli,
+# recevoir `session_token` (que la branche sert et que `main` ne sert PAS),
+# puis utiliser ce jeton comme le fait l'application : profil, panier, caisse.
+#
+# Ce workflow ne touche JAMAIS la production : il faut lui donner l'adresse du
+# serveur à tester (par défaut le serveur Beta). Il crée un compte de test
+# jetable (`smoke.<horodatage>@ayrovi.test`) sur le serveur visé.
+name: Serveur — test de bout en bout (appli)
+
+on:
+  workflow_dispatch:
+    inputs:
+      base:
+        description: "Adresse du serveur à tester"
+        required: false
+        default: "https://ayrovi-beta1-1.onrender.com"
+  push:
+    paths:
+      - ".github/workflows/beta-smoke.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: Chaîne complète (inscription → session → panier → caisse)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      BASE: ${{ github.event.inputs.base || 'https://beta-a-configurer.invalid' }}
+      CLIENT: mobile/2.0.0
+    steps:
+      - name: Test de bout en bout
+        run: |
+          set +e +o pipefail
+          set -u
+
+          # `CLIENT` يتبدّل من بيئة الـCI؛ القيمة هنا حماية ضدّ `set -u` في التجربة المحلية.
+          CLIENT="${CLIENT:-mobile/2.0.0}"
+          S="${GITHUB_STEP_SUMMARY:-/dev/null}"
+          printf '## Test de bout en bout de l application\n\nServeur : `%s`\n\n' "$BASE" >> "$S"
+          echo "| Étape | Résultat | Lecture |" >> "$S"
+          echo "|---|---|---|" >> "$S"
+
+          # حماية: التشغيل الآلي (push) ما يلمسش برودكسيون. لمسها لازم طلب يدوي
+          # صريح (`workflow_dispatch` + العنوان في الحقل) — باش ما يتخلقش حساب
+          # تجريبي في قاعدة الإنتاج من غير ما نعرفو.
+          EVENT="${GITHUB_EVENT_NAME:-local}"
+          case "$BASE" in
+            *ayrovi-beta1-1.onrender.com*|*ayrovi-beta1.onrender.com*|*ayrovi.tn*)
+              if [ "$EVENT" != "workflow_dispatch" ]; then
+                printf '\n**⏭️ تشغيل آلي على عنوان الإنتاج — وقفنا. العنوان: `%s`**\n' "$BASE" >> "$S"
+                echo "::notice title=Test de bout en bout::⏭️ arrêté: ${BASE} est un serveur de production et l'exécution est automatique. Lancez le workflow à la main avec l'adresse du serveur Beta."
+                exit 0
+              fi ;;
+            *beta-a-configurer.invalid*)
+              printf '\n**⏭️ ما فماش خادم اختبار محدّد.** شغّل الـworkflow يدويّاً وحطّ عنوان خدمة الـBeta.\n' >> "$S"
+              echo "::notice title=Test de bout en bout::⏭️ aucun serveur de test fourni — lancez le workflow avec le champ «base»."
+              exit 0 ;;
+          esac
+
+          FAIL=0            # une fonction de l'appli manque vraiment
+          WARN=0            # le serveur ne sait pas encore servir l'appli
+          SMOKE=""
+
+          # Un seul code en sortie : \`curl -w\` imprime « 000 » ET sort en erreur
+          # quand rien ne répond.
+          http_code() {
+            local out
+            out=$(curl -s -o "$2" -w '%{http_code}' --max-time 45 "${@:3}" "$1" 2>/dev/null)
+            if [ -z "$out" ]; then out="000"; fi
+            printf '%s' "$out"
+          }
+          jget() {
+            python3 -c 'import json,sys
+          try: d=json.load(open(sys.argv[1]))
+          except Exception: d={}
+          for p in sys.argv[2].split("."):
+              d=d.get(p,"") if isinstance(d,dict) else ""
+          print(d if isinstance(d,(str,int,float)) else "")' "$1" "$2" 2>/dev/null
+          }
+          note() { printf '| %s | %s | %s |\n' "$1" "$2" "$3" >> "$S"; }
+
+          # 1) Le serveur répond-il, et sait-il qu'il est la BRANCHE ?
+          READY_CODE=$(http_code "$BASE/api/ready" /tmp/ready)
+          READY_COMMIT=$(jget /tmp/ready commit)
+          READY_BRANCH=$(jget /tmp/ready branch)
+          if [ "$READY_CODE" = "200" ]; then
+            if [ -n "$READY_BRANCH" ]; then
+              note "\`GET /api/ready\`" "200" "commit \`${READY_COMMIT:-—}\` · branche \`${READY_BRANCH}\` — serveur de la branche"
+            else
+              WARN=1
+              note "\`GET /api/ready\`" "200" "**aucune branche déclarée** ⇒ ce serveur ne connaît pas le contrat de session de l'appli"
+            fi
+          else
+            FAIL=1
+            note "\`GET /api/ready\`" "$READY_CODE" "❌ le serveur ne répond pas"
+          fi
+
+          # 2) Créer un compte comme le fait l'APPLI (en-tête \`x-ayrovi-client\`).
+          STAMP=$(date +%s)
+          EMAIL="smoke.$STAMP.$RANDOM@ayrovi.test"
+          PASSWORD="ayrovi-$STAMP-$RANDOM-aA1"
+          REG_CODE=$(http_code "$BASE/api/customer/auth/register" /tmp/reg \
+            -X POST -H 'Content-Type: application/json' \
+            -H "x-ayrovi-client: $CLIENT" -c /tmp/jar -b /tmp/jar \
+            -d "{\"displayName\":\"Test Auto\",\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\",\"locale\":\"ar\"}")
+          TOKEN=$(jget /tmp/reg data.session_token)
+          if [ -z "$TOKEN" ]; then TOKEN=$(jget /tmp/reg session_token); fi
+
+          # 3) LE point décisif : le corps de la réponse porte-t-il un jeton ?
+          #    L'appli ne stocke QUE ce jeton (\`expo-secure-store\`) : sans lui,
+          #    la connexion échoue sur le téléphone, quoi qu'on fasse ensuite.
+          if [ -n "$TOKEN" ]; then
+            note "\`POST /api/customer/auth/register\` (appli)" "200" "✅ \`session_token\` reçu — l'appli peut garder la session"
+          elif [ "$REG_CODE" = "000" ]; then
+            FAIL=1
+            note "\`POST /api/customer/auth/register\` (appli)" "000" "❌ pas de réponse"
+          else
+            WARN=1
+            CODE=$(jget /tmp/reg code)
+            note "\`POST /api/customer/auth/register\` (appli)" "$REG_CODE" "⛔ **\`session_token\` absent** (code \`${CODE:-—}\`) — c'est exactement la panne « الدخول ما يخدمش »"
+          fi
+
+          if [ -n "$TOKEN" ]; then
+            # الجلسة موجودة: نجرّبو نفس الاستدعاءات اللي يعملها التطبيق بالضبط
+            # (Bearer + en-tête العميل + جلسة السلّة).
+            AUTH=(-H "Authorization: Bearer $TOKEN" -H "x-ayrovi-client: $CLIENT" -b /tmp/jar)
+
+            # 4) Le jeton ouvre-t-il vraiment la session ? (même appel que l'écran Compte)
+            ME_CODE=$(http_code "$BASE/api/customer/auth/me" /tmp/me "${AUTH[@]}")
+            ME_EMAIL=$(jget /tmp/me data.account.email)
+            case "$ME_CODE" in
+              200)
+                if [ "$ME_EMAIL" = "$EMAIL" ]; then
+                  note "\`GET /api/customer/auth/me\` (Bearer)" "200" "✅ la session du compte \`$EMAIL\` est reconnue"
+                else
+                  FAIL=1
+                  note "\`GET /api/customer/auth/me\` (Bearer)" "200" "❌ autre compte renvoyé (\`${ME_EMAIL:-vide}\`)"
+                fi ;;
+              *) FAIL=1; note "\`GET /api/customer/auth/me\` (Bearer)" "$ME_CODE" "❌ le jeton ne donne pas accès au compte" ;;
+            esac
+
+            # 5) Panier (même appel que l'onglet Panier : session de panier par en-tête)
+            CART_CODE=$(http_code "$BASE/api/cart/items" /tmp/cart -H "x-session-id: smoke-$STAMP" "${AUTH[@]}")
+            case "$CART_CODE" in
+              200|400) note "\`GET /api/cart/items\`" "$CART_CODE" "✅ le panier répond" ;;
+              *) FAIL=1; note "\`GET /api/cart/items\`" "$CART_CODE" "❌ le panier ne répond pas comme prévu" ;;
+            esac
+
+            # 6) Caisse : sur un panier vide elle DOIT refuser proprement (\`EMPTY_CART\`).
+            #    Un 500 ou un 401 ici = le tunnel d'achat est cassé avant même le paiement.
+            CHECKOUT_CODE=$(http_code "$BASE/api/checkout" /tmp/co "${AUTH[@]}" \
+              -X POST -H 'Content-Type: application/json' -d '{}')
+            CHECKOUT_REF=$(jget /tmp/co code)
+            case "$CHECKOUT_CODE" in
+              400) note "\`POST /api/checkout\` (panier vide)" "400" "✅ refus honnête \`${CHECKOUT_REF:-EMPTY_CART}\` — le tunnel existe" ;;
+              401|403) FAIL=1; note "\`POST /api/checkout\` (panier vide)" "$CHECKOUT_CODE" "❌ la session ne passe pas jusqu'à la caisse" ;;
+              *) FAIL=1; note "\`POST /api/checkout\` (panier vide)" "$CHECKOUT_CODE" "❌ réponse inattendue (\`${CHECKOUT_REF:-—}\`)" ;;
+            esac
+
+            # 7) Commandes du compte (onglet Compte)
+            ORDERS_CODE=$(http_code "$BASE/api/customer/account/orders" /tmp/orders "${AUTH[@]}")
+            case "$ORDERS_CODE" in
+              200) note "\`GET /api/customer/account/orders\`" "200" "✅ liste des commandes servie" ;;
+              *) FAIL=1; note "\`GET /api/customer/account/orders\`" "$ORDERS_CODE" "❌ la liste des commandes ne répond pas" ;;
+            esac
+
+            # 9) Nettoyage : on referme la session de test (aucun compte réel touché).
+            LOGOUT_CODE=$(http_code "$BASE/api/customer/auth/logout" /tmp/out "${AUTH[@]}" -X POST)
+            note "\`POST /api/customer/auth/logout\`" "$LOGOUT_CODE" "nettoyage de la session de test"
+
+          else
+            ME_CODE="-"; ME_EMAIL="-"; CART_CODE="-"; CHECKOUT_CODE="-"; CHECKOUT_REF="-"
+            ORDERS_CODE="-"; LOGOUT_CODE="-"
+            note "Session de l'appli (profil / panier / caisse / commandes)" "—" "non testees : ce serveur n'ouvre aucune session pour l'appli (l'appli montrera auth.error.noSession)"
+          fi
+
+          # 8) Liens profonds : sans ce fichier, cliquer un lien ayrovi.tn n'ouvre pas l'appli.
+          LINKS_CODE=$(http_code "$BASE/.well-known/assetlinks.json" /tmp/links)
+          LINKS_HEAD=$(head -c 1 /tmp/links 2>/dev/null)
+          if [ "$LINKS_HEAD" = "[" ]; then
+            COUNT=$(python3 -c 'import json,sys
+          try: d=json.load(open("/tmp/links"))
+          except Exception: d=[]
+          print(sum(len(e.get("target",{}).get("sha256_cert_fingerprints",[])) for e in d))' 2>/dev/null)
+            note "\`GET /.well-known/assetlinks.json\`" "$LINKS_CODE" "✅ JSON — ${COUNT:-0} empreinte(s)"
+            if [ "${COUNT:-0}" -lt 1 ]; then
+              WARN=1
+              note "Empreintes de signature" "0" "⚠️ \`ANDROID_APP_LINK_SHA256\` vide sur le serveur ⇒ les liens n'ouvriront pas l'appli"
+            fi
+          else
+            WARN=1
+            note "\`GET /.well-known/assetlinks.json\`" "$LINKS_CODE" "⚠️ pas un JSON (route absente) ⇒ liens profonds inertes"
+          fi
+
+          SMOKE="{$BASE ready=$READY_CODE branch=${READY_BRANCH:-—} register=$REG_CODE token=$([ -n "$TOKEN" ] && echo oui || echo NON) me=$ME_CODE cart=$CART_CODE checkout=$CHECKOUT_CODE/$CHECKOUT_REF orders=$ORDERS_CODE links=$LINKS_CODE}"
+
+          if [ "$FAIL" = "1" ]; then
+            VERDICT="❌ ÉCHEC — une fonction de l'appli ne répond pas sur ce serveur"
+          elif [ "$WARN" = "1" ]; then
+            VERDICT="⚠️ le serveur répond mais ne sert pas l'appli (branche/empreintes)"
+          else
+            VERDICT="✅ l'appli peut se connecter et commander sur ce serveur"
+          fi
+          printf '\n**Verdict : %s**\n' "$VERDICT" >> "$S"
+
+          echo "::notice title=Test de bout en bout::${VERDICT} ${SMOKE}"
+          if [ "$FAIL" = "1" ]; then
+            echo "::error title=Test de bout en bout::Une fonction de l'appli ne répond pas sur ${BASE} ${SMOKE}"
+          fi
+          exit 0
