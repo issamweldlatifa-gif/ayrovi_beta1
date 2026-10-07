@@ -280,7 +280,7 @@ export const ar = {
   'auth.forgot.backToSignIn': 'ارجع للدخول',
   'auth.forgot.submit': 'ابعث الرابط',
   'auth.forgot.accepted': 'الطلب توصلنا. كان فمّا حساب بالبريد هذا، الرابط تبعث توّا. صالح 30 دقيقة ويخدم مرّة وحدة.',
-  'auth.forgot.openLink': 'الرابط يحلّ في موقع ayrovi.tn في المتصفّح باش تختار كلمة السرّ الجديدة.',
+  'auth.forgot.openLink': 'الرابط يحلّ في موقع AYROVI في المتصفّح باش تختار كلمة السرّ الجديدة.',
   'auth.forgot.unavailable': 'إرسال بريد الاسترجاع موش متاح توّا. استعمل وسيلة دخولك المعتادة.',
   'auth.forgot.rateLimited': 'طلبات كثيرة. استنّى شويّة وعاود جرّب.',
   'auth.forgot.badEmail': 'اكتب بريد إلكتروني صحيح.',

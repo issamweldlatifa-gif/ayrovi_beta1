@@ -6,12 +6,22 @@
  *
  * Surcharge à la construction : EXPO_PUBLIC_API_BASE_URL.
  */
-export const DEFAULT_API_BASE_URL = 'https://ayrovi.tn';
+/**
+ * الأصل الافتراضي = **الخادم اللي موجود فعلاً**، موش النطاق اللي نحلمو بيه.
+ *
+ * `ayrovi.tn` ما فيهش خادم يجاوب (07/10/2026): أي حزمة تتبنى بالأصل هذا
+ * تلقى «ما فماش شبكة» في كل شاشة. الأصل الحقيقي هو خدمة Render اللي يعلن
+ * عليها الخادم نفسه (`client/src/services/apiOrigin.ts`، و
+ * `android/app/build.gradle` قبلها).
+ *
+ * لمّا `ayrovi.tn` يولّي حيّ، التبديل = سطر واحد + بناء جديد — موش أكثر.
+ */
+export const DEFAULT_API_BASE_URL = 'https://ayrovi-beta1-1.onrender.com';
 
 const configured = String(process.env.EXPO_PUBLIC_API_BASE_URL ?? '').trim();
 
 /**
- * Origine de l'API. En production : une origine absolue (`https://ayrovi.tn`).
+ * Origine de l'API. En production : une origine absolue (`DEFAULT_API_BASE_URL`).
  * En développement : `/` — l'application parle à sa propre origine et le proxy
  * Metro relaie vers le serveur local (voir metro.config.js). C'est ce qui
  * permet à un navigateur hors de la machine de développement de fonctionner

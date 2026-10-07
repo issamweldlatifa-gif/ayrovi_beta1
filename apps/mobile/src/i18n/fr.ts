@@ -280,7 +280,7 @@ export const fr = {
   'auth.forgot.backToSignIn': 'Revenir à la connexion',
   'auth.forgot.submit': 'Envoyer le lien',
   'auth.forgot.accepted': 'Demande acceptée. Si un compte existe avec cette adresse, le lien vient d’être envoyé. Il est valable 30 minutes et ne sert qu’une fois.',
-  'auth.forgot.openLink': 'Le lien s’ouvre sur le site ayrovi.tn, dans votre navigateur, pour choisir le nouveau mot de passe.',
+  'auth.forgot.openLink': 'Le lien s’ouvre sur le site AYROVI, dans votre navigateur, pour choisir le nouveau mot de passe.',
   'auth.forgot.unavailable': 'L’envoi des e-mails de récupération est indisponible pour le moment. Utilisez votre moyen de connexion habituel.',
   'auth.forgot.rateLimited': 'Trop de demandes. Patientez quelques minutes avant de réessayer.',
   'auth.forgot.badEmail': 'Entrez une adresse e-mail valide.',

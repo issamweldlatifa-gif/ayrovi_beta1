@@ -33,6 +33,10 @@
             {
               "scheme": "https",
               "host": "www.ayrovi.tn"
+            },
+            {
+              "scheme": "https",
+              "host": "ayrovi-beta1-1.onrender.com"
             }
           ]
         }

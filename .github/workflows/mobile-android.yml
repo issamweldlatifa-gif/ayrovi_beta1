@@ -22,7 +22,7 @@ on:
       api_base_url:
         description: "Origine de l'API gravée dans l'application (`EXPO_PUBLIC_API_BASE_URL`)"
         required: true
-        default: "https://ayrovi.tn"
+        default: "https://ayrovi-beta1-1.onrender.com"
   push:
     branches: [arena/c0321e79-ayrovi-beta1]
     paths:
@@ -117,7 +117,7 @@ jobs:
           # `inputs` est vide sur un déclenchement par `push` → origine par
           # défaut. L'application exige une origine ABSOLUE : sans elle, le
           # réseau échoue (pas de serveur Metro dans un APK autonome).
-          EXPO_PUBLIC_API_BASE_URL: ${{ inputs.api_base_url || 'https://ayrovi.tn' }}
+          EXPO_PUBLIC_API_BASE_URL: ${{ inputs.api_base_url || 'https://ayrovi-beta1-1.onrender.com' }}
           EXPO_PUBLIC_BUILD_STAMP: ${{ github.sha }}
           EXPO_PUBLIC_APP_VERSION: "2.0.0"
         run: ./gradlew assembleRelease --no-daemon

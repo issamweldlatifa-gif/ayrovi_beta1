@@ -9,7 +9,7 @@
  * «يبدو جاهزاً».
  *
  * الاستعمال:
- *   node scripts/release-preflight.mjs --api-base https://ayrovi.tn \
+ *   node scripts/release-preflight.mjs --api-base https://ayrovi-beta1-1.onrender.com \
  *        --version-name 2.0.1 --version-code 8
  *   node scripts/release-preflight.mjs --json          # تقرير للآلة
  *
@@ -23,8 +23,8 @@ import { execFileSync } from 'node:child_process';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULTS = {
-  apiBase: 'https://ayrovi.tn',
-  origin: 'https://ayrovi.tn',
+  apiBase: 'https://ayrovi-beta1-1.onrender.com',
+  origin: 'https://ayrovi-beta1-1.onrender.com',
   packageName: 'app.ayrovi.mobile',
   repo: 'issamweldlatifa-gif/ayrovi_beta1',
   branch: 'arena/c0321e79-ayrovi-beta1',
@@ -71,7 +71,7 @@ function usage() {
     'release-preflight — جهوزية الإصدار قبل بناء AAB',
     '',
     'المدخلات (كلها اختيارية):',
-    '  --api-base <url>     عنوان الخادم اللي يتچرى في الحزمة (افتراضي https://ayrovi.tn)',
+    '  --api-base <url>     عنوان الخادم اللي يتچرى في الحزمة (افتراضي https://ayrovi-beta1-1.onrender.com)',
     '  --origin <url>       أصل الموقع اللي فيه assetlinks.json (افتراضي مثل الخادم)',
     '  --package <id>       اسم الحزمة (افتراضي app.ayrovi.mobile)',
     '  --version-name <s>   الإصدار اللي باش يتنشر (لازم ≥ متاع app.json)',
@@ -271,6 +271,21 @@ async function main() {
       `404 — ما فماش بصمة مضبوطة في بيئة الخادم (ANDROID_APP_LINK_SHA256) على ${options.origin}`);
   } else {
     record('assetlinks', 'روابط أندرويد (assetlinks.json)', 'warn', `ما تقراش: ${links.error || links.status}`);
+  }
+
+  // 5.b) تطابق نطاق الروابط العميقة مع أصل الخادم: `intentFilters` تعلن نطاقاً،
+  //      و`assetlinks.json` لازم يكون على **نفس** النطاق. كان الأصل مختلفاً
+  //      (Render مقابل نطاق مستقبلي)، الروابط ما تفتحش التطبيق — نقولوها.
+  if (app.ok && app.hosts.length > 0) {
+    let originHost = '';
+    try { originHost = new URL(options.origin).host; } catch { originHost = ''; }
+    const declared = app.hosts.map((host) => String(host).trim()).filter(Boolean);
+    const matches = declared.includes(originHost);
+    record('links-host', 'نطاق الروابط العميقة',
+      matches ? 'pass' : 'warn',
+      matches
+        ? `${originHost} معلن في app.json`
+        : `app.json يعلن ${declared.join(', ')} بينما الخادم على ${originHost || '—'} — الروابط ما تفتحش التطبيق حتى يتوحّدو`);
   }
 
   // 6) الأسرار (الأسماء فقط، موش القيم): بلاها زرّ البناء ما يخدمش.

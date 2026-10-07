@@ -14,7 +14,7 @@ import * as Linking from 'expo-linking';
 import { AppText, Button, Card } from '@/design/ui';
 import { SubScreen } from '@/design/subScreen';
 import { useTheme } from '@/design/theme';
-import { API_BASE_URL } from '@/api/config';
+import { API_BASE_URL, DEFAULT_API_BASE_URL } from '@/api/config';
 import { useT } from '@/i18n';
 
 export default function NotFoundScreen() {
@@ -23,7 +23,7 @@ export default function NotFoundScreen() {
   const path = usePathname();
 
   /** نفس المسار على الموقع: الأصل متاع الخادم معروف، والمسار كما هو. */
-  const siteUrl = `${API_BASE_URL || 'https://ayrovi.tn'}${path || ''}`;
+  const siteUrl = `${API_BASE_URL || DEFAULT_API_BASE_URL}${path || ''}`;
 
   return (
     <SubScreen title={t('notFound.title')} subtitle={t('notFound.hint')} fallback="/">
