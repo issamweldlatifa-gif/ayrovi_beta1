@@ -9,7 +9,8 @@
  */
 import { useCallback, useState } from 'react';
 import { Linking } from 'react-native';
-import { Card, KeyValue, Screen } from '@/design/ui';
+import { router } from 'expo-router';
+import { Button, Card, KeyValue, Screen } from '@/design/ui';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { AnnouncementBar } from '@/features/home/AnnouncementBar';
 import { HeroSection } from '@/features/home/HeroSection';
@@ -68,6 +69,11 @@ export default function HomeScreen() {
       ) : (
         <NavStrip links={navigation.data ?? []} />
       )}
+
+      {/* المساعد: باب حقيقي من الرئيسية — والجاهزية تتقال داخل الشاشة. */}
+      <Card title={t('assistant.title')} hint={t('assistant.hint')}>
+        <Button label={t('assistant.open')} onPress={() => router.push('/assistant')} />
+      </Card>
 
       <Card title={t('home.diagnostics')} hint={t('home.diagnostics.body')}>
         <KeyValue label={t('common.version')} value={`${APP_VERSION} (${APP_VERSION_CODE})`} />
