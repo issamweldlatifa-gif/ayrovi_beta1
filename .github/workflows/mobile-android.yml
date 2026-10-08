@@ -95,6 +95,37 @@ jobs:
       - name: Générer le projet Android
         run: npx expo prebuild --platform android --no-install
 
+      # EMPREINTE STABLE — pourquoi cette étape existe.
+      #
+      # Sans elle, Gradle fabrique une clé debug NEUVE sur chaque machine, donc
+      # chaque build porte une EMPREINTE DIFFÉRENTE. Or `/.well-known/assetlinks.json`
+      # (le fichier qui autorise Android à ouvrir nos liens dans l'application)
+      # ne peut déclarer qu'une liste finie d'empreintes. Conséquence : « ouvrir
+      # dans l'application » est INTABLE avec un APK de démonstration, quel que
+      # soit le soin mis ailleurs.
+      #
+      # On dépose donc une clé debug VERSIONNÉE (c'est la clé de développement :
+      # son mot de passe est public et elle ne sert JAMAIS à publier — l'AAB de
+      # production est signé avec le vrai keystore, dans `mobile-release-aab.yml`).
+      - name: Clé de démonstration fixe (liens profonds testables)
+        working-directory: apps/mobile
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.android"
+          rm -f "$HOME/.android/debug.keystore"
+          keytool -importkeystore \
+            -srckeystore keystores/debug.p12 -srcstoretype PKCS12 -srcstorepass android \
+            -destkeystore "$HOME/.android/debug.keystore" -deststoretype JKS \
+            -deststorepass android -destkeypass android -alias androiddebugkey -noprompt
+          SHA=$(keytool -list -v -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey \
+            | awk '/SHA256:/ {print $2; exit}')
+          if [ -z "$SHA" ]; then
+            echo "::error title=Empreinte de démonstration::introuvable — la clé fixe n'a pas pu être importée"
+            exit 1
+          fi
+          echo "::notice title=Empreinte de démonstration::$SHA"
+          echo "ANDROID_DEBUG_SHA256=$SHA" >> "$GITHUB_ENV"
+
       - name: Identifiant + libellé de la démo (dans la CI uniquement)
         working-directory: apps/mobile/android
         run: |
