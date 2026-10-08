@@ -70,7 +70,7 @@ export function Comments({ targetId }: CommentsProps) {
     <View style={styles.wrap}>
       {comments.isPending ? <ActivityIndicator color={theme.colors.accent} /> : null}
       {comments.isError ? (
-        <AppText variant="caption" color={theme.colors.danger}>{t('social.retry')}</AppText>
+        <AppText variant="caption" color={theme.status.danger.fg}>{t('social.retry')}</AppText>
       ) : null}
 
       {!comments.isPending && rows.length === 0 ? (
@@ -82,7 +82,7 @@ export function Comments({ targetId }: CommentsProps) {
         keyExtractor={(item) => item.id}
         scrollEnabled={false}
         renderItem={({ item }) => (
-          <View style={styles.row}>
+          <View style={[styles.row, { borderBottomColor: theme.colors.divider }]}>
             <AppText variant="caption" weight="bold">{item.author}</AppText>
             <AppText variant="body">{item.text}</AppText>
           </View>
@@ -115,7 +115,7 @@ export function Comments({ targetId }: CommentsProps) {
             onPress={() => post.mutate()}
             style={[styles.send, { backgroundColor: theme.colors.accent, borderRadius: theme.radius.cta, opacity: tooShort ? 0.45 : 1 }]}
           >
-            <AppText variant="label" weight="bold" color="#000000">{t('social.send')}</AppText>
+            <AppText variant="label" weight="bold" color={theme.colors.onAccent}>{t('social.send')}</AppText>
           </Pressable>
         </View>
       ) : (
@@ -123,7 +123,7 @@ export function Comments({ targetId }: CommentsProps) {
       )}
 
       {draft.trim().length === 1 ? (
-        <AppText variant="caption" color={theme.colors.danger}>{t('social.minLength')}</AppText>
+        <AppText variant="caption" color={theme.status.danger.fg}>{t('social.minLength')}</AppText>
       ) : null}
     </View>
   );
@@ -131,7 +131,7 @@ export function Comments({ targetId }: CommentsProps) {
 
 const styles = StyleSheet.create({
   wrap: { gap: 8, paddingVertical: 8 },
-  row: { gap: 2, paddingVertical: 6, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#2A2A2A' },
+  row: { gap: 2, paddingVertical: 6, borderBottomWidth: StyleSheet.hairlineWidth },
   form: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginTop: 8 },
   input: { flex: 1, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10, textAlignVertical: 'top' },
   send: { paddingHorizontal: 16, paddingVertical: 12 },

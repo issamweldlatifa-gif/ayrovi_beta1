@@ -45,7 +45,7 @@ export function JourneyProgress({
         const isLast = index === steps.length - 1;
         const done = completed[index] === true;
         const current = index === activeIndex;
-        const tone = done ? theme.colors.accent : current ? theme.colors.accent : theme.colors.line;
+        const tone = done ? theme.status.success.fg : current ? theme.status.info.fg : theme.colors.line;
         const labelColor = done || current ? theme.colors.ink : theme.colors.muted;
 
         return (
@@ -60,9 +60,9 @@ export function JourneyProgress({
             >
               <View style={[styles.dot, { borderColor: tone, backgroundColor: done ? tone : 'transparent' }]}>
                 {done ? (
-                  <Ionicons name="checkmark" size={14} color="#000000" />
+                  <Ionicons name="checkmark" size={14} color={theme.colors.onAccent} />
                 ) : (
-                  <Ionicons name={step.icon} size={14} color={current ? theme.colors.accent : theme.colors.muted} />
+                  <Ionicons name={step.icon} size={14} color={current ? theme.status.info.fg : theme.colors.muted} />
                 )}
               </View>
               <AppText variant="caption" weight={current ? 'bold' : 'regular'} color={labelColor} numberOfLines={1}>
@@ -71,7 +71,7 @@ export function JourneyProgress({
             </Pressable>
 
             {isLast ? null : (
-              <View style={[styles.line, { backgroundColor: done ? theme.colors.accent : theme.colors.line }]} />
+              <View style={[styles.line, { backgroundColor: done ? theme.status.success.fg : theme.colors.line }]} />
             )}
           </View>
         );
@@ -92,5 +92,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  line: { flex: 1, height: 2, marginBottom: 22 },
+  line: { flex: 1, height: 2, marginBottom: 20 },
 });

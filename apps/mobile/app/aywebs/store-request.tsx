@@ -117,7 +117,7 @@ export default function AyWebsStoreRequestScreen() {
           <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.storeReqNeedIntent')}</AppText>
         ) : null}
         {error ? (
-          <AppText variant="caption" color={theme.colors.danger} accessibilityRole="alert">{error}</AppText>
+          <AppText variant="caption" color={theme.status.danger.fg} accessibilityRole="alert">{error}</AppText>
         ) : null}
         <Button
           label={t('aywebs.storeReqSubmit')}

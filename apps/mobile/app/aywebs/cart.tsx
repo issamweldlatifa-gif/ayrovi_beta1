@@ -164,7 +164,7 @@ export default function AyWebsCartScreen() {
         <KeyValue label={t('aywebs.cartNotLinked')} value="—" />
       ) : null}
       {blockers.get(item.id) ? (
-        <AppText variant="caption" color={theme.colors.danger}>{blockers.get(item.id)}</AppText>
+        <AppText variant="caption" color={theme.status.danger.fg}>{blockers.get(item.id)}</AppText>
       ) : null}
       {item.status === 'PRICE_CHANGED' ? (
         <Button
@@ -247,7 +247,7 @@ export default function AyWebsCartScreen() {
                   <>
                     <KeyValue label={t('aywebs.cartBridgeSkipped')} value={String(bridge.skipped.length)} />
                     {bridge.skipped.map((line) => (
-                      <AppText key={line.aywebsItemId} variant="caption" color={theme.colors.danger}>
+                      <AppText key={line.aywebsItemId} variant="caption" color={theme.status.danger.fg}>
                         {line.code}{line.message ? ` — ${line.message}` : ''}
                       </AppText>
                     ))}

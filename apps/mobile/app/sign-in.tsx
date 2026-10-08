@@ -203,11 +203,11 @@ export default function SignInScreen() {
             accessibilityRole="alert"
             style={[styles.alert, {
               backgroundColor: theme.colors.surface,
-              borderColor: theme.colors.danger,
+              borderColor: theme.status.danger.fg,
               borderRadius: theme.radius.card,
             }]}
           >
-            <AppText variant="label" weight="bold" color={theme.colors.danger}>
+            <AppText variant="label" weight="bold" color={theme.status.danger.fg}>
               {t('signin.serverLegacy.title')}
             </AppText>
             <AppText variant="caption" color={theme.colors.secondary}>
@@ -228,7 +228,7 @@ export default function SignInScreen() {
               borderRadius: theme.radius.card,
             }]}
           >
-            <AppText variant="label" weight="bold" color={theme.colors.danger}>{failure.message}</AppText>
+            <AppText variant="label" weight="bold" color={theme.status.danger.fg}>{failure.message}</AppText>
           </View>
         ) : null}
 
@@ -253,7 +253,7 @@ export default function SignInScreen() {
                   {t('auth.phone.sent', { phone: challenge.maskedPhone || phone })}
                 </AppText>
                 {challenge.developmentCode ? (
-                  <AppText variant="caption" color={theme.colors.accentText}>
+                  <AppText variant="caption" color={theme.status.info.fg}>
                     {t('auth.phone.dev', { code: challenge.developmentCode })}
                   </AppText>
                 ) : null}
@@ -368,7 +368,7 @@ export default function SignInScreen() {
           ) : null}
           {waiting ? (
             <>
-              <AppText variant="label" weight="bold" color={theme.colors.accentText}>{t('auth.providers.waiting')}</AppText>
+              <AppText variant="label" weight="bold" color={theme.status.info.fg}>{t('auth.providers.waiting')}</AppText>
               <Button
                 label={t('auth.providers.cancel')}
                 tone="quiet"

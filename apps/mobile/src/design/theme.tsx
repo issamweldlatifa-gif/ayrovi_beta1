@@ -14,7 +14,8 @@ import {
 } from './tokens.generated';
 import {
   CHROME, EASING, ICON_SIZE, OPACITY, RADIUS, SPRING, Z_INDEX,
-  derivedColors, duration, elevation, type DerivedColors, type ElevationName,
+  derivedColors, duration, elevation, statusFor,
+  type DerivedColors, type ElevationName, type StatusSet,
 } from './tokens.mobile';
 import { usePrefs } from '@/state/prefs';
 
@@ -54,6 +55,14 @@ export interface Theme {
   iconSize: typeof ICON_SIZE;
   /** Opacités sémantiques (désactivé, discret, squelette, voile). */
   opacity: typeof OPACITY;
+  /**
+   * Couleurs de STATUT (danger · warning · info · success), chacune en trois
+   * tons : `fg` (texte/icône), `soft` (fond de pastille), `border` (liseré).
+   *
+   * À utiliser pour tout SIGNAL. La marque, elle, reste monochrome + orange :
+   * c'est cette séparation qui permet de garder l'orange sous 3 % (§2.6).
+   */
+  status: StatusSet;
   space: readonly number[];
   geometry: typeof GEOMETRY;
   motion: typeof MOTION;
@@ -123,6 +132,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       spring: SPRING,
       iconSize: ICON_SIZE,
       opacity: OPACITY,
+      status: statusFor(mode),
       space: SPACE,
       geometry: GEOMETRY,
       motion: MOTION,

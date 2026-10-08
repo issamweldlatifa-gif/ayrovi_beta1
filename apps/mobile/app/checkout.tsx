@@ -277,7 +277,7 @@ export default function CheckoutScreen() {
           <KeyValue label={t('checkout.delivery')} value={`${cart.deliveryTND.toFixed(2)} TND`} />
           <KeyValue label={t('checkout.total')} value={`${cart.totalTND.toFixed(2)} TND`} />
           {!cartGate.canCheckout ? (
-            <AppText variant="caption" color={theme.colors.danger}>
+            <AppText variant="caption" color={theme.status.danger.fg}>
               {cartGate.blockReason === 'EMPTY' ? t('checkout.cartEmpty') : t('cart.blockedBody', { count: cartGate.staleLines.length })}
             </AppText>
           ) : null}
@@ -396,7 +396,7 @@ export default function CheckoutScreen() {
                 }]}
               >
                 <AppText variant="label" weight="bold">{t(choice.labelKey as never)}</AppText>
-                <AppText variant="caption" color={choice.available ? theme.colors.muted : theme.colors.danger}>
+                <AppText variant="caption" color={choice.available ? theme.colors.muted : theme.status.danger.fg}>
                   {choice.available ? t(choice.hintKey as never) : t(choice.blockedKey as never)}
                 </AppText>
               </Pressable>
@@ -459,7 +459,7 @@ export default function CheckoutScreen() {
         </Pressable>
 
         {note ? (
-          <AppText variant="caption" color={theme.colors.danger} accessibilityRole="alert">{note}</AppText>
+          <AppText variant="caption" color={theme.status.danger.fg} accessibilityRole="alert">{note}</AppText>
         ) : null}
 
         <Button

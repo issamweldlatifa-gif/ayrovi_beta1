@@ -330,12 +330,12 @@ export function AddToCartSheet({
                 <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.quoteServer')}</AppText>
 
                 {readiness.ready ? null : (
-                  <AppText variant="caption" color={theme.colors.danger}>
+                  <AppText variant="caption" color={theme.status.danger.fg}>
                     {blockedMessage(readiness.code)}
                   </AppText>
                 )}
                 {error ? (
-                  <AppText variant="caption" color={theme.colors.danger} accessibilityRole="alert">{error}</AppText>
+                  <AppText variant="caption" color={theme.status.danger.fg} accessibilityRole="alert">{error}</AppText>
                 ) : null}
 
                 <View style={styles.row}>
@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   backdropTouch: { flex: 1 },
   sheet: { maxHeight: '88%', paddingHorizontal: 16, paddingTop: 16 },
-  body: { gap: 10, paddingBottom: 28 },
+  body: { gap: 10, paddingBottom: 24 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
   image: { width: '100%', height: 160, marginBottom: 4 },
   group: { gap: 6, marginTop: 6 },

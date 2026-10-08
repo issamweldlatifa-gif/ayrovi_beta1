@@ -48,7 +48,7 @@ export function SonimMark({
           justifyContent: 'center',
         }}
       >
-        <Ionicons name="sparkles" size={glyph} color="#FFFFFF" />
+        <Ionicons name="sparkles" size={glyph} color={theme.colors.onAccent} />
       </View>
 
       {withName ? (

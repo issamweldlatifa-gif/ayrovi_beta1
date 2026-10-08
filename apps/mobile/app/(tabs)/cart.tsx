@@ -132,7 +132,7 @@ export default function AyroviCartScreen() {
         <KeyValue label={t('cart.priceTrust')} value={trustLabel(line)} />
 
         {blocked ? (
-          <AppText variant="caption" color={theme.colors.danger} accessibilityRole="alert">
+          <AppText variant="caption" color={theme.status.danger.fg} accessibilityRole="alert">
             {trustReasonKey(line) || t('cart.trustReason.default')}
           </AppText>
         ) : null}
@@ -211,11 +211,11 @@ export default function AyroviCartScreen() {
             <KeyValue label={t('cart.total')} value={`${cart.totalTND.toFixed(2)} TND`} />
 
             {note ? (
-              <AppText variant="caption" color={theme.colors.danger} accessibilityRole="alert">{note}</AppText>
+              <AppText variant="caption" color={theme.status.danger.fg} accessibilityRole="alert">{note}</AppText>
             ) : null}
 
             {gate.blockReason === 'PRICE_VERIFICATION_REQUIRED' ? (
-              <AppText variant="caption" color={theme.colors.danger}>
+              <AppText variant="caption" color={theme.status.danger.fg}>
                 {t('cart.blockedBody', { count: gate.staleLines.length })}
               </AppText>
             ) : null}
@@ -227,7 +227,7 @@ export default function AyroviCartScreen() {
               disabled={!gate.canCheckout}
             />
             {!gate.canCheckout && gate.blockReason === 'PRICE_VERIFICATION_REQUIRED' ? (
-              <AppText variant="caption" color={theme.colors.danger}>{t('cart.checkoutBlocked')}</AppText>
+              <AppText variant="caption" color={theme.status.danger.fg}>{t('cart.checkoutBlocked')}</AppText>
             ) : null}
           </>
         )}

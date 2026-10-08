@@ -152,7 +152,7 @@ export function StoryViewer({ stories, initialIndex = 0, visible, onClose, onOpe
             onPress={onClose}
             style={styles.close}
           >
-            <Ionicons name="close" size={26} color="#FFFFFF" />
+            <Ionicons name="close" size={26} color={theme.colors.onMedia} />
           </Pressable>
         </View>
 
@@ -190,9 +190,9 @@ export function StoryViewer({ stories, initialIndex = 0, visible, onClose, onOpe
 
         {/* التذييل: العنوان + الإجراءات */}
         <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
-          {current.title ? <AppText variant="title" weight="bold" color="#FFFFFF">{current.title}</AppText> : null}
+          {current.title ? <AppText variant="title" weight="bold" color={theme.colors.onMedia}>{current.title}</AppText> : null}
           {current.description ? (
-            <AppText variant="caption" color="#FFFFFF" numberOfLines={3}>{current.description}</AppText>
+            <AppText variant="caption" color={theme.colors.onMedia} numberOfLines={3}>{current.description}</AppText>
           ) : null}
 
           <View style={styles.actions}>
@@ -204,11 +204,11 @@ export function StoryViewer({ stories, initialIndex = 0, visible, onClose, onOpe
               onPress={toggleLike}
               style={[styles.action, { opacity: signedIn ? 1 : 0.45 }]}
             >
-              <Ionicons name={liked ? 'heart' : 'heart-outline'} size={26} color={liked ? theme.colors.accent : '#FFFFFF'} />
+              <Ionicons name={liked ? 'heart' : 'heart-outline'} size={26} color={liked ? theme.status.danger.fg : theme.colors.onMedia} />
             </Pressable>
 
             {signedIn ? null : (
-              <AppText variant="caption" color="#FFFFFF">{t('social.needAccount')}</AppText>
+              <AppText variant="caption" color={theme.colors.onMedia}>{t('social.needAccount')}</AppText>
             )}
 
             {current.cta && onOpenTarget ? (
@@ -218,7 +218,7 @@ export function StoryViewer({ stories, initialIndex = 0, visible, onClose, onOpe
                 onPress={() => onOpenTarget(current)}
                 style={[styles.cta, { backgroundColor: theme.colors.accent, borderRadius: theme.radius.cta }]}
               >
-                <AppText variant="label" weight="bold" color="#000000">{current.cta}</AppText>
+                <AppText variant="label" weight="bold" color={theme.colors.onAccent}>{current.cta}</AppText>
               </Pressable>
             ) : null}
           </View>

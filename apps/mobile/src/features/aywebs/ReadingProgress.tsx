@@ -69,14 +69,14 @@ export function ReadingProgress({ phase, elapsedMs, labels, countdownPrefix = ''
       {WAITING_PHASES.map((candidate, index) => {
         const state = stepState(index, phase);
         const label = labels[index] ?? candidate;
-        const color = state === 'done' ? theme.colors.accent
+        const color = state === 'done' ? theme.status.success.fg
           : state === 'active' ? theme.colors.ink
             : theme.colors.muted;
         return (
           <View key={candidate} style={styles.step}>
             <View style={styles.marker}>
               {state === 'done' ? (
-                <Ionicons name="checkmark-circle" size={16} color={theme.colors.accent} />
+                <Ionicons name="checkmark-circle" size={16} color={theme.status.success.fg} />
               ) : (
                 <Animated.View
                   style={{

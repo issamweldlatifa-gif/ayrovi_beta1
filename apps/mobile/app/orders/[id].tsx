@@ -268,7 +268,7 @@ export default function OrderDetailScreen() {
                 ) : null}
 
                 {payNote ? (
-                  <AppText variant="caption" color={theme.colors.danger} accessibilityRole="alert">{payNote}</AppText>
+                  <AppText variant="caption" color={theme.status.danger.fg} accessibilityRole="alert">{payNote}</AppText>
                 ) : null}
               </Card>
             );

@@ -44,7 +44,7 @@ export function BrandMark({ size = 36, withName = true, nameSize }: BrandMarkPro
         <AppText
           variant="label"
           weight="bold"
-          color="#FFFFFF"
+          color={theme.colors.onAccent}
           style={{ fontSize: Math.round(size * 0.58), lineHeight: Math.round(size * 0.66) }}
         >
           A

@@ -19,7 +19,7 @@ import type { Promotion } from '@/api/sections';
  * النصّ فوق البرتقالي AYROVI (نفس قرار `StoryCard`): البرتقالي لون فاتح،
  * والأسود فوقو هو التباين المقروء (~7:1 مقابل ~2.9:1 للأبيض).
  */
-const ON_ACCENT = '#000000';
+
 
 export interface PromotionCardProps {
   promotion: Promotion;
@@ -58,7 +58,7 @@ export function PromotionCard({ promotion, onOpen }: PromotionCardProps) {
           <AppText variant="caption" color={theme.colors.muted}>{promotion.name}</AppText>
         )}
         <View style={[styles.badge, { backgroundColor: theme.colors.accent, borderRadius: theme.radius.cta }]}>
-          <AppText variant="caption" weight="bold" color={ON_ACCENT}>{discount}</AppText>
+          <AppText variant="caption" weight="bold" color={theme.colors.onAccent}>{discount}</AppText>
         </View>
       </View>
 
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   image: { width: '100%', height: '100%' },
-  badge: { position: 'absolute', top: 8, start: 8, paddingHorizontal: 8, paddingVertical: 3 },
+  badge: { position: 'absolute', top: 8, start: 8, paddingHorizontal: 8, paddingVertical: 2 },
   name: { minHeight: 34 },
   footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6, gap: 6 },
 });

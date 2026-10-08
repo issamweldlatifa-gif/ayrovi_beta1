@@ -6,6 +6,7 @@
  *  • **الإدارة تملك الترتيب** (`elementOrder`) ⇒ نحترمو ولا نثبّتوش.
  *  • **القسم زينة**: سقوط `/lens-hero` ما يمنعش تصفّح المتجر.
  */
+import { readFileSync } from 'node:fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const apiGetData = vi.fn();
@@ -59,10 +60,32 @@ describe('قراءة القسم', () => {
     apiGetData.mockResolvedValue({ enabled: true });
     const hero = await fetchLensHero({});
     expect(hero?.title).toBe('');
-    expect(hero?.accentColor).toBe('#FF6900');
+    /**
+     * `accentColor` était autrefois `#FF6900` par défaut. C'était un SECOND
+     * orange dans le produit (l'accent de marque est `#FF7900`) — et il vivait
+     * dans `src/api/**`, une couche qui ne connaît pas la charte.
+     *
+     * La valeur de repli a donc été retirée de l'API : chaîne vide = « le
+     * serveur n'a rien dit », et c'est l'INTERFACE qui retombe sur
+     * `theme.colors.accent` (voir LensHero). On teste donc le CONTRAT
+     * (neutralité de la couche API), pas une couleur.
+     */
+    expect(hero?.accentColor).toBe('');
     expect(hero?.media.type).toBe('VIDEO');
     expect(hero?.media.muted).toBe(true);
     expect(hero?.phoneEnabled).toBe(false);
+  });
+
+  it('`accentColor` vide ⇒ la charte décide, pas la couche API', async () => {
+    /**
+     * Le complément du test précédent : ce n'est pas parce que l'API ne met
+     * rien que l'écran reste sans couleur. `LensHero` retombe sur l'accent de
+     * marque. On lit le code source plutôt que de le monter : le fichier
+     * importe React Native, que Vitest ne sait pas transformer.
+     */
+    const source = readFileSync(new URL('../src/features/lens/LensHero.tsx', import.meta.url), 'utf8');
+    expect(source).toContain('content.accentColor || theme.colors.accent');
+    expect(source).not.toContain("'#FF6900'");
   });
 
   it('`media.type` غير `IMAGE` ⇒ `VIDEO` (قائمة مغلقة)', async () => {

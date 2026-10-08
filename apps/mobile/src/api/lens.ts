@@ -698,7 +698,15 @@ export async function fetchLensHero(options: RequestOptions = {}): Promise<LensH
     ctaLabel: strOr(payload.ctaLabel),
     ctaUrl: strOr(payload.ctaUrl),
     proofLine: strOr(payload.proofLine),
-    accentColor: strOr(payload.accentColor, '#FF6900'),
+    /**
+     * Aucune couleur de repli ici, et c'est volontaire : `src/api/**` ne
+     * connaît pas la charte (aucun import de `@/design`). Mettre `#FF6900`
+     * en défaut introduisait un SECOND orange dans le produit, différent de
+     * l'accent `#FF7900` — l'exacte incohérence que §17 interdit.
+     *
+     * Chaîne vide = « le serveur n'a rien dit » : l'interface décide.
+     */
+    accentColor: strOr(payload.accentColor),
     elementOrder: strOr(payload.elementOrder, LENS_HERO_ORDER),
     enabled: payload.enabled === true,
     sortOrder: Number(payload.sortOrder) || 40,

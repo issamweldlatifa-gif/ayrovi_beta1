@@ -76,7 +76,7 @@ export default function AddressesScreen() {
       refreshing={addresses.isRefetching}
     >
       {failure ? (
-        <AppText accessibilityRole="alert" variant="label" weight="bold" color={theme.colors.danger}>{failure}</AppText>
+        <AppText accessibilityRole="alert" variant="label" weight="bold" color={theme.status.danger.fg}>{failure}</AppText>
       ) : null}
       {addresses.isLoading ? <LoadingBlock /> : null}
       {addresses.isError ? <ErrorBlock error={addresses.error} onRetry={() => addresses.refetch()} /> : null}
@@ -120,7 +120,7 @@ function AddressCard({ address, onDelete, busy }: { address: Address; onDelete: 
     <Card title={address.label || t('addresses.label')}>
       <View style={styles.row}>
         {address.isDefault ? (
-          <AppText variant="caption" weight="bold" color={theme.colors.accentText}>{t('addresses.default')}</AppText>
+          <AppText variant="caption" weight="bold" color={theme.status.info.fg}>{t('addresses.default')}</AppText>
         ) : null}
       </View>
       <AppText variant="body" weight="bold">{address.recipientName}</AppText>

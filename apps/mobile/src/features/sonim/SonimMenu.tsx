@@ -52,7 +52,7 @@ export function SonimMenu({ visible, onClose, onNewChat, onOpenThread, threads }
         {t('sonim.mission')}
       </AppText>
 
-      <View style={styles.separator} />
+      <View style={[styles.separator, { backgroundColor: theme.colors.divider }]} />
 
       <DrawerItem
         icon="add"
@@ -90,7 +90,7 @@ export function SonimMenu({ visible, onClose, onNewChat, onOpenThread, threads }
         </View>
       ) : null}
 
-      <View style={styles.separator} />
+      <View style={[styles.separator, { backgroundColor: theme.colors.divider }]} />
 
       <DrawerItem icon="receipt-outline" label={t('sonim.menu.order')} onPress={() => go('/orders')} />
       <DrawerItem icon="scan-outline" label={t('sonim.menu.ayrovix')} hint={t('sonim.menu.ayrovixHint')} onPress={() => go('/lens/scan')} />
@@ -101,7 +101,7 @@ export function SonimMenu({ visible, onClose, onNewChat, onOpenThread, threads }
 
 const styles = StyleSheet.create({
   mission: { marginTop: 6, marginBottom: 4 },
-  separator: { height: StyleSheet.hairlineWidth, backgroundColor: '#00000014', marginVertical: 8 },
+  separator: { height: StyleSheet.hairlineWidth, marginVertical: 8 },
   history: { gap: 2, paddingStart: 12, marginBottom: 4 },
   thread: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 },
 });

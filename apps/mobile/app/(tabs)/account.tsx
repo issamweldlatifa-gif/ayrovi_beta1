@@ -31,7 +31,7 @@ function OrderRow({ order }: { order: RecentOrder }) {
     <View style={[styles.order, { borderTopColor: theme.colors.line }]}>
       <View style={styles.orderHead}>
         <AppText variant="label" weight="bold">{order.orderNumber || order.id}</AppText>
-        <AppText variant="caption" color={theme.colors.accentText}>{order.status}</AppText>
+        <AppText variant="caption" color={theme.status.info.fg}>{order.status}</AppText>
       </View>
       <AppText variant="caption" color={theme.colors.muted}>
         {t('orders.items', { count: order.itemCount })} · {t('orders.total')} {order.totalTnd.toFixed(2)} DT
@@ -58,16 +58,16 @@ function SignedIn({ overview, pending }: { overview: AccountOverview | null; pen
         hint={verified ? undefined : t('account.unverified')}
       >
         <View style={styles.identity}>
-          <Ionicons name="person-circle-outline" size={44} color={theme.colors.accent} />
+          <Ionicons name="person-circle-outline" size={44} color={theme.colors.muted} />
           <View style={styles.identityText}>
             <AppText variant="lead" weight="bold">{shown?.displayName || '—'}</AppText>
             <AppText variant="caption" color={theme.colors.muted}>{shown?.email || shown?.phone || ''}</AppText>
-            <AppText variant="caption" color={shown?.phoneVerified ? theme.colors.accentText : theme.colors.muted}>
+            <AppText variant="caption" color={shown?.phoneVerified ? theme.status.success.fg : theme.colors.muted}>
               {shown?.phoneVerified ? t('account.phone.verified') : t('account.phone.unverified')}
             </AppText>
           </View>
         </View>
-        {notice ? <AppText variant="caption" color={theme.colors.danger}>{notice}</AppText> : null}
+        {notice ? <AppText variant="caption" color={theme.status.danger.fg}>{notice}</AppText> : null}
         <Button
           label={t('account.signOut')}
           tone="quiet"

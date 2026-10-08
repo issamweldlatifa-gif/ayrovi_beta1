@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 14,
+    paddingVertical: 12,
     // Le séparateur est posé à la FIN de chaque onglet sauf le dernier : une
     // bordure des deux côtés doublerait la ligne entre deux onglets.
     borderEndWidth: 0,

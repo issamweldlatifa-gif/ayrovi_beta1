@@ -90,7 +90,7 @@ export function ReelCard({ reel, active, counts, onOpenComments }: ReelCardProps
 
         {reel.durationSeconds > 0 ? (
           <View style={styles.duration}>
-            <AppText variant="caption" color="#FFFFFF">{`0:${String(reel.durationSeconds % 60).padStart(2, '0')}`}</AppText>
+            <AppText variant="caption" color={theme.colors.onMedia}>{`0:${String(reel.durationSeconds % 60).padStart(2, '0')}`}</AppText>
           </View>
         ) : null}
       </View>
@@ -110,7 +110,7 @@ export function ReelCard({ reel, active, counts, onOpenComments }: ReelCardProps
             onPress={toggleLike}
             style={[styles.action, { opacity: signedIn ? 1 : 0.45 }]}
           >
-            <Ionicons name={liked ? 'heart' : 'heart-outline'} size={20} color={liked ? theme.colors.accent : theme.colors.muted} />
+            <Ionicons name={liked ? 'heart' : 'heart-outline'} size={20} color={liked ? theme.status.danger.fg : theme.colors.muted} />
             <AppText variant="caption" color={theme.colors.muted}>{String(counts?.likes ?? reel.likes)}</AppText>
           </Pressable>
 
@@ -148,11 +148,11 @@ export function ReelCard({ reel, active, counts, onOpenComments }: ReelCardProps
 }
 
 const styles = StyleSheet.create({
-  card: { marginBottom: 14, overflow: 'hidden' },
+  card: { marginBottom: 12, overflow: 'hidden' },
   media: { width: '100%', aspectRatio: 9 / 16, justifyContent: 'flex-end' },
   poster: { alignItems: 'center', justifyContent: 'center' },
-  duration: { position: 'absolute', top: 10, start: 10, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, backgroundColor: 'rgba(0,0,0,0.55)' },
+  duration: { position: 'absolute', top: 10, start: 10, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, backgroundColor: 'rgba(0,0,0,0.55)' },
   body: { padding: 12, gap: 4 },
   actions: { flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 6 },
-  action: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  action: { flexDirection: 'row', alignItems: 'center', gap: 4 },
 });

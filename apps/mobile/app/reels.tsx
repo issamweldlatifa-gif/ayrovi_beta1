@@ -76,7 +76,7 @@ export default function ReelsScreen() {
           <AppText variant="title" weight="bold">{t('social.comments')}</AppText>
           {commentsFor ? <Comments targetId={commentsFor.id} /> : null}
           <Pressable accessibilityRole="button" onPress={closeComments} style={styles.closeBtn}>
-            <AppText variant="label" weight="bold" color={theme.colors.accentText}>{t('social.close')}</AppText>
+            <AppText variant="label" weight="bold" color={theme.colors.ink}>{t('social.close')}</AppText>
           </Pressable>
         </View>
       </Modal>

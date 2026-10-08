@@ -282,10 +282,10 @@ export function LinkRow({ label, value, onPress, icon, tone = 'default' }: LinkR
         <Ionicons
           name={icon as keyof typeof Ionicons.glyphMap}
           size={20}
-          color={tone === 'danger' ? theme.colors.danger : theme.colors.accentText}
+          color={tone === 'danger' ? theme.status.danger.fg : theme.colors.ink}
         />
       ) : null}
-      <AppText variant="body" color={tone === 'danger' ? theme.colors.danger : undefined} style={styles.linkLabel}>
+      <AppText variant="body" color={tone === 'danger' ? theme.status.danger.fg : undefined} style={styles.linkLabel}>
         {label}
       </AppText>
       {value ? <AppText variant="caption" color={theme.colors.muted}>{value}</AppText> : null}

@@ -44,7 +44,7 @@ export function ErrorBlock({ error, onRetry }: { error: unknown; onRetry?: () =>
         },
       ]}
     >
-      <AppText variant="label" weight="bold" color={theme.colors.danger} align="center">
+      <AppText variant="label" weight="bold" color={theme.status.danger.fg} align="center">
         {message[locale]}
       </AppText>
       {onRetry ? <RetryButton onPress={onRetry} /> : null}

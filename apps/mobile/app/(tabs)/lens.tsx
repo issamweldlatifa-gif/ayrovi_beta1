@@ -165,7 +165,7 @@ export default function LensScreen() {
           </View>
         ) : null}
         {note ? (
-          <AppText variant="caption" color={theme.colors.danger} accessibilityRole="alert">{note}</AppText>
+          <AppText variant="caption" color={theme.status.danger.fg} accessibilityRole="alert">{note}</AppText>
         ) : null}
       </Card>
 

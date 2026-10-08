@@ -23,7 +23,7 @@ import type { StoryItem } from '@/api/sections';
  * «الأسود ديما» قرار مقروئية، موش قرار نمط ليلي — والسبب مكتوب هنا باش
  * ما يتحولّش لقيمة سحرية يبدّلها واحد وما يعرفش علاش.
  */
-const ON_ACCENT = '#000000';
+
 
 export interface StoryCardProps {
   story: StoryItem;
@@ -70,7 +70,7 @@ export function StoryCard({ story, onOpen, viewed = false }: StoryCardProps) {
         ) : null}
         {story.cta ? (
           <View style={[styles.cta, { backgroundColor: theme.colors.accent, borderRadius: theme.radius.cta }]}>
-            <AppText variant="caption" weight="bold" color={ON_ACCENT} numberOfLines={1}>{story.cta}</AppText>
+            <AppText variant="caption" weight="bold" color={theme.colors.onAccent} numberOfLines={1}>{story.cta}</AppText>
           </View>
         ) : null}
       </View>

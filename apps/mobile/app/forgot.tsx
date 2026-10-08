@@ -105,7 +105,7 @@ export default function ForgotPasswordScreen() {
               un champ qui ne peut pas aboutir est un piège, pas une option. */}
           {!enabled ? (
             <>
-              <AppText accessibilityRole="alert" variant="label" weight="bold" color={theme.colors.danger}>
+              <AppText accessibilityRole="alert" variant="label" weight="bold" color={theme.status.danger.fg}>
                 {t('auth.forgot.unavailable')}
               </AppText>
               <Button
@@ -126,14 +126,14 @@ export default function ForgotPasswordScreen() {
                 editable={!busy}
               />
               {failure ? (
-                <AppText accessibilityRole="alert" variant="label" weight="bold" color={theme.colors.danger}>{failure}</AppText>
+                <AppText accessibilityRole="alert" variant="label" weight="bold" color={theme.status.danger.fg}>{failure}</AppText>
               ) : null}
               <Button label={t('auth.forgot.submit')} onPress={submit} busy={busy} />
               <AppText variant="caption" color={theme.colors.muted}>{t('auth.forgot.socialOnly')}</AppText>
             </>
           ) : (
             <>
-              <AppText accessibilityRole="alert" variant="body" color={theme.colors.accentText}>
+              <AppText accessibilityRole="alert" variant="body" color={theme.status.success.fg}>
                 {t('auth.forgot.accepted')}
               </AppText>
               <AppText variant="caption" color={theme.colors.muted}>{t('auth.forgot.openLink')}</AppText>

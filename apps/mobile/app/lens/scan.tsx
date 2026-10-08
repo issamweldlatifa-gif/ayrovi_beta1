@@ -13,13 +13,12 @@
  * إذن الكاميرا مرفوض = سبب صريح وحلّ مقترح (الإعدادات)، موش شاشة سوداء.
  */
 import { useCallback, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
 
 import { AppText, Button, Card, Field, KeyValue } from '@/design/ui';
+import { SubScreen } from '@/design/subScreen';
 import { ErrorBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
@@ -32,7 +31,6 @@ import { CandidateCard } from '@/features/lens/CandidateCard';
 
 export default function LensScanScreen() {
   const theme = useTheme();
-  const insets = useSafeAreaInsets();
   const { t, locale } = useI18n();
 
   const [permission, requestPermission] = useCameraPermissions();
@@ -115,20 +113,14 @@ export default function LensScanScreen() {
 
   const scanning = permission?.granted === true && !locked && !busy;
 
+  /**
+   * Coquille reprise à `SubScreen` : le bouton retour, la zone sûre et le
+   * défilement viennent d'un seul endroit. Cette écran recalculait les siens
+   * (`paddingTop: insets.top`, `paddingBottom: 32`) — le genre de choix qui,
+   * répété, a produit 23 écrans sur 35 sans zone sûre.
+   */
   return (
-    <View style={[styles.screen, { backgroundColor: theme.colors.canvas, paddingTop: insets.top + theme.space[2] }]}>
-      <View style={styles.header}>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => router.back()}
-          style={{ minHeight: theme.geometry.minTarget, minWidth: theme.geometry.minTarget, justifyContent: 'center' }}
-        >
-          <Ionicons name="chevron-back" size={26} color={theme.colors.ink} />
-        </Pressable>
-        <AppText variant="title" style={styles.headerTitle}>{t('lens.scanTitle')}</AppText>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+    <SubScreen title={t('lens.scanTitle')} fallback="/(tabs)/lens">
         {permission?.granted === false ? (
           <Card title={t('lens.cameraDeniedTitle')}>
             <AppText variant="caption" color={theme.colors.muted}>{t('lens.cameraDeniedBody')}</AppText>
@@ -154,7 +146,7 @@ export default function LensScanScreen() {
         )}
 
         {note ? (
-          <AppText variant="caption" color={theme.colors.danger} accessibilityRole="alert">{note}</AppText>
+          <AppText variant="caption" color={theme.status.danger.fg} accessibilityRole="alert">{note}</AppText>
         ) : null}
         {error ? <ErrorBlock error={error} /> : null}
         {readValue ? <KeyValue label={t('lens.scanValue')} value={readValue} /> : null}
@@ -190,8 +182,7 @@ export default function LensScanScreen() {
             ))}
           </Card>
         ) : null}
-      </ScrollView>
-    </View>
+    </SubScreen>
   );
 }
 
@@ -220,10 +211,6 @@ function ManualEntry({ onSubmit, disabled }: { onSubmit: (value: string) => void
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8 },
-  headerTitle: { flex: 1, paddingRight: 8 },
-  body: { paddingHorizontal: 16, paddingBottom: 32, gap: 8 },
   viewport: { height: 260, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
   camera: { flex: 1 },
   cameraPlaceholder: { flex: 1, alignItems: 'center', justifyContent: 'center' },

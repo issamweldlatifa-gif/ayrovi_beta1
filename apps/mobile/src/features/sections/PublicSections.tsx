@@ -197,7 +197,7 @@ export function PublicSections() {
               </View>
               {slide.body.pending ? <LoadingBlock /> : null}
               {slide.body.failed ? (
-                <AppText variant="caption" color={theme.colors.danger}>{t('sections.error')}</AppText>
+                <AppText variant="caption" color={theme.status.danger.fg}>{t('sections.error')}</AppText>
               ) : slide.body.empty ? (
                 <EmptyBlock>{t('sections.empty')}</EmptyBlock>
               ) : (
@@ -223,9 +223,9 @@ export function PublicSections() {
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: 22 },
+  wrap: { gap: 20 },
   section: { gap: 10 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  rail: { marginHorizontal: -2 },
+  rail: {},
 });

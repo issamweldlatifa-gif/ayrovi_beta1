@@ -155,7 +155,7 @@ export default function ProductScreen() {
           value={product.finalPrice > 0 ? `${product.finalPrice.toFixed(2)} TND` : t('catalog.noPrice')}
         />
         {product.expressAvailable ? (
-          <AppText variant="caption" color={theme.colors.accentText}>{t('catalog.express')}</AppText>
+          <AppText variant="caption" color={theme.status.info.fg}>{t('catalog.express')}</AppText>
         ) : null}
       </Card>
 
@@ -181,7 +181,7 @@ export default function ProductScreen() {
             disabled={addToCart.isSuccess}
           />
         ) : outOfStock ? (
-          <AppText variant="caption" color={theme.colors.danger}>{t('catalog.stock.out_of_stock')}</AppText>
+          <AppText variant="caption" color={theme.status.danger.fg}>{t('catalog.stock.out_of_stock')}</AppText>
         ) : null}
 
         {product.sourceUrl ? (
@@ -198,13 +198,13 @@ export default function ProductScreen() {
       </View>
 
       {favorite.isError ? (
-        <AppText accessibilityRole="alert" variant="caption" color={theme.colors.danger}>
+        <AppText accessibilityRole="alert" variant="caption" color={theme.status.danger.fg}>
           {t('catalog.retry')}
         </AppText>
       ) : null}
 
       {addToCart.isError ? (
-        <AppText accessibilityRole="alert" variant="caption" color={theme.colors.danger}>
+        <AppText accessibilityRole="alert" variant="caption" color={theme.status.danger.fg}>
           {isApiError(addToCart.error) && addToCart.error.code ? addToCart.error.code : t('catalog.retry')}
         </AppText>
       ) : null}

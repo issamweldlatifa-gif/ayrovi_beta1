@@ -43,7 +43,7 @@ export default function NotificationsScreen() {
       refreshing={notifications.isRefetching}
     >
       {failure ? (
-        <AppText accessibilityRole="alert" variant="label" weight="bold" color={theme.colors.danger}>{failure}</AppText>
+        <AppText accessibilityRole="alert" variant="label" weight="bold" color={theme.status.danger.fg}>{failure}</AppText>
       ) : null}
       {notifications.isLoading ? <LoadingBlock /> : null}
       {notifications.isError ? <ErrorBlock error={notifications.error} onRetry={() => notifications.refetch()} /> : null}
@@ -58,7 +58,7 @@ export default function NotificationsScreen() {
       {notifications.data?.map((item) => (
         <Card key={item.id} title={item.title || item.type}>
           <View style={styles.head}>
-            <AppText variant="caption" color={item.readAt ? theme.colors.muted : theme.colors.accentText}>
+            <AppText variant="caption" color={item.readAt ? theme.colors.muted : theme.status.info.fg}>
               {item.readAt ? t('notifications.read') : t('notifications.unread')}
             </AppText>
             {item.createdAt ? (

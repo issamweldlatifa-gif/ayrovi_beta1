@@ -67,7 +67,7 @@ export function ProductCard({ product, onOpen }: ProductCardProps) {
 
       <View style={styles.footer}>
         {hasPrice ? (
-          <AppText variant="label" weight="bold" color={theme.colors.accentText}>
+          <AppText variant="label" weight="bold" color={theme.colors.ink}>
             {product.finalPrice.toFixed(2)} TND
           </AppText>
         ) : (
@@ -75,7 +75,7 @@ export function ProductCard({ product, onOpen }: ProductCardProps) {
         )}
         <AppText
           variant="caption"
-          color={stock.tone === 'ok' ? theme.colors.accentText : stock.tone === 'warn' ? theme.colors.danger : theme.colors.muted}
+          color={stock.tone === 'ok' ? theme.status.success.fg : stock.tone === 'warn' ? theme.status.warning.fg : theme.colors.muted}
         >
           {stock.text}
         </AppText>

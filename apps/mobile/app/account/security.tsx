@@ -99,16 +99,16 @@ export default function SecurityScreen() {
           <Field label={t('security.current')} value={current} onChangeText={setCurrent} secureTextEntry editable={!busy} />
           <Field label={t('security.next')} value={next} onChangeText={setNext} secureTextEntry editable={!busy} />
           {next.length > 0 && next.length < 8 ? (
-            <AppText variant="caption" color={theme.colors.danger}>{t('security.tooShort')}</AppText>
+            <AppText variant="caption" color={theme.status.danger.fg}>{t('security.tooShort')}</AppText>
           ) : null}
           {next.length > 0 && next === current ? (
-            <AppText variant="caption" color={theme.colors.danger}>{t('security.same')}</AppText>
+            <AppText variant="caption" color={theme.status.danger.fg}>{t('security.same')}</AppText>
           ) : null}
           {failure ? (
-            <AppText accessibilityRole="alert" variant="label" weight="bold" color={theme.colors.danger}>{failure}</AppText>
+            <AppText accessibilityRole="alert" variant="label" weight="bold" color={theme.status.danger.fg}>{failure}</AppText>
           ) : null}
           {done ? (
-            <AppText accessibilityRole="alert" variant="label" weight="bold" color={theme.colors.accentText}>
+            <AppText accessibilityRole="alert" variant="label" weight="bold" color={theme.status.success.fg}>
               {t('security.changed')}
             </AppText>
           ) : null}

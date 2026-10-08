@@ -31,6 +31,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useT } from '@/i18n';
 import { useTheme } from '@/design/theme';
 import { revealChrome, useChromeHidden } from '@/design/chrome';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
@@ -47,6 +48,7 @@ export default function TabsLayout() {
   const t = useT();
   const pathname = usePathname();
   const chromeHidden = useChromeHidden();
+  const insets = useSafeAreaInsets();
 
   /**
    * Changer d’onglet RÉAFFICHE la barre : la retrouver masquée en arrivant sur
@@ -66,6 +68,21 @@ export default function TabsLayout() {
           borderTopWidth: 0,
           elevation: 0,
           paddingTop: 6,
+          /**
+           * §4.3-3 : « la barre du bas ajoute `insets.bottom` POUR ELLE-MÊME ».
+           *
+           * Sans ces deux lignes, la barre passait SOUS le bec (« home
+           * indicator ») et sous la barre de gestes Android : les libellés
+           * devenaient partiellement inaccessibles, et sur Android les trois
+           * boutons système les recouvraient. C'était le défaut n° 1 relevé
+           * par l'audit.
+           *
+           * La hauteur suit : `tabBar` (56) + la zone sûre, sinon le contenu
+           * de la barre se retrouve comprimé dans 56 points alors qu'elle en
+           * occupe davantage.
+           */
+          paddingBottom: insets.bottom,
+          height: theme.chrome.tabBar + insets.bottom,
           // En arabe, le premier outil est à DROITE : un utilisateur arabophone
           // ne cherche pas « Lens » à gauche.
           ...(theme.isRTL ? { direction: 'rtl' as const } : null),
@@ -73,7 +90,8 @@ export default function TabsLayout() {
           // barre hors de l’écran laisserait une bande vide en bas, et le
           // contenu ne profiterait pas de la place rendue.
           ...(chromeHidden ? {
-            height: 0, opacity: 0, paddingTop: 0, borderTopWidth: 0, overflow: 'hidden',
+            height: 0, opacity: 0, paddingTop: 0, paddingBottom: 0,
+            borderTopWidth: 0, overflow: 'hidden',
           } : null),
         },
         tabBarLabelStyle: {

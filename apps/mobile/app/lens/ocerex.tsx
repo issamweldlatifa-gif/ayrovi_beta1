@@ -185,7 +185,7 @@ export default function OcerexScreen() {
           </View>
         ) : null}
         {note ? (
-          <AppText variant="caption" color={theme.colors.danger} accessibilityRole="alert">{note}</AppText>
+          <AppText variant="caption" color={theme.status.danger.fg} accessibilityRole="alert">{note}</AppText>
         ) : null}
       </Card>
 
@@ -216,7 +216,7 @@ export default function OcerexScreen() {
       {extraction ? (
         <Card title={t('ocerex.calcTitle')}>
           {!readiness.canCalculate ? (
-            <AppText variant="caption" color={theme.colors.danger}>{blockText(readiness.calculateBlock)}</AppText>
+            <AppText variant="caption" color={theme.status.danger.fg}>{blockText(readiness.calculateBlock)}</AppText>
           ) : (
             <>
               {!extraction.currency && extraction.supportedCurrencies.length ? (
@@ -294,7 +294,7 @@ export default function OcerexScreen() {
           {readiness.canCommit ? (
             <AppText variant="caption" color={theme.colors.muted}>{t('ocerex.commitReady')}</AppText>
           ) : (
-            <AppText variant="caption" color={theme.colors.danger}>{blockText(readiness.commitBlock)}</AppText>
+            <AppText variant="caption" color={theme.status.danger.fg}>{blockText(readiness.commitBlock)}</AppText>
           )}
           <Button
             label={t('ocerex.commit')}

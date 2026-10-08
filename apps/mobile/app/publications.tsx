@@ -89,7 +89,7 @@ export default function PublicationsScreen() {
                     <Ionicons
                       name={liked[item.id] ? 'heart' : 'heart-outline'}
                       size={20}
-                      color={liked[item.id] ? theme.colors.accent : theme.colors.muted}
+                      color={liked[item.id] ? theme.status.danger.fg : theme.colors.muted}
                     />
                     <AppText variant="caption" color={theme.colors.muted}>{String(countsFor?.likes ?? 0)}</AppText>
                   </Pressable>
@@ -121,7 +121,7 @@ export default function PublicationsScreen() {
           <AppText variant="title" weight="bold">{t('social.comments')}</AppText>
           {commentsFor ? <Comments targetId={commentsFor.id} /> : null}
           <Pressable accessibilityRole="button" onPress={closeComments} style={styles.closeBtn}>
-            <AppText variant="label" weight="bold" color={theme.colors.accentText}>{t('social.close')}</AppText>
+            <AppText variant="label" weight="bold" color={theme.colors.ink}>{t('social.close')}</AppText>
           </Pressable>
         </View>
       </Modal>
@@ -130,11 +130,11 @@ export default function PublicationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  card: { marginBottom: 14, overflow: 'hidden' },
+  card: { marginBottom: 12, overflow: 'hidden' },
   image: { width: '100%', aspectRatio: 4 / 3 },
   body: { padding: 12, gap: 4 },
   actions: { flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 6 },
-  action: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  action: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   spacer: { height: 24 },
   sheet: { flex: 1, padding: 20, gap: 10, paddingTop: 48 },
   closeBtn: { paddingVertical: 12, alignSelf: 'flex-start' },

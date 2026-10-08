@@ -165,16 +165,16 @@ export default function ProfileScreen() {
         <AppText variant="caption" color={theme.colors.muted}>{t('profile.emailHint')}</AppText>
         <ToggleRow label={t('auth.marketing')} value={shownMarketing} onChange={setMarketing} disabled={busy} />
         {failure ? (
-          <AppText accessibilityRole="alert" variant="label" weight="bold" color={theme.colors.danger}>{failure}</AppText>
+          <AppText accessibilityRole="alert" variant="label" weight="bold" color={theme.status.danger.fg}>{failure}</AppText>
         ) : null}
         {saved ? (
-          <AppText accessibilityRole="alert" variant="label" weight="bold" color={theme.colors.accentText}>
+          <AppText accessibilityRole="alert" variant="label" weight="bold" color={theme.status.success.fg}>
             {t('profile.saved')}
           </AppText>
         ) : null}
         {/* Enregistrer sans rien changer ne sert à rien : le bouton le dit. */}
         {!shownName.trim() ? (
-          <AppText variant="caption" color={theme.colors.danger}>{t('profile.nameRequired')}</AppText>
+          <AppText variant="caption" color={theme.status.danger.fg}>{t('profile.nameRequired')}</AppText>
         ) : null}
         <Button label={t('common.save')} onPress={save} busy={busy} disabled={!shownName.trim()} />
       </Card>

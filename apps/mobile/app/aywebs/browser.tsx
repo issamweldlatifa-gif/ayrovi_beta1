@@ -288,7 +288,7 @@ export default function AyWebsBrowserScreen() {
             countdownPrefix={t('aywebs.phase.remaining')}
           />
         ) : null}
-        {note ? <AppText variant="caption" color={theme.colors.danger}>{note}</AppText> : null}
+        {note ? <AppText variant="caption" color={theme.status.danger.fg}>{note}</AppText> : null}
         {!captureAllowed ? (
           <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.readNotAllowed')}</AppText>
         ) : null}

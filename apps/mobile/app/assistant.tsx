@@ -287,7 +287,7 @@ export default function AssistantScreen() {
               onPress={() => { setReady(null); void checkStatus(); }}
               style={[styles.retry, { minHeight: theme.geometry.minTarget }]}
             >
-              <AppText variant="label" weight="bold" color={theme.colors.accentText}>{t('assistant.retry')}</AppText>
+              <AppText variant="label" weight="bold" color={theme.status.warning.fg}>{t('assistant.retry')}</AppText>
             </Pressable>
           </Card>
         ) : null}
@@ -308,14 +308,14 @@ export default function AssistantScreen() {
                 alignSelf: bubble.role === 'user' ? 'flex-end' : 'flex-start',
                 borderRadius: theme.radius.card,
                 backgroundColor: bubble.role === 'user' ? theme.colors.action : theme.colors.surface,
-                borderColor: bubble.failed ? theme.colors.danger : theme.colors.line,
+                borderColor: bubble.failed ? theme.status.danger.fg : theme.colors.line,
                 borderWidth: StyleSheet.hairlineWidth,
               },
             ]}
           >
             <AppText
               variant="body"
-              color={bubble.role === 'user' ? theme.colors.onAction : bubble.failed ? theme.colors.danger : theme.colors.ink}
+              color={bubble.role === 'user' ? theme.colors.onAction : bubble.failed ? theme.status.danger.fg : theme.colors.ink}
             >
               {bubble.text || '…'}
             </AppText>
@@ -328,7 +328,7 @@ export default function AssistantScreen() {
           </AppText>
         ) : null}
         {ready !== false && note && bubbles.length > 0 ? (
-          <AppText variant="caption" color={theme.colors.danger} accessibilityRole="alert">{note}</AppText>
+          <AppText variant="caption" color={theme.status.danger.fg} accessibilityRole="alert">{note}</AppText>
         ) : null}
       </ScrollView>
 
@@ -362,11 +362,11 @@ export default function AssistantScreen() {
           onPress={streaming ? stop : send}
           disabled={!streaming && !canSend}
           style={({ pressed }) => [styles.send, {
-            backgroundColor: streaming ? theme.colors.danger : theme.colors.accent,
+            backgroundColor: streaming ? theme.status.danger.fg : theme.colors.accent,
             opacity: !streaming && !canSend ? 0.45 : pressed ? 0.85 : 1,
           }]}
         >
-          <Ionicons name={streaming ? 'stop' : 'arrow-up'} size={20} color="#FFFFFF" />
+          <Ionicons name={streaming ? 'stop' : 'arrow-up'} size={20} color={theme.colors.onAccent} />
         </Pressable>
       </View>
     </KeyboardAvoidingView>
@@ -379,6 +379,6 @@ const styles = StyleSheet.create({
   bubble: { paddingHorizontal: 12, paddingVertical: 10, maxWidth: '92%' },
   retry: { alignItems: 'flex-start', justifyContent: 'center' },
   composer: { flexDirection: 'row', alignItems: 'center', gap: 8, height: COMPOSER_HEIGHT, borderTopWidth: StyleSheet.hairlineWidth },
-  input: { flex: 1, minHeight: 40, paddingHorizontal: 14, paddingVertical: 0, borderWidth: StyleSheet.hairlineWidth, textAlignVertical: 'center' },
+  input: { flex: 1, minHeight: 40, paddingHorizontal: 12, paddingVertical: 0, borderWidth: StyleSheet.hairlineWidth, textAlignVertical: 'center' },
   send: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
 });

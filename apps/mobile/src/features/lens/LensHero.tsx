@@ -66,7 +66,7 @@ export function LensHero({ onOpenLens }: LensHeroProps) {
     switch (id) {
       case 'eyebrow':
         return content.eyebrow ? (
-          <AppText key={id} variant="caption" weight="bold" color={content.accentColor}>{content.eyebrow}</AppText>
+          <AppText key={id} variant="caption" weight="bold" color={content.accentColor || theme.colors.accent}>{content.eyebrow}</AppText>
         ) : null;
       case 'title':
         return content.title ? (
@@ -89,10 +89,10 @@ export function LensHero({ onOpenLens }: LensHeroProps) {
             onPress={openCta}
             style={({ pressed }) => [
               styles.cta,
-              { backgroundColor: content.accentColor, borderRadius: theme.radius.cta, opacity: pressed ? 0.85 : 1 },
+              { backgroundColor: content.accentColor || theme.colors.accent, borderRadius: theme.radius.cta, opacity: pressed ? 0.85 : 1 },
             ]}
           >
-            <AppText variant="label" weight="bold" color="#000000">{content.ctaLabel}</AppText>
+            <AppText variant="label" weight="bold" color={theme.colors.onAccent}>{content.ctaLabel}</AppText>
           </Pressable>
         ) : null;
       default:
@@ -153,7 +153,7 @@ function PhoneMockup({ content }: { content: LensHeroContent }) {
     <View style={[styles.phone, { borderColor: theme.colors.line, backgroundColor: theme.colors.canvas }]}>
       {phone.image ? <Image source={{ uri: mediaUrl(phone.image) }} style={styles.phoneImage} resizeMode="cover" /> : null}
       {phone.statusLabel ? (
-        <AppText variant="caption" color={content.accentColor}>{phone.statusLabel}</AppText>
+        <AppText variant="caption" color={content.accentColor || theme.colors.accent}>{phone.statusLabel}</AppText>
       ) : null}
       {phone.resultLabel ? <AppText variant="caption" weight="bold">{phone.resultLabel}</AppText> : null}
       {phone.productName ? <AppText variant="label" weight="bold" numberOfLines={2}>{phone.productName}</AppText> : null}
@@ -165,7 +165,7 @@ function PhoneMockup({ content }: { content: LensHeroContent }) {
         ))}
       </View>
       {phone.ctaLabel ? (
-        <AppText variant="caption" weight="bold" color={content.accentColor}>{phone.ctaLabel}</AppText>
+        <AppText variant="caption" weight="bold" color={content.accentColor || theme.colors.accent}>{phone.ctaLabel}</AppText>
       ) : null}
     </View>
   );

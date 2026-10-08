@@ -39,13 +39,21 @@ export const CHROME = {
 /* ── Espacements manquants (§24.2) ────────────────────────────────────────── */
 
 /**
- * `identity.json` définit [4, 8, 12, 16, 24, 32, 48, 64, 96]. Trois marches
- * manquent pour couvrir les cas mesurés : 2 (séparateurs serrés), 20 (entre
- * 16 et 24, utilisé par les cartes), 40 (entre 32 et 48, sections).
+ * `identity.json` définit [4, 8, 12, 16, 24, 32, 48, 64, 96]. L'échelle est
+ * trop clairsemée pour les densités intermédiaires dont les écrans ont besoin,
+ * et le mesurage le prouve : avant ce complément, **78 valeurs d'espacement
+ * étaient hors échelle**, dont la très grande majorité en 6 et en 10.
+ *
+ * Ce n'est donc pas « les écrans ont tort » : c'est l'échelle qui a un trou.
+ * On comble les marches manquantes MESURÉES :
+ *   2 (séparateurs serrés) · 6 · 10 · 20 (entre 16 et 24) · 40 (entre 32 et 48)
+ *
  * On COMPLÈTE l'échelle sans la remplacer : les index 0 à 8 restent ceux de
- * l'identité, pour ne pas casser les écrans existants.
+ * l'identité, pour ne rien casser dans les écrans existants. La valeur finale
+ * est calculée, pas recopiée : ajouter une marche ici met à jour `SPACE_ALL`
+ * et le test d'application des jetons en même temps.
  */
-export const SPACE_EXTENDED = [2, 20, 40] as const;
+export const SPACE_EXTENDED = [2, 6, 10, 20, 40] as const;
 
 /** Échelle complète : identité + compléments, triée. */
 export const SPACE_ALL: readonly number[] = [...SPACE, ...SPACE_EXTENDED].sort((a, b) => a - b);
@@ -165,6 +173,104 @@ export const duration = {
   reduced: MOTION.reduced, // 0 — accessibilité
 } as const;
 
+/* ── Palette FONCTIONNELLE (statuts) ──────────────────────────────────────── */
+
+/**
+ * ── Pourquoi une palette à part, et pourquoi c'est justifié ─────────────────
+ * Consigne produit : « l'orange ne doit pas dépasser 3 %, il faut du rouge
+ * vrai, du bleu, du jaune — pas tout en orange ».
+ *
+ * Les couleurs de l'identité ont été dessinées pour une charte monochrome
+ * premium : `danger` y est un rose pâle (`#FFABAB`), `info` un GRIS
+ * (`#BDBDBD`), `success` un vert désaturé (`#90D6AF`). Sur le web, ces teintes
+ * posées sur de grandes surfaces passent. En signalétique mobile — une pastille
+ * de 12 px, une icône de 18 px, un liseré de 1 px — elles sont illisibles, et
+ * surtout elles ne se DISTINGUENT pas entre elles : trois gris teintés.
+ *
+ * On ajoute donc une palette de STATUT, distincte de la palette de MARQUE.
+ * Ce n'est pas une seconde charte : la marque reste monochrome + orange. Ce
+ * sont les ÉTATS qui ont des couleurs, et c'est précisément ce qui permet de
+ * garder l'orange sous 3 % : un signal n'a plus besoin d'être orange pour
+ * exister.
+ *
+ * ── Le contrat sémantique : la fonction EXACTE de chaque couleur ─────────────
+ *
+ *   🟡 JAUNE  warning  = AVERTISSEMENT. Demande l'attention, n'est PAS une
+ *                        erreur. L'utilisateur peut continuer.
+ *                        « التوفّر غير مؤكّد » · « السعر تقديري » ·
+ *                        « المهلة قربت تنتهي »
+ *
+ *   🔴 ROUGE  danger   = ERREUR ou DANGER. Quelque chose a échoué, ou une
+ *                        action est destructrice.
+ *                        « فشل الدفع » · « المنتوج محظور » · « حذف نهائي »
+ *
+ *   🔵 BLEU   info     = INFORMATION NEUTRE. Ni bien ni mal : un état, une
+ *                        note, une précision.
+ *                        « قيد المعالجة » · « الشحن خلال 48 ساعة »
+ *
+ *   🟢 VERT   success  = SUCCÈS ou CONFIRMATION : aboutissement positif.
+ *                        « تمّ الطلب » · « متوفّر » · « السعر مؤكّد »
+ *
+ *   🟠 ORANGE accent   = MARQUE + ACTION PRINCIPALE. Uniquement. Jamais un
+ *                        statut — sinon il n'est plus une marque et dépasse
+ *                        les 3 % de surface qui lui sont alloués.
+ *
+ *   ⬛⬜ GRIS  ink/line/ = STRUCTURE : textes, bordures, surfaces.
+ *             surface     Ne porte AUCUN sens, ne signale JAMAIS un état.
+ *                         Ces valeurs viennent de l'identité et ne bougent pas.
+ *
+ * Règle qui découle de ce contrat et qui tranche la plupart des hésitations :
+ * « est-ce que je SIGNALE un état ? » — oui ⇒ palette de statut ; non ⇒
+ * structure ou marque. Un bouton « Ajouter au panier » n'est pas un statut :
+ * il reste orange. Une pastille « التوفّر غير مؤكّد » est un statut : jaune.
+ *
+ * ── Valeurs MESURÉES, pas choisies au goût ───────────────────────────────────
+ * Chaque `fg` a été vérifié au ratio WCAG sur les deux fonds qu'il rencontre
+ * réellement (`canvas` et `surface`), dans les deux modes. Exigence : ≥ 4,5:1.
+ *
+ *   danger   #FF4D4F  6,43 sur noir · 5,49 sur #171717   (sombre)
+ *            #CF1322  5,57 sur blanc · 5,11 sur #F5F5F5  (clair)
+ *   warning  #FFC53D 13,31 sur noir · 11,36 sur #171717
+ *            #9C5700  5,56 sur blanc · 5,10 sur #F5F5F5  ← #AD6800 échouait (4,41)
+ *   info     #40A9FF  8,34 sur noir · 7,12 sur #171717
+ *            #0958D9  6,16 sur blanc · 5,65 sur #F5F5F5
+ *   success  #52C41A  9,27 sur noir · 7,91 sur #171717
+ *            #237804  5,59 sur blanc · 5,12 sur #F5F5F5
+ *
+ * `soft` et `border` sont dérivés par opacité, jamais écrits à la main.
+ */
+export const STATUS = {
+  danger: {
+    dark: { fg: '#FF4D4F', soft: alpha('#FF4D4F', 0.16), border: alpha('#FF4D4F', 0.4) },
+    light: { fg: '#CF1322', soft: alpha('#CF1322', 0.12), border: alpha('#CF1322', 0.35) },
+  },
+  warning: {
+    dark: { fg: '#FFC53D', soft: alpha('#FFC53D', 0.16), border: alpha('#FFC53D', 0.4) },
+    light: { fg: '#9C5700', soft: alpha('#9C5700', 0.12), border: alpha('#9C5700', 0.35) },
+  },
+  info: {
+    dark: { fg: '#40A9FF', soft: alpha('#40A9FF', 0.16), border: alpha('#40A9FF', 0.4) },
+    light: { fg: '#0958D9', soft: alpha('#0958D9', 0.12), border: alpha('#0958D9', 0.35) },
+  },
+  success: {
+    dark: { fg: '#52C41A', soft: alpha('#52C41A', 0.16), border: alpha('#52C41A', 0.4) },
+    light: { fg: '#237804', soft: alpha('#237804', 0.12), border: alpha('#237804', 0.35) },
+  },
+} as const;
+
+export type StatusName = keyof typeof STATUS;
+export type StatusTone = { fg: string; soft: string; border: string };
+
+/** Les statuts d'un mode donné — c'est ce que le thème expose. */
+export type StatusSet = Record<StatusName, StatusTone>;
+
+export const statusFor = (mode: 'dark' | 'light'): StatusSet => ({
+  danger: STATUS.danger[mode],
+  warning: STATUS.warning[mode],
+  info: STATUS.info[mode],
+  success: STATUS.success[mode],
+});
+
 /* ── Couleurs dérivées (§2 — Color Tokens manquants) ──────────────────────── */
 
 /**
@@ -228,9 +334,12 @@ export function derivedColors(colors: DerivablePalette) {
     overlay: alpha('#000000', 0.56),
     /** Voile plus dense : modale bloquante, permission. */
     scrim: alpha('#000000', 0.72),
-    /** Avertissement — dérivé de `accent` (même famille chaude), pas un jaune
-     *  arbitraire : entre l'accent et le succès, à mi-chemin. */
-    warning: mix(colors.accent, colors.success, 0.5),
+    /**
+     * ⚠️ `warning` n'est PLUS défini ici : il appartient à `STATUS`.
+     * L'ancienne valeur était un MÉLANGE d'accent et de succès — un vert
+     * olive qui n'était ni un jaune ni un signal lisible. Deux définitions
+     * du même jeton seraient une duplication (§22).
+     */
     /** Fond d'un contrôle inactif : la surface, à peine éclaircie. */
     disabled: mix(colors.surface, colors.ink, 0.03),
     /** Texte inactif : `muted`, ramené vers la surface. */
@@ -239,6 +348,33 @@ export function derivedColors(colors: DerivablePalette) {
     divider: mix(colors.canvas, colors.ink, 0.08),
     /** Bordure mise en avant (focus, sélection). */
     focusRing: colors.accent,
+    /**
+     * Texte posé sur l'ACCENT (`#FF7900`). Noir, et ce n'est pas un goût :
+     * c'est MESURÉ. Le noir sur cet orange donne ≈ 7:1, le blanc ≈ 2,9:1 —
+     * or WCAG AA demande 4,5:1 en texte courant. Le blanc échoue.
+     *
+     * Pourquoi pas `onAction` ? Parce que `onAction` suit le THÈME (noir en
+     * sombre, blanc en clair) alors que l'accent, lui, ne change JAMAIS :
+     * `#FF7900` dans les deux modes. Utiliser `onAction` rendrait le texte
+     * blanc sur orange en mode clair — c'est-à-dire illisible, exactement le
+     * défaut que deux composants avaient déjà (BrandMark, SonimMark).
+     *
+     * Le contraste se mesure sur le SUPPORT réel, pas sur le thème.
+     */
+    onAccent: '#000000',
+    /**
+     * Texte posé sur un MÉDIA (photo, vignette vidéo) : blanc dans les DEUX
+     * modes, et c'est volontairement une des rares couleurs non dérivées.
+     *
+     * Pourquoi pas `ink` ? Parce qu'un média est sombre quel que soit le
+     * réglage de l'utilisateur. `ink` vaut `#FFFFFF` en sombre mais `#000000`
+     * en clair : un titre blanc sur photo deviendrait noir illisible en mode
+     * clair. C'est exactement le piège que « une seule palette » peut créer si
+     * on l'applique sans distinguer le SUPPORT du THÈME.
+     */
+    onMedia: '#FFFFFF',
+    /** Voile sous ce texte, pour garantir le contraste sur une photo claire. */
+    mediaScrim: alpha('#000000', 0.4),
   } as const;
 }
 
