@@ -1,26 +1,42 @@
 /**
- * المساعد الذكي — P5، الشريحة 4: محادثة حقيقية على تيّار SSE.
+ * SONIM BETA — L'assistant IA d'AYROVI.
  *
- * قواعد الصدق:
- *  • **ما نصنعوش ردّاً**: النصّ يتجمّع من `delta` وحدها. كان التيّار انقطع بلا
- *    `done`، نقولوها — ما نكمّلوش الكلام من عندنا.
- *  • **الحالة من الخادم**: `state` (thinking/analyzing/reasoning/creating)
- *    تتعرض كما هي؛ والخطأ بكوده ونصّه.
- *  • **المساعد ما هوش جاهز ⇒ تقال**: `GET /status` و`503` يوصلوا لنفس الجملة،
- *    بلا صندوق دردشة يبعث رسائل ما يوصلش ردّها.
- *  • **التوقيف بيد المستعمل**: زرّ «وقّف» يقطع التيّار فعلاً (abort).
- *  • التيّار يتقرا بـ`expo/fetch` (React Native ما يعطيش `body` متاع تيّار في
- *    `fetch` العادي) — وهذا هو الحدّ الوحيد اللي يلمس الجهاز.
+ * Le moteur existait déjà (SSE réel, `expo/fetch`, états du serveur, arrêt par
+ * la personne) ; ce qui manquait était l'IDENTITÉ et le parcours : un nom, une
+ * marque, des amorces, un menu, un historique. Le flux n'a pas été réécrit :
+ * il a été habillé, sans qu'une seule règle de vérité en soit assouplie.
+ *
+ * Règles de vérité — inchangées, et elles sont toute la valeur de l'écran :
+ *  • **aucune réponse inventée** : le texte vient des `delta` du serveur, un
+ *    seul mot de nous serait un mensonge présenté comme une réponse ;
+ *  • **l'état vient du serveur** (`thinking/analyzing/reasoning/creating`) et
+ *    l'erreur s'affiche avec son code, jamais travestie en réponse ;
+ *  • **assistant indisponible ⇒ dit** : `GET /status` faux ou 503 mènent à la
+ *    même phrase, au lieu d'une boîte de dialogue qui envoie dans le vide ;
+ *  • **l'arrêt est réel** : le bouton coupe le flux (abort), il ne le masque pas.
+ *
+ * Ce que Q6 ajoute, et pourquoi :
+ *  • **une marque dessinée ici** (`SonimMark`) — pas d'image importée ;
+ *  • **des amorces** : face à un champ vide, personne ne sait ce que
+ *    l'assistant SAIT faire. Une amorce REMPLIT le champ, elle ne répond pas à
+ *    la place de la personne ;
+ *  • **un menu** (nouvelle discussion · historique · ma commande · AYROVIX ·
+ *    réglages) dont chaque entrée mène à un écran qui EXISTE, vérifié ;
+ *  • **un historique local** : il n'y a pas d'endpoint d'historique serveur.
+ *    Plutôt que de fabriquer une entrée morte, on conserve les discussions sur
+ *    l'appareil — une fonctionnalité réelle, qui marche aujourd'hui.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import {
+  KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View,
+} from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Crypto from 'expo-crypto';
 import { fetch as expoFetch } from 'expo/fetch';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
-import { AppText, Button, Card, Field } from '@/design/ui';
+import { AppText, Card } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useI18n, useT } from '@/i18n';
 import { isApiError, userMessage } from '@/api/errors';
@@ -29,14 +45,24 @@ import {
   type AssistantEvent, type AssistantState, type StreamFetch,
 } from '@/api/assistant';
 import { useAyWebsSessionId } from '@/features/aywebs/session';
+import { SonimMark } from '@/features/sonim/SonimMark';
+import { SonimChips, type SonimChip } from '@/features/sonim/SonimChips';
+import { SonimMenu } from '@/features/sonim/SonimMenu';
+import {
+  loadSonimThreads, saveSonimThreads, sonimTitle, upsertSonimThread,
+  type SonimThread,
+} from '@/features/sonim/history';
 
 interface Bubble {
   id: string;
   role: 'user' | 'assistant';
   text: string;
-  /** رسالة خطأ العرض: تتلوّن، وما تتعرضش كجواب. */
+  /** Message d'échec : coloré, et jamais présenté comme une réponse. */
   failed?: boolean;
 }
+
+/** Hauteur de la barre de saisie — tenue à 52 pt, comme la maquette. */
+const COMPOSER_HEIGHT = 52;
 
 export default function AssistantScreen() {
   const theme = useTheme();
@@ -53,9 +79,45 @@ export default function AssistantScreen() {
   const [note, setNote] = useState('');
   const [ready, setReady] = useState<boolean | null>(null);
 
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [threads, setThreads] = useState<SonimThread[]>([]);
+
+  /**
+   * La conversation est un ÉTAT et non plus une valeur figée : « nouvelle
+   * discussion » doit pouvoir en changer sans recréer l'écran.
+   */
+  const [conversationId, setConversationId] = useState(() => newAssistantConversationId(() => Crypto.randomUUID()));
+
   const streamRef = useRef<{ abort: () => void } | null>(null);
-  const conversationId = useMemo(() => newAssistantConversationId(() => Crypto.randomUUID()), []);
   const scrollRef = useRef<ScrollView | null>(null);
+
+  /* ── Historique : chargé à l'ouverture, sauvegardé à chaque réponse finie ── */
+
+  useEffect(() => { void loadSonimThreads().then(setThreads); }, []);
+
+  const currentThread = useCallback((messages: Bubble[]): SonimThread | null => {
+    const clean = messages
+      .filter((bubble) => !bubble.failed)
+      .map((bubble) => ({ role: bubble.role, text: bubble.text }));
+    // Rien à garder : une discussion sans question de la personne n'a pas de
+    // titre possible, et un historique plein de « Nouvelle discussion » vides
+    // est pire qu'un historique vide.
+    if (!clean.some((message) => message.role === 'user' && message.text.trim())) return null;
+    return { id: conversationId, title: sonimTitle(clean), updatedAt: Date.now(), messages: clean };
+  }, [conversationId]);
+
+  useEffect(() => {
+    if (streaming) return; // on n'écrit pas un fil pendant qu'il se remplit
+    const thread = currentThread(bubbles);
+    if (!thread) return;
+    setThreads((current) => {
+      const next = upsertSonimThread(current, thread);
+      void saveSonimThreads(next);
+      return next;
+    });
+  }, [bubbles, currentThread, streaming]);
+
+  /* ── Statut ─────────────────────────────────────────────────────────────── */
 
   const checkStatus = useCallback(async () => {
     try {
@@ -69,6 +131,8 @@ export default function AssistantScreen() {
   }, [locale, t]);
 
   useEffect(() => { void checkStatus(); }, [checkStatus]);
+
+  /* ── Flux ───────────────────────────────────────────────────────────────── */
 
   const pushDelta = useCallback((text: string) => {
     setBubbles((current) => {
@@ -97,8 +161,11 @@ export default function AssistantScreen() {
   const send = useCallback(() => {
     const text = draft.trim();
     if (!text || !sessionId || streaming) return;
-    const history = [...bubbles.filter((bubble) => !bubble.failed).map((bubble) => ({ role: bubble.role, text: bubble.text })), { role: 'user' as const, text }];
-    setBubbles((current) => [...current, { id: `u-${Date.now()}`, role: 'user', text }]);
+    const history = [
+      ...bubbles.filter((bubble) => !bubble.failed).map((bubble) => ({ role: bubble.role, text: bubble.text })),
+      { role: 'user' as const, text },
+    ];
+    setBubbles((current) => [...current, { id: `u-${Date.now()}-${current.length}`, role: 'user', text }]);
     setDraft('');
     setNote('');
     setStreaming(true);
@@ -126,6 +193,37 @@ export default function AssistantScreen() {
     setTool('');
   }, []);
 
+  /* ── Menu ───────────────────────────────────────────────────────────────── */
+
+  const newChat = useCallback(() => {
+    stop();
+    // La discussion en cours est déjà dans l'historique (effet de sauvegarde) :
+    // on ne fait que repartir d'un fil neuf.
+    setConversationId(newAssistantConversationId(() => Crypto.randomUUID()));
+    setBubbles([]);
+    setNote('');
+  }, [stop]);
+
+  const openThread = useCallback((thread: SonimThread) => {
+    stop();
+    setConversationId(thread.id);
+    setBubbles(thread.messages.map((message, index) => ({
+      id: `${thread.id}-${index}`,
+      role: message.role === 'user' ? 'user' : 'assistant',
+      text: message.text,
+    })));
+    setNote('');
+  }, [stop]);
+
+  /* ── Présentation ───────────────────────────────────────────────────────── */
+
+  const chips = useMemo<SonimChip[]>(() => [
+    { id: 'find', label: t('sonim.chip.find'), icon: 'search-outline' },
+    { id: 'order', label: t('sonim.chip.order'), icon: 'receipt-outline' },
+    { id: 'compare', label: t('sonim.chip.compare'), icon: 'git-compare-outline' },
+    { id: 'pay', label: t('sonim.chip.pay'), icon: 'card-outline' },
+  ], [t]);
+
   const stateText = (value: AssistantState): string => {
     switch (value) {
       case 'thinking': return t('assistant.state.thinking');
@@ -135,28 +233,46 @@ export default function AssistantScreen() {
     }
   };
 
+  const composerEnabled = ready !== false && Boolean(sessionId) && !streaming;
+  const canSend = composerEnabled && draft.trim().length >= 2;
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: theme.colors.canvas }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
+      <SonimMenu
+        visible={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        onNewChat={newChat}
+        onOpenThread={openThread}
+        threads={threads}
+      />
+
       <View style={[styles.header, { paddingTop: insets.top + theme.space[2], paddingHorizontal: theme.space[3] }]}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={t('assistant.title')}
-          onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
-          style={{ minHeight: theme.geometry.minTarget, minWidth: theme.geometry.minTarget, justifyContent: 'center' }}
+          accessibilityLabel={t('sonim.menu.settings')}
+          onPress={() => setMenuOpen(true)}
+          style={styles.headerButton}
         >
-          <Ionicons name="chevron-back" size={26} color={theme.colors.ink} />
+          <Ionicons name="menu" size={24} color={theme.colors.ink} />
         </Pressable>
+
         <View style={{ flex: 1 }}>
-          <AppText variant="title">{t('assistant.title')}</AppText>
-          <AppText variant="caption" color={theme.colors.muted}>{t('assistant.hint')}</AppText>
+          <SonimMark withPhase phase={t('sonim.phase')} />
         </View>
-        {streaming ? (
-          <Button label={t('assistant.stop')} tone="quiet" onPress={stop} />
-        ) : null}
+
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+          style={styles.headerButton}
+        >
+          <Ionicons name="chevron-back" size={24} color={theme.colors.ink} />
+        </Pressable>
       </View>
+
+      <SonimChips chips={chips} onPick={(chip) => setDraft(chip.label)} disabled={streaming} />
 
       <ScrollView
         ref={scrollRef}
@@ -166,7 +282,13 @@ export default function AssistantScreen() {
         {ready === false ? (
           <Card title={t('assistant.unavailableTitle')}>
             <AppText variant="body">{note || t('assistant.notReady')}</AppText>
-            <Button label={t('assistant.retry')} tone="quiet" onPress={() => { setReady(null); void checkStatus(); }} />
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => { setReady(null); void checkStatus(); }}
+              style={[styles.retry, { minHeight: theme.geometry.minTarget }]}
+            >
+              <AppText variant="label" weight="bold" color={theme.colors.accentText}>{t('assistant.retry')}</AppText>
+            </Pressable>
           </Card>
         ) : null}
 
@@ -210,25 +332,42 @@ export default function AssistantScreen() {
         ) : null}
       </ScrollView>
 
+      {/* Barre de saisie : 52 pt, une ligne, bouton circulaire centré. */}
       <View style={[styles.composer, {
+        paddingBottom: insets.bottom,
         paddingHorizontal: theme.space[3],
-        paddingBottom: insets.bottom + theme.space[2],
         borderTopColor: theme.colors.line,
+        backgroundColor: theme.colors.canvas,
       }]}>
-        <Field
-          label={t('assistant.input')}
+        <TextInput
           value={draft}
           onChangeText={setDraft}
-          multiline
-          editable={ready !== false && Boolean(sessionId)}
           placeholder={t('assistant.placeholder')}
+          placeholderTextColor={theme.colors.muted}
+          accessibilityLabel={t('assistant.input')}
+          editable={composerEnabled}
+          multiline={false}
+          returnKeyType="send"
+          onSubmitEditing={canSend ? send : undefined}
+          style={[styles.input, {
+            borderRadius: theme.radius.cta,
+            backgroundColor: theme.colors.surface,
+            borderColor: theme.colors.line,
+            color: theme.colors.ink,
+          }]}
         />
-        <Button
-          label={t('assistant.send')}
-          onPress={send}
-          busy={streaming}
-          disabled={streaming || ready === false || !sessionId || draft.trim().length < 2}
-        />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={streaming ? t('assistant.stop') : t('assistant.send')}
+          onPress={streaming ? stop : send}
+          disabled={!streaming && !canSend}
+          style={({ pressed }) => [styles.send, {
+            backgroundColor: streaming ? theme.colors.danger : theme.colors.accent,
+            opacity: !streaming && !canSend ? 0.45 : pressed ? 0.85 : 1,
+          }]}
+        >
+          <Ionicons name={streaming ? 'stop' : 'arrow-up'} size={20} color="#FFFFFF" />
+        </Pressable>
       </View>
     </KeyboardAvoidingView>
   );
@@ -236,6 +375,10 @@ export default function AssistantScreen() {
 
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingBottom: 8 },
+  headerButton: { minHeight: 44, minWidth: 44, alignItems: 'center', justifyContent: 'center' },
   bubble: { paddingHorizontal: 12, paddingVertical: 10, maxWidth: '92%' },
-  composer: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 8, gap: 6 },
+  retry: { alignItems: 'flex-start', justifyContent: 'center' },
+  composer: { flexDirection: 'row', alignItems: 'center', gap: 8, height: COMPOSER_HEIGHT, borderTopWidth: StyleSheet.hairlineWidth },
+  input: { flex: 1, minHeight: 40, paddingHorizontal: 14, paddingVertical: 0, borderWidth: StyleSheet.hairlineWidth, textAlignVertical: 'center' },
+  send: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
 });

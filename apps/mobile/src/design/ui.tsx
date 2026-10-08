@@ -2,9 +2,10 @@
  * Briques d'interface minimales du shell. Pas de bibliothèque : chaque élément
  * ici est utilisé par au moins un écran, rien n'est ajouté « au cas où ».
  */
-import type { ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
-  Pressable, RefreshControl, ScrollView, StyleSheet, Switch, Text, TextInput, View,
+  Animated, Dimensions, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Switch,
+  Text, TextInput, View,
   type StyleProp, type TextInputProps, type TextProps, type TextStyle as RNTextStyle,
   type LayoutChangeEvent,
 } from 'react-native';
@@ -348,6 +349,16 @@ export function Screen({ tab, phase, children, onRefresh, refreshing = false }: 
 }
 
 const styles = StyleSheet.create({
+  drawerScrim: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' },
+  drawerPanel: {
+    position: 'absolute', top: 0, bottom: 0,
+    paddingHorizontal: 16, gap: 4,
+    borderLeftWidth: StyleSheet.hairlineWidth, borderRightWidth: StyleSheet.hairlineWidth,
+  },
+  drawerItem: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    paddingHorizontal: 12, paddingVertical: 10,
+  },
   linkRow: { flexDirection: 'row', alignItems: 'center', gap: 10, borderTopWidth: StyleSheet.hairlineWidth },
   linkLabel: { flex: 1 },
   button: {
@@ -372,3 +383,123 @@ const styles = StyleSheet.create({
   segmented: { flexDirection: 'row', borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
   segment: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
 });
+
+/* ── Tiroir latéral (menu) ─────────────────────────────────────────────────── */
+
+/**
+ * Un tiroir — pas une bibliothèque, pas un « au cas où » : SONIM en a besoin
+ * pour son menu (nouvelle discussion · historique · ma commande · AYROVIX ·
+ * réglages), et aucun écran n'avait encore de menu latéral.
+ *
+ * Choix délibéré : `Animated` de React Native, PAS Reanimated. Reanimated
+ * exige un greffon Babel que ce projet n'a pas (pas de `babel.config.js`) ;
+ * l'ajouter pour une seule animation serait une dépendance de plus et une
+ * source de panne à la construction. `Animated` est déjà là, tourne sur le
+ * thread natif, et respecte `theme.motion.reduced`.
+ *
+ * Le tiroir sort du bord de DÉPART (`start`), pas de la gauche : en arabe,
+ * l'interface se lit de droite à gauche, et un menu qui sort de la gauche
+ * arrive « de derrière » la lecture.
+ */
+export interface DrawerProps {
+  visible: boolean;
+  onClose: () => void;
+  children: ReactNode;
+  /** Bord d'où sort le tiroir. */
+  side?: 'start' | 'end';
+}
+
+export function Drawer({ visible, onClose, children, side = 'start' }: DrawerProps) {
+  const theme = useTheme();
+  const insets = useSafeAreaInsets();
+  const reduced = theme.motion.reduced === 0;
+  const progress = useRef(new Animated.Value(0)).current;
+  const [mounted, setMounted] = useState(visible);
+
+  useEffect(() => {
+    if (visible) setMounted(true);
+    Animated.timing(progress, {
+      toValue: visible ? 1 : 0,
+      duration: reduced ? 0 : theme.motion.standard,
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      // Démontage APRÈS la sortie : couper le Modal trop tôt tronque l'animation.
+      if (finished && !visible) setMounted(false);
+    });
+  }, [progress, reduced, theme.motion.standard, visible]);
+
+  const width = Math.min(320, Dimensions.get('window').width * 0.82);
+  const fromStart = (side === 'start') === theme.isRTL ? 'right' : 'left';
+  const offset = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [fromStart === 'left' ? -width : width, 0],
+  });
+
+  if (!mounted) return null;
+
+  return (
+    <Modal transparent visible animationType="none" onRequestClose={onClose} statusBarTranslucent>
+      <View style={StyleSheet.absoluteFill}>
+        <Animated.View
+          style={[styles.drawerScrim, { opacity: progress }]}
+          accessibilityElementsHidden
+        >
+          <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityRole="button" accessibilityLabel="fermer" />
+        </Animated.View>
+        <Animated.View
+          style={[
+            styles.drawerPanel,
+            {
+              width,
+              backgroundColor: theme.colors.canvas,
+              borderLeftColor: theme.colors.line,
+              borderRightColor: theme.colors.line,
+              paddingTop: insets.top + theme.space[3],
+              paddingBottom: insets.bottom + theme.space[3],
+              [fromStart === 'left' ? 'left' : 'right']: 0,
+              transform: [{ translateX: offset }],
+            },
+          ]}
+          accessibilityViewIsModal
+        >
+          {children}
+        </Animated.View>
+      </View>
+    </Modal>
+  );
+}
+
+/** Une entrée de tiroir : cible tactile pleine, état désactivé EXPLIQUÉ. */
+export function DrawerItem({
+  icon, label, hint, onPress, active = false,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  hint?: string;
+  onPress: () => void;
+  active?: boolean;
+}) {
+  const theme = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.drawerItem,
+        {
+          minHeight: theme.geometry.minTarget,
+          backgroundColor: active ? theme.colors.surface : 'transparent',
+          borderRadius: theme.radius.control,
+          opacity: pressed ? 0.7 : 1,
+        },
+      ]}
+    >
+      <Ionicons name={icon} size={22} color={active ? theme.colors.accent : theme.colors.ink} />
+      <View style={{ flex: 1, gap: 2 }}>
+        <AppText variant="label" weight={active ? 'bold' : 'regular'} color={theme.colors.ink}>{label}</AppText>
+        {hint ? <AppText variant="caption" color={theme.colors.muted}>{hint}</AppText> : null}
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={theme.colors.muted} />
+    </Pressable>
+  );
+}
