@@ -1,30 +1,34 @@
 # AYROVI — Global-Grade Product Design System & UI/UX Specification
 
-**الحالة**: `DRAFT` — بانتظار `APPROVED` أو `CHANGES REQUIRED`
+**الحالة**: مواصفة النظام + تدقيق تنفيذ الموبيل (محدّث 08/10/2026)
 **التاريخ**: 08/10/2026
 **الهوية**: AYROVI A — Official Identity · v3.1.0 · `sha256 6ca37aa4…`
 **النطاق**: تطبيق AYROVI (React Native / Expo)
 
 ---
 
-## مقدمة: هذه الوثيقة مبنية على الكود، لا على الذوق
+## مقدمة: المواصفة والحالة الفعلية شيئان مختلفان
 
-كل قيمة مذكورة هنا قرأتُها من الملفات الفعلية، ورُمزت حالتها:
+المبادئ أدناه هي العقد التصميمي. أما حالة التنفيذ فتُوسم على حدة، وهي لقطة
+للكود والاختبارات في التاريخ أعلاه — ليست موافقة نهائية على الجودة البصرية.
 
 | الرمز | المعنى |
 |---|---|
-| ✅ | موجود اليوم في `tokens.generated.ts` / `theme.tsx` |
-| 🔶 | **مفقود** — مقترح بقيم محددة، يحتاج اعتمادك |
-| ❌ | غير موجود ويحتاج قرار منتوج |
+| ✅ | موجود في المصدر ومسنود باختبار أو عقد واضح |
+| ◐ | موجود جزئياً؛ تبنّيه أو تغطيته غير مكتملة |
+| 🔶 | فجوة/اقتراح لم يُنفّذ بعد، وليس وصفاً لما هو موجود |
+| ❌ | قرار منتوج لم يُحسم |
 
-**المصدر الأوحد الحقيقي اليوم**: `client/src/design/editorial/identity.json`
-↓ (مولَّد)
-`apps/mobile/src/design/tokens.generated.ts` — **ملف مُولَّد، يُمنع تعديله يدوياً**
-↓
-`apps/mobile/src/design/theme.tsx` — يحوّل الجيتونات إلى كائن `Theme`
+**مصادر التصميم:**
 
-> قاعدة ملزمة: أي تغيير جيتون يبدأ من `identity.json` ثم `npm run tokens:build`،
-> ثم `npm run tokens:check`. تعديل `tokens.generated.ts` مباشرةً = مخالفة.
+`client/src/design/editorial/identity.json` → `tokens.generated.ts` (مولّد، لا يُعدّل يدوياً)
+
+`apps/mobile/src/design/tokens.mobile.ts` يعرّف إضافات React Native المشتقة، ثم
+`apps/mobile/src/design/theme.tsx` يركّب المجموعتين في `Theme`.
+
+> أي تغيير لهوية العميل يبدأ من `identity.json` ثم `npm run tokens:build` و
+> `npm run tokens:check`. الإضافات الخاصة بالموبيل تُغيّر في `tokens.mobile.ts`؛
+> لا تُنسخ القيم إلى الشاشات.
 
 ### حدود نطاق هذه الوثيقة (مُقاس، موش افتراض)
 
@@ -143,48 +147,51 @@ AYROVI ليس متجراً ولا مساعداً فقط — هو **وكيل شر
 | `infoSoft` | `#171717` | `#F5F5F5` | سطح معلومة |
 | `focus` | `#FFFFFF` | `#000000` | حلقة التركيز |
 
-### المفقود — مقترح للاعتماد 🔶
+### ألوان مشتقة ومكمّلة في الموبيل ✅
 
-| الجيتون | داكن | فاتح | السبب (لماذا نحتاجه) |
-|---|---|---|---|
-| `elevatedSurface` | `#242424` | `#FFFFFF` | الورقة والبطاقة العائمة — اليوم تُستعمل `surface` وتبدو مسطّحة |
-| `overlay` | `rgba(0,0,0,.55)` | `rgba(0,0,0,.55)` | خلفية الـModal — بلا جيتون تُكتب يدوياً في كل مكان |
-| `warning` | `#FFD79A` | `#8A5A00` | «التوفّر غير مؤكّد» — حالة منتوج حقيقية بلا لون اليوم |
-| `disabled` | `#2E2E2E` | `#E5E5E5` | خلفية معطَّلة |
-| `disabledText` | `#6E6E6E` | `#A3A3A3` | نصّ معطَّل — اليوم يُستعمل `muted` فلا يُقرأ الفرق |
-| `divider` | `#2E2E2E` | `#EBEBEB` | فاصل أخفّ من `line` للتقسيم الداخلي |
-| `scrim` | `rgba(0,0,0,.72)` | `rgba(0,0,0,.72)` | تغطية كاملة (عارض الصور، القوائم) |
+`theme.tsx` يركّب ألوان `identity.json` مع `derivedColors()` ولوحة الحالات في
+`tokens.mobile.ts`. المشتقات الحالية تشمل `elevatedSurface`, `overlay`, `scrim`,
+`disabled`, `disabledText`, `divider`, `focusRing`, `onAccent`, `onMedia` و`mediaScrim`.
+الألوان المشتقة تُحسب من لوحة الهوية أو من opacities موثّقة؛ لا تُعاد كتابتها
+داخل الشاشات.
 
-> **ملاحظة أمانة**: `surface` في الوضع الداكن `#171717` قريب جداً من `canvas`
-> `#000000` — الفرق بصري ضعيف. المقترح رفع `surface` إلى `#1C1C1C`
-> وإضافة `elevatedSurface #262626`. **يحتاج رأيك.**
+| مجموعة | العقد الفعلي |
+|---|---|
+| `theme.status.{danger,warning,info,success}` | `fg` و`soft` و`border` لكل من الفاتح والداكن؛ مشتقة في `tokens.mobile.ts` |
+| `elevatedSurface`, `disabled`, `disabledText`, `divider` | مزج محسوب من ألوان `canvas`/`surface`/`ink`/`muted` |
+| `overlay`, `scrim`, `mediaScrim` | طبقات سوداء ذات opacity محددة في مصدر الموبيل |
+| `onAccent`, `onMedia`, `focusRing` | ألوان مشتقة/وظيفية معلنة في `derivedColors()` |
+
+`surface` الداكن ما زال `#171717` حسب هوية AYROVI؛ لا تغيّره من شاشة منفردة.
+أي تعديل للهوية يمرّ عبر المصدر الرسمي، وأي تغيير لصيغة مشتقة يمرّ عبر
+`tokens.mobile.ts` واختبارات التباين المناسبة.
 
 ## 2.2 Spacing Tokens
 
-الموجود ✅: `SPACE = [4, 8, 12, 16, 24, 32, 48, 64, 96]`
-
-الناقص 🔶 (مطلوب في بوابة القبول): `2`, `20`, `40` — و`80`, `128` للمسافات الكبرى.
-
-**السلم المقترح**: `[2, 4, 8, 12, 16, 20, 24, 32, 40, 48, 64, 80, 96, 128]`
+الموجود في الهوية ✅: `SPACE = [4, 8, 12, 16, 24, 32, 48, 64, 96]`.
+ويكمّله `tokens.mobile.ts` بالدرجات `[2, 6, 10, 20, 40]`؛ المقياس الموحّد
+للفحص هو `SPACE_ALL`. الدرجتان `80` و`128` غير معرّفتين بعد، ولا يجوز
+إدخالهما كأرقام حرة قبل قرار وإضافة موثّقة.
 
 | الاستعمال | الجيتون |
 |---|---|
 | داخل الزرّ (أفقي) | `16` |
-| بين عنصرين مرتبطين | `8` |
-| بين عنصرين منفصلين | `16` |
-| بين قسم وآخر | `32` |
-| هامش الشاشة الجانبي | `16` (ضيّق) · `24` (عادي) · `32` (لوحي) |
-| مسافة أمان سفلية | `insets.bottom` + `24` |
+| داخل مركّب بين عناصر مرتبطة | `8` |
+| بين عناصر الشاشة المباشرة | `screenContentGap(theme.space)` = `12` |
+| فاصل صريح | `SectionGap` يرسم `32`؛ وتُضاف فجوة الأب إن كان الحاوي يستخدمها |
+| هامش الشاشة الجانبي | `16` (compact/regular) · `24` (wide) · `32` (tablet)، من `SPACE` |
+| أسفل `AppScreen` | `insets.bottom` فقط بلا شريط تبويب؛ وإلا يملكه الشريط + `footerSpace` الاختياري |
+| أسفل `SubScreen` | `insets.bottom + theme.space[5]` = `32` |
 
 > ⚠️ تغيير `SPACE` يمرّ عبر `identity.json` ثم `tokens:build`. لا يُحرَّر
 > `tokens.generated.ts` يدوياً أبداً.
 
 ## 2.3 Radius Tokens
 
-الموجود ✅: `control 12` · `card 16` · `sheet 32` · `cta 999`
-
-المفقود 🔶: لا يوجد جيتون للـ**chip/badge** — وهذا سبب عيب حقيقي واجهته
-(اضطررت لتجنّبه). ولا توجد سُلَّم كامل.
+الموجود ✅: `RADIUS` في `tokens.mobile.ts` يعرّف `xs 4`, `sm 8`, `md 12`,
+`lg 16`, `xl 24`, و`full 999`، مع أسماء الهوية `control`, `card`, `sheet` و`cta`.
+لا يوجد اسم مستقل `chip`؛ الشارة تستخدم `full` أو `control` حسب شكلها، ولا
+تُنشأ قيمة موازية.
 
 | الجيتون | القيمة | الاستعمال |
 |---|---|---|
@@ -195,71 +202,37 @@ AYROVI ليس متجراً ولا مساعداً فقط — هو **وكيل شر
 | `xl` | `24` | بطاقة كبيرة، صورة |
 | `full` / `chip` | `999` | شارة، حبّة، زرّ دائري |
 
-## 2.4 Shadow / Elevation 🔶 (مفقود بالكامل)
+## 2.4 Shadow / Elevation ✅
 
-لا يوجد أي جيتون ظلّ اليوم. المقترح (قيم React Native):
+`elevation` في `tokens.mobile.ts` يوفّر `none`, `low`, `medium`, `high`، وكل
+مستوى يحمل خصائص iOS وAndroid معاً. `shadowFor(level)` هو واجهة القراءة.
+التعريف موجود؛ استخدامه ليس شاملاً بعد، فلا يُستنتج من وجود الجيتون أن كل
+بطاقة تستعمل ظلاً.
 
-| المستوى | الاستعمال | iOS | Android |
-|---|---|---|---|
-| `0` | مسطّح | — | — |
-| `1` | بطاقة | opacity .14, r 6, y 3 | elevation 2 |
-| `2` | بطاقة مرفوعة | opacity .18, r 10, y 6 | elevation 4 |
-| `3` | ورقة سفلية | opacity .22, r 18, y 10 | elevation 8 |
-| `4` | حوار | opacity .28, r 28, y 18 | elevation 16 |
+## 2.5 Opacity Tokens ◐
 
-> الظلّ في RN يختلف بين المنصّتين (`shadowColor/Offset/Opacity/Radius` مقابل
-> `elevation`). يجب أن يكون جيتوناً واحداً يترجم نفسه — لا يُكتب في كل مكوّن.
-
-## 2.5 Opacity Tokens 🔶
-
-| الجيتون | القيمة | الاستعمال |
-|---|---|---|
-| `disabled` | `0.40` | عنصر معطَّل |
-| `pressed` | `0.60` | أثناء الضغط (مع الضغط الخفيف) |
-| `hover` | `0.08` | طبقة تمرير |
-| `skeleton` | `0.30` | هيكل التحميل |
-| `iconInactive` | `0.55` | أيقونة غير نشِطة |
+`OPACITY` يعرّف حالياً `disabled 0.4`, `subtle 0.64`, `skeleton 0.12` و
+`imageScrim 0.32`. التعريف موجود، لكن بعض حالات الضغط والرموز ما زالت تستخدم
+قيماً محلية؛ استكمال التبنّي فجوة، وليس الجيتون نفسه مفقوداً.
 
 ## 2.6 Icon Size Tokens
 
-الموجود ✅: `iconGrid 24` · `iconStroke 1.5` · `minTarget 44`
+الموجود ✅: `GEOMETRY.iconGrid 24`, `iconStroke 1.5`, `minTarget 44`، وسلّم
+`ICON_SIZE = { xs: 14, sm: 18, md: 24, lg: 32, xl: 40 }`. لا يعني ذلك أن كل
+أيقونة قد هاجرت إلى السلم؛ الهدف اللمسي الأدنى يبقى `44`.
 
-المقترح 🔶: `16 · 20 · 24 · 28 · 32` — مع قاعدة: **الهدف اللمسي دائماً `44`
-مهما صغرت الأيقونة** (`hitSlop` يحقّقها، لا `padding` عشوائي).
+## 2.7 Motion Tokens ◐
 
-## 2.7 Motion Tokens
+الموجود: `MOTION.fast 120`, `standard 180`, `reduced 0`؛ و`duration.exit 240`.
+`EASING` و`SPRING` معرّفان في `tokens.mobile.ts` (`standard`, `accelerate`,
+`decelerate`; `firm`, `soft`). هذه القيم جاهزة، لكن توحيد جميع الحركات
+واستجابة كل شاشة لتقليل الحركة ما زال جزئياً.
 
-الموجود ✅: `MOTION.fast 120` · `standard 180` · `reduced 0`
+## 2.8 Z-Index / Layers ✅
 
-المفقود 🔶: **لا توجد easing**، ولا مدد للدخول/الخروج.
-
-| الجيتون | المدة | الاستعمال |
-|---|---|---|
-| `instant` | `80` | تبديل لون، نبضة |
-| `fast` ✅ | `120` | ضغط، تمرير حالة |
-| `standard` ✅ | `180` | ظهور، اختفاء، تبديل تبويب |
-| `slow` | `260` | ورقة سفلية، حوار |
-| `deliberate` | `380` | انتقال شاشة |
-| `reduced` ✅ | `0` | تقليل الحركة (احترام إعداد النظام) |
-
-**Easing** 🔶:
-- `standard` → `Easing.out(Easing.cubic)` (الأكثر استعمالاً)
-- `decelerate` → `Easing.out(Easing.quad)` (دخول)
-- `accelerate` → `Easing.in(Easing.quad)` (خروج)
-- `spring` → `damping 18, stiffness 180, mass 1` (ورقة، حوار فقط)
-
-## 2.8 Z-Index / Layers 🔶 (مفقود)
-
-| الطبقة | القيمة |
-|---|---|
-| `base` | `0` |
-| `header` | `10` |
-| `sticky` | `20` |
-| `tabBar` | `30` |
-| `overlay` | `40` |
-| `sheet` | `50` |
-| `modal` | `60` |
-| `toast` | `70` |
+السلم الفعلي في `Z_INDEX`: `base 0`, `raised 1`, `chrome 10`, `scrim 100`,
+`modal 101`, `toast 200`. لا توجد أسماء مستقلة لـ`sticky` أو`tabBar` أو`sheet`؛
+استعمل الاسم الدلالي الموجود، ولا تخترع طبقة موازية.
 
 ## 2.9 قاعدة منع القيم الحرّة
 
@@ -449,12 +422,12 @@ semantic colors لا يعني إعادة رسم الهيكل: الرمادي ي�
 
 | العنصر | القيمة | المصدر |
 |---|---|---|
-| أقصى عرض المحتوى | `1280` | `GEOMETRY.contentMax` ✅ |
+| أقصى عرض المحتوى | `1280` | `GEOMETRY.contentMax` ✅ (التطبيق في الحاويات ◐) |
 | ارتفاع الزرّ / الحقل | `48` | `GEOMETRY.controlHeight` ✅ |
 | الهدف اللمسي الأدنى | `44` | `GEOMETRY.minTarget` ✅ |
-| ارتفاع الهيدر | `56` | 🔶 يُقترح جيتوناً |
-| ارتفاع البار السفلي | `56` + `insets.bottom` | 🔶 يُقترح جيتوناً |
-| ارتفاع شريط التبويب الداخلي | `40` | 🔶 |
+| ارتفاع الهيدر خارج safe area | `64` = 12 أعلى + 44 هدفاً لمسياً + 8 أسفل | `CHROME.header` ✅ |
+| ارتفاع البار السفلي | `56` + `insets.bottom` | `CHROME.tabBar` ✅ |
+| ارتفاع شريط التبويب الداخلي | `40` | `CHROME.tabStrip` ✅ |
 
 ## 4.3 Safe Area — إلزامي
 
@@ -462,7 +435,7 @@ semantic colors لا يعني إعادة رسم الهيكل: الرمادي ي�
 ┌─────────────────────────┐
 │ insets.top              │ ← لا محتوى تحتها أبداً
 ├─────────────────────────┤
-│ header (56)             │
+│ header (64)             │
 ├─────────────────────────┤
 │                         │
 │   المحتوى (يتمرّر)      │
@@ -482,10 +455,11 @@ semantic colors لا يعني إعادة رسم الهيكل: الرمادي ي�
 
 ## 4.4 الكيبورد
 
-- أي شاشة فيها إدخال تستعمل `keyboard` في `AppScreen` (تغليف
-  `KeyboardAvoidingView` تلقائياً).
-- `behavior`: `padding` على iOS، `height` على Android.
-- `keyboardShouldPersistTaps="handled"` على كل قائمة متمرّرة.
+- `AppScreen.keyboard` يوفّر `KeyboardAvoidingView`، وواجبه على كل نموذج داخل
+  `AppScreen`; التبنّي عبر الشاشات ما زال جزئياً ويجب تدقيقه قبل الإطلاق.
+- السلوك: `padding` على iOS، `height` على Android.
+- `keyboardShouldPersistTaps="handled"` مفعّل في `AppScreen`; الشاشات الخاصة
+  التي تستخدم `ScrollView` مباشرةً مسؤولة عن تطبيق العقد نفسه.
 
 ## 4.5 الاتجاه (Orientation)
 
@@ -508,40 +482,27 @@ semantic colors لا يعني إعادة رسم الهيكل: الرمادي ي�
 
 > ❌ ممنوع: مركّب يعرّف لوناً أو مسافة أو حجماً بنفسه.
 
-## 5.2 الجرد: الموجود مقابل المطلوب
+## 5.2 الجرد: الموجود مقابل المطلوب (لقطة التنفيذ)
 
 | المكوّن | الحالة | الملاحظة |
 |---|---|---|
-| `AppText` | ✅ | موجود في `design/ui.tsx` |
-| `Button` | ✅ | له `block` و`style` — ينقصه حالات (§6) |
-| `Card` | ✅ | ينقصه حالات |
-| `KeyValue` | ✅ | |
-| `AppHeader` | ✅ | مبني حديثاً — **ينقصه انتقال شفاف→متماسك** |
-| `Drawer` / `DrawerItem` | ✅ | |
-| `EmptyBlock` / `ErrorBlock` / `LoadingBlock` | ✅ | `design/states.tsx` — أسماء مختلفة عن المطلوب |
-| `Field` | ✅ | الحقول |
-| `ProductCard` | ✅ | `features/catalog/` |
-| **`AppScreen`** | 🔶 | **البدائية المفقودة الأخطر** — مِلك الهندسة |
-| `BottomTabs` | 🔶 | البار مُعدّ داخل ملفّ المسارات |
-| `ProductImage` | 🔶 | **مفقود** — كل بطاقة تقرّر بنفسها |
-| `SectionHeader` | 🔶 | مفقود |
-| `SearchInput` | 🔶 | مفقود |
-| `Price` | 🔶 | مفقود — السعر يُكتب يدوياً |
-| `Chip` / `Badge` | 🔶 | لا جيتون `radius.chip` |
-| `IconButton` | 🔶 | |
-| `Input` / `Select` / `Dropdown` | 🔶 | |
-| `Checkbox` / `Radio` / `Switch` | 🔶 | |
-| `SegmentedControl` | 🔶 | |
-| `Avatar` | 🔶 | |
-| `Rating` | 🔶 | |
-| `Toolbar` | 🔶 | |
-| `Modal` / `Dialog` / `BottomSheet` | ❌ | يُغنى بـ`Drawer` جزئياً |
-| `Toast` / `Snackbar` | 🔶 | |
-| `Alert` / `Tooltip` | 🔶 | |
-| `Divider` | 🔶 | |
-| `Progress` / `Skeleton` / `Spinner` | 🔶 | `LoadingBlock` يغطّي جزءاً |
-| `EmptyState` / `ErrorState` / `SuccessState` | 🔶 | تسمية + حالات (§9) |
-| `ImagePlaceholder` | 🔶 | |
+| `AppText`, `Card`, `SectionHeader`, `KeyValue`, `Button`, `Field` | ✅ | `src/design/ui.tsx` |
+| `Segmented`, `LinkRow`, `ToggleRow`, `Drawer`, `DrawerItem` | ✅ | بدائيات عامة مستخدمة في الشاشات |
+| `ResponsiveActionGroup` | ✅ | يكدّس الأزرار في الضيق ويقسّمها بالتساوي في العرض الواسع |
+| `AppScreen`, `useResponsive`, `Section`, `SectionGap`, `FullBleed` | ✅ | `src/design/layout.tsx`; بعض المسارات لا تستخدمها بعد ◐ |
+| `SubScreen` | ✅ | غلاف للمسارات المتداخلة؛ لا يُدمج في نسخة موازية من `AppScreen` |
+| `AppHeader` | ✅ | ثابت؛ `AppScreen` يمرّر حالة التمرير ليبدّل الخلفية |
+| `EmptyBlock`, `ErrorBlock`, `LoadingBlock`, `RetryButton` | ✅ | `src/design/states.tsx` |
+| `Footer` | ✅ | محتوى من الخادم، سطح هوية داكن ثابت؛ gutter داخلي متجاوب |
+| شريط التبويبات | ◐ | `expo-router` في `app/(tabs)/_layout.tsx`؛ ليس مكوّناً مستقلاً |
+| `ProductCard` | ◐ | مركّب مجال، وليس سياسة صورة عامة |
+| `ProductImage`, `Price`, `SearchInput`, `IconButton` | 🔶 | لا توجد بدائية موحّدة بهذه العقود |
+| `Chip` / `Badge` | ◐ | تُركّب محلياً؛ لا يوجد مكوّن مشترك مستقل |
+| `Modal` / `BottomSheet` | ◐ | `Drawer` موجود؛ لا يوجد نظام عام لكل أنواع الأوراق |
+| `SuccessState`, `Toast`, `Tooltip`, `Divider` | 🔶 | لا توجد بدائيات مشتركة بهذه الأسماء |
+
+هذا الجرد يصف المكوّنات الموجودة؛ لا يثبت أن كل شاشة تستخدمها. التبنّي
+والاستثناءات يُراجعان من مسارات `app/`، ولا تُحوَّل توصية إلى حقيقة بالوثيقة.
 
 ## 5.3 قالب تعريف أي مكوّن
 
@@ -859,14 +820,18 @@ App Shell
 
 ## 13.2 الهيدر
 
-| الحالة | فوق الهيرو | بعد الهيرو |
-|---|---|---|
-| الخلفية | شفاف | `surface` متماسك |
-| الانتقال | — | بموضع التمرير، بلا تغيير أبعاد |
-| الأيقونات | بظلّ (مقروءة على الصورة) | بلون `ink` |
+`AppScreen.overlayHeader` يرسم `AppHeader` خارج `ScrollView` ويمرّر له `scrolled`.
+القرار الحالي من `headerSolidFor`: شفاف حتى `8pt` من التمرير، ثم `surface` مع
+حدّ `line`. الأبعاد لا تتبدّل عند العبور بين الحالتين.
 
-> ⚠️ **عيب حالي موثّق**: `AppHeader` شفاف دائماً. هذا يخالف البوابة (§3)
-> ويُصلح بعد الاعتماد.
+| الحالة | عند أعلى الشاشة (`y ≤ 8`) | بعد العتبة (`y > 8`) |
+|---|---|---|
+| الخلفية | شفافة | `surface` مع حدّ سفلي |
+| الأيقونات | `ink` مع ظلّ نصّ | `ink` بلا ظلّ |
+| الهندسة | ثابتة | ثابتة |
+
+هذا انتقال بالحالة لا بقياس ارتفاع الهيرو؛ لا تدّعي الوثيقة عتبة «بعد نهاية
+الصورة». اختبار `chrome.test.ts` يثبت العتبة والحالات غير الصالحة.
 
 ## 13.3 البار السفلي
 
@@ -991,8 +956,8 @@ App Shell
 ## 18.1 التركيب الإلزامي
 
 ```
-AppScreen                        ← يملك: safe area، تمرير، هامش
-└── overlayHeader (اختياري)      ← تراكب حقيقي
+AppScreen                        ← يملك: safe area، تمرير، gutter، وفجوة الشاشة
+└── overlayHeader(state) (اختياري) ← تراكب حقيقي؛ يستقبل `scrolled`
 └── المحتوى
     └── SectionHeader            ← لكل قسم
         └── مكوّنات من المكتبة
@@ -1003,8 +968,10 @@ AppScreen                        ← يملك: safe area، تمرير، هامش
 
 1. الشاشة **لا** تحسب `paddingTop` ولا `paddingBottom` — `AppScreen` يفعل.
 2. الشاشة **لا** تحدّد الهامش الجانبي — `AppScreen` يفعل (حسب نقطة التوقّف).
-3. كل قسم يبدأ بـ`SectionHeader` — لا عنوان حرّ.
-4. المسافة بين الأقسام `32`، وداخل القسم `12` — من الجيتونات.
+3. استخدم `SectionHeader` لعناوين الأقسام العليا؛ تبنّيه ليس شاملاً بعد.
+4. `AppScreen` و`SubScreen` يضيفان فجوة `space[2]` (`12`) بين الأبناء المباشرين.
+   `SectionGap` يرسم 32 إضافية، وتُضاف إليها فجوة الأب؛ استعمله فقط عندما
+   يكون هذا الفصل الأوسع مقصوداً، لا كعنصر تزييني عام.
 5. عنصر واحد فقط يحمل المستوى 1 من الهرمية (§1.2).
 6. الترتيب العمودي: الأهم فوق. لا استثناء.
 
@@ -1191,88 +1158,76 @@ disabled: opacity .40
 ## 21.1 خريطة التنفيذ
 
 ```
-client/src/design/editorial/identity.json        ← المصدر الأوحد
-        │  npm run tokens:build
+client/src/design/editorial/identity.json
+        │  tokens:build / tokens:check
         ▼
-apps/mobile/src/design/tokens.generated.ts      ← مُولَّد · لا يُحرَّر
+apps/mobile/src/design/tokens.generated.ts  (هوية مولّدة، لا تُحرّر)
+apps/mobile/src/design/tokens.mobile.ts     (إضافات Native مشتقة)
         │
         ▼
-apps/mobile/src/design/theme.tsx                ← Theme object
-        │
-        ├── design/ui.tsx        البدائيات (AppText, Button, Card…)
-        ├── design/layout.tsx    AppScreen · useResponsive  🔶
-        ├── design/states.tsx    الحالات الموحّدة
-        ├── design/chrome.tsx    تمرير → بار سفلي
-        └── features/<domain>/   المركّبات
+apps/mobile/src/design/theme.tsx            (Theme موحّد)
+        ├── layoutLogic.ts                    (breakpoints، اتجاه الأفعال، gap)
+        ├── chromeLogic.ts / chrome.tsx        (قرارات scroll + ربط التبويبات)
+        ├── layout.tsx                        (AppScreen, useResponsive, Section, SectionGap, FullBleed)
+        ├── subScreen.tsx                     (SubScreen)
+        ├── ui.tsx                            (AppText, Button, Card, ResponsiveActionGroup…)
+        ├── states.tsx                        (loading, error, empty)
+        └── features/<domain>/                 مركّبات المجال
 ```
 
-## 21.2 كيف نمنع بناء واجهة خارج النظام
+## 21.2 الإنفاذ والاختبارات الحالية
 
-| الطبقة | الأداة | الحالة |
-|---|---|---|
-| **المترجم** | `noUnusedLocals` + `noUnusedParameters` | ✅ مُفعَّل |
-| **القاموس** | تيست يرفض المفتاح الميت والناقص | ✅ 11 تيست |
-| **الهوية** | `tokens:check` يربط الجيتونات بـ`identity.json` | ✅ |
-| **النسخ** | `copy.test.ts` يمنع النصّ المكتوب يدوياً | ✅ |
-| **البنية** | تيست يفحص التبويبات مقابل النموذج | ✅ |
-| **الجيتونات** | تيست يرفض الألوان/المسافات الحرّة داخل `src/` و`app/` | 🔶 **يُقترح** |
-| **التكرار** | تيست يرفض مكوّنين بنفس الوظيفة | 🔶 **يُقترح** |
+| العقد | المصدر |
+|---|---|
+| TypeScript strict + منع المتغيرات/المعاملات غير المستخدمة | `apps/mobile/tsconfig.json` ✅ |
+| تساوي مفاتيح `fr`/`ar`، الوصول للنصوص، المتغيّرات وأكواد الخادم | `tests/copy.test.ts`, `tests/i18n.test.ts` ✅ |
+| منع ألوان/مسافات خارج النظام، وحصر `absolute` والهوامش السفلية اليدوية | `tests/design-system.test.ts` ✅ |
+| ثبات مولّد الهوية | `npm run tokens:check` ✅ |
+| هندسة breakpoints واتجاه الأفعال والفجوة المشتركة | `tests/layoutLogic.test.ts` ✅ |
+| سلوك التمرير والعتبة الخاصة بالهيدر | `tests/chrome.test.ts` ✅ |
+| منع مكوّنين مكررين آلياً | غير متاح؛ يحتاج مراجعة معمارية ◐ |
+| المظهر الفعلي على Android | لا يثبته اختبار المصدر؛ يلزم فحص جهاز/لقطة ◐ |
 
-### تصحيح مهم — الإنفاذ موجود، لكن للويب فقط
+`copy.test.ts` يحرس المفاتيح القابلة للوصول، اكتمال اللغتين، المتغيّرات وبعض
+عقود النسخ؛ لا يدّعي منع كل نصّ حرفي. والاختبارات الآلية لا تحلّ محل مراجعة
+التبنّي أو فحص الرندر على جهاز حقيقي.
 
-الادّعاء بأنّه «لا يوجد أي تيست يمنع الألوان الحرّة» **غير دقيق**. القياس
-يُظهر أنّ التيستات موجودة، لكنّها كلها خارج نطاق الموبيل:
-
-| التيست | ما يحكمه فعلاً | يغطّي `apps/mobile`؟ |
-|---|---|---|
-| `tests/design-tokens.test.ts` | `client/src/admin/**` — «plus aucune valeur de couleur en dur» | ❌ لا |
-| `tests/design-zalando.test.ts` | واجهات العميل على الويب | ❌ لا |
-
-كلاهما مذكور في `docs/DESIGN_SYSTEM_WEB.md`. البحث عن `apps/mobile` داخل
-الملفين يُرجع صفراً.
-
-**لماذا هذا التصحيح في صالح القرار، لا ضدّه**: النمط موجود ومُختبَر ومُثبت
-نجاحه على الويب. المطلوب موش اختراع شيء جديد — المطلوب **توسيع تيست قائم**
-ليشمل `apps/mobile/src/**` و`apps/mobile/app/**`. هذا أرخص وأأمن من بناء
-تيست من الصفر، ويوحّد الإنفاذ بين الويب والموبيل بدل أن يبقى نظامان منفصلين.
-
-> البندان الأخيران هما ما يحوّلان هذه الوثيقة من PDF إلى **نظام مُنفَّذ**.
-> بدونها تبقى الوثيقة أمنية طيّبة.
-
-## 21.3 الواجهات المقترحة 🔶
+## 21.3 عقود الواجهات الموجودة
 
 ```ts
-// design/layout.tsx — البدائية التي تملك الهندسة
-AppScreen({ overlayHeader?, scroll?, onRefresh?, keyboard?, children })
+// design/layout.tsx
+AppScreen({
+  overlayHeader?: (state: { scrolled: boolean }) => ReactNode,
+  scroll?, onRefresh?, refreshing?, keyboard?, padded?, hasBottomBar?,
+  chrome?, footerSpace?, contentStyle?, children,
+})
 
-// design/ui.tsx — تُوسَّع
-Button({ variant: 'primary'|'secondary'|'tertiary'|'danger',
-         loading?, disabled?, block?, icon?, label, onPress })
-ProductImage({ uri, variant: 'square'|'portrait'|'banner'|'thumb' })
-Price({ amount, currency?, source?, state: 'confirmed'|'unconfirmed'|'unavailable' })
-SectionHeader({ title, action? })
+// design/ui.tsx
+Button({ label, onPress, busy?, disabled?, tone?: 'primary' | 'quiet', block?, style? })
+ResponsiveActionGroup({ children, style?, testID? })
+SectionHeader({ title, hint?, action?, style? })
 ```
 
----
+هذه واجهات فعلية وليست مقترحات تنفيذ. لا توجد حالياً بدائية عامة باسم
+`ProductImage`, `Price` أو`SearchInput`; تُسجّل كفجوات ولا تُختلق لها واجهات
+داخل هذا الجرد.
 
 # 22 — SINGLE SOURCE OF TRUTH
 
 | السؤال | الجواب |
 |---|---|
-| أين الجيتونات؟ | `client/src/design/editorial/identity.json` ↓ `design/tokens.generated.ts` |
-| أين الثيم؟ | `design/theme.tsx` (`useTheme()`) |
-| أين البدائيات؟ | `design/ui.tsx` · `design/layout.tsx` 🔶 · `design/states.tsx` |
-| أين المركّبات؟ | `src/features/<domain>/` |
-| أين الأيقونات؟ | `@expo/vector-icons/Ionicons` + خريطة دلالية (§10.3) |
-| أين ثوابت الحركة؟ | `MOTION` في الجيتونات + §8 |
-| أين النصوص؟ | `src/i18n/{ar,fr}.ts` — قاموس مغلق، محمي بالتيست |
-| كيف أغيّر الثيم؟ | `identity.json` → `npm run tokens:build` → `tokens:check` |
-| كيف أضيف مكوّناً؟ | §23 (طلب → مراجعة → اعتماد → تنفيذ → QA → تبنّي) |
+| أين ألوان وهوية المنتج؟ | `identity.json` → `tokens.generated.ts` |
+| أين إضافات React Native؟ | `tokens.mobile.ts` |
+| أين كائن الثيم؟ | `design/theme.tsx` (`useTheme()`) |
+| أين قرارات الاستجابة؟ | `design/layoutLogic.ts`، وتستهلكها `layout.tsx` و`ui.tsx` |
+| أين سلوك chrome؟ | `chromeLogic.ts` للقرار النقي، و`chrome.tsx` للربط |
+| أين البدائيات والحالات؟ | `design/ui.tsx`, `layout.tsx`, `subScreen.tsx`, `states.tsx` |
+| أين المركّبات؟ | `src/features/<domain>/` ومسارات `app/` |
+| أين الأيقونات؟ | `@expo/vector-icons/Ionicons` + خرائط دلالية حسب المجال |
+| أين النصوص؟ | `src/i18n/{ar,fr}.ts`، محروسة باختبارات القاموس |
 
-**منع التكرار جزء من المعمارية**: مكوّنان بنفس الوظيفة = عيب يُرفض،
-والتيست المقترح (§21.2) يمنعه آلياً.
-
----
+منع التكرار مسؤولية مراجعة معمارية حالياً؛ لا يوجد اختبار آلي يثبت تفرد كل
+وظيفة. أي بدائية جديدة يجب أن تُضاف إلى المصدر المشترك أو تبرَّر كاستثناء.
 
 # 23 — DESIGN GOVERNANCE
 
@@ -1295,97 +1250,60 @@ SectionHeader({ title, action? })
 
 ---
 
-# 24 — DESIGN SYSTEM INVENTORY
+# 24 — DESIGN SYSTEM INVENTORY (08/10/2026)
 
 ## 24.1 المكوّنات
 
-| المكوّن | الأنواع | الحالات | الجيتونات | الاستعمال | الحالة |
-|---|---|---|---|---|---|
-| `AppText` | 12 دوراً | — | `theme.text()` | كل نصّ | ✅ |
-| `Button` | 4 | 7 | `controlHeight`, `radius`, ألوان | فعل | ✅ ينقصه loading/success/error |
-| `Card` | 1 | 6 | `radius.lg`, `surface` | حاوية | ✅ ينقصه حالات |
-| `AppHeader` | 2 (شفاف/متماسك) | 2 | `HEADER_HEIGHT` | أعلى الشاشة | ✅ **الانتقال مفقود** |
-| `AppScreen` | — | 5 | `insets`, `space` | كل شاشة | 🔶 مطلوب |
-| `BottomTabs` | 5 أدوات | 5 | `insets.bottom` | التنقّل | 🔶 مطلوب |
-| `ProductImage` | 4 | 4 | نسبة, `radius.lg` | صورة منتوج | 🔶 مطلوب |
-| `Price` | 4 | 3 | `price` | كل سعر | 🔶 مطلوب |
-| `SectionHeader` | 1 | — | `space` | رأس قسم | 🔶 مطلوب |
-| `Chip`/`Badge` | 3 | 2 | `radius.chip` | شارة | 🔶 (لا جيتون نصف قطر) |
-| `ProductCard` | 2 | 6 | §11.1 | نتائج | ✅ ينقصه حالات |
-| `EmptyBlock`/`ErrorBlock`/`LoadingBlock` | — | — | — | حالات | ✅ أسماء مختلفة عن النظام |
-| `SearchInput` | 1 | 7 | §5.3 | بحث | 🔶 مطلوب |
-| `Modal`/`Sheet`/`Toast` | — | — | — | تراكب | 🔶 مطلوب |
+| المكوّن/العقد | المصدر | الحالة الفعلية |
+|---|---|---|
+| `AppText`, `Button`, `Card`, `SectionHeader`, `Field`, `KeyValue` | `src/design/ui.tsx` | ✅ بدائيات مستخدمة |
+| `Segmented`, `LinkRow`, `ToggleRow`, `Drawer`, `DrawerItem` | `src/design/ui.tsx` | ✅ |
+| `ResponsiveActionGroup` | `src/design/ui.tsx` + `layoutLogic.ts` | ✅ يستخدم في Lens وOCEREX؛ تحقق الرندر يحتاج جهازاً |
+| `AppScreen`, `useResponsive`, `Section`, `SectionGap`, `FullBleed` | `src/design/layout.tsx` | ✅؛ التبنّي على كل المسارات غير مكتمل ◐ |
+| `SubScreen` | `src/design/subScreen.tsx` | ✅ غلاف مستقل للشاشات المتداخلة ويشارك فجوة الشاشة |
+| `AppHeader` | `src/features/shell/AppHeader.tsx` | ✅ خلفية تتغير بعد عتبة التمرير؛ أبعاد ثابتة |
+| `LoadingBlock`, `ErrorBlock`, `EmptyBlock`, `RetryButton` | `src/design/states.tsx` | ✅ |
+| Footer | `src/features/shell/Footer.tsx` | ✅ أسود من لوحة الهوية الداكنة، ونصّ بمسافة gutter متجاوبة |
+| شريط التبويبات | `app/(tabs)/_layout.tsx` | ◐ مبني على `expo-router`; ليس بدائية منفصلة |
+| `ProductImage`, `Price`, `SearchInput`, `IconButton` | — | 🔶 لا يوجد عقد عام موحّد بعد |
+| `Chip` / `Badge` | حسب المجال | ◐ أنماط محلية؛ لا يوجد مكوّن عام |
 
-## 24.2 الجيتونات
+## 24.2 الجيتونات والقرارات
 
-| الجيتون | القيمة | الغرض | الاستعمال | الحالة |
-|---|---|---|---|---|
-| `accent` | `#FF7900` | العلامة | تمييز، تركيز | ✅ |
-| `action` | `#FFF`/`#000` | خلفية الزرّ الرئيسي | `Button primary` | ✅ |
-| `canvas` | `#000`/`#FFF` | خلفية التطبيق | `AppScreen` | ✅ |
-| `surface` | `#171717`/`#F5F5F5` | خلفية البطاقة | `Card` | ✅ |
-| `ink` | `#FFF`/`#000` | النصّ الأساسي | `AppText` | ✅ |
-| `line` | `#525252`/`#D9D9D9` | الحدود | `Card`, `Divider` | ✅ |
-| `elevatedSurface` | `#262626`/`#FFFFFF` | ورقة، بطاقة عائمة | `Sheet` | 🔶 |
-| `overlay` | `rgba(0,0,0,.55)` | خلفية الحوار | `Modal` | 🔶 |
-| `warning` | `#FFD79A`/`#8A5A00` | توفّر غير مؤكّد | `Price` | 🔶 |
-| `disabled` | `#2E2E2E`/`#E5E5E5` | معطَّل | كل مكوّن | 🔶 |
-| `SPACE` | 9 قيم | المسافات | الكل | ✅ ينقص 2/20/40 |
-| `radius` | 4 قيم | الحواف | الكل | ✅ ينقص xs/sm/xl/chip |
-| `MOTION` | 3 قيم | الحركة | الكل | ✅ ينقص easing و slow |
-| ظلّ | — | الارتفاع | `Sheet`, `Card` | 🔶 مفقود |
-| طبقات (z) | — | الترتيب | التراكبات | 🔶 مفقود |
+| المجموعة | التعريف الحالي | الملاحظة |
+|---|---|---|
+| ألوان الهوية | `COLORS` في `tokens.generated.ts` | ✅ فاتح/داكن؛ مصدرها `identity.json` |
+| ألوان الحالات والمشتقات | `STATUS` و`derivedColors()` في `tokens.mobile.ts` | ✅ تُركّب في `theme.status` و`theme.colors` |
+| المسافات | 9 درجات الهوية + `[2, 6, 10, 20, 40]` في Native | ✅ المصدر موحّد؛ `80` و`128` غير معرّفتين |
+| أنصاف الأقطار | `RADIUS` + الأسماء الهندسية المستعارة في `theme` | ✅ `xs` إلى `full`؛ لا اسم مستقل `chip` |
+| elevation | `none`, `low`, `medium`, `high` | ✅ تعريف موجود؛ الاستخدام جزئي ◐ |
+| opacity | `disabled`, `subtle`, `skeleton`, `imageScrim` | ◐ بعض حالات الضغط محلية |
+| مقاسات الأيقونات | `ICON_SIZE` + حدّ لمس `44` | ✅ التعريف موجود؛ التبنّي جزئي ◐ |
+| الحركة | `MOTION`, `duration`, `EASING`, `SPRING` | ◐ النظام موجود؛ ليس كل انتقال موحّداً |
+| chrome | `CHROME` و`Z_INDEX` | ✅ ارتفاعات وطبقات مسماة |
+| content max | `GEOMETRY.contentMax = 1280` | ◐ الجيتون موجود؛ لا يُفرض على كل حاوية |
 
 ---
 
 # 25 — ACCEPTANCE GATE
 
-| # | المعيار | الحالة |
-|---|---|---|
-| 1 | كل جيتون معرَّف | 🔶 8 جيتونات ناقصة (§2، §24.2) |
-| 2 | كل مكوّن أساسي معرَّف | 🔶 12 ناقصاً (§5.2) |
-| 3 | كل مكوّن له حالات | ✅ مصفوفة §6 |
-| 4 | الخطوط موحّدة | ✅ سلم §3 + 6 أدوار ناقصة |
-| 5 | الألوان موحّدة | ✅ §2.1 |
-| 6 | المسافات موحّدة | ✅ §2.2 |
-| 7 | الأيقونات موحّدة | ✅ §10 |
-| 8 | الحواف موحّدة | 🔶 سُلَّم ناقص |
-| 9 | الظلال موحّدة | 🔶 مفقودة |
-| 10 | الحركات موحّدة | 🔶 easing ناقص |
-| 11 | التحميل موحّد | ✅ §9 |
-| 12 | الخطأ موحّد | ✅ §9 |
-| 13 | الفراغ موحّد | ✅ §9 |
-| 14 | التنقّل موحّد | ✅ §13 (مع عيب الهيدر) |
-| 15 | تجربة الذكاء موحّدة | ✅ §12 |
-| 16 | تجربة المنتوج موحّدة | ✅ §11 |
-| 17 | RTL محدَّد | ✅ §16 |
-| 18 | الوصولية محدَّدة | ✅ §15 |
-| 19 | الاستجابة محدَّدة | ✅ §4 |
-| 20 | معمارية التنفيذ محدَّدة | ✅ §21 |
-| 21 | أمثلة بصرية موجودة | ✅ §20 (رسوم بأبعاد) |
-| 22 | ضبط جودة موجود | ✅ §19 |
-| 23 | الممنوعات محدَّدة | ✅ §17 (24 بنداً) |
-| 24 | **لا قرار أساسي متروك لاجتهاد المطوّر** | 🔶 **مشروط بالتيستات (§21.2)** |
+هذا سجلّ حالة هندسية، لا موافقة على جودة الرندر النهائي.
 
-## ما أطلبه منك تحديداً
+| المعيار | الحالة الآن |
+|---|---|
+| هوية واحدة + مولّد قابل للتحقق | ✅ `tokens:check` |
+| فجوة الشاشة ومقاييس responsive مشتركة | ✅ helper واحد + اختبارات pure |
+| هيدر ثابت متجاوب مع التمرير | ✅ اختبار العتبة والحالات غير الصالحة |
+| تسميات فئات الأخبار | ✅ سبعة أكواد لها تسمية FR/AR؛ اسم العلامة يبقى `AYROVI`، والكود المستقبلي ظاهر |
+| أزرار Lens/OCEREX على الشاشات الضيقة | ✅ مجموعة مشتركة؛ يلزم تحقق بصري على جهاز |
+| Footer أسود ومقروء في الثيمين مع gutter محاذٍ | ✅ مصدر الألوان/gutter موحّد؛ تحقق الرندر ◐ |
+| تبنّي `AppScreen`/`SubScreen` لكل المسارات | ◐ ما زالت مسارات خاصة/قديمة خارج الغلاف |
+| منع المكوّنات المكررة آلياً | ◐ مراجعة كود فقط |
+| مطابقة screenshots النهائية على Android | ◐ تحتاج تشغيل APK ومراجعة مرئية؛ لا تُستنتج من اختبارات المصدر |
 
-ثلاثة قرارات لا أستطيع أخذها عنك:
+## ما لا تثبته هذه الوثيقة
 
-1. **`surface` الداكن** — هل نرفعه من `#171717` إلى `#1C1C1C` ونضيف
-   `elevatedSurface #262626`؟ (الفرق اليوم ضعيف جداً عن `canvas`.)
-2. **الجيتونات الثمانية الناقصة** (§2.1، §24.2) — نعتمد القيم المقترحة؟
-3. **تيستات الإنفاذ** (§21.2) — هل أوافق على **توسيع** التيستات القائمة
-   (التي تحكم الويب اليوم) لتشمل `apps/mobile/src/**` و`apps/mobile/app/**`؟
-   ترفض الألوان والمسافات الحرّة والمكوّنات المكرَّرة.
-   **بدونها تبقى الوثيقة أمنية.**
-
----
-
-## ملاحظة أخيرة — بصراحة
-
-هذه الوثيقة مبنية على **قراءة الكود الحقيقي**، لا على ذوق. كل ✅ قيسته،
-وكل 🔶 سمّيته مع سببه. لكن فيها حدّ لا أستطيع تجاوزه:
-
-**ما أستطيع رؤيته.** لا بصر في هذه البيئة ولا محاكي. لذلك بند «21 — أمثلة
-بصرية» جاء رسوماً هندسية بأبعاد، لا صوراً، والحكم النهائي على الجمال يبقى لك
-على جهاز حقيقي.
+الاختبارات النصية تثبت العقود والاتجاهات، لا القياسات البصرية أو الأداء على جهاز.
+بعد بناء Android، يجب مراجعة الفاتح والداكن، العربية والفرنسية، عرض الهاتف
+واللوحي، والتأكد من عدم قصّ الأزرار أو محتوى الفوتر. لا يُعلن القبول البصري
+قبل ذلك الفحص.

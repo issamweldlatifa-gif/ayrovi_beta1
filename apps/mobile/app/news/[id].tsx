@@ -14,6 +14,7 @@ import { SubScreen } from '@/design/subScreen';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
 import { mediaUrl } from '@/api/client';
+import { newsCategoryText } from '@/api/labels';
 import { useNews } from '@/api/hooks';
 
 function longDate(iso: string): string {
@@ -60,11 +61,12 @@ export default function NewsDetailScreen() {
   }
 
   const published = longDate(item.publishedAt);
+  const category = newsCategoryText(item.category, t);
 
   return (
     <SubScreen
       title={item.title}
-      subtitle={[item.category, published].filter(Boolean).join(' · ') || undefined}
+      subtitle={[category, published].filter(Boolean).join(' · ') || undefined}
       onRefresh={() => news.refetch()}
       refreshing={news.isFetching}
       fallback="/news"

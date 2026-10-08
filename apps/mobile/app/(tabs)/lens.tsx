@@ -22,7 +22,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 
 import { AppScreen } from '@/design/layout';
 import { AppHeader } from '@/features/shell/AppHeader';
-import {AppText, Button, Card, Field, KeyValue, SectionHeader} from '@/design/ui';
+import { AppText, Button, Card, Field, KeyValue, ResponsiveActionGroup, SectionHeader } from '@/design/ui';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
@@ -143,7 +143,7 @@ export default function LensScreen() {
 
   return (
     <AppScreen
-      overlayHeader={<AppHeader />}
+      overlayHeader={({ scrolled }) => <AppHeader scrolled={scrolled} />}
       hasBottomBar
       chrome onRefresh={() => { history.refetch(); }}>
 
@@ -153,10 +153,10 @@ export default function LensScreen() {
       */}
       <SectionHeader title={t('screen.lens.subtitle')} hint={t('screen.lens.body')} />
       <Card title={t('lens.photoTitle')} hint={t('lens.photoHint')}>
-        <View style={styles.row}>
+        <ResponsiveActionGroup>
           <Button label={t('lens.camera')} onPress={() => pickFrom('camera')} busy={busy} disabled={busy} />
           <Button label={t('lens.gallery')} tone="quiet" onPress={() => pickFrom('library')} disabled={busy} />
-        </View>
+        </ResponsiveActionGroup>
         {preview ? <Image source={{ uri: preview }} style={styles.preview} resizeMode="contain" /> : null}
         {busy ? (
           <View style={styles.row}>

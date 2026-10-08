@@ -2,14 +2,13 @@
  * Le primitives de MISE EN PAGE — le seul endroit qui calcule une géométrie.
  *
  * ── Pourquoi ce fichier existe ──────────────────────────────────────────────
- * L'audit (DESIGN_AUDIT.md ②-A) a mesuré que **23 écrans sur 35** n'avaient
- * aucune gestion de zone sûre. La cause n'était pas l'inattention : c'était
- * que la géométrie était un CHOIX PAR ÉCRAN. Tant qu'un développeur peut
- * décider `paddingTop` lui-même, il le fera — différemment de son voisin.
+ * Les wrappers d’écran centralisent la safe area, le défilement, le gutter
+ * responsive et l’espacement partagé. `AppScreen` est le chemin par défaut;
+ * `SubScreen` sert aux routes imbriquées. L’inventaire reste partiel — les
+ * layouts et écrans spéciaux doivent choisir explicitement leur contrat.
  *
- * La réponse n'est pas « faire attention », c'est rendre le mauvais choix
- * IMPOSSIBLE : `AppScreen` possède la zone sûre, le défilement et les
- * marges. Un écran qui les recalcule enfreint §18.2.
+ * Cette primitive réduit les géométries recopiées et rend leurs décisions
+ * testables; elle ne force pas à elle seule chaque route à l’utiliser.
  *
  * ── Le seul `position: absolute` justifié ───────────────────────────────────
  * La documentation interdit `absolute` sauf pour une vraie superposition.
@@ -17,7 +16,7 @@
  * le contenu défile (demande explicite, Q8). Il est donc implémenté ICI, une
  * seule fois, plutôt que recopié écran par écran.
  */
-import { useMemo, type ReactNode } from 'react';
+import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -33,10 +32,10 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from './theme';
 import { useChromeScroll } from './chrome';
+import { headerSolidFor } from './chromeLogic';
+import { responsiveMetricsFor, screenContentGap, type Breakpoint } from './layoutLogic';
 
 /* ── Points de rupture (§4.1) ─────────────────────────────────────────────── */
-
-export type Breakpoint = 'compact' | 'regular' | 'wide' | 'tablet';
 
 interface Responsive {
   width: number;
@@ -58,25 +57,15 @@ interface Responsive {
 export function useResponsive(): Responsive {
   const { width, height } = useWindowDimensions();
 
-  return useMemo<Responsive>(() => {
-    const breakpoint: Breakpoint =
-      width <= 360 ? 'compact' : width < 600 ? 'regular' : width < 768 ? 'wide' : 'tablet';
-    const table: Record<Breakpoint, { columns: number; gutter: number }> = {
-      compact: { columns: 1, gutter: 16 },
-      regular: { columns: 1, gutter: 16 },
-      wide: { columns: 2, gutter: 24 },
-      tablet: { columns: 3, gutter: 32 },
-    };
-    const { columns, gutter } = table[breakpoint];
+  return useMemo(() => {
+    const metrics = responsiveMetricsFor(width);
     return {
       width,
       height,
-      breakpoint,
-      columns,
-      gutter,
-      isCompact: breakpoint === 'compact' || breakpoint === 'regular',
-      isWide: breakpoint === 'wide',
-      isTablet: breakpoint === 'tablet',
+      ...metrics,
+      isCompact: metrics.breakpoint === 'compact' || metrics.breakpoint === 'regular',
+      isWide: metrics.breakpoint === 'wide',
+      isTablet: metrics.breakpoint === 'tablet',
     };
   }, [width, height]);
 }
@@ -86,10 +75,11 @@ export function useResponsive(): Responsive {
 export interface AppScreenProps {
   children?: ReactNode;
   /**
-   * Vraie superposition : en-tête transparent, contenu qui défile dessous.
-   * C'est le SEUL cas où `absolute` est autorisé, et il est implémenté ici.
+   * En-tête superposé dont l’apparence dépend du défilement.
+   * Le rendu reçoit `scrolled` pour passer du transparent à `surface` sans
+   * déplacer le contenu ni recalculer la zone sûre.
    */
-  overlayHeader?: ReactNode;
+  overlayHeader?: (state: { scrolled: boolean }) => ReactNode;
   /** Défiler ? `false` pour un écran à hauteur fixe (formulaire court). */
   scroll?: boolean;
   /** Tirer vers le bas pour rafraîchir. */
@@ -140,13 +130,23 @@ export function AppScreen({
   const insets = useSafeAreaInsets();
   const { gutter } = useResponsive();
   const onChromeScroll = useChromeScroll();
+  const [headerScrolled, setHeaderScrolled] = useState(false);
+
+  const onScroll = useCallback((event: Parameters<NonNullable<ScrollViewProps['onScroll']>>[0]) => {
+    if (overlayHeader) {
+      const next = headerSolidFor(event.nativeEvent.contentOffset.y);
+      setHeaderScrolled((current) => current === next ? current : next);
+    }
+    if (chrome) onChromeScroll(event);
+  }, [chrome, onChromeScroll, overlayHeader]);
 
   const topInset = insets.top + (overlayHeader ? theme.chrome.header : 0);
   const bottomInset = hasBottomBar ? 0 : insets.bottom;
+  const contentGap = screenContentGap(theme.space);
 
   const padding = padded
-    ? { paddingHorizontal: gutter, paddingTop: topInset, paddingBottom: bottomInset + footerSpace }
-    : { paddingTop: topInset, paddingBottom: bottomInset + footerSpace };
+    ? { paddingHorizontal: gutter, paddingTop: topInset, paddingBottom: bottomInset + footerSpace, gap: contentGap }
+    : { paddingTop: topInset, paddingBottom: bottomInset + footerSpace, gap: contentGap };
 
   const body = scroll ? (
     <ScrollView
@@ -159,7 +159,7 @@ export function AppScreen({
        * temps et le seuil de repli de la barre n'est presque jamais atteint.
        */
       scrollEventThrottle={16}
-      onScroll={chrome ? onChromeScroll : undefined}
+      onScroll={overlayHeader || chrome ? onScroll : undefined}
       refreshControl={
         onRefresh ? (
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.accent} />
@@ -208,7 +208,7 @@ export function AppScreen({
          * LUI-MÊME avec `useSafeAreaInsets` — pas en la demandant ici.
          */
         <View style={[styles.overlay, { zIndex: theme.zIndex.chrome }]} pointerEvents="box-none">
-          {overlayHeader}
+          {overlayHeader({ scrolled: headerScrolled })}
         </View>
       ) : null}
     </View>

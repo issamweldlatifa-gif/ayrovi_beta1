@@ -38,3 +38,9 @@ export function chromeHiddenFor(
 
 /** Course minimale avant réaction : assez pour un vrai geste, trop peu pour un tremblement. */
 export const CHROME_THRESHOLD = 8;
+
+/** L'en-tête reste transparent au sommet et devient lisible dès que la page défile. */
+export function headerSolidFor(currentY: number, threshold = CHROME_THRESHOLD): boolean {
+  const safeThreshold = Number.isFinite(threshold) ? Math.max(0, threshold) : CHROME_THRESHOLD;
+  return Number.isFinite(currentY) && currentY > safeThreshold;
+}

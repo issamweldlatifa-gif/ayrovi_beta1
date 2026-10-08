@@ -2,16 +2,17 @@
  * Briques d'interface minimales du shell. Pas de bibliothèque : chaque élément
  * ici est utilisé par au moins un écran, rien n'est ajouté « au cas où ».
  */
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Children, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   Animated, Dimensions, Modal, Pressable, StyleSheet, Switch,
-  Text, TextInput, View,
+  Text, TextInput, View, useWindowDimensions,
   type StyleProp, type TextInputProps, type TextProps, type TextStyle as RNTextStyle,
   type LayoutChangeEvent, type ViewStyle,
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, webDirection, type TextRole } from './theme';
+import { actionDirectionFor, responsiveMetricsFor } from './layoutLogic';
 
 /* ── Texte ─────────────────────────────────────────────────────────────────── */
 
@@ -249,6 +250,33 @@ export function Button({ label, onPress, busy = false, disabled = false, tone = 
   );
 }
 
+/**
+ * Groupe d’actions qui ne laisse pas les libellés localisés déborder : rangée
+ * de même largeur en espace confortable, pile pleine largeur sur mobile.
+ */
+export function ResponsiveActionGroup({ children, style, testID }: {
+  children: ReactNode;
+  style?: StyleProp<ViewStyle>;
+  testID?: string;
+}) {
+  const theme = useTheme();
+  const { width } = useWindowDimensions();
+  const direction = actionDirectionFor(responsiveMetricsFor(width).breakpoint);
+
+  return (
+    <View
+      testID={testID}
+      style={[styles.actionGroup, { flexDirection: direction, gap: theme.space[1] }, style]}
+    >
+      {Children.map(children, (child) => child == null ? null : (
+        <View style={direction === 'row' ? styles.actionItemRow : styles.actionItem}>
+          {child}
+        </View>
+      ))}
+    </View>
+  );
+}
+
 /* ── Ligne de réglage et ligne de navigation ───────────────────────────────── */
 
 export interface LinkRowProps {
@@ -361,6 +389,9 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 16,
   },
+  actionGroup: { alignItems: 'stretch' },
+  actionItem: { alignItems: 'stretch' },
+  actionItemRow: { flex: 1, minWidth: 0, alignItems: 'stretch' },
   card: { gap: 8, borderWidth: StyleSheet.hairlineWidth },
   cardHint: { marginBottom: 2 },
   kv: {

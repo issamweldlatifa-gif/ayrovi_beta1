@@ -51,6 +51,18 @@ export const PAYMENT_METHOD_CODES = [
   'POSTE',
 ] as const;
 
+/** فئات الأخبار المسموح بها في `src/magazine/service.ts`. */
+export const NEWS_CATEGORY_CODES = [
+  'NEW_ARRIVAL',
+  'NEW_BRAND',
+  'PROMOTION',
+  'DELIVERY',
+  'AYROVI',
+  'INFORMATION',
+  'OTHER',
+] as const;
+export type NewsCategoryCode = (typeof NEWS_CATEGORY_CODES)[number];
+
 /** `orders.deposit_status` — من نفس المخطط. */
 export const DEPOSIT_STATUS_CODES = [
   'NONE',
@@ -103,6 +115,31 @@ const DEPOSIT_STATUS_KEYS: Record<string, TranslationKey> = {
   PAID: 'status.deposit.PAID',
   REJECTED: 'status.deposit.REJECTED',
 };
+
+const NEWS_CATEGORY_KEYS: Record<NewsCategoryCode, TranslationKey> = {
+  NEW_ARRIVAL: 'news.category.NEW_ARRIVAL',
+  NEW_BRAND: 'news.category.NEW_BRAND',
+  PROMOTION: 'news.category.PROMOTION',
+  DELIVERY: 'news.category.DELIVERY',
+  AYROVI: 'news.category.AYROVI',
+  INFORMATION: 'news.category.INFORMATION',
+  OTHER: 'news.category.OTHER',
+};
+
+/** Clé locale d'une catégorie connue ; `null` laisse les codes futurs visibles. */
+export function newsCategoryKey(category: string): TranslationKey | null {
+  const code = String(category || '').trim().toUpperCase();
+  return NEWS_CATEGORY_KEYS[code as NewsCategoryCode] ?? null;
+}
+
+/** Libellé humain d'une catégorie, sans masquer les valeurs futures du serveur. */
+export function newsCategoryText(
+  category: string,
+  translate: (key: TranslationKey) => string,
+): string {
+  const key = newsCategoryKey(category);
+  return key ? translate(key) : category;
+}
 
 const KEYS: Record<StatusFamily, Record<string, TranslationKey>> = {
   order: ORDER_STATUS_KEYS,

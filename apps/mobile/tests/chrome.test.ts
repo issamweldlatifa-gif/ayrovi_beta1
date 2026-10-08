@@ -7,7 +7,7 @@
  * Ces tests fixent le comportement.
  */
 import { describe, expect, it } from 'vitest';
-import { CHROME_THRESHOLD, chromeHiddenFor } from '../src/design/chromeLogic';
+import { CHROME_THRESHOLD, chromeHiddenFor, headerSolidFor } from '../src/design/chromeLogic';
 
 describe('descendre ⇒ masquer', () => {
   it('une vraie course vers le bas masque la barre', () => {
@@ -65,6 +65,26 @@ describe('seuil — pas de scintillement', () => {
   it('seuil personnalisé respecté', () => {
     expect(chromeHiddenFor(120, 100, false, 30)).toBe(false);
     expect(chromeHiddenFor(131, 100, false, 30)).toBe(true);
+  });
+});
+
+describe('en-tête transparent puis solide', () => {
+  it('reste transparent au sommet et sous le seuil de défilement', () => {
+    expect(headerSolidFor(0)).toBe(false);
+    expect(headerSolidFor(CHROME_THRESHOLD)).toBe(false);
+    expect(headerSolidFor(CHROME_THRESHOLD - 1)).toBe(false);
+  });
+
+  it('devient solide après le seuil, sans toucher à sa géométrie', () => {
+    expect(headerSolidFor(CHROME_THRESHOLD + 0.01)).toBe(true);
+    expect(headerSolidFor(100)).toBe(true);
+  });
+
+  it('mesure invalide ou seuil non valide : retombe sur un état sûr', () => {
+    expect(headerSolidFor(Number.NaN)).toBe(false);
+    expect(headerSolidFor(Number.POSITIVE_INFINITY)).toBe(false);
+    expect(headerSolidFor(-1)).toBe(false);
+    expect(headerSolidFor(CHROME_THRESHOLD + 1, Number.NaN)).toBe(true);
   });
 });
 

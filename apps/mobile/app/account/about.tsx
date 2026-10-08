@@ -21,6 +21,7 @@ import { ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
 import { API_BASE_URL, CLIENT_HEADER } from '@/api/config';
+import { APP_VERSION } from '@/config/app';
 import { fetchServerReadiness } from '@/api/public';
 import { SubScreen } from '@/design/subScreen';
 
@@ -38,7 +39,7 @@ export default function AboutScreen() {
   const reload = useCallback(() => { readiness.refetch(); }, [readiness]);
 
   const expo = Constants.expoConfig ?? null;
-  const version = String(expo?.version ?? '');
+  const version = APP_VERSION;
   const buildCode = expo?.android?.versionCode;
   const packageName = String(expo?.android?.package ?? '');
   const server = readiness.data ?? null;

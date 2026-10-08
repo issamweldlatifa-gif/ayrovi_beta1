@@ -253,8 +253,7 @@ export default function AyWebsCartScreen() {
                     ))}
                   </>
                 ) : null}
-                {/* بصراحة: الربط صار فعلاً؛ السطور ولّت في سلّة AYROVI — والباب
-                    ليها زرّ حقيقي، موش جملة. الدفع نفسه في P5.2. */}
+                {/* الربط صار فعلاً؛ السطور انتقلت إلى سلّة AYROVI، والزرّ يفتحها. */}
                 <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.cartBridgeLater')}</AppText>
                 <Button label={t('aywebs.cartBridgeOpen')} tone="quiet" onPress={() => router.push('/cart')} />
               </View>

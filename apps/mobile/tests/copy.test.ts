@@ -29,7 +29,9 @@ import {
 } from '../src/i18n/copyContract';
 import { PAYMENT_DEFINITIONS } from '../src/api/checkout';
 import { OCEREX_BLOCK_CODES } from '../src/api/ocerex';
-import { statusCodes, statusKey } from '../src/api/labels';
+import {
+  NEWS_CATEGORY_CODES, newsCategoryKey, newsCategoryText, statusCodes, statusKey,
+} from '../src/api/labels';
 
 const AR = ar as unknown as Dictionary;
 const FR = fr as unknown as Dictionary;
@@ -173,6 +175,26 @@ describe('عقد النصوص — المفاتيح المتكوّنة في ال�
         expect(Object.keys(AR), `${family}/${code}`).toContain(String(key));
       }
     }
+  });
+
+  it('فئات الأخبار المعروفة لها تسمية محددة، والكود المستقبل يبقى كما وصل', () => {
+    for (const code of NEWS_CATEGORY_CODES) {
+      const key = newsCategoryKey(code);
+      expect(key, code).not.toBeNull();
+      expect(Object.keys(FR), code).toContain(String(key));
+      expect(Object.keys(AR), code).toContain(String(key));
+      const frenchLabel = newsCategoryText(code, (translationKey) => FR[translationKey]);
+      const arabicLabel = newsCategoryText(code, (translationKey) => AR[translationKey]);
+      expect(frenchLabel.trim()).not.toBe('');
+      expect(arabicLabel.trim()).not.toBe('');
+      // AYROVI is a proper brand name, not an untranslated enum label.
+      if (code !== 'AYROVI') {
+        expect(frenchLabel).not.toBe(code);
+        expect(arabicLabel).not.toBe(code);
+      }
+    }
+    expect(newsCategoryKey('UNKNOWN_CATEGORY')).toBeNull();
+    expect(newsCategoryText('UNKNOWN_CATEGORY', (key) => FR[key])).toBe('UNKNOWN_CATEGORY');
   });
 
   it('كود مجهول ما يتسمّاش بالغالط: يرجع `null` ⇒ الواجهة تعرض الكود', () => {
