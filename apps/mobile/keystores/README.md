@@ -57,3 +57,16 @@ openssl x509 -in cert.pem -noout -fingerprint -sha256
 
 ⚠️ تبديل هذا الملف يبدّل البصمة ⇒ الروابط العميقة تنقطع حتى يتحدّث
 `ANDROID_APP_LINK_SHA256` في الخادم.
+
+## ⚠️ المتغيّر الثاني (لازم بجوج)
+
+البصمة وحدها تطلع البيان، بس **لحزمة الإصدار وحدها** (`app.ayrovi.mobile`).
+الـAPK التجريبي حزمتو `app.ayrovi.mobile.demo` وما تتغطّاش بالافتراضي ⇒ باش
+تجرّب «افتح في التطبيق» بالـAPK التجريبي، **زيد المتغيّر الثاني**:
+
+```
+ANDROID_APP_LINK_SHA256 = 8E:20:…:52:53
+ANDROID_APP_LINK_PACKAGES = app.ayrovi.mobile,app.ayrovi.mobile.demo
+```
+
+والفحص الآلي يقولها (حالة `production-seule` كان ناقص).
