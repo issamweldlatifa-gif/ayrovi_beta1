@@ -229,31 +229,55 @@ jobs:
           retention-days: 30
 
       - name: Publier la mesure dans le dépôt
-        # Ce n'est QU'un rapport. Si la publication échoue (branche qui a
-        # bougé, droits), on prévient et on continue : jamais un build rouge
-        # pour un chiffre qu'on n'a pas réussi à ranger.
+        # ⚠️ Deux leçons, payées par un build rouge :
+        #
+        # 1. Ce job a `defaults.run.working-directory: apps/mobile`. Un chemin
+        #    RELATIF dans cette étape devenait « apps/mobile/apps/mobile/… », et
+        #    `git add` échouait — alors que le fichier existait bien. D'où
+        #    `git -C "$REPO"` partout : le dépôt est désigné en absolu, plus
+        #    jamais relativement au dossier courant.
+        #
+        # 2. Il n'y a PAS de `set -e` ici, volontairement. Avec lui, un simple
+        #    `git add` sur un fichier absent faisait échouer TOUT LE BUILD —
+        #    alors que l'APK était construit, signé et téléversé. Un rapport ne
+        #    doit jamais rendre rouge un build vert : on prévient et on passe.
         if: github.event_name == 'push'
         run: |
-          set -euo pipefail
+          set -uo pipefail
+          REPO="${{ github.workspace }}"
           BRANCH="${GITHUB_REF#refs/heads/}"
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add apps/mobile/APK_SIZES.md
-          if git diff --cached --quiet; then
+          REPORT="apps/mobile/APK_SIZES.md"
+
+          # Diagnostic : si le fichier manque, on le DIT au lieu de mourir.
+          if [ ! -f "$REPO/$REPORT" ]; then
+            echo "::warning::$REPORT absent — l'étape de mesure ne l'a pas produit ; rien à publier"
+            ls -la "$REPO/apps/mobile" || true
+            exit 0
+          fi
+
+          git -C "$REPO" config user.name "github-actions[bot]"
+          git -C "$REPO" config user.email "github-actions[bot]@users.noreply.github.com"
+          git -C "$REPO" add "$REPORT" || {
+            echo "::warning::git add impossible, mesure non publiée"
+            exit 0
+          }
+
+          if git -C "$REPO" diff --cached --quiet; then
             echo "tailles inchangées — rien à publier"
             exit 0
           fi
+
           # [skip ci] : sans lui ce commit redéclencherait ce workflow, qui
           # recommencerait, et ainsi de suite.
-          git commit -m "chore(apk): tailles mesurées — ${GITHUB_SHA::7} [skip ci]" || {
+          git -C "$REPO" commit -m "chore(apk): tailles mesurées — ${GITHUB_SHA::7} [skip ci]" || {
             echo "::warning::commit impossible, mesure non publiée"
             exit 0
           }
-          git pull --rebase --autostash origin "$BRANCH" || {
+          git -C "$REPO" pull --rebase --autostash origin "$BRANCH" || {
             echo "::warning::réconciliation impossible, mesure non publiée"
             exit 0
           }
-          git push origin "HEAD:$BRANCH" || {
+          git -C "$REPO" push origin "HEAD:$BRANCH" || {
             echo "::warning::publication impossible, la mesure reste dans le résumé CI"
             exit 0
           }
