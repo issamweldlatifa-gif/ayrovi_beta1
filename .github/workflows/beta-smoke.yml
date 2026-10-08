@@ -351,9 +351,13 @@ jobs:
             fi
           else
             WARN=1
-            MISSING=$(jget /tmp/links missingEnv)
+            MISSING=$(python3 -c 'import json
+          try: d=json.load(open("/tmp/links"))
+          except Exception: d={}
+          value=d.get("missingEnv") if isinstance(d,dict) else None
+          print(",".join(value) if isinstance(value,list) else (value or ""))' 2>/dev/null)
             if [ "$LINKS_CODE" = "404" ]; then
-              note "\`GET /.well-known/assetlinks.json\`" "404" "⚠️ **404** — il manque : \`${MISSING:-$ANDROID_APP_LINK_SHA256}\` sur ce serveur ⇒ liens profonds inertes"
+              note "\`GET /.well-known/assetlinks.json\`" "404" "⚠️ **404** — il manque : \`${MISSING:-ANDROID_APP_LINK_SHA256}\` sur ce serveur ⇒ liens profonds inertes"
             else
               note "\`GET /.well-known/assetlinks.json\`" "$LINKS_CODE" "⚠️ pas un JSON (route absente) ⇒ liens profonds inertes"
             fi
