@@ -6,6 +6,7 @@ import type { ReactNode } from 'react';
 import {
   Pressable, RefreshControl, ScrollView, StyleSheet, Switch, Text, TextInput, View,
   type StyleProp, type TextInputProps, type TextProps, type TextStyle as RNTextStyle,
+  type LayoutChangeEvent,
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -63,10 +64,21 @@ export function PhaseBadge({ phase }: { phase: string }) {
 
 /* ── Carte ─────────────────────────────────────────────────────────────────── */
 
-export function Card({ children, title, hint }: { children?: ReactNode; title?: string; hint?: string }) {
+export function Card({ children, title, hint, onLayout }: {
+  children?: ReactNode;
+  title?: string;
+  hint?: string;
+  /**
+   * قياس موضع البطاقة — يحتاجو مسلك الطلب باش يعرف **وين** العميل داخل
+   * الاستمارة (المؤشّر يقرا التمرير، موش عدّاد). توسيع البطاقة أفضل من
+   * تغليفها بـ`View` زايد: التخطيط يبقى كما هو.
+   */
+  onLayout?: (event: LayoutChangeEvent) => void;
+}) {
   const theme = useTheme();
   return (
     <View
+      onLayout={onLayout}
       style={[
         styles.card,
         {

@@ -15,14 +15,19 @@
  *    إنشاء الطلب — ما نحسبوش عربوناً في الجهاز.
  *  • **بلا «نجاح» مصنوع**: بلا `orderNumber` من الخادم ما فماش شاشة نجاح.
  */
-import { useCallback, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import {
+  Pressable, StyleSheet, View,
+  type LayoutChangeEvent, type ScrollView, type NativeSyntheticEvent, type NativeScrollEvent,
+} from 'react-native';
 import { router } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as WebBrowser from 'expo-web-browser';
 
 import { AppText, Button, Card, Field, KeyValue } from '@/design/ui';
 import { SubScreen } from '@/design/subScreen';
+import { JourneyProgress, type JourneyStep } from '@/features/checkout/JourneyProgress';
+import { resolveJourneyStep, journeyCompletion } from '@/features/checkout/journey';
 import { ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
@@ -74,6 +79,31 @@ export default function CheckoutScreen() {
   const [method, setMethod] = useState('');
   const [note, setNote] = useState('');
   const [result, setResult] = useState<CheckoutResult | null>(null);
+
+  /* ── مسلك الطلب: المرحلة تُقرا من **التمرير**، موش من عدّاد ────────────── */
+  const scrollRef = useRef<ScrollView | null>(null);
+  const offsets = useRef<Record<string, number>>({});
+  const [activeStep, setActiveStep] = useState(0);
+
+  const steps = useMemo<JourneyStep[]>(() => [
+    { id: 'address', label: t('checkout.step.address'), icon: 'location-outline' },
+    { id: 'payment', label: t('checkout.step.payment'), icon: 'card-outline' },
+    { id: 'confirm', label: t('checkout.step.confirm'), icon: 'checkmark-circle-outline' },
+  ], [t]);
+
+  const remember = useCallback((key: string) => (event: LayoutChangeEvent) => {
+    offsets.current[key] = event.nativeEvent.layout.y;
+  }, []);
+
+  const handleScroll = useCallback((event: { nativeEvent: { contentOffset: { y: number } } }) => {
+    setActiveStep(resolveJourneyStep(event.nativeEvent.contentOffset.y, offsets.current));
+  }, []);
+
+  const goToStep = useCallback((index: number) => {
+    const key = ['address', 'payment', 'confirm'][index];
+    const y = offsets.current[key ?? ''] ?? 0;
+    scrollRef.current?.scrollTo({ y: Math.max(0, y - 72), animated: true });
+  }, []);
 
   const policy = policyQuery.data ?? null;
   const cart = cartQuery.data ?? null;
@@ -148,14 +178,26 @@ export default function CheckoutScreen() {
     },
   });
 
+  /**
+   * شرط واحد لكل حاجة ⇒ ما يتباعدوش.
+   *
+   * مؤشّر يقول «الدفع تمّ» والزرّ معطّل هو كذبة بصريّة؛ وزرّ مفعّل يولّي
+   * لخطأ `PAYMENT_UNAVAILABLE` بعد الضغطة هو كذبة أسوء. الحلّ: الشروط تتكتب
+   * مرّة وحدة، وتُستعمل في **المؤشّر والزرّ** معاً.
+   */
+  const addressValid = name.trim().length > 1 && phone.trim().length > 5
+    && addressLine.trim().length > 3 && Boolean(governorate.trim());
+  /** هل الدفع **جاهز**؟ موش «مكتمل»: ما فمّاش بوّابة ⇒ الخادم يأجّل الدفع (`PENDING_SELECTION`) موش يرفضو. */
+  const paymentChosen = Boolean(method) && available.some((choice) => choice.id === method);
+  const paymentReady = available.length > 0 ? paymentChosen : true;
+  const completedSteps = journeyCompletion({ addressValid, paymentValid: paymentReady });
+
   const identityReady = authenticated && Boolean(account?.emailVerified || account?.phoneVerified);
   const canSubmit = Boolean(sessionId)
     && cartGate.canCheckout
     && identityReady
-    && name.trim().length > 1
-    && phone.trim().length > 5
-    && addressLine.trim().length > 3
-    && Boolean(governorate.trim())
+    && addressValid
+    && paymentReady
     && terms;
 
   /* ── شاشة التأكيد: كل رقم من الخادم ───────────────────────────────────── */
@@ -209,7 +251,21 @@ export default function CheckoutScreen() {
   }
 
   return (
-    <SubScreen title={t('checkout.title')} subtitle={t('checkout.hint')} fallback="/cart">
+    <SubScreen
+      title={t('checkout.title')}
+      subtitle={t('checkout.hint')}
+      fallback="/cart"
+      scrollRef={scrollRef}
+      onScroll={handleScroll}
+      sticky={(
+        <JourneyProgress
+          steps={steps}
+          activeIndex={activeStep}
+          completed={completedSteps}
+          onStepPress={goToStep}
+        />
+      )}
+    >
       {cartQuery.isError ? <ErrorBlock error={cartQuery.error} onRetry={() => cartQuery.refetch()} /> : null}
       {policyQuery.isError ? <ErrorBlock error={policyQuery.error} onRetry={() => policyQuery.refetch()} /> : null}
       {!policy && policyQuery.isPending ? <LoadingBlock /> : null}
@@ -254,7 +310,7 @@ export default function CheckoutScreen() {
         </Card>
       ) : null}
 
-      <Card title={t('checkout.addressTitle')} hint={t('checkout.addressHint')}>
+      <Card title={t('checkout.addressTitle')} hint={t('checkout.addressHint')} onLayout={remember('address')}>
         <Field label={t('checkout.name')} value={name} onChangeText={setName} autoCapitalize="words" />
         <Field
           label={t('checkout.phone')}
@@ -322,7 +378,7 @@ export default function CheckoutScreen() {
       </Card>
 
       {policy ? (
-        <Card title={t('checkout.paymentTitle')} hint={t('checkout.paymentHint')}>
+        <Card title={t('checkout.paymentTitle')} hint={t('checkout.paymentHint')} onLayout={remember('payment')}>
           {choices.map((choice) => {
             const active = method === choice.id;
             return (
@@ -385,7 +441,7 @@ export default function CheckoutScreen() {
         </Card>
       ) : null}
 
-      <Card title={t('checkout.confirmTitle')}>
+      <Card title={t('checkout.confirmTitle')} onLayout={remember('confirm')}>
         <Pressable
           accessibilityRole="checkbox"
           accessibilityState={{ checked: terms }}
