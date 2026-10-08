@@ -1,4 +1,5 @@
 import { API_BASE_URL } from '@/api/config';
+import { DEEP_LINK_SCHEME } from '@/config/deepLinks';
 /**
  * Liens profonds — traduction d'une URL du site en écran de l'application.
  *
@@ -113,7 +114,7 @@ export function resolveDeepLink(rawUrl: string | null | undefined): string | nul
   }
 
   const scheme = url.protocol.replace(/:$/, '').toLowerCase();
-  if (scheme === 'ayrovi' || scheme === 'exp' || scheme === 'exp+ayrovi') {
+  if (scheme === DEEP_LINK_SCHEME || scheme === 'exp' || scheme === `exp+${DEEP_LINK_SCHEME}`) {
     // Schéma propre à l'application : l'hôte n'est pas un hôte, c'est parfois
     // le début du chemin (`ayrovi://orders/42` ⇒ host « orders »).
     const path = url.host ? `/${url.host}${normalizePathname(url)}` : normalizePathname(url);

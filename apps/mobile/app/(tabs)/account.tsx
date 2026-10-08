@@ -15,7 +15,7 @@ import { useQuery } from '@tanstack/react-query';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppScreen } from '@/design/layout';
 import { AppHeader } from '@/features/shell/AppHeader';
-import {AppText, Button, Card, KeyValue, LinkRow, SectionHeader, Segmented} from '@/design/ui';
+import { AppText, Button, Card, KeyValue, LinkRow, SectionHeader, Segmented } from '@/design/ui';
 import { ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
@@ -133,7 +133,7 @@ export default function AccountScreen() {
 
   return (
     <AppScreen
-      overlayHeader={<AppHeader />}
+      overlayHeader={({ scrolled }) => <AppHeader scrolled={scrolled} />}
       hasBottomBar
       chrome onRefresh={refresh} refreshing={overviewQuery.isRefetching}>
 
@@ -175,7 +175,7 @@ export default function AccountScreen() {
             { value: 'dark', label: t('theme.dark') },
           ]}
         />
-        <AppText variant="caption" color={theme.colors.muted}>{t('settings.pending')}</AppText>
+        <AppText variant="caption" color={theme.colors.muted}>{t('settings.hint')}</AppText>
       </Card>
     </AppScreen>
   );

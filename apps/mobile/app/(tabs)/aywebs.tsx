@@ -90,7 +90,7 @@ export default function AyWebsScreen() {
 
   return (
     <AppScreen
-      overlayHeader={<AppHeader />}
+      overlayHeader={({ scrolled }) => <AppHeader scrolled={scrolled} />}
       hasBottomBar
       chrome onRefresh={reload} refreshing={stores.isFetching && !stores.isPending}>
 

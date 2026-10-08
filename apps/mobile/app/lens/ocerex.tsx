@@ -18,7 +18,7 @@ import { ActivityIndicator, Image, Pressable, StyleSheet, View } from 'react-nat
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 
-import { AppText, Button, Card, Field, KeyValue } from '@/design/ui';
+import { AppText, Button, Card, Field, KeyValue, ResponsiveActionGroup } from '@/design/ui';
 import { SubScreen } from '@/design/subScreen';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
@@ -173,10 +173,10 @@ export default function OcerexScreen() {
   return (
     <SubScreen title={t('ocerex.title')} subtitle={t('ocerex.hint')} fallback="/lens">
       <Card>
-        <View style={styles.row}>
+        <ResponsiveActionGroup>
           <Button label={t('lens.camera')} onPress={() => analyze('camera')} disabled={busy || !sessionId} />
           <Button label={t('lens.gallery')} tone="quiet" onPress={() => analyze('library')} disabled={busy || !sessionId} />
-        </View>
+        </ResponsiveActionGroup>
         {preview ? <Image source={{ uri: preview }} style={styles.preview} resizeMode="contain" /> : null}
         {busy ? (
           <View style={styles.row}>

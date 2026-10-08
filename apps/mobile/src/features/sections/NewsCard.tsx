@@ -7,7 +7,9 @@
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/design/ui';
+import { newsCategoryText } from '@/api/labels';
 import { useTheme } from '@/design/theme';
+import { useT } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import type { NewsItem } from '@/api/sections';
 
@@ -25,6 +27,8 @@ function shortDate(iso: string): string {
 
 export function NewsCard({ item, onOpen }: NewsCardProps) {
   const theme = useTheme();
+  const t = useT();
+  const category = newsCategoryText(item.category, t);
   const published = shortDate(item.publishedAt);
 
   return (
@@ -41,8 +45,8 @@ export function NewsCard({ item, onOpen }: NewsCardProps) {
       </View>
 
       <View style={styles.body}>
-        {item.category ? (
-          <AppText variant="caption" weight="bold" color={theme.status.info.fg}>{item.category}</AppText>
+        {category ? (
+          <AppText variant="caption" weight="bold" color={theme.status.info.fg}>{category}</AppText>
         ) : null}
         <AppText variant="label" weight="bold" numberOfLines={2}>{item.title}</AppText>
         {item.summary ? (

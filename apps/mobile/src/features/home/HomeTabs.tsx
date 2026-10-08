@@ -82,11 +82,8 @@ export function HomeTabs() {
 
 const styles = StyleSheet.create({
   row: {
-    // La marge latérale a été RETIRÉE : elle appartenait à l'écran (§18.2-2).
-    // `AppScreen` fournit désormais la gouttière selon le palier, une seule
-    // fois pour tous les blocs — c'est ce qui aligne enfin les onglets sur le
-    // héros et les sections, qui n'avaient pas la même valeur qu'eux.
-    marginVertical: 12,
+    // Gouttière et espace vertical appartiennent à `AppScreen`, comme pour
+    // les autres blocs de l’accueil.
     borderWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
   },

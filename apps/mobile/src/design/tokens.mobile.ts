@@ -31,7 +31,8 @@ import { GEOMETRY, MOTION, SPACE } from './tokens.generated';
  * « devinaient » leur marge haute chacun à leur façon.
  */
 export const CHROME = {
-  header: 56,
+  // Safe-area–externe Höhe: 12 top + 44 cible tactile + 8 bottom.
+  header: 64,
   tabBar: 56,
   tabStrip: 40,
 } as const;

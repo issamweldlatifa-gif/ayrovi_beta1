@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
+import { screenContentGap } from './layoutLogic';
 
 export function SubScreen({
   title, subtitle, children, onRefresh, refreshing = false, fallback = '/(tabs)/account',
@@ -64,7 +65,7 @@ export function SubScreen({
           paddingTop: insets.top + theme.space[2],
           paddingBottom: insets.bottom + theme.space[5],
           paddingHorizontal: theme.space[3],
-          gap: theme.space[2],
+          gap: screenContentGap(theme.space),
         },
       ]}
     >

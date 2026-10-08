@@ -10,8 +10,8 @@
  *  • الكمية **مطلقة** (رقم يبعث للخادم) ثم نعاود نقرا السلّة — ما نزيدوش في الجهاز.
  *  • سطر `STALE` (تسعير فات وقتو) يتقال ويتلوّن، والخادم هو اللي يرفض الطلب:
  *    هنا نقولوها قبل، باش المستعمل ما يوصلش لآخر خطوة ويكتشف.
- *  • الدفع ما هوش في هذي الشريحة: ما فماش زر «خلّص» يدّعي وظيفة ما كايناش —
- *    فماش شي في بلاصتو، والجملة تقول الحقيقة.
+ *  • السلّة ما تنفّذش الخلاص بنفسها: الزرّ يفتح صفحة الطلب، والوسائل المتاحة
+ *    تتحدّد من إعدادات الخادم — لذلك ما نوعدوش ببطاقة ولا بتحويل مسبقاً.
  */
 import { useCallback, useMemo, useState } from 'react';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
@@ -183,7 +183,7 @@ export default function AyroviCartScreen() {
 
   return (
     <AppScreen
-      overlayHeader={<AppHeader />}
+      overlayHeader={({ scrolled }) => <AppHeader scrolled={scrolled} />}
       hasBottomBar
       chrome onRefresh={reload} refreshing={cartQuery.isFetching && !cartQuery.isPending}>
 
