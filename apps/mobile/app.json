@@ -71,6 +71,32 @@
         }
       ],
       [
+        "expo-build-properties",
+        {
+          "android": {
+            /*
+             * Un APK qui embarque les bibliothèques natives des QUATRE
+             * architectures paye trois fois le même code. Le découpage par ABI
+             * produit un APK par processeur : c'est le seul réglage qui change
+             * vraiment l'ordre de grandeur (≈ -60 %), et non quelques pour
+             * cent.
+             */
+            "enableSeparateBuildPerCPUArchitecture": true,
+            /* R8 : retrait du code Java/Kotlin inutilisé. */
+            "enableProguardInReleaseBuilds": true,
+            /* Ressources Android non référencées — icônes et chaînes mortes. */
+            "enableShrinkResourcesInReleaseBuilds": true,
+            /* Hermes : le moteur JS déjà adopté par le projet. */
+            "jsEngine": "hermes",
+            /*
+             * On garde les DEUX ABI encore rencontrées en Tunisie : arm64 pour
+             * les appareils récents, armeabi-v7a pour les anciens 32 bits.
+             */
+            "abiFilters": ["arm64-v8a", "armeabi-v7a"]
+          }
+        }
+      ],
+      [
         "expo-camera",
         {
           "cameraPermission": "AYROVI utilise la caméra pour scanner un code-barres ou un QR code et chercher le produit.",

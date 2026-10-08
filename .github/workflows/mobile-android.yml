@@ -165,18 +165,37 @@ jobs:
           python3 ../../scripts/gradle-diagnose.py /tmp/gradle.log "APK démo : Gradle a échoué"
           exit 1
 
-      - name: Vérifier la signature
+      # ── Taille et signature ────────────────────────────────────────────────
+      # Le découpage par ABI (voir `app.json` → expo-build-properties) produit
+      # PLUSIEURS APK au lieu d'un seul universel. Le chemin n'est donc plus
+      # figé : on prend ce que Gradle a réellement produit, et on ANNONCE les
+      # tailles — un réglage de poids qu'on ne mesure pas est un réglage qu'on
+      # suppose.
+      - name: Taille et signature des APK
         working-directory: apps/mobile/android
         run: |
           set -euo pipefail
-          APK=app/build/outputs/apk/release/app-release.apk
-          ls -lh "$APK"
           APKSIGNER="$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)"
-          "$APKSIGNER" verify --print-certs "$APK" | head -3
+          shopt -s nullglob
+          mapfile -t APKS < <(ls -1 app/build/outputs/apk/release/*.apk | sort)
+          if [ "${#APKS[@]}" -eq 0 ]; then
+            echo "::error::aucun APK produit dans app/build/outputs/apk/release"
+            ls -R app/build/outputs/apk || true
+            exit 1
+          fi
+          echo "### APK produits" >> "$GITHUB_STEP_SUMMARY"
+          echo "| fichier | taille |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          for apk in "${APKS[@]}"; do
+            size="$(du -h "$apk" | cut -f1)"
+            echo "| $(basename "$apk") | $size |" >> "$GITHUB_STEP_SUMMARY"
+            echo "--- $(basename "$apk") : $size ---"
+            "$APKSIGNER" verify --print-certs "$apk" | head -3
+          done
 
       - uses: actions/upload-artifact@v4
         with:
           name: AYROVI-demo-apk
-          path: apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+          path: apps/mobile/android/app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 30
