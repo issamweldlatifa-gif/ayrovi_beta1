@@ -25,7 +25,9 @@ import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import { addCatalogFavorite, fetchFavorites } from '@/api/account';
-import { fetchCatalogProducts } from '@/api/catalog';
+import { addCatalogToCart } from '@/api/cart';
+import { isApiError } from '@/api/errors';
+import { fetchCatalogProducts, normalizeStockStatus } from '@/api/catalog';
 import { useSession } from '@/state/session';
 
 export default function ProductScreen() {
@@ -51,6 +53,20 @@ export default function ProductScreen() {
 
   const product = (products.data ?? []).find((entry) => entry.id === id) ?? null;
   const isFavorite = (favorites.data ?? []).some((entry) => entry.productId === id);
+
+  /**
+   * «زيد للسلّة» — كان ممنوعاً في Q1، وتحرّر في Q5.
+   *
+   * السبب اللي كان يمنعو: المسار العام للسلّة **يعيد حساب** السعر من
+   * `sourcePrice` ⇒ سعر ثانٍ لنفس المنتوج. توّا `/api/cart/catalog` يستعمل
+   * `final_price` المنشور ⇒ **سعر واحد**، هو سعر المتجر، `VERIFIED`.
+   */
+  const addToCart = useMutation({
+    mutationFn: () => addCatalogToCart({ productId: String(id) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cart'] });
+    },
+  });
 
   const favorite = useMutation({
     mutationFn: () => addCatalogFavorite(String(id)),
@@ -90,6 +106,16 @@ export default function ProductScreen() {
   }
 
   const images = [product.image, ...product.additionalImages].filter(Boolean);
+
+  /**
+   * هل «زيد للسلّة» ينجّم ينجح؟
+   *
+   * الزر **ما يبانش** كان ما فمّاش سعر منشور، أو كان المنتوج نافد. الخادم
+   * يرفض الحالتين (`NO_PRICE` · `OUT_OF_STOCK`)، فإظهار زر يفشل هو بالضبط
+   * «الزر الميّت» الممنوع.
+   */
+  const outOfStock = normalizeStockStatus(product.stockStatus) === 'OUT_OF_STOCK';
+  const canOrder = product.finalPrice > 0 && !outOfStock;
 
   return (
     <SubScreen
@@ -147,6 +173,17 @@ export default function ProductScreen() {
       ) : null}
 
       <View style={styles.actions}>
+        {canOrder ? (
+          <Button
+            label={addToCart.isSuccess ? t('catalog.added') : t('catalog.addToCart')}
+            onPress={() => addToCart.mutate()}
+            busy={addToCart.isPending}
+            disabled={addToCart.isSuccess}
+          />
+        ) : outOfStock ? (
+          <AppText variant="caption" color={theme.colors.danger}>{t('catalog.stock.out_of_stock')}</AppText>
+        ) : null}
+
         {product.sourceUrl ? (
           <Button label={t('catalog.openSource')} onPress={openSource} />
         ) : null}
@@ -163,6 +200,12 @@ export default function ProductScreen() {
       {favorite.isError ? (
         <AppText accessibilityRole="alert" variant="caption" color={theme.colors.danger}>
           {t('catalog.retry')}
+        </AppText>
+      ) : null}
+
+      {addToCart.isError ? (
+        <AppText accessibilityRole="alert" variant="caption" color={theme.colors.danger}>
+          {isApiError(addToCart.error) && addToCart.error.code ? addToCart.error.code : t('catalog.retry')}
         </AppText>
       ) : null}
     </SubScreen>

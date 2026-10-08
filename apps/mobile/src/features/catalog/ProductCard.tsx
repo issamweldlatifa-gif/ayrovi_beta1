@@ -17,7 +17,7 @@ import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useT, type Translate } from '@/i18n';
 import { mediaUrl } from '@/api/client';
-import type { CatalogProduct } from '@/api/catalog';
+import { normalizeStockStatus, type CatalogProduct } from '@/api/catalog';
 
 export interface ProductCardProps {
   product: CatalogProduct;
@@ -26,12 +26,12 @@ export interface ProductCardProps {
 
 /** نصّ المخزون: كل الحالات المعروفة، والباقي «غير مؤكّد» موش فراغ. */
 function stockLabel(status: string, t: Translate): { text: string; tone: 'ok' | 'warn' | 'muted' } {
-  switch (status) {
-    case 'in_stock':
+  switch (normalizeStockStatus(status)) {
+    case 'AVAILABLE':
       return { text: t('catalog.stock.in_stock'), tone: 'ok' };
-    case 'limited':
+    case 'LIMITED':
       return { text: t('catalog.stock.limited'), tone: 'warn' };
-    case 'out_of_stock':
+    case 'OUT_OF_STOCK':
       return { text: t('catalog.stock.out_of_stock'), tone: 'warn' };
     default:
       return { text: t('catalog.stock.unknown'), tone: 'muted' };

@@ -37,6 +37,24 @@ export interface CatalogProduct {
   arrivalIds: string[];
 }
 
+/**
+ * حالة المخزون — **مُطبَّعة من المصدر**.
+ *
+ * لماذا هذا الملف: القاعدة تخزّن `AVAILABLE | LIMITED | OUT_OF_STOCK` (قيد
+ * `CHECK` في المخطّط)، والخادم يبعثها **كما هي**. التطبيق كان يقارن بصيغة
+ * أخرى (`in_stock`) ⇒ كل المنتوجات كانت تبان «التوفّر غير مؤكّد»، وهو جهل
+ * مقنّع بالحياد. التطبيع في طبقة الـAPI: مصدر واحد، مختبَر، وكل شاشة تستعملو.
+ */
+export type StockStatus = 'AVAILABLE' | 'LIMITED' | 'OUT_OF_STOCK' | 'UNKNOWN';
+
+export function normalizeStockStatus(value: unknown): StockStatus {
+  const raw = String(value ?? '').trim().toUpperCase();
+  if (raw === 'AVAILABLE' || raw === 'IN_STOCK') return 'AVAILABLE';
+  if (raw === 'LIMITED' || raw === 'LOW') return 'LIMITED';
+  if (raw === 'OUT_OF_STOCK' || raw === 'SOLDOUT' || raw === 'SOLD_OUT') return 'OUT_OF_STOCK';
+  return 'UNKNOWN';
+}
+
 /** وصولة (arrivage) كما يقدّمها `GET /api/public/arrivals`. */
 export interface CatalogArrival {
   id: string;

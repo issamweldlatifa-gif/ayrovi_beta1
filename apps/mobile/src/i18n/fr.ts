@@ -206,6 +206,8 @@ export const fr = {
 
   'catalog.favorite': '⭐ Ajouter aux favoris',
   'catalog.favorited': 'Déjà en favoris',
+  'catalog.addToCart': 'Ajouter au panier',
+  'catalog.added': 'Ajouté au panier ✅',
   'catalog.title': 'Boutique',
   'catalog.subtitle': 'Produits disponibles — prix calculé par le serveur, en dinars.',
   'catalog.empty': 'Aucun produit en vitrine pour le moment.',

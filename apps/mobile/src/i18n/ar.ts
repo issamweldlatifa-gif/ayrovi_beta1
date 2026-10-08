@@ -206,6 +206,8 @@ export const ar = {
 
   'catalog.favorite': '⭐ للمفضلة',
   'catalog.favorited': 'موجود في المفضلة',
+  'catalog.addToCart': 'زيد للسلّة',
+  'catalog.added': 'تزاد للسلّة ✅',
   'catalog.title': 'المتجر',
   'catalog.subtitle': 'المنتوجات الجاهزة — السعر من الخادم، بالدينار.',
   'catalog.empty': 'ما فمّاش منتوجات معروضة توّا.',

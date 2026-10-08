@@ -152,6 +152,50 @@ export async function updateAyroviCartQuantity(
 }
 
 /** `DELETE /api/cart/items/:id` — `removed:true` وإلا عقد مكسور. */
+/**
+ * إضافة منتوج **كتالوج** للسلّة — بـ`productId` فقط.
+ *
+ * لماذا مسار مخصّص (`/api/cart/catalog`): المسار العام يعيد حساب السعر من
+ * `sourcePrice`، بينما منتوج الكتالوج عندو `final_price` منشور من المتجر.
+ * إعادة الحساب تنتج **سعراً ثانياً** لنفس المنتوج — وهذا بالضبط اللي منعنا
+ * «زيد للسلّة» في Q1. هنا: سعر واحد، هو سعر المتجر، `VERIFIED`.
+ *
+ * والرفض يُقرأ من الخادم (بلا سعر · نافد · منتوج موش موجود) ⇒ الشاشة تقول
+ * السبب الحقيقي، موش «وقع خطأ».
+ */
+export interface CatalogCartResult {
+  cartItemId: string;
+  totalItemsCount: number;
+  totalTND: number;
+  deliveryTND: number;
+}
+
+export async function addCatalogToCart(input: {
+  productId: string;
+  quantity?: number;
+  requestedSize?: string;
+  requestedColor?: string;
+  customerNote?: string;
+}, options: RequestOptions = {}): Promise<CatalogCartResult> {
+  const payload = await apiSendEnvelope<Record<string, unknown>>('POST', '/api/cart/catalog', {
+    ...options,
+    body: {
+      productId: input.productId,
+      ...(input.quantity ? { quantity: input.quantity } : {}),
+      ...(input.requestedSize ? { requestedSize: input.requestedSize } : {}),
+      ...(input.requestedColor ? { requestedColor: input.requestedColor } : {}),
+      ...(input.customerNote ? { customerNote: input.customerNote } : {}),
+    },
+  });
+  const cartItem = isRecord(payload.cartItem) ? payload.cartItem : {};
+  return {
+    cartItemId: str(cartItem.id),
+    totalItemsCount: num(payload.totalItemsCount) ?? 0,
+    totalTND: num(payload.totalTND) ?? 0,
+    deliveryTND: num(payload.deliveryTND) ?? 0,
+  };
+}
+
 export async function removeAyroviCartItem(
   input: { itemId: string; sessionId: string },
   options: RequestOptions = {},

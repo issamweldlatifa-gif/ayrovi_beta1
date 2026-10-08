@@ -19,7 +19,7 @@ vi.mock('../src/api/client', () => ({
   apiGet: (...args: unknown[]) => apiGet(...(args as [])),
 }));
 
-const { fetchCatalogProducts } = await import('../src/api/catalog');
+const { fetchCatalogProducts, normalizeStockStatus } = await import('../src/api/catalog');
 
 const PRODUCT = {
   id: 'product_1',
@@ -96,15 +96,47 @@ beforeEach(() => { apiGet.mockClear(); apiGet.mockResolvedValue({ data: [] }); }
 });
 
 describe('صفحة المنتوج — قرار موثّق', () => {
-  it('ما فيهاش زر «زيد للسلّة»: السعر الثاني = كذبة مطبوعة', () => {
-    // القرار متعمّد وموثّق في رأس الملف (Q5 هو مسلك الشراء). القاعدة تمنع
-    // أن يرجع الزرّ بالسهو قبل ما يتوفّر سعر واحد موثوق.
-    expect(screen()).not.toMatch(/addCartItem|addAyWebsCartItem|catalog\.addToCart/);
+  it('«زيد للسلّة» يستعمل **مسار الكتالوج** وحدو (سعر واحد، موش سعرين)', () => {
+    // Q1 كان يمنع الزر: المسار العام للسلّة يعيد حساب السعر من `sourcePrice`
+    // ⇒ سعر ثانٍ لنفس المنتوج = كذبة مطبوعة. Q5 أضاف `/api/cart/catalog`
+    // اللي يستعمل `final_price` المنشور ⇒ سعر واحد. القفل يتبدّل: موش «ما
+    // فمّاش زر»، بل «الزر يمرّ من المسار الصحيح».
+    const source = screen();
+    expect(source).toContain('addCatalogToCart');
+    expect(source).not.toMatch(/addCartItem|addAyWebsCartItem/);
+  });
+
+  it('الزر **ما يبانش** كان ما فمّاش سعر أو كان نافد (موّش زر يفشل)', () => {
+    // نفس قاعدة الخادم: `NO_PRICE` و`OUT_OF_STOCK` يرفضو الإضافة، فإظهار زر
+    // يفشل هو «الزر الميّت» الممنوع.
+    expect(screen()).toContain('canOrder');
+    expect(screen()).toContain('outOfStock');
   });
 
   it('وفيها الإجراءان اللي ينجّمو يتنفّذو: التاجر + المفضلة', () => {
     const source = screen();
     expect(source).toContain('catalog.openSource');
     expect(source).toContain('addCatalogFavorite');
+  });
+});
+
+describe('حالة المخزون — التطبيع من المصدر', () => {
+  it('القاعدة تخزّن `AVAILABLE/LIMITED/OUT_OF_STOCK` (كبير) ⇒ تُقرا صح', () => {
+    // العيب اللي كان: التطبيق يقارن بـ`in_stock` (صغير) ⇒ كل المنتوجات كانت
+    // تبان «التوفّر غير مؤكّد» — جهل مقنّع بالحياد.
+    expect(normalizeStockStatus('AVAILABLE')).toBe('AVAILABLE');
+    expect(normalizeStockStatus('LIMITED')).toBe('LIMITED');
+    expect(normalizeStockStatus('OUT_OF_STOCK')).toBe('OUT_OF_STOCK');
+  });
+
+  it('الصيغة القديمة (`in_stock`) مقبولة كذلك: التطبيق ما يتبعش نسخة القاعدة', () => {
+    expect(normalizeStockStatus('in_stock')).toBe('AVAILABLE');
+    expect(normalizeStockStatus('sold_out')).toBe('OUT_OF_STOCK');
+  });
+
+  it('قيمة مجهولة ⇒ `UNKNOWN` (موّش «موجود» بالتفاؤل)', () => {
+    expect(normalizeStockStatus('')).toBe('UNKNOWN');
+    expect(normalizeStockStatus(undefined)).toBe('UNKNOWN');
+    expect(normalizeStockStatus('nimportequoi')).toBe('UNKNOWN');
   });
 });
