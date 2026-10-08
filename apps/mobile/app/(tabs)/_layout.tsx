@@ -5,12 +5,10 @@
  * disponible — sinon des icônes vectorielles. Aucun onglet n'existe sans son
  * écran : un onglet mort est un mensonge à l'utilisateur.
  */
-import { Tabs, usePathname } from 'expo-router';
-import { useEffect } from 'react';
+import { Tabs } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useT } from '@/i18n';
 import { useTheme } from '@/design/theme';
-import { revealChrome, useChromeHidden } from '@/design/chrome';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
@@ -25,14 +23,6 @@ const ICONS: Record<string, { active: IoniconName; inactive: IoniconName }> = {
 export default function TabsLayout() {
   const theme = useTheme();
   const t = useT();
-  const pathname = usePathname();
-  const chromeHidden = useChromeHidden();
-
-  /**
-   * Changer d'onglet RÉAFFICHE la barre : la retrouver masquée en arrivant sur
-   * un écran est désorientant — on n'a encore rien fait pour la cacher.
-   */
-  useEffect(() => { revealChrome(); }, [pathname]);
 
   return (
     <Tabs
@@ -50,12 +40,10 @@ export default function TabsLayout() {
           // posée sur la barre, pas sur toute l'application — le contenu
           // (images marchandes, chiffres, liens) garde son sens de lecture.
           ...(theme.isRTL ? { direction: 'rtl' as const } : null),
-          // Masquée : hauteur à zéro, PAS un simple `translateY` — glisser la
-          // barre hors de l'écran laisserait une bande vide en bas, et le
-          // contenu ne profiterait pas de la place rendue.
-          ...(chromeHidden ? {
-            height: 0, opacity: 0, paddingTop: 0, borderTopWidth: 0, overflow: 'hidden',
-          } : null),
+          // Barre VOLONTAIREMENT FIXE. Le repli au défilement est construit et
+          // testé (`design/chrome`) mais désactivé ici : une barre qui saccade
+          // sur un appareil modeste est pire qu’une barre stable. Réactiver =
+          // restaurer `useChromeScroll` et le bloc `chromeHidden`.
         },
         tabBarLabelStyle: {
           ...theme.text('caption', 'bold'),

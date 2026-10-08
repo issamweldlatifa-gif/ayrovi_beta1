@@ -13,7 +13,6 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useT } from '@/i18n';
 import { useTheme, webDirection, type TextRole } from './theme';
-import { useChromeHidden, useChromeScroll } from './chrome';
 
 /* ── Texte ─────────────────────────────────────────────────────────────────── */
 
@@ -320,9 +319,6 @@ export function Screen({ tab, phase, children, onRefresh, refreshing = false }: 
   const theme = useTheme();
   const t = useT();
   const insets = useSafeAreaInsets();
-  // Le défilement pilote la barre d'onglets (voir `design/chrome`).
-  const onChromeScroll = useChromeScroll();
-  const chromeHidden = useChromeHidden();
   const title = t(`screen.${tab}.subtitle`);
   const body = t(`screen.${tab}.body`);
   const tabLabel = t(`tabs.${tab}`);
@@ -330,11 +326,18 @@ export function Screen({ tab, phase, children, onRefresh, refreshing = false }: 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.canvas }}>
       {/**
-       * En-tête HORS du défilement : avant, il vivait DANS la liste et
-       * disparaissait au premier geste, pour ne jamais revenir — ce n'est pas
-       * « se replier », c'est « partir ». Dehors, il peut se replier et se
-       * déplier, piloté par la MÊME décision que la barre d'onglets
-       * (`useChromeHidden`) : un seul état, deux gestes, jamais désaccordés.
+      /**
+       * En-tête VOLONTAIREMENT FIXE.
+       *
+       * Le repli au défilement a été construit ET testé (14 tests dans
+       * `tests/chrome.test.ts`) puis DÉSACTIVÉ ici : sur un appareil modeste,
+       * un repli qui saccade coûte plus cher en sensation qu’il ne rapporte
+       * en place. La décision revient au produit, une fois le geste validé
+       * sur un vrai téléphone.
+       *
+       * Rien n’a été supprimé : `design/chrome.tsx` et `design/chromeLogic.ts`
+       * sont intacts. Réactiver = remettre `useChromeScroll` sur le `ScrollView`
+       * et `chromeHidden` sur cet en-tête.
        */}
       <View
         style={[
@@ -343,11 +346,7 @@ export function Screen({ tab, phase, children, onRefresh, refreshing = false }: 
             paddingTop: insets.top + theme.space[3],
             paddingHorizontal: theme.space[3],
           },
-          // Replié : hauteur à zéro, contenu rendu à l'écran — c'est la place
-          // libérée qui fait l'intérêt du geste.
-          chromeHidden ? styles.headerCollapsed : null,
         ]}
-        accessibilityElementsHidden={chromeHidden}
       >
         <AppText variant="caption" weight="bold" color={theme.colors.accentText}>
           {tabLabel.toUpperCase()}
@@ -362,8 +361,6 @@ export function Screen({ tab, phase, children, onRefresh, refreshing = false }: 
 
       <ScrollView
         style={{ backgroundColor: theme.colors.canvas }}
-        onScroll={onChromeScroll}
-        scrollEventThrottle={16}
         refreshControl={onRefresh ? (
           <RefreshControl
             refreshing={refreshing}
@@ -408,7 +405,6 @@ const styles = StyleSheet.create({
   },
   screen: { gap: 16 },
   header: { gap: 8, paddingBottom: 12, overflow: 'hidden' },
-  headerCollapsed: { height: 0, paddingTop: 0, paddingBottom: 0, opacity: 0 },
   headerTitle: { marginTop: 2 },
   badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' },
   badge: { paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'flex-start' },
