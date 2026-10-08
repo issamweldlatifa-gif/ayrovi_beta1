@@ -15,11 +15,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
-import { screenContentGap } from './layoutLogic';
+import { useT } from '@/i18n';
+import { rowDirectionFor, screenContentGap } from './layoutLogic';
 
 export function SubScreen({
   title, subtitle, children, onRefresh, refreshing = false, fallback = '/(tabs)/account',
-  scrollRef, onScroll, sticky,
+  scrollRef, onScroll, sticky, testID,
 }: {
   title: string;
   subtitle?: string;
@@ -39,13 +40,16 @@ export function SubScreen({
    * défilement : le client sait TOUJOURS où il est dans le parcours.
    */
   sticky?: ReactNode;
+  testID?: string;
 }) {
   const theme = useTheme();
+  const t = useT();
   const insets = useSafeAreaInsets();
 
   return (
     <ScrollView
       ref={scrollRef}
+      testID={testID}
       onScroll={onScroll}
       scrollEventThrottle={16}
       stickyHeaderIndices={sticky ? [0] : undefined}
@@ -73,14 +77,19 @@ export function SubScreen({
           enfant. Sans lui, l'indicateur d'étapes défile et le client perd le
           fil dès qu'il remplit un champ. */}
       {sticky ? <View style={{ backgroundColor: theme.colors.canvas }}>{sticky}</View> : null}
-      <View style={styles.header}>
+      <View style={[styles.header, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={title}
+          accessibilityLabel={t('common.back')}
           onPress={() => (router.canGoBack() ? router.back() : router.replace(fallback as never))}
           style={{ minHeight: theme.geometry.minTarget, minWidth: theme.geometry.minTarget, justifyContent: 'center' }}
         >
-          <Ionicons name="chevron-back" size={26} color={theme.colors.ink} />
+          <Ionicons
+            name={theme.isRTL ? 'chevron-forward' : 'chevron-back'}
+            size={26}
+            color={theme.colors.ink}
+            accessibilityElementsHidden
+          />
         </Pressable>
         <View style={styles.headerText}>
           <AppText variant="title">{title}</AppText>

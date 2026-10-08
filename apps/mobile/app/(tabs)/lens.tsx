@@ -15,7 +15,7 @@
  * لأن الإضافة ما تتقرّرش هنا، تتقرّر في الخادم.
  */
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Image, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -24,6 +24,7 @@ import { AppScreen } from '@/design/layout';
 import { AppHeader } from '@/features/shell/AppHeader';
 import { AppText, Button, Card, Field, KeyValue, ResponsiveActionGroup, SectionHeader } from '@/design/ui';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
+import { AppImage } from '@/design/appImage';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
 import { isApiError, userMessage } from '@/api/errors';
@@ -154,10 +155,12 @@ export default function LensScreen() {
       <SectionHeader title={t('screen.lens.subtitle')} hint={t('screen.lens.body')} />
       <Card title={t('lens.photoTitle')} hint={t('lens.photoHint')}>
         <ResponsiveActionGroup>
-          <Button label={t('lens.camera')} onPress={() => pickFrom('camera')} busy={busy} disabled={busy} />
-          <Button label={t('lens.gallery')} tone="quiet" onPress={() => pickFrom('library')} disabled={busy} />
+          <Button label={t('lens.camera')} onPress={() => pickFrom('camera')} busy={busy} disabled={busy} testID="lens-camera" />
+          <Button label={t('lens.gallery')} tone="quiet" onPress={() => pickFrom('library')} disabled={busy} testID="lens-gallery" />
         </ResponsiveActionGroup>
-        {preview ? <Image source={{ uri: preview }} style={styles.preview} resizeMode="contain" /> : null}
+        {preview ? (
+          <AppImage uri={preview} style={styles.preview} contentFit="contain" accessibilityLabel={t('lens.previewAlt')} />
+        ) : null}
         {busy ? (
           <View style={styles.row}>
             <ActivityIndicator />
@@ -172,6 +175,7 @@ export default function LensScreen() {
       <Card title={t('lens.textTitle')} hint={t('lens.textHint')}>
         <Field
           label={t('lens.textLabel')}
+          accessibilityLabel={t('lens.textLabel')}
           value={text}
           onChangeText={setText}
           placeholder={t('lens.textPlaceholder')}
@@ -181,6 +185,7 @@ export default function LensScreen() {
         <Button
           label={t('lens.search')}
           tone="quiet"
+          testID="lens-search"
           busy={searchByText.isPending}
           disabled={text.trim().length < LENS_MIN_TEXT || searchByText.isPending}
           onPress={() => searchByText.mutate(text.trim())}
@@ -242,7 +247,7 @@ export default function LensScreen() {
 
       <Card title={t('lens.historyTitle')}>
         {history.isPending ? (
-          <LoadingBlock label={{ fr: 'Chargement…', ar: 'جارٍ التحميل…' }} />
+          <LoadingBlock labelKey="loading.generic" />
         ) : history.isError ? (
           <ErrorBlock error={history.error} onRetry={() => { history.refetch(); }} />
         ) : (history.data ?? []).length === 0 ? (

@@ -16,7 +16,9 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppScreen } from '@/design/layout';
 import { AppHeader } from '@/features/shell/AppHeader';
 import { AppText, Button, Card, KeyValue, LinkRow, SectionHeader, Segmented } from '@/design/ui';
-import { ErrorBlock, LoadingBlock } from '@/design/states';
+import { ErrorBlock } from '@/design/states';
+import { ListSkeleton } from '@/design/skeleton';
+import { rowDirectionFor } from '@/design/layoutLogic';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
 import { fetchOverview, type AccountOverview, type RecentOrder } from '@/api/account';
@@ -57,8 +59,8 @@ function SignedIn({ overview, pending }: { overview: AccountOverview | null; pen
         title={t('account.signedInAs')}
         hint={verified ? undefined : t('account.unverified')}
       >
-        <View style={styles.identity}>
-          <Ionicons name="person-circle-outline" size={44} color={theme.colors.muted} />
+        <View style={[styles.identity, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+          <Ionicons name="person-circle-outline" size={44} color={theme.colors.muted} accessibilityElementsHidden />
           <View style={styles.identityText}>
             <AppText variant="lead" weight="bold">{shown?.displayName || '—'}</AppText>
             <AppText variant="caption" color={theme.colors.muted}>{shown?.email || shown?.phone || ''}</AppText>
@@ -94,7 +96,7 @@ function SignedIn({ overview, pending }: { overview: AccountOverview | null; pen
         <LinkRow icon="information-circle-outline" label={t('account.menu.about')} onPress={() => router.push('/account/about')} />
       </Card>
 
-      {pending ? <LoadingBlock label={{ fr: t('account.loading'), ar: t('account.loading') }} /> : null}
+      {pending ? <ListSkeleton count={3} /> : null}
       {overview ? (
         <Card title={t('account.stats.orders')}>
           <KeyValue label={t('account.stats.orders')} value={String(overview.counts.orders)} />
@@ -182,7 +184,7 @@ export default function AccountScreen() {
 }
 
 const styles = StyleSheet.create({
-  identity: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 },
+  identity: { alignItems: 'center', gap: 12, paddingVertical: 8 },
   identityText: { flex: 1, gap: 2 },
   order: { borderTopWidth: StyleSheet.hairlineWidth, paddingVertical: 8, gap: 2 },
   orderHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },

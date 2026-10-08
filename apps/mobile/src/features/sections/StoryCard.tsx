@@ -8,10 +8,11 @@
  * منتوج ⇒ صفحتو؛ وصولة ⇒ المتجر مفلتر عليها؛ رابط خارجي ⇒ المتصفّح.
  * وكي ما فمّاش هدف ⇒ **ما فمّاش لمس** (موّش لمس يفتح والو).
  */
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
+import { AppImage } from '@/design/appImage';
 import { useT } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import type { StoryItem } from '@/api/sections';
@@ -58,7 +59,7 @@ export function StoryCard({ story, onOpen, viewed = false }: StoryCardProps) {
     >
       <View style={[styles.frame, { backgroundColor: theme.colors.surface }]}>
         {story.mediaUrl ? (
-          <Image source={{ uri: mediaUrl(story.mediaUrl) }} style={styles.image} resizeMode="cover" />
+          <AppImage uri={mediaUrl(story.mediaUrl)} style={styles.image} contentFit="cover" accessibilityLabel={story.title || t('sections.stories')} />
         ) : (
           <AppText variant="caption" color={theme.colors.muted}>{story.title || t('sections.stories')}</AppText>
         )}

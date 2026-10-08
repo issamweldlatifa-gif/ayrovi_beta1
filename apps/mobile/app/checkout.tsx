@@ -30,6 +30,7 @@ import { JourneyProgress, type JourneyStep } from '@/features/checkout/JourneyPr
 import { resolveJourneyStep, journeyCompletion } from '@/features/checkout/journey';
 import { ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
+import { rowDirectionFor } from '@/design/layoutLogic';
 import { useI18n } from '@/i18n';
 import { isApiError, userMessage } from '@/api/errors';
 import { fetchAddresses, type Address } from '@/api/account';
@@ -311,9 +312,10 @@ export default function CheckoutScreen() {
       ) : null}
 
       <Card title={t('checkout.addressTitle')} hint={t('checkout.addressHint')} onLayout={remember('address')}>
-        <Field label={t('checkout.name')} value={name} onChangeText={setName} autoCapitalize="words" />
+        <Field label={t('checkout.name')} accessibilityLabel={t('checkout.name')} value={name} onChangeText={setName} autoCapitalize="words" />
         <Field
           label={t('checkout.phone')}
+          accessibilityLabel={t('checkout.phone')}
           value={phone}
           onChangeText={setPhone}
           keyboardType="phone-pad"
@@ -325,6 +327,7 @@ export default function CheckoutScreen() {
         )}
         <Field
           label={t('checkout.email')}
+          accessibilityLabel={t('checkout.email')}
           value={contactEmail}
           editable={!emailLocked}
           autoCapitalize="none"
@@ -337,7 +340,7 @@ export default function CheckoutScreen() {
         {policy && policy.governorates.length ? (
           <>
             <AppText variant="caption" color={theme.colors.muted}>{t('checkout.governorate')}</AppText>
-            <View style={styles.chips}>
+            <View style={[styles.chips, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
               {policy.governorates.map((city) => {
                 const active = governorate === city;
                 return (
@@ -362,14 +365,15 @@ export default function CheckoutScreen() {
         ) : (
           <Field
             label={t('checkout.governorate')}
+            accessibilityLabel={t('checkout.governorate')}
             value={governorate}
             onChangeText={setGovernorate}
             autoCapitalize="words"
           />
         )}
 
-        <Field label={t('checkout.addressLine')} value={addressLine} onChangeText={setAddressLine} />
-        <Field label={t('checkout.notes')} value={notes} onChangeText={setNotes} />
+        <Field label={t('checkout.addressLine')} accessibilityLabel={t('checkout.addressLine')} value={addressLine} onChangeText={setAddressLine} />
+        <Field label={t('checkout.notes')} accessibilityLabel={t('checkout.notes')} value={notes} onChangeText={setNotes} />
         {policy?.deliveryDelay ? (
           <AppText variant="caption" color={theme.colors.muted}>
             {t('checkout.deliveryDelay', { delay: policy.deliveryDelay })}
@@ -446,7 +450,7 @@ export default function CheckoutScreen() {
           accessibilityRole="checkbox"
           accessibilityState={{ checked: terms }}
           onPress={() => setTerms((current) => !current)}
-          style={[styles.terms, { minHeight: theme.geometry.minTarget }]}
+          style={[styles.terms, { flexDirection: rowDirectionFor(theme.isRTL), minHeight: theme.geometry.minTarget }]}
         >
           <View style={[styles.box, {
             borderColor: terms ? theme.colors.action : theme.colors.line,
@@ -467,6 +471,7 @@ export default function CheckoutScreen() {
           onPress={() => submit.mutate()}
           busy={submit.isPending}
           disabled={!canSubmit || submit.isPending}
+          testID="checkout-submit"
         />
         <AppText variant="caption" color={theme.colors.muted}>{t('checkout.submitHint')}</AppText>
       </Card>
@@ -476,10 +481,10 @@ export default function CheckoutScreen() {
 
 const styles = StyleSheet.create({
   address: { borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8, gap: 2, marginTop: 6, justifyContent: 'center' },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
+  chips: { flexWrap: 'wrap', gap: 8, marginTop: 6 },
   chip: { borderWidth: 1, paddingHorizontal: 12, justifyContent: 'center', alignItems: 'center', minWidth: 72 },
   choice: { borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8, gap: 2, marginTop: 6, justifyContent: 'center' },
-  terms: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 },
+  terms: { alignItems: 'center', gap: 10, marginTop: 4 },
   termsText: { flex: 1 },
   box: { width: 22, height: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
 });

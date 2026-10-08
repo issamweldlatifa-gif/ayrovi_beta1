@@ -27,7 +27,8 @@ import { HeroSection } from '@/features/home/HeroSection';
 import { HomeTabs } from '@/features/home/HomeTabs';
 import { PublicSections } from '@/features/sections/PublicSections';
 import { Footer } from '@/features/shell/Footer';
-import { ErrorBlock, LoadingBlock } from '@/design/states';
+import { ErrorBlock } from '@/design/states';
+import { HeroSkeleton } from '@/design/skeleton';
 import { useAnnouncements, useHeroContent, useHeroVisual } from '@/api/hooks';
 import { apiUrl } from '@/api/client';
 
@@ -73,9 +74,7 @@ export default function HomeScreen() {
 
       {/* الهيرو — مساحة إشهار يملاها الخادم */}
       {heroLoading ? (
-        <LoadingBlock
-          label={{ fr: 'Chargement du contenu…', ar: 'جارٍ تحميل المحتوى…' }}
-        />
+        <HeroSkeleton />
       ) : hero.isError ? (
         <ErrorBlock
           error={hero.error}

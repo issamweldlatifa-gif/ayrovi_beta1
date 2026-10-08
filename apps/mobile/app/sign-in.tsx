@@ -179,10 +179,11 @@ export default function SignInScreen() {
       >
         <Pressable
           accessibilityRole="button"
+          accessibilityLabel={t('common.close')}
           onPress={() => router.back()}
           style={[styles.close, { minHeight: theme.geometry.minTarget, minWidth: theme.geometry.minTarget }]}
         >
-          <Ionicons name="close" size={26} color={theme.colors.ink} />
+          <Ionicons name="close" size={26} color={theme.colors.ink} accessibilityElementsHidden />
         </Pressable>
 
         <AppText variant="title">{t('auth.title')}</AppText>
@@ -238,6 +239,7 @@ export default function SignInScreen() {
               <>
                 <Field
                   label={t('auth.phone.label')}
+                  accessibilityLabel={t('auth.phone.label')}
                   placeholder={t('auth.phone.placeholder')}
                   value={phone}
                   onChangeText={setPhone}
@@ -245,7 +247,7 @@ export default function SignInScreen() {
                   autoComplete="tel"
                   editable={!busy && (config?.phoneOtp ?? true)}
                 />
-                <Button label={t('auth.phone.send')} onPress={sendCode} busy={busy} disabled={config?.phoneOtp === false} />
+                <Button label={t('auth.phone.send')} onPress={sendCode} busy={busy} disabled={config?.phoneOtp === false} testID="auth-send-code" />
               </>
             ) : (
               <>
@@ -259,13 +261,14 @@ export default function SignInScreen() {
                 ) : null}
                 <Field
                   label={t('auth.phone.code')}
+                  accessibilityLabel={t('auth.phone.code')}
                   value={code}
                   onChangeText={setCode}
                   keyboardType="number-pad"
                   maxLength={6}
                   editable={!busy}
                 />
-                <Button label={t('auth.phone.verify')} onPress={confirmCode} busy={busy} />
+                <Button label={t('auth.phone.verify')} onPress={confirmCode} busy={busy} testID="auth-verify-code" />
                 <Button label={t('auth.phone.resend')} onPress={sendCode} tone="quiet" disabled={busy} />
                 <Button label={t('auth.phone.change')} onPress={session.cancelPhoneCode} tone="quiet" disabled={busy} />
               </>
@@ -277,6 +280,7 @@ export default function SignInScreen() {
           <Card title={t('auth.tabs.email')} hint={config && !config.email ? t('auth.error.unavailable') : undefined}>
             <Field
               label={t('auth.email.label')}
+              accessibilityLabel={t('auth.email.label')}
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
@@ -286,12 +290,13 @@ export default function SignInScreen() {
             />
             <Field
               label={t('auth.password.label')}
+              accessibilityLabel={t('auth.password.label')}
               value={password}
               onChangeText={setPassword}
               secureTextEntry
               editable={!busy}
             />
-            <Button label={t('auth.email.submit')} onPress={emailSignIn} busy={busy} />
+            <Button label={t('auth.email.submit')} onPress={emailSignIn} busy={busy} testID="auth-email-submit" />
             {/* Le lien reste visible même quand la récupération est fermée :
                 l'écran suivant explique POURQUOI au lieu de laisser un vide. */}
             <Pressable
@@ -308,9 +313,10 @@ export default function SignInScreen() {
 
         {mode === 'register' ? (
           <Card title={t('auth.tabs.register')} hint={t('auth.register.hint')}>
-            <Field label={t('auth.name.label')} value={name} onChangeText={setName} editable={!busy} />
+            <Field label={t('auth.name.label')} accessibilityLabel={t('auth.name.label')} value={name} onChangeText={setName} editable={!busy} />
             <Field
               label={t('auth.email.label')}
+              accessibilityLabel={t('auth.email.label')}
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
@@ -320,6 +326,7 @@ export default function SignInScreen() {
             />
             <Field
               label={t('auth.password.label')}
+              accessibilityLabel={t('auth.password.label')}
               value={password}
               onChangeText={setPassword}
               secureTextEntry
@@ -335,10 +342,11 @@ export default function SignInScreen() {
                 name={marketing ? 'checkbox' : 'square-outline'}
                 size={22}
                 color={marketing ? theme.colors.accent : theme.colors.muted}
+                accessibilityElementsHidden
               />
               <AppText variant="caption" style={styles.checkboxLabel}>{t('auth.marketing')}</AppText>
             </Pressable>
-            <Button label={t('auth.register.submit')} onPress={register} busy={busy} />
+            <Button label={t('auth.register.submit')} onPress={register} busy={busy} testID="auth-register-submit" />
             <AppText variant="caption" color={theme.colors.muted}>{t('auth.legal')}</AppText>
           </Card>
         ) : null}

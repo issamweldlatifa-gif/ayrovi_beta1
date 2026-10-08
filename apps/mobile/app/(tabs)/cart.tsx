@@ -14,14 +14,17 @@
  *    تتحدّد من إعدادات الخادم — لذلك ما نوعدوش ببطاقة ولا بتحويل مسبقاً.
  */
 import { useCallback, useMemo, useState } from 'react';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useMutation, useQuery } from '@tanstack/react-query';
 
 import { AppScreen } from '@/design/layout';
 import { AppHeader } from '@/features/shell/AppHeader';
 import {AppText, Button, Card, KeyValue, SectionHeader} from '@/design/ui';
-import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
+import { EmptyBlock, ErrorBlock } from '@/design/states';
+import { ListSkeleton } from '@/design/skeleton';
+import { AppImage } from '@/design/appImage';
+import { rowDirectionFor } from '@/design/layoutLogic';
 import { useTheme } from '@/design/theme';
 import { useI18n, useT } from '@/i18n';
 import { mediaUrl } from '@/api/client';
@@ -112,7 +115,9 @@ export default function AyroviCartScreen() {
     const blocked = line.priceTrust === 'STALE';
     return (
       <View key={line.id} style={[styles.line, { borderTopColor: theme.colors.line }]}>
-        {image ? <Image source={{ uri: image }} style={styles.image} resizeMode="contain" /> : null}
+        {image ? (
+          <AppImage uri={image} style={styles.image} contentFit="contain" accessibilityLabel={line.title} />
+        ) : null}
         <AppText variant="label" weight="bold">{line.title}</AppText>
         {line.variant ? <KeyValue label={t('cart.variant')} value={line.variant} /> : null}
         <KeyValue
@@ -137,10 +142,11 @@ export default function AyroviCartScreen() {
           </AppText>
         ) : null}
 
-        <View style={styles.quantityRow}>
+        <View style={[styles.quantityRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('cart.decrease')}
+            testID={`cart-line-${line.id}-minus`}
             disabled={busy || line.quantity <= 1}
             onPress={() => setQuantity.mutate({ itemId: line.id, quantity: line.quantity - 1 })}
             style={[styles.step, {
@@ -157,6 +163,7 @@ export default function AyroviCartScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('cart.increase')}
+            testID={`cart-line-${line.id}-plus`}
             disabled={busy || line.quantity >= MAX_QUANTITY}
             onPress={() => setQuantity.mutate({ itemId: line.id, quantity: line.quantity + 1 })}
             style={[styles.step, {
@@ -175,6 +182,7 @@ export default function AyroviCartScreen() {
             busy={removeLine.isPending && removeLine.variables === line.id}
             disabled={busy}
             onPress={() => removeLine.mutate(line.id)}
+            testID={`cart-line-${line.id}-remove`}
           />
         </View>
       </View>
@@ -194,7 +202,7 @@ export default function AyroviCartScreen() {
       <SectionHeader title={t('screen.cart.subtitle')} hint={t('screen.cart.body')} />
       <Card title={t('cart.title')} hint={t('cart.hint')}>
         {!sessionId || cartQuery.isPending ? (
-          <LoadingBlock label={{ fr: 'Chargement du panier…', ar: 'جارٍ تحميل السلّة…' }} />
+          <ListSkeleton count={3} />
         ) : cartQuery.isError ? (
           <ErrorBlock error={cartQuery.error} onRetry={reload} />
         ) : !cart || cart.items.length === 0 ? (
@@ -225,6 +233,7 @@ export default function AyroviCartScreen() {
               label={t('cart.checkout')}
               onPress={() => router.push('/checkout')}
               disabled={!gate.canCheckout}
+              testID="cart-checkout"
             />
             {!gate.canCheckout && gate.blockReason === 'PRICE_VERIFICATION_REQUIRED' ? (
               <AppText variant="caption" color={theme.status.danger.fg}>{t('cart.checkoutBlocked')}</AppText>
@@ -250,6 +259,6 @@ export default function AyroviCartScreen() {
 const styles = StyleSheet.create({
   line: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 8, marginTop: 8, gap: 4 },
   image: { width: '100%', height: 140 },
-  quantityRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' },
+  quantityRow: { alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' },
   step: { borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
 });

@@ -7,10 +7,11 @@
  *    نحسبوه نحنا = سعر ثانٍ لنفس المنتوج = كذبة مطبوعة.
  *  • عرض بلا صورة ⇒ إطار فارغ صريح، موش بطاقة مقطوعة.
  */
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
+import { AppImage } from '@/design/appImage';
 import { useT } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import type { Promotion } from '@/api/sections';
@@ -53,7 +54,7 @@ export function PromotionCard({ promotion, onOpen }: PromotionCardProps) {
     >
       <View style={[styles.imageFrame, { backgroundColor: theme.colors.surface, borderRadius: theme.radius.card }]}>
         {promotion.image ? (
-          <Image source={{ uri: mediaUrl(promotion.image) }} style={styles.image} resizeMode="cover" />
+          <AppImage uri={mediaUrl(promotion.image)} style={styles.image} contentFit="cover" accessibilityLabel={promotion.name} />
         ) : (
           <AppText variant="caption" color={theme.colors.muted}>{promotion.name}</AppText>
         )}

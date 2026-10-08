@@ -12,9 +12,10 @@
  * lisible dans les deux thèmes sans dépendre d'un dégradé.
  */
 import type { ReactNode } from 'react';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
+import { AppImage } from '@/design/appImage';
 import { useI18n } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import type { HeroContent, HeroVisual } from '@/api/public';
@@ -111,10 +112,11 @@ export function HeroSection({
   return (
     <View style={styles.wrap}>
       {image ? (
-        <Image
-          source={{ uri: image }}
-          accessibilityLabel={visual?.altText || ''}
-          resizeMode="cover"
+        <AppImage
+          uri={image}
+          accessibilityLabel={visual?.altText || undefined}
+          decorative={!visual?.altText}
+          contentFit="cover"
           style={[
             styles.image,
             { aspectRatio: ratio, borderRadius: theme.radius.card, backgroundColor: theme.colors.surface },

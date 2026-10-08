@@ -64,7 +64,7 @@ export default function AboutScreen() {
       <Card title={t('about.server')}>
         <KeyValue label={t('about.origin')} value={API_BASE_URL || '/api'} />
         {readiness.isPending ? (
-          <LoadingBlock label={{ fr: 'Lecture du serveur…', ar: 'جارٍ قراءة الخادم…' }} />
+          <LoadingBlock labelKey="loading.server" />
         ) : readiness.isError ? (
           <ErrorBlock error={readiness.error} onRetry={reload} />
         ) : (

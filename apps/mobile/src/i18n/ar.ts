@@ -136,7 +136,6 @@ export const ar = {
   'account.allOrders': 'كل طلباتي',
   'account.phone.verified': 'التلفون متأكّد',
   'account.phone.unverified': 'التلفون ما تأكّدش',
-  'account.loading': 'قاعدين نحضّرو حسابك…',
 
   'orders.title': 'طلباتي',
   'orders.subtitle': 'نفس السجل اللي في الموقع.',
@@ -151,6 +150,16 @@ export const ar = {
   'common.save': 'سجّل',
   'common.cancel': 'ألغي',
   'common.delete': 'احذف',
+  'common.close': 'إغلاق',
+  'common.retry': 'عاود المحاولة',
+
+  /* ── حالات التحميل — نص واحد لكل لغة، بلا كائنات {fr, ar} مكتوبة باليد ── */
+  'loading.cart': 'جارٍ تحميل السلّة…',
+  'loading.stores': 'جارٍ تحميل المتاجر…',
+  'loading.generic': 'جارٍ التحميل…',
+  'loading.server': 'جارٍ قراءة الخادم…',
+  'loading.requests': 'جارٍ تحميل الطلبات…',
+  'loading.watches': 'جارٍ تحميل المراقبات…',
 
   'account.menu.profile': 'ملفي',
   'account.menu.addresses': 'عناويني',
@@ -264,6 +273,10 @@ export const ar = {
   'social.minLength': 'التعليق قصير بزش (حرفين على الأقل)',
   'social.retry': 'عاود جرّب',
   'social.close': 'سكّر',
+  'social.previous': 'السابق',
+  'social.next': 'التالي',
+  'social.play': 'تشغيل',
+  'social.pause': 'إيقاف',
   'checkout.step.address': 'العنوان',
   'checkout.step.payment': 'الدفع',
   'checkout.step.confirm': 'التأكيد',
@@ -276,7 +289,15 @@ export const ar = {
   'home.tab.arrivals': 'وصل حديثاً',
   'home.tab.promotions': 'العروض',
   'home.tab.magazine': 'المجلة',
+  /* ── hors-ligne : الحالة اللي وعدت بيها `states.tsx`، ولّت موجودة ──────── */
+  'offline.banner': 'غير متّصل',
+  'offline.title': 'ما فماش اتصال',
+  'offline.body': 'تحقّق من اتصالك بالشبكة ثم أعد المحاولة.',
+
+  'image.unavailable': 'تعذّر تحميل الصورة',
+  'lens.previewAlt': 'الصورة اللي حلّلناها',
   'vision.empty': 'ما فماش محتوى منشور في قسم فيجن توّا.',
+  'vision.emptyAction': 'افتح Lens',
   'security.title': 'الأمان',
   'security.subtitle': 'حالة الحساب من الخادم، موش تخمين.',
   'security.status': 'حالة الحساب',

@@ -12,7 +12,7 @@
  * يردّ `409`، وهنا نعرض السبب ونعاود نقرا السلّة — ما نكمّلوش على حالة قديمة.
  */
 import { useCallback, useMemo, useState } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -20,6 +20,7 @@ import { AppText, Button, Card, KeyValue } from '@/design/ui';
 import { SubScreen } from '@/design/subScreen';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
+import { AppImage } from '@/design/appImage';
 import { useI18n, useT } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import { isApiError, userMessage } from '@/api/errors';
@@ -135,7 +136,7 @@ export default function AyWebsCartScreen() {
   const lineBlock = (item: AyWebsCartItem) => (
     <View key={item.id} style={[styles.line, { borderColor: theme.colors.line }]}>
       {item.images[0] ? (
-        <Image source={{ uri: mediaUrl(item.images[0]) }} style={styles.image} resizeMode="contain" />
+        <AppImage uri={mediaUrl(item.images[0])} style={styles.image} contentFit="contain" accessibilityLabel={item.title} />
       ) : null}
       <AppText variant="label" weight="bold">{item.title}</AppText>
       {item.variantLabel ? (
@@ -190,7 +191,7 @@ export default function AyWebsCartScreen() {
     <SubScreen title={t('aywebs.cartTitle')} subtitle={t('aywebs.cartHint')} fallback="/aywebs" onRefresh={reload} refreshing={cartQuery.isFetching && !cartQuery.isPending}>
       <Card hint={t('aywebs.cartHint')}>
         {!sessionId || cartQuery.isPending ? (
-          <LoadingBlock label={{ fr: 'Chargement du panier…', ar: 'جارٍ تحميل السلّة…' }} />
+          <LoadingBlock labelKey="loading.cart" />
         ) : cartQuery.isError ? (
           <ErrorBlock error={cartQuery.error} onRetry={reload} />
         ) : !cart || !cart.hasCart || cart.items.length === 0 ? (

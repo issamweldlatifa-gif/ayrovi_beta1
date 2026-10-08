@@ -8,13 +8,14 @@
  * والقاعدة ثابتة: **الإعجاب يحتاج حساباً** ⇒ الزر معطّل بسبب مكتوب.
  */
 import { useCallback, useState } from 'react';
-import { FlatList, Image, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, Modal, Pressable, StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { AppText } from '@/design/ui';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { SubScreen } from '@/design/subScreen';
 import { useTheme } from '@/design/theme';
+import { AppImage } from '@/design/appImage';
 import { useT } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import { usePublications, useSocialCounts } from '@/api/hooks';
@@ -69,7 +70,7 @@ export default function PublicationsScreen() {
           return (
             <View style={[styles.card, { backgroundColor: theme.colors.surface, borderRadius: theme.radius.card }]}>
               {item.imageUrl ? (
-                <Image source={{ uri: mediaUrl(item.imageUrl) }} style={styles.image} resizeMode="cover" />
+                <AppImage uri={mediaUrl(item.imageUrl)} style={styles.image} contentFit="cover" accessibilityLabel={item.title ?? undefined} decorative={!item.title} />
               ) : null}
               <View style={styles.body}>
                 {item.title ? <AppText variant="label" weight="bold">{item.title}</AppText> : null}

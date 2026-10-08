@@ -6,10 +6,11 @@
  * «يتأكّد»، وسعر من مقتطف البحث يتقال كذلك. الضغط على البطاقة يفتح المتجر
  * (كابتشر + «Add to Cart») — موش شراءً صامتاً من هنا.
  */
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText, Button, KeyValue } from '@/design/ui';
 import { useTheme } from '@/design/theme';
+import { AppImage } from '@/design/appImage';
 import { useI18n } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import type { LensCandidate } from '@/api/lens';
@@ -42,7 +43,7 @@ export function CandidateCard({ candidate, onOpen, onWatch, watchBusy = false }:
       style={[styles.card, { borderColor: theme.colors.line, borderRadius: theme.radius.card }]}
     >
       {candidate.image ? (
-        <Image source={{ uri: mediaUrl(candidate.image) }} style={styles.image} resizeMode="contain" />
+        <AppImage uri={mediaUrl(candidate.image)} style={styles.image} contentFit="contain" accessibilityLabel={candidate.title} />
       ) : null}
       <AppText variant="label" weight="bold" numberOfLines={3}>{candidate.title}</AppText>
       {candidate.brand ? (

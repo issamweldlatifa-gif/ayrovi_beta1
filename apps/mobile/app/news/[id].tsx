@@ -5,13 +5,14 @@
  * مربوط بوصولة ⇒ زر الوصولة. وما فمّاش ⇒ ما فمّاش زر (موّش زر يفتح والو).
  */
 import { useCallback } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import { AppText, Button, Card } from '@/design/ui';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { SubScreen } from '@/design/subScreen';
 import { useTheme } from '@/design/theme';
+import { AppImage } from '@/design/appImage';
 import { useT } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import { newsCategoryText } from '@/api/labels';
@@ -72,7 +73,7 @@ export default function NewsDetailScreen() {
       fallback="/news"
     >
       {item.image ? (
-        <Image source={{ uri: mediaUrl(item.image) }} style={styles.hero} resizeMode="cover" />
+        <AppImage uri={mediaUrl(item.image)} style={styles.hero} contentFit="cover" accessibilityLabel={item.title} />
       ) : null}
 
       {item.summary ? (

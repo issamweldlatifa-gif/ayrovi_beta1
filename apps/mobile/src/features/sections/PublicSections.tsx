@@ -16,7 +16,9 @@ import { router } from 'expo-router';
 
 import { AppText, Button } from '@/design/ui';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
+import { ListSkeleton } from '@/design/skeleton';
 import { useTheme } from '@/design/theme';
+import { rowDirectionFor } from '@/design/layoutLogic';
 import { useT } from '@/i18n';
 import {
   useCatalogArrivals, useCatalogProducts,
@@ -88,7 +90,7 @@ export function PublicSections() {
         return {
           pending: products.isPending, failed: products.isError, empty: (products.data ?? []).length === 0,
           node: (
-            <View style={styles.grid}>
+            <View style={[styles.grid, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
               {(products.data ?? []).slice(0, 6).map((product) => (
                 <ProductCard key={product.id} product={product} onOpen={openProduct} />
               ))}
@@ -110,7 +112,7 @@ export function PublicSections() {
         return {
           pending: promotions.isPending, failed: promotions.isError, empty: (promotions.data ?? []).length === 0,
           node: (
-            <View style={styles.grid}>
+            <View style={[styles.grid, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
               {(promotions.data ?? []).slice(0, 4).map((promotion) => (
                 <PromotionCard key={promotion.id} promotion={promotion} onOpen={openPromotion} />
               ))}
@@ -150,7 +152,7 @@ export function PublicSections() {
   };
 
   // لين يجي ترتيب الإدارة: التحميل يبان مرة وحدة، موش خمسة.
-  if (blocks.isPending) return <LoadingBlock />;
+  if (blocks.isPending) return <ListSkeleton count={3} />;
   if (blocks.isError) return <ErrorBlock error={blocks.error} onRetry={() => blocks.refetch()} />;
 
   const visible = (blocks.data ?? []).filter((block) => block.visible);
@@ -189,7 +191,7 @@ export function PublicSections() {
             slide.raw
           ) : slide.body ? (
             <>
-              <View style={styles.header}>
+              <View style={[styles.header, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
                 {slide.title ? <AppText variant="title" weight="bold">{slide.title}</AppText> : null}
                 {slide.seeAll ? (
                   <Button label={t('catalog.seeAll')} onPress={() => router.push('/catalog')} />
@@ -225,7 +227,7 @@ export function PublicSections() {
 const styles = StyleSheet.create({
   wrap: { gap: 20 },
   section: { gap: 10 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  header: { alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  grid: { flexWrap: 'wrap', justifyContent: 'space-between' },
   rail: {},
 });

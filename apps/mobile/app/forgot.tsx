@@ -118,6 +118,7 @@ export default function ForgotPasswordScreen() {
             <>
               <Field
                 label={t('auth.forgot.email')}
+                accessibilityLabel={t('auth.forgot.email')}
                 value={email}
                 onChangeText={setEmail}
                 autoCapitalize="none"
@@ -128,7 +129,7 @@ export default function ForgotPasswordScreen() {
               {failure ? (
                 <AppText accessibilityRole="alert" variant="label" weight="bold" color={theme.status.danger.fg}>{failure}</AppText>
               ) : null}
-              <Button label={t('auth.forgot.submit')} onPress={submit} busy={busy} />
+              <Button label={t('auth.forgot.submit')} onPress={submit} busy={busy} testID="auth-forgot-submit" />
               <AppText variant="caption" color={theme.colors.muted}>{t('auth.forgot.socialOnly')}</AppText>
             </>
           ) : (

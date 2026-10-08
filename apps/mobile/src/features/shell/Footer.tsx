@@ -16,7 +16,7 @@ import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { AppText } from '@/design/ui';
-import { responsiveMetricsFor } from '@/design/layoutLogic';
+import { responsiveMetricsFor, rowDirectionFor } from '@/design/layoutLogic';
 import { useTheme } from '@/design/theme';
 import { COLORS } from '@/design/tokens.generated';
 import { useT } from '@/i18n';
@@ -108,7 +108,7 @@ export function Footer({ testID = 'app-footer' }: FooterProps) {
                   },
                 ]}
               >
-                <Ionicons name={CHANNEL_ICON[channel.id]} size={20} color={FOOTER_COLORS.accentText} />
+                <Ionicons name={CHANNEL_ICON[channel.id]} size={20} color={FOOTER_COLORS.accentText} accessibilityElementsHidden />
               </Pressable>
             ))}
           </View>
@@ -122,7 +122,7 @@ export function Footer({ testID = 'app-footer' }: FooterProps) {
           <View style={styles.methods}>
             {methods.map((method) => (
               <View key={method} style={[styles.method, { borderColor: FOOTER_COLORS.line }]}>
-                <Ionicons name="card-outline" size={12} color={FOOTER_COLORS.muted} />
+                <Ionicons name="card-outline" size={12} color={FOOTER_COLORS.muted} accessibilityElementsHidden />
                 <AppText variant="caption" color={FOOTER_COLORS.muted}>{method}</AppText>
               </View>
             ))}
@@ -153,13 +153,14 @@ function FooterLink({ icon, label, onPress }: { icon: keyof typeof Ionicons.glyp
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={label}
       onPress={onPress}
       style={({ pressed }) => [
         styles.footerLink,
-        { minHeight: theme.geometry.minTarget, opacity: pressed ? 0.7 : 1 },
+        { flexDirection: rowDirectionFor(theme.isRTL), minHeight: theme.geometry.minTarget, opacity: pressed ? 0.7 : 1 },
       ]}
     >
-      <Ionicons name={icon} size={16} color={FOOTER_COLORS.accentText} />
+      <Ionicons name={icon} size={16} color={FOOTER_COLORS.accentText} accessibilityElementsHidden />
       <AppText variant="caption" color={FOOTER_COLORS.ink}>{label}</AppText>
     </Pressable>
   );
@@ -188,5 +189,5 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   links: { gap: 2 },
-  footerLink: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  footerLink: { alignItems: 'center', gap: 8 },
 });

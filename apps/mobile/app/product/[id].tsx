@@ -14,7 +14,7 @@
  * اللي مانعملهاش. مسلك الشراء الكامل = Q5.
  */
 import { useCallback } from 'react';
-import { Image, Linking, ScrollView, StyleSheet, View } from 'react-native';
+import { Linking, ScrollView, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -22,6 +22,7 @@ import { AppText, Button, Card, KeyValue } from '@/design/ui';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { SubScreen } from '@/design/subScreen';
 import { useTheme } from '@/design/theme';
+import { AppImage } from '@/design/appImage';
 import { useT } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import { addCatalogFavorite, fetchFavorites } from '@/api/account';
@@ -127,11 +128,11 @@ export default function ProductScreen() {
       {images.length > 0 ? (
         <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={styles.gallery}>
           {images.map((uri, index) => (
-            <Image
+            <AppImage
               key={`${uri}-${index}`}
-              source={{ uri: mediaUrl(uri) }}
+              uri={mediaUrl(uri)}
               style={styles.image}
-              resizeMode="cover"
+              contentFit="cover"
               accessibilityLabel={`${product.name} — ${index + 1}/${images.length}`}
             />
           ))}
@@ -179,6 +180,7 @@ export default function ProductScreen() {
             onPress={() => addToCart.mutate()}
             busy={addToCart.isPending}
             disabled={addToCart.isSuccess}
+            testID="product-add-to-cart"
           />
         ) : outOfStock ? (
           <AppText variant="caption" color={theme.status.danger.fg}>{t('catalog.stock.out_of_stock')}</AppText>
@@ -193,6 +195,7 @@ export default function ProductScreen() {
             onPress={() => favorite.mutate()}
             busy={favorite.isPending}
             disabled={isFavorite || favorite.isPending}
+            testID="product-favorite"
           />
         ) : null}
       </View>

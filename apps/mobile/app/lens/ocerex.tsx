@@ -14,13 +14,14 @@
  *    يتقال كما هو) — التطبيق ما يعلنش نجاحاً من عندو.
  */
 import { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 
 import { AppText, Button, Card, Field, KeyValue, ResponsiveActionGroup } from '@/design/ui';
 import { SubScreen } from '@/design/subScreen';
 import { useTheme } from '@/design/theme';
+import { AppImage } from '@/design/appImage';
 import { useI18n } from '@/i18n';
 import { isApiError, userMessage } from '@/api/errors';
 import {
@@ -177,7 +178,9 @@ export default function OcerexScreen() {
           <Button label={t('lens.camera')} onPress={() => analyze('camera')} disabled={busy || !sessionId} />
           <Button label={t('lens.gallery')} tone="quiet" onPress={() => analyze('library')} disabled={busy || !sessionId} />
         </ResponsiveActionGroup>
-        {preview ? <Image source={{ uri: preview }} style={styles.preview} resizeMode="contain" /> : null}
+        {preview ? (
+          <AppImage uri={preview} style={styles.preview} contentFit="contain" accessibilityLabel={t('lens.previewAlt')} />
+        ) : null}
         {busy ? (
           <View style={styles.row}>
             <ActivityIndicator />

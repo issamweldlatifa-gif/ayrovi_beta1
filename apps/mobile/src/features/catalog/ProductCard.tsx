@@ -11,10 +11,11 @@
  *
  * الشكل أصلي (React Native) — المرجع الموقع هو **الخاصية**، موش التصميم.
  */
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
+import { AppImage } from '@/design/appImage';
 import { useT, type Translate } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import { normalizeStockStatus, type CatalogProduct } from '@/api/catalog';
@@ -53,7 +54,7 @@ export function ProductCard({ product, onOpen }: ProductCardProps) {
     >
       <View style={[styles.imageFrame, { backgroundColor: theme.colors.surface, borderRadius: theme.radius.card }]}>
         {product.image ? (
-          <Image source={{ uri: mediaUrl(product.image) }} style={styles.image} resizeMode="cover" />
+          <AppImage uri={mediaUrl(product.image)} style={styles.image} contentFit="cover" accessibilityLabel={product.name} />
         ) : (
           <AppText variant="caption" color={theme.colors.muted}>{t('catalog.noImage')}</AppText>
         )}

@@ -136,7 +136,6 @@ export const fr = {
   'account.allOrders': 'Toutes mes commandes',
   'account.phone.verified': 'Téléphone vérifié',
   'account.phone.unverified': 'Téléphone non vérifié',
-  'account.loading': 'Chargement de votre compte…',
 
   'orders.title': 'Mes commandes',
   'orders.subtitle': 'Le même historique que sur le site.',
@@ -151,6 +150,16 @@ export const fr = {
   'common.save': 'Enregistrer',
   'common.cancel': 'Annuler',
   'common.delete': 'Supprimer',
+  'common.close': 'Fermer',
+  'common.retry': 'Réessayer',
+
+  /* ── États de chargement — un seul texte par langue, plus d’objets {fr, ar} en dur ── */
+  'loading.cart': 'Chargement du panier…',
+  'loading.stores': 'Chargement des boutiques…',
+  'loading.generic': 'Chargement…',
+  'loading.server': 'Lecture du serveur…',
+  'loading.requests': 'Chargement des demandes…',
+  'loading.watches': 'Chargement des veilles…',
 
   'account.menu.profile': 'Mon profil',
   'account.menu.addresses': 'Mes adresses',
@@ -264,6 +273,10 @@ export const fr = {
   'social.minLength': 'Commentaire trop court (2 caractères minimum)',
   'social.retry': 'Réessayer',
   'social.close': 'Fermer',
+  'social.previous': 'Précédent',
+  'social.next': 'Suivant',
+  'social.play': 'Lire',
+  'social.pause': 'Pause',
   'checkout.step.address': 'Adresse',
   'checkout.step.payment': 'Paiement',
   'checkout.step.confirm': 'Confirmation',
@@ -276,7 +289,15 @@ export const fr = {
   'home.tab.arrivals': 'Nouveautés',
   'home.tab.promotions': 'Promotions',
   'home.tab.magazine': 'Magazine',
+  /* ── Hors-ligne : l’état promis par `states.tsx`, enfin présent ─────────── */
+  'offline.banner': 'Hors ligne',
+  'offline.title': 'Pas de connexion',
+  'offline.body': 'Vérifiez votre réseau, puis réessayez.',
+
+  'image.unavailable': 'Image indisponible',
+  'lens.previewAlt': 'Photo analysée',
   'vision.empty': 'Aucun contenu Vision n’est publié pour le moment.',
+  'vision.emptyAction': 'Ouvrir Lens',
   'security.title': 'Sécurité',
   'security.subtitle': 'État vérifié par le serveur, pas une supposition.',
   'security.status': 'État du compte',

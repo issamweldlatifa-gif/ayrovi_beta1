@@ -50,7 +50,7 @@ export default function LensWatchesScreen() {
   return (
     <SubScreen title={t('lens.watchTitle')} fallback="/lens" onRefresh={reload} refreshing={watches.isFetching && !watches.isPending}>
       {watches.isPending ? (
-        <LoadingBlock label={{ fr: 'Chargement des veilles…', ar: 'جارٍ تحميل المراقبات…' }} />
+        <LoadingBlock labelKey="loading.watches" />
       ) : needsSignIn ? (
         <Card>
           <AppText variant="body">{t('lens.watchSignIn')}</AppText>

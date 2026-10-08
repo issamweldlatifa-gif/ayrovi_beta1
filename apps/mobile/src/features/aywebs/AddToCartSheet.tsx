@@ -14,11 +14,12 @@
  *   • التأكيد مكتوب من **السطر اللي رجّعو الخادم**، موش من عندنا.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Image, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 
 import { AppText, Button, KeyValue } from '@/design/ui';
 import { useTheme } from '@/design/theme';
+import { AppImage } from '@/design/appImage';
 import { useI18n } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import { isApiError, userMessage } from '@/api/errors';
@@ -214,7 +215,7 @@ export function AddToCartSheet({
               <>
                 <AppText variant="title">{t('aywebs.added')}</AppText>
                 {added.item.images[0] ? (
-                  <Image source={{ uri: mediaUrl(added.item.images[0]) }} style={styles.image} resizeMode="contain" />
+                  <AppImage uri={mediaUrl(added.item.images[0])} style={styles.image} contentFit="contain" accessibilityLabel={added.item.title} />
                 ) : null}
                 <AppText variant="lead" weight="bold">{added.item.title}</AppText>
                 {added.item.variantLabel ? (

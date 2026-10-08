@@ -116,6 +116,7 @@ export default function AyWebsPurchaseRequestScreen() {
       <Card>
         <Field
           label={t('aywebs.reqProductUrl')}
+          accessibilityLabel={t('aywebs.reqProductUrl')}
           value={productUrl}
           onChangeText={setProductUrl}
           autoCapitalize="none"
@@ -126,24 +127,28 @@ export default function AyWebsPurchaseRequestScreen() {
         />
         <Field
           label={t('aywebs.reqProductName')}
+          accessibilityLabel={t('aywebs.reqProductName')}
           value={productName}
           onChangeText={setProductName}
           placeholder={t('aywebs.reqProductNamePlaceholder')}
         />
         <Field
           label={t('aywebs.reqVariant')}
+          accessibilityLabel={t('aywebs.reqVariant')}
           value={variant}
           onChangeText={setVariant}
           placeholder={t('aywebs.reqVariantPlaceholder')}
         />
         <Field
           label={t('aywebs.quantity')}
+          accessibilityLabel={t('aywebs.quantity')}
           value={quantity}
           onChangeText={setQuantity}
           keyboardType="number-pad"
         />
         <Field
           label={t('aywebs.reqRequirements')}
+          accessibilityLabel={t('aywebs.reqRequirements')}
           value={requirements}
           onChangeText={setRequirements}
           placeholder={t('aywebs.reqRequirementsPlaceholder')}
@@ -151,6 +156,7 @@ export default function AyWebsPurchaseRequestScreen() {
         />
         <Field
           label={t('aywebs.reqNotes')}
+          accessibilityLabel={t('aywebs.reqNotes')}
           value={notes}
           onChangeText={setNotes}
           multiline
@@ -183,7 +189,7 @@ export default function AyWebsPurchaseRequestScreen() {
 
       <Card title={t('aywebs.reqHistory')}>
         {!sessionId || history.isPending ? (
-          <LoadingBlock label={{ fr: 'Chargement des demandes…', ar: 'جارٍ تحميل الطلبات…' }} />
+          <LoadingBlock labelKey="loading.requests" />
         ) : history.isError ? (
           <ErrorBlock error={history.error} onRetry={reload} />
         ) : (history.data ?? []).length === 0 ? (

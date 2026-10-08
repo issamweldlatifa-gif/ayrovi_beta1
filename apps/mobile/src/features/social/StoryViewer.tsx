@@ -160,7 +160,7 @@ export function StoryViewer({ stories, initialIndex = 0, visible, onClose, onOpe
         {/* في العربية «التالي» على اليسار: القراءة تبدأ من اليمين. */}
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="previous"
+          accessibilityLabel={t('social.previous')}
           onPress={goPrev}
           onLongPress={() => setPaused(true)}
           onPressOut={() => setPaused(false)}
@@ -168,7 +168,7 @@ export function StoryViewer({ stories, initialIndex = 0, visible, onClose, onOpe
         />
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="next"
+          accessibilityLabel={t('social.next')}
           onPress={goNext}
           onLongPress={() => setPaused(true)}
           onPressOut={() => setPaused(false)}

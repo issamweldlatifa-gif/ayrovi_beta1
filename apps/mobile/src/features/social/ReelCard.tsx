@@ -77,13 +77,13 @@ export function ReelCard({ reel, active, counts, onOpenComments }: ReelCardProps
           <VideoView player={player} style={StyleSheet.absoluteFill} contentFit="cover" nativeControls={false} />
         ) : (
           <View style={[StyleSheet.absoluteFill, styles.poster]}>
-            <Ionicons name="play-circle-outline" size={44} color={theme.colors.muted} />
+            <Ionicons name="play-circle-outline" size={44} color={theme.colors.muted} accessibilityElementsHidden />
           </View>
         )}
 
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={paused ? 'play' : 'pause'}
+          accessibilityLabel={paused ? t('social.play') : t('social.pause')}
           onPress={() => setPaused((value) => !value)}
           style={StyleSheet.absoluteFill}
         />
@@ -110,7 +110,7 @@ export function ReelCard({ reel, active, counts, onOpenComments }: ReelCardProps
             onPress={toggleLike}
             style={[styles.action, { opacity: signedIn ? 1 : 0.45 }]}
           >
-            <Ionicons name={liked ? 'heart' : 'heart-outline'} size={20} color={liked ? theme.status.danger.fg : theme.colors.muted} />
+            <Ionicons name={liked ? 'heart' : 'heart-outline'} size={20} color={liked ? theme.status.danger.fg : theme.colors.muted} accessibilityElementsHidden />
             <AppText variant="caption" color={theme.colors.muted}>{String(counts?.likes ?? reel.likes)}</AppText>
           </Pressable>
 
@@ -120,7 +120,7 @@ export function ReelCard({ reel, active, counts, onOpenComments }: ReelCardProps
             onPress={() => onOpenComments(reel)}
             style={styles.action}
           >
-            <Ionicons name="chatbubble-outline" size={20} color={theme.colors.muted} />
+            <Ionicons name="chatbubble-outline" size={20} color={theme.colors.muted} accessibilityElementsHidden />
             <AppText variant="caption" color={theme.colors.muted}>{String(counts?.comments ?? 0)}</AppText>
           </Pressable>
 
@@ -130,7 +130,7 @@ export function ReelCard({ reel, active, counts, onOpenComments }: ReelCardProps
             onPress={share}
             style={styles.action}
           >
-            <Ionicons name="share-social-outline" size={20} color={theme.colors.muted} />
+            <Ionicons name="share-social-outline" size={20} color={theme.colors.muted} accessibilityElementsHidden />
             <AppText variant="caption" color={theme.colors.muted}>{String(counts?.shares ?? 0)}</AppText>
           </Pressable>
 

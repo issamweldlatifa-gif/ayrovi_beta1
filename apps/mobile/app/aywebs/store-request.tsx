@@ -91,6 +91,7 @@ export default function AyWebsStoreRequestScreen() {
       <Card>
         <Field
           label={t('aywebs.storeReqUrl')}
+          accessibilityLabel={t('aywebs.storeReqUrl')}
           value={storeUrl}
           onChangeText={setStoreUrl}
           autoCapitalize="none"
@@ -101,18 +102,20 @@ export default function AyWebsStoreRequestScreen() {
         />
         <Field
           label={t('aywebs.storeReqName')}
+          accessibilityLabel={t('aywebs.storeReqName')}
           value={storeName}
           onChangeText={setStoreName}
           placeholder={t('aywebs.storeReqNamePlaceholder')}
         />
         <Field
           label={t('aywebs.storeReqIntent')}
+          accessibilityLabel={t('aywebs.storeReqIntent')}
           value={intent}
           onChangeText={setIntent}
           placeholder={t('aywebs.storeReqIntentPlaceholder')}
           multiline
         />
-        <Field label={t('aywebs.reqNotes')} value={notes} onChangeText={setNotes} multiline />
+        <Field label={t('aywebs.reqNotes')} accessibilityLabel={t('aywebs.reqNotes')} value={notes} onChangeText={setNotes} multiline />
         {!ready ? (
           <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.storeReqNeedIntent')}</AppText>
         ) : null}
@@ -137,7 +140,7 @@ export default function AyWebsStoreRequestScreen() {
 
       <Card title={t('aywebs.storeReqHistory')}>
         {!sessionId || history.isPending ? (
-          <LoadingBlock label={{ fr: 'Chargement des demandes…', ar: 'جارٍ تحميل الطلبات…' }} />
+          <LoadingBlock labelKey="loading.requests" />
         ) : history.isError ? (
           <ErrorBlock error={history.error} onRetry={reload} />
         ) : (history.data ?? []).length === 0 ? (

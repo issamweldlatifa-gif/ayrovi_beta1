@@ -6,12 +6,13 @@
  * affiché doit changer partout, pas seulement sur cet écran.
  */
 import { useState } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AppText, Button, Card, Field, ToggleRow } from '@/design/ui';
 import { ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
+import { AppImage } from '@/design/appImage';
 import { useI18n } from '@/i18n';
 import { deleteAvatar, fetchOverview, updateProfile, uploadAvatar } from '@/api/account';
 import { authMessage } from '@/api/authMessages';
@@ -131,10 +132,10 @@ export default function ProfileScreen() {
       <Card title={t('profile.photo')}>
         <View style={styles.photoRow}>
           {account?.avatarUrl ? (
-            <Image
-              source={{ uri: account.avatarUrl }}
+            <AppImage
+              uri={account.avatarUrl}
               style={[styles.avatar, { borderColor: theme.colors.line, borderRadius: theme.radius.control }]}
-              resizeMode="cover"
+              contentFit="cover"
               accessibilityLabel={t('profile.photo')}
             />
           ) : (

@@ -22,6 +22,7 @@ import { WebView as RNWebView, type WebViewMessageEvent, type WebViewProps } fro
 
 import { AppText, Button, Card, KeyValue } from '@/design/ui';
 import { useTheme } from '@/design/theme';
+import { rowDirectionFor } from '@/design/layoutLogic';
 import { useI18n } from '@/i18n';
 import { ApiError, isApiError, userMessage } from '@/api/errors';
 import {
@@ -223,15 +224,21 @@ export default function AyWebsBrowserScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.colors.canvas, paddingTop: insets.top + theme.space[2] }]}>
-      <View style={styles.header}>
+      <View style={[styles.header, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
         <Pressable
           accessibilityRole="button"
+          accessibilityLabel={t('common.back')}
           onPress={() => router.back()}
           style={{ minHeight: theme.geometry.minTarget, minWidth: theme.geometry.minTarget, justifyContent: 'center' }}
         >
-          <Ionicons name="chevron-back" size={26} color={theme.colors.ink} />
+          <Ionicons
+            name={theme.isRTL ? 'chevron-forward' : 'chevron-back'}
+            size={26}
+            color={theme.colors.ink}
+            accessibilityElementsHidden
+          />
         </Pressable>
-        <AppText variant="title" numberOfLines={1} style={styles.headerTitle}>
+        <AppText variant="title" numberOfLines={1} style={[styles.headerTitle, { [theme.isRTL ? 'paddingLeft' : 'paddingRight']: 8 }]}>
           {t('aywebs.browserTitle')}
         </AppText>
       </View>
@@ -337,8 +344,8 @@ export default function AyWebsBrowserScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8 },
-  headerTitle: { flex: 1, paddingRight: 8 },
+  header: { alignItems: 'center', gap: 4, paddingHorizontal: 8 },
+  headerTitle: { flex: 1 },
   web: { flex: 1, marginTop: 8 },
   loading: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   footer: { borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingTop: 8, gap: 6 },

@@ -70,7 +70,7 @@ export function HomeTabs() {
             { borderColor: theme.colors.line, opacity: pressed ? 0.6 : 1 },
           ]}
         >
-          <Ionicons name={tab.icon} size={20} color={theme.colors.accent} />
+          <Ionicons name={tab.icon} size={20} color={theme.colors.accent} accessibilityElementsHidden />
           <AppText variant="caption" weight="bold" align="center" style={styles.label}>
             {t(tab.labelKey)}
           </AppText>

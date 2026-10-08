@@ -14,12 +14,13 @@
  * صورة ⇒ `Image`. والأنيميشن `Animated` مدمج (الترقية الكبرى في Q8).
  */
 import { useCallback, useMemo } from 'react';
-import { Image, Linking, Pressable, StyleSheet, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { VideoView, useVideoPlayer } from 'expo-video';
 
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
+import { AppImage } from '@/design/appImage';
 import { mediaUrl } from '@/api/client';
 import { useLensHero } from '@/api/hooks';
 import { lensHeroRatio, type LensHeroContent } from '@/api/lens';
@@ -103,12 +104,12 @@ export function LensHero({ onOpenLens }: LensHeroProps) {
   return (
     <View style={[styles.wrap, { backgroundColor: content.bgColor || theme.colors.surface, borderRadius: theme.radius.card }]}>
       {content.bgImage ? (
-        <Image source={{ uri: mediaUrl(content.bgImage) }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+        <AppImage uri={mediaUrl(content.bgImage)} style={StyleSheet.absoluteFill} contentFit="cover" decorative />
       ) : null}
 
       {showVideo ? <HeroVideo uri={source} muted={content.media.muted} loop={content.media.loop} ratio={content.media.ratio} /> : null}
       {showImage ? (
-        <Image source={{ uri: mediaUrl(content.media.poster) }} style={[styles.image, { aspectRatio: lensHeroRatio(content.media.ratio) }]} resizeMode="cover" />
+        <AppImage uri={mediaUrl(content.media.poster)} style={[styles.image, { aspectRatio: lensHeroRatio(content.media.ratio) }]} contentFit="cover" decorative />
       ) : null}
 
       <View style={styles.body}>
@@ -151,7 +152,7 @@ function PhoneMockup({ content }: { content: LensHeroContent }) {
   const phone = content.phone;
   return (
     <View style={[styles.phone, { borderColor: theme.colors.line, backgroundColor: theme.colors.canvas }]}>
-      {phone.image ? <Image source={{ uri: mediaUrl(phone.image) }} style={styles.phoneImage} resizeMode="cover" /> : null}
+      {phone.image ? <AppImage uri={mediaUrl(phone.image)} style={styles.phoneImage} contentFit="cover" decorative /> : null}
       {phone.statusLabel ? (
         <AppText variant="caption" color={content.accentColor || theme.colors.accent}>{phone.statusLabel}</AppText>
       ) : null}
