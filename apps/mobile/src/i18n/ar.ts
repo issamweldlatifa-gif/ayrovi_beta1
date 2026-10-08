@@ -301,6 +301,7 @@ export const ar = {
   'auth.providers.waiting': 'كمّل الدخول في المتصفّح. في الانتظار…',
   'auth.providers.cancel': 'بطّل الانتظار',
   'auth.providers.incomplete': 'الدخول ما كمّلش: ما تبدّل شي في الحساب.',
+  'auth.providers.incompleteHint': 'إن كان Google عرضالك رسالة خطأ في المتصفّح، فالسبب جاي من عندو: إما عنوان الرجوع موش مسجّل في عميل OAuth، وإما شاشة الموافقة في وضع «Testing» وإيميلك موش مضاف لـ«Test users». كان ما شفتش حتى رسالة، سكّرت الصفحة قبل ما تكمل — عاود جرّب.',
   'auth.providers.sameAccount': 'نفس الحساب متاع الموقع — الطلبيات يتبعوك.',
 
   'profile.photoTooBig': 'الصورة كبيرة برشا: 2 ميغا على الأكثر. اختار صورة أخفّ.',

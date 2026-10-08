@@ -301,6 +301,7 @@ export const fr = {
   'auth.providers.waiting': 'Terminez la connexion dans le navigateur. En attente…',
   'auth.providers.cancel': 'Annuler l’attente',
   'auth.providers.incomplete': 'Connexion non terminée : rien n’a changé sur le compte.',
+  'auth.providers.incompleteHint': 'Si Google a affiché un message d’erreur dans le navigateur, la cause vient de lui : soit l’adresse de retour n’est pas déclarée dans le client OAuth, soit l’écran de consentement est en mode « Testing » et votre e-mail n’est pas dans la liste « Test users ». Sans message, c’est que la page a été fermée avant la fin — réessayez.',
   'auth.providers.sameAccount': 'Le même compte que sur le site — vos commandes suivent.',
 
   'profile.photoTooBig': 'Photo trop lourde : 2 Mo maximum. Choisissez une image plus légère.',

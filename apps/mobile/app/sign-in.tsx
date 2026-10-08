@@ -42,7 +42,7 @@ export default function SignInScreen() {
   const [marketing, setMarketing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [waiting, setWaiting] = useState<ProviderId | null>(null);
-  const [failure, setFailure] = useState<{ message: string } | null>(null);
+  const [failure, setFailure] = useState<{ message: string; hint?: string } | null>(null);
 
   /**
    * هل الخادم اللي نحكي معه يعرف عميل الموبايل؟ (المعلومة هذي موش تفصيل تقني:
@@ -131,7 +131,10 @@ export default function SignInScreen() {
       await closeProviderBrowser();
       if (!issue) {
         // Absence de connexion, pas échec : la formulation ne dramatise pas.
-        setFailure({ message: t('auth.providers.incomplete') });
+        // Mais « rien n'a changé » sans piste laisse la personne seule devant
+        // l'écran : on nomme les deux causes réelles côté Google, celle qu'on
+        // ne peut pas voir d'ici (mode « Testing ») la première.
+        setFailure({ message: t('auth.providers.incomplete'), hint: t('auth.providers.incompleteHint') });
         return;
       }
       await session.adoptSession(issue);
@@ -207,6 +210,9 @@ export default function SignInScreen() {
           </View>
         ) : null}
 
+        {failure?.hint ? (
+          <AppText variant="caption" color={theme.colors.muted}>{failure.hint}</AppText>
+        ) : null}
         {failure ? (
           <View
             accessibilityRole="alert"
