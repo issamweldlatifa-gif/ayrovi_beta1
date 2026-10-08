@@ -17,6 +17,7 @@ import {
   fetchHomeBlocks, fetchNews, fetchPromotions, fetchStories,
   type HomeBlock, type NewsItem, type Promotion, type StoryItem,
 } from './sections';
+import { fetchFooterInfo, type FooterInfo } from './footer';
 
 /**
  * Clés de requête. `home` en préfixe : une invalidation globale du contenu
@@ -38,6 +39,7 @@ export const queryKeys = {
   promotions: ['sections', 'promotions'] as const,
   stories: ['sections', 'stories'] as const,
   news: ['sections', 'news'] as const,
+  footer: ['shell', 'footer'] as const,
 };
 
 /**
@@ -87,3 +89,10 @@ export const useStories = (): UseQueryResult<StoryItem[]> =>
 
 export const useNews = (): UseQueryResult<NewsItem[]> =>
   useQuery({ queryKey: queryKeys.news, queryFn: ({ signal }) => fetchNews({ signal }), ...CONTENT });
+
+/**
+ * الفوتر يقرا نفس `commerce-config` — بس **بدون أن يرمي**: عنصر زينة،
+ * ونقصو ما يمنعش التصفّح.
+ */
+export const useFooterInfo = (): UseQueryResult<FooterInfo> =>
+  useQuery({ queryKey: queryKeys.footer, queryFn: ({ signal }) => fetchFooterInfo({ signal }), ...CONTENT });

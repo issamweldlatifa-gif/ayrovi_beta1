@@ -16,6 +16,7 @@ import { AnnouncementBar } from '@/features/home/AnnouncementBar';
 import { HeroSection } from '@/features/home/HeroSection';
 import { NavStrip } from '@/features/home/NavStrip';
 import { PublicSections } from '@/features/sections/PublicSections';
+import { Footer } from '@/features/shell/Footer';
 import { useAnnouncements, useHeroContent, useHeroVisual, useNavigation } from '@/api/hooks';
 import { apiUrl } from '@/api/client';
 import { useI18n, useT } from '@/i18n';
@@ -87,6 +88,9 @@ export default function HomeScreen() {
         <KeyValue label={t('common.language')} value={locale} />
         <KeyValue label={t('common.theme')} value={`${theme.mode} · ${themeMode}`} />
       </Card>
+
+      {/* الفوتر: هوية، قنوات رسمية (الصالحة فقط)، ووسائل الخلاص المقبولة. */}
+      <Footer />
 
     </Screen>
   );

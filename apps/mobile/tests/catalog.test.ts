@@ -47,7 +47,9 @@ const PRODUCT = {
 const screen = () => readFileSync(fileURLToPath(new URL('../app/product/[id].tsx', import.meta.url)), 'utf8');
 
 describe('كتالوج المتجر — القراءة', () => {
-  beforeEach(() => apiGet.mockReset());
+  // `mockReset` يضيّع تتبّع الرفض المعلّق في Vitest ⇒ وعد مرفوض يبان «غير مُعالَج»
+// ويُسقط الاختبار، ولو كان الكود يلقطو صح. `mockClear` + قيمة افتراضية تحلّها.
+beforeEach(() => { apiGet.mockClear(); apiGet.mockResolvedValue({ data: [] }); });
 
   it('السعر المعروض هو سعر الخادم: لا مجموع، ولا تحويل عملة في التطبيق', async () => {
     apiGet.mockResolvedValue({ data: [PRODUCT] });

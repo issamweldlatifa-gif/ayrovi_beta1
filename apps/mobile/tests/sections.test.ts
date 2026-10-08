@@ -21,7 +21,9 @@ const PROMOTION = {
   arrival_ids: ['arrival_1'], product_ids: ['product_1'],
 };
 
-beforeEach(() => apiGet.mockReset());
+// `mockReset` يضيّع تتبّع الرفض المعلّق في Vitest ⇒ وعد مرفوض يبان «غير مُعالَج»
+// ويُسقط الاختبار، ولو كان الكود يلقطو صح. `mockClear` + قيمة افتراضية تحلّها.
+beforeEach(() => { apiGet.mockClear(); apiGet.mockResolvedValue({ data: [] }); });
 
 describe('ترتيب أقسام الرئيسية — قرار الإدارة', () => {
   it('`home-blocks` يفرض الترتيب، والتطبيق يتبعو', async () => {
