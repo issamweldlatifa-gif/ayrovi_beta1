@@ -22,6 +22,7 @@ import {
   fetchPublications, fetchReels, fetchSocialCounts, fetchStoryPublishers,
   type Publication, type Reel, type SocialCounts, type StoryPublisher,
 } from './social';
+import { fetchLensHero, type LensHeroContent } from './lens';
 
 /**
  * Clés de requête. `home` en préfixe : une invalidation globale du contenu
@@ -48,6 +49,7 @@ export const queryKeys = {
   publications: ['social', 'publications'] as const,
   publishers: ['social', 'publishers'] as const,
   socialCounts: (ids: string[]) => ['social', 'counts', [...ids].sort().join(',')] as const,
+  lensHero: ['lens', 'hero'] as const,
 };
 
 /**
@@ -116,3 +118,7 @@ export const useStoryPublishers = (): UseQueryResult<StoryPublisher[]> =>
 
 export const useSocialCounts = (ids: string[]): UseQueryResult<Record<string, SocialCounts>> =>
   useQuery({ queryKey: queryKeys.socialCounts(ids), queryFn: ({ signal }) => fetchSocialCounts(ids, { signal }), ...CONTENT });
+
+/** قسم LENS التعريفي — `null` يعني «ما يبانش»، وهو **ردّ صالح** موش خطأ. */
+export const useLensHero = (): UseQueryResult<LensHeroContent | null> =>
+  useQuery({ queryKey: queryKeys.lensHero, queryFn: ({ signal }) => fetchLensHero({ signal }), ...CONTENT });

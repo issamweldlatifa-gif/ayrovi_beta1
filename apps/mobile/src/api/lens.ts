@@ -608,3 +608,124 @@ export function classifyLensScan(raw: string): LensScanTarget | null {
 
 /** أنواع الباركود اللّي نطلبها من الكاميرا (نفس ما يفهمو الخادم: رقمي). */
 export const LENS_BARCODE_TYPES = ['ean13', 'ean8', 'upc_a', 'upc_e', 'code128', 'code39', 'itf14', 'qr'] as const;
+
+/* ── قسم LENS التعريفي (واجهة المتجر) ────────────────────────────────────── */
+
+/**
+ * محتوى قسم LENS على الرئيسية (`GET /api/public/lens-hero`).
+ *
+ * ملاحظة عقد مقصودة: **الردّ ينجم يكون `null`** (ما فمّاش إعداد). وهادي موش
+ * غلطة — القسم عندو الإدارة: `enabled === false` يعني «المدير عطّلو»، و`null`
+ * يعني «ما تتضبطش». والحالتين ⇒ **القسم ما يبانش**، بلا رسالة خطأ.
+ */
+export interface LensHeroContent {
+  eyebrow: string;
+  title: string;
+  description: string;
+  ctaLabel: string;
+  ctaUrl: string;
+  proofLine: string;
+  accentColor: string;
+  /** ترتيب العناصر **قرار إداري** (`eyebrow,title,description,cta,proof`). */
+  elementOrder: string;
+  enabled: boolean;
+  sortOrder: number;
+  bgType: string;
+  bgColor: string;
+  bgImage: string;
+  overlayStrength: number;
+  phoneEnabled: boolean;
+  phone: {
+    image: string;
+    statusLabel: string;
+    resultLabel: string;
+    productName: string;
+    priceChip: string;
+    metaChip: string;
+    stockChip: string;
+    ctaLabel: string;
+  };
+  media: {
+    type: 'IMAGE' | 'VIDEO';
+    videoUrl: string;
+    videoPath: string;
+    poster: string;
+    ratio: string;
+    autoplay: boolean;
+    muted: boolean;
+    loop: boolean;
+  };
+}
+
+const LENS_HERO_ORDER: LensHeroContent['elementOrder'] = 'eyebrow,title,description,cta,proof';
+
+function strOr(value: unknown, fallback = ''): string {
+  return typeof value === 'string' ? value : fallback;
+}
+
+/**
+ * نسبة العرض/الارتفاع من نصّ مثل `16/9`.
+ *
+ * القيمة الغريبة ⇒ `16/9`: هذا **عرض**، وتوقّف الشاشة على رقم ناقص أسوأ من
+ * نسبة افتراضية معروفة.
+ */
+export function lensHeroRatio(value: unknown): number {
+  const [rawWidth, rawHeight] = strOr(value, '16/9').split('/');
+  const width = Number(rawWidth);
+  const height = Number(rawHeight);
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) return 16 / 9;
+  return width / height;
+}
+
+export async function fetchLensHero(options: RequestOptions = {}): Promise<LensHeroContent | null> {
+  let payload: unknown;
+  try {
+    payload = await apiGetData<unknown>('/api/public/lens-hero', options);
+  } catch (error) {
+    // القسم زينة: نقصو ما يمنعش التصفّح (نفس قاعدة الفوتر).
+    if (typeof __DEV__ !== 'undefined' && __DEV__) console.warn('[lens-hero] inaccessible', error);
+    return null;
+  }
+  if (!isRecord(payload)) return null;
+
+  const phone = isRecord(payload.phone) ? payload.phone : {};
+  const media = isRecord(payload.media) ? payload.media : {};
+
+  return {
+    eyebrow: strOr(payload.eyebrow),
+    title: strOr(payload.title),
+    description: strOr(payload.description),
+    ctaLabel: strOr(payload.ctaLabel),
+    ctaUrl: strOr(payload.ctaUrl),
+    proofLine: strOr(payload.proofLine),
+    accentColor: strOr(payload.accentColor, '#FF6900'),
+    elementOrder: strOr(payload.elementOrder, LENS_HERO_ORDER),
+    enabled: payload.enabled === true,
+    sortOrder: Number(payload.sortOrder) || 40,
+    bgType: strOr(payload.bgType),
+    bgColor: strOr(payload.bgColor),
+    bgImage: strOr(payload.bgImage),
+    overlayStrength: Number(payload.overlayStrength) || 0,
+    phoneEnabled: payload.phoneEnabled === true,
+    phone: {
+      image: strOr(phone.image),
+      statusLabel: strOr(phone.statusLabel),
+      resultLabel: strOr(phone.resultLabel),
+      productName: strOr(phone.productName),
+      priceChip: strOr(phone.priceChip),
+      metaChip: strOr(phone.metaChip),
+      stockChip: strOr(phone.stockChip),
+      ctaLabel: strOr(phone.ctaLabel),
+    },
+    media: {
+      type: media.type === 'IMAGE' ? 'IMAGE' : 'VIDEO',
+      videoUrl: strOr(media.videoUrl),
+      videoPath: strOr(media.videoPath),
+      poster: strOr(media.poster),
+      ratio: strOr(media.ratio, '16/9'),
+      autoplay: media.autoplay !== false,
+      muted: media.muted !== false,
+      loop: media.loop !== false,
+    },
+  };
+}
