@@ -2,7 +2,9 @@
  * Contrats responsive des primitives de layout — sans React Native ni appareil.
  */
 import { describe, expect, it } from 'vitest';
-import { actionDirectionFor, responsiveMetricsFor, screenContentGap } from '../src/design/layoutLogic';
+import {
+  actionDirectionFor, responsiveMetricsFor, rowDirectionFor, screenContentGap,
+} from '../src/design/layoutLogic';
 
 describe('géométrie responsive commune', () => {
   it.each([
@@ -24,6 +26,20 @@ describe('géométrie responsive commune', () => {
     expect(actionDirectionFor(responsiveMetricsFor(599).breakpoint)).toBe('column');
     expect(actionDirectionFor(responsiveMetricsFor(600).breakpoint)).toBe('row');
     expect(actionDirectionFor(responsiveMetricsFor(768).breakpoint)).toBe('row');
+  });
+
+  it('le miroir RTL ne touche que les rangées larges, jamais la pile mobile', () => {
+    // Sans `I18nManager.forceRTL`, RN garde `row` physique en LTR : le miroir
+    // doit être explicite, et il ne concerne que l'ordre horizontal.
+    expect(actionDirectionFor(responsiveMetricsFor(392).breakpoint, true)).toBe('column');
+    expect(actionDirectionFor(responsiveMetricsFor(600).breakpoint, true)).toBe('row-reverse');
+    expect(actionDirectionFor(responsiveMetricsFor(768).breakpoint, true)).toBe('row-reverse');
+    expect(actionDirectionFor(responsiveMetricsFor(600).breakpoint, false)).toBe('row');
+  });
+
+  it('rowDirectionFor garde le premier enfant du côté de la lecture', () => {
+    expect(rowDirectionFor(false)).toBe('row');
+    expect(rowDirectionFor(true)).toBe('row-reverse');
   });
 
   it('AppScreen et SubScreen partagent le jeton d’espacement de section', () => {
