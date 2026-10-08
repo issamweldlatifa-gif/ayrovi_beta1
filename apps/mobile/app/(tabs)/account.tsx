@@ -13,7 +13,9 @@ import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { AppText, Button, Card, KeyValue, LinkRow, Screen, Segmented } from '@/design/ui';
+import { AppScreen } from '@/design/layout';
+import { AppHeader } from '@/features/shell/AppHeader';
+import {AppText, Button, Card, KeyValue, LinkRow, Segmented} from '@/design/ui';
 import { ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
@@ -130,7 +132,10 @@ export default function AccountScreen() {
   const refresh = useCallback(() => { if (signedIn) overviewQuery.refetch(); }, [signedIn, overviewQuery]);
 
   return (
-    <Screen tab="account" phase="P2" onRefresh={refresh} refreshing={overviewQuery.isRefetching}>
+    <AppScreen
+      overlayHeader={<AppHeader />}
+      hasBottomBar
+      chrome onRefresh={refresh} refreshing={overviewQuery.isRefetching}>
       {!signedIn ? (
         <Card title={t('account.guest.title')} hint={t('account.guest.body')}>
           <Button label={t('account.signIn')} onPress={() => router.push('/sign-in')} />
@@ -166,7 +171,7 @@ export default function AccountScreen() {
         />
         <AppText variant="caption" color={theme.colors.muted}>{t('settings.pending')}</AppText>
       </Card>
-    </Screen>
+    </AppScreen>
   );
 }
 

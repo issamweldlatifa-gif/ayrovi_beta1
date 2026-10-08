@@ -11,16 +11,21 @@
  *  • le libellé est traduit.
  * Ce qui manque est le CONTENU, et il reste à décider.
  */
+import { AppScreen } from '@/design/layout';
+import { AppHeader } from '@/features/shell/AppHeader';
 import { EmptyBlock } from '@/design/states';
-import { Screen } from '@/design/ui';
+import {} from '@/design/ui';
 import { useT } from '@/i18n';
 
 export default function VisionScreen() {
   const t = useT();
   return (
-    <Screen tab="vision" phase="P1">
+    <AppScreen
+      overlayHeader={<AppHeader />}
+      hasBottomBar
+      chrome>
       <EmptyBlock>{t('vision.empty')}</EmptyBlock>
       <EmptyBlock>{t('vision.empty.body')}</EmptyBlock>
-    </Screen>
+    </AppScreen>
   );
 }

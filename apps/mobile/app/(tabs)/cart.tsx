@@ -18,7 +18,9 @@ import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useMutation, useQuery } from '@tanstack/react-query';
 
-import { AppText, Button, Card, KeyValue, Screen } from '@/design/ui';
+import { AppScreen } from '@/design/layout';
+import { AppHeader } from '@/features/shell/AppHeader';
+import {AppText, Button, Card, KeyValue} from '@/design/ui';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
 import { useI18n, useT } from '@/i18n';
@@ -180,7 +182,10 @@ export default function AyroviCartScreen() {
   };
 
   return (
-    <Screen tab="cart" phase="P5" onRefresh={reload} refreshing={cartQuery.isFetching && !cartQuery.isPending}>
+    <AppScreen
+      overlayHeader={<AppHeader />}
+      hasBottomBar
+      chrome onRefresh={reload} refreshing={cartQuery.isFetching && !cartQuery.isPending}>
       <Card title={t('cart.title')} hint={t('cart.hint')}>
         {!sessionId || cartQuery.isPending ? (
           <LoadingBlock label={{ fr: 'Chargement du panier…', ar: 'جارٍ تحميل السلّة…' }} />
@@ -232,7 +237,7 @@ export default function AyroviCartScreen() {
       <Card title={t('cart.aywebsTitle')} hint={t('cart.aywebsHint')}>
         <Button label={t('cart.aywebsOpen')} tone="quiet" onPress={() => router.push('/aywebs/cart')} />
       </Card>
-    </Screen>
+    </AppScreen>
   );
 }
 

@@ -14,7 +14,9 @@ import { Image, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useMutation, useQuery } from '@tanstack/react-query';
 
-import { AppText, Button, Card, Field, KeyValue, Screen } from '@/design/ui';
+import { AppScreen } from '@/design/layout';
+import { AppHeader } from '@/features/shell/AppHeader';
+import {AppText, Button, Card, Field, KeyValue} from '@/design/ui';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
@@ -87,7 +89,10 @@ export default function AyWebsScreen() {
   };
 
   return (
-    <Screen tab="aywebs" phase="P3" onRefresh={reload} refreshing={stores.isFetching && !stores.isPending}>
+    <AppScreen
+      overlayHeader={<AppHeader />}
+      hasBottomBar
+      chrome onRefresh={reload} refreshing={stores.isFetching && !stores.isPending}>
       <Card title={t('aywebs.linkTitle')} hint={t('aywebs.linkHint')}>
         <Field
           label={t('aywebs.linkLabel')}
@@ -281,7 +286,7 @@ export default function AyWebsScreen() {
           ))
         )}
       </Card>
-    </Screen>
+    </AppScreen>
   );
 }
 

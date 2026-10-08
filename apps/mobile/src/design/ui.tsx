@@ -4,14 +4,13 @@
  */
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
-  Animated, Dimensions, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Switch,
+  Animated, Dimensions, Modal, Pressable, StyleSheet, Switch,
   Text, TextInput, View,
   type StyleProp, type TextInputProps, type TextProps, type TextStyle as RNTextStyle,
   type LayoutChangeEvent, type ViewStyle,
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useT } from '@/i18n';
 import { useTheme, webDirection, type TextRole } from './theme';
 
 /* ── Texte ─────────────────────────────────────────────────────────────────── */
@@ -46,20 +45,6 @@ export function AppText({
     >
       {children}
     </Text>
-  );
-}
-
-/* ── Pastille de phase ─────────────────────────────────────────────────────── */
-
-export function PhaseBadge({ phase }: { phase: string }) {
-  const theme = useTheme();
-  const t = useT();
-  return (
-    <View style={[styles.badge, { backgroundColor: theme.colors.infoSoft, borderRadius: theme.radius.cta }]}>
-      <AppText variant="caption" weight="bold" color={theme.colors.accentText}>
-        {t('common.phase', { phase })}
-      </AppText>
-    </View>
   );
 }
 
@@ -300,89 +285,6 @@ export function Field(props: TextInputProps & { label?: string }) {
   );
 }
 
-/* ── Écran ─────────────────────────────────────────────────────────────────── */
-
-export interface ScreenProps {
-  tab: 'home' | 'lens' | 'aywebs' | 'cart' | 'account' | 'vision';
-  phase: string;
-  children?: ReactNode;
-  /** Tirer vers le bas pour rafraîchir : le geste natif attendu sur mobile. */
-  onRefresh?: () => void;
-  refreshing?: boolean;
-}
-
-/**
- * Un onglet = un titre, une phrase de mission, la phase qui le livre, et son
- * contenu. Aucun écran ne réinvente sa mise en page.
- */
-export function Screen({ tab, phase, children, onRefresh, refreshing = false }: ScreenProps) {
-  const theme = useTheme();
-  const t = useT();
-  const insets = useSafeAreaInsets();
-  const title = t(`screen.${tab}.subtitle`);
-  const body = t(`screen.${tab}.body`);
-  const tabLabel = t(`tabs.${tab}`);
-
-  return (
-    <View style={{ flex: 1, backgroundColor: theme.colors.canvas }}>
-      {/**
-       * ⚠️ EN-TÊTE EN ATTENTE DE MIGRATION — à ne pas prendre pour une règle.
-       *
-       * L’accueil est passé à `AppHeader` (transparent, fixe, contenu qui
-       * défile dessous) et n’utilise plus `Screen`. Les écrans encore servis
-       * par `Screen` gardent CET en-tête, qui est l’ancienne forme. Ce n’est
-       * pas un oubli laissé traîner : la migration se fait ÉCRAN PAR ÉCRAN, et
-       * chacun recevra `AppHeader` à son tour. Quand le dernier aura basculé,
-       * ce bloc disparaîtra avec les clés `screen.<tab>.subtitle/body`.
-       *
-       * Repli au défilement : pas ici. L’accueil alimente `design/chrome`
-       * depuis son propre `ScrollView` ; cet en-tête reste fixe.
-       */}
-      <View
-        style={[
-          styles.header,
-          {
-            paddingTop: insets.top + theme.space[3],
-            paddingHorizontal: theme.space[3],
-          },
-        ]}
-      >
-        <AppText variant="caption" weight="bold" color={theme.colors.accentText}>
-          {tabLabel.toUpperCase()}
-        </AppText>
-        <AppText variant="title" style={styles.headerTitle}>{title}</AppText>
-        <AppText variant="body" color={theme.colors.secondary}>{body}</AppText>
-        <View style={styles.badgeRow}>
-          <PhaseBadge phase={phase} />
-          <AppText variant="caption" color={theme.colors.muted}>{t('common.inThisVersion')}</AppText>
-        </View>
-      </View>
-
-      <ScrollView
-        style={{ backgroundColor: theme.colors.canvas }}
-        refreshControl={onRefresh ? (
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={theme.colors.accent}
-            colors={[theme.colors.accent]}
-          />
-        ) : undefined}
-        contentContainerStyle={[
-          styles.screen,
-          {
-            paddingTop: theme.space[3],
-            paddingBottom: insets.bottom + theme.space[5],
-            paddingHorizontal: theme.space[3],
-          },
-        ]}
-      >
-        {children}
-      </ScrollView>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   drawerScrim: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' },
   drawerPanel: {
@@ -402,11 +304,6 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 16,
   },
-  screen: { gap: 16 },
-  header: { gap: 8, paddingBottom: 12, overflow: 'hidden' },
-  headerTitle: { marginTop: 2 },
-  badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' },
-  badge: { paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'flex-start' },
   card: { gap: 8, borderWidth: StyleSheet.hairlineWidth },
   cardHint: { marginBottom: 2 },
   kv: {
