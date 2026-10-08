@@ -15,7 +15,8 @@ import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { AnnouncementBar } from '@/features/home/AnnouncementBar';
 import { HeroSection } from '@/features/home/HeroSection';
 import { NavStrip } from '@/features/home/NavStrip';
-import { useAnnouncements, useHeroContent, useHeroVisual, useNavigation } from '@/api/hooks';
+import { CatalogSection } from '@/features/catalog/CatalogSection';
+import { useAnnouncements, useCatalogProducts, useHeroContent, useHeroVisual, useNavigation } from '@/api/hooks';
 import { apiUrl } from '@/api/client';
 import { useI18n, useT } from '@/i18n';
 import { useTheme } from '@/design/theme';
@@ -33,13 +34,15 @@ export default function HomeScreen() {
   const visual = useHeroVisual();
   const navigation = useNavigation();
   const announcements = useAnnouncements();
+  const catalog = useCatalogProducts();
 
   const reload = useCallback(() => {
     setRefreshing(true);
     Promise.allSettled([
       hero.refetch(), visual.refetch(), navigation.refetch(), announcements.refetch(),
+      catalog.refetch(),
     ]).finally(() => setRefreshing(false));
-  }, [hero, visual, navigation, announcements]);
+  }, [hero, visual, navigation, announcements, catalog]);
 
   const openLink = useCallback((href: string) => {
     Linking.openURL(apiUrl(href)).catch(() => {});
@@ -69,6 +72,9 @@ export default function HomeScreen() {
       ) : (
         <NavStrip links={navigation.data ?? []} />
       )}
+
+      {/* المتجر (Q1) — المرجع: خاصية «المنتوجات» في الموقع، بالشكل الأصلي. */}
+      <CatalogSection previewCount={6} />
 
       {/* المساعد: باب حقيقي من الرئيسية — والجاهزية تتقال داخل الشاشة. */}
       <Card title={t('assistant.title')} hint={t('assistant.hint')}>

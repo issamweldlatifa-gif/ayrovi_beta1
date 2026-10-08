@@ -609,6 +609,21 @@ export async function removeFavorite(id: string, options?: RequestOptions): Prom
   await apiSend<unknown>('DELETE', `/api/customer/account/favorites/${encodeURIComponent(id)}`, options);
 }
 
+/**
+ * منتوج الكتالوج للمفضلة — **بـ`productId`**.
+ *
+ * لماذا بالمعرّف موش بالحقول: الخادم يقرا المنتوج من جدوله ويأخذ الاسم
+ * والصورة والسعر من المصدر الرسمي. تمريرها من التطبيق كان يعني أننا نبعث
+ * سعراً نحنا من حسبناه — والسعر قرار الخادم وحدو.
+ */
+export async function addCatalogFavorite(productId: string, options?: RequestOptions): Promise<Favorite | null> {
+  const { data } = await apiSend<unknown>('POST', '/api/customer/account/favorites', {
+    ...options,
+    body: { productId },
+  });
+  return parseFavorite(data);
+}
+
 export async function fetchNotifications(options?: RequestOptions): Promise<NotificationItem[]> {
   const data = await apiGetData<unknown>('/api/customer/account/notifications', options);
   if (!Array.isArray(data)) return [];

@@ -9,6 +9,10 @@ import {
   fetchAnnouncements, fetchHeroContent, fetchHeroVisual, fetchNavigation,
   type Announcement, type HeroContent, type HeroVisual, type NavLink,
 } from './public';
+import {
+  fetchCatalogArrivals, fetchCatalogBrands, fetchCatalogProducts,
+  type CatalogArrival, type CatalogProduct,
+} from './catalog';
 
 /**
  * Clés de requête. `home` en préfixe : une invalidation globale du contenu
@@ -20,6 +24,11 @@ export const queryKeys = {
   heroVisual: ['home', 'hero-visual'] as const,
   navigation: ['home', 'navigation'] as const,
   announcements: ['home', 'announcements'] as const,
+  // الكتالوج أثقل من المحتوى التحريري ⇒ نخفّف الطلبات بشوية.
+  catalog: ['catalog'] as const,
+  catalogProducts: (arrivalId = '') => ['catalog', 'products', arrivalId] as const,
+  catalogArrivals: ['catalog', 'arrivals'] as const,
+  catalogBrands: ['catalog', 'brands'] as const,
 };
 
 /**
@@ -41,3 +50,19 @@ export const useNavigation = (): UseQueryResult<NavLink[]> =>
 
 export const useAnnouncements = (): UseQueryResult<Announcement[]> =>
   useQuery({ queryKey: queryKeys.announcements, queryFn: ({ signal }) => fetchAnnouncements({ signal }), ...CONTENT });
+
+/** الكتالوج (Q1) — منتوجات المتجر، الوصولات، الماركات. */
+const CATALOG = { staleTime: 120_000, refetchOnMount: 'always' } as const;
+
+export const useCatalogProducts = (arrivalId = ''): UseQueryResult<CatalogProduct[]> =>
+  useQuery({
+    queryKey: queryKeys.catalogProducts(arrivalId),
+    queryFn: ({ signal }) => fetchCatalogProducts({ signal, arrivalId: arrivalId || undefined, limit: 50 }),
+    ...CATALOG,
+  });
+
+export const useCatalogArrivals = (): UseQueryResult<CatalogArrival[]> =>
+  useQuery({ queryKey: queryKeys.catalogArrivals, queryFn: ({ signal }) => fetchCatalogArrivals({ signal }), ...CATALOG });
+
+export const useCatalogBrands = (): UseQueryResult<string[]> =>
+  useQuery({ queryKey: queryKeys.catalogBrands, queryFn: ({ signal }) => fetchCatalogBrands({ signal }), ...CATALOG });
