@@ -120,6 +120,9 @@ export function Footer({ testID = 'app-footer' }: FooterProps) {
           <FooterLink icon="person-outline" label={t('footer.account')} onPress={() => router.push('/(tabs)/account')} />
           <FooterLink icon="chatbubble-ellipses-outline" label={t('footer.assistant')} onPress={() => router.push('/assistant')} />
           <FooterLink icon="bag-outline" label={t('footer.orders')} onPress={() => router.push('/orders')} />
+          <FooterLink icon="play-outline" label={t('social.reels')} onPress={() => router.push('/reels')} />
+          <FooterLink icon="images-outline" label={t('social.publications')} onPress={() => router.push('/publications')} />
+          <FooterLink icon="play-circle-outline" label={t('sections.stories')} onPress={() => router.push('/stories')} />
         </View>
       </View>
     </View>

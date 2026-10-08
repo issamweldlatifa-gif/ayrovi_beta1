@@ -8,8 +8,8 @@
  * وقاعدة ثانية: **قسم يفشل ما يطيّحش الصفحة.** كل قسم عندو حالته المستقلّة
  * (تحميل · خطأ · فارغ)، والباقي يكمل يخدم.
  */
-import { useCallback } from 'react';
-import { Linking, ScrollView, StyleSheet, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 
 import { AppText, Button } from '@/design/ui';
@@ -26,6 +26,8 @@ import { ProductCard } from '@/features/catalog/ProductCard';
 import { PromotionCard } from './PromotionCard';
 import { StoryCard } from './StoryCard';
 import { NewsCard } from './NewsCard';
+import { StoryViewer } from '@/features/social/StoryViewer';
+import { openStoryTarget, storyHasTarget } from '@/features/social/storyTarget';
 
 const TITLES = {
   products: 'sections.products',
@@ -34,23 +36,6 @@ const TITLES = {
   stories: 'sections.stories',
   news: 'sections.news',
 } as const;
-
-/** هدف الستوري: منتوج ⇒ صفحتو؛ وصولة ⇒ المتجر مفلتر؛ رابط ⇒ المتصفّح. */
-function openStory(story: StoryItem) {
-  if (story.productId) {
-    router.push({ pathname: '/product/[id]', params: { id: story.productId } });
-    return;
-  }
-  if (story.arrivalId) {
-    router.push({ pathname: '/catalog', params: { arrivalId: story.arrivalId } });
-    return;
-  }
-  if (story.targetUrl) Linking.openURL(story.targetUrl).catch(() => null);
-}
-
-function storyActionable(story: StoryItem): boolean {
-  return Boolean(story.productId || story.arrivalId || story.targetUrl);
-}
 
 export function PublicSections() {
   const theme = useTheme();
@@ -77,6 +62,12 @@ export function PublicSections() {
       router.push({ pathname: '/catalog', params: { arrivalId: promotion.arrivalIds[0]! } });
     }
   }, []);
+
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+  const [viewed, setViewed] = useState<Set<string>>(new Set());
+
+  const storyRows = stories.data ?? [];
+  const openViewer = useCallback((position: number) => setViewerIndex(position), []);
 
   const openNewsItem = useCallback((item: NewsItem) => {
     router.push({ pathname: '/news/[id]', params: { id: item.id } });
@@ -135,8 +126,13 @@ export function PublicSections() {
       empty: (stories.data ?? []).length === 0,
       node: (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.rail}>
-          {(stories.data ?? []).map((story) => (
-            <StoryCard key={story.id} story={story} onOpen={openStory} actionable={storyActionable(story)} />
+          {(stories.data ?? []).map((story, position) => (
+            <StoryCard
+              key={story.id}
+              story={story}
+              onOpen={() => openViewer(position)}
+              viewed={viewed.has(story.id)}
+            />
           ))}
         </ScrollView>
       ),
@@ -175,6 +171,17 @@ export function PublicSections() {
           </View>
         );
       })}
+
+      <StoryViewer
+        stories={storyRows}
+        initialIndex={viewerIndex ?? 0}
+        visible={viewerIndex !== null}
+        onClose={() => setViewerIndex(null)}
+        onStorySeen={(story) => setViewed((previous) => new Set(previous).add(story.id))}
+        onOpenTarget={(story) => {
+          if (storyHasTarget(story)) openStoryTarget(story);
+        }}
+      />
     </View>
   );
 }

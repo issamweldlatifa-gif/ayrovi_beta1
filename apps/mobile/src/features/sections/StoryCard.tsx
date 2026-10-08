@@ -28,27 +28,32 @@ const ON_ACCENT = '#000000';
 export interface StoryCardProps {
   story: StoryItem;
   onOpen: (story: StoryItem) => void;
-  /** هل الستوري عندو هدف يفتح؟ بيها نقرّرو الإشارة البصرية للمس. */
-  actionable: boolean;
+  /**
+   * هل شافو المستعمل من قبل؟
+   *
+   * لماذا بدّلنا «قابل للمس»: المشاهدة متاحة **ديماً** (العارض يفتح)، أمّا
+   * الإجراء داخل الستوري (منتوج · وصولة · رابط) فهو اللي ينجم ما يكونش موجود.
+   * فالحالة البصرية تقول «فِت» موش «تتلمس» — وهي الحقيقة المفيدة.
+   */
+  viewed?: boolean;
 }
 
-export function StoryCard({ story, onOpen, actionable }: StoryCardProps) {
+export function StoryCard({ story, onOpen, viewed = false }: StoryCardProps) {
   const theme = useTheme();
   const t = useT();
 
   return (
     <Pressable
-      accessibilityRole={actionable ? 'button' : 'text'}
+      accessibilityRole="button"
       accessibilityLabel={story.title || t('sections.stories')}
-      disabled={!actionable}
       onPress={() => onOpen(story)}
       style={[
         styles.card,
         { borderRadius: theme.radius.card },
-        // الإطار هو الإشارة: قابل للمس ⇒ برتقالي؛ وإلا رمزي وباهت.
-        actionable
-          ? { borderColor: theme.colors.accent, borderWidth: 2 }
-          : { borderColor: theme.colors.line, borderWidth: 1 },
+        // الإطار يقول الحالة: جديد ⇒ برتقالي؛ مُشاهَد ⇒ باهت.
+        viewed
+          ? { borderColor: theme.colors.line, borderWidth: 1 }
+          : { borderColor: theme.colors.accent, borderWidth: 2 },
       ]}
     >
       <View style={[styles.frame, { backgroundColor: theme.colors.surface }]}>

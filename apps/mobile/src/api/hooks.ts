@@ -18,6 +18,10 @@ import {
   type HomeBlock, type NewsItem, type Promotion, type StoryItem,
 } from './sections';
 import { fetchFooterInfo, type FooterInfo } from './footer';
+import {
+  fetchPublications, fetchReels, fetchSocialCounts, fetchStoryPublishers,
+  type Publication, type Reel, type SocialCounts, type StoryPublisher,
+} from './social';
 
 /**
  * Clés de requête. `home` en préfixe : une invalidation globale du contenu
@@ -40,6 +44,10 @@ export const queryKeys = {
   stories: ['sections', 'stories'] as const,
   news: ['sections', 'news'] as const,
   footer: ['shell', 'footer'] as const,
+  reels: ['social', 'reels'] as const,
+  publications: ['social', 'publications'] as const,
+  publishers: ['social', 'publishers'] as const,
+  socialCounts: (ids: string[]) => ['social', 'counts', [...ids].sort().join(',')] as const,
 };
 
 /**
@@ -96,3 +104,15 @@ export const useNews = (): UseQueryResult<NewsItem[]> =>
  */
 export const useFooterInfo = (): UseQueryResult<FooterInfo> =>
   useQuery({ queryKey: queryKeys.footer, queryFn: ({ signal }) => fetchFooterInfo({ signal }), ...CONTENT });
+
+export const useReels = (): UseQueryResult<Reel[]> =>
+  useQuery({ queryKey: queryKeys.reels, queryFn: ({ signal }) => fetchReels({ signal }), ...CONTENT });
+
+export const usePublications = (): UseQueryResult<Publication[]> =>
+  useQuery({ queryKey: queryKeys.publications, queryFn: ({ signal }) => fetchPublications({ signal }), ...CONTENT });
+
+export const useStoryPublishers = (): UseQueryResult<StoryPublisher[]> =>
+  useQuery({ queryKey: queryKeys.publishers, queryFn: ({ signal }) => fetchStoryPublishers({ signal }), ...CONTENT });
+
+export const useSocialCounts = (ids: string[]): UseQueryResult<Record<string, SocialCounts>> =>
+  useQuery({ queryKey: queryKeys.socialCounts(ids), queryFn: ({ signal }) => fetchSocialCounts(ids, { signal }), ...CONTENT });
