@@ -192,14 +192,22 @@ export function AppScreen({
       {wrapped}
       {overlayHeader ? (
         /**
-         * Le seul `absolute` du système. Le contenu a déjà reçu
-         * `theme.chrome.header` en marge haute : l'en-tête se superpose SANS
-         * décaler quoi que ce soit (§3 — aucune variation de dimension).
+         * Le seul `absolute` du système.
+         *
+         * ⚠️ Ce conteneur N'ajoute PAS `insets.top`, et c'est volontaire :
+         * `AppHeader` se positionne lui-même en absolu et applique DÉJÀ sa
+         * propre zone sûre (`paddingTop: insets.top + 8`). L'ajouter ici
+         * décalerait l'en-tête de la hauteur de l'encoche — le double emploi
+         * que la consigne « construire propre, pas empiler » interdit.
+         *
+         * La réserve d'espace, elle, EST appliquée au contenu
+         * (`insets.top + theme.chrome.header`) : l'en-tête se superpose donc
+         * sans rien décaler (§3 — aucune variation de dimension au défilement).
+         *
+         * Tout en-tête futur qui ne gère pas sa zone sûre doit le faire
+         * LUI-MÊME avec `useSafeAreaInsets` — pas en la demandant ici.
          */
-        <View
-          style={[styles.overlay, { paddingTop: insets.top, zIndex: theme.zIndex.chrome }]}
-          pointerEvents="box-none"
-        >
+        <View style={[styles.overlay, { zIndex: theme.zIndex.chrome }]} pointerEvents="box-none">
           {overlayHeader}
         </View>
       ) : null}
@@ -222,6 +230,24 @@ export function Section({ children, style }: { children?: ReactNode; style?: Sty
 export function SectionGap() {
   const theme = useTheme();
   return <View style={{ height: theme.space[5] }} />;
+}
+
+/**
+ * Exception ASSUMÉE à la marge : un enfant qui doit toucher les deux bords.
+ *
+ * ── Pourquoi un composant plutôt qu'une marge négative ─────────────────────
+ * Le pied de page a un fond noir PLEIN ÉCRAN, et le héros une image qui doit
+ * saigner. La tentation est `marginHorizontal: -16` à l'endroit voulu. Mais
+ * `-16` est la marge du palier `regular` : sur tablette (32) ou en compact
+ * (16 encore) la valeur ne suit pas, et le débordement devient faux en silence.
+ *
+ * C'est exactement le « hack par appareil » que §1 interdit. On le remplace
+ * par UN composant qui lit la même source que `AppScreen` : la marge est
+ * annulée par la valeur qui l'a créée, quel que soit le palier.
+ */
+export function FullBleed({ children, style }: { children?: ReactNode; style?: StyleProp<ViewStyle> }) {
+  const { gutter } = useResponsive();
+  return <View style={[{ marginHorizontal: -gutter }, style]}>{children}</View>;
 }
 
 const styles = StyleSheet.create({
