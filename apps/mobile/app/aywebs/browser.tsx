@@ -30,10 +30,12 @@ import {
   type AyWebsResolveOutcome,
 } from '@/api/aywebs';
 import { AddToCartSheet } from '@/features/aywebs/AddToCartSheet';
+import { ReadingProgress } from '@/features/aywebs/ReadingProgress';
+import { CAPTURE_BUDGET_MS, type ReadPhase } from '@/features/aywebs/phase';
 import { useAyWebsSessionId } from '@/features/aywebs/session';
 
 /** كي الصفحة ما تبعثش شي: مانبقاوش نستنّوا بلا نهاية. */
-const CAPTURE_TIMEOUT_MS = 15_000;
+const CAPTURE_TIMEOUT_MS = CAPTURE_BUDGET_MS;
 
 /**
  * باغ أنواع عند `react-native-webview` (13.17): الصنف معلن `WebView<P = undefined>`
@@ -74,6 +76,28 @@ export default function AyWebsBrowserScreen() {
   /** الورقة: المنتوج + الكابتشر اللي بعثناه (باش الإضافة ما تعاودش تقرا التاجر). */
   const [sheet, setSheet] = useState<{ outcome: AyWebsResolveOutcome; capture?: unknown } | null>(null);
 
+  /**
+   * مرحلة القراءة + الزمن المستهلك: **جايان من مجريات حقيقية**، موش من عدّاد.
+   * كل مرحلة تتعيّن عند منعرج فعلي في الكود (جلب السكريبت، الحقن، نداء الخادم).
+   */
+  const [phase, setPhase] = useState<ReadPhase>('idle');
+  const [elapsed, setElapsed] = useState(0);
+  const tick = useRef<ReturnType<typeof setInterval> | null>(null);
+  const startedAt = useRef(0);
+
+  const startWaiting = useCallback((first: ReadPhase) => {
+    startedAt.current = Date.now();
+    setElapsed(0);
+    setPhase(first);
+    if (tick.current) clearInterval(tick.current);
+    tick.current = setInterval(() => setElapsed(Date.now() - startedAt.current), 500);
+  }, []);
+  const endWaiting = useCallback((last: ReadPhase) => {
+    if (tick.current) { clearInterval(tick.current); tick.current = null; }
+    setPhase(last);
+  }, []);
+  useEffect(() => () => { if (tick.current) clearInterval(tick.current); }, []);
+
   const stopTimer = () => {
     if (timer.current) { clearTimeout(timer.current); timer.current = null; }
   };
@@ -106,9 +130,12 @@ export default function AyWebsBrowserScreen() {
     return new Promise<Record<string, unknown>>((resolve, reject) => {
       setBusy(true);
       setNote('');
+      startWaiting('preparing');
       waiter.current = { resolve, reject };
       fetchAyWebsCaptureScript()
         .then((script) => {
+          // الحقن هو المنعرج الثاني: من توّا الكلمة صارت للصفحة.
+          startWaiting('reading');
           webRef.current?.injectJavaScript(buildAyWebsCaptureInjection(script));
           stopTimer();
           timer.current = setTimeout(() => {
@@ -126,27 +153,31 @@ export default function AyWebsBrowserScreen() {
   }, []);
 
   const fail = useCallback((error: unknown) => {
+    endWaiting('failed');
     setBusy(false);
     setNote(isApiError(error) ? userMessage(error)[locale] : t('aywebs.captureFailed'));
-  }, [locale, t]);
+  }, [endWaiting, locale, t]);
 
   /** «اقرا هذه الصفحة»: قراءة + قرار الخادم، بلا أي إضافة. */
   const readPage = useCallback(async () => {
     if (!captureAllowed || !sessionId || !url) return;
     try {
       const capture = await requestCapture();
+      // المنعرج الثالث: الكلمة صارت للخادم (تصنيف، سعر، توفّر).
+      startWaiting('resolving');
       const result = await resolveAyWebsProductWithCapture(url, {
         sessionId, storeId: storeId || undefined, capture,
       });
       setOutcome(result);
       setNote('');
+      endWaiting('done');
     } catch (error) {
       fail(error);
     } finally {
       stopTimer();
       setBusy(false);
     }
-  }, [captureAllowed, fail, requestCapture, sessionId, storeId, url]);
+  }, [captureAllowed, endWaiting, fail, requestCapture, sessionId, startWaiting, storeId, url]);
 
   /**
    * «Add to Cart»: يقرا (كي مسموح)، يحلّ المنتوج، ثم يفتح ورقة الاختيار
@@ -156,19 +187,21 @@ export default function AyWebsBrowserScreen() {
     if (!sessionId || !url || productPage !== true) return;
     try {
       const capture = captureAllowed ? await requestCapture() : undefined;
+      startWaiting('resolving');
       const result = await resolveAyWebsProductWithCapture(url, {
         sessionId, storeId: storeId || undefined, capture,
       });
       setOutcome(result);
       setNote('');
       setSheet({ outcome: result, capture });
+      endWaiting('done');
     } catch (error) {
       fail(error);
     } finally {
       stopTimer();
       setBusy(false);
     }
-  }, [captureAllowed, fail, productPage, requestCapture, sessionId, storeId, url]);
+  }, [captureAllowed, endWaiting, fail, productPage, requestCapture, sessionId, startWaiting, storeId, url]);
 
   const onMessage = useCallback((event: WebViewMessageEvent) => {
     stopTimer();
@@ -247,7 +280,14 @@ export default function AyWebsBrowserScreen() {
       />
 
       <View style={[styles.footer, { borderTopColor: theme.colors.line, paddingBottom: insets.bottom + theme.space[2] }]}>
-        {busy ? <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.reading')}</AppText> : null}
+        {phase !== 'idle' ? (
+          <ReadingProgress
+            phase={phase}
+            elapsedMs={elapsed}
+            labels={[t('aywebs.phase.preparing'), t('aywebs.phase.reading'), t('aywebs.phase.resolving')]}
+            countdownPrefix={t('aywebs.phase.remaining')}
+          />
+        ) : null}
         {note ? <AppText variant="caption" color={theme.colors.danger}>{note}</AppText> : null}
         {!captureAllowed ? (
           <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.readNotAllowed')}</AppText>

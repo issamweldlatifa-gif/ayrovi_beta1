@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '@/api/config';
 /**
  * Liens profonds — traduction d'une URL du site en écran de l'application.
  *
@@ -21,13 +22,34 @@
  * `app/` — un lien qui mène à un écran absent est un lien mort.
  */
 
-/** Hôtes autorisés — exactement ceux que l'application déclare pouvoir ouvrir. */
-export const DEEP_LINK_HOSTS = [
-  'ayrovi.tn',
-  'www.ayrovi.tn',
-  'ayrovi-beta1-1.onrender.com',
-  'ayrovi-beta1-moo8.onrender.com',
-] as const;
+/**
+ * Hôtes du domaine public — ceux de la marque, stables par nature.
+ *
+ * L'hôte de l'API n'est PAS écrit ici : il est DÉDUIT de `API_BASE_URL`,
+ * seule source de vérité (voir `src/api/config.ts`). Le recopier revenait à
+ * écrire l'origine du serveur à deux endroits ; le jour où elle change, un
+ * lien profond continuerait d'être refusé sans que rien ne l'explique.
+ */
+const BRAND_HOSTS = ['ayrovi.tn', 'www.ayrovi.tn'] as const;
+
+function hostOf(value: string): string {
+  try {
+    return new URL(value).hostname.toLowerCase();
+  } catch {
+    return '';
+  }
+}
+
+/** Hôtes autorisés : la marque, plus l'API réellement configurée. */
+export const deepLinkHosts = (apiBaseUrl: string = API_BASE_URL): string[] => {
+  const apiHost = hostOf(apiBaseUrl);
+  return apiHost && !BRAND_HOSTS.includes(apiHost as (typeof BRAND_HOSTS)[number])
+    ? [...BRAND_HOSTS, apiHost]
+    : [...BRAND_HOSTS];
+};
+
+/** Liste figée à l'import — conservée pour les tests et l'affichage. */
+export const DEEP_LINK_HOSTS = deepLinkHosts();
 
 /** Préfixes de chemin du site → route de l'application. */
 const ROUTES: { prefix: string; route: string | ((rest: string) => string | null) }[] = [
@@ -98,7 +120,7 @@ export function resolveDeepLink(rawUrl: string | null | undefined): string | nul
     return matchRoute(path.replace(/\/{2,}/g, '/'));
   }
   if (scheme !== 'http' && scheme !== 'https') return null;
-  if (!DEEP_LINK_HOSTS.includes(url.hostname.toLowerCase() as (typeof DEEP_LINK_HOSTS)[number])) return null;
+  if (!deepLinkHosts().includes(url.hostname.toLowerCase())) return null;
 
   return matchRoute(normalizePathname(url));
 }
