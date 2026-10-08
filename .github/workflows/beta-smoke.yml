@@ -161,7 +161,7 @@ jobs:
           print(u.parse_qs(u.urlparse(sys.stdin.read()).query).get("redirect_uri",[""])[0])' 2>/dev/null)
                 BASE_HOST=$(printf '%s' "$BASE" | sed -e 's#^https\?://##' -e 's#/.*$##')
                 case "$GOOGLE_CB" in
-                  *"$BASE_HOST"*) GOOGLE_STATE="ok" ; note "Connexion Google (\`redirect_uri\`)" "—" "✅ \`${GOOGLE_CB:-—}\` — revient bien sur CE serveur" ;;
+                  *"$BASE_HOST"*) GOOGLE_STATE="ok:$GOOGLE_CB" ; note "Connexion Google (\`redirect_uri\`)" "—" "✅ \`${GOOGLE_CB:-—}\` — revient bien sur CE serveur ; **cette adresse doit exister telle quelle** dans les *Authorized redirect URIs* du client Google, sinon Google répondra \`redirect_uri_mismatch\`" ;;
                   '') GOOGLE_STATE="absente"; WARN=1; note "Connexion Google" "—" "⚠️ aucune redirection renvoyée par \`/auth/google/start\` — vérifiez \`GOOGLE_CLIENT_ID\`/\`GOOGLE_CLIENT_SECRET\`" ;;
                   *) GOOGLE_STATE="autre-serveur:$GOOGLE_CB"; WARN=1
                      WANT_CB="$BASE/api/customer/auth/google/callback"
