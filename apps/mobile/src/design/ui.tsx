@@ -13,7 +13,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useT } from '@/i18n';
 import { useTheme, webDirection, type TextRole } from './theme';
-import { useChromeScroll } from './chrome';
+import { useChromeHidden, useChromeScroll } from './chrome';
 
 /* ── Texte ─────────────────────────────────────────────────────────────────── */
 
@@ -322,33 +322,33 @@ export function Screen({ tab, phase, children, onRefresh, refreshing = false }: 
   const insets = useSafeAreaInsets();
   // Le défilement pilote la barre d'onglets (voir `design/chrome`).
   const onChromeScroll = useChromeScroll();
+  const chromeHidden = useChromeHidden();
   const title = t(`screen.${tab}.subtitle`);
   const body = t(`screen.${tab}.body`);
   const tabLabel = t(`tabs.${tab}`);
 
   return (
-    <ScrollView
-      style={{ backgroundColor: theme.colors.canvas }}
-      onScroll={onChromeScroll}
-      scrollEventThrottle={16}
-      refreshControl={onRefresh ? (
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          tintColor={theme.colors.accent}
-          colors={[theme.colors.accent]}
-        />
-      ) : undefined}
-      contentContainerStyle={[
-        styles.screen,
-        {
-          paddingTop: insets.top + theme.space[3],
-          paddingBottom: insets.bottom + theme.space[5],
-          paddingHorizontal: theme.space[3],
-        },
-      ]}
-    >
-      <View style={styles.header}>
+    <View style={{ flex: 1, backgroundColor: theme.colors.canvas }}>
+      {/**
+       * En-tête HORS du défilement : avant, il vivait DANS la liste et
+       * disparaissait au premier geste, pour ne jamais revenir — ce n'est pas
+       * « se replier », c'est « partir ». Dehors, il peut se replier et se
+       * déplier, piloté par la MÊME décision que la barre d'onglets
+       * (`useChromeHidden`) : un seul état, deux gestes, jamais désaccordés.
+       */}
+      <View
+        style={[
+          styles.header,
+          {
+            paddingTop: insets.top + theme.space[3],
+            paddingHorizontal: theme.space[3],
+          },
+          // Replié : hauteur à zéro, contenu rendu à l'écran — c'est la place
+          // libérée qui fait l'intérêt du geste.
+          chromeHidden ? styles.headerCollapsed : null,
+        ]}
+        accessibilityElementsHidden={chromeHidden}
+      >
         <AppText variant="caption" weight="bold" color={theme.colors.accentText}>
           {tabLabel.toUpperCase()}
         </AppText>
@@ -359,8 +359,31 @@ export function Screen({ tab, phase, children, onRefresh, refreshing = false }: 
           <AppText variant="caption" color={theme.colors.muted}>{t('common.inThisVersion')}</AppText>
         </View>
       </View>
-      {children}
-    </ScrollView>
+
+      <ScrollView
+        style={{ backgroundColor: theme.colors.canvas }}
+        onScroll={onChromeScroll}
+        scrollEventThrottle={16}
+        refreshControl={onRefresh ? (
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.colors.accent}
+            colors={[theme.colors.accent]}
+          />
+        ) : undefined}
+        contentContainerStyle={[
+          styles.screen,
+          {
+            paddingTop: theme.space[3],
+            paddingBottom: insets.bottom + theme.space[5],
+            paddingHorizontal: theme.space[3],
+          },
+        ]}
+      >
+        {children}
+      </ScrollView>
+    </View>
   );
 }
 
@@ -384,7 +407,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   screen: { gap: 16 },
-  header: { gap: 8 },
+  header: { gap: 8, paddingBottom: 12, overflow: 'hidden' },
+  headerCollapsed: { height: 0, paddingTop: 0, paddingBottom: 0, opacity: 0 },
   headerTitle: { marginTop: 2 },
   badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' },
   badge: { paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'flex-start' },
