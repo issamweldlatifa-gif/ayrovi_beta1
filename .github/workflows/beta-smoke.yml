@@ -163,7 +163,9 @@ jobs:
                 case "$GOOGLE_CB" in
                   *"$BASE_HOST"*) GOOGLE_STATE="ok" ; note "Connexion Google (\`redirect_uri\`)" "—" "✅ \`${GOOGLE_CB:-—}\` — revient bien sur CE serveur" ;;
                   '') GOOGLE_STATE="absente"; WARN=1; note "Connexion Google" "—" "⚠️ aucune redirection renvoyée par \`/auth/google/start\` — vérifiez \`GOOGLE_CLIENT_ID\`/\`GOOGLE_CLIENT_SECRET\`" ;;
-                  *) GOOGLE_STATE="autre-serveur:$GOOGLE_CB"; WARN=1; note "Connexion Google (\`redirect_uri\`)" "—" "⚠️ Google renvoie vers **\`$GOOGLE_CB\`** (autre serveur) ⇒ mettez \`GOOGLE_CALLBACK_URL=$BASE/api/customer/auth/google/callback\` sur CE service, et déclarez cette URI dans Google Cloud Console" ;;
+                  *) GOOGLE_STATE="autre-serveur:$GOOGLE_CB"; WARN=1
+                     WANT_CB="$BASE/api/customer/auth/google/callback"
+                     note "Connexion Google (\`redirect_uri\`)" "—" "⚠️ Google renvoie vers **\`$GOOGLE_CB\`** (autre serveur) ⇒ la session atterrit ailleurs et la connexion échoue. **Sur ce service, mettez \`GOOGLE_CALLBACK_URL=$WANT_CB\`** et déclarez **exactement** cette URI dans Google Cloud Console (Credentials → client OAuth → *Authorized redirect URIs*). Client dédié au service Beta conseillé : deux services ne doivent pas partager un même client OAuth." ;;
                 esac ;;
             esac
           fi
