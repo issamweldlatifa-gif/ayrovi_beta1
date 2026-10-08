@@ -156,7 +156,6 @@ describe('الرابط والإضافة', () => {
 });
 
 describe('بوابة الجاهزية (نفس شروط الخادم)', () => {
-  const base = parseOcerexExtraction(EXTRACTION);
 
   it('LOW توقف التسعير والشراء', () => {
     const readiness = ocerexReadiness(parseOcerexExtraction({ ...EXTRACTION, confidenceLevel: 'LOW' }));

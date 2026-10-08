@@ -20,7 +20,6 @@ import { VideoView, useVideoPlayer } from 'expo-video';
 
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
-import { useT } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import { useLensHero } from '@/api/hooks';
 import { lensHeroRatio, type LensHeroContent } from '@/api/lens';
@@ -34,7 +33,6 @@ export interface LensHeroProps {
 
 export function LensHero({ onOpenLens }: LensHeroProps) {
   const theme = useTheme();
-  const t = useT();
   const hero = useLensHero();
   const content = hero.data ?? null;
 

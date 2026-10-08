@@ -23,7 +23,7 @@ import {
   useHomeBlocks, useLensHero, useNews, usePromotions, useStories,
 } from '@/api/hooks';
 import type { CatalogArrival, CatalogProduct } from '@/api/catalog';
-import type { NewsItem, Promotion, StoryItem } from '@/api/sections';
+import type { NewsItem, Promotion } from '@/api/sections';
 import { ProductCard } from '@/features/catalog/ProductCard';
 import { LensHero } from '@/features/lens/LensHero';
 import { StoryViewer } from '@/features/social/StoryViewer';

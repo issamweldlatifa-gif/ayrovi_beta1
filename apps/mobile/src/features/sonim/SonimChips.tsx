@@ -11,7 +11,7 @@
  * Aucune amorce n'est inventée ici : elles viennent des touches d'interface
  * (`sonim.chip.*`), donc traduites, et modifiables sans toucher au code.
  */
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 import { Pressable } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 

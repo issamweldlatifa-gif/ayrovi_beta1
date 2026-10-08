@@ -31,7 +31,7 @@ import { fetchAuthConfig } from '@/api/account';
 import { ApiError, isApiError } from '@/api/errors';
 import {
   clearSession, isExpired, loadSession, openSecureBackend, saveSession,
-  type SecureBackend, type StoredSession,
+  type SecureBackend,
 } from './sessionStore';
 
 const PENDING_REVOKE_KEY = 'ayrovi.session.pending-revoke.v1';

@@ -18,7 +18,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   Pressable, StyleSheet, View,
-  type LayoutChangeEvent, type ScrollView, type NativeSyntheticEvent, type NativeScrollEvent,
+  type LayoutChangeEvent, type ScrollView,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';

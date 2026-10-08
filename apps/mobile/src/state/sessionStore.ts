@@ -50,7 +50,6 @@ export interface LoadedSession {
   storageError: string;
 }
 
-const emptySession = (): StoredSession => ({ token: '', csrfToken: '', expiresAt: '', displayName: '' });
 
 /** Relit un objet stocké sans jamais faire confiance à sa forme. */
 export function parseStoredSession(raw: string | null): StoredSession | null {

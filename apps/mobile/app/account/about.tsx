@@ -26,7 +26,7 @@ import { SubScreen } from '@/design/subScreen';
 
 export default function AboutScreen() {
   const theme = useTheme();
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
 
   const readiness = useQuery({
     queryKey: ['server', 'ready'],

@@ -15,7 +15,7 @@
  * لأن الإضافة ما تتقرّرش هنا، تتقرّر في الخادم.
  */
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Image, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -24,7 +24,6 @@ import { AppText, Button, Card, Field, KeyValue, Screen } from '@/design/ui';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
-import { mediaUrl } from '@/api/client';
 import { isApiError, userMessage } from '@/api/errors';
 import {
   LENS_MIN_TEXT, analyzeLensImage, analyzeLensText, chooseLensEvent, createLensWatch,
@@ -119,15 +118,6 @@ export default function LensScreen() {
       params: { url: candidate.sourceUrl, storeId: '', capture: '1' },
     });
   }, [analysis?.eventId]);
-
-  const availabilityText = (state: string): string => {
-    switch (state) {
-      case 'in_stock': return t('lens.avail.in_stock');
-      case 'limited': return t('lens.avail.limited');
-      case 'out_of_stock': return t('lens.avail.out_of_stock');
-      default: return t('lens.avail.unknown');
-    }
-  };
 
   /** مراقبة سعر: تستلزم حساباً — 401 تُقال بصراحة مع باب للدخول. */
   const watch = useMutation({

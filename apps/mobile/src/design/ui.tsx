@@ -326,18 +326,17 @@ export function Screen({ tab, phase, children, onRefresh, refreshing = false }: 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.canvas }}>
       {/**
-      /**
-       * En-tête VOLONTAIREMENT FIXE.
+       * ⚠️ EN-TÊTE EN ATTENTE DE MIGRATION — à ne pas prendre pour une règle.
        *
-       * Le repli au défilement a été construit ET testé (14 tests dans
-       * `tests/chrome.test.ts`) puis DÉSACTIVÉ ici : sur un appareil modeste,
-       * un repli qui saccade coûte plus cher en sensation qu’il ne rapporte
-       * en place. La décision revient au produit, une fois le geste validé
-       * sur un vrai téléphone.
+       * L’accueil est passé à `AppHeader` (transparent, fixe, contenu qui
+       * défile dessous) et n’utilise plus `Screen`. Les écrans encore servis
+       * par `Screen` gardent CET en-tête, qui est l’ancienne forme. Ce n’est
+       * pas un oubli laissé traîner : la migration se fait ÉCRAN PAR ÉCRAN, et
+       * chacun recevra `AppHeader` à son tour. Quand le dernier aura basculé,
+       * ce bloc disparaîtra avec les clés `screen.<tab>.subtitle/body`.
        *
-       * Rien n’a été supprimé : `design/chrome.tsx` et `design/chromeLogic.ts`
-       * sont intacts. Réactiver = remettre `useChromeScroll` sur le `ScrollView`
-       * et `chromeHidden` sur cet en-tête.
+       * Repli au défilement : pas ici. L’accueil alimente `design/chrome`
+       * depuis son propre `ScrollView` ; cet en-tête reste fixe.
        */}
       <View
         style={[

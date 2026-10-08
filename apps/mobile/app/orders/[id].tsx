@@ -11,14 +11,14 @@
 import { useCallback, useState } from 'react';
 import { Image, Linking, Pressable, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import * as WebBrowser from 'expo-web-browser';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppText, Button, Card, Field, KeyValue } from '@/design/ui';
 import { ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
-import { useI18n, useT } from '@/i18n';
+import { useI18n } from '@/i18n';
 import { fetchOrderDetail } from '@/api/account';
 import { statusText } from '@/api/labels';
 import { mediaUrl } from '@/api/client';
@@ -36,7 +36,6 @@ export default function OrderDetailScreen() {
   const id = String(params.id ?? '');
 
   const { locale } = useI18n();
-  const client = useQueryClient();
   const [payNote, setPayNote] = useState('');
   const [reference, setReference] = useState('');
 

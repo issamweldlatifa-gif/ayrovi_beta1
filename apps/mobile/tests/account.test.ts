@@ -14,8 +14,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { resetAuthContext, setAuthContext } from '../src/api/client';
 import { API_BASE_URL, CLIENT_HEADER } from '../src/api/config';
 import {
-  changePassword, createAddress, deleteAddress, fetchAddresses, fetchFavorites, fetchNotifications,
-  fetchOrderDetail, fetchPreferences, fetchSecurity, markNotificationsRead, parseAddresses,
+  changePassword, createAddress, deleteAddress, fetchAddresses, fetchNotifications,
+  fetchOrderDetail, fetchSecurity, markNotificationsRead, parseAddresses,
   parseFavorites, parseOrderDetail, parsePreferences, parseSecurity, removeFavorite,
   savePreferences, updateAddress, updateProfile,
 } from '../src/api/account';

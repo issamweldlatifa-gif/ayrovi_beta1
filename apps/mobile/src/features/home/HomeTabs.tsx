@@ -2,11 +2,13 @@
  * Les trois onglets d’accueil — وصل حديثاً · عروض · مجلة
  *
  * ── La différence qui compte ───────────────────────────────────────────────
- * `NavStrip` (l’ancienne barre) ouvrait des pages du SITE dans le navigateur :
- * ses destinations venaient de l’Admin et pointaient vers `/arrivage`,
- * `/privacy`… La consigne est l’inverse : « تبويبات ثلاث … يفتحو داخل تطبيق ».
+ * L’ancienne barre « Découvrir AYROVI » menait à des pages du SITE, dans le
+ * navigateur, avec des destinations décidées par l’Admin (`/arrivage`,
+ * `/privacy`…). La consigne est l’inverse : « تبويبات ثلاث … يفتحو داخل تطبيق ».
  * Ces trois onglets ouvrent donc des ÉCRANS NATIFS — on reste dans
  * l’application, avec sa navigation, son thème et son sens de lecture.
+ * L’ancien composant a été SUPPRIMÉ, pas laissé à côté : deux barres qui
+ * promettent la même chose finissent toujours par se contredire.
  *
  * ── Pourquoi des destinations déjà existantes ──────────────────────────────
  * « Nouveautés » mène au catalogue, « Promotions » et « Magazine » à leurs
