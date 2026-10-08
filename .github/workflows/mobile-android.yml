@@ -37,6 +37,10 @@ jobs:
   apk:
     name: APK démo (release, signé debug)
     runs-on: ubuntu-latest
+    permissions:
+      # `contents: write` : le job réécrit la mesure (APK_SIZES.md) dans le
+      # dépôt. Rien d'autre n'est demandé — principe du moindre privilège.
+      contents: write
     defaults:
       run:
         working-directory: apps/mobile
@@ -193,9 +197,63 @@ jobs:
             "$APKSIGNER" verify --print-certs "$apk" | head -3
           done
 
+          # La mesure est aussi RÉÉCRITE dans le dépôt. Un chiffre qu'on ne
+          # peut plus relire finit toujours par être réinventé : les journaux
+          # CI se perdent, les artefacts expirent au bout de 30 jours. La
+          # publier la rend vérifiable par un simple `git pull` — pour nous
+          # comme pour la personne qui relit.
+          REPORT="${{ github.workspace }}/apps/mobile/APK_SIZES.md"
+          {
+            echo "# Tailles d'APK — mesurées"
+            echo
+            echo "Dernière mesure : $(date -u '+%Y-%m-%d %H:%M') UTC"
+            echo "Commit mesuré : \`${GITHUB_SHA}\`"
+            echo
+            echo "Écrit automatiquement par \`Mobile — APK Android (démo)\`."
+            echo "Ne pas éditer à la main : réécrit à chaque build."
+            echo
+            echo "| fichier | taille |"
+            echo "|---|---|"
+            for apk in "${APKS[@]}"; do
+              echo "| $(basename "$apk") | $(du -h "$apk" | cut -f1) |"
+            done
+          } > "$REPORT"
+          echo "--- rapport écrit : $REPORT ---"
+          cat "$REPORT"
+
       - uses: actions/upload-artifact@v4
         with:
           name: AYROVI-demo-apk
           path: apps/mobile/android/app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 30
+
+      - name: Publier la mesure dans le dépôt
+        # Ce n'est QU'un rapport. Si la publication échoue (branche qui a
+        # bougé, droits), on prévient et on continue : jamais un build rouge
+        # pour un chiffre qu'on n'a pas réussi à ranger.
+        if: github.event_name == 'push'
+        run: |
+          set -euo pipefail
+          BRANCH="${GITHUB_REF#refs/heads/}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add apps/mobile/APK_SIZES.md
+          if git diff --cached --quiet; then
+            echo "tailles inchangées — rien à publier"
+            exit 0
+          fi
+          # [skip ci] : sans lui ce commit redéclencherait ce workflow, qui
+          # recommencerait, et ainsi de suite.
+          git commit -m "chore(apk): tailles mesurées — ${GITHUB_SHA::7} [skip ci]" || {
+            echo "::warning::commit impossible, mesure non publiée"
+            exit 0
+          }
+          git pull --rebase --autostash origin "$BRANCH" || {
+            echo "::warning::réconciliation impossible, mesure non publiée"
+            exit 0
+          }
+          git push origin "HEAD:$BRANCH" || {
+            echo "::warning::publication impossible, la mesure reste dans le résumé CI"
+            exit 0
+          }
