@@ -12,6 +12,10 @@ import * as SystemUI from 'expo-system-ui';
 import {
   COLORS, FONTS, GEOMETRY, IDENTITY, MOTION, SPACE, TYPE_SCALE, TYPOGRAPHY,
 } from './tokens.generated';
+import {
+  CHROME, EASING, ICON_SIZE, OPACITY, RADIUS, SPRING, Z_INDEX,
+  derivedColors, duration, elevation, type DerivedColors, type ElevationName,
+} from './tokens.mobile';
 import { usePrefs } from '@/state/prefs';
 
 export type ColorScheme = 'light' | 'dark';
@@ -20,7 +24,9 @@ export type TextRole = 'caption' | 'label' | 'body' | 'lead' | 'title' | 'displa
 export interface Theme {
   mode: ColorScheme;
   isRTL: boolean;
-  colors: (typeof COLORS)[keyof typeof COLORS];
+  /** Palette de l'identité + couleurs dérivées (§2). Dérivées = jamais
+   *  arbitraires : voir `tokens.mobile.ts`. */
+  colors: (typeof COLORS)[keyof typeof COLORS] & DerivedColors;
   /** Famille de police à utiliser, choisie selon la langue et la graisse. */
   font: (weight?: 'regular' | 'bold') => string;
   /** Style Text prêt à l'emploi pour un niveau typographique donné. */
@@ -31,7 +37,23 @@ export interface Theme {
     fontWeight: 'normal';
   };
   direction: { writingDirection: 'rtl' | 'ltr' };
-  radius: { control: number; card: number; sheet: number; cta: number };
+  /** Échelle de rayons COMPLÈTE (xs → full), pas seulement les 4 jetons
+   *  de l'identité. Les noms d'origine restent pour ne rien casser. */
+  radius: { xs: number; sm: number; md: number; lg: number; xl: number; full: number; control: number; card: number; sheet: number; cta: number };
+  /** Ombres multi-plateformes (iOS + Android dans le même objet). */
+  elevation: Record<ElevationName, typeof elevation[ElevationName]>;
+  /** Calques nommés — remplace l'ordre d'empilement implicite du JSX. */
+  zIndex: typeof Z_INDEX;
+  /** Hauteurs du chrome (en-tête, barre d'onglets, bande d'onglets). */
+  chrome: typeof CHROME;
+  /** Durées (identité + sortie) et courbes. */
+  duration: typeof duration;
+  easing: typeof EASING;
+  spring: typeof SPRING;
+  /** Tailles d'icônes nommées — fini les `size={17}`. */
+  iconSize: typeof ICON_SIZE;
+  /** Opacités sémantiques (désactivé, discret, squelette, voile). */
+  opacity: typeof OPACITY;
   space: readonly number[];
   geometry: typeof GEOMETRY;
   motion: typeof MOTION;
@@ -63,10 +85,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const headingRatio = isRTL ? TYPOGRAPHY.arabicHeadingLineHeight : TYPOGRAPHY.headingLineHeight;
     const boldVariants: TextRole[] = ['label', 'title', 'display'];
 
+    const palette = mode === 'dark' ? COLORS.dark : COLORS.light;
+
     return {
       mode,
       isRTL,
-      colors: mode === 'dark' ? COLORS.dark : COLORS.light,
+      colors: { ...palette, ...derivedColors(palette) },
       font,
       text: (variant = 'body', weight = boldVariants.includes(variant) ? 'bold' : 'regular') => {
         const size = TYPE_SCALE[variant];
@@ -80,11 +104,25 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       },
       direction: { writingDirection: isRTL ? 'rtl' : 'ltr' },
       radius: {
+        xs: RADIUS.xs,
+        sm: RADIUS.sm,
+        md: RADIUS.md,
+        lg: RADIUS.lg,
+        xl: RADIUS.xl,
+        full: RADIUS.full,
         control: GEOMETRY.controlRadius,
         card: GEOMETRY.cardRadius,
         sheet: GEOMETRY.sheetRadius,
         cta: GEOMETRY.ctaRadius,
       },
+      elevation,
+      zIndex: Z_INDEX,
+      chrome: CHROME,
+      duration,
+      easing: EASING,
+      spring: SPRING,
+      iconSize: ICON_SIZE,
+      opacity: OPACITY,
       space: SPACE,
       geometry: GEOMETRY,
       motion: MOTION,
