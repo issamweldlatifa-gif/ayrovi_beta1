@@ -26,6 +26,7 @@
  */
 import { getRandomBytesAsync } from 'expo-crypto';
 import { apiSend, apiUrl, type RequestOptions } from './client';
+import { API_BASE_URL } from './config';
 import { parseSessionIssue, type SessionIssue } from './account';
 
 export type ProviderId = 'google' | 'facebook' | 'apple';
@@ -70,6 +71,35 @@ export function providerStartPath(
 
 export function providerStartUrl(provider: ProviderId, handoff: string): string {
   return apiUrl(providerStartPath(provider, { handoff }));
+}
+
+/**
+ * Page sur laquelle le serveur renvoie le navigateur une fois le consentement
+ * obtenu (`/auth/native-done.html`). C'est le signal de FERMETURE de la
+ * session : en l'atteignant, l'onglet se referme et l'application reprend la
+ * main. Elle vit sur l'ORIGINE DE L'API, pas sur celle du site : c'est elle qui
+ * détient la session.
+ */
+/**
+ * Traduction du résultat Expo en issue métier.
+ *
+ * Pourquoi une fonction à part, testable sans appareil : la valeur de retour
+ * d'Expo (`success` / `cancel` / `dismiss`) est un détail de plateforme, alors
+ * que l'issue (« terminé », « renoncé », « impossible ») est une décision
+ * d'INTERFACE. La confondre revenait à afficher une erreur à quelqu'un qui
+ * avait simplement refermé la feuille de consentement.
+ */
+export type ProviderSessionOutcome = 'done' | 'cancel' | 'failed';
+
+export function providerOutcomeFrom(type: string): ProviderSessionOutcome {
+  if (type === 'success') return 'done';
+  // « cancel » (iOS) et « dismiss » (Android) : l'utilisateur a refermé.
+  if (type === 'cancel' || type === 'dismiss') return 'cancel';
+  return 'failed';
+}
+
+export function providerDoneUrl(): string {
+  return `${API_BASE_URL}/auth/native-done.html`;
 }
 
 /** Le serveur dit « pas encore » : ce n'est pas un échec, c'est une attente. */

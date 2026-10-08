@@ -23,7 +23,7 @@ import { API_BASE_URL, CLIENT_HEADER } from '../src/api/config';
 import { deleteAvatar, requestPasswordReset, uploadAvatar } from '../src/api/account';
 import {
   base64FromBytes, claimHandoff, googleNativeLogin, isHandoffPending, newHandoffCode, pollHandoff,
-  providerStartPath, providerStartUrl,
+  providerDoneUrl, providerOutcomeFrom, providerStartPath, providerStartUrl,
 } from '../src/api/providers';
 import { authMessage, authMessageForCode } from '../src/api/authMessages';
 
@@ -241,5 +241,35 @@ describe('refus de photo traduits', () => {
   it('traduit une erreur HTTP réelle en clé, jamais en texte brut', () => {
     const tooBig = new ApiError('http', 'Photo invalide.', { status: 413, code: 'AVATAR_UPLOAD_INVALID' });
     expect(authMessage(tooBig)).toEqual({ key: 'profile.photoTooBig' });
+  });
+});
+
+/* ── Q6 : le consentement reste DANS l'application ──────────────────────── */
+
+describe('issue de la session de consentement', () => {
+  it('« success » ⇒ terminé', () => {
+    expect(providerOutcomeFrom('success')).toBe('done');
+  });
+
+  it('« cancel » (iOS) et « dismiss » (Android) ⇒ renoncé, PAS une panne', () => {
+    // Le confondre avec un échec afficherait une erreur à quelqu'un qui a
+    // simplement refermé la feuille — et faisait patienter 60 s de plus.
+    expect(providerOutcomeFrom('cancel')).toBe('cancel');
+    expect(providerOutcomeFrom('dismiss')).toBe('cancel');
+  });
+
+  it('tout le reste ⇒ impossible (l\'appelant garde l\'attente serveur)', () => {
+    expect(providerOutcomeFrom('')).toBe('failed');
+    expect(providerOutcomeFrom('opened')).toBe('failed');
+    expect(providerOutcomeFrom('locked')).toBe('failed');
+  });
+
+  it('la page de retour vit sur l\'origine de l\'API — celle qui tient la session', () => {
+    // Pas d'assertion `https://` : en développement l'API est légitimement en
+    // `http://localhost`. L'invariant réel est l'ORIGINE — c'est elle qui
+    // détient la session — et le chemin exact attendu par le serveur.
+    expect(providerDoneUrl()).toBe(`${API_BASE_URL}/auth/native-done.html`);
+    expect(providerDoneUrl().endsWith('/auth/native-done.html')).toBe(true);
+    expect(providerDoneUrl().startsWith(API_BASE_URL)).toBe(true);
   });
 });

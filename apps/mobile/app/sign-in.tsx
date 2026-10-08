@@ -13,7 +13,6 @@ import { useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import * as WebBrowser from 'expo-web-browser';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppText, Button, Card, Field, Segmented } from '@/design/ui';
@@ -21,8 +20,8 @@ import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
 import { authMessage, type AuthMessageKey } from '@/api/authMessages';
 import { fetchServerReadiness, mobileSessionSupport } from '@/api/public';
-import { newHandoffCode, pollHandoff, providerStartUrl, type ProviderId } from '@/api/providers';
-import { closeProviderBrowser } from '@/features/auth/browser';
+import { newHandoffCode, pollHandoff, providerDoneUrl, providerStartUrl, type ProviderId } from '@/api/providers';
+import { closeProviderBrowser, openProviderSession } from '@/features/auth/browser';
 import { useSession } from '@/state/session';
 
 type Mode = 'phone' | 'email' | 'register';
@@ -122,13 +121,20 @@ export default function SignInScreen() {
     cancelled.current = false;
     try {
       const handoff = await newHandoffCode();
-      await WebBrowser.openBrowserAsync(providerStartUrl(provider, handoff)).catch(() => null);
+      // Onglet personnalisé : le consentement se déroule DANS l'application.
+      // (openBrowserAsync, lui, basculait vers Chrome — une autre application.)
+      const outcome = await openProviderSession(providerStartUrl(provider, handoff), providerDoneUrl());
+      await closeProviderBrowser();
+      if (outcome === 'cancel') {
+        // Renoncement, pas panne : l'ANCienne version continuait d'attendre
+        // soixante secondes un consentement que la personne venait de fermer.
+        return;
+      }
       const issue = await pollHandoff(handoff, {
         attempts: 40,
         delayMs: 1500,
         shouldStop: () => cancelled.current,
       });
-      await closeProviderBrowser();
       if (!issue) {
         // Absence de connexion, pas échec : la formulation ne dramatise pas.
         // Mais « rien n'a changé » sans piste laisse la personne seule devant
