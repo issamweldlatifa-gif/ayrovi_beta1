@@ -9,7 +9,7 @@
  */
 import { useCallback, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 
 import { AppText, Segmented } from '@/design/ui';
@@ -26,7 +26,9 @@ const ALL = '';
 export default function CatalogScreen() {
   const theme = useTheme();
   const t = useT();
-  const [arrivalId, setArrivalId] = useState(ALL);
+  // وصولة مفتوحة من رابط عميق (ستوري، عرض، خبر) ⇒ تُنتقى من الأول.
+  const params = useLocalSearchParams<{ arrivalId?: string }>();
+  const [arrivalId, setArrivalId] = useState(params.arrivalId ?? ALL);
 
   const products = useQuery({
     queryKey: ['catalog', 'products', arrivalId],

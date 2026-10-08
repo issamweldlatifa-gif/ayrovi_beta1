@@ -13,6 +13,10 @@ import {
   fetchCatalogArrivals, fetchCatalogBrands, fetchCatalogProducts,
   type CatalogArrival, type CatalogProduct,
 } from './catalog';
+import {
+  fetchHomeBlocks, fetchNews, fetchPromotions, fetchStories,
+  type HomeBlock, type NewsItem, type Promotion, type StoryItem,
+} from './sections';
 
 /**
  * Clés de requête. `home` en préfixe : une invalidation globale du contenu
@@ -29,6 +33,11 @@ export const queryKeys = {
   catalogProducts: (arrivalId = '') => ['catalog', 'products', arrivalId] as const,
   catalogArrivals: ['catalog', 'arrivals'] as const,
   catalogBrands: ['catalog', 'brands'] as const,
+  // أقسام الموقع: ترتيبها قرار إداري ⇒ نفس معاملة المحتوى التحريري.
+  homeBlocks: ['sections', 'home-blocks'] as const,
+  promotions: ['sections', 'promotions'] as const,
+  stories: ['sections', 'stories'] as const,
+  news: ['sections', 'news'] as const,
 };
 
 /**
@@ -66,3 +75,15 @@ export const useCatalogArrivals = (): UseQueryResult<CatalogArrival[]> =>
 
 export const useCatalogBrands = (): UseQueryResult<string[]> =>
   useQuery({ queryKey: queryKeys.catalogBrands, queryFn: ({ signal }) => fetchCatalogBrands({ signal }), ...CATALOG });
+
+export const useHomeBlocks = (): UseQueryResult<HomeBlock[]> =>
+  useQuery({ queryKey: queryKeys.homeBlocks, queryFn: ({ signal }) => fetchHomeBlocks({ signal }), ...CONTENT });
+
+export const usePromotions = (): UseQueryResult<Promotion[]> =>
+  useQuery({ queryKey: queryKeys.promotions, queryFn: ({ signal }) => fetchPromotions({ signal }), ...CONTENT });
+
+export const useStories = (): UseQueryResult<StoryItem[]> =>
+  useQuery({ queryKey: queryKeys.stories, queryFn: ({ signal }) => fetchStories({ signal }), ...CONTENT });
+
+export const useNews = (): UseQueryResult<NewsItem[]> =>
+  useQuery({ queryKey: queryKeys.news, queryFn: ({ signal }) => fetchNews({ signal }), ...CONTENT });
