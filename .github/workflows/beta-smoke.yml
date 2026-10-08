@@ -170,6 +170,38 @@ jobs:
             esac
           fi
 
+          # 1ter-bis) Google ACCEPTE-t-il cette adresse ?
+          # Le serveur peut très bien envoyer la bonne adresse (« ok ») alors que
+          # Google la REFUSE : une URI non déclarée dans le client OAuth donne
+          # « Error 400: redirect_uri_mismatch » avant même l'écran de choix du
+          # compte. On interroge donc Google LUI-MÊME (lecture seule, aucun
+          # compte, aucune session) : c'est le seul juge de ce registre.
+          if [ "$GOOGLE_STATE" != "" ]; then
+            case "$GOOGLE_STATE" in
+              ok:*)
+                GOOGLE_START=$(curl -s -o /dev/null -w '%{redirect_url}' --max-time 30 \
+                  "$BASE/api/customer/auth/google/start?nativeHandoff=smoke" 2>/dev/null)
+                if [ -n "$GOOGLE_START" ]; then
+                  curl -sL -o /tmp/gauth.html -w '%{http_code}' --max-time 45 "$GOOGLE_START" > /tmp/gauth.code 2>/dev/null
+                  GAUTH_CODE=$(cat /tmp/gauth.code 2>/dev/null)
+                  GAUTH_ERR=$(python3 -c 'import re,sys,html
+          try: t=open("/tmp/gauth.html",encoding="utf-8",errors="replace").read()
+          except Exception: t=""
+          t=html.unescape(t)
+          m=re.search(r"redirect_uri_mismatch|invalid_client|access_denied|unauthorized_client|Error\s*400|Error\s*401|Error\s*403", t)
+          print(m.group(0) if m else "")' 2>/dev/null)
+                  if [ -n "$GAUTH_ERR" ]; then
+                    GOOGLE_STATE="refus-google:$GAUTH_ERR"
+                    WARN=1
+                    note "Google accepte-t-il l\'adresse ?" "${GAUTH_CODE:-—}" "⚠️ Google répond **\`$GAUTH_ERR\`** ⇒ le client OAuth ne connaît pas **\`${GOOGLE_CB:-cette adresse}\`**. Console Google Cloud → Credentials → client OAuth → *Authorized redirect URIs* → ajoutez-la EXACTEMENT (ou créez un client dédié au service Beta : voir \`docs/OAUTH_GOOGLE_BETA_AR.md\`)"
+                  else
+                    GOOGLE_STATE="accepte-par-google"
+                    note "Google accepte-t-il l\'adresse ?" "${GAUTH_CODE:-—}" "✅ Google présente bien son écran de connexion pour cette adresse ⇒ la connexion doit aboutir"
+                  fi
+                fi ;;
+            esac
+          fi
+
           # 1quater) La remise de session au navigateur (`native/claim`) doit EXISTER :
           # c'est le seul chemin par lequel l'appli récupère une session après une
           # connexion Google. Un code inconnu doit répondre un refus JSON (400/404
