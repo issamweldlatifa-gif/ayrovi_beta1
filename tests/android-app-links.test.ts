@@ -16,6 +16,7 @@ import {
   ANDROID_APP_LINK_PACKAGE,
   ANDROID_APP_LINK_PACKAGES_ENV,
   ANDROID_APP_LINK_RELATION,
+  appLinksDiagnostics,
   appLinksFromEnv,
   assetLinksStatement,
   parseAppLinkPackages,
@@ -148,3 +149,44 @@ describe('البيان الذي يُنشر', () => {
     }]);
   });
 });
+
+describe('App Links — التشخيص يسمّي المتغيّر الناقص', () => {
+  const FINGERPRINT = 'AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99';
+
+  test('بلا بصمات ⇒ الناقص هو البصمات (الحزم عندها معيار: حزمة الإصدار)', () => {
+    expect(appLinksDiagnostics({}).missingEnv).toEqual([ANDROID_APP_LINK_ENV]);
+    expect(appLinksDiagnostics({ [ANDROID_APP_LINK_PACKAGES_ENV]: ANDROID_APP_LINK_PACKAGE }).missingEnv).toEqual([
+      ANDROID_APP_LINK_ENV,
+    ]);
+  });
+
+  test('بصمة وبرك ⇒ البيان يخرج، بس **للإصدار وحدو**', () => {
+    // نقطة تضيّع وقت: العرض التجريبي (`…demo`) ما يتغطّاش بالافتراضي ⇒
+    // الروابط العميقة تخدم في تطبيق الإصدار وبرك. الحل صريح تحت.
+    const env = { [ANDROID_APP_LINK_ENV]: FINGERPRINT };
+    expect(appLinksDiagnostics(env).missingEnv).toEqual([]);
+    const statement = appLinksFromEnv(env) as Array<Record<string, any>>;
+    expect(statement).toHaveLength(1);
+    expect(statement[0].target.package_name).toBe(ANDROID_APP_LINK_PACKAGE);
+  });
+
+  test('العرض التجريبي يتغطّى كان بإعلان صريح', () => {
+    const env = {
+      [ANDROID_APP_LINK_ENV]: FINGERPRINT,
+      [ANDROID_APP_LINK_PACKAGES_ENV]: `${ANDROID_APP_LINK_PACKAGE},${ANDROID_APP_LINK_DEMO_PACKAGE}`,
+    };
+    expect(appLinksDiagnostics(env).missingEnv).toEqual([]);
+    const statement = appLinksFromEnv(env) as Array<Record<string, any>>;
+    expect(statement.map((entry) => entry.target.package_name)).toEqual([
+      ANDROID_APP_LINK_PACKAGE,
+      ANDROID_APP_LINK_DEMO_PACKAGE,
+    ]);
+  });
+
+  test('بصمة مغلوطة ⇒ الناقص يتقال، والبيان ما يخرجش', () => {
+    const env = { [ANDROID_APP_LINK_ENV]: 'AA:BB:ZZ' };
+    expect(appLinksDiagnostics(env).missingEnv).toEqual([ANDROID_APP_LINK_ENV]);
+    expect(appLinksFromEnv(env)).toBeNull();
+  });
+});
+

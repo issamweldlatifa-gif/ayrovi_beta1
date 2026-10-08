@@ -7,7 +7,7 @@ import compression from 'compression';
 import path from 'path';
 import fs from 'fs';
 import { KNOWN_PAGE_PATHS, isKnownPagePath, sitemapRoutes } from '../shared/publicSeo';
-import { ANDROID_APP_LINK_ENV, appLinksFromEnv } from '../shared/appLinks';
+import { ANDROID_APP_LINK_ENV, appLinksDiagnostics, appLinksFromEnv } from '../shared/appLinks';
 import { deploymentIdentity } from './services/deploymentIdentity';
 import { createHash, randomUUID } from 'node:crypto';
 import type { Server } from 'node:http';
@@ -349,7 +349,15 @@ app.get('/sitemap.xml', (_req, res) => {
 app.get('/.well-known/assetlinks.json', (_req, res) => {
   const statement = appLinksFromEnv(process.env);
   if (!statement) {
-    res.status(404).json({ error: 'APP_LINK_FINGERPRINT_NOT_CONFIGURED', expectedEnv: ANDROID_APP_LINK_ENV });
+    /* الرسالة تسمّي المتغيّر الناقص بالاسم. قول «زيد البصمات» والبصمات موجودة
+       (الناقص أسماء الحزم) يعطي 404 بلا تفسير — والناس تحسب الروابط مكسورة. */
+    const { missingEnv } = appLinksDiagnostics(process.env);
+    res.status(404).json({
+      error: 'APP_LINK_FINGERPRINT_NOT_CONFIGURED',
+      expectedEnv: ANDROID_APP_LINK_ENV,
+      missingEnv,
+      message: `Variables manquantes ou invalides : ${missingEnv.join(', ')}.`,
+    });
     return;
   }
   res.setHeader('Cache-Control', 'public, max-age=300');

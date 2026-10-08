@@ -69,6 +69,7 @@ jobs:
 
           CAPS=""
           GOOGLE_STATE=""
+          LINKS_STATE=""
           FAIL=0            # une fonction de l'appli manque vraiment
           WARN=0            # le serveur ne sait pas encore servir l'appli
           SMOKE=""
@@ -350,14 +351,30 @@ jobs:
             fi
           else
             WARN=1
+            MISSING=$(jget /tmp/links missingEnv)
             if [ "$LINKS_CODE" = "404" ]; then
-              note "\`GET /.well-known/assetlinks.json\`" "404" "⚠️ route présente mais **404** : \`ANDROID_APP_LINK_SHA256\` (empreinte du keystore) n'est pas définie sur ce serveur ⇒ liens profonds inertes"
+              note "\`GET /.well-known/assetlinks.json\`" "404" "⚠️ **404** — il manque : \`${MISSING:-$ANDROID_APP_LINK_SHA256}\` sur ce serveur ⇒ liens profonds inertes"
             else
               note "\`GET /.well-known/assetlinks.json\`" "$LINKS_CODE" "⚠️ pas un JSON (route absente) ⇒ liens profonds inertes"
             fi
           fi
 
-          SMOKE="{$BASE health=$HEALTH_CODE claim=$CLAIM_CODE/${CLAIM_REF:-—} google_callback=${GOOGLE_STATE:-—} v=${HEALTH_VERSION:-—} ready=$READY_CODE branch=${READY_BRANCH:-—} caps=${CAPS:-—} branch=${READY_BRANCH:-—} register=$REG_CODE token=$([ -n "$TOKEN" ] && echo oui || echo NON) me=$ME_CODE cart=$CART_CODE checkout=$CHECKOUT_CODE/$CHECKOUT_REF orders=$ORDERS_CODE links=$LINKS_CODE}$([ -n "${CHECKOUT_REF:-}" ] && echo " checkout_refusal=$CHECKOUT_REF")"
+          # Un piège silencieux : l'empreinte seule couvre l'application de
+          # PRODUCTION par défaut. L'APK de démonstration (`…demo`) ne doit
+          # déclarer sa propre package QUE si `ANDROID_APP_LINK_PACKAGES` la cite.
+          if [ "$LINKS_CODE" = "200" ]; then
+            LINK_PKGS=$(python3 -c 'import json
+          try: d=json.load(open("/tmp/links"))
+          except Exception: d=[]
+          print(",".join(e.get("target",{}).get("package_name","") for e in d))' 2>/dev/null)
+            case "$LINK_PKGS" in
+              *demo*) LINKS_STATE="200 pkgs=$LINK_PKGS" ;;
+              *) LINKS_STATE="200 production-seule pkgs=$LINK_PKGS"
+                 note "Couverture des liens" "—" "ℹ️ \`$LINK_PKGS\` — l\'APK de DÉMONSTRATION n\'est pas couvert : ajoutez \`ANDROID_APP_LINK_PACKAGES=app.ayrovi.mobile,app.ayrovi.mobile.demo\` pour tester les liens avec lui" ;;
+            esac
+          fi
+
+          SMOKE="{$BASE health=$HEALTH_CODE links=${LINKS_STATE:-$LINKS_CODE} claim=$CLAIM_CODE/${CLAIM_REF:-—} google_callback=${GOOGLE_STATE:-—} v=${HEALTH_VERSION:-—} ready=$READY_CODE branch=${READY_BRANCH:-—} caps=${CAPS:-—} branch=${READY_BRANCH:-—} register=$REG_CODE token=$([ -n "$TOKEN" ] && echo oui || echo NON) me=$ME_CODE cart=$CART_CODE checkout=$CHECKOUT_CODE/$CHECKOUT_REF orders=$ORDERS_CODE links=$LINKS_CODE}$([ -n "${CHECKOUT_REF:-}" ] && echo " checkout_refusal=$CHECKOUT_REF")"
 
           if [ "$FAIL" = "1" ]; then
             VERDICT="❌ ÉCHEC — une fonction de l'appli ne répond pas sur ce serveur"

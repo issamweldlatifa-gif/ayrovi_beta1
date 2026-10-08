@@ -116,6 +116,30 @@ export function assetLinksStatement(
 }
 
 /** نفس الحساب من متغيّرات البيئة — نقطة واحدة يستعملها الخادم. */
+/**
+ * تشخيص: شنوّة اللي ناقص بالضبط (08/10/2026).
+ *
+ * المشكلة اللي صلّحناها: إعلان البصمات (`ANDROID_APP_LINK_SHA256`) وحدو **ما
+ * يكفّيش** — أسماء الحزم تجي من متغيّر ثاني (`ANDROID_APP_LINK_PACKAGES`)،
+ * وفارغ ⇒ بلا بيان ⇒ 404. والرسالة كانت تقول «زيد البصمات» ⇒ صاحب المشروع
+ * يزيدها وتبقى 404 بلا تفسير. تشخيص صريح يوفّر دورات كاملة.
+ */
+export interface AppLinksDiagnostics {
+  packages: string[];
+  fingerprints: string[];
+  /** أسماء المتغيّرات الناقصة — فارغة ⇒ البيان يخرج. */
+  missingEnv: string[];
+}
+
+export function appLinksDiagnostics(env: Record<string, string | undefined>): AppLinksDiagnostics {
+  const packages = parseAppLinkPackages(env[ANDROID_APP_LINK_PACKAGES_ENV]) || [];
+  const fingerprints = parseCertificateFingerprints(env[ANDROID_APP_LINK_ENV]) || [];
+  const missingEnv: string[] = [];
+  if (fingerprints.length === 0) missingEnv.push(ANDROID_APP_LINK_ENV);
+  if (packages.length === 0) missingEnv.push(ANDROID_APP_LINK_PACKAGES_ENV);
+  return { packages, fingerprints, missingEnv };
+}
+
 export function appLinksFromEnv(env: Record<string, string | undefined>): Array<Record<string, unknown>> | null {
   return assetLinksStatement(
     parseAppLinkPackages(env[ANDROID_APP_LINK_PACKAGES_ENV]) || [],
