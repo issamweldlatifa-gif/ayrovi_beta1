@@ -24,7 +24,9 @@ on:
         required: true
         default: "https://ayrovi-beta1-moo8.onrender.com"
   push:
-    branches: [arena/c0321e79-ayrovi-beta1]
+    # Branche de travail Arena en plus de la branche historique : l'APK démo
+    # se reconstruit après chaque mise à jour de l'application.
+    branches: [arena/c0321e79-ayrovi-beta1, arena/bc19f283-ayrovi-beta1]
     paths:
       - 'apps/mobile/**'
       - '.github/workflows/mobile-android.yml'

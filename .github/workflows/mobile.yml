@@ -5,7 +5,9 @@ name: Mobile — AYROVI app
 # de l'application, et inversement (règle de frontière, apps/mobile/PLAN.md §9).
 on:
   push:
-    branches: [main]
+    # `main` + la branche de travail Arena : typecheck · tokens · tests tournent
+    # après chaque mise à jour de l'application, pas seulement à la fusion.
+    branches: [main, arena/bc19f283-ayrovi-beta1]
     paths:
       - 'apps/mobile/**'
       - '.github/workflows/mobile.yml'
