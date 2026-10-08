@@ -74,6 +74,24 @@ function amazonPage(inner: string): string {
   </div></div></body></html>`;
 }
 
+/**
+ * Balayage « aucune trace du prix piégé » — SANS l'horodatage.
+ *
+ * Pourquoi l'exclure (flakiness MESURÉE, 08/10/2026) : `capturedAt` porte des
+ * millisecondes, donc « 16.997 » RENFERME la chaîne « 6.99 ». Une fois sur
+ * mille environ, ce test sonnait l'alarme SANS AUCUNE régression — et une
+ * alarme qui ment coûte plus cher qu'une alarme manquée : la fois suivante,
+ * on ne la croit plus, et la vraie régression passe inaperçue.
+ *
+ * Le balayage garde tout son mordant : tout le reste de la charge utile y
+ * passe — prix, titres, variantes, images, URL canonique.
+ */
+function priceTrace(payload: Record<string, unknown>): string {
+  const { capturedAt, ...stable } = payload as { capturedAt?: string };
+  void capturedAt;
+  return JSON.stringify(stable);
+}
+
 const BUYBOX_109 = `<div id="corePriceDisplay_desktop_feature_div">
   <span id="apex-pricetopay-accessibility-label" class="aok-offscreen"> $109.00 </span>
   <span class="a-price priceToPay apex-pricetopay-value">
@@ -88,6 +106,25 @@ const BUYBOX_109 = `<div id="corePriceDisplay_desktop_feature_div">
 
 beforeEach(() => {
   resetAyWebsWebviewCaptureStats();
+});
+
+describe('AYWEBs — l’alarme ne doit pas mentir', () => {
+  /**
+   * Verrou de la correction du 08/10/2026 : un balayage qui inclurait
+   * `capturedAt` se déclencherait sur un HORODATAGE (« 16.997 » contient
+   * « 6.99 ») une fois sur mille, sans aucune régression. Le garder hors du
+   * balayage est un choix de sûreté : une alarme fausse désarme la vraie.
+   */
+  it('le balayage ignore l’horodatage, mais rien d’autre', () => {
+    const poisoned: Record<string, unknown> = {
+      capturedAt: '2026-10-08T00:22:16.997Z', // renferme « 6.99 »
+      title: 'Article',
+      priceCandidates: [{ text: '109.00 USD', source: 'json_ld' }],
+    };
+    expect(priceTrace(poisoned)).not.toContain('6.99');
+    // …et il reste sourd à rien d’autre : un titre piégé passe TOUJOURS.
+    expect(priceTrace({ ...poisoned, title: 'Lot à 6.99' })).toContain('6.99');
+  });
 });
 
 describe('AYWEBs — lecteur Amazon : la fiche mesurée du 04/10/2026', () => {
@@ -156,9 +193,9 @@ describe('AYWEBs — lecteur Amazon : la zone d’achat seulement', () => {
       </div>`);
     const { payload, validation } = captureFrom(page);
     expect(payload.priceCandidates).toEqual([{ text: '$109.00', source: 'dom' }]);
-    expect(JSON.stringify(payload)).not.toContain('6.99');
-    expect(JSON.stringify(payload)).not.toContain('263.86');
-    expect(JSON.stringify(payload)).not.toContain('149.00');
+    expect(priceTrace(payload)).not.toContain('6.99');
+    expect(priceTrace(payload)).not.toContain('263.86');
+    expect(priceTrace(payload)).not.toContain('149.00');
     expect(validation.price).toBe(109);
   });
 
@@ -281,7 +318,7 @@ describe('AYWEBs — lecteur Amazon : JSON-LD', () => {
       </script>`);
     const { payload, validation } = captureFrom(multiPage);
     expect(payload.priceCandidates[0]).toEqual({ text: '109.00 USD', source: 'json_ld' });
-    expect(JSON.stringify(payload)).not.toContain('6.99');
+    expect(priceTrace(payload)).not.toContain('6.99');
     expect(validation.price).toBe(109);
     expect(validation.priceVerified).toBe(true); // JSON-LD (ASIN) + DOM d'accord
     expect(validation.corroborated).toBe(true);
@@ -320,7 +357,7 @@ describe('AYWEBs — lecteur Amazon : les captures réelles du 06/10/2026', () =
   it('page SPONSORISÉE amazon.de : les prix d’annonces (14,80 / 24,14 / 18,74) ne sortent JAMAIS', () => {
     const { payload, validation } = captureFrom(REAL_SPONSORED_DE, 'https://www.amazon.de/dp/B0D1XD1ZV3');
     expect(payload.priceCandidates).toEqual([]);
-    const serialized = JSON.stringify(payload);
+    const serialized = priceTrace(payload);
     for (const adPrice of ['14.80', '24.14', '18.74', '117.88', '201.82']) {
       expect(serialized).not.toContain(adPrice);
     }
@@ -331,7 +368,7 @@ describe('AYWEBs — lecteur Amazon : les captures réelles du 06/10/2026', () =
   it('mobile amazon.com : le prix coupé (6,99 / 263,86) n’est pas publié', () => {
     const { payload, validation } = captureFrom(REAL_MOBILE_CONCAT, 'https://www.amazon.com/dp/B0D1XD1ZV3');
     expect(payload.priceCandidates).toEqual([]);
-    const serialized = JSON.stringify(payload);
+    const serialized = priceTrace(payload);
     expect(serialized).not.toContain('6.99');
     expect(serialized).not.toContain('263.86');
     expect(validation.rejection).toBe('NO_PRICE_TEXT');
