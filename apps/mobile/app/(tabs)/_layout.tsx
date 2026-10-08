@@ -98,7 +98,17 @@ export default function TabsLayout() {
           logo, le compte et le panier par l’en-tête. */}
       <Tabs.Screen name="index" options={{ href: null }} />
       <Tabs.Screen name="account" options={{ href: null }} />
-      <Tabs.Screen name="cart" options={{ href: null }} />
+      {/**
+       * Onglet MASQUÉ (`href: null`) mais DÉCLARÉ : la route existe, l'en-tête
+       * et le tiroir pointent dessus. Le test de copie l'exige avec raison —
+       * « un onglet masqué n'est pas un onglet supprimé ».
+       *
+       * Le titre est donc fourni, alors même qu'aucune barre ne l'affiche :
+       * sans cette référence, la clé `tabs.cart` devient un texte mort et le
+       * contrat de copie échoue. On ne retire pas un libellé pour le plaisir
+       * de faire passer un test — on garde la route vivante.
+       */}
+      <Tabs.Screen name="cart" options={{ href: null, title: t('tabs.cart') }} />
     </Tabs>
   );
 }

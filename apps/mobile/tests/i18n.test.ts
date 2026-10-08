@@ -24,9 +24,16 @@ describe('dictionnaires fr / ar', () => {
     expect(translate('ar', 'tabs.home')).toBe(ar['tabs.home']);
   });
 
+  /**
+   * Cette assertion utilisait `common.phase`. Cette clé a été retirée avec
+   * l'ancien en-tête d'écran (voir `copy.test.ts`) : la pastille de phase
+   * n'existe plus. On vise `orders.items`, qui porte une vraie variable et
+   * n'appartient à aucune structure transitoire — le test vérifie le
+   * MÉCANISME d'interpolation, pas une clé particulière.
+   */
   it('interpolent les variables et laissent intact un jeton inconnu', () => {
-    expect(translate('fr', 'common.phase', { phase: 'P3' })).toBe('Phase P3');
-    expect(translate('ar', 'common.phase', { phase: 'P3' })).toBe('المرحلة P3');
-    expect(translate('fr', 'common.phase')).toContain('{phase}');
+    expect(translate('fr', 'orders.items', { count: 3 })).toBe('3 article(s)');
+    expect(translate('ar', 'orders.items', { count: 3 })).toBe('3 قطعة');
+    expect(translate('fr', 'orders.items')).toContain('{count}');
   });
 });

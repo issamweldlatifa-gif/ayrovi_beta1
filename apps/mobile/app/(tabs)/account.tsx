@@ -15,7 +15,7 @@ import { useQuery } from '@tanstack/react-query';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppScreen } from '@/design/layout';
 import { AppHeader } from '@/features/shell/AppHeader';
-import {AppText, Button, Card, KeyValue, LinkRow, Segmented} from '@/design/ui';
+import {AppText, Button, Card, KeyValue, LinkRow, SectionHeader, Segmented} from '@/design/ui';
 import { ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
@@ -136,6 +136,12 @@ export default function AccountScreen() {
       overlayHeader={<AppHeader />}
       hasBottomBar
       chrome onRefresh={refresh} refreshing={overviewQuery.isRefetching}>
+
+      {/*
+        رسالة القسم — هاذا النصّ كان يعيش في هيدر `Screen` القديم.
+        صار `SectionHeader` (§18.2-3): نفس المحتوى، بمكوّن موحّد.
+      */}
+      <SectionHeader title={t('screen.account.subtitle')} hint={t('screen.account.body')} />
       {!signedIn ? (
         <Card title={t('account.guest.title')} hint={t('account.guest.body')}>
           <Button label={t('account.signIn')} onPress={() => router.push('/sign-in')} />

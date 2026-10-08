@@ -16,7 +16,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 
 import { AppScreen } from '@/design/layout';
 import { AppHeader } from '@/features/shell/AppHeader';
-import {AppText, Button, Card, Field, KeyValue} from '@/design/ui';
+import {AppText, Button, Card, Field, KeyValue, SectionHeader} from '@/design/ui';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
@@ -93,6 +93,12 @@ export default function AyWebsScreen() {
       overlayHeader={<AppHeader />}
       hasBottomBar
       chrome onRefresh={reload} refreshing={stores.isFetching && !stores.isPending}>
+
+      {/*
+        رسالة القسم — هاذا النصّ كان يعيش في هيدر `Screen` القديم.
+        صار `SectionHeader` (§18.2-3): نفس المحتوى، بمكوّن موحّد.
+      */}
+      <SectionHeader title={t('screen.aywebs.subtitle')} hint={t('screen.aywebs.body')} />
       <Card title={t('aywebs.linkTitle')} hint={t('aywebs.linkHint')}>
         <Field
           label={t('aywebs.linkLabel')}

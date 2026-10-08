@@ -84,6 +84,63 @@ export function Card({ children, title, hint, onLayout }: {
   );
 }
 
+/* ── En-tête de section (§18.2-3) ─────────────────────────────────────────── */
+
+/**
+ * §18.2-3 : « chaque section commence par un `SectionHeader` — pas de titre
+ * libre ». Avant ce composant, chaque écran fabriquait le sien : une taille,
+ * une graisse et une marge différentes à chaque fois.
+ *
+ * Le niveau typographique est FIGÉ dans le composant : `title` (label, gras)
+ * au-dessus, `hint` (caption) en dessous. Un appelant ne choisit pas la
+ * hiérarchie, sinon ce n'est plus un système.
+ *
+ * `action` reste optionnel et cadré à droite (miroir en RTL par `row-reverse`)
+ * : c'est le seul ornement autorisé — « voir tout », pas un bouton quelconque.
+ */
+export function SectionHeader({
+  title,
+  hint,
+  action,
+  style,
+}: {
+  title: string;
+  /** Phrase d'intention sous le titre. */
+  hint?: string;
+  /** Lien « voir tout » — seul ornement autorisé. */
+  action?: ReactNode;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const theme = useTheme();
+  return (
+    <View
+      style={[
+        {
+          gap: theme.space[1],
+          paddingBottom: theme.space[1],
+          // RTL : l'action passe à gauche, le texte à droite.
+          flexDirection: theme.isRTL ? 'row-reverse' : 'row',
+          alignItems: 'flex-end',
+          justifyContent: 'space-between',
+        },
+        style,
+      ]}
+    >
+      <View style={{ flex: 1, gap: 2 }}>
+        <AppText variant="label" weight="bold" color={theme.colors.ink}>
+          {title}
+        </AppText>
+        {hint ? (
+          <AppText variant="caption" color={theme.colors.muted}>
+            {hint}
+          </AppText>
+        ) : null}
+      </View>
+      {action ?? null}
+    </View>
+  );
+}
+
 /* ── Ligne clé / valeur (diagnostic) ───────────────────────────────────────── */
 
 export function KeyValue({ label, value }: { label: string; value: string }) {

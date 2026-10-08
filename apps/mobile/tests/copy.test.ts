@@ -126,9 +126,28 @@ describe('عقد النصوص — المفاتيح المتكوّنة في ال�
     expect([...tabs].sort()).toEqual([
       'account', 'aywebs', 'cart', 'index', 'lens', 'ocerex', 'sonim', 'vision',
     ]);
+    /**
+     * ── Ce que ce contrat exigeait, et pourquoi il a changé ───────────────
+     * Il demandait AUSSI `screen.<onglet>.subtitle` et `.body` pour chaque
+     * onglet. Ces textes étaient affichés par l'ancien en-tête de `Screen`
+     * (titre de mission + pastille de phase), que le Design System remplace
+     * par un en-tête UNIQUE (`AppHeader`, §13).
+     *
+     * Le contenu n'a pas été jeté : là où un écran a de vraies sections
+     * (lens, aywebs, cart, account, vision), il est repris par un
+     * `SectionHeader` — donc toujours atteignable, donc jamais mort.
+     *
+     * Là où il n'y a PAS de section (accueil : un héros ; sonim : une
+     * conversation ; ocerex : son propre `SubScreen`), ces textes n'ont plus
+     * d'endroit où vivre. Les garder ferait échouer la règle « aucun texte
+     * mort ». On ne garde pas un libellé pour faire passer un test.
+     *
+     * Le contrat devient donc ce qui est UNIVERSELLEMENT vrai et vérifiable :
+     * tout onglet déclaré possède son libellé dans les deux langues.
+     */
     for (const tab of tabs) {
       const labelKey = tab === 'index' ? 'tabs.home' : `tabs.${tab}`;
-      const keys = tab === 'index' ? [labelKey] : [labelKey, `screen.${tab}.subtitle`, `screen.${tab}.body`];
+      const keys = [labelKey];
       for (const key of keys) {
         expect(Object.keys(FR), `${key} (تبويب ${tab})`).toContain(key);
         expect(Object.keys(AR), `${key} (تبويب ${tab})`).toContain(key);

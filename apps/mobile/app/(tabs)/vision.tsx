@@ -14,7 +14,7 @@
 import { AppScreen } from '@/design/layout';
 import { AppHeader } from '@/features/shell/AppHeader';
 import { EmptyBlock } from '@/design/states';
-import {} from '@/design/ui';
+import {SectionHeader} from '@/design/ui';
 import { useT } from '@/i18n';
 
 export default function VisionScreen() {
@@ -24,6 +24,12 @@ export default function VisionScreen() {
       overlayHeader={<AppHeader />}
       hasBottomBar
       chrome>
+
+      {/*
+        رسالة القسم — هاذا النصّ كان يعيش في هيدر `Screen` القديم.
+        صار `SectionHeader` (§18.2-3): نفس المحتوى، بمكوّن موحّد.
+      */}
+      <SectionHeader title={t('screen.vision.subtitle')} hint={t('screen.vision.body')} />
       <EmptyBlock>{t('vision.empty')}</EmptyBlock>
       <EmptyBlock>{t('vision.empty.body')}</EmptyBlock>
     </AppScreen>

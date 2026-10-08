@@ -22,7 +22,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 
 import { AppScreen } from '@/design/layout';
 import { AppHeader } from '@/features/shell/AppHeader';
-import {AppText, Button, Card, Field, KeyValue} from '@/design/ui';
+import {AppText, Button, Card, Field, KeyValue, SectionHeader} from '@/design/ui';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
@@ -146,6 +146,12 @@ export default function LensScreen() {
       overlayHeader={<AppHeader />}
       hasBottomBar
       chrome onRefresh={() => { history.refetch(); }}>
+
+      {/*
+        رسالة القسم — هاذا النصّ كان يعيش في هيدر `Screen` القديم.
+        صار `SectionHeader` (§18.2-3): نفس المحتوى، بمكوّن موحّد.
+      */}
+      <SectionHeader title={t('screen.lens.subtitle')} hint={t('screen.lens.body')} />
       <Card title={t('lens.photoTitle')} hint={t('lens.photoHint')}>
         <View style={styles.row}>
           <Button label={t('lens.camera')} onPress={() => pickFrom('camera')} busy={busy} disabled={busy} />
