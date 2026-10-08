@@ -21,6 +21,7 @@ import { ThemeProvider, useTheme } from '@/design/theme';
 import { I18nProvider } from '@/i18n';
 import { PrefsProvider, usePrefs } from '@/state/prefs';
 import { SessionProvider } from '@/state/session';
+import { useDeepLinkRouting } from '@/features/links/useDeepLinkRouting';
 
 SplashScreen.preventAutoHideAsync().catch(() => {
   // Déjà masqué (rechargement à chaud) : sans effet, ne bloque pas le rendu.
@@ -47,6 +48,9 @@ function Navigation() {
   // une raison de rester sur l'écran de démarrage — on rend avec la police
   // système plutôt que de bloquer l'utilisateur sur un écran figé.
   const readyToPaint = ready && (fontsLoaded || Boolean(fontError));
+
+  // Liens profonds : branchés une fois que la navigation existe, pas avant.
+  useDeepLinkRouting(readyToPaint);
 
   useEffect(() => {
     if (readyToPaint) SplashScreen.hideAsync().catch(() => {});
