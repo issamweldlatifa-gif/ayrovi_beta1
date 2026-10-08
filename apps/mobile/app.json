@@ -1,0 +1,97 @@
+{
+  "expo": {
+    "name": "AYROVI",
+    "slug": "ayrovi",
+    "scheme": "ayrovi",
+    "version": "2.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#FFFFFF",
+    "primaryColor": "#FF7900",
+    "android": {
+      "package": "app.ayrovi.mobile",
+      "versionCode": 7,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#FAFAFA"
+      },
+      "predictiveBackGestureEnabled": false,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ],
+          "data": [
+            {
+              "scheme": "https",
+              "host": "ayrovi.tn"
+            },
+            {
+              "scheme": "https",
+              "host": "www.ayrovi.tn"
+            },
+            {
+              "scheme": "https",
+              "host": "ayrovi-beta1-1.onrender.com"
+            },
+            {
+              "scheme": "https",
+              "host": "ayrovi-beta1-moo8.onrender.com",
+              "pathPrefix": "/"
+            }
+          ]
+        }
+      ]
+    },
+    "ios": {
+      "bundleIdentifier": "app.ayrovi.mobile",
+      "supportsTablet": true
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#FAFAFA",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200,
+          "dark": {
+            "backgroundColor": "#000000",
+            "image": "./assets/images/splash-icon.png"
+          }
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+                        "enableSeparateBuildPerCPUArchitecture": true,
+                        "enableProguardInReleaseBuilds": true,
+                        "enableShrinkResourcesInReleaseBuilds": true,
+                        "jsEngine": "hermes",
+                        "abiFilters": ["arm64-v8a", "armeabi-v7a"]
+          }
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "AYROVI utilise la caméra pour scanner un code-barres ou un QR code et chercher le produit.",
+          "recordAudioAndroid": false
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

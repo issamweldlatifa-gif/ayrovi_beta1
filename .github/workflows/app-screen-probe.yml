@@ -1,0 +1,87 @@
+# ما يعرضه الخادم لشاشات التطبيق — بلا تلفون.
+#
+# Pourquoi : « l'écran est vide » / « il manque un truc » ne se diagnostique pas
+# à l'œil. Un écran de l'application n'invente RIEN : il affiche ce que le
+# serveur renvoie. Ce probe imprime donc, pour chaque écran, ce que le serveur
+# DONNE — la comparaison avec la photo du téléphone devient immédiate :
+#   • le serveur ne renvoie rien  ⇒ la boutique est vide, ce n'est pas l'appli ;
+#   • le serveur renvoie et l'écran est vide ⇒ c'est l'appli (ou le réseau).
+#
+# Lecture seule : aucune création de compte, aucune commande, aucun SMS.
+name: App — contenu des écrans (sonde)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/app-screen-probe.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  sonde:
+    name: Ce que le serveur donne aux écrans
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      BASE: https://ayrovi-beta1-moo8.onrender.com
+      CLIENT: mobile/2.0.0
+    steps:
+      - name: Sonde des écrans publics
+        run: |
+          set +e +o pipefail
+          set -u
+          S="${GITHUB_STEP_SUMMARY:-/dev/null}"
+          printf '## Ce que le serveur donne aux écrans\n\nServeur : `%s`\n\n' "$BASE" >> "$S"
+          echo "| Écran | Appel | Code | Ce que le serveur donne |" >> "$S"
+          echo "|---|---|---|---|" >> "$S"
+          note() { printf '| %s | %s | %s | %s |\n' "$1" "$2" "$3" "$4" >> "$S"; }
+
+          call() {
+            curl -s -o /tmp/probe.json -w '%{http_code}' --max-time 45 \
+              -H "x-ayrovi-client: $CLIENT" -H 'Accept: application/json' "$1"
+          }
+
+          # Résumé tolérant : compte les éléments et montre un extrait lisible.
+          peek() {
+            python3 - "$@" <<'PY'
+          import json, sys
+          label, path = sys.argv[1], sys.argv[2]
+          try:
+              data = json.load(open('/tmp/probe.json'))
+          except Exception as exc:
+              print(f'illisible ({exc.__class__.__name__})'); raise SystemExit
+          node = data
+          for key in [k for k in path.split('.') if k]:
+              node = node.get(key) if isinstance(node, dict) else None
+              if node is None: break
+          def brief(value, depth=0):
+              if isinstance(value, list):
+                  return f'{len(value)} élément(s)' + (f' · 1er : {brief(value[0], depth+1)}' if value and depth < 1 else '')
+              if isinstance(value, dict):
+                  keys = list(value.keys())[:6]
+                  return '{' + ', '.join(keys) + ('…' if len(value) > 6 else '') + '}'
+              text = str(value)
+              return (text[:120] + '…') if len(text) > 120 else text
+          print(brief(node) if node is not None else 'champ absent')
+          PY
+          }
+
+          for entry in \
+            "Accueil|/api/public/hero-content|data" \
+            "Accueil|/api/public/announcement-messages|data" \
+            "Navigation|/api/public/navigation|data" \
+            "Boutique|/api/public/commerce-config|data" \
+            "AYWEBs|/api/v1/aywebs/stores|data" \
+            "Assistant|/api/assistant/status|data" ; do
+            LABEL=$(printf '%s' "$entry" | cut -d'|' -f1)
+            PATH_PART=$(printf '%s' "$entry" | cut -d'|' -f2)
+            FIELD=$(printf '%s' "$entry" | cut -d'|' -f3)
+            CODE=$(call "$BASE$PATH_PART")
+            SUMMARY=$(peek "$LABEL" "$FIELD" 2>/dev/null)
+            note "$LABEL" "\`$PATH_PART\`" "$CODE" "${SUMMARY:-—}"
+            printf '%s %s => %s · %s\n' "$LABEL" "$PATH_PART" "$CODE" "${SUMMARY:-—}"
+          done
+
+          echo "::notice title=Contenu des écrans::$(tr '\n' ' ' < /dev/null)voir le résumé du run (tableau)"

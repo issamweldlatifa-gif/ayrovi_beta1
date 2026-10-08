@@ -27,8 +27,10 @@ import {
   rotateCustomerCsrf,
   safeEqualHash,
   setCustomerCookie,
-  nativeSessionField,
 } from './auth';
+import { attachDevicesToAccount, registerPushDevice, revokePushDevice } from '../services/pushDispatch';
+import { pushConfigured } from '../services/push';
+import { sessionExchangeFields } from './sessionExchange';
 import { deliverOtp, otpProviderName, phoneOtpAvailable, verifyProviderOtp } from './otp';
 
 const OTP_TTL_MS = 5 * 60 * 1000;
@@ -439,7 +441,14 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
     const cartSession = validCartSession(req.headers['x-session-id']);
     if (cartSession) db.attachCartToAccount(cartSession, customer.id);
     const csrfToken = rotateCustomerCsrf(db, req);
-    return res.json({ success: true, data: { account: publicAccount(accountRow(db, customer.id)), csrfToken } });
+    // `expiresAt` permet à l'application de savoir quand sa session mourra
+    // sans attendre un 401 : elle peut alors redemander une connexion au bon
+    // moment au lieu de faire échouer une commande en pleine confirmation.
+    return res.json({ success: true, data: {
+      account: publicAccount(accountRow(db, customer.id)),
+      csrfToken,
+      expiresAt: customer.expiresAt,
+    } });
   });
 
   router.post('/auth/otp/request', async (req, res) => {
@@ -452,7 +461,14 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
     const ip = req.ip || '';
     const phoneCount = Number(db.get<any>('SELECT COUNT(*) count FROM customer_otp_challenges WHERE phone=? AND created_at>=?', phone, phoneSince)?.count || 0);
     const ipCount = Number(db.get<any>('SELECT COUNT(*) count FROM customer_otp_challenges WHERE request_ip=? AND created_at>=?', ip, ipSince)?.count || 0);
-    if (phoneCount >= 3 || ipCount >= 10) return res.status(429).json({ success: false, error: 'Trop de demandes. Réessayez dans 15 minutes.' });
+    /*
+     * Le plafond par NUMÉRO reste serré (3 / 15 min) : c'est lui qui protège la
+     * personne et la facture SMS. Le plafond par IP passe à 100 / 15 min : à 10,
+     * une seule adresse d'opérateur (CGNAT) bloquait des centaines d'abonnés
+     * légitimes aux heures de pointe. Le plafond global du processus
+     * (`otp-request-global`) reste le garde-fou de dépense.
+     */
+    if (phoneCount >= 3 || ipCount >= 100) return res.status(429).json({ success: false, error: 'Trop de demandes. Réessayez dans 15 minutes.' });
 
     const challengeId = `otp_${randomUUID()}`;
     const code = String(randomInt(100000, 1000000));
@@ -524,7 +540,7 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
         csrfToken: session.csrfToken,
         expiresAt: session.expiresAt,
         linkedHistoricalOrders: linked,
-        ...nativeSessionField(req, session.token),
+        ...sessionExchangeFields(req, session),
       } });
     } catch (error: any) {
       if (error?.message === 'PHONE_CHANGE_NOT_SUPPORTED') return res.status(409).json({ success: false, error: 'Ce compte possède déjà un autre numéro vérifié.' });
@@ -567,7 +583,7 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
         account: publicAccount(accountRow(db, accountId)),
         csrfToken: session.csrfToken,
         expiresAt: session.expiresAt,
-        ...nativeSessionField(req, session.token),
+        ...sessionExchangeFields(req, session),
       } });
     } catch (error) {
       console.error('[Customer Email Register]', error);
@@ -603,7 +619,7 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
       account: publicAccount(accountRow(db, account.id)),
       csrfToken: session.csrfToken,
       expiresAt: session.expiresAt,
-      ...nativeSessionField(req, session.token),
+      ...sessionExchangeFields(req, session),
     } });
   };
   router.post('/auth/email/login', emailLoginHandler);
@@ -1517,6 +1533,59 @@ function linkGoogleProfile(db: QatafoDatabase, profile: any, linkToAccountId?: s
     const now = new Date().toISOString();
     if (req.body?.id) db.run('UPDATE customer_notifications SET read_at=? WHERE id=? AND account_id=?', now, String(req.body.id), account.id);
     else db.run('UPDATE customer_notifications SET read_at=? WHERE account_id=? AND read_at IS NULL', now, account.id);
+    return res.json({ success: true });
+  });
+
+  /**
+   * Inscription d'un appareil aux notifications push.
+   *
+   * ── Volontairement SANS `requireCustomer` ────────────────────────────────
+   * Exiger une session connectée rendait muette la notification la plus
+   * attendue : celle de la commande passée EN VISITEUR. L'appareil est donc
+   * enregistré d'abord avec son identifiant de session, puis rattaché au
+   * compte dès que la personne se connecte.
+   *
+   * ── Ce que la réponse dit ────────────────────────────────────────────────
+   * `pushEnabled` vient du SERVEUR (`pushConfigured()`), pas de l'appareil :
+   * l'application doit pouvoir afficher « les notifications ne sont pas encore
+   * activées » au lieu de faire croire qu'un jeton enregistré suffit à être
+   * prévenu. C'est la même règle que `google.enabled` sur les fournisseurs.
+   */
+  router.post('/account/devices', (req, res) => {
+    const token = String(req.body?.token || '').trim();
+    if (!token || token.length > 4096) {
+      return res.status(400).json({ success: false, code: 'PUSH_TOKEN_INVALID', error: 'Jeton d\'appareil invalide.' });
+    }
+    const current = resolveCustomer(db, req) as { id?: string; sessionId?: string } | null | undefined;
+    const accountId = current?.id ? String(current.id) : null;
+    const sessionId = String(req.body?.sessionId || current?.sessionId || '').trim();
+    try {
+      const deviceId = registerPushDevice(db, {
+        token,
+        platform: String(req.body?.platform || 'android'),
+        locale: String(req.body?.locale || 'fr'),
+        accountId,
+        sessionId,
+      });
+      // Un appareil inscrit AVANT la connexion gardait `account_id` NULL. Le
+      // rattacher maintenant rattrape ce cas sans attendre une réinscription.
+      if (accountId && sessionId) attachDevicesToAccount(db, sessionId, accountId);
+      return res.json({
+        success: true,
+        data: { deviceId, attached: Boolean(accountId), pushEnabled: pushConfigured() },
+      });
+    } catch (error: any) {
+      return res.status(400).json({
+        success: false,
+        code: 'PUSH_REGISTER_FAILED',
+        error: String(error?.message || 'Inscription impossible.'),
+      });
+    }
+  });
+
+  /** Retrait volontaire : désactivation, jamais effacement (traçabilité). */
+  router.delete('/account/devices', (req, res) => {
+    revokePushDevice(db, String(req.body?.token || ''));
     return res.json({ success: true });
   });
 

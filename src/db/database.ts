@@ -1110,6 +1110,46 @@ export class QatafoDatabase {
       );
       CREATE INDEX IF NOT EXISTS idx_customer_native_handoff_expiry ON customer_native_handoffs(expires_at);
 
+      /*
+       * Appareils inscrits aux notifications push.
+       *
+       * 'account_id' PEUT être NULL : on accepte l'inscription AVANT la
+       * connexion, sinon personne ne serait jamais prévenu de la commande
+       * qu'il vient de passer en tant que visiteur — et c'est justement la
+       * notification qui compte le plus. L'appareil est rattaché au compte au
+       * moment de la connexion ('attachDevicesToAccount').
+       *
+       * Le jeton est l'identité de l'appareil d'un point de vue FCM : UNIQUE.
+       */
+      CREATE TABLE IF NOT EXISTS customer_push_devices (
+        id TEXT PRIMARY KEY,
+        account_id TEXT REFERENCES customer_accounts(id) ON DELETE CASCADE,
+        session_id TEXT NOT NULL DEFAULT '',
+        token TEXT NOT NULL UNIQUE,
+        platform TEXT NOT NULL DEFAULT 'android' CHECK(platform IN ('android','ios')),
+        locale TEXT NOT NULL DEFAULT 'fr',
+        enabled INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_customer_push_account ON customer_push_devices(account_id);
+
+      /*
+       * Journal d'envoi. L'index UNIQUE (appareil, notification) est la vraie
+       * garantie : sans lui, une notification repassée deux fois dans le
+       * répartiteur serait poussée deux fois sur le téléphone. On préfère
+       * perdre un envoi plutôt que de réveiller quelqu'un deux fois.
+       */
+      CREATE TABLE IF NOT EXISTS customer_push_dispatched (
+        id TEXT PRIMARY KEY,
+        device_id TEXT NOT NULL REFERENCES customer_push_devices(id) ON DELETE CASCADE,
+        notification_id TEXT NOT NULL,
+        status TEXT NOT NULL,
+        detail TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_customer_push_once ON customer_push_dispatched(device_id, notification_id);
+
       CREATE TABLE IF NOT EXISTS customer_addresses (
         id TEXT PRIMARY KEY,
         account_id TEXT NOT NULL REFERENCES customer_accounts(id) ON DELETE CASCADE,
