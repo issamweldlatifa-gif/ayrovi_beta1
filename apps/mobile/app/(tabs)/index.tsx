@@ -1,97 +1,128 @@
 /**
- * Accueil — contenu réel du serveur (phase P1).
+ * Accueil — باب الدخول للتطبيق.
  *
- * Trois sections, chacune avec son propre état : une section qui échoue ne fait
- * pas tomber les autres, et le tirer-pour-rafraîchir relance l'ensemble.
+ * ── البنية المطلوبة ────────────────────────────────────────────────────────
+ *  1. هيدر **شفاف** و**ثابت** فوق المحتوى (الصفحة تمرّ من تحتو): شعار — يرجّع
+ *     للرئيسية — وحساب، وسلّة، وقائمة؛
+ *  2. **هيرو**: مساحة إشهار (صورة أو فيديو أو كتابة، بحسب ما يبعثو الخادم)؛
+ *  3. **ثلاث تبويبات** يفتحو شاشات **جوّا التطبيق**، موش صفحات في المتصفح؛
+ *  4. **السكسيونات**، بترتيب الإدارة؛
+ *  5. **الفوتر** بخلفية سوداء: الهوية، القنوات الرسمية، ووسائل الخلاص.
  *
- * Le diagnostic de construction reste en bas : c'est le repère qui permet de
- * savoir quelle version tourne réellement sur l'appareil.
+ * ── شنوّا يسيّر البار السفلي ──────────────────────────────────────────────
+ * تمرير هاذي الشاشة يغذّي `design/chrome`: البار ينسحب نزولاً ويرجع صعوداً.
+ * أمّا **الهيدر ما يتحرّكش** — هاذا نصّ الطلب التاني.
+ *
+ * ── فلوس وتوفّر ────────────────────────────────────────────────────────────
+ * حتى سعر ما يتحسب هنا. الأرقام الجاية من الخادم، واللي موش أكيد يتقال،
+ * ما يتلزّقش بتقدير من الجهاز.
  */
 import { useCallback, useState } from 'react';
-import { Linking } from 'react-native';
-import { router } from 'expo-router';
-import { Button, Card, KeyValue, Screen } from '@/design/ui';
-import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
+import { Linking, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { useTheme } from '@/design/theme';
+import { useChromeScroll } from '@/design/chrome';
+import { AppHeader } from '@/features/shell/AppHeader';
 import { AnnouncementBar } from '@/features/home/AnnouncementBar';
 import { HeroSection } from '@/features/home/HeroSection';
-import { NavStrip } from '@/features/home/NavStrip';
+import { HomeTabs } from '@/features/home/HomeTabs';
 import { PublicSections } from '@/features/sections/PublicSections';
 import { Footer } from '@/features/shell/Footer';
-import { useAnnouncements, useHeroContent, useHeroVisual, useNavigation } from '@/api/hooks';
+import { ErrorBlock, LoadingBlock } from '@/design/states';
+import { useAnnouncements, useHeroContent, useHeroVisual } from '@/api/hooks';
 import { apiUrl } from '@/api/client';
-import { useI18n, useT } from '@/i18n';
-import { useTheme } from '@/design/theme';
-import { usePrefs } from '@/state/prefs';
-import { APP_IDENTIFIER, APP_VERSION, APP_VERSION_CODE, BUILD_STAMP } from '@/config/app';
+
+/**
+ * المسافة المحجوزة فوق المحتوى.
+ * الهيدر شفاف ومحطوط في `absolute`: بلا هاذي المسافة، راس الهيرو يمرّ **تحت**
+ * الأيقونات ويولّي ما يقراش.
+ */
+const HEADER_RESERVE = 60;
 
 export default function HomeScreen() {
   const theme = useTheme();
-  const t = useT();
-  const { locale } = useI18n();
-  const { themeMode } = usePrefs();
+  const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
+
+  // Le défilement pilote la barre du bas (voir `design/chrome`) : une seule
+  // décision, testée, pour tout le produit.
+  const onChromeScroll = useChromeScroll();
 
   const hero = useHeroContent();
   const visual = useHeroVisual();
-  const navigation = useNavigation();
   const announcements = useAnnouncements();
 
   const reload = useCallback(() => {
     setRefreshing(true);
-    Promise.allSettled([
-      hero.refetch(), visual.refetch(), navigation.refetch(), announcements.refetch(),
-    ]).finally(() => setRefreshing(false));
-  }, [hero, visual, navigation, announcements]);
+    Promise.allSettled([hero.refetch(), visual.refetch(), announcements.refetch()])
+      .finally(() => setRefreshing(false));
+  }, [hero, visual, announcements]);
 
   const openLink = useCallback((href: string) => {
     Linking.openURL(apiUrl(href)).catch(() => {});
   }, []);
 
-  // Les routes du site (`/arrivage`, `/lens`…) n'ont pas d'écran natif en P1 :
-  // on ouvre le site, jamais une page blanche dans l'application.
   const heroLoading = hero.isPending || visual.isPending;
 
   return (
-    <Screen tab="home" phase="P1" onRefresh={reload} refreshing={refreshing}>
-      <AnnouncementBar messages={announcements.data ?? []} />
+    <View style={[styles.root, { backgroundColor: theme.colors.canvas }]}>
+      {/* شفاف · ثابت · والصفحة تمرّ من تحتو */}
+      <AppHeader />
 
-      {heroLoading ? (
-        <LoadingBlock label={{ fr: 'Chargement du contenu…', ar: 'جارٍ تحميل المحتوى…' }} />
-      ) : hero.isError ? (
-        <ErrorBlock error={hero.error} onRetry={() => { hero.refetch(); visual.refetch(); }} />
-      ) : (
-        <HeroSection content={hero.data ?? null} visual={visual.data ?? null} onCta={openLink} />
-      )}
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={{
+          paddingTop: insets.top + HEADER_RESERVE,
+          paddingBottom: theme.space[5],
+        }}
+        onScroll={onChromeScroll}
+        scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}
+        refreshControl={(
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={reload}
+            tintColor={theme.colors.accent}
+            colors={[theme.colors.accent]}
+          />
+        )}
+      >
+        <AnnouncementBar messages={announcements.data ?? []} />
 
-      {/* Barre de navigation publique : masquée si l'Admin a tout désactivé. */}
-      {navigation.isError ? (
-        <EmptyBlock>
-          {locale === 'ar' ? 'شريط التنقّل غير متوفّر توّا.' : 'La barre de navigation est indisponible.'}
-        </EmptyBlock>
-      ) : (
-        <NavStrip links={navigation.data ?? []} />
-      )}
+        {/* الهيرو — مساحة إشهار يملاها الخادم */}
+        {heroLoading ? (
+          <LoadingBlock
+            label={{ fr: 'Chargement du contenu…', ar: 'جارٍ تحميل المحتوى…' }}
+          />
+        ) : hero.isError ? (
+          <ErrorBlock
+            error={hero.error}
+            onRetry={() => { hero.refetch(); visual.refetch(); }}
+          />
+        ) : (
+          <HeroSection
+            content={hero.data ?? null}
+            visual={visual.data ?? null}
+            onCta={openLink}
+          />
+        )}
 
-      {/* أقسام الموقع (Q2) — الترتيب قرار الإدارة (`home-blocks`)، موش قرارنا. */}
-      <PublicSections />
+        {/* التبويبات الثلاث — يفتحو جوّا التطبيق */}
+        <HomeTabs />
 
-      {/* المساعد: باب حقيقي من الرئيسية — والجاهزية تتقال داخل الشاشة. */}
-      <Card title={t('assistant.title')} hint={t('assistant.hint')}>
-        <Button label={t('assistant.open')} onPress={() => router.push('/assistant')} />
-      </Card>
+        {/* أقسام الموقع — الترتيب قرار الإدارة (`home-blocks`)، موش قرارنا. */}
+        <PublicSections />
 
-      <Card title={t('home.diagnostics')} hint={t('home.diagnostics.body')}>
-        <KeyValue label={t('common.version')} value={`${APP_VERSION} (${APP_VERSION_CODE})`} />
-        <KeyValue label={t('common.build')} value={BUILD_STAMP} />
-        <KeyValue label={t('common.identity')} value={`${theme.identity.name} · ${theme.identity.version}`} />
-        <KeyValue label="ID" value={APP_IDENTIFIER} />
-        <KeyValue label={t('common.language')} value={locale} />
-        <KeyValue label={t('common.theme')} value={`${theme.mode} · ${themeMode}`} />
-      </Card>
+        {/* الفوتر — خلفية سوداء، قنوات رسمية، ووسائل خلاص حقيقية */}
+        <Footer />
 
-      {/* الفوتر: هوية، قنوات رسمية (الصالحة فقط)، ووسائل الخلاص المقبولة. */}
-      <Footer />
-
-    </Screen>
+      </ScrollView>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1 },
+  scroll: { flex: 1 },
+});

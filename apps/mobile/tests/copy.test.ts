@@ -112,8 +112,20 @@ describe('عقد النصوص — المفاتيح المتكوّنة في ال�
       for (const match of file.text.matchAll(/<Screen[^>]*\btab="([^"]+)"/g)) tabs.add(match[1]);
       for (const match of file.text.matchAll(/<Tabs\.Screen[^>]*\bname="([^"]+)"/g)) tabs.add(match[1]);
     }
-    // خمس تبويبات ظاهرة (`index` = مسار الرئيسية، وتسميتو `tabs.home`).
-    expect([...tabs].sort()).toEqual(['account', 'aywebs', 'cart', 'home', 'index', 'lens']);
+    /**
+     * Modèle de navigation en vigueur :
+     *   • la barre du bas porte cinq OUTILS — lens · aywebs · sonim · vision ·
+     *     ocerex (consigne produit) ;
+     *   • `index` (l’accueil), `account` et `cart` restent des ROUTES — l’en-tête
+     *     et le tiroir pointent dessus — mais sont retirés de la barre
+     *     (`href: null`). Un onglet masqué n’est pas un onglet supprimé : on ne
+     *     casse pas les liens existants pour un changement de navigation.
+     * Ce test ne fige donc pas une liste décorative : il garantit que tout
+     * onglet déclaré — visible ou non — possède ses textes dans les deux langues.
+     */
+    expect([...tabs].sort()).toEqual([
+      'account', 'aywebs', 'cart', 'index', 'lens', 'ocerex', 'sonim', 'vision',
+    ]);
     for (const tab of tabs) {
       const labelKey = tab === 'index' ? 'tabs.home' : `tabs.${tab}`;
       const keys = tab === 'index' ? [labelKey] : [labelKey, `screen.${tab}.subtitle`, `screen.${tab}.body`];

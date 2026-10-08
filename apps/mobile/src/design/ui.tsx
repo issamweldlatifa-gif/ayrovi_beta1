@@ -303,7 +303,7 @@ export function Field(props: TextInputProps & { label?: string }) {
 /* ── Écran ─────────────────────────────────────────────────────────────────── */
 
 export interface ScreenProps {
-  tab: 'home' | 'lens' | 'aywebs' | 'cart' | 'account';
+  tab: 'home' | 'lens' | 'aywebs' | 'cart' | 'account' | 'vision';
   phase: string;
   children?: ReactNode;
   /** Tirer vers le bas pour rafraîchir : le geste natif attendu sur mobile. */

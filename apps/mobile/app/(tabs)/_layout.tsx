@@ -1,65 +1,104 @@
 /**
- * Les cinq onglets du produit : Accueil · Lens · AYWEBs · Panier · Compte.
+ * Barre du bas — les cinq OUTILS, et rien d’autre.
  *
- * Les icônes sont des glyphes texte uniquement si la fonte d'icônes n'est pas
- * disponible — sinon des icônes vectorielles. Aucun onglet n'existe sans son
- * écran : un onglet mort est un mensonge à l'utilisateur.
+ * ── Ce qui a changé, et pourquoi ───────────────────────────────────────────
+ * L’ancienne barre portait des DESTINATIONS (Accueil · Compte · Panier). La
+ * consigne produit est différente : la barre porte les outils
+ * (Lens · AYWEBs · SONIM · Vision · OCEREX), l’accueil se atteint par le LOGO
+ * de l’en-tête, le compte et le panier par leurs icônes en haut à droite.
+ *
+ * `index` (l’accueil) et les anciens onglets Compte/Panier restent donc des
+ * routes — le tiroir et l’en-tête pointent dessus — mais sont retirés de la
+ * barre avec `href: null`. Un onglet masqué n’est pas un onglet supprimé : les
+ * liens existants continuent de fonctionner, ce qui évite de casser l’existant
+ * pour un changement de navigation.
+ *
+ * ── Transparence ───────────────────────────────────────────────────────────
+ * Consigne : « شريط شفاف ». Le fond est transparent et la barre reste dans le
+ * flux (elle ne recouvre pas le contenu) : une barre `absolute` laisserait le
+ * bas de chaque écran caché dessous — une régression déguisée en effet de
+ * style.
+ *
+ * ── Repli au défilement ────────────────────────────────────────────────────
+ * Réactivé sur demande (« يختفي عند تمرير الي اسفل ويضهر ») après avoir été
+ * neutralisé pour cause de saccade. La décision est pilotée par
+ * `design/chrome` : une seule fonction testée (14 tests), un seul seuil.
+ * L’en-tête, lui, reste FIXE — c’est l’autre moitié de la consigne.
  */
-import { Tabs } from 'expo-router';
+import { Tabs, usePathname } from 'expo-router';
+import { useEffect } from 'react';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useT } from '@/i18n';
 import { useTheme } from '@/design/theme';
+import { revealChrome, useChromeHidden } from '@/design/chrome';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
 const ICONS: Record<string, { active: IoniconName; inactive: IoniconName }> = {
-  index: { active: 'home', inactive: 'home-outline' },
   lens: { active: 'scan-circle', inactive: 'scan-circle-outline' },
   aywebs: { active: 'pricetags', inactive: 'pricetags-outline' },
-  cart: { active: 'bag-handle', inactive: 'bag-handle-outline' },
-  account: { active: 'person', inactive: 'person-outline' },
+  sonim: { active: 'chatbubble-ellipses', inactive: 'chatbubble-ellipses-outline' },
+  vision: { active: 'eye', inactive: 'eye-outline' },
+  ocerex: { active: 'camera', inactive: 'camera-outline' },
 };
 
 export default function TabsLayout() {
   const theme = useTheme();
   const t = useT();
+  const pathname = usePathname();
+  const chromeHidden = useChromeHidden();
+
+  /**
+   * Changer d’onglet RÉAFFICHE la barre : la retrouver masquée en arrivant sur
+   * un écran est désorientant — on n’a encore rien fait pour la cacher.
+   */
+  useEffect(() => { revealChrome(); }, [pathname]);
 
   return (
     <Tabs
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: theme.colors.ink,
+        tabBarActiveTintColor: theme.colors.accent,
         tabBarInactiveTintColor: theme.colors.muted,
         tabBarStyle: {
-          backgroundColor: theme.colors.canvas,
-          borderTopColor: theme.colors.line,
-          borderTopWidth: 1,
+          // شريط شفاف — la consigne. Aucun fond, aucune bordure.
+          backgroundColor: 'transparent',
+          borderTopWidth: 0,
+          elevation: 0,
           paddingTop: 6,
-          // En arabe, le premier onglet doit être à DROITE : un utilisateur
-          // arabophone ne cherche pas « الرئيسية » à gauche. La direction est
-          // posée sur la barre, pas sur toute l'application — le contenu
-          // (images marchandes, chiffres, liens) garde son sens de lecture.
+          // En arabe, le premier outil est à DROITE : un utilisateur arabophone
+          // ne cherche pas « Lens » à gauche.
           ...(theme.isRTL ? { direction: 'rtl' as const } : null),
-          // Barre VOLONTAIREMENT FIXE. Le repli au défilement est construit et
-          // testé (`design/chrome`) mais désactivé ici : une barre qui saccade
-          // sur un appareil modeste est pire qu’une barre stable. Réactiver =
-          // restaurer `useChromeScroll` et le bloc `chromeHidden`.
+          // Masquée : hauteur à zéro, PAS un simple `translateY` — glisser la
+          // barre hors de l’écran laisserait une bande vide en bas, et le
+          // contenu ne profiterait pas de la place rendue.
+          ...(chromeHidden ? {
+            height: 0, opacity: 0, paddingTop: 0, borderTopWidth: 0, overflow: 'hidden',
+          } : null),
         },
         tabBarLabelStyle: {
           ...theme.text('caption', 'bold'),
           fontSize: 11,
         },
         tabBarIcon: ({ focused, color, size }) => {
-          const pair = ICONS[route.name] ?? ICONS.index;
+          const pair = ICONS[route.name] ?? ICONS.lens;
           return <Ionicons name={focused ? pair.active : pair.inactive} size={size ?? 24} color={color} />;
         },
       })}
     >
-      <Tabs.Screen name="index" options={{ title: t('tabs.home') }} />
+      {/* Les cinq outils — ordre volontaire : en RTL ils apparaîtront de droite
+          à gauche, Lens le premier. */}
       <Tabs.Screen name="lens" options={{ title: t('tabs.lens') }} />
       <Tabs.Screen name="aywebs" options={{ title: t('tabs.aywebs') }} />
-      <Tabs.Screen name="cart" options={{ title: t('tabs.cart') }} />
-      <Tabs.Screen name="account" options={{ title: t('tabs.account') }} />
+      <Tabs.Screen name="sonim" options={{ title: t('tabs.sonim') }} />
+      <Tabs.Screen name="vision" options={{ title: t('tabs.vision') }} />
+      <Tabs.Screen name="ocerex" options={{ title: t('tabs.ocerex') }} />
+
+      {/* Routes conservées, retirées de la barre : l’accueil s’atteint par le
+          logo, le compte et le panier par l’en-tête. */}
+      <Tabs.Screen name="index" options={{ href: null }} />
+      <Tabs.Screen name="account" options={{ href: null }} />
+      <Tabs.Screen name="cart" options={{ href: null }} />
     </Tabs>
   );
 }
