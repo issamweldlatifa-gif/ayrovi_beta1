@@ -22,6 +22,8 @@ import { I18nProvider } from '@/i18n';
 import { PrefsProvider, usePrefs } from '@/state/prefs';
 import { SessionProvider } from '@/state/session';
 import { useDeepLinkRouting } from '@/features/links/useDeepLinkRouting';
+import { usePushNotifications } from '@/features/notifications/usePush';
+import { useAyWebsSessionId } from '@/features/aywebs/session';
 
 SplashScreen.preventAutoHideAsync().catch(() => {
   // Déjà masqué (rechargement à chaud) : sans effet, ne bloque pas le rendu.
@@ -41,7 +43,8 @@ const queryClient = new QueryClient({
 
 function Navigation() {
   const theme = useTheme();
-  const { ready } = usePrefs();
+  const { ready, locale } = usePrefs();
+  const sessionId = useAyWebsSessionId();
   const [fontsLoaded, fontError] = useFonts(FONT_SOURCES);
 
   // Les polices sont embarquées : un échec est un défaut de construction, pas
@@ -51,6 +54,11 @@ function Navigation() {
 
   // Liens profonds : branchés une fois que la navigation existe, pas avant.
   useDeepLinkRouting(readyToPaint);
+
+  // Notifications : l'appareil s'annonce au serveur, qui dit s'il peut
+  // réellement envoyer. Branché ici — au démarrage — pour qu'une commande
+  // passée plus tard puisse être annoncée.
+  usePushNotifications(sessionId, locale);
 
   useEffect(() => {
     if (readyToPaint) SplashScreen.hideAsync().catch(() => {});

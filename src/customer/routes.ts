@@ -28,6 +28,8 @@ import {
   safeEqualHash,
   setCustomerCookie,
 } from './auth';
+import { attachDevicesToAccount, registerPushDevice, revokePushDevice } from '../services/pushDispatch';
+import { pushConfigured } from '../services/push';
 import { sessionExchangeFields } from './sessionExchange';
 import { deliverOtp, otpProviderName, phoneOtpAvailable, verifyProviderOtp } from './otp';
 
@@ -1531,6 +1533,59 @@ function linkGoogleProfile(db: QatafoDatabase, profile: any, linkToAccountId?: s
     const now = new Date().toISOString();
     if (req.body?.id) db.run('UPDATE customer_notifications SET read_at=? WHERE id=? AND account_id=?', now, String(req.body.id), account.id);
     else db.run('UPDATE customer_notifications SET read_at=? WHERE account_id=? AND read_at IS NULL', now, account.id);
+    return res.json({ success: true });
+  });
+
+  /**
+   * Inscription d'un appareil aux notifications push.
+   *
+   * ── Volontairement SANS `requireCustomer` ────────────────────────────────
+   * Exiger une session connectée rendait muette la notification la plus
+   * attendue : celle de la commande passée EN VISITEUR. L'appareil est donc
+   * enregistré d'abord avec son identifiant de session, puis rattaché au
+   * compte dès que la personne se connecte.
+   *
+   * ── Ce que la réponse dit ────────────────────────────────────────────────
+   * `pushEnabled` vient du SERVEUR (`pushConfigured()`), pas de l'appareil :
+   * l'application doit pouvoir afficher « les notifications ne sont pas encore
+   * activées » au lieu de faire croire qu'un jeton enregistré suffit à être
+   * prévenu. C'est la même règle que `google.enabled` sur les fournisseurs.
+   */
+  router.post('/account/devices', (req, res) => {
+    const token = String(req.body?.token || '').trim();
+    if (!token || token.length > 4096) {
+      return res.status(400).json({ success: false, code: 'PUSH_TOKEN_INVALID', error: 'Jeton d\'appareil invalide.' });
+    }
+    const current = resolveCustomer(db, req) as { id?: string; sessionId?: string } | null | undefined;
+    const accountId = current?.id ? String(current.id) : null;
+    const sessionId = String(req.body?.sessionId || current?.sessionId || '').trim();
+    try {
+      const deviceId = registerPushDevice(db, {
+        token,
+        platform: String(req.body?.platform || 'android'),
+        locale: String(req.body?.locale || 'fr'),
+        accountId,
+        sessionId,
+      });
+      // Un appareil inscrit AVANT la connexion gardait `account_id` NULL. Le
+      // rattacher maintenant rattrape ce cas sans attendre une réinscription.
+      if (accountId && sessionId) attachDevicesToAccount(db, sessionId, accountId);
+      return res.json({
+        success: true,
+        data: { deviceId, attached: Boolean(accountId), pushEnabled: pushConfigured() },
+      });
+    } catch (error: any) {
+      return res.status(400).json({
+        success: false,
+        code: 'PUSH_REGISTER_FAILED',
+        error: String(error?.message || 'Inscription impossible.'),
+      });
+    }
+  });
+
+  /** Retrait volontaire : désactivation, jamais effacement (traçabilité). */
+  router.delete('/account/devices', (req, res) => {
+    revokePushDevice(db, String(req.body?.token || ''));
     return res.json({ success: true });
   });
 

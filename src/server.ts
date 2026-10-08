@@ -33,6 +33,8 @@ import { bootstrapErpCore } from './erp-core/bootstrap';
 import { isPublicUploadPath } from './erp-core/storage';
 import { assertProductionConfiguration } from './config/productionConfig';
 import { pruneCanonicalLensCache } from './ayrovix/services/lensCache';
+import { dispatchPushNotifications } from './services/pushDispatch';
+import { pushConfigured } from './services/push';
 import { clientRateLimitKey } from './services/rateKey';
 
 const app = express();
@@ -287,6 +289,25 @@ app.use('/api/customer/auth/otp/verify', rateLimit('otp-verify-challenge', 10, 5
 const databasePath = process.env.NODE_ENV === 'test' ? ':memory:' : (process.env.DATABASE_PATH || undefined);
 const db = new AyroviDatabase(databasePath);
 try { pruneCanonicalLensCache(db); } catch (error: any) { console.warn('[Lens cache] startup prune failed:', error?.message || 'unknown'); }
+/*
+ * Répartiteur de notifications push.
+ *
+ * Pourquoi une tâche de fond plutôt qu'un envoi dans la requête : une commande
+ * confirmée ne doit pas attendre — ni dépendre — d'un appel à Google. On
+ * balaie la table toutes les vingt secondes ; toute notification écrite finit
+ * par partir, quel que soit le chemin qui l'a écrite.
+ *
+ * Désactivé silencieusement tant que Firebase n'est pas configuré : un
+ * répartiteur qui tourne à vide n'apprend rien à personne.
+ */
+const pushDispatcher = setInterval(() => {
+  if (!pushConfigured()) return;
+  void dispatchPushNotifications(db).catch((error: any) => {
+    console.warn('[Push] dispatch failed:', error?.message || 'unknown');
+  });
+}, 20_000);
+pushDispatcher.unref?.();
+
 const lensCacheCleanupTimer = setInterval(() => {
   try { pruneCanonicalLensCache(db); } catch (error: any) { console.warn('[Lens cache] scheduled prune failed:', error?.message || 'unknown'); }
 }, 60 * 60_000);
