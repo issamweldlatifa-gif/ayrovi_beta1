@@ -303,12 +303,16 @@ export default function AyWebsBrowserScreen() {
           <Button
             label={t('aywebs.readPage')}
             tone="quiet"
+            block
+            style={styles.rowButton}
             onPress={readPage}
             busy={busy && !addEnabled}
             disabled={!captureAllowed || !loaded || !sessionId}
           />
           <Button
             label={t('aywebs.addToCart')}
+            block
+            style={styles.rowButton}
             onPress={addToCart}
             busy={busy && addEnabled}
             disabled={!addEnabled}
@@ -339,4 +343,5 @@ const styles = StyleSheet.create({
   loading: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   footer: { borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingTop: 8, gap: 6 },
   row: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  rowButton: { flex: 1 },
 });

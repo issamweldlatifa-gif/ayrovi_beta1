@@ -24,6 +24,7 @@ import { SessionProvider } from '@/state/session';
 import { useDeepLinkRouting } from '@/features/links/useDeepLinkRouting';
 import { usePushNotifications } from '@/features/notifications/usePush';
 import { useAyWebsSessionId } from '@/features/aywebs/session';
+import { LoadingScreen } from '@/design/LoadingScreen';
 
 SplashScreen.preventAutoHideAsync().catch(() => {
   // Déjà masqué (rechargement à chaud) : sans effet, ne bloque pas le rendu.
@@ -64,7 +65,15 @@ function Navigation() {
     if (readyToPaint) SplashScreen.hideAsync().catch(() => {});
   }, [readyToPaint]);
 
-  if (!readyToPaint) return null;
+  /**
+   * Chargement : NOTRE marque animée, pas l'image figée du système.
+   *
+   * L'image native est masquée par `onShown`, donc APRÈS que cet écran a été
+   * peint — la masquer plus tôt laisserait une frame vide entre les deux.
+   */
+  if (!readyToPaint) {
+    return <LoadingScreen onShown={() => { SplashScreen.hideAsync().catch(() => {}); }} />;
+  }
 
   return (
     <>

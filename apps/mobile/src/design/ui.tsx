@@ -7,12 +7,13 @@ import {
   Animated, Dimensions, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Switch,
   Text, TextInput, View,
   type StyleProp, type TextInputProps, type TextProps, type TextStyle as RNTextStyle,
-  type LayoutChangeEvent,
+  type LayoutChangeEvent, type ViewStyle,
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useT } from '@/i18n';
 import { useTheme, webDirection, type TextRole } from './theme';
+import { useChromeScroll } from './chrome';
 
 /* ── Texte ─────────────────────────────────────────────────────────────────── */
 
@@ -166,9 +167,18 @@ export interface ButtonProps {
   busy?: boolean;
   disabled?: boolean;
   tone?: 'primary' | 'quiet';
+  /**
+   * Pleine largeur du conteneur (Q8). Sans cette option, un bouton ne se
+   * dimensionnait qu'à son texte : deux boutons côte à côte sortaient avec
+   * deux largeurs différentes, et un écran entier gardait un bouton rétréci au
+   * milieu. C'est exactement le défaut de « centrage et de gabarit » signalé.
+   */
+  block?: boolean;
+  /** Laisse le parent décider (ex. `flex: 1` dans une rangée). */
+  style?: StyleProp<ViewStyle>;
 }
 
-export function Button({ label, onPress, busy = false, disabled = false, tone = 'primary' }: ButtonProps) {
+export function Button({ label, onPress, busy = false, disabled = false, tone = 'primary', block = false, style }: ButtonProps) {
   const theme = useTheme();
   const blocked = busy || disabled;
   const quiet = tone === 'quiet';
@@ -180,6 +190,8 @@ export function Button({ label, onPress, busy = false, disabled = false, tone = 
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
+        block ? { alignSelf: 'stretch' } : null,
+        style,
         {
           minHeight: theme.geometry.controlHeight,
           borderRadius: theme.radius.control,
@@ -308,6 +320,8 @@ export function Screen({ tab, phase, children, onRefresh, refreshing = false }: 
   const theme = useTheme();
   const t = useT();
   const insets = useSafeAreaInsets();
+  // Le défilement pilote la barre d'onglets (voir `design/chrome`).
+  const onChromeScroll = useChromeScroll();
   const title = t(`screen.${tab}.subtitle`);
   const body = t(`screen.${tab}.body`);
   const tabLabel = t(`tabs.${tab}`);
@@ -315,6 +329,8 @@ export function Screen({ tab, phase, children, onRefresh, refreshing = false }: 
   return (
     <ScrollView
       style={{ backgroundColor: theme.colors.canvas }}
+      onScroll={onChromeScroll}
+      scrollEventThrottle={16}
       refreshControl={onRefresh ? (
         <RefreshControl
           refreshing={refreshing}
