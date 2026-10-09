@@ -2953,6 +2953,26 @@ export class QatafoDatabase {
       ].forEach((row) => insert.run(...row, now, now));
     }
 
+    // Carrousel Hero — six campagnes de découverte initiales, INACTIVES tant que
+    // l’Admin n’a pas uploadé les visuels approuvés (jamais d’image non approuvée
+    // en production). Destinations valides (contrat fermé), ordre déterministe.
+    const heroCampaigns: Array<[string, string, string, number]> = [
+      ['hero_card_tech', 'Tech & Électronique', 'تكنولوجيا وإلكترونيات', 10],
+      ['hero_card_mode_homme', 'Mode homme — AW25', 'أزياء رجالية', 20],
+      ['hero_card_mode_femme', 'Mode femme', 'أزياء نسائية', 30],
+      ['hero_card_sport', 'Sport & Fitness', 'رياضة ولياقة', 40],
+      ['hero_card_streetwear', 'Streetwear', 'أزياء كاجوال', 50],
+      ['hero_card_designer', 'Mode designer', 'أزياء مصمّمين', 60],
+    ];
+    const heroCampaignInsert = this.db.prepare(`INSERT INTO hero_slides
+      (id,image,video,title,title_ar,subtitle,subtitle_ar,cta,cta_ar,target_url,destination_type,destination_value,bg_mode,bg_color,palette,display_order,active,published_from,published_to,created_at,updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+    for (const [id, title, titleAr, order] of heroCampaigns) {
+      const exists = (this.db.prepare('SELECT COUNT(*) AS count FROM hero_slides WHERE id=?').get(id) as { count: number }).count;
+      if (exists) continue;
+      heroCampaignInsert.run(id, '', '', title, titleAr, '', '', '', '', '', 'CAMPAIGN', '', 'auto', '', '', order, 0, '', '', now, now);
+    }
+
     if ((this.db.prepare('SELECT COUNT(*) AS count FROM brands').get() as any).count === 0) {
       const insert = this.db.prepare(`INSERT INTO brands
         (id,name,logo,image,category,url,description,display_order,active,created_at,updated_at)
