@@ -78,6 +78,22 @@ export function HeroSkeleton({ style }: { style?: StyleProp<ViewStyle> }) {
   return <Skeleton style={[{ aspectRatio: 16 / 9, borderRadius: theme.radius.card }, style]} testID="skeleton-hero" />;
 }
 
+/**
+ * Le carrousel Hero pendant le chargement : la STRUCTURE d'une carte (titre +
+ * visuel 4:5), sans inventer de donnée. Même hauteur approximative que la
+ * carte réelle pour éviter un saut de mise en page au remplacement.
+ */
+export function HeroCarouselSkeleton({ style }: { style?: StyleProp<ViewStyle> }) {
+  const theme = useTheme();
+  return (
+    <View testID="skeleton-hero-carousel" style={style}>
+      <Skeleton height={22} width="60%" radius={theme.radius.xs} />
+      <Skeleton height={12} width="40%" radius={theme.radius.xs} style={{ marginTop: 8 }} />
+      <Skeleton style={[{ aspectRatio: 4 / 5, borderRadius: theme.radius.lg, marginTop: 12 }]} />
+    </View>
+  );
+}
+
 /** Une rangée de liste : vignette + deux lignes de texte. */
 export function ListRowSkeleton() {
   const theme = useTheme();

@@ -140,6 +140,7 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
       'src/features/social/ReelCard.tsx', // durée posée sur la vignette vidéo
       'src/features/social/StoryViewer.tsx', // zones de tape + pied, au-dessus du média
       'app/aywebs/browser.tsx', // voile de chargement au-dessus de la page capturée
+      'src/features/home/HeroCarousel.tsx', // fondu du visuel vers le fond de la carte (§5.4)
     ]);
     const offenders: string[] = [];
     for (const rel of FILES) {

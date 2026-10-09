@@ -22,12 +22,15 @@ import { Linking } from 'react-native';
 import { AppScreen, FullBleed } from '@/design/layout';
 import { AppHeader } from '@/features/shell/AppHeader';
 import { AnnouncementBar } from '@/features/home/AnnouncementBar';
+import { HeroCarousel } from '@/features/home/HeroCarousel';
 import { HeroSection } from '@/features/home/HeroSection';
 import { HomeTabs } from '@/features/home/HomeTabs';
 import { Footer } from '@/features/shell/Footer';
 import { ErrorBlock } from '@/design/states';
 import { HeroSkeleton } from '@/design/skeleton';
-import { useAnnouncements, useHeroContent, useHeroVisual } from '@/api/hooks';
+import {
+  useAnnouncements, useHeroCarouselSettings, useHeroContent, useHeroSlides, useHeroVisual,
+} from '@/api/hooks';
 import { apiUrl } from '@/api/client';
 
 /**
@@ -43,12 +46,16 @@ export default function HomeScreen() {
   const hero = useHeroContent();
   const visual = useHeroVisual();
   const announcements = useAnnouncements();
+  const heroSlides = useHeroSlides();
+  const heroCarouselSettings = useHeroCarouselSettings();
 
   const reload = useCallback(() => {
     setRefreshing(true);
-    Promise.allSettled([hero.refetch(), visual.refetch(), announcements.refetch()])
-      .finally(() => setRefreshing(false));
-  }, [hero, visual, announcements]);
+    Promise.allSettled([
+      hero.refetch(), visual.refetch(), announcements.refetch(),
+      heroSlides.refetch(), heroCarouselSettings.refetch(),
+    ]).finally(() => setRefreshing(false));
+  }, [hero, visual, announcements, heroSlides, heroCarouselSettings]);
 
   const openLink = useCallback((href: string) => {
     Linking.openURL(apiUrl(href)).catch(() => {});
@@ -70,21 +77,31 @@ export default function HomeScreen() {
     >
       <AnnouncementBar messages={announcements.data ?? []} />
 
-      {/* الهيرو — مساحة إشهار يملاها الخادم */}
-      {heroLoading ? (
-        <HeroSkeleton />
-      ) : hero.isError ? (
-        <ErrorBlock
-          error={hero.error}
-          onRetry={() => { hero.refetch(); visual.refetch(); }}
-        />
-      ) : (
-        <HeroSection
-          content={hero.data ?? null}
-          visual={visual.data ?? null}
-          onCta={openLink}
-        />
-      )}
+      {/*
+        الهيرو — كاروسيل Administré (hero_slides) مع fond adaptatif.
+        L'ancien hero reste le repli : module éteint, API en erreur,
+        ou aucune carte publiée.
+      */}
+      <HeroCarousel
+        settings={heroCarouselSettings}
+        slides={heroSlides}
+        fallback={
+          heroLoading ? (
+            <HeroSkeleton />
+          ) : hero.isError ? (
+            <ErrorBlock
+              error={hero.error}
+              onRetry={() => { hero.refetch(); visual.refetch(); }}
+            />
+          ) : (
+            <HeroSection
+              content={hero.data ?? null}
+              visual={visual.data ?? null}
+              onCta={openLink}
+            />
+          )
+        }
+      />
 
       {/* التبويبات الثلاث — يفتحو جوّا التطبيق */}
       <HomeTabs />

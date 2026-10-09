@@ -6,8 +6,10 @@
  */
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 import {
-  fetchAnnouncements, fetchHeroContent, fetchHeroVisual, fetchNavigation,
-  type Announcement, type HeroContent, type HeroVisual, type NavLink,
+  fetchAnnouncements, fetchHeroCarouselSettings, fetchHeroContent, fetchHeroSlides,
+  fetchHeroVisual, fetchNavigation,
+  type Announcement, type HeroCarouselSettings, type HeroContent, type HeroSlide,
+  type HeroVisual, type NavLink,
 } from './public';
 import { fetchCatalogBrands } from './catalog';
 import {
@@ -28,6 +30,9 @@ export const queryKeys = {
   home: ['home'] as const,
   heroContent: ['home', 'hero-content'] as const,
   heroVisual: ['home', 'hero-visual'] as const,
+  // Carrousel Hero : contenu éditorial Admin ⇒ même traitement que le hero.
+  heroSlides: ['home', 'hero-slides'] as const,
+  heroCarouselSettings: ['home', 'hero-carousel-settings'] as const,
   navigation: ['home', 'navigation'] as const,
   announcements: ['home', 'announcements'] as const,
   // الكتالوج أثقل من المحتوى التحريري ⇒ نخفّف الطلبات بشوية.
@@ -57,6 +62,16 @@ export const useHeroContent = (): UseQueryResult<HeroContent | null> =>
 
 export const useHeroVisual = (): UseQueryResult<HeroVisual | null> =>
   useQuery({ queryKey: queryKeys.heroVisual, queryFn: ({ signal }) => fetchHeroVisual({ signal }), ...CONTENT });
+
+export const useHeroSlides = (): UseQueryResult<HeroSlide[]> =>
+  useQuery({ queryKey: queryKeys.heroSlides, queryFn: ({ signal }) => fetchHeroSlides({ signal }), ...CONTENT });
+
+export const useHeroCarouselSettings = (): UseQueryResult<HeroCarouselSettings> =>
+  useQuery({
+    queryKey: queryKeys.heroCarouselSettings,
+    queryFn: ({ signal }) => fetchHeroCarouselSettings({ signal }),
+    ...CONTENT,
+  });
 
 export const useNavigation = (): UseQueryResult<NavLink[]> =>
   useQuery({ queryKey: queryKeys.navigation, queryFn: ({ signal }) => fetchNavigation({ signal }), ...CONTENT });

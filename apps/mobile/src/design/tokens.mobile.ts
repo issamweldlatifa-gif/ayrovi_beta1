@@ -376,6 +376,21 @@ export function derivedColors(colors: DerivablePalette) {
     onMedia: '#FFFFFF',
     /** Voile sous ce texte, pour garantir le contraste sur une photo claire. */
     mediaScrim: alpha('#000000', 0.4),
+    /**
+     * Texte posé sur un fond ADAPTATIF CLAIR (pastel extrait de l'image par le
+     * serveur, ou override manuel clair) : noir dans les DEUX modes.
+     *
+     * Pourquoi pas `ink` ? Parce qu'un fond adaptatif clair reste clair quel
+     * que soit le thème : `ink` vaut `#FFFFFF` en sombre — un titre blanc sur
+     * pastel clair serait illisible. C'est le même raisonnement que `onMedia`,
+     * appliqué au carrousel Hero (§5.3 : contraste garanti sur fond adaptatif).
+     */
+    onAdaptiveLight: '#000000',
+    /**
+     * Texte posé sur un fond ADAPTATIF SOMBRE (override manuel Admin foncé) :
+     * blanc dans les DEUX modes — le pendant de `onAdaptiveLight`.
+     */
+    onAdaptiveDark: '#FFFFFF',
   } as const;
 }
 

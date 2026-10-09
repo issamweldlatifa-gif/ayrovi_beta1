@@ -287,6 +287,9 @@ export const fr = {
   'home.tab.arrivals': 'Nouveautés',
   'home.tab.promotions': 'Promotions',
   'home.tab.magazine': 'Magazine',
+  /* ── Carrousel Hero (piloté Admin) ─────────────────────────────────────── */
+  'home.hero.slideOf': 'Carte {current} sur {total}',
+  'home.hero.swipeHint': 'Glissez latéralement pour découvrir les campagnes',
   /* ── Hors-ligne : l’état promis par `states.tsx`, enfin présent ─────────── */
   'offline.banner': 'Hors ligne',
   'offline.title': 'Pas de connexion',

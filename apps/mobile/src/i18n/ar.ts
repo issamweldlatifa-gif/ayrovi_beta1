@@ -287,6 +287,9 @@ export const ar = {
   'home.tab.arrivals': 'وصل حديثاً',
   'home.tab.promotions': 'العروض',
   'home.tab.magazine': 'المجلة',
+  /* ── كاروسيل الهيرو (مسيّر من لوحة التحكّم) ─────────────────────────────── */
+  'home.hero.slideOf': 'البطاقة {current} من {total}',
+  'home.hero.swipeHint': 'مرّر لاستكشاف الحملات',
   /* ── hors-ligne : الحالة اللي وعدت بيها `states.tsx`، ولّت موجودة ──────── */
   'offline.banner': 'غير متّصل',
   'offline.title': 'ما فماش اتصال',
