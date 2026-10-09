@@ -431,3 +431,16 @@ export const OPACITY = {
 export const shadowFor = (level: ElevationName) => elevation[level];
 
 export const isAndroid = Platform.OS === 'android';
+
+/* ── Carrousel Hero — palette de la démo embarquée ─────────────────────────── */
+
+/**
+ * Couleur de fond de chaque carte de démo : moyenne du bas du visuel (là où
+ * le fondu se dissout). En production, le serveur extrait cette palette lui-même.
+ */
+export const HERO_DEMO_BACKGROUND = {
+  tech: '#252B2D',
+  modeHomme: '#A09C96',
+  modeFemme: '#997B68',
+  sport: '#A78F7A',
+} as const;

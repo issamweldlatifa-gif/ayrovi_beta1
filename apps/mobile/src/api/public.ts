@@ -232,6 +232,8 @@ export interface HeroSlide {
   /** Couleur de fond adaptative (palette extraite serveur) — vide = repli thème. */
   background: string;
   dominant: string;
+  /** Visuel embarqué dans l'APK (mode démo) — prioritaire sur `image`. */
+  localImage?: number;
 }
 
 /** Réglages du carrousel (`GET /api/public/hero-carousel-settings`). */

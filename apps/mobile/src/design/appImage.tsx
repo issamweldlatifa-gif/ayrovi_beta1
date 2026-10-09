@@ -24,6 +24,8 @@ import { useT } from '@/i18n';
 export interface AppImageProps {
   /** URI absolue ou relative (résolue par l'appelant via `mediaUrl`). */
   uri?: string | null;
+  /** Visuel embarqué dans l'application (`require('…/x.jpg')`) — prioritaire sur `uri`. */
+  localSource?: number;
   contentFit?: 'cover' | 'contain' | 'fill' | 'none' | 'scale-down';
   style?: StyleProp<ImageStyle>;
   /** Texte lu par le lecteur d'écran — le nom du produit, par exemple. */
@@ -34,14 +36,14 @@ export interface AppImageProps {
 }
 
 export function AppImage({
-  uri, contentFit = 'cover', style, accessibilityLabel, decorative = false, testID,
+  uri, localSource, contentFit = 'cover', style, accessibilityLabel, decorative = false, testID,
 }: AppImageProps) {
   const theme = useTheme();
   const t = useT();
   const [failed, setFailed] = useState(false);
 
-  // Pas d'URI ou chargement cassé : cadre de secours, jamais un trou muet.
-  if (!uri || failed) {
+  // Pas de source ou chargement cassé : cadre de secours, jamais un trou muet.
+  if ((!uri && localSource == null) || failed) {
     return (
       <View
         testID={testID ? `${testID}-fallback` : undefined}
@@ -64,7 +66,7 @@ export function AppImage({
   return (
     <ExpoImage
       testID={testID}
-      source={{ uri }}
+      source={localSource ?? { uri: uri as string }}
       contentFit={contentFit}
       transition={theme.duration.fast}
       onError={() => setFailed(true)}

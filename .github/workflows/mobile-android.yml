@@ -161,6 +161,8 @@ jobs:
           EXPO_PUBLIC_API_BASE_URL: ${{ inputs.api_base_url || 'https://ayrovi-beta1-moo8.onrender.com' }}
           EXPO_PUBLIC_BUILD_STAMP: ${{ github.sha }}
           EXPO_PUBLIC_APP_VERSION: "2.0.0"
+          # Démo : cartes Hero embarquées tant que l'Admin n'a rien publié.
+          EXPO_PUBLIC_HERO_DEMO: "1"
         run: |
           set -o pipefail
           # Contexte de la machine : un échec de build vient souvent du disque

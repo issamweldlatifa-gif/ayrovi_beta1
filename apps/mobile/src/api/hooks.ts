@@ -17,6 +17,8 @@ import {
   type NewsItem, type Promotion, type StoryItem,
 } from './sections';
 import { fetchFooterInfo, type FooterInfo } from './footer';
+import { HERO_DEMO_ENABLED } from '@/features/home/heroDemo';
+import { demoHeroSlides } from '@/features/home/heroDemoSlides';
 import {
   fetchPublications, fetchReels, fetchSocialCounts, fetchStoryPublishers,
   type Publication, type Reel, type SocialCounts, type StoryPublisher,
@@ -64,12 +66,25 @@ export const useHeroVisual = (): UseQueryResult<HeroVisual | null> =>
   useQuery({ queryKey: queryKeys.heroVisual, queryFn: ({ signal }) => fetchHeroVisual({ signal }), ...CONTENT });
 
 export const useHeroSlides = (): UseQueryResult<HeroSlide[]> =>
-  useQuery({ queryKey: queryKeys.heroSlides, queryFn: ({ signal }) => fetchHeroSlides({ signal }), ...CONTENT });
+  useQuery({
+    queryKey: queryKeys.heroSlides,
+    queryFn: async ({ signal }) => {
+      if (!HERO_DEMO_ENABLED) return fetchHeroSlides({ signal });
+      // Démo : une carte publiée par l'Admin gagne ; sinon les visuels embarqués.
+      const live = await fetchHeroSlides({ signal }).catch(() => [] as HeroSlide[]);
+      return live.length > 0 ? live : demoHeroSlides();
+    },
+    ...CONTENT,
+  });
 
 export const useHeroCarouselSettings = (): UseQueryResult<HeroCarouselSettings> =>
   useQuery({
     queryKey: queryKeys.heroCarouselSettings,
-    queryFn: ({ signal }) => fetchHeroCarouselSettings({ signal }),
+    queryFn: async ({ signal }) => {
+      const settings = await fetchHeroCarouselSettings({ signal });
+      // Démo : défilement automatique pour que le carrousel se voie vivre.
+      return HERO_DEMO_ENABLED ? { ...settings, autoplay: true } : settings;
+    },
     ...CONTENT,
   });
 

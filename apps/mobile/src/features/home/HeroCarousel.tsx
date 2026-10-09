@@ -36,6 +36,7 @@ import {
   type HeroCarouselSettings, type HeroSlide,
 } from '@/api/public';
 import { adaptiveInk, pickHeroText } from './heroPalette';
+import { isDemoSlide } from './heroDemo';
 
 /* ── Géométrie ───────────────────────────────────────────────────────────── */
 
@@ -136,7 +137,7 @@ function HeroCarouselView({ settings, slides }: { settings: HeroCarouselSettings
     if (trackedRef.current === activeIndex) return;
     trackedRef.current = activeIndex;
     const card = slides[activeIndex];
-    if (card) trackHeroEvent(card.id, 'impression', card.destinationType, locale);
+    if (card && !isDemoSlide(card.id)) trackHeroEvent(card.id, 'impression', card.destinationType, locale);
   }, [activeIndex, slides, locale]);
 
   // Autoplay : en pause au toucher, hors foyer, ou application en arrière-plan.
@@ -163,7 +164,7 @@ function HeroCarouselView({ settings, slides }: { settings: HeroCarouselSettings
   }, [slides.length, stride]);
 
   const onPressCard = useCallback((card: HeroSlide) => {
-    trackHeroEvent(card.id, 'click', card.destinationType, locale);
+    if (!isDemoSlide(card.id)) trackHeroEvent(card.id, 'click', card.destinationType, locale);
     if (!card.href) return;
     if (card.href.startsWith('/')) router.push(card.href as never);
     else Linking.openURL(card.href).catch(() => {});
@@ -268,7 +269,8 @@ const HeroCard = memo(function HeroCard({ card, width, background, onPress }: He
       <View style={[styles.cardMedia, { borderRadius: theme.radius.lg }]}>
         <AppImage
           testID={`hero-card-${card.id}-image`}
-          uri={mediaUrl(card.image)}
+          uri={card.localImage != null ? null : mediaUrl(card.image)}
+          localSource={card.localImage}
           contentFit="cover"
           style={styles.cardImage}
           accessibilityLabel={title || undefined}
