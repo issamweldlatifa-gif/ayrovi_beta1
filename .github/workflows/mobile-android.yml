@@ -41,8 +41,12 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       # `contents: write` : le job réécrit la mesure (APK_SIZES.md) dans le
-      # dépôt. Rien d'autre n'est demandé — principe du moindre privilège.
+      # dépôt. `actions: write` : il rallume les vérifications PR après ce
+      # commit (dispatch de ci.yml + mobile.yml) — sinon le head du PR n'a
+      # aucun check et la PR reste bloquée. Rien d'autre n'est demandé —
+      # principe du moindre privilège.
       contents: write
+      actions: write
     defaults:
       run:
         working-directory: apps/mobile
@@ -283,3 +287,17 @@ jobs:
             echo "::warning::publication impossible, la mesure reste dans le résumé CI"
             exit 0
           }
+      # Le commit bot ci-dessus est poussé avec le GITHUB_TOKEN : aucun
+      # workflow ne se déclenche dessus, le head du PR n'a donc AUCUN check
+      # et la PR reste bloquée (« required checks missing »). On rallume les
+      # vérifications PR en dispatchant les deux workflows sur la branche
+      # (`workflow_dispatch` est exempté de la règle GITHUB_TOKEN). Sans effet
+      # de bord : aucun de ces deux workflows ne committe, donc pas de boucle.
+      - name: Rallume les vérifications PR sur le head (commit bot)
+        if: success() && github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="${GITHUB_REF#refs/heads/}"
+          gh workflow run ci.yml --ref "$BRANCH" || echo "::warning::dispatch ci.yml impossible"
+          gh workflow run mobile.yml --ref "$BRANCH" || echo "::warning::dispatch mobile.yml impossible"
