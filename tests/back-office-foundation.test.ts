@@ -105,15 +105,15 @@ describe('back office shell (P2.0)', () => {
       expect(result.body.data.problems).toEqual([]);
       expect(result.body.data.status).toBe('ok');
       expect(result.body.data.frameworkVersion).toBe(BACK_OFFICE_FRAMEWORK_VERSION);
-      expect(result.body.data.frameworkRendered).toBe(12);
+      expect(result.body.data.frameworkRendered).toBe(11); // 12 - la section « annonces » retirée
     });
   });
 
   describe('deep links : rien de ce qui fonctionnait ne doit cesser de répondre', () => {
-    test('les 38 identifiants de section couvrent la navigation legacy ET les alias', () => {
+    test('les 37 identifiants de section couvrent la navigation legacy ET les alias', () => {
       const sections = new Set(backOfficeSections());
-      // La liste vient de l’AdminApp d’origine (37 entrées) - la section « trust-bar »
-      // supprimée + les 2 sections hors nav
+      // La liste vient de l’AdminApp d’origine - la section « trust-bar » et la section
+      // « annonces » (retirée avec la barre d’annonces) sont supprimées + les 2 sections hors nav
       // atteignables par deep link (`hero`, `stories`).
       const expected = [
         'dashboard', 'arrivals', 'products', 'promotions', 'social', 'news', 'magazine-agent', 'brands',
@@ -124,7 +124,7 @@ describe('back office shell (P2.0)', () => {
         'design', 'assistant', 'settings', 'users', 'audit', 'hero', 'stories',
       ];
       for (const section of expected) expect(sections.has(section), `section perdue: ${section}`).toBe(true);
-      expect(expected.length).toBe(38);
+      expect(expected.length).toBe(37);
       // P2.2 a ajouté trois surfaces (le stock). Elles sont citées nommément : une section
       // nouvelle ne doit jamais apparaître sans être écrite ici.
       for (const section of ['inventory', 'inventory-movements', 'inventory-stocktakes']) {
@@ -153,7 +153,7 @@ describe('back office shell (P2.0)', () => {
       }
       // 2026-10-09 : le carrousel Hero ajoute sa page de réglages (aperçu mobile inclus).
       expect(sections.has('hero-carousel'), 'section hero-carousel absente').toBe(true);
-      expect(sections.size).toBe(56);
+      expect(sections.size).toBe(55); // 56 - la section « annonces » retirée
     });
 
     test('la navigation serveur couvre exactement les entrées de la barre latérale legacy', () => {
@@ -169,7 +169,7 @@ describe('back office shell (P2.0)', () => {
         'erp-organization', 'erp-permissions', 'erp-audit', 'erp-events', 'erp-environment', 'interface',
         'design', 'assistant', 'settings', 'users', 'audit',
       ];
-      expect(legacyIds.length).toBe(36);
+      expect(legacyIds.length).toBe(35);
       // 1) chaque id legacy est bien un descripteur enregistré, à la même section ;
       for (const id of legacyIds) {
         expect(resourceDescriptorBySection(id)?.section, `descripteur manquant pour ${id}`).toBe(id);
@@ -212,12 +212,12 @@ describe('back office shell (P2.0)', () => {
   });
 
   describe('navigation dérivée du registre + permissions + statut de module', () => {
-    test('SUPER_ADMIN voit les 36 entrées legacy + les 3 du stock (P2.2) + les 3 des achats (P2.3) + les 6 du CRM 360 (E5) + la barre publique + la section promos + le carrousel Hero', async () => {
+    test('SUPER_ADMIN voit les 35 entrées legacy + les 3 du stock (P2.2) + les 3 des achats (P2.3) + les 6 du CRM 360 (E5) + la barre publique + la section promos + le carrousel Hero', async () => {
       const result = await superAdmin.agent.get('/api/admin/back-office/navigation');
       expect(result.status).toBe(200);
       const items = result.body.data.groups.flatMap((group: any) => group.items);
-      expect(items.length).toBe(53);
-      expect(result.body.data.counts).toMatchObject({ sections: 53, visible: 53 });
+      expect(items.length).toBe(52);
+      expect(result.body.data.counts).toMatchObject({ sections: 52, visible: 52 });
       expect(result.body.data.groups.map((group: any) => group.label)).toEqual(
         ['Vue générale', 'Contenu', 'Catalogue', 'Commerce', 'CRM', 'ERP', 'Système']);
     });
@@ -466,7 +466,7 @@ describe('back office shell (P2.0)', () => {
       // GLOBAL DISCOVERY : +2 (Globe2, MapPin — sources et marchés).
       // 2026-09-23 : le moteur de promotions ajoute son entrée (icône Tag).
       // 2026-10-09 : le carrousel Hero ajoute son entrée (icône Palette).
-      expect(declared.length).toBe(53);
+      expect(declared.length).toBe(52);
       const missing = [...new Set(declared)].filter((name) => !card.has(name));
       expect(missing, 'noms d\u2019icône sans clé dans ICONS').toEqual([]);
     });
