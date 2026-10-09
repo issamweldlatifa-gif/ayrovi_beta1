@@ -1838,6 +1838,47 @@ export class QatafoDatabase {
         new Date().toISOString());
     }
 
+    // ── Carrousel Hero (09/10/2026) : slides administrables + fond adaptatif ──
+    // Colonnes additives uniquement (contrat initSchema : jamais de DROP/RENAME).
+    this.ensureColumn('hero_slides', 'title_ar', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('hero_slides', 'subtitle_ar', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('hero_slides', 'cta_ar', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('hero_slides', 'destination_type', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('hero_slides', 'destination_value', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('hero_slides', 'bg_mode', "TEXT NOT NULL DEFAULT 'auto'");
+    this.ensureColumn('hero_slides', 'bg_color', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('hero_slides', 'palette', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('hero_slides', 'published_from', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('hero_slides', 'published_to', "TEXT NOT NULL DEFAULT ''");
+
+    // Réglages du carrousel (singleton 'global') — même pattern que hero_content_settings.
+    this.db.exec(`CREATE TABLE IF NOT EXISTS hero_carousel_settings (
+      id TEXT PRIMARY KEY CHECK(id='global'),
+      enabled INTEGER NOT NULL DEFAULT 1,
+      max_cards INTEGER NOT NULL DEFAULT 6,
+      autoplay INTEGER NOT NULL DEFAULT 0,
+      autoplay_interval_ms INTEGER NOT NULL DEFAULT 5000,
+      transition_ms INTEGER NOT NULL DEFAULT 300,
+      pagination_visible INTEGER NOT NULL DEFAULT 1,
+      updated_at TEXT NOT NULL
+    );`);
+    if (!(this.db.prepare("SELECT COUNT(*) count FROM hero_carousel_settings WHERE id='global'").get() as { count: number }).count) {
+      this.run('INSERT INTO hero_carousel_settings (id,updated_at) VALUES (?,?)', 'global', new Date().toISOString());
+    }
+
+    // Télémétrie carrousel : impression / clic, sans donnée personnelle (même
+    // philosophie que le funnel d'achat — mesurer ne doit jamais planter).
+    this.db.exec(`CREATE TABLE IF NOT EXISTS hero_events (
+      id TEXT PRIMARY KEY,
+      card_id TEXT NOT NULL,
+      event TEXT NOT NULL CHECK(event IN ('impression','click')),
+      destination_type TEXT NOT NULL DEFAULT '',
+      locale TEXT NOT NULL DEFAULT '',
+      session TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL
+    );
+      CREATE INDEX IF NOT EXISTS idx_hero_events_card ON hero_events(card_id, created_at);`);
+
     // ترتيب كتل الصفحة الرئيسية (transition / discovery / brands / lens) — يُدار من الـ Dashboard
     this.db.exec(`CREATE TABLE IF NOT EXISTS home_blocks (
       id TEXT PRIMARY KEY,

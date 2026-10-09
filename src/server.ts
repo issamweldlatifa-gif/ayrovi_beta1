@@ -218,6 +218,7 @@ app.use('/api/public/assistant-feedback', rateLimit('assistant-feedback', proces
 app.use('/api/assistant/chat', rateLimit('assistant-chat', process.env.NODE_ENV === 'test' ? 1_000 : 25, 10 * 60_000, clientRateLimitKey));
 app.use('/api/assistant/transcribe', rateLimit('assistant-voice', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000, clientRateLimitKey));
 app.use('/api/public/media', rateLimit('public-media-proxy', process.env.NODE_ENV === 'test' ? 1_000 : 300, 10 * 60_000));
+app.use('/api/public/hero-events', rateLimit('public-hero-events', process.env.NODE_ENV === 'test' ? 1_000 : 120, 60_000));
 const ayrovixRateLimit = rateLimit('ayrovix', process.env.NODE_ENV === 'test' ? 1_000 : 12, 10 * 60_000, clientRateLimitKey);
 const configuredLensDailyLimit = Number(process.env.AYROVIX_LENS_IP_DAILY_LIMIT);
 const lensDailyLimit = process.env.NODE_ENV === 'test' ? 1_000

@@ -16,6 +16,8 @@ import {
 } from '../services/heroVisual';
 import { normalizeUploadedImage } from '../services/imageValidation';
 import { parsePublicHttpUrl } from '../services/safeUrl';
+import { HERO_DESTINATION_TYPES, heroDestinationConfig, isValidExternalUrl } from '../../shared/heroDestinations';
+import { isHexColor, refreshHeroSlidePalette } from '../services/heroPalette';
 import { refreshFxRates } from '../services/fxRates';
 import { capPromoPercent, MIN_COMMISSION_FLOOR_PERCENT, resolvePromoForQuote, tunisIsoDay } from '../services/promotions';
 import { runLensPipeline, hashImage } from '../ayrovix/services/lensPipeline';
@@ -96,6 +98,8 @@ export interface ResourceConfig {
   jsonFields?: string[];
   enums?: Record<string, string[]>;
   softDelete: Record<string, any>;
+  /** Hook post-sauvegarde (ex: recalcul de la palette hero à chaque changement d'image). */
+  afterSave?: (db: QatafoDatabase, row: any, existing: any | null) => void;
 }
 
 export const resources: Record<string, ResourceConfig> = {
@@ -151,8 +155,17 @@ export const resources: Record<string, ResourceConfig> = {
   },
   'hero-slides': {
     table: 'hero_slides', module: 'HERO', prefix: 'hero', permission: 'content:write',
-    fields: ['image','video','title','subtitle','cta','target_url','display_order','active'], required: ['image','title'],
-    searchable: ['title','subtitle','cta'], sortable: ['title','display_order','active','created_at'], defaultSort: 'display_order', softDelete: { active: 0 },
+    fields: ['image','video','title','title_ar','subtitle','subtitle_ar','cta','cta_ar','target_url','destination_type','destination_value','bg_mode','bg_color','display_order','active','published_from','published_to'],
+    required: ['image','title'],
+    searchable: ['title','title_ar','subtitle','subtitle_ar','cta','cta_ar'],
+    sortable: ['title','display_order','active','created_at'], defaultSort: 'display_order',
+    enums: { destination_type: [...HERO_DESTINATION_TYPES], bg_mode: ['auto','manual'] }, softDelete: { active: 0 },
+    // La palette est recalculée à chaque sauvegarde quand l'image change — jamais
+    // dans la boucle de lecture publique (le cache colonne suffit).
+    afterSave: (db, row, existing) => {
+      if (existing && String(existing.image || '') === String(row.image || '') && String(existing.palette || '')) return;
+      void refreshHeroSlidePalette(db, row);
+    },
   },
   announcements: {
     table: 'announcement_messages', module: 'ANNOUNCEMENTS', prefix: 'announcement', permission: 'content:write',
@@ -333,6 +346,32 @@ function validateResourceDates(resource: string, payload: Record<string, any>, e
   }
   if (resource === 'promotions') ensureBefore('starts_at', 'ends_at', 'La date de fin doit être postérieure au début.');
   if (resource === 'stories') ensureBefore('publish_at', 'expires_at', 'L’expiration doit être postérieure à la publication.');
+  if (resource === 'hero-slides') ensureBefore('published_from', 'published_to', 'La fin de publication doit être postérieure au début.');
+}
+
+/**
+ * Validation métier par ressource (hors dates). Pour l'instant : hero-slides —
+ * la destination est un contrat fermé (type + valeur validée, cible existante),
+ * jamais une URL libre ; la couleur manuelle est un hexadécimal.
+ */
+function validateResourcePayload(db: QatafoDatabase, resource: string, payload: Record<string, any>, existing?: Record<string, any>) {
+  if (resource !== 'hero-slides') return;
+  const type = String(payload.destination_type ?? existing?.destination_type ?? '');
+  const value = String(payload.destination_value ?? existing?.destination_value ?? '').trim();
+  const config = heroDestinationConfig(type);
+  if (type && !config) throw new Error('Type de destination inconnu.');
+  if (config?.needsValue && !value) throw new Error('Cette destination exige une valeur (identifiant ou lien).');
+  if (type === 'COLLECTION' && value && !db.get<any>('SELECT id FROM arrivals WHERE id=?', value)) {
+    throw new Error('Arrivage introuvable : la collection n’existe pas.');
+  }
+  if (type === 'PRODUCT' && value && !db.get<any>('SELECT id FROM products WHERE id=?', value)) {
+    throw new Error('Produit introuvable.');
+  }
+  if (type === 'EXTERNAL' && value && !isValidExternalUrl(value)) {
+    throw new Error('Le lien externe doit être une URL http/https valide.');
+  }
+  const bgColor = String(payload.bg_color ?? existing?.bg_color ?? '').trim();
+  if (bgColor && !isHexColor(bgColor)) throw new Error('La couleur de fond doit être un hexadécimal (#rgb ou #rrggbb).');
 }
 
 function admin(req: Request) {
@@ -800,6 +839,40 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     orientationOverride: row.orientation_override || 'AUTO',
     status: row.status, startDate: row.start_date, endDate: row.end_date, priority: row.priority,
     createdAt: row.created_at, updatedAt: row.updated_at, publishedAt: row.published_at,
+  });
+
+  /* ==================== CARROUSEL HERO — réglages (singleton 'global') ==================== */
+
+  const carouselSettingsRowForApi = (row: any) => (row ? {
+    enabled: row.enabled !== 0,
+    maxCards: Math.max(1, Math.min(12, Number(row.max_cards) || 6)),
+    autoplay: row.autoplay === 1,
+    autoplayIntervalMs: Math.max(1000, Math.min(60000, Number(row.autoplay_interval_ms) || 5000)),
+    transitionMs: Math.max(100, Math.min(2000, Number(row.transition_ms) || 300)),
+    paginationVisible: row.pagination_visible !== 0,
+  } : null);
+
+  router.get('/hero-carousel-settings', requireAdmin(db, 'content:read'), (_req, res) => {
+    res.json({ success: true, data: carouselSettingsRowForApi(db.get<any>("SELECT * FROM hero_carousel_settings WHERE id='global'")) });
+  });
+
+  router.put('/hero-carousel-settings', requireAdmin(db, 'content:write'), (req, res) => {
+    const existing = db.get<any>("SELECT * FROM hero_carousel_settings WHERE id='global'");
+    if (!existing) return res.status(404).json({ success: false, error: 'Réglages introuvables.' });
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    const flag = (value: unknown, fallback: boolean) =>
+      value === undefined ? fallback : value === true || value === 1 || value === '1';
+    const clamped = (value: unknown, fallback: number, min: number, max: number) =>
+      value === undefined ? fallback : Math.max(min, Math.min(max, Math.round(Number(value)) || fallback));
+    db.run(`UPDATE hero_carousel_settings SET enabled=?,max_cards=?,autoplay=?,autoplay_interval_ms=?,transition_ms=?,pagination_visible=?,updated_at=? WHERE id='global'`,
+      flag(body.enabled, existing.enabled !== 0) ? 1 : 0,
+      clamped(body.maxCards, Number(existing.max_cards) || 6, 1, 12),
+      flag(body.autoplay, existing.autoplay === 1) ? 1 : 0,
+      clamped(body.autoplayIntervalMs, Number(existing.autoplay_interval_ms) || 5000, 1000, 60000),
+      clamped(body.transitionMs, Number(existing.transition_ms) || 300, 100, 2000),
+      flag(body.paginationVisible, existing.pagination_visible !== 0) ? 1 : 0,
+      new Date().toISOString());
+    res.json({ success: true, data: carouselSettingsRowForApi(db.get<any>("SELECT * FROM hero_carousel_settings WHERE id='global'")) });
   });
 
   router.get('/hero-visuals', requireAdmin(db, 'content:read'), (_req, res) => {
@@ -1465,6 +1538,7 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
         const payload = sanitizePayload(req.body, config);
         normalizePublicationLifecycle(resource, payload);
         validateResourceDates(resource, payload);
+        validateResourcePayload(db, resource, payload);
         if (resource === 'products') recomputeProductPricing(db, payload);
         const id = `${config.prefix}_${randomUUID()}`;
         const now = new Date().toISOString();
@@ -1475,6 +1549,7 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
           addRelations(db, resource, id, req.body);
         });
         const created = withRelations(db, resource, db.get<any>(`SELECT * FROM ${config.table} WHERE id=?`, id));
+        config.afterSave?.(db, created, null);
         audit(db, req, 'CREATE', config.module, id, null, created);
         res.status(201).json({ success: true, data: created });
       } catch (error: any) {
@@ -1490,6 +1565,7 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
         const payload = sanitizePayload(req.body, config, true);
         normalizePublicationLifecycle(resource, payload, existing);
         validateResourceDates(resource, payload, existing);
+        validateResourcePayload(db, resource, payload, existing);
         if (resource === 'products') recomputeProductPricing(db, payload, existing);
         if (Object.keys(payload).length === 0 && !req.body.arrival_ids && !req.body.product_ids) return res.status(400).json({ success: false, error: 'Aucune modification reçue.' });
         const now = new Date().toISOString();
@@ -1501,6 +1577,7 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
           addRelations(db, resource, req.params.id, req.body);
         });
         const updated = withRelations(db, resource, db.get<any>(`SELECT * FROM ${config.table} WHERE id=?`, req.params.id));
+        config.afterSave?.(db, updated, existing);
         audit(db, req, 'UPDATE', config.module, req.params.id, withRelations(db, resource, existing), updated);
         res.json({ success: true, data: updated });
       } catch (error: any) {
