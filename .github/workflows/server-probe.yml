@@ -1,0 +1,170 @@
+name: Serveur — état du déploiement (diagnostic)
+
+# Répond à UNE question, avec des faits et pas des suppositions :
+#   « quel code tourne réellement sur chaque serveur publié ? »
+#
+# Pourquoi ça compte : l'application mobile a besoin du serveur du BRANCH
+# (`x-ayrovi-client` → `session_token`). Sur un serveur de `main`, la connexion
+# échoue. Sans ce diagnostic, on cherche la panne dans l'application alors
+# qu'elle est dans le déploiement.
+#
+# Lecture seule : aucun secret, aucune écriture, toujours vert (c'est un
+# instrument de mesure, pas une barrière). Le résultat est aussi écrit en
+# « annotation » pour être lu depuis l'API.
+
+on:
+  workflow_dispatch:
+    inputs:
+      bases:
+        description: "Origines à interroger (séparées par des virgules)"
+        required: true
+        default: "https://ayrovi-beta1-1.onrender.com, https://ayrovi-beta1.onrender.com"
+  push:
+    branches: [arena/c0321e79-ayrovi-beta1]
+    paths:
+      - '.github/workflows/server-probe.yml'
+
+jobs:
+  probe:
+    name: État des serveurs publiés
+    runs-on: ubuntu-latest
+    env:
+      BASES: ${{ inputs.bases || 'https://ayrovi-beta1-1.onrender.com, https://ayrovi-beta1.onrender.com' }}
+      REPO: ${{ github.repository }}
+    steps:
+      - name: Lire chaque serveur et comparer au branch et à main
+        run: |
+          # GitHub lance `bash -e -o pipefail` : je reprends la main pour qu'un
+          # curl qui échoue (serveur muet) ne fasse pas rougir un diagnostic —
+          # l'absence de réponse est une MESURE, pas une panne du workflow.
+          set +e +o pipefail
+          set -u
+
+          S="${GITHUB_STEP_SUMMARY:-/dev/null}"
+          printf '## État des serveurs publiés\n\n' >> "$S"
+
+          # Un seul code en sortie : `curl -w` imprime « 000 » ET sort en erreur
+          # quand le serveur ne répond pas — le `|| echo` ajoutait un second
+          # « 000 » et faussait la lecture (« 000000 »).
+          # $3 = méthode (défaut GET). Certaines routes de l'app n'existent qu'en POST :
+          # un GET dessus renvoie 404 alors que la route EST là — mesurer la bonne méthode
+          # évite de conclure « fonction absente » à tort.
+          http_code() {
+            local out
+            if [ "${3:-GET}" = "GET" ]; then
+              out=$(curl -s -o "$2" -w '%{http_code}' --max-time 45 "$1" 2>/dev/null)
+            else
+              out=$(curl -s -o "$2" -w '%{http_code}' --max-time 45 -X "${3:-GET}" \
+                -H 'Content-Type: application/json' -d '{}' "$1" 2>/dev/null)
+            fi
+            if [ -z "$out" ]; then out="000"; fi
+            printf '%s' "$out"
+          }
+          # Une seule commande, sans pipe : `sed` imprime la première correspondance puis quitte.
+          sha_of() {
+            curl -s --max-time 25 "https://api.github.com/repos/$REPO/commits/$1" 2>/dev/null \
+              | sed -n '/"sha"/{s/.*"sha": *"\([a-f0-9]\{7,40\}\)".*/\1/p;q;}' \
+              | cut -c1-12
+          }
+          json_field() { sed -n "s/.*\"$2\": *\"\([^\"]*\)\".*/\1/p" "$1" 2>/dev/null | head -1; }
+
+          MAIN_SHA=$(sha_of main)
+          BRANCH_SHA=$(sha_of arena/c0321e79-ayrovi-beta1)
+          printf 'Références : `main` = `%s`, branche = `%s`\n\n' "${MAIN_SHA:-inconnu}" "${BRANCH_SHA:-inconnu}" >> "$S"
+
+          echo "| Serveur | /api/health | /api/ready (commit / branche) | assetlinks | aywebs/health | Code servi |" >> "$S"
+          echo "|---|---|---|---|---|---|" >> "$S"
+
+          SUMMARY_LINE=""
+          for BASE in $(printf '%s' "$BASES" | tr ',' ' '); do
+            HEALTH_CODE=$(http_code "$BASE/api/health" /tmp/health)
+            HEALTH_VERSION=$(json_field /tmp/health version)
+            READY_CODE=$(http_code "$BASE/api/ready" /tmp/ready)
+            READY_COMMIT=$(json_field /tmp/ready commit)
+            READY_BRANCH=$(json_field /tmp/ready branch)
+            LINKS_CODE=$(http_code "$BASE/.well-known/assetlinks.json" /tmp/links)
+            LINK_TYPE=$(head -c 20 /tmp/links 2>/dev/null)
+            AYWEBS_CODE=$(http_code "$BASE/api/v1/aywebs/health" /tmp/aywebs)
+            # `stats` n'existe QUE sur le branch : c'est le discriminant le plus sûr.
+            if grep -q '"stats"' /tmp/aywebs 2>/dev/null; then AYWEBS_MARK="stats ✔ (branch)"; else AYWEBS_MARK="stats ✘ (main)"; fi
+
+            # Type de réponse assetlinks : la route n'existe QUE sur le branch.
+            case "$LINK_TYPE" in
+              '<!DOCTYPE'*|'<html'*|'<!doctype'*) LINKS_KIND="HTML (route absente)" ;;
+              '['*) LINKS_KIND="JSON ✔" ;;
+              '{"'*) LINKS_KIND="JSON d'erreur" ;;
+              *) LINKS_KIND="aucune réponse" ;;
+            esac
+
+            # Verdict par serveur, à partir de preuves de code (pas de config).
+            if [ "$HEALTH_CODE" = "000" ]; then
+              VERDICT="❌ aucune réponse"
+            elif [ "$AYWEBS_MARK" = "stats ✔" ] || [ "$LINKS_KIND" = "JSON ✔" ] || [ "$LINKS_KIND" = "JSON d'erreur" ]; then
+              if [ -n "${BRANCH_SHA:-}" ] && [ -n "${READY_COMMIT:-}" ] && [ "${READY_COMMIT}" != "local" ] && [ "${READY_COMMIT}" = "${BRANCH_SHA:0:${#READY_COMMIT}}" ]; then
+                VERDICT="✅ **branche** (commit = tête de branche)"
+              else
+                VERDICT="✅ **branche** (routes du branch présentes)"
+              fi
+            elif [ "$HEALTH_CODE" = "200" ] && [ "$AYWEBS_CODE" = "200" ]; then
+              VERDICT="⚠️ **main** (routes du branch absentes)"
+            elif [ "$HEALTH_CODE" = "200" ]; then
+              VERDICT="⚠️ répond mais code indéterminé"
+            else
+              VERDICT="⚠️ réponse $HEALTH_CODE"
+            fi
+
+            printf '| `%s` | %s | `%s` / `%s` | %s | %s (%s) | %s |\n' \
+              "$BASE" "$HEALTH_CODE" "${READY_COMMIT:-—}" "${READY_BRANCH:-—}" "$LINKS_KIND" "$AYWEBS_CODE" "$AYWEBS_MARK" "$VERDICT" >> "$S"
+            SUMMARY_LINE="$SUMMARY_LINE {$BASE h=$HEALTH_CODE v=${HEALTH_VERSION:-—} commit=${READY_COMMIT:-—} branch=${READY_BRANCH:-—} links=$LINKS_KIND aywebs=$AYWEBS_CODE $AYWEBS_MARK}"
+          done
+
+          printf '\n> « Code servi » se lit sur des preuves : la route `/.well-known/assetlinks.json`\n> et le champ `stats` de `/api/v1/aywebs/health` n existent QUE sur le branch.\n> `commit`/`branche` deviennent fiables dès qu un serveur déploie ce branch.\n' >> "$S"
+
+          # Points d'entrée RÉELS de l'application (relevés dans apps/mobile/src/api) sur le
+          # PREMIER serveur de la liste. 200 = disponible ; 401/403 = exige une session ;
+          # 400 = exige un corps ; 404 = la route n'existe pas là ⇒ une fonction de l'app manque.
+          FIRST_BASE=$(printf '%s' "$BASES" | tr ',' ' ' | awk '{print $1}')
+          printf '\n**Points d entrée de l application sur `%s`**\n\n| Route | Code | Attendu sur un serveur sain | |\n|---|---|---|---|\n' "$FIRST_BASE" >> "$S"
+          ROUTE_LINE=""
+          for ENTRY in \
+            "GET /api/public/hero-content" \
+            "GET /api/public/navigation" \
+            "GET /api/public/announcement-messages" \
+            "GET /api/public/commerce-config" \
+            "GET /api/customer/auth/config" \
+            "POST /api/customer/auth/email/login" \
+            "POST /api/customer/auth/otp/request" \
+            "GET /api/customer/auth/me" \
+            "GET /api/customer/account/overview" \
+            "GET /api/customer/account/orders" \
+            "GET /api/cart/items" \
+            "GET /api/v1/aywebs/health" \
+            "GET /api/v1/aywebs/stores" \
+            "POST /api/v1/aywebs/cart/items" \
+            "GET /api/assistant/status" \
+            "POST /api/ocerex/analyze" \
+            "POST /api/checkout"; do
+            METHOD=${ENTRY%% *}
+            PATH_CHECK=${ENTRY#* }
+            ROUTE_CODE=$(http_code "$FIRST_BASE$PATH_CHECK" /tmp/route "$METHOD")
+            case "$PATH_CHECK" in
+              /api/customer/auth/me|/api/customer/account/*) EXPECT="200 / 401 / 403" ;;
+              /api/cart/items|/api/checkout) EXPECT="200 / 400 / 401" ;;
+              /api/ocerex/*) EXPECT="400 / 401" ;;
+              /api/customer/auth/*|/api/v1/aywebs/cart/*) EXPECT="400 / 401 / 403 / 429" ;;
+              /api/assistant/status) EXPECT="200 / 503" ;;
+              *) EXPECT="200" ;;
+            esac
+            case "$ROUTE_CODE" in
+              404) MARK="❌ absente" ;;
+              200|400|401|403|405|415|422|429|503) MARK="✅" ;;
+              *) MARK="⚠️" ;;
+            esac
+            printf '| `%s %s` | %s | %s | %s |\n' "$METHOD" "$PATH_CHECK" "$ROUTE_CODE" "$EXPECT" "$MARK" >> "$S"
+            ROUTE_LINE="$ROUTE_LINE ${METHOD}:${PATH_CHECK#/api/}=$ROUTE_CODE"
+          done
+          echo "::notice title=Points d entree de l app::$FIRST_BASE$ROUTE_LINE"
+          printf '\n' >> "$S"
+
+          echo "::notice title=Etat des serveurs::main=${MAIN_SHA:-inconnu} branche=${BRANCH_SHA:-inconnu}${SUMMARY_LINE}"
+          exit 0

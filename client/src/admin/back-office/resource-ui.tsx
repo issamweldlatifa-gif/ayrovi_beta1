@@ -1,3 +1,4 @@
+import { HERO_DESTINATIONS } from '../../../../shared/heroDestinations';
 import { PUBLIC_NAV_DESTINATIONS } from '../../../../shared/publicNavigation';
 /**
  * P2.0 — primitives partagées du back office (une seule implémentation par fonction).
@@ -41,6 +42,9 @@ export const labels: Record<string, string> = {
   // Destinations de la barre publique sous l'en-tête : libellés pris au contrat partagé,
   // jamais recopiés (l'Admin choisit une cible lisible, pas une URL libre).
   ...Object.fromEntries(PUBLIC_NAV_DESTINATIONS.map((destination) => [destination.id, destination.adminLabel])),
+  // Destinations du carrousel Hero — libellés pris au contrat partagé, même règle que la barre publique.
+  ...Object.fromEntries(HERO_DESTINATIONS.map((destination) => [destination.id, destination.adminLabel])),
+  auto: 'Automatique (palette extraite)', manual: 'Manuelle (couleur choisie)',
 };
 
 export const options = (values: string[]) => values.map((value) => ({ value, label: labels[value] || value }));

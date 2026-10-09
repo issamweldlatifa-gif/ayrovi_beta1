@@ -364,6 +364,8 @@ describe('chrome back-office — zéro littéral en dur dans les styles inline (
    *   • HeroVisualsPage.tsx  → défaut persisté d'accent du hero (valeur d'enregistrement) ;
    *   • AdminApp.tsx         → une miniature « Boutique AYROVI » (blanc sur l'accent client, dynamique) ;
    *   • SocialAdminPage.tsx  → un fond #000 derrière un <video> (constante média, jamais de thème).
+   *   • HeroCarouselPage.tsx → aperçu mobile du carrousel (simule l’écran public : fond
+   *     adaptatif fourni par l’API, encre calculée sur la luminance — pas du chrome admin).
    * Tout AUTRE fichier doit rester à zéro ; ajouter un littéral au chrome admin est une
    * régression bloquée par ce test.
    */
@@ -373,6 +375,7 @@ describe('chrome back-office — zéro littéral en dur dans les styles inline (
     ['client/src/admin/HeroVisualsPage.tsx', 'défaut persisté d\'accent du hero (valeur d\'enregistrement)'],
     ['client/src/admin/AdminApp.tsx', 'miniature « Boutique AYROVI » (accent dynamique)'],
     ['client/src/admin/SocialAdminPage.tsx', 'fond #000 d\'un <video> (constante média)'],
+    ['client/src/admin/HeroCarouselPage.tsx', 'aperçu mobile du carrousel (simule l\'écran public, couleurs dynamiques)'],
   ]);
   const HEX = /#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{3})(?![0-9a-zA-Z_])/g;
   test('seuls les fichiers données/maquettes/média portent un littéral', () => {

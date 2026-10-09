@@ -1110,6 +1110,46 @@ export class QatafoDatabase {
       );
       CREATE INDEX IF NOT EXISTS idx_customer_native_handoff_expiry ON customer_native_handoffs(expires_at);
 
+      /*
+       * Appareils inscrits aux notifications push.
+       *
+       * 'account_id' PEUT être NULL : on accepte l'inscription AVANT la
+       * connexion, sinon personne ne serait jamais prévenu de la commande
+       * qu'il vient de passer en tant que visiteur — et c'est justement la
+       * notification qui compte le plus. L'appareil est rattaché au compte au
+       * moment de la connexion ('attachDevicesToAccount').
+       *
+       * Le jeton est l'identité de l'appareil d'un point de vue FCM : UNIQUE.
+       */
+      CREATE TABLE IF NOT EXISTS customer_push_devices (
+        id TEXT PRIMARY KEY,
+        account_id TEXT REFERENCES customer_accounts(id) ON DELETE CASCADE,
+        session_id TEXT NOT NULL DEFAULT '',
+        token TEXT NOT NULL UNIQUE,
+        platform TEXT NOT NULL DEFAULT 'android' CHECK(platform IN ('android','ios')),
+        locale TEXT NOT NULL DEFAULT 'fr',
+        enabled INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_customer_push_account ON customer_push_devices(account_id);
+
+      /*
+       * Journal d'envoi. L'index UNIQUE (appareil, notification) est la vraie
+       * garantie : sans lui, une notification repassée deux fois dans le
+       * répartiteur serait poussée deux fois sur le téléphone. On préfère
+       * perdre un envoi plutôt que de réveiller quelqu'un deux fois.
+       */
+      CREATE TABLE IF NOT EXISTS customer_push_dispatched (
+        id TEXT PRIMARY KEY,
+        device_id TEXT NOT NULL REFERENCES customer_push_devices(id) ON DELETE CASCADE,
+        notification_id TEXT NOT NULL,
+        status TEXT NOT NULL,
+        detail TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_customer_push_once ON customer_push_dispatched(device_id, notification_id);
+
       CREATE TABLE IF NOT EXISTS customer_addresses (
         id TEXT PRIMARY KEY,
         account_id TEXT NOT NULL REFERENCES customer_accounts(id) ON DELETE CASCADE,
@@ -1797,6 +1837,47 @@ export class QatafoDatabase {
         'Mode, beauté, technologie, maison… trouvez ce que vous cherchez. AYROVI s’occupe du reste.',
         new Date().toISOString());
     }
+
+    // ── Carrousel Hero (09/10/2026) : slides administrables + fond adaptatif ──
+    // Colonnes additives uniquement (contrat initSchema : jamais de DROP/RENAME).
+    this.ensureColumn('hero_slides', 'title_ar', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('hero_slides', 'subtitle_ar', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('hero_slides', 'cta_ar', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('hero_slides', 'destination_type', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('hero_slides', 'destination_value', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('hero_slides', 'bg_mode', "TEXT NOT NULL DEFAULT 'auto'");
+    this.ensureColumn('hero_slides', 'bg_color', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('hero_slides', 'palette', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('hero_slides', 'published_from', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('hero_slides', 'published_to', "TEXT NOT NULL DEFAULT ''");
+
+    // Réglages du carrousel (singleton 'global') — même pattern que hero_content_settings.
+    this.db.exec(`CREATE TABLE IF NOT EXISTS hero_carousel_settings (
+      id TEXT PRIMARY KEY CHECK(id='global'),
+      enabled INTEGER NOT NULL DEFAULT 1,
+      max_cards INTEGER NOT NULL DEFAULT 6,
+      autoplay INTEGER NOT NULL DEFAULT 0,
+      autoplay_interval_ms INTEGER NOT NULL DEFAULT 5000,
+      transition_ms INTEGER NOT NULL DEFAULT 300,
+      pagination_visible INTEGER NOT NULL DEFAULT 1,
+      updated_at TEXT NOT NULL
+    );`);
+    if (!(this.db.prepare("SELECT COUNT(*) count FROM hero_carousel_settings WHERE id='global'").get() as { count: number }).count) {
+      this.run('INSERT INTO hero_carousel_settings (id,updated_at) VALUES (?,?)', 'global', new Date().toISOString());
+    }
+
+    // Télémétrie carrousel : impression / clic, sans donnée personnelle (même
+    // philosophie que le funnel d'achat — mesurer ne doit jamais planter).
+    this.db.exec(`CREATE TABLE IF NOT EXISTS hero_events (
+      id TEXT PRIMARY KEY,
+      card_id TEXT NOT NULL,
+      event TEXT NOT NULL CHECK(event IN ('impression','click')),
+      destination_type TEXT NOT NULL DEFAULT '',
+      locale TEXT NOT NULL DEFAULT '',
+      session TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL
+    );
+      CREATE INDEX IF NOT EXISTS idx_hero_events_card ON hero_events(card_id, created_at);`);
 
     // ترتيب كتل الصفحة الرئيسية (transition / discovery / brands / lens) — يُدار من الـ Dashboard
     this.db.exec(`CREATE TABLE IF NOT EXISTS home_blocks (
@@ -2870,6 +2951,26 @@ export class QatafoDatabase {
         ['hero_femme','/media/hero-femme.jpg','', 'Toute la mode du monde, livrée chez vous.','','','',2,1],
         ['hero_enfants','/media/hero-enfants.jpg','', 'Toute la mode du monde, livrée chez vous.','','','',3,1],
       ].forEach((row) => insert.run(...row, now, now));
+    }
+
+    // Carrousel Hero — six campagnes de découverte initiales, INACTIVES tant que
+    // l’Admin n’a pas uploadé les visuels approuvés (jamais d’image non approuvée
+    // en production). Destinations valides (contrat fermé), ordre déterministe.
+    const heroCampaigns: Array<[string, string, string, number]> = [
+      ['hero_card_tech', 'Tech & Électronique', 'تكنولوجيا وإلكترونيات', 10],
+      ['hero_card_mode_homme', 'Mode homme — AW25', 'أزياء رجالية', 20],
+      ['hero_card_mode_femme', 'Mode femme', 'أزياء نسائية', 30],
+      ['hero_card_sport', 'Sport & Fitness', 'رياضة ولياقة', 40],
+      ['hero_card_streetwear', 'Streetwear', 'أزياء كاجوال', 50],
+      ['hero_card_designer', 'Mode designer', 'أزياء مصمّمين', 60],
+    ];
+    const heroCampaignInsert = this.db.prepare(`INSERT INTO hero_slides
+      (id,image,video,title,title_ar,subtitle,subtitle_ar,cta,cta_ar,target_url,destination_type,destination_value,bg_mode,bg_color,palette,display_order,active,published_from,published_to,created_at,updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+    for (const [id, title, titleAr, order] of heroCampaigns) {
+      const exists = (this.db.prepare('SELECT COUNT(*) AS count FROM hero_slides WHERE id=?').get(id) as { count: number }).count;
+      if (exists) continue;
+      heroCampaignInsert.run(id, '', '', title, titleAr, '', '', '', '', '', 'CAMPAIGN', '', 'auto', '', '', order, 0, '', '', now, now);
     }
 
     if ((this.db.prepare('SELECT COUNT(*) AS count FROM brands').get() as any).count === 0) {

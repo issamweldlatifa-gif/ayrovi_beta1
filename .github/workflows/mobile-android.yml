@@ -1,0 +1,303 @@
+name: Mobile — APK Android (démo)
+
+# Construit un APK RÉEL de l'application React Native sur les runners GitHub
+# (JDK 17 + SDK Android), parce que l'environnement de développement n'a ni Java
+# ni SDK Android.
+#
+# Ce n'est PAS l'APK de production : celui-ci viendra en P6 (keystore de
+# l'application dans GitHub Secrets, `app-bundle` pour le Play Store).
+#
+# L'APK de démo porte un identifiant DISTINCT (`app.ayrovi.mobile.demo`) : il
+# s'installe À CÔTÉ de l'application existante, sans la toucher. C'est le choix
+# assumé tant que le keystore d'origine n'est pas disponible pour une mise à
+# jour en place.
+on:
+  # ⚠️ GitHub n'accepte `workflow_dispatch` que pour un workflow présent sur la
+  # branche PAR DÉFAUT. Tant que ce fichier n'est pas sur `main`, on déclenche
+  # donc la construction par un `push` sur la branche de travail (le push qui
+  # modifie l'application suffit). Une fois fusionné dans `main`, le bouton
+  # manuel ci-dessous devient disponible tel quel — rien à changer.
+  workflow_dispatch:
+    inputs:
+      api_base_url:
+        description: "Origine de l'API gravée dans l'application (`EXPO_PUBLIC_API_BASE_URL`)"
+        required: true
+        default: "https://ayrovi-beta1-moo8.onrender.com"
+  push:
+    # Branche de travail Arena en plus de la branche historique : l'APK démo
+    # se reconstruit après chaque mise à jour de l'application.
+    branches: [arena/c0321e79-ayrovi-beta1, arena/bc19f283-ayrovi-beta1]
+    paths:
+      - 'apps/mobile/**'
+      - '.github/workflows/mobile-android.yml'
+
+concurrency:
+  group: mobile-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    name: APK démo (release, signé debug)
+    runs-on: ubuntu-latest
+    permissions:
+      # `contents: write` : le job réécrit la mesure (APK_SIZES.md) dans le
+      # dépôt. `actions: write` : il rallume les vérifications PR après ce
+      # commit (dispatch de ci.yml + mobile.yml) — sinon le head du PR n'a
+      # aucun check et la PR reste bloquée. Rien d'autre n'est demandé —
+      # principe du moindre privilège.
+      contents: write
+      actions: write
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          # تخزين مؤقّت لـGradle: بلا هذا، كل بناء يعاود ينزّل التوزيعة
+          # والاعتماديات من الصفر (~20 دقيقة للبناء الواحد). مع التخزين،
+          # البناء الجاي يمشي برشة أسرع.
+          cache: gradle
+
+      - name: Installer le SDK Android (sans action tierce)
+        # `android-actions/setup-android@v3` échoue sur l'image ubuntu-latest
+        # actuelle (constaté ici le 07/10/2026 — étape en échec, la suite sautée ;
+        # déjà constaté le 05/10/2026 sur l'ancien pipeline Android). Le SDK est
+        # déjà présent sur l'image : on accepte les licences et on n'ajoute que
+        # les paquets utiles à ce projet — c'est ce qui a fonctionné jusqu'ici.
+        run: |
+          set -euo pipefail
+          export ANDROID_HOME="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          ls -la "$ANDROID_HOME" || true
+          SDKMANAGER="$(ls -d "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager 2>/dev/null | head -1 || true)"
+          if [ -z "$SDKMANAGER" ]; then SDKMANAGER="$(command -v sdkmanager || true)"; fi
+          if [ -z "$SDKMANAGER" ]; then
+            # Dernier recours : installer cmdline-tools dans le SDK existant.
+            mkdir -p "$ANDROID_HOME/cmdline-tools"
+            curl -sSL -o /tmp/cmdtools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+            unzip -q /tmp/cmdtools.zip -d "$ANDROID_HOME/cmdline-tools"
+            mv "$ANDROID_HOME/cmdline-tools/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest"
+            SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          fi
+          echo "SDKMANAGER=$SDKMANAGER"
+          # L'image peut appartenir à un autre utilisateur : rendre le SDK inscriptible.
+          if [ ! -w "$ANDROID_HOME" ]; then sudo chown -R "$(id -u):$(id -g)" "$ANDROID_HOME"; fi
+          yes | "$SDKMANAGER" --sdk_root="$ANDROID_HOME" --licenses >/dev/null 2>&1 || true
+          "$SDKMANAGER" --sdk_root="$ANDROID_HOME" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> "$GITHUB_ENV"
+
+      # `.npmrc` de l'application active legacy-peer-deps (graphe Expo + vitest).
+      - name: Install
+        run: npm ci
+
+      # Projet natif généré à la volée (CNG) : aucun fichier natif n'est versionné.
+      - name: Générer le projet Android
+        run: npx expo prebuild --platform android --no-install
+
+      # EMPREINTE STABLE — pourquoi cette étape existe.
+      #
+      # Sans elle, Gradle fabrique une clé debug NEUVE sur chaque machine, donc
+      # chaque build porte une EMPREINTE DIFFÉRENTE. Or `/.well-known/assetlinks.json`
+      # (le fichier qui autorise Android à ouvrir nos liens dans l'application)
+      # ne peut déclarer qu'une liste finie d'empreintes. Conséquence : « ouvrir
+      # dans l'application » est INTABLE avec un APK de démonstration, quel que
+      # soit le soin mis ailleurs.
+      #
+      # On dépose donc une clé debug VERSIONNÉE (c'est la clé de développement :
+      # son mot de passe est public et elle ne sert JAMAIS à publier — l'AAB de
+      # production est signé avec le vrai keystore, dans `mobile-release-aab.yml`).
+      - name: Clé de démonstration fixe (liens profonds testables)
+        working-directory: apps/mobile
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.android"
+          rm -f "$HOME/.android/debug.keystore"
+          keytool -importkeystore \
+            -srckeystore keystores/debug.p12 -srcstoretype PKCS12 -srcstorepass android \
+            -destkeystore "$HOME/.android/debug.keystore" -deststoretype JKS \
+            -deststorepass android -destkeypass android -alias androiddebugkey -noprompt
+          SHA=$(keytool -list -v -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey \
+            | awk '/SHA256:/ {print $2; exit}')
+          if [ -z "$SHA" ]; then
+            echo "::error title=Empreinte de démonstration::introuvable — la clé fixe n'a pas pu être importée"
+            exit 1
+          fi
+          echo "::notice title=Empreinte de démonstration::$SHA"
+          echo "ANDROID_DEBUG_SHA256=$SHA" >> "$GITHUB_ENV"
+
+      - name: Identifiant + libellé de la démo (dans la CI uniquement)
+        working-directory: apps/mobile/android
+        run: |
+          set -euo pipefail
+          sed -i "s/applicationId 'app.ayrovi.mobile'/applicationId 'app.ayrovi.mobile.demo'/" app/build.gradle
+          sed -i 's|<string name="app_name">AYROVI</string>|<string name="app_name">AYROVI Démo</string>|' app/src/main/res/values/strings.xml
+          # Vérification réelle : si le motif avait changé, on échoue AU LIEU de
+          # produire un APK qui écraserait l'application installée.
+          grep -q "applicationId 'app.ayrovi.mobile.demo'" app/build.gradle
+          grep -q '<string name="app_name">AYROVI Démo</string>' app/src/main/res/values/strings.xml
+          grep -n "applicationId" app/build.gradle
+          grep -n "app_name" app/src/main/res/values/strings.xml
+
+      # `assembleRelease` produit un APK AUTONOME (bundle JS embarqué), signé
+      # avec la clé debug du modèle — donc installable sur un téléphone.
+      # L'APK de production, lui, sera signé avec le vrai keystore (P6).
+      - name: Build APK
+        working-directory: apps/mobile/android
+        env:
+          # `inputs` est vide sur un déclenchement par `push` → origine par
+          # défaut. L'application exige une origine ABSOLUE : sans elle, le
+          # réseau échoue (pas de serveur Metro dans un APK autonome).
+          EXPO_PUBLIC_API_BASE_URL: ${{ inputs.api_base_url || 'https://ayrovi-beta1-moo8.onrender.com' }}
+          EXPO_PUBLIC_BUILD_STAMP: ${{ github.sha }}
+          EXPO_PUBLIC_APP_VERSION: "2.0.0"
+        run: |
+          set -o pipefail
+          # Contexte de la machine : un échec de build vient souvent du disque
+          # ou de la mémoire, pas du code.
+          echo "--- machine ---"; df -h / | tail -1; free -m | head -2
+          echo "--- java ---"; java -version 2>&1 | head -2
+          if ./gradlew assembleRelease --no-daemon --console=plain 2>&1 | tee /tmp/gradle.log; then
+            exit 0
+          fi
+          # Le journal complet n'est pas consultable partout : l'échec est publié
+          # en annotation (dernières lignes + causes), lisible depuis l'API.
+          python3 ../../scripts/gradle-diagnose.py /tmp/gradle.log "APK démo : Gradle a échoué"
+          exit 1
+
+      # ── Taille et signature ────────────────────────────────────────────────
+      # Le découpage par ABI (voir `app.json` → expo-build-properties) produit
+      # PLUSIEURS APK au lieu d'un seul universel. Le chemin n'est donc plus
+      # figé : on prend ce que Gradle a réellement produit, et on ANNONCE les
+      # tailles — un réglage de poids qu'on ne mesure pas est un réglage qu'on
+      # suppose.
+      - name: Taille et signature des APK
+        working-directory: apps/mobile/android
+        run: |
+          set -euo pipefail
+          APKSIGNER="$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)"
+          shopt -s nullglob
+          mapfile -t APKS < <(ls -1 app/build/outputs/apk/release/*.apk | sort)
+          if [ "${#APKS[@]}" -eq 0 ]; then
+            echo "::error::aucun APK produit dans app/build/outputs/apk/release"
+            ls -R app/build/outputs/apk || true
+            exit 1
+          fi
+          echo "### APK produits" >> "$GITHUB_STEP_SUMMARY"
+          echo "| fichier | taille |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          for apk in "${APKS[@]}"; do
+            size="$(du -h "$apk" | cut -f1)"
+            echo "| $(basename "$apk") | $size |" >> "$GITHUB_STEP_SUMMARY"
+            echo "--- $(basename "$apk") : $size ---"
+            "$APKSIGNER" verify --print-certs "$apk" | head -3
+          done
+
+          # La mesure est aussi RÉÉCRITE dans le dépôt. Un chiffre qu'on ne
+          # peut plus relire finit toujours par être réinventé : les journaux
+          # CI se perdent, les artefacts expirent au bout de 30 jours. La
+          # publier la rend vérifiable par un simple `git pull` — pour nous
+          # comme pour la personne qui relit.
+          REPORT="${{ github.workspace }}/apps/mobile/APK_SIZES.md"
+          {
+            echo "# Tailles d'APK — mesurées"
+            echo
+            echo "Dernière mesure : $(date -u '+%Y-%m-%d %H:%M') UTC"
+            echo "Commit mesuré : \`${GITHUB_SHA}\`"
+            echo
+            echo "Écrit automatiquement par \`Mobile — APK Android (démo)\`."
+            echo "Ne pas éditer à la main : réécrit à chaque build."
+            echo
+            echo "| fichier | taille |"
+            echo "|---|---|"
+            for apk in "${APKS[@]}"; do
+              echo "| $(basename "$apk") | $(du -h "$apk" | cut -f1) |"
+            done
+          } > "$REPORT"
+          echo "--- rapport écrit : $REPORT ---"
+          cat "$REPORT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AYROVI-demo-apk
+          path: apps/mobile/android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publier la mesure dans le dépôt
+        # ⚠️ Deux leçons, payées par un build rouge :
+        #
+        # 1. Ce job a `defaults.run.working-directory: apps/mobile`. Un chemin
+        #    RELATIF dans cette étape devenait « apps/mobile/apps/mobile/… », et
+        #    `git add` échouait — alors que le fichier existait bien. D'où
+        #    `git -C "$REPO"` partout : le dépôt est désigné en absolu, plus
+        #    jamais relativement au dossier courant.
+        #
+        # 2. Il n'y a PAS de `set -e` ici, volontairement. Avec lui, un simple
+        #    `git add` sur un fichier absent faisait échouer TOUT LE BUILD —
+        #    alors que l'APK était construit, signé et téléversé. Un rapport ne
+        #    doit jamais rendre rouge un build vert : on prévient et on passe.
+        if: github.event_name == 'push'
+        run: |
+          set -uo pipefail
+          REPO="${{ github.workspace }}"
+          BRANCH="${GITHUB_REF#refs/heads/}"
+          REPORT="apps/mobile/APK_SIZES.md"
+
+          # Diagnostic : si le fichier manque, on le DIT au lieu de mourir.
+          if [ ! -f "$REPO/$REPORT" ]; then
+            echo "::warning::$REPORT absent — l'étape de mesure ne l'a pas produit ; rien à publier"
+            ls -la "$REPO/apps/mobile" || true
+            exit 0
+          fi
+
+          git -C "$REPO" config user.name "github-actions[bot]"
+          git -C "$REPO" config user.email "github-actions[bot]@users.noreply.github.com"
+          git -C "$REPO" add "$REPORT" || {
+            echo "::warning::git add impossible, mesure non publiée"
+            exit 0
+          }
+
+          if git -C "$REPO" diff --cached --quiet; then
+            echo "tailles inchangées — rien à publier"
+            exit 0
+          fi
+
+          # [skip ci] : sans lui ce commit redéclencherait ce workflow, qui
+          # recommencerait, et ainsi de suite.
+          git -C "$REPO" commit -m "chore(apk): tailles mesurées — ${GITHUB_SHA::7} [skip ci]" || {
+            echo "::warning::commit impossible, mesure non publiée"
+            exit 0
+          }
+          git -C "$REPO" pull --rebase --autostash origin "$BRANCH" || {
+            echo "::warning::réconciliation impossible, mesure non publiée"
+            exit 0
+          }
+          git -C "$REPO" push origin "HEAD:$BRANCH" || {
+            echo "::warning::publication impossible, la mesure reste dans le résumé CI"
+            exit 0
+          }
+      # Le commit bot ci-dessus est poussé avec le GITHUB_TOKEN : aucun
+      # workflow ne se déclenche dessus, le head du PR n'a donc AUCUN check
+      # et la PR reste bloquée (« required checks missing »). On rallume les
+      # vérifications PR en dispatchant les deux workflows sur la branche
+      # (`workflow_dispatch` est exempté de la règle GITHUB_TOKEN). Sans effet
+      # de bord : aucun de ces deux workflows ne committe, donc pas de boucle.
+      - name: Rallume les vérifications PR sur le head (commit bot)
+        if: success() && github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="${GITHUB_REF#refs/heads/}"
+          gh workflow run ci.yml --ref "$BRANCH" || echo "::warning::dispatch ci.yml impossible"
+          gh workflow run mobile.yml --ref "$BRANCH" || echo "::warning::dispatch mobile.yml impossible"
