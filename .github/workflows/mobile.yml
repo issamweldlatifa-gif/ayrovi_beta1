@@ -53,3 +53,6 @@ jobs:
 
       - name: Tests
         run: npm test
+
+      - name: Tests composants (carrousel Hero)
+        run: npm run test:ui

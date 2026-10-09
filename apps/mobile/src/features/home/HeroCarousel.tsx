@@ -37,16 +37,13 @@ import {
 } from '@/api/public';
 import { adaptiveInk, pickHeroText } from './heroPalette';
 import { isDemoSlide } from './heroDemo';
+import {
+  CARD_ASPECT, CARD_GAP, carouselGeometry, indexForOffset, isStillAfterDrag, nextIndex,
+  shouldAutoplayAdvance,
+} from './heroCarouselLogic';
 
 /* ── Géométrie ───────────────────────────────────────────────────────────── */
 
-const CARD_ASPECT = 4 / 5;
-const CARD_GAP = 16;
-/** Largeur du voisin visible à droite/gauche : le carrousel se devine. */
-const CARD_PEEK = 24;
-/** Sur tablette, la carte est plafonnée (le 4:5 géant n'a pas de sens). */
-const CARD_MAX_WIDTH = 400;
-const CARD_MIN_WIDTH = 240;
 
 /* ── États du composant parent ───────────────────────────────────────────── */
 
@@ -118,12 +115,8 @@ function HeroCarouselView({
     return () => subscription.remove();
   }, []);
 
-  // Géométrie : carte bord-à-bord, le voisin dépasse (découvrabilité du swipe).
-  const cardWidth = Math.min(
-    CARD_MAX_WIDTH,
-    Math.max(CARD_MIN_WIDTH, width - 2 * gutter - CARD_GAP - CARD_PEEK),
-  );
-  const stride = cardWidth + CARD_GAP;
+  // Géométrie : carte active centrée, voisines visibles des deux côtés.
+  const { cardWidth, stride, sideInset } = carouselGeometry(width);
 
   // Fond effectif de chaque carte (palette serveur, repli = surface du thème).
   const backgrounds = useMemo(
@@ -162,25 +155,32 @@ function HeroCarouselView({
 
   // Autoplay : en pause au toucher, hors foyer, ou application en arrière-plan.
   const paused = interacting || !isFocused || !appActive;
+  // Lecture de l'index courant depuis une ref : le minuteur ne se recrée pas à chaque carte.
+  const indexRef = useRef(activeIndex);
+  useEffect(() => { indexRef.current = activeIndex; }, [activeIndex]);
   useEffect(() => {
     if (!settings.autoplay || reduceMotion || slides.length < 2 || paused) return;
     const timer = setInterval(() => {
-      setActiveIndex((current) => {
-        const next = (current + 1) % slides.length;
-        listRef.current?.scrollToIndex({ index: next, animated: true });
-        return next;
-      });
+      const current = indexRef.current;
+      // Dernière carte atteinte : on s'arrête, sans retour brusque au début.
+      if (!shouldAutoplayAdvance(current, slides.length)) return;
+      const next = nextIndex(current, slides.length);
+      indexRef.current = next; // sans attendre le rendu : deux ticks successifs restent cohérents
+      listRef.current?.scrollToIndex({ index: next, animated: true, viewPosition: 0.5 });
+      setActiveIndex(next);
     }, settings.autoplayIntervalMs);
     return () => clearInterval(timer);
   }, [settings.autoplay, settings.autoplayIntervalMs, slides.length, paused, reduceMotion]);
 
   const onScrollBeginDrag = useCallback(() => setInteracting(true), []);
+  // Glissement relâché SANS élan : RN ne déclenche pas `onMomentumScrollEnd`,
+  // donc la pause de l'autoplay resterait bloquée. On la libère ici.
+  const onScrollEndDrag = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (isStillAfterDrag(event.nativeEvent.velocity?.x)) setInteracting(false);
+  }, []);
   const onScrollEnd = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
     setInteracting(false);
-    // `inverted` (RTL) ⇒ offset négatif : la valeur absolue suit toujours l'index.
-    const x = Math.abs(event.nativeEvent.contentOffset.x);
-    const next = Math.min(slides.length - 1, Math.max(0, Math.round(x / stride)));
-    setActiveIndex(next);
+    setActiveIndex(indexForOffset(event.nativeEvent.contentOffset.x, stride, slides.length));
   }, [slides.length, stride]);
 
   const onPressCard = useCallback((card: HeroSlide) => {
@@ -206,14 +206,16 @@ function HeroCarouselView({
         inverted={theme.isRTL}
         showsHorizontalScrollIndicator={false}
         snapToInterval={stride}
+        snapToAlignment="center"
         decelerationRate="fast"
-        contentContainerStyle={{ paddingHorizontal: gutter, gap: CARD_GAP }}
+        contentContainerStyle={{ paddingHorizontal: sideInset, gap: CARD_GAP }}
         getItemLayout={(_, index) => ({ length: stride, offset: stride * index, index })}
         initialNumToRender={2}
         maxToRenderPerBatch={2}
         windowSize={5}
         onMomentumScrollEnd={onScrollEnd}
         onScrollBeginDrag={onScrollBeginDrag}
+        onScrollEndDrag={onScrollEndDrag}
         renderItem={({ item }) => (
           <HeroCard
             card={item}
@@ -308,14 +310,20 @@ const HeroCard = memo(function HeroCard({ card, width, background, onPress }: He
         />
       </View>
       {cta ? (
-        <View
-          style={[styles.cardCta, { backgroundColor: theme.colors.action }]}
-          accessibilityElementsHidden
+        <Pressable
+          testID={`hero-card-${card.id}-cta`}
+          onPress={() => onPress(card)}
+          accessibilityRole="button"
+          accessibilityLabel={cta}
+          style={({ pressed }) => [
+            styles.cardCta,
+            { backgroundColor: theme.colors.action, opacity: pressed ? 0.7 : 1 },
+          ]}
         >
           <AppText variant="label" weight="bold" color={theme.colors.onAction} numberOfLines={1}>
             {cta}
           </AppText>
-        </View>
+        </Pressable>
       ) : null}
     </Pressable>
   );
