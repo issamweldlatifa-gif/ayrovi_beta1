@@ -19,7 +19,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AppText, Button, Card, KeyValue } from '@/design/ui';
 import { SubScreen } from '@/design/subScreen';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
-import { rowDirectionFor } from '@/design/layoutLogic';
 import { useTheme } from '@/design/theme';
 import { AppImage } from '@/design/appImage';
 import { useI18n, useT } from '@/i18n';
@@ -117,7 +116,7 @@ export default function AyWebsCartScreen() {
   const busyLine = setQuantity.isPending || removeLine.isPending || acceptPrice.isPending;
 
   const quantityRow = (item: AyWebsCartItem) => (
-    <View style={[styles.quantityRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+    <View style={styles.quantityRow}>
       <Button
         label="−"
         tone="quiet"
@@ -223,7 +222,7 @@ export default function AyWebsCartScreen() {
               <AppText variant="caption" color={theme.colors.ink} accessibilityRole="alert">{note}</AppText>
             ) : null}
 
-            <View style={[styles.actions, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+            <View style={styles.actions}>
               <Button
                 label={t('aywebs.cartVerify')}
                 tone="quiet"

@@ -15,7 +15,6 @@ import { View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { AppText } from '@/design/ui';
-import { rowDirectionFor } from '@/design/layoutLogic';
 import { useTheme } from '@/design/theme';
 
 export interface SonimMarkProps {
@@ -37,7 +36,7 @@ export function SonimMark({
   const glyph = Math.round(size * 0.55);
 
   return (
-    <View style={[{ flexDirection: rowDirectionFor(theme.isRTL) }, { alignItems: 'center', gap: 10 }]}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
       <View
         accessibilityElementsHidden
         style={{
@@ -53,7 +52,7 @@ export function SonimMark({
       </View>
 
       {withName ? (
-        <View style={[{ flexDirection: rowDirectionFor(theme.isRTL) }, { alignItems: 'baseline', gap: 6 }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
           <AppText variant="label" weight="bold" color={theme.colors.ink} style={{ fontSize: 17, letterSpacing: 0.6 }}>
             {name}
           </AppText>

@@ -71,14 +71,4 @@ Vérifications : `npm run typecheck`, `npm test` (32 fichiers, 440 tests), `npm 
 | testID | 1 seul dans l'application | `testID` sur les primitives (`Button`, `LinkRow`, `AppScreen`, `SubScreen`, `AppImage`) et les actions clés (kebab-case — un `testID` en `dot.case` serait pris pour une clé i18n) |
 | CI | L'APK ne se construisait que sur `arena/c0321e79-ayrovi-beta1` | `mobile-android.yml` et `mobile.yml` déclenchés aussi sur `arena/bc19f283-ayrovi-beta1` |
 
-**Non fait (volontairement) :** vérification visuelle sur appareil (à faire sur l'APK démo reconstruit), liste virtualisée imbriquée dans un `ScrollView` (anti-patron).
-
-## Passe du 09/10/2026 — miroir RTL complet écran par écran (P6)
-
-| Zone | Avant | Après |
-|---|---|---|
-| Rangées non miroitées | 35 rangées `flexDirection: 'row'` en littéral dans 25 fichiers (écrans + composants) | Toutes passent par `rowDirectionFor(theme.isRTL)` (base LTR + surcharge inline au point d’usage) |
-| Alignements de bord | 8 `alignItems`/`alignSelf: 'flex-start'` épinglaient à gauche même en arabe | `startAlignFor(theme.isRTL)` (nouvelle décision pure, testée) : début de lecture à droite en RTL |
-| Écrans couverts | primitives + quelques écrans | tous les écrans avec rangées : onglets Lens, favoris, notifications, profil, panier AYWEBs, ocerex, montres, publications, sign-in, checkout (stepper), accueil (annonces), cartes produit/news/promotion/story, commentaires, reels, visionnage storie, SONIM, marque, bannière réseau, squelettes |
-
-**Verrous** : `startAlignFor` testé (`layoutLogic.test.ts`) ; deux verrous à ZÉRO dans `design-system.test.ts` (aucune rangée littérale en style inline ; tout fichier déclarant une rangée littérale la miroite). Suite mobile : 445 tests verts, typecheck clean, tokens:check OK.
+**Non fait (volontairement) :** miroir RTL complet écran par écran (reste P6), vérification visuelle sur appareil (à faire sur l'APK démo reconstruit), liste virtualisée imbriquée dans un `ScrollView` (anti-patron).

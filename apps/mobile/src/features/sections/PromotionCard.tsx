@@ -10,7 +10,6 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/design/ui';
-import { rowDirectionFor } from '@/design/layoutLogic';
 import { useTheme } from '@/design/theme';
 import { AppImage } from '@/design/appImage';
 import { useT } from '@/i18n';
@@ -70,7 +69,7 @@ export function PromotionCard({ promotion, onOpen }: PromotionCardProps) {
         <AppText variant="caption" color={theme.colors.muted} numberOfLines={2}>{promotion.description}</AppText>
       ) : null}
 
-      <View style={[styles.footer, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+      <View style={styles.footer}>
         {promotion.promoCode ? (
           <AppText variant="caption" weight="bold" color={theme.colors.accentText}>{promotion.promoCode}</AppText>
         ) : null}

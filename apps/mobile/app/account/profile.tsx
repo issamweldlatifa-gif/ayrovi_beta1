@@ -11,7 +11,6 @@ import * as ImagePicker from 'expo-image-picker';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AppText, Button, Card, Field, ToggleRow } from '@/design/ui';
 import { ErrorBlock, LoadingBlock } from '@/design/states';
-import { rowDirectionFor } from '@/design/layoutLogic';
 import { useTheme } from '@/design/theme';
 import { AppImage } from '@/design/appImage';
 import { useI18n } from '@/i18n';
@@ -131,7 +130,7 @@ export default function ProfileScreen() {
       {overview.isError ? <ErrorBlock error={overview.error} onRetry={() => overview.refetch()} /> : null}
 
       <Card title={t('profile.photo')}>
-        <View style={[styles.photoRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+        <View style={styles.photoRow}>
           {account?.avatarUrl ? (
             <AppImage
               uri={account.avatarUrl}

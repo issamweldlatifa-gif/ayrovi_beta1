@@ -916,22 +916,6 @@ App Shell
 `I18nManager.forceRTL` **غير مستعمل** عن قصد: يفرض إعادة تشغيل ويمنع
 التبديل الفوري (موثّق في `theme.tsx`).
 
-## 16.4 دوال المرآة — قرارات النظام
-
-المرآة قرار **منطقي** يُتخذ في `src/design/layoutLogic.ts`، لا قرار شاشة:
-
-| الدالة | الغرض | القاعدة |
-|---|---|---|
-| `rowDirectionFor(theme.isRTL)` | اتجاه صف ذي ترتيب (أيقونة+تسمية، stepper، ترويسة) | `row` في LTR، `row-reverse` في RTL — العنصر الأول يبقى من côté القراءة |
-| `startAlignFor(theme.isRTL)` | محاذاة أفقية داخل حاوية عامودية (`alignItems`/`alignSelf`) | `flex-start` في LTR (اليسار)، `flex-end` في RTL (اليمين) |
-
-**Verrous** (`tests/design-system.test.ts` — à ZÉRO) :
-
-- أي صف littéral en style inline : ممنوع ;
-- أي ملف يعلن صفاً littéralاً (`flexDirection: 'row'` في `StyleSheet`) يجب أن يحمل المرآة (`rowDirectionFor`).
-
-P6 (2026-10-09) : مرآة RTL كاملة شاشة-ب-شاشة — 35 صفاً + 8 محاذاة «بداية القراءة» migrées إلى الدوال.
-
 ---
 
 # 17 — ANTI-PATTERNS (قائمة الممنوعات)

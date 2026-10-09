@@ -14,7 +14,6 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppText } from '@/design/ui';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { SubScreen } from '@/design/subScreen';
-import { rowDirectionFor, startAlignFor } from '@/design/layoutLogic';
 import { useTheme } from '@/design/theme';
 import { AppImage } from '@/design/appImage';
 import { useT } from '@/i18n';
@@ -79,14 +78,14 @@ export default function PublicationsScreen() {
                   <AppText variant="caption" color={theme.colors.muted}>{item.subtitle}</AppText>
                 ) : null}
 
-                <View style={[styles.actions, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+                <View style={styles.actions}>
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={liked[item.id] ? t('social.liked') : t('social.like')}
                     accessibilityState={{ disabled: !signedIn }}
                     disabled={!signedIn}
                     onPress={() => toggleLike(item)}
-                    style={[styles.action, { flexDirection: rowDirectionFor(theme.isRTL) }, { opacity: signedIn ? 1 : 0.45 }]}
+                    style={[styles.action, { opacity: signedIn ? 1 : 0.45 }]}
                   >
                     <Ionicons
                       name={liked[item.id] ? 'heart' : 'heart-outline'}
@@ -100,7 +99,7 @@ export default function PublicationsScreen() {
                     accessibilityRole="button"
                     accessibilityLabel={t('social.comments')}
                     onPress={() => setCommentsFor(item)}
-                    style={[styles.action, { flexDirection: rowDirectionFor(theme.isRTL) }]}
+                    style={styles.action}
                   >
                     <Ionicons name="chatbubble-outline" size={20} color={theme.colors.muted} />
                     <AppText variant="caption" color={theme.colors.muted}>{String(countsFor?.comments ?? 0)}</AppText>
@@ -122,7 +121,7 @@ export default function PublicationsScreen() {
         <View style={[styles.sheet, { backgroundColor: theme.colors.canvas }]}>
           <AppText variant="title" weight="bold">{t('social.comments')}</AppText>
           {commentsFor ? <Comments targetId={commentsFor.id} /> : null}
-          <Pressable accessibilityRole="button" onPress={closeComments} style={[styles.closeBtn, { alignSelf: startAlignFor(theme.isRTL) }]}>
+          <Pressable accessibilityRole="button" onPress={closeComments} style={styles.closeBtn}>
             <AppText variant="label" weight="bold" color={theme.colors.ink}>{t('social.close')}</AppText>
           </Pressable>
         </View>

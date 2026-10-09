@@ -13,7 +13,6 @@
 import { StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppText } from './ui';
-import { rowDirectionFor } from './layoutLogic';
 import { useTheme } from './theme';
 import { useT } from '@/i18n';
 
@@ -26,7 +25,6 @@ export function NetworkBanner() {
       testID="network-banner"
       style={[
         styles.banner,
-        { flexDirection: rowDirectionFor(theme.isRTL) },
         {
           backgroundColor: theme.status.warning.soft,
           borderBottomColor: theme.status.warning.border,

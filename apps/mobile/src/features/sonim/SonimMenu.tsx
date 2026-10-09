@@ -22,7 +22,6 @@ import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { AppText, Drawer, DrawerItem } from '@/design/ui';
-import { rowDirectionFor } from '@/design/layoutLogic';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
 import { SonimMark } from './SonimMark';
@@ -79,7 +78,6 @@ export function SonimMenu({ visible, onClose, onNewChat, onOpenThread, threads }
               onPress={() => { onClose(); onOpenThread(thread); }}
               style={({ pressed }) => [
                 styles.thread,
-                { flexDirection: rowDirectionFor(theme.isRTL) },
                 { minHeight: theme.geometry.minTarget, opacity: pressed ? 0.7 : 1 },
               ]}
             >

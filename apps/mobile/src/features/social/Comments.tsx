@@ -13,7 +13,6 @@ import { ActivityIndicator, FlatList, Pressable, StyleSheet, TextInput, View } f
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { AppText } from '@/design/ui';
-import { rowDirectionFor } from '@/design/layoutLogic';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
 import { fetchComments, sendInteraction, type SocialComment } from '@/api/social';
@@ -91,7 +90,7 @@ export function Comments({ targetId }: CommentsProps) {
       />
 
       {signedIn ? (
-        <View style={[styles.form, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+        <View style={styles.form}>
           <TextInput
             value={draft}
             onChangeText={setDraft}

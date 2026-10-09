@@ -14,7 +14,6 @@ import { FlatList, Modal, Pressable, StyleSheet, View } from 'react-native';
 import { AppText } from '@/design/ui';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { SubScreen } from '@/design/subScreen';
-import { startAlignFor } from '@/design/layoutLogic';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
 import { useReels, useSocialCounts } from '@/api/hooks';
@@ -76,7 +75,7 @@ export default function ReelsScreen() {
         <View style={[styles.sheet, { backgroundColor: theme.colors.canvas }]}>
           <AppText variant="title" weight="bold">{t('social.comments')}</AppText>
           {commentsFor ? <Comments targetId={commentsFor.id} /> : null}
-          <Pressable accessibilityRole="button" onPress={closeComments} style={[styles.closeBtn, { alignSelf: startAlignFor(theme.isRTL) }]}>
+          <Pressable accessibilityRole="button" onPress={closeComments} style={styles.closeBtn}>
             <AppText variant="label" weight="bold" color={theme.colors.ink}>{t('social.close')}</AppText>
           </Pressable>
         </View>

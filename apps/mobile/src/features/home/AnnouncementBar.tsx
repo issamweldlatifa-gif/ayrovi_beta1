@@ -9,7 +9,6 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { AppText } from '@/design/ui';
-import { rowDirectionFor } from '@/design/layoutLogic';
 import { useTheme } from '@/design/theme';
 import type { Announcement } from '@/api/public';
 
@@ -30,7 +29,6 @@ export function AnnouncementBar({ messages }: { messages: Announcement[] }) {
       onPress={() => setIndex((value) => (value + 1) % messages.length)}
       style={[
         styles.bar,
-        { flexDirection: rowDirectionFor(theme.isRTL) },
         {
           backgroundColor: theme.colors.infoSoft,
           borderColor: theme.colors.line,

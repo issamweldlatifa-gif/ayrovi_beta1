@@ -10,7 +10,6 @@ import { StyleSheet, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AppText, Button, Card } from '@/design/ui';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
-import { rowDirectionFor } from '@/design/layoutLogic';
 import { useTheme } from '@/design/theme';
 import { AppImage } from '@/design/appImage';
 import { useI18n } from '@/i18n';
@@ -52,7 +51,7 @@ export default function FavoritesScreen() {
 
       {favorites.data?.map((favorite) => (
         <Card key={favorite.id}>
-          <View style={[styles.row, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+          <View style={styles.row}>
             {favorite.imageUrl ? (
               <AppImage
                 uri={mediaUrl(favorite.imageUrl)}

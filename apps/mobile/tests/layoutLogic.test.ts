@@ -3,7 +3,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
-  actionDirectionFor, responsiveMetricsFor, rowDirectionFor, screenContentGap, startAlignFor,
+  actionDirectionFor, responsiveMetricsFor, rowDirectionFor, screenContentGap,
 } from '../src/design/layoutLogic';
 
 describe('géométrie responsive commune', () => {
@@ -40,11 +40,6 @@ describe('géométrie responsive commune', () => {
   it('rowDirectionFor garde le premier enfant du côté de la lecture', () => {
     expect(rowDirectionFor(false)).toBe('row');
     expect(rowDirectionFor(true)).toBe('row-reverse');
-  });
-
-  it('startAlignFor épingle le début de lecture : gauche en LTR, droite en RTL', () => {
-    expect(startAlignFor(false)).toBe('flex-start');
-    expect(startAlignFor(true)).toBe('flex-end');
   });
 
   it('AppScreen et SubScreen partagent le jeton d’espacement de section', () => {

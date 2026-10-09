@@ -25,7 +25,6 @@ import { AppHeader } from '@/features/shell/AppHeader';
 import { AppText, Button, Card, Field, KeyValue, ResponsiveActionGroup, SectionHeader } from '@/design/ui';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { AppImage } from '@/design/appImage';
-import { rowDirectionFor } from '@/design/layoutLogic';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
 import { isApiError, userMessage } from '@/api/errors';
@@ -163,7 +162,7 @@ export default function LensScreen() {
           <AppImage uri={preview} style={styles.preview} contentFit="contain" accessibilityLabel={t('lens.previewAlt')} />
         ) : null}
         {busy ? (
-          <View style={[styles.row, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+          <View style={styles.row}>
             <ActivityIndicator />
             <AppText variant="caption" color={theme.colors.muted}>{t('lens.analyzing')}</AppText>
           </View>

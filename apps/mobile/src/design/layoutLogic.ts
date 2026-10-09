@@ -57,15 +57,6 @@ export function rowDirectionFor(isRTL: boolean): RowDirection {
   return isRTL ? 'row-reverse' : 'row';
 }
 
-/**
- * Alignement HORIZONTAL d'un conteneur en colonne (alignItems/alignSelf) :
- * « début de lecture » épingle à gauche en LTR (`flex-start`) — en RTL il faut
- * épingler à droite (`flex-end`). À appeler avec `theme.isRTL`.
- */
-export function startAlignFor(isRTL: boolean): 'flex-start' | 'flex-end' {
-  return isRTL ? 'flex-end' : 'flex-start';
-}
-
 /** Un seul espacement vertical entre blocs, partagé par AppScreen et SubScreen. */
 export function screenContentGap(space: readonly number[]): number {
   const gap = space[2];

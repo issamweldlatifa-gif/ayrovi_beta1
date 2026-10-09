@@ -14,8 +14,6 @@ import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useMutation, useQuery } from '@tanstack/react-query';
 
-import { rowDirectionFor } from '@/design/layoutLogic';
-import { useTheme } from '@/design/theme';
 import { AppText, Button, Card, KeyValue } from '@/design/ui';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { SubScreen } from '@/design/subScreen';
@@ -25,7 +23,6 @@ import { fetchLensWatches, removeLensWatch } from '@/api/lens';
 
 export default function LensWatchesScreen() {
   const { t, locale } = useI18n();
-  const theme = useTheme();
   const [note, setNote] = useState('');
 
   const watches = useQuery({
@@ -83,7 +80,7 @@ export default function LensWatchesScreen() {
                 <KeyValue label={t('lens.watchTarget')} value={`${watch.targetPriceTnd.toFixed(2)} TND`} />
               ) : null}
               <KeyValue label={t('lens.watchCheckedAt')} value={watch.lastCheckedAt || '—'} />
-              <View style={[styles.row, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+              <View style={styles.row}>
                 <Button
                   label={t('lens.watchRemove')}
                   tone="quiet"

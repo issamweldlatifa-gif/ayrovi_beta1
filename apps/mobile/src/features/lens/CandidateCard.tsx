@@ -9,7 +9,6 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText, Button, KeyValue } from '@/design/ui';
-import { rowDirectionFor } from '@/design/layoutLogic';
 import { useTheme } from '@/design/theme';
 import { AppImage } from '@/design/appImage';
 import { useI18n } from '@/i18n';
@@ -78,7 +77,7 @@ export function CandidateCard({ candidate, onOpen, onWatch, watchBusy = false }:
       {candidate.priceOrigin === 'search' ? (
         <AppText variant="caption" color={theme.colors.muted}>{t('lens.priceFromSearch')}</AppText>
       ) : null}
-      <View style={[styles.actions, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+      <View style={styles.actions}>
         <Button label={t('lens.openInAywebs')} tone="quiet" onPress={() => onOpen(candidate)} />
         {onWatch ? (
           <Button

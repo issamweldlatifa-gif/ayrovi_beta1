@@ -18,7 +18,6 @@ import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, View } fro
 import { router } from 'expo-router';
 
 import { AppText, Button, KeyValue } from '@/design/ui';
-import { rowDirectionFor } from '@/design/layoutLogic';
 import { useTheme } from '@/design/theme';
 import { AppImage } from '@/design/appImage';
 import { useI18n } from '@/i18n';
@@ -238,7 +237,7 @@ export function AddToCartSheet({
                 {!added.linked && added.reason ? (
                   <KeyValue label={t('aywebs.linkReason')} value={added.reason} />
                 ) : null}
-                <View style={[styles.row, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+                <View style={styles.row}>
                   <Button
                     label={t('aywebs.goToCart')}
                     onPress={() => { onClose(); router.push('/aywebs/cart'); }}
@@ -263,7 +262,7 @@ export function AddToCartSheet({
                       <AppText variant="label">
                         {group.attribute}{chosen ? ` : ${chosen}` : ''}
                       </AppText>
-                      <View style={[styles.chips, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+                      <View style={styles.chips}>
                         {group.values.map((value) => {
                           const state = optionAvailability(group.attribute, value);
                           const unavailable = state === 'OUT_OF_STOCK';
@@ -302,7 +301,7 @@ export function AddToCartSheet({
 
                 <View style={styles.group}>
                   <AppText variant="label">{t('aywebs.quantity')}</AppText>
-                  <View style={[styles.row, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+                  <View style={styles.row}>
                     <Button
                       label="−"
                       tone="quiet"
@@ -340,7 +339,7 @@ export function AddToCartSheet({
                   <AppText variant="caption" color={theme.status.danger.fg} accessibilityRole="alert">{error}</AppText>
                 ) : null}
 
-                <View style={[styles.row, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+                <View style={styles.row}>
                   <Button
                     label={t('aywebs.addToCart')}
                     onPress={confirm}
@@ -350,7 +349,7 @@ export function AddToCartSheet({
                   <Button label={t('common.cancel')} tone="quiet" onPress={onClose} disabled={busy} />
                 </View>
                 {busy ? (
-                  <View style={[styles.row, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+                  <View style={styles.row}>
                     <ActivityIndicator />
                     <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.adding')}</AppText>
                   </View>

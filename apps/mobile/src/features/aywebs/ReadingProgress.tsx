@@ -22,7 +22,6 @@ import { Animated, StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { AppText } from '@/design/ui';
-import { rowDirectionFor } from '@/design/layoutLogic';
 import { useTheme } from '@/design/theme';
 import {
   isTerminalPhase, remainingSeconds, stepState, WAITING_PHASES,
@@ -66,7 +65,7 @@ export function ReadingProgress({ phase, elapsedMs, labels, countdownPrefix = ''
   const terminal = isTerminalPhase(phase);
 
   return (
-    <View style={[styles.wrap, { flexDirection: rowDirectionFor(theme.isRTL) }]} accessibilityRole="progressbar">
+    <View style={styles.wrap} accessibilityRole="progressbar">
       {WAITING_PHASES.map((candidate, index) => {
         const state = stepState(index, phase);
         const label = labels[index] ?? candidate;
@@ -74,7 +73,7 @@ export function ReadingProgress({ phase, elapsedMs, labels, countdownPrefix = ''
           : state === 'active' ? theme.colors.ink
             : theme.colors.muted;
         return (
-          <View key={candidate} style={[styles.step, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+          <View key={candidate} style={styles.step}>
             <View style={styles.marker}>
               {state === 'done' ? (
                 <Ionicons name="checkmark-circle" size={16} color={theme.status.success.fg} />

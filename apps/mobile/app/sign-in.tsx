@@ -16,7 +16,6 @@ import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppText, Button, Card, Field, Segmented } from '@/design/ui';
-import { rowDirectionFor, startAlignFor } from '@/design/layoutLogic';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
 import { authMessage, type AuthMessageKey } from '@/api/authMessages';
@@ -182,7 +181,7 @@ export default function SignInScreen() {
           accessibilityRole="button"
           accessibilityLabel={t('common.close')}
           onPress={() => router.back()}
-          style={[styles.close, { alignItems: startAlignFor(theme.isRTL) }, { minHeight: theme.geometry.minTarget, minWidth: theme.geometry.minTarget }]}
+          style={[styles.close, { minHeight: theme.geometry.minTarget, minWidth: theme.geometry.minTarget }]}
         >
           <Ionicons name="close" size={26} color={theme.colors.ink} accessibilityElementsHidden />
         </Pressable>
@@ -337,7 +336,7 @@ export default function SignInScreen() {
               accessibilityRole="checkbox"
               accessibilityState={{ checked: marketing }}
               onPress={() => setMarketing((value) => !value)}
-              style={[styles.checkboxRow, { flexDirection: rowDirectionFor(theme.isRTL) }, { minHeight: theme.geometry.minTarget }]}
+              style={[styles.checkboxRow, { minHeight: theme.geometry.minTarget }]}
             >
               <Ionicons
                 name={marketing ? 'checkbox' : 'square-outline'}
