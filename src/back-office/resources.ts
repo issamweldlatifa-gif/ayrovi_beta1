@@ -772,6 +772,14 @@ const CUSTOM_RESOURCES: BackOfficeResourceDescriptor[] = [
     columns: [], fields: [], actions: ['list', 'view', 'edit'], audit: { module: 'HERO_VISUALS', resourceType: 'hero_visual' },
   },
   {
+    key: 'content.hero-carousel', label: 'Carrousel Hero', singular: 'réglage', module: 'cms', domain: 'CONTENT',
+    description: 'Réglages du carrousel Hero de l’accueil mobile (activation, autoplay, transitions, pagination) + aperçu mobile.',
+    navPermission: 'content:read', permissions: { list: 'cms:read', edit: 'cms:write' },
+    section: 'hero-carousel', nav: { group: 'Contenu', order: 75, icon: 'Palette' },
+    surface: 'custom', component: 'HeroCarouselPage', api: { prefix: '/hero-carousel-settings', kind: 'generic' },
+    columns: [], fields: [], actions: ['list', 'view', 'edit'], audit: { module: 'HERO_CAROUSEL', resourceType: 'hero_carousel_settings' },
+  },
+  {
     key: 'content.lens-section', label: 'LENS', singular: 'section', module: 'cms', domain: 'CONTENT',
     description: 'Section Lens de la page d’accueil.', navPermission: 'content:read', permissions: { list: 'cms:read', edit: 'cms:write' },
     section: 'lens-section', nav: { group: 'Contenu', order: 80, icon: 'LensBox' },
