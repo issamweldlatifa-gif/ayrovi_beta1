@@ -195,6 +195,51 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
   });
 });
 
+describe('Design System — miroir RTL des rangées', () => {
+  /**
+   * Le projet refuse `I18nManager.forceRTL` (redémarrage obligatoire) : le
+   * miroir est une DÉCISION explicite, `rowDirectionFor(theme.isRTL)` /
+   * `startAlignFor(theme.isRTL)` (`src/design/layoutLogic.ts`). Une rangée qui
+   * garde un sens d’ordre (icône+libellé, stepper, en-tête) non miroitée casse
+   * la lecture en arabe. Deux verrous, tous deux à ZÉRO :
+   */
+  it('aucune rangée `flexDirection: \'row\'` en style inline', () => {
+    // Un style inline ne décide pas seul de la direction : l’objet inline
+    // est le raccourci qu'on prend quand on oublie le miroir.
+    const offenders: string[] = [];
+    for (const rel of FILES) {
+      const text = code(rel);
+      for (const match of text.matchAll(/style=\{\{[^}]*flexDirection:\s*'row'/g)) {
+        const line = text.slice(0, match.index).split('\n').length;
+        offenders.push(`${rel}:${line}`);
+      }
+    }
+    expect(
+      offenders,
+      'Un style inline ne pose pas une rangée non miroitée : la direction se ' +
+        'décide avec `rowDirectionFor(theme.isRTL)` (miroir RTL).',
+    ).toEqual([]);
+  });
+
+  it('tout fichier qui déclare une rangée littérale la miroite (`rowDirectionFor`)', () => {
+    // La base LTR (`flexDirection: 'row'` dans un StyleSheet) est le défaut du
+    // patron « base + surcharge inline » ; le fichier doit alors porter le miroir.
+    const offenders: string[] = [];
+    for (const rel of FILES) {
+      if (TOKEN_FILES.has(rel)) continue;
+      const text = code(rel);
+      if (!/flexDirection:\s*'row'/.test(text)) continue;
+      if (text.includes('rowDirectionFor')) continue;
+      offenders.push(rel);
+    }
+    expect(
+      offenders,
+      'Une rangée déclarée en littéral doit être miroitée : ajoute ' +
+        '`rowDirectionFor(theme.isRTL)` au point d’usage (base + surcharge).',
+    ).toEqual([]);
+  });
+});
+
 describe('Design System — contrat sémantique des couleurs (§2.10)', () => {
   /**
    * Rappel du contrat, parce qu'un test qui ne dit pas sa raison devient

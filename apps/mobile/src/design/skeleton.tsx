@@ -15,6 +15,7 @@
  */
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { rowDirectionFor } from './layoutLogic';
 import { useTheme } from './theme';
 
 export function Skeleton({
@@ -98,7 +99,7 @@ export function HeroCarouselSkeleton({ style }: { style?: StyleProp<ViewStyle> }
 export function ListRowSkeleton() {
   const theme = useTheme();
   return (
-    <View style={[styles.row, { borderTopColor: theme.colors.line }]}>
+    <View style={[styles.row, { flexDirection: rowDirectionFor(theme.isRTL) }, { borderTopColor: theme.colors.line }]}>
       <Skeleton width={56} height={56} radius={theme.radius.control} />
       <View style={styles.rowText}>
         <Skeleton height={14} width="80%" />

@@ -15,6 +15,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { AppText } from '@/design/ui';
+import { rowDirectionFor } from '@/design/layoutLogic';
 import { useTheme } from '@/design/theme';
 
 export interface JourneyStep {
@@ -40,7 +41,7 @@ export function JourneyProgress({
   const theme = useTheme();
 
   return (
-    <View style={styles.wrap} accessibilityRole="tablist">
+    <View style={[styles.wrap, { flexDirection: rowDirectionFor(theme.isRTL) }]} accessibilityRole="tablist">
       {steps.map((step, index) => {
         const isLast = index === steps.length - 1;
         const done = completed[index] === true;
@@ -49,7 +50,7 @@ export function JourneyProgress({
         const labelColor = done || current ? theme.colors.ink : theme.colors.muted;
 
         return (
-          <View key={step.id} style={styles.stepWrap}>
+          <View key={step.id} style={[styles.stepWrap, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={step.label}

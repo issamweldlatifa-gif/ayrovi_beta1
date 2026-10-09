@@ -38,7 +38,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { AppText, Card } from '@/design/ui';
 import { useTheme } from '@/design/theme';
-import { rowDirectionFor } from '@/design/layoutLogic';
+import { rowDirectionFor, startAlignFor } from '@/design/layoutLogic';
 import { useI18n, useT } from '@/i18n';
 import { isApiError, userMessage } from '@/api/errors';
 import {
@@ -292,7 +292,7 @@ export default function AssistantScreen() {
             <Pressable
               accessibilityRole="button"
               onPress={() => { setReady(null); void checkStatus(); }}
-              style={[styles.retry, { minHeight: theme.geometry.minTarget }]}
+              style={[styles.retry, { alignItems: startAlignFor(theme.isRTL) }, { minHeight: theme.geometry.minTarget }]}
             >
               <AppText variant="label" weight="bold" color={theme.status.warning.fg}>{t('assistant.retry')}</AppText>
             </Pressable>

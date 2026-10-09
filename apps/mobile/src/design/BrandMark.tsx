@@ -15,6 +15,7 @@
 import { View } from 'react-native';
 
 import { AppText } from './ui';
+import { rowDirectionFor } from './layoutLogic';
 import { useTheme } from './theme';
 
 export interface BrandMarkProps {
@@ -30,7 +31,7 @@ export function BrandMark({ size = 36, withName = true, nameSize }: BrandMarkPro
   const theme = useTheme();
 
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }} accessibilityRole="image">
+    <View style={[{ flexDirection: rowDirectionFor(theme.isRTL) }, { alignItems: 'center', gap: 10 }]} accessibilityRole="image">
       <View
         style={{
           width: size,

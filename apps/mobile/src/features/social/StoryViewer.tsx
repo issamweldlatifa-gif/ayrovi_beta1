@@ -21,6 +21,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { VideoView, useVideoPlayer } from 'expo-video';
 
 import { AppText } from '@/design/ui';
+import { rowDirectionFor } from '@/design/layoutLogic';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
 import { mediaUrl } from '@/api/client';
@@ -127,7 +128,7 @@ export function StoryViewer({ stories, initialIndex = 0, visible, onClose, onOpe
       <StatusBar barStyle="light-content" />
       <View style={[styles.root, { backgroundColor: theme.colors.canvas, paddingTop: insets.top }]}>
         {/* أشرطة التقدّم — شريط لكل ستوري */}
-        <View style={styles.bars}>
+        <View style={[styles.bars, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
           {bars.map((position) => (
             <View key={position} style={[styles.barTrack, { backgroundColor: theme.colors.line }]}>
               <Animated.View
@@ -145,7 +146,7 @@ export function StoryViewer({ stories, initialIndex = 0, visible, onClose, onOpe
         </View>
 
         {/* رأس: الإغلاق */}
-        <View style={styles.topRow}>
+        <View style={[styles.topRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('social.close')}
@@ -195,7 +196,7 @@ export function StoryViewer({ stories, initialIndex = 0, visible, onClose, onOpe
             <AppText variant="caption" color={theme.colors.onMedia} numberOfLines={3}>{current.description}</AppText>
           ) : null}
 
-          <View style={styles.actions}>
+          <View style={[styles.actions, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={liked ? t('social.liked') : t('social.like')}

@@ -11,6 +11,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/design/ui';
+import { startAlignFor } from '@/design/layoutLogic';
 import { useTheme } from '@/design/theme';
 import { AppImage } from '@/design/appImage';
 import { useT } from '@/i18n';
@@ -70,7 +71,7 @@ export function StoryCard({ story, onOpen, viewed = false }: StoryCardProps) {
           <AppText variant="caption" weight="bold" numberOfLines={2}>{story.title}</AppText>
         ) : null}
         {story.cta ? (
-          <View style={[styles.cta, { backgroundColor: theme.colors.accent, borderRadius: theme.radius.cta }]}>
+          <View style={[styles.cta, { alignSelf: startAlignFor(theme.isRTL) }, { backgroundColor: theme.colors.accent, borderRadius: theme.radius.cta }]}>
             <AppText variant="caption" weight="bold" color={theme.colors.onAccent} numberOfLines={1}>{story.cta}</AppText>
           </View>
         ) : null}

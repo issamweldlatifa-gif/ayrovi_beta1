@@ -15,6 +15,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { VideoView, useVideoPlayer } from 'expo-video';
 
 import { AppText } from '@/design/ui';
+import { rowDirectionFor } from '@/design/layoutLogic';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
 import { mediaUrl } from '@/api/client';
@@ -101,14 +102,14 @@ export function ReelCard({ reel, active, counts, onOpenComments }: ReelCardProps
           <AppText variant="caption" color={theme.colors.muted} numberOfLines={2}>{reel.description}</AppText>
         ) : null}
 
-        <View style={styles.actions}>
+        <View style={[styles.actions, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={liked ? t('social.liked') : t('social.like')}
             accessibilityState={{ disabled: !signedIn }}
             disabled={!signedIn}
             onPress={toggleLike}
-            style={[styles.action, { opacity: signedIn ? 1 : 0.45 }]}
+            style={[styles.action, { flexDirection: rowDirectionFor(theme.isRTL) }, { opacity: signedIn ? 1 : 0.45 }]}
           >
             <Ionicons name={liked ? 'heart' : 'heart-outline'} size={20} color={liked ? theme.status.danger.fg : theme.colors.muted} accessibilityElementsHidden />
             <AppText variant="caption" color={theme.colors.muted}>{String(counts?.likes ?? reel.likes)}</AppText>
@@ -118,7 +119,7 @@ export function ReelCard({ reel, active, counts, onOpenComments }: ReelCardProps
             accessibilityRole="button"
             accessibilityLabel={t('social.comments')}
             onPress={() => onOpenComments(reel)}
-            style={styles.action}
+            style={[styles.action, { flexDirection: rowDirectionFor(theme.isRTL) }]}
           >
             <Ionicons name="chatbubble-outline" size={20} color={theme.colors.muted} accessibilityElementsHidden />
             <AppText variant="caption" color={theme.colors.muted}>{String(counts?.comments ?? 0)}</AppText>
@@ -128,7 +129,7 @@ export function ReelCard({ reel, active, counts, onOpenComments }: ReelCardProps
             accessibilityRole="button"
             accessibilityLabel={t('social.share')}
             onPress={share}
-            style={styles.action}
+            style={[styles.action, { flexDirection: rowDirectionFor(theme.isRTL) }]}
           >
             <Ionicons name="share-social-outline" size={20} color={theme.colors.muted} accessibilityElementsHidden />
             <AppText variant="caption" color={theme.colors.muted}>{String(counts?.shares ?? 0)}</AppText>

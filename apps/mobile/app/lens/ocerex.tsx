@@ -20,6 +20,7 @@ import * as ImagePicker from 'expo-image-picker';
 
 import { AppText, Button, Card, Field, KeyValue, ResponsiveActionGroup } from '@/design/ui';
 import { SubScreen } from '@/design/subScreen';
+import { rowDirectionFor } from '@/design/layoutLogic';
 import { useTheme } from '@/design/theme';
 import { AppImage } from '@/design/appImage';
 import { useI18n } from '@/i18n';
@@ -182,7 +183,7 @@ export default function OcerexScreen() {
           <AppImage uri={preview} style={styles.preview} contentFit="contain" accessibilityLabel={t('lens.previewAlt')} />
         ) : null}
         {busy ? (
-          <View style={styles.row}>
+          <View style={[styles.row, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
             <ActivityIndicator />
             <AppText variant="caption" color={theme.colors.muted}>{t('ocerex.working')}</AppText>
           </View>
@@ -225,7 +226,7 @@ export default function OcerexScreen() {
               {!extraction.currency && extraction.supportedCurrencies.length ? (
                 <>
                   <AppText variant="caption" color={theme.colors.muted}>{t('ocerex.chooseCurrency')}</AppText>
-                  <View style={styles.chips}>
+                  <View style={[styles.chips, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
                     {extraction.supportedCurrencies.map((currency) => {
                       const active = currencyChoice === currency;
                       return (

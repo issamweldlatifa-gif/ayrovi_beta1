@@ -9,6 +9,7 @@ import { StyleSheet, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AppText, Button, Card } from '@/design/ui';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
+import { rowDirectionFor } from '@/design/layoutLogic';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
 import { fetchNotifications, markNotificationsRead } from '@/api/account';
@@ -57,7 +58,7 @@ export default function NotificationsScreen() {
 
       {notifications.data?.map((item) => (
         <Card key={item.id} title={item.title || item.type}>
-          <View style={styles.head}>
+          <View style={[styles.head, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
             <AppText variant="caption" color={item.readAt ? theme.colors.muted : theme.status.info.fg}>
               {item.readAt ? t('notifications.read') : t('notifications.unread')}
             </AppText>

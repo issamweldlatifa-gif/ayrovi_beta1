@@ -28,7 +28,7 @@ import { AppImage } from '@/design/appImage';
 import { HeroCarouselSkeleton } from '@/design/skeleton';
 import { useTheme } from '@/design/theme';
 import { useResponsive } from '@/design/layout';
-import { rowDirectionFor } from '@/design/layoutLogic';
+import { rowDirectionFor, startAlignFor } from '@/design/layoutLogic';
 import { useI18n, useT } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import {
@@ -287,7 +287,7 @@ const HeroCard = memo(function HeroCard({ card, width, background, onPress }: He
       </View>
       {cta ? (
         <View
-          style={[styles.cardCta, { backgroundColor: theme.colors.action }]}
+          style={[styles.cardCta, { alignSelf: startAlignFor(theme.isRTL) }, { backgroundColor: theme.colors.action }]}
           accessibilityElementsHidden
         >
           <AppText variant="label" weight="bold" color={theme.colors.onAction} numberOfLines={1}>

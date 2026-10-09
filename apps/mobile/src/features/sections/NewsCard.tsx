@@ -8,6 +8,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/design/ui';
 import { newsCategoryText } from '@/api/labels';
+import { rowDirectionFor } from '@/design/layoutLogic';
 import { useTheme } from '@/design/theme';
 import { AppImage } from '@/design/appImage';
 import { useT } from '@/i18n';
@@ -37,7 +38,7 @@ export function NewsCard({ item, onOpen }: NewsCardProps) {
       accessibilityRole="button"
       accessibilityLabel={item.title}
       onPress={() => onOpen(item)}
-      style={[styles.row, { borderColor: theme.colors.line, borderRadius: theme.radius.card }]}
+      style={[styles.row, { flexDirection: rowDirectionFor(theme.isRTL) }, { borderColor: theme.colors.line, borderRadius: theme.radius.card }]}
     >
       <View style={[styles.thumb, { backgroundColor: theme.colors.surface, borderRadius: theme.radius.card }]}>
         {item.image ? (

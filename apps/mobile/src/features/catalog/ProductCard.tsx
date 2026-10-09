@@ -14,6 +14,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/design/ui';
+import { rowDirectionFor } from '@/design/layoutLogic';
 import { useTheme } from '@/design/theme';
 import { AppImage } from '@/design/appImage';
 import { useT, type Translate } from '@/i18n';
@@ -66,7 +67,7 @@ export function ProductCard({ product, onOpen }: ProductCardProps) {
 
       <AppText variant="label" weight="bold" numberOfLines={2} style={styles.name}>{product.name}</AppText>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
         {hasPrice ? (
           <AppText variant="label" weight="bold" color={theme.colors.ink}>
             {product.finalPrice.toFixed(2)} TND

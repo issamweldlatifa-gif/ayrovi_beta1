@@ -14,6 +14,7 @@
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { AppText } from '@/design/ui';
+import { startAlignFor } from '@/design/layoutLogic';
 import { useTheme } from '@/design/theme';
 import { AppImage } from '@/design/appImage';
 import { useI18n } from '@/i18n';
@@ -123,7 +124,7 @@ export function HeroSection({
           ]}
         />
       ) : null}
-      <View style={styles.copy}>
+      <View style={[styles.copy, { alignItems: startAlignFor(theme.isRTL) }]}>
         {order.map((key) => blocks[key] ?? null)}
       </View>
     </View>

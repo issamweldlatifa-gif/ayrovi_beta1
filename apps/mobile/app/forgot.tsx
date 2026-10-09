@@ -20,6 +20,7 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppText, Button, Card, Field } from '@/design/ui';
+import { startAlignFor } from '@/design/layoutLogic';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
 import { authMessage } from '@/api/authMessages';
@@ -89,7 +90,7 @@ export default function ForgotPasswordScreen() {
           accessibilityRole="button"
           accessibilityLabel={t('common.back')}
           onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/account'))}
-          style={[styles.close, { minHeight: theme.geometry.minTarget, minWidth: theme.geometry.minTarget }]}
+          style={[styles.close, { alignItems: startAlignFor(theme.isRTL) }, { minHeight: theme.geometry.minTarget, minWidth: theme.geometry.minTarget }]}
         >
           <Ionicons name={locale === 'ar' ? 'arrow-forward' : 'arrow-back'} size={26} color={theme.colors.ink} />
         </Pressable>
