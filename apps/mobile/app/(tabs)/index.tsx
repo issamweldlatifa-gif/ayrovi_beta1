@@ -6,8 +6,7 @@
  *     يرجّع للرئيسية، وحساب وسلّة وقائمة؛
  *  2. **هيرو**: مساحة إشهار (صورة أو فيديو أو كتابة، بحسب ما يبعثو الخادم)؛
  *  3. **ثلاث تبويبات** يفتحو شاشات **جوّا التطبيق**، موش صفحات في المتصفح؛
- *  4. **السكسيونات**، بترتيب الإدارة؛
- *  5. **الفوتر** بخلفية سوداء: الهوية، القنوات الرسمية، ووسائل الخلاص.
+ *  4. **الفوتر** بخلفية سوداء: الهوية، القنوات الرسمية، ووسائل الخلاص.
  *
  * ── شنوّا يسيّر البار السفلي ──────────────────────────────────────────────
  * تمرير هاذي الشاشة يغذّي `design/chrome`: البار ينسحب نزولاً ويرجع صعوداً.
@@ -25,7 +24,6 @@ import { AppHeader } from '@/features/shell/AppHeader';
 import { AnnouncementBar } from '@/features/home/AnnouncementBar';
 import { HeroSection } from '@/features/home/HeroSection';
 import { HomeTabs } from '@/features/home/HomeTabs';
-import { PublicSections } from '@/features/sections/PublicSections';
 import { Footer } from '@/features/shell/Footer';
 import { ErrorBlock } from '@/design/states';
 import { HeroSkeleton } from '@/design/skeleton';
@@ -90,9 +88,6 @@ export default function HomeScreen() {
 
       {/* التبويبات الثلاث — يفتحو جوّا التطبيق */}
       <HomeTabs />
-
-      {/* أقسام الموقع — الترتيب قرار الإدارة (`home-blocks`)، موش قرارنا. */}
-      <PublicSections />
 
       {/*
         الفوتر — خلفية سوداء عرض كامل.

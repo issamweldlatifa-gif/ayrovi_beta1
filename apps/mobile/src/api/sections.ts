@@ -1,27 +1,14 @@
 /**
- * أقسام الموقع — عروض، ستوريهات، أخبار، وترتيب الرئيسية (Q2، 08/10/2026).
+ * أقسام الموقع — عروض، ستوريهات، أخبار.
  *
- * لماذا هذا الملف: الموقع يعرض خمسة أقسام عمومية (`products`, `arrivals`,
- * `promotions`, `stories`, `news`) يترتّبوا على الرئيسية **بقرار من الإدارة**
- * (`home-blocks`). التطبيق كان يعرف اثنين فقط — فالرئيسية كانت نص محتوى.
+ * لماذا هذا الملف: écrans dédiés (`/promotions`, `/stories`, `/news`) lisent
+ * les mêmes endpoints publics. Le contenu reste piloté par l'API, jamais
+ * inventé côté client.
  *
- * قاعدتان تمنعان الرجوع للورا:
- *  • **الترتيب موش من عندنا**: `home-blocks` يقول `{id, sortOrder, visible}`؛
- *    قسم مخفي في الإدارة ⇒ مخفي في التطبيق. ما نخترعش قائمة ثابتة.
- *  • **حقل ناقص ⇒ قيمة محايدة**، موش استثناء يطيّح الشاشة.
+ * قاعدة: **حقل ناقص ⇒ قيمة محايدة**، موش استثناء يطيّح الشاشة.
  */
 import { apiGet } from './client';
 import type { RequestOptions } from './client';
-
-/** مفتاح قسم كما يعرّفه الموقع (المصدر الوحيد لأسماء الأقسام). */
-export type SectionId = 'products' | 'arrivals' | 'promotions' | 'stories' | 'news';
-
-/** كتلة رئيسية كما يقدّمها `GET /api/public/home-blocks`. */
-export interface HomeBlock {
-  id: SectionId;
-  sortOrder: number;
-  visible: boolean;
-}
 
 /** عرض تجري كما يقدّمه `GET /api/public/promotions`. */
 export interface Promotion {
@@ -72,8 +59,6 @@ export interface NewsItem {
   productId: string;
 }
 
-const SECTIONS: SectionId[] = ['products', 'arrivals', 'promotions', 'stories', 'news'];
-
 function str(value: unknown, fallback = ''): string {
   return typeof value === 'string' ? value : value === null || value === undefined ? fallback : String(value);
 }
@@ -81,10 +66,6 @@ function str(value: unknown, fallback = ''): string {
 function num(value: unknown): number {
   const parsed = typeof value === 'number' ? value : Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function bool(value: unknown): boolean {
-  return value === true || value === 1 || value === '1';
 }
 
 function list(value: unknown): string[] {
@@ -104,27 +85,6 @@ function rows(payload: unknown): Record<string, unknown>[] {
     const record = row(entry);
     return record ? [record] : [];
   });
-}
-
-/**
- * ترتيب أقسام الرئيسية.
- *
- * التحفّظ: معرّف موش معروف ⇒ يُسقَط (ما نعرضش قسم اخترعناه). وقسم موجود
- * في الخادم وما جاش في `home-blocks` ⇒ **يُعرض في الآخر**، لأنّ إخفاءه قرار
- * إداري صريح، أمّا سقوطو من القائمة فهو نقص بيانات موش إرادة.
- */
-export async function fetchHomeBlocks(options: RequestOptions = {}): Promise<HomeBlock[]> {
-  const payload = await apiGet('/api/public/home-blocks', options);
-  const declared = rows(payload).flatMap((entry) => {
-    const id = str(entry.id) as SectionId;
-    if (!SECTIONS.includes(id)) return [];
-    return [{ id, sortOrder: num(entry.sortOrder), visible: bool(entry.visible) }];
-  });
-  const missing = SECTIONS.filter((id) => !declared.some((entry) => entry.id === id));
-  return [
-    ...declared,
-    ...missing.map((id) => ({ id, sortOrder: 900 + SECTIONS.indexOf(id), visible: true })),
-  ].sort((a, b) => a.sortOrder - b.sortOrder || SECTIONS.indexOf(a.id) - SECTIONS.indexOf(b.id));
 }
 
 export async function fetchPromotions(options: RequestOptions = {}): Promise<Promotion[]> {

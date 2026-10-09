@@ -9,20 +9,16 @@ import {
   fetchAnnouncements, fetchHeroContent, fetchHeroVisual, fetchNavigation,
   type Announcement, type HeroContent, type HeroVisual, type NavLink,
 } from './public';
+import { fetchCatalogBrands } from './catalog';
 import {
-  fetchCatalogArrivals, fetchCatalogBrands, fetchCatalogProducts,
-  type CatalogArrival, type CatalogProduct,
-} from './catalog';
-import {
-  fetchHomeBlocks, fetchNews, fetchPromotions, fetchStories,
-  type HomeBlock, type NewsItem, type Promotion, type StoryItem,
+  fetchNews, fetchPromotions, fetchStories,
+  type NewsItem, type Promotion, type StoryItem,
 } from './sections';
 import { fetchFooterInfo, type FooterInfo } from './footer';
 import {
   fetchPublications, fetchReels, fetchSocialCounts, fetchStoryPublishers,
   type Publication, type Reel, type SocialCounts, type StoryPublisher,
 } from './social';
-import { fetchLensHero, type LensHeroContent } from './lens';
 
 /**
  * Clés de requête. `home` en préfixe : une invalidation globale du contenu
@@ -36,11 +32,8 @@ export const queryKeys = {
   announcements: ['home', 'announcements'] as const,
   // الكتالوج أثقل من المحتوى التحريري ⇒ نخفّف الطلبات بشوية.
   catalog: ['catalog'] as const,
-  catalogProducts: (arrivalId = '') => ['catalog', 'products', arrivalId] as const,
-  catalogArrivals: ['catalog', 'arrivals'] as const,
   catalogBrands: ['catalog', 'brands'] as const,
   // أقسام الموقع: ترتيبها قرار إداري ⇒ نفس معاملة المحتوى التحريري.
-  homeBlocks: ['sections', 'home-blocks'] as const,
   promotions: ['sections', 'promotions'] as const,
   stories: ['sections', 'stories'] as const,
   news: ['sections', 'news'] as const,
@@ -49,7 +42,6 @@ export const queryKeys = {
   publications: ['social', 'publications'] as const,
   publishers: ['social', 'publishers'] as const,
   socialCounts: (ids: string[]) => ['social', 'counts', [...ids].sort().join(',')] as const,
-  lensHero: ['lens', 'hero'] as const,
 };
 
 /**
@@ -72,24 +64,11 @@ export const useNavigation = (): UseQueryResult<NavLink[]> =>
 export const useAnnouncements = (): UseQueryResult<Announcement[]> =>
   useQuery({ queryKey: queryKeys.announcements, queryFn: ({ signal }) => fetchAnnouncements({ signal }), ...CONTENT });
 
-/** الكتالوج (Q1) — منتوجات المتجر، الوصولات، الماركات. */
+/** الكتالوج (Q1) — الماركات. */
 const CATALOG = { staleTime: 120_000, refetchOnMount: 'always' } as const;
-
-export const useCatalogProducts = (arrivalId = ''): UseQueryResult<CatalogProduct[]> =>
-  useQuery({
-    queryKey: queryKeys.catalogProducts(arrivalId),
-    queryFn: ({ signal }) => fetchCatalogProducts({ signal, arrivalId: arrivalId || undefined, limit: 50 }),
-    ...CATALOG,
-  });
-
-export const useCatalogArrivals = (): UseQueryResult<CatalogArrival[]> =>
-  useQuery({ queryKey: queryKeys.catalogArrivals, queryFn: ({ signal }) => fetchCatalogArrivals({ signal }), ...CATALOG });
 
 export const useCatalogBrands = (): UseQueryResult<string[]> =>
   useQuery({ queryKey: queryKeys.catalogBrands, queryFn: ({ signal }) => fetchCatalogBrands({ signal }), ...CATALOG });
-
-export const useHomeBlocks = (): UseQueryResult<HomeBlock[]> =>
-  useQuery({ queryKey: queryKeys.homeBlocks, queryFn: ({ signal }) => fetchHomeBlocks({ signal }), ...CONTENT });
 
 export const usePromotions = (): UseQueryResult<Promotion[]> =>
   useQuery({ queryKey: queryKeys.promotions, queryFn: ({ signal }) => fetchPromotions({ signal }), ...CONTENT });
@@ -119,6 +98,3 @@ export const useStoryPublishers = (): UseQueryResult<StoryPublisher[]> =>
 export const useSocialCounts = (ids: string[]): UseQueryResult<Record<string, SocialCounts>> =>
   useQuery({ queryKey: queryKeys.socialCounts(ids), queryFn: ({ signal }) => fetchSocialCounts(ids, { signal }), ...CONTENT });
 
-/** قسم LENS التعريفي — `null` يعني «ما يبانش»، وهو **ردّ صالح** موش خطأ. */
-export const useLensHero = (): UseQueryResult<LensHeroContent | null> =>
-  useQuery({ queryKey: queryKeys.lensHero, queryFn: ({ signal }) => fetchLensHero({ signal }), ...CONTENT });
