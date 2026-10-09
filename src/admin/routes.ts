@@ -167,12 +167,6 @@ export const resources: Record<string, ResourceConfig> = {
       void refreshHeroSlidePalette(db, row);
     },
   },
-  announcements: {
-    table: 'announcement_messages', module: 'ANNOUNCEMENTS', prefix: 'announcement', permission: 'content:write',
-    fields: ['text','display_order','active'], required: ['text'],
-    searchable: ['text'], sortable: ['text','display_order','active','created_at'], defaultSort: 'display_order',
-    softDelete: { active: 0 },
-  },
   // Barre publique sous l'en-tête — entièrement pilotée depuis l'Admin (décision 2026-09-22).
   // `destination` est une clé fermée du contrat partagé : le libellé est libre, la cible ne l'est pas.
   'public-nav': {

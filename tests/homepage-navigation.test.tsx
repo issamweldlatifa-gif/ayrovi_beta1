@@ -6,7 +6,6 @@ const navbarSource = readFileSync('client/src/components/Navbar.tsx', 'utf8');
 const bottomNavSource = readFileSync('client/src/components/BottomNavBar.tsx', 'utf8');
 const footerSource = readFileSync('client/src/components/Footer.tsx', 'utf8');
 const aboutSource = readFileSync('client/src/components/AboutSection.tsx', 'utf8');
-const announcementSource = readFileSync('client/src/components/TopAnnouncementBar.tsx', 'utf8');
 const cartSource = readFileSync('client/src/shop/ShopBagScreen.tsx', 'utf8');
 const checkoutCss = readFileSync('client/src/shop/shop.css', 'utf8');
 const confirmationCss = readFileSync('client/src/styles/order-confirmation.css', 'utf8');
@@ -29,7 +28,6 @@ describe('homepage close, sticky header and scroll-aware navigation', () => {
   });
 
   it('keeps every public chrome layer below cart and checkout overlays', () => {
-    expect(announcementSource).toContain('relative z-10');
     expect(bottomNavSource).toContain('bottom-0 z-30');
     // Le panier occupe la même bande d'avant-plan, désormais via sa propre classe.
     expect(cartSource).toContain('className="s-drape"');

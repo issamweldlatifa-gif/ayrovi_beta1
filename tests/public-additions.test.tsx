@@ -5,12 +5,9 @@ import { describe, expect, it } from 'vitest';
 import { publicPageForPath, PUBLIC_PAGES } from '../client/src/navigation/publicPages';
 import { PublicPageLinks } from '../client/src/components/PublicPageLinks';
 import { Footer, footerChannelLinks, safeChannelUrl } from '../client/src/components/Footer';
-import { publishedCampaign } from '../client/src/components/TopAnnouncementBar';
 import { LocaleProvider } from '../client/src/i18n/LocaleContext';
 
 const app = readFileSync('client/src/App.tsx', 'utf8');
-const promo = { name: 'Published campaign', description: 'Provider description', status: 'ACTIVE', starts_at: '2026-01-01T00:00:00Z', ends_at: '2027-01-01T00:00:00Z' };
-const now = Date.parse('2026-09-22T12:00:00Z');
 describe('additions without replacing the homepage', () => {
   it('preserves Hero, both admin-controlled Stories/Lens orders and all existing content hosts', () => {
     expect(app).toContain('<EvergreenHero />');
@@ -22,12 +19,12 @@ describe('additions without replacing the homepage', () => {
     expect(app).toContain('section.visible');
     expect(app).toContain('<BottomNavBar');
   });
-  it('places the ad and links after the header and before the existing homepage', () => {
+  it('places the links after the header and before the existing homepage', () => {
     const header = app.indexOf('<Navbar');
-    const ad = app.indexOf('<TopAnnouncementBar');
     const links = app.indexOf('<PublicPageLinks');
     const existing = app.indexOf('<div className="managed-public-sections">');
-    expect(header).toBeLessThan(ad); expect(ad).toBeLessThan(links); expect(links).toBeLessThan(existing);
+    expect(header).toBeLessThan(links); expect(links).toBeLessThan(existing);
+    expect(app).not.toContain('TopAnnouncementBar');
   });
   it.each(PUBLIC_PAGES)('maps $href to a standalone page and accepts a trailing slash', page => {
     expect(publicPageForPath(page.href)).toBe(page.id);
@@ -73,11 +70,6 @@ describe('additions without replacing the homepage', () => {
   });
 });
 describe('truthful campaign and channel data', () => {
-  it('uses a currently active published campaign without inventing a discount', () => expect(publishedCampaign([promo], now)).toEqual({ title: promo.name, description: promo.description, href: '/gift-cards' }));
-  it.each([
-    null, {}, [], [{ ...promo, status: 'DRAFT' }], [{ ...promo, ends_at: '2026-01-02' }],
-    [{ ...promo, starts_at: '2027-01-01' }], [{ ...promo, starts_at: 'invalid' }], [{ ...promo, name: ' ' }],
-  ])('rejects inactive/missing campaign %j', rows => expect(publishedCampaign(rows, now)).toBeNull());
   it.each(['javascript:alert(1)', 'data:text/html,x', '//example.com', '', 'https://a:b@example.com', 'ftp://example.com', 'https://'])('rejects unsafe social URL %s', value => expect(safeChannelUrl(value)).toBeNull());
   it('accepts a configured public https destination', () => expect(safeChannelUrl(' https://instagram.com/ayrovi ')).toBe('https://instagram.com/ayrovi'));
 });

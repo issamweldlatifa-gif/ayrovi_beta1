@@ -56,7 +56,7 @@ describe('back office shell (P2.0)', () => {
       // `public-nav` (2026-09-22) : la barre publique sous l'en-tête est une ressource du moteur,
       // donc son écran, ses droits et son audit sont ceux du framework — aucun écran dédié.
       expect(descriptors.map((descriptor) => descriptor.section).sort()).toEqual(
-        ['arrivals', 'assistant', 'brands', 'discovery-markets', 'discovery-sources', 'hero', 'news', 'products', 'promotions', 'public-nav', 'stories', 'ticker'].sort());
+        ['arrivals', 'assistant', 'brands', 'discovery-markets', 'discovery-sources', 'hero', 'news', 'products', 'promotions', 'public-nav', 'stories'].sort());
       // Les colonnes viennent de ResourceConfig : vérifier une colonne = vérifier le moteur.
       const products = descriptors.find((descriptor) => descriptor.section === 'products')!;
       expect(products.fields.map((field) => field.key)).toEqual(
@@ -117,7 +117,7 @@ describe('back office shell (P2.0)', () => {
       // atteignables par deep link (`hero`, `stories`).
       const expected = [
         'dashboard', 'arrivals', 'products', 'promotions', 'social', 'news', 'magazine-agent', 'brands',
-        'hero-visuals', 'lens-section', 'home-sections', 'ticker', 'catalogue-products',
+        'hero-visuals', 'lens-section', 'home-sections', 'catalogue-products',
         'catalogue-categories', 'catalogue-brands', 'arrival-ingestion', 'orders', 'lens-requests',
         'assistant-support', 'lens-lab', 'ai-discovery', 'customers', 'pricing', 'reports', 'erp-employees',
         'erp-organization', 'erp-permissions', 'erp-audit', 'erp-events', 'erp-environment', 'interface',
@@ -163,7 +163,7 @@ describe('back office shell (P2.0)', () => {
       // « aligné » sur le serveur, c'est l'inverse qui est engagé.
       const legacyIds = [
         'dashboard', 'arrivals', 'products', 'promotions', 'social', 'news', 'magazine-agent', 'brands',
-        'hero-visuals', 'lens-section', 'home-sections', 'ticker', 'catalogue-products',
+        'hero-visuals', 'lens-section', 'home-sections', 'catalogue-products',
         'catalogue-categories', 'catalogue-brands', 'arrival-ingestion', 'orders', 'lens-requests',
         'assistant-support', 'lens-lab', 'ai-discovery', 'customers', 'pricing', 'reports', 'erp-employees',
         'erp-organization', 'erp-permissions', 'erp-audit', 'erp-events', 'erp-environment', 'interface',
@@ -224,7 +224,7 @@ describe('back office shell (P2.0)', () => {
 
     test('un rôle ne voit que ce que la permission autorise — sans jamais enlever davantage', async () => {
       const cases: Array<[Session, string[], string[]]> = [
-        [content, ['products', 'ticker', 'news', 'public-nav'], ['users', 'erp-permissions', 'lens-lab', 'erp-employees', 'customers']],
+        [content, ['products', 'news', 'public-nav'], ['users', 'erp-permissions', 'lens-lab', 'erp-employees', 'customers']],
         [orders, ['orders', 'arrival-ingestion'], ['users', 'settings', 'products', 'erp-audit']],
         [admin, ['reports', 'products', 'arrival-ingestion'], ['users', 'erp-permissions', 'erp-employees']],
       ];
@@ -398,7 +398,7 @@ describe('back office shell (P2.0)', () => {
       expect(adminRoutes).toContain("router.use('/back-office', createBackOfficeRouter(db))");
       expect(adminRoutes).toContain('registerFrameworkResources(resources)');
       // Les chemins générés par le moteur sont intacts (le descripteur ne les a pas renommés).
-      for (const name of ['arrivals', 'products', 'promotions', 'stories', 'news', 'brands', 'hero-slides', 'announcements', 'ai-knowledge']) {
+      for (const name of ['arrivals', 'products', 'promotions', 'stories', 'news', 'brands', 'hero-slides', 'ai-knowledge']) {
         expect(adminRoutes, `ressource ${name} toujours décrite côté serveur`).toMatch(new RegExp(`^  '?${name}'?: \\{`, 'm'));
       }
     });

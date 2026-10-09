@@ -6,9 +6,9 @@
  */
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 import {
-  fetchAnnouncements, fetchHeroCarouselSettings, fetchHeroContent, fetchHeroSlides,
+  fetchHeroCarouselSettings, fetchHeroContent, fetchHeroSlides,
   fetchHeroVisual, fetchNavigation,
-  type Announcement, type HeroCarouselSettings, type HeroContent, type HeroSlide,
+  type HeroCarouselSettings, type HeroContent, type HeroSlide,
   type HeroVisual, type NavLink,
 } from './public';
 import { fetchCatalogBrands } from './catalog';
@@ -36,7 +36,6 @@ export const queryKeys = {
   heroSlides: ['home', 'hero-slides'] as const,
   heroCarouselSettings: ['home', 'hero-carousel-settings'] as const,
   navigation: ['home', 'navigation'] as const,
-  announcements: ['home', 'announcements'] as const,
   // الكتالوج أثقل من المحتوى التحريري ⇒ نخفّف الطلبات بشوية.
   catalog: ['catalog'] as const,
   catalogBrands: ['catalog', 'brands'] as const,
@@ -90,9 +89,6 @@ export const useHeroCarouselSettings = (): UseQueryResult<HeroCarouselSettings> 
 
 export const useNavigation = (): UseQueryResult<NavLink[]> =>
   useQuery({ queryKey: queryKeys.navigation, queryFn: ({ signal }) => fetchNavigation({ signal }), ...CONTENT });
-
-export const useAnnouncements = (): UseQueryResult<Announcement[]> =>
-  useQuery({ queryKey: queryKeys.announcements, queryFn: ({ signal }) => fetchAnnouncements({ signal }), ...CONTENT });
 
 /** الكتالوج (Q1) — الماركات. */
 const CATALOG = { staleTime: 120_000, refetchOnMount: 'always' } as const;

@@ -43,11 +43,6 @@ export interface NavLink {
   order: number;
 }
 
-export interface Announcement {
-  id: string;
-  text: string;
-}
-
 /* ── التحقّق ───────────────────────────────────────────────────────────────── */
 
 const str = (value: unknown): string => (typeof value === 'string' ? value : '');
@@ -124,15 +119,6 @@ export function parseNavigation(payload: unknown): NavLink[] {
   }).sort((a, b) => a.order - b.order);
 }
 
-export function parseAnnouncements(payload: unknown): Announcement[] {
-  if (!Array.isArray(payload)) return [];
-  return payload.flatMap((row) => {
-    if (!isRecord(row)) return [];
-    const text = str(row.text).trim();
-    return text ? [{ id: idOf(row.id), text }] : [];
-  });
-}
-
 /* ── نقاط النهاية ─────────────────────────────────────────────────────────── */
 
 export async function fetchHeroContent(options?: RequestOptions): Promise<HeroContent | null> {
@@ -148,11 +134,6 @@ export async function fetchHeroVisual(options?: RequestOptions): Promise<HeroVis
 export async function fetchNavigation(options?: RequestOptions): Promise<NavLink[]> {
   const { data } = await apiGet<unknown>('/api/public/navigation', options);
   return parseNavigation(data);
-}
-
-export async function fetchAnnouncements(options?: RequestOptions): Promise<Announcement[]> {
-  const { data } = await apiGet<unknown>('/api/public/announcement-messages', options);
-  return parseAnnouncements(data);
 }
 
 /* ── جاهزية الخادم: «أي كود قاعد يخدم فعلاً» ──────────────────────────────── */

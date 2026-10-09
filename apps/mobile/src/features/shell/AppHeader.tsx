@@ -18,6 +18,7 @@ import { BrandMark } from '@/design/BrandMark';
 import { Drawer, DrawerItem } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
+import { adaptiveInk } from '@/features/home/heroPalette';
 
 const ICON_SHADOW = {
   // Ombre discrète pendant le survol du contenu, sans ajouter de fond au header.
@@ -27,12 +28,13 @@ const ICON_SHADOW = {
 } as const;
 
 function HeaderIcon({
-  name, label, onPress, scrolled,
+  name, label, onPress, scrolled, color,
 }: {
   name: keyof typeof Ionicons.glyphMap;
   label: string;
   onPress: () => void;
   scrolled: boolean;
+  color: string;
 }) {
   const theme = useTheme();
   return (
@@ -50,16 +52,28 @@ function HeaderIcon({
       ]}
       hitSlop={8}
     >
-      <Ionicons name={name} size={22} color={theme.colors.ink} style={scrolled ? undefined : ICON_SHADOW} />
+      <Ionicons name={name} size={22} color={color} style={scrolled ? undefined : ICON_SHADOW} />
     </Pressable>
   );
 }
 
-export function AppHeader({ scrolled }: { scrolled: boolean }) {
+export function AppHeader({
+  scrolled, heroBackground = null,
+}: {
+  scrolled: boolean;
+  /** Fond de la carte Hero active : repris par le header tant qu'il est au sommet. */
+  heroBackground?: string | null;
+}) {
   const theme = useTheme();
   const t = useT();
   const insets = useSafeAreaInsets();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  // Au sommet, sur une carte Hero : le header prend sa couleur et ses icônes
+  // suivent la luminance du fond. Après défilement : surface lisible d'origine.
+  const onHero = !scrolled && heroBackground !== null;
+  const barBackground = onHero ? heroBackground : (scrolled ? theme.colors.surface : 'transparent');
+  const iconColor = onHero ? adaptiveInk(heroBackground, theme.colors) : theme.colors.ink;
 
   // En arabe, la lecture commence à droite : le logo est à DROITE, les actions
   // à gauche. Mettre le logo à gauche en RTL, c’est commencer une phrase par la
@@ -82,7 +96,7 @@ export function AppHeader({ scrolled }: { scrolled: boolean }) {
             paddingBottom: theme.space[1],
             paddingHorizontal: theme.space[2],
             flexDirection: row,
-            backgroundColor: scrolled ? theme.colors.surface : 'transparent',
+            backgroundColor: barBackground,
             borderBottomColor: scrolled ? theme.colors.line : 'transparent',
           },
         ]}
@@ -107,18 +121,21 @@ export function AppHeader({ scrolled }: { scrolled: boolean }) {
             label={t('nav.profile')}
             onPress={() => go('/(tabs)/account')}
             scrolled={scrolled}
+            color={iconColor}
           />
           <HeaderIcon
             name="bag-outline"
             label={t('cart.title')}
             onPress={() => go('/(tabs)/cart')}
             scrolled={scrolled}
+            color={iconColor}
           />
           <HeaderIcon
             name="menu-outline"
             label={t('nav.menu')}
             onPress={() => { setMenuOpen(true); }}
             scrolled={scrolled}
+            color={iconColor}
           />
         </View>
       </View>

@@ -264,11 +264,6 @@ const LEGACY_RESOURCE_META: Record<string, {
     section: 'hero', aliases: ['hero-slides'], resourceType: 'hero_visual', nav: null,
     navlessReason: 'Table `hero_slides` éditée par le moteur générique ; l’écran visible est « Visuels d’accueil » (content.hero-visuals). Deep links `hero` et `hero-slides` conservés.',
   },
-  announcements: {
-    key: 'cms.announcements', module: 'cms', domain: 'CONTENT', label: 'Ticker annonces', singular: 'annonce',
-    description: 'Bandeau d’annonces du haut de page.',
-    section: 'ticker', resourceType: 'announcement', nav: { group: 'Contenu', order: 110, icon: 'Bell' },
-  },
   'public-nav': {
     key: 'cms.public-nav', module: 'cms', domain: 'CONTENT', label: 'Barre sous l’en-tête', singular: 'onglet public',
     description: 'Onglets affichés sous l’en-tête du site (Arrivage, Gift & Cards, Magazine) : libellés FR/AR, ordre et visibilité. La destination est choisie dans une liste fermée — aucun lien mort possible.',

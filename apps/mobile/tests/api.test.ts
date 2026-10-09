@@ -4,7 +4,7 @@ import { failureFrom, parseRetryAfter, unwrap } from '../src/api/envelope';
 import { ApiError, isApiError, userMessage } from '../src/api/errors';
 import { API_BASE_URL } from '../src/api/config';
 import {
-  parseAnnouncements, parseHeroContent, parseHeroVisual, parseNavigation,
+  parseHeroContent, parseHeroVisual, parseNavigation,
 } from '../src/api/public';
 
 /* ── Doubles de `fetch` ────────────────────────────────────────────────────── */
@@ -259,9 +259,4 @@ describe('lecture du contenu public', () => {
     expect(links[2]).toMatchObject({ labelFr: 'عربي', labelAr: 'عربي' });
   });
 
-  it('nettoie les annonces vides', () => {
-    expect(parseAnnouncements([{ id: 1, text: ' Livraison offerte ' }, { id: 2, text: '   ' }, { id: 3 }]))
-      .toEqual([{ id: '1', text: 'Livraison offerte' }]);
-    expect(parseAnnouncements('nope')).toEqual([]);
-  });
 });

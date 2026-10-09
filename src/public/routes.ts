@@ -421,12 +421,6 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     res.json({ success: true, data });
   });
 
-  router.get('/announcement-messages', (_req, res) => {
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    const rows = db.all<any>(`SELECT id,text FROM announcement_messages WHERE active=1 ORDER BY display_order,id`);
-    res.json({ success: true, data: rows });
-  });
-
   /** Visual الـ Hero النشط — المجدول الصالح حالياً، وإلا آخر منشور، وإلا الافتراضي */
   router.get('/hero/active', (_req, res) => {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');

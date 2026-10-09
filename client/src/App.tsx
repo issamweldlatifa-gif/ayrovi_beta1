@@ -5,7 +5,6 @@ import { PublicPageLinks } from './components/PublicPageLinks';
 import { publicPageForPath } from './navigation/publicPages';
 import { isKnownPagePath } from '../../shared/publicSeo';
 import { NotFoundPage } from './components/NotFoundPage';
-import { TopAnnouncementBar } from './components/TopAnnouncementBar';
 import { Navbar } from './components/Navbar';
 import { EvergreenHero } from './components/EvergreenHero';
 import { StoriesShowcase } from './components/StoriesShowcase';
@@ -502,7 +501,7 @@ export const App: React.FC = () => {
       />
       </div>
 
-      {!publicPage && !unknownPath && <><TopAnnouncementBar /><PublicPageLinks /></>}
+      {!publicPage && !unknownPath && <><PublicPageLinks /></>}
 
       {appView === 'app:about' && <Suspense fallback={null}><AboutPage section={interfaceConfig.sections.find(section => section.id === 'about')} onClose={closeAppView} /></Suspense>}
 

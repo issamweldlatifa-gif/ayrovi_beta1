@@ -231,15 +231,6 @@ const SETTINGS_TABLE_SQL = `CREATE TABLE IF NOT EXISTS settings (
   updated_by TEXT
 );`;
 
-const ANNOUNCEMENT_MESSAGES_TABLE_SQL = `CREATE TABLE IF NOT EXISTS announcement_messages (
-  id TEXT PRIMARY KEY,
-  text TEXT NOT NULL,
-  display_order INTEGER NOT NULL DEFAULT 0,
-  active INTEGER NOT NULL DEFAULT 1,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
-);`;
-
 /**
  * Barre publique sous l'en-tête (onglets Arrivage / Gift & Cards / Magazine).
  * `destination` est une clé de `shared/publicNavigation.ts` — jamais une URL libre : le chemin
@@ -1682,9 +1673,6 @@ export class QatafoDatabase {
     this.recordArrivalMultistoreMigration();
     seedArrivalStores(this);
 
-    // شريط الإعلانات العلوي (Trust Ticker) — إنشاء الجدول وزرع الرسائل الافتراضية مرة واحدة
-    this.db.exec(ANNOUNCEMENT_MESSAGES_TABLE_SQL);
-
     // Barre publique sous l'en-tête — les onglets sont pilotés depuis l'Admin (onglet de navigation).
     this.db.exec(PUBLIC_NAV_ITEMS_TABLE_SQL);
 
@@ -1890,22 +1878,6 @@ export class QatafoDatabase {
       const nowBlock = new Date().toISOString();
       const insertBlock = this.db.prepare('INSERT INTO home_blocks (id,sort_order,visible,updated_at) VALUES (?,?,1,?)');
       [['transition', 10], ['discovery', 20], ['brands', 30], ['lens', 40]].forEach(([id, order]) => insertBlock.run(id, order, nowBlock));
-    }
-
-    if (!(this.db.prepare('SELECT COUNT(*) count FROM announcement_messages').get() as { count: number }).count) {
-      const seededAt = new Date().toISOString();
-      const insertSeed = this.db.prepare('INSERT INTO announcement_messages (id,text,display_order,active,created_at,updated_at) VALUES (?,?,?,?,?,?)');
-      this.db.transaction(() => {
-        for (const [index, text] of [
-          'Prix confirmé avant commande',
-          'Dédouanement inclus',
-          'Acompte sécurisé 20 %',
-          'Livraison dans les 24 gouvernorats',
-          'Service client 7j/7',
-        ].entries()) {
-          insertSeed.run(`announcement_${randomUUID()}`, text, index + 1, 1, seededAt, seededAt);
-        }
-      })();
     }
 
     // Barre publique : les trois destinations officielles existent dès la première installation.

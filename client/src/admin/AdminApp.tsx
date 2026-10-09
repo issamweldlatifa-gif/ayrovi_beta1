@@ -128,14 +128,6 @@ const resources: Record<string, ResourceDefinition> = {
       { key: 'published_from', label: 'Visible du', type: 'date' }, { key: 'published_to', label: 'Visible au', type: 'date' },
     ],
   },
-  ticker: {
-    title: 'Ticker annonces', singular: 'message', description: 'Messages du bandeau supérieur AYROVI — contenu uniquement, le design reste fixe.', endpoint: '/announcements', keyField: 'text', statusField: 'active', permission: 'content:write',
-    defaults: { text: '', display_order: 0, active: true },
-    fields: [
-      { key: 'text', label: 'Message affiché', type: 'text', required: true, full: true },
-      { key: 'display_order', label: 'Ordre d’affichage', type: 'number' }, { key: 'active', label: 'Publié', type: 'boolean' },
-    ],
-  },
   assistant: {
     title: 'Assistant IA', singular: 'connaissance', description: 'Source administrable des réponses commerciales critiques de l’Assistant AYROVI.', endpoint: '/ai-knowledge', keyField: 'question', statusField: 'active', permission: 'ai:write',
     defaults: { category: 'FAQ', question: '', answer: '', keywords: [], priority: 0, active: true },

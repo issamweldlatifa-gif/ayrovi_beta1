@@ -21,7 +21,6 @@ import { Linking } from 'react-native';
 
 import { AppScreen, FullBleed } from '@/design/layout';
 import { AppHeader } from '@/features/shell/AppHeader';
-import { AnnouncementBar } from '@/features/home/AnnouncementBar';
 import { HeroCarousel } from '@/features/home/HeroCarousel';
 import { HeroSection } from '@/features/home/HeroSection';
 import { HomeTabs } from '@/features/home/HomeTabs';
@@ -29,7 +28,7 @@ import { Footer } from '@/features/shell/Footer';
 import { ErrorBlock } from '@/design/states';
 import { HeroSkeleton } from '@/design/skeleton';
 import {
-  useAnnouncements, useHeroCarouselSettings, useHeroContent, useHeroSlides, useHeroVisual,
+  useHeroCarouselSettings, useHeroContent, useHeroSlides, useHeroVisual,
 } from '@/api/hooks';
 import { apiUrl } from '@/api/client';
 
@@ -42,20 +41,21 @@ import { apiUrl } from '@/api/client';
  */
 export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
+  // Couleur de la carte Hero active : le header la reprend (en haut de page).
+  const [heroBackground, setHeroBackground] = useState<string | null>(null);
 
   const hero = useHeroContent();
   const visual = useHeroVisual();
-  const announcements = useAnnouncements();
   const heroSlides = useHeroSlides();
   const heroCarouselSettings = useHeroCarouselSettings();
 
   const reload = useCallback(() => {
     setRefreshing(true);
     Promise.allSettled([
-      hero.refetch(), visual.refetch(), announcements.refetch(),
+      hero.refetch(), visual.refetch(),
       heroSlides.refetch(), heroCarouselSettings.refetch(),
     ]).finally(() => setRefreshing(false));
-  }, [hero, visual, announcements, heroSlides, heroCarouselSettings]);
+  }, [hero, visual, heroSlides, heroCarouselSettings]);
 
   const openLink = useCallback((href: string) => {
     Linking.openURL(apiUrl(href)).catch(() => {});
@@ -66,7 +66,7 @@ export default function HomeScreen() {
   return (
     <AppScreen
       // شفاف · ثابت · والصفحة تمرّ من تحتو — الـ`absolute` الوحيد المسموح (§3)
-      overlayHeader={({ scrolled }) => <AppHeader scrolled={scrolled} />}
+      overlayHeader={({ scrolled }) => <AppHeader scrolled={scrolled} heroBackground={heroBackground} />}
       // البار السفلي يضيف منطقته الآمنة لنفسو، والمحتوى ما يضيفهاش (§4.3-3)
       hasBottomBar
       // تمرير الشاشة يسيّر انسحاب البار (Q8)
@@ -75,8 +75,6 @@ export default function HomeScreen() {
       refreshing={refreshing}
       testID="home"
     >
-      <AnnouncementBar messages={announcements.data ?? []} />
-
       {/*
         الهيرو — كاروسيل Administré (hero_slides) مع fond adaptatif.
         L'ancien hero reste le repli : module éteint, API en erreur,
@@ -85,6 +83,7 @@ export default function HomeScreen() {
       <HeroCarousel
         settings={heroCarouselSettings}
         slides={heroSlides}
+        onActiveBackgroundChange={setHeroBackground}
         fallback={
           heroLoading ? (
             <HeroSkeleton />

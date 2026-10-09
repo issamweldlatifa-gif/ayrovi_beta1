@@ -55,9 +55,11 @@ interface HeroCarouselProps {
   slides: UseQueryResult<HeroSlide[]>;
   /** Repli : l'ancien hero éditorial (module désactivé / erreur / vide). */
   fallback: ReactNode;
+  /** Fond de la carte active (ou `null` hors carrousel) — le header le reprend. */
+  onActiveBackgroundChange?: (color: string | null) => void;
 }
 
-export function HeroCarousel({ settings, slides, fallback }: HeroCarouselProps) {
+export function HeroCarousel({ settings, slides, fallback, onActiveBackgroundChange }: HeroCarouselProps) {
   // 1. Chargement ⇒ squelette, jamais un indicateur indéfini ni un trou blanc.
   if (settings.isPending || slides.isPending) return <HeroCarouselSkeleton />;
   // 2. Erreur de réglages ⇒ défauts sûrs (module actif, sobre, sans autoplay).
@@ -65,12 +67,24 @@ export function HeroCarousel({ settings, slides, fallback }: HeroCarouselProps) 
   const cards = slides.data ?? [];
   // 3. Désactivé / erreur slides / aucune carte ⇒ repli sur l'ancien hero.
   if (!config.enabled || slides.isError || cards.length === 0) return <>{fallback}</>;
-  return <HeroCarouselView settings={config} slides={cards} />;
+  return (
+    <HeroCarouselView
+      settings={config}
+      slides={cards}
+      onActiveBackgroundChange={onActiveBackgroundChange}
+    />
+  );
 }
 
 /* ── Le carrousel ─────────────────────────────────────────────────────────── */
 
-function HeroCarouselView({ settings, slides }: { settings: HeroCarouselSettings; slides: HeroSlide[] }) {
+function HeroCarouselView({
+  settings, slides, onActiveBackgroundChange,
+}: {
+  settings: HeroCarouselSettings;
+  slides: HeroSlide[];
+  onActiveBackgroundChange?: (color: string | null) => void;
+}) {
   const theme = useTheme();
   const t = useT();
   const { locale } = useI18n();
@@ -120,6 +134,12 @@ function HeroCarouselView({ settings, slides }: { settings: HeroCarouselSettings
     inputRange: slides.map((_, index) => index),
     outputRange: backgrounds,
   });
+
+  // Le header reprend la couleur de la carte active ; remise à zéro au démontage.
+  useEffect(() => {
+    onActiveBackgroundChange?.(backgrounds[activeIndex] ?? null);
+  }, [activeIndex, backgrounds, onActiveBackgroundChange]);
+  useEffect(() => () => onActiveBackgroundChange?.(null), [onActiveBackgroundChange]);
 
   // Transition du fond de section vers la carte active.
   useEffect(() => {
