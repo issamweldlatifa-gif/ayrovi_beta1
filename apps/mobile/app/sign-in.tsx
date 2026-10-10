@@ -23,6 +23,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppText, Button, Card, Field } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { rowDirectionFor } from '@/design/layoutLogic';
+import { useResponsive } from '@/design/layout';
 import { useI18n } from '@/i18n';
 import { authMessage, type AuthMessageKey } from '@/api/authMessages';
 import { fetchServerReadiness, mobileSessionSupport } from '@/api/public';
@@ -44,6 +45,7 @@ const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
 
 export default function SignInScreen() {
   const theme = useTheme();
+  const { gutter } = useResponsive();
   const legalBlue = theme.mode === 'dark' ? LINK_BLUE.dark : LINK_BLUE.light;
   const { t, locale } = useI18n();
   const insets = useSafeAreaInsets();
@@ -338,6 +340,7 @@ export default function SignInScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.screen,
+          { paddingHorizontal: gutter },
           { paddingTop: insets.top + theme.space[2], paddingBottom: insets.bottom + theme.space[5] },
         ]}
         keyboardShouldPersistTaps="handled"
@@ -640,7 +643,7 @@ export default function SignInScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { paddingHorizontal: 16, gap: 12 },
+  screen: { gap: 12 },
   remembered: { alignItems: 'center', gap: 12, paddingHorizontal: 12, paddingVertical: 10 },
   avatar: {
     width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center',

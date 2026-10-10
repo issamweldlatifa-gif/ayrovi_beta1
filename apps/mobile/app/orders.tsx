@@ -15,6 +15,7 @@ import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
 import { AppImage } from '@/design/appImage';
 import { rowDirectionFor } from '@/design/layoutLogic';
+import { useResponsive } from '@/design/layout';
 import { useI18n } from '@/i18n';
 import { fetchOrders } from '@/api/account';
 import { statusText } from '@/api/labels';
@@ -23,6 +24,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function OrdersScreen() {
   const theme = useTheme();
+  const { gutter } = useResponsive();
   const t = useI18n().t;
   const insets = useSafeAreaInsets();
   const query = useQuery({
@@ -61,7 +63,7 @@ export default function OrdersScreen() {
         data={query.data ?? []}
         keyExtractor={(order) => order.id}
         contentContainerStyle={{
-          paddingHorizontal: theme.space[3],
+          paddingHorizontal: gutter,
           paddingBottom: insets.bottom + theme.space[4],
           gap: theme.space[2],
           flexGrow: 1,

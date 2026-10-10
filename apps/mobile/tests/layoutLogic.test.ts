@@ -8,17 +8,17 @@ import {
 
 describe('géométrie responsive commune', () => {
   it.each([
-    [320, 'compact', 1, 16],
-    [392, 'regular', 1, 16],
-    [599, 'regular', 1, 16],
-    [600, 'wide', 2, 24],
-    [768, 'tablet', 3, 32],
+    [320, 'compact', 1, 12],
+    [392, 'regular', 1, 12],
+    [599, 'regular', 1, 12],
+    [600, 'wide', 2, 16],
+    [768, 'tablet', 3, 24],
   ] as const)('largeur %i → %s, %i colonne(s), gouttière %i', (width, breakpoint, columns, gutter) => {
     expect(responsiveMetricsFor(width)).toEqual({ breakpoint, columns, gutter });
   });
 
   it('une largeur non mesurable retombe sur le palier le plus compact', () => {
-    expect(responsiveMetricsFor(Number.NaN)).toEqual({ breakpoint: 'compact', columns: 1, gutter: 16 });
+    expect(responsiveMetricsFor(Number.NaN)).toEqual({ breakpoint: 'compact', columns: 1, gutter: 12 });
   });
 
   it('les groupes d’actions s’empilent sur mobile et ne passent en rangée qu’en espace large', () => {

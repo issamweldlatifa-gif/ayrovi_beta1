@@ -29,10 +29,11 @@ export function responsiveMetricsFor(width: number): ResponsiveMetrics {
           ? 'wide'
           : 'tablet';
   const table: Record<Breakpoint, Omit<ResponsiveMetrics, 'breakpoint'>> = {
-    compact: { columns: 1, gutter: SPACE[3] },
-    regular: { columns: 1, gutter: SPACE[3] },
-    wide: { columns: 2, gutter: SPACE[4] },
-    tablet: { columns: 3, gutter: SPACE[5] },
+    // Marge d'écran unique : téléphone = 12 (était 16), un cran de moins partout.
+    compact: { columns: 1, gutter: SPACE[2] },
+    regular: { columns: 1, gutter: SPACE[2] },
+    wide: { columns: 2, gutter: SPACE[3] },
+    tablet: { columns: 3, gutter: SPACE[4] },
   };
   return { breakpoint, ...table[breakpoint] };
 }

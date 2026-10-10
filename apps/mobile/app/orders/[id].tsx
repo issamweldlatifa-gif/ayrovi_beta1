@@ -20,6 +20,7 @@ import { ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
 import { AppImage } from '@/design/appImage';
 import { rowDirectionFor } from '@/design/layoutLogic';
+import { useResponsive } from '@/design/layout';
 import { useI18n } from '@/i18n';
 import { fetchOrderDetail } from '@/api/account';
 import { statusText } from '@/api/labels';
@@ -32,6 +33,7 @@ import { ScrollView } from 'react-native';
 
 export default function OrderDetailScreen() {
   const theme = useTheme();
+  const { gutter } = useResponsive();
   const t = useI18n().t;
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ id?: string }>();
@@ -103,6 +105,7 @@ export default function OrderDetailScreen() {
       style={{ backgroundColor: theme.colors.canvas }}
       contentContainerStyle={[
         styles.screen,
+        { paddingHorizontal: gutter },
         { paddingTop: insets.top + theme.space[2], paddingBottom: insets.bottom + theme.space[5], gap: theme.space[2] },
       ]}
     >
@@ -300,7 +303,7 @@ export default function OrderDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { paddingHorizontal: 16 },
+  screen: {},
   payRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
   payChip: { borderWidth: 1, paddingHorizontal: 12, justifyContent: 'center', alignItems: 'center', minWidth: 96 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 4 },

@@ -17,6 +17,7 @@ import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
 import { rowDirectionFor, screenContentGap } from './layoutLogic';
+import { useResponsive } from './layout';
 
 export function SubScreen({
   title, subtitle, children, onRefresh, refreshing = false, fallback = '/(tabs)/account',
@@ -45,6 +46,8 @@ export function SubScreen({
   const theme = useTheme();
   const t = useT();
   const insets = useSafeAreaInsets();
+  // Même marge que AppScreen : une seule source (layoutLogic), pas de chiffre propre à l'écran.
+  const { gutter } = useResponsive();
 
   return (
     <ScrollView
@@ -68,7 +71,7 @@ export function SubScreen({
         {
           paddingTop: insets.top + theme.space[2],
           paddingBottom: insets.bottom + theme.space[5],
-          paddingHorizontal: theme.space[3],
+          paddingHorizontal: gutter,
           gap: screenContentGap(theme.space),
         },
       ]}

@@ -39,6 +39,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppText, Card } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { rowDirectionFor } from '@/design/layoutLogic';
+import { useResponsive } from '@/design/layout';
 import { useI18n, useT } from '@/i18n';
 import { isApiError, userMessage } from '@/api/errors';
 import {
@@ -67,6 +68,7 @@ const COMPOSER_HEIGHT = 52;
 
 export default function AssistantScreen() {
   const theme = useTheme();
+  const { gutter } = useResponsive();
   const t = useT();
   const { locale } = useI18n();
   const insets = useSafeAreaInsets();
@@ -284,7 +286,7 @@ export default function AssistantScreen() {
       <ScrollView
         ref={scrollRef}
         onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
-        contentContainerStyle={{ paddingHorizontal: theme.space[3], paddingBottom: theme.space[3], gap: theme.space[2] }}
+        contentContainerStyle={{ paddingHorizontal: gutter, paddingBottom: theme.space[3], gap: theme.space[2] }}
       >
         {ready === false ? (
           <Card title={t('assistant.unavailableTitle')}>
@@ -343,7 +345,7 @@ export default function AssistantScreen() {
       <View style={[styles.composer, {
         flexDirection: rowDirectionFor(theme.isRTL),
         paddingBottom: insets.bottom,
-        paddingHorizontal: theme.space[3],
+        paddingHorizontal: gutter,
         borderTopColor: theme.colors.line,
         backgroundColor: theme.colors.canvas,
       }]}>
