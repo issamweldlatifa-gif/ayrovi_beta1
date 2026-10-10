@@ -250,7 +250,8 @@ describe('Google natif : sélecteur dans l’application', () => {
     await act(async () => { fireEvent.press(screen.getByTestId('auth-provider-google')); });
     expect(GoogleSignin.signIn).not.toHaveBeenCalled();
     expect(googleNativeLogin).not.toHaveBeenCalled();
-    expect(screen.getByText('Google n’est pas correctement configuré sur cet appareil (identifiant ou empreinte). Prévenez le support.')).toBeTruthy();
+    // Le message nomme la panne ET le code technique à donner au support.
+    expect(screen.getByText(/Google n’est pas correctement configuré.*GOOGLE_CLIENT_ID_MISSING/)).toBeTruthy();
   });
 });
 
@@ -268,6 +269,29 @@ describe('liens légaux : pages dans l’application', () => {
     expect(router.push).toHaveBeenNthCalledWith(2, '/legal/privacy');
     const { openProviderSession } = jest.requireMock('../../src/features/auth/browser');
     expect(openProviderSession).not.toHaveBeenCalled();
+  });
+});
+
+describe('Google natif : aucune attente « navigateur »', () => {
+  beforeEach(() => {
+    process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID = 'test-web-client.apps.googleusercontent.com';
+    jest.clearAllMocks();
+    resetSession({
+      authConfig: { phoneOtp: true, email: true, emailCode: true, google: false, googleNative: true, facebook: false, apple: false, passwordReset: true },
+    });
+  });
+
+  afterEach(() => {
+    delete process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+  });
+
+  it('pendant le sélecteur Google, aucun texte « terminer dans le navigateur » ni « annuler l’attente »', async () => {
+    const { GoogleSignin } = jest.requireMock('@react-native-google-signin/google-signin');
+    GoogleSignin.signIn.mockReturnValue(new Promise(() => {})); // sélecteur ouvert, pas encore de réponse
+    await renderScreen();
+    await act(async () => { fireEvent.press(screen.getByTestId('auth-provider-google')); });
+    expect(screen.queryByText(/navigateur/)).toBeNull();
+    expect(screen.queryByText('Annuler l’attente')).toBeNull();
   });
 });
 

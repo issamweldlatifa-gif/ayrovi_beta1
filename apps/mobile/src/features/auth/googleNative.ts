@@ -46,3 +46,14 @@ export function googleFailureCode(error: unknown): 'play' | 'config' | 'generic'
   }
   return 'generic';
 }
+
+/**
+ * Code technique d'une panne de configuration Google, à donner au support
+ * (ex. `GOOGLE_NO_ID_TOKEN` = identifiant Web absent ou faux ; `10` = empreinte
+ * SHA-1 ou identifiant Android qui ne correspondent pas).
+ */
+export function googleFailureDetail(error: unknown): string {
+  if (error instanceof GoogleConfigError) return error.code;
+  if (isErrorWithCode(error)) return String(error.code);
+  return 'UNKNOWN';
+}

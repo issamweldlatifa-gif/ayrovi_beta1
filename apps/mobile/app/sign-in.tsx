@@ -33,7 +33,7 @@ import { closeProviderBrowser, openProviderSession } from '@/features/auth/brows
 import { GoogleLogo } from '@/design/GoogleLogo';
 import { LINK_BLUE } from '@/design/tokens.mobile';
 import { useSession } from '@/state/session';
-import { signInWithGoogleNative, googleFailureCode } from '@/features/auth/googleNative';
+import { signInWithGoogleNative, googleFailureCode, googleFailureDetail } from '@/features/auth/googleNative';
 
 /** « start » = adresse e-mail (page d'accueil de la connexion). */
 type Mode = 'start' | 'phone' | 'password' | 'register';
@@ -114,7 +114,7 @@ export default function SignInScreen() {
     } catch (error) {
       const kind = googleFailureCode(error);
       if (kind === 'play') setFailure({ message: t('auth.google.noPlayServices') });
-      else if (kind === 'config') setFailure({ message: t('auth.google.config') });
+      else if (kind === 'config') setFailure({ message: `${t('auth.google.config')} (${googleFailureDetail(error)})` });
       else show(error, 'auth.google.failed');
     } finally {
       setWaiting(null);
@@ -265,7 +265,9 @@ export default function SignInScreen() {
       {offered.length ? (
         <AppText variant="caption" color={theme.colors.muted}>{t('auth.providers.sameAccount')}</AppText>
       ) : null}
-      {waiting ? (
+      {/* Attente « navigateur » : réservée aux fournisseurs ouverts dans un onglet.
+          Google natif affiche son propre sélecteur : pas de texte d'attente ici. */}
+      {waiting && waiting !== 'google' ? (
         <>
           <AppText variant="label" weight="bold" color={theme.status.info.fg}>{t('auth.providers.waiting')}</AppText>
           <Button
