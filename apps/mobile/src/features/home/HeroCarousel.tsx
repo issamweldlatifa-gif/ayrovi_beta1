@@ -17,7 +17,7 @@ import {
 } from 'react';
 import {
   AccessibilityInfo, Animated, AppState, Easing, FlatList, Linking, Pressable, StyleSheet, View,
-  type NativeScrollEvent, type NativeSyntheticEvent,
+  type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useIsFocused } from 'expo-router';
@@ -42,8 +42,8 @@ import {
   shouldAutoplayAdvance,
 } from './heroCarouselLogic';
 
-/* ── Géométrie ───────────────────────────────────────────────────────────── */
-
+/** Hauteur du fondu final vers le fond de page (blanc) sous le carrousel. */
+const PAGE_FADE_HEIGHT = 72;
 
 /* ── États du composant parent ───────────────────────────────────────────── */
 
@@ -87,6 +87,13 @@ function HeroCarouselView({
   const { locale } = useI18n();
   const { gutter, width } = useResponsive();
   const isFocused = useIsFocused();
+  // Largeur RÉELLE de la section (mesurée) : la géométrie du carrousel en dépend,
+  // pas de la largeur de fenêtre — sinon la carte active sort du centre.
+  const [viewportWidth, setViewportWidth] = useState(width);
+  const onSectionLayout = useCallback((event: LayoutChangeEvent) => {
+    const measured = event.nativeEvent.layout.width;
+    if (measured > 0) setViewportWidth(measured);
+  }, []);
 
   const [activeIndex, setActiveIndex] = useState(0);
   const [interacting, setInteracting] = useState(false);
@@ -115,8 +122,8 @@ function HeroCarouselView({
     return () => subscription.remove();
   }, []);
 
-  // Géométrie : carte active centrée, voisines visibles des deux côtés.
-  const { cardWidth, stride, sideInset } = carouselGeometry(width);
+  // Géométrie : carte active centrée, voisines visibles à égale distance des deux côtés.
+  const { cardWidth, stride, sideInset } = carouselGeometry(viewportWidth);
 
   // Fond effectif de chaque carte (palette serveur, repli = surface du thème).
   const backgrounds = useMemo(
@@ -127,6 +134,9 @@ function HeroCarouselView({
     inputRange: slides.map((_, index) => index),
     outputRange: backgrounds,
   });
+  // Couleur unique du carrousel = couleur de la carte active. Les voisines la
+  // reprennent (texte, fondu) : aucune pastille de couleur différente ne subsiste.
+  const surface = backgrounds[activeIndex] ?? theme.colors.surface;
 
   // Le header reprend la couleur de la carte active ; remise à zéro au démontage.
   useEffect(() => {
@@ -190,11 +200,12 @@ function HeroCarouselView({
     else Linking.openURL(card.href).catch(() => {});
   }, [locale]);
 
-  const ink = adaptiveInk(backgrounds[activeIndex] ?? theme.colors.surface, theme.colors);
+  const dotInk = adaptiveInk(surface, theme.colors);
 
   return (
     <Animated.View
       testID="hero-carousel"
+      onLayout={onSectionLayout}
       style={[styles.section, { marginHorizontal: -gutter, backgroundColor: sectionBackground }]}
     >
       <FlatList
@@ -209,7 +220,8 @@ function HeroCarouselView({
         snapToAlignment="center"
         decelerationRate="fast"
         contentContainerStyle={{ paddingHorizontal: sideInset, gap: CARD_GAP }}
-        getItemLayout={(_, index) => ({ length: stride, offset: stride * index, index })}
+        // Le décalage inclut le retrait initial : sans lui, `scrollToIndex` vise à côté.
+        getItemLayout={(_, index) => ({ length: stride, offset: sideInset + stride * index, index })}
         initialNumToRender={2}
         maxToRenderPerBatch={2}
         windowSize={5}
@@ -220,7 +232,8 @@ function HeroCarouselView({
           <HeroCard
             card={item}
             width={cardWidth}
-            background={item.background || theme.colors.surface}
+            surface={surface}
+            fadeTo={surface}
             onPress={onPressCard}
           />
         )}
@@ -238,13 +251,21 @@ function HeroCarouselView({
               accessibilityElementsHidden
               style={[
                 styles.dot,
-                { backgroundColor: ink },
+                { backgroundColor: dotInk },
                 index === activeIndex ? styles.dotActive : { opacity: theme.opacity.disabled },
               ]}
             />
           ))}
         </View>
       ) : null}
+      {/* Fin de carrousel : le fond passe en douceur au blanc de la page. */}
+      <LinearGradient
+        colors={['transparent', theme.colors.canvas]}
+        style={[styles.pageFade, { height: PAGE_FADE_HEIGHT }]}
+        pointerEvents="none"
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+      />
     </Animated.View>
   );
 }
@@ -254,16 +275,18 @@ function HeroCarouselView({
 interface HeroCardProps {
   card: HeroSlide;
   width: number;
-  /** Fond effectif (palette ou repli) — cible du fondu ET couleur du texte. */
-  background: string;
+  /** Couleur du carrousel (carte active) — couleur du texte posé dessus. */
+  surface: string;
+  /** Couleur vers laquelle le visuel se dissout (= couleur du carrousel). */
+  fadeTo: string;
   onPress: (card: HeroSlide) => void;
 }
 
-const HeroCard = memo(function HeroCard({ card, width, background, onPress }: HeroCardProps) {
+const HeroCard = memo(function HeroCard({ card, width, surface, fadeTo, onPress }: HeroCardProps) {
   const theme = useTheme();
   const { locale } = useI18n();
   const isArabic = locale === 'ar';
-  const ink = adaptiveInk(background, theme.colors);
+  const ink = adaptiveInk(surface, theme.colors);
   const title = pickHeroText(card.title, card.titleAr, isArabic);
   const subtitle = pickHeroText(card.subtitle, card.subtitleAr, isArabic);
   const cta = pickHeroText(card.cta, card.ctaAr, isArabic);
@@ -273,7 +296,7 @@ const HeroCard = memo(function HeroCard({ card, width, background, onPress }: He
   return (
     <Pressable
       testID={`hero-card-${card.id}`}
-      style={[styles.card, { width, backgroundColor: background }]}
+      style={[styles.card, { width }]}
       onPress={() => onPress(card)}
       accessibilityRole="link"
       accessibilityLabel={label || undefined}
@@ -300,7 +323,7 @@ const HeroCard = memo(function HeroCard({ card, width, background, onPress }: He
         />
         {/* Fondu : le bas du visuel se dissout dans le fond de la carte (§5.4). */}
         <LinearGradient
-          colors={['transparent', background]}
+          colors={['transparent', fadeTo]}
           start={{ x: 0.5, y: 0.55 }}
           end={{ x: 0.5, y: 1 }}
           style={styles.cardFade}
@@ -332,8 +355,11 @@ const HeroCard = memo(function HeroCard({ card, width, background, onPress }: He
 /* ── Styles ───────────────────────────────────────────────────────────────── */
 
 const styles = StyleSheet.create({
-  section: { paddingVertical: 16 },
+  // Pas de fond propre à la carte : le fond continu du carrousel passe derrière
+  // les voisines (aucune bande coupée). Le bas de section laisse place au fondu.
+  section: { paddingTop: 16, paddingBottom: PAGE_FADE_HEIGHT, overflow: 'hidden' },
   card: { padding: 16 },
+  pageFade: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   cardTitle: { marginBottom: 4 },
   cardSubtitle: { marginBottom: 12 },
   cardMedia: { overflow: 'hidden' },

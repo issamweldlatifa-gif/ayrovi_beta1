@@ -7,7 +7,7 @@
  *  • l'index suit le défilement (onMomentumScrollEnd) ;
  *  • le CTA est un bouton réel, distinct de la carte.
  */
-import { AppState } from 'react-native';
+import { AppState, StyleSheet } from 'react-native';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
@@ -92,6 +92,15 @@ function currentCard(): number {
 
 const list = () => screen.getByTestId('hero-carousel-list');
 
+/** Déclenche la mesure réelle de la section (comme le moteur de mise en page). */
+function measureSection(width: number) {
+  act(() => {
+    fireEvent(screen.getByTestId('hero-carousel'), 'layout', {
+      nativeEvent: { layout: { x: 0, y: 0, width, height: 400 } },
+    });
+  });
+}
+
 beforeEach(() => {
   jest.useFakeTimers();
   jest.clearAllMocks();
@@ -175,5 +184,29 @@ describe('CTA', () => {
     await renderCarousel({ ...SETTINGS, autoplay: false });
     fireEvent.press(screen.getByTestId('hero-card-a'));
     expect(router.push).toHaveBeenCalledWith('/shop/a');
+  });
+});
+
+describe('géométrie et fond', () => {
+  it('la carte active est centrée : le retrait vient de la largeur MESURÉE, pas de la fenêtre', async () => {
+    await renderCarousel();
+    measureSection(360);
+    const { sideInset } = carouselGeometry(360);
+    const padding = StyleSheet.flatten(list().props.contentContainerStyle).paddingHorizontal;
+    expect(padding).toBe(sideInset);
+  });
+
+  it('getItemLayout inclut le retrait : scrollToIndex vise la carte, pas un décalage', async () => {
+    await renderCarousel();
+    measureSection(360);
+    const { sideInset, stride: measuredStride } = carouselGeometry(360);
+    const layout = list().props.getItemLayout(null, 1);
+    expect(layout.offset).toBe(sideInset + measuredStride);
+  });
+
+  it('les cartes n’ont pas de fond propre : la couleur continue passe derrière les voisines', async () => {
+    await renderCarousel();
+    const style = StyleSheet.flatten(screen.getByTestId('hero-card-b').props.style);
+    expect(style.backgroundColor).toBeUndefined();
   });
 });

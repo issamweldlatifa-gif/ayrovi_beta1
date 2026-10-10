@@ -99,3 +99,19 @@ describe('isStillAfterDrag — libérer la pause sans élan', () => {
     expect(isStillAfterDrag(-0.8)).toBe(false);
   });
 });
+
+describe('voisines — même largeur de peek des deux côtés', () => {
+  it.each([320, 360, 390, 412, 430, 768])('écran %i px : bords visibles identiques', (screen) => {
+    const { cardWidth, sideInset } = carouselGeometry(screen);
+    // Positions réelles (repère de la liste, retrait inclus) :
+    const activeLeft = sideInset;
+    const activeRight = sideInset + cardWidth;
+    const leftNeighbourRight = activeLeft - CARD_GAP;
+    const rightNeighbourLeft = activeRight + CARD_GAP;
+    // Ce qui dépasse de chaque voisine dans l'écran :
+    const leftPeek = leftNeighbourRight;
+    const rightPeek = screen - rightNeighbourLeft;
+    expect(leftPeek).toBeGreaterThan(0);
+    expect(rightPeek).toBe(leftPeek);
+  });
+});
