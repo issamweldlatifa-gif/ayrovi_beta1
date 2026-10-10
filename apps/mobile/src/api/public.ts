@@ -215,6 +215,49 @@ export function parseHeroCarouselSettings(payload: unknown): HeroCarouselSetting
   };
 }
 
+/* ── Section « à la une » (accueil, sous les onglets) — pilotée Admin ─────── */
+
+/** Publication affichée, telle que la renvoie `GET /api/public/home-featured`. */
+export interface HomeFeaturedPublication {
+  id: string;
+  title: string;
+  subtitle: string;
+  imageUrl: string;
+}
+
+/** `publication` = `null` ⇒ la section ne s'affiche pas du tout. */
+export interface HomeFeatured {
+  publication: HomeFeaturedPublication | null;
+  ctaLabel: string;
+}
+
+/**
+ * Lecture défensive : une réponse illisible ⇒ AUCUNE section (on n'invente pas de
+ * publication). Le libellé du bouton retombe sur le texte par défaut de l'application.
+ */
+export function parseHomeFeatured(payload: unknown): HomeFeatured {
+  if (!isRecord(payload) || !isRecord(payload.publication)) {
+    return { publication: null, ctaLabel: '' };
+  }
+  const row = payload.publication;
+  const id = typeof row.id === 'string' ? row.id.trim() : '';
+  if (!id) return { publication: null, ctaLabel: '' };
+  return {
+    publication: {
+      id,
+      title: typeof row.title === 'string' ? row.title.trim() : '',
+      subtitle: typeof row.subtitle === 'string' ? row.subtitle.trim() : '',
+      imageUrl: typeof row.imageUrl === 'string' ? row.imageUrl.trim() : '',
+    },
+    ctaLabel: typeof payload.ctaLabel === 'string' ? payload.ctaLabel.trim().slice(0, 40) : '',
+  };
+}
+
+export async function fetchHomeFeatured(options?: RequestOptions): Promise<HomeFeatured> {
+  const { data } = await apiGet<unknown>('/api/public/home-featured', options);
+  return parseHomeFeatured(data);
+}
+
 export async function fetchHeroSlides(options?: RequestOptions): Promise<HeroSlide[]> {
   const { data } = await apiGet<unknown>('/api/public/hero-slides', options);
   return parseHeroSlides(data);

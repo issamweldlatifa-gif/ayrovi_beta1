@@ -1,15 +1,15 @@
 /**
- * « À la une » de l'accueil — la dernière publication, avec « Découvrir ».
+ * « À la une » de l'accueil — pilotée par l'admin.
  *
- *  • la section affiche la publication la plus récente (date illisible = la plus ancienne) ;
+ *  • la section affiche ce que le serveur renvoie : image, titre, sous-titre, bouton ;
  *  • « Découvrir » ouvre la page Publications de l'APPLICATION ;
- *  • rien ne s'affiche sans publication (pas de bloc vide sur l'accueil) ;
+ *  • le libellé du bouton vient de l'admin, sinon le texte par défaut ;
+ *  • rien ne s'affiche si la section est masquée, sans publication, ou pendant le chargement ;
  *  • une publication sans image garde son titre et son bouton.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { router } from 'expo-router';
-import { FeaturedPublication, latestPublication } from '../../src/features/home/FeaturedPublication';
-import type { Publication } from '../../src/api/social';
+import { FeaturedPublication } from '../../src/features/home/FeaturedPublication';
 import { ThemeProvider } from '../../src/design/theme';
 import { I18nProvider } from '../../src/i18n';
 import { PrefsProvider } from '../../src/state/prefs';
@@ -26,16 +26,19 @@ jest.mock('../../src/design/appImage', () => ({
   },
 }));
 
-const mockPublications = { data: undefined as Publication[] | undefined, isPending: false };
+const mockFeatured: { data: unknown; isPending: boolean } = { data: undefined, isPending: false };
 jest.mock('../../src/api/hooks', () => ({
-  usePublications: () => mockPublications,
+  useHomeFeatured: () => mockFeatured,
 }));
 
-const older: Publication = {
-  id: 'p1', title: 'Ancien numéro', subtitle: 'Vieux', channelId: 'c', imageUrl: '/m/p1.jpg', publishAt: '2026-09-01T10:00:00Z',
-};
-const newest: Publication = {
-  id: 'p2', title: 'Prêt pour la finale', subtitle: 'La tradition sportive rencontre un style moderne.', channelId: 'c', imageUrl: '/m/p2.jpg', publishAt: '2026-10-08T09:00:00Z',
+const shown = {
+  publication: {
+    id: 'p2',
+    title: 'Prêt pour la finale',
+    subtitle: 'La tradition sportive rencontre un style moderne.',
+    imageUrl: '/m/p2.jpg',
+  },
+  ctaLabel: '',
 };
 
 async function renderSection() {
@@ -52,38 +55,20 @@ async function renderSection() {
   return view;
 }
 
-describe('latestPublication', () => {
-  it('prend la publication la plus récente, quel que soit l’ordre de la liste', () => {
-    expect(latestPublication([older, newest])?.id).toBe('p2');
-    expect(latestPublication([newest, older])?.id).toBe('p2');
-  });
-
-  it('une date illisible passe après les dates valides', () => {
-    const broken = { ...newest, id: 'p3', publishAt: 'n’importe quoi' };
-    expect(latestPublication([broken, older])?.id).toBe('p1');
-  });
-
-  it('aucune publication ⇒ rien', () => {
-    expect(latestPublication([])).toBeNull();
-    expect(latestPublication(undefined)).toBeNull();
-  });
-});
-
 describe('FeaturedPublication', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockPublications.data = [older, newest];
-    mockPublications.isPending = false;
+    mockFeatured.data = shown;
+    mockFeatured.isPending = false;
   });
 
-  it('affiche la dernière publication : image, titre, sous-titre, et « Découvrir »', async () => {
+  it('affiche la publication renvoyée par le serveur : image, titre, sous-titre, « Découvrir »', async () => {
     await renderSection();
     expect(screen.getByTestId('home-featured')).toBeTruthy();
     expect(screen.getByText('image:Prêt pour la finale')).toBeTruthy();
     expect(screen.getByText('Prêt pour la finale')).toBeTruthy();
     expect(screen.getByText('La tradition sportive rencontre un style moderne.')).toBeTruthy();
     expect(screen.getByText('Découvrir')).toBeTruthy();
-    expect(screen.queryByText('Ancien numéro')).toBeNull();
   });
 
   it('« Découvrir » ouvre la page Publications de l’application', async () => {
@@ -92,22 +77,29 @@ describe('FeaturedPublication', () => {
     expect(router.push).toHaveBeenCalledWith('/publications');
   });
 
-  it('sans publication, rien ne s’affiche sur l’accueil', async () => {
-    mockPublications.data = [];
+  it('le libellé du bouton vient de l’admin quand il est renseigné', async () => {
+    mockFeatured.data = { ...shown, ctaLabel: 'Lire le numéro' };
+    await renderSection();
+    expect(screen.getByText('Lire le numéro')).toBeTruthy();
+    expect(screen.queryByText('Découvrir')).toBeNull();
+  });
+
+  it('section masquée ou sans publication : rien ne s’affiche sur l’accueil', async () => {
+    mockFeatured.data = { publication: null, ctaLabel: '' };
     await renderSection();
     expect(screen.queryByTestId('home-featured')).toBeNull();
     expect(screen.queryByText('Découvrir')).toBeNull();
   });
 
   it('pendant le chargement, rien ne s’affiche (pas de saut de mise en page)', async () => {
-    mockPublications.data = undefined;
-    mockPublications.isPending = true;
+    mockFeatured.data = undefined;
+    mockFeatured.isPending = true;
     await renderSection();
     expect(screen.queryByTestId('home-featured')).toBeNull();
   });
 
   it('une publication sans image garde son titre et son bouton', async () => {
-    mockPublications.data = [{ ...newest, imageUrl: '' }];
+    mockFeatured.data = { ...shown, publication: { ...shown.publication, imageUrl: '' } };
     await renderSection();
     expect(screen.queryByText('image:Prêt pour la finale')).toBeNull();
     expect(screen.getByText('Prêt pour la finale')).toBeTruthy();

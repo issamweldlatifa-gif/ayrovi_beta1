@@ -12,6 +12,9 @@ import { parsePublicHttpUrl } from '../services/safeUrl';
 import { HERO_DESTINATION_TYPES, heroDestinationConfig, isValidExternalUrl } from '../../shared/heroDestinations';
 import { isHexColor, refreshHeroSlidePalette } from '../services/heroPalette';
 import {
+  DEFAULT_FEATURED_SETTINGS, normalizeFeaturedInput, resolveFeaturedPublication, type FeaturedSettings,
+} from '../services/homeFeatured';
+import {
   EDITABLE_FIELDS, EMPTY_VALUES, draftRowsById, heroImageAvailable, liveValues, mergeSlides, previewCards,
   publishedRows, validateSlideForSave, type ChangeType, type MergedSlide, type SlideValues,
 } from '../services/heroSlideDrafts';
@@ -971,6 +974,49 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     audit(db, req, 'UPDATE', 'HOME_BLOCKS', 'all', null, null);
     const rows = db.all<any>('SELECT id,sort_order sortOrder,visible FROM home_blocks ORDER BY sort_order,id');
     res.json({ success: true, data: rows.map((row) => ({ id: row.id, sortOrder: row.sortOrder, visible: Boolean(row.visible) })) });
+  });
+
+  /* ==================== SECTION « À LA UNE » — accueil mobile (singleton 'global') ====================
+   * Réglages : activée ou non, source (la plus récente, ou une publication choisie), libellé du bouton.
+   * La règle de sortie vers l'application est dans src/services/homeFeatured.ts. */
+  const featuredSettingsFrom = (row: any): FeaturedSettings => ({
+    enabled: row ? row.enabled !== 0 : DEFAULT_FEATURED_SETTINGS.enabled,
+    source: row?.source === 'pinned' ? 'pinned' : 'latest',
+    publicationId: String(row?.publication_id || ''),
+    ctaLabel: String(row?.cta_label || ''),
+  });
+  const featuredAdminView = () => {
+    const settings = featuredSettingsFrom(db.get<any>("SELECT * FROM home_featured_settings WHERE id='global'"));
+    const rows = db.all<any>('SELECT id,title,subtitle,image_url,publish_at,status FROM publications');
+    const publications = db.all<any>('SELECT id,title,status,publish_at FROM publications ORDER BY publish_at DESC');
+    return {
+      enabled: settings.enabled,
+      source: settings.source,
+      publicationId: settings.publicationId,
+      ctaLabel: settings.ctaLabel,
+      publications: publications.map((row) => ({ id: row.id, title: row.title, status: row.status, publishAt: row.publish_at })),
+      // Aperçu EXACT de ce que voit l'application : même résolution que la route publique.
+      preview: resolveFeaturedPublication(settings, rows, Date.now()),
+    };
+  };
+
+  router.get('/home-featured', requireAdmin(db, 'content:read'), (_req, res) => {
+    res.json({ success: true, data: featuredAdminView() });
+  });
+
+  router.put('/home-featured', requireAdmin(db, 'content:write'), (req, res) => {
+    const existing = featuredSettingsFrom(db.get<any>("SELECT * FROM home_featured_settings WHERE id='global'"));
+    const next = normalizeFeaturedInput(req.body, existing);
+    if (!next) {
+      return res.status(400).json({ success: false, error: 'Réglage invalide : source inconnue, ou publication à choisir.' });
+    }
+    if (next.source === 'pinned' && !db.get('SELECT id FROM publications WHERE id=?', next.publicationId)) {
+      return res.status(400).json({ success: false, error: 'Publication introuvable.' });
+    }
+    db.run("UPDATE home_featured_settings SET enabled=?,source=?,publication_id=?,cta_label=?,updated_at=? WHERE id='global'",
+      next.enabled ? 1 : 0, next.source, next.publicationId, next.ctaLabel, new Date().toISOString());
+    audit(db, req, 'UPDATE', 'HOME_FEATURED', 'global', existing, next);
+    res.json({ success: true, data: featuredAdminView() });
   });
 
   /* ==================== CARROUSEL HERO — réglages (singleton 'global') ==================== */

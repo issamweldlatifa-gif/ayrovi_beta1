@@ -1859,6 +1859,20 @@ export class QatafoDatabase {
       this.run('INSERT INTO hero_carousel_settings (id,updated_at) VALUES (?,?)', 'global', new Date().toISOString());
     }
 
+    // Section « à la une » de l'accueil mobile — réglages singleton 'global'.
+    // `source` = 'latest' (la plus récente publiée) ou 'pinned' (publication choisie).
+    this.db.exec(`CREATE TABLE IF NOT EXISTS home_featured_settings (
+      id TEXT PRIMARY KEY CHECK(id='global'),
+      enabled INTEGER NOT NULL DEFAULT 1,
+      source TEXT NOT NULL DEFAULT 'latest' CHECK(source IN ('latest','pinned')),
+      publication_id TEXT NOT NULL DEFAULT '',
+      cta_label TEXT NOT NULL DEFAULT '',
+      updated_at TEXT NOT NULL
+    );`);
+    if (!(this.db.prepare("SELECT COUNT(*) count FROM home_featured_settings WHERE id='global'").get() as { count: number }).count) {
+      this.run('INSERT INTO home_featured_settings (id,updated_at) VALUES (?,?)', 'global', new Date().toISOString());
+    }
+
     // Télémétrie carrousel : impression / clic, sans donnée personnelle (même
     // philosophie que le funnel d'achat — mesurer ne doit jamais planter).
     this.db.exec(`CREATE TABLE IF NOT EXISTS hero_events (

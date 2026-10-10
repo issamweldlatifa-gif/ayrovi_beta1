@@ -15,6 +15,7 @@ import sharp from 'sharp';
 import { customerFromRequest, keyedHash, optionalCustomer } from '../customer/auth';
 import { ownerHashOf, recordLearningEvent } from '../assistant/learning';
 import { liveValues, publishedRows, toPublicCards } from '../services/heroSlideDrafts';
+import { DEFAULT_FEATURED_SETTINGS, resolveFeaturedPublication, type FeaturedSettings } from '../services/homeFeatured';
 import { UnsafeUrlError } from '../services/safeUrl';
 import { pruneDiskCache } from '../services/diskCache';
 
@@ -313,6 +314,20 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     const rows = publishedRows(db).map((row) => ({ id: String(row.id), values: liveValues(row), palette: row.palette ? String(row.palette) : null }));
     const cards = toPublicCards(db, rows, Date.now(), maxCards);
     res.json({ success: true, data: cards });
+  });
+
+  /* Section « à la une » de l'accueil mobile : une publication PUBLIÉE, ou rien. */
+  router.get('/home-featured', (_req, res) => {
+    const row = db.get<any>("SELECT * FROM home_featured_settings WHERE id='global'");
+    const settings: FeaturedSettings = row ? {
+      enabled: row.enabled !== 0,
+      source: row.source === 'pinned' ? 'pinned' : 'latest',
+      publicationId: String(row.publication_id || ''),
+      ctaLabel: String(row.cta_label || ''),
+    } : DEFAULT_FEATURED_SETTINGS;
+    const rows = db.all<any>("SELECT id,title,subtitle,image_url,publish_at,status FROM publications WHERE status='publie'");
+    const publication = resolveFeaturedPublication(settings, rows, Date.now());
+    res.json({ success: true, data: { publication, ctaLabel: settings.ctaLabel } });
   });
 
   router.get('/hero-carousel-settings', (_req, res) => {

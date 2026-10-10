@@ -1,68 +1,63 @@
 /**
- * Section « à la une » de l'accueil — la dernière publication du magazine.
+ * Section « à la une » de l'accueil, sous les onglets.
  *
  * Présentation (d'après la capture de référence) : une grande image aux coins
  * arrondis, puis le titre en gras, le sous-titre, et un bouton « Découvrir » en
  * contour pleine largeur.
  *
+ * Qui décide : l'ADMIN (Contenu → Section à la une) — affichée ou non, publication
+ * choisie ou la plus récente, libellé du bouton. Le serveur ne renvoie que des
+ * publications publiées ; l'application n'invente rien.
+ *
  * Règles :
- *  • la section ouvre la page PUBLICATIONS de l'application (jamais une page du site) ;
- *  • rien ne s'affiche tant que la publication n'est pas chargée, ou s'il n'y en a aucune :
- *    pas de bloc vide ni d'erreur sur l'accueil ;
+ *  • le bouton ouvre la page Publications de l'APPLICATION (jamais une page du site) ;
+ *  • rien ne s'affiche tant que le réglage n'est pas lu, ni si la section est masquée
+ *    ou si aucune publication n'est à montrer : pas de bloc vide sur l'accueil ;
  *  • une publication sans image garde son texte et son bouton.
  */
 import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 
-import { usePublications } from '@/api/hooks';
+import { useHomeFeatured } from '@/api/hooks';
 import { mediaUrl } from '@/api/client';
-import type { Publication } from '@/api/social';
 import { AppImage } from '@/design/appImage';
 import { AppText, Button } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
 
-/** La publication la plus récente. Une date illisible compte pour la plus ancienne. */
-export function latestPublication(rows: readonly Publication[] | undefined | null): Publication | null {
-  if (!rows || rows.length === 0) return null;
-  const time = (row: Publication) => {
-    const value = Date.parse(row.publishAt);
-    return Number.isNaN(value) ? Number.NEGATIVE_INFINITY : value;
-  };
-  return rows.reduce((best, row) => (time(row) > time(best) ? row : best));
-}
-
 export function FeaturedPublication() {
   const theme = useTheme();
   const t = useT();
-  const publications = usePublications();
-  const featured = latestPublication(publications.data);
+  const featured = useHomeFeatured();
+  const publication = featured.data?.publication ?? null;
 
-  if (!featured) return null;
+  if (!publication) return null;
+
+  const ctaLabel = featured.data?.ctaLabel || t('home.featured.cta');
 
   return (
     <View style={styles.section} testID="home-featured">
       <AppText variant="caption" color={theme.colors.muted}>{t('home.featured.label')}</AppText>
 
-      {featured.imageUrl ? (
+      {publication.imageUrl ? (
         <AppImage
-          uri={mediaUrl(featured.imageUrl)}
+          uri={mediaUrl(publication.imageUrl)}
           style={[styles.image, { borderRadius: theme.radius.card }]}
           contentFit="cover"
-          accessibilityLabel={featured.title || undefined}
-          decorative={!featured.title}
+          accessibilityLabel={publication.title || undefined}
+          decorative={!publication.title}
         />
       ) : null}
 
-      {featured.title ? (
-        <AppText variant="title" weight="bold">{featured.title}</AppText>
+      {publication.title ? (
+        <AppText variant="title" weight="bold">{publication.title}</AppText>
       ) : null}
-      {featured.subtitle ? (
-        <AppText variant="body" color={theme.colors.secondary}>{featured.subtitle}</AppText>
+      {publication.subtitle ? (
+        <AppText variant="body" color={theme.colors.secondary}>{publication.subtitle}</AppText>
       ) : null}
 
       <Button
-        label={t('home.featured.cta')}
+        label={ctaLabel}
         tone="quiet"
         block
         onPress={() => { router.push('/publications'); }}

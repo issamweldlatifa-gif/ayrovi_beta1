@@ -6,9 +6,9 @@
  */
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 import {
-  fetchHeroCarouselSettings, fetchHeroSlides,
+  fetchHeroCarouselSettings, fetchHeroSlides, fetchHomeFeatured,
   fetchNavigation,
-  type HeroCarouselSettings, type HeroSlide,
+  type HeroCarouselSettings, type HeroSlide, type HomeFeatured,
   type NavLink,
 } from './public';
 import { fetchCatalogBrands } from './catalog';
@@ -55,6 +55,9 @@ export const queryKeys = {
  * le serveur à chaque rendu.
  */
 const CONTENT = { staleTime: 60_000, refetchOnMount: 'always' } as const;
+
+export const useHomeFeatured = (): UseQueryResult<HomeFeatured> =>
+  useQuery({ queryKey: ['home', 'featured'] as const, queryFn: ({ signal }) => fetchHomeFeatured({ signal }), ...CONTENT });
 
 export const useHeroSlides = (): UseQueryResult<HeroSlide[]> =>
   useQuery({

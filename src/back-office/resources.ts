@@ -773,6 +773,13 @@ const CUSTOM_RESOURCES: BackOfficeResourceDescriptor[] = [
     columns: [], fields: [], actions: ['list', 'view', 'edit'], audit: { module: 'HOME_SECTIONS', resourceType: 'home_block' },
   },
   {
+    key: 'content.home-featured', label: 'Section à la une', singular: 'section', module: 'cms', domain: 'CONTENT',
+    description: 'Publication « à la une » affichée sous les onglets de l’accueil mobile.', navPermission: 'content:read', permissions: { list: 'cms:read', edit: 'cms:write' },
+    section: 'home-featured', nav: { group: 'Contenu', order: 91, icon: 'Sparkles' },
+    surface: 'custom', component: 'HomeFeaturedPage', api: { prefix: '/home-featured', kind: 'generic' },
+    columns: [], fields: [], actions: ['list', 'view', 'edit'], audit: { module: 'HOME_FEATURED', resourceType: 'home_featured' },
+  },
+  {
     key: 'marketing.ai-discovery', label: 'Découverte IA', singular: 'rapport', module: 'marketing', domain: 'CONTENT',
     description: 'Agrégats de découverte produit par l’IA.', navPermission: 'reports:read', permissions: { view: 'reports:read' },
     section: 'ai-discovery', nav: { group: 'Commerce', order: 235, icon: 'ChartLine' },
