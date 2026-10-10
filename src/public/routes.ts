@@ -15,8 +15,7 @@ import sharp from 'sharp';
 import { customerFromRequest, keyedHash, optionalCustomer } from '../customer/auth';
 import { ownerHashOf, recordLearningEvent } from '../assistant/learning';
 import { resolveActiveHeroVisual } from '../services/heroVisual';
-import { heroDestinationHref } from '../../shared/heroDestinations';
-import { isHexColor, parseHeroPalette } from '../services/heroPalette';
+import { liveValues, publishedRows, toPublicCards } from '../services/heroSlideDrafts';
 import { UnsafeUrlError } from '../services/safeUrl';
 import { pruneDiskCache } from '../services/diskCache';
 
@@ -306,57 +305,14 @@ export function createPublicRouter(db: QatafoDatabase): Router {
   });
 
   /** HREF validé d'une slide : type fermé + existence de la cible quand exigée. */
-  const heroCardHref = (row: any): string | null => {
-    const href = heroDestinationHref(row.destination_type, row.destination_value);
-    if (!href) return null;
-    const type = String(row.destination_type || '').trim().toUpperCase();
-    const value = String(row.destination_value || '').trim();
-    if (type === 'COLLECTION' && !db.get<any>('SELECT id FROM arrivals WHERE id=?', value)) return null;
-    if (type === 'PRODUCT' && !db.get<any>('SELECT id FROM products WHERE id=?', value)) return null;
-    return href;
-  };
-
-  /** Fenêtre de publication : vide = toujours ; sinon bornes incluses. */
-  const heroCardInWindow = (row: any, now: number): boolean => {
-    const from = String(row.published_from || '').trim();
-    const to = String(row.published_to || '').trim();
-    if (from && Number.isFinite(new Date(from).getTime()) && new Date(from).getTime() > now) return false;
-    if (to && Number.isFinite(new Date(to).getTime()) && new Date(to).getTime() < now) return false;
-    return true;
-  };
-
+  // Contrat public : seules les cartes PUBLIÉES (`hero_slides`) — jamais les brouillons.
+  // Même règle que l'aperçu Admin (src/services/heroSlideDrafts.ts).
   router.get('/hero-slides', (_req, res) => {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     const settings = db.get<any>("SELECT * FROM hero_carousel_settings WHERE id='global'");
     const maxCards = Math.max(1, Math.min(12, Number(settings?.max_cards) || 6));
-    const now = Date.now();
-    const cards = db.all<any>('SELECT * FROM hero_slides WHERE active=1 ORDER BY display_order,id')
-      .flatMap((row) => {
-        if (!heroCardInWindow(row, now)) return [];
-        const href = heroCardHref(row);
-        // Destination invalide ⇒ la carte n'est pas publiée (jamais de lien mort).
-        if (!href) return [];
-        const palette = parseHeroPalette(row.palette);
-        const manual = String(row.bg_color || '').trim();
-        return [{
-          id: String(row.id),
-          image: String(row.image || ''),
-          video: String(row.video || ''),
-          title: String(row.title || ''),
-          titleAr: String(row.title_ar || ''),
-          subtitle: String(row.subtitle || ''),
-          subtitleAr: String(row.subtitle_ar || ''),
-          cta: String(row.cta || ''),
-          ctaAr: String(row.cta_ar || ''),
-          displayOrder: Number(row.display_order) || 0,
-          href,
-          destinationType: String(row.destination_type || ''),
-          background: row.bg_mode === 'manual' && isHexColor(manual) ? manual : (palette?.background ?? ''),
-          dominant: palette?.dominant ?? '',
-          luminance: palette?.luminance ?? 0,
-        }];
-      })
-      .slice(0, maxCards);
+    const rows = publishedRows(db).map((row) => ({ id: String(row.id), values: liveValues(row), palette: row.palette ? String(row.palette) : null }));
+    const cards = toPublicCards(db, rows, Date.now(), maxCards);
     res.json({ success: true, data: cards });
   });
 

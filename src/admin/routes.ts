@@ -18,6 +18,10 @@ import { normalizeUploadedImage } from '../services/imageValidation';
 import { parsePublicHttpUrl } from '../services/safeUrl';
 import { HERO_DESTINATION_TYPES, heroDestinationConfig, isValidExternalUrl } from '../../shared/heroDestinations';
 import { isHexColor, refreshHeroSlidePalette } from '../services/heroPalette';
+import {
+  EDITABLE_FIELDS, EMPTY_VALUES, draftRowsById, heroImageAvailable, liveValues, mergeSlides, previewCards,
+  publishedRows, validateSlideForSave, type ChangeType, type MergedSlide, type SlideValues,
+} from '../services/heroSlideDrafts';
 import { refreshFxRates } from '../services/fxRates';
 import { capPromoPercent, MIN_COMMISSION_FLOOR_PERCENT, resolvePromoForQuote, tunisIsoDay } from '../services/promotions';
 import { runLensPipeline, hashImage } from '../ayrovix/services/lensPipeline';
@@ -759,6 +763,200 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
       cardCount: Number(row.card_count), enabled: Boolean(row.enabled),
       sortOrder: Number(row.sort_order ?? 0), updatedAt: row.updated_at,
     } });
+  });
+
+  /* ==================== HERO SLIDES — BROUILLONS → PUBLICATION (module Hero) ====================
+   * `hero_slides` = publié (lu par l'app). `hero_slide_drafts` = modifications en attente.
+   * Rien d'un brouillon n'atteint `/api/public/hero-slides` avant `POST /hero-slides/publish`.
+   * Logique partagée : src/services/heroSlideDrafts.ts (validation, fusion, carte publique). */
+  const heroMaxCards = () => Math.max(1, Math.min(12, Number(db.get<any>("SELECT max_cards FROM hero_carousel_settings WHERE id='global'")?.max_cards) || 6));
+  const heroSlideSummary = (slide: MergedSlide) => ({
+    id: slide.id,
+    status: slide.status,
+    changeType: slide.changeType,
+    liveId: slide.liveId,
+    ...slide.values,
+    imageAvailable: heroImageAvailable(slide.values.image),
+    hasPalette: Boolean(slide.palette),
+  });
+  const heroMerged = () => mergeSlides(publishedRows(db), draftRowsById(db), Date.now());
+  const heroFind = (id: string) => heroMerged().find((slide) => slide.id === id) ?? null;
+  const heroInvalid = (res: Response, errors: Record<string, string>) =>
+    res.status(422).json({ success: false, error: 'Certains champs sont invalides.', errors });
+
+  /** Écrit (ou remplace) le brouillon ; s'il est identique au publié, il est supprimé. */
+  const persistHeroDraft = (id: string, changeType: ChangeType, values: SlideValues, actor: string, now: string) => {
+    const live = db.get<any>('SELECT * FROM hero_slides WHERE id=?', id);
+    if (changeType === 'UPDATE' && live && EDITABLE_FIELDS.every((field) => values[field] === liveValues(live)[field])) {
+      db.run('DELETE FROM hero_slide_drafts WHERE id=?', id);
+      return;
+    }
+    const exists = db.get<any>('SELECT id FROM hero_slide_drafts WHERE id=?', id);
+    const columns = EDITABLE_FIELDS.join(',');
+    const params = EDITABLE_FIELDS.map((field) => values[field]);
+    if (exists) {
+      db.run(`UPDATE hero_slide_drafts SET change_type=?,${EDITABLE_FIELDS.map((f) => `${f}=?`).join(',')},updated_at=?,updated_by=? WHERE id=?`,
+        changeType, ...params, now, actor, id);
+    } else {
+      db.run(`INSERT INTO hero_slide_drafts (id,change_type,${columns},created_at,updated_at,updated_by) VALUES (?,?,${EDITABLE_FIELDS.map(() => '?').join(',')},?,?,?)`,
+        id, changeType, ...params, now, now, actor);
+    }
+  };
+
+  router.get('/hero-slides/manage', requireAdmin(db, 'content:read'), (_req, res) => {
+    const slides = heroMerged();
+    res.json({
+      success: true,
+      data: slides.map(heroSlideSummary),
+      pendingCount: draftRowsById(db).size,
+      maxCards: heroMaxCards(),
+      serverTime: new Date().toISOString(),
+    });
+  });
+
+  // Aperçu = exactement ce que verrait le visiteur si les brouillons étaient publiés.
+  router.get('/hero-slides/preview', requireAdmin(db, 'content:read'), (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ success: true, data: previewCards(db, heroMaxCards(), Date.now()), pendingCount: draftRowsById(db).size });
+  });
+
+  router.post('/hero-slides/drafts', requireAdmin(db, 'content:write'), (req, res) => {
+    const { values, errors } = validateSlideForSave(db, req.body ?? {}, EMPTY_VALUES);
+    if (Object.keys(errors).length) return heroInvalid(res, errors);
+    const id = `hero_slide_${randomUUID()}`;
+    const now = new Date().toISOString();
+    persistHeroDraft(id, 'CREATE', values, admin(req)?.name || 'Système', now);
+    audit(db, req, 'HERO_DRAFT_CREATE', 'HERO', id, null, values);
+    res.status(201).json({ success: true, data: heroSlideSummary(heroFind(id)!) });
+  });
+
+  router.put('/hero-slides/drafts/:id', requireAdmin(db, 'content:write'), (req, res) => {
+    const slide = heroFind(String(req.params.id));
+    if (!slide) return res.status(404).json({ success: false, error: 'Carte introuvable.' });
+    const { values, errors } = validateSlideForSave(db, req.body ?? {}, slide.values);
+    if (Object.keys(errors).length) return heroInvalid(res, errors);
+    // Nouvelle carte ⇒ reste CREATE ; carte publiée ⇒ UPDATE (une carte « à supprimer » redevient active).
+    const changeType: ChangeType = slide.changeType === 'CREATE' ? 'CREATE' : 'UPDATE';
+    const before = slide.values;
+    persistHeroDraft(slide.id, changeType, values, admin(req)?.name || 'Système', new Date().toISOString());
+    audit(db, req, 'HERO_DRAFT_UPDATE', 'HERO', slide.id, before, values);
+    res.json({ success: true, data: heroSlideSummary(heroFind(slide.id)!) });
+  });
+
+  router.post('/hero-slides/drafts/:id/discard', requireAdmin(db, 'content:write'), (req, res) => {
+    const id = String(req.params.id);
+    if (!db.get<any>('SELECT id FROM hero_slide_drafts WHERE id=?', id)) {
+      return res.status(404).json({ success: false, error: 'Aucun brouillon pour cette carte.' });
+    }
+    db.run('DELETE FROM hero_slide_drafts WHERE id=?', id);
+    audit(db, req, 'HERO_DRAFT_DISCARD', 'HERO', id, null, null);
+    const slide = heroFind(id);
+    res.json({ success: true, data: slide ? heroSlideSummary(slide) : null });
+  });
+
+  // Suppression : une carte jamais publiée disparaît tout de suite ; une carte publiée est
+  // marquée « à supprimer » et ne sort qu'à la publication (annulable par PUT ou abandon).
+  router.delete('/hero-slides/:id', requireAdmin(db, 'content:write'), (req, res) => {
+    const id = String(req.params.id);
+    const draft = db.get<any>('SELECT * FROM hero_slide_drafts WHERE id=?', id);
+    const live = db.get<any>('SELECT * FROM hero_slides WHERE id=?', id);
+    if (!draft && !live) return res.status(404).json({ success: false, error: 'Carte introuvable.' });
+    if (draft?.change_type === 'CREATE') {
+      db.run('DELETE FROM hero_slide_drafts WHERE id=?', id);
+    } else if (live) {
+      persistHeroDraft(id, 'DELETE', liveValues(live), admin(req)?.name || 'Système', new Date().toISOString());
+    }
+    audit(db, req, 'HERO_DRAFT_DELETE', 'HERO', id, null, null);
+    const slide = heroFind(id);
+    res.json({ success: true, data: slide ? heroSlideSummary(slide) : null });
+  });
+
+  router.post('/hero-slides/reorder', requireAdmin(db, 'content:write'), (req, res) => {
+    const ids: unknown[] = Array.isArray(req.body?.ids) ? req.body.ids : [];
+    if (!ids.length) return res.status(400).json({ success: false, error: 'Liste d’ordre vide.' });
+    const visible = new Map(heroMerged().filter((slide) => slide.changeType !== 'DELETE').map((slide) => [slide.id, slide]));
+    const order = ids.map(String);
+    if (new Set(order).size !== order.length) return res.status(400).json({ success: false, error: 'Carte listée deux fois.' });
+    if (order.some((id) => !visible.has(id))) return res.status(400).json({ success: false, error: 'Carte inconnue ou supprimée.' });
+    const now = new Date().toISOString();
+    const actor = admin(req)?.name || 'Système';
+    order.forEach((id, index) => {
+      const slide = visible.get(id)!;
+      const values = { ...slide.values, display_order: (index + 1) * 10 };
+      persistHeroDraft(id, slide.changeType ?? 'UPDATE', values, actor, now);
+    });
+    audit(db, req, 'HERO_REORDER', 'HERO', null, null, { order });
+    res.json({ success: true, data: heroMerged().map(heroSlideSummary) });
+  });
+
+  router.post('/hero-slides/discard-all', requireAdmin(db, 'content:write'), (req, res) => {
+    const count = draftRowsById(db).size;
+    db.run('DELETE FROM hero_slide_drafts');
+    audit(db, req, 'HERO_DRAFT_DISCARD_ALL', 'HERO', null, null, { count });
+    res.json({ success: true, data: { discarded: count } });
+  });
+
+  // Publication : tout ou rien. Chaque brouillon est revalidé ; une seule erreur ⇒ rien n'est appliqué.
+  router.post('/hero-slides/publish', requireAdmin(db, 'content:write'), async (req, res) => {
+    const drafts = [...draftRowsById(db).values()];
+    if (!drafts.length) return res.status(409).json({ success: false, error: 'Aucune modification à publier.' });
+    const problems: Record<string, Record<string, string>> = {};
+    for (const draft of drafts) {
+      if (draft.change_type === 'DELETE') continue;
+      const { errors } = validateSlideForSave(db, draft as unknown as Record<string, unknown>, EMPTY_VALUES);
+      // Visuel absent du disque : on ne publie jamais une carte qui pointe vers un fichier mort.
+      if (!errors.image && !heroImageAvailable(draft.image)) {
+        errors.image = 'Image introuvable sur le serveur : téléversez-la de nouveau.';
+      }
+      if (Object.keys(errors).length) problems[draft.id] = errors;
+    }
+    if (Object.keys(problems).length) {
+      return res.status(422).json({ success: false, error: 'Publication refusée : des cartes sont incomplètes.', problems });
+    }
+    const now = new Date().toISOString();
+    const actor = admin(req)?.name || 'Système';
+    const counts = { created: 0, updated: 0, deleted: 0 };
+    const needsPalette: Array<{ id: string; image: string }> = [];
+    db.run('BEGIN');
+    try {
+      for (const draft of drafts) {
+        if (draft.change_type === 'DELETE') {
+          db.run('DELETE FROM hero_slides WHERE id=?', draft.id);
+          counts.deleted += 1;
+        } else if (draft.change_type === 'CREATE') {
+          db.run(`INSERT INTO hero_slides (id,image,video,title,title_ar,subtitle,subtitle_ar,cta,cta_ar,target_url,display_order,active,
+              created_at,updated_at,destination_type,destination_value,bg_mode,bg_color,published_from,published_to,palette)
+            VALUES (?,?,?,?,?,?,?,?,?,'',?,?,?,?,?,?,?,?,?,?,'')`,
+            draft.id, draft.image, draft.video, draft.title, draft.title_ar, draft.subtitle, draft.subtitle_ar,
+            draft.cta, draft.cta_ar, draft.display_order, draft.active, draft.created_at || now, now,
+            draft.destination_type, draft.destination_value, draft.bg_mode, draft.bg_color,
+            draft.published_from, draft.published_to);
+          counts.created += 1;
+          needsPalette.push({ id: draft.id, image: draft.image });
+        } else {
+          const live = db.get<any>('SELECT image FROM hero_slides WHERE id=?', draft.id);
+          db.run(`UPDATE hero_slides SET image=?,video=?,title=?,title_ar=?,subtitle=?,subtitle_ar=?,cta=?,cta_ar=?,
+              destination_type=?,destination_value=?,bg_mode=?,bg_color=?,display_order=?,active=?,published_from=?,published_to=?,updated_at=?
+            WHERE id=?`,
+            draft.image, draft.video, draft.title, draft.title_ar, draft.subtitle, draft.subtitle_ar, draft.cta, draft.cta_ar,
+            draft.destination_type, draft.destination_value, draft.bg_mode, draft.bg_color, draft.display_order, draft.active,
+            draft.published_from, draft.published_to, now, draft.id);
+          counts.updated += 1;
+          // Palette recalculée seulement si l'image a changé.
+          if (!live || String(live.image) !== draft.image) needsPalette.push({ id: draft.id, image: draft.image });
+        }
+      }
+      db.run('DELETE FROM hero_slide_drafts');
+      db.run('COMMIT');
+    } catch (error) {
+      db.run('ROLLBACK');
+      throw error;
+    }
+    audit(db, req, 'HERO_PUBLISH', 'HERO', null, null, { ...counts, actor });
+    // Hors transaction : la palette (sharp) ne bloque pas la publication.
+    for (const slide of needsPalette) await refreshHeroSlidePalette(db, slide);
+    const cards = previewCards(db, heroMaxCards(), Date.now());
+    res.json({ success: true, data: counts, cards });
   });
 
   /* ==================== HERO CONTENT — العنوان/الوصف/CTA من الـ Dashboard ==================== */

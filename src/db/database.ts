@@ -943,6 +943,32 @@ export class QatafoDatabase {
       );
       CREATE INDEX IF NOT EXISTS idx_hero_active_order ON hero_slides(active, display_order);
 
+      -- Brouillons du module Hero (Admin). Une ligne par carte modifiée ; jamais lue
+      -- par l'application publique : seule la publication copie vers hero_slides.
+      CREATE TABLE IF NOT EXISTS hero_slide_drafts (
+        id TEXT PRIMARY KEY,
+        change_type TEXT NOT NULL CHECK (change_type IN ('CREATE','UPDATE','DELETE')),
+        image TEXT NOT NULL DEFAULT '',
+        video TEXT NOT NULL DEFAULT '',
+        title TEXT NOT NULL DEFAULT '',
+        title_ar TEXT NOT NULL DEFAULT '',
+        subtitle TEXT NOT NULL DEFAULT '',
+        subtitle_ar TEXT NOT NULL DEFAULT '',
+        cta TEXT NOT NULL DEFAULT '',
+        cta_ar TEXT NOT NULL DEFAULT '',
+        destination_type TEXT NOT NULL DEFAULT '',
+        destination_value TEXT NOT NULL DEFAULT '',
+        bg_mode TEXT NOT NULL DEFAULT 'auto',
+        bg_color TEXT NOT NULL DEFAULT '',
+        display_order INTEGER NOT NULL DEFAULT 0,
+        active INTEGER NOT NULL DEFAULT 1,
+        published_from TEXT NOT NULL DEFAULT '',
+        published_to TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        updated_by TEXT NOT NULL DEFAULT ''
+      );
+
       CREATE TABLE IF NOT EXISTS customers (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
