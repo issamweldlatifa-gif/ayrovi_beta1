@@ -15,6 +15,9 @@ import { ThemeProvider } from '../../src/design/theme';
 import { I18nProvider } from '../../src/i18n';
 import { PrefsProvider } from '../../src/state/prefs';
 
+// Premier rendu à froid (chargement de l'arbre et des modules natifs simulés) : marge large.
+jest.setTimeout(20000);
+
 const mockSession: Record<string, any> = {};
 
 jest.mock('expo-router', () => ({
@@ -56,7 +59,20 @@ jest.mock('../../src/features/auth/browser', () => ({
   openProviderSession: jest.fn(async () => 'done'),
 }));
 
+// Bibliothèque Google native simulée : le sélecteur ne s'ouvre pas en test.
+jest.mock('@react-native-google-signin/google-signin', () => ({
+  GoogleSignin: {
+    configure: jest.fn(),
+    hasPlayServices: jest.fn(async () => true),
+    signIn: jest.fn(),
+  },
+  isSuccessResponse: (response: any) => response?.type === 'success',
+  isErrorWithCode: (error: any) => Boolean(error && typeof error === 'object' && 'code' in error),
+  statusCodes: { SIGN_IN_CANCELLED: '12501' },
+}));
+
 jest.mock('../../src/api/providers', () => ({
+  googleNativeLogin: jest.fn(),
   newHandoffCode: jest.fn(),
   pollHandoff: jest.fn(),
   providerDoneUrl: jest.fn(() => ''),
@@ -70,7 +86,7 @@ function resetSession(overrides: Record<string, unknown> = {}) {
     account: null,
     authConfig: {
       phoneOtp: true, email: true, emailCode: true,
-      google: false, facebook: false, apple: false, passwordReset: true,
+      google: false, googleNative: false, facebook: false, apple: false, passwordReset: true,
     },
     challenge: null,
     emailChallenge: null,
@@ -187,5 +203,53 @@ describe('connexion par code e-mail, dans l’application', () => {
     resetSession({ authConfig: { ...mockSession.authConfig, emailCode: false, email: false } });
     await renderScreen();
     expect(screen.getByTestId('auth-email-code-send')).toBeDisabled();
+  });
+});
+
+describe('Google natif : sélecteur dans l’application', () => {
+  const GOOGLE_ID = 'test-web-client.apps.googleusercontent.com';
+  const { GoogleSignin } = jest.requireMock('@react-native-google-signin/google-signin');
+  const { googleNativeLogin } = jest.requireMock('../../src/api/providers');
+  const { openProviderSession } = jest.requireMock('../../src/features/auth/browser');
+
+  beforeEach(() => {
+    process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID = GOOGLE_ID;
+    jest.clearAllMocks();
+    resetSession({
+      authConfig: { phoneOtp: true, email: true, emailCode: true, google: false, googleNative: true, facebook: false, apple: false, passwordReset: true },
+    });
+  });
+
+  afterEach(() => {
+    delete process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+  });
+
+  it('le jeton Google est transmis au serveur, sans aucun onglet navigateur', async () => {
+    GoogleSignin.signIn.mockResolvedValue({ type: 'success', data: { idToken: 'aaa.bbb.ccc' } });
+    googleNativeLogin.mockResolvedValue({ sessionToken: 'tok', account: { id: 'a1' } });
+    await renderScreen();
+    await act(async () => { fireEvent.press(screen.getByTestId('auth-provider-google')); });
+    expect(GoogleSignin.configure).toHaveBeenCalledWith(expect.objectContaining({ webClientId: GOOGLE_ID }));
+    expect(googleNativeLogin).toHaveBeenCalledWith('aaa.bbb.ccc');
+    expect(mockSession.adoptSession).toHaveBeenCalledWith({ sessionToken: 'tok', account: { id: 'a1' } });
+    expect(openProviderSession).not.toHaveBeenCalled();
+  });
+
+  it('fermer le sélecteur ne montre aucune erreur et n’appelle pas le serveur', async () => {
+    GoogleSignin.signIn.mockResolvedValue({ type: 'cancelled' });
+    await renderScreen();
+    await act(async () => { fireEvent.press(screen.getByTestId('auth-provider-google')); });
+    expect(googleNativeLogin).not.toHaveBeenCalled();
+    expect(mockSession.adoptSession).not.toHaveBeenCalled();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('sans identifiant Web dans l’application, le message dit la configuration (pas un faux succès)', async () => {
+    delete process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+    await renderScreen();
+    await act(async () => { fireEvent.press(screen.getByTestId('auth-provider-google')); });
+    expect(GoogleSignin.signIn).not.toHaveBeenCalled();
+    expect(googleNativeLogin).not.toHaveBeenCalled();
+    expect(screen.getByText('Google n’est pas correctement configuré sur cet appareil (identifiant ou empreinte). Prévenez le support.')).toBeTruthy();
   });
 });

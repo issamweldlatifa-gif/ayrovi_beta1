@@ -18,6 +18,7 @@ export type AuthMessageKey =
   | 'auth.error.otpExpired' | 'auth.error.phone' | 'auth.error.credentials'
   | 'auth.error.emailTaken' | 'auth.error.unavailable' | 'auth.error.noSession'
   | 'auth.emailCode.invalid' | 'auth.emailCode.expired' | 'auth.emailCode.invalidAddress'
+  | 'auth.google.failed' | 'auth.google.config' | 'auth.google.noPlayServices'
   | 'auth.error.register'
   | 'auth.forgot.unavailable' | 'auth.forgot.rateLimited'
   // Clé de repli d'écran : le serveur a refusé (400) sans code exploitable.

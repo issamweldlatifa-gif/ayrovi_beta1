@@ -428,6 +428,9 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
     res.json({ success: true, data: {
       phoneOtp: { enabled: customerAuthReady() && phoneOtpAvailable() },
       google: { enabled: customerAuthReady() && google.ready },
+      // Google natif (sélecteur dans l'application) : seul l'identifiant Web est nécessaire,
+      // le secret ne sert qu'au flux navigateur.
+      googleNative: { enabled: customerAuthReady() && Boolean(google.clientId) },
       facebook: { enabled: customerAuthReady() && facebook.ready },
       apple: { enabled: customerAuthReady() && apple.ready },
       email: { enabled: customerAuthReady() },

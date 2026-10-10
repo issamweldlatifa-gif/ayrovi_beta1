@@ -238,7 +238,7 @@ describe('lecture des réponses du serveur', () => {
 
   it('lit les capacités du serveur et considère le reste comme éteint', () => {
     const config = parseAuthConfig({ phoneOtp: { enabled: true }, email: { enabled: true } });
-    expect(config).toEqual({ phoneOtp: true, email: true, google: false, facebook: false, apple: false, passwordReset: false, emailCode: false });
+    expect(config).toEqual({ phoneOtp: true, email: true, google: false, facebook: false, apple: false, passwordReset: false, emailCode: false, googleNative: false });
     expect(parseAuthConfig(undefined).phoneOtp).toBe(false);
     expect(parseAuthConfig({ emailCode: { enabled: true } }).emailCode).toBe(true);
   });

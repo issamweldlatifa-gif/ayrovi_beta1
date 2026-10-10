@@ -46,6 +46,8 @@ export interface AuthConfig {
   passwordReset: boolean;
   /** Connexion par code envoyé à l'adresse e-mail (dans l'application). */
   emailCode: boolean;
+  /** Google natif : seul l'identifiant Web doit être configuré côté serveur. */
+  googleNative: boolean;
 }
 
 export interface SessionIssue {
@@ -240,6 +242,7 @@ export function parseAuthConfig(payload: unknown): AuthConfig {
     apple: enabled('apple'),
     passwordReset: enabled('passwordReset'),
     emailCode: enabled('emailCode'),
+    googleNative: enabled('googleNative'),
   };
 }
 

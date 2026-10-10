@@ -26,10 +26,13 @@ import { rowDirectionFor } from '@/design/layoutLogic';
 import { useI18n } from '@/i18n';
 import { authMessage, type AuthMessageKey } from '@/api/authMessages';
 import { fetchServerReadiness, mobileSessionSupport } from '@/api/public';
-import { newHandoffCode, pollHandoff, providerDoneUrl, providerStartUrl, type ProviderId } from '@/api/providers';
+import {
+  googleNativeLogin, newHandoffCode, pollHandoff, providerDoneUrl, providerStartUrl, type ProviderId,
+} from '@/api/providers';
 import { closeProviderBrowser, openLegalPage, openProviderSession } from '@/features/auth/browser';
 import { API_BASE_URL } from '@/api/config';
 import { useSession } from '@/state/session';
+import { signInWithGoogleNative, googleFailureCode } from '@/features/auth/googleNative';
 
 /** « start » = adresse e-mail (page d'accueil de la connexion). */
 type Mode = 'start' | 'phone' | 'password' | 'register';
@@ -88,6 +91,31 @@ export default function SignInScreen() {
     } catch (error) {
       show(error, fallback);
     } finally {
+      setBusy(false);
+    }
+  };
+
+  /**
+   * Google NATIF : sélecteur de compte dans l'application, puis jeton vérifié par le
+   * serveur. Aucun onglet navigateur, donc aucune sortie de l'application.
+   */
+  const startGoogleNative = async () => {
+    setFailure(null);
+    setBusy(true);
+    setWaiting('google');
+    try {
+      const outcome = await signInWithGoogleNative();
+      if (outcome.kind === 'cancelled') return;
+      const issue = await googleNativeLogin(outcome.idToken);
+      await session.adoptSession(issue);
+      closeIfSignedIn();
+    } catch (error) {
+      const kind = googleFailureCode(error);
+      if (kind === 'play') setFailure({ message: t('auth.google.noPlayServices') });
+      else if (kind === 'config') setFailure({ message: t('auth.google.config') });
+      else show(error, 'auth.google.failed');
+    } finally {
+      setWaiting(null);
       setBusy(false);
     }
   };
@@ -190,7 +218,7 @@ export default function SignInScreen() {
   // Un fournisseur n'est proposé QUE si le serveur le dit configuré : un bouton
   // qui mène à une page d'erreur est pire qu'une absence expliquée.
   const providers: { id: ProviderId; label: string; enabled: boolean }[] = [
-    { id: 'google', label: t('auth.providers.google'), enabled: config?.google === true },
+    { id: 'google', label: t('auth.providers.google'), enabled: config?.googleNative === true },
     { id: 'facebook', label: t('auth.providers.facebook'), enabled: config?.facebook === true },
     { id: 'apple', label: t('auth.providers.apple'), enabled: config?.apple === true },
   ];
@@ -220,7 +248,7 @@ export default function SignInScreen() {
             key={provider.id}
             label={provider.label}
             tone="quiet"
-            onPress={() => startProvider(provider.id)}
+            onPress={() => (provider.id === 'google' ? startGoogleNative() : startProvider(provider.id))}
             busy={waiting === provider.id}
             disabled={busy && waiting !== provider.id}
             testID={`auth-provider-${provider.id}`}

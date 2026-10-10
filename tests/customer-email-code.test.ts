@@ -142,6 +142,7 @@ describe('configuration exposée à l’application', () => {
     const res = await request(app).get('/api/customer/auth/config');
     expect(res.status).toBe(200);
     expect(res.body.data.emailCode).toEqual({ enabled: expect.any(Boolean) });
+    expect(res.body.data.googleNative).toEqual({ enabled: expect.any(Boolean) });
   });
 });
 
