@@ -5,7 +5,7 @@
  * Contrat d'affichage :
  *  • chargement ⇒ squelette de la forme attendue, JAMAIS un trou blanc ;
  *  • module désactivé / erreur API / aucune carte ⇒ rien (il n'existe plus d'ancien hero) ;
- *  • carte = titre + visuel 4:5 + fondu vers le fond + CTA optionnel ;
+ *  • carte = titre + visuel 5:8 + fondu vers le fond + CTA optionnel ;
  *  • la section adapte son fond à la carte active (transition animée) ;
  *  • impression/clic tracés en fire-and-forget — mesurer ne casse jamais rien.
  *
@@ -217,7 +217,10 @@ function HeroCarouselView({
         inverted={theme.isRTL}
         showsHorizontalScrollIndicator={false}
         snapToInterval={stride}
-        snapToAlignment="center"
+        // « start » et PAS « center » : avec snapToInterval = stride (carte + espace),
+        // « center » centre un bloc de largeur stride et décale la carte de l'espace / 2.
+        // Le décalage `i × stride` calculé plus haut est déjà le bon point de centrage.
+        snapToAlignment="start"
         decelerationRate="fast"
         contentContainerStyle={{ paddingHorizontal: sideInset, gap: CARD_GAP }}
         // Le décalage inclut le retrait initial : sans lui, `scrollToIndex` vise à côté.

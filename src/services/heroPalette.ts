@@ -20,11 +20,19 @@ import type { QatafoDatabase } from '../db/database';
 export interface HeroPalette {
   /** Couleur dominante de l'image (moyenne des pixels), `#rrggbb`. */
   dominant: string;
-  /** Fond doux dérivé de la dominante (même teinte, désaturée, éclaircie). */
+  /** Fond du carrousel : couleur de la BORDURE SUPÉRIEURE de la photo (voir `backgroundFromEdge`). */
   background: string;
   /** Luminance relative de la dominante (0..1). */
   luminance: number;
+  /** Version du calcul : `PALETTE_VERSION` pour une palette à jour, absente ou plus ancienne sinon. */
+  version?: number;
 }
+
+/**
+ * Version 2 (2026-10-10) : le fond vient de la BORDURE supérieure de la photo, pas
+ * de la moyenne de l'image, et n'est plus délavé. Une palette v1 est recalculée au démarrage.
+ */
+export const PALETTE_VERSION = 2;
 
 export const isHexColor = (value: unknown): boolean =>
   /^#[0-9a-fA-F]{3,8}$/.test(String(value ?? '').trim());
@@ -83,8 +91,48 @@ export function hslToRgb(h: number, s: number, l: number): { r: number; g: numbe
   };
 }
 
+/** Luminance relative WCAG (0..1) d'une couleur sRGB. */
+export function relativeLuminance(rgb: { r: number; g: number; b: number }): number {
+  const linear = (channel: number) => {
+    const c = channel / 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * linear(rgb.r) + 0.7152 * linear(rgb.g) + 0.0722 * linear(rgb.b);
+}
+
+/**
+ * Fond du carrousel = couleur de la bordure supérieure de la photo, pour que la
+ * photo se fonde dans le fond (référence Amazon). La teinte et la saturation sont
+ * conservées. Seule exception : si la couleur est trop sombre pour l'encre noire
+ * de l'en-tête (contraste < 4,5 : luminance relative < 0,18), on l'éclaircit juste
+ * assez.
+ */
+export function backgroundFromEdge(edgeHex: string): string {
+  const rgb = hexToRgb(edgeHex);
+  if (!rgb) return '#F4F1EC';
+  const { h, s, l } = rgbToHsl(rgb.r, rgb.g, rgb.b);
+  let current = rgb;
+  let lightness = l;
+  for (let guard = 0; relativeLuminance(current) < 0.18 && guard < 60; guard += 1) {
+    lightness = Math.min(0.97, lightness + 0.01);
+    current = hslToRgb(h, s, lightness);
+  }
+  return rgbToHex(current.r, current.g, current.b);
+}
+
+/** Vrai si la palette stockée a été calculée avec la version courante. */
+export function isCurrentPalette(raw: unknown): boolean {
+  try {
+    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    return Boolean(parsed) && typeof parsed === 'object' && (parsed as { version?: unknown }).version === PALETTE_VERSION;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Fond doux : même teinte que la dominante, saturation maîtrisée, clarté 0.93.
+ * Conservé comme repli pour les palettes sans fond (n'est plus utilisé pour l'extraction).
  * Une dominante grise (s≈0) produit un neutre clair — jamais de surprise.
  */
 export function softBackgroundFromDominant(dominantHex: string): string {
@@ -112,6 +160,20 @@ export async function extractHeroPalette(buffer: Buffer): Promise<HeroPalette | 
     }
     const pixels = info.width * info.height;
     if (pixels <= 0) return null;
+    // Bordure supérieure (2 premières lignes de la miniature) : c'est elle que le fond doit reprendre.
+    let er = 0, eg = 0, eb = 0, edgePixels = 0;
+    for (let y = 0; y < Math.min(2, info.height); y += 1) {
+      for (let x = 0; x < info.width; x += 1) {
+        const index = (y * info.width + x) * info.channels;
+        er += data[index];
+        eg += data[index + 1];
+        eb += data[index + 2];
+        edgePixels += 1;
+      }
+    }
+    const edge = edgePixels > 0
+      ? rgbToHex(er / edgePixels, eg / edgePixels, eb / edgePixels)
+      : rgbToHex(r / pixels, g / pixels, b / pixels);
     r = Math.round(r / pixels);
     g = Math.round(g / pixels);
     b = Math.round(b / pixels);
@@ -119,8 +181,9 @@ export async function extractHeroPalette(buffer: Buffer): Promise<HeroPalette | 
     const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
     return {
       dominant,
-      background: softBackgroundFromDominant(dominant),
+      background: backgroundFromEdge(edge),
       luminance: Math.round(luminance * 100) / 100,
+      version: PALETTE_VERSION,
     };
   } catch {
     return null;
@@ -195,4 +258,21 @@ export async function refreshHeroSlidePalette(
   } catch (error) {
     console.error('[hero-carousel] extraction palette échouée:', error instanceof Error ? error.message : error);
   }
+}
+
+/**
+ * Au démarrage : recalcule les palettes qui ne sont pas à la version courante
+ * (cartes créées avant la version 2). Tolérant : une image manquante est ignorée.
+ */
+export async function refreshStaleHeroPalettes(db: QatafoDatabase): Promise<number> {
+  const rows = db.all<{ id: string; image: string; palette: string }>(
+    "SELECT id,image,palette FROM hero_slides WHERE image IS NOT NULL AND image != ''",
+  );
+  let refreshed = 0;
+  for (const row of rows) {
+    if (isCurrentPalette(row.palette)) continue;
+    await refreshHeroSlidePalette(db, { id: row.id, image: row.image });
+    refreshed += 1;
+  }
+  return refreshed;
 }

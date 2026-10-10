@@ -13,6 +13,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import type { Server } from 'node:http';
 import { spawn } from 'node:child_process';
 import { QatafoDatabase as AyroviDatabase } from './db/database';
+import { refreshStaleHeroPalettes } from './services/heroPalette';
 import { SmartLinkScraper } from './scraper/scraper';
 import { VisualProductExtractor } from './services/vision';
 import { createApiRouter } from './api/routes';
@@ -613,6 +614,10 @@ if (process.env.NODE_ENV !== 'test') {
     console.log('🚀 AYROVI React + Vite Platform running');
     console.log(`📍 Web Application: http://0.0.0.0:${PORT}/`);
     console.log('====================================================');
+    // Palettes Hero antérieures à la version 2 : recalcul en arrière-plan, une fois.
+    refreshStaleHeroPalettes(db)
+      .then((count) => { if (count) console.log(`[hero] palettes recalculées : ${count}`); })
+      .catch((error) => console.error('[hero] recalcul des palettes échoué:', error instanceof Error ? error.message : error));
   });
   process.once('SIGTERM', () => shutdown(0, 'SIGTERM reçu'));
   process.once('SIGINT', () => shutdown(0, 'SIGINT reçu'));

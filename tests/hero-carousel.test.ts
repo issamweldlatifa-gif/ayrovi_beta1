@@ -16,8 +16,8 @@ import {
   HERO_DESTINATION_TYPES, heroDestinationHref, isValidExternalUrl,
 } from '../shared/heroDestinations';
 import {
-  extractHeroPalette, hexToRgb, isHexColor, parseHeroPalette, refreshHeroSlidePalette, rgbToHex,
-  softBackgroundFromDominant,
+  backgroundFromEdge, extractHeroPalette, hexToRgb, isCurrentPalette, isHexColor, PALETTE_VERSION,
+  parseHeroPalette, refreshHeroSlidePalette, relativeLuminance, rgbToHex, softBackgroundFromDominant,
 } from '../src/services/heroPalette';
 
 /* ── Contrat de destinations (pur) ────────────────────────────────────────── */
@@ -84,6 +84,31 @@ describe('heroPalette — math couleur', () => {
     expect(parseHeroPalette('{"background":"#fff"}')).toBeNull(); // sans dominante
     // background absent ⇒ dérivé de la dominante
     expect(parseHeroPalette('{"dominant":"#ff0000"}')?.background).toBe(softBackgroundFromDominant('#ff0000'));
+  });
+
+  test('fond = couleur de la BORDURE supérieure, pas de la moyenne (v2)', async () => {
+    // Haut rouge (2 premières lignes sur 10), reste bleu : la moyenne serait bleue.
+    const blue = await sharp({ create: { width: 40, height: 50, channels: 3, background: { r: 0, g: 0, b: 255 } } })
+      .png().toBuffer();
+    const topRed = await sharp({ create: { width: 40, height: 10, channels: 3, background: { r: 255, g: 0, b: 0 } } })
+      .png().toBuffer();
+    const image = await sharp(blue).composite([{ input: topRed, top: 0, left: 0 }]).png().toBuffer();
+    const palette = await extractHeroPalette(image);
+    expect(palette!.version).toBe(PALETTE_VERSION);
+    const bg = hexToRgb(palette!.background)!;
+    expect(bg.r).toBeGreaterThan(bg.b); // la teinte suit la bordure rouge
+    expect(palette!.dominant).not.toBe(palette!.background);
+  });
+
+  test('fond sombre éclairci pour rester lisible avec l’encre noire', () => {
+    const dark = hexToRgb(backgroundFromEdge('#0A1F5C'))!;
+    expect(relativeLuminance(dark)).toBeGreaterThanOrEqual(0.18);
+  });
+
+  test('palette v1 (sans version) ⇒ à recalculer ; v2 ⇒ à jour', () => {
+    expect(isCurrentPalette('{"dominant":"#ff0000","background":"#f9e2e2","luminance":0.5}')).toBe(false);
+    expect(isCurrentPalette(JSON.stringify({ dominant: '#ff0000', background: '#ff0000', luminance: 0.2, version: PALETTE_VERSION }))).toBe(true);
+    expect(isCurrentPalette('')).toBe(false);
   });
 
   test('extraction réelle (sharp) sur une image unie', async () => {

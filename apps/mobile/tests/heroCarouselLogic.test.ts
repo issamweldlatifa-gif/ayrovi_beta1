@@ -8,9 +8,9 @@ import {
 } from '../src/features/home/heroCarouselLogic';
 
 describe('carouselGeometry — dimensions selon l’écran', () => {
-  it.each([360, 390, 412, 430])('téléphone %i px : carte = 78 %, centrée', (screen) => {
+  it.each([360, 390, 412, 430])('téléphone %i px : carte = 76 %, centrée', (screen) => {
     const g = carouselGeometry(screen);
-    expect(g.cardWidth).toBe(Math.round(screen * 0.78));
+    expect(g.cardWidth).toBe(Math.round(screen * 0.76));
     // Le retrait symétrique centre la carte active : deux voisines visibles.
     expect(g.sideInset * 2 + g.cardWidth).toBe(screen);
     expect(g.stride).toBe(g.cardWidth + CARD_GAP);
