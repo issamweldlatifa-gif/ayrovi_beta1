@@ -312,6 +312,8 @@ export const fr = {
   'home.tab.arrivals': 'Nouveautés',
   'home.tab.promotions': 'Promotions',
   'home.tab.magazine': 'Magazine',
+  'home.featured.label': 'À la une',
+  'home.featured.cta': 'Découvrir',
   /* ── Carrousel Hero (piloté Admin) ─────────────────────────────────────── */
   'home.hero.slideOf': 'Carte {current} sur {total}',
   'home.hero.swipeHint': 'Glissez latéralement pour découvrir les campagnes',

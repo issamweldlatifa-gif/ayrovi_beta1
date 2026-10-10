@@ -312,6 +312,8 @@ export const ar = {
   'home.tab.arrivals': 'وصل حديثاً',
   'home.tab.promotions': 'العروض',
   'home.tab.magazine': 'المجلة',
+  'home.featured.label': 'الأهم',
+  'home.featured.cta': 'اكتشف',
   /* ── كاروسيل الهيرو (مسيّر من لوحة التحكّم) ─────────────────────────────── */
   'home.hero.slideOf': 'البطاقة {current} من {total}',
   'home.hero.swipeHint': 'مرّر لاستكشاف الحملات',

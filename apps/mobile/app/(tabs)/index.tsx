@@ -22,6 +22,7 @@ import { AppScreen, FullBleed } from '@/design/layout';
 import { AppHeader } from '@/features/shell/AppHeader';
 import { HeroCarousel } from '@/features/home/HeroCarousel';
 import { HomeTabs } from '@/features/home/HomeTabs';
+import { FeaturedPublication } from '@/features/home/FeaturedPublication';
 import { Footer } from '@/features/shell/Footer';
 import {
   useHeroCarouselSettings, useHeroSlides,
@@ -70,6 +71,9 @@ export default function HomeScreen() {
 
       {/* التبويبات الثلاث — يفتحو جوّا التطبيق */}
       <HomeTabs />
+
+      {/* Dernière publication du magazine — « Découvrir » ouvre la page Publications. */}
+      <FeaturedPublication />
 
       {/*
         الفوتر — خلفية سوداء عرض كامل.
