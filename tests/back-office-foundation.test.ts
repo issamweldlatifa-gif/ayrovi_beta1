@@ -190,12 +190,14 @@ describe('back office shell (P2.0)', () => {
       const promoEngineAdditions = ['promos'];
       // 2026-10-09 : page de réglages du carrousel Hero (section « hero-carousel »).
       const heroCarouselAdditions = ['hero-carousel'];
+      // 2026-10-10 : la page de gestion des cartes Hero devient UNE entrée de menu (« Hero »).
+      const heroSlidesAdditions = ['hero'];
       const navigable = backOfficeSections();
       const sections = resourceDescriptors()
         .filter((descriptor) => descriptor.nav && navigable.includes(descriptor.section))
         .map((descriptor) => descriptor.section)
         .sort();
-      expect(sections).toEqual([...[...legacyIds, ...p22Additions, ...p23Additions, ...crmAdditions, ...publicNavAdditions, ...globalDiscoveryAdditions, ...promoEngineAdditions, ...heroCarouselAdditions].sort()]);
+      expect(sections).toEqual([...[...legacyIds, ...p22Additions, ...p23Additions, ...crmAdditions, ...publicNavAdditions, ...globalDiscoveryAdditions, ...promoEngineAdditions, ...heroCarouselAdditions, ...heroSlidesAdditions].sort()]);
       // 3) et le client ne réintroduit aucune copie de cette liste.
       const adminApp = fs.readFileSync(path.resolve(process.cwd(), 'client/src/admin/AdminApp.tsx'), 'utf8');
       expect(adminApp, 'le client ne doit plus porter de liste de navigation').not.toContain('const navGroups');
@@ -212,12 +214,12 @@ describe('back office shell (P2.0)', () => {
   });
 
   describe('navigation dérivée du registre + permissions + statut de module', () => {
-    test('SUPER_ADMIN voit les 35 entrées legacy + les 3 du stock (P2.2) + les 3 des achats (P2.3) + les 6 du CRM 360 (E5) + la barre publique + la section promos + le carrousel Hero', async () => {
+    test('SUPER_ADMIN voit les 35 entrées legacy + les 3 du stock (P2.2) + les 3 des achats (P2.3) + les 6 du CRM 360 (E5) + la barre publique + la section promos + le carrousel Hero + la gestion des cartes Hero', async () => {
       const result = await superAdmin.agent.get('/api/admin/back-office/navigation');
       expect(result.status).toBe(200);
       const items = result.body.data.groups.flatMap((group: any) => group.items);
-      expect(items.length).toBe(52);
-      expect(result.body.data.counts).toMatchObject({ sections: 52, visible: 52 });
+      expect(items.length).toBe(53);
+      expect(result.body.data.counts).toMatchObject({ sections: 53, visible: 53 });
       expect(result.body.data.groups.map((group: any) => group.label)).toEqual(
         ['Vue générale', 'Contenu', 'Catalogue', 'Commerce', 'CRM', 'ERP', 'Système']);
     });
@@ -466,7 +468,8 @@ describe('back office shell (P2.0)', () => {
       // GLOBAL DISCOVERY : +2 (Globe2, MapPin — sources et marchés).
       // 2026-09-23 : le moteur de promotions ajoute son entrée (icône Tag).
       // 2026-10-09 : le carrousel Hero ajoute son entrée (icône Palette).
-      expect(declared.length).toBe(52);
+      // 2026-10-10 : la gestion des cartes Hero ajoute son entrée unique (icône LayoutGrid, déjà rendue).
+      expect(declared.length).toBe(53);
       const missing = [...new Set(declared)].filter((name) => !card.has(name));
       expect(missing, 'noms d\u2019icône sans clé dans ICONS').toEqual([]);
     });

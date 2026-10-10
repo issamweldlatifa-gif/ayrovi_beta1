@@ -259,10 +259,10 @@ const LEGACY_RESOURCE_META: Record<string, {
     nav: { group: 'Contenu', order: 60, icon: 'Tag' },
   },
   'hero-slides': {
-    key: 'cms.hero-slides', module: 'cms', domain: 'CONTENT', label: 'Hero slides', singular: 'slide',
-    description: 'Diaporama du hero (table `hero_slides`).',
-    section: 'hero', aliases: ['hero-slides'], resourceType: 'hero_visual', nav: null,
-    navlessReason: 'Table `hero_slides` éditée par le moteur générique ; l’écran visible est « Visuels d’accueil » (content.hero-visuals). Deep links `hero` et `hero-slides` conservés.',
+    key: 'cms.hero-slides', module: 'cms', domain: 'CONTENT', label: 'Hero', singular: 'carte',
+    description: 'Cartes du carrousel Hero : brouillons, aperçu visiteur, publication. Table `hero_slides` (publié) et `hero_slide_drafts` (brouillons).',
+    section: 'hero', aliases: ['hero-slides'], resourceType: 'hero_visual',
+    nav: { group: 'Contenu', order: 71, icon: 'LayoutGrid' },
   },
   'public-nav': {
     key: 'cms.public-nav', module: 'cms', domain: 'CONTENT', label: 'Barre sous l’en-tête', singular: 'onglet public',
