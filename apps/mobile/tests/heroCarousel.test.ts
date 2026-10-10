@@ -20,8 +20,10 @@ const {
   parseHeroSlides, parseHeroCarouselSettings, safeHeroHref,
   fetchHeroSlides, fetchHeroCarouselSettings, trackHeroEvent,
 } = await import('../src/api/public');
-const { hexToRgb, luminanceOfHex, adaptiveInk, pickHeroText } =
-  await import('../src/features/home/heroPalette');
+const {
+  hexToRgb, luminanceOfHex, adaptiveInk, pickHeroText,
+  mixHex, withAlpha, softenHeroBackground, HERO_BACKGROUND_SOFTEN,
+} = await import('../src/features/home/heroPalette');
 
 // `mockReset` perd les rejets suivis ⇒ `mockClear` + valeur par défaut résolue.
 beforeEach(() => {
@@ -191,6 +193,36 @@ describe('contraste — encre sur fond adaptatif', () => {
     expect(adaptiveInk('#171717', colors)).toBe('#FFFFFF'); // surface sombre (dark)
     expect(adaptiveInk('#AABBCC', colors)).toBe('#000000'); // override manuel clair
     expect(adaptiveInk('#1E3A8A', colors)).toBe('#FFFFFF'); // override manuel foncé
+  });
+});
+
+describe('mixHex / withAlpha / softenHeroBackground — adoucissement du fond', () => {
+  it('mixHex : bornes exactes et milieu', () => {
+    expect(mixHex('#000000', '#FFFFFF', 0)).toBe('#000000');
+    expect(mixHex('#000000', '#FFFFFF', 1)).toBe('#FFFFFF');
+    expect(mixHex('#000000', '#FFFFFF', 0.5)).toBe('#808080');
+    expect(mixHex('#11A59F', '#FFFFFF', 0)).toBe('#11A59F');
+  });
+
+  it('mixHex : quantité bornée entre 0 et 1, entrée invalide renvoyée telle quelle', () => {
+    expect(mixHex('#102030', '#FFFFFF', -3)).toBe('#102030');
+    expect(mixHex('#102030', '#FFFFFF', 9)).toBe('#FFFFFF');
+    expect(mixHex('pas-une-couleur', '#FFFFFF', 0.5)).toBe('pas-une-couleur');
+  });
+
+  it('withAlpha : rgba avec opacité bornée', () => {
+    expect(withAlpha('#FF8000', 0.5)).toBe('rgba(255,128,0,0.5)');
+    expect(withAlpha('#FFFFFF', 0)).toBe('rgba(255,255,255,0)');
+    expect(withAlpha('#FFFFFF', 2)).toBe('rgba(255,255,255,1)');
+  });
+
+  it('softenHeroBackground : éclaircit vers le blanc sans atteindre le blanc', () => {
+    expect(HERO_BACKGROUND_SOFTEN).toBeGreaterThan(0);
+    expect(HERO_BACKGROUND_SOFTEN).toBeLessThan(0.5);
+    const softened = softenHeroBackground('#11A59F', '#FFFFFF');
+    expect(softened).toBe(mixHex('#11A59F', '#FFFFFF', HERO_BACKGROUND_SOFTEN));
+    expect(luminanceOfHex(softened)).toBeGreaterThan(luminanceOfHex('#11A59F'));
+    expect(softened).not.toBe('#FFFFFF');
   });
 });
 

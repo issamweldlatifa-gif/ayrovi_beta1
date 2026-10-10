@@ -35,7 +35,7 @@ import {
   parseHeroCarouselSettings, trackHeroEvent,
   type HeroCarouselSettings, type HeroSlide,
 } from '@/api/public';
-import { adaptiveInk, pickHeroText } from './heroPalette';
+import { pickHeroText, softenHeroBackground, withAlpha } from './heroPalette';
 import { isDemoSlide } from './heroDemo';
 import {
   CARD_ASPECT, CARD_GAP, carouselGeometry, indexForOffset, isStillAfterDrag, nextIndex,
@@ -43,7 +43,10 @@ import {
 } from './heroCarouselLogic';
 
 /** Hauteur du fondu final vers le fond de page (blanc) sous le carrousel. */
-const PAGE_FADE_HEIGHT = 72;
+const PAGE_FADE_HEIGHT = 120;
+/** Marge au-dessus du bas de l'image pour les pastilles (posées SUR la photo). */
+const DOTS_BOTTOM_GAP = 14;
+const DOTS_HEIGHT = 18;
 
 /* ── États du composant parent ───────────────────────────────────────────── */
 
@@ -124,19 +127,19 @@ function HeroCarouselView({
 
   // Géométrie : carte active centrée, voisines visibles à égale distance des deux côtés.
   const { cardWidth, stride, sideInset } = carouselGeometry(viewportWidth);
+  const imageHeight = cardWidth / CARD_ASPECT;
 
   // Fond effectif de chaque carte (palette serveur, repli = surface du thème).
+  // Fond adouci vers le blanc de la page : le cadre de la photo reste visible.
   const backgrounds = useMemo(
-    () => slides.map((card) => card.background || theme.colors.surface),
-    [slides, theme.colors.surface],
+    () => slides.map((card) => softenHeroBackground(card.background || theme.colors.surface, theme.colors.canvas)),
+    [slides, theme.colors.surface, theme.colors.canvas],
   );
   const sectionBackground = bgAnim.interpolate({
     inputRange: slides.map((_, index) => index),
     outputRange: backgrounds,
   });
-  // Couleur unique du carrousel = couleur de la carte active. Les voisines la
-  // reprennent (texte, fondu) : aucune pastille de couleur différente ne subsiste.
-  const surface = backgrounds[activeIndex] ?? theme.colors.surface;
+  // Le header reçoit la couleur adoucie de la carte active (même valeur que la section).
 
   // Le header reprend la couleur de la carte active ; remise à zéro au démontage.
   useEffect(() => {
@@ -200,8 +203,6 @@ function HeroCarouselView({
     else Linking.openURL(card.href).catch(() => {});
   }, [locale]);
 
-  const dotInk = adaptiveInk(surface, theme.colors);
-
   return (
     <Animated.View
       testID="hero-carousel"
@@ -241,27 +242,40 @@ function HeroCarouselView({
       />
       {settings.paginationVisible && slides.length > 1 ? (
         <View
-          testID="hero-carousel-dots"
-          style={[styles.dots, { flexDirection: rowDirectionFor(theme.isRTL) }]}
-          accessibilityLabel={t('home.hero.slideOf', { current: activeIndex + 1, total: slides.length })}
-          accessibilityHint={t('home.hero.swipeHint')}
+          pointerEvents="none"
+          style={[styles.dotsLayer, { top: 16 + imageHeight - DOTS_BOTTOM_GAP - DOTS_HEIGHT }]}
         >
-          {slides.map((card, index) => (
-            <View
-              key={card.id}
-              accessibilityElementsHidden
-              style={[
-                styles.dot,
-                { backgroundColor: dotInk },
-                index === activeIndex ? styles.dotActive : { opacity: theme.opacity.disabled },
-              ]}
-            />
-          ))}
+          <View
+            testID="hero-carousel-dots"
+            style={[styles.dotsPill, {
+              flexDirection: rowDirectionFor(theme.isRTL),
+              backgroundColor: theme.colors.overlay,
+            }]}
+            accessibilityLabel={t('home.hero.slideOf', { current: activeIndex + 1, total: slides.length })}
+            accessibilityHint={t('home.hero.swipeHint')}
+          >
+            {slides.map((card, index) => (
+              <View
+                key={card.id}
+                accessibilityElementsHidden
+                style={[
+                  styles.dot,
+                  { backgroundColor: theme.colors.onMedia },
+                  index === activeIndex ? styles.dotActive : { opacity: theme.opacity.disabled },
+                ]}
+              />
+            ))}
+          </View>
         </View>
       ) : null}
       {/* Fin de carrousel : le fond passe en douceur au blanc de la page. */}
       <LinearGradient
-        colors={['transparent', theme.colors.canvas]}
+        colors={[
+          withAlpha(theme.colors.canvas, 0),
+          withAlpha(theme.colors.canvas, 0.55),
+          theme.colors.canvas,
+        ]}
+        locations={[0, 0.5, 1]}
         style={[styles.pageFade, { height: PAGE_FADE_HEIGHT }]}
         pointerEvents="none"
         accessibilityElementsHidden
@@ -311,11 +325,11 @@ const HeroCard = memo(function HeroCard({ card, width, onPress }: HeroCardProps)
           accessibilityLabel={title || undefined}
           decorative={!title}
         />
-        {/* Voile sombre en bas : garantit le contraste du texte posé sur la photo. */}
+        {/* Voile sombre en haut : garantit le contraste du titre posé sur la photo. */}
         <LinearGradient
-          colors={['transparent', theme.colors.scrim]}
-          start={{ x: 0.5, y: 0.3 }}
-          end={{ x: 0.5, y: 1 }}
+          colors={[theme.colors.scrim, withAlpha(theme.colors.scrim, 0)]}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 0.6 }}
           style={styles.cardScrim}
           pointerEvents="none"
           accessibilityElementsHidden
@@ -366,9 +380,12 @@ const styles = StyleSheet.create({
   card: {},
   cardMedia: { overflow: 'hidden' },
   cardImage: { width: '100%', aspectRatio: CARD_ASPECT },
-  cardScrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '60%' },
-  /** Titre et sous-titre posés sur le visuel, en bas, marges intérieures. */
-  cardCopy: { position: 'absolute', left: 16, right: 16, bottom: 16 },
+  cardScrim: { position: 'absolute', left: 0, right: 0, top: 0, height: '60%' },
+  /** Pastilles posées sur le bas de la photo, centrées, sur un petit voile. */
+  dotsLayer: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
+  dotsPill: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: DOTS_HEIGHT, paddingHorizontal: 10, borderRadius: 999 },
+  /** Titre et sous-titre posés sur le visuel, en haut (début de ligne), marges intérieures. */
+  cardCopy: { position: 'absolute', start: 16, end: 16, top: 16 },
   cardSubtitle: { marginTop: 4 },
   cardCta: {
     alignSelf: 'flex-start',
@@ -379,7 +396,6 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   pageFade: { position: 'absolute', left: 0, right: 0, bottom: 0 },
-  dots: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, marginTop: 12 },
   dot: { width: 6, height: 6, borderRadius: 999 },
   dotActive: { width: 20 },
 });

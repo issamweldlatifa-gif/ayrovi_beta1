@@ -24,9 +24,11 @@ export interface BrandMarkProps {
   withName?: boolean;
   /** Taille du nom (défaut : proportionnelle au signe). */
   nameSize?: number;
+  /** Couleur du nom (défaut : encre du thème). Le header sur une carte Hero la confie au contraste. */
+  nameColor?: string;
 }
 
-export function BrandMark({ size = 36, withName = true, nameSize }: BrandMarkProps) {
+export function BrandMark({ size = 36, withName = true, nameSize, nameColor }: BrandMarkProps) {
   const theme = useTheme();
 
   return (
@@ -55,7 +57,7 @@ export function BrandMark({ size = 36, withName = true, nameSize }: BrandMarkPro
         <AppText
           variant="label"
           weight="bold"
-          color={theme.colors.ink}
+          color={nameColor ?? theme.colors.ink}
           style={{ fontSize: nameSize ?? Math.round(size * 0.5), letterSpacing: 1 }}
         >
           AYROVI

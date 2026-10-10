@@ -53,3 +53,31 @@ export function pickHeroText(primary: string, arabic: string, isArabic: boolean)
   if (isArabic) return b || a;
   return a || b;
 }
+
+/* ── Adoucissement du fond (2026-10-10) ───────────────────────────────────── */
+
+/** Mélange linéaire de deux couleurs `#rrggbb` (`amount` : 0 = `from`, 1 = `to`). */
+export function mixHex(from: string, to: string, amount: number): string {
+  const a = hexToRgb(from);
+  const b = hexToRgb(to);
+  if (!a || !b) return from;
+  const t = Math.min(1, Math.max(0, amount));
+  const channel = (x: number, y: number) => Math.round(x + (y - x) * t).toString(16).padStart(2, '0');
+  return `#${channel(a.r, b.r)}${channel(a.g, b.g)}${channel(a.b, b.b)}`.toUpperCase();
+}
+
+/** Couleur `#rrggbb` avec une opacité `alpha` (0..1), en `rgba(...)`. */
+export function withAlpha(hex: string, alpha: number): string {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return `rgba(0,0,0,${alpha})`;
+  return `rgba(${rgb.r},${rgb.g},${rgb.b},${Math.min(1, Math.max(0, alpha))})`;
+}
+
+/**
+ * Fond du carrousel adouci vers le blanc de la page : la bordure de la photo reste
+ * visible (cadre du visuel) sans que le fond soit trop saturé. Quantité fixe : 18 %.
+ */
+export const HERO_BACKGROUND_SOFTEN = 0.18;
+export function softenHeroBackground(background: string, canvas: string): string {
+  return mixHex(background, canvas, HERO_BACKGROUND_SOFTEN);
+}

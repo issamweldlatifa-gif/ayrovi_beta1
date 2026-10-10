@@ -20,20 +20,12 @@ import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
 import { adaptiveInk } from '@/features/home/heroPalette';
 
-const ICON_SHADOW = {
-  // Ombre discrète pendant le survol du contenu, sans ajouter de fond au header.
-  textShadowColor: 'rgba(0,0,0,0.55)',
-  textShadowOffset: { width: 0, height: 1 },
-  textShadowRadius: 3,
-} as const;
-
 function HeaderIcon({
-  name, label, onPress, scrolled, color,
+  name, label, onPress, color,
 }: {
   name: keyof typeof Ionicons.glyphMap;
   label: string;
   onPress: () => void;
-  scrolled: boolean;
   color: string;
 }) {
   const theme = useTheme();
@@ -52,7 +44,7 @@ function HeaderIcon({
       ]}
       hitSlop={8}
     >
-      <Ionicons name={name} size={22} color={color} style={scrolled ? undefined : ICON_SHADOW} />
+      <Ionicons name={name} size={22} color={color} />
     </Pressable>
   );
 }
@@ -73,6 +65,8 @@ export function AppHeader({
   // suivent la luminance du fond. Après défilement : surface lisible d'origine.
   const onHero = !scrolled && heroBackground !== null;
   const barBackground = onHero ? heroBackground : (scrolled ? theme.colors.surface : 'transparent');
+  // Encre adaptée au fond (blanc sur fond sombre, noir sur fond clair), sans ombre :
+  // l'ombre sombre sur les icônes alourdissait le header.
   const iconColor = onHero ? adaptiveInk(heroBackground, theme.colors) : theme.colors.ink;
 
   // En arabe, la lecture commence à droite : le logo est à DROITE, les actions
@@ -112,7 +106,7 @@ export function AppHeader({
           accessibilityLabel={t('nav.home')}
           style={({ pressed }) => [styles.logo, { opacity: pressed ? 0.6 : 1 }]}
         >
-          <BrandMark size={30} />
+          <BrandMark size={30} nameColor={onHero ? iconColor : undefined} />
         </Pressable>
 
         <View style={[styles.actions, { flexDirection: row }]}>
@@ -120,21 +114,18 @@ export function AppHeader({
             name="person-outline"
             label={t('nav.profile')}
             onPress={() => go('/(tabs)/account')}
-            scrolled={scrolled}
             color={iconColor}
           />
           <HeaderIcon
             name="bag-outline"
             label={t('cart.title')}
             onPress={() => go('/(tabs)/cart')}
-            scrolled={scrolled}
             color={iconColor}
           />
           <HeaderIcon
             name="menu-outline"
             label={t('nav.menu')}
             onPress={() => { setMenuOpen(true); }}
-            scrolled={scrolled}
             color={iconColor}
           />
         </View>

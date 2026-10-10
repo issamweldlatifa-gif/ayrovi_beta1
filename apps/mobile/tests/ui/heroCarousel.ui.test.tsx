@@ -216,4 +216,11 @@ describe('géométrie et fond', () => {
     expect(within(card).getByText('Titre 1')).toBeTruthy();
     expect(within(card).getByTestId('hero-card-a-image')).toBeTruthy();
   });
+
+  it('les pastilles sont UNE barre posée sur la photo : un point par carte', async () => {
+    await renderCarousel();
+    const dots = screen.getByTestId('hero-carousel-dots');
+    expect(dots.findAll((node) => typeof node.type === 'string' && node.props.accessibilityElementsHidden === true)).toHaveLength(SLIDES.length);
+    expect(screen.getAllByTestId('hero-carousel-dots')).toHaveLength(1);
+  });
 });
