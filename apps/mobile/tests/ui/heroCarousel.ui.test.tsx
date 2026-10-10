@@ -8,7 +8,7 @@
  *  • le CTA est un bouton réel, distinct de la carte.
  */
 import { AppState, StyleSheet } from 'react-native';
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
 import { HeroCarousel } from '../../src/features/home/HeroCarousel';
@@ -208,5 +208,12 @@ describe('géométrie et fond', () => {
     await renderCarousel();
     const style = StyleSheet.flatten(screen.getByTestId('hero-card-b').props.style);
     expect(style.backgroundColor).toBeUndefined();
+  });
+
+  it('le titre est posé SUR le visuel (façon Amazon), dans la même carte', async () => {
+    await renderCarousel();
+    const card = screen.getByTestId('hero-card-a');
+    expect(within(card).getByText('Titre 1')).toBeTruthy();
+    expect(within(card).getByTestId('hero-card-a-image')).toBeTruthy();
   });
 });

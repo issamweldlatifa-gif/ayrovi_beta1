@@ -232,8 +232,6 @@ function HeroCarouselView({
           <HeroCard
             card={item}
             width={cardWidth}
-            surface={surface}
-            fadeTo={surface}
             onPress={onPressCard}
           />
         )}
@@ -275,18 +273,17 @@ function HeroCarouselView({
 interface HeroCardProps {
   card: HeroSlide;
   width: number;
-  /** Couleur du carrousel (carte active) — couleur du texte posé dessus. */
-  surface: string;
-  /** Couleur vers laquelle le visuel se dissout (= couleur du carrousel). */
-  fadeTo: string;
   onPress: (card: HeroSlide) => void;
 }
 
-const HeroCard = memo(function HeroCard({ card, width, surface, fadeTo, onPress }: HeroCardProps) {
+/**
+ * Carte « façon Amazon » : le titre et le sous-titre sont POSÉS SUR le visuel,
+ * sur un voile sombre en bas. Le visuel occupe toute la largeur de la carte.
+ */
+const HeroCard = memo(function HeroCard({ card, width, onPress }: HeroCardProps) {
   const theme = useTheme();
   const { locale } = useI18n();
   const isArabic = locale === 'ar';
-  const ink = adaptiveInk(surface, theme.colors);
   const title = pickHeroText(card.title, card.titleAr, isArabic);
   const subtitle = pickHeroText(card.subtitle, card.subtitleAr, isArabic);
   const cta = pickHeroText(card.cta, card.ctaAr, isArabic);
@@ -301,16 +298,6 @@ const HeroCard = memo(function HeroCard({ card, width, surface, fadeTo, onPress 
       accessibilityRole="link"
       accessibilityLabel={label || undefined}
     >
-      {title ? (
-        <AppText variant="title" weight="bold" color={ink} numberOfLines={2} style={styles.cardTitle}>
-          {title}
-        </AppText>
-      ) : null}
-      {subtitle ? (
-        <AppText variant="body" color={ink} numberOfLines={2} style={styles.cardSubtitle}>
-          {subtitle}
-        </AppText>
-      ) : null}
       <View style={[styles.cardMedia, { borderRadius: theme.radius.lg }]}>
         <AppImage
           testID={`hero-card-${card.id}-image`}
@@ -321,16 +308,30 @@ const HeroCard = memo(function HeroCard({ card, width, surface, fadeTo, onPress 
           accessibilityLabel={title || undefined}
           decorative={!title}
         />
-        {/* Fondu : le bas du visuel se dissout dans le fond de la carte (§5.4). */}
+        {/* Voile sombre en bas : garantit le contraste du texte posé sur la photo. */}
         <LinearGradient
-          colors={['transparent', fadeTo]}
-          start={{ x: 0.5, y: 0.55 }}
+          colors={['transparent', theme.colors.scrim]}
+          start={{ x: 0.5, y: 0.3 }}
           end={{ x: 0.5, y: 1 }}
-          style={styles.cardFade}
+          style={styles.cardScrim}
           pointerEvents="none"
           accessibilityElementsHidden
           importantForAccessibility="no-hide-descendants"
         />
+        {title || subtitle ? (
+          <View style={styles.cardCopy} pointerEvents="none">
+            {title ? (
+              <AppText variant="title" weight="bold" color={theme.colors.onMedia} numberOfLines={2}>
+                {title}
+              </AppText>
+            ) : null}
+            {subtitle ? (
+              <AppText variant="body" color={theme.colors.onMedia} numberOfLines={2} style={styles.cardSubtitle}>
+                {subtitle}
+              </AppText>
+            ) : null}
+          </View>
+        ) : null}
       </View>
       {cta ? (
         <Pressable
@@ -358,22 +359,25 @@ const styles = StyleSheet.create({
   // Pas de fond propre à la carte : le fond continu du carrousel passe derrière
   // les voisines (aucune bande coupée). Le bas de section laisse place au fondu.
   section: { paddingTop: 16, paddingBottom: PAGE_FADE_HEIGHT, overflow: 'hidden' },
-  card: { padding: 16 },
-  pageFade: { position: 'absolute', left: 0, right: 0, bottom: 0 },
-  cardTitle: { marginBottom: 4 },
-  cardSubtitle: { marginBottom: 12 },
+  // Pas de marge interne : le visuel occupe toute la largeur de la carte (plus grand).
+  card: {},
   cardMedia: { overflow: 'hidden' },
   cardImage: { width: '100%', aspectRatio: CARD_ASPECT },
-  /** Superposition unique : le fondu du visuel vers le fond de la carte. */
-  cardFade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '45%' },
+  cardScrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '60%' },
+  /** Titre et sous-titre posés sur le visuel, en bas, marges intérieures. */
+  cardCopy: { position: 'absolute', left: 16, right: 16, bottom: 16 },
+  cardSubtitle: { marginTop: 4 },
   cardCta: {
     alignSelf: 'flex-start',
     marginTop: 12,
+    marginHorizontal: 16,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 999,
   },
+  pageFade: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   dots: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, marginTop: 12 },
   dot: { width: 6, height: 6, borderRadius: 999 },
   dotActive: { width: 20 },
 });
+
