@@ -10,6 +10,7 @@
 import { GoogleSignin, isErrorWithCode, isSuccessResponse } from '@react-native-google-signin/google-signin';
 import {
   GOOGLE_CODES, GoogleConfigError, isCancelCode, outcomeFromResponse, type GoogleOutcome,
+  type GoogleSignInResponseLike,
 } from './googleOutcome';
 
 export function googleWebClientId(): string {
@@ -19,14 +20,21 @@ export function googleWebClientId(): string {
 /**
  * Ouvre le sélecteur natif et rend le jeton, ou « annulé ». Les pannes remontent
  * avec un code connu (`GoogleConfigError` ou code de la bibliothèque).
+ *
+ * `silent` : reprend le dernier compte Google de l'appareil SANS sélecteur. Rend
+ * `{ kind: 'none' }` s'il n'y en a pas : à l'appelant de proposer le sélecteur.
  */
-export async function signInWithGoogleNative(): Promise<GoogleOutcome> {
+export async function signInWithGoogleNative(options: { silent?: boolean } = {}): Promise<GoogleOutcome> {
   const webClientId = googleWebClientId();
   if (!webClientId) throw new GoogleConfigError('GOOGLE_CLIENT_ID_MISSING');
 
   GoogleSignin.configure({ webClientId, offlineAccess: false });
   try {
     await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+    if (options.silent) {
+      const silent = await GoogleSignin.signInSilently();
+      return outcomeFromResponse(silent as GoogleSignInResponseLike);
+    }
     const response = await GoogleSignin.signIn();
     if (isSuccessResponse(response)) return outcomeFromResponse({ type: 'success', data: response.data });
     return { kind: 'cancelled' };

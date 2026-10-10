@@ -111,6 +111,8 @@ export const fr = {
   'auth.emailCode.checkInbox': 'Vérifiez votre boîte de réception',
   'auth.emailCode.sentTo': 'Saisissez le code de vérification envoyé à {email}.',
   'auth.or': 'OU',
+  'auth.remembered.continue': 'Continuer avec ce compte',
+  'auth.remembered.another': 'Se connecter autrement',
   'auth.continue': 'Continuer',
   'auth.start.phone': 'Continuer avec un numéro de téléphone',
   'auth.start.email': 'Continuer avec un e-mail',

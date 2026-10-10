@@ -4,7 +4,7 @@
  */
 import { Children, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
-  Animated, Dimensions, Modal, Pressable, StyleSheet, Switch,
+  ActivityIndicator, Animated, Dimensions, Modal, Pressable, StyleSheet, Switch,
   Text, TextInput, View, useWindowDimensions,
   type StyleProp, type TextInputProps, type TextProps, type TextStyle as RNTextStyle,
   type LayoutChangeEvent, type ViewStyle,
@@ -282,6 +282,21 @@ export function Button({ label, onPress, busy = false, disabled = false, tone = 
           {label}
         </AppText>
       )}
+      {/* Attente visible DANS le bouton, côté fin de ligne (comme les grands services) : le libellé reste centré. */}
+      {busy ? (
+        <View
+          pointerEvents="none"
+          style={[styles.busyIndicator, theme.isRTL ? { left: 16 } : { right: 16 }]}
+        >
+          <ActivityIndicator
+            testID={testID ? `${testID}-busy` : undefined}
+            size="small"
+            color={quiet ? theme.colors.ink : theme.colors.onAction}
+            importantForAccessibility="no"
+            accessibilityElementsHidden
+          />
+        </View>
+      ) : null}
     </Pressable>
   );
 }
@@ -419,6 +434,7 @@ export function Field(props: TextInputProps & { label?: string }) {
 
 const styles = StyleSheet.create({
   leadingRow: { alignItems: 'center', justifyContent: 'center', gap: 10 },
+  busyIndicator: { position: 'absolute', top: 0, bottom: 0, justifyContent: 'center' },
   drawerScrim: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' },
   drawerPanel: {
     position: 'absolute', top: 0, bottom: 0,

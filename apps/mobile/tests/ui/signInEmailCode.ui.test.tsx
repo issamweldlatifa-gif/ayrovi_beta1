@@ -8,7 +8,8 @@
  *  • le mot de passe reste accessible, mais en option, pas par défaut.
  */
 import { router } from 'expo-router';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { ActivityIndicator } from 'react-native';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import SignInScreen from '../../app/sign-in';
@@ -54,6 +55,11 @@ jest.mock('../../src/api/public', () => {
   return { ...actual, fetchServerReadiness: jest.fn(async () => ({})) };
 });
 
+// Compte mémorisé : simulé ici, le coffre réel (SecureStore) n'existe pas en test.
+jest.mock('../../src/features/auth/lastAccount', () => ({
+  useRememberedAccount: jest.fn(() => ({ account: null, ready: true, remember: jest.fn() })),
+}));
+
 jest.mock('../../src/features/auth/browser', () => ({
   closeProviderBrowser: jest.fn(async () => undefined),
   openProviderSession: jest.fn(async () => 'done'),
@@ -65,6 +71,7 @@ jest.mock('@react-native-google-signin/google-signin', () => ({
     configure: jest.fn(),
     hasPlayServices: jest.fn(async () => true),
     signIn: jest.fn(),
+    signInSilently: jest.fn(),
   },
   isSuccessResponse: (response: any) => response?.type === 'success',
   isErrorWithCode: (error: any) => Boolean(error && typeof error === 'object' && 'code' in error),
@@ -292,6 +299,92 @@ describe('Google natif : aucune attente « navigateur »', () => {
     await act(async () => { fireEvent.press(screen.getByTestId('auth-provider-google')); });
     expect(screen.queryByText(/navigateur/)).toBeNull();
     expect(screen.queryByText('Annuler l’attente')).toBeNull();
+  });
+});
+
+describe('Compte mémorisé et attente dans le bouton', () => {
+  const GOOGLE_ID = 'test-web-client.apps.googleusercontent.com';
+  const { GoogleSignin } = jest.requireMock('@react-native-google-signin/google-signin');
+  const { googleNativeLogin } = jest.requireMock('../../src/api/providers');
+  const { useRememberedAccount } = jest.requireMock('../../src/features/auth/lastAccount');
+
+  const remember = jest.fn();
+  const remembered = (account: unknown) => {
+    useRememberedAccount.mockReturnValue({ account, ready: true, remember });
+  };
+
+  beforeEach(() => {
+    process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID = GOOGLE_ID;
+    jest.clearAllMocks();
+    resetSession({
+      authConfig: { phoneOtp: true, email: true, emailCode: true, google: false, googleNative: true, facebook: false, apple: false, passwordReset: true },
+    });
+  });
+
+  afterEach(() => {
+    delete process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+    remembered(null);
+  });
+
+  it('sans compte mémorisé, le formulaire complet reste proposé', async () => {
+    remembered(null);
+    await renderScreen();
+    expect(screen.queryByTestId('auth-remembered-account')).toBeNull();
+    expect(screen.getByTestId('auth-email-code-send')).toBeTruthy();
+  });
+
+  it('un compte Google mémorisé s’affiche « Continuer avec ce compte » avec son adresse', async () => {
+    remembered({ provider: 'google', email: 'essam@gmail.com', name: 'Essam' });
+    await renderScreen();
+    expect(screen.getByTestId('auth-remembered-account')).toBeTruthy();
+    expect(screen.getByText('Continuer avec ce compte')).toBeTruthy();
+    expect(screen.getByText('essam@gmail.com')).toBeTruthy();
+    // Le formulaire complet n'apparaît qu'après « Se connecter autrement ».
+    expect(screen.queryByTestId('auth-email-code-send')).toBeNull();
+  });
+
+  it('« Se connecter autrement » révèle le formulaire complet', async () => {
+    remembered({ provider: 'google', email: 'essam@gmail.com', name: 'Essam' });
+    await renderScreen();
+    await act(async () => { fireEvent.press(screen.getByTestId('auth-remembered-other')); });
+    expect(screen.getByTestId('auth-email-code-send')).toBeTruthy();
+    expect(screen.queryByTestId('auth-remembered-account')).toBeNull();
+  });
+
+  it('le compte Google mémorisé reprend la session SANS sélecteur, puis la mémorise', async () => {
+    remembered({ provider: 'google', email: 'essam@gmail.com', name: 'Essam' });
+    GoogleSignin.signInSilently.mockResolvedValue({ type: 'success', data: { idToken: 'x.y.z', user: { email: 'essam@gmail.com', name: 'Essam' } } });
+    googleNativeLogin.mockResolvedValue({ sessionToken: 'tok', account: { id: 'a1' } });
+    await renderScreen();
+    await act(async () => { fireEvent.press(screen.getByTestId('auth-remembered-account')); });
+    expect(GoogleSignin.signInSilently).toHaveBeenCalled();
+    expect(GoogleSignin.signIn).not.toHaveBeenCalled();
+    expect(googleNativeLogin).toHaveBeenCalledWith('x.y.z');
+    expect(remember).toHaveBeenCalledWith({ provider: 'google', email: 'essam@gmail.com', name: 'Essam' });
+  });
+
+  it('sans session Google mémorisée sur l’appareil, le sélecteur normal prend le relais', async () => {
+    remembered({ provider: 'google', email: 'essam@gmail.com', name: 'Essam' });
+    GoogleSignin.signInSilently.mockResolvedValue({ type: 'noSavedCredentialFound', data: null });
+    GoogleSignin.signIn.mockResolvedValue({ type: 'cancelled' });
+    await renderScreen();
+    await act(async () => { fireEvent.press(screen.getByTestId('auth-remembered-account')); });
+    expect(GoogleSignin.signInSilently).toHaveBeenCalled();
+    expect(GoogleSignin.signIn).toHaveBeenCalled();
+    expect(googleNativeLogin).not.toHaveBeenCalled();
+  });
+
+  it('pendant l’attente Google, le bouton Google affiche un indicateur DANS le bouton', async () => {
+    remembered(null);
+    GoogleSignin.signIn.mockReturnValue(new Promise(() => {}));
+    await renderScreen();
+    const googleButton = () => screen.getByTestId('auth-provider-google');
+    expect(within(googleButton()).queryByTestId('auth-provider-google-busy')).toBeNull();
+    await act(async () => { fireEvent.press(googleButton()); });
+    // Le spinner est DANS le bouton Google, et lui seul tourne.
+    expect(googleButton().props.accessibilityState.busy).toBe(true);
+    expect(within(googleButton()).UNSAFE_getByType(ActivityIndicator)).toBeTruthy();
+    expect(screen.getByTestId('auth-email-code-send').props.accessibilityState.busy).toBeFalsy();
   });
 });
 

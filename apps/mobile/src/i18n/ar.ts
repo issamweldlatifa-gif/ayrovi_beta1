@@ -111,6 +111,8 @@ export const ar = {
   'auth.emailCode.checkInbox': 'راجع بوطة الوارد تاعك',
   'auth.emailCode.sentTo': 'اكتب الكود اللي تبعث لـ {email}.',
   'auth.or': 'أو',
+  'auth.remembered.continue': 'كمّل بهذا الحساب',
+  'auth.remembered.another': 'اتصل بطريقة أخرى',
   'auth.continue': 'كمّل',
   'auth.start.phone': 'كمّل برقم التليفون',
   'auth.start.email': 'كمّل بالإيميل',

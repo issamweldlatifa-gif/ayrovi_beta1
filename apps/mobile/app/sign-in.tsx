@@ -15,7 +15,7 @@
  *     renvoie le code — on l'affiche tel quel plutôt que de laisser l'utilisateur bloqué.
  */
 import { useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -30,6 +30,7 @@ import {
   googleNativeLogin, newHandoffCode, pollHandoff, providerDoneUrl, providerStartUrl, type ProviderId,
 } from '@/api/providers';
 import { closeProviderBrowser, openProviderSession } from '@/features/auth/browser';
+import { useRememberedAccount, type LastAccount } from '@/features/auth/lastAccount';
 import { GoogleLogo } from '@/design/GoogleLogo';
 import { LINK_BLUE } from '@/design/tokens.mobile';
 import { useSession } from '@/state/session';
@@ -59,6 +60,9 @@ export default function SignInScreen() {
   const [busy, setBusy] = useState(false);
   const [waiting, setWaiting] = useState<ProviderId | null>(null);
   const [failure, setFailure] = useState<{ message: string; hint?: string } | null>(null);
+  // « Se connecter autrement » : affiche le formulaire complet même si un compte est mémorisé.
+  const [otherWaysOpen, setOtherWaysOpen] = useState(false);
+  const remembered = useRememberedAccount();
 
   /**
    * Le serveur qu'on interroge sait-il reconnaître le client mobile ? Question
@@ -100,16 +104,23 @@ export default function SignInScreen() {
   /**
    * Google NATIF : sélecteur de compte dans l'application, puis jeton vérifié par le
    * serveur. Aucun onglet navigateur, donc aucune sortie de l'application.
+   *
+   * `silent` : reprend le dernier compte Google de l'appareil sans sélecteur ; s'il
+   * n'y en a pas, on ouvre le sélecteur normal.
    */
-  const startGoogleNative = async () => {
+  const startGoogleNative = async (silent: boolean) => {
     setFailure(null);
     setBusy(true);
     setWaiting('google');
     try {
-      const outcome = await signInWithGoogleNative();
-      if (outcome.kind === 'cancelled') return;
+      let outcome = await signInWithGoogleNative({ silent });
+      if (outcome.kind === 'none') outcome = await signInWithGoogleNative({ silent: false });
+      if (outcome.kind !== 'token') return;
       const issue = await googleNativeLogin(outcome.idToken);
       await session.adoptSession(issue);
+      if (outcome.email) {
+        await remembered.remember({ provider: 'google', email: outcome.email, name: outcome.name });
+      }
       closeIfSignedIn();
     } catch (error) {
       const kind = googleFailureCode(error);
@@ -163,6 +174,7 @@ export default function SignInScreen() {
 
   const confirmEmailCode = () => run(async () => {
     await session.confirmEmailCode(emailCode);
+    await remembered.remember({ provider: 'email', email: email.trim() });
     closeIfSignedIn();
   }, 'auth.emailCode.invalid');
 
@@ -228,6 +240,35 @@ export default function SignInScreen() {
 
   const emailReady = EMAIL_SHAPE.test(email.trim());
 
+  /**
+   * Compte mémorisé proposé seulement si le serveur accepte encore sa méthode :
+   * un bouton qui mène à une panne est pire qu'un formulaire complet.
+   */
+  const rememberedUsable = (account: LastAccount | null): boolean => {
+    if (!account) return false;
+    if (account.provider === 'google') return config?.googleNative === true;
+    return config?.emailCode !== false;
+  };
+  const shownAccount = remembered.ready && rememberedUsable(remembered.account) && !otherWaysOpen
+    ? remembered.account
+    : null;
+
+  // L'attente se voit sur le compte mémorisé seulement si c'est lui qui l'a lancée.
+  const rememberedSpinning = shownAccount?.provider === 'google' ? waiting === 'google' : busy;
+
+  /** Un clic sur le compte mémorisé : Google silencieux, ou code envoyé à cette adresse. */
+  const continueWithRemembered = (account: LastAccount) => {
+    if (account.provider === 'google') {
+      void startGoogleNative(true);
+      return;
+    }
+    setEmail(account.email);
+    void run(async () => {
+      setEmailCode('');
+      await session.requestEmailCode(account.email, locale);
+    }, 'auth.error.unavailable');
+  };
+
   /* ── Titres selon l'étape ─────────────────────────────────────────────── */
   let heading = { title: t('auth.title'), subtitle: t('auth.subtitle') };
   if (mode === 'start') {
@@ -237,20 +278,15 @@ export default function SignInScreen() {
   }
 
   /* ── Bloc « OU » : Google, puis les autres fournisseurs configurés ────── */
-  const otherWays = (
+  const providerList = (
     <>
-      <View style={styles.orRow}>
-        <View style={[styles.orLine, { backgroundColor: theme.colors.line }]} />
-        <AppText variant="caption" color={theme.colors.muted}>{t('auth.or')}</AppText>
-        <View style={[styles.orLine, { backgroundColor: theme.colors.line }]} />
-      </View>
       {providers.map((provider) =>
         provider.enabled ? (
           <Button
             key={provider.id}
             label={provider.label}
             tone="quiet"
-            onPress={() => (provider.id === 'google' ? startGoogleNative() : startProvider(provider.id))}
+            onPress={() => (provider.id === 'google' ? startGoogleNative(false) : startProvider(provider.id))}
             leading={provider.id === 'google' ? <GoogleLogo size={20} /> : undefined}
             busy={waiting === provider.id}
             disabled={busy && waiting !== provider.id}
@@ -279,6 +315,18 @@ export default function SignInScreen() {
           />
         </>
       ) : null}
+    </>
+  );
+
+  /** Bloc « OU » complet : séparateur puis fournisseurs (formulaire complet). */
+  const otherWays = (
+    <>
+      <View style={styles.orRow}>
+        <View style={[styles.orLine, { backgroundColor: theme.colors.line }]} />
+        <AppText variant="caption" color={theme.colors.muted}>{t('auth.or')}</AppText>
+        <View style={[styles.orLine, { backgroundColor: theme.colors.line }]} />
+      </View>
+      {providerList}
     </>
   );
 
@@ -341,7 +389,27 @@ export default function SignInScreen() {
         ) : null}
 
         {/* Page d'accueil : adresse → code. */}
-        {mode === 'start' && !emailChallenge ? (
+        {mode === 'start' && !emailChallenge && shownAccount ? (
+          <>
+            <RememberedAccountButton
+              account={shownAccount}
+              label={t('auth.remembered.continue')}
+              busy={rememberedSpinning}
+              disabled={busy && !rememberedSpinning}
+              onPress={() => continueWithRemembered(shownAccount)}
+            />
+            {providerList}
+            <Button
+              label={t('auth.remembered.another')}
+              tone="quiet"
+              onPress={() => setOtherWaysOpen(true)}
+              disabled={busy}
+              testID="auth-remembered-other"
+            />
+          </>
+        ) : null}
+
+        {mode === 'start' && !emailChallenge && !shownAccount ? (
           <>
             <Field
               label={t('auth.email.label')}
@@ -356,8 +424,8 @@ export default function SignInScreen() {
             <Button
               label={t('auth.continue')}
               onPress={sendEmailCode}
-              busy={busy}
-              disabled={!emailReady || config?.emailCode === false}
+              busy={busy && waiting === null}
+              disabled={busy || !emailReady || config?.emailCode === false}
               testID="auth-email-code-send"
             />
             {otherWays}
@@ -384,7 +452,7 @@ export default function SignInScreen() {
               maxLength={6}
               editable={!busy}
             />
-            <Button label={t('auth.continue')} onPress={confirmEmailCode} busy={busy} testID="auth-email-code-verify" />
+            <Button label={t('auth.continue')} onPress={confirmEmailCode} busy={busy && waiting === null} disabled={busy} testID="auth-email-code-verify" />
             <Button label={t('auth.emailCode.resend')} onPress={sendEmailCode} tone="quiet" disabled={busy} />
             <Button label={t('auth.emailCode.change')} onPress={session.cancelEmailCode} tone="quiet" disabled={busy} />
             {otherWays}
@@ -416,8 +484,8 @@ export default function SignInScreen() {
                 <Button
                   label={t('auth.continue')}
                   onPress={sendCode}
-                  busy={busy}
-                  disabled={config?.phoneOtp === false}
+                  busy={busy && waiting === null}
+                  disabled={busy || config?.phoneOtp === false}
                   testID="auth-send-code"
                 />
               </>
@@ -440,7 +508,7 @@ export default function SignInScreen() {
                   maxLength={6}
                   editable={!busy}
                 />
-                <Button label={t('auth.phone.verify')} onPress={confirmCode} busy={busy} testID="auth-verify-code" />
+                <Button label={t('auth.phone.verify')} onPress={confirmCode} busy={busy && waiting === null} disabled={busy} testID="auth-verify-code" />
                 <Button label={t('auth.phone.resend')} onPress={sendCode} tone="quiet" disabled={busy} />
                 <Button label={t('auth.phone.change')} onPress={session.cancelPhoneCode} tone="quiet" disabled={busy} />
               </>
@@ -471,7 +539,7 @@ export default function SignInScreen() {
               secureTextEntry
               editable={!busy}
             />
-            <Button label={t('auth.email.submit')} onPress={emailSignIn} busy={busy} testID="auth-email-submit" />
+            <Button label={t('auth.email.submit')} onPress={emailSignIn} busy={busy && waiting === null} disabled={busy} testID="auth-email-submit" />
             {/* Le lien reste visible même quand la récupération est fermée :
                 l'écran suivant explique POURQUOI au lieu de laisser un vide. */}
             <Pressable
@@ -531,7 +599,7 @@ export default function SignInScreen() {
               />
               <AppText variant="caption" style={styles.checkboxLabel}>{t('auth.marketing')}</AppText>
             </Pressable>
-            <Button label={t('auth.register.submit')} onPress={register} busy={busy} testID="auth-register-submit" />
+            <Button label={t('auth.register.submit')} onPress={register} busy={busy && waiting === null} disabled={busy} testID="auth-register-submit" />
             <AppText variant="caption" color={theme.colors.muted}>{t('auth.legal')}</AppText>
             <Button label={t('auth.emailCode.useCode')} tone="quiet" onPress={() => changeMode('start')} disabled={busy} />
           </Card>
@@ -573,6 +641,12 @@ export default function SignInScreen() {
 
 const styles = StyleSheet.create({
   screen: { paddingHorizontal: 16, gap: 12 },
+  remembered: { alignItems: 'center', gap: 12, paddingHorizontal: 12, paddingVertical: 10 },
+  avatar: {
+    width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center',
+  },
+  rememberedText: { flex: 1, alignItems: 'flex-start', gap: 2 },
+  emailRow: { alignItems: 'center', gap: 6 },
   close: { alignItems: 'flex-start', justifyContent: 'center' },
   intro: { marginBottom: 4 },
   alert: { borderWidth: StyleSheet.hairlineWidth, padding: 12 },
@@ -585,3 +659,51 @@ const styles = StyleSheet.create({
   legalLink: { justifyContent: 'center', paddingHorizontal: 6 },
   legalText: { textDecorationLine: 'underline' },
 });
+
+/**
+ * « Continuer avec ce compte » : le dernier compte de l'appareil, avec son initiale,
+ * son adresse et, pour Google, le logo en pastille — comme la page de connexion de ChatGPT.
+ */
+function RememberedAccountButton({ account, label, busy, disabled, onPress }: {
+  account: LastAccount;
+  label: string;
+  busy: boolean;
+  disabled: boolean;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+  const initial = (account.provider === 'google' && account.name ? account.name : account.email).trim().charAt(0).toUpperCase();
+  const blocked = busy || disabled;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${label} ${account.email}`}
+      accessibilityState={{ disabled: blocked, busy }}
+      disabled={blocked}
+      onPress={onPress}
+      testID="auth-remembered-account"
+      style={({ pressed }) => [
+        styles.remembered,
+        {
+          minHeight: theme.geometry.controlHeight,
+          borderRadius: theme.radius.control,
+          backgroundColor: theme.colors.action,
+          flexDirection: rowDirectionFor(theme.isRTL),
+          opacity: disabled && !busy ? 0.5 : pressed ? 0.85 : 1,
+        },
+      ]}
+    >
+      <View style={[styles.avatar, { backgroundColor: theme.colors.surface }]}>
+        <AppText variant="label" weight="bold" color={theme.colors.ink}>{initial}</AppText>
+      </View>
+      <View style={styles.rememberedText}>
+        <AppText variant="label" weight="bold" color={theme.colors.onAction}>{label}</AppText>
+        <View style={[styles.emailRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+          {account.provider === 'google' ? <GoogleLogo size={14} /> : null}
+          <AppText variant="caption" color={theme.colors.onAction}>{account.email}</AppText>
+        </View>
+      </View>
+      {busy ? <ActivityIndicator size="small" color={theme.colors.onAction} /> : null}
+    </Pressable>
+  );
+}

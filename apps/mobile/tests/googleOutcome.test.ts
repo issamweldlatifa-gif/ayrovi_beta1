@@ -17,6 +17,18 @@ describe('outcomeFromResponse', () => {
     expect(outcomeFromResponse({ type: 'cancelled' })).toEqual({ kind: 'cancelled' });
   });
 
+  it('transmet l’adresse et le nom du compte choisi (pour le mémoriser), sans jamais les inventer', () => {
+    expect(outcomeFromResponse({
+      type: 'success',
+      data: { idToken: 'a.b.c', user: { email: ' essam@gmail.com ', name: 'Essam Tauatii' } },
+    })).toEqual({ kind: 'token', idToken: 'a.b.c', email: 'essam@gmail.com', name: 'Essam Tauatii' });
+    expect(outcomeFromResponse({ type: 'success', data: { idToken: 'a.b.c' } })).toEqual({ kind: 'token', idToken: 'a.b.c' });
+  });
+
+  it('« aucun compte mémorisé » est un résultat distinct : l’appelant ouvre alors le sélecteur', () => {
+    expect(outcomeFromResponse({ type: 'noSavedCredentialFound', data: null })).toEqual({ kind: 'none' });
+  });
+
   it('un succès sans jeton est une erreur de configuration, jamais un faux succès', () => {
     expect(() => outcomeFromResponse({ type: 'success', data: { idToken: null } })).toThrow(GoogleConfigError);
     expect(() => outcomeFromResponse({ type: 'success', data: { idToken: '   ' } })).toThrow(GoogleConfigError);
