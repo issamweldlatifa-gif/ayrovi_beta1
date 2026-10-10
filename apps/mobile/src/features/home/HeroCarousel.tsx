@@ -4,7 +4,7 @@
  *
  * Contrat d'affichage :
  *  • chargement ⇒ squelette de la forme attendue, JAMAIS un trou blanc ;
- *  • module désactivé / erreur API / aucune carte ⇒ `fallback` (l'ancien hero) ;
+ *  • module désactivé / erreur API / aucune carte ⇒ rien (il n'existe plus d'ancien hero) ;
  *  • carte = titre + visuel 4:5 + fondu vers le fond + CTA optionnel ;
  *  • la section adapte son fond à la carte active (transition animée) ;
  *  • impression/clic tracés en fire-and-forget — mesurer ne casse jamais rien.
@@ -13,7 +13,7 @@
  * visuel se dissout dans la couleur de la carte, il n'est pas posé dans le flux.
  */
 import {
-  memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode,
+  memo, useCallback, useEffect, useMemo, useRef, useState,
 } from 'react';
 import {
   AccessibilityInfo, Animated, AppState, Easing, FlatList, Linking, Pressable, StyleSheet, View,
@@ -51,19 +51,19 @@ interface HeroCarouselProps {
   settings: UseQueryResult<HeroCarouselSettings>;
   slides: UseQueryResult<HeroSlide[]>;
   /** Repli : l'ancien hero éditorial (module désactivé / erreur / vide). */
-  fallback: ReactNode;
   /** Fond de la carte active (ou `null` hors carrousel) — le header le reprend. */
   onActiveBackgroundChange?: (color: string | null) => void;
 }
 
-export function HeroCarousel({ settings, slides, fallback, onActiveBackgroundChange }: HeroCarouselProps) {
+export function HeroCarousel({ settings, slides, onActiveBackgroundChange }: HeroCarouselProps) {
   // 1. Chargement ⇒ squelette, jamais un indicateur indéfini ni un trou blanc.
   if (settings.isPending || slides.isPending) return <HeroCarouselSkeleton />;
   // 2. Erreur de réglages ⇒ défauts sûrs (module actif, sobre, sans autoplay).
   const config = settings.data ?? parseHeroCarouselSettings(null);
   const cards = slides.data ?? [];
   // 3. Désactivé / erreur slides / aucune carte ⇒ repli sur l'ancien hero.
-  if (!config.enabled || slides.isError || cards.length === 0) return <>{fallback}</>;
+  if (slides.isPending) return <HeroCarouselSkeleton />;
+  if (!config.enabled || slides.isError || cards.length === 0) return null;
   return (
     <HeroCarouselView
       settings={config}

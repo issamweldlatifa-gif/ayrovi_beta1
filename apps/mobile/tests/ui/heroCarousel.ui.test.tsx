@@ -72,7 +72,6 @@ async function renderCarousel(settings = SETTINGS, slides = SLIDES) {
           <HeroCarousel
             settings={query(settings)}
             slides={query(slides)}
-            fallback={null}
           />
         </ThemeProvider>
       </I18nProvider>

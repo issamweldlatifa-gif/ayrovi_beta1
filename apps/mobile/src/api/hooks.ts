@@ -6,10 +6,10 @@
  */
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 import {
-  fetchHeroCarouselSettings, fetchHeroContent, fetchHeroSlides,
-  fetchHeroVisual, fetchNavigation,
-  type HeroCarouselSettings, type HeroContent, type HeroSlide,
-  type HeroVisual, type NavLink,
+  fetchHeroCarouselSettings, fetchHeroSlides,
+  fetchNavigation,
+  type HeroCarouselSettings, type HeroSlide,
+  type NavLink,
 } from './public';
 import { fetchCatalogBrands } from './catalog';
 import {
@@ -30,8 +30,6 @@ import {
  */
 export const queryKeys = {
   home: ['home'] as const,
-  heroContent: ['home', 'hero-content'] as const,
-  heroVisual: ['home', 'hero-visual'] as const,
   // Carrousel Hero : contenu éditorial Admin ⇒ même traitement que le hero.
   heroSlides: ['home', 'hero-slides'] as const,
   heroCarouselSettings: ['home', 'hero-carousel-settings'] as const,
@@ -57,12 +55,6 @@ export const queryKeys = {
  * le serveur à chaque rendu.
  */
 const CONTENT = { staleTime: 60_000, refetchOnMount: 'always' } as const;
-
-export const useHeroContent = (): UseQueryResult<HeroContent | null> =>
-  useQuery({ queryKey: queryKeys.heroContent, queryFn: ({ signal }) => fetchHeroContent({ signal }), ...CONTENT });
-
-export const useHeroVisual = (): UseQueryResult<HeroVisual | null> =>
-  useQuery({ queryKey: queryKeys.heroVisual, queryFn: ({ signal }) => fetchHeroVisual({ signal }), ...CONTENT });
 
 export const useHeroSlides = (): UseQueryResult<HeroSlide[]> =>
   useQuery({

@@ -6,7 +6,7 @@ import { publicPageForPath } from './navigation/publicPages';
 import { isKnownPagePath } from '../../shared/publicSeo';
 import { NotFoundPage } from './components/NotFoundPage';
 import { Navbar } from './components/Navbar';
-import { EvergreenHero } from './components/EvergreenHero';
+import { HeroCarousel } from './components/HeroCarousel';
 import { StoriesShowcase } from './components/StoriesShowcase';
 import { LensFeature } from './components/LensFeature';
 import { PartnerBrandsSlider } from './components/PartnerBrandsSlider';
@@ -443,7 +443,7 @@ export const App: React.FC = () => {
       // كتل الصفحة الرئيسية تُرتَّب وتُخفى من الـ Dashboard (Admin → Sections)
       if (section.id === 'hero') content = (
         <>
-          <EvergreenHero />
+          <HeroCarousel />
           {/*
             Ordre piloté par le Dashboard : par défaut le bloc LENS d'abord, la
             section Stories ENSUITE. Mettre « Position = au-dessus du bloc LENS »

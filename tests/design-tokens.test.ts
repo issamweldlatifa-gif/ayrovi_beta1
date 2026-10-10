@@ -361,11 +361,8 @@ describe('chrome back-office — zéro littéral en dur dans les styles inline (
    *   • InterfaceStudio.tsx  → palettes « presets » de la boutique (données de thème envoyées
    *     au magasin public, pas des couleurs d'interface admin) ;
    *   • LensSectionPage.tsx  → maquettes téléphone Lens (simulent l'écran public) ;
-   *   • HeroVisualsPage.tsx  → défaut persisté d'accent du hero (valeur d'enregistrement) ;
    *   • AdminApp.tsx         → une miniature « Boutique AYROVI » (blanc sur l'accent client, dynamique) ;
    *   • SocialAdminPage.tsx  → un fond #000 derrière un <video> (constante média, jamais de thème).
-   *   • HeroCarouselPage.tsx → aperçu mobile du carrousel (simule l’écran public : fond
-   *     adaptatif fourni par l’API, encre calculée sur la luminance — pas du chrome admin).
    *   • HeroSlidesManagePage.tsx → aperçu visiteur des cartes (même raison que ci-dessus).
    * Tout AUTRE fichier doit rester à zéro ; ajouter un littéral au chrome admin est une
    * régression bloquée par ce test.
@@ -373,10 +370,8 @@ describe('chrome back-office — zéro littéral en dur dans les styles inline (
   const DATA_OR_MOCK = new Map<string, string>([
     ['client/src/admin/InterfaceStudio.tsx', 'palettes boutique (données)'],
     ['client/src/admin/LensSectionPage.tsx', 'maquettes téléphone (simulent l\'écran public)'],
-    ['client/src/admin/HeroVisualsPage.tsx', 'défaut persisté d\'accent du hero (valeur d\'enregistrement)'],
     ['client/src/admin/AdminApp.tsx', 'miniature « Boutique AYROVI » (accent dynamique)'],
     ['client/src/admin/SocialAdminPage.tsx', 'fond #000 d\'un <video> (constante média)'],
-    ['client/src/admin/HeroCarouselPage.tsx', 'aperçu mobile du carrousel (simule l\'écran public, couleurs dynamiques)'],
     ['client/src/admin/HeroSlidesManagePage.tsx', 'aperçu visiteur du Hero (simule l\'écran public, couleurs dynamiques, encre sur luminance)'],
   ]);
   const HEX = /#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{3})(?![0-9a-zA-Z_])/g;

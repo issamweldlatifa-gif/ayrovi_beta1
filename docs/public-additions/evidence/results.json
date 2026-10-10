@@ -6,7 +6,11 @@
       "pass": true
     },
     {
-      "name": "fr/320: original hero remains",
+      "name": "fr/320: unique dynamic hero visible",
+      "pass": true
+    },
+    {
+      "name": "fr/320: no legacy editorial hero",
       "pass": true
     },
     {
@@ -42,7 +46,11 @@
       "pass": true
     },
     {
-      "name": "fr/390: original hero remains",
+      "name": "fr/390: unique dynamic hero visible",
+      "pass": true
+    },
+    {
+      "name": "fr/390: no legacy editorial hero",
       "pass": true
     },
     {
@@ -78,7 +86,11 @@
       "pass": true
     },
     {
-      "name": "fr/1360: original hero remains",
+      "name": "fr/1360: unique dynamic hero visible",
+      "pass": true
+    },
+    {
+      "name": "fr/1360: no legacy editorial hero",
       "pass": true
     },
     {
@@ -258,7 +270,11 @@
       "pass": true
     },
     {
-      "name": "ar/320: original hero remains",
+      "name": "ar/320: unique dynamic hero visible",
+      "pass": true
+    },
+    {
+      "name": "ar/320: no legacy editorial hero",
       "pass": true
     },
     {
@@ -294,7 +310,11 @@
       "pass": true
     },
     {
-      "name": "ar/390: original hero remains",
+      "name": "ar/390: unique dynamic hero visible",
+      "pass": true
+    },
+    {
+      "name": "ar/390: no legacy editorial hero",
       "pass": true
     },
     {
@@ -330,7 +350,11 @@
       "pass": true
     },
     {
-      "name": "ar/1360: original hero remains",
+      "name": "ar/1360: unique dynamic hero visible",
+      "pass": true
+    },
+    {
+      "name": "ar/1360: no legacy editorial hero",
       "pass": true
     },
     {

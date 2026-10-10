@@ -17,20 +17,15 @@
  * ما يتلزّقش بتقدير من الجهاز.
  */
 import { useCallback, useState } from 'react';
-import { Linking } from 'react-native';
 
 import { AppScreen, FullBleed } from '@/design/layout';
 import { AppHeader } from '@/features/shell/AppHeader';
 import { HeroCarousel } from '@/features/home/HeroCarousel';
-import { HeroSection } from '@/features/home/HeroSection';
 import { HomeTabs } from '@/features/home/HomeTabs';
 import { Footer } from '@/features/shell/Footer';
-import { ErrorBlock } from '@/design/states';
-import { HeroSkeleton } from '@/design/skeleton';
 import {
-  useHeroCarouselSettings, useHeroContent, useHeroSlides, useHeroVisual,
+  useHeroCarouselSettings, useHeroSlides,
 } from '@/api/hooks';
-import { apiUrl } from '@/api/client';
 
 /**
  * La géométrie n'est plus calculée ici : `AppScreen` possède la zone sûre, le
@@ -44,24 +39,15 @@ export default function HomeScreen() {
   // Couleur de la carte Hero active : le header la reprend (en haut de page).
   const [heroBackground, setHeroBackground] = useState<string | null>(null);
 
-  const hero = useHeroContent();
-  const visual = useHeroVisual();
   const heroSlides = useHeroSlides();
   const heroCarouselSettings = useHeroCarouselSettings();
 
   const reload = useCallback(() => {
     setRefreshing(true);
     Promise.allSettled([
-      hero.refetch(), visual.refetch(),
       heroSlides.refetch(), heroCarouselSettings.refetch(),
     ]).finally(() => setRefreshing(false));
-  }, [hero, visual, heroSlides, heroCarouselSettings]);
-
-  const openLink = useCallback((href: string) => {
-    Linking.openURL(apiUrl(href)).catch(() => {});
-  }, []);
-
-  const heroLoading = hero.isPending || visual.isPending;
+  }, [heroSlides, heroCarouselSettings]);
 
   return (
     <AppScreen
@@ -75,31 +61,11 @@ export default function HomeScreen() {
       refreshing={refreshing}
       testID="home"
     >
-      {/*
-        الهيرو — كاروسيل Administré (hero_slides) مع fond adaptatif.
-        L'ancien hero reste le repli : module éteint, API en erreur,
-        ou aucune carte publiée.
-      */}
+      {/* الهيرو الوحيد والديناميكي : يُدار كله من Admin → Hero (بطاقات + إعدادات). */}
       <HeroCarousel
         settings={heroCarouselSettings}
         slides={heroSlides}
         onActiveBackgroundChange={setHeroBackground}
-        fallback={
-          heroLoading ? (
-            <HeroSkeleton />
-          ) : hero.isError ? (
-            <ErrorBlock
-              error={hero.error}
-              onRetry={() => { hero.refetch(); visual.refetch(); }}
-            />
-          ) : (
-            <HeroSection
-              content={hero.data ?? null}
-              visual={visual.data ?? null}
-              onCta={openLink}
-            />
-          )
-        }
       />
 
       {/* التبويبات الثلاث — يفتحو جوّا التطبيق */}

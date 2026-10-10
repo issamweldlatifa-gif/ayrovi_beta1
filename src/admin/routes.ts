@@ -6,15 +6,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { QatafoDatabase, SELECTABLE_PAYMENT_METHODS } from '../db/database';
 import multer from 'multer';
-import {
-  deleteHeroVisualFiles,
-  invalidateHeroVisualCache,
-  newHeroVisualId,
-  normalizeSchedule,
-  resolveActiveHeroVisual,
-  storeHeroImage,
-} from '../services/heroVisual';
 import { normalizeUploadedImage } from '../services/imageValidation';
+import { storeHeroImage } from '../services/heroImageStore';
 import { parsePublicHttpUrl } from '../services/safeUrl';
 import { HERO_DESTINATION_TYPES, heroDestinationConfig, isValidExternalUrl } from '../../shared/heroDestinations';
 import { isHexColor, refreshHeroSlidePalette } from '../services/heroPalette';
@@ -531,9 +524,6 @@ export function createAdminRouter(
   router.use('/back-office', createBackOfficeRouter(db));
 
 
-  /* ==================== HERO MANAGEMENT — Visual واحد نشط، محتوى الـ Hero غير قابل للتعديل ==================== */
-  const heroUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024, files: 2 } });
-
   /* ==================== LENS SECTION — إدارة كاملة للمحتوى (Dashboard = source of truth) ==================== */
   const LENS_ELEMENT_ORDER = ['eyebrow', 'title', 'description', 'cta', 'proof'] as const;
   const HERO_ELEMENT_ORDER = ['eyebrow', 'title', 'description', 'cta'] as const;
@@ -959,46 +949,6 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     res.json({ success: true, data: counts, cards });
   });
 
-  /* ==================== HERO CONTENT — العنوان/الوصف/CTA من الـ Dashboard ==================== */
-  const heroContentRowForApi = (row: any) => (row ? {
-    eyebrow: row.eyebrow, title: row.title, highlight: row.highlight, description: row.description,
-    ctaLabel: row.cta_label, ctaUrl: row.cta_url, accentColor: row.accent_color,
-    elementOrder: row.element_order, enabled: Boolean(row.enabled), sortOrder: Number(row.sort_order ?? 10),
-    updatedAt: row.updated_at,
-  } : null);
-
-  router.get('/hero-content', requireAdmin(db, 'content:read'), (_req, res) => {
-    res.json({ success: true, data: heroContentRowForApi(db.get<any>("SELECT * FROM hero_content_settings WHERE id='global'")) });
-  });
-
-  router.put('/hero-content', requireAdmin(db, 'content:write'), async (req, res) => {
-    const existing = db.get<any>("SELECT * FROM hero_content_settings WHERE id='global'");
-    if (!existing) return res.status(404).json({ success: false, error: 'Contenu Hero introuvable.' });
-    let ctaUrl = existing.cta_url || '';
-    if (req.body.ctaUrl !== undefined) {
-      try { ctaUrl = normalizeCtaUrl(req.body.ctaUrl); }
-      catch { return res.status(400).json({ success: false, error: 'Lien CTA invalide — utilisez une URL https:// ou un chemin interne /…' }); }
-    }
-    const title = String(req.body.title ?? existing.title).replace(/\r\n/g, '\n').slice(0, 200);
-    if (!title.trim()) return res.status(400).json({ success: false, error: 'Le titre du Hero est obligatoire.' });
-    const validColor = (value: unknown, fallback: string) => (/^#[0-9a-fA-F]{3,8}$/.test(String(value || '')) ? String(value) : fallback);
-    db.run(`UPDATE hero_content_settings SET eyebrow=?,title=?,highlight=?,description=?,cta_label=?,cta_url=?,accent_color=?,element_order=?,enabled=?,sort_order=?,updated_at=? WHERE id='global'`,
-      String(req.body.eyebrow ?? existing.eyebrow).slice(0, 40),
-      title,
-      String(req.body.highlight ?? existing.highlight).slice(0, 40),
-      String(req.body.description ?? existing.description).slice(0, 400),
-      String(req.body.ctaLabel ?? existing.cta_label).slice(0, 40),
-      ctaUrl,
-      validColor(req.body.accentColor, existing.accent_color),
-      normalizeElementOrder(req.body.elementOrder, HERO_ELEMENT_ORDER, HERO_ELEMENT_ORDER.join(',')),
-      req.body.enabled === undefined ? existing.enabled : (req.body.enabled ? 1 : 0),
-      Math.min(999, Math.max(0, Number(req.body.sortOrder ?? existing.sort_order) || 0)),
-      new Date().toISOString());
-    invalidateHeroVisualCache();
-    audit(db, req, 'UPDATE', 'HERO_CONTENT', 'global', null, null);
-    res.json({ success: true, data: heroContentRowForApi(db.get<any>("SELECT * FROM hero_content_settings WHERE id='global'")) });
-  });
-
   /* ==================== HOME BLOCKS — ترتيب وإظهار كتل الصفحة الرئيسية ==================== */
   const HOME_BLOCK_IDS = ['transition', 'discovery', 'brands', 'lens'] as const;
 
@@ -1021,16 +971,6 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     audit(db, req, 'UPDATE', 'HOME_BLOCKS', 'all', null, null);
     const rows = db.all<any>('SELECT id,sort_order sortOrder,visible FROM home_blocks ORDER BY sort_order,id');
     res.json({ success: true, data: rows.map((row) => ({ id: row.id, sortOrder: row.sortOrder, visible: Boolean(row.visible) })) });
-  });
-
-  const heroRowForAdmin = (row: any) => ({
-    id: row.id, imageUrl: row.image_url, imageWidth: row.image_width, imageHeight: row.image_height,
-    mobileImageUrl: row.mobile_image_url, altText: row.alt_text, focalX: row.focal_x, focalY: row.focal_y,
-    mobileFocalX: row.mobile_focal_x ?? 0.5, mobileFocalY: row.mobile_focal_y ?? 0.5,
-    overlayMode: row.overlay_mode === 'MANUAL' ? 'MANUAL' : 'AUTO', overlayStrength: row.overlay_strength, analysis: row.analysis_json || '',
-    orientationOverride: row.orientation_override || 'AUTO',
-    status: row.status, startDate: row.start_date, endDate: row.end_date, priority: row.priority,
-    createdAt: row.created_at, updatedAt: row.updated_at, publishedAt: row.published_at,
   });
 
   /* ==================== CARROUSEL HERO — réglages (singleton 'global') ==================== */
@@ -1065,132 +1005,6 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
       flag(body.paginationVisible, existing.pagination_visible !== 0) ? 1 : 0,
       new Date().toISOString());
     res.json({ success: true, data: carouselSettingsRowForApi(db.get<any>("SELECT * FROM hero_carousel_settings WHERE id='global'")) });
-  });
-
-  router.get('/hero-visuals', requireAdmin(db, 'content:read'), (_req, res) => {
-    const rows = db.all<any>(`SELECT * FROM hero_visuals WHERE status!='ARCHIVED' ORDER BY created_at DESC`);
-    res.json({ success: true, data: rows.map(heroRowForAdmin), active: resolveActiveHeroVisual(db) });
-  });
-
-  router.post('/hero-visuals', requireAdmin(db, 'content:write'), heroUpload.fields([
-    { name: 'image', maxCount: 1 }, { name: 'mobileImage', maxCount: 1 },
-  ]), async (req, res) => {
-    try {
-      const files = req.files as Record<string, Express.Multer.File[]> | undefined;
-      const imageFile = files?.image?.[0];
-      if (!imageFile) return res.status(400).json({ success: false, error: 'Image principale requise.' });
-      const id = newHeroVisualId();
-      const stored = await storeHeroImage(imageFile, id, 'desktop');
-      let mobileStored: Awaited<ReturnType<typeof storeHeroImage>> | null = null;
-      if (files?.mobileImage?.[0]) {
-        try { mobileStored = await storeHeroImage(files.mobileImage[0], id, 'mobile'); }
-        catch (error: any) { return res.status(400).json({ success: false, error: `Image mobile — ${error?.message || 'invalide'}` }); }
-      }
-      const { startDate, endDate } = normalizeSchedule(req.body.startDate, req.body.endDate);
-      const now = new Date().toISOString();
-      const priority = Math.min(999, Math.max(0, Number(req.body.priority) || 0));
-      const orientationOverride = ['AUTO', 'LANDSCAPE', 'PORTRAIT'].includes(String(req.body.orientationOverride)) ? String(req.body.orientationOverride) : 'AUTO';
-      const overlayMode = req.body.overlayMode === 'MANUAL' ? 'MANUAL' : 'AUTO';
-      const overlayStrength = req.body.overlayStrength === undefined || req.body.overlayStrength === '' || req.body.overlayStrength === null
-        ? null : Math.min(1, Math.max(0, Number(req.body.overlayStrength)));
-      const analysisJson = JSON.stringify(stored.analysis || null);
-      db.run(`INSERT INTO hero_visuals
-        (id,image_url,image_width,image_height,mobile_image_url,alt_text,focal_x,focal_y,mobile_focal_x,mobile_focal_y,overlay_mode,overlay_strength,analysis_json,orientation_override,status,start_date,end_date,priority,created_at,updated_at)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,'DRAFT',?,?,?,?,?)`,
-        id, stored.url, stored.width, stored.height, mobileStored?.url || '', String(req.body.altText || '').slice(0, 200),
-        Math.min(1, Math.max(0, Number(req.body.focalX ?? 0.5))), Math.min(1, Math.max(0, Number(req.body.focalY ?? 0.5))),
-        Math.min(1, Math.max(0, Number(req.body.mobileFocalX ?? 0.5))), Math.min(1, Math.max(0, Number(req.body.mobileFocalY ?? 0.5))),
-        overlayMode, overlayStrength, analysisJson, orientationOverride,
-        startDate, endDate, priority, now, now);
-      audit(db, req, 'CREATE', 'HERO', id, null, { image_url: stored.url });
-      const row = db.get<any>('SELECT * FROM hero_visuals WHERE id=?', id);
-      return res.json({ success: true, data: heroRowForAdmin(row), meta: { desktop: stored, mobile: mobileStored } });
-    } catch (error: any) {
-      return res.status(400).json({ success: false, error: error?.message || 'Téléversement invalide.' });
-    }
-  });
-
-  router.put('/hero-visuals/:id', requireAdmin(db, 'content:write'), heroUpload.fields([
-    { name: 'image', maxCount: 1 }, { name: 'mobileImage', maxCount: 1 },
-  ]), async (req, res) => {
-    const existing = db.get<any>('SELECT * FROM hero_visuals WHERE id=?', req.params.id);
-    if (!existing) return res.status(404).json({ success: false, error: 'Visual introuvable.' });
-    try {
-      const files = req.files as Record<string, Express.Multer.File[]> | undefined;
-      let imageUrl = existing.image_url;
-      let imageWidth = existing.image_width;
-      let imageHeight = existing.image_height;
-      let newAnalysis: string | null = null;
-      if (files?.image?.[0]) {
-        const stored = await storeHeroImage(files.image[0], existing.id, 'desktop');
-        imageUrl = stored.url; imageWidth = stored.width; imageHeight = stored.height;
-        if (stored.analysis) newAnalysis = JSON.stringify(stored.analysis);
-        deleteHeroVisualFiles(existing.image_url, '');
-      }
-      let mobileImageUrl = req.body.mobileImageUrl !== undefined ? String(req.body.mobileImageUrl) : existing.mobile_image_url;
-      if (files?.mobileImage?.[0]) {
-        const stored = await storeHeroImage(files.mobileImage[0], existing.id, 'mobile');
-        mobileImageUrl = stored.url;
-        deleteHeroVisualFiles('', existing.mobile_image_url);
-      }
-      const { startDate, endDate } = normalizeSchedule(
-        req.body.startDate !== undefined ? req.body.startDate : existing.start_date,
-        req.body.endDate !== undefined ? req.body.endDate : existing.end_date,
-      );
-      const now = new Date().toISOString();
-      const nextOverlayMode = req.body.overlayMode === 'MANUAL' ? 'MANUAL' : req.body.overlayMode === 'AUTO' ? 'AUTO' : (existing.overlay_mode || 'AUTO');
-      const nextOrientationOverride = ['AUTO', 'LANDSCAPE', 'PORTRAIT'].includes(String(req.body.orientationOverride))
-        ? String(req.body.orientationOverride)
-        : (req.body.orientationOverride === undefined ? (existing.orientation_override || 'AUTO') : 'AUTO');
-      const nextOverlayStrength = req.body.overlayStrength === undefined ? existing.overlay_strength : (req.body.overlayStrength === '' || req.body.overlayStrength === null ? null : Math.min(1, Math.max(0, Number(req.body.overlayStrength))));
-      const analysisJson = newAnalysis ?? (existing.analysis_json || '');
-      db.run(`UPDATE hero_visuals SET image_url=?,image_width=?,image_height=?,mobile_image_url=?,alt_text=?,focal_x=?,focal_y=?,mobile_focal_x=?,mobile_focal_y=?,overlay_mode=?,overlay_strength=?,analysis_json=?,orientation_override=?,
-        start_date=?,end_date=?,priority=?,updated_at=? WHERE id=?`,
-        imageUrl, imageWidth, imageHeight, mobileImageUrl,
-        String(req.body.altText !== undefined ? req.body.altText : existing.alt_text).slice(0, 200),
-        Math.min(1, Math.max(0, Number(req.body.focalX !== undefined ? req.body.focalX : existing.focal_x))),
-        Math.min(1, Math.max(0, Number(req.body.focalY !== undefined ? req.body.focalY : existing.focal_y))),
-        Math.min(1, Math.max(0, Number(req.body.mobileFocalX !== undefined ? req.body.mobileFocalX : existing.mobile_focal_x ?? 0.5))),
-        Math.min(1, Math.max(0, Number(req.body.mobileFocalY !== undefined ? req.body.mobileFocalY : existing.mobile_focal_y ?? 0.5))),
-        nextOverlayMode, nextOverlayStrength, analysisJson, nextOrientationOverride,
-        startDate, endDate,
-        Math.min(999, Math.max(0, Number(req.body.priority !== undefined ? req.body.priority : existing.priority))),
-        now, existing.id);
-      invalidateHeroVisualCache();
-      audit(db, req, 'UPDATE', 'HERO', existing.id, heroRowForAdmin(existing), heroRowForAdmin(db.get<any>('SELECT * FROM hero_visuals WHERE id=?', existing.id)));
-      return res.json({ success: true, data: heroRowForAdmin(db.get<any>('SELECT * FROM hero_visuals WHERE id=?', existing.id)) });
-    } catch (error: any) {
-      return res.status(400).json({ success: false, error: error?.message || 'Mise à jour invalide.' });
-    }
-  });
-
-  router.post('/hero-visuals/:id/publish', requireAdmin(db, 'content:write'), (req, res) => {
-    const existing = db.get<any>('SELECT * FROM hero_visuals WHERE id=?', req.params.id);
-    if (!existing) return res.status(404).json({ success: false, error: 'Visual introuvable.' });
-    const now = new Date().toISOString();
-    db.run(`UPDATE hero_visuals SET status='PUBLISHED', published_at=?, updated_at=? WHERE id=?`, now, now, existing.id);
-    invalidateHeroVisualCache();
-    audit(db, req, 'PUBLISH', 'HERO', existing.id, null, null);
-    res.json({ success: true, data: heroRowForAdmin(db.get<any>('SELECT * FROM hero_visuals WHERE id=?', existing.id)), active: resolveActiveHeroVisual(db) });
-  });
-
-  router.post('/hero-visuals/:id/unpublish', requireAdmin(db, 'content:write'), (req, res) => {
-    const existing = db.get<any>('SELECT * FROM hero_visuals WHERE id=?', req.params.id);
-    if (!existing) return res.status(404).json({ success: false, error: 'Visual introuvable.' });
-    db.run(`UPDATE hero_visuals SET status='DRAFT', published_at=NULL, updated_at=? WHERE id=?`, new Date().toISOString(), existing.id);
-    invalidateHeroVisualCache();
-    audit(db, req, 'UNPUBLISH', 'HERO', existing.id, null, null);
-    res.json({ success: true, data: heroRowForAdmin(db.get<any>('SELECT * FROM hero_visuals WHERE id=?', existing.id)), active: resolveActiveHeroVisual(db) });
-  });
-
-  router.delete('/hero-visuals/:id', requireAdmin(db, 'content:write'), (req, res) => {
-    const existing = db.get<any>('SELECT * FROM hero_visuals WHERE id=?', req.params.id);
-    if (!existing) return res.status(404).json({ success: false, error: 'Visual introuvable.' });
-    deleteHeroVisualFiles(existing.image_url, existing.mobile_image_url);
-    db.run('DELETE FROM hero_visuals WHERE id=?', existing.id);
-    invalidateHeroVisualCache();
-    audit(db, req, 'DELETE', 'HERO', existing.id, heroRowForAdmin(existing), null);
-    res.json({ success: true, active: resolveActiveHeroVisual(db) });
   });
 
   router.post('/auth/logout', requireAdmin(db), (req, res) => {

@@ -9,6 +9,8 @@
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Badge, Button, ConfirmDialog, Field, ImageUploader, PageHeader, Switch, Toast } from './components';
+import { HeroSettingsPanel } from './HeroSettingsPanel';
+import { moveHint } from './moveHint';
 import { adminApi } from './api';
 import { HERO_DESTINATIONS } from '../../../shared/heroDestinations';
 
@@ -253,8 +255,8 @@ export function HeroSlidesManagePage({ canWrite }: { canWrite: boolean }) {
   return (
     <div>
       <PageHeader
-        title="Hero Slider"
-        description="Cartes du carrousel de l’accueil. Chaque modification est un brouillon ; rien n’est visible par les visiteurs avant « Publier »."
+        title="Hero"
+        description="Le Hero de l’accueil (application et site) : réglages, cartes et publication. Chaque modification est un brouillon ; rien n’est visible par les visiteurs avant « Publier »."
         action={(
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <Button variant="secondary" onClick={() => void load()} disabled={busy || loading}>Recharger</Button>
@@ -274,6 +276,8 @@ export function HeroSlidesManagePage({ canWrite }: { canWrite: boolean }) {
           {pendingCount} modification(s) en brouillon — <strong>non visibles</strong> par les visiteurs.
         </p>
       ) : null}
+
+      <HeroSettingsPanel canWrite={canWrite} onSaved={() => void load()} />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(360px, 1.2fr) minmax(300px, 0.8fr)', gap: 24, alignItems: 'start' }}>
         <section aria-label="Cartes">
@@ -303,8 +307,8 @@ export function HeroSlidesManagePage({ canWrite }: { canWrite: boolean }) {
                     {problems[slide.id] ? <div role="alert" className="admin-field-error" style={{ marginTop: 4 }}>{problems[slide.id]}</div> : null}
                     {canWrite ? (
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
-                        {!deleting ? <Button variant="secondary" onClick={() => move(slide, -1)} disabled={busy || position <= 0} aria-label="Monter">↑</Button> : null}
-                        {!deleting ? <Button variant="secondary" onClick={() => move(slide, 1)} disabled={busy || position < 0 || position >= visible.length - 1} aria-label="Descendre">↓</Button> : null}
+                        {!deleting ? <Button variant="secondary" onClick={() => move(slide, -1)} disabled={busy || position <= 0} aria-label="Monter" title={moveHint(-1, !canWrite, position <= 0)}>↑</Button> : null}
+                        {!deleting ? <Button variant="secondary" onClick={() => move(slide, 1)} disabled={busy || position < 0 || position >= visible.length - 1} aria-label="Descendre" title={moveHint(1, !canWrite, position >= visible.length - 1)}>↓</Button> : null}
                         {!deleting ? <Button variant="secondary" onClick={() => openEdit(slide)} disabled={busy || editing !== null}>Modifier</Button> : null}
                         {!deleting ? <Button variant="secondary" onClick={() => void toggleActive(slide)} disabled={busy}>{slide.active ? 'Désactiver' : 'Réactiver'}</Button> : null}
                         {deleting || slide.changeType === 'UPDATE' ? (

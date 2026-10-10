@@ -247,23 +247,6 @@ const PUBLIC_NAV_ITEMS_TABLE_SQL = `CREATE TABLE IF NOT EXISTS public_nav_items 
   updated_at TEXT NOT NULL
 );`;
 
-const HERO_VISUALS_TABLE_SQL = `CREATE TABLE IF NOT EXISTS hero_visuals (
-  id TEXT PRIMARY KEY,
-  image_url TEXT NOT NULL DEFAULT '',
-  image_width INTEGER NOT NULL DEFAULT 0,
-  image_height INTEGER NOT NULL DEFAULT 0,
-  mobile_image_url TEXT NOT NULL DEFAULT '',
-  alt_text TEXT NOT NULL DEFAULT '',
-  focal_x REAL NOT NULL DEFAULT 0.5,
-  focal_y REAL NOT NULL DEFAULT 0.5,
-  status TEXT NOT NULL DEFAULT 'DRAFT' CHECK(status IN ('DRAFT','PUBLISHED','ARCHIVED')),
-  start_date TEXT,
-  end_date TEXT,
-  priority INTEGER NOT NULL DEFAULT 0,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL,
-  published_at TEXT
-);`;
 
 const PAYMENTS_TABLE_SQL = `CREATE TABLE IF NOT EXISTS payments (
   id TEXT PRIMARY KEY,
@@ -1702,9 +1685,6 @@ export class QatafoDatabase {
     // Barre publique sous l'en-tête — les onglets sont pilotés depuis l'Admin (onglet de navigation).
     this.db.exec(PUBLIC_NAV_ITEMS_TABLE_SQL);
 
-    // نظام Hero — جدول visuals قابل للتوسع مستقبلاً (صور متعددة/موبايل)
-    this.db.exec(HERO_VISUALS_TABLE_SQL);
-
     // AYROVIX LENS HERO — إعدادات قابلة للإدارة من الـAdmin (المحتوى فقط)
     this.db.exec(`CREATE TABLE IF NOT EXISTS lens_hero_settings (
       id TEXT PRIMARY KEY CHECK(id='global'),
@@ -1830,27 +1810,10 @@ export class QatafoDatabase {
       }
     }
 
-    // HERO — المحتوى (عنوان/وصف/CTA) يُدار من الـ Dashboard، لا من الكود
-    this.db.exec(`CREATE TABLE IF NOT EXISTS hero_content_settings (
-      id TEXT PRIMARY KEY CHECK(id='global'),
-      eyebrow TEXT NOT NULL DEFAULT '',
-      title TEXT NOT NULL DEFAULT '',
-      highlight TEXT NOT NULL DEFAULT 'AYROVI',
-      description TEXT NOT NULL DEFAULT '',
-      cta_label TEXT NOT NULL DEFAULT '',
-      cta_url TEXT NOT NULL DEFAULT '',
-      accent_color TEXT NOT NULL DEFAULT '#FF6900',
-      element_order TEXT NOT NULL DEFAULT 'eyebrow,title,description,cta',
-      enabled INTEGER NOT NULL DEFAULT 1,
-      sort_order INTEGER NOT NULL DEFAULT 10,
-      updated_at TEXT NOT NULL
-    );`);
-    if (!(this.db.prepare("SELECT COUNT(*) count FROM hero_content_settings WHERE id='global'").get() as { count: number }).count) {
-      this.run(`INSERT INTO hero_content_settings (id,title,description,updated_at) VALUES ('global',?,?,?)`,
-        'Vous le voyez.\nAYROVI vous le livre.',
-        'Mode, beauté, technologie, maison… trouvez ce que vous cherchez. AYROVI s’occupe du reste.',
-        new Date().toISOString());
-    }
+    // Suppression DÉFINITIVE des anciens modèles Hero (décision produit 2026-10-10) :
+    // « un seul Hero, dynamique ». Exception documentée à la règle « jamais de DROP ».
+    this.db.exec('DROP TABLE IF EXISTS hero_visuals');
+    this.db.exec('DROP TABLE IF EXISTS hero_content_settings');
 
     // ── Carrousel Hero (09/10/2026) : slides administrables + fond adaptatif ──
     // Colonnes additives uniquement (contrat initSchema : jamais de DROP/RENAME).
@@ -1865,7 +1828,7 @@ export class QatafoDatabase {
     this.ensureColumn('hero_slides', 'published_from', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('hero_slides', 'published_to', "TEXT NOT NULL DEFAULT ''");
 
-    // Réglages du carrousel (singleton 'global') — même pattern que hero_content_settings.
+    // Réglages du carrousel (singleton 'global') — même pattern que les autres singletons.
     this.db.exec(`CREATE TABLE IF NOT EXISTS hero_carousel_settings (
       id TEXT PRIMARY KEY CHECK(id='global'),
       enabled INTEGER NOT NULL DEFAULT 1,
@@ -1948,12 +1911,6 @@ export class QatafoDatabase {
     this.ensureColumn('customer_otp_challenges', 'provider', "TEXT NOT NULL DEFAULT 'local'");
     this.ensureColumn('customer_accounts', 'password_hash', 'TEXT');
     this.ensureColumn('customer_accounts', 'avatar_source', "TEXT NOT NULL DEFAULT 'provider'");
-    this.ensureColumn('hero_visuals', 'mobile_focal_x', 'REAL NOT NULL DEFAULT 0.5');
-    this.ensureColumn('hero_visuals', 'mobile_focal_y', 'REAL NOT NULL DEFAULT 0.5');
-    this.ensureColumn('hero_visuals', 'overlay_mode', "TEXT NOT NULL DEFAULT 'AUTO' CHECK(overlay_mode IN ('AUTO','MANUAL'))");
-    this.ensureColumn('hero_visuals', 'overlay_strength', 'REAL');
-    this.ensureColumn('hero_visuals', 'analysis_json', "TEXT NOT NULL DEFAULT ''");
-    this.ensureColumn('hero_visuals', 'orientation_override', "TEXT NOT NULL DEFAULT 'AUTO' CHECK(orientation_override IN ('AUTO','LANDSCAPE','PORTRAIT'))");
     this.ensureColumn('customer_oauth_states', 'provider', "TEXT NOT NULL DEFAULT 'GOOGLE' CHECK(provider IN ('GOOGLE','FACEBOOK','APPLE'))");
     // ترقية القيود القديمة لتشمل دخول Apple (CHECK القديم لا يقبل 'APPLE')
     this.rebuildTableIfLegacy('customer_oauth_states', "'APPLE'", CUSTOMER_OAUTH_STATES_TABLE_SQL, [

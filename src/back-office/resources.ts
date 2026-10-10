@@ -260,7 +260,7 @@ const LEGACY_RESOURCE_META: Record<string, {
   },
   'hero-slides': {
     key: 'cms.hero-slides', module: 'cms', domain: 'CONTENT', label: 'Hero', singular: 'carte',
-    description: 'Cartes du carrousel Hero : brouillons, aperçu visiteur, publication. Table `hero_slides` (publié) et `hero_slide_drafts` (brouillons).',
+    description: 'Hero unique et dynamique : réglages (activation, autoplay, nombre de cartes), cartes, brouillons, aperçu visiteur et publication.',
     section: 'hero', aliases: ['hero-slides'], resourceType: 'hero_visual',
     nav: { group: 'Contenu', order: 71, icon: 'LayoutGrid' },
   },
@@ -757,22 +757,6 @@ const CUSTOM_RESOURCES: BackOfficeResourceDescriptor[] = [
     section: 'magazine-agent', nav: { group: 'Contenu', order: 45, icon: 'Sparkles' },
     surface: 'custom', component: 'MagazineAgentPage', api: { prefix: '/magazine-agent', kind: 'generic' },
     columns: [], fields: [], actions: ['list', 'view', 'edit', 'approve'], audit: { module: 'MAGAZINE_AGENT', resourceType: 'magazine_draft' },
-  },
-  {
-    key: 'content.hero-visuals', label: 'Visuels d’accueil', singular: 'visuel', module: 'cms', domain: 'CONTENT',
-    description: 'Visuels du hero d’accueil (table `hero_visuals`, distincte de `hero_slides`).',
-    navPermission: 'content:read', permissions: { list: 'cms:read', edit: 'cms:write' },
-    section: 'hero-visuals', nav: { group: 'Contenu', order: 70, icon: 'Image' },
-    surface: 'custom', component: 'HeroVisualsPage', api: { prefix: '/hero-visuals', kind: 'generic' },
-    columns: [], fields: [], actions: ['list', 'view', 'edit'], audit: { module: 'HERO_VISUALS', resourceType: 'hero_visual' },
-  },
-  {
-    key: 'content.hero-carousel', label: 'Carrousel Hero', singular: 'réglage', module: 'cms', domain: 'CONTENT',
-    description: 'Réglages du carrousel Hero de l’accueil mobile (activation, autoplay, transitions, pagination) + aperçu mobile.',
-    navPermission: 'content:read', permissions: { list: 'cms:read', edit: 'cms:write' },
-    section: 'hero-carousel', nav: { group: 'Contenu', order: 75, icon: 'Palette' },
-    surface: 'custom', component: 'HeroCarouselPage', api: { prefix: '/hero-carousel-settings', kind: 'generic' },
-    columns: [], fields: [], actions: ['list', 'view', 'edit'], audit: { module: 'HERO_CAROUSEL', resourceType: 'hero_carousel_settings' },
   },
   {
     key: 'content.lens-section', label: 'LENS', singular: 'section', module: 'cms', domain: 'CONTENT',

@@ -14,7 +14,6 @@ import fs from 'node:fs';
 import sharp from 'sharp';
 import { customerFromRequest, keyedHash, optionalCustomer } from '../customer/auth';
 import { ownerHashOf, recordLearningEvent } from '../assistant/learning';
-import { resolveActiveHeroVisual } from '../services/heroVisual';
 import { liveValues, publishedRows, toPublicCards } from '../services/heroSlideDrafts';
 import { UnsafeUrlError } from '../services/safeUrl';
 import { pruneDiskCache } from '../services/diskCache';
@@ -377,12 +376,6 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     res.json({ success: true, data });
   });
 
-  /** Visual الـ Hero النشط — المجدول الصالح حالياً، وإلا آخر منشور، وإلا الافتراضي */
-  router.get('/hero/active', (_req, res) => {
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.json({ success: true, data: resolveActiveHeroVisual(db) });
-  });
-
   /** AYROVIX LENS HERO — إعدادات عامة (خلفية/محتوى) — كل المحتوى من الـ Dashboard */
   router.get('/lens-hero', (_req, res) => {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -416,17 +409,6 @@ export function createPublicRouter(db: QatafoDatabase): Router {
         muted: Boolean(row.video_muted ?? 1),
         loop: Boolean(row.video_loop ?? 1),
       },
-    } : null });
-  });
-
-  /** محتوى الـ Hero (عنوان/وصف/CTA) — الـ Visual يبقى في /hero/active */
-  router.get('/hero-content', (_req, res) => {
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    const row = db.get<any>("SELECT * FROM hero_content_settings WHERE id='global'");
-    res.json({ success: true, data: row ? {
-      eyebrow: row.eyebrow, title: row.title, highlight: row.highlight, description: row.description,
-      ctaLabel: row.cta_label, ctaUrl: row.cta_url, accentColor: row.accent_color,
-      elementOrder: row.element_order, enabled: Boolean(row.enabled),
     } : null });
   });
 

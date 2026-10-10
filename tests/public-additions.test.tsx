@@ -9,8 +9,9 @@ import { LocaleProvider } from '../client/src/i18n/LocaleContext';
 
 const app = readFileSync('client/src/App.tsx', 'utf8');
 describe('additions without replacing the homepage', () => {
-  it('preserves Hero, both admin-controlled Stories/Lens orders and all existing content hosts', () => {
-    expect(app).toContain('<EvergreenHero />');
+  it('preserves the unique dynamic Hero, both admin-controlled Stories/Lens orders and all existing content hosts', () => {
+    expect(app).toContain('<HeroCarousel />');
+    expect(app).not.toContain('EvergreenHero');
     expect(app.match(/<StoriesShowcase\s/g)).toHaveLength(2);
     expect(app.match(/<LensFeature onOpenLens=/g)).toHaveLength(2);
     expect(app).toContain('storiesBelowLens ?');
@@ -62,11 +63,14 @@ describe('additions without replacing the homepage', () => {
       { id: 'tiktok', label: 'TikTok', href: 'https://tiktok.com/@ayrovi' },
     ]);
   });
-  it('only removes the empty fallback eyebrow, not the title or hero image', () => {
-    const hero = readFileSync('client/src/components/EvergreenHero.tsx', 'utf8');
-    expect(hero).toContain("if (key === 'eyebrow') return content.eyebrow?.trim()");
-    expect(hero).not.toContain("content.eyebrow || 'AYROVI'");
-    expect(hero).toContain('titleLines.map'); expect(hero).toContain('visual.imageUrl');
+  it('the unique Hero is data-driven: no fixed copy, no old visual fallback', () => {
+    const hero = readFileSync('client/src/components/HeroCarousel.tsx', 'utf8');
+    expect(hero).toContain('/api/public/hero-slides');
+    expect(hero).toContain('/api/public/hero-carousel-settings');
+    expect(hero).not.toContain('hero/active');
+    expect(hero).not.toContain('hero-content');
+    expect(hero).not.toContain('EvergreenHero');
+    expect(hero).toContain('card.image');
   });
 });
 describe('truthful campaign and channel data', () => {

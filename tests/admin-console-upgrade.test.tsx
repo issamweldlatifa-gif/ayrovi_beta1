@@ -72,7 +72,7 @@ describe('2. Un bouton désactivé dit toujours pourquoi', () => {
   });
 
   it('les quatre écrans qui réordonnent partagent la même définition', () => {
-    for (const file of ['HeroVisualsPage', 'HomeSectionsPage', 'LensSectionPage', 'InterfaceStudio']) {
+    for (const file of ['HeroSlidesManagePage', 'HomeSectionsPage', 'LensSectionPage', 'InterfaceStudio']) {
       const source = read(`client/src/admin/${file}.tsx`);
       expect(source).toContain("from './moveHint'");
       expect(source).toContain('title={moveHint(');

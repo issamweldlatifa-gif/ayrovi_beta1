@@ -22,10 +22,19 @@ try {
       ...original, serverTime: new Date().toISOString(), data: { ...original.data, arrivals: original.data.arrivals.map(a => ({ ...a, expectedArrivalAt: future })),
         promotions: promo ? [{ id: 'browser-only-campaign', name: 'Published campaign fixture', description: 'CMS description fixture', status: 'ACTIVE', starts_at: new Date(Date.now() - 1000).toISOString(), ends_at: future, image: '/media/hero-femme.jpg', promo_code: 'FIXTURE' }] : [] },
     } }));
+    // Héro unique et dynamique : une carte publiée (fixture) + réglages par défaut.
+    await page.route('**/api/public/hero-slides', route => route.fulfill({ json: { success: true, data: [{
+      id: 'browser-hero-card', image: '/media/hero-femme.jpg', video: '', title: 'Carte Hero fixture', titleAr: 'بطاقة Hero تجريبية',
+      subtitle: 'Sous-titre fixture', subtitleAr: 'عنوان فرعي تجريبي', cta: 'Découvrir', ctaAr: 'اكتشف', href: '/arrivage',
+      destinationType: 'CAMPAIGN', displayOrder: 1, background: '#F4F4F2', dominant: '#F4F4F2', luminance: 0.9,
+    }] } }));
+    await page.route('**/api/public/hero-carousel-settings', route => route.fulfill({ json: { success: true, data: {
+      enabled: true, maxCards: 6, autoplay: false, autoplayIntervalMs: 5000, transitionMs: 300, paginationVisible: true } } }));
     await page.route('**/api/public/stories-showcase', route => route.fulfill({ json: { ...showcase, data: { ...showcase.data, enabled: true, sortOrder: order } } }));
     for (const width of [320, 390, 1360]) {
       await page.setViewportSize({ width, height: 844 }); await page.goto(base); await page.locator('.stories-showcase').waitFor(); await page.evaluate(() => document.fonts.ready);
-      check(`${locale}/${width}: original hero remains`, await page.locator('.editorial-hero__title').isVisible());
+      check(`${locale}/${width}: unique dynamic hero visible`, await page.locator('[data-hero-layout="carousel"] h2').first().isVisible());
+      check(`${locale}/${width}: no legacy editorial hero`, await page.locator('.editorial-hero').count() === 0);
       check(`${locale}/${width}: original Lens remains`, await page.locator('.lens-feature').count() === 1);
       check(`${locale}/${width}: Stories remain`, await page.locator('.stories-showcase').count() === 1);
       check(`${locale}/${width}: no horizontal overflow`, await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));

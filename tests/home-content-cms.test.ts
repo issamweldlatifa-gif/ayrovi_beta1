@@ -19,7 +19,7 @@ const appSource = readFileSync('client/src/App.tsx', 'utf8');
  * c'est que le contenu publié vient bien de la base (API) et que le Hero ne contient
  * toujours aucun texte figé.
  */
-const heroSource = readFileSync('client/src/components/EvergreenHero.tsx', 'utf8');
+const heroSource = readFileSync('client/src/components/HeroCarousel.tsx', 'utf8');
 const indexCss = readFileSync('client/src/index.css', 'utf8');
 
 
@@ -80,30 +80,15 @@ describe('Dashboard is the single source of truth for Hero, LENS and home sectio
     expect(stillSafe.body.data.ctaUrl).toBe('/lens');
   });
 
-  test('hero copy comes from the CMS, is editable and refuses an empty title', async () => {
-    const before = await request(app).get('/api/public/hero-content');
-    expect(before.status).toBe(200);
-    expect(before.body.data.title).toBe('Vous le voyez.\nAYROVI vous le livre.');
-    expect(before.body.data.highlight).toBe('AYROVI');
-    expect(before.body.data.ctaLabel).toBe('');
-
-    const updated = await admin.put('/api/admin/hero-content').set('x-csrf-token', csrf).send({
-      eyebrow: 'Livraison Tunisie', title: 'Trouvez.\nAYROVI livre.', description: 'Nouveau sous-titre.',
-      ctaLabel: 'Commencer', ctaUrl: 'https://ayrovi.tn/arrivages', elementOrder: 'title,eyebrow,description,cta',
-    });
-    expect(updated.status).toBe(200);
-
-    const published = await request(app).get('/api/public/hero-content');
-    expect(published.body.data).toMatchObject({
-      eyebrow: 'Livraison Tunisie', title: 'Trouvez.\nAYROVI livre.', description: 'Nouveau sous-titre.',
-      ctaLabel: 'Commencer', ctaUrl: 'https://ayrovi.tn/arrivages', elementOrder: 'title,eyebrow,description,cta',
-    });
-
-    const empty = await admin.put('/api/admin/hero-content').set('x-csrf-token', csrf).send({ title: '   ' });
-    expect(empty.status).toBe(400);
-
-    const unsafe = await admin.put('/api/admin/hero-content').set('x-csrf-token', csrf).send({ ctaUrl: 'javascript:alert(1)' });
-    expect(unsafe.status).toBe(400);
+  test('un seul Hero : les anciens modèles (visuels, contenu fixe) n’existent plus', async () => {
+    // Décision produit 2026-10-10 : le Hero est unique et dynamique (Admin → Hero).
+    expect((await request(app).get('/api/public/hero-content')).status).toBe(404);
+    expect((await request(app).get('/api/public/hero/active')).status).toBe(404);
+    expect((await admin.put('/api/admin/hero-content').set('x-csrf-token', csrf).send({ title: 'X' })).status).toBe(404);
+    expect((await admin.get('/api/admin/hero-visuals')).status).toBe(404);
+    // Le Hero dynamique reste administrable : réglages et cartes.
+    expect((await request(app).get('/api/public/hero-carousel-settings')).status).toBe(200);
+    expect((await request(app).get('/api/public/hero-slides')).status).toBe(200);
   });
 
   test('home sections are reordered and hidden from the dashboard', async () => {
@@ -132,8 +117,10 @@ describe('Dashboard is the single source of truth for Hero, LENS and home sectio
     expect(heroSource).not.toContain('Vous le voyez.');
     expect(heroSource).not.toContain('vous le livre.');
     expect(heroSource).not.toContain('Mode, beauté, technologie');
-    expect(heroSource).toMatch(/fetch\('\/api\/public\/hero-content'[,)]/);
-    expect(heroSource).toContain('controller.abort()');
+    expect(heroSource).toMatch(/fetch\('\/api\/public\/hero-slides'/);
+    expect(heroSource).toMatch(/fetch\('\/api\/public\/hero-carousel-settings'/);
+    expect(heroSource).not.toContain('hero-content');
+    expect(heroSource).not.toContain('hero/active');
   });
 });
 
