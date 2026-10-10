@@ -4,6 +4,8 @@ import { adminApi } from './api';
 import { Button, DataTable, Field, Modal, StatusBadge } from './components';
 import { StoriesStudioPage } from './StoriesStudio';
 import { EMPTY_PRODUCT_LINK, ProductIntegration } from './ProductIntegration';
+import { uploadMediaFile } from './mediaUpload';
+import { normalizeMediaLink, type MediaLinkKind } from '../../../shared/mediaLinks';
 
 const TABS = ['Publication', 'Reel', 'Story'] as const;
 type Tab = typeof TABS[number];
@@ -16,17 +18,14 @@ const removeWithConfirm = async (path: string, message: string, reload: () => vo
   try { await adminApi(path, { method: 'DELETE' }); reload(); } catch { reload(); }
 };
 
-const readDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
-  const reader = new FileReader();
-  reader.onload = () => resolve(String(reader.result));
-  reader.onerror = () => reject(new Error('Lecture impossible'));
-  reader.readAsDataURL(file);
-});
-
-const uploadFile = async (file: File) => {
-  const dataUrl = await readDataUrl(file);
-  const result = await adminApi<any>('/uploads', { method: 'POST', body: JSON.stringify({ dataUrl }) });
-  return result.data?.url as string;
+/**
+ * Lien saisi à la main : converti tout de suite (lecteur Cloudinary → fichier direct) ou refusé
+ * avec une explication à l'écran. Renvoie la valeur à garder, ou null si le lien est refusé.
+ */
+const acceptLink = (value: string, kind: MediaLinkKind, setError: (message: string) => void): string | null => {
+  const link = normalizeMediaLink(value, kind);
+  if (link.ok === false) { setError(link.error); return null; }
+  return link.url;
 };
 
 const videoDuration = (url: string) => new Promise<number>((resolve) => {
@@ -97,10 +96,10 @@ const PublicationsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
           <Field label="Canal" required><ChannelSelect value={form.channel_id} onChange={(v) => setForm({ ...form, channel_id: v })} channels={channels} /></Field>
           <Field label="Image" required>
             <div className="admin-actions" style={{ marginTop: 0 }}>
-              <input value={form.image_url} onChange={(e) => setForm({ ...form, image_url: e.target.value })} placeholder="URL ou upload" style={{ flex: 1 }} />
+              <input value={form.image_url} onChange={(e) => setForm({ ...form, image_url: e.target.value })} onBlur={() => { const url = acceptLink(form.image_url || '', 'image', setError); if (url !== null) setForm((cur: any) => ({ ...cur, image_url: url })); }} placeholder="URL ou upload" style={{ flex: 1 }} />
               <label style={{ cursor: 'pointer', border: '1px solid var(--admin-line)', borderRadius: 10, padding: '8px 12px', fontSize: 12, fontWeight: 700 }}>
                 <ArrowUp size={14} />Uploader
-                <input type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={async (e) => { const f = e.target.files?.[0]; if (f) setForm({ ...form, image_url: await uploadFile(f) }); }} />
+                <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden onChange={async (e) => { const f = e.target.files?.[0]; if (!f) return; try { const url = await uploadMediaFile(f); setForm((cur: any) => ({ ...cur, image_url: url })); } catch (err: any) { setError(err?.message || 'Upload impossible.'); } finally { e.target.value = ''; } }} />
               </label>
             </div>
           </Field>
@@ -169,15 +168,18 @@ const ReelsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
           <Field label="Canal" required><ChannelSelect value={form.channel_id} onChange={(v) => setForm({ ...form, channel_id: v })} channels={channels} /></Field>
           <Field label="Vidéo (mp4, mov, webm…)" required full>
             <div className="admin-actions" style={{ marginTop: 0 }}>
-              <input value={form.video_url} onChange={(e) => setForm({ ...form, video_url: e.target.value })} placeholder="URL ou upload" style={{ flex: 1 }} />
+              <input value={form.video_url} onChange={(e) => setForm({ ...form, video_url: e.target.value })} onBlur={() => { const url = acceptLink(form.video_url || '', 'video', setError); if (url !== null) setForm((cur: any) => ({ ...cur, video_url: url })); }} placeholder="URL ou upload" style={{ flex: 1 }} />
               <label style={{ cursor: 'pointer', border: '1px solid var(--admin-line)', borderRadius: 10, padding: '8px 12px', fontSize: 12, fontWeight: 700 }}>
                 <ArrowUp size={14} />Uploader
                 <input type="file" accept="video/mp4,video/webm,video/ogg,video/quicktime" hidden onChange={async (e) => {
                   const f = e.target.files?.[0];
                   if (!f) return;
-                  const url = await uploadFile(f);
-                  const duration = await videoDuration(url);
-                  setForm((cur: any) => ({ ...cur, video_url: url, duration_seconds: duration }));
+                  try {
+                    const url = await uploadMediaFile(f);
+                    const duration = await videoDuration(url);
+                    setForm((cur: any) => ({ ...cur, video_url: url, duration_seconds: duration }));
+                  } catch (err: any) { setError(err?.message || 'Upload impossible.'); }
+                  finally { e.target.value = ''; }
                 }} />
               </label>
             </div>
@@ -186,10 +188,10 @@ const ReelsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
           </Field>
           <Field label="Image de couverture (affichée avant la lecture)" full>
             <div className="admin-actions" style={{ marginTop: 0 }}>
-              <input value={form.poster_url || ''} onChange={(e) => setForm({ ...form, poster_url: e.target.value })} placeholder="URL ou upload (facultatif)" style={{ flex: 1 }} />
+              <input value={form.poster_url || ''} onChange={(e) => setForm({ ...form, poster_url: e.target.value })} onBlur={() => { const url = acceptLink(form.poster_url || '', 'image', setError); if (url !== null) setForm((cur: any) => ({ ...cur, poster_url: url })); }} placeholder="URL ou upload (facultatif)" style={{ flex: 1 }} />
               <label style={{ cursor: 'pointer', border: '1px solid var(--admin-line)', borderRadius: 10, padding: '8px 12px', fontSize: 12, fontWeight: 700 }}>
                 <ArrowUp size={14} />Uploader
-                <input type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={async (e) => { const f = e.target.files?.[0]; if (f) setForm({ ...form, poster_url: await uploadFile(f) }); }} />
+                <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden onChange={async (e) => { const f = e.target.files?.[0]; if (!f) return; try { const url = await uploadMediaFile(f); setForm((cur: any) => ({ ...cur, poster_url: url })); } catch (err: any) { setError(err?.message || 'Upload impossible.'); } finally { e.target.value = ''; } }} />
               </label>
             </div>
             {form.poster_url && <img src={form.poster_url} alt="" style={{ width: 120, aspectRatio: '9 / 16', objectFit: 'cover', borderRadius: 12, marginTop: 8 }} />}

@@ -3,6 +3,8 @@ import { X, Box, Eye, Heart, MessageSquare, Pencil, Plus, Share2, Trash2, ArrowU
 import { adminApi } from './api';
 import { Button, DataTable, Field, Modal, StatusBadge, Switch } from './components';
 import { ProductIntegration } from './ProductIntegration';
+import { uploadMediaFile } from './mediaUpload';
+import { normalizeMediaLink } from '../../../shared/mediaLinks';
 
 const KNOWN_CATEGORIES = ['ARRIVAGE', 'NEW', 'STYLE', 'INFO', 'PROMO'];
 const CHANNELS = [
@@ -34,14 +36,8 @@ const PublisherRow: React.FC<{ pub: any; onChanged: () => void }> = ({ pub, onCh
     } finally { setBusy(false); }
   };
   const uploadAvatar = async (file: File) => {
-    const dataUrl = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result));
-      reader.onerror = () => reject(new Error('read'));
-      reader.readAsDataURL(file);
-    });
-    const result = await adminApi<any>('/uploads', { method: 'POST', body: JSON.stringify({ dataUrl }) });
-    if (result.data?.url) await saveRow(result.data.url);
+    const url = await uploadMediaFile(file);
+    await saveRow(url);
   };
   return (
     <div style={{ border: '1px solid var(--admin-line)', borderRadius: 14, padding: 12, display: 'flex', gap: 12, alignItems: 'center', background: 'var(--admin-surface-card)' }}>
@@ -214,14 +210,7 @@ export const StoriesStudioPage: React.FC<{ onEditContent: () => void }> = ({ onE
     try {
       const urls: string[] = [];
       for (const file of Array.from(files).slice(0, 10)) {
-        const dataUrl = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(String(reader.result));
-          reader.onerror = () => reject(new Error('Lecture impossible'));
-          reader.readAsDataURL(file);
-        });
-        const result = await adminApi<any>('/uploads', { method: 'POST', body: JSON.stringify({ dataUrl }) });
-        if (result.data?.url) urls.push(result.data.url);
+        urls.push(await uploadMediaFile(file));
       }
       setForm((f: any) => ({ ...f, secondary_images: [...(f.secondary_images || []), ...urls] }));
     } catch (e: any) { setError(e?.message || 'Upload impossible.'); }
@@ -231,14 +220,8 @@ export const StoriesStudioPage: React.FC<{ onEditContent: () => void }> = ({ onE
   const uploadMedia = async (file: File) => {
     setUploading(true);
     try {
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result));
-        reader.onerror = () => reject(new Error('Lecture impossible'));
-        reader.readAsDataURL(file);
-      });
-      const result = await adminApi<any>('/uploads', { method: 'POST', body: JSON.stringify({ dataUrl }) });
-      setForm((f: any) => ({ ...f, media_url: result.data?.url || f.media_url, media_type: file.type.startsWith('video/') ? 'VIDEO' : f.media_type }));
+      const url = await uploadMediaFile(file);
+      setForm((f: any) => ({ ...f, media_url: url, media_type: file.type.startsWith('video/') ? 'VIDEO' : f.media_type }));
     } catch (e: any) { setError(e?.message || 'Upload impossible.'); }
     finally { setUploading(false); }
   };
@@ -343,7 +326,10 @@ export const StoriesStudioPage: React.FC<{ onEditContent: () => void }> = ({ onE
             </Field>
             <Field label="Média (upload ou URL)">
               <div className="admin-actions" style={{ marginTop: 0 }}>
-                <input value={form.media_url} onChange={(e) => setForm({ ...form, media_url: e.target.value })} placeholder="/media/… ou https://…" style={{ flex: 1 }} />
+                <input value={form.media_url} onChange={(e) => setForm({ ...form, media_url: e.target.value })} onBlur={() => {
+                  const link = normalizeMediaLink(form.media_url || '', form.media_type === 'VIDEO' ? 'video' : 'image');
+                  if (link.ok === false) setError(link.error); else setForm((cur: any) => ({ ...cur, media_url: link.url }));
+                }} placeholder="/media/… ou https://…" style={{ flex: 1 }} />
                 <label style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid var(--admin-line)', borderRadius: 10, padding: '8px 12px', fontSize: 12, fontWeight: 700, background: 'var(--admin-surface-card)' }}>
                   <ArrowUp size={14} />{uploading ? '…' : 'Uploader'}
                   <input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/ogg,video/quicktime" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadMedia(f); }} />
