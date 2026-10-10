@@ -23,6 +23,7 @@ import { can } from '../erp-core/permissions';
 import { bootstrapCatalogue } from './bootstrap';
 import { requireCatalogue } from './permissions';
 import { archiveProduct, createProduct, getProduct, listProducts, updateProduct } from './products';
+import { contentUsageCounts, contentUsageOf, isProductAvailable, priceContentProduct } from './contentProducts';
 import { archiveVariant, createVariant, getVariant, listVariants, updateVariant } from './variants';
 import { archiveCategory, categoryTree, createCategory, getCategory, listCategories, updateCategory } from './categories';
 import { BRAND_CATEGORIES, createBrand, getBrand, listBrands, updateBrand } from './brands';
@@ -141,6 +142,71 @@ export function createCatalogueRouter(db: QatafoDatabase): Router {
   });
 
   // ---------- Variants (the SKU lives here) ----------
+  // ---------- Produits temporaires (visibility = CONTENT) ----------
+  // Même modèle, même validation et même audit que le catalogue. Seule différence : la
+  // route fixe `visibility`, et refuse de toucher une fiche catalogue (et inversement).
+  const contentProductOr404 = (res: Response, id: string) => {
+    const product = getProduct(db, id);
+    if (!product || product.visibility !== 'CONTENT') {
+      answer(res, { ok: false, code: CATALOGUE_ERRORS.PRODUCT_NOT_FOUND, message: 'Produit temporaire introuvable.' });
+      return null;
+    }
+    return product;
+  };
+
+  router.get('/content-products', ...requireCatalogue(db, 'read', 'product'), (req, res) => {
+    const data = listProducts(db, {
+      search: req.query.search, status: req.query.status, visibility: 'CONTENT',
+      includeArchived: req.query.include_archived, page: req.query.page, pageSize: req.query.page_size,
+    });
+    const rows = data.data.map((product) => ({
+      ...product,
+      usage: contentUsageCounts(db, String(product.id)),
+      available: isProductAvailable(db, String(product.id), new Date().toISOString()),
+    }));
+    res.json({ success: true, data: rows, pagination: data.pagination });
+  });
+
+  router.get('/content-products/:id', ...requireCatalogue(db, 'read', 'product'), (req, res) => {
+    const product = contentProductOr404(res, req.params.id);
+    if (!product) return;
+    res.json({
+      success: true,
+      data: {
+        ...product,
+        usage: contentUsageOf(db, product.id),
+        available: isProductAvailable(db, product.id, new Date().toISOString()),
+        media: listMedia(db, product.id),
+      },
+    });
+  });
+
+  router.post('/content-products', ...requireCatalogue(db, 'create', 'product'), (req: CatalogueRequest, res) => {
+    const result = createProduct(db, req.body, {
+      actor: actorOf(req), context: catalogueContext(db, req), mayPublish: mayPublish(req), visibility: 'CONTENT',
+    });
+    if (!result.ok) return answer(res, result);
+    priceContentProduct(db, result.value.id);
+    res.status(201).json({ success: true, data: getProduct(db, result.value.id) ?? result.value });
+  });
+
+  router.put('/content-products/:id', ...requireCatalogue(db, 'update', 'product'), (req: CatalogueRequest, res) => {
+    if (!contentProductOr404(res, req.params.id)) return;
+    const result = updateProduct(db, req.params.id, req.body, {
+      actor: actorOf(req), context: catalogueContext(db, req), mayPublish: mayPublish(req),
+    });
+    if (result.ok) priceContentProduct(db, req.params.id);
+    return answer(res, result.ok ? { ok: true, value: getProduct(db, req.params.id) ?? result.value } : result);
+  });
+
+  router.delete('/content-products/:id', ...requireCatalogue(db, 'delete', 'product'), (req: CatalogueRequest, res) => {
+    if (!contentProductOr404(res, req.params.id)) return;
+    const result = archiveProduct(db, req.params.id, {
+      actor: actorOf(req), context: catalogueContext(db, req), reason: typeof req.query.reason === 'string' ? req.query.reason : undefined,
+    });
+    return answer(res, result);
+  });
+
   router.get('/products/:id/variants', ...requireCatalogue(db, 'read', 'variant'), (req, res) => {
     const product = getProduct(db, req.params.id);
     if (!product) return answer(res, { ok: false, code: CATALOGUE_ERRORS.PRODUCT_NOT_FOUND, message: 'Produit introuvable.' });

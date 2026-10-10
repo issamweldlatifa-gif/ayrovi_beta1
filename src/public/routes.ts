@@ -1,3 +1,4 @@
+import { availableProductParams, availableProductSql } from '../catalogue/contentProducts';
 import { enforceBrandIdentity, enforceLegacyTheme } from '../../shared/identityPolicy';
 import { publicNavDestination } from '../../shared/publicNavigation';
 import { createHash, randomUUID } from 'node:crypto';
@@ -75,6 +76,8 @@ function mapProduct(row: any) {
     expressAvailable: Boolean(row.express_available),
     stockStatus: row.stock_status,
     arrivalIds: row.arrival_ids ? String(row.arrival_ids).split(',').filter(Boolean) : [],
+    // `CONTENT` = produit temporaire : la fiche reste accessible, mais il n'est jamais listé.
+    visibility: row.visibility === 'CONTENT' ? 'CONTENT' : 'CATALOG',
   };
 }
 
@@ -467,15 +470,21 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     const filter = arrivalId ? 'AND EXISTS (SELECT 1 FROM product_arrivals f WHERE f.product_id=p.id AND f.arrival_id=?)' : '';
     if (arrivalId) params.push(arrivalId);
     const rows = db.all<any>(`SELECT p.*,GROUP_CONCAT(pa.arrival_id) arrival_ids FROM products p
-      LEFT JOIN product_arrivals pa ON pa.product_id=p.id WHERE p.status='ACTIVE' ${filter}
+      LEFT JOIN product_arrivals pa ON pa.product_id=p.id WHERE p.status='ACTIVE' AND p.visibility='CATALOG' ${filter}
       GROUP BY p.id ORDER BY p.updated_at DESC LIMIT ?`, ...params, limit);
     res.json({ success: true, data: rows.map(mapProduct) });
   });
 
-  /** Fiche d'un produit actif, par identifiant (page produit, « Découvrir » d'un contenu shoppable). */
+  /**
+   * Fiche d'un produit, par identifiant (page produit, « Découvrir » d'un contenu shoppable).
+   * Catalogue : produit ACTIVE. Temporaire : ACTIVE ET lié à un contenu publié et daté.
+   * Le reste (brouillon, archivé, contenu non publié) répond 404, comme un id inconnu.
+   */
   router.get('/products/:id', (req, res) => {
+    const now = new Date().toISOString();
     const row = db.get<any>(`SELECT p.*,GROUP_CONCAT(pa.arrival_id) arrival_ids FROM products p
-      LEFT JOIN product_arrivals pa ON pa.product_id=p.id WHERE p.status='ACTIVE' AND p.id=? GROUP BY p.id`, req.params.id);
+      LEFT JOIN product_arrivals pa ON pa.product_id=p.id WHERE p.id=? AND ${availableProductSql('p')} GROUP BY p.id`,
+    req.params.id, ...availableProductParams(now));
     if (!row) return res.status(404).json({ success: false, error: 'Produit introuvable.' });
     res.json({ success: true, data: mapProduct(row) });
   });

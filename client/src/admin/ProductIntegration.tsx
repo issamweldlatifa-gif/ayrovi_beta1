@@ -1,7 +1,8 @@
 /**
  * « Product Integration / ربط المنتج » — bloc commun aux formulaires Reel, Story et Publication.
  *
- *  • Mode : contenu normal (aucune carte) ou Shoppable (produit obligatoire) ;
+ *  • Produit à associer : aucun produit, un produit du catalogue, ou un produit temporaire
+ *    créé ici (visible seulement avec ce contenu) ;
  *  • Produit : recherche dans le catalogue existant (nom, SKU ou référence) ;
  *    seuls les produits vendables (actifs, avec prix) sont proposés ;
  *  • Après choix : image, nom et prix lus dans le catalogue, changer ou délier ;
@@ -32,12 +33,22 @@ interface CatalogueProduct {
   currency: string | null;
   stock_status: string | null;
   product_code: string | null;
+  /** `CONTENT` pour un produit temporaire. */
+  visibility?: string;
 }
 
 /** Même règle que le serveur : actif + prix positif. */
 const isSellable = (product: CatalogueProduct) => product.status === 'ACTIVE' && Number(product.final_price) > 0;
 
 const priceLabel = (product: CatalogueProduct) => `${Number(product.final_price ?? 0).toFixed(2)} ${product.currency || 'TND'}`;
+
+type Source = 'none' | 'catalogue' | 'temporary';
+
+const SOURCE_HINT: Record<Source, string> = {
+  none: 'Contenu sans produit : aucune carte n’est affichée sur l’application.',
+  catalogue: 'Un produit du catalogue est obligatoire. Le prix et l’image sont lus dans le catalogue, jamais recopiés.',
+  temporary: 'Produit temporaire : il n’apparaît ni dans le catalogue ni dans la recherche. Il n’est visible qu’avec ce contenu, une fois publié.',
+};
 
 export function ProductIntegration({ kind, value, onChange }: {
   kind: ShoppableKind;
@@ -51,6 +62,10 @@ export function ProductIntegration({ kind, value, onChange }: {
   const [selected, setSelected] = useState<CatalogueProduct | null>(null);
   const [selectedMissing, setSelectedMissing] = useState(false);
   const [changing, setChanging] = useState(false);
+  const [source, setSource] = useState<Source>(value.content_mode === 'shoppable' ? 'catalogue' : 'none');
+  const [creating, setCreating] = useState({ name: '', image: '', price: '', currency: 'TND' });
+  const [createBusy, setCreateBusy] = useState(false);
+  const [createError, setCreateError] = useState('');
 
   // Charge le produit déjà lié (édition) : nom, image et prix viennent du catalogue.
   useEffect(() => {
@@ -58,14 +73,19 @@ export function ProductIntegration({ kind, value, onChange }: {
     setSelected(null); setSelectedMissing(false);
     if (value.content_mode !== 'shoppable' || !value.product_id) return undefined;
     adminApi<any>(`/catalogue/products/${encodeURIComponent(value.product_id)}`)
-      .then((r) => { if (alive) setSelected(r?.data ?? null); })
+      .then((r) => {
+        if (!alive) return;
+        setSelected(r?.data ?? null);
+        if (r?.data?.visibility === 'CONTENT') setSource('temporary');
+      })
       .catch(() => { if (alive) setSelectedMissing(true); });
     return () => { alive = false; };
   }, [value.content_mode, value.product_id]);
 
   // Recherche avec un léger délai : une requête par pause de frappe.
+  // Seul le catalogue est cherché ici ; les produits temporaires ne s'y trouvent pas.
   useEffect(() => {
-    if (value.content_mode !== 'shoppable') return undefined;
+    if (value.content_mode !== 'shoppable' || source !== 'catalogue') return undefined;
     const term = query.trim();
     if (term.length < 2) { setResults([]); setSearchError(''); return undefined; }
     const timer = window.setTimeout(() => {
@@ -77,15 +97,19 @@ export function ProductIntegration({ kind, value, onChange }: {
         .finally(() => setSearching(false));
     }, 250);
     return () => window.clearTimeout(timer);
-  }, [query, value.content_mode]);
+  }, [query, value.content_mode, source]);
 
-  const setMode = (mode: 'normal' | 'shoppable') => {
-    setQuery('');
-    onChange(mode === 'normal' ? { content_mode: 'normal', product_id: '' } : { content_mode: 'shoppable', product_id: value.product_id });
+  const chooseSource = (next: Source) => {
+    setQuery(''); setChanging(false); setCreateError(''); setSource(next);
+    if (next === 'none') { onChange({ content_mode: 'normal', product_id: '' }); return; }
+    // Garder le produit déjà lié seulement s'il appartient à la même famille.
+    const sameFamily = selected && (next === 'temporary' ? selected.visibility === 'CONTENT' : selected.visibility !== 'CONTENT');
+    onChange({ content_mode: 'shoppable', product_id: sameFamily ? value.product_id : '' });
   };
 
   const pick = (product: CatalogueProduct) => {
     setSelected(product); setSelectedMissing(false); setQuery(''); setResults([]); setChanging(false);
+    setSource(product.visibility === 'CONTENT' ? 'temporary' : 'catalogue');
     onChange({ content_mode: 'shoppable', product_id: product.id });
   };
 
@@ -94,21 +118,45 @@ export function ProductIntegration({ kind, value, onChange }: {
     onChange({ content_mode: value.content_mode, product_id: '' });
   };
 
+  // Création rapide d'un produit temporaire, publié et associé en une étape. Un brouillon
+  // se prépare dans « Produits temporaires » ; il ne peut être lié à un contenu qu'une fois publié.
+  const createTemporary = async () => {
+    setCreateBusy(true); setCreateError('');
+    try {
+      const response = await adminApi<any>('/catalogue/content-products', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: creating.name.trim(),
+          image: creating.image.trim() || null,
+          original_price: Number(creating.price),
+          currency: creating.currency.trim().toUpperCase() || 'TND',
+          status: 'ACTIVE',
+          source_platform: 'OTHER',
+          product_type: 'STANDARD',
+        }),
+      });
+      pick(response.data as CatalogueProduct);
+      setCreating({ name: '', image: '', price: '', currency: 'TND' });
+    } catch (e: any) {
+      setCreateError(e?.message || 'Création refusée. Vérifiez le nom, le prix et vos droits.');
+    } finally {
+      setCreateBusy(false);
+    }
+  };
+
   const shoppable = value.content_mode === 'shoppable';
   const hasLink = shoppable && Boolean(value.product_id);
+  const canCreate = creating.name.trim().length >= 2 && Number(creating.price) > 0 && !createBusy;
 
   return (
-    <Field label="Product Integration / ربط المنتج" full>
+    <Field label="Produit à associer / ربط المنتج" full>
       <div style={{ display: 'grid', gap: 12 }}>
-        <div role="radiogroup" aria-label="Mode du contenu" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <Button variant={shoppable ? 'ghost' : undefined} onClick={() => setMode('normal')}>Contenu normal</Button>
-          <Button variant={shoppable ? undefined : 'ghost'} onClick={() => setMode('shoppable')}>Contenu Shoppable</Button>
+        <div role="radiogroup" aria-label="Produit à associer" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <Button variant={source === 'none' ? undefined : 'ghost'} onClick={() => chooseSource('none')}>Aucun produit</Button>
+          <Button variant={source === 'catalogue' ? undefined : 'ghost'} onClick={() => chooseSource('catalogue')}>Produit du catalogue</Button>
+          <Button variant={source === 'temporary' ? undefined : 'ghost'} onClick={() => chooseSource('temporary')}>Créer un produit temporaire</Button>
         </div>
-        <small style={{ opacity: 0.75 }}>
-          {shoppable
-            ? 'Un produit du catalogue est obligatoire. Le prix et l’image sont lus dans le catalogue, jamais recopiés.'
-            : 'Contenu sans produit : aucune carte n’est affichée sur l’application.'}
-        </small>
+        <small style={{ opacity: 0.75 }}>{SOURCE_HINT[source]}</small>
 
         {shoppable ? (
           <>
@@ -117,7 +165,10 @@ export function ProductIntegration({ kind, value, onChange }: {
                 {selected.image ? <img src={selected.image} alt="" style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 8 }} /> : null}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <strong>{selected.name}</strong>
-                  <div style={{ fontSize: 13 }}>{priceLabel(selected)}{selected.product_code ? ` · réf. ${selected.product_code}` : ''}</div>
+                  <div style={{ fontSize: 13 }}>
+                    {priceLabel(selected)}{selected.product_code ? ` · réf. ${selected.product_code}` : ''}
+                    {selected.visibility === 'CONTENT' ? ' · produit temporaire' : ''}
+                  </div>
                 </div>
                 <Button variant="ghost" onClick={() => setChanging(true)}>Changer</Button>
                 <Button variant="ghost" onClick={unlink}>Délier</Button>
@@ -131,7 +182,7 @@ export function ProductIntegration({ kind, value, onChange }: {
               </div>
             ) : null}
 
-            {!hasLink || changing ? (
+            {source === 'catalogue' && (!hasLink || changing) ? (
               <div style={{ display: 'grid', gap: 8 }}>
                 <input
                   aria-label="Rechercher un produit"
@@ -165,6 +216,42 @@ export function ProductIntegration({ kind, value, onChange }: {
                 {!searching && query.trim().length >= 2 && results.length === 0 && !searchError ? (
                   <small>Aucun produit vendable ne correspond (produits actifs avec prix uniquement).</small>
                 ) : null}
+              </div>
+            ) : null}
+
+            {source === 'temporary' && (!hasLink || changing) ? (
+              <div style={{ display: 'grid', gap: 8 }}>
+                <input
+                  aria-label="Nom du produit temporaire"
+                  placeholder="Nom du produit"
+                  value={creating.name}
+                  onChange={(e) => setCreating({ ...creating, name: e.target.value })}
+                />
+                <input
+                  aria-label="Image du produit temporaire"
+                  placeholder="URL d’image publique (https://…) — facultatif"
+                  value={creating.image}
+                  onChange={(e) => setCreating({ ...creating, image: e.target.value })}
+                />
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input
+                    aria-label="Prix d’origine"
+                    type="number" min="0" step="0.01"
+                    placeholder="Prix d’origine"
+                    value={creating.price}
+                    onChange={(e) => setCreating({ ...creating, price: e.target.value })}
+                  />
+                  <input
+                    aria-label="Devise"
+                    maxLength={3}
+                    value={creating.currency}
+                    onChange={(e) => setCreating({ ...creating, currency: e.target.value.toUpperCase() })}
+                  />
+                </div>
+                {createError ? <small role="alert" style={{ color: 'var(--bo-danger)' }}>{createError}</small> : null}
+                <div>
+                  <Button busy={createBusy} disabled={!canCreate} onClick={() => void createTemporary()}>Publier et associer</Button>
+                </div>
               </div>
             ) : null}
 

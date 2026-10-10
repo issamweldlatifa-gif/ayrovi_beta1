@@ -1,3 +1,4 @@
+import { availableProductParams, availableProductSql } from '../catalogue/contentProducts';
 import { createSign, randomBytes, randomInt, randomUUID } from 'node:crypto';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -1621,7 +1622,9 @@ function linkGoogleProfile(db: QatafoDatabase, profile: any, linkToAccountId?: s
   router.post('/account/favorites', requireCustomer(db), (req, res) => {
     const account = customerFromRequest(req);
     const productId = req.body?.productId ? String(req.body.productId) : null;
-    const product = productId ? db.get<any>("SELECT * FROM products WHERE id=? AND status='ACTIVE'", productId) : null;
+    const product = productId
+      ? db.get<any>(`SELECT * FROM products WHERE id=? AND ${availableProductSql('products')}`, productId, ...availableProductParams(new Date().toISOString()))
+      : null;
     const sourceUrl = String(req.body?.sourceUrl || product?.source_url || '').trim().slice(0, 2000);
     const title = String(req.body?.title || product?.name || '').trim().slice(0, 250);
     if (!title || (!sourceUrl && !product)) return res.status(400).json({ success: false, error: 'Produit favori invalide.' });

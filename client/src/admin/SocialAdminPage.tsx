@@ -4,10 +4,11 @@ import { adminApi } from './api';
 import { Button, DataTable, Field, Modal, StatusBadge } from './components';
 import { StoriesStudioPage } from './StoriesStudio';
 import { EMPTY_PRODUCT_LINK, ProductIntegration } from './ProductIntegration';
+import { CatalogueProductsPage } from './CataloguePages';
 import { uploadMediaFile } from './mediaUpload';
 import { normalizeMediaLink, type MediaLinkKind } from '../../../shared/mediaLinks';
 
-const TABS = ['Publication', 'Reel', 'Story'] as const;
+const TABS = ['Publication', 'Reel', 'Story', 'Produits temporaires'] as const;
 type Tab = typeof TABS[number];
 
 const st = (s: string) => s === 'publie' ? 'PUBLISHED' : s === 'archive' ? 'ARCHIVED' : 'DRAFT';
@@ -217,7 +218,7 @@ export const SocialAdminPage: React.FC = () => {
         <div>
           <span className="admin-eyebrow">Contenu → Social</span>
           <h2>Social Ayrovi</h2>
-          <p>Trois contenus indépendants : publications du feed, reels vidéo et stories éphémères.</p>
+          <p>Trois contenus indépendants : publications du feed, reels vidéo et stories éphémères. Les produits temporaires créés pour eux sont gérés ici.</p>
         </div>
       </header>
       <div className="admin-actions" style={{ marginTop: 0 }}>
@@ -228,6 +229,7 @@ export const SocialAdminPage: React.FC = () => {
       {tab === 'Publication' && <PublicationsTab channels={channels} />}
       {tab === 'Reel' && <ReelsTab channels={channels} />}
       {tab === 'Story' && <StoriesStudioPage onEditContent={() => undefined} />}
+      {tab === 'Produits temporaires' && <CatalogueProductsPage scope="content" />}
     </div>
   );
 };

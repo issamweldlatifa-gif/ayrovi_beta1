@@ -1,3 +1,4 @@
+import { availableProductParams, availableProductSql } from '../catalogue/contentProducts';
 import { Router, Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import { SmartLinkScraper } from '../scraper/scraper';
@@ -358,8 +359,11 @@ export function createApiRouter(
       return res.status(400).json({ success: false, code: 'INVALID_PRODUCT', error: 'Produit invalide.' });
     }
 
+    // Même règle de disponibilité que la fiche produit : un produit temporaire n'entre au
+    // panier que s'il est lié à un contenu publié (voir catalogue/contentProducts.ts).
     const product = db.get<any>(
-      "SELECT * FROM products WHERE id=? AND status='ACTIVE'", productId,
+      `SELECT * FROM products WHERE id=? AND ${availableProductSql('products')}`, productId,
+      ...availableProductParams(new Date().toISOString()),
     ) as Record<string, any> | null;
     if (!product) {
       return res.status(404).json({ success: false, code: 'PRODUCT_NOT_FOUND', error: 'Produit introuvable.' });

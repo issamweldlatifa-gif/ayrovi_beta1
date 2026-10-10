@@ -70,7 +70,7 @@ afterEach(async () => {
 describe('Product Integration — admin', () => {
   it('par défaut : contenu normal, aucune recherche, aucun aperçu de carte', async () => {
     await mount({ content_mode: 'normal', product_id: '' });
-    expect(host.textContent).toContain('Product Integration / ربط المنتج');
+    expect(host.textContent).toContain('Produit à associer / ربط المنتج');
     expect(host.querySelector('input[aria-label="Rechercher un produit"]')).toBeNull();
     expect(host.textContent).not.toContain('Aperçu sur le téléphone');
     expect(apiMock.adminApi).not.toHaveBeenCalled();
@@ -80,7 +80,7 @@ describe('Product Integration — admin', () => {
     vi.useFakeTimers();
     apiMock.adminApi.mockResolvedValue({ success: true, data: [sellable, inactive, noPrice] });
     await mount({ content_mode: 'normal', product_id: '' });
-    await act(async () => buttonByText('Contenu Shoppable')!.click());
+    await act(async () => buttonByText('Produit du catalogue')!.click());
     await type('REF-42');
     await act(async () => { vi.advanceTimersByTime(300); });
     expect(apiMock.adminApi).toHaveBeenCalledWith('/catalogue/products?search=REF-42&status=ACTIVE&page_size=8');
@@ -94,7 +94,7 @@ describe('Product Integration — admin', () => {
     vi.useFakeTimers();
     apiMock.adminApi.mockResolvedValue({ success: true, data: [sellable] });
     await mount({ content_mode: 'normal', product_id: '' });
-    await act(async () => buttonByText('Contenu Shoppable')!.click());
+    await act(async () => buttonByText('Produit du catalogue')!.click());
     await type('pant');
     await act(async () => { vi.advanceTimersByTime(300); });
     const option = Array.from(host.querySelectorAll('button')).find((b) => b.textContent?.includes('Pantalon taille haute'))!;
@@ -102,6 +102,37 @@ describe('Product Integration — admin', () => {
     expect(lastValue).toEqual({ content_mode: 'shoppable', product_id: 'p_ok' });
     expect(host.textContent).toContain('Aperçu sur le téléphone');
     expect(host.textContent).toContain('Découvrir');
+  });
+
+  it('Créer un produit temporaire : pas de recherche catalogue, création publiée puis association par identifiant', async () => {
+    const created = { ...sellable, id: 'prod_temp_new', name: 'Veste temporaire', visibility: 'CONTENT', final_price: 120 };
+    apiMock.adminApi.mockResolvedValue({ success: true, data: created });
+    await mount({ content_mode: 'normal', product_id: '' });
+    await act(async () => buttonByText('Créer un produit temporaire')!.click());
+    expect(host.querySelector('input[aria-label="Rechercher un produit"]')).toBeNull();
+    const name = host.querySelector<HTMLInputElement>('input[aria-label="Nom du produit temporaire"]')!;
+    const price = host.querySelector<HTMLInputElement>('input[aria-label="Prix d’origine"]')!;
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+    await act(async () => {
+      setter.call(name, 'Veste temporaire');
+      name.dispatchEvent(new Event('input', { bubbles: true }));
+      setter.call(price, '80');
+      price.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await act(async () => buttonByText('Publier et associer')!.click());
+    expect(apiMock.adminApi).toHaveBeenCalledWith('/catalogue/content-products', expect.objectContaining({ method: 'POST' }));
+    const body = JSON.parse(apiMock.adminApi.mock.calls[0][1].body);
+    expect(body).toMatchObject({ name: 'Veste temporaire', original_price: 80, status: 'ACTIVE' });
+    expect(lastValue).toEqual({ content_mode: 'shoppable', product_id: 'prod_temp_new' });
+  });
+
+  it('un produit temporaire lié se signale comme tel, et « Aucun produit » délie sans recherche', async () => {
+    apiMock.adminApi.mockResolvedValue({ success: true, data: { ...sellable, visibility: 'CONTENT' } });
+    await mount({ content_mode: 'shoppable', product_id: 'p_ok' });
+    await act(async () => { await Promise.resolve(); });
+    expect(host.textContent).toContain('produit temporaire');
+    await act(async () => buttonByText('Aucun produit')!.click());
+    expect(lastValue).toEqual({ content_mode: 'normal', product_id: '' });
   });
 
   it('édition : le produit lié est relu dans le catalogue ; « Délier » vide le lien', async () => {

@@ -93,14 +93,43 @@ interface Draft {
   name: string; slug: string; description: string; brand_id: string; category_id: string;
   status: string; product_type: string; image: string; source_url: string; source_platform: string;
   currency: string; stock_status: string; express_available: string;
+  original_price: string;
 }
 const emptyDraft: Draft = {
   name: '', slug: '', description: '', brand_id: '', category_id: '', status: 'DRAFT',
   product_type: 'STANDARD', image: '', source_url: '', source_platform: 'OTHER', currency: 'TND',
-  stock_status: '', express_available: 'false',
+  stock_status: '', express_available: 'false', original_price: '',
 };
 
-export const CatalogueProductsPage: React.FC = () => {
+/** Usage d'un produit temporaire : où il est utilisé, et s'il est visible aujourd'hui. */
+const CONTENT_KIND_LABEL: Record<string, string> = { reel: 'Reel', publication: 'Publication', story: 'Story' };
+
+function ContentUsageBlock({ usage, available }: { usage: any[]; available: boolean }) {
+  return (
+    <section className="admin-block-small" aria-label="Utilisation du produit temporaire">
+      <strong>{available ? 'Visible sur l’application' : 'Non visible sur l’application'}</strong>
+      <p className="admin-block-small">
+        {available
+          ? 'Le produit est actif et lié à au moins un contenu publié et daté.'
+          : 'Il faut un produit actif ET un contenu publié et daté qui le référence.'}
+      </p>
+      {usage.length === 0 ? <p className="admin-block-small">Aucun contenu n’utilise ce produit.</p> : (
+        <ul>
+          {usage.map((entry) => (
+            <li key={`${entry.kind}-${entry.id}`}>
+              {CONTENT_KIND_LABEL[entry.kind] || entry.kind} · {entry.title || '(sans titre)'} · <small>{entry.status}</small>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+export const CatalogueProductsPage: React.FC<{ scope?: 'catalogue' | 'content' }> = ({ scope = 'catalogue' }) => {
+  const isContent = scope === 'content';
+  // Même page, même formulaire, même validation : seule la route change pour un produit temporaire.
+  const base = isContent ? '/catalogue/content-products' : '/catalogue/products';
   const { meta, can, denied: metaDenied, error: metaError } = useCatalogueMeta();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
@@ -125,7 +154,7 @@ export const CatalogueProductsPage: React.FC = () => {
     () => queryString({ search, status, brand_id: brandId, category_id: categoryId, include_archived: status === 'ARCHIVED' ? 1 : '', page, page_size: 20 }),
     [search, status, brandId, categoryId, page],
   );
-  const list = useCatalogue<any>(() => adminApi<any>(`/catalogue/products?${query}`), [query]);
+  const list = useCatalogue<any>(() => adminApi<any>(`${base}?${query}`), [query]);
   const rows = rowsOf(list.data);
   const pagination = list.data?.pagination || { page: 1, total: rows.length, totalPages: 1 };
   const writable = can('product', 'create') || can('product', 'update');
@@ -137,13 +166,14 @@ export const CatalogueProductsPage: React.FC = () => {
   const openEdit = async (row: any) => {
     setBusy(true);
     try {
-      const full = (await adminApi<any>(`/catalogue/products/${row.id}`)).data;
+      const full = (await adminApi<any>(`${base}/${row.id}`)).data;
       setDraft({
         name: full.name || '', slug: full.slug || '', description: full.description || '',
         brand_id: full.brand_id || '', category_id: full.category_id || '', status: full.status || 'DRAFT',
         product_type: full.product_type || 'STANDARD', image: full.image || '', source_url: full.source_url || '',
         source_platform: full.source_platform || 'OTHER', currency: full.currency || 'TND',
         stock_status: full.stock_status || '', express_available: Number(full.express_available) === 1 ? 'true' : 'false',
+        original_price: full.original_price === null || full.original_price === undefined ? '' : String(full.original_price),
       });
       setAttributes(full.attributes || {});
       setFormError(''); setByField({}); setEditor({ mode: 'edit', id: full.id });
@@ -161,10 +191,11 @@ export const CatalogueProductsPage: React.FC = () => {
       currency: draft.currency, stock_status: emptyToNull(draft.stock_status),
       express_available: draft.express_available === 'true',
       attributes,
+      ...(isContent ? { original_price: draft.original_price.trim() === '' ? null : Number(draft.original_price) } : {}),
     };
     try {
-      if (editor?.mode === 'edit' && editor.id) await adminApi(`/catalogue/products/${editor.id}`, { method: 'PUT', body: JSON.stringify(body) });
-      else await adminApi('/catalogue/products', { method: 'POST', body: JSON.stringify(body) });
+      if (editor?.mode === 'edit' && editor.id) await adminApi(`${base}/${editor.id}`, { method: 'PUT', body: JSON.stringify(body) });
+      else await adminApi(base, { method: 'POST', body: JSON.stringify(body) });
       setEditor(null);
       list.reload(); categories.reload();
       setToast({ message: editor?.mode === 'edit' ? 'Produit enregistré (différentiel champ par champ).' : 'Produit créé en DRAFT — publier demande catalog:approve.', tone: 'success' });
@@ -174,14 +205,14 @@ export const CatalogueProductsPage: React.FC = () => {
     if (!archiveFor) return;
     setBusy(true);
     try {
-      await adminApi(`/catalogue/products/${archiveFor.id}${queryString({ reason }) ? `?${queryString({ reason })}` : ''}`, { method: 'DELETE' });
+      await adminApi(`${base}/${archiveFor.id}${queryString({ reason }) ? `?${queryString({ reason })}` : ''}`, { method: 'DELETE' });
       setArchiveFor(null); setReason(''); list.reload();
       setToast({ message: 'Produit archivé: la ligne, son historique et ses liens restent en base.', tone: 'success' });
     } catch (e: any) { setToast({ message: e?.message || 'Archivage refusé.', tone: 'error' }); } finally { setBusy(false); }
   };
   const openDetail = async (row: any) => {
     setBusy(true);
-    try { setDetail((await adminApi<any>(`/catalogue/products/${row.id}`)).data); }
+    try { setDetail((await adminApi<any>(`${base}/${row.id}`)).data); }
     catch (e: any) { setToast({ message: e?.message || 'Fiche introuvable.', tone: 'error' }); } finally { setBusy(false); }
   };
 
@@ -194,11 +225,18 @@ export const CatalogueProductsPage: React.FC = () => {
   const statuses = meta?.productStatuses || ['DRAFT', 'ACTIVE', 'ARCHIVED'];
   const canPublish = can('product', 'approve');
 
+  const contentColumns = isContent ? [
+    { key: 'usage', label: 'Utilisé dans', render: (row: any) => <small>{(row.usage && (row.usage.reel + row.usage.publication + row.usage.story)) || 0} contenu(s)</small> },
+    { key: 'available', label: 'Visibilité', render: (row: any) => <small>{row.available ? 'Visible' : 'Non visible'}</small> },
+  ] : [];
+
   return <>
     <CatalogueHeader
-      title="Produits"
-      description="Le produit canonique du catalogue: une ligne, un code PRD-, un slug, ses variantes/SKU, ses médias et ses attributs. Rien n’est dupliqué pour le site ni pour le CRM."
-      action={can('product', 'create') ? <Button onClick={openCreate}>Nouveau produit</Button> : null}
+      title={isContent ? 'Produits temporaires' : 'Produits'}
+      description={isContent
+        ? 'Produits créés pour un Reel, une Story ou une Publication. Ils n’apparaissent ni dans le catalogue, ni dans la recherche. Ils ne sont visibles qu’à travers un contenu publié.'
+        : 'Le produit canonique du catalogue: une ligne, un code PRD-, un slug, ses variantes/SKU, ses médias et ses attributs. Rien n’est dupliqué pour le site ni pour le CRM.'}
+      action={can('product', 'create') ? <Button onClick={openCreate}>{isContent ? 'Nouveau produit temporaire' : 'Nouveau produit'}</Button> : null}
     />
     <section className="admin-list-card">
       <div className="admin-list-toolbar">
@@ -219,6 +257,7 @@ export const CatalogueProductsPage: React.FC = () => {
           { key: 'variant_count', label: 'SKU', render: (row: any) => <strong>{Number(row.variant_count || 0)}</strong> },
           { key: 'status', label: 'Statut', render: (row: any) => <StatusBadge status={row.status} /> },
           { key: 'updated_at', label: 'Mis à jour', render: (row: any) => <small>{String(row.updated_at || '').slice(0, 16).replace('T', ' ')}</small> },
+          ...contentColumns,
           {
             key: 'action', label: '', render: (row: any) => (
               <div className="admin-row-actions admin-row-actions--labels">
@@ -234,7 +273,7 @@ export const CatalogueProductsPage: React.FC = () => {
     {list.error && !list.denied && <p className="admin-block-small">{list.error}</p>}
 
     <Modal
-      wide open={Boolean(editor)} title={editor?.mode === 'edit' ? 'Modifier le produit' : 'Nouveau produit'} onClose={() => setEditor(null)}
+      wide open={Boolean(editor)} title={editor?.mode === 'edit' ? 'Modifier le produit' : (isContent ? 'Nouveau produit temporaire' : 'Nouveau produit')} onClose={() => setEditor(null)}
       footer={<><Button variant="secondary" onClick={() => setEditor(null)}>Annuler</Button><Button busy={busy} onClick={() => void save()}>{editor?.mode === 'edit' ? 'Enregistrer' : 'Créer en brouillon'}</Button></>}
     >
       <Form onSubmit={save}>
@@ -262,6 +301,11 @@ export const CatalogueProductsPage: React.FC = () => {
           </Field>
         </div>
         <div className="admin-form-row">
+          {isContent ? (
+            <Field label="Prix d’origine" full required hint="Prix d’achat dans la devise ci-dessous. Le prix de vente est calculé par le moteur de prix." error={byField.original_price}>
+              <input type="number" min="0" step="0.01" value={draft.original_price} onChange={(event) => setDraft({ ...draft, original_price: event.target.value })} />
+            </Field>
+          ) : null}
           <Field label="Plateforme source" full error={byField.source_platform}><Select value={draft.source_platform} onChange={(event) => setDraft({ ...draft, source_platform: event.target.value })} options={options(['SHEIN', 'AMAZON', 'TEMU', 'ALIEXPRESS', 'OTHER'])} /></Field>
           <Field label="Devise" full error={byField.currency}><input value={draft.currency} maxLength={3} onChange={(event) => setDraft({ ...draft, currency: event.target.value.toUpperCase() })} /></Field>
         </div>
@@ -327,6 +371,7 @@ const ProductDetail: React.FC<{ product: any; can: (resource: string, action: st
   };
 
   return <>
+    {Array.isArray(product.usage) ? <ContentUsageBlock usage={product.usage} available={Boolean(product.available)} /> : null}
     <div className="admin-detail-grid">
       <div><span>Code</span><strong><code>{product.product_code || '—'}</code></strong></div>
       <div><span>Slug</span><strong><code>/{product.slug || '—'}</code></strong></div>
