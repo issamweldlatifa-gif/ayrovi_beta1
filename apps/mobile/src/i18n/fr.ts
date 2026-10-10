@@ -74,8 +74,6 @@ export const fr = {
   'screen.account.body': 'Retrouvez votre profil, vos adresses, vos favoris et vos commandes.',
 
 
-  'settings.title': 'Réglages',
-  'settings.hint': 'Vos préférences de langue et de thème s’appliquent immédiatement.',
 
   'theme.system': 'Système',
   'theme.light': 'Clair',
@@ -88,6 +86,7 @@ export const fr = {
   /* ── Compte et connexion (phase P2) ─────────────────────────────────────── */
   'auth.title': 'Se connecter',
   'auth.subtitle': 'Téléphone, e-mail ou fournisseur — le même compte que sur le site.',
+  'legal.frenchOnly': 'Ce document est disponible en français pour le moment.',
   'auth.legal.terms': 'Conditions d’utilisation',
   'auth.legal.privacy': 'Politique de confidentialité',
   'auth.tabs.email': 'E-mail',

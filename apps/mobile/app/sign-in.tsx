@@ -29,8 +29,9 @@ import { fetchServerReadiness, mobileSessionSupport } from '@/api/public';
 import {
   googleNativeLogin, newHandoffCode, pollHandoff, providerDoneUrl, providerStartUrl, type ProviderId,
 } from '@/api/providers';
-import { closeProviderBrowser, openLegalPage, openProviderSession } from '@/features/auth/browser';
-import { API_BASE_URL } from '@/api/config';
+import { closeProviderBrowser, openProviderSession } from '@/features/auth/browser';
+import { GoogleLogo } from '@/design/GoogleLogo';
+import { LINK_BLUE } from '@/design/tokens.mobile';
 import { useSession } from '@/state/session';
 import { signInWithGoogleNative, googleFailureCode } from '@/features/auth/googleNative';
 
@@ -42,6 +43,7 @@ const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
 
 export default function SignInScreen() {
   const theme = useTheme();
+  const legalBlue = theme.mode === 'dark' ? LINK_BLUE.dark : LINK_BLUE.light;
   const { t, locale } = useI18n();
   const insets = useSafeAreaInsets();
   const session = useSession();
@@ -249,6 +251,7 @@ export default function SignInScreen() {
             label={provider.label}
             tone="quiet"
             onPress={() => (provider.id === 'google' ? startGoogleNative() : startProvider(provider.id))}
+            leading={provider.id === 'google' ? <GoogleLogo size={20} /> : undefined}
             busy={waiting === provider.id}
             disabled={busy && waiting !== provider.id}
             testID={`auth-provider-${provider.id}`}
@@ -540,24 +543,25 @@ export default function SignInScreen() {
 
         {/* Conditions et confidentialité : toujours visibles en bas, ouvertes dans l'application. */}
         <View style={[styles.legal, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+          {/* Liens bleus : ouvrent la page DANS l'application (retour, jamais de navigateur). */}
           <Pressable
             accessibilityRole="link"
             accessibilityLabel={t('auth.legal.terms')}
-            onPress={() => { openLegalPage(`${API_BASE_URL}/terms.html`).catch(() => undefined); }}
+            onPress={() => { router.push('/legal/terms'); }}
             style={[styles.legalLink, { minHeight: theme.geometry.minTarget }]}
             testID="auth-legal-terms"
           >
-            <AppText variant="caption" color={theme.colors.secondary} style={styles.legalText}>{t('auth.legal.terms')}</AppText>
+            <AppText variant="caption" color={legalBlue} style={styles.legalText}>{t('auth.legal.terms')}</AppText>
           </Pressable>
           <AppText variant="caption" color={theme.colors.muted}>·</AppText>
           <Pressable
             accessibilityRole="link"
             accessibilityLabel={t('auth.legal.privacy')}
-            onPress={() => { openLegalPage(`${API_BASE_URL}/privacy.html`).catch(() => undefined); }}
+            onPress={() => { router.push('/legal/privacy'); }}
             style={[styles.legalLink, { minHeight: theme.geometry.minTarget }]}
             testID="auth-legal-privacy"
           >
-            <AppText variant="caption" color={theme.colors.secondary} style={styles.legalText}>{t('auth.legal.privacy')}</AppText>
+            <AppText variant="caption" color={legalBlue} style={styles.legalText}>{t('auth.legal.privacy')}</AppText>
           </Pressable>
         </View>
       </ScrollView>

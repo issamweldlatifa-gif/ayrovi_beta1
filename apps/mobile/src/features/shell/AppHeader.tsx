@@ -15,7 +15,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { BrandMark } from '@/design/BrandMark';
-import { Drawer, DrawerItem } from '@/design/ui';
+import { AppText, Drawer, DrawerItem, Segmented } from '@/design/ui';
+import { rowDirectionFor } from '@/design/layoutLogic';
+import { usePrefs, type Locale, type ThemeMode } from '@/state/prefs';
+import { useSession } from '@/state/session';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
 import { adaptiveInk } from '@/features/home/heroPalette';
@@ -60,6 +63,11 @@ export function AppHeader({
   const t = useT();
   const insets = useSafeAreaInsets();
   const [menuOpen, setMenuOpen] = useState(false);
+  const { locale, setLocale, themeMode, setThemeMode } = usePrefs();
+  const { status } = useSession();
+  // Icône « compte » : connecté → le compte ; sinon → la connexion directement
+  // (pas d'écran intermédiaire de réglages).
+  const accountHref = status === 'signedIn' ? '/(tabs)/account' : '/sign-in';
 
   // Au sommet, sur une carte Hero : le header prend sa couleur et ses icônes
   // suivent la luminance du fond. Après défilement : surface lisible d'origine.
@@ -113,7 +121,7 @@ export function AppHeader({
           <HeaderIcon
             name="person-outline"
             label={t('nav.profile')}
-            onPress={() => go('/(tabs)/account')}
+            onPress={() => go(accountHref)}
             color={iconColor}
           />
           <HeaderIcon
@@ -137,8 +145,37 @@ export function AppHeader({
           <DrawerItem icon="home-outline" label={t('tabs.home')} onPress={() => go('/')} />
           <DrawerItem icon="compass-outline" label={t('catalog.title')} onPress={() => go('/catalog')} />
           <DrawerItem icon="receipt-outline" label={t('orders.title')} onPress={() => go('/orders')} />
-          <DrawerItem icon="person-outline" label={t('tabs.account')} onPress={() => go('/(tabs)/account')} />
+          <DrawerItem icon="person-outline" label={t('tabs.account')} onPress={() => go(accountHref)} />
           <DrawerItem icon="chatbubble-ellipses-outline" label={t('tabs.sonim')} onPress={() => go('/assistant')} />
+        </View>
+
+        {/* Réglages d'affichage : langue et thème, dans le menu (plus sur la page compte). */}
+        <View style={[styles.prefs, { borderTopColor: theme.colors.line }]}>
+          <View style={[styles.prefHead, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+            <Ionicons name="language-outline" size={20} color={theme.colors.ink} accessibilityElementsHidden />
+            <AppText variant="label" weight="bold">{t('common.language')}</AppText>
+          </View>
+          <Segmented<Locale>
+            value={locale as Locale}
+            onChange={setLocale}
+            options={[
+              { value: 'fr', label: t('language.fr') },
+              { value: 'ar', label: t('language.ar') },
+            ]}
+          />
+          <View style={[styles.prefHead, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+            <Ionicons name="contrast-outline" size={20} color={theme.colors.ink} accessibilityElementsHidden />
+            <AppText variant="label" weight="bold">{t('common.theme')}</AppText>
+          </View>
+          <Segmented<ThemeMode>
+            value={themeMode}
+            onChange={setThemeMode}
+            options={[
+              { value: 'system', label: t('theme.system') },
+              { value: 'light', label: t('theme.light') },
+              { value: 'dark', label: t('theme.dark') },
+            ]}
+          />
         </View>
       </Drawer>
     </>
@@ -146,6 +183,8 @@ export function AppHeader({
 }
 
 const styles = StyleSheet.create({
+  prefs: { marginTop: 12, paddingTop: 16, borderTopWidth: StyleSheet.hairlineWidth, gap: 10, paddingHorizontal: 4 },
+  prefHead: { alignItems: 'center', gap: 8, marginTop: 4 },
   bar: {
     position: 'absolute',
     top: 0,

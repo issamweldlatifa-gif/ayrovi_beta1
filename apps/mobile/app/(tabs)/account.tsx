@@ -15,14 +15,13 @@ import { useQuery } from '@tanstack/react-query';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppScreen } from '@/design/layout';
 import { AppHeader } from '@/features/shell/AppHeader';
-import { AppText, Button, Card, KeyValue, LinkRow, SectionHeader, Segmented } from '@/design/ui';
+import { AppText, Button, Card, KeyValue, LinkRow, SectionHeader } from '@/design/ui';
 import { ErrorBlock } from '@/design/states';
 import { ListSkeleton } from '@/design/skeleton';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
 import { fetchOverview, type AccountOverview, type RecentOrder } from '@/api/account';
-import { usePrefs, type Locale, type ThemeMode } from '@/state/prefs';
 import { useSession } from '@/state/session';
 
 /** Ligne compacte d'une commande récente (les détails vivent dans /orders). */
@@ -119,8 +118,6 @@ function SignedIn({ overview, pending }: { overview: AccountOverview | null; pen
 
 export default function AccountScreen() {
   const t = useI18n().t;
-  const theme = useTheme();
-  const { locale, setLocale, themeMode, setThemeMode } = usePrefs();
   const { status, account } = useSession();
   const signedIn = status === 'signedIn';
 
@@ -157,28 +154,6 @@ export default function AccountScreen() {
         <SignedIn overview={overviewQuery.data ?? null} pending={overviewQuery.isLoading} />
       )}
 
-      <Card title={t('settings.title')}>
-        <Segmented<Locale>
-          label={t('common.language')}
-          value={locale as Locale}
-          onChange={setLocale}
-          options={[
-            { value: 'fr', label: t('language.fr') },
-            { value: 'ar', label: t('language.ar') },
-          ]}
-        />
-        <Segmented<ThemeMode>
-          label={t('common.theme')}
-          value={themeMode}
-          onChange={setThemeMode}
-          options={[
-            { value: 'system', label: t('theme.system') },
-            { value: 'light', label: t('theme.light') },
-            { value: 'dark', label: t('theme.dark') },
-          ]}
-        />
-        <AppText variant="caption" color={theme.colors.muted}>{t('settings.hint')}</AppText>
-      </Card>
     </AppScreen>
   );
 }

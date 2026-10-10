@@ -444,3 +444,18 @@ export const HERO_DEMO_BACKGROUND = {
   modeFemme: '#997B68',
   sport: '#A78F7A',
 } as const;
+
+/**
+ * Bleu des liens légaux (écran de connexion). La palette de la marque est
+ * monochrome + orange : ce bleu est donc un choix explicite, réservé aux liens
+ * « Conditions » et « Confidentialité », lisible sur fond clair et sombre.
+ */
+export const LINK_BLUE = { light: '#1A56DB', dark: '#8AB4FF' } as const;
+
+/** Couleurs officielles du logo « G » de Google (identité de marque, à ne pas modifier). */
+export const GOOGLE_BRAND = {
+  red: '#EA4335',
+  blue: '#4285F4',
+  yellow: '#FBBC05',
+  green: '#34A853',
+} as const;

@@ -223,6 +223,8 @@ export function Segmented<T extends string>({
 export interface ButtonProps {
   label: string;
   onPress: () => void;
+  /** Pictogramme posé avant le libellé (ex. logo Google). */
+  leading?: ReactNode;
   /** `busy` = action en cours : le bouton le DIT au lieu de rester muet. */
   busy?: boolean;
   disabled?: boolean;
@@ -241,7 +243,7 @@ export interface ButtonProps {
   testID?: string;
 }
 
-export function Button({ label, onPress, busy = false, disabled = false, tone = 'primary', block = false, style, accessibilityHint, testID }: ButtonProps) {
+export function Button({ label, onPress, busy = false, disabled = false, tone = 'primary', block = false, style, accessibilityHint, testID, leading }: ButtonProps) {
   const theme = useTheme();
   const blocked = busy || disabled;
   const quiet = tone === 'quiet';
@@ -267,9 +269,19 @@ export function Button({ label, onPress, busy = false, disabled = false, tone = 
         },
       ]}
     >
-      <AppText variant="label" weight="bold" color={quiet ? theme.colors.ink : theme.colors.onAction}>
-        {label}
-      </AppText>
+      {leading ? (
+        // Pictogramme (ex. logo Google) posé avant le libellé, dans le sens de lecture.
+        <View style={[styles.leadingRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+          {leading}
+          <AppText variant="label" weight="bold" color={quiet ? theme.colors.ink : theme.colors.onAction}>
+            {label}
+          </AppText>
+        </View>
+      ) : (
+        <AppText variant="label" weight="bold" color={quiet ? theme.colors.ink : theme.colors.onAction}>
+          {label}
+        </AppText>
+      )}
     </Pressable>
   );
 }
@@ -406,6 +418,7 @@ export function Field(props: TextInputProps & { label?: string }) {
 }
 
 const styles = StyleSheet.create({
+  leadingRow: { alignItems: 'center', justifyContent: 'center', gap: 10 },
   drawerScrim: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' },
   drawerPanel: {
     position: 'absolute', top: 0, bottom: 0,

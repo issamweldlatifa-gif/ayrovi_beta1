@@ -7,6 +7,7 @@
  *  • le code est demandé au bon endroit, et la validation appelle la session ;
  *  • le mot de passe reste accessible, mais en option, pas par défaut.
  */
+import { router } from 'expo-router';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
@@ -55,7 +56,6 @@ jest.mock('../../src/api/public', () => {
 
 jest.mock('../../src/features/auth/browser', () => ({
   closeProviderBrowser: jest.fn(async () => undefined),
-  openLegalPage: jest.fn(async () => undefined),
   openProviderSession: jest.fn(async () => 'done'),
 }));
 
@@ -253,3 +253,21 @@ describe('Google natif : sélecteur dans l’application', () => {
     expect(screen.getByText('Google n’est pas correctement configuré sur cet appareil (identifiant ou empreinte). Prévenez le support.')).toBeTruthy();
   });
 });
+
+describe('liens légaux : pages dans l’application', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    resetSession();
+  });
+
+  it('Conditions et Confidentialité ouvrent une page de l’application, jamais le navigateur', async () => {
+    await renderScreen();
+    fireEvent.press(screen.getByTestId('auth-legal-terms'));
+    fireEvent.press(screen.getByTestId('auth-legal-privacy'));
+    expect(router.push).toHaveBeenNthCalledWith(1, '/legal/terms');
+    expect(router.push).toHaveBeenNthCalledWith(2, '/legal/privacy');
+    const { openProviderSession } = jest.requireMock('../../src/features/auth/browser');
+    expect(openProviderSession).not.toHaveBeenCalled();
+  });
+});
+

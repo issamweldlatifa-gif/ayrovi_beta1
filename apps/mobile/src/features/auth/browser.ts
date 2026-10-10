@@ -72,16 +72,3 @@ export async function closeProviderBrowser(): Promise<void> {
     // Déjà fermé par l'utilisateur : rien à faire, et surtout rien à signaler.
   }
 }
-
-/**
- * Ouvre une page légale (conditions, confidentialité) DANS l'application : même
- * onglet personnalisé que la connexion — jamais Chrome (une autre application).
- * La page n'attend aucun retour : l'onglet se referme quand l'utilisateur le ferme.
- */
-export async function openLegalPage(url: string): Promise<void> {
-  try {
-    await WebBrowser.openAuthSessionAsync(url, url);
-  } catch {
-    // Aucun onglet disponible : rien à signaler, la connexion reste utilisable.
-  }
-}
