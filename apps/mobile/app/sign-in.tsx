@@ -17,11 +17,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppText, Button, Card, Field, Segmented } from '@/design/ui';
 import { useTheme } from '@/design/theme';
+import { rowDirectionFor } from '@/design/layoutLogic';
 import { useI18n } from '@/i18n';
 import { authMessage, type AuthMessageKey } from '@/api/authMessages';
 import { fetchServerReadiness, mobileSessionSupport } from '@/api/public';
 import { newHandoffCode, pollHandoff, providerDoneUrl, providerStartUrl, type ProviderId } from '@/api/providers';
-import { closeProviderBrowser, openProviderSession } from '@/features/auth/browser';
+import { closeProviderBrowser, openLegalPage, openProviderSession } from '@/features/auth/browser';
+import { API_BASE_URL } from '@/api/config';
 import { useSession } from '@/state/session';
 
 type Mode = 'phone' | 'email' | 'register';
@@ -391,6 +393,29 @@ export default function SignInScreen() {
         <AppText variant="caption" color={theme.colors.muted}>
           {session.storageSecure ? t('auth.secure.keychain') : t('auth.secure.fallback')}
         </AppText>
+
+        {/* Conditions et confidentialité : toujours visibles en bas, ouvertes dans l'application. */}
+        <View style={[styles.legal, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+          <Pressable
+            accessibilityRole="link"
+            accessibilityLabel={t('auth.legal.terms')}
+            onPress={() => { openLegalPage(`${API_BASE_URL}/terms.html`).catch(() => undefined); }}
+            style={[styles.legalLink, { minHeight: theme.geometry.minTarget }]}
+            testID="auth-legal-terms"
+          >
+            <AppText variant="caption" color={theme.colors.secondary} style={styles.legalText}>{t('auth.legal.terms')}</AppText>
+          </Pressable>
+          <AppText variant="caption" color={theme.colors.muted}>·</AppText>
+          <Pressable
+            accessibilityRole="link"
+            accessibilityLabel={t('auth.legal.privacy')}
+            onPress={() => { openLegalPage(`${API_BASE_URL}/privacy.html`).catch(() => undefined); }}
+            style={[styles.legalLink, { minHeight: theme.geometry.minTarget }]}
+            testID="auth-legal-privacy"
+          >
+            <AppText variant="caption" color={theme.colors.secondary} style={styles.legalText}>{t('auth.legal.privacy')}</AppText>
+          </Pressable>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -404,4 +429,7 @@ const styles = StyleSheet.create({
   checkboxRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   checkboxLabel: { flex: 1 },
   forgotLink: { justifyContent: 'center' },
+  legal: { alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: 4, paddingVertical: 8 },
+  legalLink: { justifyContent: 'center', paddingHorizontal: 6 },
+  legalText: { textDecorationLine: 'underline' },
 });

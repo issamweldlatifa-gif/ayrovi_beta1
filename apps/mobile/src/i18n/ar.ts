@@ -88,6 +88,8 @@ export const ar = {
   /* ── الحساب والدخول (المرحلة P2) ───────────────────────────────────────── */
   'auth.title': 'الدخول',
   'auth.subtitle': 'بالتلفون ولا البريد ولا بمزوّد — نفس الحساب اللي في الموقع.',
+  'auth.legal.terms': 'شروط الاستخدام',
+  'auth.legal.privacy': 'سياسة الخصوصية',
   'auth.tabs.phone': 'تلفون',
   'auth.tabs.email': 'بريد',
   'auth.tabs.register': 'حساب جديد',

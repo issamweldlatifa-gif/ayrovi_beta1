@@ -88,6 +88,8 @@ export const fr = {
   /* ── Compte et connexion (phase P2) ─────────────────────────────────────── */
   'auth.title': 'Se connecter',
   'auth.subtitle': 'Téléphone, e-mail ou fournisseur — le même compte que sur le site.',
+  'auth.legal.terms': 'Conditions d’utilisation',
+  'auth.legal.privacy': 'Politique de confidentialité',
   'auth.tabs.phone': 'Téléphone',
   'auth.tabs.email': 'E-mail',
   'auth.tabs.register': 'Créer un compte',
