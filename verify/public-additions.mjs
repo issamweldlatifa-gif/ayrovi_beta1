@@ -30,41 +30,20 @@ try {
       check(`${locale}/${width}: Stories remain`, await page.locator('.stories-showcase').count() === 1);
       check(`${locale}/${width}: no horizontal overflow`, await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
       check(`${locale}/${width}: no duplicate eyebrow`, await page.locator('.editorial-hero__eyebrow').count() === 0);
-      check(`${locale}/${width}: header then ad then links then old content`, await page.evaluate(() => {
-        const sels = ['.public-site-header', '.public-campaign', '.public-page-links', '[data-public-section=hero]'];
+      check(`${locale}/${width}: header then links then old content`, await page.evaluate(() => {
+        const sels = ['.public-site-header', '.public-page-links', '[data-public-section=hero]'];
         const boxes = sels.map(s => document.querySelector(s).getBoundingClientRect()); return boxes.every((b, i) => !i || b.top >= boxes[i - 1].bottom - 1);
       }));
-      // 2026-10-03 : arbitrage charte. L'ancien contrôle verrouillait une surface pleine
-      // #D3451F (vermillon) sur toute la largeur : 29 % d'un écran, contre un plafond
-      // documenté de 3 % (verify/zalando-audit.mjs). Le bandeau garde son statut
-      // publicitaire « approuvé », mais l'orange redevient un filet (3 px) et non une surface.
-      // Le contrôle est désormais piloté par le JETON, pas par un littéral : c'est le
-      // littéral codé en dur qui avait créé le conflit avec la charte.
-      check(`${locale}/${width}: approved ad treatment and white type`, await page.evaluate(() => {
-        const el = document.querySelector('.public-campaign');
-        if (!el) return false;
-        const s = getComputedStyle(el);
-        const probe = document.createElement('span');
-        probe.style.color = 'var(--ayrovi-color-brand-orange)';
-        // Le jeton est surchargé sur `.ay-customer-root` (customerTheme) : la sonde doit
-        // vivre DANS le même contexte de cascade que le bandeau, sinon elle lit la valeur
-        // de :root et le contrôle échoue pour une mauvaise raison.
-        el.appendChild(probe);
-        const orange = getComputedStyle(probe).color;
-        probe.remove();
-        return s.backgroundColor === 'rgb(0, 0, 0)' && s.color === 'rgb(255, 255, 255)'
-          && s.borderBottomColor === orange && parseFloat(s.borderBottomWidth) === 3;
-      }));
+      // 2026-10-09 : la barre d'annonces est retirée du site (décision produit). Elle ne doit
+      // plus exister ni sur l'accueil ni ailleurs ; le header reprend la couleur du hero.
+      check(`${locale}/${width}: announcement bar removed`, await page.locator('.public-campaign').count() === 0);
       check(`${locale}/${width}: footer is black`, await page.locator('[data-site-footer]').evaluate(e => getComputedStyle(e).backgroundColor) === 'rgb(0, 0, 0)');
       const names = await page.locator('.stories-showcase').innerText();
       check(`${locale}/${width}: showcase still uses original CMS title`, names.includes(showcase.data.title));
       if (width !== 320) { await page.screenshot({ path: `${output}/home-${locale}-${width}.png`, fullPage: true }); await page.locator('[data-site-footer]').screenshot({ path: `${output}/footer-${locale}-${width}.png` }); }
     }
-    // Native dialog focus and escape, original messages retained.
-    await page.locator('.public-campaign-info').click(); await page.locator('.public-campaign-dialog[open]').waitFor();
-    check(locale + ': info contains service messages', await page.locator('.public-campaign-dialog li').count() > 0);
-    await page.keyboard.press('Escape'); await page.locator('.public-campaign-dialog[open]').waitFor({ state: 'hidden' });
-    check(locale + ': info restores focus', await page.locator('.public-campaign-info').evaluate(e => document.activeElement === e));
+    // La barre et son dialogue d'information sont retirés : aucun bouton « info » ne doit subsister.
+    check(locale + ': no announcement info control', await page.locator('.public-campaign-info, .public-campaign-dialog').count() === 0);
     // Both admin-controlled Stories/Lens arrangements are still honored.
     for (const value of [0, 1]) { order = value; await page.goto(base); await page.locator('.stories-showcase').waitFor();
       check(`${locale}: original story order ${value}`, await page.evaluate(value => {
@@ -108,8 +87,8 @@ try {
       await page.locator('.public-page-back').click(); await page.locator('.stories-showcase').waitFor();
       check(`${locale}: ${href} returns to intact homepage`, await page.locator('.lens-feature').count() === 1);
     }
-    promo = true; await page.goto(base); await page.locator('.public-campaign h2').filter({ hasText: 'Published campaign fixture' }).waitFor();
-    check(locale + ': ad uses real supplied campaign text', await page.locator('.public-campaign a').getAttribute('href') === '/gift-cards');
+    promo = true; await page.goto(base); await page.locator('[data-public-section=hero]').waitFor();
+    check(locale + ': campaign fixture no longer shown as an announcement', await page.getByText('Published campaign fixture', { exact: true }).count() === 0);
     await page.goto(base + '/gift-cards', { waitUntil: 'domcontentloaded' }); await page.getByText('Published campaign fixture', { exact: true }).waitFor();
     check(locale + ': published codes retained under Gift & Cards', await page.getByText(/FIXTURE/).count() > 0);
     failHome = true; await page.goto(base + '/magazine', { waitUntil: 'domcontentloaded' }); await page.locator('[role=alert]').waitFor();

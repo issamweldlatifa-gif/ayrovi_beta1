@@ -26,11 +26,11 @@
       "pass": true
     },
     {
-      "name": "fr/320: header then ad then links then old content",
+      "name": "fr/320: header then links then old content",
       "pass": true
     },
     {
-      "name": "fr/320: approved ad color and white type",
+      "name": "fr/320: announcement bar removed",
       "pass": true
     },
     {
@@ -62,11 +62,11 @@
       "pass": true
     },
     {
-      "name": "fr/390: header then ad then links then old content",
+      "name": "fr/390: header then links then old content",
       "pass": true
     },
     {
-      "name": "fr/390: approved ad color and white type",
+      "name": "fr/390: announcement bar removed",
       "pass": true
     },
     {
@@ -98,11 +98,11 @@
       "pass": true
     },
     {
-      "name": "fr/1360: header then ad then links then old content",
+      "name": "fr/1360: header then links then old content",
       "pass": true
     },
     {
-      "name": "fr/1360: approved ad color and white type",
+      "name": "fr/1360: announcement bar removed",
       "pass": true
     },
     {
@@ -114,11 +114,7 @@
       "pass": true
     },
     {
-      "name": "fr: info contains service messages",
-      "pass": true
-    },
-    {
-      "name": "fr: info restores focus",
+      "name": "fr: no announcement info control",
       "pass": true
     },
     {
@@ -242,7 +238,7 @@
       "pass": true
     },
     {
-      "name": "fr: ad uses real supplied campaign text",
+      "name": "fr: campaign fixture no longer shown as an announcement",
       "pass": true
     },
     {
@@ -282,11 +278,11 @@
       "pass": true
     },
     {
-      "name": "ar/320: header then ad then links then old content",
+      "name": "ar/320: header then links then old content",
       "pass": true
     },
     {
-      "name": "ar/320: approved ad color and white type",
+      "name": "ar/320: announcement bar removed",
       "pass": true
     },
     {
@@ -318,11 +314,11 @@
       "pass": true
     },
     {
-      "name": "ar/390: header then ad then links then old content",
+      "name": "ar/390: header then links then old content",
       "pass": true
     },
     {
-      "name": "ar/390: approved ad color and white type",
+      "name": "ar/390: announcement bar removed",
       "pass": true
     },
     {
@@ -354,11 +350,11 @@
       "pass": true
     },
     {
-      "name": "ar/1360: header then ad then links then old content",
+      "name": "ar/1360: header then links then old content",
       "pass": true
     },
     {
-      "name": "ar/1360: approved ad color and white type",
+      "name": "ar/1360: announcement bar removed",
       "pass": true
     },
     {
@@ -370,11 +366,7 @@
       "pass": true
     },
     {
-      "name": "ar: info contains service messages",
-      "pass": true
-    },
-    {
-      "name": "ar: info restores focus",
+      "name": "ar: no announcement info control",
       "pass": true
     },
     {
@@ -498,7 +490,7 @@
       "pass": true
     },
     {
-      "name": "ar: ad uses real supplied campaign text",
+      "name": "ar: campaign fixture no longer shown as an announcement",
       "pass": true
     },
     {
