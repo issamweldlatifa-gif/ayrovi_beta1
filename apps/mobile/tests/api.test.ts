@@ -40,7 +40,7 @@ afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); vi.useRealTimers(
 
 describe('construction des URLs', () => {
   it('rend un chemin relatif absolu sur l’origine de l’API', () => {
-    expect(apiUrl('/api/public/hero-content')).toBe(`${API_BASE_URL}/api/public/hero-content`);
+    expect(apiUrl('/api/public/hero-slides')).toBe(`${API_BASE_URL}/api/public/hero-slides`);
     expect(apiUrl('api/public/x')).toBe(`${API_BASE_URL}/api/public/x`);
   });
 

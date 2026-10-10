@@ -485,8 +485,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
 
   router.get('/home', (_req, res) => {
     const now = new Date().toISOString();
-    const hero = db.all<any>(`SELECT id,image,video,title,subtitle,cta,target_url targetUrl,display_order displayOrder
-      FROM hero_slides WHERE active=1 ORDER BY display_order,id`);
+    // Le Hero n'est PAS dans cette réponse : il vit sur /api/public/hero-slides (publié seulement).
     const brands = db.all<any>(`SELECT id,name,logo,image,category,url,description,display_order displayOrder
       FROM brands WHERE active=1 ORDER BY display_order,name`);
     const arrivals = db.all<any>(`SELECT * FROM arrivals WHERE status IN ('ACTIVE','SCHEDULED') ORDER BY expected_arrival_at`).map(mapArrival);
@@ -495,7 +494,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     const promotions = db.all<any>(`SELECT * FROM promotions WHERE status='ACTIVE' AND starts_at<=? AND ends_at>? ORDER BY starts_at DESC LIMIT 8`, now, now);
     const stories = db.all<any>(`SELECT * FROM stories WHERE status='PUBLISHED' AND publish_at<=? AND (expires_at IS NULL OR expires_at>?) ORDER BY priority DESC,publish_at DESC LIMIT 12`, now, now);
     const news = db.all<any>(`SELECT * FROM news_items WHERE status IN ('PUBLISHED','SCHEDULED') AND published_at<=? ORDER BY published_at DESC LIMIT 8`, now);
-    res.json({ success: true, data: { hero, brands, arrivals, products, promotions, stories, news }, serverTime: now });
+    res.json({ success: true, data: { brands, arrivals, products, promotions, stories, news }, serverTime: now });
   });
 
   router.get('/assistant-context', (_req, res) => {

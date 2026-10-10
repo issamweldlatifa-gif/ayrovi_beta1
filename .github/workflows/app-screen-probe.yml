@@ -69,7 +69,7 @@ jobs:
           }
 
           for entry in \
-            "Accueil|/api/public/hero-content|data" \
+            "Accueil|/api/public/hero-slides|data" \
             "Accueil|/api/public/announcement-messages|data" \
             "Navigation|/api/public/navigation|data" \
             "Boutique|/api/public/commerce-config|data" \

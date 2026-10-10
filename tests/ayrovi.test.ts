@@ -1052,7 +1052,8 @@ describe('AYSONIC platform', () => {
     const home = await request(app).get('/api/public/home');
     expect(home.status).toBe(200);
     expect(home.body.success).toBe(true);
-    expect(home.body.data.hero.length).toBeGreaterThan(0);
+    // Le Hero n'est plus servi ici : seul /api/public/hero-slides (cartes publiées) fait foi.
+    expect(home.body.data.hero).toBeUndefined();
     expect(home.body.data.brands.length).toBeGreaterThan(0);
     expect(home.body.data.arrivals.length).toBeGreaterThan(0);
     expect(home.body.serverTime).toMatch(/^\d{4}-\d{2}-\d{2}T/);
