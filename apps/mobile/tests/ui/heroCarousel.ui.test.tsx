@@ -82,10 +82,9 @@ async function renderCarousel(settings = SETTINGS, slides = SLIDES) {
   return view;
 }
 
-/** Indice courant lu depuis le libellé de pagination (« Carte N sur T »). */
+/** Indice courant lu depuis le libellé d'accessibilité de la liste (« Carte N sur T »). */
 function currentCard(): number {
-  const dots = screen.getByTestId('hero-carousel-dots');
-  const label = dots.props.accessibilityLabel as string;
+  const label = screen.getByTestId('hero-carousel-list').props.accessibilityLabel as string;
   const match = /(\d+)/.exec(label);
   return match ? Number(match[1]) : NaN;
 }
@@ -217,10 +216,9 @@ describe('géométrie et fond', () => {
     expect(within(card).getByTestId('hero-card-a-image')).toBeTruthy();
   });
 
-  it('les pastilles sont UNE barre posée sur la photo : un point par carte', async () => {
+  it('aucune barre de pastilles : la position reste annoncée à l’accessibilité sur la liste', async () => {
     await renderCarousel();
-    const dots = screen.getByTestId('hero-carousel-dots');
-    expect(dots.findAll((node) => typeof node.type === 'string' && node.props.accessibilityElementsHidden === true)).toHaveLength(SLIDES.length);
-    expect(screen.getAllByTestId('hero-carousel-dots')).toHaveLength(1);
+    expect(screen.queryByTestId('hero-carousel-dots')).toBeNull();
+    expect(currentCard()).toBe(1);
   });
 });

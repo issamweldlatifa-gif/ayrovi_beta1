@@ -1,34 +1,20 @@
 /**
  * Les trois onglets d’accueil — وصل حديثاً · عروض · مجلة
  *
- * ── La différence qui compte ───────────────────────────────────────────────
- * L’ancienne barre « Découvrir AYROVI » menait à des pages du SITE, dans le
- * navigateur, avec des destinations décidées par l’Admin (`/arrivage`,
- * `/privacy`…). La consigne est l’inverse : « تبويبات ثلاث … يفتحو داخل تطبيق ».
- * Ces trois onglets ouvrent donc des ÉCRANS NATIFS — on reste dans
- * l’application, avec sa navigation, son thème et son sens de lecture.
- * L’ancien composant a été SUPPRIMÉ, pas laissé à côté : deux barres qui
- * promettent la même chose finissent toujours par se contredire.
+ * Présentation : une rangée de libellés en gras, sur fond blanc, sans icône ni
+ * cadre (façon barre de catégories d’une grande boutique). Le texte est dans la
+ * police principale de l’application, au même poids (gras) que la référence.
  *
- * ── Pourquoi des destinations déjà existantes ──────────────────────────────
- * « Nouveautés » mène au catalogue, « Promotions » et « Magazine » à leurs
- * écrans publiés. Aucun écran vide n’a été fabriqué pour meubler : mieux vaut
- * une destination réelle qu’un onglet qui s’ouvre sur du vide.
- *
- * ── Pages volontairement non remplies ──────────────────────────────────────
- * Consigne : « خلي صفحاتهم فاظيه الي ان نصل الي محتواهم ». Le contenu de ces
- * écrans viendra à son étape ; les onglets, eux, fonctionnent dès maintenant et
- * ne mentent pas sur où ils mènent.
+ * Chaque onglet ouvre un écran NATIF de l’application (jamais une page du site) :
+ * « Nouveautés » → catalogue, « Promotions » et « Magazine » → leurs écrans publiés.
  */
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
 
 type HomeTab = {
-  icon: keyof typeof Ionicons.glyphMap;
   /** Clé de libellé — jamais de texte écrit en dur. */
   labelKey: 'home.tab.arrivals' | 'home.tab.promotions' | 'home.tab.magazine';
   /** Destination : une route de l’APPLICATION, pas une URL de site. */
@@ -36,9 +22,9 @@ type HomeTab = {
 };
 
 const TABS: readonly HomeTab[] = [
-  { icon: 'sparkles-outline', labelKey: 'home.tab.arrivals', href: '/catalog' },
-  { icon: 'pricetag-outline', labelKey: 'home.tab.promotions', href: '/promotions' },
-  { icon: 'book-outline', labelKey: 'home.tab.magazine', href: '/publications' },
+  { labelKey: 'home.tab.arrivals', href: '/catalog' },
+  { labelKey: 'home.tab.promotions', href: '/promotions' },
+  { labelKey: 'home.tab.magazine', href: '/publications' },
 ];
 
 export function HomeTabs() {
@@ -46,16 +32,14 @@ export function HomeTabs() {
   const t = useT();
 
   return (
-    <View
-      style={[
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={{ backgroundColor: theme.colors.canvas }}
+      contentContainerStyle={[
         styles.row,
-        {
-          // En arabe le premier onglet est à DROITE.
-          flexDirection: theme.isRTL ? 'row-reverse' : 'row',
-          backgroundColor: theme.colors.surface,
-          borderRadius: theme.radius.card,
-          borderColor: theme.colors.line,
-        },
+        // En arabe le premier onglet est à DROITE.
+        { flexDirection: theme.isRTL ? 'row-reverse' : 'row' },
       ]}
       accessibilityRole="tablist"
     >
@@ -65,41 +49,30 @@ export function HomeTabs() {
           onPress={() => { router.push(tab.href as never); }}
           accessibilityRole="tab"
           accessibilityLabel={t(tab.labelKey)}
-          style={({ pressed }) => [
-            styles.tab,
-            { borderColor: theme.colors.line, opacity: pressed ? 0.6 : 1 },
-          ]}
+          hitSlop={8}
+          style={({ pressed }) => [styles.tab, { opacity: pressed ? 0.6 : 1 }]}
         >
-          <Ionicons name={tab.icon} size={20} color={theme.colors.accent} accessibilityElementsHidden />
-          <AppText variant="caption" weight="bold" align="center" style={styles.label}>
+          <AppText variant="lead" weight="bold" color={theme.colors.ink} style={styles.label}>
             {t(tab.labelKey)}
           </AppText>
         </Pressable>
       ))}
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   row: {
-    // Gouttière et espace vertical appartiennent à `AppScreen`, comme pour
-    // les autres blocs de l’accueil.
-    borderWidth: StyleSheet.hairlineWidth,
-    overflow: 'hidden',
+    alignItems: 'center',
+    gap: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   tab: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 12,
-    // Le séparateur est posé à la FIN de chaque onglet sauf le dernier : une
-    // bordure des deux côtés doublerait la ligne entre deux onglets.
-    borderEndWidth: 0,
+    paddingVertical: 4,
   },
   label: {
-    // Les libellés sont courts et sur une seule ligne : sans cela, une langue
-    // plus longue ferait grandir un onglet par rapport aux autres.
-    flexShrink: 1,
+    // Une seule ligne : un libellé plus long ne doit pas passer à la ligne.
+    flexShrink: 0,
   },
 });
