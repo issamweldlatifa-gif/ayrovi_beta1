@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
   row: {
     alignItems: 'center',
     gap: 24,
-    paddingVertical: 12,
+    paddingVertical: 8,
   },
   tab: {
     paddingVertical: 4,

@@ -17,6 +17,7 @@ import { VideoView, useVideoPlayer } from 'expo-video';
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
+import { MEDIA_RATIO, VIDEO_BACKDROP } from '@/design/tokens.mobile';
 import { mediaUrl } from '@/api/client';
 import { useSession } from '@/state/session';
 import { sendInteraction, type Reel } from '@/api/social';
@@ -28,14 +29,22 @@ export interface ReelCardProps {
   active: boolean;
   counts?: { likes: number; comments: number; views: number; shares: number };
   onOpenComments: (reel: Reel) => void;
+  /**
+   * Mode plein écran (visionneuse) : la vidéo remplit `width`×`height`, le texte
+   * et les actions se posent par-dessus en blanc. Absent ⇒ carte de la liste.
+   */
+  fill?: { width: number; height: number };
 }
 
-export function ReelCard({ reel, active, counts, onOpenComments }: ReelCardProps) {
+export function ReelCard({ reel, active, counts, onOpenComments, fill }: ReelCardProps) {
   const theme = useTheme();
   const t = useT();
   const session = useSession();
   const guestSession = useAyWebsSessionId();
   const signedIn = session.status === 'signedIn';
+  // En plein écran le texte est posé sur la vidéo : blanc, pas la couleur de carte.
+  const ink = fill ? theme.colors.onMedia : theme.colors.ink;
+  const muted = fill ? theme.colors.onMedia : theme.colors.muted;
 
   const [liked, setLiked] = useState(false);
   const [paused, setPaused] = useState(false);
@@ -71,13 +80,15 @@ export function ReelCard({ reel, active, counts, onOpenComments }: ReelCardProps
   }, [reel.id, reel.title, reel.description, guestSession]);
 
   return (
-    <View style={[styles.card, { backgroundColor: theme.colors.surface, borderRadius: theme.radius.card }]}>
-      <View style={[styles.media, { backgroundColor: theme.colors.canvas }]}>
+    <View style={fill
+      ? [styles.card, styles.fillCard, { width: fill.width, height: fill.height }]
+      : [styles.card, { backgroundColor: theme.colors.surface, borderRadius: theme.radius.card }]}>
+      <View style={fill ? styles.fillMedia : [styles.media, { backgroundColor: theme.colors.canvas }]}>
         {active && player ? (
           <VideoView player={player} style={StyleSheet.absoluteFill} contentFit="cover" nativeControls={false} />
         ) : (
           <View style={[StyleSheet.absoluteFill, styles.poster]}>
-            <Ionicons name="play-circle-outline" size={44} color={theme.colors.muted} accessibilityElementsHidden />
+            <Ionicons name="play-circle-outline" size={44} color={muted} accessibilityElementsHidden />
           </View>
         )}
 
@@ -88,17 +99,17 @@ export function ReelCard({ reel, active, counts, onOpenComments }: ReelCardProps
           style={StyleSheet.absoluteFill}
         />
 
-        {reel.durationSeconds > 0 ? (
+        {!fill && reel.durationSeconds > 0 ? (
           <View style={styles.duration}>
             <AppText variant="caption" color={theme.colors.onMedia}>{`0:${String(reel.durationSeconds % 60).padStart(2, '0')}`}</AppText>
           </View>
         ) : null}
       </View>
 
-      <View style={styles.body}>
-        {reel.title ? <AppText variant="label" weight="bold" numberOfLines={1}>{reel.title}</AppText> : null}
+      <View style={fill ? styles.fillBody : styles.body}>
+        {reel.title ? <AppText variant="label" weight="bold" color={ink} numberOfLines={1}>{reel.title}</AppText> : null}
         {reel.description ? (
-          <AppText variant="caption" color={theme.colors.muted} numberOfLines={2}>{reel.description}</AppText>
+          <AppText variant="caption" color={muted} numberOfLines={2}>{reel.description}</AppText>
         ) : null}
 
         <View style={styles.actions}>
@@ -110,8 +121,8 @@ export function ReelCard({ reel, active, counts, onOpenComments }: ReelCardProps
             onPress={toggleLike}
             style={[styles.action, { opacity: signedIn ? 1 : 0.45 }]}
           >
-            <Ionicons name={liked ? 'heart' : 'heart-outline'} size={20} color={liked ? theme.status.danger.fg : theme.colors.muted} accessibilityElementsHidden />
-            <AppText variant="caption" color={theme.colors.muted}>{String(counts?.likes ?? reel.likes)}</AppText>
+            <Ionicons name={liked ? 'heart' : 'heart-outline'} size={20} color={liked ? theme.status.danger.fg : muted} accessibilityElementsHidden />
+            <AppText variant="caption" color={muted}>{String(counts?.likes ?? reel.likes)}</AppText>
           </Pressable>
 
           <Pressable
@@ -120,8 +131,8 @@ export function ReelCard({ reel, active, counts, onOpenComments }: ReelCardProps
             onPress={() => onOpenComments(reel)}
             style={styles.action}
           >
-            <Ionicons name="chatbubble-outline" size={20} color={theme.colors.muted} accessibilityElementsHidden />
-            <AppText variant="caption" color={theme.colors.muted}>{String(counts?.comments ?? 0)}</AppText>
+            <Ionicons name="chatbubble-outline" size={20} color={muted} accessibilityElementsHidden />
+            <AppText variant="caption" color={muted}>{String(counts?.comments ?? 0)}</AppText>
           </Pressable>
 
           <Pressable
@@ -130,17 +141,17 @@ export function ReelCard({ reel, active, counts, onOpenComments }: ReelCardProps
             onPress={share}
             style={styles.action}
           >
-            <Ionicons name="share-social-outline" size={20} color={theme.colors.muted} accessibilityElementsHidden />
-            <AppText variant="caption" color={theme.colors.muted}>{String(counts?.shares ?? 0)}</AppText>
+            <Ionicons name="share-social-outline" size={20} color={muted} accessibilityElementsHidden />
+            <AppText variant="caption" color={muted}>{String(counts?.shares ?? 0)}</AppText>
           </Pressable>
 
           {counts && counts.views > 0 ? (
-            <AppText variant="caption" color={theme.colors.muted}>{t('social.views', { value: String(counts.views) })}</AppText>
+            <AppText variant="caption" color={muted}>{t('social.views', { value: String(counts.views) })}</AppText>
           ) : null}
         </View>
 
         {!signedIn ? (
-          <AppText variant="caption" color={theme.colors.muted}>{t('social.needAccount')}</AppText>
+          <AppText variant="caption" color={muted}>{t('social.needAccount')}</AppText>
         ) : null}
       </View>
     </View>
@@ -149,7 +160,10 @@ export function ReelCard({ reel, active, counts, onOpenComments }: ReelCardProps
 
 const styles = StyleSheet.create({
   card: { marginBottom: 12, overflow: 'hidden' },
-  media: { width: '100%', aspectRatio: 9 / 16, justifyContent: 'flex-end' },
+  media: { width: '100%', aspectRatio: MEDIA_RATIO.reel, justifyContent: 'flex-end' },
+  fillCard: { marginBottom: 0, borderRadius: 0, backgroundColor: VIDEO_BACKDROP },
+  fillMedia: { position: 'absolute', top: 0, bottom: 0, start: 0, end: 0, backgroundColor: VIDEO_BACKDROP },
+  fillBody: { position: 'absolute', start: 0, end: 0, bottom: 0, padding: 16, paddingBottom: 32, gap: 6 },
   poster: { alignItems: 'center', justifyContent: 'center' },
   duration: { position: 'absolute', top: 10, start: 10, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, backgroundColor: 'rgba(0,0,0,0.55)' },
   body: { padding: 12, gap: 4 },

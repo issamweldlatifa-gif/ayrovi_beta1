@@ -23,6 +23,7 @@ import { AppHeader } from '@/features/shell/AppHeader';
 import { HeroCarousel } from '@/features/home/HeroCarousel';
 import { HomeTabs } from '@/features/home/HomeTabs';
 import { FeaturedPublication } from '@/features/home/FeaturedPublication';
+import { ReelsShopSection } from '@/features/home/ReelsShopSection';
 import { SectionRule } from '@/design/SectionRule';
 import { Footer } from '@/features/shell/Footer';
 import {
@@ -79,6 +80,11 @@ export default function HomeScreen() {
 
       {/* Dernière publication du magazine — « Découvrir » ouvre la page Publications. */}
       <FeaturedPublication />
+
+      <SectionRule />
+
+      {/* Reels • Shop — vignettes verticales ; un toucher ouvre la visionneuse plein écran. */}
+      <ReelsShopSection />
 
       {/*
         الفوتر — خلفية سوداء عرض كامل.

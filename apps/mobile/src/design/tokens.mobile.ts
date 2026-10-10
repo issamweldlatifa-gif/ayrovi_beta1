@@ -69,6 +69,19 @@ export const SPACE_ALL: readonly number[] = [...SPACE, ...SPACE_EXTENDED].sort((
  */
 export const MEDIA_RATIO = {
   square: 1,
+  /** Reels verticaux : 9:16 (comme la vidéo plein écran). */
+  reel: 9 / 16,
+} as const;
+
+/**
+ * Vignettes Reels de l'accueil : `widthFraction` de la colonne utile ; le reste
+ * laisse dépasser la vignette suivante (indice de défilement horizontal).
+ */
+/** Fond derrière une vidéo plein écran (la vidéo ne couvre pas toujours l'écran entier). */
+export const VIDEO_BACKDROP = '#000000';
+
+export const REEL_TILE = {
+  widthFraction: 0.66,
 } as const;
 
 /* ── Rayons (§2 — Radius Tokens) ──────────────────────────────────────────── */

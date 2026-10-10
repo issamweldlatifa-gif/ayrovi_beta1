@@ -9,7 +9,7 @@
  * وتطبيق يخدم.
  */
 import { useCallback, useRef, useState } from 'react';
-import { FlatList, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/design/ui';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
@@ -18,7 +18,7 @@ import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
 import { useReels, useSocialCounts } from '@/api/hooks';
 import { ReelCard } from '@/features/social/ReelCard';
-import { Comments } from '@/features/social/Comments';
+import { ReelCommentsModal } from '@/features/social/ReelCommentsModal';
 import type { Reel } from '@/api/social';
 
 export default function ReelsScreen() {
@@ -71,21 +71,11 @@ export default function ReelsScreen() {
       <AppText variant="caption" color={theme.colors.muted}>{`${rows.length} · ${t('social.reels')}`}</AppText>
       <View style={styles.spacer} />
 
-      <Modal visible={commentsFor !== null} animationType="slide" onRequestClose={closeComments}>
-        <View style={[styles.sheet, { backgroundColor: theme.colors.canvas }]}>
-          <AppText variant="title" weight="bold">{t('social.comments')}</AppText>
-          {commentsFor ? <Comments targetId={commentsFor.id} /> : null}
-          <Pressable accessibilityRole="button" onPress={closeComments} style={styles.closeBtn}>
-            <AppText variant="label" weight="bold" color={theme.colors.ink}>{t('social.close')}</AppText>
-          </Pressable>
-        </View>
-      </Modal>
+      {commentsFor ? <ReelCommentsModal reel={commentsFor} onClose={closeComments} /> : null}
     </SubScreen>
   );
 }
 
 const styles = StyleSheet.create({
   spacer: { height: 24 },
-  sheet: { flex: 1, padding: 20, gap: 10, paddingTop: 48 },
-  closeBtn: { paddingVertical: 12, alignSelf: 'flex-start' },
 });
