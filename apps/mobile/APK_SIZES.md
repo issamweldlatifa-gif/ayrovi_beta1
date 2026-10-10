@@ -1,11 +1,11 @@
 # Tailles d'APK — mesurées
 
-Dernière mesure : 2026-10-10 06:45 UTC
-Commit mesuré : `05bbcf23d42c352800e55ea07563ac4f7de7c998`
+Dernière mesure : 2026-10-10 07:23 UTC
+Commit mesuré : `0ac554acd825206663e3f83b1fea7ea9fef4d2aa`
 
 Écrit automatiquement par `Mobile — APK Android (démo)`.
 Ne pas éditer à la main : réécrit à chaque build.
 
 | fichier | taille |
 |---|---|
-| app-release.apk | 116M |
+| app-release.apk | 122M |
