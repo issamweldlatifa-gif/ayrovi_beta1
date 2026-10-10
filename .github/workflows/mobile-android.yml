@@ -165,7 +165,7 @@ jobs:
           EXPO_PUBLIC_HERO_DEMO: "1"
           # Connexion Google native : identifiant Web (public, pas un secret). Le serveur
           # le reçoit en GOOGLE_CLIENT_ID : les deux doivent être strictement identiques.
-          EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: "917317804534-8phj8uh9sh6vqkg9unkohqjgn063jm9e.apps.googleusercontent.com"
+          EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: "917317804534-e37d2kardhtac1g7fummsfk61dr86q3j.apps.googleusercontent.com"
         run: |
           set -o pipefail
           # Contexte de la machine : un échec de build vient souvent du disque
