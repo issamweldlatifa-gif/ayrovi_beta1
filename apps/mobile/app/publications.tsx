@@ -12,6 +12,7 @@ import { FlatList, Modal, Pressable, StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { AppText } from '@/design/ui';
+import { LinkedProductCard } from '@/features/shopping/LinkedProductCard';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { SubScreen } from '@/design/subScreen';
 import { useTheme } from '@/design/theme';
@@ -77,6 +78,8 @@ export default function PublicationsScreen() {
                 {item.subtitle ? (
                   <AppText variant="caption" color={theme.colors.muted}>{item.subtitle}</AppText>
                 ) : null}
+
+                {item.product ? <LinkedProductCard product={item.product} testID={`publication-product-${item.id}`} /> : null}
 
                 <View style={styles.actions}>
                   <Pressable

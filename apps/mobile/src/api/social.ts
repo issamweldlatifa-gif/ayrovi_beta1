@@ -16,6 +16,7 @@
  */
 import { apiGet, apiSend } from './client';
 import type { RequestOptions } from './client';
+import { parseLinkedProduct, type LinkedProduct } from './linkedProduct';
 
 export type SocialInteractionType = 'like' | 'comment' | 'view' | 'share';
 
@@ -39,6 +40,8 @@ export interface Reel {
   /** عدّادان يقراهم الخادم في نفس الطلب (من `story_interactions`). */
   views: number;
   likes: number;
+  /** Carte produit (null = pas de carte). */
+  product: LinkedProduct | null;
 }
 
 export interface Publication {
@@ -48,6 +51,8 @@ export interface Publication {
   channelId: string;
   imageUrl: string;
   publishAt: string;
+  /** Carte produit (null = contenu normal, ou produit plus vendable). */
+  product: LinkedProduct | null;
 }
 
 export interface StoryPublisher {
@@ -109,6 +114,7 @@ export async function fetchReels(options: RequestOptions = {}): Promise<Reel[]> 
       publishAt: str(entry.publish_at),
       views: num(entry.views),
       likes: num(entry.likes),
+      product: parseLinkedProduct(entry.product),
     }];
   });
 }
@@ -124,6 +130,7 @@ export async function fetchPublications(options: RequestOptions = {}): Promise<P
       channelId: str(entry.channel_id),
       imageUrl: str(entry.image_url),
       publishAt: str(entry.publish_at),
+      product: parseLinkedProduct(entry.product),
     }];
   });
 }

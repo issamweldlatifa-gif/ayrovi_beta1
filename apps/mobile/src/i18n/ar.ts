@@ -312,6 +312,8 @@ export const ar = {
   'home.tab.arrivals': 'وصل حديثاً',
   'home.tab.promotions': 'العروض',
   'home.tab.magazine': 'المجلة',
+  'shopping.discover': 'اكتشف',
+  'shopping.unavailable': 'غير متوفر حالياً',
   'home.reelsShop.open': 'افتح الريل',
   'home.reelsShop.label': 'Reels، Shop',
   'home.featured.label': 'الأهم',

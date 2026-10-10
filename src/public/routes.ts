@@ -18,6 +18,7 @@ import { liveValues, publishedRows, toPublicCards } from '../services/heroSlideD
 import { DEFAULT_FEATURED_SETTINGS, resolveFeaturedPublication, type FeaturedSettings } from '../services/homeFeatured';
 import { UnsafeUrlError } from '../services/safeUrl';
 import { pruneDiskCache } from '../services/diskCache';
+import { LINKED_PRODUCT_JOIN_SELECT, linkedProductFromJoin } from '../services/shoppableContent';
 
 function parseJson(value: string, fallback: any = []) {
   try { return JSON.parse(value); } catch { return fallback; }
@@ -37,6 +38,19 @@ function mapArrival(row: any) {
     badge: row.badge,
     status: row.status,
   };
+}
+
+/**
+ * Sortie publique d'un contenu shoppable : les colonnes de jointure `lp_*` sont
+ * retirées, et `product` porte la carte (ou null si le produit n'est plus vendable).
+ */
+function withLinkedProduct(row: Record<string, any>) {
+  const out: Record<string, any> = {};
+  for (const [key, value] of Object.entries(row)) {
+    if (!key.startsWith('lp_')) out[key] = value;
+  }
+  out.product = linkedProductFromJoin(row);
+  return out;
 }
 
 function mapProduct(row: any) {
@@ -458,6 +472,14 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     res.json({ success: true, data: rows.map(mapProduct) });
   });
 
+  /** Fiche d'un produit actif, par identifiant (page produit, « Découvrir » d'un contenu shoppable). */
+  router.get('/products/:id', (req, res) => {
+    const row = db.get<any>(`SELECT p.*,GROUP_CONCAT(pa.arrival_id) arrival_ids FROM products p
+      LEFT JOIN product_arrivals pa ON pa.product_id=p.id WHERE p.status='ACTIVE' AND p.id=? GROUP BY p.id`, req.params.id);
+    if (!row) return res.status(404).json({ success: false, error: 'Produit introuvable.' });
+    res.json({ success: true, data: mapProduct(row) });
+  });
+
   router.get('/promotions', (_req, res) => {
     const now = new Date().toISOString();
     const rows = db.all<any>(`SELECT p.*,
@@ -470,8 +492,12 @@ export function createPublicRouter(db: QatafoDatabase): Router {
 
   router.get('/stories', (_req, res) => {
     const now = new Date().toISOString();
-    const rows = db.all<any>(`SELECT * FROM stories WHERE status='PUBLISHED' AND publish_at<=?
-      AND (expires_at IS NULL OR expires_at>?) ORDER BY priority DESC,publish_at DESC`, now, now);
+    const rows = db.all<any>(`SELECT s.*,${LINKED_PRODUCT_JOIN_SELECT} FROM stories s LEFT JOIN products p ON p.id=s.product_id
+      WHERE s.status='PUBLISHED' AND s.publish_at<=?
+      AND (s.expires_at IS NULL OR s.expires_at>?) ORDER BY s.priority DESC,s.publish_at DESC`, now, now).map(withLinkedProduct)
+      // Story shoppable dont le produit n'est plus vendable : on coupe le lien, pour que le CTA
+      // existant (qui suit product_id) n'ouvre jamais une page produit morte.
+      .map((story) => (story.content_mode === 'shoppable' && !story.product ? { ...story, product_id: null } : story));
     res.json({ success: true, data: rows, serverTime: now });
   });
 
@@ -550,17 +576,19 @@ export function createPublicRouter(db: QatafoDatabase): Router {
   router.get('/social/publications', (_req, res) => {
     const now = new Date().toISOString();
     // Liste blanche stricte : les notes éditoriales et champs Admin ne quittent jamais l'API publique.
-    const rows = db.all<any>(`SELECT id,title,subtitle,channel_id,image_url,publish_at
-      FROM publications WHERE status='publie' AND publish_at<=? ORDER BY publish_at DESC`, now);
+    const rows = db.all<any>(`SELECT pub.id,pub.title,pub.subtitle,pub.channel_id,pub.image_url,pub.publish_at,pub.content_mode,${LINKED_PRODUCT_JOIN_SELECT}
+      FROM publications pub LEFT JOIN products p ON p.id=pub.product_id
+      WHERE pub.status='publie' AND pub.publish_at<=? ORDER BY pub.publish_at DESC`, now).map(withLinkedProduct);
     res.json({ success: true, data: rows });
   });
 
   router.get('/social/reels', (_req, res) => {
     const now = new Date().toISOString();
-    const rows = db.all<any>(`SELECT r.id,r.title,r.channel_id,r.description,r.video_url,r.duration_seconds,r.publish_at,
+    const rows = db.all<any>(`SELECT r.id,r.title,r.channel_id,r.description,r.video_url,r.duration_seconds,r.publish_at,r.content_mode,
       (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=r.id AND i.type='view') views,
-      (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=r.id AND i.type='like') likes
-      FROM reels r WHERE r.status='publie' AND r.publish_at<=? ORDER BY r.publish_at DESC`, now);
+      (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=r.id AND i.type='like') likes,${LINKED_PRODUCT_JOIN_SELECT}
+      FROM reels r LEFT JOIN products p ON p.id=r.product_id
+      WHERE r.status='publie' AND r.publish_at<=? ORDER BY r.publish_at DESC`, now).map(withLinkedProduct);
     res.json({ success: true, data: rows });
   });
 

@@ -110,14 +110,14 @@ describe('التفاعل', () => {
 
 describe('هدف الستوري', () => {
   it('منتوج أو وصولة أو رابط ⇒ عندو هدف', () => {
-    const base = { id: 's', mediaType: 'IMAGE', mediaUrl: '', title: '', description: '', cta: '', targetUrl: '', productId: '', arrivalId: '', promotionId: '', publishAt: '', expiresAt: '', priority: 0, status: 'PUBLISHED' };
+    const base = { id: 's', product: null, mediaType: 'IMAGE', mediaUrl: '', title: '', description: '', cta: '', targetUrl: '', productId: '', arrivalId: '', promotionId: '', publishAt: '', expiresAt: '', priority: 0, status: 'PUBLISHED' };
     expect(storyHasTarget({ ...base, productId: 'p1' })).toBe(true);
     expect(storyHasTarget({ ...base, arrivalId: 'a1' })).toBe(true);
     expect(storyHasTarget({ ...base, targetUrl: 'https://x.tn' })).toBe(true);
   });
 
   it('بلا هدف ⇒ **ما فمّاش CTA** (موّش زر يفتح والو)', () => {
-    const base = { id: 's', mediaType: 'IMAGE', mediaUrl: '', title: 'T', description: '', cta: '', targetUrl: '', productId: '', arrivalId: '', promotionId: '', publishAt: '', expiresAt: '', priority: 0, status: 'PUBLISHED' };
+    const base = { id: 's', product: null, mediaType: 'IMAGE', mediaUrl: '', title: 'T', description: '', cta: '', targetUrl: '', productId: '', arrivalId: '', promotionId: '', publishAt: '', expiresAt: '', priority: 0, status: 'PUBLISHED' };
     expect(storyHasTarget(base)).toBe(false);
   });
 });

@@ -70,6 +70,7 @@ import {
 import { lensPerformanceReport } from '../ayrovix/services/lensPerformanceTrace';
 import { funnelSummary } from '../analytics/funnel';
 import { ayWebsAnalyticsSummary } from '../aywebs/analytics';
+import { decideShoppable, type ProductSnapshot } from '../services/shoppableContent';
 import { createAyWebsAdminRouter } from '../aywebs/adminRoutes';
 import {
   GenerateMagazineInput,
@@ -132,11 +133,11 @@ export const resources: Record<string, ResourceConfig> = {
   },
   stories: {
     table: 'stories', module: 'STORIES', prefix: 'story', permission: 'content:write',
-    fields: ['category','media_type','media_url','secondary_images','title','description','cta','target_url','product_id','arrival_id','promotion_id','publish_at','expires_at','priority','status'],
+    fields: ['category','media_type','media_url','secondary_images','title','description','cta','target_url','content_mode','product_id','arrival_id','promotion_id','publish_at','expires_at','priority','status'],
     required: ['media_type','media_url','title','publish_at','status'], searchable: ['title','description','cta'],
     sortable: ['title','media_type','publish_at','expires_at','priority','status','created_at'], defaultSort: 'priority',
     jsonFields: ['secondary_images'],
-    enums: { category: ['ARRIVAGE','NEW','STYLE','INFO','PROMO'], media_type: ['IMAGE','VIDEO'], status: ['DRAFT','SCHEDULED','PUBLISHED','EXPIRED'] },
+    enums: { category: ['ARRIVAGE','NEW','STYLE','INFO','PROMO'], media_type: ['IMAGE','VIDEO'], status: ['DRAFT','SCHEDULED','PUBLISHED','EXPIRED'], content_mode: ['normal','shoppable'] },
     softDelete: { status: 'EXPIRED' },
   },
   news: {
@@ -348,7 +349,22 @@ function validateResourceDates(resource: string, payload: Record<string, any>, e
  * la destination est un contrat fermé (type + valeur validée, cible existante),
  * jamais une URL libre ; la couleur manuelle est un hexadécimal.
  */
+/** Lecture du produit dans le catalogue existant (source unique). */
+function catalogueProductSnapshot(db: QatafoDatabase, productId: string): ProductSnapshot | null {
+  return db.get<any>('SELECT id,name,image,status,final_price,stock_status FROM products WHERE id=?', productId) ?? null;
+}
+
 function validateResourcePayload(db: QatafoDatabase, resource: string, payload: Record<string, any>, existing?: Record<string, any>) {
+  if (resource === 'stories') {
+    // Mode + produit : décidés ici, côté serveur (jamais seulement dans l'interface).
+    const productInput = payload.product_id !== undefined ? payload.product_id : existing?.product_id;
+    const decision = decideShoppable(payload.content_mode ?? existing?.content_mode, productInput,
+      (id) => catalogueProductSnapshot(db, id));
+    if (decision.ok === false) throw new Error(decision.error);
+    payload.content_mode = decision.mode;
+    payload.product_id = decision.productId;
+    return;
+  }
   if (resource !== 'hero-slides') return;
   const type = String(payload.destination_type ?? existing?.destination_type ?? '');
   const value = String(payload.destination_value ?? existing?.destination_value ?? '').trim();
@@ -1281,23 +1297,29 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     if (!title || !imageUrl || !db.get('SELECT id FROM story_publishers WHERE id=?', channelId)) {
       return res.status(400).json({ success: false, error: 'Titre, image et canal obligatoires.' });
     }
+    const shoppable = decideShoppable(req.body?.content_mode, req.body?.product_id, (pid) => catalogueProductSnapshot(db, pid));
+    if (shoppable.ok === false) return res.status(400).json({ success: false, code: shoppable.code, error: shoppable.error });
     const now = new Date().toISOString();
     const id = `publication_${randomUUID()}`;
-    db.run(`INSERT INTO publications (id,title,subtitle,channel_id,image_url,remark,publish_at,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)`,
+    db.run(`INSERT INTO publications (id,title,subtitle,channel_id,image_url,remark,publish_at,status,content_mode,product_id,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
       id, title, String(req.body?.subtitle || '').slice(0, 150), channelId, imageUrl, String(req.body?.remark || ''),
-      req.body?.publish_at ? String(req.body.publish_at) : now, ['brouillon','publie','archive'].includes(req.body?.status) ? req.body.status : 'brouillon', now, now);
+      req.body?.publish_at ? String(req.body.publish_at) : now, ['brouillon','publie','archive'].includes(req.body?.status) ? req.body.status : 'brouillon',
+      shoppable.mode, shoppable.productId, now, now);
     audit(db, req, 'CREATE', 'SOCIAL_PUBLICATIONS', id, null, db.get<any>('SELECT * FROM publications WHERE id=?', id));
     res.status(201).json({ success: true, data: { id } });
   });
   router.put('/publications/:id', requireAdmin(db, 'content:write'), (req, res) => {
     const row = db.get<any>(`SELECT * FROM publications WHERE id=?`, req.params.id);
     if (!row) return res.status(404).json({ success: false, error: 'Publication introuvable.' });
-    db.run(`UPDATE publications SET title=?, subtitle=?, image_url=?, remark=?, publish_at=?, status=?, updated_at=? WHERE id=?`,
+    const shoppable = decideShoppable(req.body?.content_mode ?? row.content_mode, req.body?.product_id !== undefined ? req.body.product_id : row.product_id,
+      (pid) => catalogueProductSnapshot(db, pid));
+    if (shoppable.ok === false) return res.status(400).json({ success: false, code: shoppable.code, error: shoppable.error });
+    db.run(`UPDATE publications SET title=?, subtitle=?, image_url=?, remark=?, publish_at=?, status=?, content_mode=?, product_id=?, updated_at=? WHERE id=?`,
       String(req.body?.title ?? row.title).slice(0, 150), String(req.body?.subtitle ?? row.subtitle).slice(0, 150),
       String(req.body?.image_url ?? row.image_url).slice(0, 500), String(req.body?.remark ?? row.remark),
       req.body?.publish_at ? String(req.body.publish_at) : row.publish_at,
       ['brouillon','publie','archive'].includes(req.body?.status) ? req.body.status : row.status,
-      new Date().toISOString(), req.params.id);
+      shoppable.mode, shoppable.productId, new Date().toISOString(), req.params.id);
     audit(db, req, 'UPDATE', 'SOCIAL_PUBLICATIONS', req.params.id, row, db.get<any>('SELECT * FROM publications WHERE id=?', req.params.id));
     res.json({ success: true });
   });
@@ -1316,25 +1338,31 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     if (!title || !videoUrl || !db.get('SELECT id FROM story_publishers WHERE id=?', channelId)) {
       return res.status(400).json({ success: false, error: 'Titre, vidéo et canal obligatoires.' });
     }
+    const shoppable = decideShoppable(req.body?.content_mode, req.body?.product_id, (pid) => catalogueProductSnapshot(db, pid));
+    if (shoppable.ok === false) return res.status(400).json({ success: false, code: shoppable.code, error: shoppable.error });
     const now = new Date().toISOString();
     const id = `reel_${randomUUID()}`;
-    db.run(`INSERT INTO reels (id,title,channel_id,description,video_url,duration_seconds,publish_at,status,views,likes,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,0,0,?,?)`,
+    db.run(`INSERT INTO reels (id,title,channel_id,description,video_url,duration_seconds,publish_at,status,views,likes,content_mode,product_id,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,0,0,?,?,?,?)`,
       id, title, channelId, String(req.body?.description || ''), videoUrl,
       Number.isFinite(Number(req.body?.duration_seconds)) ? Math.max(0, Math.round(Number(req.body.duration_seconds))) : 0,
-      req.body?.publish_at ? String(req.body.publish_at) : now, ['brouillon','publie','archive'].includes(req.body?.status) ? req.body.status : 'brouillon', now, now);
+      req.body?.publish_at ? String(req.body.publish_at) : now, ['brouillon','publie','archive'].includes(req.body?.status) ? req.body.status : 'brouillon',
+      shoppable.mode, shoppable.productId, now, now);
     audit(db, req, 'CREATE', 'SOCIAL_REELS', id, null, db.get<any>('SELECT * FROM reels WHERE id=?', id));
     res.status(201).json({ success: true, data: { id } });
   });
   router.put('/reels/:id', requireAdmin(db, 'content:write'), (req, res) => {
     const row = db.get<any>(`SELECT * FROM reels WHERE id=?`, req.params.id);
     if (!row) return res.status(404).json({ success: false, error: 'Reel introuvable.' });
-    db.run(`UPDATE reels SET title=?, description=?, video_url=?, duration_seconds=?, publish_at=?, status=?, updated_at=? WHERE id=?`,
+    const shoppable = decideShoppable(req.body?.content_mode ?? row.content_mode, req.body?.product_id !== undefined ? req.body.product_id : row.product_id,
+      (pid) => catalogueProductSnapshot(db, pid));
+    if (shoppable.ok === false) return res.status(400).json({ success: false, code: shoppable.code, error: shoppable.error });
+    db.run(`UPDATE reels SET title=?, description=?, video_url=?, duration_seconds=?, publish_at=?, status=?, content_mode=?, product_id=?, updated_at=? WHERE id=?`,
       String(req.body?.title ?? row.title).slice(0, 150), String(req.body?.description ?? row.description),
       String(req.body?.video_url ?? row.video_url).slice(0, 500),
       Number.isFinite(Number(req.body?.duration_seconds)) ? Math.max(0, Math.round(Number(req.body.duration_seconds))) : row.duration_seconds,
       req.body?.publish_at ? String(req.body.publish_at) : row.publish_at,
       ['brouillon','publie','archive'].includes(req.body?.status) ? req.body.status : row.status,
-      new Date().toISOString(), req.params.id);
+      shoppable.mode, shoppable.productId, new Date().toISOString(), req.params.id);
     audit(db, req, 'UPDATE', 'SOCIAL_REELS', req.params.id, row, db.get<any>('SELECT * FROM reels WHERE id=?', req.params.id));
     res.json({ success: true });
   });

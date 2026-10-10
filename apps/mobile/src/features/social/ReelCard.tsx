@@ -18,6 +18,7 @@ import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
 import { MEDIA_RATIO, VIDEO_BACKDROP } from '@/design/tokens.mobile';
+import { LinkedProductCard } from '@/features/shopping/LinkedProductCard';
 import { mediaUrl } from '@/api/client';
 import { useSession } from '@/state/session';
 import { sendInteraction, type Reel } from '@/api/social';
@@ -107,6 +108,9 @@ export function ReelCard({ reel, active, counts, onOpenComments, fill }: ReelCar
       </View>
 
       <View style={fill ? styles.fillBody : styles.body}>
+        {reel.product ? (
+          <LinkedProductCard product={reel.product} variant={fill ? 'overlay' : 'row'} testID={`reel-product-${reel.id}`} />
+        ) : null}
         {reel.title ? <AppText variant="label" weight="bold" color={ink} numberOfLines={1}>{reel.title}</AppText> : null}
         {reel.description ? (
           <AppText variant="caption" color={muted} numberOfLines={2}>{reel.description}</AppText>

@@ -3,6 +3,7 @@ import { ArrowUp, Pencil, Plus, Trash2 } from '../components/QatafoIcons';
 import { adminApi } from './api';
 import { Button, DataTable, Field, Modal, StatusBadge } from './components';
 import { StoriesStudioPage } from './StoriesStudio';
+import { EMPTY_PRODUCT_LINK, ProductIntegration } from './ProductIntegration';
 
 const TABS = ['Publication', 'Reel', 'Story'] as const;
 type Tab = typeof TABS[number];
@@ -70,7 +71,7 @@ const PublicationsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
     <section className="admin-card">
       {error && <div className="admin-error">{error}</div>}
       <div className="admin-actions" style={{ marginTop: 0 }}>
-        <Button onClick={() => { setError(''); setForm({ title: '', subtitle: '', channel_id: channels[0]?.id || '', image_url: '', remark: '', status: 'publie' }); }}><Plus size={15} />Ajouter</Button>
+        <Button onClick={() => { setError(''); setForm({ title: '', subtitle: '', channel_id: channels[0]?.id || '', image_url: '', remark: '', status: 'publie', ...EMPTY_PRODUCT_LINK }); }}><Plus size={15} />Ajouter</Button>
         <span className="admin-block-small">Format conseillé : image verticale 4:5, titre court et canal actif.</span>
       </div>
       <DataTable
@@ -104,6 +105,7 @@ const PublicationsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
             </div>
           </Field>
           <Field label="Remarque (interne, invisible sur le site)" full><textarea rows={2} value={form.remark} onChange={(e) => setForm({ ...form, remark: e.target.value })} /></Field>
+          <ProductIntegration kind="publication" value={form} onChange={(v) => setForm({ ...form, ...v })} />
           <Field label="Statut"><select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}><option value="brouillon">Brouillon</option><option value="publie">Publié</option><option value="archive">Archivé</option></select></Field>
         </div>}
       </Modal>
@@ -140,7 +142,7 @@ const ReelsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
     <section className="admin-card">
       {error && <div className="admin-error">{error}</div>}
       <div className="admin-actions" style={{ marginTop: 0 }}>
-        <Button onClick={() => { setError(''); setForm({ title: '', channel_id: channels[0]?.id || '', description: '', video_url: '', duration_seconds: 0, status: 'publie' }); }}><Plus size={15} />Ajouter</Button>
+        <Button onClick={() => { setError(''); setForm({ title: '', channel_id: channels[0]?.id || '', description: '', video_url: '', duration_seconds: 0, status: 'publie', ...EMPTY_PRODUCT_LINK }); }}><Plus size={15} />Ajouter</Button>
         <span className="admin-block-small">Format conseillé : vidéo verticale 9:16, sous-titres lisibles et caption courte.</span>
       </div>
       <DataTable
@@ -183,6 +185,7 @@ const ReelsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
             {form.duration_seconds > 0 && <p className="admin-block-small">Durée détectée automatiquement : {fmt(form.duration_seconds)}</p>}
           </Field>
           <Field label="Description" full><textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></Field>
+          <ProductIntegration kind="reel" value={form} onChange={(v) => setForm({ ...form, ...v })} />
           <Field label="Statut"><select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}><option value="brouillon">Brouillon</option><option value="publie">Publié</option><option value="archive">Archivé</option></select></Field>
         </div>}
       </Modal>

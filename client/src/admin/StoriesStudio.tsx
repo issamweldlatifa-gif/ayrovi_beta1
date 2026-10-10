@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { X, Box, Eye, Heart, MessageSquare, Pencil, Plus, Share2, Trash2, ArrowUp } from '../components/QatafoIcons';
 import { adminApi } from './api';
 import { Button, DataTable, Field, Modal, StatusBadge, Switch } from './components';
+import { ProductIntegration } from './ProductIntegration';
 
 const KNOWN_CATEGORIES = ['ARRIVAGE', 'NEW', 'STYLE', 'INFO', 'PROMO'];
 const CHANNELS = [
@@ -10,7 +11,7 @@ const CHANNELS = [
 
 const emptyForm = {
   id: '', title: '', category: 'ARRIVAGE', media_type: 'IMAGE', media_url: '', description: '',
-  cta: '', arrival_id: '', promotion_id: '', product_id: '', publish_at: '', expires_at: '', priority: 0, status: 'PUBLISHED',
+  cta: '', arrival_id: '', promotion_id: '', content_mode: 'normal', product_id: '', publish_at: '', expires_at: '', priority: 0, status: 'PUBLISHED',
   secondary_images: [] as string[],
 };
 
@@ -194,7 +195,8 @@ export const StoriesStudioPage: React.FC<{ onEditContent: () => void }> = ({ onE
       title: form.title, category: form.category, media_type: form.media_type, media_url: form.media_url,
       description: form.description, cta: form.cta, priority: Number(form.priority) || 0, status: form.status,
       secondary_images: form.secondary_images || [],
-      arrival_id: form.arrival_id || null, promotion_id: form.promotion_id || null, product_id: form.product_id || null,
+      arrival_id: form.arrival_id || null, promotion_id: form.promotion_id || null,
+      content_mode: form.content_mode === 'shoppable' ? 'shoppable' : 'normal', product_id: form.product_id || null,
       publish_at: form.publish_at ? new Date(form.publish_at).toISOString() : new Date().toISOString(),
       expires_at: form.expires_at ? new Date(form.expires_at).toISOString() : null,
     };
@@ -369,6 +371,7 @@ export const StoriesStudioPage: React.FC<{ onEditContent: () => void }> = ({ onE
             <Field label="Caption" full><textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></Field>
             <Field label="CTA (label, optionnel)"><input value={form.cta} onChange={(e) => setForm({ ...form, cta: e.target.value })} placeholder="Découvrir / Voir le produit" /></Field>
             <Field label="Priorité"><input type="number" value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })} /></Field>
+            <ProductIntegration kind="story" value={form} onChange={(v) => setForm({ ...form, ...v })} />
             <Field label="Lien arrivage (optionnel)">
               <select value={form.arrival_id || ''} onChange={(e) => setForm({ ...form, arrival_id: e.target.value })}>
                 <option value="">—</option>

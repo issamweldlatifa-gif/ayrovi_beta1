@@ -312,6 +312,8 @@ export const fr = {
   'home.tab.arrivals': 'Nouveautés',
   'home.tab.promotions': 'Promotions',
   'home.tab.magazine': 'Magazine',
+  'shopping.discover': 'Découvrir',
+  'shopping.unavailable': 'Actuellement indisponible',
   'home.reelsShop.open': 'Ouvrir le reel',
   'home.reelsShop.label': 'Reels, Shop',
   'home.featured.label': 'À la une',

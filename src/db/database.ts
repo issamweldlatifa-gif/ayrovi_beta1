@@ -1549,6 +1549,15 @@ export class QatafoDatabase {
     this.ensureColumn('crm_extraction_jobs', 'lease_expires_at', 'TEXT');
     this.ensureColumn('crm_extraction_jobs', 'retry_at', 'TEXT');
     this.ensureColumn('crm_extracted_products', 'arrival_client_store_id', 'TEXT REFERENCES crm_arrival_client_stores(id) ON DELETE CASCADE');
+    // Contenu « Shoppable » (Reels, Publications, Stories) : mode + produit lié.
+    // Additif et idempotent : les lignes existantes deviennent `normal` sans produit.
+    // `stories.product_id` existe déjà (ancienne colonne) : seul le mode est ajouté.
+    const contentMode = "TEXT NOT NULL DEFAULT 'normal' CHECK(content_mode IN ('normal','shoppable'))";
+    this.ensureColumn('reels', 'content_mode', contentMode);
+    this.ensureColumn('reels', 'product_id', 'TEXT REFERENCES products(id) ON DELETE SET NULL');
+    this.ensureColumn('publications', 'content_mode', contentMode);
+    this.ensureColumn('publications', 'product_id', 'TEXT REFERENCES products(id) ON DELETE SET NULL');
+    this.ensureColumn('stories', 'content_mode', contentMode);
     // Operational line-item fields produced by the AI Extraction Schema and
     // carried through Normalization. Nullable at the DB level (application
     // model) — the AI schema itself stays union-free.

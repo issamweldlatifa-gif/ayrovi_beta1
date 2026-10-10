@@ -9,6 +9,7 @@
  */
 import { apiGet } from './client';
 import type { RequestOptions } from './client';
+import { parseLinkedProduct, type LinkedProduct } from './linkedProduct';
 
 /** عرض تجري كما يقدّمه `GET /api/public/promotions`. */
 export interface Promotion {
@@ -30,6 +31,8 @@ export interface Promotion {
 /** ستوري كما يقدّمه `GET /api/public/stories`. */
 export interface StoryItem {
   id: string;
+  /** Carte produit (null = story normale, ou produit plus vendable). */
+  product: LinkedProduct | null;
   mediaType: string;
   mediaUrl: string;
   title: string;
@@ -132,6 +135,7 @@ export async function fetchStories(options: RequestOptions = {}): Promise<StoryI
         expiresAt: str(entry.expires_at || entry.expiresAt),
         priority: num(entry.priority),
         status: str(entry.status),
+        product: parseLinkedProduct(entry.product),
       },
     ];
   });
