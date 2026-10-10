@@ -20,6 +20,7 @@ import { AppText } from '@/design/ui';
 import { FullBleed, useResponsive } from '@/design/layout';
 import { useTheme } from '@/design/theme';
 import { MEDIA_RATIO, REEL_TILE } from '@/design/tokens.mobile';
+import { FadeIn, PressScale } from '@/design/motion';
 import { useT } from '@/i18n';
 import { ReelsShopMark } from '@/features/reels/ReelsShopMark';
 import type { Reel } from '@/api/social';
@@ -42,8 +43,9 @@ export function ReelsShopSection() {
   };
 
   return (
-    <View testID="home-reels-shop">
-      <View style={[styles.section, { gap: theme.space[3] }]}>
+    <FadeIn testID="home-reels-shop">
+      {/* Espace entre l'en-tête et les vignettes : l'en-tête ne doit pas toucher la carte. */}
+      <View style={[styles.section, { paddingBottom: theme.space[4] }]}>
         <ReelsShopMark />
       </View>
 
@@ -60,37 +62,43 @@ export function ReelsShopSection() {
               accessibilityRole="button"
               accessibilityLabel={item.title || t('home.reelsShop.open')}
               onPress={() => open(item)}
-              style={({ pressed }) => [
-                styles.tile,
-                {
-                  width: tileWidth,
-                  height: tileHeight,
-                  borderRadius: theme.radius.card,
-                  backgroundColor: theme.colors.surface,
-                  opacity: pressed ? 0.85 : 1,
-                },
-              ]}
+              style={{ width: tileWidth, height: tileHeight }}
             >
-              <View style={styles.poster}>
-                <Ionicons name="play-circle-outline" size={44} color={theme.colors.muted} accessibilityElementsHidden />
-              </View>
-              {item.title ? (
-                <View style={styles.caption}>
-                  <AppText variant="label" weight="bold" color={theme.colors.onMedia} numberOfLines={2}>
-                    {item.title}
-                  </AppText>
-                </View>
-              ) : null}
+              {({ pressed }) => (
+                <PressScale
+                  pressed={pressed}
+                  style={[
+                    styles.tile,
+                    {
+                      width: tileWidth,
+                      height: tileHeight,
+                      borderRadius: theme.radius.card,
+                      backgroundColor: theme.colors.surface,
+                    },
+                  ]}
+                >
+                  <View style={styles.poster}>
+                    <Ionicons name="play-circle-outline" size={44} color={theme.colors.muted} accessibilityElementsHidden />
+                  </View>
+                  {item.title ? (
+                    <View style={styles.caption}>
+                      <AppText variant="label" weight="bold" color={theme.colors.onMedia} numberOfLines={2}>
+                        {item.title}
+                      </AppText>
+                    </View>
+                  ) : null}
+                </PressScale>
+              )}
             </Pressable>
           )}
         />
       </FullBleed>
-    </View>
+    </FadeIn>
   );
 }
 
 const styles = StyleSheet.create({
-  section: { paddingTop: 16 },
+  section: { paddingTop: 24 },
   tile: { overflow: 'hidden', justifyContent: 'flex-end' },
   poster: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   caption: { padding: 10, backgroundColor: 'rgba(0,0,0,0.35)' },

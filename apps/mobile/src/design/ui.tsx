@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme, webDirection, type TextRole } from './theme';
+import { useTheme, webDirection, type FontWeightName, type TextRole } from './theme';
 import { actionDirectionFor, responsiveMetricsFor, rowDirectionFor } from './layoutLogic';
 import { useT } from '@/i18n';
 
@@ -20,7 +20,7 @@ import { useT } from '@/i18n';
 export interface AppTextProps {
   children: ReactNode;
   variant?: TextRole;
-  weight?: 'regular' | 'bold';
+  weight?: FontWeightName;
   color?: string;
   align?: 'auto' | 'center';
   numberOfLines?: number;

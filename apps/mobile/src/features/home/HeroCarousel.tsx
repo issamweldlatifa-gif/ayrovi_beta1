@@ -308,7 +308,7 @@ const HeroCard = memo(function HeroCard({ card, width, onPress }: HeroCardProps)
         {title || subtitle ? (
           <View style={styles.cardCopy} pointerEvents="none">
             {title ? (
-              <AppText variant="title" weight="bold" color={theme.colors.onMedia} numberOfLines={2}>
+              <AppText variant="title" weight="semibold" color={theme.colors.onMedia} numberOfLines={2}>
                 {title}
               </AppText>
             ) : null}

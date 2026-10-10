@@ -111,7 +111,7 @@ export function LegalScreen({ docId }: { docId: LegalDocId }) {
           { paddingBottom: insets.bottom + theme.space[6], paddingHorizontal: theme.space[4] },
         ]}
       >
-        <AppText variant="title" weight="bold" style={styles.docTitle}>{version.title}</AppText>
+        <AppText variant="title" weight="semibold" style={styles.docTitle}>{version.title}</AppText>
         {version.meta ? (
           <AppText variant="caption" color={theme.colors.muted}>{version.meta}</AppText>
         ) : null}

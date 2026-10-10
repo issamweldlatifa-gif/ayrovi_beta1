@@ -122,7 +122,7 @@ export default function PublicationsScreen() {
 
       <Modal visible={commentsFor !== null} animationType="slide" onRequestClose={closeComments}>
         <View style={[styles.sheet, { backgroundColor: theme.colors.canvas }]}>
-          <AppText variant="title" weight="bold">{t('social.comments')}</AppText>
+          <AppText variant="title" weight="semibold">{t('social.comments')}</AppText>
           {commentsFor ? <Comments targetId={commentsFor.id} /> : null}
           <Pressable accessibilityRole="button" onPress={closeComments} style={styles.closeBtn}>
             <AppText variant="label" weight="bold" color={theme.colors.ink}>{t('social.close')}</AppText>

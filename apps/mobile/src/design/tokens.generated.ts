@@ -112,10 +112,12 @@ export const FONTS = {
   arabic: {
     bold: "NotoSansArabic-Bold",
     regular: "NotoSansArabic-Regular",
+    semibold: "NotoSansArabic-Bold",
   },
   latin: {
     bold: "ZalandoSans-Bold",
     regular: "ZalandoSans-Regular",
+    semibold: "ZalandoSans-SemiBold",
   },
 } as const;
 

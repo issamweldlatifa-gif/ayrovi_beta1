@@ -71,7 +71,7 @@ export function Footer({ testID = 'app-footer' }: FooterProps) {
       ]}
     >
       {/* 1) الهوية */}
-      <AppText variant="display" weight="bold" color={FOOTER_COLORS.accentText} style={styles.wordmark}>
+      <AppText variant="display" weight="semibold" color={FOOTER_COLORS.accentText} style={styles.wordmark}>
         AYROVI
       </AppText>
       <AppText variant="caption" color={FOOTER_COLORS.muted}>

@@ -191,7 +191,7 @@ export function StoryViewer({ stories, initialIndex = 0, visible, onClose, onOpe
 
         {/* التذييل: العنوان + الإجراءات */}
         <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
-          {current.title ? <AppText variant="title" weight="bold" color={theme.colors.onMedia}>{current.title}</AppText> : null}
+          {current.title ? <AppText variant="title" weight="semibold" color={theme.colors.onMedia}>{current.title}</AppText> : null}
           {current.description ? (
             <AppText variant="caption" color={theme.colors.onMedia} numberOfLines={3}>{current.description}</AppText>
           ) : null}
