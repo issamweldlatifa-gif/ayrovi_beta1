@@ -8,9 +8,10 @@
  *   la page Reels. Les autres pages attendent (règle de `ReelCard`).
  */
 import { useCallback, useRef, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { FlatList, Pressable, StatusBar, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { useReels, useSocialCounts } from '@/api/hooks';
@@ -74,6 +75,16 @@ export default function ReelsViewerScreen() {
         )}
       />
 
+      {/* Barre d'état claire et translucide : les icônes (heure, réseau, batterie) restent lisibles sur la vidéo. */}
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+
+      {/* Dégradé discret sous la barre d'état et l'en-tête : lisibilité sans bandeau opaque. */}
+      <LinearGradient
+        pointerEvents="none"
+        colors={['rgba(0,0,0,0.55)', 'rgba(0,0,0,0)']}
+        style={[styles.scrim, { height: insets.top + 96 }]}
+      />
+
       {/* En-tête fixe et transparent : par-dessus la liste, il ne bouge pas au défilement. */}
       <View
         pointerEvents="box-none"
@@ -110,4 +121,5 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   back: { width: BACK_HIT, height: BACK_HIT, alignItems: 'center', justifyContent: 'center' },
+  scrim: { position: 'absolute', top: 0, start: 0, end: 0 },
 });

@@ -184,6 +184,16 @@ const ReelsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
             {form.video_url && <video src={form.video_url} controls muted style={{ width: '100%', maxHeight: 240, borderRadius: 12, marginTop: 8, background: '#000' }} />}
             {form.duration_seconds > 0 && <p className="admin-block-small">Durée détectée automatiquement : {fmt(form.duration_seconds)}</p>}
           </Field>
+          <Field label="Image de couverture (affichée avant la lecture)" full>
+            <div className="admin-actions" style={{ marginTop: 0 }}>
+              <input value={form.poster_url || ''} onChange={(e) => setForm({ ...form, poster_url: e.target.value })} placeholder="URL ou upload (facultatif)" style={{ flex: 1 }} />
+              <label style={{ cursor: 'pointer', border: '1px solid var(--admin-line)', borderRadius: 10, padding: '8px 12px', fontSize: 12, fontWeight: 700 }}>
+                <ArrowUp size={14} />Uploader
+                <input type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={async (e) => { const f = e.target.files?.[0]; if (f) setForm({ ...form, poster_url: await uploadFile(f) }); }} />
+              </label>
+            </div>
+            {form.poster_url && <img src={form.poster_url} alt="" style={{ width: 120, aspectRatio: '9 / 16', objectFit: 'cover', borderRadius: 12, marginTop: 8 }} />}
+          </Field>
           <Field label="Description" full><textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></Field>
           <ProductIntegration kind="reel" value={form} onChange={(v) => setForm({ ...form, ...v })} />
           <Field label="Statut"><select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}><option value="brouillon">Brouillon</option><option value="publie">Publié</option><option value="archive">Archivé</option></select></Field>

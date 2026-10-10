@@ -1555,6 +1555,8 @@ export class QatafoDatabase {
     const contentMode = "TEXT NOT NULL DEFAULT 'normal' CHECK(content_mode IN ('normal','shoppable'))";
     this.ensureColumn('reels', 'content_mode', contentMode);
     this.ensureColumn('reels', 'product_id', 'TEXT REFERENCES products(id) ON DELETE SET NULL');
+    // Image de couverture du Reel (affichée sur la tuile et avant la lecture). Vide = pas de couverture.
+    this.ensureColumn('reels', 'poster_url', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('publications', 'content_mode', contentMode);
     this.ensureColumn('publications', 'product_id', 'TEXT REFERENCES products(id) ON DELETE SET NULL');
     this.ensureColumn('stories', 'content_mode', contentMode);

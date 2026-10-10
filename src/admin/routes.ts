@@ -1342,8 +1342,8 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     if (shoppable.ok === false) return res.status(400).json({ success: false, code: shoppable.code, error: shoppable.error });
     const now = new Date().toISOString();
     const id = `reel_${randomUUID()}`;
-    db.run(`INSERT INTO reels (id,title,channel_id,description,video_url,duration_seconds,publish_at,status,views,likes,content_mode,product_id,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,0,0,?,?,?,?)`,
-      id, title, channelId, String(req.body?.description || ''), videoUrl,
+    db.run(`INSERT INTO reels (id,title,channel_id,description,video_url,poster_url,duration_seconds,publish_at,status,views,likes,content_mode,product_id,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,0,0,?,?,?,?)`,
+      id, title, channelId, String(req.body?.description || ''), videoUrl, String(req.body?.poster_url || '').slice(0, 500),
       Number.isFinite(Number(req.body?.duration_seconds)) ? Math.max(0, Math.round(Number(req.body.duration_seconds))) : 0,
       req.body?.publish_at ? String(req.body.publish_at) : now, ['brouillon','publie','archive'].includes(req.body?.status) ? req.body.status : 'brouillon',
       shoppable.mode, shoppable.productId, now, now);
@@ -1356,9 +1356,10 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     const shoppable = decideShoppable(req.body?.content_mode ?? row.content_mode, req.body?.product_id !== undefined ? req.body.product_id : row.product_id,
       (pid) => catalogueProductSnapshot(db, pid));
     if (shoppable.ok === false) return res.status(400).json({ success: false, code: shoppable.code, error: shoppable.error });
-    db.run(`UPDATE reels SET title=?, description=?, video_url=?, duration_seconds=?, publish_at=?, status=?, content_mode=?, product_id=?, updated_at=? WHERE id=?`,
+    db.run(`UPDATE reels SET title=?, description=?, video_url=?, poster_url=?, duration_seconds=?, publish_at=?, status=?, content_mode=?, product_id=?, updated_at=? WHERE id=?`,
       String(req.body?.title ?? row.title).slice(0, 150), String(req.body?.description ?? row.description),
       String(req.body?.video_url ?? row.video_url).slice(0, 500),
+      req.body?.poster_url !== undefined ? String(req.body.poster_url || '').slice(0, 500) : (row.poster_url || ''),
       Number.isFinite(Number(req.body?.duration_seconds)) ? Math.max(0, Math.round(Number(req.body.duration_seconds))) : row.duration_seconds,
       req.body?.publish_at ? String(req.body.publish_at) : row.publish_at,
       ['brouillon','publie','archive'].includes(req.body?.status) ? req.body.status : row.status,

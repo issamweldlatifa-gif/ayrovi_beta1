@@ -20,6 +20,7 @@ import { useT } from '@/i18n';
 import { MEDIA_RATIO, VIDEO_BACKDROP } from '@/design/tokens.mobile';
 import { LinkedProductCard } from '@/features/shopping/LinkedProductCard';
 import { mediaUrl } from '@/api/client';
+import { AppImage } from '@/design/appImage';
 import { useSession } from '@/state/session';
 import { sendInteraction, type Reel } from '@/api/social';
 import { useAyWebsSessionId } from '@/features/aywebs/session';
@@ -85,9 +86,13 @@ export function ReelCard({ reel, active, counts, onOpenComments, fill }: ReelCar
       ? [styles.card, styles.fillCard, { width: fill.width, height: fill.height }]
       : [styles.card, { backgroundColor: theme.colors.surface, borderRadius: theme.radius.card }]}>
       <View style={fill ? styles.fillMedia : [styles.media, { backgroundColor: theme.colors.canvas }]}>
+        {reel.posterUrl ? (
+          // Couverture derrière la vidéo : elle reste visible tant que la vidéo n'a pas d'image.
+          <AppImage uri={mediaUrl(reel.posterUrl)} style={StyleSheet.absoluteFill} contentFit="cover" decorative />
+        ) : null}
         {active && player ? (
           <VideoView player={player} style={StyleSheet.absoluteFill} contentFit="cover" nativeControls={false} />
-        ) : (
+        ) : reel.posterUrl ? null : (
           <View style={[StyleSheet.absoluteFill, styles.poster]}>
             <Ionicons name="play-circle-outline" size={44} color={muted} accessibilityElementsHidden />
           </View>

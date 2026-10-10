@@ -63,6 +63,15 @@ describe('section Reels • Shop (accueil)', () => {
     expect(screen.getByTestId('home-reel-tile-r2')).toBeTruthy();
   });
 
+  it('affiche la couverture du Reel sur la vignette quand elle existe', () => {
+    mockReels.data = [{ ...reel('r1'), posterUrl: '/uploads/cover-r1.jpg' }, reel('r2')];
+    render(wrap(<ReelsShopSection />));
+    const withPoster = screen.getByTestId('home-reel-tile-r1');
+    const without = screen.getByTestId('home-reel-tile-r2');
+    expect(withPoster.findAll((n: any) => n.props?.source?.uri?.includes('cover-r1.jpg')).length).toBeGreaterThan(0);
+    expect(without.findAll((n: any) => n.props?.source?.uri?.includes('cover-'))).toHaveLength(0);
+  });
+
   it('toucher une vignette ouvre la visionneuse à ce Reel', () => {
     mockReels.data = [reel('r1'), reel('r2')];
     render(wrap(<ReelsShopSection />));

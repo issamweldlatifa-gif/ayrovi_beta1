@@ -584,7 +584,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
 
   router.get('/social/reels', (_req, res) => {
     const now = new Date().toISOString();
-    const rows = db.all<any>(`SELECT r.id,r.title,r.channel_id,r.description,r.video_url,r.duration_seconds,r.publish_at,r.content_mode,
+    const rows = db.all<any>(`SELECT r.id,r.title,r.channel_id,r.description,r.video_url,r.poster_url,r.duration_seconds,r.publish_at,r.content_mode,
       (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=r.id AND i.type='view') views,
       (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=r.id AND i.type='like') likes,${LINKED_PRODUCT_JOIN_SELECT}
       FROM reels r LEFT JOIN products p ON p.id=r.product_id

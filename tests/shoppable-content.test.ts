@@ -118,6 +118,20 @@ describe('parcours serveur — admin + lecture publique', () => {
     expect(Object.keys(item).some((key) => key.startsWith('lp_'))).toBe(false);
   });
 
+  test('la couverture d’un Reel est enregistrée, exposée, et conservée si le champ est absent à la modification', async () => {
+    const created = await admin.post('/api/admin/reels').set('x-csrf-token', csrf).send({
+      title: 'Reel couverture', channel_id: CHANNEL, video_url: '/v/c.mp4', status: 'publie', publish_at: PAST, content_mode: 'normal', poster_url: '/m/cover-reel.jpg',
+    });
+    expect(created.status).toBe(201);
+    const id = created.body.data.id;
+    const pub = await request(app).get('/api/public/social/reels');
+    expect(pub.body.data.find((r: any) => r.id === id).poster_url).toBe('/m/cover-reel.jpg');
+    const updated = await admin.put(`/api/admin/reels/${id}`).set('x-csrf-token', csrf).send({ title: 'Reel couverture 2' });
+    expect(updated.status).toBe(200);
+    const row = db.get<any>('SELECT poster_url FROM reels WHERE id=?', id);
+    expect(row.poster_url).toBe('/m/cover-reel.jpg');
+  });
+
   test('un Reel normal n’a aucune carte, même si on lui donne un produit', async () => {
     const created = await admin.post('/api/admin/reels').set('x-csrf-token', csrf).send({
       title: 'Reel normal', channel_id: CHANNEL, video_url: '/v/n.mp4', status: 'publie', publish_at: PAST, content_mode: 'normal', product_id: ACTIVE,

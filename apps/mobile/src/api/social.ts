@@ -42,6 +42,8 @@ export interface Reel {
   likes: number;
   /** Carte produit (null = pas de carte). */
   product: LinkedProduct | null;
+  /** Image de couverture (vide = pas de couverture). */
+  posterUrl: string;
 }
 
 export interface Publication {
@@ -110,6 +112,7 @@ export async function fetchReels(options: RequestOptions = {}): Promise<Reel[]> 
       channelId: str(entry.channel_id),
       description: str(entry.description),
       videoUrl: str(entry.video_url),
+      posterUrl: str(entry.poster_url),
       durationSeconds: num(entry.duration_seconds),
       publishAt: str(entry.publish_at),
       views: num(entry.views),

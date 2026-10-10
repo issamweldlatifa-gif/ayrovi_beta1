@@ -17,6 +17,8 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { useReels } from '@/api/hooks';
 import { AppText } from '@/design/ui';
+import { AppImage } from '@/design/appImage';
+import { mediaUrl } from '@/api/client';
 import { FullBleed, useResponsive } from '@/design/layout';
 import { useTheme } from '@/design/theme';
 import { MEDIA_RATIO, REEL_TILE } from '@/design/tokens.mobile';
@@ -78,7 +80,11 @@ export function ReelsShopSection() {
                   ]}
                 >
                   <View style={styles.poster}>
-                    <Ionicons name="play-circle-outline" size={44} color={theme.colors.muted} accessibilityElementsHidden />
+                    {item.posterUrl ? (
+                      <AppImage uri={mediaUrl(item.posterUrl)} style={StyleSheet.absoluteFill} contentFit="cover" decorative />
+                    ) : (
+                      <Ionicons name="play-circle-outline" size={44} color={theme.colors.muted} accessibilityElementsHidden />
+                    )}
                   </View>
                   {item.title ? (
                     <View style={styles.caption}>
