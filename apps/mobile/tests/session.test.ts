@@ -21,7 +21,7 @@ import {
 import { CLIENT_HEADER, CLIENT_VERSION, API_BASE_URL } from '../src/api/config';
 import {
   emailLogin, emailRegister, fetchMe, fetchOrders, fetchOverview, logout, parseAccount,
-  parseAuthConfig, parseOtpChallenge, parseOverview, parseRecentOrder, parseSessionIssue,
+  parseAuthConfig, parseEmailCodeChallenge, parseOtpChallenge, parseOverview, parseRecentOrder, parseSessionIssue,
   requestOtp, verifyOtp,
 } from '../src/api/account';
 import { authMessage, authMessageForCode } from '../src/api/authMessages';
@@ -238,8 +238,16 @@ describe('lecture des réponses du serveur', () => {
 
   it('lit les capacités du serveur et considère le reste comme éteint', () => {
     const config = parseAuthConfig({ phoneOtp: { enabled: true }, email: { enabled: true } });
-    expect(config).toEqual({ phoneOtp: true, email: true, google: false, facebook: false, apple: false, passwordReset: false });
+    expect(config).toEqual({ phoneOtp: true, email: true, google: false, facebook: false, apple: false, passwordReset: false, emailCode: false });
     expect(parseAuthConfig(undefined).phoneOtp).toBe(false);
+    expect(parseAuthConfig({ emailCode: { enabled: true } }).emailCode).toBe(true);
+  });
+
+  it('lit le défi e-mail : identifiant obligatoire, adresse masquée, délai de 10 min par défaut', () => {
+    const challenge = parseEmailCodeChallenge({ challengeId: 'ecode_1', maskedEmail: 'ah***@gm***.com' });
+    expect(challenge).toEqual({ challengeId: 'ecode_1', maskedEmail: 'ah***@gm***.com', expiresInSeconds: 600, developmentCode: '' });
+    expect(() => parseEmailCodeChallenge({ maskedEmail: 'x' })).toThrow(/identifiant manquant/);
+    expect(() => parseEmailCodeChallenge(null)).toThrow(/illisible/);
   });
 
   it('ne considère pas une session sans jeton comme valide', () => {

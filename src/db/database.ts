@@ -1080,6 +1080,22 @@ export class QatafoDatabase {
       CREATE INDEX IF NOT EXISTS idx_customer_otp_phone_created ON customer_otp_challenges(phone, created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_customer_otp_ip_created ON customer_otp_challenges(request_ip, created_at DESC);
 
+      /* Connexion par code e-mail (façon ChatGPT). Le code est haché, jamais stocké
+         en clair ; une seule demande active par adresse (les anciennes sont consommées). */
+      CREATE TABLE IF NOT EXISTS customer_email_code_challenges (
+        id TEXT PRIMARY KEY,
+        email TEXT NOT NULL,
+        code_hash TEXT NOT NULL,
+        expires_at TEXT NOT NULL,
+        consumed_at TEXT,
+        attempts INTEGER NOT NULL DEFAULT 0,
+        max_attempts INTEGER NOT NULL DEFAULT 5,
+        request_ip TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_customer_email_code_email_created ON customer_email_code_challenges(email, created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_customer_email_code_ip_created ON customer_email_code_challenges(request_ip, created_at DESC);
+
       CREATE TABLE IF NOT EXISTS customer_oauth_states (
         id TEXT PRIMARY KEY,
         account_id TEXT REFERENCES customer_accounts(id) ON DELETE SET NULL,

@@ -44,6 +44,8 @@ export interface AuthConfig {
   facebook: boolean;
   apple: boolean;
   passwordReset: boolean;
+  /** Connexion par code envoyé à l'adresse e-mail (dans l'application). */
+  emailCode: boolean;
 }
 
 export interface SessionIssue {
@@ -61,6 +63,15 @@ export interface OtpChallenge {
   maskedPhone: string;
   expiresInSeconds: number;
   /** Code affiché par le serveur quand aucun SMS réel n'est configuré (dev). */
+  developmentCode: string;
+}
+
+/** Défi envoyé par e-mail : le code n'est jamais montré hors développement. */
+export interface EmailCodeChallenge {
+  challengeId: string;
+  maskedEmail: string;
+  expiresInSeconds: number;
+  /** Code renvoyé par le serveur quand aucun service mail n'est configuré (dev). */
   developmentCode: string;
 }
 
@@ -228,6 +239,7 @@ export function parseAuthConfig(payload: unknown): AuthConfig {
     facebook: enabled('facebook'),
     apple: enabled('apple'),
     passwordReset: enabled('passwordReset'),
+    emailCode: enabled('emailCode'),
   };
 }
 
@@ -258,6 +270,18 @@ export function parseOtpChallenge(payload: unknown): OtpChallenge {
     challengeId,
     maskedPhone: str(payload.maskedPhone),
     expiresInSeconds: num(payload.expiresInSeconds, 300),
+    developmentCode: str(payload.developmentCode),
+  };
+}
+
+export function parseEmailCodeChallenge(payload: unknown): EmailCodeChallenge {
+  if (!isRecord(payload)) throw new Error('Défi e-mail illisible.');
+  const challengeId = str(payload.challengeId);
+  if (!challengeId) throw new Error('Défi e-mail illisible : identifiant manquant.');
+  return {
+    challengeId,
+    maskedEmail: str(payload.maskedEmail),
+    expiresInSeconds: num(payload.expiresInSeconds, 600),
     developmentCode: str(payload.developmentCode),
   };
 }
@@ -491,6 +515,23 @@ export async function requestOtp(phone: string, options?: RequestOptions): Promi
 
 export async function verifyOtp(challengeId: string, code: string, options?: RequestOptions): Promise<SessionIssue> {
   const { data } = await apiSend<unknown>('POST', '/api/customer/auth/otp/verify', {
+    ...options,
+    body: { challengeId, code },
+  });
+  return parseSessionIssue(data);
+}
+
+/** Demande un code à usage unique envoyé à l'adresse (connexion dans l'application). */
+export async function requestEmailCode(email: string, locale: 'fr' | 'ar', options?: RequestOptions): Promise<EmailCodeChallenge> {
+  const { data } = await apiSend<unknown>('POST', '/api/customer/auth/email-code/request', {
+    ...options,
+    body: { email, locale },
+  });
+  return parseEmailCodeChallenge(data);
+}
+
+export async function verifyEmailCode(challengeId: string, code: string, options?: RequestOptions): Promise<SessionIssue> {
+  const { data } = await apiSend<unknown>('POST', '/api/customer/auth/email-code/verify', {
     ...options,
     body: { challengeId, code },
   });

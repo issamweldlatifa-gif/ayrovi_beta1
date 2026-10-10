@@ -1,13 +1,18 @@
 /**
- * Écran de connexion — téléphone (SMS), e-mail, ou création de compte.
+ * Écran de connexion — page unique, façon ChatGPT.
+ *
+ * Parcours :
+ *   • « start » : adresse e-mail → code reçu par e-mail → session (dans l'écran) ;
+ *   • autres méthodes proposées sous « OU » : Google, numéro de téléphone, mot de passe ;
+ *   • conditions et confidentialité toujours en bas, ouvertes dans l'application.
  *
  * Règles tenues par cet écran :
  *   • il ne propose QUE ce que le serveur sait faire (`/auth/config`). Une
  *     méthode absente du serveur est expliquée, pas cliquable ;
  *   • chaque échec affiche la raison réelle, dans la langue de l'utilisateur ;
  *   • le bouton d'action porte l'état d'attente : aucun écran figé muet ;
- *   • en développement, quand aucun SMS n'est configuré, le serveur renvoie le
- *     code — on l'affiche tel quel plutôt que de laisser l'utilisateur bloqué.
+ *   • en développement, quand aucun SMS ni e-mail n'est configuré, le serveur
+ *     renvoie le code — on l'affiche tel quel plutôt que de laisser l'utilisateur bloqué.
  */
 import { useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -15,7 +20,7 @@ import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { AppText, Button, Card, Field, Segmented } from '@/design/ui';
+import { AppText, Button, Card, Field } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { useI18n } from '@/i18n';
@@ -26,7 +31,11 @@ import { closeProviderBrowser, openLegalPage, openProviderSession } from '@/feat
 import { API_BASE_URL } from '@/api/config';
 import { useSession } from '@/state/session';
 
-type Mode = 'phone' | 'email' | 'register';
+/** « start » = adresse e-mail (page d'accueil de la connexion). */
+type Mode = 'start' | 'phone' | 'password' | 'register';
+
+/** Forme minimale d'une adresse : le serveur fait foi, ceci évite un aller-retour inutile. */
+const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
 
 export default function SignInScreen() {
   const theme = useTheme();
@@ -34,10 +43,11 @@ export default function SignInScreen() {
   const insets = useSafeAreaInsets();
   const session = useSession();
 
-  const [mode, setMode] = useState<Mode>('phone');
+  const [mode, setMode] = useState<Mode>('start');
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [email, setEmail] = useState('');
+  const [emailCode, setEmailCode] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [marketing, setMarketing] = useState(false);
@@ -46,9 +56,9 @@ export default function SignInScreen() {
   const [failure, setFailure] = useState<{ message: string; hint?: string } | null>(null);
 
   /**
-   * هل الخادم اللي نحكي معه يعرف عميل الموبايل؟ (المعلومة هذي موش تفصيل تقني:
-   * خادم قديم = كل محاولة دخول غادي تفشل.) نسألو مرّة، وبلا إعادة محاولة:
-   * كان الخادم ما جاوبش، ما نعرضوش لافتة — الضغطة على «دخول» تقول الحقيقة.
+   * Le serveur qu'on interroge sait-il reconnaître le client mobile ? Question
+   * posée une fois, sans relance : un serveur ancien ferait échouer chaque
+   * tentative, autant le dire tout de suite.
    */
   const readiness = useQuery({
     queryKey: ['server', 'ready'],
@@ -61,6 +71,8 @@ export default function SignInScreen() {
   const cancelled = useRef(false);
 
   const config = session.authConfig;
+  const emailChallenge = session.emailChallenge;
+  const challenge = session.challenge;
 
   /** Traduit un échec puis l'affiche — un seul chemin pour tous les formulaires. */
   const show = (error: unknown, fallback?: AuthMessageKey) => {
@@ -80,10 +92,17 @@ export default function SignInScreen() {
     }
   };
 
+  const changeMode = (next: Mode) => {
+    setFailure(null);
+    setMode(next);
+  };
+
   const closeIfSignedIn = () => {
     if (router.canGoBack()) router.back();
     else router.replace('/(tabs)/account');
   };
+
+  /* ── Téléphone (SMS) ──────────────────────────────────────────────────── */
 
   const sendCode = () => run(async () => {
     // Refus local AVANT l'appel : inutile de consommer un quota SMS pour un
@@ -99,6 +118,23 @@ export default function SignInScreen() {
     await session.confirmPhoneCode(code);
     closeIfSignedIn();
   }, 'auth.error.otpInvalid');
+
+  /* ── E-mail : code (par défaut) et mot de passe (en option) ───────────── */
+
+  // Connexion par code e-mail : tout reste dans l'écran, aucun navigateur ni lien de retour.
+  const sendEmailCode = () => run(async () => {
+    if (!EMAIL_SHAPE.test(email.trim())) {
+      setFailure({ message: t('auth.emailCode.invalidAddress') });
+      return;
+    }
+    setEmailCode('');
+    await session.requestEmailCode(email, locale);
+  }, 'auth.error.unavailable');
+
+  const confirmEmailCode = () => run(async () => {
+    await session.confirmEmailCode(emailCode);
+    closeIfSignedIn();
+  }, 'auth.emailCode.invalid');
 
   const emailSignIn = () => run(async () => {
     await session.signInWithEmail(email, password);
@@ -124,12 +160,10 @@ export default function SignInScreen() {
     try {
       const handoff = await newHandoffCode();
       // Onglet personnalisé : le consentement se déroule DANS l'application.
-      // (openBrowserAsync, lui, basculait vers Chrome — une autre application.)
       const outcome = await openProviderSession(providerStartUrl(provider, handoff), providerDoneUrl());
       await closeProviderBrowser();
       if (outcome === 'cancel') {
-        // Renoncement, pas panne : l'ANCienne version continuait d'attendre
-        // soixante secondes un consentement que la personne venait de fermer.
+        // Renoncement, pas panne.
         return;
       }
       const issue = await pollHandoff(handoff, {
@@ -138,10 +172,7 @@ export default function SignInScreen() {
         shouldStop: () => cancelled.current,
       });
       if (!issue) {
-        // Absence de connexion, pas échec : la formulation ne dramatise pas.
-        // Mais « rien n'a changé » sans piste laisse la personne seule devant
-        // l'écran : on nomme les deux causes réelles côté Google, celle qu'on
-        // ne peut pas voir d'ici (mode « Testing ») la première.
+        // Absence de connexion, pas échec : on nomme les deux causes réelles côté Google.
         setFailure({ message: t('auth.providers.incomplete'), hint: t('auth.providers.incompleteHint') });
         return;
       }
@@ -156,8 +187,6 @@ export default function SignInScreen() {
     }
   };
 
-  const challenge = session.challenge;
-
   // Un fournisseur n'est proposé QUE si le serveur le dit configuré : un bouton
   // qui mène à une page d'erreur est pire qu'une absence expliquée.
   const providers: { id: ProviderId; label: string; enabled: boolean }[] = [
@@ -166,6 +195,59 @@ export default function SignInScreen() {
     { id: 'apple', label: t('auth.providers.apple'), enabled: config?.apple === true },
   ];
   const offered = providers.filter((provider) => provider.enabled);
+
+  const emailReady = EMAIL_SHAPE.test(email.trim());
+
+  /* ── Titres selon l'étape ─────────────────────────────────────────────── */
+  let heading = { title: t('auth.title'), subtitle: t('auth.subtitle') };
+  if (mode === 'start') {
+    heading = emailChallenge
+      ? { title: t('auth.emailCode.checkInbox'), subtitle: t('auth.emailCode.sentTo', { email: emailChallenge.maskedEmail || email }) }
+      : { title: t('auth.start.title'), subtitle: t('auth.start.subtitle') };
+  }
+
+  /* ── Bloc « OU » : Google, puis les autres fournisseurs configurés ────── */
+  const otherWays = (
+    <>
+      <View style={styles.orRow}>
+        <View style={[styles.orLine, { backgroundColor: theme.colors.line }]} />
+        <AppText variant="caption" color={theme.colors.muted}>{t('auth.or')}</AppText>
+        <View style={[styles.orLine, { backgroundColor: theme.colors.line }]} />
+      </View>
+      {providers.map((provider) =>
+        provider.enabled ? (
+          <Button
+            key={provider.id}
+            label={provider.label}
+            tone="quiet"
+            onPress={() => startProvider(provider.id)}
+            busy={waiting === provider.id}
+            disabled={busy && waiting !== provider.id}
+            testID={`auth-provider-${provider.id}`}
+          />
+        ) : (
+          <AppText key={provider.id} variant="caption" color={theme.colors.muted}>
+            {provider.label} — {t('auth.providers.off')}
+          </AppText>
+        ),
+      )}
+      {offered.length ? (
+        <AppText variant="caption" color={theme.colors.muted}>{t('auth.providers.sameAccount')}</AppText>
+      ) : null}
+      {waiting ? (
+        <>
+          <AppText variant="label" weight="bold" color={theme.status.info.fg}>{t('auth.providers.waiting')}</AppText>
+          <Button
+            label={t('auth.providers.cancel')}
+            tone="quiet"
+            onPress={() => {
+              cancelled.current = true;
+            }}
+          />
+        </>
+      ) : null}
+    </>
+  );
 
   return (
     <KeyboardAvoidingView
@@ -188,18 +270,8 @@ export default function SignInScreen() {
           <Ionicons name="close" size={26} color={theme.colors.ink} accessibilityElementsHidden />
         </Pressable>
 
-        <AppText variant="title">{t('auth.title')}</AppText>
-        <AppText variant="body" color={theme.colors.secondary} style={styles.intro}>{t('auth.subtitle')}</AppText>
-
-        <Segmented<Mode>
-          value={mode}
-          onChange={setMode}
-          options={[
-            { value: 'phone', label: t('auth.tabs.phone') },
-            { value: 'email', label: t('auth.tabs.email') },
-            { value: 'register', label: t('auth.tabs.register') },
-          ]}
-        />
+        <AppText variant="title">{heading.title}</AppText>
+        <AppText variant="body" color={theme.colors.secondary} style={styles.intro}>{heading.subtitle}</AppText>
 
         {legacyServer ? (
           <View
@@ -235,10 +307,69 @@ export default function SignInScreen() {
           </View>
         ) : null}
 
+        {/* Page d'accueil : adresse → code. */}
+        {mode === 'start' && !emailChallenge ? (
+          <>
+            <Field
+              label={t('auth.email.label')}
+              accessibilityLabel={t('auth.email.label')}
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              autoComplete="email"
+              editable={!busy && config?.emailCode !== false}
+            />
+            <Button
+              label={t('auth.continue')}
+              onPress={sendEmailCode}
+              busy={busy}
+              disabled={!emailReady || config?.emailCode === false}
+              testID="auth-email-code-send"
+            />
+            {otherWays}
+            <Button label={t('auth.start.phone')} tone="quiet" onPress={() => changeMode('phone')} disabled={busy} testID="auth-start-phone" />
+            <Button label={t('auth.start.password')} tone="quiet" onPress={() => changeMode('password')} disabled={busy} testID="auth-start-password" />
+          </>
+        ) : null}
+
+        {/* Étape « code » : même page, code reçu par e-mail. */}
+        {mode === 'start' && emailChallenge ? (
+          <>
+            <AppText variant="caption" color={theme.colors.muted}>{t('auth.emailCode.spam')}</AppText>
+            {emailChallenge.developmentCode ? (
+              <AppText variant="caption" color={theme.status.info.fg}>
+                {t('auth.emailCode.dev', { code: emailChallenge.developmentCode })}
+              </AppText>
+            ) : null}
+            <Field
+              label={t('auth.emailCode.code')}
+              accessibilityLabel={t('auth.emailCode.code')}
+              value={emailCode}
+              onChangeText={setEmailCode}
+              keyboardType="number-pad"
+              maxLength={6}
+              editable={!busy}
+            />
+            <Button label={t('auth.continue')} onPress={confirmEmailCode} busy={busy} testID="auth-email-code-verify" />
+            <Button label={t('auth.emailCode.resend')} onPress={sendEmailCode} tone="quiet" disabled={busy} />
+            <Button label={t('auth.emailCode.change')} onPress={session.cancelEmailCode} tone="quiet" disabled={busy} />
+            {otherWays}
+            <Button label={t('auth.start.password')} tone="quiet" onPress={() => changeMode('password')} disabled={busy} />
+          </>
+        ) : null}
+
+        {/* Téléphone : Tunisie uniquement (le serveur ne normalise que les numéros tunisiens). */}
         {mode === 'phone' ? (
-          <Card title={t('auth.tabs.phone')} hint={config && !config.phoneOtp ? t('auth.error.unavailable') : undefined}>
+          <>
             {!challenge ? (
               <>
+                <Field
+                  label={t('auth.phone.country')}
+                  accessibilityLabel={t('auth.phone.country')}
+                  value={t('auth.phone.countryValue')}
+                  editable={false}
+                />
                 <Field
                   label={t('auth.phone.label')}
                   accessibilityLabel={t('auth.phone.label')}
@@ -249,7 +380,13 @@ export default function SignInScreen() {
                   autoComplete="tel"
                   editable={!busy && (config?.phoneOtp ?? true)}
                 />
-                <Button label={t('auth.phone.send')} onPress={sendCode} busy={busy} disabled={config?.phoneOtp === false} testID="auth-send-code" />
+                <Button
+                  label={t('auth.continue')}
+                  onPress={sendCode}
+                  busy={busy}
+                  disabled={config?.phoneOtp === false}
+                  testID="auth-send-code"
+                />
               </>
             ) : (
               <>
@@ -275,10 +412,13 @@ export default function SignInScreen() {
                 <Button label={t('auth.phone.change')} onPress={session.cancelPhoneCode} tone="quiet" disabled={busy} />
               </>
             )}
-          </Card>
+            {otherWays}
+            <Button label={t('auth.start.email')} tone="quiet" onPress={() => changeMode('start')} disabled={busy} />
+          </>
         ) : null}
 
-        {mode === 'email' ? (
+        {/* Mot de passe : méthode en option, pour les comptes qui en ont un. */}
+        {mode === 'password' ? (
           <Card title={t('auth.tabs.email')} hint={config && !config.email ? t('auth.error.unavailable') : undefined}>
             <Field
               label={t('auth.email.label')}
@@ -304,12 +444,22 @@ export default function SignInScreen() {
             <Pressable
               accessibilityRole="button"
               onPress={() => router.push('/forgot')}
-              style={[styles.forgotLink, { minHeight: theme.geometry.minTarget }]}
+              style={[styles.link, { minHeight: theme.geometry.minTarget }]}
             >
               <AppText variant="label" weight="bold" color={theme.colors.accentText}>
                 {t('auth.forgot.link')}
               </AppText>
             </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => changeMode('register')}
+              style={[styles.link, { minHeight: theme.geometry.minTarget }]}
+            >
+              <AppText variant="label" weight="bold" color={theme.colors.accentText}>
+                {t('auth.start.createAccount')}
+              </AppText>
+            </Pressable>
+            <Button label={t('auth.emailCode.useCode')} tone="quiet" onPress={() => changeMode('start')} disabled={busy} />
           </Card>
         ) : null}
 
@@ -350,49 +500,15 @@ export default function SignInScreen() {
             </Pressable>
             <Button label={t('auth.register.submit')} onPress={register} busy={busy} testID="auth-register-submit" />
             <AppText variant="caption" color={theme.colors.muted}>{t('auth.legal')}</AppText>
+            <Button label={t('auth.emailCode.useCode')} tone="quiet" onPress={() => changeMode('start')} disabled={busy} />
           </Card>
         ) : null}
 
-        <Card title={t('auth.providers.title')} hint={offered.length ? t('auth.providers.hint') : t('auth.error.unavailable')}>
-          {/* Les trois fournisseurs sont TOUJOURS nommés : celui qui n'est pas
-              configuré est annoncé comme tel, jamais passé sous silence — un
-              utilisateur qui cherche « Facebook » doit lire pourquoi il ne le
-              trouve pas, pas croire à un oubli. */}
-          {providers.map((provider) =>
-            provider.enabled ? (
-              <Button
-                key={provider.id}
-                label={provider.label}
-                onPress={() => startProvider(provider.id)}
-                busy={waiting === provider.id}
-                disabled={busy && waiting !== provider.id}
-              />
-            ) : (
-              <AppText key={provider.id} variant="caption" color={theme.colors.muted}>
-                {provider.label} — {t('auth.providers.off')}
-              </AppText>
-            ),
-          )}
-          {offered.length ? (
-            <AppText variant="caption" color={theme.colors.muted}>{t('auth.providers.sameAccount')}</AppText>
-          ) : null}
-          {waiting ? (
-            <>
-              <AppText variant="label" weight="bold" color={theme.status.info.fg}>{t('auth.providers.waiting')}</AppText>
-              <Button
-                label={t('auth.providers.cancel')}
-                tone="quiet"
-                onPress={() => {
-                  cancelled.current = true;
-                }}
-              />
-            </>
-          ) : null}
-        </Card>
-
-        <AppText variant="caption" color={theme.colors.muted}>
-          {session.storageSecure ? t('auth.secure.keychain') : t('auth.secure.fallback')}
-        </AppText>
+        {mode === 'start' ? (
+          <AppText variant="caption" color={theme.colors.muted}>
+            {session.storageSecure ? t('auth.secure.keychain') : t('auth.secure.fallback')}
+          </AppText>
+        ) : null}
 
         {/* Conditions et confidentialité : toujours visibles en bas, ouvertes dans l'application. */}
         <View style={[styles.legal, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
@@ -428,7 +544,9 @@ const styles = StyleSheet.create({
   alert: { borderWidth: StyleSheet.hairlineWidth, padding: 12 },
   checkboxRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   checkboxLabel: { flex: 1 },
-  forgotLink: { justifyContent: 'center' },
+  link: { justifyContent: 'center' },
+  orRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 4 },
+  orLine: { flex: 1, height: StyleSheet.hairlineWidth },
   legal: { alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: 4, paddingVertical: 8 },
   legalLink: { justifyContent: 'center', paddingHorizontal: 6 },
   legalText: { textDecorationLine: 'underline' },

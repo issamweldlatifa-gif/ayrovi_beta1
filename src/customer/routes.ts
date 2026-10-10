@@ -6,7 +6,7 @@ import { Request, Router } from 'express';
 import { QatafoDatabase } from '../db/database';
 import { invoiceAbsolutePath, depositWriteDir, proofRoots, invoiceRoots } from '../services/invoice';
 import { servePrivateDocument } from '../documents/fileAccess';
-import { sendMail } from '../services/mailer';
+import { mailerReady, sendMail } from '../services/mailer';
 import { createAccountSettingsRouter } from './accountSettings';
 import { hashPassword, verifyPassword } from './passwords';
 import { enqueueWelcomeMail, passwordRecoveryReady } from './accountMail';
@@ -31,6 +31,10 @@ import {
 import { attachDevicesToAccount, registerPushDevice, revokePushDevice } from '../services/pushDispatch';
 import { pushConfigured } from '../services/push';
 import { sessionExchangeFields } from './sessionExchange';
+import {
+  EMAIL_CODE_MAX_ATTEMPTS, EMAIL_CODE_PER_ADDRESS_MAX, EMAIL_CODE_PER_IP_MAX, EMAIL_CODE_TTL_MS, EMAIL_CODE_WINDOW_MS,
+  displayNameFromEmail, emailCodeHtml, emailCodeSubject, maskEmail,
+} from './emailCode';
 import { deliverOtp, otpProviderName, phoneOtpAvailable, verifyProviderOtp } from './otp';
 
 const OTP_TTL_MS = 5 * 60 * 1000;
@@ -427,6 +431,7 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
       facebook: { enabled: customerAuthReady() && facebook.ready },
       apple: { enabled: customerAuthReady() && apple.ready },
       email: { enabled: customerAuthReady() },
+      emailCode: { enabled: customerAuthReady() && (mailerReady() || process.env.NODE_ENV !== 'production') },
       passwordReset: { enabled: passwordRecoveryReady() },
       checkoutRequiresAuthentication: true,
     } });
@@ -545,6 +550,117 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
     } catch (error: any) {
       if (error?.message === 'PHONE_CHANGE_NOT_SUPPORTED') return res.status(409).json({ success: false, error: 'Ce compte possède déjà un autre numéro vérifié.' });
       console.error('[Customer OTP Verification]', error);
+      return res.status(500).json({ success: false, error: 'La connexion n’a pas pu être finalisée.' });
+    }
+  });
+
+  /*
+   * Connexion par code e-mail, entièrement dans l'application (façon ChatGPT) :
+   *   1. /auth/email-code/request : envoie un code à 6 chiffres à l'adresse saisie ;
+   *   2. /auth/email-code/verify  : vérifie le code, crée le compte si l'adresse est
+   *      nouvelle, ouvre la session. Le code prouve la possession de l'adresse :
+   *      `email_verified_at` est renseigné.
+   * La réponse à la demande est identique qu'un compte existe ou non (pas
+   * d'énumération d'adresses).
+   */
+  router.post('/auth/email-code/request', async (req, res) => {
+    if (!customerAuthReady()) return res.status(503).json({ success: false, code: 'EMAIL_CODE_UNAVAILABLE', error: 'Authentification client non configurée.' });
+    const email = normalizedEmail(req.body?.email);
+    if (!EMAIL_PATTERN.test(email)) return res.status(400).json({ success: false, code: 'EMAIL_INVALID', error: 'Adresse e-mail invalide.' });
+    const ready = mailerReady();
+    const production = process.env.NODE_ENV === 'production';
+    // Sans service d'envoi : en production, refus clair ; en développement, le code
+    // est renvoyé à l'application (même principe que le SMS sans fournisseur).
+    if (!ready && production) return res.status(503).json({ success: false, code: 'EMAIL_CODE_UNAVAILABLE', error: 'La connexion par code e-mail n’est pas encore configurée.' });
+
+    const ip = req.ip || '';
+    const since = new Date(Date.now() - EMAIL_CODE_WINDOW_MS).toISOString();
+    const addressCount = Number(db.get<any>('SELECT COUNT(*) count FROM customer_email_code_challenges WHERE email=? AND created_at>=?', email, since)?.count || 0);
+    const ipCount = Number(db.get<any>('SELECT COUNT(*) count FROM customer_email_code_challenges WHERE request_ip=? AND created_at>=?', ip, since)?.count || 0);
+    if (addressCount >= EMAIL_CODE_PER_ADDRESS_MAX || ipCount >= EMAIL_CODE_PER_IP_MAX) {
+      return res.status(429).json({ success: false, code: 'EMAIL_CODE_RATE_LIMITED', error: 'Trop de demandes. Réessayez dans 15 minutes.' });
+    }
+
+    const now = new Date();
+    const challengeId = `ecode_${randomUUID()}`;
+    const code = String(randomInt(100000, 1000000));
+    const ar = req.body?.locale === 'ar';
+    db.run('UPDATE customer_email_code_challenges SET consumed_at=? WHERE email=? AND consumed_at IS NULL', now.toISOString(), email);
+    db.run(`INSERT INTO customer_email_code_challenges
+      (id,email,code_hash,expires_at,max_attempts,request_ip,created_at) VALUES (?,?,?,?,?,?,?)`,
+    challengeId, email, keyedHash(`${challengeId}:${email}:${code}`), new Date(now.getTime() + EMAIL_CODE_TTL_MS).toISOString(),
+    EMAIL_CODE_MAX_ATTEMPTS, ip, now.toISOString());
+
+    try {
+      const delivery = ready
+        ? await sendMail({ to: email, subject: emailCodeSubject(ar, code), html: emailCodeHtml(ar, code), idempotencyKey: challengeId })
+        : null;
+      if (delivery && !delivery.delivered) throw new Error(delivery.error || 'EMAIL_DELIVERY_FAILED');
+      if (!ready && production) throw new Error('EMAIL_CODE_UNAVAILABLE');
+      if (!ready && process.env.NODE_ENV !== 'test') console.info(`[Customer Email Code] ${email}: ${code}`);
+      return res.status(201).json({ success: true, data: {
+        challengeId,
+        maskedEmail: maskEmail(email),
+        expiresInSeconds: EMAIL_CODE_TTL_MS / 1000,
+        ...(!ready ? { developmentCode: code } : {}),
+      } });
+    } catch (error: any) {
+      db.run('DELETE FROM customer_email_code_challenges WHERE id=?', challengeId);
+      console.error('[Customer Email Code Delivery]', error?.message || error);
+      return res.status(503).json({ success: false, code: 'EMAIL_DELIVERY_FAILED', error: 'Le courriel n’a pas pu être envoyé. Réessayez dans un instant.' });
+    }
+  });
+
+  router.post('/auth/email-code/verify', (req, res) => {
+    if (!customerAuthReady()) return res.status(503).json({ success: false, error: 'Authentification client non configurée.' });
+    const challengeId = String(req.body?.challengeId || '');
+    const code = String(req.body?.code || '').replace(/\D/g, '');
+    const challenge = db.get<any>('SELECT * FROM customer_email_code_challenges WHERE id=?', challengeId);
+    const now = new Date().toISOString();
+    if (!challenge || challenge.consumed_at || challenge.expires_at <= now) return res.status(400).json({ success: false, code: 'EMAIL_CODE_EXPIRED', error: 'Ce code a expiré. Demandez un nouveau code.' });
+    if (Number(challenge.attempts) >= Number(challenge.max_attempts)) return res.status(429).json({ success: false, code: 'EMAIL_CODE_LOCKED', error: 'Trop de tentatives. Demandez un nouveau code.' });
+    if (code.length !== 6 || !safeEqualHash(`${challengeId}:${challenge.email}:${code}`, challenge.code_hash)) {
+      db.run('UPDATE customer_email_code_challenges SET attempts=attempts+1 WHERE id=?', challengeId);
+      return res.status(400).json({ success: false, code: 'EMAIL_CODE_INVALID', error: 'Le code saisi est incorrect.' });
+    }
+    try {
+      const claimed = db.run('UPDATE customer_email_code_challenges SET consumed_at=? WHERE id=? AND consumed_at IS NULL', now, challengeId);
+      if (!claimed.changes) return res.status(409).json({ success: false, code: 'EMAIL_CODE_ALREADY_USED', error: 'Ce code a déjà été utilisé.' });
+      const email: string = challenge.email;
+      let account = db.get<any>('SELECT * FROM customer_accounts WHERE email=? COLLATE NOCASE', email);
+      if (account && account.status !== 'ACTIVE') return res.status(403).json({ success: false, code: 'ACCOUNT_BLOCKED', error: 'Ce compte est bloqué. Contactez le support.' });
+      let accountId: string;
+      if (account) {
+        accountId = account.id;
+        if (!account.email_verified_at) db.run('UPDATE customer_accounts SET email_verified_at=?, updated_at=? WHERE id=?', now, now, accountId);
+      } else {
+        accountId = `account_${randomUUID()}`;
+        db.transaction(() => {
+          db.run(`INSERT INTO customer_accounts
+            (id,display_name,email,email_verified_at,password_hash,marketing_opt_in,status,last_login_at,created_at,updated_at)
+            VALUES (?,?,?,?,NULL,0,'ACTIVE',?,?,?)`,
+            accountId, displayNameFromEmail(email), email, now, now, now, now);
+          db.run('UPDATE customer_accounts SET locale=? WHERE id=?', req.body?.locale === 'ar' ? 'ar-TN' : 'fr-TN', accountId);
+          enqueueWelcomeMail(db, accountId);
+          notification(db, accountId, 'ACCOUNT', 'Bienvenue chez AYROVI', 'Votre compte est actif. Vérifiez votre téléphone avant votre première commande.', '/compte');
+        });
+        account = db.get<any>('SELECT * FROM customer_accounts WHERE id=?', accountId);
+      }
+      const cartSession = validCartSession(req.body?.cartSessionId || req.headers['x-session-id']);
+      if (cartSession) db.attachCartToAccount(cartSession, accountId);
+      const prior = resolveCustomer(db, req) as any;
+      if (prior?.sessionId) db.run('DELETE FROM customer_sessions WHERE id=?', prior.sessionId);
+      const session = createCustomerSession(db, accountId, req);
+      setCustomerCookie(res, session.token);
+      return res.json({ success: true, data: {
+        account: publicAccount(accountRow(db, accountId)),
+        csrfToken: session.csrfToken,
+        expiresAt: session.expiresAt,
+        linkedHistoricalOrders: 0,
+        ...sessionExchangeFields(req, session),
+      } });
+    } catch (error: any) {
+      console.error('[Customer Email Code Verification]', error?.message || error);
       return res.status(500).json({ success: false, error: 'La connexion n’a pas pu être finalisée.' });
     }
   });

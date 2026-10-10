@@ -17,6 +17,7 @@ export type AuthMessageKey =
   | 'auth.error.offline' | 'auth.error.rateLimited' | 'auth.error.otpInvalid'
   | 'auth.error.otpExpired' | 'auth.error.phone' | 'auth.error.credentials'
   | 'auth.error.emailTaken' | 'auth.error.unavailable' | 'auth.error.noSession'
+  | 'auth.emailCode.invalid' | 'auth.emailCode.expired' | 'auth.emailCode.invalidAddress'
   | 'auth.error.register'
   | 'auth.forgot.unavailable' | 'auth.forgot.rateLimited'
   // Clé de repli d'écran : le serveur a refusé (400) sans code exploitable.
@@ -61,6 +62,18 @@ export function authMessageForCode(code: string, status = 0): AuthMessageKey | n
       return 'auth.error.noSession';
     case 'EMAIL_TAKEN':
       return 'auth.error.emailTaken';
+    // Code par e-mail (connexion dans l'application).
+    case 'EMAIL_CODE_INVALID':
+      return 'auth.emailCode.invalid';
+    case 'EMAIL_CODE_EXPIRED':
+    case 'EMAIL_CODE_ALREADY_USED':
+      return 'auth.emailCode.expired';
+    case 'EMAIL_CODE_LOCKED':
+    case 'EMAIL_CODE_RATE_LIMITED':
+      return 'auth.error.rateLimited';
+    case 'EMAIL_CODE_UNAVAILABLE':
+    case 'EMAIL_DELIVERY_FAILED':
+      return 'auth.error.unavailable';
 
     // Récupération de mot de passe : le serveur refuse AVANT toute recherche de
     // compte quand l'envoi d'e-mails n'est pas configuré — l'écran doit le dire
