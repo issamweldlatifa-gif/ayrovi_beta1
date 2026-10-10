@@ -23,6 +23,7 @@ import { AppHeader } from '@/features/shell/AppHeader';
 import { HeroCarousel } from '@/features/home/HeroCarousel';
 import { HomeTabs } from '@/features/home/HomeTabs';
 import { FeaturedPublication } from '@/features/home/FeaturedPublication';
+import { SectionRule } from '@/design/SectionRule';
 import { Footer } from '@/features/shell/Footer';
 import {
   useHeroCarouselSettings, useHeroSlides,
@@ -69,8 +70,12 @@ export default function HomeScreen() {
         onActiveBackgroundChange={setHeroBackground}
       />
 
+      <SectionRule />
+
       {/* التبويبات الثلاث — يفتحو جوّا التطبيق */}
       <HomeTabs />
+
+      <SectionRule />
 
       {/* Dernière publication du magazine — « Découvrir » ouvre la page Publications. */}
       <FeaturedPublication />

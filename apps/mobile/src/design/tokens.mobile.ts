@@ -59,6 +59,18 @@ export const SPACE_EXTENDED = [2, 6, 10, 20, 40] as const;
 /** Échelle complète : identité + compléments, triée. */
 export const SPACE_ALL: readonly number[] = [...SPACE, ...SPACE_EXTENDED].sort((a, b) => a - b);
 
+/* ── Ratios des médias (un seul endroit : pas de nombre en dur dans les écrans) ─ */
+
+/**
+ * Proportions largeur/hauteur des images de carte. La LARGEUR d'une image vient
+ * toujours de la colonne (`AppScreen` : une seule marge d'écran) ; ce jeton ne
+ * fixe que la hauteur. Ainsi « à la une » et les autres cartes suivent la même
+ * règle sur tous les appareils.
+ */
+export const MEDIA_RATIO = {
+  square: 1,
+} as const;
+
 /* ── Rayons (§2 — Radius Tokens) ──────────────────────────────────────────── */
 
 /**

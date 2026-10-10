@@ -12,6 +12,7 @@ import { Pressable, ScrollView, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
+import { FullBleed, useResponsive } from '@/design/layout';
 import { useT } from '@/i18n';
 
 type HomeTab = {
@@ -30,8 +31,10 @@ const TABS: readonly HomeTab[] = [
 export function HomeTabs() {
   const theme = useTheme();
   const t = useT();
+  const { gutter } = useResponsive();
 
   return (
+    <FullBleed>
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
@@ -39,7 +42,7 @@ export function HomeTabs() {
       contentContainerStyle={[
         styles.row,
         // En arabe le premier onglet est à DROITE.
-        { flexDirection: theme.isRTL ? 'row-reverse' : 'row' },
+        { flexDirection: theme.isRTL ? 'row-reverse' : 'row', paddingHorizontal: gutter },
       ]}
       accessibilityRole="tablist"
     >
@@ -58,6 +61,7 @@ export function HomeTabs() {
         </Pressable>
       ))}
     </ScrollView>
+    </FullBleed>
   );
 }
 
@@ -65,7 +69,6 @@ const styles = StyleSheet.create({
   row: {
     alignItems: 'center',
     gap: 24,
-    paddingHorizontal: 16,
     paddingVertical: 12,
   },
   tab: {

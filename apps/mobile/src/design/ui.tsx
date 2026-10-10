@@ -243,6 +243,9 @@ export interface ButtonProps {
   testID?: string;
 }
 
+/** Épaisseur du contour des boutons « quiet » (référence : contour net, pas un filet). */
+export const BUTTON_OUTLINE_WIDTH = 2;
+
 export function Button({ label, onPress, busy = false, disabled = false, tone = 'primary', block = false, style, accessibilityHint, testID, leading }: ButtonProps) {
   const theme = useTheme();
   const blocked = busy || disabled;
@@ -262,9 +265,11 @@ export function Button({ label, onPress, busy = false, disabled = false, tone = 
         style,
         {
           minHeight: theme.geometry.controlHeight,
-          borderRadius: theme.radius.control,
+          // Système de boutons : pastille (CTA), contour encre épais en mode « quiet ».
+          borderRadius: theme.radius.cta,
+          borderWidth: quiet ? BUTTON_OUTLINE_WIDTH : StyleSheet.hairlineWidth,
           backgroundColor: quiet ? 'transparent' : theme.colors.action,
-          borderColor: quiet ? theme.colors.lineControl : theme.colors.action,
+          borderColor: quiet ? theme.colors.ink : theme.colors.action,
           opacity: blocked ? 0.5 : pressed ? 0.85 : 1,
         },
       ]}

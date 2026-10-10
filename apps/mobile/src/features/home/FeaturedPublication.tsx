@@ -21,6 +21,7 @@ import { router } from 'expo-router';
 import { useHomeFeatured } from '@/api/hooks';
 import { mediaUrl } from '@/api/client';
 import { AppImage } from '@/design/appImage';
+import { MEDIA_RATIO } from '@/design/tokens.mobile';
 import { AppText, Button } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
@@ -68,7 +69,8 @@ export function FeaturedPublication() {
 }
 
 const styles = StyleSheet.create({
-  section: { paddingHorizontal: 16, paddingVertical: 16, gap: 12 },
-  // Presque carré, comme la référence : l'image porte la section.
-  image: { width: '100%', aspectRatio: 1, overflow: 'hidden' },
+  // Marge horizontale = celle de l'écran (AppScreen) : pas de double marge.
+  section: { paddingVertical: 16, gap: 12 },
+  // Pleine largeur de la colonne (même marge que le reste de l'accueil), hauteur = ratio du système.
+  image: { width: '100%', aspectRatio: MEDIA_RATIO.square, overflow: 'hidden' },
 });

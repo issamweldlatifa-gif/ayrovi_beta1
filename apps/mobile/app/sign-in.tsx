@@ -686,7 +686,7 @@ function RememberedAccountButton({ account, label, busy, disabled, onPress }: {
         styles.remembered,
         {
           minHeight: theme.geometry.controlHeight,
-          borderRadius: theme.radius.control,
+          borderRadius: theme.radius.cta,
           backgroundColor: theme.colors.action,
           flexDirection: rowDirectionFor(theme.isRTL),
           opacity: disabled && !busy ? 0.5 : pressed ? 0.85 : 1,
