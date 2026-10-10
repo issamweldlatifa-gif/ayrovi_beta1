@@ -201,6 +201,9 @@ describe('Hero — brouillons, aperçu et publication (Admin)', () => {
     await publish();
     expect(await publicIds()).not.toContain(draft.id);
     expect((await manage()).data.map((s: any) => s.id)).not.toContain(draft.id);
+    // Suppression définitive (décision produit) : la ligne n'existe plus en base, ni brouillon.
+    expect(db.get<any>('SELECT id FROM hero_slides WHERE id=?', draft.id)).toBeUndefined();
+    expect(db.get<any>('SELECT id FROM hero_slide_drafts WHERE id=?', draft.id)).toBeUndefined();
   });
 
   test('une carte jamais publiée se supprime tout de suite', async () => {
