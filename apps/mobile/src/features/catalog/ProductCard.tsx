@@ -64,11 +64,16 @@ export function ProductCard({ product, onOpen, style, hasCombinations = false }:
         )}
       </View>
 
+      {hasCombinations ? (
+        <View style={styles.chipRow}>
+          <View style={[styles.chip, { backgroundColor: theme.colors.canvas, borderColor: theme.colors.line, borderRadius: theme.radius.control }]}>
+            <AppText variant="caption" color={theme.colors.ink} numberOfLines={1}>{t('lens.combinations')}</AppText>
+          </View>
+        </View>
+      ) : null}
+
       {product.brandName ? (
         <AppText variant="caption" color={theme.colors.muted} numberOfLines={1}>{product.brandName}</AppText>
-      ) : null}
-      {hasCombinations ? (
-        <AppText variant="caption" color={theme.colors.muted} numberOfLines={1}>{t('lens.combinations')}</AppText>
       ) : null}
 
       <AppText variant="label" weight="bold" numberOfLines={2} style={styles.name}>{product.name}</AppText>
@@ -107,6 +112,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   image: { width: '100%', height: '100%' },
+  chipRow: { flexDirection: 'row', marginBottom: 6 },
+  chip: { paddingHorizontal: 8, paddingVertical: 4, borderWidth: StyleSheet.hairlineWidth, alignSelf: 'flex-start' },
   name: { marginTop: 2, minHeight: 34 },
   footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6, gap: 6 },
 });

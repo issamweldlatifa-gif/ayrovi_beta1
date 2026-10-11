@@ -19,7 +19,7 @@ import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { CameraView } from 'expo-camera';
 
-import { AppText, Button, Card, Field, KeyValue, ResponsiveActionGroup } from '@/design/ui';
+import { AppText, Button, Card, Field, KeyValue, ResponsiveActionGroup, Segmented } from '@/design/ui';
 import { SubScreen } from '@/design/subScreen';
 import { useTheme } from '@/design/theme';
 import { AppImage } from '@/design/appImage';
@@ -212,6 +212,20 @@ export default function OcerexScreen() {
       <Card>
         {viewfinder ? (
           <>
+            <Segmented<'camera' | 'import'>
+              value="camera"
+              onChange={(next) => {
+                // «استيراد صورة» يفتح المعرض مباشرة، ويقفل المنظار.
+                if (next === 'import') {
+                  setViewfinder(false);
+                  void analyzeLibrary();
+                }
+              }}
+              options={[
+                { value: 'camera', label: t('ocerex.tab.camera') },
+                { value: 'import', label: t('ocerex.tab.import') },
+              ]}
+            />
             <View style={styles.viewfinder}>
               <CameraView ref={cameraRef} style={styles.camera} facing="back">
                 <View style={styles.frameLayer}>

@@ -749,6 +749,8 @@ export const fr = {
   'ocerex.shutter': 'Prendre la photo du prix',
   'ocerex.closeViewfinder': 'Fermer la caméra',
   'ocerex.useRecentShot': 'Utiliser cette photo',
+  'ocerex.tab.camera': 'Prendre une photo',
+  'ocerex.tab.import': 'Importer une image',
   'lens.watchAdded': 'Surveillance enregistrée par le serveur : le prix sera relu périodiquement.',
   'lens.watchHint': 'Le serveur relit la page marchande et prévient quand le prix baisse.',
   'lens.watchOpen': 'Mes surveillances',

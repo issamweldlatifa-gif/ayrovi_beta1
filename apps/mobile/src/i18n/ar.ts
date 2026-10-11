@@ -749,6 +749,8 @@ export const ar = {
   'ocerex.shutter': 'التقاط صورة السعر',
   'ocerex.closeViewfinder': 'إغلاق الكاميرا',
   'ocerex.useRecentShot': 'استعمال هذه الصورة',
+  'ocerex.tab.camera': 'التقاط صورة',
+  'ocerex.tab.import': 'استيراد صورة',
   'lens.watchAdded': 'المراقبة تسجّلت في الخادم: السعر يتعاود يقرا بصفة دورية.',
   'lens.watchHint': 'الخادم يعاود يقرا صفحة المتجر ويعلمك كي ينزل السعر.',
   'lens.watchOpen': 'مراقباتي',
