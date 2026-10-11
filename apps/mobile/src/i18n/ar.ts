@@ -9,7 +9,6 @@ export const ar = {
   'tabs.account': 'حسابي',
   'common.language': 'اللغة',
   'common.theme': 'الثيم',
-  'screen.lens.subtitle': 'ابحث بصورة',
   'screen.lens.body': 'كاميرا أصلية، معرض الصور، قراءة الباركود، ومن بعد نفس النتائج اللي في الموقع.',
   'screen.aywebs.subtitle': 'أي متجر في الويب',
   'screen.aywebs.body': 'الصق ولا شارك رابط متجر: الصفحة تتقبض داخل التطبيق، والسعر والتوفّر يحكم فيهم الخادم.',
@@ -720,10 +719,17 @@ export const ar = {
   /* ── P4.2: مسح QR / باركود + مراقبة السعر. ───────────────────────────────── */
   'lens.scanHint': 'الرمز يتفكّ في التليفون؛ والمعنى يجي من الخادم (رابط ولا باركود ولا نصّ في QR).',
   'lens.scanOpen': 'افتح القارئ',
-  'lens.mode.label': 'طريقة البحث',
   'lens.mode.photo': 'صورة',
   'lens.mode.live': 'مسح مباشر',
   'lens.mode.code': 'رابط / رمز',
+  'lens.topTitle': 'AYROVIX Lens',
+  'lens.cameraHint': 'ركّز على المنتج، وبعدين صوّر.',
+  'lens.cameraNeeded': 'الكاميرا لازمة باش نصوّرو المنتج. فعّلها، ولا اختار صورة من المعرض.',
+  'lens.shutter': 'التقاط الصورة',
+  'lens.flashOn': 'تشغيل الفلاش',
+  'lens.flashOff': 'إيقاف الفلاش',
+  'lens.help': 'مساعدة وسجل',
+  'lens.ocerexShort': 'OCEREX',
   'lens.progress.title': 'نتائج Lens',
   'lens.progress.searchingHint': 'بحث جارٍ',
   'lens.progress.count': 'بحث جارٍ: {done} من {total}',
@@ -815,7 +821,6 @@ export const ar = {
   'ocerex.block.CURRENCY_LOCKED': 'العملة المقروءة من اللقطة ما تتبدّلش.',
   'ocerex.block.INVALID_URL': 'يلزم رابط منتوج صالح بـ HTTPS.',
   'ocerex.block.RESTRICTED': 'المنتوج موش قابل للطلب توّا.',
-  'ocerex.open': 'سعر من لقطة شاشة (OCEREX)',
 
   /* ── حالات الخادم: نفس مفردات المخطط (`src/api/labels.ts`) ─────────
      الكود الخام ما يوصلش للمستعمل؛ وكود مجهول يبقى يبان كما هو. */

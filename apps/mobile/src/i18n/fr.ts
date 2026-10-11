@@ -9,7 +9,6 @@ export const fr = {
   'tabs.account': 'Compte',
   'common.language': 'Langue',
   'common.theme': 'Thème',
-  'screen.lens.subtitle': 'Chercher à partir d’une image',
   'screen.lens.body': 'Caméra native, galerie, reconnaissance de code-barres, puis les mêmes résultats que sur le site.',
   'screen.aywebs.subtitle': 'N’importe quelle boutique du web',
   'screen.aywebs.body': 'Collez ou partagez un lien marchand : la page est capturée dans l’application, le prix et la disponibilité sont jugés par le serveur.',
@@ -720,10 +719,17 @@ export const fr = {
   /* ── P4.2 : scan QR / code-barres + surveillance de prix. ─────────────────── */
   'lens.scanHint': 'Le code est décodé sur le téléphone ; le sens vient du serveur (lien, code-barres ou contenu de QR).',
   'lens.scanOpen': 'Ouvrir le lecteur',
-  'lens.mode.label': 'Mode de recherche',
   'lens.mode.photo': 'Photo',
   'lens.mode.live': 'Scan en direct',
   'lens.mode.code': 'Lien / code',
+  'lens.topTitle': 'AYROVIX Lens',
+  'lens.cameraHint': 'Cadrez le produit, puis prenez la photo.',
+  'lens.cameraNeeded': 'La caméra sert à photographier le produit. Autorisez-la, ou choisissez une image dans la galerie.',
+  'lens.shutter': 'Prendre la photo',
+  'lens.flashOn': 'Activer le flash',
+  'lens.flashOff': 'Couper le flash',
+  'lens.help': 'Aide et historique',
+  'lens.ocerexShort': 'OCEREX',
   'lens.progress.title': 'Résultats Lens',
   'lens.progress.searchingHint': 'Recherche en cours',
   'lens.progress.count': 'Recherche en cours : {done} sur {total}',
@@ -815,7 +821,6 @@ export const fr = {
   'ocerex.block.CURRENCY_LOCKED': 'La devise lue sur la capture ne peut pas être remplacée.',
   'ocerex.block.INVALID_URL': 'Il faut un lien produit valide en HTTPS.',
   'ocerex.block.RESTRICTED': 'Article non commandable pour le moment.',
-  'ocerex.open': 'Prix vu sur une capture (OCEREX)',
 
   /* ── حالات الخادم: نفس مفردات المخطط (`src/api/labels.ts`) ─────────
      الكود الخام ما يوصلش للمستعمل؛ وكود مجهول يبقى يبان كما هو. */

@@ -3,10 +3,10 @@
 Document de référence (dans le dépôt pour ne pas être perdu). Chaque section : ce que montre la maquette, la décision, et l'état réel dans `apps/mobile`.
 Les maquettes sont des visuels de référence : la mise en œuvre suit les **données réelles** du serveur (aucun prix, promo ou pourcentage inventé).
 
-## 1. Lens — caméra (sélecteur de mode)
-- Montre : titre, consigne, sélecteur **Scan en direct / Photo / Lien / code**, vignette, déclencheur, bouton OCEREX.
-- Décision : une seule page Lens ; le mode choisi affiche sa carte.
-- État : **fait** — sélecteur « Photo / Scan en direct / Lien-code » (`de35927`). Raccourci OCEREX dans la caméra : non fait.
+## 1. Lens — caméra (ouverture directe)
+- Montre : caméra plein écran, barre du haut (retour, « AYROVIX Lens », flash, aide), indication « Cadrez le produit, puis prenez la photo. », sélecteur **Scan en direct / Photo / Lien / code**, vignette galerie, déclencheur, bouton OCEREX rond.
+- Décision : ouvrir l'onglet Lens = la caméra tout de suite (plus de page intermédiaire). La caméra ne tourne que quand l'onglet est affiché. Le résultat monte en panneau sous l'aperçu.
+- État : **fait, à tester sur appareil** — `app/(tabs)/lens.tsx` (`expo-camera`). Sans accès caméra : cause expliquée + bouton « Demander l'autorisation » (demandé une fois à l'ouverture) + galerie. « Scan en direct » ouvre le lecteur QR (`/lens/scan`). « Lien / code » ouvre la saisie dans le panneau.
 
 ## 2. Lens — résultats en cours (feuille de progression)
 - Montre : feuille « Résultats Lens », étapes « Image lue ✓ / Recherche des boutiques ⟳ / Lecture des fiches produit », emplacements gris, « Réessayer » et « Annuler ».
