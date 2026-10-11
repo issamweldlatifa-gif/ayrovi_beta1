@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "scope": "Recursive static inventory of all client TypeScript/TSX/CSS; manual review tracked separately",
   "totals": {
-    "files": 261,
-    "customerAndSharedFiles": 205,
-    "controls": 484,
+    "files": 259,
+    "customerAndSharedFiles": 203,
+    "controls": 481,
     "iconAliases": 102,
     "uniqueGlyphs": 99
   },
@@ -11535,50 +11535,6 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/ayrovix/components/lens-product-card.css",
-      "domain": "lens",
-      "sha256": "7b8eadf025a9fdbbfb7f77a474af932c92dd86e29bf90f9e9c87d30bc49085db",
-      "lines": 57,
-      "imports": [],
-      "exports": [],
-      "controls": [],
-      "icons": [],
-      "inlineSvg": [],
-      "colors": [
-        "#000",
-        "#12683a",
-        "#595959",
-        "#8a5300",
-        "#a01b1b",
-        "#bcdcc7",
-        "#d9d9d9",
-        "#dc2626",
-        "#e5b400",
-        "#e6c9c9",
-        "#e7f6ec",
-        "#f0f2f2",
-        "#f4fbf6",
-        "#f6f6f6",
-        "#faf3f3",
-        "#fdeaea",
-        "#fdf1dd",
-        "#fff",
-        "#ffffff"
-      ],
-      "fontDeclarations": [
-        "font-family:var(--ay-font-stack)",
-        "font-family:var(--ay-font-stack)",
-        "font-family:var(--ay-font-stack)",
-        "font-family:var(--ay-font-stack)",
-        "font-family:var(--ay-font-stack)",
-        "font-family:var(--ay-font-stack)",
-        "font-family:var(--ay-font-stack)",
-        "font-family:var(--ay-font-stack)",
-        "font-family:var(--ay-font-stack)"
-      ],
-      "apiReferences": []
-    },
-    {
       "file": "client/src/ayrovix/components/lens-results.css",
       "domain": "lens",
       "sha256": "24f61d121b3332e7a7008a854abb7dfd9aabb70cd37a2249df0defabb092e50b",
@@ -12261,70 +12217,6 @@
         {
           "module": "../../components/QatafoIcons",
           "bindings": "{\n  ArrowLeft, FileText, History, Info, MoreVertical, Moon, ShoppingBag, X,\n}",
-          "line": 2
-        }
-      ],
-      "inlineSvg": [],
-      "colors": [],
-      "fontDeclarations": [],
-      "apiReferences": []
-    },
-    {
-      "file": "client/src/ayrovix/components/LensProductCard.tsx",
-      "domain": "lens",
-      "sha256": "54a8bc87abb096b98f73e385d2f4196e7e884d6e5bc082cd4b94dd5ba3deb549",
-      "lines": 183,
-      "imports": [
-        "react",
-        "../../components/QatafoIcons",
-        "../../i18n/LocaleContext",
-        "../types",
-        "../services/lensApi",
-        "./MerchantRating",
-        "./quiet-card",
-        "../services/mediaIsolation",
-        "./lens-product-card.css"
-      ],
-      "exports": [
-        "lensCardCopy",
-        "LensProductCard"
-      ],
-      "controls": [
-        {
-          "tag": "button",
-          "line": 148,
-          "className": "\"lens-card-open\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": "{tr(`Voir le produit : ${candidate.title}`, `عرض المنتج: ${candidate.title}`)}",
-          "onClick": "{() => onChoose(candidate)}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 171,
-          "className": "\"lens-card-favorite\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": "{saved\n        ? tr(`Retirer des favoris : ${candidate.title}`, `إزالة من المفضلة: ${candidate.title}`)\n        : tr(`Ajouter aux favoris : ${candidate.title}`, `إضافة إلى المفضلة: ${candidate.title}`)}",
-          "onClick": "{() => onFavorite(candidate)}",
-          "disabled": "{busy}"
-        },
-        {
-          "tag": "button",
-          "line": 176,
-          "className": "\"lens-card-verify\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": "{tr(`Vérifier le stock : ${candidate.title}`, `التحقق من المخزون: ${candidate.title}`)}",
-          "onClick": "{() => void verifyStock()}",
-          "disabled": "{checking}"
-        }
-      ],
-      "icons": [
-        {
-          "module": "../../components/QatafoIcons",
-          "bindings": "{ Heart, HeartFilled, Image as ImageIcon, RefreshCw }",
           "line": 2
         }
       ],

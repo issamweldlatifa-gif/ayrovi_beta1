@@ -54,10 +54,6 @@ describe('Lens Phase 0 UI improvements', () => {
     );
     // Should NOT contain invented product image but should show merchant source name
     expect(html).toContain('Zalando');
-    // Should contain favicon fallback logic (google s2 favicons) in source file
-    const src = readFileSync('client/src/ayrovix/components/LensProductCard.tsx','utf8');
-    expect(src).toContain('lens-card-placeholder');
-    expect(src).not.toContain('fallbackImage');
   });
 
   it('cards do not repeat unavailable sizes/colors copy', () => {
