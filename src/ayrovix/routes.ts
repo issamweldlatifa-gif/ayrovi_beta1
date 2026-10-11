@@ -20,6 +20,7 @@ import { createAyrovixPriceToken, type AyrovixQuoteStatus } from './priceQuote';
 import { listAyrovixHistory, recordAyrovixHistory, type AyrovixHistoryInput } from './history';
 import { filterWithFallback, withDisplayRating } from './services/candidatePolicy';
 import { startTrace, mark, endTrace } from './services/lensPerformanceTrace';
+import { armLensDeadline, lensAnalyzeDeadlineMs } from './services/lensDeadline';
 import { warmIsolation } from '../services/imageIsolation';
 import { warmComposition } from '../services/imageComposition';
 import { addPriceWatcher, listPriceWatchers, priceWatcherLimitReached, removePriceWatcher } from './services/priceWatch';
@@ -211,6 +212,19 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
     if (!ALLOWED_MIME.has(file.mimetype)) {
       return res.status(415).json({ success: false, code: 'UNSUPPORTED_IMAGE', error: 'Format non supporté — JPEG, PNG ou WebP uniquement.' });
     }
+    // Délai global : sans lui, une étape muette laisse le client sur « Analyse en cours… ».
+    let timedOut = false;
+    const deadlineMs = lensAnalyzeDeadlineMs();
+    const cancelDeadline = armLensDeadline(deadlineMs, () => {
+      timedOut = true;
+      console.warn('[AYROVIX analyze-image] ANALYZE_TIMEOUT', requestId, deadlineMs);
+      const message = "L'analyse a pris trop de temps. Réessayez avec une photo plus nette ou dans un instant.";
+      if (stream) {
+        if (!res.writableEnded) { emit('error', { code: 'ANALYZE_TIMEOUT', error: message }); res.end(); }
+      } else if (!res.headersSent) {
+        res.status(504).json({ success: false, code: 'ANALYZE_TIMEOUT', error: message });
+      }
+    });
     try {
       const tNorm = Date.now();
       const normalized = await normalizeUploadedImage(file.buffer, file.mimetype);
@@ -316,7 +330,9 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       }
       mark(trace, 'pipelineCacheHit', false);
 
+      emit('progress', { step: 'identified' });
       const effectiveQuery = buildSearchQuery(identification);
+      emit('progress', { step: 'searching' });
       const tSearch = Date.now();
       // Avec des liens SerpApi, `searchCandidates` n'appelle AUCUNE recherche web :
       // il note, convertit (calculateur AYROVI) et regroupe les offres, puis
@@ -337,6 +353,8 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
        * AYROVI ; l'extrait SerpApi n'est qu'un repli en attendant la page.
        */
       const tLiveStock = Date.now();
+      let readyCount = 0;
+      emit('progress', { step: 'reading', done: 0, total: candidates.length });
       const { candidates: liveCandidates, report: liveStock } = await enrichCandidatesLiveStock(candidates, {
         fetcher: (url) => scraper.scrapeParsedPage(url).then((result) => result.data),
         reprice: (price, currency) => {
@@ -344,6 +362,8 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
           return estimate ? { priceTnd: estimate.priceTnd, promo: estimate.promo } : null;
         },
         onReady: (candidate) => {
+          readyCount += 1;
+          emit('progress', { step: 'reading', done: readyCount, total: candidates.length });
           if (streamedUrls.has(candidate.sourceUrl)) return;
           streamedUrls.add(candidate.sourceUrl);
           emit('card', tokenizedCandidate(candidate));
@@ -373,6 +393,8 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       const candidateMedia = [...securedCandidates.map((item) => item.image), ...securedCandidates.flatMap((item) => item.images || [])];
       warmIsolation(candidateMedia, 8);
       warmComposition(candidateMedia, 8);
+      // Le délai a déjà répondu : on n'écrit plus rien dans la réponse.
+      if (timedOut) return;
       const eventId = recordAyrovixEvent(db, {
         channel: 'image',
         brand: identification.brand,
@@ -422,6 +444,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       }
       return res.json({ success: true, data: responseData });
     } catch (error: any) {
+      if (timedOut) return;
       if (stream && !res.writableEnded) {
         emit('error', { code: error?.code || 'IDENTIFICATION_FAILED', error: error?.message || 'IDENTIFICATION_FAILED' });
         return res.end();
@@ -434,6 +457,8 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       }
       console.warn('[AYROVIX analyze-image]', error?.code || error?.message || 'unknown');
       return res.status(422).json({ success: false, code: 'IDENTIFICATION_FAILED', error: "Impossible d'identifier le produit. Essayez une photo plus nette et centrée." });
+    } finally {
+      cancelDeadline();
     }
   });
 

@@ -2,10 +2,11 @@ import { LensProductCard } from './LensProductCard';
 import { useLensFavorites } from './useLensFavorites';
 import type { CustomerSession } from '../../types';
 import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
-import { ArrowLeft, ScanSearch, Loader2, Image as ImageIcon } from '../../components/QatafoIcons';
+import { ArrowLeft, ScanSearch, Loader2, Image as ImageIcon, Check } from '../../components/QatafoIcons';
 import type { AyrovixCandidate } from '../types';
 import { isDisplayableCandidate, isLenientCandidate } from '../services/resultPolicy';
 import { useLocale } from '../../i18n/LocaleContext';
+import type { LensProgress } from '../services/lensStream';
 
 import { containedImageRect, pointInImage, detectedBox, selectionForPoint, resizeSelection, type LensBox, type Corner } from '../services/lensSelectionGeometry';
 import { useLensResultsSheet } from './useLensResultsSheet';
@@ -34,9 +35,51 @@ interface Props {
   customerIntent?: string;
   /** true = rendu à l'intérieur de la coque caméra (jamais une page séparée) : plein conteneur parent, pas de 100dvh. */
   shell?: boolean;
+  /** Étape en cours du flux serveur (image lue, recherche, lecture des fiches). */
+  analysisProgress?: LensProgress | null;
+  onCancelAnalysis?: () => void;
+  onRetryAnalysis?: () => void;
 }
 
-export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fallbackImage, onChoose, onReset, onRoiSearch, onLassoSearch, isLoading, detectedProducts, shell, customerSession, onOpenFavorites }) => {
+const LensAnalysisProgress: React.FC<{ progress: LensProgress | null; onRetry?: () => void; onCancel?: () => void }> = ({ progress, onRetry, onCancel }) => {
+  const { tr } = useLocale();
+  const step = progress?.step;
+  const imageState = step ? 'done' : 'active';
+  const shopsState = step === 'reading' ? 'done' : step ? 'active' : 'pending';
+  const readState = step === 'reading' ? 'active' : 'pending';
+  const counter = step === 'reading' && progress?.total
+    ? tr(`Recherche en cours : ${progress.done ?? 0} sur ${progress.total}`, `جارٍ البحث: ${progress.done ?? 0} من ${progress.total}`)
+    : tr('Recherche en cours…', 'جارٍ البحث…');
+  const rows: Array<[string, 'done' | 'active' | 'pending']> = [
+    [tr('Image lue', 'تمت قراءة الصورة'), imageState],
+    [tr('Recherche des boutiques', 'البحث في المتاجر'), shopsState],
+    [tr('Lecture des fiches produit', 'قراءة بطاقات المنتجات'), readState],
+  ];
+  return (
+    <div className="lens-analysis-progress" role="status" aria-live="polite">
+      <p className="text-sm font-extrabold text-ink">{counter}</p>
+      <ul className="mt-2 space-y-1.5">
+        {rows.map(([label, state]) => (
+          <li key={label} className={`flex items-center gap-2 text-xs font-bold ${state === 'pending' ? 'text-muted' : 'text-ink'}`}>
+            <span aria-hidden="true" className="grid h-4 w-4 place-items-center">
+              {state === 'done' ? <Check size={14} /> : state === 'active' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <span className="h-1.5 w-1.5 rounded-full bg-line" />}
+            </span>
+            {label}
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 text-xs font-medium text-muted">{tr('Cela peut prendre quelques secondes.', 'قد يستغرق ذلك بضع ثوانٍ.')}</p>
+      {(onRetry || onCancel) && (
+        <div className="mt-3 flex justify-center gap-2.5">
+          {onRetry && <button type="button" onClick={onRetry} className="ay-btn-secondary text-xs">{tr('Réessayer', 'إعادة المحاولة')}</button>}
+          {onCancel && <button type="button" onClick={onCancel} className="ay-btn-secondary text-xs">{tr('Annuler', 'إلغاء')}</button>}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fallbackImage, onChoose, onReset, onRoiSearch, onLassoSearch, isLoading, detectedProducts, shell, customerSession, onOpenFavorites, analysisProgress, onCancelAnalysis, onRetryAnalysis }) => {
   const { tr, direction } = useLocale();
   const favorites = useLensFavorites(customerSession, onOpenFavorites);
   const visible = useMemo(() => {
@@ -155,7 +198,7 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
           onKeyDown={e => { if (['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key)) { e.preventDefault(); drawer.snap(e.key === 'ArrowUp' || e.key === 'Home'); } }}><span aria-hidden="true" /></button>}
         <div className="lens-sheet-summary" aria-hidden={drawer.full && previewUrl ? true : undefined}>
           {previewUrl && <img src={previewUrl} alt="" draggable={false} />}
-          <div><h3>{tr('Résultats Lens', 'نتائج Lens')}{!isLoading && visible.length > 0 ? ` · ${visible.length}` : ''}</h3>
+          <div><h3>{tr('Résultats Lens', 'نتائج Lens')}{visible.length > 0 ? ` · ${visible.length}` : ''}</h3>
             <p>{isLoading ? tr('Analyse en cours…', 'جارٍ التحليل…') : name}</p></div>
         </div>
         <p className="sr-only" role="status" aria-live="polite">{isLoading ? tr('Analyse en cours…', 'جارٍ التحليل…') : tr(`${visible.length} résultats disponibles`, `${visible.length} نتيجة متاحة`)}</p>
@@ -164,9 +207,13 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
           onFocusCapture={e => { if (previewUrl && !drawer.full && e.target instanceof HTMLElement && e.target.matches('button:focus-visible,a:focus-visible')) drawer.snap(true); }}>
           {isLoading ? (
             <div className="space-y-3 py-4">
-              <div className="flex items-center gap-2 text-xs font-bold text-muted"><Loader2 className="h-4 w-4 animate-spin" />{tr('Analyse en cours…', 'جارٍ التحليل…')}</div>
-              <div className="grid grid-cols-2 gap-2.5">{[0,1,2,3].map(i => (<div key={i} className="animate-pulse bg-white p-2"><div className="aspect-square rounded-card bg-line" /><div className="mt-2 h-3 rounded bg-line" /><div className="mt-1 h-2 rounded bg-line w-2/3" /></div>))}</div>
-
+              <LensAnalysisProgress progress={analysisProgress ?? null} onRetry={onRetryAnalysis} onCancel={onCancelAnalysis} />
+              <div className="lens-result-grid grid grid-cols-2 md:grid-cols-3 gap-x-3 gap-y-6">
+                {visible.map(candidate => <LensProductCard key={candidate.id} candidate={candidate} onChoose={onChoose} saved={favorites.isSaved(candidate)} busy={favorites.busy} onFavorite={favorites.toggle} />)}
+                {Array.from({ length: Math.max(0, Math.min(4, (analysisProgress?.total ?? 4) - visible.length)) }).map((_, i) => (
+                  <div key={`placeholder-${i}`} className="animate-pulse bg-white p-2"><div className="aspect-square rounded-card bg-line" /><div className="mt-2 h-3 rounded bg-line" /><div className="mt-1 h-2 rounded bg-line w-2/3" /></div>
+                ))}
+              </div>
             </div>
           ) : (
             <>
