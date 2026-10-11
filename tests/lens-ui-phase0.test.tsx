@@ -70,7 +70,7 @@ describe('Lens Phase 0 UI improvements', () => {
       <LocaleProvider><InteractiveLensResults view={view as any} previewUrl={null} fallbackImage={null} onChoose={()=>{}} onReset={()=>{}} /></LocaleProvider>
     );
     expect(html).not.toContain('Tailles/couleurs');
-    expect(html).toContain('Voir le produit');
+    expect(html).toContain('aria-label="Voir ');
   });
 
   it('cards retain the TND amount and leave detailed pricing to the product sheet', () => {
@@ -82,7 +82,7 @@ describe('Lens Phase 0 UI improvements', () => {
     const html = renderToStaticMarkup(
       <LocaleProvider><InteractiveLensResults view={view as any} previewUrl={null} fallbackImage={null} onChoose={()=>{}} onReset={()=>{}} /></LocaleProvider>
     );
-    expect(html).toContain('598.00 DT');
+    expect(html).toContain('598,00 DT');
     for (const text of ['Prix final estimé','Prix boutique','Estimation tout inclus','84 EUR']) expect(html).not.toContain(text);
   });
 

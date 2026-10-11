@@ -1,4 +1,3 @@
-import { LensProductCard } from './LensProductCard';
 import { useLensFavorites } from './useLensFavorites';
 import type { CustomerSession } from '../../types';
 import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
@@ -6,6 +5,8 @@ import { ArrowLeft, ScanSearch, Loader2, Image as ImageIcon, Check } from '../..
 import type { AyrovixCandidate } from '../types';
 import { isDisplayableCandidate, isLenientCandidate } from '../services/resultPolicy';
 import { useLocale } from '../../i18n/LocaleContext';
+import { ProductGrid } from '../../shop/ProductGrid';
+import { candidateToView } from '../../shop/adapter';
 import type { LensProgress } from '../services/lensStream';
 
 import { containedImageRect, pointInImage, detectedBox, selectionForPoint, resizeSelection, type LensBox, type Corner } from '../services/lensSelectionGeometry';
@@ -76,13 +77,30 @@ const LensAnalysisProgress: React.FC<{ progress: LensProgress | null; onRetry?: 
 };
 
 export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fallbackImage, onChoose, onReset, onRoiSearch, onLassoSearch, isLoading, detectedProducts, shell, customerSession, onOpenFavorites, analysisProgress, onCancelAnalysis, onRetryAnalysis }) => {
-  const { tr, direction } = useLocale();
+  const { tr, direction, formatMoney } = useLocale();
   const favorites = useLensFavorites(customerSession, onOpenFavorites);
   const visible = useMemo(() => {
     const strict = view.list.filter(isDisplayableCandidate).sort((a, b) => (b.match || 0) - (a.match || 0));
     return strict.length ? strict : view.list.filter(isLenientCandidate).sort((a, b) => (b.match || 0) - (a.match || 0));
   }, [view.list]);
   const name = view.queryLabel || visible[0]?.title || tr('Votre image', 'صورتك');
+  const placeholderCount = Math.max(0, Math.min(4, (analysisProgress?.total ?? 4) - visible.length));
+  // Une seule carte dans tout le site : la grille boutique (ProductGrid), alimentée par l'adaptateur de la boutique.
+  const renderResultsGrid = (items: AyrovixCandidate[]) => {
+    const byId = new Map(items.map((candidate) => [candidate.id, candidate] as const));
+    const saved = new Set(items.filter((candidate) => favorites.isSaved(candidate)).map((candidate) => candidate.id));
+    return (
+      <ProductGrid
+        products={items.map(candidateToView)}
+        tr={tr}
+        formatMoney={(tnd: number) => formatMoney(tnd)}
+        direction={direction}
+        favorites={saved}
+        onOpen={(product) => { const candidate = byId.get(product.id); if (candidate) onChoose(candidate); }}
+        onFavorite={(product) => { const candidate = byId.get(product.id); if (candidate) void favorites.toggle(candidate); }}
+      />
+    );
+  };
   const loadingSubtitle = analysisProgress?.step === 'reading' && analysisProgress.total
     ? tr(`Recherche en cours : ${analysisProgress.done ?? 0} sur ${analysisProgress.total}`, `جارٍ البحث: ${analysisProgress.done ?? 0} من ${analysisProgress.total}`)
     : tr('Recherche en cours…', 'جارٍ البحث…');
@@ -207,12 +225,20 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
           {isLoading ? (
             <div className="space-y-3 py-4">
               <LensAnalysisProgress progress={analysisProgress ?? null} onRetry={onRetryAnalysis} onCancel={onCancelAnalysis} />
-              <div className="lens-result-grid grid grid-cols-2 md:grid-cols-3 gap-x-3 gap-y-6">
-                {visible.map(candidate => <LensProductCard key={candidate.id} candidate={candidate} onChoose={onChoose} saved={favorites.isSaved(candidate)} busy={favorites.busy} onFavorite={favorites.toggle} />)}
-                {Array.from({ length: Math.max(0, Math.min(4, (analysisProgress?.total ?? 4) - visible.length)) }).map((_, i) => (
-                  <div key={`placeholder-${i}`} className="animate-pulse bg-white p-2"><div className="aspect-square rounded-card bg-line" /><div className="mt-2 h-3 rounded bg-line" /><div className="mt-1 h-2 rounded bg-line w-2/3" /></div>
-                ))}
-              </div>
+              {renderResultsGrid(visible)}
+              {placeholderCount > 0 && (
+                <div className="s-root" aria-hidden="true">
+                  <div className="s-grid">
+                    {Array.from({ length: placeholderCount }).map((_, i) => (
+                      <div key={`placeholder-${i}`} className="s-card animate-pulse">
+                        <div className="s-card__media" style={{ background: 'var(--s-surface, #f2f2f2)' }} />
+                        <div className="mt-2 h-3 rounded bg-line" />
+                        <div className="mt-1 h-2 rounded bg-line w-2/3" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <>
@@ -231,8 +257,8 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
                 <>
                   {view.excludedCount ? <p className="lens-favorite-notice" role="status">{tr(`${view.excludedCount} résultat(s) écarté(s) — stock ou prix non confirmés par le marchand.`, `تم استبعاد ${view.excludedCount} نتيجة — المتجر لم يؤكد السعر أو التوفر.`)}</p> : null}
                   {favorites.message && <p className="lens-favorite-notice" role="status">{favorites.message === 'auth' ? tr('Connectez-vous à votre compte pour enregistrer vos favoris.', 'سجّل الدخول إلى حسابك لحفظ المفضلة.') : tr('Impossible de mettre à jour les favoris. Réessayez avec le cœur.', 'تعذر تحديث المفضلة. أعد المحاولة من زر القلب.')}</p>}
-                  <div className="lens-result-grid grid grid-cols-2 md:grid-cols-3 gap-x-3 gap-y-6">
-                    {visible.map(candidate => <LensProductCard key={candidate.id} candidate={candidate} onChoose={onChoose} saved={favorites.isSaved(candidate)} busy={favorites.busy} onFavorite={favorites.toggle} />)}
+                  <div className="lens-result-grid">
+                    {renderResultsGrid(visible)}
                   </div>
                 </>
               )}

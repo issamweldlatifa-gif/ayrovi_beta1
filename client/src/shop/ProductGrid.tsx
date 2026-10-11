@@ -29,7 +29,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
         const price = product.price;
         const saved = favorites?.has(product.id) ?? false;
         return (
-          <article className="s-card" key={product.id}>
+          <article className="s-card" key={product.id} data-product-id={product.id}>
             <div className="s-card__media">
               <button
                 type="button"
@@ -39,7 +39,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
               >
                 {cover
                   ? <img src={cover.src} alt={cover.alt} loading="lazy" decoding="async" referrerPolicy="no-referrer" />
-                  : <span className="s-card__desc">{tr('Image indisponible', 'الصورة غير متوفرة')}</span>}
+                  : <span className="s-card__desc">{tr('Image indisponible', 'الصورة غير متوفرة')}{product.merchant?.name ? ` · ${product.merchant.name}` : ''}</span>}
               </button>
 
               {onFavorite && (

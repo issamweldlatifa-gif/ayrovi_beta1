@@ -53,23 +53,23 @@ describe('AYROVIX LENS results screen (post-analysis, real-data shape)', () => {
     expect(html).not.toContain('Estimation tout inclus');
     expect(html).toContain('Afficher tous les résultats');
     expect(html).not.toContain('Prix final estimé');
-    expect(html).toContain('Voir le produit');
+    expect(html).toContain('aria-label="Voir ');
     // ROI / interactive controls keep image visible
     expect(html).toContain('Sélectionner un produit');
   });
 
   it('preserves ranking while removing percentage badges', () => {
     const html = render();
-    expect(html.indexOf('data-candidate-id="a"')).toBeLessThan(html.indexOf('data-candidate-id="c"'));
-    expect(html.indexOf('data-candidate-id="c"')).toBeLessThan(html.indexOf('data-candidate-id="b"'));
+    expect(html.indexOf('data-product-id="a"')).toBeLessThan(html.indexOf('data-product-id="c"'));
+    expect(html.indexOf('data-product-id="c"')).toBeLessThan(html.indexOf('data-product-id="b"'));
     expect(html).not.toContain('94%');
   });
   it('shows the unchanged TND price, without extra price labels/currencies', () => {
     const html = render();
-    expect(html).toContain('598.00 DT');
+    expect(html).toContain('598,00 DT');
     expect(html).not.toContain('Prix boutique');
     expect(html).not.toContain('EUR');
-    expect(html).toContain('Voir le produit');
+    expect(html).toContain('aria-label="Voir ');
   });
 
   it('the analyzing stage uses Google Lens style (image stays visible + sheet loading, no separate dots page)', () => {
