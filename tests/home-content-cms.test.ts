@@ -141,7 +141,7 @@ describe('AYROVI mobile width-first layout rule', () => {
 
   test('the homepage ends at its own sections — no footer or content below them', () => {
     // الفوتر مستثنى من أقسام الصفحة الرئيسية المعروضة
-    expect(appSource).toContain("!['brands', 'about', 'footer'].includes(section.id)");
+    expect(appSource).toContain("!['brands', 'about', 'footer', 'announcement'].includes(section.id)");
     // قسم الـhero يُغلق بدون padding سفلي حتى تنتهي الصفحة عند LENS
     expect(indexCss).toContain(".managed-public-section[data-public-section='hero'] { padding-block-end: 0 !important; }");
   });

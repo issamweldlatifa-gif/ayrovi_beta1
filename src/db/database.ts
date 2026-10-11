@@ -2925,6 +2925,7 @@ export class QatafoDatabase {
           { id: 'brands', visible: true, order: 30, title: '', subtitle: '', image: '', backgroundColor: '#f8f9fa', textColor: '#111111', paddingY: 0, contained: false },
           { id: 'about', visible: true, order: 40, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#111111', paddingY: 0, contained: false },
           { id: 'footer', visible: true, order: 50, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#111111', paddingY: 0, contained: false },
+          { id: 'announcement', visible: false, order: 25, title: '', subtitle: '', image: '', backgroundColor: '#ff6900', textColor: '#ffffff', paddingY: 48, contained: false, mediaType: 'image', videoUrl: '', ctaLabel: 'Découvrir', ctaTarget: 'app:lens' },
         ],
         typography: { preset: 'ayrovi-a', body: FONT_STACK, display: FONT_STACK, baseSize: 16, align: 'start', headingColor: '#111111', textColor: '#666666', lineHeight: 1.5, letterSpacing: -0.011, headingScale: 1 },
         colors: { pageBackground: '#ffffff', surfaceBackground: '#ffffff', surfaceAlt: '#f8f9fa', borderColor: '#eaeaea', primary: '#111111', primaryDark: '#0a0a0a', primaryLight: '#3f3f46', accent: '#ff6900', headerBackground: '#ffffff', headerText: '#111111', announcementBackground: '#0a0a0a', announcementText: '#ffffff', heroBackground: '#0a0a0a', heroText: '#ffffff', footerBackground: '#ffffff', footerText: '#111111', success: '#15803d', warning: '#666666', danger: '#dc2626' },

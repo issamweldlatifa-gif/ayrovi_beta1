@@ -11,6 +11,7 @@ import { StoriesShowcase } from './components/StoriesShowcase';
 import { LensFeature } from './components/LensFeature';
 import { PartnerBrandsSlider } from './components/PartnerBrandsSlider';
 import { PublicCmsSections } from './components/PublicCmsSections';
+import { AnnouncementSection } from './components/AnnouncementSection';
 import { AboutSection } from './components/AboutSection';
 import { BottomNavBar } from './components/BottomNavBar';
 import type { AyrovixOrderPayload } from './ayrovix/types';
@@ -435,8 +436,15 @@ export const App: React.FC = () => {
 
   // Preserve the existing homepage composition and the CMS-controlled Stories/Lens order.
   // Discovery links and the shared footer are additions outside this unchanged content.
+  // Bloc « annonce » : rendu DANS le bloc Stories/Reels (juste après), pas comme section à part.
+  const announcementSection = interfaceConfig.sections.find((section) => section.id === 'announcement');
+  const handleAnnouncementCta = (target: string) => {
+    if (target.startsWith('app:')) navigation.navigate([{ id: target }]);
+    else if (target.startsWith('/')) window.location.assign(target);
+  };
+  const announcementBlock = announcementSection ? <AnnouncementSection section={announcementSection} onCta={handleAnnouncementCta} /> : null;
   const publicSections = [...interfaceConfig.sections]
-    .filter((section) => section.visible && !['brands', 'about', 'footer'].includes(section.id))
+    .filter((section) => section.visible && !['brands', 'about', 'footer', 'announcement'].includes(section.id))
     .sort((a, b) => a.order - b.order)
     .map((section) => {
       let content: React.ReactNode;
@@ -456,6 +464,7 @@ export const App: React.FC = () => {
                 isAuthenticated={Boolean(customerSession)}
                 onRequireAuth={() => { setAccountInitialSection('home'); openAppView('app:account'); }}
               />
+              {announcementBlock}
             </>
           ) : (
             <>
@@ -463,6 +472,7 @@ export const App: React.FC = () => {
                 isAuthenticated={Boolean(customerSession)}
                 onRequireAuth={() => { setAccountInitialSection('home'); openAppView('app:account'); }}
               />
+              {announcementBlock}
               <LensFeature onOpenLens={handleOpenLens} />
             </>
           )}

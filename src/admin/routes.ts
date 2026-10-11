@@ -2310,12 +2310,15 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     if (current.setting_key === 'interface_config') {
       if (hasForbiddenFontSelection(received)) return res.status(400).json({ success: false, code: 'IDENTITY_LOCKED', error: 'La typographie AYROVI A est verrouillée.' });
       received = enforceBrandIdentity(received);
-      const sectionIds = new Set(['hero', 'cms', 'brands', 'about', 'footer']);
+      // « announcement » est récente : une configuration enregistrée avant reste valide sans elle.
+      const requiredSectionIds = ['hero', 'cms', 'brands', 'about', 'footer'];
+      const sectionIds = new Set([...requiredSectionIds, 'announcement']);
       const sections = received && typeof received === 'object' && !Array.isArray(received) ? received.sections : null;
       const encoded = JSON.stringify(received);
-      if (!Array.isArray(sections) || sections.length !== sectionIds.size
-        || new Set(sections.map((section: any) => section?.id)).size !== sectionIds.size
+      if (!Array.isArray(sections) || sections.length < requiredSectionIds.length || sections.length > sectionIds.size
+        || new Set(sections.map((section: any) => section?.id)).size !== sections.length
         || sections.some((section: any) => !sectionIds.has(String(section?.id)))
+        || requiredSectionIds.some((id) => !sections.some((section: any) => section?.id === id))
         || encoded.length > 50_000) {
         return res.status(400).json({ success: false, error: 'La configuration واجهتي est invalide ou trop volumineuse.' });
       }

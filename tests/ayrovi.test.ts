@@ -1126,7 +1126,7 @@ describe('AYSONIC platform', () => {
     expect(settings.status).toBe(200);
     const row = settings.body.data.find((item: any) => item.setting_key === 'interface_config');
     expect(row).toBeTruthy();
-    expect(row.setting_value.sections.map((section: any) => section.id)).toEqual(['hero', 'cms', 'brands', 'about', 'footer']);
+    expect(row.setting_value.sections.map((section: any) => section.id)).toEqual(['hero', 'cms', 'brands', 'about', 'footer', 'announcement']);
     expect(row.setting_value.typography.preset).toBe('ayrovi-a');
     expect(row.setting_value.colors).toMatchObject({ pageBackground: '#ffffff', primary: '#000000', heroBackground: '#0a0a0a', announcementBackground: '#0a0a0a', accent: '#ff6900' }); // DS v1.0
     expect(row.setting_value.icons).toMatchObject({ library: 'ayrovi', activeColor: '#ff6900' });
