@@ -22,7 +22,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 
 import { AppScreen } from '@/design/layout';
 import { AppHeader } from '@/features/shell/AppHeader';
-import { AppText, Button, Card, Field, KeyValue, ResponsiveActionGroup, SectionHeader } from '@/design/ui';
+import { AppText, Button, Card, Field, KeyValue, ResponsiveActionGroup, SectionHeader, Segmented } from '@/design/ui';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { AppImage } from '@/design/appImage';
 import { useTheme } from '@/design/theme';
@@ -34,10 +34,14 @@ import {
 } from '@/api/lens';
 import { LensResultCard } from '@/features/lens/LensResultCard';
 
+/** طريقة البحث: صورة، أو مسح مباشر (QR/باركود)، أو رابط/رمز نصّي. */
+type LensMode = 'photo' | 'live' | 'code';
+
 export default function LensScreen() {
   const theme = useTheme();
   const { t, locale } = useI18n();
 
+  const [mode, setMode] = useState<LensMode>('photo');
   const [preview, setPreview] = useState('');
   const [text, setText] = useState('');
   const [analysis, setAnalysis] = useState<LensAnalysis | null>(null);
@@ -153,6 +157,17 @@ export default function LensScreen() {
         صار `SectionHeader` (§18.2-3): نفس المحتوى، بمكوّن موحّد.
       */}
       <SectionHeader title={t('screen.lens.subtitle')} hint={t('screen.lens.body')} />
+      <Segmented<LensMode>
+        label={t('lens.mode.label')}
+        value={mode}
+        onChange={setMode}
+        options={[
+          { value: 'photo', label: t('lens.mode.photo') },
+          { value: 'live', label: t('lens.mode.live') },
+          { value: 'code', label: t('lens.mode.code') },
+        ]}
+      />
+      {mode === 'photo' ? (
       <Card title={t('lens.photoTitle')} hint={t('lens.photoHint')}>
         <ResponsiveActionGroup>
           <Button label={t('lens.camera')} onPress={() => pickFrom('camera')} busy={busy} disabled={busy} testID="lens-camera" />
@@ -172,6 +187,9 @@ export default function LensScreen() {
         ) : null}
       </Card>
 
+      ) : null}
+
+      {mode === 'code' ? (
       <Card title={t('lens.textTitle')} hint={t('lens.textHint')}>
         <Field
           label={t('lens.textLabel')}
@@ -194,6 +212,8 @@ export default function LensScreen() {
           <ErrorBlock error={searchByText.error} onRetry={() => searchByText.mutate(text.trim())} />
         ) : null}
       </Card>
+
+      ) : null}
 
       {analysis ? (
         <Card title={t('lens.analysisTitle')}>
@@ -233,9 +253,11 @@ export default function LensScreen() {
         </Card>
       ) : null}
 
-      <Card title={t('lens.scanTitle')} hint={t('lens.scanHint')}>
-        <Button label={t('lens.scanOpen')} onPress={() => router.push('/lens/scan')} />
-      </Card>
+      {mode === 'live' ? (
+        <Card title={t('lens.scanTitle')} hint={t('lens.scanHint')}>
+          <Button label={t('lens.scanOpen')} onPress={() => router.push('/lens/scan')} />
+        </Card>
+      ) : null}
 
       <Card title={t('lens.watchTitle')} hint={t('lens.watchHint')}>
         <Button label={t('lens.watchOpen')} tone="quiet" onPress={() => router.push('/lens/watches')} />

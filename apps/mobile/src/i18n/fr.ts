@@ -721,6 +721,10 @@ export const fr = {
   /* ── P4.2 : scan QR / code-barres + surveillance de prix. ─────────────────── */
   'lens.scanHint': 'Le code est décodé sur le téléphone ; le sens vient du serveur (lien, code-barres ou contenu de QR).',
   'lens.scanOpen': 'Ouvrir le lecteur',
+  'lens.mode.label': 'Mode de recherche',
+  'lens.mode.photo': 'Photo',
+  'lens.mode.live': 'Scan en direct',
+  'lens.mode.code': 'Lien / code',
   'lens.scanEmpty': 'Ce code est vide : rien à chercher.',
   'lens.scanBusy': 'Lecture de la fiche en cours…',
   'lens.scanPaused': 'Lecteur en pause — touchez « Scanner à nouveau ».',
