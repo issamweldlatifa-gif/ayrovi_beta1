@@ -32,7 +32,7 @@ import {
   LENS_MIN_TEXT, analyzeLensImage, analyzeLensText, chooseLensEvent, createLensWatch,
   fetchLensHistory, lensUploadInputFrom, type LensAnalysis, type LensCandidate,
 } from '@/api/lens';
-import { CandidateCard } from '@/features/lens/CandidateCard';
+import { LensResultCard } from '@/features/lens/LensResultCard';
 
 export default function LensScreen() {
   const theme = useTheme();
@@ -222,7 +222,7 @@ export default function LensScreen() {
       {candidates.length ? (
         <Card title={t('lens.resultsTitle')} hint={t('lens.resultsHint')}>
           {candidates.map((candidate, index) => (
-            <CandidateCard
+            <LensResultCard
               key={candidate.id || `${candidate.sourceUrl}-${index}`}
               candidate={candidate}
               onOpen={openCandidate}

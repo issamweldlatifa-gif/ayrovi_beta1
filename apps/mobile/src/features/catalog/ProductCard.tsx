@@ -11,7 +11,7 @@
  *
  * الشكل أصلي (React Native) — المرجع الموقع هو **الخاصية**، موش التصميم.
  */
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
@@ -23,6 +23,10 @@ import { normalizeStockStatus, type CatalogProduct } from '@/api/catalog';
 export interface ProductCardProps {
   product: CatalogProduct;
   onOpen: (product: CatalogProduct) => void;
+  /** Largeur/forme imposées par l'écran appelant (ex. liste pleine largeur des résultats Lens). */
+  style?: StyleProp<ViewStyle>;
+  /** Le marchand publie des couleurs ou tailles : repère « Combinaisons disponibles » (donnée réelle seulement). */
+  hasCombinations?: boolean;
 }
 
 /** نصّ المخزون: كل الحالات المعروفة، والباقي «غير مؤكّد» موش فراغ. */
@@ -39,7 +43,7 @@ function stockLabel(status: string, t: Translate): { text: string; tone: 'ok' | 
   }
 }
 
-export function ProductCard({ product, onOpen }: ProductCardProps) {
+export function ProductCard({ product, onOpen, style, hasCombinations = false }: ProductCardProps) {
   const theme = useTheme();
   const t = useT();
   const stock = stockLabel(product.stockStatus, t);
@@ -50,7 +54,7 @@ export function ProductCard({ product, onOpen }: ProductCardProps) {
       accessibilityRole="button"
       accessibilityLabel={`${product.name}${hasPrice ? ` — ${product.finalPrice.toFixed(2)} TND` : ''}`}
       onPress={() => onOpen(product)}
-      style={[styles.card, { borderColor: theme.colors.line, borderRadius: theme.radius.card }]}
+      style={[styles.card, { borderColor: theme.colors.line, borderRadius: theme.radius.card }, style]}
     >
       <View style={[styles.imageFrame, { backgroundColor: theme.colors.surface, borderRadius: theme.radius.card }]}>
         {product.image ? (
@@ -62,6 +66,9 @@ export function ProductCard({ product, onOpen }: ProductCardProps) {
 
       {product.brandName ? (
         <AppText variant="caption" color={theme.colors.muted} numberOfLines={1}>{product.brandName}</AppText>
+      ) : null}
+      {hasCombinations ? (
+        <AppText variant="caption" color={theme.colors.muted} numberOfLines={1}>{t('lens.combinations')}</AppText>
       ) : null}
 
       <AppText variant="label" weight="bold" numberOfLines={2} style={styles.name}>{product.name}</AppText>
