@@ -47,11 +47,11 @@ for(const [engine,type] of [['chromium',chromium],['firefox',firefox]]){
   await p.locator('#lens-product-link').fill('https://example.com/product?size=M');await p.locator('.lens-link-form button[type=submit]').click();
   check('URL preserved by handler',await p.evaluate(()=>lensEntryTest.links[0]==='https://example.com/product?size=M'));
   await p.screenshot({path:`${output}/${engine}-${locale}-link.png`});
-  await p.goBack();await p.locator('.lens-methods').waitFor();await p.locator('.lens-methods button').first().click();await p.locator('.lens-scan-actions').waitFor();
+  await p.goBack();await p.locator('.lens-methods').waitFor();await p.locator('.lens-methods button').first().click();await p.locator('.lens-mode-pill button[aria-pressed="true"]').waitFor();
   check('scanner does not conceal a link field',await p.locator('#lens-product-link').count()===0);
   await p.evaluate(()=>window.codeToDetect='1234567890123');await p.waitForFunction(()=>lensEntryTest.codes.length===1);
   check('barcode uses existing handler',await p.evaluate(()=>lensEntryTest.codes[0]==='1234567890123'));
-  await p.goBack();await p.locator('.lens-scan-actions').waitFor({state:'hidden'});
+  await p.goBack();await p.locator('.lens-mode-pill button[aria-pressed="true"]').waitFor({state:'hidden'});
   await p.getByRole('tab',{name:ar?'مسح مباشر':'Scan en direct',exact:true}).click();
   check('Live is labeled as scanning, not video recording',!await p.getByText('Vidéo (Live)',{exact:true}).count());
   await help.click();await p.locator('.lens-panel').waitFor();await p.goBack();await p.locator('.lens-panel').waitFor({state:'hidden'});
