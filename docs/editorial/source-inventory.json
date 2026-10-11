@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "scope": "Recursive static inventory of all client TypeScript/TSX/CSS; manual review tracked separately",
   "totals": {
-    "files": 260,
-    "customerAndSharedFiles": 204,
+    "files": 261,
+    "customerAndSharedFiles": 205,
     "controls": 484,
     "iconAliases": 102,
     "uniqueGlyphs": 99
@@ -11283,8 +11283,8 @@
     {
       "file": "client/src/App.tsx",
       "domain": "shell-content",
-      "sha256": "965dea3173982bbcc0d4b14a63661ae2f6fbec4cb3548d4364a87dcbfc9c2acf",
-      "lines": 739,
+      "sha256": "71b68d65efc5e611e540407eb987c4460dbe4ed7fe9e1ff627c6915d535311b3",
+      "lines": 740,
       "imports": [
         "./design/editorial/customerTheme",
         "react",
@@ -11361,7 +11361,7 @@
         },
         {
           "tag": "ShopBagScreen",
-          "line": 664,
+          "line": 665,
           "className": null,
           "type": null,
           "role": null,
@@ -11371,7 +11371,7 @@
         },
         {
           "tag": "ShopCheckoutScreen",
-          "line": 684,
+          "line": 685,
           "className": null,
           "type": null,
           "role": null,
@@ -11381,7 +11381,7 @@
         },
         {
           "tag": "OrderSuccessModal",
-          "line": 727,
+          "line": 728,
           "className": null,
           "type": null,
           "role": null,
@@ -11405,10 +11405,9 @@
     {
       "file": "client/src/ayrovix/components/InteractiveLensResults.tsx",
       "domain": "lens",
-      "sha256": "6cf46ff2270e13f7399eedf00e9b0f80d0fa24af1101a3ecbb97bd7e2f6c995e",
-      "lines": 200,
+      "sha256": "28e371c7efd81de3abdc0321577d1117067bfef10ccfefe98d5eebfcc58cf333",
+      "lines": 272,
       "imports": [
-        "./LensProductCard",
         "./useLensFavorites",
         "../../types",
         "react",
@@ -11416,6 +11415,9 @@
         "../types",
         "../services/resultPolicy",
         "../../i18n/LocaleContext",
+        "../../shop/ProductGrid",
+        "../../shop/adapter",
+        "../services/lensStream",
         "../services/lensSelectionGeometry",
         "./useLensResultsSheet",
         "./lens-results.css"
@@ -11426,7 +11428,27 @@
       "controls": [
         {
           "tag": "button",
-          "line": 122,
+          "line": 71,
+          "className": "\"ay-btn-secondary text-xs\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{onRetry}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 72,
+          "className": "\"ay-btn-secondary text-xs\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{onCancel}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 182,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -11436,7 +11458,7 @@
         },
         {
           "tag": "button",
-          "line": 134,
+          "line": 194,
           "className": "{`lens-selection-corner lens-corner-${corner}`}",
           "type": "\"button\"",
           "role": null,
@@ -11446,7 +11468,7 @@
         },
         {
           "tag": "button",
-          "line": 142,
+          "line": 202,
           "className": "\"lens-product-dot\"",
           "type": "\"button\"",
           "role": null,
@@ -11456,7 +11478,7 @@
         },
         {
           "tag": "button",
-          "line": 150,
+          "line": 210,
           "className": "\"lens-sheet-handle\"",
           "type": "\"button\"",
           "role": null,
@@ -11466,42 +11488,34 @@
         },
         {
           "tag": "button",
-          "line": 181,
+          "line": 253,
           "className": "\"rounded-control bg-ink px-5 py-2 text-xs font-bold text-white\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
           "onClick": "{() => { clearSelection(); onReset(); }}",
           "disabled": null
-        },
-        {
-          "tag": "LensProductCard",
-          "line": 189,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
         }
       ],
       "icons": [
         {
           "module": "../../components/QatafoIcons",
-          "bindings": "{ ArrowLeft, ScanSearch, Loader2, Image as ImageIcon }",
-          "line": 5
+          "bindings": "{ ArrowLeft, ScanSearch, Loader2, Image as ImageIcon, Check }",
+          "line": 4
         }
       ],
       "inlineSvg": [],
-      "colors": [],
+      "colors": [
+        "#f2f2f2"
+      ],
       "fontDeclarations": [],
       "apiReferences": []
     },
     {
       "file": "client/src/ayrovix/components/lens-camera.css",
       "domain": "lens",
-      "sha256": "3bf88dfc91a751d9b7ef34d62bd5de5f2cfabf01a4a6d2c106b59b06bdbc5c67",
-      "lines": 63,
+      "sha256": "60584325f5084ccc53ca5b6c1ca7af483de1827cc2d87d281e7b69ebb2e4acfc",
+      "lines": 69,
       "imports": [],
       "exports": [],
       "controls": [],
@@ -11855,8 +11869,8 @@
     {
       "file": "client/src/ayrovix/components/LensLauncher.tsx",
       "domain": "lens",
-      "sha256": "86a705964d47047e33f7b749678aa21445066ae029452b470d6c1bcd449fc176",
-      "lines": 1007,
+      "sha256": "29435324c4dd7943817ce8fc6ab81a9c04f662cb0e9519d09907860b9529bed2",
+      "lines": 1036,
       "imports": [
         "../../types",
         "./LensHelp",
@@ -11867,6 +11881,7 @@
         "../../hooks/useBodyScrollLock",
         "../types",
         "../services/lensApi",
+        "../services/lensStream",
         "../services/imagePrep",
         "../services/history",
         "../../services/publicApi",
@@ -11893,7 +11908,7 @@
       "controls": [
         {
           "tag": "AppHeader",
-          "line": 747,
+          "line": 773,
           "className": "{stage === 'product' ? 'border-b-0 bg-transparent' : ''}",
           "type": null,
           "role": null,
@@ -11903,7 +11918,7 @@
         },
         {
           "tag": "button",
-          "line": 753,
+          "line": 779,
           "className": "\"relative grid h-11 w-11 place-items-center rounded-full bg-transparent text-ink hover:bg-surface transition\"",
           "type": "\"button\"",
           "role": null,
@@ -11913,7 +11928,7 @@
         },
         {
           "tag": "input",
-          "line": 769,
+          "line": 795,
           "className": "\"hidden\"",
           "type": "\"file\"",
           "role": null,
@@ -11923,7 +11938,7 @@
         },
         {
           "tag": "button",
-          "line": 795,
+          "line": 821,
           "className": "\"lens-drop\"",
           "type": "\"button\"",
           "role": null,
@@ -11933,7 +11948,7 @@
         },
         {
           "tag": "form",
-          "line": 813,
+          "line": 839,
           "className": "\"bg-white p-4\"",
           "type": null,
           "role": null,
@@ -11943,7 +11958,7 @@
         },
         {
           "tag": "input",
-          "line": 829,
+          "line": 855,
           "className": "\"min-h-[46px] min-w-0 flex-1 rounded-control border border-line bg-surface px-3.5 text-sm text-ink placeholder:text-muted focus:border-line focus:outline-none\"",
           "type": "\"search\"",
           "role": null,
@@ -11953,7 +11968,7 @@
         },
         {
           "tag": "button",
-          "line": 841,
+          "line": 867,
           "className": "\"ay-btn-primary flex-none text-xs disabled:opacity-40\"",
           "type": "\"submit\"",
           "role": null,
@@ -11963,7 +11978,7 @@
         },
         {
           "tag": "form",
-          "line": 846,
+          "line": 872,
           "className": "\"bg-white p-4\"",
           "type": null,
           "role": null,
@@ -11973,7 +11988,7 @@
         },
         {
           "tag": "input",
-          "line": 861,
+          "line": 887,
           "className": "\"min-h-[46px] min-w-0 flex-1 rounded-control border border-line bg-surface px-3.5 text-sm text-ink placeholder:text-muted focus:border-line focus:outline-none\"",
           "type": "\"url\"",
           "role": null,
@@ -11983,7 +11998,7 @@
         },
         {
           "tag": "button",
-          "line": 863,
+          "line": 889,
           "className": "\"ay-btn-primary flex-none text-xs\"",
           "type": "\"submit\"",
           "role": null,
@@ -11993,7 +12008,7 @@
         },
         {
           "tag": "button",
-          "line": 872,
+          "line": 898,
           "className": "\"text-xs font-bold text-ink underline\"",
           "type": "\"button\"",
           "role": null,
@@ -12003,7 +12018,7 @@
         },
         {
           "tag": "button",
-          "line": 876,
+          "line": 902,
           "className": "\"max-w-full truncate rounded-full border border-line bg-white px-3 py-1.5 text-left text-xs font-semibold text-ink hover:border-line/30\"",
           "type": "\"button\"",
           "role": null,
@@ -12013,7 +12028,7 @@
         },
         {
           "tag": "ShopProductScreen",
-          "line": 934,
+          "line": 963,
           "className": null,
           "type": null,
           "role": null,
@@ -12023,7 +12038,7 @@
         },
         {
           "tag": "button",
-          "line": 964,
+          "line": 993,
           "className": "\"ay-btn-secondary text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -12033,7 +12048,7 @@
         },
         {
           "tag": "button",
-          "line": 967,
+          "line": 996,
           "className": "\"ay-btn-primary text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -12043,7 +12058,7 @@
         },
         {
           "tag": "button",
-          "line": 986,
+          "line": 1015,
           "className": "\"ay-btn-secondary text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -12053,7 +12068,7 @@
         },
         {
           "tag": "button",
-          "line": 989,
+          "line": 1018,
           "className": "\"ay-btn-secondary text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -12063,7 +12078,7 @@
         },
         {
           "tag": "button",
-          "line": 992,
+          "line": 1021,
           "className": "\"ay-btn-secondary text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -12073,7 +12088,7 @@
         },
         {
           "tag": "button",
-          "line": 994,
+          "line": 1023,
           "className": "\"ay-btn-secondary text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -12083,7 +12098,7 @@
         },
         {
           "tag": "button",
-          "line": 995,
+          "line": 1024,
           "className": "\"ay-btn-primary text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -12096,7 +12111,7 @@
         {
           "module": "../../components/QatafoIcons",
           "bindings": "{ Type, ExternalLink, Barcode, Image as GalleryIcon, Percent, Search, ShieldCheck, ShoppingBag }",
-          "line": 29
+          "line": 30
         }
       ],
       "inlineSvg": [],
@@ -12368,8 +12383,8 @@
     {
       "file": "client/src/ayrovix/components/LiveCamera.tsx",
       "domain": "lens",
-      "sha256": "574ab11cf60e4d1eda27c6c6d3bd8f0c552d62055f8f05539ba61dbf33ef9c34",
-      "lines": 435,
+      "sha256": "6c008c5cf1c56202b164eea8e988944072f9eb5b088eddf0699f03b27d89027c",
+      "lines": 439,
       "imports": [
         "react",
         "../services/qr",
@@ -12387,7 +12402,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 262,
+          "line": 264,
           "className": "\"lens-camera-icon\"",
           "type": "\"button\"",
           "role": null,
@@ -12397,17 +12412,7 @@
         },
         {
           "tag": "button",
-          "line": 268,
-          "className": "\"lens-camera-icon\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": "{tr('Aide et règles de Lens', 'مساعدة Lens وقواعد الاستخدام')}",
-          "onClick": "{() => openPanel('help')}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 269,
+          "line": 270,
           "className": "\"lens-camera-icon\"",
           "type": "\"button\"",
           "role": null,
@@ -12417,7 +12422,17 @@
         },
         {
           "tag": "button",
-          "line": 297,
+          "line": 273,
+          "className": "\"lens-camera-icon\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Aide et règles de Lens', 'مساعدة Lens وقواعد الاستخدام')}",
+          "onClick": "{() => openPanel('help')}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 299,
           "className": "{`pointer-events-auto absolute rounded-[14px] border-2 transition-all ${isSel ? 'border-white bg-white/20 ring-2 ring-white' : 'border-white/90 hover:border-white hover:bg-white/10'}`}",
           "type": "\"button\"",
           "role": null,
@@ -12427,7 +12442,7 @@
         },
         {
           "tag": "button",
-          "line": 315,
+          "line": 317,
           "className": "\"pointer-events-auto absolute -bottom-10 left-1/2 z-10 flex w-[105%] -translate-x-1/2 items-center gap-2.5 rounded-2xl bg-black/75 p-2 text-start backdrop-blur border border-white/10 shadow-lg\"",
           "type": "\"button\"",
           "role": null,
@@ -12437,7 +12452,7 @@
         },
         {
           "tag": "button",
-          "line": 342,
+          "line": 344,
           "className": "{`flex flex-none items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-xs font-bold ${selected[obj.trackingId] ? 'border-white bg-white/20 text-white' : 'border-white/20 bg-white/10 text-white/70'}`}",
           "type": "\"button\"",
           "role": null,
@@ -12447,7 +12462,7 @@
         },
         {
           "tag": "button",
-          "line": 349,
+          "line": 351,
           "className": "\"bg-ink text-white hover:bg-ink/90 mt-2.5 flex w-full items-center justify-center gap-2 rounded-full py-2.5 text-sm font-extrabold text-white\"",
           "type": "\"button\"",
           "role": null,
@@ -12457,27 +12472,37 @@
         },
         {
           "tag": "button",
-          "line": 374,
-          "className": "{`lens-camera-tab relative rounded-full px-5 py-2 text-sm font-semibold transition-colors ${camMode === m ? 'text-white' : 'text-white/55'} ${disabled ? 'opacity-40' : ''}`}",
+          "line": 377,
+          "className": "{`lens-camera-tab rounded-full px-4 py-2 text-sm font-semibold transition-colors ${selected ? 'is-selected bg-white text-ink' : 'text-white/85'} ${disabled ? 'opacity-40' : ''}`}",
           "type": "\"button\"",
           "role": "\"tab\"",
           "ariaLabel": null,
-          "onClick": "{() => { setCamMode(m); setNotice(null); }}",
+          "onClick": "{() => { if (mode === 'code') closePanel(); setCamMode(m); setNotice(null); }}",
           "disabled": "{disabled}"
         },
         {
           "tag": "button",
-          "line": 389,
-          "className": "\"lens-camera-action\"",
+          "line": 384,
+          "className": "{`lens-camera-tab rounded-full px-4 py-2 text-sm font-semibold ${mode === 'code' ? 'is-selected bg-white text-ink' : 'text-white/85'}`}",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
-          "onClick": "{pickFromGallery}",
+          "onClick": "{() => openPanel('methods', mode === 'code')}",
           "disabled": null
         },
         {
           "tag": "button",
           "line": 395,
+          "className": "\"lens-gallery-button\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Importer une image depuis la galerie', 'استيراد صورة من المعرض')}",
+          "onClick": "{pickFromGallery}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 400,
           "className": "{`lens-camera-shutter grid h-[78px] w-[78px] place-items-center rounded-full border-[3px] border-white/90 bg-transparent transition active:scale-95 ${capturing ? 'scale-90 bg-white/80' : ''}`}",
           "type": "\"button\"",
           "role": null,
@@ -12487,37 +12512,17 @@
         },
         {
           "tag": "button",
-          "line": 403,
-          "className": "\"lens-camera-action\"",
+          "line": 409,
+          "className": "\"lens-ocerex-button\"",
           "type": "\"button\"",
           "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => openPanel('methods')}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 411,
-          "className": null,
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => openPanel('methods', true)}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 411,
-          "className": null,
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{closePanel}",
+          "ariaLabel": "{tr('Ouvrir OCEREX — prix depuis une image', 'فتح OCEREX — السعر من صورة')}",
+          "onClick": "{onOpenOcerex}",
           "disabled": null
         },
         {
           "tag": "input",
-          "line": 415,
+          "line": 419,
           "className": "\"hidden\"",
           "type": "\"file\"",
           "role": null,
@@ -12527,7 +12532,7 @@
         },
         {
           "tag": "button",
-          "line": 421,
+          "line": 425,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -12537,7 +12542,7 @@
         },
         {
           "tag": "button",
-          "line": 422,
+          "line": 426,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -12547,7 +12552,7 @@
         },
         {
           "tag": "form",
-          "line": 424,
+          "line": 428,
           "className": "\"lens-link-form\"",
           "type": null,
           "role": null,
@@ -12557,7 +12562,7 @@
         },
         {
           "tag": "input",
-          "line": 426,
+          "line": 430,
           "className": null,
           "type": "\"url\"",
           "role": null,
@@ -12567,7 +12572,7 @@
         },
         {
           "tag": "button",
-          "line": 429,
+          "line": 433,
           "className": "\"lens-panel-primary\"",
           "type": "\"submit\"",
           "role": null,
@@ -12579,7 +12584,7 @@
       "icons": [
         {
           "module": "../../components/QatafoIcons",
-          "bindings": "{ ArrowLeft, Zap, ArrowRight, Barcode, Check, Image as ImageIcon, ScanSearch, ShoppingBag, Info, Search, Link2 }",
+          "bindings": "{ ArrowLeft, X, Zap, ArrowRight, Barcode, Check, Image as ImageIcon, ScanSearch, ShoppingBag, Info, Search, Link2 }",
           "line": 3
         }
       ],
@@ -12825,14 +12830,17 @@
     {
       "file": "client/src/ayrovix/services/lensApi.ts",
       "domain": "lens",
-      "sha256": "152bd0f700355757c5b474d3d7c69e73097821be51bbef192555f197b7e09488",
-      "lines": 205,
+      "sha256": "0bea723e15e4e78f5cc482a7ee7f91c50b5f94888341c7749aa98a3e247a31b6",
+      "lines": 259,
       "imports": [
         "../types",
-        "../../utils/session"
+        "../../utils/session",
+        "./lensStream"
       ],
       "exports": [
         "AyrovixApiError",
+        "LENS_STREAM_IDLE_MS",
+        "LENS_JSON_TIMEOUT_MS",
         "analyzeImage",
         "analyzeUrl",
         "requestManualReview",
@@ -12871,6 +12879,22 @@
         "detectedBox",
         "selectionForPoint",
         "resizeSelection"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/ayrovix/services/lensStream.ts",
+      "domain": "lens",
+      "sha256": "3fe80052a035ab89fd3e7d817c3105b397740da7e099c0343f67c4203bc9fdbe",
+      "lines": 46,
+      "imports": [],
+      "exports": [
+        "parseLensSseBlock"
       ],
       "controls": [],
       "icons": [],
@@ -21055,7 +21079,7 @@
     {
       "file": "client/src/shop/ProductGrid.tsx",
       "domain": "shell-content",
-      "sha256": "f868b4c8bed6d9999204668f381d45b6f515613cc5d9859ad8af124f10a01555",
+      "sha256": "4ebb5c729fefcaf8baffe5b97c803f15a762dab3dea933cbc664d14e125bf64c",
       "lines": 90,
       "imports": [
         "react",
