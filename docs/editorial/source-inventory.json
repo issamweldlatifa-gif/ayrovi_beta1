@@ -11405,8 +11405,8 @@
     {
       "file": "client/src/ayrovix/components/InteractiveLensResults.tsx",
       "domain": "lens",
-      "sha256": "28e371c7efd81de3abdc0321577d1117067bfef10ccfefe98d5eebfcc58cf333",
-      "lines": 272,
+      "sha256": "0a0fbf8b24ea0e9bd87ca96d0d1c11416e3b0683381be1440c62e0bbb37d62d5",
+      "lines": 294,
       "imports": [
         "./useLensFavorites",
         "../../types",
@@ -11416,6 +11416,7 @@
         "../services/resultPolicy",
         "../../i18n/LocaleContext",
         "../../shop/ProductGrid",
+        "../services/lensApi",
         "../../shop/adapter",
         "../services/lensStream",
         "../services/lensSelectionGeometry",
@@ -11428,7 +11429,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 71,
+          "line": 72,
           "className": "\"ay-btn-secondary text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -11438,7 +11439,7 @@
         },
         {
           "tag": "button",
-          "line": 72,
+          "line": 73,
           "className": "\"ay-btn-secondary text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -11448,7 +11449,7 @@
         },
         {
           "tag": "button",
-          "line": 182,
+          "line": 204,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -11458,7 +11459,7 @@
         },
         {
           "tag": "button",
-          "line": 194,
+          "line": 216,
           "className": "{`lens-selection-corner lens-corner-${corner}`}",
           "type": "\"button\"",
           "role": null,
@@ -11468,7 +11469,7 @@
         },
         {
           "tag": "button",
-          "line": 202,
+          "line": 224,
           "className": "\"lens-product-dot\"",
           "type": "\"button\"",
           "role": null,
@@ -11478,7 +11479,7 @@
         },
         {
           "tag": "button",
-          "line": 210,
+          "line": 232,
           "className": "\"lens-sheet-handle\"",
           "type": "\"button\"",
           "role": null,
@@ -11488,7 +11489,7 @@
         },
         {
           "tag": "button",
-          "line": 253,
+          "line": 275,
           "className": "\"rounded-control bg-ink px-5 py-2 text-xs font-bold text-white\"",
           "type": "\"button\"",
           "role": null,
@@ -17036,8 +17037,8 @@
     {
       "file": "client/src/components/PublicCmsSections.tsx",
       "domain": "shell-content",
-      "sha256": "1c030888055697e6cde86d81eb686da43b7bedd27733d4b5a6a7fbba6441fc94",
-      "lines": 336,
+      "sha256": "81aa198d739f7d73e00b83e87dfa6862f582c23ec4afb8452ad9e924c7d1440d",
+      "lines": 300,
       "imports": [
         "react",
         "../assets/hero-homme.jpg",
@@ -17054,6 +17055,8 @@
         "../navigation/NavigationHistory",
         "./QatafoIcons",
         "../commerce/catalogProduct",
+        "../shop/ProductGrid",
+        "../shop/adapter",
         "../types"
       ],
       "exports": [
@@ -17062,7 +17065,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 184,
+          "line": 186,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -17072,27 +17075,7 @@
         },
         {
           "tag": "ContentCard",
-          "line": 190,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 213,
-          "className": "\"lens-card-open w-full text-start cursor-pointer disabled:cursor-not-allowed\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": "{tr(`Voir le produit : ${product.name}`, `عرض المنتج: ${product.name}`)}",
-          "onClick": "{open}",
-          "disabled": "{soldOut}"
-        },
-        {
-          "tag": "ContentCard",
-          "line": 264,
+          "line": 192,
           "className": null,
           "type": null,
           "role": null,
@@ -17102,7 +17085,17 @@
         },
         {
           "tag": "ContentCard",
-          "line": 274,
+          "line": 228,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "ContentCard",
+          "line": 238,
           "className": null,
           "type": null,
           "role": null,
@@ -17112,7 +17105,7 @@
         },
         {
           "tag": "a",
-          "line": 282,
+          "line": 246,
           "className": "\"public-page-back\"",
           "type": null,
           "role": null,
@@ -17122,7 +17115,7 @@
         },
         {
           "tag": "button",
-          "line": 303,
+          "line": 267,
           "className": "\"min-h-11 min-w-0 whitespace-nowrap bg-transparent px-0.5 py-2 text-center text-xs font-black text-ink transition-colors hover:text-ink focus-visible:text-ink sm:text-lg\"",
           "type": "\"button\"",
           "role": null,
@@ -17144,10 +17137,7 @@
         }
       ],
       "inlineSvg": [],
-      "colors": [
-        "#595959",
-        "#f0f2f2"
-      ],
+      "colors": [],
       "fontDeclarations": [],
       "apiReferences": []
     },
@@ -20591,8 +20581,8 @@
     {
       "file": "client/src/shop/adapter.ts",
       "domain": "shell-content",
-      "sha256": "47afde0777acc047731b10dac59daea57211dee2df50721e1f3ecfc0bf6f0aba",
-      "lines": 205,
+      "sha256": "eda0375e27aa38dd04e4443edb369dfba589d818dee9c1968b60db0ad71fdfe3",
+      "lines": 259,
       "imports": [
         "../ayrovix/types",
         "../ayrovix/services/mediaIsolation",
@@ -20602,6 +20592,7 @@
       "exports": [
         "candidateToView",
         "displayProductTitle",
+        "catalogProductToView",
         "productToView"
       ],
       "controls": [],
@@ -20971,8 +20962,8 @@
     {
       "file": "client/src/shop/ProductGrid.tsx",
       "domain": "shell-content",
-      "sha256": "4ebb5c729fefcaf8baffe5b97c803f15a762dab3dea933cbc664d14e125bf64c",
-      "lines": 90,
+      "sha256": "0ac4990b94ce2b64a5ab4f9a567104616b0a1c99bfc699eaaf2fd647f5af3bbf",
+      "lines": 136,
       "imports": [
         "react",
         "../design/editorial/Icon",
@@ -20984,7 +20975,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 34,
+          "line": 64,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -20994,13 +20985,23 @@
         },
         {
           "tag": "button",
-          "line": 46,
+          "line": 76,
           "className": "\"s-rail__btn\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": "{tr('Favori', 'المفضّلة')}",
           "onClick": "{() => onFavorite(product)}",
           "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 117,
+          "className": "\"s-card__stock\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr(`Vérifier le stock : ${product.title}`, `التحقق من المخزون: ${product.title}`)}",
+          "onClick": "{() => onVerifyStock?.(product)}",
+          "disabled": "{check?.status === 'checking'}"
         }
       ],
       "icons": [],
@@ -21237,8 +21238,8 @@
     {
       "file": "client/src/shop/shop.css",
       "domain": "shell-content",
-      "sha256": "a6729d7abf32d2d9db27771db5c617f9dd28d8192214e53da3d16f661af4b0f0",
-      "lines": 717,
+      "sha256": "213f1ec403874307266badceb0ef1e7f6feee5cd31988875f936eb7d0b63d132",
+      "lines": 720,
       "imports": [],
       "exports": [],
       "controls": [],

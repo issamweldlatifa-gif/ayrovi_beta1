@@ -109,6 +109,60 @@ export function displayProductTitle(raw: string): string {
   return title.slice(0, 140);
 }
 
+/**
+ * Un produit du catalogue (grille d'accueil) rendu par la MÊME carte boutique.
+ * Prix : le prix final calculé ; sans prix valable, « Prix à confirmer ».
+ */
+export function catalogProductToView(product: CatalogProductLike, tr: (fr: string, ar: string) => string): ProductView {
+  const images = [product.image, ...(Array.isArray(product.additionalImages) ? product.additionalImages : [])]
+    .filter((value): value is string => typeof value === 'string' && value.trim().length > 0);
+  const outOfStock = String(product.stockStatus || '').toUpperCase() === 'OUT_OF_STOCK';
+  const finalTnd = Number(product.finalPrice);
+  const platform = product.sourcePlatform || product.brandName || null;
+  return {
+    id: product.id,
+    brand: product.brandName?.trim() || null,
+    title: product.name.trim(),
+    description: product.description?.trim() || null,
+    media: toMedia(images, product.name),
+    price: priceOf(
+      Number.isFinite(finalTnd) && finalTnd > 0 ? finalTnd : null,
+      null,
+      { amount: product.originalPrice ?? null, currency: product.currency ?? null },
+      false,
+      null,
+    ),
+    sizes: [],
+    sizeScaleLabel: null,
+    sizeKind: 'none',
+    optionLabel: null,
+    capacity: null,
+    availability: outOfStock ? 'unavailable' : 'available',
+    availabilitySource: platform,
+    availabilityCheckedAt: null,
+    availabilityExpiresAt: null,
+    colors: [],
+    flags: outOfStock ? [{ kind: 'info', label: tr('Épuisé', 'نفدت الكمية') }] : [],
+    merchant: product.sourceUrl ? { name: platform || 'AYROVI', url: product.sourceUrl } : null,
+  };
+}
+
+/** Forme minimale d'un produit du catalogue (voir client/src/commerce/catalogProduct.ts). */
+export interface CatalogProductLike {
+  id: string;
+  name: string;
+  description?: string | null;
+  image?: string | null;
+  additionalImages?: string[] | null;
+  brandName?: string | null;
+  sourceUrl?: string | null;
+  sourcePlatform?: string | null;
+  originalPrice?: number | null;
+  currency?: string | null;
+  finalPrice?: number | null;
+  stockStatus?: string | null;
+}
+
 /** La fiche complète : mêmes règles, plus les tailles et les couleurs. */
 export function productToView(product: AyrovixProduct, activeColor?: string | null): ProductView {
   const options = product.variantOptions || [];

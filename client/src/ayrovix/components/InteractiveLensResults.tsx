@@ -5,7 +5,8 @@ import { ArrowLeft, ScanSearch, Loader2, Image as ImageIcon, Check } from '../..
 import type { AyrovixCandidate } from '../types';
 import { isDisplayableCandidate, isLenientCandidate } from '../services/resultPolicy';
 import { useLocale } from '../../i18n/LocaleContext';
-import { ProductGrid } from '../../shop/ProductGrid';
+import { ProductGrid, type StockCheck } from '../../shop/ProductGrid';
+import { refreshLiveStock } from '../services/lensApi';
 import { candidateToView } from '../../shop/adapter';
 import type { LensProgress } from '../services/lensStream';
 
@@ -79,6 +80,25 @@ const LensAnalysisProgress: React.FC<{ progress: LensProgress | null; onRetry?: 
 export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fallbackImage, onChoose, onReset, onRoiSearch, onLassoSearch, isLoading, detectedProducts, shell, customerSession, onOpenFavorites, analysisProgress, onCancelAnalysis, onRetryAnalysis }) => {
   const { tr, direction, formatMoney } = useLocale();
   const favorites = useLensFavorites(customerSession, onOpenFavorites);
+  // Lecture fraîche à la demande (« Vérifier le stock »): un résultat par candidat, réinitialisé à chaque nouvelle recherche.
+  const [stockChecks, setStockChecks] = useState<Record<string, StockCheck>>({});
+  useEffect(() => { setStockChecks({}); }, [view.eventId]);
+  const verifyStock = useCallback(async (product: { id: string; title: string; merchant?: { url?: string | null } | null }) => {
+    const candidate = view.list.find(item => item.id === product.id);
+    const url = candidate?.sourceUrl || product.merchant?.url || '';
+    if (!candidate || !url) return;
+    setStockChecks(current => ({ ...current, [product.id]: { status: 'checking' } }));
+    try {
+      const rows = await refreshLiveStock([url], undefined, candidate.title);
+      const result = rows.find(row => row.url === url) || rows[0];
+      setStockChecks(current => ({
+        ...current,
+        [product.id]: result ? { status: 'done', availability: result.availability, checkedAt: result.checkedAt } : { status: 'failed' },
+      }));
+    } catch {
+      setStockChecks(current => ({ ...current, [product.id]: { status: 'failed' } }));
+    }
+  }, [view.list]);
   const visible = useMemo(() => {
     const strict = view.list.filter(isDisplayableCandidate).sort((a, b) => (b.match || 0) - (a.match || 0));
     return strict.length ? strict : view.list.filter(isLenientCandidate).sort((a, b) => (b.match || 0) - (a.match || 0));
@@ -96,6 +116,8 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
         formatMoney={(tnd: number) => formatMoney(tnd)}
         direction={direction}
         favorites={saved}
+        onVerifyStock={verifyStock}
+        stockChecks={stockChecks}
         onOpen={(product) => { const candidate = byId.get(product.id); if (candidate) onChoose(candidate); }}
         onFavorite={(product) => { const candidate = byId.get(product.id); if (candidate) void favorites.toggle(candidate); }}
       />

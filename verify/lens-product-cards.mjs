@@ -16,6 +16,7 @@ try{
    const p=await context.newPage();p.on('pageerror',e=>errors.push(e.message));
    await p.route('**/*',r=>{const u=r.request().url();return /^https?:/.test(u)&&!u.startsWith(process.env.AYROVI_BASE_URL+'/')?r.abort():r.continue();});
    let favorites=[],writes=[],reads=0,failNext=false;
+   await p.route('**/api/ayrovix/live-stock',r=>r.fulfill({json:{success:true,data:{results:[{url:'https://example.com/p/0',availability:'in_stock',price:84,currency:'EUR',originalPrice:null,priceTnd:598,originalPriceTnd:null,sizes:[],colors:[],images:[],checkedAt:new Date().toISOString(),reason:'fixture'}]}}}));
    await p.route('**/api/customer/account/favorites**',async r=>{
     const method=r.request().method();
     if(method==='GET'){reads++;return r.fulfill({json:{success:true,data:favorites}});}
@@ -33,6 +34,10 @@ try{
    check('brand and real title separated',await first.locator('.s-card__brand').innerText()==='Atelier'&&await first.locator('.s-card__title').innerText()==='Veste noire — coupe droite');
    check('one price, no converted source price repeated',await first.locator('.s-card__price').count()===1&&!await first.innerText().then(s=>s.includes('84 EUR')));
    check('no invented ratings or badges',await p.locator('.lens-result-grid [data-merchant-rating], .lens-result-grid .lens-rating-star').count()===0&&!/(Meilleure note|Nouveau|Top rated|Best rated)/.test(await first.innerText()));
+   const stockButton=first.getByRole('button',{name:locale==='ar'?'التحقق من المخزون: Veste noire — coupe droite':'Vérifier le stock : Veste noire — coupe droite',exact:true});
+   await stockButton.click();
+   await first.locator('.s-card__stock-note').waitFor();
+   check('stock check is a fresh read shown with its time',await first.locator('.s-card__stock-note').innerText().then(s=>s.includes(locale==='ar'?'متوفر':'En stock')&&/\d{1,2}:\d{2}/.test(s)));
    for(const width of [320,390,768,1360]){
     await p.setViewportSize({width,height:844});await p.waitForTimeout(60);
     const g=await p.evaluate(()=>({overflow:document.documentElement.scrollWidth>innerWidth,cardWidth:document.querySelector('.lens-result-grid article.s-card').getBoundingClientRect().width}));
