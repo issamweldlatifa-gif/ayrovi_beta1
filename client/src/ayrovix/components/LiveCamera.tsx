@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { CodeScanResult, CodeScanSession } from '../services/qr';
-import { ArrowLeft, Zap, ArrowRight, Barcode, Check, Image as ImageIcon, ScanSearch, ShoppingBag, Info, Search, Link2 } from '../../components/QatafoIcons';
+import { ArrowLeft, X, Zap, ArrowRight, Barcode, Check, Image as ImageIcon, ScanSearch, ShoppingBag, Info, Search, Link2 } from '../../components/QatafoIcons';
 import { useLocale } from '../../i18n/LocaleContext';
 import { LensDialog, LensGuide } from './LensHelp';
 import { useNavigationHistory } from '../../navigation/NavigationHistory';
@@ -262,7 +262,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
       )}
       {!(photoUrl && overlay) && <header className="lens-camera-header">
         <button type="button" onClick={panel === 'scan' ? closePanel : photoUrl && onPhotoClose ? onPhotoClose : onClose} className="lens-camera-icon" aria-label={photoUrl || panel === 'scan' ? tr('Retour à la caméra', 'العودة إلى الكاميرا') : tr('Quitter Lens', 'مغادرة Lens')}>
-          <ArrowLeft size={22} />
+          {mode === 'code' ? <X size={22} /> : <ArrowLeft size={22} />}
         </button>
         <p className="lens-camera-brand" dir="ltr">AYROVIX <span>Lens</span></p>
         {photoUrl ? null : (
@@ -270,7 +270,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
             <button type="button" onClick={toggleTorch} className="lens-camera-icon" disabled={!torchAvailable || torchBusy} aria-busy={torchBusy} aria-pressed={torchOn}
               title={!torchAvailable ? tr('Flash indisponible sur cet appareil', 'الفلاش غير متاح على هذا الجهاز') : undefined}
               aria-label={!torchAvailable ? tr('Flash indisponible sur cet appareil', 'الفلاش غير متاح على هذا الجهاز') : torchOn ? tr('Éteindre le flash', 'إطفاء الفلاش') : tr('Allumer le flash', 'تشغيل الفلاش')}><Zap size={22} /></button>
-            <button type="button" className="lens-camera-icon" onClick={() => openPanel('help')} aria-label={tr('Aide et règles de Lens', 'مساعدة Lens وقواعد الاستخدام')} aria-haspopup="dialog"><Info size={22} /></button>
+            {mode !== 'code' && <button type="button" className="lens-camera-icon" onClick={() => openPanel('help')} aria-label={tr('Aide et règles de Lens', 'مساعدة Lens وقواعد الاستخدام')} aria-haspopup="dialog"><Info size={22} /></button>}
           </div>
         )}
       </header>}
@@ -360,7 +360,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
       </div>}
 
       {/* Pilule de modes : Scan en direct · Photo · Lien / code (maquette approuvée) */}
-      {mode !== 'code' && !photoUrl && (
+      {!photoUrl && (
         <div className="lens-mode-pill relative z-10 mx-auto mb-3 flex w-fit rounded-full bg-black/45 p-1 backdrop-blur" role="tablist" aria-label={tr('Mode caméra', 'وضع الكاميرا')} onKeyDown={event => {
           if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
           event.preventDefault();
@@ -372,17 +372,17 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
         }}>
           {(['video', 'photo'] as CamMode[]).map((m) => {
             const disabled = m === 'video' && !liveEnabled;
-            const selected = camMode === m;
+            const selected = mode !== 'code' && camMode === m;
             return (
               <button key={m} type="button" role="tab" aria-selected={selected} tabIndex={selected ? 0 : -1} disabled={disabled} title={disabled ? tr('Le scan en direct n’est pas activé pour le moment.', 'المسح المباشر غير مفعّل حاليًا.') : undefined}
-                onClick={() => { setCamMode(m); setNotice(null); }}
+                onClick={() => { if (mode === 'code') closePanel(); setCamMode(m); setNotice(null); }}
                 className={`lens-camera-tab rounded-full px-4 py-2 text-sm font-semibold transition-colors ${selected ? 'is-selected bg-white text-ink' : 'text-white/85'} ${disabled ? 'opacity-40' : ''}`}>
                 {m === 'photo' ? tr('Photo', 'تصوير') : tr('Scan en direct', 'مسح مباشر')}
               </button>
             );
           })}
-          <button type="button" onClick={() => openPanel('methods')} aria-haspopup="dialog"
-            className="lens-camera-tab rounded-full px-4 py-2 text-sm font-semibold text-white/85">
+          <button type="button" onClick={() => openPanel('methods', mode === 'code')} aria-haspopup="dialog" aria-pressed={mode === 'code'}
+            className={`lens-camera-tab rounded-full px-4 py-2 text-sm font-semibold ${mode === 'code' ? 'is-selected bg-white text-ink' : 'text-white/85'}`}>
             {tr('Lien / code', 'رابط أو رمز')}
           </button>
         </div>
@@ -390,7 +390,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
 
       {!photoUrl && mode !== 'code' && !liveEnabled && <p className="lens-live-unavailable">{tr('Scan en direct indisponible pour le moment.', 'المسح المباشر غير متاح حاليًا.')}</p>}
       {/* Contrôles : galerie · déclencheur · OCEREX (le bouton loupe est remplacé). */}
-      {!photoUrl && mode !== 'code' && (
+      {!photoUrl && (
       <div className="lens-camera-controls relative z-10">
         <button type="button" onClick={pickFromGallery} className="lens-gallery-button" aria-label={tr('Importer une image depuis la galerie', 'استيراد صورة من المعرض')}>
           <ImageIcon size={22} />
@@ -413,7 +413,6 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
       </div>
       )}
 
-      {mode === 'code' && !photoUrl && <div className="lens-scan-actions"><button type="button" onClick={() => openPanel('methods', true)}>{tr('Changer de méthode', 'تغيير طريقة البحث')}</button><button type="button" onClick={closePanel}>{tr('Retour à la photo', 'العودة إلى التصوير')}</button></div>}
 
       <div className="relative z-10 h-[max(0.75rem,env(safe-area-inset-bottom))]" />
 
