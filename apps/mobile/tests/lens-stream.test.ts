@@ -200,3 +200,41 @@ describe('analyzeLensImageStream', () => {
     await expect(promise).rejects.toMatchObject({ kind: 'aborted' });
   });
 });
+
+describe('SSE selon la spécification (fins de ligne, champs, commentaires)', () => {
+  it('accepte CRLF et CR seul comme fin de ligne', () => {
+    const crlf = takeSseBlocks('event: done\r\ndata: {}\r\n\r\nevent: card\r\ndata: {"x"');
+    expect(crlf.blocks).toEqual(['event: done\r\ndata: {}']);
+    expect(crlf.rest).toBe('event: card\r\ndata: {"x"');
+    const cr = takeSseBlocks('event: done\rdata: {}\r\rreste');
+    expect(cr.blocks).toEqual(['event: done\rdata: {}']);
+    expect(cr.rest).toBe('reste');
+  });
+
+  it('attend le \\n qui suit un \\r coupé entre deux morceaux', () => {
+    const first = takeSseBlocks('event: done\ndata: {}\n\r');
+    expect(first.blocks).toEqual([]);
+    const second = takeSseBlocks(`${first.rest}\n`);
+    expect(second.blocks).toEqual(['event: done\ndata: {}']);
+  });
+
+  it('joint plusieurs lignes data avec un saut de ligne', () => {
+    expect(parseLensSseBlock('event: progress\ndata: {"step":\ndata: "identified"}')).toEqual({
+      type: 'progress',
+      progress: { step: 'identified', done: undefined, total: undefined },
+    });
+  });
+
+  it('ignore les commentaires et ne retire qu’un seul espace après le deux-points', () => {
+    const block = ': keep-alive\nevent:progress\ndata:{"step":"searching"}';
+    expect(parseLensSseBlock(block)).toEqual({
+      type: 'progress',
+      progress: { step: 'searching', done: undefined, total: undefined },
+    });
+  });
+
+  it('un bloc sans data ne produit aucun événement', () => {
+    expect(parseLensSseBlock('event: done')).toBeNull();
+    expect(parseLensSseBlock(': seulement un commentaire')).toBeNull();
+  });
+});

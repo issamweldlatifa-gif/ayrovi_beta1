@@ -47,20 +47,53 @@ const finiteOrUndefined = (value: unknown): number | undefined =>
  * Le reste incomplet est rendu tel quel pour le bloc suivant.
  */
 export function takeSseBlocks(buffer: string): { blocks: string[]; rest: string } {
-  const parts = buffer.replace(/\r\n/g, '\n').split('\n\n');
-  const rest = parts.pop() ?? '';
-  return { blocks: parts, rest };
+  // Fin de ligne : CRLF, LF ou CR seul (WHATWG). Une ligne vide termine un bloc.
+  const blocks: string[] = [];
+  let blockStart = 0; // début du bloc en cours
+  let lastEol = -1; // position de la fin de ligne qui précède (sans l'inclure dans le bloc)
+  let lineStart = 0;
+  let i = 0;
+  while (i < buffer.length) {
+    const ch = buffer[i];
+    if (ch !== '\r' && ch !== '\n') {
+      i += 1;
+      continue;
+    }
+    // Un \r en fin de morceau peut être suivi d'un \n au morceau suivant : on attend.
+    if (ch === '\r' && i + 1 >= buffer.length) break;
+    const next = ch === '\r' && buffer[i + 1] === '\n' ? i + 2 : i + 1;
+    if (i === lineStart) {
+      // Ligne vide : fin du bloc (un bloc vide, sans ligne avant, est ignoré).
+      if (i > blockStart && lastEol >= blockStart) blocks.push(buffer.slice(blockStart, lastEol));
+      blockStart = next;
+      lastEol = -1;
+    } else {
+      lastEol = i;
+    }
+    lineStart = next;
+    i = next;
+  }
+  return { blocks, rest: buffer.slice(blockStart) };
 }
 
 /** Décode un bloc `event: … / data: …`. `null` si le bloc est vide ou invalide. */
 export function parseLensSseBlock(block: string): LensStreamEvent | null {
   let event = 'message';
-  let raw = '';
-  for (const line of block.split('\n')) {
-    if (line.startsWith('event:')) event = line.slice(6).trim();
-    else if (line.startsWith('data:')) raw += line.slice(5).trim();
+  const data: string[] = [];
+  for (const line of block.split(/\r\n|\r|\n/)) {
+    // Ligne de commentaire (`:…`) ou vide : ignorée.
+    if (line === '' || line.startsWith(':')) continue;
+    const colon = line.indexOf(':');
+    const field = colon === -1 ? line : line.slice(0, colon);
+    // Un seul espace après les deux-points est retiré, pas davantage.
+    let value = colon === -1 ? '' : line.slice(colon + 1);
+    if (value.startsWith(' ')) value = value.slice(1);
+    if (field === 'event') event = value;
+    else if (field === 'data') data.push(value);
+    // `id` et `retry` ne servent pas ici.
   }
-  if (!raw) return null;
+  if (data.length === 0) return null;
+  const raw = data.join('\n');
   let payload: unknown;
   try {
     payload = JSON.parse(raw);
