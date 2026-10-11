@@ -11,6 +11,8 @@ import {
 import { adminApi } from './api';
 import { Button, Field, ImageUploader, Select, Switch, Toast } from './components';
 import { moveHint } from './moveHint';
+import { uploadMediaFile } from './mediaUpload';
+import { ANNOUNCEMENT_TARGETS } from '../config/interfaceConfig';
 
 const SECTION_LABELS: Record<InterfaceSectionConfig['id'], string> = {
   hero: 'Hero & slider',
@@ -18,6 +20,7 @@ const SECTION_LABELS: Record<InterfaceSectionConfig['id'], string> = {
   brands: 'Marques partenaires',
   about: 'Pourquoi AYROVI',
   footer: 'Pied de page',
+  announcement: 'Annonce promotionnelle',
 };
 const PANEL_ICONS = {
   sections: LayoutGrid,
@@ -100,6 +103,56 @@ const AyroviCorePreview: React.FC<{ config: PublicInterfaceConfig['icons'] }> = 
     <ul>{AYROVI_CORE_ICONS.map(({ label, icon: Icon }) => <li key={label}><Icon size={Math.max(20, config.size)} /><span>{label}</span></li>)}</ul>
   </div>
 );
+
+/** Champs propres à l’annonce : média image/vidéo, bouton et sa destination interne. */
+function AnnouncementFields({ section, canWrite, onPatch }: {
+  section: InterfaceSectionConfig; canWrite: boolean; onPatch: (value: Partial<InterfaceSectionConfig>) => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState('');
+  const hasVideo = Boolean(section.videoUrl);
+  const hasImage = Boolean(section.image);
+  const upload = async (file?: File) => {
+    if (!file) return;
+    setUploading(true); setError('');
+    try {
+      const url = await uploadMediaFile(file);
+      if (file.type.startsWith('video/')) onPatch({ videoUrl: url, mediaType: 'video' });
+      else onPatch({ image: url });
+    } catch (reason: any) {
+      setError(reason?.message || 'Téléversement impossible.');
+    } finally {
+      setUploading(false);
+    }
+  };
+  return (<>
+    <Field label="Média : image ou vidéo" hint="Image (PNG, JPG, WebP, GIF) ou vidéo MP4 / WebM de 10 Mo maximum. « Média affiché » choisit celui qui s’affiche quand il y en a deux." full error={error}>
+      <div className="admin-image-uploader">
+        {(hasImage || hasVideo) && (
+          <div className="admin-image-preview">
+            {hasVideo && section.mediaType === 'video'
+              ? <video src={section.videoUrl} muted controls playsInline style={{ maxWidth: '100%' }} />
+              : hasImage && <img src={section.image} alt="Aperçu" />}
+            <button type="button" disabled={!canWrite} onClick={() => onPatch({ image: '', videoUrl: '', mediaType: 'image' })}>Retirer le média</button>
+          </div>
+        )}
+        <input type="file" accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm" disabled={!canWrite || uploading} onChange={(event) => upload(event.target.files?.[0])} />
+        {uploading && <small>Téléversement en cours…</small>}
+      </div>
+    </Field>
+    {hasImage && hasVideo && (
+      <Field label="Média affiché">
+        <Select disabled={!canWrite} value={section.mediaType} onChange={(event) => onPatch({ mediaType: event.target.value as 'image' | 'video' })} options={[{ value: 'image', label: 'Image' }, { value: 'video', label: 'Vidéo' }]} />
+      </Field>
+    )}
+    <Field label="Texte du bouton" hint="Laisser vide pour masquer le bouton.">
+      <input disabled={!canWrite} maxLength={40} value={section.ctaLabel} onChange={(event) => onPatch({ ctaLabel: event.target.value })} placeholder="Découvrir" />
+    </Field>
+    <Field label="Destination du bouton" hint="Pages internes uniquement : aucune adresse externe.">
+      <Select disabled={!canWrite} value={section.ctaTarget} onChange={(event) => onPatch({ ctaTarget: event.target.value })} options={[{ value: '', label: 'Aucun bouton' }, ...ANNOUNCEMENT_TARGETS]} />
+    </Field>
+  </>);
+}
 
 export const InterfaceStudio: React.FC<{ canWrite: boolean }> = ({ canWrite }) => {
   const [settingId, setSettingId] = useState('');
@@ -197,7 +250,7 @@ export const InterfaceStudio: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
           <section className="admin-card interface-card"><header><div><LayoutGrid size={19} /><div><h2>Contrôle complet des sections</h2><p>Ordre, visibilité, textes, média, fond, texte, espacement et largeur de chaque bloc.</p></div></div></header>
             <div className="interface-section-list">{orderedSections.map((section, index) => <article key={section.id} className={!section.visible ? 'is-hidden' : ''}>
               <div className="interface-section-toolbar"><div><span>{String(index + 1).padStart(2, '0')}</span><strong>{SECTION_LABELS[section.id]}</strong></div><div><button type="button" disabled={!canWrite || index === 0} onClick={() => move(section.id, -1)} aria-label="Monter" title={moveHint(-1, !canWrite, index === 0)}><ArrowUp size={15} /></button><button type="button" disabled={!canWrite || index === orderedSections.length - 1} onClick={() => move(section.id, 1)} aria-label="Descendre" title={moveHint(1, !canWrite, index === orderedSections.length - 1)}><ArrowDown size={15} /></button><button type="button" disabled={!canWrite} className={section.visible ? 'is-visible' : ''} onClick={() => patchSection(section.id, { visible: !section.visible })}>{section.visible ? <AyroviEye size={15} /> : <EyeOff size={15} />}{section.visible ? 'Visible' : 'Masqué'}</button></div></div>
-              <div className="admin-form interface-section-form"><Field label="Titre" full><input disabled={!canWrite} value={section.title} onChange={(event) => patchSection(section.id, { title: event.target.value })} placeholder="Titre du bloc (facultatif)" /></Field><Field label="Sous-titre / contenu court" full><textarea disabled={!canWrite} rows={2} value={section.subtitle} onChange={(event) => patchSection(section.id, { subtitle: event.target.value })} /></Field><Field label="Image du bloc" hint={section.id === 'hero' ? 'Remplace visuellement la première slide du Hero.' : 'Affichée comme couverture administrée du bloc.'} full><ImageUploader value={section.image} onChange={(image) => patchSection(section.id, { image })} label={`Ajouter l’image ${SECTION_LABELS[section.id]}`} /></Field></div>
+              <div className="admin-form interface-section-form"><Field label="Titre" full><input disabled={!canWrite} value={section.title} onChange={(event) => patchSection(section.id, { title: event.target.value })} placeholder="Titre du bloc (facultatif)" /></Field><Field label="Sous-titre / contenu court" full><textarea disabled={!canWrite} rows={2} value={section.subtitle} onChange={(event) => patchSection(section.id, { subtitle: event.target.value })} /></Field>{section.id === 'announcement' ? <AnnouncementFields section={section} canWrite={canWrite} onPatch={(value) => patchSection(section.id, value)} /> : <Field label="Image du bloc" hint={section.id === 'hero' ? 'Remplace visuellement la première slide du Hero.' : 'Affichée comme couverture administrée du bloc.'} full><ImageUploader value={section.image} onChange={(image) => patchSection(section.id, { image })} label={`Ajouter l’image ${SECTION_LABELS[section.id]}`} /></Field>}</div>
               <details className="interface-section-advanced"><summary><Palette size={14} />Style propre à cette section</summary><div>
                 <ColorControl label="Fond" value={section.backgroundColor} onChange={(backgroundColor) => patchSection(section.id, { backgroundColor })} disabled={!canWrite} />
                 <ColorControl label="Texte" value={section.textColor} onChange={(textColor) => patchSection(section.id, { textColor })} disabled={!canWrite} />

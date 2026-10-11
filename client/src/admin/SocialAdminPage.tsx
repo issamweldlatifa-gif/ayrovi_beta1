@@ -3,8 +3,12 @@ import { ArrowUp, Pencil, Plus, Trash2 } from '../components/QatafoIcons';
 import { adminApi } from './api';
 import { Button, DataTable, Field, Modal, StatusBadge } from './components';
 import { StoriesStudioPage } from './StoriesStudio';
+import { EMPTY_PRODUCT_LINK, ProductIntegration } from './ProductIntegration';
+import { CatalogueProductsPage } from './CataloguePages';
+import { uploadMediaFile } from './mediaUpload';
+import { normalizeMediaLink, type MediaLinkKind } from '../../../shared/mediaLinks';
 
-const TABS = ['Publication', 'Reel', 'Story'] as const;
+const TABS = ['Publication', 'Reel', 'Story', 'Produits temporaires'] as const;
 type Tab = typeof TABS[number];
 
 const st = (s: string) => s === 'publie' ? 'PUBLISHED' : s === 'archive' ? 'ARCHIVED' : 'DRAFT';
@@ -15,17 +19,14 @@ const removeWithConfirm = async (path: string, message: string, reload: () => vo
   try { await adminApi(path, { method: 'DELETE' }); reload(); } catch { reload(); }
 };
 
-const readDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
-  const reader = new FileReader();
-  reader.onload = () => resolve(String(reader.result));
-  reader.onerror = () => reject(new Error('Lecture impossible'));
-  reader.readAsDataURL(file);
-});
-
-const uploadFile = async (file: File) => {
-  const dataUrl = await readDataUrl(file);
-  const result = await adminApi<any>('/uploads', { method: 'POST', body: JSON.stringify({ dataUrl }) });
-  return result.data?.url as string;
+/**
+ * Lien saisi à la main : converti tout de suite (lecteur Cloudinary → fichier direct) ou refusé
+ * avec une explication à l'écran. Renvoie la valeur à garder, ou null si le lien est refusé.
+ */
+const acceptLink = (value: string, kind: MediaLinkKind, setError: (message: string) => void): string | null => {
+  const link = normalizeMediaLink(value, kind);
+  if (link.ok === false) { setError(link.error); return null; }
+  return link.url;
 };
 
 const videoDuration = (url: string) => new Promise<number>((resolve) => {
@@ -70,7 +71,7 @@ const PublicationsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
     <section className="admin-card">
       {error && <div className="admin-error">{error}</div>}
       <div className="admin-actions" style={{ marginTop: 0 }}>
-        <Button onClick={() => { setError(''); setForm({ title: '', subtitle: '', channel_id: channels[0]?.id || '', image_url: '', remark: '', status: 'publie' }); }}><Plus size={15} />Ajouter</Button>
+        <Button onClick={() => { setError(''); setForm({ title: '', subtitle: '', channel_id: channels[0]?.id || '', image_url: '', remark: '', status: 'publie', ...EMPTY_PRODUCT_LINK }); }}><Plus size={15} />Ajouter</Button>
         <span className="admin-block-small">Format conseillé : image verticale 4:5, titre court et canal actif.</span>
       </div>
       <DataTable
@@ -96,14 +97,15 @@ const PublicationsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
           <Field label="Canal" required><ChannelSelect value={form.channel_id} onChange={(v) => setForm({ ...form, channel_id: v })} channels={channels} /></Field>
           <Field label="Image" required>
             <div className="admin-actions" style={{ marginTop: 0 }}>
-              <input value={form.image_url} onChange={(e) => setForm({ ...form, image_url: e.target.value })} placeholder="URL ou upload" style={{ flex: 1 }} />
+              <input value={form.image_url} onChange={(e) => setForm({ ...form, image_url: e.target.value })} onBlur={() => { const url = acceptLink(form.image_url || '', 'image', setError); if (url !== null) setForm((cur: any) => ({ ...cur, image_url: url })); }} placeholder="URL ou upload" style={{ flex: 1 }} />
               <label style={{ cursor: 'pointer', border: '1px solid var(--admin-line)', borderRadius: 10, padding: '8px 12px', fontSize: 12, fontWeight: 700 }}>
                 <ArrowUp size={14} />Uploader
-                <input type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={async (e) => { const f = e.target.files?.[0]; if (f) setForm({ ...form, image_url: await uploadFile(f) }); }} />
+                <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden onChange={async (e) => { const f = e.target.files?.[0]; if (!f) return; try { const url = await uploadMediaFile(f); setForm((cur: any) => ({ ...cur, image_url: url })); } catch (err: any) { setError(err?.message || 'Upload impossible.'); } finally { e.target.value = ''; } }} />
               </label>
             </div>
           </Field>
           <Field label="Remarque (interne, invisible sur le site)" full><textarea rows={2} value={form.remark} onChange={(e) => setForm({ ...form, remark: e.target.value })} /></Field>
+          <ProductIntegration kind="publication" value={form} onChange={(v) => setForm({ ...form, ...v })} />
           <Field label="Statut"><select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}><option value="brouillon">Brouillon</option><option value="publie">Publié</option><option value="archive">Archivé</option></select></Field>
         </div>}
       </Modal>
@@ -140,7 +142,7 @@ const ReelsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
     <section className="admin-card">
       {error && <div className="admin-error">{error}</div>}
       <div className="admin-actions" style={{ marginTop: 0 }}>
-        <Button onClick={() => { setError(''); setForm({ title: '', channel_id: channels[0]?.id || '', description: '', video_url: '', duration_seconds: 0, status: 'publie' }); }}><Plus size={15} />Ajouter</Button>
+        <Button onClick={() => { setError(''); setForm({ title: '', channel_id: channels[0]?.id || '', description: '', video_url: '', duration_seconds: 0, status: 'publie', ...EMPTY_PRODUCT_LINK }); }}><Plus size={15} />Ajouter</Button>
         <span className="admin-block-small">Format conseillé : vidéo verticale 9:16, sous-titres lisibles et caption courte.</span>
       </div>
       <DataTable
@@ -167,22 +169,36 @@ const ReelsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
           <Field label="Canal" required><ChannelSelect value={form.channel_id} onChange={(v) => setForm({ ...form, channel_id: v })} channels={channels} /></Field>
           <Field label="Vidéo (mp4, mov, webm…)" required full>
             <div className="admin-actions" style={{ marginTop: 0 }}>
-              <input value={form.video_url} onChange={(e) => setForm({ ...form, video_url: e.target.value })} placeholder="URL ou upload" style={{ flex: 1 }} />
+              <input value={form.video_url} onChange={(e) => setForm({ ...form, video_url: e.target.value })} onBlur={() => { const url = acceptLink(form.video_url || '', 'video', setError); if (url !== null) setForm((cur: any) => ({ ...cur, video_url: url })); }} placeholder="URL ou upload" style={{ flex: 1 }} />
               <label style={{ cursor: 'pointer', border: '1px solid var(--admin-line)', borderRadius: 10, padding: '8px 12px', fontSize: 12, fontWeight: 700 }}>
                 <ArrowUp size={14} />Uploader
                 <input type="file" accept="video/mp4,video/webm,video/ogg,video/quicktime" hidden onChange={async (e) => {
                   const f = e.target.files?.[0];
                   if (!f) return;
-                  const url = await uploadFile(f);
-                  const duration = await videoDuration(url);
-                  setForm((cur: any) => ({ ...cur, video_url: url, duration_seconds: duration }));
+                  try {
+                    const url = await uploadMediaFile(f);
+                    const duration = await videoDuration(url);
+                    setForm((cur: any) => ({ ...cur, video_url: url, duration_seconds: duration }));
+                  } catch (err: any) { setError(err?.message || 'Upload impossible.'); }
+                  finally { e.target.value = ''; }
                 }} />
               </label>
             </div>
             {form.video_url && <video src={form.video_url} controls muted style={{ width: '100%', maxHeight: 240, borderRadius: 12, marginTop: 8, background: '#000' }} />}
             {form.duration_seconds > 0 && <p className="admin-block-small">Durée détectée automatiquement : {fmt(form.duration_seconds)}</p>}
           </Field>
+          <Field label="Image de couverture (affichée avant la lecture)" full>
+            <div className="admin-actions" style={{ marginTop: 0 }}>
+              <input value={form.poster_url || ''} onChange={(e) => setForm({ ...form, poster_url: e.target.value })} onBlur={() => { const url = acceptLink(form.poster_url || '', 'image', setError); if (url !== null) setForm((cur: any) => ({ ...cur, poster_url: url })); }} placeholder="URL ou upload (facultatif)" style={{ flex: 1 }} />
+              <label style={{ cursor: 'pointer', border: '1px solid var(--admin-line)', borderRadius: 10, padding: '8px 12px', fontSize: 12, fontWeight: 700 }}>
+                <ArrowUp size={14} />Uploader
+                <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden onChange={async (e) => { const f = e.target.files?.[0]; if (!f) return; try { const url = await uploadMediaFile(f); setForm((cur: any) => ({ ...cur, poster_url: url })); } catch (err: any) { setError(err?.message || 'Upload impossible.'); } finally { e.target.value = ''; } }} />
+              </label>
+            </div>
+            {form.poster_url && <img src={form.poster_url} alt="" style={{ width: 120, aspectRatio: '9 / 16', objectFit: 'cover', borderRadius: 12, marginTop: 8 }} />}
+          </Field>
           <Field label="Description" full><textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></Field>
+          <ProductIntegration kind="reel" value={form} onChange={(v) => setForm({ ...form, ...v })} />
           <Field label="Statut"><select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}><option value="brouillon">Brouillon</option><option value="publie">Publié</option><option value="archive">Archivé</option></select></Field>
         </div>}
       </Modal>
@@ -202,7 +218,7 @@ export const SocialAdminPage: React.FC = () => {
         <div>
           <span className="admin-eyebrow">Contenu → Social</span>
           <h2>Social Ayrovi</h2>
-          <p>Trois contenus indépendants : publications du feed, reels vidéo et stories éphémères.</p>
+          <p>Trois contenus indépendants : publications du feed, reels vidéo et stories éphémères. Les produits temporaires créés pour eux sont gérés ici.</p>
         </div>
       </header>
       <div className="admin-actions" style={{ marginTop: 0 }}>
@@ -213,6 +229,7 @@ export const SocialAdminPage: React.FC = () => {
       {tab === 'Publication' && <PublicationsTab channels={channels} />}
       {tab === 'Reel' && <ReelsTab channels={channels} />}
       {tab === 'Story' && <StoriesStudioPage onEditContent={() => undefined} />}
+      {tab === 'Produits temporaires' && <CatalogueProductsPage scope="content" />}
     </div>
   );
 };

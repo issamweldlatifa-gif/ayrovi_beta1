@@ -69,6 +69,6 @@ describe('CMS links are actual destinations, never executable schemes', () => {
     const lens=readFileSync('client/src/components/LensFeature.tsx','utf8');
     expect(lens).toContain("const Action = href ? 'a' : 'button'");
     expect(lens).not.toContain("if (data.ctaUrl.startsWith('/')) return");
-    expect(readFileSync('client/src/components/EvergreenHero.tsx','utf8')).toContain('content.ctaLabel && href ? <a');
+    expect(readFileSync('client/src/components/HeroCarousel.tsx','utf8')).toContain('cta && href ? (');
   });
 });

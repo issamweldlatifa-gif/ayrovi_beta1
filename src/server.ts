@@ -7,10 +7,13 @@ import compression from 'compression';
 import path from 'path';
 import fs from 'fs';
 import { KNOWN_PAGE_PATHS, isKnownPagePath, sitemapRoutes } from '../shared/publicSeo';
+import { ANDROID_APP_LINK_ENV, appLinksDiagnostics, appLinksFromEnv } from '../shared/appLinks';
+import { deploymentIdentity } from './services/deploymentIdentity';
 import { createHash, randomUUID } from 'node:crypto';
 import type { Server } from 'node:http';
 import { spawn } from 'node:child_process';
 import { QatafoDatabase as AyroviDatabase } from './db/database';
+import { refreshStaleHeroPalettes } from './services/heroPalette';
 import { SmartLinkScraper } from './scraper/scraper';
 import { VisualProductExtractor } from './services/vision';
 import { createApiRouter } from './api/routes';
@@ -31,6 +34,9 @@ import { bootstrapErpCore } from './erp-core/bootstrap';
 import { isPublicUploadPath } from './erp-core/storage';
 import { assertProductionConfiguration } from './config/productionConfig';
 import { pruneCanonicalLensCache } from './ayrovix/services/lensCache';
+import { dispatchPushNotifications } from './services/pushDispatch';
+import { pushConfigured } from './services/push';
+import { clientRateLimitKey } from './services/rateKey';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -145,16 +151,39 @@ app.use('/api/admin/arrival-ingestion/sources', (req, res, next) => {
   }
   return next();
 });
-app.use('/api/customer/auth/otp/request', rateLimit('otp-request-ip', process.env.NODE_ENV === 'test' ? 1_000 : 20, 60_000));
+/*
+ * Connexion par SMS — dimensionnée pour la Tunisie.
+ *
+ * Le contrôle qui protège réellement du coût (et du harcèlement) est
+ * PAR NUMÉRO : 3 demandes / 15 min et 5 / minute, plus le plafond technique du
+ * fournisseur. Le plafond par IP n'est qu'un garde-fou de débit : à 20/min il
+ * punissait un opérateur entier (CGNAT) au lieu d'un attaquant. On le monte,
+ * et on ajoute un plafond GLOBAL au processus — lui seul borne la dépense SMS
+ * face à une attaque distribuée, qu'aucun compteur par IP ne peut arrêter.
+ */
+app.use('/api/customer/auth/otp/request', rateLimit('otp-request-global', process.env.NODE_ENV === 'test' ? 10_000 : 300, 15 * 60_000, () => 'process'));
+app.use('/api/customer/auth/otp/request', rateLimit('otp-request-ip', process.env.NODE_ENV === 'test' ? 1_000 : 120, 60_000));
+/**
+ * Clé du plafond PAR NUMÉRO — volontairement SANS l'IP.
+ *
+ * Avec l'IP dans la clé, un attaquant disposant de plusieurs adresses
+ * multipliait son quota contre la même victime ; et un abonné derrière un
+ * CGNAT partageait son quota avec ses voisins. Sans l'IP, le quota protège le
+ * numéro, d'où qu'on l'attaque — c'est la bonne dimension pour des SMS payants.
+ * Le téléphone n'est jamais stocké : seul un hachage tronqué sert de clé.
+ */
 export function otpRateLimitKey(req: Pick<Request, 'ip' | 'body'>): string {
   let digits = String(req.body?.phone || '').replace(/\D/g, '').slice(0, 20);
   if (digits.startsWith('00')) digits = digits.slice(2);
   if (digits.length === 8) digits = `216${digits}`; // local Tunisian notation → E.164 digits
-  const phoneHash = createHash('sha256').update(digits).digest('hex').slice(0, 16);
-  return `${req.ip || 'unknown'}:${phoneHash}`;
+  return `phone:${createHash('sha256').update(digits).digest('hex').slice(0, 16)}`;
 }
 const otpRequestTargetRateLimit = rateLimit('otp-request-target', process.env.NODE_ENV === 'test' ? 1_000 : 5, 60_000, otpRateLimitKey);
-app.use('/api/customer/auth/otp/verify', rateLimit('otp-verify', 12, 5 * 60_000));
+// Le garde-fou utile est PAR DÉFI (voir `otpVerifyChallengeRateLimit` plus bas,
+// enregistré après la lecture du corps) ; le compteur par IP ne sert qu'à
+// absorber une rafale. Le garder bas rendait la connexion impossible aux heures
+// de pointe derrière un même opérateur (une adresse = des milliers d'abonnés).
+app.use('/api/customer/auth/otp/verify', rateLimit('otp-verify-ip', process.env.NODE_ENV === 'test' ? 1_000 : 120, 5 * 60_000));
 app.use('/api/customer/auth/google', rateLimit('google-oauth', 30, 10 * 60_000));
 app.use('/api/customer/auth/facebook', rateLimit('facebook-oauth', 30, 10 * 60_000));
 // Remise de session native (04/10/2026) : l'application interroge en boucle
@@ -165,7 +194,7 @@ app.use('/api/customer/auth/native/claim', rateLimit('native-handoff', process.e
 // Connexion Google native : chaque appel déclenche une vérification chez
 // Google. Sans plafond, un tiers pourrait s'en servir comme amplificateur.
 app.use('/api/customer/auth/google/native', rateLimit('google-native', process.env.NODE_ENV === 'test' ? 1_000 : 30, 10 * 60_000));
-app.use('/api/checkout', rateLimit('checkout', process.env.NODE_ENV === 'test' ? 1_000 : 15, 5 * 60_000));
+app.use('/api/checkout', rateLimit('checkout', process.env.NODE_ENV === 'test' ? 1_000 : 15, 5 * 60_000, clientRateLimitKey));
 app.use('/api/customer/account/orders', (req, res, next) => req.path.includes('/payments/card/')
   ? rateLimit('card-payment', process.env.NODE_ENV === 'test' ? 1_000 : 20, 5 * 60_000)(req, res, next)
   : next());
@@ -173,28 +202,29 @@ app.use('/api/customer/payments/konnect/webhook', rateLimit('konnect-webhook', p
 app.use('/api/extract-image', rateLimit('vision', 25, 10 * 60_000));
 app.use('/api/ocerex', rateLimit('ocerex', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000));
 app.use('/api/scrape', rateLimit('scrape', 30, 10 * 60_000));
-app.use('/api/v1/aywebs/capture', rateLimit('aywebs-capture', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000));
-app.use('/api/v1/aywebs/product/resolve', rateLimit('aywebs-resolve', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000));
-app.use('/api/v1/aywebs/product/variants', rateLimit('aywebs-variants', process.env.NODE_ENV === 'test' ? 1_000 : 40, 10 * 60_000));
-app.use('/api/v1/aywebs/page/analyze', rateLimit('aywebs-analyze', process.env.NODE_ENV === 'test' ? 1_000 : 120, 10 * 60_000));
-app.use('/api/v1/aywebs/price-quote', rateLimit('aywebs-quote', process.env.NODE_ENV === 'test' ? 1_000 : 60, 10 * 60_000));
-app.use('/api/v1/aywebs/events', rateLimit('aywebs-events', process.env.NODE_ENV === 'test' ? 1_000 : 120, 10 * 60_000));
+app.use('/api/v1/aywebs/capture', rateLimit('aywebs-capture', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000, clientRateLimitKey));
+app.use('/api/v1/aywebs/product/resolve', rateLimit('aywebs-resolve', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000, clientRateLimitKey));
+app.use('/api/v1/aywebs/product/variants', rateLimit('aywebs-variants', process.env.NODE_ENV === 'test' ? 1_000 : 40, 10 * 60_000, clientRateLimitKey));
+app.use('/api/v1/aywebs/page/analyze', rateLimit('aywebs-analyze', process.env.NODE_ENV === 'test' ? 1_000 : 120, 10 * 60_000, clientRateLimitKey));
+app.use('/api/v1/aywebs/price-quote', rateLimit('aywebs-quote', process.env.NODE_ENV === 'test' ? 1_000 : 60, 10 * 60_000, clientRateLimitKey));
+app.use('/api/v1/aywebs/events', rateLimit('aywebs-events', process.env.NODE_ENV === 'test' ? 1_000 : 120, 10 * 60_000, clientRateLimitKey));
 // Écritures propriétaires du domaine AYWEBs : panier, commande, paiement, demandes.
-app.use('/api/v1/aywebs/cart', rateLimit('aywebs-cart', process.env.NODE_ENV === 'test' ? 1_000 : 60, 10 * 60_000));
-app.use('/api/v1/aywebs/checkout', rateLimit('aywebs-checkout', process.env.NODE_ENV === 'test' ? 1_000 : 30, 10 * 60_000));
-app.use('/api/v1/aywebs/orders', rateLimit('aywebs-orders', process.env.NODE_ENV === 'test' ? 1_000 : 30, 10 * 60_000));
-app.use('/api/v1/aywebs/payments', rateLimit('aywebs-payments', process.env.NODE_ENV === 'test' ? 1_000 : 30, 10 * 60_000));
-app.use('/api/v1/aywebs/purchase-requests', rateLimit('aywebs-purchase-requests', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000));
-app.use('/api/v1/aywebs/store-requests', rateLimit('aywebs-store-requests', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000));
+app.use('/api/v1/aywebs/cart', rateLimit('aywebs-cart', process.env.NODE_ENV === 'test' ? 1_000 : 60, 10 * 60_000, clientRateLimitKey));
+app.use('/api/v1/aywebs/checkout', rateLimit('aywebs-checkout', process.env.NODE_ENV === 'test' ? 1_000 : 30, 10 * 60_000, clientRateLimitKey));
+app.use('/api/v1/aywebs/orders', rateLimit('aywebs-orders', process.env.NODE_ENV === 'test' ? 1_000 : 30, 10 * 60_000, clientRateLimitKey));
+app.use('/api/v1/aywebs/payments', rateLimit('aywebs-payments', process.env.NODE_ENV === 'test' ? 1_000 : 30, 10 * 60_000, clientRateLimitKey));
+app.use('/api/v1/aywebs/purchase-requests', rateLimit('aywebs-purchase-requests', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000, clientRateLimitKey));
+app.use('/api/v1/aywebs/store-requests', rateLimit('aywebs-store-requests', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000, clientRateLimitKey));
 app.use('/api/public/assistant-feedback', rateLimit('assistant-feedback', process.env.NODE_ENV === 'test' ? 1_000 : 40, 10 * 60_000));
-app.use('/api/assistant/chat', rateLimit('assistant-chat', process.env.NODE_ENV === 'test' ? 1_000 : 25, 10 * 60_000));
-app.use('/api/assistant/transcribe', rateLimit('assistant-voice', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000));
+app.use('/api/assistant/chat', rateLimit('assistant-chat', process.env.NODE_ENV === 'test' ? 1_000 : 25, 10 * 60_000, clientRateLimitKey));
+app.use('/api/assistant/transcribe', rateLimit('assistant-voice', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000, clientRateLimitKey));
 app.use('/api/public/media', rateLimit('public-media-proxy', process.env.NODE_ENV === 'test' ? 1_000 : 300, 10 * 60_000));
-const ayrovixRateLimit = rateLimit('ayrovix', process.env.NODE_ENV === 'test' ? 1_000 : 12, 10 * 60_000);
+app.use('/api/public/hero-events', rateLimit('public-hero-events', process.env.NODE_ENV === 'test' ? 1_000 : 120, 60_000));
+const ayrovixRateLimit = rateLimit('ayrovix', process.env.NODE_ENV === 'test' ? 1_000 : 12, 10 * 60_000, clientRateLimitKey);
 const configuredLensDailyLimit = Number(process.env.AYROVIX_LENS_IP_DAILY_LIMIT);
 const lensDailyLimit = process.env.NODE_ENV === 'test' ? 1_000
   : Number.isInteger(configuredLensDailyLimit) ? Math.max(5, Math.min(200, configuredLensDailyLimit)) : 40;
-const ayrovixDailyCostLimit = rateLimit('ayrovix-daily-cost', lensDailyLimit, 24 * 60 * 60_000);
+const ayrovixDailyCostLimit = rateLimit('ayrovix-daily-cost', lensDailyLimit, 24 * 60 * 60_000, clientRateLimitKey);
 const costlyAyrovixPaths = new Set(['/analyze-image', '/analyze-url', '/analyze-code', '/analyze-barcode', '/analyze-text']);
 app.use('/api/ayrovix', (req, res, next) => {
   // Reading compact history is free. Costly analyses also have a daily IP
@@ -246,12 +276,40 @@ app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 // Phone target is in the parsed body: enforce this second factor only after parsing,
 // while the independent IP ceiling above still runs before the request body is read.
 app.use('/api/customer/auth/otp/request', otpRequestTargetRateLimit);
+/*
+ * Balayage d'un même défi (le corps doit être lu : le défi en vient).
+ * Deviner le code d'un défi plus de dix fois en cinq minutes n'est pas une
+ * connexion ; le compteur en base coupe de toute façon à cinq essais.
+ * Une requête sans défi partage la clé « sans-defi » : on n'échappe pas au
+ * plafond en omettant simplement le champ.
+ */
+app.use('/api/customer/auth/otp/verify', rateLimit('otp-verify-challenge', 10, 5 * 60_000,
+  (req) => String(req.body?.challengeId || 'sans-defi').slice(0, 80)));
 
 // Database, Scraper & Vision Engine
 // Tests must always be hermetic: never let a local .env DATABASE_PATH hijack the test run.
 const databasePath = process.env.NODE_ENV === 'test' ? ':memory:' : (process.env.DATABASE_PATH || undefined);
 const db = new AyroviDatabase(databasePath);
 try { pruneCanonicalLensCache(db); } catch (error: any) { console.warn('[Lens cache] startup prune failed:', error?.message || 'unknown'); }
+/*
+ * Répartiteur de notifications push.
+ *
+ * Pourquoi une tâche de fond plutôt qu'un envoi dans la requête : une commande
+ * confirmée ne doit pas attendre — ni dépendre — d'un appel à Google. On
+ * balaie la table toutes les vingt secondes ; toute notification écrite finit
+ * par partir, quel que soit le chemin qui l'a écrite.
+ *
+ * Désactivé silencieusement tant que Firebase n'est pas configuré : un
+ * répartiteur qui tourne à vide n'apprend rien à personne.
+ */
+const pushDispatcher = setInterval(() => {
+  if (!pushConfigured()) return;
+  void dispatchPushNotifications(db).catch((error: any) => {
+    console.warn('[Push] dispatch failed:', error?.message || 'unknown');
+  });
+}, 20_000);
+pushDispatcher.unref?.();
+
 const lensCacheCleanupTimer = setInterval(() => {
   try { pruneCanonicalLensCache(db); } catch (error: any) { console.warn('[Lens cache] scheduled prune failed:', error?.message || 'unknown'); }
 }, 60 * 60_000);
@@ -303,6 +361,30 @@ app.get('/sitemap.xml', (_req, res) => {
   res.setHeader('Content-Type', 'application/xml; charset=utf-8');
   res.setHeader('Cache-Control', 'public, max-age=3600');
   res.send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`);
+});
+
+// App Links (P6) : النصف الثاني لـ`android.intentFilters` في `apps/mobile/app.json`.
+// أندرويد ما يفتحش روابط النطاق في التطبيق كان ما لقاش هذا الملف وبصمة صحيحة فيه.
+// البصمات ما تتكتبش في الكود: تتقرا من البيئة (`ANDROID_APP_LINK_SHA256`)، لأنّ
+// صاحب المشروع هو اللي يولّد المفتاح، وكذلك لأنّ Google Play يعيد توقيع الحزمة
+// بمفتاح ثانٍ لازم يزاد هو أيضاً. متغيّر فارغ ⇒ 404 صريح: ملف غالط أسوأ من ملف
+// غايب، لأنه يوهم بالعمل ثم يُرفض بلا إشارة.
+app.get('/.well-known/assetlinks.json', (_req, res) => {
+  const statement = appLinksFromEnv(process.env);
+  if (!statement) {
+    /* الرسالة تسمّي المتغيّر الناقص بالاسم. قول «زيد البصمات» والبصمات موجودة
+       (الناقص أسماء الحزم) يعطي 404 بلا تفسير — والناس تحسب الروابط مكسورة. */
+    const { missingEnv } = appLinksDiagnostics(process.env);
+    res.status(404).json({
+      error: 'APP_LINK_FINGERPRINT_NOT_CONFIGURED',
+      expectedEnv: ANDROID_APP_LINK_ENV,
+      missingEnv,
+      message: `Variables manquantes ou invalides : ${missingEnv.join(', ')}.`,
+    });
+    return;
+  }
+  res.setHeader('Cache-Control', 'public, max-age=300');
+  res.json(statement);
 });
 
 app.use(express.static(publicDir, {
@@ -374,12 +456,17 @@ app.get('/api/ready', (_req, res) => {
     if (!arrivalMultistoreMigration.ready) throw new Error('Arrival multi-store migration is incomplete.');
     // Empreinte de déploiement (04/10/2026) : permet de vérifier depuis un
     // téléphone QUEL code tourne réellement en production (déployé périmé ?).
-    // Render injecte RENDER_GIT_COMMIT_SHA au runtime ; npm injecte la version.
+    // `deploymentIdentity` lit les variables Render RÉELLES (`RENDER_GIT_COMMIT`,
+    // `RENDER_GIT_BRANCH`) : l'ancien nom `RENDER_GIT_COMMIT_SHA` n'existe pas
+    // chez Render, d'où un `local` permanent qui rendait la question — « quelle
+    // branche tourne ? » — impossible à trancher de l'extérieur.
+    const deployment = deploymentIdentity();
     res.json({
       status: 'ready',
       database: 'ok',
       version: process.env.npm_package_version || 'unknown',
-      commit: String(process.env.RENDER_GIT_COMMIT_SHA || process.env.AYROVI_BUILD_COMMIT || 'local').slice(0, 12),
+      commit: deployment.commit,
+      branch: deployment.branch,
     });
   } catch (error: any) {
     console.error(`[ready] request=${( _req as any).requestId || 'unknown'}`, error?.message || 'dependency unavailable');
@@ -527,6 +614,10 @@ if (process.env.NODE_ENV !== 'test') {
     console.log('🚀 AYROVI React + Vite Platform running');
     console.log(`📍 Web Application: http://0.0.0.0:${PORT}/`);
     console.log('====================================================');
+    // Palettes Hero antérieures à la version 2 : recalcul en arrière-plan, une fois.
+    refreshStaleHeroPalettes(db)
+      .then((count) => { if (count) console.log(`[hero] palettes recalculées : ${count}`); })
+      .catch((error) => console.error('[hero] recalcul des palettes échoué:', error instanceof Error ? error.message : error));
   });
   process.once('SIGTERM', () => shutdown(0, 'SIGTERM reçu'));
   process.once('SIGINT', () => shutdown(0, 'SIGINT reçu'));

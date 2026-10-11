@@ -1,3 +1,4 @@
+import { availableProductParams, availableProductSql } from '../catalogue/contentProducts';
 import { Router, Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import { SmartLinkScraper } from '../scraper/scraper';
@@ -332,6 +333,97 @@ export function createApiRouter(
         success: false,
         error: 'Erreur lors de l\'enregistrement dans le panier.'
       });
+    }
+  });
+
+  /**
+   * POST /api/cart/catalog — ajouter un produit du CATALOGUE au panier.
+   *
+   * Pourquoi une route dédiée plutôt que `POST /api/cart/items` : cette
+   * dernière REcalcule le prix depuis `sourcePrice` + `sourceCurrency`. Or un
+   * produit du catalogue porte déjà le prix publié par la boutique
+   * (`final_price`) : le recalcul produirait un **deuxième** prix pour le même
+   * article — parfois différent (frais de catégorie, devise, arrondis) — et
+   * l'application afficherait deux chiffres pour une même chose. Un prix
+   * publié n'est pas une estimation à refaire : c'est **le** prix.
+   *
+   * Le statut de vérification est donc `VERIFIED` : la preuve, ici, c'est la
+   * ligne de la boutique elle-même, pas un jeton de lecture.
+   */
+  router.post('/cart/catalog', protectAuthenticatedCart, (req: Request, res: Response) => {
+    const sessionId = requireSessionId(req, res);
+    if (!sessionId) return;
+
+    const productId = String(req.body?.productId || '').trim();
+    if (!/^[A-Za-z0-9_-]{1,120}$/.test(productId)) {
+      return res.status(400).json({ success: false, code: 'INVALID_PRODUCT', error: 'Produit invalide.' });
+    }
+
+    // Même règle de disponibilité que la fiche produit : un produit temporaire n'entre au
+    // panier que s'il est lié à un contenu publié (voir catalogue/contentProducts.ts).
+    const product = db.get<any>(
+      `SELECT * FROM products WHERE id=? AND ${availableProductSql('products')}`, productId,
+      ...availableProductParams(new Date().toISOString()),
+    ) as Record<string, any> | null;
+    if (!product) {
+      return res.status(404).json({ success: false, code: 'PRODUCT_NOT_FOUND', error: 'Produit introuvable.' });
+    }
+
+    // Pas de prix publié ⇒ pas de panier. Un « 0.00 TND » dans un panier est
+    // un mensonge imprimé, et un article non commandable est un échec au
+    // dernier écran. On refuse AVANT, avec le bon mot.
+    const finalPrice = Number(product.final_price);
+    if (!Number.isFinite(finalPrice) || finalPrice <= 0) {
+      return res.status(409).json({ success: false, code: 'NO_PRICE', error: 'Produit sans prix publié.' });
+    }
+    if (String(product.stock_status || '').toLowerCase() === 'out_of_stock') {
+      return res.status(409).json({ success: false, code: 'OUT_OF_STOCK', error: 'Produit épuisé.' });
+    }
+
+    const quantity = Math.min(99, Math.max(1, Math.trunc(Number(req.body?.quantity ?? 1)) || 1));
+    const requestedSize = String(req.body?.requestedSize || '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 100);
+    const requestedColor = String(req.body?.requestedColor || '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 100);
+    const customerNote = String(req.body?.customerNote || '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 1000);
+
+    const sourcePrice = Number(product.original_price) > 0 ? Number(product.original_price) : finalPrice;
+    const sourceCurrency = String(product.currency || 'TND').toUpperCase();
+    const store = String(product.source_platform || 'ayrovi').toLowerCase().replace(/[^a-z0-9._-]/g, '') || 'ayrovi';
+
+    const item: AddToCartRequest = {
+      store,
+      externalId: `catalog-${product.id}`,
+      url: String(product.source_url || '').trim() || `https://catalog.local/${product.id}`,
+      title: String(product.name || '').trim().slice(0, 500) || 'Produit',
+      imageUrl: String(product.image || '').trim().slice(0, 4096),
+      sourcePrice,
+      sourceCurrency,
+      priceTND: finalPrice,
+      requestedSize,
+      requestedColor,
+      customerNote,
+      priceVerificationStatus: 'VERIFIED',
+      quantity,
+    };
+
+    try {
+      const accountId = cartAccountId(req, sessionId);
+      const cartItem = db.addItem(sessionId, item, accountId);
+      recordFunnelEvent(db, 'cart_item_added', { locale: null, visitorKey: funnelVisitorKey(sessionId) });
+      const summary = cartSummary()(db.getItems(sessionId, accountId));
+      return res.status(201).json({
+        success: true,
+        cartItem,
+        message: 'Article ajouté au panier.',
+        totalItemsCount: summary.items.reduce((sum, current) => sum + current.quantity, 0),
+        totalTND: summary.totalTND,
+        deliveryTND: summary.deliveryTND,
+      });
+    } catch (err: any) {
+      if (err instanceof RangeError && err.message === 'CART_QUANTITY_LIMIT') {
+        return res.status(400).json({ success: false, error: 'La quantité maximale par article est de 99.' });
+      }
+      console.error('[Cart Catalog Add Error]', err);
+      return res.status(500).json({ success: false, error: 'Erreur lors de l\'enregistrement dans le panier.' });
     }
   });
 

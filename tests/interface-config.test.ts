@@ -45,7 +45,7 @@ describe('واجهتي full interface configuration', () => {
       layout: { sectionGap: 24, maxWidth: 1320 },
     };
     const normalized = normalizeInterfaceConfig(legacy);
-    expect(normalized.sections.map((section) => section.id)).toEqual(['hero', 'cms', 'brands', 'about', 'footer']);
+    expect(normalized.sections.map((section) => section.id)).toEqual(['hero', 'cms', 'brands', 'about', 'footer', 'announcement']);
     expect(normalized.typography.baseSize).toBe(17);
     expect(normalized.typography.headingColor).toBe('#000000');
     expect(normalized.colors.pageBackground).toBe('#ffffff');
@@ -73,5 +73,22 @@ describe('واجهتي full interface configuration', () => {
     expect(normalized.icons).toMatchObject({ library: 'ayrovi', size: 44 });
     expect(normalized.layout.cardRadius).toBe(48);
     expect(normalized.sections[0].paddingY).toBe(160);
+  });
+
+  test('annonce : masquée par défaut, cible interne seulement, média image ou vidéo validé', () => {
+    const base = normalizeInterfaceConfig(undefined);
+    const defaultAnnouncement = base.sections.find((section) => section.id === 'announcement');
+    expect(defaultAnnouncement).toMatchObject({ visible: false, mediaType: 'image', ctaTarget: 'app:lens' });
+
+    const input = structuredClone(DEFAULT_INTERFACE_CONFIG) as any;
+    input.sections = input.sections.map((section: any) => section.id === 'announcement'
+      ? { ...section, visible: true, mediaType: 'video', videoUrl: '/uploads/clip.mp4', image: 'javascript:alert(1)', ctaLabel: 'Voir', ctaTarget: 'https://evil.example' }
+      : section);
+    const hostile = normalizeInterfaceConfig(input).sections.find((section) => section.id === 'announcement');
+    expect(hostile).toMatchObject({ visible: true, mediaType: 'video', videoUrl: '/uploads/clip.mp4', image: '', ctaLabel: 'Voir', ctaTarget: '' });
+
+    input.sections = input.sections.map((section: any) => section.id === 'announcement' ? { ...section, ctaTarget: '/magazine', videoUrl: 'data:text/html,x' } : section);
+    const internal = normalizeInterfaceConfig(input).sections.find((section) => section.id === 'announcement');
+    expect(internal).toMatchObject({ ctaTarget: '/magazine', videoUrl: '' });
   });
 });

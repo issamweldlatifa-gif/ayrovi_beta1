@@ -190,7 +190,7 @@ describe('markup des primitives — figé par contrat', () => {
 
 describe('extractions — la primitive rend ce que l’écran écrivait à la main', () => {
   /* Les formes manuscrites ci-dessous sont recopiées des écrans tels qu'ils étaient avant P3/T2
-     (HeroVisualsPage, HomeSectionsPage, InterfaceStudio, LensSectionPage, resource-ui,
+     (HomeSectionsPage, InterfaceStudio, LensSectionPage, resource-ui,
      AdminApp, AdminPricingPage, DataTable). L'égalité est faite sur le rendu, pas sur le code. */
   const noop = () => {};
 

@@ -9,7 +9,7 @@ import { ayWebsReadGateStats } from './readGate';
 import { readerFingerprintReport } from '../scraper/readerFingerprint';
 import { AYWEBS_CAPTURE_LIMITS, AYWEBS_CAPTURE_VERSION } from '../../shared/aywebsCapture';
 import { AYWEBS_CAPTURE_SCRIPT } from './captureScript';
-import { ayWebsWebviewVerifySample } from './webviewCapture';
+import { ayWebsWebviewCaptureStats, ayWebsWebviewVerifySample } from './webviewCapture';
 import { getAyroviAiCore } from '../ai-core/core';
 import { ayWebsResolveCacheStats, ayWebsResolveFailureCacheStats } from './resolveCache';
 import {
@@ -420,6 +420,9 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
           contract_version: AYWEBS_CAPTURE_VERSION,
           verify_sample: ayWebsWebviewVerifySample(),
           max_bytes: AYWEBS_CAPTURE_LIMITS.maxBytes,
+          /** Compteurs réels : captures jugées / acceptées / refusées, et comment
+              la devise a été prouvée (code publié, symbole de boutique, ou rien). */
+          stats: ayWebsWebviewCaptureStats(),
           /**
            * Boutique externe (hors registre) : quel identifiant est écrit sur un
            * produit capturé, et combien de domaines elle revendique. Zéro domaine,

@@ -110,6 +110,9 @@ const PRODUCT_COLUMN_ADDITIONS: Array<[string, string]> = [
   ['product_type', "TEXT NOT NULL DEFAULT 'STANDARD'"],
   ['created_by', 'TEXT'],
   ['updated_by', 'TEXT'],
+  // CATALOG = produit du catalogue (défaut, toutes les lignes existantes) ;
+  // CONTENT = produit temporaire créé depuis un Reel, une Story ou une Publication.
+  ['visibility', "TEXT NOT NULL DEFAULT 'CATALOG'"],
 ];
 
 /** `brands` is already the canonical brand entity; it only lacked a URL identity. */

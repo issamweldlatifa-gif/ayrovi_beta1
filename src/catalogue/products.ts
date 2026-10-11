@@ -32,8 +32,17 @@ const PRODUCT_SELECT = `
   SELECT p.id, p.name, p.slug, p.product_code, p.description, p.image, p.additional_images,
          p.brand_id, p.brand_name, p.category, p.category_id, p.status, p.product_type,
          p.source_url, p.source_platform, p.original_price, p.currency, p.final_price,
-         p.stock_status, p.express_available, p.created_at, p.updated_at, p.created_by, p.updated_by
+         p.stock_status, p.express_available, p.created_at, p.updated_at, p.created_by, p.updated_by, p.visibility
     FROM products p`;
+
+/**
+ * `CATALOG` : produit du catalogue (valeur par défaut, toutes les lignes existantes).
+ * `CONTENT` : produit temporaire créé depuis un Reel, une Story ou une Publication. Il
+ * n'apparaît ni dans le catalogue public, ni dans la recherche, ni dans la liste admin
+ * du catalogue ; il n'est joignable que via un contenu publié (voir public/routes.ts).
+ */
+export const PRODUCT_VISIBILITIES = ['CATALOG', 'CONTENT'] as const;
+export type ProductVisibility = typeof PRODUCT_VISIBILITIES[number];
 
 const LEGACY_ENUMS = {
   source_platform: ['SHEIN', 'AMAZON', 'TEMU', 'ALIEXPRESS', 'OTHER'],
@@ -57,6 +66,7 @@ function parseRow(row: Record<string, unknown> | undefined): CatalogueProductRow
     category: row.category ? String(row.category) : null,
     category_id: row.category_id ? String(row.category_id) : null,
     status: String(row.status ?? 'DRAFT'),
+    visibility: row.visibility ? String(row.visibility) : 'CATALOG',
     product_type: row.product_type ? String(row.product_type) : 'STANDARD',
     source_platform: String(row.source_platform ?? 'OTHER'),
     final_price: row.final_price === null || row.final_price === undefined ? null : Number(row.final_price),
@@ -82,6 +92,8 @@ export interface CatalogueProductListQuery {
   brandId?: unknown;
   categoryId?: unknown;
   includeArchived?: unknown;
+  /** Défaut `CATALOG` : la liste du catalogue ne montre jamais les produits temporaires. */
+  visibility?: unknown;
   page?: unknown;
   pageSize?: unknown;
 }
@@ -102,6 +114,9 @@ export function listProducts(db: QatafoDatabase, query: CatalogueProductListQuer
   }
   if (status && (allowedStatuses.product as readonly string[]).includes(status)) { where.push('p.status=?'); params.push(status); }
   else if (!boolFlag(query.includeArchived, 0)) { where.push("p.status<>'ARCHIVED'"); }
+  const visibility = String(query.visibility ?? 'CATALOG').trim().toUpperCase();
+  where.push('p.visibility=?');
+  params.push((PRODUCT_VISIBILITIES as readonly string[]).includes(visibility) ? visibility : 'CATALOG');
   if (isIdentifier(String(query.brandId ?? ''))) { where.push('p.brand_id=?'); params.push(String(query.brandId)); }
   if (isIdentifier(String(query.categoryId ?? ''))) { where.push('p.category_id=?'); params.push(String(query.categoryId)); }
   const clause = where.length ? `WHERE ${where.join(' AND ')}` : '';
@@ -238,6 +253,8 @@ export interface CatalogueMutationOptions {
   /** True when the caller holds `catalog:approve` (checked by the route). */
   mayPublish?: boolean;
   attributes?: unknown;
+  /** Only the temporary-product route sets `CONTENT`; catalogue routes keep the default. */
+  visibility?: ProductVisibility;
 }
 
 export function createProduct(db: QatafoDatabase, rawInput: unknown, options: CatalogueMutationOptions): Result<CatalogueProductRow> {
@@ -245,6 +262,8 @@ export function createProduct(db: QatafoDatabase, rawInput: unknown, options: Ca
   const validated = validateProductPayload(db, input, null);
   if (!validated.ok) return propagate(validated);
   const payload = validated.value;
+  // Fixée par la route appelante, jamais par le corps de requête.
+  payload.visibility = options.visibility ?? 'CATALOG';
   if (payload.status === 'ACTIVE' && !options.mayPublish) {
     return fail(CATALOGUE_ERRORS.PERMISSION_DENIED, 'Publier un produit demande la permission « approve ».', [{ field: 'status', reason: 'APPROVE_REQUIRED' }]);
   }
@@ -286,6 +305,7 @@ export function updateProduct(db: QatafoDatabase, id: string, rawInput: unknown,
   const attributes = validateAttributes(db, input.attributes, 'product');
   if (!attributes.ok) return propagate(attributes);
   delete payload.product_code; // identity fields are not editable through this surface
+  delete payload.visibility; // une fiche catalogue ne devient pas temporaire, et inversement
   if (payload.status && payload.status !== existing.status && !options.mayPublish) {
     return fail(CATALOGUE_ERRORS.PERMISSION_DENIED, 'Changer le statut d’un produit demande la permission « approve ».', [{ field: 'status', reason: 'APPROVE_REQUIRED' }]);
   }

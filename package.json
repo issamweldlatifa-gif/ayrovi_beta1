@@ -13,6 +13,7 @@
     "test": "vitest run",
     "audit:design": "node verify/zalando-audit.mjs",
     "backup": "node scripts/backup-sqlite.mjs",
+    "android:assetlinks": "node scripts/assetlinks.mjs",
     "android:assets": "node scripts/cap-assets.mjs && capacitor-assets generate --android",
     "android:sync": "cap sync android",
     "android:open": "cap open android",

@@ -56,7 +56,7 @@ describe('back office shell (P2.0)', () => {
       // `public-nav` (2026-09-22) : la barre publique sous l'en-tête est une ressource du moteur,
       // donc son écran, ses droits et son audit sont ceux du framework — aucun écran dédié.
       expect(descriptors.map((descriptor) => descriptor.section).sort()).toEqual(
-        ['arrivals', 'assistant', 'brands', 'discovery-markets', 'discovery-sources', 'hero', 'news', 'products', 'promotions', 'public-nav', 'stories', 'ticker'].sort());
+        ['arrivals', 'assistant', 'brands', 'discovery-markets', 'discovery-sources', 'hero', 'news', 'products', 'promotions', 'public-nav', 'stories'].sort());
       // Les colonnes viennent de ResourceConfig : vérifier une colonne = vérifier le moteur.
       const products = descriptors.find((descriptor) => descriptor.section === 'products')!;
       expect(products.fields.map((field) => field.key)).toEqual(
@@ -105,26 +105,26 @@ describe('back office shell (P2.0)', () => {
       expect(result.body.data.problems).toEqual([]);
       expect(result.body.data.status).toBe('ok');
       expect(result.body.data.frameworkVersion).toBe(BACK_OFFICE_FRAMEWORK_VERSION);
-      expect(result.body.data.frameworkRendered).toBe(12);
+      expect(result.body.data.frameworkRendered).toBe(11); // 12 - la section « annonces » retirée
     });
   });
 
   describe('deep links : rien de ce qui fonctionnait ne doit cesser de répondre', () => {
-    test('les 38 identifiants de section couvrent la navigation legacy ET les alias', () => {
+    test('les 36 identifiants de section couvrent la navigation legacy ET les alias', () => {
       const sections = new Set(backOfficeSections());
-      // La liste vient de l’AdminApp d’origine (37 entrées) - la section « trust-bar »
-      // supprimée + les 2 sections hors nav
+      // La liste vient de l’AdminApp d’origine - la section « trust-bar » et la section
+      // « annonces » (retirée avec la barre d’annonces) sont supprimées + les 2 sections hors nav
       // atteignables par deep link (`hero`, `stories`).
       const expected = [
         'dashboard', 'arrivals', 'products', 'promotions', 'social', 'news', 'magazine-agent', 'brands',
-        'hero-visuals', 'lens-section', 'home-sections', 'ticker', 'catalogue-products',
+        'lens-section', 'home-sections', 'catalogue-products',
         'catalogue-categories', 'catalogue-brands', 'arrival-ingestion', 'orders', 'lens-requests',
         'assistant-support', 'lens-lab', 'ai-discovery', 'customers', 'pricing', 'reports', 'erp-employees',
         'erp-organization', 'erp-permissions', 'erp-audit', 'erp-events', 'erp-environment', 'interface',
-        'design', 'assistant', 'settings', 'users', 'audit', 'hero', 'stories',
+        'design', 'assistant', 'settings', 'users', 'audit', 'hero', 'stories', 'home-featured',
       ];
       for (const section of expected) expect(sections.has(section), `section perdue: ${section}`).toBe(true);
-      expect(expected.length).toBe(38);
+      expect(expected.length).toBe(37); // 37 - « Visuels d’accueil » (hero-visuals) supprimée le 2026-10-10 ; + « Section à la une » (2026-10-10)
       // P2.2 a ajouté trois surfaces (le stock). Elles sont citées nommément : une section
       // nouvelle ne doit jamais apparaître sans être écrite ici.
       for (const section of ['inventory', 'inventory-movements', 'inventory-stocktakes']) {
@@ -151,7 +151,13 @@ describe('back office shell (P2.0)', () => {
       for (const section of ['promos']) {
         expect(sections.has(section), `section promos absente: ${section}`).toBe(true);
       }
-      expect(sections.size).toBe(55);
+      // 2026-10-10 : un seul Hero — « Visuels d’accueil » et « Carrousel Hero » sont fusionnés
+      // dans l’entrée « Hero » (section `hero`) ; leurs sections disparaissent du menu.
+      expect(sections.has('hero-carousel'), 'section hero-carousel doit être fusionnée').toBe(false);
+      expect(sections.has('hero-visuals'), 'section hero-visuals doit être supprimée').toBe(false);
+      // 2026-10-10 : + la section « à la une » (accueil mobile).
+      expect(sections.has('home-featured'), 'section home-featured absente').toBe(true);
+      expect(sections.size).toBe(54);
     });
 
     test('la navigation serveur couvre exactement les entrées de la barre latérale legacy', () => {
@@ -161,13 +167,13 @@ describe('back office shell (P2.0)', () => {
       // « aligné » sur le serveur, c'est l'inverse qui est engagé.
       const legacyIds = [
         'dashboard', 'arrivals', 'products', 'promotions', 'social', 'news', 'magazine-agent', 'brands',
-        'hero-visuals', 'lens-section', 'home-sections', 'ticker', 'catalogue-products',
+        'lens-section', 'home-sections', 'catalogue-products',
         'catalogue-categories', 'catalogue-brands', 'arrival-ingestion', 'orders', 'lens-requests',
         'assistant-support', 'lens-lab', 'ai-discovery', 'customers', 'pricing', 'reports', 'erp-employees',
         'erp-organization', 'erp-permissions', 'erp-audit', 'erp-events', 'erp-environment', 'interface',
         'design', 'assistant', 'settings', 'users', 'audit',
       ];
-      expect(legacyIds.length).toBe(36);
+      expect(legacyIds.length).toBe(34); // 35 - « Visuels d’accueil » supprimée le 2026-10-10
       // 1) chaque id legacy est bien un descripteur enregistré, à la même section ;
       for (const id of legacyIds) {
         expect(resourceDescriptorBySection(id)?.section, `descripteur manquant pour ${id}`).toBe(id);
@@ -186,12 +192,16 @@ describe('back office shell (P2.0)', () => {
       const globalDiscoveryAdditions = ['discovery-sources', 'discovery-markets'];
       // 2026-09-23 : le moteur de promotions ajoute sa surface (section « promos »).
       const promoEngineAdditions = ['promos'];
+      // 2026-10-10 : la page de gestion des cartes Hero devient UNE entrée de menu (« Hero »).
+      const heroSlidesAdditions = ['hero'];
+      // 2026-10-10 : la section « à la une » de l'accueil mobile (réglages admin) devient une entrée.
+      const homeFeaturedAdditions = ['home-featured'];
       const navigable = backOfficeSections();
       const sections = resourceDescriptors()
         .filter((descriptor) => descriptor.nav && navigable.includes(descriptor.section))
         .map((descriptor) => descriptor.section)
         .sort();
-      expect(sections).toEqual([...[...legacyIds, ...p22Additions, ...p23Additions, ...crmAdditions, ...publicNavAdditions, ...globalDiscoveryAdditions, ...promoEngineAdditions].sort()]);
+      expect(sections).toEqual([...[...legacyIds, ...p22Additions, ...p23Additions, ...crmAdditions, ...publicNavAdditions, ...globalDiscoveryAdditions, ...promoEngineAdditions, ...heroSlidesAdditions, ...homeFeaturedAdditions].sort()]);
       // 3) et le client ne réintroduit aucune copie de cette liste.
       const adminApp = fs.readFileSync(path.resolve(process.cwd(), 'client/src/admin/AdminApp.tsx'), 'utf8');
       expect(adminApp, 'le client ne doit plus porter de liste de navigation').not.toContain('const navGroups');
@@ -208,7 +218,7 @@ describe('back office shell (P2.0)', () => {
   });
 
   describe('navigation dérivée du registre + permissions + statut de module', () => {
-    test('SUPER_ADMIN voit les 36 entrées legacy + les 3 du stock (P2.2) + les 3 des achats (P2.3) + les 6 du CRM 360 (E5) + la barre publique + la section promos', async () => {
+    test('SUPER_ADMIN voit les 34 entrées legacy + les 3 du stock (P2.2) + les 3 des achats (P2.3) + les 6 du CRM 360 (E5) + la barre publique + la section promos + le carrousel Hero + la gestion des cartes Hero + la section à la une', async () => {
       const result = await superAdmin.agent.get('/api/admin/back-office/navigation');
       expect(result.status).toBe(200);
       const items = result.body.data.groups.flatMap((group: any) => group.items);
@@ -220,7 +230,7 @@ describe('back office shell (P2.0)', () => {
 
     test('un rôle ne voit que ce que la permission autorise — sans jamais enlever davantage', async () => {
       const cases: Array<[Session, string[], string[]]> = [
-        [content, ['products', 'ticker', 'news', 'public-nav'], ['users', 'erp-permissions', 'lens-lab', 'erp-employees', 'customers']],
+        [content, ['products', 'news', 'public-nav'], ['users', 'erp-permissions', 'lens-lab', 'erp-employees', 'customers']],
         [orders, ['orders', 'arrival-ingestion'], ['users', 'settings', 'products', 'erp-audit']],
         [admin, ['reports', 'products', 'arrival-ingestion'], ['users', 'erp-permissions', 'erp-employees']],
       ];
@@ -394,7 +404,7 @@ describe('back office shell (P2.0)', () => {
       expect(adminRoutes).toContain("router.use('/back-office', createBackOfficeRouter(db))");
       expect(adminRoutes).toContain('registerFrameworkResources(resources)');
       // Les chemins générés par le moteur sont intacts (le descripteur ne les a pas renommés).
-      for (const name of ['arrivals', 'products', 'promotions', 'stories', 'news', 'brands', 'hero-slides', 'announcements', 'ai-knowledge']) {
+      for (const name of ['arrivals', 'products', 'promotions', 'stories', 'news', 'brands', 'hero-slides', 'ai-knowledge']) {
         expect(adminRoutes, `ressource ${name} toujours décrite côté serveur`).toMatch(new RegExp(`^  '?${name}'?: \\{`, 'm'));
       }
     });
@@ -461,6 +471,10 @@ describe('back office shell (P2.0)', () => {
       // 2026-09-22 : la barre publique sous l'en-tête ajoute une entrée (icône LayoutGrid).
       // GLOBAL DISCOVERY : +2 (Globe2, MapPin — sources et marchés).
       // 2026-09-23 : le moteur de promotions ajoute son entrée (icône Tag).
+      // 2026-10-09 : le carrousel Hero ajoute son entrée (icône Palette).
+      // 2026-10-10 : le Hero unique est l’entrée « Hero » (icône LayoutGrid) ; les entrées
+      // « Visuels d’accueil » et « Carrousel Hero » sont supprimées.
+      // 2026-10-10 : la section « à la une » (icône Sparkles) ajoute son entrée.
       expect(declared.length).toBe(52);
       const missing = [...new Set(declared)].filter((name) => !card.has(name));
       expect(missing, 'noms d\u2019icône sans clé dans ICONS').toEqual([]);

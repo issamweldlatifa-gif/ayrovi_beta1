@@ -5,7 +5,6 @@ interface PublicResponse<T> {
 }
 
 export interface PublicHomeData {
-  hero: any[];
   brands: any[];
   arrivals: any[];
   products: any[];

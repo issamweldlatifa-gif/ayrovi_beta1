@@ -1,0 +1,396 @@
+# Test de bout en bout de l'APPLICATION contre un serveur, sans téléphone.
+#
+# Pourquoi : « l'appli ne marche pas » ne se diagnostique pas à l'œil. Le seul
+# juge, c'est la chaîne réelle — créer un compte avec l'en-tête de l'appli,
+# recevoir `session_token` (que la branche sert et que `main` ne sert PAS),
+# puis utiliser ce jeton comme le fait l'application : profil, panier, caisse.
+#
+# Ce workflow ne touche JAMAIS la production : par défaut il vise le serveur
+# Beta (`Ayrovi2`, branche), et tout déclenchement automatique sur une adresse de
+# PRODUCTION est arrêté net (garde plus bas). Il crée un compte de test jetable
+# (`smoke.<horodatage>@ayrovi.test`) sur le serveur visé.
+name: Serveur — test de bout en bout (appli)
+
+on:
+  workflow_dispatch:
+    inputs:
+      base:
+        description: "Adresse du serveur à tester"
+        required: false
+        default: "https://ayrovi-beta1-moo8.onrender.com"
+  # فحص يومي: متغيّرات Render تتبدّل **بلا** حتى push في الريبو، وهذا الفحص
+  # هو العين الوحيدة اللي تلقى التبديل وحدها (مثلاً GOOGLE_CALLBACK_URL).
+  schedule:
+    - cron: "0 5 * * *"
+  push:
+    paths:
+      - ".github/workflows/beta-smoke.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: Chaîne complète (inscription → session → panier → caisse)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      BASE: ${{ github.event.inputs.base || 'https://ayrovi-beta1-moo8.onrender.com' }}
+      CLIENT: mobile/2.0.0
+    steps:
+      - name: Test de bout en bout
+        run: |
+          set +e +o pipefail
+          set -u
+
+          # `CLIENT` يتبدّل من بيئة الـCI؛ القيمة هنا حماية ضدّ `set -u` في التجربة المحلية.
+          CLIENT="${CLIENT:-mobile/2.0.0}"
+          S="${GITHUB_STEP_SUMMARY:-/dev/null}"
+          printf '## Test de bout en bout de l application\n\nServeur : `%s`\n\n' "$BASE" >> "$S"
+          echo "| Étape | Résultat | Lecture |" >> "$S"
+          echo "|---|---|---|" >> "$S"
+
+          # حماية: التشغيل الآلي (push) ما يلمسش برودكسيون. لمسها لازم طلب يدوي
+          # صريح (`workflow_dispatch` + العنوان في الحقل) — باش ما يتخلقش حساب
+          # تجريبي في قاعدة الإنتاج من غير ما نعرفو.
+          EVENT="${GITHUB_EVENT_NAME:-local}"
+          case "$BASE" in
+            *ayrovi-beta1-1.onrender.com*|*ayrovi-beta1.onrender.com*|*ayrovi.tn*)
+              if [ "$EVENT" != "workflow_dispatch" ]; then
+                printf '\n**⏭️ تشغيل آلي على عنوان الإنتاج — وقفنا. العنوان: `%s`**\n' "$BASE" >> "$S"
+                echo "::notice title=Test de bout en bout::⏭️ arrêté: ${BASE} est un serveur de production et l'exécution est automatique. Lancez le workflow à la main avec l'adresse du serveur Beta."
+                exit 0
+              fi ;;
+            *beta-a-configurer.invalid*)
+              printf '\n**⏭️ ما فماش خادم اختبار محدّد.** شغّل الـworkflow يدويّاً وحطّ عنوان خدمة الـBeta.\n' >> "$S"
+              echo "::notice title=Test de bout en bout::⏭️ aucun serveur de test fourni — lancez le workflow avec le champ «base»."
+              exit 0 ;;
+          esac
+
+          CAPS=""
+          GOOGLE_STATE=""
+          LINKS_STATE=""
+          FAIL=0            # une fonction de l'appli manque vraiment
+          WARN=0            # le serveur ne sait pas encore servir l'appli
+          SMOKE=""
+
+          # Un seul code en sortie : \`curl -w\` imprime « 000 » ET sort en erreur
+          # quand rien ne répond.
+          http_code() {
+            local out
+            out=$(curl -s -o "$2" -w '%{http_code}' --max-time 45 "${@:3}" "$1" 2>/dev/null)
+            if [ -z "$out" ]; then out="000"; fi
+            printf '%s' "$out"
+          }
+          jget() {
+            python3 -c 'import json,sys
+          try: d=json.load(open(sys.argv[1]))
+          except Exception: d={}
+          for p in sys.argv[2].split("."):
+              d=d.get(p,"") if isinstance(d,dict) else ""
+          print(d if isinstance(d,(str,int,float)) else "")' "$1" "$2" 2>/dev/null
+          }
+          note() { printf '| %s | %s | %s |\n' "$1" "$2" "$3" >> "$S"; }
+
+          # 1) Le serveur répond-il, et sait-il qu'il est la BRANCHE ?
+          READY_CODE=$(http_code "$BASE/api/ready" /tmp/ready)
+          READY_COMMIT=$(jget /tmp/ready commit)
+          READY_BRANCH=$(jget /tmp/ready branch)
+          if [ "$READY_CODE" = "200" ]; then
+            if [ -n "$READY_BRANCH" ] && [ "$READY_BRANCH" != "unknown" ]; then
+              note "\`GET /api/ready\`" "200" "commit \`${READY_COMMIT:-—}\` · branche \`${READY_BRANCH}\` — serveur de la branche"
+            else
+              WARN=1
+              note "\`GET /api/ready\`" "200" "**aucune branche déclarée** ⇒ ce serveur ne connaît pas le contrat de session de l'appli"
+            fi
+          else
+            FAIL=1
+            note "\`GET /api/ready\`" "$READY_CODE" "❌ le serveur ne répond pas"
+          fi
+
+          # 0bis) Version servie : un déploiement réussi doit la montrer.
+          HEALTH_CODE=$(http_code "$BASE/api/health" /tmp/health)
+          HEALTH_VERSION=$(jget /tmp/health version)
+          if [ "$HEALTH_CODE" = "200" ]; then
+            note "\`GET /api/health\`" "200" "version \`${HEALTH_VERSION:-—}\` — le serveur est debout"
+          else
+            FAIL=1
+            note "\`GET /api/health\`" "$HEALTH_CODE" "❌ liveness muette"
+          fi
+
+          # 1bis) Que sait faire ce serveur ? (`/auth/config`) — c'est LUI qui décide
+          # ce que l'appli propose. Deux méthodes de contact comptent pour la caisse :
+          # une CONNEXION vérifiée (Google/Apple/Facebook → e-mail vérifié par le
+          # fournisseur) ou le SMS (téléphone vérifié). Sans aucune des deux, un compte
+          # e-mail ne peut PAS confirmer de commande — et le refus sera honnête.
+          CONFIG_CODE=$(http_code "$BASE/api/customer/auth/config" /tmp/authcfg)
+          if [ "$CONFIG_CODE" = "200" ]; then
+            CAPS=$(python3 -c 'import json,sys
+          try: d=json.load(open("/tmp/authcfg"))
+          except Exception: d={}
+          data=d.get("data",d) if isinstance(d,dict) else {}
+          def on(k):
+              v=data.get(k)
+              return "oui" if (v is True or (isinstance(v,dict) and v.get("enabled") is True)) else "non"
+          print("email=%s google=%s facebook=%s apple=%s sms=%s reset=%s" % (on("email"),on("google"),on("facebook"),on("apple"),on("phoneOtp"),on("passwordReset")))' 2>/dev/null)
+            note "\`GET /api/customer/auth/config\`" "200" "methodes offertes : \`${CAPS:-illisible}\`"
+            case "$CAPS" in
+              *google=oui*|*facebook=oui*|*apple=oui*|*sms=oui*)
+                :
+                ;;
+              *)
+                WARN=1
+                note "Vérification du contact" "—" "⚠️ ni fournisseur (Google/Apple/Facebook) ni SMS : un compte e-mail ne peut pas devenir **vérifié** ⇒ \`POST /api/checkout\` refusera \`CONTACT_VERIFICATION_REQUIRED\` (comportement voulu, pas une panne de l'appli)" ;;
+            esac
+          else
+            WARN=1
+            note "\`GET /api/customer/auth/config\`" "$CONFIG_CODE" "⚠️ illisible — impossible de savoir ce que le serveur propose"
+          fi
+
+          # 1ter) Connexion Google : vers QUEL serveur Google renvoie-t-il l'utilisateur ?
+          # Le serveur construit son `callback` depuis `GOOGLE_CALLBACK_URL` (ou
+          # `PUBLIC_BASE_URL`). S'il pointe encore l'ANCIENNE adresse, Google
+          # ramènera la personne sur l'autre service, qui ne connaît pas le code de
+          # remise ⇒ « la connexion Google ne marche pas » sans aucune erreur lisible.
+          # On lit l'en-tête `Location` réel : c'est la preuve, pas la config.
+          if [ "$CONFIG_CODE" = "200" ]; then
+            case "$CAPS" in
+              *google=oui*)
+                GOOGLE_LOC=$(curl -s -o /dev/null -w '%{redirect_url}' --max-time 30 \
+                  "$BASE/api/customer/auth/google/start?nativeHandoff=smoke" 2>/dev/null)
+                GOOGLE_CB=$(printf '%s' "$GOOGLE_LOC" | python3 -c 'import sys,urllib.parse as u
+          print(u.parse_qs(u.urlparse(sys.stdin.read()).query).get("redirect_uri",[""])[0])' 2>/dev/null)
+                BASE_HOST=$(printf '%s' "$BASE" | sed -e 's#^https\?://##' -e 's#/.*$##')
+                case "$GOOGLE_CB" in
+                  *"$BASE_HOST"*) GOOGLE_STATE="ok:$GOOGLE_CB" ; note "Connexion Google (\`redirect_uri\`)" "—" "✅ \`${GOOGLE_CB:-—}\` — revient bien sur CE serveur ; **cette adresse doit exister telle quelle** dans les *Authorized redirect URIs* du client Google, sinon Google répondra \`redirect_uri_mismatch\`" ;;
+                  '') GOOGLE_STATE="absente"; WARN=1; note "Connexion Google" "—" "⚠️ aucune redirection renvoyée par \`/auth/google/start\` — vérifiez \`GOOGLE_CLIENT_ID\`/\`GOOGLE_CLIENT_SECRET\`" ;;
+                  *) GOOGLE_STATE="autre-serveur:$GOOGLE_CB"; WARN=1
+                     WANT_CB="$BASE/api/customer/auth/google/callback"
+                     note "Connexion Google (\`redirect_uri\`)" "—" "⚠️ Google renvoie vers **\`$GOOGLE_CB\`** (autre serveur) ⇒ la session atterrit ailleurs et la connexion échoue. **Sur ce service, mettez \`GOOGLE_CALLBACK_URL=$WANT_CB\`** et déclarez **exactement** cette URI dans Google Cloud Console (Credentials → client OAuth → *Authorized redirect URIs*). Client dédié au service Beta conseillé : deux services ne doivent pas partager un même client OAuth." ;;
+                esac ;;
+            esac
+          fi
+
+          # 1ter-bis) Google ACCEPTE-t-il cette adresse ?
+          # Le serveur peut très bien envoyer la bonne adresse (« ok ») alors que
+          # Google la REFUSE : une URI non déclarée dans le client OAuth donne
+          # « Error 400: redirect_uri_mismatch » avant même l'écran de choix du
+          # compte. On interroge donc Google LUI-MÊME (lecture seule, aucun
+          # compte, aucune session) : c'est le seul juge de ce registre.
+          if [ "$GOOGLE_STATE" != "" ]; then
+            case "$GOOGLE_STATE" in
+              ok:*)
+                GOOGLE_START=$(curl -s -o /dev/null -w '%{redirect_url}' --max-time 30 \
+                  "$BASE/api/customer/auth/google/start?nativeHandoff=smoke" 2>/dev/null)
+                if [ -n "$GOOGLE_START" ]; then
+                  curl -sL -o /tmp/gauth.html -w '%{http_code}' --max-time 45 "$GOOGLE_START" > /tmp/gauth.code 2>/dev/null
+                  GAUTH_CODE=$(cat /tmp/gauth.code 2>/dev/null)
+                  GAUTH_ERR=$(python3 -c 'import re,sys,html
+          try: t=open("/tmp/gauth.html",encoding="utf-8",errors="replace").read()
+          except Exception: t=""
+          t=html.unescape(t)
+          m=re.search(r"redirect_uri_mismatch|invalid_client|access_denied|unauthorized_client|Error\s*400|Error\s*401|Error\s*403", t)
+          print(m.group(0) if m else "")' 2>/dev/null)
+                  if [ -n "$GAUTH_ERR" ]; then
+                    GOOGLE_STATE="refus-google:$GAUTH_ERR"
+                    WARN=1
+                    note "Google accepte-t-il l\'adresse ?" "${GAUTH_CODE:-—}" "⚠️ Google répond **\`$GAUTH_ERR\`** ⇒ le client OAuth ne connaît pas **\`${GOOGLE_CB:-cette adresse}\`**. Console Google Cloud → Credentials → client OAuth → *Authorized redirect URIs* → ajoutez-la EXACTEMENT (ou créez un client dédié au service Beta : voir \`docs/OAUTH_GOOGLE_BETA_AR.md\`)"
+                  else
+                    GOOGLE_STATE="accepte-par-google"
+                    note "Google accepte-t-il l\'adresse ?" "${GAUTH_CODE:-—}" "✅ Google présente bien son écran de connexion pour cette adresse ⇒ la connexion doit aboutir"
+                  fi
+                fi ;;
+            esac
+          fi
+
+          # 1quater) La remise de session au navigateur (`native/claim`) doit EXISTER :
+          # c'est le seul chemin par lequel l'appli récupère une session après une
+          # connexion Google. Un code inconnu doit répondre un refus JSON (400/404
+          # AVEC code), jamais une page HTML « Cannot POST ».
+          CLAIM_CODE=$(http_code "$BASE/api/customer/auth/native/claim" /tmp/claim \
+            -X POST -H 'Content-Type: application/json' -d '{"handoff":"smoke-inconnu"}')
+          CLAIM_REF=$(jget /tmp/claim code)
+          case "$CLAIM_CODE" in
+            400|404|410|429)
+              if [ -n "$CLAIM_REF" ] || [ "$CLAIM_CODE" = "404" ]; then
+                note "\`POST /api/customer/auth/native/claim\`" "$CLAIM_CODE" "✅ route de remise présente (refus \`${CLAIM_REF:-HANDOFF_PENDING}\`) — l'appli sait attendre"
+              else
+                WARN=1
+                note "\`POST /api/customer/auth/native/claim\`" "$CLAIM_CODE" "⚠️ refus sans code — l'appli ne peut pas distinguer « en attente » d'une erreur"
+              fi ;;
+            000|500|502|503) FAIL=1; note "\`POST /api/customer/auth/native/claim\`" "$CLAIM_CODE" "❌ la remise de session ne répond pas ⇒ connexion Google impossible" ;;
+            *) WARN=1; note "\`POST /api/customer/auth/native/claim\`" "$CLAIM_CODE" "⚠️ réponse inattendue (\`${CLAIM_REF:-—}\`)" ;;
+          esac
+
+          # 2) Créer un compte comme le fait l'APPLI (en-tête \`x-ayrovi-client\`).
+          STAMP=$(date +%s)
+          EMAIL="smoke.$STAMP.$RANDOM@ayrovi.test"
+          PASSWORD="ayrovi-$STAMP-$RANDOM-aA1"
+          REG_CODE=$(http_code "$BASE/api/customer/auth/register" /tmp/reg \
+            -X POST -H 'Content-Type: application/json' \
+            -H "x-ayrovi-client: $CLIENT" -c /tmp/jar -b /tmp/jar \
+            -d "{\"displayName\":\"Test Auto\",\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\",\"locale\":\"ar\"}")
+          TOKEN=$(jget /tmp/reg data.session_token)
+          if [ -z "$TOKEN" ]; then TOKEN=$(jget /tmp/reg session_token); fi
+
+          # 3) LE point décisif : le corps de la réponse porte-t-il un jeton ?
+          #    L'appli ne stocke QUE ce jeton (\`expo-secure-store\`) : sans lui,
+          #    la connexion échoue sur le téléphone, quoi qu'on fasse ensuite.
+          if [ -n "$TOKEN" ]; then
+            note "\`POST /api/customer/auth/register\` (appli)" "200" "✅ \`session_token\` reçu — l'appli peut garder la session"
+          elif [ "$REG_CODE" = "000" ]; then
+            FAIL=1
+            note "\`POST /api/customer/auth/register\` (appli)" "000" "❌ pas de réponse"
+          else
+            WARN=1
+            CODE=$(jget /tmp/reg code)
+            note "\`POST /api/customer/auth/register\` (appli)" "$REG_CODE" "⛔ **\`session_token\` absent** (code \`${CODE:-—}\`) — c'est exactement la panne « الدخول ما يخدمش »"
+          fi
+
+          if [ -n "$TOKEN" ]; then
+            # الجلسة موجودة: نجرّبو نفس الاستدعاءات اللي يعملها التطبيق بالضبط
+            # (Bearer + en-tête العميل + جلسة السلّة).
+            # `csrfToken`: التطبيق يبعثو مع كل كتابة (`x-csrf-token`)، والخادم
+            # **يبدّلو** في كل `GET /auth/me` — نعاودو نقراوه من بعد `/me`.
+            CSRF=$(jget /tmp/reg data.csrfToken)
+            AUTH=(-H "Authorization: Bearer $TOKEN" -H "x-ayrovi-client: $CLIENT" -b /tmp/jar)
+            REPLAYED=0
+
+            # كتابة محميّة بالـCSRF — نفس التطبيق بالضبط: كي يرجع `INVALID_CSRF`
+            # (توكن قديم من بعد تدوير الخادم)، يجدّدو من `/auth/me` ويعاود **مرّة وحدة**.
+            write_code() {
+              local url="$1" out="$2"
+              shift 2
+              local code
+              code=$(http_code "$url" "$out" -H "x-csrf-token: ${CSRF:-absent}" "${AUTH[@]}" "$@")
+              if [ "$code" = "403" ] && [ "$(jget "$out" code)" = "INVALID_CSRF" ]; then
+                http_code "$BASE/api/customer/auth/me" /tmp/me-refresh "${AUTH[@]}" >/dev/null
+                CSRF=$(jget /tmp/me-refresh data.csrfToken)
+                code=$(http_code "$url" "$out" -H "x-csrf-token: ${CSRF:-absent}" "${AUTH[@]}" "$@")
+                REPLAYED=1
+              fi
+              printf '%s' "$code"
+            }
+
+            # 4) Le jeton ouvre-t-il vraiment la session ? (même appel que l'écran Compte)
+            ME_CODE=$(http_code "$BASE/api/customer/auth/me" /tmp/me "${AUTH[@]}")
+            ME_EMAIL=$(jget /tmp/me data.account.email)
+            case "$ME_CODE" in
+              200)
+                if [ "$ME_EMAIL" = "$EMAIL" ]; then
+                  # الخادم دار تدوير للـCSRF هنا: نقراو الجديد.
+                  CSRF=$(jget /tmp/me data.csrfToken)
+                  note "\`GET /api/customer/auth/me\` (Bearer)" "200" "✅ la session du compte \`$EMAIL\` est reconnue"
+                else
+                  FAIL=1
+                  note "\`GET /api/customer/auth/me\` (Bearer)" "200" "❌ autre compte renvoyé (\`${ME_EMAIL:-vide}\`)"
+                fi ;;
+              *) FAIL=1; note "\`GET /api/customer/auth/me\` (Bearer)" "$ME_CODE" "❌ le jeton ne donne pas accès au compte" ;;
+            esac
+
+            # 5) Panier (même appel que l'onglet Panier : session de panier par en-tête)
+            CART_CODE=$(http_code "$BASE/api/cart/items" /tmp/cart -H "x-session-id: smoke-$STAMP" "${AUTH[@]}")
+            case "$CART_CODE" in
+              200|400) note "\`GET /api/cart/items\`" "$CART_CODE" "✅ le panier répond" ;;
+              *) FAIL=1; note "\`GET /api/cart/items\`" "$CART_CODE" "❌ le panier ne répond pas comme prévu" ;;
+            esac
+
+            # 6) Caisse : sur un panier vide elle DOIT refuser proprement (`EMPTY_CART`).
+            #    Un 500, un 401 ou un `INVALID_CSRF` définitif ici = le tunnel d'achat
+            #    est cassé avant même le paiement.
+            # `x-session-id` إلزامي في الشراء (جلسة السلّة) + جسم كيف التطبيق بالضبط.
+            # حساب جديد ما عندوش إيميل ولا تلفون موثّق ⇒ الخادم يرفض **بالصريح**
+            # (`CONTACT_VERIFICATION_REQUIRED` 403) — وهذا ردّ صحيح ومقصود، موش عطب:
+            # معناه الجلسة والـCSRF والتحقّق كامل عدا، والرفض مبرّر وdocumenté.
+            CHECKOUT_BODY=$(printf '{"name":"Test Auto","email":"%s","phone":"20000000","city":"Tunis","address":"Rue de test 1","deliveryMode":"home","paymentMethod":"PENDING_SELECTION","locale":"ar-TN","termsAccepted":true}' "$EMAIL")
+            CHECKOUT_CODE=$(write_code "$BASE/api/checkout" /tmp/co -H "x-session-id: smoke-$STAMP" \
+              -X POST -H 'Content-Type: application/json' -d "$CHECKOUT_BODY")
+            CHECKOUT_REF=$(jget /tmp/co code)
+            CHECKOUT_MSG=$(jget /tmp/co error)
+            case "$CHECKOUT_CODE" in
+              200) note "\`POST /api/checkout\`" "200" "✅ commande créée (compte vérifié) — le tunnel va jusqu'au bout" ;;
+              400|403)
+                if [ -n "$CHECKOUT_REF" ]; then
+                  note "\`POST /api/checkout\`" "$CHECKOUT_CODE" "✅ refus honnête et documenté \`$CHECKOUT_REF\` (« ${CHECKOUT_MSG:-—} »)"
+                else
+                  WARN=1
+                  note "\`POST /api/checkout\`" "$CHECKOUT_CODE" "⚠️ refus sans code (« ${CHECKOUT_MSG:-—} ») — l'appli ne peut pas le traduire"
+                fi ;;
+              *) FAIL=1; note "\`POST /api/checkout\`" "$CHECKOUT_CODE" "❌ réponse inattendue (\`${CHECKOUT_REF:-—}\` ${CHECKOUT_MSG:-})" ;;
+            esac
+
+            # 7) Commandes du compte (onglet Compte)
+            ORDERS_CODE=$(http_code "$BASE/api/customer/account/orders" /tmp/orders "${AUTH[@]}")
+            case "$ORDERS_CODE" in
+              200) note "\`GET /api/customer/account/orders\`" "200" "✅ liste des commandes servie" ;;
+              *) FAIL=1; note "\`GET /api/customer/account/orders\`" "$ORDERS_CODE" "❌ la liste des commandes ne répond pas" ;;
+            esac
+
+            # 9) Nettoyage : on referme la session de test (aucun compte réel touché).
+            LOGOUT_CODE=$(write_code "$BASE/api/customer/auth/logout" /tmp/out -X POST)
+            note "\`POST /api/customer/auth/logout\`" "$LOGOUT_CODE" "nettoyage de la session de test$([ "$REPLAYED" = "1" ] && echo ' (jeton CSRF renouvelé puis rejoué)')"
+
+          else
+            ME_CODE="-"; ME_EMAIL="-"; CART_CODE="-"; CHECKOUT_CODE="-"; CHECKOUT_REF="-"
+            ORDERS_CODE="-"; LOGOUT_CODE="-"
+            note "Session de l'appli (profil / panier / caisse / commandes)" "—" "non testees : ce serveur n'ouvre aucune session pour l'appli (l'appli montrera auth.error.noSession)"
+          fi
+
+          # 8) Liens profonds : sans ce fichier, cliquer un lien ayrovi.tn n'ouvre pas l'appli.
+          LINKS_CODE=$(http_code "$BASE/.well-known/assetlinks.json" /tmp/links)
+          LINKS_HEAD=$(head -c 1 /tmp/links 2>/dev/null)
+          if [ "$LINKS_HEAD" = "[" ]; then
+            COUNT=$(python3 -c 'import json,sys
+          try: d=json.load(open("/tmp/links"))
+          except Exception: d=[]
+          print(sum(len(e.get("target",{}).get("sha256_cert_fingerprints",[])) for e in d))' 2>/dev/null)
+            note "\`GET /.well-known/assetlinks.json\`" "$LINKS_CODE" "✅ JSON — ${COUNT:-0} empreinte(s)"
+            if [ "${COUNT:-0}" -lt 1 ]; then
+              WARN=1
+              note "Empreintes de signature" "0" "⚠️ \`ANDROID_APP_LINK_SHA256\` vide sur le serveur ⇒ les liens n'ouvriront pas l'appli"
+            fi
+          else
+            WARN=1
+            MISSING=$(python3 -c 'import json
+          try: d=json.load(open("/tmp/links"))
+          except Exception: d={}
+          value=d.get("missingEnv") if isinstance(d,dict) else None
+          print(",".join(value) if isinstance(value,list) else (value or ""))' 2>/dev/null)
+            if [ "$LINKS_CODE" = "404" ]; then
+              note "\`GET /.well-known/assetlinks.json\`" "404" "⚠️ **404** — il manque : \`${MISSING:-ANDROID_APP_LINK_SHA256}\` sur ce serveur ⇒ liens profonds inertes"
+            else
+              note "\`GET /.well-known/assetlinks.json\`" "$LINKS_CODE" "⚠️ pas un JSON (route absente) ⇒ liens profonds inertes"
+            fi
+          fi
+
+          # Un piège silencieux : l'empreinte seule couvre l'application de
+          # PRODUCTION par défaut. L'APK de démonstration (`…demo`) ne doit
+          # déclarer sa propre package QUE si `ANDROID_APP_LINK_PACKAGES` la cite.
+          if [ "$LINKS_CODE" = "200" ]; then
+            LINK_PKGS=$(python3 -c 'import json
+          try: d=json.load(open("/tmp/links"))
+          except Exception: d=[]
+          print(",".join(e.get("target",{}).get("package_name","") for e in d))' 2>/dev/null)
+            case "$LINK_PKGS" in
+              *demo*) LINKS_STATE="200 pkgs=$LINK_PKGS" ;;
+              *) LINKS_STATE="200 production-seule pkgs=$LINK_PKGS"
+                 note "Couverture des liens" "—" "ℹ️ \`$LINK_PKGS\` — l\'APK de DÉMONSTRATION n\'est pas couvert : ajoutez \`ANDROID_APP_LINK_PACKAGES=app.ayrovi.mobile,app.ayrovi.mobile.demo\` pour tester les liens avec lui" ;;
+            esac
+          fi
+
+          SMOKE="{$BASE health=$HEALTH_CODE links=${LINKS_STATE:-$LINKS_CODE} claim=$CLAIM_CODE/${CLAIM_REF:-—} google_callback=${GOOGLE_STATE:-—} v=${HEALTH_VERSION:-—} ready=$READY_CODE branch=${READY_BRANCH:-—} caps=${CAPS:-—} branch=${READY_BRANCH:-—} register=$REG_CODE token=$([ -n "$TOKEN" ] && echo oui || echo NON) me=$ME_CODE cart=$CART_CODE checkout=$CHECKOUT_CODE/$CHECKOUT_REF orders=$ORDERS_CODE links=$LINKS_CODE}$([ -n "${CHECKOUT_REF:-}" ] && echo " checkout_refusal=$CHECKOUT_REF")"
+
+          if [ "$FAIL" = "1" ]; then
+            VERDICT="❌ ÉCHEC — une fonction de l'appli ne répond pas sur ce serveur"
+          elif [ "$WARN" = "1" ]; then
+            VERDICT="⚠️ le serveur répond mais ne sert pas l'appli (branche/empreintes)"
+          else
+            VERDICT="✅ l'appli peut se connecter et commander sur ce serveur"
+          fi
+          printf '\n**Verdict : %s**\n' "$VERDICT" >> "$S"
+
+          echo "::notice title=Test de bout en bout::${VERDICT} ${SMOKE}"
+          if [ "$FAIL" = "1" ]; then
+            echo "::error title=Test de bout en bout::Une fonction de l'appli ne répond pas sur ${BASE} ${SMOKE}"
+          fi
+          exit 0

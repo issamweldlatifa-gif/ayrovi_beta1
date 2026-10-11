@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Déclenchable à la main : le workflow APK (mobile-android.yml) rallume les
+  # vérifications PR sur le head après son commit bot « tailles mesurées ».
+  workflow_dispatch:
 
 jobs:
   typecheck-test:

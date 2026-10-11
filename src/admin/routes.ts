@@ -6,16 +6,19 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { QatafoDatabase, SELECTABLE_PAYMENT_METHODS } from '../db/database';
 import multer from 'multer';
-import {
-  deleteHeroVisualFiles,
-  invalidateHeroVisualCache,
-  newHeroVisualId,
-  normalizeSchedule,
-  resolveActiveHeroVisual,
-  storeHeroImage,
-} from '../services/heroVisual';
 import { normalizeUploadedImage } from '../services/imageValidation';
+import { storeHeroImage } from '../services/heroImageStore';
 import { parsePublicHttpUrl } from '../services/safeUrl';
+import { HERO_DESTINATION_TYPES, heroDestinationConfig, isValidExternalUrl } from '../../shared/heroDestinations';
+import { normalizeMediaLink, type MediaLinkKind } from '../../shared/mediaLinks';
+import { isHexColor, refreshHeroSlidePalette } from '../services/heroPalette';
+import {
+  DEFAULT_FEATURED_SETTINGS, normalizeFeaturedInput, resolveFeaturedPublication, type FeaturedSettings,
+} from '../services/homeFeatured';
+import {
+  EDITABLE_FIELDS, EMPTY_VALUES, draftRowsById, heroImageAvailable, liveValues, mergeSlides, previewCards,
+  publishedRows, validateSlideForSave, type ChangeType, type MergedSlide, type SlideValues,
+} from '../services/heroSlideDrafts';
 import { refreshFxRates } from '../services/fxRates';
 import { capPromoPercent, MIN_COMMISSION_FLOOR_PERCENT, resolvePromoForQuote, tunisIsoDay } from '../services/promotions';
 import { runLensPipeline, hashImage } from '../ayrovix/services/lensPipeline';
@@ -68,6 +71,7 @@ import {
 import { lensPerformanceReport } from '../ayrovix/services/lensPerformanceTrace';
 import { funnelSummary } from '../analytics/funnel';
 import { ayWebsAnalyticsSummary } from '../aywebs/analytics';
+import { decideShoppable, type ProductSnapshot } from '../services/shoppableContent';
 import { createAyWebsAdminRouter } from '../aywebs/adminRoutes';
 import {
   GenerateMagazineInput,
@@ -96,6 +100,8 @@ export interface ResourceConfig {
   jsonFields?: string[];
   enums?: Record<string, string[]>;
   softDelete: Record<string, any>;
+  /** Hook post-sauvegarde (ex: recalcul de la palette hero à chaque changement d'image). */
+  afterSave?: (db: QatafoDatabase, row: any, existing: any | null) => void;
 }
 
 export const resources: Record<string, ResourceConfig> = {
@@ -128,11 +134,11 @@ export const resources: Record<string, ResourceConfig> = {
   },
   stories: {
     table: 'stories', module: 'STORIES', prefix: 'story', permission: 'content:write',
-    fields: ['category','media_type','media_url','secondary_images','title','description','cta','target_url','product_id','arrival_id','promotion_id','publish_at','expires_at','priority','status'],
+    fields: ['category','media_type','media_url','secondary_images','title','description','cta','target_url','content_mode','product_id','arrival_id','promotion_id','publish_at','expires_at','priority','status'],
     required: ['media_type','media_url','title','publish_at','status'], searchable: ['title','description','cta'],
     sortable: ['title','media_type','publish_at','expires_at','priority','status','created_at'], defaultSort: 'priority',
     jsonFields: ['secondary_images'],
-    enums: { category: ['ARRIVAGE','NEW','STYLE','INFO','PROMO'], media_type: ['IMAGE','VIDEO'], status: ['DRAFT','SCHEDULED','PUBLISHED','EXPIRED'] },
+    enums: { category: ['ARRIVAGE','NEW','STYLE','INFO','PROMO'], media_type: ['IMAGE','VIDEO'], status: ['DRAFT','SCHEDULED','PUBLISHED','EXPIRED'], content_mode: ['normal','shoppable'] },
     softDelete: { status: 'EXPIRED' },
   },
   news: {
@@ -151,14 +157,17 @@ export const resources: Record<string, ResourceConfig> = {
   },
   'hero-slides': {
     table: 'hero_slides', module: 'HERO', prefix: 'hero', permission: 'content:write',
-    fields: ['image','video','title','subtitle','cta','target_url','display_order','active'], required: ['image','title'],
-    searchable: ['title','subtitle','cta'], sortable: ['title','display_order','active','created_at'], defaultSort: 'display_order', softDelete: { active: 0 },
-  },
-  announcements: {
-    table: 'announcement_messages', module: 'ANNOUNCEMENTS', prefix: 'announcement', permission: 'content:write',
-    fields: ['text','display_order','active'], required: ['text'],
-    searchable: ['text'], sortable: ['text','display_order','active','created_at'], defaultSort: 'display_order',
-    softDelete: { active: 0 },
+    fields: ['image','video','title','title_ar','subtitle','subtitle_ar','cta','cta_ar','target_url','destination_type','destination_value','bg_mode','bg_color','display_order','active','published_from','published_to'],
+    required: ['image','title'],
+    searchable: ['title','title_ar','subtitle','subtitle_ar','cta','cta_ar'],
+    sortable: ['title','display_order','active','created_at'], defaultSort: 'display_order',
+    enums: { destination_type: [...HERO_DESTINATION_TYPES], bg_mode: ['auto','manual'] }, softDelete: { active: 0 },
+    // La palette est recalculée à chaque sauvegarde quand l'image change — jamais
+    // dans la boucle de lecture publique (le cache colonne suffit).
+    afterSave: (db, row, existing) => {
+      if (existing && String(existing.image || '') === String(row.image || '') && String(existing.palette || '')) return;
+      void refreshHeroSlidePalette(db, row);
+    },
   },
   // Barre publique sous l'en-tête — entièrement pilotée depuis l'Admin (décision 2026-09-22).
   // `destination` est une clé fermée du contrat partagé : le libellé est libre, la cible ne l'est pas.
@@ -333,6 +342,64 @@ function validateResourceDates(resource: string, payload: Record<string, any>, e
   }
   if (resource === 'promotions') ensureBefore('starts_at', 'ends_at', 'La date de fin doit être postérieure au début.');
   if (resource === 'stories') ensureBefore('publish_at', 'expires_at', 'L’expiration doit être postérieure à la publication.');
+  if (resource === 'hero-slides') ensureBefore('published_from', 'published_to', 'La fin de publication doit être postérieure au début.');
+}
+
+/**
+ * Validation métier par ressource (hors dates). Pour l'instant : hero-slides —
+ * la destination est un contrat fermé (type + valeur validée, cible existante),
+ * jamais une URL libre ; la couleur manuelle est un hexadécimal.
+ */
+/** Lecture du produit dans le catalogue existant (source unique). */
+function catalogueProductSnapshot(db: QatafoDatabase, productId: string): ProductSnapshot | null {
+  return db.get<any>('SELECT id,name,image,status,final_price,stock_status FROM products WHERE id=?', productId) ?? null;
+}
+
+/** Lien média saisi (Stories, Reels, Publications) : renvoie le lien normalisé, ou répond 400 et renvoie null. */
+function linkOrReject(res: Response, value: unknown, kind: MediaLinkKind): string | null {
+  const link = normalizeMediaLink(value, kind);
+  if (link.ok === false) {
+    res.status(400).json({ success: false, code: 'MEDIA_URL_INVALID', error: link.error });
+    return null;
+  }
+  return link.url;
+}
+
+function validateResourcePayload(db: QatafoDatabase, resource: string, payload: Record<string, any>, existing?: Record<string, any>) {
+  if (resource === 'stories') {
+    // Lien du média : seulement quand il est saisi (une ancienne valeur n'est pas re-validée).
+    if (payload.media_url !== undefined) {
+      const kind: MediaLinkKind = String(payload.media_type ?? existing?.media_type ?? 'IMAGE') === 'VIDEO' ? 'video' : 'image';
+      const link = normalizeMediaLink(payload.media_url, kind);
+      if (link.ok === false) throw new Error(link.error);
+      payload.media_url = link.url;
+    }
+    // Mode + produit : décidés ici, côté serveur (jamais seulement dans l'interface).
+    const productInput = payload.product_id !== undefined ? payload.product_id : existing?.product_id;
+    const decision = decideShoppable(payload.content_mode ?? existing?.content_mode, productInput,
+      (id) => catalogueProductSnapshot(db, id));
+    if (decision.ok === false) throw new Error(decision.error);
+    payload.content_mode = decision.mode;
+    payload.product_id = decision.productId;
+    return;
+  }
+  if (resource !== 'hero-slides') return;
+  const type = String(payload.destination_type ?? existing?.destination_type ?? '');
+  const value = String(payload.destination_value ?? existing?.destination_value ?? '').trim();
+  const config = heroDestinationConfig(type);
+  if (type && !config) throw new Error('Type de destination inconnu.');
+  if (config?.needsValue && !value) throw new Error('Cette destination exige une valeur (identifiant ou lien).');
+  if (type === 'COLLECTION' && value && !db.get<any>('SELECT id FROM arrivals WHERE id=?', value)) {
+    throw new Error('Arrivage introuvable : la collection n’existe pas.');
+  }
+  if (type === 'PRODUCT' && value && !db.get<any>('SELECT id FROM products WHERE id=?', value)) {
+    throw new Error('Produit introuvable.');
+  }
+  if (type === 'EXTERNAL' && value && !isValidExternalUrl(value)) {
+    throw new Error('Le lien externe doit être une URL http/https valide.');
+  }
+  const bgColor = String(payload.bg_color ?? existing?.bg_color ?? '').trim();
+  if (bgColor && !isHexColor(bgColor)) throw new Error('La couleur de fond doit être un hexadécimal (#rgb ou #rrggbb).');
 }
 
 function admin(req: Request) {
@@ -493,9 +560,6 @@ export function createAdminRouter(
   // déplace aucune écriture. Le moteur générique s'y enregistre lui-même, source unique.
   router.use('/back-office', createBackOfficeRouter(db));
 
-
-  /* ==================== HERO MANAGEMENT — Visual واحد نشط، محتوى الـ Hero غير قابل للتعديل ==================== */
-  const heroUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024, files: 2 } });
 
   /* ==================== LENS SECTION — إدارة كاملة للمحتوى (Dashboard = source of truth) ==================== */
   const LENS_ELEMENT_ORDER = ['eyebrow', 'title', 'description', 'cta', 'proof'] as const;
@@ -728,44 +792,198 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     } });
   });
 
-  /* ==================== HERO CONTENT — العنوان/الوصف/CTA من الـ Dashboard ==================== */
-  const heroContentRowForApi = (row: any) => (row ? {
-    eyebrow: row.eyebrow, title: row.title, highlight: row.highlight, description: row.description,
-    ctaLabel: row.cta_label, ctaUrl: row.cta_url, accentColor: row.accent_color,
-    elementOrder: row.element_order, enabled: Boolean(row.enabled), sortOrder: Number(row.sort_order ?? 10),
-    updatedAt: row.updated_at,
-  } : null);
+  /* ==================== HERO SLIDES — BROUILLONS → PUBLICATION (module Hero) ====================
+   * `hero_slides` = publié (lu par l'app). `hero_slide_drafts` = modifications en attente.
+   * Rien d'un brouillon n'atteint `/api/public/hero-slides` avant `POST /hero-slides/publish`.
+   * Logique partagée : src/services/heroSlideDrafts.ts (validation, fusion, carte publique). */
+  const heroMaxCards = () => Math.max(1, Math.min(12, Number(db.get<any>("SELECT max_cards FROM hero_carousel_settings WHERE id='global'")?.max_cards) || 6));
+  const heroSlideSummary = (slide: MergedSlide) => ({
+    id: slide.id,
+    status: slide.status,
+    changeType: slide.changeType,
+    liveId: slide.liveId,
+    ...slide.values,
+    imageAvailable: heroImageAvailable(slide.values.image),
+    hasPalette: Boolean(slide.palette),
+  });
+  const heroMerged = () => mergeSlides(publishedRows(db), draftRowsById(db), Date.now());
+  const heroFind = (id: string) => heroMerged().find((slide) => slide.id === id) ?? null;
+  const heroInvalid = (res: Response, errors: Record<string, string>) =>
+    res.status(422).json({ success: false, error: 'Certains champs sont invalides.', errors });
 
-  router.get('/hero-content', requireAdmin(db, 'content:read'), (_req, res) => {
-    res.json({ success: true, data: heroContentRowForApi(db.get<any>("SELECT * FROM hero_content_settings WHERE id='global'")) });
+  /** Écrit (ou remplace) le brouillon ; s'il est identique au publié, il est supprimé. */
+  const persistHeroDraft = (id: string, changeType: ChangeType, values: SlideValues, actor: string, now: string) => {
+    const live = db.get<any>('SELECT * FROM hero_slides WHERE id=?', id);
+    if (changeType === 'UPDATE' && live && EDITABLE_FIELDS.every((field) => values[field] === liveValues(live)[field])) {
+      db.run('DELETE FROM hero_slide_drafts WHERE id=?', id);
+      return;
+    }
+    const exists = db.get<any>('SELECT id FROM hero_slide_drafts WHERE id=?', id);
+    const columns = EDITABLE_FIELDS.join(',');
+    const params = EDITABLE_FIELDS.map((field) => values[field]);
+    if (exists) {
+      db.run(`UPDATE hero_slide_drafts SET change_type=?,${EDITABLE_FIELDS.map((f) => `${f}=?`).join(',')},updated_at=?,updated_by=? WHERE id=?`,
+        changeType, ...params, now, actor, id);
+    } else {
+      db.run(`INSERT INTO hero_slide_drafts (id,change_type,${columns},created_at,updated_at,updated_by) VALUES (?,?,${EDITABLE_FIELDS.map(() => '?').join(',')},?,?,?)`,
+        id, changeType, ...params, now, now, actor);
+    }
+  };
+
+  router.get('/hero-slides/manage', requireAdmin(db, 'content:read'), (_req, res) => {
+    const slides = heroMerged();
+    res.json({
+      success: true,
+      data: slides.map(heroSlideSummary),
+      pendingCount: draftRowsById(db).size,
+      maxCards: heroMaxCards(),
+      serverTime: new Date().toISOString(),
+    });
   });
 
-  router.put('/hero-content', requireAdmin(db, 'content:write'), async (req, res) => {
-    const existing = db.get<any>("SELECT * FROM hero_content_settings WHERE id='global'");
-    if (!existing) return res.status(404).json({ success: false, error: 'Contenu Hero introuvable.' });
-    let ctaUrl = existing.cta_url || '';
-    if (req.body.ctaUrl !== undefined) {
-      try { ctaUrl = normalizeCtaUrl(req.body.ctaUrl); }
-      catch { return res.status(400).json({ success: false, error: 'Lien CTA invalide — utilisez une URL https:// ou un chemin interne /…' }); }
+  // Aperçu = exactement ce que verrait le visiteur si les brouillons étaient publiés.
+  router.get('/hero-slides/preview', requireAdmin(db, 'content:read'), (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ success: true, data: previewCards(db, heroMaxCards(), Date.now()), pendingCount: draftRowsById(db).size });
+  });
+
+  router.post('/hero-slides/drafts', requireAdmin(db, 'content:write'), (req, res) => {
+    const { values, errors } = validateSlideForSave(db, req.body ?? {}, EMPTY_VALUES);
+    if (Object.keys(errors).length) return heroInvalid(res, errors);
+    const id = `hero_slide_${randomUUID()}`;
+    const now = new Date().toISOString();
+    persistHeroDraft(id, 'CREATE', values, admin(req)?.name || 'Système', now);
+    audit(db, req, 'HERO_DRAFT_CREATE', 'HERO', id, null, values);
+    res.status(201).json({ success: true, data: heroSlideSummary(heroFind(id)!) });
+  });
+
+  router.put('/hero-slides/drafts/:id', requireAdmin(db, 'content:write'), (req, res) => {
+    const slide = heroFind(String(req.params.id));
+    if (!slide) return res.status(404).json({ success: false, error: 'Carte introuvable.' });
+    const { values, errors } = validateSlideForSave(db, req.body ?? {}, slide.values);
+    if (Object.keys(errors).length) return heroInvalid(res, errors);
+    // Nouvelle carte ⇒ reste CREATE ; carte publiée ⇒ UPDATE (une carte « à supprimer » redevient active).
+    const changeType: ChangeType = slide.changeType === 'CREATE' ? 'CREATE' : 'UPDATE';
+    const before = slide.values;
+    persistHeroDraft(slide.id, changeType, values, admin(req)?.name || 'Système', new Date().toISOString());
+    audit(db, req, 'HERO_DRAFT_UPDATE', 'HERO', slide.id, before, values);
+    res.json({ success: true, data: heroSlideSummary(heroFind(slide.id)!) });
+  });
+
+  router.post('/hero-slides/drafts/:id/discard', requireAdmin(db, 'content:write'), (req, res) => {
+    const id = String(req.params.id);
+    if (!db.get<any>('SELECT id FROM hero_slide_drafts WHERE id=?', id)) {
+      return res.status(404).json({ success: false, error: 'Aucun brouillon pour cette carte.' });
     }
-    const title = String(req.body.title ?? existing.title).replace(/\r\n/g, '\n').slice(0, 200);
-    if (!title.trim()) return res.status(400).json({ success: false, error: 'Le titre du Hero est obligatoire.' });
-    const validColor = (value: unknown, fallback: string) => (/^#[0-9a-fA-F]{3,8}$/.test(String(value || '')) ? String(value) : fallback);
-    db.run(`UPDATE hero_content_settings SET eyebrow=?,title=?,highlight=?,description=?,cta_label=?,cta_url=?,accent_color=?,element_order=?,enabled=?,sort_order=?,updated_at=? WHERE id='global'`,
-      String(req.body.eyebrow ?? existing.eyebrow).slice(0, 40),
-      title,
-      String(req.body.highlight ?? existing.highlight).slice(0, 40),
-      String(req.body.description ?? existing.description).slice(0, 400),
-      String(req.body.ctaLabel ?? existing.cta_label).slice(0, 40),
-      ctaUrl,
-      validColor(req.body.accentColor, existing.accent_color),
-      normalizeElementOrder(req.body.elementOrder, HERO_ELEMENT_ORDER, HERO_ELEMENT_ORDER.join(',')),
-      req.body.enabled === undefined ? existing.enabled : (req.body.enabled ? 1 : 0),
-      Math.min(999, Math.max(0, Number(req.body.sortOrder ?? existing.sort_order) || 0)),
-      new Date().toISOString());
-    invalidateHeroVisualCache();
-    audit(db, req, 'UPDATE', 'HERO_CONTENT', 'global', null, null);
-    res.json({ success: true, data: heroContentRowForApi(db.get<any>("SELECT * FROM hero_content_settings WHERE id='global'")) });
+    db.run('DELETE FROM hero_slide_drafts WHERE id=?', id);
+    audit(db, req, 'HERO_DRAFT_DISCARD', 'HERO', id, null, null);
+    const slide = heroFind(id);
+    res.json({ success: true, data: slide ? heroSlideSummary(slide) : null });
+  });
+
+  // Suppression : une carte jamais publiée disparaît tout de suite ; une carte publiée est
+  // marquée « à supprimer » et ne sort qu'à la publication (annulable par PUT ou abandon).
+  router.delete('/hero-slides/:id', requireAdmin(db, 'content:write'), (req, res) => {
+    const id = String(req.params.id);
+    const draft = db.get<any>('SELECT * FROM hero_slide_drafts WHERE id=?', id);
+    const live = db.get<any>('SELECT * FROM hero_slides WHERE id=?', id);
+    if (!draft && !live) return res.status(404).json({ success: false, error: 'Carte introuvable.' });
+    if (draft?.change_type === 'CREATE') {
+      db.run('DELETE FROM hero_slide_drafts WHERE id=?', id);
+    } else if (live) {
+      persistHeroDraft(id, 'DELETE', liveValues(live), admin(req)?.name || 'Système', new Date().toISOString());
+    }
+    audit(db, req, 'HERO_DRAFT_DELETE', 'HERO', id, null, null);
+    const slide = heroFind(id);
+    res.json({ success: true, data: slide ? heroSlideSummary(slide) : null });
+  });
+
+  router.post('/hero-slides/reorder', requireAdmin(db, 'content:write'), (req, res) => {
+    const ids: unknown[] = Array.isArray(req.body?.ids) ? req.body.ids : [];
+    if (!ids.length) return res.status(400).json({ success: false, error: 'Liste d’ordre vide.' });
+    const visible = new Map(heroMerged().filter((slide) => slide.changeType !== 'DELETE').map((slide) => [slide.id, slide]));
+    const order = ids.map(String);
+    if (new Set(order).size !== order.length) return res.status(400).json({ success: false, error: 'Carte listée deux fois.' });
+    if (order.some((id) => !visible.has(id))) return res.status(400).json({ success: false, error: 'Carte inconnue ou supprimée.' });
+    const now = new Date().toISOString();
+    const actor = admin(req)?.name || 'Système';
+    order.forEach((id, index) => {
+      const slide = visible.get(id)!;
+      const values = { ...slide.values, display_order: (index + 1) * 10 };
+      persistHeroDraft(id, slide.changeType ?? 'UPDATE', values, actor, now);
+    });
+    audit(db, req, 'HERO_REORDER', 'HERO', null, null, { order });
+    res.json({ success: true, data: heroMerged().map(heroSlideSummary) });
+  });
+
+  router.post('/hero-slides/discard-all', requireAdmin(db, 'content:write'), (req, res) => {
+    const count = draftRowsById(db).size;
+    db.run('DELETE FROM hero_slide_drafts');
+    audit(db, req, 'HERO_DRAFT_DISCARD_ALL', 'HERO', null, null, { count });
+    res.json({ success: true, data: { discarded: count } });
+  });
+
+  // Publication : tout ou rien. Chaque brouillon est revalidé ; une seule erreur ⇒ rien n'est appliqué.
+  router.post('/hero-slides/publish', requireAdmin(db, 'content:write'), async (req, res) => {
+    const drafts = [...draftRowsById(db).values()];
+    if (!drafts.length) return res.status(409).json({ success: false, error: 'Aucune modification à publier.' });
+    const problems: Record<string, Record<string, string>> = {};
+    for (const draft of drafts) {
+      if (draft.change_type === 'DELETE') continue;
+      const { errors } = validateSlideForSave(db, draft as unknown as Record<string, unknown>, EMPTY_VALUES);
+      // Visuel absent du disque : on ne publie jamais une carte qui pointe vers un fichier mort.
+      if (!errors.image && !heroImageAvailable(draft.image)) {
+        errors.image = 'Image introuvable sur le serveur : téléversez-la de nouveau.';
+      }
+      if (Object.keys(errors).length) problems[draft.id] = errors;
+    }
+    if (Object.keys(problems).length) {
+      return res.status(422).json({ success: false, error: 'Publication refusée : des cartes sont incomplètes.', problems });
+    }
+    const now = new Date().toISOString();
+    const actor = admin(req)?.name || 'Système';
+    const counts = { created: 0, updated: 0, deleted: 0 };
+    const needsPalette: Array<{ id: string; image: string }> = [];
+    db.run('BEGIN');
+    try {
+      for (const draft of drafts) {
+        if (draft.change_type === 'DELETE') {
+          db.run('DELETE FROM hero_slides WHERE id=?', draft.id);
+          counts.deleted += 1;
+        } else if (draft.change_type === 'CREATE') {
+          db.run(`INSERT INTO hero_slides (id,image,video,title,title_ar,subtitle,subtitle_ar,cta,cta_ar,target_url,display_order,active,
+              created_at,updated_at,destination_type,destination_value,bg_mode,bg_color,published_from,published_to,palette)
+            VALUES (?,?,?,?,?,?,?,?,?,'',?,?,?,?,?,?,?,?,?,?,'')`,
+            draft.id, draft.image, draft.video, draft.title, draft.title_ar, draft.subtitle, draft.subtitle_ar,
+            draft.cta, draft.cta_ar, draft.display_order, draft.active, draft.created_at || now, now,
+            draft.destination_type, draft.destination_value, draft.bg_mode, draft.bg_color,
+            draft.published_from, draft.published_to);
+          counts.created += 1;
+          needsPalette.push({ id: draft.id, image: draft.image });
+        } else {
+          const live = db.get<any>('SELECT image FROM hero_slides WHERE id=?', draft.id);
+          db.run(`UPDATE hero_slides SET image=?,video=?,title=?,title_ar=?,subtitle=?,subtitle_ar=?,cta=?,cta_ar=?,
+              destination_type=?,destination_value=?,bg_mode=?,bg_color=?,display_order=?,active=?,published_from=?,published_to=?,updated_at=?
+            WHERE id=?`,
+            draft.image, draft.video, draft.title, draft.title_ar, draft.subtitle, draft.subtitle_ar, draft.cta, draft.cta_ar,
+            draft.destination_type, draft.destination_value, draft.bg_mode, draft.bg_color, draft.display_order, draft.active,
+            draft.published_from, draft.published_to, now, draft.id);
+          counts.updated += 1;
+          // Palette recalculée seulement si l'image a changé.
+          if (!live || String(live.image) !== draft.image) needsPalette.push({ id: draft.id, image: draft.image });
+        }
+      }
+      db.run('DELETE FROM hero_slide_drafts');
+      db.run('COMMIT');
+    } catch (error) {
+      db.run('ROLLBACK');
+      throw error;
+    }
+    audit(db, req, 'HERO_PUBLISH', 'HERO', null, null, { ...counts, actor });
+    // Hors transaction : la palette (sharp) ne bloque pas la publication.
+    for (const slide of needsPalette) await refreshHeroSlidePalette(db, slide);
+    const cards = previewCards(db, heroMaxCards(), Date.now());
+    res.json({ success: true, data: counts, cards });
   });
 
   /* ==================== HOME BLOCKS — ترتيب وإظهار كتل الصفحة الرئيسية ==================== */
@@ -792,140 +1010,81 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     res.json({ success: true, data: rows.map((row) => ({ id: row.id, sortOrder: row.sortOrder, visible: Boolean(row.visible) })) });
   });
 
-  const heroRowForAdmin = (row: any) => ({
-    id: row.id, imageUrl: row.image_url, imageWidth: row.image_width, imageHeight: row.image_height,
-    mobileImageUrl: row.mobile_image_url, altText: row.alt_text, focalX: row.focal_x, focalY: row.focal_y,
-    mobileFocalX: row.mobile_focal_x ?? 0.5, mobileFocalY: row.mobile_focal_y ?? 0.5,
-    overlayMode: row.overlay_mode === 'MANUAL' ? 'MANUAL' : 'AUTO', overlayStrength: row.overlay_strength, analysis: row.analysis_json || '',
-    orientationOverride: row.orientation_override || 'AUTO',
-    status: row.status, startDate: row.start_date, endDate: row.end_date, priority: row.priority,
-    createdAt: row.created_at, updatedAt: row.updated_at, publishedAt: row.published_at,
+  /* ==================== SECTION « À LA UNE » — accueil mobile (singleton 'global') ====================
+   * Réglages : activée ou non, source (la plus récente, ou une publication choisie), libellé du bouton.
+   * La règle de sortie vers l'application est dans src/services/homeFeatured.ts. */
+  const featuredSettingsFrom = (row: any): FeaturedSettings => ({
+    enabled: row ? row.enabled !== 0 : DEFAULT_FEATURED_SETTINGS.enabled,
+    source: row?.source === 'pinned' ? 'pinned' : 'latest',
+    publicationId: String(row?.publication_id || ''),
+    ctaLabel: String(row?.cta_label || ''),
+  });
+  const featuredAdminView = () => {
+    const settings = featuredSettingsFrom(db.get<any>("SELECT * FROM home_featured_settings WHERE id='global'"));
+    const rows = db.all<any>('SELECT id,title,subtitle,image_url,publish_at,status FROM publications');
+    const publications = db.all<any>('SELECT id,title,status,publish_at FROM publications ORDER BY publish_at DESC');
+    return {
+      enabled: settings.enabled,
+      source: settings.source,
+      publicationId: settings.publicationId,
+      ctaLabel: settings.ctaLabel,
+      publications: publications.map((row) => ({ id: row.id, title: row.title, status: row.status, publishAt: row.publish_at })),
+      // Aperçu EXACT de ce que voit l'application : même résolution que la route publique.
+      preview: resolveFeaturedPublication(settings, rows, Date.now()),
+    };
+  };
+
+  router.get('/home-featured', requireAdmin(db, 'content:read'), (_req, res) => {
+    res.json({ success: true, data: featuredAdminView() });
   });
 
-  router.get('/hero-visuals', requireAdmin(db, 'content:read'), (_req, res) => {
-    const rows = db.all<any>(`SELECT * FROM hero_visuals WHERE status!='ARCHIVED' ORDER BY created_at DESC`);
-    res.json({ success: true, data: rows.map(heroRowForAdmin), active: resolveActiveHeroVisual(db) });
-  });
-
-  router.post('/hero-visuals', requireAdmin(db, 'content:write'), heroUpload.fields([
-    { name: 'image', maxCount: 1 }, { name: 'mobileImage', maxCount: 1 },
-  ]), async (req, res) => {
-    try {
-      const files = req.files as Record<string, Express.Multer.File[]> | undefined;
-      const imageFile = files?.image?.[0];
-      if (!imageFile) return res.status(400).json({ success: false, error: 'Image principale requise.' });
-      const id = newHeroVisualId();
-      const stored = await storeHeroImage(imageFile, id, 'desktop');
-      let mobileStored: Awaited<ReturnType<typeof storeHeroImage>> | null = null;
-      if (files?.mobileImage?.[0]) {
-        try { mobileStored = await storeHeroImage(files.mobileImage[0], id, 'mobile'); }
-        catch (error: any) { return res.status(400).json({ success: false, error: `Image mobile — ${error?.message || 'invalide'}` }); }
-      }
-      const { startDate, endDate } = normalizeSchedule(req.body.startDate, req.body.endDate);
-      const now = new Date().toISOString();
-      const priority = Math.min(999, Math.max(0, Number(req.body.priority) || 0));
-      const orientationOverride = ['AUTO', 'LANDSCAPE', 'PORTRAIT'].includes(String(req.body.orientationOverride)) ? String(req.body.orientationOverride) : 'AUTO';
-      const overlayMode = req.body.overlayMode === 'MANUAL' ? 'MANUAL' : 'AUTO';
-      const overlayStrength = req.body.overlayStrength === undefined || req.body.overlayStrength === '' || req.body.overlayStrength === null
-        ? null : Math.min(1, Math.max(0, Number(req.body.overlayStrength)));
-      const analysisJson = JSON.stringify(stored.analysis || null);
-      db.run(`INSERT INTO hero_visuals
-        (id,image_url,image_width,image_height,mobile_image_url,alt_text,focal_x,focal_y,mobile_focal_x,mobile_focal_y,overlay_mode,overlay_strength,analysis_json,orientation_override,status,start_date,end_date,priority,created_at,updated_at)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,'DRAFT',?,?,?,?,?)`,
-        id, stored.url, stored.width, stored.height, mobileStored?.url || '', String(req.body.altText || '').slice(0, 200),
-        Math.min(1, Math.max(0, Number(req.body.focalX ?? 0.5))), Math.min(1, Math.max(0, Number(req.body.focalY ?? 0.5))),
-        Math.min(1, Math.max(0, Number(req.body.mobileFocalX ?? 0.5))), Math.min(1, Math.max(0, Number(req.body.mobileFocalY ?? 0.5))),
-        overlayMode, overlayStrength, analysisJson, orientationOverride,
-        startDate, endDate, priority, now, now);
-      audit(db, req, 'CREATE', 'HERO', id, null, { image_url: stored.url });
-      const row = db.get<any>('SELECT * FROM hero_visuals WHERE id=?', id);
-      return res.json({ success: true, data: heroRowForAdmin(row), meta: { desktop: stored, mobile: mobileStored } });
-    } catch (error: any) {
-      return res.status(400).json({ success: false, error: error?.message || 'Téléversement invalide.' });
+  router.put('/home-featured', requireAdmin(db, 'content:write'), (req, res) => {
+    const existing = featuredSettingsFrom(db.get<any>("SELECT * FROM home_featured_settings WHERE id='global'"));
+    const next = normalizeFeaturedInput(req.body, existing);
+    if (!next) {
+      return res.status(400).json({ success: false, error: 'Réglage invalide : source inconnue, ou publication à choisir.' });
     }
-  });
-
-  router.put('/hero-visuals/:id', requireAdmin(db, 'content:write'), heroUpload.fields([
-    { name: 'image', maxCount: 1 }, { name: 'mobileImage', maxCount: 1 },
-  ]), async (req, res) => {
-    const existing = db.get<any>('SELECT * FROM hero_visuals WHERE id=?', req.params.id);
-    if (!existing) return res.status(404).json({ success: false, error: 'Visual introuvable.' });
-    try {
-      const files = req.files as Record<string, Express.Multer.File[]> | undefined;
-      let imageUrl = existing.image_url;
-      let imageWidth = existing.image_width;
-      let imageHeight = existing.image_height;
-      let newAnalysis: string | null = null;
-      if (files?.image?.[0]) {
-        const stored = await storeHeroImage(files.image[0], existing.id, 'desktop');
-        imageUrl = stored.url; imageWidth = stored.width; imageHeight = stored.height;
-        if (stored.analysis) newAnalysis = JSON.stringify(stored.analysis);
-        deleteHeroVisualFiles(existing.image_url, '');
-      }
-      let mobileImageUrl = req.body.mobileImageUrl !== undefined ? String(req.body.mobileImageUrl) : existing.mobile_image_url;
-      if (files?.mobileImage?.[0]) {
-        const stored = await storeHeroImage(files.mobileImage[0], existing.id, 'mobile');
-        mobileImageUrl = stored.url;
-        deleteHeroVisualFiles('', existing.mobile_image_url);
-      }
-      const { startDate, endDate } = normalizeSchedule(
-        req.body.startDate !== undefined ? req.body.startDate : existing.start_date,
-        req.body.endDate !== undefined ? req.body.endDate : existing.end_date,
-      );
-      const now = new Date().toISOString();
-      const nextOverlayMode = req.body.overlayMode === 'MANUAL' ? 'MANUAL' : req.body.overlayMode === 'AUTO' ? 'AUTO' : (existing.overlay_mode || 'AUTO');
-      const nextOrientationOverride = ['AUTO', 'LANDSCAPE', 'PORTRAIT'].includes(String(req.body.orientationOverride))
-        ? String(req.body.orientationOverride)
-        : (req.body.orientationOverride === undefined ? (existing.orientation_override || 'AUTO') : 'AUTO');
-      const nextOverlayStrength = req.body.overlayStrength === undefined ? existing.overlay_strength : (req.body.overlayStrength === '' || req.body.overlayStrength === null ? null : Math.min(1, Math.max(0, Number(req.body.overlayStrength))));
-      const analysisJson = newAnalysis ?? (existing.analysis_json || '');
-      db.run(`UPDATE hero_visuals SET image_url=?,image_width=?,image_height=?,mobile_image_url=?,alt_text=?,focal_x=?,focal_y=?,mobile_focal_x=?,mobile_focal_y=?,overlay_mode=?,overlay_strength=?,analysis_json=?,orientation_override=?,
-        start_date=?,end_date=?,priority=?,updated_at=? WHERE id=?`,
-        imageUrl, imageWidth, imageHeight, mobileImageUrl,
-        String(req.body.altText !== undefined ? req.body.altText : existing.alt_text).slice(0, 200),
-        Math.min(1, Math.max(0, Number(req.body.focalX !== undefined ? req.body.focalX : existing.focal_x))),
-        Math.min(1, Math.max(0, Number(req.body.focalY !== undefined ? req.body.focalY : existing.focal_y))),
-        Math.min(1, Math.max(0, Number(req.body.mobileFocalX !== undefined ? req.body.mobileFocalX : existing.mobile_focal_x ?? 0.5))),
-        Math.min(1, Math.max(0, Number(req.body.mobileFocalY !== undefined ? req.body.mobileFocalY : existing.mobile_focal_y ?? 0.5))),
-        nextOverlayMode, nextOverlayStrength, analysisJson, nextOrientationOverride,
-        startDate, endDate,
-        Math.min(999, Math.max(0, Number(req.body.priority !== undefined ? req.body.priority : existing.priority))),
-        now, existing.id);
-      invalidateHeroVisualCache();
-      audit(db, req, 'UPDATE', 'HERO', existing.id, heroRowForAdmin(existing), heroRowForAdmin(db.get<any>('SELECT * FROM hero_visuals WHERE id=?', existing.id)));
-      return res.json({ success: true, data: heroRowForAdmin(db.get<any>('SELECT * FROM hero_visuals WHERE id=?', existing.id)) });
-    } catch (error: any) {
-      return res.status(400).json({ success: false, error: error?.message || 'Mise à jour invalide.' });
+    if (next.source === 'pinned' && !db.get('SELECT id FROM publications WHERE id=?', next.publicationId)) {
+      return res.status(400).json({ success: false, error: 'Publication introuvable.' });
     }
+    db.run("UPDATE home_featured_settings SET enabled=?,source=?,publication_id=?,cta_label=?,updated_at=? WHERE id='global'",
+      next.enabled ? 1 : 0, next.source, next.publicationId, next.ctaLabel, new Date().toISOString());
+    audit(db, req, 'UPDATE', 'HOME_FEATURED', 'global', existing, next);
+    res.json({ success: true, data: featuredAdminView() });
   });
 
-  router.post('/hero-visuals/:id/publish', requireAdmin(db, 'content:write'), (req, res) => {
-    const existing = db.get<any>('SELECT * FROM hero_visuals WHERE id=?', req.params.id);
-    if (!existing) return res.status(404).json({ success: false, error: 'Visual introuvable.' });
-    const now = new Date().toISOString();
-    db.run(`UPDATE hero_visuals SET status='PUBLISHED', published_at=?, updated_at=? WHERE id=?`, now, now, existing.id);
-    invalidateHeroVisualCache();
-    audit(db, req, 'PUBLISH', 'HERO', existing.id, null, null);
-    res.json({ success: true, data: heroRowForAdmin(db.get<any>('SELECT * FROM hero_visuals WHERE id=?', existing.id)), active: resolveActiveHeroVisual(db) });
+  /* ==================== CARROUSEL HERO — réglages (singleton 'global') ==================== */
+
+  const carouselSettingsRowForApi = (row: any) => (row ? {
+    enabled: row.enabled !== 0,
+    maxCards: Math.max(1, Math.min(12, Number(row.max_cards) || 6)),
+    autoplay: row.autoplay === 1,
+    autoplayIntervalMs: Math.max(1000, Math.min(60000, Number(row.autoplay_interval_ms) || 5000)),
+    transitionMs: Math.max(100, Math.min(2000, Number(row.transition_ms) || 300)),
+    paginationVisible: row.pagination_visible !== 0,
+  } : null);
+
+  router.get('/hero-carousel-settings', requireAdmin(db, 'content:read'), (_req, res) => {
+    res.json({ success: true, data: carouselSettingsRowForApi(db.get<any>("SELECT * FROM hero_carousel_settings WHERE id='global'")) });
   });
 
-  router.post('/hero-visuals/:id/unpublish', requireAdmin(db, 'content:write'), (req, res) => {
-    const existing = db.get<any>('SELECT * FROM hero_visuals WHERE id=?', req.params.id);
-    if (!existing) return res.status(404).json({ success: false, error: 'Visual introuvable.' });
-    db.run(`UPDATE hero_visuals SET status='DRAFT', published_at=NULL, updated_at=? WHERE id=?`, new Date().toISOString(), existing.id);
-    invalidateHeroVisualCache();
-    audit(db, req, 'UNPUBLISH', 'HERO', existing.id, null, null);
-    res.json({ success: true, data: heroRowForAdmin(db.get<any>('SELECT * FROM hero_visuals WHERE id=?', existing.id)), active: resolveActiveHeroVisual(db) });
-  });
-
-  router.delete('/hero-visuals/:id', requireAdmin(db, 'content:write'), (req, res) => {
-    const existing = db.get<any>('SELECT * FROM hero_visuals WHERE id=?', req.params.id);
-    if (!existing) return res.status(404).json({ success: false, error: 'Visual introuvable.' });
-    deleteHeroVisualFiles(existing.image_url, existing.mobile_image_url);
-    db.run('DELETE FROM hero_visuals WHERE id=?', existing.id);
-    invalidateHeroVisualCache();
-    audit(db, req, 'DELETE', 'HERO', existing.id, heroRowForAdmin(existing), null);
-    res.json({ success: true, active: resolveActiveHeroVisual(db) });
+  router.put('/hero-carousel-settings', requireAdmin(db, 'content:write'), (req, res) => {
+    const existing = db.get<any>("SELECT * FROM hero_carousel_settings WHERE id='global'");
+    if (!existing) return res.status(404).json({ success: false, error: 'Réglages introuvables.' });
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    const flag = (value: unknown, fallback: boolean) =>
+      value === undefined ? fallback : value === true || value === 1 || value === '1';
+    const clamped = (value: unknown, fallback: number, min: number, max: number) =>
+      value === undefined ? fallback : Math.max(min, Math.min(max, Math.round(Number(value)) || fallback));
+    db.run(`UPDATE hero_carousel_settings SET enabled=?,max_cards=?,autoplay=?,autoplay_interval_ms=?,transition_ms=?,pagination_visible=?,updated_at=? WHERE id='global'`,
+      flag(body.enabled, existing.enabled !== 0) ? 1 : 0,
+      clamped(body.maxCards, Number(existing.max_cards) || 6, 1, 12),
+      flag(body.autoplay, existing.autoplay === 1) ? 1 : 0,
+      clamped(body.autoplayIntervalMs, Number(existing.autoplay_interval_ms) || 5000, 1000, 60000),
+      clamped(body.transitionMs, Number(existing.transition_ms) || 300, 100, 2000),
+      flag(body.paginationVisible, existing.pagination_visible !== 0) ? 1 : 0,
+      new Date().toISOString());
+    res.json({ success: true, data: carouselSettingsRowForApi(db.get<any>("SELECT * FROM hero_carousel_settings WHERE id='global'")) });
   });
 
   router.post('/auth/logout', requireAdmin(db), (req, res) => {
@@ -1152,27 +1311,36 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
   router.post('/publications', requireAdmin(db, 'content:write'), (req, res) => {
     const title = String(req.body?.title || '').trim().slice(0, 150);
     const channelId = String(req.body?.channel_id || '');
-    const imageUrl = String(req.body?.image_url || '').slice(0, 500);
+    const imageUrl = linkOrReject(res, req.body?.image_url, 'image');
+    if (imageUrl === null) return;
     if (!title || !imageUrl || !db.get('SELECT id FROM story_publishers WHERE id=?', channelId)) {
       return res.status(400).json({ success: false, error: 'Titre, image et canal obligatoires.' });
     }
+    const shoppable = decideShoppable(req.body?.content_mode, req.body?.product_id, (pid) => catalogueProductSnapshot(db, pid));
+    if (shoppable.ok === false) return res.status(400).json({ success: false, code: shoppable.code, error: shoppable.error });
     const now = new Date().toISOString();
     const id = `publication_${randomUUID()}`;
-    db.run(`INSERT INTO publications (id,title,subtitle,channel_id,image_url,remark,publish_at,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)`,
+    db.run(`INSERT INTO publications (id,title,subtitle,channel_id,image_url,remark,publish_at,status,content_mode,product_id,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
       id, title, String(req.body?.subtitle || '').slice(0, 150), channelId, imageUrl, String(req.body?.remark || ''),
-      req.body?.publish_at ? String(req.body.publish_at) : now, ['brouillon','publie','archive'].includes(req.body?.status) ? req.body.status : 'brouillon', now, now);
+      req.body?.publish_at ? String(req.body.publish_at) : now, ['brouillon','publie','archive'].includes(req.body?.status) ? req.body.status : 'brouillon',
+      shoppable.mode, shoppable.productId, now, now);
     audit(db, req, 'CREATE', 'SOCIAL_PUBLICATIONS', id, null, db.get<any>('SELECT * FROM publications WHERE id=?', id));
     res.status(201).json({ success: true, data: { id } });
   });
   router.put('/publications/:id', requireAdmin(db, 'content:write'), (req, res) => {
     const row = db.get<any>(`SELECT * FROM publications WHERE id=?`, req.params.id);
     if (!row) return res.status(404).json({ success: false, error: 'Publication introuvable.' });
-    db.run(`UPDATE publications SET title=?, subtitle=?, image_url=?, remark=?, publish_at=?, status=?, updated_at=? WHERE id=?`,
+    const imageUrl = req.body?.image_url !== undefined ? linkOrReject(res, req.body.image_url, 'image') : row.image_url;
+    if (imageUrl === null) return;
+    const shoppable = decideShoppable(req.body?.content_mode ?? row.content_mode, req.body?.product_id !== undefined ? req.body.product_id : row.product_id,
+      (pid) => catalogueProductSnapshot(db, pid));
+    if (shoppable.ok === false) return res.status(400).json({ success: false, code: shoppable.code, error: shoppable.error });
+    db.run(`UPDATE publications SET title=?, subtitle=?, image_url=?, remark=?, publish_at=?, status=?, content_mode=?, product_id=?, updated_at=? WHERE id=?`,
       String(req.body?.title ?? row.title).slice(0, 150), String(req.body?.subtitle ?? row.subtitle).slice(0, 150),
-      String(req.body?.image_url ?? row.image_url).slice(0, 500), String(req.body?.remark ?? row.remark),
+      String(imageUrl).slice(0, 500), String(req.body?.remark ?? row.remark),
       req.body?.publish_at ? String(req.body.publish_at) : row.publish_at,
       ['brouillon','publie','archive'].includes(req.body?.status) ? req.body.status : row.status,
-      new Date().toISOString(), req.params.id);
+      shoppable.mode, shoppable.productId, new Date().toISOString(), req.params.id);
     audit(db, req, 'UPDATE', 'SOCIAL_PUBLICATIONS', req.params.id, row, db.get<any>('SELECT * FROM publications WHERE id=?', req.params.id));
     res.json({ success: true });
   });
@@ -1187,29 +1355,43 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
   router.post('/reels', requireAdmin(db, 'content:write'), (req, res) => {
     const title = String(req.body?.title || '').trim().slice(0, 150);
     const channelId = String(req.body?.channel_id || '');
-    const videoUrl = String(req.body?.video_url || '').slice(0, 500);
+    const videoUrl = linkOrReject(res, req.body?.video_url, 'video');
+    if (videoUrl === null) return;
+    const posterUrl = linkOrReject(res, req.body?.poster_url, 'image');
+    if (posterUrl === null) return;
     if (!title || !videoUrl || !db.get('SELECT id FROM story_publishers WHERE id=?', channelId)) {
       return res.status(400).json({ success: false, error: 'Titre, vidéo et canal obligatoires.' });
     }
+    const shoppable = decideShoppable(req.body?.content_mode, req.body?.product_id, (pid) => catalogueProductSnapshot(db, pid));
+    if (shoppable.ok === false) return res.status(400).json({ success: false, code: shoppable.code, error: shoppable.error });
     const now = new Date().toISOString();
     const id = `reel_${randomUUID()}`;
-    db.run(`INSERT INTO reels (id,title,channel_id,description,video_url,duration_seconds,publish_at,status,views,likes,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,0,0,?,?)`,
-      id, title, channelId, String(req.body?.description || ''), videoUrl,
+    db.run(`INSERT INTO reels (id,title,channel_id,description,video_url,poster_url,duration_seconds,publish_at,status,views,likes,content_mode,product_id,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,0,0,?,?,?,?)`,
+      id, title, channelId, String(req.body?.description || ''), videoUrl.slice(0, 500), posterUrl.slice(0, 500),
       Number.isFinite(Number(req.body?.duration_seconds)) ? Math.max(0, Math.round(Number(req.body.duration_seconds))) : 0,
-      req.body?.publish_at ? String(req.body.publish_at) : now, ['brouillon','publie','archive'].includes(req.body?.status) ? req.body.status : 'brouillon', now, now);
+      req.body?.publish_at ? String(req.body.publish_at) : now, ['brouillon','publie','archive'].includes(req.body?.status) ? req.body.status : 'brouillon',
+      shoppable.mode, shoppable.productId, now, now);
     audit(db, req, 'CREATE', 'SOCIAL_REELS', id, null, db.get<any>('SELECT * FROM reels WHERE id=?', id));
     res.status(201).json({ success: true, data: { id } });
   });
   router.put('/reels/:id', requireAdmin(db, 'content:write'), (req, res) => {
     const row = db.get<any>(`SELECT * FROM reels WHERE id=?`, req.params.id);
     if (!row) return res.status(404).json({ success: false, error: 'Reel introuvable.' });
-    db.run(`UPDATE reels SET title=?, description=?, video_url=?, duration_seconds=?, publish_at=?, status=?, updated_at=? WHERE id=?`,
+    const videoUrl = req.body?.video_url !== undefined ? linkOrReject(res, req.body.video_url, 'video') : row.video_url;
+    if (videoUrl === null) return;
+    const posterUrl = req.body?.poster_url !== undefined ? linkOrReject(res, req.body.poster_url, 'image') : row.poster_url;
+    if (posterUrl === null) return;
+    const shoppable = decideShoppable(req.body?.content_mode ?? row.content_mode, req.body?.product_id !== undefined ? req.body.product_id : row.product_id,
+      (pid) => catalogueProductSnapshot(db, pid));
+    if (shoppable.ok === false) return res.status(400).json({ success: false, code: shoppable.code, error: shoppable.error });
+    db.run(`UPDATE reels SET title=?, description=?, video_url=?, poster_url=?, duration_seconds=?, publish_at=?, status=?, content_mode=?, product_id=?, updated_at=? WHERE id=?`,
       String(req.body?.title ?? row.title).slice(0, 150), String(req.body?.description ?? row.description),
-      String(req.body?.video_url ?? row.video_url).slice(0, 500),
+      String(videoUrl).slice(0, 500),
+      String(posterUrl || '').slice(0, 500),
       Number.isFinite(Number(req.body?.duration_seconds)) ? Math.max(0, Math.round(Number(req.body.duration_seconds))) : row.duration_seconds,
       req.body?.publish_at ? String(req.body.publish_at) : row.publish_at,
       ['brouillon','publie','archive'].includes(req.body?.status) ? req.body.status : row.status,
-      new Date().toISOString(), req.params.id);
+      shoppable.mode, shoppable.productId, new Date().toISOString(), req.params.id);
     audit(db, req, 'UPDATE', 'SOCIAL_REELS', req.params.id, row, db.get<any>('SELECT * FROM reels WHERE id=?', req.params.id));
     res.json({ success: true });
   });
@@ -1465,6 +1647,7 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
         const payload = sanitizePayload(req.body, config);
         normalizePublicationLifecycle(resource, payload);
         validateResourceDates(resource, payload);
+        validateResourcePayload(db, resource, payload);
         if (resource === 'products') recomputeProductPricing(db, payload);
         const id = `${config.prefix}_${randomUUID()}`;
         const now = new Date().toISOString();
@@ -1475,6 +1658,7 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
           addRelations(db, resource, id, req.body);
         });
         const created = withRelations(db, resource, db.get<any>(`SELECT * FROM ${config.table} WHERE id=?`, id));
+        config.afterSave?.(db, created, null);
         audit(db, req, 'CREATE', config.module, id, null, created);
         res.status(201).json({ success: true, data: created });
       } catch (error: any) {
@@ -1490,6 +1674,7 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
         const payload = sanitizePayload(req.body, config, true);
         normalizePublicationLifecycle(resource, payload, existing);
         validateResourceDates(resource, payload, existing);
+        validateResourcePayload(db, resource, payload, existing);
         if (resource === 'products') recomputeProductPricing(db, payload, existing);
         if (Object.keys(payload).length === 0 && !req.body.arrival_ids && !req.body.product_ids) return res.status(400).json({ success: false, error: 'Aucune modification reçue.' });
         const now = new Date().toISOString();
@@ -1501,6 +1686,7 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
           addRelations(db, resource, req.params.id, req.body);
         });
         const updated = withRelations(db, resource, db.get<any>(`SELECT * FROM ${config.table} WHERE id=?`, req.params.id));
+        config.afterSave?.(db, updated, existing);
         audit(db, req, 'UPDATE', config.module, req.params.id, withRelations(db, resource, existing), updated);
         res.json({ success: true, data: updated });
       } catch (error: any) {
@@ -2124,12 +2310,15 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     if (current.setting_key === 'interface_config') {
       if (hasForbiddenFontSelection(received)) return res.status(400).json({ success: false, code: 'IDENTITY_LOCKED', error: 'La typographie AYROVI A est verrouillée.' });
       received = enforceBrandIdentity(received);
-      const sectionIds = new Set(['hero', 'cms', 'brands', 'about', 'footer']);
+      // « announcement » est récente : une configuration enregistrée avant reste valide sans elle.
+      const requiredSectionIds = ['hero', 'cms', 'brands', 'about', 'footer'];
+      const sectionIds = new Set([...requiredSectionIds, 'announcement']);
       const sections = received && typeof received === 'object' && !Array.isArray(received) ? received.sections : null;
       const encoded = JSON.stringify(received);
-      if (!Array.isArray(sections) || sections.length !== sectionIds.size
-        || new Set(sections.map((section: any) => section?.id)).size !== sectionIds.size
+      if (!Array.isArray(sections) || sections.length < requiredSectionIds.length || sections.length > sectionIds.size
+        || new Set(sections.map((section: any) => section?.id)).size !== sections.length
         || sections.some((section: any) => !sectionIds.has(String(section?.id)))
+        || requiredSectionIds.some((id) => !sections.some((section: any) => section?.id === id))
         || encoded.length > 50_000) {
         return res.status(400).json({ success: false, error: 'La configuration واجهتي est invalide ou trop volumineuse.' });
       }

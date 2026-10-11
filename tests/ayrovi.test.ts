@@ -1052,7 +1052,8 @@ describe('AYSONIC platform', () => {
     const home = await request(app).get('/api/public/home');
     expect(home.status).toBe(200);
     expect(home.body.success).toBe(true);
-    expect(home.body.data.hero.length).toBeGreaterThan(0);
+    // Le Hero n'est plus servi ici : seul /api/public/hero-slides (cartes publiées) fait foi.
+    expect(home.body.data.hero).toBeUndefined();
     expect(home.body.data.brands.length).toBeGreaterThan(0);
     expect(home.body.data.arrivals.length).toBeGreaterThan(0);
     expect(home.body.serverTime).toMatch(/^\d{4}-\d{2}-\d{2}T/);
@@ -1125,7 +1126,7 @@ describe('AYSONIC platform', () => {
     expect(settings.status).toBe(200);
     const row = settings.body.data.find((item: any) => item.setting_key === 'interface_config');
     expect(row).toBeTruthy();
-    expect(row.setting_value.sections.map((section: any) => section.id)).toEqual(['hero', 'cms', 'brands', 'about', 'footer']);
+    expect(row.setting_value.sections.map((section: any) => section.id)).toEqual(['hero', 'cms', 'brands', 'about', 'footer', 'announcement']);
     expect(row.setting_value.typography.preset).toBe('ayrovi-a');
     expect(row.setting_value.colors).toMatchObject({ pageBackground: '#ffffff', primary: '#000000', heroBackground: '#0a0a0a', announcementBackground: '#0a0a0a', accent: '#ff6900' }); // DS v1.0
     expect(row.setting_value.icons).toMatchObject({ library: 'ayrovi', activeColor: '#ff6900' });

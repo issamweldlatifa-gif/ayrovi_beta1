@@ -124,6 +124,8 @@ export interface CatalogueProductRow {
   category: string | null;
   category_id: string | null;
   status: string;
+  /** `CATALOG` or `CONTENT` (temporary product). */
+  visibility?: string;
   source_platform: string;
   final_price: number | null;
   original_price: number | null;

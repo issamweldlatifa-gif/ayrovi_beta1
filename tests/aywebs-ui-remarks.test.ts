@@ -410,7 +410,7 @@ describe('Connexion Google sans navigateur', () => {
   test('l’identifiant client Web est une ressource, pas une constante perdue', () => {
     expect(readCode(PLUGIN)).toContain('R.string.google_web_client_id');
     expect(read('android/app/src/main/res/values/strings.xml'))
-      .toContain('917317804534-5v3d6fmlddpgrraj8bemu5tkju16066o.apps.googleusercontent.com');
+      .toContain('917317804534-e37d2kardhtac1g7fummsfk61dr86q3j.apps.googleusercontent.com');
   });
 
   test('un échec natif retombe sur l’onglet au lieu d’afficher une panne', () => {
