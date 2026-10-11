@@ -13569,8 +13569,8 @@
     {
       "file": "client/src/components/AnnouncementSection.tsx",
       "domain": "shell-content",
-      "sha256": "6ec36a24c729153b4548ba1ba4907529d17209ed388aa435606f458239e3ef0e",
-      "lines": 92,
+      "sha256": "3f6536ed12d8ff3a5f202a6eae37826ea844b5975c907fdb656fa6b6fcf60477",
+      "lines": 93,
       "imports": [
         "react",
         "../config/interfaceConfig"
@@ -13581,7 +13581,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 68,
+          "line": 69,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -21762,7 +21762,7 @@
     {
       "file": "client/src/social/components/StoryFeed.tsx",
       "domain": "discovery-social",
-      "sha256": "099adadc3cfbdd08414d76a37658f8185ae7c2b9cb3d228a384839d2ac14500e",
+      "sha256": "ed709768df4e244e51c2abe7701d9503b795bd362822896ae6ce4d81ca3136dc",
       "lines": 188,
       "imports": [
         "react",
@@ -21999,7 +21999,7 @@
     {
       "file": "client/src/social/StoryTab.tsx",
       "domain": "discovery-social",
-      "sha256": "c8cc8c1b8e3247cd183fb8bf94b2bfca61fd0fdddc2878de0ab3c794ed88cdb9",
+      "sha256": "8e7070fec9fcccca8c330bd07ff4dcf9152f9bb7f17740a65aa7baeb38845b70",
       "lines": 248,
       "imports": [
         "react",
