@@ -259,6 +259,28 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+      - name: Publier l'APK dans une Release (lien direct, sans connexion)
+        # Le lien d'artifact exige une connexion GitHub. Une Release donne un lien de
+        # téléchargement direct. Un tag par commit : rien n'est écrasé. Échec ⇒ avertissement,
+        # le build reste vert (l'APK reste dans l'artifact).
+        if: success() && github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -uo pipefail
+          SHORT="${GITHUB_SHA::7}"
+          TAG="apk-${SHORT}"
+          APK_SRC=$(ls "$GITHUB_WORKSPACE"/apps/mobile/android/app/build/outputs/apk/release/*.apk 2>/dev/null | head -n 1)
+          if [ -z "$APK_SRC" ]; then
+            echo "::warning::APK introuvable — pas de Release"
+            exit 0
+          fi
+          APK="$RUNNER_TEMP/AYROVI-demo-${SHORT}.apk"
+          cp "$APK_SRC" "$APK"
+          NOTES="APK démo — commit \`${GITHUB_SHA}\`. Build : https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          gh release create "$TAG" "$APK" --target "$GITHUB_SHA" --prerelease \
+            --title "APK démo ${SHORT}" --notes "$NOTES" \
+            || echo "::warning::publication de la Release impossible"
       - name: Publier la mesure dans le dépôt
         # ⚠️ Deux leçons, payées par un build rouge :
         #
