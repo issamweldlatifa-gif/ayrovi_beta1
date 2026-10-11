@@ -6,11 +6,12 @@
  * comme tel — c'est un repère, pas le prix du jour.
  */
 import { useState } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AppText, Button, Card } from '@/design/ui';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
+import { AppImage } from '@/design/appImage';
 import { useI18n } from '@/i18n';
 import { fetchFavorites, removeFavorite } from '@/api/account';
 import { mediaUrl } from '@/api/client';
@@ -52,10 +53,10 @@ export default function FavoritesScreen() {
         <Card key={favorite.id}>
           <View style={styles.row}>
             {favorite.imageUrl ? (
-              <Image
-                source={{ uri: mediaUrl(favorite.imageUrl) }}
+              <AppImage
+                uri={mediaUrl(favorite.imageUrl)}
                 style={[styles.thumb, { borderRadius: theme.radius.control, borderColor: theme.colors.line }]}
-                resizeMode="cover"
+                contentFit="cover"
                 accessibilityLabel={favorite.title}
               />
             ) : null}

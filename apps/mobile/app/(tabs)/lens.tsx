@@ -14,35 +14,48 @@
  * الاختيار يفتح مسار AYWEBs: نفس المتجر، نفس الكابتشر، ونفس «Add to Cart» —
  * لأن الإضافة ما تتقرّرش هنا، تتقرّر في الخادم.
  */
-import { useCallback, useState } from 'react';
-import { ActivityIndicator, Image, StyleSheet, View } from 'react-native';
+import { useCallback, useRef, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useMutation, useQuery } from '@tanstack/react-query';
 
 import { AppScreen } from '@/design/layout';
 import { AppHeader } from '@/features/shell/AppHeader';
-import { AppText, Button, Card, Field, KeyValue, ResponsiveActionGroup, SectionHeader } from '@/design/ui';
+import { AppText, Button, Card, Field, KeyValue, ResponsiveActionGroup, SectionHeader, Segmented } from '@/design/ui';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
+import { AppImage } from '@/design/appImage';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
 import { isApiError, userMessage } from '@/api/errors';
 import {
-  LENS_MIN_TEXT, analyzeLensImage, analyzeLensText, chooseLensEvent, createLensWatch,
+  LENS_MIN_TEXT, analyzeLensText, chooseLensEvent, createLensWatch,
   fetchLensHistory, lensUploadInputFrom, type LensAnalysis, type LensCandidate,
 } from '@/api/lens';
-import { CandidateCard } from '@/features/lens/CandidateCard';
+import { analyzeLensImageStream, type LensProgress } from '@/api/lensStream';
+import { LensResultCard } from '@/features/lens/LensResultCard';
+import { LensProgressSheet } from '@/features/lens/LensProgressSheet';
+
+/** طريقة البحث: صورة، أو مسح مباشر (QR/باركود)، أو رابط/رمز نصّي. */
+type LensMode = 'photo' | 'live' | 'code';
 
 export default function LensScreen() {
   const theme = useTheme();
   const { t, locale } = useI18n();
 
+  const [mode, setMode] = useState<LensMode>('photo');
   const [preview, setPreview] = useState('');
   const [text, setText] = useState('');
   const [analysis, setAnalysis] = useState<LensAnalysis | null>(null);
   const [textResults, setTextResults] = useState<LensCandidate[] | null>(null);
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
+  /** Étape en cours et fiches déjà reçues pendant l'analyse en flux. */
+  const [progress, setProgress] = useState<LensProgress | null>(null);
+  const [streamCards, setStreamCards] = useState<LensCandidate[]>([]);
+  const [canRetry, setCanRetry] = useState(false);
+  const streamController = useRef<AbortController | null>(null);
+  const lastAsset = useRef<ImagePicker.ImagePickerAsset | null>(null);
 
   const history = useQuery({
     queryKey: ['lens', 'history'],
@@ -56,23 +69,57 @@ export default function LensScreen() {
     setNote(isApiError(error) ? userMessage(error)[locale] : t('lens.failed'));
   }, [locale, t]);
 
-  /** نفس مسار الموقع: نبعثو الملف للخادم، وهو اللي يقرا ويحكم. */
+  /**
+   * نفس مسار الموقع: نبعثو الملف للخادم، وهو اللي يقرا ويحكم.
+   * التحليل يجي في تدفق: كل خطوة وكل فيشة تظهر حين يرسلها الخادم.
+   */
   const analyzeAsset = useCallback(async (asset: ImagePicker.ImagePickerAsset) => {
+    lastAsset.current = asset;
     setNote('');
+    setCanRetry(false);
     setAnalysis(null);
     setTextResults(null);
+    setStreamCards([]);
+    setProgress(null);
     setPreview(asset.uri);
+    streamController.current?.abort();
+    const controller = new AbortController();
+    streamController.current = controller;
     setBusy(true);
     try {
-      const result = await analyzeLensImage(lensUploadInputFrom(asset));
+      const result = await analyzeLensImageStream(
+        lensUploadInputFrom(asset),
+        {
+          onProgress: setProgress,
+          onCard: (candidate) => setStreamCards((prev) => (
+            prev.some((item) => item.sourceUrl === candidate.sourceUrl) ? prev : [...prev, candidate]
+          )),
+        },
+        { signal: controller.signal },
+      );
       setAnalysis(result);
+      setStreamCards([]);
       if (!result.candidates.length) setNote(t('lens.noResults'));
     } catch (error) {
+      setStreamCards([]);
+      // إلغاء المستخدم ما يستحقّش رسالة خطأ.
+      if (isApiError(error) && error.isAborted) return;
+      setCanRetry(true);
       fail(error);
     } finally {
       setBusy(false);
+      setProgress(null);
+      if (streamController.current === controller) streamController.current = null;
     }
   }, [fail, t]);
+
+  const cancelAnalysis = useCallback(() => {
+    streamController.current?.abort();
+  }, []);
+
+  const retryAnalysis = useCallback(() => {
+    if (lastAsset.current) void analyzeAsset(lastAsset.current);
+  }, [analyzeAsset]);
 
   const pickFrom = useCallback(async (source: 'camera' | 'library') => {
     setNote('');
@@ -139,7 +186,7 @@ export default function LensScreen() {
     },
   });
 
-  const candidates = analysis?.candidates ?? textResults ?? [];
+  const candidates = analysis?.candidates ?? textResults ?? streamCards;
 
   return (
     <AppScreen
@@ -152,26 +199,43 @@ export default function LensScreen() {
         صار `SectionHeader` (§18.2-3): نفس المحتوى، بمكوّن موحّد.
       */}
       <SectionHeader title={t('screen.lens.subtitle')} hint={t('screen.lens.body')} />
+      <Segmented<LensMode>
+        label={t('lens.mode.label')}
+        value={mode}
+        onChange={setMode}
+        options={[
+          { value: 'photo', label: t('lens.mode.photo') },
+          { value: 'live', label: t('lens.mode.live') },
+          { value: 'code', label: t('lens.mode.code') },
+        ]}
+      />
+      {mode === 'photo' ? (
       <Card title={t('lens.photoTitle')} hint={t('lens.photoHint')}>
         <ResponsiveActionGroup>
-          <Button label={t('lens.camera')} onPress={() => pickFrom('camera')} busy={busy} disabled={busy} />
-          <Button label={t('lens.gallery')} tone="quiet" onPress={() => pickFrom('library')} disabled={busy} />
+          <Button label={t('lens.camera')} onPress={() => pickFrom('camera')} busy={busy} disabled={busy} testID="lens-camera" />
+          <Button label={t('lens.gallery')} tone="quiet" onPress={() => pickFrom('library')} disabled={busy} testID="lens-gallery" />
         </ResponsiveActionGroup>
-        {preview ? <Image source={{ uri: preview }} style={styles.preview} resizeMode="contain" /> : null}
+        {preview ? (
+          <AppImage uri={preview} style={styles.preview} contentFit="contain" accessibilityLabel={t('lens.previewAlt')} />
+        ) : null}
         {busy ? (
-          <View style={styles.row}>
-            <ActivityIndicator />
-            <AppText variant="caption" color={theme.colors.muted}>{t('lens.analyzing')}</AppText>
-          </View>
+          <LensProgressSheet progress={progress} cardCount={streamCards.length} onCancel={cancelAnalysis} />
         ) : null}
         {note ? (
           <AppText variant="caption" color={theme.status.danger.fg} accessibilityRole="alert">{note}</AppText>
         ) : null}
+        {canRetry && !busy && lastAsset.current ? (
+          <Button label={t('lens.progress.retry')} tone="quiet" onPress={retryAnalysis} />
+        ) : null}
       </Card>
 
+      ) : null}
+
+      {mode === 'code' ? (
       <Card title={t('lens.textTitle')} hint={t('lens.textHint')}>
         <Field
           label={t('lens.textLabel')}
+          accessibilityLabel={t('lens.textLabel')}
           value={text}
           onChangeText={setText}
           placeholder={t('lens.textPlaceholder')}
@@ -181,6 +245,7 @@ export default function LensScreen() {
         <Button
           label={t('lens.search')}
           tone="quiet"
+          testID="lens-search"
           busy={searchByText.isPending}
           disabled={text.trim().length < LENS_MIN_TEXT || searchByText.isPending}
           onPress={() => searchByText.mutate(text.trim())}
@@ -189,6 +254,8 @@ export default function LensScreen() {
           <ErrorBlock error={searchByText.error} onRetry={() => searchByText.mutate(text.trim())} />
         ) : null}
       </Card>
+
+      ) : null}
 
       {analysis ? (
         <Card title={t('lens.analysisTitle')}>
@@ -217,7 +284,7 @@ export default function LensScreen() {
       {candidates.length ? (
         <Card title={t('lens.resultsTitle')} hint={t('lens.resultsHint')}>
           {candidates.map((candidate, index) => (
-            <CandidateCard
+            <LensResultCard
               key={candidate.id || `${candidate.sourceUrl}-${index}`}
               candidate={candidate}
               onOpen={openCandidate}
@@ -228,9 +295,11 @@ export default function LensScreen() {
         </Card>
       ) : null}
 
-      <Card title={t('lens.scanTitle')} hint={t('lens.scanHint')}>
-        <Button label={t('lens.scanOpen')} onPress={() => router.push('/lens/scan')} />
-      </Card>
+      {mode === 'live' ? (
+        <Card title={t('lens.scanTitle')} hint={t('lens.scanHint')}>
+          <Button label={t('lens.scanOpen')} onPress={() => router.push('/lens/scan')} />
+        </Card>
+      ) : null}
 
       <Card title={t('lens.watchTitle')} hint={t('lens.watchHint')}>
         <Button label={t('lens.watchOpen')} tone="quiet" onPress={() => router.push('/lens/watches')} />
@@ -242,7 +311,7 @@ export default function LensScreen() {
 
       <Card title={t('lens.historyTitle')}>
         {history.isPending ? (
-          <LoadingBlock label={{ fr: 'Chargement…', ar: 'جارٍ التحميل…' }} />
+          <LoadingBlock labelKey="loading.generic" />
         ) : history.isError ? (
           <ErrorBlock error={history.error} onRetry={() => { history.refetch(); }} />
         ) : (history.data ?? []).length === 0 ? (

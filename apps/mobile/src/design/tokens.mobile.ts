@@ -59,6 +59,31 @@ export const SPACE_EXTENDED = [2, 6, 10, 20, 40] as const;
 /** Échelle complète : identité + compléments, triée. */
 export const SPACE_ALL: readonly number[] = [...SPACE, ...SPACE_EXTENDED].sort((a, b) => a - b);
 
+/* ── Ratios des médias (un seul endroit : pas de nombre en dur dans les écrans) ─ */
+
+/**
+ * Proportions largeur/hauteur des images de carte. La LARGEUR d'une image vient
+ * toujours de la colonne (`AppScreen` : une seule marge d'écran) ; ce jeton ne
+ * fixe que la hauteur. Ainsi « à la une » et les autres cartes suivent la même
+ * règle sur tous les appareils.
+ */
+export const MEDIA_RATIO = {
+  square: 1,
+  /** Reels verticaux : 9:16 (comme la vidéo plein écran). */
+  reel: 9 / 16,
+} as const;
+
+/**
+ * Vignettes Reels de l'accueil : `widthFraction` de la colonne utile ; le reste
+ * laisse dépasser la vignette suivante (indice de défilement horizontal).
+ */
+/** Fond derrière une vidéo plein écran (la vidéo ne couvre pas toujours l'écran entier). */
+export const VIDEO_BACKDROP = '#000000';
+
+export const REEL_TILE = {
+  widthFraction: 0.66,
+} as const;
+
 /* ── Rayons (§2 — Radius Tokens) ──────────────────────────────────────────── */
 
 /**
@@ -376,6 +401,21 @@ export function derivedColors(colors: DerivablePalette) {
     onMedia: '#FFFFFF',
     /** Voile sous ce texte, pour garantir le contraste sur une photo claire. */
     mediaScrim: alpha('#000000', 0.4),
+    /**
+     * Texte posé sur un fond ADAPTATIF CLAIR (pastel extrait de l'image par le
+     * serveur, ou override manuel clair) : noir dans les DEUX modes.
+     *
+     * Pourquoi pas `ink` ? Parce qu'un fond adaptatif clair reste clair quel
+     * que soit le thème : `ink` vaut `#FFFFFF` en sombre — un titre blanc sur
+     * pastel clair serait illisible. C'est le même raisonnement que `onMedia`,
+     * appliqué au carrousel Hero (§5.3 : contraste garanti sur fond adaptatif).
+     */
+    onAdaptiveLight: '#000000',
+    /**
+     * Texte posé sur un fond ADAPTATIF SOMBRE (override manuel Admin foncé) :
+     * blanc dans les DEUX modes — le pendant de `onAdaptiveLight`.
+     */
+    onAdaptiveDark: '#FFFFFF',
   } as const;
 }
 
@@ -416,3 +456,31 @@ export const OPACITY = {
 export const shadowFor = (level: ElevationName) => elevation[level];
 
 export const isAndroid = Platform.OS === 'android';
+
+/* ── Carrousel Hero — palette de la démo embarquée ─────────────────────────── */
+
+/**
+ * Couleur de fond de chaque carte de démo : moyenne du bas du visuel (là où
+ * le fondu se dissout). En production, le serveur extrait cette palette lui-même.
+ */
+export const HERO_DEMO_BACKGROUND = {
+  tech: '#252B2D',
+  modeHomme: '#A09C96',
+  modeFemme: '#997B68',
+  sport: '#A78F7A',
+} as const;
+
+/**
+ * Bleu des liens légaux (écran de connexion). La palette de la marque est
+ * monochrome + orange : ce bleu est donc un choix explicite, réservé aux liens
+ * « Conditions » et « Confidentialité », lisible sur fond clair et sombre.
+ */
+export const LINK_BLUE = { light: '#1A56DB', dark: '#8AB4FF' } as const;
+
+/** Couleurs officielles du logo « G » de Google (identité de marque, à ne pas modifier). */
+export const GOOGLE_BRAND = {
+  red: '#EA4335',
+  blue: '#4285F4',
+  yellow: '#FBBC05',
+  green: '#34A853',
+} as const;

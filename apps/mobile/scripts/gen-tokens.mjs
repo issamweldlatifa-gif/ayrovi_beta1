@@ -57,8 +57,10 @@ ${block('MOTION', identity.motion, 'Durées d’animation (ms).')}
 ${block('GEOMETRY', identity.geometry, 'Rayons, cibles tactiles, grille d’icônes.')}
 ${block('TYPOGRAPHY', identity.typography, 'Graisses et interlignes ; `stack` est la pile CSS du site, non utilisable en React Native.')}
 ${block('FONTS', {
-  latin: { regular: 'ZalandoSans-Regular', bold: 'ZalandoSans-Bold' },
-  arabic: { regular: 'NotoSansArabic-Regular', bold: 'NotoSansArabic-Bold' },
+  // semibold = titres (plus légers que le gras). L'arabe n'a pas encore de graisse
+  // intermédiaire embarquée : ses titres gardent la graisse grasse.
+  latin: { regular: 'ZalandoSans-Regular', semibold: 'ZalandoSans-SemiBold', bold: 'ZalandoSans-Bold' },
+  arabic: { regular: 'NotoSansArabic-Regular', semibold: 'NotoSansArabic-Bold', bold: 'NotoSansArabic-Bold' },
 }, 'Noms de familles telles que chargées par expo-font (fichiers .ttf embarqués).')}
 
 export type ColorName = keyof typeof COLORS.light;

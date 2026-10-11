@@ -26,6 +26,7 @@ import { useT } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import { useSession } from '@/state/session';
 import { sendInteraction } from '@/api/social';
+import { LinkedProductCard } from '@/features/shopping/LinkedProductCard';
 import type { StoryItem } from '@/api/sections';
 import { useAyWebsSessionId } from '@/features/aywebs/session';
 
@@ -160,7 +161,7 @@ export function StoryViewer({ stories, initialIndex = 0, visible, onClose, onOpe
         {/* في العربية «التالي» على اليسار: القراءة تبدأ من اليمين. */}
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="previous"
+          accessibilityLabel={t('social.previous')}
           onPress={goPrev}
           onLongPress={() => setPaused(true)}
           onPressOut={() => setPaused(false)}
@@ -168,7 +169,7 @@ export function StoryViewer({ stories, initialIndex = 0, visible, onClose, onOpe
         />
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="next"
+          accessibilityLabel={t('social.next')}
           onPress={goNext}
           onLongPress={() => setPaused(true)}
           onPressOut={() => setPaused(false)}
@@ -190,9 +191,18 @@ export function StoryViewer({ stories, initialIndex = 0, visible, onClose, onOpe
 
         {/* التذييل: العنوان + الإجراءات */}
         <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
-          {current.title ? <AppText variant="title" weight="bold" color={theme.colors.onMedia}>{current.title}</AppText> : null}
+          {current.title ? <AppText variant="title" weight="semibold" color={theme.colors.onMedia}>{current.title}</AppText> : null}
           {current.description ? (
             <AppText variant="caption" color={theme.colors.onMedia} numberOfLines={3}>{current.description}</AppText>
+          ) : null}
+
+          {current.product ? (
+            <LinkedProductCard
+              product={current.product}
+              variant="overlay"
+              testID="story-linked-product"
+              onOpen={onOpenTarget ? () => onOpenTarget(current) : undefined}
+            />
           ) : null}
 
           <View style={styles.actions}>

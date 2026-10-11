@@ -8,13 +8,15 @@
  * والقاعدة ثابتة: **الإعجاب يحتاج حساباً** ⇒ الزر معطّل بسبب مكتوب.
  */
 import { useCallback, useState } from 'react';
-import { FlatList, Image, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, Modal, Pressable, StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { AppText } from '@/design/ui';
+import { LinkedProductCard } from '@/features/shopping/LinkedProductCard';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { SubScreen } from '@/design/subScreen';
 import { useTheme } from '@/design/theme';
+import { AppImage } from '@/design/appImage';
 import { useT } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import { usePublications, useSocialCounts } from '@/api/hooks';
@@ -69,13 +71,15 @@ export default function PublicationsScreen() {
           return (
             <View style={[styles.card, { backgroundColor: theme.colors.surface, borderRadius: theme.radius.card }]}>
               {item.imageUrl ? (
-                <Image source={{ uri: mediaUrl(item.imageUrl) }} style={styles.image} resizeMode="cover" />
+                <AppImage uri={mediaUrl(item.imageUrl)} style={styles.image} contentFit="cover" accessibilityLabel={item.title ?? undefined} decorative={!item.title} />
               ) : null}
               <View style={styles.body}>
                 {item.title ? <AppText variant="label" weight="bold">{item.title}</AppText> : null}
                 {item.subtitle ? (
                   <AppText variant="caption" color={theme.colors.muted}>{item.subtitle}</AppText>
                 ) : null}
+
+                {item.product ? <LinkedProductCard product={item.product} testID={`publication-product-${item.id}`} /> : null}
 
                 <View style={styles.actions}>
                   <Pressable
@@ -118,7 +122,7 @@ export default function PublicationsScreen() {
 
       <Modal visible={commentsFor !== null} animationType="slide" onRequestClose={closeComments}>
         <View style={[styles.sheet, { backgroundColor: theme.colors.canvas }]}>
-          <AppText variant="title" weight="bold">{t('social.comments')}</AppText>
+          <AppText variant="title" weight="semibold">{t('social.comments')}</AppText>
           {commentsFor ? <Comments targetId={commentsFor.id} /> : null}
           <Pressable accessibilityRole="button" onPress={closeComments} style={styles.closeBtn}>
             <AppText variant="label" weight="bold" color={theme.colors.ink}>{t('social.close')}</AppText>

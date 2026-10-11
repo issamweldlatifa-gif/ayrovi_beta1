@@ -13,14 +13,17 @@
  *  • الرقم النهائي هو رقم الخادم، وسطر السلّة ينكتب على الخادم (`cartItemId`
  *    يتقال كما هو) — التطبيق ما يعلنش نجاحاً من عندو.
  */
-import { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, StyleSheet, View } from 'react-native';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import { CameraView } from 'expo-camera';
 
-import { AppText, Button, Card, Field, KeyValue, ResponsiveActionGroup } from '@/design/ui';
+import { AppText, Button, Card, Field, KeyValue, ResponsiveActionGroup, Segmented } from '@/design/ui';
 import { SubScreen } from '@/design/subScreen';
 import { useTheme } from '@/design/theme';
+import { AppImage } from '@/design/appImage';
+import { VIDEO_BACKDROP } from '@/design/tokens.mobile';
 import { useI18n } from '@/i18n';
 import { isApiError, userMessage } from '@/api/errors';
 import {
@@ -43,6 +46,10 @@ export default function OcerexScreen() {
   const [committed, setCommitted] = useState('');
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
+  const [viewfinder, setViewfinder] = useState(false);
+  /** لقطات الجلسة الأخيرة (ذاكرة الشاشة فقط — ما تتخزنش على الجهاز). */
+  const [shots, setShots] = useState<string[]>([]);
+  const cameraRef = useRef<CameraView>(null);
 
   const readiness = useMemo(() => ocerexReadiness(extraction), [extraction]);
 
@@ -50,26 +57,16 @@ export default function OcerexScreen() {
     setNote(isApiError(error) ? userMessage(error)[locale] : `${t(fallbackKey)} — ${ocerexErrorMessage(error)}`);
   }, [locale, t]);
 
-  const analyze = useCallback(async (source: 'camera' | 'library') => {
+  /** المسار المشترك: أي صورة (لقطة مباشرة أو من المعرض) تمشي من هنا. */
+  const processAsset = useCallback(async (asset: { uri: string; mimeType?: string | null; fileName?: string | null }) => {
     setNote('');
+    setPreview(asset.uri);
+    setShots((prev) => [asset.uri, ...prev.filter((uri) => uri !== asset.uri)].slice(0, 4));
+    setBusy(true);
+    setExtraction(null);
+    setResolution(null);
+    setCommitted('');
     try {
-      const permission = source === 'camera'
-        ? await ImagePicker.requestCameraPermissionsAsync()
-        : await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permission.granted) {
-        setNote(t('lens.permissionDenied'));
-        return;
-      }
-      const result = source === 'camera'
-        ? await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.9 })
-        : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.9 });
-      if (result.canceled || !result.assets?.length) return;
-      const asset = result.assets[0];
-      setPreview(asset.uri);
-      setBusy(true);
-      setExtraction(null);
-      setResolution(null);
-      setCommitted('');
       const mimeType = String(asset.mimeType ?? '').toLowerCase()
         || (/\.png$/i.test(asset.uri) ? 'image/png' : /\.webp$/i.test(asset.uri) ? 'image/webp' : 'image/jpeg');
       const outcome = await analyzeOcerexImage(
@@ -86,6 +83,46 @@ export default function OcerexScreen() {
       setBusy(false);
     }
   }, [report, sessionId, t]);
+
+  /** يحلّ إذن الكاميرا ويفتح منظار التصوير داخل التطبيق (CameraView). */
+  const openViewfinder = useCallback(async () => {
+    setNote('');
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      setNote(t('lens.permissionDenied'));
+      return;
+    }
+    setViewfinder(true);
+  }, [t]);
+
+  const shoot = useCallback(async () => {
+    const camera = cameraRef.current;
+    if (!camera || busy) return;
+    try {
+      const photo = await camera.takePictureAsync({ quality: 0.9 });
+      if (!photo?.uri) return;
+      setViewfinder(false);
+      await processAsset({ uri: photo.uri, mimeType: 'image/jpeg' });
+    } catch (error) {
+      report(error, 'ocerex.failed');
+    }
+  }, [busy, processAsset, report]);
+
+  const analyzeLibrary = useCallback(async () => {
+    setNote('');
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        setNote(t('lens.permissionDenied'));
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.9 });
+      if (result.canceled || !result.assets?.length) return;
+      await processAsset(result.assets[0]);
+    } catch (error) {
+      report(error, 'ocerex.failed');
+    }
+  }, [processAsset, report, t]);
 
   const calculate = useCallback(async () => {
     if (!extraction || !readiness.canCalculate) return;
@@ -173,11 +210,73 @@ export default function OcerexScreen() {
   return (
     <SubScreen title={t('ocerex.title')} subtitle={t('ocerex.hint')} fallback="/lens">
       <Card>
-        <ResponsiveActionGroup>
-          <Button label={t('lens.camera')} onPress={() => analyze('camera')} disabled={busy || !sessionId} />
-          <Button label={t('lens.gallery')} tone="quiet" onPress={() => analyze('library')} disabled={busy || !sessionId} />
-        </ResponsiveActionGroup>
-        {preview ? <Image source={{ uri: preview }} style={styles.preview} resizeMode="contain" /> : null}
+        {viewfinder ? (
+          <>
+            <Segmented<'camera' | 'import'>
+              value="camera"
+              onChange={(next) => {
+                // «استيراد صورة» يفتح المعرض مباشرة، ويقفل المنظار.
+                if (next === 'import') {
+                  setViewfinder(false);
+                  void analyzeLibrary();
+                }
+              }}
+              options={[
+                { value: 'camera', label: t('ocerex.tab.camera') },
+                { value: 'import', label: t('ocerex.tab.import') },
+              ]}
+            />
+            <View style={styles.viewfinder}>
+              <CameraView ref={cameraRef} style={styles.camera} facing="back">
+                <View style={styles.frameLayer}>
+                  <View style={[styles.frame, { borderColor: theme.colors.onMedia }]} />
+                  <View style={[styles.frameHintChip, { backgroundColor: theme.colors.mediaScrim }]}>
+                    <AppText variant="caption" color={theme.colors.onMedia}>{t('ocerex.frameHint')}</AppText>
+                  </View>
+                </View>
+              </CameraView>
+            </View>
+            <View style={styles.shutterRow}>
+              <Button label={t('ocerex.closeViewfinder')} tone="quiet" onPress={() => setViewfinder(false)} />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('ocerex.shutter')}
+                accessibilityState={{ disabled: busy }}
+                disabled={busy}
+                onPress={() => void shoot()}
+                style={[styles.shutter, { borderColor: theme.colors.ink }]}
+              >
+                <View style={[styles.shutterInner, { backgroundColor: theme.colors.ink }]} />
+              </Pressable>
+              <View style={styles.spacer} />
+            </View>
+          </>
+        ) : (
+          <ResponsiveActionGroup>
+            <Button label={t('lens.camera')} onPress={() => void openViewfinder()} disabled={busy || !sessionId} />
+            <Button label={t('lens.gallery')} tone="quiet" onPress={() => void analyzeLibrary()} disabled={busy || !sessionId} />
+          </ResponsiveActionGroup>
+        )}
+        {preview ? (
+          <AppImage uri={preview} style={styles.preview} contentFit="contain" accessibilityLabel={t('lens.previewAlt')} />
+        ) : null}
+        {shots.length > 1 ? (
+          <View style={styles.thumbs}>
+            {shots.map((uri) => (
+              <Pressable
+                key={uri}
+                accessibilityRole="button"
+                accessibilityLabel={t('ocerex.useRecentShot')}
+                accessibilityState={{ disabled: busy }}
+                disabled={busy}
+                onPress={() => void processAsset({ uri })}
+                style={[styles.thumb, { borderColor: uri === preview ? theme.colors.action : theme.colors.line }]}
+              >
+                <AppImage uri={uri} style={styles.thumbImage} contentFit="cover" accessibilityLabel={t('ocerex.useRecentShot')} />
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
         {busy ? (
           <View style={styles.row}>
             <ActivityIndicator />
@@ -195,8 +294,8 @@ export default function OcerexScreen() {
           <KeyValue label={t('ocerex.confidence')} value={confidenceText(extraction.confidenceLevel)} />
           <KeyValue
             label={t('ocerex.referencePrice')}
-            value={extraction.referencePrice != null
-              ? `${extraction.referencePrice} ${extraction.currency || '?'}`
+            value={extraction.referenceTnd != null
+              ? `${extraction.referenceTnd.toFixed(2)} DT`
               : t('ocerex.noReferencePrice')}
           />
           {extraction.productTitle ? (
@@ -318,6 +417,18 @@ export default function OcerexScreen() {
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: 8, alignItems: 'center', marginTop: 6 },
   preview: { width: '100%', height: 220, marginTop: 8 },
+  viewfinder: { width: '100%', height: 360, marginTop: 8, borderRadius: 12, overflow: 'hidden', backgroundColor: VIDEO_BACKDROP },
+  camera: { flex: 1 },
+  frameLayer: { flex: 1, padding: 24, alignItems: 'center', justifyContent: 'space-between' },
+  frame: { flex: 1, width: '100%', borderWidth: 2, borderRadius: 8 },
+  frameHintChip: { marginTop: 12, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 6 },
+  shutterRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 },
+  shutter: { width: 72, height: 72, borderRadius: 36, borderWidth: 4, alignItems: 'center', justifyContent: 'center' },
+  shutterInner: { width: 56, height: 56, borderRadius: 28 },
+  spacer: { width: 96 },
+  thumbs: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  thumb: { borderWidth: 2, borderRadius: 8, overflow: 'hidden' },
+  thumbImage: { width: 56, height: 56 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
   chip: { borderWidth: 1, paddingHorizontal: 12, justifyContent: 'center', alignItems: 'center', minWidth: 64 },
 });

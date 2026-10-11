@@ -14,7 +14,7 @@
  * اللي مانعملهاش. مسلك الشراء الكامل = Q5.
  */
 import { useCallback } from 'react';
-import { Image, Linking, ScrollView, StyleSheet, View } from 'react-native';
+import { Linking, ScrollView, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -22,12 +22,13 @@ import { AppText, Button, Card, KeyValue } from '@/design/ui';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { SubScreen } from '@/design/subScreen';
 import { useTheme } from '@/design/theme';
+import { AppImage } from '@/design/appImage';
 import { useT } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import { addCatalogFavorite, fetchFavorites } from '@/api/account';
 import { addCatalogToCart } from '@/api/cart';
 import { isApiError } from '@/api/errors';
-import { fetchCatalogProducts, normalizeStockStatus } from '@/api/catalog';
+import { fetchCatalogProduct, fetchCatalogProducts, normalizeStockStatus } from '@/api/catalog';
 import { useSession } from '@/state/session';
 
 export default function ProductScreen() {
@@ -51,7 +52,16 @@ export default function ProductScreen() {
     enabled: signedIn,
   });
 
-  const product = (products.data ?? []).find((entry) => entry.id === id) ?? null;
+  // La fiche se lit par identifiant : un produit lié à un contenu n'est pas forcément
+  // dans les 50 premiers de la liste. La liste reste en secours.
+  const byId = useQuery({
+    queryKey: ['catalog', 'product', id],
+    queryFn: ({ signal }) => fetchCatalogProduct(String(id), { signal }),
+    enabled: Boolean(id),
+    staleTime: 120_000,
+    retry: false,
+  });
+  const product = byId.data ?? (products.data ?? []).find((entry) => entry.id === id) ?? null;
   const isFavorite = (favorites.data ?? []).some((entry) => entry.productId === id);
 
   /**
@@ -81,7 +91,7 @@ export default function ProductScreen() {
     Linking.openURL(product.sourceUrl).catch(() => null);
   }, [product?.sourceUrl]);
 
-  if (products.isPending) {
+  if (!product && products.isPending && byId.isPending) {
     return (
       <SubScreen title={t('catalog.title')}>
         <LoadingBlock />
@@ -89,7 +99,7 @@ export default function ProductScreen() {
     );
   }
 
-  if (products.isError) {
+  if (!product && products.isError && byId.isError) {
     return (
       <SubScreen title={t('catalog.title')} onRefresh={() => products.refetch()} refreshing={products.isFetching}>
         <ErrorBlock error={products.error} onRetry={() => products.refetch()} />
@@ -127,11 +137,11 @@ export default function ProductScreen() {
       {images.length > 0 ? (
         <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={styles.gallery}>
           {images.map((uri, index) => (
-            <Image
+            <AppImage
               key={`${uri}-${index}`}
-              source={{ uri: mediaUrl(uri) }}
+              uri={mediaUrl(uri)}
               style={styles.image}
-              resizeMode="cover"
+              contentFit="cover"
               accessibilityLabel={`${product.name} — ${index + 1}/${images.length}`}
             />
           ))}
@@ -179,6 +189,7 @@ export default function ProductScreen() {
             onPress={() => addToCart.mutate()}
             busy={addToCart.isPending}
             disabled={addToCart.isSuccess}
+            testID="product-add-to-cart"
           />
         ) : outOfStock ? (
           <AppText variant="caption" color={theme.status.danger.fg}>{t('catalog.stock.out_of_stock')}</AppText>
@@ -193,6 +204,7 @@ export default function ProductScreen() {
             onPress={() => favorite.mutate()}
             busy={favorite.isPending}
             disabled={isFavorite || favorite.isPending}
+            testID="product-favorite"
           />
         ) : null}
       </View>

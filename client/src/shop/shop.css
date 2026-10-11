@@ -126,6 +126,9 @@
 .s-card__price { margin-top: 3px; font-size: 1rem; font-weight: 700; }
 .s-card__price[data-deal="true"] { color: var(--s-danger); }
 .s-card__off { font-size: 0.75rem; line-height: 1rem; font-weight: 700; color: var(--s-danger); }
+.s-card__stock { justify-self: start; align-self: flex-start; margin-top: 4px; min-height: 36px; padding: 0 12px; border: 1px solid currentColor; border-radius: 999px; background: transparent; font: inherit; font-size: 0.8125rem; font-weight: 700; cursor: pointer; }
+.s-card__stock:disabled { cursor: wait; opacity: 0.6; }
+.s-card__stock-note { font-size: 0.75rem; line-height: 1rem; color: var(--s-muted); }
 
 /* Checkout is a real full-screen surface layered over the app shell. The host App
    keeps the underlying Lens session mounted for Back, but its page chrome cannot

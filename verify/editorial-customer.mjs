@@ -15,7 +15,7 @@ try{
   const p=await ctx.newPage();p.on('pageerror',e=>errors.push(e.message));
   for(const width of [320,360,390,768,1360]){
    await p.setViewportSize({width,height:844});await p.goto(base,{waitUntil:'domcontentloaded'});
-   await p.locator('.editorial-hero__title').waitFor();await p.evaluate(()=>document.fonts.ready);
+   await p.locator('[data-hero-layout="carousel"]').waitFor();await p.evaluate(()=>document.fonts.ready);
    const inspect=async(name,selector)=>{
     const el=p.locator(selector).first();await el.waitFor();await p.evaluate(()=>document.fonts.ready);
     const size=await el.evaluate(e=>({client:e.clientWidth,scroll:e.scrollWidth}));check(`${locale}/${width}/${name}: no horizontal overflow`,size.scroll<=size.client+1,size);
@@ -84,7 +84,7 @@ try{
  check('dark muted text is readable token',await p.locator('.assistant-quick-card .text-muted').first().evaluate(e=>getComputedStyle(e).color)==='rgb(189, 189, 189)');
  await p.screenshot({path:output+'/sonim-dark-short.png'});await extra.close();
  const restricted=await browser.newContext();await restricted.addInitScript(()=>Object.defineProperty(window,'localStorage',{get(){throw new DOMException('Blocked','SecurityError');}}));
- const rp=await restricted.newPage();rp.on('pageerror',e=>errors.push(e.message));await rp.goto(base,{waitUntil:'domcontentloaded'});await rp.locator('.editorial-hero__title').waitFor();check('restricted browser storage does not crash the customer shell',await rp.locator('.public-site-header').isVisible());await restricted.close();
+ const rp=await restricted.newPage();rp.on('pageerror',e=>errors.push(e.message));await rp.goto(base,{waitUntil:'domcontentloaded'});await rp.locator('[data-hero-layout="carousel"]').waitFor();check('restricted browser storage does not crash the customer shell',await rp.locator('.public-site-header').isVisible());await restricted.close();
  check('no page errors',errors.length===0,errors);
 }catch(error){errors.push(String(error));process.exitCode=1;}finally{await browser.close();fs.writeFileSync(`${output}/results.json`,JSON.stringify({scope:'Actual locally served app, default CMS content, anonymous navigation; no external AI/OAuth/payment exercised',checks,orange,errors,failures},null,2)+'\n');}
 if(failures.length){console.log('FAILED CHECKS');for(const failure of failures)console.log(failure);process.exitCode=1;}

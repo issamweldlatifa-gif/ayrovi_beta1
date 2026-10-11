@@ -11,10 +11,11 @@
  *
  * الشكل أصلي (React Native) — المرجع الموقع هو **الخاصية**، موش التصميم.
  */
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
+import { AppImage } from '@/design/appImage';
 import { useT, type Translate } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import { normalizeStockStatus, type CatalogProduct } from '@/api/catalog';
@@ -22,6 +23,10 @@ import { normalizeStockStatus, type CatalogProduct } from '@/api/catalog';
 export interface ProductCardProps {
   product: CatalogProduct;
   onOpen: (product: CatalogProduct) => void;
+  /** Largeur/forme imposées par l'écran appelant (ex. liste pleine largeur des résultats Lens). */
+  style?: StyleProp<ViewStyle>;
+  /** Le marchand publie des couleurs ou tailles : repère « Combinaisons disponibles » (donnée réelle seulement). */
+  hasCombinations?: boolean;
 }
 
 /** نصّ المخزون: كل الحالات المعروفة، والباقي «غير مؤكّد» موش فراغ. */
@@ -38,7 +43,7 @@ function stockLabel(status: string, t: Translate): { text: string; tone: 'ok' | 
   }
 }
 
-export function ProductCard({ product, onOpen }: ProductCardProps) {
+export function ProductCard({ product, onOpen, style, hasCombinations = false }: ProductCardProps) {
   const theme = useTheme();
   const t = useT();
   const stock = stockLabel(product.stockStatus, t);
@@ -49,15 +54,23 @@ export function ProductCard({ product, onOpen }: ProductCardProps) {
       accessibilityRole="button"
       accessibilityLabel={`${product.name}${hasPrice ? ` — ${product.finalPrice.toFixed(2)} TND` : ''}`}
       onPress={() => onOpen(product)}
-      style={[styles.card, { borderColor: theme.colors.line, borderRadius: theme.radius.card }]}
+      style={[styles.card, { borderColor: theme.colors.line, borderRadius: theme.radius.card }, style]}
     >
       <View style={[styles.imageFrame, { backgroundColor: theme.colors.surface, borderRadius: theme.radius.card }]}>
         {product.image ? (
-          <Image source={{ uri: mediaUrl(product.image) }} style={styles.image} resizeMode="cover" />
+          <AppImage uri={mediaUrl(product.image)} style={styles.image} contentFit="cover" accessibilityLabel={product.name} />
         ) : (
           <AppText variant="caption" color={theme.colors.muted}>{t('catalog.noImage')}</AppText>
         )}
       </View>
+
+      {hasCombinations ? (
+        <View style={styles.chipRow}>
+          <View style={[styles.chip, { backgroundColor: theme.colors.canvas, borderColor: theme.colors.line, borderRadius: theme.radius.control }]}>
+            <AppText variant="caption" color={theme.colors.ink} numberOfLines={1}>{t('lens.combinations')}</AppText>
+          </View>
+        </View>
+      ) : null}
 
       {product.brandName ? (
         <AppText variant="caption" color={theme.colors.muted} numberOfLines={1}>{product.brandName}</AppText>
@@ -99,6 +112,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   image: { width: '100%', height: '100%' },
+  chipRow: { flexDirection: 'row', marginBottom: 6 },
+  chip: { paddingHorizontal: 8, paddingVertical: 4, borderWidth: StyleSheet.hairlineWidth, alignSelf: 'flex-start' },
   name: { marginTop: 2, minHeight: 34 },
   footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6, gap: 6 },
 });

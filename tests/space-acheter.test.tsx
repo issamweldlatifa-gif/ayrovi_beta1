@@ -51,7 +51,9 @@ describe('espace 01 — acheter', () => {
   it('branche la carte du catalogue sur le tiroir de commande', () => {
     expect(app).toContain('const openCatalogProduct = (product: ScrapedProduct) =>');
     expect(app).toContain('onOpenProduct={openCatalogProduct}');
-    expect(cms).toContain("tr('Commander', 'اطلب الآن')");
+    // La carte du catalogue est la carte boutique : son clic ouvre la fiche/tiroir via onOpenProduct.
+    expect(cms).toContain('<ProductGrid');
+    expect(cms).toContain('onOpenProduct?.(catalogProductToScraped(product))');
   });
 
   it('convertit un produit du catalogue sans recalculer les prix du serveur', () => {

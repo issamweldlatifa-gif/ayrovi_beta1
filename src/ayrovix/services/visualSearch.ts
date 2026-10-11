@@ -34,7 +34,8 @@ async function responseJson(response: Response, maxBytes = 2_000_000): Promise<a
 }
 
 function serpApiKey(): string | null {
-  return process.env.SERPAPI_KEY?.trim() || null;
+  // Alias accepté : SERPAPI_KEY (nom canonique) ou SERPAPI_API_KEY (utilisé par productEnrichment / variantAvailability).
+  return process.env.SERPAPI_KEY?.trim() || process.env.SERPAPI_API_KEY?.trim() || null;
 }
 
 export function serpApiVisualReady(): boolean {

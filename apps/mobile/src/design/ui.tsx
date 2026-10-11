@@ -4,22 +4,23 @@
  */
 import { Children, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
-  Animated, Dimensions, Modal, Pressable, StyleSheet, Switch,
+  ActivityIndicator, Animated, Dimensions, Modal, Pressable, StyleSheet, Switch,
   Text, TextInput, View, useWindowDimensions,
   type StyleProp, type TextInputProps, type TextProps, type TextStyle as RNTextStyle,
   type LayoutChangeEvent, type ViewStyle,
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme, webDirection, type TextRole } from './theme';
-import { actionDirectionFor, responsiveMetricsFor } from './layoutLogic';
+import { useTheme, webDirection, type FontWeightName, type TextRole } from './theme';
+import { actionDirectionFor, responsiveMetricsFor, rowDirectionFor } from './layoutLogic';
+import { useT } from '@/i18n';
 
 /* ── Texte ─────────────────────────────────────────────────────────────────── */
 
 export interface AppTextProps {
   children: ReactNode;
   variant?: TextRole;
-  weight?: 'regular' | 'bold';
+  weight?: FontWeightName;
   color?: string;
   align?: 'auto' | 'center';
   numberOfLines?: number;
@@ -147,9 +148,24 @@ export function SectionHeader({
 export function KeyValue({ label, value }: { label: string; value: string }) {
   const theme = useTheme();
   return (
-    <View style={[styles.kv, { borderTopColor: theme.colors.line }]}>
+    <View
+      style={[
+        styles.kv,
+        {
+          borderTopColor: theme.colors.line,
+          // En arabe, le libellé part à droite et la valeur à gauche.
+          flexDirection: rowDirectionFor(theme.isRTL),
+        },
+      ]}
+    >
       <AppText variant="caption" color={theme.colors.muted}>{label}</AppText>
-      <AppText variant="caption" weight="bold" style={styles.kvValue}>{value}</AppText>
+      <AppText
+        variant="caption"
+        weight="bold"
+        style={[styles.kvValue, { textAlign: theme.isRTL ? 'left' : 'right' }]}
+      >
+        {value}
+      </AppText>
     </View>
   );
 }
@@ -179,8 +195,10 @@ export function Segmented<T extends string>({
                 {
                   minHeight: theme.geometry.minTarget,
                   backgroundColor: active ? theme.colors.action : 'transparent',
-                  borderLeftWidth: index === 0 ? 0 : StyleSheet.hairlineWidth,
-                  borderLeftColor: theme.colors.lineControl,
+                  // Le séparateur suit le côté de la lecture, pas la gauche.
+                  [theme.isRTL ? 'borderRightWidth' : 'borderLeftWidth']:
+                    index === 0 ? 0 : StyleSheet.hairlineWidth,
+                  [theme.isRTL ? 'borderRightColor' : 'borderLeftColor']: theme.colors.lineControl,
                 },
               ]}
             >
@@ -205,6 +223,8 @@ export function Segmented<T extends string>({
 export interface ButtonProps {
   label: string;
   onPress: () => void;
+  /** Pictogramme posé avant le libellé (ex. logo Google). */
+  leading?: ReactNode;
   /** `busy` = action en cours : le bouton le DIT au lieu de rester muet. */
   busy?: boolean;
   disabled?: boolean;
@@ -218,34 +238,70 @@ export interface ButtonProps {
   block?: boolean;
   /** Laisse le parent décider (ex. `flex: 1` dans une rangée). */
   style?: StyleProp<ViewStyle>;
+  /** Contexte lu par le lecteur d'écran (ex. « passer à la caisse »). */
+  accessibilityHint?: string;
+  testID?: string;
 }
 
-export function Button({ label, onPress, busy = false, disabled = false, tone = 'primary', block = false, style }: ButtonProps) {
+/** Épaisseur du contour des boutons « quiet » (référence : contour net, pas un filet). */
+export const BUTTON_OUTLINE_WIDTH = 2;
+
+export function Button({ label, onPress, busy = false, disabled = false, tone = 'primary', block = false, style, accessibilityHint, testID, leading }: ButtonProps) {
   const theme = useTheme();
   const blocked = busy || disabled;
   const quiet = tone === 'quiet';
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled: blocked, busy }}
       disabled={blocked}
       onPress={onPress}
+      testID={testID}
       style={({ pressed }) => [
         styles.button,
         block ? { alignSelf: 'stretch' } : null,
         style,
         {
           minHeight: theme.geometry.controlHeight,
-          borderRadius: theme.radius.control,
+          // Système de boutons : pastille (CTA), contour encre épais en mode « quiet ».
+          borderRadius: theme.radius.cta,
+          borderWidth: quiet ? BUTTON_OUTLINE_WIDTH : StyleSheet.hairlineWidth,
           backgroundColor: quiet ? 'transparent' : theme.colors.action,
-          borderColor: quiet ? theme.colors.lineControl : theme.colors.action,
+          borderColor: quiet ? theme.colors.ink : theme.colors.action,
           opacity: blocked ? 0.5 : pressed ? 0.85 : 1,
         },
       ]}
     >
-      <AppText variant="label" weight="bold" color={quiet ? theme.colors.ink : theme.colors.onAction}>
-        {label}
-      </AppText>
+      {leading ? (
+        // Pictogramme (ex. logo Google) posé avant le libellé, dans le sens de lecture.
+        <View style={[styles.leadingRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+          {leading}
+          <AppText variant="label" weight="bold" color={quiet ? theme.colors.ink : theme.colors.onAction}>
+            {label}
+          </AppText>
+        </View>
+      ) : (
+        <AppText variant="label" weight="bold" color={quiet ? theme.colors.ink : theme.colors.onAction}>
+          {label}
+        </AppText>
+      )}
+      {/* Attente visible DANS le bouton, côté fin de ligne (comme les grands services) : le libellé reste centré. */}
+      {busy ? (
+        <View
+          pointerEvents="none"
+          style={[styles.busyIndicator, theme.isRTL ? { left: 16 } : { right: 16 }]}
+        >
+          <ActivityIndicator
+            testID={testID ? `${testID}-busy` : undefined}
+            size="small"
+            color={quiet ? theme.colors.ink : theme.colors.onAction}
+            importantForAccessibility="no"
+            accessibilityElementsHidden
+          />
+        </View>
+      ) : null}
     </Pressable>
   );
 }
@@ -261,7 +317,7 @@ export function ResponsiveActionGroup({ children, style, testID }: {
 }) {
   const theme = useTheme();
   const { width } = useWindowDimensions();
-  const direction = actionDirectionFor(responsiveMetricsFor(width).breakpoint);
+  const direction = actionDirectionFor(responsiveMetricsFor(width).breakpoint, theme.isRTL);
 
   return (
     <View
@@ -291,15 +347,18 @@ export interface LinkRowProps {
 }
 
 /** Ligne cliquable d'un menu : icône, libellé, valeur éventuelle, chevron. */
-export function LinkRow({ label, value, onPress, icon, tone = 'default' }: LinkRowProps) {
+export function LinkRow({ label, value, onPress, icon, tone = 'default', testID }: LinkRowProps & { testID?: string }) {
   const theme = useTheme();
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={label}
       onPress={onPress}
+      testID={testID}
       style={({ pressed }) => [
         styles.linkRow,
         {
+          flexDirection: rowDirectionFor(theme.isRTL),
           minHeight: theme.geometry.minTarget,
           borderTopColor: theme.colors.line,
           opacity: pressed ? 0.7 : 1,
@@ -311,13 +370,19 @@ export function LinkRow({ label, value, onPress, icon, tone = 'default' }: LinkR
           name={icon as keyof typeof Ionicons.glyphMap}
           size={20}
           color={tone === 'danger' ? theme.status.danger.fg : theme.colors.ink}
+          accessibilityElementsHidden
         />
       ) : null}
       <AppText variant="body" color={tone === 'danger' ? theme.status.danger.fg : undefined} style={styles.linkLabel}>
         {label}
       </AppText>
       {value ? <AppText variant="caption" color={theme.colors.muted}>{value}</AppText> : null}
-      <Ionicons name="chevron-forward" size={18} color={theme.colors.muted} />
+      <Ionicons
+        name={theme.isRTL ? 'chevron-back' : 'chevron-forward'}
+        size={18}
+        color={theme.colors.muted}
+        accessibilityElementsHidden
+      />
     </Pressable>
   );
 }
@@ -327,12 +392,14 @@ export function ToggleRow({ label, value, onChange, disabled = false }: {
 }) {
   const theme = useTheme();
   return (
-    <View style={[styles.linkRow, { borderTopColor: theme.colors.line, minHeight: theme.geometry.minTarget }]}>
+    <View style={[styles.linkRow, { flexDirection: rowDirectionFor(theme.isRTL), borderTopColor: theme.colors.line, minHeight: theme.geometry.minTarget }]}>
       <AppText variant="body" style={styles.linkLabel}>{label}</AppText>
       <Switch
         value={value}
         onValueChange={onChange}
         disabled={disabled}
+        accessibilityRole="switch"
+        accessibilityLabel={label}
         trackColor={{ false: theme.colors.lineControl, true: theme.colors.accent }}
         thumbColor={theme.colors.surface}
       />
@@ -371,6 +438,8 @@ export function Field(props: TextInputProps & { label?: string }) {
 }
 
 const styles = StyleSheet.create({
+  leadingRow: { alignItems: 'center', justifyContent: 'center', gap: 10 },
+  busyIndicator: { position: 'absolute', top: 0, bottom: 0, justifyContent: 'center' },
   drawerScrim: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' },
   drawerPanel: {
     position: 'absolute', top: 0, bottom: 0,
@@ -398,7 +467,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     gap: 12, paddingTop: 8, borderTopWidth: StyleSheet.hairlineWidth,
   },
-  kvValue: { flexShrink: 1, textAlign: 'right' },
+  kvValue: { flexShrink: 1 },
   segmentedBlock: { gap: 6 },
   segmented: { flexDirection: 'row', borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
   segment: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
@@ -431,6 +500,7 @@ export interface DrawerProps {
 
 export function Drawer({ visible, onClose, children, side = 'start' }: DrawerProps) {
   const theme = useTheme();
+  const t = useT();
   const insets = useSafeAreaInsets();
   const reduced = theme.motion.reduced === 0;
   const progress = useRef(new Animated.Value(0)).current;
@@ -464,7 +534,12 @@ export function Drawer({ visible, onClose, children, side = 'start' }: DrawerPro
           style={[styles.drawerScrim, { opacity: progress }]}
           accessibilityElementsHidden
         >
-          <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityRole="button" accessibilityLabel="fermer" />
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={onClose}
+            accessibilityRole="button"
+            accessibilityLabel={t('common.close')}
+          />
         </Animated.View>
         <Animated.View
           style={[
@@ -503,10 +578,12 @@ export function DrawerItem({
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={label}
       onPress={onPress}
       style={({ pressed }) => [
         styles.drawerItem,
         {
+          flexDirection: rowDirectionFor(theme.isRTL),
           minHeight: theme.geometry.minTarget,
           backgroundColor: active ? theme.colors.surface : 'transparent',
           borderRadius: theme.radius.control,
@@ -514,12 +591,22 @@ export function DrawerItem({
         },
       ]}
     >
-      <Ionicons name={icon} size={22} color={active ? theme.colors.accent : theme.colors.ink} />
+      <Ionicons
+        name={icon}
+        size={22}
+        color={active ? theme.colors.accent : theme.colors.ink}
+        accessibilityElementsHidden
+      />
       <View style={{ flex: 1, gap: 2 }}>
         <AppText variant="label" weight={active ? 'bold' : 'regular'} color={theme.colors.ink}>{label}</AppText>
         {hint ? <AppText variant="caption" color={theme.colors.muted}>{hint}</AppText> : null}
       </View>
-      <Ionicons name="chevron-forward" size={18} color={theme.colors.muted} />
+      <Ionicons
+        name={theme.isRTL ? 'chevron-back' : 'chevron-forward'}
+        size={18}
+        color={theme.colors.muted}
+        accessibilityElementsHidden
+      />
     </Pressable>
   );
 }

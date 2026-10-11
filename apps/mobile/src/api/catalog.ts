@@ -130,6 +130,12 @@ export async function fetchCatalogProducts(
   return data.map(parseProduct).filter((product): product is CatalogProduct => product !== null);
 }
 
+/** منتوج واحد بالمعرّف (صفحة المنتوج و«Découvrir»). `null` إذا ما عادش نشط أو ما كاينش. */
+export async function fetchCatalogProduct(id: string, options: RequestOptions = {}): Promise<CatalogProduct | null> {
+  const { data } = await apiGet<unknown>(`/api/public/products/${encodeURIComponent(id)}`, options);
+  return parseProduct(data);
+}
+
 /** الوصولات (arrivage) — النشطة والمبرمجة. */
 export async function fetchCatalogArrivals(options?: RequestOptions): Promise<CatalogArrival[]> {
   const { data } = await apiGet<unknown>('/api/public/arrivals', options);

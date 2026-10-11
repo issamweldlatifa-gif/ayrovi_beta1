@@ -119,8 +119,6 @@ describe('P2 — la page produit comprend ce qu’elle vend', () => {
     expect(shopCss).toMatch(/\.s-was\s*\{[^}]*color: var\(--s-muted\)/);
     const shared = read('client/src/ayrovix/components/quiet-card.css');
     expect(shared).toMatch(/\.ay-quiet-price__original\s*\{[^}]*font-weight:\s*500/);
-    const grid = read('client/src/ayrovix/components/lens-product-card.css');
-    expect(grid).toMatch(/\.lens-product-card \.lens-card-description\{[^}]*color:#595959/);
   });
 
   it('isolation d’arrière-plan : TOUTE la galerie est proxyfiée, jamais les images locales', () => {
@@ -132,7 +130,6 @@ describe('P2 — la page produit comprend ce qu’elle vend', () => {
     // withIsolation isole CHAQUE url (avant : seulement la première).
     expect(helper).toMatch(/for \(const url of urls\)/);
     expect(read('client/src/ayrovix/components/quiet-card.tsx')).toContain('withIsolation(');
-    expect(read('client/src/ayrovix/components/LensProductCard.tsx')).toContain('withIsolation(');
     // Les chemins locaux restent intacts (fixtures, uploads).
     expect(helper).toContain('/api/public/media/isolated?url=');
   });

@@ -15,24 +15,21 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { BrandMark } from '@/design/BrandMark';
-import { Drawer, DrawerItem } from '@/design/ui';
+import { AppText, Drawer, DrawerItem, Segmented } from '@/design/ui';
+import { rowDirectionFor } from '@/design/layoutLogic';
+import { usePrefs, type Locale, type ThemeMode } from '@/state/prefs';
+import { useSession } from '@/state/session';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
-
-const ICON_SHADOW = {
-  // Ombre discrète pendant le survol du contenu, sans ajouter de fond au header.
-  textShadowColor: 'rgba(0,0,0,0.55)',
-  textShadowOffset: { width: 0, height: 1 },
-  textShadowRadius: 3,
-} as const;
+import { adaptiveInk } from '@/features/home/heroPalette';
 
 function HeaderIcon({
-  name, label, onPress, scrolled,
+  name, label, onPress, color,
 }: {
   name: keyof typeof Ionicons.glyphMap;
   label: string;
   onPress: () => void;
-  scrolled: boolean;
+  color: string;
 }) {
   const theme = useTheme();
   return (
@@ -50,16 +47,36 @@ function HeaderIcon({
       ]}
       hitSlop={8}
     >
-      <Ionicons name={name} size={22} color={theme.colors.ink} style={scrolled ? undefined : ICON_SHADOW} />
+      <Ionicons name={name} size={22} color={color} />
     </Pressable>
   );
 }
 
-export function AppHeader({ scrolled }: { scrolled: boolean }) {
+export function AppHeader({
+  scrolled, heroBackground = null,
+}: {
+  scrolled: boolean;
+  /** Fond de la carte Hero active : repris par le header tant qu'il est au sommet. */
+  heroBackground?: string | null;
+}) {
   const theme = useTheme();
   const t = useT();
   const insets = useSafeAreaInsets();
   const [menuOpen, setMenuOpen] = useState(false);
+  const { locale, setLocale, themeMode, setThemeMode } = usePrefs();
+  const { status } = useSession();
+  // Cloche : connecté → la liste des notifications ; sinon → la connexion
+  // (les notifications sont celles du compte).
+  const accountHref = status === 'signedIn' ? '/(tabs)/account' : '/sign-in';
+  const notificationsHref = status === 'signedIn' ? '/account/notifications' : '/sign-in';
+
+  // Au sommet, sur une carte Hero : le header prend sa couleur et ses icônes
+  // suivent la luminance du fond. Après défilement : surface lisible d'origine.
+  const onHero = !scrolled && heroBackground !== null;
+  const barBackground = onHero ? heroBackground : (scrolled ? theme.colors.surface : 'transparent');
+  // Encre adaptée au fond (blanc sur fond sombre, noir sur fond clair), sans ombre :
+  // l'ombre sombre sur les icônes alourdissait le header.
+  const iconColor = onHero ? adaptiveInk(heroBackground, theme.colors) : theme.colors.ink;
 
   // En arabe, la lecture commence à droite : le logo est à DROITE, les actions
   // à gauche. Mettre le logo à gauche en RTL, c’est commencer une phrase par la
@@ -82,7 +99,7 @@ export function AppHeader({ scrolled }: { scrolled: boolean }) {
             paddingBottom: theme.space[1],
             paddingHorizontal: theme.space[2],
             flexDirection: row,
-            backgroundColor: scrolled ? theme.colors.surface : 'transparent',
+            backgroundColor: barBackground,
             borderBottomColor: scrolled ? theme.colors.line : 'transparent',
           },
         ]}
@@ -90,35 +107,37 @@ export function AppHeader({ scrolled }: { scrolled: boolean }) {
         // défilement du contenu qui passe en dessous.
         pointerEvents="box-none"
       >
-        {/* Le logo ramène à l’accueil : c’est le choix validé, la barre du bas
-            ne portant que les cinq outils. */}
-        <Pressable
-          onPress={() => go('/')}
-          accessibilityRole="button"
-          accessibilityLabel={t('nav.home')}
-          style={({ pressed }) => [styles.logo, { opacity: pressed ? 0.6 : 1 }]}
-        >
-          <BrandMark size={30} />
-        </Pressable>
-
+        {/* Groupe de gauche : menu, puis logo (le logo ramène à l’accueil). */}
         <View style={[styles.actions, { flexDirection: row }]}>
           <HeaderIcon
-            name="person-outline"
-            label={t('nav.profile')}
-            onPress={() => go('/(tabs)/account')}
-            scrolled={scrolled}
+            name="menu-outline"
+            label={t('nav.menu')}
+            onPress={() => { setMenuOpen(true); }}
+            color={iconColor}
+          />
+          <Pressable
+            onPress={() => go('/')}
+            accessibilityRole="button"
+            accessibilityLabel={t('nav.home')}
+            style={({ pressed }) => [styles.logo, { opacity: pressed ? 0.6 : 1 }]}
+          >
+            <BrandMark size={30} nameColor={onHero ? iconColor : undefined} />
+          </Pressable>
+        </View>
+
+        {/* Groupe de droite : notifications (ouvre directement la liste), panier. */}
+        <View style={[styles.actions, { flexDirection: row }]}>
+          <HeaderIcon
+            name="notifications-outline"
+            label={t('account.menu.notifications')}
+            onPress={() => go(notificationsHref)}
+            color={iconColor}
           />
           <HeaderIcon
             name="bag-outline"
             label={t('cart.title')}
             onPress={() => go('/(tabs)/cart')}
-            scrolled={scrolled}
-          />
-          <HeaderIcon
-            name="menu-outline"
-            label={t('nav.menu')}
-            onPress={() => { setMenuOpen(true); }}
-            scrolled={scrolled}
+            color={iconColor}
           />
         </View>
       </View>
@@ -129,8 +148,37 @@ export function AppHeader({ scrolled }: { scrolled: boolean }) {
           <DrawerItem icon="home-outline" label={t('tabs.home')} onPress={() => go('/')} />
           <DrawerItem icon="compass-outline" label={t('catalog.title')} onPress={() => go('/catalog')} />
           <DrawerItem icon="receipt-outline" label={t('orders.title')} onPress={() => go('/orders')} />
-          <DrawerItem icon="person-outline" label={t('tabs.account')} onPress={() => go('/(tabs)/account')} />
+          <DrawerItem icon="person-outline" label={t('tabs.account')} onPress={() => go(accountHref)} />
           <DrawerItem icon="chatbubble-ellipses-outline" label={t('tabs.sonim')} onPress={() => go('/assistant')} />
+        </View>
+
+        {/* Réglages d'affichage : langue et thème, dans le menu (plus sur la page compte). */}
+        <View style={[styles.prefs, { borderTopColor: theme.colors.line }]}>
+          <View style={[styles.prefHead, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+            <Ionicons name="language-outline" size={20} color={theme.colors.ink} accessibilityElementsHidden />
+            <AppText variant="label" weight="bold">{t('common.language')}</AppText>
+          </View>
+          <Segmented<Locale>
+            value={locale as Locale}
+            onChange={setLocale}
+            options={[
+              { value: 'fr', label: t('language.fr') },
+              { value: 'ar', label: t('language.ar') },
+            ]}
+          />
+          <View style={[styles.prefHead, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+            <Ionicons name="contrast-outline" size={20} color={theme.colors.ink} accessibilityElementsHidden />
+            <AppText variant="label" weight="bold">{t('common.theme')}</AppText>
+          </View>
+          <Segmented<ThemeMode>
+            value={themeMode}
+            onChange={setThemeMode}
+            options={[
+              { value: 'system', label: t('theme.system') },
+              { value: 'light', label: t('theme.light') },
+              { value: 'dark', label: t('theme.dark') },
+            ]}
+          />
         </View>
       </Drawer>
     </>
@@ -138,6 +186,8 @@ export function AppHeader({ scrolled }: { scrolled: boolean }) {
 }
 
 const styles = StyleSheet.create({
+  prefs: { marginTop: 12, paddingTop: 16, borderTopWidth: StyleSheet.hairlineWidth, gap: 10, paddingHorizontal: 4 },
+  prefHead: { alignItems: 'center', gap: 8, marginTop: 4 },
   bar: {
     position: 'absolute',
     top: 0,
@@ -151,6 +201,7 @@ const styles = StyleSheet.create({
   logo: {
     paddingVertical: 4,
     paddingHorizontal: 2,
+    justifyContent: 'center',
   },
   actions: {
     alignItems: 'center',

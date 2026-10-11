@@ -17,6 +17,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
+import { rowDirectionFor } from '@/design/layoutLogic';
 
 export interface SonimChip {
   id: string;
@@ -45,10 +46,12 @@ export function SonimChips({
         <Pressable
           key={chip.id}
           accessibilityRole="button"
+          accessibilityLabel={chip.label}
           onPress={() => onPick(chip)}
           style={({ pressed }) => [
             styles.chip,
             {
+              flexDirection: rowDirectionFor(theme.isRTL),
               minHeight: 36,
               borderRadius: theme.radius.control,
               borderColor: theme.colors.line,
@@ -57,7 +60,7 @@ export function SonimChips({
             },
           ]}
         >
-          <Ionicons name={chip.icon} size={16} color={theme.colors.accent} />
+          <Ionicons name={chip.icon} size={16} color={theme.colors.accent} accessibilityElementsHidden />
           <AppText variant="caption" color={theme.colors.ink}>{chip.label}</AppText>
         </Pressable>
       ))}
@@ -68,7 +71,6 @@ export function SonimChips({
 const styles = StyleSheet.create({
   row: { flexGrow: 0, marginBottom: 8 },
   chip: {
-    flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     paddingHorizontal: 12,

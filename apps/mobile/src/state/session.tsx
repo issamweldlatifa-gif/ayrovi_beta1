@@ -25,6 +25,7 @@ import { CLIENT_HEADER } from '@/api/config';
 import { resetAuthContext, setAuthContext, setCsrfRefresher } from '@/api/client';
 import {
   emailLogin, emailRegister, fetchMe, logout as apiLogout, requestOtp, verifyOtp,
+  requestEmailCode as requestEmailCodeApi, verifyEmailCode, type EmailCodeChallenge,
   type AuthConfig, type CustomerAccount, type OtpChallenge, type SessionIssue,
 } from '@/api/account';
 import { fetchAuthConfig } from '@/api/account';
@@ -53,6 +54,8 @@ export interface SessionValue {
   authConfig: AuthConfig | null;
   /** Défi SMS en cours (entre « demander le code » et « valider »). */
   challenge: OtpChallenge | null;
+  /** Défi « code par e-mail » en cours (connexion dans l'application, sans navigateur). */
+  emailChallenge: EmailCodeChallenge | null;
   /** `false` = jeton rangé hors trousseau (aperçu web) — on le dit à l'écran. */
   storageSecure: boolean;
   /** Compte relu du serveur depuis le dernier lancement (session confirmée). */
@@ -70,6 +73,9 @@ export interface SessionValue {
   requestPhoneCode: (phone: string) => Promise<OtpChallenge>;
   confirmPhoneCode: (code: string) => Promise<SessionIssue>;
   cancelPhoneCode: () => void;
+  requestEmailCode: (email: string, locale: 'fr' | 'ar') => Promise<EmailCodeChallenge>;
+  confirmEmailCode: (code: string) => Promise<SessionIssue>;
+  cancelEmailCode: () => void;
   signInWithEmail: (email: string, password: string) => Promise<SessionIssue>;
   signUpWithEmail: (input: SignUpInput) => Promise<SessionIssue>;
   signOut: () => Promise<void>;
@@ -93,6 +99,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [account, setAccount] = useState<CustomerAccount | null>(null);
   const [authConfig, setAuthConfig] = useState<AuthConfig | null>(null);
   const [challenge, setChallenge] = useState<OtpChallenge | null>(null);
+  const [emailChallenge, setEmailChallenge] = useState<EmailCodeChallenge | null>(null);
   const [storageSecure, setStorageSecure] = useState(true);
   const [verified, setVerified] = useState(false);
   const [notice, setNotice] = useState('');
@@ -269,6 +276,25 @@ const noSessionIssued = () => new ApiError(
     return issue;
   }, [challenge]);
 
+  /** Code par e-mail : l'adresse est normalisée ici, le serveur fait foi pour le reste. */
+  const requestEmailCode = useCallback(async (email: string, locale: 'fr' | 'ar') => {
+    const issued = await requestEmailCodeApi(email.trim().toLowerCase(), locale);
+    setEmailChallenge(issued);
+    return issued;
+  }, []);
+
+  const confirmEmailCode = useCallback(async (code: string) => {
+    if (!emailChallenge) throw new Error('Aucun code demandé. Demandez d’abord un code par e-mail.');
+    const issue = await verifyEmailCode(emailChallenge.challengeId, code.trim());
+    if (!issue.sessionToken) throw noSessionIssued();
+    await adoptSession(backend(), issue);
+    setAccount(issue.account);
+    setVerified(true);
+    setEmailChallenge(null);
+    setStatus('signedIn');
+    return issue;
+  }, [emailChallenge]);
+
   const signInWithEmail = useCallback(async (email: string, password: string) => {
     const issue = await emailLogin(email.trim(), password);
     if (!issue.sessionToken) throw noSessionIssued();
@@ -326,14 +352,15 @@ const noSessionIssued = () => new ApiError(
   }, []);
 
   const value = useMemo<SessionValue>(() => ({
-    status, account, authConfig, challenge, storageSecure, verified, notice,
+    status, account, authConfig, challenge, emailChallenge, storageSecure, verified, notice,
     refreshAccount, adoptSession: adoptIssued,
     requestPhoneCode, confirmPhoneCode, cancelPhoneCode: () => setChallenge(null),
+    requestEmailCode, confirmEmailCode, cancelEmailCode: () => setEmailChallenge(null),
     signInWithEmail, signUpWithEmail, signOut,
   }), [
-    status, account, authConfig, challenge, storageSecure, verified, notice,
+    status, account, authConfig, challenge, emailChallenge, storageSecure, verified, notice,
     refreshAccount, adoptIssued,
-    requestPhoneCode, confirmPhoneCode, signInWithEmail, signUpWithEmail, signOut,
+    requestPhoneCode, confirmPhoneCode, requestEmailCode, confirmEmailCode, signInWithEmail, signUpWithEmail, signOut,
   ]);
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

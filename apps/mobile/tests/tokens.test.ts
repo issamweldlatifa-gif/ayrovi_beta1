@@ -29,10 +29,10 @@ describe('jetons générés', () => {
   it('nomment les familles réellement embarquées', () => {
     // Ces noms sont les clés passées à expo-font : une faute de frappe ici
     // donne un texte en police système, sans erreur visible.
-    const families = Object.values(FONTS).flatMap((set) => [set.regular, set.bold]).sort();
+    const families = [...new Set(Object.values(FONTS).flatMap((set) => [set.regular, set.semibold, set.bold]))].sort();
     expect(families).toEqual([
       'NotoSansArabic-Bold', 'NotoSansArabic-Regular',
-      'ZalandoSans-Bold', 'ZalandoSans-Regular',
+      'ZalandoSans-Bold', 'ZalandoSans-Regular', 'ZalandoSans-SemiBold',
     ].sort());
     for (const family of families) {
       expect(() => readFileSync(new URL(`../assets/fonts/${family}.ttf`, import.meta.url))).not.toThrow();

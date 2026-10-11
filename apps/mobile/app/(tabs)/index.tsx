@@ -6,8 +6,7 @@
  *     يرجّع للرئيسية، وحساب وسلّة وقائمة؛
  *  2. **هيرو**: مساحة إشهار (صورة أو فيديو أو كتابة، بحسب ما يبعثو الخادم)؛
  *  3. **ثلاث تبويبات** يفتحو شاشات **جوّا التطبيق**، موش صفحات في المتصفح؛
- *  4. **السكسيونات**، بترتيب الإدارة؛
- *  5. **الفوتر** بخلفية سوداء: الهوية، القنوات الرسمية، ووسائل الخلاص.
+ *  4. **الفوتر** بخلفية سوداء: الهوية، القنوات الرسمية، ووسائل الخلاص.
  *
  * ── شنوّا يسيّر البار السفلي ──────────────────────────────────────────────
  * تمرير هاذي الشاشة يغذّي `design/chrome`: البار ينسحب نزولاً ويرجع صعوداً.
@@ -18,18 +17,18 @@
  * ما يتلزّقش بتقدير من الجهاز.
  */
 import { useCallback, useState } from 'react';
-import { Linking } from 'react-native';
 
 import { AppScreen, FullBleed } from '@/design/layout';
 import { AppHeader } from '@/features/shell/AppHeader';
-import { AnnouncementBar } from '@/features/home/AnnouncementBar';
-import { HeroSection } from '@/features/home/HeroSection';
+import { HeroCarousel } from '@/features/home/HeroCarousel';
 import { HomeTabs } from '@/features/home/HomeTabs';
-import { PublicSections } from '@/features/sections/PublicSections';
+import { FeaturedPublication } from '@/features/home/FeaturedPublication';
+import { ReelsShopSection } from '@/features/home/ReelsShopSection';
+import { SectionRule } from '@/design/SectionRule';
 import { Footer } from '@/features/shell/Footer';
-import { ErrorBlock, LoadingBlock } from '@/design/states';
-import { useAnnouncements, useHeroContent, useHeroVisual } from '@/api/hooks';
-import { apiUrl } from '@/api/client';
+import {
+  useHeroCarouselSettings, useHeroSlides,
+} from '@/api/hooks';
 
 /**
  * La géométrie n'est plus calculée ici : `AppScreen` possède la zone sûre, le
@@ -40,27 +39,23 @@ import { apiUrl } from '@/api/client';
  */
 export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
+  // Couleur de la carte Hero active : le header la reprend (en haut de page).
+  const [heroBackground, setHeroBackground] = useState<string | null>(null);
 
-  const hero = useHeroContent();
-  const visual = useHeroVisual();
-  const announcements = useAnnouncements();
+  const heroSlides = useHeroSlides();
+  const heroCarouselSettings = useHeroCarouselSettings();
 
   const reload = useCallback(() => {
     setRefreshing(true);
-    Promise.allSettled([hero.refetch(), visual.refetch(), announcements.refetch()])
-      .finally(() => setRefreshing(false));
-  }, [hero, visual, announcements]);
-
-  const openLink = useCallback((href: string) => {
-    Linking.openURL(apiUrl(href)).catch(() => {});
-  }, []);
-
-  const heroLoading = hero.isPending || visual.isPending;
+    Promise.allSettled([
+      heroSlides.refetch(), heroCarouselSettings.refetch(),
+    ]).finally(() => setRefreshing(false));
+  }, [heroSlides, heroCarouselSettings]);
 
   return (
     <AppScreen
       // شفاف · ثابت · والصفحة تمرّ من تحتو — الـ`absolute` الوحيد المسموح (§3)
-      overlayHeader={({ scrolled }) => <AppHeader scrolled={scrolled} />}
+      overlayHeader={({ scrolled }) => <AppHeader scrolled={scrolled} heroBackground={heroBackground} />}
       // البار السفلي يضيف منطقته الآمنة لنفسو، والمحتوى ما يضيفهاش (§4.3-3)
       hasBottomBar
       // تمرير الشاشة يسيّر انسحاب البار (Q8)
@@ -69,31 +64,27 @@ export default function HomeScreen() {
       refreshing={refreshing}
       testID="home"
     >
-      <AnnouncementBar messages={announcements.data ?? []} />
+      {/* الهيرو الوحيد والديناميكي : يُدار كله من Admin → Hero (بطاقات + إعدادات). */}
+      <HeroCarousel
+        settings={heroCarouselSettings}
+        slides={heroSlides}
+        onActiveBackgroundChange={setHeroBackground}
+      />
 
-      {/* الهيرو — مساحة إشهار يملاها الخادم */}
-      {heroLoading ? (
-        <LoadingBlock
-          label={{ fr: 'Chargement du contenu…', ar: 'جارٍ تحميل المحتوى…' }}
-        />
-      ) : hero.isError ? (
-        <ErrorBlock
-          error={hero.error}
-          onRetry={() => { hero.refetch(); visual.refetch(); }}
-        />
-      ) : (
-        <HeroSection
-          content={hero.data ?? null}
-          visual={visual.data ?? null}
-          onCta={openLink}
-        />
-      )}
+      <SectionRule />
 
       {/* التبويبات الثلاث — يفتحو جوّا التطبيق */}
       <HomeTabs />
 
-      {/* أقسام الموقع — الترتيب قرار الإدارة (`home-blocks`)، موش قرارنا. */}
-      <PublicSections />
+      <SectionRule />
+
+      {/* Dernière publication du magazine — « Découvrir » ouvre la page Publications. */}
+      <FeaturedPublication />
+
+      <SectionRule />
+
+      {/* Reels • Shop — vignettes verticales ; un toucher ouvre la visionneuse plein écran. */}
+      <ReelsShopSection />
 
       {/*
         الفوتر — خلفية سوداء عرض كامل.

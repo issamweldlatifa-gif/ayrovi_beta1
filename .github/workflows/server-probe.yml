@@ -127,7 +127,7 @@ jobs:
           printf '\n**Points d entrée de l application sur `%s`**\n\n| Route | Code | Attendu sur un serveur sain | |\n|---|---|---|---|\n' "$FIRST_BASE" >> "$S"
           ROUTE_LINE=""
           for ENTRY in \
-            "GET /api/public/hero-content" \
+            "GET /api/public/hero-slides" \
             "GET /api/public/navigation" \
             "GET /api/public/announcement-messages" \
             "GET /api/public/commerce-config" \

@@ -1,6 +1,7 @@
 import { FONT_STACK, BRAND } from '../../../shared/brand.generated';
 import { enforceBrandIdentity } from '../../../shared/identityPolicy';
-export const PUBLIC_SECTION_IDS = ['hero', 'cms', 'brands', 'about', 'footer'] as const;
+import { PUBLIC_NAV_DESTINATIONS } from '../../../shared/publicNavigation';
+export const PUBLIC_SECTION_IDS = ['hero', 'cms', 'brands', 'about', 'footer', 'announcement'] as const;
 export type PublicSectionId = (typeof PUBLIC_SECTION_IDS)[number];
 
 export const AYROVI_FONT_STACK = FONT_STACK;
@@ -28,7 +29,28 @@ export interface InterfaceSectionConfig {
   textColor: string;
   paddingY: number;
   contained: boolean;
+  /** Bloc « annonce » : média image ou vidéo (URL /uploads/, /media/ ou https). */
+  mediaType: 'image' | 'video';
+  videoUrl: string;
+  /** Bouton d’action : libellé, et cible INTERNE uniquement (voir `ANNOUNCEMENT_TARGETS`). */
+  ctaLabel: string;
+  ctaTarget: string;
 }
+
+/**
+ * Destinations autorisées pour le bouton d’une annonce. Liste fermée : l’admin ne peut pas
+ * saisir une URL externe. `app:*` = vues de l’application ; `/…` = pages publiques.
+ */
+export const ANNOUNCEMENT_TARGETS: ReadonlyArray<{ value: string; label: string }> = [
+  { value: 'app:lens', label: 'Lens' },
+  { value: 'app:aywebs', label: 'AYWEBs' },
+  { value: 'app:ocerex', label: 'OCEREX' },
+  { value: 'app:account', label: 'Compte' },
+  ...PUBLIC_NAV_DESTINATIONS.map((destination) => ({
+    value: destination.href,
+    label: destination.adminLabel,
+  })),
+];
 
 export interface PublicInterfaceConfig {
   logoUrl: string;
@@ -119,11 +141,13 @@ export interface PublicInterfaceConfig {
 export const DEFAULT_INTERFACE_CONFIG: PublicInterfaceConfig = {
   logoUrl: '/media/logo-ayrovi.png',
   sections: [
-    { id: 'hero', visible: true, order: 10, title: 'Toute la mode du monde, livrée chez vous.', subtitle: '', image: '', backgroundColor: '#000000', textColor: '#ffffff', paddingY: 0, contained: false },
-    { id: 'cms', visible: true, order: 20, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#000000', paddingY: 0, contained: false },
-    { id: 'brands', visible: true, order: 30, title: '', subtitle: '', image: '', backgroundColor: '#f8f9fa', textColor: '#000000', paddingY: 0, contained: false },
-    { id: 'about', visible: true, order: 40, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#000000', paddingY: 0, contained: false },
-    { id: 'footer', visible: true, order: 50, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#000000', paddingY: 0, contained: false },
+    { id: 'hero', visible: true, order: 10, title: 'Toute la mode du monde, livrée chez vous.', subtitle: '', image: '', backgroundColor: '#000000', textColor: '#ffffff', paddingY: 0, contained: false, mediaType: 'image', videoUrl: '', ctaLabel: '', ctaTarget: '' },
+    { id: 'cms', visible: true, order: 20, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#000000', paddingY: 0, contained: false, mediaType: 'image', videoUrl: '', ctaLabel: '', ctaTarget: '' },
+    { id: 'brands', visible: true, order: 30, title: '', subtitle: '', image: '', backgroundColor: '#f8f9fa', textColor: '#000000', paddingY: 0, contained: false, mediaType: 'image', videoUrl: '', ctaLabel: '', ctaTarget: '' },
+    { id: 'about', visible: true, order: 40, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#000000', paddingY: 0, contained: false, mediaType: 'image', videoUrl: '', ctaLabel: '', ctaTarget: '' },
+    { id: 'footer', visible: true, order: 50, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#000000', paddingY: 0, contained: false, mediaType: 'image', videoUrl: '', ctaLabel: '', ctaTarget: '' },
+    // Masquée par défaut : l’admin l’active et la remplit. Rendue DANS le bloc Stories/Reels.
+    { id: 'announcement', visible: false, order: 25, title: '', subtitle: '', image: '', backgroundColor: '#ff6900', textColor: '#ffffff', paddingY: 48, contained: false, mediaType: 'image', videoUrl: '', ctaLabel: 'Découvrir', ctaTarget: 'app:lens' },
   ],
   typography: {
     preset: 'ayrovi-a',
@@ -204,6 +228,10 @@ export function normalizeInterfaceConfig(input: unknown): PublicInterfaceConfig 
       textColor: safeColor(candidate?.textColor, fallback.textColor),
       paddingY: safeNumber(candidate?.paddingY, fallback.paddingY, 0, 160),
       contained: candidate?.contained === true,
+      mediaType: (candidate?.mediaType === 'video' ? 'video' : 'image') as InterfaceSectionConfig['mediaType'],
+      videoUrl: safeMedia(candidate?.videoUrl),
+      ctaLabel: safeText(candidate?.ctaLabel, fallback.ctaLabel, 40),
+      ctaTarget: !candidate ? fallback.ctaTarget : (ANNOUNCEMENT_TARGETS.some((target) => target.value === candidate.ctaTarget) ? String(candidate.ctaTarget) : ''),
     };
   });
   const typography = value.typography || {} as PublicInterfaceConfig['typography'];

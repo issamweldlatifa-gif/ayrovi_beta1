@@ -24,7 +24,9 @@ on:
         required: true
         default: "https://ayrovi-beta1-moo8.onrender.com"
   push:
-    branches: [arena/c0321e79-ayrovi-beta1]
+    # Branche de travail Arena en plus de la branche historique : l'APK démo
+    # se reconstruit après chaque mise à jour de l'application.
+    branches: [arena/c0321e79-ayrovi-beta1, arena/bc19f283-ayrovi-beta1, arena/a41a200d-ayrovi-beta1]
     paths:
       - 'apps/mobile/**'
       - '.github/workflows/mobile-android.yml'
@@ -39,8 +41,12 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       # `contents: write` : le job réécrit la mesure (APK_SIZES.md) dans le
-      # dépôt. Rien d'autre n'est demandé — principe du moindre privilège.
+      # dépôt. `actions: write` : il rallume les vérifications PR après ce
+      # commit (dispatch de ci.yml + mobile.yml) — sinon le head du PR n'a
+      # aucun check et la PR reste bloquée. Rien d'autre n'est demandé —
+      # principe du moindre privilège.
       contents: write
+      actions: write
     defaults:
       run:
         working-directory: apps/mobile
@@ -121,6 +127,18 @@ jobs:
             -srckeystore keystores/debug.p12 -srcstoretype PKCS12 -srcstorepass android \
             -destkeystore "$HOME/.android/debug.keystore" -deststoretype JKS \
             -deststorepass android -destkeypass android -alias androiddebugkey -noprompt
+          # Gradle signe les builds avec `android/app/debug.keystore` (créé par prebuild,
+          # NEUF à chaque machine). On y met la MÊME clé fixe, sinon chaque APK porte
+          # une empreinte différente et Google refuse la connexion.
+          mkdir -p android/app
+          cp "$HOME/.android/debug.keystore" android/app/debug.keystore
+          SHA1=$(keytool -list -v -keystore android/app/debug.keystore -storepass android -alias androiddebugkey \
+            | awk '/SHA1:/ {print $2}')
+          if [ "$SHA1" != "4D:0B:91:84:E6:15:F1:76:4A:E3:08:C4:46:49:7E:DB:1A:6E:05:3E" ]; then
+            echo "::error title=Clé de démonstration::empreinte SHA-1 inattendue : ${SHA1:-vide}"
+            exit 1
+          fi
+          echo "::notice title=Clé de démonstration::SHA-1 fixe OK ($SHA1)"
           SHA=$(keytool -list -v -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey \
             | awk '/SHA256:/ {print $2; exit}')
           if [ -z "$SHA" ]; then
@@ -155,6 +173,11 @@ jobs:
           EXPO_PUBLIC_API_BASE_URL: ${{ inputs.api_base_url || 'https://ayrovi-beta1-moo8.onrender.com' }}
           EXPO_PUBLIC_BUILD_STAMP: ${{ github.sha }}
           EXPO_PUBLIC_APP_VERSION: "2.0.0"
+          # Démo : cartes Hero embarquées tant que l'Admin n'a rien publié.
+          EXPO_PUBLIC_HERO_DEMO: "1"
+          # Connexion Google native : identifiant Web (public, pas un secret). Le serveur
+          # le reçoit en GOOGLE_CLIENT_ID : les deux doivent être strictement identiques.
+          EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: "917317804534-e37d2kardhtac1g7fummsfk61dr86q3j.apps.googleusercontent.com"
         run: |
           set -o pipefail
           # Contexte de la machine : un échec de build vient souvent du disque
@@ -195,6 +218,14 @@ jobs:
             echo "| $(basename "$apk") | $size |" >> "$GITHUB_STEP_SUMMARY"
             echo "--- $(basename "$apk") : $size ---"
             "$APKSIGNER" verify --print-certs "$apk" | head -3
+            # Diagnostic (lecture seule) : empreinte SHA-1 RÉELLE de la signature de
+            # l'APK, à comparer avec le client Android Google Cloud. N'arrête jamais le build.
+            raw="$("$APKSIGNER" verify --print-certs "$apk" 2>/dev/null | sed -n 's/.*SHA-1 digest: //p' | head -1 || true)"
+            sha1="$(printf '%s' "$raw" | tr 'a-f' 'A-F' | sed -E 's/(..)/\1:/g; s/:$//')"
+            echo "- Empreinte SHA-1 de la signature de $(basename "$apk") : \`${sha1:-introuvable}\`" >> "$GITHUB_STEP_SUMMARY"
+            if [ "$sha1" != "4D:0B:91:84:E6:15:F1:76:4A:E3:08:C4:46:49:7E:DB:1A:6E:05:3E" ]; then
+              echo "::warning title=Empreinte APK::signature différente de la clé de démonstration fixe (${sha1:-vide})"
+            fi
           done
 
           # La mesure est aussi RÉÉCRITE dans le dépôt. Un chiffre qu'on ne
@@ -228,6 +259,28 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+      - name: Publier l'APK dans une Release (lien direct, sans connexion)
+        # Le lien d'artifact exige une connexion GitHub. Une Release donne un lien de
+        # téléchargement direct. Un tag par commit : rien n'est écrasé. Échec ⇒ avertissement,
+        # le build reste vert (l'APK reste dans l'artifact).
+        if: success() && github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -uo pipefail
+          SHORT="${GITHUB_SHA::7}"
+          TAG="apk-${SHORT}"
+          APK_SRC=$(ls "$GITHUB_WORKSPACE"/apps/mobile/android/app/build/outputs/apk/release/*.apk 2>/dev/null | head -n 1)
+          if [ -z "$APK_SRC" ]; then
+            echo "::warning::APK introuvable — pas de Release"
+            exit 0
+          fi
+          APK="$RUNNER_TEMP/AYROVI-demo-${SHORT}.apk"
+          cp "$APK_SRC" "$APK"
+          NOTES="APK démo — commit \`${GITHUB_SHA}\`. Build : https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          gh release create "$TAG" "$APK" --target "$GITHUB_SHA" --prerelease \
+            --title "APK démo ${SHORT}" --notes "$NOTES" \
+            || echo "::warning::publication de la Release impossible"
       - name: Publier la mesure dans le dépôt
         # ⚠️ Deux leçons, payées par un build rouge :
         #
@@ -281,3 +334,17 @@ jobs:
             echo "::warning::publication impossible, la mesure reste dans le résumé CI"
             exit 0
           }
+      # Le commit bot ci-dessus est poussé avec le GITHUB_TOKEN : aucun
+      # workflow ne se déclenche dessus, le head du PR n'a donc AUCUN check
+      # et la PR reste bloquée (« required checks missing »). On rallume les
+      # vérifications PR en dispatchant les deux workflows sur la branche
+      # (`workflow_dispatch` est exempté de la règle GITHUB_TOKEN). Sans effet
+      # de bord : aucun de ces deux workflows ne committe, donc pas de boucle.
+      - name: Rallume les vérifications PR sur le head (commit bot)
+        if: success() && github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="${GITHUB_REF#refs/heads/}"
+          gh workflow run ci.yml --ref "$BRANCH" || echo "::warning::dispatch ci.yml impossible"
+          gh workflow run mobile.yml --ref "$BRANCH" || echo "::warning::dispatch mobile.yml impossible"

@@ -42,6 +42,8 @@ export interface OcerexExtraction {
   type: OcerexScreenType;
   /** السعر المرجعي المقروء من الصورة — `null` = ما تقراش. */
   referencePrice: number | null;
+  /** Prix de référence en dinars (taux du serveur, même que le devis) — null si pas de taux. */
+  referenceTnd: number | null;
   currency: string;
   confidence: number;
   confidenceLevel: OcerexConfidenceLevel;
@@ -65,6 +67,7 @@ export function parseOcerexExtraction(payload: unknown): OcerexExtraction {
     extractionId: str(payload.extractionId),
     type: payload.type === 'PRODUCT' || payload.type === 'CART' ? payload.type : 'UNKNOWN',
     referencePrice: num(payload.referencePrice),
+    referenceTnd: num(payload.referenceTnd),
     currency: str(payload.currency).toUpperCase(),
     confidence: num(payload.confidence) ?? 0,
     confidenceLevel: level === 'HIGH' || level === 'MEDIUM' ? level : 'LOW',

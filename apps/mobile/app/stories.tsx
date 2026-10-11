@@ -15,6 +15,7 @@ import { AppText } from '@/design/ui';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { SubScreen } from '@/design/subScreen';
 import { useTheme } from '@/design/theme';
+import { rowDirectionFor } from '@/design/layoutLogic';
 import { useT } from '@/i18n';
 import { useStories } from '@/api/hooks';
 import { StoryCard } from '@/features/sections/StoryCard';
@@ -58,7 +59,7 @@ export default function StoriesScreen() {
         <EmptyBlock>{t('sections.empty')}</EmptyBlock>
       ) : null}
 
-      <View style={styles.grid}>
+      <View style={[styles.grid, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
         {rows.map((story) => (
           <StoryCard key={story.id} story={story} onOpen={openViewer} viewed={viewed.has(story.id)} />
         ))}
@@ -82,6 +83,6 @@ export default function StoriesScreen() {
 }
 
 const styles = StyleSheet.create({
-  grid: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 12 },
+  grid: { flexWrap: 'wrap', marginTop: 12 },
   spacer: { height: 24 },
 });

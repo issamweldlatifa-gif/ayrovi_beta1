@@ -65,7 +65,7 @@ const PostMedia: React.FC<{ post: StoryPost; onOpenReels?: (post: StoryPost) => 
           setSlide(Math.round(element.scrollLeft / element.clientWidth));
         }}>
           {post.media.map((media, index) => (
-            <img key={index} src={media.url} alt="" loading="lazy" className="aspect-[4/5] w-full shrink-0 snap-center object-cover" />
+            <img key={index} src={media.url} alt="" loading="lazy" className="aspect-[3/4] w-full shrink-0 snap-center object-cover" />
           ))}
         </div>
         <span className="absolute end-3 top-3 rounded-full bg-black/60 px-2.5 py-1 text-xs font-black text-white">{slide + 1} / {post.media.length}</span>
@@ -87,7 +87,7 @@ const PostMedia: React.FC<{ post: StoryPost; onOpenReels?: (post: StoryPost) => 
       </button>
     );
   }
-  return <img src={post.media[0].url} alt="" loading="lazy" className="aspect-[4/5] w-full object-cover" />;
+  return <img src={post.media[0].url} alt="" loading="lazy" className="aspect-[3/4] w-full object-cover" />;
 };
 
 const PostActions: React.FC<{

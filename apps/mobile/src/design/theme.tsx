@@ -22,6 +22,9 @@ import { usePrefs } from '@/state/prefs';
 export type ColorScheme = 'light' | 'dark';
 export type TextRole = 'caption' | 'label' | 'body' | 'lead' | 'title' | 'display';
 
+/** Graisses disponibles : chacune est une famille embarquée (voir FONTS). */
+export type FontWeightName = 'regular' | 'semibold' | 'bold';
+
 export interface Theme {
   mode: ColorScheme;
   isRTL: boolean;
@@ -29,9 +32,9 @@ export interface Theme {
    *  arbitraires : voir `tokens.mobile.ts`. */
   colors: (typeof COLORS)[keyof typeof COLORS] & DerivedColors;
   /** Famille de police à utiliser, choisie selon la langue et la graisse. */
-  font: (weight?: 'regular' | 'bold') => string;
+  font: (weight?: FontWeightName) => string;
   /** Style Text prêt à l'emploi pour un niveau typographique donné. */
-  text: (variant?: TextRole, weight?: 'regular' | 'bold') => {
+  text: (variant?: TextRole, weight?: FontWeightName) => {
     fontFamily: string;
     fontSize: number;
     lineHeight: number;
@@ -93,6 +96,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const lineHeightRatio = isRTL ? TYPOGRAPHY.arabicLineHeight : TYPOGRAPHY.bodyLineHeight;
     const headingRatio = isRTL ? TYPOGRAPHY.arabicHeadingLineHeight : TYPOGRAPHY.headingLineHeight;
     const boldVariants: TextRole[] = ['label', 'title', 'display'];
+    // Titres : graisse « semibold » (un cran plus légère que le gras). Libellés : gras.
+    const defaultWeight = (variant: TextRole): FontWeightName =>
+      variant === 'label' ? 'bold' : (variant === 'title' || variant === 'display') ? 'semibold' : 'regular';
 
     const palette = mode === 'dark' ? COLORS.dark : COLORS.light;
 
@@ -101,7 +107,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       isRTL,
       colors: { ...palette, ...derivedColors(palette) },
       font,
-      text: (variant = 'body', weight = boldVariants.includes(variant) ? 'bold' : 'regular') => {
+      text: (variant = 'body', weight = defaultWeight(variant)) => {
         const size = TYPE_SCALE[variant];
         const ratio = boldVariants.includes(variant) ? headingRatio : lineHeightRatio;
         return {

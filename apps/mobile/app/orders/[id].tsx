@@ -9,7 +9,7 @@
  *     `remainder_tnd`) — jamais recalculés à partir d'un prix affiché.
  */
 import { useCallback, useState } from 'react';
-import { Image, Linking, Pressable, StyleSheet, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
@@ -18,6 +18,9 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppText, Button, Card, Field, KeyValue } from '@/design/ui';
 import { ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
+import { AppImage } from '@/design/appImage';
+import { rowDirectionFor } from '@/design/layoutLogic';
+import { useResponsive } from '@/design/layout';
 import { useI18n } from '@/i18n';
 import { fetchOrderDetail } from '@/api/account';
 import { statusText } from '@/api/labels';
@@ -30,6 +33,7 @@ import { ScrollView } from 'react-native';
 
 export default function OrderDetailScreen() {
   const theme = useTheme();
+  const { gutter } = useResponsive();
   const t = useI18n().t;
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ id?: string }>();
@@ -101,16 +105,23 @@ export default function OrderDetailScreen() {
       style={{ backgroundColor: theme.colors.canvas }}
       contentContainerStyle={[
         styles.screen,
+        { paddingHorizontal: gutter },
         { paddingTop: insets.top + theme.space[2], paddingBottom: insets.bottom + theme.space[5], gap: theme.space[2] },
       ]}
     >
-      <View style={styles.header}>
+      <View style={[styles.header, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
         <Pressable
           accessibilityRole="button"
+          accessibilityLabel={t('common.back')}
           onPress={() => router.back()}
           style={{ minHeight: theme.geometry.minTarget, minWidth: theme.geometry.minTarget, justifyContent: 'center' }}
         >
-          <Ionicons name="chevron-back" size={26} color={theme.colors.ink} />
+          <Ionicons
+            name={theme.isRTL ? 'chevron-forward' : 'chevron-back'}
+            size={26}
+            color={theme.colors.ink}
+            accessibilityElementsHidden
+          />
         </Pressable>
         <AppText variant="title" style={styles.headerTitle}>
           {order.data?.orderNumber || t('order.title')}
@@ -133,10 +144,10 @@ export default function OrderDetailScreen() {
             {order.data.items.map((item) => (
               <View key={item.id} style={[styles.item, { borderTopColor: theme.colors.line }]}>
                 {item.imageUrl ? (
-                  <Image
-                    source={{ uri: mediaUrl(item.imageUrl) }}
+                  <AppImage
+                    uri={mediaUrl(item.imageUrl)}
                     style={[styles.thumb, { borderRadius: theme.radius.control, borderColor: theme.colors.line }]}
-                    resizeMode="cover"
+                    contentFit="cover"
                     accessibilityLabel={item.title}
                   />
                 ) : null}
@@ -292,7 +303,7 @@ export default function OrderDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { paddingHorizontal: 16 },
+  screen: {},
   payRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
   payChip: { borderWidth: 1, paddingHorizontal: 12, justifyContent: 'center', alignItems: 'center', minWidth: 96 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 4 },

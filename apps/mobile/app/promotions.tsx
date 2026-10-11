@@ -12,6 +12,7 @@ import { AppText } from '@/design/ui';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { SubScreen } from '@/design/subScreen';
 import { useTheme } from '@/design/theme';
+import { rowDirectionFor } from '@/design/layoutLogic';
 import { useT } from '@/i18n';
 import { usePromotions } from '@/api/hooks';
 import { PromotionCard } from '@/features/sections/PromotionCard';
@@ -46,7 +47,7 @@ export default function PromotionsScreen() {
         <EmptyBlock>{t('sections.empty')}</EmptyBlock>
       ) : null}
 
-      <View style={styles.grid}>
+      <View style={[styles.grid, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
         {(promotions.data ?? []).map((promotion) => (
           <PromotionCard key={promotion.id} promotion={promotion} onOpen={open} />
         ))}
@@ -61,6 +62,6 @@ export default function PromotionsScreen() {
 }
 
 const styles = StyleSheet.create({
-  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginTop: 12 },
+  grid: { flexWrap: 'wrap', justifyContent: 'space-between', marginTop: 12 },
   spacer: { height: 24 },
 });

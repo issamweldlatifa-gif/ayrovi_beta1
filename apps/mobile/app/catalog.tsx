@@ -16,6 +16,7 @@ import { AppText, Segmented } from '@/design/ui';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { SubScreen } from '@/design/subScreen';
 import { useTheme } from '@/design/theme';
+import { rowDirectionFor } from '@/design/layoutLogic';
 import { useT } from '@/i18n';
 import { fetchCatalogArrivals, fetchCatalogProducts } from '@/api/catalog';
 import { ProductCard } from '@/features/catalog/ProductCard';
@@ -76,7 +77,7 @@ export default function CatalogScreen() {
         <EmptyBlock>{t('catalog.empty')}</EmptyBlock>
       ) : null}
 
-      <View style={styles.grid}>
+      <View style={[styles.grid, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
         {rows.map((product) => (
           <ProductCard key={product.id} product={product} onOpen={open} />
         ))}
@@ -91,5 +92,5 @@ export default function CatalogScreen() {
 }
 
 const styles = StyleSheet.create({
-  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginTop: 12 },
+  grid: { flexWrap: 'wrap', justifyContent: 'space-between', marginTop: 12 },
 });

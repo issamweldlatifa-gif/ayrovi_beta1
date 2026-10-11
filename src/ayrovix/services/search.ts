@@ -81,7 +81,7 @@ export function catalogSearch(
   const rows = db.all<any>(
     `SELECT id, name, brand_name, image, source_url, source_platform, stock_status,
             original_price, currency, final_price
-     FROM products WHERE status='ACTIVE' ORDER BY updated_at DESC LIMIT 400`,
+     FROM products WHERE status='ACTIVE' AND visibility='CATALOG' ORDER BY updated_at DESC LIMIT 400`,
   );
   const candidates = rows.map((row) => {
     const title = `${row.brand_name ? `${row.brand_name} ` : ''}${row.name}`;

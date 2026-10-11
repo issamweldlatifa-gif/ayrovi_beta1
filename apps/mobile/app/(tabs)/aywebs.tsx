@@ -10,7 +10,7 @@
  * يعلن مرحلة فارغة.
  */
 import { useCallback, useState } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useMutation, useQuery } from '@tanstack/react-query';
 
@@ -18,6 +18,8 @@ import { AppScreen } from '@/design/layout';
 import { AppHeader } from '@/features/shell/AppHeader';
 import {AppText, Button, Card, Field, KeyValue, SectionHeader} from '@/design/ui';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
+import { AppImage } from '@/design/appImage';
+import { rowDirectionFor } from '@/design/layoutLogic';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
 import { mediaUrl } from '@/api/client';
@@ -102,6 +104,7 @@ export default function AyWebsScreen() {
       <Card title={t('aywebs.linkTitle')} hint={t('aywebs.linkHint')}>
         <Field
           label={t('aywebs.linkLabel')}
+          accessibilityLabel={t('aywebs.linkLabel')}
           value={url}
           onChangeText={setUrl}
           placeholder="https://www.amazon.com/dp/…"
@@ -110,19 +113,21 @@ export default function AyWebsScreen() {
           keyboardType="url"
           inputMode="url"
         />
-        <View style={styles.row}>
+        <View style={[styles.row, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
           <Button
             label={t('aywebs.analyze')}
             onPress={() => analyze.mutate(trimmed)}
             busy={analyze.isPending}
             disabled={!ready}
             tone="quiet"
+            testID="aywebs-analyze"
           />
           <Button
             label={t('aywebs.resolve')}
             onPress={() => resolve.mutate(trimmed)}
             busy={resolve.isPending}
             disabled={!ready}
+            testID="aywebs-resolve"
           />
         </View>
         {!sessionId ? (
@@ -190,7 +195,12 @@ export default function AyWebsScreen() {
       {product ? (
         <Card title={t('aywebs.productTitle')} hint={product.sourceDomain || product.storeName}>
           {product.images[0] ? (
-            <Image source={{ uri: mediaUrl(product.images[0]) }} style={styles.image} resizeMode="contain" />
+            <AppImage
+              uri={mediaUrl(product.images[0])}
+              style={styles.image}
+              contentFit="contain"
+              accessibilityLabel={product.title}
+            />
           ) : null}
           <AppText variant="lead" weight="bold">{product.title}</AppText>
           {product.brand ? (
@@ -277,7 +287,7 @@ export default function AyWebsScreen() {
 
       <Card title={t('aywebs.storesTitle')} hint={t('aywebs.storesHint')}>
         {stores.isPending ? (
-          <LoadingBlock label={{ fr: 'Chargement des boutiques…', ar: 'جارٍ تحميل المتاجر…' }} />
+          <LoadingBlock labelKey="loading.stores" />
         ) : stores.isError ? (
           <ErrorBlock error={stores.error} onRetry={reload} />
         ) : (stores.data ?? []).length === 0 ? (
@@ -297,6 +307,6 @@ export default function AyWebsScreen() {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  row: { gap: 8, marginTop: 8 },
   image: { width: '100%', height: 180, marginBottom: 8 },
 });

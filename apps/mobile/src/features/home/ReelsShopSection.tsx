@@ -1,0 +1,111 @@
+/**
+ * Section « Reels • Shop » de l'accueil, sous « À la une ».
+ *
+ * Présentation (d'après la référence Facebook) : en-tête « ▶ Reels • Shop », puis une
+ * rangée horizontale de vignettes verticales 9:16. La première vignette occupe
+ * `REEL_TILE.widthFraction` de la colonne et la suivante dépasse à droite (indice de
+ * défilement). Les marges viennent de l'écran (`gutter`), la hauteur du ratio partagé.
+ *
+ * Données : les Reels publiés (même source que la page Reels). Rien à afficher ⇒
+ * rien ne s'affiche (pas de bloc vide, pas de bloc de chargement sur l'accueil).
+ *
+ * Toucher une vignette ouvre la visionneuse plein écran à ce Reel.
+ */
+import { useWindowDimensions, FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { router } from 'expo-router';
+import Ionicons from '@expo/vector-icons/Ionicons';
+
+import { useReels } from '@/api/hooks';
+import { AppText } from '@/design/ui';
+import { AppImage } from '@/design/appImage';
+import { mediaUrl } from '@/api/client';
+import { FullBleed, useResponsive } from '@/design/layout';
+import { useTheme } from '@/design/theme';
+import { MEDIA_RATIO, REEL_TILE } from '@/design/tokens.mobile';
+import { FadeIn, PressScale } from '@/design/motion';
+import { useT } from '@/i18n';
+import { ReelsShopMark } from '@/features/reels/ReelsShopMark';
+import type { Reel } from '@/api/social';
+
+export function ReelsShopSection() {
+  const theme = useTheme();
+  const t = useT();
+  const { gutter } = useResponsive();
+  const { width } = useWindowDimensions();
+  const reels = useReels();
+
+  const rows = reels.data ?? [];
+  if (rows.length === 0) return null;
+
+  const tileWidth = Math.round((width - gutter * 2) * REEL_TILE.widthFraction);
+  const tileHeight = Math.round(tileWidth / MEDIA_RATIO.reel);
+
+  const open = (reel: Reel) => {
+    router.push({ pathname: '/reels-viewer', params: { id: reel.id } });
+  };
+
+  return (
+    <FadeIn testID="home-reels-shop">
+      {/* Espace entre l'en-tête et les vignettes : l'en-tête ne doit pas toucher la carte. */}
+      <View style={[styles.section, { paddingBottom: theme.space[4] }]}>
+        <ReelsShopMark />
+      </View>
+
+      <FullBleed>
+        <FlatList
+          horizontal
+          data={rows}
+          keyExtractor={(item) => item.id}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: gutter, gap: theme.space[1], paddingBottom: theme.space[4] }}
+          renderItem={({ item }) => (
+            <Pressable
+              testID={`home-reel-tile-${item.id}`}
+              accessibilityRole="button"
+              accessibilityLabel={item.title || t('home.reelsShop.open')}
+              onPress={() => open(item)}
+              style={{ width: tileWidth, height: tileHeight }}
+            >
+              {({ pressed }) => (
+                <PressScale
+                  pressed={pressed}
+                  style={[
+                    styles.tile,
+                    {
+                      width: tileWidth,
+                      height: tileHeight,
+                      borderRadius: theme.radius.card,
+                      backgroundColor: theme.colors.surface,
+                    },
+                  ]}
+                >
+                  <View style={styles.poster}>
+                    {item.posterUrl ? (
+                      <AppImage uri={mediaUrl(item.posterUrl)} style={StyleSheet.absoluteFill} contentFit="cover" decorative />
+                    ) : (
+                      <Ionicons name="play-circle-outline" size={44} color={theme.colors.muted} accessibilityElementsHidden />
+                    )}
+                  </View>
+                  {item.title ? (
+                    <View style={styles.caption}>
+                      <AppText variant="label" weight="bold" color={theme.colors.onMedia} numberOfLines={2}>
+                        {item.title}
+                      </AppText>
+                    </View>
+                  ) : null}
+                </PressScale>
+              )}
+            </Pressable>
+          )}
+        />
+      </FullBleed>
+    </FadeIn>
+  );
+}
+
+const styles = StyleSheet.create({
+  section: { paddingTop: 24 },
+  tile: { overflow: 'hidden', justifyContent: 'flex-end' },
+  poster: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  caption: { padding: 10, backgroundColor: 'rgba(0,0,0,0.35)' },
+});

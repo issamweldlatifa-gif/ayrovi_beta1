@@ -38,6 +38,8 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { AppText, Card } from '@/design/ui';
 import { useTheme } from '@/design/theme';
+import { rowDirectionFor } from '@/design/layoutLogic';
+import { useResponsive } from '@/design/layout';
 import { useI18n, useT } from '@/i18n';
 import { isApiError, userMessage } from '@/api/errors';
 import {
@@ -66,6 +68,7 @@ const COMPOSER_HEIGHT = 52;
 
 export default function AssistantScreen() {
   const theme = useTheme();
+  const { gutter } = useResponsive();
   const t = useT();
   const { locale } = useI18n();
   const insets = useSafeAreaInsets();
@@ -249,14 +252,14 @@ export default function AssistantScreen() {
         threads={threads}
       />
 
-      <View style={[styles.header, { paddingTop: insets.top + theme.space[2], paddingHorizontal: theme.space[3] }]}>
+      <View style={[styles.header, { flexDirection: rowDirectionFor(theme.isRTL), paddingTop: insets.top + theme.space[2], paddingHorizontal: theme.space[3] }]}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t('sonim.menu.settings')}
           onPress={() => setMenuOpen(true)}
           style={styles.headerButton}
         >
-          <Ionicons name="menu" size={24} color={theme.colors.ink} />
+          <Ionicons name="menu" size={24} color={theme.colors.ink} accessibilityElementsHidden />
         </Pressable>
 
         <View style={{ flex: 1 }}>
@@ -265,10 +268,16 @@ export default function AssistantScreen() {
 
         <Pressable
           accessibilityRole="button"
+          accessibilityLabel={t('common.back')}
           onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
           style={styles.headerButton}
         >
-          <Ionicons name="chevron-back" size={24} color={theme.colors.ink} />
+          <Ionicons
+            name={theme.isRTL ? 'chevron-forward' : 'chevron-back'}
+            size={24}
+            color={theme.colors.ink}
+            accessibilityElementsHidden
+          />
         </Pressable>
       </View>
 
@@ -277,7 +286,7 @@ export default function AssistantScreen() {
       <ScrollView
         ref={scrollRef}
         onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
-        contentContainerStyle={{ paddingHorizontal: theme.space[3], paddingBottom: theme.space[3], gap: theme.space[2] }}
+        contentContainerStyle={{ paddingHorizontal: gutter, paddingBottom: theme.space[3], gap: theme.space[2] }}
       >
         {ready === false ? (
           <Card title={t('assistant.unavailableTitle')}>
@@ -334,8 +343,9 @@ export default function AssistantScreen() {
 
       {/* Barre de saisie : 52 pt, une ligne, bouton circulaire centré. */}
       <View style={[styles.composer, {
+        flexDirection: rowDirectionFor(theme.isRTL),
         paddingBottom: insets.bottom,
-        paddingHorizontal: theme.space[3],
+        paddingHorizontal: gutter,
         borderTopColor: theme.colors.line,
         backgroundColor: theme.colors.canvas,
       }]}>
@@ -366,7 +376,7 @@ export default function AssistantScreen() {
             opacity: !streaming && !canSend ? 0.45 : pressed ? 0.85 : 1,
           }]}
         >
-          <Ionicons name={streaming ? 'stop' : 'arrow-up'} size={20} color={theme.colors.onAccent} />
+          <Ionicons name={streaming ? 'stop' : 'arrow-up'} size={20} color={theme.colors.onAccent} accessibilityElementsHidden />
         </Pressable>
       </View>
     </KeyboardAvoidingView>
@@ -374,11 +384,11 @@ export default function AssistantScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingBottom: 8 },
+  header: { alignItems: 'center', gap: 4, paddingBottom: 8 },
   headerButton: { minHeight: 44, minWidth: 44, alignItems: 'center', justifyContent: 'center' },
   bubble: { paddingHorizontal: 12, paddingVertical: 10, maxWidth: '92%' },
   retry: { alignItems: 'flex-start', justifyContent: 'center' },
-  composer: { flexDirection: 'row', alignItems: 'center', gap: 8, height: COMPOSER_HEIGHT, borderTopWidth: StyleSheet.hairlineWidth },
+  composer: { alignItems: 'center', gap: 8, height: COMPOSER_HEIGHT, borderTopWidth: StyleSheet.hairlineWidth },
   input: { flex: 1, minHeight: 40, paddingHorizontal: 12, paddingVertical: 0, borderWidth: StyleSheet.hairlineWidth, textAlignVertical: 'center' },
   send: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
 });

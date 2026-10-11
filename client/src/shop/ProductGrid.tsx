@@ -9,6 +9,13 @@ import type { ProductView } from './types';
  * (0,75 rem / 400 / gris), sur une ligne. Il n'apparaît que si la source en
  * fournit un : la boutique v2 ne découpe pas un titre pour remplir un vide.
  */
+/** Résultat d'une lecture FRAÎCHE de la page marchand (bouton « Vérifier le stock »). */
+export interface StockCheck {
+  status: 'checking' | 'done' | 'failed';
+  availability?: 'in_stock' | 'limited' | 'out_of_stock' | 'unknown' | null;
+  checkedAt?: string | null;
+}
+
 export interface ProductGridProps {
   products: ProductView[];
   tr: (fr: string, ar: string) => string;
@@ -17,10 +24,23 @@ export interface ProductGridProps {
   onOpen: (product: ProductView) => void;
   onFavorite?: (product: ProductView) => void;
   favorites?: Set<string>;
+  /** Présent seulement là où une lecture live a un sens (résultats Lens). */
+  onVerifyStock?: (product: ProductView) => void;
+  stockChecks?: Record<string, StockCheck>;
+}
+
+const STOCK_LABEL: Record<string, [string, string]> = {
+  in_stock: ['En stock', 'متوفر'],
+  limited: ['Stock limité', 'آخر القطع'],
+  out_of_stock: ['Épuisé', 'نفدت الكمية'],
+};
+
+function isPublicLink(url?: string | null): boolean {
+  try { const u = new URL(String(url || '')); return u.protocol === 'https:' || u.protocol === 'http:'; } catch { return false; }
 }
 
 export const ProductGrid: React.FC<ProductGridProps> = ({
-  products, tr, formatMoney, direction = 'ltr', onOpen, onFavorite, favorites,
+  products, tr, formatMoney, direction = 'ltr', onOpen, onFavorite, favorites, onVerifyStock, stockChecks,
 }) => (
   <div className="s-root" dir={direction} data-ay-design="editorial">
     <div className="s-grid">
@@ -28,8 +48,18 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
         const cover = product.media[0];
         const price = product.price;
         const saved = favorites?.has(product.id) ?? false;
+        const check = stockChecks?.[product.id];
+        const canVerify = Boolean(onVerifyStock) && isPublicLink(product.merchant?.url);
+        const stockNote = (() => {
+          if (!check || check.status === 'checking') return null;
+          if (check.status === 'failed' || !check.availability || check.availability === 'unknown') return tr('Stock non confirmé', 'المخزون غير مؤكد');
+          const label = STOCK_LABEL[check.availability];
+          const time = check.checkedAt ? new Date(check.checkedAt).toLocaleTimeString(direction === 'rtl' ? 'ar-TN' : 'fr-TN', { hour: '2-digit', minute: '2-digit' }) : '';
+          const text = label ? tr(label[0], label[1]) : tr('Stock non confirmé', 'المخزون غير مؤكد');
+          return time ? `${text} · ${tr(`Vérifié à ${time}`, `تم التحقق ${time}`)}` : text;
+        })();
         return (
-          <article className="s-card" key={product.id}>
+          <article className="s-card" key={product.id} data-product-id={product.id}>
             <div className="s-card__media">
               <button
                 type="button"
@@ -39,7 +69,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
               >
                 {cover
                   ? <img src={cover.src} alt={cover.alt} loading="lazy" decoding="async" referrerPolicy="no-referrer" />
-                  : <span className="s-card__desc">{tr('Image indisponible', 'الصورة غير متوفرة')}</span>}
+                  : <span className="s-card__desc">{tr('Image indisponible', 'الصورة غير متوفرة')}{product.merchant?.name ? ` · ${product.merchant.name}` : ''}</span>}
               </button>
 
               {onFavorite && (
@@ -55,8 +85,11 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
                 </button>
               )}
 
-              {product.flags.length > 0 && (
+              {(product.flags.length > 0 || product.colors.length > 0) && (
                 <div className="s-card__flags">
+                  {product.colors.length > 0 && (
+                    <span className="s-flag s-flag--info">{tr('Combinaisons disponibles', 'توجد خيارات')}</span>
+                  )}
                   {product.flags.map((flag) => (
                     <span key={flag.label} className={`s-flag s-flag--${flag.kind}`}>{flag.label}</span>
                   ))}
@@ -80,6 +113,22 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
               </>
             ) : (
               <div className="s-card__was">{tr('Prix à confirmer', 'السعر قيد التأكيد')}</div>
+            )}
+
+            {canVerify && (
+              <>
+                <button
+                  type="button"
+                  className="s-card__stock"
+                  disabled={check?.status === 'checking'}
+                  aria-busy={check?.status === 'checking'}
+                  aria-label={tr(`Vérifier le stock : ${product.title}`, `التحقق من المخزون: ${product.title}`)}
+                  onClick={() => onVerifyStock?.(product)}
+                >
+                  {check?.status === 'checking' ? tr('Vérification…', 'جارٍ التحقق…') : tr('Vérifier le stock', 'تحقق من المخزون')}
+                </button>
+                {stockNote && <div className="s-card__stock-note" role="status">{stockNote}</div>}
+              </>
             )}
           </article>
         );

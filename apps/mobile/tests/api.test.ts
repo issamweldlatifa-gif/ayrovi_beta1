@@ -4,7 +4,7 @@ import { failureFrom, parseRetryAfter, unwrap } from '../src/api/envelope';
 import { ApiError, isApiError, userMessage } from '../src/api/errors';
 import { API_BASE_URL } from '../src/api/config';
 import {
-  parseAnnouncements, parseHeroContent, parseHeroVisual, parseNavigation,
+  parseNavigation,
 } from '../src/api/public';
 
 /* ── Doubles de `fetch` ────────────────────────────────────────────────────── */
@@ -40,7 +40,7 @@ afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); vi.useRealTimers(
 
 describe('construction des URLs', () => {
   it('rend un chemin relatif absolu sur l’origine de l’API', () => {
-    expect(apiUrl('/api/public/hero-content')).toBe(`${API_BASE_URL}/api/public/hero-content`);
+    expect(apiUrl('/api/public/hero-slides')).toBe(`${API_BASE_URL}/api/public/hero-slides`);
     expect(apiUrl('api/public/x')).toBe(`${API_BASE_URL}/api/public/x`);
   });
 
@@ -218,32 +218,6 @@ describe('failureFrom', () => {
 /* ── Analyse des charges utiles ────────────────────────────────────────────── */
 
 describe('lecture du contenu public', () => {
-  it('lit le contenu du hero et considère `enabled` absent comme actif', () => {
-    const content = parseHeroContent({
-      eyebrow: 'Nouveau', title: 'Titre\nà deux lignes', highlight: 'deux',
-      description: 'Texte', ctaLabel: 'Découvrir', ctaUrl: '/arrivage',
-    });
-    expect(content).toMatchObject({ eyebrow: 'Nouveau', highlight: 'deux', ctaUrl: '/arrivage', enabled: true });
-    expect(parseHeroContent({ enabled: false })).toMatchObject({ enabled: false });
-    expect(parseHeroContent(null)).toBeNull();
-    expect(parseHeroContent('texte')).toBeNull();
-  });
-
-  it('refuse un visuel sans image et filtre les tailles illisibles', () => {
-    expect(parseHeroVisual({ imageUrl: '' })).toBeNull();
-    expect(parseHeroVisual(null)).toBeNull();
-    const visual = parseHeroVisual({
-      imageUrl: '/media/hero-default.jpg', imageWidth: 1600, imageHeight: 900,
-      srcset: [{ url: '/media/hero-default_640.webp', width: 640 }, { url: '' }, 'nope'],
-      altText: 'Hero', focalX: 0.4, focalY: 9,
-    });
-    expect(visual).toMatchObject({
-      imageUrl: '/media/hero-default.jpg', imageWidth: 1600, imageHeight: 900,
-      srcset: [{ url: '/media/hero-default_640.webp', width: 640 }],
-      focalX: 0.4, isDefault: false,
-    });
-  });
-
   it('ne garde que les liens de navigation utilisables, dans l’ordre', () => {
     const links = parseNavigation([
       { id: 2, destination: 'b', href: '/arrivage', labelFr: 'Arrivage', order: 20 },
@@ -259,9 +233,4 @@ describe('lecture du contenu public', () => {
     expect(links[2]).toMatchObject({ labelFr: 'عربي', labelAr: 'عربي' });
   });
 
-  it('nettoie les annonces vides', () => {
-    expect(parseAnnouncements([{ id: 1, text: ' Livraison offerte ' }, { id: 2, text: '   ' }, { id: 3 }]))
-      .toEqual([{ id: '1', text: 'Livraison offerte' }]);
-    expect(parseAnnouncements('nope')).toEqual([]);
-  });
 });

@@ -15,6 +15,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AppText, Button, Card, Field } from '@/design/ui';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
+import { rowDirectionFor } from '@/design/layoutLogic';
 import { useI18n } from '@/i18n';
 import {
   createAddress, deleteAddress, fetchAddresses, type Address,
@@ -95,14 +96,14 @@ export default function AddressesScreen() {
 
       {adding ? (
         <Card title={t('addresses.new')}>
-          <Field label={t('addresses.label')} placeholder={t('addresses.labelPlaceholder')} value={form.label} onChangeText={(v) => setForm({ ...form, label: v })} />
-          <Field label={t('addresses.recipient')} value={form.recipientName} onChangeText={(v) => setForm({ ...form, recipientName: v })} />
-          <Field label={t('auth.phone.label')} placeholder="20 123 456" keyboardType="phone-pad" value={form.phone} onChangeText={(v) => setForm({ ...form, phone: v })} />
-          <Field label={t('addresses.governorate')} value={form.governorate} onChangeText={(v) => setForm({ ...form, governorate: v })} autoCapitalize="words" />
+          <Field label={t('addresses.label')} accessibilityLabel={t('addresses.label')} placeholder={t('addresses.labelPlaceholder')} value={form.label} onChangeText={(v) => setForm({ ...form, label: v })} />
+          <Field label={t('addresses.recipient')} accessibilityLabel={t('addresses.recipient')} value={form.recipientName} onChangeText={(v) => setForm({ ...form, recipientName: v })} />
+          <Field label={t('auth.phone.label')} accessibilityLabel={t('auth.phone.label')} placeholder="20 123 456" keyboardType="phone-pad" value={form.phone} onChangeText={(v) => setForm({ ...form, phone: v })} />
+          <Field label={t('addresses.governorate')} accessibilityLabel={t('addresses.governorate')} value={form.governorate} onChangeText={(v) => setForm({ ...form, governorate: v })} autoCapitalize="words" />
           <AppText variant="caption" color={theme.colors.muted}>{GOVERNORATES.join(' · ')}</AppText>
-          <Field label={t('addresses.city')} value={form.city} onChangeText={(v) => setForm({ ...form, city: v })} />
-          <Field label={t('addresses.line')} value={form.addressLine} onChangeText={(v) => setForm({ ...form, addressLine: v })} multiline />
-          <Field label={t('addresses.notes')} value={form.deliveryNotes} onChangeText={(v) => setForm({ ...form, deliveryNotes: v })} />
+          <Field label={t('addresses.city')} accessibilityLabel={t('addresses.city')} value={form.city} onChangeText={(v) => setForm({ ...form, city: v })} />
+          <Field label={t('addresses.line')} accessibilityLabel={t('addresses.line')} value={form.addressLine} onChangeText={(v) => setForm({ ...form, addressLine: v })} multiline />
+          <Field label={t('addresses.notes')} accessibilityLabel={t('addresses.notes')} value={form.deliveryNotes} onChangeText={(v) => setForm({ ...form, deliveryNotes: v })} />
           <Button label={t('common.save')} onPress={() => { setFailure(''); add.mutate(); }} busy={add.isPending} disabled={!complete} />
           <Button label={t('common.cancel')} tone="quiet" onPress={() => { setAdding(false); setFailure(''); }} />
         </Card>
@@ -118,7 +119,7 @@ function AddressCard({ address, onDelete, busy }: { address: Address; onDelete: 
   const t = useI18n().t;
   return (
     <Card title={address.label || t('addresses.label')}>
-      <View style={styles.row}>
+      <View style={[styles.row, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
         {address.isDefault ? (
           <AppText variant="caption" weight="bold" color={theme.status.info.fg}>{t('addresses.default')}</AppText>
         ) : null}
@@ -138,5 +139,5 @@ function AddressCard({ address, onDelete, busy }: { address: Address; onDelete: 
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', justifyContent: 'flex-end' },
+  row: { justifyContent: 'flex-end' },
 });

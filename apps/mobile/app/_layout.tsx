@@ -12,6 +12,8 @@
 import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useNetworkState } from 'expo-network';
+import { View } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -25,6 +27,7 @@ import { useDeepLinkRouting } from '@/features/links/useDeepLinkRouting';
 import { usePushNotifications } from '@/features/notifications/usePush';
 import { useAyWebsSessionId } from '@/features/aywebs/session';
 import { LoadingScreen } from '@/design/LoadingScreen';
+import { NetworkBanner } from '@/design/NetworkBanner';
 
 SplashScreen.preventAutoHideAsync().catch(() => {
   // Déjà masqué (rechargement à chaud) : sans effet, ne bloque pas le rendu.
@@ -47,6 +50,9 @@ function Navigation() {
   const { ready, locale } = usePrefs();
   const sessionId = useAyWebsSessionId();
   const [fontsLoaded, fontError] = useFonts(FONT_SOURCES);
+  // `isConnected === false` = coupure avérée ; `null` = inconnu, on n'affiche rien.
+  const network = useNetworkState();
+  const offline = network.isConnected === false;
 
   // Les polices sont embarquées : un échec est un défaut de construction, pas
   // une raison de rester sur l'écran de démarrage — on rend avec la police
@@ -76,21 +82,27 @@ function Navigation() {
   }
 
   return (
-    <>
+    <View style={{ flex: 1, backgroundColor: theme.colors.canvas }}>
       <StatusBar style={theme.mode === 'dark' ? 'light' : 'dark'} />
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: theme.colors.canvas },
-        }}
-      >
-        <Stack.Screen name="(tabs)" />
-        {/* Connexion : présentée par-dessus l'onglet courant, refermée au succès. */}
-        <Stack.Screen name="sign-in" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="forgot" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="orders" />
-      </Stack>
-    </>
+      {/* Hors ligne : bandeau DANS LE FLUX — le contenu est poussé, jamais
+          recouvert (un `absolute` ici violerait le verrou §17). */}
+      {offline ? <NetworkBanner /> : null}
+      {/* `Stack` n'a pas de prop `style` : le View flex:1 lui rend la place. */}
+      <View style={{ flex: 1 }}>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: theme.colors.canvas },
+          }}
+        >
+          <Stack.Screen name="(tabs)" />
+          {/* Connexion : présentée par-dessus l'onglet courant, refermée au succès. */}
+          <Stack.Screen name="sign-in" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="forgot" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="orders" />
+        </Stack>
+      </View>
+    </View>
   );
 }
 

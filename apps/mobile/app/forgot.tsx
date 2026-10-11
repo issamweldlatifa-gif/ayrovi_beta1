@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppText, Button, Card, Field } from '@/design/ui';
 import { useTheme } from '@/design/theme';
+import { useResponsive } from '@/design/layout';
 import { useI18n } from '@/i18n';
 import { authMessage } from '@/api/authMessages';
 import { requestPasswordReset } from '@/api/account';
@@ -31,6 +32,7 @@ const DEFAULT_RETRY_SECONDS = 60;
 
 export default function ForgotPasswordScreen() {
   const theme = useTheme();
+  const { gutter } = useResponsive();
   const { t, locale } = useI18n();
   const insets = useSafeAreaInsets();
   const session = useSession();
@@ -81,6 +83,7 @@ export default function ForgotPasswordScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.screen,
+          { paddingHorizontal: gutter },
           { paddingTop: insets.top + theme.space[2], paddingBottom: insets.bottom + theme.space[5] },
         ]}
         keyboardShouldPersistTaps="handled"
@@ -118,6 +121,7 @@ export default function ForgotPasswordScreen() {
             <>
               <Field
                 label={t('auth.forgot.email')}
+                accessibilityLabel={t('auth.forgot.email')}
                 value={email}
                 onChangeText={setEmail}
                 autoCapitalize="none"
@@ -128,7 +132,7 @@ export default function ForgotPasswordScreen() {
               {failure ? (
                 <AppText accessibilityRole="alert" variant="label" weight="bold" color={theme.status.danger.fg}>{failure}</AppText>
               ) : null}
-              <Button label={t('auth.forgot.submit')} onPress={submit} busy={busy} />
+              <Button label={t('auth.forgot.submit')} onPress={submit} busy={busy} testID="auth-forgot-submit" />
               <AppText variant="caption" color={theme.colors.muted}>{t('auth.forgot.socialOnly')}</AppText>
             </>
           ) : (
@@ -153,7 +157,7 @@ export default function ForgotPasswordScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { paddingHorizontal: 16, gap: 12 },
+  screen: { gap: 12 },
   close: { alignItems: 'flex-start', justifyContent: 'center' },
   intro: { marginBottom: 4 },
 });

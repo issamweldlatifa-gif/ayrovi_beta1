@@ -4,11 +4,12 @@
  * لماذا صف موش بطاقة مربّعة: الخبر يُقرأ بسرعة في قائمة، والصورة فيه مرافقة
  * موش موضوع. والتمييز مع «ستوري» و«عرض» يبان في الشكل قبل الكلمة.
  */
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/design/ui';
 import { newsCategoryText } from '@/api/labels';
 import { useTheme } from '@/design/theme';
+import { AppImage } from '@/design/appImage';
 import { useT } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import type { NewsItem } from '@/api/sections';
@@ -40,7 +41,7 @@ export function NewsCard({ item, onOpen }: NewsCardProps) {
     >
       <View style={[styles.thumb, { backgroundColor: theme.colors.surface, borderRadius: theme.radius.card }]}>
         {item.image ? (
-          <Image source={{ uri: mediaUrl(item.image) }} style={styles.image} resizeMode="cover" />
+          <AppImage uri={mediaUrl(item.image)} style={styles.image} contentFit="cover" accessibilityLabel={item.title} />
         ) : null}
       </View>
 

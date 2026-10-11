@@ -1,11 +1,11 @@
 /**
- * Barre du bas — les cinq OUTILS, et rien d’autre.
+ * Barre du bas — les quatre OUTILS et le Profil.
  *
  * ── Ce qui a changé, et pourquoi ───────────────────────────────────────────
- * L’ancienne barre portait des DESTINATIONS (Accueil · Compte · Panier). La
- * consigne produit est différente : la barre porte les outils
- * (Lens · AYWEBs · SONIM · Vision · OCEREX), l’accueil se atteint par le LOGO
- * de l’en-tête, le compte et le panier par leurs icônes en haut à droite.
+ * La barre porte désormais : Lens · AYWEBs · SONIM · Vision · Profil. OCEREX
+ * n’y figure plus (route conservée, sans fusion avec Lens). L’accueil se
+ * atteint par le LOGO de l’en-tête, le panier par son icône, les notifications
+ * par la cloche.
  *
  * `index` (l’accueil) et les anciens onglets Compte/Panier restent donc des
  * routes — le tiroir et l’en-tête pointent dessus — mais sont retirés de la
@@ -40,7 +40,7 @@ const ICONS: Record<string, { active: IoniconName; inactive: IoniconName }> = {
   aywebs: { active: 'pricetags', inactive: 'pricetags-outline' },
   sonim: { active: 'chatbubble-ellipses', inactive: 'chatbubble-ellipses-outline' },
   vision: { active: 'eye', inactive: 'eye-outline' },
-  ocerex: { active: 'camera', inactive: 'camera-outline' },
+  account: { active: 'person', inactive: 'person-outline' },
 };
 
 export default function TabsLayout() {
@@ -104,18 +104,20 @@ export default function TabsLayout() {
         },
       })}
     >
-      {/* Les cinq outils — ordre volontaire : en RTL ils apparaîtront de droite
-          à gauche, Lens le premier. */}
+      {/* Barre : Lens · AYWEBs · SONIM · Vision · Profil. Ordre voulu ; en RTL
+          la barre se lit de droite à gauche, Lens reste le premier. */}
       <Tabs.Screen name="lens" options={{ title: t('tabs.lens') }} />
       <Tabs.Screen name="aywebs" options={{ title: t('tabs.aywebs') }} />
       <Tabs.Screen name="sonim" options={{ title: t('tabs.sonim') }} />
       <Tabs.Screen name="vision" options={{ title: t('tabs.vision') }} />
-      <Tabs.Screen name="ocerex" options={{ title: t('tabs.ocerex') }} />
+      <Tabs.Screen name="account" options={{ title: t('tabs.account') }} />
 
-      {/* Routes conservées, retirées de la barre : l’accueil s’atteint par le
-          logo, le compte et le panier par l’en-tête. */}
+      {/* OCEREX retiré de la barre : la route reste déclarée (aucune fusion
+          avec Lens), elle n’est simplement plus un onglet. */}
+      <Tabs.Screen name="ocerex" options={{ href: null, title: t('tabs.ocerex') }} />
+
+      {/* Route conservée, retirée de la barre : l’accueil s’atteint par le logo. */}
       <Tabs.Screen name="index" options={{ href: null }} />
-      <Tabs.Screen name="account" options={{ href: null }} />
       {/**
        * Onglet MASQUÉ (`href: null`) mais DÉCLARÉ : la route existe, l'en-tête
        * et le tiroir pointent dessus. Le test de copie l'exige avec raison —

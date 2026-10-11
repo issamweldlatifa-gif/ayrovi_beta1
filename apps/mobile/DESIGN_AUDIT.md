@@ -52,3 +52,23 @@ Les changements de couleur, de taille de cible et de retours à la ligne doivent
 - actions Lens/OCEREX, footer full-bleed et zone gestuelle du bas.
 
 Aucune conformité visuelle n’est déclarée sur la seule base de ces tests. Le rendu final et les captures doivent être vérifiés après construction de la démo Android.
+
+## Passe du 08/10/2026 (soir) — accessibilité, hors-ligne, images, squelettes, RTL
+
+**Périmètre :** `apps/mobile/` + CI (build APK sur la branche de travail).
+Vérifications : `npm run typecheck`, `npm test` (32 fichiers, 440 tests), `npm run tokens:check`, `npx expo export --platform android` — tous verts.
+
+| Sujet | Défaut constaté | Correction |
+|---|---|---|
+| État hors-ligne | `states.tsx` promettait 4 états, il n'en existait que 3 | `OfflineBlock` (icône, titre, explication, réessai) ; `ErrorBlock` route les `ApiError.isOffline` vers cet état ; bannière réseau globale (`expo-network`) dans le flux, jamais en `absolute` |
+| Accessibilité | Boutons icône-seuls sans nom, champs sans `accessibilityLabel`, libellés figés (`"fermer"`, `"previous"`, `"play"`) | `accessibilityLabel` sur tous les boutons visuels et tous les `Field` ; icônes décoratives en `accessibilityElementsHidden` ; libellés figés remplacés par des clés i18n ; **verrou** `tests/accessibility.test.ts` (3 règles) |
+| Images | `Image` natif partout : pas de cache disque, pas de secours | `AppImage` unique (`expo-image`) : cache, fondu, cadre de secours, `decorative` ; les 19 usages migrés |
+| Squelettes | Le jeton `opacity.skeleton` existait sans composant | `Skeleton` + `HeroSkeleton` + `ListSkeleton` (pulsation figée si mouvement réduit) ; branchés sur accueil, panier, compte, sections |
+| Liste commandes | `map` sur un historique sans plafond, non virtualisé | `FlatList` sur `/orders` (listes bornées ou dans un `ScrollView` laissées en `map` — pas de liste virtualisée imbriquée) |
+| Onglet Vision | Onglet vide = 20 % de la barre du bas sans action | CTA réel vers Lens (`vision.emptyAction`) ; l'onglet reste (contrat de copie) |
+| Miroir RTL | Rangées à ordre fixe restées LTR en arabe (steppers, en-têtes, grilles) | `rowDirectionFor`/`actionDirectionFor(isRTL)` purs + testés ; appliqués aux primitives (`KeyValue`, `LinkRow`, `DrawerItem`, `SubScreen`, `Segmented`, `ToggleRow`) et aux écrans (panier, aywebs, compte, assistant, navigateur, grilles catalogue/promotions/stories/sections, footer, tiroir SONIM) |
+| Textes de chargement | Objets `{fr, ar}` en dur dans les écrans | `LoadingBlock` prend une clé `labelKey` ; clés `loading.*` dans les deux langues |
+| testID | 1 seul dans l'application | `testID` sur les primitives (`Button`, `LinkRow`, `AppScreen`, `SubScreen`, `AppImage`) et les actions clés (kebab-case — un `testID` en `dot.case` serait pris pour une clé i18n) |
+| CI | L'APK ne se construisait que sur `arena/c0321e79-ayrovi-beta1` | `mobile-android.yml` et `mobile.yml` déclenchés aussi sur `arena/bc19f283-ayrovi-beta1` |
+
+**Non fait (volontairement) :** miroir RTL complet écran par écran (reste P6), vérification visuelle sur appareil (à faire sur l'APK démo reconstruit), liste virtualisée imbriquée dans un `ScrollView` (anti-patron).
