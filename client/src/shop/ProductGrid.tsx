@@ -85,8 +85,11 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
                 </button>
               )}
 
-              {product.flags.length > 0 && (
+              {(product.flags.length > 0 || product.colors.length > 0) && (
                 <div className="s-card__flags">
+                  {product.colors.length > 0 && (
+                    <span className="s-flag s-flag--info">{tr('Combinaisons disponibles', 'توجد خيارات')}</span>
+                  )}
                   {product.flags.map((flag) => (
                     <span key={flag.label} className={`s-flag s-flag--${flag.kind}`}>{flag.label}</span>
                   ))}

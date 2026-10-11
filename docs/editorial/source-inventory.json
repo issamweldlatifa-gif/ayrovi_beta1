@@ -20581,8 +20581,8 @@
     {
       "file": "client/src/shop/adapter.ts",
       "domain": "shell-content",
-      "sha256": "eda0375e27aa38dd04e4443edb369dfba589d818dee9c1968b60db0ad71fdfe3",
-      "lines": 259,
+      "sha256": "8439ae42311863c86d985e2b5bd81f8afbdf80ad04c89572e8f95d290a41bc47",
+      "lines": 260,
       "imports": [
         "../ayrovix/types",
         "../ayrovix/services/mediaIsolation",
@@ -20962,8 +20962,8 @@
     {
       "file": "client/src/shop/ProductGrid.tsx",
       "domain": "shell-content",
-      "sha256": "0ac4990b94ce2b64a5ab4f9a567104616b0a1c99bfc699eaaf2fd647f5af3bbf",
-      "lines": 136,
+      "sha256": "bf88eae142fd7b47f719f8596723f110159b94574928ec4b44cd0a752a70199d",
+      "lines": 139,
       "imports": [
         "react",
         "../design/editorial/Icon",
@@ -20995,7 +20995,7 @@
         },
         {
           "tag": "button",
-          "line": 117,
+          "line": 120,
           "className": "\"s-card__stock\"",
           "type": "\"button\"",
           "role": null,

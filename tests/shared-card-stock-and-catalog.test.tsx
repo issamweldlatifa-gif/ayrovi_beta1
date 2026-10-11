@@ -58,6 +58,18 @@ describe('carte boutique partagée — vérifier le stock (Lens uniquement)', ()
   });
 });
 
+describe('carte boutique — « Combinaisons disponibles » seulement si le marchand publie des couleurs', () => {
+  it('affiche le repère quand la source publie des couleurs', () => {
+    const html = renderToStaticMarkup(<ProductGrid products={[view({ colors: [{ name: 'Noir', media: null, selected: false }] })]} tr={tr} formatMoney={money} onOpen={() => {}} />);
+    expect(html).toContain('Combinaisons disponibles');
+  });
+
+  it('n’affiche rien d’inventé sans couleur publiée', () => {
+    const html = renderToStaticMarkup(<ProductGrid products={[view()]} tr={tr} formatMoney={money} onOpen={() => {}} />);
+    expect(html).not.toContain('Combinaisons disponibles');
+  });
+});
+
 describe('grille d’accueil — produits du catalogue dans la carte boutique', () => {
   const base = { id: 'c1', name: 'Sac cuir', brandName: 'Maison', sourcePlatform: 'AMAZON', sourceUrl: 'https://amazon.example/x', currency: 'EUR', originalPrice: 40, finalPrice: 120, stockStatus: 'IN_STOCK', image: 'https://img.example/a.jpg', additionalImages: [] };
 

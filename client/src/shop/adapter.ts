@@ -92,7 +92,8 @@ export function candidateToView(candidate: AyrovixCandidate): ProductView {
     availabilitySource: candidate.source || null,
     availabilityCheckedAt: null,
     availabilityExpiresAt: null,
-    colors: [],
+    // Couleurs publiées par le marchand uniquement (aucune taille ni stock inventés).
+    colors: (candidate.colors || []).map((name) => String(name || '').trim()).filter(Boolean).slice(0, 12).map((name) => ({ name, media: null, selected: false })),
     flags: candidate.promo ? [{ kind: 'deal', label: candidate.promo.label || 'Promo' }] : [],
     merchant: candidate.source ? { name: candidate.source, url: candidate.sourceUrl } : null,
   };
