@@ -122,7 +122,7 @@ export const StoryTab: React.FC<SocialProps> = ({ isAuthenticated, onRequireAuth
                   <div className="h-11 w-11 rounded-full bg-surface/25" />
                   <div className="space-y-1.5"><div className="h-2.5 w-28 rounded bg-surface/25" /><div className="h-2 w-16 rounded bg-surface/25" /></div>
                 </div>
-                <div className="mt-3 aspect-[4/5] w-full rounded-xl bg-surface/20" />
+                <div className="mt-3 aspect-[3/4] w-full rounded-xl bg-surface/20" />
                 <div className="mt-3 h-3 w-40 rounded bg-surface/25" />
               </div>
             ))}
