@@ -62,6 +62,18 @@ export function googleFailureCode(error: unknown): 'play' | 'config' | 'generic'
  */
 export function googleFailureDetail(error: unknown): string {
   if (error instanceof GoogleConfigError) return error.code;
-  if (isErrorWithCode(error)) return String(error.code);
+  if (isErrorWithCode(error)) {
+    const code = String(error.code);
+    // Diagnostic (non secret) : fin de l'identifiant Web RÉELLEMENT intégré à ce build,
+    // à comparer avec GOOGLE_CLIENT_ID sur le serveur.
+    if (code === '10') return `${code} · web …${webClientIdTail()}`;
+    return code;
+  }
   return 'UNKNOWN';
+}
+
+/** Fin de l'identifiant Web (sans le suffixe public), pour le diagnostic uniquement. */
+export function webClientIdTail(): string {
+  const id = googleWebClientId().replace('.apps.googleusercontent.com', '');
+  return id ? id.slice(-10) : 'absent';
 }
