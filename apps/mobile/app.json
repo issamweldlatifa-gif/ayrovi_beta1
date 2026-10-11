@@ -3,7 +3,7 @@
     "name": "AYROVI",
     "slug": "ayrovi",
     "scheme": "ayrovi",
-    "version": "2.0.0",
+    "version": "2.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "userInterfaceStyle": "automatic",
@@ -11,7 +11,7 @@
     "primaryColor": "#FF7900",
     "android": {
       "package": "app.ayrovi.mobile",
-      "versionCode": 7,
+      "versionCode": 8,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#FAFAFA"
