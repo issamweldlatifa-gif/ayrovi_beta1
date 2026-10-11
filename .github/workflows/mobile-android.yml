@@ -127,6 +127,18 @@ jobs:
             -srckeystore keystores/debug.p12 -srcstoretype PKCS12 -srcstorepass android \
             -destkeystore "$HOME/.android/debug.keystore" -deststoretype JKS \
             -deststorepass android -destkeypass android -alias androiddebugkey -noprompt
+          # Gradle signe les builds avec `android/app/debug.keystore` (créé par prebuild,
+          # NEUF à chaque machine). On y met la MÊME clé fixe, sinon chaque APK porte
+          # une empreinte différente et Google refuse la connexion.
+          mkdir -p android/app
+          cp "$HOME/.android/debug.keystore" android/app/debug.keystore
+          SHA1=$(keytool -list -v -keystore android/app/debug.keystore -storepass android -alias androiddebugkey \
+            | awk '/SHA1:/ {print $2}')
+          if [ "$SHA1" != "4D:0B:91:84:E6:15:F1:76:4A:E3:08:C4:46:49:7E:DB:1A:6E:05:3E" ]; then
+            echo "::error title=Clé de démonstration::empreinte SHA-1 inattendue : ${SHA1:-vide}"
+            exit 1
+          fi
+          echo "::notice title=Clé de démonstration::SHA-1 fixe OK ($SHA1)"
           SHA=$(keytool -list -v -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey \
             | awk '/SHA256:/ {print $2; exit}')
           if [ -z "$SHA" ]; then
@@ -211,6 +223,9 @@ jobs:
             raw="$("$APKSIGNER" verify --print-certs "$apk" 2>/dev/null | sed -n 's/.*SHA-1 digest: //p' | head -1 || true)"
             sha1="$(printf '%s' "$raw" | tr 'a-f' 'A-F' | sed -E 's/(..)/\1:/g; s/:$//')"
             echo "- Empreinte SHA-1 de la signature de $(basename "$apk") : \`${sha1:-introuvable}\`" >> "$GITHUB_STEP_SUMMARY"
+            if [ "$sha1" != "4D:0B:91:84:E6:15:F1:76:4A:E3:08:C4:46:49:7E:DB:1A:6E:05:3E" ]; then
+              echo "::warning title=Empreinte APK::signature différente de la clé de démonstration fixe (${sha1:-vide})"
+            fi
           done
 
           # La mesure est aussi RÉÉCRITE dans le dépôt. Un chiffre qu'on ne
