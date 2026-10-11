@@ -307,7 +307,6 @@ export const ar = {
   'tabs.vision': 'فيجن',
   'tabs.ocerex': 'OCEREX',
   'nav.menu': 'القائمة',
-  'nav.profile': 'حسابي',
   'nav.home': 'الرئيسية',
   'home.tab.arrivals': 'وصل حديثاً',
   'home.tab.promotions': 'العروض',

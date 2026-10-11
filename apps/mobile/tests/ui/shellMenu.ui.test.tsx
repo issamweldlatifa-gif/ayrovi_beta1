@@ -1,6 +1,6 @@
 /**
  * En-tête et menu :
- *  • l’icône « compte » ouvre la CONNEXION directement quand on n’est pas connecté ;
+ *  • la cloche ouvre les NOTIFICATIONS, ou la CONNEXION quand on n’est pas connecté ;
  *  • la langue et le thème sont dans le menu (plus sur la page compte).
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
@@ -42,17 +42,24 @@ describe('icône compte et menu', () => {
     jest.clearAllMocks();
   });
 
-  it('non connecté : l’icône compte ouvre directement la connexion', async () => {
+  it('non connecté : la cloche ouvre directement la connexion', async () => {
     await renderHeader();
-    fireEvent.press(screen.getByRole('button', { name: 'Mon compte' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Notifications' }));
     expect(router.push).toHaveBeenCalledWith('/sign-in');
   });
 
-  it('connecté : l’icône compte ouvre le compte', async () => {
+  it('connecté : la cloche ouvre directement les notifications', async () => {
     (globalThis as any).__testStatus = 'signedIn';
     await renderHeader();
-    fireEvent.press(screen.getByRole('button', { name: 'Mon compte' }));
-    expect(router.push).toHaveBeenCalledWith('/(tabs)/account');
+    fireEvent.press(screen.getByRole('button', { name: 'Notifications' }));
+    expect(router.push).toHaveBeenCalledWith('/account/notifications');
+  });
+
+  it('l’icône menu est à gauche du logo, la cloche et le panier à droite', async () => {
+    await renderHeader();
+    expect(screen.queryByRole('button', { name: 'Mon compte' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Menu' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Panier AYROVI' })).toBeTruthy();
   });
 
   it('le menu contient la langue et le thème, avec leurs choix', async () => {

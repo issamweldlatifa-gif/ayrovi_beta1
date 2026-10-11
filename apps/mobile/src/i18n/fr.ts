@@ -307,7 +307,6 @@ export const fr = {
   'tabs.vision': 'Vision',
   'tabs.ocerex': 'OCEREX',
   'nav.menu': 'Menu',
-  'nav.profile': 'Mon compte',
   'nav.home': 'Accueil',
   'home.tab.arrivals': 'Nouveautés',
   'home.tab.promotions': 'Promotions',

@@ -65,9 +65,10 @@ export function AppHeader({
   const [menuOpen, setMenuOpen] = useState(false);
   const { locale, setLocale, themeMode, setThemeMode } = usePrefs();
   const { status } = useSession();
-  // Icône « compte » : connecté → le compte ; sinon → la connexion directement
-  // (pas d'écran intermédiaire de réglages).
+  // Cloche : connecté → la liste des notifications ; sinon → la connexion
+  // (les notifications sont celles du compte).
   const accountHref = status === 'signedIn' ? '/(tabs)/account' : '/sign-in';
+  const notificationsHref = status === 'signedIn' ? '/account/notifications' : '/sign-in';
 
   // Au sommet, sur une carte Hero : le header prend sa couleur et ses icônes
   // suivent la luminance du fond. Après défilement : surface lisible d'origine.
@@ -106,34 +107,36 @@ export function AppHeader({
         // défilement du contenu qui passe en dessous.
         pointerEvents="box-none"
       >
-        {/* Le logo ramène à l’accueil : c’est le choix validé, la barre du bas
-            ne portant que les cinq outils. */}
-        <Pressable
-          onPress={() => go('/')}
-          accessibilityRole="button"
-          accessibilityLabel={t('nav.home')}
-          style={({ pressed }) => [styles.logo, { opacity: pressed ? 0.6 : 1 }]}
-        >
-          <BrandMark size={30} nameColor={onHero ? iconColor : undefined} />
-        </Pressable>
-
+        {/* Groupe de gauche : menu, puis logo (le logo ramène à l’accueil). */}
         <View style={[styles.actions, { flexDirection: row }]}>
           <HeaderIcon
-            name="person-outline"
-            label={t('nav.profile')}
-            onPress={() => go(accountHref)}
+            name="menu-outline"
+            label={t('nav.menu')}
+            onPress={() => { setMenuOpen(true); }}
+            color={iconColor}
+          />
+          <Pressable
+            onPress={() => go('/')}
+            accessibilityRole="button"
+            accessibilityLabel={t('nav.home')}
+            style={({ pressed }) => [styles.logo, { opacity: pressed ? 0.6 : 1 }]}
+          >
+            <BrandMark size={30} nameColor={onHero ? iconColor : undefined} />
+          </Pressable>
+        </View>
+
+        {/* Groupe de droite : notifications (ouvre directement la liste), panier. */}
+        <View style={[styles.actions, { flexDirection: row }]}>
+          <HeaderIcon
+            name="notifications-outline"
+            label={t('account.menu.notifications')}
+            onPress={() => go(notificationsHref)}
             color={iconColor}
           />
           <HeaderIcon
             name="bag-outline"
             label={t('cart.title')}
             onPress={() => go('/(tabs)/cart')}
-            color={iconColor}
-          />
-          <HeaderIcon
-            name="menu-outline"
-            label={t('nav.menu')}
-            onPress={() => { setMenuOpen(true); }}
             color={iconColor}
           />
         </View>
@@ -198,6 +201,7 @@ const styles = StyleSheet.create({
   logo: {
     paddingVertical: 4,
     paddingHorizontal: 2,
+    justifyContent: 'center',
   },
   actions: {
     alignItems: 'center',

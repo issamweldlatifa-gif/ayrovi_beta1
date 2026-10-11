@@ -42,7 +42,9 @@ import {
 } from './heroCarouselLogic';
 
 /** Hauteur du fondu final vers le fond de page (blanc) sous le carrousel. */
-const PAGE_FADE_HEIGHT = 120;
+const PAGE_FADE_HEIGHT = 40;
+/** Espace entre le bas du héros et les tabs : petit, pas un vide de 120 pts. */
+const SECTION_BOTTOM_GAP = 12;
 /** Marge au-dessus du bas de l'image pour les pastilles (posées SUR la photo). */
 
 /* ── États du composant parent ───────────────────────────────────────────── */
@@ -345,7 +347,7 @@ const HeroCard = memo(function HeroCard({ card, width, onPress }: HeroCardProps)
 const styles = StyleSheet.create({
   // Pas de fond propre à la carte : le fond continu du carrousel passe derrière
   // les voisines (aucune bande coupée). Le bas de section laisse place au fondu.
-  section: { paddingTop: 16, paddingBottom: PAGE_FADE_HEIGHT, overflow: 'hidden' },
+  section: { paddingTop: 16, paddingBottom: SECTION_BOTTOM_GAP, overflow: 'hidden' },
   // Pas de marge interne : le visuel occupe toute la largeur de la carte (plus grand).
   card: {},
   cardMedia: { overflow: 'hidden' },
