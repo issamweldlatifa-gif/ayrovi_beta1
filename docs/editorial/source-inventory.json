@@ -4,7 +4,7 @@
   "totals": {
     "files": 259,
     "customerAndSharedFiles": 203,
-    "controls": 481,
+    "controls": 485,
     "iconAliases": 102,
     "uniqueGlyphs": 99
   },
@@ -20004,8 +20004,8 @@
     {
       "file": "client/src/features/ocerex/screens/OcerexHome.tsx",
       "domain": "shell-content",
-      "sha256": "51f37150ea9f49f5d4d66966d586a63319289fa50586fd4cf2175fcce649e7a4",
-      "lines": 39,
+      "sha256": "06d8d5b3812b18be3445a85ee20922f9da4158cca8f88ac9a3fa9451c14138b8",
+      "lines": 145,
       "imports": [
         "react",
         "../../../components/QatafoIcons",
@@ -20018,8 +20018,48 @@
       "controls": [
         {
           "tag": "button",
-          "line": 17,
-          "className": "\"mt-6 grid min-h-52 place-items-center rounded-card border-2 border-dashed border-line bg-white px-6 text-center transition hover:border-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20\"",
+          "line": 65,
+          "className": "{`min-h-11 rounded-full px-3 text-sm font-bold transition ${mode === 'camera' ? 'bg-ink text-white' : 'text-ink'}`}",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => setMode('camera')}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 69,
+          "className": "{`min-h-11 rounded-full px-3 text-sm font-bold transition ${mode === 'upload' ? 'bg-ink text-white' : 'text-ink'}`}",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => setMode('upload')}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 100,
+          "className": "\"mx-auto mt-6 grid h-20 w-20 place-items-center rounded-full border-4 border-ink bg-white transition disabled:opacity-50\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Prendre la photo du prix', 'التقاط صورة السعر')}",
+          "onClick": "{shoot}",
+          "disabled": "{busy}"
+        },
+        {
+          "tag": "Button",
+          "line": 111,
+          "className": "\"mt-4 w-full\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": "{tr('Prendre une photo', 'التقاط صورة')}",
+          "onClick": "{() => cameraRef.current?.click()}",
+          "disabled": "{busy}"
+        },
+        {
+          "tag": "button",
+          "line": 119,
+          "className": "\"mt-6 grid min-h-52 place-items-center rounded-card border-2 border-dashed border-line bg-white px-6 text-center transition hover:border-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": "{tr('Importer une image', 'رفع صورة')}",
@@ -20027,18 +20067,8 @@
           "disabled": "{busy}"
         },
         {
-          "tag": "input",
-          "line": 29,
-          "className": "\"sr-only\"",
-          "type": "\"file\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
           "tag": "Button",
-          "line": 30,
+          "line": 131,
           "className": "\"mt-4 w-full\"",
           "type": null,
           "role": null,
@@ -20048,7 +20078,17 @@
         },
         {
           "tag": "input",
-          "line": 34,
+          "line": 138,
+          "className": "\"sr-only\"",
+          "type": "\"file\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 139,
           "className": "\"sr-only\"",
           "type": "\"file\"",
           "role": null,
