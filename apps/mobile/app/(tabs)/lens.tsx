@@ -14,8 +14,8 @@
  * الاختيار يفتح مسار AYWEBs: نفس المتجر، نفس الكابتشر، ونفس «Add to Cart» —
  * لأن الإضافة ما تتقرّرش هنا، تتقرّر في الخادم.
  */
-import { useCallback, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { useCallback, useRef, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -29,10 +29,12 @@ import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
 import { isApiError, userMessage } from '@/api/errors';
 import {
-  LENS_MIN_TEXT, analyzeLensImage, analyzeLensText, chooseLensEvent, createLensWatch,
+  LENS_MIN_TEXT, analyzeLensText, chooseLensEvent, createLensWatch,
   fetchLensHistory, lensUploadInputFrom, type LensAnalysis, type LensCandidate,
 } from '@/api/lens';
+import { analyzeLensImageStream, type LensProgress } from '@/api/lensStream';
 import { LensResultCard } from '@/features/lens/LensResultCard';
+import { LensProgressSheet } from '@/features/lens/LensProgressSheet';
 
 /** طريقة البحث: صورة، أو مسح مباشر (QR/باركود)، أو رابط/رمز نصّي. */
 type LensMode = 'photo' | 'live' | 'code';
@@ -48,6 +50,12 @@ export default function LensScreen() {
   const [textResults, setTextResults] = useState<LensCandidate[] | null>(null);
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
+  /** Étape en cours et fiches déjà reçues pendant l'analyse en flux. */
+  const [progress, setProgress] = useState<LensProgress | null>(null);
+  const [streamCards, setStreamCards] = useState<LensCandidate[]>([]);
+  const [canRetry, setCanRetry] = useState(false);
+  const streamController = useRef<AbortController | null>(null);
+  const lastAsset = useRef<ImagePicker.ImagePickerAsset | null>(null);
 
   const history = useQuery({
     queryKey: ['lens', 'history'],
@@ -61,23 +69,57 @@ export default function LensScreen() {
     setNote(isApiError(error) ? userMessage(error)[locale] : t('lens.failed'));
   }, [locale, t]);
 
-  /** نفس مسار الموقع: نبعثو الملف للخادم، وهو اللي يقرا ويحكم. */
+  /**
+   * نفس مسار الموقع: نبعثو الملف للخادم، وهو اللي يقرا ويحكم.
+   * التحليل يجي في تدفق: كل خطوة وكل فيشة تظهر حين يرسلها الخادم.
+   */
   const analyzeAsset = useCallback(async (asset: ImagePicker.ImagePickerAsset) => {
+    lastAsset.current = asset;
     setNote('');
+    setCanRetry(false);
     setAnalysis(null);
     setTextResults(null);
+    setStreamCards([]);
+    setProgress(null);
     setPreview(asset.uri);
+    streamController.current?.abort();
+    const controller = new AbortController();
+    streamController.current = controller;
     setBusy(true);
     try {
-      const result = await analyzeLensImage(lensUploadInputFrom(asset));
+      const result = await analyzeLensImageStream(
+        lensUploadInputFrom(asset),
+        {
+          onProgress: setProgress,
+          onCard: (candidate) => setStreamCards((prev) => (
+            prev.some((item) => item.sourceUrl === candidate.sourceUrl) ? prev : [...prev, candidate]
+          )),
+        },
+        { signal: controller.signal },
+      );
       setAnalysis(result);
+      setStreamCards([]);
       if (!result.candidates.length) setNote(t('lens.noResults'));
     } catch (error) {
+      setStreamCards([]);
+      // إلغاء المستخدم ما يستحقّش رسالة خطأ.
+      if (isApiError(error) && error.isAborted) return;
+      setCanRetry(true);
       fail(error);
     } finally {
       setBusy(false);
+      setProgress(null);
+      if (streamController.current === controller) streamController.current = null;
     }
   }, [fail, t]);
+
+  const cancelAnalysis = useCallback(() => {
+    streamController.current?.abort();
+  }, []);
+
+  const retryAnalysis = useCallback(() => {
+    if (lastAsset.current) void analyzeAsset(lastAsset.current);
+  }, [analyzeAsset]);
 
   const pickFrom = useCallback(async (source: 'camera' | 'library') => {
     setNote('');
@@ -144,7 +186,7 @@ export default function LensScreen() {
     },
   });
 
-  const candidates = analysis?.candidates ?? textResults ?? [];
+  const candidates = analysis?.candidates ?? textResults ?? streamCards;
 
   return (
     <AppScreen
@@ -177,13 +219,13 @@ export default function LensScreen() {
           <AppImage uri={preview} style={styles.preview} contentFit="contain" accessibilityLabel={t('lens.previewAlt')} />
         ) : null}
         {busy ? (
-          <View style={styles.row}>
-            <ActivityIndicator />
-            <AppText variant="caption" color={theme.colors.muted}>{t('lens.analyzing')}</AppText>
-          </View>
+          <LensProgressSheet progress={progress} cardCount={streamCards.length} onCancel={cancelAnalysis} />
         ) : null}
         {note ? (
           <AppText variant="caption" color={theme.status.danger.fg} accessibilityRole="alert">{note}</AppText>
+        ) : null}
+        {canRetry && !busy && lastAsset.current ? (
+          <Button label={t('lens.progress.retry')} tone="quiet" onPress={retryAnalysis} />
         ) : null}
       </Card>
 
