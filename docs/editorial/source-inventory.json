@@ -4,7 +4,7 @@
   "totals": {
     "files": 259,
     "customerAndSharedFiles": 203,
-    "controls": 485,
+    "controls": 486,
     "iconAliases": 102,
     "uniqueGlyphs": 99
   },
@@ -20004,8 +20004,8 @@
     {
       "file": "client/src/features/ocerex/screens/OcerexHome.tsx",
       "domain": "shell-content",
-      "sha256": "06d8d5b3812b18be3445a85ee20922f9da4158cca8f88ac9a3fa9451c14138b8",
-      "lines": 145,
+      "sha256": "8da448b22977510a64526e9d5531b498ece01f500b13b25898675563c0207a68",
+      "lines": 169,
       "imports": [
         "react",
         "../../../components/QatafoIcons",
@@ -20018,7 +20018,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 65,
+          "line": 77,
           "className": "{`min-h-11 rounded-full px-3 text-sm font-bold transition ${mode === 'camera' ? 'bg-ink text-white' : 'text-ink'}`}",
           "type": "\"button\"",
           "role": null,
@@ -20028,7 +20028,7 @@
         },
         {
           "tag": "button",
-          "line": 69,
+          "line": 81,
           "className": "{`min-h-11 rounded-full px-3 text-sm font-bold transition ${mode === 'upload' ? 'bg-ink text-white' : 'text-ink'}`}",
           "type": "\"button\"",
           "role": null,
@@ -20038,8 +20038,18 @@
         },
         {
           "tag": "button",
-          "line": 100,
-          "className": "\"mx-auto mt-6 grid h-20 w-20 place-items-center rounded-full border-4 border-ink bg-white transition disabled:opacity-50\"",
+          "line": 115,
+          "className": "\"h-14 w-14 overflow-hidden rounded-full border border-line bg-white transition disabled:opacity-50\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Utiliser cette photo', 'استعمال هذه الصورة')}",
+          "onClick": "{() => onFile(item.file, false)}",
+          "disabled": "{busy}"
+        },
+        {
+          "tag": "button",
+          "line": 122,
+          "className": "\"grid h-20 w-20 place-items-center rounded-full border-4 border-ink bg-white transition disabled:opacity-50\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": "{tr('Prendre la photo du prix', 'التقاط صورة السعر')}",
@@ -20048,7 +20058,7 @@
         },
         {
           "tag": "Button",
-          "line": 111,
+          "line": 135,
           "className": "\"mt-4 w-full\"",
           "type": null,
           "role": null,
@@ -20058,7 +20068,7 @@
         },
         {
           "tag": "button",
-          "line": 119,
+          "line": 143,
           "className": "\"mt-6 grid min-h-52 place-items-center rounded-card border-2 border-dashed border-line bg-white px-6 text-center transition hover:border-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink\"",
           "type": "\"button\"",
           "role": null,
@@ -20068,7 +20078,7 @@
         },
         {
           "tag": "Button",
-          "line": 131,
+          "line": 155,
           "className": "\"mt-4 w-full\"",
           "type": null,
           "role": null,
@@ -20078,7 +20088,7 @@
         },
         {
           "tag": "input",
-          "line": 138,
+          "line": 162,
           "className": "\"sr-only\"",
           "type": "\"file\"",
           "role": null,
@@ -20088,7 +20098,7 @@
         },
         {
           "tag": "input",
-          "line": 139,
+          "line": 163,
           "className": "\"sr-only\"",
           "type": "\"file\"",
           "role": null,
@@ -20177,7 +20187,7 @@
     {
       "file": "client/src/features/ocerex/screens/OcerexResult.tsx",
       "domain": "shell-content",
-      "sha256": "829cc113d1755c1e533188bb44f00687e9944da56e645d32431507cda7c81af8",
+      "sha256": "b079aaf415874864667ca564342270bd0abfed0ca10dc06419f68fc9d4151737",
       "lines": 51,
       "imports": [
         "react",
@@ -20238,7 +20248,7 @@
     {
       "file": "client/src/features/ocerex/screens/OcerexSummary.tsx",
       "domain": "shell-content",
-      "sha256": "142bf7c06bc9b396779bee534324556e4ae4d28d02eec1e310069b7e31f70b51",
+      "sha256": "ea210b7e749928cf3767c3ac2c613b62054b69a97f6f09d4e141204884b93d19",
       "lines": 42,
       "imports": [
         "react",
@@ -20315,8 +20325,8 @@
     {
       "file": "client/src/features/ocerex/types.ts",
       "domain": "shell-content",
-      "sha256": "a7b90f85ca0188a9abe1725a0d5f4103b8ae2b7d7aa0e639cfb945657d9843e7",
-      "lines": 42,
+      "sha256": "0d690051c65d6645145e3b56cb6c7d679c6147193d83675390f2d566ba016835",
+      "lines": 44,
       "imports": [],
       "exports": [],
       "controls": [],

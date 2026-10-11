@@ -5,7 +5,7 @@ import { optionalCustomer } from '../customer/auth';
 import type { QatafoDatabase } from '../db/database';
 import type { SmartLinkScraper } from '../scraper/scraper';
 import { InvalidImageError } from '../services/imageValidation';
-import { getExchangeRate } from '../services/pricing';
+import { getExchangeRate, millimes, type PricingRules } from '../services/pricing';
 import { recordOcerexEvent, isOcerexEvent } from './analytics';
 import { ocerexOCRService } from './ocrService';
 import { analyzeOcerexImage, ocerexFailureCode } from './pipeline';
@@ -33,11 +33,15 @@ function accountId(req: Request): string | null {
   return (req as { customer?: { id?: string } }).customer?.id || null;
 }
 
-function publicExtraction(row: OcerexExtractionRow, rulesCurrencies: string[]) {
+function publicExtraction(row: OcerexExtractionRow, rules: PricingRules) {
+  // Prix de référence converti en dinars avec le MÊME taux que le devis : jamais un taux inventé côté navigateur.
+  const rate = row.currency ? getExchangeRate(rules, row.currency) : null;
+  const referenceTnd = row.reference_price != null && rate != null ? millimes(Number(row.reference_price) * rate) : null;
   return {
     extractionId: row.id,
     type: row.screen_type,
     referencePrice: row.reference_price,
+    referenceTnd,
     currency: row.currency,
     confidence: row.confidence,
     confidenceLevel: row.confidence_level,
@@ -49,7 +53,7 @@ function publicExtraction(row: OcerexExtractionRow, rulesCurrencies: string[]) {
     code: row.code,
     ayroviPrice: row.ayrovi_price_tnd,
     pricingVersion: row.pricing_version,
-    supportedCurrencies: rulesCurrencies,
+    supportedCurrencies: supportedPricingCurrencies(rules),
   };
 }
 
@@ -105,7 +109,7 @@ export function createOcerexRouter(db: QatafoDatabase, scraper: SmartLinkScraper
       if (decision.type === 'CART') recordOcerexEvent(db, 'ocerex_cart_detected', { sessionId: sid, extractionType: 'CART', confidenceLevel: decision.confidenceLevel });
       if (decision.referencePrice != null) recordOcerexEvent(db, 'ocerex_reference_price_detected', { sessionId: sid, extractionType: decision.type, confidenceLevel: decision.confidenceLevel });
       if (decision.code === 'LOW_CONFIDENCE') recordOcerexEvent(db, 'ocerex_low_confidence', { sessionId: sid, confidenceLevel: 'LOW' });
-      return res.json({ success: decision.code === 'OK', ...publicExtraction(saved, supportedPricingCurrencies(rules)) });
+      return res.json({ success: decision.code === 'OK', ...publicExtraction(saved, rules) });
     } catch (error) {
       const code = ocerexFailureCode(error);
       recordOcerexEvent(db, 'ocerex_ocr_failed', { sessionId: sid });
@@ -154,7 +158,7 @@ export function createOcerexRouter(db: QatafoDatabase, scraper: SmartLinkScraper
       recordOcerexEvent(db, 'ocerex_price_calculated', { sessionId: sid, extractionType: row.screen_type, confidenceLevel: row.confidence_level });
       return res.json({
         success: true,
-        ...publicExtraction(saved!, supportedPricingCurrencies(rules)),
+        ...publicExtraction(saved!, rules),
         ayroviPrice: quote.totalTND,
         pricingVersion: quote.pricingVersion,
         referencePrice: row.reference_price,
@@ -200,7 +204,7 @@ export function createOcerexRouter(db: QatafoDatabase, scraper: SmartLinkScraper
     });
     return res.json({
       success: true,
-      ...publicExtraction(saved!, supportedPricingCurrencies(db.getPricingRules())),
+      ...publicExtraction(saved!, db.getPricingRules()),
       resolved: {
         title: saved!.product_title,
         platform: saved!.platform,
@@ -249,7 +253,7 @@ export function createOcerexRouter(db: QatafoDatabase, scraper: SmartLinkScraper
       return res.status(201).json({
         success: true,
         cartItemId: cartItem.id,
-        ...publicExtraction(saved!, supportedPricingCurrencies(db.getPricingRules())),
+        ...publicExtraction(saved!, db.getPricingRules()),
         ayroviPrice: quote.totalTND,
       });
     } catch (error) {

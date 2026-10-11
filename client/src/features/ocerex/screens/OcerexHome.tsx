@@ -5,6 +5,13 @@ import { useLocale } from '../../../i18n/LocaleContext';
 
 type Mode = 'camera' | 'upload';
 
+/** Dernières photos de CETTE session de la page seulement : jamais écrites sur le disque ni envoyées ailleurs. */
+const sessionPhotos: { url: string; file: File }[] = [];
+function remember(file: File) {
+  sessionPhotos.unshift({ url: URL.createObjectURL(file), file });
+  sessionPhotos.splice(2).forEach((item) => URL.revokeObjectURL(item.url));
+}
+
 /**
  * Maquette OCEREX (prix d'étiquette) : viseur en direct, cadre sur le prix, déclencheur.
  * Seul le prix est lu, jamais un autre code. Si la caméra est refusée ou absente,
@@ -40,9 +47,14 @@ export const OcerexHome: React.FC<{ busy: boolean; onFile: (file: File, capture:
     };
   }, [mode]);
 
+  const submit = (file: File, capture: boolean) => {
+    remember(file);
+    onFile(file, capture);
+  };
+
   const take = (list: FileList | null, capture: boolean) => {
     const file = list?.[0];
-    if (file) onFile(file, capture);
+    if (file) submit(file, capture);
   };
 
   const shoot = () => {
@@ -55,7 +67,7 @@ export const OcerexHome: React.FC<{ busy: boolean; onFile: (file: File, capture:
     if (!context) { cameraRef.current?.click(); return; }
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
     canvas.toBlob((blob) => {
-      if (blob) onFile(new File([blob], 'ocerex-price.jpg', { type: 'image/jpeg' }), true);
+      if (blob) submit(new File([blob], 'ocerex-price.jpg', { type: 'image/jpeg' }), true);
       else cameraRef.current?.click();
     }, 'image/jpeg', 0.92);
   };
@@ -97,15 +109,27 @@ export const OcerexHome: React.FC<{ busy: boolean; onFile: (file: File, capture:
             )}
           </div>
 
-          <button
-            type="button"
-            disabled={busy}
-            onClick={shoot}
-            aria-label={tr('Prendre la photo du prix', 'التقاط صورة السعر')}
-            className="mx-auto mt-6 grid h-20 w-20 place-items-center rounded-full border-4 border-ink bg-white transition disabled:opacity-50"
-          >
-            <span className="h-14 w-14 rounded-full bg-ink" aria-hidden />
-          </button>
+          <div className="mt-6 flex items-center justify-between">
+            <div className="flex w-28 gap-2">
+              {sessionPhotos.slice(0, 2).map((item, index) => (
+                <button key={item.url} type="button" disabled={busy} onClick={() => onFile(item.file, false)}
+                  aria-label={tr('Utiliser cette photo', 'استعمال هذه الصورة')}
+                  className="h-14 w-14 overflow-hidden rounded-full border border-line bg-white transition disabled:opacity-50">
+                  <img src={item.url} alt="" className="h-full w-full object-cover" data-index={index} />
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={shoot}
+              aria-label={tr('Prendre la photo du prix', 'التقاط صورة السعر')}
+              className="grid h-20 w-20 place-items-center rounded-full border-4 border-ink bg-white transition disabled:opacity-50"
+            >
+              <span className="h-14 w-14 rounded-full bg-ink" aria-hidden />
+            </button>
+            <span className="w-28" aria-hidden />
+          </div>
 
           {denied && (
             <Button variant="secondary" className="mt-4 w-full" disabled={busy} onClick={() => cameraRef.current?.click()} aria-label={tr('Prendre une photo', 'التقاط صورة')}>
