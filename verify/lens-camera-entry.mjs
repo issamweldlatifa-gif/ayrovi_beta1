@@ -57,9 +57,10 @@ for(const [engine,type] of [['chromium',chromium],['firefox',firefox]]){
   await help.click();await p.locator('.lens-panel').waitFor();await p.goBack();await p.locator('.lens-panel').waitFor({state:'hidden'});
   check('nested navigation preserves selected Live mode',await p.getByRole('tab',{name:ar?'مسح مباشر':'Scan en direct',exact:true}).getAttribute('aria-selected')==='true');
   await p.getByRole('tab',{name:ar?'تصوير':'Photo',exact:true}).click();
-  await p.getByRole('tab',{name:ar?'تصوير':'Photo',exact:true}).focus();await p.keyboard.press('End');
+  // Ordre de la maquette : Scan en direct · Photo · Lien / code (Lien / code n'est pas un onglet).
+  await p.getByRole('tab',{name:ar?'تصوير':'Photo',exact:true}).focus();await p.keyboard.press('Home');
   check('keyboard selects Live',await p.getByRole('tab',{name:ar?'مسح مباشر':'Scan en direct',exact:true}).getAttribute('aria-selected')==='true');
-  await p.keyboard.press('Home');check('keyboard selects Photo',await p.getByRole('tab',{name:ar?'تصوير':'Photo',exact:true}).getAttribute('aria-selected')==='true');
+  await p.keyboard.press('End');check('keyboard selects Photo',await p.getByRole('tab',{name:ar?'تصوير':'Photo',exact:true}).getAttribute('aria-selected')==='true');
   await p.setViewportSize({width:320,height:480});await p.evaluate(()=>document.documentElement.style.fontSize='200%');
   await methods.click();await p.locator('.lens-methods').waitFor();
   check('enlarged short-screen panel has no horizontal overflow',await p.locator('.lens-panel').evaluate(e=>e.scrollWidth<=e.clientWidth+1));
