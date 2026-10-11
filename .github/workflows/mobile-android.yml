@@ -206,6 +206,11 @@ jobs:
             echo "| $(basename "$apk") | $size |" >> "$GITHUB_STEP_SUMMARY"
             echo "--- $(basename "$apk") : $size ---"
             "$APKSIGNER" verify --print-certs "$apk" | head -3
+            # Diagnostic (lecture seule) : empreinte SHA-1 RÉELLE de la signature de
+            # l'APK, à comparer avec le client Android Google Cloud. N'arrête jamais le build.
+            raw="$("$APKSIGNER" verify --print-certs "$apk" 2>/dev/null | sed -n 's/.*SHA-1 digest: //p' | head -1 || true)"
+            sha1="$(printf '%s' "$raw" | tr 'a-f' 'A-F' | sed -E 's/(..)/\1:/g; s/:$//')"
+            echo "- Empreinte SHA-1 de la signature de $(basename "$apk") : \`${sha1:-introuvable}\`" >> "$GITHUB_STEP_SUMMARY"
           done
 
           # La mesure est aussi RÉÉCRITE dans le dépôt. Un chiffre qu'on ne
