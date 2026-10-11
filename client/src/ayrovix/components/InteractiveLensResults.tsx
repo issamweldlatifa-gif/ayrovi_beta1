@@ -47,9 +47,6 @@ const LensAnalysisProgress: React.FC<{ progress: LensProgress | null; onRetry?: 
   const imageState = step ? 'done' : 'active';
   const shopsState = step === 'reading' ? 'done' : step ? 'active' : 'pending';
   const readState = step === 'reading' ? 'active' : 'pending';
-  const counter = step === 'reading' && progress?.total
-    ? tr(`Recherche en cours : ${progress.done ?? 0} sur ${progress.total}`, `جارٍ البحث: ${progress.done ?? 0} من ${progress.total}`)
-    : tr('Recherche en cours…', 'جارٍ البحث…');
   const rows: Array<[string, 'done' | 'active' | 'pending']> = [
     [tr('Image lue', 'تمت قراءة الصورة'), imageState],
     [tr('Recherche des boutiques', 'البحث في المتاجر'), shopsState],
@@ -57,8 +54,7 @@ const LensAnalysisProgress: React.FC<{ progress: LensProgress | null; onRetry?: 
   ];
   return (
     <div className="lens-analysis-progress" role="status" aria-live="polite">
-      <p className="text-sm font-extrabold text-ink">{counter}</p>
-      <ul className="mt-2 space-y-1.5">
+      <ul className="space-y-1.5">
         {rows.map(([label, state]) => (
           <li key={label} className={`flex items-center gap-2 text-xs font-bold ${state === 'pending' ? 'text-muted' : 'text-ink'}`}>
             <span aria-hidden="true" className="grid h-4 w-4 place-items-center">
@@ -87,6 +83,9 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
     return strict.length ? strict : view.list.filter(isLenientCandidate).sort((a, b) => (b.match || 0) - (a.match || 0));
   }, [view.list]);
   const name = view.queryLabel || visible[0]?.title || tr('Votre image', 'صورتك');
+  const loadingSubtitle = analysisProgress?.step === 'reading' && analysisProgress.total
+    ? tr(`Recherche en cours : ${analysisProgress.done ?? 0} sur ${analysisProgress.total}`, `جارٍ البحث: ${analysisProgress.done ?? 0} من ${analysisProgress.total}`)
+    : tr('Recherche en cours…', 'جارٍ البحث…');
   const drawer = useLensResultsSheet(Boolean(previewUrl));
   const imageRef = useRef<HTMLImageElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -199,7 +198,7 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
         <div className="lens-sheet-summary" aria-hidden={drawer.full && previewUrl ? true : undefined}>
           {previewUrl && <img src={previewUrl} alt="" draggable={false} />}
           <div><h3>{tr('Résultats Lens', 'نتائج Lens')}{visible.length > 0 ? ` · ${visible.length}` : ''}</h3>
-            <p>{isLoading ? tr('Analyse en cours…', 'جارٍ التحليل…') : name}</p></div>
+            <p>{isLoading ? loadingSubtitle : name}</p></div>
         </div>
         <p className="sr-only" role="status" aria-live="polite">{isLoading ? tr('Analyse en cours…', 'جارٍ التحليل…') : tr(`${visible.length} résultats disponibles`, `${visible.length} نتيجة متاحة`)}</p>
         <div ref={drawer.bodyRef} id="lens-result-list" className="lens-results-list" aria-busy={Boolean(isLoading)}

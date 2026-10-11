@@ -647,6 +647,7 @@ export const App: React.FC = () => {
           <LensLauncher
             customerSession={customerSession}
             onOpenFavorites={() => { setAccountInitialSection('favorites'); setAccountMessage(''); openAppView('app:account'); }}
+            onOpenOcerex={() => openAppView('app:ocerex')}
             isOpen={isLensOpen}
             historyScope={customerSession?.account.id || null}
             onClose={handleCloseLens}

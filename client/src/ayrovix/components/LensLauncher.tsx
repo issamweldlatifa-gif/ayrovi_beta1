@@ -37,6 +37,8 @@ interface LensLauncherProps {
   historyScope?: string | null;
   customerSession?: CustomerSession | null;
   onOpenFavorites?: () => void;
+  /** Ouvre OCEREX depuis la caméra Lens. */
+  onOpenOcerex?: () => void;
   onOrder: (payload: AyrovixOrderPayload) => Promise<void>;
   cartCount: number;
   onOpenCart: () => void;
@@ -174,6 +176,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   historyScope,
   customerSession,
   onOpenFavorites,
+  onOpenOcerex,
   onOrder,
   cartCount,
   onOpenCart,
@@ -717,6 +720,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
     return (
       <>
         {!historyOpen && <LiveCamera
+          onOpenOcerex={onOpenOcerex}
           onPhoto={(file) => void handleImage(file)}
           onQrUrl={(url) => void runUrlAnalysis(url, 'qr')}
           onBarcode={(code) => void runBarcodeAnalysis(code)}

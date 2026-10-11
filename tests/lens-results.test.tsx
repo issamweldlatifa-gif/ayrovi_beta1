@@ -108,9 +108,11 @@ describe('AYROVIX LENS results screen (post-analysis, real-data shape)', () => {
     // Wordmark + white flat header icons (no bg circle)
     expect(camera).toContain('AYROVIX <span>Lens</span>');
     expect(camera).toContain('className="lens-camera-icon"');
-    // Bottom: Barcode label + transparent tiles
+    // Bas de caméra (maquette approuvée) : vignette galerie + bouton OCEREX rond translucide
     expect(camera).toContain("tr('Lien / code', 'رابط أو رمز')");
-    expect(camera).toContain('rounded-2xl bg-transparent');
+    expect(camera).toContain('lens-gallery-button');
+    expect(camera).toContain('lens-ocerex-button');
+    expect(camera).toContain('onOpenOcerex');
     expect(camera).not.toContain("tr('Code', 'رمز')");
     // Reference literal (2026-09-18): in shell mode NOTHING floats over the photo — controls live in the sheet strip
     expect(irl).not.toContain("tr('Zoomer'");

@@ -30,6 +30,8 @@ interface LiveCameraProps {
   photoUrl?: string | null;
   overlay?: React.ReactNode;
   onPhotoClose?: () => void;
+  /** Ouvre OCEREX (prix depuis une image) depuis le bouton rond de la caméra. */
+  onOpenOcerex?: () => void;
 }
 
 type CameraPanel = 'help' | 'methods' | 'link' | 'scan';
@@ -40,7 +42,7 @@ type CamMode = 'photo' | 'video';
  * Entry/help panels suspend sampling; results retain their existing shell.
  * LIVE ≠ تسجيل فيديو. الزر المركزي في LIVE = التقاط الحالة الحالية للنتيجة.
  */
-export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarcode, onCodeText, onLink, onClose, onMenu, onCameraFailed, liveEnabled = false, onLiveResults, photoUrl = null, overlay = null, onPhotoClose }) => {
+export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarcode, onCodeText, onLink, onClose, onMenu, onCameraFailed, liveEnabled = false, onLiveResults, photoUrl = null, overlay = null, onPhotoClose, onOpenOcerex }) => {
   const { direction, tr } = useLocale();
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -265,10 +267,10 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
         <p className="lens-camera-brand" dir="ltr">AYROVIX <span>Lens</span></p>
         {photoUrl ? null : (
           <div className="lens-camera-tools">
-            <button type="button" className="lens-camera-icon" onClick={() => openPanel('help')} aria-label={tr('Aide et règles de Lens', 'مساعدة Lens وقواعد الاستخدام')} aria-haspopup="dialog"><Info size={22} /></button>
             <button type="button" onClick={toggleTorch} className="lens-camera-icon" disabled={!torchAvailable || torchBusy} aria-busy={torchBusy} aria-pressed={torchOn}
               title={!torchAvailable ? tr('Flash indisponible sur cet appareil', 'الفلاش غير متاح على هذا الجهاز') : undefined}
               aria-label={!torchAvailable ? tr('Flash indisponible sur cet appareil', 'الفلاش غير متاح على هذا الجهاز') : torchOn ? tr('Éteindre le flash', 'إطفاء الفلاش') : tr('Allumer le flash', 'تشغيل الفلاش')}><Zap size={22} /></button>
+            <button type="button" className="lens-camera-icon" onClick={() => openPanel('help')} aria-label={tr('Aide et règles de Lens', 'مساعدة Lens وقواعد الاستخدام')} aria-haspopup="dialog"><Info size={22} /></button>
           </div>
         )}
       </header>}
@@ -357,38 +359,41 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
         {notice || (!cameraReady ? tr('Ouverture de la caméra…', 'جارٍ تشغيل الكاميرا…') : mode === 'code' ? tr('Visez un code-barres ou un QR.', 'وجّه الكاميرا إلى باركود أو QR.') : camMode === 'video' && liveEnabled ? tr('Visez un produit. Le scan est automatique.', 'وجّه الكاميرا إلى منتج. المسح تلقائي.') : tr('Cadrez le produit, puis prenez la photo.', 'ضع المنتج في الإطار ثم التقط الصورة.'))}
       </div>}
 
-      {/* PHOTO | VIDÉO selector */}
+      {/* Pilule de modes : Scan en direct · Photo · Lien / code (maquette approuvée) */}
       {mode !== 'code' && !photoUrl && (
-        <div className="relative z-10 mx-auto mb-3 flex w-fit rounded-full bg-black/45 p-1 backdrop-blur" role="tablist" aria-label={tr('Mode caméra', 'وضع الكاميرا')} onKeyDown={event => {
+        <div className="lens-mode-pill relative z-10 mx-auto mb-3 flex w-fit rounded-full bg-black/45 p-1 backdrop-blur" role="tablist" aria-label={tr('Mode caméra', 'وضع الكاميرا')} onKeyDown={event => {
           if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
           event.preventDefault();
-          const available = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not(:disabled)'));
+          const available = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('button[role="tab"]:not(:disabled)'));
           const index = available.indexOf(document.activeElement as HTMLButtonElement);
           const step = (event.key === 'ArrowRight' ? 1 : -1) * (direction === 'rtl' ? -1 : 1);
           const next = event.key === 'Home' ? 0 : event.key === 'End' ? available.length - 1 : (index + step + available.length) % available.length;
           available[next]?.focus(); available[next]?.click();
         }}>
-          {(['photo', 'video'] as CamMode[]).map((m) => {
+          {(['video', 'photo'] as CamMode[]).map((m) => {
             const disabled = m === 'video' && !liveEnabled;
+            const selected = camMode === m;
             return (
-              <button key={m} type="button" role="tab" aria-selected={camMode === m} tabIndex={camMode === m ? 0 : -1} disabled={disabled} title={disabled ? tr('Le scan en direct n’est pas activé pour le moment.', 'المسح المباشر غير مفعّل حاليًا.') : undefined}
+              <button key={m} type="button" role="tab" aria-selected={selected} tabIndex={selected ? 0 : -1} disabled={disabled} title={disabled ? tr('Le scan en direct n’est pas activé pour le moment.', 'المسح المباشر غير مفعّل حاليًا.') : undefined}
                 onClick={() => { setCamMode(m); setNotice(null); }}
-                className={`lens-camera-tab relative rounded-full px-5 py-2 text-sm font-semibold transition-colors ${camMode === m ? 'text-white' : 'text-white/55'} ${disabled ? 'opacity-40' : ''}`}>
+                className={`lens-camera-tab rounded-full px-4 py-2 text-sm font-semibold transition-colors ${selected ? 'is-selected bg-white text-ink' : 'text-white/85'} ${disabled ? 'opacity-40' : ''}`}>
                 {m === 'photo' ? tr('Photo', 'تصوير') : tr('Scan en direct', 'مسح مباشر')}
-                {camMode === m && <span className="absolute -bottom-0.5 left-1/2 h-[2px] w-8 -translate-x-1/2 rounded-full bg-white" />}
               </button>
             );
           })}
+          <button type="button" onClick={() => openPanel('methods')} aria-haspopup="dialog"
+            className="lens-camera-tab rounded-full px-4 py-2 text-sm font-semibold text-white/85">
+            {tr('Lien / code', 'رابط أو رمز')}
+          </button>
         </div>
       )}
 
       {!photoUrl && mode !== 'code' && !liveEnabled && <p className="lens-live-unavailable">{tr('Scan en direct indisponible pour le moment.', 'المسح المباشر غير متاح حاليًا.')}</p>}
-      {/* Controls: import / capture / explicit link-or-code chooser. */}
+      {/* Contrôles : galerie · déclencheur · OCEREX (le bouton loupe est remplacé). */}
       {!photoUrl && mode !== 'code' && (
       <div className="lens-camera-controls relative z-10">
-        <button type="button" onClick={pickFromGallery} className="lens-camera-action">
-          <span className="grid h-14 w-14 place-items-center rounded-2xl bg-transparent"><ImageIcon size={22} /></span>
-          {tr('Importer', 'استيراد صورة')}
+        <button type="button" onClick={pickFromGallery} className="lens-gallery-button" aria-label={tr('Importer une image depuis la galerie', 'استيراد صورة من المعرض')}>
+          <ImageIcon size={22} />
         </button>
 
         <>
@@ -400,11 +405,11 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
           </button>
         </>
 
-        <button type="button" onClick={() => openPanel('methods')} aria-haspopup="dialog"
-          className="lens-camera-action">
-          <span className={`grid h-14 w-14 place-items-center rounded-2xl bg-transparent `}><Search size={22} /></span>
-          {tr('Lien / code', 'رابط أو رمز')}
-        </button>
+        {onOpenOcerex ? (
+          <button type="button" onClick={onOpenOcerex} className="lens-ocerex-button" aria-label={tr('Ouvrir OCEREX — prix depuis une image', 'فتح OCEREX — السعر من صورة')}>
+            OCEREX
+          </button>
+        ) : <span aria-hidden="true" />}
       </div>
       )}
 

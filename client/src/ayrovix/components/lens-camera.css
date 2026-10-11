@@ -60,3 +60,9 @@
 @media(min-width:600px) { .lens-panel-backdrop { align-items:center; padding:24px; } .lens-panel { max-height:calc(100dvh - 48px); } .lens-camera-controls { width:420px; max-width:100%; margin-inline:auto; } }
 @media(max-height:550px) { .lens-camera .lens-viewfinder { padding-block:8px; } .lens-viewfinder > div { max-width:120px; } .lens-camera-guidance { margin-bottom:4px; padding-block:4px; } .lens-camera-header { padding-block:4px; } }
 @media(prefers-reduced-motion:reduce) { .lens-camera button { transition:none; } }
+
+/* Maquette caméra approuvée : vignette galerie, bouton OCEREX rond translucide. */
+.lens-gallery-button { display:grid; place-items:center; justify-self:start; width:56px; height:56px; border-radius:16px; background:rgba(255,255,255,.18); border:2px solid rgba(255,255,255,.75); color:#fff; cursor:pointer; }
+.lens-ocerex-button { display:grid; place-items:center; justify-self:end; width:64px; height:64px; border-radius:50%; background:rgba(255,255,255,.28); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); border:0; color:#fff; font-size:12px; font-weight:800; letter-spacing:.02em; cursor:pointer; }
+.lens-ocerex-button:focus-visible, .lens-gallery-button:focus-visible { outline:2px solid #fff; outline-offset:3px; }
+.lens-mode-pill .lens-camera-tab.is-selected { box-shadow:0 1px 4px rgba(0,0,0,.25); }
