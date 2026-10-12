@@ -113,7 +113,7 @@ export default function TabsLayout() {
     >
       {/* Barre : Lens · AYWEBs · SONIM · Vision · Profil. Ordre voulu ; en RTL
           la barre se lit de droite à gauche, Lens reste le premier. */}
-      <Tabs.Screen name="lens" options={{ title: t('tabs.lens') }} />
+      <Tabs.Screen name="lens" options={{ title: t('tabs.lens'), tabBarStyle: { display: 'none' } }} />
       <Tabs.Screen name="aywebs" options={{ title: t('tabs.aywebs') }} />
       <Tabs.Screen name="sonim" options={{ title: t('tabs.sonim') }} />
       <Tabs.Screen name="vision" options={{ title: t('tabs.vision') }} />

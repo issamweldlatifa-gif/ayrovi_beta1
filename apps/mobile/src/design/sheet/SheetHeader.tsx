@@ -31,7 +31,7 @@ export function SheetHeader({ title, subtitle, onClose }: SheetHeaderProps) {
         hitSlop={8}
         style={({ pressed }) => [styles.close, { opacity: pressed ? 0.6 : 1 }]}
       >
-        <Ionicons name="chevron-down" size={24} color={theme.colors.ink} />
+        <Ionicons name="close" size={24} color={theme.colors.ink} />
       </Pressable>
     </View>
   );

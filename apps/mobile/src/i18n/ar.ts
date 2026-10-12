@@ -694,6 +694,8 @@ export const ar = {
   'lens.confirmPhoto': 'استعمل هالصورة',
   'lens.capturedAlt': 'الصورة اللي صوّرتها',
   'lens.close': 'إغلاق',
+  'lens.back': 'رجوع',
+  'lens.topTitle': 'AYROVI Lens',
   'lens.captureFailed': 'ما تنجمناش نصوّر الصورة. عاود جرّب.',
   'lens.itemPick': 'اختار {name}',
   'lens.promoBadge': 'عرض',

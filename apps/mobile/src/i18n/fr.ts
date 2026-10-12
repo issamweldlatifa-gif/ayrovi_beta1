@@ -690,6 +690,8 @@ export const fr = {
   'lens.helpOpen': 'Aide et règles d’utilisation',
   'lens.help.title': 'Aide Lens',
   'lens.close': 'Fermer',
+  'lens.back': 'Retour',
+  'lens.topTitle': 'AYROVI Lens',
   'lens.retake': 'Reprendre',
   'lens.confirmPhoto': 'Utiliser cette photo',
   'lens.capturedAlt': 'Photo prise',

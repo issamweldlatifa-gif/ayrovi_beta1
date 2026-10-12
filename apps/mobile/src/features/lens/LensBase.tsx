@@ -10,7 +10,8 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions, type BarcodeScanningResult, type FlashMode } from 'expo-camera';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { LensTopBar } from '@/features/lens/LensTopBar';
+import { LensScrim } from '@/features/lens/LensScrim';
 
 import { LENS_BARCODE_TYPES } from '@/api/lens';
 import { AppText, Button } from '@/design/ui';
@@ -44,6 +45,8 @@ export interface LensBaseProps {
   onCapture: (image: LensCapturedImage) => void;
   onOpenGallery: () => void;
   onCaptureFailed: () => void;
+  /** رجوع إلى الرئيسية (الدروج تُغلق قبل ذلك في الشاشة الأم). */
+  onBack: () => void;
 }
 
 export function LensBase(props: LensBaseProps) {
@@ -82,7 +85,7 @@ export function LensBase(props: LensBaseProps) {
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.ink }]}>
       {mode === 'code' ? (
-        <View style={[styles.codePanel, { top: insets.top + theme.chrome.header + 8, backgroundColor: theme.colors.canvas, borderRadius: theme.radius.card }]}>
+        <View style={[styles.codePanel, { top: insets.top + 64, backgroundColor: theme.colors.canvas, borderRadius: theme.radius.card }]}>
           <AppText variant="label" weight="bold">{t('lens.textLabel')}</AppText>
           <TextInput
             accessibilityLabel={t('lens.textLabel')}
@@ -141,28 +144,22 @@ export function LensBase(props: LensBaseProps) {
         </View>
       ) : null}
 
-      <View style={[styles.top, { top: insets.top + theme.chrome.header + 4 }]}>
-        <Pressable accessibilityRole="button" accessibilityLabel={t('lens.helpOpen')} onPress={props.onHelp} style={styles.iconButton}>
-          <Ionicons name="help-circle-outline" size={26} color={theme.colors.canvas} />
-        </Pressable>
-        <View style={styles.topRight}>
-          <Pressable accessibilityRole="button" accessibilityLabel={t('lens.historyTitle')} onPress={props.onHistory} style={styles.iconButton}>
-            <Ionicons name="time-outline" size={24} color={theme.colors.canvas} />
-          </Pressable>
-          {mode !== 'code' ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={flash === 'on' ? t('lens.flashOff') : t('lens.flashOn')}
-              onPress={() => setFlash((current) => (current === 'on' ? 'off' : 'on'))}
-              style={styles.iconButton}
-            >
-              <Ionicons name={flash === 'on' ? 'flash' : 'flash-off'} size={24} color={theme.colors.canvas} />
-            </Pressable>
-          ) : null}
-        </View>
+      <LensScrim edge="top" />
+      <View style={[styles.top, { top: insets.top + 8 }]}>
+        <LensTopBar
+          title={t('lens.topTitle')}
+          onBack={props.onBack}
+          onHelp={props.onHelp}
+          onHistory={props.onHistory}
+          showFlash={mode !== 'code'}
+          flashOn={flash === 'on'}
+          onToggleFlash={() => setFlash((current) => (current === 'on' ? 'off' : 'on'))}
+        />
       </View>
 
-      <View style={[styles.bottom, { bottom: insets.bottom + 16 }]}>
+      {/* أزرار الالتقاط تختفي أثناء التأكيد: زر «استعمل هالصورة» يحل محلها ولا يتداخل معها. */}
+      {pending ? null : <LensScrim edge="bottom" />}
+      {pending ? null : <View style={[styles.bottom, { bottom: insets.bottom + 16 }]}>
         {mode !== 'code' ? (
           <AppText variant="body" color={theme.colors.canvas} align="center">{t('lens.frame')}</AppText>
         ) : null}
@@ -239,7 +236,7 @@ export function LensBase(props: LensBaseProps) {
             <AppText variant="label" weight="bold" color={theme.colors.canvas}>{t('ocerex.open')}</AppText>
           </Pressable>
         )}
-      </View>
+      </View>}
     </View>
   );
 }
@@ -251,11 +248,8 @@ const styles = StyleSheet.create({
   codePanel: { position: 'absolute', left: 16, right: 16, padding: 16, gap: 12 },
   input: { borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16 },
   top: {
-    position: 'absolute', left: 16, right: 16,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    position: 'absolute', left: 8, right: 8,
   },
-  topRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  iconButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   bottom: { position: 'absolute', left: 16, right: 16, gap: 12 },
   pill: { flexDirection: 'row', borderRadius: 28, padding: 4, overflow: 'hidden' },
   pillBack: { opacity: 0.55 },

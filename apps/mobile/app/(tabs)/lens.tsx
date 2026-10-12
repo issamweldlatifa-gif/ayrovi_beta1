@@ -17,7 +17,6 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { AppHeader } from '@/features/shell/AppHeader';
 import { useI18n } from '@/i18n';
 import { isApiError, userMessage } from '@/api/errors';
 import { addExternalFavorite, fetchFavorites, removeFavorite } from '@/api/account';
@@ -33,6 +32,7 @@ import { LensResultsDrawer } from '@/features/lens/LensResultsDrawer';
 import { LensHelp } from '@/features/lens/LensHelp';
 import { LensOcerex } from '@/features/lens/LensOcerex';
 import { LensHistory } from '@/features/lens/LensHistory';
+import { LensSystemBars } from '@/features/lens/LensSystemBars';
 
 /** مدة منع إعادة قراءة الرمز نفسه من الكاميرا الحيّة (ملّي ثانية). */
 const LIVE_SCAN_REPEAT_MS = 4_000;
@@ -290,6 +290,13 @@ export default function LensScreen() {
     router.push('/cart');
   }, []);
 
+  /** الرجوع إلى الرئيسية من زر Lens: الدروج تُغلق والتحليل الجاري يُلغى قبل الانتقال. */
+  const goHome = useCallback(() => {
+    cancelStream();
+    setStack((current) => Layers.closeLayer(current));
+    router.navigate('/');
+  }, [cancelStream]);
+
   /** السجل → المراقبة: الصفحة الكاملة، والدرج يُغلق قبلها. */
   const openWatches = useCallback(() => {
     setStack((current) => Layers.closeLayer(current));
@@ -373,8 +380,10 @@ export default function LensScreen() {
      * ولا إطار مستدير. التبويبات بقيت في التدفق أسفل الشاشة، فالمعاينة تنتهي فوقها.
      */
     <View style={{ flex: 1 }}>
+      <LensSystemBars active={focused} />
       <View style={{ flex: 1 }}>
         <LensBase
+          onBack={goHome}
           mode={stack.mode}
           active={cameraActive}
           busy={busy}
@@ -444,7 +453,6 @@ export default function LensScreen() {
           />
         ) : null}
       </View>
-      <AppHeader scrolled={false} />
     </View>
   );
 }

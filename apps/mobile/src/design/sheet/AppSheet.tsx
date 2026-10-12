@@ -12,7 +12,7 @@
  *  • `onClosed` يُستدعى بعد انتهاء حركة الإغلاق، فيُزال المحتوى من الشجرة.
  *  • لا `Modal`: الكاميرا وخلفيتها تبقى حيّة تحت الدرج.
  */
-import { useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   Animated,
   PanResponder,
@@ -35,8 +35,6 @@ import {
   SHEET_SPRING, nextTranslate, panMovesSheet, shouldDismiss,
 } from '@/design/sheet/sheetPhysics';
 
-/** فراغ يبقى أعلى الدرج ليُرى الظل والحافة. */
-const TOP_GAP = 8;
 /** مسافة دنيا (px) قبل أن تُعدّ الحركة سحباً، حتى لا تسرق النقرات. */
 const DRAG_SLOP = 6;
 
@@ -54,7 +52,13 @@ export function AppSheet({ open, onDismiss, onClosed, header, children }: AppShe
   const { height: windowHeight } = useWindowDimensions();
   const reduce = useReduceMotion();
 
-  const sheetHeight = Math.max(1, windowHeight - insets.top - TOP_GAP);
+  /**
+   * ملء الشاشة: الدرج يغطي المنطقة كلها، بما فيها الحافة العليا (شريط الحالة يبقى
+   * محجوزاً بـ`paddingTop` داخل الدرج). الارتفاع يُقاس من الحاوية الفعلية، لا من
+   * نافذة الجهاز، حتى لا يُترك فراغ أو يُقطع جزء.
+   */
+  const [measuredHeight, setMeasuredHeight] = useState(windowHeight);
+  const sheetHeight = Math.max(1, measuredHeight);
 
   /** الموضع: 0 مفتوح، sheetHeight مغلق. يبدأ مغلقاً ثم يُفتح عند الظهور. */
   const translate = useRef(new Animated.Value(sheetHeight)).current;
@@ -151,18 +155,19 @@ export function AppSheet({ open, onDismiss, onClosed, header, children }: AppShe
   };
 
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+    <View
+      style={StyleSheet.absoluteFill}
+      pointerEvents="box-none"
+      onLayout={(event) => setMeasuredHeight(event.nativeEvent.layout.height)}
+    >
       <SheetBackdrop opacity={backdrop} onPress={onDismiss} />
       <Animated.View
         {...panResponder.panHandlers}
         style={[
           styles.panel,
           {
-            top: insets.top + TOP_GAP,
+            paddingTop: insets.top + 8,
             backgroundColor: theme.colors.canvas,
-            borderTopLeftRadius: theme.radius.card,
-            borderTopRightRadius: theme.radius.card,
-            shadowColor: theme.colors.ink,
             transform: [{ translateY: translate }],
           },
         ]}
@@ -184,8 +189,7 @@ export function AppSheet({ open, onDismiss, onClosed, header, children }: AppShe
 
 const styles = StyleSheet.create({
   panel: {
-    position: 'absolute', left: 0, right: 0, bottom: 0,
-    paddingTop: 8, shadowOpacity: 0.25, shadowRadius: 16, elevation: 12,
+    position: 'absolute', left: 0, right: 0, top: 0, bottom: 0,
   },
   handle: { alignSelf: 'center', width: 44, height: 4, borderRadius: 2, marginBottom: 6 },
   body: { padding: 16, gap: 12 },
