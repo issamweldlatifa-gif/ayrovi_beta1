@@ -49,6 +49,8 @@ export interface LensBaseProps {
   onModeChange: (mode: LensMode) => void;
   onHelp: () => void;
   onHistory: () => void;
+  /** الخادم أعاد منتجاً فعلياً من آخر تحليل (تُعرض شارة «Produit détecté»). */
+  productDetected: boolean;
   onOcerex: () => void;
   onBarcode: (value: string) => void;
   onCapture: (image: LensCapturedImage) => void;
@@ -79,14 +81,11 @@ export function LensBase(props: LensBaseProps) {
   const [pending, setPending] = useState<LensCapturedImage | null>(null);
   /** «Lien / code»: الاختيار، أو الإدخال، أو الماسح. */
   const [codeView, setCodeView] = useState<CodeView>('choice');
-  /** «Scan en direct»: تم التقاط منتج ثابت (تُعرض شارة «Produit détecté»). */
-  const [detected, setDetected] = useState(false);
 
   // تغيير الوضع يلغي كل حالة مؤقتة: لا صورة معلّقة، ولا ماسح مفتوح، ولا شارة قديمة.
   useEffect(() => {
     setPending(null);
     setCodeView('choice');
-    setDetected(false);
   }, [mode]);
 
   const shutter = async () => {
@@ -102,7 +101,6 @@ export function LensBase(props: LensBaseProps) {
   /** «Scan en direct»: التقاط إطار واحد عند ثبات الجهاز، ثم إرساله للتحليل. */
   const captureStill = useCallback(async () => {
     if (busyRef.current || !cameraRef.current) return;
-    setDetected(true);
     try {
       const picture = await cameraRef.current.takePictureAsync({ quality: 0.9 });
       if (picture?.uri) latest.current.onCapture({ uri: picture.uri, width: picture.width, height: picture.height });
@@ -174,7 +172,7 @@ export function LensBase(props: LensBaseProps) {
         </View>
       ) : null}
 
-      {mode === 'live' ? <LensScanFrame ratio={1.25} label={detected ? t('lens.productDetected') : undefined} /> : null}
+      {mode === 'live' ? <LensScanFrame ratio={1.25} label={props.productDetected ? t('lens.productDetected') : undefined} /> : null}
       {scannerOpen ? <LensScanFrame ratio={1} /> : null}
 
       <LensScrim edge="top" />

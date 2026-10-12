@@ -693,7 +693,7 @@ export const ar = {
   'lens.close': 'إغلاق',
   'lens.back': 'رجوع',
   'lens.resultsTitle': 'نتائج Lens',
-  'lens.liveCaption': 'مسح مباشر: يتعرّف على المنتج باستمرار',
+  'lens.liveCaption': 'مسح مباشر: ثبّت الهاتف ليتعرّف على المنتج تلقائياً',
   'lens.productDetected': 'تم اكتشاف المنتج',
   'lens.scanQrHint': 'ضع رمز QR داخل الإطار',
   'lens.choiceLinkTitle': 'إدخال رابط أو رمز',

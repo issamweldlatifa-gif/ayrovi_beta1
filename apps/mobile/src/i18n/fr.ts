@@ -689,7 +689,7 @@ export const fr = {
   'lens.close': 'Fermer',
   'lens.back': 'Retour',
   'lens.resultsTitle': 'Résultats Lens',
-  'lens.liveCaption': 'Scan en direct : le produit est reconnu en continu',
+  'lens.liveCaption': 'Scan en direct : restez stable, le produit est reconnu automatiquement',
   'lens.productDetected': 'Produit détecté',
   'lens.scanQrHint': 'Placez le QR code dans le cadre',
   'lens.choiceLinkTitle': 'Saisir un lien ou un code',
