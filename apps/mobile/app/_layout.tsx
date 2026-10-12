@@ -17,6 +17,7 @@ import { View } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { FONT_SOURCES } from '@/config/app';
 import { ThemeProvider, useTheme } from '@/design/theme';
@@ -107,19 +108,22 @@ function Navigation() {
 }
 
 export default function RootLayout() {
+  // إيماءات الدروج (السحب للإغلاق) تحتاج جذراً واحداً يحملها لكل الشاشة.
   return (
-    <SafeAreaProvider>
-      <PrefsProvider>
-        <I18nProvider>
-          <ThemeProvider>
-            <QueryClientProvider client={queryClient}>
-              <SessionProvider>
-                <Navigation />
-              </SessionProvider>
-            </QueryClientProvider>
-          </ThemeProvider>
-        </I18nProvider>
-      </PrefsProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <PrefsProvider>
+          <I18nProvider>
+            <ThemeProvider>
+              <QueryClientProvider client={queryClient}>
+                <SessionProvider>
+                  <Navigation />
+                </SessionProvider>
+              </QueryClientProvider>
+            </ThemeProvider>
+          </I18nProvider>
+        </PrefsProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

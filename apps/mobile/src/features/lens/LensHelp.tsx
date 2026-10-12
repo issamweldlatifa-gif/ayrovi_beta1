@@ -9,12 +9,18 @@ import { useI18n } from '@/i18n';
 import { LENS_POLICY } from '@/features/lens/lensPolicy';
 import { LensDrawer } from '@/features/lens/LensDrawer';
 
-export function LensHelp({ onClose }: { onClose: () => void }) {
+export interface LensHelpProps {
+  open: boolean;
+  onClose: () => void;
+  onClosed: () => void;
+}
+
+export function LensHelp({ open, onClose, onClosed }: LensHelpProps) {
   const { t, locale } = useI18n();
   const policy = LENS_POLICY[locale];
 
   return (
-    <LensDrawer title={t('lens.help.title')} onClose={onClose}>
+    <LensDrawer title={t('lens.help.title')} open={open} onClose={onClose} onClosed={onClosed}>
       <AppText variant="body">{policy.intro}</AppText>
       {policy.sections.map((section) => (
         <Card key={section.title} title={section.title}>

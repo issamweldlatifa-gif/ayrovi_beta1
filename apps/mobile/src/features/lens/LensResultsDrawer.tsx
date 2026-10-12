@@ -48,6 +48,8 @@ export interface LensResultsDrawerProps {
   /** Résumé du serveur (identification, requête, stock). `null` tant qu'il n'y a pas d'analyse. */
   analysis: LensAnalysis | null;
   onClose: () => void;
+  onClosed: () => void;
+  open: boolean;
   onRetry: () => void;
   onSelectItem: (index: number) => void;
   onOpenCandidate: (candidate: LensCandidate) => void;
@@ -61,7 +63,7 @@ export interface LensResultsDrawerProps {
 
 export function LensResultsDrawer({
   busy, imageUri, imageSize, progress, results, items, selectedIndex, note, analysis,
-  onClose, onRetry, onSelectItem, onOpenCandidate, onWatch, watchBusy,
+  open, onClose, onClosed, onRetry, onSelectItem, onOpenCandidate, onWatch, watchBusy,
   favoriteUrls, favoriteBusy, onToggleFavorite,
 }: LensResultsDrawerProps) {
   const theme = useTheme();
@@ -170,7 +172,7 @@ export function LensResultsDrawer({
   );
 
   return (
-    <LensDrawer title={t('lens.progress.title')} subtitle={hint} onClose={onClose}>
+    <LensDrawer title={t('lens.progress.title')} subtitle={hint} open={open} onClose={onClose} onClosed={onClosed}>
       {photo}
 
       {busy ? steps : null}

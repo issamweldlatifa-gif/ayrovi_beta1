@@ -144,7 +144,8 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
       'app/reels-viewer.tsx', // en-tête transparent FIXE au-dessus de la liste plein écran (Reels)
       'src/features/lens/LensItemOverlay.tsx', // cadres des éléments détectés posés sur la photo (Lens, plusieurs produits) — exception approuvée par le propriétaire
       'src/features/lens/LensBase.tsx', // barre du haut, modes et commandes posées sur l'aperçu de la caméra (Lens, maquette 01) — exception approuvée par le propriétaire
-      'src/features/lens/LensDrawer.tsx', // tiroir Lens : voile et feuille posés au-dessus de la base (plan de navigation par couches, approuvé)
+      'src/design/sheet/AppSheet.tsx', // درج موحّد: الورقة والظل فوق المحتوى (إيماءة سحب، بلا Modal)
+      'src/design/sheet/SheetBackdrop.tsx', // الظل الخلفي للدرج، يغطي الشاشة تحت الورقة
       'src/features/lens/LensResultCard.tsx', // cœur et étiquettes posés sur la photo de la fiche (Lens, maquette 03) — exception approuvée par le propriétaire
     ]);
     const offenders: string[] = [];

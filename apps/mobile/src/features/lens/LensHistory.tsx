@@ -21,14 +21,18 @@ export interface LensHistoryProps {
   onRetry: () => void;
   onOpenWatches: () => void;
   onClose: () => void;
+  onClosed: () => void;
+  open: boolean;
 }
 
-export function LensHistory({ entries, pending, error, failed, onRetry, onOpenWatches, onClose }: LensHistoryProps) {
+export function LensHistory({
+  entries, pending, error, failed, onRetry, onOpenWatches, onClose, onClosed, open,
+}: LensHistoryProps) {
   const theme = useTheme();
   const { t } = useI18n();
 
   return (
-    <LensDrawer title={t('lens.historyTitle')} onClose={onClose}>
+    <LensDrawer title={t('lens.historyTitle')} open={open} onClose={onClose} onClosed={onClosed}>
       {pending ? (
         <LoadingBlock labelKey="loading.generic" />
       ) : failed ? (

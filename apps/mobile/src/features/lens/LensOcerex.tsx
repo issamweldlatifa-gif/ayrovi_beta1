@@ -33,7 +33,14 @@ import {
 import { useAyWebsSessionId } from '@/features/aywebs/session';
 
 /** `onGoToCart` ferme الدرج أولاً ثم ينتقل: لا تبقى حالة OCEREX عند العودة. */
-export function LensOcerex({ onClose, onGoToCart }: { onClose: () => void; onGoToCart: () => void }) {
+export interface LensOcerexProps {
+  open: boolean;
+  onClose: () => void;
+  onClosed: () => void;
+  onGoToCart: () => void;
+}
+
+export function LensOcerex({ open, onClose, onClosed, onGoToCart }: LensOcerexProps) {
   const theme = useTheme();
   const { t, locale } = useI18n();
   const sessionId = useAyWebsSessionId();
@@ -208,7 +215,7 @@ export function LensOcerex({ onClose, onGoToCart }: { onClose: () => void; onGoT
   };
 
   return (
-    <LensDrawer title={t('ocerex.title')} subtitle={t('ocerex.hint')} onClose={onClose}>
+    <LensDrawer title={t('ocerex.title')} subtitle={t('ocerex.hint')} open={open} onClose={onClose} onClosed={onClosed}>
       <Card>
         {viewfinder ? (
           <>

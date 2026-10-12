@@ -339,6 +339,16 @@ export default function LensScreen() {
   const candidates = analysis?.candidates ?? textResults ?? streamCards;
   const layer = stack.layer;
 
+  /**
+   * الدرج المعروض يبقى مركّباً بعد أن يطلب المستعمل إغلاقه، حتى تنتهي حركة الخروج
+   * (`onDrawerClosed`). يُحدَّث أثناء الرسم نفسه، فلا يظهر إطار فارغ عند الفتح.
+   */
+  const [rendered, setRendered] = useState<Layers.LensLayer | null>(null);
+  if (layer !== null && rendered !== layer) setRendered(layer);
+  const onDrawerClosed = useCallback(() => {
+    setRendered((current) => (stackRef.current.layer === null ? null : current));
+  }, []);
+
   /** الكاميرا تعمل حين تكون Lens معروضة وليس وضع الرابط. */
   const cameraActive = focused && stack.mode !== 'code';
 
@@ -369,8 +379,10 @@ export default function LensScreen() {
           onCaptureFailed={() => setNote(t('lens.captureFailed'))}
         />
 
-        {layer === 'results' ? (
+        {rendered === 'results' ? (
           <LensResultsDrawer
+            open={layer === 'results'}
+            onClosed={onDrawerClosed}
             busy={busy}
             imageUri={preview}
             imageSize={previewSize}
@@ -392,10 +404,21 @@ export default function LensScreen() {
           />
         ) : null}
 
-        {layer === 'help' ? <LensHelp onClose={dismissLayer} /> : null}
-        {layer === 'ocerex' ? <LensOcerex onClose={dismissLayer} onGoToCart={goToCart} /> : null}
-        {layer === 'history' ? (
+        {rendered === 'help' ? (
+          <LensHelp open={layer === 'help'} onClose={dismissLayer} onClosed={onDrawerClosed} />
+        ) : null}
+        {rendered === 'ocerex' ? (
+          <LensOcerex
+            open={layer === 'ocerex'}
+            onClose={dismissLayer}
+            onClosed={onDrawerClosed}
+            onGoToCart={goToCart}
+          />
+        ) : null}
+        {rendered === 'history' ? (
           <LensHistory
+            open={layer === 'history'}
+            onClosed={onDrawerClosed}
             entries={history.data ?? []}
             pending={history.isPending}
             failed={history.isError}
