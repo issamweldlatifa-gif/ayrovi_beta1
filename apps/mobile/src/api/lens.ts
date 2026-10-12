@@ -407,13 +407,19 @@ export async function requestManualReview(input: {
   desiredSize?: string;
   desiredColor?: string;
   contact: string;
-}): Promise<LensReviewRequest> {
-  const data = await apiSendData<unknown>('POST', `${LENS_BASE}/review-request`, { body: input });
+}, sessionId: string): Promise<LensReviewRequest> {
+  // `x-session-id` إلزامي: الخادم يرد INVALID_SESSION بدونه.
+  const data = await apiSendData<unknown>('POST', `${LENS_BASE}/review-request`, {
+    body: input,
+    headers: { 'x-session-id': sessionId },
+  });
   return parseReview(data);
 }
 
-export async function getManualReview(id: string): Promise<LensReviewRequest> {
-  const data = await apiGetData<unknown>(`${LENS_BASE}/review-request/${encodeURIComponent(id)}`);
+export async function getManualReview(id: string, sessionId: string): Promise<LensReviewRequest> {
+  const data = await apiGetData<unknown>(`${LENS_BASE}/review-request/${encodeURIComponent(id)}`, {
+    headers: { 'x-session-id': sessionId },
+  });
   return parseReview(data);
 }
 

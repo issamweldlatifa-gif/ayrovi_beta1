@@ -18,6 +18,8 @@ import { useT, type TranslationKey } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import { ApiError } from '@/api/errors';
 import { addExternalToCart } from '@/api/cart';
+import { useSessionId } from '@/session/session';
+import { LensReviewForm } from './LensReviewForm';
 import { refreshLiveStock, type LensCandidate, type LensLiveStock } from '@/api/lens';
 import { availabilityKey, isOpenableSourceUrl, priceView } from './lensView';
 import {
@@ -46,15 +48,18 @@ function refusalKey(error: unknown): TranslationKey | string {
 }
 
 export function LensProductView({
-  candidate, onBack, onOpenMerchantUrl,
+  candidate, eventId, onBack, onOpenMerchantUrl,
 }: {
   candidate: LensCandidate;
+  eventId: string | null;
   onBack: () => void;
   onOpenMerchantUrl?: (url: string) => void;
 }) {
   const theme = useTheme();
   const t = useT();
   const queryClient = useQueryClient();
+  const sessionId = useSessionId();
+  const [reviewOpen, setReviewOpen] = useState(false);
   const [size, setSize] = useState<string>(NO_CHOICE);
   const [color, setColor] = useState<string>(NO_CHOICE);
   const [quantity, setQuantity] = useState(1);
@@ -101,7 +106,7 @@ export function LensProductView({
     }
     setOrderBusy(true);
     try {
-      await addExternalToCart(payload);
+      await addExternalToCart({ payload, sessionId });
       await queryClient.invalidateQueries({ queryKey: ['cart'] });
       router.push('/checkout');
     } catch (error) {
@@ -110,7 +115,7 @@ export function LensProductView({
     } finally {
       setOrderBusy(false);
     }
-  }, [block, candidate, colorValue, quantity, queryClient, selection, sizeValue, t]);
+  }, [block, candidate, colorValue, quantity, queryClient, selection, sessionId, sizeValue, t]);
 
   const openMerchant = useCallback(() => {
     if (!isOpenableSourceUrl(candidate.sourceUrl)) return;
@@ -180,13 +185,33 @@ export function LensProductView({
       {block ? <AppText variant="caption" color={theme.colors.muted}>{t(BLOCK_KEY[block])}</AppText> : null}
       {message ? <AppText variant="caption" color={theme.status.danger.fg}>{message}</AppText> : null}
 
-      <Button
-        label={orderBusy ? t('lens.product.ordering') : t('lens.product.order')}
-        onPress={order}
-        disabled={block !== null || orderBusy}
-        block
-        testID="lens-order"
-      />
+      {block !== null ? (
+        reviewOpen ? (
+          <LensReviewForm
+            candidate={candidate}
+            desiredSize={sizeValue}
+            desiredColor={colorValue}
+            eventId={eventId}
+            sessionId={sessionId}
+          />
+        ) : (
+          <Button
+            label={t('lens.review.open')}
+            onPress={() => setReviewOpen(true)}
+            tone="quiet"
+            block
+            testID="lens-review-open"
+          />
+        )
+      ) : (
+        <Button
+          label={orderBusy ? t('lens.product.ordering') : t('lens.product.order')}
+          onPress={order}
+          disabled={orderBusy || !sessionId}
+          block
+          testID="lens-order"
+        />
+      )}
     </View>
   );
 }

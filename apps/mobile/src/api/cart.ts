@@ -14,7 +14,7 @@
  *    (`PRICE_VERIFICATION_REQUIRED`) — نقولوها قبل الضغطة، موش بعدها.
  */
 import { ApiError } from './errors';
-import { apiGetEnvelope, apiSend, apiSendEnvelope, type RequestOptions } from './client';
+import { apiGetEnvelope, apiSendEnvelope, type RequestOptions } from './client';
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -243,10 +243,16 @@ export const AYROVI_PRICE_TRUST_REASONS: Record<string, string> = {
  * الخادم يحكم على السعر والرمز والتوفر؛ الرفض يصل بكوده وسببه (400/409).
  */
 export async function addExternalToCart(
-  payload: import('@/features/lens/productOrder').ExternalCartPayload,
+  input: { payload: import('@/features/lens/productOrder').ExternalCartPayload; sessionId: string },
   options: RequestOptions = {},
 ): Promise<CatalogCartResult> {
-  const { data } = await apiSend<unknown>('POST', '/api/cart/items', { ...options, body: payload });
+  // `x-session-id` إلزامي على الكتابة: بلاه الخادم يرد 400 قبل أي تحقق.
+  // المسار AYROVI: الحقول في الجذر مع `success` (بلا `data`) ⇒ الغلاف الكامل.
+  const data = await apiSendEnvelope<Record<string, unknown>>('POST', '/api/cart/items', {
+    ...options,
+    headers: { 'x-session-id': input.sessionId, ...(options.headers ?? {}) },
+    body: input.payload,
+  });
   if (!isRecord(data) || data.success !== true) {
     throw new ApiError('malformed', 'Réponse panier illisible.');
   }

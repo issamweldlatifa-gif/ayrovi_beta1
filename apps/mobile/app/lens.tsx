@@ -183,6 +183,7 @@ export default function LensScreen() {
         <View style={styles.wrap}>
           <LensProductView
             candidate={stage.candidate}
+            eventId={stage.back.eventId}
             onBack={() => setStage(stage.back)}
           />
         </View>
