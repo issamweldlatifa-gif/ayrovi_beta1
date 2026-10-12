@@ -42,9 +42,9 @@ describe('طبقات Lens', () => {
   });
 
   it('القراءة المباشرة لا تعمل إلا في وضع المسح وبلا درج', () => {
-    expect(scanAllowed(changeMode(LENS_START, 'live'))).toBe(true);
-    expect(scanAllowed(openLayer(changeMode(LENS_START, 'live'), 'results'))).toBe(false);
+    expect(scanAllowed(changeMode(LENS_START, 'code'))).toBe(true);
+    expect(scanAllowed(changeMode(LENS_START, 'live'))).toBe(false);
+    expect(scanAllowed(openLayer(changeMode(LENS_START, 'code'), 'results'))).toBe(false);
     expect(scanAllowed(LENS_START)).toBe(false);
-    expect(scanAllowed(changeMode(LENS_START, 'code'))).toBe(false);
   });
 });

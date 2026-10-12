@@ -60,5 +60,6 @@ export function applyBack(stack: LensStack): LensStack {
 
 /** هل يُقرأ الباركود أو الكاميرا تعمل؟ لا قراءة والدرج مفتوح، ولا كاميرا في وضع الرابط. */
 export function scanAllowed(stack: LensStack): boolean {
-  return stack.mode === 'live' && stack.layer === null;
+  // القراءة بالكاميرا تأتي من ماسح QR في وضع «Lien / code» فقط (لا يُركَّب إلا وهو مفتوح).
+  return stack.mode === 'code' && stack.layer === null;
 }
