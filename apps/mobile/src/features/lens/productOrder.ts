@@ -46,7 +46,9 @@ export interface Selection {
 export function resolveSelection(candidate: LensCandidate, size: string, color: string): Selection {
   const wantedSize = key(size);
   const wantedColor = key(color);
-  const requested = Boolean(wantedSize || wantedColor);
+  // منتج بخيار واحد أو بلا خيارات ولا قائمة متغيّرات: العرض العام هو المعتمد (الاستثناء المتفق عليه).
+  const singleOrStandard = candidate.variantOptions.length === 0 && candidate.sizes.length <= 1 && candidate.colors.length <= 1;
+  const requested = !singleOrStandard && Boolean(wantedSize || wantedColor);
   const matches = requested
     ? candidate.variantOptions.filter((option) => option.available
       && (!wantedSize || key(option.size) === wantedSize)
@@ -79,6 +81,26 @@ export function completeOffer(offer: ProductOffer): offer is ProductOffer & { pr
 
 /** سبب منع الطلب قبل الإرسال (يُعرض للمستخدم)، أو null إن كان الطلب ممكناً. */
 export type OrderBlock = 'ambiguous' | 'manual' | 'incomplete' | null;
+
+/**
+ * استثناء وحيد: إذا المنتج فيه خيار واحد فقط (مقاس واحد، أو سعة واحدة للعطر)، هو الخيار المعتمد.
+ * غير ذلك: المقاس/اللون اختيار الزبون، وما نخمّنوش.
+ */
+export function effectiveChoice(
+  candidate: Pick<LensCandidate, 'sizes' | 'colors'>,
+  size: string,
+  color: string,
+): { size: string; color: string } {
+  return {
+    size: candidate.sizes.length === 1 ? candidate.sizes[0] : size,
+    color: candidate.colors.length === 1 ? candidate.colors[0] : color,
+  };
+}
+
+export function missingChoice(candidate: Pick<LensCandidate, 'sizes' | 'colors'>, size: string, color: string): boolean {
+  const choice = effectiveChoice(candidate, size, color);
+  return (candidate.sizes.length > 1 && !choice.size.trim()) || (candidate.colors.length > 1 && !choice.color.trim());
+}
 
 export function orderBlock(selection: Selection): OrderBlock {
   if (selection.kind === 'ambiguous') return 'ambiguous';
@@ -120,6 +142,7 @@ export interface ExternalCartPayload {
 export function buildCartPayload(input: CartPayloadInput): ExternalCartPayload | null {
   const { candidate, selection } = input;
   if (orderBlock(selection) !== null) return null;
+  if (missingChoice(candidate, input.size, input.color)) return null;
   const offer = selection.offer;
   if (!completeOffer(offer)) return null;
   const size = input.size.trim();

@@ -563,6 +563,7 @@ export const fr = {
   'lens.product.size': 'Taille',
   'lens.product.color': 'Couleur',
   'lens.product.noChoice': '—',
+  'lens.product.chooseOption': 'Choisissez la taille et la couleur avant de commander.',
   'lens.help.open': 'Comment utiliser Lens',
   'lens.help.title': 'Comment utiliser Lens',
   'lens.help.back': 'Retour',

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { LensCandidate, LensVariantOption } from '../src/api/lens';
 import { parseCandidate } from '../src/api/lens';
 import {
-  buildCartPayload, completeOffer, orderBlock, resolveSelection, toStoreKey,
+  buildCartPayload, completeOffer, effectiveChoice, missingChoice, orderBlock, resolveSelection, toStoreKey,
 } from '../src/features/lens/productOrder';
 
 const option = (over: Partial<LensVariantOption>): LensVariantOption => ({
@@ -107,14 +107,14 @@ describe('Lens — حمولة السلة', () => {
   });
   it('VERIFIED فقط إن قالت النتيجة ذلك؛ وإلا PENDING_MANUAL', () => {
     const c = candidate({ priceVerificationStatus: 'PENDING_MANUAL' });
-    const payload = buildCartPayload({ candidate: c, selection: resolveSelection(c, '', ''), size: '', color: '', quantity: 1, customerNote: '' });
+    const payload = buildCartPayload({ candidate: c, selection: resolveSelection(c, '', ''), size: 'M', color: 'Rouge', quantity: 1, customerNote: '' });
     expect(payload?.priceVerificationStatus).toBe('PENDING_MANUAL');
   });
   it('الكمية محصورة بين 1 و99', () => {
     const c = candidate();
     const sel = resolveSelection(c, '', '');
-    expect(buildCartPayload({ candidate: c, selection: sel, size: '', color: '', quantity: 0, customerNote: '' })?.quantity).toBe(1);
-    expect(buildCartPayload({ candidate: c, selection: sel, size: '', color: '', quantity: 500, customerNote: '' })?.quantity).toBe(99);
+    expect(buildCartPayload({ candidate: c, selection: sel, size: 'M', color: 'Rouge', quantity: 0, customerNote: '' })?.quantity).toBe(1);
+    expect(buildCartPayload({ candidate: c, selection: sel, size: 'M', color: 'Rouge', quantity: 500, customerNote: '' })?.quantity).toBe(99);
   });
 });
 
@@ -131,5 +131,42 @@ describe('Lens — تحليل الرمز والمتغيرات', () => {
     });
     expect(parsed.variantOptions[0].availability).toBe('unknown');
     expect(parsed.variantOptions[0].size).toBe('M');
+  });
+});
+
+describe('الاختيار لازم يكون من الزبون', () => {
+  it('منتج عنده مقاسات ولا مقاس مختار ⇒ الطلب موقوف (ما نختارش عنه)', () => {
+    const c = candidate({ colors: [] });
+    expect(missingChoice(c, '', '')).toBe(true);
+    expect(buildCartPayload({ candidate: c, selection: resolveSelection(c, '', ''), size: '', color: '', quantity: 1, customerNote: '' })).toBeNull();
+  });
+
+  it('منتج عنده مقاسات والزبون اختار ⇒ مسموح', () => {
+    const c = candidate({ colors: [] });
+    expect(missingChoice(c, 'M', '')).toBe(false);
+  });
+
+  it('منتج بلا مقاسات ولا ألوان ⇒ لا اختيار مطلوب', () => {
+    const c = candidate({ sizes: [], colors: [] });
+    expect(missingChoice(c, '', '')).toBe(false);
+  });
+});
+
+describe('استثناء الخيار الواحد', () => {
+  it('منتج بمقاس واحد ⇒ لا يُطلب اختيار، والمقاس هو المعتمد', () => {
+    const c = candidate({ sizes: ['100 ml'], colors: [] });
+    expect(missingChoice(c, '', '')).toBe(false);
+    expect(effectiveChoice(c, '', '').size).toBe('100 ml');
+    const choice = effectiveChoice(c, '', '');
+    const payload = buildCartPayload({
+      candidate: c, selection: resolveSelection(c, choice.size, choice.color), size: choice.size, color: choice.color, quantity: 1, customerNote: '',
+    });
+    expect(payload?.requestedSize).toBe('100 ml');
+  });
+
+  it('منتج بلون واحد ⇒ اللون معتمد تلقائياً، والمقاس ما زال اختيار الزبون', () => {
+    const c = candidate({ colors: ['Noir'] });
+    expect(effectiveChoice(c, '', '').color).toBe('Noir');
+    expect(missingChoice(c, '', '')).toBe(true);
   });
 });

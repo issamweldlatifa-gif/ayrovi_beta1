@@ -23,7 +23,7 @@ import { LensReviewForm } from './LensReviewForm';
 import { refreshLiveStock, type LensCandidate, type LensLiveStock } from '@/api/lens';
 import { availabilityKey, isOpenableSourceUrl, priceView } from './lensView';
 import {
-  buildCartPayload, orderBlock, resolveSelection, type OrderBlock,
+  buildCartPayload, effectiveChoice, missingChoice, orderBlock, resolveSelection, type OrderBlock,
 } from './productOrder';
 
 // قيمة «بلا اختيار» — نص ثابت غير فارغ حتى تبقى قراءة القاموس سليمة.
@@ -70,8 +70,11 @@ export function LensProductView({
 
   const sizeValue = size === NO_CHOICE ? '' : size;
   const colorValue = color === NO_CHOICE ? '' : color;
-  const selection = useMemo(() => resolveSelection(candidate, sizeValue, colorValue), [candidate, sizeValue, colorValue]);
+  const choice = effectiveChoice(candidate, sizeValue, colorValue);
+  const selection = useMemo(() => resolveSelection(candidate, choice.size, choice.color), [candidate, choice.size, choice.color]);
   const block = orderBlock(selection);
+  // المقاس/اللون لازم يختارهم الزبون؛ ما نعتمدوش «بلا اختيار» على منتج عنده خيارات.
+  const needsChoice = missingChoice(candidate, sizeValue, colorValue);
   const offerTnd = selection.offer.priceTnd;
   const view = priceView(candidate);
   const priceText = offerTnd != null
@@ -97,8 +100,12 @@ export function LensProductView({
 
   const order = useCallback(async () => {
     setMessage(null);
+    if (needsChoice) {
+      setMessage(t('lens.product.chooseOption'));
+      return;
+    }
     const payload = buildCartPayload({
-      candidate, selection, size: sizeValue, color: colorValue, quantity, customerNote: '',
+      candidate, selection, size: choice.size, color: choice.color, quantity, customerNote: '',
     });
     if (!payload) {
       setMessage(t(BLOCK_KEY[block ?? 'incomplete']));
@@ -115,7 +122,7 @@ export function LensProductView({
     } finally {
       setOrderBusy(false);
     }
-  }, [block, candidate, colorValue, quantity, queryClient, selection, sessionId, sizeValue, t]);
+  }, [block, candidate, colorValue, needsChoice, quantity, queryClient, selection, sessionId, sizeValue, t]);
 
   const openMerchant = useCallback(() => {
     if (!isOpenableSourceUrl(candidate.sourceUrl)) return;
@@ -164,11 +171,15 @@ export function LensProductView({
         </View>
       </Card>
 
-      {candidate.sizes.length > 0 ? (
+      {candidate.sizes.length > 1 ? (
         <Segmented options={sizeOptions} value={size} onChange={setSize} label={t('lens.product.size')} />
+      ) : candidate.sizes.length === 1 ? (
+        <AppText variant="caption" color={theme.colors.muted}>{t('lens.product.size')}: {candidate.sizes[0]}</AppText>
       ) : null}
-      {candidate.colors.length > 0 ? (
+      {candidate.colors.length > 1 ? (
         <Segmented options={colorOptions} value={color} onChange={setColor} label={t('lens.product.color')} />
+      ) : candidate.colors.length === 1 ? (
+        <AppText variant="caption" color={theme.colors.muted}>{t('lens.product.color')}: {candidate.colors[0]}</AppText>
       ) : null}
 
       <View style={styles.row}>
@@ -183,14 +194,15 @@ export function LensProductView({
       </View>
 
       {block ? <AppText variant="caption" color={theme.colors.muted}>{t(BLOCK_KEY[block])}</AppText> : null}
+      {!block && needsChoice ? <AppText variant="caption" color={theme.colors.muted}>{t('lens.product.chooseOption')}</AppText> : null}
       {message ? <AppText variant="caption" color={theme.status.danger.fg}>{message}</AppText> : null}
 
       {block !== null ? (
         reviewOpen ? (
           <LensReviewForm
             candidate={candidate}
-            desiredSize={sizeValue}
-            desiredColor={colorValue}
+            desiredSize={choice.size}
+            desiredColor={choice.color}
             eventId={eventId}
             sessionId={sessionId}
           />
@@ -207,7 +219,7 @@ export function LensProductView({
         <Button
           label={orderBusy ? t('lens.product.ordering') : t('lens.product.order')}
           onPress={order}
-          disabled={orderBusy || !sessionId}
+          disabled={orderBusy || !sessionId || needsChoice}
           block
           testID="lens-order"
         />
