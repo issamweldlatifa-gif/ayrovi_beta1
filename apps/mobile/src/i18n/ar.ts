@@ -560,4 +560,9 @@ export const ar = {
   'lens.excluded': '{count} فيشة انزاحت: السعر ولا المخزون ما تقراش.',
   'lens.priceUnpublished': 'السعر موش منشور',
   'lens.newSearch': 'قلّب من جديد',
+  'lens.historyTitle': 'آخر عمليات البحث',
+  'lens.favorite': 'زيدو للمفضّلة',
+  'lens.favorited': 'في المفضّلة متاعك',
+  'lens.favoriteNeedsAccount': 'ادخل لحسابك باش تزيد للمفضّلة.',
+  'lens.favoriteFailed': 'ما نجمناش نزيدو للمفضّلة. عاود جرّب.',
 } as const;

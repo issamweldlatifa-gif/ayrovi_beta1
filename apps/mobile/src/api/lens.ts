@@ -374,3 +374,58 @@ export async function getManualReview(id: string): Promise<LensReviewRequest> {
   const data = await apiGetData<unknown>(`${LENS_BASE}/review-request/${encodeURIComponent(id)}`);
   return parseReview(data);
 }
+
+/* ── السجل (نفس شكل `AyrovixHistoryItem` في الموقع) ───────────────────── */
+
+export type LensHistoryKind = 'image' | 'url' | 'qr' | 'barcode' | 'code' | 'text';
+
+export interface LensHistoryItem {
+  id: string;
+  kind: LensHistoryKind;
+  inputValue: string;
+  queryLabel: string;
+  title: string;
+  imageUrl: string;
+  sourceUrl: string;
+  source: string;
+  price: number | null;
+  currency: string | null;
+  verificationStatus: 'VERIFIED' | 'PENDING_MANUAL';
+  resultsCount: number;
+  createdAt: string;
+}
+
+const HISTORY_KINDS: LensHistoryKind[] = ['image', 'url', 'qr', 'barcode', 'code', 'text'];
+
+export function parseHistory(value: unknown): LensHistoryItem[] {
+  if (!Array.isArray(value)) throw malformed('historique');
+  const items: LensHistoryItem[] = [];
+  for (const entry of value) {
+    if (!isRecord(entry)) throw malformed('ligne historique');
+    const id = str(entry.id);
+    if (!id) throw malformed('identifiant historique');
+    const kind = str(entry.kind) as LensHistoryKind;
+    items.push({
+      id,
+      kind: HISTORY_KINDS.includes(kind) ? kind : 'text',
+      inputValue: str(entry.inputValue),
+      queryLabel: str(entry.queryLabel),
+      title: str(entry.title),
+      imageUrl: str(entry.imageUrl),
+      sourceUrl: str(entry.sourceUrl),
+      source: str(entry.source),
+      price: num(entry.price),
+      currency: strOrNull(entry.currency),
+      verificationStatus: entry.verificationStatus === 'VERIFIED' ? 'VERIFIED' : 'PENDING_MANUAL',
+      resultsCount: num(entry.resultsCount) ?? 0,
+      createdAt: str(entry.createdAt),
+    });
+  }
+  return items;
+}
+
+/** سجل Lens لهذا الزائر/الحساب. بلا هوية، الخادم يرجّع قائمة فارغة. */
+export async function fetchLensHistory(limit = 30): Promise<LensHistoryItem[]> {
+  const data = await apiGetData<unknown>(`${LENS_BASE}/history?limit=${Math.min(Math.max(1, limit), 100)}`);
+  return parseHistory(data);
+}

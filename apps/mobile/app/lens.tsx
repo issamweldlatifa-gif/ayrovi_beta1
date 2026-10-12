@@ -1,16 +1,19 @@
 /**
- * AYROVIX Lens — شاشة البحث (مطابقة للموقع: `ayrovix/components/LensLauncher`).
+ * AYROVIX Lens — شاشة البحث (وظائف ونصوص الموقع، بمكونات التطبيق وأيقوناته).
  *
  * ثلاث قنوات: صورة (كاميرا أو معرض)، كود (باركود أو QR)، واسم منتوج.
  *  • الصورة والكود والاسم تُرسل للخادم كما هي؛ الخادم هو اللي يقرا المتاجر ويحسب السعر.
  *  • QR يحمل رابط ⇒ `analyze-url`، وغير ذلك ⇒ `analyze-code`. باركود ⇒ `analyze-barcode`.
  *  • الفيشة بلا سعر تعرض «السعر موش منشور»، وما نخمّنوش.
+ *  • الأيقونات من Ionicons فقط (دليل التصميم، الفصل 10).
  */
 import { useCallback, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import * as WebBrowser from 'expo-web-browser';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { useQuery } from '@tanstack/react-query';
 
 import { AppText, Button, Card, Field, Segmented } from '@/design/ui';
 import { SubScreen } from '@/design/subScreen';
@@ -19,9 +22,11 @@ import { ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
 import { useT, type TranslationKey } from '@/i18n';
 import { mediaUrl } from '@/api/client';
+import { isApiError } from '@/api/errors';
+import { addExternalFavorite } from '@/api/account';
 import {
-  analyzeBarcode, analyzeCode, analyzeImage, analyzeText, analyzeUrl, markChosen,
-  type LensCandidate, type LensSearchResult,
+  analyzeBarcode, analyzeCode, analyzeImage, analyzeText, analyzeUrl, fetchLensHistory, markChosen,
+  type LensCandidate, type LensHistoryItem, type LensSearchResult,
 } from '@/api/lens';
 import {
   availabilityKey, isOpenableSourceUrl, priceView, uniqueCandidates,
@@ -35,6 +40,8 @@ type Stage =
   | { kind: 'error'; error: unknown };
 
 const CODE_TYPES = ['qr', 'ean13', 'ean8', 'upc_a', 'upc_e', 'code128'] as const;
+/** هدف لمس 44 دائماً (دليل التصميم 10.2). */
+const HIT_SLOP = { top: 12, bottom: 12, left: 12, right: 12 } as const;
 
 export default function LensScreen() {
   const theme = useTheme();
@@ -43,13 +50,23 @@ export default function LensScreen() {
   const [mode, setMode] = useState<Mode>('camera');
   const [stage, setStage] = useState<Stage>({ kind: 'idle' });
   const [text, setText] = useState('');
+  const [favorited, setFavorited] = useState<Record<string, true>>({});
+  const [favoriteNote, setFavoriteNote] = useState<TranslationKey | null>(null);
   const cameraRef = useRef<CameraView>(null);
   const scanLock = useRef(false);
+  const history = useQuery({ queryKey: ['lens', 'history'], queryFn: () => fetchLensHistory(), staleTime: 30_000 });
 
   const showSearch = useCallback((result: LensSearchResult | { candidates: LensCandidate[]; eventId: string; excluded?: number }) => {
     const candidates = uniqueCandidates(result.candidates);
-    setStage({ kind: 'results', candidates, eventId: result.eventId, excluded: 'excluded' in result ? (result.excluded ?? 0) : 0 });
-  }, []);
+    setFavoriteNote(null);
+    setStage({
+      kind: 'results',
+      candidates,
+      eventId: result.eventId,
+      excluded: 'excluded' in result ? (result.excluded ?? 0) : 0,
+    });
+    void history.refetch();
+  }, [history]);
 
   const run = useCallback(async (job: () => Promise<void>) => {
     setStage({ kind: 'busy' });
@@ -104,19 +121,48 @@ export default function LensScreen() {
     });
   }, [run, showSearch]);
 
-  const onSearchText = useCallback(() => {
-    const query = text.trim();
-    if (query.length < 2) return;
+  const runTextSearch = useCallback((query: string) => {
+    const clean = query.trim();
+    if (clean.length < 2) return;
     void run(async () => {
-      showSearch(await analyzeText(query));
+      showSearch(await analyzeText(clean));
     });
-  }, [run, showSearch, text]);
+  }, [run, showSearch]);
 
   const onOpen = useCallback(async (candidate: LensCandidate) => {
     if (!isOpenableSourceUrl(candidate.sourceUrl)) return;
-    markChosen(stage.kind === 'results' ? stage.eventId : '');
+    if (stage.kind === 'results') markChosen(stage.eventId);
     await WebBrowser.openBrowserAsync(candidate.sourceUrl);
   }, [stage]);
+
+  const onFavorite = useCallback(async (candidate: LensCandidate) => {
+    setFavoriteNote(null);
+    try {
+      await addExternalFavorite({
+        sourceUrl: candidate.sourceUrl,
+        title: candidate.title,
+        imageUrl: candidate.image,
+        priceTnd: candidate.priceTnd,
+      });
+      setFavorited((current) => ({ ...current, [candidate.sourceUrl]: true }));
+    } catch (error) {
+      // الإعجاب يحتاج حساباً: الخادم يرد 401 بلا تسجيل.
+      const needsAccount = isApiError(error) && (error.status === 401 || error.code === 'AUTH_REQUIRED');
+      setFavoriteNote(needsAccount ? 'lens.favoriteNeedsAccount' : 'lens.favoriteFailed');
+    }
+  }, []);
+
+  const onHistoryItem = useCallback((item: LensHistoryItem) => {
+    if (isOpenableSourceUrl(item.sourceUrl)) {
+      void WebBrowser.openBrowserAsync(item.sourceUrl);
+      return;
+    }
+    if (item.kind === 'text' && item.inputValue) {
+      setMode('text');
+      setText(item.inputValue);
+      runTextSearch(item.inputValue);
+    }
+  }, [runTextSearch]);
 
   const reset = useCallback(() => {
     scanLock.current = false;
@@ -132,9 +178,9 @@ export default function LensScreen() {
   return (
     <SubScreen title={t('lens.title')} subtitle={t('lens.subtitle')} fallback="/">
       <View style={styles.wrap}>
-        {stage.kind === 'results' || stage.kind === 'busy' || stage.kind === 'error' ? null : (
+        {stage.kind === 'idle' ? (
           <Segmented options={modeOptions} value={mode} onChange={(next) => { setMode(next); reset(); }} />
-        )}
+        ) : null}
 
         {stage.kind === 'busy' ? <LoadingBlock labelKey="lens.analyzing" /> : null}
 
@@ -149,7 +195,10 @@ export default function LensScreen() {
           <Results
             candidates={stage.candidates}
             excluded={stage.excluded}
+            favorited={favorited}
+            favoriteNote={favoriteNote}
             onOpen={onOpen}
+            onFavorite={onFavorite}
             onNewSearch={reset}
             t={t}
           />
@@ -196,12 +245,38 @@ export default function LensScreen() {
               value={text}
               onChangeText={setText}
               placeholder={t('lens.textPlaceholder')}
-              onSubmitEditing={onSearchText}
+              onSubmitEditing={() => runTextSearch(text)}
               returnKeyType="search"
               accessibilityLabel={t('lens.textPlaceholder')}
             />
-            <Button label={t('lens.search')} onPress={onSearchText} disabled={text.trim().length < 2} block />
+            <Button label={t('lens.search')} onPress={() => runTextSearch(text)} disabled={text.trim().length < 2} block />
           </Card>
+        ) : null}
+
+        {stage.kind === 'idle' && history.data && history.data.length > 0 ? (
+          <View style={styles.history}>
+            <View style={styles.sectionRow}>
+              <Ionicons name="time-outline" size={20} color={theme.colors.muted} />
+              <AppText variant="caption" color={theme.colors.muted}>{t('lens.historyTitle')}</AppText>
+            </View>
+            {history.data.slice(0, 10).map((item) => (
+              <Pressable
+                key={item.id}
+                onPress={() => onHistoryItem(item)}
+                accessibilityRole="button"
+                accessibilityLabel={item.title || item.inputValue}
+                hitSlop={HIT_SLOP}
+                testID={`lens-history-${item.id}`}
+              >
+                <Card>
+                  <AppText numberOfLines={1}>{item.title || item.inputValue}</AppText>
+                  <AppText variant="caption" color={theme.colors.muted}>
+                    {item.resultsCount > 0 ? `${item.resultsCount}` : ''}
+                  </AppText>
+                </Card>
+              </Pressable>
+            ))}
+          </View>
         ) : null}
       </View>
     </SubScreen>
@@ -209,11 +284,14 @@ export default function LensScreen() {
 }
 
 function Results({
-  candidates, excluded, onOpen, onNewSearch, t,
+  candidates, excluded, favorited, favoriteNote, onOpen, onFavorite, onNewSearch, t,
 }: {
   candidates: LensCandidate[];
   excluded: number;
+  favorited: Record<string, true>;
+  favoriteNote: TranslationKey | null;
   onOpen: (candidate: LensCandidate) => void;
+  onFavorite: (candidate: LensCandidate) => void;
   onNewSearch: () => void;
   t: (key: TranslationKey, vars?: Record<string, string | number>) => string;
 }) {
@@ -232,6 +310,7 @@ function Results({
       {excluded > 0 ? (
         <AppText variant="caption" color={theme.colors.muted}>{t('lens.excluded', { count: excluded })}</AppText>
       ) : null}
+      {favoriteNote ? <AppText variant="caption" color={theme.status.danger.fg}>{t(favoriteNote)}</AppText> : null}
       {candidates.map((candidate) => {
         const price = priceView(candidate);
         const priceText = price.kind === 'tnd'
@@ -239,31 +318,43 @@ function Results({
           : price.kind === 'original'
             ? `${price.amount.toFixed(2)} ${price.currency}`
             : t('lens.priceUnpublished');
+        const isFavorite = favorited[candidate.sourceUrl] === true;
         return (
-          <Pressable
-            key={candidate.id}
-            onPress={() => onOpen(candidate)}
-            accessibilityRole="button"
-            accessibilityLabel={`${candidate.title} — ${priceText}`}
-            testID={`lens-result-${candidate.id}`}
-          >
-            <Card>
+          <Card key={candidate.id}>
+            <Pressable
+              onPress={() => onOpen(candidate)}
+              accessibilityRole="button"
+              accessibilityLabel={`${candidate.title} — ${priceText}`}
+              testID={`lens-result-${candidate.id}`}
+            >
               <View style={styles.row}>
-                <AppImage
-                  uri={mediaUrl(candidate.image)}
-                  style={styles.thumb}
-                  accessibilityLabel={candidate.title}
-                />
+                <AppImage uri={mediaUrl(candidate.image)} style={styles.thumb} accessibilityLabel={candidate.title} />
                 <View style={styles.rowText}>
                   <AppText>{candidate.title}</AppText>
                   {candidate.brand ? <AppText variant="caption" color={theme.colors.muted}>{candidate.brand}</AppText> : null}
                   <AppText>{priceText}</AppText>
                   <AppText variant="caption" color={theme.colors.muted}>{t(availabilityKey(candidate.availability) as TranslationKey)}</AppText>
-                  <AppText variant="caption" color={theme.colors.muted}>{t('catalog.openSource')}</AppText>
                 </View>
+                <Ionicons name="open-outline" size={20} color={theme.colors.muted} />
               </View>
-            </Card>
-          </Pressable>
+            </Pressable>
+            <Pressable
+              onPress={() => onFavorite(candidate)}
+              disabled={isFavorite}
+              accessibilityRole="button"
+              accessibilityLabel={t(isFavorite ? 'lens.favorited' : 'lens.favorite')}
+              hitSlop={HIT_SLOP}
+              testID={`lens-favorite-${candidate.id}`}
+              style={styles.favoriteRow}
+            >
+              <Ionicons
+                name={isFavorite ? 'heart' : 'heart-outline'}
+                size={20}
+                color={isFavorite ? theme.colors.accent : theme.colors.muted}
+              />
+              <AppText variant="caption" color={theme.colors.muted}>{t(isFavorite ? 'lens.favorited' : 'lens.favorite')}</AppText>
+            </Pressable>
+          </Card>
         );
       })}
       <Button label={t('lens.newSearch')} onPress={onNewSearch} tone="quiet" block />
@@ -279,5 +370,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: 12, alignItems: 'center' },
   rowText: { flex: 1, gap: 4 },
   thumb: { width: 72, height: 72, borderRadius: 8 },
+  favoriteRow: { flexDirection: 'row', gap: 8, alignItems: 'center', minHeight: 44 },
+  history: { gap: 8 },
+  sectionRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
 });
-

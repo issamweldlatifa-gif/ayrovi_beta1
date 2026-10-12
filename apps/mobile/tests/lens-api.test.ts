@@ -73,3 +73,24 @@ describe('Lens — parsing (contrat du site)', () => {
     expect(review.duplicate).toBe(false);
   });
 });
+
+describe('Lens — historique', () => {
+  it('ligne valide : type fermé, vérification fermée', async () => {
+    const { parseHistory } = await import('../src/api/lens');
+    const [item] = parseHistory([{ id: 'h1', kind: 'nouveau', verificationStatus: 'VERIFIED', resultsCount: 3 }]);
+    expect(item.kind).toBe('text');
+    expect(item.verificationStatus).toBe('VERIFIED');
+    expect(item.resultsCount).toBe(3);
+    expect(item.price).toBeNull();
+  });
+  it('ligne sans identifiant ou liste non tableau → erreur', async () => {
+    const { parseHistory } = await import('../src/api/lens');
+    expect(() => parseHistory([{ kind: 'image' }])).toThrow(ApiError);
+    expect(() => parseHistory({})).toThrow(ApiError);
+  });
+  it('statut inconnu → PENDING_MANUAL (jamais VERIFIED par défaut)', async () => {
+    const { parseHistory } = await import('../src/api/lens');
+    const [item] = parseHistory([{ id: 'h2', kind: 'url', verificationStatus: 'ok' }]);
+    expect(item.verificationStatus).toBe('PENDING_MANUAL');
+  });
+});

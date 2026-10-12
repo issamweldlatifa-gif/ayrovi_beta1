@@ -560,4 +560,9 @@ export const fr = {
   'lens.excluded': '{count} fiche(s) écartée(s) : prix ou stock non lus.',
   'lens.priceUnpublished': 'Prix non publié',
   'lens.newSearch': 'Nouvelle recherche',
+  'lens.historyTitle': 'Recherches récentes',
+  'lens.favorite': 'Ajouter aux favoris',
+  'lens.favorited': 'Dans vos favoris',
+  'lens.favoriteNeedsAccount': 'Connectez-vous pour ajouter aux favoris.',
+  'lens.favoriteFailed': 'Ajout aux favoris impossible. Réessayez.',
 } as const;
