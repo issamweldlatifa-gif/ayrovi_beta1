@@ -22,7 +22,6 @@ import { filterWithFallback, withDisplayRating } from './services/candidatePolic
 import { startTrace, mark, endTrace } from './services/lensPerformanceTrace';
 import { armLensDeadline, lensAnalyzeDeadlineMs } from './services/lensDeadline';
 import { warmIsolation } from '../services/imageIsolation';
-import { fetchParsedPageWithApify } from './services/apifyProductScraper';
 import { warmComposition } from '../services/imageComposition';
 import { addPriceWatcher, listPriceWatchers, priceWatcherLimitReached, removePriceWatcher } from './services/priceWatch';
 import { createHash } from 'node:crypto';
@@ -371,13 +370,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       let readyCount = 0;
       emit('progress', { step: 'reading', done: 0, total: candidates.length });
       const { candidates: liveCandidates, report: liveStock } = await enrichCandidatesLiveStock(candidates, {
-        // Grille photo : Apify d'abord (même contrat de page), puis le lecteur local.
-        // Le « vérifier le stock » (ligne suivante, plus bas) reste local : il porte les variantes.
-        fetcher: async (url) => {
-          const apifyPage = await fetchParsedPageWithApify(url).catch(() => null);
-          if (apifyPage) return apifyPage;
-          return scraper.scrapeParsedPage(url).then((result) => result.data);
-        },
+        fetcher: (url) => scraper.scrapeParsedPage(url).then((result) => result.data),
         reprice: (price, currency) => {
           const estimate = estimateWithDb(db, price, currency);
           return estimate ? { priceTnd: estimate.priceTnd, promo: estimate.promo } : null;

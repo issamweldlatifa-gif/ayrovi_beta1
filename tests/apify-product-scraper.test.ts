@@ -1,7 +1,5 @@
 import { describe, expect, test, vi } from 'vitest';
 import {
-  apifyItemToParsedPage,
-  fetchParsedPageWithApify,
   apifyProductScraperEnabled,
   mapApifyItem,
   pickScrapedProduct,
@@ -94,28 +92,5 @@ describe('apifyProductScraper', () => {
     expect(pickScrapedProduct(noPrice, null)).toBe(noPrice);
     expect(pickScrapedProduct(null, local)).toBe(local);
     expect(pickScrapedProduct(null, null)).toBeNull();
-  });
-
-  test('chemin photo : page lue au contrat ParsedProductPage, source de prix reconnue', () => {
-    const page = apifyItemToParsedPage({ ...ITEM, extraction_method: 'json_ld' }, URL_PRODUCT)!;
-    expect(page).toMatchObject({ title: 'Nike Air Max 95', price: 149.99, currency: 'EUR', priceSource: 'json_ld', availability: 'in_stock' });
-    expect(page.variants).toEqual({});
-    expect(apifyItemToParsedPage({ ...ITEM, extraction_method: 'open_graph' }, URL_PRODUCT)!.priceSource).toBe('meta');
-    expect(apifyItemToParsedPage({ ...ITEM, extraction_method: 'css' }, URL_PRODUCT)!.priceSource).toBe('dom');
-    expect(apifyItemToParsedPage({ ...ITEM, extraction_method: 'inconnu' }, URL_PRODUCT)!.priceSource).toBe('none');
-  });
-
-  test('chemin photo : sans prix ou sans devise ⇒ null (le lecteur local prend le relais)', () => {
-    expect(apifyItemToParsedPage({ ...ITEM, price: null }, URL_PRODUCT)).toBeNull();
-    expect(apifyItemToParsedPage({ ...ITEM, currency: '' }, URL_PRODUCT)).toBeNull();
-  });
-
-  test('chemin photo : fetch Apify ⇒ page ou null, jeton dans l’en-tête', async () => {
-    const fetchMock = vi.fn(async () => new Response(JSON.stringify([{ ...ITEM, extraction_method: 'json_ld' }]), { status: 200 }));
-    const page = await fetchParsedPageWithApify(URL_PRODUCT, { APIFY_TOKEN: 'tok' }, fetchMock as unknown as typeof fetch);
-    expect(page?.price).toBe(149.99);
-    expect(((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].headers as Record<string, string>).Authorization).toBe('Bearer tok');
-    expect(await fetchParsedPageWithApify(URL_PRODUCT, {}, fetchMock as unknown as typeof fetch)).toBeNull();
-    expect(await fetchParsedPageWithApify(URL_PRODUCT, { APIFY_TOKEN: 't' }, vi.fn(async () => new Response('x', { status: 500 })) as unknown as typeof fetch)).toBeNull();
   });
 });
