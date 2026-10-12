@@ -194,10 +194,11 @@ async function runSerpApiVisualSearch(image: Buffer, limit: number): Promise<Ayr
 
     const configuredCountry = (process.env.AYROVIX_LENS_COUNTRY || '').trim().toLowerCase();
     const country = /^[a-z]{2}$/.test(configuredCountry) ? configuredCountry : 'fr';
-    const searchType = async (type: 'products' | 'visual_matches' | 'exact_matches'): Promise<AyrovixCandidate[]> => {
+    /* SerpApi a arrêté le type `products` (Google l'a supprimé) : il répond 400.
+       Sans `type`, Lens renvoie `visual_matches`, que `toCandidates` lit déjà. */
+    const lensSearch = async (): Promise<AyrovixCandidate[]> => {
       const params = new URLSearchParams({
         engine: 'google_lens',
-        type,
         image_id: imageId,
         hl: 'fr',
         country,
@@ -207,23 +208,20 @@ async function runSerpApiVisualSearch(image: Buffer, limit: number): Promise<Ayr
         signal: AbortSignal.timeout(remainingMs(deadline, 12_000)),
       });
       if (!response.ok) {
-        console.warn(`[AYROVIX serpapi-lens] ${type} HTTP ${response.status}`);
+        console.warn(`[AYROVIX serpapi-lens] lens HTTP ${response.status}`);
         return [];
       }
       const payload: any = await responseJson(response);
       if (payload?.error) {
-        console.warn(`[AYROVIX serpapi-lens] ${type} API error`);
+        console.warn('[AYROVIX serpapi-lens] lens API error');
         return [];
       }
       return toCandidates(payload, limit);
     };
-    /* One Lens query is enough: SerpApi's `products` response already exposes
-       its rows through the supported product/visual result collections. A
-       second unconditional tab query doubled quota use and made one customer
-       action produce an avoidable third network request after image upload. */
-    const products = await searchType('products');
-    console.log(`[AYROVIX serpapi-lens] ${products.length} matches`);
-    return products;
+    /* One Lens query is enough (une seule requête payante par action client). */
+    const matches = await lensSearch();
+    console.log(`[AYROVIX serpapi-lens] ${matches.length} matches`);
+    return matches;
   } catch (error: any) {
     console.warn(`[AYROVIX serpapi-lens] ${error?.name === 'TimeoutError' ? 'timeout' : 'unavailable'}`);
     return [];

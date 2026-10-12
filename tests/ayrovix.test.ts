@@ -184,7 +184,7 @@ describe('AYROVIX Lens', () => {
     }
   });
 
-  test('SerpApi Google Lens renvoie produits, images et prix puis évite la recherche texte Claude', async () => {
+  test('SerpApi Google Lens (sans type, visual_matches) renvoie images et prix puis évite la recherche texte Claude', async () => {
     const previousKey = process.env.SERPAPI_KEY;
     process.env.SERPAPI_KEY = 'test-serpapi-key';
     const fetchMock = vi.fn(async (url: string, init: RequestInit = {}) => {
@@ -196,7 +196,7 @@ describe('AYROVIX Lens', () => {
       if (url.startsWith('https://serpapi.com/search.json?')) {
         const parsed = new URL(url);
         expect(parsed.searchParams.get('engine')).toBe('google_lens');
-        expect(parsed.searchParams.get('type')).toBe('products');
+        expect(parsed.searchParams.get('type')).toBeNull(); // `products` supprimé par Google/SerpApi
         expect(parsed.searchParams.get('image_id')).toBe('temporary-image-id');
         return new Response(JSON.stringify({
           visual_matches: [{
