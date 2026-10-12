@@ -689,6 +689,7 @@ export const ar = {
   'lens.flashOff': 'طفّي الفلاش',
   'lens.helpOpen': 'المساعدة وقواعد الاستعمال',
   'lens.help.title': 'مساعدة Lens',
+  'lens.drawerFailed': 'ما قدّرناش نعرضو هالجزء. سكّرو وعاود جرّب.',
   'lens.close': 'إغلاق',
   'lens.captureFailed': 'ما تنجمناش نصوّر الصورة. عاود جرّب.',
   'lens.itemPick': 'اختار {name}',

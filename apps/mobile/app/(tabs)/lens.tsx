@@ -363,7 +363,9 @@ export default function LensScreen() {
   }, []);
 
   /** الكاميرا تعمل حين تكون Lens معروضة وليس وضع الرابط. */
-  const cameraActive = focused && stack.mode !== 'code';
+  // OCEREX يفتح منظاره الخاص: كاميرتان حيّتان معاً على جهاز Android قد تتعارضان،
+  // لذلك تتوقف معاينة Lens الأساسية طالما OCEREX مفتوح، وتعود عند إغلاقه.
+  const cameraActive = focused && stack.mode !== 'code' && stack.layer !== 'ocerex';
 
   return (
     /**

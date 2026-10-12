@@ -6,6 +6,7 @@ import type { ReactNode } from 'react';
 
 import { AppSheet } from '@/design/sheet/AppSheet';
 import { SheetHeader } from '@/design/sheet/SheetHeader';
+import { LensDrawerBoundary } from '@/features/lens/LensDrawerBoundary';
 
 export interface LensDrawerProps {
   title: string;
@@ -26,7 +27,7 @@ export function LensDrawer({ title, subtitle, onClose, onClosed, open, children 
       onClosed={onClosed}
       header={<SheetHeader title={title} subtitle={subtitle} onClose={onClose} />}
     >
-      {children}
+      <LensDrawerBoundary onClose={onClose}>{children}</LensDrawerBoundary>
     </AppSheet>
   );
 }

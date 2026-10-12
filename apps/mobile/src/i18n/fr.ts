@@ -690,6 +690,7 @@ export const fr = {
   'lens.helpOpen': 'Aide et règles d’utilisation',
   'lens.help.title': 'Aide Lens',
   'lens.close': 'Fermer',
+  'lens.drawerFailed': 'Ce panneau n’a pas pu s’afficher. Fermez-le et réessayez.',
   'lens.captureFailed': 'La photo n’a pas pu être prise. Réessayez.',
   'lens.itemPick': 'Choisir {name}',
   'lens.promoBadge': 'Promo',
