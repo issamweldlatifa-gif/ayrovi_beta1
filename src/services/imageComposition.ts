@@ -29,6 +29,7 @@ import sharp from 'sharp';
 import { fetchRemoteImage, isolateBuffer } from './imageIsolation';
 import { UnsafeUrlError } from './safeUrl';
 import { segmentBuffer } from './segmentation';
+import { isolationCacheInput, isolationProvider, shouldPersistNegative } from './photoroomIsolation';
 import { pruneDiskCache } from './diskCache';
 
 /* ── Contrat visuel AYROVI — miroir de client/src/ayrovix/components/lens-product-card.css ──
@@ -413,7 +414,8 @@ export function acceptComposition(result: CompositionResult): { pass: boolean; c
  * Règle intangible du projet — jamais d'image cassée, jamais de produit déformé.
  */
 export async function getComposedCard(rawUrl: string, idealWidth = IDEAL_FRAME_WIDTH): Promise<{ file: string | null; checks?: Record<string, boolean> }> {
-  const key = crypto.createHash('sha256').update(`${idealWidth}|${rawUrl}`).digest('hex').slice(0, 32);
+  const provider = isolationProvider();
+  const key = crypto.createHash('sha256').update(`${idealWidth}|${isolationCacheInput(rawUrl, provider)}`).digest('hex').slice(0, 32);
   const dir = composedCacheDir();
   const metaPath = path.join(dir, `${key}.meta.json`);
   const pngPath = path.join(dir, `${key}.png`);
@@ -451,6 +453,7 @@ export async function getComposedCard(rawUrl: string, idealWidth = IDEAL_FRAME_W
     if (error instanceof UnsafeUrlError || (error as any)?.code === 'UNSAFE_URL') throw error;
     meta = { file: null };
   }
+  if (meta.file == null && !shouldPersistNegative(provider)) return meta;
   try {
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(metaPath, JSON.stringify(meta));

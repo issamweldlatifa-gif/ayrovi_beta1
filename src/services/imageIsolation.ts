@@ -19,7 +19,7 @@ import sharp from 'sharp';
 import { fetchSafeRemote, parsePublicHttpUrl, readLimitedBuffer } from './safeUrl';
 import { pruneDiskCache } from './diskCache';
 import { segmentBuffer } from './segmentation';
-import { isolationProvider, removeBackgroundWithPhotoRoom } from './photoroomIsolation';
+import { isolationCacheInput, isolationProvider, removeBackgroundWithPhotoRoom, shouldPersistNegative } from './photoroomIsolation';
 
 const MAX_DIMENSION = 900;
 const MAX_BYTES = 8 * 1024 * 1024;
@@ -383,7 +383,8 @@ export interface CachedIsolation {
 }
 
 export async function getIsolatedImage(rawUrl: string): Promise<CachedIsolation> {
-  const key = crypto.createHash('sha256').update(rawUrl).digest('hex').slice(0, 32);
+  const provider = isolationProvider();
+  const key = crypto.createHash('sha256').update(isolationCacheInput(rawUrl, provider)).digest('hex').slice(0, 32);
   const dir = cacheDir();
   const metaPath = path.join(dir, `${key}.meta.json`);
   const pngPath = path.join(dir, `${key}.png`);
@@ -408,6 +409,8 @@ export async function getIsolatedImage(rawUrl: string): Promise<CachedIsolation>
     } catch { /* repli : original */ }
   }
   const meta: CachedIsolation = { kind: result.kind, file: null };
+  // Mode PhotoRoom : un échec (sans PNG) n'est pas persisté, il sera retenté.
+  if (!result.png && !shouldPersistNegative(provider)) return meta;
   if (result.png) {
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(pngPath, result.png);

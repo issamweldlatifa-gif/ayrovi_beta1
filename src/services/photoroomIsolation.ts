@@ -31,6 +31,20 @@ export function isPhotoRoomPng(buffer: Buffer): boolean {
   return PNG_SIGNATURE.every((byte, index) => buffer[index] === byte);
 }
 
+/**
+ * Clé de cache : le mode `local` garde l'ancienne clé (aucun recalcul du cache
+ * existant) ; le mode `photoroom` a une clé distincte, sinon un résultat local
+ * déjà en cache (y compris un échec « aucune isolation ») masquerait PhotoRoom.
+ */
+export function isolationCacheInput(rawUrl: string, provider: IsolationProvider = isolationProvider()): string {
+  return provider === 'photoroom' ? `photoroom|${rawUrl}` : rawUrl;
+}
+
+/** En mode PhotoRoom, un échec n'est pas une vérité durable : on ne le persiste pas. */
+export function shouldPersistNegative(provider: IsolationProvider = isolationProvider()): boolean {
+  return provider !== 'photoroom';
+}
+
 export interface PhotoRoomOptions {
   env?: NodeJS.ProcessEnv;
   fetchImpl?: typeof fetch;

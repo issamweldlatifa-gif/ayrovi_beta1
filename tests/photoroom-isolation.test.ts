@@ -1,6 +1,6 @@
 import sharp from 'sharp';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { isolationProvider, isPhotoRoomPng, PHOTOROOM_SEGMENT_URL, removeBackgroundWithPhotoRoom } from '../src/services/photoroomIsolation';
+import { isolationCacheInput, isolationProvider, isPhotoRoomPng, PHOTOROOM_SEGMENT_URL, removeBackgroundWithPhotoRoom, shouldPersistNegative } from '../src/services/photoroomIsolation';
 import { isolateBuffer } from '../src/services/imageIsolation';
 import { segmentBuffer } from '../src/services/segmentation';
 
@@ -79,5 +79,20 @@ describe('isolation PhotoRoom (sandbox / dev)', () => {
       vi.unstubAllGlobals();
       vi.unstubAllEnvs();
     }
+  });
+});
+
+describe('cache par fournisseur (anti-résultat local périmé)', () => {
+  const URL = 'https://cdn.example.com/p/1.jpg';
+  it('le mode local garde la clé historique (pas de recalcul du cache existant)', () => {
+    expect(isolationCacheInput(URL, 'local')).toBe(URL);
+  });
+  it('le mode photoroom a une clé distincte', () => {
+    expect(isolationCacheInput(URL, 'photoroom')).not.toBe(URL);
+    expect(isolationCacheInput(URL, 'photoroom')).toBe(`photoroom|${URL}`);
+  });
+  it('un échec n’est pas persisté en mode photoroom, mais l’est en local', () => {
+    expect(shouldPersistNegative('photoroom')).toBe(false);
+    expect(shouldPersistNegative('local')).toBe(true);
   });
 });
