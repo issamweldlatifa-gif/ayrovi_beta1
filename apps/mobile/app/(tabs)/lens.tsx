@@ -1,30 +1,24 @@
 /**
- * Lens — P4، الشريحة 1: صورة أو كلمة ⇒ نتائج من فيشات المتاجر الحقيقية.
+ * Lens — شاشة واحدة بطبقات. القاعدة (الكاميرا أو الرابط والرمز) لا تُغلق أبداً؛
+ * كل ما يعلوها درج واحد داخل الشاشة: النتائج، OCEREX، المساعدة، السجل.
+ *
+ * انظر `docs/LENS_NAV_PLAN.md`: منطق الرجوع في `lensLayers.ts`.
  *
  * قواعد هذي الشاشة (نفس مبادئ المنتوج كلّو):
- *  • **الصورة ما تعطي سعراً**: كنبعثو الصورة، والخادم يجيب صفحات المتاجر،
- *    ويقرا السعر من الفيشة (JSON-LD/ميتا/دوم) ويحوّلو للدينار. الرقم اللي
- *    يظهر هو رقم الخادم — وإذا الخادم ما لقاش سعر منشور نقولو «ما فماش».
- *  • **التوفّر والثقة يتقالوا**: `VERIFIED` / `PENDING_MANUAL`، و`in_stock` /
- *    `limited` / `out_of_stock` / `unknown` — بلا تجميل.
+ *  • **الصورة ما تعطي سعراً**: الخادم يجيب صفحات المتاجر ويقرا السعر منها.
+ *  • **التوفّر والثقة يتقالوا**: بلا تجميل.
  *  • **الفيشات الموقوفة ما تتخبّاش**: الخادم يقول كم فيشة تخبّتت وعلاش.
- *  • **الأدوات الناقصة تتقال**: QR/الباركود (القارئ في الشريحة الجاية) ومراقبة
- *    السعر (تستلزم حساب) مكتوبين بصراحة — ما فماش زرّ يدّعي الّي ما كاينش.
  *
- * الاختيار يفتح مسار AYWEBs: نفس المتجر، نفس الكابتشر، ونفس «Add to Cart» —
- * لأن الإضافة ما تتقرّرش هنا، تتقرّر في الخادم.
+ * الاختيار يفتح مسار AYWEBs: نفس المتجر، نفس الكابتشر، ونفس «Add to Cart».
  */
-import { useCallback, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { BackHandler, View } from 'react-native';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { AppScreen } from '@/design/layout';
 import { AppHeader } from '@/features/shell/AppHeader';
-import { AppText, Button, Card, Field, KeyValue, SectionHeader, Segmented } from '@/design/ui';
-import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
-import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
 import { isApiError, userMessage } from '@/api/errors';
 import { addExternalFavorite, fetchFavorites, removeFavorite } from '@/api/account';
@@ -34,23 +28,32 @@ import {
   type LensDetectedItem,
 } from '@/api/lens';
 import { analyzeLensImageStream, type LensProgress } from '@/api/lensStream';
-import { LensResultCard } from '@/features/lens/LensResultCard';
-import { LensResultsSheet } from '@/features/lens/LensResultsSheet';
-import { LensCamera, type LensCapturedImage } from '@/features/lens/LensCamera';
+import * as Layers from '@/features/lens/lensLayers';
+import { LensBase, type LensCapturedImage } from '@/features/lens/LensBase';
+import { LensResultsDrawer } from '@/features/lens/LensResultsDrawer';
 import { LensHelp } from '@/features/lens/LensHelp';
 import { LensOcerex } from '@/features/lens/LensOcerex';
+import { LensHistory } from '@/features/lens/LensHistory';
 
 /** قصّ يطلبه الخادم بالنسب المائوية (0..100). */
 type LensRoi = { x: number; y: number; w: number; h: number };
 
-/** طريقة البحث: صورة، أو مسح مباشر (QR/باركود)، أو رابط/رمز نصّي. */
-type LensMode = 'photo' | 'live' | 'code';
-
 export default function LensScreen() {
-  const theme = useTheme();
   const { t, locale } = useI18n();
+  const params = useLocalSearchParams<{ mode?: string; layer?: string }>();
 
-  const [mode, setMode] = useState<LensMode>('photo');
+  /** الوضع + الدرج المفتوح: مصدر الحقيقة الوحيد للتنقل داخل Lens. */
+  const [stack, setStack] = useState<Layers.LensStack>(Layers.LENS_START);
+  const stackRef = useRef(stack);
+  stackRef.current = stack;
+
+  /** Lens هي الشاشة المعروضة الآن (الكاميرا تعمل فقط في هذه الحالة). */
+  const [focused, setFocused] = useState(false);
+  useFocusEffect(useCallback(() => {
+    setFocused(true);
+    return () => setFocused(false);
+  }, []));
+
   const [preview, setPreview] = useState('');
   const [text, setText] = useState('');
   const [analysis, setAnalysis] = useState<LensAnalysis | null>(null);
@@ -60,13 +63,6 @@ export default function LensScreen() {
   /** Étape en cours et fiches déjà reçues pendant l'analyse en flux. */
   const [progress, setProgress] = useState<LensProgress | null>(null);
   const [streamCards, setStreamCards] = useState<LensCandidate[]>([]);
-  const [canRetry, setCanRetry] = useState(false);
-  /** الورقة مفتوحة للتحليل الحالي (تبقى حتى يغلقها المستعمل). */
-  const [sheetOpen, setSheetOpen] = useState(false);
-  /** لوحة داخلية فوق Lens: المساعدة أو OCEREX (لا تنقل المستعمل إلى صفحة أخرى). */
-  const [overlay, setOverlay] = useState<'help' | 'ocerex' | null>(null);
-  /** كاميرا مفتوحة (وضع الصورة والمسح الحي). */
-  const [cameraOpen, setCameraOpen] = useState(true);
   const streamController = useRef<AbortController | null>(null);
   const lastAsset = useRef<LensCapturedImage | null>(null);
   /** `roi` du dernier appel (null = la photo entière). Sert à « Réessayer ». */
@@ -99,6 +95,43 @@ export default function LensScreen() {
     setNote(isApiError(error) ? userMessage(error)[locale] : t('lens.failed'));
   }, [locale, t]);
 
+  /** إيقاف التحليل الجاري (إغلاق الدرج أو تغيير الوضع). */
+  const cancelStream = useCallback(() => {
+    streamController.current?.abort();
+  }, []);
+
+  /** إغلاق الدرج المفتوح؛ الوضع يبقى كما هو. */
+  const dismissLayer = useCallback(() => {
+    if (stackRef.current.layer === 'results') cancelStream();
+    setStack((current) => Layers.closeLayer(current));
+  }, [cancelStream]);
+
+  /** تغيير الوضع: يغلق أي درج ويوقف التحليل الجاري. */
+  const switchMode = useCallback((next: Layers.LensMode) => {
+    cancelStream();
+    setNote('');
+    setStack((current) => Layers.changeMode(current, next));
+  }, [cancelStream]);
+
+  /** زر الرجوع في الجهاز: يتبع منطق الطبقات، وإن لم يبقَ شيء يترك التبويبات تتولّى الباقي. */
+  const onHardwareBack = useCallback(() => {
+    if (Layers.backAction(stackRef.current) === 'leave') return false;
+    if (stackRef.current.layer === 'results') cancelStream();
+    setStack((current) => Layers.applyBack(current));
+    return true;
+  }, [cancelStream]);
+
+  useFocusEffect(useCallback(() => {
+    const subscription = BackHandler.addEventListener('hardwareBackPress', onHardwareBack);
+    return () => subscription.remove();
+  }, [onHardwareBack]));
+
+  /** روابط الدخول: `?mode=live` و`?layer=ocerex` (بديل الصفحات القديمة). */
+  useEffect(() => {
+    if (params.mode === 'photo' || params.mode === 'live' || params.mode === 'code') switchMode(params.mode);
+    if (params.layer === 'ocerex') setStack((current) => Layers.openLayer(current, 'ocerex'));
+  }, [params.mode, params.layer, switchMode]);
+
   /**
    * نفس مسار الموقع: نبعثو الملف للخادم، وهو اللي يقرا ويحكم.
    * التحليل يجي في تدفق: كل خطوة وكل فيشة تظهر حين يرسلها الخادم.
@@ -107,7 +140,6 @@ export default function LensScreen() {
     lastAsset.current = asset;
     lastRoi.current = roi ?? null;
     setNote('');
-    setCanRetry(false);
     setAnalysis(null);
     setTextResults(null);
     setStreamCards([]);
@@ -119,7 +151,7 @@ export default function LensScreen() {
       setDetectedItems([]);
       setSelectedIndex(-1);
     }
-    setSheetOpen(true);
+    setStack((current) => Layers.openLayer(current, 'results'));
     streamController.current?.abort();
     const controller = new AbortController();
     streamController.current = controller;
@@ -144,7 +176,6 @@ export default function LensScreen() {
       if (isApiError(error) && error.isAborted) return;
       if (streamController.current !== controller) return;
       setStreamCards([]);
-      setCanRetry(true);
       fail(error);
     } finally {
       // الحالة تُصفَّر فقط إذا كان هذا التحليل هو الحالي؛ القديم لا يُسكت الجديد.
@@ -156,39 +187,8 @@ export default function LensScreen() {
     }
   }, [fail, t]);
 
-  /** إغلاق الورقة: يلغي التحليل الجاري إن وُجد، ويرجع المستعمل إلى الكاميرا. */
-  const closeSheet = useCallback(() => {
-    streamController.current?.abort();
-    setSheetOpen(false);
-    // بعد إغلاق النتائج نرجع إلى الكاميرا المفتوحة (من وضع الرابط/الرمز نرجع إلى الصورة).
-    if (mode === 'code') setMode('photo');
-    setCameraOpen(true);
-  }, [mode]);
-
-  /** تغيير الوضع من شريط الأوضاع (الصفحة أو الكاميرا): الكاميرا تفتح للصورة فقط. */
-  const changeMode = useCallback((next: LensMode) => {
-    setMode(next);
-    setCameraOpen(next !== 'code');
-  }, []);
-
-  /** كل رجوع إلى Lens (من صفحة مثل المتابعة) يعيد الكاميرا، إلا وضع الرابط/الرمز. */
-  useFocusEffect(useCallback(() => {
-    if (mode !== 'code') setCameraOpen(true);
-  }, [mode]));
-
-  /** فتح لوحة داخلية (المساعدة / OCEREX): الكاميرا تُخفى، والإغلاق يعيدها. */
-  const openOverlay = useCallback((name: 'help' | 'ocerex') => {
-    setCameraOpen(false);
-    setOverlay(name);
-  }, []);
-
-  const closeOverlay = useCallback(() => {
-    setOverlay(null);
-    changeMode('photo');
-  }, [changeMode]);
-
   /**
-   * قراءة نصّ أو رمز (QR / باركود / رابط): الخادم يعطي المعنى، والنتائج تظهر في نفس الورقة.
+   * قراءة نصّ أو رمز (QR / باركود / رابط): الخادم يعطي المعنى، والنتائج تظهر في الدرج.
    * القفل يمنع تكرار قراءة واحدة من الكاميرا الحيّة.
    */
   const scanLock = useRef(false);
@@ -200,15 +200,13 @@ export default function LensScreen() {
     }
     lastAsset.current = null;
     lastRoi.current = null;
-    setCanRetry(false);
     setNote('');
     setAnalysis(null);
     setPreview('');
     setStreamCards([]);
     setProgress(null);
     setTextResults(null);
-    setCameraOpen(false);
-    setSheetOpen(true);
+    setStack((current) => Layers.openLayer(current, 'results'));
     setBusy(true);
     try {
       let found: LensCandidate[];
@@ -230,8 +228,9 @@ export default function LensScreen() {
     }
   }, [fail, t]);
 
+  /** قراءة الكاميرا الحيّة: تُتجاهل إذا كان درج مفتوح أو قراءة جارية. */
   const onBarcode = useCallback((value: string) => {
-    if (scanLock.current) return;
+    if (!Layers.scanAllowed(stackRef.current) || scanLock.current) return;
     scanLock.current = true;
     void runCode(value).finally(() => { scanLock.current = false; });
   }, [runCode]);
@@ -262,14 +261,27 @@ export default function LensScreen() {
     }
   }, [analyzeAsset, fail, t]);
 
-  /** فتح نتائج الرابط: نمرّرو الرابط إلى شاشة المتجر (كابتشر + Add to Cart). */
+  /** فتح نتائج الرابط: نمرّرو الرابط إلى شاشة المتجر. الدرج يُغلق أولاً. */
   const openCandidate = useCallback((candidate: LensCandidate) => {
     if (analysis?.eventId) void chooseLensEvent(analysis.eventId).catch(() => {});
+    setStack((current) => Layers.closeLayer(current));
     router.push({
       pathname: '/aywebs/browser',
       params: { url: candidate.sourceUrl, storeId: '', capture: '1' },
     });
   }, [analysis?.eventId]);
+
+  /** OCEREX → السلة: الدروج تُغلق قبل الانتقال حتى لا تبقى حالة قديمة عند العودة. */
+  const goToCart = useCallback(() => {
+    setStack((current) => Layers.closeLayer(current));
+    router.push('/cart');
+  }, []);
+
+  /** السجل → المراقبة: الصفحة الكاملة، والدرج يُغلق قبلها. */
+  const openWatches = useCallback(() => {
+    setStack((current) => Layers.closeLayer(current));
+    router.push('/lens/watches');
+  }, []);
 
   /** قلب فيشة Lens: يحفظها في مفضّلات الحساب، أو يحذفها إذا كانت محفوظة. */
   const toggleFavorite = useMutation({
@@ -316,7 +328,7 @@ export default function LensScreen() {
     },
   });
 
-  /** اختيار عنصر من الصورة: نعيد البحث بقصّ الخادم على كادره، في نفس الورقة. */
+  /** اختيار عنصر من الصورة: نعيد البحث بقصّ الخادم على كادره، في نفس الدرج. */
   const selectItem = useCallback((index: number) => {
     const item = detectedItems[index];
     if (!item || !lastAsset.current) return;
@@ -325,190 +337,75 @@ export default function LensScreen() {
   }, [analyzeAsset, detectedItems]);
 
   const candidates = analysis?.candidates ?? textResults ?? streamCards;
-  /** الورقة تظهر في وضع الصورة فقط: أثناء البحث، أو حين تكون الفيشات جاهزة. */
-  const sheetShown = sheetOpen && (busy || candidates.length > 0);
+  const layer = stack.layer;
+
+  /** الكاميرا تعمل حين تكون Lens معروضة وليس وضع الرابط. */
+  const cameraActive = focused && stack.mode !== 'code';
 
   return (
     <AppScreen
       overlayHeader={({ scrolled }) => <AppHeader scrolled={scrolled} />}
+      scroll={false}
       hasBottomBar
-      chrome onRefresh={() => { history.refetch(); }}>
-
-      {/*
-        رسالة القسم — هاذا النصّ كان يعيش في هيدر `Screen` القديم.
-        صار `SectionHeader` (§18.2-3): نفس المحتوى، بمكوّن موحّد.
-      */}
-      <SectionHeader title={t('screen.lens.subtitle')} hint={t('screen.lens.body')} />
-      <Segmented<LensMode>
-        label={t('lens.mode.label')}
-        value={mode}
-        onChange={changeMode}
-        options={[
-          { value: 'photo', label: t('lens.mode.photo') },
-          { value: 'live', label: t('lens.mode.live') },
-          { value: 'code', label: t('lens.mode.code') },
-        ]}
-      />
-      <LensResultsSheet
-        visible={sheetShown}
-        busy={busy}
-        imageUri={preview}
-        imageSize={previewSize}
-        progress={progress}
-        results={candidates}
-        items={detectedItems}
-        selectedIndex={selectedIndex}
-        note={note}
-        onSelectItem={selectItem}
-        onClose={closeSheet}
-        onRetry={retryAnalysis}
-        onOpenCandidate={(candidate) => { setSheetOpen(false); openCandidate(candidate); }}
-        onWatch={(item) => watch.mutate(item)}
-        watchBusy={watch.isPending}
-        favoriteUrls={favoriteUrls}
-        favoriteBusy={toggleFavorite.isPending}
-        onToggleFavorite={(item) => toggleFavorite.mutate(item)}
-      />
-
-      {overlay === 'help' ? <LensHelp onClose={closeOverlay} /> : null}
-      {overlay === 'ocerex' ? <LensOcerex onClose={closeOverlay} /> : null}
-
-      <LensCamera
-        visible={cameraOpen && mode !== 'code'}
-        mode={mode}
-        busy={busy}
-        thumbnailUri={preview}
-        onModeChange={changeMode}
-        onClose={() => setCameraOpen(false)}
-        onHelp={() => openOverlay('help')}
-        onOcerex={() => openOverlay('ocerex')}
-        onBarcode={onBarcode}
-        onCapture={(image) => { setCameraOpen(false); void analyzeAsset(image); }}
-        onOpenGallery={() => { setCameraOpen(false); void openGallery(); }}
-        onCaptureFailed={() => setNote(t('lens.captureFailed'))}
-      />
-
-      {mode !== 'code' ? (
-        <>
-          {!cameraOpen ? (
-            <Button label={t('lens.openCamera')} onPress={() => setCameraOpen(true)} />
-          ) : null}
-          {note || (canRetry && lastAsset.current) ? (
-            <Card>
-              {note ? (
-                <AppText variant="caption" color={theme.status.danger.fg} accessibilityRole="alert">{note}</AppText>
-              ) : null}
-              {canRetry && !busy && lastAsset.current ? (
-                <Button label={t('lens.progress.retry')} tone="quiet" onPress={retryAnalysis} />
-              ) : null}
-            </Card>
-          ) : null}
-        </>
-      ) : null}
-
-      {mode === 'code' ? (
-      <Card title={t('lens.textTitle')} hint={t('lens.textHint')}>
-        <Field
-          label={t('lens.textLabel')}
-          accessibilityLabel={t('lens.textLabel')}
-          value={text}
-          onChangeText={setText}
-          placeholder={t('lens.textPlaceholder')}
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-        <Button
-          label={t('lens.search')}
-          tone="quiet"
-          testID="lens-search"
+      chrome>
+      <View style={{ flex: 1 }}>
+        <LensBase
+          mode={stack.mode}
+          active={cameraActive}
           busy={busy}
-          disabled={text.trim().length < LENS_MIN_TEXT || busy}
-          onPress={() => { void runCode(text.trim()); }}
+          thumbnailUri={preview}
+          note={layer === null ? note : ''}
+          code={text}
+          codeReady={text.trim().length >= LENS_MIN_TEXT}
+          onCodeChange={setText}
+          onSearchCode={() => { void runCode(text.trim()); }}
+          onModeChange={switchMode}
+          onHelp={() => setStack((current) => Layers.openLayer(current, 'help'))}
+          onHistory={() => setStack((current) => Layers.openLayer(current, 'history'))}
+          onOcerex={() => setStack((current) => Layers.openLayer(current, 'ocerex'))}
+          onBarcode={onBarcode}
+          onCapture={(image) => { void analyzeAsset(image); }}
+          onOpenGallery={() => { void openGallery(); }}
+          onCaptureFailed={() => setNote(t('lens.captureFailed'))}
         />
-        <Button label={t('lens.close')} tone="quiet" onPress={() => changeMode('photo')} />
-      </Card>
 
-      ) : null}
-
-      {analysis ? (
-        <Card title={t('lens.analysisTitle')}>
-          <KeyValue
-            label={t('lens.identification')}
-            value={[analysis.identification.brand, analysis.identification.model].filter(Boolean).join(' ')
-              || analysis.identification.description
-              || t('lens.identificationUnknown')}
+        {layer === 'results' ? (
+          <LensResultsDrawer
+            busy={busy}
+            imageUri={preview}
+            imageSize={previewSize}
+            progress={progress}
+            results={candidates}
+            items={detectedItems}
+            selectedIndex={selectedIndex}
+            note={note}
+            analysis={analysis}
+            onClose={dismissLayer}
+            onRetry={retryAnalysis}
+            onSelectItem={selectItem}
+            onOpenCandidate={openCandidate}
+            onWatch={(item) => watch.mutate(item)}
+            watchBusy={watch.isPending}
+            favoriteUrls={favoriteUrls}
+            favoriteBusy={toggleFavorite.isPending}
+            onToggleFavorite={(item) => toggleFavorite.mutate(item)}
           />
-          {analysis.query ? <KeyValue label={t('lens.query')} value={analysis.query} /> : null}
-          <KeyValue label={t('lens.resultsCount')} value={String(analysis.candidates.length)} />
-          {analysis.excluded.count > 0 ? (
-            <AppText variant="caption" color={theme.colors.muted}>
-              {t('lens.excluded', { count: analysis.excluded.count })}
-            </AppText>
-          ) : null}
-          <AppText variant="caption" color={theme.colors.muted}>
-            {t('lens.liveStock', {
-              fetched: analysis.liveStock.fetched,
-              cached: analysis.liveStock.cacheHits,
-            })}
-          </AppText>
-        </Card>
-      ) : null}
+        ) : null}
 
-      {candidates.length && !sheetShown ? (
-        <Card title={t('lens.resultsTitle')} hint={t('lens.resultsHint')}>
-          <View style={styles.grid}>
-            {candidates.map((candidate, index) => (
-              <View key={candidate.id || `${candidate.sourceUrl}-${index}`} style={styles.cell}>
-                <LensResultCard
-                  candidate={candidate}
-                  onOpen={openCandidate}
-                  onWatch={(item) => watch.mutate(item)}
-                  watchBusy={watch.isPending}
-                  favorite={favoriteUrls.has(candidate.sourceUrl)}
-                  favoriteBusy={toggleFavorite.isPending}
-                  onToggleFavorite={(item) => toggleFavorite.mutate(item)}
-                />
-              </View>
-            ))}
-          </View>
-        </Card>
-      ) : null}
-
-
-      <Card title={t('lens.watchTitle')} hint={t('lens.watchHint')}>
-        <Button label={t('lens.watchOpen')} tone="quiet" onPress={() => router.push('/lens/watches')} />
-      </Card>
-
-      {mode !== 'photo' ? (
-        <Card title={t('ocerex.title')} hint={t('ocerex.hint')}>
-          <Button label={t('ocerex.open')} onPress={() => openOverlay('ocerex')} />
-        </Card>
-      ) : null}
-
-      <Card title={t('lens.historyTitle')}>
-        {history.isPending ? (
-          <LoadingBlock labelKey="loading.generic" />
-        ) : history.isError ? (
-          <ErrorBlock error={history.error} onRetry={() => { history.refetch(); }} />
-        ) : (history.data ?? []).length === 0 ? (
-          <EmptyBlock>{t('lens.historyEmpty')}</EmptyBlock>
-        ) : (
-          (history.data ?? []).map((entry) => (
-            <View key={entry.id} style={[styles.historyRow, { borderTopColor: theme.colors.line }]}>
-              <AppText variant="label" numberOfLines={2}>{entry.title}</AppText>
-              <AppText variant="caption" color={theme.colors.muted}>
-                {entry.queryLabel || entry.source} · {entry.resultsCount}
-              </AppText>
-            </View>
-          ))
-        )}
-      </Card>
+        {layer === 'help' ? <LensHelp onClose={dismissLayer} /> : null}
+        {layer === 'ocerex' ? <LensOcerex onClose={dismissLayer} onGoToCart={goToCart} /> : null}
+        {layer === 'history' ? (
+          <LensHistory
+            entries={history.data ?? []}
+            pending={history.isPending}
+            failed={history.isError}
+            error={history.error}
+            onRetry={() => { void history.refetch(); }}
+            onOpenWatches={openWatches}
+            onClose={dismissLayer}
+          />
+        ) : null}
+      </View>
     </AppScreen>
   );
 }
-
-const styles = StyleSheet.create({
-  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12 },
-  cell: { width: '48%' },
-  historyRow: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 8, marginTop: 8, gap: 2 },
-});

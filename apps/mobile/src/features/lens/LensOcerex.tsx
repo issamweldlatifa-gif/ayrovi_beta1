@@ -15,12 +15,11 @@
  */
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
-import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { CameraView } from 'expo-camera';
 
 import { AppText, Button, Card, Field, KeyValue, ResponsiveActionGroup, Segmented } from '@/design/ui';
-import { LensPanel } from '@/features/lens/LensPanel';
+import { LensDrawer } from '@/features/lens/LensDrawer';
 import { useTheme } from '@/design/theme';
 import { AppImage } from '@/design/appImage';
 import { VIDEO_BACKDROP } from '@/design/tokens.mobile';
@@ -33,7 +32,8 @@ import {
 } from '@/api/ocerex';
 import { useAyWebsSessionId } from '@/features/aywebs/session';
 
-export function LensOcerex({ onClose }: { onClose: () => void }) {
+/** `onGoToCart` ferme الدرج أولاً ثم ينتقل: لا تبقى حالة OCEREX عند العودة. */
+export function LensOcerex({ onClose, onGoToCart }: { onClose: () => void; onGoToCart: () => void }) {
   const theme = useTheme();
   const { t, locale } = useI18n();
   const sessionId = useAyWebsSessionId();
@@ -208,7 +208,7 @@ export function LensOcerex({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <LensPanel title={t('ocerex.title')} subtitle={t('ocerex.hint')} onClose={onClose}>
+    <LensDrawer title={t('ocerex.title')} subtitle={t('ocerex.hint')} onClose={onClose}>
       <Card>
         {viewfinder ? (
           <>
@@ -405,12 +405,12 @@ export function LensOcerex({ onClose }: { onClose: () => void }) {
             <>
               <KeyValue label={t('ocerex.cartItem')} value={committed} />
               <AppText variant="caption" color={theme.colors.muted}>{t('ocerex.committed')}</AppText>
-              <Button label={t('aywebs.goToCart')} tone="quiet" onPress={() => router.push('/cart')} />
+              <Button label={t('aywebs.goToCart')} tone="quiet" onPress={onGoToCart} />
             </>
           ) : null}
         </Card>
       ) : null}
-    </LensPanel>
+    </LensDrawer>
   );
 }
 

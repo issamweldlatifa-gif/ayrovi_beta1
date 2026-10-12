@@ -7,14 +7,14 @@ import { StyleSheet, View } from 'react-native';
 import { AppText, Button, Card } from '@/design/ui';
 import { useI18n } from '@/i18n';
 import { LENS_POLICY } from '@/features/lens/lensPolicy';
-import { LensPanel } from '@/features/lens/LensPanel';
+import { LensDrawer } from '@/features/lens/LensDrawer';
 
 export function LensHelp({ onClose }: { onClose: () => void }) {
   const { t, locale } = useI18n();
   const policy = LENS_POLICY[locale];
 
   return (
-    <LensPanel title={t('lens.help.title')} onClose={onClose}>
+    <LensDrawer title={t('lens.help.title')} onClose={onClose}>
       <AppText variant="body">{policy.intro}</AppText>
       {policy.sections.map((section) => (
         <Card key={section.title} title={section.title}>
@@ -29,7 +29,7 @@ export function LensHelp({ onClose }: { onClose: () => void }) {
         </Card>
       ))}
       <Button label={t('lens.close')} tone="quiet" onPress={onClose} />
-    </LensPanel>
+    </LensDrawer>
   );
 }
 
