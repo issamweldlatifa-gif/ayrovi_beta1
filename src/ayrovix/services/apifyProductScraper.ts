@@ -11,6 +11,7 @@
  *  • rien n'est deviné : un champ absent reste `null` / `unknown`.
  */
 import type { ScrapedProduct } from '../../types';
+import type { ParsedProductPage } from '../../scraper/productPageParser';
 
 export const APIFY_PRODUCT_ACTOR = 'skipper_lume~ecommerce-product-scraper';
 const APIFY_RUN_URL = `https://api.apify.com/v2/acts/${APIFY_PRODUCT_ACTOR}/run-sync-get-dataset-items`;
@@ -123,4 +124,76 @@ export function pickScrapedProduct(
   if (apify && apify.sourcePrice > 0) return apify;
   if (local?.title) return local;
   return apify ?? local;
+}
+
+/* ── Chemin « analyse photo » : même lecteur, forme `ParsedProductPage` ───── */
+
+/** Couche d'extraction publiée par l'Actor → source de prix reconnue par le contrat. */
+function priceSourceFrom(method: unknown): ParsedProductPage['priceSource'] {
+  const text = String(method || '').toLowerCase();
+  if (text.includes('json')) return 'json_ld';
+  if (text.includes('open') || text === 'og' || text.includes('meta')) return 'meta';
+  if (text.includes('micro') || text.includes('css') || text.includes('dom')) return 'dom';
+  return 'none';
+}
+
+/**
+ * Convertit un élément Apify en page lue. `null` si le prix ou le titre manque :
+ * l'appelant garde alors le lecteur local. Les variantes ne sont pas publiées par
+ * cet Actor : elles restent vides (rien n'est inventé).
+ */
+export function apifyItemToParsedPage(item: unknown, requestedUrl: string): ParsedProductPage | null {
+  const mapped = mapApifyItem(item, requestedUrl);
+  if (!mapped || !(mapped.sourcePrice > 0) || !mapped.sourceCurrency) return null;
+  const row = item as Record<string, unknown>;
+  return {
+    title: mapped.title,
+    brand: mapped.brand || undefined,
+    description: mapped.description || undefined,
+    price: mapped.sourcePrice,
+    currency: mapped.sourceCurrency,
+    currencyVerified: false,
+    images: mapped.images,
+    colorImages: {},
+    externalId: mapped.sku || '',
+    variants: {},
+    availability: mapped.availability,
+    sku: mapped.sku || undefined,
+    rating: mapped.rating ?? undefined,
+    reviewCount: mapped.reviewsCount ?? undefined,
+    priceSource: priceSourceFrom(row.extraction_method),
+    priceRejection: null,
+  } as unknown as ParsedProductPage;
+}
+
+/** Lecture d'une page pour l'analyse photo. `null` = pas de lecture Apify exploitable. */
+export async function fetchParsedPageWithApify(
+  url: string,
+  env: NodeJS.ProcessEnv = process.env,
+  fetchImpl: typeof fetch = fetch,
+): Promise<ParsedProductPage | null> {
+  const token = (env.APIFY_TOKEN || '').trim();
+  if (!token || (env.AYROVIX_APIFY_PRODUCT_SCRAPER || '').trim().toLowerCase() === 'off') return null;
+  try {
+    const response = await fetchImpl(APIFY_RUN_URL, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ urls: [url], maxConcurrency: 1, forcePlaywright: false }),
+      signal: AbortSignal.timeout(APIFY_TIMEOUT_MS),
+    });
+    if (!response.ok) {
+      console.warn(`[AYROVIX apify-product] HTTP ${response.status}`);
+      return null;
+    }
+    const payload: unknown = await response.json();
+    if (!Array.isArray(payload)) return null;
+    for (const item of payload) {
+      const page = apifyItemToParsedPage(item, url);
+      if (page) return page;
+    }
+    return null;
+  } catch (error: any) {
+    console.warn(`[AYROVIX apify-product] ${error?.name === 'TimeoutError' ? 'timeout' : 'indisponible'}`);
+    return null;
+  }
 }
