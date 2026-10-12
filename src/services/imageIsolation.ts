@@ -19,6 +19,7 @@ import sharp from 'sharp';
 import { fetchSafeRemote, parsePublicHttpUrl, readLimitedBuffer } from './safeUrl';
 import { pruneDiskCache } from './diskCache';
 import { segmentBuffer } from './segmentation';
+import { isolationProvider, removeBackgroundWithPhotoRoom } from './photoroomIsolation';
 
 const MAX_DIMENSION = 900;
 const MAX_BYTES = 8 * 1024 * 1024;
@@ -295,6 +296,12 @@ export interface IsolationOptions {
 }
 
 export async function isolateBuffer(buffer: Buffer, options: IsolationOptions = {}): Promise<{ kind: IsolationKind; png: Buffer | null }> {
+  // Fournisseur externe (AYROVI_ISOLATION_PROVIDER=photoroom + clé serveur) : il passe
+  // en premier ; en cas d'échec on retombe sur le chroma-key ci-dessous.
+  if (isolationProvider() === 'photoroom') {
+    const cutout = await removeBackgroundWithPhotoRoom(buffer);
+    if (cutout) return { kind: 'segmented', png: await trimTransparentMargins(cutout) };
+  }
   const base = sharp(buffer, { failOn: 'none', limitInputPixels: 40_000_000 }).rotate();
   const resized = base.resize({ width: MAX_DIMENSION, height: MAX_DIMENSION, fit: 'inside', withoutEnlargement: true });
   const { data, info } = await resized.ensureAlpha().raw().toBuffer({ resolveWithObject: true });

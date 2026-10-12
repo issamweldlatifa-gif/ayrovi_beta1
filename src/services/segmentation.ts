@@ -16,6 +16,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import sharp from 'sharp';
+import { isolationProvider } from './photoroomIsolation';
 
 /** SHA-256 du fichier commis — toute divergence désactive la couche (sécurité). */
 const MODEL_SHA256 = '309c8469258dda742793dce0ebea8e6dd393174f89934733ecc8b14c76f4ddd8';
@@ -276,6 +277,8 @@ export function applyMask(image: { data: Buffer; width: number; height: number }
  * l'appelant garde alors son repli actuel (original non touché).
  */
 export async function segmentBuffer(buffer: Buffer): Promise<Buffer | null> {
+  // Fournisseur PhotoRoom actif : l'isolation locale (u2netp) est désactivée.
+  if (isolationProvider() === 'photoroom') return null;
   const session = await loadSession();
   if (!session) return null;
   const base = sharp(buffer, { failOn: 'none', limitInputPixels: 40_000_000 }).rotate();
