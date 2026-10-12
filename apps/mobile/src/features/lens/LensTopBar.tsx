@@ -1,7 +1,6 @@
 /**
- * الشريط العلوي لـLens فوق الكاميرا، مطابق للمرجع حرفياً:
- * سهم الرجوع ثم العنوان بجانبه، وعلى اليمين الفلاش والمساعدة فقط.
- * الرجوع يعود إلى الشاشة الرئيسية. لا يوجد زر سجل في هذا الشريط.
+ * الشريط العلوي لـLens فوق الكاميرا: سهم الرجوع ثم العنوان بجانبه، وعلى اليمين
+ * السجل والفلاش والمساعدة. الرجوع يعود إلى الشاشة الرئيسية.
  */
 import { Pressable, StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -14,13 +13,14 @@ export interface LensTopBarProps {
   title: string;
   onBack: () => void;
   onHelp: () => void;
+  onHistory: () => void;
   /** يُخفى الفلاش في وضع الرابط والرمز، لأنه لا كاميرا فيه. */
   showFlash: boolean;
   flashOn: boolean;
   onToggleFlash: () => void;
 }
 
-export function LensTopBar({ title, onBack, onHelp, showFlash, flashOn, onToggleFlash }: LensTopBarProps) {
+export function LensTopBar({ title, onBack, onHelp, onHistory, showFlash, flashOn, onToggleFlash }: LensTopBarProps) {
   const theme = useTheme();
   const { t } = useI18n();
   const color = theme.colors.canvas;
@@ -34,6 +34,9 @@ export function LensTopBar({ title, onBack, onHelp, showFlash, flashOn, onToggle
       </Pressable>
       <AppText variant="lead" weight="bold" color={color} numberOfLines={1} style={styles.title}>{title}</AppText>
       <View style={styles.end}>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('lens.historyTitle')} onPress={onHistory} hitSlop={8} style={styles.iconButton}>
+          <Ionicons name="time-outline" size={24} color={color} />
+        </Pressable>
         {showFlash ? (
           <Pressable
             accessibilityRole="button"

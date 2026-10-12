@@ -398,6 +398,7 @@ export default function LensScreen() {
           onSearchCode={() => { void runCode(text.trim()); }}
           onModeChange={switchMode}
           onHelp={() => setStack((current) => Layers.openLayer(current, 'help'))}
+          onHistory={() => setStack((current) => Layers.openLayer(current, 'history'))}
           onOcerex={() => setStack((current) => Layers.openLayer(current, 'ocerex'))}
           onBarcode={onBarcode}
           onCapture={(image) => { void analyzeAsset(image); }}

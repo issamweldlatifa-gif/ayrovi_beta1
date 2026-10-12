@@ -48,6 +48,7 @@ export interface LensBaseProps {
   onSearchCode: () => void;
   onModeChange: (mode: LensMode) => void;
   onHelp: () => void;
+  onHistory: () => void;
   onOcerex: () => void;
   onBarcode: (value: string) => void;
   onCapture: (image: LensCapturedImage) => void;
@@ -182,6 +183,7 @@ export function LensBase(props: LensBaseProps) {
           title={t('lens.topTitle')}
           onBack={onTopBack}
           onHelp={props.onHelp}
+          onHistory={props.onHistory}
           showFlash={mode !== 'code' || scannerOpen}
           flashOn={flash === 'on'}
           onToggleFlash={() => setFlash((current) => (current === 'on' ? 'off' : 'on'))}

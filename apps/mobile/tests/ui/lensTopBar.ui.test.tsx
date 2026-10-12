@@ -25,6 +25,7 @@ const base = {
   title: 'AYROVIX Lens',
   onBack: () => undefined,
   onHelp: () => undefined,
+  onHistory: () => undefined,
   flashOn: false,
   onToggleFlash: () => undefined,
 };
