@@ -8,8 +8,9 @@
  *   la page Reels. Les autres pages attendent (règle de `ReelCard`).
  */
 import { useCallback, useRef, useState } from 'react';
+import { goBack } from '@/design/navigation';
 import { FlatList, Pressable, StatusBar, StyleSheet, View, useWindowDimensions } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -47,10 +48,7 @@ export default function ReelsViewerScreen() {
     if (first) setActiveId(first.id);
   }).current;
 
-  const back = useCallback(() => {
-    if (router.canGoBack()) router.back();
-    else router.replace('/(tabs)');
-  }, []);
+  const back = useCallback(() => goBack('/'), []);
 
   const closeComments = useCallback(() => setCommentsFor(null), []);
 

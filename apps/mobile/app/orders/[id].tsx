@@ -9,8 +9,9 @@
  *     `remainder_tnd`) — jamais recalculés à partir d'un prix affiché.
  */
 import { useCallback, useState } from 'react';
+import { goBack } from '@/design/navigation';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import * as WebBrowser from 'expo-web-browser';
@@ -113,7 +114,7 @@ export default function OrderDetailScreen() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t('common.back')}
-          onPress={() => router.back()}
+          onPress={() => goBack('/orders')}
           style={{ minHeight: theme.geometry.minTarget, minWidth: theme.geometry.minTarget, justifyContent: 'center' }}
         >
           <Ionicons

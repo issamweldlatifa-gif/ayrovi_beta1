@@ -6,6 +6,7 @@
  * Aucune commande n'est inventée ni dupliquée depuis la page d'accueil.
  */
 import { useCallback } from 'react';
+import { goBack } from '@/design/navigation';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
@@ -41,7 +42,7 @@ export default function OrdersScreen() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t('common.back')}
-          onPress={() => router.back()}
+          onPress={() => goBack('/')}
           style={{ minHeight: theme.geometry.minTarget, minWidth: theme.geometry.minTarget, justifyContent: 'center' }}
         >
           <Ionicons

@@ -7,8 +7,8 @@
  * l’application, sens de lecture selon la langue.
  */
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { goBack } from '@/design/navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
@@ -64,10 +64,7 @@ export function LegalScreen({ docId }: { docId: LegalDocId }) {
   const fallbackToFrench = wantsArabic && !versions.ar;
   const titleKey = docId === 'terms' ? 'auth.legal.terms' : 'auth.legal.privacy';
 
-  const onBack = () => {
-    if (router.canGoBack()) router.back();
-    else router.replace('/(tabs)/account');
-  };
+  const onBack = () => goBack('/(tabs)/account');
 
   if (!version) return null;
 

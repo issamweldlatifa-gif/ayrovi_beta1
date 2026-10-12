@@ -10,17 +10,17 @@
  */
 import type { ReactNode, RefObject } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
-import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
 import { rowDirectionFor, screenContentGap } from './layoutLogic';
+import { goBack } from './navigation';
 import { useResponsive } from './layout';
 
 export function SubScreen({
-  title, subtitle, children, onRefresh, refreshing = false, fallback = '/(tabs)/account',
+  title, subtitle, children, onRefresh, refreshing = false, fallback = '/',
   scrollRef, onScroll, sticky, testID,
 }: {
   title: string;
@@ -28,7 +28,7 @@ export function SubScreen({
   children: ReactNode;
   onRefresh?: () => void;
   refreshing?: boolean;
-  /** Destination du bouton retour quand aucune pile n'existe derrière. */
+  /** Destination du bouton retour quand aucune pile n'existe derrière (accueil par défaut). */
   fallback?: string;
   /**
    * Référence au `ScrollView` — pour qu'un écran puisse **piloter** le
@@ -84,7 +84,7 @@ export function SubScreen({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t('common.back')}
-          onPress={() => (router.canGoBack() ? router.back() : router.replace(fallback as never))}
+          onPress={() => goBack(fallback)}
           style={{ minHeight: theme.geometry.minTarget, minWidth: theme.geometry.minTarget, justifyContent: 'center' }}
         >
           <Ionicons

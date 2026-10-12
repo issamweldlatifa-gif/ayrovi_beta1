@@ -27,10 +27,10 @@
  *    l'appareil — une fonctionnalité réelle, qui marche aujourd'hui.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { goBack } from '@/design/navigation';
 import {
   KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View,
 } from 'react-native';
-import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Crypto from 'expo-crypto';
 import { fetch as expoFetch } from 'expo/fetch';
@@ -269,7 +269,7 @@ export default function AssistantScreen() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t('common.back')}
-          onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+          onPress={() => goBack('/')}
           style={styles.headerButton}
         >
           <Ionicons

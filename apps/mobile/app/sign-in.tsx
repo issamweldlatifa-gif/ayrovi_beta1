@@ -15,6 +15,7 @@
  *     renvoie le code — on l'affiche tel quel plutôt que de laisser l'utilisateur bloqué.
  */
 import { useRef, useState } from 'react';
+import { goBack } from '@/design/navigation';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
@@ -140,10 +141,7 @@ export default function SignInScreen() {
     setMode(next);
   };
 
-  const closeIfSignedIn = () => {
-    if (router.canGoBack()) router.back();
-    else router.replace('/(tabs)/account');
-  };
+  const closeIfSignedIn = () => goBack('/(tabs)/account');
 
   /* ── Téléphone (SMS) ──────────────────────────────────────────────────── */
 
@@ -348,7 +346,7 @@ export default function SignInScreen() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t('common.close')}
-          onPress={() => router.back()}
+          onPress={() => goBack('/')}
           style={[styles.close, { minHeight: theme.geometry.minTarget, minWidth: theme.geometry.minTarget }]}
         >
           <Ionicons name="close" size={26} color={theme.colors.ink} accessibilityElementsHidden />

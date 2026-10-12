@@ -15,8 +15,8 @@
  * pointe vers ayrovi.tn et le jeton n'est valable qu'une fois, 30 minutes.
  */
 import { useEffect, useState } from 'react';
+import { goBack } from '@/design/navigation';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet } from 'react-native';
-import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppText, Button, Card, Field } from '@/design/ui';
@@ -91,7 +91,7 @@ export default function ForgotPasswordScreen() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t('common.back')}
-          onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/account'))}
+          onPress={() => goBack('/(tabs)/account')}
           style={[styles.close, { minHeight: theme.geometry.minTarget, minWidth: theme.geometry.minTarget }]}
         >
           <Ionicons name={locale === 'ar' ? 'arrow-forward' : 'arrow-back'} size={26} color={theme.colors.ink} />
@@ -114,7 +114,7 @@ export default function ForgotPasswordScreen() {
               <Button
                 label={t('auth.forgot.backToSignIn')}
                 tone="quiet"
-                onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/account'))}
+                onPress={() => goBack('/(tabs)/account')}
               />
             </>
           ) : !accepted ? (

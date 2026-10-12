@@ -58,6 +58,13 @@ export default function TabsLayout() {
 
   return (
     <Tabs
+      /**
+       * Accueil = racine de toutes les barres. Le retour (bouton Android ou
+       * flèche) depuis un onglet ramène à l'accueil, pas au dernier onglet
+       * visité : sans cela, on revenait à Lens depuis SONIM.
+       */
+      initialRouteName="index"
+      backBehavior="initialRoute"
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: theme.colors.accent,
