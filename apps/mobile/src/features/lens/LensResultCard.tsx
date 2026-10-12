@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
+import { mediaUrl } from '@/api/client';
 import { lensLiveStock, type LensCandidate } from '@/api/lens';
 import { AppImage } from '@/design/appImage';
 import { AppText, Button } from '@/design/ui';
@@ -15,6 +16,7 @@ import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
 
 import { lensCardState } from './lensCardState';
+import { lensCardPath } from './cardImage';
 
 export interface LensResultCardProps {
   candidate: LensCandidate;
@@ -96,7 +98,13 @@ export function LensResultCard({
       <Pressable accessibilityRole="button" accessibilityLabel={candidate.title} onPress={() => onOpen(candidate)}>
         <View style={[styles.media, { backgroundColor: theme.colors.surface }]}>
           {candidate.image ? (
-            <AppImage uri={candidate.image} style={StyleSheet.absoluteFill} contentFit="contain" accessibilityLabel={candidate.title} />
+            <AppImage
+              uri={lensCardPath(candidate.image) ? mediaUrl(lensCardPath(candidate.image)) : candidate.image}
+              fallbackUri={lensCardPath(candidate.image) ? candidate.image : null}
+              style={StyleSheet.absoluteFill}
+              contentFit="contain"
+              accessibilityLabel={candidate.title}
+            />
           ) : null}
           {onToggleFavorite ? (
             <Pressable

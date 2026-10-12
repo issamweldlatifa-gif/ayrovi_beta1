@@ -24,6 +24,8 @@ import { useT } from '@/i18n';
 export interface AppImageProps {
   /** URI absolue ou relative (résolue par l'appelant via `mediaUrl`). */
   uri?: string | null;
+  /** Source de secours : essayée une fois si `uri` échoue, avant le cadre de secours. */
+  fallbackUri?: string | null;
   /** Visuel embarqué dans l'application (`require('…/x.jpg')`) — prioritaire sur `uri`. */
   localSource?: number;
   contentFit?: 'cover' | 'contain' | 'fill' | 'none' | 'scale-down';
@@ -36,14 +38,20 @@ export interface AppImageProps {
 }
 
 export function AppImage({
-  uri, localSource, contentFit = 'cover', style, accessibilityLabel, decorative = false, testID,
+  uri, fallbackUri, localSource, contentFit = 'cover', style, accessibilityLabel, decorative = false, testID,
 }: AppImageProps) {
   const theme = useTheme();
   const t = useT();
   const [failed, setFailed] = useState(false);
+  const [onFallback, setOnFallback] = useState(false);
+  const activeUri = onFallback && fallbackUri ? fallbackUri : uri;
+  const onLoadError = () => {
+    if (!onFallback && fallbackUri) setOnFallback(true);
+    else setFailed(true);
+  };
 
   // Pas de source ou chargement cassé : cadre de secours, jamais un trou muet.
-  if ((!uri && localSource == null) || failed) {
+  if ((!activeUri && localSource == null) || failed) {
     return (
       <View
         testID={testID ? `${testID}-fallback` : undefined}
@@ -66,10 +74,10 @@ export function AppImage({
   return (
     <ExpoImage
       testID={testID}
-      source={localSource ?? { uri: uri as string }}
+      source={localSource ?? { uri: activeUri as string }}
       contentFit={contentFit}
       transition={theme.duration.fast}
-      onError={() => setFailed(true)}
+      onError={onLoadError}
       accessibilityElementsHidden={decorative}
       accessibilityLabel={decorative ? undefined : accessibilityLabel}
       style={[{ backgroundColor: theme.colors.line }, style]}
