@@ -7,7 +7,7 @@ on:
   push:
     # `main` + la branche de travail Arena : typecheck · tokens · tests tournent
     # après chaque mise à jour de l'application, pas seulement à la fusion.
-    branches: [main, arena/bc19f283-ayrovi-beta1]
+    branches: [main, arena/bc19f283-ayrovi-beta1, arena/9fd9a9fc-ayrovi-beta1]
     paths:
       - 'apps/mobile/**'
       - '.github/workflows/mobile.yml'

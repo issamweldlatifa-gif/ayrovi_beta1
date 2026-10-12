@@ -10,7 +10,7 @@
  *
  * الاستعمال:
  *   node scripts/release-preflight.mjs --api-base https://ayrovi-beta1-moo8.onrender.com \
- *        --version-name 2.0.1 --version-code 8
+ *        --version-name 2.0.3 --version-code 10
  *   node scripts/release-preflight.mjs --json          # تقرير للآلة
  *
  * ملاحظة: الأسرار ما تتقراش ولا تتعرض — كان `gh` موجود نتحقّقوا من **الأسماء**
@@ -27,7 +27,7 @@ const DEFAULTS = {
   origin: 'https://ayrovi-beta1-moo8.onrender.com',
   packageName: 'app.ayrovi.mobile',
   repo: 'issamweldlatifa-gif/ayrovi_beta1',
-  branch: 'arena/c0321e79-ayrovi-beta1',
+  branch: 'arena/9fd9a9fc-ayrovi-beta1',
   timeoutMs: 8000,
 };
 /** الأسرار الأربعة اللي يستعملها `.github/workflows/mobile-release-aab.yml`. */

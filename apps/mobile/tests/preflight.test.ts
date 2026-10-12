@@ -92,7 +92,7 @@ describe('جهوزية الإصدار — الحكم', () => {
 
     const { code, stdout } = await run([
       '--api-base', stub.url, '--origin', stub.url, '--json',
-      '--version-name', '2.0.1', '--version-code', '9',
+      '--version-name', '2.0.3', '--version-code', '10',
       '--branch-commit', '4ae6c0d24e70', '--secrets', ALL_SECRETS,
     ]);
     const report = parse(stdout);
@@ -102,7 +102,7 @@ describe('جهوزية الإصدار — الحكم', () => {
     expect(report.summary.fail).toBe(0);
     const byId = Object.fromEntries(report.checks.map((check) => [check.id, check]));
     expect(byId['app-json'].status).toBe('pass');
-    expect(byId['version-code'].detail).toContain('9 > 8');
+    expect(byId['version-code'].detail).toContain('10 > 9');
     expect(byId['server-health'].status).toBe('pass');
     expect(byId['server-deploy'].status).toBe('pass');
     expect(byId['assetlinks'].detail).toContain('2 بصمة');
@@ -117,7 +117,7 @@ describe('جهوزية الإصدار — الحكم', () => {
 
     const { code, stdout } = await run([
       '--api-base', stub.url, '--origin', stub.url, '--json',
-      '--version-code', '9', '--branch-commit', '4ae6c0d24e70', '--secrets', ALL_SECRETS,
+      '--version-code', '10', '--branch-commit', '4ae6c0d24e70', '--secrets', ALL_SECRETS,
     ]);
     const report = parse(stdout);
     const byId = Object.fromEntries(report.checks.map((check) => [check.id, check]));
@@ -125,7 +125,7 @@ describe('جهوزية الإصدار — الحكم', () => {
     expect(code).toBe(0); // موش فشل قاتل: التطبيق يخدم جزئياً، والمعلومة صريحة
     expect(byId['server-branch'].status).toBe('warn');
     expect(byId['server-branch'].detail).toContain('main');
-    expect(byId['server-branch'].detail).toContain('arena/c0321e79-ayrovi-beta1');
+    expect(byId['server-branch'].detail).toContain('arena/9fd9a9fc-ayrovi-beta1');
   });
 
   it('بصمة واحدة ⇒ تحذير (Play يعيد التوقيع) بلا فشل', async () => {
@@ -138,7 +138,7 @@ describe('جهوزية الإصدار — الحكم', () => {
 
     const { code, stdout } = await run([
       '--api-base', stub.url, '--origin', stub.url, '--json',
-      '--version-code', '9', '--branch-commit', '4ae6c0d24e70', '--secrets', ALL_SECRETS,
+      '--version-code', '10', '--branch-commit', '4ae6c0d24e70', '--secrets', ALL_SECRETS,
     ]);
     const report = parse(stdout);
     const byId = Object.fromEntries(report.checks.map((check) => [check.id, check]));
@@ -158,7 +158,7 @@ describe('جهوزية الإصدار — الحكم', () => {
 
     const { code, stdout } = await run([
       '--api-base', stub.url, '--origin', stub.url, '--json',
-      '--version-code', '9', '--branch-commit', '4ae6c0d24e70', '--secrets', ALL_SECRETS,
+      '--version-code', '10', '--branch-commit', '4ae6c0d24e70', '--secrets', ALL_SECRETS,
     ]);
     const report = parse(stdout);
     const byId = Object.fromEntries(report.checks.map((check) => [check.id, check]));
@@ -177,7 +177,7 @@ describe('جهوزية الإصدار — الحكم', () => {
 
     const { code, stdout } = await run([
       '--api-base', stub.url, '--origin', stub.url, '--json',
-      '--version-code', '9', '--branch-commit', '4ae6c0d24e70', '--secrets', ALL_SECRETS,
+      '--version-code', '10', '--branch-commit', '4ae6c0d24e70', '--secrets', ALL_SECRETS,
     ]);
     const report = parse(stdout);
     const byId = Object.fromEntries(report.checks.map((check) => [check.id, check]));
@@ -193,7 +193,7 @@ describe('جهوزية الإصدار — الحكم', () => {
 
     const { code, stdout } = await run([
       '--api-base', stub.url, '--origin', stub.url, '--json',
-      '--version-code', '8', '--branch-commit', '4ae6c0d24e70', '--secrets', ALL_SECRETS,
+      '--version-code', '9', '--branch-commit', '4ae6c0d24e70', '--secrets', ALL_SECRETS,
     ]);
     const report = parse(stdout);
     const byId = Object.fromEntries(report.checks.map((check) => [check.id, check]));
@@ -209,7 +209,7 @@ describe('جهوزية الإصدار — الحكم', () => {
 
     const { code, stdout } = await run([
       '--api-base', stub.url, '--origin', stub.url, '--json', '--timeout', '800',
-      '--version-code', '9', '--branch-commit', '4ae6c0d24e70', '--secrets', ALL_SECRETS,
+      '--version-code', '10', '--branch-commit', '4ae6c0d24e70', '--secrets', ALL_SECRETS,
     ]);
     const report = parse(stdout);
     const byId = Object.fromEntries(report.checks.map((check) => [check.id, check]));
@@ -224,7 +224,7 @@ describe('جهوزية الإصدار — الحكم', () => {
 
     const { code, stdout } = await run([
       '--api-base', stub.url, '--origin', stub.url, '--json',
-      '--version-code', '9', '--branch-commit', '4ae6c0d24e70', '--secrets', 'ANDROID_KEYSTORE_BASE64',
+      '--version-code', '10', '--branch-commit', '4ae6c0d24e70', '--secrets', 'ANDROID_KEYSTORE_BASE64',
     ]);
     const report = parse(stdout);
     const byId = Object.fromEntries(report.checks.map((check) => [check.id, check]));
@@ -244,7 +244,7 @@ describe('جهوزية الإصدار — الحكم', () => {
     openStubs.push(stub.close);
     const { code, stdout } = await run([
       '--api-base', stub.url, '--origin', stub.url,
-      '--version-code', '9', '--branch-commit', '4ae6c0d24e70', '--secrets', ALL_SECRETS,
+      '--version-code', '10', '--branch-commit', '4ae6c0d24e70', '--secrets', ALL_SECRETS,
     ]);
     expect(code).toBe(1);
     expect(stdout).toContain('[FAIL]');

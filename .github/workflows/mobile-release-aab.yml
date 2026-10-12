@@ -31,7 +31,7 @@ on:
       version_name:
         description: "Nom de version publié (ex. 2.0.0)"
         required: true
-        default: "2.0.0"
+        default: "2.0.2"
       version_code:
         description: "Code de version Play Store (entier, STRICTEMENT croissant)"
         required: true
@@ -134,7 +134,7 @@ jobs:
       - name: Version publiée (nom + code)
         working-directory: apps/mobile/android
         env:
-          VERSION_NAME: ${{ inputs.version_name || '2.0.0' }}
+          VERSION_NAME: ${{ inputs.version_name || '2.0.2' }}
           VERSION_CODE: ${{ inputs.version_code }}
         run: |
           set -euo pipefail
@@ -196,7 +196,7 @@ jobs:
         env:
           EXPO_PUBLIC_API_BASE_URL: ${{ inputs.api_base_url || 'https://ayrovi-beta1-moo8.onrender.com' }}
           EXPO_PUBLIC_BUILD_STAMP: ${{ github.sha }}
-          EXPO_PUBLIC_APP_VERSION: ${{ inputs.version_name || '2.0.0' }}
+          EXPO_PUBLIC_APP_VERSION: ${{ inputs.version_name || '2.0.2' }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
