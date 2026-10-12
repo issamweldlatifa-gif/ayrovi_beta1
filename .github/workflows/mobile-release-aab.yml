@@ -207,7 +207,7 @@ jobs:
             exit 0
           fi
           # L'échec devient une annotation lisible (le journal complet ne l'est pas partout).
-          python3 ../../scripts/gradle-diagnose.py /tmp/gradle.log "AAB : Gradle a échoué"
+          python3 ../scripts/gradle-diagnose.py /tmp/gradle.log "AAB : Gradle a échoué"
           exit 1
 
       - name: Vérifier la signature (et refuser la clé debug)

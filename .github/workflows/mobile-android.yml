@@ -189,7 +189,7 @@ jobs:
           fi
           # Le journal complet n'est pas consultable partout : l'échec est publié
           # en annotation (dernières lignes + causes), lisible depuis l'API.
-          python3 ../../scripts/gradle-diagnose.py /tmp/gradle.log "APK démo : Gradle a échoué"
+          python3 ../scripts/gradle-diagnose.py /tmp/gradle.log "APK démo : Gradle a échoué"
           exit 1
 
       # ── Taille et signature ────────────────────────────────────────────────
