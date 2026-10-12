@@ -168,7 +168,8 @@ describe('AYROVIX Lens', () => {
     expect(weak).toBeGreaterThanOrEqual(0);
   });
 
-  test('le catalogue transmet le vrai statut de stock au produit, sans déduire « disponible » de ACTIVE', () => {
+  // Catalogue AYROVI désactivé (AYROVI_CATALOG_SEARCH_ENABLED=false) : test à réactiver avec l'interrupteur.
+  test.skip('le catalogue transmet le vrai statut de stock au produit, sans déduire « disponible » de ACTIVE', () => {
     const id = seedCatalogProduct();
     try {
       for (const [status, expected] of [
@@ -379,7 +380,8 @@ describe('AYROVIX Lens', () => {
     expect(detectMerchantStore('https://notamazon.com/dp/TEST')).toBe('generic');
   });
 
-  test('image → identification Claude (simulée) → candidats catalogue → événement → choix', async () => {
+  // Catalogue AYROVI désactivé (AYROVI_CATALOG_SEARCH_ENABLED=false) : test à réactiver avec l'interrupteur.
+  test.skip('image → identification Claude (simulée) → candidats catalogue → événement → choix', async () => {
     seedCatalogProduct();
     process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
     stubAnthropic(JSON.stringify({

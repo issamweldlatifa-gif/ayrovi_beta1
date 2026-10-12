@@ -72,12 +72,20 @@ export function scoreCandidate(
   return clampMatch(score);
 }
 
+/**
+ * Interrupteur du catalogue AYROVI dans les recherches (Lens, assistant, liens).
+ * DÉSACTIVÉ : aucune recherche ni résultat n'interroge le catalogue tant que le
+ * propriétaire ne l'a pas réactivé explicitement.
+ */
+export const AYROVI_CATALOG_SEARCH_ENABLED = false;
+
 export function catalogSearch(
   db: QatafoDatabase,
   identification: AyrovixIdentification | null,
   query: string,
   limit = 6,
 ): AyrovixCandidate[] {
+  if (!AYROVI_CATALOG_SEARCH_ENABLED) return [];
   const rows = db.all<any>(
     `SELECT id, name, brand_name, image, source_url, source_platform, stock_status,
             original_price, currency, final_price

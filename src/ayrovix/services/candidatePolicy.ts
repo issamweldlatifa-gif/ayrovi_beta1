@@ -163,12 +163,12 @@ export function filterLenientCandidates(items: AyrovixCandidate[], limit = 16): 
     .slice(0, limit);
 }
 
+/**
+ * Résultats affichés : UNIQUEMENT ceux qui ont un prix exploitable.
+ * Aucun repli sur des fiches sans prix : sans résultat fiable, la liste est vide.
+ */
 export function filterWithFallback(items: AyrovixCandidate[], limit = 16): AyrovixCandidate[] {
-  const strict = filterDisplayableCandidates(items, limit);
-  if (strict.length > 0) return strict;
-  const lenient = filterLenientCandidates(items, limit);
-  if (lenient.length) console.warn(`[AYROVIX candidatePolicy] strict filter empty — lenient fallback ${lenient.length} PENDING candidates`);
-  return lenient;
+  return filterDisplayableCandidates(items, limit);
 }
 
 /** Filet de kacht : prix d'abord, puis les URLs sans prix SerpApi (la page les remplira). */
