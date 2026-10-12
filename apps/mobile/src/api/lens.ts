@@ -101,6 +101,8 @@ export interface LensCandidate {
   description: string;
   offerCount: number;
   offers: LensOffer[];
+  /** الترويج على الفيشة كلها (من محرك التخفيضات في الخادم)، `null` إذا ما فماش. */
+  promo: LensPromo | null;
 }
 
 export function parseLensCandidate(entry: unknown): LensCandidate {
@@ -144,6 +146,7 @@ export function parseLensCandidate(entry: unknown): LensCandidate {
     description: str(entry.description),
     offerCount: num(entry.offerCount) ?? 0,
     offers,
+    promo: parsePromo(entry.promo),
   };
 }
 

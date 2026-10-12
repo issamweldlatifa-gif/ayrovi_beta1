@@ -649,6 +649,21 @@ export async function fetchFavorites(options?: RequestOptions): Promise<Favorite
   return parseFavorites(await apiGetData<unknown>('/api/customer/account/favorites', options));
 }
 
+/**
+ * مفضّلة من نتيجة Lens (ما عندهاش productId): نبعثو المصدر والعنوان والصورة فقط.
+ * السعر ما يتبعثش من التطبيق — الخادم يحفظ ما يرسله هو.
+ */
+export async function addExternalFavorite(
+  input: { sourceUrl: string; title: string; imageUrl: string; priceTnd: number | null },
+  options?: RequestOptions,
+): Promise<Favorite | null> {
+  const { data } = await apiSend<unknown>('POST', '/api/customer/account/favorites', {
+    ...options,
+    body: { sourceUrl: input.sourceUrl, title: input.title, imageUrl: input.imageUrl, priceTND: input.priceTnd },
+  });
+  return parseFavorite(data);
+}
+
 export async function removeFavorite(id: string, options?: RequestOptions): Promise<void> {
   await apiSend<unknown>('DELETE', `/api/customer/account/favorites/${encodeURIComponent(id)}`, options);
 }

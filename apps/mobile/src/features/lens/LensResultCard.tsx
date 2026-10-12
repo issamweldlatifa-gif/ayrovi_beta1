@@ -6,7 +6,8 @@
  * كل الأرقام تجي من الخادم. ما نحسبوش شي هنا، ومخزون ما تأكدش ما يتقالش «متوفر».
  */
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { lensLiveStock, type LensCandidate } from '@/api/lens';
 import { ProductCard } from '@/features/catalog/ProductCard';
@@ -22,6 +23,10 @@ export interface LensResultCardProps {
   /** `undefined` = زر المراقبة غير معروض (مثلاً شاشة المسح). */
   onWatch?: (candidate: LensCandidate) => void;
   watchBusy?: boolean;
+  /** زر القلب: `undefined` = غير معروض. */
+  favorite?: boolean;
+  favoriteBusy?: boolean;
+  onToggleFavorite?: (candidate: LensCandidate) => void;
 }
 
 type StockState =
@@ -38,7 +43,9 @@ function isWebLink(url: string): boolean {
   }
 }
 
-export function LensResultCard({ candidate, onOpen, onWatch, watchBusy = false }: LensResultCardProps) {
+export function LensResultCard({
+  candidate, onOpen, onWatch, watchBusy = false, favorite = false, favoriteBusy = false, onToggleFavorite,
+}: LensResultCardProps) {
   const theme = useTheme();
   const { t, locale } = useI18n();
   const [stock, setStock] = useState<StockState | null>(null);
@@ -82,20 +89,42 @@ export function LensResultCard({ candidate, onOpen, onWatch, watchBusy = false }
 
   return (
     <View style={styles.wrap}>
+      {onToggleFavorite ? (
+        <View style={styles.topRow}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={favorite ? t('lens.favoriteRemove') : t('lens.favoriteAdd')}
+            accessibilityState={{ selected: favorite, busy: favoriteBusy }}
+            disabled={favoriteBusy}
+            onPress={() => onToggleFavorite(candidate)}
+            style={[styles.heart, { borderColor: theme.colors.line, borderRadius: theme.radius.control }]}
+          >
+            <Ionicons name={favorite ? 'heart' : 'heart-outline'} size={20} color={favorite ? theme.status.danger.fg : theme.colors.ink} />
+          </Pressable>
+        </View>
+      ) : null}
       <ProductCard
         product={candidateToProduct(candidate)}
         onOpen={() => onOpen(candidate)}
         style={styles.full}
         hasCombinations={candidate.colors.length > 0}
+        promo={candidate.promo != null && candidate.promo.percent > 0}
       />
       <KeyValue
         label={t('lens.verification')}
         value={candidate.verification === 'VERIFIED' ? t('lens.verified') : t('lens.pending')}
       />
       {candidate.originalPriceTnd != null && candidate.priceTnd != null && candidate.originalPriceTnd > candidate.priceTnd ? (
-        <AppText variant="caption" color={theme.colors.muted}>
-          {t('lens.wasPrice', { price: candidate.originalPriceTnd.toFixed(2) })}
-        </AppText>
+        <View style={styles.wasRow}>
+          <AppText variant="caption" color={theme.colors.muted}>
+            {t('lens.wasPrice', { price: candidate.originalPriceTnd.toFixed(2) })}
+          </AppText>
+          {candidate.promo != null && candidate.promo.percent > 0 ? (
+            <AppText variant="caption" weight="bold" color={theme.status.danger.fg}>
+              {`-${candidate.promo.percent}%`}
+            </AppText>
+          ) : null}
+        </View>
       ) : null}
       {candidate.offerCount > 1 ? (
         <AppText variant="caption" color={theme.colors.muted}>
@@ -128,5 +157,8 @@ export function LensResultCard({ candidate, onOpen, onWatch, watchBusy = false }
 const styles = StyleSheet.create({
   wrap: { marginTop: 10, gap: 4 },
   full: { width: '100%', marginTop: 0 },
+  topRow: { flexDirection: 'row', justifyContent: 'flex-end' },
+  heart: { width: 40, height: 40, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },
+  wasRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   actions: { flexDirection: 'row', gap: 8, marginTop: 6, flexWrap: 'wrap' },
 });

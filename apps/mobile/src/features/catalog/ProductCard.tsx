@@ -27,6 +27,8 @@ export interface ProductCardProps {
   style?: StyleProp<ViewStyle>;
   /** Le marchand publie des couleurs ou tailles : repère « Combinaisons disponibles » (donnée réelle seulement). */
   hasCombinations?: boolean;
+  /** Promotion donnée par le serveur (jamais déduite ici) : repère « Promo ». */
+  promo?: boolean;
 }
 
 /** نصّ المخزون: كل الحالات المعروفة، والباقي «غير مؤكّد» موش فراغ. */
@@ -43,7 +45,7 @@ function stockLabel(status: string, t: Translate): { text: string; tone: 'ok' | 
   }
 }
 
-export function ProductCard({ product, onOpen, style, hasCombinations = false }: ProductCardProps) {
+export function ProductCard({ product, onOpen, style, hasCombinations = false, promo = false }: ProductCardProps) {
   const theme = useTheme();
   const t = useT();
   const stock = stockLabel(product.stockStatus, t);
@@ -64,11 +66,18 @@ export function ProductCard({ product, onOpen, style, hasCombinations = false }:
         )}
       </View>
 
-      {hasCombinations ? (
+      {hasCombinations || promo ? (
         <View style={styles.chipRow}>
-          <View style={[styles.chip, { backgroundColor: theme.colors.canvas, borderColor: theme.colors.line, borderRadius: theme.radius.control }]}>
-            <AppText variant="caption" color={theme.colors.ink} numberOfLines={1}>{t('lens.combinations')}</AppText>
-          </View>
+          {hasCombinations ? (
+            <View style={[styles.chip, { backgroundColor: theme.colors.canvas, borderColor: theme.colors.line, borderRadius: theme.radius.control }]}>
+              <AppText variant="caption" color={theme.colors.ink} numberOfLines={1}>{t('lens.combinations')}</AppText>
+            </View>
+          ) : null}
+          {promo ? (
+            <View style={[styles.chip, { backgroundColor: theme.status.danger.fg, borderColor: theme.status.danger.fg, borderRadius: theme.radius.control }]}>
+              <AppText variant="caption" weight="bold" color={theme.colors.canvas} numberOfLines={1}>{t('lens.promoBadge')}</AppText>
+            </View>
+          ) : null}
         </View>
       ) : null}
 
@@ -112,7 +121,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   image: { width: '100%', height: '100%' },
-  chipRow: { flexDirection: 'row', marginBottom: 6 },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginBottom: 6 },
   chip: { paddingHorizontal: 8, paddingVertical: 4, borderWidth: StyleSheet.hairlineWidth, alignSelf: 'flex-start' },
   name: { marginTop: 2, minHeight: 34 },
   footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6, gap: 6 },

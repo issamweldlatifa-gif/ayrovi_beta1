@@ -156,6 +156,20 @@ describe('analyzeLensImageStream', () => {
     expect(result.eventId).toBe('evt-1');
   });
 
+  it('envoie le roi (0..100) comme champ JSON, et rien sans roi', async () => {
+    const withRoi = analyzeLensImageStream({ ...input, roi: { x: 10, y: 20, w: 30, h: 40 } });
+    const sent = FakeXHR.last!.body as FormData;
+    expect(sent.get('roi')).toBe('{"x":10,"y":20,"w":30,"h":40}');
+    FakeXHR.last!.emit(block('done', DONE));
+    FakeXHR.last!.end(200);
+    await withRoi;
+
+    analyzeLensImageStream(input);
+    expect((FakeXHR.last!.body as FormData).get('roi')).toBeNull();
+    FakeXHR.last!.emit(block('done', DONE));
+    FakeXHR.last!.end(200);
+  });
+
   it('reconstitue un bloc coupé en deux morceaux', async () => {
     const cards: LensCandidate[] = [];
     const promise = analyzeLensImageStream(input, { onCard: (c) => cards.push(c) });

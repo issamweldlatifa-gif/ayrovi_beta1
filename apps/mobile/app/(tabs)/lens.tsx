@@ -18,7 +18,7 @@ import { useCallback, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { AppScreen } from '@/design/layout';
 import { AppHeader } from '@/features/shell/AppHeader';
@@ -27,6 +27,7 @@ import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
 import { isApiError, userMessage } from '@/api/errors';
+import { addExternalFavorite, fetchFavorites, removeFavorite } from '@/api/account';
 import {
   LENS_MIN_TEXT, analyzeLensText, chooseLensEvent, createLensWatch,
   fetchLensHistory, lensUploadInputFrom, detectedItemRoi, type LensAnalysis, type LensCandidate,
@@ -68,6 +69,17 @@ export default function LensScreen() {
   /** Éléments de la photo entière (ne changent pas quand on cherche un élément précis). */
   const [detectedItems, setDetectedItems] = useState<LensDetectedItem[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+
+  const queryClient = useQueryClient();
+  const favorites = useQuery({
+    queryKey: ['account', 'favorites'],
+    queryFn: ({ signal }) => fetchFavorites({ signal }),
+    // بلا حساب ⇒ الخادم يرفض، والقلب يبقى فارغاً ويطلب الدخول عند الضغط.
+    retry: 0,
+  });
+  const favoriteList = favorites.data ?? [];
+  /** روابط المصدر المحفوظة: الخادم يطابق المفضّلة بـ `sourceUrl`. */
+  const favoriteUrls = new Set(favoriteList.map((favorite) => favorite.sourceUrl));
 
   const history = useQuery({
     queryKey: ['lens', 'history'],
@@ -191,6 +203,33 @@ export default function LensScreen() {
     });
   }, [analysis?.eventId]);
 
+  /** قلب فيشة Lens: يحفظها في مفضّلات الحساب، أو يحذفها إذا كانت محفوظة. */
+  const toggleFavorite = useMutation({
+    mutationFn: async (candidate: LensCandidate) => {
+      const saved = favoriteList.find((favorite) => favorite.sourceUrl === candidate.sourceUrl);
+      if (saved) {
+        await removeFavorite(saved.id);
+        return;
+      }
+      await addExternalFavorite({
+        sourceUrl: candidate.sourceUrl,
+        title: candidate.title,
+        imageUrl: candidate.image,
+        priceTnd: candidate.priceTnd,
+      });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['account', 'favorites'] });
+    },
+    onError: (error) => {
+      if (isApiError(error) && (error.status === 401 || error.status === 403)) {
+        setNote(t('lens.favoriteSignIn'));
+        return;
+      }
+      setNote(isApiError(error) ? userMessage(error)[locale] : t('lens.failed'));
+    },
+  });
+
   /** مراقبة سعر: تستلزم حساباً — 401 تُقال بصراحة مع باب للدخول. */
   const watch = useMutation({
     mutationFn: (candidate: LensCandidate) => createLensWatch({
@@ -258,6 +297,9 @@ export default function LensScreen() {
         onOpenCandidate={(candidate) => { setSheetOpen(false); openCandidate(candidate); }}
         onWatch={(item) => watch.mutate(item)}
         watchBusy={watch.isPending}
+        favoriteUrls={favoriteUrls}
+        favoriteBusy={toggleFavorite.isPending}
+        onToggleFavorite={(item) => toggleFavorite.mutate(item)}
       />
 
       {mode === 'photo' ? (
@@ -341,6 +383,9 @@ export default function LensScreen() {
               onOpen={openCandidate}
               onWatch={(item) => watch.mutate(item)}
               watchBusy={watch.isPending}
+              favorite={favoriteUrls.has(candidate.sourceUrl)}
+              favoriteBusy={toggleFavorite.isPending}
+              onToggleFavorite={(item) => toggleFavorite.mutate(item)}
             />
           ))}
         </Card>

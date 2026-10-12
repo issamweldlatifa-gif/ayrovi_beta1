@@ -28,6 +28,7 @@ const ORDER: readonly LensStep[] = ['identified', 'searching', 'reading'];
 export function fitImage(
   width: number, height: number, maxWidth: number, maxHeight: number,
 ): { width: number; height: number } {
+  if (width <= 0 || height <= 0) return { width: 0, height: 0 };
   const scale = Math.min(maxWidth / width, maxHeight / height);
   return { width: Math.round(width * scale), height: Math.round(height * scale) };
 }
@@ -54,11 +55,16 @@ export interface LensResultsSheetProps {
   onOpenCandidate: (candidate: LensCandidate) => void;
   onWatch: (candidate: LensCandidate) => void;
   watchBusy: boolean;
+  /** `sourceUrl` des fiches déjà enregistrées dans les favoris du compte. */
+  favoriteUrls: ReadonlySet<string>;
+  favoriteBusy: boolean;
+  onToggleFavorite: (candidate: LensCandidate) => void;
 }
 
 export function LensResultsSheet({
   visible, busy, imageUri, imageSize, progress, results, items, selectedIndex, note,
   onClose, onRetry, onSelectItem, onOpenCandidate, onWatch, watchBusy,
+  favoriteUrls, favoriteBusy, onToggleFavorite,
 }: LensResultsSheetProps) {
   const theme = useTheme();
   const { t } = useI18n();
@@ -170,15 +176,21 @@ export function LensResultsSheet({
           <ScrollView contentContainerStyle={styles.fullList}>
             {photo}
             {busy ? steps : null}
-            {results.map((candidate, index) => (
-              <LensResultCard
-                key={candidate.id || `${candidate.sourceUrl}-${index}`}
-                candidate={candidate}
-                onOpen={onOpenCandidate}
-                onWatch={onWatch}
-                watchBusy={watchBusy}
-              />
-            ))}
+            <View style={styles.grid}>
+              {results.map((candidate, index) => (
+                <View key={candidate.id || `${candidate.sourceUrl}-${index}`} style={styles.cell}>
+                  <LensResultCard
+                    candidate={candidate}
+                    onOpen={onOpenCandidate}
+                    onWatch={onWatch}
+                    watchBusy={watchBusy}
+                    favorite={favoriteUrls.has(candidate.sourceUrl)}
+                    favoriteBusy={favoriteBusy}
+                    onToggleFavorite={onToggleFavorite}
+                  />
+                </View>
+              ))}
+            </View>
             {noteLine}
           </ScrollView>
           <View style={styles.fullFoot}>{actions}</View>
@@ -209,6 +221,8 @@ const styles = StyleSheet.create({
   fullTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 },
   fullHead: { flex: 1 },
   fullList: { gap: 12, paddingBottom: 12 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12 },
+  cell: { width: '48%' },
   fullFoot: { paddingTop: 8 },
   photo: { alignSelf: 'center' },
   photoFallback: { width: '100%', height: 240 },
