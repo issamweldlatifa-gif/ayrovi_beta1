@@ -23,7 +23,7 @@ import { normalizeStockStatus, type CatalogProduct } from '@/api/catalog';
 export interface ProductCardProps {
   product: CatalogProduct;
   onOpen: (product: CatalogProduct) => void;
-  /** Largeur/forme imposées par l'écran appelant (ex. liste pleine largeur des résultats Lens). */
+  /** Largeur/forme imposées par l'écran appelant (ex. liste pleine largeur des résultats). */
   style?: StyleProp<ViewStyle>;
   /** Le marchand publie des couleurs ou tailles : repère « Combinaisons disponibles » (donnée réelle seulement). */
   hasCombinations?: boolean;
@@ -70,12 +70,12 @@ export function ProductCard({ product, onOpen, style, hasCombinations = false, p
         <View style={styles.chipRow}>
           {hasCombinations ? (
             <View style={[styles.chip, { backgroundColor: theme.colors.canvas, borderColor: theme.colors.line, borderRadius: theme.radius.control }]}>
-              <AppText variant="caption" color={theme.colors.ink} numberOfLines={1}>{t('lens.combinations')}</AppText>
+              <AppText variant="caption" color={theme.colors.ink} numberOfLines={1}>{t('product.combinations')}</AppText>
             </View>
           ) : null}
           {promo ? (
             <View style={[styles.chip, { backgroundColor: theme.status.danger.fg, borderColor: theme.status.danger.fg, borderRadius: theme.radius.control }]}>
-              <AppText variant="caption" weight="bold" color={theme.colors.canvas} numberOfLines={1}>{t('lens.promoBadge')}</AppText>
+              <AppText variant="caption" weight="bold" color={theme.colors.canvas} numberOfLines={1}>{t('product.promoBadge')}</AppText>
             </View>
           ) : null}
         </View>

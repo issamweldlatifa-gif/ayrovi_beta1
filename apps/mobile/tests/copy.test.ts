@@ -19,7 +19,6 @@ import { ar } from '../src/i18n/ar';
 import { fr } from '../src/i18n/fr';
 import {
   dynamicPrefixes,
-  exactCopyProblems,
   keyReferences,
   missingKeys,
   placeholderDrift,
@@ -28,7 +27,6 @@ import {
   type Dictionary,
 } from '../src/i18n/copyContract';
 import { PAYMENT_DEFINITIONS } from '../src/api/checkout';
-import { OCEREX_BLOCK_CODES } from '../src/api/ocerex';
 import {
   NEWS_CATEGORY_CODES, newsCategoryKey, newsCategoryText, statusCodes, statusKey,
 } from '../src/api/labels';
@@ -83,28 +81,6 @@ describe('عقد النصوص — القاموس', () => {
   it('المتغيّرات متاع `{}` متطابقة بين اللغتين', () => {
     expect(placeholderDrift(AR, FR).map((f) => `${f.key}: ${f.detail}`)).toEqual([]);
   });
-
-  it('النصوص المجمّدة كيما قالها صاحب المشروع', () => {
-    expect(exactCopyProblems(AR, [
-      {
-        key: 'aywebs.addToCart',
-        value: 'Add to Cart',
-        why: 'قرار AYWEBs: التسمية بالحرف — لا «Buy» لا «احترِ توّا»',
-      },
-    ]).map((f) => `${f.key}: ${f.detail}`)).toEqual([]);
-    expect(exactCopyProblems(FR, [
-      {
-        key: 'aywebs.addToCart',
-        value: 'Add to Cart',
-        why: 'نفس القرار في الفرنسية: زرّ الإضافة ما يتبدّلش',
-      },
-    ]).map((f) => `${f.key}: ${f.detail}`)).toEqual([]);
-  });
-
-  it('زرّ الإضافة يقرا النص المجمّد، ما يكتبش «Add to Cart» في اليد', () => {
-    const sheet = readFileSync(path.join(ROOT, 'src/features/aywebs/AddToCartSheet.tsx'), 'utf8');
-    expect(sheet).toContain("t('aywebs.addToCart')");
-  });
 });
 
 describe('عقد النصوص — المفاتيح المتكوّنة في الوقت الحقيقي', () => {
@@ -116,8 +92,7 @@ describe('عقد النصوص — المفاتيح المتكوّنة في ال�
     }
     /**
      * Modèle de navigation en vigueur :
-     *   • la barre du bas porte cinq OUTILS — lens · aywebs · sonim · vision ·
-     *     ocerex (consigne produit) ;
+     *   • la barre du bas ne porte plus que le profil ;
      *   • `index` (l’accueil), `account` et `cart` restent des ROUTES — l’en-tête
      *     et le tiroir pointent dessus — mais sont retirés de la barre
      *     (`href: null`). Un onglet masqué n’est pas un onglet supprimé : on ne
@@ -126,7 +101,7 @@ describe('عقد النصوص — المفاتيح المتكوّنة في ال�
      * onglet déclaré — visible ou non — possède ses textes dans les deux langues.
      */
     expect([...tabs].sort()).toEqual([
-      'account', 'aywebs', 'cart', 'index', 'lens', 'sonim', 'vision',
+      'account', 'cart', 'index',
     ]);
     /**
      * ── Ce que ce contrat exigeait, et pourquoi il a changé ───────────────
@@ -136,11 +111,10 @@ describe('عقد النصوص — المفاتيح المتكوّنة في ال�
      * par un en-tête UNIQUE (`AppHeader`, §13).
      *
      * Le contenu n'a pas été jeté : là où un écran a de vraies sections
-     * (lens, aywebs, cart, account, vision), il est repris par un
+     * (cart, account), il est repris par un
      * `SectionHeader` — donc toujours atteignable, donc jamais mort.
      *
-     * Là où il n'y a PAS de section (accueil : un héros ; sonim : une
-     * conversation ; ocerex : son propre `SubScreen`), ces textes n'ont plus
+     * Là où il n'y a PAS de section (accueil : un héros), ces textes n'ont plus
      * d'endroit où vivre. Les garder ferait échouer la règle « aucun texte
      * mort ». On ne garde pas un libellé pour faire passer un test.
      *
@@ -200,14 +174,5 @@ describe('عقد النصوص — المفاتيح المتكوّنة في ال�
   it('كود مجهول ما يتسمّاش بالغالط: يرجع `null` ⇒ الواجهة تعرض الكود', () => {
     expect(statusKey('order', 'STATUS_FROM_THE_FUTURE')).toBeNull();
     expect(statusKey('payment', '')).toBeNull();
-  });
-
-  it('أكواد منع الشراء (OCEREX): لكل واحد نص باللغتين', () => {
-    for (const code of OCEREX_BLOCK_CODES) {
-      if (!code) continue;
-      const key = `ocerex.block.${code}`;
-      expect(Object.keys(FR), key).toContain(key);
-      expect(Object.keys(AR), key).toContain(key);
-    }
   });
 });

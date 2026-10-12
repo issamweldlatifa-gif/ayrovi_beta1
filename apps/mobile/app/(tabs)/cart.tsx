@@ -1,9 +1,7 @@
 /**
- * تبويب السلّة — P5، الشريحة 1: **سلّة AYROVI** (سلّة الشراء).
+ * تبويب السلّة — **سلّة AYROVI** (سلّة الشراء).
  *
- * علاش تبدّلت السلّة في التبويب: هذي هي السلّة اللي منها يتكوّن الطلب — تدخلها
- * سطور AYWEBs (بالجسر) وسطور OCEREX (بـ`commit`). سلّة AYWEBs ولّت شاشة فرعية
- * (`/aywebs/cart`) لأنها **منبع**: أسعار المتاجر وتحقّقها.
+ * هذي السلّة اللي منها يتكوّن الطلب.
  *
  * قواعد الصدق في الشاشة:
  *  • كل رقم يجي من `GET /api/cart/items`: المجموع، التوصيل، سطر كل منتوج.
@@ -33,7 +31,7 @@ import {
   AYROVI_PRICE_TRUST_REASONS, ayroviCartReadiness, fetchAyroviCart, removeAyroviCartItem,
   updateAyroviCartQuantity, type AyroviCartLine,
 } from '@/api/cart';
-import { useAyWebsSessionId } from '@/features/aywebs/session';
+import { useSessionId } from '@/session/session';
 
 const MAX_QUANTITY = 99;
 
@@ -41,7 +39,7 @@ export default function AyroviCartScreen() {
   const t = useT();
   const theme = useTheme();
   const { locale } = useI18n();
-  const sessionId = useAyWebsSessionId();
+  const sessionId = useSessionId();
   const [note, setNote] = useState('');
 
   const cartQuery = useQuery({
@@ -103,10 +101,10 @@ export default function AyroviCartScreen() {
 
   const availabilityLabel = (value: string): string => {
     switch (value) {
-      case 'in_stock': return t('lens.avail.in_stock');
-      case 'limited': return t('lens.avail.limited');
-      case 'out_of_stock': return t('lens.avail.out_of_stock');
-      default: return t('lens.avail.unknown');
+      case 'in_stock': return t('product.avail.in_stock');
+      case 'limited': return t('product.avail.limited');
+      case 'out_of_stock': return t('product.avail.out_of_stock');
+      default: return t('product.avail.unknown');
     }
   };
 
@@ -208,8 +206,6 @@ export default function AyroviCartScreen() {
         ) : !cart || cart.items.length === 0 ? (
           <>
             <EmptyBlock>{t('cart.empty')}</EmptyBlock>
-            {/* إجراء حقيقي: باب لمنتوجات AYWEBs (بلا زرّ ميّت). */}
-            <Button label={t('cart.emptyAction')} onPress={() => router.push('/aywebs')} />
           </>
         ) : (
           <>
@@ -248,10 +244,6 @@ export default function AyroviCartScreen() {
         </Card>
       ))}
 
-      {/* سلّة AYWEBs (المصادر) — باب حقيقي من هنا. */}
-      <Card title={t('cart.aywebsTitle')} hint={t('cart.aywebsHint')}>
-        <Button label={t('cart.aywebsOpen')} tone="quiet" onPress={() => router.push('/aywebs/cart')} />
-      </Card>
     </AppScreen>
   );
 }

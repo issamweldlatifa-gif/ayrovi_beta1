@@ -65,7 +65,7 @@ export async function fetchNavigation(options?: RequestOptions): Promise<NavLink
 /* ── جاهزية الخادم: «أي كود قاعد يخدم فعلاً» ──────────────────────────────── */
 
 /**
- * `/api/ready` **موش** داخل غلاف `{data:…}` (كيما AYWEBs): نقراوه بـ
+ * `/api/ready` **موش** داخل غلاف `{data:…}`: نقراوه بـ
  * `apiGetEnvelope`. اللي يعنينا هنا: `commit` — الرقم اللي يفرّق بين «تحدّث
  * التطبيق» و«تحدّث الخادم». `local` تعني خادم تشغيل محلي، موش منشور من Git.
  */

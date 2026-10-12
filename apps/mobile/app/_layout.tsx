@@ -25,7 +25,7 @@ import { PrefsProvider, usePrefs } from '@/state/prefs';
 import { SessionProvider } from '@/state/session';
 import { useDeepLinkRouting } from '@/features/links/useDeepLinkRouting';
 import { usePushNotifications } from '@/features/notifications/usePush';
-import { useAyWebsSessionId } from '@/features/aywebs/session';
+import { useSessionId } from '@/session/session';
 import { LoadingScreen } from '@/design/LoadingScreen';
 import { NetworkBanner } from '@/design/NetworkBanner';
 
@@ -48,7 +48,7 @@ const queryClient = new QueryClient({
 function Navigation() {
   const theme = useTheme();
   const { ready, locale } = usePrefs();
-  const sessionId = useAyWebsSessionId();
+  const sessionId = useSessionId();
   const [fontsLoaded, fontError] = useFonts(FONT_SOURCES);
   // `isConnected === false` = coupure avérée ; `null` = inconnu, on n'affiche rien.
   const network = useNetworkState();

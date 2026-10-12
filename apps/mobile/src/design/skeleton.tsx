@@ -108,7 +108,7 @@ export function ListRowSkeleton() {
   );
 }
 
-/** `count` rangées — pour panier, commandes, favoris, historique Lens. */
+/** `count` rangées — pour panier, commandes, favoris, historique. */
 export function ListSkeleton({ count = 3 }: { count?: number }) {
   return (
     <View testID="skeleton-list">

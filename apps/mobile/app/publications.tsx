@@ -23,14 +23,14 @@ import { usePublications, useSocialCounts } from '@/api/hooks';
 import { useSession } from '@/state/session';
 import { sendInteraction } from '@/api/social';
 import { Comments } from '@/features/social/Comments';
-import { useAyWebsSessionId } from '@/features/aywebs/session';
+import { useSessionId } from '@/session/session';
 import type { Publication } from '@/api/social';
 
 export default function PublicationsScreen() {
   const theme = useTheme();
   const t = useT();
   const session = useSession();
-  const guestSession = useAyWebsSessionId();
+  const guestSession = useSessionId();
   const signedIn = session.status === 'signedIn';
 
   const publications = usePublications();

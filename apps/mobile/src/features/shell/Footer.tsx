@@ -137,7 +137,6 @@ export function Footer({ testID = 'app-footer' }: FooterProps) {
         <AppText variant="caption" weight="bold" color={FOOTER_COLORS.ink}>{t('footer.useful')}</AppText>
         <View style={styles.links}>
           <FooterLink icon="person-outline" label={t('footer.account')} onPress={() => router.push('/(tabs)/account')} />
-          <FooterLink icon="chatbubble-ellipses-outline" label={t('footer.assistant')} onPress={() => router.push('/assistant')} />
           <FooterLink icon="bag-outline" label={t('footer.orders')} onPress={() => router.push('/orders')} />
           <FooterLink icon="play-outline" label={t('social.reels')} onPress={() => router.push('/reels')} />
           <FooterLink icon="images-outline" label={t('social.publications')} onPress={() => router.push('/publications')} />

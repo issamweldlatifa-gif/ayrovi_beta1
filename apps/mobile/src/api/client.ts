@@ -160,7 +160,7 @@ export interface SendOptions extends RequestOptions {
   form?: FormData;
   /**
    * يرجّع الغلاف كامل (`{success, data, capture, quote_token…}`) بدل `data` وحدها.
-   * يحتاجو AYWEBs: قرار الخادم (`capture.used/rejection`) وفاتورة السعر
+   * يحتاجو الخادم: قرار الخادم (`capture.used/rejection`) وفاتورة السعر
    * (`quote_token`) حقول **جنب** `data`، وتضييعها يعني شاشة ما تعرفش تحكي
    * الحقيقة. المغلّف يُتحقّق منو في `apiSendEnvelope`.
    */
@@ -241,7 +241,7 @@ async function attempt<T>(method: string, path: string, options: SendOptions = {
     ? String((payload as { serverTime: string }).serverTime)
     : '';
 
-  /* الغلاف الكامل مطلوب (AYWEBs) : هنا ما نفكّوش `data` — `apiSendEnvelope`
+  /* الغلاف الكامل مطلوب : هنا ما نفكّوش `data` — `apiSendEnvelope`
      يتولّى التحقّق من الغلاف، ويرمي بنفس معاني `unwrap` بالضبط. */
   if (options.envelope === true) {
     return { kind: 'ok', result: { data: payload as T, serverTime } };
@@ -286,7 +286,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 /**
  * طلب GET يرجّع نصّاً خاماً — لسكريبت الكابتشر.
  *
- * `GET /api/v1/aywebs/capture/script.js` يرجّع JavaScript، موش غلاف JSON:
+ * أي GET يرجّع JavaScript، موش غلاف JSON:
  * تمريرو على `unwrap` كان باش يفشل، وهذا **مقصود**: السكريبت يتصلّح من
  * الخادم بلا تحديث للتطبيق. الفشل الوحيد المقبول: غير 2xx أو جسم فارغ.
  */
@@ -324,7 +324,7 @@ export async function apiGetText(path: string, options: RequestOptions = {}): Pr
 /**
  * طلب كاتب يرجّع الغلاف كامل (`{success, data, capture, quote_token…}`).
  *
- * AYWEBs يرجّع قرار الخادم وفاتورة السعر **جنب** `data`؛ فكّ `data` وحدها
+ * الخادم يرجّع قرار الخادم وفاتورة السعر **جنب** `data`؛ فكّ `data` وحدها
  * يضيّع `capture.rejection` و`quote_token`، والشاشة تولّي ما تعرفش تحكي
  * الحقيقة. التحقّق هنا هو نفس عقد `unwrap` (لا غلاف = خطأ، لا نجاح صامت).
  */

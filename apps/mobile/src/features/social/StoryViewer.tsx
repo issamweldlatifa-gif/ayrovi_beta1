@@ -28,7 +28,7 @@ import { useSession } from '@/state/session';
 import { sendInteraction } from '@/api/social';
 import { LinkedProductCard } from '@/features/shopping/LinkedProductCard';
 import type { StoryItem } from '@/api/sections';
-import { useAyWebsSessionId } from '@/features/aywebs/session';
+import { useSessionId } from '@/session/session';
 
 /** مدّة الستوري الواحد: صورة 6 ثوانٍ، فيديو مدّته من الخادم. */
 const IMAGE_DURATION_MS = 6_000;
@@ -48,7 +48,7 @@ export function StoryViewer({ stories, initialIndex = 0, visible, onClose, onOpe
   const t = useT();
   const insets = useSafeAreaInsets();
   const session = useSession();
-  const guestSession = useAyWebsSessionId();
+  const guestSession = useSessionId();
   const signedIn = session.status === 'signedIn';
 
   const [index, setIndex] = useState(initialIndex);

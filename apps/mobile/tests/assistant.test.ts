@@ -23,8 +23,8 @@ describe('فكّ الأحداث', () => {
     expect(parseAssistantEvent({ type: 'delta', text: 'مرحبا' })).toEqual({ type: 'delta', text: 'مرحبا' });
     expect(parseAssistantEvent({ type: 'state', state: 'analyzing' })).toEqual({ type: 'state', state: 'analyzing' });
     expect(parseAssistantEvent({ type: 'done', model: 'gpt-x' })).toEqual({ type: 'done', model: 'gpt-x' });
-    expect(parseAssistantEvent({ type: 'tool', name: 'lens_search', data: { q: 'x' } }))
-      .toEqual({ type: 'tool', name: 'lens_search', data: { q: 'x' } });
+    expect(parseAssistantEvent({ type: 'tool', name: 'product_search', data: { q: 'x' } }))
+      .toEqual({ type: 'tool', name: 'product_search', data: { q: 'x' } });
     expect(parseAssistantEvent({ type: 'state', state: 'inventée' })).toBeNull();
     expect(parseAssistantEvent({ type: 'peut_être' })).toBeNull();
     expect(parseAssistantEvent(null)).toBeNull();

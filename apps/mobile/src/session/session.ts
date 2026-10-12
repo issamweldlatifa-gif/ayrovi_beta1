@@ -1,7 +1,7 @@
 /**
- * جلسة AYWEBs على الجهاز: توليد مرّة، تخزين دائم، واسترجاع.
+ * جلسة الزائر على الجهاز: توليد مرّة، تخزين دائم، واسترجاع.
  *
- * علاش مخزّنة: السلّة تتبنى داخل جلسة AYWEBs على الخادم. بلا تخزين، كل فتح
+ * علاش مخزّنة: السلّة تتبنى داخل جلسة الزائر على الخادم. بلا تخزين، كل فتح
  * للتطبيق يبدا جلسة جديدة والسلّة تبدو «ضاعت». التخزين يحلّها بلا أي تسجيل.
  *
  * علاش هنا موش في `src/api`: هذي واجهة الجهاز (AsyncStorage + crypto)، و`src/api`
@@ -11,9 +11,9 @@ import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 
-import { formatAyWebsSessionId, isValidAyWebsSessionId } from './sessionId';
+import { formatSessionId, isValidSessionId } from './sessionId';
 
-export const AYWEBS_SESSION_KEY = 'ayrovi.aywebs.session';
+export const SESSION_KEY = 'ayrovi.session';
 
 /** المعرّف الجاري في هذي العملية — يتفادى قراءة التخزين في كل شاشة. */
 let cached: string | null = null;
@@ -25,21 +25,21 @@ let cached: string | null = null;
  * والجلسة تخدم — غير ما تدومش بعد إغلاق التطبيق. ما نكذبوش على المستعمل
  * بحالة «محفوظة»؛ السلّة تخدم في الزوز الحالات.
  */
-export async function getAyWebsSessionId(): Promise<string> {
+export async function getSessionId(): Promise<string> {
   if (cached) return cached;
   try {
-    const stored = await AsyncStorage.getItem(AYWEBS_SESSION_KEY);
-    if (isValidAyWebsSessionId(stored)) {
+    const stored = await AsyncStorage.getItem(SESSION_KEY);
+    if (isValidSessionId(stored)) {
       cached = stored.trim();
       return cached;
     }
   } catch {
-    cached = formatAyWebsSessionId(Crypto.randomUUID());
+    cached = formatSessionId(Crypto.randomUUID());
     return cached;
   }
-  const created = formatAyWebsSessionId(Crypto.randomUUID());
+  const created = formatSessionId(Crypto.randomUUID());
   try {
-    await AsyncStorage.setItem(AYWEBS_SESSION_KEY, created);
+    await AsyncStorage.setItem(SESSION_KEY, created);
   } catch {
     // التخزين ما خدمش: الجلسة تبقى صالحة في الذاكرة.
   }
@@ -52,11 +52,11 @@ export async function getAyWebsSessionId(): Promise<string> {
  * الشاشة تستعملها باش تمنع الأزرار قبل ما يولي المعرّف حاضر — زر ما ينجمش
  * ينجح خير من زر يفشل.
  */
-export function useAyWebsSessionId(): string {
+export function useSessionId(): string {
   const [sessionId, setSessionId] = useState(cached ?? '');
   useEffect(() => {
     let alive = true;
-    getAyWebsSessionId()
+    getSessionId()
       .then((value) => { if (alive) setSessionId(value); })
       .catch(() => { if (alive) setSessionId(''); });
     return () => { alive = false; };

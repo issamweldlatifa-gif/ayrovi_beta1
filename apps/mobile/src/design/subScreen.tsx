@@ -1,12 +1,12 @@
 /**
- * Ossature commune des écrans empilés (compte, AYWEBs, commandes…).
+ * Ossature commune des écrans empilés (compte, commandes, favoris…).
  *
  * Un seul endroit pour : le bouton retour, le titre, la marge haute sûre, et le
  * geste de rafraîchissement. Sans cela, chaque écran réinvente sa coquille et
  * finit par ne plus rien avoir en commun avec les autres.
  *
  * `fallback` : où revenir quand l'écran a été ouvert directement (lien profond)
- * et qu'il n'y a rien derrière. Un écran AYWEBs ne doit pas renvoyer au compte.
+ * et qu'il n'y a rien derrière. Un écran empilé ne doit pas renvoyer au compte.
  */
 import type { ReactNode, RefObject } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';

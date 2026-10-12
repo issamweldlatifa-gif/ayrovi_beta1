@@ -21,14 +21,7 @@ describe('traduction des URL du site', () => {
   it('les listes et les onglets', () => {
     expect(resolveDeepLink('https://ayrovi.tn/catalog')).toBe('/catalog');
     expect(resolveDeepLink('https://ayrovi.tn/orders')).toBe('/orders');
-    expect(resolveDeepLink('https://ayrovi.tn/lens')).toBe('/(tabs)/lens');
-    expect(resolveDeepLink('https://ayrovi.tn/aywebs')).toBe('/(tabs)/aywebs');
     expect(resolveDeepLink('https://ayrovi.tn/panier')).toBe('/(tabs)/cart');
-  });
-
-  it('le lien vers SONIM, sous ses deux noms', () => {
-    expect(resolveDeepLink('https://ayrovi.tn/assistant')).toBe('/assistant');
-    expect(resolveDeepLink('https://ayrovi.tn/sonim')).toBe('/assistant');
   });
 
   it('barre oblique finale : même écran, pas deux routes', () => {
@@ -46,12 +39,6 @@ describe('refus — un lien inconnu ne navigue pas', () => {
   it('hôte étranger : ignoré, même avec un chemin connu', () => {
     expect(resolveDeepLink('https://site-malin.tn/orders/42')).toBeNull();
     expect(resolveDeepLink('https://ayrovi.tn.evil.com/orders')).toBeNull();
-  });
-
-  it('la vue Web marchande n’est JAMAIS atteignable par lien profond', () => {
-    // Elle prend une URL en paramètre : l'ouvrir aux liens revenait à « faire
-    // afficher n'importe quelle adresse dans l'application ».
-    expect(resolveDeepLink('https://ayrovi.tn/aywebs/browser?url=https://n-importe-quoi.tn')).not.toContain('browser');
   });
 
   it('un préfixe ne colle pas au milieu d’un segment', () => {

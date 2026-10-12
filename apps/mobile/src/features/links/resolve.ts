@@ -13,7 +13,7 @@ import { DEEP_LINK_SCHEME } from '@/config/deepLinks';
  *    ne navigue pas : il est ignoré, sans message d'erreur (l'utilisateur
  *    n'a rien demandé, il n'a rien à comprendre).
  *
- * 2. **Aucun lien profond n'ouvre la vue Web marchande.** `aywebs/browser`
+ * 2. **Aucun lien profond n'ouvre la vue Web marchande.** `browser`
  *    prend une URL en paramètre ; l'exposer aux liens profonds
  *    transformait n'importe quel lien en « ouvrir cette adresse dans
  *    l'application ». Cette écran reste accessible uniquement de l'intérieur.
@@ -64,13 +64,6 @@ const ROUTES: { prefix: string; route: string | ((rest: string) => string | null
   { prefix: '/checkout', route: '/checkout' },
   { prefix: '/panier', route: '/(tabs)/cart' },
   { prefix: '/cart', route: '/(tabs)/cart' },
-  { prefix: '/lens/scan', route: '/(tabs)/lens?mode=live' },
-  { prefix: '/lens/ocerex', route: '/(tabs)/lens?layer=ocerex' },
-  { prefix: '/lens/watches', route: '/lens/watches' },
-  { prefix: '/lens', route: '/(tabs)/lens' },
-  { prefix: '/aywebs', route: '/(tabs)/aywebs' },
-  { prefix: '/assistant', route: '/assistant' },
-  { prefix: '/sonim', route: '/assistant' },
   { prefix: '/account/notifications', route: '/account/notifications' },
   { prefix: '/account/addresses', route: '/account/addresses' },
   { prefix: '/account/favorites', route: '/account/favorites' },

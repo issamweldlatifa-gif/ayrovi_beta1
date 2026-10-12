@@ -17,7 +17,7 @@ export function SheetBackdrop({ opacity, onPress }: SheetBackdropProps) {
     <Animated.View style={[StyleSheet.absoluteFill, styles.scrim, { opacity }]}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={t('lens.close')}
+        accessibilityLabel={t('sheet.close')}
         onPress={onPress}
         style={StyleSheet.absoluteFill}
       />

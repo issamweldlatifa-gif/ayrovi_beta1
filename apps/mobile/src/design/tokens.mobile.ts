@@ -383,7 +383,7 @@ export function derivedColors(colors: DerivablePalette) {
      * sombre, blanc en clair) alors que l'accent, lui, ne change JAMAIS :
      * `#FF7900` dans les deux modes. Utiliser `onAction` rendrait le texte
      * blanc sur orange en mode clair — c'est-à-dire illisible, exactement le
-     * défaut que deux composants avaient déjà (BrandMark, SonimMark).
+     * défaut qu'un composant avait déjà (BrandMark).
      *
      * Le contraste se mesure sur le SUPPORT réel, pas sur le thème.
      */

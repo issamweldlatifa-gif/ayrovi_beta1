@@ -322,7 +322,6 @@ export const CHECKOUT_LOCAL_REFUSALS: Record<string, string> = {
 /** أكواد رفض الخادم اللي نعرفوهم — والكود المجهول يبقى يبان. */
 export const CHECKOUT_SERVER_REFUSALS: Record<string, string> = {
   PRICE_VERIFICATION_REQUIRED: 'checkout.refusal.PRICE_VERIFICATION_REQUIRED',
-  AYWEBS_SOURCE_VERIFICATION_REQUIRED: 'checkout.refusal.AYWEBS_SOURCE_VERIFICATION_REQUIRED',
   CONTACT_VERIFICATION_REQUIRED: 'checkout.refusal.CONTACT_VERIFICATION_REQUIRED',
   VERIFIED_EMAIL_REQUIRED: 'checkout.refusal.VERIFIED_EMAIL_REQUIRED',
   CHECKOUT_EMAIL_INVALID: 'checkout.refusal.CHECKOUT_EMAIL_INVALID',

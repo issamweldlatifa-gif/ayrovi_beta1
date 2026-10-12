@@ -39,13 +39,13 @@ import {
   availablePaymentChoices, checkoutRefusalText, fetchCommercePolicy, initiateCardPayment, paymentChoices,
   refuseCheckout, resolvePaymentMethod, submitCheckout, type CheckoutResult,
 } from '@/api/checkout';
-import { useAyWebsSessionId } from '@/features/aywebs/session';
+import { useSessionId } from '@/session/session';
 import { useSession } from '@/state/session';
 
 export default function CheckoutScreen() {
   const theme = useTheme();
   const { t, locale } = useI18n();
-  const sessionId = useAyWebsSessionId();
+  const sessionId = useSessionId();
   const session = useSession();
   const queryClient = useQueryClient();
 

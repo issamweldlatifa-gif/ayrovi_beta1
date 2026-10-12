@@ -17,7 +17,7 @@ import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
 import { fetchComments, sendInteraction, type SocialComment } from '@/api/social';
 import { useSession } from '@/state/session';
-import { useAyWebsSessionId } from '@/features/aywebs/session';
+import { useSessionId } from '@/session/session';
 
 export interface CommentsProps {
   targetId: string;
@@ -27,7 +27,7 @@ export function Comments({ targetId }: CommentsProps) {
   const theme = useTheme();
   const t = useT();
   const session = useSession();
-  const guestSession = useAyWebsSessionId();
+  const guestSession = useSessionId();
   const queryClient = useQueryClient();
   const signedIn = session.status === 'signedIn';
 

@@ -3,9 +3,6 @@
  *
  * Aucune image importée, aucun SVG externe : un carré à l'accent de la marque,
  * la lettre « A » (l'identité officielle est « AYROVI A »), et le nom à côté.
- * C'est VOLONTAIREMENT la même famille graphique que `SonimMark` : deux marques
- * d'un même produit doivent se ressembler, sinon ce n'est plus un système de
- * design mais deux dessins qui cohabitent.
  *
  * Contraste mesuré, pas goûté : sur `#FF7900`, le blanc tient ≈ 3:1 — seuil
  * NON-TEXTUEL. Un « A » est un signe, pas une phrase : c'est acceptable pour

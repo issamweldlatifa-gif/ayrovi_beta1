@@ -476,9 +476,8 @@ const styles = StyleSheet.create({
 /* ── Tiroir latéral (menu) ─────────────────────────────────────────────────── */
 
 /**
- * Un tiroir — pas une bibliothèque, pas un « au cas où » : SONIM en a besoin
- * pour son menu (nouvelle discussion · historique · ma commande · AYROVIX ·
- * réglages), et aucun écran n'avait encore de menu latéral.
+ * Un tiroir — pas une bibliothèque, pas un « au cas où » : il sert au menu
+ * latéral de l'application.
  *
  * Choix délibéré : `Animated` de React Native, PAS Reanimated. Reanimated
  * exige un greffon Babel que ce projet n'a pas (pas de `babel.config.js`) ;

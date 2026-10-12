@@ -7,7 +7,7 @@
  *
  * ── Le menu ────────────────────────────────────────────────────────────────
  * Le tiroir regroupe des destinations réellement câblées (Accueil, Catalogue,
- * Commandes, Compte et SONIM). Aucun élément décoratif n’est rendu cliquable.
+ * Commandes et Compte). Aucun élément décoratif n’est rendu cliquable.
  */
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -149,7 +149,6 @@ export function AppHeader({
           <DrawerItem icon="compass-outline" label={t('catalog.title')} onPress={() => go('/catalog')} />
           <DrawerItem icon="receipt-outline" label={t('orders.title')} onPress={() => go('/orders')} />
           <DrawerItem icon="person-outline" label={t('tabs.account')} onPress={() => go(accountHref)} />
-          <DrawerItem icon="chatbubble-ellipses-outline" label={t('tabs.sonim')} onPress={() => go('/assistant')} />
         </View>
 
         {/* Réglages d'affichage : langue et thème, dans le menu (plus sur la page compte). */}

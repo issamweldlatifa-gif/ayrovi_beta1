@@ -1,15 +1,10 @@
 /**
- * Barre du bas — les quatre OUTILS et le Profil.
+ * Barre du bas — Profil seul pour l’instant.
  *
- * ── Ce qui a changé, et pourquoi ───────────────────────────────────────────
- * La barre porte désormais : Lens · AYWEBs · SONIM · Vision · Profil. OCEREX
- * n’y figure plus (route conservée, sans fusion avec Lens). L’accueil se
- * atteint par le LOGO de l’en-tête, le panier par son icône, les notifications
- * par la cloche.
- *
- * `index` (l’accueil) et les anciens onglets Compte/Panier restent donc des
- * routes — le tiroir et l’en-tête pointent dessus — mais sont retirés de la
- * barre avec `href: null`. Un onglet masqué n’est pas un onglet supprimé : les
+ * L’accueil se atteint par le LOGO de l’en-tête, le panier par son icône, les
+ * notifications par la cloche. `index` (l’accueil) et `cart` restent des routes
+ * — le tiroir et l’en-tête pointent dessus — mais sont retirées de la barre
+ * avec `href: null`. Un onglet masqué n’est pas un onglet supprimé : les
  * liens existants continuent de fonctionner, ce qui évite de casser l’existant
  * pour un changement de navigation.
  *
@@ -57,7 +52,7 @@ export default function TabsLayout() {
       /**
        * Accueil = racine de toutes les barres. Le retour (bouton Android ou
        * flèche) depuis un onglet ramène à l'accueil, pas au dernier onglet
-       * visité : sans cela, on revenait à Lens depuis SONIM.
+       * visité : sans cela, le retour pouvait ramener à un onglet précédent.
        */
       initialRouteName="index"
       backBehavior="initialRoute"
@@ -86,8 +81,6 @@ export default function TabsLayout() {
            */
           paddingBottom: insets.bottom,
           height: theme.chrome.tabBar + insets.bottom,
-          // En arabe, le premier outil est à DROITE : un utilisateur arabophone
-          // ne cherche pas « Lens » à gauche.
           ...(theme.isRTL ? { direction: 'rtl' as const } : null),
           // Masquée : hauteur à zéro, PAS un simple `translateY` — glisser la
           // barre hors de l’écran laisserait une bande vide en bas, et le
@@ -107,12 +100,8 @@ export default function TabsLayout() {
         },
       })}
     >
-      {/* Barre : Lens · AYWEBs · SONIM · Vision · Profil. Ordre voulu ; en RTL
-          la barre se lit de droite à gauche, Lens reste le premier. */}
+      {/* Barre : Profil. */}
       <Tabs.Screen name="account" options={{ title: t('tabs.account') }} />
-
-      {/* OCEREX retiré de la barre : la route reste déclarée (aucune fusion
-          avec Lens), elle n’est simplement plus un onglet. */}
 
       {/* Route conservée, retirée de la barre : l’accueil s’atteint par le logo. */}
       <Tabs.Screen name="index" options={{ href: null }} />

@@ -23,7 +23,7 @@ import { mediaUrl } from '@/api/client';
 import { AppImage } from '@/design/appImage';
 import { useSession } from '@/state/session';
 import { sendInteraction, type Reel } from '@/api/social';
-import { useAyWebsSessionId } from '@/features/aywebs/session';
+import { useSessionId } from '@/session/session';
 
 export interface ReelCardProps {
   reel: Reel;
@@ -42,7 +42,7 @@ export function ReelCard({ reel, active, counts, onOpenComments, fill }: ReelCar
   const theme = useTheme();
   const t = useT();
   const session = useSession();
-  const guestSession = useAyWebsSessionId();
+  const guestSession = useSessionId();
   const signedIn = session.status === 'signedIn';
   // En plein écran le texte est posé sur la vidéo : blanc, pas la couleur de carte.
   const ink = fill ? theme.colors.onMedia : theme.colors.ink;

@@ -650,7 +650,7 @@ export async function fetchFavorites(options?: RequestOptions): Promise<Favorite
 }
 
 /**
- * مفضّلة من نتيجة Lens (ما عندهاش productId): نبعثو المصدر والعنوان والصورة فقط.
+ * مفضّلة من نتيجة بحث بلا productId: نبعثو المصدر والعنوان والصورة فقط.
  * السعر ما يتبعثش من التطبيق — الخادم يحفظ ما يرسله هو.
  */
 export async function addExternalFavorite(

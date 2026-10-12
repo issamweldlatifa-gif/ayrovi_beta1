@@ -11,7 +11,6 @@ import { I18nProvider } from '../../src/i18n';
 import { PrefsProvider } from '../../src/state/prefs';
 import { AppSheet } from '../../src/design/sheet/AppSheet';
 import { SheetHeader } from '../../src/design/sheet/SheetHeader';
-import { LensHelp } from '../../src/features/lens/LensHelp';
 
 const METRICS = {
   frame: { x: 0, y: 0, width: 390, height: 844 },
@@ -59,13 +58,3 @@ describe('AppSheet', () => {
   });
 });
 
-describe('مسار زر «?» داخل Lens', () => {
-  it('درج المساعدة يُرسم بمحتواه دون خطأ', () => {
-    render(
-      <Providers>
-        <LensHelp open onClose={() => undefined} onClosed={() => undefined} />
-      </Providers>,
-    );
-    expect(screen.getAllByRole('button').length).toBeGreaterThan(0);
-  });
-});

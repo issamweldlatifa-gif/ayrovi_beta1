@@ -26,7 +26,7 @@ export function SheetHeader({ title, subtitle, onClose }: SheetHeaderProps) {
       </View>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={t('lens.close')}
+        accessibilityLabel={t('sheet.close')}
         onPress={onClose}
         hitSlop={8}
         style={({ pressed }) => [styles.close, { opacity: pressed ? 0.6 : 1 }]}
