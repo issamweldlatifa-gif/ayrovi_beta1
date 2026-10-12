@@ -6,6 +6,7 @@ const base: LensCandidate = {
   id: '1', kind: 'external', title: 't', promo: null, description: null, brand: null, model: null,
   colors: [], sizes: [], source: 's', sourceUrl: 'https://a.example/1', image: '', images: [], colorImages: null,
   price: null, currency: null, priceTnd: null, availability: 'unknown',
+  priceToken: null, priceVerificationStatus: 'PENDING_MANUAL', variantOptions: [],
 };
 
 describe('Lens — vue', () => {

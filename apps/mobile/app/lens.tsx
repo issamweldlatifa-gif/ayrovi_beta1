@@ -32,12 +32,16 @@ import {
   availabilityKey, isOpenableSourceUrl, priceView, uniqueCandidates,
 } from '@/features/lens/lensView';
 import { OcerexFlow } from '@/features/lens/ocerex/OcerexFlow';
+import { LensProductView } from '@/features/lens/LensProductView';
 
 type Mode = 'camera' | 'code' | 'text';
+type ResultsStage = { kind: 'results'; candidates: LensCandidate[]; eventId: string; excluded: number };
+
 type Stage =
   | { kind: 'idle' }
   | { kind: 'busy' }
-  | { kind: 'results'; candidates: LensCandidate[]; eventId: string; excluded: number }
+  | ResultsStage
+  | { kind: 'product'; candidate: LensCandidate; back: ResultsStage }
   | { kind: 'error'; error: unknown };
 
 const CODE_TYPES = ['qr', 'ean13', 'ean8', 'upc_a', 'upc_e', 'code128'] as const;
@@ -131,10 +135,12 @@ export default function LensScreen() {
     });
   }, [run, showSearch]);
 
-  const onOpen = useCallback(async (candidate: LensCandidate) => {
+  // نتيجة Lens تفتح صفحة المنتج داخل التطبيق (السعر والمقاس والكمية والطلب).
+  const onOpen = useCallback((candidate: LensCandidate) => {
     if (!isOpenableSourceUrl(candidate.sourceUrl)) return;
-    if (stage.kind === 'results') markChosen(stage.eventId);
-    await WebBrowser.openBrowserAsync(candidate.sourceUrl);
+    if (stage.kind !== 'results') return;
+    markChosen(stage.eventId).catch(() => undefined);
+    setStage({ kind: 'product', candidate, back: stage });
   }, [stage]);
 
   const onFavorite = useCallback(async (candidate: LensCandidate) => {
@@ -170,6 +176,19 @@ export default function LensScreen() {
     scanLock.current = false;
     setStage({ kind: 'idle' });
   }, []);
+
+  if (stage.kind === 'product') {
+    return (
+      <SubScreen title={t('lens.title')} subtitle={t('lens.subtitle')} fallback="/">
+        <View style={styles.wrap}>
+          <LensProductView
+            candidate={stage.candidate}
+            onBack={() => setStage(stage.back)}
+          />
+        </View>
+      </SubScreen>
+    );
+  }
 
   if (ocerexOpen) {
     return (

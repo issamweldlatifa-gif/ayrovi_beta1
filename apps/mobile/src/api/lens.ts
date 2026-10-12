@@ -23,6 +23,20 @@ export interface LensPromo {
   priceTnd: number | null;
 }
 
+export interface LensVariantOption {
+  id: string | null;
+  label: string;
+  size: string | null;
+  color: string | null;
+  /** مؤهّل لاختيار خاص بالمتغيّر (ليس ضماناً للمخزون). */
+  available: boolean;
+  availability: 'available' | 'unavailable' | 'unknown';
+  price: number | null;
+  currency: string | null;
+  priceTnd: number | null;
+  priceToken: string | null;
+}
+
 export interface LensCandidate {
   id: string;
   kind: 'catalog' | 'external';
@@ -42,6 +56,11 @@ export interface LensCandidate {
   currency: string | null;
   priceTnd: number | null;
   availability: LensAvailability;
+  /** رمز سعر موقّع من الخادم. التطبيق لا يصنعه أبداً. */
+  priceToken: string | null;
+  /** VERIFIED فقط مع رمز موقّع؛ غير ذلك PENDING_MANUAL. */
+  priceVerificationStatus: 'VERIFIED' | 'PENDING_MANUAL';
+  variantOptions: LensVariantOption[];
 }
 
 export interface LensIdentification {
@@ -167,7 +186,30 @@ export function parseCandidate(value: unknown): LensCandidate {
     currency: strOrNull(value.currency),
     priceTnd: num(value.priceTnd),
     availability: availability(value.availability),
+    priceToken: strOrNull(value.priceToken),
+    priceVerificationStatus: value.priceVerificationStatus === 'VERIFIED' && strOrNull(value.priceToken)
+      ? 'VERIFIED'
+      : 'PENDING_MANUAL',
+    variantOptions: parseVariantOptions(value.variantOptions),
   };
+}
+
+function parseVariantOptions(value: unknown): LensVariantOption[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(isRecord).map((option) => ({
+    id: strOrNull(option.id),
+    label: str(option.label),
+    size: strOrNull(option.size),
+    color: strOrNull(option.color),
+    available: option.available === true,
+    availability: option.availability === 'available' || option.availability === 'unavailable'
+      ? option.availability
+      : 'unknown',
+    price: num(option.price),
+    currency: strOrNull(option.currency),
+    priceTnd: num(option.priceTnd),
+    priceToken: strOrNull(option.priceToken),
+  }));
 }
 
 const parseCandidates = (value: unknown): LensCandidate[] =>

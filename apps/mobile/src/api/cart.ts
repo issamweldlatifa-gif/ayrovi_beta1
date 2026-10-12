@@ -14,7 +14,7 @@
  *    (`PRICE_VERIFICATION_REQUIRED`) — نقولوها قبل الضغطة، موش بعدها.
  */
 import { ApiError } from './errors';
-import { apiGetEnvelope, apiSendEnvelope, type RequestOptions } from './client';
+import { apiGetEnvelope, apiSend, apiSendEnvelope, type RequestOptions } from './client';
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -237,3 +237,24 @@ export const AYROVI_PRICE_TRUST_REASONS: Record<string, string> = {
   TOKEN_VALID: 'FRESH',
   LEGACY_RECENT: 'FRESH',
 };
+
+/**
+ * إضافة منتج من متجر خارجي (نتيجة Lens) إلى سلة Ayrovi: `POST /api/cart/items`.
+ * الخادم يحكم على السعر والرمز والتوفر؛ الرفض يصل بكوده وسببه (400/409).
+ */
+export async function addExternalToCart(
+  payload: import('@/features/lens/productOrder').ExternalCartPayload,
+  options: RequestOptions = {},
+): Promise<CatalogCartResult> {
+  const { data } = await apiSend<unknown>('POST', '/api/cart/items', { ...options, body: payload });
+  if (!isRecord(data) || data.success !== true) {
+    throw new ApiError('malformed', 'Réponse panier illisible.');
+  }
+  const cartItem = isRecord(data.cartItem) ? data.cartItem : {};
+  return {
+    cartItemId: str(cartItem.id),
+    totalItemsCount: num(data.totalItemsCount) ?? 0,
+    totalTND: num(data.totalTND) ?? 0,
+    deliveryTND: num(data.deliveryTND) ?? 0,
+  };
+}
