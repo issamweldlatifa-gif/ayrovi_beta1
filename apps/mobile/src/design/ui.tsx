@@ -10,6 +10,7 @@ import {
   type LayoutChangeEvent, type ViewStyle,
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import LensGlyph from '@/design/LensGlyph';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, webDirection, type FontWeightName, type TextRole } from './theme';
 import { actionDirectionFor, responsiveMetricsFor, rowDirectionFor } from './layoutLogic';
@@ -568,7 +569,7 @@ export function Drawer({ visible, onClose, children, side = 'start' }: DrawerPro
 export function DrawerItem({
   icon, label, hint, onPress, active = false,
 }: {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: keyof typeof Ionicons.glyphMap | 'ayrovi-lens';
   label: string;
   hint?: string;
   onPress: () => void;
@@ -591,12 +592,16 @@ export function DrawerItem({
         },
       ]}
     >
-      <Ionicons
-        name={icon}
-        size={22}
-        color={active ? theme.colors.accent : theme.colors.ink}
-        accessibilityElementsHidden
-      />
+      {icon === 'ayrovi-lens' ? (
+        <LensGlyph size={22} color={active ? theme.colors.accent : theme.colors.ink} />
+      ) : (
+        <Ionicons
+          name={icon}
+          size={22}
+          color={active ? theme.colors.accent : theme.colors.ink}
+          accessibilityElementsHidden
+        />
+      )}
       <View style={{ flex: 1, gap: 2 }}>
         <AppText variant="label" weight={active ? 'bold' : 'regular'} color={theme.colors.ink}>{label}</AppText>
         {hint ? <AppText variant="caption" color={theme.colors.muted}>{hint}</AppText> : null}

@@ -37,7 +37,6 @@ import LensGlyph from '@/design/LensGlyph';
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
 const ICONS: Record<string, { active: IoniconName; inactive: IoniconName }> = {
-  lens: { active: 'scan-circle', inactive: 'scan-circle-outline' },
   aywebs: { active: 'pricetags', inactive: 'pricetags-outline' },
   sonim: { active: 'chatbubble-ellipses', inactive: 'chatbubble-ellipses-outline' },
   vision: { active: 'eye', inactive: 'eye-outline' },
@@ -102,7 +101,7 @@ export default function TabsLayout() {
         tabBarIcon: ({ focused, color, size }) => {
           // Lens : icône officielle (viseur + point orange), pas le glyphe générique.
           if (route.name === 'lens') return <LensGlyph size={size ?? 24} color={String(color)} />;
-          const pair = ICONS[route.name] ?? ICONS.lens;
+          const pair = ICONS[route.name] ?? ICONS.aywebs;
           return <Ionicons name={focused ? pair.active : pair.inactive} size={size ?? 24} color={color} />;
         },
       })}

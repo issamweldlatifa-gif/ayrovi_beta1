@@ -93,7 +93,7 @@ export function SonimMenu({ visible, onClose, onNewChat, onOpenThread, threads }
       <View style={[styles.separator, { backgroundColor: theme.colors.divider }]} />
 
       <DrawerItem icon="receipt-outline" label={t('sonim.menu.order')} onPress={() => go('/orders')} />
-      <DrawerItem icon="scan-outline" label={t('sonim.menu.ayrovix')} hint={t('sonim.menu.ayrovixHint')} onPress={() => go('/lens/scan')} />
+      <DrawerItem icon="ayrovi-lens" label={t('sonim.menu.ayrovix')} hint={t('sonim.menu.ayrovixHint')} onPress={() => go('/lens/scan')} />
       <DrawerItem icon="settings-outline" label={t('sonim.menu.settings')} onPress={() => go('/account/preferences')} />
     </Drawer>
   );

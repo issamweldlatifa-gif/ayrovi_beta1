@@ -5,11 +5,13 @@
  * (grille 24×24, trait 1.286). Généré : ne pas éditer les coordonnées à la main.
  */
 import Svg, { Circle, Path } from 'react-native-svg';
+import { useTheme } from '@/design/theme';
 
 export type LensGlyphProps = {
   size?: number;
+  /** Trait. Par défaut : `theme.colors.ink`. */
   color?: string;
-  /** Couleur du point signature. Par défaut orange AYROVI. */
+  /** Point signature. Par défaut : `theme.colors.accent` (orange de l'identité). */
   accentColor?: string;
 };
 
@@ -22,14 +24,17 @@ const PATHS = [
 const LENS_CIRCLE = { cx: 11.711, cy: 11.951, r: 5.159 };
 const SIGNATURE_DOT = { cx: 18.138, cy: 4.283, r: 2.78 };
 
-export default function LensGlyph({ size = 24, color = '#111827', accentColor = '#FF6A00' }: LensGlyphProps) {
+export default function LensGlyph({ size = 24, color, accentColor }: LensGlyphProps) {
+  const theme = useTheme();
+  const ink = color ?? theme.colors.ink;
+  const accent = accentColor ?? theme.colors.accent;
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" accessibilityElementsHidden importantForAccessibility="no">
       {PATHS.map((d, i) => (
-        <Path key={i} d={d} stroke={color} strokeWidth={1.286} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        <Path key={i} d={d} stroke={ink} strokeWidth={1.286} strokeLinecap="round" strokeLinejoin="round" fill="none" />
       ))}
-      <Circle cx={LENS_CIRCLE.cx} cy={LENS_CIRCLE.cy} r={LENS_CIRCLE.r} stroke={color} strokeWidth={1.286} fill="none" />
-      <Circle cx={SIGNATURE_DOT.cx} cy={SIGNATURE_DOT.cy} r={SIGNATURE_DOT.r} fill={accentColor} />
+      <Circle cx={LENS_CIRCLE.cx} cy={LENS_CIRCLE.cy} r={LENS_CIRCLE.r} stroke={ink} strokeWidth={1.286} fill="none" />
+      <Circle cx={SIGNATURE_DOT.cx} cy={SIGNATURE_DOT.cy} r={SIGNATURE_DOT.r} fill={accent} />
     </Svg>
   );
 }
