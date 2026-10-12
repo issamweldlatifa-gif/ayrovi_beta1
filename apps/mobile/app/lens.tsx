@@ -31,6 +31,7 @@ import {
 import {
   availabilityKey, isOpenableSourceUrl, priceView, uniqueCandidates,
 } from '@/features/lens/lensView';
+import { OcerexFlow } from '@/features/lens/ocerex/OcerexFlow';
 
 type Mode = 'camera' | 'code' | 'text';
 type Stage =
@@ -52,6 +53,7 @@ export default function LensScreen() {
   const [text, setText] = useState('');
   const [favorited, setFavorited] = useState<Record<string, true>>({});
   const [favoriteNote, setFavoriteNote] = useState<TranslationKey | null>(null);
+  const [ocerexOpen, setOcerexOpen] = useState(false);
   const cameraRef = useRef<CameraView>(null);
   const scanLock = useRef(false);
   const history = useQuery({ queryKey: ['lens', 'history'], queryFn: () => fetchLensHistory(), staleTime: 30_000 });
@@ -169,6 +171,16 @@ export default function LensScreen() {
     setStage({ kind: 'idle' });
   }, []);
 
+  if (ocerexOpen) {
+    return (
+      <SubScreen title={t('lens.title')} subtitle={t('ocerex.subtitle')} fallback="/">
+        <View style={styles.wrap}>
+          <OcerexFlow onClose={() => setOcerexOpen(false)} />
+        </View>
+      </SubScreen>
+    );
+  }
+
   const modeOptions: { value: Mode; label: string }[] = [
     { value: 'camera', label: t('lens.modeCamera') },
     { value: 'code', label: t('lens.modeCode') },
@@ -178,6 +190,26 @@ export default function LensScreen() {
   return (
     <SubScreen title={t('lens.title')} subtitle={t('lens.subtitle')} fallback="/">
       <View style={styles.wrap}>
+        {stage.kind === 'idle' ? (
+          <Pressable
+            onPress={() => setOcerexOpen(true)}
+            accessibilityRole="button"
+            accessibilityLabel={t('ocerex.open')}
+            hitSlop={HIT_SLOP}
+            testID="lens-open-ocerex"
+          >
+            <Card>
+              <View style={styles.row}>
+                <Ionicons name="camera-outline" size={24} color={theme.colors.ink} />
+                <View style={styles.rowText}>
+                  <AppText>{t('ocerex.open')}</AppText>
+                  <AppText variant="caption" color={theme.colors.muted}>{t('ocerex.openHint')}</AppText>
+                </View>
+              </View>
+            </Card>
+          </Pressable>
+        ) : null}
+
         {stage.kind === 'idle' ? (
           <Segmented options={modeOptions} value={mode} onChange={(next) => { setMode(next); reset(); }} />
         ) : null}

@@ -15,16 +15,19 @@ export type ThemeMode = 'system' | 'light' | 'dark';
 export interface Prefs {
   locale: Locale;
   themeMode: ThemeMode;
+  /** L'intro OCEREX n'est montrée qu'une fois (comme sur le site). */
+  ocerexOnboarded: boolean;
 }
 
 const STORAGE_KEY = 'ayrovi.prefs.v1';
-const DEFAULTS: Prefs = { locale: 'fr', themeMode: 'system' };
+const DEFAULTS: Prefs = { locale: 'fr', themeMode: 'system', ocerexOnboarded: false };
 
 interface PrefsValue extends Prefs {
   /** false tant que le disque n'a pas répondu : on ne peint pas avant. */
   ready: boolean;
   setLocale: (locale: Locale) => void;
   setThemeMode: (mode: ThemeMode) => void;
+  setOcerexOnboarded: (value: boolean) => void;
 }
 
 const PrefsContext = createContext<PrefsValue | null>(null);
@@ -47,6 +50,7 @@ export function PrefsProvider({ children }: { children: ReactNode }) {
           setPrefs({
             locale: isLocale(parsed.locale) ? parsed.locale : DEFAULTS.locale,
             themeMode: isThemeMode(parsed.themeMode) ? parsed.themeMode : DEFAULTS.themeMode,
+            ocerexOnboarded: parsed.ocerexOnboarded === true,
           });
         }
       } catch {
@@ -71,6 +75,7 @@ export function PrefsProvider({ children }: { children: ReactNode }) {
     ready,
     setLocale: (locale) => persist({ ...prefs, locale }),
     setThemeMode: (themeMode) => persist({ ...prefs, themeMode }),
+    setOcerexOnboarded: (ocerexOnboarded) => persist({ ...prefs, ocerexOnboarded }),
   }), [prefs, ready, persist]);
 
   return <PrefsContext.Provider value={value}>{children}</PrefsContext.Provider>;
