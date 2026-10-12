@@ -3,6 +3,8 @@
  *
  * Usage (la clé vient UNIQUEMENT de l'environnement, jamais d'un argument ni d'un fichier) :
  *   SERPAPI_KEY=... npx tsx scripts/lens-probe.ts <dossier-de-sortie> <image1.jpg> [image2.jpg ...]
+ * Usage sans clé (liens directs, un par ligne) :
+ *   npx tsx scripts/lens-probe.ts --urls <dossier-de-sortie> <liens.txt>
  *
  * Sortie : un rapport JSON (sans aucune clé) + un résumé sur la console.
  * Chaque candidat reçoit un verdict : prix lu, ou échec avec son code (page_non_lue, HTTP, etc.).
@@ -52,12 +54,17 @@ async function withTimeout<T>(task: Promise<T>, ms: number): Promise<T> {
 }
 
 async function main(): Promise<void> {
-  const [outDirArg, ...images] = process.argv.slice(2);
+  const argv = process.argv.slice(2);
+  // Mode « liens directs » : aucune clé requise. Lit un fichier de liens (un par ligne)
+  // et mesure uniquement la lecture des pages marchandes.
+  const urlMode = argv[0] === '--urls';
+  const [outDirArg, ...images] = urlMode ? argv.slice(1) : argv;
   if (!outDirArg || images.length === 0) {
-    console.error('Usage: SERPAPI_KEY=... npx tsx scripts/lens-probe.ts <dossier-de-sortie> <image...>');
+    console.error('Usage (photo) : SERPAPI_KEY=... npx tsx scripts/lens-probe.ts <dossier-de-sortie> <image...>');
+    console.error('Usage (liens) : npx tsx scripts/lens-probe.ts --urls <dossier-de-sortie> <liens.txt>');
     process.exit(2);
   }
-  if (!serpApiVisualReady()) {
+  if (!urlMode && !serpApiVisualReady()) {
     console.error('SERPAPI_KEY absent de l\'environnement : rien n\'a été exécuté.');
     process.exit(3);
   }
@@ -68,12 +75,19 @@ async function main(): Promise<void> {
 
   for (const imagePath of images) {
     const name = path.basename(imagePath);
-    let candidates: Awaited<ReturnType<typeof serpApiVisualSearch>> = [];
-    try {
-      candidates = await serpApiVisualSearch(fs.readFileSync(imagePath), 24);
-    } catch (error: any) {
-      searchFailures.push({ image: name, error: String(error?.message || error).slice(0, 120) });
-      continue;
+    let candidates: Array<{ sourceUrl: string; source: string; kind: string }> = [];
+    if (urlMode) {
+      candidates = fs.readFileSync(imagePath, 'utf8').split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line) => /^https?:\/\//i.test(line))
+        .map((url) => ({ sourceUrl: url, source: hostOf(url), kind: 'direct' }));
+    } else {
+      try {
+        candidates = await serpApiVisualSearch(fs.readFileSync(imagePath), 24);
+      } catch (error: any) {
+        searchFailures.push({ image: name, error: String(error?.message || error).slice(0, 120) });
+        continue;
+      }
     }
     const targets = candidates.filter((item) => /^https?:\/\//i.test(item.sourceUrl || ''));
     console.log(`[${name}] ${candidates.length} candidats, ${targets.length} avec page http(s)`);
