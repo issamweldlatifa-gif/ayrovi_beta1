@@ -1,21 +1,19 @@
 /**
- * بطاقة نتيجة Lens في التطبيق — هي نفسها بطاقة المتجر (`ProductCard`) بعرض كامل،
- * مع ما يخص Lens فقط: التحقق من المخزون مباشرة من المصدر، والثقة، والسعر الأصلي،
- * وزر مراقبة السعر.
+ * بطاقة نتيجة Lens (المرجع 03): الصورة مع القلب في الزاوية واللافتات في الأسفل،
+ * ثم العلامة والعنوان والسعر بالدينار (أحمر). كل رقم وكل لافتة من الخادم فقط.
  *
- * كل الأرقام تجي من الخادم. ما نحسبوش شي هنا، ومخزون ما تأكدش ما يتقالش «متوفر».
+ * تحت البطاقة: الثقة، والتحقق من المخزون مباشرة من المصدر، ومراقبة السعر (كما في الخطة §3.4).
  */
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { lensLiveStock, type LensCandidate } from '@/api/lens';
-import { ProductCard } from '@/features/catalog/ProductCard';
-import { AppText, Button, KeyValue } from '@/design/ui';
+import { AppImage } from '@/design/appImage';
+import { AppText, Button } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
 
-import { candidateToProduct } from './candidateToProduct';
 import { lensCardState } from './lensCardState';
 
 export interface LensResultCardProps {
@@ -89,80 +87,110 @@ export function LensResultCard({
     return `${availabilityText(stock.availability)} · ${t('lens.stockChecked', { time })}`;
   })();
 
+  const priceLine = view.priceTnd !== null
+    ? `${view.priceFrom ? `${t('lens.priceFrom')} ` : ''}${view.priceTnd.toFixed(2)} DT`
+    : t('catalog.noPrice');
+
   return (
-    <View style={styles.wrap}>
-      {onToggleFavorite ? (
-        <View style={styles.topRow}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={favorite ? t('lens.favoriteRemove') : t('lens.favoriteAdd')}
-            accessibilityState={{ selected: favorite, busy: favoriteBusy }}
-            disabled={favoriteBusy}
-            onPress={() => onToggleFavorite(candidate)}
-            style={[styles.heart, { borderColor: theme.colors.line, borderRadius: theme.radius.control }]}
-          >
-            <Ionicons name={favorite ? 'heart' : 'heart-outline'} size={20} color={favorite ? theme.status.danger.fg : theme.colors.ink} />
-          </Pressable>
-        </View>
-      ) : null}
-      <ProductCard
-        product={candidateToProduct(candidate)}
-        onOpen={() => onOpen(candidate)}
-        style={styles.full}
-        hasCombinations={candidate.colors.length > 0}
-        promo={view.promoBadge}
-      />
-      <KeyValue
-        label={t('lens.verification')}
-        value={candidate.verification === 'VERIFIED' ? t('lens.verified') : t('lens.pending')}
-      />
-      {view.wasPriceTnd !== null || view.discountPercent !== null ? (
-        <View style={styles.wasRow}>
-          {view.wasPriceTnd !== null ? (
-            <AppText variant="caption" color={theme.colors.muted}>
-              {t('lens.wasPrice', { price: view.wasPriceTnd.toFixed(2) })}
-            </AppText>
+    <View style={[styles.card, { borderColor: theme.colors.line, borderRadius: theme.radius.card, backgroundColor: theme.colors.canvas }]}>
+      <Pressable accessibilityRole="button" accessibilityLabel={candidate.title} onPress={() => onOpen(candidate)}>
+        <View style={[styles.media, { backgroundColor: theme.colors.surface }]}>
+          {candidate.image ? (
+            <AppImage uri={candidate.image} style={StyleSheet.absoluteFill} contentFit="contain" accessibilityLabel={candidate.title} />
           ) : null}
-          {view.discountPercent !== null ? (
-            <AppText variant="caption" weight="bold" color={theme.status.danger.fg}>
-              {`-${view.discountPercent}%`}
-            </AppText>
+          {onToggleFavorite ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={favorite ? t('lens.favoriteRemove') : t('lens.favoriteAdd')}
+              accessibilityState={{ selected: favorite, busy: favoriteBusy }}
+              disabled={favoriteBusy}
+              onPress={() => onToggleFavorite(candidate)}
+              style={[styles.heart, { backgroundColor: theme.colors.canvas, borderRadius: 20 }]}
+            >
+              <Ionicons name={favorite ? 'heart' : 'heart-outline'} size={20} color={favorite ? theme.status.danger.fg : theme.colors.ink} />
+            </Pressable>
+          ) : null}
+          <View style={styles.chips}>
+            {candidate.colors.length > 0 ? (
+              <View style={[styles.chip, { backgroundColor: theme.colors.canvas }]}>
+                <AppText variant="caption" color={theme.colors.ink} numberOfLines={1}>{t('lens.combinations')}</AppText>
+              </View>
+            ) : null}
+            {view.promoBadge ? (
+              <View style={[styles.chip, { backgroundColor: theme.status.danger.fg }]}>
+                <AppText variant="caption" weight="bold" color={theme.colors.canvas} numberOfLines={1}>{t('lens.promoBadge')}</AppText>
+              </View>
+            ) : null}
+          </View>
+        </View>
+
+        <View style={styles.text}>
+          {candidate.brand ? (
+            <AppText variant="label" weight="bold" numberOfLines={1}>{candidate.brand}</AppText>
+          ) : null}
+          <AppText variant="label" numberOfLines={2}>{candidate.title}</AppText>
+          {candidate.sizes.length > 0 ? (
+            <AppText variant="caption" color={theme.colors.muted} numberOfLines={1}>{candidate.sizes.join(' · ')}</AppText>
+          ) : null}
+          <AppText variant="label" weight="bold" color={view.priceTnd !== null ? theme.status.danger.fg : theme.colors.muted}>
+            {priceLine}
+          </AppText>
+          {view.wasPriceTnd !== null || view.discountPercent !== null ? (
+            <View style={styles.wasRow}>
+              {view.wasPriceTnd !== null ? (
+                <AppText variant="caption" color={theme.colors.muted}>
+                  {t('lens.wasPrice', { price: view.wasPriceTnd.toFixed(2) })}
+                </AppText>
+              ) : null}
+              {view.discountPercent !== null ? (
+                <AppText variant="caption" weight="bold" color={theme.status.danger.fg}>
+                  {`-${view.discountPercent}%`}
+                </AppText>
+              ) : null}
+            </View>
           ) : null}
         </View>
-      ) : null}
-      {candidate.offerCount > 1 ? (
+      </Pressable>
+
+      <View style={styles.footer}>
         <AppText variant="caption" color={theme.colors.muted}>
-          {t('lens.offerCount', { count: candidate.offerCount })}
+          {`${t('lens.verification')} : ${candidate.verification === 'VERIFIED' ? t('lens.verified') : t('lens.pending')}`}
         </AppText>
-      ) : null}
-      {candidate.priceOrigin === 'search' ? (
-        <AppText variant="caption" color={theme.colors.muted}>{t('lens.priceFromSearch')}</AppText>
-      ) : null}
-      <View style={styles.actions}>
-        {canVerify ? (
-          <Button
-            label={checking ? t('lens.verifyingStock') : t('lens.verifyStock')}
-            tone="quiet"
-            busy={checking}
-            onPress={() => void verifyStock()}
-          />
+        {candidate.priceOrigin === 'search' ? (
+          <AppText variant="caption" color={theme.colors.muted}>{t('lens.priceFromSearch')}</AppText>
         ) : null}
-        {onWatch ? (
-          <Button label={t('lens.watchThis')} tone="quiet" busy={watchBusy} onPress={() => onWatch(candidate)} />
+        <View style={styles.actions}>
+          {canVerify ? (
+            <Button
+              label={checking ? t('lens.verifyingStock') : t('lens.verifyStock')}
+              tone="quiet"
+              busy={checking}
+              onPress={() => void verifyStock()}
+            />
+          ) : null}
+          {onWatch ? (
+            <Button label={t('lens.watchThis')} tone="quiet" busy={watchBusy} onPress={() => onWatch(candidate)} />
+          ) : null}
+        </View>
+        {stockLine ? (
+          <AppText variant="caption" color={theme.colors.muted}>{stockLine}</AppText>
         ) : null}
       </View>
-      {stockLine ? (
-        <AppText variant="caption" color={theme.colors.muted}>{stockLine}</AppText>
-      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { marginTop: 10, gap: 4 },
-  full: { width: '100%', marginTop: 0 },
-  topRow: { flexDirection: 'row', justifyContent: 'flex-end' },
-  heart: { width: 40, height: 40, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },
-  wasRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  card: { borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
+  media: { width: '100%', aspectRatio: 0.85 },
+  heart: {
+    position: 'absolute', top: 8, right: 8, width: 40, height: 40,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  chips: { position: 'absolute', left: 8, bottom: 8, gap: 4, alignItems: 'flex-start' },
+  chip: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10, maxWidth: '100%' },
+  text: { padding: 10, gap: 4 },
+  wasRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  footer: { paddingHorizontal: 10, paddingBottom: 10, gap: 4 },
   actions: { flexDirection: 'row', gap: 8, marginTop: 6, flexWrap: 'wrap' },
 });

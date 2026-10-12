@@ -20,17 +20,17 @@ describe('حالة بطاقة Lens من ردّ الخادم', () => {
       originalPriceTnd: 100,
       promo: { percent: 20, label: 'Soldes', priceTnd: 80 },
     });
-    expect(lensCardState(candidate)).toEqual({ promoBadge: true, discountPercent: 20, wasPriceTnd: 100 });
+    expect(lensCardState(candidate)).toMatchObject({ promoBadge: true, discountPercent: 20, wasPriceTnd: 100 });
   });
 
   it('بلا promo ⇒ بلا شارة وبلا نسبة (حتى مع سعر مرجعي)', () => {
     const candidate = parseLensCandidate({ ...base, priceTnd: 80, originalPriceTnd: 100 });
-    expect(lensCardState(candidate)).toEqual({ promoBadge: false, discountPercent: null, wasPriceTnd: 100 });
+    expect(lensCardState(candidate)).toMatchObject({ promoBadge: false, discountPercent: null, wasPriceTnd: 100 });
   });
 
   it('بلا أي سعر مرجعي ⇒ لا يُخترع سعر مشطوب', () => {
     const candidate = parseLensCandidate({ ...base, priceTnd: 80 });
-    expect(lensCardState(candidate)).toEqual({ promoBadge: false, discountPercent: null, wasPriceTnd: null });
+    expect(lensCardState(candidate)).toMatchObject({ promoBadge: false, discountPercent: null, wasPriceTnd: null });
   });
 
   it('السعر المرجعي ليس أعلى من السعر ⇒ لا يُعرض', () => {
@@ -40,12 +40,19 @@ describe('حالة بطاقة Lens من ردّ الخادم', () => {
 
   it('promo بنسبة 0 ⇒ كأن العرض ما جاش', () => {
     const candidate = parseLensCandidate({ ...base, priceTnd: 80, promo: { percent: 0, label: '', priceTnd: 80 } });
-    expect(lensCardState(candidate)).toEqual({ promoBadge: false, discountPercent: null, wasPriceTnd: null });
+    expect(lensCardState(candidate)).toMatchObject({ promoBadge: false, discountPercent: null, wasPriceTnd: null });
   });
 
   it('خانة promo بنسبة لكن بلا سعر مرجعي ⇒ النسبة تظهر والسعر المشطوب لا', () => {
     const candidate = parseLensCandidate({ ...base, priceTnd: 80, promo: { percent: 15, label: 'Promo', priceTnd: 80 } });
-    expect(lensCardState(candidate)).toEqual({ promoBadge: true, discountPercent: 15, wasPriceTnd: null });
+    expect(lensCardState(candidate)).toMatchObject({ promoBadge: true, discountPercent: 15, wasPriceTnd: null });
+  });
+
+  it('«à partir de» فقط إذا أعلن الخادم أكثر من عرض', () => {
+    const one = parseLensCandidate({ ...base, priceTnd: 45.45, offerCount: 1 });
+    const many = parseLensCandidate({ ...base, priceTnd: 45.45, offerCount: 3 });
+    expect(lensCardState(one).priceFrom).toBe(false);
+    expect(lensCardState(many)).toMatchObject({ priceTnd: 45.45, priceFrom: true });
   });
 
   it('نتيجة التحليل بالصورة: كل فيشة تأخذ حالتها من ردّها', () => {

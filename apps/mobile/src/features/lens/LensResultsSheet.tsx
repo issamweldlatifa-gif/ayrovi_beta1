@@ -1,22 +1,21 @@
 /**
- * feuille « Résultats Lens » (maquette 2) — deux états:
+ * ورقة «Résultats Lens» (المرجع 02): ورقة سفلية بمقبض، فوق الصورة.
  *
- *  • pendant la recherche initiale, sans fiche ni élément: une carte centrée avec la
- *    photo, les étapes du serveur, les emplacements gris, et «Réessayer» / «Annuler» ;
- *  • dès que la photo a des éléments ou des fiches: la feuille est en plein écran,
- *    avec la photo et ses cadres en haut (touchez un élément ⇒ la recherche est
- *    refaite pour lui, dans cette même feuille), puis les fiches en dessous.
+ *  • أثناء البحث: صف الصورة والعنوان، الخطوات بأيقونات (✓ / دوّامة / مستند)،
+ *    بطاقتان رماديتان بشبكة، «Cela peut prendre…»، وزرّا «Réessayer» و«Annuler» جنباً إلى جنب؛
+ *  • حين تصل الفيشات: الورقة تكبر وتعرض الشبكة بعمودين، والصورة تبقى فوقها بالإطارات.
  *
- * Les étapes, les cadres et les fiches viennent du serveur. Rien n'est simulé.
+ * التخطيط عمود في الـModal (الصورة فوق، الورقة تحتها): لا موضع مطلق هنا.
+ * الخطوات والفيشات تأتي من الخادم. لا شيء مُحاكى.
  */
 import { ActivityIndicator, Modal, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 import type { LensProgress, LensStep } from '@/api/lensStream';
 import type { LensCandidate, LensDetectedItem } from '@/api/lens';
-import { AppText, Button, ResponsiveActionGroup } from '@/design/ui';
+import { AppText, Button } from '@/design/ui';
 import { AppImage } from '@/design/appImage';
-import { Skeleton } from '@/design/skeleton';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
 import { LensResultCard } from '@/features/lens/LensResultCard';
@@ -71,7 +70,7 @@ export function LensResultsSheet({
   const insets = useSafeAreaInsets();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
 
-  const fullScreen = results.length > 0 || items.length > 0;
+  const expanded = results.length > 0 || items.length > 0;
   const current = progress ? ORDER.indexOf(progress.step) : 0;
   const labels: Record<LensStep, string> = {
     identified: t('lens.progress.identified'),
@@ -82,70 +81,24 @@ export function LensResultsSheet({
     ? t('lens.progress.count', { done: progress.done ?? 0, total: progress.total })
     : t('lens.progress.searchingHint');
 
-  const steps = (
-    <View style={styles.steps}>
-      {ORDER.map((step, index) => {
-        const state = index < current ? 'done' : index === current ? 'active' : 'pending';
-        return (
-          <View key={step} style={styles.row} accessibilityState={{ busy: state === 'active' }}>
-            {state === 'active' ? (
-              <ActivityIndicator size="small" color={theme.colors.action} />
-            ) : (
-              <View
-                style={[
-                  styles.dot,
-                  { backgroundColor: state === 'done' ? theme.status.success.fg : theme.colors.line },
-                ]}
-              />
-            )}
-            <AppText variant="label" color={state === 'pending' ? theme.colors.muted : theme.colors.ink}>
-              {labels[step]}
-            </AppText>
-          </View>
-        );
-      })}
-    </View>
-  );
-
-  const header = (
-    <View style={styles.head}>
-      {imageUri && !fullScreen ? (
-        <AppImage
-          uri={imageUri}
-          style={[styles.thumb, { borderRadius: theme.radius.control }]}
-          contentFit="cover"
-          accessibilityLabel={t('lens.previewAlt')}
-        />
-      ) : null}
-      <View style={styles.headText}>
-        <AppText variant="lead" weight="bold">{t('lens.progress.title')}</AppText>
-        <AppText variant="body" color={theme.colors.muted}>{hint}</AppText>
-      </View>
-    </View>
-  );
-
-  const actions = (
-    <ResponsiveActionGroup>
-      <Button label={t('lens.progress.retry')} tone="quiet" onPress={onRetry} />
-      <Button label={busy ? t('lens.progress.cancel') : t('lens.close')} onPress={onClose} />
-    </ResponsiveActionGroup>
-  );
-
-  const noteLine = note ? (
-    <AppText variant="caption" color={theme.colors.ink} accessibilityRole="alert">{note}</AppText>
-  ) : null;
-
-  /** Photo + cadres. Sans taille native, on affiche la photo seule (pas de cadres devinés). */
+  /** الصورة: فوق الورقة. بدون حجم أصلي تُعرض وحدها (بلا إطارات مخمّنة). */
   const photo = (() => {
     if (!imageUri) return null;
     const maxWidth = windowWidth - 32;
-    const maxHeight = windowHeight * 0.5;
+    const maxHeight = windowHeight * (expanded ? 0.28 : 0.5);
     if (!imageSize || imageSize.width <= 0 || imageSize.height <= 0) {
-      return <AppImage uri={imageUri} style={[styles.photoFallback, { borderRadius: theme.radius.card }]} contentFit="contain" accessibilityLabel={t('lens.previewAlt')} />;
+      return (
+        <AppImage
+          uri={imageUri}
+          style={{ width: maxWidth, height: maxHeight, borderRadius: theme.radius.card }}
+          contentFit="contain"
+          accessibilityLabel={t('lens.previewAlt')}
+        />
+      );
     }
     const fitted = fitImage(imageSize.width, imageSize.height, maxWidth, maxHeight);
     return (
-      <View style={[styles.photo, { width: fitted.width, height: fitted.height }]}>
+      <View style={{ width: fitted.width, height: fitted.height }}>
         <AppImage
           uri={imageUri}
           style={[StyleSheet.absoluteFill, { borderRadius: theme.radius.card }]}
@@ -165,72 +118,123 @@ export function LensResultsSheet({
     );
   })();
 
+  const steps = (
+    <View style={[styles.steps, { borderColor: theme.colors.divider }]}>
+      {ORDER.map((step, index) => {
+        const state = index < current ? 'done' : index === current ? 'active' : 'pending';
+        return (
+          <View key={step} style={[styles.row, { borderBottomColor: theme.colors.divider }]} accessibilityState={{ busy: state === 'active' }}>
+            {state === 'done' ? (
+              <Ionicons name="checkmark-circle" size={24} color={theme.status.success.fg} />
+            ) : state === 'active' ? (
+              <ActivityIndicator size="small" color={theme.colors.action} />
+            ) : (
+              <Ionicons name="document-text-outline" size={22} color={theme.colors.muted} />
+            )}
+            <AppText variant="label" weight="bold" color={state === 'pending' ? theme.colors.muted : theme.colors.ink}>
+              {labels[step]}
+            </AppText>
+          </View>
+        );
+      })}
+    </View>
+  );
+
+  const placeholders = (
+    <View style={styles.grid}>
+      {[0, 1].map((index) => (
+        <View key={index} style={[styles.cell, styles.placeholder, { borderColor: theme.colors.line, borderRadius: theme.radius.card }]}>
+          <View style={[styles.placeholderImage, { backgroundColor: theme.colors.divider, borderRadius: theme.radius.control }]} />
+          <View style={[styles.placeholderLine, { backgroundColor: theme.colors.divider, width: '100%' }]} />
+          <View style={[styles.placeholderLine, { backgroundColor: theme.colors.divider, width: '100%' }]} />
+          <View style={[styles.placeholderLine, { backgroundColor: theme.colors.divider, width: '60%' }]} />
+        </View>
+      ))}
+    </View>
+  );
+
+  const cards = (
+    <ScrollView style={styles.list} contentContainerStyle={styles.grid}>
+      {results.map((candidate, index) => (
+        <View key={candidate.id || `${candidate.sourceUrl}-${index}`} style={styles.cell}>
+          <LensResultCard
+            candidate={candidate}
+            onOpen={onOpenCandidate}
+            onWatch={onWatch}
+            watchBusy={watchBusy}
+            favorite={favoriteUrls.has(candidate.sourceUrl)}
+            favoriteBusy={favoriteBusy}
+            onToggleFavorite={onToggleFavorite}
+          />
+        </View>
+      ))}
+    </ScrollView>
+  );
+
+  const noteLine = note ? (
+    <AppText variant="caption" color={theme.colors.ink} accessibilityRole="alert">{note}</AppText>
+  ) : null;
+
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      {fullScreen ? (
-        <View style={[styles.fullScreen, { backgroundColor: theme.colors.canvas, paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-          <View style={styles.fullTop}>
-            <View style={styles.fullHead}>{header}</View>
-            <Button label={t('lens.close')} tone="quiet" onPress={onClose} />
+    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+      <View style={[styles.root, { backgroundColor: theme.colors.ink, paddingTop: insets.top }]}>
+        <View style={styles.stage}>{photo}</View>
+
+        <View style={[styles.sheet, { backgroundColor: theme.colors.canvas, borderTopLeftRadius: theme.radius.card, borderTopRightRadius: theme.radius.card, paddingBottom: insets.bottom + 12, maxHeight: windowHeight * 0.72 }]}>
+          <View style={[styles.handle, { backgroundColor: theme.colors.line }]} />
+
+          <View style={styles.head}>
+            {imageUri ? (
+              <AppImage
+                uri={imageUri}
+                style={[styles.thumb, { borderRadius: theme.radius.control }]}
+                contentFit="cover"
+                accessibilityLabel={t('lens.previewAlt')}
+              />
+            ) : null}
+            <View style={styles.headText}>
+              <AppText variant="lead" weight="bold">{t('lens.progress.title')}</AppText>
+              <AppText variant="body" color={theme.colors.muted}>{hint}</AppText>
+            </View>
           </View>
-          <ScrollView contentContainerStyle={styles.fullList}>
-            {photo}
-            {busy ? steps : null}
-            <View style={styles.grid}>
-              {results.map((candidate, index) => (
-                <View key={candidate.id || `${candidate.sourceUrl}-${index}`} style={styles.cell}>
-                  <LensResultCard
-                    candidate={candidate}
-                    onOpen={onOpenCandidate}
-                    onWatch={onWatch}
-                    watchBusy={watchBusy}
-                    favorite={favoriteUrls.has(candidate.sourceUrl)}
-                    favoriteBusy={favoriteBusy}
-                    onToggleFavorite={onToggleFavorite}
-                  />
-                </View>
-              ))}
-            </View>
-            {noteLine}
-          </ScrollView>
-          <View style={styles.fullFoot}>{actions}</View>
-        </View>
-      ) : (
-        <View style={styles.centerBackdrop}>
-          <View style={[styles.card, { backgroundColor: theme.colors.canvas, borderRadius: theme.radius.card }]}>
-            {header}
-            {steps}
-            <View style={styles.placeholders}>
-              <Skeleton width="48%" height={120} radius={theme.radius.card} />
-              <Skeleton width="48%" height={120} radius={theme.radius.card} />
-            </View>
+
+          {busy ? steps : null}
+          {expanded ? cards : busy ? placeholders : null}
+          {busy && !expanded ? (
             <AppText variant="caption" color={theme.colors.muted} align="center">{t('lens.progress.wait')}</AppText>
-            {noteLine}
-            {actions}
+          ) : null}
+          {noteLine}
+
+          <View style={styles.actions}>
+            <View style={styles.action}>
+              <Button label={t('lens.progress.retry')} tone="quiet" block onPress={onRetry} />
+            </View>
+            <View style={styles.action}>
+              <Button label={busy ? t('lens.progress.cancel') : t('lens.close')} block onPress={onClose} />
+            </View>
           </View>
         </View>
-      )}
+      </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  centerBackdrop: { flex: 1, justifyContent: 'center', padding: 24 },
-  card: { padding: 16, gap: 12 },
-  fullScreen: { flex: 1, padding: 16, gap: 12 },
-  fullTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 },
-  fullHead: { flex: 1 },
-  fullList: { gap: 12, paddingBottom: 12 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12 },
-  cell: { width: '48%' },
-  fullFoot: { paddingTop: 8 },
-  photo: { alignSelf: 'center' },
-  photoFallback: { width: '100%', height: 240 },
+  root: { flex: 1, justifyContent: 'flex-end' },
+  stage: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
+  sheet: { paddingHorizontal: 16, paddingTop: 10, gap: 12 },
+  handle: { alignSelf: 'center', width: 44, height: 4, borderRadius: 2 },
   head: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   thumb: { width: 56, height: 56 },
   headText: { flex: 1, gap: 2 },
-  steps: { gap: 8 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  dot: { width: 12, height: 12, borderRadius: 6 },
-  placeholders: { flexDirection: 'row', justifyContent: 'space-between' },
+  steps: { borderTopWidth: StyleSheet.hairlineWidth },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth },
+  list: { flexShrink: 1 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12 },
+  cell: { width: '48%' },
+  placeholder: { borderWidth: StyleSheet.hairlineWidth, padding: 10, gap: 8 },
+  placeholderImage: { width: '100%', aspectRatio: 1 },
+  placeholderLine: { height: 8, borderRadius: 4 },
+  actions: { flexDirection: 'row', gap: 12 },
+  action: { flex: 1 },
 });

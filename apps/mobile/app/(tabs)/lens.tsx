@@ -61,6 +61,8 @@ export default function LensScreen() {
   const [canRetry, setCanRetry] = useState(false);
   /** الورقة مفتوحة للتحليل الحالي (تبقى حتى يغلقها المستعمل). */
   const [sheetOpen, setSheetOpen] = useState(false);
+  /** الكاميرا بملء الشاشة مفتوحة (وضع الصورة فقط). */
+  const [cameraOpen, setCameraOpen] = useState(true);
   const streamController = useRef<AbortController | null>(null);
   const lastAsset = useRef<LensCapturedImage | null>(null);
   /** `roi` du dernier appel (null = la photo entière). Sert à « Réessayer ». */
@@ -154,6 +156,14 @@ export default function LensScreen() {
   const closeSheet = useCallback(() => {
     streamController.current?.abort();
     setSheetOpen(false);
+    // بعد إغلاق النتائج نرجع إلى الكاميرا (وضع الصورة).
+    setCameraOpen(mode === 'photo');
+  }, [mode]);
+
+  /** تغيير الوضع من شريط الأوضاع (الصفحة أو الكاميرا): الكاميرا تفتح للصورة فقط. */
+  const changeMode = useCallback((next: LensMode) => {
+    setMode(next);
+    setCameraOpen(next === 'photo');
   }, []);
 
   const retryAnalysis = useCallback(() => {
@@ -274,7 +284,7 @@ export default function LensScreen() {
       <Segmented<LensMode>
         label={t('lens.mode.label')}
         value={mode}
-        onChange={setMode}
+        onChange={changeMode}
         options={[
           { value: 'photo', label: t('lens.mode.photo') },
           { value: 'live', label: t('lens.mode.live') },
@@ -302,15 +312,25 @@ export default function LensScreen() {
         onToggleFavorite={(item) => toggleFavorite.mutate(item)}
       />
 
+      <LensCamera
+        visible={cameraOpen && mode === 'photo'}
+        mode={mode}
+        busy={busy}
+        thumbnailUri={preview}
+        onModeChange={changeMode}
+        onClose={() => setCameraOpen(false)}
+        onHelp={() => { setCameraOpen(false); router.push('/lens/help'); }}
+        onOcerex={() => { setCameraOpen(false); router.push('/lens/ocerex'); }}
+        onCapture={(image) => { setCameraOpen(false); void analyzeAsset(image); }}
+        onOpenGallery={() => { setCameraOpen(false); void openGallery(); }}
+        onCaptureFailed={() => setNote(t('lens.captureFailed'))}
+      />
+
       {mode === 'photo' ? (
         <>
-          <LensCamera
-            busy={busy}
-            thumbnailUri={preview}
-            onCapture={(image) => { void analyzeAsset(image); }}
-            onOpenGallery={() => { void openGallery(); }}
-            onCaptureFailed={() => setNote(t('lens.captureFailed'))}
-          />
+          {!cameraOpen ? (
+            <Button label={t('lens.openCamera')} onPress={() => setCameraOpen(true)} />
+          ) : null}
           {note || (canRetry && lastAsset.current) ? (
             <Card>
               {note ? (
@@ -376,18 +396,21 @@ export default function LensScreen() {
 
       {candidates.length && !sheetShown ? (
         <Card title={t('lens.resultsTitle')} hint={t('lens.resultsHint')}>
-          {candidates.map((candidate, index) => (
-            <LensResultCard
-              key={candidate.id || `${candidate.sourceUrl}-${index}`}
-              candidate={candidate}
-              onOpen={openCandidate}
-              onWatch={(item) => watch.mutate(item)}
-              watchBusy={watch.isPending}
-              favorite={favoriteUrls.has(candidate.sourceUrl)}
-              favoriteBusy={toggleFavorite.isPending}
-              onToggleFavorite={(item) => toggleFavorite.mutate(item)}
-            />
-          ))}
+          <View style={styles.grid}>
+            {candidates.map((candidate, index) => (
+              <View key={candidate.id || `${candidate.sourceUrl}-${index}`} style={styles.cell}>
+                <LensResultCard
+                  candidate={candidate}
+                  onOpen={openCandidate}
+                  onWatch={(item) => watch.mutate(item)}
+                  watchBusy={watch.isPending}
+                  favorite={favoriteUrls.has(candidate.sourceUrl)}
+                  favoriteBusy={toggleFavorite.isPending}
+                  onToggleFavorite={(item) => toggleFavorite.mutate(item)}
+                />
+              </View>
+            ))}
+          </View>
         </Card>
       ) : null}
 
@@ -430,8 +453,7 @@ export default function LensScreen() {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', gap: 8, alignItems: 'center', marginTop: 6 },
-  candidate: { borderWidth: StyleSheet.hairlineWidth, padding: 8, marginTop: 10, gap: 2 },
-  candidateImage: { width: '100%', height: 160 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12 },
+  cell: { width: '48%' },
   historyRow: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 8, marginTop: 8, gap: 2 },
 });

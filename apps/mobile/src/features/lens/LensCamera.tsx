@@ -1,11 +1,13 @@
 /**
- * معاينة كاميرا Lens: التصوير، الفلاش، المساعدة، المعرض، وOCEREX.
+ * كاميرا Lens بملء الشاشة (المرجع 01): شريط علوي فوق المعاينة (رجوع، العنوان،
+ * الفلاش، المساعدة)، وشريط الأوضاع وأزرار التصوير فوقها، وOCEREX دائري.
  *
- * الصورة تُسلَّم كما هي للشاشة الأم، والخادم هو الذي يقرأها (لا تحليل هنا).
+ * الطبقات فوق المعاينة استثناء معتمد من المالك (مثل إطارات العناصر). الصورة
+ * تُسلَّم كما هي للشاشة الأم، والخادم هو الذي يقرأها (لا تحليل هنا).
  */
 import { useRef, useState } from 'react';
-import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
-import { router, useIsFocused } from 'expo-router';
+import { ActivityIndicator, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions, type FlashMode } from 'expo-camera';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
@@ -17,26 +19,39 @@ import { useI18n } from '@/i18n';
 /** Photo prête pour l'analyse. `width`/`height` = taille native (sert à placer les cadres). */
 export type LensCapturedImage = { uri: string; mimeType?: string; fileName?: string | null; width?: number; height?: number };
 
+/** أوضاع شريط الأوضاع (نفس ترتيب المرجع). */
+export type LensCameraMode = 'live' | 'photo' | 'code';
+
 type LensCameraProps = {
+  visible: boolean;
+  mode: LensCameraMode;
   busy: boolean;
   /** آخر صورة معروفة (من التصوير أو المعرض) — تظهر مصغّرة. */
   thumbnailUri: string;
+  onModeChange: (mode: LensCameraMode) => void;
+  onClose: () => void;
+  onHelp: () => void;
+  onOcerex: () => void;
   onCapture: (image: LensCapturedImage) => void;
   onOpenGallery: () => void;
   onCaptureFailed: () => void;
 };
 
-export function LensCamera({ busy, thumbnailUri, onCapture, onOpenGallery, onCaptureFailed }: LensCameraProps) {
+const MODES: LensCameraMode[] = ['live', 'photo', 'code'];
+
+export function LensCamera({
+  visible, mode, busy, thumbnailUri, onModeChange, onClose, onHelp, onOcerex,
+  onCapture, onOpenGallery, onCaptureFailed,
+}: LensCameraProps) {
   const theme = useTheme();
   const { t } = useI18n();
-  const { height } = useWindowDimensions();
-  const isFocused = useIsFocused();
+  const insets = useSafeAreaInsets();
   const [permission, requestPermission] = useCameraPermissions();
   const [flash, setFlash] = useState<FlashMode>('off');
   const cameraRef = useRef<CameraView>(null);
 
-  const live = permission?.granted === true && isFocused && !busy;
-  const viewportHeight = Math.round(height * 0.6);
+  const granted = permission?.granted === true;
+  const live = granted && visible && !busy;
 
   const shutter = async () => {
     try {
@@ -48,91 +63,142 @@ export function LensCamera({ busy, thumbnailUri, onCapture, onOpenGallery, onCap
     }
   };
 
-  return (
-    <View style={styles.wrap}>
-      <View style={styles.topRow}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={flash === 'on' ? t('lens.flashOff') : t('lens.flashOn')}
-          onPress={() => setFlash((current) => (current === 'on' ? 'off' : 'on'))}
-          style={[styles.iconButton, { borderColor: theme.colors.line, borderRadius: theme.radius.control }]}
-        >
-          <Ionicons name={flash === 'on' ? 'flash' : 'flash-off'} size={22} color={theme.colors.ink} />
-        </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('lens.helpOpen')}
-          onPress={() => router.push('/lens/help')}
-          style={[styles.iconButton, { borderColor: theme.colors.line, borderRadius: theme.radius.control }]}
-        >
-          <Ionicons name="help-circle-outline" size={22} color={theme.colors.ink} />
-        </Pressable>
-      </View>
+  const modeLabel: Record<LensCameraMode, string> = {
+    live: t('lens.mode.live'),
+    photo: t('lens.mode.photo'),
+    code: t('lens.mode.code'),
+  };
 
-      <View style={[styles.viewport, { height: viewportHeight, borderRadius: theme.radius.card, backgroundColor: theme.colors.surface }]}>
-        {permission?.granted === true ? (
+  return (
+    <Modal visible={visible} animationType="fade" statusBarTranslucent onRequestClose={onClose}>
+      <View style={[styles.root, { backgroundColor: theme.colors.ink }]}>
+        {granted ? (
           <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="back" flash={flash} active={live} />
         ) : (
           <View style={styles.askBox}>
             <Button label={t('lens.cameraAsk')} onPress={() => { void requestPermission(); }} />
           </View>
         )}
+
+        <View style={[styles.top, { top: insets.top + 8 }]}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('lens.close')}
+            onPress={onClose}
+            style={styles.iconButton}
+          >
+            <Ionicons name="arrow-back" size={26} color={theme.colors.canvas} />
+          </Pressable>
+          <AppText variant="lead" weight="bold" color={theme.colors.canvas}>{t('lens.cameraTitle')}</AppText>
+          <View style={styles.topRight}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={flash === 'on' ? t('lens.flashOff') : t('lens.flashOn')}
+              onPress={() => setFlash((current) => (current === 'on' ? 'off' : 'on'))}
+              style={styles.iconButton}
+            >
+              <Ionicons name={flash === 'on' ? 'flash' : 'flash-off'} size={24} color={theme.colors.canvas} />
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('lens.helpOpen')}
+              onPress={onHelp}
+              style={styles.iconButton}
+            >
+              <Ionicons name="help-circle-outline" size={26} color={theme.colors.canvas} />
+            </Pressable>
+          </View>
+        </View>
+
+        <View style={[styles.bottom, { bottom: insets.bottom + 16 }]}>
+          <AppText variant="body" color={theme.colors.canvas} align="center">{t('lens.frame')}</AppText>
+
+          <View style={styles.pill}>
+            <View style={[StyleSheet.absoluteFill, styles.pillBack, { backgroundColor: theme.colors.ink, borderRadius: 28 }]} />
+            {MODES.map((value) => {
+              const selected = value === mode;
+              return (
+                <Pressable
+                  key={value}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected }}
+                  onPress={() => onModeChange(value)}
+                  style={[styles.segment, selected && { backgroundColor: theme.colors.canvas, borderRadius: 24 }]}
+                >
+                  <AppText variant="label" weight={selected ? 'bold' : 'regular'} color={selected ? theme.colors.ink : theme.colors.canvas} align="center">
+                    {modeLabel[value]}
+                  </AppText>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <View style={styles.controls}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('lens.galleryOpen')}
+              onPress={onOpenGallery}
+              disabled={busy}
+              style={[styles.thumb, { borderColor: theme.colors.canvas, borderRadius: theme.radius.control }]}
+            >
+              {thumbnailUri ? (
+                <AppImage uri={thumbnailUri} style={styles.thumbImage} contentFit="cover" accessibilityLabel={t('lens.previewAlt')} />
+              ) : null}
+            </Pressable>
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('lens.shutter')}
+              onPress={() => { void shutter(); }}
+              disabled={!live}
+              style={[styles.shutterOuter, { borderColor: theme.colors.canvas, opacity: live ? 1 : 0.4 }]}
+            >
+              {busy ? (
+                <ActivityIndicator color={theme.colors.ink} />
+              ) : (
+                <View style={[styles.shutterInner, { backgroundColor: theme.colors.canvas }]} />
+              )}
+            </Pressable>
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('ocerex.open')}
+              onPress={onOcerex}
+              style={[styles.ocerex, { borderColor: theme.colors.canvas }]}
+            >
+              <View style={[StyleSheet.absoluteFill, styles.pillBack, { backgroundColor: theme.colors.ink, borderRadius: 28 }]} />
+              <AppText variant="caption" weight="bold" color={theme.colors.canvas}>OCEREX</AppText>
+            </Pressable>
+          </View>
+        </View>
       </View>
-
-      <AppText variant="caption" color={theme.colors.muted} align="center">{t('lens.frame')}</AppText>
-
-      <View style={styles.controls}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('lens.galleryOpen')}
-          onPress={onOpenGallery}
-          disabled={busy}
-          style={[styles.thumb, { borderColor: theme.colors.line, borderRadius: theme.radius.control, backgroundColor: theme.colors.surface }]}
-        >
-          {thumbnailUri ? (
-            <AppImage uri={thumbnailUri} style={styles.thumbImage} contentFit="cover" accessibilityLabel={t('lens.previewAlt')} />
-          ) : null}
-        </Pressable>
-
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('lens.shutter')}
-          onPress={() => { void shutter(); }}
-          disabled={!live}
-          style={[styles.shutterOuter, { borderColor: theme.colors.ink, opacity: live ? 1 : 0.4 }]}
-        >
-          <View style={[styles.shutterInner, { backgroundColor: theme.colors.ink }]} />
-        </Pressable>
-
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('ocerex.open')}
-          onPress={() => router.push('/lens/ocerex')}
-          style={[styles.ocerex, { backgroundColor: theme.colors.surface, borderColor: theme.colors.line }]}
-        >
-          <AppText variant="caption" weight="bold">OCEREX</AppText>
-        </Pressable>
-      </View>
-    </View>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: 10 },
-  viewport: { width: '100%', overflow: 'hidden' },
+  root: { flex: 1 },
   askBox: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 16 },
-  topRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  iconButton: { width: 44, height: 44, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },
-  controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 8 },
-  thumb: { width: 56, height: 56, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
+  top: {
+    position: 'absolute', left: 16, right: 16,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+  },
+  topRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  iconButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  bottom: { position: 'absolute', left: 16, right: 16, gap: 16 },
+  pill: { flexDirection: 'row', borderRadius: 28, padding: 4, overflow: 'hidden' },
+  pillBack: { opacity: 0.55 },
+  segment: { flex: 1, paddingVertical: 12, alignItems: 'center', justifyContent: 'center' },
+  controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  thumb: { width: 60, height: 60, borderWidth: 2, overflow: 'hidden' },
   thumbImage: { width: '100%', height: '100%' },
   shutterOuter: {
-    width: 76, height: 76, borderRadius: 38, borderWidth: 4,
+    width: 80, height: 80, borderRadius: 40, borderWidth: 5,
     alignItems: 'center', justifyContent: 'center',
   },
-  shutterInner: { width: 58, height: 58, borderRadius: 29 },
+  shutterInner: { width: 62, height: 62, borderRadius: 31 },
   ocerex: {
-    width: 56, height: 56, borderRadius: 28, borderWidth: StyleSheet.hairlineWidth,
-    alignItems: 'center', justifyContent: 'center',
+    width: 64, height: 64, borderRadius: 32, borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
   },
 });

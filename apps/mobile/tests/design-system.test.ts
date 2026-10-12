@@ -143,6 +143,8 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
       'src/features/home/HeroCarousel.tsx', // fondu du visuel vers le fond de la carte (§5.4)
       'app/reels-viewer.tsx', // en-tête transparent FIXE au-dessus de la liste plein écran (Reels)
       'src/features/lens/LensItemOverlay.tsx', // cadres des éléments détectés posés sur la photo (Lens, plusieurs produits) — exception approuvée par le propriétaire
+      'src/features/lens/LensCamera.tsx', // barre du haut, modes et commandes posées sur l'aperçu plein écran (Lens, maquette 01) — exception approuvée par le propriétaire
+      'src/features/lens/LensResultCard.tsx', // cœur et étiquettes posés sur la photo de la fiche (Lens, maquette 03) — exception approuvée par le propriétaire
     ]);
     const offenders: string[] = [];
     for (const rel of FILES) {
