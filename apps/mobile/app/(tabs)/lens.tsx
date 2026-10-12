@@ -16,7 +16,7 @@
  */
 import { useCallback, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -157,14 +157,19 @@ export default function LensScreen() {
     streamController.current?.abort();
     setSheetOpen(false);
     // بعد إغلاق النتائج نرجع إلى الكاميرا (وضع الصورة).
-    setCameraOpen(mode === 'photo');
+    setCameraOpen(mode !== 'code');
   }, [mode]);
 
   /** تغيير الوضع من شريط الأوضاع (الصفحة أو الكاميرا): الكاميرا تفتح للصورة فقط. */
   const changeMode = useCallback((next: LensMode) => {
     setMode(next);
-    setCameraOpen(next === 'photo');
+    setCameraOpen(next !== 'code');
   }, []);
+
+  /** كل رجوع إلى Lens (من المساعدة أو OCEREX أو المسح) يعيد الكاميرا، إلا وضع الرابط/الرمز. */
+  useFocusEffect(useCallback(() => {
+    if (mode !== 'code') setCameraOpen(true);
+  }, [mode]));
 
   const retryAnalysis = useCallback(() => {
     if (lastAsset.current) void analyzeAsset(lastAsset.current, lastRoi.current ?? undefined);
@@ -268,7 +273,7 @@ export default function LensScreen() {
 
   const candidates = analysis?.candidates ?? textResults ?? streamCards;
   /** الورقة تظهر في وضع الصورة فقط: أثناء البحث، أو حين تكون الفيشات جاهزة. */
-  const sheetShown = mode === 'photo' && sheetOpen && (busy || candidates.length > 0);
+  const sheetShown = mode !== 'code' && sheetOpen && (busy || candidates.length > 0);
 
   return (
     <AppScreen
@@ -313,7 +318,7 @@ export default function LensScreen() {
       />
 
       <LensCamera
-        visible={cameraOpen && mode === 'photo'}
+        visible={cameraOpen && mode !== 'code'}
         mode={mode}
         busy={busy}
         thumbnailUri={preview}
@@ -326,7 +331,7 @@ export default function LensScreen() {
         onCaptureFailed={() => setNote(t('lens.captureFailed'))}
       />
 
-      {mode === 'photo' ? (
+      {mode !== 'code' ? (
         <>
           {!cameraOpen ? (
             <Button label={t('lens.openCamera')} onPress={() => setCameraOpen(true)} />
@@ -366,6 +371,7 @@ export default function LensScreen() {
         {searchByText.isError ? (
           <ErrorBlock error={searchByText.error} onRetry={() => searchByText.mutate(text.trim())} />
         ) : null}
+        <Button label={t('lens.close')} tone="quiet" onPress={() => changeMode('photo')} />
       </Card>
 
       ) : null}
