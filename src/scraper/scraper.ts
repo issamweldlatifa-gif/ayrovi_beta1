@@ -398,7 +398,7 @@ export class SmartLinkScraper {
    * Décision (12/10/2026) : aucun lien marchand n'est plus lu directement depuis
    * le serveur. Sans BRIGHTDATA_API_KEY + BRIGHTDATA_ZONE, aucun appel n'est
    * fait et la lecture échoue proprement (BRIGHTDATA_NOT_CONFIGURED).
-   * Budget : AYROVIX_BRIGHTDATA_TIMEOUT_MS (18 s par défaut).
+   * Budget : AYROVIX_BRIGHTDATA_TIMEOUT_MS (25 s par défaut).
    */
   private async scrapeWithHttp(url: string, storeType: StoreType, options: ScrapeOptions = {}): Promise<MerchantScrapeResult> {
     // ── 0. Page fournie par le client (WebView) : lecture locale, zéro réseau ──
@@ -418,7 +418,7 @@ export class SmartLinkScraper {
       }
     }
 
-    const brightDataTimeoutMs = positiveIntEnv('AYROVIX_BRIGHTDATA_TIMEOUT_MS', 18_000, 250, 60_000);
+    const brightDataTimeoutMs = positiveIntEnv('AYROVIX_BRIGHTDATA_TIMEOUT_MS', 25_000, 250, 60_000);
     const startedAt = Date.now();
     const outcome = await this.readViaBrightData(url, storeType, brightDataTimeoutMs);
     logReadOutcome(url, storeType, outcome, Date.now() - startedAt);
