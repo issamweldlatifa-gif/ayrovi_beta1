@@ -36,10 +36,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
 const ICONS: Record<string, { active: IoniconName; inactive: IoniconName }> = {
-  lens: { active: 'scan-circle', inactive: 'scan-circle-outline' },
-  aywebs: { active: 'pricetags', inactive: 'pricetags-outline' },
-  sonim: { active: 'chatbubble-ellipses', inactive: 'chatbubble-ellipses-outline' },
-  vision: { active: 'eye', inactive: 'eye-outline' },
   account: { active: 'person', inactive: 'person-outline' },
 };
 
@@ -106,17 +102,13 @@ export default function TabsLayout() {
           fontSize: 11,
         },
         tabBarIcon: ({ focused, color, size }) => {
-          const pair = ICONS[route.name] ?? ICONS.lens;
+          const pair = ICONS[route.name] ?? ICONS.account;
           return <Ionicons name={focused ? pair.active : pair.inactive} size={size ?? 24} color={color} />;
         },
       })}
     >
       {/* Barre : Lens · AYWEBs · SONIM · Vision · Profil. Ordre voulu ; en RTL
           la barre se lit de droite à gauche, Lens reste le premier. */}
-      <Tabs.Screen name="lens" options={{ title: t('tabs.lens'), tabBarStyle: { display: 'none' } }} />
-      <Tabs.Screen name="aywebs" options={{ title: t('tabs.aywebs') }} />
-      <Tabs.Screen name="sonim" options={{ title: t('tabs.sonim') }} />
-      <Tabs.Screen name="vision" options={{ title: t('tabs.vision') }} />
       <Tabs.Screen name="account" options={{ title: t('tabs.account') }} />
 
       {/* OCEREX retiré de la barre : la route reste déclarée (aucune fusion
