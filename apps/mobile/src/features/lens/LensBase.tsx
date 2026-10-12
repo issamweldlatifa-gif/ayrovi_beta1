@@ -22,6 +22,7 @@ import { LensTopBar } from '@/features/lens/LensTopBar';
 import { LensScrim } from '@/features/lens/LensScrim';
 import { LensScanFrame } from '@/features/lens/LensScanFrame';
 import { LensChoiceCard } from '@/features/lens/LensChoiceCard';
+import { LensPermissionButton } from '@/features/lens/LensPermissionButton';
 import { useStillness } from '@/features/lens/useStillness';
 
 /** Photo prête pour l'analyse. `width`/`height` = taille native (sert à placer les cadres). */
@@ -145,7 +146,7 @@ export function LensBase(props: LensBaseProps) {
         />
       ) : (
         <View style={styles.askBox}>
-          <Button label={t('lens.cameraAsk')} onPress={() => { void requestPermission(); }} />
+          <LensPermissionButton label={t('lens.cameraAsk')} testID="lens-camera-permission" onPress={() => { void requestPermission(); }} />
         </View>
       )}
 
