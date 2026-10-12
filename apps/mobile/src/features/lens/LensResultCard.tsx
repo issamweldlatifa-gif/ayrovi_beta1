@@ -16,6 +16,7 @@ import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
 
 import { candidateToProduct } from './candidateToProduct';
+import { lensCardState } from './lensCardState';
 
 export interface LensResultCardProps {
   candidate: LensCandidate;
@@ -51,6 +52,7 @@ export function LensResultCard({
   const [stock, setStock] = useState<StockState | null>(null);
   const canVerify = isWebLink(candidate.sourceUrl);
   const checking = stock?.status === 'checking';
+  const view = lensCardState(candidate);
 
   const availabilityText = (state: string): string => {
     switch (state) {
@@ -108,20 +110,22 @@ export function LensResultCard({
         onOpen={() => onOpen(candidate)}
         style={styles.full}
         hasCombinations={candidate.colors.length > 0}
-        promo={candidate.promo != null && candidate.promo.percent > 0}
+        promo={view.promoBadge}
       />
       <KeyValue
         label={t('lens.verification')}
         value={candidate.verification === 'VERIFIED' ? t('lens.verified') : t('lens.pending')}
       />
-      {candidate.originalPriceTnd != null && candidate.priceTnd != null && candidate.originalPriceTnd > candidate.priceTnd ? (
+      {view.wasPriceTnd !== null || view.discountPercent !== null ? (
         <View style={styles.wasRow}>
-          <AppText variant="caption" color={theme.colors.muted}>
-            {t('lens.wasPrice', { price: candidate.originalPriceTnd.toFixed(2) })}
-          </AppText>
-          {candidate.promo != null && candidate.promo.percent > 0 ? (
+          {view.wasPriceTnd !== null ? (
+            <AppText variant="caption" color={theme.colors.muted}>
+              {t('lens.wasPrice', { price: view.wasPriceTnd.toFixed(2) })}
+            </AppText>
+          ) : null}
+          {view.discountPercent !== null ? (
             <AppText variant="caption" weight="bold" color={theme.status.danger.fg}>
-              {`-${candidate.promo.percent}%`}
+              {`-${view.discountPercent}%`}
             </AppText>
           ) : null}
         </View>

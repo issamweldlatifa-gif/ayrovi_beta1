@@ -16,7 +16,7 @@ Les maquettes sont des visuels de référence : la mise en œuvre suit les **don
 ## 3. Carte produit (résultats)
 - Montre : image, pastille « Combinaisons disponibles », « Promo », marque, nom, prix, prix de référence barré, « Jusqu'à -35 % », livraison.
 - Décision : pastille « Combinaisons disponibles » seulement si le marchand publie couleurs/tailles. « Jusqu'à -35 % » et « Promo » seulement si le serveur fournit la donnée.
-- État : **partiel** — pastille sous la photo (`dc87122`). « Promo », prix barré et « Jusqu'à -35 % » : non faits.
+- État : **fait, à tester sur appareil** — pastille « Combinaisons disponibles » (`dc87122`); pastille **Promo**, **-N %** et prix barré uniquement si le serveur envoie `candidate.promo` / `originalPriceTnd` (`src/features/lens/lensCardState.ts`, `LensResultCard.tsx`). Cœur d'ajout aux favoris du compte, grille à deux colonnes. Tests : `tests/lens-card-state.test.ts`, `tests/lens-promo.test.ts`. Le bouton « Jusqu'à -35 % » de la maquette n'est pas reproduit en dur : seul le pourcentage du serveur s'affiche.
 
 ## 4. OCEREX — prix en direct
 - Montre : cadre sur l'étiquette, consigne, onglets **Prendre une photo / Importer une image**, vignettes, déclencheur, bouton OCEREX.
@@ -30,5 +30,6 @@ Les maquettes sont des visuels de référence : la mise en œuvre suit les **don
 
 ## Reste à faire
 1. Test sur appareil de la feuille de progression (flux XHR) — section 2.
-2. Prix barré et « Promo » sur la carte (section 3), si le serveur fournit les données.
-3. Retour visuel QR et bouton OCEREX (sections 4 et 5).
+2. Vérifier sur appareil la carte avec et sans promo (section 3). La pastille Promo et le prix barré sont testés côté données, pas à l'écran.
+3. La fiche QR/URL (`app/lens/scan.tsx`, `analyzeLensUrl`) n'envoie pas de `promo` dans son contrat : aucune pastille n'y est affichée.
+4. Retour visuel QR et bouton OCEREX (sections 4 et 5).
