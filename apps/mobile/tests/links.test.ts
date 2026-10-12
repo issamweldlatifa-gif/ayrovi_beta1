@@ -44,6 +44,8 @@ describe('refus — un lien inconnu ne navigue pas', () => {
   it('un préfixe ne colle pas au milieu d’un segment', () => {
     expect(resolveDeepLink('https://ayrovi.tn/ordersomething')).toBeNull();
     expect(resolveDeepLink('https://ayrovi.tn/catalogue')).toBeNull();
+    expect(resolveDeepLink('https://ayrovi.tn/lens')).toBe('/lens');
+    expect(resolveDeepLink('https://ayrovi.tn/lenses')).toBeNull();
   });
 
   it('schémas qui ne sont pas les nôtres', () => {

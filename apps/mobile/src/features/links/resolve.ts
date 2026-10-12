@@ -62,6 +62,7 @@ const ROUTES: { prefix: string; route: string | ((rest: string) => string | null
   { prefix: '/orders', route: '/orders' },
   { prefix: '/commandes', route: '/orders' },
   { prefix: '/checkout', route: '/checkout' },
+  { prefix: '/lens', route: '/lens' },
   { prefix: '/panier', route: '/(tabs)/cart' },
   { prefix: '/cart', route: '/(tabs)/cart' },
   { prefix: '/account/notifications', route: '/account/notifications' },
