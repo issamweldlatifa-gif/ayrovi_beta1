@@ -6,7 +6,7 @@
  * الطبقات فوق المعاينة استثناء معتمد من المالك (مثل إطارات العناصر). الصورة
  * تُسلَّم كما هي للشاشة الأم، والخادم هو الذي يقرأها (لا تحليل هنا).
  */
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions, type BarcodeScanningResult, type FlashMode } from 'expo-camera';
@@ -58,10 +58,15 @@ export function LensBase(props: LensBaseProps) {
   const granted = permission?.granted === true;
   const live = granted && active && !busy && mode !== 'code';
 
+  /** صورة التقطت للتو وتنتظر التأكيد: لا تُرسل للتحليل قبل أن يقبلها المستعمل. */
+  const [pending, setPending] = useState<LensCapturedImage | null>(null);
+  // تغيير الوضع يلغي الصورة المعلّقة: لا تبقى صورة قديمة فوق وضع آخر.
+  useEffect(() => { setPending(null); }, [mode]);
+
   const shutter = async () => {
     try {
       const picture = await cameraRef.current?.takePictureAsync({ quality: 0.9 });
-      if (picture?.uri) props.onCapture({ uri: picture.uri, width: picture.width, height: picture.height });
+      if (picture?.uri) setPending({ uri: picture.uri, width: picture.width, height: picture.height });
       else props.onCaptureFailed();
     } catch {
       props.onCaptureFailed();
@@ -112,6 +117,29 @@ export function LensBase(props: LensBaseProps) {
           <Button label={t('lens.cameraAsk')} onPress={() => { void requestPermission(); }} />
         </View>
       )}
+
+      {pending ? (
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.colors.ink }]}>
+          <AppImage
+            uri={pending.uri}
+            style={StyleSheet.absoluteFill}
+            contentFit="contain"
+            accessibilityLabel={t('lens.capturedAlt')}
+          />
+          <View style={[styles.confirm, { bottom: insets.bottom + 24 }]}>
+            <Button label={t('lens.retake')} tone="quiet" onPress={() => { setPending(null); }} />
+            <Button
+              label={t('lens.confirmPhoto')}
+              testID="lens-confirm-photo"
+              onPress={() => {
+                const image = pending;
+                setPending(null);
+                props.onCapture(image);
+              }}
+            />
+          </View>
+        </View>
+      ) : null}
 
       <View style={[styles.top, { top: insets.top + theme.chrome.header + 4 }]}>
         <Pressable accessibilityRole="button" accessibilityLabel={t('lens.helpOpen')} onPress={props.onHelp} style={styles.iconButton}>
@@ -218,6 +246,7 @@ export function LensBase(props: LensBaseProps) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, overflow: 'hidden' },
+  confirm: { position: 'absolute', left: 16, right: 16, flexDirection: 'row', gap: 12 },
   askBox: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 16 },
   codePanel: { position: 'absolute', left: 16, right: 16, padding: 16, gap: 12 },
   input: { borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16 },
