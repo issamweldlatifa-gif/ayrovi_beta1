@@ -14,7 +14,8 @@ import { AppImage } from '@/design/appImage';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
 
-export type LensCapturedImage = { uri: string; mimeType?: string; fileName?: string | null };
+/** Photo prête pour l'analyse. `width`/`height` = taille native (sert à placer les cadres). */
+export type LensCapturedImage = { uri: string; mimeType?: string; fileName?: string | null; width?: number; height?: number };
 
 type LensCameraProps = {
   busy: boolean;
@@ -40,7 +41,7 @@ export function LensCamera({ busy, thumbnailUri, onCapture, onOpenGallery, onCap
   const shutter = async () => {
     try {
       const picture = await cameraRef.current?.takePictureAsync({ quality: 0.9 });
-      if (picture?.uri) onCapture({ uri: picture.uri });
+      if (picture?.uri) onCapture({ uri: picture.uri, width: picture.width, height: picture.height });
       else onCaptureFailed();
     } catch {
       onCaptureFailed();

@@ -142,6 +142,7 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
       'app/aywebs/browser.tsx', // voile de chargement au-dessus de la page capturée
       'src/features/home/HeroCarousel.tsx', // fondu du visuel vers le fond de la carte (§5.4)
       'app/reels-viewer.tsx', // en-tête transparent FIXE au-dessus de la liste plein écran (Reels)
+      'src/features/lens/LensItemOverlay.tsx', // cadres des éléments détectés posés sur la photo (Lens, plusieurs produits) — exception approuvée par le propriétaire
     ]);
     const offenders: string[] = [];
     for (const rel of FILES) {

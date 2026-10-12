@@ -29,12 +29,16 @@ import { useI18n } from '@/i18n';
 import { isApiError, userMessage } from '@/api/errors';
 import {
   LENS_MIN_TEXT, analyzeLensText, chooseLensEvent, createLensWatch,
-  fetchLensHistory, lensUploadInputFrom, type LensAnalysis, type LensCandidate,
+  fetchLensHistory, lensUploadInputFrom, detectedItemRoi, type LensAnalysis, type LensCandidate,
+  type LensDetectedItem,
 } from '@/api/lens';
 import { analyzeLensImageStream, type LensProgress } from '@/api/lensStream';
 import { LensResultCard } from '@/features/lens/LensResultCard';
 import { LensResultsSheet } from '@/features/lens/LensResultsSheet';
 import { LensCamera, type LensCapturedImage } from '@/features/lens/LensCamera';
+
+/** قصّ يطلبه الخادم بالنسب المائوية (0..100). */
+type LensRoi = { x: number; y: number; w: number; h: number };
 
 /** طريقة البحث: صورة، أو مسح مباشر (QR/باركود)، أو رابط/رمز نصّي. */
 type LensMode = 'photo' | 'live' | 'code';
@@ -58,6 +62,12 @@ export default function LensScreen() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const streamController = useRef<AbortController | null>(null);
   const lastAsset = useRef<LensCapturedImage | null>(null);
+  /** `roi` du dernier appel (null = la photo entière). Sert à « Réessayer ». */
+  const lastRoi = useRef<LensRoi | null>(null);
+  const [previewSize, setPreviewSize] = useState<{ width: number; height: number } | null>(null);
+  /** Éléments de la photo entière (ne changent pas quand on cherche un élément précis). */
+  const [detectedItems, setDetectedItems] = useState<LensDetectedItem[]>([]);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
 
   const history = useQuery({
     queryKey: ['lens', 'history'],
@@ -75,8 +85,9 @@ export default function LensScreen() {
    * نفس مسار الموقع: نبعثو الملف للخادم، وهو اللي يقرا ويحكم.
    * التحليل يجي في تدفق: كل خطوة وكل فيشة تظهر حين يرسلها الخادم.
    */
-  const analyzeAsset = useCallback(async (asset: LensCapturedImage) => {
+  const analyzeAsset = useCallback(async (asset: LensCapturedImage, roi?: LensRoi) => {
     lastAsset.current = asset;
+    lastRoi.current = roi ?? null;
     setNote('');
     setCanRetry(false);
     setAnalysis(null);
@@ -84,6 +95,12 @@ export default function LensScreen() {
     setStreamCards([]);
     setProgress(null);
     setPreview(asset.uri);
+    setPreviewSize(asset.width && asset.height ? { width: asset.width, height: asset.height } : null);
+    if (!roi) {
+      // photo جديدة (ما هيش بحث عن عنصر): نبدّلو العناصر والاختيار.
+      setDetectedItems([]);
+      setSelectedIndex(-1);
+    }
     setSheetOpen(true);
     streamController.current?.abort();
     const controller = new AbortController();
@@ -91,7 +108,7 @@ export default function LensScreen() {
     setBusy(true);
     try {
       const result = await analyzeLensImageStream(
-        lensUploadInputFrom(asset),
+        roi ? { ...lensUploadInputFrom(asset), roi } : lensUploadInputFrom(asset),
         {
           onProgress: setProgress,
           onCard: (candidate) => setStreamCards((prev) => (
@@ -101,6 +118,7 @@ export default function LensScreen() {
         { signal: controller.signal },
       );
       setAnalysis(result);
+      if (!roi) setDetectedItems(result.items);
       setStreamCards([]);
       if (!result.candidates.length) setNote(t('lens.noResults'));
     } catch (error) {
@@ -127,7 +145,7 @@ export default function LensScreen() {
   }, []);
 
   const retryAnalysis = useCallback(() => {
-    if (lastAsset.current) void analyzeAsset(lastAsset.current);
+    if (lastAsset.current) void analyzeAsset(lastAsset.current, lastRoi.current ?? undefined);
   }, [analyzeAsset]);
 
   /** المعرض فقط: التصوير صار داخل معاينة الكاميرا نفسها. */
@@ -191,6 +209,14 @@ export default function LensScreen() {
     },
   });
 
+  /** اختيار عنصر من الصورة: نعيد البحث بقصّ الخادم على كادره، في نفس الورقة. */
+  const selectItem = useCallback((index: number) => {
+    const item = detectedItems[index];
+    if (!item || !lastAsset.current) return;
+    setSelectedIndex(index);
+    void analyzeAsset(lastAsset.current, detectedItemRoi(item));
+  }, [analyzeAsset, detectedItems]);
+
   const candidates = analysis?.candidates ?? textResults ?? streamCards;
   /** الورقة تظهر في وضع الصورة فقط: أثناء البحث، أو حين تكون الفيشات جاهزة. */
   const sheetShown = mode === 'photo' && sheetOpen && (busy || candidates.length > 0);
@@ -220,9 +246,13 @@ export default function LensScreen() {
         visible={sheetShown}
         busy={busy}
         imageUri={preview}
+        imageSize={previewSize}
         progress={progress}
         results={candidates}
+        items={detectedItems}
+        selectedIndex={selectedIndex}
         note={note}
+        onSelectItem={selectItem}
         onClose={closeSheet}
         onRetry={retryAnalysis}
         onOpenCandidate={(candidate) => { setSheetOpen(false); openCandidate(candidate); }}

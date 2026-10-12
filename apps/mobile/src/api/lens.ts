@@ -168,10 +168,49 @@ const parseIdentification = (value: unknown): LensIdentification => {
   };
 };
 
+/**
+ * Élément détecté dans la photo (le serveur en renvoie jusqu'à 8).
+ * `box` = `[x, y, largeur, hauteur]` normalisé 0..1 — ne vient que du serveur.
+ */
+export interface LensDetectedItem {
+  name: string;
+  brand: string | null;
+  box: { x: number; y: number; w: number; h: number };
+}
+
+/** Éléments avec un cadre fiable seulement (cadre absent ou hors image ⇒ écarté). */
+export function parseDetectedItems(identification: unknown): LensDetectedItem[] {
+  if (!isRecord(identification) || !Array.isArray(identification.products)) return [];
+  const items: LensDetectedItem[] = [];
+  for (const entry of identification.products) {
+    if (!isRecord(entry)) continue;
+    const name = str(entry.name).trim();
+    const box = Array.isArray(entry.box) ? entry.box.map(num) : null;
+    if (!name || !box || box.length !== 4 || box.some((n) => n == null)) continue;
+    const [x, y, w, h] = box as number[];
+    const inside = x >= 0 && y >= 0 && w > 0 && h > 0 && x + w <= 1 && y + h <= 1;
+    if (!inside) continue;
+    items.push({ name, brand: str(entry.brand).trim() || null, box: { x, y, w, h } });
+  }
+  return items;
+}
+
+/** Cadre d'un élément ⇒ `roi` en pourcentages (0..100), comme le demande le serveur. */
+export function detectedItemRoi(item: LensDetectedItem): { x: number; y: number; w: number; h: number } {
+  return {
+    x: item.box.x * 100,
+    y: item.box.y * 100,
+    w: item.box.w * 100,
+    h: item.box.h * 100,
+  };
+}
+
 export interface LensAnalysis {
   identification: LensIdentification;
   query: string;
   candidates: LensCandidate[];
+  /** Éléments détectés dans la photo, avec leur cadre (vide si le serveur n'en a pas trouvé de fiable). */
+  items: LensDetectedItem[];
   eventId: string;
   /** كم فيشة زارها الخادم فعلاً وكام من الذاكرة، وكم معلومة تدخّلت. */
   liveStock: { fetched: number; cacheHits: number; applied: number; budget: number };
@@ -196,6 +235,7 @@ export function parseLensAnalysis(payload: unknown): LensAnalysis {
     identification: parseIdentification(payload.identification),
     query: str(payload.query),
     candidates: candidates.map(parseLensCandidate),
+    items: parseDetectedItems(payload.identification),
     eventId: str(payload.eventId),
     liveStock: {
       fetched: num(liveStock.fetched) ?? 0,

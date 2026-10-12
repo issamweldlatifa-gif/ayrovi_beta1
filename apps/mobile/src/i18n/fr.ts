@@ -691,6 +691,7 @@ export const fr = {
   'lens.help.title': 'Aide Lens',
   'lens.close': 'Fermer',
   'lens.captureFailed': 'La photo n’a pas pu être prise. Réessayez.',
+  'lens.itemPick': 'Choisir {name}',
   'lens.permissionDenied': 'Accès refusé : autorisez la caméra (ou la galerie) dans les réglages du téléphone, puis réessayez.',
   'lens.failed': 'Recherche impossible pour le moment',
   'lens.noResults': 'Aucune fiche exploitable pour cette recherche. Essayez une autre photo ou un autre mot.',

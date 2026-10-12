@@ -691,6 +691,7 @@ export const ar = {
   'lens.help.title': 'مساعدة Lens',
   'lens.close': 'إغلاق',
   'lens.captureFailed': 'ما تنجمناش نصوّر الصورة. عاود جرّب.',
+  'lens.itemPick': 'اختار {name}',
   'lens.permissionDenied': 'الإذن مرفوض: سمّح للكاميرا (ولا للمعرض) في إعدادات التليفون، وعاود جرّب.',
   'lens.failed': 'البحث ما نجّمش توّا',
   'lens.noResults': 'ما لقيناش فيشة صالحة لهذا البحث. جرّب صورة أخرى ولا كلمة أخرى.',
