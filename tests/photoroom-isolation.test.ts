@@ -1,6 +1,6 @@
 import sharp from 'sharp';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { isolationCacheInput, isolationProvider, isPhotoRoomPng, PHOTOROOM_SEGMENT_URL, removeBackgroundWithPhotoRoom, shouldPersistNegative } from '../src/services/photoroomIsolation';
+import { resetPhotoRoomMemoryForTests, isolationCacheInput, isolationProvider, isPhotoRoomPng, PHOTOROOM_SEGMENT_URL, removeBackgroundWithPhotoRoom, shouldPersistNegative } from '../src/services/photoroomIsolation';
 import { isolateBuffer } from '../src/services/imageIsolation';
 import { segmentBuffer } from '../src/services/segmentation';
 
@@ -16,7 +16,7 @@ async function jpegSource(): Promise<Buffer> {
 
 describe('isolation PhotoRoom (sandbox / dev)', () => {
   let warn: ReturnType<typeof vi.spyOn>;
-  beforeEach(() => { warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined); });
+  beforeEach(() => { resetPhotoRoomMemoryForTests(); warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined); });
   afterEach(() => { warn.mockRestore(); vi.restoreAllMocks(); });
 
   it('reste en local sans clé, et ne prend PhotoRoom que si provider ET clé sont présents', () => {
@@ -94,5 +94,32 @@ describe('cache par fournisseur (anti-résultat local périmé)', () => {
   it('un échec n’est pas persisté en mode photoroom, mais l’est en local', () => {
     expect(shouldPersistNegative('photoroom')).toBe(false);
     expect(shouldPersistNegative('local')).toBe(true);
+  });
+});
+
+describe('anti-doublon PhotoRoom', () => {
+  beforeEach(() => { resetPhotoRoomMemoryForTests(); });
+  it('deux demandes simultanées pour la même image = un seul appel réseau', async () => {
+    const png = await pngBytes();
+    const fetchImpl = vi.fn(async () => new Response(new Uint8Array(png), { status: 200 }));
+    const input = await jpegSource();
+    const opts = { env: { AYROVI_ISOLATION_PROVIDER: 'photoroom', PHOTOROOM_API_KEY: 'k_dedupe_test_1' } as NodeJS.ProcessEnv, fetchImpl: fetchImpl as unknown as typeof fetch };
+    const [a, b] = await Promise.all([removeBackgroundWithPhotoRoom(input, opts), removeBackgroundWithPhotoRoom(input, opts)]);
+    expect(a && isPhotoRoomPng(a)).toBe(true);
+    expect(b && isPhotoRoomPng(b)).toBe(true);
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    await removeBackgroundWithPhotoRoom(input, opts);
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+  it('un échec n’est pas gardé : la demande suivante est retentée', async () => {
+    const png = await pngBytes();
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(new Response('x', { status: 500 }))
+      .mockResolvedValueOnce(new Response(new Uint8Array(png), { status: 200 }));
+    const input = await jpegSource();
+    const opts = { env: { AYROVI_ISOLATION_PROVIDER: 'photoroom', PHOTOROOM_API_KEY: 'k_dedupe_test_2' } as NodeJS.ProcessEnv, fetchImpl: fetchImpl as unknown as typeof fetch };
+    expect(await removeBackgroundWithPhotoRoom(input, opts)).toBeNull();
+    expect(await removeBackgroundWithPhotoRoom(input, opts)).not.toBeNull();
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
 });

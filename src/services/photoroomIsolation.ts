@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 /*
  * ISOLATION PAR PHOTOROOM (Remove Background API, plan Basic).
  *
@@ -55,10 +56,49 @@ export interface PhotoRoomOptions {
  * Envoie l'image à PhotoRoom et renvoie le PNG détouré, ou null en cas d'échec.
  * Le contenu d'entrée est envoyé tel quel (multipart `image_file`).
  */
+/* Anti-doublon : une même image (même octets) ne consomme qu'UN appel, même si
+ * la recherche et le composeur la demandent en parallèle. Les succès sont gardés
+ * en mémoire (LRU borné) ; les échecs ne le sont jamais, pour être retentés. */
+const PHOTOROOM_MEMORY_MAX = 200;
+const inFlight = new Map<string, Promise<Buffer | null>>();
+const settled = new Map<string, Buffer>();
+
 export async function removeBackgroundWithPhotoRoom(
   input: Buffer,
   options: PhotoRoomOptions = {},
 ): Promise<Buffer | null> {
+  const env = options.env ?? process.env;
+  if (isolationProvider(env) !== 'photoroom') return null;
+  const digest = hashImage(input);
+  const known = settled.get(digest);
+  if (known) return known;
+  const pending = inFlight.get(digest);
+  if (pending) return pending;
+  const job = callPhotoRoom(input, options).then((output) => {
+    inFlight.delete(digest);
+    if (output) {
+      settled.delete(digest);
+      settled.set(digest, output);
+      while (settled.size > PHOTOROOM_MEMORY_MAX) settled.delete(settled.keys().next().value as string);
+    }
+    return output;
+  });
+  inFlight.set(digest, job);
+  return job;
+}
+
+/** Réservé aux tests : vide la mémoire anti-doublon. */
+export function resetPhotoRoomMemoryForTests(): void {
+  inFlight.clear();
+  settled.clear();
+}
+
+function hashImage(input: Buffer): string {
+  return createHash('sha256').update(input).digest('hex');
+}
+
+/** Appel HTTP réel vers PhotoRoom (sans cache). */
+async function callPhotoRoom(input: Buffer, options: PhotoRoomOptions): Promise<Buffer | null> {
   const env = options.env ?? process.env;
   if (isolationProvider(env) !== 'photoroom') return null;
   const apiKey = String(env.PHOTOROOM_API_KEY || '').trim();
