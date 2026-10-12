@@ -563,6 +563,7 @@ export const ar = {
   'lens.product.size': 'المقاس',
   'lens.product.color': 'اللون',
   'lens.product.noChoice': '—',
+  'home.lens.cta': 'افتح Lens',
   'lens.review.open': 'اطلب مراجعة يدوية',
   'lens.review.hint': 'نتحقّقو من هالتركيبة ونرجعولك بالسعر.',
   'lens.review.contact': 'تيليفون ولا إيميل',

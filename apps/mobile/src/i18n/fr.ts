@@ -563,6 +563,7 @@ export const fr = {
   'lens.product.size': 'Taille',
   'lens.product.color': 'Couleur',
   'lens.product.noChoice': '—',
+  'home.lens.cta': 'Ouvrir Lens',
   'lens.review.open': 'Demander une révision manuelle',
   'lens.review.hint': 'Nous vérifions cette combinaison pour vous et revenons vers vous avec un prix.',
   'lens.review.contact': 'Téléphone ou e-mail',
