@@ -6,7 +6,7 @@
  *  • السعر المرجعي والسعر Ayrovi من الخادم، والجهاز لا يحسب شيئاً.
  *  • الطلب يُثبَّت بـ`commit` ثم يُفتح الدفع، ولا تُعرض شاشة نجاح مصنوعة.
  */
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
@@ -19,10 +19,12 @@ import { LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
 import { useT, type TranslationKey } from '@/i18n';
 import { usePrefs } from '@/state/prefs';
+import { useSessionId } from '@/session/session';
 import {
   analyzeOcerexImage, calculateOcerexPrice, commitOcerexOrder, ocerexErrorCode, resolveOcerexLink,
-  type OcerexCode, type OcerexExtraction,
+  trackOcerexEvent, type OcerexCode, type OcerexExtraction,
 } from '@/api/ocerex';
+import { eventsForExtraction } from './ocerexEvents';
 import { ApiError } from '@/api/errors';
 import {
   afterAnalyze, errorCopy, isHttpUrl, type OcerexStep,
@@ -50,6 +52,12 @@ export function OcerexFlow({ onClose }: { onClose: () => void }) {
   const [linkUrl, setLinkUrl] = useState('');
   const [urlError, setUrlError] = useState(false);
   const [busy, setBusy] = useState(false);
+  const sessionId = useSessionId();
+  const track = useCallback((event: string, extra?: { type?: string; confidenceLevel?: string }) => {
+    void trackOcerexEvent(event, sessionId, extra);
+  }, [sessionId]);
+
+  useEffect(() => { track('ocerex_opened'); }, [track]);
 
   const fail = useCallback((code: OcerexCode) => {
     setErrorCode(code);
@@ -74,11 +82,14 @@ export function OcerexFlow({ onClose }: { onClose: () => void }) {
     setBusy(true);
     setUrlError(false);
     setStep('processing');
+    track('ocerex_ocr_started');
     try {
       const analyzed = await analyzeOcerexImage(image, capture);
       setExtraction(analyzed);
+      track('ocerex_ocr_success', { type: analyzed.type, confidenceLevel: analyzed.confidenceLevel });
+      for (const event of eventsForExtraction(analyzed)) track(event, { type: analyzed.type, confidenceLevel: analyzed.confidenceLevel });
       const decision = afterAnalyze(analyzed);
-      if (decision.next === 'error') { fail(decision.code); return; }
+      if (decision.next === 'error') { track('ocerex_ocr_failed'); fail(decision.code); return; }
       if (decision.next === 'currency') {
         setCurrency(decision.defaultCurrency);
         setStep('currency');
@@ -87,9 +98,10 @@ export function OcerexFlow({ onClose }: { onClose: () => void }) {
       }
       await priceIt(analyzed);
     } catch (error) {
+      track('ocerex_ocr_failed');
       fail(ocerexErrorCode(error));
     }
-  }, [fail, priceIt]);
+  }, [fail, priceIt, track]);
 
   const onCapture = useCallback(async () => {
     const camera = cameraRef.current;
@@ -97,22 +109,25 @@ export function OcerexFlow({ onClose }: { onClose: () => void }) {
     try {
       const picture = await camera.takePictureAsync({ quality: 0.8, skipProcessing: true });
       if (!picture?.uri) throw new ApiError('malformed', 'no-photo');
+      track('ocerex_camera_used');
       await analyze({ uri: picture.uri, name: 'prix-ocerex', type: 'image/jpeg' }, true);
     } catch (error) {
       fail(ocerexErrorCode(error));
     }
-  }, [analyze, fail]);
+  }, [analyze, fail, track]);
 
   const onImport = useCallback(async () => {
     const picked = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
     if (picked.canceled || !picked.assets[0]) return;
     const asset = picked.assets[0];
+    track('ocerex_image_uploaded');
     await analyze({ uri: asset.uri, name: asset.fileName || 'prix-ocerex', type: asset.mimeType || 'image/jpeg' }, false);
-  }, [analyze]);
+  }, [analyze, track]);
 
   const onLink = useCallback(async (url: string, fromError = false) => {
     if (!extraction) return;
     if (!isHttpUrl(url)) { setUrlError(true); return; }
+    track('ocerex_link_submitted');
     setBusy(true);
     setUrlError(false);
     setStep('processing');
@@ -136,7 +151,7 @@ export function OcerexFlow({ onClose }: { onClose: () => void }) {
     } finally {
       setBusy(false);
     }
-  }, [extraction, fail]);
+  }, [extraction, fail, track]);
 
   const onConfirmCurrency = useCallback(() => {
     if (!extraction) return;
@@ -166,9 +181,10 @@ export function OcerexFlow({ onClose }: { onClose: () => void }) {
   }, []);
 
   const completeOnboarding = useCallback(() => {
+    track('ocerex_first_use_completed');
     prefs.setOcerexOnboarded(true);
     setStep('home');
-  }, [prefs]);
+  }, [prefs, track]);
 
   const modeOptions: { value: CaptureMode; label: string }[] = [
     { value: 'photo', label: t('ocerex.home.photo') },

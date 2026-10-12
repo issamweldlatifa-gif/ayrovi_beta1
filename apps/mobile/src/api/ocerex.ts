@@ -105,3 +105,23 @@ export async function commitOcerexOrder(extractionId: string): Promise<OcerexExt
   const { data } = await apiSend<unknown>('POST', `${OCEREX_BASE}/commit`, { body: { extractionId } });
   return parseExtraction(data);
 }
+
+/**
+ * أحداث المنتج لـ OCEREX (`POST /api/ocerex/events`): نفس الأحداث المسموحة في الخادم.
+ * لا صورة ولا لقطة ولا رابط خام. الفشل صامت: التحليلات ما توقّفش الأداة.
+ */
+export async function trackOcerexEvent(
+  event: string,
+  sessionId: string,
+  extra: { type?: string; confidenceLevel?: string } = {},
+): Promise<void> {
+  if (!sessionId) return;
+  try {
+    await apiSend<unknown>('POST', `${OCEREX_BASE}/events`, {
+      headers: { 'x-session-id': sessionId },
+      body: { event, ...extra },
+    });
+  } catch {
+    /* analytics must not block the tool */
+  }
+}

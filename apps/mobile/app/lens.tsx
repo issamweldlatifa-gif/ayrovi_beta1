@@ -33,6 +33,7 @@ import {
 } from '@/features/lens/lensView';
 import { OcerexFlow } from '@/features/lens/ocerex/OcerexFlow';
 import { LensProductView } from '@/features/lens/LensProductView';
+import { LensHelpView } from '@/features/lens/LensHelpView';
 
 type Mode = 'camera' | 'code' | 'text';
 type ResultsStage = { kind: 'results'; candidates: LensCandidate[]; eventId: string; excluded: number };
@@ -54,6 +55,7 @@ export default function LensScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [mode, setMode] = useState<Mode>('camera');
   const [stage, setStage] = useState<Stage>({ kind: 'idle' });
+  const [helpOpen, setHelpOpen] = useState(false);
   const [text, setText] = useState('');
   const [favorited, setFavorited] = useState<Record<string, true>>({});
   const [favoriteNote, setFavoriteNote] = useState<TranslationKey | null>(null);
@@ -191,6 +193,17 @@ export default function LensScreen() {
     );
   }
 
+  if (helpOpen) {
+    return (
+      <SubScreen title={t('lens.title')} subtitle={t('lens.help.title')} fallback="/">
+        <View style={styles.wrap}>
+          <LensHelpView />
+          <Button label={t('lens.help.back')} onPress={() => setHelpOpen(false)} tone="quiet" block />
+        </View>
+      </SubScreen>
+    );
+  }
+
   if (ocerexOpen) {
     return (
       <SubScreen title={t('lens.title')} subtitle={t('ocerex.subtitle')} fallback="/">
@@ -227,6 +240,12 @@ export default function LensScreen() {
                 </View>
               </View>
             </Card>
+          </Pressable>
+        ) : null}
+
+        {stage.kind === 'idle' ? (
+          <Pressable onPress={() => setHelpOpen(true)} accessibilityRole="button" hitSlop={HIT_SLOP} testID="lens-open-help">
+            <AppText variant="caption" color={theme.colors.muted}>{t('lens.help.open')}</AppText>
           </Pressable>
         ) : null}
 
