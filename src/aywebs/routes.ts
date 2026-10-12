@@ -67,6 +67,7 @@ import {
   listAyWebsStoreRequests,
   readAyWebsPurchaseRequest,
 } from './purchaseRequests';
+import { brightDataReady } from '../scraper/brightData';
 import { ayWebsCartLinkedMap, bridgeAyWebsCartToAyrovi, listAyWebsOrderLinks, syncAyWebsItemToAyroviCart } from './ayroviBridge';
 import {
   createAyWebsContext,
@@ -403,8 +404,8 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
         capture_enabled: flags.captureEnabled,
         active_adapters: stores.filter((store) => ctx.storeCaptureEnabled(store)).map((store) => store.id),
         deterministic_extraction: true,
-        jina_reader_enabled: process.env.AYROVI_JINA_READER !== 'false',
-        rendered_provider_ready: false, // rendu payant retiré
+        rendered_provider: 'brightdata',
+        rendered_provider_ready: brightDataReady(),
         /** Cache de résolution : taux de réutilisation réellement mesuré. */
         resolve_cache: ayWebsResolveCacheStats(),
         /** Phase 1 — mémo court des fiches ILLISIBLES (réessais rapides). */
