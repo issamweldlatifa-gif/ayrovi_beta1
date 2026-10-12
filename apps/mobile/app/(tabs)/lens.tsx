@@ -101,15 +101,19 @@ export default function LensScreen() {
       setStreamCards([]);
       if (!result.candidates.length) setNote(t('lens.noResults'));
     } catch (error) {
-      setStreamCards([]);
-      // إلغاء المستخدم ما يستحقّش رسالة خطأ.
+      // تحليل أُلغي لأن تحليلاً جديداً بدأ (إعادة المحاولة) أو لأن المستعمل ألغى: ما يلمس الحالة.
       if (isApiError(error) && error.isAborted) return;
+      if (streamController.current !== controller) return;
+      setStreamCards([]);
       setCanRetry(true);
       fail(error);
     } finally {
-      setBusy(false);
-      setProgress(null);
-      if (streamController.current === controller) streamController.current = null;
+      // الحالة تُصفَّر فقط إذا كان هذا التحليل هو الحالي؛ القديم لا يُسكت الجديد.
+      if (streamController.current === controller) {
+        streamController.current = null;
+        setBusy(false);
+        setProgress(null);
+      }
     }
   }, [fail, t]);
 
@@ -205,6 +209,15 @@ export default function LensScreen() {
           { value: 'code', label: t('lens.mode.code') },
         ]}
       />
+      <LensProgressSheet
+        visible={busy}
+        imageUri={preview}
+        progress={progress}
+        cardCount={streamCards.length}
+        onCancel={cancelAnalysis}
+        onRetry={retryAnalysis}
+      />
+
       {mode === 'photo' ? (
         <>
           <LensCamera
@@ -214,11 +227,8 @@ export default function LensScreen() {
             onOpenGallery={() => { void openGallery(); }}
             onCaptureFailed={() => setNote(t('lens.captureFailed'))}
           />
-          {busy || note || (canRetry && lastAsset.current) ? (
+          {note || (canRetry && lastAsset.current) ? (
             <Card>
-              {busy ? (
-                <LensProgressSheet progress={progress} cardCount={streamCards.length} onCancel={cancelAnalysis} />
-              ) : null}
               {note ? (
                 <AppText variant="caption" color={theme.status.danger.fg} accessibilityRole="alert">{note}</AppText>
               ) : null}
