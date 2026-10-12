@@ -22,9 +22,8 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 
 import { AppScreen } from '@/design/layout';
 import { AppHeader } from '@/features/shell/AppHeader';
-import { AppText, Button, Card, Field, KeyValue, ResponsiveActionGroup, SectionHeader, Segmented } from '@/design/ui';
+import { AppText, Button, Card, Field, KeyValue, SectionHeader, Segmented } from '@/design/ui';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
-import { AppImage } from '@/design/appImage';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
 import { isApiError, userMessage } from '@/api/errors';
@@ -35,6 +34,7 @@ import {
 import { analyzeLensImageStream, type LensProgress } from '@/api/lensStream';
 import { LensResultCard } from '@/features/lens/LensResultCard';
 import { LensProgressSheet } from '@/features/lens/LensProgressSheet';
+import { LensCamera, type LensCapturedImage } from '@/features/lens/LensCamera';
 
 /** طريقة البحث: صورة، أو مسح مباشر (QR/باركود)، أو رابط/رمز نصّي. */
 type LensMode = 'photo' | 'live' | 'code';
@@ -55,7 +55,7 @@ export default function LensScreen() {
   const [streamCards, setStreamCards] = useState<LensCandidate[]>([]);
   const [canRetry, setCanRetry] = useState(false);
   const streamController = useRef<AbortController | null>(null);
-  const lastAsset = useRef<ImagePicker.ImagePickerAsset | null>(null);
+  const lastAsset = useRef<LensCapturedImage | null>(null);
 
   const history = useQuery({
     queryKey: ['lens', 'history'],
@@ -73,7 +73,7 @@ export default function LensScreen() {
    * نفس مسار الموقع: نبعثو الملف للخادم، وهو اللي يقرا ويحكم.
    * التحليل يجي في تدفق: كل خطوة وكل فيشة تظهر حين يرسلها الخادم.
    */
-  const analyzeAsset = useCallback(async (asset: ImagePicker.ImagePickerAsset) => {
+  const analyzeAsset = useCallback(async (asset: LensCapturedImage) => {
     lastAsset.current = asset;
     setNote('');
     setCanRetry(false);
@@ -121,25 +121,21 @@ export default function LensScreen() {
     if (lastAsset.current) void analyzeAsset(lastAsset.current);
   }, [analyzeAsset]);
 
-  const pickFrom = useCallback(async (source: 'camera' | 'library') => {
+  /** المعرض فقط: التصوير صار داخل معاينة الكاميرا نفسها. */
+  const openGallery = useCallback(async () => {
     setNote('');
     try {
-      const permission = source === 'camera'
-        ? await ImagePicker.requestCameraPermissionsAsync()
-        : await ImagePicker.requestMediaLibraryPermissionsAsync();
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permission.granted) {
         // إذن مرفوض = السبب الصريح، موش شاشة ساكتة.
         setNote(t('lens.permissionDenied'));
         return;
       }
-      const options: ImagePicker.ImagePickerOptions = {
+      const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         quality: 0.9,
         allowsMultipleSelection: false,
-      };
-      const result = source === 'camera'
-        ? await ImagePicker.launchCameraAsync(options)
-        : await ImagePicker.launchImageLibraryAsync(options);
+      });
       if (result.canceled || !result.assets?.length) return;
       await analyzeAsset(result.assets[0]);
     } catch (error) {
@@ -210,25 +206,28 @@ export default function LensScreen() {
         ]}
       />
       {mode === 'photo' ? (
-      <Card title={t('lens.photoTitle')} hint={t('lens.photoHint')}>
-        <ResponsiveActionGroup>
-          <Button label={t('lens.camera')} onPress={() => pickFrom('camera')} busy={busy} disabled={busy} testID="lens-camera" />
-          <Button label={t('lens.gallery')} tone="quiet" onPress={() => pickFrom('library')} disabled={busy} testID="lens-gallery" />
-        </ResponsiveActionGroup>
-        {preview ? (
-          <AppImage uri={preview} style={styles.preview} contentFit="contain" accessibilityLabel={t('lens.previewAlt')} />
-        ) : null}
-        {busy ? (
-          <LensProgressSheet progress={progress} cardCount={streamCards.length} onCancel={cancelAnalysis} />
-        ) : null}
-        {note ? (
-          <AppText variant="caption" color={theme.status.danger.fg} accessibilityRole="alert">{note}</AppText>
-        ) : null}
-        {canRetry && !busy && lastAsset.current ? (
-          <Button label={t('lens.progress.retry')} tone="quiet" onPress={retryAnalysis} />
-        ) : null}
-      </Card>
-
+        <>
+          <LensCamera
+            busy={busy}
+            thumbnailUri={preview}
+            onCapture={(image) => { void analyzeAsset(image); }}
+            onOpenGallery={() => { void openGallery(); }}
+            onCaptureFailed={() => setNote(t('lens.captureFailed'))}
+          />
+          {busy || note || (canRetry && lastAsset.current) ? (
+            <Card>
+              {busy ? (
+                <LensProgressSheet progress={progress} cardCount={streamCards.length} onCancel={cancelAnalysis} />
+              ) : null}
+              {note ? (
+                <AppText variant="caption" color={theme.status.danger.fg} accessibilityRole="alert">{note}</AppText>
+              ) : null}
+              {canRetry && !busy && lastAsset.current ? (
+                <Button label={t('lens.progress.retry')} tone="quiet" onPress={retryAnalysis} />
+              ) : null}
+            </Card>
+          ) : null}
+        </>
       ) : null}
 
       {mode === 'code' ? (
@@ -305,9 +304,11 @@ export default function LensScreen() {
         <Button label={t('lens.watchOpen')} tone="quiet" onPress={() => router.push('/lens/watches')} />
       </Card>
 
-      <Card title={t('ocerex.title')} hint={t('ocerex.hint')}>
-        <Button label={t('ocerex.open')} onPress={() => router.push('/lens/ocerex')} />
-      </Card>
+      {mode !== 'photo' ? (
+        <Card title={t('ocerex.title')} hint={t('ocerex.hint')}>
+          <Button label={t('ocerex.open')} onPress={() => router.push('/lens/ocerex')} />
+        </Card>
+      ) : null}
 
       <Card title={t('lens.historyTitle')}>
         {history.isPending ? (
@@ -333,7 +334,6 @@ export default function LensScreen() {
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: 8, alignItems: 'center', marginTop: 6 },
-  preview: { width: '100%', height: 200, marginTop: 8 },
   candidate: { borderWidth: StyleSheet.hairlineWidth, padding: 8, marginTop: 10, gap: 2 },
   candidateImage: { width: '100%', height: 160 },
   historyRow: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 8, marginTop: 8, gap: 2 },
