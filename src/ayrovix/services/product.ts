@@ -10,7 +10,6 @@ import { estimateWithDb } from './currency';
 import { catalogSearch, scoreCandidate, externalProductSearch } from './search';
 import { isUnsafeHostname, UnsafeUrlError } from '../../services/safeUrl';
 import { filterDisplayableCandidates, registerTrustedMerchantHost } from './candidatePolicy';
-import { pickScrapedProduct, scrapeProductWithApify } from './apifyProductScraper';
 
 /**
  * AYROVI product-link layer.
@@ -225,19 +224,7 @@ export async function extractProductFromUrl(db: QatafoDatabase, scraper: SmartLi
   } catch { /* unreadable profile → normal recrawl */ }
 
   try {
-    // Apify d'abord (si configuré), puis le scraper local : voir apifyProductScraper.ts.
-    const apifyScraped = await scrapeProductWithApify(url).catch(() => null);
-    let localScraped: ScrapedProduct | null = null;
-    let localError: unknown = null;
-    if (!apifyScraped || apifyScraped.sourcePrice <= 0) {
-      try {
-        localScraped = await scraper.scrapeProduct(url);
-      } catch (error) {
-        localError = error;
-      }
-    }
-    if (!apifyScraped && localError) throw localError;
-    const scraped = pickScrapedProduct(apifyScraped, localScraped);
+    const scraped = await scraper.scrapeProduct(url);
     if (scraped?.title) {
       const product = toAyrovixProduct(db, scraped);
       await enrichSparseProduct(product, url);
