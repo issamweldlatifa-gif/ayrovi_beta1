@@ -33,7 +33,7 @@ import {
 } from '@/api/lens';
 import { analyzeLensImageStream, type LensProgress } from '@/api/lensStream';
 import { LensResultCard } from '@/features/lens/LensResultCard';
-import { LensProgressSheet } from '@/features/lens/LensProgressSheet';
+import { LensResultsSheet } from '@/features/lens/LensResultsSheet';
 import { LensCamera, type LensCapturedImage } from '@/features/lens/LensCamera';
 
 /** طريقة البحث: صورة، أو مسح مباشر (QR/باركود)، أو رابط/رمز نصّي. */
@@ -54,6 +54,8 @@ export default function LensScreen() {
   const [progress, setProgress] = useState<LensProgress | null>(null);
   const [streamCards, setStreamCards] = useState<LensCandidate[]>([]);
   const [canRetry, setCanRetry] = useState(false);
+  /** الورقة مفتوحة للتحليل الحالي (تبقى حتى يغلقها المستعمل). */
+  const [sheetOpen, setSheetOpen] = useState(false);
   const streamController = useRef<AbortController | null>(null);
   const lastAsset = useRef<LensCapturedImage | null>(null);
 
@@ -82,6 +84,7 @@ export default function LensScreen() {
     setStreamCards([]);
     setProgress(null);
     setPreview(asset.uri);
+    setSheetOpen(true);
     streamController.current?.abort();
     const controller = new AbortController();
     streamController.current = controller;
@@ -117,8 +120,10 @@ export default function LensScreen() {
     }
   }, [fail, t]);
 
-  const cancelAnalysis = useCallback(() => {
+  /** إغلاق الورقة: يلغي التحليل الجاري إن وُجد، ويرجع المستعمل إلى الكاميرا. */
+  const closeSheet = useCallback(() => {
     streamController.current?.abort();
+    setSheetOpen(false);
   }, []);
 
   const retryAnalysis = useCallback(() => {
@@ -187,6 +192,8 @@ export default function LensScreen() {
   });
 
   const candidates = analysis?.candidates ?? textResults ?? streamCards;
+  /** الورقة تظهر في وضع الصورة فقط: أثناء البحث، أو حين تكون الفيشات جاهزة. */
+  const sheetShown = mode === 'photo' && sheetOpen && (busy || candidates.length > 0);
 
   return (
     <AppScreen
@@ -209,13 +216,18 @@ export default function LensScreen() {
           { value: 'code', label: t('lens.mode.code') },
         ]}
       />
-      <LensProgressSheet
-        visible={busy}
+      <LensResultsSheet
+        visible={sheetShown}
+        busy={busy}
         imageUri={preview}
         progress={progress}
-        cardCount={streamCards.length}
-        onCancel={cancelAnalysis}
+        results={candidates}
+        note={note}
+        onClose={closeSheet}
         onRetry={retryAnalysis}
+        onOpenCandidate={(candidate) => { setSheetOpen(false); openCandidate(candidate); }}
+        onWatch={(item) => watch.mutate(item)}
+        watchBusy={watch.isPending}
       />
 
       {mode === 'photo' ? (
@@ -290,7 +302,7 @@ export default function LensScreen() {
         </Card>
       ) : null}
 
-      {candidates.length ? (
+      {candidates.length && !sheetShown ? (
         <Card title={t('lens.resultsTitle')} hint={t('lens.resultsHint')}>
           {candidates.map((candidate, index) => (
             <LensResultCard
