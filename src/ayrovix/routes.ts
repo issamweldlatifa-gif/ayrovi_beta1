@@ -326,6 +326,20 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
         mark(trace, 'pipelineCacheHit', true);
         mark(trace, 'candidatesCount', (pCached.data?.candidates?.length ?? 0));
         endTrace(trace);
+        if (stream) {
+          // Le client attend du SSE : en-tête déjà posé, donc on rejoue les fiches et `done`
+          // (un `res.json` ici envoyait du JSON sous `text/event-stream` → « Réponse illisible »).
+          const cachedData = pCached.data;
+          for (const candidate of cachedData.candidates ?? []) emit('card', candidate);
+          emit('done', {
+            eventId: cachedData.eventId,
+            query: cachedData.query,
+            identification: cachedData.identification,
+            excluded: cachedData.excluded,
+            liveStock: cachedData.liveStock,
+          });
+          return res.end();
+        }
         return res.json({ success: true, data: pCached.data });
       }
       mark(trace, 'pipelineCacheHit', false);
