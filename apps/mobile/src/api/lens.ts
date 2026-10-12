@@ -303,19 +303,6 @@ const parseCandidates = (payload: unknown, what: string): LensCandidatesPayload 
   };
 };
 
-/** `POST /analyze-text` — بحث بكلمة. الخادم يجيب كتالوج AYROVI + نتائج الويب. */
-export async function analyzeLensText(
-  query: string,
-  options: RequestOptions = {},
-): Promise<LensCandidatesPayload> {
-  const data = await apiSendData<unknown>('POST', `${LENS_BASE}/analyze-text`, {
-    body: { query },
-    ...options,
-    timeoutMs: options.timeoutMs ?? LENS_ANALYZE_TIMEOUT_MS,
-  });
-  return parseCandidates(data, 'recherche texte');
-}
-
 /** `POST /analyze-code` — محتوى QR (قد يكون رابطاً). */
 export async function analyzeLensCode(
   value: string,

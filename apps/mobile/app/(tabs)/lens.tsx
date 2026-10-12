@@ -29,14 +29,16 @@ import { useI18n } from '@/i18n';
 import { isApiError, userMessage } from '@/api/errors';
 import { addExternalFavorite, fetchFavorites, removeFavorite } from '@/api/account';
 import {
-  LENS_MIN_TEXT, analyzeLensText, chooseLensEvent, createLensWatch,
-  fetchLensHistory, lensUploadInputFrom, detectedItemRoi, type LensAnalysis, type LensCandidate,
+  LENS_MIN_TEXT, analyzeLensBarcode, analyzeLensCode, analyzeLensUrl, chooseLensEvent, classifyLensScan,
+  createLensWatch, fetchLensHistory, lensUploadInputFrom, detectedItemRoi, type LensAnalysis, type LensCandidate,
   type LensDetectedItem,
 } from '@/api/lens';
 import { analyzeLensImageStream, type LensProgress } from '@/api/lensStream';
 import { LensResultCard } from '@/features/lens/LensResultCard';
 import { LensResultsSheet } from '@/features/lens/LensResultsSheet';
 import { LensCamera, type LensCapturedImage } from '@/features/lens/LensCamera';
+import { LensHelp } from '@/features/lens/LensHelp';
+import { LensOcerex } from '@/features/lens/LensOcerex';
 
 /** قصّ يطلبه الخادم بالنسب المائوية (0..100). */
 type LensRoi = { x: number; y: number; w: number; h: number };
@@ -61,7 +63,9 @@ export default function LensScreen() {
   const [canRetry, setCanRetry] = useState(false);
   /** الورقة مفتوحة للتحليل الحالي (تبقى حتى يغلقها المستعمل). */
   const [sheetOpen, setSheetOpen] = useState(false);
-  /** الكاميرا بملء الشاشة مفتوحة (وضع الصورة فقط). */
+  /** لوحة داخلية فوق Lens: المساعدة أو OCEREX (لا تنقل المستعمل إلى صفحة أخرى). */
+  const [overlay, setOverlay] = useState<'help' | 'ocerex' | null>(null);
+  /** كاميرا مفتوحة (وضع الصورة والمسح الحي). */
   const [cameraOpen, setCameraOpen] = useState(true);
   const streamController = useRef<AbortController | null>(null);
   const lastAsset = useRef<LensCapturedImage | null>(null);
@@ -156,8 +160,9 @@ export default function LensScreen() {
   const closeSheet = useCallback(() => {
     streamController.current?.abort();
     setSheetOpen(false);
-    // بعد إغلاق النتائج نرجع إلى الكاميرا (وضع الصورة).
-    setCameraOpen(mode !== 'code');
+    // بعد إغلاق النتائج نرجع إلى الكاميرا المفتوحة (من وضع الرابط/الرمز نرجع إلى الصورة).
+    if (mode === 'code') setMode('photo');
+    setCameraOpen(true);
   }, [mode]);
 
   /** تغيير الوضع من شريط الأوضاع (الصفحة أو الكاميرا): الكاميرا تفتح للصورة فقط. */
@@ -166,10 +171,70 @@ export default function LensScreen() {
     setCameraOpen(next !== 'code');
   }, []);
 
-  /** كل رجوع إلى Lens (من المساعدة أو OCEREX أو المسح) يعيد الكاميرا، إلا وضع الرابط/الرمز. */
+  /** كل رجوع إلى Lens (من صفحة مثل المتابعة) يعيد الكاميرا، إلا وضع الرابط/الرمز. */
   useFocusEffect(useCallback(() => {
     if (mode !== 'code') setCameraOpen(true);
   }, [mode]));
+
+  /** فتح لوحة داخلية (المساعدة / OCEREX): الكاميرا تُخفى، والإغلاق يعيدها. */
+  const openOverlay = useCallback((name: 'help' | 'ocerex') => {
+    setCameraOpen(false);
+    setOverlay(name);
+  }, []);
+
+  const closeOverlay = useCallback(() => {
+    setOverlay(null);
+    changeMode('photo');
+  }, [changeMode]);
+
+  /**
+   * قراءة نصّ أو رمز (QR / باركود / رابط): الخادم يعطي المعنى، والنتائج تظهر في نفس الورقة.
+   * القفل يمنع تكرار قراءة واحدة من الكاميرا الحيّة.
+   */
+  const scanLock = useRef(false);
+  const runCode = useCallback(async (raw: string) => {
+    const target = classifyLensScan(raw);
+    if (!target) {
+      setNote(t('lens.scanEmpty'));
+      return;
+    }
+    lastAsset.current = null;
+    lastRoi.current = null;
+    setCanRetry(false);
+    setNote('');
+    setAnalysis(null);
+    setPreview('');
+    setStreamCards([]);
+    setProgress(null);
+    setTextResults(null);
+    setCameraOpen(false);
+    setSheetOpen(true);
+    setBusy(true);
+    try {
+      let found: LensCandidate[];
+      if (target.kind === 'barcode') {
+        found = (await analyzeLensBarcode(target.value)).candidates;
+      } else if (target.kind === 'url') {
+        const result = await analyzeLensUrl(target.value, { channel: 'qr' });
+        found = result.alternates;
+        if (result.fallback) setNote(t('lens.urlFallback'));
+      } else {
+        found = (await analyzeLensCode(target.value)).candidates;
+      }
+      setTextResults(found);
+      if (!found.length) setNote(t('lens.noResults'));
+    } catch (error) {
+      fail(error);
+    } finally {
+      setBusy(false);
+    }
+  }, [fail, t]);
+
+  const onBarcode = useCallback((value: string) => {
+    if (scanLock.current) return;
+    scanLock.current = true;
+    void runCode(value).finally(() => { scanLock.current = false; });
+  }, [runCode]);
 
   const retryAnalysis = useCallback(() => {
     if (lastAsset.current) void analyzeAsset(lastAsset.current, lastRoi.current ?? undefined);
@@ -196,18 +261,6 @@ export default function LensScreen() {
       fail(error);
     }
   }, [analyzeAsset, fail, t]);
-
-  const searchByText = useMutation({
-    mutationFn: (query: string) => analyzeLensText(query),
-    onSuccess: (result) => {
-      setNote('');
-      setAnalysis(null);
-      setPreview('');
-      setTextResults(result.candidates);
-      if (!result.candidates.length) setNote(t('lens.noResults'));
-    },
-    onError: fail,
-  });
 
   /** فتح نتائج الرابط: نمرّرو الرابط إلى شاشة المتجر (كابتشر + Add to Cart). */
   const openCandidate = useCallback((candidate: LensCandidate) => {
@@ -273,7 +326,7 @@ export default function LensScreen() {
 
   const candidates = analysis?.candidates ?? textResults ?? streamCards;
   /** الورقة تظهر في وضع الصورة فقط: أثناء البحث، أو حين تكون الفيشات جاهزة. */
-  const sheetShown = mode !== 'code' && sheetOpen && (busy || candidates.length > 0);
+  const sheetShown = sheetOpen && (busy || candidates.length > 0);
 
   return (
     <AppScreen
@@ -317,6 +370,9 @@ export default function LensScreen() {
         onToggleFavorite={(item) => toggleFavorite.mutate(item)}
       />
 
+      {overlay === 'help' ? <LensHelp onClose={closeOverlay} /> : null}
+      {overlay === 'ocerex' ? <LensOcerex onClose={closeOverlay} /> : null}
+
       <LensCamera
         visible={cameraOpen && mode !== 'code'}
         mode={mode}
@@ -324,8 +380,9 @@ export default function LensScreen() {
         thumbnailUri={preview}
         onModeChange={changeMode}
         onClose={() => setCameraOpen(false)}
-        onHelp={() => { setCameraOpen(false); router.push('/lens/help'); }}
-        onOcerex={() => { setCameraOpen(false); router.push('/lens/ocerex'); }}
+        onHelp={() => openOverlay('help')}
+        onOcerex={() => openOverlay('ocerex')}
+        onBarcode={onBarcode}
         onCapture={(image) => { setCameraOpen(false); void analyzeAsset(image); }}
         onOpenGallery={() => { setCameraOpen(false); void openGallery(); }}
         onCaptureFailed={() => setNote(t('lens.captureFailed'))}
@@ -364,13 +421,10 @@ export default function LensScreen() {
           label={t('lens.search')}
           tone="quiet"
           testID="lens-search"
-          busy={searchByText.isPending}
-          disabled={text.trim().length < LENS_MIN_TEXT || searchByText.isPending}
-          onPress={() => searchByText.mutate(text.trim())}
+          busy={busy}
+          disabled={text.trim().length < LENS_MIN_TEXT || busy}
+          onPress={() => { void runCode(text.trim()); }}
         />
-        {searchByText.isError ? (
-          <ErrorBlock error={searchByText.error} onRetry={() => searchByText.mutate(text.trim())} />
-        ) : null}
         <Button label={t('lens.close')} tone="quiet" onPress={() => changeMode('photo')} />
       </Card>
 
@@ -420,11 +474,6 @@ export default function LensScreen() {
         </Card>
       ) : null}
 
-      {mode === 'live' ? (
-        <Card title={t('lens.scanTitle')} hint={t('lens.scanHint')}>
-          <Button label={t('lens.scanOpen')} onPress={() => router.push('/lens/scan')} />
-        </Card>
-      ) : null}
 
       <Card title={t('lens.watchTitle')} hint={t('lens.watchHint')}>
         <Button label={t('lens.watchOpen')} tone="quiet" onPress={() => router.push('/lens/watches')} />
@@ -432,7 +481,7 @@ export default function LensScreen() {
 
       {mode !== 'photo' ? (
         <Card title={t('ocerex.title')} hint={t('ocerex.hint')}>
-          <Button label={t('ocerex.open')} onPress={() => router.push('/lens/ocerex')} />
+          <Button label={t('ocerex.open')} onPress={() => openOverlay('ocerex')} />
         </Card>
       ) : null}
 

@@ -114,7 +114,6 @@ export default function TabsLayout() {
 
       {/* OCEREX retiré de la barre : la route reste déclarée (aucune fusion
           avec Lens), elle n’est simplement plus un onglet. */}
-      <Tabs.Screen name="ocerex" options={{ href: null, title: t('tabs.ocerex') }} />
 
       {/* Route conservée, retirée de la barre : l’accueil s’atteint par le logo. */}
       <Tabs.Screen name="index" options={{ href: null }} />

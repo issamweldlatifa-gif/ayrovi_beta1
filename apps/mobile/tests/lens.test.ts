@@ -11,8 +11,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
-  LENS_ANALYZE_TIMEOUT_MS, LENS_BARCODE_PATTERN, LENS_MIN_TEXT,
-  analyzeLensBarcode, analyzeLensCode, analyzeLensImage, analyzeLensText, analyzeLensUrl,
+  LENS_ANALYZE_TIMEOUT_MS, LENS_BARCODE_PATTERN,
+  analyzeLensBarcode, analyzeLensCode, analyzeLensImage, analyzeLensUrl,
   LENS_BARCODE_TYPES, classifyLensScan,
   fetchLensHistory, fetchLensWatches, isLensAllowedMime, lensLiveStock, lensUploadInputFrom,
   parseLensAnalysis, parseLensCandidate,
@@ -189,17 +189,6 @@ describe('رفع الصورة', () => {
 /* ── النصّ، الرمز، الباركود، الرابط ─────────────────────────────────────── */
 
 describe('القنوات النصّية', () => {
-  it('النصّ يمشي في `query`، والحدّ الأدنى معروف', async () => {
-    const spy = stubFetch(() => json({ success: true, data: { query: 'anker', candidates: [CANDIDATE], eventId: 'ayx_2' } }));
-    const result = await analyzeLensText('anker');
-    const [url, init] = spy.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe(`${API_BASE_URL}/api/ayrovix/analyze-text`);
-    expect(bodyOf(init)).toEqual({ query: 'anker' });
-    expect(result.candidates[0].title).toBe('Écouteurs Bluetooth');
-    expect(result.eventId).toBe('ayx_2');
-    expect(LENS_MIN_TEXT).toBe(2);
-  });
-
   it('QR في `value`، والباركود في `code` بستّ خانات على الأقل', async () => {
     const spy = stubFetch((url) => url.includes('analyze-barcode')
       ? json({ success: true, data: { code: '1234567890', candidates: [], eventId: 'ayx_3' } })

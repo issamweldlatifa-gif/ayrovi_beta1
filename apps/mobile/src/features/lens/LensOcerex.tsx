@@ -20,7 +20,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { CameraView } from 'expo-camera';
 
 import { AppText, Button, Card, Field, KeyValue, ResponsiveActionGroup, Segmented } from '@/design/ui';
-import { SubScreen } from '@/design/subScreen';
+import { LensPanel } from '@/features/lens/LensPanel';
 import { useTheme } from '@/design/theme';
 import { AppImage } from '@/design/appImage';
 import { VIDEO_BACKDROP } from '@/design/tokens.mobile';
@@ -33,7 +33,7 @@ import {
 } from '@/api/ocerex';
 import { useAyWebsSessionId } from '@/features/aywebs/session';
 
-export default function OcerexScreen() {
+export function LensOcerex({ onClose }: { onClose: () => void }) {
   const theme = useTheme();
   const { t, locale } = useI18n();
   const sessionId = useAyWebsSessionId();
@@ -208,7 +208,7 @@ export default function OcerexScreen() {
   };
 
   return (
-    <SubScreen title={t('ocerex.title')} subtitle={t('ocerex.hint')} fallback="/lens">
+    <LensPanel title={t('ocerex.title')} subtitle={t('ocerex.hint')} onClose={onClose}>
       <Card>
         {viewfinder ? (
           <>
@@ -410,7 +410,7 @@ export default function OcerexScreen() {
           ) : null}
         </Card>
       ) : null}
-    </SubScreen>
+    </LensPanel>
   );
 }
 

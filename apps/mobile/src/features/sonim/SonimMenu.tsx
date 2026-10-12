@@ -10,7 +10,7 @@
  *
  *  • **« Ma commande » et « AYROVIX » mènent à des écrans qui EXISTENT.** Une
  *    entrée qui ouvre un vide est pire qu'une entrée absente ; chacune a donc
- *    été vérifiée contre les routes réelles (`/orders`, `/lens/scan`,
+ *    été vérifiée contre les routes réelles (`/orders`, `/(tabs)/lens`,
  *    `/account/preferences`).
  *
  *  • **L'historique se déplie dans le tiroir**, il ne change pas d'écran :
@@ -93,7 +93,7 @@ export function SonimMenu({ visible, onClose, onNewChat, onOpenThread, threads }
       <View style={[styles.separator, { backgroundColor: theme.colors.divider }]} />
 
       <DrawerItem icon="receipt-outline" label={t('sonim.menu.order')} onPress={() => go('/orders')} />
-      <DrawerItem icon="scan-outline" label={t('sonim.menu.ayrovix')} hint={t('sonim.menu.ayrovixHint')} onPress={() => go('/lens/scan')} />
+      <DrawerItem icon="scan-outline" label={t('sonim.menu.ayrovix')} hint={t('sonim.menu.ayrovixHint')} onPress={() => go('/(tabs)/lens')} />
       <DrawerItem icon="settings-outline" label={t('sonim.menu.settings')} onPress={() => go('/account/preferences')} />
     </Drawer>
   );

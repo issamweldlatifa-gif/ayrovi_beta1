@@ -1,21 +1,20 @@
 /**
  * مساعدة Lens: سياسة الاستعمال (مسموح / ممنوع) باللغة الحالية للتطبيق.
- * النص في `src/features/lens/lensPolicy.ts` — لا يُعدَّل هنا.
+ * النص في `lensPolicy.ts` — لا يُعدَّل هنا.
  */
 import { StyleSheet, View } from 'react-native';
 
 import { AppText, Button, Card } from '@/design/ui';
-import { SubScreen } from '@/design/subScreen';
 import { useI18n } from '@/i18n';
 import { LENS_POLICY } from '@/features/lens/lensPolicy';
-import { router } from 'expo-router';
+import { LensPanel } from '@/features/lens/LensPanel';
 
-export default function LensHelpScreen() {
+export function LensHelp({ onClose }: { onClose: () => void }) {
   const { t, locale } = useI18n();
   const policy = LENS_POLICY[locale];
 
   return (
-    <SubScreen title={t('lens.help.title')} fallback="/(tabs)/lens">
+    <LensPanel title={t('lens.help.title')} onClose={onClose}>
       <AppText variant="body">{policy.intro}</AppText>
       {policy.sections.map((section) => (
         <Card key={section.title} title={section.title}>
@@ -29,8 +28,8 @@ export default function LensHelpScreen() {
           {section.body ? <AppText variant="body">{section.body}</AppText> : null}
         </Card>
       ))}
-      <Button label={t('lens.close')} tone="quiet" onPress={() => router.back()} />
-    </SubScreen>
+      <Button label={t('lens.close')} tone="quiet" onPress={onClose} />
+    </LensPanel>
   );
 }
 

@@ -8,9 +8,10 @@
 import { useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CameraView, useCameraPermissions, type FlashMode } from 'expo-camera';
+import { CameraView, useCameraPermissions, type BarcodeScanningResult, type FlashMode } from 'expo-camera';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
+import { LENS_BARCODE_TYPES } from '@/api/lens';
 import { AppText, Button } from '@/design/ui';
 import { AppImage } from '@/design/appImage';
 import { useTheme } from '@/design/theme';
@@ -32,6 +33,8 @@ type LensCameraProps = {
   onClose: () => void;
   onHelp: () => void;
   onOcerex: () => void;
+  /** وضع المسح الحي: قيمة QR / باركود تُقرأ من المعاينة نفسها. */
+  onBarcode: (value: string) => void;
   onCapture: (image: LensCapturedImage) => void;
   onOpenGallery: () => void;
   onCaptureFailed: () => void;
@@ -41,7 +44,7 @@ const MODES: LensCameraMode[] = ['live', 'photo', 'code'];
 
 export function LensCamera({
   visible, mode, busy, thumbnailUri, onModeChange, onClose, onHelp, onOcerex,
-  onCapture, onOpenGallery, onCaptureFailed,
+  onBarcode, onCapture, onOpenGallery, onCaptureFailed,
 }: LensCameraProps) {
   const theme = useTheme();
   const { t } = useI18n();
@@ -73,7 +76,15 @@ export function LensCamera({
     <Modal visible={visible} animationType="fade" statusBarTranslucent onRequestClose={onClose}>
       <View style={[styles.root, { backgroundColor: theme.colors.ink }]}>
         {granted ? (
-          <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="back" flash={flash} active={live} />
+          <CameraView
+            ref={cameraRef}
+            style={StyleSheet.absoluteFill}
+            facing="back"
+            flash={flash}
+            active={live}
+            barcodeScannerSettings={mode === 'live' ? { barcodeTypes: [...LENS_BARCODE_TYPES] } : undefined}
+            onBarcodeScanned={mode === 'live' ? (result: BarcodeScanningResult) => onBarcode(String(result.data ?? '')) : undefined}
+          />
         ) : (
           <View style={styles.askBox}>
             <Button label={t('lens.cameraAsk')} onPress={() => { void requestPermission(); }} />
