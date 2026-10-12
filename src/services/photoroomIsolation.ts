@@ -90,6 +90,7 @@ export async function removeBackgroundWithPhotoRoom(
       console.warn('[PhotoRoom] réponse non PNG ou vide — repli.');
       return null;
     }
+    console.info(`[PhotoRoom] détourage reçu (${output.length} octets).`);
     return output;
   } catch (error: any) {
     // Le message d'erreur peut contenir des détails d'URL : on ne journalise que le nom.

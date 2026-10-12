@@ -426,7 +426,10 @@ export async function getIsolatedImage(rawUrl: string): Promise<CachedIsolation>
 export function warmIsolation(urls: Array<string | null | undefined>, limit = 6): void {
   const targets = urls.filter((url): url is string => Boolean(url && /^https?:\/\//i.test(url))).slice(0, limit);
   for (const url of targets) {
-    void getIsolatedImage(url).catch(() => { /* chauffe best-effort */ });
+    // Diagnostic : l'échec reste non bloquant, mais il est journalisé (code seulement).
+    void getIsolatedImage(url).catch((error: any) => {
+      console.warn(`[Isolation] chauffe échouée (${String(error?.code || error?.message || 'erreur').slice(0, 60)}) provider=${isolationProvider()}`);
+    });
   }
 }
 
