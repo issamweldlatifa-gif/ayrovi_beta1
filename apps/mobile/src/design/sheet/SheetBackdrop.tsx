@@ -1,22 +1,20 @@
 /**
  * الظل الخلفي للدرج: يعتم الشاشة تحته، والنقر عليه يطلب الإغلاق (كالسهم).
- * شفافيته تُحسب على خيط الواجهة من موضع الدرج، فيخفت مع الحركة نفسها.
+ * شفافيته تأتي من موضع الدرج نفسه، فتخفت مع الحركة.
  */
-import { Pressable, StyleSheet } from 'react-native';
-import Animated, { type AnimatedStyle } from 'react-native-reanimated';
-import type { ViewStyle } from 'react-native';
+import { Animated, Pressable, StyleSheet } from 'react-native';
 
 import { useI18n } from '@/i18n';
 
 export interface SheetBackdropProps {
-  animatedStyle: AnimatedStyle<ViewStyle>;
+  opacity: Animated.AnimatedInterpolation<number>;
   onPress: () => void;
 }
 
-export function SheetBackdrop({ animatedStyle, onPress }: SheetBackdropProps) {
+export function SheetBackdrop({ opacity, onPress }: SheetBackdropProps) {
   const { t } = useI18n();
   return (
-    <Animated.View style={[StyleSheet.absoluteFill, styles.scrim, animatedStyle]}>
+    <Animated.View style={[StyleSheet.absoluteFill, styles.scrim, { opacity }]}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={t('lens.close')}
