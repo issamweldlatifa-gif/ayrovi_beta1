@@ -1,6 +1,7 @@
 /**
- * الشريط العلوي لـLens فوق الكاميرا: رجوع إلى الرئيسية، العنوان، والأزرار
- * (السجل، الفلاش، المساعدة). الشاشة الرئيسية وحدها تتولى التنقل خارجه.
+ * الشريط العلوي لـLens فوق الكاميرا، مطابق للمرجع حرفياً:
+ * سهم الرجوع ثم العنوان بجانبه، وعلى اليمين الفلاش والمساعدة فقط.
+ * الرجوع يعود إلى الشاشة الرئيسية. لا يوجد زر سجل في هذا الشريط.
  */
 import { Pressable, StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -13,14 +14,13 @@ export interface LensTopBarProps {
   title: string;
   onBack: () => void;
   onHelp: () => void;
-  onHistory: () => void;
   /** يُخفى الفلاش في وضع الرابط والرمز، لأنه لا كاميرا فيه. */
   showFlash: boolean;
   flashOn: boolean;
   onToggleFlash: () => void;
 }
 
-export function LensTopBar({ title, onBack, onHelp, onHistory, showFlash, flashOn, onToggleFlash }: LensTopBarProps) {
+export function LensTopBar({ title, onBack, onHelp, showFlash, flashOn, onToggleFlash }: LensTopBarProps) {
   const theme = useTheme();
   const { t } = useI18n();
   const color = theme.colors.canvas;
@@ -45,9 +45,6 @@ export function LensTopBar({ title, onBack, onHelp, onHistory, showFlash, flashO
             <Ionicons name={flashOn ? 'flash' : 'flash-off'} size={24} color={color} />
           </Pressable>
         ) : null}
-        <Pressable accessibilityRole="button" accessibilityLabel={t('lens.historyTitle')} onPress={onHistory} hitSlop={8} style={styles.iconButton}>
-          <Ionicons name="time-outline" size={24} color={color} />
-        </Pressable>
         <Pressable accessibilityRole="button" accessibilityLabel={t('lens.helpOpen')} onPress={onHelp} hitSlop={8} style={styles.iconButton}>
           <Ionicons name="help-circle-outline" size={26} color={color} />
         </Pressable>
@@ -57,8 +54,8 @@ export function LensTopBar({ title, onBack, onHelp, onHistory, showFlash, flashO
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  title: { flex: 1, textAlign: 'center' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  title: { flex: 1, textAlign: 'left' },
   end: { flexDirection: 'row', alignItems: 'center' },
   iconButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
 });

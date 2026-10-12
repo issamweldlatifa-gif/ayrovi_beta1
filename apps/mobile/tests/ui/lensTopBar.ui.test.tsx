@@ -22,10 +22,9 @@ function Providers({ children }: { children: React.ReactNode }) {
 }
 
 const base = {
-  title: 'AYROVI Lens',
+  title: 'AYROVIX Lens',
   onBack: () => undefined,
   onHelp: () => undefined,
-  onHistory: () => undefined,
   flashOn: false,
   onToggleFlash: () => undefined,
 };
@@ -38,7 +37,7 @@ describe('LensTopBar', () => {
         <LensTopBar {...base} onBack={onBack} showFlash />
       </Providers>,
     );
-    expect(screen.getByText('AYROVI Lens')).toBeTruthy();
+    expect(screen.getByText('AYROVIX Lens')).toBeTruthy();
     fireEvent.press(screen.getByRole('button', { name: /retour|رجوع/i }));
     expect(onBack).toHaveBeenCalledTimes(1);
   });
