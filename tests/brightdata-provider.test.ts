@@ -66,3 +66,13 @@ describe('Bright Data Web Unlocker', () => {
     expect(scraper).not.toContain('r.jina.ai');
   });
 });
+
+describe('journal de lecture Bright Data', () => {
+  it('journalise un résumé par lien sans le chemin ni la requête', () => {
+    const scraper = readFileSync('src/scraper/scraper.ts', 'utf8');
+    expect(scraper).toContain("console.info('[scraper] read'");
+    expect(scraper).toContain('hostname');
+    expect(scraper).toContain('failureCode: result.failureCode');
+    expect(scraper).not.toMatch(/console\.info\([^)]*\burl\b/);
+  });
+});

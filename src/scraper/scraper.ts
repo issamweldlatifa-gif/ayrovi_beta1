@@ -18,6 +18,24 @@ function positiveIntEnv(key: string, fallback: number, min: number, max: number)
  * lecture. `pageUrl` : l'URL réellement ouverte chez le client, si elle diffère
  * de l'URL demandée (redirections marchand).
  */
+/**
+ * Journal d'une lecture (une ligne par lien). Hôte seulement : ni chemin ni
+ * requête, pour ne jamais journaliser de jeton ou d'identifiant de session.
+ */
+function logReadOutcome(url: string, storeType: StoreType, result: MerchantScrapeResult, ms: number): void {
+  let host = 'invalid-url';
+  try { host = new URL(url).hostname; } catch { /* URL déjà rejetée en amont */ }
+  console.info('[scraper] read', JSON.stringify({
+    host,
+    store: storeType,
+    ok: Boolean(result.data && result.verified),
+    partial: Boolean(result.data && !result.verified),
+    price: result.data?.price ?? null,
+    failureCode: result.failureCode,
+    ms,
+  }));
+}
+
 export interface ScrapeOptions {
   pageHtml?: string | null;
   pageUrl?: string | null;
@@ -401,13 +419,18 @@ export class SmartLinkScraper {
     }
 
     const brightDataTimeoutMs = positiveIntEnv('AYROVIX_BRIGHTDATA_TIMEOUT_MS', 18_000, 250, 60_000);
+    const startedAt = Date.now();
+    const outcome = await this.readViaBrightData(url, storeType, brightDataTimeoutMs);
+    logReadOutcome(url, storeType, outcome, Date.now() - startedAt);
+    return outcome;
+  }
 
+  private async readViaBrightData(url: string, storeType: StoreType, timeoutMs: number): Promise<MerchantScrapeResult> {
     if (!brightDataReady()) {
       return { data: null, verified: false, provider: 'none', method: 'none', failureCode: 'BRIGHTDATA_NOT_CONFIGURED' };
     }
-
     try {
-      const result = await this.probeBrightData(url, storeType, AbortSignal.timeout(brightDataTimeoutMs));
+      const result = await this.probeBrightData(url, storeType, AbortSignal.timeout(timeoutMs));
       if (result) return result;
       return { data: null, verified: false, provider: 'none', method: 'none', failureCode: 'BRIGHTDATA_EMPTY_PAGE' };
     } catch (error) {
