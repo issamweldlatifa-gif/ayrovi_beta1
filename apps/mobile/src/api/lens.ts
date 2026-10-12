@@ -583,16 +583,22 @@ export const isLensAllowedMime = (mime: string): boolean =>
  * الصيغة اللّي يستحقّها الشاشة من مصوّر الجهاز: `mimeType` الغايب يتقرا من
  * الامتداد، والصيغة غير المقبولة تتقال هنا قبل ما تتبعث 6 ميغا بلا فايدة.
  */
+/** نوع الصورة كما سيُرفع: المعلن من المصوّر، وإلا يُستنتج من الامتداد. */
+export function lensMimeOf(asset: { uri?: string; mimeType?: string }): string {
+  const uri = String(asset.uri ?? '');
+  const declared = String(asset.mimeType ?? '').toLowerCase();
+  const inferred = /\.png$/i.test(uri) ? 'image/png' : /\.webp$/i.test(uri) ? 'image/webp' : 'image/jpeg';
+  return declared || inferred;
+}
+
 export function lensUploadInputFrom(asset: {
   uri?: string; mimeType?: string; fileName?: string | null;
 }): LensImageInput {
   const uri = String(asset.uri ?? '');
   if (!uri) throw new ApiError('malformed', 'Aucune image à analyser');
-  const declared = String(asset.mimeType ?? '').toLowerCase();
-  const inferred = /\.png$/i.test(uri) ? 'image/png' : /\.webp$/i.test(uri) ? 'image/webp' : 'image/jpeg';
   return {
     uri,
-    mimeType: declared || inferred,
+    mimeType: lensMimeOf(asset),
     fileName: asset.fileName ?? undefined,
   };
 }

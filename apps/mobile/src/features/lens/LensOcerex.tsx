@@ -25,6 +25,7 @@ import { AppImage } from '@/design/appImage';
 import { VIDEO_BACKDROP } from '@/design/tokens.mobile';
 import { useI18n } from '@/i18n';
 import { isApiError, userMessage } from '@/api/errors';
+import { isLensAllowedMime, lensMimeOf } from '@/api/lens';
 import {
   OCEREX_INVALID_HINT_PLACEHOLDER, analyzeOcerexImage, calculateOcerexPrice, commitOcerexToCart,
   ocerexErrorMessage, ocerexReadiness, resolveOcerexUrl,
@@ -67,6 +68,11 @@ export function LensOcerex({ open, onClose, onClosed, onGoToCart }: LensOcerexPr
   /** المسار المشترك: أي صورة (لقطة مباشرة أو من المعرض) تمشي من هنا. */
   const processAsset = useCallback(async (asset: { uri: string; mimeType?: string | null; fileName?: string | null }) => {
     setNote('');
+    // نفس قاعدة Lens: صيغة غير مقبولة تُقال قبل الرفع، وبلا معاينة مكسورة.
+    if (!isLensAllowedMime(lensMimeOf({ uri: asset.uri, mimeType: asset.mimeType ?? undefined }))) {
+      setNote(t('lens.unsupportedImage'));
+      return;
+    }
     setPreview(asset.uri);
     setShots((prev) => [asset.uri, ...prev.filter((uri) => uri !== asset.uri)].slice(0, 4));
     setBusy(true);

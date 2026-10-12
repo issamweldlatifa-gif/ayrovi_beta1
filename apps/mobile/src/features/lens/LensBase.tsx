@@ -77,7 +77,7 @@ export function LensBase(props: LensBaseProps) {
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.ink }]}>
       {mode === 'code' ? (
-        <View style={[styles.codePanel, { top: insets.top + 56, backgroundColor: theme.colors.canvas, borderRadius: theme.radius.card }]}>
+        <View style={[styles.codePanel, { top: insets.top + theme.chrome.header + 8, backgroundColor: theme.colors.canvas, borderRadius: theme.radius.card }]}>
           <AppText variant="label" weight="bold">{t('lens.textLabel')}</AppText>
           <TextInput
             accessibilityLabel={t('lens.textLabel')}
@@ -113,7 +113,7 @@ export function LensBase(props: LensBaseProps) {
         </View>
       )}
 
-      <View style={[styles.top, { top: insets.top + 8 }]}>
+      <View style={[styles.top, { top: insets.top + theme.chrome.header + 4 }]}>
         <Pressable accessibilityRole="button" accessibilityLabel={t('lens.helpOpen')} onPress={props.onHelp} style={styles.iconButton}>
           <Ionicons name="help-circle-outline" size={26} color={theme.colors.canvas} />
         </Pressable>
@@ -217,7 +217,7 @@ export function LensBase(props: LensBaseProps) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, overflow: 'hidden', borderRadius: 16 },
+  root: { flex: 1, overflow: 'hidden' },
   askBox: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 16 },
   codePanel: { position: 'absolute', left: 16, right: 16, padding: 16, gap: 12 },
   input: { borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16 },

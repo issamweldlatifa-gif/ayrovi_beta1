@@ -17,13 +17,12 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { AppScreen } from '@/design/layout';
 import { AppHeader } from '@/features/shell/AppHeader';
 import { useI18n } from '@/i18n';
 import { isApiError, userMessage } from '@/api/errors';
 import { addExternalFavorite, fetchFavorites, removeFavorite } from '@/api/account';
 import {
-  LENS_MIN_TEXT, analyzeLensBarcode, analyzeLensCode, analyzeLensUrl, chooseLensEvent, classifyLensScan,
+  LENS_MIN_TEXT, analyzeLensBarcode, isLensAllowedMime, lensMimeOf, analyzeLensCode, analyzeLensUrl, chooseLensEvent, classifyLensScan,
   createLensWatch, fetchLensHistory, lensUploadInputFrom, detectedItemRoi, type LensAnalysis, type LensCandidate,
   type LensDetectedItem,
 } from '@/api/lens';
@@ -34,6 +33,9 @@ import { LensResultsDrawer } from '@/features/lens/LensResultsDrawer';
 import { LensHelp } from '@/features/lens/LensHelp';
 import { LensOcerex } from '@/features/lens/LensOcerex';
 import { LensHistory } from '@/features/lens/LensHistory';
+
+/** مدة منع إعادة قراءة الرمز نفسه من الكاميرا الحيّة (ملّي ثانية). */
+const LIVE_SCAN_REPEAT_MS = 4_000;
 
 /** قصّ يطلبه الخادم بالنسب المائوية (0..100). */
 type LensRoi = { x: number; y: number; w: number; h: number };
@@ -137,6 +139,11 @@ export default function LensScreen() {
    * التحليل يجي في تدفق: كل خطوة وكل فيشة تظهر حين يرسلها الخادم.
    */
   const analyzeAsset = useCallback(async (asset: LensCapturedImage, roi?: LensRoi) => {
+    // صيغة مرفوضة تُقال قبل أي رفع: لا 6 ميغا تُرسل لتُرفض، ولا نتائج قديمة تُمسح.
+    if (!isLensAllowedMime(lensMimeOf(asset))) {
+      setNote(t('lens.unsupportedImage'));
+      return;
+    }
     lastAsset.current = asset;
     lastRoi.current = roi ?? null;
     setNote('');
@@ -192,6 +199,8 @@ export default function LensScreen() {
    * القفل يمنع تكرار قراءة واحدة من الكاميرا الحيّة.
    */
   const scanLock = useRef(false);
+  /** آخر رمز قُرئ من الكاميرا الحيّة ووقته (انظر `onBarcode`). */
+  const lastScan = useRef<{ value: string; at: number }>({ value: '', at: 0 });
   const runCode = useCallback(async (raw: string) => {
     const target = classifyLensScan(raw);
     if (!target) {
@@ -231,6 +240,10 @@ export default function LensScreen() {
   /** قراءة الكاميرا الحيّة: تُتجاهل إذا كان درج مفتوح أو قراءة جارية. */
   const onBarcode = useCallback((value: string) => {
     if (!Layers.scanAllowed(stackRef.current) || scanLock.current) return;
+    // الكاميرا تعيد قراءة الرمز نفسه ما دام في الإطار: بدون هذا، إغلاق الدرج يفتحه من جديد فوراً.
+    const now = Date.now();
+    if (value === lastScan.current.value && now - lastScan.current.at < LIVE_SCAN_REPEAT_MS) return;
+    lastScan.current = { value, at: now };
     scanLock.current = true;
     void runCode(value).finally(() => { scanLock.current = false; });
   }, [runCode]);
@@ -353,11 +366,11 @@ export default function LensScreen() {
   const cameraActive = focused && stack.mode !== 'code';
 
   return (
-    <AppScreen
-      overlayHeader={({ scrolled }) => <AppHeader scrolled={scrolled} />}
-      scroll={false}
-      hasBottomBar
-      chrome>
+    /**
+     * ملء الشاشة: الكاميرا تبدأ من الحافة العليا وتحت الترويسة الشفافة، بلا هوامش
+     * ولا إطار مستدير. التبويبات بقيت في التدفق أسفل الشاشة، فالمعاينة تنتهي فوقها.
+     */
+    <View style={{ flex: 1 }}>
       <View style={{ flex: 1 }}>
         <LensBase
           mode={stack.mode}
@@ -429,6 +442,7 @@ export default function LensScreen() {
           />
         ) : null}
       </View>
-    </AppScreen>
+      <AppHeader scrolled={false} />
+    </View>
   );
 }

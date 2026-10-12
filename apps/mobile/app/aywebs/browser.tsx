@@ -20,6 +20,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { WebView as RNWebView, type WebViewMessageEvent, type WebViewProps } from 'react-native-webview';
+import { decideWebNavigation, isWebPageUrl } from '@/features/aywebs/webNavigation';
 
 import { AppText, Button, Card, KeyValue } from '@/design/ui';
 import { useTheme } from '@/design/theme';
@@ -62,6 +63,8 @@ export default function AyWebsBrowserScreen() {
   const url = String(params.url ?? '');
   const storeId = String(params.storeId ?? '');
   const captureAllowed = params.capture === '1';
+  /** رابط غير صالح (مخطط غريب أو فارغ) لا يُحمَّل أبداً في الـWebView. */
+  const pageOk = isWebPageUrl(url);
 
   const webRef = useRef<WebViewHandle>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -106,7 +109,7 @@ export default function AyWebsBrowserScreen() {
 
   /** تصنيف الصفحة — شرط تفعيل «Add to Cart» (لا تخمين من الرابط). */
   useEffect(() => {
-    if (!sessionId || !url) return;
+    if (!sessionId || !url || !pageOk) return;
     let alive = true;
     setClassified(false);
     analyzeAyWebsPage(url, { sessionId })
@@ -269,11 +272,21 @@ export default function AyWebsBrowserScreen() {
         </Card>
       ) : null}
 
+      {pageOk ? (
       <WebView
         ref={webRef}
         source={{ uri: url }}
         style={styles.web}
-        originWhitelist={['https://*']}
+        /**
+         * `'*'` عمداً: لو بقيت القائمة `https://*`، المكتبة تفتح كل عنوان خارجها
+         * في تطبيق آخر قبل أن تسألنا. القرار كله هنا: الصفحات تبقى، والباقي يُمنع.
+         */
+        originWhitelist={['*']}
+        onShouldStartLoadWithRequest={(request: { url: string }) => {
+          if (decideWebNavigation(request.url) === 'allow') return true;
+          setNote(t('aywebs.blockedScheme'));
+          return false;
+        }}
         javaScriptEnabled
         setSupportMultipleWindows={false}
         onLoadEnd={() => setLoaded(true)}
@@ -286,6 +299,11 @@ export default function AyWebsBrowserScreen() {
           </View>
         )}
       />
+      ) : (
+        <View style={[styles.web, styles.loading, { backgroundColor: theme.colors.canvas }]}>
+          <AppText variant="body" color={theme.status.danger.fg}>{t('aywebs.badUrl')}</AppText>
+        </View>
+      )}
 
       <View style={[styles.footer, { borderTopColor: theme.colors.line, paddingBottom: insets.bottom + theme.space[2] }]}>
         {phase !== 'idle' ? (
