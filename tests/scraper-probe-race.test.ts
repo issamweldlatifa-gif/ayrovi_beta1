@@ -147,14 +147,6 @@ describe('scraper — câblage de la course parallèle', () => {
     expect(scraper).toContain('readerJinaHeadstartMs()');
   });
 
-  it('le rendu payant reste le dernier recours, jamais la première dépense', () => {
-    const stageB = scraper.indexOf('fetchRenderedProductPage(url)');
-    const stageA = scraper.indexOf('const raced = await raceProbes(attempts');
-    expect(stageA).toBeGreaterThan(0);
-    expect(stageB).toBeGreaterThan(stageA);
-    expect(scraper).toContain('ÉTAPE B — rendu payant, uniquement si');
-    expect(scraper).toContain('ÉTAPE A — course des sondes gratuites');
-  });
 });
 
 describe('outillage — la mesure est reproductible, pas déclarative', () => {

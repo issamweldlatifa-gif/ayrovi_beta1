@@ -11,8 +11,7 @@ import { serpApiVisualSearch } from '../src/ayrovix/services/visualSearch';
 import { filterDisplayableCandidates } from '../src/ayrovix/services/candidatePolicy';
 import { extractProductFromUrl } from '../src/ayrovix/services/product';
 import { parseProductPageHtml } from '../src/scraper/productPageParser';
-import { fetchRenderedProductPage, RenderedPageError } from '../src/scraper/renderedPageFetcher';
-import { detectMerchantStore, isTrustedRenderTarget } from '../src/scraper/merchantDomains';
+import { detectMerchantStore } from '../src/scraper/merchantDomains';
 import { createAyrovixPriceToken, verifyAyrovixPriceToken } from '../src/ayrovix/priceQuote';
 import { recordAyrovixHistory } from '../src/ayrovix/history';
 import { getAyrovixStats } from '../src/ayrovix/events';
@@ -374,93 +373,10 @@ describe('AYROVIX Lens', () => {
     }
   });
 
-  test('les domaines marchands sont appariés par suffixe exact et seuls les sites HTTPS fiables atteignent le renderer', async () => {
+  test('les domaines marchands sont appariés par suffixe exact', async () => {
     expect(detectMerchantStore('https://www.amazon.fr/dp/TEST')).toBe('amazon');
     expect(detectMerchantStore('https://amazon.evil.example/dp/TEST')).toBe('generic');
     expect(detectMerchantStore('https://notamazon.com/dp/TEST')).toBe('generic');
-    expect(isTrustedRenderTarget('https://fr.shein.com/robe')).toBe(true);
-    expect(isTrustedRenderTarget('http://www.amazon.fr/dp/TEST')).toBe(false);
-    expect(isTrustedRenderTarget('https://amazon.fr:8443/dp/TEST')).toBe(false);
-    expect(isTrustedRenderTarget('https://amazon.evil.example/dp/TEST')).toBe(false);
-    // Rendu étendu par l'exploitant (01/10/2026) : sans cette liste, un lien Lens
-    // vers sportsdirect.fr retombait sur le fetch direct seul et échouait.
-    expect(isTrustedRenderTarget('https://www.zalando.fr/nike-alphafly')).toBe(true);
-    expect(isTrustedRenderTarget('https://www.alltricks.fr/p/x')).toBe(true);
-    expect(isTrustedRenderTarget('https://www.sportsdirect.fr/hoody-991631')).toBe(false);
-    vi.stubEnv('AYROVI_TRUSTED_RENDER_HOSTS', 'sportsdirect.fr, zalando.fr');
-    expect(isTrustedRenderTarget('https://www.sportsdirect.fr/hoody-991631')).toBe(true);
-    expect(isTrustedRenderTarget('https://fr.zalando.fr/robe')).toBe(true);
-    // Une allowlist ne doit jamais devenir une porte ouverte : ni http, ni port
-    // exotique, ni hôte qui se contente de CONTENIR le nom autorisé.
-    expect(isTrustedRenderTarget('http://www.sportsdirect.fr/hoody')).toBe(false);
-    expect(isTrustedRenderTarget('https://www.sportsdirect.fr:8443/hoody')).toBe(false);
-    expect(isTrustedRenderTarget('https://sportsdirect.fr.evil.example/hoody')).toBe(false);
-    vi.unstubAllEnvs();
-    const fetchMock = vi.fn();
-    vi.stubGlobal('fetch', fetchMock);
-    await expect(fetchRenderedProductPage('https://amazon.evil.example/dp/TEST')).rejects.toMatchObject({
-      name: 'RenderedPageError', code: 'RENDER_TARGET_NOT_ALLOWED',
-    });
-    expect(fetchMock).not.toHaveBeenCalled();
-  });
-
-  test('rendu headless : ScraperAPI reçoit render=true et les erreurs conservent fournisseur et cause', async () => {
-    const previous = {
-      scraperApi: process.env.SCRAPERAPI_KEY,
-      scrapingBee: process.env.SCRAPINGBEE_API_KEY,
-      brightToken: process.env.BRIGHTDATA_API_TOKEN,
-      brightZone: process.env.BRIGHTDATA_UNLOCKER_ZONE,
-      provider: process.env.AYROVIX_RENDER_PROVIDER,
-    };
-    process.env.SCRAPERAPI_KEY = 'scraper-api-test';
-    delete process.env.SCRAPINGBEE_API_KEY;
-    delete process.env.BRIGHTDATA_API_TOKEN;
-    delete process.env.BRIGHTDATA_UNLOCKER_ZONE;
-    process.env.AYROVIX_RENDER_PROVIDER = 'scraperapi';
-    try {
-      const fetchMock = vi.fn(async (url: string) => {
-        const requestUrl = new URL(url);
-        expect(requestUrl.searchParams.get('render')).toBe('true');
-        expect(requestUrl.searchParams.get('url')).toBe('https://www.amazon.fr/dp/TEST');
-        return new Response('<html><body><span>Prix : 44,90 EUR</span></body></html>', { status: 200 });
-      });
-      vi.stubGlobal('fetch', fetchMock);
-      await expect(fetchRenderedProductPage('https://www.amazon.fr/dp/TEST#client-only-secret')).resolves.toMatchObject({ provider: 'scraperapi' });
-
-      vi.stubGlobal('fetch', vi.fn(async () => new Response('Forbidden', { status: 403 })));
-      await expect(fetchRenderedProductPage('https://fr.shein.com/test')).rejects.toMatchObject({
-        name: 'RenderedPageError', code: 'RENDER_ACCESS_DENIED', provider: 'scraperapi',
-      } satisfies Partial<RenderedPageError>);
-
-      delete process.env.SCRAPERAPI_KEY;
-      process.env.SCRAPINGBEE_API_KEY = 'bee-test';
-      process.env.AYROVIX_RENDER_PROVIDER = 'scrapingbee';
-      vi.stubGlobal('fetch', vi.fn(async (url: string) => {
-        const requestUrl = new URL(url);
-        expect(requestUrl.hostname).toBe('app.scrapingbee.com');
-        expect(requestUrl.searchParams.get('render_js')).toBe('true');
-        return new Response('<html><body>Prix : 60 EUR</body></html>', { status: 200 });
-      }));
-      await expect(fetchRenderedProductPage('https://fr.shein.com/test')).resolves.toMatchObject({ provider: 'scrapingbee' });
-
-      delete process.env.SCRAPINGBEE_API_KEY;
-      process.env.BRIGHTDATA_API_TOKEN = 'bright-token';
-      process.env.BRIGHTDATA_UNLOCKER_ZONE = 'unlocker-zone';
-      process.env.AYROVIX_RENDER_PROVIDER = 'brightdata';
-      vi.stubGlobal('fetch', vi.fn(async (url: string, init: RequestInit = {}) => {
-        expect(url).toBe('https://api.brightdata.com/request');
-        expect((init.headers as Record<string, string>).Authorization).toBe('Bearer bright-token');
-        expect(JSON.parse(String(init.body))).toMatchObject({ zone: 'unlocker-zone', url: 'https://www.amazon.fr/dp/TEST', format: 'raw' });
-        return new Response('<html><body>Prix : 60 EUR</body></html>', { status: 200 });
-      }));
-      await expect(fetchRenderedProductPage('https://www.amazon.fr/dp/TEST')).resolves.toMatchObject({ provider: 'brightdata' });
-    } finally {
-      restoreEnv('SCRAPERAPI_KEY', previous.scraperApi);
-      restoreEnv('SCRAPINGBEE_API_KEY', previous.scrapingBee);
-      restoreEnv('BRIGHTDATA_API_TOKEN', previous.brightToken);
-      restoreEnv('BRIGHTDATA_UNLOCKER_ZONE', previous.brightZone);
-      restoreEnv('AYROVIX_RENDER_PROVIDER', previous.provider);
-    }
   });
 
   test('image → identification Claude (simulée) → candidats catalogue → événement → choix', async () => {

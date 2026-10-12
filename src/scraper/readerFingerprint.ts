@@ -72,8 +72,8 @@ const GENERIC_PROFILE: ReaderProfile = 'desktop';
 
 const PROVENANCE: Readonly<Record<string, string>> = Object.freeze({
   amazon: 'Mesures 04–06/10/2026 : agent mobile → fiche 693 Ko avec a-price-whole (prix lu) ; agent bureau → 3 coquilles de 3,8 Ko + une page de 842 Ko sans aucune ancre de prix.',
-  shein: 'Boutique rendue côté client : la lecture directe ne rend pas un prix (mesures 05/10 : coquilles JS). Profil bureau par défaut ; le prix dépend du lecteur Jina ou du rendu payant.',
-  temu: 'Boutique rendue côté client : la lecture directe ne rend pas un prix. Profil bureau par défaut ; le prix dépend du lecteur Jina ou du rendu payant.',
+  shein: 'Boutique rendue côté client : la lecture directe ne rend pas un prix (mesures 05/10 : coquilles JS). Profil bureau par défaut ; le prix dépend du lecteur Jina.',
+  temu: 'Boutique rendue côté client : la lecture directe ne rend pas un prix. Profil bureau par défaut ; le prix dépend du lecteur Jina.',
   aliexpress: 'Accès produit non obtenu dans cette infrastructure (302 / coquille x5secdata). Profil bureau par défaut, sans revendication de succès.',
 });
 

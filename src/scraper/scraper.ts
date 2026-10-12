@@ -2,7 +2,6 @@ import { createHash } from 'node:crypto';
 import { ScrapedProduct, StoreType, ProductVariants } from '../types';
 import { fetchSafeRemote, readLimitedText, resolveSafeHttpUrl } from '../services/safeUrl';
 import { parseProductPageHtml, type ParsedProductPage } from './productPageParser';
-import { fetchRenderedProductPage, RenderedPageError } from './renderedPageFetcher';
 import { detectMerchantStore } from './merchantDomains';
 import { raceProbes, type ProbeAttempt } from './probeRace';
 import { readerHeaders, readerJinaHeadstartMs, readerProbePlan } from './readerFingerprint';
@@ -36,7 +35,7 @@ export interface MerchantScrapeResult {
    * côté client, re-parsée ici par le MÊME parseur, et non une donnée fabriquée
    * par le client. Le prix reste calculé côté serveur (§45).
    */
-  provider: 'direct' | 'none' | 'jina' | 'scraperapi' | 'scrapingbee' | 'brightdata' | 'webview';
+  provider: 'direct' | 'none' | 'jina' | 'webview';
   method: ParsedProductPage['priceSource'] | 'none';
   failureCode: string | null;
 }
@@ -463,33 +462,14 @@ export class SmartLinkScraper {
     const directFailure = raced.failures.find((failure) => failure.id.startsWith('direct_'))?.error
       || (attempts.some((attempt) => attempt.id === 'direct_mobile') ? 'DIRECT_PRICE_NOT_FOUND' : 'DIRECT_UNAVAILABLE');
 
-    // ── ÉTAPE B — rendu payant, uniquement si l'étape A n'a pas donné de prix ──
-    try {
-      const rendered = await fetchRenderedProductPage(url);
-      const parsed = parseProductPageHtml(rendered.html, url, storeType);
-      if (parsed.price > 0) {
-        return { data: parsed, verified: true, provider: rendered.provider, method: parsed.priceSource, failureCode: null };
-      }
-      return {
-        data: parsed.title || parsed.images.length ? parsed : partial?.data ?? null,
-        verified: false,
-        provider: rendered.provider,
-        method: 'none',
-        failureCode: 'PRICE_NOT_FOUND_AFTER_RENDER',
-      };
-    } catch (error: any) {
-      const code = error instanceof RenderedPageError ? error.code : 'RENDER_UPSTREAM_ERROR';
-      const provider = error instanceof RenderedPageError && error.provider ? error.provider : 'none';
-      return {
-        data: partial?.data ?? null,
-        verified: false,
-        provider,
-        method: 'none',
-        failureCode: code === 'RENDER_PROVIDER_NOT_CONFIGURED' && directFailure !== 'DIRECT_PRICE_NOT_FOUND'
-          ? directFailure
-          : code,
-      };
-    }
+    // Plus de rendu payant : sans prix, on rend le meilleur repli gratuit (titre, images).
+    return {
+      data: partial?.data ?? null,
+      verified: false,
+      provider: 'none',
+      method: 'none',
+      failureCode: directFailure,
+    };
   }
 
   /** Sonde directe : GET la page marchande avec un agent donné. Jamais de prix inventé. */

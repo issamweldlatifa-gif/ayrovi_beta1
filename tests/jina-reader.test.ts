@@ -1,7 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { parseProductPageHtml } from '../src/scraper/productPageParser';
-import { isTrustedRenderTarget } from '../src/scraper/merchantDomains';
 
 describe('lecteur Jina — repli quand Zalando coupe le fetch direct', () => {
   it('le scrape appelle r.jina.ai avec le HTML rendu, sauf si AYROVI_JINA_READER=false', () => {
@@ -10,11 +9,6 @@ describe('lecteur Jina — repli quand Zalando coupe le fetch direct', () => {
     expect(scraper).toContain("provider: 'jina'");
     expect(scraper).toContain("AYROVI_JINA_READER !== 'false'");
     expect(scraper).toContain("'X-Return-Format': 'html'");
-  });
-
-  it('Zalando / Alltricks sont des cibles de rendu de confiance par défaut', () => {
-    expect(isTrustedRenderTarget('https://www.zalando.fr/p/n1241a1ev-i11.html')).toBe(true);
-    expect(isTrustedRenderTarget('https://www.alltricks.fr/produit/x')).toBe(true);
   });
 
   it('le parseur lit le JSON-LD Zalando (prix 309.95 EUR) comme le ferait le HTML Jina', () => {
