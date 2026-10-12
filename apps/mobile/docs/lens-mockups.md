@@ -32,3 +32,6 @@ Les maquettes sont des visuels de référence : la mise en œuvre suit les **don
 1. Test sur appareil de la feuille de progression (flux XHR) — section 2.
 2. Prix barré et « Promo » sur la carte (section 3), si le serveur fournit les données.
 3. Retour visuel QR et bouton OCEREX (sections 4 et 5).
+
+## Journal de validation
+- Lens : caméra à l'ouverture de l'onglet (commit `ecb5e7f`). Vérifications locales : typecheck OK, vitest 512/512, test:ui 67/67, tokens:check OK. Le build APK de `ecb5e7f` a été annulé par la concurrence du workflow ; relancé par un commit de suivi.
