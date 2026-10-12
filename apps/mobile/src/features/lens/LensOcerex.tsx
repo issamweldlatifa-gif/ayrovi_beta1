@@ -18,7 +18,7 @@ import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { CameraView } from 'expo-camera';
 
-import { AppText, Button, Card, Field, KeyValue, ResponsiveActionGroup, Segmented } from '@/design/ui';
+import { AppText, Button, Card, Field, KeyValue, ResponsiveActionGroup } from '@/design/ui';
 import { LensDrawer } from '@/features/lens/LensDrawer';
 import { useTheme } from '@/design/theme';
 import { AppImage } from '@/design/appImage';
@@ -221,24 +221,11 @@ export function LensOcerex({ open, onClose, onClosed, onGoToCart }: LensOcerexPr
   };
 
   return (
-    <LensDrawer title={t('ocerex.title')} subtitle={t('ocerex.hint')} open={open} onClose={onClose} onClosed={onClosed}>
+    <LensDrawer title={t('ocerex.title')} open={open} onClose={onClose} onClosed={onClosed}>
+      <AppText variant="body" color={theme.colors.muted}>{t('ocerex.intro')}</AppText>
       <Card>
         {viewfinder ? (
           <>
-            <Segmented<'camera' | 'import'>
-              value="camera"
-              onChange={(next) => {
-                // «استيراد صورة» يفتح المعرض مباشرة، ويقفل المنظار.
-                if (next === 'import') {
-                  setViewfinder(false);
-                  void analyzeLibrary();
-                }
-              }}
-              options={[
-                { value: 'camera', label: t('ocerex.tab.camera') },
-                { value: 'import', label: t('ocerex.tab.import') },
-              ]}
-            />
             <View style={styles.viewfinder}>
               <CameraView ref={cameraRef} style={styles.camera} facing="back">
                 <View style={styles.frameLayer}>
@@ -266,8 +253,8 @@ export function LensOcerex({ open, onClose, onClosed, onGoToCart }: LensOcerexPr
           </>
         ) : (
           <ResponsiveActionGroup>
-            <Button label={t('lens.camera')} onPress={() => void openViewfinder()} disabled={busy || !sessionId} />
-            <Button label={t('lens.gallery')} tone="quiet" onPress={() => void analyzeLibrary()} disabled={busy || !sessionId} />
+            <Button label={t('ocerex.takePhoto')} onPress={() => void openViewfinder()} disabled={busy || !sessionId} />
+            <Button label={t('ocerex.chooseImage')} tone="quiet" onPress={() => void analyzeLibrary()} disabled={busy || !sessionId} />
           </ResponsiveActionGroup>
         )}
         {preview ? (

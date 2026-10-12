@@ -172,7 +172,7 @@ export function LensResultsDrawer({
   );
 
   return (
-    <LensDrawer title={t('lens.progress.title')} subtitle={hint} open={open} onClose={onClose} onClosed={onClosed}>
+    <LensDrawer title={t('lens.resultsTitle')} subtitle={hint} open={open} onClose={onClose} onClosed={onClosed}>
       {photo}
 
       {busy ? steps : null}
