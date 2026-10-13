@@ -10,6 +10,7 @@
  */
 import { ApiError } from './errors';
 import { apiGetData, apiSendData } from './client';
+import { apiUploadFileData } from './nativeUpload';
 
 export const LENS_BASE = '/api/ayrovix';
 /** الخادم يزور صفحات المتاجر لكل نتيجة، فالقراءة الباردة تطول. */
@@ -341,13 +342,13 @@ export async function analyzeImage(
   file: { uri: string; name: string; type: string },
   options: { customerIntent?: string | null; roi?: { x: number; y: number; w: number; h: number }; signal?: AbortSignal } = {},
 ): Promise<LensImageResult> {
-  const form = new FormData();
-  // React Native يقبل كائن الملف بهذا الشكل.
-  form.append('image', { uri: file.uri, name: file.name, type: file.type } as unknown as Blob);
-  if (options.customerIntent) form.append('customerIntent', options.customerIntent.slice(0, 200));
-  if (options.roi) form.append('roi', JSON.stringify(options.roi));
-  const data = await apiSendData<unknown>('POST', `${LENS_BASE}/analyze-image`, {
-    form,
+  const parameters: Record<string, string> = {};
+  if (options.customerIntent) parameters.customerIntent = options.customerIntent.slice(0, 200);
+  if (options.roi) parameters.roi = JSON.stringify(options.roi);
+  // Upload natif du file:// : valide le fichier local avant le réseau et
+  // distingue une panne de caméra d'un refus de Render.
+  const data = await apiUploadFileData<unknown>(`${LENS_BASE}/analyze-image`, 'image', file, {
+    parameters,
     timeoutMs: LENS_TIMEOUT_MS,
     signal: options.signal,
   });

@@ -43,9 +43,11 @@ export function OcerexFlow({ onClose }: { onClose: () => void }) {
   const queryClient = useQueryClient();
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
+  const captureLock = useRef(false);
 
   const [step, setStep] = useState<OcerexStep>(prefs.ocerexOnboarded ? 'home' : 'onboarding');
   const [captureMode, setCaptureMode] = useState<CaptureMode>('photo');
+  const [cameraReady, setCameraReady] = useState(false);
   const [extraction, setExtraction] = useState<OcerexExtraction | null>(null);
   const [currency, setCurrency] = useState('');
   const [errorCode, setErrorCode] = useState<OcerexCode>('PROCESSING_ERROR');
@@ -105,16 +107,21 @@ export function OcerexFlow({ onClose }: { onClose: () => void }) {
 
   const onCapture = useCallback(async () => {
     const camera = cameraRef.current;
-    if (!camera) return;
+    if (!camera || !cameraReady || captureLock.current) return;
+    captureLock.current = true;
     try {
-      const picture = await camera.takePictureAsync({ quality: 0.8, skipProcessing: true });
-      if (!picture?.uri) throw new ApiError('malformed', 'no-photo');
+      const picture = await camera.takePictureAsync({ quality: 0.8 });
+      if (!picture?.uri) {
+        throw new ApiError('device', 'La caméra n’a produit aucun fichier.', { code: 'CAMERA_FILE_MISSING' });
+      }
       track('ocerex_camera_used');
-      await analyze({ uri: picture.uri, name: 'prix-ocerex', type: 'image/jpeg' }, true);
+      await analyze({ uri: picture.uri, name: 'prix-ocerex.jpg', type: 'image/jpeg' }, true);
     } catch (error) {
       fail(ocerexErrorCode(error));
+    } finally {
+      captureLock.current = false;
     }
-  }, [analyze, fail, track]);
+  }, [analyze, cameraReady, fail, track]);
 
   const onImport = useCallback(async () => {
     const picked = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
@@ -175,6 +182,8 @@ export function OcerexFlow({ onClose }: { onClose: () => void }) {
   }, [extraction, fail, onClose, queryClient]);
 
   const retry = useCallback(() => {
+    captureLock.current = false;
+    setCameraReady(false);
     setExtraction(null);
     setUrlError(false);
     setStep('home');
@@ -214,13 +223,24 @@ export function OcerexFlow({ onClose }: { onClose: () => void }) {
       {step === 'home' ? (
         <Card>
           <AppText>{t('ocerex.home.explain')}</AppText>
-          <Segmented options={modeOptions} value={captureMode} onChange={setCaptureMode} label={t('ocerex.home.mode')} />
+          <Segmented
+            options={modeOptions}
+            value={captureMode}
+            onChange={(next) => { setCameraReady(false); setCaptureMode(next); }}
+            label={t('ocerex.home.mode')}
+          />
           {captureMode === 'photo' ? (
             permission?.granted ? (
               <>
-                <CameraView ref={cameraRef} style={styles.camera} facing="back" />
+                <CameraView
+                  ref={cameraRef}
+                  style={styles.camera}
+                  facing="back"
+                  onCameraReady={() => setCameraReady(true)}
+                  onMountError={() => fail('PROCESSING_ERROR')}
+                />
                 <AppText variant="caption" color={theme.colors.muted}>{t('ocerex.home.frameHint')}</AppText>
-                <Button label={t('ocerex.home.capture')} onPress={onCapture} block disabled={busy} testID="ocerex-capture" />
+                <Button label={t('ocerex.home.capture')} onPress={onCapture} block disabled={busy || !cameraReady} testID="ocerex-capture" />
               </>
             ) : (
               <Button label={t('ocerex.home.allowCamera')} onPress={() => { void requestPermission(); }} block />

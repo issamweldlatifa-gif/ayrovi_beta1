@@ -18,6 +18,8 @@ export type ApiErrorKind =
   | 'http'
   /** ردّ 200 لكن المحتوى موش الصيغة المتفق عليها. */
   | 'malformed'
+  /** الكاميرا أو الملف المحلي تعذّر استعماله قبل وصول الطلب للخادم. */
+  | 'device'
   /** الطلب أُلغي من الطرف اللي طلبو (مثلاً خروج من الشاشة). */
   | 'aborted';
 
@@ -72,6 +74,11 @@ export function userMessage(error: unknown): LocalizedMessage {
       return { fr: 'Requête interrompue.', ar: 'الطلب تقطع.' };
     case 'malformed':
       return { fr: 'Réponse illisible du serveur.', ar: 'ردّ غير مفهوم من الخادم.' };
+    case 'device':
+      return {
+        fr: "La photo n'a pas pu être lue sur le téléphone. Rouvrez la caméra ou choisissez-la dans la galerie.",
+        ar: 'تعذّرت قراءة الصورة من الهاتف. أعد فتح الكاميرا أو اخترها من المعرض.',
+      };
     default:
       break;
   }

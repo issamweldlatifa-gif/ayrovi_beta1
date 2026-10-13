@@ -22,7 +22,7 @@ import { ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
 import { useT, type TranslationKey } from '@/i18n';
 import { mediaUrl } from '@/api/client';
-import { isApiError } from '@/api/errors';
+import { ApiError, isApiError } from '@/api/errors';
 import { addExternalFavorite } from '@/api/account';
 import {
   analyzeBarcode, analyzeCode, analyzeImage, analyzeText, analyzeUrl, fetchLensHistory, markChosen,
@@ -60,8 +60,10 @@ export default function LensScreen() {
   const [favorited, setFavorited] = useState<Record<string, true>>({});
   const [favoriteNote, setFavoriteNote] = useState<TranslationKey | null>(null);
   const [ocerexOpen, setOcerexOpen] = useState(false);
+  const [cameraReady, setCameraReady] = useState(false);
   const cameraRef = useRef<CameraView>(null);
   const scanLock = useRef(false);
+  const photoLock = useRef(false);
   const history = useQuery({ queryKey: ['lens', 'history'], queryFn: () => fetchLensHistory(), staleTime: 30_000 });
 
   const showSearch = useCallback((result: LensSearchResult | { candidates: LensCandidate[]; eventId: string; excluded?: number }) => {
@@ -89,14 +91,35 @@ export default function LensScreen() {
 
   const onPhoto = useCallback(async () => {
     const camera = cameraRef.current;
-    if (!camera) return;
-    await run(async () => {
-      const picture = await camera.takePictureAsync({ quality: 0.7, skipProcessing: true });
-      if (!picture?.uri) throw new Error('no-photo');
-      const result = await analyzeImage({ uri: picture.uri, name: 'capture.jpg', type: 'image/jpeg' });
-      showSearch({ ...result, excluded: result.excluded?.count ?? 0 });
-    });
-  }, [run, showSearch]);
+    // Expo exige explicitement onCameraReady avant takePictureAsync. Le rendu
+    // de la preview peut précéder ce signal sur Android de quelques centaines
+    // de ms : sans garde, le clic échoue instantanément et aucun POST ne part.
+    if (!camera || !cameraReady || photoLock.current) return;
+    photoLock.current = true;
+    try {
+      await run(async () => {
+        let picture;
+        try {
+          // Le traitement natif garantit un JPEG orienté et lisible. Le vieux
+          // skipProcessing laissait certains appareils avec un fichier encore
+          // indisponible au moment de l'upload.
+          picture = await camera.takePictureAsync({ quality: 0.7 });
+        } catch (cause) {
+          throw new ApiError('device', 'La caméra n’a pas pu enregistrer la photo.', {
+            code: 'CAMERA_CAPTURE_FAILED',
+            cause,
+          });
+        }
+        if (!picture?.uri) {
+          throw new ApiError('device', 'La caméra n’a produit aucun fichier.', { code: 'CAMERA_FILE_MISSING' });
+        }
+        const result = await analyzeImage({ uri: picture.uri, name: 'capture.jpg', type: 'image/jpeg' });
+        showSearch({ ...result, excluded: result.excluded?.count ?? 0 });
+      });
+    } finally {
+      photoLock.current = false;
+    }
+  }, [cameraReady, run, showSearch]);
 
   const onGallery = useCallback(async () => {
     const picked = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 });
@@ -176,6 +199,8 @@ export default function LensScreen() {
 
   const reset = useCallback(() => {
     scanLock.current = false;
+    photoLock.current = false;
+    setCameraReady(false);
     setStage({ kind: 'idle' });
   }, []);
 
@@ -258,6 +283,11 @@ export default function LensScreen() {
         {stage.kind === 'error' ? (
           <>
             <ErrorBlock error={stage.error} onRetry={reset} />
+            {isApiError(stage.error) ? (
+              <AppText variant="caption" color={theme.colors.muted} align="center">
+                {`Diagnostic: ${stage.error.code || stage.error.kind}`}
+              </AppText>
+            ) : null}
             <Button label={t('lens.newSearch')} onPress={reset} tone="quiet" block />
           </>
         ) : null}
@@ -278,8 +308,17 @@ export default function LensScreen() {
         {stage.kind === 'idle' && mode === 'camera' ? (
           permission?.granted ? (
             <View style={styles.cameraBlock}>
-              <CameraView ref={cameraRef} style={styles.camera} facing="back" />
-              <Button label={t('lens.capture')} onPress={onPhoto} block testID="lens-capture" />
+              <CameraView
+                ref={cameraRef}
+                style={styles.camera}
+                facing="back"
+                onCameraReady={() => setCameraReady(true)}
+                onMountError={(event) => setStage({
+                  kind: 'error',
+                  error: new ApiError('device', event.message || 'Camera indisponible.', { code: 'CAMERA_MOUNT_FAILED' }),
+                })}
+              />
+              <Button label={t('lens.capture')} onPress={onPhoto} disabled={!cameraReady} block testID="lens-capture" />
               <Button label={t('lens.pickGallery')} onPress={onGallery} tone="quiet" block testID="lens-gallery" />
             </View>
           ) : (

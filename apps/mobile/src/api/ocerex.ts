@@ -8,6 +8,7 @@
  */
 import { apiSend } from './client';
 import { ApiError } from './errors';
+import { apiUploadFileData } from './nativeUpload';
 
 export const OCEREX_BASE = '/api/ocerex';
 
@@ -82,10 +83,10 @@ export function ocerexErrorCode(error: unknown): OcerexCode {
 }
 
 export async function analyzeOcerexImage(file: { uri: string; name: string; type: string }, capture: boolean): Promise<OcerexExtraction> {
-  const form = new FormData();
-  form.append('image', { uri: file.uri, name: file.name, type: file.type } as unknown as Blob);
-  form.append('capture', capture ? '1' : '0');
-  const { data } = await apiSend<unknown>('POST', `${OCEREX_BASE}/analyze`, { form });
+  const data = await apiUploadFileData<unknown>(`${OCEREX_BASE}/analyze`, 'image', file, {
+    parameters: { capture: capture ? '1' : '0' },
+    timeoutMs: 45_000,
+  });
   return parseExtraction(data);
 }
 

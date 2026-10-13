@@ -212,6 +212,11 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
     if (!ALLOWED_MIME.has(file.mimetype)) {
       return res.status(415).json({ success: false, code: 'UNSUPPORTED_IMAGE', error: 'Format non supporté — JPEG, PNG ou WebP uniquement.' });
     }
+    // Journal d'arrivée, avant Sharp/SerpApi : permet de distinguer en une ligne
+    // « le téléphone n'a jamais envoyé le fichier » d'un échec fournisseur.
+    const clientKind = String(req.headers['x-ayrovi-client'] || 'web').slice(0, 40);
+    const nativeTransport = req.headers['x-ayrovi-native'] === '1';
+    console.info(`[AYROVIX analyze-image] received ${requestId} bytes=${file.buffer.length} mime=${file.mimetype} client=${clientKind} native=${nativeTransport ? 1 : 0}`);
     // Délai global : sans lui, une étape muette laisse le client sur « Analyse en cours… ».
     let timedOut = false;
     const deadlineMs = lensAnalyzeDeadlineMs();
