@@ -442,7 +442,7 @@
     {
       "file": "client/src/admin/AdminApp.tsx",
       "domain": "admin",
-      "sha256": "54476e1a98e72e66c2c376a5639374ead74a0dd67d81e0fd1f85740d3999893b",
+      "sha256": "1a30ba9424fec2dd85f556a0dfa5db22096207cb323215bc789c6d298d405b42",
       "lines": 1040,
       "imports": [
         "../../../shared/brand.generated",
