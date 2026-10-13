@@ -186,5 +186,31 @@ jobs:
           echo "::notice title=Points d entree de l app::$FIRST_BASE$ROUTE_LINE"
           printf '\n' >> "$S"
 
+          # Une vraie action de l'app, une seule requête payante au maximum :
+          # texte mobile → serveur → SerpApi Google Shopping → candidats tarifés.
+          # AI Core seul ne peut pas réussir ce verdict car ses liens sans prix
+          # sont écartés par la politique d'affichage AYROVIX.
+          TEXT_CODE=$(curl -s -o /tmp/ayrovix-text -w '%{http_code}' --max-time 60 \
+            -X POST -H 'Content-Type: application/json' \
+            -d '{"query":"Nike Air Max 95"}' \
+            "$FIRST_BASE/api/ayrovix/analyze-text" 2>/dev/null)
+          if [ -z "$TEXT_CODE" ]; then TEXT_CODE="000"; fi
+          TEXT_FACTS=$(python3 -c 'import json
+          try: d=json.load(open("/tmp/ayrovix-text"))
+          except Exception: d={}
+          rows=(d.get("data") or {}).get("candidates") or []
+          priced=sum(1 for x in rows if isinstance(x,dict) and isinstance(x.get("price"),(int,float)) and x.get("price",0)>0)
+          search=sum(1 for x in rows if isinstance(x,dict) and x.get("priceOrigin")=="search")
+          print("%d %d %d"%(len(rows),priced,search))' 2>/dev/null)
+          set -- ${TEXT_FACTS:-0 0 0}
+          TEXT_TOTAL=${1:-0}; TEXT_PRICED=${2:-0}; TEXT_SEARCH=${3:-0}
+          if [ "$TEXT_CODE" = "200" ] && [ "$TEXT_PRICED" -gt 0 ] && [ "$TEXT_SEARCH" -gt 0 ]; then
+            printf '**Sonde SerpApi Shopping réelle : ✅ code `%s`, %s candidat(s), %s tarifé(s) depuis la recherche.**\n\n' "$TEXT_CODE" "$TEXT_TOTAL" "$TEXT_PRICED" >> "$S"
+            echo "::notice title=SerpApi Shopping connecte a l app::code=$TEXT_CODE candidates=$TEXT_TOTAL priced=$TEXT_PRICED priceOriginSearch=$TEXT_SEARCH"
+          else
+            printf '**Sonde SerpApi Shopping réelle : ⚠️ code `%s`, %s candidat(s), %s tarifé(s).**\n\n' "$TEXT_CODE" "$TEXT_TOTAL" "$TEXT_PRICED" >> "$S"
+            echo "::warning title=SerpApi Shopping non prouve::code=$TEXT_CODE candidates=$TEXT_TOTAL priced=$TEXT_PRICED priceOriginSearch=$TEXT_SEARCH"
+          fi
+
           echo "::notice title=Etat des serveurs::main=${MAIN_SHA:-inconnu} branche=${BRANCH_SHA:-inconnu}${SUMMARY_LINE}"
           exit 0
