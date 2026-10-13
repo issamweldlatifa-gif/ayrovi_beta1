@@ -32,6 +32,8 @@ jobs:
       BASES: ${{ inputs.bases || 'https://ayrovi-beta1-moo8.onrender.com' }}
       REPO: ${{ github.repository }}
     steps:
+      - uses: actions/checkout@v4
+
       - name: Attendre le déploiement du commit courant
         if: ${{ github.event_name == 'push' }}
         timeout-minutes: 8
@@ -210,6 +212,31 @@ jobs:
           else
             printf '**Sonde SerpApi Shopping réelle : ⚠️ code `%s`, %s candidat(s), %s tarifé(s).**\n\n' "$TEXT_CODE" "$TEXT_TOTAL" "$TEXT_PRICED" >> "$S"
             echo "::warning title=SerpApi Shopping non prouve::code=$TEXT_CODE candidates=$TEXT_TOTAL priced=$TEXT_PRICED priceOriginSearch=$TEXT_SEARCH"
+          fi
+
+          # Le vrai trajet en panne signalé par l'utilisateur : le même JPEG que
+          # l'écran Galerie envoie en multipart, puis Google Lens via SerpApi.
+          IMAGE_CODE=$(curl -s -o /tmp/ayrovix-image -w '%{http_code}' --max-time 75 \
+            -H 'Accept: application/json' \
+            -F 'image=@client/public/media/lens-sneakers.jpg;type=image/jpeg' \
+            "$FIRST_BASE/api/ayrovix/analyze-image" 2>/dev/null)
+          if [ -z "$IMAGE_CODE" ]; then IMAGE_CODE="000"; fi
+          IMAGE_FACTS=$(python3 -c 'import json
+          try: d=json.load(open("/tmp/ayrovix-image"))
+          except Exception: d={}
+          data=d.get("data") or {}
+          rows=data.get("candidates") or []
+          code=d.get("code") or "none"
+          query=str(data.get("query") or "").replace(" ","_")[:80] or "none"
+          print("%d %s %s"%(len(rows),code,query))' 2>/dev/null)
+          set -- ${IMAGE_FACTS:-0 unreadable none}
+          IMAGE_TOTAL=${1:-0}; IMAGE_ERROR=${2:-unreadable}; IMAGE_QUERY=${3:-none}
+          if [ "$IMAGE_CODE" = "200" ]; then
+            printf '**Sonde photo → SerpApi Lens réelle : ✅ code `%s`, %s candidat(s), requête `%s`.**\n\n' "$IMAGE_CODE" "$IMAGE_TOTAL" "$IMAGE_QUERY" >> "$S"
+            echo "::notice title=Photo SerpApi Lens connectee a l app::code=$IMAGE_CODE candidates=$IMAGE_TOTAL query=$IMAGE_QUERY"
+          else
+            printf '**Sonde photo → SerpApi Lens réelle : ❌ code `%s`, erreur `%s`.**\n\n' "$IMAGE_CODE" "$IMAGE_ERROR" >> "$S"
+            echo "::warning title=Photo SerpApi Lens en panne::code=$IMAGE_CODE error=$IMAGE_ERROR candidates=$IMAGE_TOTAL"
           fi
 
           echo "::notice title=Etat des serveurs::main=${MAIN_SHA:-inconnu} branche=${BRANCH_SHA:-inconnu}${SUMMARY_LINE}"
