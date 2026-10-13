@@ -32,6 +32,26 @@ jobs:
       BASES: ${{ inputs.bases || 'https://ayrovi-beta1-moo8.onrender.com' }}
       REPO: ${{ github.repository }}
     steps:
+      - name: Attendre le déploiement du commit courant
+        if: ${{ github.event_name == 'push' }}
+        timeout-minutes: 8
+        run: |
+          set +e
+          FIRST_BASE=$(printf '%s' "$BASES" | tr ',' ' ' | awk '{print $1}')
+          EXPECTED=${GITHUB_SHA:0:12}
+          for ATTEMPT in $(seq 1 28); do
+            READY=$(curl -s --max-time 30 "$FIRST_BASE/api/ready" 2>/dev/null)
+            SERVED=$(printf '%s' "$READY" | sed -n 's/.*"commit": *"\([a-f0-9]\{7,12\}\)".*/\1/p' | head -1)
+            if [ -n "$SERVED" ] && [ "$SERVED" = "${EXPECTED:0:${#SERVED}}" ]; then
+              echo "Déploiement prêt : $SERVED (tentative $ATTEMPT)."
+              exit 0
+            fi
+            echo "Tentative $ATTEMPT/28 : serveur=${SERVED:-muet}, attendu=$EXPECTED"
+            sleep 15
+          done
+          echo "::warning title=Déploiement non terminé::Le serveur ne sert pas encore $EXPECTED après 7 minutes; le diagnostic ci-dessous montrera le commit réellement servi."
+          exit 0
+
       - name: Lire chaque serveur et comparer au branch et à main
         run: |
           # GitHub lance `bash -e -o pipefail` : je reprends la main pour qu'un
