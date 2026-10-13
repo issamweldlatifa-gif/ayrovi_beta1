@@ -562,13 +562,17 @@ describe('AYROVIX Lens', () => {
     expect(response.body.code).toBe('INVALID_URL');
   });
 
-  test('Claude Web Search transforme les résultats officiels Anthropic en candidats', async () => {
+  test('Claude Web Search transforme les résultats officiels Anthropic en candidats sans SerpApi', async () => {
     const previousKey = process.env.ANTHROPIC_API_KEY;
     const previousModel = process.env.ANTHROPIC_MODEL;
     const previousSearch = process.env.AYROVIX_AI_WEB_SEARCH;
+    const previousSerp = process.env.SERPAPI_KEY;
+    const previousSerpAlias = process.env.SERPAPI_API_KEY;
     process.env.ANTHROPIC_API_KEY = 'test-anthropic-web-search';
     process.env.ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001';
     process.env.AYROVIX_AI_WEB_SEARCH = 'true';
+    delete process.env.SERPAPI_KEY;
+    delete process.env.SERPAPI_API_KEY;
     const fetchMock = vi.fn(async (_url: string, _init: RequestInit = {}) => new Response(JSON.stringify({
       model: 'claude-haiku-4-5-20251001',
       content: [{
@@ -593,6 +597,68 @@ describe('AYROVIX Lens', () => {
       restoreEnv('ANTHROPIC_API_KEY', previousKey);
       restoreEnv('ANTHROPIC_MODEL', previousModel);
       restoreEnv('AYROVIX_AI_WEB_SEARCH', previousSearch);
+      restoreEnv('SERPAPI_KEY', previousSerp);
+      restoreEnv('SERPAPI_API_KEY', previousSerpAlias);
+    }
+  });
+
+  test('recherche texte mobile utilise SerpApi Shopping en priorité et renvoie des prix malgré le crédit Anthropic épuisé', async () => {
+    const previousKey = process.env.ANTHROPIC_API_KEY;
+    const previousSearch = process.env.AYROVIX_AI_WEB_SEARCH;
+    const previousSerp = process.env.SERPAPI_KEY;
+    const previousSerpAlias = process.env.SERPAPI_API_KEY;
+    process.env.ANTHROPIC_API_KEY = 'anthropic-credit-exhausted';
+    process.env.AYROVIX_AI_WEB_SEARCH = 'true';
+    process.env.SERPAPI_KEY = 'test-serpapi-shopping';
+    delete process.env.SERPAPI_API_KEY;
+    const fetchMock = vi.fn(async (url: string | URL | Request) => {
+      const target = String(url);
+      if (!target.startsWith('https://serpapi.com/search.json?')) {
+        return new Response(JSON.stringify({ error: { message: 'credit balance is too low' } }), {
+          status: 400,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      return new Response(JSON.stringify({
+        shopping_results: [{
+          title: 'Nike Air Max 95 Essential',
+          source: 'Nike',
+          link: 'https://www.nike.com/fr/t/air-max-95-essential/TEST',
+          thumbnail: 'https://static.nike.com/air-max-95.jpg',
+          price: '189,99 €',
+          extracted_price: 189.99,
+          rating: 4.7,
+          reviews: 215,
+        }],
+      }), { status: 200, headers: { 'content-type': 'application/json' } });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      const response = await request(app)
+        .post('/api/ayrovix/analyze-text')
+        .send({ query: 'Nike Air Max 95 Essential test SerpApi' });
+      expect(response.status).toBe(200);
+      expect(response.body.data.candidates).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'external',
+          source: 'Nike',
+          price: 189.99,
+          currency: 'EUR',
+          priceOrigin: 'search',
+          priceVerificationStatus: 'PENDING_MANUAL',
+        }),
+      ]));
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      const requestUrl = new URL(String(fetchMock.mock.calls[0][0]));
+      expect(requestUrl.searchParams.get('engine')).toBe('google_shopping');
+      expect(requestUrl.searchParams.get('q')).toContain('Nike Air Max 95');
+      expect(requestUrl.searchParams.get('api_key')).toBe('test-serpapi-shopping');
+      expect(fetchMock.mock.calls.some(([url]) => String(url).includes('api.anthropic.com'))).toBe(false);
+    } finally {
+      restoreEnv('ANTHROPIC_API_KEY', previousKey);
+      restoreEnv('AYROVIX_AI_WEB_SEARCH', previousSearch);
+      restoreEnv('SERPAPI_KEY', previousSerp);
+      restoreEnv('SERPAPI_API_KEY', previousSerpAlias);
     }
   });
 
