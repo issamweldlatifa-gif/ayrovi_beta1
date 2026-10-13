@@ -48,11 +48,16 @@ export function pricePresentation(candidate: LensCandidate, quote: CartLineQuote
   const candidateReference = positive(candidate.promo?.originalPriceTnd)
     ?? positive(candidate.originalPriceTnd);
   const quotedReference = positive(quote?.originalLineTotalTnd);
-  const reference = quotedReference ?? candidateReference;
+  // Dès qu'un devis frais existe, il remplace TOUTE la présentation tarifaire
+  // Lens précédente. Mélanger son montant avec une ancienne promo ferait
+  // réapparaître une remise que le serveur vient précisément de retirer.
+  const reference = quote ? quotedReference : candidateReference;
   const referenceTnd = current.kind === 'tnd' && reference != null && reference > current.amount
     ? reference
     : null;
-  const explicitPercent = positive(quote?.promo?.percent) ?? positive(candidate.promo?.percent);
+  const explicitPercent = quote
+    ? positive(quote.promo?.percent)
+    : positive(candidate.promo?.percent);
   const derivedPercent = referenceTnd != null && current.kind === 'tnd'
     ? Math.round((1 - current.amount / referenceTnd) * 100)
     : null;
@@ -61,7 +66,9 @@ export function pricePresentation(candidate: LensCandidate, quote: CartLineQuote
     current,
     referenceTnd,
     discountPercent: explicitPercent != null ? Math.round(explicitPercent) : derivedPercent,
-    promoLabel: quote?.promo?.label?.trim() || candidate.promo?.label?.trim() || null,
+    promoLabel: quote
+      ? quote.promo?.label?.trim() || null
+      : candidate.promo?.label?.trim() || null,
     verifiedAtSource: candidate.priceOrigin === 'merchant' || candidate.priceVerificationStatus === 'VERIFIED',
   };
 }

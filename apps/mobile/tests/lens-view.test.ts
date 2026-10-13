@@ -38,6 +38,22 @@ describe('Lens — vue', () => {
     expect(view.referenceTnd).toBe(100);
     expect(view.discountPercent).toBe(8);
   });
+  it('un devis frais sans promo efface entièrement une ancienne promo Lens', () => {
+    const view = pricePresentation({
+      ...base,
+      priceTnd: 96,
+      promo: { percent: 4, label: 'Ancienne promo', priceTnd: 96, originalPriceTnd: 100 },
+    }, {
+      lineTotalTnd: 100,
+      originalLineTotalTnd: null,
+      promo: null,
+      pricingVersion: 3,
+    });
+    expect(view.current).toEqual({ kind: 'tnd', amount: 100 });
+    expect(view.referenceTnd).toBeNull();
+    expect(view.discountPercent).toBeNull();
+    expect(view.promoLabel).toBeNull();
+  });
   it('sans priceTnd: prix original seulement avec devise', () => {
     expect(priceView({ ...base, price: 40, currency: 'EUR' })).toEqual({ kind: 'original', amount: 40, currency: 'EUR' });
     expect(priceView({ ...base, price: 40, currency: null })).toEqual({ kind: 'none' });
