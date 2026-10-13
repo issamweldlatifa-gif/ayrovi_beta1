@@ -18,9 +18,9 @@ on:
       bases:
         description: "Origines à interroger (séparées par des virgules)"
         required: true
-        default: "https://ayrovi-beta1-1.onrender.com, https://ayrovi-beta1.onrender.com"
+        default: "https://ayrovi-beta1-moo8.onrender.com"
   push:
-    branches: [arena/c0321e79-ayrovi-beta1]
+    branches: [arena/9fd9a9fc-ayrovi-beta1]
     paths:
       - '.github/workflows/server-probe.yml'
 
@@ -29,7 +29,7 @@ jobs:
     name: État des serveurs publiés
     runs-on: ubuntu-latest
     env:
-      BASES: ${{ inputs.bases || 'https://ayrovi-beta1-1.onrender.com, https://ayrovi-beta1.onrender.com' }}
+      BASES: ${{ inputs.bases || 'https://ayrovi-beta1-moo8.onrender.com' }}
       REPO: ${{ github.repository }}
     steps:
       - name: Lire chaque serveur et comparer au branch et à main
@@ -69,7 +69,7 @@ jobs:
           json_field() { sed -n "s/.*\"$2\": *\"\([^\"]*\)\".*/\1/p" "$1" 2>/dev/null | head -1; }
 
           MAIN_SHA=$(sha_of main)
-          BRANCH_SHA=$(sha_of arena/c0321e79-ayrovi-beta1)
+          BRANCH_SHA=$(sha_of arena/9fd9a9fc-ayrovi-beta1)
           printf 'Références : `main` = `%s`, branche = `%s`\n\n' "${MAIN_SHA:-inconnu}" "${BRANCH_SHA:-inconnu}" >> "$S"
 
           echo "| Serveur | /api/health | /api/ready (commit / branche) | assetlinks | aywebs/health | Code servi |" >> "$S"
