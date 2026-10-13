@@ -23,6 +23,8 @@ on:
     branches: [arena/9fd9a9fc-ayrovi-beta1]
     paths:
       - '.github/workflows/server-probe.yml'
+      - 'src/ayrovix/services/visualSearch.ts'
+      - 'src/ayrovix/services/search.ts'
 
 jobs:
   probe:
