@@ -218,7 +218,7 @@ jobs:
 
           # Le vrai trajet en panne signalé par l'utilisateur : le même JPEG que
           # l'écran Galerie envoie en multipart, puis Google Lens via SerpApi.
-          IMAGE_CODE=$(curl -s -o /tmp/ayrovix-image -w '%{http_code}' --max-time 75 \
+          IMAGE_CODE=$(curl -s -D /tmp/ayrovix-image-headers -o /tmp/ayrovix-image -w '%{http_code}' --max-time 75 \
             -H 'Accept: application/json' \
             -F 'image=@client/public/media/lens-sneakers.jpg;type=image/jpeg' \
             "$FIRST_BASE/api/ayrovix/analyze-image" 2>/dev/null)
@@ -229,16 +229,19 @@ jobs:
           data=d.get("data") or {}
           rows=data.get("candidates") or []
           code=d.get("code") or "none"
+          provider=d.get("providerCode") or "none"
           query=str(data.get("query") or "").replace(" ","_")[:80] or "none"
-          print("%d %s %s"%(len(rows),code,query))' 2>/dev/null)
-          set -- ${IMAGE_FACTS:-0 unreadable none}
-          IMAGE_TOTAL=${1:-0}; IMAGE_ERROR=${2:-unreadable}; IMAGE_QUERY=${3:-none}
+          print("%d %s %s %s"%(len(rows),code,provider,query))' 2>/dev/null)
+          set -- ${IMAGE_FACTS:-0 unreadable none none}
+          IMAGE_TOTAL=${1:-0}; IMAGE_ERROR=${2:-unreadable}; IMAGE_PROVIDER=${3:-none}; IMAGE_QUERY=${4:-none}
+          IMAGE_HEADER=$(awk -F': ' 'tolower($1)=="x-ayrovix-visual-status" {gsub("\\r", "", $2); print $2}' /tmp/ayrovix-image-headers | tail -1)
+          IMAGE_HEADER=${IMAGE_HEADER:-none}
           if [ "$IMAGE_CODE" = "200" ]; then
             printf '**Sonde photo → SerpApi Lens réelle : ✅ code `%s`, %s candidat(s), requête `%s`.**\n\n' "$IMAGE_CODE" "$IMAGE_TOTAL" "$IMAGE_QUERY" >> "$S"
             echo "::notice title=Photo SerpApi Lens connectee a l app::code=$IMAGE_CODE candidates=$IMAGE_TOTAL query=$IMAGE_QUERY"
           else
-            printf '**Sonde photo → SerpApi Lens réelle : ❌ code `%s`, erreur `%s`.**\n\n' "$IMAGE_CODE" "$IMAGE_ERROR" >> "$S"
-            echo "::warning title=Photo SerpApi Lens en panne::code=$IMAGE_CODE error=$IMAGE_ERROR candidates=$IMAGE_TOTAL"
+            printf '**Sonde photo → SerpApi Lens réelle : ❌ code `%s`, erreur `%s`, étape `%s` (en-tête `%s`).**\n\n' "$IMAGE_CODE" "$IMAGE_ERROR" "$IMAGE_PROVIDER" "$IMAGE_HEADER" >> "$S"
+            echo "::warning title=Photo SerpApi Lens en panne::code=$IMAGE_CODE error=$IMAGE_ERROR provider=$IMAGE_PROVIDER header=$IMAGE_HEADER candidates=$IMAGE_TOTAL"
           fi
 
           echo "::notice title=Etat des serveurs::main=${MAIN_SHA:-inconnu} branche=${BRANCH_SHA:-inconnu}${SUMMARY_LINE}"

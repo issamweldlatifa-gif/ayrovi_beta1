@@ -49,9 +49,10 @@ describe('une seule orchestration', () => {
     expect(engine).toContain("matchesResult.status === 'fulfilled' ? matchesResult.value : []");
   });
 
-  it('l’erreur de vision est transmise, pas avalée : l’appelant décide s’il continue', () => {
+  it('les erreurs des fournisseurs sont transmises, pas avalées : l’appelant décide s’il continue', () => {
     expect(engine).toContain('identificationError');
-    expect(routes).toContain('throw lastResort.identificationError || new Error(\'IDENTIFICATION_FAILED\');');
+    expect(engine).toContain('matchesError');
+    expect(routes).toContain('throw recognition.matchesError || lastResort.identificationError || new Error(\'IDENTIFICATION_FAILED\');');
   });
 
   it('chaque moteur est mesuré séparément', () => {

@@ -18,6 +18,18 @@ const MAX_IN_FLIGHT = 12;
 const cache = new Map<string, { at: number; results: AyrovixCandidate[] }>();
 const inFlight = new Map<string, Promise<AyrovixCandidate[]>>();
 
+/** Safe provider-stage code: useful in logs/responses, never contains the key or provider body. */
+export class SerpApiVisualError extends Error {
+  constructor(public readonly code: string) {
+    super(code);
+    this.name = 'SerpApiVisualError';
+  }
+}
+
+function visualFailure(code: string): SerpApiVisualError {
+  return new SerpApiVisualError(`SERPAPI_${code.replace(/[^A-Z0-9_]/g, '_')}`);
+}
+
 function boundedLimit(value: number): number {
   return Number.isFinite(value) ? Math.max(8, Math.min(40, Math.floor(value))) : 24;
 }
@@ -186,16 +198,13 @@ async function runSerpApiVisualSearch(image: Buffer, limit: number): Promise<Ayr
       body: form,
       signal: AbortSignal.timeout(remainingMs(deadline, 5_000)),
     });
-    if (!upload.ok) {
-      console.warn(`[AYROVIX serpapi-lens] image upload HTTP ${upload.status}`);
-      return [];
-    }
-    const uploadPayload: any = await responseJson(upload, 256 * 1024);
+    if (!upload.ok) throw visualFailure(`UPLOAD_HTTP_${upload.status}`);
+    let uploadPayload: any;
+    try { uploadPayload = await responseJson(upload, 256 * 1024); }
+    catch { throw visualFailure('UPLOAD_INVALID_JSON'); }
     const imageId = String(uploadPayload?.image_id || '').trim();
-    if (!imageId || deadline - Date.now() < 500) {
-      console.warn('[AYROVIX serpapi-lens] image upload returned no usable image_id');
-      return [];
-    }
+    if (!imageId) throw visualFailure('UPLOAD_NO_IMAGE_ID');
+    if (deadline - Date.now() < 500) throw visualFailure('UPLOAD_DEADLINE');
 
     const configuredCountry = (process.env.AYROVIX_LENS_COUNTRY || '').trim().toLowerCase();
     const country = /^[a-z]{2}$/.test(configuredCountry) ? configuredCountry : 'fr';
@@ -213,15 +222,11 @@ async function runSerpApiVisualSearch(image: Buffer, limit: number): Promise<Ayr
       const response = await fetch(`https://serpapi.com/search.json?${params.toString()}`, {
         signal: AbortSignal.timeout(remainingMs(deadline, 12_000)),
       });
-      if (!response.ok) {
-        console.warn(`[AYROVIX serpapi-lens] lens HTTP ${response.status}`);
-        return [];
-      }
-      const payload: any = await responseJson(response);
-      if (payload?.error) {
-        console.warn('[AYROVIX serpapi-lens] lens API error');
-        return [];
-      }
+      if (!response.ok) throw visualFailure(`LENS_HTTP_${response.status}`);
+      let payload: any;
+      try { payload = await responseJson(response); }
+      catch { throw visualFailure('LENS_INVALID_JSON'); }
+      if (payload?.error) throw visualFailure('LENS_API_ERROR');
       return toCandidates(payload, limit);
     };
     /* One Lens query is enough (une seule requête payante par action client). */
@@ -229,8 +234,11 @@ async function runSerpApiVisualSearch(image: Buffer, limit: number): Promise<Ayr
     console.log(`[AYROVIX serpapi-lens] ${matches.length} matches`);
     return matches;
   } catch (error: any) {
-    console.warn(`[AYROVIX serpapi-lens] ${error?.name === 'TimeoutError' ? 'timeout' : 'unavailable'}`);
-    return [];
+    const failure = error instanceof SerpApiVisualError
+      ? error
+      : visualFailure(error?.name === 'TimeoutError' ? 'TIMEOUT' : 'UNAVAILABLE');
+    console.warn(`[AYROVIX serpapi-lens] ${failure.code}`);
+    throw failure;
   }
 }
 

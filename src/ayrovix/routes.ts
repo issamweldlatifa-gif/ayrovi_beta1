@@ -5,7 +5,7 @@ import type { QatafoDatabase } from '../db/database';
 import type { SmartLinkScraper } from '../scraper/scraper';
 import { buildSearchQuery, AyrovixUnavailableError, ayrovixAiReady, fallbackIdentification } from './services/ai';
 import { catalogSearch, externalProductSearch, groupOffers, scoreCandidate, searchCandidates } from './services/search';
-import { serpApiVisualReady } from './services/visualSearch';
+import { SerpApiVisualError, serpApiVisualReady } from './services/visualSearch';
 import { recognizeImage } from './services/lensEngine';
 import { enrichCandidatesLiveStock, filterPurchasable, refreshLiveStock } from './services/lensLiveStock';
 import { deduplicateCandidates } from './services/candidateDedup';
@@ -288,17 +288,23 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       });
       mark(trace, 'serpApiTotalMs', recognition.timings.matchesMs);
       const visualCandidates = recognition.matches;
+      const visualStatus = visualCandidates.length
+        ? 'ok'
+        : recognition.matchesError instanceof SerpApiVisualError
+          ? recognition.matchesError.code
+          : 'empty';
+      res.setHeader('X-Ayrovix-Visual-Status', visualStatus);
 
       let identification: AyrovixIdentification;
       if (visualCandidates.length) {
         // L'intitulé de la grille est celui de la meilleure page trouvée — pas une devinette.
         identification = fallbackIdentification(visualCandidates[0].title);
       } else {
-        if (!ayrovixAiReady()) throw new Error('IDENTIFICATION_FAILED');
+        if (!ayrovixAiReady()) throw recognition.matchesError || new Error('IDENTIFICATION_FAILED');
         const lastResort = await recognizeImage(effectiveBuffer, effectiveMime, { withMatches: false, withSignals: false });
         mark(trace, 'anthropicVisionMs', lastResort.timings.visionMs);
         if (!lastResort.identification) {
-          throw lastResort.identificationError || new Error('IDENTIFICATION_FAILED');
+          throw recognition.matchesError || lastResort.identificationError || new Error('IDENTIFICATION_FAILED');
         }
         identification = lastResort.identification;
         console.warn('[AYROVIX analyze-image] SerpApi sans lien — vision en dernier recours (intitulé seulement)');
@@ -468,6 +474,15 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       }
       if (error instanceof AyrovixUnavailableError || error?.code === 'AYROVIX_UNAVAILABLE') {
         return res.status(503).json({ success: false, code: 'AYROVIX_UNAVAILABLE', error: "AYROVIX n'est pas encore activé. Réessayez bientôt." });
+      }
+      if (error instanceof SerpApiVisualError) {
+        console.warn('[AYROVIX analyze-image]', error.code);
+        return res.status(502).json({
+          success: false,
+          code: 'VISUAL_SEARCH_FAILED',
+          providerCode: error.code,
+          error: "La recherche visuelle est temporairement indisponible. Réessayez dans un instant.",
+        });
       }
       console.warn('[AYROVIX analyze-image]', error?.code || error?.message || 'unknown');
       return res.status(422).json({ success: false, code: 'IDENTIFICATION_FAILED', error: "Impossible d'identifier le produit. Essayez une photo plus nette et centrée." });

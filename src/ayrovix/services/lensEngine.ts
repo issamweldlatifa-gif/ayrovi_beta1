@@ -29,6 +29,8 @@ export interface LensRecognition {
   identification: AyrovixIdentification | null;
   /** Raison de l'échec de la vision, laissée à l'appelant : lui seul sait s'il peut continuer. */
   identificationError: unknown;
+  /** Safe operational reason when SerpApi failed before returning matches. */
+  matchesError: unknown;
   matches: AyrovixCandidate[];
   signals: LensSignals;
   timings: { visionMs: number; matchesMs: number; signalsMs: number };
@@ -164,6 +166,7 @@ export async function recognizeImage(
   return {
     identification,
     identificationError: visionResult.status === 'rejected' ? visionResult.reason : null,
+    matchesError: matchesResult.status === 'rejected' ? matchesResult.reason : null,
     matches,
     signals,
     timings: { visionMs, matchesMs, signalsMs },
