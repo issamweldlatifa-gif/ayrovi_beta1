@@ -13,8 +13,11 @@ const option = (over: Partial<LensVariantOption>): LensVariantOption => ({
 const candidate = (over: Partial<LensCandidate> = {}): LensCandidate => ({
   id: 'c1', kind: 'external', title: 'Robe', promo: null, description: null, brand: 'Z', model: null,
   colors: ['Rouge', 'Bleu'], sizes: ['M', 'L'], source: 'shein', sourceUrl: 'https://www.shein.com/p/1', image: 'https://img/1.jpg',
-  images: [], colorImages: null, price: 20, currency: 'EUR', priceTnd: 85, availability: 'in_stock',
-  priceToken: 'tok-general', priceVerificationStatus: 'VERIFIED', variantOptions: [],
+  images: [], colorImages: null, price: 20, currency: 'EUR', priceTnd: 85,
+  originalPrice: null, originalPriceTnd: null, priceOrigin: null, availability: 'in_stock',
+  availabilityCheckedAt: null, availabilityExpiresAt: null, sourceRead: null, sourceCondition: null,
+  optionLabel: null, rating: null, ratingCount: null, ratingKind: null, match: null,
+  offerCount: 0, offers: [], priceToken: 'tok-general', priceVerificationStatus: 'VERIFIED', variantOptions: [],
   ...over,
 });
 

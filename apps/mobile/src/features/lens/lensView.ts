@@ -7,6 +7,7 @@
  *  • الفيشات المكررة (نفس رابط المصدر) تتشال.
  */
 import type { LensAvailability, LensCandidate } from '@/api/lens';
+import type { CartLineQuote } from '@/api/pricing';
 
 export type LensPriceView =
   | { kind: 'tnd'; amount: number }
@@ -21,6 +22,48 @@ export function priceView(candidate: Pick<LensCandidate, 'priceTnd' | 'price' | 
     return { kind: 'original', amount: candidate.price, currency: candidate.currency };
   }
   return { kind: 'none' };
+}
+
+export interface LensPricePresentation {
+  current: LensPriceView;
+  referenceTnd: number | null;
+  discountPercent: number | null;
+  promoLabel: string | null;
+  verifiedAtSource: boolean;
+}
+
+const positive = (value: unknown): number | null =>
+  typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : null;
+
+/** Hiérarchie unique du prix pour la grille et la fiche. */
+export function pricePresentation(candidate: LensCandidate, quote: CartLineQuote | null = null): LensPricePresentation {
+  const quoteCurrent = positive(quote?.lineTotalTnd);
+  const promoCurrent = positive(candidate.promo?.priceTnd);
+  const regularCurrent = positive(candidate.priceTnd);
+  const currentTnd = quoteCurrent ?? promoCurrent ?? regularCurrent;
+  const current: LensPriceView = currentTnd != null
+    ? { kind: 'tnd', amount: currentTnd }
+    : priceView(candidate);
+
+  const candidateReference = positive(candidate.promo?.originalPriceTnd)
+    ?? positive(candidate.originalPriceTnd);
+  const quotedReference = positive(quote?.originalLineTotalTnd);
+  const reference = quotedReference ?? candidateReference;
+  const referenceTnd = current.kind === 'tnd' && reference != null && reference > current.amount
+    ? reference
+    : null;
+  const explicitPercent = positive(quote?.promo?.percent) ?? positive(candidate.promo?.percent);
+  const derivedPercent = referenceTnd != null && current.kind === 'tnd'
+    ? Math.round((1 - current.amount / referenceTnd) * 100)
+    : null;
+
+  return {
+    current,
+    referenceTnd,
+    discountPercent: explicitPercent != null ? Math.round(explicitPercent) : derivedPercent,
+    promoLabel: quote?.promo?.label?.trim() || candidate.promo?.label?.trim() || null,
+    verifiedAtSource: candidate.priceOrigin === 'merchant' || candidate.priceVerificationStatus === 'VERIFIED',
+  };
 }
 
 /** مفتاح الترجمة للتوفّر (قاموس مغلق). */

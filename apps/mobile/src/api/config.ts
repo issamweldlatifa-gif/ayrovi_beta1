@@ -40,7 +40,7 @@ export const API_BASE_URL = configured.replace(/\/+$/, '');
  *
  * Surcharge : EXPO_PUBLIC_APP_VERSION (posée par la chaîne de construction).
  */
-export const CLIENT_VERSION = String(process.env.EXPO_PUBLIC_APP_VERSION ?? '').trim() || '2.0.3';
+export const CLIENT_VERSION = String(process.env.EXPO_PUBLIC_APP_VERSION ?? '').trim() || '2.0.4';
 
-/** En-tête exact attendu par le serveur : `mobile/2.0.3`. */
+/** En-tête exact attendu par le serveur : `mobile/2.0.4`. */
 export const CLIENT_HEADER = `mobile/${CLIENT_VERSION}`;

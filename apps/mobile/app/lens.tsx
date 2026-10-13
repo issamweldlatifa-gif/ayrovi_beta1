@@ -17,20 +17,17 @@ import { useQuery } from '@tanstack/react-query';
 
 import { AppText, Button, Card, Field, Segmented } from '@/design/ui';
 import { SubScreen } from '@/design/subScreen';
-import { AppImage } from '@/design/appImage';
 import { ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
 import { useT, type TranslationKey } from '@/i18n';
-import { mediaUrl } from '@/api/client';
 import { ApiError, isApiError } from '@/api/errors';
 import { addExternalFavorite } from '@/api/account';
 import {
   analyzeBarcode, analyzeCode, analyzeImage, analyzeText, analyzeUrl, fetchLensHistory, markChosen,
   type LensCandidate, type LensHistoryItem, type LensSearchResult,
 } from '@/api/lens';
-import {
-  availabilityKey, isOpenableSourceUrl, priceView, uniqueCandidates,
-} from '@/features/lens/lensView';
+import { isOpenableSourceUrl, uniqueCandidates } from '@/features/lens/lensView';
+import { LensResultsGrid } from '@/features/lens/LensResultsGrid';
 import { OcerexFlow } from '@/features/lens/ocerex/OcerexFlow';
 import { LensProductView } from '@/features/lens/LensProductView';
 import { LensHelpView } from '@/features/lens/LensHelpView';
@@ -293,7 +290,7 @@ export default function LensScreen() {
         ) : null}
 
         {stage.kind === 'results' ? (
-          <Results
+          <LensResultsGrid
             candidates={stage.candidates}
             excluded={stage.excluded}
             favorited={favorited}
@@ -301,7 +298,6 @@ export default function LensScreen() {
             onOpen={onOpen}
             onFavorite={onFavorite}
             onNewSearch={reset}
-            t={t}
           />
         ) : null}
 
@@ -393,94 +389,12 @@ export default function LensScreen() {
   );
 }
 
-function Results({
-  candidates, excluded, favorited, favoriteNote, onOpen, onFavorite, onNewSearch, t,
-}: {
-  candidates: LensCandidate[];
-  excluded: number;
-  favorited: Record<string, true>;
-  favoriteNote: TranslationKey | null;
-  onOpen: (candidate: LensCandidate) => void;
-  onFavorite: (candidate: LensCandidate) => void;
-  onNewSearch: () => void;
-  t: (key: TranslationKey, vars?: Record<string, string | number>) => string;
-}) {
-  const theme = useTheme();
-  if (candidates.length === 0) {
-    return (
-      <Card>
-        <AppText>{t('lens.empty')}</AppText>
-        <Button label={t('lens.newSearch')} onPress={onNewSearch} block />
-      </Card>
-    );
-  }
-  return (
-    <View style={styles.results}>
-      <AppText variant="caption" color={theme.colors.muted}>{t('lens.resultsTitle')}</AppText>
-      {excluded > 0 ? (
-        <AppText variant="caption" color={theme.colors.muted}>{t('lens.excluded', { count: excluded })}</AppText>
-      ) : null}
-      {favoriteNote ? <AppText variant="caption" color={theme.status.danger.fg}>{t(favoriteNote)}</AppText> : null}
-      {candidates.map((candidate) => {
-        const price = priceView(candidate);
-        const priceText = price.kind === 'tnd'
-          ? `${price.amount.toFixed(2)} TND`
-          : price.kind === 'original'
-            ? `${price.amount.toFixed(2)} ${price.currency}`
-            : t('lens.priceUnpublished');
-        const isFavorite = favorited[candidate.sourceUrl] === true;
-        return (
-          <Card key={candidate.id}>
-            <Pressable
-              onPress={() => onOpen(candidate)}
-              accessibilityRole="button"
-              accessibilityLabel={`${candidate.title} — ${priceText}`}
-              testID={`lens-result-${candidate.id}`}
-            >
-              <View style={styles.row}>
-                <AppImage uri={mediaUrl(candidate.image)} style={styles.thumb} accessibilityLabel={candidate.title} />
-                <View style={styles.rowText}>
-                  <AppText>{candidate.title}</AppText>
-                  {candidate.brand ? <AppText variant="caption" color={theme.colors.muted}>{candidate.brand}</AppText> : null}
-                  <AppText>{priceText}</AppText>
-                  <AppText variant="caption" color={theme.colors.muted}>{t(availabilityKey(candidate.availability) as TranslationKey)}</AppText>
-                </View>
-                <Ionicons name="open-outline" size={20} color={theme.colors.muted} />
-              </View>
-            </Pressable>
-            <Pressable
-              onPress={() => onFavorite(candidate)}
-              disabled={isFavorite}
-              accessibilityRole="button"
-              accessibilityLabel={t(isFavorite ? 'lens.favorited' : 'lens.favorite')}
-              hitSlop={HIT_SLOP}
-              testID={`lens-favorite-${candidate.id}`}
-              style={styles.favoriteRow}
-            >
-              <Ionicons
-                name={isFavorite ? 'heart' : 'heart-outline'}
-                size={20}
-                color={isFavorite ? theme.colors.accent : theme.colors.muted}
-              />
-              <AppText variant="caption" color={theme.colors.muted}>{t(isFavorite ? 'lens.favorited' : 'lens.favorite')}</AppText>
-            </Pressable>
-          </Card>
-        );
-      })}
-      <Button label={t('lens.newSearch')} onPress={onNewSearch} tone="quiet" block />
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   wrap: { gap: 12, padding: 16 },
   cameraBlock: { gap: 12 },
   camera: { width: '100%', aspectRatio: 3 / 4, borderRadius: 12, overflow: 'hidden' },
-  results: { gap: 10 },
   row: { flexDirection: 'row', gap: 12, alignItems: 'center' },
   rowText: { flex: 1, gap: 4 },
-  thumb: { width: 72, height: 72, borderRadius: 8 },
-  favoriteRow: { flexDirection: 'row', gap: 8, alignItems: 'center', minHeight: 44 },
   history: { gap: 8 },
   sectionRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
 });

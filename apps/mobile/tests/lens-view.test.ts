@@ -1,17 +1,42 @@
 import { describe, expect, it } from 'vitest';
 import type { LensCandidate } from '../src/api/lens';
-import { availabilityKey, isOpenableSourceUrl, priceView, uniqueCandidates } from '../src/features/lens/lensView';
+import { availabilityKey, isOpenableSourceUrl, pricePresentation, priceView, uniqueCandidates } from '../src/features/lens/lensView';
 
 const base: LensCandidate = {
   id: '1', kind: 'external', title: 't', promo: null, description: null, brand: null, model: null,
   colors: [], sizes: [], source: 's', sourceUrl: 'https://a.example/1', image: '', images: [], colorImages: null,
-  price: null, currency: null, priceTnd: null, availability: 'unknown',
+  price: null, currency: null, priceTnd: null, originalPrice: null, originalPriceTnd: null,
+  priceOrigin: null, availability: 'unknown', availabilityCheckedAt: null, availabilityExpiresAt: null,
+  sourceRead: null, sourceCondition: null, optionLabel: null, rating: null, ratingCount: null,
+  ratingKind: null, match: null, offerCount: 0, offers: [],
   priceToken: null, priceVerificationStatus: 'PENDING_MANUAL', variantOptions: [],
 };
 
 describe('Lens — vue', () => {
   it('priceTnd prime', () => {
     expect(priceView({ ...base, priceTnd: 120, price: 40, currency: 'EUR' })).toEqual({ kind: 'tnd', amount: 120 });
+  });
+  it('la promo du serveur fournit le prix courant, la référence et le pourcentage', () => {
+    const view = pricePresentation({
+      ...base,
+      priceTnd: 100,
+      promo: { percent: 4, label: 'Promo', priceTnd: 96, originalPriceTnd: 100 },
+    });
+    expect(view.current).toEqual({ kind: 'tnd', amount: 96 });
+    expect(view.referenceTnd).toBe(100);
+    expect(view.discountPercent).toBe(4);
+    expect(view.promoLabel).toBe('Promo');
+  });
+  it('le devis frais remplace la promo de la grille sans calcul local', () => {
+    const view = pricePresentation(base, {
+      lineTotalTnd: 92,
+      originalLineTotalTnd: 100,
+      promo: { percent: 8, label: 'Flash', discountTnd: 8 },
+      pricingVersion: 2,
+    });
+    expect(view.current).toEqual({ kind: 'tnd', amount: 92 });
+    expect(view.referenceTnd).toBe(100);
+    expect(view.discountPercent).toBe(8);
   });
   it('sans priceTnd: prix original seulement avec devise', () => {
     expect(priceView({ ...base, price: 40, currency: 'EUR' })).toEqual({ kind: 'original', amount: 40, currency: 'EUR' });

@@ -39,6 +39,32 @@ function isPublicLink(url?: string | null): boolean {
   try { const u = new URL(String(url || '')); return u.protocol === 'https:' || u.protocol === 'http:'; } catch { return false; }
 }
 
+/** Composition → isolation → proxy → original, au lieu d'abandonner au premier échec. */
+const FallbackProductImage: React.FC<{
+  media: ProductView['media'][number];
+  unavailable: string;
+}> = ({ media, unavailable }) => {
+  const chain = [media.src, ...media.fallbacks].filter((src, index, values) => Boolean(src) && values.indexOf(src) === index);
+  const key = chain.join('|');
+  const [step, setStep] = React.useState(0);
+  const [failed, setFailed] = React.useState(false);
+  React.useEffect(() => { setStep(0); setFailed(false); }, [key]);
+  if (!chain.length || failed) return <span className="s-card__desc">{unavailable}</span>;
+  return (
+    <img
+      src={chain[Math.min(step, chain.length - 1)]}
+      alt={media.alt}
+      loading="lazy"
+      decoding="async"
+      referrerPolicy="no-referrer"
+      onError={() => {
+        if (step + 1 < chain.length) setStep((current) => current + 1);
+        else setFailed(true);
+      }}
+    />
+  );
+};
+
 export const ProductGrid: React.FC<ProductGridProps> = ({
   products, tr, formatMoney, direction = 'ltr', onOpen, onFavorite, favorites, onVerifyStock, stockChecks,
 }) => (
@@ -68,7 +94,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
                 style={{ display: 'block', width: '100%', height: '100%' }}
               >
                 {cover
-                  ? <img src={cover.src} alt={cover.alt} loading="lazy" decoding="async" referrerPolicy="no-referrer" />
+                  ? <FallbackProductImage media={cover} unavailable={tr('Image indisponible', 'الصورة غير متوفرة')} />
                   : <span className="s-card__desc">{tr('Image indisponible', 'الصورة غير متوفرة')}{product.merchant?.name ? ` · ${product.merchant.name}` : ''}</span>}
               </button>
 

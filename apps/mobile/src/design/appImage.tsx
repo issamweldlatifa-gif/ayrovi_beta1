@@ -14,7 +14,7 @@
  *
  * `resizeMode` de React Native devient `contentFit` (même vocabulaire qu'Expo).
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Image as ExpoImage, type ImageStyle } from 'expo-image';
 import { StyleSheet, View, type StyleProp } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -24,8 +24,10 @@ import { useT } from '@/i18n';
 export interface AppImageProps {
   /** URI absolue ou relative (résolue par l'appelant via `mediaUrl`). */
   uri?: string | null;
-  /** Source de secours : essayée une fois si `uri` échoue, avant le cadre de secours. */
+  /** Source de secours historique : essayée après `uri`. */
   fallbackUri?: string | null;
+  /** Chaîne ordonnée de replis (isolation, proxy, original, par exemple). */
+  fallbackUris?: readonly (string | null | undefined)[];
   /** Visuel embarqué dans l'application (`require('…/x.jpg')`) — prioritaire sur `uri`. */
   localSource?: number;
   contentFit?: 'cover' | 'contain' | 'fill' | 'none' | 'scale-down';
@@ -38,16 +40,31 @@ export interface AppImageProps {
 }
 
 export function AppImage({
-  uri, fallbackUri, localSource, contentFit = 'cover', style, accessibilityLabel, decorative = false, testID,
+  uri, fallbackUri, fallbackUris = [], localSource, contentFit = 'cover', style, accessibilityLabel, decorative = false, testID,
 }: AppImageProps) {
   const theme = useTheme();
   const t = useT();
+  const sources = [uri, ...fallbackUris, fallbackUri]
+    .map((value) => String(value ?? '').trim())
+    .filter((value, index, list) => Boolean(value) && list.indexOf(value) === index);
+  const sourceKey = sources.join('\u0000');
+  const [sourceIndex, setSourceIndex] = useState(0);
   const [failed, setFailed] = useState(false);
-  const [onFallback, setOnFallback] = useState(false);
-  const activeUri = onFallback && fallbackUri ? fallbackUri : uri;
+  const activeUri = sources[sourceIndex] ?? null;
+
+  // Une même instance sert à plusieurs produits dans une liste recyclée : une
+  // panne de l'ancien produit ne doit pas condamner l'image suivante.
+  useEffect(() => {
+    setSourceIndex(0);
+    setFailed(false);
+  }, [localSource, sourceKey]);
+
   const onLoadError = () => {
-    if (!onFallback && fallbackUri) setOnFallback(true);
-    else setFailed(true);
+    if (localSource == null && sourceIndex + 1 < sources.length) {
+      setSourceIndex((current) => current + 1);
+      return;
+    }
+    setFailed(true);
   };
 
   // Pas de source ou chargement cassé : cadre de secours, jamais un trou muet.

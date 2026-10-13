@@ -22,6 +22,25 @@ export interface LensPromo {
   percent: number;
   label: string;
   priceTnd: number | null;
+  /** Prix AYROVI avant remise, calculé par le serveur — jamais reconstruit sur le téléphone. */
+  originalPriceTnd: number | null;
+}
+
+export interface LensSourceRead {
+  at: string;
+  variantsAvailable: number;
+  variantsAvailableWithColor: number | null;
+  variantsUnavailable: number;
+  variantsUnknown: number;
+}
+
+export interface LensOffer {
+  source: string;
+  sourceUrl: string;
+  price: number | null;
+  currency: string | null;
+  priceTnd: number | null;
+  promo: LensPromo | null;
 }
 
 export interface LensVariantOption {
@@ -56,7 +75,23 @@ export interface LensCandidate {
   price: number | null;
   currency: string | null;
   priceTnd: number | null;
+  /** Prix barré publié par le marchand, puis son équivalent AYROVI. */
+  originalPrice: number | null;
+  originalPriceTnd: number | null;
+  priceOrigin: 'merchant' | 'search' | null;
   availability: LensAvailability;
+  availabilityCheckedAt: string | null;
+  availabilityExpiresAt: string | null;
+  sourceRead: LensSourceRead | null;
+  sourceCondition: string | null;
+  optionLabel: string | null;
+  rating: number | null;
+  ratingCount: number | null;
+  ratingKind: 'merchant' | 'match' | 'listing-quality' | null;
+  /** Score de rapprochement renvoyé par Lens, entre 0 et 100. */
+  match: number | null;
+  offerCount: number;
+  offers: LensOffer[];
   /** رمز سعر موقّع من الخادم. التطبيق لا يصنعه أبداً. */
   priceToken: string | null;
   /** VERIFIED فقط مع رمز موقّع؛ غير ذلك PENDING_MANUAL. */
@@ -156,17 +191,54 @@ const availability = (value: unknown): LensAvailability => {
 
 const parsePromo = (value: unknown): LensPromo | null => {
   if (!isRecord(value)) return null;
-  return { percent: num(value.percent) ?? 0, label: str(value.label), priceTnd: num(value.priceTnd) };
+  return {
+    percent: num(value.percent) ?? 0,
+    label: str(value.label),
+    priceTnd: num(value.priceTnd),
+    originalPriceTnd: num(value.originalPriceTnd),
+  };
 };
 
-export function parseCandidate(value: unknown): LensCandidate {
+function parseSourceRead(value: unknown): LensSourceRead | null {
+  if (!isRecord(value) || !str(value.at)) return null;
+  return {
+    at: str(value.at),
+    variantsAvailable: num(value.variantsAvailable) ?? 0,
+    variantsAvailableWithColor: num(value.variantsAvailableWithColor),
+    variantsUnavailable: num(value.variantsUnavailable) ?? 0,
+    variantsUnknown: num(value.variantsUnknown) ?? 0,
+  };
+}
+
+function parseOffers(value: unknown): LensOffer[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(isRecord).flatMap((offer) => {
+    const sourceUrl = str(offer.sourceUrl);
+    if (!sourceUrl) return [];
+    return [{
+      source: str(offer.source),
+      sourceUrl,
+      price: num(offer.price),
+      currency: strOrNull(offer.currency),
+      priceTnd: num(offer.priceTnd),
+      promo: parsePromo(offer.promo),
+    }];
+  });
+}
+
+function parseCandidateRecord(value: unknown, allowProductShape: boolean): LensCandidate {
   if (!isRecord(value)) throw malformed('fiche produit');
-  const id = str(value.id);
   const sourceUrl = str(value.sourceUrl);
+  const id = str(value.id) || (allowProductShape && sourceUrl ? `url:${sourceUrl}` : '');
   if (!id || !sourceUrl) throw malformed('identifiant ou lien manquant');
   const colorImagesRaw = isRecord(value.colorImages) ? value.colorImages : null;
   const colorImages = colorImagesRaw
     ? Object.fromEntries(Object.entries(colorImagesRaw).map(([color, list]) => [color, strList(list)]))
+    : null;
+  const sourceRead = parseSourceRead(value.sourceRead);
+  const offers = parseOffers(value.offers);
+  const ratingKind = value.ratingKind === 'merchant' || value.ratingKind === 'match' || value.ratingKind === 'listing-quality'
+    ? value.ratingKind
     : null;
   return {
     id,
@@ -186,13 +258,37 @@ export function parseCandidate(value: unknown): LensCandidate {
     price: num(value.price),
     currency: strOrNull(value.currency),
     priceTnd: num(value.priceTnd),
+    originalPrice: num(value.originalPrice),
+    originalPriceTnd: num(value.originalPriceTnd),
+    priceOrigin: value.priceOrigin === 'merchant' || value.priceOrigin === 'search' ? value.priceOrigin : null,
     availability: availability(value.availability),
+    availabilityCheckedAt: strOrNull(value.availabilityCheckedAt) ?? sourceRead?.at ?? null,
+    availabilityExpiresAt: strOrNull(value.availabilityExpiresAt),
+    sourceRead,
+    sourceCondition: strOrNull(value.sourceCondition),
+    optionLabel: strOrNull(value.optionLabel),
+    rating: num(value.rating),
+    ratingCount: num(value.ratingCount),
+    ratingKind,
+    match: num(value.match),
+    offerCount: Math.max(offers.length, Math.trunc(num(value.offerCount) ?? 0)),
+    offers,
     priceToken: strOrNull(value.priceToken),
     priceVerificationStatus: value.priceVerificationStatus === 'VERIFIED' && strOrNull(value.priceToken)
       ? 'VERIFIED'
       : 'PENDING_MANUAL',
     variantOptions: parseVariantOptions(value.variantOptions),
   };
+}
+
+/** Candidat d'une grille Lens : l'identifiant fourni par le serveur est obligatoire. */
+export function parseCandidate(value: unknown): LensCandidate {
+  return parseCandidateRecord(value, false);
+}
+
+/** `/analyze-url` renvoie un produit sans `id`; son lien fournit un identifiant stable. */
+export function parseUrlProduct(value: unknown): LensCandidate {
+  return parseCandidateRecord(value, true);
 }
 
 function parseVariantOptions(value: unknown): LensVariantOption[] {
@@ -267,7 +363,7 @@ export function parseSearchResult(value: unknown): LensSearchResult {
 export function parseUrlResult(value: unknown): LensUrlResult {
   if (!isRecord(value)) throw malformed('résultat lien');
   return {
-    product: parseCandidate(value.product),
+    product: parseUrlProduct(value.product),
     alternates: parseCandidates(value.alternates),
     eventId: str(value.eventId),
     fallback: value.fallback === true,
@@ -355,10 +451,16 @@ export async function analyzeImage(
   return parseImageResult(data);
 }
 
-export async function analyzeUrl(url: string, channel: 'url' | 'qr' = 'url', recordHistory = true): Promise<LensUrlResult> {
+export async function analyzeUrl(
+  url: string,
+  channel: 'url' | 'qr' = 'url',
+  recordHistory = true,
+  signal?: AbortSignal,
+): Promise<LensUrlResult> {
   const data = await apiSendData<unknown>('POST', `${LENS_BASE}/analyze-url`, {
     body: { url, channel, recordHistory },
     timeoutMs: LENS_TIMEOUT_MS,
+    signal,
   });
   return parseUrlResult(data);
 }
@@ -379,10 +481,11 @@ export async function analyzeText(query: string): Promise<LensSearchResult> {
 }
 
 /** Stock frais: la page marchande est relue. Une page illisible rend `unknown`. */
-export async function refreshLiveStock(urls: string[], title?: string): Promise<LensLiveStock[]> {
+export async function refreshLiveStock(urls: string[], title?: string, signal?: AbortSignal): Promise<LensLiveStock[]> {
   const data = await apiSendData<unknown>('POST', `${LENS_BASE}/live-stock`, {
     body: { urls: urls.slice(0, 8), title: title || undefined },
     timeoutMs: LENS_TIMEOUT_MS,
+    signal,
   });
   return parseLiveStock(data);
 }

@@ -150,6 +150,18 @@ describe('boutique v2 — indépendance', () => {
     'client/src/shop/BagPage.tsx', 'client/src/shop/AddressPage.tsx', 'client/src/shop/PaymentPage.tsx',
   ].map((path) => readFileSync(path, 'utf8'));
 
+  it('les cartes, miniatures, couleurs et zoom consomment réellement les replis média', () => {
+    const grid = readFileSync('client/src/shop/ProductGrid.tsx', 'utf8');
+    const page = readFileSync('client/src/shop/ProductPage.tsx', 'utf8');
+    expect(grid).toContain('[media.src, ...media.fallbacks]');
+    expect(grid).toContain('onError={() =>');
+    expect(grid).toContain('<FallbackProductImage');
+    expect(page).toContain('[media.src, ...media.fallbacks]');
+    expect(page).toContain('<FallbackMediaImage media={item}');
+    expect(page).toContain('<FallbackMediaImage media={media[slide]}');
+    expect(page).toContain('<FallbackMediaImage media={color.media}');
+  });
+
   it('aucun écran v2 n’importe un composant ancien', () => {
     for (const source of files) {
       expect(source).not.toMatch(/from '\.\.\/components\//);

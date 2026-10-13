@@ -26,6 +26,27 @@ describe('Lens — parsing (contrat du site)', () => {
     expect(parsed.priceTnd).toBeNull();
   });
 
+  it('lit sans perte le prix barré, la promo et les preuves de source', () => {
+    const parsed = parseCandidate({
+      ...candidate,
+      promo: { percent: 3, label: 'Jour', priceTnd: 97, originalPriceTnd: 100 },
+      originalPrice: 30,
+      originalPriceTnd: 100,
+      priceOrigin: 'merchant',
+      rating: 4.7,
+      ratingCount: 42,
+      ratingKind: 'merchant',
+      match: 93,
+      sourceRead: { at: '2026-10-14T12:00:00.000Z', variantsAvailable: 2, variantsUnavailable: 1, variantsUnknown: 0 },
+    });
+    expect(parsed.promo?.originalPriceTnd).toBe(100);
+    expect(parsed.originalPriceTnd).toBe(100);
+    expect(parsed.priceOrigin).toBe('merchant');
+    expect(parsed.ratingKind).toBe('merchant');
+    expect(parsed.match).toBe(93);
+    expect(parsed.availabilityCheckedAt).toBe('2026-10-14T12:00:00.000Z');
+  });
+
   it('fiche sans identifiant ou lien → erreur malformed', () => {
     expect(() => parseCandidate({ ...candidate, id: '' })).toThrow(ApiError);
     expect(() => parseCandidate({ ...candidate, sourceUrl: '' })).toThrow(ApiError);
@@ -52,6 +73,15 @@ describe('Lens — parsing (contrat du site)', () => {
   it('résultat lien : fallback booléen strict', () => {
     const result = parseUrlResult({ product: candidate, alternates: [], eventId: 'e', fallback: 'yes' });
     expect(result.fallback).toBe(false);
+  });
+
+  it('résultat lien accepte le contrat produit sans id et crée un identifiant stable', () => {
+    const result = parseUrlResult({
+      product: { title: 'Fiche', sourceUrl: 'https://shop.example/p/1', image: 'x' },
+      alternates: [], eventId: 'e2',
+    });
+    expect(result.product.id).toBe('url:https://shop.example/p/1');
+    expect(result.product.sourceUrl).toBe('https://shop.example/p/1');
   });
 
   it('stock frais : chaque variante a une disponibilité fermée', () => {
