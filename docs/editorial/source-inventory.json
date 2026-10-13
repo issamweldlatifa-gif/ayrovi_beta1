@@ -21012,8 +21012,8 @@
     {
       "file": "client/src/shop/ProductGrid.tsx",
       "domain": "shell-content",
-      "sha256": "bf88eae142fd7b47f719f8596723f110159b94574928ec4b44cd0a752a70199d",
-      "lines": 139,
+      "sha256": "d1f5612360050b0fbde7c824307fa50122dde2425c36bfa4e26d7069275698b3",
+      "lines": 165,
       "imports": [
         "react",
         "../design/editorial/Icon",
@@ -21025,7 +21025,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 64,
+          "line": 90,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -21035,7 +21035,7 @@
         },
         {
           "tag": "button",
-          "line": 76,
+          "line": 102,
           "className": "\"s-rail__btn\"",
           "type": "\"button\"",
           "role": null,
@@ -21045,7 +21045,7 @@
         },
         {
           "tag": "button",
-          "line": 120,
+          "line": 146,
           "className": "\"s-card__stock\"",
           "type": "\"button\"",
           "role": null,
@@ -21063,8 +21063,8 @@
     {
       "file": "client/src/shop/ProductPage.tsx",
       "domain": "shell-content",
-      "sha256": "a8080b56a385d02ee74e0328d5cae1b9fdd988b42ede65913ef3103a4f2a63a6",
-      "lines": 320,
+      "sha256": "3fb7d350fe120fb8056d40feb06f5e2e1b477a8b63fcb04c691173481c3de6ea",
+      "lines": 349,
       "imports": [
         "react",
         "../design/editorial/Icon",
@@ -21077,7 +21077,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 79,
+          "line": 108,
           "className": "\"s-rail__btn\"",
           "type": "\"button\"",
           "role": null,
@@ -21087,7 +21087,7 @@
         },
         {
           "tag": "button",
-          "line": 80,
+          "line": 109,
           "className": "\"s-rail__btn\"",
           "type": "\"button\"",
           "role": null,
@@ -21097,7 +21097,7 @@
         },
         {
           "tag": "button",
-          "line": 81,
+          "line": 110,
           "className": "\"s-rail__btn\"",
           "type": "\"button\"",
           "role": null,
@@ -21107,7 +21107,7 @@
         },
         {
           "tag": "button",
-          "line": 153,
+          "line": 182,
           "className": "\"s-iconbtn\"",
           "type": "\"button\"",
           "role": null,
@@ -21117,7 +21117,7 @@
         },
         {
           "tag": "button",
-          "line": 161,
+          "line": 190,
           "className": "\"s-iconbtn\"",
           "type": "\"button\"",
           "role": null,
@@ -21127,7 +21127,7 @@
         },
         {
           "tag": "button",
-          "line": 191,
+          "line": 220,
           "className": "\"s-media__open\"",
           "type": "\"button\"",
           "role": null,
@@ -21137,7 +21137,7 @@
         },
         {
           "tag": "button",
-          "line": 221,
+          "line": 250,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -21147,7 +21147,7 @@
         },
         {
           "tag": "button",
-          "line": 231,
+          "line": 260,
           "className": "\"s-rail__btn\"",
           "type": "\"button\"",
           "role": null,
@@ -21157,7 +21157,7 @@
         },
         {
           "tag": "button",
-          "line": 232,
+          "line": 261,
           "className": "\"s-rail__btn\"",
           "type": "\"button\"",
           "role": null,
@@ -21167,7 +21167,7 @@
         },
         {
           "tag": "button",
-          "line": 235,
+          "line": 264,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -21177,7 +21177,7 @@
         },
         {
           "tag": "button",
-          "line": 245,
+          "line": 274,
           "className": "\"s-swatch\"",
           "type": "\"button\"",
           "role": null,
@@ -21187,7 +21187,7 @@
         },
         {
           "tag": "summary",
-          "line": 273,
+          "line": 302,
           "className": null,
           "type": null,
           "role": null,
@@ -21197,7 +21197,7 @@
         },
         {
           "tag": "input",
-          "line": 274,
+          "line": 303,
           "className": null,
           "type": null,
           "role": null,
@@ -21207,7 +21207,7 @@
         },
         {
           "tag": "input",
-          "line": 275,
+          "line": 304,
           "className": null,
           "type": null,
           "role": null,
@@ -21217,7 +21217,7 @@
         },
         {
           "tag": "button",
-          "line": 290,
+          "line": 319,
           "className": "\"s-select\"",
           "type": "\"button\"",
           "role": null,
@@ -21227,7 +21227,7 @@
         },
         {
           "tag": "button",
-          "line": 298,
+          "line": 327,
           "className": "\"s-iconbtn\"",
           "type": "\"button\"",
           "role": null,
@@ -21237,7 +21237,7 @@
         },
         {
           "tag": "button",
-          "line": 300,
+          "line": 329,
           "className": "\"s-iconbtn\"",
           "type": "\"button\"",
           "role": null,
@@ -21247,7 +21247,7 @@
         },
         {
           "tag": "button",
-          "line": 302,
+          "line": 331,
           "className": "\"s-cta\"",
           "type": "\"button\"",
           "role": null,
@@ -21257,7 +21257,7 @@
         },
         {
           "tag": "button",
-          "line": 306,
+          "line": 335,
           "className": "\"s-cta s-cta--ghost\"",
           "type": "\"button\"",
           "role": null,
@@ -21267,7 +21267,7 @@
         },
         {
           "tag": "button",
-          "line": 312,
+          "line": 341,
           "className": "\"s-zoom__close s-iconbtn\"",
           "type": "\"button\"",
           "role": null,
@@ -21281,6 +21281,7 @@
       "colors": [],
       "fontDeclarations": [],
       "apiReferences": [
+        "/api/public/media/isolated?",
         "/api/public/media/isolated?",
         "/api/public/media/card?"
       ]
