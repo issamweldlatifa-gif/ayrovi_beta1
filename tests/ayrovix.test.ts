@@ -184,19 +184,23 @@ describe('AYROVIX Lens', () => {
     }
   });
 
-  test('SerpApi Google Lens (sans type, visual_matches) renvoie images et prix puis évite la recherche texte Claude', async () => {
+  test('SerpApi Google Lens envoie la clé dans le multipart officiel et demande visual_matches', async () => {
     const previousKey = process.env.SERPAPI_KEY;
     process.env.SERPAPI_KEY = 'test-serpapi-key';
     const fetchMock = vi.fn(async (url: string, init: RequestInit = {}) => {
-      if (url.startsWith('https://serpapi.com/image?')) {
+      if (url === 'https://serpapi.com/image') {
         expect(init.method).toBe('POST');
         expect(init.body).toBeInstanceOf(FormData);
+        const form = init.body as FormData;
+        expect(form.get('api_key')).toBe('test-serpapi-key');
+        expect(form.get('source')).toBe('ayrovi-server');
+        expect(form.get('image')).toBeInstanceOf(Blob);
         return new Response(JSON.stringify({ image_id: 'temporary-image-id' }), { status: 200 });
       }
       if (url.startsWith('https://serpapi.com/search.json?')) {
         const parsed = new URL(url);
         expect(parsed.searchParams.get('engine')).toBe('google_lens');
-        expect(parsed.searchParams.get('type')).toBeNull(); // `products` supprimé par Google/SerpApi
+        expect(parsed.searchParams.get('type')).toBe('visual_matches');
         expect(parsed.searchParams.get('image_id')).toBe('temporary-image-id');
         return new Response(JSON.stringify({
           visual_matches: [{
@@ -432,7 +436,7 @@ describe('AYROVIX Lens', () => {
       if (String(url).includes('api.anthropic.com')) {
         return new Response('internal', { status: 500 });
       }
-      if (String(url).startsWith('https://serpapi.com/image?')) {
+      if (String(url) === 'https://serpapi.com/image') {
         return new Response(JSON.stringify({ image_id: 'temporary-image-id' }), { status: 200 });
       }
       if (String(url).startsWith('https://serpapi.com/search.json?')) {

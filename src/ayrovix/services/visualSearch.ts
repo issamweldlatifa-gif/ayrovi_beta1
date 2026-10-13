@@ -175,8 +175,13 @@ async function runSerpApiVisualSearch(image: Buffer, limit: number): Promise<Ayr
   try {
     const prepared = await prepareImageForSerpApi(image);
     const form = new FormData();
+    // Image API requires the credential as a multipart field. Supplying it only
+    // in the query string returns an unusable upload on the live API. Keep the
+    // request aligned with SerpApi's official upload_image clients.
+    form.append('api_key', key);
+    form.append('source', 'ayrovi-server');
     form.append('image', new Blob([new Uint8Array(prepared)], { type: 'image/jpeg' }), 'ayrovix-lens.jpg');
-    const upload = await fetch(`https://serpapi.com/image?api_key=${encodeURIComponent(key)}`, {
+    const upload = await fetch('https://serpapi.com/image', {
       method: 'POST',
       body: form,
       signal: AbortSignal.timeout(remainingMs(deadline, 5_000)),
@@ -194,12 +199,13 @@ async function runSerpApiVisualSearch(image: Buffer, limit: number): Promise<Ayr
 
     const configuredCountry = (process.env.AYROVIX_LENS_COUNTRY || '').trim().toLowerCase();
     const country = /^[a-z]{2}$/.test(configuredCountry) ? configuredCountry : 'fr';
-    /* SerpApi a arrêté le type `products` (Google l'a supprimé) : il répond 400.
-       Sans `type`, Lens renvoie `visual_matches`, que `toCandidates` lit déjà. */
+    /* `products` n'est plus un type valide. The current Image API contract
+       explicitly requests `visual_matches` for an uploaded image_id. */
     const lensSearch = async (): Promise<AyrovixCandidate[]> => {
       const params = new URLSearchParams({
         engine: 'google_lens',
         image_id: imageId,
+        type: 'visual_matches',
         hl: 'fr',
         country,
         api_key: key,
