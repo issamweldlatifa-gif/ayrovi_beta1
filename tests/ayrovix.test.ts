@@ -249,6 +249,44 @@ describe('AYROVIX Lens', () => {
     }
   });
 
+  test('SerpApi Lens réessaie une seule fois si image_id vient juste d’être créé', async () => {
+    const previousKey = process.env.SERPAPI_KEY;
+    process.env.SERPAPI_KEY = 'test-serpapi-key';
+    let lensRequests = 0;
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url === 'https://serpapi.com/image') {
+        return new Response(JSON.stringify({ image_id: 'propagating-image-id' }), { status: 200 });
+      }
+      if (url.startsWith('https://serpapi.com/search.json?')) {
+        lensRequests += 1;
+        if (lensRequests === 1) {
+          return new Response(JSON.stringify({ error: 'Image is still processing' }), { status: 200 });
+        }
+        return new Response(JSON.stringify({
+          visual_matches: [{
+            title: 'Sneaker après propagation',
+            link: 'https://shop.example.com/propagated-sneaker',
+            source: 'Example Shop',
+          }],
+        }), { status: 200 });
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      // Trailing bytes are accepted by the PNG decoder and make a distinct
+      // cache key from the preceding success scenario.
+      const distinctImage = Buffer.concat([PNG_1PX, Buffer.from('provider-retry')]);
+      const visual = await serpApiVisualSearch(distinctImage, 8);
+      expect(visual).toHaveLength(1);
+      expect(visual[0].title).toBe('Sneaker après propagation');
+      expect(lensRequests).toBe(2);
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+    } finally {
+      restoreEnv('SERPAPI_KEY', previousKey);
+    }
+  });
+
   test('fiche marchand : extrait uniquement les variantes disponibles et leur prix réel', () => {
     const html = `<!doctype html><html><head>
       <meta property="og:title" content="Sneaker Test">

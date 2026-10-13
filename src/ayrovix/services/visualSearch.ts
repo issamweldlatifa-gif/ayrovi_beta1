@@ -63,6 +63,20 @@ function remainingMs(deadline: number, cap: number): number {
   return Math.max(100, Math.min(cap, deadline - Date.now()));
 }
 
+function providerPause(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isTestRuntime(): boolean {
+  return Boolean(process.env.VITEST || process.env.NODE_ENV === 'test');
+}
+
+function retryableLensApiError(payload: any): boolean {
+  const message = String(payload?.error || '').toLowerCase();
+  // Billing/auth/configuration failures cannot heal during the same request.
+  return !/(api[_ ]?key|unauthori[sz]ed|forbidden|credit|billing|account|plan|invalid (engine|type|parameter))/.test(message);
+}
+
 function normalizeCurrency(raw: unknown): string | null {
   const value = String(raw || '').trim().toUpperCase();
   const known: Record<string, string> = {
@@ -219,17 +233,38 @@ async function runSerpApiVisualSearch(image: Buffer, limit: number): Promise<Ayr
         country,
         api_key: key,
       });
-      const response = await fetch(`https://serpapi.com/search.json?${params.toString()}`, {
-        signal: AbortSignal.timeout(remainingMs(deadline, 12_000)),
-      });
-      if (!response.ok) throw visualFailure(`LENS_HTTP_${response.status}`);
-      let payload: any;
-      try { payload = await responseJson(response); }
-      catch { throw visualFailure('LENS_INVALID_JSON'); }
-      if (payload?.error) throw visualFailure('LENS_API_ERROR');
-      return toCandidates(payload, limit);
+      const searchUrl = `https://serpapi.com/search.json?${params.toString()}`;
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        const response = await fetch(searchUrl, {
+          signal: AbortSignal.timeout(remainingMs(deadline, 12_000)),
+        });
+        if (!response.ok) {
+          const transientHttp = response.status === 408 || response.status === 425 || response.status >= 500;
+          if (attempt === 0 && transientHttp && deadline - Date.now() > 1_200) {
+            await providerPause(isTestRuntime() ? 0 : 650);
+            continue;
+          }
+          throw visualFailure(`LENS_HTTP_${response.status}`);
+        }
+        let payload: any;
+        try { payload = await responseJson(response); }
+        catch { throw visualFailure('LENS_INVALID_JSON'); }
+        if (!payload?.error) return toCandidates(payload, limit);
+        // The Image API can return image_id before Google Lens can consume it.
+        // Give that temporary id one bounded propagation retry; never retry a
+        // permanent key/billing/configuration error.
+        if (attempt === 0 && retryableLensApiError(payload) && deadline - Date.now() > 1_200) {
+          console.warn('[AYROVIX serpapi-lens] image_id not ready — retrying once');
+          await providerPause(isTestRuntime() ? 0 : 650);
+          continue;
+        }
+        throw visualFailure('LENS_API_ERROR');
+      }
+      throw visualFailure('LENS_API_ERROR');
     };
-    /* One Lens query is enough (une seule requête payante par action client). */
+    // The live provider occasionally exposes image_id a fraction before Lens
+    // indexes it. A short first-use pause avoids spending the request on that race.
+    if (!isTestRuntime() && deadline - Date.now() > 1_500) await providerPause(450);
     const matches = await lensSearch();
     console.log(`[AYROVIX serpapi-lens] ${matches.length} matches`);
     return matches;
