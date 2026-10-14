@@ -1,0 +1,116 @@
+# قبول AYROVI 2.0.7 على هاتف Android حقيقي
+
+**التاريخ:** 14/10/2026  
+**الحزمة التي نفحصها:** `app.ayrovi.mobile.demo`  
+**خادم Beta:** `https://ayrovi-beta1-moo8.onrender.com`
+
+> هذا الفحص هو آخر جزء لا يمكن للـCI أو المتصفح ادّعاء نجاحه: Android نفسه،
+> الكاميرا، المعرض، الرجوع من الخلفية وفتح رابط HTTPS مباشرة. السكريبت أدناه
+> يفحص الجزء القابل للقياس، ثم يطبع البنود التي تحتاج عين ولمسة بشرية. لا يحوّل
+> البنود اليدوية إلى نجاح وهمي.
+
+## 1. التحضير
+
+1. ثبّت **Android Platform Tools** حتى يكون أمر `adb` متاحاً.
+2. في الهاتف: فعّل خيارات المطوّر ثم **USB debugging**.
+3. صِل الهاتف، وافق على بصمة الحاسوب، ثم تحقّق:
+
+```bash
+adb devices
+```
+
+لازم يظهر سطر واحد حالته `device`، موش `unauthorized` أو `offline`.
+
+نزّل APK الرسمي:
+
+- الإصدار: <https://github.com/issamweldlatifa-gif/ayrovi_beta1/releases/tag/apk-815a025>
+- الملف: `AYROVI-demo-815a025.apk`
+- SHA-256: `1363825b02c45220b78c80812636290b03fcf55a88f0ec51d52c396b85e1552f`
+
+## 2. أمر واحد: تثبيت + App Links + فتح Lens
+
+من جذر `apps/mobile`:
+
+```bash
+npm run device:acceptance -- \
+  --apk /المسار/AYROVI-demo-815a025.apk \
+  --launch
+```
+
+إذا التطبيق مركّب من قبل:
+
+```bash
+npm run device:acceptance -- --launch
+```
+
+إذا مربوط أكثر من هاتف:
+
+```bash
+npm run device:acceptance -- --serial R58M123ABC --launch
+```
+
+### ما الذي يثبته الأمر؟
+
+| الفحص | النجاح الصادق |
+|---|---|
+| `server-assetlinks` | JSON المنشور فيه نفس package ونفس SHA-256 للشهادة الثابتة |
+| `device` | هاتف واحد مصرّح به عبر ADB |
+| `package` | `app.ayrovi.mobile.demo` مركّبة فعلاً |
+| `domain-verification` | على Android 12+: نطاق Beta حالته `verified` أو `system_configured` |
+| `resolver` | Android يختار AYROVI، وليس Chrome أو نافذة الاختيار |
+| `launch` | أمر النظام فتح الرابط بلا خطأ؛ الرؤية على الشاشة تبقى بنداً يدوياً |
+
+للتقرير القابل للحفظ:
+
+```bash
+npm run device:acceptance -- --launch --json > ayrovi-device-acceptance.json
+```
+
+## 3. البنود اليدوية الإلزامية
+
+ضع ✅ أو ❌، وسجّل نوع الهاتف وإصدار Android:
+
+| الحالة | التجربة | القبول |
+|---|---|---|
+| ⬜ | فتح رابط Beta | AYROVI يفتح مباشرة على Lens، بلا Chrome وبلا Chooser |
+| ⬜ | إذن الكاميرا مقبول | معاينة حيّة، التقاط واضح، رجوع وإعادة تصوير بلا تجمّد |
+| ⬜ | إذن الكاميرا مرفوض | تفسير واضح؛ زر المعرض يبقى قابلاً للاستعمال |
+| ⬜ | اختيار من المعرض | JPG/PNG/WebP يظهر كمعاينة ثم يبدأ البحث مرة واحدة |
+| ⬜ | إلغاء البحث | يتوقف، لا retry loop ولا نتيجة متأخرة بعد الإلغاء |
+| ⬜ | خلفية ثم رجوع | لا طلب مكرر، لا شاشة سوداء، ولا ضياع لحالة الاختيار |
+| ⬜ | إضافة للسلة | badge يتحدث؛ عدّاد 30 دقيقة يبدأ فقط بعد جواب الخادم |
+| ⬜ | قتل التطبيق وفتحه | العداد مشتق من deadline المحفوظ، لا يبدأ من جديد |
+| ⬜ | انتهاء Lens | السطر المنتهي يطلب Lens verification جديدة قبل checkout |
+| ⬜ | عربي/فرنسي + RTL | الترتيب والنصوص والرجوع وCTA صحيحة في اللغتين |
+| ⬜ | TalkBack / حجم خط كبير | Back، Cart، الخيارات وCTA لها أسماء وترتيب focus مفهوم |
+
+## 4. تشخيص سريع
+
+### `unauthorized`
+
+افصل USB، من خيارات المطوّر اختر **Revoke USB debugging authorizations**، ثم
+أعد التوصيل ووافق على النافذة.
+
+### `domain-verification: legacy_failure` أو `missing`
+
+```bash
+adb shell pm verify-app-links --re-verify app.ayrovi.mobile.demo
+adb shell pm get-app-links app.ayrovi.mobile.demo
+```
+
+تأكد أيضاً أن الهاتف متصل بالإنترنت وأن الوقت والتاريخ صحيحان. السكريبت يفشل
+إذا كان البيان المنشور لا يطابق شهادة APK؛ لذلك لا تبدّل package أو بصمة يدوياً.
+
+### `resolver: android` أو Chrome
+
+هذا يعني أن Android لم يعيّن AYROVI handler افتراضياً. على Android 12+ افتح:
+**Settings → Apps → AYROVI Démo → Open by default → Open supported links**، ثم
+أعد `npm run device:acceptance -- --launch`. سجّل النتيجة كفشل تحقق تلقائي إذا
+لم تصبح حالة النطاق `verified`.
+
+## 5. ما لا يغطيه هذا الفحص
+
+- بصمة إصدار Play الحقيقية: لا تُعرف إلا بعد أن يوفّر المالك keystore ويعرض
+  Play Console بصمة **App signing key**.
+- iOS Universal Links.
+- جودة كاميرات كل الأجهزة؛ يلزم على الأقل جهاز منخفض/متوسط وجهاز Android 12+.

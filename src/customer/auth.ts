@@ -21,6 +21,8 @@ export interface CustomerIdentity {
 
 interface ResolvedCustomer extends CustomerIdentity {
   sessionId: string;
+  /** Fin de validité de la session — l'application l'affiche et s'y fie. */
+  expiresAt: string;
 }
 
 function configuredSecret(): string {
@@ -127,11 +129,6 @@ export function sessionTokenFromRequest(req: Request): string {
   return header.startsWith('Bearer ') ? header.slice(7).trim() : '';
 }
 
-/** Champ de réponse remis uniquement à un client native déclaré (§app réelle). */
-export function nativeSessionField(req: Request, token: string): Record<string, string> {
-  return String(req.headers['x-ayrovi-native'] || '') === '1' ? { native_session_token: token } : {};
-}
-
 export function resolveCustomer(db: QatafoDatabase, req: Request): ResolvedCustomer | null {
   const token = sessionTokenFromRequest(req);
   if (!token) return null;
@@ -142,7 +139,7 @@ export function resolveCustomer(db: QatafoDatabase, req: Request): ResolvedCusto
     WHERE s.id=? AND s.expires_at>?`, hashToken(token), new Date().toISOString());
   if (!session || session.status !== 'ACTIVE') return null;
   db.run('UPDATE customer_sessions SET last_seen_at=? WHERE id=?', new Date().toISOString(), session.session_id);
-  return { ...mapAccount(session), sessionId: session.session_id };
+  return { ...mapAccount(session), sessionId: session.session_id, expiresAt: String(session.expires_at || '') };
 }
 
 export function rotateCustomerCsrf(db: QatafoDatabase, req: Request): string | null {
@@ -193,8 +190,14 @@ export function optionalCustomer(db: QatafoDatabase) {
   };
 }
 
+/**
+ * Ferme la session de l'appelant. Lit le jeton par la MÊME voie que le reste
+ * de l'authentification (cookie OU Bearer) : un client mobile qui se déconnecte
+ * doit réellement révoquer sa session en base. Lire seulement le cookie
+ * laissait la session mobile vivante trente jours après un « se déconnecter ».
+ */
 export function destroyCustomerSession(db: QatafoDatabase, req: Request) {
-  const token = parseCookie(req.headers.cookie, COOKIE_NAME);
+  const token = sessionTokenFromRequest(req);
   if (token) db.run('DELETE FROM customer_sessions WHERE id=?', hashToken(token));
 }
 

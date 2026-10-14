@@ -93,6 +93,71 @@ Le cookie client `ayrovi_customer_session` est séparé du cookie Admin. La conf
 
 La route de liveness doit répondre avec `"status":"ok"`; la readiness vérifie en plus que SQLite est lisible et expose uniquement l’état configuré/non configuré des capacités externes. Connectez-vous ensuite à `/admin` avec `ADMIN_EMAIL` et `ADMIN_PASSWORD`.
 
+## Ce que la production REFUSE au démarrage (à connaître avant de déployer)
+
+Le serveur exécute `assertProductionConfiguration()` avant d’ouvrir le port. Si
+une seule de ces règles est violée, le service **quitte avec le code 1** et le
+journal affiche exactement :
+
+`Unsafe production configuration. Fix: <la liste>`
+
+| Variable | Règle exacte | Erreur typique |
+|---|---|---|
+| `NODE_ENV` | doit valoir `production` si `RENDER` est présent | service qui refuse de démarrer |
+| `DATABASE_PATH` | **chemin absolu** | `DATABASE_PATH (absolute persistent path)` |
+| `PUBLIC_BASE_URL` | origine **HTTPS seule** : pas de chemin, pas de `?`, pas de `#`, pas d’identifiants | `PUBLIC_BASE_URL (HTTPS origin only)` |
+| `ADMIN_EMAIL` | adresse e-mail valide | `ADMIN_EMAIL` |
+| `ADMIN_PASSWORD` | ≥ 12 caractères, sans `replace/placeholder/example/demo`, différent du mot de passe de démonstration | `ADMIN_PASSWORD` |
+| `CUSTOMER_AUTH_SECRET` | ≥ 32 caractères, sans `replace/placeholder/example/demo` | `CUSTOMER_AUTH_SECRET` |
+| `ADMIN_BOOTSTRAP_RESET` | si présent : ≥ 32 caractères | `ADMIN_BOOTSTRAP_RESET (one-time token, 32+ characters)` |
+| `TRUST_PROXY_HOPS` | si présent : entier entre 0 et 5 | `TRUST_PROXY_HOPS (integer 0..5)` |
+
+**Valeur à utiliser pour `DATABASE_PATH`** (identique à la production, et le
+dossier est créé automatiquement au démarrage) :
+
+```
+/opt/render/project/src/data/qatafo.sqlite
+```
+
+Deux conséquences à connaître :
+
+- **Avec un Disk** monté sur `/opt/render/project/src/data` (plan Starter ou
+  plus) : la base **survit** aux redéploiements — c’est ce qu’il faut pour un
+  test réaliste.
+- **Sans Disk** (plan Free) : le chemin fonctionne, mais le système de fichiers
+  est **éphémère** ⇒ les comptes et les commandes de test disparaissent à chaque
+  redéploiement/redémarrage. Suffisant pour un premier essai de bout en bout,
+  trompeur au-delà.
+
+## Service Beta à partir de la BRANCHE (test de l’application mobile)
+
+Le service de production sert `main`. Pour tester l’application AYROVI (session
+mobile, panier, caisse) sans toucher à la production, créez un **second service**
+avec `Branch = arena/c0321e79-ayrovi-beta1` (voir `docs/RELEASE_PLAY_AR_2026-10-07.md`
+§6). Configuration minimale pour que la connexion de l’appli fonctionne :
+
+| Variable | Valeur | Pourquoi |
+|---|---|---|
+| `NODE_ENV` | `production` | comportement de production (cookies `Secure`, OTP réel) |
+| `CUSTOMER_AUTH_SECRET` | ≥ 32 caractères, **la même valeur que la production** | sans elle : `customerAuthReady()` = faux ⇒ toutes les routes de connexion répondent 503 |
+| `PUBLIC_BASE_URL` | l’adresse de la nouvelle service | liens, redirections, e-mails |
+| `DATABASE_PATH` | `/opt/render/project/src/data/qatafo.sqlite` | identique au disque monté (base neuve = test propre) |
+| `AYROVIX_QUOTE_SECRET` | une valeur ≥ 32 caractères | jetons de devis AYWEBs |
+| `ANDROID_APP_LINK_SHA256` | l’empreinte du keystore d’émission | sinon `/.well-known/assetlinks.json` répond 404 (liens profonds inertes) |
+| `CUSTOMER_OTP_PROVIDER` + (webhook ou Twilio) | voir ci-dessus | sinon `POST /api/customer/auth/otp/request` répond 503 `OTP_UNAVAILABLE` (la connexion par e-mail, elle, fonctionne) |
+| `GOOGLE_CALLBACK_URL` | `https://VOTRE-SERVICE-BETA.onrender.com/api/customer/auth/google/callback` | copiée de la production, elle renvoie vos utilisateurs vers l’ANCIEN serveur ⇒ la connexion Google échoue. La même URI doit être déclarée dans Google Cloud Console (Authorized redirect URIs). |
+
+Après le déploiement, la vérification en une commande :
+
+```bash
+curl -s https://VOTRE-SERVICE-BETA.onrender.com/api/ready
+# doit contenir "branch":"arena/c0321e79-ayrovi-beta1" et un "commit"
+```
+
+Puis lancez le workflow `Serveur — test de bout en bout (appli)` avec l’adresse de
+ce service : il crée un compte jetable et vérifie inscription → `session_token` →
+Bearer → panier → caisse → commandes → assetlinks.
+
 ## Domaine personnalisé
 
 Les appels du site et de l’Admin utilisent le même domaine. Aucun `CORS_ORIGINS` n’est nécessaire dans ce cas. Ajoutez cette variable uniquement si un client externe doit appeler l’API, sous forme d’une liste d’origines HTTPS séparées par des virgules.

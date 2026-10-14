@@ -8,6 +8,35 @@ import { refusalReason, type ProductActions, type ProductView, type SizeOption }
  * app bar. Its source photos are swipeable in place; the details sheet remains
  * in document flow and rises over the gallery with a soft shadow on scroll.
  */
+const FallbackMediaImage: React.FC<{
+  media: ProductView['media'][number];
+  alt: string;
+  loading?: 'eager' | 'lazy';
+  preferIsolated?: boolean;
+}> = ({ media, alt, loading, preferIsolated = false }) => {
+  const base = [media.src, ...media.fallbacks].filter((src, index, values) => Boolean(src) && values.indexOf(src) === index);
+  const isolated = preferIsolated ? base.find((src) => src.startsWith('/api/public/media/isolated?')) : null;
+  const chain = isolated ? [isolated, ...base.filter((src) => src !== isolated)] : base;
+  const key = chain.join('|');
+  const [step, setStep] = React.useState(0);
+  const [failed, setFailed] = React.useState(false);
+  React.useEffect(() => { setStep(0); setFailed(false); }, [key]);
+  if (!chain.length || failed) return null;
+  return (
+    <img
+      src={chain[Math.min(step, chain.length - 1)]}
+      alt={alt}
+      loading={loading}
+      decoding="async"
+      referrerPolicy="no-referrer"
+      onError={() => {
+        if (step + 1 < chain.length) setStep((current) => current + 1);
+        else setFailed(true);
+      }}
+    />
+  );
+};
+
 export interface ProductPageProps {
   product: ProductView;
   actions?: ProductActions;
@@ -232,7 +261,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                 <button type="button" className="s-rail__btn" onClick={() => go(slide + 1)} aria-label={tr('Photo suivante', 'الصورة التالية')}><EditorialIcon name="ChevronRight" size={18} direction={direction} /></button>
               </div>
               <div className="s-gallery-thumbs s-gallery-desktop-only" role="group" aria-label={tr('Choisir une photo', 'اختار صورة')}>
-                {media.map((item, index) => <button key={`${item.src}-desktop-thumb-${index}`} type="button" aria-current={slide === index ? 'true' : undefined} aria-label={tr(`Afficher la photo ${index + 1}`, `اعرض الصورة ${index + 1}`)} onClick={() => go(index)}><img src={item.src} alt="" loading="lazy" /></button>)}
+                {media.map((item, index) => <button key={`${item.src}-desktop-thumb-${index}`} type="button" aria-current={slide === index ? 'true' : undefined} aria-label={tr(`Afficher la photo ${index + 1}`, `اعرض الصورة ${index + 1}`)} onClick={() => go(index)}><FallbackMediaImage media={item} alt="" loading="lazy" /></button>)}
               </div>
             </>
           )}
@@ -242,7 +271,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
           {renderRail('s-rail s-rail--sheet')}
           {product.colors.length > 1 && (
             <div className="s-swatches" role="group" aria-label={tr('Couleurs', 'الألوان')}>
-              {product.colors.map((color) => <button key={color.name} type="button" className="s-swatch" aria-pressed={color.selected} aria-label={color.name} onClick={() => actions?.onSelectColor?.(color.name)}>{color.media ? <img src={color.media.src} alt="" /> : <span>{color.name.slice(0, 3)}</span>}</button>)}
+              {product.colors.map((color) => <button key={color.name} type="button" className="s-swatch" aria-pressed={color.selected} aria-label={color.name} onClick={() => actions?.onSelectColor?.(color.name)}>{color.media ? <FallbackMediaImage media={color.media} alt="" loading="lazy" /> : <span>{color.name.slice(0, 3)}</span>}</button>)}
             </div>
           )}
           {product.brand && <div className="s-brand">{product.brand}</div>}
@@ -310,7 +339,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
       {zoomed && media[slide] && (
         <div className="s-zoom" role="dialog" aria-modal="true" aria-label={tr('Photo agrandie', 'الصورة مكبّرة')}>
           <button type="button" className="s-zoom__close s-iconbtn" onClick={() => setZoomed(false)} aria-label={tr('Fermer', 'إغلاق')}><EditorialIcon name="Close" /></button>
-          <img src={media[slide].src} alt={media[slide].alt} />
+          <FallbackMediaImage media={media[slide]} alt={media[slide].alt} preferIsolated />
         </div>
       )}
       <SizeDrape open={drapeOpen} sizes={currentSizes} title={sizeListTitle} selected={chosen?.value ?? null} scaleLabel={product.sizeScaleLabel} tr={tr} onClose={() => setDrapeOpen(false)} onSelect={pickSize} />

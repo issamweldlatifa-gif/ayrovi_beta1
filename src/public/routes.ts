@@ -1,3 +1,4 @@
+import { availableProductParams, availableProductSql } from '../catalogue/contentProducts';
 import { enforceBrandIdentity, enforceLegacyTheme } from '../../shared/identityPolicy';
 import { publicNavDestination } from '../../shared/publicNavigation';
 import { createHash, randomUUID } from 'node:crypto';
@@ -12,11 +13,13 @@ import { getComposedCard, readComposedPng, IDEAL_FRAME_WIDTH, frameSizeFor, CARD
 import path from 'node:path';
 import fs from 'node:fs';
 import sharp from 'sharp';
-import { customerFromRequest, optionalCustomer } from '../customer/auth';
+import { customerFromRequest, keyedHash, optionalCustomer } from '../customer/auth';
 import { ownerHashOf, recordLearningEvent } from '../assistant/learning';
-import { resolveActiveHeroVisual } from '../services/heroVisual';
+import { liveValues, publishedRows, toPublicCards } from '../services/heroSlideDrafts';
+import { DEFAULT_FEATURED_SETTINGS, resolveFeaturedPublication, type FeaturedSettings } from '../services/homeFeatured';
 import { UnsafeUrlError } from '../services/safeUrl';
 import { pruneDiskCache } from '../services/diskCache';
+import { LINKED_PRODUCT_JOIN_SELECT, linkedProductFromJoin } from '../services/shoppableContent';
 
 function parseJson(value: string, fallback: any = []) {
   try { return JSON.parse(value); } catch { return fallback; }
@@ -36,6 +39,19 @@ function mapArrival(row: any) {
     badge: row.badge,
     status: row.status,
   };
+}
+
+/**
+ * Sortie publique d'un contenu shoppable : les colonnes de jointure `lp_*` sont
+ * retirées, et `product` porte la carte (ou null si le produit n'est plus vendable).
+ */
+function withLinkedProduct(row: Record<string, any>) {
+  const out: Record<string, any> = {};
+  for (const [key, value] of Object.entries(row)) {
+    if (!key.startsWith('lp_')) out[key] = value;
+  }
+  out.product = linkedProductFromJoin(row);
+  return out;
 }
 
 function mapProduct(row: any) {
@@ -60,6 +76,8 @@ function mapProduct(row: any) {
     expressAvailable: Boolean(row.express_available),
     stockStatus: row.stock_status,
     arrivalIds: row.arrival_ids ? String(row.arrival_ids).split(',').filter(Boolean) : [],
+    // `CONTENT` = produit temporaire : la fiche reste accessible, mais il n'est jamais listé.
+    visibility: row.visibility === 'CONTENT' ? 'CONTENT' : 'CATALOG',
   };
 }
 
@@ -303,10 +321,71 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     res.json({ success: true, data: result });
   });
 
+  /** HREF validé d'une slide : type fermé + existence de la cible quand exigée. */
+  // Contrat public : seules les cartes PUBLIÉES (`hero_slides`) — jamais les brouillons.
+  // Même règle que l'aperçu Admin (src/services/heroSlideDrafts.ts).
   router.get('/hero-slides', (_req, res) => {
-    const rows = db.all<any>(`SELECT id,image,video,title,subtitle,cta,target_url targetUrl,display_order displayOrder
-      FROM hero_slides WHERE active=1 ORDER BY display_order,id`);
-    res.json({ success: true, data: rows });
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    const settings = db.get<any>("SELECT * FROM hero_carousel_settings WHERE id='global'");
+    const maxCards = Math.max(1, Math.min(12, Number(settings?.max_cards) || 6));
+    const rows = publishedRows(db).map((row) => ({ id: String(row.id), values: liveValues(row), palette: row.palette ? String(row.palette) : null }));
+    const cards = toPublicCards(db, rows, Date.now(), maxCards);
+    res.json({ success: true, data: cards });
+  });
+
+  /* Section « à la une » de l'accueil mobile : une publication PUBLIÉE, ou rien. */
+  router.get('/home-featured', (_req, res) => {
+    const row = db.get<any>("SELECT * FROM home_featured_settings WHERE id='global'");
+    const settings: FeaturedSettings = row ? {
+      enabled: row.enabled !== 0,
+      source: row.source === 'pinned' ? 'pinned' : 'latest',
+      publicationId: String(row.publication_id || ''),
+      ctaLabel: String(row.cta_label || ''),
+    } : DEFAULT_FEATURED_SETTINGS;
+    const rows = db.all<any>("SELECT id,title,subtitle,image_url,publish_at,status FROM publications WHERE status='publie'");
+    const publication = resolveFeaturedPublication(settings, rows, Date.now());
+    res.json({ success: true, data: { publication, ctaLabel: settings.ctaLabel } });
+  });
+
+  router.get('/hero-carousel-settings', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    const row = db.get<any>("SELECT * FROM hero_carousel_settings WHERE id='global'");
+    res.json({
+      success: true,
+      data: {
+        enabled: !row || row.enabled !== 0,
+        maxCards: Math.max(1, Math.min(12, Number(row?.max_cards) || 6)),
+        autoplay: row?.autoplay === 1,
+        autoplayIntervalMs: Math.max(1000, Math.min(60000, Number(row?.autoplay_interval_ms) || 5000)),
+        transitionMs: Math.max(100, Math.min(2000, Number(row?.transition_ms) || 300)),
+        paginationVisible: !row || row.pagination_visible !== 0,
+      },
+    });
+  });
+
+  // Télémétrie carrousel — mesurer ne doit jamais casser l'expérience : toujours 200.
+  router.post('/hero-events', (req, res) => {
+    try {
+      const body = req.body && typeof req.body === 'object' ? req.body : {};
+      const event = String(body.event || '');
+      const cardId = String(body.cardId || '').trim().slice(0, 100);
+      if ((event === 'impression' || event === 'click') && cardId) {
+        const session = keyedHash(`hero:${req.ip || ''}:${req.headers['user-agent'] || ''}`).slice(0, 32);
+        db.run(
+          `INSERT INTO hero_events (id,card_id,event,destination_type,locale,session,created_at) VALUES (?,?,?,?,?,?,?)`,
+          `hev_${randomUUID()}`,
+          cardId,
+          event,
+          String(body.destinationType || '').trim().slice(0, 40),
+          String(body.locale || '').trim().slice(0, 12),
+          session,
+          new Date().toISOString(),
+        );
+      }
+    } catch (error) {
+      console.warn('[hero-events]', error instanceof Error ? error.message : 'failed');
+    }
+    res.json({ success: true });
   });
 
   router.get('/navigation', (_req, res) => {
@@ -327,18 +406,6 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       }];
     });
     res.json({ success: true, data });
-  });
-
-  router.get('/announcement-messages', (_req, res) => {
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    const rows = db.all<any>(`SELECT id,text FROM announcement_messages WHERE active=1 ORDER BY display_order,id`);
-    res.json({ success: true, data: rows });
-  });
-
-  /** Visual الـ Hero النشط — المجدول الصالح حالياً، وإلا آخر منشور، وإلا الافتراضي */
-  router.get('/hero/active', (_req, res) => {
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.json({ success: true, data: resolveActiveHeroVisual(db) });
   });
 
   /** AYROVIX LENS HERO — إعدادات عامة (خلفية/محتوى) — كل المحتوى من الـ Dashboard */
@@ -377,17 +444,6 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     } : null });
   });
 
-  /** محتوى الـ Hero (عنوان/وصف/CTA) — الـ Visual يبقى في /hero/active */
-  router.get('/hero-content', (_req, res) => {
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    const row = db.get<any>("SELECT * FROM hero_content_settings WHERE id='global'");
-    res.json({ success: true, data: row ? {
-      eyebrow: row.eyebrow, title: row.title, highlight: row.highlight, description: row.description,
-      ctaLabel: row.cta_label, ctaUrl: row.cta_url, accentColor: row.accent_color,
-      elementOrder: row.element_order, enabled: Boolean(row.enabled),
-    } : null });
-  });
-
   /** ترتيب وإظهار كتل الصفحة الرئيسية */
   router.get('/home-blocks', (_req, res) => {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -414,9 +470,23 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     const filter = arrivalId ? 'AND EXISTS (SELECT 1 FROM product_arrivals f WHERE f.product_id=p.id AND f.arrival_id=?)' : '';
     if (arrivalId) params.push(arrivalId);
     const rows = db.all<any>(`SELECT p.*,GROUP_CONCAT(pa.arrival_id) arrival_ids FROM products p
-      LEFT JOIN product_arrivals pa ON pa.product_id=p.id WHERE p.status='ACTIVE' ${filter}
+      LEFT JOIN product_arrivals pa ON pa.product_id=p.id WHERE p.status='ACTIVE' AND p.visibility='CATALOG' ${filter}
       GROUP BY p.id ORDER BY p.updated_at DESC LIMIT ?`, ...params, limit);
     res.json({ success: true, data: rows.map(mapProduct) });
+  });
+
+  /**
+   * Fiche d'un produit, par identifiant (page produit, « Découvrir » d'un contenu shoppable).
+   * Catalogue : produit ACTIVE. Temporaire : ACTIVE ET lié à un contenu publié et daté.
+   * Le reste (brouillon, archivé, contenu non publié) répond 404, comme un id inconnu.
+   */
+  router.get('/products/:id', (req, res) => {
+    const now = new Date().toISOString();
+    const row = db.get<any>(`SELECT p.*,GROUP_CONCAT(pa.arrival_id) arrival_ids FROM products p
+      LEFT JOIN product_arrivals pa ON pa.product_id=p.id WHERE p.id=? AND ${availableProductSql('p')} GROUP BY p.id`,
+    req.params.id, ...availableProductParams(now));
+    if (!row) return res.status(404).json({ success: false, error: 'Produit introuvable.' });
+    res.json({ success: true, data: mapProduct(row) });
   });
 
   router.get('/promotions', (_req, res) => {
@@ -431,8 +501,12 @@ export function createPublicRouter(db: QatafoDatabase): Router {
 
   router.get('/stories', (_req, res) => {
     const now = new Date().toISOString();
-    const rows = db.all<any>(`SELECT * FROM stories WHERE status='PUBLISHED' AND publish_at<=?
-      AND (expires_at IS NULL OR expires_at>?) ORDER BY priority DESC,publish_at DESC`, now, now);
+    const rows = db.all<any>(`SELECT s.*,${LINKED_PRODUCT_JOIN_SELECT} FROM stories s LEFT JOIN products p ON p.id=s.product_id
+      WHERE s.status='PUBLISHED' AND s.publish_at<=?
+      AND (s.expires_at IS NULL OR s.expires_at>?) ORDER BY s.priority DESC,s.publish_at DESC`, now, now).map(withLinkedProduct)
+      // Story shoppable dont le produit n'est plus vendable : on coupe le lien, pour que le CTA
+      // existant (qui suit product_id) n'ouvre jamais une page produit morte.
+      .map((story) => (story.content_mode === 'shoppable' && !story.product ? { ...story, product_id: null } : story));
     res.json({ success: true, data: rows, serverTime: now });
   });
 
@@ -461,8 +535,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
 
   router.get('/home', (_req, res) => {
     const now = new Date().toISOString();
-    const hero = db.all<any>(`SELECT id,image,video,title,subtitle,cta,target_url targetUrl,display_order displayOrder
-      FROM hero_slides WHERE active=1 ORDER BY display_order,id`);
+    // Le Hero n'est PAS dans cette réponse : il vit sur /api/public/hero-slides (publié seulement).
     const brands = db.all<any>(`SELECT id,name,logo,image,category,url,description,display_order displayOrder
       FROM brands WHERE active=1 ORDER BY display_order,name`);
     const arrivals = db.all<any>(`SELECT * FROM arrivals WHERE status IN ('ACTIVE','SCHEDULED') ORDER BY expected_arrival_at`).map(mapArrival);
@@ -471,7 +544,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     const promotions = db.all<any>(`SELECT * FROM promotions WHERE status='ACTIVE' AND starts_at<=? AND ends_at>? ORDER BY starts_at DESC LIMIT 8`, now, now);
     const stories = db.all<any>(`SELECT * FROM stories WHERE status='PUBLISHED' AND publish_at<=? AND (expires_at IS NULL OR expires_at>?) ORDER BY priority DESC,publish_at DESC LIMIT 12`, now, now);
     const news = db.all<any>(`SELECT * FROM news_items WHERE status IN ('PUBLISHED','SCHEDULED') AND published_at<=? ORDER BY published_at DESC LIMIT 8`, now);
-    res.json({ success: true, data: { hero, brands, arrivals, products, promotions, stories, news }, serverTime: now });
+    res.json({ success: true, data: { brands, arrivals, products, promotions, stories, news }, serverTime: now });
   });
 
   router.get('/assistant-context', (_req, res) => {
@@ -512,17 +585,19 @@ export function createPublicRouter(db: QatafoDatabase): Router {
   router.get('/social/publications', (_req, res) => {
     const now = new Date().toISOString();
     // Liste blanche stricte : les notes éditoriales et champs Admin ne quittent jamais l'API publique.
-    const rows = db.all<any>(`SELECT id,title,subtitle,channel_id,image_url,publish_at
-      FROM publications WHERE status='publie' AND publish_at<=? ORDER BY publish_at DESC`, now);
+    const rows = db.all<any>(`SELECT pub.id,pub.title,pub.subtitle,pub.channel_id,pub.image_url,pub.publish_at,pub.content_mode,${LINKED_PRODUCT_JOIN_SELECT}
+      FROM publications pub LEFT JOIN products p ON p.id=pub.product_id
+      WHERE pub.status='publie' AND pub.publish_at<=? ORDER BY pub.publish_at DESC`, now).map(withLinkedProduct);
     res.json({ success: true, data: rows });
   });
 
   router.get('/social/reels', (_req, res) => {
     const now = new Date().toISOString();
-    const rows = db.all<any>(`SELECT r.id,r.title,r.channel_id,r.description,r.video_url,r.duration_seconds,r.publish_at,
+    const rows = db.all<any>(`SELECT r.id,r.title,r.channel_id,r.description,r.video_url,r.poster_url,r.duration_seconds,r.publish_at,r.content_mode,
       (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=r.id AND i.type='view') views,
-      (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=r.id AND i.type='like') likes
-      FROM reels r WHERE r.status='publie' AND r.publish_at<=? ORDER BY r.publish_at DESC`, now);
+      (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=r.id AND i.type='like') likes,${LINKED_PRODUCT_JOIN_SELECT}
+      FROM reels r LEFT JOIN products p ON p.id=r.product_id
+      WHERE r.status='publie' AND r.publish_at<=? ORDER BY r.publish_at DESC`, now).map(withLinkedProduct);
     res.json({ success: true, data: rows });
   });
 

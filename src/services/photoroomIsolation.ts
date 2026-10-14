@@ -1,0 +1,153 @@
+import { createHash } from 'node:crypto';
+/*
+ * ISOLATION PAR PHOTOROOM (Remove Background API, plan Basic).
+ *
+ * Activée uniquement si :
+ *   • AYROVI_ISOLATION_PROVIDER=photoroom ;
+ *   • PHOTOROOM_API_KEY est défini côté serveur (Render Environment).
+ * Sinon le comportement reste celui de l'isolation locale (défaut `local`).
+ *
+ * La clé ne quitte jamais le serveur, n'apparaît dans aucun journal et aucun
+ * message d'erreur. Une clé sandbox produit un résultat FILIGRANÉ : acceptable
+ * en développement uniquement ; la production exige une clé de production.
+ * Tout échec (réseau, délai, statut HTTP, réponse non PNG) renvoie null : l'appelant
+ * retombe alors sur le chroma-key puis sur l'original — jamais d'erreur bloquante.
+ */
+
+export const PHOTOROOM_SEGMENT_URL = 'https://sdk.photoroom.com/v1/segment';
+const PHOTOROOM_TIMEOUT_MS = 20_000;
+const PHOTOROOM_MAX_RESULT_BYTES = 16 * 1024 * 1024;
+const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+
+export type IsolationProvider = 'local' | 'photoroom';
+
+/** Les clés sandbox PhotoRoom rendent volontairement une image filigranée. */
+export function isPhotoRoomSandboxKey(apiKey: string): boolean {
+  const normalized = apiKey.trim().toLowerCase();
+  return normalized.startsWith('sandbox_') || normalized.startsWith('sb_');
+}
+
+/**
+ * Fournisseur effectif : PhotoRoom seulement avec une clé serveur exploitable.
+ * En production, une clé sandbox est refusée afin de ne jamais publier de
+ * visuels PhotoRoom filigranés ; le pipeline local reste alors le repli sûr.
+ */
+export function isolationProvider(env: NodeJS.ProcessEnv = process.env): IsolationProvider {
+  if (env.AYROVI_ISOLATION_PROVIDER !== 'photoroom') return 'local';
+  const apiKey = String(env.PHOTOROOM_API_KEY || '').trim();
+  if (!apiKey) return 'local';
+  const isProduction = env.NODE_ENV === 'production' || Boolean(env.RENDER);
+  return isProduction && isPhotoRoomSandboxKey(apiKey) ? 'local' : 'photoroom';
+}
+
+export function isPhotoRoomPng(buffer: Buffer): boolean {
+  if (buffer.length < PNG_SIGNATURE.length) return false;
+  return PNG_SIGNATURE.every((byte, index) => buffer[index] === byte);
+}
+
+/**
+ * Clé de cache : le mode `local` garde l'ancienne clé (aucun recalcul du cache
+ * existant) ; le mode `photoroom` a une clé distincte, sinon un résultat local
+ * déjà en cache (y compris un échec « aucune isolation ») masquerait PhotoRoom.
+ */
+export function isolationCacheInput(rawUrl: string, provider: IsolationProvider = isolationProvider()): string {
+  return provider === 'photoroom' ? `photoroom|${rawUrl}` : rawUrl;
+}
+
+/** En mode PhotoRoom, un échec n'est pas une vérité durable : on ne le persiste pas. */
+export function shouldPersistNegative(provider: IsolationProvider = isolationProvider()): boolean {
+  return provider !== 'photoroom';
+}
+
+export interface PhotoRoomOptions {
+  env?: NodeJS.ProcessEnv;
+  fetchImpl?: typeof fetch;
+  timeoutMs?: number;
+}
+
+/**
+ * Envoie l'image à PhotoRoom et renvoie le PNG détouré, ou null en cas d'échec.
+ * Le contenu d'entrée est envoyé tel quel (multipart `image_file`).
+ */
+/* Anti-doublon : une même image (même octets) ne consomme qu'UN appel, même si
+ * la recherche et le composeur la demandent en parallèle. Les succès sont gardés
+ * en mémoire (LRU borné) ; les échecs ne le sont jamais, pour être retentés. */
+const PHOTOROOM_MEMORY_MAX = 200;
+const inFlight = new Map<string, Promise<Buffer | null>>();
+const settled = new Map<string, Buffer>();
+
+export async function removeBackgroundWithPhotoRoom(
+  input: Buffer,
+  options: PhotoRoomOptions = {},
+): Promise<Buffer | null> {
+  const env = options.env ?? process.env;
+  if (isolationProvider(env) !== 'photoroom') return null;
+  const digest = hashImage(input);
+  const known = settled.get(digest);
+  if (known) return known;
+  const pending = inFlight.get(digest);
+  if (pending) return pending;
+  const job = callPhotoRoom(input, options).then((output) => {
+    inFlight.delete(digest);
+    if (output) {
+      settled.delete(digest);
+      settled.set(digest, output);
+      while (settled.size > PHOTOROOM_MEMORY_MAX) settled.delete(settled.keys().next().value as string);
+    }
+    return output;
+  });
+  inFlight.set(digest, job);
+  return job;
+}
+
+/** Réservé aux tests : vide la mémoire anti-doublon. */
+export function resetPhotoRoomMemoryForTests(): void {
+  inFlight.clear();
+  settled.clear();
+}
+
+function hashImage(input: Buffer): string {
+  return createHash('sha256').update(input).digest('hex');
+}
+
+/** Appel HTTP réel vers PhotoRoom (sans cache). */
+async function callPhotoRoom(input: Buffer, options: PhotoRoomOptions): Promise<Buffer | null> {
+  const env = options.env ?? process.env;
+  if (isolationProvider(env) !== 'photoroom') return null;
+  const apiKey = String(env.PHOTOROOM_API_KEY || '').trim();
+  const fetchImpl = options.fetchImpl ?? fetch;
+  try {
+    const form = new FormData();
+    form.append('image_file', new Blob([new Uint8Array(input)]), 'product.jpg');
+    form.append('format', 'png');
+    form.append('channels', 'rgba');
+    form.append('size', 'full');
+    const response = await fetchImpl(PHOTOROOM_SEGMENT_URL, {
+      method: 'POST',
+      headers: { 'x-api-key': apiKey, accept: 'image/png' },
+      body: form,
+      signal: AbortSignal.timeout(options.timeoutMs ?? PHOTOROOM_TIMEOUT_MS),
+    });
+    if (!response.ok) {
+      console.warn(`[PhotoRoom] HTTP ${response.status} — repli sur l'isolation locale.`);
+      await response.body?.cancel().catch(() => undefined);
+      return null;
+    }
+    const declared = Number(response.headers.get('content-length') || 0);
+    if (declared > PHOTOROOM_MAX_RESULT_BYTES) {
+      await response.body?.cancel().catch(() => undefined);
+      return null;
+    }
+    const output = Buffer.from(await response.arrayBuffer());
+    if (output.length === 0 || output.length > PHOTOROOM_MAX_RESULT_BYTES || !isPhotoRoomPng(output)) {
+      console.warn('[PhotoRoom] réponse non PNG ou vide — repli.');
+      return null;
+    }
+    console.info(`[PhotoRoom] détourage reçu (${output.length} octets).`);
+    return output;
+  } catch (error: any) {
+    // Le message d'erreur peut contenir des détails d'URL : on ne journalise que le nom.
+    console.warn(`[PhotoRoom] appel échoué (${error?.name || 'erreur'}) — repli.`);
+    return null;
+  }
+}

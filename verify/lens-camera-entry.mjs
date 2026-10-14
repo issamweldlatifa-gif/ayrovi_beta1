@@ -47,19 +47,20 @@ for(const [engine,type] of [['chromium',chromium],['firefox',firefox]]){
   await p.locator('#lens-product-link').fill('https://example.com/product?size=M');await p.locator('.lens-link-form button[type=submit]').click();
   check('URL preserved by handler',await p.evaluate(()=>lensEntryTest.links[0]==='https://example.com/product?size=M'));
   await p.screenshot({path:`${output}/${engine}-${locale}-link.png`});
-  await p.goBack();await p.locator('.lens-methods').waitFor();await p.locator('.lens-methods button').first().click();await p.locator('.lens-scan-actions').waitFor();
+  await p.goBack();await p.locator('.lens-methods').waitFor();await p.locator('.lens-methods button').first().click();await p.locator('.lens-mode-pill button[aria-pressed="true"]').waitFor();
   check('scanner does not conceal a link field',await p.locator('#lens-product-link').count()===0);
   await p.evaluate(()=>window.codeToDetect='1234567890123');await p.waitForFunction(()=>lensEntryTest.codes.length===1);
   check('barcode uses existing handler',await p.evaluate(()=>lensEntryTest.codes[0]==='1234567890123'));
-  await p.goBack();await p.locator('.lens-scan-actions').waitFor({state:'hidden'});
+  await p.goBack();await p.locator('.lens-mode-pill button[aria-pressed="true"]').waitFor({state:'hidden'});
   await p.getByRole('tab',{name:ar?'مسح مباشر':'Scan en direct',exact:true}).click();
   check('Live is labeled as scanning, not video recording',!await p.getByText('Vidéo (Live)',{exact:true}).count());
   await help.click();await p.locator('.lens-panel').waitFor();await p.goBack();await p.locator('.lens-panel').waitFor({state:'hidden'});
   check('nested navigation preserves selected Live mode',await p.getByRole('tab',{name:ar?'مسح مباشر':'Scan en direct',exact:true}).getAttribute('aria-selected')==='true');
   await p.getByRole('tab',{name:ar?'تصوير':'Photo',exact:true}).click();
-  await p.getByRole('tab',{name:ar?'تصوير':'Photo',exact:true}).focus();await p.keyboard.press('End');
+  // Ordre de la maquette : Scan en direct · Photo · Lien / code (Lien / code n'est pas un onglet).
+  await p.getByRole('tab',{name:ar?'تصوير':'Photo',exact:true}).focus();await p.keyboard.press('Home');
   check('keyboard selects Live',await p.getByRole('tab',{name:ar?'مسح مباشر':'Scan en direct',exact:true}).getAttribute('aria-selected')==='true');
-  await p.keyboard.press('Home');check('keyboard selects Photo',await p.getByRole('tab',{name:ar?'تصوير':'Photo',exact:true}).getAttribute('aria-selected')==='true');
+  await p.keyboard.press('End');check('keyboard selects Photo',await p.getByRole('tab',{name:ar?'تصوير':'Photo',exact:true}).getAttribute('aria-selected')==='true');
   await p.setViewportSize({width:320,height:480});await p.evaluate(()=>document.documentElement.style.fontSize='200%');
   await methods.click();await p.locator('.lens-methods').waitFor();
   check('enlarged short-screen panel has no horizontal overflow',await p.locator('.lens-panel').evaluate(e=>e.scrollWidth<=e.clientWidth+1));

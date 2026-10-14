@@ -161,7 +161,7 @@ describe('purge — plus aucun littéral orange hérité', () => {
     const database = read('src/db/database.ts');
     expect(database).toMatch(/accent: '#ff6900'/);
     expect(database).toMatch(/activeColor: '#ff6900'/);
-    expect(database).toMatch(/accent_color TEXT NOT NULL DEFAULT '#FF6900'/);
+    // Le défaut `accent_color` du contenu Hero (table hero_content_settings) a été supprimé avec l’ancien Hero (2026-10-10).
   });
 });
 

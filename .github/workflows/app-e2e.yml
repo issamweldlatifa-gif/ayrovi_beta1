@@ -1,0 +1,123 @@
+# Parcours complet de l'APPLICATION, exécuté par la CI, sans téléphone.
+#
+# Deux vérifications qui protègent des régressions invisibles :
+#
+#   1. « démarrage production » — le serveur est démarré avec EXACTEMENT la
+#      recette d'environnement d'un service Render (production). Si une variable
+#      obligatoire disparaît ou si la règle change, le déploiement planterait en
+#      production ; ici, on le voit avant.
+#   2. « parcours complet » — un serveur local est démarré, puis
+#      `scripts/app-e2e.mjs` joue la chaîne réelle de l'appli :
+#      connexion SMS → jeton de session → profil → panier → CAISSE → commande →
+#      liste → détail. Une commande réellement créée est la seule preuve qui vaut.
+#
+# Aucune de ces étapes ne parle à la production ni à un service distant.
+name: App — parcours complet (CI)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [arena/c0321e79-ayrovi-beta1, main]
+    paths:
+      - "src/**"
+      - "shared/**"
+      - "scripts/app-e2e.mjs"
+      - ".github/workflows/app-e2e.yml"
+      - "package.json"
+      - "package-lock.json"
+
+permissions:
+  contents: read
+
+jobs:
+  demarrage-production:
+    name: Démarrage production (recette Render)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NODE_ENV: production
+      PORT: "4399"
+      DATABASE_PATH: /tmp/e2e-boot-data/qatafo.sqlite
+      PUBLIC_BASE_URL: https://ayrovi-beta1-moo8.onrender.com
+      ADMIN_EMAIL: ops@ayrovi.test
+      ADMIN_PASSWORD: Un-Mot-De-Passe-Solide-2026-E2E
+      CUSTOMER_AUTH_SECRET: secret-de-test-e2e-0123456789-abcdefghijklmnop-qrstuv
+      ANDROID_APP_LINK_SHA256: AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Installer les dépendances
+        run: npm ci --no-audit --no-fund
+      - name: Construire le serveur
+        run: npm run build:server
+      - name: Démarrer et interroger la readiness
+        run: |
+          set +e +o pipefail
+          set -u
+          mkdir -p /tmp/e2e-boot-data
+          node dist/server.js > /tmp/boot.log 2>&1 &
+          SERVER_PID=$!
+          CODE=000
+          for _ in $(seq 1 30); do
+            CODE=$(curl -s -o /tmp/ready.json -w '%{http_code}' --max-time 10 "http://127.0.0.1:${PORT}/api/ready" 2>/dev/null)
+            [ "$CODE" = "200" ] && break
+            sleep 2
+          done
+          BODY=$(head -c 300 /tmp/ready.json 2>/dev/null)
+          kill "$SERVER_PID" 2>/dev/null
+          if [ "$CODE" = "200" ]; then
+            echo "::notice title=Démarrage production::readiness 200 — ${BODY}"
+            exit 0
+          fi
+          echo "::group::journal du serveur"; tail -40 /tmp/boot.log; echo "::endgroup::"
+          echo "::error title=Démarrage production::readiness=${CODE} — ${BODY}"
+          exit 1
+
+  parcours-complet:
+    name: Parcours complet (connexion → panier → commande)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # `console` : le serveur rend le code SMS dans la réponse — le seul moyen
+      # d'automatiser la connexion sans opérateur. Interdit en production, donc
+      # ce job tourne en développement, sur une base jetable.
+      NODE_ENV: development
+      PORT: "4321"
+      CUSTOMER_OTP_PROVIDER: console
+      DATABASE_PATH: /tmp/e2e-run-data/qatafo.sqlite
+      PUBLIC_BASE_URL: http://127.0.0.1:4321
+      CUSTOMER_AUTH_SECRET: secret-de-test-e2e-0123456789-abcdefghijklmnop-qrstuv
+      AYROVIX_QUOTE_SECRET: quote-de-test-e2e-0123456789-abcdefghijklmnop-qrstuv
+      ANDROID_APP_LINK_SHA256: AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Installer les dépendances
+        run: npm ci --no-audit --no-fund
+      - name: Construire le serveur
+        run: npm run build:server
+      - name: Démarrer le serveur
+        run: |
+          set +e +o pipefail
+          mkdir -p /tmp/e2e-run-data
+          node dist/server.js > /tmp/server.log 2>&1 &
+          echo "SERVER_PID=$!" >> "$GITHUB_ENV"
+          for _ in $(seq 1 30); do
+            CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "http://127.0.0.1:${PORT}/api/ready" 2>/dev/null)
+            [ "$CODE" = "200" ] && exit 0
+            sleep 2
+          done
+          echo "::group::journal du serveur"; tail -40 /tmp/server.log; echo "::endgroup::"
+          echo "::error title=Parcours complet::le serveur local n'a pas démarré"
+          exit 1
+      - name: Parcours complet de l'application
+        run: node scripts/app-e2e.mjs --base "http://127.0.0.1:${PORT}"
+      - name: Journal du serveur (en cas d'échec)
+        if: failure()
+        run: tail -60 /tmp/server.log

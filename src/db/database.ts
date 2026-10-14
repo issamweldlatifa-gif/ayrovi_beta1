@@ -231,15 +231,6 @@ const SETTINGS_TABLE_SQL = `CREATE TABLE IF NOT EXISTS settings (
   updated_by TEXT
 );`;
 
-const ANNOUNCEMENT_MESSAGES_TABLE_SQL = `CREATE TABLE IF NOT EXISTS announcement_messages (
-  id TEXT PRIMARY KEY,
-  text TEXT NOT NULL,
-  display_order INTEGER NOT NULL DEFAULT 0,
-  active INTEGER NOT NULL DEFAULT 1,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
-);`;
-
 /**
  * Barre publique sous l'en-tête (onglets Arrivage / Gift & Cards / Magazine).
  * `destination` est une clé de `shared/publicNavigation.ts` — jamais une URL libre : le chemin
@@ -256,23 +247,6 @@ const PUBLIC_NAV_ITEMS_TABLE_SQL = `CREATE TABLE IF NOT EXISTS public_nav_items 
   updated_at TEXT NOT NULL
 );`;
 
-const HERO_VISUALS_TABLE_SQL = `CREATE TABLE IF NOT EXISTS hero_visuals (
-  id TEXT PRIMARY KEY,
-  image_url TEXT NOT NULL DEFAULT '',
-  image_width INTEGER NOT NULL DEFAULT 0,
-  image_height INTEGER NOT NULL DEFAULT 0,
-  mobile_image_url TEXT NOT NULL DEFAULT '',
-  alt_text TEXT NOT NULL DEFAULT '',
-  focal_x REAL NOT NULL DEFAULT 0.5,
-  focal_y REAL NOT NULL DEFAULT 0.5,
-  status TEXT NOT NULL DEFAULT 'DRAFT' CHECK(status IN ('DRAFT','PUBLISHED','ARCHIVED')),
-  start_date TEXT,
-  end_date TEXT,
-  priority INTEGER NOT NULL DEFAULT 0,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL,
-  published_at TEXT
-);`;
 
 const PAYMENTS_TABLE_SQL = `CREATE TABLE IF NOT EXISTS payments (
   id TEXT PRIMARY KEY,
@@ -952,6 +926,32 @@ export class QatafoDatabase {
       );
       CREATE INDEX IF NOT EXISTS idx_hero_active_order ON hero_slides(active, display_order);
 
+      -- Brouillons du module Hero (Admin). Une ligne par carte modifiée ; jamais lue
+      -- par l'application publique : seule la publication copie vers hero_slides.
+      CREATE TABLE IF NOT EXISTS hero_slide_drafts (
+        id TEXT PRIMARY KEY,
+        change_type TEXT NOT NULL CHECK (change_type IN ('CREATE','UPDATE','DELETE')),
+        image TEXT NOT NULL DEFAULT '',
+        video TEXT NOT NULL DEFAULT '',
+        title TEXT NOT NULL DEFAULT '',
+        title_ar TEXT NOT NULL DEFAULT '',
+        subtitle TEXT NOT NULL DEFAULT '',
+        subtitle_ar TEXT NOT NULL DEFAULT '',
+        cta TEXT NOT NULL DEFAULT '',
+        cta_ar TEXT NOT NULL DEFAULT '',
+        destination_type TEXT NOT NULL DEFAULT '',
+        destination_value TEXT NOT NULL DEFAULT '',
+        bg_mode TEXT NOT NULL DEFAULT 'auto',
+        bg_color TEXT NOT NULL DEFAULT '',
+        display_order INTEGER NOT NULL DEFAULT 0,
+        active INTEGER NOT NULL DEFAULT 1,
+        published_from TEXT NOT NULL DEFAULT '',
+        published_to TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        updated_by TEXT NOT NULL DEFAULT ''
+      );
+
       CREATE TABLE IF NOT EXISTS customers (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
@@ -1080,6 +1080,22 @@ export class QatafoDatabase {
       CREATE INDEX IF NOT EXISTS idx_customer_otp_phone_created ON customer_otp_challenges(phone, created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_customer_otp_ip_created ON customer_otp_challenges(request_ip, created_at DESC);
 
+      /* Connexion par code e-mail (façon ChatGPT). Le code est haché, jamais stocké
+         en clair ; une seule demande active par adresse (les anciennes sont consommées). */
+      CREATE TABLE IF NOT EXISTS customer_email_code_challenges (
+        id TEXT PRIMARY KEY,
+        email TEXT NOT NULL,
+        code_hash TEXT NOT NULL,
+        expires_at TEXT NOT NULL,
+        consumed_at TEXT,
+        attempts INTEGER NOT NULL DEFAULT 0,
+        max_attempts INTEGER NOT NULL DEFAULT 5,
+        request_ip TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_customer_email_code_email_created ON customer_email_code_challenges(email, created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_customer_email_code_ip_created ON customer_email_code_challenges(request_ip, created_at DESC);
+
       CREATE TABLE IF NOT EXISTS customer_oauth_states (
         id TEXT PRIMARY KEY,
         account_id TEXT REFERENCES customer_accounts(id) ON DELETE SET NULL,
@@ -1109,6 +1125,46 @@ export class QatafoDatabase {
         created_at TEXT NOT NULL
       );
       CREATE INDEX IF NOT EXISTS idx_customer_native_handoff_expiry ON customer_native_handoffs(expires_at);
+
+      /*
+       * Appareils inscrits aux notifications push.
+       *
+       * 'account_id' PEUT être NULL : on accepte l'inscription AVANT la
+       * connexion, sinon personne ne serait jamais prévenu de la commande
+       * qu'il vient de passer en tant que visiteur — et c'est justement la
+       * notification qui compte le plus. L'appareil est rattaché au compte au
+       * moment de la connexion ('attachDevicesToAccount').
+       *
+       * Le jeton est l'identité de l'appareil d'un point de vue FCM : UNIQUE.
+       */
+      CREATE TABLE IF NOT EXISTS customer_push_devices (
+        id TEXT PRIMARY KEY,
+        account_id TEXT REFERENCES customer_accounts(id) ON DELETE CASCADE,
+        session_id TEXT NOT NULL DEFAULT '',
+        token TEXT NOT NULL UNIQUE,
+        platform TEXT NOT NULL DEFAULT 'android' CHECK(platform IN ('android','ios')),
+        locale TEXT NOT NULL DEFAULT 'fr',
+        enabled INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_customer_push_account ON customer_push_devices(account_id);
+
+      /*
+       * Journal d'envoi. L'index UNIQUE (appareil, notification) est la vraie
+       * garantie : sans lui, une notification repassée deux fois dans le
+       * répartiteur serait poussée deux fois sur le téléphone. On préfère
+       * perdre un envoi plutôt que de réveiller quelqu'un deux fois.
+       */
+      CREATE TABLE IF NOT EXISTS customer_push_dispatched (
+        id TEXT PRIMARY KEY,
+        device_id TEXT NOT NULL REFERENCES customer_push_devices(id) ON DELETE CASCADE,
+        notification_id TEXT NOT NULL,
+        status TEXT NOT NULL,
+        detail TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_customer_push_once ON customer_push_dispatched(device_id, notification_id);
 
       CREATE TABLE IF NOT EXISTS customer_addresses (
         id TEXT PRIMARY KEY,
@@ -1493,6 +1549,17 @@ export class QatafoDatabase {
     this.ensureColumn('crm_extraction_jobs', 'lease_expires_at', 'TEXT');
     this.ensureColumn('crm_extraction_jobs', 'retry_at', 'TEXT');
     this.ensureColumn('crm_extracted_products', 'arrival_client_store_id', 'TEXT REFERENCES crm_arrival_client_stores(id) ON DELETE CASCADE');
+    // Contenu « Shoppable » (Reels, Publications, Stories) : mode + produit lié.
+    // Additif et idempotent : les lignes existantes deviennent `normal` sans produit.
+    // `stories.product_id` existe déjà (ancienne colonne) : seul le mode est ajouté.
+    const contentMode = "TEXT NOT NULL DEFAULT 'normal' CHECK(content_mode IN ('normal','shoppable'))";
+    this.ensureColumn('reels', 'content_mode', contentMode);
+    this.ensureColumn('reels', 'product_id', 'TEXT REFERENCES products(id) ON DELETE SET NULL');
+    // Image de couverture du Reel (affichée sur la tuile et avant la lecture). Vide = pas de couverture.
+    this.ensureColumn('reels', 'poster_url', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('publications', 'content_mode', contentMode);
+    this.ensureColumn('publications', 'product_id', 'TEXT REFERENCES products(id) ON DELETE SET NULL');
+    this.ensureColumn('stories', 'content_mode', contentMode);
     // Operational line-item fields produced by the AI Extraction Schema and
     // carried through Normalization. Nullable at the DB level (application
     // model) — the AI schema itself stays union-free.
@@ -1642,14 +1709,8 @@ export class QatafoDatabase {
     this.recordArrivalMultistoreMigration();
     seedArrivalStores(this);
 
-    // شريط الإعلانات العلوي (Trust Ticker) — إنشاء الجدول وزرع الرسائل الافتراضية مرة واحدة
-    this.db.exec(ANNOUNCEMENT_MESSAGES_TABLE_SQL);
-
     // Barre publique sous l'en-tête — les onglets sont pilotés depuis l'Admin (onglet de navigation).
     this.db.exec(PUBLIC_NAV_ITEMS_TABLE_SQL);
-
-    // نظام Hero — جدول visuals قابل للتوسع مستقبلاً (صور متعددة/موبايل)
-    this.db.exec(HERO_VISUALS_TABLE_SQL);
 
     // AYROVIX LENS HERO — إعدادات قابلة للإدارة من الـAdmin (المحتوى فقط)
     this.db.exec(`CREATE TABLE IF NOT EXISTS lens_hero_settings (
@@ -1776,27 +1837,65 @@ export class QatafoDatabase {
       }
     }
 
-    // HERO — المحتوى (عنوان/وصف/CTA) يُدار من الـ Dashboard، لا من الكود
-    this.db.exec(`CREATE TABLE IF NOT EXISTS hero_content_settings (
+    // Suppression DÉFINITIVE des anciens modèles Hero (décision produit 2026-10-10) :
+    // « un seul Hero, dynamique ». Exception documentée à la règle « jamais de DROP ».
+    this.db.exec('DROP TABLE IF EXISTS hero_visuals');
+    this.db.exec('DROP TABLE IF EXISTS hero_content_settings');
+
+    // ── Carrousel Hero (09/10/2026) : slides administrables + fond adaptatif ──
+    // Colonnes additives uniquement (contrat initSchema : jamais de DROP/RENAME).
+    this.ensureColumn('hero_slides', 'title_ar', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('hero_slides', 'subtitle_ar', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('hero_slides', 'cta_ar', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('hero_slides', 'destination_type', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('hero_slides', 'destination_value', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('hero_slides', 'bg_mode', "TEXT NOT NULL DEFAULT 'auto'");
+    this.ensureColumn('hero_slides', 'bg_color', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('hero_slides', 'palette', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('hero_slides', 'published_from', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('hero_slides', 'published_to', "TEXT NOT NULL DEFAULT ''");
+
+    // Réglages du carrousel (singleton 'global') — même pattern que les autres singletons.
+    this.db.exec(`CREATE TABLE IF NOT EXISTS hero_carousel_settings (
       id TEXT PRIMARY KEY CHECK(id='global'),
-      eyebrow TEXT NOT NULL DEFAULT '',
-      title TEXT NOT NULL DEFAULT '',
-      highlight TEXT NOT NULL DEFAULT 'AYROVI',
-      description TEXT NOT NULL DEFAULT '',
-      cta_label TEXT NOT NULL DEFAULT '',
-      cta_url TEXT NOT NULL DEFAULT '',
-      accent_color TEXT NOT NULL DEFAULT '#FF6900',
-      element_order TEXT NOT NULL DEFAULT 'eyebrow,title,description,cta',
       enabled INTEGER NOT NULL DEFAULT 1,
-      sort_order INTEGER NOT NULL DEFAULT 10,
+      max_cards INTEGER NOT NULL DEFAULT 6,
+      autoplay INTEGER NOT NULL DEFAULT 0,
+      autoplay_interval_ms INTEGER NOT NULL DEFAULT 5000,
+      transition_ms INTEGER NOT NULL DEFAULT 300,
+      pagination_visible INTEGER NOT NULL DEFAULT 1,
       updated_at TEXT NOT NULL
     );`);
-    if (!(this.db.prepare("SELECT COUNT(*) count FROM hero_content_settings WHERE id='global'").get() as { count: number }).count) {
-      this.run(`INSERT INTO hero_content_settings (id,title,description,updated_at) VALUES ('global',?,?,?)`,
-        'Vous le voyez.\nAYROVI vous le livre.',
-        'Mode, beauté, technologie, maison… trouvez ce que vous cherchez. AYROVI s’occupe du reste.',
-        new Date().toISOString());
+    if (!(this.db.prepare("SELECT COUNT(*) count FROM hero_carousel_settings WHERE id='global'").get() as { count: number }).count) {
+      this.run('INSERT INTO hero_carousel_settings (id,updated_at) VALUES (?,?)', 'global', new Date().toISOString());
     }
+
+    // Section « à la une » de l'accueil mobile — réglages singleton 'global'.
+    // `source` = 'latest' (la plus récente publiée) ou 'pinned' (publication choisie).
+    this.db.exec(`CREATE TABLE IF NOT EXISTS home_featured_settings (
+      id TEXT PRIMARY KEY CHECK(id='global'),
+      enabled INTEGER NOT NULL DEFAULT 1,
+      source TEXT NOT NULL DEFAULT 'latest' CHECK(source IN ('latest','pinned')),
+      publication_id TEXT NOT NULL DEFAULT '',
+      cta_label TEXT NOT NULL DEFAULT '',
+      updated_at TEXT NOT NULL
+    );`);
+    if (!(this.db.prepare("SELECT COUNT(*) count FROM home_featured_settings WHERE id='global'").get() as { count: number }).count) {
+      this.run('INSERT INTO home_featured_settings (id,updated_at) VALUES (?,?)', 'global', new Date().toISOString());
+    }
+
+    // Télémétrie carrousel : impression / clic, sans donnée personnelle (même
+    // philosophie que le funnel d'achat — mesurer ne doit jamais planter).
+    this.db.exec(`CREATE TABLE IF NOT EXISTS hero_events (
+      id TEXT PRIMARY KEY,
+      card_id TEXT NOT NULL,
+      event TEXT NOT NULL CHECK(event IN ('impression','click')),
+      destination_type TEXT NOT NULL DEFAULT '',
+      locale TEXT NOT NULL DEFAULT '',
+      session TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL
+    );
+      CREATE INDEX IF NOT EXISTS idx_hero_events_card ON hero_events(card_id, created_at);`);
 
     // ترتيب كتل الصفحة الرئيسية (transition / discovery / brands / lens) — يُدار من الـ Dashboard
     this.db.exec(`CREATE TABLE IF NOT EXISTS home_blocks (
@@ -1809,22 +1908,6 @@ export class QatafoDatabase {
       const nowBlock = new Date().toISOString();
       const insertBlock = this.db.prepare('INSERT INTO home_blocks (id,sort_order,visible,updated_at) VALUES (?,?,1,?)');
       [['transition', 10], ['discovery', 20], ['brands', 30], ['lens', 40]].forEach(([id, order]) => insertBlock.run(id, order, nowBlock));
-    }
-
-    if (!(this.db.prepare('SELECT COUNT(*) count FROM announcement_messages').get() as { count: number }).count) {
-      const seededAt = new Date().toISOString();
-      const insertSeed = this.db.prepare('INSERT INTO announcement_messages (id,text,display_order,active,created_at,updated_at) VALUES (?,?,?,?,?,?)');
-      this.db.transaction(() => {
-        for (const [index, text] of [
-          'Prix confirmé avant commande',
-          'Dédouanement inclus',
-          'Acompte sécurisé 20 %',
-          'Livraison dans les 24 gouvernorats',
-          'Service client 7j/7',
-        ].entries()) {
-          insertSeed.run(`announcement_${randomUUID()}`, text, index + 1, 1, seededAt, seededAt);
-        }
-      })();
     }
 
     // Barre publique : les trois destinations officielles existent dès la première installation.
@@ -1869,12 +1952,6 @@ export class QatafoDatabase {
     this.ensureColumn('customer_otp_challenges', 'provider', "TEXT NOT NULL DEFAULT 'local'");
     this.ensureColumn('customer_accounts', 'password_hash', 'TEXT');
     this.ensureColumn('customer_accounts', 'avatar_source', "TEXT NOT NULL DEFAULT 'provider'");
-    this.ensureColumn('hero_visuals', 'mobile_focal_x', 'REAL NOT NULL DEFAULT 0.5');
-    this.ensureColumn('hero_visuals', 'mobile_focal_y', 'REAL NOT NULL DEFAULT 0.5');
-    this.ensureColumn('hero_visuals', 'overlay_mode', "TEXT NOT NULL DEFAULT 'AUTO' CHECK(overlay_mode IN ('AUTO','MANUAL'))");
-    this.ensureColumn('hero_visuals', 'overlay_strength', 'REAL');
-    this.ensureColumn('hero_visuals', 'analysis_json', "TEXT NOT NULL DEFAULT ''");
-    this.ensureColumn('hero_visuals', 'orientation_override', "TEXT NOT NULL DEFAULT 'AUTO' CHECK(orientation_override IN ('AUTO','LANDSCAPE','PORTRAIT'))");
     this.ensureColumn('customer_oauth_states', 'provider', "TEXT NOT NULL DEFAULT 'GOOGLE' CHECK(provider IN ('GOOGLE','FACEBOOK','APPLE'))");
     // ترقية القيود القديمة لتشمل دخول Apple (CHECK القديم لا يقبل 'APPLE')
     this.rebuildTableIfLegacy('customer_oauth_states', "'APPLE'", CUSTOMER_OAUTH_STATES_TABLE_SQL, [
@@ -2848,6 +2925,7 @@ export class QatafoDatabase {
           { id: 'brands', visible: true, order: 30, title: '', subtitle: '', image: '', backgroundColor: '#f8f9fa', textColor: '#111111', paddingY: 0, contained: false },
           { id: 'about', visible: true, order: 40, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#111111', paddingY: 0, contained: false },
           { id: 'footer', visible: true, order: 50, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#111111', paddingY: 0, contained: false },
+          { id: 'announcement', visible: false, order: 25, title: '', subtitle: '', image: '', backgroundColor: '#ff6900', textColor: '#ffffff', paddingY: 48, contained: false, mediaType: 'image', videoUrl: '', ctaLabel: 'Découvrir', ctaTarget: 'app:lens' },
         ],
         typography: { preset: 'ayrovi-a', body: FONT_STACK, display: FONT_STACK, baseSize: 16, align: 'start', headingColor: '#111111', textColor: '#666666', lineHeight: 1.5, letterSpacing: -0.011, headingScale: 1 },
         colors: { pageBackground: '#ffffff', surfaceBackground: '#ffffff', surfaceAlt: '#f8f9fa', borderColor: '#eaeaea', primary: '#111111', primaryDark: '#0a0a0a', primaryLight: '#3f3f46', accent: '#ff6900', headerBackground: '#ffffff', headerText: '#111111', announcementBackground: '#0a0a0a', announcementText: '#ffffff', heroBackground: '#0a0a0a', heroText: '#ffffff', footerBackground: '#ffffff', footerText: '#111111', success: '#15803d', warning: '#666666', danger: '#dc2626' },
@@ -2870,6 +2948,26 @@ export class QatafoDatabase {
         ['hero_femme','/media/hero-femme.jpg','', 'Toute la mode du monde, livrée chez vous.','','','',2,1],
         ['hero_enfants','/media/hero-enfants.jpg','', 'Toute la mode du monde, livrée chez vous.','','','',3,1],
       ].forEach((row) => insert.run(...row, now, now));
+    }
+
+    // Carrousel Hero — six campagnes de découverte initiales, INACTIVES tant que
+    // l’Admin n’a pas uploadé les visuels approuvés (jamais d’image non approuvée
+    // en production). Destinations valides (contrat fermé), ordre déterministe.
+    const heroCampaigns: Array<[string, string, string, number]> = [
+      ['hero_card_tech', 'Tech & Électronique', 'تكنولوجيا وإلكترونيات', 10],
+      ['hero_card_mode_homme', 'Mode homme — AW25', 'أزياء رجالية', 20],
+      ['hero_card_mode_femme', 'Mode femme', 'أزياء نسائية', 30],
+      ['hero_card_sport', 'Sport & Fitness', 'رياضة ولياقة', 40],
+      ['hero_card_streetwear', 'Streetwear', 'أزياء كاجوال', 50],
+      ['hero_card_designer', 'Mode designer', 'أزياء مصمّمين', 60],
+    ];
+    const heroCampaignInsert = this.db.prepare(`INSERT INTO hero_slides
+      (id,image,video,title,title_ar,subtitle,subtitle_ar,cta,cta_ar,target_url,destination_type,destination_value,bg_mode,bg_color,palette,display_order,active,published_from,published_to,created_at,updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+    for (const [id, title, titleAr, order] of heroCampaigns) {
+      const exists = (this.db.prepare('SELECT COUNT(*) AS count FROM hero_slides WHERE id=?').get(id) as { count: number }).count;
+      if (exists) continue;
+      heroCampaignInsert.run(id, '', '', title, titleAr, '', '', '', '', '', 'CAMPAIGN', '', 'auto', '', '', order, 0, '', '', now, now);
     }
 
     if ((this.db.prepare('SELECT COUNT(*) AS count FROM brands').get() as any).count === 0) {

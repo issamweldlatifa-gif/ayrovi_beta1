@@ -67,7 +67,7 @@ try {
   }
   await page.locator('#ayrovix-text-input').fill(title);
   await page.getByRole('button', { name: 'Rechercher', exact: true }).click();
-  await page.getByRole('button', { name: `Voir le produit : ${title}` }).click();
+  await page.getByRole('button', { name: `Voir ${title}`, exact: true }).click();
   const screen = page.locator('.s-product-page');
   await screen.getByRole('button', { name: 'Votre pointure', exact: true }).waitFor();
   await screen.getByRole('button', { name: 'Votre pointure', exact: true }).click();

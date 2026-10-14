@@ -33,12 +33,12 @@ export const ERP_AUDIT_ACTIONS = [
 
 const RESOURCE_BY_MODULE: Record<string, string> = {
   ORDERS: 'order', PRODUCTS: 'product', PROMOTIONS: 'promotion', ARRIVALS: 'cms_arrival',
-  BRANDS: 'brand', ANNOUNCEMENTS: 'announcement', STORIES: 'story', NEWS: 'news',
+  BRANDS: 'brand', STORIES: 'story', NEWS: 'news',
   AI_KNOWLEDGE: 'ai_knowledge', SETTINGS: 'setting', USERS: 'admin_user', EXPENSES: 'expense',
   PAYMENT_PROOFS: 'payment_proof', INVOICES: 'invoice', MEDIA: 'media',
   LENS_LAB: 'lens_lab_run', AI_SUGGESTIONS: 'magazine_draft', ASSISTANT_SUPPORT: 'assistant_support_ticket',
-  HERO_VISUALS: 'hero_visual', HOME_BLOCKS: 'home_blocks',
-  LENS_HERO: 'lens_hero_settings', HERO_CONTENT: 'hero_content_settings',
+  HERO_SLIDES: 'hero_slide', HOME_BLOCKS: 'home_blocks',
+  LENS_HERO: 'lens_hero_settings',
   SOCIAL_PUBLICATIONS: 'publication', SOCIAL_REELS: 'reel', SOCIAL_PUBLISHERS: 'story_publisher',
   CUSTOMERS: 'customer', CUSTOMER_ACCOUNTS: 'customer_account', PRICING: 'pricing_config',
   CRM_ARRIVALS: 'crm_arrival',

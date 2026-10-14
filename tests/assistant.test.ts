@@ -330,7 +330,7 @@ describe('AYROVI Claude assistant', () => {
     process.env.SERPAPI_KEY = 'serpapi-assistant-test-key';
     delete process.env.ANTHROPIC_API_KEY;
     const fetchMock = vi.fn(async (url: any) => {
-      if (String(url).startsWith('https://serpapi.com/image?')) {
+      if (String(url) === 'https://serpapi.com/image') {
         return new Response(JSON.stringify({ image_id: 'image_test_id' }), { status: 200, headers: { 'content-type': 'application/json' } });
       }
       return new Response(JSON.stringify({

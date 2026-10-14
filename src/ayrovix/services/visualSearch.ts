@@ -18,6 +18,18 @@ const MAX_IN_FLIGHT = 12;
 const cache = new Map<string, { at: number; results: AyrovixCandidate[] }>();
 const inFlight = new Map<string, Promise<AyrovixCandidate[]>>();
 
+/** Safe provider-stage code: useful in logs/responses, never contains the key or provider body. */
+export class SerpApiVisualError extends Error {
+  constructor(public readonly code: string) {
+    super(code);
+    this.name = 'SerpApiVisualError';
+  }
+}
+
+function visualFailure(code: string): SerpApiVisualError {
+  return new SerpApiVisualError(`SERPAPI_${code.replace(/[^A-Z0-9_]/g, '_')}`);
+}
+
 function boundedLimit(value: number): number {
   return Number.isFinite(value) ? Math.max(8, Math.min(40, Math.floor(value))) : 24;
 }
@@ -34,7 +46,8 @@ async function responseJson(response: Response, maxBytes = 2_000_000): Promise<a
 }
 
 function serpApiKey(): string | null {
-  return process.env.SERPAPI_KEY?.trim() || null;
+  // Alias accepté : SERPAPI_KEY (nom canonique) ou SERPAPI_API_KEY (utilisé par productEnrichment / variantAvailability).
+  return process.env.SERPAPI_KEY?.trim() || process.env.SERPAPI_API_KEY?.trim() || null;
 }
 
 export function serpApiVisualReady(): boolean {
@@ -48,6 +61,20 @@ function timeoutMs(): number {
 
 function remainingMs(deadline: number, cap: number): number {
   return Math.max(100, Math.min(cap, deadline - Date.now()));
+}
+
+function providerPause(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isTestRuntime(): boolean {
+  return Boolean(process.env.VITEST || process.env.NODE_ENV === 'test');
+}
+
+function retryableLensApiError(payload: any): boolean {
+  const message = String(payload?.error || '').toLowerCase();
+  // Billing/auth/configuration failures cannot heal during the same request.
+  return !/(api[_ ]?key|unauthori[sz]ed|forbidden|credit|billing|account|plan|invalid (engine|type|parameter))/.test(message);
 }
 
 function normalizeCurrency(raw: unknown): string | null {
@@ -174,58 +201,79 @@ async function runSerpApiVisualSearch(image: Buffer, limit: number): Promise<Ayr
   try {
     const prepared = await prepareImageForSerpApi(image);
     const form = new FormData();
+    // Image API requires the credential as a multipart field. Supplying it only
+    // in the query string returns an unusable upload on the live API. Keep the
+    // request aligned with SerpApi's official upload_image clients.
+    form.append('api_key', key);
+    form.append('source', 'ayrovi-server');
     form.append('image', new Blob([new Uint8Array(prepared)], { type: 'image/jpeg' }), 'ayrovix-lens.jpg');
-    const upload = await fetch(`https://serpapi.com/image?api_key=${encodeURIComponent(key)}`, {
+    const upload = await fetch('https://serpapi.com/image', {
       method: 'POST',
       body: form,
       signal: AbortSignal.timeout(remainingMs(deadline, 5_000)),
     });
-    if (!upload.ok) {
-      console.warn(`[AYROVIX serpapi-lens] image upload HTTP ${upload.status}`);
-      return [];
-    }
-    const uploadPayload: any = await responseJson(upload, 256 * 1024);
+    if (!upload.ok) throw visualFailure(`UPLOAD_HTTP_${upload.status}`);
+    let uploadPayload: any;
+    try { uploadPayload = await responseJson(upload, 256 * 1024); }
+    catch { throw visualFailure('UPLOAD_INVALID_JSON'); }
     const imageId = String(uploadPayload?.image_id || '').trim();
-    if (!imageId || deadline - Date.now() < 500) {
-      console.warn('[AYROVIX serpapi-lens] image upload returned no usable image_id');
-      return [];
-    }
+    if (!imageId) throw visualFailure('UPLOAD_NO_IMAGE_ID');
+    if (deadline - Date.now() < 500) throw visualFailure('UPLOAD_DEADLINE');
 
     const configuredCountry = (process.env.AYROVIX_LENS_COUNTRY || '').trim().toLowerCase();
     const country = /^[a-z]{2}$/.test(configuredCountry) ? configuredCountry : 'fr';
-    const searchType = async (type: 'products' | 'visual_matches' | 'exact_matches'): Promise<AyrovixCandidate[]> => {
+    /* `products` n'est plus un type valide. The current Image API contract
+       explicitly requests `visual_matches` for an uploaded image_id. */
+    const lensSearch = async (): Promise<AyrovixCandidate[]> => {
       const params = new URLSearchParams({
         engine: 'google_lens',
-        type,
         image_id: imageId,
+        type: 'visual_matches',
         hl: 'fr',
         country,
         api_key: key,
       });
-      const response = await fetch(`https://serpapi.com/search.json?${params.toString()}`, {
-        signal: AbortSignal.timeout(remainingMs(deadline, 12_000)),
-      });
-      if (!response.ok) {
-        console.warn(`[AYROVIX serpapi-lens] ${type} HTTP ${response.status}`);
-        return [];
+      const searchUrl = `https://serpapi.com/search.json?${params.toString()}`;
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        const response = await fetch(searchUrl, {
+          signal: AbortSignal.timeout(remainingMs(deadline, 12_000)),
+        });
+        if (!response.ok) {
+          const transientHttp = response.status === 408 || response.status === 425 || response.status >= 500;
+          if (attempt === 0 && transientHttp && deadline - Date.now() > 1_200) {
+            await providerPause(isTestRuntime() ? 0 : 650);
+            continue;
+          }
+          throw visualFailure(`LENS_HTTP_${response.status}`);
+        }
+        let payload: any;
+        try { payload = await responseJson(response); }
+        catch { throw visualFailure('LENS_INVALID_JSON'); }
+        if (!payload?.error) return toCandidates(payload, limit);
+        // The Image API can return image_id before Google Lens can consume it.
+        // Give that temporary id one bounded propagation retry; never retry a
+        // permanent key/billing/configuration error.
+        if (attempt === 0 && retryableLensApiError(payload) && deadline - Date.now() > 1_200) {
+          console.warn('[AYROVIX serpapi-lens] image_id not ready — retrying once');
+          await providerPause(isTestRuntime() ? 0 : 650);
+          continue;
+        }
+        throw visualFailure('LENS_API_ERROR');
       }
-      const payload: any = await responseJson(response);
-      if (payload?.error) {
-        console.warn(`[AYROVIX serpapi-lens] ${type} API error`);
-        return [];
-      }
-      return toCandidates(payload, limit);
+      throw visualFailure('LENS_API_ERROR');
     };
-    /* One Lens query is enough: SerpApi's `products` response already exposes
-       its rows through the supported product/visual result collections. A
-       second unconditional tab query doubled quota use and made one customer
-       action produce an avoidable third network request after image upload. */
-    const products = await searchType('products');
-    console.log(`[AYROVIX serpapi-lens] ${products.length} matches`);
-    return products;
+    // The live provider occasionally exposes image_id a fraction before Lens
+    // indexes it. A short first-use pause avoids spending the request on that race.
+    if (!isTestRuntime() && deadline - Date.now() > 1_500) await providerPause(450);
+    const matches = await lensSearch();
+    console.log(`[AYROVIX serpapi-lens] ${matches.length} matches`);
+    return matches;
   } catch (error: any) {
-    console.warn(`[AYROVIX serpapi-lens] ${error?.name === 'TimeoutError' ? 'timeout' : 'unavailable'}`);
-    return [];
+    const failure = error instanceof SerpApiVisualError
+      ? error
+      : visualFailure(error?.name === 'TimeoutError' ? 'TIMEOUT' : 'UNAVAILABLE');
+    console.warn(`[AYROVIX serpapi-lens] ${failure.code}`);
+    throw failure;
   }
 }
 

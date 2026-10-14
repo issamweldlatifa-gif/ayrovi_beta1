@@ -4,12 +4,11 @@ import type { QatafoDatabase as AyroviDatabase } from '../db/database';
 import type { SmartLinkScraper } from '../scraper/scraper';
 import { calculatePrice, type PricingRules } from '../services/pricing';
 import { cardGatewayAvailable } from '../services/paymentGateway';
-import { renderedProviderReady } from '../scraper/renderedPageFetcher';
 import { ayWebsReadGateStats } from './readGate';
 import { readerFingerprintReport } from '../scraper/readerFingerprint';
 import { AYWEBS_CAPTURE_LIMITS, AYWEBS_CAPTURE_VERSION } from '../../shared/aywebsCapture';
 import { AYWEBS_CAPTURE_SCRIPT } from './captureScript';
-import { ayWebsWebviewVerifySample } from './webviewCapture';
+import { ayWebsWebviewCaptureStats, ayWebsWebviewVerifySample } from './webviewCapture';
 import { getAyroviAiCore } from '../ai-core/core';
 import { ayWebsResolveCacheStats, ayWebsResolveFailureCacheStats } from './resolveCache';
 import {
@@ -68,6 +67,7 @@ import {
   listAyWebsStoreRequests,
   readAyWebsPurchaseRequest,
 } from './purchaseRequests';
+import { brightDataReady } from '../scraper/brightData';
 import { ayWebsCartLinkedMap, bridgeAyWebsCartToAyrovi, listAyWebsOrderLinks, syncAyWebsItemToAyroviCart } from './ayroviBridge';
 import {
   createAyWebsContext,
@@ -202,7 +202,7 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
     if (!store.enabled || !ctx.storeCaptureEnabled(store)) {
       return { operational: false, operational_reason: 'CAPTURE_DISABLED_FOR_STORE' };
     }
-    if (renderDependentStores.has(store.id) && !renderedProviderReady()) {
+    if (renderDependentStores.has(store.id)) {  // rendu payant retiré : aucun fournisseur
       return { operational: false, operational_reason: 'RENDER_PROVIDER_NOT_CONFIGURED' };
     }
     return { operational: true, operational_reason: null };
@@ -404,8 +404,8 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
         capture_enabled: flags.captureEnabled,
         active_adapters: stores.filter((store) => ctx.storeCaptureEnabled(store)).map((store) => store.id),
         deterministic_extraction: true,
-        jina_reader_enabled: process.env.AYROVI_JINA_READER !== 'false',
-        rendered_provider_ready: renderedProviderReady(),
+        rendered_provider: 'brightdata',
+        rendered_provider_ready: brightDataReady(),
         /** Cache de résolution : taux de réutilisation réellement mesuré. */
         resolve_cache: ayWebsResolveCacheStats(),
         /** Phase 1 — mémo court des fiches ILLISIBLES (réessais rapides). */
@@ -420,6 +420,9 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
           contract_version: AYWEBS_CAPTURE_VERSION,
           verify_sample: ayWebsWebviewVerifySample(),
           max_bytes: AYWEBS_CAPTURE_LIMITS.maxBytes,
+          /** Compteurs réels : captures jugées / acceptées / refusées, et comment
+              la devise a été prouvée (code publié, symbole de boutique, ou rien). */
+          stats: ayWebsWebviewCaptureStats(),
           /**
            * Boutique externe (hors registre) : quel identifiant est écrit sur un
            * produit capturé, et combien de domaines elle revendique. Zéro domaine,

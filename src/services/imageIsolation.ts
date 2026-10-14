@@ -19,6 +19,7 @@ import sharp from 'sharp';
 import { fetchSafeRemote, parsePublicHttpUrl, readLimitedBuffer } from './safeUrl';
 import { pruneDiskCache } from './diskCache';
 import { segmentBuffer } from './segmentation';
+import { isolationCacheInput, isolationProvider, removeBackgroundWithPhotoRoom, shouldPersistNegative } from './photoroomIsolation';
 
 const MAX_DIMENSION = 900;
 const MAX_BYTES = 8 * 1024 * 1024;
@@ -295,6 +296,12 @@ export interface IsolationOptions {
 }
 
 export async function isolateBuffer(buffer: Buffer, options: IsolationOptions = {}): Promise<{ kind: IsolationKind; png: Buffer | null }> {
+  // Fournisseur externe (AYROVI_ISOLATION_PROVIDER=photoroom + clé serveur) : il passe
+  // en premier ; en cas d'échec on retombe sur le chroma-key ci-dessous.
+  if (isolationProvider() === 'photoroom') {
+    const cutout = await removeBackgroundWithPhotoRoom(buffer);
+    if (cutout) return { kind: 'segmented', png: await trimTransparentMargins(cutout) };
+  }
   const base = sharp(buffer, { failOn: 'none', limitInputPixels: 40_000_000 }).rotate();
   const resized = base.resize({ width: MAX_DIMENSION, height: MAX_DIMENSION, fit: 'inside', withoutEnlargement: true });
   const { data, info } = await resized.ensureAlpha().raw().toBuffer({ resolveWithObject: true });
@@ -376,7 +383,8 @@ export interface CachedIsolation {
 }
 
 export async function getIsolatedImage(rawUrl: string): Promise<CachedIsolation> {
-  const key = crypto.createHash('sha256').update(rawUrl).digest('hex').slice(0, 32);
+  const provider = isolationProvider();
+  const key = crypto.createHash('sha256').update(isolationCacheInput(rawUrl, provider)).digest('hex').slice(0, 32);
   const dir = cacheDir();
   const metaPath = path.join(dir, `${key}.meta.json`);
   const pngPath = path.join(dir, `${key}.png`);
@@ -401,6 +409,8 @@ export async function getIsolatedImage(rawUrl: string): Promise<CachedIsolation>
     } catch { /* repli : original */ }
   }
   const meta: CachedIsolation = { kind: result.kind, file: null };
+  // Mode PhotoRoom : un échec (sans PNG) n'est pas persisté, il sera retenté.
+  if (!result.png && !shouldPersistNegative(provider)) return meta;
   if (result.png) {
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(pngPath, result.png);
@@ -416,7 +426,10 @@ export async function getIsolatedImage(rawUrl: string): Promise<CachedIsolation>
 export function warmIsolation(urls: Array<string | null | undefined>, limit = 6): void {
   const targets = urls.filter((url): url is string => Boolean(url && /^https?:\/\//i.test(url))).slice(0, limit);
   for (const url of targets) {
-    void getIsolatedImage(url).catch(() => { /* chauffe best-effort */ });
+    // Diagnostic : l'échec reste non bloquant, mais il est journalisé (code seulement).
+    void getIsolatedImage(url).catch((error: any) => {
+      console.warn(`[Isolation] chauffe échouée (${String(error?.code || error?.message || 'erreur').slice(0, 60)}) provider=${isolationProvider()}`);
+    });
   }
 }
 

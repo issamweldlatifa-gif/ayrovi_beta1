@@ -1,11 +1,9 @@
 import { createHash } from 'node:crypto';
 import { ScrapedProduct, StoreType, ProductVariants } from '../types';
-import { fetchSafeRemote, readLimitedText, resolveSafeHttpUrl } from '../services/safeUrl';
+import { resolveSafeHttpUrl } from '../services/safeUrl';
 import { parseProductPageHtml, type ParsedProductPage } from './productPageParser';
-import { fetchRenderedProductPage, RenderedPageError } from './renderedPageFetcher';
 import { detectMerchantStore } from './merchantDomains';
-import { raceProbes, type ProbeAttempt } from './probeRace';
-import { readerHeaders, readerJinaHeadstartMs, readerProbePlan } from './readerFingerprint';
+import { brightDataReady, fetchBrightDataHtml } from './brightData';
 
 /** Entier d'environnement borné : une valeur absurde ne doit pas geler une lecture. */
 function positiveIntEnv(key: string, fallback: number, min: number, max: number): number {
@@ -20,6 +18,24 @@ function positiveIntEnv(key: string, fallback: number, min: number, max: number)
  * lecture. `pageUrl` : l'URL réellement ouverte chez le client, si elle diffère
  * de l'URL demandée (redirections marchand).
  */
+/**
+ * Journal d'une lecture (une ligne par lien). Hôte seulement : ni chemin ni
+ * requête, pour ne jamais journaliser de jeton ou d'identifiant de session.
+ */
+function logReadOutcome(url: string, storeType: StoreType, result: MerchantScrapeResult, ms: number): void {
+  let host = 'invalid-url';
+  try { host = new URL(url).hostname; } catch { /* URL déjà rejetée en amont */ }
+  console.info('[scraper] read', JSON.stringify({
+    host,
+    store: storeType,
+    ok: Boolean(result.data && result.verified),
+    partial: Boolean(result.data && !result.verified),
+    price: result.data?.price ?? null,
+    failureCode: result.failureCode,
+    ms,
+  }));
+}
+
 export interface ScrapeOptions {
   pageHtml?: string | null;
   pageUrl?: string | null;
@@ -36,7 +52,7 @@ export interface MerchantScrapeResult {
    * côté client, re-parsée ici par le MÊME parseur, et non une donnée fabriquée
    * par le client. Le prix reste calculé côté serveur (§45).
    */
-  provider: 'direct' | 'none' | 'jina' | 'scraperapi' | 'scrapingbee' | 'brightdata' | 'webview';
+  provider: 'direct' | 'none' | 'brightdata' | 'webview';
   method: ParsedProductPage['priceSource'] | 'none';
   failureCode: string | null;
 }
@@ -377,22 +393,12 @@ export class SmartLinkScraper {
   }
 
   /**
-   * Lecture d'une fiche : sondes PARALLÈLES (05/10/2026), plus de cascade.
+   * Lecture d'une fiche : UNIQUEMENT via Bright Data Web Unlocker.
    *
-   * Mesure à l'origine du changement : la cascade séquentielle
-   * (mobile 7 s → bureau 6 s → Jina 18 s → rendu payant 18 s) faisait attendre
-   * le client jusqu'à ~49 s, et « plus de vingt secondes » avant l'affichage
-   * d'un produit chiffré. Les sondes sont indépendantes : elles partent
-   * maintenant ensemble, la première qui publie un prix gagne, les autres sont
-   * annulées.
-   *
-   * Budgets (surchargeables) : mobile/bureau `AYROVIX_DIRECT_TIMEOUT_MS` (6,5 s),
-   * lecteur Jina `AYROVIX_JINA_TIMEOUT_MS` (12 s), rendu payant
-   * `AYROVIX_RENDER_TIMEOUT_MS` (18 s, filet de sécurité inchangé).
-   *
-   * Le lecteur Jina part différé de ~1,2 s : sur une fiche que la lecture
-   * directe lit du premier coup, il n'est jamais appelé — aucun appel externe
-   * supplémentaire n'est dépensé pour rien.
+   * Décision (12/10/2026) : aucun lien marchand n'est plus lu directement depuis
+   * le serveur. Sans BRIGHTDATA_API_KEY + BRIGHTDATA_ZONE, aucun appel n'est
+   * fait et la lecture échoue proprement (BRIGHTDATA_NOT_CONFIGURED).
+   * Budget : AYROVIX_BRIGHTDATA_TIMEOUT_MS (25 s par défaut).
    */
   private async scrapeWithHttp(url: string, storeType: StoreType, options: ScrapeOptions = {}): Promise<MerchantScrapeResult> {
     // ── 0. Page fournie par le client (WebView) : lecture locale, zéro réseau ──
@@ -412,138 +418,44 @@ export class SmartLinkScraper {
       }
     }
 
-    const directTimeoutMs = positiveIntEnv('AYROVIX_DIRECT_TIMEOUT_MS', 6_500, 250, 15_000);
-    const jinaTimeoutMs = positiveIntEnv('AYROVIX_JINA_TIMEOUT_MS', 12_000, 250, 30_000);
+    const brightDataTimeoutMs = positiveIntEnv('AYROVIX_BRIGHTDATA_TIMEOUT_MS', 25_000, 250, 60_000);
+    const startedAt = Date.now();
+    const outcome = await this.readViaBrightData(url, storeType, brightDataTimeoutMs);
+    logReadOutcome(url, storeType, outcome, Date.now() - startedAt);
+    return outcome;
+  }
 
-    /*
-     * EMPREINTE DE LECTEUR FIXÉE (Phase 1, 06/10/2026 — readerFingerprint.ts).
-     *
-     * Avant : l'agent mobile ET l'agent bureau partaient EN MÊME TEMPS, la
-     * première sonde qui lisait un prix gagnait. Mesures 04–06/10/2026 sur la
-     * même URL Amazon : le mobile a rendu une fiche lisible (693 Ko,
-     * `a-price-whole`), le bureau trois coquilles de 3,8 Ko puis une vraie page
-     * de 842 Ko contenant **aucune** ancre de prix. Deux requêtes marchandes par
-     * lecture dont une perdue, et un comportement qui changeait sans qu'une
-     * ligne ne bouge : ce n'était pas une stratégie, c'était un tirage au sort.
-     *
-     * Maintenant : l'empreinte fixée par store part SEULE ; l'autre n'est qu'un
-     * repli DIFFÉRÉ (readerFallbackDelayMs, 2,5 s par défaut) qui ne coûte rien
-     * quand la première lit. Réglable sans redéploiement :
-     *   AYROVIX_READER_PROFILE_AMAZON=mobile|desktop  (ou AYROVIX_READER_PROFILE)
-     *   AYROVIX_READER_FALLBACK_MS=2500
-     */
-    const attempts: ProbeAttempt<MerchantScrapeResult>[] = readerProbePlan(storeType).map((step) => ({
-      id: step.id,
-      timeoutMs: directTimeoutMs,
-      delayMs: step.delayMs,
-      run: (signal) => this.probeDirectHtml(url, storeType, readerHeaders(step.profile), signal),
-    }));
-
-    // Zalando/Alltricks coupent l'IP Render (timeout 0 octet / 403 Akamai).
-    // r.jina.ai lit la page comme un navigateur et rend le HTML+JSON-LD.
-    // Coupure : AYROVI_JINA_READER=false
-    if (process.env.AYROVI_JINA_READER !== 'false') {
-      attempts.push({
-        id: 'jina',
-        timeoutMs: jinaTimeoutMs,
-        delayMs: readerJinaHeadstartMs(),
-        run: (signal) => this.probeJinaReader(url, storeType, signal),
-      });
+  private async readViaBrightData(url: string, storeType: StoreType, timeoutMs: number): Promise<MerchantScrapeResult> {
+    if (!brightDataReady()) {
+      return { data: null, verified: false, provider: 'none', method: 'none', failureCode: 'BRIGHTDATA_NOT_CONFIGURED' };
     }
-
-    // ── ÉTAPE A — course des sondes gratuites ─────────────────────────────────
-    const raced = await raceProbes(attempts, {
-      isWinner: (result) => Number(result.data?.price || 0) > 0,
-      budgetMs: attempts.reduce((max, attempt) => Math.max(max, (attempt.delayMs || 0) + attempt.timeoutMs), 0),
-    });
-    if (raced.winner) return raced.winner.value;
-
-    // Meilleur repli : ce qu'une sonde a su lire même sans prix (titre, images).
-    const partial = raced.fallback?.value ?? null;
-    const directFailure = raced.failures.find((failure) => failure.id.startsWith('direct_'))?.error
-      || (attempts.some((attempt) => attempt.id === 'direct_mobile') ? 'DIRECT_PRICE_NOT_FOUND' : 'DIRECT_UNAVAILABLE');
-
-    // ── ÉTAPE B — rendu payant, uniquement si l'étape A n'a pas donné de prix ──
     try {
-      const rendered = await fetchRenderedProductPage(url);
-      const parsed = parseProductPageHtml(rendered.html, url, storeType);
-      if (parsed.price > 0) {
-        return { data: parsed, verified: true, provider: rendered.provider, method: parsed.priceSource, failureCode: null };
-      }
-      return {
-        data: parsed.title || parsed.images.length ? parsed : partial?.data ?? null,
-        verified: false,
-        provider: rendered.provider,
-        method: 'none',
-        failureCode: 'PRICE_NOT_FOUND_AFTER_RENDER',
-      };
-    } catch (error: any) {
-      const code = error instanceof RenderedPageError ? error.code : 'RENDER_UPSTREAM_ERROR';
-      const provider = error instanceof RenderedPageError && error.provider ? error.provider : 'none';
-      return {
-        data: partial?.data ?? null,
-        verified: false,
-        provider,
-        method: 'none',
-        failureCode: code === 'RENDER_PROVIDER_NOT_CONFIGURED' && directFailure !== 'DIRECT_PRICE_NOT_FOUND'
-          ? directFailure
-          : code,
-      };
+      const result = await this.probeBrightData(url, storeType, AbortSignal.timeout(timeoutMs));
+      if (result) return result;
+      return { data: null, verified: false, provider: 'none', method: 'none', failureCode: 'BRIGHTDATA_EMPTY_PAGE' };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '';
+      const failureCode = error instanceof Error && error.name === 'TimeoutError'
+        ? 'BRIGHTDATA_TIMEOUT'
+        : message.startsWith('BRIGHTDATA_') ? message : 'BRIGHTDATA_FAILED';
+      return { data: null, verified: false, provider: 'none', method: 'none', failureCode };
     }
   }
 
-  /** Sonde directe : GET la page marchande avec un agent donné. Jamais de prix inventé. */
-  private async probeDirectHtml(
-    url: string,
-    storeType: StoreType,
-    headers: Record<string, string>,
-    signal: AbortSignal,
-  ): Promise<MerchantScrapeResult | null> {
-    const response = await fetchSafeRemote(url, { signal, headers });
-    if (!response.ok) {
-      await response.body?.cancel().catch(() => undefined);
-      throw new Error(`DIRECT_HTTP_${response.status}`);
-    }
-    const contentType = response.headers.get('content-type') || '';
-    if (contentType && !contentType.includes('text/html') && !contentType.includes('application/xhtml+xml')) {
-      throw new Error('DIRECT_NOT_HTML');
-    }
-    const parsed = parseProductPageHtml(await readLimitedText(response, 2_000_000), url, storeType);
-    if (parsed.price > 0) {
-      return { data: parsed, verified: true, provider: 'direct', method: parsed.priceSource, failureCode: null };
-    }
-    return parsed.title || parsed.images.length
-      ? { data: parsed, verified: false, provider: 'direct', method: 'none', failureCode: 'DIRECT_PRICE_NOT_FOUND' }
-      : null;
-  }
-
-  /** Lecteur Jina : lit la page comme un navigateur (HTML + JSON-LD rendus). */
-  private async probeJinaReader(
+  /** Bright Data Web Unlocker : seul chemin de lecture d'une fiche marchande. */
+  private async probeBrightData(
     url: string,
     storeType: StoreType,
     signal: AbortSignal,
   ): Promise<MerchantScrapeResult | null> {
-    const reader = `https://r.jina.ai/${url}`;
-    const response = await fetchSafeRemote(reader, {
-      signal,
-      headers: {
-        Accept: 'text/html,application/xhtml+xml,text/plain',
-        'X-Return-Format': 'html',
-        'User-Agent': 'Mozilla/5.0 (compatible; AYROVI-reader/1.0)',
-      },
-    });
-    if (!response.ok) {
-      await response.body?.cancel().catch(() => undefined);
-      throw new Error(`JINA_HTTP_${response.status}`);
-    }
-    const html = await readLimitedText(response, 2_000_000);
-    if (!html.trim() || !/<(?:html|body|script|meta)\b/i.test(html)) return null;
+    const html = await fetchBrightDataHtml(url, storeType, signal);
+    if (!html) return null;
     const parsed = parseProductPageHtml(html, url, storeType);
     if (parsed.price > 0) {
-      return { data: parsed, verified: true, provider: 'jina', method: parsed.priceSource, failureCode: null };
+      return { data: parsed, verified: true, provider: 'brightdata', method: parsed.priceSource, failureCode: null };
     }
     return parsed.title || parsed.images.length
-      ? { data: parsed, verified: false, provider: 'jina', method: 'none', failureCode: 'JINA_PRICE_NOT_FOUND' }
+      ? { data: parsed, verified: false, provider: 'brightdata', method: 'none', failureCode: 'BRIGHTDATA_PRICE_NOT_FOUND' }
       : null;
   }
 

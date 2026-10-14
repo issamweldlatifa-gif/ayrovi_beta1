@@ -1,0 +1,162 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { describe, expect, it } from 'vitest';
+
+const read = (relative: string) => readFileSync(fileURLToPath(new URL(relative, import.meta.url)), 'utf8');
+
+const lens = read('../app/lens.tsx');
+const skeleton = read('../src/features/lens/LensSearchSkeleton.tsx');
+const grid = read('../src/features/lens/LensResultsGrid.tsx');
+const card = read('../src/features/lens/LensResultCard.tsx');
+const product = read('../src/features/lens/LensProductView.tsx');
+const help = read('../src/features/lens/LensHelpView.tsx');
+const palette = read('../src/features/lens/lensPalette.ts');
+const nativeTokens = read('../src/design/tokens.mobile.ts');
+
+function contrastWithWhite(hex: string): number {
+  const channels = hex.match(/[0-9a-f]{2}/gi)?.map((value) => Number.parseInt(value, 16) / 255) ?? [];
+  const linear = channels.map((value) => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4);
+  const luminance = 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
+  return 1.05 / (luminance + 0.05);
+}
+
+describe('parcours AYROVIX Lens unifié', () => {
+  it('ouvre directement la caméra et traite le premier consentement sans lanceur intermédiaire', () => {
+    expect(lens).toContain('testID="lens-camera-experience"');
+    expect(lens).toContain('<CameraView');
+    expect(lens).toContain("permission.status !== 'undetermined'");
+    expect(lens).toContain('void requestPermission()');
+    expect(lens).toContain("goBack('/')");
+    expect(lens).not.toContain('LensLauncher');
+    expect(lens).not.toContain('Segmented');
+  });
+
+  it('conserve une seule requête annulable par action, sans boucle de relance', () => {
+    expect(lens).toContain('type SearchJob = (signal: AbortSignal) => Promise<void>');
+    expect(lens).toContain('requestRef.current?.abort()');
+    expect(lens).toContain('const controller = new AbortController()');
+    expect(lens).toContain('await job(controller.signal)');
+    expect(lens).toContain('if (!signal.aborted) showSearch');
+    expect(lens).not.toContain('setInterval(');
+    expect(lens).not.toMatch(/setTimeout\([^)]*retry/i);
+  });
+
+  it('garde la photo sous une feuille réellement ajustable pendant le chargement et les résultats', () => {
+    expect(lens).toContain('setPreviewUri(picture.uri)');
+    expect(lens).toContain('accessibilityLabel={t(\'lens.capturedPhoto\')}');
+    expect(lens).toContain('<SearchSheet top={sheetTop} expandedTop={insets.top + 58}>');
+    expect(lens).toContain('PanResponder.create');
+    expect(lens).toContain('top: expandedTop');
+    expect(lens).toContain('onMoveShouldSetPanResponderCapture');
+    expect(lens).toContain('testID="lens-search-sheet-handle"');
+    expect(lens).toContain('<LensSearchSkeleton onCancel={cancelSearch} />');
+    expect(lens).toContain('removePrivateCapture');
+    expect(lens).toContain('if (file.exists) file.delete()');
+  });
+});
+
+describe('chargement et résultats Lens', () => {
+  it('charge avec quatre cartes grises à deux colonnes plutôt qu’un panneau vide', () => {
+    expect(skeleton).toContain('[0, 1, 2, 3]');
+    expect(skeleton).toContain('lens-skeleton-card-');
+    expect(skeleton).toContain('flexWrap: \'wrap\'');
+    expect(skeleton).toContain('const GRID_GAP = 4');
+    expect(skeleton).toContain("width: '49.3%'");
+    expect(skeleton).toContain('minOpacity={0.48}');
+    expect(skeleton).toContain("t('common.cancel')");
+    expect(skeleton).not.toContain('ActivityIndicator');
+  });
+
+  it('virtualise une grille commerciale compacte à deux colonnes avec favoris', () => {
+    expect(grid).toContain('<FlatList');
+    expect(grid).toContain('numColumns={2}');
+    expect(grid).toContain('removeClippedSubviews');
+    expect(card).toContain('numberOfLines={2}');
+    expect(card).toContain('lens-favorite-');
+    expect(card).toContain('event.stopPropagation()');
+    expect(card).toContain('aspectRatio: 4 / 5');
+    expect(card).toContain('candidate.brand?.trim() || candidate.source.trim()');
+    expect(card).not.toContain('cardOptions');
+  });
+
+  it('réserve le rouge aux promotions, le jaune aux étoiles et le bleu aux actions/minuteurs', () => {
+    expect(palette).toContain("export { LENS_COLORS } from '@/design/tokens.mobile'");
+    expect(nativeTokens).toContain("sale: '#D00000'");
+    expect(nativeTokens).toContain("star: '#F5B800'");
+    expect(nativeTokens).toContain('export const ACTION_GRADIENT');
+    expect(nativeTokens).toContain('export const WAITING_GRADIENTS');
+    const action = /ACTION_GRADIENT = \[([^\]]+)\]/.exec(nativeTokens)?.[1].match(/#[0-9A-F]{6}/gi) ?? [];
+    const waiting = /WAITING_GRADIENTS = \[([\s\S]*?)\n\]/.exec(nativeTokens)?.[1].match(/#[0-9A-F]{6}/gi) ?? [];
+    expect(action.length).toBeGreaterThanOrEqual(3);
+    expect(action.every((color) => contrastWithWhite(color) >= 4.5)).toBe(true);
+    expect([...action, ...waiting].every((color) => Number.parseInt(color.slice(3, 5), 16) < Number.parseInt(color.slice(5, 7), 16) + 90)).toBe(true);
+    expect(card).toContain('color={LENS_COLORS.star}');
+    expect(card).toContain('backgroundColor: LENS_COLORS.sale');
+    expect(product).toContain('ACTION_GRADIENT[2]');
+  });
+});
+
+describe('fiche produit Lens continue', () => {
+  it('place un chrome progressif avant un seul défilement vertical et une grande galerie recouverte par la fiche', () => {
+    const header = product.indexOf('styles.productHeader');
+    const verticalScroll = product.indexOf('<Animated.ScrollView');
+    expect(header).toBeGreaterThan(0);
+    expect(verticalScroll).toBeGreaterThan(header);
+    expect(product).toContain('const chromeOpacity = scrollY.interpolate');
+    expect(product).toContain('Math.min(560, Math.round(width * 1.2))');
+    expect(product).toContain('contentFit="contain"');
+    expect(product).toContain('styles.detailsSheet');
+    expect(product).toContain('marginTop: -SPACE[4]');
+    expect(product).toContain('snapToOffsets={[0, expandedOffset]}');
+    expect(product).toContain('snapToEnd={false}');
+    expect(product).toContain('testID="lens-product-sheet-handle"');
+  });
+
+  it('propose balayage, pincement et double toucher dans la galerie plein écran', () => {
+    expect(product).toContain('function ZoomableGalleryImage');
+    expect(product).toContain('touches.length >= 2');
+    expect(product).toContain('Math.min(4,');
+    expect(product).toContain('now - lastTapAt.current <= 300');
+    expect(product).toContain('scrollEnabled={!zoomed}');
+    expect(product).toContain('lens-gallery-zoom-image');
+  });
+
+  it('utilise des images réelles pour les couleurs et masque les sélecteurs inutiles', () => {
+    expect(product).toContain('candidate.colorImages');
+    expect(product).toContain("lensGallery(candidate, null, 'thumb')");
+    expect(product).toContain('if (candidate.colors.length <= 1) return null');
+    expect(product).toContain('if (values.length <= 1) return null');
+    expect(product).not.toMatch(/backgroundColor:\s*color\b/);
+  });
+
+  it('met à jour le prix de la variante et garde une seule action panier signée et guidée', () => {
+    expect(product).toContain('const displayCandidate');
+    expect(product).toContain('<LensPriceBlock candidate={displayCandidate}');
+    expect(product).toContain('buildCartPayload');
+    expect(product).toContain('addExternalToCart');
+    expect(product).toContain('priceVerificationStatus: candidate.priceVerificationStatus');
+    expect(product).not.toContain("selection.option.priceToken ? 'VERIFIED'");
+    expect(product).toContain('setSizeOpenRequest');
+    expect(product).toContain('disabledValues={sizeUnavailable}');
+    expect(product).toContain('testID="lens-add-to-cart"');
+    expect(product).toContain('styles.confirmationSheet');
+    expect(product).not.toContain('LensReviewForm');
+    expect(product).not.toContain('WebView');
+  });
+
+  it('garde description, caractéristiques, matière, coupe et entretien dans des accordéons fermés', () => {
+    expect(product).toContain('const [open, setOpen] = useState(false)');
+    expect(product).toContain('lens-accordion-description');
+    expect(product).toContain('lens-accordion-characteristics');
+    expect(product).toContain('lens-accordion-material');
+    expect(product).toContain('lens-accordion-fit');
+    expect(product).toContain('lens-accordion-care');
+    expect(product).not.toContain('defaultOpen');
+  });
+
+  it('garde l’aide courte et strictement orientée prise de vue', () => {
+    expect(help).toContain('const TIPS');
+    expect(help.match(/key: 'lens\.help\.step/g)).toHaveLength(4);
+    expect(help).not.toMatch(/estimate|verification|stock/i);
+  });
+});

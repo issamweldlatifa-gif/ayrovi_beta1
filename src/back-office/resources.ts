@@ -259,15 +259,10 @@ const LEGACY_RESOURCE_META: Record<string, {
     nav: { group: 'Contenu', order: 60, icon: 'Tag' },
   },
   'hero-slides': {
-    key: 'cms.hero-slides', module: 'cms', domain: 'CONTENT', label: 'Hero slides', singular: 'slide',
-    description: 'Diaporama du hero (table `hero_slides`).',
-    section: 'hero', aliases: ['hero-slides'], resourceType: 'hero_visual', nav: null,
-    navlessReason: 'Table `hero_slides` éditée par le moteur générique ; l’écran visible est « Visuels d’accueil » (content.hero-visuals). Deep links `hero` et `hero-slides` conservés.',
-  },
-  announcements: {
-    key: 'cms.announcements', module: 'cms', domain: 'CONTENT', label: 'Ticker annonces', singular: 'annonce',
-    description: 'Bandeau d’annonces du haut de page.',
-    section: 'ticker', resourceType: 'announcement', nav: { group: 'Contenu', order: 110, icon: 'Bell' },
+    key: 'cms.hero-slides', module: 'cms', domain: 'CONTENT', label: 'Hero', singular: 'carte',
+    description: 'Hero unique et dynamique : réglages (activation, autoplay, nombre de cartes), cartes, brouillons, aperçu visiteur et publication.',
+    section: 'hero', aliases: ['hero-slides'], resourceType: 'hero_visual',
+    nav: { group: 'Contenu', order: 71, icon: 'LayoutGrid' },
   },
   'public-nav': {
     key: 'cms.public-nav', module: 'cms', domain: 'CONTENT', label: 'Barre sous l’en-tête', singular: 'onglet public',
@@ -764,14 +759,6 @@ const CUSTOM_RESOURCES: BackOfficeResourceDescriptor[] = [
     columns: [], fields: [], actions: ['list', 'view', 'edit', 'approve'], audit: { module: 'MAGAZINE_AGENT', resourceType: 'magazine_draft' },
   },
   {
-    key: 'content.hero-visuals', label: 'Visuels d’accueil', singular: 'visuel', module: 'cms', domain: 'CONTENT',
-    description: 'Visuels du hero d’accueil (table `hero_visuals`, distincte de `hero_slides`).',
-    navPermission: 'content:read', permissions: { list: 'cms:read', edit: 'cms:write' },
-    section: 'hero-visuals', nav: { group: 'Contenu', order: 70, icon: 'Image' },
-    surface: 'custom', component: 'HeroVisualsPage', api: { prefix: '/hero-visuals', kind: 'generic' },
-    columns: [], fields: [], actions: ['list', 'view', 'edit'], audit: { module: 'HERO_VISUALS', resourceType: 'hero_visual' },
-  },
-  {
     key: 'content.lens-section', label: 'LENS', singular: 'section', module: 'cms', domain: 'CONTENT',
     description: 'Section Lens de la page d’accueil.', navPermission: 'content:read', permissions: { list: 'cms:read', edit: 'cms:write' },
     section: 'lens-section', nav: { group: 'Contenu', order: 80, icon: 'LensBox' },
@@ -784,6 +771,13 @@ const CUSTOM_RESOURCES: BackOfficeResourceDescriptor[] = [
     section: 'home-sections', nav: { group: 'Contenu', order: 90, icon: 'LayoutGrid' },
     surface: 'custom', component: 'HomeSectionsPage', api: { prefix: '/home-blocks', kind: 'generic' },
     columns: [], fields: [], actions: ['list', 'view', 'edit'], audit: { module: 'HOME_SECTIONS', resourceType: 'home_block' },
+  },
+  {
+    key: 'content.home-featured', label: 'Section à la une', singular: 'section', module: 'cms', domain: 'CONTENT',
+    description: 'Publication « à la une » affichée sous les onglets de l’accueil mobile.', navPermission: 'content:read', permissions: { list: 'cms:read', edit: 'cms:write' },
+    section: 'home-featured', nav: { group: 'Contenu', order: 91, icon: 'Sparkles' },
+    surface: 'custom', component: 'HomeFeaturedPage', api: { prefix: '/home-featured', kind: 'generic' },
+    columns: [], fields: [], actions: ['list', 'view', 'edit'], audit: { module: 'HOME_FEATURED', resourceType: 'home_featured' },
   },
   {
     key: 'marketing.ai-discovery', label: 'Découverte IA', singular: 'rapport', module: 'marketing', domain: 'CONTENT',
