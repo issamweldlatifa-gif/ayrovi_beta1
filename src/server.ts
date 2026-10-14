@@ -7,7 +7,7 @@ import compression from 'compression';
 import path from 'path';
 import fs from 'fs';
 import { KNOWN_PAGE_PATHS, isKnownPagePath, sitemapRoutes } from '../shared/publicSeo';
-import { ANDROID_APP_LINK_ENV, appLinksDiagnostics, appLinksFromEnv } from '../shared/appLinks';
+import { ANDROID_APP_LINK_ENV, appLinksDiagnostics, appLinksForDeployment } from '../shared/appLinks';
 import { deploymentIdentity } from './services/deploymentIdentity';
 import { createHash, randomUUID } from 'node:crypto';
 import type { Server } from 'node:http';
@@ -365,12 +365,12 @@ app.get('/sitemap.xml', (_req, res) => {
 
 // App Links (P6) : النصف الثاني لـ`android.intentFilters` في `apps/mobile/app.json`.
 // أندرويد ما يفتحش روابط النطاق في التطبيق كان ما لقاش هذا الملف وبصمة صحيحة فيه.
-// البصمات ما تتكتبش في الكود: تتقرا من البيئة (`ANDROID_APP_LINK_SHA256`)، لأنّ
-// صاحب المشروع هو اللي يولّد المفتاح، وكذلك لأنّ Google Play يعيد توقيع الحزمة
-// بمفتاح ثانٍ لازم يزاد هو أيضاً. متغيّر فارغ ⇒ 404 صريح: ملف غالط أسوأ من ملف
-// غايب، لأنه يوهم بالعمل ثم يُرفض بلا إشارة.
+// إنتاج/Play يجي دائماً من البيئة. نشر `arena/*` يزيد وحده شهادة الـdebug العمومية
+// لحزمة `.demo` فقط؛ بهذا الـAPK المنشور يتجرّب من غير ما نخترع بصمة إنتاج أو
+// نعطي شهادة debug صلاحية `app.ayrovi.mobile`. خارج العرض، ضبط ناقص ⇒ 404 صريح:
+// ملف غالط أسوأ من ملف غايب، لأنه يوهم بالعمل ثم يُرفض بلا إشارة.
 app.get('/.well-known/assetlinks.json', (_req, res) => {
-  const statement = appLinksFromEnv(process.env);
+  const statement = appLinksForDeployment(process.env);
   if (!statement) {
     /* الرسالة تسمّي المتغيّر الناقص بالاسم. قول «زيد البصمات» والبصمات موجودة
        (الناقص أسماء الحزم) يعطي 404 بلا تفسير — والناس تحسب الروابط مكسورة. */

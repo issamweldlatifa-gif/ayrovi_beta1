@@ -35,13 +35,6 @@ services:
         sync: false
       - key: GOOGLE_CLIENT_ID
         sync: false
-      # APK de démonstration : clé debug fixe, publique et versionnée. Elle
-      # autorise uniquement le package `.demo`; la future app Play conservera
-      # ses propres empreintes de production dans ses variables dédiées.
-      - key: ANDROID_APP_LINK_PACKAGES
-        value: app.ayrovi.mobile.demo
-      - key: ANDROID_APP_LINK_SHA256
-        value: 8E:20:AB:BB:68:D8:AE:88:21:C6:08:A5:77:C7:DB:CD:97:80:66:B2:86:7C:D5:BF:84:7B:3C:2E:5D:A1:52:53
       - key: GOOGLE_CLIENT_SECRET
         sync: false
       - key: GOOGLE_CALLBACK_URL

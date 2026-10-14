@@ -12,11 +12,14 @@
 import { describe, expect, test } from 'vitest';
 import {
   ANDROID_APP_LINK_DEMO_PACKAGE,
+  ANDROID_APP_LINK_DEMO_SHA256,
   ANDROID_APP_LINK_ENV,
   ANDROID_APP_LINK_PACKAGE,
   ANDROID_APP_LINK_PACKAGES_ENV,
   ANDROID_APP_LINK_RELATION,
+  RENDER_GIT_BRANCH_ENV,
   appLinksDiagnostics,
+  appLinksForDeployment,
   appLinksFromEnv,
   assetLinksStatement,
   parseAppLinkPackages,
@@ -147,6 +150,53 @@ describe('البيان الذي يُنشر', () => {
         sha256_cert_fingerprints: [SIGNING, PLAY],
       },
     }]);
+  });
+});
+
+describe('البيان المنشور حسب هوية النشر', () => {
+  test('بلا ضبط وعلى `main`: ما نفوّضوش حتى حزمة بمفتاح تجريبي', () => {
+    expect(appLinksForDeployment({})).toBeNull();
+    expect(appLinksForDeployment({ [RENDER_GIT_BRANCH_ENV]: 'main' })).toBeNull();
+  });
+
+  test('نشر Render متاع `arena/*` يفوّض APK العرض بشهادته الثابتة فقط', () => {
+    const statement = appLinksForDeployment({
+      [RENDER_GIT_BRANCH_ENV]: 'arena/9fd9a9fc-ayrovi-beta1',
+    });
+    expect(statement).toEqual([{
+      relation: [ANDROID_APP_LINK_RELATION],
+      target: {
+        namespace: 'android_app',
+        package_name: ANDROID_APP_LINK_DEMO_PACKAGE,
+        sha256_cert_fingerprints: [ANDROID_APP_LINK_DEMO_SHA256],
+      },
+    }]);
+  });
+
+  test('بصمة الإنتاج لا تختلط أبداً ببصمة demo', () => {
+    const statement = appLinksForDeployment({
+      [RENDER_GIT_BRANCH_ENV]: 'arena/9fd9a9fc-ayrovi-beta1',
+      [ANDROID_APP_LINK_ENV]: SIGNING,
+      [ANDROID_APP_LINK_PACKAGES_ENV]: ANDROID_APP_LINK_PACKAGE,
+    }) as Array<Record<string, any>>;
+    const byPackage = Object.fromEntries(statement.map((entry) => [
+      entry.target.package_name,
+      entry.target.sha256_cert_fingerprints,
+    ]));
+    expect(byPackage).toEqual({
+      [ANDROID_APP_LINK_PACKAGE]: [SIGNING],
+      [ANDROID_APP_LINK_DEMO_PACKAGE]: [ANDROID_APP_LINK_DEMO_SHA256],
+    });
+  });
+
+  test('ضبط demo الصريح ما يكرّرش البيان ولا البصمة', () => {
+    const statement = appLinksForDeployment({
+      [RENDER_GIT_BRANCH_ENV]: 'arena/9fd9a9fc-ayrovi-beta1',
+      [ANDROID_APP_LINK_ENV]: ANDROID_APP_LINK_DEMO_SHA256,
+      [ANDROID_APP_LINK_PACKAGES_ENV]: ANDROID_APP_LINK_DEMO_PACKAGE,
+    }) as Array<Record<string, any>>;
+    expect(statement).toHaveLength(1);
+    expect(statement[0].target.sha256_cert_fingerprints).toEqual([ANDROID_APP_LINK_DEMO_SHA256]);
   });
 });
 

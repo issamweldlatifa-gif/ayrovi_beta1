@@ -145,7 +145,15 @@ jobs:
             echo "::error title=Empreinte de démonstration::introuvable — la clé fixe n'a pas pu être importée"
             exit 1
           fi
-          echo "::notice title=Empreinte de démonstration::$SHA"
+          # Le serveur publie cette valeur sur les déploiements `arena/*`.
+          # Comparer à la clé réellement importée empêche un assetlinks 200 mais
+          # inutilisable après un remplacement accidentel du certificat.
+          DECLARED_SHA=$(sed -n "s/^export const ANDROID_APP_LINK_DEMO_SHA256 = '\([^']*\)';$/\1/p" ../../shared/appLinks.ts)
+          if [ "$SHA" != "$DECLARED_SHA" ]; then
+            echo "::error title=Empreinte App Links incohérente::APK=$SHA serveur=${DECLARED_SHA:-absente}"
+            exit 1
+          fi
+          echo "::notice title=Empreinte de démonstration::$SHA (APK = serveur App Links)"
           echo "ANDROID_DEBUG_SHA256=$SHA" >> "$GITHUB_ENV"
 
       - name: Identifiant + libellé de la démo (dans la CI uniquement)

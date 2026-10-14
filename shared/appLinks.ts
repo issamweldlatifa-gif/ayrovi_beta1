@@ -11,9 +11,11 @@
  *    بمفتاحها. المعنى: لازم زوز بصمات على الأقل (مفتاح الإصدار + مفتاح Play)
  *    وإلاّ التطبيق المثبّت من Play ما يفتحش الروابط.
  *
- * البصمات ما تتكتبش في الكود: تتقرا من متغيّر بيئة (`ANDROID_APP_LINK_SHA256`)
- * لأنّها تتولّد عند صاحب المشروع، و`npm ci` ما عندوش سرّ. متغيّر فارغ = بلا
- * ملف = الموقع يبقى كما هو، والروابط تفتح في المتصفّح (سلوك أندرويد الافتراضي).
+ * بصمات **الإنتاج وGoogle Play** ما تتكتبش في الكود: تتقرا من متغيّر بيئة
+ * (`ANDROID_APP_LINK_SHA256`) لأنّها تتولّد عند صاحب المشروع، و`npm ci` ما
+ * عندوش سرّ. الاستثناء الوحيد هو شهادة APK العرض: مفتاح debug عمومي ومثبّت
+ * أصلاً في الريبو، وننشره آلياً فقط على نشر Render متاع فروع `arena/*`.
+ * متغيّر إنتاج فارغ = بلا تفويض لحزمة الإنتاج؛ الروابط تبقى في المتصفّح.
  *
  * خطأ بصمة (باي واحد ناقص) = ملف ما يتحقّقش أبداً بلا حتى إشارة. علاش هالقد
  * نرفضوا الخطأ بالقوة: نكتبوا هنا نفس ما تعمل أندرويد بالضبط — 32 بايت،
@@ -25,6 +27,15 @@ export const ANDROID_APP_LINK_PACKAGE = 'app.ayrovi.mobile';
 
 /** حزمة العرض التجريبي (`AYROVI Démo`) — بصمة الـdebug key مختلفة. */
 export const ANDROID_APP_LINK_DEMO_PACKAGE = 'app.ayrovi.mobile.demo';
+
+/**
+ * شهادة APK العرض الثابتة، الموثّقة في `apps/mobile/keystores/README.md`.
+ * مفتاح debug عمومي وموجود في الريبو؛ هذه ليست بصمة إنتاج ولا قيمة سرّية.
+ */
+export const ANDROID_APP_LINK_DEMO_SHA256 = '8E:20:AB:BB:68:D8:AE:88:21:C6:08:A5:77:C7:DB:CD:97:80:66:B2:86:7C:D5:BF:84:7B:3C:2E:5D:A1:52:53';
+
+/** Render يوفّر هذا الاسم بنفسه؛ `arena/*` هو نشر العرض، و`main` إنتاج. */
+export const RENDER_GIT_BRANCH_ENV = 'RENDER_GIT_BRANCH';
 
 /** متغيّر البيئة اللي يقرا منه الخادم البصمات (مفصولة بفاصلة). */
 export const ANDROID_APP_LINK_ENV = 'ANDROID_APP_LINK_SHA256';
@@ -145,4 +156,53 @@ export function appLinksFromEnv(env: Record<string, string | undefined>): Array<
     parseAppLinkPackages(env[ANDROID_APP_LINK_PACKAGES_ENV]) || [],
     parseCertificateFingerprints(env[ANDROID_APP_LINK_ENV]) || [],
   );
+}
+
+function statementPackage(entry: Record<string, unknown>): string | null {
+  const target = entry.target;
+  if (!target || typeof target !== 'object') return null;
+  const packageName = (target as Record<string, unknown>).package_name;
+  return typeof packageName === 'string' ? packageName : null;
+}
+
+function statementFingerprints(entry: Record<string, unknown>): string[] {
+  const target = entry.target;
+  if (!target || typeof target !== 'object') return [];
+  const fingerprints = (target as Record<string, unknown>).sha256_cert_fingerprints;
+  return Array.isArray(fingerprints)
+    ? fingerprints.filter((value): value is string => typeof value === 'string')
+    : [];
+}
+
+/**
+ * البيان المنشور فعلياً حسب هوية النشر.
+ *
+ * `render.yaml` لا يقدر يحدّث متغيّرات خدمة Render الموجودة بلا مزامنة Blueprint،
+ * لكن Render يحقن `RENDER_GIT_BRANCH` في كل نشر. لذلك فرع العرض `arena/*` يحصل
+ * دائماً على تفويض **حزمة demo فقط** بالشهادة اللي توقّع APK فعلاً. `main` لا
+ * يحصل على هذا الاستثناء، فلا نعطي مفتاح debug عمومياً صلاحية حزمة الإنتاج.
+ *
+ * إذا وُجدت بصمات إنتاج حقيقية في البيئة، تبقى كل حزمة مرتبطة ببصماتها وحدها؛
+ * لا نخلط بصمة debug مع `app.ayrovi.mobile`.
+ */
+export function appLinksForDeployment(
+  env: Record<string, string | undefined>,
+): Array<Record<string, unknown>> | null {
+  const configured = appLinksFromEnv(env) || [];
+  const branch = (env[RENDER_GIT_BRANCH_ENV] || '').trim().toLowerCase();
+  if (!branch.startsWith('arena/')) return configured.length > 0 ? configured : null;
+
+  const configuredDemo = configured.find((entry) => statementPackage(entry) === ANDROID_APP_LINK_DEMO_PACKAGE);
+  const demoFingerprints = [
+    ...new Set([
+      ...statementFingerprints(configuredDemo || {}),
+      ANDROID_APP_LINK_DEMO_SHA256,
+    ]),
+  ];
+  const demoStatement = assetLinksStatement([ANDROID_APP_LINK_DEMO_PACKAGE], demoFingerprints) || [];
+
+  return [
+    ...configured.filter((entry) => statementPackage(entry) !== ANDROID_APP_LINK_DEMO_PACKAGE),
+    ...demoStatement,
+  ];
 }
