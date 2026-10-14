@@ -80,6 +80,20 @@ export const MEDIA_RATIO = {
 /** Fond derrière une vidéo plein écran (la vidéo ne couvre pas toujours l'écran entier). */
 export const VIDEO_BACKDROP = '#000000';
 
+/**
+ * Palette commerciale fermée de Lens : rouge sans composante orange pour une
+ * baisse de prix, jaune pour une note, neutres pour la caméra. Elle vit avec
+ * les jetons natifs afin que les écrans Lens ne recréent jamais leur palette.
+ */
+export const LENS_COLORS = {
+  sale: '#D00000',
+  star: '#F5B800',
+  cameraScrim: 'rgba(0,0,0,0.48)',
+  cameraControl: 'rgba(20,20,20,0.68)',
+  white: '#FFFFFF',
+  black: '#0A0A0A',
+} as const;
+
 export const REEL_TILE = {
   widthFraction: 0.66,
 } as const;

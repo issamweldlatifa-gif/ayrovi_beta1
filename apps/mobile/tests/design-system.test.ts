@@ -143,6 +143,9 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
       'app/reels-viewer.tsx', // en-tête transparent FIXE au-dessus de la liste plein écran (Reels)
       'src/design/sheet/AppSheet.tsx', // درج موحّد: الورقة والظل فوق المحتوى (إيماءة سحب، بلا Modal)
       'src/design/sheet/SheetBackdrop.tsx', // الظل الخلفي للدرج، يغطي الشاشة تحت الورقة
+      'app/lens.tsx', // caméra plein écran : commandes, cadre et feuille au-dessus du flux vidéo
+      'src/features/lens/LensProductView.tsx', // galerie : en-tête fixe, badges et aide zoom au-dessus des images
+      'src/features/lens/LensResultCard.tsx', // badge promo et favori posés sur la vignette produit
     ]);
     const offenders: string[] = [];
     for (const rel of FILES) {

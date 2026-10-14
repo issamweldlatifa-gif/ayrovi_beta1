@@ -29,6 +29,13 @@ describe('traduction des URL du site', () => {
     expect(resolveDeepLink('https://ayrovi.tn/catalog/')).toBe('/catalog');
   });
 
+  it('tous les anciens liens Lens reviennent au parcours caméra canonique', () => {
+    expect(resolveDeepLink('https://ayrovi.tn/lens')).toBe('/lens');
+    expect(resolveDeepLink('https://ayrovi.tn/lens/help')).toBe('/lens');
+    expect(resolveDeepLink('https://ayrovi.tn/lens/history')).toBe('/lens');
+    expect(resolveDeepLink('ayrovi:///lens/code')).toBe('/lens');
+  });
+
   it('le plus long préfixe gagne — /orders/42 ne tombe pas sur /orders', () => {
     expect(resolveDeepLink('https://ayrovi.tn/orders/42')).toBe('/orders/42');
     expect(resolveDeepLink('https://ayrovi.tn/account/notifications')).toBe('/account/notifications');

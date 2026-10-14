@@ -88,7 +88,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "AYROVI utilise la caméra pour scanner un code-barres ou un QR code et chercher le produit.",
+          "cameraPermission": "AYROVI utilise la caméra pour photographier ou scanner un produit avec Lens.",
           "recordAudioAndroid": false
         }
       ]

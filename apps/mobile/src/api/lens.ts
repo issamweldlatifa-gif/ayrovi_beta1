@@ -465,18 +465,24 @@ export async function analyzeUrl(
   return parseUrlResult(data);
 }
 
-export async function analyzeCode(value: string): Promise<LensSearchResult> {
-  const data = await apiSendData<unknown>('POST', `${LENS_BASE}/analyze-code`, { body: { value }, timeoutMs: LENS_TIMEOUT_MS });
+export async function analyzeCode(value: string, signal?: AbortSignal): Promise<LensSearchResult> {
+  const data = await apiSendData<unknown>('POST', `${LENS_BASE}/analyze-code`, {
+    body: { value }, timeoutMs: LENS_TIMEOUT_MS, signal,
+  });
   return parseSearchResult(data);
 }
 
-export async function analyzeBarcode(code: string): Promise<LensSearchResult> {
-  const data = await apiSendData<unknown>('POST', `${LENS_BASE}/analyze-barcode`, { body: { code }, timeoutMs: LENS_TIMEOUT_MS });
+export async function analyzeBarcode(code: string, signal?: AbortSignal): Promise<LensSearchResult> {
+  const data = await apiSendData<unknown>('POST', `${LENS_BASE}/analyze-barcode`, {
+    body: { code }, timeoutMs: LENS_TIMEOUT_MS, signal,
+  });
   return parseSearchResult(data);
 }
 
-export async function analyzeText(query: string): Promise<LensSearchResult> {
-  const data = await apiSendData<unknown>('POST', `${LENS_BASE}/analyze-text`, { body: { query }, timeoutMs: LENS_TIMEOUT_MS });
+export async function analyzeText(query: string, signal?: AbortSignal): Promise<LensSearchResult> {
+  const data = await apiSendData<unknown>('POST', `${LENS_BASE}/analyze-text`, {
+    body: { query }, timeoutMs: LENS_TIMEOUT_MS, signal,
+  });
   return parseSearchResult(data);
 }
 

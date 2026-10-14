@@ -206,7 +206,9 @@ async function attempt<T>(method: string, path: string, options: SendOptions = {
       ...(form ? { body: form } : body !== undefined ? { body: JSON.stringify(body) } : null),
     });
   } catch (error) {
-    if (isAbort(error)) {
+    // Certains ponts React Native rejettent un abort avec une Error générique :
+    // l’état de notre signal reste alors la source de vérité.
+    if (isAbort(error) || gate.signal.aborted) {
       if (gate.timedOut()) {
         throw new ApiError('timeout', `Délai dépassé (${timeoutMs} ms) : ${path}`, { cause: error });
       }
