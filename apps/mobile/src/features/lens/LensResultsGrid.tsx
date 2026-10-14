@@ -6,6 +6,7 @@ import { AppText, Button } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useT, type TranslationKey } from '@/i18n';
 import { LensResultCard } from './LensResultCard';
+import { LENS_COLORS } from './lensPalette';
 
 export function LensResultsGrid({
   candidates,
@@ -94,10 +95,10 @@ export function LensResultsGrid({
 
 const styles = StyleSheet.create({
   list: { flex: 1 },
-  content: { paddingHorizontal: 12, paddingTop: 4, paddingBottom: 32, gap: 10 },
-  row: { gap: 10, alignItems: 'stretch' },
-  cell: { flex: 1, minWidth: 0, marginBottom: 10 },
-  header: { gap: 8, paddingTop: 2, paddingBottom: 12 },
+  content: { paddingHorizontal: 4, paddingTop: 4, paddingBottom: 32, gap: 4 },
+  row: { gap: 4, alignItems: 'stretch', backgroundColor: LENS_COLORS.white },
+  cell: { flex: 1, minWidth: 0, marginBottom: 4 },
+  header: { gap: 8, paddingHorizontal: 8, paddingTop: 2, paddingBottom: 12 },
   headerRow: { alignItems: 'center', gap: 12 },
   headerCopy: { flex: 1, gap: 2 },
   newSearch: { width: 48, height: 48, borderRadius: 24, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },

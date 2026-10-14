@@ -16,8 +16,9 @@
  */
 import { useRef, useState } from 'react';
 import { goBack } from '@/design/navigation';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -34,7 +35,8 @@ import {
 import { closeProviderBrowser, openProviderSession } from '@/features/auth/browser';
 import { useRememberedAccount, type LastAccount } from '@/features/auth/lastAccount';
 import { GoogleLogo } from '@/design/GoogleLogo';
-import { LINK_BLUE } from '@/design/tokens.mobile';
+import { WaitingBars } from '@/design/WaitingBars';
+import { ACTION_GRADIENT, ACTION_ON_COLOR, LINK_BLUE } from '@/design/tokens.mobile';
 import { useSession } from '@/state/session';
 import { signInWithGoogleNative, googleFailureCode, googleFailureDetail } from '@/features/auth/googleNative';
 
@@ -642,7 +644,7 @@ export default function SignInScreen() {
 
 const styles = StyleSheet.create({
   screen: { gap: 12 },
-  remembered: { alignItems: 'center', gap: 12, paddingHorizontal: 12, paddingVertical: 10 },
+  remembered: { alignItems: 'center', gap: 12, paddingHorizontal: 12, paddingVertical: 10, overflow: 'hidden' },
   avatar: {
     width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center',
   },
@@ -688,23 +690,30 @@ function RememberedAccountButton({ account, label, busy, disabled, onPress }: {
         {
           minHeight: theme.geometry.controlHeight,
           borderRadius: theme.radius.cta,
-          backgroundColor: theme.colors.action,
+          backgroundColor: 'transparent',
           flexDirection: rowDirectionFor(theme.isRTL),
           opacity: disabled && !busy ? 0.5 : pressed ? 0.85 : 1,
         },
       ]}
     >
+      <LinearGradient
+        pointerEvents="none"
+        colors={ACTION_GRADIENT}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[StyleSheet.absoluteFill, { borderRadius: theme.radius.cta }]}
+      />
       <View style={[styles.avatar, { backgroundColor: theme.colors.surface }]}>
         <AppText variant="label" weight="bold" color={theme.colors.ink}>{initial}</AppText>
       </View>
       <View style={styles.rememberedText}>
-        <AppText variant="label" weight="bold" color={theme.colors.onAction}>{label}</AppText>
+        <AppText variant="label" weight="bold" color={ACTION_ON_COLOR}>{label}</AppText>
         <View style={[styles.emailRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
           {account.provider === 'google' ? <GoogleLogo size={14} /> : null}
-          <AppText variant="caption" color={theme.colors.onAction}>{account.email}</AppText>
+          <AppText variant="caption" color={ACTION_ON_COLOR}>{account.email}</AppText>
         </View>
       </View>
-      {busy ? <ActivityIndicator size="small" color={theme.colors.onAction} /> : null}
+      {busy ? <WaitingBars compact light testID="auth-remembered-busy" /> : null}
     </Pressable>
   );
 }

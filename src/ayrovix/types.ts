@@ -50,6 +50,17 @@ export interface AyrovixIdentification {
 
 export type AyrovixChannel = 'image' | 'url' | 'qr' | 'text';
 
+export type AyrovixProductFactSection = 'details' | 'material' | 'fit';
+
+/** Fait marchand lisible : valeur publiée, jamais inférée ni inventée. */
+export interface AyrovixProductFact {
+  /** Clé canonique facultative pour traduire les libellés connus sur le mobile. */
+  key: string | null;
+  label: string;
+  value: string;
+  section: AyrovixProductFactSection;
+}
+
 /** Un candidat produit proposé à l'utilisateur pour confirmation humaine. */
 export interface AyrovixCandidate {
   id: string;
@@ -59,6 +70,8 @@ export interface AyrovixCandidate {
   promo?: AyrovixPromo | null;
   /** Optional descriptive text supplied by the merchant/search provider. */
   description?: string | null;
+  /** Structured facts published by the merchant or SerpApi product profile. */
+  details?: AyrovixProductFact[];
   brand: string | null;
   model: string | null;
   colors: string[];
@@ -147,6 +160,8 @@ export interface AyrovixProduct {
   brand: string | null;
   model: string | null;
   description: string;
+  /** Détails progressifs, strictement lus dans une source produit. */
+  details?: AyrovixProductFact[];
   image: string;
   images: string[];
   /** Images par couleur (clé = couleur minuscule) — 24/09/2026. */

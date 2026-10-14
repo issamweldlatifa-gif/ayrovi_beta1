@@ -118,6 +118,13 @@ describe('enriching the opened merchant page', () => {
     expect(f.loadProduct).not.toHaveBeenCalled();
   });
 
+  it('rejects a neighbouring product path on the same merchant', async () => {
+    const f = { findProduct: vi.fn(async () => found), loadProduct: vi.fn(async () => product) };
+    const out = await enrichProduct(TITLE, { fetchers: f, cacheScope: 'https://shop.test/another-item' });
+    expect(out.images).toEqual([]);
+    expect(f.loadProduct).not.toHaveBeenCalled();
+  });
+
   it('separates same-name products by merchant URL in cache', async () => {
     const f = fetchers();
     await enrichProduct(TITLE, { fetchers: f, cacheScope: 'https://shop-a.test/item' });
@@ -162,7 +169,8 @@ describe('enriching the opened merchant page', () => {
 describe('opened-page enrichment wiring', () => {
   const source = readFileSync('src/ayrovix/services/product.ts', 'utf8');
   it('enriches only a sparse opened page and scopes cache by its merchant URL', () => {
-    expect(source).toContain('if (product.images.length >= 4 && product.sizes.length > 0) return;');
+    expect(source).toContain('product.description.trim().length >= 40');
+    expect(source).toContain('(product.details?.length ?? 0) > 0');
     expect(source).toContain('enrichProduct(product.title, { cacheScope: url })');
     expect(source).toContain('await enrichSparseProduct(product, url);');
   });

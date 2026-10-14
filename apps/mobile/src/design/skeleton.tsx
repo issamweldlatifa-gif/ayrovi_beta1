@@ -18,7 +18,7 @@ import { Animated, Easing, StyleSheet, View, type StyleProp, type ViewStyle } fr
 import { useTheme } from './theme';
 
 export function Skeleton({
-  style, width = '100%', height = 16, radius, testID,
+  style, width = '100%', height = 16, radius, testID, color, minOpacity,
 }: {
   style?: StyleProp<ViewStyle>;
   /** `DimensionValue` : un nombre de points ou un pourcentage (`'80%'`). */
@@ -26,17 +26,22 @@ export function Skeleton({
   height?: number;
   radius?: number;
   testID?: string;
+  /** Une surface spécifique peut renforcer le gris sans créer un autre composant. */
+  color?: string;
+  /** Opacité la plus faible de la pulsation (Lens demande un squelette plus net). */
+  minOpacity?: number;
 }) {
   const theme = useTheme();
   const pulse = useRef(new Animated.Value(1)).current;
   const reduced = theme.motion.reduced === 0;
+  const floor = Math.max(0.1, Math.min(1, minOpacity ?? theme.opacity.skeleton));
 
   useEffect(() => {
     if (reduced) return; // mouvement réduit : bloc statique, lisible
     const loop = Animated.loop(
       Animated.sequence([
         Animated.timing(pulse, {
-          toValue: theme.opacity.skeleton,
+          toValue: floor,
           duration: theme.duration.standard,
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
@@ -51,7 +56,7 @@ export function Skeleton({
     );
     loop.start();
     return () => loop.stop();
-  }, [pulse, reduced, theme.opacity.skeleton, theme.duration.standard]);
+  }, [floor, pulse, reduced, theme.duration.standard]);
 
   return (
     <Animated.View
@@ -63,8 +68,9 @@ export function Skeleton({
           width,
           height,
           borderRadius: radius ?? theme.radius.sm,
-          backgroundColor: theme.colors.line,
-          opacity: reduced ? theme.opacity.skeleton : pulse,
+          backgroundColor: color ?? theme.colors.line,
+          // Mouvement réduit : bloc pleinement visible, seulement immobile.
+          opacity: reduced ? 1 : pulse,
         },
         style,
       ]}

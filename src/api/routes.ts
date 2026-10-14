@@ -15,7 +15,7 @@ import { notifyNewOrder } from '../services/orderNotification';
 import { customerFromRequest, requireCustomer, resolveCustomer } from '../customer/auth';
 import { InvalidImageError, normalizeUploadedImage } from '../services/imageValidation';
 import { isUnsafeHostname, parsePublicHttpUrl, UnsafeUrlError } from '../services/safeUrl';
-import { verifyAyrovixPriceToken } from '../ayrovix/priceQuote';
+import { inspectAyrovixPriceToken, verifyAyrovixPriceToken } from '../ayrovix/priceQuote';
 import { attachOcerexExtractionsToOrder } from '../ocerex/store';
 import { recordOcerexEvent } from '../ocerex/analytics';
 import { funnelVisitorKey, recordFunnelEvent } from '../analytics/funnel';
@@ -240,6 +240,10 @@ export function createApiRouter(
       referenceUrl,
       status: priceVerificationStatus,
     });
+    // Exposer uniquement l'échéance d'une preuve authentique : le mobile peut
+    // afficher le même délai que la caisse, jamais un minuteur inventé.
+    const quoteClaims = quoteValid && ayrovixItem ? inspectAyrovixPriceToken(item.priceToken) : null;
+    const quoteExpiresAt = quoteClaims ? new Date(quoteClaims.expiresAt).toISOString() : null;
 
     if (
       typeof item.title !== 'string' || !item.title.trim() || item.title.length > 500 ||
@@ -320,6 +324,8 @@ export function createApiRouter(
         cartItem,
         duplicate: Boolean(existingItem),
         message: existingItem ? 'Cet article était déjà dans le panier ; sa quantité a été mise à jour.' : 'Article ajouté au panier.',
+        quoteExpiresAt,
+        serverNow: new Date().toISOString(),
         totalItemsCount: summary.items.reduce((sum, current) => sum + current.quantity, 0),
         totalTND: summary.totalTND,
         deliveryTND: summary.deliveryTND,
@@ -444,6 +450,7 @@ export function createApiRouter(
       return res.json({
         success: true,
         sessionId,
+        serverNow: new Date().toISOString(),
         itemCount: summary.items.length,
         totalItemsCount: summary.items.reduce((sum, item) => sum + item.quantity, 0),
         totalTND: summary.totalTND,

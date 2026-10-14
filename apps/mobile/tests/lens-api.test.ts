@@ -47,6 +47,21 @@ describe('Lens — parsing (contrat du site)', () => {
     expect(parsed.availabilityCheckedAt).toBe('2026-10-14T12:00:00.000Z');
   });
 
+  it('lit uniquement les faits structurés complets et ferme leurs sections', () => {
+    const parsed = parseCandidate({
+      ...candidate,
+      details: [
+        { key: 'material', label: 'Matière', value: 'Coton', section: 'material' },
+        { key: null, label: 'Motif', value: 'Rayé', section: 'section-inconnue' },
+        { key: 'fit', label: '', value: 'Regular', section: 'fit' },
+      ],
+    });
+    expect(parsed.details).toEqual([
+      { key: 'material', label: 'Matière', value: 'Coton', section: 'material' },
+      { key: null, label: 'Motif', value: 'Rayé', section: 'details' },
+    ]);
+  });
+
   it('fiche sans identifiant ou lien → erreur malformed', () => {
     expect(() => parseCandidate({ ...candidate, id: '' })).toThrow(ApiError);
     expect(() => parseCandidate({ ...candidate, sourceUrl: '' })).toThrow(ApiError);

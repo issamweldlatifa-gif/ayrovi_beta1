@@ -57,12 +57,23 @@ export interface LensVariantOption {
   priceToken: string | null;
 }
 
+export type LensProductFactSection = 'details' | 'material' | 'fit';
+
+export interface LensProductFact {
+  key: string | null;
+  label: string;
+  value: string;
+  section: LensProductFactSection;
+}
+
 export interface LensCandidate {
   id: string;
   kind: 'catalog' | 'external';
   title: string;
   promo: LensPromo | null;
   description: string | null;
+  /** Détails marchands arrivant progressivement à l'ouverture de la fiche. */
+  details?: LensProductFact[];
   brand: string | null;
   model: string | null;
   colors: string[];
@@ -226,6 +237,23 @@ function parseOffers(value: unknown): LensOffer[] {
   });
 }
 
+function parseProductFacts(value: unknown): LensProductFact[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(isRecord).flatMap((fact) => {
+    const label = str(fact.label).trim();
+    const factValue = str(fact.value).trim();
+    if (!label || !factValue) return [];
+    const section: LensProductFactSection = fact.section === 'material' || fact.section === 'fit'
+      ? fact.section : 'details';
+    return [{
+      key: strOrNull(fact.key),
+      label: label.slice(0, 80),
+      value: factValue.slice(0, 240),
+      section,
+    }];
+  }).slice(0, 18);
+}
+
 function parseCandidateRecord(value: unknown, allowProductShape: boolean): LensCandidate {
   if (!isRecord(value)) throw malformed('fiche produit');
   const sourceUrl = str(value.sourceUrl);
@@ -246,6 +274,7 @@ function parseCandidateRecord(value: unknown, allowProductShape: boolean): LensC
     title: str(value.title),
     promo: parsePromo(value.promo),
     description: strOrNull(value.description),
+    details: parseProductFacts(value.details),
     brand: strOrNull(value.brand),
     model: strOrNull(value.model),
     colors: strList(value.colors),

@@ -51,6 +51,7 @@ export function resolveSelection(candidate: LensCandidate, size: string, color: 
   const requested = !singleOrStandard && Boolean(wantedSize || wantedColor);
   const matches = requested
     ? candidate.variantOptions.filter((option) => option.available
+      && option.availability !== 'unavailable'
       && (!wantedSize || key(option.size) === wantedSize)
       && (!wantedColor || key(option.color) === wantedColor))
     : [];

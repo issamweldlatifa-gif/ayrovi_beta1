@@ -34,6 +34,7 @@ import { OcerexFlow } from '@/features/lens/ocerex/OcerexFlow';
 import { LensProductView } from '@/features/lens/LensProductView';
 import { LensHelpView } from '@/features/lens/LensHelpView';
 import { LENS_COLORS } from '@/features/lens/lensPalette';
+import { mergeLensProduct } from '@/features/lens/productEnrichment';
 
 type Mode = 'camera' | 'code' | 'text';
 type ResultsStage = { kind: 'results'; candidates: LensCandidate[]; eventId: string; excluded: number };
@@ -41,7 +42,7 @@ type Stage =
   | { kind: 'idle' }
   | { kind: 'busy' }
   | ResultsStage
-  | { kind: 'product'; candidate: LensCandidate; back: ResultsStage }
+  | { kind: 'product'; candidate: LensCandidate; back: ResultsStage; enriching: boolean }
   | { kind: 'error'; error: unknown };
 type SearchJob = (signal: AbortSignal) => Promise<void>;
 
@@ -199,6 +200,7 @@ export default function LensScreen() {
   const photoLock = useRef(false);
   const favoriteLocks = useRef(new Set<string>());
   const requestRef = useRef<AbortController | null>(null);
+  const enrichmentRef = useRef<AbortController | null>(null);
   const lastJobRef = useRef<SearchJob | null>(null);
   const ownedPreviewRef = useRef<string | null>(null);
   const mountedRef = useRef(true);
@@ -215,6 +217,7 @@ export default function LensScreen() {
     return () => {
       mountedRef.current = false;
       requestRef.current?.abort();
+      enrichmentRef.current?.abort();
       discardOwnedPreview();
     };
   }, [discardOwnedPreview]);
@@ -339,7 +342,33 @@ export default function LensScreen() {
   const onOpen = useCallback((candidate: LensCandidate) => {
     if (!isOpenableSourceUrl(candidate.sourceUrl) || stage.kind !== 'results') return;
     void markChosen(stage.eventId);
-    setStage({ kind: 'product', candidate, back: stage });
+    enrichmentRef.current?.abort();
+    const controller = new AbortController();
+    enrichmentRef.current = controller;
+    setStage({ kind: 'product', candidate, back: stage, enriching: true });
+
+    // Affichage immédiat de la carte, puis surcouche progressive depuis la
+    // page marchande + SerpApi. Un retour ou un autre produit annule la lecture.
+    void analyzeUrl(candidate.sourceUrl, 'url', false, controller.signal)
+      .then((result) => {
+        if (controller.signal.aborted || !mountedRef.current) return;
+        setStage((current) => current.kind === 'product' && current.candidate.sourceUrl === candidate.sourceUrl
+          ? {
+              ...current,
+              candidate: result.fallback ? current.candidate : mergeLensProduct(current.candidate, result.product),
+              enriching: false,
+            }
+          : current);
+      })
+      .catch(() => {
+        if (controller.signal.aborted || !mountedRef.current) return;
+        setStage((current) => current.kind === 'product' && current.candidate.sourceUrl === candidate.sourceUrl
+          ? { ...current, enriching: false }
+          : current);
+      })
+      .finally(() => {
+        if (enrichmentRef.current === controller) enrichmentRef.current = null;
+      });
   }, [stage]);
 
   const onFavorite = useCallback(async (candidate: LensCandidate) => {
@@ -364,7 +393,9 @@ export default function LensScreen() {
 
   const reset = useCallback(() => {
     requestRef.current?.abort();
+    enrichmentRef.current?.abort();
     requestRef.current = null;
+    enrichmentRef.current = null;
     lastJobRef.current = null;
     scanLock.current = false;
     photoLock.current = false;
@@ -377,7 +408,9 @@ export default function LensScreen() {
 
   const cancelSearch = useCallback(() => {
     requestRef.current?.abort();
+    enrichmentRef.current?.abort();
     requestRef.current = null;
+    enrichmentRef.current = null;
     lastJobRef.current = null;
     scanLock.current = false;
     discardOwnedPreview();
@@ -396,7 +429,12 @@ export default function LensScreen() {
     return (
       <LensProductView
         candidate={stage.candidate}
-        onBack={() => setStage(stage.back)}
+        enriching={stage.enriching}
+        onBack={() => {
+          enrichmentRef.current?.abort();
+          enrichmentRef.current = null;
+          setStage(stage.back);
+        }}
         favorite={favorited[stage.candidate.sourceUrl] === true}
         favoriteNote={favoriteNote}
         onFavorite={onFavorite}

@@ -28,6 +28,7 @@ import { AppImage } from '@/design/appImage';
 import { HeroCarouselSkeleton } from '@/design/skeleton';
 import { useTheme } from '@/design/theme';
 import { useResponsive } from '@/design/layout';
+import { ACTION_GRADIENT, ACTION_ON_COLOR } from '@/design/tokens.mobile';
 import { useI18n, useT } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import {
@@ -328,12 +329,16 @@ const HeroCard = memo(function HeroCard({ card, width, onPress }: HeroCardProps)
           onPress={() => onPress(card)}
           accessibilityRole="button"
           accessibilityLabel={cta}
-          style={({ pressed }) => [
-            styles.cardCta,
-            { backgroundColor: theme.colors.action, opacity: pressed ? 0.7 : 1 },
-          ]}
+          style={({ pressed }) => [styles.cardCta, { opacity: pressed ? 0.7 : 1 }]}
         >
-          <AppText variant="label" weight="bold" color={theme.colors.onAction} numberOfLines={1}>
+          <LinearGradient
+            pointerEvents="none"
+            colors={ACTION_GRADIENT}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+          <AppText variant="label" weight="bold" color={ACTION_ON_COLOR} numberOfLines={1}>
             {cta}
           </AppText>
         </Pressable>
@@ -364,6 +369,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 999,
+    overflow: 'hidden',
   },
   pageFade: { position: 'absolute', left: 0, right: 0, bottom: 0 },
 });

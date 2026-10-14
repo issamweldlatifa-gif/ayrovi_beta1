@@ -8,7 +8,6 @@
  *  • le mot de passe reste accessible, mais en option, pas par défaut.
  */
 import { router } from 'expo-router';
-import { ActivityIndicator } from 'react-native';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
@@ -16,6 +15,7 @@ import SignInScreen from '../../app/sign-in';
 import { ThemeProvider } from '../../src/design/theme';
 import { I18nProvider } from '../../src/i18n';
 import { PrefsProvider } from '../../src/state/prefs';
+import { WaitingBars } from '../../src/design/WaitingBars';
 
 // Premier rendu à froid (chargement de l'arbre et des modules natifs simulés) : marge large.
 jest.setTimeout(20000);
@@ -381,9 +381,9 @@ describe('Compte mémorisé et attente dans le bouton', () => {
     const googleButton = () => screen.getByTestId('auth-provider-google');
     expect(within(googleButton()).queryByTestId('auth-provider-google-busy')).toBeNull();
     await act(async () => { fireEvent.press(googleButton()); });
-    // Le spinner est DANS le bouton Google, et lui seul tourne.
+    // Les cinq barres sont DANS le bouton Google, et lui seul attend.
     expect(googleButton().props.accessibilityState.busy).toBe(true);
-    expect(within(googleButton()).UNSAFE_getByType(ActivityIndicator)).toBeTruthy();
+    expect(within(googleButton()).UNSAFE_getByType(WaitingBars)).toBeTruthy();
     expect(screen.getByTestId('auth-email-code-send').props.accessibilityState.busy).toBeFalsy();
   });
 });

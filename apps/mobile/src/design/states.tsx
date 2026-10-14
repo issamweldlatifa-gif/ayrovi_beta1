@@ -8,9 +8,10 @@
  * qui ferait croire à une panne alors que c'est la connexion qui manque.
  */
 import type { ReactNode } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { AppText } from './ui';
+import { AppText, Button } from './ui';
+import { WaitingBars } from './WaitingBars';
 import { useTheme } from './theme';
 import { useI18n, useT, type TranslationKey } from '@/i18n';
 import { isApiError, userMessage } from '@/api/errors';
@@ -27,7 +28,7 @@ export function LoadingBlock({ labelKey }: { labelKey?: TranslationKey }) {
       accessibilityRole="progressbar"
       style={[styles.block, { backgroundColor: theme.colors.surface, borderRadius: theme.radius.card }]}
     >
-      <ActivityIndicator color={theme.colors.accent} />
+      <WaitingBars testID="loading-bars" />
       {labelKey ? (
         <AppText variant="caption" color={theme.colors.muted}>{t(labelKey)}</AppText>
       ) : null}
@@ -100,28 +101,8 @@ export function OfflineBlock({ onRetry }: { onRetry?: () => void }) {
 }
 
 export function RetryButton({ onPress }: { onPress: () => void }) {
-  const theme = useTheme();
   const t = useT();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={t('common.retry')}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.retry,
-        {
-          minHeight: theme.geometry.minTarget,
-          borderRadius: theme.radius.cta,
-          backgroundColor: pressed ? theme.colors.actionHover : theme.colors.action,
-          paddingHorizontal: theme.space[3],
-        },
-      ]}
-    >
-      <AppText variant="label" weight="bold" color={theme.colors.onAction}>
-        {t('common.retry')}
-      </AppText>
-    </Pressable>
-  );
+  return <Button label={t('common.retry')} onPress={onPress} />;
 }
 
 /**
@@ -139,5 +120,4 @@ export function EmptyBlock({ children }: { children: ReactNode }) {
 
 const styles = StyleSheet.create({
   block: { gap: 10, alignItems: 'center', justifyContent: 'center', padding: 20 },
-  retry: { alignItems: 'center', justifyContent: 'center' },
 });

@@ -17,6 +17,8 @@
  *   • PREUVE   — on n'accepte la fiche trouvée que si son titre recouvre
  *                fortement le nôtre. Illustrer un produit avec les photos d'un
  *                autre est pire que n'en montrer qu'une ;
+ *   • PAGE     — l'hôte et le chemin normalisés doivent être ceux du lien
+ *                ouvert ; un voisin du même marchand est refusé ;
  *   • CACHE    — 7 jours sur disque : une galerie ne change pas comme un prix ;
  *   • ÉCHÉANCE — l'enrichissement ne retarde jamais la fiche ; s'il n'est pas
  *                prêt, on affiche ce qu'on a déjà ;
@@ -30,7 +32,8 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { normalizeTitle, titleOverlap } from './titleMatch';
-import { buildProductCard } from './productVariants';
+import { buildProductCard, parseSerpApi } from './productVariants';
+import type { AyrovixProductFact, AyrovixProductFactSection } from '../types';
 
 export interface EnrichedVariant {
   /** Literal value published by the merchant: clothing size, volume, storage, etc. */
@@ -46,9 +49,13 @@ export interface ProductEnrichment {
   sizes: EnrichedVariant[];
   optionLabel: string | null;
   description: string | null;
+  /** Faits structurés de la fiche SerpApi, regroupés pour les accordéons natifs. */
+  details: AyrovixProductFact[];
 }
 
-export const EMPTY_ENRICHMENT: ProductEnrichment = { images: [], sizes: [], optionLabel: null, description: null };
+export const EMPTY_ENRICHMENT: ProductEnrichment = {
+  images: [], sizes: [], optionLabel: null, description: null, details: [],
+};
 
 const DEFAULT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const DEFAULT_DEADLINE_MS = 4000;
@@ -68,23 +75,23 @@ function envInt(name: string, fallback: number, min: number, max: number): numbe
   return Math.min(max, Math.max(min, Math.round(raw)));
 }
 
-function sameMerchantHost(left: string, right: string): boolean {
-  try {
-    const a = new URL(left);
-    const b = new URL(right);
-    return ['http:', 'https:'].includes(a.protocol) && ['http:', 'https:'].includes(b.protocol)
-      && a.hostname.toLowerCase().replace(/^www\./, '') === b.hostname.toLowerCase().replace(/^www\./, '');
-  } catch {
-    return false;
-  }
-}
-
 function canonicalScope(value: string): string {
   try {
     const url = new URL(value);
     return `${url.hostname.toLowerCase().replace(/^www\./, '')}${url.pathname.replace(/\/+$/, '')}`;
   } catch {
     return value.trim().toLowerCase();
+  }
+}
+
+function sameMerchantPage(left: string, right: string): boolean {
+  try {
+    const a = new URL(left);
+    const b = new URL(right);
+    return ['http:', 'https:'].includes(a.protocol) && ['http:', 'https:'].includes(b.protocol)
+      && canonicalScope(left) === canonicalScope(right);
+  } catch {
+    return false;
   }
 }
 
@@ -100,7 +107,8 @@ function readCache(title: string, now: number, scope = ''): ProductEnrichment | 
   try {
     const entry = JSON.parse(fs.readFileSync(cacheFile(title, scope), 'utf8')) as { at: number; value: ProductEnrichment };
     const ttl = envInt('AYROVI_PRODUCT_ENRICH_TTL_MS', DEFAULT_TTL_MS, 60_000, 30 * 24 * 60 * 60 * 1000);
-    return now - entry.at <= ttl ? entry.value : null;
+    if (now - entry.at > ttl) return null;
+    return { ...entry.value, details: Array.isArray(entry.value?.details) ? entry.value.details : [] };
   } catch {
     return null;
   }
@@ -179,6 +187,52 @@ function readOptionLabel(product: any): string | null {
   return primaryAttribute(product)?.label ?? null;
 }
 
+const FACT_NOISE = /(?:^|\b)(?:price|prix|stock|availability|disponibilit|seller|vendeur|shipping|livraison|delivery|offer|offre|rating|review|avis|payment|paiement)(?:\b|$)/i;
+const MATERIAL_FACT = /material|mati[eè]re|composition|fabric|tissu|outer|lining|doublure|leather|cuir|sole|semelle/i;
+const FIT_FACT = /(?:^|\b)(?:fit|coupe|size|taille|length|longueur|neckline|encolure|sleeve|manche|shape|forme|height|hauteur|width|largeur|dimension|waist|poitrine)(?:\b|$)/i;
+
+const FACT_KEYS: Array<{ key: string; pattern: RegExp; section?: AyrovixProductFactSection }> = [
+  { key: 'material', pattern: /material|mati[eè]re|composition|fabric|tissu/i, section: 'material' },
+  { key: 'fit', pattern: /(?:^|\b)(?:fit|coupe)(?:\b|$)/i, section: 'fit' },
+  { key: 'length', pattern: /length|longueur/i, section: 'fit' },
+  { key: 'neckline', pattern: /neckline|encolure|col\b/i, section: 'fit' },
+  { key: 'sleeveLength', pattern: /sleeve|manche/i, section: 'fit' },
+  { key: 'shape', pattern: /shape|forme|silhouette/i, section: 'fit' },
+  { key: 'pattern', pattern: /pattern|motif|imprim[eé]/i },
+  { key: 'model', pattern: /model|mod[eè]le|mpn/i },
+  { key: 'productNumber', pattern: /product\s*(?:number|id)|r[eé]f[eé]rence|sku/i },
+];
+
+function cleanFactText(value: unknown, max: number): string {
+  const text = String(value ?? '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!text || text === '[object Object]' || /https?:\/\//i.test(text)) return '';
+  return text.slice(0, max);
+}
+
+/**
+ * Détails strictement publiés par la fiche Google Product/SerpApi.
+ * Aucun chemin interne ni diagnostic n'est exposé au client.
+ */
+export function readProductFacts(product: unknown): AyrovixProductFact[] {
+  const specs = parseSerpApi({ product_results: product }).signals.specs;
+  const seen = new Set<string>();
+  const facts: AyrovixProductFact[] = [];
+  for (const spec of specs) {
+    const label = cleanFactText(spec.name, 80);
+    const value = cleanFactText(spec.value, 240);
+    if (!label || !value || FACT_NOISE.test(label)) continue;
+    const canonical = FACT_KEYS.find((entry) => entry.pattern.test(label));
+    const section: AyrovixProductFactSection = canonical?.section
+      ?? (MATERIAL_FACT.test(label) ? 'material' : FIT_FACT.test(label) ? 'fit' : 'details');
+    const identity = `${label.toLocaleLowerCase()}|${value.toLocaleLowerCase()}`;
+    if (seen.has(identity)) continue;
+    seen.add(identity);
+    facts.push({ key: canonical?.key ?? null, label, value, section });
+    if (facts.length >= 18) break;
+  }
+  return facts;
+}
+
 /* ── Appels réseau, isolés pour être remplaçables dans les tests ───────────── */
 
 export interface ProductFetchers {
@@ -240,9 +294,9 @@ export async function enrichProduct(
     const found = await findProduct(title);
     // La preuve avant les photos : sans recouvrement fort, c'est un autre produit.
     if (!found || titleOverlap(title, found.title) < MATCH_THRESHOLD) return EMPTY_ENRICHMENT;
-    // Production callers supply the exact opened URL. If SerpApi cannot prove
-    // the same merchant host, skip enrichment rather than borrow another shop's media/options.
-    if (options.cacheScope && (!found.sourceUrl || !sameMerchantHost(found.sourceUrl, options.cacheScope))) return EMPTY_ENRICHMENT;
+    // Production callers supply the exact opened URL. A matching host is not
+    // enough: a neighbouring product page must never lend its media or facts.
+    if (options.cacheScope && (!found.sourceUrl || !sameMerchantPage(found.sourceUrl, options.cacheScope))) return EMPTY_ENRICHMENT;
 
     const product = await loadProduct(found.productId);
     if (!product) return EMPTY_ENRICHMENT;
@@ -252,9 +306,12 @@ export async function enrichProduct(
       sizes: readSizes(product),
       optionLabel: readOptionLabel(product),
       description: String(product?.description || '').trim().slice(0, 600) || null,
+      details: readProductFacts(product),
     };
     // Cache only useful data and never let same-title pages share product media/options.
-    if (value.images.length || value.sizes.length || value.description) writeCache(title, value, now, cacheScope);
+    if (value.images.length || value.sizes.length || value.description || value.details.length) {
+      writeCache(title, value, now, cacheScope);
+    }
     return value;
   })();
 

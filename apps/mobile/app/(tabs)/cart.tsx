@@ -11,10 +11,10 @@
  *  • السلّة ما تنفّذش الخلاص بنفسها: الزرّ يفتح صفحة الطلب، والوسائل المتاحة
  *    تتحدّد من إعدادات الخادم — لذلك ما نوعدوش ببطاقة ولا بتحويل مسبقاً.
  */
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { AppScreen } from '@/design/layout';
 import { AppHeader } from '@/features/shell/AppHeader';
@@ -32,6 +32,8 @@ import {
   updateAyroviCartQuantity, type AyroviCartLine,
 } from '@/api/cart';
 import { useSessionId } from '@/session/session';
+import { earliestCartDeadline, formatCartCountdown, remainingMs, serverClockOffset } from '@/features/lens/lensCartStatus';
+import { ACTION_GRADIENT } from '@/design/tokens.mobile';
 
 const MAX_QUANTITY = 99;
 
@@ -40,7 +42,9 @@ export default function AyroviCartScreen() {
   const theme = useTheme();
   const { locale } = useI18n();
   const sessionId = useSessionId();
+  const queryClient = useQueryClient();
   const [note, setNote] = useState('');
+  const [now, setNow] = useState(Date.now());
 
   const cartQuery = useQuery({
     queryKey: ['cart', 'ayrovi'],
@@ -58,19 +62,44 @@ export default function AyroviCartScreen() {
   const setQuantity = useMutation({
     mutationFn: (input: { itemId: string; quantity: number }) =>
       updateAyroviCartQuantity({ ...input, sessionId }),
-    onSuccess: () => { setNote(''); reload(); },
+    onSuccess: () => {
+      setNote('');
+      void queryClient.invalidateQueries({ queryKey: ['cart'] });
+    },
     onError: (error) => onNote(error, 'cart.updateFailed'),
   });
 
   const removeLine = useMutation({
     mutationFn: (itemId: string) => removeAyroviCartItem({ itemId, sessionId }),
-    onSuccess: () => { setNote(''); reload(); },
+    onSuccess: () => {
+      setNote('');
+      void queryClient.invalidateQueries({ queryKey: ['cart'] });
+    },
     onError: (error) => onNote(error, 'cart.removeFailed'),
   });
 
   const cart = cartQuery.data ?? null;
   const gate = useMemo(() => ayroviCartReadiness(cart), [cart]);
   const busy = setQuantity.isPending || removeLine.isPending;
+  const quoteDeadline = earliestCartDeadline(cart);
+  const clockOffset = useMemo(() => cart?.serverNow
+    ? serverClockOffset(cart.serverNow, cartQuery.dataUpdatedAt || Date.now()) : 0,
+  [cart?.serverNow, cartQuery.dataUpdatedAt]);
+  const authoritativeNow = now + clockOffset;
+  const quoteExpired = Boolean(quoteDeadline) && remainingMs(quoteDeadline, authoritativeNow) === 0;
+  const quoteCountdown = quoteDeadline ? formatCartCountdown(quoteDeadline, authoritativeNow) : '';
+  const locallyExpiredLines = (cart?.items ?? []).filter((line) => (
+    Boolean(line.priceTrustExpiresAt) && remainingMs(line.priceTrustExpiresAt, authoritativeNow) === 0
+  )).length;
+  const requiresLensReverification = quoteExpired || gate.blockReason === 'PRICE_VERIFICATION_REQUIRED';
+  const staleLensCount = Math.max(gate.staleLines.length, locallyExpiredLines);
+
+  useEffect(() => {
+    if (!quoteDeadline) return undefined;
+    setNow(Date.now());
+    const timer = setInterval(() => setNow(Date.now()), 1_000);
+    return () => clearInterval(timer);
+  }, [quoteDeadline]);
 
   /** سطور مجموعة حسب المتجر — كما يجي التقسيم في المفهوم، بلا اختراع. */
   const groups = useMemo(() => {
@@ -213,25 +242,35 @@ export default function AyroviCartScreen() {
             <KeyValue label={t('cart.subtotalProducts')} value={`${cart.productSubtotalTND.toFixed(2)} TND`} />
             <KeyValue label={t('cart.delivery')} value={`${cart.deliveryTND.toFixed(2)} TND`} />
             <KeyValue label={t('cart.total')} value={`${cart.totalTND.toFixed(2)} TND`} />
+            {quoteDeadline ? (
+              <View style={[styles.quoteTimer, { backgroundColor: theme.colors.infoSoft }]}>
+                <AppText variant="caption" weight="bold" style={{ color: quoteExpired ? theme.status.danger.fg : ACTION_GRADIENT[2] }}>
+                  {quoteExpired ? t('cart.quoteExpired') : t('cart.quoteCountdown', { time: quoteCountdown })}
+                </AppText>
+              </View>
+            ) : null}
 
             {note ? (
               <AppText variant="caption" color={theme.status.danger.fg} accessibilityRole="alert">{note}</AppText>
             ) : null}
 
-            {gate.blockReason === 'PRICE_VERIFICATION_REQUIRED' ? (
-              <AppText variant="caption" color={theme.status.danger.fg}>
-                {t('cart.blockedBody', { count: gate.staleLines.length })}
-              </AppText>
+            {requiresLensReverification ? (
+              <>
+                <AppText variant="caption" color={theme.status.danger.fg}>
+                  {t('cart.blockedBody', { count: Math.max(1, staleLensCount) })}
+                </AppText>
+                <Button label={t('cart.reverifyLens')} onPress={() => router.push('/lens')} testID="cart-reverify-lens" />
+              </>
             ) : null}
 
             {/* باب الدفع: يتفتح كان كي الخادم يقبل — والسطر الموقوف يتقال بسببه. */}
             <Button
               label={t('cart.checkout')}
               onPress={() => router.push('/checkout')}
-              disabled={!gate.canCheckout}
+              disabled={!gate.canCheckout || quoteExpired}
               testID="cart-checkout"
             />
-            {!gate.canCheckout && gate.blockReason === 'PRICE_VERIFICATION_REQUIRED' ? (
+            {requiresLensReverification ? (
               <AppText variant="caption" color={theme.status.danger.fg}>{t('cart.checkoutBlocked')}</AppText>
             ) : null}
           </>
@@ -253,4 +292,5 @@ const styles = StyleSheet.create({
   image: { width: '100%', height: 140 },
   quantityRow: { alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' },
   step: { borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  quoteTimer: { minHeight: 42, borderRadius: 12, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center' },
 });

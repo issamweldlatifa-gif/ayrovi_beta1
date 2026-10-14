@@ -62,12 +62,9 @@ export function LensResultCard({
       style={[
         styles.card,
         {
-          backgroundColor: theme.colors.surface,
-          borderColor: theme.colors.line,
-          borderRadius: theme.radius.card,
+          backgroundColor: LENS_COLORS.white,
           opacity: appear,
           transform: [{ translateY: rise }, { scale }],
-          ...theme.elevation.low,
         },
       ]}
       testID={`lens-card-${candidate.id}`}
@@ -85,13 +82,13 @@ export function LensResultCard({
             uri={media[0]}
             fallbackUris={media.slice(1)}
             contentFit="contain"
-            style={[styles.media, { backgroundColor: theme.colors.infoSoft }]}
+            style={[styles.media, { backgroundColor: LENS_COLORS.resultMedia }]}
             accessibilityLabel={candidate.title}
             testID={`lens-result-image-${candidate.id}`}
           />
           {candidate.promo ? (
             <View style={[styles.promo, theme.isRTL ? styles.promoRight : styles.promoLeft]}>
-              <AppText variant="caption" weight="bold" color={LENS_COLORS.white}>{t('lens.promo')}</AppText>
+              <AppText variant="caption" weight="bold" color={LENS_COLORS.white}>{candidate.promo.label || t('lens.promo')}</AppText>
             </View>
           ) : null}
           <Pressable
@@ -105,43 +102,40 @@ export function LensResultCard({
             style={({ pressed }) => [
               styles.favorite,
               theme.isRTL ? styles.favoriteLeft : styles.favoriteRight,
-              { backgroundColor: theme.colors.surface, opacity: pressed ? theme.opacity.subtle : 1 },
+              { backgroundColor: LENS_COLORS.white, opacity: pressed ? theme.opacity.subtle : 1 },
             ]}
           >
             <Ionicons
               name={favorite ? 'heart' : 'heart-outline'}
               size={theme.iconSize.md}
-              color={favorite ? LENS_COLORS.sale : theme.colors.ink}
+              color={favorite ? LENS_COLORS.sale : LENS_COLORS.black}
               accessibilityElementsHidden
             />
           </Pressable>
         </View>
 
         <View style={styles.copy}>
-          {candidate.brand ? <AppText variant="caption" weight="bold" numberOfLines={1}>{candidate.brand}</AppText> : null}
-          <AppText variant="label" numberOfLines={2}>{candidate.title}</AppText>
-          {candidate.description ? (
-            <AppText variant="caption" color={theme.colors.muted} numberOfLines={2}>{candidate.description}</AppText>
-          ) : null}
+          {candidate.brand ? <AppText variant="caption" weight="bold" color={LENS_COLORS.black} numberOfLines={1}>{candidate.brand}</AppText> : null}
+          <AppText variant="label" color={LENS_COLORS.black} numberOfLines={2}>{candidate.title}</AppText>
           {rating != null ? (
             <View style={[styles.rating, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
               <Ionicons name="star" size={theme.iconSize.sm} color={LENS_COLORS.star} accessibilityElementsHidden />
-              <AppText variant="caption" weight="bold">{rating.toFixed(1)}</AppText>
+              <AppText variant="caption" weight="bold" color={LENS_COLORS.black}>{rating.toFixed(1)}</AppText>
               {candidate.ratingCount != null ? (
-                <AppText variant="caption" color={theme.colors.muted}>{`(${candidate.ratingCount})`}</AppText>
+                <AppText variant="caption" color={LENS_COLORS.resultMuted}>{`(${candidate.ratingCount})`}</AppText>
               ) : null}
             </View>
           ) : null}
-          <LensPriceBlock candidate={candidate} compact />
+          <LensPriceBlock candidate={candidate} compact onWhite />
           {visibleOptions.length > 0 ? (
             <View style={[styles.options, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
               {visibleOptions.map((option) => (
-                <View key={option} style={[styles.option, { borderColor: theme.colors.lineControl, borderRadius: theme.radius.xs }]}>
-                  <AppText variant="caption" numberOfLines={1}>{option}</AppText>
+                <View key={option} style={[styles.option, { borderColor: LENS_COLORS.resultLine, borderRadius: theme.radius.xs }]}>
+                  <AppText variant="caption" color={LENS_COLORS.black} numberOfLines={1}>{option}</AppText>
                 </View>
               ))}
               {remainingOptions > 0 ? (
-                <AppText variant="caption" color={theme.colors.muted}>{`+${remainingOptions}`}</AppText>
+                <AppText variant="caption" color={LENS_COLORS.resultMuted}>{`+${remainingOptions}`}</AppText>
               ) : null}
             </View>
           ) : null}
@@ -152,22 +146,22 @@ export function LensResultCard({
 }
 
 const styles = StyleSheet.create({
-  card: { flex: 1, minWidth: 0, overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth },
-  mediaWrap: { position: 'relative' },
+  card: { flex: 1, minWidth: 0 },
+  mediaWrap: { position: 'relative', overflow: 'hidden' },
   media: { width: '100%', aspectRatio: 4 / 5 },
   promo: {
-    position: 'absolute', top: 10, backgroundColor: LENS_COLORS.sale,
-    borderRadius: 7, paddingHorizontal: 10, paddingVertical: 6,
+    position: 'absolute', top: 8, backgroundColor: LENS_COLORS.sale,
+    borderRadius: 3, paddingHorizontal: 8, paddingVertical: 6,
   },
-  promoLeft: { left: 10 },
-  promoRight: { right: 10 },
+  promoLeft: { left: 7 },
+  promoRight: { right: 7 },
   favorite: {
-    position: 'absolute', top: 8, width: 44, height: 44,
-    alignItems: 'center', justifyContent: 'center', borderRadius: 22,
+    position: 'absolute', top: 7, width: 40, height: 40,
+    alignItems: 'center', justifyContent: 'center', borderRadius: 20,
   },
-  favoriteRight: { right: 8 },
-  favoriteLeft: { left: 8 },
-  copy: { gap: 6, padding: 10 },
+  favoriteRight: { right: 7 },
+  favoriteLeft: { left: 7 },
+  copy: { gap: 6, paddingHorizontal: 8, paddingTop: 8, paddingBottom: 12 },
   rating: { alignItems: 'center', gap: 4, flexWrap: 'wrap' },
   options: { alignItems: 'center', gap: 6, flexWrap: 'wrap', paddingTop: 2 },
   option: { minHeight: 28, minWidth: 34, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center', borderWidth: StyleSheet.hairlineWidth },

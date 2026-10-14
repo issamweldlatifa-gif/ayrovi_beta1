@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import type { LensCandidate, LensVariantOption } from '@/api/lens';
+import { addExternalToCart } from '@/api/cart';
 import { LensProductView } from '@/features/lens/LensProductView';
 import { ThemeProvider } from '@/design/theme';
 import { I18nProvider } from '@/i18n';
@@ -13,7 +14,16 @@ const mockPush = jest.fn();
 
 jest.mock('expo-router', () => ({ router: { push: (...args: unknown[]) => mockPush(...args) } }));
 jest.mock('@/session/session', () => ({ useSessionId: () => 'mob_1234567890123456' }));
-jest.mock('@/api/cart', () => ({ addExternalToCart: jest.fn(async () => undefined) }));
+jest.mock('@/api/cart', () => ({
+  addExternalToCart: jest.fn(async () => ({
+    cartItemId: 'line-1', totalItemsCount: 1, totalTND: 85, deliveryTND: 0,
+    quoteExpiresAt: '2026-10-14T09:00:00.000Z', serverNow: '2026-10-14T08:30:00.000Z',
+  })),
+  fetchAyroviCart: jest.fn(async () => ({
+    sessionId: 'mob_1234567890123456', serverNow: '2026-10-14T08:30:00.000Z', items: [],
+    units: 0, productSubtotalTND: 0, deliveryTND: 0, totalTND: 0,
+  })),
+}));
 
 const option = (over: Partial<LensVariantOption>): LensVariantOption => ({
   id: null,
@@ -84,7 +94,10 @@ function wrap(node: React.ReactNode) {
 }
 
 describe('fiche produit Lens native', () => {
-  beforeEach(() => mockPush.mockClear());
+  beforeEach(() => {
+    mockPush.mockClear();
+    (addExternalToCart as jest.Mock).mockClear();
+  });
 
   it('auto-sélectionne Standard et masque les contrôles à choix unique', async () => {
     render(wrap(<LensProductView candidate={candidate()} onBack={() => {}} />));
@@ -92,8 +105,8 @@ describe('fiche produit Lens native', () => {
     expect(await screen.findByTestId('lens-product-view')).toBeOnTheScreen();
     expect(screen.queryByTestId('lens-option-selector')).toBeNull();
     expect(screen.queryByTestId('lens-color-0')).toBeNull();
-    expect(screen.queryByText('Standard')).toBeNull();
-    expect(screen.getByTestId('lens-order')).toBeEnabled();
+    expect(screen.getByText(/Standard/)).toBeOnTheScreen();
+    expect(screen.getByTestId('lens-add-to-cart')).toBeEnabled();
   });
 
   it('change la galerie et le prix avec les vrais choix image/variante', async () => {
@@ -125,12 +138,66 @@ describe('fiche produit Lens native', () => {
     expect(JSON.stringify(heroMedia.props.source)).toContain(encodeURIComponent('https://images.example/red.jpg'));
   });
 
-  it('ouvre la galerie plein écran zoomable puis la referme', async () => {
+  it('désactive une variante réellement indisponible dans le sélecteur', async () => {
+    const product = candidate({
+      sizes: ['M', 'L'],
+      colors: ['Noir'],
+      variantOptions: [
+        option({ id: 'm', label: 'M', size: 'M', color: 'Noir', available: false, availability: 'unavailable' }),
+        option({ id: 'l', label: 'L', size: 'L', color: 'Noir', price: 26, currency: 'EUR', priceTnd: 88, priceToken: 'signed-l' }),
+      ],
+    });
+    render(wrap(<LensProductView candidate={product} onBack={() => {}} />));
+
+    fireEvent.press(await screen.findByTestId('lens-add-to-cart'));
+    expect(await screen.findByTestId('lens-option-0')).toBeDisabled();
+    expect(screen.getByTestId('lens-option-1')).toBeEnabled();
+  });
+
+  it('désactive les tailles incompatibles avec la couleur choisie', async () => {
+    const product = candidate({
+      sizes: ['M', 'L'],
+      colors: ['Rouge', 'Bleu'],
+      variantOptions: [
+        option({ id: 'red-l', label: 'Rouge · L', size: 'L', color: 'Rouge', price: 26, currency: 'EUR', priceTnd: 88, priceToken: 'signed-red-l' }),
+        option({ id: 'blue-m', label: 'Bleu · M', size: 'M', color: 'Bleu', price: 25, currency: 'EUR', priceTnd: 85, priceToken: 'signed-blue-m' }),
+      ],
+    });
+    render(wrap(<LensProductView candidate={product} onBack={() => {}} />));
+
+    fireEvent.press(await screen.findByTestId('lens-color-0'));
+    fireEvent.press(screen.getByTestId('lens-add-to-cart'));
+    expect(await screen.findByTestId('lens-option-0')).toBeDisabled();
+    expect(screen.getByTestId('lens-option-1')).toBeEnabled();
+  });
+
+  it('ouvre le choix manquant depuis le CTA puis confirme sans forcer la caisse', async () => {
+    const product = candidate({
+      sizes: ['M', 'L'],
+      colors: ['Noir'],
+      variantOptions: [
+        option({ id: 'm', label: 'M', size: 'M', color: 'Noir', price: 25, currency: 'EUR', priceTnd: 85, priceToken: 'signed-m' }),
+        option({ id: 'l', label: 'L', size: 'L', color: 'Noir', price: 26, currency: 'EUR', priceTnd: 88, priceToken: 'signed-l' }),
+      ],
+    });
+    render(wrap(<LensProductView candidate={product} onBack={() => {}} />));
+
+    fireEvent.press(await screen.findByTestId('lens-add-to-cart'));
+    fireEvent.press(await screen.findByText('M'));
+    fireEvent.press(screen.getByTestId('lens-add-to-cart'));
+
+    expect(await screen.findByText('Article ajouté au panier')).toBeOnTheScreen();
+    expect(addExternalToCart).toHaveBeenCalledTimes(1);
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(screen.getByText(/Prix valable encore/)).toBeOnTheScreen();
+  });
+
+  it('rend la grande galerie directement pincable et double-touchable', async () => {
     render(wrap(<LensProductView candidate={candidate()} onBack={() => {}} />));
 
-    fireEvent.press(await screen.findByTestId('lens-product-image'));
-    expect(await screen.findByTestId('lens-gallery-zoom-image')).toBeOnTheScreen();
-    fireEvent.press(screen.getByTestId('lens-gallery-close'));
-    await waitFor(() => expect(screen.queryByTestId('lens-gallery-zoom-image')).toBeNull());
+    const zoomTarget = await screen.findByTestId('lens-gallery-zoom-image');
+    expect(zoomTarget.props.accessibilityHint).toBe('Pincez ou touchez deux fois pour zoomer');
+    expect(zoomTarget.props.accessibilityRole).toBe('imagebutton');
+    expect(screen.getByTestId('lens-product-image-media', { includeHiddenElements: true })).toBeOnTheScreen();
   });
 });

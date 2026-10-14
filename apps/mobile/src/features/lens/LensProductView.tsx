@@ -7,32 +7,31 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Animated, Modal, PanResponder, Pressable, ScrollView, StyleSheet, View, useWindowDimensions,
+  Animated, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Vibration, View, useWindowDimensions,
   type NativeScrollEvent, type NativeSyntheticEvent,
 } from 'react-native';
 import { router } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { AppText, Button } from '@/design/ui';
 import { AppImage } from '@/design/appImage';
+import { WaitingBars } from '@/design/WaitingBars';
+import { ACTION_GRADIENT } from '@/design/tokens.mobile';
 import { useTheme } from '@/design/theme';
 import { useT, type TranslationKey } from '@/i18n';
 import { ApiError } from '@/api/errors';
-import { addExternalToCart } from '@/api/cart';
+import { addExternalToCart, fetchAyroviCart } from '@/api/cart';
 import { useSessionId } from '@/session/session';
-import type { LensCandidate } from '@/api/lens';
+import type { LensCandidate, LensProductFact } from '@/api/lens';
 import { lensGallery, lensMediaChain } from './lensMedia';
 import { LENS_COLORS } from './lensPalette';
 import { LensPriceBlock } from './LensPriceBlock';
+import { earliestCartDeadline, formatCartCountdown, remainingMs, serverClockOffset } from './lensCartStatus';
 import {
   buildCartPayload, effectiveChoice, missingChoice, orderBlock, resolveSelection, type OrderBlock,
 } from './productOrder';
-
-const NO_CHOICE = 'none';
-const HIT_SLOP = { top: 12, bottom: 12, left: 12, right: 12 } as const;
 
 const BLOCK_KEY: Record<Exclude<OrderBlock, null>, TranslationKey> = {
   ambiguous: 'lens.product.ambiguous',
@@ -40,42 +39,24 @@ const BLOCK_KEY: Record<Exclude<OrderBlock, null>, TranslationKey> = {
   incomplete: 'lens.product.incomplete',
 };
 
-function refusalKey(error: unknown): TranslationKey | string {
-  if (error instanceof ApiError) {
-    if (error.code === 'INVALID_AYROVIX_PRICE_TOKEN') return 'lens.product.expired';
-    if (error.code === 'NO_CONTRACT' || error.code.startsWith('VARIANT_')) return 'lens.product.variantRefused';
-    if (error.message) return error.message;
-  }
-  return 'lens.product.orderFailed';
-}
-
-function Stars({ rating, count }: { rating: number; count: number | null }) {
-  const theme = useTheme();
-  return (
-    <View style={[styles.rating, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
-      <View style={[styles.stars, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]} accessibilityElementsHidden>
-        {[0, 1, 2, 3, 4].map((index) => (
-          <Ionicons key={index} name={rating >= index + 0.5 ? 'star' : 'star-outline'} size={17} color={LENS_COLORS.star} />
-        ))}
-      </View>
-      <AppText variant="caption" weight="bold">{rating.toFixed(1)}</AppText>
-      {count != null ? <AppText variant="caption" color={theme.colors.muted}>{`(${count})`}</AppText> : null}
-    </View>
-  );
-}
-
 function OptionSelector({
-  label, values, value, onChange,
+  label, values, value, onChange, openRequest = 0, disabledValues = new Set<string>(),
 }: {
   label: string;
   values: string[];
   value: string;
   onChange: (value: string) => void;
+  /** Incrémenté par le CTA quand le client a oublié ce choix. */
+  openRequest?: number;
+  disabledValues?: Set<string>;
 }) {
   const theme = useTheme();
   const t = useT();
   const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (openRequest > 0 && values.length > 1) setOpen(true);
+  }, [openRequest, values.length]);
   if (values.length <= 1) return null;
   const effective = value;
 
@@ -104,7 +85,12 @@ function OptionSelector({
         {values.length > 1 ? <Ionicons name="chevron-down" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden /> : null}
       </Pressable>
 
-      <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
+      <Modal
+        visible={open}
+        transparent
+        animationType={theme.motion.reduced === 0 ? 'none' : 'slide'}
+        onRequestClose={() => setOpen(false)}
+      >
         <View style={styles.modalRoot}>
           <Pressable style={styles.modalScrim} onPress={() => setOpen(false)} accessibilityRole="button" accessibilityLabel={t('sheet.close')} />
           <View
@@ -120,28 +106,42 @@ function OptionSelector({
           >
             <View style={[styles.sheetHandle, { backgroundColor: theme.colors.lineControl }]} />
             <AppText variant="title" weight="bold">{label}</AppText>
-            {values.map((option) => {
-              const selected = option === effective;
-              return (
-                <Pressable
-                  key={option}
-                  onPress={() => { onChange(option); setOpen(false); }}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected }}
-                  style={({ pressed }) => [
-                    styles.optionRow,
-                    {
-                      borderTopColor: theme.colors.line,
-                      flexDirection: theme.isRTL ? 'row-reverse' : 'row',
-                      opacity: pressed ? theme.opacity.subtle : 1,
-                    },
-                  ]}
-                >
-                  <AppText style={styles.selectorValue} weight={selected ? 'bold' : 'regular'}>{option}</AppText>
-                  {selected ? <Ionicons name="checkmark" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden /> : null}
-                </Pressable>
-              );
-            })}
+            <ScrollView style={styles.optionList} showsVerticalScrollIndicator={false}>
+              {values.map((option, index) => {
+                const selected = option === effective;
+                const unavailable = disabledValues.has(option);
+                return (
+                  <Pressable
+                    key={option}
+                    testID={`lens-option-${index}`}
+                    disabled={unavailable}
+                    onPress={() => {
+                      Vibration.vibrate(12);
+                      onChange(option);
+                      setOpen(false);
+                    }}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected, disabled: unavailable }}
+                    style={({ pressed }) => [
+                      styles.optionRow,
+                      {
+                        borderTopColor: theme.colors.line,
+                        flexDirection: theme.isRTL ? 'row-reverse' : 'row',
+                        opacity: unavailable ? 0.36 : pressed ? theme.opacity.subtle : 1,
+                      },
+                    ]}
+                  >
+                    <AppText
+                      style={[styles.selectorValue, unavailable ? styles.unavailableOption : null]}
+                      weight={selected ? 'bold' : 'regular'}
+                    >
+                      {option}
+                    </AppText>
+                    {selected ? <Ionicons name="checkmark" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden /> : null}
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -157,11 +157,13 @@ function colorImage(candidate: LensCandidate, color: string): string | null {
 }
 
 function ColorSelector({
-  candidate, value, onChange,
+  candidate, value, onChange, disabledValues = new Set<string>(), attention = false,
 }: {
   candidate: LensCandidate;
   value: string;
   onChange: (value: string) => void;
+  disabledValues?: Set<string>;
+  attention?: boolean;
 }) {
   const theme = useTheme();
   const t = useT();
@@ -170,7 +172,10 @@ function ColorSelector({
   const effective = value;
 
   return (
-    <View style={styles.optionBlock}>
+    <View
+      style={[styles.optionBlock, attention ? { borderColor: LENS_COLORS.sale, borderWidth: 1.5, borderRadius: theme.radius.control, padding: 10 } : null]}
+      testID="lens-color-selector"
+    >
       <AppText variant="caption">
         {`${t('lens.product.color')}: `}
         <AppText variant="caption" weight="bold">{effective || t('lens.product.chooseColorShort')}</AppText>
@@ -182,16 +187,21 @@ function ColorSelector({
       >
         {candidate.colors.map((color, index) => {
           const selected = color === effective;
+          const unavailable = disabledValues.has(color);
           const rawImage = colorImage(candidate, color);
           const fallback = fallbackImages[index % Math.max(1, fallbackImages.length)];
           const media = rawImage ? lensMediaChain(rawImage, 'thumb') : (fallback?.uris ?? []);
           return (
             <Pressable
               key={color}
-              onPress={() => onChange(color)}
+              disabled={unavailable}
+              onPress={() => {
+                Vibration.vibrate(12);
+                onChange(color);
+              }}
               accessibilityRole="button"
               accessibilityLabel={`${t('lens.product.color')}: ${color}`}
-              accessibilityState={{ selected }}
+              accessibilityState={{ selected, disabled: unavailable }}
               testID={`lens-color-${index}`}
               style={[
                 styles.colorChoice,
@@ -199,6 +209,7 @@ function ColorSelector({
                   borderColor: selected ? theme.colors.ink : theme.colors.lineControl,
                   borderRadius: theme.radius.control,
                   backgroundColor: theme.colors.infoSoft,
+                  opacity: unavailable ? 0.35 : 1,
                 },
               ]}
             >
@@ -373,7 +384,7 @@ function ZoomableGalleryImage({
       accessibilityRole="imagebutton"
       accessibilityLabel={label}
       accessibilityHint={t('lens.product.galleryZoomHint')}
-      style={styles.zoomViewport}
+      style={[styles.zoomViewport, { width, height }]}
       testID={active ? 'lens-gallery-zoom-image' : undefined}
     >
       <Animated.View
@@ -392,6 +403,7 @@ function ZoomableGalleryImage({
           fallbackUris={fallbackUris}
           contentFit="contain"
           style={styles.fullscreenImage}
+          testID={active ? 'lens-product-image-media' : undefined}
           decorative
         />
       </Animated.View>
@@ -399,32 +411,203 @@ function ZoomableGalleryImage({
   );
 }
 
+function FactAccordion({
+  title, icon, facts, description, defaultOpen = false,
+}: {
+  title: string;
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  facts: LensProductFact[];
+  description?: string | null;
+  defaultOpen?: boolean;
+}) {
+  const theme = useTheme();
+  const [open, setOpen] = useState(defaultOpen);
+  if (!facts.length && !description) return null;
+  return (
+    <View style={[styles.accordion, { borderColor: theme.colors.line }]}>
+      <Pressable
+        onPress={() => setOpen((value) => !value)}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        style={({ pressed }) => [
+          styles.accordionHeader,
+          { flexDirection: theme.isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.64 : 1 },
+        ]}
+      >
+        <View style={[styles.accordionHeading, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
+          <Ionicons name={icon} size={20} color={theme.colors.ink} accessibilityElementsHidden />
+          <AppText weight="bold" style={styles.accordionTitle}>{title}</AppText>
+        </View>
+        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={20} color={theme.colors.muted} accessibilityElementsHidden />
+      </Pressable>
+      {open ? (
+        <View style={[styles.accordionBody, { borderTopColor: theme.colors.line }]}>
+          {description ? <AppText color={theme.colors.muted} style={styles.description}>{description}</AppText> : null}
+          {facts.length ? (
+            <View style={[styles.factGrid, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
+              {facts.map((fact, index) => (
+                <View key={`${fact.label}-${fact.value}-${index}`} style={[styles.factCell, { backgroundColor: theme.colors.infoSoft }]}>
+                  <AppText variant="caption" color={theme.colors.muted} numberOfLines={2}>{fact.label}</AppText>
+                  <AppText weight="semibold" style={styles.factValue}>{fact.value}</AppText>
+                </View>
+              ))}
+            </View>
+          ) : null}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+function unavailableValues(candidate: LensCandidate, attribute: 'size' | 'color', otherValue = ''): Set<string> {
+  const values = attribute === 'size' ? candidate.sizes : candidate.colors;
+  const unavailable = new Set<string>();
+  const normalizedOther = otherValue.trim().toLocaleLowerCase();
+  for (const value of values) {
+    const normalizedValue = value.trim().toLocaleLowerCase();
+    const ownMatches = candidate.variantOptions.filter((variant) => {
+      const own = attribute === 'size' ? variant.size : variant.color;
+      return own?.trim().toLocaleLowerCase() === normalizedValue;
+    });
+    const matches = normalizedOther
+      ? ownMatches.filter((variant) => {
+          const other = attribute === 'size' ? variant.color : variant.size;
+          return other?.trim().toLocaleLowerCase() === normalizedOther;
+        })
+      : ownMatches;
+    // Une combinaison absente n'est incompatible que lorsque la source fournit
+    // réellement la dimension opposée. Sans matrice complète, on ne devine rien.
+    const hasCounterpartMatrix = Boolean(normalizedOther) && ownMatches.some((variant) => {
+      const other = attribute === 'size' ? variant.color : variant.size;
+      return Boolean(other?.trim());
+    });
+    if ((matches.length === 0 && hasCounterpartMatrix)
+      || (matches.length > 0 && matches.every((variant) => !variant.available || variant.availability === 'unavailable'))) {
+      unavailable.add(value);
+    }
+  }
+  return unavailable;
+}
+
 export function LensProductView({
-  candidate, onBack, favorite = false, favoriteNote = null, onFavorite,
+  candidate,
+  enriching = false,
+  onBack,
+  favorite = false,
+  favoriteNote = null,
+  onFavorite,
 }: {
   candidate: LensCandidate;
+  enriching?: boolean;
   onBack: () => void;
   favorite?: boolean;
   favoriteNote?: TranslationKey | null;
   onFavorite?: (candidate: LensCandidate) => void;
 }) {
-  const theme = useTheme();
   const t = useT();
+  const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { width, height } = useWindowDimensions();
+  const { width } = useWindowDimensions();
   const queryClient = useQueryClient();
   const sessionId = useSessionId();
-  const [size, setSize] = useState<string>(NO_CHOICE);
-  const [color, setColor] = useState<string>(NO_CHOICE);
-  const [activeImage, setActiveImage] = useState(0);
-  const [galleryOpen, setGalleryOpen] = useState(false);
-  const [galleryZoomed, setGalleryZoomed] = useState(false);
+  const productKey = `${candidate.id}|${candidate.sourceUrl}`;
+  const [selectedSize, setSelectedSize] = useState(() => candidate.sizes.length === 1 ? candidate.sizes[0] : '');
+  const [selectedColor, setSelectedColor] = useState(() => candidate.colors.length === 1 ? candidate.colors[0] : '');
+  const [page, setPage] = useState(0);
   const [orderBusy, setOrderBusy] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const heroPagerRef = useRef<ScrollView>(null);
-  const fullscreenPagerRef = useRef<ScrollView>(null);
+  const [orderAdded, setOrderAdded] = useState(false);
+  const [orderMessage, setOrderMessage] = useState('');
+  const [addedUnits, setAddedUnits] = useState(0);
+  const [addedUnitsAt, setAddedUnitsAt] = useState(0);
+  const [addedDeadline, setAddedDeadline] = useState('');
+  const [addedClockOffset, setAddedClockOffset] = useState(0);
+  const [confirmationOpen, setConfirmationOpen] = useState(false);
+  const [sizeOpenRequest, setSizeOpenRequest] = useState(0);
+  const [colorAttention, setColorAttention] = useState(false);
+  const [zoomed, setZoomed] = useState(false);
+  const [now, setNow] = useState(Date.now());
   const orderLock = useRef(false);
+  const orderRequestRef = useRef(0);
   const mountedRef = useRef(true);
+  const lastChoiceRef = useRef<'size' | 'color'>('size');
+  const scrollRef = useRef<ScrollView>(null);
+  const optionsY = useRef(0);
+  const scrollY = useRef(new Animated.Value(0)).current;
+
+  const cartQuery = useQuery({
+    queryKey: ['cart', sessionId],
+    queryFn: ({ signal }) => fetchAyroviCart({ sessionId: sessionId || '', signal }),
+    enabled: Boolean(sessionId),
+    staleTime: 15_000,
+    retry: false,
+  });
+
+  const selection = useMemo(
+    () => resolveSelection(candidate, selectedSize, selectedColor),
+    [candidate, selectedColor, selectedSize],
+  );
+  const choice = effectiveChoice(candidate, selectedSize, selectedColor);
+  const resolvedSize = choice.size;
+  const resolvedColor = choice.color;
+  const sizeUnavailable = useMemo(
+    () => unavailableValues(candidate, 'size', resolvedColor),
+    [candidate, resolvedColor],
+  );
+  const colorUnavailable = useMemo(
+    () => unavailableValues(candidate, 'color', resolvedSize),
+    [candidate, resolvedSize],
+  );
+  const missingSize = candidate.sizes.length > 1 && !resolvedSize.trim();
+  const missingColor = candidate.colors.length > 1 && !resolvedColor.trim();
+  const missing = missingChoice(candidate, selectedSize, selectedColor);
+  const missingKind: 'size' | 'color' | 'both' | null = missingSize && missingColor
+    ? 'both' : missingSize ? 'size' : missingColor ? 'color' : null;
+  // Un choix manquant est une action guidée, jamais un motif de désactivation.
+  // Sans variante positive, un produit explicitement épuisé reste non commandable.
+  const productUnavailable = !selection.option && candidate.availability === 'out_of_stock';
+  const actionableBlock: OrderBlock = missing ? null : productUnavailable ? 'manual' : orderBlock(selection);
+  const displayCandidate = useMemo<LensCandidate>(() => {
+    if (!selection.option) return candidate;
+    return {
+      ...candidate,
+      price: selection.option.price ?? candidate.price,
+      currency: selection.option.currency ?? candidate.currency,
+      priceTnd: selection.option.priceTnd ?? candidate.priceTnd,
+      priceOrigin: 'merchant',
+      priceToken: selection.option.priceToken ?? candidate.priceToken,
+      priceVerificationStatus: selection.option.priceToken ? 'VERIFIED' : candidate.priceVerificationStatus,
+      availability: selection.option.availability === 'unavailable' ? 'out_of_stock' : candidate.availability,
+    };
+  }, [candidate, selection.option]);
+  const gallery = useMemo(
+    () => lensGallery(candidate, resolvedColor || null, 'detail'),
+    [candidate, resolvedColor],
+  );
+  const heroHeight = Math.max(390, Math.min(560, Math.round(width * 1.2)));
+
+  const facts = candidate.details ?? [];
+  const detailFacts = facts.filter((fact) => fact.section === 'details');
+  const materialFacts = facts.filter((fact) => fact.section === 'material');
+  const fitFacts = facts.filter((fact) => fact.section === 'fit');
+  const cartDeadline = earliestCartDeadline(cartQuery.data);
+  const deadline = useMemo(() => [cartDeadline, addedDeadline]
+    .filter((value) => Number.isFinite(Date.parse(value)))
+    .sort((left, right) => Date.parse(left) - Date.parse(right))[0] ?? '', [addedDeadline, cartDeadline]);
+  const queryClockOffset = useMemo(() => cartQuery.data?.serverNow
+    ? serverClockOffset(cartQuery.data.serverNow, cartQuery.dataUpdatedAt || Date.now()) : 0,
+  [cartQuery.data?.serverNow, cartQuery.dataUpdatedAt]);
+  const clockOffset = deadline && deadline === addedDeadline ? addedClockOffset : queryClockOffset;
+  const countdownExpired = Boolean(deadline) && remainingMs(deadline, now + clockOffset) === 0;
+  const countdown = deadline ? formatCartCountdown(deadline, now + clockOffset) : '';
+  const cartUnits = addedUnitsAt ? addedUnits : cartQuery.data?.units ?? 0;
+
+  useEffect(() => {
+    if (!addedUnitsAt || cartQuery.dataUpdatedAt <= addedUnitsAt || !cartDeadline) return;
+    setAddedUnitsAt(0);
+    setAddedUnits(0);
+    setAddedDeadline('');
+    setAddedClockOffset(0);
+  }, [addedUnitsAt, cartDeadline, cartQuery.dataUpdatedAt]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -432,287 +615,401 @@ export function LensProductView({
   }, []);
 
   useEffect(() => {
-    orderLock.current = false;
-    setSize(NO_CHOICE);
-    setColor(NO_CHOICE);
-    setActiveImage(0);
-    setGalleryOpen(false);
-    setGalleryZoomed(false);
-    setMessage(null);
-  }, [candidate]);
-
-  const sizeValue = size === NO_CHOICE ? '' : size;
-  const colorValue = color === NO_CHOICE ? '' : color;
-  const choice = effectiveChoice(candidate, sizeValue, colorValue);
-  const selection = useMemo(
-    () => resolveSelection(candidate, choice.size, choice.color),
-    [candidate, choice.color, choice.size],
-  );
-  const pricedCandidate = useMemo<LensCandidate>(() => {
-    if (!selection.offer.fromVariant) return candidate;
-    return {
-      ...candidate,
-      promo: null,
-      price: selection.offer.price,
-      currency: selection.offer.currency,
-      priceTnd: selection.offer.priceTnd,
-      originalPrice: null,
-      originalPriceTnd: null,
-    };
-  }, [candidate, selection.offer]);
-  const block = orderBlock(selection);
-  const needsChoice = missingChoice(candidate, sizeValue, colorValue);
-  const missingSizeChoice = candidate.sizes.length > 1 && !sizeValue.trim();
-  const missingColorChoice = candidate.colors.length > 1 && !colorValue.trim();
-  const choicePromptKey: TranslationKey = missingSizeChoice && missingColorChoice
-    ? 'lens.product.chooseOption'
-    : missingSizeChoice ? 'lens.product.chooseSize' : 'lens.product.chooseColor';
-  const gallery = useMemo(() => lensGallery(candidate, choice.color || null, 'detail'), [candidate, choice.color]);
-  const galleryKey = gallery.map((item) => item.original).join('|');
-  useEffect(() => setActiveImage(0), [galleryKey]);
-  const heroHeight = Math.min(690, height * 0.72, Math.max(width * 1.12, height * 0.64));
-  const fullscreenImageHeight = Math.max(1, height - insets.top - insets.bottom - 58);
+    if (!deadline) return undefined;
+    setNow(Date.now());
+    const timer = setInterval(() => setNow(Date.now()), 1_000);
+    return () => clearInterval(timer);
+  }, [deadline]);
 
   useEffect(() => {
-    const frame = requestAnimationFrame(() => {
-      const pager = galleryOpen ? fullscreenPagerRef.current : heroPagerRef.current;
-      pager?.scrollTo({ x: activeImage * width, y: 0, animated: false });
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [activeImage, galleryKey, galleryOpen, width]);
+    setSelectedSize(candidate.sizes.length === 1 ? candidate.sizes[0] : '');
+    setSelectedColor(candidate.colors.length === 1 ? candidate.colors[0] : '');
+    setPage(0);
+    setZoomed(false);
+    setOrderMessage('');
+    setOrderAdded(false);
+    setConfirmationOpen(false);
+    setColorAttention(false);
+    lastChoiceRef.current = 'size';
+    orderLock.current = false;
+    orderRequestRef.current += 1;
+  // Progressive enrichment keeps the same product key and must not erase choices.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productKey]);
 
-  const setIndexFromScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const index = Math.round(event.nativeEvent.contentOffset.x / Math.max(1, width));
-    setActiveImage(Math.max(0, Math.min(index, gallery.length - 1)));
-    setGalleryZoomed(false);
-  };
+  useEffect(() => {
+    setSelectedSize((current) => candidate.sizes.length === 1
+      ? candidate.sizes[0]
+      : candidate.sizes.includes(current) ? current : '');
+    setSelectedColor((current) => candidate.colors.length === 1
+      ? candidate.colors[0]
+      : candidate.colors.includes(current) ? current : '');
+  }, [candidate.colors, candidate.sizes]);
 
-  const order = useCallback(async () => {
-    if (orderLock.current) return;
-    setMessage(null);
-    if (needsChoice) {
-      setMessage(t(choicePromptKey));
+  useEffect(() => {
+    const blockedSize = Boolean(selectedSize) && sizeUnavailable.has(selectedSize);
+    const blockedColor = Boolean(selectedColor) && colorUnavailable.has(selectedColor);
+    if (!blockedSize && !blockedColor) return;
+    if (blockedSize && blockedColor) {
+      // Garder le choix le plus récent et retirer son ancienne contrepartie.
+      if (lastChoiceRef.current === 'size') setSelectedColor('');
+      else setSelectedSize('');
+    } else if (blockedSize) setSelectedSize('');
+    else setSelectedColor('');
+    setOrderMessage('');
+  }, [colorUnavailable, selectedColor, selectedSize, sizeUnavailable]);
+
+  useEffect(() => {
+    if (page >= gallery.length) setPage(0);
+  }, [gallery.length, page]);
+
+  useEffect(() => {
+    if (!orderAdded) return undefined;
+    const timer = setTimeout(() => setOrderAdded(false), 2_200);
+    return () => clearTimeout(timer);
+  }, [orderAdded]);
+
+  const chromeOpacity = scrollY.interpolate({
+    inputRange: [Math.max(120, heroHeight - 230), Math.max(220, heroHeight - 90)],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  });
+
+  const onMomentumEnd = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const next = Math.round(event.nativeEvent.contentOffset.x / Math.max(1, width));
+    setPage(Math.max(0, Math.min(gallery.length - 1, next)));
+  }, [gallery.length, width]);
+
+  const promptChoice = useCallback(() => {
+    setOrderMessage(
+      missingKind === 'size' ? t('lens.product.chooseSize')
+        : missingKind === 'color' ? t('lens.product.chooseColor')
+          : t('lens.product.chooseOption'),
+    );
+    if (missingKind === 'size' || missingKind === 'both') {
+      setSizeOpenRequest((value) => value + 1);
       return;
     }
+    setColorAttention(true);
+    scrollRef.current?.scrollTo?.({ y: Math.max(0, optionsY.current - 100), animated: theme.motion.reduced !== 0 });
+  }, [missingKind, t, theme.motion.reduced]);
+
+  const submitOrder = useCallback(async () => {
+    if (orderLock.current || orderAdded) return;
+    if (missing) {
+      promptChoice();
+      return;
+    }
+    if (!sessionId || actionableBlock) return;
     const payload = buildCartPayload({
       candidate,
       selection,
-      size: choice.size,
-      color: choice.color,
+      size: resolvedSize,
+      color: resolvedColor,
       quantity: 1,
       customerNote: '',
     });
     if (!payload) {
-      setMessage(t(BLOCK_KEY[block ?? 'incomplete']));
+      setOrderMessage(t('lens.product.incomplete'));
       return;
     }
     orderLock.current = true;
+    const requestId = ++orderRequestRef.current;
     setOrderBusy(true);
+    setOrderMessage('');
     try {
-      await addExternalToCart({ payload, sessionId });
-      await queryClient.invalidateQueries({ queryKey: ['cart'] });
-      if (mountedRef.current) router.push('/checkout');
+      const result = await addExternalToCart({ payload, sessionId });
+      const receivedAt = Date.now();
+      void queryClient.invalidateQueries({ queryKey: ['cart'] }).catch(() => undefined);
+      if (!mountedRef.current || requestId !== orderRequestRef.current) return;
+      setAddedUnits(result.totalItemsCount);
+      setAddedUnitsAt(receivedAt);
+      setAddedDeadline(result.quoteExpiresAt);
+      setAddedClockOffset(serverClockOffset(result.serverNow, receivedAt));
+      setOrderAdded(true);
+      setConfirmationOpen(true);
+      Vibration.vibrate(28);
     } catch (error) {
-      if (mountedRef.current) {
-        const key = refusalKey(error);
-        setMessage(key.startsWith('lens.') ? t(key as TranslationKey) : key);
+      if (!mountedRef.current || requestId !== orderRequestRef.current) return;
+      if (error instanceof ApiError) {
+        if (error.code === 'VARIANT_AMBIGUOUS') setOrderMessage(t('lens.product.ambiguous'));
+        else if (error.code === 'VARIANT_UNAVAILABLE' || error.code === 'VARIANT_SELECTION_INVALID') setOrderMessage(t('lens.product.variantRefused'));
+        else if (error.code === 'INVALID_AYROVIX_PRICE_TOKEN') setOrderMessage(t('lens.product.expired'));
+        else setOrderMessage(error.message || t('lens.product.orderFailed'));
+      } else {
+        setOrderMessage(t('lens.product.orderFailed'));
       }
     } finally {
-      orderLock.current = false;
-      if (mountedRef.current) setOrderBusy(false);
+      if (requestId === orderRequestRef.current) {
+        orderLock.current = false;
+        if (mountedRef.current) setOrderBusy(false);
+      }
     }
-  }, [block, candidate, choice.color, choice.size, choicePromptKey, needsChoice, queryClient, selection, sessionId, t]);
+  }, [
+    actionableBlock, candidate, missing, orderAdded, promptChoice, queryClient,
+    resolvedColor, resolvedSize, selection, sessionId, t,
+  ]);
+
+  const message = orderMessage || (actionableBlock ? t(BLOCK_KEY[actionableBlock]) : '');
+  const actionLabel = orderAdded ? t('lens.product.added')
+    : missingKind === 'size' ? t('lens.product.chooseSizeAction')
+      : missingKind === 'color' ? t('lens.product.chooseColorAction')
+        : missingKind === 'both' ? t('lens.product.chooseOptionsAction')
+          : t('lens.product.order');
 
   return (
-    <View style={[styles.screen, { backgroundColor: theme.colors.canvas }]} testID="lens-product-view">
-      <StatusBar style={galleryOpen || theme.mode === 'dark' ? 'light' : 'dark'} />
-      <View
+    <View style={[styles.screen, { backgroundColor: theme.colors.surface }]} testID="lens-product-view">
+      <Animated.View
+        pointerEvents="none"
         style={[
-          styles.productHeader,
+          styles.headerBackdrop,
           {
-            paddingTop: insets.top,
-            minHeight: insets.top + 58,
+            height: insets.top + 58,
             backgroundColor: theme.colors.surface,
             borderBottomColor: theme.colors.line,
-            flexDirection: theme.isRTL ? 'row-reverse' : 'row',
+            opacity: chromeOpacity,
           },
         ]}
+      />
+      <View
+        pointerEvents="box-none"
+        style={[styles.productHeader, { paddingTop: insets.top + 7, flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}
       >
         <Pressable
           onPress={onBack}
           accessibilityRole="button"
           accessibilityLabel={t('lens.product.back')}
-          hitSlop={HIT_SLOP}
-          testID="lens-product-back"
-          style={styles.headerButton}
+          hitSlop={8}
+          style={({ pressed }) => [styles.headerRoundButton, { opacity: pressed ? theme.opacity.subtle : 1 }]}
         >
-          <Ionicons name={theme.isRTL ? 'arrow-forward' : 'arrow-back'} size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
+          <Ionicons name={theme.isRTL ? 'arrow-forward' : 'arrow-back'} size={23} color={LENS_COLORS.black} accessibilityElementsHidden />
         </Pressable>
-        <AppText variant="label" weight="bold" align="center" style={styles.headerTitle} numberOfLines={1}>
-          {candidate.brand || t('lens.product.header')}
-        </AppText>
-        <View style={styles.headerButton} />
+        <Animated.View pointerEvents="none" style={[styles.collapsedTitle, { opacity: chromeOpacity }]}>
+          <AppText weight="bold" numberOfLines={1}>{candidate.title}</AppText>
+        </Animated.View>
+        <Pressable
+          onPress={() => router.push('/cart')}
+          accessibilityRole="button"
+          accessibilityLabel={[
+            `${t('tabs.cart')}: ${cartUnits}`,
+            deadline ? (countdownExpired ? t('lens.cart.expired') : t('lens.cart.validFor', { time: countdown })) : '',
+          ].filter(Boolean).join('. ')}
+          style={({ pressed }) => [
+            styles.cartCapsule,
+            theme.isRTL ? styles.cartCapsuleRTL : styles.cartCapsuleLTR,
+            { opacity: pressed ? theme.opacity.subtle : 1, flexDirection: theme.isRTL ? 'row-reverse' : 'row' },
+          ]}
+        >
+          <Ionicons name="bag-handle-outline" size={18} color={LENS_COLORS.black} accessibilityElementsHidden />
+          <AppText weight="bold" style={styles.cartCount}>{cartUnits}</AppText>
+          {deadline ? (
+            <AppText variant="caption" weight="bold" style={{ color: countdownExpired ? LENS_COLORS.sale : ACTION_GRADIENT[2] }}>
+              {countdownExpired ? t('lens.cart.expiredShort') : countdown}
+            </AppText>
+          ) : null}
+        </Pressable>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 28 }}>
-        <View style={[styles.gallery, { height: heroHeight, backgroundColor: theme.colors.infoSoft }]}>
-          {gallery.length > 0 ? (
-            <ScrollView
-              key={`hero-${galleryKey}`}
-              ref={heroPagerRef}
-              horizontal
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-              onMomentumScrollEnd={setIndexFromScroll}
-              contentOffset={{ x: activeImage * width, y: 0 }}
-            >
-              {gallery.map((item, index) => (
-                <Pressable
-                  key={item.original}
-                  onPress={() => { setActiveImage(index); setGalleryZoomed(false); setGalleryOpen(true); }}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('lens.product.openGallery')}
-                  accessibilityHint={t('lens.product.galleryZoomHint')}
-                  testID={index === activeImage ? 'lens-product-image' : undefined}
-                  style={{ width, height: heroHeight }}
-                >
-                  <AppImage
-                    uri={item.uris[0]}
-                    fallbackUris={item.uris.slice(1)}
-                    contentFit="contain"
-                    style={styles.heroImage}
-                    decorative
-                    testID={index === activeImage ? 'lens-product-image-media' : undefined}
-                  />
-                </Pressable>
-              ))}
-            </ScrollView>
-          ) : (
-            <AppImage style={styles.heroImage} accessibilityLabel={candidate.title} testID="lens-product-image" />
-          )}
-
-          {candidate.promo ? (
-            <View style={[styles.heroPromo, theme.isRTL ? { right: 16 } : { left: 16 }]}>
-              <AppText variant="caption" weight="bold" color={LENS_COLORS.white}>{t('lens.promo')}</AppText>
-            </View>
-          ) : null}
+      <Animated.ScrollView
+        ref={scrollRef}
+        style={styles.scroll}
+        contentContainerStyle={[styles.productScroll, { paddingBottom: 96 + insets.bottom }]}
+        showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
+      >
+        <View style={[styles.gallery, { width, height: heroHeight, backgroundColor: theme.colors.infoSoft }]}>
+          <ScrollView
+            horizontal
+            pagingEnabled
+            directionalLockEnabled
+            scrollEnabled={!zoomed}
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={onMomentumEnd}
+          >
+            {gallery.map((media, index) => (
+              <ZoomableGalleryImage
+                key={`${media.original}-${index}`}
+                uri={media.uris[0] || media.original}
+                fallbackUris={media.uris.slice(1)}
+                label={`${candidate.title} ${index + 1}`}
+                width={width}
+                height={heroHeight}
+                active={index === page}
+                onZoomChange={index === page ? setZoomed : () => undefined}
+              />
+            ))}
+          </ScrollView>
+          <View style={styles.heroFade} pointerEvents="none" />
           {onFavorite ? (
             <Pressable
               onPress={() => onFavorite(candidate)}
               disabled={favorite}
               accessibilityRole="button"
-              accessibilityLabel={t(favorite ? 'lens.favorited' : 'lens.favorite')}
+              accessibilityLabel={favorite ? t('lens.favorited') : t('lens.favorite')}
               accessibilityState={{ selected: favorite, disabled: favorite }}
-              style={[styles.heroFavorite, theme.isRTL ? { left: 16 } : { right: 16 }, { backgroundColor: theme.colors.surface }]}
+              style={({ pressed }) => [
+                styles.favorite,
+                theme.isRTL ? styles.favoriteRTL : styles.favoriteLTR,
+                { top: insets.top + 66, opacity: favorite ? 0.72 : pressed ? theme.opacity.subtle : 1 },
+              ]}
             >
-              <Ionicons name={favorite ? 'heart' : 'heart-outline'} size={theme.iconSize.lg} color={favorite ? LENS_COLORS.sale : theme.colors.ink} accessibilityElementsHidden />
+              <Ionicons name={favorite ? 'heart' : 'heart-outline'} size={22} color={favorite ? LENS_COLORS.sale : LENS_COLORS.black} accessibilityElementsHidden />
             </Pressable>
           ) : null}
-          {gallery.length > 0 ? (
-            <View style={[styles.counter, theme.isRTL ? { right: 18 } : { left: 18 }]}>
-              <AppText variant="caption" weight="bold">{`${activeImage + 1} / ${gallery.length}`}</AppText>
+          {candidate.promo ? (
+            <View style={[
+              styles.promoBadge,
+              theme.isRTL ? styles.promoBadgeRTL : styles.promoBadgeLTR,
+              { borderRadius: theme.radius.full },
+            ]}>
+              <AppText variant="caption" weight="bold" style={styles.promoText}>{candidate.promo.label || t('lens.promo')}</AppText>
             </View>
           ) : null}
-          {gallery.length > 1 ? (
-            <View style={styles.dots} accessibilityElementsHidden>
-              {gallery.slice(0, 7).map((item, index) => (
-                <View
-                  key={item.original}
-                  style={[
-                    styles.dot,
-                    { backgroundColor: index === activeImage ? theme.colors.ink : theme.colors.lineControl },
-                  ]}
-                />
-              ))}
-            </View>
-          ) : null}
+          <View style={[
+            styles.counter,
+            theme.isRTL ? styles.counterRTL : styles.counterLTR,
+            { borderRadius: theme.radius.full },
+          ]}>
+            <AppText variant="caption" weight="bold" style={styles.counterText}>{`${page + 1}/${gallery.length}`}</AppText>
+          </View>
         </View>
 
-        <View style={[styles.details, { backgroundColor: theme.colors.surface }]}>
-          {candidate.brand ? <AppText variant="label" weight="bold">{candidate.brand}</AppText> : null}
-          <AppText variant="display" weight="semibold">{candidate.title}</AppText>
-          {candidate.description ? (
-            <AppText color={theme.colors.muted} numberOfLines={3}>{candidate.description}</AppText>
-          ) : null}
+        <View style={[
+          styles.detailsSheet,
+          { borderTopLeftRadius: 26, borderTopRightRadius: 26, backgroundColor: theme.colors.surface },
+        ]}>
+          <View style={[styles.sheetHandle, { backgroundColor: theme.colors.lineControl }]} />
+          {candidate.brand ? <AppText variant="caption" color={theme.colors.muted} style={styles.brand}>{candidate.brand.toLocaleUpperCase()}</AppText> : null}
+          <AppText variant="title" weight="bold" style={styles.productTitle}>{candidate.title}</AppText>
           {candidate.ratingKind === 'merchant' && candidate.rating != null ? (
-            <Stars rating={candidate.rating} count={candidate.ratingCount} />
+            <View style={[styles.ratingRow, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
+              <Ionicons name="star" size={17} color={LENS_COLORS.star} accessibilityElementsHidden />
+              <AppText weight="bold">{candidate.rating.toFixed(1)}</AppText>
+              {candidate.ratingCount ? <AppText variant="caption" color={theme.colors.muted}>{`(${candidate.ratingCount})`}</AppText> : null}
+            </View>
           ) : null}
-          <LensPriceBlock candidate={pricedCandidate} />
+          <LensPriceBlock candidate={displayCandidate} compact={false} />
+          {favoriteNote ? (
+            <AppText variant="caption" color={theme.status.danger.fg} accessibilityRole="alert">{t(favoriteNote)}</AppText>
+          ) : null}
+          {resolvedSize || resolvedColor ? (
+            <View style={[styles.choiceSummary, { backgroundColor: theme.colors.infoSoft, borderRadius: theme.radius.control }]}>
+              <AppText variant="caption" color={theme.colors.muted}>
+                {[resolvedSize && `${candidate.optionLabel || t('lens.product.size')}: ${resolvedSize}`, resolvedColor && `${t('lens.product.color')}: ${resolvedColor}`]
+                  .filter(Boolean).join('  ·  ')}
+              </AppText>
+            </View>
+          ) : null}
 
-          <ColorSelector candidate={candidate} value={colorValue} onChange={setColor} />
-          <OptionSelector
-            label={candidate.optionLabel || t('lens.product.size')}
-            values={candidate.sizes}
-            value={sizeValue}
-            onChange={setSize}
-          />
+          <View onLayout={(event) => { optionsY.current = heroHeight + event.nativeEvent.layout.y; }} style={styles.optionsArea}>
+            <OptionSelector
+              label={candidate.optionLabel || t('lens.product.size')}
+              values={candidate.sizes}
+              value={resolvedSize}
+              onChange={(value) => { lastChoiceRef.current = 'size'; setSelectedSize(value); setOrderMessage(''); }}
+              openRequest={sizeOpenRequest}
+              disabledValues={sizeUnavailable}
+            />
+            <ColorSelector
+              candidate={candidate}
+              value={resolvedColor}
+              onChange={(value) => { lastChoiceRef.current = 'color'; setSelectedColor(value); setColorAttention(false); setOrderMessage(''); }}
+              disabledValues={colorUnavailable}
+              attention={colorAttention}
+            />
+          </View>
 
-          {!block && needsChoice ? <AppText variant="caption" color={theme.colors.muted}>{t(choicePromptKey)}</AppText> : null}
-          {block ? <AppText variant="caption" color={theme.colors.muted}>{t(BLOCK_KEY[block])}</AppText> : null}
-          {favoriteNote ? <AppText variant="caption" color={theme.status.danger.fg} accessibilityRole="alert">{t(favoriteNote)}</AppText> : null}
-          {message ? <AppText variant="caption" color={theme.status.danger.fg} accessibilityRole="alert">{message}</AppText> : null}
+          {enriching ? (
+            <View style={[styles.enrichingRow, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
+              <WaitingBars compact />
+              <AppText variant="caption" color={theme.colors.muted}>{t('lens.product.enriching')}</AppText>
+            </View>
+          ) : null}
 
-          <Button
-            label={orderBusy ? t('lens.product.ordering') : t('lens.product.order')}
-            onPress={order}
-            busy={orderBusy}
-            disabled={!sessionId || needsChoice || block !== null}
-            block
-            testID="lens-order"
-          />
+          <View style={styles.accordions}>
+            <FactAccordion
+              title={t('lens.product.details')}
+              icon="information-circle-outline"
+              facts={detailFacts}
+              description={candidate.description}
+              defaultOpen
+            />
+            <FactAccordion title={t('lens.product.material')} icon="layers-outline" facts={materialFacts} />
+            <FactAccordion title={t('lens.product.fit')} icon="resize-outline" facts={fitFacts} />
+          </View>
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
+
+      <View style={[
+        styles.stickyAction,
+        {
+          paddingBottom: Math.max(insets.bottom, 10),
+          borderTopColor: theme.colors.line,
+          backgroundColor: theme.colors.surface,
+        },
+      ]}>
+        {message ? (
+          <AppText variant="caption" style={{ color: LENS_COLORS.sale }} numberOfLines={2} accessibilityRole="alert">
+            {message}
+          </AppText>
+        ) : null}
+        <Button
+          label={actionLabel}
+          onPress={() => { void submitOrder(); }}
+          disabled={!sessionId || Boolean(actionableBlock) || orderAdded}
+          busy={orderBusy}
+          testID="lens-add-to-cart"
+          block
+        />
+      </View>
 
       <Modal
-        visible={galleryOpen}
-        animationType="fade"
-        onRequestClose={() => { setGalleryZoomed(false); setGalleryOpen(false); }}
+        visible={confirmationOpen}
+        transparent
+        animationType={theme.motion.reduced === 0 ? 'none' : 'slide'}
+        onRequestClose={() => setConfirmationOpen(false)}
       >
-        <View style={[styles.fullscreen, { backgroundColor: LENS_COLORS.black, paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-          <View style={[styles.fullscreenHeader, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
-            <AppText variant="label" weight="bold" color={LENS_COLORS.white}>{`${activeImage + 1} / ${Math.max(1, gallery.length)}`}</AppText>
-            <Pressable
-              onPress={() => { setGalleryZoomed(false); setGalleryOpen(false); }}
-              accessibilityRole="button"
-              accessibilityLabel={t('sheet.close')}
-              hitSlop={HIT_SLOP}
-              style={styles.closeButton}
-              testID="lens-gallery-close"
-            >
-              <Ionicons name="close" size={theme.iconSize.lg} color={LENS_COLORS.white} accessibilityElementsHidden />
+        <View style={styles.confirmationBackdrop}>
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={() => setConfirmationOpen(false)}
+            accessibilityRole="button"
+            accessibilityLabel={t('common.close')}
+          />
+          <View style={[
+            styles.confirmationSheet,
+            {
+              paddingBottom: Math.max(insets.bottom, 18),
+              borderTopLeftRadius: theme.radius.sheet,
+              borderTopRightRadius: theme.radius.sheet,
+              backgroundColor: theme.colors.surface,
+            },
+          ]}>
+            <View style={[styles.confirmationIcon, { backgroundColor: theme.colors.infoSoft }]}>
+              <Ionicons name="checkmark" size={26} color={theme.status.success.fg} accessibilityElementsHidden />
+            </View>
+            <AppText variant="title" weight="bold" align="center" accessibilityRole="header">
+              {t('lens.cart.addedTitle')}
+            </AppText>
+            <AppText color={theme.colors.muted} align="center">{t('lens.cart.addedBody')}</AppText>
+            {deadline ? (
+              <View style={[styles.confirmationTimer, { backgroundColor: theme.colors.infoSoft }]}>
+                <Ionicons name="time-outline" size={19} color={ACTION_GRADIENT[2]} accessibilityElementsHidden />
+                <AppText weight="bold" style={{ color: ACTION_GRADIENT[2] }}>
+                  {countdownExpired ? t('lens.cart.expired') : t('lens.cart.validFor', { time: countdown })}
+                </AppText>
+              </View>
+            ) : null}
+            <Button
+              label={t('lens.cart.view')}
+              onPress={() => { setConfirmationOpen(false); router.push('/cart'); }}
+              block
+            />
+            <Pressable onPress={() => setConfirmationOpen(false)} accessibilityRole="button" style={styles.continueShopping}>
+              <AppText weight="semibold" align="center">{t('lens.cart.continue')}</AppText>
             </Pressable>
           </View>
-          <ScrollView
-            key={`fullscreen-${galleryKey}`}
-            ref={fullscreenPagerRef}
-            horizontal
-            pagingEnabled
-            scrollEnabled={!galleryZoomed}
-            showsHorizontalScrollIndicator={false}
-            onMomentumScrollEnd={setIndexFromScroll}
-            contentOffset={{ x: activeImage * width, y: 0 }}
-            style={styles.fullscreenPager}
-          >
-            {gallery.map((item, index) => (
-              <View key={item.original} style={{ width, height: fullscreenImageHeight }}>
-                <ZoomableGalleryImage
-                  uri={item.uris[0]}
-                  fallbackUris={item.uris.slice(1)}
-                  label={candidate.title}
-                  width={width}
-                  height={fullscreenImageHeight}
-                  active={index === activeImage}
-                  onZoomChange={setGalleryZoomed}
-                />
-              </View>
-            ))}
-          </ScrollView>
-          {!galleryZoomed ? (
-            <View style={[styles.zoomHint, { bottom: insets.bottom + 16 }]} pointerEvents="none">
-              <Ionicons name="search-outline" size={18} color={LENS_COLORS.white} accessibilityElementsHidden />
-              <AppText variant="caption" color={LENS_COLORS.white}>{t('lens.product.galleryZoomHint')}</AppText>
-            </View>
-          ) : null}
         </View>
       </Modal>
     </View>
@@ -721,36 +1018,91 @@ export function LensProductView({
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  productHeader: { alignItems: 'center', borderBottomWidth: StyleSheet.hairlineWidth, paddingHorizontal: 8 },
-  headerButton: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { flex: 1 },
-  gallery: { width: '100%', position: 'relative', overflow: 'hidden' },
-  heroImage: { width: '100%', height: '100%' },
-  heroPromo: { position: 'absolute', top: 16, backgroundColor: LENS_COLORS.sale, borderRadius: 7, paddingHorizontal: 10, paddingVertical: 6 },
-  heroFavorite: { position: 'absolute', top: 14, width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center' },
-  counter: { position: 'absolute', bottom: 18, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.82)' },
-  dots: { position: 'absolute', bottom: 22, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 6 },
-  dot: { width: 7, height: 7, borderRadius: 4 },
-  details: { gap: 16, paddingHorizontal: 20, paddingTop: 24, paddingBottom: 12 },
-  rating: { alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  stars: { gap: 2 },
+  scroll: { flex: 1 },
+  productScroll: { minHeight: '100%' },
+  headerBackdrop: {
+    position: 'absolute', top: 0, left: 0, right: 0, zIndex: 18,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  productHeader: {
+    position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20,
+    height: 108, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'flex-start', gap: 8,
+  },
+  headerRoundButton: {
+    width: 43, height: 43, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.94)',
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: LENS_COLORS.black, shadowOpacity: 0.12, shadowRadius: 9, shadowOffset: { width: 0, height: 3 }, elevation: 4,
+  },
+  collapsedTitle: { position: 'absolute', left: 68, right: 154, height: 43, justifyContent: 'center' },
+  cartCapsule: {
+    minHeight: 43, maxWidth: 148, paddingHorizontal: 12, borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.96)', alignItems: 'center', justifyContent: 'center', gap: 6,
+    shadowColor: LENS_COLORS.black, shadowOpacity: 0.12, shadowRadius: 9, shadowOffset: { width: 0, height: 3 }, elevation: 4,
+  },
+  cartCapsuleLTR: { marginLeft: 'auto' },
+  cartCapsuleRTL: { marginRight: 'auto' },
+  cartCount: { minWidth: 12, textAlign: 'center', color: LENS_COLORS.black },
+  gallery: { position: 'relative', overflow: 'hidden' },
+  heroFade: { position: 'absolute', left: 0, right: 0, top: 0, height: 110, backgroundColor: 'rgba(8,9,10,0.06)' },
+  favorite: {
+    position: 'absolute', width: 44, height: 44, borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.94)', alignItems: 'center', justifyContent: 'center',
+    shadowColor: LENS_COLORS.black, shadowOpacity: 0.1, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 3,
+  },
+  favoriteLTR: { right: 14 },
+  favoriteRTL: { left: 14 },
+  promoBadge: { position: 'absolute', bottom: 18, backgroundColor: LENS_COLORS.sale, paddingHorizontal: 10, paddingVertical: 6 },
+  promoBadgeLTR: { left: 14 },
+  promoBadgeRTL: { right: 14 },
+  promoText: { color: LENS_COLORS.white },
+  counter: { position: 'absolute', bottom: 18, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: 'rgba(255,255,255,0.9)' },
+  counterLTR: { right: 14 },
+  counterRTL: { left: 14 },
+  counterText: { color: LENS_COLORS.black },
+  detailsSheet: {
+    transform: [{ translateY: -24 }], minHeight: 500,
+    paddingHorizontal: 20, paddingTop: 12, paddingBottom: 24, gap: 10,
+  },
+  sheetHandle: { width: 44, height: 5, borderRadius: 3, alignSelf: 'center', marginBottom: 8 },
+  brand: { letterSpacing: 1.2, marginTop: 4 },
+  productTitle: { lineHeight: 30, marginBottom: 1 },
+  ratingRow: { alignItems: 'center', gap: 6, minHeight: 24 },
+  choiceSummary: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 8 },
+  optionsArea: { gap: 12, marginTop: 4 },
   optionBlock: { gap: 8, paddingTop: 4 },
   selector: { minHeight: 58, borderWidth: 1.5, paddingHorizontal: 16, alignItems: 'center', gap: 12 },
   selectorValue: { flex: 1 },
-  colorRow: { gap: 10 },
-  colorChoice: { width: 76, height: 104, gap: 4, borderWidth: 2, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', padding: 4 },
+  unavailableOption: { textDecorationLine: 'line-through' },
+  colorRow: { gap: 8, paddingEnd: 4 },
+  colorChoice: { width: 72, height: 98, gap: 4, borderWidth: 2, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', padding: 4 },
   colorImage: { width: '100%', flex: 1 },
   modalRoot: { flex: 1, justifyContent: 'flex-end' },
-  modalScrim: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.42)' },
+  modalScrim: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(0,0,0,0.42)' },
   optionSheet: { maxHeight: '72%', paddingTop: 12, paddingHorizontal: 20, gap: 10 },
-  sheetHandle: { width: 46, height: 5, borderRadius: 3, alignSelf: 'center', marginBottom: 8 },
+  optionList: { flexShrink: 1 },
   optionRow: { minHeight: 54, borderTopWidth: StyleSheet.hairlineWidth, alignItems: 'center', gap: 12 },
-  fullscreen: { flex: 1 },
-  fullscreenHeader: { minHeight: 58, alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, zIndex: 2 },
-  closeButton: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
-  fullscreenPager: { flex: 1 },
-  zoomViewport: { flex: 1, overflow: 'hidden' },
+  enrichingRow: { minHeight: 42, alignItems: 'center', gap: 12, marginTop: 4 },
+  accordions: { marginTop: 6, gap: 0 },
+  accordion: { borderTopWidth: StyleSheet.hairlineWidth },
+  accordionHeader: { minHeight: 62, alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  accordionHeading: { flex: 1, alignItems: 'center', gap: 12 },
+  accordionTitle: { fontSize: 16 },
+  accordionBody: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 16, paddingBottom: 20, gap: 16 },
+  description: { fontSize: 15, lineHeight: 23 },
+  factGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  factCell: { width: '48%', minHeight: 72, borderRadius: 11, paddingHorizontal: 12, paddingVertical: 10, gap: 4 },
+  factValue: { lineHeight: 20 },
+  stickyAction: {
+    position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 24,
+    borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingTop: 10, gap: 8,
+    shadowColor: LENS_COLORS.black, shadowOpacity: 0.1, shadowRadius: 12, shadowOffset: { width: 0, height: -3 }, elevation: 12,
+  },
+  confirmationBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(13,14,16,0.46)' },
+  confirmationSheet: { paddingHorizontal: 24, paddingTop: 24, gap: 12, alignItems: 'center' },
+  confirmationIcon: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
+  confirmationTimer: { minHeight: 44, alignSelf: 'stretch', borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 12 },
+  continueShopping: { minHeight: 44, alignSelf: 'stretch', justifyContent: 'center' },
+  zoomViewport: { overflow: 'hidden' },
   zoomContent: { flex: 1 },
   fullscreenImage: { width: '100%', height: '100%' },
-  zoomHint: { position: 'absolute', alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: 'rgba(0,0,0,0.58)' },
 });

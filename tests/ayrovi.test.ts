@@ -7,7 +7,7 @@ import { app, db, scraper } from '../src/server';
 import { DEFAULT_PAYMENT_METHODS, QatafoDatabase } from '../src/db/database';
 import { calculatePrice } from '../src/services/pricing';
 import { createCustomerSession, hashToken } from '../src/customer/auth';
-import { createAyrovixPriceToken } from '../src/ayrovix/priceQuote';
+import { createAyrovixPriceToken, inspectAyrovixPriceToken } from '../src/ayrovix/priceQuote';
 import { verifyKonnectCardPayment } from '../src/services/paymentGateway';
 
 const uniqueSession = (label: string) => `${label}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -479,6 +479,9 @@ describe('AYSONIC platform', () => {
       });
       expect(lensAdd.status, JSON.stringify(lensAdd.body)).toBe(201);
       expect(lensAdd.body.cartItem.priceVerificationStatus).toBe('VERIFIED');
+      expect(lensAdd.body.quoteExpiresAt).toBe(new Date(inspectAyrovixPriceToken(priceToken)!.expiresAt).toISOString());
+      expect(Number.isFinite(Date.parse(lensAdd.body.serverNow))).toBe(true);
+      expect(lensAdd.body.totalItemsCount).toBe(2);
     } finally {
       db.clearCart(sessionId);
     }

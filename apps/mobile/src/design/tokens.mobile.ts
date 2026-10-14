@@ -88,11 +88,37 @@ export const VIDEO_BACKDROP = '#000000';
 export const LENS_COLORS = {
   sale: '#D00000',
   star: '#F5B800',
+  /** Squelette Lens volontairement plus lisible que les séparateurs neutres. */
+  skeleton: '#C9C9C9',
+  /** Neutres fixes des cartes résultats, dont la zone texte reste blanche. */
+  resultMuted: '#666666',
+  resultLine: '#D7D7D7',
+  resultMedia: '#F5F5F5',
   cameraScrim: 'rgba(0,0,0,0.48)',
   cameraControl: 'rgba(20,20,20,0.68)',
   white: '#FFFFFF',
   black: '#0A0A0A',
 } as const;
+
+/**
+ * Action primaire 2026 — dérivée de la référence orange validée par le produit.
+ *
+ * Le jaune vif de la référence reste dans les petites barres d'attente : une
+ * grande surface jaune vif ferait perdre le contraste du libellé blanc. Le CTA
+ * va donc du rouge à l'orange puis à un jaune ocre profond, chaque étape restant
+ * lisible avec du texte blanc. Les prix soldés restent `LENS_COLORS.sale`.
+ */
+export const ACTION_GRADIENT = ['#A92D00', '#B93400', '#C94A00', '#9A6500'] as const;
+export const ACTION_ON_COLOR = '#FFFFFF';
+
+/** Une nuance par barre : l'indicateur ressemble à un signal vivant, pas à un spinner. */
+export const WAITING_GRADIENTS = [
+  ['#F04400', '#FFAA00'],
+  ['#F56A00', '#FFB000'],
+  ['#FF9800', '#FFD000'],
+  ['#E83B00', '#F06A00'],
+  ['#F26A00', '#FF9A20'],
+] as const;
 
 export const REEL_TILE = {
   widthFraction: 0.66,

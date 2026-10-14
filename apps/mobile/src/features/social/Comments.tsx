@@ -9,10 +9,11 @@
  * نخترعو نحنا: العميل ما يقرّرش هوية المعلّق.
  */
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { AppText } from '@/design/ui';
+import { WaitingBars } from '@/design/WaitingBars';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
 import { fetchComments, sendInteraction, type SocialComment } from '@/api/social';
@@ -68,7 +69,11 @@ export function Comments({ targetId }: CommentsProps) {
 
   return (
     <View style={styles.wrap}>
-      {comments.isPending ? <ActivityIndicator color={theme.colors.accent} /> : null}
+      {comments.isPending ? (
+        <View accessibilityRole="progressbar" accessibilityLabel={t('loading.server')}>
+          <WaitingBars compact testID="comments-loading-bars" />
+        </View>
+      ) : null}
       {comments.isError ? (
         <AppText variant="caption" color={theme.status.danger.fg}>{t('social.retry')}</AppText>
       ) : null}

@@ -13,9 +13,12 @@ const money = (amount: number): string => `${amount.toFixed(2)} TND`;
 export function LensPriceBlock({
   candidate,
   compact = false,
+  onWhite = false,
 }: {
   candidate: LensCandidate;
   compact?: boolean;
+  /** Les cartes résultats restent blanches, même si le téléphone est en mode sombre. */
+  onWhite?: boolean;
 }) {
   const theme = useTheme();
   const t = useT();
@@ -33,13 +36,13 @@ export function LensPriceBlock({
         <AppText
           variant={compact ? 'label' : 'title'}
           weight="bold"
-          color={discounted ? LENS_COLORS.sale : theme.colors.ink}
+          color={discounted ? LENS_COLORS.sale : onWhite ? LENS_COLORS.black : theme.colors.ink}
           numberOfLines={1}
         >
           {currentText}
         </AppText>
         {view.referenceTnd != null ? (
-          <AppText variant={compact ? 'caption' : 'body'} color={theme.colors.muted} style={styles.struck} numberOfLines={1}>
+          <AppText variant={compact ? 'caption' : 'body'} color={onWhite ? LENS_COLORS.resultMuted : theme.colors.muted} style={styles.struck} numberOfLines={1}>
             {money(view.referenceTnd)}
           </AppText>
         ) : null}

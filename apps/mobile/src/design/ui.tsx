@@ -4,15 +4,18 @@
  */
 import { Children, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
-  ActivityIndicator, Animated, Dimensions, Modal, Pressable, StyleSheet, Switch,
+  Animated, Dimensions, Modal, Pressable, StyleSheet, Switch,
   Text, TextInput, View, useWindowDimensions,
   type StyleProp, type TextInputProps, type TextProps, type TextStyle as RNTextStyle,
   type LayoutChangeEvent, type ViewStyle,
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, webDirection, type FontWeightName, type TextRole } from './theme';
 import { actionDirectionFor, responsiveMetricsFor, rowDirectionFor } from './layoutLogic';
+import { ACTION_GRADIENT, ACTION_ON_COLOR } from './tokens.mobile';
+import { WaitingBars } from './WaitingBars';
 import { useT } from '@/i18n';
 
 /* ── Texte ─────────────────────────────────────────────────────────────────── */
@@ -268,37 +271,44 @@ export function Button({ label, onPress, busy = false, disabled = false, tone = 
           // Système de boutons : pastille (CTA), contour encre épais en mode « quiet ».
           borderRadius: theme.radius.cta,
           borderWidth: quiet ? BUTTON_OUTLINE_WIDTH : StyleSheet.hairlineWidth,
-          backgroundColor: quiet ? 'transparent' : theme.colors.action,
-          borderColor: quiet ? theme.colors.ink : theme.colors.action,
-          opacity: blocked ? 0.5 : pressed ? 0.85 : 1,
+          backgroundColor: 'transparent',
+          borderColor: quiet ? theme.colors.ink : ACTION_GRADIENT[0],
+          opacity: disabled && !busy ? 0.5 : pressed ? 0.85 : 1,
         },
       ]}
     >
+      {!quiet ? (
+        <LinearGradient
+          pointerEvents="none"
+          colors={ACTION_GRADIENT}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[StyleSheet.absoluteFill, { borderRadius: theme.radius.cta }]}
+        />
+      ) : null}
       {leading ? (
         // Pictogramme (ex. logo Google) posé avant le libellé, dans le sens de lecture.
         <View style={[styles.leadingRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
           {leading}
-          <AppText variant="label" weight="bold" color={quiet ? theme.colors.ink : theme.colors.onAction}>
+          <AppText variant="label" weight="bold" color={quiet ? theme.colors.ink : ACTION_ON_COLOR}>
             {label}
           </AppText>
         </View>
       ) : (
-        <AppText variant="label" weight="bold" color={quiet ? theme.colors.ink : theme.colors.onAction}>
+        <AppText variant="label" weight="bold" color={quiet ? theme.colors.ink : ACTION_ON_COLOR}>
           {label}
         </AppText>
       )}
-      {/* Attente visible DANS le bouton, côté fin de ligne (comme les grands services) : le libellé reste centré. */}
+      {/* Attente visible DANS le bouton : cinq barres, jamais une roue indéfinie. */}
       {busy ? (
         <View
           pointerEvents="none"
           style={[styles.busyIndicator, theme.isRTL ? { left: 16 } : { right: 16 }]}
         >
-          <ActivityIndicator
+          <WaitingBars
             testID={testID ? `${testID}-busy` : undefined}
-            size="small"
-            color={quiet ? theme.colors.ink : theme.colors.onAction}
-            importantForAccessibility="no"
-            accessibilityElementsHidden
+            compact
+            light={!quiet}
           />
         </View>
       ) : null}
@@ -457,6 +467,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 16,
+    overflow: 'hidden',
   },
   actionGroup: { alignItems: 'stretch' },
   actionItem: { alignItems: 'stretch' },

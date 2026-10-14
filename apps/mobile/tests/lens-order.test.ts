@@ -57,9 +57,11 @@ describe('Lens — اختيار المتغيّر', () => {
     expect(sel.kind).toBe('manual');
     expect(orderBlock(sel)).toBe('manual');
   });
-  it('متغيّر غير متوفر لا يُختار', () => {
-    const c = candidate({ variantOptions: [option({ size: 'M', available: false, priceToken: 'tok' })] });
-    expect(resolveSelection(c, 'M', '').kind).toBe('manual');
+  it('متغيّر غير متوفر لا يُختار، سواء قالها عقد الاختيار أو المخزون', () => {
+    const disabled = candidate({ variantOptions: [option({ size: 'M', available: false, priceToken: 'tok' })] });
+    const outOfStock = candidate({ variantOptions: [option({ size: 'M', availability: 'unavailable', priceToken: 'tok' })] });
+    expect(resolveSelection(disabled, 'M', '').kind).toBe('manual');
+    expect(resolveSelection(outOfStock, 'M', '').kind).toBe('manual');
   });
 });
 

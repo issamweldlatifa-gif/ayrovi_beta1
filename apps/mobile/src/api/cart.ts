@@ -55,6 +55,7 @@ export interface AyroviCartLine {
 
 export interface AyroviCart {
   sessionId: string;
+  serverNow: string;
   items: AyroviCartLine[];
   /** مجموع القطع (موش عدد السطور). */
   units: number;
@@ -102,6 +103,7 @@ export function parseAyroviCart(payload: unknown): AyroviCart {
   const totalTND = num(payload.totalTND) ?? 0;
   return {
     sessionId: str(payload.sessionId),
+    serverNow: str(payload.serverNow),
     items,
     units: num(payload.totalItemsCount) ?? items.reduce((sum, line) => sum + line.quantity, 0),
     // المجموع متاع الخادم يشمل التوصيل: نرجّعو المنتوجات كيما هو معروف في الخادم.
@@ -165,6 +167,13 @@ export interface CatalogCartResult {
   totalItemsCount: number;
   totalTND: number;
   deliveryTND: number;
+}
+
+export interface ExternalCartResult extends CatalogCartResult {
+  /** Échéance inspectée dans la preuve signée de cette ligne Lens. */
+  quoteExpiresAt: string;
+  /** Horloge du serveur au moment de l'écriture, pour corriger l'affichage local. */
+  serverNow: string;
 }
 
 export async function addCatalogToCart(input: {
@@ -245,7 +254,7 @@ export const AYROVI_PRICE_TRUST_REASONS: Record<string, string> = {
 export async function addExternalToCart(
   input: { payload: import('@/features/lens/productOrder').ExternalCartPayload; sessionId: string },
   options: RequestOptions = {},
-): Promise<CatalogCartResult> {
+): Promise<ExternalCartResult> {
   // `x-session-id` إلزامي على الكتابة: بلاه الخادم يرد 400 قبل أي تحقق.
   // المسار AYROVI: الحقول في الجذر مع `success` (بلا `data`) ⇒ الغلاف الكامل.
   const data = await apiSendEnvelope<Record<string, unknown>>('POST', '/api/cart/items', {
@@ -262,5 +271,7 @@ export async function addExternalToCart(
     totalItemsCount: num(data.totalItemsCount) ?? 0,
     totalTND: num(data.totalTND) ?? 0,
     deliveryTND: num(data.deliveryTND) ?? 0,
+    quoteExpiresAt: str(data.quoteExpiresAt),
+    serverNow: str(data.serverNow),
   };
 }

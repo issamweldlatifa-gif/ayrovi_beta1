@@ -98,7 +98,11 @@ function toAyrovixProduct(db: QatafoDatabase, scraped: ScrapedProduct): AyrovixP
 
 /** Enriches only the opened page and only with same-merchant, title-matched data. */
 async function enrichSparseProduct(product: AyrovixProduct, url: string): Promise<void> {
-  if (product.images.length >= 4 && product.sizes.length > 0) return;
+  // Même une galerie complète peut manquer de matière/coupe : la fiche n'est
+  // « complète » que lorsque médias, option principale, description et faits
+  // structurés sont présents.
+  if (product.images.length >= 4 && product.sizes.length > 0
+    && product.description.trim().length >= 40 && (product.details?.length ?? 0) > 0) return;
   const extra = await enrichProduct(product.title, { cacheScope: url });
   if (!product.optionLabel && extra.optionLabel) product.optionLabel = extra.optionLabel;
   if (extra.images.length) {
@@ -123,7 +127,16 @@ async function enrichSparseProduct(product: AyrovixProduct, url: string): Promis
       })),
     ];
   }
-  if (!product.description && extra.description) product.description = extra.description;
+  if (extra.description && extra.description.trim().length > product.description.trim().length) {
+    product.description = extra.description;
+  }
+  if (extra.details.length) {
+    const known = new Set((product.details || []).map((fact) => `${fact.label.toLocaleLowerCase()}|${fact.value.toLocaleLowerCase()}`));
+    product.details = [
+      ...(product.details || []),
+      ...extra.details.filter((fact) => !known.has(`${fact.label.toLocaleLowerCase()}|${fact.value.toLocaleLowerCase()}`)),
+    ].slice(0, 18);
+  }
 }
 
 function recordProductAvailability(product: AyrovixProduct, checkedAt?: string | null): void {
