@@ -11,6 +11,8 @@
 | `src/api/` | عميل الـ HTTP، الأخطاء، والمحتوى العام |
 | `src/features/` | أقسام الشاشات (hero، شريط التنقّل، الإعلانات) |
 | `scripts/gen-tokens.mjs` | يولّد `src/design/tokens.generated.ts` من هوية المنتوج |
+| `scripts/device-acceptance.mjs` | فحص ADB/App Links وفتح Lens على هاتف حقيقي بلا ادّعاء اختبار الكاميرا آلياً |
+| `DEVICE_ACCEPTANCE_AR.md` | checklist القبول النهائي للكاميرا، المعرض، الاستئناف والـdeep link |
 | `metro.config.js` | بروكسي تطوير: `/api` و`/media` نحو الخادم المحلي |
 | `tests/` | اختبارات التطبيق (مستقلة عن اختبارات الموقع) |
 
@@ -49,10 +51,14 @@ npm run web            # معاينة في المتصفح
 ## الفحوص
 
 ```bash
-npm run tokens:check   # التوكنات مطابقة للهوية؟
-npm run typecheck      # TypeScript
-npm test               # اختبارات اللغة والهوية الرقمية
+npm run tokens:check       # التوكنات مطابقة للهوية؟
+npm run typecheck          # TypeScript
+npm test                   # اختبارات اللغة والهوية الرقمية
+npm run device:acceptance -- --launch  # جهاز ADB حقيقي: App Links + فتح Lens
 ```
+
+الأمر الأخير يحتاج هاتفاً مربوطاً؛ خطوات الكاميرا والمعرض اليدوية موجودة في
+`DEVICE_ACCEPTANCE_AR.md`.
 
 ## الأصل (الشعارات والخطوط)
 
