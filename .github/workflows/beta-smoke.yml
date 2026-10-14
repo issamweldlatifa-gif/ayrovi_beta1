@@ -374,7 +374,7 @@ jobs:
             case "$LINK_PKGS" in
               *demo*) LINKS_STATE="200 pkgs=$LINK_PKGS" ;;
               *) LINKS_STATE="200 production-seule pkgs=$LINK_PKGS"
-                 note "Couverture des liens" "—" "ℹ️ \`$LINK_PKGS\` — l\'APK de DÉMONSTRATION n\'est pas couvert : ajoutez \`ANDROID_APP_LINK_PACKAGES=app.ayrovi.mobile,app.ayrovi.mobile.demo\` pour tester les liens avec lui" ;;
+                 note "Couverture des liens" "—" "ℹ️ \`$LINK_PKGS\` — l\'APK de DÉMONSTRATION n\'est pas couvert : sur le serveur Beta, utilisez \`ANDROID_APP_LINK_PACKAGES=app.ayrovi.mobile.demo\` avec sa seule empreinte debug (jamais pour la package production)" ;;
             esac
           fi
 

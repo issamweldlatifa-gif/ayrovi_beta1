@@ -23,6 +23,9 @@ on:
     branches: [arena/9fd9a9fc-ayrovi-beta1]
     paths:
       - '.github/workflows/server-probe.yml'
+      # La configuration Render fait partie du comportement publié (notamment
+      # la délégation Android App Links), elle doit donc être sondée elle aussi.
+      - 'render.yaml'
       # Toute évolution des contrats API/Lens doit vérifier le commit réellement
       # servi. Une liste de trois fichiers laissait les routes panier et
       # l'enrichissement produit partir sans aucun diagnostic de déploiement.
@@ -103,6 +106,14 @@ jobs:
           BRANCH_SHA=$(sha_of arena/9fd9a9fc-ayrovi-beta1)
           printf 'Références : `main` = `%s`, branche = `%s`\n\n' "${MAIN_SHA:-inconnu}" "${BRANCH_SHA:-inconnu}" >> "$S"
 
+          # La preuve attendue vient du certificat qui signe réellement l'APK,
+          # pas d'une seconde constante copiée dans le workflow.
+          DEMO_SHA256=$(openssl pkcs12 \
+            -in apps/mobile/keystores/debug.p12 -passin pass:android \
+            -nokeys -clcerts 2>/dev/null \
+            | openssl x509 -noout -fingerprint -sha256 2>/dev/null \
+            | sed 's/^.*=//')
+
           echo "| Serveur | /api/health | /api/ready (commit / branche) | assetlinks | aywebs/health | Code servi |" >> "$S"
           echo "|---|---|---|---|---|---|" >> "$S"
 
@@ -120,9 +131,27 @@ jobs:
             if grep -q '"stats"' /tmp/aywebs 2>/dev/null; then AYWEBS_MARK="stats ✔ (branch)"; else AYWEBS_MARK="stats ✘ (main)"; fi
 
             # Type de réponse assetlinks : la route n'existe QUE sur le branch.
+            # Si c'est bien un tableau, on vérifie en plus la package de démo ET
+            # sa vraie empreinte. « JSON » seul ne prouve pas qu'Android acceptera
+            # l'APK publié.
+            LINKS_DEMO="—"
             case "$LINK_TYPE" in
               '<!DOCTYPE'*|'<html'*|'<!doctype'*) LINKS_KIND="HTML (route absente)" ;;
-              '['*) LINKS_KIND="JSON ✔" ;;
+              '['*)
+                LINKS_KIND="JSON ✔"
+                DEMO_LINK_STATE=$(DEMO_SHA256="$DEMO_SHA256" python3 -c 'import json, os
+          try: rows=json.load(open("/tmp/links"))
+          except Exception: rows=[]
+          targets=[row.get("target", {}) for row in rows if isinstance(row, dict)]
+          demo=[target for target in targets if target.get("package_name")=="app.ayrovi.mobile.demo"]
+          expected=os.environ.get("DEMO_SHA256", "").upper()
+          print("ok" if expected and any(expected in [str(v).upper() for v in target.get("sha256_cert_fingerprints", [])] for target in demo) else ("wrong" if demo else "missing"))' 2>/dev/null)
+                case "$DEMO_LINK_STATE" in
+                  ok) LINKS_DEMO="démo + certificat ✔" ;;
+                  wrong) LINKS_DEMO="⚠ certificat démo incorrect" ;;
+                  *) LINKS_DEMO="⚠ package démo absente" ;;
+                esac
+                ;;
               '{"'*) LINKS_KIND="JSON d'erreur" ;;
               *) LINKS_KIND="aucune réponse" ;;
             esac
@@ -144,9 +173,9 @@ jobs:
               VERDICT="⚠️ réponse $HEALTH_CODE"
             fi
 
-            printf '| `%s` | %s | `%s` / `%s` | %s | %s (%s) | %s |\n' \
-              "$BASE" "$HEALTH_CODE" "${READY_COMMIT:-—}" "${READY_BRANCH:-—}" "$LINKS_KIND" "$AYWEBS_CODE" "$AYWEBS_MARK" "$VERDICT" >> "$S"
-            SUMMARY_LINE="$SUMMARY_LINE {$BASE h=$HEALTH_CODE v=${HEALTH_VERSION:-—} commit=${READY_COMMIT:-—} branch=${READY_BRANCH:-—} links=$LINKS_KIND aywebs=$AYWEBS_CODE $AYWEBS_MARK}"
+            printf '| `%s` | %s | `%s` / `%s` | %s (%s) | %s (%s) | %s |\n' \
+              "$BASE" "$HEALTH_CODE" "${READY_COMMIT:-—}" "${READY_BRANCH:-—}" "$LINKS_KIND" "$LINKS_DEMO" "$AYWEBS_CODE" "$AYWEBS_MARK" "$VERDICT" >> "$S"
+            SUMMARY_LINE="$SUMMARY_LINE {$BASE h=$HEALTH_CODE v=${HEALTH_VERSION:-—} commit=${READY_COMMIT:-—} branch=${READY_BRANCH:-—} links=$LINKS_KIND demo=$LINKS_DEMO aywebs=$AYWEBS_CODE $AYWEBS_MARK}"
           done
 
           printf '\n> « Code servi » se lit sur des preuves : la route `/.well-known/assetlinks.json`\n> et le champ `stats` de `/api/v1/aywebs/health` n existent QUE sur le branch.\n> `commit`/`branche` deviennent fiables dès qu un serveur déploie ce branch.\n' >> "$S"

@@ -61,12 +61,15 @@ openssl x509 -in cert.pem -noout -fingerprint -sha256
 ## ⚠️ المتغيّر الثاني (لازم بجوج)
 
 البصمة وحدها تطلع البيان، بس **لحزمة الإصدار وحدها** (`app.ayrovi.mobile`).
-الـAPK التجريبي حزمتو `app.ayrovi.mobile.demo` وما تتغطّاش بالافتراضي ⇒ باش
-تجرّب «افتح في التطبيق» بالـAPK التجريبي، **زيد المتغيّر الثاني**:
+الـAPK التجريبي حزمتو `app.ayrovi.mobile.demo` وما تتغطّاش بالافتراضي ⇒ في
+خدمة الـBeta، اضبط الحزمة التجريبية وحدها:
 
 ```
 ANDROID_APP_LINK_SHA256 = 8E:20:…:52:53
-ANDROID_APP_LINK_PACKAGES = app.ayrovi.mobile,app.ayrovi.mobile.demo
+ANDROID_APP_LINK_PACKAGES = app.ayrovi.mobile.demo
 ```
 
-والفحص الآلي يقولها (حالة `production-seule` كان ناقص).
+ما نربطوش `app.ayrovi.mobile` ببصمة الـdebug: خدمة الإنتاج تضبط حزمة الإنتاج
+وحدها، مع بصمة مفتاح الإصدار وبصمة Google Play الحقيقية وقت يوفّرهم المالك.
+بهذا ما نخترعوش بصمة إنتاج وما نعطيوش مفتاحاً تجريبياً صلاحية حزمة الإنتاج.
+والفحص الآلي يقول `production-seule` إذا خدمة الـBeta نسيت حزمة العرض.
