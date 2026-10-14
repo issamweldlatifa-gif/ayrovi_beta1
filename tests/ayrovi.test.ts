@@ -468,7 +468,9 @@ describe('AYSONIC platform', () => {
     const previousCacheDir = process.env.AYROVI_VARIANT_CACHE_DIR;
     process.env.AYROVI_VARIANT_CACHE_DIR = cacheDir;
     const title = 'Pull marchand avec taille confirmée';
-    const url = 'https://merchant.example/products/pull-confirmed';
+    // Un domaine `.example` est volontairement refusé par le garde URL public.
+    // Utiliser une page marchande publique réaliste exerce donc le vrai contrat.
+    const url = 'https://www.amazon.fr/dp/PULLCONFIRMED';
     const quote = { price: 35, currency: 'EUR', title, referenceUrl: url, status: 'PENDING_MANUAL' as const };
     try {
       recordVariantContract(url, {
