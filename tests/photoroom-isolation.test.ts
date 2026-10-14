@@ -1,6 +1,6 @@
 import sharp from 'sharp';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { resetPhotoRoomMemoryForTests, isolationCacheInput, isolationProvider, isPhotoRoomPng, PHOTOROOM_SEGMENT_URL, removeBackgroundWithPhotoRoom, shouldPersistNegative } from '../src/services/photoroomIsolation';
+import { resetPhotoRoomMemoryForTests, isolationCacheInput, isolationProvider, isPhotoRoomPng, isPhotoRoomSandboxKey, PHOTOROOM_SEGMENT_URL, removeBackgroundWithPhotoRoom, shouldPersistNegative } from '../src/services/photoroomIsolation';
 import { isolateBuffer } from '../src/services/imageIsolation';
 import { segmentBuffer } from '../src/services/segmentation';
 
@@ -24,6 +24,16 @@ describe('isolation PhotoRoom (sandbox / dev)', () => {
     expect(isolationProvider({ AYROVI_ISOLATION_PROVIDER: 'photoroom' } as NodeJS.ProcessEnv)).toBe('local');
     expect(isolationProvider({ AYROVI_ISOLATION_PROVIDER: 'photoroom', PHOTOROOM_API_KEY: '  ' } as NodeJS.ProcessEnv)).toBe('local');
     expect(isolationProvider(ENV)).toBe('photoroom');
+  });
+
+  it('refuse toute clé sandbox en production pour ne jamais publier le filigrane', () => {
+    expect(isPhotoRoomSandboxKey(' sandbox_demo_key ')).toBe(true);
+    expect(isPhotoRoomSandboxKey('SB_demo_key')).toBe(true);
+    expect(isPhotoRoomSandboxKey('live_demo_key')).toBe(false);
+    expect(isolationProvider({ ...ENV, NODE_ENV: 'production' })).toBe('local');
+    expect(isolationProvider({ ...ENV, RENDER: 'true' })).toBe('local');
+    expect(isolationProvider({ ...ENV, PHOTOROOM_API_KEY: 'sandbox_demo_key', NODE_ENV: 'production' })).toBe('local');
+    expect(isolationProvider({ ...ENV, PHOTOROOM_API_KEY: 'live_demo_key', NODE_ENV: 'production' })).toBe('photoroom');
   });
 
   it('envoie la clé dans x-api-key vers sdk.photoroom.com et renvoie le PNG', async () => {

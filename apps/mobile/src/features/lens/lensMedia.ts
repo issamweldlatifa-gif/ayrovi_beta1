@@ -3,7 +3,8 @@
  *
  * Une galerie contient UNE diapositive par photo marchand. Chaque diapositive
  * possède ses replis : composition AYROVI → détourage → proxy → original.
- * Les replis ne deviennent jamais de fausses photos supplémentaires.
+ * Les miniatures privilégient le proxy léger pour apparaître immédiatement ;
+ * les replis ne deviennent jamais de fausses photos supplémentaires.
  */
 import { API_BASE_URL } from '@/api/config';
 import { mediaUrl } from '@/api/client';
@@ -56,12 +57,12 @@ export function lensMediaChain(
   const composedWidth = size === 'detail' ? 900 : 600;
   const proxyWidth = size === 'detail' ? 760 : size === 'thumb' ? 156 : 480;
   const encoded = encodeURIComponent(clean);
-  return unique([
-    mediaUrl(`/api/public/media/card?u=${encoded}&w=${composedWidth}`),
-    mediaUrl(`/api/public/media/isolated?url=${encoded}`),
-    mediaUrl(`/api/public/media/img?u=${encoded}&w=${proxyWidth}`),
-    original,
-  ]);
+  const composed = mediaUrl(`/api/public/media/card?u=${encoded}&w=${composedWidth}`);
+  const isolated = mediaUrl(`/api/public/media/isolated?url=${encoded}`);
+  const proxy = mediaUrl(`/api/public/media/img?u=${encoded}&w=${proxyWidth}`);
+  return size === 'thumb'
+    ? unique([proxy, composed, isolated, original])
+    : unique([composed, isolated, proxy, original]);
 }
 
 function colorGallery(candidate: LensCandidate, color?: string | null): string[] {

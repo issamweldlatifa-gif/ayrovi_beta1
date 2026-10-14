@@ -578,6 +578,8 @@ export const fr = {
   'lens.product.stockChecking': 'Vérification…',
   'lens.product.size': 'Taille',
   'lens.product.color': 'Couleur',
+  'lens.product.chooseSize': 'Choisissez une taille avant de commander.',
+  'lens.product.chooseColor': 'Choisissez une couleur avant de commander.',
   'lens.product.chooseOption': 'Choisissez la taille et la couleur avant de commander.',
   'lens.help.open': 'Comment utiliser Lens',
   'lens.help.title': 'Comment utiliser Lens',

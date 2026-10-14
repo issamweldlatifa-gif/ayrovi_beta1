@@ -23,6 +23,15 @@ describe('Lens — chaîne média native', () => {
     expect(chain[3]).toBe('https://cdn.example/product.jpg');
   });
 
+  it('charge une miniature par le proxy léger avant les transformations longues', () => {
+    const chain = lensMediaChain('https://cdn.example/product.jpg', 'thumb');
+    expect(chain).toHaveLength(4);
+    expect(chain[0]).toContain('/api/public/media/img?');
+    expect(chain[0]).toContain('w=156');
+    expect(chain[1]).toContain('/api/public/media/card?');
+    expect(chain[2]).toContain('/api/public/media/isolated?');
+  });
+
   it('un média local au serveur n’est pas envoyé dans le pipeline distant', () => {
     expect(lensMediaChain('/media/catalogue/a.jpg')).toEqual(['/media/catalogue/a.jpg']);
   });

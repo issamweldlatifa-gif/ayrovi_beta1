@@ -578,6 +578,8 @@ export const ar = {
   'lens.product.stockChecking': 'جاري التحقّق…',
   'lens.product.size': 'المقاس',
   'lens.product.color': 'اللون',
+  'lens.product.chooseSize': 'اختار المقاس قبل ما تطلب.',
+  'lens.product.chooseColor': 'اختار اللون قبل ما تطلب.',
   'lens.product.chooseOption': 'اختار المقاس واللون قبل ما تطلب.',
   'lens.help.open': 'كيفاش تستعمل Lens',
   'lens.help.title': 'كيفاش تستعمل Lens',

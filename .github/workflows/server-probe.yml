@@ -26,6 +26,10 @@ on:
       - 'src/ayrovix/routes.ts'
       - 'src/ayrovix/services/visualSearch.ts'
       - 'src/ayrovix/services/search.ts'
+      - 'src/public/routes.ts'
+      - 'src/services/photoroomIsolation.ts'
+      - 'src/services/imageIsolation.ts'
+      - 'src/services/imageComposition.ts'
 
 jobs:
   probe:

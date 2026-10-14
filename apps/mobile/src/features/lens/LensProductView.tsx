@@ -161,6 +161,11 @@ export function LensProductView({
   );
   const block = orderBlock(selection);
   const needsChoice = missingChoice(product, sizeValue, colorValue);
+  const missingSizeChoice = product.sizes.length > 1 && !sizeValue.trim();
+  const missingColorChoice = product.colors.length > 1 && !colorValue.trim();
+  const choicePromptKey: TranslationKey = missingSizeChoice && missingColorChoice
+    ? 'lens.product.chooseOption'
+    : missingSizeChoice ? 'lens.product.chooseSize' : 'lens.product.chooseColor';
   const sourcePrice = selection.offer.price != null && selection.offer.currency
     ? { amount: selection.offer.price, currency: selection.offer.currency }
     : null;
@@ -219,7 +224,7 @@ export function LensProductView({
   const order = useCallback(async () => {
     setMessage(null);
     if (needsChoice) {
-      setMessage(t('lens.product.chooseOption'));
+      setMessage(t(choicePromptKey));
       return;
     }
     const payload = buildCartPayload({
@@ -245,7 +250,7 @@ export function LensProductView({
     } finally {
       setOrderBusy(false);
     }
-  }, [block, choice.color, choice.size, needsChoice, product, quantity, queryClient, selection, sessionId, t]);
+  }, [block, choice.color, choice.size, choicePromptKey, needsChoice, product, quantity, queryClient, selection, sessionId, t]);
 
   const openMerchant = useCallback(() => {
     if (!isOpenableSourceUrl(product.sourceUrl)) return;
@@ -413,7 +418,7 @@ export function LensProductView({
       </View>
 
       {block ? <AppText variant="caption" color={theme.colors.muted}>{t(BLOCK_KEY[block])}</AppText> : null}
-      {!block && needsChoice ? <AppText variant="caption" color={theme.colors.muted}>{t('lens.product.chooseOption')}</AppText> : null}
+      {!block && needsChoice ? <AppText variant="caption" color={theme.colors.muted}>{t(choicePromptKey)}</AppText> : null}
       {message ? <AppText variant="caption" color={theme.status.danger.fg} accessibilityRole="alert">{message}</AppText> : null}
 
       {block !== null ? (

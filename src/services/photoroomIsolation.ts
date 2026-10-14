@@ -21,10 +21,23 @@ const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 
 export type IsolationProvider = 'local' | 'photoroom';
 
-/** Fournisseur effectif : `photoroom` seulement si la clé serveur est présente. */
+/** Les clés sandbox PhotoRoom rendent volontairement une image filigranée. */
+export function isPhotoRoomSandboxKey(apiKey: string): boolean {
+  const normalized = apiKey.trim().toLowerCase();
+  return normalized.startsWith('sandbox_') || normalized.startsWith('sb_');
+}
+
+/**
+ * Fournisseur effectif : PhotoRoom seulement avec une clé serveur exploitable.
+ * En production, une clé sandbox est refusée afin de ne jamais publier de
+ * visuels PhotoRoom filigranés ; le pipeline local reste alors le repli sûr.
+ */
 export function isolationProvider(env: NodeJS.ProcessEnv = process.env): IsolationProvider {
   if (env.AYROVI_ISOLATION_PROVIDER !== 'photoroom') return 'local';
-  return String(env.PHOTOROOM_API_KEY || '').trim() ? 'photoroom' : 'local';
+  const apiKey = String(env.PHOTOROOM_API_KEY || '').trim();
+  if (!apiKey) return 'local';
+  const isProduction = env.NODE_ENV === 'production' || Boolean(env.RENDER);
+  return isProduction && isPhotoRoomSandboxKey(apiKey) ? 'local' : 'photoroom';
 }
 
 export function isPhotoRoomPng(buffer: Buffer): boolean {
