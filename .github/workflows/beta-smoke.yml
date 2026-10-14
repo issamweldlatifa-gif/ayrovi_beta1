@@ -25,6 +25,15 @@ on:
   push:
     paths:
       - ".github/workflows/beta-smoke.yml"
+      # Le smoke doit suivre le comportement serveur, pas seulement ses propres
+      # changements. Sinon une route peut être déployée sans jamais rejouer la
+      # vraie chaîne inscription → panier → caisse.
+      - "render.yaml"
+      - "shared/appLinks.ts"
+      - "src/server.ts"
+      - "src/api/**"
+      - "src/ayrovix/**"
+      - "src/customer/**"
 
 permissions:
   contents: read
@@ -38,6 +47,25 @@ jobs:
       BASE: ${{ github.event.inputs.base || 'https://ayrovi-beta1-moo8.onrender.com' }}
       CLIENT: mobile/2.0.7
     steps:
+      - name: Attendre que Render serve le commit testé
+        if: ${{ github.event_name == 'push' }}
+        timeout-minutes: 8
+        run: |
+          set -euo pipefail
+          EXPECTED=${GITHUB_SHA:0:12}
+          for ATTEMPT in $(seq 1 28); do
+            READY=$(curl -s --max-time 30 "$BASE/api/ready" 2>/dev/null || true)
+            SERVED=$(printf '%s' "$READY" | sed -n 's/.*"commit": *"\([a-f0-9]\{7,12\}\)".*/\1/p' | head -1)
+            if [ -n "$SERVED" ] && [ "$SERVED" = "${EXPECTED:0:${#SERVED}}" ]; then
+              echo "Render sert $SERVED (tentative $ATTEMPT)."
+              exit 0
+            fi
+            echo "Tentative $ATTEMPT/28 : serveur=${SERVED:-muet}, attendu=$EXPECTED"
+            sleep 15
+          done
+          echo "::error title=Déploiement Beta périmé::Render ne sert toujours pas $EXPECTED; arrêter évite un faux diagnostic sur l'ancien code."
+          exit 1
+
       - name: Test de bout en bout
         run: |
           set +e +o pipefail
