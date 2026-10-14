@@ -36,7 +36,7 @@ jobs:
     timeout-minutes: 10
     env:
       BASE: ${{ github.event.inputs.base || 'https://ayrovi-beta1-moo8.onrender.com' }}
-      CLIENT: mobile/2.0.3
+      CLIENT: mobile/2.0.7
     steps:
       - name: Test de bout en bout
         run: |
@@ -44,7 +44,7 @@ jobs:
           set -u
 
           # `CLIENT` يتبدّل من بيئة الـCI؛ القيمة هنا حماية ضدّ `set -u` في التجربة المحلية.
-          CLIENT="${CLIENT:-mobile/2.0.3}"
+          CLIENT="${CLIENT:-mobile/2.0.7}"
           S="${GITHUB_STEP_SUMMARY:-/dev/null}"
           printf '## Test de bout en bout de l application\n\nServeur : `%s`\n\n' "$BASE" >> "$S"
           echo "| Étape | Résultat | Lecture |" >> "$S"
