@@ -23,9 +23,11 @@ on:
     branches: [arena/9fd9a9fc-ayrovi-beta1]
     paths:
       - '.github/workflows/server-probe.yml'
-      - 'src/ayrovix/routes.ts'
-      - 'src/ayrovix/services/visualSearch.ts'
-      - 'src/ayrovix/services/search.ts'
+      # Toute évolution des contrats API/Lens doit vérifier le commit réellement
+      # servi. Une liste de trois fichiers laissait les routes panier et
+      # l'enrichissement produit partir sans aucun diagnostic de déploiement.
+      - 'src/api/**'
+      - 'src/ayrovix/**'
       - 'src/public/routes.ts'
       - 'src/services/photoroomIsolation.ts'
       - 'src/services/imageIsolation.ts'
