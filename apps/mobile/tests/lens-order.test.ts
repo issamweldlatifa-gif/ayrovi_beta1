@@ -110,6 +110,17 @@ describe('Lens — حمولة السلة', () => {
     const c = candidate();
     expect(buildCartPayload({ candidate: c, selection: resolveSelection(c, 'L', ''), size: 'L', color: '', quantity: 1, customerNote: '' })).toBeNull();
   });
+  it('متغيّر مصدر بلا سعر خاص يستعمل عرض المنتج الموقّع، لا سعراً مخترعاً', () => {
+    const c = candidate({
+      colors: [],
+      variantOptions: [option({ id: 'source-l', label: 'L', size: 'L', availability: 'available' })],
+    });
+    const selection = resolveSelection(c, 'L', '');
+    expect(selection).toMatchObject({ kind: 'matched', offer: { fromVariant: false, priceToken: 'tok-general' } });
+    expect(buildCartPayload({ candidate: c, selection, size: 'L', color: '', quantity: 1, customerNote: '' })).toMatchObject({
+      externalId: 'source-l', sourcePrice: 20, priceToken: 'tok-general', requestedSize: 'L',
+    });
+  });
   it('VERIFIED فقط إن قالت النتيجة ذلك؛ وإلا PENDING_MANUAL', () => {
     const c = candidate({ priceVerificationStatus: 'PENDING_MANUAL' });
     const payload = buildCartPayload({ candidate: c, selection: resolveSelection(c, '', ''), size: 'M', color: 'Rouge', quantity: 1, customerNote: '' });

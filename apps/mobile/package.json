@@ -1,6 +1,6 @@
 {
   "name": "ayrovi",
-  "version": "2.0.7",
+  "version": "2.0.8",
   "private": true,
   "main": "expo-router/entry",
   "scripts": {

@@ -26,7 +26,7 @@ jobs:
     timeout-minutes: 10
     env:
       BASE: https://ayrovi-beta1-moo8.onrender.com
-      CLIENT: mobile/2.0.7
+      CLIENT: mobile/2.0.8
     steps:
       - name: Sonde des écrans publics
         run: |

@@ -8,6 +8,7 @@ import { DEFAULT_PAYMENT_METHODS, QatafoDatabase } from '../src/db/database';
 import { calculatePrice } from '../src/services/pricing';
 import { createCustomerSession, hashToken } from '../src/customer/auth';
 import { createAyrovixPriceToken, inspectAyrovixPriceToken } from '../src/ayrovix/priceQuote';
+import { recordVariantContract } from '../src/ayrovix/services/variantAvailability';
 import { verifyKonnectCardPayment } from '../src/services/paymentGateway';
 
 const uniqueSession = (label: string) => `${label}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -458,6 +459,38 @@ describe('AYSONIC platform', () => {
       db.clearCart(sessionId);
       db.clearCart(`${sessionId}-tampered`);
       db.clearCart(`${sessionId}-link`);
+    }
+  });
+
+  test('a source-confirmed Lens size with a signed product offer really enters the cart', async () => {
+    const sessionId = uniqueSession('lens-confirmed-size');
+    const cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lens-confirmed-size-'));
+    const previousCacheDir = process.env.AYROVI_VARIANT_CACHE_DIR;
+    process.env.AYROVI_VARIANT_CACHE_DIR = cacheDir;
+    const title = 'Pull marchand avec taille confirmée';
+    const url = 'https://merchant.example/products/pull-confirmed';
+    const quote = { price: 35, currency: 'EUR', title, referenceUrl: url, status: 'PENDING_MANUAL' as const };
+    try {
+      recordVariantContract(url, {
+        attribute: 'Taille',
+        productAvailability: 'available',
+        source: 'Merchant',
+        variants: [{ value: 'M', availability: 'available', reason: 'Offre source avec prix.' }],
+      });
+      const added = await request(app).post('/api/cart/items').set('x-session-id', sessionId).send({
+        store: 'generic', externalId: 'variant-m', url, referenceUrl: url, title,
+        imageUrl: 'https://images.example/pull.jpg', sourcePrice: quote.price, sourceCurrency: quote.currency,
+        priceTND: 1, variant: 'M', requestedSize: 'M', requestedColor: '', customerNote: '',
+        priceVerificationStatus: quote.status, priceToken: createAyrovixPriceToken(quote), quantity: 1,
+      });
+      expect(added.status, JSON.stringify(added.body)).toBe(201);
+      expect(added.body.cartItem).toMatchObject({ requestedSize: 'M', sourceUrl: url });
+      expect(added.body.totalItemsCount).toBe(1);
+    } finally {
+      db.clearCart(sessionId);
+      if (previousCacheDir == null) delete process.env.AYROVI_VARIANT_CACHE_DIR;
+      else process.env.AYROVI_VARIANT_CACHE_DIR = previousCacheDir;
+      fs.rmSync(cacheDir, { recursive: true, force: true });
     }
   });
 

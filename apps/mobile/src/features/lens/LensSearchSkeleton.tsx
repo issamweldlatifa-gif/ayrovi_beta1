@@ -10,7 +10,6 @@ const GRID_PADDING = 4;
 const GRID_GAP = 4;
 
 function ProductSkeleton({ index }: { index: number }) {
-  const theme = useTheme();
   const { width } = useWindowDimensions();
   const mediaHeight = Math.max(1, ((width - GRID_PADDING * 2 - GRID_GAP) / 2) * 5 / 4);
   return (
@@ -22,11 +21,6 @@ function ProductSkeleton({ index }: { index: number }) {
         <Skeleton color={LENS_COLORS.skeleton} minOpacity={0.48} height={12} width="70%" />
         <Skeleton color={LENS_COLORS.skeleton} minOpacity={0.48} height={12} width="58%" />
         <Skeleton color={LENS_COLORS.skeleton} minOpacity={0.48} height={14} width="48%" />
-        <View style={[styles.optionRow, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
-          <Skeleton color={LENS_COLORS.skeleton} minOpacity={0.48} height={28} width={38} radius={theme.radius.xs} />
-          <Skeleton color={LENS_COLORS.skeleton} minOpacity={0.48} height={28} width={38} radius={theme.radius.xs} />
-          <Skeleton color={LENS_COLORS.skeleton} minOpacity={0.48} height={28} width={38} radius={theme.radius.xs} />
-        </View>
       </View>
     </View>
   );
@@ -71,7 +65,6 @@ const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GRID_GAP, paddingTop: 8, backgroundColor: LENS_COLORS.white },
   card: { width: '49.3%', overflow: 'hidden', backgroundColor: LENS_COLORS.white },
   copy: { gap: 8, paddingHorizontal: 8, paddingTop: 8, paddingBottom: 12 },
-  optionRow: { flexDirection: 'row', gap: 6 },
   cancel: { minHeight: 48, justifyContent: 'center', paddingHorizontal: 8 },
   cancelText: { textDecorationLine: 'underline' },
 });

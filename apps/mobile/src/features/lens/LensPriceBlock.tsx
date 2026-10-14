@@ -31,7 +31,17 @@ export function LensPriceBlock({
   const discounted = view.referenceTnd != null && view.discountPercent != null && view.discountPercent > 0;
 
   return (
-    <View style={styles.block} testID="lens-price-block">
+    <View style={[styles.block, compact ? styles.compactBlock : null]} testID="lens-price-block">
+      {compact && view.referenceTnd != null ? (
+        <AppText
+          variant="caption"
+          color={onWhite ? LENS_COLORS.resultMuted : theme.colors.muted}
+          style={styles.struck}
+          numberOfLines={1}
+        >
+          {money(view.referenceTnd)}
+        </AppText>
+      ) : null}
       <View style={[styles.priceRow, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
         <AppText
           variant={compact ? 'label' : 'title'}
@@ -41,8 +51,8 @@ export function LensPriceBlock({
         >
           {currentText}
         </AppText>
-        {view.referenceTnd != null ? (
-          <AppText variant={compact ? 'caption' : 'body'} color={onWhite ? LENS_COLORS.resultMuted : theme.colors.muted} style={styles.struck} numberOfLines={1}>
+        {!compact && view.referenceTnd != null ? (
+          <AppText variant="body" color={onWhite ? LENS_COLORS.resultMuted : theme.colors.muted} style={styles.struck} numberOfLines={1}>
             {money(view.referenceTnd)}
           </AppText>
         ) : null}
@@ -58,6 +68,7 @@ export function LensPriceBlock({
 
 const styles = StyleSheet.create({
   block: { gap: 2 },
+  compactBlock: { minHeight: 38, justifyContent: 'flex-end' },
   priceRow: { alignItems: 'baseline', gap: 8, flexWrap: 'wrap' },
   struck: { textDecorationLine: 'line-through' },
 });

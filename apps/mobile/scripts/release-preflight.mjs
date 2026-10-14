@@ -10,7 +10,7 @@
  *
  * الاستعمال:
  *   node scripts/release-preflight.mjs --api-base https://ayrovi-beta1-moo8.onrender.com \
- *        --version-name 2.0.7 --version-code 14
+ *        --version-name 2.0.8 --version-code 16
  *   node scripts/release-preflight.mjs --json          # تقرير للآلة
  *
  * ملاحظة: الأسرار ما تتقراش ولا تتعرض — كان `gh` موجود نتحقّقوا من **الأسماء**

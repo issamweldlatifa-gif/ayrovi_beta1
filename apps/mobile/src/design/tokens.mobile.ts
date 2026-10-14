@@ -101,23 +101,20 @@ export const LENS_COLORS = {
 } as const;
 
 /**
- * Action primaire 2026 — dérivée de la référence orange validée par le produit.
- *
- * Le jaune vif de la référence reste dans les petites barres d'attente : une
- * grande surface jaune vif ferait perdre le contraste du libellé blanc. Le CTA
- * va donc du rouge à l'orange puis à un jaune ocre profond, chaque étape restant
- * lisible avec du texte blanc. Les prix soldés restent `LENS_COLORS.sale`.
+ * Bleu d’action AYROVI. Tous les tons gardent ≥ 4.5:1 face au blanc afin que
+ * le libellé reste lisible, y compris au soleil sur un appareil Android.
+ * Les prix soldés restent `LENS_COLORS.sale` : ce n’est pas une action.
  */
-export const ACTION_GRADIENT = ['#A92D00', '#B93400', '#C94A00', '#9A6500'] as const;
+export const ACTION_GRADIENT = ['#071E5B', '#0A3788', '#0F4CB8', '#1A56DB'] as const;
 export const ACTION_ON_COLOR = '#FFFFFF';
 
-/** Une nuance par barre : l'indicateur ressemble à un signal vivant, pas à un spinner. */
+/** Une seule famille bleue pour le signal d’attente Lens, sans couleur chaude. */
 export const WAITING_GRADIENTS = [
-  ['#F04400', '#FFAA00'],
-  ['#F56A00', '#FFB000'],
-  ['#FF9800', '#FFD000'],
-  ['#E83B00', '#F06A00'],
-  ['#F26A00', '#FF9A20'],
+  ['#071E5B', '#0B3D91'],
+  ['#0A3788', '#1559C7'],
+  ['#0F4CB8', '#2672E8'],
+  ['#123FA0', '#4285F4'],
+  ['#092E77', '#1A56DB'],
 ] as const;
 
 export const REEL_TILE = {

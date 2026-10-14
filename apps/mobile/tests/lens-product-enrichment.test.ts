@@ -107,6 +107,26 @@ describe('enrichissement progressif d’une fiche Lens', () => {
     expect(merged.priceVerificationStatus).toBe('VERIFIED');
   });
 
+  it('conserve aussi une preuve signée PENDING_MANUAL sans la promouvoir en VERIFIED', () => {
+    const merged = mergeLensProduct(candidate(), candidate({
+      title: 'Veste à confirmer',
+      price: 23,
+      currency: 'EUR',
+      priceTnd: 81,
+      priceToken: 'signed-pending-product',
+      priceVerificationStatus: 'PENDING_MANUAL',
+      sizes: ['M', 'L'],
+      variantOptions: [{
+        id: 'm', label: 'M', size: 'M', color: null, available: true, availability: 'available',
+        price: null, currency: null, priceTnd: null, priceToken: null,
+      }],
+    }));
+    expect(merged.title).toBe('Veste à confirmer');
+    expect(merged.priceToken).toBe('signed-pending-product');
+    expect(merged.priceVerificationStatus).toBe('PENDING_MANUAL');
+    expect(merged.variantOptions[0].availability).toBe('available');
+  });
+
   it('ignore intégralement une réponse qui vise un autre produit', () => {
     const current = candidate();
     const other = candidate({ sourceUrl: 'https://shop.example/products/99', description: 'Mauvais produit' });

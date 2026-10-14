@@ -52,10 +52,12 @@ export function mergeLensProduct(current: LensCandidate, full: LensCandidate): L
   }
   const description = (full.description || '').trim().length > (current.description || '').trim().length
     ? full.description : current.description;
-  const signedPrice = full.priceVerificationStatus === 'VERIFIED' && Boolean(full.priceToken)
-    && full.price != null && Boolean(full.currency);
+  // PENDING_MANUAL peut lui aussi porter un jeton serveur valide : le statut ne
+  // prétend pas que le prix est vérifié, mais le jeton lie bien montant, titre,
+  // URL et statut. Le rejeter cassait l’ajout au panier des offres à réviser.
+  const tokenizedPrice = Boolean(full.priceToken) && full.price != null && Boolean(full.currency);
   const enrichedVariants = full.variantOptions.length
-    ? (signedPrice ? full.variantOptions : full.variantOptions.map((option) => ({
+    ? (tokenizedPrice ? full.variantOptions : full.variantOptions.map((option) => ({
         ...option,
         // Sans preuve générale assortie au titre enrichi, ces champs ne doivent
         // pas détourner l'ancienne quote. L'option et son stock restent utiles.
@@ -68,7 +70,7 @@ export function mergeLensProduct(current: LensCandidate, full: LensCandidate): L
 
   return {
     ...current,
-    ...(signedPrice ? {
+    ...(tokenizedPrice ? {
       price: full.price,
       currency: full.currency,
       priceTnd: full.priceTnd,
@@ -77,11 +79,11 @@ export function mergeLensProduct(current: LensCandidate, full: LensCandidate): L
       promo: full.promo,
       priceOrigin: 'merchant' as const,
       priceToken: full.priceToken,
-      priceVerificationStatus: 'VERIFIED' as const,
+      priceVerificationStatus: full.priceVerificationStatus,
     } : {}),
     // Le titre fait partie de la preuve signée. Ne jamais garder un ancien
     // jeton tout en lui greffant le titre différent d'une réponse non signée.
-    title: signedPrice ? (full.title || current.title) : current.title,
+    title: tokenizedPrice ? (full.title || current.title) : current.title,
     brand: full.brand || current.brand,
     model: full.model || current.model,
     description,

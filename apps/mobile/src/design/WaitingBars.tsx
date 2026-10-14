@@ -19,7 +19,7 @@ export function WaitingBars({
   testID,
 }: {
   compact?: boolean;
-  /** Fond blanc compact quand l'indicateur vit sur le CTA orange. */
+  /** Fond blanc compact quand l’indicateur vit sur le CTA bleu. */
   light?: boolean;
   testID?: string;
 }) {

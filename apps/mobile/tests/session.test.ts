@@ -60,7 +60,7 @@ afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); setCsrfRefresher(
 describe('en-têtes d’authentification', () => {
   it('déclare toujours le type de client, même visiteur', () => {
     const headers = authHeaders('GET');
-    expect(headers['x-ayrovi-client']).toBe('mobile/2.0.7');
+    expect(headers['x-ayrovi-client']).toBe('mobile/2.0.8');
     expect(headers.Authorization).toBeUndefined();
     expect(headers['x-csrf-token']).toBeUndefined();
   });

@@ -200,4 +200,26 @@ describe('fiche produit Lens native', () => {
     expect(zoomTarget.props.accessibilityRole).toBe('imagebutton');
     expect(screen.getByTestId('lens-product-image-media', { includeHiddenElements: true })).toBeOnTheScreen();
   });
+
+  it('expose deux crans natifs et une poignée pour lever rapidement la fiche', async () => {
+    render(wrap(<LensProductView candidate={candidate()} onBack={() => {}} />));
+
+    const drawer = await screen.findByTestId('lens-product-drawer');
+    expect(drawer.props.snapToOffsets).toHaveLength(2);
+    expect(drawer.props.snapToOffsets[0]).toBe(0);
+    expect(drawer.props.snapToOffsets[1]).toBeGreaterThan(250);
+    expect(drawer.props.snapToEnd).toBe(false);
+    expect(screen.getByTestId('lens-product-sheet-handle')).toBeOnTheScreen();
+  });
+
+  it('garde la description enrichie fermée puis la révèle à la demande', async () => {
+    render(wrap(<LensProductView candidate={candidate()} onBack={() => {}} />));
+
+    const description = await screen.findByTestId('lens-accordion-description');
+    expect(description.props.accessibilityState.expanded).toBe(false);
+    expect(screen.queryByText('Un sac léger et solide.')).toBeNull();
+    fireEvent.press(description);
+    expect(await screen.findByText('Un sac léger et solide.')).toBeOnTheScreen();
+    expect(screen.getByTestId('lens-accordion-description').props.accessibilityState.expanded).toBe(true);
+  });
 });

@@ -60,102 +60,153 @@ function removePrivateCapture(uri: string): void {
     });
 }
 
-function SearchSheet({ children, top }: { children: ReactNode; top: number }) {
+function SearchSheet({ children, top, expandedTop }: { children: ReactNode; top: number; expandedTop: number }) {
   const theme = useTheme();
   const t = useT();
-  const entrance = useRef(new Animated.Value(theme.motion.reduced === 0 ? 0 : 44)).current;
-  const dragY = useRef(new Animated.Value(0)).current;
-  const dragPosition = useRef(0);
-  const dragStart = useRef(0);
-  const minDrag = -Math.max(0, top - 72);
-  const maxDrag = Math.min(180, Math.max(88, top * 0.5));
+  // La feuille est TOUJOURS mise en page dans son état complet. La translation
+  // ne fait que choisir le cran visible : ainsi, la lever ne coupe jamais son
+  // bas comme le faisait l’ancienne feuille dimensionnée depuis `top`.
+  const restingOffset = Math.max(0, top - expandedTop);
+  const collapsedOffset = restingOffset + Math.min(168, Math.max(88, top * 0.42));
+  const sheetY = useRef(new Animated.Value(
+    restingOffset + (theme.motion.reduced === 0 ? 0 : 44),
+  )).current;
+  const dragPosition = useRef(restingOffset);
+  const dragStart = useRef(restingOffset);
 
-  const snapTo = useCallback((value: number) => {
-    const target = Math.max(minDrag, Math.min(maxDrag, value));
+  const clampPosition = useCallback(
+    (value: number) => Math.max(0, Math.min(collapsedOffset, value)),
+    [collapsedOffset],
+  );
+
+  const snapTo = useCallback((value: number, velocity = 0) => {
+    const target = clampPosition(value);
+    sheetY.stopAnimation();
+    dragPosition.current = target;
     if (theme.motion.reduced === 0) {
-      dragY.setValue(target);
-      dragPosition.current = target;
+      sheetY.setValue(target);
       return;
     }
-    Animated.spring(dragY, {
+    Animated.spring(sheetY, {
       toValue: target,
-      damping: 22,
-      stiffness: 220,
-      mass: 0.8,
+      velocity,
+      damping: 25,
+      stiffness: 330,
+      mass: 0.68,
+      overshootClamping: false,
       useNativeDriver: true,
-    }).start(() => { dragPosition.current = target; });
-  }, [dragY, maxDrag, minDrag, theme.motion.reduced]);
+    }).start(({ finished }) => {
+      if (finished) dragPosition.current = target;
+    });
+  }, [clampPosition, sheetY, theme.motion.reduced]);
 
-  const panResponder = useMemo(() => PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onMoveShouldSetPanResponder: (_event, gesture) => Math.abs(gesture.dy) > 2,
-    onPanResponderGrant: () => {
-      dragY.stopAnimation((value) => {
-        dragStart.current = value;
-        dragPosition.current = value;
-      });
-    },
-    onPanResponderMove: (_event, gesture) => {
-      const next = Math.max(minDrag, Math.min(maxDrag, dragStart.current + gesture.dy));
-      dragPosition.current = next;
-      dragY.setValue(next);
-    },
-    onPanResponderRelease: (_event, gesture) => {
-      if (gesture.vy < -0.55) {
-        snapTo(minDrag);
-        return;
-      }
-      if (gesture.vy > 0.55) {
-        snapTo(maxDrag);
-        return;
-      }
-      const projected = dragPosition.current + gesture.vy * 32;
-      const stops = [minDrag, 0, maxDrag];
-      const nearest = stops.reduce((best, stop) => (
-        Math.abs(stop - projected) < Math.abs(best - projected) ? stop : best
-      ));
-      snapTo(nearest);
-    },
-    onPanResponderTerminate: () => snapTo(0),
-  }), [dragY, maxDrag, minDrag, snapTo]);
+  const beginDrag = useCallback(() => {
+    sheetY.stopAnimation((value) => {
+      const current = clampPosition(value);
+      dragStart.current = current;
+      dragPosition.current = current;
+    });
+  }, [clampPosition, sheetY]);
+
+  const moveDrag = useCallback((_event: unknown, gesture: { dy: number }) => {
+    const next = clampPosition(dragStart.current + gesture.dy);
+    dragPosition.current = next;
+    sheetY.setValue(next);
+  }, [clampPosition, sheetY]);
+
+  const finishDrag = useCallback((_event: unknown, gesture: { vy: number }) => {
+    if (gesture.vy < -0.34) {
+      snapTo(0, gesture.vy);
+      return;
+    }
+    if (gesture.vy > 0.42) {
+      const target = dragPosition.current < restingOffset * 0.55 ? restingOffset : collapsedOffset;
+      snapTo(target, gesture.vy);
+      return;
+    }
+    const projected = clampPosition(dragPosition.current + gesture.vy * 110);
+    const stops = [0, restingOffset, collapsedOffset];
+    const nearest = stops.reduce((best, stop) => (
+      Math.abs(stop - projected) < Math.abs(best - projected) ? stop : best
+    ));
+    snapTo(nearest, gesture.vy);
+  }, [clampPosition, collapsedOffset, restingOffset, snapTo]);
+
+  const handleResponder = useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponder: () => false,
+    onMoveShouldSetPanResponder: (_event, gesture) => (
+      Math.abs(gesture.dy) > 3 && Math.abs(gesture.dy) > Math.abs(gesture.dx)
+    ),
+    onPanResponderGrant: beginDrag,
+    onPanResponderMove: moveDrag,
+    onPanResponderRelease: finishDrag,
+    onPanResponderTerminate: finishDrag,
+    onPanResponderTerminationRequest: () => false,
+  }), [beginDrag, finishDrag, moveDrag]);
+
+  // Un balayage vers le haut depuis n’importe quel point de la feuille la lève.
+  // Une fois ouverte, on ne capture plus le geste : FlatList reprend la main et
+  // peut défiler sans blocage. Le mouvement vers le bas reste sur la poignée.
+  const liftResponder = useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponder: () => false,
+    onMoveShouldSetPanResponder: (_event, gesture) => (
+      dragPosition.current > 1
+      && gesture.dy < -4
+      && Math.abs(gesture.dy) > Math.abs(gesture.dx) * 1.2
+    ),
+    onMoveShouldSetPanResponderCapture: (_event, gesture) => (
+      dragPosition.current > 1
+      && gesture.dy < -4
+      && Math.abs(gesture.dy) > Math.abs(gesture.dx) * 1.2
+    ),
+    onPanResponderGrant: beginDrag,
+    onPanResponderMove: moveDrag,
+    onPanResponderRelease: finishDrag,
+    onPanResponderTerminate: finishDrag,
+    onPanResponderTerminationRequest: () => false,
+  }), [beginDrag, finishDrag, moveDrag]);
 
   useEffect(() => {
-    Animated.timing(entrance, {
-      toValue: 0,
-      duration: theme.motion.reduced === 0 ? 0 : theme.duration.standard,
+    dragStart.current = restingOffset;
+    dragPosition.current = restingOffset;
+    if (theme.motion.reduced === 0) {
+      sheetY.setValue(restingOffset);
+      return;
+    }
+    sheetY.setValue(restingOffset + 44);
+    Animated.timing(sheetY, {
+      toValue: restingOffset,
+      duration: theme.duration.standard,
       useNativeDriver: true,
     }).start();
-  }, [entrance, theme.duration.standard, theme.motion.reduced]);
-
-  useEffect(() => {
-    dragY.setValue(0);
-    dragPosition.current = 0;
-  }, [dragY, top]);
+  }, [restingOffset, sheetY, theme.duration.standard, theme.motion.reduced]);
 
   return (
     <Animated.View
+      {...liftResponder.panHandlers}
       style={[
         styles.searchSheet,
         {
-          top,
+          top: expandedTop,
           backgroundColor: theme.colors.surface,
           borderTopLeftRadius: theme.radius.sheet,
           borderTopRightRadius: theme.radius.sheet,
-          transform: [{ translateY: Animated.add(entrance, dragY) }],
+          transform: [{ translateY: sheetY }],
           ...theme.elevation.high,
         },
       ]}
+      testID="lens-search-sheet"
     >
       <Pressable
-        {...panResponder.panHandlers}
-        onPress={() => snapTo(dragPosition.current < -1 ? 0 : minDrag)}
+        {...handleResponder.panHandlers}
+        onPress={() => snapTo(dragPosition.current <= 1 ? restingOffset : 0)}
         accessibilityRole="adjustable"
         accessibilityLabel={t('lens.sheet.adjust')}
         accessibilityActions={[
           { name: 'increment', label: t('lens.sheet.expand') },
           { name: 'decrement', label: t('lens.sheet.collapse') },
         ]}
-        onAccessibilityAction={(event) => snapTo(event.nativeEvent.actionName === 'increment' ? minDrag : maxDrag)}
+        onAccessibilityAction={(event) => snapTo(event.nativeEvent.actionName === 'increment' ? 0 : restingOffset)}
         style={styles.sheetGrabArea}
         testID="lens-search-sheet-handle"
       >
@@ -473,7 +524,7 @@ export default function LensScreen() {
           <View style={styles.headerSpacer} />
         </View>
 
-        <SearchSheet top={sheetTop}>
+        <SearchSheet top={sheetTop} expandedTop={insets.top + 58}>
           {stage.kind === 'busy' ? <LensSearchSkeleton onCancel={cancelSearch} /> : null}
           {stage.kind === 'results' ? (
             <LensResultsGrid

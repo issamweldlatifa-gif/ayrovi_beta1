@@ -44,8 +44,10 @@ describe('parcours AYROVIX Lens unifié', () => {
   it('garde la photo sous une feuille réellement ajustable pendant le chargement et les résultats', () => {
     expect(lens).toContain('setPreviewUri(picture.uri)');
     expect(lens).toContain('accessibilityLabel={t(\'lens.capturedPhoto\')}');
-    expect(lens).toContain('<SearchSheet top={sheetTop}>');
+    expect(lens).toContain('<SearchSheet top={sheetTop} expandedTop={insets.top + 58}>');
     expect(lens).toContain('PanResponder.create');
+    expect(lens).toContain('top: expandedTop');
+    expect(lens).toContain('onMoveShouldSetPanResponderCapture');
     expect(lens).toContain('testID="lens-search-sheet-handle"');
     expect(lens).toContain('<LensSearchSkeleton onCancel={cancelSearch} />');
     expect(lens).toContain('removePrivateCapture');
@@ -65,26 +67,29 @@ describe('chargement et résultats Lens', () => {
     expect(skeleton).not.toContain('ActivityIndicator');
   });
 
-  it('virtualise une grille compacte à deux colonnes avec favoris et options', () => {
+  it('virtualise une grille commerciale compacte à deux colonnes avec favoris', () => {
     expect(grid).toContain('<FlatList');
     expect(grid).toContain('numColumns={2}');
     expect(grid).toContain('removeClippedSubviews');
     expect(card).toContain('numberOfLines={2}');
     expect(card).toContain('lens-favorite-');
     expect(card).toContain('event.stopPropagation()');
-    expect(card).toContain('candidate.sizes.length > 0 ? candidate.sizes : candidate.colors');
-    expect(card).toContain('cardOptions.slice(0, 4)');
+    expect(card).toContain('aspectRatio: 4 / 5');
+    expect(card).toContain('candidate.brand?.trim() || candidate.source.trim()');
+    expect(card).not.toContain('cardOptions');
   });
 
-  it('réserve le rouge aux promotions, le jaune aux étoiles et le dégradé chaud aux actions/minuteurs', () => {
+  it('réserve le rouge aux promotions, le jaune aux étoiles et le bleu aux actions/minuteurs', () => {
     expect(palette).toContain("export { LENS_COLORS } from '@/design/tokens.mobile'");
     expect(nativeTokens).toContain("sale: '#D00000'");
     expect(nativeTokens).toContain("star: '#F5B800'");
     expect(nativeTokens).toContain('export const ACTION_GRADIENT');
     expect(nativeTokens).toContain('export const WAITING_GRADIENTS');
     const action = /ACTION_GRADIENT = \[([^\]]+)\]/.exec(nativeTokens)?.[1].match(/#[0-9A-F]{6}/gi) ?? [];
+    const waiting = /WAITING_GRADIENTS = \[([\s\S]*?)\n\]/.exec(nativeTokens)?.[1].match(/#[0-9A-F]{6}/gi) ?? [];
     expect(action.length).toBeGreaterThanOrEqual(3);
     expect(action.every((color) => contrastWithWhite(color) >= 4.5)).toBe(true);
+    expect([...action, ...waiting].every((color) => Number.parseInt(color.slice(3, 5), 16) < Number.parseInt(color.slice(5, 7), 16) + 90)).toBe(true);
     expect(card).toContain('color={LENS_COLORS.star}');
     expect(card).toContain('backgroundColor: LENS_COLORS.sale');
     expect(product).toContain('ACTION_GRADIENT[2]');
@@ -101,7 +106,10 @@ describe('fiche produit Lens continue', () => {
     expect(product).toContain('Math.min(560, Math.round(width * 1.2))');
     expect(product).toContain('contentFit="contain"');
     expect(product).toContain('styles.detailsSheet');
-    expect(product).toContain('transform: [{ translateY: -24 }]');
+    expect(product).toContain('marginTop: -SPACE[4]');
+    expect(product).toContain('snapToOffsets={[0, expandedOffset]}');
+    expect(product).toContain('snapToEnd={false}');
+    expect(product).toContain('testID="lens-product-sheet-handle"');
   });
 
   it('propose balayage, pincement et double toucher dans la galerie plein écran', () => {
@@ -126,12 +134,24 @@ describe('fiche produit Lens continue', () => {
     expect(product).toContain('<LensPriceBlock candidate={displayCandidate}');
     expect(product).toContain('buildCartPayload');
     expect(product).toContain('addExternalToCart');
+    expect(product).toContain('priceVerificationStatus: candidate.priceVerificationStatus');
+    expect(product).not.toContain("selection.option.priceToken ? 'VERIFIED'");
     expect(product).toContain('setSizeOpenRequest');
     expect(product).toContain('disabledValues={sizeUnavailable}');
     expect(product).toContain('testID="lens-add-to-cart"');
     expect(product).toContain('styles.confirmationSheet');
     expect(product).not.toContain('LensReviewForm');
     expect(product).not.toContain('WebView');
+  });
+
+  it('garde description, caractéristiques, matière, coupe et entretien dans des accordéons fermés', () => {
+    expect(product).toContain('const [open, setOpen] = useState(false)');
+    expect(product).toContain('lens-accordion-description');
+    expect(product).toContain('lens-accordion-characteristics');
+    expect(product).toContain('lens-accordion-material');
+    expect(product).toContain('lens-accordion-fit');
+    expect(product).toContain('lens-accordion-care');
+    expect(product).not.toContain('defaultOpen');
   });
 
   it('garde l’aide courte et strictement orientée prise de vue', () => {

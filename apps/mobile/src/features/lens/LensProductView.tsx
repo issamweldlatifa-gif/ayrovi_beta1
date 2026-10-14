@@ -19,6 +19,7 @@ import { AppText, Button } from '@/design/ui';
 import { AppImage } from '@/design/appImage';
 import { WaitingBars } from '@/design/WaitingBars';
 import { ACTION_GRADIENT } from '@/design/tokens.mobile';
+import { SPACE } from '@/design/tokens.generated';
 import { useTheme } from '@/design/theme';
 import { useT, type TranslationKey } from '@/i18n';
 import { ApiError } from '@/api/errors';
@@ -38,6 +39,8 @@ const BLOCK_KEY: Record<Exclude<OrderBlock, null>, TranslationKey> = {
   manual: 'lens.product.manual',
   incomplete: 'lens.product.incomplete',
 };
+
+const CARE_FACT = /(?:^|\b)(?:care|wash|washing|clean|cleaning|entretien|lavage|nettoyage|pflege|غسل|تنظيف|العناية)(?:\b|$)/i;
 
 function OptionSelector({
   label, values, value, onChange, openRequest = 0, disabledValues = new Set<string>(),
@@ -412,16 +415,18 @@ function ZoomableGalleryImage({
 }
 
 function FactAccordion({
-  title, icon, facts, description, defaultOpen = false,
+  title, icon, facts, description, testID,
 }: {
   title: string;
   icon: React.ComponentProps<typeof Ionicons>['name'];
   facts: LensProductFact[];
   description?: string | null;
-  defaultOpen?: boolean;
+  testID?: string;
 }) {
   const theme = useTheme();
-  const [open, setOpen] = useState(defaultOpen);
+  // Les informations longues sont fermées par défaut. La fiche garde ainsi sa
+  // hiérarchie commerciale au lieu d’imprimer un bloc enrichi géant.
+  const [open, setOpen] = useState(false);
   if (!facts.length && !description) return null;
   return (
     <View style={[styles.accordion, { borderColor: theme.colors.line }]}>
@@ -433,26 +438,32 @@ function FactAccordion({
           styles.accordionHeader,
           { flexDirection: theme.isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.64 : 1 },
         ]}
+        testID={testID}
       >
         <View style={[styles.accordionHeading, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
           <Ionicons name={icon} size={20} color={theme.colors.ink} accessibilityElementsHidden />
-          <AppText weight="bold" style={styles.accordionTitle}>{title}</AppText>
+          <AppText weight="semibold" style={styles.accordionTitle}>{title}</AppText>
         </View>
-        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={20} color={theme.colors.muted} accessibilityElementsHidden />
+        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={20} color={theme.colors.ink} accessibilityElementsHidden />
       </Pressable>
       {open ? (
         <View style={[styles.accordionBody, { borderTopColor: theme.colors.line }]}>
-          {description ? <AppText color={theme.colors.muted} style={styles.description}>{description}</AppText> : null}
-          {facts.length ? (
-            <View style={[styles.factGrid, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
-              {facts.map((fact, index) => (
-                <View key={`${fact.label}-${fact.value}-${index}`} style={[styles.factCell, { backgroundColor: theme.colors.infoSoft }]}>
-                  <AppText variant="caption" color={theme.colors.muted} numberOfLines={2}>{fact.label}</AppText>
-                  <AppText weight="semibold" style={styles.factValue}>{fact.value}</AppText>
-                </View>
-              ))}
+          {description ? <AppText color={theme.colors.ink} style={styles.description}>{description}</AppText> : null}
+          {facts.map((fact, index) => (
+            <View
+              key={`${fact.label}-${fact.value}-${index}`}
+              style={[
+                styles.factRow,
+                {
+                  borderTopColor: theme.colors.line,
+                  flexDirection: theme.isRTL ? 'row-reverse' : 'row',
+                },
+              ]}
+            >
+              <AppText variant="caption" color={theme.colors.muted} style={styles.factLabel}>{fact.label}</AppText>
+              <AppText weight="semibold" style={styles.factValue}>{fact.value}</AppText>
             </View>
-          ) : null}
+          ))}
         </View>
       ) : null}
     </View>
@@ -575,7 +586,9 @@ export function LensProductView({
       priceTnd: selection.option.priceTnd ?? candidate.priceTnd,
       priceOrigin: 'merchant',
       priceToken: selection.option.priceToken ?? candidate.priceToken,
-      priceVerificationStatus: selection.option.priceToken ? 'VERIFIED' : candidate.priceVerificationStatus,
+      // Le jeton de variante est signé avec le même statut que l’offre produit.
+      // Sa présence ne transforme jamais une offre PENDING_MANUAL en VERIFIED.
+      priceVerificationStatus: candidate.priceVerificationStatus,
       availability: selection.option.availability === 'unavailable' ? 'out_of_stock' : candidate.availability,
     };
   }, [candidate, selection.option]);
@@ -584,9 +597,14 @@ export function LensProductView({
     [candidate, resolvedColor],
   );
   const heroHeight = Math.max(390, Math.min(560, Math.round(width * 1.2)));
+  // Le second cran place exactement le début de la fiche sous le chrome. RN
+  // anime ce snap sur le thread natif, sans PanResponder concurrent au scroll.
+  const expandedOffset = Math.max(1, heroHeight - (insets.top + 82));
 
   const facts = candidate.details ?? [];
   const detailFacts = facts.filter((fact) => fact.section === 'details');
+  const careFacts = detailFacts.filter((fact) => CARE_FACT.test(`${fact.label} ${fact.value}`));
+  const characteristicFacts = detailFacts.filter((fact) => !careFacts.includes(fact));
   const materialFacts = facts.filter((fact) => fact.section === 'material');
   const fitFacts = facts.filter((fact) => fact.section === 'fit');
   const cartDeadline = earliestCartDeadline(cartQuery.data);
@@ -670,7 +688,7 @@ export function LensProductView({
   }, [orderAdded]);
 
   const chromeOpacity = scrollY.interpolate({
-    inputRange: [Math.max(120, heroHeight - 230), Math.max(220, heroHeight - 90)],
+    inputRange: [Math.max(80, expandedOffset - 130), expandedOffset],
     outputRange: [0, 1],
     extrapolate: 'clamp',
   });
@@ -733,7 +751,8 @@ export function LensProductView({
       if (!mountedRef.current || requestId !== orderRequestRef.current) return;
       if (error instanceof ApiError) {
         if (error.code === 'VARIANT_AMBIGUOUS') setOrderMessage(t('lens.product.ambiguous'));
-        else if (error.code === 'VARIANT_UNAVAILABLE' || error.code === 'VARIANT_SELECTION_INVALID') setOrderMessage(t('lens.product.variantRefused'));
+        else if (error.code === 'VARIANT_AVAILABILITY_UNKNOWN' || error.code === 'NO_CONTRACT') setOrderMessage(t('lens.product.availabilityUnknown'));
+        else if (error.code === 'VARIANT_UNAVAILABLE' || error.code === 'VARIANT_SELECTION_INVALID' || error.code === 'VARIANT_NOT_FOUND') setOrderMessage(t('lens.product.variantRefused'));
         else if (error.code === 'INVALID_AYROVIX_PRICE_TOKEN') setOrderMessage(t('lens.product.expired'));
         else setOrderMessage(error.message || t('lens.product.orderFailed'));
       } else {
@@ -816,9 +835,16 @@ export function LensProductView({
         contentContainerStyle={[styles.productScroll, { paddingBottom: 96 + insets.bottom }]}
         showsVerticalScrollIndicator={false}
         scrollEventThrottle={16}
+        directionalLockEnabled
+        decelerationRate="fast"
+        snapToOffsets={[0, expandedOffset]}
+        snapToAlignment="start"
+        snapToStart
+        snapToEnd={false}
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
+        testID="lens-product-drawer"
       >
-        <View style={[styles.gallery, { width, height: heroHeight, backgroundColor: theme.colors.infoSoft }]}>
+        <View style={[styles.gallery, { width, height: heroHeight, backgroundColor: LENS_COLORS.white }]}>
           <ScrollView
             horizontal
             pagingEnabled
@@ -875,13 +901,24 @@ export function LensProductView({
           </View>
         </View>
 
-        <View style={[
-          styles.detailsSheet,
-          { borderTopLeftRadius: 26, borderTopRightRadius: 26, backgroundColor: theme.colors.surface },
-        ]}>
-          <View style={[styles.sheetHandle, { backgroundColor: theme.colors.lineControl }]} />
-          {candidate.brand ? <AppText variant="caption" color={theme.colors.muted} style={styles.brand}>{candidate.brand.toLocaleUpperCase()}</AppText> : null}
-          <AppText variant="title" weight="bold" style={styles.productTitle}>{candidate.title}</AppText>
+        <View
+          style={[
+            styles.detailsSheet,
+            { borderTopLeftRadius: 24, borderTopRightRadius: 24, backgroundColor: theme.colors.surface },
+          ]}
+          testID="lens-product-sheet"
+        >
+          <Pressable
+            onPress={() => scrollRef.current?.scrollTo?.({ y: expandedOffset, animated: theme.motion.reduced !== 0 })}
+            accessibilityRole="button"
+            accessibilityLabel={t('lens.sheet.expand')}
+            style={styles.productSheetHandle}
+            testID="lens-product-sheet-handle"
+          >
+            <View style={[styles.sheetHandle, { backgroundColor: theme.colors.lineControl }]} />
+          </Pressable>
+          {candidate.brand ? <AppText weight="bold" style={styles.brand}>{candidate.brand}</AppText> : null}
+          <AppText weight={candidate.brand ? 'regular' : 'bold'} style={styles.productTitle}>{candidate.title}</AppText>
           {candidate.ratingKind === 'merchant' && candidate.rating != null ? (
             <View style={[styles.ratingRow, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
               <Ionicons name="star" size={17} color={LENS_COLORS.star} accessibilityElementsHidden />
@@ -929,14 +966,36 @@ export function LensProductView({
 
           <View style={styles.accordions}>
             <FactAccordion
-              title={t('lens.product.details')}
-              icon="information-circle-outline"
-              facts={detailFacts}
+              title={t('lens.product.description')}
+              icon="document-text-outline"
+              facts={[]}
               description={candidate.description}
-              defaultOpen
+              testID="lens-accordion-description"
             />
-            <FactAccordion title={t('lens.product.material')} icon="layers-outline" facts={materialFacts} />
-            <FactAccordion title={t('lens.product.fit')} icon="resize-outline" facts={fitFacts} />
+            <FactAccordion
+              title={t('lens.product.characteristics')}
+              icon="information-circle-outline"
+              facts={characteristicFacts}
+              testID="lens-accordion-characteristics"
+            />
+            <FactAccordion
+              title={t('lens.product.material')}
+              icon="layers-outline"
+              facts={materialFacts}
+              testID="lens-accordion-material"
+            />
+            <FactAccordion
+              title={t('lens.product.fit')}
+              icon="resize-outline"
+              facts={fitFacts}
+              testID="lens-accordion-fit"
+            />
+            <FactAccordion
+              title={t('lens.product.care')}
+              icon="water-outline"
+              facts={careFacts}
+              testID="lens-accordion-care"
+            />
           </View>
         </View>
       </Animated.ScrollView>
@@ -1060,12 +1119,13 @@ const styles = StyleSheet.create({
   counterRTL: { left: 14 },
   counterText: { color: LENS_COLORS.black },
   detailsSheet: {
-    transform: [{ translateY: -24 }], minHeight: 500,
-    paddingHorizontal: 20, paddingTop: 12, paddingBottom: 24, gap: 10,
+    marginTop: -SPACE[4], minHeight: 500,
+    paddingHorizontal: 16, paddingTop: 4, paddingBottom: 24, gap: 8,
   },
-  sheetHandle: { width: 44, height: 5, borderRadius: 3, alignSelf: 'center', marginBottom: 8 },
-  brand: { letterSpacing: 1.2, marginTop: 4 },
-  productTitle: { lineHeight: 30, marginBottom: 1 },
+  productSheetHandle: { height: 34, marginHorizontal: -SPACE[3], alignItems: 'center', justifyContent: 'center' },
+  sheetHandle: { width: 44, height: 5, borderRadius: 3, alignSelf: 'center' },
+  brand: { color: LENS_COLORS.black, fontSize: 19, lineHeight: 24, marginTop: 2 },
+  productTitle: { color: LENS_COLORS.black, fontSize: 17, lineHeight: 23, marginBottom: 4 },
   ratingRow: { alignItems: 'center', gap: 6, minHeight: 24 },
   choiceSummary: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 8 },
   optionsArea: { gap: 12, marginTop: 4 },
@@ -1082,16 +1142,16 @@ const styles = StyleSheet.create({
   optionList: { flexShrink: 1 },
   optionRow: { minHeight: 54, borderTopWidth: StyleSheet.hairlineWidth, alignItems: 'center', gap: 12 },
   enrichingRow: { minHeight: 42, alignItems: 'center', gap: 12, marginTop: 4 },
-  accordions: { marginTop: 6, gap: 0 },
+  accordions: { marginTop: 8 },
   accordion: { borderTopWidth: StyleSheet.hairlineWidth },
-  accordionHeader: { minHeight: 62, alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  accordionHeader: { minHeight: 60, alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   accordionHeading: { flex: 1, alignItems: 'center', gap: 12 },
   accordionTitle: { fontSize: 16 },
-  accordionBody: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 16, paddingBottom: 20, gap: 16 },
-  description: { fontSize: 15, lineHeight: 23 },
-  factGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  factCell: { width: '48%', minHeight: 72, borderRadius: 11, paddingHorizontal: 12, paddingVertical: 10, gap: 4 },
-  factValue: { lineHeight: 20 },
+  accordionBody: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 8, paddingBottom: 16 },
+  description: { fontSize: 15, lineHeight: 23, paddingVertical: 8 },
+  factRow: { minHeight: 58, borderTopWidth: StyleSheet.hairlineWidth, alignItems: 'flex-start', gap: 16, paddingVertical: 12 },
+  factLabel: { width: '36%', lineHeight: 19 },
+  factValue: { flex: 1, lineHeight: 20 },
   stickyAction: {
     position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 24,
     borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingTop: 10, gap: 8,
