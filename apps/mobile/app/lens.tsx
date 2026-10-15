@@ -513,7 +513,9 @@ export default function LensScreen() {
         {previewUri ? (
           <AppImage uri={previewUri} contentFit="cover" style={styles.preview} accessibilityLabel={t('lens.capturedPhoto')} testID="lens-captured-preview" />
         ) : (
-          <View style={[styles.preview, styles.previewFallback, { backgroundColor: theme.colors.ink }]}>
+          // Fond de « viseur » toujours sombre : l'en-tête et les contrôles posés dessus sont
+          // blancs. `ink` devenait BLANC en mode sombre (titre blanc sur blanc).
+          <View style={[styles.preview, styles.previewFallback, { backgroundColor: LENS_COLORS.black }]}>
             <Ionicons name="scan-outline" size={64} color={LENS_COLORS.white} accessibilityElementsHidden />
           </View>
         )}
@@ -575,7 +577,7 @@ export default function LensScreen() {
           })}
         />
       ) : (
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.colors.ink }]} />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: LENS_COLORS.black }]} />
       )}
       <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
         <View style={[styles.cameraTop, { paddingTop: insets.top + 6, flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>

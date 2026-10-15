@@ -100,6 +100,10 @@ describe('chargement et résultats Lens', () => {
     expect(product).toContain('countdownExpired ? LENS_COLORS.sale : LENS_COLORS.active');
     expect(product).toContain("color={theme.colors.accentText}");
     expect(lens).toContain('modeActive: { backgroundColor: LENS_COLORS.active }');
+    // Le viseur reste sombre dans les DEUX modes : `ink` devient blanc en mode sombre
+    // et rendait l'en-tête blanc illisible.
+    expect(lens).not.toContain('backgroundColor: theme.colors.ink');
+    expect(lens).toContain('styles.previewFallback, { backgroundColor: LENS_COLORS.black }');
   });
 });
 
