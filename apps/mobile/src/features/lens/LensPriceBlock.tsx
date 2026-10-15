@@ -29,6 +29,9 @@ export function LensPriceBlock({
       ? `${view.current.amount.toFixed(2)} ${view.current.currency}`
       : t('lens.priceUnpublished');
   const discounted = view.referenceTnd != null && view.discountPercent != null && view.discountPercent > 0;
+  // Rouge de baisse de prix : fixe sur une carte blanche ; sur la fiche, il suit le
+  // thème (même teinte en clair, rouge éclairci en sombre pour rester ≥ 4,5:1).
+  const dropRed = onWhite ? LENS_COLORS.sale : theme.status.danger.fg;
 
   return (
     <View style={[styles.block, compact ? styles.compactBlock : null]} testID="lens-price-block">
@@ -46,7 +49,7 @@ export function LensPriceBlock({
         <AppText
           variant={compact ? 'label' : 'title'}
           weight="bold"
-          color={discounted ? LENS_COLORS.sale : onWhite ? LENS_COLORS.black : theme.colors.ink}
+          color={discounted ? dropRed : onWhite ? LENS_COLORS.black : theme.colors.ink}
           numberOfLines={1}
         >
           {currentText}
@@ -57,7 +60,7 @@ export function LensPriceBlock({
           </AppText>
         ) : null}
         {discounted ? (
-          <AppText variant={compact ? 'caption' : 'body'} weight="bold" color={LENS_COLORS.sale} numberOfLines={1}>
+          <AppText variant={compact ? 'caption' : 'body'} weight="bold" color={dropRed} numberOfLines={1}>
             {`−${view.discountPercent}%`}
           </AppText>
         ) : null}

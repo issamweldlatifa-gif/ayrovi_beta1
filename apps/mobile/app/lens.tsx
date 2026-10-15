@@ -20,6 +20,7 @@ import { AppText, Button, Field } from '@/design/ui';
 import { SubScreen } from '@/design/subScreen';
 import { goBack } from '@/design/navigation';
 import { useTheme } from '@/design/theme';
+import { veil } from '@/design/tokens.mobile';
 import { useT, type TranslationKey } from '@/i18n';
 import { ApiError, isApiError } from '@/api/errors';
 import { addExternalFavorite } from '@/api/account';
@@ -641,7 +642,7 @@ export default function LensScreen() {
                   accessibilityState={{ selected: active }}
                   style={[styles.mode, active ? styles.modeActive : null]}
                 >
-                  <AppText variant="caption" weight="bold" color={active ? LENS_COLORS.black : LENS_COLORS.white} align="center">{label}</AppText>
+                  <AppText variant="caption" weight="bold" color={LENS_COLORS.white} align="center">{label}</AppText>
                 </Pressable>
               );
             })}
@@ -702,9 +703,9 @@ export default function LensScreen() {
 const styles = StyleSheet.create({
   scene: { flex: 1 },
   cameraTop: { position: 'absolute', left: 8, right: 8, top: 0, alignItems: 'center', zIndex: 5 },
-  overlayButton: { width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(0,0,0,0.34)', alignItems: 'center', justifyContent: 'center' },
+  overlayButton: { width: 48, height: 48, borderRadius: 24, backgroundColor: veil(0.34), alignItems: 'center', justifyContent: 'center' },
   headerSpacer: { width: 48, height: 48 },
-  cameraTitle: { flex: 1, textShadowColor: 'rgba(0,0,0,0.8)', textShadowRadius: 5 },
+  cameraTitle: { flex: 1, textShadowColor: veil(0.8), textShadowRadius: 5 },
   cameraActions: { alignItems: 'center' },
   focusFrame: { position: 'absolute', left: '12%', right: '12%', top: '22%', bottom: '27%' },
   corner: { position: 'absolute', width: 38, height: 38, borderColor: LENS_COLORS.white },
@@ -713,22 +714,23 @@ const styles = StyleSheet.create({
   cornerBL: { bottom: 0, left: 0, borderBottomWidth: 3, borderLeftWidth: 3, borderBottomLeftRadius: 6 },
   cornerBR: { bottom: 0, right: 0, borderBottomWidth: 3, borderRightWidth: 3, borderBottomRightRadius: 6 },
   cameraBottom: { position: 'absolute', left: 20, right: 20, bottom: 0, gap: 16 },
-  cameraHint: { textShadowColor: 'rgba(0,0,0,0.7)', textShadowRadius: 5 },
+  cameraHint: { textShadowColor: veil(0.7), textShadowRadius: 5 },
   modePicker: { minHeight: 54, borderRadius: 28, padding: 4, backgroundColor: LENS_COLORS.cameraControl },
   mode: { flex: 1, minHeight: 46, borderRadius: 24, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
-  modeActive: { backgroundColor: LENS_COLORS.white },
+  // Mode choisi = élément actif : pastille violette, libellé blanc (7,19:1).
+  modeActive: { backgroundColor: LENS_COLORS.active },
   captureRow: { alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 8 },
-  sideControl: { width: 58, height: 58, borderRadius: 18, borderWidth: 1.5, borderColor: LENS_COLORS.white, backgroundColor: 'rgba(0,0,0,0.25)', alignItems: 'center', justifyContent: 'center' },
-  shutterOuter: { width: 84, height: 84, borderRadius: 42, borderWidth: 5, borderColor: LENS_COLORS.white, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' },
+  sideControl: { width: 58, height: 58, borderRadius: 18, borderWidth: 1.5, borderColor: LENS_COLORS.white, backgroundColor: veil(0.25), alignItems: 'center', justifyContent: 'center' },
+  shutterOuter: { width: 84, height: 84, borderRadius: 42, borderWidth: 5, borderColor: LENS_COLORS.white, backgroundColor: veil(0.35), alignItems: 'center', justifyContent: 'center' },
   shutterInner: { width: 64, height: 64, borderRadius: 32, backgroundColor: LENS_COLORS.white },
-  ocerexControl: { width: 68, height: 58, borderRadius: 29, borderWidth: 1.5, borderColor: LENS_COLORS.white, backgroundColor: 'rgba(0,0,0,0.25)', alignItems: 'center', justifyContent: 'center' },
+  ocerexControl: { width: 68, height: 58, borderRadius: 29, borderWidth: 1.5, borderColor: LENS_COLORS.white, backgroundColor: veil(0.25), alignItems: 'center', justifyContent: 'center' },
   permissionCenter: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
   permissionCard: { width: '100%', maxWidth: 420, gap: 16, alignItems: 'center', padding: 24 },
   textSearch: { gap: 10, padding: 16 },
   preview: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   previewFallback: { alignItems: 'center', justifyContent: 'center' },
   resultTop: { position: 'absolute', top: 0, left: 8, right: 8, alignItems: 'center', zIndex: 3 },
-  resultTitle: { flex: 1, textShadowColor: 'rgba(0,0,0,0.8)', textShadowRadius: 5 },
+  resultTitle: { flex: 1, textShadowColor: veil(0.8), textShadowRadius: 5 },
   searchSheet: { position: 'absolute', left: 0, right: 0, bottom: 0, overflow: 'hidden' },
   sheetGrabArea: { height: 30, alignItems: 'center', justifyContent: 'center' },
   sheetHandle: { width: 48, height: 5, borderRadius: 3, alignSelf: 'center', marginBottom: 10 },

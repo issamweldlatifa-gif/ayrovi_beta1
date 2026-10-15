@@ -40,7 +40,8 @@ export function LinkedProductCard({ product, variant = 'row', onOpen, testID }: 
       style={[
         styles.card,
         overlay ? styles.overlay : null,
-        { backgroundColor: theme.colors.surface, borderRadius: theme.radius.card, borderColor: theme.colors.line },
+        // Carte produit : fond BLANC (identité — « بطاقات المنتجات »), filet gris léger.
+        { backgroundColor: theme.colors.canvas, borderRadius: theme.radius.card, borderColor: theme.colors.line },
       ]}
     >
       <AppImage

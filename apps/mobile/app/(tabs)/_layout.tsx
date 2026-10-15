@@ -58,7 +58,8 @@ export default function TabsLayout() {
       backBehavior="initialRoute"
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: theme.colors.accent,
+        // Onglet actif : le violet de marque, dans sa version lisible du mode.
+        tabBarActiveTintColor: theme.colors.accentText,
         tabBarInactiveTintColor: theme.colors.muted,
         tabBarStyle: {
           // شريط شفاف — la consigne. Aucun fond, aucune bordure.

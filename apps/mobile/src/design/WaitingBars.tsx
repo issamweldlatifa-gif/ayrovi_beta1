@@ -11,7 +11,7 @@ import { Animated, Easing, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { useTheme } from './theme';
-import { ACTION_ON_COLOR, WAITING_GRADIENTS } from './tokens.mobile';
+import { WAITING_GRADIENTS } from './tokens.mobile';
 
 export function WaitingBars({
   compact = false,
@@ -19,7 +19,7 @@ export function WaitingBars({
   testID,
 }: {
   compact?: boolean;
-  /** Fond blanc compact quand l’indicateur vit sur le CTA bleu. */
+  /** Pastille blanche compacte quand l’indicateur vit sur le CTA violet. */
   light?: boolean;
   testID?: string;
 }) {
@@ -66,7 +66,7 @@ export function WaitingBars({
       style={[
         styles.row,
         { height: compact ? 18 : 38, gap },
-        light ? { backgroundColor: ACTION_ON_COLOR, borderRadius: 8, paddingHorizontal: 4 } : null,
+        light ? { backgroundColor: theme.colors.onAction, borderRadius: 8, paddingHorizontal: 4 } : null,
       ]}
     >
       {values.map((value, index) => {

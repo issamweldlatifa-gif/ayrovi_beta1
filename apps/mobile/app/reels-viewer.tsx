@@ -22,7 +22,7 @@ import { useT } from '@/i18n';
 import { ReelCard } from '@/features/social/ReelCard';
 import { ReelCommentsModal } from '@/features/social/ReelCommentsModal';
 import { ReelsShopMark } from '@/features/reels/ReelsShopMark';
-import { VIDEO_BACKDROP } from '@/design/tokens.mobile';
+import { VIDEO_BACKDROP, veil } from '@/design/tokens.mobile';
 import type { Reel } from '@/api/social';
 
 const BACK_HIT = 48;
@@ -79,7 +79,7 @@ export default function ReelsViewerScreen() {
       {/* Dégradé discret sous la barre d'état et l'en-tête : lisibilité sans bandeau opaque. */}
       <LinearGradient
         pointerEvents="none"
-        colors={['rgba(0,0,0,0.55)', 'rgba(0,0,0,0)']}
+        colors={[veil(0.55), veil(0)]}
         style={[styles.scrim, { height: insets.top + 96 }]}
       />
 

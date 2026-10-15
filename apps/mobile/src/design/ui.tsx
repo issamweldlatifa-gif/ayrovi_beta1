@@ -4,17 +4,16 @@
  */
 import { Children, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
-  Animated, Dimensions, Modal, Pressable, StyleSheet, Switch,
+  Animated, Dimensions, Modal, Platform, Pressable, StyleSheet, Switch,
   Text, TextInput, View, useWindowDimensions,
   type StyleProp, type TextInputProps, type TextProps, type TextStyle as RNTextStyle,
   type LayoutChangeEvent, type ViewStyle,
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, webDirection, type FontWeightName, type TextRole } from './theme';
 import { actionDirectionFor, responsiveMetricsFor, rowDirectionFor } from './layoutLogic';
-import { ACTION_GRADIENT, ACTION_ON_COLOR } from './tokens.mobile';
+import { veil } from './tokens.mobile';
 import { WaitingBars } from './WaitingBars';
 import { useT } from '@/i18n';
 
@@ -249,10 +248,20 @@ export interface ButtonProps {
 /** Épaisseur du contour des boutons « quiet » (référence : contour net, pas un filet). */
 export const BUTTON_OUTLINE_WIDTH = 2;
 
+/**
+ * Deux rôles, deux couleurs — jamais tous les boutons pareils :
+ *   • `primary` : VIOLET plein (`action`, #571EF6), libellé blanc (7,19:1),
+ *     violet plus profond quand on appuie (`actionHover`).
+ *   • `quiet`   : bouton secondaire — fond blanc (`canvas`), contour et
+ *     libellé noirs (`ink`).
+ * Désactivé : même forme, opacité réduite. Occupé : barres d'attente dans le
+ * bouton (pastille blanche sur le violet).
+ */
 export function Button({ label, onPress, busy = false, disabled = false, tone = 'primary', block = false, style, accessibilityHint, testID, leading }: ButtonProps) {
   const theme = useTheme();
   const blocked = busy || disabled;
   const quiet = tone === 'quiet';
+  const labelColor = quiet ? theme.colors.ink : theme.colors.onAction;
   return (
     <Pressable
       accessibilityRole="button"
@@ -271,31 +280,24 @@ export function Button({ label, onPress, busy = false, disabled = false, tone = 
           // Système de boutons : pastille (CTA), contour encre épais en mode « quiet ».
           borderRadius: theme.radius.cta,
           borderWidth: quiet ? BUTTON_OUTLINE_WIDTH : StyleSheet.hairlineWidth,
-          backgroundColor: 'transparent',
-          borderColor: quiet ? theme.colors.ink : ACTION_GRADIENT[0],
-          opacity: disabled && !busy ? 0.5 : pressed ? 0.85 : 1,
+          backgroundColor: quiet
+            ? theme.colors.canvas
+            : pressed ? theme.colors.actionHover : theme.colors.action,
+          borderColor: quiet ? theme.colors.ink : theme.colors.action,
+          opacity: disabled && !busy ? 0.5 : pressed && quiet ? 0.85 : 1,
         },
       ]}
     >
-      {!quiet ? (
-        <LinearGradient
-          pointerEvents="none"
-          colors={ACTION_GRADIENT}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[StyleSheet.absoluteFill, { borderRadius: theme.radius.cta }]}
-        />
-      ) : null}
       {leading ? (
         // Pictogramme (ex. logo Google) posé avant le libellé, dans le sens de lecture.
         <View style={[styles.leadingRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
           {leading}
-          <AppText variant="label" weight="bold" color={quiet ? theme.colors.ink : ACTION_ON_COLOR}>
+          <AppText variant="label" weight="bold" color={labelColor}>
             {label}
           </AppText>
         </View>
       ) : (
-        <AppText variant="label" weight="bold" color={quiet ? theme.colors.ink : ACTION_ON_COLOR}>
+        <AppText variant="label" weight="bold" color={labelColor}>
           {label}
         </AppText>
       )}
@@ -419,25 +421,69 @@ export function ToggleRow({ label, value, onChange, disabled = false }: {
 
 /* ── Champ de saisie (liens marchands, phase P3) ───────────────────────────── */
 
+/** Épaisseur du contour d'un champ qui a le focus. */
+export const FIELD_FOCUS_WIDTH = 2;
+
+type FocusHandler = NonNullable<TextInputProps['onFocus']>;
+type BlurHandler = NonNullable<TextInputProps['onBlur']>;
+
+/**
+ * Habillage COMMUN de tous les champs de saisie (`Field`, commentaire…) :
+ *   • fond blanc (`canvas`) — les formulaires sont blancs dans l'identité ;
+ *   • contour gris de contrôle au repos (`lineControl`, ≥ 3:1 sur blanc) ;
+ *   • contour VIOLET épaissi au focus (`focus`), curseur et poignées violets ;
+ *   • non éditable : fond `disabled`, texte `muted`.
+ * La taille extérieure ne bouge jamais : le contour plus épais du focus est
+ * compensé dans le padding (`inset`), le texte ne saute donc pas.
+ */
+export function useFieldChrome({ onFocus, onBlur, editable = true }: {
+  onFocus?: FocusHandler;
+  onBlur?: BlurHandler;
+  editable?: boolean;
+} = {}) {
+  const theme = useTheme();
+  const [focused, setFocused] = useState(false);
+  const active = focused && editable;
+  const borderWidth = active ? FIELD_FOCUS_WIDTH : StyleSheet.hairlineWidth;
+  return {
+    focused: active,
+    inset: borderWidth - StyleSheet.hairlineWidth,
+    style: {
+      color: editable ? theme.colors.ink : theme.colors.muted,
+      backgroundColor: editable ? theme.colors.canvas : theme.colors.disabled,
+      borderColor: active ? theme.colors.focus : theme.colors.lineControl,
+      borderWidth,
+    },
+    inputProps: {
+      placeholderTextColor: theme.colors.muted,
+      // Android : la sélection est un aplat — on la veut translucide ; iOS
+      // dérive lui-même la transparence depuis la teinte pleine.
+      selectionColor: Platform.OS === 'android' ? theme.colors.selection : theme.colors.focus,
+      cursorColor: theme.colors.focus,
+      selectionHandleColor: theme.colors.focus,
+      onFocus: ((event) => { setFocused(true); onFocus?.(event); }) as FocusHandler,
+      onBlur: ((event) => { setFocused(false); onBlur?.(event); }) as BlurHandler,
+    },
+  };
+}
+
 export function Field(props: TextInputProps & { label?: string }) {
   const theme = useTheme();
-  const { label, style, ...rest } = props;
+  const { label, style, onFocus, onBlur, ...rest } = props;
+  const chrome = useFieldChrome({ onFocus, onBlur, editable: rest.editable !== false });
   return (
     <View style={styles.segmentedBlock}>
       {label ? <AppText variant="caption" color={theme.colors.muted}>{label}</AppText> : null}
       <TextInput
-        placeholderTextColor={theme.colors.muted}
+        {...chrome.inputProps}
         {...rest}
         style={[
           theme.text('body'),
           {
-            color: theme.colors.ink,
-            backgroundColor: theme.colors.surface,
-            borderColor: theme.colors.lineControl,
+            ...chrome.style,
             borderRadius: theme.radius.control,
-            borderWidth: StyleSheet.hairlineWidth,
             minHeight: theme.geometry.controlHeight,
-            paddingHorizontal: theme.space[3],
+            paddingHorizontal: theme.space[3] - chrome.inset,
             ...webDirection(theme.isRTL),
           },
           style,
@@ -450,7 +496,7 @@ export function Field(props: TextInputProps & { label?: string }) {
 const styles = StyleSheet.create({
   leadingRow: { alignItems: 'center', justifyContent: 'center', gap: 10 },
   busyIndicator: { position: 'absolute', top: 0, bottom: 0, justifyContent: 'center' },
-  drawerScrim: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' },
+  drawerScrim: { flex: 1, backgroundColor: veil(0.45) },
   drawerPanel: {
     position: 'absolute', top: 0, bottom: 0,
     paddingHorizontal: 16, gap: 4,
@@ -604,7 +650,7 @@ export function DrawerItem({
       <Ionicons
         name={icon}
         size={22}
-        color={active ? theme.colors.accent : theme.colors.ink}
+        color={active ? theme.colors.accentText : theme.colors.ink}
         accessibilityElementsHidden
       />
       <View style={{ flex: 1, gap: 2 }}>

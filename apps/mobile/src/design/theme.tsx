@@ -62,8 +62,9 @@ export interface Theme {
    * Couleurs de STATUT (danger · warning · info · success), chacune en trois
    * tons : `fg` (texte/icône), `soft` (fond de pastille), `border` (liseré).
    *
-   * À utiliser pour tout SIGNAL. La marque, elle, reste monochrome + orange :
-   * c'est cette séparation qui permet de garder l'orange sous 3 % (§2.6).
+   * À utiliser pour tout SIGNAL. La marque, elle, reste noir/blanc/gris +
+   * violet (#571EF6) : c'est cette séparation qui garde le violet rare (~10 %)
+   * et chaque statut lisible (§2.10).
    */
   status: StatusSet;
   space: readonly number[];

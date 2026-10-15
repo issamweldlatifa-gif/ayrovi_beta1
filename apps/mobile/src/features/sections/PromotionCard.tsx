@@ -17,8 +17,8 @@ import { mediaUrl } from '@/api/client';
 import type { Promotion } from '@/api/sections';
 
 /**
- * النصّ فوق البرتقالي AYROVI (نفس قرار `StoryCard`): البرتقالي لون فاتح،
- * والأسود فوقو هو التباين المقروء (~7:1 مقابل ~2.9:1 للأبيض).
+ * النصّ فوق البنفسجي AYROVI (نفس قرار `StoryCard`): أبيض (`onAccent`) — تباين
+ * 7.19:1 على `#571EF6`.
  */
 
 

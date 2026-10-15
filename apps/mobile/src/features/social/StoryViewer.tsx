@@ -214,7 +214,7 @@ export function StoryViewer({ stories, initialIndex = 0, visible, onClose, onOpe
               onPress={toggleLike}
               style={[styles.action, { opacity: signedIn ? 1 : 0.45 }]}
             >
-              <Ionicons name={liked ? 'heart' : 'heart-outline'} size={26} color={liked ? theme.status.danger.fg : theme.colors.onMedia} />
+              <Ionicons name={liked ? 'heart' : 'heart-outline'} size={26} color={liked ? theme.colors.accentOnMedia : theme.colors.onMedia} />
             </Pressable>
 
             {signedIn ? null : (

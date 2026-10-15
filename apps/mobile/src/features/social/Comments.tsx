@@ -12,7 +12,7 @@ import { useEffect, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { AppText } from '@/design/ui';
+import { AppText, useFieldChrome } from '@/design/ui';
 import { WaitingBars } from '@/design/WaitingBars';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
@@ -26,6 +26,8 @@ export interface CommentsProps {
 
 export function Comments({ targetId }: CommentsProps) {
   const theme = useTheme();
+  // Même habillage que tous les champs : fond blanc, contour gris, focus violet.
+  const field = useFieldChrome();
   const t = useT();
   const session = useSession();
   const guestSession = useSessionId();
@@ -97,19 +99,20 @@ export function Comments({ targetId }: CommentsProps) {
       {signedIn ? (
         <View style={styles.form}>
           <TextInput
+            {...field.inputProps}
             value={draft}
             onChangeText={setDraft}
             placeholder={t('social.comment')}
-            placeholderTextColor={theme.colors.muted}
             maxLength={500}
             multiline
             style={[
               styles.input,
               {
-                color: theme.colors.ink,
-                borderColor: theme.colors.line,
+                ...field.style,
                 borderRadius: theme.radius.control,
                 minHeight: 44,
+                paddingHorizontal: 12 - field.inset,
+                paddingVertical: 10 - field.inset,
               },
             ]}
           />
@@ -138,6 +141,6 @@ const styles = StyleSheet.create({
   wrap: { gap: 8, paddingVertical: 8 },
   row: { gap: 2, paddingVertical: 6, borderBottomWidth: StyleSheet.hairlineWidth },
   form: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginTop: 8 },
-  input: { flex: 1, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10, textAlignVertical: 'top' },
+  input: { flex: 1, textAlignVertical: 'top' },
   send: { paddingHorizontal: 16, paddingVertical: 12 },
 });

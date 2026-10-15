@@ -17,7 +17,7 @@ import { VideoView, useVideoPlayer } from 'expo-video';
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
-import { MEDIA_RATIO, VIDEO_BACKDROP } from '@/design/tokens.mobile';
+import { MEDIA_RATIO, VIDEO_BACKDROP, veil } from '@/design/tokens.mobile';
 import { LinkedProductCard } from '@/features/shopping/LinkedProductCard';
 import { mediaUrl } from '@/api/client';
 import { AppImage } from '@/design/appImage';
@@ -130,7 +130,7 @@ export function ReelCard({ reel, active, counts, onOpenComments, fill }: ReelCar
             onPress={toggleLike}
             style={[styles.action, { opacity: signedIn ? 1 : 0.45 }]}
           >
-            <Ionicons name={liked ? 'heart' : 'heart-outline'} size={20} color={liked ? theme.status.danger.fg : muted} accessibilityElementsHidden />
+            <Ionicons name={liked ? 'heart' : 'heart-outline'} size={20} color={liked ? (fill ? theme.colors.accentOnMedia : theme.colors.accentText) : muted} accessibilityElementsHidden />
             <AppText variant="caption" color={muted}>{String(counts?.likes ?? reel.likes)}</AppText>
           </Pressable>
 
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
   fillMedia: { position: 'absolute', top: 0, bottom: 0, start: 0, end: 0, backgroundColor: VIDEO_BACKDROP },
   fillBody: { position: 'absolute', start: 0, end: 0, bottom: 0, padding: 16, paddingBottom: 32, gap: 6 },
   poster: { alignItems: 'center', justifyContent: 'center' },
-  duration: { position: 'absolute', top: 10, start: 10, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, backgroundColor: 'rgba(0,0,0,0.55)' },
+  duration: { position: 'absolute', top: 10, start: 10, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, backgroundColor: veil(0.55) },
   body: { padding: 12, gap: 4 },
   actions: { flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 6 },
   action: { flexDirection: 'row', alignItems: 'center', gap: 4 },

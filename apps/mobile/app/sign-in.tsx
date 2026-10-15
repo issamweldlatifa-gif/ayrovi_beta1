@@ -18,7 +18,6 @@ import { useRef, useState } from 'react';
 import { goBack } from '@/design/navigation';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -36,7 +35,6 @@ import { closeProviderBrowser, openProviderSession } from '@/features/auth/brows
 import { useRememberedAccount, type LastAccount } from '@/features/auth/lastAccount';
 import { GoogleLogo } from '@/design/GoogleLogo';
 import { WaitingBars } from '@/design/WaitingBars';
-import { ACTION_GRADIENT, ACTION_ON_COLOR, LINK_BLUE } from '@/design/tokens.mobile';
 import { useSession } from '@/state/session';
 import { signInWithGoogleNative, googleFailureCode, googleFailureDetail } from '@/features/auth/googleNative';
 
@@ -49,7 +47,8 @@ const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
 export default function SignInScreen() {
   const theme = useTheme();
   const { gutter } = useResponsive();
-  const legalBlue = theme.mode === 'dark' ? LINK_BLUE.dark : LINK_BLUE.light;
+  /** Liens « Conditions » et « Confidentialité » : le violet lisible du mode (lien important). */
+  const legalLink = theme.colors.accentText;
   const { t, locale } = useI18n();
   const insets = useSafeAreaInsets();
   const session = useSession();
@@ -597,7 +596,7 @@ export default function SignInScreen() {
               <Ionicons
                 name={marketing ? 'checkbox' : 'square-outline'}
                 size={22}
-                color={marketing ? theme.colors.accent : theme.colors.muted}
+                color={marketing ? theme.colors.accentText : theme.colors.muted}
                 accessibilityElementsHidden
               />
               <AppText variant="caption" style={styles.checkboxLabel}>{t('auth.marketing')}</AppText>
@@ -616,7 +615,7 @@ export default function SignInScreen() {
 
         {/* Conditions et confidentialité : toujours visibles en bas, ouvertes dans l'application. */}
         <View style={[styles.legal, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-          {/* Liens bleus : ouvrent la page DANS l'application (retour, jamais de navigateur). */}
+          {/* Liens violets : ouvrent la page DANS l'application (retour, jamais de navigateur). */}
           <Pressable
             accessibilityRole="link"
             accessibilityLabel={t('auth.legal.terms')}
@@ -624,7 +623,7 @@ export default function SignInScreen() {
             style={[styles.legalLink, { minHeight: theme.geometry.minTarget }]}
             testID="auth-legal-terms"
           >
-            <AppText variant="caption" color={legalBlue} style={styles.legalText}>{t('auth.legal.terms')}</AppText>
+            <AppText variant="caption" color={legalLink} style={styles.legalText}>{t('auth.legal.terms')}</AppText>
           </Pressable>
           <AppText variant="caption" color={theme.colors.muted}>·</AppText>
           <Pressable
@@ -634,7 +633,7 @@ export default function SignInScreen() {
             style={[styles.legalLink, { minHeight: theme.geometry.minTarget }]}
             testID="auth-legal-privacy"
           >
-            <AppText variant="caption" color={legalBlue} style={styles.legalText}>{t('auth.legal.privacy')}</AppText>
+            <AppText variant="caption" color={legalLink} style={styles.legalText}>{t('auth.legal.privacy')}</AppText>
           </Pressable>
         </View>
       </ScrollView>
@@ -690,27 +689,21 @@ function RememberedAccountButton({ account, label, busy, disabled, onPress }: {
         {
           minHeight: theme.geometry.controlHeight,
           borderRadius: theme.radius.cta,
-          backgroundColor: 'transparent',
+          // Même rôle que le bouton principal : violet plein, plus profond à l'appui.
+          backgroundColor: pressed ? theme.colors.actionHover : theme.colors.action,
           flexDirection: rowDirectionFor(theme.isRTL),
-          opacity: disabled && !busy ? 0.5 : pressed ? 0.85 : 1,
+          opacity: disabled && !busy ? 0.5 : 1,
         },
       ]}
     >
-      <LinearGradient
-        pointerEvents="none"
-        colors={ACTION_GRADIENT}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={[StyleSheet.absoluteFill, { borderRadius: theme.radius.cta }]}
-      />
       <View style={[styles.avatar, { backgroundColor: theme.colors.surface }]}>
         <AppText variant="label" weight="bold" color={theme.colors.ink}>{initial}</AppText>
       </View>
       <View style={styles.rememberedText}>
-        <AppText variant="label" weight="bold" color={ACTION_ON_COLOR}>{label}</AppText>
+        <AppText variant="label" weight="bold" color={theme.colors.onAction}>{label}</AppText>
         <View style={[styles.emailRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
           {account.provider === 'google' ? <GoogleLogo size={14} /> : null}
-          <AppText variant="caption" color={ACTION_ON_COLOR}>{account.email}</AppText>
+          <AppText variant="caption" color={theme.colors.onAction}>{account.email}</AppText>
         </View>
       </View>
       {busy ? <WaitingBars compact light testID="auth-remembered-busy" /> : null}

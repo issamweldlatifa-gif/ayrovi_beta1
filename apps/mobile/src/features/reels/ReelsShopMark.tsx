@@ -13,6 +13,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
+import { frost } from '@/design/tokens.mobile';
 import { useT } from '@/i18n';
 
 export interface ReelsShopMarkProps {
@@ -25,7 +26,7 @@ export function ReelsShopMark({ tone = 'ink' }: ReelsShopMarkProps) {
   const t = useT();
   const main = tone === 'onMedia' ? theme.colors.onMedia : theme.colors.ink;
   // « Shop » reste plus discret que « Reels » sur les deux fonds.
-  const secondary = tone === 'onMedia' ? 'rgba(255,255,255,0.7)' : theme.colors.muted;
+  const secondary = tone === 'onMedia' ? frost(0.7) : theme.colors.muted;
 
   return (
     <View

@@ -79,20 +79,27 @@ describe('chargement et résultats Lens', () => {
     expect(card).not.toContain('cardOptions');
   });
 
-  it('réserve le rouge aux promotions, le jaune aux étoiles et le bleu aux actions/minuteurs', () => {
+  it('réserve le rouge aux baisses de prix, le violet aux actions/éléments actifs/minuteurs, le noir aux étoiles', () => {
     expect(palette).toContain("export { LENS_COLORS } from '@/design/tokens.mobile'");
-    expect(nativeTokens).toContain("sale: '#D00000'");
-    expect(nativeTokens).toContain("star: '#F5B800'");
-    expect(nativeTokens).toContain('export const ACTION_GRADIENT');
+    // Palette Lens fermée, entièrement dérivée de la marque (sauf le rouge de prix).
+    expect(nativeTokens).toContain("const PRICE_DROP_RED = '#CF1322'");
+    expect(nativeTokens).toContain('sale: PRICE_DROP_RED');
+    expect(nativeTokens).toContain('active: BRAND.violet');
+    expect(nativeTokens).toContain('star: BRAND.black');
+    expect(nativeTokens).toContain('skeleton: BRAND.lightGray');
+    expect(contrastWithWhite('#CF1322')).toBeGreaterThanOrEqual(4.5);
+    expect(contrastWithWhite('#571EF6')).toBeGreaterThanOrEqual(4.5);
+    // Plus aucun dégradé bleu ni orange : l'attente est une famille violette dérivée.
+    expect(nativeTokens).not.toContain('ACTION_GRADIENT');
     expect(nativeTokens).toContain('export const WAITING_GRADIENTS');
-    const action = /ACTION_GRADIENT = \[([^\]]+)\]/.exec(nativeTokens)?.[1].match(/#[0-9A-F]{6}/gi) ?? [];
-    const waiting = /WAITING_GRADIENTS = \[([\s\S]*?)\n\]/.exec(nativeTokens)?.[1].match(/#[0-9A-F]{6}/gi) ?? [];
-    expect(action.length).toBeGreaterThanOrEqual(3);
-    expect(action.every((color) => contrastWithWhite(color) >= 4.5)).toBe(true);
-    expect([...action, ...waiting].every((color) => Number.parseInt(color.slice(3, 5), 16) < Number.parseInt(color.slice(5, 7), 16) + 90)).toBe(true);
+    expect(nativeTokens).toMatch(/WAITING_GRADIENTS = \[\s*\[mix\(BRAND\.violet/);
     expect(card).toContain('color={LENS_COLORS.star}');
     expect(card).toContain('backgroundColor: LENS_COLORS.sale');
-    expect(product).toContain('ACTION_GRADIENT[2]');
+    expect(card).toContain('favorite ? LENS_COLORS.active : LENS_COLORS.black');
+    expect(product).toContain('favorite ? LENS_COLORS.active : LENS_COLORS.black');
+    expect(product).toContain('countdownExpired ? LENS_COLORS.sale : LENS_COLORS.active');
+    expect(product).toContain("color={theme.colors.accentText}");
+    expect(lens).toContain('modeActive: { backgroundColor: LENS_COLORS.active }');
   });
 });
 

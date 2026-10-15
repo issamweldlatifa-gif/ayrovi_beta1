@@ -5,6 +5,7 @@
 import { Animated, Pressable, StyleSheet } from 'react-native';
 
 import { useI18n } from '@/i18n';
+import { veil } from '../tokens.mobile';
 
 export interface SheetBackdropProps {
   opacity: Animated.AnimatedInterpolation<number>;
@@ -26,5 +27,5 @@ export function SheetBackdrop({ opacity, onPress }: SheetBackdropProps) {
 }
 
 const styles = StyleSheet.create({
-  scrim: { backgroundColor: 'rgba(0,0,0,0.5)' },
+  scrim: { backgroundColor: veil(0.5) },
 });

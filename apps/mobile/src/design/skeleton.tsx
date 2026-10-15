@@ -68,7 +68,8 @@ export function Skeleton({
           width,
           height,
           borderRadius: radius ?? theme.radius.sm,
-          backgroundColor: color ?? theme.colors.line,
+          // Gris clair officiel (#F2F2F2) : la couleur de chargement de l'identité.
+          backgroundColor: color ?? theme.colors.skeleton,
           // Mouvement réduit : bloc pleinement visible, seulement immobile.
           opacity: reduced ? 1 : pulse,
         },

@@ -10,7 +10,7 @@
 | `assets/` | الخطوط والشعارات (مصدرها هوية المنتوج) |
 | `src/api/` | عميل الـ HTTP، الأخطاء، والمحتوى العام |
 | `src/features/` | أقسام الشاشات (hero، شريط التنقّل، الإعلانات) |
-| `scripts/gen-tokens.mjs` | يولّد `src/design/tokens.generated.ts` من هوية المنتوج |
+| `scripts/gen-tokens.mjs` | يولّد `src/design/tokens.generated.ts`: الألوان من `src/design/brand.json`، والهيكل من هوية المنتوج |
 | `scripts/device-acceptance.mjs` | فحص ADB/App Links وفتح Lens على هاتف حقيقي بلا ادّعاء اختبار الكاميرا آلياً |
 | `DEVICE_ACCEPTANCE_AR.md` | checklist القبول النهائي للكاميرا، المعرض، الاستئناف والـdeep link |
 | `metro.config.js` | بروكسي تطوير: `/api` و`/media` نحو الخادم المحلي |
@@ -25,8 +25,13 @@
 5. CI: مهمة `mobile` مستقلة بـ `paths: apps/mobile/**`.
 
 الاستثناء الوحيد للقاعدة 2: `scripts/gen-tokens.mjs` **يقرا** ملف
-`client/src/design/editorial/identity.json` وقت البناء (موش وقت التشغيل) — باش تكون
-نفس الهوية في الموقع والتطبيق، بلا نسختين يدوية.
+`client/src/design/editorial/identity.json` وقت البناء (موش وقت التشغيل) — للهيكل فقط
+(مسافات، خطوط، أبعاد، مدد)، باش يبقى نفسو في الموقع والتطبيق.
+
+**الألوان** (15/10/2026) تجي من `src/design/brand.json` — هوية ألوان التطبيق الرسمية:
+أسود `#0A0A0A` · أبيض `#FFFFFF` · بنفسجي كهربائي `#571EF6` · رمادي فاتح `#F2F2F2`.
+**البرتقالي انتهى** في التطبيق (جيتونات، كود، `app.json`، أيقونات) — `tests/brand-colors.test.ts`
+يمنعو. الموقع عندو لوحتو الخاصة وما تبدّلش.
 
 ## الهوية
 
@@ -51,7 +56,7 @@ npm run web            # معاينة في المتصفح
 ## الفحوص
 
 ```bash
-npm run tokens:check       # التوكنات مطابقة للهوية؟
+npm run tokens:check       # التوكنات مطابقة لـ brand.json + الهوية؟
 npm run typecheck          # TypeScript
 npm test                   # اختبارات اللغة والهوية الرقمية
 npm run device:acceptance -- --launch  # جهاز ADB حقيقي: App Links + فتح Lens
@@ -65,11 +70,12 @@ npm run device:acceptance -- --launch  # جهاز ADB حقيقي: App Links + ف
 | الملف | المصدر |
 |---|---|
 | `assets/fonts/*.ttf` + `*-OFL.txt` | `../../assets/fonts/` (نفس خطوط الموقع) |
-| `assets/images/icon.png` | `../../assets/icon.png` (شعار على `#FAFAFA`) |
-| `assets/images/adaptive-icon.png` · `splash-icon.png` · `favicon.png` | وُلّدت بـ sharp من `../../client/public/media/logo-ayrovi-512.png` |
+| `assets/images/icon.png` | `../../assets/icon.png` (شعار على `#FFFFFF`، النقطة بنفسجية `#571EF6` منذ 15/10/2026) |
+| `assets/images/adaptive-icon.png` · `splash-icon.png` · `favicon.png` | وُلّدت بـ sharp من `../../client/public/media/logo-ayrovi-512.png`، ثم النقطة البرتقالية لوّنت بنفسجي `#571EF6` (15/10/2026) |
+| `assets/images/splash-icon-dark.png` | نسخة `splash-icon.png` للوضع الداكن: حرف A أبيض + نقطة بنفسجية (على `#0A0A0A`) |
 
 الألوان والأبعاد كاملة تجي من `src/design/tokens.generated.ts` — **ما تصلّحش بيدك**، صلّح
-الهوية ولا بدّل السكربت.
+`src/design/brand.json` (ألوان) أو الهوية (هيكل) ثم `npm run tokens:build`.
 
 ## تطوير محلي مع الخادم
 

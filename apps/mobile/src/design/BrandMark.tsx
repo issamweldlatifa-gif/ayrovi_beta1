@@ -1,13 +1,9 @@
 /**
  * Marque AYROVI — dessinée ici, avec les jetons de l'identité.
  *
- * Aucune image importée, aucun SVG externe : un carré à l'accent de la marque,
- * la lettre « A » (l'identité officielle est « AYROVI A »), et le nom à côté.
- *
- * Contraste mesuré, pas goûté : sur `#FF7900`, le blanc tient ≈ 3:1 — seuil
- * NON-TEXTUEL. Un « A » est un signe, pas une phrase : c'est acceptable pour
- * un glyphe épais, ce qui justifie de garder le NOM en `ink` à côté plutôt que
- * posé sur l'orange.
+ * Aucune image importée, aucun SVG externe : un carré au VIOLET de la marque
+ * (`accent`, #571EF6), la lettre « A » en blanc (`onAccent`, 7,19:1), et le
+ * nom à côté en `ink`.
  */
 import { View } from 'react-native';
 

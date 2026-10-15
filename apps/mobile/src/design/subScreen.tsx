@@ -62,8 +62,8 @@ export function SubScreen({
         <RefreshControl
           refreshing={refreshing}
           onRefresh={onRefresh}
-          tintColor={theme.colors.accent}
-          colors={[theme.colors.accent]}
+          tintColor={theme.colors.accentText}
+          colors={[theme.colors.accentText]}
         />
       ) : undefined}
       contentContainerStyle={[

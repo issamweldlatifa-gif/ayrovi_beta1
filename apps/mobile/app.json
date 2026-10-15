@@ -8,13 +8,13 @@
     "icon": "./assets/images/icon.png",
     "userInterfaceStyle": "automatic",
     "backgroundColor": "#FFFFFF",
-    "primaryColor": "#FF7900",
+    "primaryColor": "#571EF6",
     "android": {
       "package": "app.ayrovi.mobile",
       "versionCode": 15,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#FAFAFA"
+        "backgroundColor": "#FFFFFF"
       },
       "predictiveBackGestureEnabled": false,
       "intentFilters": [
@@ -61,12 +61,12 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#FAFAFA",
+          "backgroundColor": "#FFFFFF",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "dark": {
-            "backgroundColor": "#000000",
-            "image": "./assets/images/splash-icon.png"
+            "backgroundColor": "#0A0A0A",
+            "image": "./assets/images/splash-icon-dark.png"
           }
         }
       ],

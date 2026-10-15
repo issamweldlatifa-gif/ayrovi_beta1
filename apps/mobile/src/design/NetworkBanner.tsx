@@ -7,8 +7,8 @@
  * est pas une — il Pousse le contenu vers le bas quand le réseau tombe, ce
  * qui est honnête (l'état est visible, rien ne recouvre le contenu).
  *
- * Sémantique : avertissement (warning), JAMAIS la marque — un état n'est pas
- * de l'orange (§2.10.2), et le budget orange ne bouge pas.
+ * Sémantique : avertissement (warning, jaune), JAMAIS la marque — un état
+ * n'est pas du violet (§2.10.2).
  */
 import { StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';

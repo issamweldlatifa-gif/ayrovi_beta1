@@ -33,7 +33,6 @@ import {
 } from '@/api/cart';
 import { useSessionId } from '@/session/session';
 import { earliestCartDeadline, formatCartCountdown, remainingMs, serverClockOffset } from '@/features/lens/lensCartStatus';
-import { ACTION_GRADIENT } from '@/design/tokens.mobile';
 
 const MAX_QUANTITY = 99;
 
@@ -244,7 +243,7 @@ export default function AyroviCartScreen() {
             <KeyValue label={t('cart.total')} value={`${cart.totalTND.toFixed(2)} TND`} />
             {quoteDeadline ? (
               <View style={[styles.quoteTimer, { backgroundColor: theme.colors.infoSoft }]}>
-                <AppText variant="caption" weight="bold" style={{ color: quoteExpired ? theme.status.danger.fg : ACTION_GRADIENT[2] }}>
+                <AppText variant="caption" weight="bold" style={{ color: quoteExpired ? theme.status.danger.fg : theme.colors.accentText }}>
                   {quoteExpired ? t('cart.quoteExpired') : t('cart.quoteCountdown', { time: quoteCountdown })}
                 </AppText>
               </View>

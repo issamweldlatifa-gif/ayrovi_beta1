@@ -1,24 +1,44 @@
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { COLORS, FONTS, GEOMETRY, IDENTITY, TYPE_SCALE } from '../src/design/tokens.generated';
+import {
+  BRAND, BRAND_SHARE, COLORS, FONTS, GEOMETRY, IDENTITY, NEUTRALS, TYPE_SCALE,
+} from '../src/design/tokens.generated';
 
+/** Structure (espaces, typo, géométrie) : partagée avec le site. */
 const IDENTITY_PATH = new URL('../../../client/src/design/editorial/identity.json', import.meta.url);
 const raw = readFileSync(IDENTITY_PATH, 'utf8');
 const identity = JSON.parse(raw);
 
+/** Couleurs : identité couleur officielle de l'application (15/10/2026). */
+const BRAND_PATH = new URL('../src/design/brand.json', import.meta.url);
+const brandRaw = readFileSync(BRAND_PATH, 'utf8');
+const brand = JSON.parse(brandRaw);
+
+const sha = (text: string) => createHash('sha256').update(text).digest('hex');
+
 describe('jetons générés', () => {
-  it('proviennent de l’identité produit et sont à jour', () => {
-    const sha256 = createHash('sha256').update(raw).digest('hex');
-    // Le sha256 scellé dans le fichier généré est la preuve que la palette de
-    // l'application est bien celle du site — pas une copie qui a dérivé.
-    expect(IDENTITY.sha256).toBe(sha256);
-    expect(IDENTITY.version).toBe(identity.version);
+  it('proviennent des deux sources déclarées et sont à jour', () => {
+    // Les sha256 scellés dans le fichier généré prouvent que les jetons de
+    // l'application sont bien ceux des sources — pas une copie qui a dérivé.
+    expect(IDENTITY.sha256).toBe(sha(brandRaw));
+    expect(IDENTITY.version).toBe(brand.version);
+    expect(IDENTITY.source).toBe('apps/mobile/src/design/brand.json');
+    expect(IDENTITY.structure.sha256).toBe(sha(raw));
+    expect(IDENTITY.structure.version).toBe(identity.version);
   });
 
-  it('portent la palette claire et sombre à l’identique', () => {
-    expect(COLORS.light).toEqual(identity.colors);
-    expect(COLORS.dark).toEqual(identity.darkColors);
+  it('portent la palette claire et sombre de l’application à l’identique', () => {
+    expect(COLORS.light).toEqual(brand.colors);
+    expect(COLORS.dark).toEqual(brand.darkColors);
+    expect(BRAND).toEqual(brand.brand);
+    expect(BRAND_SHARE).toEqual(brand.share);
+    expect(NEUTRALS).toEqual(brand.neutrals);
+  });
+
+  it('ne reprennent PAS la palette du site (l’identité couleur de l’app est distincte)', () => {
+    // Le site garde sa propre palette ; seule la structure est partagée.
+    expect(COLORS.light.accent).not.toBe(identity.colors.accent);
   });
 
   it('portent la géométrie et l’échelle typographique', () => {

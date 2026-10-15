@@ -1,24 +1,58 @@
 /**
- * Génère src/design/tokens.generated.ts depuis LA source d'identité du produit :
- * client/src/design/editorial/identity.json (le même fichier qui produit le CSS
- * du site). Une identité, deux rendus — jamais deux palettes à garder en phase.
+ * Génère src/design/tokens.generated.ts depuis DEUX sources, chacune pour ce
+ * qu'elle possède (décision produit du 15/10/2026 — nouvelle identité couleur
+ * de l'application) :
+ *
+ *   • COULEURS  → apps/mobile/src/design/brand.json
+ *                 Identité couleur officielle de l'APPLICATION : noir #0A0A0A,
+ *                 blanc #FFFFFF, violet électrique #571EF6, gris clair #F2F2F2.
+ *                 Elle ne touche PAS le site : le site garde sa propre palette.
+ *   • STRUCTURE → client/src/design/editorial/identity.json
+ *                 Espacements, échelle typographique, durées, géométrie et
+ *                 graisses, partagés avec le site (aucune raison de diverger).
  *
  *   npm run tokens:build    écrit le fichier
  *   npm run tokens:check    échoue si le fichier n'est plus à jour (CI)
  *
- * Ce script LIT le fichier du site au moment du build ; l'application ne
- * l'importe jamais à l'exécution (règle de frontière, PLAN.md §9.2).
+ * Ce script LIT ces fichiers au moment du build ; l'application ne les importe
+ * jamais à l'exécution (règle de frontière, PLAN.md §9.2).
  */
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 
 const IDENTITY_PATH = new URL('../../../client/src/design/editorial/identity.json', import.meta.url);
+const BRAND_PATH = new URL('../src/design/brand.json', import.meta.url);
 const OUTPUT_PATH = new URL('../src/design/tokens.generated.ts', import.meta.url);
 const RELATIVE_SOURCE = 'client/src/design/editorial/identity.json';
+const BRAND_SOURCE = 'apps/mobile/src/design/brand.json';
 
 const raw = fs.readFileSync(IDENTITY_PATH, 'utf8');
 const identity = JSON.parse(raw);
 const sha256 = crypto.createHash('sha256').update(raw).digest('hex');
+
+const brandRaw = fs.readFileSync(BRAND_PATH, 'utf8');
+const brand = JSON.parse(brandRaw);
+const brandSha256 = crypto.createHash('sha256').update(brandRaw).digest('hex');
+
+/**
+ * Garde-fous : une palette incohérente doit casser la génération, pas
+ * l'application sur un téléphone. Les deux modes portent EXACTEMENT les mêmes
+ * clés (le type `ColorName` en dépend) et chaque valeur est un hexadécimal.
+ */
+const HEX = /^#[0-9A-F]{6}$/;
+const problems = [];
+for (const group of ['brand', 'neutrals', 'colors', 'darkColors']) {
+  for (const [key, value] of Object.entries(brand[group] ?? {})) {
+    if (!HEX.test(String(value))) problems.push(`${group}.${key} = ${value} (attendu : #RRGGBB en majuscules)`);
+  }
+}
+const lightKeys = Object.keys(brand.colors ?? {}).sort().join(',');
+const darkKeys = Object.keys(brand.darkColors ?? {}).sort().join(',');
+if (!lightKeys || lightKeys !== darkKeys) problems.push('colors et darkColors doivent avoir les mêmes clés');
+if (problems.length) {
+  console.error(`Palette invalide (${BRAND_SOURCE}) :\n  ${problems.join('\n  ')}`);
+  process.exit(1);
+}
 
 /** Sérialise une valeur en littéral TypeScript stable (clés triées). */
 const literal = (value, indent = 0) => {
@@ -43,14 +77,26 @@ const block = (name, value, comment) =>
 const file = `/**
  * GÉNÉRÉ — ne pas modifier à la main.
  *
- * Source unique : ${RELATIVE_SOURCE}
- * Identité : ${identity.name} · version ${identity.version}
- * sha256 : ${sha256}
+ * Couleurs   : ${BRAND_SOURCE}
+ *              ${brand.name} · version ${brand.version}
+ *              sha256 : ${brandSha256}
+ * Structure  : ${RELATIVE_SOURCE}
+ *              ${identity.name} · version ${identity.version}
+ *              sha256 : ${sha256}
  *
  * Régénérer : npm run tokens:build   ·   vérifier : npm run tokens:check
  */
-${block('IDENTITY', { version: identity.version, name: identity.name, source: RELATIVE_SOURCE, sha256 }, 'Provenance de ces jetons.')}
-${block('COLORS', { light: identity.colors, dark: identity.darkColors }, 'Palette, mode clair et mode sombre.')}
+${block('IDENTITY', {
+  name: brand.name,
+  version: brand.version,
+  source: BRAND_SOURCE,
+  sha256: brandSha256,
+  structure: { name: identity.name, version: identity.version, source: RELATIVE_SOURCE, sha256 },
+}, 'Provenance de ces jetons (couleurs de l’application + structure partagée avec le site).')}
+${block('BRAND', brand.brand, 'Les quatre couleurs officielles de la marque — la seule source des valeurs dérivées.')}
+${block('BRAND_SHARE', brand.share, 'Part visuelle visée par couleur (objectif d’ensemble, pas une contrainte par écran).')}
+${block('NEUTRALS', brand.neutrals, 'Gris d’appui : bordure légère, texte secondaire, texte appuyé, contour de champ.')}
+${block('COLORS', { light: brand.colors, dark: brand.darkColors }, 'Palette sémantique, mode clair et mode sombre.')}
 ${block('SPACE', identity.space, 'Échelle d’espacement (px).')}
 ${block('TYPE_SCALE', identity.type, 'Échelle typographique (px).')}
 ${block('MOTION', identity.motion, 'Durées d’animation (ms).')}
@@ -73,13 +119,14 @@ if (process.argv.includes('--check')) {
   if (current !== file) {
     console.error(
       'tokens.generated.ts est périmé.\n'
-      + `  source : ${RELATIVE_SOURCE} (sha256 ${sha256.slice(0, 12)}…)\n`
+      + `  couleurs  : ${BRAND_SOURCE} (sha256 ${brandSha256.slice(0, 12)}…)\n`
+      + `  structure : ${RELATIVE_SOURCE} (sha256 ${sha256.slice(0, 12)}…)\n`
       + '  corriger : npm run tokens:build',
     );
     process.exit(1);
   }
-  console.log(`Jetons de conception à jour (identité ${identity.version}).`);
+  console.log(`Jetons de conception à jour (couleurs ${brand.version} · structure ${identity.version}).`);
 } else {
   fs.writeFileSync(OUTPUT_PATH, file);
-  console.log(`src/design/tokens.generated.ts écrit depuis l'identité ${identity.version}.`);
+  console.log(`src/design/tokens.generated.ts écrit (couleurs ${brand.version} · structure ${identity.version}).`);
 }

@@ -162,7 +162,12 @@ export function AppScreen({
       onScroll={overlayHeader || chrome ? onScroll : undefined}
       refreshControl={
         onRefresh ? (
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.accent} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.colors.accentText}
+            colors={[theme.colors.accentText]}
+          />
         ) : undefined
       }
       testID={testID ? `${testID}-scroll` : undefined}

@@ -18,7 +18,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppText, Button } from '@/design/ui';
 import { AppImage } from '@/design/appImage';
 import { WaitingBars } from '@/design/WaitingBars';
-import { ACTION_GRADIENT } from '@/design/tokens.mobile';
+import { frost, veil } from '@/design/tokens.mobile';
 import { SPACE } from '@/design/tokens.generated';
 import { useTheme } from '@/design/theme';
 import { useT, type TranslationKey } from '@/i18n';
@@ -140,7 +140,7 @@ function OptionSelector({
                     >
                       {option}
                     </AppText>
-                    {selected ? <Ionicons name="checkmark" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden /> : null}
+                    {selected ? <Ionicons name="checkmark" size={theme.iconSize.md} color={theme.colors.accentText} accessibilityElementsHidden /> : null}
                   </Pressable>
                 );
               })}
@@ -176,7 +176,7 @@ function ColorSelector({
 
   return (
     <View
-      style={[styles.optionBlock, attention ? { borderColor: LENS_COLORS.sale, borderWidth: 1.5, borderRadius: theme.radius.control, padding: 10 } : null]}
+      style={[styles.optionBlock, attention ? { borderColor: theme.status.danger.fg, borderWidth: 1.5, borderRadius: theme.radius.control, padding: 10 } : null]}
       testID="lens-color-selector"
     >
       <AppText variant="caption">
@@ -209,7 +209,7 @@ function ColorSelector({
               style={[
                 styles.colorChoice,
                 {
-                  borderColor: selected ? theme.colors.ink : theme.colors.lineControl,
+                  borderColor: selected ? theme.colors.focus : theme.colors.lineControl,
                   borderRadius: theme.radius.control,
                   backgroundColor: theme.colors.infoSoft,
                   opacity: unavailable ? 0.35 : 1,
@@ -822,7 +822,7 @@ export function LensProductView({
           <Ionicons name="bag-handle-outline" size={18} color={LENS_COLORS.black} accessibilityElementsHidden />
           <AppText weight="bold" style={styles.cartCount}>{cartUnits}</AppText>
           {deadline ? (
-            <AppText variant="caption" weight="bold" style={{ color: countdownExpired ? LENS_COLORS.sale : ACTION_GRADIENT[2] }}>
+            <AppText variant="caption" weight="bold" style={{ color: countdownExpired ? LENS_COLORS.sale : LENS_COLORS.active }}>
               {countdownExpired ? t('lens.cart.expiredShort') : countdown}
             </AppText>
           ) : null}
@@ -880,7 +880,7 @@ export function LensProductView({
                 { top: insets.top + 66, opacity: favorite ? 0.72 : pressed ? theme.opacity.subtle : 1 },
               ]}
             >
-              <Ionicons name={favorite ? 'heart' : 'heart-outline'} size={22} color={favorite ? LENS_COLORS.sale : LENS_COLORS.black} accessibilityElementsHidden />
+              <Ionicons name={favorite ? 'heart' : 'heart-outline'} size={22} color={favorite ? LENS_COLORS.active : LENS_COLORS.black} accessibilityElementsHidden />
             </Pressable>
           ) : null}
           {candidate.promo ? (
@@ -921,7 +921,7 @@ export function LensProductView({
           <AppText weight={candidate.brand ? 'regular' : 'bold'} style={styles.productTitle}>{candidate.title}</AppText>
           {candidate.ratingKind === 'merchant' && candidate.rating != null ? (
             <View style={[styles.ratingRow, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
-              <Ionicons name="star" size={17} color={LENS_COLORS.star} accessibilityElementsHidden />
+              <Ionicons name="star" size={17} color={theme.colors.ink} accessibilityElementsHidden />
               <AppText weight="bold">{candidate.rating.toFixed(1)}</AppText>
               {candidate.ratingCount ? <AppText variant="caption" color={theme.colors.muted}>{`(${candidate.ratingCount})`}</AppText> : null}
             </View>
@@ -1009,7 +1009,7 @@ export function LensProductView({
         },
       ]}>
         {message ? (
-          <AppText variant="caption" style={{ color: LENS_COLORS.sale }} numberOfLines={2} accessibilityRole="alert">
+          <AppText variant="caption" style={{ color: theme.status.danger.fg }} numberOfLines={2} accessibilityRole="alert">
             {message}
           </AppText>
         ) : null}
@@ -1054,8 +1054,8 @@ export function LensProductView({
             <AppText color={theme.colors.muted} align="center">{t('lens.cart.addedBody')}</AppText>
             {deadline ? (
               <View style={[styles.confirmationTimer, { backgroundColor: theme.colors.infoSoft }]}>
-                <Ionicons name="time-outline" size={19} color={ACTION_GRADIENT[2]} accessibilityElementsHidden />
-                <AppText weight="bold" style={{ color: ACTION_GRADIENT[2] }}>
+                <Ionicons name="time-outline" size={19} color={theme.colors.accentText} accessibilityElementsHidden />
+                <AppText weight="bold" style={{ color: theme.colors.accentText }}>
                   {countdownExpired ? t('lens.cart.expired') : t('lens.cart.validFor', { time: countdown })}
                 </AppText>
               </View>
@@ -1088,24 +1088,24 @@ const styles = StyleSheet.create({
     height: 108, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'flex-start', gap: 8,
   },
   headerRoundButton: {
-    width: 43, height: 43, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.94)',
+    width: 43, height: 43, borderRadius: 22, backgroundColor: frost(0.94),
     alignItems: 'center', justifyContent: 'center',
     shadowColor: LENS_COLORS.black, shadowOpacity: 0.12, shadowRadius: 9, shadowOffset: { width: 0, height: 3 }, elevation: 4,
   },
   collapsedTitle: { position: 'absolute', left: 68, right: 154, height: 43, justifyContent: 'center' },
   cartCapsule: {
     minHeight: 43, maxWidth: 148, paddingHorizontal: 12, borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.96)', alignItems: 'center', justifyContent: 'center', gap: 6,
+    backgroundColor: frost(0.96), alignItems: 'center', justifyContent: 'center', gap: 6,
     shadowColor: LENS_COLORS.black, shadowOpacity: 0.12, shadowRadius: 9, shadowOffset: { width: 0, height: 3 }, elevation: 4,
   },
   cartCapsuleLTR: { marginLeft: 'auto' },
   cartCapsuleRTL: { marginRight: 'auto' },
   cartCount: { minWidth: 12, textAlign: 'center', color: LENS_COLORS.black },
   gallery: { position: 'relative', overflow: 'hidden' },
-  heroFade: { position: 'absolute', left: 0, right: 0, top: 0, height: 110, backgroundColor: 'rgba(8,9,10,0.06)' },
+  heroFade: { position: 'absolute', left: 0, right: 0, top: 0, height: 110, backgroundColor: veil(0.06) },
   favorite: {
     position: 'absolute', width: 44, height: 44, borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.94)', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: frost(0.94), alignItems: 'center', justifyContent: 'center',
     shadowColor: LENS_COLORS.black, shadowOpacity: 0.1, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 3,
   },
   favoriteLTR: { right: 14 },
@@ -1114,7 +1114,7 @@ const styles = StyleSheet.create({
   promoBadgeLTR: { left: 14 },
   promoBadgeRTL: { right: 14 },
   promoText: { color: LENS_COLORS.white },
-  counter: { position: 'absolute', bottom: 18, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: 'rgba(255,255,255,0.9)' },
+  counter: { position: 'absolute', bottom: 18, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: frost(0.9) },
   counterLTR: { right: 14 },
   counterRTL: { left: 14 },
   counterText: { color: LENS_COLORS.black },
@@ -1124,8 +1124,9 @@ const styles = StyleSheet.create({
   },
   productSheetHandle: { height: 34, marginHorizontal: -SPACE[3], alignItems: 'center', justifyContent: 'center' },
   sheetHandle: { width: 44, height: 5, borderRadius: 3, alignSelf: 'center' },
-  brand: { color: LENS_COLORS.black, fontSize: 19, lineHeight: 24, marginTop: 2 },
-  productTitle: { color: LENS_COLORS.black, fontSize: 17, lineHeight: 23, marginBottom: 4 },
+  // Pas de couleur fixe : la fiche suit le thème (`ink`), lisible en clair comme en sombre.
+  brand: { fontSize: 19, lineHeight: 24, marginTop: 2 },
+  productTitle: { fontSize: 17, lineHeight: 23, marginBottom: 4 },
   ratingRow: { alignItems: 'center', gap: 6, minHeight: 24 },
   choiceSummary: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 8 },
   optionsArea: { gap: 12, marginTop: 4 },
@@ -1137,7 +1138,7 @@ const styles = StyleSheet.create({
   colorChoice: { width: 72, height: 98, gap: 4, borderWidth: 2, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', padding: 4 },
   colorImage: { width: '100%', flex: 1 },
   modalRoot: { flex: 1, justifyContent: 'flex-end' },
-  modalScrim: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(0,0,0,0.42)' },
+  modalScrim: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: veil(0.42) },
   optionSheet: { maxHeight: '72%', paddingTop: 12, paddingHorizontal: 20, gap: 10 },
   optionList: { flexShrink: 1 },
   optionRow: { minHeight: 54, borderTopWidth: StyleSheet.hairlineWidth, alignItems: 'center', gap: 12 },
@@ -1157,7 +1158,7 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingTop: 10, gap: 8,
     shadowColor: LENS_COLORS.black, shadowOpacity: 0.1, shadowRadius: 12, shadowOffset: { width: 0, height: -3 }, elevation: 12,
   },
-  confirmationBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(13,14,16,0.46)' },
+  confirmationBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: veil(0.46) },
   confirmationSheet: { paddingHorizontal: 24, paddingTop: 24, gap: 12, alignItems: 'center' },
   confirmationIcon: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
   confirmationTimer: { minHeight: 44, alignSelf: 'stretch', borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 12 },

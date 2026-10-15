@@ -50,7 +50,7 @@ const SPACE_EXTENDED = tokenFileNumbers('SPACE_EXTENDED');
 
 /** Là où les valeurs ont le DROIT d'être littérales : c'est leur définition. */
 const TOKEN_FILES = new Set([
-  'src/design/tokens.generated.ts', // généré depuis identity.json
+  'src/design/tokens.generated.ts', // généré depuis brand.json + identity.json
   'src/design/tokens.mobile.ts', // jetons propres au natif
 ]);
 
@@ -96,6 +96,30 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
       offenders,
       'Toute couleur doit venir de `theme.colors` — voir DESIGN_SYSTEM.md §2 et §17.',
     ).toEqual([]);
+  });
+
+  /**
+   * Les voiles `rgba(0,0,0,x)` / `rgba(255,255,255,x)` étaient éparpillés dans
+   * une dizaine d'écrans (17 occurrences, 12 opacités différentes). Ils passent
+   * désormais par `veil(opacité)` / `frost(opacité)` de `tokens.mobile.ts` : la
+   * couleur vient de la marque, seule l'opacité reste un choix local.
+   *
+   * Exception : `heroPalette.ts`, module de CALCUL de couleur (il fabrique un
+   * `rgba(...)` à partir d'une couleur extraite d'image) — ce n'est pas une
+   * couleur de design écrite à la main.
+   */
+  it('aucun voile `rgb()/rgba()` littéral hors des fichiers de jetons', () => {
+    const CALCULATION_MODULES = new Set(['src/features/home/heroPalette.ts']);
+    const offenders: string[] = [];
+    for (const rel of FILES) {
+      if (TOKEN_FILES.has(rel) || CALCULATION_MODULES.has(rel)) continue;
+      const text = code(rel);
+      for (const match of text.matchAll(/rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+/g)) {
+        const line = text.slice(0, match.index).split('\n').length;
+        offenders.push(`${rel}:${line} → ${match[0]}`);
+      }
+    }
+    expect(offenders, 'Utiliser `veil(opacité)` ou `frost(opacité)` de tokens.mobile.ts.').toEqual([]);
   });
 
   it('aucun espacement hors échelle', () => {
@@ -206,9 +230,11 @@ describe('Design System — contrat sémantique des couleurs (§2.10)', () => {
    * arbitraire à la première pression :
    *
    *   🟡 warning = avertissement   🔴 danger = erreur/danger
-   *   🔵 info    = information     🟢 success = succès
-   *   🟠 accent  = MARQUE + action principale, jamais un statut
-   *   ⬛ gris    = structure, ne signale rien
+   *   🟣 info    = information / état actif (violet lisible)
+   *   🟢 success = succès
+   *   🟣 accent / action / focus = MARQUE + action principale + élément actif,
+   *      jamais un succès, une erreur ou un avertissement
+   *   ⬛⬜ noir / blanc / gris = structure, ne signale rien
    */
   const usage = (token: string) => {
     let count = 0;
@@ -221,58 +247,59 @@ describe('Design System — contrat sémantique des couleurs (§2.10)', () => {
     return count;
   };
 
-  const statusUsage = () => {
+  const occurrences = (pattern: RegExp) => {
     let count = 0;
     for (const rel of FILES) {
       if (TOKEN_FILES.has(rel)) continue;
-      count += (code(rel).match(/theme\.status\.\w+\.\w+/g) ?? []).length;
+      count += (code(rel).match(pattern) ?? []).length;
     }
     return count;
   };
 
-  /**
-   * Budget d'orange. ⚠️ HONNÊTETÉ : c'est un PROXY, pas la vraie mesure.
-   *
-   * La consigne parle de 3 % de la SURFACE VISIBLE. Compter les références
-   * dans le code n'est pas la même chose : le lettrage AYROVI du pied de page
-   * (40 px) compte pour une référence et couvre à lui seul plus de surface que
-   * dix icônes d'onglet. Mesurer une surface exige un rendu, qu'on n'a pas ici.
-   *
-   * Ce test fait donc ce qu'un test peut faire : il interdit la RÉGRESSION
-   * (le plafond ne peut pas monter) et il documente la cible. La vérification
-   * réelle des 3 % reste un contrôle visuel sur appareil (§19).
-   */
-  /**
-   * 33 = mesuré après la première passe de recatégorisation (avant : 61).
-   *
-   * ⚠️ `onAccent` est VOLONTAIREMENT EXCLU du décompte : c'est la couleur du
-   * texte posé SUR un fond orange (noir en sombre, blanc en clair). Ce n'est
-   * pas de l'orange — le compter gonflerait le budget de 9 et interdirait
-   * précisément les boutons que l'accent est censé porter.
-   */
-  const ORANGE_BUDGET = 33;
+  const statusUsage = () => occurrences(/theme\.status\.\w+\.\w+/g);
 
-  it('le budget orange ne régresse pas (proxy — la vraie mesure est visuelle)', () => {
-    const orange = usage('accent') + usage('accentText');
+  /**
+   * Budget de VIOLET. ⚠️ HONNÊTETÉ : c'est un PROXY, pas la vraie mesure.
+   *
+   * L'identité vise ≈ 10 % de violet à l'écran. Compter des références dans le
+   * code n'est pas mesurer une surface : un CTA pleine largeur compte pour une
+   * référence et couvre plus que dix icônes actives. Mesurer une surface exige
+   * un rendu, qu'on n'a pas ici.
+   *
+   * Ce test fait donc ce qu'un test peut faire : il interdit la DÉRIVE (le
+   * plafond ne peut pas monter sans décision) et il documente la cible. La
+   * vérification réelle reste un contrôle visuel sur appareil (§19).
+   *
+   * 64 = mesuré le 15/10/2026 après la bascule (accent 8 · accentText 19 ·
+   * action 13 · actionHover 3 · focus 5 · accentOnMedia 2 · LENS active 4 ·
+   * status.info 10).
+   */
+  const VIOLET_BUDGET = 64;
+
+  it('le budget violet ne dérive pas (proxy — la vraie mesure est visuelle)', () => {
+    const violet = ['accent', 'accentText', 'action', 'actionHover', 'focus', 'accentOnMedia']
+      .reduce((sum, token) => sum + usage(token), 0)
+      + occurrences(/LENS_COLORS\.active\b/g)
+      + occurrences(/theme\.status\.info\.\w+/g);
     expect(
-      orange,
-      `Budget orange dépassé : ${orange} > ${ORANGE_BUDGET}. Un signal doit ` +
-        'utiliser `theme.status.*`, pas l’accent (§2.10.2).',
-    ).toBeLessThanOrEqual(ORANGE_BUDGET);
+      violet,
+      `Budget violet dépassé : ${violet} > ${VIOLET_BUDGET}. Le violet est réservé aux ` +
+        'actions principales, aux liens importants, aux éléments actifs et au focus (§2.10).',
+    ).toBeLessThanOrEqual(VIOLET_BUDGET);
   });
 
   /**
    * La règle la plus mécaniquement vérifiable du contrat : un élément annoncé
-   * comme alerte au lecteur d’écran n’est JAMAIS de la marque. Trois messages
-   * de succès étaient peints en orange avant ce test.
+   * comme alerte au lecteur d’écran n’est JAMAIS de la marque. Un succès, une
+   * erreur ou un avertissement ne se peint pas en violet.
    */
-  it('aucun élément `alert` peint en orange', () => {
+  it('aucun élément `alert` peint aux couleurs de la marque', () => {
     const offenders: string[] = [];
     for (const rel of FILES) {
       if (TOKEN_FILES.has(rel)) continue;
       const text = code(rel);
       for (const match of text.matchAll(
-        /accessibilityRole="alert"[^>]{0,400}?theme\.colors\.accent\w*/g,
+        /accessibilityRole="alert"[^>]{0,400}?theme\.colors\.(?:accent|action|focus)\w*/g,
       )) {
         const line = text.slice(0, match.index).split('\n').length;
         offenders.push(`${rel}:${line}`);
@@ -288,8 +315,8 @@ describe('Design System — contrat sémantique des couleurs (§2.10)', () => {
   it('les couleurs de statut sont réellement employées', () => {
     /**
      * Avant la palette fonctionnelle, `info` et `success` n’étaient utilisés
-     * NULLE PART : l’interface ne savait dire que « orange » ou « rouge pâle ».
-     * Ce test empêche de revenir à ce mono-langage.
+     * NULLE PART : l’interface ne savait dire que « couleur de marque » ou
+     * « rouge pâle ». Ce test empêche de revenir à ce mono-langage.
      */
     expect(statusUsage(), 'Aucune couleur de statut utilisée — l’interface redevient muette.')
       .toBeGreaterThan(0);
@@ -297,9 +324,9 @@ describe('Design System — contrat sémantique des couleurs (§2.10)', () => {
 
   it('les teintes pâles de l’identité ne servent plus de signal', () => {
     /**
-     * `colors.danger` (#FFABAB), `colors.info` (#BDBDBD : un GRIS) et
-     * `colors.success` (#90D6AF) sont dessinées pour le web. En signalétique
-     * mobile elles sont illisibles. On les a remplacées par `theme.status.*`.
+     * `colors.danger` (#FFABAB en sombre), `colors.info` (un GRIS) et
+     * `colors.success` (#90D6AF en sombre) sont des teintes pâles de palette.
+     * En signalétique mobile elles sont illisibles : `theme.status.*` les remplace.
      */
     const offenders: string[] = [];
     for (const rel of FILES) {

@@ -60,7 +60,9 @@ export function JourneyProgress({
             >
               <View style={[styles.dot, { borderColor: tone, backgroundColor: done ? tone : 'transparent' }]}>
                 {done ? (
-                  <Ionicons name="checkmark" size={14} color={theme.colors.onAccent} />
+                  // Coche posée sur le VERT de succès : `canvas` (blanc en clair, noir en
+                  // sombre) garde ≥ 4,5:1 dans les deux modes — `onAccent` est réservé au violet.
+                  <Ionicons name="checkmark" size={14} color={theme.colors.canvas} />
                 ) : (
                   <Ionicons name={step.icon} size={14} color={current ? theme.status.info.fg : theme.colors.muted} />
                 )}

@@ -2,27 +2,33 @@
  * Jetons propres à React Native — écrits à la main, et c'est volontaire.
  *
  * ── Pourquoi un fichier séparé plutôt que `tokens.generated.ts` ─────────────
- * `tokens.generated.ts` est GÉNÉRÉ depuis `client/src/design/editorial/identity.json`,
- * qui est AUSSI la source du CSS du site en production. Deux conséquences :
- *
- *   1. L'éditer à la main serait une violation (il se fait écraser au build,
- *      et `tokens:check` échoue en CI).
- *   2. Ajouter des jetons dans `identity.json` changerait le SITE — or le site
- *      est servi en direct depuis `main`. Une décision de produit, pas un
- *      détail d'implémentation.
+ * `tokens.generated.ts` est GÉNÉRÉ (voir `scripts/gen-tokens.mjs`) :
+ *   • ses COULEURS viennent de `src/design/brand.json` — l'identité couleur
+ *     officielle de l'application (noir #0A0A0A, blanc #FFFFFF, violet
+ *     électrique #571EF6, gris clair #F2F2F2) ;
+ *   • sa STRUCTURE (espaces, typo, géométrie, durées) vient de
+ *     `client/src/design/editorial/identity.json`, partagé avec le site.
+ * L'éditer à la main serait une violation (écrasé au build, `tokens:check`
+ * échoue en CI).
  *
  * Donc : ce que l'identité définit vit dans le fichier généré ; ce qui est
- * PROPRE au rendu natif (ombres, calques, courbes, hauteurs de chrome) vit ici.
+ * PROPRE au rendu natif (ombres, calques, courbes, hauteurs de chrome, voiles)
+ * vit ici.
  *
  * ── Règle de dérivation ─────────────────────────────────────────────────────
  * Les couleurs dérivées ne sont JAMAIS des valeurs arbitraires : elles sont
- * calculées depuis la palette générée (sinon on recrée une seconde palette à
- * garder en phase — exactement ce que le système interdit). Seules les valeurs
- * que React Native ne peut pas exprimer autrement (ombres, z-index, easing)
- * sont littérales, et elles sont documentées.
+ * calculées depuis `BRAND` (mélange ou opacité), sinon on recrée une seconde
+ * palette à garder en phase — exactement ce que le système interdit. Seules
+ * les couleurs FONCTIONNELLES (statuts mesurés au ratio WCAG, prix soldé) et
+ * celles qu'une marque tierce impose (logo Google) sont littérales, et elles
+ * sont documentées.
+ *
+ * ── Plus d'orange ───────────────────────────────────────────────────────────
+ * L'orange (#FF7900 et ses dérivés) a quitté l'application le 15/10/2026 : ni
+ * marque, ni action, ni statut. `tests/brand-colors.test.ts` l'interdit.
  */
 import { Platform } from 'react-native';
-import { GEOMETRY, MOTION, SPACE } from './tokens.generated';
+import { BRAND, COLORS, GEOMETRY, MOTION, NEUTRALS, SPACE } from './tokens.generated';
 
 /* ── Hauteurs de chrome (§4.2) ────────────────────────────────────────────── */
 
@@ -78,44 +84,69 @@ export const MEDIA_RATIO = {
  * laisse dépasser la vignette suivante (indice de défilement horizontal).
  */
 /** Fond derrière une vidéo plein écran (la vidéo ne couvre pas toujours l'écran entier). */
-export const VIDEO_BACKDROP = '#000000';
+export const VIDEO_BACKDROP = BRAND.black;
 
 /**
- * Palette commerciale fermée de Lens : rouge sans composante orange pour une
- * baisse de prix, jaune pour une note, neutres pour la caméra. Elle vit avec
- * les jetons natifs afin que les écrans Lens ne recréent jamais leur palette.
+ * Rouge des prix soldés : le MÊME rouge que `STATUS.danger.light.fg` (5,57:1
+ * sur blanc). Une seule teinte rouge dans l'application, et c'est une couleur
+ * FONCTIONNELLE (une baisse de prix), pas une couleur de marque.
+ */
+const PRICE_DROP_RED = '#CF1322';
+
+/**
+ * Palette commerciale fermée de Lens. Les cartes résultats et la galerie
+ * restent blanches dans les deux modes : ces valeurs ne suivent donc PAS le
+ * thème. Tout vient de `BRAND`/`NEUTRALS`, sauf le rouge de prix soldé.
+ *
+ *   • rouge  = baisse de prix (fonctionnel)
+ *   • violet = élément ACTIF : favori coché, mode caméra choisi
+ *   • noir   = texte, icônes, étoiles de note (plus de jaune orangé)
+ *   • gris   = squelette, fond média, texte secondaire, filets
  */
 export const LENS_COLORS = {
-  sale: '#D00000',
-  star: '#F5B800',
-  /** Squelette Lens volontairement plus lisible que les séparateurs neutres. */
-  skeleton: '#C9C9C9',
+  sale: PRICE_DROP_RED,
+  /** Élément actif d'une surface Lens blanche (favori, mode caméra). */
+  active: BRAND.violet,
+  star: BRAND.black,
+  /** Squelette : le gris clair officiel (§ « Skeleton Loading » de l'identité). */
+  skeleton: BRAND.lightGray,
   /** Neutres fixes des cartes résultats, dont la zone texte reste blanche. */
-  resultMuted: '#666666',
-  resultLine: '#D7D7D7',
-  resultMedia: '#F5F5F5',
-  cameraScrim: 'rgba(0,0,0,0.48)',
-  cameraControl: 'rgba(20,20,20,0.68)',
-  white: '#FFFFFF',
-  black: '#0A0A0A',
+  resultMuted: NEUTRALS.textSecondary,
+  resultLine: NEUTRALS.border,
+  resultMedia: BRAND.lightGray,
+  cameraScrim: veil(0.48),
+  cameraControl: veil(0.68),
+  white: BRAND.white,
+  black: BRAND.black,
 } as const;
 
 /**
- * Bleu d’action AYROVI. Tous les tons gardent ≥ 4.5:1 face au blanc afin que
- * le libellé reste lisible, y compris au soleil sur un appareil Android.
- * Les prix soldés restent `LENS_COLORS.sale` : ce n’est pas une action.
+ * Signal d'attente (cinq barres) : une seule famille VIOLETTE, dérivée du
+ * violet de marque par mélange vers le noir ou le blanc — aucune teinte
+ * écrite à la main, aucune couleur chaude.
  */
-export const ACTION_GRADIENT = ['#071E5B', '#0A3788', '#0F4CB8', '#1A56DB'] as const;
-export const ACTION_ON_COLOR = '#FFFFFF';
-
-/** Une seule famille bleue pour le signal d’attente Lens, sans couleur chaude. */
 export const WAITING_GRADIENTS = [
-  ['#071E5B', '#0B3D91'],
-  ['#0A3788', '#1559C7'],
-  ['#0F4CB8', '#2672E8'],
-  ['#123FA0', '#4285F4'],
-  ['#092E77', '#1A56DB'],
+  [mix(BRAND.violet, BRAND.black, 0.4), BRAND.violet],
+  [mix(BRAND.violet, BRAND.black, 0.25), mix(BRAND.violet, BRAND.white, 0.1)],
+  [mix(BRAND.violet, BRAND.black, 0.1), mix(BRAND.violet, BRAND.white, 0.2)],
+  [mix(BRAND.violet, BRAND.black, 0.3), mix(BRAND.violet, BRAND.white, 0.3)],
+  [mix(BRAND.violet, BRAND.black, 0.2), BRAND.violet],
 ] as const;
+
+/**
+ * Voile NEUTRE (noir de marque + opacité) : fonds de contrôle posés sur une
+ * photo ou la caméra, ombres de texte, fondus. Remplace les `rgba(0,0,0,x)`
+ * qui étaient éparpillés dans les écrans : l'opacité reste un choix local,
+ * la couleur vient toujours de `BRAND`.
+ */
+export function veil(opacity: number): string {
+  return alpha(BRAND.black, opacity);
+}
+
+/** Voile CLAIR (blanc de marque + opacité) : boutons « givrés » posés sur une image. */
+export function frost(opacity: number): string {
+  return alpha(BRAND.white, opacity);
+}
 
 export const REEL_TILE = {
   widthFraction: 0.66,
@@ -158,7 +189,7 @@ export const elevation = {
   },
   /** Carte posée sur le fond — séparation douce. */
   low: {
-    shadowColor: '#000000',
+    shadowColor: BRAND.black,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
     shadowRadius: 2,
@@ -166,7 +197,7 @@ export const elevation = {
   },
   /** Bouton flottant, barre d'action. */
   medium: {
-    shadowColor: '#000000',
+    shadowColor: BRAND.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.12,
     shadowRadius: 6,
@@ -174,7 +205,7 @@ export const elevation = {
   },
   /** Feuille modale, menu. */
   high: {
-    shadowColor: '#000000',
+    shadowColor: BRAND.black,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.18,
     shadowRadius: 16,
@@ -239,81 +270,75 @@ export const duration = {
 /* ── Palette FONCTIONNELLE (statuts) ──────────────────────────────────────── */
 
 /**
- * ── Pourquoi une palette à part, et pourquoi c'est justifié ─────────────────
- * Consigne produit : « l'orange ne doit pas dépasser 3 %, il faut du rouge
- * vrai, du bleu, du jaune — pas tout en orange ».
- *
- * Les couleurs de l'identité ont été dessinées pour une charte monochrome
- * premium : `danger` y est un rose pâle (`#FFABAB`), `info` un GRIS
- * (`#BDBDBD`), `success` un vert désaturé (`#90D6AF`). Sur le web, ces teintes
- * posées sur de grandes surfaces passent. En signalétique mobile — une pastille
- * de 12 px, une icône de 18 px, un liseré de 1 px — elles sont illisibles, et
- * surtout elles ne se DISTINGUENT pas entre elles : trois gris teintés.
- *
- * On ajoute donc une palette de STATUT, distincte de la palette de MARQUE.
- * Ce n'est pas une seconde charte : la marque reste monochrome + orange. Ce
- * sont les ÉTATS qui ont des couleurs, et c'est précisément ce qui permet de
- * garder l'orange sous 3 % : un signal n'a plus besoin d'être orange pour
- * exister.
+ * ── Pourquoi une palette de STATUT à part ───────────────────────────────────
+ * La marque dit QUI nous sommes (noir, blanc, violet, gris clair). Un statut
+ * dit CE QUI SE PASSE. Mélanger les deux rend l'un et l'autre illisibles :
+ * un bouton violet ne doit jamais être confondu avec une erreur, et une erreur
+ * ne doit jamais ressembler à la marque.
  *
  * ── Le contrat sémantique : la fonction EXACTE de chaque couleur ─────────────
  *
  *   🟡 JAUNE  warning  = AVERTISSEMENT. Demande l'attention, n'est PAS une
  *                        erreur. L'utilisateur peut continuer.
- *                        « التوفّر غير مؤكّد » · « السعر تقديري » ·
- *                        « المهلة قربت تنتهي »
+ *                        « التوفّر غير مؤكّد » · « السعر تقديري » · « هاتفك غير متصل »
+ *                        Jaune franc (teinte 50°) — plus de brun orangé.
  *
  *   🔴 ROUGE  danger   = ERREUR ou DANGER. Quelque chose a échoué, ou une
  *                        action est destructrice.
  *                        « فشل الدفع » · « المنتوج محظور » · « حذف نهائي »
  *
- *   🔵 BLEU   info     = INFORMATION NEUTRE. Ni bien ni mal : un état, une
- *                        note, une précision.
+ *   🟣 VIOLET info     = INFORMATION / ÉTAT ACTIF. Le violet de marque, dans sa
+ *                        version lisible en texte : étape en cours, élément non
+ *                        lu, adresse par défaut, catégorie éditoriale.
  *                        « قيد المعالجة » · « الشحن خلال 48 ساعة »
  *
  *   🟢 VERT   success  = SUCCÈS ou CONFIRMATION : aboutissement positif.
  *                        « تمّ الطلب » · « متوفّر » · « السعر مؤكّد »
  *
- *   🟠 ORANGE accent   = MARQUE + ACTION PRINCIPALE. Uniquement. Jamais un
- *                        statut — sinon il n'est plus une marque et dépasse
- *                        les 3 % de surface qui lui sont alloués.
+ *   ⬛⬜ NOIR/BLANC/GRIS = STRUCTURE : textes, bordures, surfaces. Ne signale
+ *                        JAMAIS un état.
  *
- *   ⬛⬜ GRIS  ink/line/ = STRUCTURE : textes, bordures, surfaces.
- *             surface     Ne porte AUCUN sens, ne signale JAMAIS un état.
- *                         Ces valeurs viennent de l'identité et ne bougent pas.
- *
- * Règle qui découle de ce contrat et qui tranche la plupart des hésitations :
- * « est-ce que je SIGNALE un état ? » — oui ⇒ palette de statut ; non ⇒
- * structure ou marque. Un bouton « Ajouter au panier » n'est pas un statut :
- * il reste orange. Une pastille « التوفّر غير مؤكّد » est un statut : jaune.
+ * Règle qui tranche la plupart des hésitations : « est-ce que je SIGNALE un
+ * succès, une erreur ou un avertissement ? » — oui ⇒ palette de statut ; non ⇒
+ * structure (noir/gris) ou marque (violet). Un bouton « Ajouter au panier »
+ * n'est pas un statut : il est violet. « التوفّر غير مؤكّد » est un statut : jaune.
  *
  * ── Valeurs MESURÉES, pas choisies au goût ───────────────────────────────────
  * Chaque `fg` a été vérifié au ratio WCAG sur les deux fonds qu'il rencontre
- * réellement (`canvas` et `surface`), dans les deux modes. Exigence : ≥ 4,5:1.
+ * réellement (`canvas` et `surface`), dans les deux modes. Exigence : ≥ 4,5:1
+ * (re-vérifié par `tests/brand-colors.test.ts`).
  *
- *   danger   #FF4D4F  6,43 sur noir · 5,49 sur #171717   (sombre)
- *            #CF1322  5,57 sur blanc · 5,11 sur #F5F5F5  (clair)
- *   warning  #FFC53D 13,31 sur noir · 11,36 sur #171717
- *            #9C5700  5,56 sur blanc · 5,10 sur #F5F5F5  ← #AD6800 échouait (4,41)
- *   info     #40A9FF  8,34 sur noir · 7,12 sur #171717
- *            #0958D9  6,16 sur blanc · 5,65 sur #F5F5F5
- *   success  #52C41A  9,27 sur noir · 7,91 sur #171717
- *            #237804  5,59 sur blanc · 5,12 sur #F5F5F5
+ *   danger   #FF4D4F  6,06 sur #0A0A0A · 5,49 sur #171717   (sombre)
+ *            #CF1322  5,57 sur blanc   · 5,0  sur #F2F2F2   (clair)
+ *   warning  #FFD60A 14,02 sur #0A0A0A · 12,70 sur #171717
+ *            #6B5A00  6,80 sur blanc   · 6,08 sur #F2F2F2
+ *   info     #926DF9  5,45 sur #0A0A0A · 4,93 sur #171717   (violet éclairci)
+ *            #571EF6  7,19 sur blanc   · 6,42 sur #F2F2F2   (violet de marque)
+ *   success  #52C41A  8,74 sur #0A0A0A · 7,91 sur #171717
+ *            #237804  5,59 sur blanc   · 4,99 sur #F2F2F2
  *
- * `soft` et `border` sont dérivés par opacité, jamais écrits à la main.
+ * `soft` et `border` sont dérivés par opacité, jamais écrits à la main. Seule
+ * exception documentée : le fond `soft` de l'avertissement clair part du jaune
+ * franc (#FFD60A) — dérivé du texte olive, il donnerait un kaki terne.
  */
+const WARNING_YELLOW = '#FFD60A';
+const WARNING_TEXT_ON_LIGHT = '#6B5A00';
+/** Violet lisible en texte : celui de la palette sémantique (`accentText`), mode par mode. */
+const VIOLET_ON_DARK = COLORS.dark.accentText;
+const VIOLET_ON_LIGHT = COLORS.light.accentText;
+
 export const STATUS = {
   danger: {
     dark: { fg: '#FF4D4F', soft: alpha('#FF4D4F', 0.16), border: alpha('#FF4D4F', 0.4) },
     light: { fg: '#CF1322', soft: alpha('#CF1322', 0.12), border: alpha('#CF1322', 0.35) },
   },
   warning: {
-    dark: { fg: '#FFC53D', soft: alpha('#FFC53D', 0.16), border: alpha('#FFC53D', 0.4) },
-    light: { fg: '#9C5700', soft: alpha('#9C5700', 0.12), border: alpha('#9C5700', 0.35) },
+    dark: { fg: WARNING_YELLOW, soft: alpha(WARNING_YELLOW, 0.16), border: alpha(WARNING_YELLOW, 0.4) },
+    light: { fg: WARNING_TEXT_ON_LIGHT, soft: alpha(WARNING_YELLOW, 0.22), border: alpha(WARNING_TEXT_ON_LIGHT, 0.35) },
   },
   info: {
-    dark: { fg: '#40A9FF', soft: alpha('#40A9FF', 0.16), border: alpha('#40A9FF', 0.4) },
-    light: { fg: '#0958D9', soft: alpha('#0958D9', 0.12), border: alpha('#0958D9', 0.35) },
+    dark: { fg: VIOLET_ON_DARK, soft: alpha(VIOLET_ON_DARK, 0.16), border: alpha(VIOLET_ON_DARK, 0.4) },
+    light: { fg: VIOLET_ON_LIGHT, soft: alpha(VIOLET_ON_LIGHT, 0.08), border: alpha(VIOLET_ON_LIGHT, 0.3) },
   },
   success: {
     dark: { fg: '#52C41A', soft: alpha('#52C41A', 0.16), border: alpha('#52C41A', 0.4) },
@@ -367,7 +392,7 @@ function alpha(hex: string, opacity: number): string {
 /**
  * Seules les clés RÉELLEMENT nécessaires au calcul. Typer ce paramètre avec
  * la palette entière du mode clair la rendait inutilisable avec le mode sombre
- * (les littéraux diffèrent : `#FFAE69` contre `#A74700`) — l'union des deux
+ * (les littéraux diffèrent : `#926DF9` contre `#571EF6`) — l'union des deux
  * palettes n'est pas assignable à l'une d'elles.
  *
  * Décrire le BESOIN plutôt que la SOURCE rend la fonction utilisable par les
@@ -378,30 +403,30 @@ export interface DerivablePalette {
   canvas: string;
   ink: string;
   muted: string;
-  accent: string;
-  success: string;
+  focus: string;
 }
 
 /**
  * Les jetons de couleur demandés par §2 mais absents de l'identité.
  *
  * ⚠️ DÉCISION PRODUIT EN ATTENTE (§25.1) : `elevatedSurface` est calculé à
- * 55 % vers `ink`. Si le produit préfère une valeur littérale (#262626
- * proposé), elle se change ICI — une seule ligne, aucun écran à toucher.
+ * 5,5 % vers `ink`. Si le produit préfère une valeur littérale, elle se change
+ * ICI — une seule ligne, aucun écran à toucher.
+ *
+ * `onAccent` n'est plus ici : il vit dans la palette générée (`brand.json`),
+ * blanc sur le violet dans les deux modes (7,19:1).
  */
 export function derivedColors(colors: DerivablePalette) {
   return {
     /** Surface posée sur une surface : carte dans une carte, menu. */
     elevatedSurface: mix(colors.surface, colors.ink, 0.055),
     /** Voile d'arrière-plan d'une feuille/modale. */
-    overlay: alpha('#000000', 0.56),
+    overlay: veil(0.56),
     /** Voile plus dense : modale bloquante, permission. */
-    scrim: alpha('#000000', 0.72),
+    scrim: veil(0.72),
     /**
-     * ⚠️ `warning` n'est PLUS défini ici : il appartient à `STATUS`.
-     * L'ancienne valeur était un MÉLANGE d'accent et de succès — un vert
-     * olive qui n'était ni un jaune ni un signal lisible. Deux définitions
-     * du même jeton seraient une duplication (§22).
+     * ⚠️ `warning` n'est PAS défini ici : il appartient à `STATUS`. Deux
+     * définitions du même jeton seraient une duplication (§22).
      */
     /** Fond d'un contrôle inactif : la surface, à peine éclaircie. */
     disabled: mix(colors.surface, colors.ink, 0.03),
@@ -409,35 +434,35 @@ export function derivedColors(colors: DerivablePalette) {
     disabledText: mix(colors.muted, colors.surface, 0.45),
     /** Séparateur faible, distinct de `line` (bordure de contrôle). */
     divider: mix(colors.canvas, colors.ink, 0.08),
-    /** Bordure mise en avant (focus, sélection). */
-    focusRing: colors.accent,
+    /** Bordure mise en avant (focus, sélection) : le violet lisible du mode. */
+    focusRing: colors.focus,
+    /** Surlignage d'un texte sélectionné dans un champ (Android) : violet translucide. */
+    selection: alpha(colors.focus, 0.3),
     /**
-     * Texte posé sur l'ACCENT (`#FF7900`). Noir, et ce n'est pas un goût :
-     * c'est MESURÉ. Le noir sur cet orange donne ≈ 7:1, le blanc ≈ 2,9:1 —
-     * or WCAG AA demande 4,5:1 en texte courant. Le blanc échoue.
-     *
-     * Pourquoi pas `onAction` ? Parce que `onAction` suit le THÈME (noir en
-     * sombre, blanc en clair) alors que l'accent, lui, ne change JAMAIS :
-     * `#FF7900` dans les deux modes. Utiliser `onAction` rendrait le texte
-     * blanc sur orange en mode clair — c'est-à-dire illisible, exactement le
-     * défaut qu'un composant avait déjà (BrandMark).
-     *
-     * Le contraste se mesure sur le SUPPORT réel, pas sur le thème.
+     * Squelette de chargement : le GRIS CLAIR de l'identité (`surface` =
+     * #F2F2F2 en clair). Un seul gris de chargement pour tout le shell.
      */
-    onAccent: '#000000',
+    skeleton: colors.surface,
     /**
      * Texte posé sur un MÉDIA (photo, vignette vidéo) : blanc dans les DEUX
-     * modes, et c'est volontairement une des rares couleurs non dérivées.
+     * modes, et c'est volontairement une des rares couleurs qui ne suivent pas
+     * le thème.
      *
      * Pourquoi pas `ink` ? Parce qu'un média est sombre quel que soit le
-     * réglage de l'utilisateur. `ink` vaut `#FFFFFF` en sombre mais `#000000`
+     * réglage de l'utilisateur. `ink` vaut `#FFFFFF` en sombre mais `#0A0A0A`
      * en clair : un titre blanc sur photo deviendrait noir illisible en mode
      * clair. C'est exactement le piège que « une seule palette » peut créer si
      * on l'applique sans distinguer le SUPPORT du THÈME.
      */
-    onMedia: '#FFFFFF',
+    onMedia: BRAND.white,
+    /**
+     * Violet posé sur un MÉDIA (story, reel plein écran) : la version éclaircie
+     * du violet, celle du mode sombre, dans les DEUX modes — un média est sombre
+     * quel que soit le thème (même raisonnement que `onMedia`).
+     */
+    accentOnMedia: COLORS.dark.accentText,
     /** Voile sous ce texte, pour garantir le contraste sur une photo claire. */
-    mediaScrim: alpha('#000000', 0.4),
+    mediaScrim: veil(0.4),
     /**
      * Texte posé sur un fond ADAPTATIF CLAIR (pastel extrait de l'image par le
      * serveur, ou override manuel clair) : noir dans les DEUX modes.
@@ -447,12 +472,12 @@ export function derivedColors(colors: DerivablePalette) {
      * pastel clair serait illisible. C'est le même raisonnement que `onMedia`,
      * appliqué au carrousel Hero (§5.3 : contraste garanti sur fond adaptatif).
      */
-    onAdaptiveLight: '#000000',
+    onAdaptiveLight: BRAND.black,
     /**
      * Texte posé sur un fond ADAPTATIF SOMBRE (override manuel Admin foncé) :
      * blanc dans les DEUX modes — le pendant de `onAdaptiveLight`.
      */
-    onAdaptiveDark: '#FFFFFF',
+    onAdaptiveDark: BRAND.white,
   } as const;
 }
 
@@ -499,6 +524,8 @@ export const isAndroid = Platform.OS === 'android';
 /**
  * Couleur de fond de chaque carte de démo : moyenne du bas du visuel (là où
  * le fondu se dissout). En production, le serveur extrait cette palette lui-même.
+ * Ce sont des couleurs de CONTENU (tirées des photos), pas de la marque : elles
+ * ne servent qu'aux cartes de démonstration hors ligne.
  */
 export const HERO_DEMO_BACKGROUND = {
   tech: '#252B2D',
@@ -508,13 +535,10 @@ export const HERO_DEMO_BACKGROUND = {
 } as const;
 
 /**
- * Bleu des liens légaux (écran de connexion). La palette de la marque est
- * monochrome + orange : ce bleu est donc un choix explicite, réservé aux liens
- * « Conditions » et « Confidentialité », lisible sur fond clair et sombre.
+ * Couleurs officielles du logo « G » de Google (identité de marque d'un TIERS,
+ * imposée par ses règles d'usage — à ne pas modifier). Seule exception à la
+ * palette AYROVI, et uniquement dans `GoogleLogo.tsx`.
  */
-export const LINK_BLUE = { light: '#1A56DB', dark: '#8AB4FF' } as const;
-
-/** Couleurs officielles du logo « G » de Google (identité de marque, à ne pas modifier). */
 export const GOOGLE_BRAND = {
   red: '#EA4335',
   blue: '#4285F4',

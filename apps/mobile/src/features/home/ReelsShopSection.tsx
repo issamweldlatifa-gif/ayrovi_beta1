@@ -21,7 +21,7 @@ import { AppImage } from '@/design/appImage';
 import { mediaUrl } from '@/api/client';
 import { FullBleed, useResponsive } from '@/design/layout';
 import { useTheme } from '@/design/theme';
-import { MEDIA_RATIO, REEL_TILE } from '@/design/tokens.mobile';
+import { MEDIA_RATIO, REEL_TILE, veil } from '@/design/tokens.mobile';
 import { FadeIn, PressScale } from '@/design/motion';
 import { useT } from '@/i18n';
 import { ReelsShopMark } from '@/features/reels/ReelsShopMark';
@@ -107,5 +107,5 @@ const styles = StyleSheet.create({
   section: { paddingTop: 24 },
   tile: { overflow: 'hidden', justifyContent: 'flex-end' },
   poster: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  caption: { padding: 10, backgroundColor: 'rgba(0,0,0,0.35)' },
+  caption: { padding: 10, backgroundColor: veil(0.35) },
 });

@@ -6,6 +6,7 @@ import type { LensCandidate } from '@/api/lens';
 import { AppImage } from '@/design/appImage';
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
+import { frost } from '@/design/tokens.mobile';
 import { useT } from '@/i18n';
 import { lensMediaChain } from './lensMedia';
 import { LensPriceBlock } from './LensPriceBlock';
@@ -94,7 +95,7 @@ function LensResultCardComponent({ candidate, favorite, onOpen, onFavorite }: Pr
             ]}
             testID={`lens-favorite-${candidate.id}`}
           >
-            <Ionicons name={favorite ? 'heart' : 'heart-outline'} size={21} color={favorite ? LENS_COLORS.sale : LENS_COLORS.black} accessibilityElementsHidden />
+            <Ionicons name={favorite ? 'heart' : 'heart-outline'} size={21} color={favorite ? LENS_COLORS.active : LENS_COLORS.black} accessibilityElementsHidden />
           </Pressable>
         </View>
 
@@ -132,7 +133,7 @@ const styles = StyleSheet.create({
   promoText: { color: LENS_COLORS.white },
   favorite: {
     position: 'absolute', top: 8, width: 38, height: 38, borderRadius: 19,
-    backgroundColor: 'rgba(255,255,255,0.96)', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: frost(0.96), alignItems: 'center', justifyContent: 'center',
   },
   favoriteLTR: { right: 8 },
   favoriteRTL: { left: 8 },

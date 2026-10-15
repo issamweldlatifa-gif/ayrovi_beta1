@@ -93,7 +93,7 @@ export default function PublicationsScreen() {
                     <Ionicons
                       name={liked[item.id] ? 'heart' : 'heart-outline'}
                       size={20}
-                      color={liked[item.id] ? theme.status.danger.fg : theme.colors.muted}
+                      color={liked[item.id] ? theme.colors.accentText : theme.colors.muted}
                     />
                     <AppText variant="caption" color={theme.colors.muted}>{String(countsFor?.likes ?? 0)}</AppText>
                   </Pressable>
