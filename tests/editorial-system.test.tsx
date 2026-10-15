@@ -33,8 +33,9 @@ describe('editorial identity, generated from one versioned source', () => {
     expect(names).toHaveLength(99);
   });
   it('defines the area budget, semantic customer geometry, and touch target', () => {
-    expect(identity.orangeAreaLimit).toBe(.03);
-    expect(identity.orangeAreaExclusions).toEqual(['product-images']);
+    // Palette officielle (2026-10-15) : le violet électrique occupe ≈ 10 % d'un écran, jamais plus.
+    expect(identity.accentAreaLimit).toBe(.1);
+    expect(identity.accentAreaExclusions).toEqual(['product-images']);
     expect(identity.geometry.ctaRadius).toBe(999);
     expect(identity.geometry.controlRadius).toBe(12);
     expect(identity.geometry.cardRadius).toBe(16);
@@ -56,9 +57,13 @@ describe('editorial identity, generated from one versioned source', () => {
       expect(contrast(c.action, c.onAction)).toBeGreaterThan(7);
     });
   }
-  it('rejects white on the bright orange for normal text by documenting a separate text token', () => {
-    expect(contrast(identity.colors.accent, '#FFFFFF')).toBeLessThan(4.5);
+  it('lets the violet accent carry text both ways: violet on white and white on violet', () => {
+    // L'ancien orange (2,6:1) exigeait un jeton de texte distinct ; le violet #571EF6 tient 7,19:1.
+    expect(contrast(identity.colors.accent, '#FFFFFF')).toBeGreaterThanOrEqual(4.5);
     expect(contrast(identity.colors.accentText, '#FFFFFF')).toBeGreaterThan(4.5);
+    expect(contrast(identity.colors.onAccent, identity.colors.accent)).toBeGreaterThan(7);
+    // Sur fond sombre, le texte d'accent est le violet éclairci, lisible (≥ 4,5:1).
+    expect(contrast(identity.darkColors.accentText, identity.darkColors.canvas)).toBeGreaterThanOrEqual(4.5);
   });
   for (const f of identity.fonts) it(`ships a verified local WOFF2 and OFL: ${f.family}`, () => {
     const bytes = readFileSync('client/public' + f.file);

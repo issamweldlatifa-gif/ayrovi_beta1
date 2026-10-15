@@ -14,11 +14,15 @@ import { invoiceEmailHtml } from '../src/services/invoice';
 import { authMailTemplate } from '../src/customer/accountMail';
 
 describe('AYROVI A — enforceable identity', () => {
-  test('has only the two approved local families and pure base neutrals', () => {
+  test('has only the two approved local families and the official palette', () => {
     expect(BRAND.fonts.map(f => f.family)).toEqual(['Zalando Sans', 'Noto Sans Arabic']);
+    // Palette officielle du 2026-10-15 : noir #0A0A0A · blanc · violet électrique #571EF6 · gris clair #F2F2F2.
     expect(BRAND.colors.canvas).toBe('#FFFFFF');
-    expect(BRAND.colors.ink).toBe('#000000');
-    expect(BRAND.colors.accent).toBe('#FF7900'); // Existing brand accent unchanged.
+    expect(BRAND.colors.ink).toBe('#0A0A0A');
+    expect(BRAND.colors.surface).toBe('#F2F2F2');
+    expect(BRAND.colors.accent).toBe('#571EF6'); // L'orange #FF7900 est retiré.
+    expect(BRAND.colors.action).toBe('#571EF6');
+    expect(BRAND.colors.onAction).toBe('#FFFFFF');
     expect(auditBrand()).toEqual([]);
   });
   test('normalizes legacy/malicious CMS data without mutating content or price data', () => {

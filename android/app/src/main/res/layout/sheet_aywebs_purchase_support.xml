@@ -86,7 +86,7 @@
             android:layout_width="match_parent"
             android:layout_height="56dp"
             android:layout_marginTop="14dp"
-            android:background="#F18902"
+            android:background="@color/aywebs_accent"
             android:text="@string/aywebs_support_send"
             android:textColor="#FFFFFF"
             android:textSize="16sp"

@@ -4,7 +4,7 @@ import { twMerge } from 'tailwind-merge';
 /**
  * AYROVI DS v1.0 — Card.
  * Surface `#F8F9FA` + filet `#EAEAEA` + rayon carte 16px.
- * `accent` ajoute le filet d'identité de 3px (orange) sur le bord amont —
+ * `accent` ajoute le filet d'identité de 3px (violet) sur le bord amont —
  * l'unique façon pour une carte de « porter » la marque.
  */
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {

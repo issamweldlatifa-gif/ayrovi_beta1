@@ -4,7 +4,7 @@ import { Badge, type BadgeVariant } from './Badge';
 /**
  * AYROVI DS v1.0 — StatusBadge.
  * Statuts d'ordre/paiement : vert = abouti, rouge = bloqué/échec,
- * gris = en attente, encre = confirmé. Pas d'orange (l'orange = action).
+ * gris = en attente, encre = confirmé. Pas de violet (le violet = action).
  */
 const TONE_BY_STATUS: Record<string, BadgeVariant> = {
   PAID: 'success', CONFIRMED: 'dark', COMPLETED: 'success', DELIVERED: 'success', SUCCESS: 'success',

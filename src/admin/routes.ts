@@ -1,5 +1,5 @@
 import { FONT_STACK } from '../../shared/brand.generated';
-import { enforceBrandIdentity, enforceLegacyTheme, hasForbiddenFontSelection } from '../../shared/identityPolicy';
+import { brandAccentColor, enforceBrandIdentity, enforceLegacyTheme, hasForbiddenFontSelection } from '../../shared/identityPolicy';
 import { Router, Request, Response } from 'express';
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
@@ -589,7 +589,7 @@ export function createAdminRouter(
   const lensRowForApi = (row: any) => (row ? {
     eyebrow: row.eyebrow, title: row.title, description: row.description,
     ctaLabel: row.cta_label, ctaUrl: row.cta_url || '', proofLine: row.proof_line || '',
-    accentColor: row.accent_color || '#FF6900', elementOrder: row.element_order || LENS_ELEMENT_ORDER.join(','),
+    accentColor: brandAccentColor(row.accent_color), elementOrder: row.element_order || LENS_ELEMENT_ORDER.join(','),
     bgType: row.bg_type, bgColor: row.bg_color, bgImage: row.bg_image,
     overlayStrength: row.overlay_strength, focalX: row.focal_x, focalY: row.focal_y,
     phoneEnabled: Boolean(row.phone_enabled), enabled: Boolean(row.enabled), sortOrder: Number(row.sort_order ?? 40),
@@ -708,7 +708,7 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
       text(req.body.ctaLabel, existing.cta_label, 40) || 'Ouvrir LENS',
       ctaUrl,
       text(req.body.proofLine, existing.proof_line, 120),
-      validColor(req.body.accentColor, existing.accent_color || '#FF6900'),
+      validColor(req.body.accentColor, brandAccentColor(existing.accent_color)),
       normalizeElementOrder(req.body.elementOrder, LENS_ELEMENT_ORDER, LENS_ELEMENT_ORDER.join(',')),
       bgType,
       validColor(req.body.bgColor, existing.bg_color),

@@ -4,15 +4,18 @@
  * Ce fichier ne teste pas des pixels : il teste la RÈGLE que la refonte était chargée
  * d'installer, et rend le retour en arrière impossible par inadvertance.
  *
+ *   Palette officielle du 2026-10-15 : noir #0A0A0A, blanc, violet électrique #571EF6,
+ *   gris clair #F2F2F2. L'orange des chartes précédentes (#FF6900, #FF7900…) est retiré.
+ *
  *   1. les six jetons canoniques existent, avec les valeurs exactes de la charte ;
- *   2. un seul orange dans tout le client : `#ff6900`, porté par un seul jeton ;
- *      `--ayrovi-cta`, `--ayrovi-orange` et `--ayrovi-accent` ne sont que des alias ;
+ *   2. une seule couleur de marque dans tout le client : `#571ef6`, portée par un seul
+ *      jeton ; `--ayrovi-cta` et `--ayrovi-accent` ne sont que des alias ;
  *   3. aucun littéral orange hérité ne survit dans `client/src` (ni CSS, ni TSX, ni TS) ;
- *   4. les surfaces LENS et les cartes éditoriales ne sont plus des aplats oranges :
- *      le lavis pêche, la diagonale et la bannière dégradée sont neutralisés ;
+ *   4. les surfaces LENS et les cartes éditoriales ne sont pas des aplats de couleur :
+ *      le lavis, la diagonale et la bannière dégradée sont neutralisés ;
  *   5. les primitives de la charte (carte de surface, badge, action icône, CTA) existent
  *      et sont bien importées par la feuille racine ;
- *   6. l'orange reste un déclencheur d'action : les rares `bg-cta` / `text-cta` qui
+ *   6. le violet reste un déclencheur d'action : les rares `bg-cta` / `text-cta` qui
  *      subsistent sont des états actifs ou le CTA principal, listés nommément.
  *
  * Les nombres de ce fichier sont MESURÉS, pas déduits.
@@ -20,6 +23,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, test } from 'vitest';
+import { enforceBrandIdentity } from '../shared/identityPolicy';
 
 const ROOT = process.cwd();
 const read = (rel: string) => fs.readFileSync(path.resolve(ROOT, rel), 'utf8');
@@ -61,56 +65,67 @@ describe('jetons canoniques — la charte tient en six variables', () => {
     const declared = new Map(declarations(read(TOKENS)).map(([, n, v]) => [n, v.trim().toLowerCase()]));
     const canonical: Record<string, string> = {
       '--ayrovi-bg-main': '#ffffff',
-      '--ayrovi-bg-surface': '#f8f9fa',
-      '--ayrovi-border-soft': '#eaeaea',
-      '--ayrovi-text-primary': '#000000',
+      '--ayrovi-bg-surface': '#f2f2f2',
+      '--ayrovi-border-soft': '#e5e5e5',
+      '--ayrovi-text-primary': '#0a0a0a',
       '--ayrovi-text-secondary': '#666666',
-      '--ayrovi-color-brand-orange': '#ff6900',
+      '--ayrovi-color-brand-accent': '#571ef6',
     };
     for (const [name, value] of Object.entries(canonical)) {
       expect(declared.get(name), `${name} doit être déclaré dans tokens.css`).toBe(value);
     }
   });
 
-  test('l’orange n’a qu’un seul porteur : les autres noms ne sont que des alias', () => {
+  test('le violet n’a qu’un seul porteur : les autres noms ne sont que des alias', () => {
     const declared = new Map(declarations(read(TOKENS)).map(([, n, v]) => [n, v.trim().toLowerCase()]));
     const resolve = (name: string, depth = 0): string => {
       const raw = declared.get(name) ?? '';
       const alias = raw.match(/^var\((--[a-z0-9-]+)\)$/);
       return alias && depth < 6 ? resolve(alias[1], depth + 1) : raw;
     };
-    expect(resolve('--ayrovi-color-brand-orange')).toBe('#ff6900');
-    for (const alias of ['--ayrovi-cta', '--ayrovi-orange', '--ayrovi-accent']) {
-      expect(resolve(alias), `${alias} doit résoudre l'orange canonique`).toBe('#ff6900');
+    expect(resolve('--ayrovi-color-brand-accent')).toBe('#571ef6');
+    for (const alias of ['--ayrovi-cta', '--ayrovi-accent']) {
+      expect(resolve(alias), `${alias} doit résoudre le violet canonique`).toBe('#571ef6');
     }
+    // l'ancien nom « orange » ne survit pas, même comme alias : il mentirait sur la couleur
+    expect(declared.has('--ayrovi-color-brand-orange')).toBe(false);
+    expect(declared.has('--ayrovi-orange')).toBe(false);
     // et un seul jeton porte réellement la valeur : deux porteurs = deux vérités
-    const bearers = [...declared.entries()].filter(([, v]) => v === '#ff6900').map(([n]) => n);
-    expect(bearers).toEqual(['--ayrovi-color-brand-orange']);
+    const bearers = [...declared.entries()].filter(([, v]) => v === '#571ef6').map(([n]) => n);
+    expect(bearers).toEqual(['--ayrovi-color-brand-accent']);
+    // texte sur violet : blanc (l'ancien orange portait du noir)
+    expect(resolve('--ayrovi-cta-ink')).toBe('#ffffff');
   });
 
-  test('l’ancien accent « soft » n’est plus une teinte orange', () => {
+  test('l’accent « soft » est le violet clair officiel (#C5B2F4), porté par un seul jeton, texte noir dessus', () => {
     const declared = new Map(declarations(read(TOKENS)).map(([, n, v]) => [n, v.trim().toLowerCase()]));
     const resolve = (name: string, depth = 0): string => {
       const raw = declared.get(name) ?? '';
       const alias = raw.match(/^var\((--[a-z0-9-]+)\)$/);
       return alias && depth < 6 ? resolve(alias[1], depth + 1) : raw;
     };
-    expect(resolve('--ayrovi-accent-soft')).toBe('#f8f9fa');
+    expect(resolve('--ayrovi-accent-soft')).toBe('#c5b2f4');
+    const bearers = [...declared.entries()].filter(([, v]) => v === '#c5b2f4').map(([n]) => n);
+    expect(bearers).toEqual(['--ayrovi-color-brand-accent-soft']);
+    expect(resolve('--ayrovi-on-accent-soft')).toBe('#0a0a0a');
   });
 });
 
 describe('purge — plus aucun littéral orange hérité', () => {
-  /** Oranges de l'ancienne charte : #fe7003 (jeton), #ff7a00 (LENS), et leurs déclinaisons. */
-  const LEGACY = /#(fe7003|ff7a00|ff8f33|e05f00|f26a1b|ff9433|fdf6f0|fbeadd|fbe3d2|ffb070)\b/gi;
+  /** Oranges des chartes retirées : #fe7003 (jeton), #ff7a00 (LENS), #ff6900 (Zalando),
+   *  #ff7900 / #a74700 / #ffae69 (AYROVI A v3), #f18902 (AyWebs), et leurs déclinaisons. */
+  const LEGACY = /#(fe7003|ff7a00|ff8f33|e05f00|f26a1b|ff9433|fdf6f0|fbeadd|fbe3d2|ffb070|ff6900|ff7900|a74700|ffae69|f18902|e85f00|ffb173|fb923c|d3451f|fff3ea)\b/gi;
+  /** Ce que la base persistée peut encore contenir (graines et migrations) : la liste d'avant
+   *  #ff6900. Les graines #ff6900 sont relues en violet par shared/identityPolicy.ts (test plus bas). */
+  const LEGACY_BEFORE_ZALANDO = /#(fe7003|ff7a00|ff8f33|e05f00|f26a1b|ff9433|fdf6f0|fbeadd|fbe3d2)\b/gi;
 
   /**
-   * `tokens.css` héberge aussi la couche back-office (`--admin-*`), dont le pêche
-   * `--admin-warm-accent` est verrouillé par `design-tokens.test.ts` : on ne balaie
-   * que les déclarations de la couche vitrine (`--ayrovi-*`).
+   * `tokens.css` héberge aussi la couche back-office (`--admin-*`) : depuis la palette
+   * officielle, son accent chaud est lui aussi violet ; on balaie donc toutes les
+   * déclarations (vitrine ET back-office), commentaires exclus.
    */
   const storefrontTokens = (src: string) =>
     declarations(src)
-      .filter(([, name]) => !name.startsWith('--admin-'))
       .map(([, name, value]) => `${name}:${value}`)
       .join(';');
 
@@ -144,28 +159,35 @@ describe('purge — plus aucun littéral orange hérité', () => {
       .replace(/private applyZalandoOrange\(\)[\s\S]*?\n  \}\n/, '');
 
   test('le serveur ne publie plus l’ancienne valeur par défaut', () => {
-    for (const rel of ['src/admin/routes.ts', 'src/public/routes.ts', 'src/services/invoice.ts']) {
+    for (const rel of ['src/admin/routes.ts', 'src/public/routes.ts', 'src/services/invoice.ts', 'src/customer/accountMail.ts']) {
       const hits = (withoutComments(read(rel)).match(LEGACY) ?? []);
       expect(hits, `${rel} porte encore un orange hérité`).toEqual([]);
     }
     const database = stripPaletteMigrations(read('src/db/database.ts'));
     expect(
-      (withoutComments(database).match(LEGACY) ?? []),
+      (withoutComments(database).match(LEGACY_BEFORE_ZALANDO) ?? []),
       'src/db/database.ts : un orange hérité hors du code de migration',
     ).toEqual([]);
     // et la migration existe bien (sinon le test ci-dessus ne voudrait rien dire)
     expect(read('src/db/database.ts')).toMatch(/rebrand_zalando_orange_v1/);
   });
 
-  test('les valeurs par défaut persistées sont le nouvel orange', () => {
+  test('les graines persistées (encore orange) sont relues en violet, sans réécrire la base', () => {
+    // La base n'est pas migrée (aucune écriture en production) : chaque lecture passe par
+    // l'adaptateur d'identité partagé par le serveur ET le client. On rejoue donc les graines.
     const database = read('src/db/database.ts');
-    expect(database).toMatch(/accent: '#ff6900'/);
-    expect(database).toMatch(/activeColor: '#ff6900'/);
+    const seededAccent = database.match(/accent: '(#[0-9a-f]{6})', headerBackground/i)?.[1];
+    const seededActive = database.match(/activeColor: '(#[0-9a-f]{6})', size: 28/i)?.[1];
+    expect(seededAccent).toBeTruthy();
+    expect(seededActive).toBeTruthy();
+    const read1 = enforceBrandIdentity({ colors: { accent: seededAccent }, icons: { activeColor: seededActive } }) as { colors: { accent: string }; icons: { activeColor: string } };
+    expect(read1.colors.accent).toBe('#571ef6');
+    expect(read1.icons.activeColor).toBe('#571ef6');
     // Le défaut `accent_color` du contenu Hero (table hero_content_settings) a été supprimé avec l’ancien Hero (2026-10-10).
   });
 });
 
-describe('surfaces — l’orange n’est plus un papier peint', () => {
+describe('surfaces — la couleur de marque n’est jamais un papier peint', () => {
   const css = () => withoutComments(read(INDEX_CSS));
 
   test('la section LENS v2 n’a plus de lavis pêche', () => {
@@ -174,23 +196,23 @@ describe('surfaces — l’orange n’est plus un papier peint', () => {
     expect(rule).not.toMatch(/gradient/);
   });
 
-  test('la diagonale orange décorative est neutralisée', () => {
+  test('la diagonale décorative est neutralisée', () => {
     const rule = css().match(/\.lens2__diagonal\s*\{[^}]*\}/)?.[0] ?? '';
     expect(rule).toMatch(/display:\s*none/);
     expect(rule).not.toMatch(/linear-gradient/);
   });
 
-  test('la bannière est une carte de surface à filet de 3px, pas un bloc orange', () => {
+  test('la bannière est une carte de surface à filet de 3px, pas un bloc de couleur', () => {
     const rule = css().match(/\.lens2__banner\s*\{[^}]*\}/)?.[0] ?? '';
     expect(rule).toMatch(/background:\s*var\(--ayrovi-bg-surface\)/);
-    expect(rule).toMatch(/border-inline-start:\s*3px solid var\(--ayrovi-color-brand-orange\)/);
+    expect(rule).toMatch(/border-inline-start:\s*3px solid var\(--ayrovi-color-brand-accent\)/);
     expect(rule).not.toMatch(/linear-gradient/);
   });
 
-  test('le CTA de la bannière est rétrogradé en secondaire (un seul orange plein par écran)', () => {
+  test('le CTA de la bannière est rétrogradé en secondaire (un seul violet plein par écran)', () => {
     const rule = css().match(/\.lens2__banner-cta\s*\{[^}]*\}/)?.[0] ?? '';
     expect(rule).toMatch(/background:\s*var\(--ayrovi-bg-main\)/);
-    expect(rule).not.toMatch(/var\(--ayrovi-color-brand-orange\)/);
+    expect(rule).not.toMatch(/var\(--ayrovi-color-brand-accent\)/);
   });
 
   test('le CTA client « Ouvrir LENS » reprend l’action capsule du système', () => {
@@ -204,10 +226,10 @@ describe('surfaces — l’orange n’est plus un papier peint', () => {
     const rule = css().match(/\.lens2__merchant-go\s*\{[^}]*\}/)?.[0] ?? '';
     expect(rule).toMatch(/background:\s*transparent/);
     expect(rule).toMatch(/border:\s*1px solid var\(--ayrovi-border-soft\)/);
-    expect(rule).not.toMatch(/var\(--ayrovi-color-brand-orange\)/);
+    expect(rule).not.toMatch(/var\(--ayrovi-color-brand-accent\)/);
   });
 
-  test('le viseur LENS est neutre (Google Lens), pas orange', () => {
+  test('le viseur LENS est neutre (Google Lens), pas coloré', () => {
     const body = css();
     const scan = body.match(/\.lens-scan::before\s*\{[^}]*\}/)?.[0] ?? '';
     expect(scan).toMatch(/var\(--ayrovi-white\)/);
@@ -222,7 +244,7 @@ describe('surfaces — l’orange n’est plus un papier peint', () => {
    * Hero + Trust Bar. La règle qu'elle portait (surface grise + filet 3px) est
    * désormais portée par la primitive `.ay-surface-card`, verrouillée ci-dessous.
    */
-  test('les anciens blocs oranges de la page d’accueil ont bien été retirés', () => {
+  test('les anciens blocs de couleur de la page d’accueil ont bien été retirés', () => {
     for (const gone of [
       'client/src/components/TransitionCard.tsx',
       'client/src/components/BrandsShowcase.tsx',
@@ -251,10 +273,11 @@ describe('primitives de la charte', () => {
     expect(body.match(/#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b/g) ?? []).toEqual([]);
   });
 
-  test('la carte de surface porte le filet de 3px et jamais de fond orange', () => {
+  test('la carte de surface porte le filet de 3px — noir depuis la v4.2.0 — et jamais de fond violet', () => {
     const rule = withoutComments(read(PRIMITIVES)).match(/\.ay-surface-card\s*\{[^}]*\}/)?.[0] ?? '';
     expect(rule).toMatch(/background:\s*var\(--ayrovi-bg-surface\)/);
-    expect(rule).toMatch(/border-inline-start:\s*3px solid var\(--ayrovi-color-brand-orange\)/);
+    expect(rule).toMatch(/border-inline-start:\s*3px solid var\(--ayrovi-text-primary\)/);
+    expect(rule).not.toMatch(/brand-accent/);
   });
 });
 
@@ -295,9 +318,9 @@ describe("DS v1.0 — verrous d\'échelle (2026-09-18)", () => {
     expect(offenders.join(' | ')).toBe('');
   });
 
-  test('editorial customer tokens are scoped; legacy admin orange is not overwritten', () => {
+  test('editorial customer tokens are scoped; the legacy admin accent is not overwritten', () => {
     const app = withoutComments(read('client/src/App.tsx'));
-    expect(app).not.toMatch(/color-brand-orange',\s*'#0A0A0A'/i);
+    expect(app).not.toMatch(/color-brand-(?:orange|accent)',\s*'#0A0A0A'/i);
     expect(app).not.toMatch(/--ayrovi-cta',\s*'#0A0A0A'/i);
     // v2 deliberately replaces global CMS writes with the approved customer boundary.
     expect(app).not.toContain('root.style.setProperty');
@@ -305,7 +328,7 @@ describe("DS v1.0 — verrous d\'échelle (2026-09-18)", () => {
   });
 });
 
-describe('budget orange — l’orange reste un déclencheur d’action', () => {
+describe('budget violet — le violet reste un déclencheur d’action', () => {
   /**
    * Allowlist fermée. Chaque entrée est un ÉTAT ACTIF ou le CTA PRINCIPAL d'un écran —
    * jamais un aplat décoratif. Ajouter une ligne ici doit être justifié ; ajouter un
@@ -318,9 +341,11 @@ describe('budget orange — l’orange reste un déclencheur d’action', () => 
     ['client/src/social/components/StoryFeed.tsx', 'cœur aimé (état actif)'],
     ['client/src/components/assistant/AssistantComposer.tsx', 'bouton d’envoi : CTA principal de l’écran conversation'],
     ['client/src/components/assistant/AssistantVoiceModeScreen.tsx', 'bouton d’écoute : CTA principal de l’écran vocal'],
+    // v4.2.0 (violet réduit au minimum) : la page 404, la caméra LENS et l'état vide LENS
+    // repassent en noir ; l'onglet de mode OCEREX utilise le violet CLAIR (bg-accent-soft).
   ]);
 
-  test('aucun conteneur ne repeint sa surface en orange', () => {
+  test('aucun conteneur ne repeint sa surface en violet', () => {
     const offenders: string[] = [];
     for (const rel of clientFiles(/\.tsx$/)) {
       if (rel.startsWith('client/src/admin/')) continue; // couche back-office : charte distincte
@@ -332,11 +357,14 @@ describe('budget orange — l’orange reste un déclencheur d’action', () => 
     expect([...ALLOWED.keys()].every((f) => fs.existsSync(path.resolve(ROOT, f))), 'l’allowlist cite des fichiers réels').toBe(true);
   });
 
-  test('le compte d’usages orange reste sous le plafond mesuré après refonte', () => {
+  test('le compte d’usages de l’accent reste sous le plafond mesuré après refonte', () => {
     // MESURÉ après DS v1.0 (2026-09-18) : les variantes cta de la bibliothèque
     // (design/Button.tsx, 7 classes) + CTA assistant (envoi, écoute, orbe) + rail.
+    // 2026-10-15 (palette officielle) : 33 — +12 classes pour quatre actions principales.
+    // 2026-10-15 (v4.2.0, violet au minimum) : 18 — ces quatre actions repassent en noir ;
+    // le total compte aussi les 2 `bg-accent-soft` (violet CLAIR) de l'onglet OCEREX choisi.
     // Le relever exige de justifier chaque nouvel usage.
-    const CEILING = 23;
+    const CEILING = 18;
     let used = 0;
     for (const rel of clientFiles(/\.(tsx|css|ts)$/)) {
       if (rel.startsWith('client/src/admin/')) continue;

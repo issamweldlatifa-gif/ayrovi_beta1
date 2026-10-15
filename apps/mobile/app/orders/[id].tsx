@@ -230,12 +230,12 @@ export default function OrderDetailScreen() {
                           onPress={() => chooseMethod.mutate(choice as DepositMethod)}
                           style={[styles.payChip, {
                             borderColor: active ? theme.colors.action : theme.colors.line,
-                            backgroundColor: active ? theme.colors.action : theme.colors.canvas,
+                            backgroundColor: active ? theme.colors.accentSoft : theme.colors.canvas,
                             borderRadius: theme.radius.control,
                             minHeight: theme.geometry.minTarget,
                           }]}
                         >
-                          <AppText variant="label" color={active ? theme.colors.onAction : theme.colors.ink}>
+                          <AppText variant="label" color={active ? theme.colors.onAccentSoft : theme.colors.ink}>
                             {t(`pay.${choice}` as never)}
                           </AppText>
                         </Pressable>

@@ -122,7 +122,7 @@ export const ReelsViewer: React.FC<{
             <video
               ref={(el) => { if (el) videoRefs.current.set(post.id, el); else videoRefs.current.delete(post.id); }}
               src={post.media[0].url}
-              poster="/media/logo-ayrovi.png"
+              poster="/media/logo-ayrovi.png?v=4.1"
               muted={muted}
               loop
               playsInline
@@ -130,7 +130,7 @@ export const ReelsViewer: React.FC<{
               className={`absolute inset-0 h-full w-full bg-ink-deep object-cover ${videoFailed[post.id] ? 'hidden' : ''}`}
               onError={() => setVideoFailed((current) => ({ ...current, [post.id]: true }))}
             />
-            {videoFailed[post.id] && <div className="absolute inset-0 grid place-items-center bg-ink-gradient"><img src="/media/logo-ayrovi.png" alt="" className="h-11 w-11 rounded-card bg-white object-contain p-3" /></div>}
+            {videoFailed[post.id] && <div className="absolute inset-0 grid place-items-center bg-ink-gradient"><img src="/media/logo-ayrovi.png?v=4.1" alt="" className="h-11 w-11 rounded-card bg-white object-contain p-3" /></div>}
 
             {likeError && <p role="alert" className="absolute start-4 end-4 top-20 z-30 border border-line bg-white p-3 text-sm text-danger">{tr("Confirmation du geste indisponible. Vérifiez la connexion.", "تعذر تأكيد التفاعل. تحقق من الاتصال.")}</p>}
             <FullscreenActionRail
@@ -150,7 +150,7 @@ export const ReelsViewer: React.FC<{
               {'views' in (post as ReelItem) && <p className="mb-1 text-xs font-bold text-white/70"><Play size={14} /> {(post as ReelItem).views.toLocaleString(locale === 'ar' ? 'ar-TN' : 'fr-TN')} {tr('vues', 'مشاهدة')}</p>}
               <div className="flex items-center gap-2.5">
                 <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full bg-white">
-                  {post.publisher.official ? <img src="/media/logo-ayrovi.png" alt="" className="h-11 w-11 object-contain p-1" /> : post.publisher.avatar ? <img src={post.publisher.avatar} alt="" className="h-11 w-11 object-cover" /> : <span className="text-xs font-black text-ink">{post.publisher.name.slice(0, 2).toUpperCase()}</span>}
+                  {post.publisher.official ? <img src="/media/logo-ayrovi.png?v=4.1" alt="" className="h-11 w-11 object-contain p-1" /> : post.publisher.avatar ? <img src={post.publisher.avatar} alt="" className="h-11 w-11 object-cover" /> : <span className="text-xs font-black text-ink">{post.publisher.name.slice(0, 2).toUpperCase()}</span>}
                 </span>
                 <p className="text-sm font-extrabold text-white drop-shadow">{post.publisher.name}</p>
               </div>

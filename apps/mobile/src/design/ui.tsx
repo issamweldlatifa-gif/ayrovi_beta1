@@ -196,7 +196,10 @@ export function Segmented<T extends string>({
                 styles.segment,
                 {
                   minHeight: theme.geometry.minTarget,
-                  backgroundColor: active ? theme.colors.action : 'transparent',
+                  // Segment choisi : fond violet clair (#C5B2F4) + filet violet en bas
+                  // (indicateur d'onglet actif). Le violet plein reste réservé à
+                  // l'action principale de l'écran.
+                  backgroundColor: active ? theme.colors.accentSoft : 'transparent',
                   // Le séparateur suit le côté de la lecture, pas la gauche.
                   [theme.isRTL ? 'borderRightWidth' : 'borderLeftWidth']:
                     index === 0 ? 0 : StyleSheet.hairlineWidth,
@@ -207,11 +210,18 @@ export function Segmented<T extends string>({
               <AppText
                 variant="label"
                 weight={active ? 'bold' : 'regular'}
-                color={active ? theme.colors.onAction : theme.colors.ink}
+                color={active ? theme.colors.onAccentSoft : theme.colors.ink}
                 align="center"
               >
                 {option.label}
               </AppText>
+              {active ? (
+                <View
+                  pointerEvents="none"
+                  testID={`segment-indicator-${option.value}`}
+                  style={[styles.segmentIndicator, { backgroundColor: theme.colors.action }]}
+                />
+              ) : null}
             </Pressable>
           );
         })}
@@ -230,7 +240,13 @@ export interface ButtonProps {
   /** `busy` = action en cours : le bouton le DIT au lieu de rester muet. */
   busy?: boolean;
   disabled?: boolean;
-  tone?: 'primary' | 'quiet';
+  /**
+   * `main`  : l'action principale de l'écran (ajout au panier, caisse,
+   *           paiement, connexion) — la SEULE en violet plein.
+   * `solid` : bouton plein encre (défaut) — toutes les autres actions.
+   * `quiet` : bouton secondaire à contour.
+   */
+  tone?: 'main' | 'solid' | 'quiet';
   /**
    * Pleine largeur du conteneur (Q8). Sans cette option, un bouton ne se
    * dimensionnait qu'à son texte : deux boutons côte à côte sortaient avec
@@ -249,19 +265,22 @@ export interface ButtonProps {
 export const BUTTON_OUTLINE_WIDTH = 2;
 
 /**
- * Deux rôles, deux couleurs — jamais tous les boutons pareils :
- *   • `primary` : VIOLET plein (`action`, #571EF6), libellé blanc (7,19:1),
- *     violet plus profond quand on appuie (`actionHover`).
- *   • `quiet`   : bouton secondaire — fond blanc (`canvas`), contour et
- *     libellé noirs (`ink`).
+ * Trois rôles — le violet est RARE (charte v4.2.0, repère global ≈ 3 %) :
+ *   • `main`  : VIOLET plein (`action`, #571EF6), libellé blanc (7,19:1),
+ *     violet plus profond quand on appuie (`actionHover`). Réservé à l'action
+ *     principale : ajouter au panier, passer à la caisse, payer, se connecter.
+ *   • `solid` : défaut — fond encre (`ink`), libellé `canvas` (noir/blanc,
+ *     inversés en mode sombre), `secondary` quand on appuie.
+ *   • `quiet` : bouton secondaire — fond `canvas`, contour et libellé `ink`.
  * Désactivé : même forme, opacité réduite. Occupé : barres d'attente dans le
- * bouton (pastille blanche sur le violet).
+ * bouton (pastille blanche sur les fonds pleins).
  */
-export function Button({ label, onPress, busy = false, disabled = false, tone = 'primary', block = false, style, accessibilityHint, testID, leading }: ButtonProps) {
+export function Button({ label, onPress, busy = false, disabled = false, tone = 'solid', block = false, style, accessibilityHint, testID, leading }: ButtonProps) {
   const theme = useTheme();
   const blocked = busy || disabled;
   const quiet = tone === 'quiet';
-  const labelColor = quiet ? theme.colors.ink : theme.colors.onAction;
+  const main = tone === 'main';
+  const labelColor = quiet ? theme.colors.ink : main ? theme.colors.onAction : theme.colors.canvas;
   return (
     <Pressable
       accessibilityRole="button"
@@ -282,8 +301,10 @@ export function Button({ label, onPress, busy = false, disabled = false, tone = 
           borderWidth: quiet ? BUTTON_OUTLINE_WIDTH : StyleSheet.hairlineWidth,
           backgroundColor: quiet
             ? theme.colors.canvas
-            : pressed ? theme.colors.actionHover : theme.colors.action,
-          borderColor: quiet ? theme.colors.ink : theme.colors.action,
+            : main
+              ? (pressed ? theme.colors.actionHover : theme.colors.action)
+              : (pressed ? theme.colors.secondary : theme.colors.ink),
+          borderColor: quiet ? theme.colors.ink : main ? theme.colors.action : theme.colors.ink,
           opacity: disabled && !busy ? 0.5 : pressed && quiet ? 0.85 : 1,
         },
       ]}
@@ -528,6 +549,8 @@ const styles = StyleSheet.create({
   segmentedBlock: { gap: 6 },
   segmented: { flexDirection: 'row', borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
   segment: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
+  /** Filet d'onglet actif : posé en absolu, il ne déplace pas le libellé. */
+  segmentIndicator: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 2 },
 });
 
 /* ── Tiroir latéral (menu) ─────────────────────────────────────────────────── */

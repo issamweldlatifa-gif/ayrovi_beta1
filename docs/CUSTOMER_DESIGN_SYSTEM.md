@@ -1,4 +1,4 @@
-# AYROVI Customer Design System 3.1
+# AYROVI Customer Design System 4.2
 
 Current customer-facing visual contract: storefront, product and merchant flows, Lens, cart, checkout, account, login, and password recovery. The admin/back-office is intentionally out of scope.
 
@@ -11,13 +11,25 @@ Current customer-facing visual contract: storefront, product and merchant flows,
 
 ## Color roles
 
+Official palette (2026-10-15), identity `v4.2.0` — the same values as the mobile app (`apps/mobile/src/design/brand.json`).
+
 | Role | Light | Dark | Usage |
 |---|---|---|---|
-| Canvas / ink | `#FFFFFF` / `#000000` | `#000000` / `#FFFFFF` | Page base and readable text |
-| Primary action | `#000000` with white text | `#FFFFFF` with black text | Primary and CTA buttons |
-| Information | `#595959` on `#F5F5F5` | `#BDBDBD` on `#171717` | Quiet information, tips, and neutral status |
-| Success / error | Green / dark red tokens | Accessible light variants | Outcome states only |
-| Brand accent | AYROVI orange | AYROVI orange | Brand details, not the primary CTA |
+| Canvas / ink | `#FFFFFF` / `#0A0A0A` | `#0A0A0A` / `#FFFFFF` | Page base and readable text |
+| Surface | `#F2F2F2` | `#171717` | Secondary backgrounds, skeletons |
+| Main action (`action`, `--ayrovi-cta`) | `#571EF6` with white text (7.19:1) | same | **Only** the main purchase/sign-in action: add to bag, checkout, pay, sign in (`.s-cta`, `.ay-btn-cta`, `Button variant="cta"`, auth submit) |
+| Generic primary button (`--ayrovi-button-bg`) | `#0A0A0A` with white text | — | Every other solid button (`.ay-btn-primary`, `Button variant="primary"`) |
+| Accent text / focus | `#571EF6` | `#926DF9` | Important links, active tab / bottom-nav item, selected-option border, focus ring |
+| Light violet (`accentSoft`, `--ayrovi-accent-soft`) | `#C5B2F4` with `#0A0A0A` text (10.4:1) | same | Background of a selected option or active state — always with a violet border/indicator, never white text, never large areas or product cards |
+| Information | `#666666` on `#F2F2F2` | `#BDBDBD` on `#171717` | Quiet information, tips, and neutral status |
+| Success / error | Green / dark red tokens | Accessible light variants | Outcome states only (unchanged) |
+
+### Violet usage (v4.2.0 — violet kept to the minimum)
+
+- App-level visual guide: violet ≈ **3 %** of the interface (`#571EF6` ≈ 2 % + `#C5B2F4` ≈ 1 %), down from 10 %; white 50 %, black 35 %, light gray 5 % are unchanged and the 7 released points go back to these neutrals (everything that is not violet ≈ 97 %). Source: `identity.json → accentShare`.
+- It is a guide for the whole app, **not a quota per screen or component**: a screen with little or no violet is fine, and violet is never added to reach the number. `accentAreaLimit` stays a per-screen *safety ceiling* for the CI pixel audits (no large violet surfaces), not a target.
+- Never place violet frames or backgrounds around product photos; product images keep their original colors. Prices, sizes and ratings stay in ink. Promotion badges and decorative rules are neutral.
+- One violet main action per screen at most, and not on every screen; secondary actions are ink or outlined. Adjacent violet elements are avoided.
 
 Use the semantic information tokens (`--ayrovi-info`, `--ayrovi-info-soft`) for new informational copy or surfaces. Do not use success/error colors to style neutral information.
 
@@ -36,7 +48,7 @@ The shared Zalando Sans / Noto Sans Arabic stack remains local to the project. B
 
 ## Component contract
 
-- Use `Button` with `primary`/`cta` for primary actions (capsule), `secondary` for secondary controls (12px), and `ghost` for text or icon controls.
+- Use `Button` `cta` only for the screen's main purchase/sign-in action (violet capsule), `primary` for other solid actions (ink capsule), `secondary` for secondary controls (12px), and `ghost` for text or icon controls.
 - `size="icon"` is an unboxed, round hit area with a visible focus ring; do not add a square background wrapper.
 - Keep image/media corners and product crops independent from control/card radii.
 - For information-only content, use the neutral info tokens; preserve distinct success, error, promotion, and availability states.

@@ -243,7 +243,7 @@ export default function AyroviCartScreen() {
             <KeyValue label={t('cart.total')} value={`${cart.totalTND.toFixed(2)} TND`} />
             {quoteDeadline ? (
               <View style={[styles.quoteTimer, { backgroundColor: theme.colors.infoSoft }]}>
-                <AppText variant="caption" weight="bold" style={{ color: quoteExpired ? theme.status.danger.fg : theme.colors.accentText }}>
+                <AppText variant="caption" weight="bold" style={{ color: quoteExpired ? theme.status.danger.fg : theme.colors.ink }}>
                   {quoteExpired ? t('cart.quoteExpired') : t('cart.quoteCountdown', { time: quoteCountdown })}
                 </AppText>
               </View>
@@ -265,6 +265,7 @@ export default function AyroviCartScreen() {
             {/* باب الدفع: يتفتح كان كي الخادم يقبل — والسطر الموقوف يتقال بسببه. */}
             <Button
               label={t('cart.checkout')}
+              tone="main"
               onPress={() => router.push('/checkout')}
               disabled={!gate.canCheckout || quoteExpired}
               testID="cart-checkout"

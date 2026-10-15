@@ -330,11 +330,12 @@ const HeroCard = memo(function HeroCard({ card, width, onPress }: HeroCardProps)
           accessibilityLabel={cta}
           style={({ pressed }) => [
             styles.cardCta,
-            // CTA principal de la carte : violet plein, libellé blanc (7,19:1).
-            { backgroundColor: pressed ? theme.colors.actionHover : theme.colors.action },
+            // Lien éditorial de la carte : pastille encre (le violet plein est réservé
+            // à l'action d'achat — ajout au panier, caisse, paiement).
+            { backgroundColor: pressed ? theme.colors.secondary : theme.colors.ink },
           ]}
         >
-          <AppText variant="label" weight="bold" color={theme.colors.onAction} numberOfLines={1}>
+          <AppText variant="label" weight="bold" color={theme.colors.canvas} numberOfLines={1}>
             {cta}
           </AppText>
         </Pressable>

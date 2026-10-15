@@ -2,14 +2,17 @@
    AYROVI — P4/T1 « Zalando Strategy » : primitives d'interface (Muted & Punchy).
 
    Règle stricte de la plateforme : le canvas est monochrome (blanc / noir).
-   L'orange n'est PAS un outil de décoration : c'est un déclencheur d'action.
+   Le violet n'est PAS un outil de décoration : c'est un déclencheur d'action.
    Il est INTERDIT en fond de page, en dégradé, en pleine carte, en badge plein
-   ou en bordure épaisse autour d'un produit. Il est RÉSERVÉ :
-     • au CTA principal — un seul bouton orange plein par écran ;
-     • à l'étape active d'un tracker de progression ;
-     • au filet vertical de 3px d'une carte de surface ;
-     • aux micro-interactions (point actif de navigation, halo fin).
-   Budget : ≤ 3 % de la surface d'un écran.
+   ou en bordure / fond autour d'une photo produit. #571EF6 est RÉSERVÉ :
+     • à l'action principale (ajout au panier, caisse, paiement, connexion) —
+       un seul bouton violet plein par écran, et pas sur tous les écrans ;
+     • aux liens importants, à l'onglet / l'étape / la navigation actifs ;
+     • au contour d'une option choisie et au focus.
+   #C5B2F4 (violet clair) : fond d'une option choisie ou d'un état actif, texte
+   #0A0A0A, toujours accompagné d'un contour ou d'une graisse (jamais seul).
+   Repère global : ≈ 3 % de l'app (2 % + 1 %) — pas un quota par écran
+   (identity.json → accentShare ; plafond de sécurité : accentAreaLimit).
 
    Cette feuille ne définit aucune valeur : chaque couleur vient de
    `client/src/design/tokens.css`.
@@ -17,13 +20,13 @@
 
 /* ── 1. Surfaces ─────────────────────────────────────────────────────────────
    Remplace les anciennes cartes/bannières oranges pleines. Fond gris très clair,
-   texte noir, et un filet vertical de 3px sur le bord amont comme seule trace
-   d'identité. */
+   texte noir, et un filet vertical de 3px sur le bord amont. Le filet est NOIR
+   depuis la v4.2.0 : un repère de structure n'a pas de fonction d'action. */
 .ay-surface-card {
   position: relative;
   background: var(--ayrovi-bg-surface);
   border: 1px solid var(--ayrovi-border-soft);
-  border-inline-start: 3px solid var(--ayrovi-color-brand-orange);
+  border-inline-start: 3px solid var(--ayrovi-text-primary);
   color: var(--ayrovi-text-primary);
 }
 
@@ -45,7 +48,7 @@
 }
 
 /* ── 2. Badges ───────────────────────────────────────────────────────────────
-   Un badge n'est jamais une pastille orange pleine : fond blanc ou gris très
+   Un badge n'est jamais une pastille violette pleine : fond blanc ou gris très
    clair, filet fin, texte noir ou gris foncé. */
 .ay-badge {
   display: inline-flex;
@@ -133,30 +136,35 @@
 }
 
 /* ── 5. Filet d'identité ─────────────────────────────────────────────────────
-   Le seul endroit où l'orange peut « tenir » une surface : un filet fin. */
+   Le seul endroit où le violet peut « tenir » une surface : un filet fin. */
 .ay-accent-rule {
   display: block;
   width: 3rem;
   height: 3px;
   border-radius: 999px;
-  background: var(--ayrovi-color-brand-orange);
+  background: var(--ayrovi-color-brand-accent);
 }
 
 /* ── 6. Tracker d'étapes ─────────────────────────────────────────────────────
-   Norme figée : le point et le trait de l'étape ACTIVE sont oranges, les
-   étapes à venir restent grises. Rien d'autre n'est orange dans le rail. */
+   Norme figée : seul le point de l'étape EN COURS est violet ; les étapes
+   franchies passent en noir, les étapes à venir restent grises. */
 .ay-step {
   --ay-step-dot: var(--ayrovi-border-soft);
   --ay-step-line: var(--ayrovi-border-soft);
   --ay-step-ink: var(--ayrovi-text-secondary);
 }
 
-.ay-step.is-active,
-.ay-step.is-current,
 .ay-step.is-done,
 .ay-step.is-complete {
-  --ay-step-dot: var(--ayrovi-color-brand-orange);
-  --ay-step-line: var(--ayrovi-color-brand-orange);
+  --ay-step-dot: var(--ayrovi-text-primary);
+  --ay-step-line: var(--ayrovi-text-primary);
+  --ay-step-ink: var(--ayrovi-text-primary);
+}
+
+.ay-step.is-active,
+.ay-step.is-current {
+  --ay-step-dot: var(--ayrovi-color-brand-accent);
+  --ay-step-line: var(--ayrovi-text-primary);
   --ay-step-ink: var(--ayrovi-text-primary);
 }
 

@@ -27,16 +27,16 @@ export function groupByPublisher(stories: Story[]): StoryGroup[] {
 
 const Avatar: React.FC<{ publisher: StoryPublisher; size: number }> = ({ publisher, size }) => (
   publisher.official
-    ? <img src="/media/logo-ayrovi.png" alt="" loading="lazy" className="h-full w-full bg-white p-1 object-contain" style={{ borderRadius: '50%' }} />
+    ? <img src="/media/logo-ayrovi.png?v=4.1" alt="" loading="lazy" className="h-full w-full bg-white p-1 object-contain" style={{ borderRadius: '50%' }} />
     : publisher.avatar
       ? <img src={publisher.avatar} alt="" loading="lazy" className="h-full w-full object-cover" style={{ borderRadius: '50%' }} />
-      : <span className="grid h-full w-full place-items-center bg-gradient-to-br from-brand-light to-accent text-sm font-black text-white" style={{ width: size, height: size, borderRadius: '50%' }}>{publisher.name.slice(0, 2).toUpperCase()}</span>
+      : <span className="grid h-full w-full place-items-center bg-brand-light text-sm font-black text-white" style={{ width: size, height: size, borderRadius: '50%' }}>{publisher.name.slice(0, 2).toUpperCase()}</span>
 );
 
 export const StoryCircle: React.FC<{ group: StoryGroup; onOpen: () => void }> = ({ group, onOpen }) => {
   const { tr } = useLocale();
   return <button type="button" onClick={onOpen} className="flex w-16 shrink-0 flex-col items-center gap-1.5" aria-label={tr(`Stories de ${group.publisher.name}`, `قصص ${group.publisher.name}`)}>
-    <span className={`rounded-full p-[2.5px] ${group.hasUnseen ? 'bg-gradient-to-tr from-brand via-brand-light to-accent' : 'bg-line'}`}>
+    <span className={`rounded-full p-[2.5px] ${group.hasUnseen ? 'bg-ink' : 'bg-line'}`}>
       <span className="block rounded-full bg-white p-[2px]">
         <Avatar publisher={group.publisher} size={44} />
       </span>

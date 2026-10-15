@@ -71,7 +71,7 @@ export function Footer({ testID = 'app-footer' }: FooterProps) {
       ]}
     >
       {/* 1) الهوية */}
-      <AppText variant="display" weight="semibold" color={FOOTER_COLORS.accentText} style={styles.wordmark}>
+      <AppText variant="display" weight="semibold" color={FOOTER_COLORS.ink} style={styles.wordmark}>
         AYROVI
       </AppText>
       <AppText variant="caption" color={FOOTER_COLORS.muted}>
@@ -108,7 +108,7 @@ export function Footer({ testID = 'app-footer' }: FooterProps) {
                   },
                 ]}
               >
-                <Ionicons name={CHANNEL_ICON[channel.id]} size={20} color={FOOTER_COLORS.accentText} accessibilityElementsHidden />
+                <Ionicons name={CHANNEL_ICON[channel.id]} size={20} color={FOOTER_COLORS.ink} accessibilityElementsHidden />
               </Pressable>
             ))}
           </View>
@@ -159,7 +159,7 @@ function FooterLink({ icon, label, onPress }: { icon: keyof typeof Ionicons.glyp
         { flexDirection: rowDirectionFor(theme.isRTL), minHeight: theme.geometry.minTarget, opacity: pressed ? 0.7 : 1 },
       ]}
     >
-      <Ionicons name={icon} size={16} color={FOOTER_COLORS.accentText} accessibilityElementsHidden />
+      <Ionicons name={icon} size={16} color={FOOTER_COLORS.ink} accessibilityElementsHidden />
       <AppText variant="caption" color={FOOTER_COLORS.ink}>{label}</AppText>
     </Pressable>
   );

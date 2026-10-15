@@ -121,9 +121,9 @@ export function Comments({ targetId }: CommentsProps) {
             accessibilityState={{ disabled: tooShort || post.isPending }}
             disabled={tooShort || post.isPending}
             onPress={() => post.mutate()}
-            style={[styles.send, { backgroundColor: theme.colors.accent, borderRadius: theme.radius.cta, opacity: tooShort ? 0.45 : 1 }]}
+            style={[styles.send, { backgroundColor: theme.colors.ink, borderRadius: theme.radius.cta, opacity: tooShort ? 0.45 : 1 }]}
           >
-            <AppText variant="label" weight="bold" color={theme.colors.onAccent}>{t('social.send')}</AppText>
+            <AppText variant="label" weight="bold" color={theme.colors.canvas}>{t('social.send')}</AppText>
           </Pressable>
         </View>
       ) : (

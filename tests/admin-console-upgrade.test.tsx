@@ -173,14 +173,17 @@ describe('4. Écran de connexion aligné sur le modèle A', () => {
   });
 
   it('la connexion porte le verrou A.ROVI une seule fois (identité 2026-09-22)', () => {
-    expect(login).toContain('/media/logo-ayrovi-lockup-white-orange.svg');
-    expect(login).toContain('/media/logo-ayrovi-lockup-black-orange.svg');
+    expect(login).toContain('/media/logo-ayrovi-lockup-white-violet.svg');
+    expect(login).toContain('/media/logo-ayrovi-lockup-black-violet.svg');
     // Le nom n'est plus écrit une seconde fois à côté du verrou.
     expect(login).not.toContain('<strong>AYROVI</strong>');
   });
 
-  it('l’action forte de la connexion est bien l’orange du modèle A', () => {
+  it('l’action forte de la connexion est bien le violet du modèle A, texte blanc', () => {
     expect(css).toContain(':is(.bo-shell, .admin-login) .admin-button--primary');
+    expect(css).toMatch(/--bo-accent:\s*var\(--ayrovi-color-brand-accent\)/);
+    expect(css).toMatch(/\.admin-button--primary \{\s*background: var\(--bo-accent\); border-color: var\(--bo-accent\); color: var\(--bo-on-accent\);/);
+    expect(css).not.toMatch(/#FF6900|#E85F00/i);
   });
 });
 

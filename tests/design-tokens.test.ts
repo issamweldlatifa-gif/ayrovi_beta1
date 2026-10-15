@@ -18,7 +18,8 @@
  *  5. aucun `var(--x)` utilisé par une feuille système, ni par un style en ligne de la couche
  *     admin (`client/src/admin/**`), ne reste non résolu — à une seule exception allowlistée :
  *     `--bo-icon`, règle CSS morte de `back-office.css` (voir rapport P3/T1 §7, F-2) ;
- *  6. la couche admin ne connaît qu'un seul orange : la valeur de `--ayrovi-cta`.
+ *  6. la couche admin ne connaît qu'une seule couleur d'action : la valeur de `--ayrovi-cta`
+ *     (violet électrique #571EF6 depuis la palette officielle du 2026-10-15 ; l'orange est retiré).
  *
  * Les nombres de ce fichier sont MESURÉS (scripts/design-token-sweep.cjs --check), pas déduits.
  */
@@ -128,15 +129,15 @@ describe('couche back-office — plus aucune valeur de couleur en dur', () => {
   test('les valeurs canoniques de la couche admin sont exactes (P3/T2)', () => {
     const tokens = read(TOKENS);
     const canonical: Record<string, string> = {
-      '--admin-ink': '#000000',
+      '--admin-ink': '#0a0a0a',
       '--admin-line': '#d9d9d9',
-      '--admin-ink-strong': '#000000',
-      '--admin-ink-black': '#000000',
-      '--admin-warm-accent': '#ffb070',
+      '--admin-ink-strong': '#0a0a0a',
+      '--admin-ink-black': '#0a0a0a',
+      '--admin-warm-accent': '#926df9',
       '--admin-ink-muted': '#595959',
       '--admin-surface-page': '#ffffff',
       '--admin-surface-card': '#ffffff',
-      '--admin-rail': '#000000',
+      '--admin-rail': '#0a0a0a',
     };
     const declared = new Map(declarations(tokens).map(([, n, v]) => [n, v.trim()]));
     /** Une valeur de rôle peut être un alias d'un autre rôle (T2e) : on résout un saut. */
@@ -326,18 +327,20 @@ describe('accent — une seule source', () => {
     const tokens = read(TOKENS);
     const cta = declarations(tokens).find(([, n]) => n === '--ayrovi-cta');
     expect(cta).toBeTruthy();
-    /* P4/T1 « Zalando Strategy » : l'orange de marque n'est plus un littéral local — il
-       alias le jeton canonique, qui est le seul porteur de la valeur. On résout la chaîne
-       pour continuer à verrouiller la couleur elle-même. */
+    /* P4/T1 « Zalando Strategy » : la couleur de marque n'est plus un littéral local — elle
+       alias le jeton canonique, qui est le seul porteur de la valeur (violet #571EF6 depuis
+       la palette officielle du 2026-10-15). On résout la chaîne pour verrouiller la couleur. */
     const declared = new Map(declarations(tokens).map(([, n, v]) => [n, v.trim().toLowerCase()]));
     const resolve = (name: string, depth = 0): string => {
       const raw = declared.get(name) ?? '';
       const alias = raw.match(/^var\((--[a-z0-9-]+)\)$/);
       return alias && depth < 4 ? resolve(alias[1], depth + 1) : raw;
     };
-    expect(cta![2].trim().toLowerCase()).toBe('var(--ayrovi-color-brand-orange)');
-    expect(resolve('--ayrovi-cta')).toBe('#ff6900');
-    expect(resolve('--ayrovi-color-brand-orange')).toBe('#ff6900');
+    expect(cta![2].trim().toLowerCase()).toBe('var(--ayrovi-color-brand-accent)');
+    expect(resolve('--ayrovi-cta')).toBe('#571ef6');
+    expect(resolve('--ayrovi-color-brand-accent')).toBe('#571ef6');
+    // texte posé sur l'action : blanc (7,19:1), jamais l'encre noire de l'ancien orange
+    expect(resolve('--ayrovi-cta-ink')).toBe('#ffffff');
     for (const file of SYSTEM_SHEETS) {
       const body = withoutComments(read(file));
       const oranges = (body.match(/var\(--ayrovi-cta\)|var\(--admin-yellow\)/g) ?? []).length;

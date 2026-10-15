@@ -277,7 +277,7 @@
   animation: announcementOut 440ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
-/* وميض ضوئي شبه محسوس يعبر الخط البرتقالي السفلي عند كل رسالة جديدة */
+/* وميض ضوئي شبه محسوس يعبر الخط السفلي عند كل رسالة جديدة */
 .announcement-sweep {
   pointer-events: none;
   position: absolute;
@@ -617,11 +617,11 @@
 .hero-anim-up-2 { animation: heroFadeUp 520ms cubic-bezier(0.22, 1, 0.36, 1) 80ms both; }
 .hero-anim-fade-3 { animation: heroFadeIn 640ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both; }
 
-/* أيقونات الهيدر فوق الـ Hero: بيضاء واضحة بstroke موحّد 2px + hover برتقالي */
+/* أيقونات الهيدر فوق الـ Hero: بيضاء واضحة بstroke موحّد 2px + hover بنفسجي */
 
 .public-site-header.is-over-hero .public-site-header-icon:hover,
 .public-site-header.is-over-hero .public-site-header-icon:focus-visible,
-.public-site-header.is-over-hero .public-site-header-icon:active { color: var(--ayrovi-color-brand-orange) !important; }
+.public-site-header.is-over-hero .public-site-header-icon:active { color: var(--ayrovi-accent-on-dark) !important; }
 .public-site-header.is-over-hero .public-site-header-icon { color: var(--ayrovi-bg-main) !important; }
 
 /* الهيدر فوق الـ Hero: شفاف تماماً بلا زجاجية — بخصوصية أعلى من قاعدة public-site-header */
@@ -780,7 +780,7 @@
   flex-shrink: 0;
 }
 
-.brand-tile:hover { border-color: color-mix(in srgb, var(--ayrovi-color-brand-orange) 65%, transparent); background: rgba(255, 255, 255, 0.09); transform: translateY(-2px); }
+.brand-tile:hover { border-color: color-mix(in srgb, var(--ayrovi-accent-on-dark) 65%, transparent); background: rgba(255, 255, 255, 0.09); transform: translateY(-2px); }
 
 .brand-tile__logo { display: grid; place-items: center; width: 100%; height: 34px; }
 .brand-tile__logo img { max-height: 34px; max-width: 84px; object-fit: contain; }
@@ -849,11 +849,11 @@
 .lens2__steps-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 12px; }
 @media (min-width: 900px) { .lens2__steps-grid { grid-template-columns: repeat(4, 1fr); } }
 .lens2__step { position: relative; text-align: center; }
-/* Tracker : seule l'étape active est orange, les suivantes restent gris pâle. */
+/* Tracker : seule l'étape active est violette, les suivantes restent gris pâle. */
 .lens2__step-num { position: absolute; top: -8px; left: 50%; transform: translateX(-34px); width: 20px; height: 20px; border-radius: 999px; background: var(--ayrovi-border-soft); color: var(--ayrovi-text-secondary); font-size: 11px; font-weight: 800; display: grid; place-items: center; z-index: 2; }
-.lens2__step.is-active .lens2__step-num { background: var(--ayrovi-color-brand-orange); color: var(--ayrovi-bg-main); }
+.lens2__step.is-active .lens2__step-num { background: var(--ayrovi-color-brand-accent); color: var(--ayrovi-bg-main); }
 .lens2__step-icon { width: 52px; height: 52px; border-radius: 14px; margin-inline: auto; display: grid; place-items: center; background: var(--ayrovi-bg-surface); color: var(--ayrovi-text-primary); }
-.lens2__step.is-active .lens2__step-icon { color: var(--ayrovi-color-brand-orange); }
+.lens2__step.is-active .lens2__step-icon { color: var(--ayrovi-color-brand-accent); }
 .lens2__step strong { display: block; margin-top: 12px; font-size: 13.5px; font-weight: 800; color: var(--ayrovi-text-primary); }
 .lens2__step p { margin: 6px 0 0; font-size: 11.5px; line-height: 1.5; color: color-mix(in srgb, var(--ayrovi-text-primary) 60%, transparent); }
 
@@ -861,13 +861,13 @@
 /* Bannière dépréciée en tant que bloc orange plein : elle devient une carte de surface
    (fond gris très clair, texte noir) dont la seule trace d'identité est le filet
    vertical de 3px sur le bord amont. */
-.lens2__banner { margin-top: 20px; display: flex; flex-direction: column; gap: 16px; align-items: flex-start; border-radius: 18px; padding: 18px 20px; background: var(--ayrovi-bg-surface); border: 1px solid var(--ayrovi-border-soft); border-inline-start: 3px solid var(--ayrovi-color-brand-orange); color: var(--ayrovi-text-primary); }
+.lens2__banner { margin-top: 20px; display: flex; flex-direction: column; gap: 16px; align-items: flex-start; border-radius: 18px; padding: 18px 20px; background: var(--ayrovi-bg-surface); border: 1px solid var(--ayrovi-border-soft); border-inline-start: 3px solid var(--ayrovi-color-brand-accent); color: var(--ayrovi-text-primary); }
 @media (min-width: 768px) { .lens2__banner { flex-direction: row; align-items: center; justify-content: space-between; } }
 .lens2__banner-text { display: flex; gap: 12px; }
 .lens2__banner-text svg { flex-shrink: 0; margin-top: 2px; }
 .lens2__banner-text strong { display: block; font-size: 15.5px; font-weight: 800; color: var(--ayrovi-text-primary); }
 .lens2__banner-text p { margin: 5px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--ayrovi-text-secondary); }
-/* Un seul bouton orange plein par écran : le CTA de la bannière est rétrogradé en
+/* Un seul bouton violet plein par écran : le CTA de la bannière est rétrogradé en
    secondaire (fond blanc, filet fin, encre noire) au profit du CTA principal. */
 .lens2__banner-cta { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--ayrovi-border-soft); border-radius: 999px; background: var(--ayrovi-bg-main); color: var(--ayrovi-text-primary); font-size: 14px; font-weight: 800; padding: 12px 22px; cursor: pointer; flex-shrink: 0; }
 .lens2__banner-cta:hover { border-color: var(--ayrovi-text-primary); }
@@ -914,12 +914,12 @@
 .lens-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; list-style: none; margin: 4px 0 0; padding: 14px 10px; border-radius: 18px; border: 1px solid color-mix(in srgb, currentColor 10%, transparent); background: color-mix(in srgb, currentColor 4%, transparent); }
 .lens-step { position: relative; display: flex; flex-direction: column; align-items: center; gap: 7px; text-align: center; }
 .lens-step:not(:first-child)::before { content: ''; position: absolute; top: 11px; right: calc(50% + 14px); left: calc(-50% + 14px); height: 1.5px; background: color-mix(in srgb, currentColor 18%, transparent); }
-/* Tracker d'étapes — norme figée : trait ET point de l'étape active en orange,
-   étapes futures en gris pâle. Aucun autre orange dans le rail. */
-.lens-step.is-done:not(:first-child)::before, .lens-step.is-active:not(:first-child)::before { background: var(--ayrovi-color-brand-orange); }
+/* Tracker d'étapes — norme figée : trait ET point de l'étape active en violet,
+   étapes futures en gris pâle. Aucun autre violet dans le rail. */
+.lens-step.is-done:not(:first-child)::before, .lens-step.is-active:not(:first-child)::before { background: var(--ayrovi-color-brand-accent); }
 .lens-step__dot { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 999px; border: 2px solid color-mix(in srgb, currentColor 25%, transparent); color: var(--ayrovi-bg-main); z-index: 1; }
-.lens-step.is-active .lens-step__dot { border-color: var(--ayrovi-color-brand-orange); background: var(--ayrovi-color-brand-orange); box-shadow: 0 0 0 4px color-mix(in srgb, var(--ayrovi-color-brand-orange) 18%, transparent); }
-.lens-step.is-done .lens-step__dot { border-color: var(--ayrovi-color-brand-orange); background: var(--ayrovi-color-brand-orange); }
+.lens-step.is-active .lens-step__dot { border-color: var(--ayrovi-color-brand-accent); background: var(--ayrovi-color-brand-accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--ayrovi-color-brand-accent) 18%, transparent); }
+.lens-step.is-done .lens-step__dot { border-color: var(--ayrovi-color-brand-accent); background: var(--ayrovi-color-brand-accent); }
 .lens-step__label { font-size: 10px; font-weight: 700; color: color-mix(in srgb, currentColor 66%, transparent); }
 .lens-step.is-active .lens-step__label, .lens-step.is-done .lens-step__label { color: var(--ayrovi-text-primary); }
 
@@ -939,7 +939,7 @@
    Surtitre → grand titre → paragraphe → média large → lien d'action.
    Respiration verticale large entre les sections, conformément à la demande
    « toujours garder un espace confortable pour l'œil entre les sections ».
-   Monochrome : blanc / gris / encre. Seule la flèche du lien porte l'orange.
+   Monochrome : blanc / gris / encre. Seule la flèche du lien porte le violet.
    ============================================================ */
 .lens-feature {
   /* Espace AVANT et APRÈS la section — c'est la respiration entre blocs. */
@@ -1012,7 +1012,7 @@
 }
 
 /* Lien d'action éditorial (style Zalando) : pas de bouton plein, juste un
-   libellé souligné et une flèche. La flèche est l'unique point orangé. */
+   libellé souligné et une flèche. La flèche est l'unique point violet. */
 .lens-feature__cta {
   margin-top: clamp(22px, 5vw, 34px);
   display: inline-flex;
@@ -1028,7 +1028,7 @@
   color: var(--ayrovi-text-primary);
 }
 
-.lens-feature__cta svg { color: var(--ayrovi-color-brand-orange); transition: transform 0.18s ease; }
+.lens-feature__cta svg { color: currentColor; transition: transform 0.18s ease; }
 .lens-feature__cta:hover svg { transform: translateX(3px); }
 .lens-feature__cta:focus-visible { outline: 2px solid var(--ayrovi-text-primary); outline-offset: 4px; }
 
@@ -1048,7 +1048,7 @@
    horizontal : une carte de ~78 % de la largeur de l'écran, la suivante dépasse
    du bord droit pour inviter au défilement. Le texte est posé EN BAS de l'image.
    Respiration verticale large, identique au bloc LENS, entre les sections.
-   Monochrome : seule la flèche du lien porte l'orange.
+   Monochrome : seule la flèche du lien porte le violet (éclairci sur fond sombre).
    ============================================================ */
 /* ─────────────────────────────────────────────────────────────────────────────
    STORIES — LE BLOC COMPLET, RELEVÉ AU PIXEL SUR LE MODÈLE FOURNI
@@ -1116,7 +1116,7 @@
   color: var(--ayrovi-bg-main);
 }
 
-.stories-showcase__cta > svg { color: var(--ayrovi-color-brand-orange); transition: transform 0.18s ease; }
+.stories-showcase__cta > svg { color: currentColor; transition: transform 0.18s ease; }
 .stories-showcase__cta:hover > svg { transform: translateX(3px); }
 .stories-showcase__cta:focus-visible { outline: 2px solid var(--ayrovi-bg-main); outline-offset: 4px; }
 

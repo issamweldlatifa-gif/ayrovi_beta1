@@ -2,7 +2,8 @@
    CustomerIdentity (notably the admin). Customer-facing v3.1 values are authored
    in editorial/identity.json and injected by customerTheme.ts. The legacy aliases
    below must not override that customer-scoped identity.
-   Charte legacy : « Monochrome Premium × Orange d'action ».
+   Charte : palette officielle du 2026-10-15 — noir #0A0A0A, blanc #FFFFFF, violet électrique
+   #571EF6, gris clair #F2F2F2 (« Monochrome Premium × Violet d'action »).
 
    1. UNE SEULE ÉCHELLE NEUTRE (P0 de P4/T2, exécuté) :
       #FFFFFF canvas · #F8F9FA surface · #EAEAEA filet · #111111 encre ·
@@ -10,12 +11,19 @@
       élément doux sur sombre. Toute l'échelle slate héritée
       (#111318/#1d2130/#6b7280/#f8f9fe/#e2e8f0/#5b6472/#050505) est absorbée ;
       les anciens noms survivent UNIQUEMENT comme alias sans valeur propre.
-   2. L'ORANGE (#FF6900, couleur du logo) n'est jamais décoratif : c'est le
-      déclencheur d'action UNIQUE — CTA principal, étape active, point actif,
-      filet d'identité 3px. Texte sur orange : #111111 (6.54:1, WCAG AAA).
-      Budget vitrine : ≤ 3 % (verify/zalando-audit.mjs).
-      Exception v1.1 demandée pour l'auth mobile : en-tête orange de marque,
-      contrôles pill et sheet 32px, strictement limités à .ay-auth.
+   2. Le VIOLET ÉLECTRIQUE (#571EF6, point du logo) n'est jamais décoratif : il est
+      réservé à l'action principale (ajout au panier, caisse, paiement, connexion),
+      aux liens importants, à l'onglet / l'élément de navigation actif, au contour
+      d'une option choisie et au focus. Texte sur violet : #FFFFFF (7,19:1, AAA).
+      Le VIOLET CLAIR (#C5B2F4) est secondaire : fond d'une option choisie ou d'un
+      état actif, toujours avec un texte #0A0A0A (10,4:1) et jamais seul pour
+      signaler l'état. Jamais de grande surface violette.
+      Repère global (v4.2.0) : ≈ 3 % de l'application (2 % violet + 1 % violet
+      clair) — un repère d'ensemble, pas un quota par écran (identity.json →
+      accentShare). Plafond de sécurité par écran : identity.json → accentAreaLimit.
+      L'orange des chartes précédentes (#FF6900, #FF7900) est retiré partout ;
+      les réglages CMS qui le portent encore sont relus en violet
+      (shared/identityPolicy.ts).
    3. Le NOIR (#0A0A0A) est l'encre premium des SURFACES : hero, announcement
       bar, coquille Lens, rails. Jamais une dixième nuance de noir.
    4. États : vert (#15803D) succès, rouge (#DC2626) erreur, neutre sinon.
@@ -37,6 +45,8 @@
   --color-cta-ink: var(--ayrovi-cta-ink);
   --color-accent: var(--ayrovi-accent);
   --color-accent-deep: var(--ayrovi-accent-deep);
+  --color-accent-soft: var(--ayrovi-accent-soft);
+  --color-on-accent-soft: var(--ayrovi-on-accent-soft);
   --color-success: var(--ayrovi-success);
   --color-success-soft: var(--ayrovi-success-soft);
   --color-info: var(--ayrovi-info);
@@ -132,24 +142,27 @@ html[data-theme='dark'] {
 
     /* — les six jetons canoniques de la charte (verrouillés par tests/design-zalando.test.ts) — */
     --ayrovi-bg-main: #ffffff;              /* Canvas — fond pur de toutes les pages */
-    --ayrovi-bg-surface: #f8f9fa;           /* Cartes, listes, écrans de comparaison */
-    --ayrovi-border-soft: #eaeaea;          /* Filets 1px, séparateurs fins */
-    --ayrovi-text-primary: #000000;         /* Encre : titres, marques, prix, texte */
+    --ayrovi-bg-surface: #f2f2f2;           /* Gris clair officiel : cartes, listes, squelettes */
+    --ayrovi-border-soft: #e5e5e5;          /* Filets 1px, séparateurs fins */
+    --ayrovi-text-primary: #0a0a0a;         /* Noir officiel : titres, marques, prix, texte */
     --ayrovi-text-secondary: #666666;       /* Encre secondaire : légendes, méta */
-    --ayrovi-color-brand-orange: #ff6900;   /* Orange de marque (logo) — déclencheur d'action UNIQUE */
+    --ayrovi-color-brand-accent: #571ef6;   /* Violet électrique officiel (point du logo) — déclencheur d'action UNIQUE */
+    --ayrovi-color-brand-accent-soft: #c5b2f4; /* Violet clair (secondaire) : fond d'une option choisie, jamais une grande surface */
 
     /* — surfaces sombres premium : la SEULE famille de noir — */
-    --ayrovi-ink-deep: #000000;             /* Hero, announcement, coquille Lens, rails */
+    --ayrovi-ink-deep: #0a0a0a;             /* Hero, announcement, coquille Lens, rails */
     --ayrovi-ink-soft: #3f3f46;             /* Éléments doux sur sombre (liseré, icône au repos) */
 
     /* — chaîne accent : une seule source de vérité, dérivations incluses — */
-    --ayrovi-cta: var(--ayrovi-color-brand-orange);
-    --ayrovi-orange: var(--ayrovi-color-brand-orange);
-    --ayrovi-accent: var(--ayrovi-color-brand-orange);
-    --ayrovi-accent-soft: var(--ayrovi-bg-surface);
-    --ayrovi-cta-ink: var(--ayrovi-text-primary);      /* texte SUR orange : 6.54:1, AAA */
-    --ayrovi-cta-hover: color-mix(in srgb, var(--ayrovi-color-brand-orange) 87%, var(--ayrovi-text-primary));
-    --ayrovi-cta-active: color-mix(in srgb, var(--ayrovi-color-brand-orange) 72%, var(--ayrovi-text-primary));
+    --ayrovi-cta: var(--ayrovi-color-brand-accent);
+    --ayrovi-accent: var(--ayrovi-color-brand-accent);
+    --ayrovi-accent-soft: var(--ayrovi-color-brand-accent-soft);
+    --ayrovi-on-accent-soft: #0a0a0a;                  /* texte SUR violet clair : 10,4:1 ; le blanc y est interdit (1,9:1) */
+    --ayrovi-on-accent: #ffffff;                       /* texte SUR violet : 7,19:1, AAA */
+    --ayrovi-accent-on-dark: #926df9;                  /* violet SUR noir (panneaux sombres) : 5,45:1 */
+    --ayrovi-cta-ink: var(--ayrovi-on-accent);
+    --ayrovi-cta-hover: color-mix(in srgb, var(--ayrovi-color-brand-accent) 87%, var(--ayrovi-text-primary));
+    --ayrovi-cta-active: color-mix(in srgb, var(--ayrovi-color-brand-accent) 72%, var(--ayrovi-text-primary));
     --ayrovi-cta-dark: var(--ayrovi-cta-hover);        /* alias compat (hover) */
     --ayrovi-accent-dark: var(--ayrovi-cta-hover);     /* alias compat */
     --ayrovi-accent-deep: var(--ayrovi-cta-active);    /* alias compat (pressé) */
@@ -157,8 +170,8 @@ html[data-theme='dark'] {
     /* — états : succès / erreur uniquement ; le kهرماني est retiré (0 usage UI) — */
     --ayrovi-success: #15803d;
     --ayrovi-success-soft: #e6f5ec;
-    --ayrovi-info: var(--ay-e-info, #595959);
-    --ayrovi-info-soft: var(--ay-e-info-soft, #f5f5f5);
+    --ayrovi-info: var(--ay-e-info, #666666);
+    --ayrovi-info-soft: var(--ay-e-info-soft, #f2f2f2);
     --ayrovi-danger: #dc2626;
     --ayrovi-danger-soft: #fdecec;
 
@@ -182,7 +195,7 @@ html[data-theme='dark'] {
     --ayrovi-gradient: linear-gradient(135deg, var(--ayrovi-ink-deep) 0%, var(--ayrovi-text-primary) 100%);
 
     /* — focus ring (remplace l'alias mensonger --ayrovi-purple) — */
-    --ayrovi-focus-ring: var(--ayrovi-text-primary);
+    --ayrovi-focus-ring: var(--ayrovi-color-brand-accent);
     --ayrovi-focus-ring-inverse: var(--ayrovi-white);
 
     --font-primary: var(--ay-font-stack);
@@ -317,7 +330,7 @@ html[data-theme='dark'] {
      ───────────────────────────────────────────────────────────────────────── */
   --admin-ink-strong:var(--admin-ink); /* c'est un noir, pas un violet */
   --admin-ink-black:var(--admin-ink); /* noir profond du rail et des dégradés */
-  --admin-warm-accent:#ffb070; /* pêche : « yellow » induisait en erreur */
+  --admin-warm-accent:var(--ayrovi-accent-on-dark); /* violet clair (accent officiel éclairci, 5,45:1 sur le noir) : marqueurs actifs du rail sombre et des cartes ; remplace la pêche orangée */
   --admin-ink-muted:#595959; /* encre atténuée, pas une couleur « muette » */
   --admin-surface-page:var(--admin-surface-card); /* surface de page */
   --admin-surface-card:var(--ayrovi-white); /* surface de carte */
@@ -368,7 +381,18 @@ html[data-theme='dark'] {
   --admin-danger-strong:#c9362b; /* danger soutenu (bandeaux, badges) */
   --admin-danger-text:#b42318; /* texte en erreur */
   --admin-danger-ink:#b6251c; /* erreur profonde (barre latérale) */
-  --admin-violet:#673de6; /* accent produit (Lens, IA) */
+  --admin-violet:var(--ayrovi-color-brand-accent); /* accent produit (Lens, IA) = violet officiel */
+  /* — accent officiel dans la console : teintes du violet (sélection, focus, décor) — dérivées
+       d'UNE source par color-mix ; elles remplacent les teintes orangées rgba(254,112,3,…). Les états
+       « alerte » et « erreur » gardent leurs tons chauds : ce sont des significations, pas la marque. */
+  --admin-accent-tint-06:color-mix(in srgb, var(--ayrovi-color-brand-accent) 6%, transparent);
+  --admin-accent-tint-08:color-mix(in srgb, var(--ayrovi-color-brand-accent) 8%, transparent);
+  --admin-accent-tint-12:color-mix(in srgb, var(--ayrovi-color-brand-accent) 12%, transparent);
+  --admin-accent-tint-14:color-mix(in srgb, var(--ayrovi-color-brand-accent) 14%, transparent);
+  --admin-accent-tint-16:color-mix(in srgb, var(--ayrovi-color-brand-accent) 16%, transparent);
+  --admin-accent-tint-24:color-mix(in srgb, var(--ayrovi-color-brand-accent) 24%, transparent);
+  --admin-accent-tint-32:color-mix(in srgb, var(--ayrovi-color-brand-accent) 32%, transparent);
+  --admin-accent-tint-35:color-mix(in srgb, var(--ayrovi-color-brand-accent) 35%, transparent);
   --admin-text: var(--admin-ink); /* P3/T2c — `arrival-ingestion.css:244` appelait ce nom sans qu'il existe ; alias, valeur = encre du thème */
   --admin-danger: var(--ayrovi-danger); /* P3/T2 — AdminApp.tsx appelait cette variable sans qu'elle existe ; alias, aucune valeur nouvelle */
 
@@ -509,7 +533,6 @@ html[data-theme='dark'] {
   --admin-tone-fff5d9:#fff5d9;
   --admin-tone-fff7ed:#fff7ed;
   --admin-tone-fff8d8:#fff8d8;
-  --admin-tone-fffaf5:#fffaf5;
   --admin-tone-fffbeb:#fffbeb;
   --admin-tone-rgba-0-0-0-08:rgba(0,0,0,.08);
   --admin-tone-rgba-0-0-0-25:rgba(0,0,0,.25);
@@ -528,14 +551,8 @@ html[data-theme='dark'] {
   --admin-tone-rgba-18-15-24-65:rgba(18,15,24,.65);
   --admin-tone-rgba-20-18-24-85:rgba(20,18,24,.85);
   --admin-tone-rgba-247-201-72-22:rgba(247,201,72,.22);
-  --admin-tone-rgba-254-112-3-06:rgba(254,112,3,.06);
-  --admin-tone-rgba-254-112-3-08:rgba(254,112,3,.08);
   --admin-tone-rgba-254-112-3-12:rgba(254,112,3,.12);
-  --admin-tone-rgba-254-112-3-14:rgba(254,112,3,.14);
-  --admin-tone-rgba-254-112-3-16:rgba(254,112,3,.16);
   --admin-tone-rgba-254-112-3-2:rgba(254,112,3,.2);
-  --admin-tone-rgba-254-112-3-24:rgba(254,112,3,.24);
-  --admin-tone-rgba-254-112-3-35:rgba(254,112,3,.35);
   --admin-tone-rgba-255-255-255-025:rgba(255,255,255,.025);
   --admin-tone-rgba-255-255-255-05:rgba(255,255,255,.05);
   --admin-tone-rgba-255-255-255-055:rgba(255,255,255,.055);
@@ -575,7 +592,6 @@ html[data-theme='dark'] {
   --admin-tone-eff6ff:#eff6ff;
   --admin-tone-f0fdf4:#f0fdf4;
   --admin-tone-f1f1f3:#f1f1f3;
-  --admin-tone-fb923c:#fb923c;
   --admin-tone-fdba74:#fdba74;
   --admin-tone-fecaca:#fecaca;
   --admin-tone-fff1f2:#fff1f2;
@@ -586,7 +602,6 @@ html[data-theme='dark'] {
   --admin-tone-rgba-20-18-28-1:rgba(20,18,28,.1);
   --admin-tone-rgba-239-68-68-12:rgba(239,68,68,.12);
   --admin-tone-rgba-239-68-68-4:rgba(239,68,68,.4);
-  --admin-tone-rgba-254-112-3-32:rgba(254,112,3,.32);
   --admin-tone-rgba-255-255-255-18:rgba(255,255,255,.18);
   --admin-tone-rgba-34-197-94-12:rgba(34,197,94,.12);
   --admin-tone-rgba-34-197-94-14:rgba(34,197,94,.14);

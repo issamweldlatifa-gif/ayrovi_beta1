@@ -3,6 +3,8 @@
 **Charte historique : « Monochrome Premium × Orange d'action »**
 Date : 2026-09-18 · Statut : compatibilité héritée hors du scope client courant.
 
+> **Mise à jour 2026-10-15 (identité v4.2.0)** : l'orange de cette charte historique est retiré. Palette officielle : noir `#0A0A0A`, blanc `#FFFFFF`, gris clair `#F2F2F2`, violet électrique `#571EF6` et violet clair `#C5B2F4`. Le violet est réduit au minimum : repère global ≈ 3 % de l'application (2 % + 1 % clair, contre 10 % auparavant), réservé à l'action principale (ajout au panier, caisse, paiement, connexion), aux liens importants, à l'onglet / la navigation actifs, au contour d'une option choisie et au focus. Référence courante : `docs/CUSTOMER_DESIGN_SYSTEM.md` + `client/src/design/editorial/identity.json` (`accentShare`). Les sections « orange » ci-dessous sont conservées comme historique.
+>
 > Mise à jour 2026-09-27 : pour toutes les interfaces client (boutique, Lens, panier, paiement, compte, connexion et récupération), la référence courante est `docs/CUSTOMER_DESIGN_SYSTEM.md` et sa source générée `client/src/design/editorial/identity.json` (v3.1). Elle remplace les choix orange-CTA/rayon-zéro de cette documentation dans le scope client. L’admin reste sur les tokens de compatibilité décrits ici.
 Documents liés : `docs/DESIGN_AUDIT_2026-09-18.md` (audit) · `tests/design-zalando.test.ts` + `tests/design-tokens.test.ts` (verrous) · `verify/zalando-audit.mjs` (audit pixel).
 

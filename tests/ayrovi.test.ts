@@ -1166,8 +1166,10 @@ describe('AYSONIC platform', () => {
     expect(row).toBeTruthy();
     expect(row.setting_value.sections.map((section: any) => section.id)).toEqual(['hero', 'cms', 'brands', 'about', 'footer', 'announcement']);
     expect(row.setting_value.typography.preset).toBe('ayrovi-a');
-    expect(row.setting_value.colors).toMatchObject({ pageBackground: '#ffffff', primary: '#000000', heroBackground: '#0a0a0a', announcementBackground: '#0a0a0a', accent: '#ff6900' }); // DS v1.0
-    expect(row.setting_value.icons).toMatchObject({ library: 'ayrovi', activeColor: '#ff6900' });
+    // Palette officielle (2026-10-15) : la graine garde l'ancien orange en base, la lecture le rend en violet.
+    expect(row.setting_value.colors).toMatchObject({ pageBackground: '#ffffff', primary: '#0a0a0a', heroBackground: '#0a0a0a', announcementBackground: '#0a0a0a', accent: '#571ef6' }); // DS v1.0
+    expect(row.setting_value.icons).toMatchObject({ library: 'ayrovi', activeColor: '#571ef6' });
+    expect(row.setting_value.sections.find((section: any) => section.id === 'announcement').backgroundColor).toBe('#0a0a0a');
     expect(row.setting_value.navigation.color).toBe('#111111'); // DS v1.0
 
     const malformed = await superAdmin.put(`/api/admin/settings/${row.id}`).set('x-csrf-token', adminCsrf).send({

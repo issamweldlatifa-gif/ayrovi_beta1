@@ -16,7 +16,10 @@ describe('customer identity integration, not a reference-only kit', () => {
     config.colors.accent='#0000ff';config.layout.maxWidth=1100;config.navigation.aiLabel='Mon SONIM';
     const before=JSON.stringify(config);
     const style=customerTheme('ar',config) as Record<string,string>;
-    expect(style['--ayrovi-color-brand-orange']).toBe(identity.colors.accent);
+    expect(style['--ayrovi-color-brand-accent']).toBe(identity.colors.accent);
+    expect(style['--ayrovi-on-accent']).toBe(identity.colors.onAccent);
+    expect(style['--ayrovi-accent-on-dark']).toBe(identity.darkColors.accentText);
+    expect(style['--ayrovi-color-brand-orange']).toBeUndefined();
     expect(style['--ayrovi-cta']).toBe(identity.colors.action);
     expect(style['--ayrovi-cta-ink']).toBe(identity.colors.onAction);
     expect(style['--ayrovi-radius-cta']).toBe('999px');

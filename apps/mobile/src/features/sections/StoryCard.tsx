@@ -48,10 +48,11 @@ export function StoryCard({ story, onOpen, viewed = false }: StoryCardProps) {
       style={[
         styles.card,
         { borderRadius: theme.radius.card },
-        // الإطار يقول الحالة: جديد ⇒ بنفسجي؛ مُشاهَد ⇒ باهت.
+        // الإطار يقول الحالة: جديد ⇒ أسود عريض؛ مُشاهَد ⇒ باهت رفيع (v4.2.0 :
+        // ما فماش إطار بنفسجي حول الصورة، والحالة تبقى واضحة بالسُمك واللون).
         viewed
           ? { borderColor: theme.colors.line, borderWidth: 1 }
-          : { borderColor: theme.colors.accent, borderWidth: 2 },
+          : { borderColor: theme.colors.ink, borderWidth: 2 },
       ]}
     >
       <View style={[styles.frame, { backgroundColor: theme.colors.surface }]}>
@@ -67,8 +68,8 @@ export function StoryCard({ story, onOpen, viewed = false }: StoryCardProps) {
           <AppText variant="caption" weight="bold" numberOfLines={2}>{story.title}</AppText>
         ) : null}
         {story.cta ? (
-          <View style={[styles.cta, { backgroundColor: theme.colors.accent, borderRadius: theme.radius.cta }]}>
-            <AppText variant="caption" weight="bold" color={theme.colors.onAccent} numberOfLines={1}>{story.cta}</AppText>
+          <View style={[styles.cta, { backgroundColor: theme.colors.ink, borderRadius: theme.radius.cta }]}>
+            <AppText variant="caption" weight="bold" color={theme.colors.canvas} numberOfLines={1}>{story.cta}</AppText>
           </View>
         ) : null}
       </View>

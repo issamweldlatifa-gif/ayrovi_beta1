@@ -99,14 +99,16 @@ const PRICE_DROP_RED = '#CF1322';
  * thème. Tout vient de `BRAND`/`NEUTRALS`, sauf le rouge de prix soldé.
  *
  *   • rouge  = baisse de prix (fonctionnel)
- *   • violet = élément ACTIF : favori coché, mode caméra choisi
+ *   • violet = élément ACTIF : favori coché ; violet clair = mode caméra choisi
  *   • noir   = texte, icônes, étoiles de note (plus de jaune orangé)
  *   • gris   = squelette, fond média, texte secondaire, filets
  */
 export const LENS_COLORS = {
   sale: PRICE_DROP_RED,
-  /** Élément actif d'une surface Lens blanche (favori, mode caméra). */
+  /** Élément actif d'une surface Lens blanche (favori coché). */
   active: BRAND.violet,
+  /** Fond d'un choix actif (mode caméra choisi) : violet clair, libellé noir (10,4:1). */
+  activeSoft: BRAND.violetLight,
   star: BRAND.black,
   /** Squelette : le gris clair officiel (§ « Skeleton Loading » de l'identité). */
   skeleton: BRAND.lightGray,

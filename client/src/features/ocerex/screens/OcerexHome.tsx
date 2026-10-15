@@ -75,11 +75,11 @@ export const OcerexHome: React.FC<{ busy: boolean; onFile: (file: File, capture:
   const modeTabs = (
     <div className="mt-6 grid grid-cols-2 rounded-full border border-line bg-white p-1" role="group" aria-label={tr('Mode de capture', 'طريقة الالتقاط')}>
       <button type="button" aria-pressed={mode === 'camera'} onClick={() => setMode('camera')}
-        className={`min-h-11 rounded-full px-3 text-sm font-bold transition ${mode === 'camera' ? 'bg-ink text-white' : 'text-ink'}`}>
+        className={`min-h-11 rounded-full px-3 text-sm font-bold transition ${mode === 'camera' ? 'bg-accent-soft text-on-accent-soft ring-1 ring-inset ring-cta' : 'text-ink'}`}>
         {tr('Prendre une photo', 'التقاط صورة')}
       </button>
       <button type="button" aria-pressed={mode === 'upload'} onClick={() => setMode('upload')}
-        className={`min-h-11 rounded-full px-3 text-sm font-bold transition ${mode === 'upload' ? 'bg-ink text-white' : 'text-ink'}`}>
+        className={`min-h-11 rounded-full px-3 text-sm font-bold transition ${mode === 'upload' ? 'bg-accent-soft text-on-accent-soft ring-1 ring-inset ring-cta' : 'text-ink'}`}>
         {tr('Importer une image', 'رفع صورة')}
       </button>
     </div>

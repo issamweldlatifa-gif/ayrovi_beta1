@@ -47,8 +47,12 @@ const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
 export default function SignInScreen() {
   const theme = useTheme();
   const { gutter } = useResponsive();
-  /** Liens « Conditions » et « Confidentialité » : le violet lisible du mode (lien important). */
-  const legalLink = theme.colors.accentText;
+  /**
+   * Liens « Conditions » et « Confidentialité » : encre + soulignement (v4.2.0).
+   * Ils voisinent l'action principale violette : un second violet juste à côté
+   * diluerait le signal. Le soulignement garde l'affordance de lien.
+   */
+  const legalLink = theme.colors.ink;
   const { t, locale } = useI18n();
   const insets = useSafeAreaInsets();
   const session = useSession();
@@ -425,6 +429,7 @@ export default function SignInScreen() {
             />
             <Button
               label={t('auth.continue')}
+              tone="main"
               onPress={sendEmailCode}
               busy={busy && waiting === null}
               disabled={busy || !emailReady || config?.emailCode === false}
@@ -454,7 +459,7 @@ export default function SignInScreen() {
               maxLength={6}
               editable={!busy}
             />
-            <Button label={t('auth.continue')} onPress={confirmEmailCode} busy={busy && waiting === null} disabled={busy} testID="auth-email-code-verify" />
+            <Button label={t('auth.continue')} tone="main" onPress={confirmEmailCode} busy={busy && waiting === null} disabled={busy} testID="auth-email-code-verify" />
             <Button label={t('auth.emailCode.resend')} onPress={sendEmailCode} tone="quiet" disabled={busy} />
             <Button label={t('auth.emailCode.change')} onPress={session.cancelEmailCode} tone="quiet" disabled={busy} />
             {otherWays}
@@ -485,6 +490,7 @@ export default function SignInScreen() {
                 />
                 <Button
                   label={t('auth.continue')}
+                  tone="main"
                   onPress={sendCode}
                   busy={busy && waiting === null}
                   disabled={busy || config?.phoneOtp === false}
@@ -510,7 +516,7 @@ export default function SignInScreen() {
                   maxLength={6}
                   editable={!busy}
                 />
-                <Button label={t('auth.phone.verify')} onPress={confirmCode} busy={busy && waiting === null} disabled={busy} testID="auth-verify-code" />
+                <Button label={t('auth.phone.verify')} tone="main" onPress={confirmCode} busy={busy && waiting === null} disabled={busy} testID="auth-verify-code" />
                 <Button label={t('auth.phone.resend')} onPress={sendCode} tone="quiet" disabled={busy} />
                 <Button label={t('auth.phone.change')} onPress={session.cancelPhoneCode} tone="quiet" disabled={busy} />
               </>
@@ -541,7 +547,7 @@ export default function SignInScreen() {
               secureTextEntry
               editable={!busy}
             />
-            <Button label={t('auth.email.submit')} onPress={emailSignIn} busy={busy && waiting === null} disabled={busy} testID="auth-email-submit" />
+            <Button label={t('auth.email.submit')} tone="main" onPress={emailSignIn} busy={busy && waiting === null} disabled={busy} testID="auth-email-submit" />
             {/* Le lien reste visible même quand la récupération est fermée :
                 l'écran suivant explique POURQUOI au lieu de laisser un vide. */}
             <Pressable
@@ -601,7 +607,7 @@ export default function SignInScreen() {
               />
               <AppText variant="caption" style={styles.checkboxLabel}>{t('auth.marketing')}</AppText>
             </Pressable>
-            <Button label={t('auth.register.submit')} onPress={register} busy={busy && waiting === null} disabled={busy} testID="auth-register-submit" />
+            <Button label={t('auth.register.submit')} tone="main" onPress={register} busy={busy && waiting === null} disabled={busy} testID="auth-register-submit" />
             <AppText variant="caption" color={theme.colors.muted}>{t('auth.legal')}</AppText>
             <Button label={t('auth.emailCode.useCode')} tone="quiet" onPress={() => changeMode('start')} disabled={busy} />
           </Card>

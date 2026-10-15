@@ -1,6 +1,6 @@
 // QUIET CARD v2 (décision client 2026-09-23, référence Zalando) :
 //  • le prix remisé est ROUGE (var(--ayrovi-promo)) et l'original reste barré gris ;
-//  • le badge −X% est rouge — l'orange reste réservé aux CTA ;
+//  • le badge −X% est rouge — le violet reste réservé aux CTA ;
 //  • toute image produit vit dans le cadre studio unifié (blanc + hairline +
 //    mix-blend-mode: multiply) — plus de fond marchand brut, plus de crop cover.
 import React from 'react';

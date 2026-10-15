@@ -20,14 +20,14 @@ const AdminApp = lazy(() => import('./admin/AdminApp').then((module) => ({ defau
 
 /**
  * Écran d'amorçage AYROVI — même dessin que le chargeur statique de index.html :
- * l'emblème pulse et une ligne orange balaie pendant que les modules se chargent.
+ * l'emblème pulse et une ligne violette balaie pendant que les modules se chargent.
  * React remplace le contenu statique de #root au premier rendu ; ce fallback prend
  * le relais sans page blanche ni saut visuel (les styles vivent dans index.html).
  */
 const loading = (
   <div className="ay-boot" role="status" aria-live="polite" aria-label="AYROVI">
     <div className="ay-boot-box">
-      <img className="ay-boot-mark" src="/media/logo-ayrovi-mark.svg" alt="" />
+      <img className="ay-boot-mark" src="/media/logo-ayrovi-mark.svg?v=4.1" alt="" />
       <span className="ay-boot-line" aria-hidden="true" />
     </div>
   </div>

@@ -4,7 +4,7 @@ import { twMerge } from 'tailwind-merge';
 
 /**
  * AYROVI DS v1.0 — Badge.
- * Règle de la charte : un badge est JAMAIS une pastille orange pleine.
+ * Règle de la charte : un badge est JAMAIS une pastille violette pleine.
  * Fond blanc/gris, filet fin, encre noire ou secondaire.
  * Variantes `onDark` pour les surfaces sombres (Lens, hero).
  */

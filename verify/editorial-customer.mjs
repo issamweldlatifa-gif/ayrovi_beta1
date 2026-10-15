@@ -2,11 +2,12 @@ import { chromium } from 'playwright';
 import sharp from 'sharp';
 import fs from 'node:fs';
 import { inspectEditorialIcons } from './editorial-icon-contract.mjs';
+const identity=JSON.parse(fs.readFileSync('client/src/design/editorial/identity.json','utf8'));
 const base=process.env.AYROVI_BASE_URL || 'http://127.0.0.1:3000';
 const output='screenshots/editorial/customer';fs.mkdirSync(output,{recursive:true});
 const checks=[], errors=[], failures=[], orange=[];
 function check(label,pass,details){checks.push({label,pass:Boolean(pass),...(details===undefined?{}:{details})});if(!pass)failures.push(label+': '+JSON.stringify(details??null));}
-async function orangeRatio(buffer){const {data,info}=await sharp(buffer).removeAlpha().raw().toBuffer({resolveWithObject:true});let count=0;for(let i=0;i<data.length;i+=info.channels){const r=data[i]/255,g=data[i+1]/255,b=data[i+2]/255,max=Math.max(r,g,b),min=Math.min(r,g,b),delta=max-min;if(!delta||max<.4||delta/max<.55)continue;let hue=max===r?((g-b)/delta)%6:max===g?(b-r)/delta+2:(r-g)/delta+4;hue=(hue*60+360)%360;if(hue>=14&&hue<=45)count++;}return count/(info.width*info.height);}
+async function orangeRatio(buffer,lo=14,hi=45){const {data,info}=await sharp(buffer).removeAlpha().raw().toBuffer({resolveWithObject:true});let count=0;for(let i=0;i<data.length;i+=info.channels){const r=data[i]/255,g=data[i+1]/255,b=data[i+2]/255,max=Math.max(r,g,b),min=Math.min(r,g,b),delta=max-min;if(!delta||max<.4||delta/max<.55)continue;let hue=max===r?((g-b)/delta)%6:max===g?(b-r)/delta+2:(r-g)/delta+4;hue=(hue*60+360)%360;if(hue>=lo&&hue<=hi)count++;}return count/(info.width*info.height);}
 const browser=await chromium.launch({headless:true});
 try{
  for(const locale of ['fr','ar']){
@@ -19,9 +20,10 @@ try{
    const inspect=async(name,selector)=>{
     const el=p.locator(selector).first();await el.waitFor();await p.evaluate(()=>document.fonts.ready);
     const size=await el.evaluate(e=>({client:e.clientWidth,scroll:e.scrollWidth}));check(`${locale}/${width}/${name}: no horizontal overflow`,size.scroll<=size.client+1,size);
-    const image=await p.screenshot();const ratio=await orangeRatio(image);orange.push({locale,width,screen:name,ratio,exclusions:[]});
+    const image=await p.screenshot();const ratio=await orangeRatio(image);const violet=await orangeRatio(image,245,275);orange.push({locale,width,screen:name,ratio,violet,exclusions:[]});
     // Conservative: every pixel is counted, including photos. No blanket image masking.
     check(`${locale}/${width}/${name}: orange area <= 3% (no exclusions)`,ratio<=.03,ratio);
+    check(`${locale}/${width}/${name}: violet area <= ${identity.accentAreaLimit*100}% (no exclusions)`,violet<=identity.accentAreaLimit,violet);
     if(width===390||width===1360)fs.writeFileSync(`${output}/${name}-${locale}-${width}.png`,image);
    };
    await inspect('home','.ayrovi-app-shell');

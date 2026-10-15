@@ -92,11 +92,17 @@ describe('contraste — les valeurs de l\'identité tiennent les seuils', () => 
     }
   });
 
-  test('l\'accent ne porte pas de texte sur fond clair — le système a un token dédié pour cela', () => {
-    // `accent` est un aplat d'identité (2,63:1 sur blanc) : il ne doit jamais servir de couleur
-    // de texte sur clair. `accentText` existe exactement pour ce rôle et dépasse 4,5:1.
-    expect(contrast(plain(light.accent), '#FFFFFF')).toBeLessThan(3);
+  test('le violet porte du texte dans les deux sens ; sur fond sombre, sa version éclaircie', () => {
+    // L'ancien orange (2,63:1 sur blanc) ne pouvait pas porter de texte. Le violet électrique
+    // #571EF6 tient 7,19:1 : texte violet sur blanc ET texte blanc sur violet (boutons primaires).
+    expect(contrast(plain(light.accent), '#FFFFFF')).toBeGreaterThanOrEqual(4.5);
     expect(contrast(plain(light.accentText), '#FFFFFF')).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(plain(light.onAccent), plain(light.accent))).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(plain(dark.onAction), plain(dark.action))).toBeGreaterThanOrEqual(4.5);
+    // Le violet plein sur noir (2,9:1) n'est PAS du texte : le thème sombre a son violet clair.
+    expect(contrast(plain(dark.accent), plain(dark.canvas))).toBeLessThan(4.5);
+    expect(contrast(plain(dark.accentText), plain(dark.canvas))).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(plain(dark.focus), plain(dark.canvas))).toBeGreaterThanOrEqual(3);
   });
 });
 

@@ -71,7 +71,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {logoUrl && logoUrl !== '/media/logo-ayrovi.png' ? (
             <>
               <img
-                src={overHero ? '/media/logo-ayrovi-light.png' : logoUrl}
+                src={overHero ? '/media/logo-ayrovi-light.png?v=4.1' : logoUrl}
                 alt=""
                 className={`h-11 w-11 bg-transparent object-contain transition-opacity duration-300 sm:h-11 sm:w-11 ${overHero ? '' : 'brightness-0'}`}
               />
@@ -79,7 +79,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </>
           ) : (
             <img
-              src={overHero ? '/media/logo-ayrovi-lockup-white-orange.svg' : '/media/logo-ayrovi-lockup-black-orange.svg'}
+              src={overHero ? '/media/logo-ayrovi-lockup-white-violet.svg' : '/media/logo-ayrovi-lockup-black-violet.svg'}
               alt="AYROVI"
               className="h-7 w-auto bg-transparent object-contain transition-opacity duration-300 sm:h-8"
             />

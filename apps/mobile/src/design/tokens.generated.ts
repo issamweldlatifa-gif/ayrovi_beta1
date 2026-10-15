@@ -2,26 +2,26 @@
  * GÉNÉRÉ — ne pas modifier à la main.
  *
  * Couleurs   : apps/mobile/src/design/brand.json
- *              AYROVI App — Official Brand Colors · version 4.0.0
- *              sha256 : 2eaf8af52aebecb92b56099de979205ed215044cb8fc341b8ca7225f59bf666a
+ *              AYROVI App — Official Brand Colors · version 4.2.0
+ *              sha256 : 941037c948de56eacc53bccc41ac8b0ed204d3cab4d4b8e762a7b8a9a4de990f
  * Structure  : client/src/design/editorial/identity.json
- *              AYROVI A — Official Identity · version 3.1.0
- *              sha256 : 6ca37aa4aa9739c618d789cfa43da56d6a94c78a656f8222933da7e7e507324b
+ *              AYROVI A — Official Identity · version 4.2.0
+ *              sha256 : 0155e45b72fc82f1194c826c77d3652e4d3e97dde6996cdd62af31aa4b9edbba
  *
  * Régénérer : npm run tokens:build   ·   vérifier : npm run tokens:check
  */
 /** Provenance de ces jetons (couleurs de l’application + structure partagée avec le site). */
 export const IDENTITY = {
   name: "AYROVI App — Official Brand Colors",
-  sha256: "2eaf8af52aebecb92b56099de979205ed215044cb8fc341b8ca7225f59bf666a",
+  sha256: "941037c948de56eacc53bccc41ac8b0ed204d3cab4d4b8e762a7b8a9a4de990f",
   source: "apps/mobile/src/design/brand.json",
   structure: {
     name: "AYROVI A — Official Identity",
-    sha256: "6ca37aa4aa9739c618d789cfa43da56d6a94c78a656f8222933da7e7e507324b",
+    sha256: "0155e45b72fc82f1194c826c77d3652e4d3e97dde6996cdd62af31aa4b9edbba",
     source: "client/src/design/editorial/identity.json",
-    version: "3.1.0",
+    version: "4.2.0",
   },
-  version: "4.0.0",
+  version: "4.2.0",
 } as const;
 
 /** Les quatre couleurs officielles de la marque — la seule source des valeurs dérivées. */
@@ -29,6 +29,7 @@ export const BRAND = {
   black: "#0A0A0A",
   lightGray: "#F2F2F2",
   violet: "#571EF6",
+  violetLight: "#C5B2F4",
   white: "#FFFFFF",
 } as const;
 
@@ -36,14 +37,15 @@ export const BRAND = {
 export const BRAND_SHARE = {
   black: 0.35,
   lightGray: 0.05,
-  violet: 0.1,
+  violet: 0.02,
+  violetLight: 0.01,
   white: 0.5,
 } as const;
 
 /** Gris d’appui : bordure légère, texte secondaire, texte appuyé, contour de champ. */
 export const NEUTRALS = {
   border: "#E5E5E5",
-  controlBorder: "#8E8E8E",
+  controlBorder: "#888888",
   textSecondary: "#666666",
   textStrong: "#333333",
 } as const;
@@ -52,6 +54,7 @@ export const NEUTRALS = {
 export const COLORS = {
   dark: {
     accent: "#571EF6",
+    accentSoft: "#C5B2F4",
     accentText: "#926DF9",
     action: "#571EF6",
     actionHover: "#491ACC",
@@ -65,6 +68,7 @@ export const COLORS = {
     lineControl: "#6E6E6E",
     muted: "#BDBDBD",
     onAccent: "#FFFFFF",
+    onAccentSoft: "#0A0A0A",
     onAction: "#FFFFFF",
     secondary: "#E5E5E5",
     success: "#90D6AF",
@@ -72,6 +76,7 @@ export const COLORS = {
   },
   light: {
     accent: "#571EF6",
+    accentSoft: "#C5B2F4",
     accentText: "#571EF6",
     action: "#571EF6",
     actionHover: "#491ACC",
@@ -82,9 +87,10 @@ export const COLORS = {
     infoSoft: "#F2F2F2",
     ink: "#0A0A0A",
     line: "#E5E5E5",
-    lineControl: "#8E8E8E",
+    lineControl: "#888888",
     muted: "#666666",
     onAccent: "#FFFFFF",
+    onAccentSoft: "#0A0A0A",
     onAction: "#FFFFFF",
     secondary: "#333333",
     success: "#236044",

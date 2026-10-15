@@ -12,7 +12,7 @@ import { app } from '../src/server';
  *   2. le nombre de cartes est borné à 4 ou 5 (pas de valeur arbitraire) ;
  *   3. la destination du lien est validée (pas de javascript: ni d'origine ouverte) ;
  *   4. le Trust Bar a bien disparu du site ;
- *   5. charte : cartes de dimensions identiques, lien centré, orange limité à la flèche.
+ *   5. charte : cartes de dimensions identiques, lien centré, violet limité à la flèche.
  */
 
 const admin = request.agent(app);
@@ -168,7 +168,7 @@ describe('Stories showcase — settings come from the dashboard', () => {
     expect(indexCss).not.toMatch(/--stories-showcase-gap:/);
   });
 
-  test('Zalando charter: the whole block is a monochrome dark panel, orange on the arrow only', () => {
+  test('AYROVI charter: the whole block is a monochrome dark panel, no violet (v4.2.0)', () => {
     const block = /\.stories-showcase \{[\s\S]*?@media \(prefers-reduced-motion/.exec(indexCss)?.[0] ?? '';
 
     // aucun littéral hexadécimal : tout passe par les jetons ou par du blanc/noir translucide
@@ -182,9 +182,12 @@ describe('Stories showcase — settings come from the dashboard', () => {
     expect(block).toMatch(/\.stories-showcase__subtitle \{[\s\S]*?rgba\(255,\s*255,\s*255/);
     expect(block).not.toMatch(/--ayrovi-text-secondary/);
 
-    // une seule occurrence d'orange : la flèche du lien « Explorer toutes les stories »
-    expect(block.match(/--ayrovi-color-brand-orange/g) ?? []).toHaveLength(1);
-    expect(block).toMatch(/\.stories-showcase__cta > svg \{[^}]*--ayrovi-color-brand-orange/);
+    // Charte v4.2.0 (violet au minimum) : plus aucun violet dans le bloc. La flèche du lien
+    // « Explorer toutes les stories » suit la couleur du lien (blanc sur le fond noir) — un
+    // accent décoratif n'est pas une fonction.
+    expect(block).not.toMatch(/--ayrovi-accent-on-dark|--ayrovi-cta\b/);
+    expect(block).toMatch(/\.stories-showcase__cta > svg \{[^}]*color: currentColor/);
+    expect(block).not.toMatch(/--ayrovi-color-brand-(?:orange|accent)/);
     // le voile sous le texte est noir (monochrome), jamais orangé
     expect(block).not.toMatch(/rgba\(\s*2[0-9]{2}\s*,\s*1[0-9]{2}/);
   });

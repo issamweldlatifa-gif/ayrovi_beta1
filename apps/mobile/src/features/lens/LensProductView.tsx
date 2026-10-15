@@ -822,7 +822,7 @@ export function LensProductView({
           <Ionicons name="bag-handle-outline" size={18} color={LENS_COLORS.black} accessibilityElementsHidden />
           <AppText weight="bold" style={styles.cartCount}>{cartUnits}</AppText>
           {deadline ? (
-            <AppText variant="caption" weight="bold" style={{ color: countdownExpired ? LENS_COLORS.sale : LENS_COLORS.active }}>
+            <AppText variant="caption" weight="bold" style={{ color: countdownExpired ? LENS_COLORS.sale : LENS_COLORS.black }}>
               {countdownExpired ? t('lens.cart.expiredShort') : countdown}
             </AppText>
           ) : null}
@@ -1015,6 +1015,7 @@ export function LensProductView({
         ) : null}
         <Button
           label={actionLabel}
+          tone="main"
           onPress={() => { void submitOrder(); }}
           disabled={!sessionId || Boolean(actionableBlock) || orderAdded}
           busy={orderBusy}
@@ -1054,14 +1055,15 @@ export function LensProductView({
             <AppText color={theme.colors.muted} align="center">{t('lens.cart.addedBody')}</AppText>
             {deadline ? (
               <View style={[styles.confirmationTimer, { backgroundColor: theme.colors.infoSoft }]}>
-                <Ionicons name="time-outline" size={19} color={theme.colors.accentText} accessibilityElementsHidden />
-                <AppText weight="bold" style={{ color: theme.colors.accentText }}>
+                <Ionicons name="time-outline" size={19} color={theme.colors.ink} accessibilityElementsHidden />
+                <AppText weight="bold" style={{ color: theme.colors.ink }}>
                   {countdownExpired ? t('lens.cart.expired') : t('lens.cart.validFor', { time: countdown })}
                 </AppText>
               </View>
             ) : null}
             <Button
               label={t('lens.cart.view')}
+              tone="main"
               onPress={() => { setConfirmationOpen(false); router.push('/cart'); }}
               block
             />

@@ -58,8 +58,9 @@ export function PromotionCard({ promotion, onOpen }: PromotionCardProps) {
         ) : (
           <AppText variant="caption" color={theme.colors.muted}>{promotion.name}</AppText>
         )}
-        <View style={[styles.badge, { backgroundColor: theme.colors.accent, borderRadius: theme.radius.cta }]}>
-          <AppText variant="caption" weight="bold" color={theme.colors.onAccent}>{discount}</AppText>
+        {/* Remise : pastille encre sur la photo — information commerciale nette, sans violet sur l'image. */}
+        <View style={[styles.badge, { backgroundColor: theme.colors.ink, borderRadius: theme.radius.cta }]}>
+          <AppText variant="caption" weight="bold" color={theme.colors.canvas}>{discount}</AppText>
         </View>
       </View>
 
@@ -71,7 +72,7 @@ export function PromotionCard({ promotion, onOpen }: PromotionCardProps) {
 
       <View style={styles.footer}>
         {promotion.promoCode ? (
-          <AppText variant="caption" weight="bold" color={theme.colors.accentText}>{promotion.promoCode}</AppText>
+          <AppText variant="caption" weight="bold" color={theme.colors.ink}>{promotion.promoCode}</AppText>
         ) : null}
         {ends ? (
           <AppText variant="caption" color={theme.colors.muted}>{t('sections.until', { value: ends })}</AppText>

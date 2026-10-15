@@ -422,7 +422,7 @@
     {
       "file": "client/src/admin/admin.css",
       "domain": "admin",
-      "sha256": "cefa4b55c330d393a7e789e3b32b5be33cb8289bc0ebe9a236e26153da7af310",
+      "sha256": "223cbb5577a8dc210e508120f796fcfdbe01453c5bef5c8e4242a5da29a39588",
       "lines": 1371,
       "imports": [],
       "exports": [],
@@ -442,7 +442,7 @@
     {
       "file": "client/src/admin/AdminApp.tsx",
       "domain": "admin",
-      "sha256": "1a30ba9424fec2dd85f556a0dfa5db22096207cb323215bc789c6d298d405b42",
+      "sha256": "e74831577655022ac837ed872c045926b2abe75dc5ace76f14319fde85a5d2be",
       "lines": 1040,
       "imports": [
         "../../../shared/brand.generated",
@@ -1648,6 +1648,7 @@
         "#3f3f46",
         "#431407",
         "#500724",
+        "#571ef6",
         "#60a5fa",
         "#64748b",
         "#92400e",
@@ -1656,7 +1657,6 @@
         "#d97706",
         "#db2777",
         "#f472b6",
-        "#ff6900",
         "#fff"
       ],
       "fontDeclarations": [],
@@ -3759,7 +3759,7 @@
     {
       "file": "client/src/admin/back-office/BackOfficeShell.tsx",
       "domain": "admin",
-      "sha256": "bafc744f4cbef477c8d4737ea29fb2e0d8d6679c7eeacb1712e9eba405754660",
+      "sha256": "56c551b4730093a048ad449b3288b6baf8bfaba44d5474410c085a2f39de8b83",
       "lines": 405,
       "imports": [
         "react",
@@ -7231,7 +7231,7 @@
     {
       "file": "client/src/admin/HomeSectionsPage.tsx",
       "domain": "admin",
-      "sha256": "f442efb4266fa4038b6fd8eb79faacf4f6fa70f6c707c179f7370d09c060a17b",
+      "sha256": "845874a71fe080f18c25aeeeb42826434f9757de300a71c32cf81f2211c1538b",
       "lines": 107,
       "imports": [
         "react",
@@ -7300,7 +7300,7 @@
     {
       "file": "client/src/admin/InterfaceStudio.tsx",
       "domain": "admin",
-      "sha256": "56b0a65abeb0699fd0b01f2227b5f20be940e82692334391e8d8942998fad39a",
+      "sha256": "e9b0e347038ed7f9005c058e1a089788de192c062e6de2e008b1dbc8a2b839fd",
       "lines": 307,
       "imports": [
         "react",
@@ -8575,14 +8575,15 @@
     {
       "file": "client/src/admin/LensSectionPage.tsx",
       "domain": "admin",
-      "sha256": "bf0a248906bbc89f75c55abea06cb417c2c8da37833812df770dfb068530b8a3",
-      "lines": 433,
+      "sha256": "88836accf00ce37216701fa4842b6345528c3dcc3a4dce910a6b327b0a8c853c",
+      "lines": 436,
       "imports": [
         "react",
         "./components",
         "./api",
         "../components/QatafoIcons",
-        "./moveHint"
+        "./moveHint",
+        "../../../shared/identityPolicy"
       ],
       "exports": [
         "LensSectionPage"
@@ -8590,7 +8591,7 @@
       "controls": [
         {
           "tag": "Button",
-          "line": 204,
+          "line": 207,
           "className": null,
           "type": null,
           "role": null,
@@ -8600,7 +8601,7 @@
         },
         {
           "tag": "Button",
-          "line": 205,
+          "line": 208,
           "className": null,
           "type": null,
           "role": null,
@@ -8610,7 +8611,7 @@
         },
         {
           "tag": "Field",
-          "line": 214,
+          "line": 217,
           "className": null,
           "type": null,
           "role": null,
@@ -8620,27 +8621,7 @@
         },
         {
           "tag": "input",
-          "line": 214,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": "{!canWrite}"
-        },
-        {
-          "tag": "Field",
-          "line": 215,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "textarea",
-          "line": 216,
+          "line": 217,
           "className": null,
           "type": null,
           "role": null,
@@ -8660,26 +8641,6 @@
         },
         {
           "tag": "textarea",
-          "line": 218,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": "{!canWrite}"
-        },
-        {
-          "tag": "Field",
-          "line": 219,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
           "line": 219,
           "className": null,
           "type": null,
@@ -8690,7 +8651,7 @@
         },
         {
           "tag": "Field",
-          "line": 220,
+          "line": 221,
           "className": null,
           "type": null,
           "role": null,
@@ -8699,7 +8660,7 @@
           "disabled": null
         },
         {
-          "tag": "input",
+          "tag": "textarea",
           "line": 221,
           "className": null,
           "type": null,
@@ -8710,6 +8671,26 @@
         },
         {
           "tag": "Field",
+          "line": 222,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 222,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": "{!canWrite}"
+        },
+        {
+          "tag": "Field",
           "line": 223,
           "className": null,
           "type": null,
@@ -8720,7 +8701,7 @@
         },
         {
           "tag": "input",
-          "line": 223,
+          "line": 224,
           "className": null,
           "type": null,
           "role": null,
@@ -8730,27 +8711,7 @@
         },
         {
           "tag": "Field",
-          "line": 224,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 224,
-          "className": null,
-          "type": "\"color\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": "{!canWrite}"
-        },
-        {
-          "tag": "Field",
-          "line": 225,
+          "line": 226,
           "className": null,
           "type": null,
           "role": null,
@@ -8762,7 +8723,27 @@
           "tag": "input",
           "line": 226,
           "className": null,
-          "type": "\"number\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": "{!canWrite}"
+        },
+        {
+          "tag": "Field",
+          "line": 227,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 227,
+          "className": null,
+          "type": "\"color\"",
           "role": null,
           "ariaLabel": null,
           "onClick": null,
@@ -8779,8 +8760,28 @@
           "disabled": null
         },
         {
+          "tag": "input",
+          "line": 229,
+          "className": null,
+          "type": "\"number\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": "{!canWrite}"
+        },
+        {
+          "tag": "Field",
+          "line": 231,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
           "tag": "Button",
-          "line": 239,
+          "line": 242,
           "className": null,
           "type": null,
           "role": null,
@@ -8790,7 +8791,7 @@
         },
         {
           "tag": "Button",
-          "line": 240,
+          "line": 243,
           "className": null,
           "type": null,
           "role": null,
@@ -8800,7 +8801,7 @@
         },
         {
           "tag": "Field",
-          "line": 250,
+          "line": 253,
           "className": null,
           "type": null,
           "role": null,
@@ -8810,29 +8811,9 @@
         },
         {
           "tag": "select",
-          "line": 251,
+          "line": 254,
           "className": null,
           "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": "{!canWrite}"
-        },
-        {
-          "tag": "Field",
-          "line": 257,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 257,
-          "className": null,
-          "type": "\"color\"",
           "role": null,
           "ariaLabel": null,
           "onClick": null,
@@ -8850,7 +8831,27 @@
         },
         {
           "tag": "input",
-          "line": 261,
+          "line": 260,
+          "className": null,
+          "type": "\"color\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": "{!canWrite}"
+        },
+        {
+          "tag": "Field",
+          "line": 263,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 264,
           "className": null,
           "type": "\"file\"",
           "role": null,
@@ -8860,26 +8861,6 @@
         },
         {
           "tag": "Field",
-          "line": 264,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 265,
-          "className": null,
-          "type": "\"range\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": "{!canWrite}"
-        },
-        {
-          "tag": "Field",
           "line": 267,
           "className": null,
           "type": null,
@@ -8890,7 +8871,7 @@
         },
         {
           "tag": "input",
-          "line": 267,
+          "line": 268,
           "className": null,
           "type": "\"range\"",
           "role": null,
@@ -8900,7 +8881,7 @@
         },
         {
           "tag": "Field",
-          "line": 268,
+          "line": 270,
           "className": null,
           "type": null,
           "role": null,
@@ -8910,7 +8891,27 @@
         },
         {
           "tag": "input",
-          "line": 268,
+          "line": 270,
+          "className": null,
+          "type": "\"range\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": "{!canWrite}"
+        },
+        {
+          "tag": "Field",
+          "line": 271,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 271,
           "className": null,
           "type": "\"range\"",
           "role": null,
@@ -8920,23 +8921,13 @@
         },
         {
           "tag": "Button",
-          "line": 270,
+          "line": 273,
           "className": null,
           "type": null,
           "role": null,
           "ariaLabel": null,
           "onClick": "{() => patch({ bgImage: '' })}",
           "disabled": "{!canWrite}"
-        },
-        {
-          "tag": "Field",
-          "line": 278,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
         },
         {
           "tag": "Field",
@@ -8949,8 +8940,18 @@
           "disabled": null
         },
         {
+          "tag": "Field",
+          "line": 284,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
           "tag": "input",
-          "line": 282,
+          "line": 285,
           "className": null,
           "type": "\"file\"",
           "role": null,
@@ -8960,7 +8961,7 @@
         },
         {
           "tag": "Button",
-          "line": 285,
+          "line": 288,
           "className": null,
           "type": null,
           "role": null,
@@ -8970,66 +8971,6 @@
         },
         {
           "tag": "Field",
-          "line": 286,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 286,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": "{!canWrite}"
-        },
-        {
-          "tag": "Field",
-          "line": 287,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 287,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": "{!canWrite}"
-        },
-        {
-          "tag": "Field",
-          "line": 288,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 288,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": "{!canWrite}"
-        },
-        {
-          "tag": "Field",
           "line": 289,
           "className": null,
           "type": null,
@@ -9110,7 +9051,67 @@
         },
         {
           "tag": "Field",
-          "line": 303,
+          "line": 293,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 293,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": "{!canWrite}"
+        },
+        {
+          "tag": "Field",
+          "line": 294,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 294,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": "{!canWrite}"
+        },
+        {
+          "tag": "Field",
+          "line": 295,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 295,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": "{!canWrite}"
+        },
+        {
+          "tag": "Field",
+          "line": 306,
           "className": null,
           "type": null,
           "role": null,
@@ -9120,7 +9121,7 @@
         },
         {
           "tag": "select",
-          "line": 304,
+          "line": 307,
           "className": null,
           "type": null,
           "role": null,
@@ -9130,7 +9131,7 @@
         },
         {
           "tag": "Field",
-          "line": 310,
+          "line": 313,
           "className": null,
           "type": null,
           "role": null,
@@ -9140,7 +9141,7 @@
         },
         {
           "tag": "select",
-          "line": 311,
+          "line": 314,
           "className": null,
           "type": null,
           "role": null,
@@ -9150,7 +9151,7 @@
         },
         {
           "tag": "Field",
-          "line": 321,
+          "line": 324,
           "className": null,
           "type": null,
           "role": null,
@@ -9160,7 +9161,7 @@
         },
         {
           "tag": "input",
-          "line": 322,
+          "line": 325,
           "className": null,
           "type": "\"file\"",
           "role": null,
@@ -9170,7 +9171,7 @@
         },
         {
           "tag": "Field",
-          "line": 331,
+          "line": 334,
           "className": null,
           "type": null,
           "role": null,
@@ -9180,7 +9181,7 @@
         },
         {
           "tag": "input",
-          "line": 332,
+          "line": 335,
           "className": null,
           "type": null,
           "role": null,
@@ -9190,7 +9191,7 @@
         },
         {
           "tag": "Field",
-          "line": 340,
+          "line": 343,
           "className": null,
           "type": null,
           "role": null,
@@ -9200,7 +9201,7 @@
         },
         {
           "tag": "Field",
-          "line": 341,
+          "line": 344,
           "className": null,
           "type": null,
           "role": null,
@@ -9210,7 +9211,7 @@
         },
         {
           "tag": "Field",
-          "line": 342,
+          "line": 345,
           "className": null,
           "type": null,
           "role": null,
@@ -9220,7 +9221,7 @@
         },
         {
           "tag": "Field",
-          "line": 346,
+          "line": 349,
           "className": null,
           "type": null,
           "role": null,
@@ -9230,7 +9231,7 @@
         },
         {
           "tag": "input",
-          "line": 347,
+          "line": 350,
           "className": null,
           "type": "\"file\"",
           "role": null,
@@ -9240,7 +9241,7 @@
         },
         {
           "tag": "Field",
-          "line": 356,
+          "line": 359,
           "className": null,
           "type": null,
           "role": null,
@@ -9250,7 +9251,7 @@
         },
         {
           "tag": "Button",
-          "line": 359,
+          "line": 362,
           "className": null,
           "type": null,
           "role": null,
@@ -9260,7 +9261,7 @@
         },
         {
           "tag": "Button",
-          "line": 364,
+          "line": 367,
           "className": null,
           "type": null,
           "role": null,
@@ -9284,7 +9285,6 @@
         "#374151",
         "#666",
         "#F6F7F9",
-        "#FF6900",
         "#f3f4f6",
         "#f8f9fa",
         "#fff"
@@ -11515,8 +11515,8 @@
     {
       "file": "client/src/ayrovix/components/lens-camera.css",
       "domain": "lens",
-      "sha256": "60584325f5084ccc53ca5b6c1ca7af483de1827cc2d87d281e7b69ebb2e4acfc",
-      "lines": 69,
+      "sha256": "7d50069432fec75202052549461f8d31b59cfb84291ff6e7bec6d7d6e3d4d50f",
+      "lines": 70,
       "imports": [],
       "exports": [],
       "controls": [],
@@ -11538,7 +11538,7 @@
     {
       "file": "client/src/ayrovix/components/lens-results.css",
       "domain": "lens",
-      "sha256": "24f61d121b3332e7a7008a854abb7dfd9aabb70cd37a2249df0defabb092e50b",
+      "sha256": "8c6de883ed5ad9b2c20dfef2b999410f352984192d6d39bd13e2539ca28de585",
       "lines": 50,
       "imports": [],
       "exports": [],
@@ -11553,7 +11553,6 @@
         "#bdbdbd",
         "#d9d9d9",
         "#f5f5f5",
-        "#ff7900",
         "#fff",
         "#fff3"
       ],
@@ -12276,7 +12275,7 @@
     {
       "file": "client/src/ayrovix/components/LiveCamera.tsx",
       "domain": "lens",
-      "sha256": "6c008c5cf1c56202b164eea8e988944072f9eb5b088eddf0699f03b27d89027c",
+      "sha256": "afcd3296faf314d2211bde71e208d942f97b472e116f8afec3d9126b50c0a51f",
       "lines": 439,
       "imports": [
         "react",
@@ -12356,7 +12355,7 @@
         {
           "tag": "button",
           "line": 351,
-          "className": "\"bg-ink text-white hover:bg-ink/90 mt-2.5 flex w-full items-center justify-center gap-2 rounded-full py-2.5 text-sm font-extrabold text-white\"",
+          "className": "\"bg-ink text-white hover:bg-ink/90 mt-2.5 flex w-full items-center justify-center gap-2 rounded-full py-2.5 text-sm font-extrabold\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
@@ -12590,7 +12589,7 @@
     {
       "file": "client/src/ayrovix/components/quiet-card.tsx",
       "domain": "lens",
-      "sha256": "be34604eef768677075ecf8267c978776b2e7999caa3939bc4d7684bae5c14c6",
+      "sha256": "14f14c8fa594ede7e4fad566ad03c60c0c6dc48b427f63e31d1b40d5db41bd84",
       "lines": 195,
       "imports": [
         "react",
@@ -13225,7 +13224,7 @@
     {
       "file": "client/src/components/account/AccountHome.tsx",
       "domain": "account-auth",
-      "sha256": "2d2e2a87cc4517962242bd7ea7e3e8032f3377a2ea29e1753df2f9a94c01a2eb",
+      "sha256": "7fb98d59710bb7652f1a1b4592d480ea183fe12482dbe13809fa2c68c00fa4af",
       "lines": 50,
       "imports": [
         "react",
@@ -13760,7 +13759,7 @@
     {
       "file": "client/src/components/assistant/AssistantComposer.tsx",
       "domain": "sonim",
-      "sha256": "830c74b338b44c6f505ca5078f4e8d4381e9697e39a5ebfb0c15060b7f5925ae",
+      "sha256": "a78f3c61eea251e81f8fb519648c0ef389fbc2ca7182ebd54c2ef268c4fff8d3",
       "lines": 176,
       "imports": [
         "./AssistantMediaPending",
@@ -14273,7 +14272,7 @@
     {
       "file": "client/src/components/assistant/AssistantSideMenu.tsx",
       "domain": "sonim",
-      "sha256": "78789490addb6eba45491eae72e28d0960210fe19bf943039d349107bce53084",
+      "sha256": "11b05e83c93c6486bdf22a6e270c9c2d370ec01597c27002640f80467bf7bb9e",
       "lines": 110,
       "imports": [
         "./AssistantHistoryNotice",
@@ -14956,7 +14955,7 @@
     {
       "file": "client/src/components/BottomNavBar.tsx",
       "domain": "shell-content",
-      "sha256": "9112a490ca19bc675b8f612c6e8f4776a64702da2674f41252b155a3776bde2b",
+      "sha256": "e4f2cd5e88c51c36c1e80c97d082b3c7e8a0f14ca29f81de9d2bf93d84f1d778",
       "lines": 116,
       "imports": [
         "react",
@@ -15041,8 +15040,7 @@
       ],
       "inlineSvg": [],
       "colors": [
-        "#000000",
-        "#ff6900"
+        "#000000"
       ],
       "fontDeclarations": [],
       "apiReferences": []
@@ -15050,7 +15048,7 @@
     {
       "file": "client/src/components/CustomerAccountPage.tsx",
       "domain": "account-auth",
-      "sha256": "273c39a0230d1c91552847bec862fc422b45587e916c37fc49721f81a405cf17",
+      "sha256": "aefa1f4f875acc37299b168ec26060819825269900485d65050d078e960c9462",
       "lines": 976,
       "imports": [
         "react",
@@ -15968,7 +15966,7 @@
     {
       "file": "client/src/components/CustomerPasswordRecovery.tsx",
       "domain": "account-auth",
-      "sha256": "32194509528476ab6a42e6c41a8d05787f393b97ecf6ddf000d1b118bd0fa65f",
+      "sha256": "dc5383a3acf4527b1f0513a057db4a101e68ec0616369df8c1010549be37a9dd",
       "lines": 122,
       "imports": [
         "react",
@@ -16133,7 +16131,7 @@
     {
       "file": "client/src/components/Footer.tsx",
       "domain": "shell-content",
-      "sha256": "443278073cc80ffa3844d29118fbeefe831c07fefda40ac7c46577d992ac67b6",
+      "sha256": "7c88aeea041193029c25a4ef59fed7a78775201e3053d3b094a5dfafebe44d84",
       "lines": 110,
       "imports": [
         "react",
@@ -16504,7 +16502,7 @@
     {
       "file": "client/src/components/LensFeature.tsx",
       "domain": "lens",
-      "sha256": "7a03d64b6495568353e59417f9f1c8613cd0066619de39e1f8868b7f531ec19b",
+      "sha256": "68978051c12d254cff8dccfa52a96c8865220cd37836d1a974f3ae51d9898f0b",
       "lines": 137,
       "imports": [
         "./QatafoIcons",
@@ -16657,7 +16655,7 @@
     {
       "file": "client/src/components/Navbar.tsx",
       "domain": "shell-content",
-      "sha256": "1cc5ca40a5e6dbc06bcfa00af4b493870f60b49118654354e462b42e756421ef",
+      "sha256": "cfc5e7e58cb34fec5dc7b36d07e669907818285cb246be42a4f09cb7c6361142",
       "lines": 118,
       "imports": [
         "react",
@@ -17345,7 +17343,7 @@
     {
       "file": "client/src/components/StoriesShowcase.tsx",
       "domain": "discovery-social",
-      "sha256": "ff83972cb1d8c3c7d84cd477d0c5b51dbc2522f07b1c96df6e851ab21184f5a7",
+      "sha256": "5312a8a9593d713140ff1b85d4602717b0cf2a74852a6b64092d65e6074d52d1",
       "lines": 171,
       "imports": [
         "./QatafoIcons",
@@ -17435,7 +17433,7 @@
     {
       "file": "client/src/config/interfaceConfig.ts",
       "domain": "shell-content",
-      "sha256": "3076b204570ef77d20651d3f97a622a87930c417b8bfcefaea70cfca68b1f65d",
+      "sha256": "49227637dd1fcd3ccc7594b97f8d0dc9d8ca41c33ccb8c4368b46518be00e456",
       "lines": 332,
       "imports": [
         "../../../shared/brand.generated",
@@ -17456,13 +17454,14 @@
       "inlineSvg": [],
       "colors": [
         "#000000",
+        "#0a0a0a",
         "#15803d",
         "#3f3f46",
+        "#571ef6",
         "#666666",
         "#dc2626",
         "#eaeaea",
         "#f8f9fa",
-        "#ff6900",
         "#ffffff"
       ],
       "fontDeclarations": [],
@@ -18234,7 +18233,7 @@
     {
       "file": "client/src/design/AppHeader.tsx",
       "domain": "shared-design",
-      "sha256": "ec3789eb0dbdc8a140d654756b652ea2349934763b93ebbb63ff87d43aa2132c",
+      "sha256": "aefb6f783f13314476ee13a3263f80aaaccf6b1aebad269d794ff7fb212404c8",
       "lines": 76,
       "imports": [
         "react",
@@ -18412,8 +18411,8 @@
     {
       "file": "client/src/design/editorial/customerTheme.ts",
       "domain": "account-auth",
-      "sha256": "95449832e2c8af2927c3e1acb99373e6c6c3223e7c23360b52594e0bc0698a4a",
-      "lines": 65,
+      "sha256": "17cbc958df825ea439f70ff19e44b8ff7cce5fa4dcea1d943c270cff914e9ba4",
+      "lines": 72,
       "imports": [
         "../../../../shared/brand.generated",
         "react",
@@ -18508,33 +18507,32 @@
     {
       "file": "client/src/design/editorial/tokens.generated.css",
       "domain": "shared-design",
-      "sha256": "9aa8ac49488b83733021d98ef962274908158a195c40770cc95b262941dd8f9c",
-      "lines": 70,
+      "sha256": "c809b6d8233799d303b577d57eb74a7f59024ab28174e65dd618cd0d02f87707",
+      "lines": 76,
       "imports": [],
       "exports": [],
       "controls": [],
       "icons": [],
       "inlineSvg": [],
       "colors": [
-        "#000000",
+        "#0A0A0A",
         "#171717",
         "#236044",
-        "#262626",
         "#333333",
+        "#491ACC",
         "#525252",
-        "#595959",
+        "#571EF6",
+        "#666666",
         "#6E6E6E",
-        "#8E8E8E",
+        "#888888",
         "#90D6AF",
+        "#926DF9",
         "#A52D2D",
-        "#A74700",
         "#BDBDBD",
-        "#D9D9D9",
+        "#C5B2F4",
         "#E5E5E5",
-        "#F5F5F5",
-        "#FF7900",
+        "#F2F2F2",
         "#FFABAB",
-        "#FFAE69",
         "#FFFFFF"
       ],
       "fontDeclarations": [
@@ -18564,19 +18562,19 @@
     {
       "file": "client/src/design/tokens.css",
       "domain": "shared-design",
-      "sha256": "337c2d7831d400bf30d125bb97cc3d3a53b893975c4909ea6e6f5d4c9e8ab804",
-      "lines": 598,
+      "sha256": "7193d62a9c0fa90b700d0ff012282de63fc10cdc7577a5589c23ebfce6376cd8",
+      "lines": 613,
       "imports": [],
       "exports": [],
       "controls": [],
       "icons": [],
       "inlineSvg": [],
       "colors": [
-        "#000000",
         "#047857",
         "#050505",
         "#059669",
         "#0A0A0A",
+        "#0a0a0a",
         "#0b7044",
         "#0f7147",
         "#111111",
@@ -18617,6 +18615,8 @@
         "#4e27a6",
         "#5230a4",
         "#534961",
+        "#571EF6",
+        "#571ef6",
         "#595959",
         "#5a477b",
         "#5b4b70",
@@ -18628,7 +18628,6 @@
         "#604700",
         "#64748b",
         "#666666",
-        "#673de6",
         "#685f72",
         "#6b7280",
         "#6c6779",
@@ -18658,6 +18657,7 @@
         "#8c8395",
         "#8f8c98",
         "#918c9d",
+        "#926df9",
         "#991b1b",
         "#9994a0",
         "#9a3412",
@@ -18667,10 +18667,13 @@
         "#9c98a5",
         "#9ca3af",
         "#9f1239",
+        "#C5B2F4",
         "#DC2626",
         "#EAEAEA",
+        "#F2F2F2",
         "#F8F9FA",
         "#FF6900",
+        "#FF7900",
         "#FFFFFF",
         "#a12a21",
         "#a1392f",
@@ -18698,6 +18701,7 @@
         "#c05621",
         "#c2410c",
         "#c4c0ca",
+        "#c5b2f4",
         "#c7d2fe",
         "#c9362b",
         "#c9c6cc",
@@ -18735,7 +18739,6 @@
         "#e9c3a3",
         "#e9e6f2",
         "#eadc9b",
-        "#eaeaea",
         "#ecfdf5",
         "#eeeaf3",
         "#eeeeee",
@@ -18749,6 +18752,7 @@
         "#f0fdf4",
         "#f1f1f3",
         "#f1f5f9",
+        "#f2f2f2",
         "#f3d9c4",
         "#f4f2fa",
         "#f4f4f5",
@@ -18756,18 +18760,14 @@
         "#f5f5f5",
         "#f7c948",
         "#f7f4ff",
-        "#f8f9fa",
         "#f8f9fe",
-        "#fb923c",
         "#fca5a5",
         "#fdba74",
         "#fde68a",
         "#fdecec",
         "#fecaca",
         "#fed7aa",
-        "#ff6900",
         "#ff8a80",
-        "#ffb070",
         "#ffcb9f",
         "#ffd7bd",
         "#ffebe8",
@@ -18779,7 +18779,6 @@
         "#fff5d9",
         "#fff7ed",
         "#fff8d8",
-        "#fffaf5",
         "#fffbeb",
         "#ffffff"
       ],
@@ -18809,7 +18808,7 @@
     {
       "file": "client/src/design/ui/Badge.tsx",
       "domain": "shared-design",
-      "sha256": "baedffafb66863b9c5a263a77c6f86786759fd7e8e98a4d438729541c0e80d4d",
+      "sha256": "540adade5a3277d450abfbe3b9b1e6b26a44dc6062d73ca29fb70fdfc36c35f8",
       "lines": 41,
       "imports": [
         "react",
@@ -18829,7 +18828,7 @@
     {
       "file": "client/src/design/ui/Card.tsx",
       "domain": "shared-design",
-      "sha256": "79849a17de8cf0c33ec3dd4a7c5faf9d59c9a18847c66caf874bc31f3ef25e3a",
+      "sha256": "03d733775eb24658314270527c463b64e5678dfb70a4e6eb1aa39287baf3d115",
       "lines": 31,
       "imports": [
         "react",
@@ -18870,7 +18869,7 @@
     {
       "file": "client/src/design/ui/EmptyState.tsx",
       "domain": "shared-design",
-      "sha256": "059104e0918e0290dc0537a4aaafb57fee8bdb0f5769fc8372cc6c0d28156df4",
+      "sha256": "4d2e718a29a8d43ceaeffd3b5e9ca76a22e10fcdf367259ce25064985cb2a149",
       "lines": 34,
       "imports": [
         "react",
@@ -19032,7 +19031,7 @@
     {
       "file": "client/src/design/ui/SectionHeader.tsx",
       "domain": "shared-design",
-      "sha256": "77159160ad8c88dc9c1e1dfaeae0023ca93368fcf9c9d3c39cca79328cc79cbb",
+      "sha256": "37b6f5c0045a35338ea9acf20fbf0ee6dcd460b41bd0d72a40a2c01e03718432",
       "lines": 27,
       "imports": [
         "react",
@@ -19079,7 +19078,7 @@
     {
       "file": "client/src/design/ui/StatusBadge.tsx",
       "domain": "shared-design",
-      "sha256": "9eada70915026c5cab020827c9eff595c362e90becee6672cdca09c35ec22afe",
+      "sha256": "11a153921c49db0466ddd7ef1e54cf2a0c5b2869508254e6008001923a5fb6a4",
       "lines": 20,
       "imports": [
         "react",
@@ -19220,7 +19219,7 @@
     {
       "file": "client/src/features/aywebs/aywebs.css",
       "domain": "shell-content",
-      "sha256": "0f9264d4bedd8a18d16208fbec1e5d492c7207a3020cc9bcf5e4e06434946819",
+      "sha256": "7104d0aa969f5d2ecd92bd6d2f32131740b05465d686a9d936f13e4efe4118f3",
       "lines": 559,
       "imports": [],
       "exports": [],
@@ -19228,15 +19227,17 @@
       "icons": [],
       "inlineSvg": [],
       "colors": [
+        "#0a0a0a",
         "#101828",
         "#1d3f8f",
         "#344054",
         "#475467",
+        "#571ef6",
         "#667085",
         "#d0d5dd",
         "#e4e4e4",
         "#ececec",
-        "#f18902",
+        "#f2f2f2",
         "#f2f4f7",
         "#f5f5f5",
         "#f8f9fa",
@@ -20004,7 +20005,7 @@
     {
       "file": "client/src/features/ocerex/screens/OcerexHome.tsx",
       "domain": "shell-content",
-      "sha256": "8da448b22977510a64526e9d5531b498ece01f500b13b25898675563c0207a68",
+      "sha256": "91d65bd080663e04c3d66dda49bf0c3e12f1bfc6d48cfc4c939a4777fdcf2ce3",
       "lines": 169,
       "imports": [
         "react",
@@ -20019,7 +20020,7 @@
         {
           "tag": "button",
           "line": 77,
-          "className": "{`min-h-11 rounded-full px-3 text-sm font-bold transition ${mode === 'camera' ? 'bg-ink text-white' : 'text-ink'}`}",
+          "className": "{`min-h-11 rounded-full px-3 text-sm font-bold transition ${mode === 'camera' ? 'bg-accent-soft text-on-accent-soft ring-1 ring-inset ring-cta' : 'text-ink'}`}",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
@@ -20029,7 +20030,7 @@
         {
           "tag": "button",
           "line": 81,
-          "className": "{`min-h-11 rounded-full px-3 text-sm font-bold transition ${mode === 'upload' ? 'bg-ink text-white' : 'text-ink'}`}",
+          "className": "{`min-h-11 rounded-full px-3 text-sm font-bold transition ${mode === 'upload' ? 'bg-accent-soft text-on-accent-soft ring-1 ring-inset ring-cta' : 'text-ink'}`}",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
@@ -20187,7 +20188,7 @@
     {
       "file": "client/src/features/ocerex/screens/OcerexResult.tsx",
       "domain": "shell-content",
-      "sha256": "b079aaf415874864667ca564342270bd0abfed0ca10dc06419f68fc9d4151737",
+      "sha256": "a74d3d561eae0667ab3f9ba9bf900881ea9515597e71022a0d14311c6b7c74dc",
       "lines": 51,
       "imports": [
         "react",
@@ -20205,7 +20206,7 @@
         {
           "tag": "Price",
           "line": 40,
-          "className": "\"mt-1 items-start text-cta [&_bdi]:text-cta\"",
+          "className": "\"mt-1 items-start text-ink [&_bdi]:text-ink\"",
           "type": null,
           "role": null,
           "ariaLabel": null,
@@ -20248,7 +20249,7 @@
     {
       "file": "client/src/features/ocerex/screens/OcerexSummary.tsx",
       "domain": "shell-content",
-      "sha256": "ea210b7e749928cf3767c3ac2c613b62054b69a97f6f09d4e141204884b93d19",
+      "sha256": "29625f49709e8558a43dcf6f9401681b06644cd850256f69dd01c873e103119a",
       "lines": 42,
       "imports": [
         "react",
@@ -20430,7 +20431,7 @@
     {
       "file": "client/src/index.css",
       "domain": "shell-content",
-      "sha256": "827b7f3f0a8c3e6324cbec5633ba34170968c58fd12e572743753e82edb2c77a",
+      "sha256": "b208cb7a84e4359c4b0aa71a48f74a4ccc3cb25358326ebb26fdedefecac8867",
       "lines": 1244,
       "imports": [],
       "exports": [],
@@ -20446,7 +20447,7 @@
     {
       "file": "client/src/main.tsx",
       "domain": "shell-content",
-      "sha256": "404085327e9b77732eccd599c4d10d3d252c5668d5762c6a317039e83953d7ff",
+      "sha256": "a6950a818d85919535de5f35fc5e5355aea890e30fbb78a1da45d1d7f3a53df3",
       "lines": 48,
       "imports": [
         "react",
@@ -21289,22 +21290,23 @@
     {
       "file": "client/src/shop/shop.css",
       "domain": "shell-content",
-      "sha256": "213f1ec403874307266badceb0ef1e7f6feee5cd31988875f936eb7d0b63d132",
-      "lines": 720,
+      "sha256": "1b3774cbcff927bfaba6fd3ea2670935615a976d3ee527452d0e4abbcea6a34a",
+      "lines": 731,
       "imports": [],
       "exports": [],
       "controls": [],
       "icons": [],
       "inlineSvg": [],
       "colors": [
-        "#000",
+        "#0a0a0a",
         "#236044",
-        "#595959",
-        "#909090",
+        "#571ef6",
+        "#666666",
+        "#888888",
         "#a52d2d",
         "#a6a6a6",
-        "#d9d9d9",
-        "#f5f5f5",
+        "#e5e5e5",
+        "#f2f2f2",
         "#fff"
       ],
       "fontDeclarations": [
@@ -21618,7 +21620,7 @@
     {
       "file": "client/src/social/components/FullscreenMediaHeader.tsx",
       "domain": "discovery-social",
-      "sha256": "60d767fab59588213eeecbe88ca168ca49381798b4edbde1f327351edbbe9617",
+      "sha256": "6a4071c7d7fe5ba6ae588e6e538014ed4cbdd6183e601f3b7a551bc9c3d31e3c",
       "lines": 33,
       "imports": [
         "react",
@@ -21665,7 +21667,7 @@
     {
       "file": "client/src/social/components/ReelsViewer.tsx",
       "domain": "discovery-social",
-      "sha256": "e58c3780ec7254cfaa5f756a06ce2cbe5e5c2592cd2b1b96af2ed0c032e08e22",
+      "sha256": "247a935444ccec066d1cbe90dfaf4b8bb9d49ccd38f91475d034296c307e1d14",
       "lines": 165,
       "imports": [
         "../../components/QatafoIcons",
@@ -21697,7 +21699,7 @@
     {
       "file": "client/src/social/components/StoryCircles.tsx",
       "domain": "discovery-social",
-      "sha256": "3b97423c2db824b96f4e0e91d55e69f8bf0df066f34847bbed160a579c920f91",
+      "sha256": "ead7ede0b9fc4dbee9355fb46aa94674f33fabbbb8528ee1532d758967b90acf",
       "lines": 58,
       "imports": [
         "react",
@@ -21730,7 +21732,7 @@
     {
       "file": "client/src/social/components/StoryFeed.tsx",
       "domain": "discovery-social",
-      "sha256": "ed709768df4e244e51c2abe7701d9503b795bd362822896ae6ce4d81ca3136dc",
+      "sha256": "6ac890ed134cfb2fcfb7ea527c7cbc6c9a39c749cb67b63d0a4da66f3dd10485",
       "lines": 188,
       "imports": [
         "react",
@@ -21967,7 +21969,7 @@
     {
       "file": "client/src/social/StoryTab.tsx",
       "domain": "discovery-social",
-      "sha256": "8e7070fec9fcccca8c330bd07ff4dcf9152f9bb7f17740a65aa7baeb38845b70",
+      "sha256": "31186f5f96d9c8c52e887e43f150a16b0e675a4ef2b0d27e609bee536a303f65",
       "lines": 248,
       "imports": [
         "react",
@@ -22087,8 +22089,8 @@
     {
       "file": "client/src/styles/admin-console.css",
       "domain": "shell-content",
-      "sha256": "b589c8204cc4bb8a213c64f0c4a0df6c2249e66c4748fc2f8e2f59c72884e456",
-      "lines": 590,
+      "sha256": "dcd52eb77f8bfce98fd24b40ec279fce3da6d61d8fcb118c6654d0c660b226a2",
+      "lines": 593,
       "imports": [],
       "exports": [],
       "controls": [],
@@ -22103,18 +22105,20 @@
         "#141414",
         "#16202B",
         "#1A1A1A",
+        "#1C1239",
         "#1C5DB5",
         "#202020",
         "#242424",
         "#262626",
         "#2A1816",
-        "#2A1B10",
         "#2A2314",
         "#2C2C2C",
         "#383838",
         "#3A3018",
         "#3B4148",
+        "#491ACC",
         "#4A4A4A",
+        "#571EF6",
         "#5A5F66",
         "#6B4A00",
         "#6B7076",
@@ -22127,11 +22131,11 @@
         "#D5D9D9",
         "#D6D6D6",
         "#E3E5E7",
-        "#E85F00",
         "#E8C98A",
         "#EAF1FA",
         "#EAF4EF",
         "#EDEDED",
+        "#EEE9FE",
         "#EFF0F1",
         "#F0DCB4",
         "#F2F2F2",
@@ -22141,8 +22145,6 @@
         "#F6F7F8",
         "#FBEDEB",
         "#FBF3E2",
-        "#FF6900",
-        "#FFF3EA",
         "#FFFFFF"
       ],
       "fontDeclarations": [],
@@ -22151,8 +22153,8 @@
     {
       "file": "client/src/styles/ayrovix-theme.css",
       "domain": "shell-content",
-      "sha256": "18b365646d1456a0469d89bde2e3db0712c81ceb853c7a5892acc9efe371633f",
-      "lines": 90,
+      "sha256": "4efca60e9d465b7c9e61a84106aee741516be373e6fba44de70af2f458b0820a",
+      "lines": 94,
       "imports": [],
       "exports": [],
       "controls": [],
@@ -22165,7 +22167,7 @@
     {
       "file": "client/src/styles/customer-account.css",
       "domain": "account-auth",
-      "sha256": "75cf72a73490d660203dd074e57430a1c075e61ea464e979554b0e08603a40f9",
+      "sha256": "23062317cfd2c233f5ee2f7ccf6685afce39255ce8827e27f9c16d914a5a96a2",
       "lines": 38,
       "imports": [],
       "exports": [],
@@ -22192,7 +22194,6 @@
         "#efcbc6",
         "#f6f6f7",
         "#ffb0ad",
-        "#ffb173",
         "#ffb9b2",
         "#fff",
         "#fff2f0"
@@ -22203,8 +22204,8 @@
     {
       "file": "client/src/styles/customer-auth.css",
       "domain": "account-auth",
-      "sha256": "5686b37fb8de28a9b45e4949116038752ed214dc5bd0c5af0067d202107ffc81",
-      "lines": 170,
+      "sha256": "971da9ad018a9deff5782a3536e28fec8c3172e8cbfd695ca5b188347b0babb9",
+      "lines": 171,
       "imports": [],
       "exports": [],
       "controls": [],
@@ -22239,8 +22240,8 @@
     {
       "file": "client/src/styles/editorial-voice.css",
       "domain": "shell-content",
-      "sha256": "65ae9c05a0bf3bf7f920c59a9e17d195d7d315e18e7f21d50b3831f64fe31b18",
-      "lines": 58,
+      "sha256": "48fc1795e88a201614992ea7c38bfef36c9ef74f1fe0cc822f569eef6dc69593",
+      "lines": 60,
       "imports": [],
       "exports": [],
       "controls": [],
@@ -22256,7 +22257,7 @@
     {
       "file": "client/src/styles/interface-runtime.css",
       "domain": "shell-content",
-      "sha256": "dbb6648b554d3ef8325138f088d3df37649277c746667eb792e379135ad27598",
+      "sha256": "684bc4c0e64248f484232f55e7922754c87e9d0e45522bec1cd6e51ce4d413ac",
       "lines": 60,
       "imports": [],
       "exports": [],
@@ -22272,7 +22273,7 @@
     {
       "file": "client/src/styles/journey.css",
       "domain": "shell-content",
-      "sha256": "66a983e4007d960dcea8a22b4224caed122e3c96bcb1240577ae0d8714eaea3a",
+      "sha256": "b7e5a1010d6263e3601bd7cda3ff604b46fe22e1141c50e0aca6c8303e071e17",
       "lines": 3,
       "imports": [],
       "exports": [],
@@ -22300,7 +22301,7 @@
     {
       "file": "client/src/styles/public-discovery.css",
       "domain": "discovery-social",
-      "sha256": "c1967073e0080cce4a5827f1f217525bccacb0dfdcaee1bae7649107a8d998ca",
+      "sha256": "9450fa76ad933512bcb6c9df7ff13562bcb8c84d7f4ff87013ba8f509ebc1a5b",
       "lines": 106,
       "imports": [],
       "exports": [],
@@ -22315,9 +22316,7 @@
         "#595959",
         "#8A8A8A",
         "#BDBDBD",
-        "#D3451F",
         "#D9D9D9",
-        "#FF7900",
         "#FFFFFF"
       ],
       "fontDeclarations": [],
@@ -22349,14 +22348,18 @@
     {
       "file": "client/src/styles/zalando-ui.css",
       "domain": "shell-content",
-      "sha256": "7e2f7fc69ce523336802588629128be41bea3bf757155d483c126f22325eb4cd",
-      "lines": 193,
+      "sha256": "916f2113c0b8c23dc6e05aad2bee72808aa62ec243e86a16c57a2f70443ed8b8",
+      "lines": 201,
       "imports": [],
       "exports": [],
       "controls": [],
       "icons": [],
       "inlineSvg": [],
-      "colors": [],
+      "colors": [
+        "#0A0A0A",
+        "#571EF6",
+        "#C5B2F4"
+      ],
       "fontDeclarations": [],
       "apiReferences": []
     },

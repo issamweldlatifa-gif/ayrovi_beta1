@@ -79,7 +79,7 @@ describe('chargement et résultats Lens', () => {
     expect(card).not.toContain('cardOptions');
   });
 
-  it('réserve le rouge aux baisses de prix, le violet aux actions/éléments actifs/minuteurs, le noir aux étoiles', () => {
+  it('réserve le rouge aux baisses de prix, le violet au favori coché, le violet clair au mode choisi, le noir aux minuteurs et aux étoiles', () => {
     expect(palette).toContain("export { LENS_COLORS } from '@/design/tokens.mobile'");
     // Palette Lens fermée, entièrement dérivée de la marque (sauf le rouge de prix).
     expect(nativeTokens).toContain("const PRICE_DROP_RED = '#CF1322'");
@@ -97,9 +97,14 @@ describe('chargement et résultats Lens', () => {
     expect(card).toContain('backgroundColor: LENS_COLORS.sale');
     expect(card).toContain('favorite ? LENS_COLORS.active : LENS_COLORS.black');
     expect(product).toContain('favorite ? LENS_COLORS.active : LENS_COLORS.black');
-    expect(product).toContain('countdownExpired ? LENS_COLORS.sale : LENS_COLORS.active');
-    expect(product).toContain("color={theme.colors.accentText}");
-    expect(lens).toContain('modeActive: { backgroundColor: LENS_COLORS.active }');
+    // v4.2.0 : un minuteur est une information, pas une action — encre noire.
+    expect(product).toContain('countdownExpired ? LENS_COLORS.sale : LENS_COLORS.black');
+    expect(product).not.toContain('countdownExpired ? LENS_COLORS.sale : LENS_COLORS.active');
+    expect(product).toContain('color={theme.colors.ink} accessibilityElementsHidden');
+    // Mode caméra choisi : violet clair, libellé noir.
+    expect(nativeTokens).toContain('activeSoft: BRAND.violetLight');
+    expect(lens).toContain('modeActive: { backgroundColor: LENS_COLORS.activeSoft }');
+    expect(lens).toContain('color={active ? LENS_COLORS.black : LENS_COLORS.white}');
     // Le viseur reste sombre dans les DEUX modes : `ink` devient blanc en mode sombre
     // et rendait l'en-tête blanc illisible.
     expect(lens).not.toContain('backgroundColor: theme.colors.ink');

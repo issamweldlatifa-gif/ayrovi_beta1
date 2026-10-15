@@ -121,7 +121,7 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
             <Plus className="h-6 w-6" />
           </button>
 
-          {/* Right actions: Mic | Send (if text typed) | Orange Voice Mode Button */}
+          {/* Right actions: Mic | Send (if text typed) | Voice Mode Button */}
           <div className="flex min-w-0 max-w-full flex-wrap items-center justify-end gap-2">
             {/* 1. Dictation Microphone */}
             <button
@@ -152,7 +152,7 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
               </button>
             )}
 
-            {/* 3. Circular Orange Voice Mode Button (Mode Switcher strictly to Voice Mode) */}
+            {/* 3. Voice Mode Button (Mode Switcher strictly to Voice Mode) */}
             {onToggleVoiceMode && (
               <button
                 type="button"

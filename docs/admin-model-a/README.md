@@ -190,7 +190,7 @@ Titre d'onglet : `AYROVI · Console d'exploitation` (la console ne s'annonce plu
 marketing du site public).
 Captures : `audit/login-desktop.png` et `audit/login-mobile.png` — elles sont régénérées par l'audit.
 
-Identité : la connexion utilise le **verrou A.ROVI** (`logo-ayrovi-lockup-white-orange.svg` sur le
+Identité : la connexion utilise le **verrou A.ROVI** (`logo-ayrovi-lockup-white-violet.svg` sur le
 panneau en encre, version noire sur la carte mobile). Le nom n'y est donc plus écrit deux fois. Un
 détail mesuré au passage : dans un conteneur flex en colonne, l'étirement transversal écrasait la
 hauteur imposée et centrait l'art dans une boîte trop large — l'emblème n'était plus aligné sur le

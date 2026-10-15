@@ -226,9 +226,10 @@ export function StoryViewer({ stories, initialIndex = 0, visible, onClose, onOpe
                 accessibilityRole="button"
                 accessibilityLabel={current.cta}
                 onPress={() => onOpenTarget(current)}
-                style={[styles.cta, { backgroundColor: theme.colors.accent, borderRadius: theme.radius.cta }]}
+                style={[styles.cta, { backgroundColor: theme.colors.onMedia, borderRadius: theme.radius.cta }]}
               >
-                <AppText variant="label" weight="bold" color={theme.colors.onAccent}>{current.cta}</AppText>
+                {/* Sur le média : pastille blanche, libellé noir — lisible sur toute photo. */}
+                <AppText variant="label" weight="bold" color={theme.colors.onAdaptiveLight}>{current.cta}</AppText>
               </Pressable>
             ) : null}
           </View>

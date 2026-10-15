@@ -644,7 +644,7 @@ export default function LensScreen() {
                   accessibilityState={{ selected: active }}
                   style={[styles.mode, active ? styles.modeActive : null]}
                 >
-                  <AppText variant="caption" weight="bold" color={LENS_COLORS.white} align="center">{label}</AppText>
+                  <AppText variant="caption" weight="bold" color={active ? LENS_COLORS.black : LENS_COLORS.white} align="center">{label}</AppText>
                 </Pressable>
               );
             })}
@@ -719,8 +719,8 @@ const styles = StyleSheet.create({
   cameraHint: { textShadowColor: veil(0.7), textShadowRadius: 5 },
   modePicker: { minHeight: 54, borderRadius: 28, padding: 4, backgroundColor: LENS_COLORS.cameraControl },
   mode: { flex: 1, minHeight: 46, borderRadius: 24, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
-  // Mode choisi = élément actif : pastille violette, libellé blanc (7,19:1).
-  modeActive: { backgroundColor: LENS_COLORS.active },
+  // Mode choisi = état actif : pastille violet clair, libellé noir (10,4:1).
+  modeActive: { backgroundColor: LENS_COLORS.activeSoft },
   captureRow: { alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 8 },
   sideControl: { width: 58, height: 58, borderRadius: 18, borderWidth: 1.5, borderColor: LENS_COLORS.white, backgroundColor: veil(0.25), alignItems: 'center', justifyContent: 'center' },
   shutterOuter: { width: 84, height: 84, borderRadius: 42, borderWidth: 5, borderColor: LENS_COLORS.white, backgroundColor: veil(0.35), alignItems: 'center', justifyContent: 'center' },

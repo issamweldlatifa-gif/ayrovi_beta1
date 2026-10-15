@@ -349,7 +349,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
             ))}
           </div>
           <button type="button" onClick={() => openLiveResults(selectedObjects)} disabled={!selectedObjects.length}
-            className="bg-ink text-white hover:bg-ink/90 mt-2.5 flex w-full items-center justify-center gap-2 rounded-full py-2.5 text-sm font-extrabold text-white">
+            className="bg-ink text-white hover:bg-ink/90 mt-2.5 flex w-full items-center justify-center gap-2 rounded-full py-2.5 text-sm font-extrabold">
             {tr('Sélectionner les produits', 'اختيار المنتجات')}
           </button>
         </div>

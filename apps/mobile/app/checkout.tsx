@@ -351,12 +351,12 @@ export default function CheckoutScreen() {
                     onPress={() => setGovernorate(city)}
                     style={[styles.chip, {
                       borderColor: active ? theme.colors.action : theme.colors.line,
-                      backgroundColor: active ? theme.colors.action : theme.colors.canvas,
+                      backgroundColor: active ? theme.colors.accentSoft : theme.colors.canvas,
                       borderRadius: theme.radius.control,
                       minHeight: theme.geometry.minTarget,
                     }]}
                   >
-                    <AppText variant="label" color={active ? theme.colors.onAction : theme.colors.ink}>{city}</AppText>
+                    <AppText variant="label" color={active ? theme.colors.onAccentSoft : theme.colors.ink}>{city}</AppText>
                   </Pressable>
                 );
               })}
@@ -468,6 +468,7 @@ export default function CheckoutScreen() {
 
         <Button
           label={t('checkout.submit')}
+          tone="main"
           onPress={() => submit.mutate()}
           busy={submit.isPending}
           disabled={!canSubmit || submit.isPending}

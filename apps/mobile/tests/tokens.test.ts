@@ -36,9 +36,13 @@ describe('jetons générés', () => {
     expect(NEUTRALS).toEqual(brand.neutrals);
   });
 
-  it('ne reprennent PAS la palette du site (l’identité couleur de l’app est distincte)', () => {
-    // Le site garde sa propre palette ; seule la structure est partagée.
-    expect(COLORS.light.accent).not.toBe(identity.colors.accent);
+  it('partagent la palette officielle du site (même violet, même violet clair)', () => {
+    // Depuis le 15/10/2026 le site applique la même palette officielle que l'application ;
+    // les deux sources restent distinctes (brand.json / identity.json) mais doivent concorder.
+    for (const role of ['accent', 'action', 'onAction', 'accentSoft', 'onAccentSoft', 'canvas', 'ink', 'surface'] as const) {
+      expect(COLORS.light[role], role).toBe(identity.colors[role]);
+    }
+    expect(COLORS.dark.accentSoft).toBe(identity.darkColors.accentSoft);
   });
 
   it('portent la géométrie et l’échelle typographique', () => {

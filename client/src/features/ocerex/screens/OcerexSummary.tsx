@@ -24,7 +24,7 @@ export const OcerexSummary: React.FC<{ extraction: OcerexExtraction; busy: boole
           <dd className="mt-1 font-black tabular-nums text-ink" dir="ltr">{extraction.referenceTnd != null ? `${extraction.referenceTnd.toFixed(2)} DT` : `${extraction.referencePrice} ${extraction.currency}`}</dd>
         </div>
         <div>
-          <dt className="text-xs font-bold uppercase tracking-[0.14em] text-cta">{tr('Prix Ayrovi', 'سعر Ayrovi')}</dt>
+          <dt className="text-xs font-bold uppercase tracking-[0.14em] text-ink">{tr('Prix Ayrovi', 'سعر Ayrovi')}</dt>
           <dd className="mt-1"><Price className="items-start" amount={Number(extraction.ayroviPrice || 0)} size="lg" currencyLabel="TND" /></dd>
         </div>
         <div>

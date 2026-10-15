@@ -31,7 +31,7 @@ function Block({ block }: { block: LegalBlock }) {
           styles.notice,
           {
             backgroundColor: theme.colors.surface,
-            borderStartColor: theme.colors.accentText,
+            borderStartColor: theme.colors.ink,
             borderRadius: theme.radius.control,
           },
         ]}

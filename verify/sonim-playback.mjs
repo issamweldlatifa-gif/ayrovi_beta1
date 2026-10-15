@@ -1,5 +1,7 @@
 import { chromium } from 'playwright';
 import fs from 'node:fs';
+const identity=JSON.parse(fs.readFileSync('client/src/design/editorial/identity.json','utf8'));
+const rgb=hex=>{const n=parseInt(String(hex).slice(1),16);return `rgb(${n>>16&255}, ${n>>8&255}, ${n&255})`;};
 const output='screenshots/editorial/sonim-playback';fs.mkdirSync(output,{recursive:true});
 const checks=[],errors=[];let page;
 const check=(label,pass,details)=>{checks.push({label,pass:Boolean(pass),details});if(!pass)throw new Error(label+': '+JSON.stringify(details));};
@@ -84,7 +86,7 @@ try {
     await settings.getByRole('button',{name:/^Puck/}).click();await settings.getByRole('button',{name:'0.9x',exact:true}).click();
     check(`${key}: selected preset and rate match the controls`,await settings.locator('.voice-choices [aria-pressed=true]').innerText().then(text=>text.includes('Puck'))&&await settings.locator('.voice-rates [aria-pressed=true]').innerText()==='0.9x');
     // Wait for the inherited color transition too, not merely aria-pressed.
-    await page.waitForFunction(()=>{const button=document.querySelector('.voice-rates [aria-pressed=true]');return button&&getComputedStyle(button).backgroundColor==='rgb(0, 0, 0)'&&getComputedStyle(button.firstElementChild).color==='rgb(255, 255, 255)';});
+    await page.waitForFunction(({action,onAction})=>{const button=document.querySelector('.voice-rates [aria-pressed=true]');return button&&getComputedStyle(button).backgroundColor===action&&getComputedStyle(button.firstElementChild).color===onAction;},{action:rgb(identity.colors.action),onAction:rgb(identity.colors.onAction)});
     check(`${key}: selected rate settles on readable action contrast`,await settings.locator('.voice-rates [aria-pressed=true]').evaluate(el=>getComputedStyle(el).color===getComputedStyle(el.firstElementChild).color));
     await page.screenshot({path:`${output}/settings-${locale}-${width}.png`});
     await page.evaluate(()=>document.documentElement.style.fontSize='200%');

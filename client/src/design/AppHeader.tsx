@@ -32,7 +32,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   sticky = false,
   tone = 'light',
   className = '',
-  logoUrl = '/media/logo-ayrovi.png',
+  logoUrl = '/media/logo-ayrovi.png?v=4.1',
   onLogoClick,
   showLogo = true,
   backPlacement = 'trailing',

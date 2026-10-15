@@ -48,6 +48,7 @@
 .lens-link-form p { margin:0; font-size:0.8125rem; }
 .lens-panel-primary,.lens-panel-secondary { min-height:48px; width:100%; padding:10px 16px; border:1px solid #000; background:#000; color:#fff; font:inherit; font-weight:700; cursor:pointer; }
 .lens-panel-secondary { background:#fff; color:#000; }
+.lens-panel-primary { border-color:var(--ay-e-ink); background:var(--ay-e-ink); color:var(--ay-e-canvas); }
 .lens-panel-primary:disabled { background:#595959; border-color:#595959; opacity:.55; cursor:not-allowed; }
 .lens-panel button:focus-visible,.lens-panel input:focus-visible,.lens-panel summary:focus-visible,.lens-panel a:focus-visible { outline:2px solid #000; outline-offset:3px; }
 .lens-access-intro { display:flex; align-items:flex-start; gap:12px; margin-bottom:20px; }

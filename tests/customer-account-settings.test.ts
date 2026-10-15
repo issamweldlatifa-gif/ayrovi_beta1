@@ -13,7 +13,7 @@ async function register(email='customer@example.com'){
  const agent=request.agent(app);const result=await agent.post('/api/customer/auth/email/register').send({email,password,displayName:'Test Customer'});expect(result.status).toBe(200);
  return {agent,id:result.body.data.account.id,csrf:result.body.data.csrfToken};
 }
-const photo=()=>sharp({create:{width:500,height:300,channels:3,background:'#ff7900'}}).png().withMetadata().toBuffer();
+const photo=()=>sharp({create:{width:500,height:300,channels:3,background:'#571ef6'}}).png().withMetadata().toBuffer();
 describe('Persistent customer account settings',()=>{
  test('avatar and password writes require authentication',async()=>{
   expect((await request(app).post('/api/customer/account/avatar')).status).toBe(401);

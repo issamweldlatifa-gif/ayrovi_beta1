@@ -74,7 +74,11 @@ html[data-ayrovix-theme='dark'] .ayrovix-theme-scope .shadow-overlay {
 }
 html[data-ayrovix-theme='dark'] .ayrovix-theme-scope .ay-journey-progress li.is-current::before,
 html[data-ayrovix-theme='dark'] .ayrovix-theme-scope .ay-journey-progress li.is-complete::before {
-  background-color: var(--ayrovi-cta);
+  background-color: var(--ayrovi-white);
+}
+/* Étape franchie : anneau blanc (neutre). Seule l'étape en cours garde le violet. */
+html[data-ayrovix-theme='dark'] .ayrovix-theme-scope .ay-journey-progress li.is-complete > span {
+  border-color: var(--ayrovi-white);
 }
 
 @media (max-width: 359px) {

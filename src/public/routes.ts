@@ -1,5 +1,5 @@
 import { availableProductParams, availableProductSql } from '../catalogue/contentProducts';
-import { enforceBrandIdentity, enforceLegacyTheme } from '../../shared/identityPolicy';
+import { brandAccentColor, enforceBrandIdentity, enforceLegacyTheme } from '../../shared/identityPolicy';
 import { publicNavDestination } from '../../shared/publicNavigation';
 import { createHash, randomUUID } from 'node:crypto';
 import { Router } from 'express';
@@ -415,7 +415,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     res.json({ success: true, data: row ? {
       eyebrow: row.eyebrow, title: row.title, description: row.description,
       ctaLabel: row.cta_label, ctaUrl: row.cta_url || '', proofLine: row.proof_line || '',
-      accentColor: row.accent_color || '#FF6900', elementOrder: row.element_order || 'eyebrow,title,description,cta,proof',
+      accentColor: brandAccentColor(row.accent_color), elementOrder: row.element_order || 'eyebrow,title,description,cta,proof',
       bgType: row.bg_type, bgColor: row.bg_color, bgImage: row.bg_image,
       overlayStrength: row.overlay_strength, focalX: row.focal_x, focalY: row.focal_y,
       phoneEnabled: Boolean(row.phone_enabled), enabled: Boolean(row.enabled),

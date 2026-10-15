@@ -5,8 +5,9 @@
  *
  *   • COULEURS  → apps/mobile/src/design/brand.json
  *                 Identité couleur officielle de l'APPLICATION : noir #0A0A0A,
- *                 blanc #FFFFFF, violet électrique #571EF6, gris clair #F2F2F2.
- *                 Elle ne touche PAS le site : le site garde sa propre palette.
+ *                 blanc #FFFFFF, violet électrique #571EF6 (+ violet clair
+ *                 #C5B2F4 depuis la v4.2.0), gris clair #F2F2F2. Le site applique
+ *                 la même palette via identity.json ; les tests imposent l'accord.
  *   • STRUCTURE → client/src/design/editorial/identity.json
  *                 Espacements, échelle typographique, durées, géométrie et
  *                 graisses, partagés avec le site (aucune raison de diverger).

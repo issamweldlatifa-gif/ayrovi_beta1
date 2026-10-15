@@ -186,6 +186,7 @@ export default function ProductScreen() {
         {canOrder ? (
           <Button
             label={addToCart.isSuccess ? t('catalog.added') : t('catalog.addToCart')}
+            tone="main"
             onPress={() => addToCart.mutate()}
             busy={addToCart.isPending}
             disabled={addToCart.isSuccess}
@@ -196,11 +197,12 @@ export default function ProductScreen() {
         ) : null}
 
         {product.sourceUrl ? (
-          <Button label={t('catalog.openSource')} onPress={openSource} />
+          <Button label={t('catalog.openSource')} tone="quiet" onPress={openSource} />
         ) : null}
         {signedIn ? (
           <Button
             label={isFavorite ? t('catalog.favorited') : t('catalog.favorite')}
+            tone="quiet"
             onPress={() => favorite.mutate()}
             busy={favorite.isPending}
             disabled={isFavorite || favorite.isPending}

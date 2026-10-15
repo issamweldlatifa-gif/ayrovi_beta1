@@ -20,8 +20,8 @@ import { useNavigationHistory } from '../navigation/NavigationHistory';
  * Tout est piloté depuis Admin → Contenu → Social → onglet Story → « Bloc d'accueil ».
  * Aucun texte ni image n'est figé dans ce composant.
  *
- * Charte Zalando : la section reste monochrome. La seule touche orangée est la
- * flèche du lien « Explorer toutes les stories ».
+ * Charte AYROVI : la section reste monochrome. La seule touche violette (éclaircie
+ * pour le fond sombre) est la flèche du lien « Explorer toutes les stories ».
  */
 
 interface ShowcaseSettings {

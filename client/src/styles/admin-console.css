@@ -20,9 +20,10 @@
    4. UNE SEULE ACTION FORTE par écran (bouton primaire), le reste en boutons secondaires.
    5. Les files d'attente et les états vides disent quoi faire, pas seulement « aucune donnée ».
 
-   La PALETTE reste celle d'AYROVI (charte « Monochrome Premium × Orange d'action ») : ce n'est pas
-   Amazon qu'on copie, ce sont ses conventions de poste de travail. L'orange AYROVI #FF6900 reste le
-   seul déclencheur d'action ; les gris sont ceux de l'échelle neutre du dépôt.
+   La PALETTE reste celle d'AYROVI (palette officielle du 2026-10-15 : noir #0A0A0A, blanc, violet
+   électrique #571EF6, gris clair #F2F2F2) : ce n'est pas Amazon qu'on copie, ce sont ses conventions
+   de poste de travail. Le violet AYROVI (jeton --ayrovi-color-brand-accent) est le seul déclencheur
+   d'action ; les gris sont ceux de l'échelle neutre du dépôt.
    ═════════════════════════════════════════════════════════════════════════════════════════════ */
 
 /* ── 1. Rôles du modèle A, portés par la racine de la coquille et par la porte d'entrée ────────
@@ -48,8 +49,10 @@
   --bo-soft: #6B7076;
   --bo-sunken: #F6F7F8;
   --bo-hover: #F3F3F4;
-  --bo-accent: #FF6900;       /* action unique — identité AYROVI */
-  --bo-accent-soft: #FFF3EA;
+  --bo-accent: var(--ayrovi-color-brand-accent); /* action unique — violet officiel AYROVI */
+  --bo-accent-hover: #491ACC;  /* survol de l'action (actionHover de l'identité) */
+  --bo-on-accent: #FFFFFF;     /* texte sur violet : 7,19:1 */
+  --bo-accent-soft: #EEE9FE;   /* teinte de sélection : 10 % de violet sur blanc */
   --bo-ok: #0E7C4A;
   --bo-ok-soft: #EAF4EF;
   --bo-warn: #946200;
@@ -108,7 +111,7 @@ html[data-theme='dark'] .admin-boot {
   --bo-soft: #A0A0A0;
   --bo-sunken: #202020;
   --bo-hover: #242424;
-  --bo-accent-soft: #2A1B10;
+  --bo-accent-soft: #1C1239;
   --bo-ok-soft: #12271E;
   --bo-warn-soft: #2A2314;
   --bo-danger-soft: #2A1816;
@@ -301,7 +304,7 @@ html[data-theme='dark'] .bo-shell .admin-sidebar nav button { color: #D6D6D6; }
 :is(.bo-shell, .admin-login) .admin-eyebrow { color: var(--bo-soft); font-size: 9.5px; font-weight: 800; letter-spacing: .15em; }
 
 /* Boutons : une action forte, le reste sobre. Rayon 3 px, pas d'ombre, pas de dégradé.
-   Portée étendue à `.admin-login` : la connexion doit montrer l'action forte en orange, comme
+   Portée étendue à `.admin-login` : la connexion doit montrer l'action forte en violet, comme
    partout ailleurs dans le poste de travail (avant ce correctif, elle restait en noir). */
 :is(.bo-shell, .admin-login) .admin-button {
   border-radius: var(--bo-radius-sm); border: 1px solid var(--bo-line-firm);
@@ -309,9 +312,9 @@ html[data-theme='dark'] .bo-shell .admin-sidebar nav button { color: #D6D6D6; }
 }
 :is(.bo-shell, .admin-login) .admin-button:hover { border-color: var(--bo-ink); }
 :is(.bo-shell, .admin-login) .admin-button--primary {
-  background: var(--bo-accent); border-color: var(--bo-accent); color: #111110;
+  background: var(--bo-accent); border-color: var(--bo-accent); color: var(--bo-on-accent);
 }
-:is(.bo-shell, .admin-login) .admin-button--primary:hover { background: #E85F00; border-color: #E85F00; color: #111110; }
+:is(.bo-shell, .admin-login) .admin-button--primary:hover { background: var(--bo-accent-hover); border-color: var(--bo-accent-hover); color: var(--bo-on-accent); }
 :is(.bo-shell, .admin-login) .admin-button--secondary { background: var(--bo-card); color: var(--bo-ink); }
 :is(.bo-shell, .admin-login) .admin-button--ghost { border-color: transparent; color: var(--bo-ink); }
 :is(.bo-shell, .admin-login) .admin-button--ghost:hover { background: var(--bo-hover); border-color: transparent; }
@@ -408,7 +411,7 @@ html[data-theme='dark'] .bo-shell .admin-table-bulkbar { background: var(--bo-ca
 .bo-shell .bo-notice {
   display: flex; align-items: center; gap: 10px;
   margin: 12px 24px 0; padding: 9px 12px;
-  background: var(--bo-warn-soft); border: 1px solid #F0DCB4; border-inline-start: 3px solid var(--bo-accent);
+  background: var(--bo-warn-soft); border: 1px solid #F0DCB4; border-inline-start: 3px solid var(--bo-warn);
   border-radius: var(--bo-radius-sm); color: #6B4A00; font-size: 12px;
 }
 html[data-theme='dark'] .bo-shell .bo-notice { border-color: #3A3018; color: #E8C98A; }
@@ -472,7 +475,7 @@ html[data-theme='dark'] .bo-shell .bo-notice { border-color: #3A3018; color: #E8
 /* ── 12. Accès : connexion et création de compte portent le modèle A ────────────────────────────
    La porte d'entrée est la première impression du poste de travail : elle suit donc les mêmes
    conventions que les 49 écrans (deux surfaces, filets de 1 px, rayon 4 px, AUCUN dégradé, une
-   seule action forte en orange, densité compacte). Ce qui a changé par rapport à l'écran
+   seule action forte en violet, densité compacte). Ce qui a changé par rapport à l'écran
    précédent : plus de grands cercles décoratifs ni de dégradés, un cartouche de statut serveur
    réellement alimenté par /api/health, et une bande de pied qui dit quoi faire en cas de blocage.
    Tout est additif : la feuille historique reste intacte et le retour arrière consiste à retirer

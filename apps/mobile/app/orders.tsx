@@ -95,7 +95,7 @@ export default function OrdersScreen() {
                 <AppText variant="label" weight="bold" style={styles.orderNumber}>
                   {order.orderNumber || order.id}
                 </AppText>
-                <AppText variant="caption" color={theme.colors.accentText}>
+                <AppText variant="caption" color={theme.colors.ink}>
                   {statusText('order', order.status, t)}
                 </AppText>
               </View>

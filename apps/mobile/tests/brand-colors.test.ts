@@ -1,8 +1,9 @@
 /**
  * Identité couleur officielle de l'application (décision produit du 15/10/2026).
  *
- *   NOIR  #0A0A0A (≈ 35 %) · BLANC #FFFFFF (≈ 50 %)
- *   VIOLET ÉLECTRIQUE #571EF6 (≈ 10 %) · GRIS CLAIR #F2F2F2 (≈ 5 %)
+ *   NOIR  #0A0A0A (≈ 35 %) · BLANC #FFFFFF (≈ 50 %) · GRIS CLAIR #F2F2F2 (≈ 5 %)
+ *   VIOLET ÉLECTRIQUE #571EF6 + VIOLET CLAIR #C5B2F4 : repère global ≈ 3 % (2 % + 1 %)
+ *   depuis la v4.2.0 — il était de 10 %. Repère d'ensemble, jamais un quota par écran.
  *
  * Ce fichier verrouille trois choses vérifiables :
  *   1. les valeurs officielles et leur rôle sémantique (fond blanc, texte noir,
@@ -10,8 +11,9 @@
  *   2. la LISIBILITÉ réelle — ratios WCAG mesurés, pas supposés ;
  *   3. la disparition de l'orange : jetons, code, app.json ET images.
  *
- * Les proportions (35/50/10/5) sont un objectif d'ensemble : elles se jugent à
- * l'écran, pas dans le code — ce test ne prétend pas les mesurer.
+ * Les proportions (50/35/5 + 2/1) sont un objectif d'ensemble : elles se jugent à
+ * l'écran, pas dans le code — ce test ne prétend pas les mesurer. Il verrouille en
+ * revanche OÙ le violet plein est permis (section « violet au minimum »).
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -171,11 +173,29 @@ function decodePng(file: string): { width: number; height: number; pixels: Uint8
 /* ── 1. Valeurs officielles et rôles ──────────────────────────────────────── */
 
 describe('identité couleur officielle', () => {
-  it('les quatre couleurs officielles sont exactement celles de la charte', () => {
-    expect(BRAND).toEqual({ black: '#0A0A0A', white: '#FFFFFF', violet: '#571EF6', lightGray: '#F2F2F2' });
-    expect(BRAND_SHARE).toEqual({ black: 0.35, white: 0.5, violet: 0.1, lightGray: 0.05 });
-    const total = Object.values(BRAND_SHARE).reduce((sum, share) => sum + share, 0);
-    expect(total).toBeCloseTo(1, 10);
+  it('les couleurs officielles sont exactement celles de la charte (v4.2.0 : + violet clair)', () => {
+    expect(BRAND).toEqual({ black: '#0A0A0A', white: '#FFFFFF', violet: '#571EF6', violetLight: '#C5B2F4', lightGray: '#F2F2F2' });
+  });
+
+  it('le violet est ramené de 10 % à un repère global de 3 % (2 % + 1 % clair), les autres parts sont inchangées', () => {
+    expect(BRAND_SHARE).toEqual({ white: 0.5, black: 0.35, violet: 0.02, violetLight: 0.01, lightGray: 0.05 });
+    expect(BRAND_SHARE.violet + BRAND_SHARE.violetLight).toBeCloseTo(0.03, 10);
+    // Les 7 points rendus par le violet reviennent au bloc neutre (blanc, noir, gris) sans
+    // nouvelle couleur : tout ce qui n'est pas violet couvre 97 % de l'ensemble.
+    expect(1 - (BRAND_SHARE.violet + BRAND_SHARE.violetLight)).toBeCloseTo(0.97, 10);
+  });
+
+  it('le violet clair est un fond secondaire : texte noir dessus, jamais blanc, et identique dans les deux modes', () => {
+    for (const mode of ['light', 'dark'] as const) {
+      expect(COLORS[mode].accentSoft).toBe(BRAND.violetLight);
+      expect(COLORS[mode].onAccentSoft).toBe(BRAND.black);
+      expect(contrast(COLORS[mode].onAccentSoft, COLORS[mode].accentSoft)).toBeGreaterThanOrEqual(7);
+    }
+    // Blanc sur violet clair : 1,9:1 — interdit pour du texte.
+    expect(contrast(BRAND.white, BRAND.violetLight)).toBeLessThan(3);
+    // Le violet clair ne suffit pas seul à signaler un état sur blanc : il faut un contour violet.
+    expect(contrast(BRAND.violetLight, BRAND.white)).toBeLessThan(3);
+    expect(contrast(BRAND.violet, BRAND.white)).toBeGreaterThanOrEqual(3);
   });
 
   it('fond blanc, texte noir, action et focus violets, gris clair secondaire (mode clair)', () => {
@@ -380,5 +400,61 @@ describe('plus d’orange dans l’application', () => {
       if (orange > 0 || violet === 0) report.push(`${name}: orange=${orange} violet=${violet}`);
     }
     expect(report).toEqual([]);
+  });
+});
+
+/* ── 5. Violet au minimum (v4.2.0) ────────────────────────────────────────── */
+
+describe('violet au minimum : le violet plein est réservé à l’action principale', () => {
+  const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
+  const walkSources = (dir: string, out: string[] = []): string[] => {
+    for (const entry of fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true })) {
+      const rel = path.posix.join(dir, entry.name);
+      if (entry.isDirectory()) walkSources(rel, out);
+      else if (/\.tsx$/.test(entry.name)) out.push(rel);
+    }
+    return out;
+  };
+
+  it('le bouton par défaut n’est plus violet : `main` est une décision explicite', () => {
+    const ui = read('src/design/ui.tsx');
+    expect(ui).toMatch(/tone = 'solid'/);
+    expect(ui).toMatch(/tone\?: 'main' \| 'solid' \| 'quiet'/);
+  });
+
+  it('seules les actions d’achat et de connexion portent tone="main"', () => {
+    const counts: Record<string, number> = {};
+    for (const rel of [...walkSources('app'), ...walkSources('src')]) {
+      const n = (read(rel).match(/tone="main"/g) ?? []).length;
+      if (n) counts[rel] = n;
+    }
+    expect(counts).toEqual({
+      'app/(tabs)/cart.tsx': 1,            // passer à la caisse
+      'app/checkout.tsx': 1,               // valider la commande
+      'app/forgot.tsx': 1,                 // envoyer le lien de réinitialisation
+      'app/product/[id].tsx': 1,           // ajouter au panier
+      'app/sign-in.tsx': 6,                // une validation par étape de connexion
+      'src/features/lens/LensProductView.tsx': 2, // ajouter au panier · voir le panier
+      'src/features/lens/ocerex/OcerexFlow.tsx': 1, // confirmer la commande OCEREX
+    });
+  });
+
+  it('choix sélectionnés : violet clair + contour violet + texte noir (plus de pastille violette pleine)', () => {
+    for (const rel of ['app/checkout.tsx', 'app/orders/[id].tsx']) {
+      const src = read(rel);
+      expect(src, rel).toMatch(/backgroundColor: active \? theme\.colors\.accentSoft : theme\.colors\.canvas/);
+      expect(src, rel).toMatch(/color=\{active \? theme\.colors\.onAccentSoft : theme\.colors\.ink\}/);
+      expect(src, rel).not.toMatch(/backgroundColor: active \? theme\.colors\.action/);
+    }
+  });
+
+  it('aucun violet décoratif : remises, codes promo, cartes story, pied de page, notices légales', () => {
+    const promo = read('src/features/sections/PromotionCard.tsx');
+    expect(promo).not.toMatch(/colors\.accent\b|colors\.accentText/);
+    const story = read('src/features/sections/StoryCard.tsx');
+    expect(story).not.toMatch(/colors\.accent\b/);
+    expect(read('src/features/shell/Footer.tsx')).not.toMatch(/accentText/);
+    expect(read('src/features/legal/LegalScreen.tsx')).not.toMatch(/accentText/);
+    expect(read('src/features/home/HeroCarousel.tsx')).not.toMatch(/colors\.action\b/);
   });
 });

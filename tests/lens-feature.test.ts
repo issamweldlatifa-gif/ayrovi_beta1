@@ -12,7 +12,7 @@ import { resolveLensVideoUrl } from '../src/services/lensMedia';
  *   2. une vidéo peut être déposée OU pointée par un lien, et ce lien est réécrit
  *      vers un lecteur officiel (jamais une origine arbitraire) ;
  *   3. la section respire : un écart vertical confortable la sépare des blocs voisins ;
- *   4. charte Zalando : section monochrome, l'orange se limite à la flèche d'action.
+ *   4. charte AYROVI : section monochrome, le violet se limite à la flèche d'action.
  */
 
 const admin = request.agent(app);
@@ -151,7 +151,7 @@ describe('LENS editorial block — rythme et charte', () => {
     expect(indexCss).toMatch(/@media \(min-width: 768px\)\s*\{\s*\.lens-feature__media\s*\{[^}]*border-radius: 20px/);
   });
 
-  test('Zalando charter: monochrome block, orange limited to the action arrow', () => {
+  test('AYROVI charter: monochrome block, no violet (v4.2.0) — the arrow follows the link colour', () => {
     const block = /\.lens-feature[\s\S]*?@media \(prefers-reduced-motion/.exec(indexCss)?.[0] ?? '';
     // couleurs : uniquement les jetons de la charte
     expect(block).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
@@ -159,10 +159,12 @@ describe('LENS editorial block — rythme et charte', () => {
     expect(block).toMatch(/var\(--ayrovi-text-primary\)/);
     expect(block).toMatch(/var\(--ayrovi-text-secondary\)/);
     expect(block).toMatch(/var\(--ayrovi-bg-surface\)/);
-    // l'orange n'apparaît qu'une seule fois, sur la flèche du lien d'action
-    const orange = block.match(/--ayrovi-color-brand-orange/g) ?? [];
-    expect(orange).toHaveLength(1);
-    expect(block).toMatch(/\.lens-feature__cta svg \{[^}]*--ayrovi-color-brand-orange/);
+    // Charte v4.2.0 (violet au minimum) : plus aucun violet dans ce bloc éditorial. La flèche
+    // du lien suit la couleur du lien (currentColor) — un accent décoratif n'est pas une
+    // fonction ; le violet reste réservé aux actions principales et aux états actifs.
+    expect(block).not.toMatch(/--ayrovi-color-brand-accent|--ayrovi-accent-on-dark|--ayrovi-cta\b/);
+    expect(block).toMatch(/\.lens-feature__cta svg \{[^}]*color: currentColor/);
+    expect(block).not.toMatch(/--ayrovi-color-brand-orange/);
   });
 
   test('the action is a text link, not a second filled button', () => {

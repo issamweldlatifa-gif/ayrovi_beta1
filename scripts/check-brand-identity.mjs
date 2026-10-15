@@ -76,7 +76,13 @@ export function auditBrand(root=process.cwd()) {
   const identity=JSON.parse(fs.readFileSync(path.join(root,'client/src/design/editorial/identity.json'),'utf8'));
   if (identity.typography.stack !== "'Zalando Sans', 'Noto Sans Arabic', sans-serif") errors.push('official stack changed');
   if (identity.fonts.length!==2 || identity.fonts.map(f=>f.family).join('|')!=='Zalando Sans|Noto Sans Arabic') errors.push('official family allowlist changed');
-  if (identity.colors.canvas!=='#FFFFFF'||identity.colors.ink!=='#000000') errors.push('pure black/white identity changed');
+  // Palette officielle (2026-10-15) : noir #0A0A0A · blanc #FFFFFF · violet électrique #571EF6 · gris clair #F2F2F2.
+  // v4.2.0 : violet clair #C5B2F4 (secondaire, texte #0A0A0A) ; repère global ≈ 3 % (2 % + 1 %), pas un quota par écran.
+  const official={canvas:'#FFFFFF',ink:'#0A0A0A',surface:'#F2F2F2',action:'#571EF6',accent:'#571EF6',onAction:'#FFFFFF',accentSoft:'#C5B2F4',onAccentSoft:'#0A0A0A'};
+  for(const [role,value] of Object.entries(official)) if(identity.colors[role]!==value) errors.push(`official palette changed: ${role}`);
+  for(const role of ['accentSoft','onAccentSoft']) if(identity.darkColors[role]!==official[role]) errors.push(`official palette changed: dark ${role}`);
+  const share=identity.accentShare||{};
+  if(share.scope!=='app'||share.violet!==0.02||share.violetLight!==0.01||Math.abs(share.total-(share.violet+share.violetLight))>1e-9) errors.push('violet share changed (app-level guide: 2 % + 1 % = 3 %)');
   const walk=relative=>{
     for (const entry of fs.readdirSync(path.join(root,relative),{withFileTypes:true})) {
       const file=path.posix.join(relative,entry.name);
@@ -98,5 +104,5 @@ export function auditBrand(root=process.cwd()) {
 }
 if (process.argv[1] && path.resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
   const errors=auditBrand();
-  if(errors.length){console.error(errors.join('\n'));process.exitCode=1;}else console.log('AYROVI A: source, stack, pure neutrals, local assets and font hashes verified.');
+  if(errors.length){console.error(errors.join('\n'));process.exitCode=1;}else console.log('AYROVI A: source, stack, official palette, local assets and font hashes verified.');
 }

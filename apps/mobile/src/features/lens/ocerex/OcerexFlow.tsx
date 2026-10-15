@@ -288,7 +288,7 @@ export function OcerexFlow({ onClose }: { onClose: () => void }) {
           <KeyRow label={t('ocerex.summary.referencePrice')} value={formatReference(extraction)} />
           <KeyRow label={t('ocerex.summary.ayroviPrice')} value={formatTnd(extraction.ayroviPrice)} />
           <AppText variant="caption" color={theme.colors.muted}>{t('ocerex.summary.payNote')}</AppText>
-          <Button label={t('ocerex.summary.confirm')} onPress={onConfirmOrder} block disabled={busy} testID="ocerex-confirm" />
+          <Button label={t('ocerex.summary.confirm')} tone="main" onPress={onConfirmOrder} block disabled={busy} testID="ocerex-confirm" />
         </Card>
       ) : null}
 

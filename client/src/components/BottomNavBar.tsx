@@ -30,7 +30,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onTo
   const iconStyle = (active = false): React.CSSProperties => ({
     width: Math.max(iconConfig.size, 30),
     height: Math.max(iconConfig.size, 30),
-    color: active ? (iconConfig.activeColor || '#ff6900') : (iconConfig.color || '#000000'),
+    color: active ? (iconConfig.activeColor || 'var(--ay-e-accent-text)') : (iconConfig.color || '#000000'),
     fill: 'none',
   });
   useBodyScrollLock(isVisionOpen);
@@ -102,7 +102,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onTo
           <button type="button" onClick={() => navigation.navigate([{ id: 'app:vision' }])} className={NAV_ITEM} aria-label={tr('Vision — bientôt disponible', 'Vision — قريبًا')} aria-current={isVisionOpen ? 'page' : undefined}>
             <Vision className="interface-runtime-icon" style={iconStyle(isVisionOpen)} />
             {config.showLabels && <span className={`max-w-full truncate ${isVisionOpen ? 'text-cta' : ''}`}>{config.visionLabel}</span>}
-            <span className="absolute end-2 top-1.5 h-1.5 w-1.5 rounded-full bg-cta" aria-hidden="true" />
+            <span className="absolute end-2 top-1.5 h-1.5 w-1.5 rounded-full bg-ink" aria-hidden="true" />
           </button>
           <button type="button" onClick={() => navigation.navigate([{ id: 'app:ocerex' }])} className={NAV_ITEM} aria-label={tr('OCEREX — prix depuis une image', 'OCEREX — السعر من صورة')} aria-current={isOcerexOpen ? 'page' : undefined}>
             <ScanSearch className="interface-runtime-icon" style={iconStyle(isOcerexOpen)} />
