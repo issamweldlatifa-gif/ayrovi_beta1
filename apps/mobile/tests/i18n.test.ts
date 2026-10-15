@@ -36,4 +36,20 @@ describe('dictionnaires fr / ar', () => {
     expect(translate('ar', 'orders.items', { count: 3 })).toBe('3 قطعة');
     expect(translate('fr', 'orders.items')).toContain('{count}');
   });
+
+  /**
+   * L'interpolation ne remplace que les jetons NOMMÉS (`{value}`, `{count}`).
+   * Cinq libellés utilisaient un jeton anonyme `{}` : jamais remplacé, il
+   * s'affichait tel quel — « -{} % » sur la pastille d'une promotion,
+   * « jusqu'au {} », « par {} », « {} vues ».
+   */
+  it('n’utilisent aucun jeton anonyme `{}`', () => {
+    const anonymous = [...Object.entries(fr), ...Object.entries(ar)]
+      .filter(([, value]) => String(value).includes('{}'))
+      .map(([key]) => key);
+    expect(anonymous).toEqual([]);
+    expect(translate('fr', 'sections.discountPercent', { value: '20' })).toBe('-20 %');
+    expect(translate('ar', 'sections.until', { value: '12/11' })).toBe('لين 12/11');
+    expect(translate('fr', 'social.views', { value: '8' })).toBe('8 vues');
+  });
 });
