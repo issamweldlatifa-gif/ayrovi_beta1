@@ -24,9 +24,12 @@ on:
         required: true
         default: "https://ayrovi-beta1-moo8.onrender.com"
   push:
-    # Branche de travail Arena en plus de la branche historique : l'APK démo
-    # se reconstruit après chaque mise à jour de l'application.
-    branches: [arena/c0321e79-ayrovi-beta1, arena/bc19f283-ayrovi-beta1, arena/a41a200d-ayrovi-beta1, arena/dbcc3118-ayrovi-beta1, arena/6c61a279-ayrovi-beta1, arena/9fd9a9fc-ayrovi-beta1]
+    # TOUTE branche de travail Arena (`arena/<session>-ayrovi-beta1`) : l'APK
+    # démo se reconstruit après chaque mise à jour de l'application, quelle que
+    # soit la session. Avant, chaque nouvelle session devait ajouter sa branche
+    # à une liste écrite à la main (c0321e79, bc19f283, a41a200d, dbcc3118,
+    # 6c61a279, 9fd9a9fc…) ; une branche oubliée = aucun APK, en silence.
+    branches: ['arena/*-ayrovi-beta1']
     paths:
       - 'apps/mobile/**'
       - '.github/workflows/mobile-android.yml'
