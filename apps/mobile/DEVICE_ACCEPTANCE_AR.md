@@ -1,4 +1,4 @@
-# قبول AYROVI 2.0.7 على هاتف Android حقيقي
+# قبول ZAYROVI 2.0.7 على هاتف Android حقيقي
 
 **التاريخ:** 14/10/2026  
 **الحزمة التي نفحصها:** `app.ayrovi.mobile.demo`  
@@ -57,7 +57,7 @@ npm run device:acceptance -- --serial R58M123ABC --launch
 | `device` | هاتف واحد مصرّح به عبر ADB |
 | `package` | `app.ayrovi.mobile.demo` مركّبة فعلاً |
 | `domain-verification` | على Android 12+: نطاق Beta حالته `verified` أو `system_configured` |
-| `resolver` | Android يختار AYROVI، وليس Chrome أو نافذة الاختيار |
+| `resolver` | Android يختار ZAYROVI، وليس Chrome أو نافذة الاختيار |
 | `launch` | أمر النظام فتح الرابط بلا خطأ؛ الرؤية على الشاشة تبقى بنداً يدوياً |
 
 للتقرير القابل للحفظ:
@@ -72,7 +72,7 @@ npm run device:acceptance -- --launch --json > ayrovi-device-acceptance.json
 
 | الحالة | التجربة | القبول |
 |---|---|---|
-| ⬜ | فتح رابط Beta | AYROVI يفتح مباشرة على Lens، بلا Chrome وبلا Chooser |
+| ⬜ | فتح رابط Beta | ZAYROVI يفتح مباشرة على Lens، بلا Chrome وبلا Chooser |
 | ⬜ | إذن الكاميرا مقبول | معاينة حيّة، التقاط واضح، رجوع وإعادة تصوير بلا تجمّد |
 | ⬜ | إذن الكاميرا مرفوض | تفسير واضح؛ زر المعرض يبقى قابلاً للاستعمال |
 | ⬜ | اختيار من المعرض | JPG/PNG/WebP يظهر كمعاينة ثم يبدأ البحث مرة واحدة |
@@ -103,8 +103,8 @@ adb shell pm get-app-links app.ayrovi.mobile.demo
 
 ### `resolver: android` أو Chrome
 
-هذا يعني أن Android لم يعيّن AYROVI handler افتراضياً. على Android 12+ افتح:
-**Settings → Apps → AYROVI Démo → Open by default → Open supported links**، ثم
+هذا يعني أن Android لم يعيّن ZAYROVI handler افتراضياً. على Android 12+ افتح:
+**Settings → Apps → ZAYROVI Démo → Open by default → Open supported links**، ثم
 أعد `npm run device:acceptance -- --launch`. سجّل النتيجة كفشل تحقق تلقائي إذا
 لم تصبح حالة النطاق `verified`.
 

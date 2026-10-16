@@ -1,4 +1,4 @@
-# AYROVI Customer Design System 4.2
+# ZAYROVI Customer Design System 4.2
 
 Current customer-facing visual contract: storefront, product and merchant flows, Lens, cart, checkout, account, login, and password recovery. The admin/back-office is intentionally out of scope.
 

@@ -29,7 +29,7 @@ Claude doit décrire uniquement ce qui est visible. Il ne doit inventer ni marqu
 
 - Claude Vision et SerpApi Google Lens sont lancés en parallèle sur une photo.
 - Google Lens reçoit une copie JPEG en mémoire de 500 Ko maximum et renvoie les correspondances visuelles avec images, liens et prix éventuels.
-- Le catalogue AYROVI est interrogé localement.
+- Le catalogue ZAYROVI est interrogé localement.
 - Si Google Lens trouve au moins un produit exploitable, Claude Web Search n'est pas appelé pour cette image.
 - Claude Web Search reste le fallback texte et traite aussi QR, code-barres et recherche par lien.
 - Les résultats sont mis en cache, dédupliqués et classés selon correspondance visuelle, référence, marque, modèle et couleurs.
@@ -66,7 +66,7 @@ Les réponses utilisent `detectedPrice`; l’ancien nom de champ lié à une imp
 - plusieurs candidats avec score de correspondance;
 - distinction entre collection locale et marché externe;
 - prix repéré dans l’image affiché comme indication;
-- conversion et total AYROVI calculés par le moteur tarifaire existant;
+- conversion et total ZAYROVI calculés par le moteur tarifaire existant;
 - champ de vérification du lien avant commande lorsque le prix vient de l’image.
 
 ### Messages
@@ -77,7 +77,7 @@ Le client affiche des formulations utiles à l’acheteur : analyse, prix repér
 
 - Les clés Anthropic et SerpApi restent exclusivement côté serveur et ne portent jamais de préfixe `VITE_`.
 - Claude est l'unique modèle IA; SerpApi Google Lens est utilisé uniquement comme moteur de correspondance visuelle.
-- Les données analytiques sont anonymisées. AYROVI ne conserve pas les images Lens; l'identifiant d'image temporaire SerpApi expire côté fournisseur.
+- Les données analytiques sont anonymisées. ZAYROVI ne conserve pas les images Lens; l'identifiant d'image temporaire SerpApi expire côté fournisseur.
 - Les résultats IA restent indicatifs; le prix du marchand doit être vérifié à la source.
 
 ## Vérifications avant livraison

@@ -1,4 +1,4 @@
-# AYROVI CRM 360 — Matrice de tests
+# ZAYROVI CRM 360 — Matrice de tests
 
 Cartographie verrous ↔ fonctionnalités, mesurée sur la suite au moment de la rédaction : 645 tests verts, 51 fichiers, typecheck serveur + client propres, build ok.
 

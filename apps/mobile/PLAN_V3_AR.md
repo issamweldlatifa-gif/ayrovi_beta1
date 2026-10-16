@@ -45,7 +45,7 @@
 
 ### Q6 — الإصلاحات الحرجة + **SONIM**
 - **رجوع Google** للتطبيق (العيب الحقيقي: `nativeOAuth.ts`)
-- **محادثة SONIM** — الاسم الرسمي («SONIM BETA — L'assistant IA d'AYROVI»،
+- **محادثة SONIM** — الاسم الرسمي («SONIM BETA — L'assistant IA de ZAYROVI»،
   علامة SONIM، شريط 52px، رقاقات فوق المحادثة، قائمة: محادثة جديدة ·
   السجل · طلبي · AYROVIX · الإعدادات)
 - الإشعارات (FCM) · الروابط العميقة · الحجم (123 م.ب)

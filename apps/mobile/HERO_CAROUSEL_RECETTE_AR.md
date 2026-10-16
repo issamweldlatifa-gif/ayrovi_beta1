@@ -7,7 +7,7 @@ elle valide le **rendu réel** sur un appareil, une fois les visuels uploadés.
 
 ## Pré-requis
 
-- APK démo à jour (artefact `AYROVI-demo-apk`, build du 09/10 02:45 — contient le carrousel)
+- APK démo à jour (artefact `ZAYROVI-demo-apk`, build du 09/10 02:45 — contient le carrousel)
   ou app de dev sur émulateur.
 - Admin : les campagnes `hero_card_*` uploadées (image 4:5) et **activées**
   (elles sont seedées inactives — rien n'est publié sans visuel approuvé).

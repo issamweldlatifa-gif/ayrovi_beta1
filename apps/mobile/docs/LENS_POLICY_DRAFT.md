@@ -1,4 +1,4 @@
-# سياسة استعمال AYROVI Lens — مسودة للمراجعة
+# سياسة استعمال ZAYROVI Lens — مسودة للمراجعة
 
 > **الحالة:** مسودة. لا تُعرض في التطبيق قبل اعتماد المالك.
 
@@ -19,7 +19,7 @@ Lens يساعدك على البحث عن منتج عبر صورة أو رابط 
 - محاولة استغلال الخدمة (إرسال طلبات آلية كثيرة، أو تجاوز حدودها).
 
 **الأسعار والتوفّر:**
-الأسعار والتوفّر والعروض تأتي من المتاجر عبر الخادم وقد تتغيّر. AYROVI لا تضمن دقتها في كل لحظة؛ تحقّق من المتجر قبل الشراء.
+الأسعار والتوفّر والعروض تأتي من المتاجر عبر الخادم وقد تتغيّر. ZAYROVI لا تضمن دقتها في كل لحظة؛ تحقّق من المتجر قبل الشراء.
 
 **البيانات:**
 تُحفظ الصور والروابط والرموز التي تستعملها مع طلباتك، لتشغيل الميزة التي تستعملها (انظر سياسة الخصوصية).
@@ -45,7 +45,7 @@ Lens vous aide à trouver un produit à partir d'une photo, d'un lien ou d'un co
 - Détourner le service (envoi automatisé massif, contournement des limites).
 
 **Prix et disponibilité :**
-Les prix, stocks et offres proviennent des boutiques via le serveur et peuvent changer. AYROVI ne garantit pas leur exactitude à tout moment ; vérifiez auprès de la boutique avant d'acheter.
+Les prix, stocks et offres proviennent des boutiques via le serveur et peuvent changer. ZAYROVI ne garantit pas leur exactitude à tout moment ; vérifiez auprès de la boutique avant d'acheter.
 
 **Données :**
 Les images, liens et codes que vous envoyez sont conservés pour faire fonctionner la fonctionnalité utilisée (voir la politique de confidentialité).

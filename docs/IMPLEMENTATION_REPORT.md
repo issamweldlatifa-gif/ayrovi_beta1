@@ -1,4 +1,4 @@
-# AYROVI — Rapport d'implémentation Design System v1.0
+# ZAYROVI — Rapport d'implémentation Design System v1.0
 
 **Date :** 18 septembre 2026 · **Périmètre :** storefront (client) uniquement · **Repo :** `ayrovi_beta1`
 

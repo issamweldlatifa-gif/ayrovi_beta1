@@ -1,10 +1,10 @@
-# AYROVI — Global-Grade Product Design System & UI/UX Specification
+# ZAYROVI — Global-Grade Product Design System & UI/UX Specification
 
 **الحالة**: مواصفة النظام + تدقيق تنفيذ الموبيل (محدّث 15/10/2026 — هوية الألوان الجديدة)
 **التاريخ**: 08/10/2026 · تحديث الألوان 15/10/2026
 **الهوية**: ألوان التطبيق — `src/design/brand.json` v4.2.0 (أسود · أبيض · بنفسجي كهربائي + بنفسجي فاتح · رمادي فاتح) ·
-الهيكل (مسافات، خطوط، أبعاد) — AYROVI A — Official Identity v4.1.0 (الموقع يستعمل نفس الألوان بالضبط: `client/src/design/editorial/identity.json` ≡ `brand.json`، يحرسها `tests/brand-colors-web.test.ts`)
-**النطاق**: تطبيق AYROVI (React Native / Expo)
+الهيكل (مسافات، خطوط، أبعاد) — ZAYROVI A — Official Identity v4.1.0 (الموقع يستعمل نفس الألوان بالضبط: `client/src/design/editorial/identity.json` ≡ `brand.json`، يحرسها `tests/brand-colors-web.test.ts`)
+**النطاق**: تطبيق ZAYROVI (React Native / Expo)
 
 ---
 
@@ -61,7 +61,7 @@ outside CustomerIdentity (notably the admin)»، وأنّ الأسماء الق�
 
 ## 1.1 الإحساس
 
-AYROVI ليس متجراً ولا مساعداً فقط — هو **وكيل شراء**: يرى ما تراه، يفهمه، يثمّنه
+ZAYROVI ليس متجراً ولا مساعداً فقط — هو **وكيل شراء**: يرى ما تراه، يفهمه، يثمّنه
 بالدينار، ويوصلك إياه. الإحساس المطلوب: **واثق، هادئ، دقيق**.
 
 ثلاث كلمات تحكم كل قرار:

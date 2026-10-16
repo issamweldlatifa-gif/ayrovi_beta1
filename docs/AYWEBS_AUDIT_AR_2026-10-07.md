@@ -8,7 +8,7 @@
 
 ## 1) ما هو AYWEBs — والفصل بين الأسماء الثلاثة
 
-**AYWEBs = وكيل شراء (proxy-shopping / shopping agent)، على مبدأ Buyee:** العميل يتصفّح متجراً أجنبياً **داخل تجربة المتجر**، يضغط «Add to Cart»، فيُكتب السطر في **سلة AYROVI** بالسعر المحسوب على الخادم (منتج + شحن + ديوانة + أتعاب خدمة، بالدينار)، ثم طلب، ثم شراء بالنيابة وشحن.
+**AYWEBs = وكيل شراء (proxy-shopping / shopping agent)، على مبدأ Buyee:** العميل يتصفّح متجراً أجنبياً **داخل تجربة المتجر**، يضغط «Add to Cart»، فيُكتب السطر في **سلة ZAYROVI** بالسعر المحسوب على الخادم (منتج + شحن + ديوانة + أتعاب خدمة، بالدينار)، ثم طلب، ثم شراء بالنيابة وشحن.
 
 | الكيان | المسار في الكود | يُقدَّم على | الدور |
 |---|---|---|---|
@@ -16,7 +16,7 @@
 | **AYROVIX** | `src/ayrovix/` | `/api/ayrovix` | البحث البصري (Lens) + **عقد السعر** (`priceQuote.ts`، `createAyrovixPriceToken`) + مراقبة الأسعار |
 | **Lens** | `src/ayrovix/services/{lensEngine,visualSearch,lensLiveStock}` | داخل AYROVIX | البحث بالصورة (Claude Vision + SerpApi Google Lens) — **ليس AYWEBs** |
 
-**العلاقة:** AYWEBs لا يحسب الثمن لنفسه — ينادي محرّك التسعير المركزي `src/services/pricing.ts`، ويأخذ **رمز سعر** من AYROVIX قبل أن يعبر السطر الجسر إلى سلة AYROVI. «الثمن على الخادم فقط» تعني حرفياً: العميل يرسل رابطاً/منتجاً/متغيّرة/كمية — **ولا يرسل مبلغاً أبداً**.
+**العلاقة:** AYWEBs لا يحسب الثمن لنفسه — ينادي محرّك التسعير المركزي `src/services/pricing.ts`، ويأخذ **رمز سعر** من AYROVIX قبل أن يعبر السطر الجسر إلى سلة ZAYROVI. «الثمن على الخادم فقط» تعني حرفياً: العميل يرسل رابطاً/منتجاً/متغيّرة/كمية — **ولا يرسل مبلغاً أبداً**.
 
 ---
 
@@ -35,7 +35,7 @@
 | `errors.ts` | 18 435 | عقد الخطأ الموحّد (§44) |
 | `captureScript.ts` | 18 403 | **سكربت الالتقاط المُخدَّم للعميل** (ES5، بلا أسرار) |
 | `purchaseRequests.ts` | 17 838 | طلبات الشراء وطلبات المتجر |
-| `ayroviBridge.ts` | 17 622 | الجسر idempotent إلى سلة AYROVI |
+| `ayroviBridge.ts` | 17 622 | الجسر idempotent إلى سلة ZAYROVI |
 | `events.ts` · `resolveCache.ts` | 15 844 · 15 498 | المقاييس/الأحداث · ذاكرة القراءة |
 | `productNormalizer.ts` · `checkoutFees.ts` | 15 087 · 14 398 | التطبيع · **محرّك حساب الدفع** |
 | `stateMachines.ts` · `context.ts` | 10 304 · 9 948 | آلات الحالة · السياق والأعلام |
@@ -59,7 +59,7 @@
 (5) الدليل            → ayWebsEvidenceHash + تخزين المنتج
 (6) ورقة الاختيار فوق صفحة المتجر → إن لزمت متغيّرة، بلا اختيار لا إضافة
 (7) POST /cart/items  → تحقّق (متغيّرة منشورة/متاحة، pricing>0) ثم INSERT فعلي + لقطة سعر
-(8) الجسر (نفس الطلب) → رمز سعر AYROVIX → db.addItem ⇒ السطر يظهر في سلة AYROVI الموحّدة
+(8) الجسر (نفس الطلب) → رمز سعر AYROVIX → db.addItem ⇒ السطر يظهر في سلة ZAYROVI الموحّدة
 (9) تأكيد من بيانات الخادم → خياران فقط: Checkout أو Continue Shopping
 (10) POST /cart/bridge-to-ayrovi → POST /checkout/preview → POST /orders → الدفع → الشراء (مراجعة بشرية اليوم)
 ```
@@ -214,7 +214,7 @@
 
 1. **جدار المتاجر**: Amazon يخدم عناوين مراكز البيانات صفحة قشرة بلا سعر؛ أفضل قراءة أولى ≈21 ث، وSHEIN/TEMU/AliExpress **معطّلة السعر** فعلياً حتى يُضبط مزوّد رسم مدفوع (`RENDER_PROVIDER_NOT_CONFIGURED`).
 2. **لا شراء آلي**: `purchase_integration_state: PENDING_INTEGRATION`، والمراحل 6–8 تُرجع `NOT_IMPLEMENTED`. الطلب يصل «مدفوع + مراجعة بشرية».
-3. **سلالان**: سلة AYWEBs + سلة AYROVI مع حالة ربط (`linked_to_ayrovi`, `unlinked_units`) — الجسر متين، لكنه أكبر تعقيد بنيوي في المودل.
+3. **سلالان**: سلة AYWEBs + سلة ZAYROVI مع حالة ربط (`linked_to_ayrovi`, `unlinked_units`) — الجسر متين، لكنه أكبر تعقيد بنيوي في المودل.
 4. **الخادم على خطة نائمة**: كل «أول» استخدام يدفع زمن الاستيقاظ.
 5. **تبعية خارجية للقراءة**: قارئ Jina (طرف ثالث) + مزوّد رسم مدفوع — تكلفة وتوفّر خارج سيطرتنا.
 6. **ذاكرة 5 دقائق** قد تُخفي تغيّر سعر حتى `verify` (وهو يفرض `refresh:true دائماً`).
@@ -230,7 +230,7 @@
 - **الويب** (`client/src/features/aywebs/`): AyWebsApp (رئيسية/متجر/منتج/متصفّح/طلبات)، تبويب «المفضلة» **داخلي** متزامن مع `/api/customer/account/favorites` (لا localStorage)، «حسابي» وحده يخرج (خروج مقصود)، شريط واحد، صور `contain` بحارس اختبار.
 - **أندرويد** (`android/.../AyWebsBrowseActivity.java`): متصفّح أصلي + زر عائم + ورقة متغيّرات Dialog فوق الصفحة + دروج السلة/المفضّلة فوق الصفحة (لا `finish()` يقتل المتجر) + `onBackPressed` + قراءة مُسبقة `prefetchResolve` + مهل 15/60 + `EXTRA_CUSTOMER_TOKEN` للحساب + Custom Tab (`AyroviAuthTabPlugin.java`). آخر إصدار موثّق: **1.0.5 / versionCode 5**.
 - **CRM**: `/api/admin/aywebs` (Dashboard · Stores · Adapters · Orders · Purchase Requests · Exceptions · Payments · Audit · Events؛ Warehouse/Consolidation/Shipping تعرض «غير منفَّذ» بدل بيانات مُتخيَّلة).
-- **تطبيق AYROVI الجديد** (React Native، `apps/mobile/`): `app/(tabs)/aywebs.tsx` **عنصر نائب** — P3 لم تبدأ بعد قائمة التحديثات.
+- **تطبيق ZAYROVI الجديد** (React Native، `apps/mobile/`): `app/(tabs)/aywebs.tsx` **عنصر نائب** — P3 لم تبدأ بعد قائمة التحديثات.
 
 ---
 

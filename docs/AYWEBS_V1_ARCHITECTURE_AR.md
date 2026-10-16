@@ -1,26 +1,26 @@
-# AyWebs V1 — بنية التنفيذ داخل AYROVI
+# AyWebs V1 — بنية التنفيذ داخل ZAYROVI
 
 تاريخ الحالة: 2026-10-02
 
 ## القرار التنفيذي
 
-AyWebs ليست متجرًا أو تطبيقًا أو سلة مستقلة. هي مدخل شراء داخل جلسة AYROVI نفسها:
+AyWebs ليست متجرًا أو تطبيقًا أو سلة مستقلة. هي مدخل شراء داخل جلسة ZAYROVI نفسها:
 
-`AyWebsScreen → Store Registry → Capture API → ProductDrawer / ShopProductScreen → AYROVI Cart`
+`AyWebsScreen → Store Registry → Capture API → ProductDrawer / ShopProductScreen → ZAYROVI Cart`
 
 لا تُنسخ هوية أو واجهة Buyee. المرجع استُخدم لفهم رحلة التصفح والتقاط المنتج والفشل البديل فقط.
 
 ## ما يعمل في V1
 
-1. الدخول من أيقونة AyWebs الأصلية في شريط تنقل AYROVI.
+1. الدخول من أيقونة AyWebs الأصلية في شريط تنقل ZAYROVI.
 2. اختيار متجر من Store Registry المشترك بين الخادم والعميل.
 3. البحث داخل المتجر في تبويب خارجي مدعوم، لأن مواقع التجارة قد تمنع `iframe`.
-4. العودة ولصق رابط صفحة المنتج المباشرة، أو مشاركة الرابط إلى AYROVI من Share Sheet عند تثبيت الـPWA.
+4. العودة ولصق رابط صفحة المنتج المباشرة، أو مشاركة الرابط إلى ZAYROVI من Share Sheet عند تثبيت الـPWA.
 5. التحقق من البروتوكول والدومين وصفحة المنتج قبل جلبها.
 6. التقاط Amazon وSHEIN وTEMU وAliExpress عبر Adapters مستقلة تغلف `SmartLinkScraper` الحالي، مع إبقاء المتاجر الثلاثة الأخيرة في حالة Beta قابلة للإيقاف منفردة.
 7. إعادة حساب السعر في الخادم بواسطة Price Engine المركزي.
 8. فتح شاشة التأكيد الحالية لاختيار المقاس واللون والكمية والملاحظة.
-9. الإضافة إلى سلة AYROVI الحالية والجلسة/الحساب الحالي؛ إذا تكرر نفس المنتج والـvariant يُحدّث السطر الموجود وتظهر رسالة تمنع الالتباس.
+9. الإضافة إلى سلة ZAYROVI الحالية والجلسة/الحساب الحالي؛ إذا تكرر نفس المنتج والـvariant يُحدّث السطر الموجود وتظهر رسالة تمنع الالتباس.
 10. إظهار مسارات فشل صريحة: إعادة المحاولة، رابط مباشر، أو Screenshot عبر Lens.
 
 ## Store Registry
@@ -41,7 +41,7 @@ AyWebs ليست متجرًا أو تطبيقًا أو سلة مستقلة. هي 
 المسار الأساسي: `/api/v1/aywebs`
 
 - `GET /stores`: المتاجر وحالات الدعم وRuntime Feature Flags.
-- `GET /session`: يؤكد أن AyWebs يستخدم Session وسلة AYROVI المشتركة.
+- `GET /session`: يؤكد أن AyWebs يستخدم Session وسلة ZAYROVI المشتركة.
 - `GET /health`: جاهزية Adapters وJina وRendered Provider وAI Provider دون كشف أسرار.
 - `POST /capture`: يتحقق من الرابط والمتجر، يستدعي Adapter، يطبّع المنتج، ويحسب السعر.
 - `POST /price-quote`: يعيد تسعيرًا خلفيًا فقط؛ لا توجد معادلة سعر في Frontend.

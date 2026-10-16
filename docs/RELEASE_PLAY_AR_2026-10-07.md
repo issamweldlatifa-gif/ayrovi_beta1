@@ -1,4 +1,4 @@
-# إصدار AYROVI على Google Play — دليل عملي (07/10/2026)
+# إصدار ZAYROVI على Google Play — دليل عملي (07/10/2026)
 
 هذا الدليل يخصّ **المرحلة P6** في `apps/mobile/PLAN.md`. مكتوب باش يتنفّذ من
 غير مطوّر: كل خطوة فيها الأمر/الضغطة بالضبط، وبعد كل خطوة «كيفاش تعرف أنها
@@ -14,7 +14,7 @@
 | القطعة | الحالة |
 |---|---|
 | تطبيق React Native (`apps/mobile`) | ✅ 24 شاشة اصلية، يعمل على الخادم |
-| APK تجريبي (`app.ayrovi.mobile.demo` / «AYROVI Démo») | ✅ يتبنى في GitHub Actions — **موش** نسخة النشر |
+| APK تجريبي (`app.ayrovi.mobile.demo` / «ZAYROVI Démo») | ✅ يتبنى في GitHub Actions — **موش** نسخة النشر |
 | AAB موقّع للنشر | ⏳ الملف موجود (`.github/workflows/mobile-release-aab.yml`) — **ناقص غير المفاتيح** |
 | روابط عميقة `https://ayrovi.tn` | ✅ التطبيق (`app.json`) + الخادم (`/.well-known/assetlinks.json`) جاهزين — **ناقص** غير بصمتك في متغيّر البيئة |
 | إشعارات FCM | ❌ ما بدتش: تستلزم مشروع Firebase متاعك + مفاتيح (تحت) |
@@ -28,10 +28,10 @@
 كل ما يتبدّل شي في `apps/mobile/`، GitHub يبني APK تجريبي تلقائياً:
 
 1. افتح **Actions → Mobile — APK Android (démo) → أحدث تشغيل ناجح**.
-2. نزّل الـartifact الاسم **`AYROVI-demo-apk`** (يصلح 30 يوماً) — ولا من الطرمينال:
+2. نزّل الـartifact الاسم **`ZAYROVI-demo-apk`** (يصلح 30 يوماً) — ولا من الطرمينال:
 
    ```bash
-   gh run download -R issamweldlatifa-gif/ayrovi_beta1 -n AYROVI-demo-apk
+   gh run download -R issamweldlatifa-gif/ayrovi_beta1 -n ZAYROVI-demo-apk
    ```
 
 3. ثبّتو على التلفون. معرّفو `app.ayrovi.mobile.demo` ⇒ **يتمشّى حَدّ التطبيق
@@ -186,7 +186,7 @@ base64 -i ayrovi-release.jks -o ayrovi-release.jks.base64
 > على كل workflow). قبل ذلك، البناء يمشي بـtag: `git tag v2.0.0 && git push origin v2.0.0`.
 
 **كيفاش تعرف أنها نجحت**: خطوة «Vérifier la signature (et refuser la clé debug)»
-ما تفشلش، وتلقى `AYROVI-release-aab` في أسفل صفحة التشغيل (artifact، محفوظ 30
+ما تفشلش، وتلقى `ZAYROVI-release-aab` في أسفل صفحة التشغيل (artifact، محفوظ 30
 يوم).
 
 > ملاحظة صدق: كان الملف توقّع بالمفتاح التجريبي متاع القالب، الـworkflow يرفض
@@ -513,7 +513,7 @@ Git**. لهذا: الدخول من التطبيق ما يخدمش، وإصلاح
 
 - [ ] `version_code` زاد عن الإصدار اللي قبلو.
 - [ ] `EXPO_PUBLIC_API_BASE_URL` مضبوط على الخادم اللي باش يخدم فعلاً.
-- [ ] الـCI أخضر على الفرع (`CI` + `Mobile — AYROVI app`).
+- [ ] الـCI أخضر على الفرع (`CI` + `Mobile — ZAYROVI app`).
 - [ ] الأسرار الأربعة موجودة (وما تبدّلتش من غير ما تعرف).
 - [ ] الـAAB المرفوع موقّع بالمفتاح متاعك (الـworkflow يقولها).
 - [ ] نسخة احتياطية جديدة من `ayrovi-release.jks` + كلمات السر.

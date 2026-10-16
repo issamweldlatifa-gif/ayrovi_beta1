@@ -1,4 +1,4 @@
-# AYROVI CRM — BASELINE AUDIT (Phase 0)
+# ZAYROVI CRM — BASELINE AUDIT (Phase 0)
 
 **Portée :** audit de découverte et ligne de base du dépôt avant toute modification liée au CRM.
 **Règle appliquée :** aucune ligne de production n'a été modifiée par ce document. Toutes les affirmations ont été vérifiées contre le code réel (`src/`, `client/src/`, `tests/`), jamais déduites de la documentation.
@@ -9,7 +9,7 @@
 
 ## 0. Résumé exécutif
 
-AYROVI est un **monolithe Express + React (Vite) + SQLite** mature (≈ **72 663** lignes TS/TSX suivies, **101** tables DDL distinctes, **49** fichiers de test) qui possède déjà une **fondation ERP partagée** (`src/erp-core/`, registre de modules, identité employé, un seul rédacteur d'audit, événements dérivés, séquences de numérotation, moteur de permissions en données) et une **coquille Back Office** (`src/back-office/`, navigation dérivée, framework de ressources, recherche globale, thème).
+ZAYROVI est un **monolithe Express + React (Vite) + SQLite** mature (≈ **72 663** lignes TS/TSX suivies, **101** tables DDL distinctes, **49** fichiers de test) qui possède déjà une **fondation ERP partagée** (`src/erp-core/`, registre de modules, identité employé, un seul rédacteur d'audit, événements dérivés, séquences de numérotation, moteur de permissions en données) et une **coquille Back Office** (`src/back-office/`, navigation dérivée, framework de ressources, recherche globale, thème).
 
 Le mot « CRM » est **déjà consommé par deux sens différents** :
 
@@ -27,7 +27,7 @@ Le travail CRM n'est donc **pas** un greenfield, mais il n'est **pas non plus** 
 ### 1.1 Vue d'ensemble
 
 ```text
-AYROVI — un processus Express, une instance SQLite
+ZAYROVI — un processus Express, une instance SQLite
 │
 ├── client/  (Vite → public/, servi par express.static)
 │   ├── /         PublicApp (e-commerce, Lens, assistant, compte client)

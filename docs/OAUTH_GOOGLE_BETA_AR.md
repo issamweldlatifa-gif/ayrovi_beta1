@@ -37,7 +37,7 @@ google_callback=autre-serveur:https://ayrovi-beta1-1.onrender.com/api/customer/a
 3. **Create Credentials** ← **OAuth client ID**
 4. **Application type** ← `Web application` (موش Android ولا iOS: التدفّق
    يمرّ من خادمنا، والخادم هو اللي يعمل التبادل).
-5. **Name** ← `AYROVI Beta (Render)`
+5. **Name** ← `ZAYROVI Beta (Render)`
 6. **Authorized JavaScript origins** ← زيد:
    ```
    https://ayrovi-beta1-moo8.onrender.com

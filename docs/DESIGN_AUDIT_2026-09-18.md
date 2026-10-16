@@ -1,4 +1,4 @@
-# AYROVI — UI/UX AUDIT REPORT (Design System v1.0 — Phase 1)
+# ZAYROVI — UI/UX AUDIT REPORT (Design System v1.0 — Phase 1)
 
 **Date:** 2026-09-18 · **Scope:** storefront publique (site, Lens, panier, checkout, compte, assistant, stories) + coquille Admin (en lecture seule).
 **Méthode:** inspection du code réel (29 862 lignes client), mesures par balayage (hex, classes, z-index, tailles), analyse de la base (seeds CMS), lecture des chartes existantes (P3, P4/T1, P4/T2) et des verrous de test (`tests/design-zalando.test.ts`, `tests/design-tokens.test.ts`).
@@ -7,7 +7,7 @@
 
 ## 0. Verdict en trois lignes
 
-1. **L'identité de marque est cassée au runtime.** Le logo AYROVI est noir + orange `#FF6900` (mesuré sur le fichier). Mais depuis l'commit `b96f027` (« no orange (creative, not hasty) »), `App.tsx` ré-écrit **à l'exécution** `--ayrovi-color-brand-orange: #0A0A0A` : tout l'orange de la plateforme devient noir, alors que les tests et la charte P4/T1 verrouillent l'orange comme CTA canonique. Le site ne ressemble plus à sa propre marque.
+1. **L'identité de marque est cassée au runtime.** Le logo ZAYROVI est noir + orange `#FF6900` (mesuré sur le fichier). Mais depuis l'commit `b96f027` (« no orange (creative, not hasty) »), `App.tsx` ré-écrit **à l'exécution** `--ayrovi-color-brand-orange: #0A0A0A` : tout l'orange de la plateforme devient noir, alors que les tests et la charte P4/T1 verrouillent l'orange comme CTA canonique. Le site ne ressemble plus à sa propre marque.
 2. **Deux échelles grises coexistent sur la même page** (le P0 de P4/T2 n'a jamais été appliqué) : l'échelle canonique `#111111/#666666/#f8f9fa/#eaeaea` (portée par les primitives `zalando-ui.css`) et l'échelle slate héritée `#111318/#1d2130/#6b7280/#f8f9fe/#e2e8f0/#5b6472` (portée par les seeds CMS injectés au runtime sur TOUT le UI). Résultat mesuré : **314 valeurs hexadécimales distinctes** dans le client public, dont **~10 nuances de « noir »** et 5 de « blanc ».
 3. **Le système s'arrête aux tokens** : il existe 6 jetons canoniques verrouillés + une feuille de primitives, mais **aucune bibliothèque de composants publique** (l'Admin en a 25, la vitrine 2), et 4 familles de boutons parallèles. L'application du système aux pages s'est faite par classes ad hoc, avec 197 tailles de police hors échelle et une z-indexation anarchique.
 
@@ -113,7 +113,7 @@
 
 ---
 
-## 5. Direction de design proposée — « AYROVI v1.0 : Monochrome Premium × Orange d'action »
+## 5. Direction de design proposée — « ZAYROVI v1.0 : Monochrome Premium × Orange d'action »
 
 **Analyse (pas de préférence imposée) :**
 - Le **logo** (mesuré) = monogramme noir + accent orange → l'identité de marque est déjà « noir + orange sur clair ».

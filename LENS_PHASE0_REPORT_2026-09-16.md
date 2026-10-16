@@ -88,7 +88,7 @@ Implémenté :
 
 ## 4. Contraintes préservées (Scope 7)
 
-- **AYROVI visuel / RTL / i18n** : classes `ayrovix-theme-scope`, `direction`, `tr()` conservées.
+- **ZAYROVI visuel / RTL / i18n** : classes `ayrovix-theme-scope`, `direction`, `tr()` conservées.
 - **CMS source of truth** : aucune écriture CMS ; `source` reste label UI uniquement.
 - **Pricing** : `computePriceTnd`, `currency.ts`, `signed priceToken` inchangés.
 - **Candidate display policy** : `filterDisplayableCandidates` + `validProductUrl` seuls garde-fous.

@@ -1,4 +1,4 @@
-# Design audit — AYROVI Android / React Native
+# Design audit — ZAYROVI Android / React Native
 
 **Mis à jour :** 08/10/2026
 **Périmètre :** `apps/mobile/`
@@ -17,7 +17,7 @@ Cette passe centralise la géométrie commune, rend l’en-tête scroll-aware, e
 | Cart / Compte : écarts verticaux | `AppScreen` et `SubScreen` n’utilisaient pas un contrat de gap commun | `screenContentGap(theme.space)` est partagé ; le contrat vaut `space[2]` (12 pt) |
 | En-tête transparent en permanence | `AppHeader` ne recevait aucun état de scroll | `AppScreen` transmet `scrolled`; le fond passe de transparent à `surface` au-delà de 8 pt, sans changer les dimensions |
 | Actions Lens / OCEREX trop larges | Deux boutons juxtaposés sur toutes les largeurs | `ResponsiveActionGroup` empile en mobile et partage une rangée en espace large |
-| Catégories de news en code brut | Les cartes et le détail affichaient directement les valeurs API | Les sept codes connus ont des libellés FR/AR (la marque reste « AYROVI »); un code futur reste visible tel quel |
+| Catégories de news en code brut | Les cartes et le détail affichaient directement les valeurs API | Les sept codes connus ont des libellés FR/AR (la marque reste « ZAYROVI »); un code futur reste visible tel quel |
 | Footer blanc / contenu bord à bord | Fond hérité du thème clair et absence de gutter interne après le full-bleed | Footer utilise la palette sombre officielle dans les deux thèmes et le gutter responsive partagé |
 | Copie Vision / Compte orientée développement | Des textes parlaient d’une structure « prête », de phases internes ou d’étapes futures | Vision reste vide avec un seul état honnête; la note Compte décrit seulement les préférences réellement proposées |
 | Paiement présenté comme garanti | Le résumé du panier nommait carte et virement indépendamment de la configuration serveur | Le texte annonce que les options sont indiquées selon disponibilité; l’action mène à la commande, pas à une promesse de paiement |

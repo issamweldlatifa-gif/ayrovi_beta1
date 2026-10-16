@@ -1,4 +1,4 @@
-# AYROVI DESIGN SYSTEM v1.1
+# ZAYROVI DESIGN SYSTEM v1.1
 
 **Charte historique : « Monochrome Premium × Orange d'action »**
 Date : 2026-09-18 · Statut : compatibilité héritée hors du scope client courant.
@@ -12,7 +12,7 @@ Documents liés : `docs/DESIGN_AUDIT_2026-09-18.md` (audit) · `tests/design-zal
 
 ## 1. Identité
 
-AYROVI achète le monde pour la Tunisie, en dinars. La marque se lit comme :
+ZAYROVI achète le monde pour la Tunisie, en dinars. La marque se lit comme :
 
 - **confiance** → canvas clair, encre nette, hiérarchie évidente ;
 - **action** → l'orange de la marque, rare et mémorisable, pointe le bouton à presser ;

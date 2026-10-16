@@ -1,4 +1,4 @@
-# ورقة التسليم — تطبيق AYROVI (React Native)
+# ورقة التسليم — تطبيق ZAYROVI (React Native)
 
 **التاريخ:** 08/10/2026 · **الفرع:** `arena/c0321e79-ayrovi-beta1` · **القاعدة:** `4ee2a8a`
 **الحالة:** Q1 → Q8 منجزون ومدفوعون. Q9 (هذه الورقة) هو آخر مرحلة.
@@ -83,7 +83,7 @@
 
 | المخرج | الأمر | أين يلقاه |
 |---|---|---|
-| APK تجريبي | workflow `Mobile — APK Android (démo)` | artefact `AYROVI-demo-apk` |
+| APK تجريبي | workflow `Mobile — APK Android (démo)` | artefact `ZAYROVI-demo-apk` |
 | AAB للنشر | workflow `mobile-release-aab` | artefact / الإصدار |
 
 **التقسيم على ABI مفعّل** (`arm64-v8a` + `armeabi-v7a`) ⇒ يخرج **أكثر من APK**،

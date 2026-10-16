@@ -35,7 +35,7 @@
 ```env
 MAIL_PROVIDER=resend
 MAIL_API_KEY=<مفتاح الإرسال السري من المزود>
-MAIL_FROM=AYROVI <no-reply@your-domain.example>
+MAIL_FROM=ZAYROVI <no-reply@your-domain.example>
 PUBLIC_BASE_URL=https://your-domain.example
 CUSTOMER_AUTH_SECRET=<قيمة سرية ثابتة لا تقل عن 32 حرفًا>
 ```

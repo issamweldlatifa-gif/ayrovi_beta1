@@ -1,4 +1,4 @@
-# AYROVI — إصلاحات تطبيق الأندرويد + تصحيحات جوهرية
+# ZAYROVI — إصلاحات تطبيق الأندرويد + تصحيحات جوهرية
 
 **التاريخ:** 3 أكتوبر 2026 · **الإصدار:** `3.10.4`
 **الرقعة:** `AYROVI_إصلاحات_التطبيق_2026-10-03.patch` (353 سطراً، 7 ملفات + ملف جديد) — مُتحقَّق أنها تُطبَّق وتُنتج ملفات **مطابقة بايت-بايت**
@@ -81,7 +81,7 @@ finish();
 $ grep -rn "onBackPressed" node_modules/@capacitor/android/       →  0 نتيجة
 $ grep -n "enableOnBackInvokedCallback" AndroidManifest.xml       →  غير مضبوط
 ```
-**Capacitor 7.6.9 لا يعرّف زر الرجوع إطلاقاً** (المفتاح `handleBackButton` مات). فالنقر على الرجوع كان يذهب للسلوك الافتراضي لأندرويد: `finish()` ⇒ **إغلاق التطبيق حتى لو كانت شاشة AYROVI مفتوحة فوق**.
+**Capacitor 7.6.9 لا يعرّف زر الرجوع إطلاقاً** (المفتاح `handleBackButton` مات). فالنقر على الرجوع كان يذهب للسلوك الافتراضي لأندرويد: `finish()` ⇒ **إغلاق التطبيق حتى لو كانت شاشة ZAYROVI مفتوحة فوق**.
 
 قبل الإصلاح، اختبرنا الفرضية التي يقوم عليها الحل — هل طبقات التطبيق مبنية على `history`؟
 ```
@@ -96,7 +96,7 @@ $ grep -n "enableOnBackInvokedCallback" AndroidManifest.xml       →  غير م
 public void onBackPressed() {
     if (getBridge() != null && getBridge().getWebView() != null
         && getBridge().getWebView().canGoBack()) {
-        getBridge().getWebView().goBack();   // شاشة AYROVI مفتوحة ⇒ تُغلق
+        getBridge().getWebView().goBack();   // شاشة ZAYROVI مفتوحة ⇒ تُغلق
         return;
     }
     super.onBackPressed();                   // الجذر ⇒ يخرج من التطبيق (سلوك صحيح)
@@ -273,7 +273,7 @@ const stripComments = (source) =>
 
 # الجزء الثاني — دفعة لقطاتك السبع (Q8) · 2026-10-03
 
-> **قبل أي شيء، تصحيح جوهري واحد** (تفصيله في §12): اللقطات السبع التي أرسلتها هي **تطبيق Buyee نفسه** (تجربة «Add to Buyee»)، **لا** شاشات تطبيق AYROVI. تحقّقت من ذلك بأربعة أدلة قاطعة. ومع ذلك — وهذا مهم — **الأخطاء التي كشفتها الدفعة الثانية أخطاء حقيقية في شيفرة تطبيقنا**، اكتُشفت بقراءة الكود وفحص الخادم حيّاً، لا بتخمين من اللقطات. الإصلاحات مثبتة أدناه بدليلها.
+> **قبل أي شيء، تصحيح جوهري واحد** (تفصيله في §12): اللقطات السبع التي أرسلتها هي **تطبيق Buyee نفسه** (تجربة «Add to Buyee»)، **لا** شاشات تطبيق ZAYROVI. تحقّقت من ذلك بأربعة أدلة قاطعة. ومع ذلك — وهذا مهم — **الأخطاء التي كشفتها الدفعة الثانية أخطاء حقيقية في شيفرة تطبيقنا**، اكتُشفت بقراءة الكود وفحص الخادم حيّاً، لا بتخمين من اللقطات. الإصلاحات مثبتة أدناه بدليلها.
 
 ## 11. الجذر الحقيقي لثلاثة أعراض دفعة واحدة
 
@@ -303,7 +303,7 @@ const stripComments = (source) =>
 
 الخادم يصنّف الصفحة تصنيفاً دقيقاً (`page_type` = PRODUCT / LOGIN / CHECKOUT / SEARCH / CAPTCHA، و`customer_action_required`) **ويملك رسالة عربية/فرنسية جاهزة للزبون** في `error_contract.userMessage`. لكن الشِل كان يقرأ حقلاً واحداً (`is_product_page`) ويرمي الباقي.
 
-**الإصلاح:** `AyWebsApiException` يحمل `error_contract.userMessage`، و`toastMessage`، و`setAddLabel` — فصار الزر يقول الحقيقة: «Connectez-vous sur la boutique» مع شرح «La boutique demande une connexion…»، و»Panier de la boutique» مع «Ceci est le panier de la boutique, pas celui d'AYROVI». و+8 ثم +5 نصوص في `res/values/strings.xml`.
+**الإصلاح:** `AyWebsApiException` يحمل `error_contract.userMessage`، و`toastMessage`، و`setAddLabel` — فصار الزر يقول الحقيقة: «Connectez-vous sur la boutique» مع شرح «La boutique demande une connexion…»، و»Panier de la boutique» مع «Ceci est le panier de la boutique, pas celui de ZAYROVI». و+8 ثم +5 نصوص في `res/values/strings.xml`.
 
 ### 📊 التحقّق الحيّ (خادم :3000 — `ayrovi-d1d6344e`, PID 3885)
 
@@ -326,7 +326,7 @@ const stripComments = (source) =>
 |---|---|---|
 | الشريط الأعلى | ✕ + 🔒 + الرابط + **أيقونة الترجمة 文A** + تحديث | ✕ + الرابط + تحديث — **لا قفل ولا ترجمة** (أسطر 20-47) |
 | الشريط السفلي | سهمان ‹ › فقط (5/6/7) | رجوع + تقدّم + «Panier» + «Favoris» + **زر برتقالي «Add to Cart»** (أسطر 63-118) |
-| النصوص | «Item added to **Buyee** cart» · «Proceed to **order page**» · شعار Buyee في صفحة الدخول | نصوصنا تقول «panier **AYROVI**» ولا تذكر Buyee إطلاقاً |
+| النصوص | «Item added to **Buyee** cart» · «Proceed to **order page**» · شعار Buyee في صفحة الدخول | نصوصنا تقول «panier **ZAYROVI**» ولا تذكر Buyee إطلاقاً |
 | الشاشة 1 | تطبيق Buyee: تبويبات Home / Stores / Wish List / Cart / My Page | واجهتنا: OCEREX / Vision / AyWebs / SONIM / Lens |
 
 **السبب في التشابه:** المطوّر الأصلي بنى واجهاتنا على هذه الصور نفسها كـ«مواصفة» — تعليقاته في المستودع تقول حرفياً: `dialog_aywebs_variant_sheet.xml → (capture 3)` و`dialog_aywebs_added.xml → (capture 4)` و`AyWebsStoresScreen.tsx → (référence Add-to-Buyee, capture 2)`. أي أن AYWEBs **صُمِّم ليشبه Buyee**، لكنه كود وتشغيل مختلفان تماماً.
@@ -338,14 +338,14 @@ const stripComments = (source) =>
 1. **الملحق (Extension):** «Add to Buyee» ملحق **للمتصفّح على الحاسوب فقط** (Chrome / Firefox / Safari / 360)، يدعم 150+ متجراً يابانياً (Amazon JP، Mercari، Rakuten…). ليس تطبيق هاتف.
 2. **التطبيق (ما في لقطاتك):** يقدّم **نفس الوظيفة داخل الهاتف**: متصفّح داخلي → اختيار النسخة/اللون/المقاس → «Add to Cart» → **سلة Buyee** → «Proceed to order page».
 3. **الشرط الحاسم:** «**To place an order, free membership registration and login are required**» — عضوية Buyee وتسجيل دخول **إلزاميان** لإتمام الطلب (لقطة 6 بالنص). أي أن «الزر المعطّل» في تجربتهم ليس عطلاً: إنه شرط عضوية.
-4. **البديل الرسمي:** لصق **رابط** المنتج («Simply provide the URL to request your purchase») — وهذا **بالضبط** ما يفعله AYWEBs خادمياً: تصنيف الرابط → حلّ المنتج → ورقة النسخ → سلة AYROVI.
+4. **البديل الرسمي:** لصق **رابط** المنتج («Simply provide the URL to request your purchase») — وهذا **بالضبط** ما يفعله AYWEBs خادمياً: تصنيف الرابط → حلّ المنتج → ورقة النسخ → سلة ZAYROVI.
 
 **الامتثال — بنداً بنداً:**
 
 | المعيار | حالتنا | الحكم |
 |---|---|---|
 | عدم تجاوز تسجيل دخول المتجر | `src/aywebs/browser.ts:165-195` (§27) + `AUTH_REQUIRED` برسالة صادقة | ✅ ملتزم |
-| عدم إيهام الزبون بسلة المتجر | وسم «Panier de la boutique» + «…pas celui d'AYROVI» | ✅ ملتزم |
+| عدم إيهام الزبون بسلة المتجر | وسم «Panier de la boutique» + «…pas celui de ZAYROVI» | ✅ ملتزم |
 | طريقة الرابط مسموحة رسمياً | هي الطريقة الموصى بها من Buyee للزبون | ✅ ملتزم |
 | عدم انتحال ماركة Buyee | نصوصنا لا تذكر Buyee؛ واجهتنا مختلفة (موثّق في §12) | ✅ ملتزم |
 | التقاط `buyee.jp` | `registered=false` — نتصفّح ولا نلتقط | ⚪ قرار سياسة تجارة، لا خطأ تقني |
@@ -364,7 +364,7 @@ label: "AyWebs — التسوق من الويب"      (زر موجود، نص م
 
 الأيقونة ليست صورة خارجية ولا خطّاً بعيداً: هندستها داخل `client/src/design/editorial/glyphs.json` (رمز `AyWebs`، من أصل 99 رمزاً) — أي أنها تعمل داخل APK بلا شبكة.
 **اللقطتان:** `verify_shots/aywebs-tab-zoom.png` (الأيقونة مكبّرة) و`verify_shots/aywebs-screen.png` (الشاشة كاملة: المتاجر + الشريط الخمسي والتبويب AYWEBs مضيء بالبرتقالي).
-**وأيقونة التطبيق نفسها** (`mipmap-*/ic_launcher.png`) هي شعار AYROVI «A» بنقطة برتقالية — ليست أيقونة Capacitor الافتراضية.
+**وأيقونة التطبيق نفسها** (`mipmap-*/ic_launcher.png`) هي شعار ZAYROVI «A» بنقطة برتقالية — ليست أيقونة Capacitor الافتراضية.
 
 ## 15. حالة التحقّق النهائية بعد الدفعة الثانية
 
@@ -433,7 +433,7 @@ label: "AyWebs — التسوق من الويب"      (زر موجود، نص م
 | الفحص على الملف الناتج | النتيجة |
 |---|---|
 | التصريف | **`compileDebugJavaWithJavac` نجح**: `AyWebsBrowseActivity.java` و`MainActivity.java` و`AyWebsBrowsePlugin.java` صُرِّفت بلا خطأ واحد (تحذيرات `deprecation`/`unchecked` فقط) |
-| هوية الحزمة | `app.ayrovi.mobile` · `versionName 1.0` · `targetSdk 35` · التسمية **AYROVI** |
+| هوية الحزمة | `app.ayrovi.mobile` · `versionName 1.0` · `targetSdk 35` · التسمية **ZAYROVI** |
 | الأصناف داخل `classes4.dex` | `AyWebsBrowseActivity` · `AyWebsBrowsePlugin` · `MainActivity` ✓ |
 | رموز الإصلاح داخل الـ dex | `apiOrigin` · `EXTRA_API_ORIGIN` · `AyWebsApiException` · `toastMessage` · `setAddLabel` · `setSupportMultipleWindows` · `onCreateWindow` · `setAcceptThirdPartyCookies` |
 | النصوص الصادقة داخل الموارد | «Connectez-vous sur la boutique» · «La boutique demande une connexion» · «Panier de la boutique» · «Vérification anti-robot» · «Service indisponible» |
@@ -452,7 +452,7 @@ label: "AyWebs — التسوق من الويب"      (زر موجود، نص م
 ```
 GET /                                    → 200
 POST /api/v1/aywebs/page/analyze         → 400 SESSION_REQUIRED
-  error_contract.userMessage = "Session AYROVI invalide ou absente."
+  error_contract.userMessage = "Session ZAYROVI invalide ou absente."
 ```
 
 أي أن عقد الخطأ الذي بنيت عليه `AyWebsApiException` **حقيقي في الإنتاج**، لا في خادمي المحلّي فقط. (ملاحظة: الاستجابة الأولى استغرقت 52 ثانية — إنها خطة Render المجانية في وضع السبات؛ أول فتح للتطبيق بعد خموله سيكون بطيئًا، وهذا **ليس** عطلاً في التطبيق.)

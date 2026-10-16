@@ -1,4 +1,4 @@
-# AYROVI CRM 360 — API
+# ZAYROVI CRM 360 — API
 
 Inventaire des routes du module (montées sous `/api/admin/crm`), de leurs gardes et de leurs codes d'erreur.
 

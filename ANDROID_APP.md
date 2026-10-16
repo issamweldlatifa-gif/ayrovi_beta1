@@ -1,4 +1,4 @@
-# AYROVI — Application Android native (Capacitor)
+# ZAYROVI — Application Android native (Capacitor)
 
 Le site **est** l'app : même code, même UI (Lens inclus), embarquée dans une coque native.
 Aucun chemin dupliqué — `isNativeApp()` garde les ponts natifs hors du web.
@@ -50,7 +50,7 @@ Debug USB complet : Chrome → `chrome://inspect` (WebView `webview/localhost:80
 
 ## Build via GitHub Actions (sans Android Studio)
 
-1. Push sur `main` → workflow **Android APK/AAB** → artefact `AYROVI-debug.apk`.
+1. Push sur `main` → workflow **Android APK/AAB** → artefact `ZAYROVI-debug.apk`.
 2. AAB signé (Play Store) : créer le keystore une fois, puis stocker dans les secrets GitHub :
 
 ```bash

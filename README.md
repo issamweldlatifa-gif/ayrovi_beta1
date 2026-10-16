@@ -1,11 +1,11 @@
-# AYROVI — Shopping international et Admin CMS
+# ZAYROVI — Shopping international et Admin CMS
 
-AYROVI est une plateforme Express, React et SQLite de shopping international en dinars tunisiens. Le site public, Lens, le panier, le checkout, l’Assistant et l’espace Admin utilisent le même backend et la même base de données.
+ZAYROVI est une plateforme Express, React et SQLite de shopping international en dinars tunisiens. Le site public, Lens, le panier, le checkout, l’Assistant et l’espace Admin utilisent le même backend et la même base de données.
 
 ## Fonctions principales
 
 - Site public responsive avec Hero administrable, marques partenaires et une navigation textuelle simple sous le Hero pour Arrivages, Promotions, Stories et Actualités.
-- Chaque libellé CMS ouvre une page plein écran dédiée avec l’en-tête AYROVI, une fermeture explicite et uniquement le contenu backend de la catégorie choisie.
+- Chaque libellé CMS ouvre une page plein écran dédiée avec l’en-tête ZAYROVI, une fermeture explicite et uniquement le contenu backend de la catégorie choisie.
 - Lens pour extraire un prix depuis une image ou un lien, avec prévisualisation tarifaire calculée côté serveur.
 - Connexion client séparée de l’Admin par Google, Facebook OAuth ou SMS OTP, avec validation OAuth côté serveur et état anti-CSRF lié au navigateur.
 - Espace « Mon compte » complet : profil, adresses, historique détaillé, favoris, panier sauvegardé, notifications et suppression autonome du compte.

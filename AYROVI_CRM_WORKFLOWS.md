@@ -1,4 +1,4 @@
-# AYROVI CRM 360 — Parcours métier
+# ZAYROVI CRM 360 — Parcours métier
 
 Les flux de bout en bout tels qu'implémentés et verrouillés par les tests.
 

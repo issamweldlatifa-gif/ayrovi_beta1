@@ -1,4 +1,4 @@
-# تقرير فحص شامل — AYROVI / AYROVIX Lens
+# تقرير فحص شامل — ZAYROVI / AYROVIX Lens
 
 **تاريخ الفحص:** 1 أكتوبر 2026
 **المستودع:** `issamweldlatifa-gif/ayrovi_beta1`

@@ -1,4 +1,4 @@
-# AYROVI — خطة تطوير شاملة (دورة 2026-08-13)
+# ZAYROVI — خطة تطوير شاملة (دورة 2026-08-13)
 
 ## طلبات المستخدم (حرفية → مهام)
 1. [P1] إزالة بوابة تحقق الهاتف من إتمام الطلب نهائيًا (App.tsx يحجب !phoneVerified) — التحقق اختياري في إعدادات الحريف فقط
@@ -42,7 +42,7 @@
 
 ## AYROVIX Lens V1 (2026-08-13)
 - **Nouvelle feature au-dessus du système existant** (zéro casse : auth, panier, calculator, commandes, acompte 20%, preuves, admin, factures intacts).
-- Server `src/ayrovix/` : `services/ai.ts` (Claude Vision, clé ANTHROPIC_API_KEY server-side only, jamais de VITE_*), `services/search.ts` (fournisseurs interchangeables : catalogue AYROVI toujours actif + Google Shopping optionnel via SERPAPI_KEY ; scoring déterministe code>marque>modèle>couleurs), `services/product.ts` (URL → scraper existant, SSRF bloqué, jamais de données devinées), `services/currency.ts` (réutilise pricing_config versionné), `events.ts` (analytics anonymes).
+- Server `src/ayrovix/` : `services/ai.ts` (Claude Vision, clé ANTHROPIC_API_KEY server-side only, jamais de VITE_*), `services/search.ts` (fournisseurs interchangeables : catalogue ZAYROVI toujours actif + Google Shopping optionnel via SERPAPI_KEY ; scoring déterministe code>marque>modèle>couleurs), `services/product.ts` (URL → scraper existant, SSRF bloqué, jamais de données devinées), `services/currency.ts` (réutilise pricing_config versionné), `events.ts` (analytics anonymes).
 - API : POST /api/ayrovix/analyze-image (multer 6 Mo, JPEG/PNG/WebP/GIF), /analyze-url (canal url|qr), /choose ; rate-limit 12/10 min ; 503 AYROVIX_UNAVAILABLE sans clé.
 - Admin : GET /api/admin/ayrovix/stats (reports:read) + carte AYROVIX dans Rapports (analyses 7j, taux de correspondance, top marques/requêtes).
 - Client `client/src/ayrovix/` : LensLauncher (sheet plein écran, state machine home→preview→analyzing→candidates→product), LensCamera (capture=environment + fallback), LensUpload, QRScanner (BarcodeDetector natif + repli `@zxing/library` multi-format), ProductCandidates (plusieurs candidats, % match, jamais de réponse unique), ProductResult + ProductVariants. Commander → handleAddToCart existant → panier → checkout dépôt existant.
@@ -75,7 +75,7 @@
 ## AYROVIX Lens V2.1 — recherche visuelle Google Lens (2026-08-13, état courant)
 - Cette section remplace l'architecture de recherche image Anthropic-only documentée en V2.
 - Une photo lance désormais Claude Vision et SerpApi Google Lens en parallèle : Claude lit le prix et les indices visibles; Google Lens renvoie produits, images, liens et prix éventuels.
-- L'image destinée à SerpApi est réencodée en mémoire en JPEG de 500 Ko maximum, sans fichier public ni upload AYROVI; `image_id` est temporaire.
+- L'image destinée à SerpApi est réencodée en mémoire en JPEG de 500 Ko maximum, sans fichier public ni upload ZAYROVI; `image_id` est temporaire.
 - Si Google Lens renvoie au moins un produit exploitable, Claude Web Search n'est pas facturé pour cette image. Il reste le fallback texte et le moteur des QR/codes-barres/liens.
 - Cache SHA-256 dix minutes et coalescing empêchent de refacturer les rescans identiques.
 - Les badges Admin distinguent Claude Vision, Google Lens et Claude Web Search.
@@ -116,12 +116,12 @@
 - Les recherches photo, lien, QR, code texte et code-barres sont listées avec source, date, prix et action Relancer; la vérification automatique interne d'un candidat n'ajoute pas de doublon.
 - Validation locale : TypeScript ✅ et **56/56** tests ✅, dont isolation compte/invité et persistance automatique d'un scan code-barres.
 
-## AYROVI Chat Assistant UI V1 — Motion, messages et feedback hybride (2026-08-14, état courant)
-- Le symbole AYROVI à huit branches a été vectorisé depuis le visuel fourni. Le composant `AyroviMotion` prend en charge `idle`, `thinking`, `analyzing`, `reasoning` et `creating`; chaque état actif revient vers `idle` via le même settle de 680 ms, avec repli statique pour `prefers-reduced-motion`.
-- Header compact : Retour à gauche, symbole animé + AYROVI centré, Historique à droite. Le symbole reflète les quatre phases de génération puis reprend sa respiration idle sans saut.
-- Les messages client utilisent le tint violet AYROVI; chaque réponse assistant possède un avatar violet animé, une bulle neutre, copier/régénérer, 👍/👎 et un formulaire de commentaire accessible.
+## ZAYROVI Chat Assistant UI V1 — Motion, messages et feedback hybride (2026-08-14, état courant)
+- Le symbole ZAYROVI à huit branches a été vectorisé depuis le visuel fourni. Le composant `AyroviMotion` prend en charge `idle`, `thinking`, `analyzing`, `reasoning` et `creating`; chaque état actif revient vers `idle` via le même settle de 680 ms, avec repli statique pour `prefers-reduced-motion`.
+- Header compact : Retour à gauche, symbole animé + ZAYROVI centré, Historique à droite. Le symbole reflète les quatre phases de génération puis reprend sa respiration idle sans saut.
+- Les messages client utilisent le tint violet ZAYROVI; chaque réponse assistant possède un avatar violet animé, une bulle neutre, copier/régénérer, 👍/👎 et un formulaire de commentaire accessible.
 - Les avis sont enregistrés côté serveur avec liaison au compte lorsqu'il est connecté, CSRF obligatoire pour ce cas, et hash irréversible de la session pour le visiteur. Aucun identifiant de session brut ni question client n'est stocké.
-- Le menu fictif a été remplacé par les actions AYROVI essentielles : nouvelle conversation, historique local cloisonné invité/compte, commandes, Lens, compte, aide et thème sombre. Les badges et messages placeholder ont été supprimés.
+- Le menu fictif a été remplacé par les actions ZAYROVI essentielles : nouvelle conversation, historique local cloisonné invité/compte, commandes, Lens, compte, aide et thème sombre. Les badges et messages placeholder ont été supprimés.
 - Les taux factices ne sont plus récités : l'assistant renvoie vers le calcul Lens basé sur la configuration publiée et le total réel avant confirmation.
 - Validation locale : TypeScript ✅, **57/57** tests ✅ (dont feedback invité/compte + CSRF), build production ✅, audit npm 0 vulnérabilité ✅ et smoke API feedback ✅.
 

@@ -1,4 +1,4 @@
-# Admin AYROVI — passage au modèle A « Console opérationnelle »
+# Admin ZAYROVI — passage au modèle A « Console opérationnelle »
 
 Réalisé le **2026-09-22**, après ton choix : **A** (référence Amazon Seller Central).
 Ce dossier garde les preuves et la trace de ce qui a été fait, décision par décision.
@@ -46,7 +46,7 @@ contrat n'a bougé.
    contrôle qui ne filtrait rien. Et si le filtre disparaît, il est remis à « Tous » — le rail ne
    peut pas devenir vide sans explication.
 6. **Densité compacte par défaut**, rayon 3–4 px, aucune ombre sur les cartes, aucune couleur
-   décorative : la palette reste celle d'AYROVI (encre `#111110`, orange d'action `#FF6900`), ce
+   décorative : la palette reste celle de ZAYROVI (encre `#111110`, orange d'action `#FF6900`), ce
    sont les conventions de poste de travail qui sont reprises, pas la charte d'Amazon.
 7. **Le titre n'est plus écrit deux fois.** L'en-tête affichait `COMMERCE / COMMANDES` puis le titre
    de la page en dessous : le fil d'Ariane garde une ligne, le titre appartient à l'écran.
@@ -84,12 +84,12 @@ Vérifié écran par écran, pas déclaré :
 | Barre sous l'en-tête pilotée par l'Admin | Les 3 onglets viennent de `/api/public/navigation` (base → contrat partagé → client). Renommer, réordonner, masquer se fait dans `Contenu › Barre sous l'en-tête` ; tout masquer fait disparaître la barre. |
 | Le pied de page | Un seul, sur l'accueil. Les pages plein écran (Arrivage, Gift & Cards, Magazine) n'en affichent aucun — compte vérifié : `footers 1` sur l'accueil, `0` sur les trois pages. |
 | Pas de débordement horizontal | `1440/1440` et `390/390` sur l'accueil et les trois pages : rien de ce que l'Admin publie ne peut casser la mise en page. |
-| **Libellés arabes réels** | **Corrigé.** Les libellés AR étaient la copie du français : en mode arabe, les onglets et les titres de pages s'affichaient en latin. Ils sont maintenant `وصلات جديدة` · `هدايا وبطاقات` · `مجلة AYROVI`, dans le contrat partagé **et** en base (réparation ponctuelle `public_nav_arabic_labels_v1`, jouée une seule fois — un libellé retouché ensuite à la main n'est jamais écrasé). Vérifié en direct : `dir=rtl`, onglets arabes, `h1` de `/arrivage` = `وصلات جديدة`. |
+| **Libellés arabes réels** | **Corrigé.** Les libellés AR étaient la copie du français : en mode arabe, les onglets et les titres de pages s'affichaient en latin. Ils sont maintenant `وصلات جديدة` · `هدايا وبطاقات` · `مجلة ZAYROVI`, dans le contrat partagé **et** en base (réparation ponctuelle `public_nav_arabic_labels_v1`, jouée une seule fois — un libellé retouché ensuite à la main n'est jamais écrasé). Vérifié en direct : `dir=rtl`, onglets arabes, `h1` de `/arrivage` = `وصلات جديدة`. |
 | Une seule source de libellés | `PublicCmsSections.tsx` recopiait les trois libellés ; il lit maintenant `shared/publicNavigation.ts` comme l'Admin, l'API et le routage. Seuls « Social » et les textes éditoriaux (accroche, description) restent locaux. |
 | Fichiers média | Les 31 fichiers de `client/public/media` sont tous référencés (manifeste PWA, générateur d'icônes, tests, écrans). Aucun fichier mort à supprimer. |
 
 Reste un point **volontairement non touché** : sur l'accueil en arabe, le grand titre du hero s'affiche
-encore en français (« Vous le voyez. AYROVI vous le livre. »). Ce texte vient du contenu Hero, pas de
+encore en français (« Vous le voyez. ZAYROVI vous le livre. »). Ce texte vient du contenu Hero, pas de
 la barre publique : il a son propre écran et sa propre saisie AR. Dis-moi si tu veux que je m'en
 occupe dans la foulée.
 
@@ -142,7 +142,7 @@ Les écrans métier, eux, n'ont jamais été touchés : ils héritent du style p
   لكل سطر، ليجوند الجدول، وأسماء شاشات بالإنجليزية/غير متناسقة.
 - **الموقع:** تثبّتنا بلي الـfooter موجود كان في الـaccueil، ما فماش débordement في 1440 و390،
   و**أهم شي**: الترجمات العربية للتبويبات كانت نسخة من الفرنسية — تصلّحت (وصلات جديدة · هدايا
-  وبطاقات · مجلة AYROVI) في العقد المشترك وفي قاعدة البيانات.
+  وبطاقات · مجلة ZAYROVI) في العقد المشترك وفي قاعدة البيانات.
 - **الفحوصات:** 1489 تست ✅ · typecheck ✅ · design:check ✅ · 20/20 و129/129 و102/102 ✅.
 
 ---
@@ -186,7 +186,7 @@ Trois éléments de l'écran de connexion sont **vivants** (et vérifiables) :
 3. l'erreur de connexion est annoncée (`role="alert"`), et le bloc « mot de passe perdu » décrit la
    **procédure réelle du serveur** (`ADMIN_EMAIL`/`ADMIN_PASSWORD` et un jeton ponctuel `ADMIN_BOOTSTRAP_RESET` aléatoire de 32 octets). Le jeton est consommé une fois et doit être retiré après redémarrage.
 
-Titre d'onglet : `AYROVI · Console d'exploitation` (la console ne s'annonce plus avec le titre
+Titre d'onglet : `ZAYROVI · Console d'exploitation` (la console ne s'annonce plus avec le titre
 marketing du site public).
 Captures : `audit/login-desktop.png` et `audit/login-mobile.png` — elles sont régénérées par l'audit.
 
@@ -241,7 +241,7 @@ les flèches).
 - **34 شاشة كان فيها زوز أزرار رمادية بلا سبب** — تو كل زر رمادي يقول **علاش** هو رمادي.
 - **واجهة دخول الادمين ولّات بنفس ستايل النموذج A**: نفس الألوان ونفس الفواصل، زر « Se connecter »
   ولّى **برتقالي** (الأكشن الوحيد)، وفمّا **كارتوس حالة** يقرا `/api/health` ويوري version الحقيقي
-  مع زر « Réessayer »، وعين كلمة السر فيها `aria-pressed`، والتيتل ولّى `AYROVI · Console`.
+  مع زر « Réessayer »، وعين كلمة السر فيها `aria-pressed`، والتيتل ولّى `ZAYROVI · Console`.
 - **زوز إضافات جديدة**: **تصدير CSV** (نفس السطور ونفس الأعمدة اللي في الشاشة، بـ BOM باش Excel
   يقرا العربي، وبلا خطر formule) و**الjournal: Rafraîchir + Exporter**.
 - **أمان**: التصديق تجرّب من **contexte فارغ** → 401 في كل بلاصة، الكتابة بلا CSRF → 403، الكوكي
