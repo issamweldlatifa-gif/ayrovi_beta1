@@ -13,7 +13,7 @@ import { FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { AppText, useFieldChrome } from '@/design/ui';
-import { WaitingBars } from '@/design/WaitingBars';
+import { LoadingSpinner } from '@/design/LoadingSpinner';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
 import { fetchComments, sendInteraction, type SocialComment } from '@/api/social';
@@ -73,7 +73,7 @@ export function Comments({ targetId }: CommentsProps) {
     <View style={styles.wrap}>
       {comments.isPending ? (
         <View accessibilityRole="progressbar" accessibilityLabel={t('loading.server')}>
-          <WaitingBars compact testID="comments-loading-bars" />
+          <LoadingSpinner size="sm" testID="comments-loading-spinner" />
         </View>
       ) : null}
       {comments.isError ? (

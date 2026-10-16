@@ -5,12 +5,13 @@
  * Contrat d'affichage :
  *  • chargement ⇒ squelette de la forme attendue, JAMAIS un trou blanc ;
  *  • module désactivé / erreur API / aucune carte ⇒ rien (il n'existe plus d'ancien hero) ;
- *  • carte = titre + visuel 5:8 + fondu vers le fond + CTA optionnel ;
- *  • la section adapte son fond à la carte active (transition animée) ;
+ *  • carte = titre + visuel 5:8 + CTA optionnel ;
+ *  • le fond de la section EST celui de la photo active : ses bords exacts, du
+ *    haut jusqu'en bas (plus de voile blanc sous les photos), en fondu enchaîné ;
  *  • impression/clic tracés en fire-and-forget — mesurer ne casse jamais rien.
  *
- * Le fondu (dégradé) est la SEULE superposition `absolute` de ce fichier : le
- * visuel se dissout dans la couleur de la carte, il n'est pas posé dans le flux.
+ * Les couches de fond (une par carte, empilées) et le voile du titre sont les
+ * seules superpositions `absolute` de ce fichier.
  */
 import {
   memo, useCallback, useEffect, useMemo, useRef, useState,
@@ -34,15 +35,13 @@ import {
   parseHeroCarouselSettings, trackHeroEvent,
   type HeroCarouselSettings, type HeroSlide,
 } from '@/api/public';
-import { pickHeroText, softenHeroBackground, withAlpha } from './heroPalette';
+import { adaptiveInk, heroEdgeColors, pickHeroText, withAlpha } from './heroPalette';
 import { isDemoSlide } from './heroDemo';
 import {
-  backgroundRanges, CARD_ASPECT, CARD_GAP, carouselGeometry, indexForOffset, isStillAfterDrag, nextIndex,
+  backdropLayerRange, CARD_ASPECT, CARD_GAP, carouselGeometry, indexForOffset, isStillAfterDrag, nextIndex,
   shouldAutoplayAdvance,
 } from './heroCarouselLogic';
 
-/** Hauteur du fondu final vers le fond de page (blanc) sous le carrousel. */
-const PAGE_FADE_HEIGHT = 40;
 /** Espace entre le bas du héros et les tabs : petit, pas un vide de 120 pts. */
 const SECTION_BOTTOM_GAP = 12;
 /** Marge au-dessus du bas de l'image pour les pastilles (posées SUR la photo). */
@@ -127,30 +126,28 @@ function HeroCarouselView({
   // Géométrie : carte active centrée, voisines visibles à égale distance des deux côtés.
   const { cardWidth, stride, sideInset } = carouselGeometry(viewportWidth);
 
-  // Fond effectif de chaque carte (palette serveur, repli = surface du thème).
-  // Fond adouci vers le blanc de la page : le cadre de la photo reste visible.
-  const backgrounds = useMemo(
-    () => slides.map((card) => softenHeroBackground(card.background || theme.colors.surface, theme.colors.canvas)),
-    [slides, theme.colors.surface, theme.colors.canvas],
+  // Fond de chaque carte = les bords EXACTS de sa photo (haut → bas), sans retouche.
+  // Repli : fond manuel / ancienne palette (`background`), puis surface du thème.
+  const edges = useMemo(
+    () => slides.map((card) => heroEdgeColors(card, theme.colors.surface)),
+    [slides, theme.colors.surface],
   );
-  // Une seule carte : pas d'interpolation (il faut au moins deux points), la couleur suffit.
-  const ranges = backgroundRanges(backgrounds);
-  const sectionBackground = ranges ? bgAnim.interpolate(ranges) : (backgrounds[0] ?? theme.colors.canvas);
-  // Le header reçoit la couleur adoucie de la carte active (même valeur que la section).
 
-  // Le header reprend la couleur de la carte active ; remise à zéro au démontage.
+  // Le header reprend le bord HAUT de la photo active ; remise à zéro au démontage.
+  const activeTop = edges[activeIndex]?.top ?? null;
   useEffect(() => {
-    onActiveBackgroundChange?.(backgrounds[activeIndex] ?? null);
-  }, [activeIndex, backgrounds, onActiveBackgroundChange]);
+    onActiveBackgroundChange?.(activeTop);
+  }, [activeTop, onActiveBackgroundChange]);
   useEffect(() => () => onActiveBackgroundChange?.(null), [onActiveBackgroundChange]);
 
-  // Transition du fond de section vers la carte active.
+  // Transition du fond de section vers la carte active : seule l'opacité des
+  // couches bouge (fil natif), aucune couleur recalculée image par image.
   useEffect(() => {
     Animated.timing(bgAnim, {
       toValue: activeIndex,
       duration: reduceMotion ? 0 : settings.transitionMs,
       easing: Easing.inOut(Easing.ease),
-      useNativeDriver: false,
+      useNativeDriver: true,
     }).start();
   }, [bgAnim, activeIndex, reduceMotion, settings.transitionMs]);
 
@@ -201,11 +198,41 @@ function HeroCarouselView({
   }, [locale]);
 
   return (
-    <Animated.View
+    <View
       testID="hero-carousel"
       onLayout={onSectionLayout}
-      style={[styles.section, { marginHorizontal: -gutter, backgroundColor: sectionBackground }]}
+      style={[styles.section, { marginHorizontal: -gutter, backgroundColor: edges[0]?.top ?? theme.colors.canvas }]}
     >
+      {/* Fond = la photo : une couche par carte, du bord haut au bord bas de SA photo.
+          Couches empilées dans l'ordre : la carte i apparaît par-dessus la précédente
+          (fondu enchaîné sans trou), celles d'après restent transparentes. */}
+      <View
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+        testID="hero-carousel-backdrop"
+      >
+        {edges.map((edge, index) => {
+          const range = backdropLayerRange(index);
+          return (
+          <Animated.View
+            key={slides[index]?.id ?? index}
+            style={[
+              StyleSheet.absoluteFill,
+              range ? { opacity: bgAnim.interpolate({ ...range, extrapolate: 'clamp' }) } : null,
+            ]}
+          >
+            <LinearGradient
+              colors={[edge.top, edge.top, edge.bottom, edge.bottom]}
+              locations={EDGE_LOCATIONS}
+              style={StyleSheet.absoluteFill}
+              testID={`hero-carousel-backdrop-${index}`}
+            />
+          </Animated.View>
+          );
+        })}
+      </View>
       <FlatList
         ref={listRef}
         testID="hero-carousel-list"
@@ -231,28 +258,16 @@ function HeroCarouselView({
         onMomentumScrollEnd={onScrollEnd}
         onScrollBeginDrag={onScrollBeginDrag}
         onScrollEndDrag={onScrollEndDrag}
-        renderItem={({ item }) => (
+        renderItem={({ item, index }) => (
           <HeroCard
             card={item}
             width={cardWidth}
+            backdrop={edges[index]?.bottom ?? theme.colors.surface}
             onPress={onPressCard}
           />
         )}
       />
-      {/* Fin de carrousel : le fond passe en douceur au blanc de la page. */}
-      <LinearGradient
-        colors={[
-          withAlpha(theme.colors.canvas, 0),
-          withAlpha(theme.colors.canvas, 0.55),
-          theme.colors.canvas,
-        ]}
-        locations={[0, 0.5, 1]}
-        style={[styles.pageFade, { height: PAGE_FADE_HEIGHT }]}
-        pointerEvents="none"
-        accessibilityElementsHidden
-        importantForAccessibility="no-hide-descendants"
-      />
-    </Animated.View>
+    </View>
   );
 }
 
@@ -261,6 +276,8 @@ function HeroCarouselView({
 interface HeroCardProps {
   card: HeroSlide;
   width: number;
+  /** Fond réel sous le CTA (bord bas de la photo) : la pastille s'y adapte. */
+  backdrop: string;
   onPress: (card: HeroSlide) => void;
 }
 
@@ -268,7 +285,7 @@ interface HeroCardProps {
  * Carte « façon Amazon » : le titre et le sous-titre sont POSÉS SUR le visuel,
  * sur un voile sombre en bas. Le visuel occupe toute la largeur de la carte.
  */
-const HeroCard = memo(function HeroCard({ card, width, onPress }: HeroCardProps) {
+const HeroCard = memo(function HeroCard({ card, width, backdrop, onPress }: HeroCardProps) {
   const theme = useTheme();
   const { locale } = useI18n();
   const isArabic = locale === 'ar';
@@ -277,6 +294,10 @@ const HeroCard = memo(function HeroCard({ card, width, onPress }: HeroCardProps)
   const cta = pickHeroText(card.cta, card.ctaAr, isArabic);
   // Libellé composé des données serveur — jamais de chaîne écrite en dur.
   const label = [title, subtitle, cta].filter(Boolean).join(' · ');
+  // Le CTA est posé sur le fond de la photo (parfois sombre) : pastille d'encre
+  // contrastée avec CE fond, libellé de la couleur opposée.
+  const ctaFill = adaptiveInk(backdrop, theme.colors);
+  const ctaText = ctaFill === theme.colors.onAdaptiveLight ? theme.colors.onAdaptiveDark : theme.colors.onAdaptiveLight;
 
   return (
     <Pressable
@@ -331,10 +352,10 @@ const HeroCard = memo(function HeroCard({ card, width, onPress }: HeroCardProps)
             styles.cardCta,
             // Lien éditorial de la carte : pastille encre (le violet plein est réservé
             // à l'action d'achat — ajout au panier, caisse, paiement).
-            { backgroundColor: pressed ? theme.colors.secondary : theme.colors.ink },
+            { backgroundColor: ctaFill, opacity: pressed ? theme.opacity.subtle : 1 },
           ]}
         >
-          <AppText variant="label" weight="bold" color={theme.colors.canvas} numberOfLines={1}>
+          <AppText variant="label" weight="bold" color={ctaText} numberOfLines={1}>
             {cta}
           </AppText>
         </Pressable>
@@ -346,8 +367,8 @@ const HeroCard = memo(function HeroCard({ card, width, onPress }: HeroCardProps)
 /* ── Styles ───────────────────────────────────────────────────────────────── */
 
 const styles = StyleSheet.create({
-  // Pas de fond propre à la carte : le fond continu du carrousel passe derrière
-  // les voisines (aucune bande coupée). Le bas de section laisse place au fondu.
+  // Pas de fond propre à la carte : le fond continu du carrousel (celui de la
+  // photo) passe derrière les voisines et jusqu'au bas de la section.
   section: { paddingTop: 16, paddingBottom: SECTION_BOTTOM_GAP, overflow: 'hidden' },
   // Pas de marge interne : le visuel occupe toute la largeur de la carte (plus grand).
   card: {},
@@ -367,6 +388,12 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     overflow: 'hidden',
   },
-  pageFade: { position: 'absolute', left: 0, right: 0, bottom: 0 },
 });
+
+/**
+ * Bandes de la couche de fond : le haut de la section garde EXACTEMENT le bord
+ * haut de la photo, le bas EXACTEMENT son bord bas ; le passage se fait le long
+ * des cartes, là où seuls les interstices le laissent voir.
+ */
+const EDGE_LOCATIONS = [0, 0.18, 0.82, 1] as const;
 

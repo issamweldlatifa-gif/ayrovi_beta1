@@ -5,9 +5,10 @@
  * dépendre de `react-native` (les tests de logique pure ne chargent jamais
  * le rendu natif). Même séparation que `design/layoutLogic.ts`.
  *
- * Le serveur extrait la palette de l'image (dominante + pastel clair) et la
- * publie avec la carte ; ici, on ne fait que LIRE ce contrat : choisir l'encre
- * qui contraste avec le fond effectif, et le texte selon la langue de l'app.
+ * Le serveur extrait la palette de l'image (dominante + bords exacts) et la
+ * publie avec la carte ; ici, on ne fait que LIRE ce contrat : choisir le fond
+ * (les bords de la photo), l'encre qui contraste avec lui, et le texte selon la
+ * langue de l'app.
  */
 
 const HEX_RE = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
@@ -73,11 +74,26 @@ export function withAlpha(hex: string, alpha: number): string {
   return `rgba(${rgb.r},${rgb.g},${rgb.b},${Math.min(1, Math.max(0, alpha))})`;
 }
 
+/* ── Fond = la photo elle-même (2026-10-16) ───────────────────────────────── */
+
 /**
- * Fond du carrousel adouci vers le blanc de la page : la bordure de la photo reste
- * visible (cadre du visuel) sans que le fond soit trop saturé. Quantité fixe : 18 %.
+ * Fond d'une carte : les bords EXACTS de sa photo, du haut (`top`) jusqu'en bas
+ * (`bottom`), publiés par le serveur (palette v3). Aucune retouche : ni
+ * éclaircissement, ni voile blanc — le carrousel prend le fond même de la photo.
+ *
+ * Un fond manuel (Admin) ou une palette plus ancienne n'a pas de bords : on
+ * reprend alors `background`, puis le repli (surface du thème).
  */
-export const HERO_BACKGROUND_SOFTEN = 0.18;
-export function softenHeroBackground(background: string, canvas: string): string {
-  return mixHex(background, canvas, HERO_BACKGROUND_SOFTEN);
+export function heroEdgeColors(
+  card: { background?: string; edgeTop?: string; edgeBottom?: string },
+  fallback: string,
+): { top: string; bottom: string } {
+  const valid = (value?: string): string => {
+    const clean = (value ?? '').trim();
+    return HEX_RE.test(clean) ? clean : '';
+  };
+  const base = valid(card.background) || fallback;
+  const top = valid(card.edgeTop) || base;
+  const bottom = valid(card.edgeBottom) || top;
+  return { top, bottom };
 }

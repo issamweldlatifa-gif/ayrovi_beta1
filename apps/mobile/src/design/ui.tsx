@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, webDirection, type FontWeightName, type TextRole } from './theme';
 import { actionDirectionFor, responsiveMetricsFor, rowDirectionFor } from './layoutLogic';
 import { veil } from './tokens.mobile';
-import { WaitingBars } from './WaitingBars';
+import { LoadingSpinner } from './LoadingSpinner';
 import { useT } from '@/i18n';
 
 /* ── Texte ─────────────────────────────────────────────────────────────────── */
@@ -272,8 +272,8 @@ export const BUTTON_OUTLINE_WIDTH = 2;
  *   • `solid` : défaut — fond encre (`ink`), libellé `canvas` (noir/blanc,
  *     inversés en mode sombre), `secondary` quand on appuie.
  *   • `quiet` : bouton secondaire — fond `canvas`, contour et libellé `ink`.
- * Désactivé : même forme, opacité réduite. Occupé : barres d'attente dans le
- * bouton (pastille blanche sur les fonds pleins).
+ * Désactivé : même forme, opacité réduite. Occupé : le cercle d'attente prend
+ * la place du pictogramme de tête, dans la couleur du libellé.
  */
 export function Button({ label, onPress, busy = false, disabled = false, tone = 'solid', block = false, style, accessibilityHint, testID, leading }: ButtonProps) {
   const theme = useTheme();
@@ -281,6 +281,11 @@ export function Button({ label, onPress, busy = false, disabled = false, tone = 
   const quiet = tone === 'quiet';
   const main = tone === 'main';
   const labelColor = quiet ? theme.colors.ink : main ? theme.colors.onAction : theme.colors.canvas;
+  // Attente visible DANS le bouton : le cercle en pointillés remplace le
+  // pictogramme de tête (ex. le logo Google), jamais posé à côté du libellé.
+  const lead = busy
+    ? <LoadingSpinner size="sm" color={labelColor} testID={testID ? `${testID}-busy` : undefined} />
+    : leading;
   return (
     <Pressable
       accessibilityRole="button"
@@ -309,10 +314,10 @@ export function Button({ label, onPress, busy = false, disabled = false, tone = 
         },
       ]}
     >
-      {leading ? (
+      {lead ? (
         // Pictogramme (ex. logo Google) posé avant le libellé, dans le sens de lecture.
         <View style={[styles.leadingRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-          {leading}
+          {lead}
           <AppText variant="label" weight="bold" color={labelColor}>
             {label}
           </AppText>
@@ -322,19 +327,6 @@ export function Button({ label, onPress, busy = false, disabled = false, tone = 
           {label}
         </AppText>
       )}
-      {/* Attente visible DANS le bouton : cinq barres, jamais une roue indéfinie. */}
-      {busy ? (
-        <View
-          pointerEvents="none"
-          style={[styles.busyIndicator, theme.isRTL ? { left: 16 } : { right: 16 }]}
-        >
-          <WaitingBars
-            testID={testID ? `${testID}-busy` : undefined}
-            compact
-            light={!quiet}
-          />
-        </View>
-      ) : null}
     </Pressable>
   );
 }
@@ -516,7 +508,6 @@ export function Field(props: TextInputProps & { label?: string }) {
 
 const styles = StyleSheet.create({
   leadingRow: { alignItems: 'center', justifyContent: 'center', gap: 10 },
-  busyIndicator: { position: 'absolute', top: 0, bottom: 0, justifyContent: 'center' },
   drawerScrim: { flex: 1, backgroundColor: veil(0.45) },
   drawerPanel: {
     position: 'absolute', top: 0, bottom: 0,

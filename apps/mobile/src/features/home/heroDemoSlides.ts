@@ -3,7 +3,7 @@
  * Voir `heroDemo.ts` pour l'activation et la règle de priorité.
  */
 import type { HeroSlide } from '@/api/public';
-import { HERO_DEMO_BACKGROUND } from '@/design/tokens.mobile';
+import { HERO_DEMO_BACKGROUND, HERO_DEMO_EDGES } from '@/design/tokens.mobile';
 
 export function demoHeroSlides(): HeroSlide[] {
   return [
@@ -20,6 +20,8 @@ export function demoHeroSlides(): HeroSlide[] {
       href: '/catalog',
       destinationType: 'catalog',
       background: HERO_DEMO_BACKGROUND.tech,
+      edgeTop: HERO_DEMO_EDGES.tech.top,
+      edgeBottom: HERO_DEMO_EDGES.tech.bottom,
       dominant: HERO_DEMO_BACKGROUND.tech,
     },
     {
@@ -35,6 +37,8 @@ export function demoHeroSlides(): HeroSlide[] {
       href: '/catalog',
       destinationType: 'catalog',
       background: HERO_DEMO_BACKGROUND.modeHomme,
+      edgeTop: HERO_DEMO_EDGES.modeHomme.top,
+      edgeBottom: HERO_DEMO_EDGES.modeHomme.bottom,
       dominant: HERO_DEMO_BACKGROUND.modeHomme,
     },
     {
@@ -50,6 +54,8 @@ export function demoHeroSlides(): HeroSlide[] {
       href: '/catalog',
       destinationType: 'catalog',
       background: HERO_DEMO_BACKGROUND.modeFemme,
+      edgeTop: HERO_DEMO_EDGES.modeFemme.top,
+      edgeBottom: HERO_DEMO_EDGES.modeFemme.bottom,
       dominant: HERO_DEMO_BACKGROUND.modeFemme,
     },
     {
@@ -65,6 +71,8 @@ export function demoHeroSlides(): HeroSlide[] {
       href: '/promotions',
       destinationType: 'promotions',
       background: HERO_DEMO_BACKGROUND.sport,
+      edgeTop: HERO_DEMO_EDGES.sport.top,
+      edgeBottom: HERO_DEMO_EDGES.sport.bottom,
       dominant: HERO_DEMO_BACKGROUND.sport,
     },
   ];

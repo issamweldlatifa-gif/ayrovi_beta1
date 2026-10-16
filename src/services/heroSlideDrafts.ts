@@ -297,6 +297,9 @@ export interface PublicHeroCard {
   href: string;
   destinationType: string;
   background: string;
+  /** Couleurs EXACTES des bords haut / bas de la photo (application) — vides si fond manuel ou palette ancienne. */
+  edgeTop: string;
+  edgeBottom: string;
   dominant: string;
   luminance: number;
 }
@@ -337,6 +340,8 @@ export function toPublicCards(
     if (!href || !heroDestinationExists(db, values.destination_type, values.destination_value)) continue;
     const palette = parseHeroPalette(rawPalette);
     const manual = values.bg_color.trim();
+    // Fond choisi à la main dans l'Admin : il prime partout, bords exacts compris.
+    const manualBackground = values.bg_mode === 'manual' && isHexColor(manual);
     cards.push({
       id,
       image: values.image,
@@ -350,7 +355,9 @@ export function toPublicCards(
       displayOrder: values.display_order,
       href,
       destinationType: values.destination_type,
-      background: values.bg_mode === 'manual' && isHexColor(manual) ? manual : (palette?.background ?? ''),
+      background: manualBackground ? manual : (palette?.background ?? ''),
+      edgeTop: manualBackground ? '' : (palette?.edgeTop ?? ''),
+      edgeBottom: manualBackground ? '' : (palette?.edgeBottom ?? ''),
       dominant: palette?.dominant ?? '',
       luminance: palette?.luminance ?? 0,
     });

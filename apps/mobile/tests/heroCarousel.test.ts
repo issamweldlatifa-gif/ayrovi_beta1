@@ -22,7 +22,7 @@ const {
 } = await import('../src/api/public');
 const {
   hexToRgb, luminanceOfHex, adaptiveInk, pickHeroText,
-  mixHex, withAlpha, softenHeroBackground, HERO_BACKGROUND_SOFTEN,
+  mixHex, withAlpha, heroEdgeColors,
 } = await import('../src/features/home/heroPalette');
 
 // `mockReset` perd les rejets suivis ⇒ `mockClear` + valeur par défaut résolue.
@@ -64,7 +64,14 @@ describe('parseHeroSlides — contrat serveur, défensif', () => {
       href: '/promotions',
       destinationType: 'CAMPAIGN',
       background: '#F6E7D8',
+      edgeTop: '',
+      edgeBottom: '',
     });
+  });
+
+  it('bords exacts de la photo (palette v3) lus tels quels', () => {
+    const [card] = parseHeroSlides([{ ...CARD, edgeTop: '#433F39', edgeBottom: '#3D3C39' }]);
+    expect(card).toMatchObject({ edgeTop: '#433F39', edgeBottom: '#3D3C39' });
   });
 
   it('carte sans id ⇒ écartée (jamais de carte sans identité)', () => {
@@ -196,7 +203,7 @@ describe('contraste — encre sur fond adaptatif', () => {
   });
 });
 
-describe('mixHex / withAlpha / softenHeroBackground — adoucissement du fond', () => {
+describe('mixHex / withAlpha — mélanges de couleur', () => {
   it('mixHex : bornes exactes et milieu', () => {
     expect(mixHex('#000000', '#FFFFFF', 0)).toBe('#000000');
     expect(mixHex('#000000', '#FFFFFF', 1)).toBe('#FFFFFF');
@@ -216,13 +223,24 @@ describe('mixHex / withAlpha / softenHeroBackground — adoucissement du fond', 
     expect(withAlpha('#FFFFFF', 2)).toBe('rgba(255,255,255,1)');
   });
 
-  it('softenHeroBackground : éclaircit vers le blanc sans atteindre le blanc', () => {
-    expect(HERO_BACKGROUND_SOFTEN).toBeGreaterThan(0);
-    expect(HERO_BACKGROUND_SOFTEN).toBeLessThan(0.5);
-    const softened = softenHeroBackground('#11A59F', '#FFFFFF');
-    expect(softened).toBe(mixHex('#11A59F', '#FFFFFF', HERO_BACKGROUND_SOFTEN));
-    expect(luminanceOfHex(softened)).toBeGreaterThan(luminanceOfHex('#11A59F'));
-    expect(softened).not.toBe('#FFFFFF');
+});
+
+describe('heroEdgeColors — le fond EST celui de la photo, du haut jusqu’en bas', () => {
+  it('bords exacts du serveur, sans éclaircissement ni voile blanc', () => {
+    expect(heroEdgeColors({ background: '#7C766C', edgeTop: '#433F39', edgeBottom: '#3D3C39' }, '#F2F2F2'))
+      .toEqual({ top: '#433F39', bottom: '#3D3C39' });
+  });
+
+  it('fond manuel ou palette ancienne (sans bords) ⇒ `background` partout', () => {
+    expect(heroEdgeColors({ background: '#AABBCC', edgeTop: '', edgeBottom: '' }, '#F2F2F2'))
+      .toEqual({ top: '#AABBCC', bottom: '#AABBCC' });
+  });
+
+  it('bord bas absent ⇒ bord haut ; rien de valide ⇒ repli du thème', () => {
+    expect(heroEdgeColors({ background: '#AABBCC', edgeTop: '#101010' }, '#F2F2F2'))
+      .toEqual({ top: '#101010', bottom: '#101010' });
+    expect(heroEdgeColors({ background: '', edgeTop: 'gris', edgeBottom: 'rouge' }, '#F2F2F2'))
+      .toEqual({ top: '#F2F2F2', bottom: '#F2F2F2' });
   });
 });
 

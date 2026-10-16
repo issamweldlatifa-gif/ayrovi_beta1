@@ -26,7 +26,7 @@ vi.mock('react-native', () => ({ Platform: { OS: 'android' } }));
 
 import { BRAND, BRAND_SHARE, COLORS, NEUTRALS } from '../src/design/tokens.generated';
 import {
-  GOOGLE_BRAND, LENS_COLORS, STATUS, WAITING_GRADIENTS, derivedColors, frost, veil,
+  GOOGLE_BRAND, LENS_COLORS, STATUS, derivedColors, frost, veil,
 } from '../src/design/tokens.mobile';
 
 const ROOT = path.resolve(__dirname, '..');
@@ -228,12 +228,6 @@ describe('identité couleur officielle', () => {
     expect(COLORS.light.actionHover).toBe(mix(BRAND.violet, BRAND.black, 0.18));
     expect(COLORS.dark.actionHover).toBe(COLORS.light.actionHover);
     expect(COLORS.dark.accentText).toBe(mix(BRAND.violet, BRAND.white, 0.35));
-    for (const pair of WAITING_GRADIENTS) {
-      for (const color of pair) {
-        expect(hue(color)).toBeGreaterThan(250);
-        expect(hue(color)).toBeLessThan(262);
-      }
-    }
     expect(veil(0.5)).toBe('#0A0A0A80');
     expect(frost(0.9)).toBe('#FFFFFFe6');
   });
@@ -342,7 +336,7 @@ describe('plus d’orange dans l’application', () => {
     const palette = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/design/brand.json'), 'utf8'));
     const all = [
       ...hexesIn(palette), ...hexesIn(COLORS), ...hexesIn(STATUS), ...hexesIn(LENS_COLORS),
-      ...hexesIn(WAITING_GRADIENTS), ...hexesIn(derivedColors(COLORS.light)), ...hexesIn(derivedColors(COLORS.dark)),
+      ...hexesIn(derivedColors(COLORS.light)), ...hexesIn(derivedColors(COLORS.dark)),
     ];
     expect(all.length).toBeGreaterThan(40);
     expect(all.filter(isOrange)).toEqual([]);

@@ -15,7 +15,7 @@ import SignInScreen from '../../app/sign-in';
 import { ThemeProvider } from '../../src/design/theme';
 import { I18nProvider } from '../../src/i18n';
 import { PrefsProvider } from '../../src/state/prefs';
-import { WaitingBars } from '../../src/design/WaitingBars';
+import { LoadingSpinner } from '../../src/design/LoadingSpinner';
 
 // Premier rendu à froid (chargement de l'arbre et des modules natifs simulés) : marge large.
 jest.setTimeout(20000);
@@ -379,11 +379,12 @@ describe('Compte mémorisé et attente dans le bouton', () => {
     GoogleSignin.signIn.mockReturnValue(new Promise(() => {}));
     await renderScreen();
     const googleButton = () => screen.getByTestId('auth-provider-google');
-    expect(within(googleButton()).queryByTestId('auth-provider-google-busy')).toBeNull();
+    expect(within(googleButton()).queryByTestId('auth-provider-google-busy', { includeHiddenElements: true })).toBeNull();
     await act(async () => { fireEvent.press(googleButton()); });
-    // Les cinq barres sont DANS le bouton Google, et lui seul attend.
+    // Le cercle d'attente est DANS le bouton Google (à la place du logo), et lui seul attend.
     expect(googleButton().props.accessibilityState.busy).toBe(true);
-    expect(within(googleButton()).UNSAFE_getByType(WaitingBars)).toBeTruthy();
+    expect(within(googleButton()).UNSAFE_getByType(LoadingSpinner)).toBeTruthy();
+    expect(within(googleButton()).getByTestId('auth-provider-google-busy', { includeHiddenElements: true })).toBeTruthy();
     expect(screen.getByTestId('auth-email-code-send').props.accessibilityState.busy).toBeFalsy();
   });
 });

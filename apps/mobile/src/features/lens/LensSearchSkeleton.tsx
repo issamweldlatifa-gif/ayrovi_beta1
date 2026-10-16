@@ -5,6 +5,7 @@ import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
 import { LENS_COLORS } from './lensPalette';
+import { useLensSheetScroll } from './lensSheetScroll';
 
 const GRID_PADDING = 4;
 const GRID_GAP = 4;
@@ -30,6 +31,7 @@ function ProductSkeleton({ index }: { index: number }) {
 export function LensSearchSkeleton({ onCancel, title }: { onCancel: () => void; title?: string }) {
   const theme = useTheme();
   const t = useT();
+  const onSheetScroll = useLensSheetScroll();
   return (
     <View style={styles.wrap} testID="lens-search-skeleton">
       <View style={[styles.header, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
@@ -47,7 +49,13 @@ export function LensSearchSkeleton({ onCancel, title }: { onCancel: () => void; 
         </Pressable>
       </View>
       <AppText color={theme.colors.muted}>{t('lens.searchingFriendly')}</AppText>
-      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        style={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        onScroll={onSheetScroll}
+        scrollEventThrottle={16}
+        contentContainerStyle={styles.scrollContent}
+      >
         <View style={[styles.grid, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
           {[0, 1, 2, 3].map((index) => <ProductSkeleton key={index} index={index} />)}
         </View>

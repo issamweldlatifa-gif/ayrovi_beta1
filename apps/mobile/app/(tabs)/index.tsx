@@ -17,6 +17,8 @@
  * ما يتلزّقش بتقدير من الجهاز.
  */
 import { useCallback, useState } from 'react';
+import { StatusBar } from 'expo-status-bar';
+import { useIsFocused } from 'expo-router';
 
 import { AppScreen, FullBleed } from '@/design/layout';
 import { AppHeader } from '@/features/shell/AppHeader';
@@ -30,6 +32,19 @@ import { Footer } from '@/features/shell/Footer';
 import {
   useHeroCarouselSettings, useHeroSlides,
 } from '@/api/hooks';
+import { luminanceOfHex } from '@/features/home/heroPalette';
+
+/**
+ * Barre d'état lisible sur le fond de la photo Hero active : le header prend la
+ * couleur exacte du haut de la photo, parfois sombre ⇒ icônes système claires.
+ * Seulement quand l'accueil est affiché et le header au sommet ; sinon la barre
+ * d'état de l'application (thème) reprend la main.
+ */
+function HeroStatusBar({ background }: { background: string | null }) {
+  const focused = useIsFocused();
+  if (!focused || background === null) return null;
+  return <StatusBar style={luminanceOfHex(background) > 0.5 ? 'dark' : 'light'} />;
+}
 
 /**
  * La géométrie n'est plus calculée ici : `AppScreen` possède la zone sûre, le
@@ -56,7 +71,12 @@ export default function HomeScreen() {
   return (
     <AppScreen
       // شفاف · ثابت · والصفحة تمرّ من تحتو — الـ`absolute` الوحيد المسموح (§3)
-      overlayHeader={({ scrolled }) => <AppHeader scrolled={scrolled} heroBackground={heroBackground} />}
+      overlayHeader={({ scrolled }) => (
+        <>
+          <HeroStatusBar background={scrolled ? null : heroBackground} />
+          <AppHeader scrolled={scrolled} heroBackground={heroBackground} />
+        </>
+      )}
       // البار السفلي يضيف منطقته الآمنة لنفسو، والمحتوى ما يضيفهاش (§4.3-3)
       hasBottomBar
       // تمرير الشاشة يسيّر انسحاب البار (Q8)

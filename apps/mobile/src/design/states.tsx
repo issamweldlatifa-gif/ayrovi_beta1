@@ -11,7 +11,7 @@ import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppText, Button } from './ui';
-import { WaitingBars } from './WaitingBars';
+import { LoadingSpinner } from './LoadingSpinner';
 import { useTheme } from './theme';
 import { useI18n, useT, type TranslationKey } from '@/i18n';
 import { isApiError, userMessage } from '@/api/errors';
@@ -28,7 +28,7 @@ export function LoadingBlock({ labelKey }: { labelKey?: TranslationKey }) {
       accessibilityRole="progressbar"
       style={[styles.block, { backgroundColor: theme.colors.surface, borderRadius: theme.radius.card }]}
     >
-      <WaitingBars testID="loading-bars" />
+      <LoadingSpinner testID="loading-spinner" />
       {labelKey ? (
         <AppText variant="caption" color={theme.colors.muted}>{t(labelKey)}</AppText>
       ) : null}

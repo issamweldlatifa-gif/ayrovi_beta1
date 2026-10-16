@@ -11,17 +11,25 @@ import type { QatafoDatabase } from '../db/database';
  * de `hero_slides` (identifiant stable = la ligne), et il est recalculé à chaque
  * remplacement d'image — jamais retraité pour une image inchangée.
  *
- * Contrat de `background` : toujours un pastel CLAIR (clarté ~0.93) dérivé de la
- * teinte dominante — la carte Hero pose du texte sombre dessus, dans les deux
- * thèmes. Une extraction qui échoue laisse `palette` vide ⇒ repli neutre côté
- * client (`theme.colors.surface`), jamais de fond cassé.
+ * Deux familles de fonds, pour deux usages :
+ *  • `background` (site web) : couleur de la bordure supérieure, éclaircie juste
+ *    assez pour l'encre noire de l'en-tête (`backgroundFromEdge`).
+ *  • `edgeTop` / `edgeBottom` (application, v3) : la couleur EXACTE des bords haut
+ *    et bas de la photo, sans retouche — le carrousel de l'application prend le
+ *    fond même de chaque photo, du haut jusqu'en bas (plus de voile blanc).
+ * Une extraction qui échoue laisse `palette` vide ⇒ repli neutre côté client
+ * (`theme.colors.surface`), jamais de fond cassé.
  */
 
 export interface HeroPalette {
   /** Couleur dominante de l'image (moyenne des pixels), `#rrggbb`. */
   dominant: string;
-  /** Fond du carrousel : couleur de la BORDURE SUPÉRIEURE de la photo (voir `backgroundFromEdge`). */
+  /** Fond du carrousel WEB : couleur de la BORDURE SUPÉRIEURE de la photo (voir `backgroundFromEdge`). */
   background: string;
+  /** Couleur exacte du bord HAUT de la photo (médiane, sans retouche) — fond de l'application, v3. */
+  edgeTop?: string;
+  /** Couleur exacte du bord BAS de la photo (médiane, sans retouche) — fond de l'application, v3. */
+  edgeBottom?: string;
   /** Luminance relative de la dominante (0..1). */
   luminance: number;
   /** Version du calcul : `PALETTE_VERSION` pour une palette à jour, absente ou plus ancienne sinon. */
@@ -30,9 +38,12 @@ export interface HeroPalette {
 
 /**
  * Version 2 (2026-10-10) : le fond vient de la BORDURE supérieure de la photo, pas
- * de la moyenne de l'image, et n'est plus délavé. Une palette v1 est recalculée au démarrage.
+ * de la moyenne de l'image, et n'est plus délavé.
+ * Version 3 (2026-10-16) : + `edgeTop` / `edgeBottom`, couleurs EXACTES des bords
+ * haut et bas (médiane), pour que le carrousel de l'application reprenne le fond
+ * même de chaque photo. Une palette plus ancienne est recalculée au démarrage.
  */
-export const PALETTE_VERSION = 2;
+export const PALETTE_VERSION = 3;
 
 export const isHexColor = (value: unknown): boolean =>
   /^#[0-9a-fA-F]{3,8}$/.test(String(value ?? '').trim());
@@ -145,6 +156,37 @@ export function softBackgroundFromDominant(dominantHex: string): string {
 
 /* ── Extraction ───────────────────────────────────────────────────────────── */
 
+/**
+ * Couleur médiane (canal par canal) de quelques lignes d'une miniature brute.
+ * La médiane, pas la moyenne : un produit ou un visage qui touche le bord ne
+ * déteint pas sur la couleur du fond.
+ */
+export function medianRowsColor(
+  data: Uint8Array | Buffer,
+  info: { width: number; height: number; channels: number },
+  rows: readonly number[],
+): string | null {
+  const reds: number[] = [];
+  const greens: number[] = [];
+  const blues: number[] = [];
+  for (const y of rows) {
+    if (y < 0 || y >= info.height) continue;
+    for (let x = 0; x < info.width; x += 1) {
+      const index = (y * info.width + x) * info.channels;
+      reds.push(data[index]);
+      greens.push(data[index + 1]);
+      blues.push(data[index + 2]);
+    }
+  }
+  if (reds.length === 0) return null;
+  const median = (values: number[]) => {
+    const sorted = [...values].sort((a, b) => a - b);
+    const middle = Math.floor(sorted.length / 2);
+    return sorted.length % 2 === 1 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+  };
+  return rgbToHex(median(reds), median(greens), median(blues));
+}
+
 export async function extractHeroPalette(buffer: Buffer): Promise<HeroPalette | null> {
   try {
     const { data, info } = await sharp(buffer)
@@ -179,9 +221,15 @@ export async function extractHeroPalette(buffer: Buffer): Promise<HeroPalette | 
     b = Math.round(b / pixels);
     const dominant = rgbToHex(r, g, b);
     const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+    // Bords exacts (2 lignes du haut, 2 lignes du bas), sans éclaircissement.
+    const lastRow = info.height - 1;
+    const edgeTop = medianRowsColor(data, info, [0, 1]) ?? edge;
+    const edgeBottom = medianRowsColor(data, info, [lastRow - 1, lastRow]) ?? edgeTop;
     return {
       dominant,
       background: backgroundFromEdge(edge),
+      edgeTop,
+      edgeBottom,
       luminance: Math.round(luminance * 100) / 100,
       version: PALETTE_VERSION,
     };
@@ -204,7 +252,12 @@ export function parseHeroPalette(raw: unknown): HeroPalette | null {
     const luminance = typeof record.luminance === 'number' && Number.isFinite(record.luminance)
       ? record.luminance
       : 0;
-    return { dominant, background, luminance };
+    const palette: HeroPalette = { dominant, background, luminance };
+    // Bords exacts (v3) : présents seulement s'ils sont valides — une palette plus
+    // ancienne n'en a pas, le client retombe alors sur `background`.
+    if (isHexColor(record.edgeTop)) palette.edgeTop = String(record.edgeTop).trim();
+    if (isHexColor(record.edgeBottom)) palette.edgeBottom = String(record.edgeBottom).trim();
+    return palette;
   } catch {
     return null;
   }
@@ -262,7 +315,7 @@ export async function refreshHeroSlidePalette(
 
 /**
  * Au démarrage : recalcule les palettes qui ne sont pas à la version courante
- * (cartes créées avant la version 2). Tolérant : une image manquante est ignorée.
+ * (cartes créées avant la version 3). Tolérant : une image manquante est ignorée.
  */
 export async function refreshStaleHeroPalettes(db: QatafoDatabase): Promise<number> {
   const rows = db.all<{ id: string; image: string; palette: string }>(

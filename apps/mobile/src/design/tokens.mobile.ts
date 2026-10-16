@@ -124,19 +124,6 @@ export const LENS_COLORS = {
 } as const;
 
 /**
- * Signal d'attente (cinq barres) : une seule famille VIOLETTE, dérivée du
- * violet de marque par mélange vers le noir ou le blanc — aucune teinte
- * écrite à la main, aucune couleur chaude.
- */
-export const WAITING_GRADIENTS = [
-  [mix(BRAND.violet, BRAND.black, 0.4), BRAND.violet],
-  [mix(BRAND.violet, BRAND.black, 0.25), mix(BRAND.violet, BRAND.white, 0.1)],
-  [mix(BRAND.violet, BRAND.black, 0.1), mix(BRAND.violet, BRAND.white, 0.2)],
-  [mix(BRAND.violet, BRAND.black, 0.3), mix(BRAND.violet, BRAND.white, 0.3)],
-  [mix(BRAND.violet, BRAND.black, 0.2), BRAND.violet],
-] as const;
-
-/**
  * Voile NEUTRE (noir de marque + opacité) : fonds de contrôle posés sur une
  * photo ou la caméra, ombres de texte, fondus. Remplace les `rgba(0,0,0,x)`
  * qui étaient éparpillés dans les écrans : l'opacité reste un choix local,
@@ -535,6 +522,19 @@ export const HERO_DEMO_BACKGROUND = {
   modeHomme: '#A09C96',
   modeFemme: '#997B68',
   sport: '#A78F7A',
+} as const;
+
+/**
+ * Bords EXACTS (haut / bas) de chaque visuel de démo : médiane des deux lignes
+ * extrêmes de sa miniature 10×10 — le même calcul que le serveur (palette v3).
+ * Le carrousel prend ainsi le fond même de la photo, du haut jusqu'en bas.
+ * Couleurs de CONTENU (tirées des photos), réservées aux cartes de démonstration.
+ */
+export const HERO_DEMO_EDGES = {
+  tech: { top: '#274546', bottom: '#20272A' },
+  modeHomme: { top: '#60685B', bottom: '#A9A49E' },
+  modeFemme: { top: '#E0C3A0', bottom: '#8E877E' },
+  sport: { top: '#D0D6D9', bottom: '#E1B889' },
 } as const;
 
 /**

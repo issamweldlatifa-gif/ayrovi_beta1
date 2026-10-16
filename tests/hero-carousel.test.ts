@@ -16,7 +16,7 @@ import {
   HERO_DESTINATION_TYPES, heroDestinationHref, isValidExternalUrl,
 } from '../shared/heroDestinations';
 import {
-  backgroundFromEdge, extractHeroPalette, hexToRgb, isCurrentPalette, isHexColor, PALETTE_VERSION,
+  backgroundFromEdge, extractHeroPalette, hexToRgb, isCurrentPalette, isHexColor, medianRowsColor, PALETTE_VERSION,
   parseHeroPalette, refreshHeroSlidePalette, relativeLuminance, rgbToHex, softBackgroundFromDominant,
 } from '../src/services/heroPalette';
 
@@ -100,13 +100,45 @@ describe('heroPalette — math couleur', () => {
     expect(palette!.dominant).not.toBe(palette!.background);
   });
 
+  test('bords EXACTS haut et bas (v3) : la couleur même de la photo, sans éclaircissement', async () => {
+    // Moitié haute gris foncé, moitié basse brune : les bords gardent leur vraie couleur.
+    const brown = await sharp({ create: { width: 40, height: 50, channels: 3, background: { r: 0x7a, g: 0x52, b: 0x30 } } })
+      .png().toBuffer();
+    const topGray = await sharp({ create: { width: 40, height: 25, channels: 3, background: { r: 0x33, g: 0x33, b: 0x33 } } })
+      .png().toBuffer();
+    const image = await sharp(brown).composite([{ input: topGray, top: 0, left: 0 }]).png().toBuffer();
+    const palette = await extractHeroPalette(image);
+    expect(palette!.version).toBe(3);
+    expect(palette!.edgeTop).toBe('#333333');
+    expect(palette!.edgeBottom).toBe('#7a5230');
+    // Le fond du site, lui, reste éclairci pour l'encre noire : il diffère du bord exact.
+    expect(palette!.background).not.toBe(palette!.edgeTop);
+  });
+
+  test('médiane des bords : un objet qui touche le bord ne déteint pas', () => {
+    // 4 pixels gris, 1 pixel rouge vif sur la même ligne → la médiane reste grise.
+    const row = [0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0xff, 0x00, 0x00, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40];
+    expect(medianRowsColor(Uint8Array.from(row), { width: 5, height: 1, channels: 3 }, [0])).toBe('#404040');
+    expect(medianRowsColor(Uint8Array.from(row), { width: 5, height: 1, channels: 3 }, [3])).toBeNull();
+  });
+
+  test('parseHeroPalette lit les bords exacts quand ils sont valides', () => {
+    expect(parseHeroPalette(JSON.stringify({
+      dominant: '#202020', background: '#5f5f5f', luminance: 0.1, edgeTop: '#333333', edgeBottom: '#7a5230',
+    }))).toEqual({ dominant: '#202020', background: '#5f5f5f', luminance: 0.1, edgeTop: '#333333', edgeBottom: '#7a5230' });
+    const invalid = parseHeroPalette(JSON.stringify({ dominant: '#202020', edgeTop: 'gris', edgeBottom: 12 }));
+    expect(invalid).not.toHaveProperty('edgeTop');
+    expect(invalid).not.toHaveProperty('edgeBottom');
+  });
+
   test('fond sombre éclairci pour rester lisible avec l’encre noire', () => {
     const dark = hexToRgb(backgroundFromEdge('#0A1F5C'))!;
     expect(relativeLuminance(dark)).toBeGreaterThanOrEqual(0.18);
   });
 
-  test('palette v1 (sans version) ⇒ à recalculer ; v2 ⇒ à jour', () => {
+  test('palette v1 (sans version) ou v2 ⇒ à recalculer ; version courante ⇒ à jour', () => {
     expect(isCurrentPalette('{"dominant":"#ff0000","background":"#f9e2e2","luminance":0.5}')).toBe(false);
+    expect(isCurrentPalette('{"dominant":"#ff0000","background":"#f9e2e2","luminance":0.5,"version":2}')).toBe(false);
     expect(isCurrentPalette(JSON.stringify({ dominant: '#ff0000', background: '#ff0000', luminance: 0.2, version: PALETTE_VERSION }))).toBe(true);
     expect(isCurrentPalette('')).toBe(false);
   });
@@ -272,6 +304,9 @@ describe('API carrousel Hero', () => {
     let pub = await request(app).get('/api/public/hero-slides');
     const manual = pub.body.data.find((row: any) => row.id === second.body.data.id);
     expect(manual.background).toBe('#AABBCC');
+    // Fond manuel : l'application ne doit pas lui préférer les bords de la photo.
+    expect(manual.edgeTop).toBe('');
+    expect(manual.edgeBottom).toBe('');
 
     const settings = await admin.put('/api/admin/hero-carousel-settings').set('x-csrf-token', csrf)
       .send({ maxCards: 1, autoplay: true, autoplayIntervalMs: 4000, transitionMs: 250, paginationVisible: false, enabled: true });
@@ -303,5 +338,8 @@ describe('API carrousel Hero', () => {
     const card = pub.body.data.find((item: any) => item.id === created.body.data.id);
     expect(card.background).toBe(palette.background);
     expect(card.dominant).toBe('#ff0000');
+    // Bords exacts servis à l'application : rouge pur, sans éclaircissement.
+    expect(card.edgeTop).toBe('#ff0000');
+    expect(card.edgeBottom).toBe('#ff0000');
   });
 });

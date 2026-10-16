@@ -559,7 +559,7 @@ export const ar = {
   'lens.select.detecting': 'قاعدين نلوّجوا على المنتوجات في الصورة…',
   'lens.select.tipOne': 'المنتوج محدّد · كبّر الإطار ولا حرّكو',
   'lens.select.tipMany': '{count} منتوجات · اضغط على منتوج آخر باش تختارو',
-  'lens.select.tipNone': 'حط الإطار على المنتوج',
+  'lens.select.tipNone': 'إلمس المنتوج باش تختارو',
   'lens.select.frame': 'المنطقة اللي نلوّجوا فيها: اسحب الزوايا ولا حرّك الإطار',
   'lens.select.product': 'اختار {name}',
   'lens.select.photo': 'الصورة {index} من {count}',

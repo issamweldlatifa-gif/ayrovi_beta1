@@ -74,14 +74,15 @@ export function isStillAfterDrag(velocityX: number | undefined): boolean {
 }
 
 /**
- * Plages de l'interpolation du fond de section (une couleur par carte).
+ * Fondu enchaîné du fond de section : une couche par carte (le fond de SA photo),
+ * empilées dans l'ordre. La couche 0 est toujours opaque ; la couche `index`
+ * apparaît pendant que le carrousel va de la carte `index − 1` à la carte `index`,
+ * et reste opaque au-delà (elle recouvre alors les précédentes).
  *
- * `Animated.Value.interpolate` exige au moins DEUX points : avec une seule carte publiée,
- * React Native levait « outputRange must have at least 2 elements » (« Bad output range »
- * selon la version) et tout l'accueil plantait. Avec moins de deux cartes il n'y a rien à
- * interpoler : `null`, et le fond est simplement la couleur de la carte.
+ * Toujours DEUX points par plage : avec une seule carte publiée, une interpolation
+ * à un seul point levait « Bad output range » et tout l'accueil plantait.
  */
-export function backgroundRanges(backgrounds: readonly string[]): { inputRange: number[]; outputRange: string[] } | null {
-  if (backgrounds.length < 2) return null;
-  return { inputRange: backgrounds.map((_, index) => index), outputRange: [...backgrounds] };
+export function backdropLayerRange(index: number): { inputRange: number[]; outputRange: number[] } | null {
+  if (!Number.isInteger(index) || index < 1) return null;
+  return { inputRange: [index - 1, index], outputRange: [0, 1] };
 }

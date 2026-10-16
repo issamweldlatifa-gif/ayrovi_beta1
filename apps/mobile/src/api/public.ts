@@ -138,6 +138,9 @@ export interface HeroSlide {
   destinationType: string;
   /** Couleur de fond adaptative (palette extraite serveur) — vide = repli thème. */
   background: string;
+  /** Couleurs EXACTES des bords haut / bas de la photo (palette v3) — vides = `background`. */
+  edgeTop?: string;
+  edgeBottom?: string;
   dominant: string;
   /** Visuel embarqué dans l'APK (mode démo) — prioritaire sur `image`. */
   localImage?: number;
@@ -188,6 +191,8 @@ export function parseHeroSlides(payload: unknown): HeroSlide[] {
       href,
       destinationType: str(row.destinationType).trim(),
       background: str(row.background).trim(),
+      edgeTop: str(row.edgeTop).trim(),
+      edgeBottom: str(row.edgeBottom).trim(),
       dominant: str(row.dominant).trim(),
     }];
   });

@@ -559,7 +559,7 @@ export const fr = {
   'lens.select.detecting': 'Recherche des produits de la photo…',
   'lens.select.tipOne': 'Produit sélectionné · agrandissez ou déplacez le cadre',
   'lens.select.tipMany': '{count} produits · touchez-en un autre pour le choisir',
-  'lens.select.tipNone': 'Placez le cadre sur le produit',
+  'lens.select.tipNone': 'Touchez le produit pour le sélectionner',
   'lens.select.frame': 'Zone recherchée : étirez les coins ou déplacez le cadre',
   'lens.select.product': 'Choisir {name}',
   'lens.select.photo': 'Photo {index} sur {count}',

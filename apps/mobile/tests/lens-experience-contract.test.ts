@@ -44,10 +44,17 @@ describe('parcours AYROVIX Lens unifié', () => {
   it('garde la photo sous une feuille réellement ajustable pendant le chargement et les résultats', () => {
     expect(lens).toContain('setPreviewUri(picture.uri)');
     expect(lens).toContain('accessibilityLabel={t(\'lens.capturedPhoto\')}');
-    expect(lens).toContain('<SearchSheet top={sheetTop} expandedTop={insets.top + 58}>');
+    expect(lens).toContain('<SearchSheet geometry={sheet}>');
     expect(lens).toContain('PanResponder.create');
     expect(lens).toContain('top: expandedTop');
     expect(lens).toContain('onMoveShouldSetPanResponderCapture');
+    // Fluide : on la saisit de n'importe où, elle garde l'élan du doigt, et la
+    // liste signale son défilement pour rendre la main à la feuille tout en haut.
+    expect(lens).toContain('lensSheetOwnsPan(position.current, scrollY.current, gesture.dx, gesture.dy)');
+    expect(lens).toContain('gesture.vy * 1000');
+    expect(lens).toContain('<LensSheetScrollContext.Provider value={onListScroll}>');
+    expect(grid).toContain('onScroll={onSheetScroll}');
+    expect(lens).not.toContain('liftResponder');
     expect(lens).toContain('testID="lens-search-sheet-handle"');
     expect(lens).toContain('<LensSearchSkeleton onCancel={cancelSearch}');
     expect(lens).toContain('removePrivateCapture');
@@ -89,10 +96,9 @@ describe('chargement et résultats Lens', () => {
     expect(nativeTokens).toContain('skeleton: BRAND.lightGray');
     expect(contrastWithWhite('#CF1322')).toBeGreaterThanOrEqual(4.5);
     expect(contrastWithWhite('#571EF6')).toBeGreaterThanOrEqual(4.5);
-    // Plus aucun dégradé bleu ni orange : l'attente est une famille violette dérivée.
+    // Plus aucun dégradé d'attente : l'attente est le cercle en pointillés (LoadingSpinner).
     expect(nativeTokens).not.toContain('ACTION_GRADIENT');
-    expect(nativeTokens).toContain('export const WAITING_GRADIENTS');
-    expect(nativeTokens).toMatch(/WAITING_GRADIENTS = \[\s*\[mix\(BRAND\.violet/);
+    expect(nativeTokens).not.toContain('WAITING_GRADIENTS');
     expect(card).toContain('color={LENS_COLORS.star}');
     expect(card).toContain('backgroundColor: LENS_COLORS.sale');
     expect(card).toContain('favorite ? LENS_COLORS.active : LENS_COLORS.black');

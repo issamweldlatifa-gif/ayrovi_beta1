@@ -20,6 +20,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   Animated, AppState, Keyboard, Linking, Modal, PanResponder, Pressable, ScrollView, StyleSheet, View, useWindowDimensions,
+  type NativeScrollEvent, type NativeSyntheticEvent, type PanResponderGestureState,
 } from 'react-native';
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
@@ -57,6 +58,11 @@ import { mergeLensProduct } from '@/features/lens/productEnrichment';
 import { shrinkImage } from '@/features/lens/lensImage';
 import { FULL_BOX, biggestProductIndex, isFullFrame, keepSelection, padBox, selectionKey, toRoi } from '@/features/lens/lensSelection';
 import { initialMotion, isSteady, nextMotion, shouldDetect, type MotionState } from '@/features/lens/lensLive';
+import {
+  clampLensSheet, lensSheetGeometry, lensSheetOwnsPan, snapLensSheet, toggleLensSheet, type LensSheetGeometry,
+} from '@/features/lens/lensSheet';
+import { LensSheetScrollContext } from '@/features/lens/lensSheetScroll';
+import { SHEET_SPRING } from '@/design/sheet/sheetPhysics';
 
 type Mode = 'live' | 'code' | 'link' | 'text';
 type ResultsStage = { kind: 'results'; candidates: LensCandidate[]; eventId: string; excluded: number };
@@ -124,130 +130,105 @@ function removePrivateCapture(uri: string): void {
     });
 }
 
-function SearchSheet({ children, top, expandedTop }: { children: ReactNode; top: number; expandedTop: number }) {
+/**
+ * Feuille des résultats, fluide comme celle de Google Lens :
+ *  • au repos, elle reste basse (69 % de l'écran) : la photo et son cadre se voient ;
+ *  • levée, elle devient plein écran ; baissée, seul son titre dépasse ;
+ *  • on la saisit de N'IMPORTE OÙ (pas seulement la poignée) : tant qu'elle n'est
+ *    pas plein écran, tout glissement vertical la déplace ; plein écran, la liste
+ *    défile et un glissement vers le bas, liste tout en haut, la redescend.
+ *
+ * Même mécanique que le tiroir unifié (`AppSheet`) : `PanResponder` en phase de
+ * capture + `Animated` sur le fil natif, sans module natif supplémentaire.
+ */
+function SearchSheet({ children, geometry }: { children: ReactNode; geometry: LensSheetGeometry }) {
   const theme = useTheme();
   const t = useT();
-  // La feuille est TOUJOURS mise en page dans son état complet. La translation
-  // ne fait que choisir le cran visible : ainsi, la lever ne coupe jamais son
-  // bas comme le faisait l’ancienne feuille dimensionnée depuis `top`.
-  const restingOffset = Math.max(0, top - expandedTop);
-  const collapsedOffset = restingOffset + Math.min(168, Math.max(88, top * 0.42));
-  const sheetY = useRef(new Animated.Value(
-    restingOffset + (theme.motion.reduced === 0 ? 0 : 44),
-  )).current;
-  const dragPosition = useRef(restingOffset);
-  const dragStart = useRef(restingOffset);
-
-  const clampPosition = useCallback(
-    (value: number) => Math.max(0, Math.min(collapsedOffset, value)),
-    [collapsedOffset],
-  );
-
-  const snapTo = useCallback((value: number, velocity = 0) => {
-    const target = clampPosition(value);
-    sheetY.stopAnimation();
-    dragPosition.current = target;
-    if (theme.motion.reduced === 0) {
-      sheetY.setValue(target);
-      return;
-    }
-    Animated.spring(sheetY, {
-      toValue: target,
-      velocity,
-      damping: 25,
-      stiffness: 330,
-      mass: 0.68,
-      overshootClamping: false,
-      useNativeDriver: true,
-    }).start(({ finished }) => {
-      if (finished) dragPosition.current = target;
-    });
-  }, [clampPosition, sheetY, theme.motion.reduced]);
-
-  const beginDrag = useCallback(() => {
-    sheetY.stopAnimation((value) => {
-      const current = clampPosition(value);
-      dragStart.current = current;
-      dragPosition.current = current;
-    });
-  }, [clampPosition, sheetY]);
-
-  const moveDrag = useCallback((_event: unknown, gesture: { dy: number }) => {
-    const next = clampPosition(dragStart.current + gesture.dy);
-    dragPosition.current = next;
-    sheetY.setValue(next);
-  }, [clampPosition, sheetY]);
-
-  const finishDrag = useCallback((_event: unknown, gesture: { vy: number }) => {
-    if (gesture.vy < -0.34) {
-      snapTo(0, gesture.vy);
-      return;
-    }
-    if (gesture.vy > 0.42) {
-      const target = dragPosition.current < restingOffset * 0.55 ? restingOffset : collapsedOffset;
-      snapTo(target, gesture.vy);
-      return;
-    }
-    const projected = clampPosition(dragPosition.current + gesture.vy * 110);
-    const stops = [0, restingOffset, collapsedOffset];
-    const nearest = stops.reduce((best, stop) => (
-      Math.abs(stop - projected) < Math.abs(best - projected) ? stop : best
-    ));
-    snapTo(nearest, gesture.vy);
-  }, [clampPosition, collapsedOffset, restingOffset, snapTo]);
-
-  const handleResponder = useMemo(() => PanResponder.create({
-    onStartShouldSetPanResponder: () => false,
-    onMoveShouldSetPanResponder: (_event, gesture) => (
-      Math.abs(gesture.dy) > 3 && Math.abs(gesture.dy) > Math.abs(gesture.dx)
-    ),
-    onPanResponderGrant: beginDrag,
-    onPanResponderMove: moveDrag,
-    onPanResponderRelease: finishDrag,
-    onPanResponderTerminate: finishDrag,
-    onPanResponderTerminationRequest: () => false,
-  }), [beginDrag, finishDrag, moveDrag]);
-
-  // Un balayage vers le haut depuis n’importe quel point de la feuille la lève.
-  // Une fois ouverte, on ne capture plus le geste : FlatList reprend la main et
-  // peut défiler sans blocage. Le mouvement vers le bas reste sur la poignée.
-  const liftResponder = useMemo(() => PanResponder.create({
-    onStartShouldSetPanResponder: () => false,
-    onMoveShouldSetPanResponder: (_event, gesture) => (
-      dragPosition.current > 1
-      && gesture.dy < -4
-      && Math.abs(gesture.dy) > Math.abs(gesture.dx) * 1.2
-    ),
-    onMoveShouldSetPanResponderCapture: (_event, gesture) => (
-      dragPosition.current > 1
-      && gesture.dy < -4
-      && Math.abs(gesture.dy) > Math.abs(gesture.dx) * 1.2
-    ),
-    onPanResponderGrant: beginDrag,
-    onPanResponderMove: moveDrag,
-    onPanResponderRelease: finishDrag,
-    onPanResponderTerminate: finishDrag,
-    onPanResponderTerminationRequest: () => false,
-  }), [beginDrag, finishDrag, moveDrag]);
+  const reduced = theme.motion.reduced === 0;
+  const { expandedTop, stops, rest } = geometry;
+  // La feuille est TOUJOURS mise en page pleine page : la translation ne fait
+  // que choisir le cran visible — la lever ne coupe jamais son bas.
+  const translate = useRef(new Animated.Value(rest + (reduced ? 0 : 44))).current;
+  /** Copie lisible du décalage courant (mise à jour par l'écouteur), lue par les gestes. */
+  const position = useRef(rest);
+  const dragStart = useRef(rest);
+  const grantDy = useRef(0);
+  /** Défilement de la liste contenue (remonté par `LensSheetScrollContext`). */
+  const scrollY = useRef(0);
+  const mounted = useRef(false);
+  const live = useRef({ stops, rest });
+  live.current = { stops, rest };
 
   useEffect(() => {
-    dragStart.current = restingOffset;
-    dragPosition.current = restingOffset;
-    if (theme.motion.reduced === 0) {
-      sheetY.setValue(restingOffset);
+    const id = translate.addListener(({ value }) => {
+      position.current = value;
+    });
+    return () => translate.removeListener(id);
+  }, [translate]);
+
+  const snapTo = useCallback((target: number, velocity = 0) => {
+    translate.stopAnimation();
+    if (reduced) {
+      translate.setValue(target);
+      position.current = target;
       return;
     }
-    sheetY.setValue(restingOffset + 44);
-    Animated.timing(sheetY, {
-      toValue: restingOffset,
-      duration: theme.duration.standard,
-      useNativeDriver: true,
-    }).start();
-  }, [restingOffset, sheetY, theme.duration.standard, theme.motion.reduced]);
+    // `velocity` en px/s : la feuille garde l'élan du doigt jusqu'au cran.
+    Animated.spring(translate, { toValue: target, velocity, useNativeDriver: true, ...SHEET_SPRING }).start();
+  }, [reduced, translate]);
+
+  // Entrée : la feuille monte jusqu'au repos. Ensuite, si le repos change
+  // (attente → résultats sans photo), elle y glisse depuis sa position actuelle.
+  useEffect(() => {
+    scrollY.current = 0;
+    if (!mounted.current) {
+      mounted.current = true;
+      if (reduced) {
+        translate.setValue(rest);
+        position.current = rest;
+        return;
+      }
+      translate.setValue(rest + 44);
+    }
+    snapTo(rest);
+  }, [reduced, rest, snapTo, translate]);
+
+  const responder = useMemo(() => {
+    const owns = (gesture: PanResponderGestureState) => (
+      lensSheetOwnsPan(position.current, scrollY.current, gesture.dx, gesture.dy)
+    );
+    const follow = (gesture: PanResponderGestureState) => (
+      clampLensSheet(dragStart.current + gesture.dy - grantDy.current, live.current.stops)
+    );
+    const release = (gesture: PanResponderGestureState) => {
+      const at = follow(gesture);
+      snapTo(snapLensSheet(at, gesture.vy, live.current.stops), gesture.vy * 1000);
+    };
+    return PanResponder.create({
+      onMoveShouldSetPanResponderCapture: (_event, gesture) => owns(gesture),
+      onMoveShouldSetPanResponder: (_event, gesture) => owns(gesture),
+      onPanResponderGrant: (_event, gesture) => {
+        translate.stopAnimation();
+        dragStart.current = position.current;
+        // Le geste n'est pris qu'après quelques points : on part d'ici, sans saut.
+        grantDy.current = gesture.dy;
+      },
+      onPanResponderMove: (_event, gesture) => {
+        translate.setValue(follow(gesture));
+      },
+      onPanResponderRelease: (_event, gesture) => release(gesture),
+      onPanResponderTerminate: (_event, gesture) => release(gesture),
+      onPanResponderTerminationRequest: () => false,
+    });
+  }, [snapTo, translate]);
+
+  const onListScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    scrollY.current = event.nativeEvent.contentOffset.y;
+  }, []);
 
   return (
     <Animated.View
-      {...liftResponder.panHandlers}
+      {...responder.panHandlers}
       style={[
         styles.searchSheet,
         {
@@ -255,28 +236,29 @@ function SearchSheet({ children, top, expandedTop }: { children: ReactNode; top:
           backgroundColor: theme.colors.surface,
           borderTopLeftRadius: theme.radius.sheet,
           borderTopRightRadius: theme.radius.sheet,
-          transform: [{ translateY: sheetY }],
+          transform: [{ translateY: translate }],
           ...theme.elevation.high,
         },
       ]}
       testID="lens-search-sheet"
     >
       <Pressable
-        {...handleResponder.panHandlers}
-        onPress={() => snapTo(dragPosition.current <= 1 ? restingOffset : 0)}
+        onPress={() => snapTo(toggleLensSheet(position.current, live.current.rest))}
         accessibilityRole="adjustable"
         accessibilityLabel={t('lens.sheet.adjust')}
         accessibilityActions={[
           { name: 'increment', label: t('lens.sheet.expand') },
           { name: 'decrement', label: t('lens.sheet.collapse') },
         ]}
-        onAccessibilityAction={(event) => snapTo(event.nativeEvent.actionName === 'increment' ? 0 : restingOffset)}
+        onAccessibilityAction={(event) => snapTo(event.nativeEvent.actionName === 'increment' ? 0 : live.current.rest)}
         style={styles.sheetGrabArea}
         testID="lens-search-sheet-handle"
       >
         <View style={[styles.sheetHandle, styles.sheetDragHandle, { backgroundColor: theme.colors.lineControl }]} />
       </Pressable>
-      {children}
+      <LensSheetScrollContext.Provider value={onListScroll}>
+        {children}
+      </LensSheetScrollContext.Provider>
     </Animated.View>
   );
 }
@@ -996,10 +978,16 @@ export default function LensScreen() {
   if (resultScene) {
     const errorCopy = stage.kind === 'error' ? errorCopyKey(stage.error) : null;
     const deviceError = stage.kind === 'error' && isApiError(stage.error) && stage.error.kind === 'device';
-    // Avec une photo, la feuille s'arrête à mi-hauteur : le cadre reste visible et manipulable.
-    const sheetTop = sessionPhoto
-      ? Math.round(height * 0.6)
-      : stage.kind === 'busy' ? Math.max(210, height * 0.34) : Math.max(150, height * 0.24);
+    // Avec une photo, la feuille repose BAS (69 % de l'écran) : la photo et son
+    // cadre restent visibles et manipulables ; levée, elle passe plein écran.
+    const sheet = lensSheetGeometry({
+      screenHeight: height,
+      topInset: insets.top,
+      bottomInset: insets.bottom,
+      withPhoto: Boolean(sessionPhoto),
+      busy: stage.kind === 'busy',
+    });
+    const sheetTop = sheet.restTop;
     const photoTop = insets.top + 58;
     const multi = (session?.photos.length ?? 0) > 1;
     const photoHeight = Math.max(120, sheetTop - photoTop - (multi ? 72 : 12));
@@ -1056,13 +1044,13 @@ export default function LensScreen() {
         ) : null}
         <View style={[styles.resultTop, { paddingTop: insets.top + 6, flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
           <Pressable onPress={reset} accessibilityRole="button" accessibilityLabel={t('common.back')} style={styles.overlayButton} hitSlop={HIT_SLOP}>
-            <Ionicons name={theme.isRTL ? 'arrow-forward' : 'arrow-back'} size={theme.iconSize.lg} color={LENS_COLORS.white} accessibilityElementsHidden />
+            <Ionicons name={theme.isRTL ? 'arrow-forward' : 'arrow-back'} size={theme.iconSize.lg} color={LENS_COLORS.white} style={styles.crisp} accessibilityElementsHidden />
           </Pressable>
-          <AppText variant="title" weight="bold" color={LENS_COLORS.white} align="center" style={styles.resultTitle}>{t('lens.title')}</AppText>
+          <AppText variant="title" weight="semibold" color={LENS_COLORS.white} align="center" style={styles.resultTitle}>{t('lens.title')}</AppText>
           <View style={styles.headerSpacer} />
         </View>
 
-        <SearchSheet top={sheetTop} expandedTop={insets.top + 58}>
+        <SearchSheet geometry={sheet}>
           {stage.kind === 'busy' ? <LensSearchSkeleton onCancel={cancelSearch} title={resultTitle} /> : null}
           {stage.kind === 'results' ? (
             <LensResultsGrid
@@ -1151,19 +1139,19 @@ export default function LensScreen() {
         <View style={[styles.cameraTop, { paddingTop: insets.top + 6, flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
           <View style={[styles.headerSide, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
             <Pressable onPress={() => goBack('/')} accessibilityRole="button" accessibilityLabel={t('common.back')} style={styles.overlayButton} hitSlop={HIT_SLOP}>
-              <Ionicons name={theme.isRTL ? 'arrow-forward' : 'arrow-back'} size={theme.iconSize.lg} color={LENS_COLORS.white} accessibilityElementsHidden />
+              <Ionicons name={theme.isRTL ? 'arrow-forward' : 'arrow-back'} size={theme.iconSize.lg} color={LENS_COLORS.white} style={styles.crisp} accessibilityElementsHidden />
             </Pressable>
             {cameraMode && cameraAllowed ? (
               <Pressable onPress={() => setTorch((value) => !value)} accessibilityRole="button" accessibilityLabel={t('lens.flash')} style={styles.overlayButton} hitSlop={HIT_SLOP} testID="lens-torch">
-                <Ionicons name={torch ? 'flash' : 'flash-off'} size={theme.iconSize.md} color={LENS_COLORS.white} accessibilityElementsHidden />
+                <Ionicons name={torch ? 'flash' : 'flash-off'} size={theme.iconSize.md} color={LENS_COLORS.white} style={styles.crisp} accessibilityElementsHidden />
               </Pressable>
             ) : null}
           </View>
           {/* « Z Lens » écrit en texte (pas le logo) — spécification du client. */}
-          <AppText variant="title" weight="bold" color={LENS_COLORS.white} align="center" style={styles.cameraTitle}>{t('lens.title')}</AppText>
+          <AppText variant="title" weight="semibold" color={LENS_COLORS.white} align="center" style={styles.cameraTitle}>{t('lens.title')}</AppText>
           <View style={[styles.headerSide, { flexDirection: theme.isRTL ? 'row' : 'row-reverse' }]}>
             <Pressable onPress={() => setMenuOpen(true)} accessibilityRole="button" accessibilityLabel={t('lens.menu.open')} style={styles.overlayButton} hitSlop={HIT_SLOP} testID="lens-open-menu">
-              <Ionicons name="ellipsis-vertical" size={theme.iconSize.md} color={LENS_COLORS.white} accessibilityElementsHidden />
+              <Ionicons name="ellipsis-vertical" size={theme.iconSize.md} color={LENS_COLORS.white} style={styles.crisp} accessibilityElementsHidden />
             </Pressable>
           </View>
         </View>
@@ -1199,7 +1187,7 @@ export default function LensScreen() {
         {mode === 'live' && showCamera ? (
           <View style={[styles.livePill, { bottom: panelHeight + 12, backgroundColor: veil(0.62) }]} pointerEvents="none" accessibilityLiveRegion="polite" testID="lens-live-status">
             <View style={[styles.livePillDot, { backgroundColor: live.status === 'detected' ? LENS_COLORS.activeSoft : frost(0.6) }]} />
-            <AppText variant="caption" weight="bold" color={LENS_COLORS.white} numberOfLines={1}>{livePill}</AppText>
+            <AppText variant="caption" weight="semibold" color={LENS_COLORS.white} numberOfLines={1}>{livePill}</AppText>
           </View>
         ) : null}
 
@@ -1217,7 +1205,7 @@ export default function LensScreen() {
                 <View style={styles.sideCircle}>
                   <Ionicons name="images-outline" size={theme.iconSize.md} color={LENS_COLORS.white} accessibilityElementsHidden />
                 </View>
-                <AppText variant="caption" weight="bold" color={LENS_COLORS.white} style={styles.overCamera}>{t('lens.gallery')}</AppText>
+                <AppText variant="caption" weight="semibold" color={LENS_COLORS.white} style={styles.overCamera}>{t('lens.gallery')}</AppText>
               </Pressable>
               <Pressable
                 onPress={() => { void onPhoto(); }}
@@ -1236,7 +1224,7 @@ export default function LensScreen() {
                 <View style={styles.sideCircle}>
                   <Ionicons name="pricetag-outline" size={theme.iconSize.md} color={LENS_COLORS.white} accessibilityElementsHidden />
                 </View>
-                <AppText variant="caption" weight="bold" color={LENS_COLORS.white} style={styles.overCamera}>OCEREX</AppText>
+                <AppText variant="caption" weight="semibold" color={LENS_COLORS.white} style={styles.overCamera}>OCEREX</AppText>
               </Pressable>
             </View>
           ) : null}
@@ -1303,7 +1291,7 @@ export default function LensScreen() {
                   testID={`lens-mode-${value}`}
                 >
                   <Ionicons name={icon} size={theme.iconSize.sm} color={active ? LENS_COLORS.black : LENS_COLORS.white} accessibilityElementsHidden />
-                  <AppText variant="caption" weight="bold" color={active ? LENS_COLORS.black : LENS_COLORS.white} align="center" numberOfLines={1}>{t(label)}</AppText>
+                  <AppText variant="caption" weight="semibold" color={active ? LENS_COLORS.black : LENS_COLORS.white} align="center" numberOfLines={1}>{t(label)}</AppText>
                 </Pressable>
               );
             })}
@@ -1327,9 +1315,14 @@ const styles = StyleSheet.create({
   scene: { flex: 1 },
   cameraTop: { position: 'absolute', left: 8, right: 8, top: 0, alignItems: 'center', zIndex: 5 },
   headerSide: { width: 100, alignItems: 'center', gap: 4 },
-  overlayButton: { width: 48, height: 48, borderRadius: 24, backgroundColor: veil(0.34), alignItems: 'center', justifyContent: 'center' },
+  // Icônes nues sur la caméra, comme Google Lens : plus de pastille sombre derrière.
+  // Zone de toucher 48 × 48 conservée.
+  overlayButton: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
   headerSpacer: { width: 48, height: 48 },
-  cameraTitle: { flex: 1, textShadowColor: veil(0.8), textShadowRadius: 5 },
+  // Ombre SERRÉE (rayon 2, décalée d'un point) : lisible sur une image claire sans
+  // flouter les contours — l'ancienne ombre large rendait textes et icônes baveux.
+  crisp: { textShadowColor: veil(0.5), textShadowRadius: 2, textShadowOffset: { width: 0, height: 1 } },
+  cameraTitle: { flex: 1, textShadowColor: veil(0.5), textShadowRadius: 2, textShadowOffset: { width: 0, height: 1 } },
   focusFrame: { position: 'absolute', left: '14%', right: '14%', top: '24%', aspectRatio: 1 },
   // Coins en quart de cercle, comme le viseur de Google Lens.
   corner: { position: 'absolute', width: 52, height: 52, borderColor: frost(0.9) },
@@ -1349,10 +1342,11 @@ const styles = StyleSheet.create({
   captureRow: { alignItems: 'center', justifyContent: 'center', gap: 24 },
   side: { width: 72, alignItems: 'center', gap: 4 },
   // Libellé blanc lisible sur une image claire (le panneau n'a plus de fond).
-  overCamera: { textShadowColor: veil(0.85), textShadowRadius: 4, textShadowOffset: { width: 0, height: 1 } },
+  overCamera: { textShadowColor: veil(0.5), textShadowRadius: 2, textShadowOffset: { width: 0, height: 1 } },
+  // Anneau blanc net (2 pt) sur un voile léger : l'icône ressort sans tache sombre.
   sideCircle: {
-    width: SIDE, height: SIDE, borderRadius: SIDE / 2, borderWidth: 1.5, borderColor: LENS_COLORS.white,
-    backgroundColor: veil(0.4), alignItems: 'center', justifyContent: 'center',
+    width: SIDE, height: SIDE, borderRadius: SIDE / 2, borderWidth: 2, borderColor: LENS_COLORS.white,
+    backgroundColor: veil(0.28), alignItems: 'center', justifyContent: 'center',
   },
   // Déclencheur nettement plus grand que Galerie et OCEREX (104 contre 54) ;
   // la marge basse aligne son centre sur celui des deux cercles (libellés dessous).
@@ -1386,8 +1380,9 @@ const styles = StyleSheet.create({
   thumbCount: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
   tip: { position: 'absolute', alignSelf: 'center', maxWidth: '88%', borderRadius: 18, paddingHorizontal: 16, paddingVertical: 8, zIndex: 3 },
   resultTop: { position: 'absolute', top: 0, left: 8, right: 8, alignItems: 'center', zIndex: 3 },
-  resultTitle: { flex: 1, textShadowColor: veil(0.8), textShadowRadius: 5 },
-  searchSheet: { position: 'absolute', left: 0, right: 0, bottom: 0, overflow: 'hidden' },
+  resultTitle: { flex: 1, textShadowColor: veil(0.5), textShadowRadius: 2, textShadowOffset: { width: 0, height: 1 } },
+  // Au-dessus de tout le reste (en-tête, aide, vignettes) : plein écran, elle les couvre.
+  searchSheet: { position: 'absolute', left: 0, right: 0, bottom: 0, overflow: 'hidden', zIndex: 5 },
   sheetGrabArea: { height: 30, alignItems: 'center', justifyContent: 'center' },
   sheetHandle: { width: 48, height: 5, borderRadius: 3, alignSelf: 'center', marginBottom: 10 },
   sheetDragHandle: { marginBottom: 0 },

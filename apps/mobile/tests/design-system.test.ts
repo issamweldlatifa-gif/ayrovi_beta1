@@ -163,7 +163,7 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
       'src/features/sections/PromotionCard.tsx', // badge de réduction posé sur la vignette
       'src/features/social/ReelCard.tsx', // durée posée sur la vignette vidéo
       'src/features/social/StoryViewer.tsx', // zones de tape + pied, au-dessus du média
-      'src/features/home/HeroCarousel.tsx', // fondu du visuel vers le fond de la carte (§5.4)
+      'src/features/home/HeroCarousel.tsx', // couches de fond (le fond de chaque photo) et voile du titre (§5.4)
       'app/reels-viewer.tsx', // en-tête transparent FIXE au-dessus de la liste plein écran (Reels)
       'src/design/sheet/AppSheet.tsx', // درج موحّد: الورقة والظل فوق المحتوى (إيماءة سحب، بلا Modal)
       'src/design/sheet/SheetBackdrop.tsx', // الظل الخلفي للدرج، يغطي الشاشة تحت الورقة

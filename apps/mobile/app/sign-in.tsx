@@ -34,7 +34,7 @@ import {
 import { closeProviderBrowser, openProviderSession } from '@/features/auth/browser';
 import { useRememberedAccount, type LastAccount } from '@/features/auth/lastAccount';
 import { GoogleLogo } from '@/design/GoogleLogo';
-import { WaitingBars } from '@/design/WaitingBars';
+import { LoadingSpinner } from '@/design/LoadingSpinner';
 import { useSession } from '@/state/session';
 import { signInWithGoogleNative, googleFailureCode, googleFailureDetail } from '@/features/auth/googleNative';
 
@@ -712,7 +712,7 @@ function RememberedAccountButton({ account, label, busy, disabled, onPress }: {
           <AppText variant="caption" color={theme.colors.onAction}>{account.email}</AppText>
         </View>
       </View>
-      {busy ? <WaitingBars compact light testID="auth-remembered-busy" /> : null}
+      {busy ? <LoadingSpinner size="sm" color={theme.colors.onAction} testID="auth-remembered-busy" /> : null}
     </Pressable>
   );
 }

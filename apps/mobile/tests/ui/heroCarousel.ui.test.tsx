@@ -223,6 +223,22 @@ describe('géométrie et fond', () => {
   });
 });
 
+describe('fond = la photo', () => {
+  it('chaque carte pose sa couche de fond ; la section commence au bord haut de la 1re photo', async () => {
+    const withEdges = SLIDES.map((card, index) => ({
+      ...card,
+      edgeTop: ['#433F39', '#274546', '#E0C3A0'][index],
+      edgeBottom: ['#3D3C39', '#20272A', '#8E877E'][index],
+    }));
+    await renderCarousel(SETTINGS, withEdges);
+    const background = StyleSheet.flatten(screen.getByTestId('hero-carousel').props.style).backgroundColor;
+    expect(background).toBe('#433F39');
+    for (const index of [0, 1, 2]) {
+      expect(screen.getByTestId(`hero-carousel-backdrop-${index}`, { includeHiddenElements: true })).toBeTruthy();
+    }
+  });
+});
+
 describe('une seule carte', () => {
   // `interpolate` exige au moins deux points : avec une carte, React Native levait
   // « Bad output range » et tout l'accueil plantait (un seul visuel publié dans Admin → Hero).
@@ -232,6 +248,7 @@ describe('une seule carte', () => {
     expect(currentCard()).toBe(1);
     const background = StyleSheet.flatten(screen.getByTestId('hero-carousel').props.style).backgroundColor;
     expect(typeof background).toBe('string');
+    expect(screen.getByTestId('hero-carousel-backdrop-0', { includeHiddenElements: true })).toBeTruthy();
     // pas d'autoplay possible : rien à faire défiler
     act(() => { jest.advanceTimersByTime(INTERVAL_MS * 3); });
     expect(currentCard()).toBe(1);

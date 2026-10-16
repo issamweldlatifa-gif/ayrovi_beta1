@@ -17,7 +17,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { AppText, Button } from '@/design/ui';
 import { AppImage } from '@/design/appImage';
-import { WaitingBars } from '@/design/WaitingBars';
+import { LoadingSpinner } from '@/design/LoadingSpinner';
 import { frost, veil } from '@/design/tokens.mobile';
 import { SPACE } from '@/design/tokens.generated';
 import { useTheme } from '@/design/theme';
@@ -959,7 +959,7 @@ export function LensProductView({
 
           {enriching ? (
             <View style={[styles.enrichingRow, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
-              <WaitingBars compact />
+              <LoadingSpinner size="sm" />
               <AppText variant="caption" color={theme.colors.muted}>{t('lens.product.enriching')}</AppText>
             </View>
           ) : null}

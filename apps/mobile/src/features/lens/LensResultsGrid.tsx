@@ -7,6 +7,7 @@ import { useTheme } from '@/design/theme';
 import { useT, type TranslationKey } from '@/i18n';
 import { LensResultCard } from './LensResultCard';
 import { LENS_COLORS } from './lensPalette';
+import { useLensSheetScroll } from './lensSheetScroll';
 
 export function LensResultsGrid({
   candidates,
@@ -29,6 +30,9 @@ export function LensResultsGrid({
 }) {
   const theme = useTheme();
   const t = useT();
+  // Position de défilement remontée à la feuille : tout en haut, un glissement
+  // vers le bas baisse la feuille au lieu de faire défiler la liste.
+  const onSheetScroll = useLensSheetScroll();
 
   if (candidates.length === 0) {
     return (
@@ -52,6 +56,8 @@ export function LensResultsGrid({
       keyExtractor={(candidate) => candidate.sourceUrl || candidate.id}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
+      onScroll={onSheetScroll}
+      scrollEventThrottle={16}
       contentContainerStyle={styles.content}
       columnWrapperStyle={[styles.row, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}
       initialNumToRender={6}
