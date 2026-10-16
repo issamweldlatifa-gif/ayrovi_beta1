@@ -12,7 +12,8 @@
  *     d'onglet propre à la console ;
  *  5. la console est protégée contre la mise en cadre (clickjacking) dans TOUS les environnements.
  *  6. (2026-10-16) chaque état de la coquille reste lisible : le tiroir fermé ne voile plus la
- *     console sous 900 px ; en thème sombre, la pastille de domaine choisie garde son contraste.
+ *     console sous 900 px ; en thème sombre, la pastille de domaine choisie et le bandeau
+ *     « Arrivages Standard actifs » gardent leur contraste.
  */
 import { readFileSync } from 'node:fs';
 // @vitest-environment jsdom
@@ -274,5 +275,24 @@ describe('6. Chaque état de la coquille reste lisible', () => {
     // même couple que le bouton-bascule pressé : une seule manière de dire « choisi » dans la console
     const pressed = rule(":is(.bo-shell, .admin-login) .admin-button--secondary[aria-pressed='true']");
     expect([selected!.background, selected!.color]).toEqual([pressed!.background, pressed!.color]);
+  });
+
+  it('bandeaux « Arrivages actifs » : encre et texte blanc dans les deux thèmes (plus de bandeau blanc en sombre)', () => {
+    const admin = read('client/src/admin/admin.css').replace(/\/\*[\s\S]*?\*\//g, '');
+    const band = rule('.admin-arrival-summary article', admin)!;
+    const white = resolve(band.color, roles.dark);
+    // admin.css peint le premier bandeau avec --admin-ink, que la coquille relie à --bo-ink…
+    expect(band.background).toBe('var(--admin-ink)');
+    expect(roles.light['--admin-ink']).toBe('var(--bo-ink)');
+    expect(contrast(resolve(band.background, roles.light), white)).toBeGreaterThanOrEqual(4.5);
+    // … qui s'éclaircit en thème sombre : sans reprise, le chiffre blanc serait posé sur du blanc
+    expect(contrast(resolve(band.background, roles.dark), white)).toBeLessThan(1.5);
+    const fixed = rule("html[data-theme='dark'] .bo-shell .admin-arrival-summary article:first-child");
+    expect(fixed).not.toBeNull();
+    const background = resolve(fixed!.background, roles.dark);
+    const label = read('client/src/design/tokens.css').match(/--admin-tone-c4c0ca:\s*(#[0-9a-f]{6})/i)![1];
+    expect(background).toMatch(/^#[0-9A-F]{6}$/i);
+    expect(contrast(background, white), `chiffre ${white} sur ${background}`).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(background, label), `libellé ${label} sur ${background}`).toBeGreaterThanOrEqual(4.5);
   });
 });

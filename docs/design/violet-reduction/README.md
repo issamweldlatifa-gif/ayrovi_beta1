@@ -103,5 +103,6 @@ commits séparés — voir « Fixed » du CHANGELOG) :
   la correction. **Corrigé** : le voile n'existe plus que tiroir ouvert ;
 - en thème sombre, la pastille de domaine choisie était blanche sur blanc. **Corrigé** : son
   texte suit le thème (`--bo-card`), comme le bouton-bascule pressé ;
-- en thème sombre, la carte « Arrivages Standard actifs » reste blanche (non corrigé à ce
-  stade).
+- en thème sombre, la carte « Arrivages Standard actifs » restait blanche — c'est la carte
+  claire de « Thème sombre : tableau de bord » dans `admin-4`, prise avant la correction.
+  **Corrigé** : en sombre, elle prend l'encre des barres, comme « Arrivages Express actifs ».

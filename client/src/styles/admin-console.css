@@ -418,6 +418,11 @@ html[data-theme='dark'] .bo-shell .admin-table-bulkbar { background: var(--bo-ca
 .bo-shell .admin-metric small { font-size: 10.5px; color: var(--bo-soft); }
 .bo-shell .admin-metric i { width: 30px; height: 30px; border-radius: var(--bo-radius-sm); background: var(--bo-sunken); color: var(--bo-muted); }
 .bo-shell .admin-metric i svg { width: 16px; }
+/* Bandeaux « Arrivages Standard / Express actifs » : deux bandeaux d'encre à texte blanc, dans les
+   deux thèmes. Défaut corrigé : le premier est peint avec --admin-ink, que la coquille relie à
+   --bo-ink ; le thème sombre éclaircit --bo-ink (#F5F5F5) et le bandeau devenait blanc, son
+   chiffre blanc illisible (1,09:1). En sombre, il prend l'encre des barres, comme le second. */
+html[data-theme='dark'] .bo-shell .admin-arrival-summary article:first-child { background: var(--bo-bar); }
 
 .bo-shell .admin-queues > header strong { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; }
 .bo-shell .admin-queues > header span { color: var(--bo-muted); font-size: 11.5px; }
