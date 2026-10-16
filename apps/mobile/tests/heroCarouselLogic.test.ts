@@ -3,7 +3,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
-  CARD_GAP, CARD_MAX_WIDTH, CARD_MIN_WIDTH, carouselGeometry, indexForOffset,
+  backgroundRanges, CARD_GAP, CARD_MAX_WIDTH, CARD_MIN_WIDTH, carouselGeometry, indexForOffset,
   isStillAfterDrag, nextIndex, shouldAutoplayAdvance,
 } from '../src/features/home/heroCarouselLogic';
 
@@ -113,5 +113,19 @@ describe('voisines — même largeur de peek des deux côtés', () => {
     const rightPeek = screen - rightNeighbourLeft;
     expect(leftPeek).toBeGreaterThan(0);
     expect(rightPeek).toBe(leftPeek);
+  });
+});
+
+describe('backgroundRanges — le fond de section ne s’interpole qu’à partir de deux cartes', () => {
+  it('une carte (ou aucune) : rien à interpoler — `interpolate` lèverait une erreur', () => {
+    expect(backgroundRanges(['#112233'])).toBeNull();
+    expect(backgroundRanges([])).toBeNull();
+  });
+
+  it('deux cartes et plus : une couleur par index, dans l’ordre', () => {
+    expect(backgroundRanges(['#111111', '#222222', '#333333'])).toEqual({
+      inputRange: [0, 1, 2],
+      outputRange: ['#111111', '#222222', '#333333'],
+    });
   });
 });

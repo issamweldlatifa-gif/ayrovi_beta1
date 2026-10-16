@@ -222,3 +222,18 @@ describe('géométrie et fond', () => {
     expect(currentCard()).toBe(1);
   });
 });
+
+describe('une seule carte', () => {
+  // `interpolate` exige au moins deux points : avec une carte, React Native levait
+  // « Bad output range » et tout l'accueil plantait (un seul visuel publié dans Admin → Hero).
+  it('s’affiche sans planter ; le fond de section est celui de la carte, sans animation', async () => {
+    await renderCarousel(SETTINGS, [slide('a', 0)]);
+    expect(screen.getByTestId('hero-carousel')).toBeTruthy();
+    expect(currentCard()).toBe(1);
+    const background = StyleSheet.flatten(screen.getByTestId('hero-carousel').props.style).backgroundColor;
+    expect(typeof background).toBe('string');
+    // pas d'autoplay possible : rien à faire défiler
+    act(() => { jest.advanceTimersByTime(INTERVAL_MS * 3); });
+    expect(currentCard()).toBe(1);
+  });
+});

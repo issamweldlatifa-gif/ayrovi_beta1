@@ -72,3 +72,16 @@ export const STILL_VELOCITY = 0.05;
 export function isStillAfterDrag(velocityX: number | undefined): boolean {
   return velocityX === undefined || Math.abs(velocityX) < STILL_VELOCITY;
 }
+
+/**
+ * Plages de l'interpolation du fond de section (une couleur par carte).
+ *
+ * `Animated.Value.interpolate` exige au moins DEUX points : avec une seule carte publiée,
+ * React Native levait « outputRange must have at least 2 elements » (« Bad output range »
+ * selon la version) et tout l'accueil plantait. Avec moins de deux cartes il n'y a rien à
+ * interpoler : `null`, et le fond est simplement la couleur de la carte.
+ */
+export function backgroundRanges(backgrounds: readonly string[]): { inputRange: number[]; outputRange: string[] } | null {
+  if (backgrounds.length < 2) return null;
+  return { inputRange: backgrounds.map((_, index) => index), outputRange: [...backgrounds] };
+}

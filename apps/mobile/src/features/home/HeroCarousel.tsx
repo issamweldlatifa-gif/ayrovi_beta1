@@ -37,7 +37,7 @@ import {
 import { pickHeroText, softenHeroBackground, withAlpha } from './heroPalette';
 import { isDemoSlide } from './heroDemo';
 import {
-  CARD_ASPECT, CARD_GAP, carouselGeometry, indexForOffset, isStillAfterDrag, nextIndex,
+  backgroundRanges, CARD_ASPECT, CARD_GAP, carouselGeometry, indexForOffset, isStillAfterDrag, nextIndex,
   shouldAutoplayAdvance,
 } from './heroCarouselLogic';
 
@@ -133,10 +133,9 @@ function HeroCarouselView({
     () => slides.map((card) => softenHeroBackground(card.background || theme.colors.surface, theme.colors.canvas)),
     [slides, theme.colors.surface, theme.colors.canvas],
   );
-  const sectionBackground = bgAnim.interpolate({
-    inputRange: slides.map((_, index) => index),
-    outputRange: backgrounds,
-  });
+  // Une seule carte : pas d'interpolation (il faut au moins deux points), la couleur suffit.
+  const ranges = backgroundRanges(backgrounds);
+  const sectionBackground = ranges ? bgAnim.interpolate(ranges) : (backgrounds[0] ?? theme.colors.canvas);
   // Le header reçoit la couleur adoucie de la carte active (même valeur que la section).
 
   // Le header reprend la couleur de la carte active ; remise à zéro au démontage.
