@@ -1,0 +1,129 @@
+name: Carte native — mesure production
+
+# MESURE, pas barrière : quelle part du catalogue réel passe par la voie
+# native (native-trim / native-extend) au lieu de l'isolation (composed) ?
+# Lecture seule : le workflow ne fait que GET /api/public/media/card et lire
+# l'en-tête X-Ayrovi-Card. Toujours vert : c'est un instrument de mesure.
+#
+# Le sandbox de développement ne peut pas joindre Render ; GitHub Actions, si.
+# Déclenché par un push qui modifie CE fichier (ou le moteur de carte).
+
+on:
+  push:
+    branches: ['arena/*-ayrovi-beta1']
+    paths:
+      - '.github/workflows/media-native-measure.yml'
+      - 'src/services/cardNative.ts'
+      - 'src/public/routes.ts'
+  workflow_dispatch:
+    inputs:
+      base:
+        description: "Serveur à mesurer"
+        required: true
+        default: "https://ayrovi-beta1-moo8.onrender.com"
+
+permissions:
+  contents: read
+
+jobs:
+  measure:
+    name: Ratio native/composed sur le catalogue réel
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      BASE: ${{ inputs.base || 'https://ayrovi-beta1-moo8.onrender.com' }}
+    steps:
+      - name: Attendre que Render serve ce commit
+        if: ${{ github.event_name == 'push' && !contains(github.event.head_commit.message, '[skip render]') }}
+        timeout-minutes: 10
+        run: |
+          set +e
+          EXPECTED=${GITHUB_SHA:0:12}
+          for ATTEMPT in $(seq 1 40); do
+            READY=$(curl -s --max-time 30 "$BASE/api/ready" 2>/dev/null)
+            SERVED=$(printf '%s' "$READY" | sed -n 's/.*"commit": *"\([a-f0-9]\{7,12\}\)".*/\1/p' | head -1)
+            if [ -n "$SERVED" ] && [ "$SERVED" = "${EXPECTED:0:${#SERVED}}" ]; then
+              echo "Render sert $SERVED (tentative $ATTEMPT)."
+              exit 0
+            fi
+            echo "Tentative $ATTEMPT/40 : serveur=${SERVED:-muet}, attendu=$EXPECTED"
+            sleep 15
+          done
+          echo "::warning title=Deploiement non termine::Render ne sert pas encore $EXPECTED ; la mesure porte sur le commit réellement servi."
+          exit 0
+
+      - name: Mesurer le ratio sur le catalogue publié
+        run: |
+          set +e +o pipefail
+          S="${GITHUB_STEP_SUMMARY:-/dev/null}"
+
+          # Render peut dormir : le réveiller d'abord, sinon on mesure le réveil.
+          READY=""
+          for ATTEMPT in $(seq 1 12); do
+            READY=$(curl -s --max-time 30 "$BASE/api/ready" 2>/dev/null)
+            [ -n "$READY" ] && break
+            sleep 10
+          done
+          COMMIT=$(printf '%s' "$READY" | sed -n 's/.*"commit": *"\([A-Za-z0-9]*\)".*/\1/p' | head -1)
+
+          # Le corpus = le catalogue réel (image principale + images secondaires).
+          curl -s --max-time 60 "$BASE/api/public/products?limit=50" -o /tmp/products.json 2>/dev/null
+          python3 - "$BASE" <<'PY' > /tmp/urls.txt
+          import json, sys, urllib.parse
+          base = sys.argv[1].rstrip('/')
+          try:
+              rows = (json.load(open('/tmp/products.json')).get('data') or [])
+          except Exception:
+              rows = []
+          urls, seen = [], set()
+          def add(u):
+              if not u or u in seen: return
+              seen.add(u)
+              if u.startswith('/'): u = base + u
+              if u.startswith('http'): urls.append(u)
+          for row in rows:
+              if not isinstance(row, dict): continue
+              add(row.get('image'))
+              for extra in (row.get('additionalImages') or [])[:2]:
+                  add(extra)
+          # Filet de sécurité : le corpus média publié, si le catalogue est vide.
+          for fallback in ['/media/hero-femme.jpg', '/media/hero-homme.jpg',
+                           '/media/hero-enfants.jpg', '/media/hero-default.jpg',
+                           '/media/lens-sneakers.jpg']:
+              add(fallback)
+          for u in urls[:30]:
+              print(u)
+          PY
+          TOTAL=$(wc -l < /tmp/urls.txt | tr -d ' ')
+
+          TRIM=0; EXTEND=0; COMPOSED=0; LETTERBOX=0; OTHER=0
+          : > /tmp/table.md
+          while IFS= read -r U; do
+            [ -z "$U" ] && continue
+            ENC=$(python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=""))' "$U")
+            START=$(date +%s%3N)
+            HDR=$(curl -s -o /dev/null -D - --max-time 90 "$BASE/api/public/media/card?u=$ENC&w=600" 2>/dev/null)
+            MS=$(( $(date +%s%3N) - START ))
+            CODE=$(printf '%s' "$HDR" | head -1 | tr -dc '0-9')
+            KIND=$(printf '%s' "$HDR" | tr -d '\r' | sed -n 's/^x-ayrovi-card: *//Ip' | head -1)
+            case "$KIND" in
+              native-trim)   TRIM=$((TRIM+1)) ;;
+              native-extend) EXTEND=$((EXTEND+1)) ;;
+              composed)      COMPOSED=$((COMPOSED+1)) ;;
+              letterbox)     LETTERBOX=$((LETTERBOX+1)) ;;
+              *)             OTHER=$((OTHER+1)) ;;
+            esac
+            printf '| `%s` | %s | %s | %s ms |\n' "$(printf '%s' "$U" | sed "s|$BASE||" | cut -c1-60)" "${CODE:-000}" "${KIND:-aucun}" "$MS" >> /tmp/table.md
+          done < /tmp/urls.txt
+
+          NATIVE=$((TRIM+EXTEND))
+          AVOID=$((NATIVE))
+          [ "$TOTAL" -gt 0 ] && PCT=$(( (NATIVE * 100) / TOTAL )) || PCT=0
+
+          printf '## Carte native — mesure production `%s`\n\n' "$BASE" >> "$S"
+          printf -- '- Commit servi : `%s`\n- Images mesurées : **%s** (catalogue public, w=600)\n- `native-trim` : **%s** · `native-extend` : **%s** · `composed` (cas D) : **%s** · `letterbox` : **%s** · sans en-tête : **%s**\n- **Isolations évitées : %s/%s (%s%%)**\n\n| Image | HTTP | Voie | Latence |\n|---|---|---|---|\n' \
+            "${COMMIT:-?}" "$TOTAL" "$TRIM" "$EXTEND" "$COMPOSED" "$LETTERBOX" "$OTHER" "$AVOID" "$TOTAL" "$PCT" >> "$S"
+          cat /tmp/table.md >> "$S"
+
+          echo "::notice title=Carte native production::total=$TOTAL trim=$TRIM extend=$EXTEND composed=$COMPOSED letterbox=$LETTERBOX other=$OTHER avoided=$AVOID/$TOTAL ($PCT%) commit=${COMMIT:-?}"
+          exit 0
