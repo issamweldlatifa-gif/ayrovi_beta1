@@ -5,7 +5,7 @@
 
 .ayw-screen {
   min-height: 100%;
-  background: var(--ayrovi-surface, #f5f5f5);
+  background: var(--ayrovi-surface, #FFFFFF);
   padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
 }
 
@@ -100,7 +100,7 @@
   height: 4.2rem;
   border: 0;
   border-radius: .4rem;
-  background: var(--ayrovi-surface, #fafafa);
+  background: var(--ayrovi-surface, #FFFFFF);
   cursor: pointer;
   padding: .5rem;
 }
@@ -130,7 +130,7 @@
   cursor: pointer;
 }
 
-.ayw-fav.is-on { color: var(--ayrovi-cta, #571ef6); background: var(--ayrovi-bg-surface, #f2f2f2); }
+.ayw-fav.is-on { color: var(--ayrovi-cta, #571ef6); background: var(--ayrovi-bg-surface, #FFFFFF); }
 
 .ayw-storedesc {
   margin-top: .5rem;
@@ -233,7 +233,7 @@
 }
 
 .ayw-sheet-product { display: flex; align-items: center; gap: .8rem; }
-.ayw-sheet-thumb { width: 4.6rem; height: 4.6rem; object-fit: contain; background: #f2f4f7; border-radius: .35rem; }
+.ayw-sheet-thumb { width: 4.6rem; height: 4.6rem; object-fit: contain; background: #FFFFFF; border: 1px solid #E5E5E5; border-radius: .35rem; }
 .ayw-sheet-name { font-weight: 600; color: var(--ayrovi-ink, #101828); }
 
 .ayw-cond { border: 0; padding: 0; margin: 0; }
@@ -294,7 +294,7 @@
 .ayw-added-icon { position: relative; align-self: center; color: var(--ayrovi-text-primary, #0a0a0a); }
 .ayw-added-icon svg:last-child { position: absolute; top: -.5rem; inset-inline-end: -.6rem; color: var(--ayrovi-text-primary, #0a0a0a); }
 .ayw-added-sum { display: flex; gap: .9rem; align-items: center; border-block: 1px solid var(--ayrovi-line, #e4e4e4); padding: .9rem 0; }
-.ayw-added-thumb { width: 6.5rem; height: 8rem; object-fit: contain; background: #f2f4f7; border-radius: .35rem; }
+.ayw-added-thumb { width: 6.5rem; height: 8rem; object-fit: contain; background: #FFFFFF; border: 1px solid #E5E5E5; border-radius: .35rem; }
 .ayw-added-title { font-weight: 700; color: var(--ayrovi-ink, #101828); }
 .ayw-added-meta { color: var(--ayrovi-ink-secondary, #475467); font-size: .9rem; margin-top: .3rem; }
 
@@ -309,7 +309,7 @@
   box-shadow: 0 1px 2px rgb(16 24 40 / .06);
 }
 
-.ayw-cartline-img { width: 6rem; height: 7rem; object-fit: contain; background: #f2f4f7; border-radius: .3rem; flex: none; }
+.ayw-cartline-img { width: 6rem; height: 7rem; object-fit: contain; background: #FFFFFF; border: 1px solid #E5E5E5; border-radius: .3rem; flex: none; }
 .ayw-cartline-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .55rem; }
 .ayw-cartline-title { font-size: .98rem; font-weight: 700; color: var(--ayrovi-ink, #101828); }
 
@@ -407,7 +407,7 @@
   cursor: pointer;
 }
 .ayw-variantcard.is-on { border-color: var(--ayrovi-ink-secondary, #1d3f8f); box-shadow: 0 0 0 1.5px var(--ayrovi-ink-secondary, #1d3f8f); }
-.ayw-variantcard-img { width: 100%; height: 6.8rem; object-fit: contain; border-radius: .35rem; background: #f2f4f7; }
+.ayw-variantcard-img { width: 100%; height: 6.8rem; object-fit: contain; border-radius: .35rem; background: #FFFFFF; border: 1px solid #E5E5E5; }
 .ayw-variantcard-name { font-weight: 700; color: var(--ayrovi-ink, #101828); font-size: .95rem; }
 .ayw-variantcard-price { color: var(--ayrovi-ink, #101828); font-size: .9rem; }
 .ayw-variantcard-stock { color: var(--ayrovi-ink-secondary, #475467); font-size: .8rem; }
@@ -425,7 +425,7 @@
   font-weight: 700;
   color: var(--ayrovi-ink, #101828);
   border-bottom: 1px solid var(--ayrovi-line, #e4e4e4);
-  background: var(--ayrovi-surface-alt, #f8f9fa);
+  background: var(--ayrovi-surface-alt, #FFFFFF);
 }
 .ayw-cartgroup .ayw-cartline { margin: 0; box-shadow: none; border-radius: 0; border-bottom: 1px solid var(--ayrovi-line, #e4e4e4); }
 .ayw-cartgroup .ayw-cartline:last-child { border-bottom: 0; }
@@ -447,7 +447,8 @@
   margin: .8rem 1rem 0;
   padding: .8rem 1rem;
   border-radius: .5rem;
-  background: var(--ayrovi-surface-alt, #fdf6ec);
+  background: var(--ayrovi-surface-alt, #FFFFFF);
+  border: 1px solid var(--ayrovi-line, #E5E5E5);
   color: var(--ayrovi-ink, #101828);
   font-size: .92rem;
   font-weight: 600;
@@ -465,7 +466,7 @@
   width: 5.2rem;
   height: 5.2rem;
   object-fit: contain;
-  background: #f2f4f7;
+  background: #FFFFFF; border: 1px solid #E5E5E5;
   border-radius: .4rem;
   flex: none;
 }
@@ -510,7 +511,7 @@
   width: 4.4rem;
   height: 4.4rem;
   object-fit: contain;
-  background: #f2f4f7;
+  background: #FFFFFF; border: 1px solid #E5E5E5;
   border-radius: .35rem;
   flex: none;
 }

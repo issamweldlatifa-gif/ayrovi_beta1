@@ -890,7 +890,7 @@
 .lens-home__actions { display: flex; flex-direction: column; gap: 10px; }
 
 /* إطار Lens لصورة المستخدم أثناء التحليل — لا صورة Demo */
-.lens-frame { position: relative; overflow: hidden; border-radius: 22px; border: 1px solid color-mix(in srgb, currentColor 12%, transparent); background: color-mix(in srgb, currentColor 5%, transparent); }
+.lens-frame { position: relative; overflow: hidden; border-radius: 22px; border: 1px solid color-mix(in srgb, currentColor 12%, transparent); background: var(--ayrovi-bg-main); }
 .lens-frame__img { display: block; width: 100%; max-height: 52vh; object-fit: cover; }
 .lens-frame__empty { display: grid; place-items: center; height: 220px; }
 .lens-frame__dots { position: absolute; inset: 0; pointer-events: none; background-image: radial-gradient(color-mix(in srgb, var(--ayrovi-white) 85%, transparent) 1.5px, transparent 1.6px); background-size: 22px 22px; opacity: .5; }
@@ -911,7 +911,7 @@
 .lens-analyzing__sub { margin: -6px auto 0; max-width: 36ch; text-align: center; font-size: 12.5px; line-height: 1.55; color: color-mix(in srgb, currentColor 62%, transparent); }
 
 /* Stepper 4 مراحل: Analyse → Recherche → Vérification → Prix */
-.lens-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; list-style: none; margin: 4px 0 0; padding: 14px 10px; border-radius: 18px; border: 1px solid color-mix(in srgb, currentColor 10%, transparent); background: color-mix(in srgb, currentColor 4%, transparent); }
+.lens-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; list-style: none; margin: 4px 0 0; padding: 14px 10px; border-radius: 18px; border: 1px solid color-mix(in srgb, currentColor 10%, transparent); background: var(--ayrovi-bg-main); }
 .lens-step { position: relative; display: flex; flex-direction: column; align-items: center; gap: 7px; text-align: center; }
 .lens-step:not(:first-child)::before { content: ''; position: absolute; top: 11px; right: calc(50% + 14px); left: calc(-50% + 14px); height: 1.5px; background: color-mix(in srgb, currentColor 18%, transparent); }
 /* Tracker d'étapes — norme figée : trait ET point de l'étape active en violet,
@@ -923,7 +923,7 @@
 .lens-step__label { font-size: 10px; font-weight: 700; color: color-mix(in srgb, currentColor 66%, transparent); }
 .lens-step.is-active .lens-step__label, .lens-step.is-done .lens-step__label { color: var(--ayrovi-text-primary); }
 
-.lens-analyzing__card { display: flex; gap: 12px; align-items: flex-start; padding: 14px; border-radius: 16px; border: 1px solid color-mix(in srgb, currentColor 10%, transparent); background: color-mix(in srgb, currentColor 4%, transparent); }
+.lens-analyzing__card { display: flex; gap: 12px; align-items: flex-start; padding: 14px; border-radius: 16px; border: 1px solid color-mix(in srgb, currentColor 10%, transparent); background: var(--ayrovi-bg-main); }
 .lens-analyzing__cardicon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0; background: var(--ayrovi-bg-surface); border: 1px solid var(--ayrovi-border-soft); color: var(--ayrovi-text-primary); }
 .lens-analyzing__card strong { display: block; font-size: 13.5px; font-weight: 800; }
 .lens-analyzing__card p { margin: 4px 0 0; font-size: 11.5px; line-height: 1.5; color: color-mix(in srgb, currentColor 62%, transparent); }

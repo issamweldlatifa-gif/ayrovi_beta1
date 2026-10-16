@@ -143,7 +143,7 @@ export const DEFAULT_INTERFACE_CONFIG: PublicInterfaceConfig = {
   sections: [
     { id: 'hero', visible: true, order: 10, title: 'Toute la mode du monde, livrée chez vous.', subtitle: '', image: '', backgroundColor: '#000000', textColor: '#ffffff', paddingY: 0, contained: false, mediaType: 'image', videoUrl: '', ctaLabel: '', ctaTarget: '' },
     { id: 'cms', visible: true, order: 20, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#000000', paddingY: 0, contained: false, mediaType: 'image', videoUrl: '', ctaLabel: '', ctaTarget: '' },
-    { id: 'brands', visible: true, order: 30, title: '', subtitle: '', image: '', backgroundColor: '#f8f9fa', textColor: '#000000', paddingY: 0, contained: false, mediaType: 'image', videoUrl: '', ctaLabel: '', ctaTarget: '' },
+    { id: 'brands', visible: true, order: 30, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#000000', paddingY: 0, contained: false, mediaType: 'image', videoUrl: '', ctaLabel: '', ctaTarget: '' },
     { id: 'about', visible: true, order: 40, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#000000', paddingY: 0, contained: false, mediaType: 'image', videoUrl: '', ctaLabel: '', ctaTarget: '' },
     { id: 'footer', visible: true, order: 50, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#000000', paddingY: 0, contained: false, mediaType: 'image', videoUrl: '', ctaLabel: '', ctaTarget: '' },
     // Masquée par défaut : l’admin l’active et la remplit. Rendue DANS le bloc Stories/Reels.
@@ -164,7 +164,7 @@ export const DEFAULT_INTERFACE_CONFIG: PublicInterfaceConfig = {
   colors: {
     pageBackground: '#ffffff',
     surfaceBackground: '#ffffff',
-    surfaceAlt: '#f8f9fa',
+    surfaceAlt: '#ffffff',
     borderColor: '#eaeaea',
     primary: '#000000',
     primaryDark: '#000000',

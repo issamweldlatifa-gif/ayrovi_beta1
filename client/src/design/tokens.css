@@ -142,7 +142,7 @@ html[data-theme='dark'] {
 
     /* — les six jetons canoniques de la charte (verrouillés par tests/design-zalando.test.ts) — */
     --ayrovi-bg-main: #ffffff;              /* Canvas — fond pur de toutes les pages */
-    --ayrovi-bg-surface: #f2f2f2;           /* Gris clair officiel : cartes, listes, squelettes */
+    --ayrovi-bg-surface: #ffffff;           /* Surface — BLANCHE depuis le 17/10/2026 : la séparation se fait par un filet, pas par un aplat gris */
     --ayrovi-border-soft: #e5e5e5;          /* Filets 1px, séparateurs fins */
     --ayrovi-text-primary: #0a0a0a;         /* Noir officiel : titres, marques, prix, texte */
     --ayrovi-text-secondary: #666666;       /* Encre secondaire : légendes, méta */
@@ -171,7 +171,7 @@ html[data-theme='dark'] {
     --ayrovi-success: #15803d;
     --ayrovi-success-soft: #e6f5ec;
     --ayrovi-info: var(--ay-e-info, #666666);
-    --ayrovi-info-soft: var(--ay-e-info-soft, #f2f2f2);
+    --ayrovi-info-soft: var(--ay-e-info-soft, #ffffff);
     --ayrovi-danger: #dc2626;
     --ayrovi-danger-soft: #fdecec;
 

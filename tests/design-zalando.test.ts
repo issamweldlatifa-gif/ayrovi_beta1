@@ -65,7 +65,7 @@ describe('jetons canoniques — la charte tient en six variables', () => {
     const declared = new Map(declarations(read(TOKENS)).map(([, n, v]) => [n, v.trim().toLowerCase()]));
     const canonical: Record<string, string> = {
       '--ayrovi-bg-main': '#ffffff',
-      '--ayrovi-bg-surface': '#f2f2f2',
+      '--ayrovi-bg-surface': '#ffffff',
       '--ayrovi-border-soft': '#e5e5e5',
       '--ayrovi-text-primary': '#0a0a0a',
       '--ayrovi-text-secondary': '#666666',
@@ -74,6 +74,35 @@ describe('jetons canoniques — la charte tient en six variables', () => {
     for (const [name, value] of Object.entries(canonical)) {
       expect(declared.get(name), `${name} doit être déclaré dans tokens.css`).toBe(value);
     }
+  });
+
+  test('décision du 17/10/2026 : plus aucun fond gris dans le site web, seulement des filets', () => {
+    // Même règle que l'appli, appliquée au front web : le gris ne remplit plus
+    // une surface ; seules les BORDURES et les séparateurs ont le droit d'être gris.
+    const isGreyFill = (hex: string): boolean => {
+      const h = hex.slice(1);
+      const full = h.length === 3 ? h.split('').map((c) => c + c).join('') : h.slice(0, 6);
+      const [r, g, b] = [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16));
+      // gris = trois composantes quasi égales ; « clair » = ce qui se voyait comme un
+      // aplat (#F2F2F2, #F8F9FA…). Le blanc (>= #FD) est la cible, pas une faute, et
+      // les teintes plus soutenues (#E5E5E5, #ECECEC) sont des FILETS, qui restent licites.
+      return Math.max(r, g, b) - Math.min(r, g, b) <= 12 && Math.min(r, g, b) >= 0xf0 && Math.min(r, g, b) <= 0xfc;
+    };
+    const offenders: string[] = [];
+    for (const file of clientFiles(/\.(css|tsx|ts)$/)) {
+      // Le back-office est une coquille NOIRE assumée : elle n'est pas un aplat gris.
+      if (/\/admin\/|admin-console\.css|\/admin-/.test(file)) continue;
+      const text = withoutComments(read(file)).split('\n');
+      text.forEach((line, index) => {
+        // `background` / `background-color` uniquement : une bordure grise reste licite.
+        const m = line.match(/background(?:-color)?\s*:\s*([^;'"\n]+)/);
+        if (!m) return;
+        for (const hex of m[1].match(/#[0-9a-fA-F]{3,8}\b/g) ?? []) {
+          if (isGreyFill(hex)) offenders.push(`${file}:${index + 1} ${hex}`);
+        }
+      });
+    }
+    expect(offenders, 'Un aplat gris subsiste côté site : passer la surface en blanc et séparer par un filet.').toEqual([]);
   });
 
   test('le violet n’a qu’un seul porteur : les autres noms ne sont que des alias', () => {

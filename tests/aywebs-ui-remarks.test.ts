@@ -52,7 +52,8 @@ describe('§1 — l’image originale est montrée entière, jamais rognée', ()
       const rule = css.split('\n').find((line) => line.trim().startsWith(`${selector} {`));
       expect(rule, `règle absente : ${selector}`).toBeTruthy();
       expect(rule).toMatch(/object-fit:\s*contain/);
-      expect(rule).toMatch(/background:\s*#f2f4f7/);
+      // Décision n° 1 : plus d'aplat gris — fond blanc, cadre au filet.
+      expect(rule).toMatch(/background:\s*#FFFFFF;\s*border:\s*1px solid #E5E5E5;/);
     }
   });
 });

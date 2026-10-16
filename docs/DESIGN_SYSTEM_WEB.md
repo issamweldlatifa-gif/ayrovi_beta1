@@ -44,7 +44,7 @@ développeur, pour toujours.
 | Token | Valeur | Rôle |
 |---|---|---|
 | `--ayrovi-bg-main` | `#ffffff` | Canvas (≈ 95 % de la surface) |
-| `--ayrovi-bg-surface` | `#f8f9fa` | Cartes, listes, champs, maquettes de comparaison |
+| `--ayrovi-bg-surface` | `#ffffff` | Surfaces (cartes, listes, champs) — BLANC depuis le 17/10/2026 ; la séparation se fait par `--ayrovi-border-soft` |
 | `--ayrovi-border-soft` | `#eaeaea` | Filets 1 px, séparateurs |
 | `--ayrovi-text-primary` | `#111111` | Encre : titres, prix, texte, texte sur orange |
 | `--ayrovi-text-secondary` | `#666666` | Légendes, méta, prix secondaires |

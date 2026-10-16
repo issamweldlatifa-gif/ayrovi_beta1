@@ -14,11 +14,11 @@
 
 .s-root {
   --s-canvas: var(--ay-e-canvas, #fff);
-  --s-surface: var(--ay-e-surface, #f2f2f2);
+  --s-surface: var(--ay-e-surface, #FFFFFF);
   --s-ink: var(--ay-e-ink, #0a0a0a);
   --s-muted: var(--ay-e-muted, #666666);
   --s-info: var(--ay-e-info, #666666);
-  --s-info-soft: var(--ay-e-info-soft, #f2f2f2);
+  --s-info-soft: var(--ay-e-info-soft, #FFFFFF);
   --s-line: var(--ay-e-line, #e5e5e5);
   /* Frontière des CONTRÔLES sélectionnables (radio de moyen de paiement, vignettes,
      pastilles, pas-de-quantité). `--s-line` reste le filet décoratif : à 1,41:1 il ne

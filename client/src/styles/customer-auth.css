@@ -99,7 +99,7 @@
 .ay-auth__divider::before, .ay-auth__divider::after { content: ''; flex: 1; height: 1px; background: var(--ayrovi-border-soft); }
 .ay-auth__fields { display: flex; flex-direction: column; gap: var(--ayrovi-space-4); border: 0; padding: 0; margin: 0; min-width: 0; }
 .ay-auth__fields label { color: var(--ayrovi-text-primary); font-size: var(--text-small); font-weight: 600; }
-.ay-auth__fields input { padding-inline: var(--ayrovi-space-5); min-height: var(--ayrovi-control-height); font-size: var(--text-body); font-weight: var(--ayrovi-body-weight, 500); background: var(--ayrovi-bg-surface); color: var(--ayrovi-text-primary); }
+.ay-auth__fields input { padding-inline: var(--ayrovi-space-5); min-height: var(--ayrovi-control-height); font-size: var(--text-body); font-weight: var(--ayrovi-body-weight, 500); background: var(--ayrovi-bg-surface); border: 1px solid var(--ayrovi-border-soft); border-radius: var(--ayrovi-radius-card); color: var(--ayrovi-text-primary); }
 .ay-auth__fields input::placeholder { color: var(--ayrovi-text-secondary); opacity: 1; }
 /* Do not disable password managers. Only normalize the browser's autofill paint. */
 .ay-auth input:autofill {

@@ -253,7 +253,7 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
                   <div className="s-grid">
                     {Array.from({ length: placeholderCount }).map((_, i) => (
                       <div key={`placeholder-${i}`} className="s-card animate-pulse">
-                        <div className="s-card__media" style={{ background: 'var(--s-surface, #f2f2f2)' }} />
+                        <div className="s-card__media" style={{ background: 'var(--s-surface, #FFFFFF)', border: '1px solid var(--ayrovi-border-soft, #E5E5E5)' }} />
                         <div className="mt-2 h-3 rounded bg-line" />
                         <div className="mt-1 h-2 rounded bg-line w-2/3" />
                       </div>

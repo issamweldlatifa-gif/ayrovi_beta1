@@ -27,7 +27,7 @@
 .lens-sheet-handle:active{cursor:grabbing!important}
 .lens-sheet-handle>span{width:36px;height:4px;background:#bdbdbd;border-radius:4px}
 .lens-sheet-summary{flex:none;display:flex;gap:12px;align-items:center;min-height:60px;padding:0 16px 12px;overflow:hidden}
-.lens-sheet-summary>img{width:44px;height:44px;flex:none;object-fit:contain;border:1px solid #d9d9d9;border-radius:10px;background:#f5f5f5}
+.lens-sheet-summary>img{width:44px;height:44px;flex:none;object-fit:contain;border:1px solid #d9d9d9;border-radius:10px;background:#FFFFFF}
 .lens-sheet-summary>div{min-width:0}.lens-sheet-summary h3{font-size:.9375rem;line-height:1.4;font-weight:500;margin:0}
 .lens-sheet-summary p{font-size:.8125rem;line-height:1.5;color:#595959;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:2px 0 0}
 .lens-results-list{flex:1;min-height:0;overflow-y:auto;overscroll-behavior-y:contain;padding:0 12px calc(20px + env(safe-area-inset-bottom,0px));scrollbar-width:none;touch-action:pan-y}

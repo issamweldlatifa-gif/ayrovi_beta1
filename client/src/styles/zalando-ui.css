@@ -68,6 +68,7 @@
 
 .ay-badge--muted {
   background: var(--ayrovi-bg-surface);
+  border: 1px solid var(--ayrovi-border-soft);
   color: var(--ayrovi-text-secondary);
 }
 

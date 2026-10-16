@@ -373,7 +373,7 @@ export const LensSectionPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
             </div>
 
             {/* Aperçu du média tel qu’il apparaîtra dans la section */}
-            <div style={{ maxWidth: 390, margin: '14px 0 0', borderRadius: 16, overflow: 'hidden', border: '1px solid rgba(17,18,23,0.12)', background: '#f8f9fa', aspectRatio: String(draft.media.ratio).replace('/', ' / ') }}>
+            <div style={{ maxWidth: 390, margin: '14px 0 0', borderRadius: 16, overflow: 'hidden', border: '1px solid rgba(17,18,23,0.12)', background: '#ffffff', aspectRatio: String(draft.media.ratio).replace('/', ' / ') }}>
               {videoPreview
                 ? <video src={videoPreview} controls muted loop playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 : draft.media.videoPath
@@ -415,7 +415,7 @@ export const LensSectionPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
                         <span style={{ display: 'block', marginTop: 3, fontSize: 13, fontWeight: 800 }}>{draft.phone.productName}</span>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 8 }}>
                           {[draft.phone.priceChip, draft.phone.metaChip, draft.phone.stockChip].filter(Boolean).map((chip, index) => (
-                            <span key={index} style={{ fontSize: 10, fontWeight: 700, borderRadius: 999, padding: '4px 9px', background: index === 0 ? draft.accentColor : '#f3f4f6', color: index === 0 ? '#fff' : '#374151' }}>{chip}</span>
+                            <span key={index} style={{ fontSize: 10, fontWeight: 700, borderRadius: 999, padding: '4px 9px', background: index === 0 ? draft.accentColor : '#ffffff', border: index === 0 ? '1px solid transparent' : '1px solid #E5E5E5', color: index === 0 ? '#fff' : '#374151' }}>{chip}</span>
                           ))}
                         </div>
                         <span style={{ display: 'block', textAlign: 'center', marginTop: 10, borderRadius: 999, background: '#111318', color: '#fff', fontSize: 11.5, fontWeight: 800, padding: '9px 12px' }}>{draft.phone.ctaLabel}</span>
