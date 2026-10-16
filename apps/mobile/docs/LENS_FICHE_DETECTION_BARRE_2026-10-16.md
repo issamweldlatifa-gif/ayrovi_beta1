@@ -226,3 +226,18 @@ multiplie pas « pour voir » : une cible = un objet **que l'utilisateur a chois
 | Notice temporaire à remplacer par la barre | `apps/mobile/app/lens.tsx:1383` (`styles.tip`), `showTip` |
 | Contrôle de la recherche (ROI) | `apps/mobile/app/lens.tsx` (`searchSelection`) |
 | Contrat SSE (pour la barre vivante) | `src/ayrovix/routes.ts:186-505` · fiche 1, §3 |
+
+---
+
+## 7. État d'implémentation (16/10/2026)
+
+| Point | Fait | Où |
+|---|---|---|
+| **Barre flottante** (le point 2) | Pastille givrée en haut : vignette de la photo + étape en cours + annulation. Elle remplace le titre tant qu'une photo est analysée | `apps/mobile/src/features/lens/LensSearchBar.tsx` · `apps/mobile/app/lens.tsx` |
+| **D1 — puces des objets repérés** | Bande horizontale sous la barre : une puce = un objet repéré. Taper une puce = reprendre la recherche sur cette zone (la photo revient visible, la boîte s'allume) | `apps/mobile/src/features/lens/LensDetectedChips.tsx` |
+| **D2 — états de détection explicites** | Trois états, tous dits : `detected` (des objets repérés) · `noObject` (« aucun produit repéré — agrandissez la zone ») · `unavailable` (« détection indisponible — recherche sur la photo entière »). Le 3ᵉ est le seul qui justifie la recherche « dans toute la photo », et il est dit | `apps/mobile/app/lens.tsx` (`detectionState`) |
+| **Le nombre de produits par cible** | Affiché **uniquement** pour la cible cherchée : les autres cibles n'ont pas encore été cherchées — pas de score inventé | `LensDetectedChips.tsx` |
+| **D3 — comparaison multi-cibles** | **Non fait** : chaque cible = une requête Lens de plus (quota SerpApi, temps serveur). Reste une décision de produit | — |
+
+Le flux SSE (E1, E3) est la condition du « P0 live bar » : la barre affiche l'étape réelle
+envoyée par le serveur (`progress`), pas une animation de façade.

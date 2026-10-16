@@ -606,6 +606,8 @@ export const ar = {
   'lens.progress.searching': 'نبحث عن منتجات مشابهة',
   'lens.progress.reading': 'نقراو البطاقات {done}/{total}',
   'lens.overview.title': 'شنوّة تعرّفنا عليه',
+  'lens.detect.noObject': 'ما لقينا حتى منتوج — كبّر المنطقة ولا إلمس المنتوج',
+  'lens.detect.unavailable': 'الكشف ما نجحش — البحث في الصورة كاملة',
   'lens.bar.placeholder': 'ابحث على منتجات…',
   'lens.resultsCountOne': '{count} نتيجة',
   'lens.resultsCountMany': '{count} نتائج',

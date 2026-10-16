@@ -606,6 +606,8 @@ export const fr = {
   'lens.progress.searching': 'Recherche de produits similaires',
   'lens.progress.reading': 'Lecture des fiches {done}/{total}',
   'lens.overview.title': 'Ce que nous avons reconnu',
+  'lens.detect.noObject': 'Aucun produit repéré — agrandissez la zone ou touchez le produit',
+  'lens.detect.unavailable': 'Détection indisponible — recherche sur la photo entière',
   'lens.bar.placeholder': 'Rechercher des produits…',
   'lens.resultsCountOne': '{count} résultat',
   'lens.resultsCountMany': '{count} résultats',

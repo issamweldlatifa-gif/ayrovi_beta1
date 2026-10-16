@@ -50,6 +50,7 @@ import { LensSearchSkeleton } from '@/features/lens/LensSearchSkeleton';
 import { LensProgressLine, lensProgressLabel } from '@/features/lens/LensProgressLine';
 import { LensOverviewCard } from '@/features/lens/LensOverviewCard';
 import { LensSearchBar } from '@/features/lens/LensSearchBar';
+import { LensDetectedChips } from '@/features/lens/LensDetectedChips';
 import { OcerexFlow } from '@/features/lens/ocerex/OcerexFlow';
 import { LensProductView } from '@/features/lens/LensProductView';
 import { LensHelpView } from '@/features/lens/LensHelpView';
@@ -996,6 +997,26 @@ export default function LensScreen() {
     return t('lens.bar.placeholder');
   }, [stage, resultTitle, t]);
 
+  /**
+   * L'état de la détection, DIT à l'utilisateur (jamais de silence) :
+   *   • `detected`   — au moins un objet repéré ;
+   *   • `noObject`   — la vision a répondu « rien » : on le dit ;
+   *   • `unavailable`— le fournisseur a été lent ou HS : on le dit aussi,
+   *                    c'est le SEUL cas qui justifie de chercher « dans
+   *                    toute la photo ».
+   */
+  const detectionState = useMemo<'detected' | 'noObject' | 'unavailable' | 'pending' | 'none'>(() => {
+    if (!sessionPhoto) return 'none';
+    if (sessionPhoto.detection === 'pending') return 'pending';
+    if (sessionPhoto.detection === 'failed') return 'unavailable';
+    return sessionPhoto.products.length > 0 ? 'detected' : 'noObject';
+  }, [sessionPhoto]);
+
+  /** Choisir une cible repérée : la recherche repart sur cette zone. */
+  const onSelectTarget = useCallback((index: number) => {
+    onSelectionCommit({ kind: 'product', index });
+  }, [onSelectionCommit]);
+
   const infoModal = (
     <Modal visible={panel !== null} transparent animationType="slide" onRequestClose={() => setPanel(null)}>
       <View style={styles.helpRoot}>
@@ -1122,6 +1143,29 @@ export default function LensScreen() {
         </View>
 
         <SearchSheet geometry={sheet}>
+          {/* Les objets REPÉRÉS dans la photo restent accessibles même quand la
+              feuille monte : une puce = une cible, la photo revient visible. */}
+          {sessionPhoto && sessionPhoto.products.length > 0 ? (
+            <LensDetectedChips
+              products={sessionPhoto.products}
+              selectedIndex={sessionPhoto.selected}
+              resultCount={stage.kind === 'results' ? stage.candidates.length : undefined}
+              onSelect={onSelectTarget}
+            />
+          ) : null}
+          {/* La détection ne doit JAMAIS échouer en silence : l'utilisateur
+              sait s'il a eu un repérage, rien, ou une panne du fournisseur. */}
+          {detectionState === 'unavailable' || detectionState === 'noObject' ? (
+            <View
+              style={[styles.detectNotice, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}
+              testID="lens-detect-notice"
+            >
+              <Ionicons name="information-circle-outline" size={16} color={theme.colors.muted} accessibilityElementsHidden />
+              <AppText variant="caption" color={theme.colors.muted} style={styles.detectNoticeText}>
+                {t(detectionState === 'unavailable' ? 'lens.detect.unavailable' : 'lens.detect.noObject')}
+              </AppText>
+            </View>
+          ) : null}
           {stage.kind === 'busy' ? (
             <>
               {/* L'identification arrive dès la première étape : la réponse en
@@ -1481,6 +1525,13 @@ const styles = StyleSheet.create({
   sheetGrabArea: { height: 30, alignItems: 'center', justifyContent: 'center' },
   sheetHandle: { width: 48, height: 5, borderRadius: 3, alignSelf: 'center', marginBottom: 10 },
   sheetDragHandle: { marginBottom: 0 },
+  detectNotice: {
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  detectNoticeText: { flex: 1 },
   errorState: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 16, paddingHorizontal: 24, paddingBottom: 24 },
   errorIcon: { width: 72, height: 72, alignItems: 'center', justifyContent: 'center' },
   helpRoot: { flex: 1, justifyContent: 'flex-end' },
