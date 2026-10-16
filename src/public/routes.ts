@@ -10,6 +10,7 @@ import { quoteCartLine } from '../services/cartQuote';
 import { resolvePromoForQuote, tunisIsoDay } from '../services/promotions';
 import { getIsolatedImage, isPublicHttpUrl, readCachedPng, fetchRemoteImage, warmIsolation } from '../services/imageIsolation';
 import { getComposedCard, readComposedPng, IDEAL_FRAME_WIDTH, frameSizeFor, CARD_CANVAS } from '../services/imageComposition';
+import { getNativeCard, readNativeCard } from '../services/cardNative';
 import path from 'node:path';
 import fs from 'node:fs';
 import sharp from 'sharp';
@@ -189,10 +190,33 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     const width = Number(req.query.w || IDEAL_FRAME_WIDTH);
     if (!isPublicHttpUrl(url)) { res.status(400).json({ success: false, error: 'INVALID_IMAGE_URL' }); return; }
     if (!COMPOSED_WIDTHS.has(width)) { res.status(400).json({ success: false, error: 'INVALID_WIDTH' }); return; }
+    /*
+     * VOIE NATIVE D'ABORD (16/10/2026) : fond blanc → trim + canvas blanc ;
+     * fond uniforme → trim + canvas couleur du bord ; fond complexe proche du
+     * ratio → photo entière sur ses bords floutés. Aucune isolation ne part
+     * d'ici : l'isolation (composition) ne reste que le cas D — photo très loin
+     * du ratio 9/13, où le contain laisserait de grandes bandes.
+     */
+    try {
+      const native = await getNativeCard(url, width);
+      if (native.file) {
+        res.setHeader('Content-Type', 'image/jpeg');
+        res.setHeader('X-Ayrovi-Card', `native-${native.mode}`);
+        res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
+        res.send(readNativeCard(native.file));
+        return;
+      }
+    } catch (error: any) {
+      if (error instanceof UnsafeUrlError || error?.code === 'UNSAFE_URL') {
+        return res.status(400).json({ success: false, error: 'INVALID_IMAGE_URL' });
+      }
+      // analyse/rendu impossible : la composition reste le plan suivant.
+    }
     try {
       const meta = await getComposedCard(url, width);
       if (meta.file) {
         res.setHeader('Content-Type', 'image/png');
+        res.setHeader('X-Ayrovi-Card', 'composed');
         res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
         res.send(readComposedPng(meta.file));
         return;
