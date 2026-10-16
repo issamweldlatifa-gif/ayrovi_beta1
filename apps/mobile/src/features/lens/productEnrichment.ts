@@ -101,5 +101,9 @@ export function mergeLensProduct(current: LensCandidate, full: LensCandidate): L
     rating: full.ratingKind === 'merchant' && full.rating != null ? full.rating : current.rating,
     ratingCount: full.ratingKind === 'merchant' && full.rating != null ? full.ratingCount : current.ratingCount,
     ratingKind: full.ratingKind === 'merchant' && full.rating != null ? 'merchant' : current.ratingKind,
+    // Identités marchandes : la réponse la plus récente qui les publie gagne.
+    gtin: full.gtin || current.gtin,
+    sku: full.sku || current.sku,
+    seller: full.seller || current.seller,
   };
 }

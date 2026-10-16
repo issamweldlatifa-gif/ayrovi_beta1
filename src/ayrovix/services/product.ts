@@ -90,6 +90,10 @@ function toAyrovixProduct(db: QatafoDatabase, scraped: ScrapedProduct): AyrovixP
     verificationProvider: scraped.verificationProvider || 'none',
     verificationMethod: scraped.verificationMethod || 'none',
     verificationFailureCode: scraped.verificationFailureCode || null,
+    // Identités publiées par la page (16/10/2026) : transmises, jamais déduites.
+    gtin: scraped.gtin || null,
+    sku: scraped.sku || null,
+    seller: scraped.seller || null,
     rating: Number.isFinite(Number((scraped as any).rating)) && Number((scraped as any).rating) > 0 && Number((scraped as any).rating) <= 5 ? Number((scraped as any).rating) : null,
     ratingCount: Number.isFinite(Number((scraped as any).ratingCount)) ? Number((scraped as any).ratingCount) : null,
     ratingKind: Number.isFinite(Number((scraped as any).rating)) ? 'merchant' : 'listing-quality',

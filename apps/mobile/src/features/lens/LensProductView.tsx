@@ -601,7 +601,24 @@ export function LensProductView({
   // anime ce snap sur le thread natif, sans PanResponder concurrent au scroll.
   const expandedOffset = Math.max(1, heroHeight - (insets.top + 82));
 
-  const facts = candidate.details ?? [];
+  // IDENTITÉS MARCHANDES (16/10/2026, fiche façon Zalando) : la référence et le
+  // code-barres publiés par la source rejoignent « Caractéristiques ». Jamais
+  // inventés, jamais doublonnés avec une fact marchande portant la même valeur.
+  const identityFacts = useMemo(() => {
+    const published = candidate.details ?? [];
+    const existing = new Set(published.map((fact) => fact.value.trim().toLocaleLowerCase()));
+    const rows: LensProductFact[] = [];
+    const sku = (candidate.sku || '').trim();
+    const gtin = (candidate.gtin || '').trim();
+    if (sku && !existing.has(sku.toLocaleLowerCase())) {
+      rows.push({ key: 'productNumber', label: t('lens.product.modelReference'), value: sku, section: 'details' });
+    }
+    if (gtin && !existing.has(gtin.toLocaleLowerCase())) {
+      rows.push({ key: 'gtin', label: t('lens.product.barcode'), value: gtin, section: 'details' });
+    }
+    return rows;
+  }, [candidate.details, candidate.gtin, candidate.sku, t]);
+  const facts = [...(candidate.details ?? []), ...identityFacts];
   const detailFacts = facts.filter((fact) => fact.section === 'details');
   const careFacts = detailFacts.filter((fact) => CARE_FACT.test(`${fact.label} ${fact.value}`));
   const characteristicFacts = detailFacts.filter((fact) => !careFacts.includes(fact));

@@ -657,6 +657,8 @@ export const ar = {
   'lens.product.material': 'الخامة والتركيب',
   'lens.product.fit': 'المقاس والقَصّة',
   'lens.product.care': 'العناية والغسيل',
+  'lens.product.modelReference': 'مرجع الموديل',
+  'lens.product.barcode': 'الباركود',
   'lens.cart.addedTitle': 'المنتج تزاد للسلة',
   'lens.cart.addedBody': 'سلتك جاهزة، والسعر يبقى قابل للتثبّت حتى للموعد الظاهر.',
   'lens.cart.validFor': 'السعر صالح مدّة {time}',

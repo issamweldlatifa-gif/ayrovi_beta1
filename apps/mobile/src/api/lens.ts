@@ -108,6 +108,12 @@ export interface LensCandidate {
   /** VERIFIED فقط مع رمز موقّع؛ غير ذلك PENDING_MANUAL. */
   priceVerificationStatus: 'VERIFIED' | 'PENDING_MANUAL';
   variantOptions: LensVariantOption[];
+  /** مرجع التاجر كما نشره (sku/mpn) — غائب إن لم تكشطه المصدر. */
+  sku?: string | null;
+  /** الباركود كما نشرته المصدر (gtin/ean) — غائب إن لم يُنشر. */
+  gtin?: string | null;
+  /** بائع العرض كما نشرته المصدر — غائب إن لم يُنشر. */
+  seller?: string | null;
 }
 
 export interface LensIdentification {
@@ -329,6 +335,10 @@ function parseCandidateRecord(value: unknown, allowProductShape: boolean): LensC
       ? 'VERIFIED'
       : 'PENDING_MANUAL',
     variantOptions: parseVariantOptions(value.variantOptions),
+    // Identités marchandes (16/10/2026) : telles que publiées par la source.
+    sku: strOrNull(value.sku),
+    gtin: strOrNull(value.gtin),
+    seller: strOrNull(value.seller),
   };
 }
 

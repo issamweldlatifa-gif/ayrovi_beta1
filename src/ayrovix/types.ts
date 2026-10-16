@@ -197,6 +197,15 @@ export interface AyrovixProduct {
   rating?: number | null;
   ratingCount?: number | null;
   ratingKind?: 'merchant' | 'match' | 'listing-quality';
+  /**
+   * IDENTITÉS MARCHANDES (16/10/2026, clonage de la fiche Zalando) — code-barres
+   * (`gtin`), référence marchand (`sku`/mpn) et vendeur de l'offre (`seller`) :
+   * lus par le parser (Phase 2.5), désormais transmis tels quels à la carte
+   * mobile. Absents quand la source ne les publie pas — jamais déduits.
+   */
+  gtin?: string | null;
+  sku?: string | null;
+  seller?: string | null;
 }
 
 export interface AyrovixDetectedPrice {

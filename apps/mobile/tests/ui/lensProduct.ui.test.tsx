@@ -109,6 +109,39 @@ describe('fiche produit Lens native', () => {
     expect(screen.getByTestId('lens-add-to-cart')).toBeEnabled();
   });
 
+  it('affiche les identités marchandes scrapées dans Caractéristiques (fiche Zalando)', async () => {
+    render(wrap(<LensProductView
+      candidate={candidate({ sku: 'LV040BM333', gtin: '6CA22S0GI-C11' })}
+      onBack={() => {}}
+    />));
+
+    expect(await screen.findByTestId('lens-product-view')).toBeOnTheScreen();
+    fireEvent.press(screen.getByTestId('lens-accordion-characteristics'));
+    expect(screen.getByText('Référence du modèle')).toBeOnTheScreen();
+    expect(screen.getByText('LV040BM333')).toBeOnTheScreen();
+    expect(screen.getByText('Code-barres')).toBeOnTheScreen();
+    expect(screen.getByText('6CA22S0GI-C11')).toBeOnTheScreen();
+  });
+
+  it('ne double pas une référence déjà publiée par le marchand', async () => {
+    const withMerchantRef = candidate({
+      sku: 'LV040BM333',
+      details: [{ key: 'productNumber', label: 'Référence du modèle', value: 'LV040BM333', section: 'details' }],
+    });
+    render(wrap(<LensProductView candidate={withMerchantRef} onBack={() => {}} />));
+    expect(await screen.findByTestId('lens-product-view')).toBeOnTheScreen();
+    fireEvent.press(screen.getByTestId('lens-accordion-characteristics'));
+    expect(screen.getAllByText('LV040BM333')).toHaveLength(1);
+  });
+
+  it('n’invente aucune identité quand la source n’en publie pas', async () => {
+    render(wrap(<LensProductView candidate={candidate()} onBack={() => {}} />));
+    expect(await screen.findByTestId('lens-product-view')).toBeOnTheScreen();
+    expect(screen.queryByTestId('lens-accordion-characteristics')).toBeNull();
+    expect(screen.queryByText('Référence du modèle')).toBeNull();
+    expect(screen.queryByText('Code-barres')).toBeNull();
+  });
+
   it('change la galerie et le prix avec les vrais choix image/variante', async () => {
     const product = candidate({
       colors: ['Rouge', 'Bleu'],

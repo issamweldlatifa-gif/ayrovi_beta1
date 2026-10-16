@@ -657,6 +657,8 @@ export const fr = {
   'lens.product.material': 'Matière et composition',
   'lens.product.fit': 'Taille et coupe',
   'lens.product.care': 'Conseils d’entretien',
+  'lens.product.modelReference': 'Référence du modèle',
+  'lens.product.barcode': 'Code-barres',
   'lens.cart.addedTitle': 'Article ajouté au panier',
   'lens.cart.addedBody': 'Votre panier est prêt. Le prix reste vérifiable jusqu’à l’échéance affichée.',
   'lens.cart.validFor': 'Prix valable encore {time}',
