@@ -48,6 +48,12 @@ jest.mock('@/api/lens', () => ({
   markChosen: jest.fn(async () => undefined),
 }));
 
+// La recherche passe par le FLUX (SSE) : le même double sert les deux voies,
+// avec la même signature (fichier + options `{ roi, signal, onProgress, onCard }`).
+jest.mock('@/api/lensStream', () => ({
+  analyzeImageStream: (...args: unknown[]) => mockAnalyzeImage(...args),
+}));
+
 jest.mock('@/api/account', () => ({ addExternalFavorite: jest.fn(async () => undefined) }));
 jest.mock('@/api/cart', () => ({ addExternalToCart: jest.fn(async () => undefined) }));
 jest.mock('@/session/session', () => ({ useSessionId: () => 'mob_1234567890123456' }));
