@@ -16655,8 +16655,8 @@
     {
       "file": "client/src/components/Navbar.tsx",
       "domain": "shell-content",
-      "sha256": "cfc5e7e58cb34fec5dc7b36d07e669907818285cb246be42a4f09cb7c6361142",
-      "lines": 118,
+      "sha256": "75f97ea9ed02fa6fcce5db1dc6b0b127d41a9c903d58ebe17aed14348e80b49f",
+      "lines": 130,
       "imports": [
         "react",
         "./QatafoIcons",
@@ -16664,12 +16664,13 @@
         "../design/Button"
       ],
       "exports": [
+        "headerOverHero",
         "Navbar"
       ],
       "controls": [
         {
           "tag": "Button",
-          "line": 66,
+          "line": 78,
           "className": "{iconButtonClass}",
           "type": null,
           "role": null,
@@ -16679,7 +16680,7 @@
         },
         {
           "tag": "button",
-          "line": 70,
+          "line": 82,
           "className": "\"flex items-center bg-transparent\"",
           "type": "\"button\"",
           "role": null,
@@ -16689,7 +16690,7 @@
         },
         {
           "tag": "Button",
-          "line": 89,
+          "line": 101,
           "className": "{`relative ${iconButtonClass ?? ''}`}",
           "type": null,
           "role": null,
@@ -16699,7 +16700,7 @@
         },
         {
           "tag": "Button",
-          "line": 102,
+          "line": 114,
           "className": "{`relative ${iconButtonClass ?? ''}`}",
           "type": null,
           "role": null,

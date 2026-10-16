@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { headerOverHero } from '../client/src/components/Navbar';
 
 const appSource = readFileSync('client/src/App.tsx', 'utf8');
 const navbarSource = readFileSync('client/src/components/Navbar.tsx', 'utf8');
@@ -19,6 +20,21 @@ describe('homepage close, sticky header and scroll-aware navigation', () => {
   it('closes the customer profile to the homepage instead of treating X as Back', () => {
     expect(appSource).toContain('onClose={() => { navigation.goHome();');
     expect(appSource).toContain("setAccountInitialSection('home')");
+  });
+
+  it('turns the header transparent (white logo and icons) only when the hero really starts under it', () => {
+    // Carrousel actuel : il commence après l'en-tête et les liens de page. Avant le correctif, le
+    // premier défilement rendait l'en-tête transparent : logo et icônes blancs sur du blanc.
+    expect(headerOverHero({ top: 146, bottom: 1065, layout: 'carousel' }, 0)).toBe(false);
+    expect(headerOverHero({ top: 106, bottom: 1025, layout: 'carousel' }, 40)).toBe(false);
+    expect(headerOverHero({ top: -300, bottom: 619, layout: 'carousel' }, 446)).toBe(false);
+    // Visuel plein cadre remonté sous l'en-tête : transparent tant qu'il reste visible.
+    expect(headerOverHero({ top: 0, bottom: 900 }, 0)).toBe(true);
+    expect(headerOverHero({ top: -400, bottom: 500 }, 400)).toBe(true);
+    expect(headerOverHero({ top: -896, bottom: 4 }, 896)).toBe(false);
+    // Mise en page éditoriale, ou pas de Hero : jamais.
+    expect(headerOverHero({ top: 0, bottom: 900, layout: 'editorial' }, 0)).toBe(false);
+    expect(headerOverHero(null, 0)).toBe(false);
   });
 
   it('keeps the white public header sticky without creating a horizontal scroll container', () => {

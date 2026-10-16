@@ -14,6 +14,19 @@ interface NavbarProps {
 }
 
 /**
+ * L'en-tête passe en mode « transparent + logo blanc » seulement quand il est VRAIMENT posé sur
+ * le Hero : le Hero doit commencer sous l'en-tête (visuel plein cadre remonté sous la barre) et
+ * être encore visible. Le carrousel actuel commence plus bas, après l'en-tête et les liens de
+ * page : le rendre transparent posait le logo et les icônes blancs sur du blanc (invisibles)
+ * dès le premier défilement, sur bureau comme sur téléphone.
+ */
+export function headerOverHero(hero: { top: number; bottom: number; layout?: string } | null, scrollY: number): boolean {
+  if (!hero || hero.layout === 'editorial') return false;
+  const startsUnderHeader = hero.top + scrollY <= 1;
+  return startsUnderHeader && hero.bottom > 8;
+}
+
+/**
  * En-tête minimaliste (ordre du client) :
  * [Menu] — [Logo + nom au centre] — [Profil]
  * فوق الـ Hero: شفاف بالكامل — الشعار الأبيض والأيقونات بيضاء.
@@ -34,10 +47,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   useEffect(() => {
     let raf = 0;
     const update = () => {
-      const hero = document.querySelector('[data-hero]');
-      if (!hero || (hero as HTMLElement).dataset.heroLayout === 'editorial') { setOverHero(false); return; }
-      const rect = hero.getBoundingClientRect();
-      setOverHero(rect.bottom > 8);
+      const hero = document.querySelector<HTMLElement>('[data-hero]');
+      const rect = hero?.getBoundingClientRect();
+      setOverHero(headerOverHero(hero && rect ? { top: rect.top, bottom: rect.bottom, layout: hero.dataset.heroLayout } : null, window.scrollY));
     };
     const onScroll = () => {
       cancelAnimationFrame(raf);
