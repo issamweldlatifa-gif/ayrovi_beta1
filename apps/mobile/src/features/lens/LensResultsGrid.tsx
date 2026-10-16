@@ -15,6 +15,7 @@ export function LensResultsGrid({
   onOpen,
   onFavorite,
   onNewSearch,
+  title,
 }: {
   candidates: LensCandidate[];
   excluded?: number;
@@ -23,6 +24,8 @@ export function LensResultsGrid({
   onOpen: (candidate: LensCandidate) => void;
   onFavorite: (candidate: LensCandidate) => void;
   onNewSearch: () => void;
+  /** Nom du produit choisi par le cadre de Z Lens (sinon « Produits similaires »). */
+  title?: string;
 }) {
   const theme = useTheme();
   const t = useT();
@@ -59,7 +62,7 @@ export function LensResultsGrid({
         <View style={styles.header}>
           <View style={[styles.headerRow, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
             <View style={styles.headerCopy}>
-              <AppText variant="title" weight="bold">{t('lens.resultsTitle')}</AppText>
+              <AppText variant="title" weight="bold" numberOfLines={2}>{title || t('lens.resultsTitle')}</AppText>
               <AppText variant="caption" color={theme.colors.muted}>
                 {t(candidates.length === 1 ? 'lens.resultsCountOne' : 'lens.resultsCountMany', { count: candidates.length })}
               </AppText>

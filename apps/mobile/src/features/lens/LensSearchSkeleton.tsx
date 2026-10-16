@@ -27,13 +27,13 @@ function ProductSkeleton({ index }: { index: number }) {
 }
 
 /** Structure exacte des résultats pendant la recherche — aucun faux contenu. */
-export function LensSearchSkeleton({ onCancel }: { onCancel: () => void }) {
+export function LensSearchSkeleton({ onCancel, title }: { onCancel: () => void; title?: string }) {
   const theme = useTheme();
   const t = useT();
   return (
     <View style={styles.wrap} testID="lens-search-skeleton">
       <View style={[styles.header, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
-        <AppText variant="title" weight="bold" style={styles.title}>{t('lens.resultsTitle')}</AppText>
+        <AppText variant="title" weight="bold" numberOfLines={2} style={styles.title}>{title || t('lens.resultsTitle')}</AppText>
         <Pressable
           onPress={onCancel}
           accessibilityRole="button"

@@ -226,10 +226,23 @@ const lensDailyLimit = process.env.NODE_ENV === 'test' ? 1_000
   : Number.isInteger(configuredLensDailyLimit) ? Math.max(5, Math.min(200, configuredLensDailyLimit)) : 40;
 const ayrovixDailyCostLimit = rateLimit('ayrovix-daily-cost', lensDailyLimit, 24 * 60 * 60_000, clientRateLimitKey);
 const costlyAyrovixPaths = new Set(['/analyze-image', '/analyze-url', '/analyze-code', '/analyze-barcode', '/analyze-text']);
+// Z Lens mobile : la détection seule (cadre de sélection + Live) a son PROPRE
+// compteur. Live interroge la caméra quand le téléphone se stabilise : sur le
+// compteur général (12 / 10 min, partagé avec les recherches), quelques visées
+// suffiraient à bloquer la recherche elle-même. Plafond journalier par client
+// pour borner la dépense vision (réglable : AYROVIX_DETECT_DAILY_LIMIT).
+const ayrovixDetectRateLimit = rateLimit('ayrovix-detect', process.env.NODE_ENV === 'test' ? 1_000 : 90, 10 * 60_000, clientRateLimitKey);
+const configuredDetectDailyLimit = Number(process.env.AYROVIX_DETECT_DAILY_LIMIT);
+const detectDailyLimit = process.env.NODE_ENV === 'test' ? 1_000
+  : Number.isInteger(configuredDetectDailyLimit) ? Math.max(20, Math.min(2_000, configuredDetectDailyLimit)) : 400;
+const ayrovixDetectDailyLimit = rateLimit('ayrovix-detect-daily', detectDailyLimit, 24 * 60 * 60_000, clientRateLimitKey);
 app.use('/api/ayrovix', (req, res, next) => {
   // Reading compact history is free. Costly analyses also have a daily IP
   // ceiling so a long rolling 10-minute series cannot create unbounded vendor spend.
   if (req.method === 'GET' && req.path === '/history') return next();
+  if (req.method === 'POST' && req.path === '/detect') {
+    return ayrovixDetectDailyLimit(req, res, () => ayrovixDetectRateLimit(req, res, next));
+  }
   if (costlyAyrovixPaths.has(req.path)) {
     return ayrovixDailyCostLimit(req, res, () => ayrovixRateLimit(req, res, next));
   }

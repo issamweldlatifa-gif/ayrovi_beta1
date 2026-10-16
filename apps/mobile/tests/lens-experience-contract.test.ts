@@ -49,7 +49,7 @@ describe('parcours AYROVIX Lens unifié', () => {
     expect(lens).toContain('top: expandedTop');
     expect(lens).toContain('onMoveShouldSetPanResponderCapture');
     expect(lens).toContain('testID="lens-search-sheet-handle"');
-    expect(lens).toContain('<LensSearchSkeleton onCancel={cancelSearch} />');
+    expect(lens).toContain('<LensSearchSkeleton onCancel={cancelSearch}');
     expect(lens).toContain('removePrivateCapture');
     expect(lens).toContain('if (file.exists) file.delete()');
   });
@@ -174,5 +174,71 @@ describe('fiche produit Lens continue', () => {
     expect(help).toContain('const TIPS');
     expect(help.match(/key: 'lens\.help\.step/g)).toHaveLength(4);
     expect(help).not.toMatch(/estimate|verification|stock/i);
+  });
+});
+
+describe('Z Lens — option 3 voulue par le client (16/10/2026)', () => {
+  const menu = read('../src/features/lens/LensMenu.tsx');
+  const selectionView = read('../src/features/lens/LensSelectionView.tsx');
+  const liveOverlay = read('../src/features/lens/LensLiveOverlay.tsx');
+  const fr = read('../src/i18n/fr.ts');
+
+  it('titre « Z Lens » écrit en texte, quatre modes Live · QR code · Lien · Mot clé', () => {
+    expect(lens).toContain("t('lens.title')");
+    expect(lens).not.toContain('AYROVIX Lens</AppText>');
+    expect(fr).toContain("'lens.title': 'Z Lens'");
+    expect(fr).toContain("'lens.modeLive': 'Live'");
+    expect(fr).toContain("'lens.modeCode': 'QR code'");
+    expect(fr).toContain("'lens.modeLink': 'Lien'");
+    expect(fr).toContain("'lens.modeText': 'Mot clé'");
+  });
+
+  it('panneau du bas : Galerie · déclencheur · OCEREX AU-DESSUS, barre des modes TOUT EN BAS', () => {
+    const panel = lens.slice(lens.indexOf('testID="lens-panel"'));
+    const gallery = panel.indexOf('testID="lens-gallery"');
+    const shutter = panel.indexOf('testID="lens-capture"');
+    const ocerex = panel.indexOf('testID="lens-open-ocerex"');
+    const bar = panel.indexOf('styles.modePicker');
+    expect(gallery).toBeGreaterThan(0);
+    expect(shutter).toBeGreaterThan(gallery);
+    expect(ocerex).toBeGreaterThan(shutter);
+    expect(bar).toBeGreaterThan(ocerex);
+    // Le déclencheur ressort nettement : 104 points contre 54 pour Galerie et OCEREX.
+    expect(lens).toContain('const SHUTTER = 104;');
+    expect(lens).toContain('const SIDE = 54;');
+  });
+
+  it('menu ⋮ : Informations, Historique, Politique de confidentialité, Conditions d’utilisation, Produits interdits', () => {
+    for (const key of ['lens.menu.info', 'lens.menu.history', 'lens.menu.privacy', 'lens.menu.terms', 'lens.menu.rules']) {
+      expect(menu).toContain(`'${key}'`);
+    }
+    expect(lens).toContain("router.push('/legal/privacy')");
+    expect(lens).toContain("router.push('/legal/terms')");
+  });
+
+  it('Live = repérage en direct par le serveur, déclenché quand le téléphone se stabilise', () => {
+    expect(lens).toContain('detectProducts(');
+    expect(lens).toContain('shouldDetect(');
+    expect(lens).toContain("import('expo-sensors')");
+    expect(lens).toContain('shutterSound: false');
+    expect(lens).toContain('animateShutter={false}');
+    expect(liveOverlay).toContain('productIndexAt(');
+  });
+
+  it('le cadre se pose sur le seul produit ou le plus grand, et suit le produit touché', () => {
+    expect(lens).toContain('biggestProductIndex(products)');
+    expect(lens).toContain('padBox(products[selected].box)');
+    expect(lens).toContain("commit.kind === 'product'");
+    expect(lens).toContain('const roi = toRoi(photo.selection)');
+    expect(lens).toContain('{ roi, signal }');
+    expect(selectionView).toContain('resizeSelection(');
+    expect(selectionView).toContain('moveSelection(');
+    expect(selectionView).toContain('productIndexAt(found, point)');
+  });
+
+  it('la galerie ouvre la galerie du client, plusieurs photos à la fois', () => {
+    expect(lens).toContain('launchImageLibraryAsync');
+    expect(lens).toContain('allowsMultipleSelection: true');
+    expect(lens).toContain('selectionLimit: GALLERY_LIMIT');
   });
 });

@@ -170,6 +170,9 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
       'app/lens.tsx', // caméra plein écran : commandes, cadre et feuille au-dessus du flux vidéo
       'src/features/lens/LensProductView.tsx', // galerie : en-tête fixe, badges et aide zoom au-dessus des images
       'src/features/lens/LensResultCard.tsx', // badge promo et favori posés sur la vignette produit
+      'src/features/lens/LensSelectionView.tsx', // Z Lens : photo, voile, cadre de sélection et points posés les uns sur les autres
+      'src/features/lens/LensLiveOverlay.tsx', // Z Lens Live : cadre et points posés sur l'aperçu caméra plein écran
+      'src/features/lens/LensMenu.tsx', // menu ⋮ flottant au-dessus de la caméra, sous son bouton
     ]);
     const offenders: string[] = [];
     for (const rel of FILES) {

@@ -390,3 +390,180 @@ export async function identifyProduct(image: Buffer, mime: string): Promise<Ayro
   }
   return identifyProductInner(image, mime);
 }
+
+/* ── Détection seule — Z Lens mobile (cadre de sélection + Live) ──────────
+ *
+ * Pourquoi un chemin séparé : depuis la décision produit du 02/10/2026,
+ * `/analyze-image` ne passe plus par la vision (SerpApi d'abord ; la vision
+ * n'est qu'un dernier recours) et ne renvoie donc plus de boîtes. Or le cadre
+ * aux coins arrondis de Z Lens doit SE POSER sur un produit (le seul, ou le
+ * plus grand), et Live doit repérer les produits de la caméra. Ce chemin ne
+ * demande que des noms et des boîtes — schéma minimal, réponse courte, aucun
+ * prix, aucune recherche marchande, aucune écriture.
+ */
+
+export interface AyrovixDetection {
+  name: string;
+  category: string;
+  /** Boîte normalisée [x, y, largeur, hauteur], 0..1, (x, y) = coin haut-gauche. */
+  box: [number, number, number, number];
+}
+
+const DETECTION_PROMPT = `Tu es le détecteur de produits de Z Lens (ZAYROVI), une application d'achat.
+Repère chaque produit achetable distinct visible dans l'image (vêtement, chaussure, sac, accessoire, appareil, objet de maison, beauté…), jusqu'à 8 produits.
+Pour chaque produit :
+- name : nom court et factuel en français (ex. "Sweat à capuche jaune", "Baskets blanches", "Smartphone noir").
+- category : une valeur parmi clothing, shoes, bags, accessories, electronics, beauty, home, other.
+- box : boîte englobante normalisée [x, y, largeur, hauteur] avec des valeurs entre 0.0 et 1.0 ; (x, y) est le coin haut-gauche ; la boîte entoure exactement le produit.
+Règles :
+- Une tenue portée = un produit par pièce visible (haut, bas, chaussures, sac, lunettes…).
+- Ne liste jamais une personne, un visage ou une partie du corps.
+- N'invente aucune marque et ne donne aucune autre information.
+- Si aucun produit n'est visible, renvoie products = [].`;
+
+/** Schéma sans union (même contrainte fournisseur que IDENTIFICATION_SCHEMA). */
+const DETECTION_SCHEMA = {
+  type: 'object',
+  properties: {
+    products: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          category: { type: 'string' },
+          box: { type: 'array', items: { type: 'number' } },
+        },
+        required: ['name', 'category', 'box'],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ['products'],
+  additionalProperties: false,
+};
+
+const DETECTION_CATEGORIES = new Set(['clothing', 'shoes', 'bags', 'accessories', 'electronics', 'beauty', 'home', 'other']);
+
+function detectionIou(a: [number, number, number, number], b: [number, number, number, number]): number {
+  const x1 = Math.max(a[0], b[0]);
+  const y1 = Math.max(a[1], b[1]);
+  const x2 = Math.min(a[0] + a[2], b[0] + b[2]);
+  const y2 = Math.min(a[1] + a[3], b[1] + b[3]);
+  const inter = Math.max(0, x2 - x1) * Math.max(0, y2 - y1);
+  const union = a[2] * a[3] + b[2] * b[3] - inter;
+  return union > 0 ? inter / union : 0;
+}
+
+/**
+ * Lit la réponse du détecteur. Tolère les deux écarts fréquents des modèles :
+ * des coordonnées en PIXELS (ramenées à 0..1 avec la taille de l'image) et des
+ * coins [x1, y1, x2, y2] au lieu de [x, y, largeur, hauteur]. Écarte le bruit
+ * (< 0,25 % de l'image) et les doublons (IoU > 0,85).
+ */
+export function parseDetections(raw: string, size?: { width: number; height: number }): AyrovixDetection[] {
+  const cleaned = String(raw || '').replace(/```(?:json)?/gi, '').trim();
+  const match = cleaned.match(/\{[\s\S]*\}/);
+  if (!match) throw new AyrovixIdentificationError('Réponse de détection inexploitable.');
+  let parsed: any;
+  try {
+    parsed = JSON.parse(match[0]);
+  } catch {
+    throw new AyrovixIdentificationError('JSON de détection invalide.');
+  }
+  const items: unknown[] = Array.isArray(parsed?.products) ? parsed.products : [];
+  const out: AyrovixDetection[] = [];
+  for (const item of items as any[]) {
+    const name = typeof item?.name === 'string' ? item.name.replace(/\s+/g, ' ').trim().slice(0, 80) : '';
+    if (!name || !Array.isArray(item?.box) || item.box.length !== 4) continue;
+    let values = item.box.map((value: unknown) => Number(value));
+    if (values.some((value: number) => !Number.isFinite(value) || value < 0)) continue;
+    if (Math.max(...values) > 1.5) {
+      if (!size || size.width < 1 || size.height < 1) continue;
+      values = [values[0] / size.width, values[1] / size.height, values[2] / size.width, values[3] / size.height];
+    }
+    let [x, y, w, h] = values;
+    if ((x + w > 1.02 || y + h > 1.02) && w > x && h > y) {
+      w -= x;
+      h -= y;
+    }
+    const box = normalizeBox([x, y, w, h]);
+    if (!box || box[2] * box[3] < 0.0025) continue;
+    const rounded = box.map((value) => Math.round(value * 1000) / 1000) as [number, number, number, number];
+    if (out.some((existing) => detectionIou(existing.box, rounded) > 0.85)) continue;
+    const category = typeof item.category === 'string' ? item.category.trim().toLowerCase() : '';
+    out.push({ name, category: DETECTION_CATEGORIES.has(category) ? category : 'other', box: rounded });
+    if (out.length >= 8) break;
+  }
+  return out;
+}
+
+async function requestDetections(
+  image: Buffer,
+  mime: string,
+  timeoutMs: number,
+  structured: boolean,
+  size?: { width: number; height: number },
+): Promise<AyrovixDetection[]> {
+  const provider = getAyroviAiCore().responses();
+  const request: AiCompletionRequest = {
+    workload: 'vision',
+    modelClass: 'fast',
+    instructions: structured
+      ? DETECTION_PROMPT
+      : `${DETECTION_PROMPT}\nRéponds uniquement par un objet JSON valide {"products":[...]}, sans markdown ni texte autour.`,
+    messages: [{
+      role: 'user',
+      content: [
+        { type: 'image', source: { type: 'base64', mediaType: mime, data: image.toString('base64') } },
+        { type: 'text', text: 'Liste les produits visibles avec leur boîte englobante.' },
+      ],
+    }],
+    maxOutputTokens: 600,
+    temperature: 0,
+    ...(structured ? { outputSchema: { name: 'zlens_detection', schema: DETECTION_SCHEMA } } : {}),
+  };
+  try {
+    const result = await provider.complete(request, AbortSignal.timeout(timeoutMs));
+    return parseDetections(result.textBlocks.join(''), size);
+  } catch (error) {
+    if (!(error instanceof AiProviderError)) throw error;
+    if (error.code === 'PROVIDER_AUTHENTICATION_FAILED') throw new AyrovixUnavailableError('Vision provider authentication failed');
+    if (error.code === 'PROVIDER_RATE_LIMITED') throw new AyrovixIdentificationError('Vision provider quota exceeded');
+    if (error.code === 'PROVIDER_TIMEOUT') throw new AyrovixIdentificationError('Vision provider timeout');
+    throw new AyrovixIdentificationError(`Vision provider HTTP ${error.status || 0}`);
+  }
+}
+
+/**
+ * Produits visibles + boîtes, sans recherche marchande. Partage le plafond de
+ * requêtes vision simultanées avec `identifyProduct` (Live ne peut pas saturer
+ * le fournisseur au détriment des recherches).
+ */
+export async function detectProducts(
+  image: Buffer,
+  mime: string,
+  size?: { width: number; height: number },
+): Promise<AyrovixDetection[]> {
+  if (!ALLOWED_MIME.has(mime)) throw new AyrovixIdentificationError("Format d'image non supporté");
+  if (!image.length || image.length > MAX_IMAGE_BYTES) throw new AyrovixIdentificationError('Image trop lourde');
+  const provider = getAyroviAiCore().responses();
+  if (!provider.isConfigured()) throw new AyrovixUnavailableError('Vision provider is not configured');
+  if (activeVisionRequests >= MAX_ACTIVE_VISION_REQUESTS) {
+    throw new AyrovixUnavailableError('Vision provider is at its concurrency limit');
+  }
+  activeVisionRequests += 1;
+  const timeoutMs = boundedEnvMs('AYROVIX_DETECT_TIMEOUT_MS', 9_000, 4_000, 20_000);
+  try {
+    try {
+      return await requestDetections(image, mime, timeoutMs, true, size);
+    } catch (error: any) {
+      if (error instanceof AyrovixUnavailableError) throw error;
+      if (error instanceof AyrovixIdentificationError && /quota exceeded|timeout/.test(error.message)) throw error;
+      // Sortie structurée refusée ou illisible : une seule relance en JSON libre.
+      return await requestDetections(image, mime, timeoutMs, false, size);
+    }
+  } finally {
+    activeVisionRequests = Math.max(0, activeVisionRequests - 1);
+  }
+}

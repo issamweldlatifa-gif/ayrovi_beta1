@@ -3,7 +3,7 @@ import type { NextFunction, Request, Response } from 'express';
 import multer from 'multer';
 import type { QatafoDatabase } from '../db/database';
 import type { SmartLinkScraper } from '../scraper/scraper';
-import { buildSearchQuery, AyrovixUnavailableError, ayrovixAiReady, fallbackIdentification } from './services/ai';
+import { buildSearchQuery, AyrovixUnavailableError, ayrovixAiReady, detectProducts, fallbackIdentification } from './services/ai';
 import { catalogSearch, externalProductSearch, groupOffers, scoreCandidate, searchCandidates } from './services/search';
 import { SerpApiVisualError, serpApiVisualReady } from './services/visualSearch';
 import { recognizeImage } from './services/lensEngine';
@@ -493,6 +493,45 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       return res.status(422).json({ success: false, code: 'IDENTIFICATION_FAILED', error: "Impossible d'identifier le produit. Essayez une photo plus nette et centrée." });
     } finally {
       cancelDeadline();
+    }
+  });
+
+  /*
+   * Z Lens mobile — DÉTECTION SEULE : noms + boîtes des produits visibles, pour
+   * poser le cadre de sélection (le seul produit, ou le plus grand) et pour le
+   * mode Live. Aucun appel SerpApi, aucune page marchande, aucun historique,
+   * aucun prix : la recherche reste `/analyze-image` (avec `roi` = le cadre).
+   */
+  router.post('/detect', upload.single('image'), async (req: Request, res: Response) => {
+    const file = req.file;
+    if (!file?.buffer?.length) {
+      return res.status(400).json({ success: false, code: 'IMAGE_REQUIRED', error: 'Veuillez envoyer une image.' });
+    }
+    if (!ALLOWED_MIME.has(file.mimetype)) {
+      return res.status(415).json({ success: false, code: 'UNSUPPORTED_IMAGE', error: 'Format non supporté — JPEG, PNG ou WebP uniquement.' });
+    }
+    if (!ayrovixAiReady()) {
+      return res.status(503).json({ success: false, code: 'AYROVIX_UNAVAILABLE', error: "La détection de produits n'est pas encore activée." });
+    }
+    try {
+      const normalized = await normalizeUploadedImage(file.buffer, file.mimetype);
+      // 768 px suffisent pour situer des produits : moins de jetons, réponse plus rapide.
+      const small = await sharp(normalized.buffer)
+        .resize({ width: 768, height: 768, fit: 'inside', withoutEnlargement: true })
+        .jpeg({ quality: 82, mozjpeg: true })
+        .toBuffer({ resolveWithObject: true });
+      const products = await detectProducts(small.data, 'image/jpeg', { width: small.info.width, height: small.info.height });
+      res.setHeader('Cache-Control', 'no-store');
+      return res.json({ success: true, data: { products, width: normalized.width, height: normalized.height } });
+    } catch (error: any) {
+      if (error instanceof InvalidImageError || error?.code === 'INVALID_IMAGE') {
+        return res.status(415).json({ success: false, code: 'INVALID_IMAGE', error: error.message });
+      }
+      if (error instanceof AyrovixUnavailableError || error?.code === 'AYROVIX_UNAVAILABLE') {
+        return res.status(503).json({ success: false, code: 'AYROVIX_UNAVAILABLE', error: "La détection de produits est momentanément indisponible." });
+      }
+      console.warn('[AYROVIX detect]', error?.message || 'unknown');
+      return res.status(422).json({ success: false, code: 'DETECTION_FAILED', error: 'Aucun produit n’a pu être repéré sur cette image.' });
     }
   });
 

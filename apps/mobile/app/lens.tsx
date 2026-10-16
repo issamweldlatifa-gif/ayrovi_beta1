@@ -1,18 +1,31 @@
 /**
- * AYROVIX Lens — parcours caméra natif, direct et unique.
+ * Z Lens — parcours caméra natif (option 3 choisie par le client, 16/10/2026).
  *
- * Le bouton Lens arrive ici sans écran intermédiaire. Une photo déclenche une
- * seule recherche annulable ; l'image reste visible et une feuille de résultats
- * remplace progressivement ses squelettes. Les diagnostics restent côté serveur.
+ *  • En-tête : retour, lampe, « Z Lens » écrit en texte, menu ⋮ (Informations,
+ *    Historique, Politique de confidentialité, Conditions d'utilisation,
+ *    Produits interdits).
+ *  • Panneau du bas : Galerie · déclencheur (plus grand) · OCEREX AU-DESSUS ;
+ *    la barre Live · QR code · Lien · Mot clé TOUT EN BAS, sous les boutons.
+ *  • Live = détection en direct : quand le téléphone se stabilise, une petite
+ *    image part au serveur (`/detect`) ; le cadre aux coins arrondis se pose
+ *    sur le seul produit, ou sur le plus grand ; toucher un autre produit le
+ *    sélectionne.
+ *  • Photo prise ou importée (une ou plusieurs) : même règle ; le cadre
+ *    s'étire par ses coins, se déplace, ou saute sur un autre produit touché —
+ *    et la recherche se relance sur cette zone (`roi`).
+ *
+ * Une action = une seule recherche annulable ; l'image reste visible sous une
+ * feuille de résultats ajustable. Les diagnostics restent côté serveur.
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
-  Animated, Linking, Modal, PanResponder, Pressable, StyleSheet, View, useWindowDimensions,
+  Animated, AppState, Keyboard, Linking, Modal, PanResponder, Pressable, ScrollView, StyleSheet, View, useWindowDimensions,
 } from 'react-native';
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { StatusBar } from 'expo-status-bar';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { router, useIsFocused } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppImage } from '@/design/appImage';
@@ -20,13 +33,13 @@ import { AppText, Button, Field } from '@/design/ui';
 import { SubScreen } from '@/design/subScreen';
 import { goBack } from '@/design/navigation';
 import { useTheme } from '@/design/theme';
-import { veil } from '@/design/tokens.mobile';
+import { frost, veil } from '@/design/tokens.mobile';
 import { useT, type TranslationKey } from '@/i18n';
 import { ApiError, isApiError } from '@/api/errors';
 import { addExternalFavorite } from '@/api/account';
 import {
-  analyzeBarcode, analyzeCode, analyzeImage, analyzeText, analyzeUrl, markChosen,
-  type LensCandidate, type LensSearchResult,
+  analyzeBarcode, analyzeCode, analyzeImage, analyzeText, analyzeUrl, detectProducts, markChosen,
+  type LensBox, type LensCandidate, type LensDetectedProduct, type LensHistoryItem, type LensSearchResult,
 } from '@/api/lens';
 import { isOpenableSourceUrl, uniqueCandidates } from '@/features/lens/lensView';
 import { LensResultsGrid } from '@/features/lens/LensResultsGrid';
@@ -34,10 +47,18 @@ import { LensSearchSkeleton } from '@/features/lens/LensSearchSkeleton';
 import { OcerexFlow } from '@/features/lens/ocerex/OcerexFlow';
 import { LensProductView } from '@/features/lens/LensProductView';
 import { LensHelpView } from '@/features/lens/LensHelpView';
+import { LensHistoryView } from '@/features/lens/LensHistoryView';
+import { LensRulesView } from '@/features/lens/LensRulesView';
+import { LensMenu, type LensMenuItem } from '@/features/lens/LensMenu';
+import { LensLiveOverlay } from '@/features/lens/LensLiveOverlay';
+import { LensSelectionView, type SelectionCommit } from '@/features/lens/LensSelectionView';
 import { LENS_COLORS } from '@/features/lens/lensPalette';
 import { mergeLensProduct } from '@/features/lens/productEnrichment';
+import { shrinkImage } from '@/features/lens/lensImage';
+import { FULL_BOX, biggestProductIndex, isFullFrame, keepSelection, padBox, selectionKey, toRoi } from '@/features/lens/lensSelection';
+import { initialMotion, isSteady, nextMotion, shouldDetect, type MotionState } from '@/features/lens/lensLive';
 
-type Mode = 'camera' | 'code' | 'text';
+type Mode = 'live' | 'code' | 'link' | 'text';
 type ResultsStage = { kind: 'results'; candidates: LensCandidate[]; eventId: string; excluded: number };
 type Stage =
   | { kind: 'idle' }
@@ -46,9 +67,50 @@ type Stage =
   | { kind: 'product'; candidate: LensCandidate; back: ResultsStage; enriching: boolean }
   | { kind: 'error'; error: unknown };
 type SearchJob = (signal: AbortSignal) => Promise<void>;
+type InfoPanel = 'help' | 'history' | 'rules';
+
+/** Live : ce que montre le cadre sur l'aperçu caméra. */
+interface LiveView {
+  status: 'scanning' | 'detected' | 'empty' | 'unavailable';
+  products: LensDetectedProduct[];
+  selected: number;
+  /** Taille de l'image analysée (les boîtes lui sont relatives). */
+  photo: { width: number; height: number } | null;
+}
+
+/** Une photo de la séance de sélection (prise, ou importée de la galerie). */
+interface SessionPhoto {
+  key: string;
+  /** Copie réduite affichée ET envoyée (ou l'original si la réduction a échoué). */
+  uri: string;
+  width: number;
+  height: number;
+  /** Fichiers privés à supprimer en fin de séance. */
+  cleanup: string[];
+  detection: 'pending' | 'done' | 'failed';
+  products: LensDetectedProduct[];
+  /** Produit sélectionné (index), ou -1 pour une zone tracée à la main. */
+  selected: number;
+  selection: LensBox;
+}
+interface PhotoSession { photos: SessionPhoto[]; index: number }
 
 const CODE_TYPES = ['qr', 'ean13', 'ean8', 'upc_a', 'upc_e', 'code128'] as const;
 const HIT_SLOP = { top: 12, bottom: 12, left: 12, right: 12 } as const;
+const MODES: ReadonlyArray<[Mode, TranslationKey]> = [
+  ['live', 'lens.modeLive'],
+  ['code', 'lens.modeCode'],
+  ['link', 'lens.modeLink'],
+  ['text', 'lens.modeText'],
+];
+/** Bords maximaux des copies envoyées : recherche, repérage d'une photo, image Live. */
+const SEARCH_EDGE = 1600;
+const DETECT_EDGE = 768;
+const LIVE_EDGE = 640;
+/** Galerie : plusieurs photos d'un coup, bornées (chaque photo coûte une recherche). */
+const GALLERY_LIMIT = 5;
+/** Une détection Live sert encore au déclencheur si elle est récente et que rien n'a bougé. */
+const LIVE_REUSE_MS = 6_000;
 
 function removePrivateCapture(uri: string): void {
   void import('expo-file-system')
@@ -222,6 +284,7 @@ function errorCopyKey(error: unknown): { title: TranslationKey; body: Translatio
   if (isApiError(error)) {
     if (error.kind === 'network') return { title: 'lens.error.networkTitle', body: 'lens.error.networkBody' };
     if (error.kind === 'timeout') return { title: 'lens.error.timeoutTitle', body: 'lens.error.timeoutBody' };
+    if (error.status === 429 || error.code === 'RATE_LIMITED') return { title: 'lens.error.rateTitle', body: 'lens.error.rateBody' };
     if (error.code === 'CAMERA_MOUNT_FAILED') return { title: 'lens.error.cameraTitle', body: 'lens.error.cameraBody' };
     if (error.kind === 'device') return { title: 'lens.error.photoTitle', body: 'lens.error.photoBody' };
     if (['BLURRY_IMAGE', 'IMAGE_TOO_BLURRY'].includes(error.code)) return { title: 'lens.error.blurryTitle', body: 'lens.error.blurryBody' };
@@ -231,32 +294,54 @@ function errorCopyKey(error: unknown): { title: TranslationKey; body: Translatio
   return { title: 'lens.error.serviceTitle', body: 'lens.error.serviceBody' };
 }
 
+const IDLE_LIVE: LiveView = { status: 'scanning', products: [], selected: -1, photo: null };
+
 export default function LensScreen() {
   const theme = useTheme();
   const t = useT();
   const insets = useSafeAreaInsets();
-  const { height } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
+  const focused = useIsFocused();
   const [permission, requestPermission] = useCameraPermissions();
-  const [mode, setMode] = useState<Mode>('camera');
+  const [mode, setMode] = useState<Mode>('live');
   const [stage, setStage] = useState<Stage>({ kind: 'idle' });
-  const [helpOpen, setHelpOpen] = useState(false);
+  const [panel, setPanel] = useState<InfoPanel | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [text, setText] = useState('');
+  const [link, setLink] = useState('');
+  const [linkInvalid, setLinkInvalid] = useState(false);
   const [favorited, setFavorited] = useState<Record<string, true>>({});
   const [favoriteNote, setFavoriteNote] = useState<TranslationKey | null>(null);
   const [ocerexOpen, setOcerexOpen] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
   const [torch, setTorch] = useState(false);
   const [previewUri, setPreviewUri] = useState<string | null>(null);
+  const [session, setSession] = useState<PhotoSession | null>(null);
+  const [tip, setTip] = useState<{ key: TranslationKey; count?: number } | null>(null);
+  const [live, setLive] = useState<LiveView>(IDLE_LIVE);
+  const [panelHeight, setPanelHeight] = useState(220);
+  const [appActive, setAppActive] = useState(AppState.currentState === 'active');
   const cameraRef = useRef<CameraView>(null);
   const scanLock = useRef(false);
   const photoLock = useRef(false);
   const favoriteLocks = useRef(new Set<string>());
   const requestRef = useRef<AbortController | null>(null);
+  const detectRef = useRef<AbortController | null>(null);
   const enrichmentRef = useRef<AbortController | null>(null);
   const lastJobRef = useRef<SearchJob | null>(null);
   const ownedPreviewRef = useRef<string | null>(null);
   const mountedRef = useRef(true);
   const permissionPrompted = useRef(false);
+  const sessionRef = useRef<PhotoSession | null>(null);
+  const resultsCache = useRef(new Map<string, ResultsStage>());
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flash = useRef(new Animated.Value(0)).current;
+  // Live : capteur de mouvement + état du dernier repérage (lus hors rendu).
+  const motionRef = useRef<MotionState>(initialMotion(Date.now()));
+  const sensorRef = useRef(false);
+  const liveCaptureRef = useRef<Promise<unknown> | null>(null);
+  const liveRef = useRef({ lastAt: 0, doneAt: 0, count: 0, failures: 0, view: IDLE_LIVE });
 
   const discardOwnedPreview = useCallback(() => {
     const uri = ownedPreviewRef.current;
@@ -264,15 +349,39 @@ export default function LensScreen() {
     if (uri) removePrivateCapture(uri);
   }, []);
 
+  /** Fin de séance : fichiers privés supprimés, cache des sélections vidé. */
+  const discardSession = useCallback(() => {
+    const current = sessionRef.current;
+    sessionRef.current = null;
+    resultsCache.current.clear();
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    detectRef.current?.abort();
+    detectRef.current = null;
+    current?.photos.forEach((photo) => photo.cleanup.forEach(removePrivateCapture));
+    setSession(null);
+    setTip(null);
+  }, []);
+
   useEffect(() => {
     mountedRef.current = true;
+    const subscription = AppState.addEventListener('change', (state) => setAppActive(state === 'active'));
     return () => {
       mountedRef.current = false;
+      subscription.remove();
       requestRef.current?.abort();
+      detectRef.current?.abort();
       enrichmentRef.current?.abort();
+      if (searchTimer.current) clearTimeout(searchTimer.current);
+      if (tipTimer.current) clearTimeout(tipTimer.current);
       discardOwnedPreview();
+      sessionRef.current?.photos.forEach((photo) => photo.cleanup.forEach(removePrivateCapture));
     };
   }, [discardOwnedPreview]);
+
+  // Écran quitté (pages légales, autre onglet) : la caméra est démontée, elle devra se réarmer.
+  useEffect(() => {
+    if (!focused) setCameraReady(false);
+  }, [focused]);
 
   useEffect(() => {
     if (!permission || permission.granted || permission.status !== 'undetermined' || permissionPrompted.current) return;
@@ -282,13 +391,18 @@ export default function LensScreen() {
     });
   }, [permission, requestPermission]);
 
-  const showSearch = useCallback((result: LensSearchResult | { candidates: LensCandidate[]; eventId: string; excluded?: number }) => {
+  const showSearch = useCallback((
+    result: LensSearchResult | { candidates: LensCandidate[]; eventId: string; excluded?: number },
+    cacheKey?: string,
+  ) => {
     const candidates = uniqueCandidates(result.candidates);
-    setFavoriteNote(null);
-    setStage({
+    const next: ResultsStage = {
       kind: 'results', candidates, eventId: result.eventId,
       excluded: 'excluded' in result ? (result.excluded ?? 0) : 0,
-    });
+    };
+    if (cacheKey) resultsCache.current.set(cacheKey, next);
+    setFavoriteNote(null);
+    setStage(next);
   }, []);
 
   const run = useCallback(async (job: SearchJob, remember = true) => {
@@ -307,11 +421,276 @@ export default function LensScreen() {
     }
   }, []);
 
+  /* ── Séance photo : cadre de sélection + recherche relancée ───────────── */
+
+  const showTip = useCallback((key: TranslationKey, count?: number, ms = 3_500) => {
+    if (tipTimer.current) clearTimeout(tipTimer.current);
+    setTip({ key, count });
+    if (ms > 0) tipTimer.current = setTimeout(() => setTip(null), ms);
+  }, []);
+
+  const writeSession = useCallback((next: PhotoSession | null) => {
+    sessionRef.current = next;
+    setSession(next);
+  }, []);
+
+  const patchPhoto = useCallback((key: string, patch: Partial<SessionPhoto>): SessionPhoto | null => {
+    const current = sessionRef.current;
+    if (!current) return null;
+    let updated: SessionPhoto | null = null;
+    const photos = current.photos.map((photo) => {
+      if (photo.key !== key) return photo;
+      updated = { ...photo, ...patch };
+      return updated;
+    });
+    writeSession({ ...current, photos });
+    return updated;
+  }, [writeSession]);
+
+  /** Recherche sur la zone du cadre ; une zone déjà cherchée revient du cache. */
+  const searchSelection = useCallback((photo: SessionPhoto) => {
+    const key = selectionKey(photo.key, photo.selection);
+    const cached = resultsCache.current.get(key);
+    if (cached) {
+      requestRef.current?.abort();
+      setFavoriteNote(null);
+      setStage(cached);
+      return;
+    }
+    const roi = toRoi(photo.selection);
+    const job: SearchJob = async (signal) => {
+      const result = await analyzeImage({ uri: photo.uri, name: 'capture.jpg', type: 'image/jpeg' }, { roi, signal });
+      if (!signal.aborted) showSearch({ ...result, excluded: result.excluded?.count ?? 0 }, key);
+    };
+    void run(job);
+  }, [run, showSearch]);
+
+  /** Repère les produits de la photo (si besoin), pose le cadre, puis lance la recherche. */
+  const preparePhoto = useCallback(async (photoKey: string) => {
+    const photo = sessionRef.current?.photos.find((item) => item.key === photoKey);
+    if (!photo) return;
+    if (photo.detection !== 'pending') {
+      if (photo.products.length > 1) showTip('lens.select.tipMany', photo.products.length);
+      else if (photo.products.length === 1) showTip('lens.select.tipOne');
+      searchSelection(photo);
+      return;
+    }
+    detectRef.current?.abort();
+    const controller = new AbortController();
+    detectRef.current = controller;
+    requestRef.current?.abort();
+    setStage({ kind: 'busy' });
+    showTip('lens.select.detecting', undefined, 0);
+    const small = await shrinkImage(photo.uri, DETECT_EDGE, 0.7, { width: photo.width, height: photo.height });
+    let products: LensDetectedProduct[] = [];
+    let failed = false;
+    try {
+      products = (await detectProducts({ uri: small.uri, name: 'lens-detect.jpg', type: 'image/jpeg' }, { signal: controller.signal })).products;
+    } catch {
+      failed = true;
+    } finally {
+      if (small.created) removePrivateCapture(small.uri);
+      if (detectRef.current === controller) detectRef.current = null;
+    }
+    if (controller.signal.aborted || !mountedRef.current) return;
+    // Règle du client : un seul produit → lui ; plusieurs → le plus grand ; aucun → toute la photo.
+    const selected = biggestProductIndex(products);
+    const updated = patchPhoto(photoKey, {
+      detection: failed ? 'failed' : 'done',
+      products,
+      selected,
+      selection: selected >= 0 ? padBox(products[selected].box) : FULL_BOX,
+    });
+    if (!updated) return;
+    if (products.length > 1) showTip('lens.select.tipMany', products.length);
+    else if (products.length === 1) showTip('lens.select.tipOne');
+    else showTip('lens.select.tipNone');
+    if (sessionRef.current?.photos[sessionRef.current.index]?.key === photoKey) searchSelection(updated);
+  }, [patchPhoto, searchSelection, showTip]);
+
+  const openSession = useCallback((photos: SessionPhoto[]) => {
+    const previous = sessionRef.current;
+    previous?.photos.forEach((photo) => photo.cleanup.forEach(removePrivateCapture));
+    resultsCache.current.clear();
+    writeSession({ photos, index: 0 });
+    void preparePhoto(photos[0].key);
+  }, [preparePhoto, writeSession]);
+
+  const onSelectionCommit = useCallback((commit: SelectionCommit) => {
+    const current = sessionRef.current;
+    const photo = current?.photos[current.index];
+    if (!photo) return;
+    const patch: Partial<SessionPhoto> = commit.kind === 'product'
+      ? { selected: commit.index, selection: padBox(photo.products[commit.index]?.box ?? FULL_BOX) }
+      : { selected: -1, selection: commit.box };
+    const updated = patchPhoto(photo.key, patch);
+    if (!updated) return;
+    setTip(null);
+    // Petit délai : enchaîner deux gestes ne lance qu'une recherche.
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => {
+      const latest = sessionRef.current?.photos.find((item) => item.key === updated.key);
+      if (latest) searchSelection(latest);
+    }, commit.kind === 'product' ? 120 : 350);
+  }, [patchPhoto, searchSelection]);
+
+  const showPhotoAt = useCallback((index: number) => {
+    const current = sessionRef.current;
+    if (!current || index === current.index || !current.photos[index]) return;
+    writeSession({ ...current, index });
+    void preparePhoto(current.photos[index].key);
+  }, [preparePhoto, writeSession]);
+
+  /* ── Live : repérage des produits sur l'aperçu caméra ──────────────────── */
+
+  const liveActive = mode === 'live' && permission?.granted === true && cameraReady && focused && appActive
+    && !session && stage.kind === 'idle' && !menuOpen && panel === null && !ocerexOpen;
+
+  const writeLive = useCallback((next: LiveView) => {
+    liveRef.current.view = next;
+    setLive(next);
+  }, []);
+
+  // Capteur de mouvement : le téléphone bouge → les cadres périmés s'effacent ;
+  // il se stabilise → un nouveau repérage peut partir.
+  useEffect(() => {
+    if (!liveActive) return undefined;
+    let cancelled = false;
+    let subscription: { remove: () => void } | null = null;
+    void import('expo-sensors')
+      .then(async ({ Accelerometer }) => {
+        const available = await Accelerometer.isAvailableAsync().catch(() => false);
+        if (!available || cancelled) return;
+        sensorRef.current = true;
+        Accelerometer.setUpdateInterval(120);
+        subscription = Accelerometer.addListener((sample) => {
+          const before = motionRef.current;
+          const next = nextMotion(before, sample, Date.now());
+          motionRef.current = next;
+          if (before.steadySince !== null && next.steadySince === null) {
+            const view = liveRef.current.view;
+            if (view.status === 'detected' || view.status === 'empty') writeLive({ ...view, status: 'scanning' });
+          }
+        });
+      })
+      .catch(() => {
+        // Pas de capteur (ou module absent) : rythme lent et borné, voir `shouldDetect`.
+      });
+    return () => {
+      cancelled = true;
+      subscription?.remove();
+      sensorRef.current = false;
+    };
+  }, [liveActive, writeLive]);
+
+  // Boucle de repérage (chaîne de minuteries, jamais d'intervalle fixe).
+  useEffect(() => {
+    if (!liveActive) return undefined;
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const controller = new AbortController();
+    const detectOnce = async () => {
+      const camera = cameraRef.current;
+      if (!camera) return;
+      const startedAt = Date.now();
+      const state = liveRef.current;
+      state.lastAt = startedAt;
+      state.count += 1;
+      let snapshot: { uri: string; width: number; height: number } | null = null;
+      try {
+        const capture = camera.takePictureAsync({ quality: 0.5, shutterSound: false });
+        liveCaptureRef.current = capture;
+        snapshot = await capture;
+      } catch {
+        state.failures += 1;
+        return;
+      } finally {
+        liveCaptureRef.current = null;
+      }
+      if (!snapshot?.uri) return;
+      if (stopped) {
+        removePrivateCapture(snapshot.uri);
+        return;
+      }
+      const small = await shrinkImage(snapshot.uri, LIVE_EDGE, 0.6, { width: snapshot.width, height: snapshot.height });
+      try {
+        const result = await detectProducts({ uri: small.uri, name: 'lens-live.jpg', type: 'image/jpeg' }, { signal: controller.signal, timeoutMs: 10_000 });
+        if (stopped || controller.signal.aborted) return;
+        state.failures = 0;
+        // Le téléphone a bougé pendant la requête : ces cadres ne correspondent plus à l'aperçu.
+        if (motionRef.current.movedAt > startedAt) return;
+        state.doneAt = Date.now();
+        const previous = state.view.status === 'detected' ? state.view.products[state.view.selected] ?? null : null;
+        writeLive({
+          status: result.products.length ? 'detected' : 'empty',
+          products: result.products,
+          selected: keepSelection(previous, result.products),
+          photo: { width: small.width || snapshot.width, height: small.height || snapshot.height },
+        });
+      } catch (error) {
+        if (stopped || controller.signal.aborted) return;
+        state.failures += 1;
+        if (isApiError(error) && (error.status === 503 || error.status === 429 || state.failures >= 3)) {
+          writeLive({ ...IDLE_LIVE, status: 'unavailable' });
+        }
+      } finally {
+        removePrivateCapture(snapshot.uri);
+        if (small.created) removePrivateCapture(small.uri);
+      }
+    };
+    const tick = async () => {
+      if (stopped) return;
+      const now = Date.now();
+      const state = liveRef.current;
+      const motion = motionRef.current;
+      const due = shouldDetect({
+        now,
+        lastDetectAt: state.lastAt,
+        detections: state.count,
+        failures: state.failures,
+        sensor: sensorRef.current,
+        steady: isSteady(motion, now),
+        movedSinceDetect: motion.movedAt > state.doneAt,
+        hasResult: state.doneAt > 0 && motion.movedAt <= state.doneAt,
+      });
+      if (due && !photoLock.current) await detectOnce();
+      if (!stopped) timer = setTimeout(() => { void tick(); }, 350);
+    };
+    timer = setTimeout(() => { void tick(); }, 700);
+    return () => {
+      stopped = true;
+      controller.abort();
+      if (timer) clearTimeout(timer);
+    };
+  }, [liveActive, writeLive]);
+
+  const resetLive = useCallback(() => {
+    liveRef.current = { lastAt: 0, doneAt: 0, count: 0, failures: 0, view: IDLE_LIVE };
+    setLive(IDLE_LIVE);
+  }, []);
+
+  const onLiveSelect = useCallback((index: number) => {
+    const view = liveRef.current.view;
+    if (view.status !== 'detected' || !view.products[index]) return;
+    writeLive({ ...view, selected: index });
+  }, [writeLive]);
+
+  /* ── Déclencheur, galerie, codes, lien, mot clé ────────────────────────── */
+
+  const flashFeedback = useCallback(() => {
+    if (theme.motion.reduced === 0) return;
+    flash.setValue(0.85);
+    Animated.timing(flash, { toValue: 0, duration: 380, useNativeDriver: true }).start();
+  }, [flash, theme.motion.reduced]);
+
   const onPhoto = useCallback(async () => {
     const camera = cameraRef.current;
     if (!camera || !cameraReady || photoLock.current) return;
     photoLock.current = true;
     try {
+      // Une image Live est peut-être en cours : la caméra ne prend qu'une photo à la fois.
+      await liveCaptureRef.current?.catch(() => undefined);
+      flashFeedback();
       let picture;
       try {
         picture = await camera.takePictureAsync({ quality: 0.7 });
@@ -332,36 +711,64 @@ export default function LensScreen() {
       discardOwnedPreview();
       ownedPreviewRef.current = picture.uri;
       setPreviewUri(picture.uri);
-      const job: SearchJob = async (signal) => {
-        const result = await analyzeImage({ uri: picture.uri, name: 'capture.jpg', type: 'image/jpeg' }, { signal });
-        if (!signal.aborted) showSearch({ ...result, excluded: result.excluded?.count ?? 0 });
-      };
-      await run(job);
+      // Le repérage Live sert directement s'il est récent et que le téléphone n'a pas bougé :
+      // le cadre reste sur le produit que le client avait choisi.
+      const state = liveRef.current;
+      const view = state.view;
+      const reuse = view.status === 'detected' && Date.now() - state.doneAt < LIVE_REUSE_MS && motionRef.current.movedAt <= state.doneAt;
+      const working = await shrinkImage(picture.uri, SEARCH_EDGE, 0.8, { width: picture.width, height: picture.height });
+      if (!mountedRef.current) return;
+      openSession([{
+        key: `capture-${Date.now()}`,
+        uri: working.uri,
+        width: working.width || picture.width,
+        height: working.height || picture.height,
+        cleanup: working.created ? [working.uri] : [],
+        detection: reuse ? 'done' : 'pending',
+        products: reuse ? view.products : [],
+        selected: reuse ? view.selected : -1,
+        selection: reuse && view.products[view.selected] ? padBox(view.products[view.selected].box) : FULL_BOX,
+      }]);
     } finally {
       photoLock.current = false;
     }
-  }, [cameraReady, discardOwnedPreview, run, showSearch]);
+  }, [cameraReady, discardOwnedPreview, flashFeedback, openSession]);
 
   const onGallery = useCallback(async () => {
     try {
-      const picked = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 });
+      const picked = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 0.8,
+        allowsMultipleSelection: true,
+        selectionLimit: GALLERY_LIMIT,
+        orderedSelection: true,
+      });
       if (!mountedRef.current || picked.canceled || !picked.assets[0]) return;
-      const asset = picked.assets[0];
+      const assets = picked.assets.slice(0, GALLERY_LIMIT);
+      const photos = await Promise.all(assets.map(async (asset, index): Promise<SessionPhoto> => {
+        const working = await shrinkImage(asset.uri, SEARCH_EDGE, 0.8, { width: asset.width, height: asset.height });
+        return {
+          key: `gallery-${Date.now()}-${index}`,
+          uri: working.uri,
+          width: working.width || asset.width,
+          height: working.height || asset.height,
+          cleanup: working.created ? [working.uri] : [],
+          detection: 'pending',
+          products: [],
+          selected: -1,
+          selection: FULL_BOX,
+        };
+      }));
+      if (!mountedRef.current) return;
       discardOwnedPreview();
-      setPreviewUri(asset.uri);
-      const job: SearchJob = async (signal) => {
-        const result = await analyzeImage({
-          uri: asset.uri, name: asset.fileName || 'capture.jpg', type: asset.mimeType || 'image/jpeg',
-        }, { signal });
-        if (!signal.aborted) showSearch({ ...result, excluded: result.excluded?.count ?? 0 });
-      };
-      await run(job);
+      setPreviewUri(photos[0].uri);
+      openSession(photos);
     } catch (cause) {
       if (mountedRef.current) {
         setStage({ kind: 'error', error: new ApiError('device', 'La galerie n’a pas pu ouvrir cette image.', { code: 'GALLERY_PICK_FAILED', cause }) });
       }
     }
-  }, [discardOwnedPreview, run, showSearch]);
+  }, [discardOwnedPreview, openSession]);
 
   const onCodeScanned = useCallback((scan: BarcodeScanningResult) => {
     if (scanLock.current) return;
@@ -384,12 +791,68 @@ export default function LensScreen() {
   const runTextSearch = useCallback((query: string) => {
     const clean = query.trim();
     if (clean.length < 2) return;
+    Keyboard.dismiss();
     const job: SearchJob = async (signal) => {
       const result = await analyzeText(clean, signal);
       if (!signal.aborted) showSearch(result);
     };
     void run(job);
   }, [run, showSearch]);
+
+  const runLinkSearch = useCallback((value: string, recordHistory = true) => {
+    const url = value.trim();
+    if (!isOpenableSourceUrl(url)) {
+      setLinkInvalid(true);
+      return;
+    }
+    setLinkInvalid(false);
+    Keyboard.dismiss();
+    const job: SearchJob = async (signal) => {
+      const result = await analyzeUrl(url, 'url', recordHistory, signal);
+      if (!signal.aborted) showSearch({ candidates: [result.product, ...result.alternates], eventId: result.eventId });
+    };
+    void run(job);
+  }, [run, showSearch]);
+
+  const pasteLink = useCallback(async () => {
+    try {
+      const { getStringAsync } = await import('expo-clipboard');
+      const value = (await getStringAsync()).trim();
+      if (value) {
+        setLink(value);
+        setLinkInvalid(false);
+      }
+    } catch {
+      // Presse-papiers indisponible : le champ reste éditable à la main.
+    }
+  }, []);
+
+  const openHistoryItem = useCallback((item: LensHistoryItem) => {
+    setPanel(null);
+    if (isOpenableSourceUrl(item.sourceUrl)) runLinkSearch(item.sourceUrl, false);
+    else if (item.queryLabel.trim().length >= 2) runTextSearch(item.queryLabel);
+  }, [runLinkSearch, runTextSearch]);
+
+  const onMenuPick = useCallback((item: LensMenuItem) => {
+    setMenuOpen(false);
+    if (item === 'info') setPanel('help');
+    else if (item === 'history') setPanel('history');
+    else if (item === 'rules') setPanel('rules');
+    else if (item === 'privacy') router.push('/legal/privacy');
+    else router.push('/legal/terms');
+  }, []);
+
+  const switchMode = useCallback((value: Mode) => {
+    if (value === mode) return;
+    Keyboard.dismiss();
+    scanLock.current = false;
+    // Live et QR code partagent la même caméra : elle reste montée entre les deux.
+    const keepsCamera = (value === 'live' || value === 'code') && (mode === 'live' || mode === 'code');
+    if (!keepsCamera) setCameraReady(false);
+    if (value !== 'live' && value !== 'code') setTorch(false);
+    resetLive();
+    setMode(value);
+  }, [mode, resetLive]);
 
   const onOpen = useCallback((candidate: LensCandidate) => {
     if (!isOpenableSourceUrl(candidate.sourceUrl) || stage.kind !== 'results') return;
@@ -451,12 +914,13 @@ export default function LensScreen() {
     lastJobRef.current = null;
     scanLock.current = false;
     photoLock.current = false;
-    setCameraReady(false);
     discardOwnedPreview();
+    discardSession();
     setPreviewUri(null);
     setFavoriteNote(null);
+    resetLive();
     setStage({ kind: 'idle' });
-  }, [discardOwnedPreview]);
+  }, [discardOwnedPreview, discardSession, resetLive]);
 
   const cancelSearch = useCallback(() => {
     requestRef.current?.abort();
@@ -466,16 +930,41 @@ export default function LensScreen() {
     lastJobRef.current = null;
     scanLock.current = false;
     discardOwnedPreview();
+    discardSession();
     setPreviewUri(null);
+    resetLive();
     setStage({ kind: 'idle' });
-    setCameraReady(false);
-  }, [discardOwnedPreview]);
+  }, [discardOwnedPreview, discardSession, resetLive]);
 
   const retry = useCallback(() => {
     const job = lastJobRef.current;
     if (job) void run(job, false);
     else reset();
   }, [reset, run]);
+
+  const sessionPhoto = session ? session.photos[session.index] ?? null : null;
+  const resultTitle = useMemo(() => {
+    if (!sessionPhoto) return undefined;
+    if (sessionPhoto.selected >= 0) return sessionPhoto.products[sessionPhoto.selected]?.name;
+    return isFullFrame(sessionPhoto.selection) ? undefined : t('lens.select.zone');
+  }, [sessionPhoto, t]);
+
+  const infoModal = (
+    <Modal visible={panel !== null} transparent animationType="slide" onRequestClose={() => setPanel(null)}>
+      <View style={styles.helpRoot}>
+        <Pressable style={styles.helpScrim} onPress={() => setPanel(null)} accessibilityRole="button" accessibilityLabel={t('sheet.close')} />
+        <View style={[styles.helpSheet, { backgroundColor: theme.colors.surface, borderTopLeftRadius: theme.radius.sheet, borderTopRightRadius: theme.radius.sheet, paddingBottom: insets.bottom + 16 }]}>
+          <View style={[styles.sheetHandle, { backgroundColor: theme.colors.lineControl }]} />
+          {panel === 'history' ? <LensHistoryView onOpen={openHistoryItem} /> : (
+            <ScrollView style={styles.helpScroll} contentContainerStyle={styles.helpScrollContent} showsVerticalScrollIndicator={false}>
+              {panel === 'rules' ? <LensRulesView /> : <LensHelpView />}
+            </ScrollView>
+          )}
+          <Button label={t('lens.help.back')} onPress={() => setPanel(null)} tone="quiet" block />
+        </View>
+      </View>
+    </Modal>
+  );
 
   if (stage.kind === 'product') {
     return (
@@ -502,15 +991,35 @@ export default function LensScreen() {
     );
   }
 
-  const resultScene = stage.kind === 'busy' || stage.kind === 'results' || stage.kind === 'error';
+  const resultScene = stage.kind === 'busy' || stage.kind === 'results' || stage.kind === 'error' || session !== null;
   if (resultScene) {
     const errorCopy = stage.kind === 'error' ? errorCopyKey(stage.error) : null;
     const deviceError = stage.kind === 'error' && isApiError(stage.error) && stage.error.kind === 'device';
-    const sheetTop = stage.kind === 'busy' ? Math.max(210, height * 0.34) : Math.max(150, height * 0.24);
+    // Avec une photo, la feuille s'arrête à mi-hauteur : le cadre reste visible et manipulable.
+    const sheetTop = sessionPhoto
+      ? Math.round(height * 0.5)
+      : stage.kind === 'busy' ? Math.max(210, height * 0.34) : Math.max(150, height * 0.24);
+    const photoTop = insets.top + 58;
+    const multi = (session?.photos.length ?? 0) > 1;
+    const photoHeight = Math.max(120, sheetTop - photoTop - (multi ? 72 : 12));
     return (
-      <View style={[styles.scene, { backgroundColor: theme.colors.infoSoft }]}>
+      <View style={[styles.scene, { backgroundColor: sessionPhoto ? LENS_COLORS.black : theme.colors.infoSoft }]}>
         <StatusBar style="light" />
-        {previewUri ? (
+        {sessionPhoto ? (
+          <LensSelectionView
+            uri={sessionPhoto.uri}
+            imageWidth={sessionPhoto.width}
+            imageHeight={sessionPhoto.height}
+            top={photoTop}
+            height={photoHeight}
+            width={width}
+            products={sessionPhoto.products}
+            selection={sessionPhoto.selection}
+            selectedIndex={sessionPhoto.selected}
+            detecting={sessionPhoto.detection === 'pending'}
+            onCommit={onSelectionCommit}
+          />
+        ) : previewUri ? (
           <AppImage uri={previewUri} contentFit="cover" style={styles.preview} accessibilityLabel={t('lens.capturedPhoto')} testID="lens-captured-preview" />
         ) : (
           // Fond de « viseur » toujours sombre : l'en-tête et les contrôles posés dessus sont
@@ -519,16 +1028,41 @@ export default function LensScreen() {
             <Ionicons name="scan-outline" size={64} color={LENS_COLORS.white} accessibilityElementsHidden />
           </View>
         )}
+        {session && multi ? (
+          <View style={[styles.thumbs, { top: sheetTop - 64, flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]} testID="lens-photo-thumbs">
+            {session.photos.map((photo, index) => (
+              <Pressable
+                key={photo.key}
+                onPress={() => showPhotoAt(index)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: index === session.index }}
+                accessibilityLabel={t('lens.select.photo', { index: index + 1, count: session.photos.length })}
+                style={[styles.thumb, { borderColor: index === session.index ? LENS_COLORS.white : frost(0.35), borderRadius: theme.radius.md }]}
+                testID={`lens-photo-thumb-${index}`}
+              >
+                <AppImage uri={photo.uri} contentFit="cover" style={StyleSheet.absoluteFill} decorative />
+              </Pressable>
+            ))}
+            <View style={[styles.thumbCount, { backgroundColor: veil(0.65) }]}>
+              <AppText variant="caption" weight="bold" color={LENS_COLORS.white}>{`${session.index + 1}/${session.photos.length}`}</AppText>
+            </View>
+          </View>
+        ) : null}
+        {sessionPhoto && tip ? (
+          <View pointerEvents="none" style={[styles.tip, { top: photoTop + 8, backgroundColor: veil(0.78) }]} accessibilityLiveRegion="polite" testID="lens-selection-tip">
+            <AppText variant="caption" color={LENS_COLORS.white} align="center">{t(tip.key, { count: tip.count ?? 0 })}</AppText>
+          </View>
+        ) : null}
         <View style={[styles.resultTop, { paddingTop: insets.top + 6, flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
           <Pressable onPress={reset} accessibilityRole="button" accessibilityLabel={t('common.back')} style={styles.overlayButton} hitSlop={HIT_SLOP}>
             <Ionicons name={theme.isRTL ? 'arrow-forward' : 'arrow-back'} size={theme.iconSize.lg} color={LENS_COLORS.white} accessibilityElementsHidden />
           </Pressable>
-          <AppText variant="title" weight="bold" color={LENS_COLORS.white} style={styles.resultTitle}>AYROVIX Lens</AppText>
+          <AppText variant="title" weight="bold" color={LENS_COLORS.white} align="center" style={styles.resultTitle}>{t('lens.title')}</AppText>
           <View style={styles.headerSpacer} />
         </View>
 
         <SearchSheet top={sheetTop} expandedTop={insets.top + 58}>
-          {stage.kind === 'busy' ? <LensSearchSkeleton onCancel={cancelSearch} /> : null}
+          {stage.kind === 'busy' ? <LensSearchSkeleton onCancel={cancelSearch} title={resultTitle} /> : null}
           {stage.kind === 'results' ? (
             <LensResultsGrid
               candidates={stage.candidates}
@@ -538,6 +1072,7 @@ export default function LensScreen() {
               onOpen={onOpen}
               onFavorite={onFavorite}
               onNewSearch={reset}
+              title={resultTitle}
             />
           ) : null}
           {stage.kind === 'error' && errorCopy ? (
@@ -557,17 +1092,25 @@ export default function LensScreen() {
     );
   }
 
-  const cameraMode = mode === 'camera' || mode === 'code';
+  const cameraMode = mode === 'live' || mode === 'code';
   const cameraAllowed = permission?.granted === true;
+  const showCamera = cameraMode && cameraAllowed && focused;
+  const headerBottom = insets.top + 58;
+  const liveCount = live.products.length;
+  const livePill: string = live.status === 'detected'
+    ? (liveCount === 1 ? t('lens.live.detectedOne') : t('lens.live.detectedMany', { count: liveCount }))
+    : live.status === 'empty' ? t('lens.live.empty')
+      : live.status === 'unavailable' ? t('lens.cameraHint') : t('lens.live.scanning');
   return (
     <View style={[styles.scene, { backgroundColor: LENS_COLORS.black }]} testID="lens-camera-experience">
       <StatusBar style="light" />
-      {cameraMode && cameraAllowed ? (
+      {showCamera ? (
         <CameraView
-          ref={mode === 'camera' ? cameraRef : undefined}
+          ref={cameraRef}
           style={StyleSheet.absoluteFill}
           facing="back"
           enableTorch={torch}
+          animateShutter={false}
           barcodeScannerSettings={mode === 'code' ? { barcodeTypes: [...CODE_TYPES] } : undefined}
           onBarcodeScanned={mode === 'code' ? onCodeScanned : undefined}
           onCameraReady={() => setCameraReady(true)}
@@ -580,24 +1123,21 @@ export default function LensScreen() {
         <View style={[StyleSheet.absoluteFill, { backgroundColor: LENS_COLORS.black }]} />
       )}
       <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-        <View style={[styles.cameraTop, { paddingTop: insets.top + 6, flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
-          <Pressable onPress={() => goBack('/')} accessibilityRole="button" accessibilityLabel={t('common.back')} style={styles.overlayButton} hitSlop={HIT_SLOP}>
-            <Ionicons name={theme.isRTL ? 'arrow-forward' : 'arrow-back'} size={theme.iconSize.lg} color={LENS_COLORS.white} accessibilityElementsHidden />
-          </Pressable>
-          <AppText variant="title" weight="bold" color={LENS_COLORS.white} style={styles.cameraTitle}>AYROVIX Lens</AppText>
-          <View style={[styles.cameraActions, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
-            {cameraMode && cameraAllowed ? (
-              <Pressable onPress={() => setTorch((value) => !value)} accessibilityRole="button" accessibilityLabel={t('lens.flash')} style={styles.overlayButton} hitSlop={HIT_SLOP}>
-                <Ionicons name={torch ? 'flash' : 'flash-off'} size={theme.iconSize.md} color={LENS_COLORS.white} accessibilityElementsHidden />
-              </Pressable>
-            ) : null}
-            <Pressable onPress={() => setHelpOpen(true)} accessibilityRole="button" accessibilityLabel={t('lens.help.open')} style={styles.overlayButton} hitSlop={HIT_SLOP} testID="lens-open-help">
-              <Ionicons name="help-circle-outline" size={theme.iconSize.lg} color={LENS_COLORS.white} accessibilityElementsHidden />
-            </Pressable>
-          </View>
-        </View>
+        {mode === 'live' && showCamera ? (
+          <LensLiveOverlay
+            detected={live.status === 'detected'}
+            products={live.products}
+            selected={live.selected}
+            photo={live.photo}
+            width={width}
+            height={height}
+            visibleTop={headerBottom}
+            visibleBottom={height - panelHeight}
+            onSelect={onLiveSelect}
+          />
+        ) : null}
 
-        {cameraMode && cameraAllowed ? (
+        {mode === 'code' && showCamera ? (
           <View style={styles.focusFrame} pointerEvents="none">
             <View style={[styles.corner, styles.cornerTL]} />
             <View style={[styles.corner, styles.cornerTR]} />
@@ -605,6 +1145,26 @@ export default function LensScreen() {
             <View style={[styles.corner, styles.cornerBR]} />
           </View>
         ) : null}
+
+        <View style={[styles.cameraTop, { paddingTop: insets.top + 6, flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
+          <View style={[styles.headerSide, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
+            <Pressable onPress={() => goBack('/')} accessibilityRole="button" accessibilityLabel={t('common.back')} style={styles.overlayButton} hitSlop={HIT_SLOP}>
+              <Ionicons name={theme.isRTL ? 'arrow-forward' : 'arrow-back'} size={theme.iconSize.lg} color={LENS_COLORS.white} accessibilityElementsHidden />
+            </Pressable>
+            {cameraMode && cameraAllowed ? (
+              <Pressable onPress={() => setTorch((value) => !value)} accessibilityRole="button" accessibilityLabel={t('lens.flash')} style={styles.overlayButton} hitSlop={HIT_SLOP} testID="lens-torch">
+                <Ionicons name={torch ? 'flash' : 'flash-off'} size={theme.iconSize.md} color={LENS_COLORS.white} accessibilityElementsHidden />
+              </Pressable>
+            ) : null}
+          </View>
+          {/* « Z Lens » écrit en texte (pas le logo) — spécification du client. */}
+          <AppText variant="title" weight="bold" color={LENS_COLORS.white} align="center" style={styles.cameraTitle}>{t('lens.title')}</AppText>
+          <View style={[styles.headerSide, { flexDirection: theme.isRTL ? 'row' : 'row-reverse' }]}>
+            <Pressable onPress={() => setMenuOpen(true)} accessibilityRole="button" accessibilityLabel={t('lens.menu.open')} style={styles.overlayButton} hitSlop={HIT_SLOP} testID="lens-open-menu">
+              <Ionicons name="ellipsis-vertical" size={theme.iconSize.md} color={LENS_COLORS.white} accessibilityElementsHidden />
+            </Pressable>
+          </View>
+        </View>
 
         {!cameraAllowed && cameraMode ? (
           <View style={styles.permissionCenter}>
@@ -622,38 +1182,38 @@ export default function LensScreen() {
           </View>
         ) : null}
 
-        <View style={[styles.cameraBottom, { paddingBottom: insets.bottom + 16 }]}>
-          {cameraAllowed && cameraMode ? (
-            <AppText color={LENS_COLORS.white} align="center" style={styles.cameraHint}>
-              {mode === 'code' ? t('lens.codeHint') : t('lens.cameraHint')}
+        {mode === 'link' || mode === 'text' ? (
+          <View style={[styles.offline, { top: headerBottom + 48 }]} pointerEvents="none">
+            <View style={[styles.offlineIcon, { backgroundColor: frost(0.1) }]}>
+              <Ionicons name={mode === 'link' ? 'link-outline' : 'search-outline'} size={theme.iconSize.lg} color={LENS_COLORS.white} accessibilityElementsHidden />
+            </View>
+            <AppText variant="title" weight="bold" color={LENS_COLORS.white} align="center">
+              {mode === 'link' ? t('lens.link.title') : t('lens.text.title')}
             </AppText>
-          ) : null}
-
-          <View style={[styles.modePicker, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
-            {([
-              ['camera', t('lens.modeCamera')],
-              ['code', t('lens.modeCode')],
-              ['text', t('lens.modeText')],
-            ] as const).map(([value, label]) => {
-              const active = value === mode;
-              return (
-                <Pressable
-                  key={value}
-                  onPress={() => { setMode(value); scanLock.current = false; setCameraReady(false); }}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: active }}
-                  style={[styles.mode, active ? styles.modeActive : null]}
-                >
-                  <AppText variant="caption" weight="bold" color={active ? LENS_COLORS.black : LENS_COLORS.white} align="center">{label}</AppText>
-                </Pressable>
-              );
-            })}
+            <AppText color={frost(0.75)} align="center">{mode === 'link' ? t('lens.link.text') : t('lens.text.text')}</AppText>
           </View>
+        ) : null}
 
-          {mode === 'camera' && cameraAllowed ? (
+        {mode === 'live' && showCamera ? (
+          <View style={[styles.livePill, { bottom: panelHeight + 12, backgroundColor: veil(0.62) }]} pointerEvents="none" accessibilityLiveRegion="polite" testID="lens-live-status">
+            <View style={[styles.livePillDot, { backgroundColor: live.status === 'detected' ? LENS_COLORS.activeSoft : frost(0.6) }]} />
+            <AppText variant="caption" weight="bold" color={LENS_COLORS.white} numberOfLines={1}>{livePill}</AppText>
+          </View>
+        ) : null}
+
+        {/* Panneau du bas : boutons AU-DESSUS, barre des modes TOUT EN BAS (demande du client). */}
+        <View
+          style={[styles.panel, { paddingBottom: insets.bottom + 12, backgroundColor: LENS_COLORS.cameraControl, borderTopLeftRadius: theme.radius.sheet, borderTopRightRadius: theme.radius.sheet }]}
+          onLayout={(event) => setPanelHeight(Math.round(event.nativeEvent.layout.height))}
+          testID="lens-panel"
+        >
+          {mode === 'live' && cameraAllowed ? (
             <View style={[styles.captureRow, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
-              <Pressable onPress={onGallery} accessibilityRole="button" accessibilityLabel={t('lens.pickGallery')} style={styles.sideControl} testID="lens-gallery">
-                <Ionicons name="images-outline" size={theme.iconSize.lg} color={LENS_COLORS.white} accessibilityElementsHidden />
+              <Pressable onPress={onGallery} accessibilityRole="button" accessibilityLabel={t('lens.pickGallery')} style={styles.side} testID="lens-gallery">
+                <View style={styles.sideCircle}>
+                  <Ionicons name="images-outline" size={theme.iconSize.md} color={LENS_COLORS.white} accessibilityElementsHidden />
+                </View>
+                <AppText variant="caption" weight="bold" color={LENS_COLORS.white}>{t('lens.gallery')}</AppText>
               </Pressable>
               <Pressable
                 onPress={() => { void onPhoto(); }}
@@ -664,11 +1224,51 @@ export default function LensScreen() {
                 testID="lens-capture"
                 style={[styles.shutterOuter, { opacity: cameraReady ? 1 : 0.5 }]}
               >
-                <View style={styles.shutterInner} />
+                <View style={styles.shutterInner}>
+                  <Ionicons name="search" size={theme.iconSize.lg} color={LENS_COLORS.black} accessibilityElementsHidden />
+                </View>
               </Pressable>
-              <Pressable onPress={() => setOcerexOpen(true)} accessibilityRole="button" accessibilityLabel={t('ocerex.open')} style={styles.ocerexControl} testID="lens-open-ocerex">
+              <Pressable onPress={() => setOcerexOpen(true)} accessibilityRole="button" accessibilityLabel={t('ocerex.open')} style={styles.side} testID="lens-open-ocerex">
+                <View style={styles.sideCircle}>
+                  <Ionicons name="pricetag-outline" size={theme.iconSize.md} color={LENS_COLORS.white} accessibilityElementsHidden />
+                </View>
                 <AppText variant="caption" weight="bold" color={LENS_COLORS.white}>OCEREX</AppText>
               </Pressable>
+            </View>
+          ) : null}
+
+          {mode === 'code' && cameraAllowed ? (
+            <View style={[styles.codeHint, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
+              <Ionicons name="qr-code-outline" size={theme.iconSize.md} color={LENS_COLORS.white} accessibilityElementsHidden />
+              <View style={styles.codeHintCopy}>
+                <AppText weight="bold" color={LENS_COLORS.white}>{t('lens.codeHint')}</AppText>
+                <AppText variant="caption" color={frost(0.75)}>{t('lens.codeAuto')}</AppText>
+              </View>
+            </View>
+          ) : null}
+
+          {mode === 'link' ? (
+            <View style={[styles.textSearch, { backgroundColor: theme.colors.surface, borderRadius: theme.radius.card }]}>
+              <View style={[styles.linkRow, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
+                <View style={styles.linkField}>
+                  <Field
+                    value={link}
+                    onChangeText={(value) => { setLink(value); if (linkInvalid) setLinkInvalid(false); }}
+                    placeholder={t('lens.link.placeholder')}
+                    onSubmitEditing={() => runLinkSearch(link)}
+                    returnKeyType="search"
+                    keyboardType="url"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    accessibilityLabel={t('lens.link.placeholder')}
+                  />
+                </View>
+                <Button label={t('lens.link.paste')} onPress={() => { void pasteLink(); }} tone="quiet" testID="lens-link-paste" />
+              </View>
+              {linkInvalid ? (
+                <AppText variant="caption" color={theme.status.danger.fg} accessibilityRole="alert">{t('lens.link.invalid')}</AppText>
+              ) : null}
+              <Button label={t('lens.search')} onPress={() => runLinkSearch(link)} disabled={link.trim().length < 8} block testID="lens-link-search" />
             </View>
           ) : null}
 
@@ -685,52 +1285,93 @@ export default function LensScreen() {
               <Button label={t('lens.search')} onPress={() => runTextSearch(text)} disabled={text.trim().length < 2} block />
             </View>
           ) : null}
+
+          <View style={[styles.modePicker, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]} accessibilityRole="tablist">
+            {MODES.map(([value, label]) => {
+              const active = value === mode;
+              return (
+                <Pressable
+                  key={value}
+                  onPress={() => switchMode(value)}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: active }}
+                  style={[styles.mode, active ? styles.modeActive : null]}
+                  testID={`lens-mode-${value}`}
+                >
+                  <AppText variant="caption" weight="bold" color={active ? LENS_COLORS.black : LENS_COLORS.white} align="center" numberOfLines={1}>{t(label)}</AppText>
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
       </View>
 
-      <Modal visible={helpOpen} transparent animationType="slide" onRequestClose={() => setHelpOpen(false)}>
-        <View style={styles.helpRoot}>
-          <Pressable style={styles.helpScrim} onPress={() => setHelpOpen(false)} accessibilityRole="button" accessibilityLabel={t('sheet.close')} />
-          <View style={[styles.helpSheet, { backgroundColor: theme.colors.surface, borderTopLeftRadius: theme.radius.sheet, borderTopRightRadius: theme.radius.sheet, paddingBottom: insets.bottom + 16 }]}>
-            <View style={[styles.sheetHandle, { backgroundColor: theme.colors.lineControl }]} />
-            <LensHelpView />
-            <Button label={t('lens.help.back')} onPress={() => setHelpOpen(false)} tone="quiet" block />
-          </View>
-        </View>
-      </Modal>
+      <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: LENS_COLORS.white, opacity: flash }]} />
+
+      <LensMenu visible={menuOpen} top={insets.top + 54} onClose={() => setMenuOpen(false)} onPick={onMenuPick} />
+      {infoModal}
     </View>
   );
 }
 
+const SHUTTER = 104;
+const SHUTTER_CORE = 88;
+const SIDE = 54;
+
 const styles = StyleSheet.create({
   scene: { flex: 1 },
   cameraTop: { position: 'absolute', left: 8, right: 8, top: 0, alignItems: 'center', zIndex: 5 },
+  headerSide: { width: 100, alignItems: 'center', gap: 4 },
   overlayButton: { width: 48, height: 48, borderRadius: 24, backgroundColor: veil(0.34), alignItems: 'center', justifyContent: 'center' },
   headerSpacer: { width: 48, height: 48 },
   cameraTitle: { flex: 1, textShadowColor: veil(0.8), textShadowRadius: 5 },
-  cameraActions: { alignItems: 'center' },
-  focusFrame: { position: 'absolute', left: '12%', right: '12%', top: '22%', bottom: '27%' },
+  focusFrame: { position: 'absolute', left: '14%', right: '14%', top: '24%', aspectRatio: 1 },
   corner: { position: 'absolute', width: 38, height: 38, borderColor: LENS_COLORS.white },
-  cornerTL: { top: 0, left: 0, borderTopWidth: 3, borderLeftWidth: 3, borderTopLeftRadius: 6 },
-  cornerTR: { top: 0, right: 0, borderTopWidth: 3, borderRightWidth: 3, borderTopRightRadius: 6 },
-  cornerBL: { bottom: 0, left: 0, borderBottomWidth: 3, borderLeftWidth: 3, borderBottomLeftRadius: 6 },
-  cornerBR: { bottom: 0, right: 0, borderBottomWidth: 3, borderRightWidth: 3, borderBottomRightRadius: 6 },
-  cameraBottom: { position: 'absolute', left: 20, right: 20, bottom: 0, gap: 16 },
-  cameraHint: { textShadowColor: veil(0.7), textShadowRadius: 5 },
-  modePicker: { minHeight: 54, borderRadius: 28, padding: 4, backgroundColor: LENS_COLORS.cameraControl },
-  mode: { flex: 1, minHeight: 46, borderRadius: 24, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
+  cornerTL: { top: 0, left: 0, borderTopWidth: 4, borderLeftWidth: 4, borderTopLeftRadius: 18 },
+  cornerTR: { top: 0, right: 0, borderTopWidth: 4, borderRightWidth: 4, borderTopRightRadius: 18 },
+  cornerBL: { bottom: 0, left: 0, borderBottomWidth: 4, borderLeftWidth: 4, borderBottomLeftRadius: 18 },
+  cornerBR: { bottom: 0, right: 0, borderBottomWidth: 4, borderRightWidth: 4, borderBottomRightRadius: 18 },
+  livePill: {
+    position: 'absolute', alignSelf: 'center', maxWidth: '92%', minHeight: 32, borderRadius: 16,
+    paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 8,
+  },
+  livePillDot: { width: 8, height: 8, borderRadius: 4 },
+  offline: { position: 'absolute', left: 32, right: 32, alignItems: 'center', gap: 12 },
+  offlineIcon: { width: 68, height: 68, borderRadius: 34, alignItems: 'center', justifyContent: 'center' },
+  panel: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingTop: 16, paddingHorizontal: 12, gap: 16 },
+  captureRow: { alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16 },
+  side: { width: 72, alignItems: 'center', gap: 4 },
+  sideCircle: {
+    width: SIDE, height: SIDE, borderRadius: SIDE / 2, borderWidth: 1.5, borderColor: LENS_COLORS.white,
+    backgroundColor: veil(0.4), alignItems: 'center', justifyContent: 'center',
+  },
+  // Déclencheur nettement plus grand que Galerie et OCEREX (104 contre 54) ;
+  // la marge basse aligne son centre sur celui des deux cercles (libellés dessous).
+  shutterOuter: {
+    width: SHUTTER, height: SHUTTER, borderRadius: SHUTTER / 2, backgroundColor: frost(0.35),
+    alignItems: 'center', justifyContent: 'center', marginBottom: 20,
+  },
+  shutterInner: {
+    width: SHUTTER_CORE, height: SHUTTER_CORE, borderRadius: SHUTTER_CORE / 2, backgroundColor: LENS_COLORS.white,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  codeHint: { alignItems: 'flex-start', gap: 12, paddingHorizontal: 8, paddingVertical: 8 },
+  codeHintCopy: { flex: 1, gap: 4 },
+  modePicker: { minHeight: 52, borderRadius: 26, padding: 4, backgroundColor: frost(0.13) },
+  mode: { flex: 1, minHeight: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
   // Mode choisi = état actif : pastille violet clair, libellé noir (10,4:1).
   modeActive: { backgroundColor: LENS_COLORS.activeSoft },
-  captureRow: { alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 8 },
-  sideControl: { width: 58, height: 58, borderRadius: 18, borderWidth: 1.5, borderColor: LENS_COLORS.white, backgroundColor: veil(0.25), alignItems: 'center', justifyContent: 'center' },
-  shutterOuter: { width: 84, height: 84, borderRadius: 42, borderWidth: 5, borderColor: LENS_COLORS.white, backgroundColor: veil(0.35), alignItems: 'center', justifyContent: 'center' },
-  shutterInner: { width: 64, height: 64, borderRadius: 32, backgroundColor: LENS_COLORS.white },
-  ocerexControl: { width: 68, height: 58, borderRadius: 29, borderWidth: 1.5, borderColor: LENS_COLORS.white, backgroundColor: veil(0.25), alignItems: 'center', justifyContent: 'center' },
   permissionCenter: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
   permissionCard: { width: '100%', maxWidth: 420, gap: 16, alignItems: 'center', padding: 24 },
   textSearch: { gap: 10, padding: 16 },
+  linkRow: { alignItems: 'center', gap: 8 },
+  linkField: { flex: 1 },
   preview: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   previewFallback: { alignItems: 'center', justifyContent: 'center' },
+  thumbs: { position: 'absolute', left: 12, right: 12, alignItems: 'center', gap: 8, zIndex: 2 },
+  thumb: { width: 48, height: 48, borderWidth: 2, overflow: 'hidden' },
+  thumbCount: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
+  tip: { position: 'absolute', alignSelf: 'center', maxWidth: '88%', borderRadius: 18, paddingHorizontal: 16, paddingVertical: 8, zIndex: 3 },
   resultTop: { position: 'absolute', top: 0, left: 8, right: 8, alignItems: 'center', zIndex: 3 },
   resultTitle: { flex: 1, textShadowColor: veil(0.8), textShadowRadius: 5 },
   searchSheet: { position: 'absolute', left: 0, right: 0, bottom: 0, overflow: 'hidden' },
@@ -742,4 +1383,6 @@ const styles = StyleSheet.create({
   helpRoot: { flex: 1, justifyContent: 'flex-end' },
   helpScrim: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: LENS_COLORS.cameraScrim },
   helpSheet: { maxHeight: '82%', paddingHorizontal: 20, paddingTop: 12, gap: 12 },
+  helpScroll: { flexGrow: 0, flexShrink: 1 },
+  helpScrollContent: { paddingBottom: 4 },
 });

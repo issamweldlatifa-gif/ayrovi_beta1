@@ -121,6 +121,28 @@ export interface LensIdentification {
   confidence: number | null;
 }
 
+/** Boîte normalisée 0..1 : (x, y) = coin haut-gauche, w/h = largeur/hauteur. */
+export interface LensBox {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/** Produit repéré par `/detect` (cadre de sélection + Live). Aucun prix. */
+export interface LensDetectedProduct {
+  name: string;
+  category: string;
+  box: LensBox;
+}
+
+export interface LensDetection {
+  products: LensDetectedProduct[];
+  /** Taille de l'image analysée (après redressement EXIF côté serveur). */
+  width: number | null;
+  height: number | null;
+}
+
 export interface LensImageResult {
   identification: LensIdentification;
   query: string;
@@ -380,6 +402,27 @@ export function parseImageResult(value: unknown): LensImageResult {
   };
 }
 
+/**
+ * Réponse de `/detect`. Une boîte hors de 0..1 ou trop petite est écartée
+ * (jamais « corrigée » au hasard) : mieux vaut un cadre manuel qu'un cadre faux.
+ */
+export function parseDetection(value: unknown): LensDetection {
+  if (!isRecord(value)) throw malformed('détection');
+  const products: LensDetectedProduct[] = [];
+  for (const item of Array.isArray(value.products) ? value.products : []) {
+    if (!isRecord(item) || !Array.isArray(item.box) || item.box.length !== 4) continue;
+    const name = str(item.name).trim();
+    const [x, y, w, h] = item.box.map((part) => num(part));
+    if (!name || x === null || y === null || w === null || h === null) continue;
+    if (x < 0 || y < 0 || w < 0.01 || h < 0.01 || x + w > 1.001 || y + h > 1.001) continue;
+    products.push({ name: name.slice(0, 80), category: str(item.category) || 'other', box: { x, y, w: Math.min(w, 1 - x), h: Math.min(h, 1 - y) } });
+    if (products.length >= 8) break;
+  }
+  const width = num(value.width);
+  const height = num(value.height);
+  return { products, width: width && width > 0 ? width : null, height: height && height > 0 ? height : null };
+}
+
 export function parseSearchResult(value: unknown): LensSearchResult {
   if (!isRecord(value)) throw malformed('résultat recherche');
   return {
@@ -478,6 +521,24 @@ export async function analyzeImage(
     signal: options.signal,
   });
   return parseImageResult(data);
+}
+
+/**
+ * Produits visibles + boîtes (Z Lens : cadre de sélection et Live). Délai court :
+ * une détection en retard ne doit jamais bloquer la recherche — l'écran retombe
+ * alors sur un cadre manuel couvrant toute la photo.
+ */
+export const LENS_DETECT_TIMEOUT_MS = 15_000;
+
+export async function detectProducts(
+  file: { uri: string; name: string; type: string },
+  options: { signal?: AbortSignal; timeoutMs?: number } = {},
+): Promise<LensDetection> {
+  const data = await apiUploadFileData<unknown>(`${LENS_BASE}/detect`, 'image', file, {
+    timeoutMs: options.timeoutMs ?? LENS_DETECT_TIMEOUT_MS,
+    signal: options.signal,
+  });
+  return parseDetection(data);
 }
 
 export async function analyzeUrl(
