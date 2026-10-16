@@ -143,7 +143,7 @@ export const HeroCarousel: React.FC = () => {
               aria-label={`${position + 1} / ${count}`}
               aria-current={position === index ? 'true' : undefined}
               onClick={() => goTo(position)}
-              style={{ width: 10, height: 10, borderRadius: 999, border: 0, padding: 0, cursor: 'pointer', background: position === index ? '#1A1A1A' : '#BDBDBD' }}
+              style={{ width: 10, height: 10, borderRadius: 999, border: 0, padding: 0, cursor: 'pointer', background: position === index ? '#1A1A1A' : '#FFFFFF', boxShadow: position === index ? 'none' : 'inset 0 0 0 1px #BDBDBD' }}
             />
           ))}
         </div>
