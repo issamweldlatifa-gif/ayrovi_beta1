@@ -662,6 +662,8 @@ export const ar = {
   'lens.product.merchantSays': 'منشور من المتجر',
   'lens.product.offerEnds': 'عرض المتجر ينتهي بعد',
   'lens.product.merchantDelivery': 'التسليم حسب المتجر',
+  'lens.product.merchantReturns': 'الإرجاع حسب المتجر',
+  'lens.product.dimensions': 'الأبعاد',
   'lens.sizeGuide.title': 'دليل المقاسات',
   'lens.sizeGuide.available': 'المقاسات المنشورة من المتجر',
   'lens.sizeGuide.noSizes': 'المتجر ما نشرش أي مقاس لهذا المنتج.',

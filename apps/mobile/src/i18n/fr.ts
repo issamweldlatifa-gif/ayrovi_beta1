@@ -662,6 +662,8 @@ export const fr = {
   'lens.product.merchantSays': 'Publié par le marchand',
   'lens.product.offerEnds': 'Fin de l’offre du marchand dans',
   'lens.product.merchantDelivery': 'Livraison annoncée par le marchand',
+  'lens.product.merchantReturns': 'Retours annoncés par le marchand',
+  'lens.product.dimensions': 'Dimensions',
   'lens.sizeGuide.title': 'Guide des tailles',
   'lens.sizeGuide.available': 'Tailles publiées par le marchand',
   'lens.sizeGuide.noSizes': 'Le marchand n’a publié aucune taille pour ce produit.',

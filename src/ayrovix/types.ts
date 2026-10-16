@@ -216,6 +216,8 @@ export interface AyrovixProduct {
   manufacturingInfo?: string | null;
   deliveryEstimate?: string | null;
   promoCountdown?: string | null;
+  dimensionsInfo?: string | null;
+  returnsPolicy?: string | null;
 }
 
 export interface AyrovixDetectedPrice {

@@ -100,6 +100,8 @@ function toAyrovixProduct(db: QatafoDatabase, scraped: ScrapedProduct): AyrovixP
     manufacturingInfo: scraped.manufacturingInfo || null,
     deliveryEstimate: scraped.deliveryEstimate || null,
     promoCountdown: scraped.promoCountdown || null,
+    dimensionsInfo: scraped.dimensionsInfo || null,
+    returnsPolicy: scraped.returnsPolicy || null,
     rating: Number.isFinite(Number((scraped as any).rating)) && Number((scraped as any).rating) > 0 && Number((scraped as any).rating) <= 5 ? Number((scraped as any).rating) : null,
     ratingCount: Number.isFinite(Number((scraped as any).ratingCount)) ? Number((scraped as any).ratingCount) : null,
     ratingKind: Number.isFinite(Number((scraped as any).rating)) ? 'merchant' : 'listing-quality',

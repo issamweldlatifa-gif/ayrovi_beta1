@@ -175,6 +175,26 @@ describe('fiche produit Lens native', () => {
     expect(screen.getByText('Turquie')).toBeOnTheScreen();
   });
 
+  it('ouvre une section Dimensions et une ligne de retours quand la fiche les publie', async () => {
+    render(wrap(<LensProductView candidate={candidate({
+      dimensionsInfo: '30 x 20 x 10 cm',
+      returnsPolicy: 'Retours gratuits',
+    })} onBack={() => {}} />));
+
+    expect(await screen.findByTestId('lens-product-view')).toBeOnTheScreen();
+    expect(screen.getByTestId('lens-merchant-returns')).toBeOnTheScreen();
+    expect(screen.getByText('Retours gratuits')).toBeOnTheScreen();
+    fireEvent.press(screen.getByTestId('lens-accordion-dimensions'));
+    expect(screen.getByText('30 x 20 x 10 cm')).toBeOnTheScreen();
+  });
+
+  it('n’ouvre aucune section Dimensions sans mesure publiée', async () => {
+    render(wrap(<LensProductView candidate={candidate()} onBack={() => {}} />));
+    expect(await screen.findByTestId('lens-product-view')).toBeOnTheScreen();
+    expect(screen.queryByTestId('lens-accordion-dimensions')).toBeNull();
+    expect(screen.queryByTestId('lens-merchant-returns')).toBeNull();
+  });
+
   it('n’affiche aucun signal quand la page marchande n’en publie pas', async () => {
     render(wrap(<LensProductView candidate={candidate()} onBack={() => {}} />));
     expect(await screen.findByTestId('lens-product-view')).toBeOnTheScreen();

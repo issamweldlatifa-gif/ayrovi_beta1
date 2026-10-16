@@ -671,6 +671,12 @@ export function LensProductView({
     if (!info) return [] as LensProductFact[];
     return [{ key: 'manufacturing', label: t('lens.product.manufacturing'), value: info, section: 'details' as const }];
   }, [candidate.manufacturingInfo, t]);
+  // Dimensions : sa propre section, et seulement si la page publie une mesure.
+  const dimensionFacts = useMemo(() => {
+    const info = (candidate.dimensionsInfo || '').trim();
+    if (!info) return [] as LensProductFact[];
+    return [{ key: 'dimensions', label: t('lens.product.dimensions'), value: info, section: 'dimensions' as const }];
+  }, [candidate.dimensionsInfo, t]);
   const identityFacts = useMemo(() => {
     const published = candidate.details ?? [];
     const existing = new Set(published.map((fact) => fact.value.trim().toLocaleLowerCase()));
@@ -685,12 +691,13 @@ export function LensProductView({
     }
     return rows;
   }, [candidate.details, candidate.gtin, candidate.sku, t]);
-  const facts = [...(candidate.details ?? []), ...manufacturingFacts, ...identityFacts];
+  const facts = [...(candidate.details ?? []), ...manufacturingFacts, ...identityFacts, ...dimensionFacts];
   const detailFacts = facts.filter((fact) => fact.section === 'details');
   const careFacts = detailFacts.filter((fact) => CARE_FACT.test(`${fact.label} ${fact.value}`));
   const characteristicFacts = detailFacts.filter((fact) => !careFacts.includes(fact));
   const materialFacts = facts.filter((fact) => fact.section === 'material');
   const fitFacts = facts.filter((fact) => fact.section === 'fit');
+  const dimensionsSection = facts.filter((fact) => fact.section === 'dimensions');
   const cartDeadline = earliestCartDeadline(cartQuery.data);
   const deadline = useMemo(() => [cartDeadline, addedDeadline]
     .filter((value) => Number.isFinite(Date.parse(value)))
@@ -1116,6 +1123,12 @@ export function LensProductView({
               <AppText variant="caption" weight="semibold">{candidate.deliveryEstimate}</AppText>
             </View>
           ) : null}
+          {candidate.returnsPolicy ? (
+            <View style={[styles.merchantLine, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]} testID="lens-merchant-returns">
+              <AppText variant="caption" weight="bold">{t('lens.product.merchantReturns')}</AppText>
+              <AppText variant="caption" weight="semibold">{candidate.returnsPolicy}</AppText>
+            </View>
+          ) : null}
           {favoriteNote ? (
             <AppText variant="caption" color={theme.status.danger.fg} accessibilityRole="alert">{t(favoriteNote)}</AppText>
           ) : null}
@@ -1196,6 +1209,12 @@ export function LensProductView({
               icon="water-outline"
               facts={careFacts}
               testID="lens-accordion-care"
+            />
+            <FactAccordion
+              title={t('lens.product.dimensions')}
+              icon="scan-outline"
+              facts={dimensionsSection}
+              testID="lens-accordion-dimensions"
             />
           </View>
         </View>

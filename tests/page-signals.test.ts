@@ -29,6 +29,8 @@ const ZALANDO_LIKE_PAGE = `<!doctype html>
   <p>Fabriqué en Turquie</p>
   <div class="delivery">Livraison rapide 23 octobre-29 octobre</div>
   <div class="promo">Se termine dans 1j4h22m</div>
+  <section>Dimensions : 30 x 20 x 10 cm</section>
+  <div class="returns">Retours gratuits</div>
 </body></html>`;
 
 const EMPTY_PAGE = `<!doctype html><html><head><title>Sans signal</title></head><body>
@@ -44,6 +46,8 @@ describe('signaux de fiche marchande', () => {
     expect(signals.manufacturingInfo).toBe('Turquie');
     expect(signals.deliveryEstimate).toBe('23 octobre-29 octobre');
     expect(signals.promoCountdown).toBe('1j4h22m');
+    expect(signals.dimensionsInfo).toBe('30 x 20 x 10 cm');
+    expect(signals.returnsPolicy).toBe('Retours gratuits');
   });
 
   it('ne fabrique RIEN quand la page ne publie pas ces informations', () => {
@@ -58,9 +62,19 @@ describe('signaux de fiche marchande', () => {
     expect(parsed.signals?.sizeAdvice).toBe('Nous vous recommandons de choisir une taille au-dessus de celle habituelle.');
     expect(parsed.signals?.deliveryEstimate).toBe('23 octobre-29 octobre');
     expect(parsed.signals?.promoCountdown).toBe('1j4h22m');
+    expect(parsed.signals?.dimensionsInfo).toBe('30 x 20 x 10 cm');
+    expect(parsed.signals?.returnsPolicy).toBe('Retours gratuits');
     // Le prix publié reste la priorité : un signal ne remplace jamais un montant.
     expect(parsed.price).toBe(18.5);
     expect(parsed.currency).toBe('EUR');
+  });
+
+  it('refuse une section « Dimensions » qui ne publie aucune mesure', () => {
+    // Un mot seul n'est pas une dimension : sans chiffre ni unité, rien n'est retenu.
+    expect(readPageSignals('Dimensions : standard').dimensionsInfo).toBeUndefined();
+    expect(readPageSignals('Dimensions : 30 x 20').dimensionsInfo).toBeUndefined();
+    expect(readPageSignals('Dimensions : 30 x 20 x 10 cm').dimensionsInfo).toBe('30 x 20 x 10 cm');
+    expect(readPageSignals('Dimensions : 1,2 kg').dimensionsInfo).toBe('1,2 kg');
   });
 
   it('n’invente aucune équivalence de taille : aucun tableau FR ↔ US n’est produit', () => {

@@ -28,6 +28,13 @@ export interface MerchantPageSignals {
   deliveryEstimate?: string;
   /** Compte à rebours de l'offre publié par le marchand : « 1j4h22m ». */
   promoCountdown?: string;
+  /**
+   * Dimensions publiées par la fiche (« 30 x 20 x 10 cm »). Uniquement quand
+   * la page porte une mesure réelle : un chiffre seul n'est pas une dimension.
+   */
+  dimensionsInfo?: string;
+  /** Politique de retour du marchand, telle que publiée : « Retours gratuits ». */
+  returnsPolicy?: string;
 }
 
 const clean = (raw: string): string => raw.replace(/\s+/g, ' ').trim();
@@ -79,6 +86,19 @@ export function readPageSignals(rawText: string): MerchantPageSignals {
   /* LIVRAISON — « Livraison rapide 23 octobre-29 octobre ». */
   const delivery = /(?:Livraison\s+rapide|Livraison\s+estim[ée]+e|Livraison)[^\d\n]{0,40}?(\d{1,2}\s*[a-zéûà]+\s*(?:-|au|à)\s*\d{1,2}\s*[a-zéûà]+)/iu.exec(text);
   if (delivery) signals.deliveryEstimate = bounded(delivery[1], 50, 4);
+
+  /* DIMENSIONS — la section « Dimensions » de la fiche, mesure à l'appui. */
+  const dimensions = /\bDimensions\b\s*:?\s*([^.;\n]{0,120})/iu.exec(text);
+  if (dimensions) {
+    // On ne retient QUE la mesure : « 30 x 20 x 10 cm », « 1,2 kg »… Un chiffre
+    // sans unité n'est pas une dimension publiée, on ne devine jamais un gabarit.
+    const measured = /(?:[\d.,]+\s*(?:x|×)\s*)*[\d.,]+\s*(?:cm|mm|m|kg|g|l|ml|pouces?)\b/iu.exec(dimensions[1]);
+    if (measured) signals.dimensionsInfo = bounded(measured[0], 120, 4);
+  }
+
+  /* RETOURS — politique annoncée par le marchand : « Retours gratuits ». */
+  const returns = /(Retours?\s+gratuits?(?:\s+sous\s+\d{1,3}\s+jours?)?)/iu.exec(text);
+  if (returns) signals.returnsPolicy = bounded(returns[1], 60, 8);
 
   /* COMPTE À REBOURS DE L'OFFRE — « Se termine dans 1j4h22m ». */
   const countdown = /Se termine dans\s+([0-9]+[a-zéû]{1,3}(?:\s*[0-9]+[a-zéû]{1,3}){0,2})/iu.exec(text);

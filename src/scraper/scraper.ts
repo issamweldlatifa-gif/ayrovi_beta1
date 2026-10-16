@@ -195,6 +195,8 @@ export class SmartLinkScraper {
       manufacturingInfo: liveData?.signals?.manufacturingInfo || null,
       deliveryEstimate: liveData?.signals?.deliveryEstimate || null,
       promoCountdown: liveData?.signals?.promoCountdown || null,
+      dimensionsInfo: liveData?.signals?.dimensionsInfo || null,
+      returnsPolicy: liveData?.signals?.returnsPolicy || null,
       rating: liveData?.rating ?? null,
       reviewsCount: liveData?.reviewCount ?? null,
       priceVerified: merchantResult.verified && price > 0,

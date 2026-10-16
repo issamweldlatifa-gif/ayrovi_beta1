@@ -57,7 +57,7 @@ export interface LensVariantOption {
   priceToken: string | null;
 }
 
-export type LensProductFactSection = 'details' | 'material' | 'fit';
+export type LensProductFactSection = 'details' | 'material' | 'fit' | 'dimensions';
 
 export interface LensProductFact {
   key: string | null;
@@ -124,6 +124,10 @@ export interface LensCandidate {
   deliveryEstimate?: string | null;
   /** عدّاد تخفيض المتجر كما نشره (مثال 1j4h22m). */
   promoCountdown?: string | null;
+  /** أبعاد منشورة في الفيشة (تحتوي قيساً حقيقياً). */
+  dimensionsInfo?: string | null;
+  /** سياسة الإرجاع كما نشرها المتجر (مثال: Retours gratuits). */
+  returnsPolicy?: string | null;
 }
 
 export interface LensIdentification {
@@ -281,7 +285,7 @@ function parseProductFacts(value: unknown): LensProductFact[] {
     const label = str(fact.label).trim();
     const factValue = str(fact.value).trim();
     if (!label || !factValue) return [];
-    const section: LensProductFactSection = fact.section === 'material' || fact.section === 'fit'
+    const section: LensProductFactSection = fact.section === 'material' || fact.section === 'fit' || fact.section === 'dimensions'
       ? fact.section : 'details';
     return [{
       key: strOrNull(fact.key),
@@ -355,6 +359,8 @@ function parseCandidateRecord(value: unknown, allowProductShape: boolean): LensC
     manufacturingInfo: strOrNull(value.manufacturingInfo),
     deliveryEstimate: strOrNull(value.deliveryEstimate),
     promoCountdown: strOrNull(value.promoCountdown),
+    dimensionsInfo: strOrNull(value.dimensionsInfo),
+    returnsPolicy: strOrNull(value.returnsPolicy),
   };
 }
 

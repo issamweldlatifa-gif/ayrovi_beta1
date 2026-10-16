@@ -110,5 +110,7 @@ export function mergeLensProduct(current: LensCandidate, full: LensCandidate): L
     manufacturingInfo: full.manufacturingInfo || current.manufacturingInfo,
     deliveryEstimate: full.deliveryEstimate || current.deliveryEstimate,
     promoCountdown: full.promoCountdown || current.promoCountdown,
+    dimensionsInfo: full.dimensionsInfo || current.dimensionsInfo,
+    returnsPolicy: full.returnsPolicy || current.returnsPolicy,
   };
 }
