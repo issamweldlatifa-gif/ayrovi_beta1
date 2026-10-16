@@ -27,7 +27,6 @@ input { font: inherit; }
   .menu { top: 88px !important; }
   .panel { height: 222px; }
   .seg { bottom: 26px; }
-  .live-stage { bottom: 186px; }
   .lpill.bottom { bottom: 236px; }
 }
 
@@ -51,9 +50,9 @@ input { font: inherit; }
 .phone[data-mode="live"] .pc-live, .phone[data-mode="qr"] .pc-qr, .phone[data-mode="lien"] .pc-lien, .phone[data-mode="mot"] .pc-mot { display: flex; }
 
 /* ── Live : détection en direct ─────────────────────────────────── */
-.live-stage { position: absolute; left: 0; right: 0; top: 0; bottom: 176px; overflow: hidden; }
+/* Caméra PLEIN ÉCRAN : elle reste visible derrière les boutons et la barre (demande du client). */
+.live-stage { position: absolute; inset: 0; overflow: hidden; }
 .live-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 35%; pointer-events: none; }
-.live-stage::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 64px; background: linear-gradient(rgba(10,10,10,0), #0A0A0A); pointer-events: none; }
 .ldots { position: absolute; inset: 0; }
 .dot { position: absolute; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 5px rgba(255,255,255,.3), 0 2px 10px rgba(0,0,0,.35); animation: pop .32s ease-out; }
 .dot::after { content: ''; position: absolute; inset: -12px; border-radius: 50%; }
@@ -93,18 +92,19 @@ input { font: inherit; }
 .off span { font-size: 14px; line-height: 1.45; color: rgba(255,255,255,.72); }
 
 /* ── panneau bas (option 3) — déclencheur en haut, barre des modes tout en bas ── */
-.panel { position: absolute; left: 0; right: 0; bottom: 0; height: calc(212px + env(safe-area-inset-bottom)); border-radius: 28px 28px 0 0; background: rgba(10,10,10,.62); box-shadow: inset 0 1px 0 rgba(255,255,255,.08); z-index: 2; }
-.seg { position: absolute; left: 14px; right: 14px; bottom: calc(16px + env(safe-area-inset-bottom)); height: 46px; border-radius: 23px; background: rgba(255,255,255,.13); display: flex; padding: 4px; }
+/* Panneau TRANSPARENT, comme Google Lens : seuls les boutons et la barre portent un voile. */
+.panel { position: absolute; left: 0; right: 0; bottom: 0; height: calc(212px + env(safe-area-inset-bottom)); background: transparent; z-index: 2; }
+.seg { position: absolute; left: 14px; right: 14px; bottom: calc(16px + env(safe-area-inset-bottom)); height: 46px; border-radius: 23px; background: rgba(10,10,10,.5); display: flex; padding: 4px; }
 .seg button { flex: 1; border-radius: 19px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; white-space: nowrap; transition: background .18s, color .18s; }
 .seg button.on { background: #C5B2F4; color: #0A0A0A; }
 .capture { position: absolute; left: 0; right: 0; top: 24px; align-items: center; justify-content: space-between; padding: 0 30px; }
-.side { width: 66px; display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; letter-spacing: .02em; }
+.side { width: 66px; display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; letter-spacing: .02em; text-shadow: 0 1px 3px rgba(0,0,0,.85); }
 .side .c { width: 54px; height: 54px; border-radius: 50%; background: rgba(10,10,10,.5); border: 1.5px solid rgba(255,255,255,.9); display: flex; align-items: center; justify-content: center; }
 .side:active .c { background: rgba(255,255,255,.18); }
 .shutter { width: 104px; height: 104px; border-radius: 50%; background: rgba(255,255,255,.35); display: flex; align-items: center; justify-content: center; margin-bottom: 19px; box-shadow: 0 6px 20px rgba(0,0,0,.35); }
 .shutter .d { width: 88px; height: 88px; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; transition: transform .12s; }
 .shutter:active .d { transform: scale(.92); }
-.hint { position: absolute; left: 22px; right: 22px; top: 42px; gap: 14px; align-items: flex-start; }
+.hint { position: absolute; left: 16px; right: 16px; top: 30px; gap: 14px; align-items: flex-start; padding: 12px 14px; border-radius: 18px; background: rgba(10,10,10,.5); }
 .hint b { display: block; font-size: 15px; font-weight: 600; line-height: 1.35; }
 .hint span { display: block; font-size: 13.5px; color: rgba(255,255,255,.72); margin-top: 6px; }
 .text-zone { position: absolute; left: 16px; right: 16px; top: 18px; flex-direction: column; gap: 10px; }
@@ -297,10 +297,15 @@ input { font: inherit; }
     const r = coverRect(st.width, st.height, IMG[LIVE].nw, IMG[LIVE].nh, 0.5, 0.35);
     const toPx = (b) => ({ x: r.x + b[0] * r.w, y: r.y + b[1] * r.h, w: b[2] * r.w, h: b[3] * r.h });
     ldots.innerHTML = '';
+    // Bande visible : sous l'en-tête, au-dessus de la pastille posée sur les boutons.
+    const topLimit = $('.top').getBoundingClientRect().bottom - st.top + 6;
+    const bottomLimit = $('.panel').getBoundingClientRect().top - st.top - 54;
     let f;
     if (S.live.state === 'detected') {
       DET[LIVE].forEach((d, i) => {
         const p = toPx(d.box);
+        // Produit caché derrière les boutons : pas de point (on ne peut pas le toucher).
+        if (p.y + p.h / 2 > bottomLimit) return;
         const dot = el('button', 'dot' + (i === S.live.sel ? ' on' : ''));
         dot.style.left = (p.x + p.w / 2) + 'px'; dot.style.top = (p.y + p.h / 2) + 'px';
         dot.setAttribute('aria-label', d.label);
@@ -308,12 +313,12 @@ input { font: inherit; }
         ldots.appendChild(dot);
       });
       const p = toPx(DET[LIVE][S.live.sel].box), pad = 8;
-      const topLimit = $('.top').getBoundingClientRect().bottom - st.top + 6;
       const x = Math.max(8, p.x - pad), y = Math.max(topLimit, p.y - pad);
-      f = { x, y, w: Math.min(st.width - 8, p.x + p.w + pad) - x, h: Math.min(st.height - 8, p.y + p.h + pad) - y };
+      f = { x, y, w: Math.min(st.width - 8, p.x + p.w + pad) - x, h: Math.max(56, Math.min(bottomLimit, p.y + p.h + pad) - y) };
       lchip.classList.toggle('inside', f.y - 40 < topLimit);
     } else {
-      f = { x: st.width * 0.2, y: st.height * 0.24, w: st.width * 0.6, h: st.height * 0.42 };
+      const band = Math.max(160, bottomLimit - topLimit);
+      f = { x: st.width * 0.2, y: topLimit + band * 0.12, w: st.width * 0.6, h: band * 0.6 };
     }
     Object.assign(lframe.style, { left: f.x + 'px', top: f.y + 'px', width: f.w + 'px', height: f.h + 'px' });
     lframe.classList.toggle('scanning', S.live.state !== 'detected');
