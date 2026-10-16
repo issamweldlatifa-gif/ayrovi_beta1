@@ -101,5 +101,7 @@ commits séparés — voir « Fixed » du CHANGELOG) :
 - sous 900 px de large, l'ombre du tiroir fermé (`0 0 0 100vmax`) voilait tout l'écran de
   la console — c'est le voile gris des captures « Téléphone 390 » de `admin-4`, prises avant
   la correction. **Corrigé** : le voile n'existe plus que tiroir ouvert ;
-- en thème sombre, la pastille de domaine choisie est blanche sur blanc et la carte
-  « Arrivages Standard actifs » reste blanche (non corrigés à ce stade).
+- en thème sombre, la pastille de domaine choisie était blanche sur blanc. **Corrigé** : son
+  texte suit le thème (`--bo-card`), comme le bouton-bascule pressé ;
+- en thème sombre, la carte « Arrivages Standard actifs » reste blanche (non corrigé à ce
+  stade).

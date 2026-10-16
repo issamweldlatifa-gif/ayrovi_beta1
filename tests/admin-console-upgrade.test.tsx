@@ -12,7 +12,7 @@
  *     d'onglet propre à la console ;
  *  5. la console est protégée contre la mise en cadre (clickjacking) dans TOUS les environnements.
  *  6. (2026-10-16) chaque état de la coquille reste lisible : le tiroir fermé ne voile plus la
- *     console sous 900 px.
+ *     console sous 900 px ; en thème sombre, la pastille de domaine choisie garde son contraste.
  */
 import { readFileSync } from 'node:fs';
 // @vitest-environment jsdom
@@ -227,6 +227,25 @@ describe('6. Chaque état de la coquille reste lisible', () => {
     return Object.fromEntries(found[1].split(';').map((entry) => entry.trim()).filter(Boolean)
       .map((entry) => [entry.slice(0, entry.indexOf(':')).trim(), entry.slice(entry.indexOf(':') + 1).trim()]));
   };
+  /** Rôles de la coquille, thème clair puis sombre (le sombre ne redéfinit qu'une partie des rôles). */
+  const roles = {
+    light: rule('.bo-shell, .admin-login, .admin-boot')!,
+    dark: { ...rule('.bo-shell, .admin-login, .admin-boot')!, ...rule("html[data-theme='dark'] .bo-shell, html[data-theme='dark'] .admin-login, html[data-theme='dark'] .admin-boot")! },
+  };
+  const resolve = (value: string, theme: Record<string, string>): string => {
+    const reference = value.match(/^var\((--[\w-]+)\)$/);
+    return reference && theme[reference[1]] ? resolve(theme[reference[1]], theme) : value;
+  };
+  /** Contraste WCAG de deux couleurs #RRGGBB. */
+  const contrast = (first: string, second: string): number => {
+    const luminance = (hex: string) => {
+      const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+        .map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    const [light, dark] = [luminance(first), luminance(second)].sort((a, b) => b - a);
+    return (light + 0.05) / (dark + 0.05);
+  };
 
   it('sous 900 px, le voile du tiroir n’existe que tiroir ouvert (la console n’est plus voilée au repos)', () => {
     const drawer = atBlock('@media (max-width: 900px)');
@@ -240,5 +259,20 @@ describe('6. Chaque état de la coquille reste lisible', () => {
     // `is-open` et le fond cliquable suivent le même état que le bouton « Ouvrir le menu »
     expect(shell).toContain("<aside className={`admin-sidebar ${mobile ? 'is-open' : ''}`}>");
     expect(shell).toContain('{mobile && <button className="admin-sidebar-overlay" onClick={() => setMobile(false)}');
+  });
+
+  it('pastille de domaine choisie : encre inversée lisible dans les deux thèmes (plus de blanc sur blanc en sombre)', () => {
+    const selected = rule(".bo-domains button[aria-selected='true']");
+    expect(selected).not.toBeNull();
+    for (const [name, theme] of Object.entries(roles)) {
+      const background = resolve(selected!.background, theme);
+      const text = resolve(selected!.color, theme);
+      expect(background, name).toMatch(/^#[0-9A-F]{6}$/i);
+      expect(text, name).toMatch(/^#[0-9A-F]{6}$/i);
+      expect(contrast(background, text), `${name} : ${text} sur ${background}`).toBeGreaterThanOrEqual(4.5);
+    }
+    // même couple que le bouton-bascule pressé : une seule manière de dire « choisi » dans la console
+    const pressed = rule(":is(.bo-shell, .admin-login) .admin-button--secondary[aria-pressed='true']");
+    expect([selected!.background, selected!.color]).toEqual([pressed!.background, pressed!.color]);
   });
 });

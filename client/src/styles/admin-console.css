@@ -205,7 +205,10 @@ html[data-theme='dark'] .admin-boot {
   font: inherit; font-size: 10.5px; font-weight: 700; cursor: pointer;
 }
 .bo-domains button:hover { border-color: var(--bo-ink); color: var(--bo-ink); }
-.bo-domains button[aria-selected='true'] { background: var(--bo-ink); border-color: var(--bo-ink); color: #FFFFFF; }
+/* Pastille choisie = encre inversée : fond --bo-ink, texte --bo-card (même couple que le
+   bouton-bascule). Défaut corrigé : un texte #FFFFFF fixe restait blanc quand le thème sombre
+   éclaircit --bo-ink (#F5F5F5) — « Tous », « ERP »… devenaient blanc sur blanc (1,09:1). */
+.bo-domains button[aria-selected='true'] { background: var(--bo-ink); border-color: var(--bo-ink); color: var(--bo-card); }
 .bo-domains button small { font-size: 9.5px; font-weight: 700; opacity: .75; }
 
 .bo-shell .admin-sidebar nav { padding: 10px 8px 18px; }

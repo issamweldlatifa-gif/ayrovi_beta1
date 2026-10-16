@@ -22090,8 +22090,8 @@
     {
       "file": "client/src/styles/admin-console.css",
       "domain": "shell-content",
-      "sha256": "c3dbc8daf488924e07a24855a193f9fbe556d001b63cbadbadeff984e459fe0a",
-      "lines": 614,
+      "sha256": "bab2fae5d88a6f9f2d7f0d61a6fae6c25a8ad520b1aec7f4028a79ff7223c024",
+      "lines": 617,
       "imports": [],
       "exports": [],
       "controls": [],
