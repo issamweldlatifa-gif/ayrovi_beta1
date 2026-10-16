@@ -193,6 +193,53 @@ describe('fiche produit Lens native', () => {
     expect(blurOfGallery().some((value) => value > 0)).toBe(true);
   });
 
+  it('présente les caractéristiques en grille : intitulé au-dessus, valeur dessous', async () => {
+    render(wrap(<LensProductView
+      candidate={candidate({
+        details: [
+          { key: 'length', label: 'Longueur', value: 'longueur standard', section: 'details' },
+          { key: 'fit', label: 'Coupe', value: 'regular', section: 'details' },
+          { key: 'collar', label: 'Forme du col', value: 'col rond', section: 'details' },
+        ],
+      })}
+      onBack={() => {}}
+    />));
+    expect(await screen.findByTestId('lens-product-view')).toBeOnTheScreen();
+    fireEvent.press(screen.getByTestId('lens-accordion-characteristics'));
+
+    // Grille Zalando : deux cellules par rangée, libellé puis valeur en dessous.
+    expect(screen.getByTestId('lens-fact-grid')).toBeOnTheScreen();
+    // 3 caractéristiques → 2 rangées : [2 cellules] puis [1 cellule].
+    expect(screen.getAllByTestId(/^lens-fact-cell-/)).toHaveLength(3);
+    expect(screen.getByTestId('lens-fact-cell-0-0')).toBeOnTheScreen();
+    expect(screen.getByTestId('lens-fact-cell-0-1')).toBeOnTheScreen();
+    expect(screen.getByTestId('lens-fact-cell-1-0')).toBeOnTheScreen();
+    expect(screen.getByText('Longueur')).toBeOnTheScreen();
+    expect(screen.getByText('longueur standard')).toBeOnTheScreen();
+    expect(screen.getByText('Forme du col')).toBeOnTheScreen();
+  });
+
+  it('ouvre un guide des tailles qui n’invente aucune équivalence', async () => {
+    render(wrap(<LensProductView
+      candidate={candidate({ sizes: ['40', '41', '42'], colors: ['Noir'] })}
+      onBack={() => {}}
+    />));
+    expect(await screen.findByTestId('lens-product-view')).toBeOnTheScreen();
+    expect(screen.queryByTestId('lens-size-guide-sheet')).toBeNull();
+
+    fireEvent.press(await screen.findByTestId('lens-open-size-guide'));
+    const sheet = await screen.findByTestId('lens-size-guide-sheet');
+    expect(sheet).toBeOnTheScreen();
+    // Les tailles affichées sont celles du marchand, une par une, sans conversion inventée.
+    expect(screen.getByTestId('lens-size-guide-sizes')).toBeOnTheScreen();
+    expect(screen.getByText('40')).toBeOnTheScreen();
+    expect(screen.getByText('42')).toBeOnTheScreen();
+    // La méthode générale est annoncée comme telle (aucune donnée inventée).
+    expect(screen.getByText(/Méthode générale/)).toBeOnTheScreen();
+    fireEvent.press(screen.getByTestId('lens-size-guide-close'));
+    await waitFor(() => expect(screen.queryByTestId('lens-size-guide-sheet')).toBeNull());
+  });
+
   it('change la galerie et le prix avec les vrais choix image/variante', async () => {
     const product = candidate({
       colors: ['Rouge', 'Bleu'],

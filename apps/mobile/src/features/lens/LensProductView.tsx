@@ -29,6 +29,7 @@ import type { LensCandidate, LensProductFact } from '@/api/lens';
 import { lensGallery, lensMediaChain } from './lensMedia';
 import { LENS_COLORS } from './lensPalette';
 import { LensPriceBlock } from './LensPriceBlock';
+import { LensSizeGuide } from './LensSizeGuide';
 import { earliestCartDeadline, formatCartCountdown, remainingMs, serverClockOffset } from './lensCartStatus';
 import {
   buildCartPayload, effectiveChoice, missingChoice, orderBlock, resolveSelection, type OrderBlock,
@@ -43,7 +44,7 @@ const BLOCK_KEY: Record<Exclude<OrderBlock, null>, TranslationKey> = {
 const CARE_FACT = /(?:^|\b)(?:care|wash|washing|clean|cleaning|entretien|lavage|nettoyage|pflege|غسل|تنظيف|العناية)(?:\b|$)/i;
 
 function OptionSelector({
-  label, values, value, onChange, openRequest = 0, disabledValues = new Set<string>(),
+  label, values, value, onChange, openRequest = 0, disabledValues = new Set<string>(), trailing,
 }: {
   label: string;
   values: string[];
@@ -52,6 +53,8 @@ function OptionSelector({
   /** Incrémenté par le CTA quand le client a oublié ce choix. */
   openRequest?: number;
   disabledValues?: Set<string>;
+  /** Élément posé SOUS le champ (ex. « Guide des tailles ») — jamais obligatoire. */
+  trailing?: React.ReactNode;
 }) {
   const theme = useTheme();
   const t = useT();
@@ -148,6 +151,7 @@ function OptionSelector({
           </View>
         </View>
       </Modal>
+      {trailing}
     </View>
   );
 }
@@ -420,6 +424,13 @@ function ZoomableGalleryImage({
   );
 }
 
+/** Découpe les caractéristiques en rangées de DEUX (grille Zalando). */
+function chunkFacts(facts: readonly LensProductFact[]): LensProductFact[][] {
+  const rows: LensProductFact[][] = [];
+  for (let index = 0; index < facts.length; index += 2) rows.push(facts.slice(index, index + 2));
+  return rows;
+}
+
 function FactAccordion({
   title, icon, facts, description, testID,
 }: {
@@ -455,21 +466,34 @@ function FactAccordion({
       {open ? (
         <View style={[styles.accordionBody, { borderTopColor: theme.colors.line }]}>
           {description ? <AppText color={theme.colors.ink} style={styles.description}>{description}</AppText> : null}
-          {facts.map((fact, index) => (
-            <View
-              key={`${fact.label}-${fact.value}-${index}`}
-              style={[
-                styles.factRow,
-                {
-                  borderTopColor: theme.colors.line,
-                  flexDirection: theme.isRTL ? 'row-reverse' : 'row',
-                },
-              ]}
-            >
-              <AppText variant="caption" color={theme.colors.muted} style={styles.factLabel}>{fact.label}</AppText>
-              <AppText weight="semibold" style={styles.factValue}>{fact.value}</AppText>
+          {facts.length ? (
+            /* Référence Zalando (17/10/2026) : une GRILLE de deux colonnes où
+               l'intitulé est posé AU-DESSUS de sa valeur — « تلقى عنوان تحتو
+               معلومة ». Une seule colonne reste une colonne, jamais une ligne
+               étiquette/valeur collée. */
+            <View style={styles.factGrid} testID="lens-fact-grid">
+              {chunkFacts(facts).map((row, rowIndex) => (
+                <View
+                  key={`row-${rowIndex}`}
+                  style={[
+                    styles.factGridRow,
+                    {
+                      borderTopColor: theme.colors.line,
+                      flexDirection: theme.isRTL ? 'row-reverse' : 'row',
+                    },
+                  ]}
+                >
+                  {row.map((fact, column) => (
+                    <View key={`${fact.label}-${fact.value}`} style={styles.factCell} testID={`lens-fact-cell-${rowIndex}-${column}`}>
+                      <AppText variant="caption" color={theme.colors.muted} numberOfLines={1}>{fact.label}</AppText>
+                      <AppText weight="semibold">{fact.value}</AppText>
+                    </View>
+                  ))}
+                  {row.length === 1 ? <View style={styles.factCell} /> : null}
+                </View>
+              ))}
             </View>
-          ))}
+          ) : null}
         </View>
       ) : null}
     </View>
@@ -544,6 +568,7 @@ export function LensProductView({
   const [addedDeadline, setAddedDeadline] = useState('');
   const [addedClockOffset, setAddedClockOffset] = useState(0);
   const [confirmationOpen, setConfirmationOpen] = useState(false);
+  const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
   const [sizeOpenRequest, setSizeOpenRequest] = useState(0);
   const [colorAttention, setColorAttention] = useState(false);
   const [zoomed, setZoomed] = useState(false);
@@ -668,6 +693,7 @@ export function LensProductView({
   }, [deadline]);
 
   useEffect(() => {
+    setSizeGuideOpen(false);
     setSelectedSize(candidate.sizes.length === 1 ? candidate.sizes[0] : '');
     setSelectedColor(candidate.colors.length === 1 ? candidate.colors[0] : '');
     setPage(0);
@@ -970,7 +996,7 @@ export function LensProductView({
                 { top: insets.top + 66, opacity: favorite ? 0.72 : pressed ? theme.opacity.subtle : 1 },
               ]}
             >
-              <Ionicons name={favorite ? 'heart' : 'heart-outline'} size={22} color={favorite ? LENS_COLORS.active : LENS_COLORS.black} accessibilityElementsHidden />
+              <Ionicons name={favorite ? 'heart' : 'heart-outline'} size={22} color={favorite ? LENS_COLORS.active : LENS_COLORS.white} style={styles.crispIcon} accessibilityElementsHidden />
             </Pressable>
           ) : null}
           {candidate.promo ? (
@@ -1037,6 +1063,18 @@ export function LensProductView({
               onChange={(value) => { lastChoiceRef.current = 'size'; setSelectedSize(value); setOrderMessage(''); }}
               openRequest={sizeOpenRequest}
               disabledValues={sizeUnavailable}
+              trailing={candidate.sizes.length > 1 ? (
+                <Pressable
+                  onPress={() => setSizeGuideOpen(true)}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('lens.product.sizeGuide')}
+                  style={({ pressed }) => [styles.sizeGuideLink, { opacity: pressed ? theme.opacity.subtle : 1, flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}
+                  testID="lens-open-size-guide"
+                >
+                  <Ionicons name="help-circle-outline" size={16} color={theme.colors.ink} style={styles.sizeGuideIcon} accessibilityElementsHidden />
+                  <AppText variant="caption" weight="bold" style={styles.sizeGuideText}>{t('lens.product.sizeGuide')}</AppText>
+                </Pressable>
+              ) : null}
             />
             <ColorSelector
               candidate={candidate}
@@ -1113,6 +1151,13 @@ export function LensProductView({
           block
         />
       </View>
+
+      <LensSizeGuide
+        visible={sizeGuideOpen}
+        candidate={candidate}
+        unavailableSizes={sizeUnavailable}
+        onClose={() => setSizeGuideOpen(false)}
+      />
 
       <Modal
         visible={confirmationOpen}
@@ -1246,9 +1291,14 @@ const styles = StyleSheet.create({
   accordionTitle: { fontSize: 16 },
   accordionBody: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 8, paddingBottom: 16 },
   description: { fontSize: 15, lineHeight: 23, paddingVertical: 8 },
-  factRow: { minHeight: 58, borderTopWidth: StyleSheet.hairlineWidth, alignItems: 'flex-start', gap: 16, paddingVertical: 12 },
-  factLabel: { width: '36%', lineHeight: 19 },
-  factValue: { flex: 1, lineHeight: 20 },
+  factGrid: { marginTop: 4 },
+  factGridRow: { borderTopWidth: StyleSheet.hairlineWidth, gap: 16, paddingVertical: 12 },
+  // Une cellule = intitulé au-dessus, valeur en dessous (jamais côte à côte).
+  factCell: { flex: 1, gap: 2 },
+  // « Guide des tailles » : un LIEN texte souligné, pas un bouton plein (Zalando).
+  sizeGuideLink: { alignSelf: 'flex-start', minHeight: 36, alignItems: 'center', gap: 6, paddingHorizontal: 2 },
+  sizeGuideIcon: { marginTop: 1 },
+  sizeGuideText: { textDecorationLine: 'underline' },
   stickyAction: {
     position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 24,
     borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingTop: 10, gap: 8,

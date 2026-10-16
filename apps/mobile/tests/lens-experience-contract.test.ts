@@ -102,7 +102,9 @@ describe('chargement et résultats Lens', () => {
     expect(card).toContain('color={LENS_COLORS.star}');
     expect(card).toContain('backgroundColor: LENS_COLORS.sale');
     expect(card).toContain('favorite ? LENS_COLORS.active : LENS_COLORS.black');
-    expect(product).toContain('favorite ? LENS_COLORS.active : LENS_COLORS.black');
+    // Fiche produit : le cœur est posé À MÊME LA PHOTO (17/10/2026, plus de
+    // pastille blanche) — il est donc blanc sur le média, violet une fois coché.
+    expect(product).toContain('favorite ? LENS_COLORS.active : LENS_COLORS.white');
     // v4.2.0 : un minuteur est une information, pas une action — encre noire.
     expect(product).toContain('countdownExpired ? LENS_COLORS.sale : LENS_COLORS.black');
     expect(product).not.toContain('countdownExpired ? LENS_COLORS.sale : LENS_COLORS.active');
