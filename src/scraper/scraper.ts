@@ -189,6 +189,12 @@ export class SmartLinkScraper {
       gtin: liveData?.gtin || null,
       sku: liveData?.sku || null,
       seller: liveData?.seller || null,
+      /* Signaux de fiche (17/10/2026) : texte publié, jamais reconstruit. */
+      sizeAdvice: liveData?.signals?.sizeAdvice || null,
+      modelInfo: liveData?.signals?.modelInfo || null,
+      manufacturingInfo: liveData?.signals?.manufacturingInfo || null,
+      deliveryEstimate: liveData?.signals?.deliveryEstimate || null,
+      promoCountdown: liveData?.signals?.promoCountdown || null,
       rating: liveData?.rating ?? null,
       reviewsCount: liveData?.reviewCount ?? null,
       priceVerified: merchantResult.verified && price > 0,

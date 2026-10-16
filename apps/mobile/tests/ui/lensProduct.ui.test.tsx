@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -150,6 +150,51 @@ describe('fiche produit Lens native', () => {
     expect(await screen.findByTestId('lens-product-view')).toBeOnTheScreen();
     fireEvent.press(screen.getByTestId('lens-accordion-characteristics'));
     expect(screen.getAllByText('LV040BM333')).toHaveLength(1);
+  });
+
+  it('affiche les signaux de fiche publiés par le marchand (Zalando)', async () => {
+    render(wrap(<LensProductView candidate={candidate({
+      sizeAdvice: 'Nous vous recommandons de choisir une taille au-dessus de celle habituelle.',
+      modelInfo: 'Notre mannequin (190 cm) porte une taille XL',
+      manufacturingInfo: 'Turquie',
+      deliveryEstimate: '23 octobre-29 octobre',
+      promoCountdown: '1j4h22m',
+    })} onBack={() => {}} />));
+
+    expect(await screen.findByTestId('lens-product-view')).toBeOnTheScreen();
+    expect(screen.getByTestId('lens-model-info')).toBeOnTheScreen();
+    expect(screen.getByText('Notre mannequin (190 cm) porte une taille XL')).toBeOnTheScreen();
+    expect(screen.getByTestId('lens-size-advice')).toBeOnTheScreen();
+    expect(screen.getByText('Nous vous recommandons de choisir une taille au-dessus de celle habituelle.')).toBeOnTheScreen();
+    expect(screen.getByTestId('lens-merchant-countdown')).toBeOnTheScreen();
+    expect(screen.getByText('1j4h22m')).toBeOnTheScreen();
+    expect(screen.getByTestId('lens-merchant-delivery')).toBeOnTheScreen();
+    expect(screen.getByText('23 octobre-29 octobre')).toBeOnTheScreen();
+    fireEvent.press(screen.getByTestId('lens-accordion-characteristics'));
+    expect(screen.getByText('Informations sur la fabrication')).toBeOnTheScreen();
+    expect(screen.getByText('Turquie')).toBeOnTheScreen();
+  });
+
+  it('n’affiche aucun signal quand la page marchande n’en publie pas', async () => {
+    render(wrap(<LensProductView candidate={candidate()} onBack={() => {}} />));
+    expect(await screen.findByTestId('lens-product-view')).toBeOnTheScreen();
+    expect(screen.queryByTestId('lens-model-info')).toBeNull();
+    expect(screen.queryByTestId('lens-size-advice')).toBeNull();
+    expect(screen.queryByTestId('lens-merchant-countdown')).toBeNull();
+    expect(screen.queryByTestId('lens-merchant-delivery')).toBeNull();
+  });
+
+  it('ne traduit jamais un signal marchand en équivalence de taille chiffrée', async () => {
+    render(wrap(<LensProductView candidate={candidate({
+      sizeAdvice: 'Nous vous recommandons de choisir une taille au-dessus de celle habituelle.',
+      modelInfo: 'Notre mannequin (190 cm) porte une taille XL',
+    })} onBack={() => {}} />));
+
+    expect(await screen.findByTestId('lens-product-view')).toBeOnTheScreen();
+    const advice = within(screen.getByTestId('lens-size-advice'));
+    expect(advice.getByText('Nous vous recommandons de choisir une taille au-dessus de celle habituelle.')).toBeOnTheScreen();
+    expect(advice.queryByText(/38|40|42|44|46/)).toBeNull();
+    expect(screen.queryByText(/taille équivalente/i)).toBeNull();
   });
 
   it('n’invente aucune identité quand la source n’en publie pas', async () => {

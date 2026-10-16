@@ -94,6 +94,12 @@ function toAyrovixProduct(db: QatafoDatabase, scraped: ScrapedProduct): AyrovixP
     gtin: scraped.gtin || null,
     sku: scraped.sku || null,
     seller: scraped.seller || null,
+    // Signaux de fiche : le texte du marchand, mot pour mot, ou rien.
+    sizeAdvice: scraped.sizeAdvice || null,
+    modelInfo: scraped.modelInfo || null,
+    manufacturingInfo: scraped.manufacturingInfo || null,
+    deliveryEstimate: scraped.deliveryEstimate || null,
+    promoCountdown: scraped.promoCountdown || null,
     rating: Number.isFinite(Number((scraped as any).rating)) && Number((scraped as any).rating) > 0 && Number((scraped as any).rating) <= 5 ? Number((scraped as any).rating) : null,
     ratingCount: Number.isFinite(Number((scraped as any).ratingCount)) ? Number((scraped as any).ratingCount) : null,
     ratingKind: Number.isFinite(Number((scraped as any).rating)) ? 'merchant' : 'listing-quality',

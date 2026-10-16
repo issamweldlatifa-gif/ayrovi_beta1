@@ -4,6 +4,8 @@ import type { ProductVariantDetail, ProductVariants, StoreType } from '../types'
 import { readAmazonAvailability, readAmazonExtras, readAmazonPrice, readAmazonVariants } from './amazonPage';
 import { checkPriceText, priceFromText, priceRejectionOf, type PriceRejectionReason } from './priceIntegrity';
 
+import { readPageSignals, type MerchantPageSignals } from './pageSignals';
+
 export interface ParsedProductPage {
   title: string;
   brand?: string;
@@ -46,6 +48,13 @@ export interface ParsedProductPage {
   sku?: string;
   /** Vendeur de l'offre (`offers.seller.name`, `offeredBy`) — pas la boutique. */
   seller?: string;
+  /**
+   * SIGNAUX DE FICHE (17/10/2026) — conseil de taille, mannequin, fabrication,
+   * livraison et compte à rebours de l'offre : lus TELS QUELS dans le texte
+   * publié par la page (textes relevés sur les fiches Zalando). Vides quand la
+   * page ne les porte pas — jamais reconstruits, jamais traduits en données.
+   */
+  signals?: MerchantPageSignals;
   /** Note publiée (`aggregateRating.ratingValue`), bornée 0–5. */
   rating?: number;
   /** Nombre d'avis publié (`reviewCount`/`ratingCount`), entier positif. */
@@ -1151,6 +1160,7 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
       gtin: gtin || undefined,
       sku: skuFinal || undefined,
       seller: sellerFinal || undefined,
+      signals: readPageSignals(document.body?.textContent || ''),
       rating: ratingFinal,
       reviewCount: reviewCountFinal,
       variants: { sizes, colors, details },

@@ -665,6 +665,12 @@ export function LensProductView({
   // IDENTITÉS MARCHANDES (16/10/2026, fiche façon Zalando) : la référence et le
   // code-barres publiés par la source rejoignent « Caractéristiques ». Jamais
   // inventés, jamais doublonnés avec une fact marchande portant la même valeur.
+  // Fabrication : un fait de plus, publié par la fiche, jamais une supposition.
+  const manufacturingFacts = useMemo(() => {
+    const info = (candidate.manufacturingInfo || '').trim();
+    if (!info) return [] as LensProductFact[];
+    return [{ key: 'manufacturing', label: t('lens.product.manufacturing'), value: info, section: 'details' as const }];
+  }, [candidate.manufacturingInfo, t]);
   const identityFacts = useMemo(() => {
     const published = candidate.details ?? [];
     const existing = new Set(published.map((fact) => fact.value.trim().toLocaleLowerCase()));
@@ -679,7 +685,7 @@ export function LensProductView({
     }
     return rows;
   }, [candidate.details, candidate.gtin, candidate.sku, t]);
-  const facts = [...(candidate.details ?? []), ...identityFacts];
+  const facts = [...(candidate.details ?? []), ...manufacturingFacts, ...identityFacts];
   const detailFacts = facts.filter((fact) => fact.section === 'details');
   const careFacts = detailFacts.filter((fact) => CARE_FACT.test(`${fact.label} ${fact.value}`));
   const characteristicFacts = detailFacts.filter((fact) => !careFacts.includes(fact));
@@ -1069,6 +1075,14 @@ export function LensProductView({
           >
             <View style={[styles.sheetHandle, { backgroundColor: theme.colors.lineControl }]} />
           </Pressable>
+          {/* Zalando place la mention du mannequin juste AU-DESSUS de la marque :
+              c'est l'information qui aide à choisir, on la garde à cet endroit.
+              Rien n'est affiché quand le marchand ne l'a pas publiée. */}
+          {candidate.modelInfo ? (
+            <View testID="lens-model-info">
+              <AppText variant="caption" color={theme.colors.muted}>{candidate.modelInfo}</AppText>
+            </View>
+          ) : null}
           {candidate.brand ? <AppText weight="bold" style={styles.brand}>{candidate.brand}</AppText> : null}
           <AppText weight={candidate.brand ? 'regular' : 'bold'} style={styles.productTitle}>{candidate.title}</AppText>
           {candidate.ratingKind === 'merchant' && candidate.rating != null ? (
@@ -1079,6 +1093,29 @@ export function LensProductView({
             </View>
           ) : null}
           <LensPriceBlock candidate={displayCandidate} compact={false} />
+          {/* CONSEIL DE TAILLE : le texte du marchand, encadré comme chez Zalando
+              mais en blanc (jamais de pastille grise). */}
+          {candidate.sizeAdvice ? (
+            <View style={[styles.adviceBox, { borderColor: theme.colors.line }]} testID="lens-size-advice">
+              <Ionicons name="information-circle-outline" size={16} color={theme.colors.ink} accessibilityElementsHidden />
+              <AppText variant="caption" style={styles.adviceText}>{candidate.sizeAdvice}</AppText>
+            </View>
+          ) : null}
+          {/* Fin de l'offre DU MARCHAND : attribuée, jamais confondue avec notre
+              propre compte à rebours d'attache de prix (qui reste en en-tête). */}
+          {candidate.promoCountdown ? (
+            <View style={[styles.merchantLine, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]} testID="lens-merchant-countdown">
+              <AppText variant="caption" weight="bold">{t('lens.product.offerEnds')}</AppText>
+              <AppText variant="caption" weight="bold">{candidate.promoCountdown}</AppText>
+              <AppText variant="caption" color={theme.colors.muted}>{t('lens.product.merchantSays')}</AppText>
+            </View>
+          ) : null}
+          {candidate.deliveryEstimate ? (
+            <View style={[styles.merchantLine, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]} testID="lens-merchant-delivery">
+              <AppText variant="caption" weight="bold">{t('lens.product.merchantDelivery')}</AppText>
+              <AppText variant="caption" weight="semibold">{candidate.deliveryEstimate}</AppText>
+            </View>
+          ) : null}
           {favoriteNote ? (
             <AppText variant="caption" color={theme.status.danger.fg} accessibilityRole="alert">{t(favoriteNote)}</AppText>
           ) : null}
@@ -1312,6 +1349,13 @@ const styles = StyleSheet.create({
   brand: { fontSize: 19, lineHeight: 24, marginTop: 2 },
   productTitle: { fontSize: 17, lineHeight: 23, marginBottom: 4 },
   ratingRow: { alignItems: 'center', gap: 6, minHeight: 24 },
+  adviceBox: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 8,
+    borderWidth: StyleSheet.hairlineWidth, padding: 12, marginTop: 4,
+  },
+  adviceText: { flex: 1, lineHeight: 19 },
+  merchantLine: { alignItems: 'center', gap: 6, minHeight: 24, marginTop: 2 },
+  merchantValue: { fontWeight: '600' },
   // Résumé du choix : du TEXTE sur blanc, plus une pastille grise (17/10/2026).
   choiceSummary: { alignSelf: 'flex-start', paddingVertical: 2 },
   optionsArea: { gap: 12, marginTop: 4 },

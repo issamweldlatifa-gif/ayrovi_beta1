@@ -114,6 +114,16 @@ export interface LensCandidate {
   gtin?: string | null;
   /** بائع العرض كما نشرته المصدر — غائب إن لم يُنشر. */
   seller?: string | null;
+  /** نصيحة المقاس كما نشرها المتجر — غائبة إن لم ينشرها. */
+  sizeAdvice?: string | null;
+  /** «العارض (190 سم) يلبس مقاس XL» — كما نشرها المتجر. */
+  modelInfo?: string | null;
+  /** معلومات التصنيع كما نشرها المتجر. */
+  manufacturingInfo?: string | null;
+  /** تقدير التسليم عند المتجر كما نشره. */
+  deliveryEstimate?: string | null;
+  /** عدّاد تخفيض المتجر كما نشره (مثال 1j4h22m). */
+  promoCountdown?: string | null;
 }
 
 export interface LensIdentification {
@@ -339,6 +349,12 @@ function parseCandidateRecord(value: unknown, allowProductShape: boolean): LensC
     sku: strOrNull(value.sku),
     gtin: strOrNull(value.gtin),
     seller: strOrNull(value.seller),
+    // Signaux de fiche (17/10/2026) : textes du marchand, mot pour mot.
+    sizeAdvice: strOrNull(value.sizeAdvice),
+    modelInfo: strOrNull(value.modelInfo),
+    manufacturingInfo: strOrNull(value.manufacturingInfo),
+    deliveryEstimate: strOrNull(value.deliveryEstimate),
+    promoCountdown: strOrNull(value.promoCountdown),
   };
 }
 

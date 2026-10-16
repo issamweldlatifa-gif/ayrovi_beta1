@@ -105,5 +105,10 @@ export function mergeLensProduct(current: LensCandidate, full: LensCandidate): L
     gtin: full.gtin || current.gtin,
     sku: full.sku || current.sku,
     seller: full.seller || current.seller,
+    sizeAdvice: full.sizeAdvice || current.sizeAdvice,
+    modelInfo: full.modelInfo || current.modelInfo,
+    manufacturingInfo: full.manufacturingInfo || current.manufacturingInfo,
+    deliveryEstimate: full.deliveryEstimate || current.deliveryEstimate,
+    promoCountdown: full.promoCountdown || current.promoCountdown,
   };
 }

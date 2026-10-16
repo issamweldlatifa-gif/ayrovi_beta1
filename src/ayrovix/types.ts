@@ -206,6 +206,16 @@ export interface AyrovixProduct {
   gtin?: string | null;
   sku?: string | null;
   seller?: string | null;
+  /**
+   * SIGNAUX DE FICHE (17/10/2026) : texte publié par le marchand sur sa fiche
+   * (conseil de taille, mannequin, fabrication, livraison, fin d'offre).
+   * Transportés TELS QUELS — l'écran les affiche ou n'affiche rien.
+   */
+  sizeAdvice?: string | null;
+  modelInfo?: string | null;
+  manufacturingInfo?: string | null;
+  deliveryEstimate?: string | null;
+  promoCountdown?: string | null;
 }
 
 export interface AyrovixDetectedPrice {

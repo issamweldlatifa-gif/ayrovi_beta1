@@ -80,6 +80,17 @@ export interface ScrapedProduct {
   gtin?: string | null;
   sku?: string | null;
   seller?: string | null;
+  /**
+   * SIGNAUX DE FICHE (17/10/2026, fiches Zalando) — publiés tels quels par la
+   * page, jamais reconstruits : conseil de taille, mention du mannequin,
+   * informations de fabrication, estimation de livraison du marchand, compte à
+   * rebours de son offre. `null` quand la page ne les porte pas.
+   */
+  sizeAdvice?: string | null;
+  modelInfo?: string | null;
+  manufacturingInfo?: string | null;
+  deliveryEstimate?: string | null;
+  promoCountdown?: string | null;
   priceVerified?: boolean;
   /**
    * INTÉGRITÉ DU PRIX (Phase 0, 06/10/2026) — raison pour laquelle un montant
