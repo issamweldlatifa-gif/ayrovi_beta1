@@ -54,10 +54,15 @@ export function LensLiveOverlay({
       const area = { left: PAD, top: visibleTop + PAD, right: width - PAD, bottom: visibleBottom - PAD };
       return clampRectToArea({ x: rect.x - PAD, y: rect.y - PAD, w: rect.w + PAD * 2, h: rect.h + PAD * 2 }, area, 56);
     }
-    // Attente : cadre centré dans la bande visible.
+    // Attente : cadre CARRÉ centré dans la bande visible, comme le viseur de Google Lens.
     const bandH = Math.max(120, visibleBottom - visibleTop);
-    return { x: width * 0.14, y: visibleTop + bandH * 0.16, w: width * 0.72, h: bandH * 0.6 };
+    const side = Math.min(width * 0.72, bandH * 0.78);
+    return { x: (width - side) / 2, y: visibleTop + (bandH - side) * 0.42, w: side, h: side };
   }, [active, image, visibleBottom, visibleTop, width]);
+  // Coins = quarts de cercle (« حواف دائرية » comme Google Lens) : rayon selon la taille du cadre.
+  const radius = Math.round(Math.max(24, Math.min(56, Math.min(target.w, target.h) * 0.2)));
+  const stroke = active ? 3.5 : 2.5;
+  const arcColor = active ? LENS_COLORS.white : frost(0.82);
 
   const layout = useRef({
     x: new Animated.Value(target.x),
@@ -115,10 +120,10 @@ export function LensLiveOverlay({
         testID={active ? 'lens-live-frame-locked' : 'lens-live-frame-scanning'}
       >
         <Animated.View style={[StyleSheet.absoluteFill, { opacity: breath }]}>
-          <View style={[styles.corner, styles.cornerTL]} />
-          <View style={[styles.corner, styles.cornerTR]} />
-          <View style={[styles.corner, styles.cornerBL]} />
-          <View style={[styles.corner, styles.cornerBR]} />
+          <View style={[styles.arc, { top: 0, left: 0, width: radius, height: radius, borderColor: arcColor, borderTopWidth: stroke, borderLeftWidth: stroke, borderTopLeftRadius: radius }]} />
+          <View style={[styles.arc, { top: 0, right: 0, width: radius, height: radius, borderColor: arcColor, borderTopWidth: stroke, borderRightWidth: stroke, borderTopRightRadius: radius }]} />
+          <View style={[styles.arc, { bottom: 0, left: 0, width: radius, height: radius, borderColor: arcColor, borderBottomWidth: stroke, borderLeftWidth: stroke, borderBottomLeftRadius: radius }]} />
+          <View style={[styles.arc, { bottom: 0, right: 0, width: radius, height: radius, borderColor: arcColor, borderBottomWidth: stroke, borderRightWidth: stroke, borderBottomRightRadius: radius }]} />
         </Animated.View>
         {active ? (
           <View
@@ -153,16 +158,10 @@ export function LensLiveOverlay({
 }
 
 const DOT = 30;
-const CORNER = 34;
-const STROKE = 4;
 
 const styles = StyleSheet.create({
   frame: { position: 'absolute' },
-  corner: { position: 'absolute', width: CORNER, height: CORNER, borderColor: LENS_COLORS.white },
-  cornerTL: { top: 0, left: 0, borderTopWidth: STROKE, borderLeftWidth: STROKE, borderTopLeftRadius: 18 },
-  cornerTR: { top: 0, right: 0, borderTopWidth: STROKE, borderRightWidth: STROKE, borderTopRightRadius: 18 },
-  cornerBL: { bottom: 0, left: 0, borderBottomWidth: STROKE, borderLeftWidth: STROKE, borderBottomLeftRadius: 18 },
-  cornerBR: { bottom: 0, right: 0, borderBottomWidth: STROKE, borderRightWidth: STROKE, borderBottomRightRadius: 18 },
+  arc: { position: 'absolute' },
   chip: { position: 'absolute', height: CHIP_H, maxWidth: 260, borderRadius: CHIP_H / 2, paddingHorizontal: 12, alignItems: 'center', gap: 8 },
   chipAbove: { left: 0, top: -(CHIP_H + PAD) },
   chipInside: { left: 10, top: 10 },

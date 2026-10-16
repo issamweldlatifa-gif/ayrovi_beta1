@@ -192,8 +192,8 @@ export function LensSelectionView({
 }
 
 const DOT = 30;
-const CORNER = 30;
-const STROKE = 4;
+const CORNER = 34;
+const STROKE = 5;
 
 const styles = StyleSheet.create({
   area: { position: 'absolute', left: 0, right: 0 },

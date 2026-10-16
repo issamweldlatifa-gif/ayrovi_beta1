@@ -97,11 +97,12 @@ interface PhotoSession { photos: SessionPhoto[]; index: number }
 
 const CODE_TYPES = ['qr', 'ean13', 'ean8', 'upc_a', 'upc_e', 'code128'] as const;
 const HIT_SLOP = { top: 12, bottom: 12, left: 12, right: 12 } as const;
-const MODES: ReadonlyArray<[Mode, TranslationKey]> = [
-  ['live', 'lens.modeLive'],
-  ['code', 'lens.modeCode'],
-  ['link', 'lens.modeLink'],
-  ['text', 'lens.modeText'],
+/** Barre du bas : icône au-dessus du libellé, comme Search · Translate · Talk · Create de Google Lens. */
+const MODES: ReadonlyArray<[Mode, TranslationKey, keyof typeof Ionicons.glyphMap]> = [
+  ['live', 'lens.modeLive', 'scan-outline'],
+  ['code', 'lens.modeCode', 'qr-code-outline'],
+  ['link', 'lens.modeLink', 'link-outline'],
+  ['text', 'lens.modeText', 'text-outline'],
 ];
 /** Bords maximaux des copies envoyées : recherche, repérage d'une photo, image Live. */
 const SEARCH_EDGE = 1600;
@@ -997,7 +998,7 @@ export default function LensScreen() {
     const deviceError = stage.kind === 'error' && isApiError(stage.error) && stage.error.kind === 'device';
     // Avec une photo, la feuille s'arrête à mi-hauteur : le cadre reste visible et manipulable.
     const sheetTop = sessionPhoto
-      ? Math.round(height * 0.5)
+      ? Math.round(height * 0.6)
       : stage.kind === 'busy' ? Math.max(210, height * 0.34) : Math.max(150, height * 0.24);
     const photoTop = insets.top + 58;
     const multi = (session?.photos.length ?? 0) > 1;
@@ -1132,7 +1133,8 @@ export default function LensScreen() {
             width={width}
             height={height}
             visibleTop={headerBottom}
-            visibleBottom={height - panelHeight}
+            // Le cadre s'arrête au-dessus de la pastille d'état (posée sur le panneau).
+            visibleBottom={height - panelHeight - 52}
             onSelect={onLiveSelect}
           />
         ) : null}
@@ -1287,7 +1289,7 @@ export default function LensScreen() {
           ) : null}
 
           <View style={[styles.modePicker, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]} accessibilityRole="tablist">
-            {MODES.map(([value, label]) => {
+            {MODES.map(([value, label, icon]) => {
               const active = value === mode;
               return (
                 <Pressable
@@ -1298,6 +1300,7 @@ export default function LensScreen() {
                   style={[styles.mode, active ? styles.modeActive : null]}
                   testID={`lens-mode-${value}`}
                 >
+                  <Ionicons name={icon} size={theme.iconSize.sm} color={active ? LENS_COLORS.black : LENS_COLORS.white} accessibilityElementsHidden />
                   <AppText variant="caption" weight="bold" color={active ? LENS_COLORS.black : LENS_COLORS.white} align="center" numberOfLines={1}>{t(label)}</AppText>
                 </Pressable>
               );
@@ -1326,11 +1329,12 @@ const styles = StyleSheet.create({
   headerSpacer: { width: 48, height: 48 },
   cameraTitle: { flex: 1, textShadowColor: veil(0.8), textShadowRadius: 5 },
   focusFrame: { position: 'absolute', left: '14%', right: '14%', top: '24%', aspectRatio: 1 },
-  corner: { position: 'absolute', width: 38, height: 38, borderColor: LENS_COLORS.white },
-  cornerTL: { top: 0, left: 0, borderTopWidth: 4, borderLeftWidth: 4, borderTopLeftRadius: 18 },
-  cornerTR: { top: 0, right: 0, borderTopWidth: 4, borderRightWidth: 4, borderTopRightRadius: 18 },
-  cornerBL: { bottom: 0, left: 0, borderBottomWidth: 4, borderLeftWidth: 4, borderBottomLeftRadius: 18 },
-  cornerBR: { bottom: 0, right: 0, borderBottomWidth: 4, borderRightWidth: 4, borderBottomRightRadius: 18 },
+  // Coins en quart de cercle, comme le viseur de Google Lens.
+  corner: { position: 'absolute', width: 52, height: 52, borderColor: frost(0.9) },
+  cornerTL: { top: 0, left: 0, borderTopWidth: 3, borderLeftWidth: 3, borderTopLeftRadius: 52 },
+  cornerTR: { top: 0, right: 0, borderTopWidth: 3, borderRightWidth: 3, borderTopRightRadius: 52 },
+  cornerBL: { bottom: 0, left: 0, borderBottomWidth: 3, borderLeftWidth: 3, borderBottomLeftRadius: 52 },
+  cornerBR: { bottom: 0, right: 0, borderBottomWidth: 3, borderRightWidth: 3, borderBottomRightRadius: 52 },
   livePill: {
     position: 'absolute', alignSelf: 'center', maxWidth: '92%', minHeight: 32, borderRadius: 16,
     paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 8,
@@ -1339,7 +1343,8 @@ const styles = StyleSheet.create({
   offline: { position: 'absolute', left: 32, right: 32, alignItems: 'center', gap: 12 },
   offlineIcon: { width: 68, height: 68, borderRadius: 34, alignItems: 'center', justifyContent: 'center' },
   panel: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingTop: 16, paddingHorizontal: 12, gap: 16 },
-  captureRow: { alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16 },
+  // Galerie et OCEREX tout près du déclencheur (repère : la vignette galerie de Google Lens).
+  captureRow: { alignItems: 'center', justifyContent: 'center', gap: 24 },
   side: { width: 72, alignItems: 'center', gap: 4 },
   sideCircle: {
     width: SIDE, height: SIDE, borderRadius: SIDE / 2, borderWidth: 1.5, borderColor: LENS_COLORS.white,
@@ -1357,8 +1362,8 @@ const styles = StyleSheet.create({
   },
   codeHint: { alignItems: 'flex-start', gap: 12, paddingHorizontal: 8, paddingVertical: 8 },
   codeHintCopy: { flex: 1, gap: 4 },
-  modePicker: { minHeight: 52, borderRadius: 26, padding: 4, backgroundColor: frost(0.13) },
-  mode: { flex: 1, minHeight: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
+  modePicker: { minHeight: 64, borderRadius: 28, padding: 4, backgroundColor: frost(0.13) },
+  mode: { flex: 1, minHeight: 56, borderRadius: 24, alignItems: 'center', justifyContent: 'center', gap: 2, paddingHorizontal: 4 },
   // Mode choisi = état actif : pastille violet clair, libellé noir (10,4:1).
   modeActive: { backgroundColor: LENS_COLORS.activeSoft },
   permissionCenter: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
