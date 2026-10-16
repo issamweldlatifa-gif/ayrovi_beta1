@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -93,6 +93,24 @@ function wrap(node: React.ReactNode) {
   );
 }
 
+/** Flou demandé aux images de la galerie (`expo-image` le reçoit en prop). */
+function blurOfGallery(): number[] {
+  const { Image: ExpoImage } = require('expo-image');
+  return screen.UNSAFE_getAllByType(ExpoImage).map((node: Record<string, any>) => node.props.blurRadius ?? 0);
+}
+
+/** Opacité réelle d'une couche animée (valeur interne lue hors animation). */
+function readOpacity(node: Record<string, any>): number {
+  const style = node.props.style;
+  const flat = Array.isArray(style) ? style.flat() : [style];
+  for (const item of flat) {
+    const opacity = (item as { opacity?: { __getValue?: () => number } } | undefined)?.opacity;
+    if (opacity && typeof opacity.__getValue === 'function') return opacity.__getValue();
+    if (typeof opacity === 'number') return opacity;
+  }
+  return Number.NaN;
+}
+
 describe('fiche produit Lens native', () => {
   beforeEach(() => {
     mockPush.mockClear();
@@ -140,6 +158,39 @@ describe('fiche produit Lens native', () => {
     expect(screen.queryByTestId('lens-accordion-characteristics')).toBeNull();
     expect(screen.queryByText('Référence du modèle')).toBeNull();
     expect(screen.queryByText('Code-barres')).toBeNull();
+  });
+
+  it('pose un en-tête transparent sur la photo : icônes blanches, aucune pastille', async () => {
+    render(wrap(<LensProductView candidate={candidate()} onBack={() => {}} />));
+    expect(await screen.findByTestId('lens-product-view')).toBeOnTheScreen();
+
+    // Retour et panier sont posés à même la photo : l'encre (noire) est à 0.
+    const backInk = screen.getByTestId('lens-header-back-ink');
+    const cartInk = screen.getByTestId('lens-header-cart-ink');
+    expect(readOpacity(backInk)).toBeCloseTo(0, 5);
+    expect(readOpacity(cartInk)).toBeCloseTo(0, 5);
+
+    // Photo nette, aucun brouillard au repos.
+    expect(readOpacity(screen.getByTestId('lens-hero-haze'))).toBe(0);
+    expect(blurOfGallery().every((value) => value === 0)).toBe(true);
+  });
+
+  it('transforme l’en-tête en bande pleine et voile la photo quand la fiche monte', async () => {
+    render(wrap(<LensProductView candidate={candidate()} onBack={() => {}} />));
+    expect(await screen.findByTestId('lens-product-view')).toBeOnTheScreen();
+
+    const drawer = screen.getByTestId('lens-product-drawer');
+    // Second cran atteint (et dépassé) : la fiche recouvre la photo, l'en-tête
+    // est plein. Les interpolations sont bornées, donc une valeur large suffit.
+    await act(async () => {
+      fireEvent.scroll(drawer, { nativeEvent: { contentOffset: { y: 600, x: 0 }, layoutMeasurement: { width: 390, height: 844 }, contentSize: { width: 390, height: 1600 } } });
+    });
+
+    expect(readOpacity(screen.getByTestId('lens-header-back-ink'))).toBeCloseTo(1, 5);
+    expect(readOpacity(screen.getByTestId('lens-header-cart-ink'))).toBeCloseTo(1, 5);
+    // Le brouillard monte et la photo se floute : la fiche passe DEVANT.
+    expect(readOpacity(screen.getByTestId('lens-hero-haze'))).toBeGreaterThan(0);
+    expect(blurOfGallery().some((value) => value > 0)).toBe(true);
   });
 
   it('change la galerie et le prix avec les vrais choix image/variante', async () => {

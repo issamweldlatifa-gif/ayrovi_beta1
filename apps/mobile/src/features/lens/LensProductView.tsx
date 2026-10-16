@@ -242,6 +242,7 @@ function ZoomableGalleryImage({
   width,
   height,
   active,
+  blurRadius = 0,
   onZoomChange,
 }: {
   uri: string;
@@ -250,6 +251,8 @@ function ZoomableGalleryImage({
   width: number;
   height: number;
   active: boolean;
+  /** Flou appliqué à la photo pendant que la fiche monte dessus (0 = nette). */
+  blurRadius?: number;
   onZoomChange: (zoomed: boolean) => void;
 }) {
   const t = useT();
@@ -405,6 +408,7 @@ function ZoomableGalleryImage({
           uri={uri}
           fallbackUris={fallbackUris}
           contentFit="contain"
+          blurRadius={blurRadius}
           style={styles.fullscreenImage}
           testID={active ? 'lens-product-image-media' : undefined}
           decorative
@@ -499,6 +503,11 @@ function unavailableValues(candidate: LensCandidate, attribute: 'size' | 'color'
   }
   return unavailable;
 }
+
+/** Paliers du voile : la photo se floute par crans pendant que la fiche monte. */
+const HAZE_STEPS = 5;
+const HAZE_BLUR = [0, 1.5, 4, 8, 13];
+const HAZE_VEIL = [0, 0.08, 0.17, 0.27, 0.38];
 
 export function LensProductView({
   candidate,
@@ -710,6 +719,33 @@ export function LensProductView({
     extrapolate: 'clamp',
   });
 
+  /**
+   * « Brouillard » de la photo (référence Zalando, 17/10/2026) : la fiche monte
+   * SUR la photo, et la photo se voile puis se floute à mesure qu'elle disparaît
+   * sous la fiche. Cinq paliers seulement — un flou continu ferait recommencer
+   * le rendu de l'image à chaque image de défilement.
+   */
+  const [haze, setHaze] = useState(0);
+  /**
+   * Le défilement alimente `scrollY` et le brouillard dans le MÊME geste :
+   * `useNativeDriver` n'appelle pas les écouteurs JS, donc la valeur est écrite
+   * ici (pas d'`Animated.event` natif) — l'en-tête et le voile restent au même
+   * cran. Cinq paliers seulement : le flou ne se recalcule pas à chaque frame.
+   */
+  const onDrawerScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const offset = event?.nativeEvent?.contentOffset?.y ?? 0;
+    // `scrollY` pilote l'en-tête (fondu) : il est alimenté ici, en JS, pour que
+    // le brouillard et l'en-tête restent exactement au même cran du défilement.
+    scrollY.setValue(offset);
+    const start = heroHeight * 0.3;
+    const end = Math.max(start + 1, expandedOffset);
+    const progress = Math.max(0, Math.min(1, (offset - start) / (end - start)));
+    const step = Math.round(progress * (HAZE_STEPS - 1));
+    setHaze((current) => (current === step ? current : step));
+  }, [expandedOffset, heroHeight, scrollY]);
+  const hazeBlur = HAZE_BLUR[haze];
+  const hazeVeil = HAZE_VEIL[haze];
+
   const onMomentumEnd = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const next = Math.round(event.nativeEvent.contentOffset.x / Math.max(1, width));
     setPage(Math.max(0, Math.min(gallery.length - 1, next)));
@@ -807,18 +843,31 @@ export function LensProductView({
           },
         ]}
       />
+      {/* EN-TÊTE (17/10/2026, fiche Zalando) : transparent et POSÉ SUR LA PHOTO
+          — icônes NUES (aucune pastille blanche, aucune ombre en boîte), blanches
+          sur la photo puis NOIRES quand l'en-tête devient plein. Le fondu est
+          piloté par `chromeOpacity`, la couleur ne clignote jamais. */}
       <View
         pointerEvents="box-none"
         style={[styles.productHeader, { paddingTop: insets.top + 7, flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}
+        testID="lens-product-header"
       >
         <Pressable
           onPress={onBack}
           accessibilityRole="button"
           accessibilityLabel={t('lens.product.back')}
           hitSlop={8}
-          style={({ pressed }) => [styles.headerRoundButton, { opacity: pressed ? theme.opacity.subtle : 1 }]}
+          style={({ pressed }) => [styles.headerIconButton, { opacity: pressed ? theme.opacity.subtle : 1 }]}
+          testID="lens-header-back"
         >
-          <Ionicons name={theme.isRTL ? 'arrow-forward' : 'arrow-back'} size={23} color={LENS_COLORS.black} accessibilityElementsHidden />
+          <Ionicons name={theme.isRTL ? 'arrow-forward' : 'arrow-back'} size={23} color={LENS_COLORS.white} style={styles.crispIcon} accessibilityElementsHidden />
+          <Animated.View
+            pointerEvents="none"
+            style={[styles.headerIconInk, { opacity: chromeOpacity }]}
+            testID="lens-header-back-ink"
+          >
+            <Ionicons name={theme.isRTL ? 'arrow-forward' : 'arrow-back'} size={23} color={LENS_COLORS.black} accessibilityElementsHidden />
+          </Animated.View>
         </Pressable>
         <Animated.View pointerEvents="none" style={[styles.collapsedTitle, { opacity: chromeOpacity }]}>
           <AppText weight="bold" numberOfLines={1}>{candidate.title}</AppText>
@@ -831,18 +880,33 @@ export function LensProductView({
             deadline ? (countdownExpired ? t('lens.cart.expired') : t('lens.cart.validFor', { time: countdown })) : '',
           ].filter(Boolean).join('. ')}
           style={({ pressed }) => [
-            styles.cartCapsule,
-            theme.isRTL ? styles.cartCapsuleRTL : styles.cartCapsuleLTR,
+            styles.cartRow,
+            theme.isRTL ? styles.cartRowRTL : styles.cartRowLTR,
             { opacity: pressed ? theme.opacity.subtle : 1, flexDirection: theme.isRTL ? 'row-reverse' : 'row' },
           ]}
+          testID="lens-header-cart"
         >
-          <Ionicons name="bag-handle-outline" size={18} color={LENS_COLORS.black} accessibilityElementsHidden />
-          <AppText weight="bold" style={styles.cartCount}>{cartUnits}</AppText>
+          <Ionicons name="bag-handle-outline" size={19} color={LENS_COLORS.white} style={styles.crispIcon} accessibilityElementsHidden />
+          <AppText weight="bold" style={styles.cartCountWhite}>{cartUnits}</AppText>
           {deadline ? (
-            <AppText variant="caption" weight="bold" style={{ color: countdownExpired ? LENS_COLORS.sale : LENS_COLORS.black }}>
+            <AppText variant="caption" weight="bold" style={styles.cartCountdownWhite}>
               {countdownExpired ? t('lens.cart.expiredShort') : countdown}
             </AppText>
           ) : null}
+          {/* Même contenu en encre : prend la main quand l'en-tête devient plein. */}
+          <Animated.View
+            pointerEvents="none"
+            style={[styles.headerIconInk, styles.cartRow, { opacity: chromeOpacity, flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}
+            testID="lens-header-cart-ink"
+          >
+            <Ionicons name="bag-handle-outline" size={19} color={LENS_COLORS.black} accessibilityElementsHidden />
+            <AppText weight="bold" style={styles.cartCount}>{cartUnits}</AppText>
+            {deadline ? (
+              <AppText variant="caption" weight="bold" style={{ color: countdownExpired ? LENS_COLORS.sale : LENS_COLORS.black }}>
+                {countdownExpired ? t('lens.cart.expiredShort') : countdown}
+              </AppText>
+            ) : null}
+          </Animated.View>
         </Pressable>
       </View>
 
@@ -858,7 +922,7 @@ export function LensProductView({
         snapToAlignment="start"
         snapToStart
         snapToEnd={false}
-        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
+        onScroll={onDrawerScroll}
         testID="lens-product-drawer"
       >
         <View style={[styles.gallery, { width, height: heroHeight, backgroundColor: LENS_COLORS.white }]}>
@@ -879,11 +943,18 @@ export function LensProductView({
                 width={width}
                 height={heroHeight}
                 active={index === page}
+                blurRadius={hazeBlur}
                 onZoomChange={index === page ? setZoomed : () => undefined}
               />
             ))}
           </ScrollView>
           <View style={styles.heroFade} pointerEvents="none" />
+          {/* Brouillard : la photo perd ses détails sous la fiche qui l'avale. */}
+          <View
+            pointerEvents="none"
+            style={[styles.heroHaze, { opacity: hazeVeil }]}
+            testID="lens-hero-haze"
+          />
           {onFavorite ? (
             <Pressable
               onPress={() => onFavorite(candidate)}
@@ -1106,22 +1177,22 @@ const styles = StyleSheet.create({
     position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20,
     height: 108, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'flex-start', gap: 8,
   },
-  headerRoundButton: {
-    width: 43, height: 43, borderRadius: 22, backgroundColor: frost(0.94),
-    alignItems: 'center', justifyContent: 'center',
-    shadowColor: LENS_COLORS.black, shadowOpacity: 0.12, shadowRadius: 9, shadowOffset: { width: 0, height: 3 }, elevation: 4,
-  },
-  collapsedTitle: { position: 'absolute', left: 68, right: 154, height: 43, justifyContent: 'center' },
-  cartCapsule: {
-    minHeight: 43, maxWidth: 148, paddingHorizontal: 12, borderRadius: 22,
-    backgroundColor: frost(0.96), alignItems: 'center', justifyContent: 'center', gap: 6,
-    shadowColor: LENS_COLORS.black, shadowOpacity: 0.12, shadowRadius: 9, shadowOffset: { width: 0, height: 3 }, elevation: 4,
-  },
-  cartCapsuleLTR: { marginLeft: 'auto' },
-  cartCapsuleRTL: { marginRight: 'auto' },
+  // Icônes NUES (demande client 17/10/2026) : ni pastille blanche, ni boîte
+  // d'ombre — l'icône pose directement sur la photo, lisible grâce à une ombre
+  // de glyphe serrée (`crispIcon`), jamais grâce à un fond rapporté.
+  headerIconButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  headerIconInk: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
+  crispIcon: { textShadowColor: veil(0.55), textShadowRadius: 3, textShadowOffset: { width: 0, height: 1 } },
+  collapsedTitle: { position: 'absolute', left: 68, right: 154, height: 44, justifyContent: 'center' },
+  cartRow: { minHeight: 44, alignItems: 'center', justifyContent: 'center', gap: 6 },
+  cartRowLTR: { marginLeft: 'auto' },
+  cartRowRTL: { marginRight: 'auto' },
   cartCount: { minWidth: 12, textAlign: 'center', color: LENS_COLORS.black },
+  cartCountWhite: { minWidth: 12, textAlign: 'center', color: LENS_COLORS.white, textShadowColor: veil(0.55), textShadowRadius: 3, textShadowOffset: { width: 0, height: 1 } },
+  cartCountdownWhite: { color: LENS_COLORS.white, textShadowColor: veil(0.55), textShadowRadius: 3, textShadowOffset: { width: 0, height: 1 } },
   gallery: { position: 'relative', overflow: 'hidden' },
   heroFade: { position: 'absolute', left: 0, right: 0, top: 0, height: 110, backgroundColor: veil(0.06) },
+  heroHaze: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: frost(0.9) },
   favorite: {
     position: 'absolute', width: 44, height: 44, borderRadius: 22,
     backgroundColor: frost(0.94), alignItems: 'center', justifyContent: 'center',

@@ -36,11 +36,18 @@ export interface AppImageProps {
   accessibilityLabel?: string;
   /** Image purement décorative : cachée des lecteurs d'écran. */
   decorative?: boolean;
+  /**
+   * Flou (en points) appliqué par `expo-image` — sert l'effet « photo qui se
+   * voile » quand la fiche produit monte dessus (référence Zalando, 17/10/2026).
+   * 0 = nette. La valeur est choisie par l'appelant, jamais devinée ici.
+   */
+  blurRadius?: number;
   testID?: string;
 }
 
 export function AppImage({
-  uri, fallbackUri, fallbackUris = [], localSource, contentFit = 'cover', style, accessibilityLabel, decorative = false, testID,
+  uri, fallbackUri, fallbackUris = [], localSource, contentFit = 'cover', style,
+  accessibilityLabel, decorative = false, blurRadius = 0, testID,
 }: AppImageProps) {
   const theme = useTheme();
   const t = useT();
@@ -94,6 +101,7 @@ export function AppImage({
       source={localSource ?? { uri: activeUri as string }}
       contentFit={contentFit}
       transition={theme.duration.fast}
+      blurRadius={blurRadius}
       onError={onLoadError}
       accessibilityElementsHidden={decorative}
       accessibilityLabel={decorative ? undefined : accessibilityLabel}
