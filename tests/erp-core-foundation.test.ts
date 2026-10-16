@@ -39,7 +39,7 @@ describe('ERP Core foundation (P0 + P1)', () => {
 
   beforeAll(async () => {
     const login = await admin
-      .set('User-Agent', 'AYROVI-ErpCoreTest/1.0 (vitest)')
+      .set('User-Agent', 'ZAYROVI-ErpCoreTest/1.0 (vitest)')
       .post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
     expect(login.status).toBe(200);
     csrf = login.body.data.csrfToken;
@@ -451,7 +451,7 @@ describe('E8 — événements : résumé du tableau de bord (P1)', () => {
 
   beforeAll(async () => {
     const login = await admin
-      .set('User-Agent', 'AYROVI-ErpSummary/1.0 (vitest)')
+      .set('User-Agent', 'ZAYROVI-ErpSummary/1.0 (vitest)')
       .post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
     expect(login.status).toBe(200);
     csrf = login.body.data.csrfToken;

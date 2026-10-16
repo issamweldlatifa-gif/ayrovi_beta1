@@ -1,5 +1,5 @@
 /**
- * AYROVI voice session configuration and Gemini text-to-speech adapter.
+ * ZAYROVI voice session configuration and Gemini text-to-speech adapter.
  *
  * The REST TTS endpoint returns raw signed 16-bit little-endian PCM by default.
  * Browsers cannot reliably decode that byte stream with decodeAudioData(), so this
@@ -50,11 +50,11 @@ export interface GeminiVoiceSessionConfig {
 }
 
 export const SUPPORTED_GEMINI_VOICES = [
-  { id: 'Aoede', name: 'AYROVI Féminin (Aoede)', gender: 'female' as const, description: 'Voix féminine chaleureuse et naturelle' },
-  { id: 'Kore', name: 'AYROVI Féminin Doux (Kore)', gender: 'female' as const, description: 'Voix féminine posée et claire' },
-  { id: 'Puck', name: 'AYROVI Masculin (Puck)', gender: 'male' as const, description: 'Voix masculine énergique et dynamique' },
-  { id: 'Fenrir', name: 'AYROVI Masculin Calme (Fenrir)', gender: 'male' as const, description: 'Voix masculine posée et professionnelle' },
-  { id: 'Charon', name: 'AYROVI Masculin Profond (Charon)', gender: 'male' as const, description: 'Voix masculine profonde et rassurante' },
+  { id: 'Aoede', name: 'ZAYROVI Féminin (Aoede)', gender: 'female' as const, description: 'Voix féminine chaleureuse et naturelle' },
+  { id: 'Kore', name: 'ZAYROVI Féminin Doux (Kore)', gender: 'female' as const, description: 'Voix féminine posée et claire' },
+  { id: 'Puck', name: 'ZAYROVI Masculin (Puck)', gender: 'male' as const, description: 'Voix masculine énergique et dynamique' },
+  { id: 'Fenrir', name: 'ZAYROVI Masculin Calme (Fenrir)', gender: 'male' as const, description: 'Voix masculine posée et professionnelle' },
+  { id: 'Charon', name: 'ZAYROVI Masculin Profond (Charon)', gender: 'male' as const, description: 'Voix masculine profonde et rassurante' },
 ];
 
 const DEFAULT_GEMINI_TTS_MODEL = 'gemini-3.1-flash-tts-preview';

@@ -10,7 +10,7 @@
  *                          pas une couleur : il groupe la ligne sans la repeindre.
  *
  * Le réglage est centralisé ici. La variante bleue s'active en ajoutant `data-legal-tone="blue"`
- * sur `.ay-auth` : la charte AYROVI est monochrome + violet, donc le bleu n'est pas la valeur par
+ * sur `.ay-auth` : la charte ZAYROVI est monochrome + violet, donc le bleu n'est pas la valeur par
  * défaut — mais il ne coûte qu'un attribut, et rien d'autre n'est à modifier.
  */
 .ay-auth {

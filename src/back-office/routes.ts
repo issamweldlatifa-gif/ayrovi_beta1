@@ -1,5 +1,5 @@
 /**
- * AYROVI Back Office (P2.0) — API de la coquille et du framework de ressources.
+ * ZAYROVI Back Office (P2.0) — API de la coquille et du framework de ressources.
  *
  * Montée sous `/api/admin/back-office` depuis le router admin existant : elle hérite donc du
  * cookie de session (`Path=/api/admin`), de la règle CSRF sur les écritures et des mêmes gardes

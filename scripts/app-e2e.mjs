@@ -176,7 +176,7 @@ async function main() {
     csrf,
     sessionId,
     body: {
-      title: 'Article de test AYROVI',
+      title: 'Article de test ZAYROVI',
       store: 'aliexpress',
       url: 'https://example.com/article-de-test',
       imageUrl: 'https://example.com/article-de-test.jpg',

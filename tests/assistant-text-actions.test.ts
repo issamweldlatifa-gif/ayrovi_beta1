@@ -16,7 +16,7 @@ describe('SONIM displayed-text export policy', () => {
   it('shares native text without touching the clipboard', async () => {
     const port = { clipboard: clipboard(), share: vi.fn(async () => {}) };
     expect(await shareAssistantText('Texte [[OPEN_LENS]]', port)).toBe('shared');
-    expect(port.share).toHaveBeenCalledWith({ title: 'AYROVI', text: 'Texte' });
+    expect(port.share).toHaveBeenCalledWith({ title: 'ZAYROVI', text: 'Texte' });
     expect(port.clipboard.writeText).not.toHaveBeenCalled();
   });
   it('reports clipboard fallback explicitly when Web Share is absent', async () => {

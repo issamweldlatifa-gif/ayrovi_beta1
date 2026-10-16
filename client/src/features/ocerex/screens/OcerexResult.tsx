@@ -36,7 +36,7 @@ export const OcerexResult: React.FC<{
       )}
       <p className="mt-6 text-xs font-bold uppercase tracking-[0.14em] text-muted">{tr('Prix de référence', 'السعر المرجعي')}</p>
       <p className="mt-1 font-display text-3xl font-black tabular-nums text-ink" dir="ltr">{extraction.referenceTnd != null ? `${new Intl.NumberFormat('fr-TN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(extraction.referenceTnd)} DT` : extraction.referencePrice != null ? referenceLabel(extraction.referencePrice, extraction.currency) : '—'}</p>
-      <p className="mt-6 text-xs font-bold uppercase tracking-[0.14em] text-ink">{tr('Prix Ayrovi', 'سعر Ayrovi')}</p>
+      <p className="mt-6 text-xs font-bold uppercase tracking-[0.14em] text-ink">{tr('Prix Zayrovi', 'سعر Zayrovi')}</p>
       <Price className="mt-1 items-start text-ink [&_bdi]:text-ink" amount={Number(extraction.ayroviPrice || 0)} size="lg" currencyLabel="TND" />
       <form className="mt-8" onSubmit={(event) => { event.preventDefault(); onSubmit(url.trim()); }}>
         <label htmlFor="ocerex-url" className="text-sm font-bold text-ink">{tr('Saisissez le lien du produit ou du panier pour continuer', 'أدخل رابط المنتج أو السلة للمتابعة')}</label>

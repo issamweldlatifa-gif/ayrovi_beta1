@@ -161,7 +161,7 @@ describe('عقد النصوص — المفاتيح المتكوّنة في ال�
       const arabicLabel = newsCategoryText(code, (translationKey) => AR[translationKey]);
       expect(frenchLabel.trim()).not.toBe('');
       expect(arabicLabel.trim()).not.toBe('');
-      // AYROVI is a proper brand name, not an untranslated enum label.
+      // ZAYROVI is a proper brand name, not an untranslated enum label.
       if (code !== 'AYROVI') {
         expect(frenchLabel).not.toBe(code);
         expect(arabicLabel).not.toBe(code);

@@ -82,7 +82,7 @@ export interface AyrovixCandidate {
   priceOrigin?: 'merchant' | 'search';
   /** Prix barré publié par le marchand (strictement > price), jamais déduit. */
   originalPrice?: number | null;
-  /** Le même prix barré, passé par le calculateur AYROVI (tout inclus). */
+  /** Le même prix barré, passé par le calculateur ZAYROVI (tout inclus). */
   originalPriceTnd?: number | null;
   /**
    * PREUVE D'ACHAT (02/10/2026) — la page marchande a-t-elle été lue, et que
@@ -229,7 +229,7 @@ export interface AyrovixReviewRequest {
   duplicate?: boolean;
 }
 
-/** Charge utile transmise au Calculator/panier AYROVI existant (aucun flow modifié). */
+/** Charge utile transmise au Calculator/panier ZAYROVI existant (aucun flow modifié). */
 export interface AyrovixHistoryItem {
   id: string;
   kind: 'image' | 'url' | 'qr' | 'barcode' | 'code' | 'text';

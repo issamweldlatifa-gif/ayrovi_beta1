@@ -1,6 +1,6 @@
 /* ==========================================================================
    AYWEBs — parcours proxy-shopping (référence Add-to-Buyee, captures 1-6).
-   Une seule feuille de style, tokens AYROVI d'abord, replis explicites.
+   Une seule feuille de style, tokens ZAYROVI d'abord, replis explicites.
    ========================================================================== */
 
 .ayw-screen {
@@ -140,7 +140,7 @@
 }
 
 /* --- barre d'onglets basse (capture 2) --- */
-/* §3 (04/10/2026) : z-index 40 ET hauteur FIXE. La barre AYROVI (z-30, racine)
+/* §3 (04/10/2026) : z-index 40 ET hauteur FIXE. La barre ZAYROVI (z-30, racine)
    est démontée pendant AyWebs (App.tsx) ; cette valeur garde la barre AyWebs
    au-dessus de tout ce qui vit DANS la couche AyWebs (z-25). */
 .ayw-tabs {
@@ -455,7 +455,7 @@
 
 /* ==========================================================================
    §6 (04/10/2026) — Favoris AyWebs : tiroir + écran « Wish List ».
-   Le stockage est le compte AYROVI (/api/customer/account/favorites) : aucune
+   Le stockage est le compte ZAYROVI (/api/customer/account/favorites) : aucune
    copie locale, donc rien à resynchroniser. Les styles ci-dessous ne décrivent
    que la présentation.
    ========================================================================== */

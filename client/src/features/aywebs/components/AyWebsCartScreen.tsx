@@ -13,11 +13,11 @@ import { AyWebsTabBar, type AyWebsTab } from './AyWebsTabBar';
  *
  * Une seule lecture possible : les lignes sont GROUPÉES PAR BOUTIQUE comme sur
  * la page panier Buyee (en-tête « Amazon », lignes article, sous-total), et le
- * bloc total affiche LE montant AYROVI en dinars, recalculé par le moteur
+ * bloc total affiche LE montant ZAYROVI en dinars, recalculé par le moteur
  * tarifaire côté serveur — c'est ce montant qui fait foi au checkout (§2 :
  * une seule voie de paiement, jamais un second checkout).
  *
- * « Proceed to order page » = pont §2 vers le panier/checkout AYROVI existant :
+ * « Proceed to order page » = pont §2 vers le panier/checkout ZAYROVI existant :
  * les lignes AYWEBs y sont synchronisées (idempotent), le client paie UNE seule
  * commande mixte — les deux paniers ne font qu'un au moment du paiement.
  */
@@ -110,11 +110,11 @@ export const AyWebsCartScreen: React.FC<AyWebsCartScreenProps> = ({ tab, onTab, 
           </div>
           <div><dt>{tr('Price', 'السعر')}</dt><dd>{item.unit_price.toLocaleString()} {item.currency}</dd></div>
           {item.variant_label && <div><dt>{tr('Options', 'الخيارات')}</dt><dd>{item.variant_label}</dd></div>}
-          {/* Panier unifié : la ligne synchronisée vit déjà dans le panier AYROVI. */}
+          {/* Panier unifié : la ligne synchronisée vit déjà dans le panier ZAYROVI. */}
           {item.linked_to_ayrovi && (
             <div>
-              <dt>{tr('AYROVI cart', 'سلة AYROVI')}</dt>
-              <dd>{tr('Already in your AYROVI cart', 'موجود بالفعل في سلة AYROVI')}</dd>
+              <dt>{tr('ZAYROVI cart', 'سلة ZAYROVI')}</dt>
+              <dd>{tr('Already in your ZAYROVI cart', 'موجود بالفعل في سلة ZAYROVI')}</dd>
             </div>
           )}
           {/* UNKNOWN is visible, never silently omitted or treated as available. */}
@@ -137,7 +137,7 @@ export const AyWebsCartScreen: React.FC<AyWebsCartScreenProps> = ({ tab, onTab, 
           <p className="ayw-subtotal">
             <span>{tr('Sub total', 'المجموع الفرعي')}</span>
             <strong>{(item.unit_price * item.quantity).toLocaleString()} {item.currency}</strong>
-            {/* Le montant AYROVI est TOUJOURS celui du serveur (jamais un calcul client). */}
+            {/* Le montant ZAYROVI est TOUJOURS celui du serveur (jamais un calcul client). */}
             {item.line_total_tnd > 0 && (
               <em className="ayw-line-tnd">
               ≈ {item.line_total_tnd.toFixed(2)} {tr('DT', 'د.ت')} · {tr('before local delivery', 'قبل التوصيل المحلي')}
@@ -197,17 +197,17 @@ export const AyWebsCartScreen: React.FC<AyWebsCartScreenProps> = ({ tab, onTab, 
       {!loading && items.length > 0 && (
         <section className="ayw-carttotal">
           <p className="ayw-carttotal-label">
-            {tr('Estimated AYROVI amount before local delivery', 'تقدير AYROVI قبل التوصيل المحلي')}
+            {tr('Estimated ZAYROVI amount before local delivery', 'تقدير ZAYROVI قبل التوصيل المحلي')}
             <span>{'(' + units + ' ' + tr('Item(s)', 'منتج') + ')'}</span>
           </p>
-          {/* Le montant qui fait foi : dinars, moteur tarifaire AYROVI (serveur). */}
+          {/* Le montant qui fait foi : dinars, moteur tarifaire ZAYROVI (serveur). */}
           <p className="ayw-carttotal-value">
             {Number(cart?.totals?.product_subtotal_tnd || 0).toFixed(2)} <span>{tr('DT', 'د.ت')}</span>
           </p>
           <p className="ayw-carttotal-note">
             {tr(
-              'Estimate from the AYROVI pricing engine (customs, freight, service); local delivery is added once at checkout.',
-              'تقدير من محرك تسعير AYROVI (الديوانة والشحن والخدمة)؛ تُضاف كلفة التوصيل المحلي مرة واحدة عند الدفع.',
+              'Estimate from the ZAYROVI pricing engine (customs, freight, service); local delivery is added once at checkout.',
+              'تقدير من محرك تسعير ZAYROVI (الديوانة والشحن والخدمة)؛ تُضاف كلفة التوصيل المحلي مرة واحدة عند الدفع.',
             )}
           </p>
           {cart?.blockers?.length ? (
@@ -224,8 +224,8 @@ export const AyWebsCartScreen: React.FC<AyWebsCartScreenProps> = ({ tab, onTab, 
           </button>
           <p className="ayw-carttotal-note">
             {tr(
-              'To place an order, your AYROVI account and login are required.',
-              'لإتمام الطلب يلزم حساب AYROVI وتسجيل الدخول.',
+              'To place an order, your ZAYROVI account and login are required.',
+              'لإتمام الطلب يلزم حساب ZAYROVI وتسجيل الدخول.',
             )}
           </p>
           {notice && <p className="ayw-notice">{notice}</p>}

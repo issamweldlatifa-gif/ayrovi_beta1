@@ -2,7 +2,7 @@
  * Chaîne média native Lens.
  *
  * Une galerie contient UNE diapositive par photo marchand. Chaque diapositive
- * possède ses replis : composition AYROVI → détourage → proxy → original.
+ * possède ses replis : composition ZAYROVI → détourage → proxy → original.
  * Les miniatures privilégient le proxy léger pour apparaître immédiatement ;
  * les replis ne deviennent jamais de fausses photos supplémentaires.
  */

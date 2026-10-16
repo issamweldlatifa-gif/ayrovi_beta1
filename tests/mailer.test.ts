@@ -29,7 +29,7 @@ describe('transactional mail readiness', () => {
     process.env.MAIL_FROM = 'not-an-email';
     expect(mailerReady()).toBe(false);
 
-    process.env.MAIL_FROM = 'AYROVI <no-reply@ayrovi.tn>';
+    process.env.MAIL_FROM = 'ZAYROVI <no-reply@ayrovi.tn>';
     expect(mailerReady()).toBe(true);
 
     process.env.MAIL_PROVIDER = 'unsupported';
@@ -44,7 +44,7 @@ describe('mail provider transport contracts', () => {
   test.each(['resend', 'brevo', 'sendgrid'])('%s submits a real provider request and reports acceptance', async (provider) => {
     process.env.MAIL_PROVIDER = provider;
     process.env.MAIL_API_KEY = 'test-key-not-real';
-    process.env.MAIL_FROM = 'AYROVI <no-reply@example.com>';
+    process.env.MAIL_FROM = 'ZAYROVI <no-reply@example.com>';
     const transport = vi.fn().mockResolvedValue(new Response('{}', {status: 202}));
     vi.stubGlobal('fetch', transport);
     expect(await sendMail({to: 'customer@example.com', subject: 'Welcome', html: '<p>Welcome</p>', idempotencyKey: 'test-job'})).toMatchObject({provider, delivered: true});

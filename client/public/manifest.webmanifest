@@ -1,6 +1,6 @@
 {
-  "name": "AYROVI — Shopping international en TND",
-  "short_name": "AYROVI",
+  "name": "ZAYROVI — Shopping international en TND",
+  "short_name": "ZAYROVI",
   "description": "Shopping international, recherche visuelle et livraison partout en Tunisie.",
   "lang": "fr-TN",
   "dir": "ltr",
@@ -21,13 +21,13 @@
   },
   "icons": [
     {
-      "src": "/media/logo-ayrovi-192.png?v=4.1",
+      "src": "/media/logo-ayrovi-192.png?v=5.0",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/media/logo-ayrovi-512.png?v=4.1",
+      "src": "/media/logo-ayrovi-512.png?v=5.0",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"

@@ -1,5 +1,5 @@
 /**
- * AYROVI — verrou d'application du Design System (mobile).
+ * ZAYROVI — verrou d'application du Design System (mobile).
  *
  * ── Ce que ce fichier est ────────────────────────────────────────────────────
  * La traduction en CODE du §17 (anti-patrons) et du §21.2 (empêcher la

@@ -1,5 +1,5 @@
 /**
- * QatafoIcons — porte d'entrée UNIQUE des icônes AYROVI.
+ * QatafoIcons — porte d'entrée UNIQUE des icônes ZAYROVI.
  * Uniquement les noms réellement utilisés par l'UI (aucune export morte).
  * Les doublons conceptuels pointent vers UNE seule icône (ex: Grid = LayoutGrid).
  */
@@ -65,7 +65,7 @@ export const Clipboard = I.AyroviClipboard;
 export const History = I.AyroviHistory;
 export const ChartLine = I.AyroviChart;
 
-/* AYROVI AI / Lens / Vision */
+/* ZAYROVI AI / Lens / Vision */
 export const Sparkles = I.AyroviSparkles;
 export const LensBox = I.AyroviLens;
 export const ScanSearch = I.AyroviScan;

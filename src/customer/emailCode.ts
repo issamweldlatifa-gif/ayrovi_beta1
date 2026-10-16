@@ -38,7 +38,7 @@ export function displayNameFromEmail(email: string): string {
 }
 
 export function emailCodeSubject(ar: boolean, code: string): string {
-  return ar ? `رمز الدخول إلى AYROVI: ${code}` : `Votre code de connexion AYROVI : ${code}`;
+  return ar ? `رمز الدخول إلى ZAYROVI: ${code}` : `Votre code de connexion ZAYROVI : ${code}`;
 }
 
 export function emailCodeHtml(ar: boolean, code: string): string {

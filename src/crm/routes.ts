@@ -1,5 +1,5 @@
 /**
- * AYROVI CRM 360 (E1/E2) — API du back-office.
+ * ZAYROVI CRM 360 (E1/E2) — API du back-office.
  *
  * Monté sous `/api/admin/crm` par le routeur admin : hérite du cookie de session et
  * compose les deux gardes existantes — `requireAdmin(db)` (session + CSRF sur les

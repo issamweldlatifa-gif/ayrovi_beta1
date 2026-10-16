@@ -9,7 +9,7 @@ import { readLimitedText } from '../../services/safeUrl';
 /**
  * AYROVIX owns product discovery for text, QR/barcodes and Lens fallback.
  * SerpApi Google Shopping is the primary product provider when its server-side
- * key exists; AYROVI AI Core remains a no-price link fallback.
+ * key exists; ZAYROVI AI Core remains a no-price link fallback.
  */
 
 const STOPWORDS = new Set(['the', 'and', 'pour', 'avec', 'les', 'des', 'une', 'femme', 'homme', 'femmes', 'hommes', 'new', 'style', 'mode', 'de', 'du', 'en', 'au', 'aux']);
@@ -86,7 +86,7 @@ export function scoreCandidate(
 }
 
 /**
- * Interrupteur du catalogue AYROVI dans les recherches (Lens, assistant, liens).
+ * Interrupteur du catalogue ZAYROVI dans les recherches (Lens, assistant, liens).
  * DÉSACTIVÉ : aucune recherche ni résultat n'interroge le catalogue tant que le
  * propriétaire ne l'a pas réactivé explicitement.
  */
@@ -116,7 +116,7 @@ export function catalogSearch(
       model: null,
       colors: [],
       sizes: [],
-      source: 'Collection AYROVI',
+      source: 'Collection ZAYROVI',
       sourceUrl: row.source_url || '',
       image: row.image || '',
       // An ACTIVE catalog listing is not proof of stock: use its recorded status.
@@ -303,7 +303,7 @@ async function aiCoreWebSearch(
     const result = await provider.complete({
       workload: 'research',
       modelClass: 'fast',
-      instructions: 'You are AYROVI shopping search. Always run exactly one web search. Prefer direct merchant product pages. Exclude news, reviews and generic search pages. Keep the final answer very short.',
+      instructions: 'You are ZAYROVI shopping search. Always run exactly one web search. Prefer direct merchant product pages. Exclude news, reviews and generic search pages. Keep the final answer very short.',
       messages: [{
         role: 'user',
         content: [{ type: 'text', text: `Find direct product pages selling this exact item or code: ${query.slice(0, 200)}` }],
@@ -432,8 +432,8 @@ export async function searchCandidates(
  *
  * Identité produit par signaux disponibles : marque + recouvrement des tokens du
  * titre (Jaccard ≥ 0.6 ; le modèle/GTIN, quand il est dans le titre, participe
- * naturellement aux tokens). Le catalogue AYROVI reste à part : c'est l'offre
- * propre d'AYROVI, pas une offre externe à regrouper.
+ * naturellement aux tokens). Le catalogue ZAYROVI reste à part : c'est l'offre
+ * propre de ZAYROVI, pas une offre externe à regrouper.
  */
 export function groupOffers(candidates: AyrovixCandidate[]): AyrovixCandidate[] {
   const passthrough = candidates.filter((candidate) => candidate.kind !== 'external');

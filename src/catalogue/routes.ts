@@ -1,5 +1,5 @@
 /**
- * AYROVI Catalogue (P2.1) — back-office API.
+ * ZAYROVI Catalogue (P2.1) — back-office API.
  *
  * Mounted at `/api/admin/catalogue` inside the existing admin router, so it inherits the
  * session cookie (`Path=/api/admin`) and nothing here is reachable anonymously. Every

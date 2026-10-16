@@ -25,7 +25,7 @@
 /** اسم حزمة الإصدار — نفس القيمة في `apps/mobile/app.json`. */
 export const ANDROID_APP_LINK_PACKAGE = 'app.ayrovi.mobile';
 
-/** حزمة العرض التجريبي (`AYROVI Démo`) — بصمة الـdebug key مختلفة. */
+/** حزمة العرض التجريبي (`ZAYROVI Démo`) — بصمة الـdebug key مختلفة. */
 export const ANDROID_APP_LINK_DEMO_PACKAGE = 'app.ayrovi.mobile.demo';
 
 /**

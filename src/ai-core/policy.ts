@@ -23,8 +23,8 @@ export interface AiCircuitSnapshot {
 }
 
 /**
- * AYROVI-owned, capability-isolated circuit breaker. State is keyed by the
- * provider AND canonical AYROVI workload: quota or transient failures in one
+ * ZAYROVI-owned, capability-isolated circuit breaker. State is keyed by the
+ * provider AND canonical ZAYROVI workload: quota or transient failures in one
  * capability cannot disable unrelated capabilities on the same provider.
  * A 429 opens its scoped circuit immediately and is never retried here.
  */
@@ -129,7 +129,7 @@ export class AiProviderCircuitBreaker {
   }
 }
 
-/** Applies AYROVI policy without changing provider adapter contracts. */
+/** Applies ZAYROVI policy without changing provider adapter contracts. */
 export class PolicyResponsesAdapter implements AiResponsesProviderAdapter {
   readonly id: string;
   readonly kind = 'responses' as const;

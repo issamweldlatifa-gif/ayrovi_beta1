@@ -5,7 +5,7 @@ import { app } from '../src/server';
 
 /**
  * Dashboard = Control · Database/CMS = Source of Truth · Frontend = Presentation
- * + قاعدة AYROVI: Mobile width-first (العنوان في تدفق الصفحة، الـ slider بعرض الشاشة).
+ * + قاعدة ZAYROVI: Mobile width-first (العنوان في تدفق الصفحة، الـ slider بعرض الشاشة).
  */
 
 const admin = request.agent(app);
@@ -49,7 +49,7 @@ describe('Dashboard is the single source of truth for Hero, LENS and home sectio
   test('editing LENS in the dashboard changes the public site without touching code', async () => {
     const updated = await admin.put('/api/admin/lens-hero').set('x-csrf-token', csrf)
       .field('title', 'Scannez. Comparez. Commandez.')
-      .field('proofLine', 'Vérifié par AYROVI.')
+      .field('proofLine', 'Vérifié par ZAYROVI.')
       .field('ctaLabel', 'Ouvrir le scanner')
       .field('ctaUrl', '/lens')
       .field('accentColor', '#123456')
@@ -61,7 +61,7 @@ describe('Dashboard is the single source of truth for Hero, LENS and home sectio
 
     const published = await request(app).get('/api/public/lens-hero');
     expect(published.body.data.title).toBe('Scannez. Comparez. Commandez.');
-    expect(published.body.data.proofLine).toBe('Vérifié par AYROVI.');
+    expect(published.body.data.proofLine).toBe('Vérifié par ZAYROVI.');
     expect(published.body.data.ctaUrl).toBe('/lens');
     expect(published.body.data.accentColor).toBe('#123456');
     expect(published.body.data.elementOrder).toBe('title,eyebrow,cta,description,proof');
@@ -125,7 +125,7 @@ describe('Dashboard is the single source of truth for Hero, LENS and home sectio
   });
 });
 
-describe('AYROVI mobile width-first layout rule', () => {
+describe('ZAYROVI mobile width-first layout rule', () => {
   test('the slider reaches the screen edges and stays swipeable on mobile', () => {
     // gap ثابت 16px بين البطاقات
     expect(indexCss).toContain('--ay-rail-gap: 16px;');

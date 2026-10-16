@@ -7,14 +7,14 @@ export type PublicSectionId = (typeof PUBLIC_SECTION_IDS)[number];
 export const AYROVI_FONT_STACK = FONT_STACK;
 
 export const INTERFACE_FONT_PRESETS = [{
-  id: 'ayrovi-a', label: 'AYROVI A — identité officielle',
+  id: 'ayrovi-a', label: 'ZAYROVI A — identité officielle',
   description: 'Zalando Sans + Noto Sans Arabic. Charte verrouillée, fontes locales.',
   display: AYROVI_FONT_STACK, body: AYROVI_FONT_STACK,
 }] as const;
 export type InterfaceFontPresetId = (typeof INTERFACE_FONT_PRESETS)[number]['id'];
 
 export const INTERFACE_ICON_LIBRARIES = [
-  { id: 'ayrovi', label: 'AYROVI', description: 'Pictogrammes maison — monoline fine' },
+  { id: 'ayrovi', label: 'ZAYROVI', description: 'Pictogrammes maison — monoline fine' },
 ] as const;
 export type InterfaceIconLibrary = (typeof INTERFACE_ICON_LIBRARIES)[number]['id'];
 

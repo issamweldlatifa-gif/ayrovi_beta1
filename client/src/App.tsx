@@ -217,8 +217,8 @@ export const App: React.FC = () => {
           openAppView('app:account', true);
           // Le téléphone est une seconde option de vérification; un e-mail vérifié suffit également.
           setAccountMessage(customerAuthResult === 'facebook_success'
-            ? tr('Connexion Facebook réussie. Bienvenue sur AYROVI !', 'تم تسجيل الدخول عبر Facebook. مرحبًا بك في AYROVI!')
-            : tr('Connexion Google réussie. Bienvenue sur AYROVI !', 'تم تسجيل الدخول عبر Google. مرحبًا بك في AYROVI!'));
+            ? tr('Connexion Facebook réussie. Bienvenue sur ZAYROVI !', 'تم تسجيل الدخول عبر Facebook. مرحبًا بك في ZAYROVI!')
+            : tr('Connexion Google réussie. Bienvenue sur ZAYROVI !', 'تم تسجيل الدخول عبر Google. مرحبًا بك في ZAYROVI!'));
         } else if (customerAuthResult === 'error' || customerAuthResult === 'facebook_error') {
           openAppView('app:account', true);
           setAccountMessage(tr(`Erreur : la connexion ${customerAuthResult === 'facebook_error' ? 'Facebook' : 'Google'} n’a pas abouti. Réessayez ou utilisez le code SMS.`, `تعذر تسجيل الدخول عبر ${customerAuthResult === 'facebook_error' ? 'Facebook' : 'Google'}. أعد المحاولة أو استخدم رمز SMS.`));
@@ -489,7 +489,7 @@ export const App: React.FC = () => {
     <div className="ayrovi-app-shell interface-page-shell min-h-screen flex flex-col text-ink relative" style={customerTheme(locale, interfaceConfig)}>
       
 
-      {/* Header: Left Menu, Center Fig Logo + AYROVI, Right Profile */}
+      {/* Header: Left Menu, Center Fig Logo + ZAYROVI, Right Profile */}
       <div data-preserved-navigation style={{ display: 'contents' }}>
       <Navbar
         onOpenMenuDrawer={() => openAppView('app:menu')}
@@ -553,7 +553,7 @@ export const App: React.FC = () => {
       {/* Floating Scroll To Top FAB Button */}
       <ScrollToTopButton hidden={navigation.stack.length > 0} />
 
-      {/* Compact RTL glass navigation: Ayvisi (left), Ayrovi (center), Ayrovix (right). */}
+      {/* Compact RTL glass navigation: Ayvisi (left), Zayrovi (center), Ayrovix (right). */}
       {/* §3 (04/10/2026) — JAMAIS deux barres. AyWebs s'ouvre dans une couche
           `fixed inset-0 z-[25]`, mais cette barre-ci vit à la racine en z-30 :
           elle RECOUVRAIT donc la barre AyWebs, qui devenait visible mais
@@ -601,7 +601,7 @@ export const App: React.FC = () => {
         </Suspense>
       )}
 
-      {/* Modular AYROVI assistant interface */}
+      {/* Modular ZAYROVI assistant interface */}
       {isAiDrawerOpen && (
         <Suspense fallback={null}>
           <AiAssistantDrawer

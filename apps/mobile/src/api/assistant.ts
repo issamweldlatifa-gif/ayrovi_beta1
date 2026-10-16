@@ -187,7 +187,7 @@ export function streamAssistantChat(
     });
 
     if (response.status === 503) {
-      onEvent({ type: 'error', code: 'ASSISTANT_UNAVAILABLE', message: 'L’assistant AYROVI n’est pas encore disponible.' });
+      onEvent({ type: 'error', code: 'ASSISTANT_UNAVAILABLE', message: 'L’assistant ZAYROVI n’est pas encore disponible.' });
       return 'error';
     }
     if (!response.ok || !response.body) {

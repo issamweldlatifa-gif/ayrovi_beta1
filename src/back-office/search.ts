@@ -1,5 +1,5 @@
 /**
- * AYROVI Back Office (P2.0) — recherche globale.
+ * ZAYROVI Back Office (P2.0) — recherche globale.
  *
  * Une seule abstraction pour « retrouver un enregistrement » dans tout le back office, au lieu
  * d'un champ de recherche par écran. Contraintes volontaires :

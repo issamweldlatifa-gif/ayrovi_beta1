@@ -72,7 +72,7 @@ export function Footer({ testID = 'app-footer' }: FooterProps) {
     >
       {/* 1) الهوية */}
       <AppText variant="display" weight="semibold" color={FOOTER_COLORS.ink} style={styles.wordmark}>
-        AYROVI
+        ZAYROVI
       </AppText>
       <AppText variant="caption" color={FOOTER_COLORS.muted}>
         {`v${APP_VERSION} · ${t('footer.rights', { year: String(year) })}`}

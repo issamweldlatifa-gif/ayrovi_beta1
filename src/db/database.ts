@@ -205,7 +205,7 @@ const ORDERS_TABLE_SQL = `CREATE TABLE IF NOT EXISTS orders (
   delivery_longitude REAL,
   /* Mode de livraison : sans lui, l'entrepot ne sait pas OU envoyer le colis. */
   delivery_mode TEXT NOT NULL DEFAULT 'home' CHECK(delivery_mode IN ('home','desk','pickup')),
-  /* Point de retrait choisi (bureau AYROVI ou relais). Vide pour une livraison à domicile. */
+  /* Point de retrait choisi (bureau ZAYROVI ou relais). Vide pour une livraison à domicile. */
   pickup_point_id TEXT NOT NULL DEFAULT '',
   terms_accepted_at TEXT,
   locale TEXT NOT NULL DEFAULT 'fr-TN',
@@ -346,6 +346,72 @@ export class QatafoDatabase {
     this.initPurchasingSchema();
     this.initCrmSchema();
     this.seedCoreData();
+    this.rebrandZayroviV1();
+  }
+
+  /**
+   * AYROVI → ZAYROVI (2026-10-16) : la marque change partout, sauf le serveur et le
+   * nom de domaine. Le code et les graines disent déjà ZAYROVI ; cette migration
+   * one-shot met à jour les valeurs ENREGISTRÉES qui sont encore exactement les
+   * graines d'origine. Un texte modifié depuis le Dashboard n'est jamais touché
+   * (chaque UPDATE exige l'ancienne valeur exacte). Restent volontairement :
+   *  • la catégorie de news `AYROVI` (valeur d'énumération, CHECK en base — son
+   *    LIBELLÉ affiché devient ZAYROVI côté interfaces) ;
+   *  • « Client AYROVI », nom provisoire des comptes, comparé tel quel par la logique
+   *    des comptes clients ;
+   *  • les adresses e-mail et URL en `ayrovi.tn` (domaine).
+   * Appelée en dernier : toutes les tables existent, et sur une base neuve les
+   * graines viennent d'insérer les nouvelles valeurs — la migration n'y trouve rien.
+   */
+  private rebrandZayroviV1(): void {
+    this.runOnceDataMigration('rebrand_zayrovi_v1', () => {
+      const now = new Date().toISOString();
+      const exact: Array<[string, string, string, string, string]> = [
+        // [table, colonne, condition supplémentaire, ancienne valeur, nouvelle valeur]
+        ['settings', 'setting_value', "setting_key IN ('company_name','company_legal_name')", 'AYROVI', 'ZAYROVI'],
+        ['settings', 'setting_value', "setting_key='unavailable_refund_policy'",
+          'Acompte remboursé si AYROVI ne peut pas valider ou acheter l’article demandé',
+          'Acompte remboursé si ZAYROVI ne peut pas valider ou acheter l’article demandé'],
+        ['admin_users', 'name', '1=1', 'AYROVI Admin', 'ZAYROVI Admin'],
+        ['news_items', 'author', '1=1', 'Équipe AYROVI', 'Équipe ZAYROVI'],
+        ['news_items', 'title', "id='news_arrival_08'", 'Le nouvel arrivage AYROVI est ouvert', 'Le nouvel arrivage ZAYROVI est ouvert'],
+        ['news_items', 'content', "id='news_arrival_08'",
+          'Préparez vos liens et captures avec Lens. AYROVI centralise le calcul, l’achat et la livraison en Tunisie.',
+          'Préparez vos liens et captures avec Lens. ZAYROVI centralise le calcul, l’achat et la livraison en Tunisie.'],
+        ['products', 'name', "id='product_demo_01'", 'Ensemble tendance AYROVI', 'Ensemble tendance ZAYROVI'],
+        ['lens_hero_settings', 'phone_status_label', '1=1', 'AYROVI LENS', 'ZAYROVI LENS'],
+        ['stories_showcase_settings', 'title', "id='global'", 'Social AYROVI', 'Social ZAYROVI'],
+        ['story_publishers', 'name', "id='pub_ayrovi'", 'Ayrovi', 'Zayrovi'],
+        ['reels', 'title', "id='reel_demo_01'", 'La sélection AYROVI en mouvement', 'La sélection ZAYROVI en mouvement'],
+        ['stories', 'description', "id='story_demo_02'", 'Ce que l’équipe AYROVI a sélectionné pour vous.', 'Ce que l’équipe ZAYROVI a sélectionné pour vous.'],
+        ['ai_knowledge', 'answer', "id='ai_delivery'",
+          'AYROVI livre dans les 24 gouvernorats. Le délai indicatif configuré est de 5 à 8 jours ouvrés.',
+          'ZAYROVI livre dans les 24 gouvernorats. Le délai indicatif configuré est de 5 à 8 jours ouvrés.'],
+        ['ai_knowledge', 'answer', "id='ai_payment'",
+          'Les moyens gérés par AYROVI sont le paiement à la livraison, D17 et Flouci.',
+          'Les moyens gérés par ZAYROVI sont le paiement à la livraison, D17 et Flouci.'],
+        ['erp_organizations', 'name', "code='ORG-0001'", 'AYROVI', 'ZAYROVI'],
+        ['erp_organizations', 'legal_name', "code='ORG-0001'", 'AYROVI', 'ZAYROVI'],
+        // fiche employé miroir de l'admin d'origine (son ancien nom découpé en prénom / nom)
+        ['erp_employees', 'first_name', "last_name='Admin' AND user_id IN (SELECT id FROM admin_users WHERE name='ZAYROVI Admin')", 'AYROVI', 'ZAYROVI'],
+        ['erp_sequences', 'description', "sequence_key='ayweb_cart_item_number'", 'Identité AYROVI d’une ligne de panier AyWebs', 'Identité ZAYROVI d’une ligne de panier AyWebs'],
+        ['erp_sequences', 'description', "sequence_key='ayweb_package_number'", 'Colis consolidé en entrepôt AYROVI', 'Colis consolidé en entrepôt ZAYROVI'],
+        ['public_nav_items', 'label_ar', "destination='news'", 'مجلة AYROVI', 'مجلة ZAYROVI'],
+      ];
+      const hasTable = (table: string) => Boolean(this.get<any>("SELECT 1 AS ok FROM sqlite_master WHERE type='table' AND name=?", table));
+      const hasColumn = (table: string, column: string) => (this.all<any>(`PRAGMA table_info(${table})`) || []).some((c: any) => c.name === column);
+      for (const [table, column, where, before, after] of exact) {
+        if (!hasTable(table) || !hasColumn(table, column)) continue;
+        const stamp = hasColumn(table, 'updated_at') ? ',updated_at=?' : '';
+        const args: unknown[] = stamp ? [after, now, before] : [after, before];
+        this.run(`UPDATE ${table} SET ${column}=?${stamp} WHERE ${where} AND ${column}=?`, ...args);
+      }
+      // Contenu LENS v2 (JSON) : seules les deux mentions de la graine d'origine.
+      if (hasTable('lens_hero_settings') && hasColumn('lens_hero_settings', 'sections_json')) {
+        this.run(`UPDATE lens_hero_settings SET sections_json=REPLACE(REPLACE(sections_json,'Propulsé par l’IA AYROVI','Propulsé par l’IA ZAYROVI'),'"AYROVI LENS"','"ZAYROVI LENS"')
+          WHERE id='global' AND (sections_json LIKE '%Propulsé par l’IA AYROVI%' OR sections_json LIKE '%"AYROVI LENS"%')`);
+      }
+    });
   }
 
   /**
@@ -888,7 +954,7 @@ export class QatafoDatabase {
         category TEXT NOT NULL CHECK(category IN ('NEW_ARRIVAL','NEW_BRAND','PROMOTION','DELIVERY','AYROVI','INFORMATION','OTHER')),
         arrival_id TEXT REFERENCES arrivals(id) ON DELETE SET NULL,
         product_id TEXT REFERENCES products(id) ON DELETE SET NULL,
-        author TEXT NOT NULL DEFAULT 'Équipe AYROVI',
+        author TEXT NOT NULL DEFAULT 'Équipe ZAYROVI',
         published_at TEXT NOT NULL,
         status TEXT NOT NULL CHECK(status IN ('DRAFT','SCHEDULED','PUBLISHED','ARCHIVED')),
         created_at TEXT NOT NULL,
@@ -1322,7 +1388,7 @@ export class QatafoDatabase {
       CREATE INDEX IF NOT EXISTS idx_assistant_support_account ON assistant_support_tickets(account_id, created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_assistant_support_conversation ON assistant_support_tickets(conversation_id, created_at DESC);
 
-      -- Canonical AYROVI tool security audit: no model arguments or provider
+      -- Canonical ZAYROVI tool security audit: no model arguments or provider
       -- payloads are stored here. Every proposal is classified before dispatch.
       CREATE TABLE IF NOT EXISTS assistant_tool_audit (
         id TEXT PRIMARY KEY,
@@ -1677,10 +1743,10 @@ export class QatafoDatabase {
       CREATE INDEX IF NOT EXISTS idx_crm_ship_dispatch_shipment ON crm_shipment_dispatches(shipment_id);
       CREATE INDEX IF NOT EXISTS idx_crm_ship_dispatch_status ON crm_shipment_dispatches(status);
 
-      -- ---- Category Master (official AYROVI product taxonomy) ----
+      -- ---- Category Master (official ZAYROVI product taxonomy) ----
       -- The single authoritative list of product categories used by the Arrival
       -- CRM AI classifier. It is NEVER hardcoded in application code: rows are
-      -- imported/managed by Administration from the official AYROVI Warehouse
+      -- imported/managed by Administration from the official ZAYROVI Warehouse
       -- Core taxonomy. An empty master means nothing can be classified, so
       -- lines stay in review instead of being assigned an invented category.
       CREATE TABLE IF NOT EXISTS crm_categories (
@@ -1740,7 +1806,7 @@ export class QatafoDatabase {
     this.ensureColumn('lens_hero_settings', 'element_order', "TEXT NOT NULL DEFAULT 'eyebrow,title,description,cta,proof'");
     this.ensureColumn('lens_hero_settings', 'sort_order', 'INTEGER NOT NULL DEFAULT 40');
     this.ensureColumn('lens_hero_settings', 'phone_image', "TEXT NOT NULL DEFAULT '/media/hero-femme.jpg'");
-    this.ensureColumn('lens_hero_settings', 'phone_status_label', "TEXT NOT NULL DEFAULT 'AYROVI LENS'");
+    this.ensureColumn('lens_hero_settings', 'phone_status_label', "TEXT NOT NULL DEFAULT 'ZAYROVI LENS'");
     this.ensureColumn('lens_hero_settings', 'phone_result_label', "TEXT NOT NULL DEFAULT 'Produit identifié'");
     this.ensureColumn('lens_hero_settings', 'phone_product_name', "TEXT NOT NULL DEFAULT 'Sneakers blanches — 89,00 €'");
     this.ensureColumn('lens_hero_settings', 'phone_price_chip', "TEXT NOT NULL DEFAULT '≈ 298,900 TND'");
@@ -1765,7 +1831,7 @@ export class QatafoDatabase {
     // depuis Admin → Stories → Bloc d'accueil — rien n'est figé dans le code.
     this.db.exec(`CREATE TABLE IF NOT EXISTS stories_showcase_settings (
       id TEXT PRIMARY KEY CHECK(id='global'),
-      title TEXT NOT NULL DEFAULT 'Social AYROVI',
+      title TEXT NOT NULL DEFAULT 'Social ZAYROVI',
       subtitle TEXT NOT NULL DEFAULT 'Le meilleur de la semaine',
       cta_label TEXT NOT NULL DEFAULT 'Explorer toutes les stories',
       cta_url TEXT NOT NULL DEFAULT '',
@@ -1795,11 +1861,11 @@ export class QatafoDatabase {
             { icon: 'zap', label: 'Rapide & précis' },
           ],
           aiCard: {
-            title: 'Propulsé par l’IA AYROVI',
+            title: 'Propulsé par l’IA ZAYROVI',
             text: 'Notre intelligence artificielle identifie les produits, compare des milliers d’options et vous aide à acheter mieux, au meilleur prix.',
           },
           phone: {
-            topLabel: 'AYROVI LENS',
+            topLabel: 'ZAYROVI LENS',
             image: '/media/lens-sneakers.jpg',
             resultLabel: 'Produit identifié',
             productName: 'Sneakers blanches',
@@ -1993,13 +2059,13 @@ export class QatafoDatabase {
     this.ensureColumn('cart_items', 'price_verification_status', "TEXT NOT NULL DEFAULT 'VERIFIED'");
     this.ensureColumn('cart_items', 'price_token', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('cart_items', 'ocerex_extraction_id', "TEXT NOT NULL DEFAULT ''");
-    // دفتر الشروط Stories : قنوات الناشرين (Ayrovi Official / Style / Promos / Actus).
+    // دفتر الشروط Stories : قنوات الناشرين (Zayrovi Official / Style / Promos / Actus).
     this.ensureColumn('stories', 'category', "TEXT NOT NULL DEFAULT 'ARRIVAGE'");
     this.ensureColumn('stories', 'secondary_images', "TEXT NOT NULL DEFAULT '[]'");
     if ((this.db.prepare('SELECT COUNT(*) AS count FROM story_publishers').get() as any).count === 0) {
       const ins = this.db.prepare(`INSERT INTO story_publishers (id,slug,name,subtitle,avatar,official,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)`);
       const nowP = new Date().toISOString();
-      ins.run('pub_ayrovi', 'ARRIVAGE', 'Ayrovi', 'Official', '', 1, nowP, nowP);
+      ins.run('pub_ayrovi', 'ARRIVAGE', 'Zayrovi', 'Official', '', 1, nowP, nowP);
       ins.run('pub_new', 'NEW', 'Nouveautés', 'Channel', '', 0, nowP, nowP);
       ins.run('pub_style', 'STYLE', 'Style', 'Channel', '', 0, nowP, nowP);
       ins.run('pub_actus', 'INFO', 'Actus', 'Channel', '', 0, nowP, nowP);
@@ -2014,7 +2080,7 @@ export class QatafoDatabase {
     if ((this.db.prepare('SELECT COUNT(*) AS count FROM reels').get() as any).count === 0) {
       const nowR = new Date().toISOString();
       this.db.prepare(`INSERT INTO reels (id,title,channel_id,description,video_url,duration_seconds,publish_at,status,views,likes,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,0,0,?,?)`)
-        .run('reel_demo_01', 'La sélection AYROVI en mouvement', 'pub_ayrovi', 'Découvrez la sélection en vidéo.', 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4', 8, nowR, 'publie', nowR, nowR);
+        .run('reel_demo_01', 'La sélection ZAYROVI en mouvement', 'pub_ayrovi', 'Découvrez la sélection en vidéo.', 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4', 8, nowR, 'publie', nowR, nowR);
     }
 
     this.ensureColumn('order_items', 'requested_size', "TEXT NOT NULL DEFAULT ''");
@@ -2573,7 +2639,7 @@ export class QatafoDatabase {
           cta: 'Voir l’arrivage', category: 'ARRIVAGE', priority: 95 },
         { id: 'story_demo_02', media_url: '/media/hero-homme.jpg',
           title: 'Nouveautés de la semaine',
-          description: 'Ce que l’équipe AYROVI a sélectionné pour vous.',
+          description: 'Ce que l’équipe ZAYROVI a sélectionné pour vous.',
           cta: 'Découvrir', category: 'NEW', priority: 90 },
         { id: 'story_demo_03', media_url: '/media/hero-enfants.jpg',
           title: 'Le dressing minimaliste',
@@ -2655,7 +2721,7 @@ export class QatafoDatabase {
   }
 
   /**
-   * AYROVI DESIGN SYSTEM v1.0 — unification de l'échelle neutre (P0 P4/T2).
+   * ZAYROVI DESIGN SYSTEM v1.0 — unification de l'échelle neutre (P0 P4/T2).
    * Les réglages persistés avant cette migration portent l'échelle slate
    * (#111318/#1d2130/#6b7280/#f8f9fe/#e2e8f0/#5b6472/#050505). Ils sont
    * ré-écrits UNE SEULE FOIS vers la canonique : #0A0A0A (surfaces sombres),
@@ -2888,7 +2954,7 @@ export class QatafoDatabase {
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
     const settings = [
-      ['setting_name', 'GENERAL', 'company_name', 'AYROVI', 'STRING', 'Nom de la plateforme'],
+      ['setting_name', 'GENERAL', 'company_name', 'ZAYROVI', 'STRING', 'Nom de la plateforme'],
       ['setting_email', 'GENERAL', 'company_email', 'contact@ayrovi.tn', 'STRING', 'Email'],
       ['setting_phone', 'GENERAL', 'company_phone', '+216 00 000 000', 'STRING', 'Téléphone'],
       ['setting_address', 'GENERAL', 'company_address', 'Tunis, Tunisie', 'STRING', 'Adresse'],
@@ -2900,8 +2966,8 @@ export class QatafoDatabase {
       ['setting_payment_methods', 'PAYMENT', 'payment_methods', JSON.stringify(DEFAULT_PAYMENT_METHODS), 'JSON', 'Méthodes de paiement de l’acompte'],
       ['setting_deposit_percent', 'PAYMENT', 'deposit_percent', '20', 'NUMBER', 'Pourcentage de l’acompte de confirmation (%)'],
       ['setting_deposit_review_delay', 'PAYMENT', 'deposit_review_delay', 'Sous 1 jour ouvré après réception du justificatif', 'STRING', 'Délai indicatif de vérification de l’acompte'],
-      ['setting_unavailable_refund', 'PAYMENT', 'unavailable_refund_policy', 'Acompte remboursé si AYROVI ne peut pas valider ou acheter l’article demandé', 'STRING', 'Politique si l’article ne peut pas être validé'],
-      ['setting_company_legal_name', 'PAYMENT', 'company_legal_name', 'AYROVI', 'STRING', 'Nom légal de l’entreprise (reçus/factures)'],
+      ['setting_unavailable_refund', 'PAYMENT', 'unavailable_refund_policy', 'Acompte remboursé si ZAYROVI ne peut pas valider ou acheter l’article demandé', 'STRING', 'Politique si l’article ne peut pas être validé'],
+      ['setting_company_legal_name', 'PAYMENT', 'company_legal_name', 'ZAYROVI', 'STRING', 'Nom légal de l’entreprise (reçus/factures)'],
       ['setting_bank_rib', 'PAYMENT', 'bank_rib', '', 'STRING', 'RIB pour le virement bancaire'],
       ['setting_poste_account', 'PAYMENT', 'poste_account', '', 'STRING', 'Compte courant postal (mandat poste)'],
       ['setting_flouci_number', 'PAYMENT', 'flouci_number', '', 'STRING', 'Numéro / identifiant Flouci'],
@@ -3008,7 +3074,7 @@ export class QatafoDatabase {
         (id,name,description,image,additional_images,brand_id,brand_name,category,source_url,source_platform,
          original_price,currency,converted_price,customs_fee,shipping_fee,service_fee,final_price,express_available,stock_status,status,created_at,updated_at)
         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
-          'product_demo_01','Ensemble tendance AYROVI','Produit de démonstration relié à l’arrivage actif.',
+          'product_demo_01','Ensemble tendance ZAYROVI','Produit de démonstration relié à l’arrivage actif.',
           '/media/hero-femme.jpg','[]','brand_shein','SHEIN','Mode','https://www.shein.com/','SHEIN',21.99,'EUR',
           breakdown.convertedPriceTND,breakdown.customsFeeTND,breakdown.shippingFeeTND,breakdown.serviceFeeTND,breakdown.totalTND,
           1,'AVAILABLE','ACTIVE',now,now,
@@ -3041,9 +3107,9 @@ export class QatafoDatabase {
       this.db.prepare(`INSERT INTO news_items
         (id,title,summary,content,image,category,arrival_id,product_id,author,published_at,status,created_at,updated_at)
         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
-          'news_arrival_08','Le nouvel arrivage AYROVI est ouvert','Les commandes pour l’arrivage #08 sont maintenant disponibles.',
-          'Préparez vos liens et captures avec Lens. AYROVI centralise le calcul, l’achat et la livraison en Tunisie.',
-          '/media/hero-homme.jpg','NEW_ARRIVAL','arrival_08','product_demo_01','Équipe AYROVI','2026-08-12T00:00:00.000Z','PUBLISHED',now,now,
+          'news_arrival_08','Le nouvel arrivage ZAYROVI est ouvert','Les commandes pour l’arrivage #08 sont maintenant disponibles.',
+          'Préparez vos liens et captures avec Lens. ZAYROVI centralise le calcul, l’achat et la livraison en Tunisie.',
+          '/media/hero-homme.jpg','NEW_ARRIVAL','arrival_08','product_demo_01','Équipe ZAYROVI','2026-08-12T00:00:00.000Z','PUBLISHED',now,now,
         );
     }
 
@@ -3052,10 +3118,10 @@ export class QatafoDatabase {
         (id,category,question,answer,keywords,priority,active,created_at,updated_at)
         VALUES (?,?,?,?,?,?,?,?,?)`);
       insert.run('ai_delivery','FAQ','Quels sont les délais de livraison ?',
-        'AYROVI livre dans les 24 gouvernorats. Le délai indicatif configuré est de 5 à 8 jours ouvrés.',
+        'ZAYROVI livre dans les 24 gouvernorats. Le délai indicatif configuré est de 5 à 8 jours ouvrés.',
         JSON.stringify(['livraison','délai','gouvernorat']),100,1,now,now);
       insert.run('ai_payment','FAQ','Quels moyens de paiement sont disponibles ?',
-        'Les moyens gérés par AYROVI sont le paiement à la livraison, D17 et Flouci.',
+        'Les moyens gérés par ZAYROVI sont le paiement à la livraison, D17 et Flouci.',
         JSON.stringify(['paiement','d17','flouci','livraison']),90,1,now,now);
       insert.run('ai_order','PREDEFINED_RESPONSE','Comment commander ?',
         'Ouvrez Lens, collez le lien du produit ou ajoutez une capture, puis confirmez le panier et vos coordonnées.',

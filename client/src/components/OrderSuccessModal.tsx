@@ -47,8 +47,8 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
   if (!result) return null;
 
   const whatsappMessage = encodeURIComponent(tr(
-    `Bonjour AYROVI,\nJe viens d’enregistrer une commande :\n\nRéférence : ${result.orderNumber}\nNom : ${result.customer.name}\nTéléphone : ${result.customer.phone}\nVille/Adresse : ${result.customer.city} - ${result.customer.address}\nMontant total : ${result.totalTND.toFixed(2)} DT\n\nMerci de m’aider pour le paiement et le suivi.`,
-    `مرحبًا AYROVI،\nسجلت طلبًا جديدًا:\n\nالمرجع: ${result.orderNumber}\nالاسم: ${result.customer.name}\nالهاتف: ${result.customer.phone}\nالولاية/العنوان: ${result.customer.city} - ${result.customer.address}\nالإجمالي: ${result.totalTND.toFixed(2)} د.ت\n\nيرجى مساعدتي في الدفع والمتابعة.`
+    `Bonjour ZAYROVI,\nJe viens d’enregistrer une commande :\n\nRéférence : ${result.orderNumber}\nNom : ${result.customer.name}\nTéléphone : ${result.customer.phone}\nVille/Adresse : ${result.customer.city} - ${result.customer.address}\nMontant total : ${result.totalTND.toFixed(2)} DT\n\nMerci de m’aider pour le paiement et le suivi.`,
+    `مرحبًا ZAYROVI،\nسجلت طلبًا جديدًا:\n\nالمرجع: ${result.orderNumber}\nالاسم: ${result.customer.name}\nالهاتف: ${result.customer.phone}\nالولاية/العنوان: ${result.customer.city} - ${result.customer.address}\nالإجمالي: ${result.totalTND.toFixed(2)} د.ت\n\nيرجى مساعدتي في الدفع والمتابعة.`
   ));
 
   const whatsappUrl = `https://wa.me/?text=${whatsappMessage}`;
@@ -64,7 +64,7 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
 
   return (
     <OrderConfirmationShell direction={direction} ariaLabelledBy="order-success-title">
-        <AppHeader title={tr('Commande enregistrée', 'تم تسجيل الطلب')} subtitle={tr('Confirmation AYROVI', 'تأكيد AYROVI')} onClose={onClose} actionLabel={tr('Retour à l’accueil', 'العودة إلى الصفحة الرئيسية')} />
+        <AppHeader title={tr('Commande enregistrée', 'تم تسجيل الطلب')} subtitle={tr('Confirmation ZAYROVI', 'تأكيد ZAYROVI')} onClose={onClose} actionLabel={tr('Retour à l’accueil', 'العودة إلى الصفحة الرئيسية')} />
         <JourneyProgress active={4} />
         <div className="order-confirmation-content ay-safe-bottom space-y-5 text-center">
         {/* Celebration Icon */}
@@ -78,7 +78,7 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
             {tr('Commande enregistrée', 'تم تسجيل الطلب')}
           </h2>
           <p className="text-xs text-muted font-medium">
-            {tr('Merci pour votre confiance. Suivez le paiement et la livraison depuis votre compte AYROVI.', 'شكرًا لثقتك. تابع الدفع والتوصيل من حسابك في AYROVI.')}
+            {tr('Merci pour votre confiance. Suivez le paiement et la livraison depuis votre compte ZAYROVI.', 'شكرًا لثقتك. تابع الدفع والتوصيل من حسابك في ZAYROVI.')}
           </p>
         </div>
 
@@ -167,7 +167,7 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
           className="flex w-full items-center justify-center gap-2 rounded-control bg-whatsapp px-6 py-3.5 text-xs font-bold text-white shadow-card transition hover:bg-whatsapp-hover active:scale-95 sm:text-sm"
         >
           <MessageSquare className="w-4 h-4" />
-          <span>{tr('Contacter AYROVI sur WhatsApp', 'التواصل مع AYROVI عبر واتساب')}</span>
+          <span>{tr('Contacter ZAYROVI sur WhatsApp', 'التواصل مع ZAYROVI عبر واتساب')}</span>
         </a>
 
         <button type="button" onClick={onCalculateAnotherProduct} className="ay-btn-primary min-h-12 w-full text-xs sm:text-sm">

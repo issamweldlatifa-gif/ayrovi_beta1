@@ -192,7 +192,7 @@
   content: none;
 }
 
-/* Branded task cards: no emoji, just AYROVI vector icons and shared editorial surfaces. */
+/* Branded task cards: no emoji, just ZAYROVI vector icons and shared editorial surfaces. */
 .assistant-quick-card {
   position: relative;
   isolation: isolate;
@@ -248,7 +248,7 @@
   }
 }
 
-/* Entrée douce de l'écran d'accueil AYROVI AI */
+/* Entrée douce de l'écran d'accueil ZAYROVI AI */
 .assistant-welcome {
   animation: assistantWelcomeIn 320ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
@@ -305,7 +305,7 @@
   to { transform: translateX(440%); opacity: 0; }
 }
 
-/* AYROVI assistant subview entrance animations */
+/* ZAYROVI assistant subview entrance animations */
 @keyframes assistantSideMenuIn {
   from { transform: translateX(-100%); }
   to { transform: translateX(0); }
@@ -657,8 +657,8 @@
   .transition-card-fade, .discovery-panel { animation: none; }
 }
 
-/* ============ AYROVI — MOBILE WIDTH-FIRST LAYOUT RULE ============
-   قاعدة AYROVI: container النص = عرض مريح للقراءة،
+/* ============ ZAYROVI — MOBILE WIDTH-FIRST LAYOUT RULE ============
+   قاعدة ZAYROVI: container النص = عرض مريح للقراءة،
    أما الـvisual / slider / mockup = أقصى عرض متاح من الشاشة.
    كل المسافات الرأسية هنا محكومة بهذه المتغيرات (40–56px للأقسام). */
 :root {

@@ -4,8 +4,8 @@ import { useLocale } from '../../../i18n/LocaleContext';
 
 /**
  * AYWEBs — barre d'onglets basse (référence Add-to-Buyee, capture 2) avec les
- * libellés AYROVI bilingues : Accueil · Boutiques · Favoris · Panier · Compte.
- * Chaque onglet est VIVANT : il appelle la navigation AYROVI correspondante.
+ * libellés ZAYROVI bilingues : Accueil · Boutiques · Favoris · Panier · Compte.
+ * Chaque onglet est VIVANT : il appelle la navigation ZAYROVI correspondante.
  */
 export type AyWebsTab = 'home' | 'stores' | 'wish' | 'cart' | 'account';
 

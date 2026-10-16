@@ -80,7 +80,7 @@ describe('Produits temporaires — Reels, Stories, Publications', () => {
     expect(contentList.body.data.some((p: any) => p.id === id)).toBe(true);
   });
 
-  // Catalogue AYROVI désactivé (AYROVI_CATALOG_SEARCH_ENABLED=false) : test à réactiver avec l'interrupteur.
+  // Catalogue ZAYROVI désactivé (AYROVI_CATALOG_SEARCH_ENABLED=false) : test à réactiver avec l'interrupteur.
 
   test.skip('la recherche de catalogue ne retourne jamais un produit temporaire (un produit catalogue au même nom, oui)', async () => {
     const created = await createTemp({ name: 'Blouson Zephyrix temporaire', status: 'ACTIVE' });

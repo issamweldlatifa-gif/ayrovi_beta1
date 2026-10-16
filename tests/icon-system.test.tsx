@@ -10,7 +10,7 @@ import { AyroviBack, AyroviSearch, AyroviSparkles, AyroviUser } from '../client/
 
 const family = [Menu, AyroviBack, Search, User, Sparkles, Home, ShoppingBag, Heart, MessageCircle, Package, X, AlertCircle];
 
-describe('AYROVI icon system', () => {
+describe('ZAYROVI icon system', () => {
   it('renders the family as independent 24px monoline SVG (editorial, stroke 1.5)', () => {
     for (const Icon of family) {
       const markup = renderToStaticMarkup(<Icon />);
@@ -32,7 +32,7 @@ describe('AYROVI icon system', () => {
     }
   });
 
-  it('wires public aliases to the AYROVI components (one icon per concept)', () => {
+  it('wires public aliases to the ZAYROVI components (one icon per concept)', () => {
     expect(Sparkles).toBe(AyroviSparkles);
     expect(User).toBe(AyroviUser);
     expect(Home).toBeTruthy();

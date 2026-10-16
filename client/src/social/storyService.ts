@@ -2,7 +2,7 @@ import type { Story, StoryComment, StoryPost, StoryPublisher } from './types';
 import { getSessionId } from '../utils/session';
 
 /**
- * AYROVI Story Tab — service social backend-ready.
+ * ZAYROVI Story Tab — service social backend-ready.
  * Contenu éditorial réel via /api/public ; interactions (likes, commentaires,
  * vues, partages) persistées côté serveur via /api/public/social/*, avec
  * erreurs explicites : aucun faux succès local. Invités : lecture seule.
@@ -39,7 +39,7 @@ function isComment(value: any): value is StoryComment {
 
 export const OFFICIAL: StoryPublisher = {
   id: 'pub_ayrovi',
-  name: 'Ayrovi',
+  name: 'Zayrovi',
   avatar: '',
   verified: true,
   subtitle: 'Official',
@@ -325,9 +325,9 @@ export function postPublicUrl(id: string): string {
 
 export async function sharePost(post: StoryPost): Promise<boolean> {
   const url = postPublicUrl(post.id);
-  const text = `${post.publisher.name} sur AYROVI Social — ${post.caption || 'Découvrez la sélection AYROVI.'}`;
+  const text = `${post.publisher.name} sur ZAYROVI Social — ${post.caption || 'Découvrez la sélection ZAYROVI.'}`;
   try {
-    if (navigator.share) await navigator.share({ title: 'AYROVI Social', text, url });
+    if (navigator.share) await navigator.share({ title: 'ZAYROVI Social', text, url });
     else if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(url);
     else return false;
     recordShare(post.id);

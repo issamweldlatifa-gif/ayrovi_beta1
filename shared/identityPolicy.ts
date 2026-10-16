@@ -3,7 +3,7 @@ import { BRAND, FONT_STACK } from './brand.generated';
 const record = (value: unknown): Record<string, unknown> =>
   value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
 
-/** Oranges de marque des chartes retirées : #FF6900 (« Zalando », P4/T1), #FF7900 (AYROVI A v3),
+/** Oranges de marque des chartes retirées : #FF6900 (« Zalando », P4/T1), #FF7900 (ZAYROVI A v3),
  * #FE7003 et #FF7A00 (avant P4/T1). Ils restent écrits dans des réglages CMS déjà persistés et dans
  * les graines de la base ; ils ne sont plus l'identité depuis la palette officielle du 2026-10-15
  * (noir #0A0A0A · blanc #FFFFFF · violet électrique #571EF6 · gris clair #F2F2F2). */

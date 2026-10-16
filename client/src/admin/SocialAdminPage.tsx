@@ -217,7 +217,7 @@ export const SocialAdminPage: React.FC = () => {
       <header className="admin-page-head">
         <div>
           <span className="admin-eyebrow">Contenu → Social</span>
-          <h2>Social Ayrovi</h2>
+          <h2>Social Zayrovi</h2>
           <p>Trois contenus indépendants : publications du feed, reels vidéo et stories éphémères. Les produits temporaires créés pour eux sont gérés ici.</p>
         </div>
       </header>

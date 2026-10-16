@@ -101,10 +101,10 @@ describe('التفاعل', () => {
     expect(result.comment).toMatchObject({ id: 'int_1', author: 'Sam' });
   });
 
-  it('التعليقات: مؤلّف مجهول ⇒ «Membre AYROVI» موش فراغ', async () => {
+  it('التعليقات: مؤلّف مجهول ⇒ «Membre ZAYROVI» موش فراغ', async () => {
     apiGet.mockResolvedValue({ data: [{ id: 'c1', text: 'S', createdAt: 'now' }] });
     const rows = await fetchComments('story_1', {});
-    expect(rows[0]?.author).toBe('Membre AYROVI');
+    expect(rows[0]?.author).toBe('Membre ZAYROVI');
   });
 });
 

@@ -22,7 +22,7 @@ function localScheduleDefault(): string {
 
 function categoriesFor(type: string) {
   if (type === 'editorial') return [
-    { value: 'AYROVI', label: 'AYROVI' }, { value: 'NEW_ARRIVAL', label: 'وصول جديد' },
+    { value: 'AYROVI', label: 'ZAYROVI' }, { value: 'NEW_ARRIVAL', label: 'وصول جديد' },
     { value: 'NEW_BRAND', label: 'علامة جديدة' }, { value: 'PROMOTION', label: 'عرض' },
     { value: 'INFORMATION', label: 'معلومة' }, { value: 'OTHER', label: 'أخرى' },
   ];
@@ -30,7 +30,7 @@ function categoriesFor(type: string) {
     { value: 'STYLE', label: 'ستايل' }, { value: 'NEW', label: 'جديد' }, { value: 'ARRIVAGE', label: 'وصول' },
     { value: 'PROMO', label: 'عرض' }, { value: 'INFO', label: 'معلومة' },
   ];
-  return [{ value: 'AYROVI', label: 'AYROVI' }, { value: 'STYLE', label: 'ستايل' }, { value: 'PROMO', label: 'عرض' }];
+  return [{ value: 'AYROVI', label: 'ZAYROVI' }, { value: 'STYLE', label: 'ستايل' }, { value: 'PROMO', label: 'عرض' }];
 }
 
 function preview(draft: MagazineDraft): string {

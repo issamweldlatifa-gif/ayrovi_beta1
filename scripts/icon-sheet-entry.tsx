@@ -9,7 +9,7 @@ export function renderSheet(): string {
     .sort(([a], [b]) => a.localeCompare(b));
 
   const cards = entries.map(([name, Cmp]) => {
-    const label = (name as string).replace(/^Ayrovi/, '');
+    const label = (name as string).replace(/^Zayrovi/, '');
     return `<div class="card">${renderToStaticMarkup(React.createElement(Cmp as React.ComponentType<any>, { size: 56 }))}<span>${label}</span></div>`;
   });
   return `<div class="grid">${cards.join('\n')}</div>`;

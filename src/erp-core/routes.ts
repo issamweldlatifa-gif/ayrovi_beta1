@@ -1,5 +1,5 @@
 /**
- * AYROVI ERP Core — Back-office API (P1).
+ * ZAYROVI ERP Core — Back-office API (P1).
  *
  * Mounted at `/api/admin/core` inside the existing admin router, so it inherits
  * the session cookie scope (`Path=/api/admin`), the CSRF middleware and the

@@ -6,7 +6,7 @@
  *   1) assetlinks المنشور يذكر package الديمو + بصمة الشهادة الفعلية؛
  *   2) جهاز ADB واحد ومصرّح به، والحزمة مركّبة؛
  *   3) Android يعتبر نطاق Beta verified (Android 12+)؛
- *   4) resolver الحقيقي للرابط هو AYROVI، موش المتصفح/Chooser؛
+ *   4) resolver الحقيقي للرابط هو ZAYROVI، موش المتصفح/Chooser؛
  *   5) اختيارياً يفتح رابط Lens على الهاتف.
  *
  * الكاميرا والمعرض وإعادة التشغيل تحتاج عين/لمسة إنسان؛ في الآخر نطبع checklist
@@ -145,7 +145,7 @@ async function fetchAssetLinks(origin, timeoutMs) {
 
 function printHelp() {
   console.log([
-    'AYROVI — قبول Android على جهاز حقيقي',
+    'ZAYROVI — قبول Android على جهاز حقيقي',
     '',
     'الاستعمال:',
     '  npm run device:acceptance -- --launch',
@@ -259,12 +259,12 @@ export async function runAcceptance(options) {
   } else record('launch', 'manual', 'ajoute --launch pour ouvrir réellement Lens sur le téléphone');
 
   const manual = [
-    'Lens s’ouvre directement dans AYROVI, sans navigateur ni fenêtre de choix.',
+    'Lens s’ouvre directement dans ZAYROVI, sans navigateur ni fenêtre de choix.',
     'Caméra: accepter l’autorisation, capturer un produit net, puis annuler/reprendre sans écran bloqué.',
     'Permission refusée: refuser CAMERA; l’écran explique le refus et le bouton Galerie reste utilisable.',
     'Galerie: choisir JPG/PNG/WebP, revenir, vérifier l’aperçu puis lancer la recherche.',
     'Arrière-plan/reprise: pendant un résultat ou un timer panier, quitter puis revenir; pas de double requête.',
-    'Redémarrage: tuer AYROVI, rouvrir; le délai Lens vient du serveur et une ligne expirée demande une nouvelle vérification.',
+    'Redémarrage: tuer ZAYROVI, rouvrir; le délai Lens vient du serveur et une ligne expirée demande une nouvelle vérification.',
     'RTL/FR et TalkBack: ordre de lecture, libellés Retour/Panier/CTA, zones tactiles et focus visibles.',
   ];
   const ok = !checks.some((check) => check.status === 'fail');

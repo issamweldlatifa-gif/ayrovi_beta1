@@ -27,7 +27,7 @@ import com.getcapacitor.annotation.CapacitorPlugin;
  * faire DANS l'application. Le correctif précédent du 404 Google passait par
  * `window.open`, que Capacitor délègue à Android : l'utilisateur basculait
  * dans Chrome, application séparée, pile de tâches séparée — il quittait
- * visiblement AYROVI et devait revenir à la main.
+ * visiblement ZAYROVI et devait revenir à la main.
  *
  * ── Pourquoi un onglet personnalisé, et pas une WebView ─────────────────────
  * Charger le flux Google dans notre propre WebView n'est PAS une option : le
@@ -38,7 +38,7 @@ import com.getcapacitor.annotation.CapacitorPlugin;
  *
  * L'onglet personnalisé (Custom Tab) est la réponse prévue pour ce cas : c'est
  * le moteur de Chrome, donc un agent utilisateur accepté et un vrai bac à
- * sable (AYROVI ne voit RIEN de ce qui y est tapé), mais il s'ouvre DANS notre
+ * sable (ZAYROVI ne voit RIEN de ce qui y est tapé), mais il s'ouvre DANS notre
  * tâche, aux couleurs de l'application, et se referme tout seul au retour. Pas
  * de bascule d'application, pas de retour manuel.
  *
@@ -53,7 +53,7 @@ public class AyroviAuthTabPlugin extends Plugin {
    *
    * ── Pourquoi cette méthode s'ajoute à l'onglet personnalisé ────────────────
    * L'onglet reste une page web : le client l'a lue comme « je quitte ». Ici
-   * Android affiche sa propre feuille de comptes, par-dessus AYROVI ; aucune
+   * Android affiche sa propre feuille de comptes, par-dessus ZAYROVI ; aucune
    * page ne se charge, rien ne bascule. Le résultat est un jeton d'identité
    * signé par Google, que la couche web envoie à
    * POST /api/customer/auth/google/native pour vérification côté serveur.

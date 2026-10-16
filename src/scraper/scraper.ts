@@ -67,14 +67,14 @@ export class SmartLinkScraper {
    *   1. **Un taux inventé pour toute devise absente de la table** (le `|| 4.00`) :
    *      un article en SEK ou en CAD non listé était converti à 4 dinars pour 1,
    *      sans que rien ne le signale ;
-   *   2. **Deux vérités pour un même produit** : le calculateur AYROVI applique
+   *   2. **Deux vérités pour un même produit** : le calculateur ZAYROVI applique
    *      le taux EFFECTIF de `pricing_config` (marché × buffer, versionné), la
    *      table disait autre chose — l'écart exact que l'audit du 23/09 avait
    *      déjà dû corriger ailleurs ;
    *   3. **Un prix TND publié sans moteur** : `serviceFee = max(10, 8 %)` et
    *      `shipping = 25.00` étaient des constantes, pas des règles métier.
    *
-   * Désormais : le scraper publie le prix SOURCE et sa devise. Le prix AYROVI
+   * Désormais : le scraper publie le prix SOURCE et sa devise. Le prix ZAYROVI
    * (`convertedPriceTND`/`serviceFeeTND`/`estimatedShippingTND`/`totalPriceTND`)
    * est produit par `calculatePrice` sur les règles versionnées, à la couche qui
    * a la base (API / panier / AYWEBs). Les quatre champs restent à 0 ici :

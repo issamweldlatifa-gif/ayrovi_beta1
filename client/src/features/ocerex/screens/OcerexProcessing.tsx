@@ -7,7 +7,7 @@ const STAGES: Array<{ id: OcerexStage; fr: string; ar: string }> = [
   { id: 'image', fr: 'Analyse de l’image', ar: 'تحليل الصورة' },
   { id: 'read', fr: 'Lecture des prix', ar: 'قراءة الأسعار' },
   { id: 'reference', fr: 'Prix de référence', ar: 'تحديد السعر المرجعي' },
-  { id: 'price', fr: 'Calcul du prix Ayrovi', ar: 'حساب سعر Ayrovi' },
+  { id: 'price', fr: 'Calcul du prix Zayrovi', ar: 'حساب سعر Zayrovi' },
 ];
 
 export const OcerexProcessing: React.FC<{ active: OcerexStage }> = ({ active }) => {

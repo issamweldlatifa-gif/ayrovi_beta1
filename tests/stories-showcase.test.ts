@@ -67,22 +67,22 @@ describe('Stories showcase — settings come from the dashboard', () => {
 
   test('the card count is bounded to 4 or 5 — no arbitrary value passes', async () => {
     const tooMany = await admin.put('/api/admin/stories-showcase').set('x-csrf-token', csrf)
-      .send({ cardCount: 99, title: 'Social AYROVI' });
+      .send({ cardCount: 99, title: 'Social ZAYROVI' });
     expect(tooMany.status).toBe(200);
     expect(tooMany.body.data.cardCount).toBe(5);
 
     const tooFew = await admin.put('/api/admin/stories-showcase').set('x-csrf-token', csrf)
-      .send({ cardCount: 1, title: 'Social AYROVI' });
+      .send({ cardCount: 1, title: 'Social ZAYROVI' });
     expect(tooFew.status).toBe(200);
     expect(tooFew.body.data.cardCount).toBe(4);
 
     const five = await admin.put('/api/admin/stories-showcase').set('x-csrf-token', csrf)
-      .send({ cardCount: 5, title: 'Social AYROVI' });
+      .send({ cardCount: 5, title: 'Social ZAYROVI' });
     expect(five.body.data.cardCount).toBe(5);
 
     // remise dans l'état livré
     await admin.put('/api/admin/stories-showcase').set('x-csrf-token', csrf)
-      .send({ cardCount: 4, title: 'Social AYROVI', subtitle: 'Le meilleur de la semaine', ctaLabel: 'Explorer toutes les stories', ctaUrl: '', enabled: true });
+      .send({ cardCount: 4, title: 'Social ZAYROVI', subtitle: 'Le meilleur de la semaine', ctaLabel: 'Explorer toutes les stories', ctaUrl: '', enabled: true });
   });
 
   test('an unsafe link destination is rejected instead of being published', async () => {
@@ -105,7 +105,7 @@ describe('Stories showcase — settings come from the dashboard', () => {
 
   test('the frontend hardcodes no copy — title, subtitle and link are fetched', () => {
     expect(code(component)).toContain("fetch('/api/public/stories-showcase')");
-    for (const frozen of ['Social AYROVI', 'Le meilleur de la semaine', 'Explorer toutes les stories']) {
+    for (const frozen of ['Social ZAYROVI', 'Le meilleur de la semaine', 'Explorer toutes les stories']) {
       expect(code(component), `« ${frozen} » ne doit pas être figé dans le composant`).not.toContain(frozen);
     }
   });
@@ -168,7 +168,7 @@ describe('Stories showcase — settings come from the dashboard', () => {
     expect(indexCss).not.toMatch(/--stories-showcase-gap:/);
   });
 
-  test('AYROVI charter: the whole block is a monochrome dark panel, no violet (v4.2.0)', () => {
+  test('ZAYROVI charter: the whole block is a monochrome dark panel, no violet (v4.2.0)', () => {
     const block = /\.stories-showcase \{[\s\S]*?@media \(prefers-reduced-motion/.exec(indexCss)?.[0] ?? '';
 
     // aucun littéral hexadécimal : tout passe par les jetons ou par du blanc/noir translucide

@@ -19,7 +19,7 @@ describe('1. Plus de mots répétés', () => {
   const page = read(PAGE);
 
   it('le sous-titre ne répète plus le verbe du titre', () => {
-    expect(page).not.toContain("tr('Connectez-vous à votre univers AYROVI.'");
+    expect(page).not.toContain("tr('Connectez-vous à votre univers ZAYROVI.'");
     expect(page).toContain("tr('Vos commandes, vos favoris et votre panier, au même endroit.'");
   });
 

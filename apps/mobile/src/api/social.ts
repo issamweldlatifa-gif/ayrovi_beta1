@@ -189,7 +189,7 @@ export async function fetchComments(targetId: string, options: RequestOptions = 
       if (!id) return [];
       return [{
         id,
-        author: str(entry.author) || 'Membre AYROVI',
+        author: str(entry.author) || 'Membre ZAYROVI',
         text: str(entry.text),
         createdAt: str(entry.createdAt),
       }];
@@ -235,7 +235,7 @@ export async function sendInteraction(input: {
       shares: num(counts.shares),
     } : null,
     comment: str(comment.id)
-      ? { id: str(comment.id), author: str(comment.author) || 'Membre AYROVI', text: str(comment.text), createdAt: str(comment.createdAt) }
+      ? { id: str(comment.id), author: str(comment.author) || 'Membre ZAYROVI', text: str(comment.text), createdAt: str(comment.createdAt) }
       : null,
     recorded: typeof payload.recorded === 'boolean' ? payload.recorded : null,
   };

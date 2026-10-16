@@ -1,6 +1,6 @@
 /**
  * Session client pour l'APPLICATION — le contrat qui relie le serveur à
- * AYROVI (React Native), et les garde-fous qui l'empêchent d'affaiblir le web.
+ * ZAYROVI (React Native), et les garde-fous qui l'empêchent d'affaiblir le web.
  *
  * Ce que ces tests protègent :
  *   1. le client mobile déclaré reçoit un jeton ; un navigateur n'en reçoit JAMAIS ;

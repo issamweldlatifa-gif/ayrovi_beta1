@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════════════════════════════════════
-   AYROVI — Admin « Console opérationnelle » (modèle A retenu le 2026-09-22)
+   ZAYROVI — Admin « Console opérationnelle » (modèle A retenu le 2026-09-22)
 
    Ce que fait cette feuille, et pourquoi elle est SEULE à le faire :
    • Les 49 écrans de l'admin partagent une coquille et des primitives (`admin.css`, plus les
@@ -20,9 +20,9 @@
    4. UNE SEULE ACTION FORTE par écran (bouton primaire), le reste en boutons secondaires.
    5. Les files d'attente et les états vides disent quoi faire, pas seulement « aucune donnée ».
 
-   La PALETTE reste celle d'AYROVI (palette officielle du 2026-10-15 : noir #0A0A0A, blanc, violet
+   La PALETTE reste celle de ZAYROVI (palette officielle du 2026-10-15 : noir #0A0A0A, blanc, violet
    électrique #571EF6, gris clair #F2F2F2) : ce n'est pas Amazon qu'on copie, ce sont ses conventions
-   de poste de travail. Le violet AYROVI (jeton --ayrovi-color-brand-accent) est le seul déclencheur
+   de poste de travail. Le violet ZAYROVI (jeton --ayrovi-color-brand-accent) est le seul déclencheur
    d'action ; les gris sont ceux de l'échelle neutre du dépôt.
    Charte v4.2.0 « violet au minimum » (2026-10-16) : dans la console comme dans la vitrine, le violet
    ne sert qu'à l'action principale, à l'onglet / l'entrée de navigation active (un filet, pas un
@@ -39,7 +39,7 @@
 .admin-login,
 .admin-boot {
   /* Chrome */
-  --bo-bar: #111110;          /* barre 1 — encre AYROVI */
+  --bo-bar: #111110;          /* barre 1 — encre ZAYROVI */
   --bo-bar-2: #262626;        /* barre 2 — un pas plus clair, repère de service */
   --bo-bar-ink: #EDEDED;
   --bo-bar-muted: #A3A3A3;
@@ -54,7 +54,7 @@
   --bo-soft: #6B7076;
   --bo-sunken: #F6F7F8;
   --bo-hover: #F3F3F4;
-  --bo-accent: var(--ayrovi-color-brand-accent); /* action unique — violet officiel AYROVI */
+  --bo-accent: var(--ayrovi-color-brand-accent); /* action unique — violet officiel ZAYROVI */
   --bo-accent-hover: var(--ay-e-action-hover); /* survol de l'action (actionHover de l'identité, #491ACC) */
   --bo-on-accent: var(--ay-e-on-action);        /* texte sur violet : 7,19:1 */
   --bo-accent-soft: var(--ay-e-accent-soft);    /* violet clair officiel (#C5B2F4) : halo du focus, jamais un fond de ligne */
@@ -530,7 +530,7 @@ html[data-theme='dark'] .bo-shell .bo-notice { border-color: #3A3018; color: #E8
   border: 1px solid rgba(255, 255, 255, .18); border-radius: var(--bo-radius);
   background: rgba(255, 255, 255, .06); color: #FFFFFF;
 }
-/* Verrou A.ROVI : il porte déjà le nom, donc plus de mot « AYROVI » à côté (identité 2026-09-22).
+/* Verrou A.ROVI : il porte déjà le nom, donc plus de mot « ZAYROVI » à côté (identité 2026-09-22).
    `align-self: flex-start` est indispensable : le panneau est un conteneur flex en colonne, où
    l'étirement transversal écrasait la hauteur imposée et centrait l'art dans une boîte trop large
    (l'emblème n'était plus aligné sur le titre). */

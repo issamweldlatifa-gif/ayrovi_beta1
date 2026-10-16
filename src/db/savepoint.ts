@@ -1,5 +1,5 @@
 /**
- * AYROVI — transaction imbriquable (extrait du module Stock, P2.2 → P2.3).
+ * ZAYROVI — transaction imbriquable (extrait du module Stock, P2.2 → P2.3).
  *
  * `QatafoDatabase` n'expose pas de transaction publique. Un `SAVEPOINT` est l'idiome SQLite
  * qui fonctionne aussi bien au niveau racine qu'imbriqué dans une transaction déjà ouverte

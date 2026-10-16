@@ -3,14 +3,14 @@
  *
  * Ce que le test verrouille, sur le vrai HTTP du routeur AYWEBs :
  *   1. l'ajout (POST /cart/items) synchronise immédiatement la ligne vers le
- *      panier AYROVI au prix du moteur tarifaire — `ayrovi.linked=true` dans
- *      la réponse, et la ligne AYROVI existe avec priceTND > 0 ;
+ *      panier ZAYROVI au prix du moteur tarifaire — `ayrovi.linked=true` dans
+ *      la réponse, et la ligne ZAYROVI existe avec priceTND > 0 ;
  *   2. GET /cart annote chaque ligne de `linked_to_ayrovi` (items ET groupes)
  *      et les totaux de `unlinked_units` ;
  *   3. une ligne ajoutée SANS pont (écriture domaine directe) reste
  *      linked=false et compte dans unlinked_units — puis le pont HTTP la lie
- *      (linked=true, unlinked_units=0) sans doubler la ligne AYROVI ;
- *   4. badge unifié = unités AYROVI + unlinked_units : jamais de double compte.
+ *      (linked=true, unlinked_units=0) sans doubler la ligne ZAYROVI ;
+ *   4. badge unifié = unités ZAYROVI + unlinked_units : jamais de double compte.
  */
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -80,11 +80,11 @@ function harness() {
 
 const HEADERS = { 'x-session-id': SESSION_ID };
 
-describe('panier unifié AYWEBs ↔ AYROVI (linked_to_ayrovi / unlinked_units)', () => {
+describe('panier unifié AYWEBs ↔ ZAYROVI (linked_to_ayrovi / unlinked_units)', () => {
   test("liaison à l'ajout, annotation au pont, compteur sans doublon", async () => {
     const { db, ctx, app } = harness();
 
-    // 1. ajout HTTP : la ligne est aussitôt synchronisée vers le panier AYROVI.
+    // 1. ajout HTTP : la ligne est aussitôt synchronisée vers le panier ZAYROVI.
     const added = await request(app)
       .post('/api/v1/aywebs/cart/items')
       .set(HEADERS)
@@ -114,11 +114,11 @@ describe('panier unifié AYWEBs ↔ AYROVI (linked_to_ayrovi / unlinked_units)',
     const groupFlags = mixed.body.data.groups.flatMap((group: any) => group.items.map((item: any) => item.linked_to_ayrovi)).sort();
     expect(groupFlags).toEqual([false, true]);
 
-    // Badge unifié : unités AYROVI (1) + non liées (2) = 3, jamais plus.
+    // Badge unifié : unités ZAYROVI (1) + non liées (2) = 3, jamais plus.
     const ayroviUnits = ayroviLines().reduce((sum, line) => sum + Number(line.quantity), 0);
     expect(ayroviUnits + mixed.body.data.totals.unlinked_units).toBe(3);
 
-    // 3. le pont HTTP lie la ligne restante sans doubler la ligne AYROVI.
+    // 3. le pont HTTP lie la ligne restante sans doubler la ligne ZAYROVI.
     const bridged = await request(app)
       .post('/api/v1/aywebs/cart/bridge-to-ayrovi')
       .set(HEADERS)

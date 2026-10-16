@@ -4,7 +4,7 @@ import {
 } from '../client/src/config/interfaceConfig';
 
 describe('واجهتي full interface configuration', () => {
-  test('locks the official AYROVI palette (white / black / electric violet) on public defaults', () => {
+  test('locks the official ZAYROVI palette (white / black / electric violet) on public defaults', () => {
     expect(DEFAULT_INTERFACE_CONFIG.colors).toMatchObject({
       pageBackground: '#ffffff',
       primary: '#000000',
@@ -27,7 +27,7 @@ describe('واجهتي full interface configuration', () => {
     expect(INTERFACE_FONT_PRESETS[0].display).not.toContain('Plus Jakarta');
   });
 
-  test('publishes one locked font preset and the single AYROVI icon system', () => {
+  test('publishes one locked font preset and the single ZAYROVI icon system', () => {
     expect(INTERFACE_FONT_PRESETS).toHaveLength(1);
     expect(new Set(INTERFACE_FONT_PRESETS.map((preset) => preset.id)).size).toBe(1);
     expect(INTERFACE_FONT_PRESETS.every((preset) => preset.body && preset.display)).toBe(true);
@@ -52,7 +52,7 @@ describe('واجهتي full interface configuration', () => {
     expect(normalized.typography.headingColor).toBe('#0a0a0a');
     expect(normalized.colors.pageBackground).toBe('#ffffff');
     expect(normalized.buttons.secondaryColor).toBe('#000000');
-    // Les anciennes valeurs de bibliothèque (lucide…) sont recentrées sur le système AYROVI.
+    // Les anciennes valeurs de bibliothèque (lucide…) sont recentrées sur le système ZAYROVI.
     expect(normalized.icons).toMatchObject({ library: 'ayrovi', color: '#654321', activeColor: '#571ef6' });
     expect(normalized.layout).toMatchObject({ sectionGap: 24, maxWidth: 1320, cardRadius: 16, shadow: 'soft' });
   });

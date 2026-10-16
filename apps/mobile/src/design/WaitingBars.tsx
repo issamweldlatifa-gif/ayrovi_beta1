@@ -1,5 +1,5 @@
 /**
- * Indicateur d'attente AYROVI : cinq barres vivantes, comme un niveau audio.
+ * Indicateur d'attente ZAYROVI : cinq barres vivantes, comme un niveau audio.
  *
  * Il remplace les roues indéfinies sans remplacer les squelettes structurés :
  * une liste garde son squelette, une action courte utilise ces barres. Chaque

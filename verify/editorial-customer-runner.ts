@@ -12,7 +12,7 @@ async function run() {
   });
   const { app, db } = await import('../src/server');
   // Hero d'accueil : une carte PUBLIÉE est nécessaire (sans carte, le Hero ne s'affiche pas — règle produit).
-  { const t = new Date().toISOString(); const cols = ['id','image','video','title','subtitle','cta','target_url','display_order','active','created_at','updated_at','title_ar','subtitle_ar','cta_ar','destination_type','destination_value']; const vals: any[] = ['editorial-hero-1','/media/hero-default.jpg','','Nouvelle collection','Sélection AYROVI de la saison','Découvrir','',0,1,t,t,'مجموعة جديدة','اختيارات AYROVI لهذا الموسم','اكتشف','STORIES','']; db.run(`INSERT INTO hero_slides(${cols.join(',')}) VALUES(${cols.map(() => '?').join(',')})`, ...vals); }
+  { const t = new Date().toISOString(); const cols = ['id','image','video','title','subtitle','cta','target_url','display_order','active','created_at','updated_at','title_ar','subtitle_ar','cta_ar','destination_type','destination_value']; const vals: any[] = ['editorial-hero-1','/media/hero-default.jpg','','Nouvelle collection','Sélection ZAYROVI de la saison','Découvrir','',0,1,t,t,'مجموعة جديدة','اختيارات ZAYROVI لهذا الموسم','اكتشف','STORIES','']; db.run(`INSERT INTO hero_slides(${cols.join(',')}) VALUES(${cols.map(() => '?').join(',')})`, ...vals); }
   const server = app.listen(0, '127.0.0.1');
   await new Promise<void>(resolve => server.once('listening', resolve));
   const address = server.address() as { port: number };

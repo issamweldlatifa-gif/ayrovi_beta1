@@ -69,7 +69,7 @@ export function parseCommercePolicy(payload: unknown): CommercePolicy {
     deposit: {
       percent,
       cardDiscountPercent,
-      companyName: str(deposit.companyName) || 'AYROVI',
+      companyName: str(deposit.companyName) || 'ZAYROVI',
       bankRib: str(deposit.bankRib),
       posteAccount: str(deposit.posteAccount),
       flouciNumber: str(deposit.flouciNumber),

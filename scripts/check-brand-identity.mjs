@@ -104,5 +104,5 @@ export function auditBrand(root=process.cwd()) {
 }
 if (process.argv[1] && path.resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
   const errors=auditBrand();
-  if(errors.length){console.error(errors.join('\n'));process.exitCode=1;}else console.log('AYROVI A: source, stack, official palette, local assets and font hashes verified.');
+  if(errors.length){console.error(errors.join('\n'));process.exitCode=1;}else console.log('ZAYROVI A: source, stack, official palette, local assets and font hashes verified.');
 }

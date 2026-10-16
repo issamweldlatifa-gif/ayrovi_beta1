@@ -1,5 +1,5 @@
 /**
- * TableCell — primitive du design system AYROVI.
+ * TableCell — primitive du design system ZAYROVI.
  *
  * Une cellule de données du back office : la classe d'alignement se calcule à un seul endroit, ce
  * qui prolonge le correctif P2.1 « un seul rendu de cellule » — le corps de la table ne peut plus

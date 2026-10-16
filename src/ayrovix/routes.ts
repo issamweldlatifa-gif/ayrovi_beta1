@@ -360,8 +360,8 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       emit('progress', { step: 'searching' });
       const tSearch = Date.now();
       // Avec des liens SerpApi, `searchCandidates` n'appelle AUCUNE recherche web :
-      // il note, convertit (calculateur AYROVI) et regroupe les offres, puis
-      // ajoute le catalogue AYROVI (données réelles elles aussi).
+      // il note, convertit (calculateur ZAYROVI) et regroupe les offres, puis
+      // ajoute le catalogue ZAYROVI (données réelles elles aussi).
       const rawCandidates = (visualCandidates.length > 0 || identification.confidence >= 0.35) && effectiveQuery
         ? await searchCandidates(db, identification, effectiveQuery, visualCandidates)
         : [];
@@ -375,7 +375,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
        * VÉRITÉ MARCHANDE — la page produit derrière CHAQUE lien SerpApi (budget
        * 8 = toute la grille) : prix du jour, prix barré, stock, tailles,
        * couleurs, photos, description. Le prix lu repasse par le calculateur
-       * AYROVI ; l'extrait SerpApi n'est qu'un repli en attendant la page.
+       * ZAYROVI ; l'extrait SerpApi n'est qu'un repli en attendant la page.
        */
       const tLiveStock = Date.now();
       let readyCount = 0;

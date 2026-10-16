@@ -16,7 +16,7 @@ import React, { useEffect, useMemo, useState } from 'react';
  * (fichier déposé OU lien YouTube/Vimeo) et son affiche viennent tous de
  * /api/public/lens-hero (Admin → Contenu → LENS). Aucun texte n'est figé ici.
  *
- * Charte AYROVI : section monochrome (blanc/gris), texte encre. La seule touche
+ * Charte ZAYROVI : section monochrome (blanc/gris), texte encre. La seule touche
  * violette est la flèche du lien d'action — elle reste très en dessous du budget de 10 %.
  */
 

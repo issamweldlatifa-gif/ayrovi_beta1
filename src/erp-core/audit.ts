@@ -1,5 +1,5 @@
 /**
- * AYROVI ERP Core — ONE audit system (P0/P1).
+ * ZAYROVI ERP Core — ONE audit system (P0/P1).
  *
  * Audit findings this file closes:
  *   • two writers on `audit_logs` (`audit()` inside src/admin/routes.ts and

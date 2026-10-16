@@ -164,7 +164,7 @@ function createHarness(): Harness {
   return harness;
 }
 
-/** The official AYROVI Warehouse Core taxonomy, imported as DATA (never code). */
+/** The official ZAYROVI Warehouse Core taxonomy, imported as DATA (never code). */
 const OFFICIAL_MASTER = [
   { code: 'SHOES', name: 'Chaussures', parentCode: null, active: true },
   { code: 'SHOES_SPORTS', name: 'Chaussures de sport', parentCode: 'SHOES', active: true },
@@ -249,7 +249,7 @@ afterEach(async () => {
 });
 
 describe('Category Master (official taxonomy)', () => {
-  test('the master is data imported from AYROVI, never hardcoded: empty master disables classification', async () => {
+  test('the master is data imported from ZAYROVI, never hardcoded: empty master disables classification', async () => {
     const harness = createHarness();
     expect(harness.module.categories.isAvailable()).toBe(false);
     const card = seedCard(harness, [{ id: 'p1', sku: 'SB-1', name: 'Running Shoes', quantity: 1 }]);

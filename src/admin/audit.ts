@@ -1,5 +1,5 @@
 /**
- * AYROVI Administration — audit actor plumbing.
+ * ZAYROVI Administration — audit actor plumbing.
  *
  * The writer itself lives in `src/erp-core/audit.ts` (ONE audit system for the
  * whole back office, including the CRM). This module keeps the API the 13

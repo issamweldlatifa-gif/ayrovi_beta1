@@ -539,7 +539,7 @@ export const HERO_DEMO_BACKGROUND = {
 /**
  * Couleurs officielles du logo « G » de Google (identité de marque d'un TIERS,
  * imposée par ses règles d'usage — à ne pas modifier). Seule exception à la
- * palette AYROVI, et uniquement dans `GoogleLogo.tsx`.
+ * palette ZAYROVI, et uniquement dans `GoogleLogo.tsx`.
  */
 export const GOOGLE_BRAND = {
   red: '#EA4335',

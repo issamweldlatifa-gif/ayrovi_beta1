@@ -1,5 +1,5 @@
 /**
- * ConfirmDialog — primitive du design system AYROVI.
+ * ConfirmDialog — primitive du design system ZAYROVI.
  *
  * Primitive d'interface du back office, déplacée telle quelle depuis client/src/admin/components.tsx
  * (P3/T2) : le moteur ne définit plus ses propres composants, il les réexporte depuis la couche

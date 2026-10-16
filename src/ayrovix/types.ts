@@ -76,13 +76,13 @@ export interface AyrovixCandidate {
   model: string | null;
   colors: string[];
   sizes: string[];
-  source: string;         // ex. "Collection AYROVI", "SHEIN", "Amazon"
+  source: string;         // ex. "Collection ZAYROVI", "SHEIN", "Amazon"
   sourceUrl: string;      // page produit (ou page interne)
   image: string;
   images?: string[];      // miniatures de repli si la source bloque l'image principale
   price: number | null;   // prix source (null si inconnu — jamais deviné)
   currency: string | null;
-  priceTnd: number | null; // estimation "tout inclus" via le calculator AYROVI
+  priceTnd: number | null; // estimation "tout inclus" via le calculator ZAYROVI
   /**
    * VÉRITÉ MARCHANDE (02/10/2026) — d'où vient `price` :
    *  'merchant' : lu sur la page produit derrière le lien (JSON-LD, meta, variante) ;
@@ -91,7 +91,7 @@ export interface AyrovixCandidate {
   priceOrigin?: 'merchant' | 'search';
   /** Prix barré publié par le marchand (strictement > price), jamais déduit. */
   originalPrice?: number | null;
-  /** Le même prix barré, passé par le calculateur AYROVI (tout inclus). */
+  /** Le même prix barré, passé par le calculateur ZAYROVI (tout inclus). */
   originalPriceTnd?: number | null;
   /**
    * PREUVE D'ACHAT (02/10/2026) — la page marchande a-t-elle été lue, et que

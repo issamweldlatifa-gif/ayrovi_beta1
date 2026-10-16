@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "AYROVI",
+    "name": "ZAYROVI",
     "slug": "ayrovi",
     "scheme": "ayrovi",
     "version": "2.0.8",
@@ -14,7 +14,7 @@
       "versionCode": 15,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#FFFFFF"
+        "backgroundColor": "#0A0A0A"
       },
       "predictiveBackGestureEnabled": false,
       "intentFilters": [
@@ -61,7 +61,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#FFFFFF",
+          "backgroundColor": "#0A0A0A",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "dark": {
@@ -88,7 +88,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "AYROVI utilise la caméra pour photographier ou scanner un produit avec Lens.",
+          "cameraPermission": "ZAYROVI utilise la caméra pour photographier ou scanner un produit avec Lens.",
           "recordAudioAndroid": false
         }
       ]

@@ -1,5 +1,5 @@
 /**
- * AYROVI CRM 360 (E2) — timeline 360°.
+ * ZAYROVI CRM 360 (E2) — timeline 360°.
  *
  * Une seule fenêtre chronologique par fiche : événements d'état de la fiche,
  * activités, tâches (échéances), issues (résolutions/clôtures), notes, communications,

@@ -1,5 +1,5 @@
 /**
- * AYROVI Inventory (P2.2) — lignes de stock et mouvements.
+ * ZAYROVI Inventory (P2.2) — lignes de stock et mouvements.
  *
  * Ce fichier est la seule écriture du stock : ni la coquille, ni un écran, ni un futur
  * module Achats ne touchent `inventory_stock_items` sans passer par ici. Trois

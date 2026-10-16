@@ -9,7 +9,7 @@ import android.webkit.WebView;
 import androidx.activity.OnBackPressedCallback;
 
 /**
- * Coque native AYROVI (Capacitor 7) — application réelle à paquet embarqué.
+ * Coque native ZAYROVI (Capacitor 7) — application réelle à paquet embarqué.
  *
  * §24 Partage Android : ACTION_SEND text/plain → route WEB /aywebs?url=…
  * §25 Liens profonds : ayrovi://aywebs[/cart|/wish|/product?url=…] → routes WEB

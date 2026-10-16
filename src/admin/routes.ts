@@ -1247,7 +1247,7 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     return res.json({ success: true, data: row });
   });
 
-  /* ===== AYROVI Lens Test Lab + AI Discovery (évaluation humaine, aucun auto-changement) ===== */
+  /* ===== ZAYROVI Lens Test Lab + AI Discovery (évaluation humaine, aucun auto-changement) ===== */
   const labUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 6 * 1024 * 1024, files: 1 } });
 
   router.post('/lens-lab/run', requireAdmin(db, 'settings:write'), labUpload.single('image'), async (req, res) => {
@@ -1602,7 +1602,7 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     if (existing.account_id && existing.status !== status && status === 'RESOLVED') {
       db.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
         VALUES (?,?,?,?,?,?,?)`, `notification_${randomUUID()}`, existing.account_id, 'GENERAL',
-      'Votre demande de support a été traitée', 'L’équipe AYROVI a traité votre demande envoyée depuis l’assistant.', '/account?tab=notifications', now);
+      'Votre demande de support a été traitée', 'L’équipe ZAYROVI a traité votre demande envoyée depuis l’assistant.', '/account?tab=notifications', now);
     }
     return res.json({ success: true, data: {
       id: updated.id, status: updated.status, priority: updated.priority, admin_note: updated.admin_note,
@@ -1996,7 +1996,7 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
           totalLabel: `${total.toFixed(3)} DT`,
           depositLabel: `${dep.toFixed(3)} DT`,
           balanceLabel: `${balance.toFixed(3)} DT`,
-          company: String(db.get<any>("SELECT setting_value FROM settings WHERE setting_key='company_legal_name'")?.setting_value || 'AYROVI'),
+          company: String(db.get<any>("SELECT setting_value FROM settings WHERE setting_key='company_legal_name'")?.setting_value || 'ZAYROVI'),
         }),
         attachments: updated?.invoice_path && fs.existsSync(String(updated.invoice_path)) ? [{ filename: `${order.invoice_number}.pdf`, path: String(updated.invoice_path) }] : [],
       });
@@ -2304,11 +2304,11 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
       }
     }
     if (current.setting_key === 'site_theme') {
-      if (received?.font !== undefined && received.font !== FONT_STACK) return res.status(400).json({ success: false, code: 'IDENTITY_LOCKED', error: 'La typographie AYROVI A est verrouillée.' });
+      if (received?.font !== undefined && received.font !== FONT_STACK) return res.status(400).json({ success: false, code: 'IDENTITY_LOCKED', error: 'La typographie ZAYROVI A est verrouillée.' });
       received = enforceLegacyTheme(received);
     }
     if (current.setting_key === 'interface_config') {
-      if (hasForbiddenFontSelection(received)) return res.status(400).json({ success: false, code: 'IDENTITY_LOCKED', error: 'La typographie AYROVI A est verrouillée.' });
+      if (hasForbiddenFontSelection(received)) return res.status(400).json({ success: false, code: 'IDENTITY_LOCKED', error: 'La typographie ZAYROVI A est verrouillée.' });
       received = enforceBrandIdentity(received);
       // « announcement » est récente : une configuration enregistrée avant reste valide sans elle.
       const requiredSectionIds = ['hero', 'cms', 'brands', 'about', 'footer'];

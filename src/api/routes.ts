@@ -34,7 +34,7 @@ export function createApiRouter(
   visionExtractor: VisualProductExtractor
 ): Router {
   const router = Router();
-  // The shared AYROVI checkout performs a conditional guard only for cart lines
+  // The shared ZAYROVI checkout performs a conditional guard only for cart lines
   // that came through AYWEBs; all other cart flows keep their existing contract.
   const ayWebsContext = createAyWebsContext(db, scraper);
 
@@ -628,7 +628,7 @@ export function createApiRouter(
     try {
       attachAyWebsCartToAccount(db, sessionId, customer.id);
     } catch (error) {
-      // AYWEBs' additive attach must never take down an unrelated AYROVI checkout.
+      // AYWEBs' additive attach must never take down an unrelated ZAYROVI checkout.
       ayWebsAttachFailed = true;
       console.warn('[AYWEBs checkout attach]', error instanceof Error ? error.message : error);
     }
@@ -652,7 +652,7 @@ export function createApiRouter(
       });
     }
 
-    // AYWEBs lines are re-resolved from the merchant at the final AYROVI order
+    // AYWEBs lines are re-resolved from the merchant at the final ZAYROVI order
     // boundary. Their signed client price token is not a stock/variant proof.
     const linkedAyWebsLines = items.map((line) => ({
       ayroviLine: line,
@@ -691,7 +691,7 @@ export function createApiRouter(
           blockedLines.push({
             itemId: ayroviLine.id,
             code: 'AYWEBS_ITEM_REMOVED',
-            message: 'Cet article a été retiré du panier AYWEBs. Retirez-le du panier AYROVI avant de commander.',
+            message: 'Cet article a été retiré du panier AYWEBs. Retirez-le du panier ZAYROVI avant de commander.',
           });
         } else if (!currentSource.checkoutReady) {
           blockedLines.push({
@@ -705,7 +705,7 @@ export function createApiRouter(
           blockedLines.push({
             itemId: ayroviLine.id,
             code: 'AYWEBS_QUOTE_MISMATCH',
-            message: 'Le devis de la ligne AYROVI ne correspond plus au devis source AYWEBs. Synchronisez-la avant de commander.',
+            message: 'Le devis de la ligne ZAYROVI ne correspond plus au devis source AYWEBs. Synchronisez-la avant de commander.',
           });
         }
       }
@@ -794,12 +794,12 @@ export function createApiRouter(
       return res.json({
         success: true,
         ...result,
-        message: 'Votre commande a été enregistrée avec succès chez AYSONIC !'
+        message: 'Votre commande a été enregistrée avec succès chez ZAYROVI !'
       });
     } catch (error: any) {
       if (error?.message === 'EMPTY_CART') return res.status(400).json({ success: false, error: 'Votre panier est vide.' });
-      if (error?.message === 'ORDER_TOTAL_CAP') return res.status(400).json({ success: false, code: 'ORDER_TOTAL_CAP', error: 'Le montant total dépasse la limite des commandes en ligne. Contactez le support AYROVI : nous accompagnons les gros volumes personnellement.' });
-      if (error?.message === 'ACCOUNT_UNAVAILABLE') return res.status(403).json({ success: false, code: 'ACCOUNT_UNAVAILABLE', error: 'Votre compte n’est plus actif. Contactez le support AYROVI.' });
+      if (error?.message === 'ORDER_TOTAL_CAP') return res.status(400).json({ success: false, code: 'ORDER_TOTAL_CAP', error: 'Le montant total dépasse la limite des commandes en ligne. Contactez le support ZAYROVI : nous accompagnons les gros volumes personnellement.' });
+      if (error?.message === 'ACCOUNT_UNAVAILABLE') return res.status(403).json({ success: false, code: 'ACCOUNT_UNAVAILABLE', error: 'Votre compte n’est plus actif. Contactez le support ZAYROVI.' });
       console.error('[Checkout Error]', error);
       return res.status(500).json({ success: false, error: 'La commande n’a pas pu être enregistrée.' });
     }

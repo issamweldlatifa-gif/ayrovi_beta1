@@ -162,7 +162,7 @@ export const OcerexHome: React.FC<{ busy: boolean; onFile: (file: File, capture:
       <input ref={uploadRef} type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" className="sr-only" aria-hidden tabIndex={-1} onChange={(event) => { take(event.target.files, false); event.target.value = ''; }} />
       <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="sr-only" aria-hidden tabIndex={-1} onChange={(event) => { take(event.target.files, true); event.target.value = ''; }} />
 
-      <p className="mt-6 text-center text-sm leading-6 text-muted">{tr('Ocerex lit le prix de référence sur l’image et calcule le prix Ayrovi.', 'Ocerex يقرأ السعر المرجعي من الصورة ويحسب سعر Ayrovi.')}</p>
+      <p className="mt-6 text-center text-sm leading-6 text-muted">{tr('Ocerex lit le prix de référence sur l’image et calcule le prix Zayrovi.', 'Ocerex يقرأ السعر المرجعي من الصورة ويحسب سعر Zayrovi.')}</p>
     </div>
   );
 };

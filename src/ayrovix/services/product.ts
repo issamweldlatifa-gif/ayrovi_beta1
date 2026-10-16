@@ -12,7 +12,7 @@ import { isUnsafeHostname, UnsafeUrlError } from '../../services/safeUrl';
 import { filterDisplayableCandidates, registerTrustedMerchantHost } from './candidatePolicy';
 
 /**
- * AYROVI product-link layer.
+ * ZAYROVI product-link layer.
  * URL/QR links use SSRF-safe metadata extraction first, then AI Core web
  * search when merchant metadata is incomplete.
  */
@@ -214,7 +214,7 @@ function toFallbackProductFromUrl(rawUrl: string): AyrovixProduct {
     const title = decoded.length > 5 ? decoded : `Produit ${host}`;
     return {
       title: title.charAt(0).toUpperCase() + title.slice(1), brand: null, model: null,
-      description: `Lien partagé depuis ${host} — AYROVI cherchera des alternatives similaires.`,
+      description: `Lien partagé depuis ${host} — ZAYROVI cherchera des alternatives similaires.`,
       image: '', images: [], source: host, sourceUrl: rawUrl, price: null, currency: null,
       priceTnd: null, exchangeRate: null, colors: [], sizes: [], availability: 'unknown',
       priceVerified: false, priceVerificationStatus: 'PENDING_MANUAL', verificationFailureCode: 'MERCHANT_EXTRACTION_FAILED',
@@ -222,7 +222,7 @@ function toFallbackProductFromUrl(rawUrl: string): AyrovixProduct {
   } catch {
     return {
       title: `Produit ${rawUrl.slice(0, 50)}`, brand: null, model: null,
-      description: 'Lien partagé — AYROVI cherchera des alternatives.', image: '', images: [],
+      description: 'Lien partagé — ZAYROVI cherchera des alternatives.', image: '', images: [],
       source: 'Web', sourceUrl: rawUrl, price: null, currency: null, priceTnd: null,
       exchangeRate: null, colors: [], sizes: [], availability: 'unknown', priceVerified: false,
       priceVerificationStatus: 'PENDING_MANUAL', verificationFailureCode: 'MERCHANT_EXTRACTION_FAILED',

@@ -82,7 +82,7 @@ try {
         check(`${locale}: ${href}/${width} page fits`, await page.locator('[data-public-page]').evaluate(e => e.scrollWidth <= e.clientWidth));
       }
       await page.getByRole('button', { name: locale === 'ar' ? 'فتح القائمة' : 'Ouvrir le menu', exact: true }).click();
-      const menu = page.getByRole('dialog', { name: locale === 'ar' ? 'قائمة AYROVI' : 'Menu AYROVI', exact: true });
+      const menu = page.getByRole('dialog', { name: locale === 'ar' ? 'قائمة ZAYROVI' : 'Menu ZAYROVI', exact: true });
       await menu.waitFor();
       check(`${locale}: ${href} menu uses real destination links`, await menu.locator('a[href="/magazine"]').count() === 1);
       await menu.getByRole('button', { name: locale === 'ar' ? 'التواصل' : 'Social', exact: true }).click();

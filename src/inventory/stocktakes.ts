@@ -1,5 +1,5 @@
 /**
- * AYROVI Inventory (P2.2) — inventaires physiques (stocktakes).
+ * ZAYROVI Inventory (P2.2) — inventaires physiques (stocktakes).
  *
  * Un inventaire est le SEUL chemin qui applique un écart sans pièce de justification :
  *  • à la création, chaque ligne active du lieu est photographiée (`expected_quantity`) ;

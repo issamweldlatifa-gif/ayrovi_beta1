@@ -71,7 +71,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant, 
     <div className="public-footer-inner">
       <div className="public-footer-message">
         {/* Le pied de page est noir : la marque inverse est forcée (le logo du thème est sombre). */}
-        <img className="public-footer-logo" src="/media/logo-ayrovi-lockup-white-violet.svg" alt="AYROVI" height={26} />
+        <img className="public-footer-logo" src="/media/logo-ayrovi-lockup-white-violet.svg?v=5.0" alt="ZAYROVI" height={26} />
         <h2>{introTitle || tr('Vos envies, notre point de départ.', 'رغباتك، نقطة البداية.')}</h2>
         <p dir="auto">{introText || footerAbout || tr('Nos espaces et les informations utiles, au même endroit.', 'أقسامنا والمعلومات اللي تستحقّها، في بلاصة واحدة.')}</p>
       </div>
@@ -82,7 +82,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant, 
           const href = publishedChannels.find((channel) => channel.id === id)?.href;
           const content = <><span className="public-footer-social-mark"><Icon /></span><span>{label}</span></>;
           return href
-            ? <a key={id} href={href} target="_blank" rel="noopener noreferrer" aria-label={`${tr('AYROVI sur', 'AYROVI على')} ${label}`}>{content}</a>
+            ? <a key={id} href={href} target="_blank" rel="noopener noreferrer" aria-label={`${tr('ZAYROVI sur', 'ZAYROVI على')} ${label}`}>{content}</a>
             : <span key={id} className="public-footer-social-unavailable" aria-label={tr(`${label} : lien non renseigné`, `${label}: الرابط غير مضبوط`)} title={tr('Lien non renseigné', 'الرابط غير مضبوط')}>{content}</span>;
         })}
       </nav>
@@ -95,12 +95,12 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant, 
         <button type="button" onClick={onOpenAssistant} disabled={!onOpenAssistant}><MessageSquare size={22} /><span><strong>{tr('Parlons de votre commande', 'نحكيو على طلبك')}</strong><small>{tr('Contact et accompagnement', 'تواصل ومساعدة')}</small></span></button>
         <button type="button" onClick={onOpenAccount} disabled={!onOpenAccount}><User size={22} /><span><strong>{tr('Votre espace', 'فضاءك')}</strong><small>{tr('Commandes et favoris', 'الطلبات والمفضلة')}</small></span></button>
         <div><MapPin size={22} /><span><strong>{tr('En Tunisie', 'في تونس')}</strong><small>{tr('Vos achats en dinars tunisiens', 'مشترياتك بالدينار التونسي')}</small></span></div>
-        {onOpenAbout && <button type="button" onClick={onOpenAbout}><Info size={22} /><span><strong>{tr('À propos d’AYROVI', 'عن AYROVI')}</strong><small>{tr('Notre maison, nos engagements', 'قصتنا والتزاماتنا')}</small></span></button>}
+        {onOpenAbout && <button type="button" onClick={onOpenAbout}><Info size={22} /><span><strong>{tr('À propos de ZAYROVI', 'عن ZAYROVI')}</strong><small>{tr('Notre maison, nos engagements', 'قصتنا والتزاماتنا')}</small></span></button>}
       </div>
       </div>
     </div>
     <div className="public-footer-bottom">
-      <span>© {new Date().getFullYear()} AYROVI — {tr('Tous droits réservés', 'جميع الحقوق محفوظة')}</span>
+      <span>© {new Date().getFullYear()} ZAYROVI — {tr('Tous droits réservés', 'جميع الحقوق محفوظة')}</span>
       <a href="/privacy.html">{tr('Confidentialité', 'الخصوصية')}</a>
       <a href="/terms.html">{tr('Conditions d’utilisation', 'شروط الاستخدام')}</a>
       <a href="/data-deletion.html">{tr('Suppression des données', 'حذف البيانات')}</a>

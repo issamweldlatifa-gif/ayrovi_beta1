@@ -42,7 +42,7 @@ async function closeOverlays(page) {
     try { await page.keyboard.press('Escape'); await sleep(250); } catch (e) {}
   }
   try {
-    const logo = page.locator('button[aria-label="AYROVI"]').first();
+    const logo = page.locator('button[aria-label="ZAYROVI"]').first();
     if (await logo.isVisible({ timeout: 500 })) { await logo.click({ timeout: 1500 }); await sleep(600); }
   } catch (e) {}
   try { await page.evaluate(() => window.scrollTo(0, 0)); } catch (e) {}

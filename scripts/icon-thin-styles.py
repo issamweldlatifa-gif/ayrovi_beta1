@@ -111,7 +111,7 @@ def build():
     parts = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" '
              f'viewBox="0 0 {W} {H}" font-family="Inter,Helvetica,Arial,sans-serif">']
     parts.append(f'<rect width="{W}" height="{H}" fill="#ffffff"/>')
-    parts.append(f'<text x="20" y="34" font-size="19" font-weight="700" fill="{INK}">AYROVI — نماذج راقية انحف (Zalando / Apple)</text>')
+    parts.append(f'<text x="20" y="34" font-size="19" font-weight="700" fill="{INK}">ZAYROVI — نماذج راقية انحف (Zalando / Apple)</text>')
     parts.append(f'<text x="20" y="54" font-size="12" fill="#666">الهندسة أُعيد رسمها نظيفة — اختر الوزن/النمط المفضل وسيُطبَّق على العائلة كاملة</text>')
     for c, key in enumerate(STANDARD):
         parts.append(f'<text x="{250 + c * CELL + CELL / 2}" y="66" font-size="13" font-weight="700" '
@@ -133,7 +133,7 @@ def main():
     svg = build()
     html = ('<!DOCTYPE html><html lang="ar" dir="ltr"><head><meta charset="utf-8"/>'
             '<meta name="viewport" content="width=device-width, initial-scale=1"/>'
-            '<title>AYROVI — Thin Icon Styles</title>'
+            '<title>ZAYROVI — Thin Icon Styles</title>'
             '<style>body{margin:0;background:#fff;padding:16px}.wrap{max-width:1180px;margin:0 auto}</style>'
             '</head><body><div class="wrap">' + svg + '</div></body></html>')
     out = '/home/user/ayrovi_beta1/docs/ayrovi-icon-thin-styles.html'

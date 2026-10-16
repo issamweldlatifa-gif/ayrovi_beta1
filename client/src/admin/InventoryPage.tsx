@@ -1,5 +1,5 @@
 /**
- * AYROVI Inventory (P2.2) — écrans « mouvements » et « inventaires ».
+ * ZAYROVI Inventory (P2.2) — écrans « mouvements » et « inventaires ».
  *
  * Le stock n'a pas de troisième moteur : les listes sont dessinées par `DataTable` (la garde
  * `back-office-shell.test.tsx` refuse toute balise de table écrite à la main hors du moteur),
@@ -52,7 +52,7 @@ function useInventoryMeta() {
 }
 
 // En-tête partagé du back office (./components) — le libellé du domaine reste local.
-const StockHeader: React.FC<{ title: string; description: string; action?: React.ReactNode }> = (props) => <PageHeader {...props} eyebrow="AYROVI STOCK" />;
+const StockHeader: React.FC<{ title: string; description: string; action?: React.ReactNode }> = (props) => <PageHeader {...props} eyebrow="ZAYROVI STOCK" />;
 
 /* Les chiffres du module : la bande est la primitive MetricStrip (P3/T2), l'écran ne garde que
    la correspondance données -> cellules. `null` = méta absente = rien n'est rendu, comme avant. */
@@ -384,7 +384,7 @@ export const InventoryStocktakesPage: React.FC = () => {
         <Pagination {...pagination} onChange={(page) => void load(page)} />
       </section>
 
-      <Modal open={Boolean(detail)} title={`Inventaire ${detail?.code ?? ''}`} eyebrow="AYROVI STOCK" onClose={() => setDetail(null)} wide>
+      <Modal open={Boolean(detail)} title={`Inventaire ${detail?.code ?? ''}`} eyebrow="ZAYROVI STOCK" onClose={() => setDetail(null)} wide>
         {detail ? (
           <>
             <div className="admin-detail-grid">
@@ -411,7 +411,7 @@ export const InventoryStocktakesPage: React.FC = () => {
         ) : null}
       </Modal>
 
-      <Modal open={creating} title="Nouvel inventaire" eyebrow="AYROVI STOCK" onClose={() => setCreating(false)}>
+      <Modal open={creating} title="Nouvel inventaire" eyebrow="ZAYROVI STOCK" onClose={() => setCreating(false)}>
         <div className="admin-form-row">
           <Field label="Emplacement" required hint="Seules les lignes actives de cet emplacement sont photographiées.">
             <input value={newLocation} onChange={(event) => setNewLocation(event.target.value.toUpperCase())} />
@@ -424,7 +424,7 @@ export const InventoryStocktakesPage: React.FC = () => {
         </div>
       </Modal>
 
-      <Modal open={rejecting} title="Refuser cet inventaire" eyebrow="AYROVI STOCK" onClose={() => setRejecting(false)}>
+      <Modal open={rejecting} title="Refuser cet inventaire" eyebrow="ZAYROVI STOCK" onClose={() => setRejecting(false)}>
         <Field label="Motif" required full hint="Un refus s’écrit : il restera lisible dans l’audit et sur la session.">
           <textarea rows={3} value={rejectReason} onChange={(event) => setRejectReason(event.target.value)} />
         </Field>

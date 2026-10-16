@@ -78,7 +78,7 @@ export function ReelCard({ reel, active, counts, onOpenComments, fill }: ReelCar
    */
   const share = useCallback(async () => {
     await sendInteraction({ type: 'share', targetId: reel.id, sessionId: guestSession || undefined }).catch(() => null);
-    await Share.share({ message: reel.title || reel.description || 'AYROVI' }).catch(() => null);
+    await Share.share({ message: reel.title || reel.description || 'ZAYROVI' }).catch(() => null);
   }, [reel.id, reel.title, reel.description, guestSession]);
 
   return (

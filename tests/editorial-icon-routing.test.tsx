@@ -27,16 +27,16 @@ describe('every compatibility icon resolves to the approved geometry',()=>{
     const html=renderToStaticMarkup(<LocaleProvider><CustomerIdentity><Navbar onOpenMenuDrawer={()=>{}} onOpenAccount={()=>{}} onGoHome={()=>{}} onOpenCart={()=>{}} logoUrl="/media/logo-ayrovi.png" /></CustomerIdentity></LocaleProvider>);
     expect(html).toContain('data-editorial-icon="Menu"');
     expect(html).toContain('data-editorial-icon="User"');
-    // Identité A.ROVI : le lockup officiel remplace l'icône + le mot « AYROVI »
+    // Identité A.ROVI : le lockup officiel remplace l'icône + le mot « ZAYROVI »
     // lorsque le logo public n'est pas personnalisé dans l'Admin.
-    expect(html).toContain('src="/media/logo-ayrovi-lockup-black-violet.svg"');
+    expect(html).toContain('src="/media/logo-ayrovi-lockup-black-violet.svg?v=5.0"');
     expect(html).not.toContain('<strong');
     expect(html).toContain('stroke-linecap="square"');
   });
   it('a custom public logo keeps the historical icon + word rendering',()=>{
     const html=renderToStaticMarkup(<LocaleProvider><CustomerIdentity><Navbar onOpenMenuDrawer={()=>{}} onOpenAccount={()=>{}} onGoHome={()=>{}} onOpenCart={()=>{}} logoUrl="/uploads/interface/logo-custom.png" /></CustomerIdentity></LocaleProvider>);
     expect(html).toContain('src="/uploads/interface/logo-custom.png"');
-    expect(html).toContain('>AYROVI</strong>');
+    expect(html).toContain('>ZAYROVI</strong>');
   });
   it('all account section icons resolve to editorial, not only the authentication screen',()=>{
     for(const item of accountSections){

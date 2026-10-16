@@ -1,4 +1,4 @@
-// Génère docs/ayrovi-icon-contact.html : contact sheet de toute la famille AYROVI.
+// Génère docs/ayrovi-icon-contact.html : contact sheet de toute la famille ZAYROVI.
 // Usage : node scripts/icon-sheet.mjs
 import { buildSync } from 'esbuild';
 import { writeFileSync } from 'node:fs';
@@ -40,8 +40,8 @@ h1 { font-size:20px; letter-spacing:-.02em; margin:0 0 4px; }
 
 const page = `<!DOCTYPE html>
 <html lang="fr"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>AYROVI — contact sheet icônes</title><style>${css}</style></head><body>
-<h1>AYROVI Icon System — contact sheet (rendu exact du site)</h1>
+<title>ZAYROVI — contact sheet icônes</title><style>${css}</style></head><body>
+<h1>ZAYROVI Icon System — contact sheet (rendu exact du site)</h1>
 <p class="sub">Toute la famille issue de <code>client/src/components/icons/ayrovi/catalog.tsx</code>, avec la même CSS que le site (grille 24, stroke 2, coins arrondis, point signature #FF6A00).</p>
 ${html}
 </body></html>`;

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- AYWEBs §9 — teintes de la couche de navigation marchande interne.
-     Palette officielle AYROVI (2026-10-15) : noir #0A0A0A, blanc, violet électrique #571EF6. -->
+     Palette officielle ZAYROVI (2026-10-15) : noir #0A0A0A, blanc, violet électrique #571EF6. -->
 <resources>
     <color name="aywebs_surface">#FFFFFFFF</color>
     <color name="aywebs_ink">#FF0A0A0A</color>

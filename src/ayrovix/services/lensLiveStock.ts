@@ -8,7 +8,7 @@
  *   • le budget couvre TOUTE la grille (8 fiches, plus 4) — c'est le cœur de la
  *     recherche, pas un bonus ;
  *   • le prix lu remplace l'extrait SerpApi et repasse par le calculateur
- *     AYROVI (`reprice`) : un prix affiché a toujours sa date et sa source ;
+ *     ZAYROVI (`reprice`) : un prix affiché a toujours sa date et sa source ;
  *   • le prix barré du marchand est transmis tel quel (jamais déduit).
  *
  * Constat : Google Lens rend un titre, une boutique, un prix parfois, et un
@@ -280,7 +280,7 @@ export function applyLiveStock(candidate: AyrovixCandidate, entry: LiveStockEntr
   /*
    * LE PRIX DU MARCHAND PRIME (02/10/2026). L'extrait SerpApi est un index,
    * parfois vieux de semaines ; la page est le prix d'aujourd'hui. Il remplace
-   * donc l'extrait, repasse par le calculateur AYROVI, et le prix barré de la
+   * donc l'extrait, repasse par le calculateur ZAYROVI, et le prix barré de la
    * page voyage avec lui. Un prix lu par simple regex de contexte n'est pas
    * assez sûr pour écraser l'extrait : il ne s'applique que si l'extrait manque.
    */
@@ -475,7 +475,7 @@ export type PurchaseBlocker = 'page_non_lue' | 'prix_non_lu' | 'rupture' | 'stoc
 
 /**
  * Diagnostic de preuve d'achat (page lue / prix / stock / image).
- * Le catalogue AYROVI porte sa propre preuve et n'est jamais bloqué.
+ * Le catalogue ZAYROVI porte sa propre preuve et n'est jamais bloqué.
  *
  * Affichage (filterPurchasable) : par défaut seules les fiches avec page lue,
  * prix marchand, stock et tailles/couleurs arrivent au client.

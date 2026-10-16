@@ -1,5 +1,5 @@
 /**
- * AYROVI Purchasing (P2.3) — commandes d'achat et leurs lignes.
+ * ZAYROVI Purchasing (P2.3) — commandes d'achat et leurs lignes.
  *
  * Le cycle est celui d'un engagement, pas d'un brouillon partagé :
  * `DRAFT → SUBMITTED → APPROVED → (réceptions) → PARTIALLY_RECEIVED | RECEIVED`, avec

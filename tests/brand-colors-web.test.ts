@@ -1,5 +1,5 @@
 /**
- * AYROVI — palette officielle (2026-10-15) appliquée au SITE, au back-office, aux courriels
+ * ZAYROVI — palette officielle (2026-10-15) appliquée au SITE, au back-office, aux courriels
  * et à la coquille Android Capacitor.
  *
  *   noir #0A0A0A (≈ 35 %) · blanc #FFFFFF (≈ 50 %) · gris clair #F2F2F2 (≈ 5 %) · violet
@@ -23,6 +23,7 @@ import { normalizeInterfaceConfig } from '../client/src/config/interfaceConfig';
 import { authMailTemplate } from '../src/customer/accountMail';
 import { invoiceEmailHtml } from '../src/services/invoice';
 import { customerTheme } from '../client/src/design/editorial/customerTheme';
+import { BOOT_Z_TRANSFORM, Z_MARK } from '../client/src/design/zMark';
 
 const ROOT = process.cwd();
 const read = (rel: string) => fs.readFileSync(path.resolve(ROOT, rel), 'utf8');
@@ -31,7 +32,7 @@ const brand = JSON.parse(read('apps/mobile/src/design/brand.json'));
 
 const OFFICIAL = { black: '#0A0A0A', white: '#FFFFFF', violet: '#571EF6', lightGray: '#F2F2F2' };
 
-/** Oranges retirés : #FF6900 (« Zalando »), #FF7900 / #A74700 / #FFAE69 (AYROVI A v3), #F18902
+/** Oranges retirés : #FF6900 (« Zalando »), #FF7900 / #A74700 / #FFAE69 (ZAYROVI A v3), #F18902
  *  (AyWebs), #F97316 / #9A3412 / #FFF7ED (coquille Android), #FFB070 / #FFB173 / #E85F00 / #FFF3EA
  *  (pêches et survols), #FE7003 / #FF7A00 / #FB923C / #D3451F (chartes plus anciennes). */
 const RETIRED = /#(?:ff6900|ff7900|fe7003|ff7a00|f18902|f97316|ffae69|a74700|ffb070|ffb173|e85f00|fff3ea|fb923c|d3451f)(?![0-9a-f])|rgba?\(\s*(?:254\s*,\s*112\s*,\s*3|255\s*,\s*121\s*,\s*0|255\s*,\s*105\s*,\s*0|241\s+137\s+2)\b/gi;
@@ -151,7 +152,7 @@ describe('2. réglages persistés en orange : relus en violet, jamais réécrits
 });
 
 describe('3. aucun orange retiré dans les sources produit', () => {
-  /** Exceptions nommées : ce ne sont pas des couleurs de la marque AYROVI. */
+  /** Exceptions nommées : ce ne sont pas des couleurs de la marque ZAYROVI. */
   const EXCEPTIONS = new Map<string, string>([
     ['client/public/media/payments/orange.svg', 'logo de l’opérateur Orange Money (marque tierce, couleur imposée)'],
     ['shared/identityPolicy.ts', 'adaptateur de lecture : il nomme les oranges retirés pour les convertir'],
@@ -200,10 +201,24 @@ describe('3. aucun orange retiré dans les sources produit', () => {
     expect(uses.every((line) => /\.bo-nav-state\.is-error|\.bo-tag--warn/.test(line))).toBe(true);
   });
 
-  test('les logos vectoriels portent le point violet ; les anciens noms « -orange » ont disparu', () => {
-    for (const rel of ['logo-ayrovi-mark.svg', 'logo-ayrovi-lockup-black-violet.svg', 'logo-ayrovi-lockup-white-violet.svg']) {
-      expect(read(`client/public/media/${rel}`)).toContain('fill="#571EF6"');
+  test('les logos vectoriels sont le Z ZAYROVI monochrome, sans violet ; les anciens noms « -orange » ont disparu', () => {
+    // Logo officiel du 2026-10-16 : un Z blanc sur noir (ou noir sur blanc). Le violet reste réservé à l'action principale.
+    for (const [rel, ink] of [
+      ['logo-ayrovi-mark.svg', OFFICIAL.black],
+      ['logo-ayrovi-lockup-black-violet.svg', OFFICIAL.black],
+      ['logo-ayrovi-lockup-black.svg', OFFICIAL.black],
+      ['logo-ayrovi-lockup-white-violet.svg', OFFICIAL.white],
+      ['logo-ayrovi-lockup-white.svg', OFFICIAL.white],
+    ] as const) {
+      const svg = read(`client/public/media/${rel}`);
+      expect(svg, rel).toContain(`d="${Z_MARK.d}"`);
+      expect(svg, rel).toContain(`fill="${ink}"`);
+      expect(svg, rel).toContain('aria-label="ZAYROVI"');
+      expect(svg.toUpperCase(), rel).not.toContain(OFFICIAL.violet);
     }
+    const icon = read('client/public/media/logo-ayrovi-icon.svg');
+    expect(icon).toContain(`fill="${OFFICIAL.black}"`); // carré noir
+    expect(icon).toContain(`fill="${OFFICIAL.white}" d="${Z_MARK.d}"`); // Z blanc
     for (const gone of ['black', 'white']) {
       for (const ext of ['svg', 'png']) {
         expect(fs.existsSync(path.resolve(ROOT, `client/public/media/logo-ayrovi-lockup-${gone}-orange.${ext}`))).toBe(false);
@@ -216,17 +231,44 @@ describe('3. aucun orange retiré dans les sources produit', () => {
 
   test('les logos retouchés changent d’URL (les fichiers publics sont en cache « immutable » un an)', () => {
     const html = read('client/index.html');
-    expect(html).toContain('/media/logo-ayrovi-mark.svg?v=4.1');
-    expect(html).toContain('/media/logo-ayrovi.png?v=4.1');
-    expect(html).toContain('/media/logo-ayrovi-apple-touch.png?v=4.1');
+    expect(html).toContain('<link rel="icon" type="image/svg+xml" href="/media/logo-ayrovi-icon.svg?v=5.0" />');
+    expect(html).toContain('/media/logo-ayrovi-192.png?v=5.0');
+    expect(html).toContain('/media/logo-ayrovi.png?v=5.0');
+    expect(html).toContain('/media/logo-ayrovi-apple-touch.png?v=5.0');
+    expect(html).not.toContain('?v=4.1');
     const manifest = JSON.parse(read('client/public/manifest.webmanifest'));
-    expect(manifest.icons.map((icon: { src: string }) => icon.src)).toEqual(['/media/logo-ayrovi-192.png?v=4.1', '/media/logo-ayrovi-512.png?v=4.1']);
+    expect(manifest.icons.map((icon: { src: string }) => icon.src)).toEqual(['/media/logo-ayrovi-192.png?v=5.0', '/media/logo-ayrovi-512.png?v=5.0']);
+    expect(manifest.short_name).toBe('ZAYROVI');
     // la barre du navigateur est noire (pas une grande surface violette), plus l'ancien violet #673DE6
     expect(manifest.theme_color.toUpperCase()).toBe(OFFICIAL.black);
     expect(html).toContain('<meta name="theme-color" content="#0A0A0A" />');
-    // l'écran d'amorçage : ligne et point du logo en violet
-    expect(html).toMatch(/\.ay-boot-line::after \{[^}]*background: #571EF6/);
-    expect(html).toContain('fill="#571EF6"');
+    // toute référence de code à un fichier de logo porte la nouvelle version (sauf la valeur sentinelle
+    // « pas de logo personnalisé », '/media/logo-ayrovi.png', comparée telle quelle et jamais affichée)
+    const stale = [...walk('client/src', /\.(tsx?)$/), ...walk('client/public', /\.(html|webmanifest)$/)]
+      .flatMap((rel) => [...read(rel).matchAll(/\/media\/logo-ayrovi[a-z0-9-]*\.(?:svg|png)(\?v=[0-9.]+)?/g)]
+        .filter((m) => m[1] !== '?v=5.0' && m[0] !== '/media/logo-ayrovi.png')
+        .map((m) => `${rel}: ${m[0]}`));
+    expect(stale).toEqual([]);
+  });
+
+  test('écran de chargement du site : le Z gris dans son anneau, aucun violet (maquette du 2026-10-16)', () => {
+    const html = read('client/index.html');
+    const main = read('client/src/main.tsx');
+    expect(html).toContain('data-brand="zayrovi-loader"');
+    expect(html).toContain(`d="${Z_MARK.d}"`);
+    expect(html).toContain(`transform="${BOOT_Z_TRANSFORM}"`);
+    expect(html).toMatch(/\.ay-boot \{[^}]*background: #FFFFFF/);
+    expect(html).toMatch(/\.ay-boot-track \{[^}]*stroke: #E5E5E5/);
+    expect(html).toMatch(/\.ay-boot-arc \{[^}]*stroke: #666666[^}]*stroke-linecap: round[^}]*animation: ay-boot-turn/);
+    expect(html).toMatch(/\.ay-boot-z \{ fill: #666666; \}/);
+    expect(html).toMatch(/prefers-reduced-motion: reduce\) \{\s*\.ay-boot-arc \{ animation: none; \}/);
+    // même dessin dans le fallback React (classes, cercle, arc et tracé partagés)
+    for (const piece of ['className="ay-boot-svg"', 'data-brand="zayrovi-loader"', '<circle className="ay-boot-track" cx="68" cy="68" r="65" />',
+      '<path className="ay-boot-arc" d="M 68 3 A 65 65 0 0 1 129.08 45.77" />', 'transform={BOOT_Z_TRANSFORM} d={Z_MARK.d}']) {
+      expect(main).toContain(piece);
+    }
+    expect(html).toContain('<path class="ay-boot-arc" d="M 68 3 A 65 65 0 0 1 129.08 45.77" />');
+    expect(html.toUpperCase()).not.toContain(OFFICIAL.violet);
   });
 
   test('courriels et facture : bandeau et filets noirs, seul le CTA est violet', () => {
@@ -287,9 +329,8 @@ describe('4. aucun pixel orange dans les logos, icônes et écrans de démarrage
       if (data[i + 2] > 170 && data[i + 2] - data[i + 1] > 90 && data[i] > data[i + 1]) violet += 1;
     }
     expect(orange, `${rel} : pixels orange`).toBe(0);
-    // les variantes « nuit » sont monochromes (A blanc sur noir) et le fond d'icône adaptative est uni ;
-    // toutes les autres images portent le point violet du logo
-    if (!rel.includes('-night') && !rel.endsWith('ic_launcher_background.png')) expect(violet, `${rel} : point violet`).toBeGreaterThan(0);
+    // logo officiel du 2026-10-16 : Z blanc sur noir / noir sur blanc — plus aucun pixel violet
+    expect(violet, `${rel} : pixels violets`).toBe(0);
   }, 20_000);
 });
 

@@ -1,5 +1,5 @@
 /**
- * AYROVI DESIGN SYSTEM v1.0 — bibliothèque de composants de la vitrine.
+ * ZAYROVI DESIGN SYSTEM v1.0 — bibliothèque de composants de la vitrine.
  * Point d'import unique : import { Button, Badge, Price, ... } from '../design/ui';
  * Documentation : docs/DESIGN_SYSTEM.md
  */

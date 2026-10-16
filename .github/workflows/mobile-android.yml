@@ -164,11 +164,11 @@ jobs:
         run: |
           set -euo pipefail
           sed -i "s/applicationId 'app.ayrovi.mobile'/applicationId 'app.ayrovi.mobile.demo'/" app/build.gradle
-          sed -i 's|<string name="app_name">AYROVI</string>|<string name="app_name">AYROVI Démo</string>|' app/src/main/res/values/strings.xml
+          sed -i 's|<string name="app_name">ZAYROVI</string>|<string name="app_name">ZAYROVI Démo</string>|' app/src/main/res/values/strings.xml
           # Vérification réelle : si le motif avait changé, on échoue AU LIEU de
           # produire un APK qui écraserait l'application installée.
           grep -q "applicationId 'app.ayrovi.mobile.demo'" app/build.gradle
-          grep -q '<string name="app_name">AYROVI Démo</string>' app/src/main/res/values/strings.xml
+          grep -q '<string name="app_name">ZAYROVI Démo</string>' app/src/main/res/values/strings.xml
           grep -n "applicationId" app/build.gradle
           grep -n "app_name" app/src/main/res/values/strings.xml
 
@@ -265,7 +265,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: AYROVI-demo-apk
+          name: ZAYROVI-demo-apk
           path: apps/mobile/android/app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 30
@@ -286,7 +286,7 @@ jobs:
             echo "::warning::APK introuvable — pas de Release"
             exit 0
           fi
-          APK="$RUNNER_TEMP/AYROVI-demo-${SHORT}.apk"
+          APK="$RUNNER_TEMP/ZAYROVI-demo-${SHORT}.apk"
           cp "$APK_SRC" "$APK"
           NOTES="APK démo — commit \`${GITHUB_SHA}\`. Build : https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
           gh release create "$TAG" "$APK" --target "$GITHUB_SHA" --prerelease \

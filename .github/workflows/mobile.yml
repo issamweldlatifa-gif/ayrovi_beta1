@@ -1,4 +1,4 @@
-name: Mobile — AYROVI app
+name: Mobile — ZAYROVI app
 
 # Pipeline indépendant du site : il ne se déclenche que sur `apps/mobile/**`.
 # Une modification de la vitrine ne peut donc pas faire échouer la construction

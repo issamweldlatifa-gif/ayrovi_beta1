@@ -17,7 +17,7 @@ import { mediaUrl } from '@/api/client';
 import type { Promotion } from '@/api/sections';
 
 /**
- * النصّ فوق البنفسجي AYROVI (نفس قرار `StoryCard`): أبيض (`onAccent`) — تباين
+ * النصّ فوق البنفسجي ZAYROVI (نفس قرار `StoryCard`): أبيض (`onAccent`) — تباين
  * 7.19:1 على `#571EF6`.
  */
 

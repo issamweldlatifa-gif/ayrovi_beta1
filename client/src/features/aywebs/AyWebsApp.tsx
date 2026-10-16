@@ -14,7 +14,7 @@ import type { AyWebsTab } from './components/AyWebsTabBar';
 /**
  * AYWEBs V2 — hôte du parcours proxy-shopping (référence Add-to-Buyee).
  *
- * Une seule session AYROVI, un seul panier de paiement : les écrans internes
+ * Une seule session ZAYROVI, un seul panier de paiement : les écrans internes
  * (Boutiques → feuille de variantes → confirmation → panier proxy) reposent
  * sur le backend /api/v1/aywebs existant. L'ouverture d'un magasin passe par
  * openMerchantPage : WebView native à barre flottante dans l'APK, onglet
@@ -23,12 +23,12 @@ import type { AyWebsTab } from './components/AyWebsTabBar';
  * ── Correctifs du 04/10/2026 (ملاحظات الواجهة السبع) ───────────────────────
  * §4 — l'en-tête « AyWebs » a été SUPPRIMÉ. Il mangeait ~10 % de la hauteur
  *      utile et dupliquait une sortie déjà présente : « Accueil », dans la
- *      barre basse, EST le retour vers la boutique AYROVI. Chaque écran garde
+ *      barre basse, EST le retour vers la boutique ZAYROVI. Chaque écran garde
  *      son propre titre (Boutiques / Wish List / Panier).
  * §2 — tous les onglets restent DANS AyWebs. Seul « Mon compte » ouvre
  *      l'espace client, parce que commandes et adresses y vivent ; c'est une
  *      sortie choisie, pas une fuite d'interface.
- * §3 — la barre AYROVI est démontée pendant AyWebs (App.tsx) : une seule barre
+ * §3 — la barre ZAYROVI est démontée pendant AyWebs (App.tsx) : une seule barre
  *      est visible à tout instant.
  */
 export interface AyWebsAppProps {
@@ -70,7 +70,7 @@ export const AyWebsApp: React.FC<AyWebsAppProps> = ({
   useEffect(() => {
     const controller = new AbortController();
     void getAyWebsCart(controller.signal)
-      // Panier unifié : le compteur AYROVI (cartCount) inclut déjà les lignes
+      // Panier unifié : le compteur ZAYROVI (cartCount) inclut déjà les lignes
       // synchronisées — on n'ajoute ici QUE les unités non liées, sans doublon.
       .then((payload) => setAyWebsCount(Number(payload.totals?.unlinked_units ?? 0)))
       .catch(() => undefined);

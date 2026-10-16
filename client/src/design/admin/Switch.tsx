@@ -1,5 +1,5 @@
 /**
- * Interrupteur (bouton à bascule) — primitive du design system AYROVI.
+ * Interrupteur (bouton à bascule) — primitive du design system ZAYROVI.
  *
  * Extraite en P3/T2 : le markup est celui que les écrans écrivaient à la main, repris tel quel,
  * pour qu'une seule implémentation porte le concept. Le style vient de admin/admin.css (aucun

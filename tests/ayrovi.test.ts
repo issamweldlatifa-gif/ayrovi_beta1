@@ -34,7 +34,7 @@ const quoteEur = (price = 21.99, extra: Record<string, unknown> = {}) => calcula
   express: extra.express === true,
 })!;
 
-describe('AYSONIC platform', () => {
+describe('ZAYROVI platform', () => {
   const primarySession = uniqueSession('primary');
   const isolatedSession = uniqueSession('isolated');
   const quantitySession = uniqueSession('quantity');
@@ -1328,7 +1328,7 @@ describe('AYSONIC platform', () => {
       messageId: `assistant_${suffix}`,
       rating: 'down',
       comment: 'La réponse pourrait être plus précise.',
-      responseExcerpt: 'Réponse test AYROVI',
+      responseExcerpt: 'Réponse test ZAYROVI',
     };
     const guest = await request(app)
       .post('/api/public/assistant-feedback')
@@ -1401,7 +1401,7 @@ describe('AYSONIC platform', () => {
     expect(audit.status).toBe(200);
     expect(audit.body.data.some((entry: any) => entry.action === 'CREATE' && entry.module === 'PRODUCTS' && entry.entity_id === createdProductId)).toBe(true);
     const pricingAudit = audit.body.data.find((entry: any) => entry.module === 'PRICING');
-    expect(pricingAudit.user_name).toBe('AYROVI Admin');
+    expect(pricingAudit.user_name).toBe('ZAYROVI Admin');
     expect(pricingAudit.old_value.version).toBe(originalPricingVersion);
     expect(pricingAudit.new_value.version).toBe(originalPricingVersion + 1);
   });

@@ -1,5 +1,5 @@
 /**
- * AYROVI ERP Core — Employee & organization identity (P1).
+ * ZAYROVI ERP Core — Employee & organization identity (P1).
  *
  * Audit finding that this file answers: `admin_users` is a LOGIN ACCOUNT
  * (email, password_hash, role, active) and `employee`/`department`/`branch`
@@ -160,8 +160,8 @@ export function ensureIdentitySchema(db: QatafoDatabase): void {
   const organizations = Number(db.get<{ count: number }>('SELECT COUNT(*) AS count FROM erp_organizations')?.count ?? 0);
   if (!organizations) {
     const organizationId = `org_${randomUUID()}`;
-    db.run(`INSERT INTO erp_organizations (id,code,name,legal_name,status,created_at,updated_at) VALUES (?,?,?,'AYROVI','ACTIVE',?,?)`,
-      organizationId, 'ORG-0001', 'AYROVI', now, now);
+    db.run(`INSERT INTO erp_organizations (id,code,name,legal_name,status,created_at,updated_at) VALUES (?,?,?,'ZAYROVI','ACTIVE',?,?)`,
+      organizationId, 'ORG-0001', 'ZAYROVI', now, now);
     const branchId = `brn_${randomUUID()}`;
     db.run(`INSERT INTO erp_branches (id,organization_id,code,name,city,address,status,created_at,updated_at)
       VALUES (?,?,?,?,?,?,'ACTIVE',?,?)`, branchId, organizationId, 'BRC-0001', 'Siège — Tunis', 'Tunis', '', now, now);

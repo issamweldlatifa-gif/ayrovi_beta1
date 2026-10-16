@@ -90,7 +90,7 @@ export const HeroCarousel: React.FC = () => {
       data-hero-layout="carousel"
       id="home-hero"
       aria-roledescription="carrousel"
-      aria-label={tr('Sélection AYROVI', 'اختيارات AYROVI')}
+      aria-label={tr('Sélection ZAYROVI', 'اختيارات ZAYROVI')}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}

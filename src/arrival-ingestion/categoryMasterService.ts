@@ -5,12 +5,12 @@ import { ArrivalIngestionError } from './errors';
 import type { CategoryMasterEntry, CategoryMasterSource, CategoryValidation } from './types';
 
 /**
- * Category Master — the official AYROVI product taxonomy used by the Arrival
+ * Category Master — the official ZAYROVI product taxonomy used by the Arrival
  * CRM classifier.
  *
  * Design rules:
  * - The taxonomy is DATA, never code. No category list is hardcoded anywhere in
- *   the application; Administration imports/manages it from the official AYROVI
+ *   the application; Administration imports/manages it from the official ZAYROVI
  *   Warehouse Core taxonomy (`importMaster`) or edits single entries.
  * - An empty master is a legitimate state: it simply means nothing can be
  *   classified yet, so every line stays in review instead of receiving an

@@ -15,7 +15,7 @@ export const PUBLIC_NAV_DESTINATIONS = [
   // réparation des lignes déjà en base suit la même source (voir `repairPublicNavTranslations`).
   { id: 'arrivals', href: '/arrivage', labelFr: 'Arrivage', labelAr: 'وصلات جديدة', adminLabel: 'Arrivage — /arrivage' },
   { id: 'promotions', href: '/gift-cards', labelFr: 'Gift & Cards', labelAr: 'هدايا وبطاقات', adminLabel: 'Gift & Cards — /gift-cards' },
-  { id: 'news', href: '/magazine', labelFr: 'Magazine', labelAr: 'مجلة AYROVI', adminLabel: 'Magazine — /magazine' },
+  { id: 'news', href: '/magazine', labelFr: 'Magazine', labelAr: 'مجلة ZAYROVI', adminLabel: 'Magazine — /magazine' },
 ] as const;
 
 export type PublicNavDestinationId = (typeof PUBLIC_NAV_DESTINATIONS)[number]['id'];

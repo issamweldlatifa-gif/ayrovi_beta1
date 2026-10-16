@@ -371,7 +371,7 @@ function completePhoneVerification(db: QatafoDatabase, req: Request, phone: stri
   db.run('UPDATE customer_accounts SET phone=?,phone_verified_at=?,status=\'ACTIVE\',last_login_at=?,updated_at=? WHERE id=?', phone, now, now, now, accountId);
   ensurePhoneIdentity(db, accountId, phone);
   const linked = linkHistoricalOrders(db, accountId, phone);
-  if (created && !linked) notification(db, accountId, 'ACCOUNT', 'Bienvenue chez AYROVI', 'Votre compte est actif. Votre panier et vos commandes sont maintenant accessibles sur tous vos appareils.', '/compte');
+  if (created && !linked) notification(db, accountId, 'ACCOUNT', 'Bienvenue chez ZAYROVI', 'Votre compte est actif. Votre panier et vos commandes sont maintenant accessibles sur tous vos appareils.', '/compte');
   return { accountId, linked };
 }
 
@@ -397,7 +397,7 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
   router.use(createAccountSettingsRouter(db, publicAccount));
   cleanupCustomerAuth(db);
 
-  // Konnect sends only a payment reference. AYROVI always fetches the payment
+  // Konnect sends only a payment reference. ZAYROVI always fetches the payment
   // server-to-server and validates amount, currency and merchant order identity.
   router.get('/payments/konnect/webhook', async (req, res) => {
     const paymentRef = String(req.query.payment_ref || '').trim();
@@ -646,7 +646,7 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
             accountId, displayNameFromEmail(email), email, now, now, now, now);
           db.run('UPDATE customer_accounts SET locale=? WHERE id=?', req.body?.locale === 'ar' ? 'ar-TN' : 'fr-TN', accountId);
           enqueueWelcomeMail(db, accountId);
-          notification(db, accountId, 'ACCOUNT', 'Bienvenue chez AYROVI', 'Votre compte est actif. Vérifiez votre téléphone avant votre première commande.', '/compte');
+          notification(db, accountId, 'ACCOUNT', 'Bienvenue chez ZAYROVI', 'Votre compte est actif. Vérifiez votre téléphone avant votre première commande.', '/compte');
         });
         account = db.get<any>('SELECT * FROM customer_accounts WHERE id=?', accountId);
       }
@@ -691,7 +691,7 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
           accountId, displayName, email, hashPassword(password), marketingOptIn ? 1 : 0, now, now, now);
         db.run('UPDATE customer_accounts SET locale=? WHERE id=?', req.body?.locale === 'ar' ? 'ar-TN' : 'fr-TN', accountId);
         enqueueWelcomeMail(db, accountId);
-        notification(db, accountId, 'ACCOUNT', 'Bienvenue chez AYROVI', 'Votre compte est actif. Vérifiez votre téléphone avant votre première commande.', '/compte');
+        notification(db, accountId, 'ACCOUNT', 'Bienvenue chez ZAYROVI', 'Votre compte est actif. Vérifiez votre téléphone avant votre première commande.', '/compte');
         const cartSession = validCartSession(req.body?.cartSessionId || req.headers['x-session-id']);
         if (cartSession) db.attachCartToAccount(cartSession, accountId);
         const prior = resolveCustomer(db, req) as any;
@@ -814,7 +814,7 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
           VALUES (?,?,?,?, 'ACTIVE', ?, ?, ?)`,
           accountId, 'Client AYROVI', emailVerifiedHere ? email : null, emailVerifiedHere ? nowIso : null, nowIso, nowIso, nowIso);
         enqueueWelcomeMail(db, accountId);
-        notification(db, accountId, 'ACCOUNT', 'Bienvenue chez AYROVI', 'Votre compte Apple est actif. Vérifiez votre téléphone avant votre première commande.', '/compte');
+        notification(db, accountId, 'ACCOUNT', 'Bienvenue chez ZAYROVI', 'Votre compte Apple est actif. Vérifiez votre téléphone avant votre première commande.', '/compte');
       } else {
         const currentAccount = accountRow(db, accountId);
         if (!currentAccount) throw new Error('ACCOUNT_MISSING');
@@ -847,7 +847,7 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
   });
 
 /**
- * Rattachement d'un profil Google a un compte AYROVI.
+ * Rattachement d'un profil Google a un compte ZAYROVI.
  *
  * Extrait tel quel du callback OAuth (04/10/2026) pour etre reutilise par la
  * connexion NATIVE : les deux chemins doivent fusionner les comptes, arbitrer
@@ -885,7 +885,7 @@ function linkGoogleProfile(db: QatafoDatabase, profile: any, linkToAccountId?: s
       VALUES (?,?,?,?,?,'ACTIVE',?,?,?)`, accountId, String(profile.name || 'Client AYROVI').slice(0, 100), email,
     String(profile.picture || '').slice(0, 1000), now, now, now, now);
     enqueueWelcomeMail(db, accountId);
-    notification(db, accountId, 'ACCOUNT', 'Bienvenue chez AYROVI', 'Votre compte Google est actif. Vérifiez votre téléphone avant votre première commande.', '/compte');
+    notification(db, accountId, 'ACCOUNT', 'Bienvenue chez ZAYROVI', 'Votre compte Google est actif. Vérifiez votre téléphone avant votre première commande.', '/compte');
   } else {
     for (const ownerId of new Set([identityOwnerId, verifiedLegacyEmailOwnerId].filter((id): id is string => Boolean(id)))) {
       if (ownerId !== accountId && accountRow(db, ownerId)) accountId = mergeAccounts(db, ownerId, accountId);
@@ -1138,7 +1138,7 @@ function linkGoogleProfile(db: QatafoDatabase, profile: any, linkToAccountId?: s
       const accessToken = String(tokens.access_token || '');
       if (!accessToken) throw new Error('FACEBOOK_TOKEN_INVALID');
 
-      // Confirm that Meta issued the token for this exact AYROVI app before trusting /me.
+      // Confirm that Meta issued the token for this exact ZAYROVI app before trusting /me.
       const debugUrl = new URL(`https://graph.facebook.com/${facebook.graphVersion}/debug_token`);
       debugUrl.search = new URLSearchParams({
         input_token: accessToken,
@@ -1186,7 +1186,7 @@ function linkGoogleProfile(db: QatafoDatabase, profile: any, linkToAccountId?: s
           (id,display_name,email,avatar_url,status,last_login_at,created_at,updated_at)
           VALUES (?,?,?,?, 'ACTIVE',?,?,?)`, accountId, displayName, email && !emailOwner ? email : null, avatarUrl, now, now, now);
         enqueueWelcomeMail(db, accountId);
-        notification(db, accountId, 'ACCOUNT', 'Bienvenue chez AYROVI', 'Votre compte Facebook est actif. Vous pouvez ajouter un téléphone à votre profil à tout moment.', '/compte');
+        notification(db, accountId, 'ACCOUNT', 'Bienvenue chez ZAYROVI', 'Votre compte Facebook est actif. Vous pouvez ajouter un téléphone à votre profil à tout moment.', '/compte');
       } else {
         const currentAccount = accountRow(db, accountId);
         if (!currentAccount) throw new Error('ACCOUNT_MERGE_FAILED');
@@ -1379,7 +1379,7 @@ function linkGoogleProfile(db: QatafoDatabase, profile: any, linkToAccountId?: s
         choices: ['CARD','BANK_TRANSFER','POSTE'],
         cardGatewayAvailable: cardGatewayAvailable(),
         transfer: {
-          companyName: setting('company_legal_name') || setting('company_name') || 'AYROVI',
+          companyName: setting('company_legal_name') || setting('company_name') || 'ZAYROVI',
           bankRib: setting('bank_rib'),
           posteAccount: setting('poste_account'),
           reviewDelay: setting('deposit_review_delay'),
@@ -1395,7 +1395,7 @@ function linkGoogleProfile(db: QatafoDatabase, profile: any, linkToAccountId?: s
     if (requested === 'BANK_TRANSFER' || requested === 'POSTE') {
       const settingKey = requested === 'POSTE' ? 'poste_account' : 'bank_rib';
       const coordinates = String(db.get<any>('SELECT setting_value FROM settings WHERE setting_key=?', settingKey)?.setting_value || '').trim();
-      if (!coordinates) return res.status(503).json({ success: false, code: 'TRANSFER_DETAILS_UNAVAILABLE', error: 'Les coordonnées officielles de ce moyen de paiement ne sont pas encore publiées par AYROVI.' });
+      if (!coordinates) return res.status(503).json({ success: false, code: 'TRANSFER_DETAILS_UNAVAILABLE', error: 'Les coordonnées officielles de ce moyen de paiement ne sont pas encore publiées par ZAYROVI.' });
     }
     try {
       const selected = db.selectDepositMethod(req.params.id, requested as 'CARD' | 'BANK_TRANSFER' | 'POSTE', account.id);

@@ -1,5 +1,5 @@
 /**
- * AYROVI CRM 360 (E1) — audit par l'UNIQUE écriture du système.
+ * ZAYROVI CRM 360 (E1) — audit par l'UNIQUE écriture du système.
  *
  * Le module n'écrit jamais dans `audit_logs` directement : chaque mutation passe par
  * `writeAuditEvent` (acteur employé, requête/session, type et id de ressource, diff champ

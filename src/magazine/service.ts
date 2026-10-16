@@ -749,7 +749,7 @@ export async function generateMagazineContent(db: QatafoDatabase, input: Generat
   if (productContext.requested && !productContext.matched) {
     return {
       model: magazineModel(), batchId, drafts: [], needsClarification: true,
-      clarification: 'لم أجد تطابقًا مؤكدًا لهذا المنتج في قاعدة منتجات AYROVI. اختر منتجًا من القائمة أو أرسل اسمه الدقيق كما يظهر في الأدمين.',
+      clarification: 'لم أجد تطابقًا مؤكدًا لهذا المنتج في قاعدة منتجات ZAYROVI. اختر منتجًا من القائمة أو أرسل اسمه الدقيق كما يظهر في الأدمين.',
       suggestions: productContext.products,
     };
   }

@@ -142,7 +142,7 @@ for (const [file, list] of [...assigned].sort()) {
   const byFile = new Map();
   for (const p of internal) byFile.set(OWNERS[p], (byFile.get(OWNERS[p]) || []).concat(p));
   const head = [];
-  head.push(banner(`${file} — primitive du design system AYROVI.`));
+  head.push(banner(`${file} — primitive du design system ZAYROVI.`));
   if (needsReact || usedHooks.length) head.push(`import React${usedHooks.length ? `, { ${usedHooks.join(', ')} }` : ''} from 'react';`);
   else if (/=>|: React/.test(body)) head.push(`import React from 'react';`);
   if (usesApi) head.push(`import { adminApi } from '../../admin/api';`);

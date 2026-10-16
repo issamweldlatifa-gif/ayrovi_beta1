@@ -1,5 +1,5 @@
 /**
- * AYROVI ERP Core — Numbering sequences (P1).
+ * ZAYROVI ERP Core — Numbering sequences (P1).
  *
  * Replaces, for every NEW ERP object, the two patterns found in the audit:
  *   • `randomInt(100000,1000000)`  (orders, payments, transactions)

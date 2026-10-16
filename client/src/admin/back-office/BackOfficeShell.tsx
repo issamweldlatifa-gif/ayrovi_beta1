@@ -250,7 +250,7 @@ export const BackOfficeShell: React.FC<{
     {/* Barre 1 — identité, recherche globale, préférences, compte */}
     <header className="bo-topbar bo-header">
       <div className="bo-topbar-brand">
-        <img src="/media/logo-ayrovi-lockup-white-violet.svg" alt="AYROVI" style={{ width: 'auto', height: 22 }} />
+        <img src="/media/logo-ayrovi-lockup-white-violet.svg?v=5.0" alt="ZAYROVI" style={{ width: 'auto', height: 22 }} />
         <div><span>CONSOLE DE GESTION</span></div>
       </div>
       <div className="bo-topbar-search"><GlobalSearch onNavigate={navigate} /></div>
@@ -363,7 +363,7 @@ export const BackOfficeShell: React.FC<{
 
         <div className="admin-sidebar-foot">
           <a href="/" target="_blank" rel="noopener noreferrer">Voir le site public</a>
-          <span>AYROVI v3.10.4 · Tunis · framework {context?.frameworkVersion ?? '—'}</span>
+          <span>ZAYROVI v3.10.4 · Tunis · framework {context?.frameworkVersion ?? '—'}</span>
         </div>
       </aside>
       {mobile && <button className="admin-sidebar-overlay" onClick={() => setMobile(false)} aria-label="Fermer le menu" />}

@@ -1,5 +1,5 @@
 /**
- * Origine de l'API AYROVI — SOURCE UNIQUE.
+ * Origine de l'API ZAYROVI — SOURCE UNIQUE.
  *
  * Pourquoi ce fichier existe (2026-10-03) : la constante vivait dans
  * `nativeApiOrigin.ts`, qui importe `nativeShell.ts`. Or c'est justement

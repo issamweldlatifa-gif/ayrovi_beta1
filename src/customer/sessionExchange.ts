@@ -9,7 +9,7 @@
  *
  * Deux en-têtes sont reconnus :
  *   • `x-ayrovi-client: mobile/<version>` — le client de la nouvelle
- *     application (AYROVI React Native). Reçoit `session_token`.
+ *     application (ZAYROVI React Native). Reçoit `session_token`.
  *   • `x-ayrovi-native: 1` — l'ancienne coque Capacitor, encore installée chez
  *     des utilisateurs. Reçoit `native_session_token`, exactement comme avant.
  *     Cette branche disparaîtra avec elle ; elle est isolée ici pour que la

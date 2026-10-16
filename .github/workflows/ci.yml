@@ -36,7 +36,7 @@ jobs:
       - name: Check generated identity and source inventory
         run: npm run design:check
 
-      - name: Enforce official AYROVI A identity
+      - name: Enforce official ZAYROVI identity
         run: npm run identity:check && npm run identity:test
 
       # Invariants de la coque Android (2026-10-03) : manifeste + tripwires Java.

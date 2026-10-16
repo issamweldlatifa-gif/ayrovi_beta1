@@ -93,7 +93,7 @@ export async function deliverOtp(phone: string, code: string): Promise<OtpDelive
     body: JSON.stringify({
       to: phone,
       code,
-      message: `Votre code AYROVI est ${code}. Il expire dans 5 minutes.`,
+      message: `Votre code ZAYROVI est ${code}. Il expire dans 5 minutes.`,
       purpose: 'customer_login',
     }),
     signal: AbortSignal.timeout(10_000),

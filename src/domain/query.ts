@@ -1,5 +1,5 @@
 /**
- * AYROVI — primitives de requête et de validation partagées (P2.3).
+ * ZAYROVI — primitives de requête et de validation partagées (P2.3).
  *
  * Le contexte : le module Stock (P2.2) avait ses propres `paginationOf`, `sortOf`,
  * `isIdentifier`, `textField`. Le module Achats (P2.3) allait les recopier — trois

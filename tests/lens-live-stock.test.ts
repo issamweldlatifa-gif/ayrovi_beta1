@@ -417,7 +417,7 @@ describe('vérité marchande — le prix de la page remplace l’extrait SerpApi
     expect(entryFromPage(page({ price: 50, originalPrice: 69.9 }), 1).originalPrice).toBe(69.9);
   });
 
-  it('ne touche jamais au prix du catalogue AYROVI', () => {
+  it('ne touche jamais au prix du catalogue ZAYROVI', () => {
     const own = candidate({ kind: 'catalog', price: 80, currency: 'TND' });
     applyLiveStock(own, entryFromPage(page({ price: 20, currency: 'EUR' }), 1), reprice);
     expect(own.price).toBe(80);
@@ -436,7 +436,7 @@ describe('vérité marchande — le prix de la page remplace l’extrait SerpApi
     expect(results[0]).toMatchObject({ price: 228.95, currency: 'EUR', originalPrice: 309.95, priceTnd: 915.8, originalPriceTnd: 1239.8 });
   });
 
-  it('la route passe le calculateur AYROVI au lecteur de pages (grille ET relecture)', () => {
+  it('la route passe le calculateur ZAYROVI au lecteur de pages (grille ET relecture)', () => {
     expect(route.split('reprice: (price, currency) =>').length - 1).toBe(2);
     expect(route).toContain('estimateWithDb(db, price, currency)');
   });
@@ -508,7 +508,7 @@ describe('achetabilité — seules les fiches prouvées atteignent le client', (
     expect(purchaseBlocker(proven({ image: '' }, { images: [] }))).toBe('sans_image');
   });
 
-  it('le catalogue AYROVI passe tel quel : il porte sa propre preuve de stock', () => {
+  it('le catalogue ZAYROVI passe tel quel : il porte sa propre preuve de stock', () => {
     expect(purchaseBlocker(candidate({ kind: 'catalog' }))).toBeNull();
   });
 

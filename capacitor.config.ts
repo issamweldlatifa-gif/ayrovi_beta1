@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 /**
- * AYROVI — تطبيق أندرويد حقيقي (Capacitor 7)، وضع «الحزمة المضمّنة».
+ * ZAYROVI — تطبيق أندرويد حقيقي (Capacitor 7)، وضع «الحزمة المضمّنة».
  *
  * قرار 2026-10-03 : حذف وضع «الغلاف الحي» نهائيًا. لم تعد القشرة
  * تفتح الموقع عن بُعد — الواجهة كاملة مُجمَّعة داخل الـ APK (webDir = public/)
@@ -19,7 +19,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
  */
 const config: CapacitorConfig = {
   appId: 'app.ayrovi.mobile',
-  appName: 'AYROVI',
+  appName: 'ZAYROVI',
   webDir: 'public',
   android: {
     allowMixedContent: false,

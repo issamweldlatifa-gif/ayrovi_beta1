@@ -51,7 +51,7 @@ describe('Persistent customer account settings',()=>{
   const {agent,id}=await register();expect((await agent.get('/api/customer/account/security')).body.data.hasPassword).toBe(true);db.run("UPDATE customer_accounts SET password_hash=NULL WHERE id=?",id);expect((await agent.get('/api/customer/account/security')).body.data.hasPassword).toBe(false);
  });
  test('password change rotates current session, revokes others/resets and queues notification',async()=>{
-  vi.stubEnv('PUBLIC_BASE_URL','https://shop.example.com');vi.stubEnv('MAIL_PROVIDER','resend');vi.stubEnv('MAIL_API_KEY','test-only');vi.stubEnv('MAIL_FROM','AYROVI <no-reply@example.com>');
+  vi.stubEnv('PUBLIC_BASE_URL','https://shop.example.com');vi.stubEnv('MAIL_PROVIDER','resend');vi.stubEnv('MAIL_API_KEY','test-only');vi.stubEnv('MAIL_FROM','ZAYROVI <no-reply@example.com>');
   const {agent,id,csrf}=await register();const other=request.agent(app);await other.post('/api/customer/auth/email/login').send({email:'customer@example.com',password});
   expect((await request(app).post('/api/customer/auth/password/request').send({email:'customer@example.com'})).status).toBe(202);
   const result=await agent.post('/api/customer/account/security/password').set('x-csrf-token',csrf).send({currentPassword:password,newPassword:updated,locale:'ar'});

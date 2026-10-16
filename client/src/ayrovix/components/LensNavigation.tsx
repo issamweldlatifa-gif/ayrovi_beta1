@@ -127,7 +127,7 @@ export const LensMoreMenu: React.FC<LensMoreMenuProps> = ({ open, dark, onToggle
               tr('Photographiez le produit ou importez une image.', 'صوّر المنتج أو ارفع صورة.'),
               tr("AYROVIX Lens analyse l’image.", 'تحلل AYROVIX Lens الصورة.'),
               tr('Consultez les informations produit disponibles.', 'راجع معلومات المنتج المتاحة.'),
-              tr('Consultez le prix ou son estimation AYROVI.', 'راجع السعر أو تقدير AYROVI.'),
+              tr('Consultez le prix ou son estimation ZAYROVI.', 'راجع السعر أو تقدير ZAYROVI.'),
               tr('Vérifiez le résultat et les variantes.', 'تحقق من النتيجة والخيارات.'),
               tr('Ajoutez le produit au panier.', 'أضف المنتج إلى السلة.'),
               tr('Utilisez « Calculer un autre produit » pour continuer vos achats.', 'استخدم «حساب منتج آخر» لمواصلة التسوق.'),
@@ -146,8 +146,8 @@ export const LensMoreMenu: React.FC<LensMoreMenuProps> = ({ open, dark, onToggle
           </div>}
 
           {section === 'service' && <div className="space-y-3 text-sm leading-6 text-muted">
-            <p>{tr('AYROVIX est le service de recherche visuelle d’AYROVI. Il aide à identifier un produit, retrouver une offre exploitable et préparer son prix en dinars.', 'AYROVIX هي خدمة البحث البصري من AYROVI، تساعد على التعرف على المنتج والعثور على عرض قابل للاستخدام وتحضير سعره بالدينار.')}</p>
-            <p>{tr('Le produit choisi rejoint le panier partagé AYROVI, puis suit le parcours livraison, paiement, validation et suivi existant.', 'ينتقل المنتج المختار إلى سلة AYROVI المشتركة، ثم يتبع مسار التسليم والدفع والتحقق والتتبع الحالي.')}</p>
+            <p>{tr('AYROVIX est le service de recherche visuelle de ZAYROVI. Il aide à identifier un produit, retrouver une offre exploitable et préparer son prix en dinars.', 'AYROVIX هي خدمة البحث البصري من ZAYROVI، تساعد على التعرف على المنتج والعثور على عرض قابل للاستخدام وتحضير سعره بالدينار.')}</p>
+            <p>{tr('Le produit choisi rejoint le panier partagé ZAYROVI, puis suit le parcours livraison, paiement, validation et suivi existant.', 'ينتقل المنتج المختار إلى سلة ZAYROVI المشتركة، ثم يتبع مسار التسليم والدفع والتحقق والتتبع الحالي.')}</p>
           </div>}
 
           {section === 'legal' && <div className="space-y-2 text-sm">

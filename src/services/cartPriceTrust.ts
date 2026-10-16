@@ -18,7 +18,7 @@ import type { CartItem } from '../types';
  * rien n'est créé — pas de commande bloquée, pas de montant périmé encaissé.
  *
  * Le chemin manuel historique n'est PAS modifié : une ligne `PENDING_MANUAL`
- * suit la revue humaine existante (contrat de variante, confirmation AYROVI).
+ * suit la revue humaine existante (contrat de variante, confirmation ZAYROVI).
  */
 
 /** Durée de vie de la cotation Lens ; le jeton signé la porte lui-même. */

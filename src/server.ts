@@ -442,7 +442,7 @@ app.use('/api', createApiRouter(db, scraper, visionExtractor));
 app.get('/api/health', (_req, res) => {
   res.json({
     status: 'ok',
-    service: 'AYROVI Universal Shopping & Vision Platform',
+    service: 'ZAYROVI Universal Shopping & Vision Platform',
     version: '3.10.4',
     framework: 'React 19 + Vite + TypeScript + Express',
   });
@@ -513,7 +513,7 @@ const looksLikeAssetRequest = (pathname: string): boolean =>
 app.get('*', (req, res) => {
   const indexPath = path.join(publicDir, 'index.html');
   if (!fs.existsSync(indexPath)) {
-    res.status(404).send('AYROVI Frontend build not found.');
+    res.status(404).send('ZAYROVI Frontend build not found.');
     return;
   }
   const pathname = req.path.replace(/\/+$/, '') || '/';
@@ -611,7 +611,7 @@ function shutdown(exitCode: number, reason: string) {
 if (process.env.NODE_ENV !== 'test') {
   httpServer = app.listen(Number(PORT), '0.0.0.0', () => {
     console.log('====================================================');
-    console.log('🚀 AYROVI React + Vite Platform running');
+    console.log('🚀 ZAYROVI React + Vite Platform running');
     console.log(`📍 Web Application: http://0.0.0.0:${PORT}/`);
     console.log('====================================================');
     // Palettes Hero antérieures à la version 2 : recalcul en arrière-plan, une fois.

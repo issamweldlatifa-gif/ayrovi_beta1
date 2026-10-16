@@ -71,8 +71,8 @@ export function createPasswordRecoveryRouter(db: QatafoDatabase) {
       const url = `${customerPublicOrigin()}/reset-password#token=${token}`;
       const title = ar ? 'إعادة تعيين كلمة المرور' : 'Réinitialisez votre mot de passe';
       const body = ar
-        ? '<p>تلقّينا طلبًا لتغيير كلمة مرور حسابك في AYROVI.</p><p>الرابط صالح لمدة 30 دقيقة، ويُستعمل مرة واحدة فقط. إذا لم تطلب هذا التغيير، تجاهل الرسالة؛ لن تتغير كلمة مرورك.</p>'
-        : '<p>Nous avons reçu une demande de changement de mot de passe pour votre compte AYROVI.</p><p>Ce lien est valable 30 minutes et ne peut être utilisé qu’une fois. Si vous n’êtes pas à l’origine de cette demande, ignorez cet e-mail : votre mot de passe reste inchangé.</p>';
+        ? '<p>تلقّينا طلبًا لتغيير كلمة مرور حسابك في ZAYROVI.</p><p>الرابط صالح لمدة 30 دقيقة، ويُستعمل مرة واحدة فقط. إذا لم تطلب هذا التغيير، تجاهل الرسالة؛ لن تتغير كلمة مرورك.</p>'
+        : '<p>Nous avons reçu une demande de changement de mot de passe pour votre compte ZAYROVI.</p><p>Ce lien est valable 30 minutes et ne peut être utilisé qu’une fois. Si vous n’êtes pas à l’origine de cette demande, ignorez cet e-mail : votre mot de passe reste inchangé.</p>';
       enqueueAuthMail(db, account.id, 'PASSWORD_RESET', { to: email, subject: title, html: authMailTemplate(ar, title, body, { label: title, url }) },
         { dedupKey: `reset:${hash}`, resetHash: hash, expiresAt });
     });
@@ -103,8 +103,8 @@ export function createPasswordRecoveryRouter(db: QatafoDatabase) {
       const ar = req.body?.locale === 'ar';
       const title = ar ? 'تم تغيير كلمة مرورك' : 'Votre mot de passe a été modifié';
       enqueueAuthMail(db, reset.account_id, 'PASSWORD_CHANGED', { to: reset.email, subject: title, html: authMailTemplate(ar, title,
-        ar ? '<p>تم تحديث كلمة المرور وإغلاق الجلسات السابقة. يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة.</p><p>إذا لم تقم بهذا التغيير، اطلب استرجاع حسابك فورًا وتواصل مع فريق AYROVI.</p>'
-          : '<p>Votre mot de passe a été modifié et les anciennes sessions ont été fermées. Connectez-vous avec votre nouveau mot de passe.</p><p>Si vous n’êtes pas à l’origine de ce changement, demandez une récupération et contactez l’équipe AYROVI.</p>') }, { dedupKey: `password-changed:${randomUUID()}` });
+        ar ? '<p>تم تحديث كلمة المرور وإغلاق الجلسات السابقة. يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة.</p><p>إذا لم تقم بهذا التغيير، اطلب استرجاع حسابك فورًا وتواصل مع فريق ZAYROVI.</p>'
+          : '<p>Votre mot de passe a été modifié et les anciennes sessions ont été fermées. Connectez-vous avec votre nouveau mot de passe.</p><p>Si vous n’êtes pas à l’origine de ce changement, demandez une récupération et contactez l’équipe ZAYROVI.</p>') }, { dedupKey: `password-changed:${randomUUID()}` });
       return true;
     });
     if (!completed) return invalid(req, res);

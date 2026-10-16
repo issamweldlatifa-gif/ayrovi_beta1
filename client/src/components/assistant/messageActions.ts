@@ -17,7 +17,7 @@ export async function shareAssistantText(raw: string, browser = browserActions()
   const text = cleanAssistantText(raw);
   if (!text) return 'empty';
   if (!browser.share) return copyAssistantText(text, browser);
-  try { await browser.share({ title: 'AYROVI', text }); return 'shared'; }
+  try { await browser.share({ title: 'ZAYROVI', text }); return 'shared'; }
   catch (error) {
     // A dismissed native sheet is not failure, and must never write the clipboard.
     return error && typeof error === 'object' && 'name' in error && error.name === 'AbortError' ? 'cancelled' : 'error';

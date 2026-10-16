@@ -12,7 +12,7 @@ export function parseCommercePolicy(data: any) {
   return {
     deposit: {
       percent, cardDiscountPercent,
-      companyName: text(source.companyName) || 'AYROVI',
+      companyName: text(source.companyName) || 'ZAYROVI',
       bankRib: text(source.bankRib), posteAccount: text(source.posteAccount),
       flouciNumber: text(source.flouciNumber), reviewDelay: text(source.reviewDelay),
       unavailableRefundPolicy: text(source.unavailableRefundPolicy),

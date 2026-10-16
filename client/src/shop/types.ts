@@ -49,7 +49,7 @@ export interface SizeOption {
 }
 
 export interface MediaView {
-  /** URL déjà passée par la composition AYROVI (produit détouré sur notre canvas). */
+  /** URL déjà passée par la composition ZAYROVI (produit détouré sur notre canvas). */
   src: string;
   /** Replis successifs, du meilleur rendu au plus sûr. */
   fallbacks: string[];

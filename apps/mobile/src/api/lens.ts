@@ -22,7 +22,7 @@ export interface LensPromo {
   percent: number;
   label: string;
   priceTnd: number | null;
-  /** Prix AYROVI avant remise, calculé par le serveur — jamais reconstruit sur le téléphone. */
+  /** Prix ZAYROVI avant remise, calculé par le serveur — jamais reconstruit sur le téléphone. */
   originalPriceTnd: number | null;
 }
 
@@ -86,7 +86,7 @@ export interface LensCandidate {
   price: number | null;
   currency: string | null;
   priceTnd: number | null;
-  /** Prix barré publié par le marchand, puis son équivalent AYROVI. */
+  /** Prix barré publié par le marchand, puis son équivalent ZAYROVI. */
   originalPrice: number | null;
   originalPriceTnd: number | null;
   priceOrigin: 'merchant' | 'search' | null;

@@ -156,7 +156,7 @@ export function requireCustomer(db: QatafoDatabase, options: { verifiedPhone?: b
     const customer = resolveCustomer(db, req);
     if (!customer) {
       clearCustomerCookie(res);
-      return res.status(401).json({ success: false, code: 'AUTH_REQUIRED', error: 'Connectez-vous à votre compte AYROVI.' });
+      return res.status(401).json({ success: false, code: 'AUTH_REQUIRED', error: 'Connectez-vous à votre compte ZAYROVI.' });
     }
     if (options.verifiedPhone && !customer.phoneVerified) {
       return res.status(403).json({ success: false, code: 'PHONE_VERIFICATION_REQUIRED', error: 'Vérifiez votre numéro de téléphone avant de confirmer la commande.' });

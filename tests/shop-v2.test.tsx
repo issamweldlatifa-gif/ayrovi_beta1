@@ -75,7 +75,7 @@ describe('boutique v2 — adaptateur', () => {
     expect(bare.price).toBeNull();
   });
 
-  it('l’image passe par la composition AYROVI en premier', () => {
+  it('l’image passe par la composition ZAYROVI en premier', () => {
     expect(productToView(product).media[0].src).toContain('/api/public/media/card');
   });
 });

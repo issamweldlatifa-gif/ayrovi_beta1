@@ -224,7 +224,7 @@ export function markChosen(eventId: string): void {
   }).catch(() => {});
 }
 
-/** Recherche du contenu texte d'un QR via AYROVI Web Search. */
+/** Recherche du contenu texte d'un QR via ZAYROVI Web Search. */
 export async function analyzeCode(value: string, signal?: AbortSignal): Promise<{ code: string; candidates: AyrovixImageResult['candidates']; eventId: string }> {
   const response = await fetch('/api/ayrovix/analyze-code', {
     method: 'POST',
@@ -246,7 +246,7 @@ export async function analyzeBarcode(code: string, signal?: AbortSignal): Promis
   return parseResponse(response);
 }
 
-/** Recherche par nom de produit (texte libre) via AYROVI Catalog + Web Search. */
+/** Recherche par nom de produit (texte libre) via ZAYROVI Catalog + Web Search. */
 export async function analyzeText(query: string, signal?: AbortSignal): Promise<{ query: string; candidates: AyrovixImageResult['candidates']; eventId: string }> {
   const response = await fetch('/api/ayrovix/analyze-text', {
     method: 'POST',

@@ -1,5 +1,5 @@
 /**
- * AYROVI — audit complet de l'admin (2026-09-22).
+ * ZAYROVI — audit complet de l'admin (2026-09-22).
  *
  * Ce que cet audit mesure, écran par écran, sur l'application RÉELLE :
  *   1. l'écran se rend (titre présent, pas d'état bloqué sur « Chargement… ») ;

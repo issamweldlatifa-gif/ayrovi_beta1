@@ -126,12 +126,12 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       deposit: {
         percent: Number(facts.deposit_percent) > 0 ? Number(facts.deposit_percent) : 20,
         cardDiscountPercent: Number(facts.card_discount_percent) >= 0 ? Number(facts.card_discount_percent) : 5,
-        companyName: String(facts.company_legal_name || facts.company_name || 'AYSONIC'),
+        companyName: String(facts.company_legal_name || facts.company_name || 'ZAYROVI'),
         bankRib: String(facts.bank_rib || ''),
         posteAccount: String(facts.poste_account || ''),
         flouciNumber: String(facts.flouci_number || ''),
         reviewDelay: String(facts.deposit_review_delay || 'Sous 1 jour ouvré après réception du justificatif'),
-        unavailableRefundPolicy: String(facts.unavailable_refund_policy || 'Acompte remboursé si AYSONIC ne peut pas valider ou acheter l’article demandé'),
+        unavailableRefundPolicy: String(facts.unavailable_refund_policy || 'Acompte remboursé si ZAYROVI ne peut pas valider ou acheter l’article demandé'),
       },
       // قنوات التواصل الاجتماعي (تُدار من لوحة الأدمن ← Paramètres ← CHANNELS)
       channels: {
@@ -179,7 +179,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
 
 
   // COMPOSITION D'IMAGE PRODUIT (phase 2, 25/09/2026) : le produit est détouré puis
-  // POSÉ sur le mockup AYROVI (9/13, #F0F2F2) avec une échelle UNIFORME et un
+  // POSÉ sur le mockup ZAYROVI (9/13, #F0F2F2) avec une échelle UNIFORME et un
   // centrage sur son barycentre — ratio conservé, aucun rognage, aucune règle
   // spécifique à une image. Contrat d'acceptation vérifié AVANT mise en cache.
   // Aucun échec de traitement ne redirige vers un hôte externe.
@@ -214,7 +214,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
      *
      * Décliner le détourage ne dispense pas de tenir le cadre : l'image est donc
      * posée ENTIÈRE (contain, ratio conservé, aucun rognage) sur le canvas
-     * AYROVI 9/13 #F0F2F2. Ce n'est pas une composition et on ne le prétend pas
+     * ZAYROVI 9/13 #F0F2F2. Ce n'est pas une composition et on ne le prétend pas
      * — l'en-tête le dit — mais la grille redevient homogène.
      */
     try {
@@ -669,7 +669,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     const rows = db.all<any>(`SELECT i.id,i.text,i.created_at,c.display_name author
       FROM story_interactions i LEFT JOIN customer_accounts c ON c.id=i.account_id
       WHERE i.target_id=? AND i.type='comment' ORDER BY i.created_at DESC LIMIT 100`, id).reverse();
-    res.json({ success: true, data: rows.map((row) => ({ id: row.id, author: row.author || 'Membre AYROVI', text: row.text, createdAt: row.created_at })) });
+    res.json({ success: true, data: rows.map((row) => ({ id: row.id, author: row.author || 'Membre ZAYROVI', text: row.text, createdAt: row.created_at })) });
   });
 
   router.post('/social/interact', optionalCustomer(db), (req, res) => {
@@ -716,7 +716,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       const id = `int_${randomUUID()}`;
       db.run(`INSERT INTO story_interactions (id,target_id,target_kind,type,account_id,guest_hash,text,created_at)
         VALUES (?,?,?,?,?,NULL,?,?)`, id, targetId, target.kind, 'comment', accountId, text, now);
-      return res.status(201).json({ success: true, data: { id, author: customer.displayName || 'Membre AYROVI', text, createdAt: now } });
+      return res.status(201).json({ success: true, data: { id, author: customer.displayName || 'Membre ZAYROVI', text, createdAt: now } });
     }
 
     // Les vues et partages sont comptés par propriétaire unique afin d'éviter le gonflement artificiel.

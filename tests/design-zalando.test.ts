@@ -1,5 +1,5 @@
 /**
- * AYROVI — P4/T1 « Zalando Strategy » : verrou du système de design.
+ * ZAYROVI — P4/T1 « Zalando Strategy » : verrou du système de design.
  *
  * Ce fichier ne teste pas des pixels : il teste la RÈGLE que la refonte était chargée
  * d'installer, et rend le retour en arrière impossible par inadvertance.
@@ -113,7 +113,7 @@ describe('jetons canoniques — la charte tient en six variables', () => {
 
 describe('purge — plus aucun littéral orange hérité', () => {
   /** Oranges des chartes retirées : #fe7003 (jeton), #ff7a00 (LENS), #ff6900 (Zalando),
-   *  #ff7900 / #a74700 / #ffae69 (AYROVI A v3), #f18902 (AyWebs), et leurs déclinaisons. */
+   *  #ff7900 / #a74700 / #ffae69 (ZAYROVI A v3), #f18902 (AyWebs), et leurs déclinaisons. */
   const LEGACY = /#(fe7003|ff7a00|ff8f33|e05f00|f26a1b|ff9433|fdf6f0|fbeadd|fbe3d2|ffb070|ff6900|ff7900|a74700|ffae69|f18902|e85f00|ffb173|fb923c|d3451f|fff3ea)\b/gi;
   /** Ce que la base persistée peut encore contenir (graines et migrations) : la liste d'avant
    *  #ff6900. Les graines #ff6900 sont relues en violet par shared/identityPolicy.ts (test plus bas). */
@@ -239,7 +239,7 @@ describe('surfaces — la couleur de marque n’est jamais un papier peint', () 
   });
 
   /**
-   * P4/T2 : la carte « Découvrez AYROVI » (bloc `transition`) a été SUPPRIMÉE du
+   * P4/T2 : la carte « Découvrez ZAYROVI » (bloc `transition`) a été SUPPRIMÉE du
    * projet avec `BrandsShowcase` et `LensHero` — la page d'accueil se limite au
    * Hero + Trust Bar. La règle qu'elle portait (surface grise + filet 3px) est
    * désormais portée par la primitive `.ay-surface-card`, verrouillée ci-dessous.

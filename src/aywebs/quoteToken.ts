@@ -13,7 +13,7 @@ import { validateQuoteSecret } from '../ayrovix/priceQuote';
  * (lecture froide). L'utilisateur payait donc deux fois la lecture du marchand.
  *
  * ── CE QUE FAIT CE MODULE ───────────────────────────────────────────────────
- * Au moment où le serveur a lui-même lu la fiche (et calculé son devis AYROVI),
+ * Au moment où le serveur a lui-même lu la fiche (et calculé son devis ZAYROVI),
  * il scelle un jeton HMAC-SHA256 contenant : produit, boutique, variante, prix
  * source, devise, état de stock, horodatage et expiration. Le client le renvoie
  * à l'ajout ; le panier l'accepte SANS relire le marchand, à trois conditions :

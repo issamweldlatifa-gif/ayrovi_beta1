@@ -1,5 +1,5 @@
 /**
- * AYROVI Inventory (P2.2) — schéma + amorçage.
+ * ZAYROVI Inventory (P2.2) — schéma + amorçage.
  *
  * Règles que ce fichier respecte (leçons déjà payées en P1/P2.1) :
  *  • additif uniquement : `CREATE TABLE IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`.

@@ -866,7 +866,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
                   />
                   <button type="submit" disabled={textQuery.trim().length < 2} className="ay-btn-primary flex-none text-xs disabled:opacity-40">{tr('Rechercher', 'بحث')}</button>
                 </div>
-                <p className="text-xs font-medium text-muted leading-relaxed">{tr('Recherche dans le catalogue AYROVI + web marchand (même moteur que QR/lien). Aucun prix inventé.', 'بحث في مجموعة AYROVI + وِب المتاجر (نفس محرك QR/الرابط). لا سعر مخترع.')}</p>
+                <p className="text-xs font-medium text-muted leading-relaxed">{tr('Recherche dans le catalogue ZAYROVI + web marchand (même moteur que QR/lien). Aucun prix inventé.', 'بحث في مجموعة ZAYROVI + وِب المتاجر (نفس محرك QR/الرابط). لا سعر مخترع.')}</p>
               </form>
 
               <form

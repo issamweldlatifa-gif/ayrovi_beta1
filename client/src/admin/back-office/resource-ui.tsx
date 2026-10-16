@@ -35,7 +35,7 @@ export const labels: Record<string, string> = {
   SHEIN: 'SHEIN', AMAZON: 'Amazon', TEMU: 'TEMU', ALIEXPRESS: 'AliExpress', OTHER: 'Autre', EUR: 'EUR', USD: 'USD', GBP: 'GBP', JPY: 'JPY', TND: 'TND',
   AVAILABLE: 'Disponible', LIMITED: 'Stock limité', OUT_OF_STOCK: 'Épuisé', INACTIVE: 'Inactif', PERCENTAGE: 'Pourcentage', FIXED: 'Montant fixe',
   IMAGE: 'Image', VIDEO: 'Vidéo', PUBLISHED: 'Publié', EXPIRED: 'Expiré', NEW_ARRIVAL: 'Nouvel arrivage', NEW_BRAND: 'Nouvelle marque', PROMOTION: 'Promotion',
-  DELIVERY: 'Livraison', AYROVI: 'AYROVI', INFORMATION: 'Information', FASHION: 'Mode', SPORT_LIFESTYLE: 'Sport & lifestyle', BEAUTY: 'Beauté', TECH: 'Tech', HOME: 'Maison',
+  DELIVERY: 'Livraison', AYROVI: 'ZAYROVI', INFORMATION: 'Information', FASHION: 'Mode', SPORT_LIFESTYLE: 'Sport & lifestyle', BEAUTY: 'Beauté', TECH: 'Tech', HOME: 'Maison',
   FAQ: 'FAQ', PREDEFINED_RESPONSE: 'Réponse prédéfinie', PAYMENT: 'Paiement', BRAND: 'Marque', ARRIVAL: 'Arrivage', GENERAL: 'Général',
   PENDING: 'En attente', IN_PROGRESS: 'En cours', RESOLVED: 'Résolu', CLOSED: 'Fermé', NORMAL: 'Normale', HIGH: 'Haute',
   SUPER_ADMIN: 'Super Admin', ADMIN: 'Admin', CONTENT_MANAGER: 'Contenu', ORDER_MANAGER: 'Commandes',

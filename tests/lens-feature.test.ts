@@ -12,7 +12,7 @@ import { resolveLensVideoUrl } from '../src/services/lensMedia';
  *   2. une vidéo peut être déposée OU pointée par un lien, et ce lien est réécrit
  *      vers un lecteur officiel (jamais une origine arbitraire) ;
  *   3. la section respire : un écart vertical confortable la sépare des blocs voisins ;
- *   4. charte AYROVI : section monochrome, le violet se limite à la flèche d'action.
+ *   4. charte ZAYROVI : section monochrome, le violet se limite à la flèche d'action.
  */
 
 const admin = request.agent(app);
@@ -151,7 +151,7 @@ describe('LENS editorial block — rythme et charte', () => {
     expect(indexCss).toMatch(/@media \(min-width: 768px\)\s*\{\s*\.lens-feature__media\s*\{[^}]*border-radius: 20px/);
   });
 
-  test('AYROVI charter: monochrome block, no violet (v4.2.0) — the arrow follows the link colour', () => {
+  test('ZAYROVI charter: monochrome block, no violet (v4.2.0) — the arrow follows the link colour', () => {
     const block = /\.lens-feature[\s\S]*?@media \(prefers-reduced-motion/.exec(indexCss)?.[0] ?? '';
     // couleurs : uniquement les jetons de la charte
     expect(block).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);

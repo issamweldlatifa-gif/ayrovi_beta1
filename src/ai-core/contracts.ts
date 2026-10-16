@@ -1,5 +1,5 @@
 /**
- * AYROVI AI Core contracts.
+ * ZAYROVI AI Core contracts.
  *
  * These types are application-owned. Provider SDK objects and wire event
  * shapes must be translated inside adapters before crossing this boundary.
@@ -22,7 +22,7 @@ export type AiWorkload =
  */
 export type AiExecutionLane = 'active' | 'shadow' | 'probe';
 
-/** AYROVI identifiers remain canonical; provider session/response IDs do not. */
+/** ZAYROVI identifiers remain canonical; provider session/response IDs do not. */
 export interface AiExecutionContext {
   requestId: string;
   executionLane: AiExecutionLane;
@@ -154,7 +154,7 @@ export type AiCoreEventType =
   | 'request_completed'
   | 'request_failed';
 
-/** Provider-neutral, sanitized telemetry contract owned by AYROVI. */
+/** Provider-neutral, sanitized telemetry contract owned by ZAYROVI. */
 export interface AiCoreEvent {
   eventId: string;
   type: AiCoreEventType;

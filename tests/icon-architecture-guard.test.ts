@@ -6,7 +6,8 @@ describe('whole-application icon architecture gate',()=>{
   it('audits the actual application, including admin, with zero unreviewed exceptions',()=>{
     const report=checkIconContract();
     expect(report.files).toBeGreaterThan(150);
-    expect(report.rawSvg).toBe(2); // Canonical icon renderer + audio waveform; Lens now uses CSS geometry.
+    // Canonical icon renderer + audio waveform + the ZAYROVI loading screen (brand mark, not an icon); Lens uses CSS geometry.
+    expect(report.rawSvg).toBe(3);
     expect(report.issues).toEqual([]);
   });
   it.each([
@@ -26,7 +27,7 @@ describe('whole-application icon architecture gate',()=>{
     'const x=createAyroviIcon("User",<path/>);',
   ])('rejects a bypass: %s',source=>expect(inspectIconSource(file,source).issues.length).toBeGreaterThan(0));
   it('allows the canonical renderer, genuine typography, and regular business text',()=>{
-    const source='import {User} from "./QatafoIcons"; const x=<User size={24} aria-label="Compte"/>; const y="© AYROVI · N° 3 · 360° · Paramètres → Compte"; // ✓ comment, not an icon';
+    const source='import {User} from "./QatafoIcons"; const x=<User size={24} aria-label="Compte"/>; const y="© ZAYROVI · N° 3 · 360° · Paramètres → Compte"; // ✓ comment, not an icon';
     expect(inspectIconSource(file,source).issues).toEqual([]);
   });
   it('cannot disguise an interface drawing as a new brand exception',()=>{

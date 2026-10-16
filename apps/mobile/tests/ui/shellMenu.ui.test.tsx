@@ -59,7 +59,7 @@ describe('icône compte et menu', () => {
     await renderHeader();
     expect(screen.queryByRole('button', { name: 'Mon compte' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Menu' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Panier AYROVI' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Panier ZAYROVI' })).toBeTruthy();
   });
 
   it('le menu contient la langue et le thème, avec leurs choix', async () => {

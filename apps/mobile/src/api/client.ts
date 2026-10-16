@@ -352,7 +352,7 @@ export async function apiSendEnvelope<T>(
 }
 
 /**
- * طلب GET يرجّع الغلاف كامل — لمسارات AYROVI (`/cart/items`، `/checkout`):
+ * طلب GET يرجّع الغلاف كامل — لمسارات ZAYROVI (`/cart/items`، `/checkout`):
  * حقولها في الجذر مع `success`، بلا `data`. فكّ `data` هنا كان يرجّع
  * `undefined` ويولّي كل شي «مالفورمِ» بلا سبب حقيقي.
  */

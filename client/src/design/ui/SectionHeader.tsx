@@ -3,7 +3,7 @@ import { twMerge } from 'tailwind-merge';
 import { Badge } from './Badge';
 
 /**
- * AYROVI DS v1.0 — SectionHeader.
+ * ZAYROVI DS v1.0 — SectionHeader.
  * Rhythm de section standard : eyebrow (optionnel) + titre + sous-titre.
  * Le filet violet de 3px n'apparaît QUE via `accent` (carte de surface).
  */

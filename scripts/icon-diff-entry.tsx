@@ -25,7 +25,7 @@ export function renderDiff(): string {
     const isNew = !O && N;
     if (!isChanged && !isNew) continue;
     if (isChanged) changed++; if (isNew) added++;
-    const label = name.replace(/^Ayrovi/, '');
+    const label = name.replace(/^Zayrovi/, '');
     rows.push(`<div class="row ${isChanged ? 'changed' : ''}">
   <div class="box"><span class="tag">قبل (git HEAD)</span>${O ? oldMark : '<span style="color:#9ca3af">—</span>'}</div>
   <div class="box"><span class="tag">بعد (الحالي)</span>${N ? newMark : ''}</div>

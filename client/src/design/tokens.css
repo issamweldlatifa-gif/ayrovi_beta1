@@ -1,4 +1,4 @@
-/* AYROVI DESIGN SYSTEM v1.1 — legacy compatibility tokens for screens outside
+/* ZAYROVI DESIGN SYSTEM v1.1 — legacy compatibility tokens for screens outside
    CustomerIdentity (notably the admin). Customer-facing v3.1 values are authored
    in editorial/identity.json and injected by customerTheme.ts. The legacy aliases
    below must not override that customer-scoped identity.

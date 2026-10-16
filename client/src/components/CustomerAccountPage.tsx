@@ -384,7 +384,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
       setEmailName('');
       setShowPassword(false);
       setNotice(emailMode === 'register'
-        ? tr('Bienvenue ! Votre compte AYROVI est actif.', 'مرحباً بك! تم تفعيل حسابك في AYROVI.')
+        ? tr('Bienvenue ! Votre compte ZAYROVI est actif.', 'مرحباً بك! تم تفعيل حسابك في ZAYROVI.')
         : tr('Content de vous revoir !', 'سعداء بعودتك!'));
       onCartChanged();
     } catch (reason: any) { setError(reason.message); }
@@ -419,7 +419,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
         navigation.navigate(navigation.stack.filter((layer) => !['account:phone-link', 'account:otp-code'].includes(layer.id)), { replace: true });
       }
       const linked = Number(result.data.linkedHistoricalOrders || 0);
-      setNotice(linked ? `${linked} ancienne${linked > 1 ? 's' : ''} commande${linked > 1 ? 's' : ''} retrouvée${linked > 1 ? 's' : ''} et ajoutée${linked > 1 ? 's' : ''} à votre compte.` : 'Votre compte AYROVI est maintenant actif.');
+      setNotice(linked ? `${linked} ancienne${linked > 1 ? 's' : ''} commande${linked > 1 ? 's' : ''} retrouvée${linked > 1 ? 's' : ''} et ajoutée${linked > 1 ? 's' : ''} à votre compte.` : 'Votre compte ZAYROVI est maintenant actif.');
       onCartChanged();
     } catch (reason: any) { setError(reason.message); }
     finally { setAuthBusy(false); }
@@ -453,7 +453,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
   };
 
   const deleteAccount = async () => {
-    if (!session || !confirm(tr('Supprimer définitivement votre compte AYROVI ? Les commandes et factures seront conservées pour les obligations légales.','هل تريد حذف حسابك نهائيًا؟ ستُحفظ الطلبات والفواتير للالتزامات القانونية.'))) return;
+    if (!session || !confirm(tr('Supprimer définitivement votre compte ZAYROVI ? Les commandes et factures seront conservées pour les obligations légales.','هل تريد حذف حسابك نهائيًا؟ ستُحفظ الطلبات والفواتير للالتزامات القانونية.'))) return;
     setBusyId('delete-account'); setError('');
     try {
       await customerApi('/api/customer/account', {
@@ -665,7 +665,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
             </div>
             {developmentCode && <button type="button" onClick={() => setCode(developmentCode)} className="mt-3 w-full border border-line bg-surface p-3 text-xs font-bold text-ink">{tr('Mode développement — utiliser', 'وضع التطوير — استخدم')} {developmentCode}</button>}
             <button disabled={authBusy || code.length !== 6} className="ay-btn-primary mt-5 w-full text-sm">{authBusy && <Loader2 className="h-5 w-5 animate-spin" />}{tr('Valider mon compte', 'تأكيد حسابي')}</button>
-            <p className="mt-auto pt-8 text-center text-xs leading-5 text-muted">{tr('Connexion sécurisée. AYROVI ne vous demandera jamais votre code par téléphone.', 'دخول آمن. لن تطلب منك AYROVI رمزك عبر مكالمة أو رسالة.')}</p>
+            <p className="mt-auto pt-8 text-center text-xs leading-5 text-muted">{tr('Connexion sécurisée. ZAYROVI ne vous demandera jamais votre code par téléphone.', 'دخول آمن. لن تطلب منك ZAYROVI رمزك عبر مكالمة أو رسالة.')}</p>
           </form>
         ) : phoneLoginOpen || phoneLinkOpen ? (
           /* ===== شاشة الدخول برقم الهاتف ===== */
@@ -687,7 +687,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
             </div>
             <button disabled={authBusy || config?.phoneOtp.enabled === false} className="ay-btn-primary mt-5 w-full text-sm">{authBusy && <Loader2 className="h-5 w-5 animate-spin" />}{tr('Recevoir mon code SMS', 'استلام رمز SMS')}</button>
             {config?.phoneOtp.enabled === false && <p className="mt-3 text-center text-xs font-semibold text-muted">{tr('L’envoi SMS doit être configuré sur le serveur.', 'يجب ضبط خدمة SMS على الخادم.')}</p>}
-            <p className="mt-auto pt-8 text-center text-xs leading-5 text-muted">{tr('Connexion sécurisée. AYROVI ne vous demandera jamais votre code par téléphone.', 'دخول آمن. لن تطلب منك AYROVI رمزك عبر مكالمة أو رسالة.')}</p>
+            <p className="mt-auto pt-8 text-center text-xs leading-5 text-muted">{tr('Connexion sécurisée. ZAYROVI ne vous demandera jamais votre code par téléphone.', 'دخول آمن. لن تطلب منك ZAYROVI رمزك عبر مكالمة أو رسالة.')}</p>
           </form>
         ) : (
           <div className="ay-auth__main">
@@ -719,7 +719,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
                   elle se lisait comme un bouton de plus. Centrée, elle
                   redevient ce qu'elle est — une signature. */}
               <div className="ay-auth__brand ay-auth__brand--centered" dir="ltr">
-                <img src="/media/logo-ayrovi-lockup-black-violet.svg" alt="AYROVI" className="ay-auth__logo ay-auth__logo--wordmark" />
+                <img src="/media/logo-ayrovi-lockup-black-violet.svg?v=5.0" alt="ZAYROVI" className="ay-auth__logo ay-auth__logo--wordmark" />
               </div>
               <div className="ay-auth__intro">
                 <h1 id="auth-title" tabIndex={-1}>
@@ -770,7 +770,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
               {config?.email.enabled && (socialLoginEnabled || config?.phoneOtp.enabled) && <div className="ay-auth__divider"><span>{tr('ou', 'أو')}</span></div>}
 
               {/* Dans l'application, ces boutons ouvrent un ONGLET PERSONNALISÉ
-                  par-dessus AYROVI (voir customer/nativeOAuth.ts) : plus de
+                  par-dessus ZAYROVI (voir customer/nativeOAuth.ts) : plus de
                   bascule vers Chrome. Sur le web, un vrai lien same-origin —
                   le cookie de session est conservé. */}
               {socialLoginEnabled && <div className="ay-auth__social" aria-label={tr('Autres moyens de connexion', 'وسائل دخول أخرى')}>
@@ -809,7 +809,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
             </> : <>
               {/* ÉTAPE 2 — l'adresse est connue, on demande ce qui la protège.
                   Aucun appel « cet e-mail existe-t-il ? » n'est fait : cela
-                  révélerait qui possède un compte chez AYROVI. C'est donc le
+                  révélerait qui possède un compte chez ZAYROVI. C'est donc le
                   serveur qui tranche à l'envoi, et le bascule ci-dessous reste
                   disponible pour créer le compte. */}
               <section id="auth-email-panel" aria-labelledby="auth-title">
@@ -843,7 +843,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
                 {tr(' et notre ', ' و')}<a href="/privacy.html" target="_blank" rel="noreferrer">{tr('Politique de confidentialité', 'سياسة الخصوصية')}</a>.
               </p>}
               <p className="ay-auth__switch">
-                <span>{emailMode === 'login' ? tr('Nouveau chez AYROVI ?', 'جديد في AYROVI؟') : tr('Déjà un compte ?', 'لديك حساب؟')}</span>
+                <span>{emailMode === 'login' ? tr('Nouveau chez ZAYROVI ?', 'جديد في ZAYROVI؟') : tr('Déjà un compte ?', 'لديك حساب؟')}</span>
                 <button type="button" disabled={authBusy} aria-controls="auth-email-panel" onClick={() => {
                   setEmailMode(emailMode === 'login' ? 'register' : 'login');
                   setEmailName(''); setEmailPassword(''); setShowPassword(false); setRecoveryOpen(false); setError(''); setNotice('');
@@ -880,7 +880,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
         <FormField label={tr('Nom complet','الاسم الكامل')} htmlFor="account-display-name"><Input id="account-display-name" autoComplete="name" maxLength={100} required value={profile.displayName} onChange={e=>setProfile({...profile,displayName:e.target.value})}/></FormField>
         <FormField label={tr('Adresse e-mail','البريد الإلكتروني')} htmlFor="account-email"><Input id="account-email" type="email" autoComplete="email" dir="ltr" maxLength={254} required={Boolean(session!.account.email)} value={profile.email} onChange={e=>setProfile({...profile,email:e.target.value})}/></FormField>
         <p className="ac-note">{tr('La modification de l’e-mail retire son statut vérifié.','تغيير البريد الإلكتروني يُلغي حالة توثيقه.')}</p>
-        <label className="ac-checkbox-row"><input type="checkbox" checked={profile.marketingOptIn} onChange={e=>setProfile({...profile,marketingOptIn:e.target.checked})}/><span>{tr('Recevoir les offres AYROVI (facultatif)','تلقي عروض AYROVI (اختياري)')}</span></label>
+        <label className="ac-checkbox-row"><input type="checkbox" checked={profile.marketingOptIn} onChange={e=>setProfile({...profile,marketingOptIn:e.target.checked})}/><span>{tr('Recevoir les offres ZAYROVI (facultatif)','تلقي عروض ZAYROVI (اختياري)')}</span></label>
         <Button type="submit" disabled={Boolean(busyId)}>{busyId==='profile'&&<Loader2 className="h-5 w-5 animate-spin" aria-hidden/>}{tr('Enregistrer','حفظ المعلومات')}</Button>
       </fieldset>
     </form>
@@ -903,7 +903,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
     return <div className="space-y-6"><section><h3 className="mb-3 text-lg font-black">{tr('Paiements','المدفوعات')}</h3><div className="space-y-3">{payments.map((p: CustomerPayment)=><article key={p.id} className="rounded-2xl border border-line bg-white p-4"><div className="flex flex-wrap justify-between gap-2"><div><strong className="block ay-number text-sm">{p.payment_number}</strong><button onClick={()=>openOrder(p.order_id)} className="text-xs font-black text-ink">{p.order_number}</button></div><Status value={p.status}/></div><div className="mt-3 flex justify-between text-sm"><span className="text-muted">{p.method==='PENDING_SELECTION'?tr('À choisir','يُختار لاحقًا'):p.method}</span><strong>{money(p.amount_tnd)}</strong></div></article>)}</div></section><section><h3 className="mb-3 text-lg font-black">{tr('Transactions','المعاملات')}</h3>{transactions.length?<div className="space-y-3">{transactions.map((t: CustomerPaymentTransaction)=><article key={t.id} className="rounded-2xl border border-line bg-white p-4"><div className="flex flex-wrap justify-between gap-2"><strong className="ay-number text-sm">{t.transaction_number}</strong><Status value={t.status}/></div><p className="mt-2 text-xs text-muted">{t.provider} · {t.order_number} · {date(t.created_at,true)}</p><strong className="mt-2 block">{money(t.amount_tnd)}</strong>{t.failure_reason&&<p className="mt-2 text-xs text-danger">{t.failure_reason}</p>}</article>)}</div>:<Empty title={tr('Aucune transaction','لا توجد معاملات')} text={tr('Aucune transaction confirmée ou échouée.','لا توجد معاملات مؤكدة أو فاشلة.')}/>}</section></div>;
   };
 
-  const renderInvoices = () => Array.isArray(rows)&&rows.length?<div className="space-y-3">{rows.map((invoice: CustomerInvoice)=><article key={invoice.id} className="flex min-w-0 items-center gap-3 rounded-2xl border border-line bg-white p-4"><div className="min-w-0 flex-1"><strong className="block truncate ay-number text-sm">{invoice.invoice_number}</strong><p className="text-xs text-muted">{invoice.order_number} · {date(invoice.issued_at,true)}</p></div><a href={`/api/customer/account/orders/${invoice.order_id}/invoice`} className="ay-btn-secondary shrink-0 px-3 text-xs">{tr('PDF','PDF')}</a></article>)}</div>:<Empty title={tr('Aucune facture émise','لا توجد فواتير صادرة')} text={tr('Une facture apparaît uniquement après son émission par AYROVI.','تظهر الفاتورة فقط بعد إصدارها من AYROVI.')}/>;
+  const renderInvoices = () => Array.isArray(rows)&&rows.length?<div className="space-y-3">{rows.map((invoice: CustomerInvoice)=><article key={invoice.id} className="flex min-w-0 items-center gap-3 rounded-2xl border border-line bg-white p-4"><div className="min-w-0 flex-1"><strong className="block truncate ay-number text-sm">{invoice.invoice_number}</strong><p className="text-xs text-muted">{invoice.order_number} · {date(invoice.issued_at,true)}</p></div><a href={`/api/customer/account/orders/${invoice.order_id}/invoice`} className="ay-btn-secondary shrink-0 px-3 text-xs">{tr('PDF','PDF')}</a></article>)}</div>:<Empty title={tr('Aucune facture émise','لا توجد فواتير صادرة')} text={tr('Une facture apparaît uniquement après son émission par ZAYROVI.','تظهر الفاتورة فقط بعد إصدارها من ZAYROVI.')}/>;
 
   const renderTracking = () => Array.isArray(rows)&&rows.length?<div className="space-y-3">{rows.map((shipment: CustomerDelivery)=><article key={shipment.id} className="rounded-2xl border border-line bg-white p-5"><div className="flex items-start justify-between gap-3"><div><strong>{shipment.order_number}</strong><div className="mt-2"><Status value={shipment.status}/></div></div></div><dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2"><div><dt className="text-xs text-muted">{tr('Transporteur','الناقل')}</dt><dd className="font-black">{shipment.carrier}</dd></div><div><dt className="text-xs text-muted">{tr('Numéro de suivi','رقم التتبع')}</dt><dd className="break-all ay-number font-black">{shipment.tracking_number}</dd></div><div><dt className="text-xs text-muted">{tr('Expédié le','تاريخ الشحن')}</dt><dd>{date(shipment.shipped_at,true)}</dd></div></dl>{safeAccountLink(shipment.tracking_url)&&<a href={safeAccountLink(shipment.tracking_url)} target="_blank" rel="noreferrer" className="ay-btn-secondary mt-4 w-full text-xs">{tr('Suivre chez le transporteur','التتبع لدى الناقل')}</a>}</article>)}</div>:<Empty title={tr('Aucun colis expédié','لا توجد شحنة مرسلة')} text={tr('Le suivi apparaît seulement après SHIPPED avec un transporteur et un numéro réels.','يظهر التتبع فقط بعد الشحن برقم وناقل حقيقيين.')}/>;
 
@@ -926,7 +926,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
     if(sectionLayer)navigation.back();else openSection('home');
   };
   const authVisible=!session||phoneLinkOpen||phoneLoginOpen;
-  return <div className={`${session ? 'ayrovix-theme-scope customer-account ' : ''}fixed inset-0 z-[95] overflow-hidden bg-surface`} dir={direction} role="dialog" aria-modal="true" aria-label={session?tr('Mon compte AYROVI','حسابي في AYROVI'):tr('Connexion client AYROVI','تسجيل الدخول إلى AYROVI')}>
+  return <div className={`${session ? 'ayrovix-theme-scope customer-account ' : ''}fixed inset-0 z-[95] overflow-hidden bg-surface`} dir={direction} role="dialog" aria-modal="true" aria-label={session?tr('Mon compte ZAYROVI','حسابي في ZAYROVI'):tr('Connexion client ZAYROVI','تسجيل الدخول إلى ZAYROVI')}>
     {!authVisible&&<AccountHeader section={section} onBack={accountBack}/>}
     <div ref={contentRef} className={authVisible?'h-[100dvh] overflow-y-auto':'ac-scroll'}>{loadingSession?<div className="ac-loading" role="status"><Loader2 className="h-8 w-8 animate-spin" aria-hidden/><span>{tr('Chargement…','جارٍ التحميل…')}</span></div>:authVisible?authPanel:<main className="ac-main">
       {notice&&<div className="ac-notice" role="status"><CheckCircle2 className="h-5 w-5 shrink-0" aria-hidden/><span>{notice}</span><button type="button" aria-label={tr('Fermer le message','إغلاق الرسالة')} onClick={()=>setNotice('')}><X className="h-5 w-5" aria-hidden/></button></div>}
@@ -948,7 +948,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
         <section className="rounded-2xl border border-line bg-white p-5"><div className="flex items-center justify-between gap-2"><h3 className="font-black">{tr('Paiement de l’acompte','دفع العربون')}</h3><Status value={orderDetail.payment_status}/></div><p className="mt-2 text-xs text-muted">{tr('Méthode','الطريقة')} : {orderDetail.payment_method==='PENDING_SELECTION'?tr('À choisir','اختر الطريقة'):orderDetail.payment_method}</p>
           {orderDetail.status==='AWAITING_DEPOSIT'&&orderDetail.payment_status!=='PAID'&&<div className="mt-4 grid gap-3">
             <article className={`rounded-2xl border p-4 ${orderDetail.payment_method==='CARD'?'border-line bg-surface':'border-line'}`}><CreditCard className="h-7 w-7 text-ink"/><strong className="mt-2 block text-sm">{tr('Carte bancaire','بطاقة بنكية')}</strong><p className="mt-1 text-xs leading-5 text-muted">{orderDetail.paymentOptions?.cardGatewayAvailable?tr('Paiement immédiat sécurisé; seul le serveur confirme le résultat.','دفع فوري آمن ولا يؤكد النتيجة إلا الخادم.'):tr('Passerelle non configurée : aucun paiement carte ne peut être lancé.','بوابة الدفع غير مضبوطة ولا يمكن بدء دفع بالبطاقة.')}</p><button onClick={startCardPayment} disabled={paymentBusy||!orderDetail.paymentOptions?.cardGatewayAvailable} className="ay-btn-primary mt-3 w-full text-xs">{paymentBusy&&<Loader2 className="h-7 w-7 animate-spin"/>}{tr('Payer l’acompte par carte','دفع العربون بالبطاقة')}</button></article>
-            <article className={`rounded-2xl border p-4 ${['BANK_TRANSFER','POSTE'].includes(orderDetail.payment_method)?'border-line bg-surface':'border-line'}`}><ReceiptText className="h-7 w-7 text-ink"/><strong className="mt-2 block text-sm">{tr('Virement bancaire / postal','تحويل بنكي / بريدي')}</strong><p className="mt-1 text-xs leading-5 text-muted">{tr('Le justificatif sera vérifié par AYROVI; son envoi ne confirme pas le paiement.','تتحقق AYROVI من الإثبات ورفعه لا يعني تأكيد الدفع.')}</p>{!orderDetail.paymentOptions.transfer.bankRib&&!orderDetail.paymentOptions.transfer.posteAccount&&<p className="mt-2 text-xs font-bold text-muted">{tr('Indisponible jusqu’à la publication des coordonnées officielles.','غير متاح حتى نشر البيانات الرسمية.')}</p>}{!['BANK_TRANSFER','POSTE'].includes(orderDetail.payment_method)&&<button onClick={()=>selectDepositMethod(orderDetail.paymentOptions.transfer.bankRib?'BANK_TRANSFER':'POSTE')} disabled={paymentBusy||(!orderDetail.paymentOptions.transfer.bankRib&&!orderDetail.paymentOptions.transfer.posteAccount)} className="ay-btn-secondary mt-3 w-full text-xs">{tr('Choisir le virement','اختيار التحويل')}</button>}</article>
+            <article className={`rounded-2xl border p-4 ${['BANK_TRANSFER','POSTE'].includes(orderDetail.payment_method)?'border-line bg-surface':'border-line'}`}><ReceiptText className="h-7 w-7 text-ink"/><strong className="mt-2 block text-sm">{tr('Virement bancaire / postal','تحويل بنكي / بريدي')}</strong><p className="mt-1 text-xs leading-5 text-muted">{tr('Le justificatif sera vérifié par ZAYROVI; son envoi ne confirme pas le paiement.','تتحقق ZAYROVI من الإثبات ورفعه لا يعني تأكيد الدفع.')}</p>{!orderDetail.paymentOptions.transfer.bankRib&&!orderDetail.paymentOptions.transfer.posteAccount&&<p className="mt-2 text-xs font-bold text-muted">{tr('Indisponible jusqu’à la publication des coordonnées officielles.','غير متاح حتى نشر البيانات الرسمية.')}</p>}{!['BANK_TRANSFER','POSTE'].includes(orderDetail.payment_method)&&<button onClick={()=>selectDepositMethod(orderDetail.paymentOptions.transfer.bankRib?'BANK_TRANSFER':'POSTE')} disabled={paymentBusy||(!orderDetail.paymentOptions.transfer.bankRib&&!orderDetail.paymentOptions.transfer.posteAccount)} className="ay-btn-secondary mt-3 w-full text-xs">{tr('Choisir le virement','اختيار التحويل')}</button>}</article>
           </div>}
           {['BANK_TRANSFER','POSTE'].includes(orderDetail.payment_method)&&orderDetail.status==='AWAITING_DEPOSIT'&&(()=>{
             const isPostal=orderDetail.payment_method==='POSTE';

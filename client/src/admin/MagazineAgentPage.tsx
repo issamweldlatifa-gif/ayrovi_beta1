@@ -72,7 +72,7 @@ const AgentHeader: React.FC<{ status: any; onRefresh: () => void }> = ({ status,
   const capabilities = status?.capabilities || {};
   return (
     <header className="mag-agent-head">
-      <div className="mag-agent-title"><span><Sparkles /></span><div><p>AYROVI EDITORIAL AI</p><h1>وكيل مجلتي</h1><small>محرر داخلي عبر AYROVI AI Core — لا يظهر لزوار الموقع</small></div></div>
+      <div className="mag-agent-title"><span><Sparkles /></span><div><p>ZAYROVI EDITORIAL AI</p><h1>وكيل مجلتي</h1><small>محرر داخلي عبر ZAYROVI AI Core — لا يظهر لزوار الموقع</small></div></div>
       <div className="mag-agent-health" aria-label="حالة ربط الوكيل">
         <span className={capabilities.providerReady ? 'is-on' : 'is-off'}>AI Core {capabilities.providerReady ? 'متصل' : 'غير مضبوط'}</span>
         <span className={capabilities.imageSearch ? 'is-on' : 'is-warning'}>صور {capabilities.imageSearch ? 'متصلة' : 'بدون API'}</span>
@@ -98,7 +98,7 @@ const DraftDetails: React.FC<{ draft: MagazineDraft }> = ({ draft }) => {
       {publication && <article className="mag-social-copy"><p>{publication.caption}</p><div>{(publication.hashtags || []).map((tag: string) => <span key={tag}>{tag.startsWith('#') ? tag : `#${tag}`}</span>)}</div><small>الميديا المقترحة: {publication.media_suggestion}</small></article>}
       {story && <article><p className="mag-hook">{story.hook}</p><ol className="mag-script-list">{(story.frames || []).map((frame: any) => <li key={frame.order}><strong>{frame.order}</strong><div><p>{frame.text}</p><small>{frame.visual}</small></div></li>)}</ol><p><strong>تفاعل:</strong> {story.interaction}</p><p><strong>CTA:</strong> {story.cta}</p></article>}
       {reel && <article><p className="mag-hook">{reel.hook}</p><ol className="mag-script-list">{(reel.scenes || []).map((scene: any) => <li key={scene.order}><strong>{scene.seconds}</strong><div><p>{scene.text}</p><small>Stock query: {scene.stock_query}</small></div></li>)}</ol><p><strong>CTA:</strong> {reel.cta} · {reel.duration_seconds} ثانية</p></article>}
-      {draft.product && <section className="mag-product-link"><img src={draft.product.image} alt="" /><div><small>منتج حقيقي من قاعدة AYROVI</small><strong>{draft.product.brand} {draft.product.name}</strong><span>{draft.product.price} {draft.product.currency} · {draft.product.finalPriceTnd} TND</span>{draft.product.url && <a href={draft.product.url} target="_blank" rel="noreferrer"><Link2 />فتح الرابط الأصلي</a>}</div></section>}
+      {draft.product && <section className="mag-product-link"><img src={draft.product.image} alt="" /><div><small>منتج حقيقي من قاعدة ZAYROVI</small><strong>{draft.product.brand} {draft.product.name}</strong><span>{draft.product.price} {draft.product.currency} · {draft.product.finalPriceTnd} TND</span>{draft.product.url && <a href={draft.product.url} target="_blank" rel="noreferrer"><Link2 />فتح الرابط الأصلي</a>}</div></section>}
       <section className="mag-media-sources"><h3>المراجع المرئية وحقوق الاستخدام</h3><div>{(draft.referenceMedia || []).map((media) => <a key={media.url} href={media.url} target="_blank" rel="noreferrer" className="mag-source-card"><span className="is-reference">مرجعي فقط</span>{media.thumbnailUrl ? <img src={media.thumbnailUrl} alt="" /> : <Image />}<strong>{media.title}</strong><small>{media.source}</small></a>)}{(draft.stockMedia || []).map((media) => <a key={`${media.provider}-${media.url}`} href={media.url} target="_blank" rel="noreferrer" className="mag-source-card"><span className={media.publicationReady ? 'is-licensed' : 'is-library'}>{media.publicationReady ? 'مرخص للنشر' : 'مكتبة مرخصة — اختر المقطع'}</span>{media.previewUrl ? <img src={media.previewUrl} alt="" /> : <Video />}<strong>{media.title}</strong><small>{media.provider}</small></a>)}</div>{!draft.referenceMedia?.length && !draft.stockMedia?.length && <p className="mag-empty-inline">لا توجد مراجع خارجية محفوظة لهذه البطاقة.</p>}</section>
     </div>
   );
@@ -238,7 +238,7 @@ export const MagazineAgentPage: React.FC<MagazineAgentPageProps> = ({ canWrite, 
               type="submit"
               disabled={!command.trim() || busy || !canWrite}
               /* Un bouton grisé doit dire POURQUOI il l'est : commande vide, requête en cours, ou droits. */
-              title={!canWrite ? 'لا تملك صلاحية الكتابة في هذا القسم.' : !command.trim() ? 'اكتب الطلب أولاً في السطر أعلاه.' : busy ? 'جارٍ توليد الأفكار…' : 'إرسال الطلب إلى AYROVI AI Core'}
+              title={!canWrite ? 'لا تملك صلاحية الكتابة في هذا القسم.' : !command.trim() ? 'اكتب الطلب أولاً في السطر أعلاه.' : busy ? 'جارٍ توليد الأفكار…' : 'إرسال الطلب إلى ZAYROVI AI Core'}
             >{busy ? <Loader2 /> : <ArrowUp />}إرسال</button></div>
           </form>
           <aside className="mag-rights-note"><CheckCircle2 /><p><strong>مراجعة بشرية إلزامية</strong><span>الصور العامة مرجعية فقط. علامة «مرخص للنشر» تظهر فقط لمقاطع Pexels/Pixabay التي أعادها مزود API.</span></p></aside>

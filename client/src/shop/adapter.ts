@@ -46,7 +46,7 @@ function priceOf(
     : null;
   /*
    * Deux remises possibles, jamais additionnées ni confondues :
-   *  • la promo AYROVI du jour (serveur) — prioritaire, car c'est notre prix ;
+   *  • la promo ZAYROVI du jour (serveur) — prioritaire, car c'est notre prix ;
    *  • sinon la remise que le marchand affiche lui-même (prix barré de sa page).
    */
   const promoReference = promo && promo.originalPriceTnd > promo.priceTnd ? { tnd: promo.originalPriceTnd } : null;
@@ -144,7 +144,7 @@ export function catalogProductToView(product: CatalogProductLike, tr: (fr: strin
     availabilityExpiresAt: null,
     colors: [],
     flags: outOfStock ? [{ kind: 'info', label: tr('Épuisé', 'نفدت الكمية') }] : [],
-    merchant: product.sourceUrl ? { name: platform || 'AYROVI', url: product.sourceUrl } : null,
+    merchant: product.sourceUrl ? { name: platform || 'ZAYROVI', url: product.sourceUrl } : null,
   };
 }
 

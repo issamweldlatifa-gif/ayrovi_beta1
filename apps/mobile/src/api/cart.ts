@@ -1,5 +1,5 @@
 /**
- * سلّة AYROVI — العميل (مرحلة P5، الشريحة 1).
+ * سلّة ZAYROVI — العميل (مرحلة P5، الشريحة 1).
  *
  * هذي **سلّة الشراء** الوحيدة: كل السطور تجي هنا، ومنها يتكوّن الطلب.
  *
@@ -254,7 +254,7 @@ export const AYROVI_PRICE_TRUST_REASONS: Record<string, string> = {
 };
 
 /**
- * إضافة منتج من متجر خارجي (نتيجة Lens) إلى سلة Ayrovi: `POST /api/cart/items`.
+ * إضافة منتج من متجر خارجي (نتيجة Lens) إلى سلة Zayrovi: `POST /api/cart/items`.
  * الخادم يحكم على السعر والرمز والتوفر؛ الرفض يصل بكوده وسببه (400/409).
  */
 export async function addExternalToCart(
@@ -262,7 +262,7 @@ export async function addExternalToCart(
   options: RequestOptions = {},
 ): Promise<ExternalCartResult> {
   // `x-session-id` إلزامي على الكتابة: بلاه الخادم يرد 400 قبل أي تحقق.
-  // المسار AYROVI: الحقول في الجذر مع `success` (بلا `data`) ⇒ الغلاف الكامل.
+  // المسار ZAYROVI: الحقول في الجذر مع `success` (بلا `data`) ⇒ الغلاف الكامل.
   const data = await apiSendEnvelope<Record<string, unknown>>('POST', '/api/cart/items', {
     ...options,
     headers: { 'x-session-id': input.sessionId, ...(options.headers ?? {}) },

@@ -1,5 +1,5 @@
 /**
- * AYROVI Achats (P2.3) — tests d'acceptation.
+ * ZAYROVI Achats (P2.3) — tests d'acceptation.
  *
  * Ils couvrent, dans l'ordre du plan, ce que la phase a promis :
  *  • le schéma est additif et idempotent (base fraîche, base existante, re-boot) et `products`
@@ -69,7 +69,7 @@ function movementRows(handle: QatafoDatabase, receiptId: string) {
       WHERE reference_type='goods_receipt' AND reference_id=? ORDER BY created_at ASC, rowid ASC`, receiptId);
 }
 
-describe('AYROVI Achats (P2.3)', () => {
+describe('ZAYROVI Achats (P2.3)', () => {
   let supplierId = '';
   let productId = '';
   let secondProductId = '';

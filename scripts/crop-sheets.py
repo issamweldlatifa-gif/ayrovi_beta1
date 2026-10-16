@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""قصّ أيقونات AYROVI من لوحات المرجع (sheets) → ملفات PNG فردية جاهزة للمتتبع.
+"""قصّ أيقونات ZAYROVI من لوحات المرجع (sheets) → ملفات PNG فردية جاهزة للمتتبع.
 قاعدة التمييز: الأيقونة = مجموعة أجزاء حبر بسماكة خط (radius≥1.15) تحتوي جزءًا رئيسيًا
 (max dim ≥ 25px) أو عدة أجزاء كبيرة موزعة رأسيًا (ارتفاع ≥45) — النصوص أسطر صغيرة من أجزاء <100px."""
 from __future__ import annotations
@@ -24,7 +24,7 @@ SHEETS = {
     'file_000000007340824691dc26e13cfeb890.png': {
         'prefix': '04-commerce-ai', 'count': 38,
         'names': ['Produits', 'Commandes', 'Arrivages', 'Panier', 'Favoris', 'Paiements', 'Factures', 'Suivi-colis', 'Adresses', 'Notifications',
-                  'AYROVI-AI', 'AYROVIX-Lens', 'AYVISI-Vision', 'Recherche-Web', 'Connecteurs', 'Code', 'Flash', 'Capture', 'Lien', 'Ajouter-image',
+                  'ZAYROVI-AI', 'AYROVIX-Lens', 'AYVISI-Vision', 'Recherche-Web', 'Connecteurs', 'Code', 'Flash', 'Capture', 'Lien', 'Ajouter-image',
                   'Chat', 'Support', 'Social', 'Message', 'Appel', 'Email', 'Info', 'Aide', 'Conditions', 'Confidentialite', 'Mentions-legales', 'A-propos',
                   'Langue', 'Mode-sombre', 'Parametres', 'Filtre', 'Tri', 'Localisation'],
         'header_frac': 0.21, 'footer_frac': 0.0,
@@ -44,7 +44,7 @@ SHEETS = {
         'names': ['Menu', 'Retour', 'Fermer', 'Options', 'Chevron', 'Accueil',
                   'Profil', 'Infos-personnelles', 'Securite', 'Parametres', 'Deconnexion',
                   'Produits', 'Commandes', 'Arrivages', 'Panier', 'Favoris', 'Promotions',
-                  'AYROVI-AI', 'AYROVIX-Lens', 'AYVISI-Vision', 'Recherche-Web', 'Connecteurs',
+                  'ZAYROVI-AI', 'AYROVIX-Lens', 'AYVISI-Vision', 'Recherche-Web', 'Connecteurs',
                   'Prendre-photo', 'Galerie', 'Lien', 'Flash', 'Code',
                   'Informations', 'Aide', 'Support', 'Conditions', 'Confidentialite'],
         'header_frac': 0.21, 'footer_frac': 0.08,
@@ -65,7 +65,7 @@ SHEETS = {
                   'Succes', 'Erreur', 'Attention', 'Information', 'Notification', 'En-attente',
                   'Ajouter', 'Modifier', 'Supprimer', 'Telecharger', 'Partager', 'Copier',
                   'Francais', 'Arabe', 'Globe', 'Mode-clair', 'Mode-sombre', 'Accessibilite',
-                  'AYROVI-AI-brain', 'AYROVIX-Lens', 'AYVISI-Vision', 'AYROVI-Shopping', 'AYROVI-Logo', 'AI-Sparkle', 'Scan-Reconnaissance'],
+                  'ZAYROVI-AI-brain', 'AYROVIX-Lens', 'AYVISI-Vision', 'ZAYROVI-Shopping', 'ZAYROVI-Logo', 'AI-Sparkle', 'Scan-Reconnaissance'],
         'header_frac': 0.21, 'footer_frac': 0.16,
     },
 }
@@ -151,7 +151,7 @@ def main() -> int:
             x, y, w, h, area = map(int, st2[i])
             if area >= 15:
                 all_comps.append({'x': x, 'y': y, 'w': w, 'h': h, 'area': area, 'cx': x + w / 2, 'cy': y + h / 2})
-        # أيقونات برتقالية كاملة (مثل AYROVI Logo): مكوّن برتقالي كبير عمودي (الشعارات مسطّحة)
+        # أيقونات برتقالية كاملة (مثل ZAYROVI Logo): مكوّن برتقالي كبير عمودي (الشعارات مسطّحة)
         n3, lab3, st3, _ = cv2.connectedComponentsWithStats(orange, 8)
         for i in range(1, n3):
             x, y, w, h, area = map(int, st3[i])

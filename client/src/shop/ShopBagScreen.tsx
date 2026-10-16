@@ -112,7 +112,7 @@ export const ShopBagScreen: React.FC<ShopBagScreenProps> = ({
     : [];
 
   return (
-    <div className="s-drape" role="dialog" aria-modal="true" aria-label={tr('Panier AYROVI', 'سلة AYROVI')} dir={direction}>
+    <div className="s-drape" role="dialog" aria-modal="true" aria-label={tr('Panier ZAYROVI', 'سلة ZAYROVI')} dir={direction}>
       <button type="button" className="s-drape__backdrop" aria-label={tr('Fermer le panier', 'إغلاق السلة')} onClick={onClose} />
       <div className="s-bag-panel" data-side={direction === 'rtl' ? 'start' : 'end'}>
         <BagPage

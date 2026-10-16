@@ -2,7 +2,7 @@
  * Configuration Metro.
  *
  * Le seul ajout au réglage par défaut d'Expo : un **proxy de développement**
- * qui relaie `/api` et `/media` vers le serveur AYROVI local (port 3000, ou
+ * qui relaie `/api` et `/media` vers le serveur ZAYROVI local (port 3000, ou
  * `AYROVI_DEV_API`).
  *
  * Pourquoi c'est nécessaire et pas un confort :
@@ -52,7 +52,7 @@ function createProxy(target) {
       res.end(JSON.stringify({
         success: false,
         code: 'DEV_PROXY_UNAVAILABLE',
-        error: `Serveur AYROVI injoignable sur ${target} (${error.code || error.message}).`,
+        error: `Serveur ZAYROVI injoignable sur ${target} (${error.code || error.message}).`,
       }));
     });
     req.pipe(forwarded);

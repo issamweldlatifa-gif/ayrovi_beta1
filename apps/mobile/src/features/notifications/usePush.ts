@@ -62,7 +62,7 @@ export function usePushNotifications(sessionId: string, locale = 'fr'): PushStat
 
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync(PUSH_CHANNEL_ID, {
-        name: 'AYROVI',
+        name: 'ZAYROVI',
         importance: Notifications.AndroidImportance.HIGH,
         sound: 'default',
         vibrationPattern: [0, 250, 250, 250],

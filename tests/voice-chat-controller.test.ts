@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { transcribeMock } = vi.hoisted(() => ({
-  transcribeMock: vi.fn(async (_input: { audio: Blob; signal?: AbortSignal }) => ({ text: 'مرحبا أيروفي' })),
+  transcribeMock: vi.fn(async (_input: { audio: Blob; signal?: AbortSignal }) => ({ text: 'مرحبا زايروفي' })),
 }));
 vi.mock('../client/src/components/assistant/assistantApi', () => ({
   transcribeAssistantAudio: transcribeMock,
@@ -137,7 +137,7 @@ beforeEach(() => {
     success: true,
     data: { serverTextToSpeechReady: false },
   }), { headers: { 'content-type': 'application/json' } })));
-  transcribeMock.mockReset().mockResolvedValue({text:'مرحبا أيروفي'});
+  transcribeMock.mockReset().mockResolvedValue({text:'مرحبا زايروفي'});
 });
 
 afterEach(() => {
@@ -163,7 +163,7 @@ const makeController = () => {
 describe('VoiceChatController clean hands-free lifecycle', () => {
   it('speaks the opening greeting once, then begins hands-free capture', async () => {
     const voice = makeController();
-    const startup = voice.start('مرحباً بك في أيروفي.');
+    const startup = voice.start('مرحباً بك في زايروفي.');
     await flush();
     await flush();
 
@@ -173,7 +173,7 @@ describe('VoiceChatController clean hands-free lifecycle', () => {
     expect(speechSynthesis.speak).toHaveBeenCalledOnce();
 
     const utterance = speechSynthesis.speak.mock.calls[0][0] as FakeUtterance;
-    expect(utterance.text).toBe('مرحباً بك في أيروفي.');
+    expect(utterance.text).toBe('مرحباً بك في زايروفي.');
     utterance.onend?.();
     await expect(startup).resolves.toBe(true);
 
@@ -215,7 +215,7 @@ describe('VoiceChatController clean hands-free lifecycle', () => {
     expect(submittedAudio.size).toBeGreaterThanOrEqual(1_800);
     const submittedBytes = new Uint8Array(await submittedAudio.arrayBuffer());
     expect(submittedBytes[0]).toBe(1);
-    expect(turns).toEqual(['مرحبا أيروفي']);
+    expect(turns).toEqual(['مرحبا زايروفي']);
     expect(voice.getState()).toBe('thinking');
     expect(states).toEqual(expect.arrayContaining(['starting', 'listening', 'user_speaking', 'transcribing', 'thinking']));
   });

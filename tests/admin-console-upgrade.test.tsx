@@ -172,14 +172,14 @@ describe('4. Écran de connexion aligné sur le modèle A', () => {
   });
 
   it('la console s’annonce comme console, pas avec le titre du site public', () => {
-    expect(login).toContain("document.title='AYROVI · Console d’exploitation'");
+    expect(login).toContain("document.title='ZAYROVI · Console d’exploitation'");
   });
 
   it('la connexion porte le verrou A.ROVI une seule fois (identité 2026-09-22)', () => {
     expect(login).toContain('/media/logo-ayrovi-lockup-white-violet.svg');
     expect(login).toContain('/media/logo-ayrovi-lockup-black-violet.svg');
     // Le nom n'est plus écrit une seconde fois à côté du verrou.
-    expect(login).not.toContain('<strong>AYROVI</strong>');
+    expect(login).not.toContain('<strong>ZAYROVI</strong>');
   });
 
   it('l’action forte de la connexion est bien le violet du modèle A, texte blanc', () => {

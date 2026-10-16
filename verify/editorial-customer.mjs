@@ -50,16 +50,16 @@ try{
    check(`${locale}/${width}: auth uses new glyphs`,await p.locator('.ay-auth [data-editorial-icon]').count()>0);
    await p.goBack();await p.locator('.ay-auth').waitFor({state:'hidden'});
    await p.getByRole('button',{name:locale==='ar'?'فتح القائمة':'Ouvrir le menu',exact:true}).click();
-   const menu=p.getByRole('dialog',{name:locale==='ar'?'قائمة AYROVI':'Menu AYROVI',exact:true});
+   const menu=p.getByRole('dialog',{name:locale==='ar'?'قائمة ZAYROVI':'Menu ZAYROVI',exact:true});
    await inspect('menu','[role=dialog]');
    check(`${locale}/${width}: initial menu focus is close`,await p.locator('[data-dialog-autofocus]').evaluate(e=>e===document.activeElement));
    await p.keyboard.press('Shift+Tab');await p.keyboard.press('Shift+Tab');check(`${locale}/${width}: menu traps focus at the end`,await menu.getByRole('button',{name:'AR',exact:true}).evaluate(e=>e===document.activeElement));
    await p.keyboard.press('Tab');check(`${locale}/${width}: menu wraps focus to first target`,await menu.getByRole('button',{name:/Se connecter \/ Créer un compte|تسجيل الدخول \/ إنشاء حساب/}).evaluate(e=>e===document.activeElement));
-   await menu.getByRole('button',{name:locale==='ar'?'حول AYROVI':'À propos d’AYROVI',exact:true}).click();
-   await p.getByRole('dialog',{name:locale==='ar'?'حول AYROVI':'À propos d’AYROVI',exact:true}).waitFor();
+   await menu.getByRole('button',{name:locale==='ar'?'حول ZAYROVI':'À propos de ZAYROVI',exact:true}).click();
+   await p.getByRole('dialog',{name:locale==='ar'?'حول ZAYROVI':'À propos de ZAYROVI',exact:true}).waitFor();
    check(`${locale}/${width}: About is a reachable screen`,await p.locator('#why-ayrovi-title').isVisible());
    await p.keyboard.press('Escape');await menu.waitFor();await p.keyboard.press('Escape');await menu.waitFor({state:'hidden'});
-   await p.getByRole('button',{name:locale==='ar'?'SONIM — المساعد الذكي لـ AYROVI':"SONIM — l'assistant IA d'AYROVI",exact:true}).click();
+   await p.getByRole('button',{name:locale==='ar'?'SONIM — المساعد الذكي لـ ZAYROVI':"SONIM — l'assistant IA de ZAYROVI",exact:true}).click();
    await p.locator('[data-assistant-composer]').waitFor();await inspect('sonim','[data-sonim-tone]');
    const boxes=await p.evaluate(()=>{const a=document.querySelector('.assistant-editorial-header').getBoundingClientRect(),b=document.querySelector('[data-assistant-messages]').getBoundingClientRect(),c=document.querySelector('[data-assistant-composer]').getBoundingClientRect();return {header:a.bottom,messagesTop:b.top,messagesBottom:b.bottom,composer:c.top};});
    check(`${locale}/${width}: controls do not cover conversation`,boxes.header<=boxes.messagesTop+1&&boxes.messagesBottom<=boxes.composer+1,boxes);
@@ -75,7 +75,7 @@ try{
  }
  // Dark SONIM + short viewport: actual control state, no AI request.
  const extra=await browser.newContext({viewport:{width:390,height:480},locale:'fr'});const p=await extra.newPage();p.on('pageerror',e=>errors.push(e.message));
- await p.goto(base,{waitUntil:'domcontentloaded'});await p.getByRole('button',{name:"SONIM — l'assistant IA d'AYROVI",exact:true}).click();await p.locator('[data-assistant-composer]').waitFor();
+ await p.goto(base,{waitUntil:'domcontentloaded'});await p.getByRole('button',{name:"SONIM — l'assistant IA de ZAYROVI",exact:true}).click();await p.locator('[data-assistant-composer]').waitFor();
  await p.locator('.assistant-editorial-header').getByRole('button',{name:'Menu',exact:true}).click();
  await p.getByRole('switch',{name:'Mode sombre',exact:true}).click();
  await p.keyboard.press('Escape');await p.locator('[data-sonim-tone="dark"]').waitFor();

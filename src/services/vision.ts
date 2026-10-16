@@ -117,7 +117,7 @@ export class VisualProductExtractor {
    * Même table en dur que le scraper (`EUR 4.00 … || 4.00`) et mêmes constantes
    * métier (`serviceFee = max(10, 8 %)`, `shipping = 25.00`) appliquées à un
    * prix lu par OCR. Trois conséquences, toutes fausses : un taux inventé pour
-   * toute devise absente, un total qui contredisait le calculateur AYROVI
+   * toute devise absente, un total qui contredisait le calculateur ZAYROVI
    * versionné, et une description qui publiait ce total (« … = 122.5 DT »)
    * comme un fait vérifié.
    *
@@ -162,7 +162,7 @@ export class VisualProductExtractor {
       title: title.trim(),
       titleSource: title.trim() ? 'merchant' : 'none',
       // Faits lus seulement — plus de total recalculé ici, plus de « Vérifié par
-      // AYROVI » (rien n'avait été vérifié : une capture n'est pas le marchand).
+      // ZAYROVI » (rien n'avait été vérifié : une capture n'est pas le marchand).
       description: isCartScreenshot
         ? 'Total de la commande lu sur la capture du panier.'
         : (priceText
@@ -231,7 +231,7 @@ export class VisualProductExtractor {
   private extractCartGrandTotal(text: string, _store: StoreType): { price: number; currency: string } {
     /* Devise VIDE par défaut : « EUR » était un choix par défaut jamais prouvé
        par la capture. Un montant « 129,99 » sans symbole ni code était donc
-       converti au taux EUR et publié comme un prix AYROVI. Sans preuve de
+       converti au taux EUR et publié comme un prix ZAYROVI. Sans preuve de
        devise, le prix reste lu mais aucun devis n'est possible — et le moteur
        tarifaire, lui, répond `null` (jamais un taux inventé). */
     let currency = '';

@@ -640,7 +640,7 @@
   .s-availability { display: none; }
 }
 
-/* ── Panier mobile AYROVI ──────────────────────────────────────────────────── */
+/* ── Panier mobile ZAYROVI ──────────────────────────────────────────────────── */
 @media (max-width: 767px) {
   .s-bag-page { height: 100%; min-height: 0; overflow: hidden; }
   .s-bag-page > .s-appbar { flex: none; }

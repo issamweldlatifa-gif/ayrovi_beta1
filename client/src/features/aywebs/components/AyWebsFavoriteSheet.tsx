@@ -8,7 +8,7 @@ import type { AyWebsFavoriteTarget, AyWebsFavoritesApi } from '../useAyWebsFavor
  *
  * Il monte du bas comme la feuille de variantes, montre l'article CONCERNÉ
  * (image originale entière, titre, prix) et expose UNE action explicite :
- * ajouter ou retirer. L'écriture va au compte AYROVI ; il n'y a pas de
+ * ajouter ou retirer. L'écriture va au compte ZAYROVI ; il n'y a pas de
  * « favori local » qui disparaîtrait au rechargement.
  *
  * Sans session : le tiroir le DIT et propose la connexion — aucun faux succès.
@@ -56,8 +56,8 @@ export const AyWebsFavoriteSheet: React.FC<AyWebsFavoriteSheetProps> = ({ target
             <>
               <p className="ayw-notice">
                 {tr(
-                  'Sign in to save this item to your AYROVI account. Nothing is stored on this phone.',
-                  'سجّل الدخول لحفظ هذا العنصر في حساب AYROVI. لا يُحفظ شيء على هذا الهاتف.',
+                  'Sign in to save this item to your ZAYROVI account. Nothing is stored on this phone.',
+                  'سجّل الدخول لحفظ هذا العنصر في حساب ZAYROVI. لا يُحفظ شيء على هذا الهاتف.',
                 )}
               </p>
               <button type="button" className="ayw-cta" onClick={onOpenAccount}>
@@ -81,7 +81,7 @@ export const AyWebsFavoriteSheet: React.FC<AyWebsFavoriteSheetProps> = ({ target
                 {saved ? tr('Remove from favorites', 'أزل من المفضلة') : tr('Add to favorites', 'أضف إلى المفضلة')}
               </button>
               <p className="ayw-notice">
-                {tr('Synced with your AYROVI account.', 'متزامن مع حسابك في AYROVI.')}
+                {tr('Synced with your ZAYROVI account.', 'متزامن مع حسابك في ZAYROVI.')}
               </p>
             </>
           )}

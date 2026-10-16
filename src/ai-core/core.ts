@@ -20,7 +20,7 @@ export interface AiCapabilityReadiness {
 }
 
 /**
- * AYROVI owns routing. Phase 1 intentionally keeps the production-compatible
+ * ZAYROVI owns routing. Phase 1 intentionally keeps the production-compatible
  * adapter active so contract extraction is behavior-preserving. Environment
  * variables cannot silently promote the candidate before reviewed gates.
  */

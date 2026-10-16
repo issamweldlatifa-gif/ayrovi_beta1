@@ -1,5 +1,5 @@
 /**
- * AYROVI · AYWEBs — Master Engineering Order contract (shared).
+ * ZAYROVI · AYWEBs — Master Engineering Order contract (shared).
  *
  * Ce fichier est LA seule définition des vocabulaires AYWEBs partagés entre le
  * serveur, le client et l'Admin. Aucune chaîne d'état, aucun code d'erreur et
@@ -7,9 +7,9 @@
  * l'import vient d'ici.
  *
  * Règle maître (§53 du Master Order) : l'identité SOURCE (boutique externe +
- * identifiant marchand) n'est JAMAIS remplacée par l'identité AYROVI. Les deux
+ * identifiant marchand) n'est JAMAIS remplacée par l'identité ZAYROVI. Les deux
  * vivent côte à côte sur chaque objet : `source*` = le marchand, `id`/`number`
- * = AYROVI.
+ * = ZAYROVI.
  */
 
 /* ------------------------------------------------------------------ *
@@ -533,7 +533,7 @@ export interface AyWebsResolvedProduct {
   integrationType: AyWebsIntegrationType;
   capturedAt: string;
   evidenceHash: string;
-  /** Devis AYROVI recalculé côté serveur — aucune formule de prix dans le client. */
+  /** Devis ZAYROVI recalculé côté serveur — aucune formule de prix dans le client. */
   ayroviPricing: {
     totalTnd: number;
     pricingVersion: number;

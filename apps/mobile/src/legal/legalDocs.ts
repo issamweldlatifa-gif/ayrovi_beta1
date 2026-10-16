@@ -36,7 +36,7 @@ export const LEGAL_DOCS: Record<LegalDocId, Partial<Record<'fr' | 'ar', LegalVer
   "blocks": [
     {
       "kind": "p",
-      "text": "AYROVI agit comme service d’accompagnement à l’achat. Le récapitulatif présenté avant confirmation détaille le produit, les frais, l’acompte et le solde."
+      "text": "ZAYROVI agit comme service d’accompagnement à l’achat. Le récapitulatif présenté avant confirmation détaille le produit, les frais, l’acompte et le solde."
     },
     {
       "kind": "h2",
@@ -44,7 +44,7 @@ export const LEGAL_DOCS: Record<LegalDocId, Partial<Record<'fr' | 'ar', LegalVer
     },
     {
       "kind": "p",
-      "text": "La commande est enregistrée après validation du formulaire. Lorsqu’un prix ou une disponibilité doit être vérifié manuellement, l’équipe AYROVI effectue ce contrôle avant l’achat définitif. La commande n’est confirmée qu’après réception et validation de l’acompte."
+      "text": "La commande est enregistrée après validation du formulaire. Lorsqu’un prix ou une disponibilité doit être vérifié manuellement, l’équipe ZAYROVI effectue ce contrôle avant l’achat définitif. La commande n’est confirmée qu’après réception et validation de l’acompte."
     },
     {
       "kind": "h2",
@@ -52,7 +52,7 @@ export const LEGAL_DOCS: Record<LegalDocId, Partial<Record<'fr' | 'ar', LegalVer
     },
     {
       "kind": "p",
-      "text": "Le montant et le pourcentage de l’acompte sont affichés avant confirmation. Si AYROVI ne peut pas valider ou acheter l’article demandé, l’acompte correspondant est remboursé selon le moyen convenu avec le client. Aucun numéro de carte ne doit être envoyé par message."
+      "text": "Le montant et le pourcentage de l’acompte sont affichés avant confirmation. Si ZAYROVI ne peut pas valider ou acheter l’article demandé, l’acompte correspondant est remboursé selon le moyen convenu avec le client. Aucun numéro de carte ne doit être envoyé par message."
     },
     {
       "kind": "h2",
@@ -60,7 +60,7 @@ export const LEGAL_DOCS: Record<LegalDocId, Partial<Record<'fr' | 'ar', LegalVer
     },
     {
       "kind": "p",
-      "text": "Une demande d’annulation doit être transmise au support le plus tôt possible. Avant l’achat marchand, elle peut être traitée après vérification. Après l’achat, les possibilités de retour dépendent de l’état du produit, des règles du marchand et des frais déjà engagés. AYROVI communique au client la décision et les montants applicables avant toute opération complémentaire."
+      "text": "Une demande d’annulation doit être transmise au support le plus tôt possible. Avant l’achat marchand, elle peut être traitée après vérification. Après l’achat, les possibilités de retour dépendent de l’état du produit, des règles du marchand et des frais déjà engagés. ZAYROVI communique au client la décision et les montants applicables avant toute opération complémentaire."
     },
     {
       "kind": "h2",
@@ -76,7 +76,7 @@ export const LEGAL_DOCS: Record<LegalDocId, Partial<Record<'fr' | 'ar', LegalVer
     },
     {
       "kind": "p",
-      "text": "Consultez la politique de confidentialité. Pour une commande, utilisez l’espace client ou les canaux de contact officiels affichés par AYROVI."
+      "text": "Consultez la politique de confidentialité. Pour une commande, utilisez l’espace client ou les canaux de contact officiels affichés par ZAYROVI."
     }
   ]
 },
@@ -85,7 +85,7 @@ export const LEGAL_DOCS: Record<LegalDocId, Partial<Record<'fr' | 'ar', LegalVer
     "blocks": [
     {
       "kind": "p",
-      "text": "تعمل AYROVI كخدمة مرافقة للشراء. يعرض ملخص الطلب المنتج والمصاريف والعربون والمبلغ المتبقي قبل التأكيد."
+      "text": "تعمل ZAYROVI كخدمة مرافقة للشراء. يعرض ملخص الطلب المنتج والمصاريف والعربون والمبلغ المتبقي قبل التأكيد."
     },
     {
       "kind": "h2",
@@ -93,7 +93,7 @@ export const LEGAL_DOCS: Record<LegalDocId, Partial<Record<'fr' | 'ar', LegalVer
     },
     {
       "kind": "p",
-      "text": "يُسجل الطلب بعد اعتماد النموذج. عندما يحتاج السعر أو التوفر إلى مراجعة يدوية، يتحقق فريق AYROVI قبل الشراء النهائي. لا يصبح الطلب مؤكدًا إلا بعد استلام العربون والتحقق منه."
+      "text": "يُسجل الطلب بعد اعتماد النموذج. عندما يحتاج السعر أو التوفر إلى مراجعة يدوية، يتحقق فريق ZAYROVI قبل الشراء النهائي. لا يصبح الطلب مؤكدًا إلا بعد استلام العربون والتحقق منه."
     },
     {
       "kind": "h2",
@@ -101,7 +101,7 @@ export const LEGAL_DOCS: Record<LegalDocId, Partial<Record<'fr' | 'ar', LegalVer
     },
     {
       "kind": "p",
-      "text": "تظهر قيمة العربون ونسبته قبل التأكيد. إذا تعذر على AYROVI التحقق من المنتج أو شراؤه، يُرجع العربون المتعلق به بالطريقة المتفق عليها مع العميل. لا ترسل رقم بطاقتك البنكية عبر الرسائل."
+      "text": "تظهر قيمة العربون ونسبته قبل التأكيد. إذا تعذر على ZAYROVI التحقق من المنتج أو شراؤه، يُرجع العربون المتعلق به بالطريقة المتفق عليها مع العميل. لا ترسل رقم بطاقتك البنكية عبر الرسائل."
     },
     {
       "kind": "h2",
@@ -109,7 +109,7 @@ export const LEGAL_DOCS: Record<LegalDocId, Partial<Record<'fr' | 'ar', LegalVer
     },
     {
       "kind": "p",
-      "text": "يجب إرسال طلب الإلغاء إلى الدعم في أقرب وقت. قبل شراء المنتج من المتجر يمكن النظر في الإلغاء بعد التحقق. بعد الشراء تعتمد إمكانية الإرجاع على حالة المنتج وشروط المتجر والمصاريف التي تم دفعها، ويبلّغ فريق AYROVI العميل بالقرار والتكاليف قبل أي إجراء إضافي."
+      "text": "يجب إرسال طلب الإلغاء إلى الدعم في أقرب وقت. قبل شراء المنتج من المتجر يمكن النظر في الإلغاء بعد التحقق. بعد الشراء تعتمد إمكانية الإرجاع على حالة المنتج وشروط المتجر والمصاريف التي تم دفعها، ويبلّغ فريق ZAYROVI العميل بالقرار والتكاليف قبل أي إجراء إضافي."
     },
     {
       "kind": "h2",
@@ -125,7 +125,7 @@ export const LEGAL_DOCS: Record<LegalDocId, Partial<Record<'fr' | 'ar', LegalVer
     },
     {
       "kind": "p",
-      "text": "راجع سياسة الخصوصية، واستعمل حساب العميل أو قنوات AYROVI الرسمية لأي استفسار عن الطلب."
+      "text": "راجع سياسة الخصوصية، واستعمل حساب العميل أو قنوات ZAYROVI الرسمية لأي استفسار عن الطلب."
     }
   ]
 },
@@ -137,7 +137,7 @@ export const LEGAL_DOCS: Record<LegalDocId, Partial<Record<'fr' | 'ar', LegalVer
   "blocks": [
     {
       "kind": "notice",
-      "text": "Résumé : AYROVI collecte uniquement les données nécessaires à la connexion, au panier, aux commandes, à la livraison, au support et à la sécurité. Le mot de passe Google ou Facebook n’est jamais communiqué à AYROVI."
+      "text": "Résumé : ZAYROVI collecte uniquement les données nécessaires à la connexion, au panier, aux commandes, à la livraison, au support et à la sécurité. Le mot de passe Google ou Facebook n’est jamais communiqué à ZAYROVI."
     },
     {
       "kind": "h2",
@@ -173,7 +173,7 @@ export const LEGAL_DOCS: Record<LegalDocId, Partial<Record<'fr' | 'ar', LegalVer
     },
     {
       "kind": "p",
-      "text": "AYROVI utilise un flux OAuth côté serveur. Google ou Meta peut transmettre un identifiant de compte, un nom, une adresse e-mail et une photo selon les autorisations accordées. AYROVI ne stocke pas le mot de passe du fournisseur et ne conserve pas le jeton Facebook après la connexion. L’adresse e-mail Facebook, lorsqu’elle est disponible, n’est pas utilisée seule pour fusionner automatiquement deux comptes."
+      "text": "ZAYROVI utilise un flux OAuth côté serveur. Google ou Meta peut transmettre un identifiant de compte, un nom, une adresse e-mail et une photo selon les autorisations accordées. ZAYROVI ne stocke pas le mot de passe du fournisseur et ne conserve pas le jeton Facebook après la connexion. L’adresse e-mail Facebook, lorsqu’elle est disponible, n’est pas utilisée seule pour fusionner automatiquement deux comptes."
     },
     {
       "kind": "h2",
@@ -197,7 +197,7 @@ export const LEGAL_DOCS: Record<LegalDocId, Partial<Record<'fr' | 'ar', LegalVer
     },
     {
       "kind": "p",
-      "text": "AYROVI utilise HTTPS, des cookies HttpOnly, une protection CSRF, des limites de débit, des contrôles d’accès, une séparation des sessions Admin/client et une base de données côté serveur. Aucun système n’étant infaillible, tout incident confirmé doit être traité et documenté."
+      "text": "ZAYROVI utilise HTTPS, des cookies HttpOnly, une protection CSRF, des limites de débit, des contrôles d’accès, une séparation des sessions Admin/client et une base de données côté serveur. Aucun système n’étant infaillible, tout incident confirmé doit être traité et documenté."
     },
     {
       "kind": "h2",

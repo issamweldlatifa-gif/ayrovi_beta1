@@ -1,5 +1,5 @@
 /**
- * AYROVI — mesure de la couverture de la couleur de marque (violet électrique #571EF6).
+ * ZAYROVI — mesure de la couverture de la couleur de marque (violet électrique #571EF6).
  *
  * Le cahier des charges fixe une règle chiffrée : aucun écran mesuré ne dépasse le plafond de
  * sécurité fixé par l'identité (identity.json → accentAreaLimit) — un garde-fou contre les
@@ -137,7 +137,7 @@ for (const [w, h, tag] of [[390, 844, 'mobile'], [1440, 900, 'desktop']]) {
   report.push(await coverage(file, `accueil ${tag} (page entière)`));
 
   // surfaces nommées par le cahier des charges.
-  // P4/T2 : `.lens2` et la carte « Découvrez AYROVI » ont été retirés de la page
+  // P4/T2 : `.lens2` et la carte « Découvrez ZAYROVI » ont été retirés de la page
   // d'accueil ; on mesure donc le Hero, le Trust Bar et l'écran LENS ouvert.
   for (const [selector, name] of [
     ['.interface-hero, [data-public-section="hero"]', 'section Hero'],

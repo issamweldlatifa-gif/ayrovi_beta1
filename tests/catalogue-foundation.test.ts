@@ -1,5 +1,5 @@
 /**
- * AYROVI Catalogue (P2.1) — acceptance tests.
+ * ZAYROVI Catalogue (P2.1) — acceptance tests.
  *
  * Covers what this phase promised, in the order the spec lists it: the canonical product
  * entity (created on the EXISTING `products` table, never a second one), variants with a
@@ -57,7 +57,7 @@ describe('catalogue foundation (P2.1)', () => {
 
   beforeAll(async () => {
     superAgent = request.agent(app);
-    const login = await superAgent.set('User-Agent', 'AYROVI-CatalogueTest/1.0 (vitest)')
+    const login = await superAgent.set('User-Agent', 'ZAYROVI-CatalogueTest/1.0 (vitest)')
       .post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
     expect(login.status).toBe(200);
     superCsrf = login.body.data.csrfToken;
@@ -209,7 +209,7 @@ describe('catalogue foundation (P2.1)', () => {
       const fields = db.all<{ field_name: string }>(`SELECT field_name FROM erp_audit_changes WHERE audit_id=?`, auditRow.id).map((row) => row.field_name);
       expect(fields).toContain('description');
       expect(fields).toContain('status');
-      expect(auditRow.user_name).toBe('AYROVI Admin');
+      expect(auditRow.user_name).toBe('ZAYROVI Admin');
       expect(typeof auditRow.employee_code).toBe('string');
 
       // A plain edit (no status movement) must stay an UPDATE, not masquerade as a status event.

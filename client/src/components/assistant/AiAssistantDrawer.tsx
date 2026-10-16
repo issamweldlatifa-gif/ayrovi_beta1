@@ -414,7 +414,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
 
     const isRtl = direction === 'rtl';
     const greeting = isRtl
-      ? (customerFirstName ? `مرحباً ${customerFirstName}، كيف يمكنني مساعدتك اليوم؟` : 'مرحباً بك في AYROVI، كيف يمكنني مساعدتك اليوم؟')
+      ? (customerFirstName ? `مرحباً ${customerFirstName}، كيف يمكنني مساعدتك اليوم؟` : 'مرحباً بك في ZAYROVI، كيف يمكنني مساعدتك اليوم؟')
       : (customerFirstName ? `Bonjour ${customerFirstName} ! Comment puis-je vous aider aujourd’hui ?` : 'Bonjour ! Comment puis-je vous aider aujourd’hui ?');
 
     const connected = await controller.start(greeting);
@@ -752,7 +752,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     } catch (error: any) {
       if (!current()) return;
       if (!refreshRequired) openAssistantProduct({ messageId, product: candidateToProduct(candidate), priceVerified: false });
-      showToast(refreshRequired ? tr('Actualisation impossible. Le produit conservé n’a pas été remplacé. Réessayez.', 'تعذّر التحديث. لم يُستبدل المنتج المحفوظ. أعد المحاولة.') : error?.message || tr('Le lien sera vérifié manuellement par AYROVI.', 'ستتحقق AYROVI من الرابط يدويًا.'));
+      showToast(refreshRequired ? tr('Actualisation impossible. Le produit conservé n’a pas été remplacé. Réessayez.', 'تعذّر التحديث. لم يُستبدل المنتج المحفوظ. أعد المحاولة.') : error?.message || tr('Le lien sera vérifié manuellement par ZAYROVI.', 'ستتحقق ZAYROVI من الرابط يدويًا.'));
     } finally {
       if (productRequestRef.current === controller) { productRequestRef.current = null; setProductBusyId(''); }
     }

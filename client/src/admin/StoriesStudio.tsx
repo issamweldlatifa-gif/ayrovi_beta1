@@ -8,7 +8,7 @@ import { normalizeMediaLink } from '../../../shared/mediaLinks';
 
 const KNOWN_CATEGORIES = ['ARRIVAGE', 'NEW', 'STYLE', 'INFO', 'PROMO'];
 const CHANNELS = [
-  ['ARRIVAGE', 'Ayrovi Official'], ['NEW', 'Nouveautés'], ['STYLE', 'Style'], ['INFO', 'Actus'], ['PROMO', 'Promos'],
+  ['ARRIVAGE', 'Zayrovi Official'], ['NEW', 'Nouveautés'], ['STYLE', 'Style'], ['INFO', 'Actus'], ['PROMO', 'Promos'],
 ] as const;
 
 const emptyForm = {

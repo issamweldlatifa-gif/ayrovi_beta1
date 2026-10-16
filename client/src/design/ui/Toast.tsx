@@ -2,7 +2,7 @@ import React from 'react';
 import { twMerge } from 'tailwind-merge';
 
 /**
- * AYROVI DS v1.0 — Toast.
+ * ZAYROVI DS v1.0 — Toast.
  * Retour visuel court : succès (vert), erreur (rouge), info (neutre).
  * Calque 60 (au-dessus de tout). Auto-fermeture gérée par l'appelant.
  */
