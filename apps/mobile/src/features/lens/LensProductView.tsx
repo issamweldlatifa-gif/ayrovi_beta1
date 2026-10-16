@@ -29,6 +29,7 @@ import type { LensCandidate, LensProductFact } from '@/api/lens';
 import { lensGallery, lensMediaChain } from './lensMedia';
 import { LENS_COLORS } from './lensPalette';
 import { LensPriceBlock } from './LensPriceBlock';
+import { LensGalleryViewer } from './LensGalleryViewer';
 import { LensSizeGuide } from './LensSizeGuide';
 import { earliestCartDeadline, formatCartCountdown, remainingMs, serverClockOffset } from './lensCartStatus';
 import {
@@ -236,6 +237,9 @@ function ColorSelector({
   );
 }
 
+/** Nombre de doigts posés — un événement sans tactile ne doit jamais bloquer. */
+const touchesOf = (event: { nativeEvent?: { touches?: readonly unknown[] } }): number => event?.nativeEvent?.touches?.length ?? 0;
+
 function touchDistance(touches: readonly { pageX: number; pageY: number }[]): number {
   if (touches.length < 2) return 0;
   return Math.hypot(touches[0].pageX - touches[1].pageX, touches[0].pageY - touches[1].pageY);
@@ -250,6 +254,8 @@ function ZoomableGalleryImage({
   active,
   blurRadius = 0,
   onZoomChange,
+  onOpen,
+  onSettled,
 }: {
   uri: string;
   fallbackUris: string[];
@@ -260,6 +266,10 @@ function ZoomableGalleryImage({
   /** Flou appliqué à la photo pendant que la fiche monte dessus (0 = nette). */
   blurRadius?: number;
   onZoomChange: (zoomed: boolean) => void;
+  /** Une pression simple ouvre la visionneuse plein écran (référence Zalando). */
+  onOpen?: () => void;
+  /** Photo chargée (ou en panne) : l'écran d'attente n'a plus lieu d'être. */
+  onSettled?: () => void;
 }) {
   const t = useT();
   const theme = useTheme();
@@ -271,6 +281,8 @@ function ZoomableGalleryImage({
   const panStart = useRef({ x: 0, y: 0 });
   const beganWithPinch = useRef(false);
   const lastTapAt = useRef(0);
+  const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (openTimer.current) clearTimeout(openTimer.current); }, []);
   const reportedZoom = useRef(false);
 
   const reportZoom = useCallback((zoomed: boolean) => {
@@ -328,14 +340,16 @@ function ZoomableGalleryImage({
   }, [active, scale, translation]);
 
   const panResponder = useMemo(() => PanResponder.create({
-    onStartShouldSetPanResponder: (event) => event.nativeEvent.touches.length >= 2,
-    onStartShouldSetPanResponderCapture: (event) => event.nativeEvent.touches.length >= 2,
+    // Un seul doigt n'active PAS le pincement : la photo reste offerte à la
+    // pression (plein écran) et au défilement de la galerie.
+    onStartShouldSetPanResponder: (event) => touchesOf(event) >= 2,
+    onStartShouldSetPanResponderCapture: (event) => touchesOf(event) >= 2,
     onMoveShouldSetPanResponder: (event, gesture) => (
-      event.nativeEvent.touches.length >= 2
+      touchesOf(event) >= 2
       || (scaleValue.current > 1.01 && (Math.abs(gesture.dx) > 2 || Math.abs(gesture.dy) > 2))
     ),
     onMoveShouldSetPanResponderCapture: (event, gesture) => (
-      event.nativeEvent.touches.length >= 2
+      touchesOf(event) >= 2
       || (scaleValue.current > 1.01 && (Math.abs(gesture.dx) > 2 || Math.abs(gesture.dy) > 2))
     ),
     onPanResponderGrant: (event) => {
@@ -382,12 +396,20 @@ function ZoomableGalleryImage({
     const now = Date.now();
     if (now - lastTapAt.current <= 300) {
       lastTapAt.current = 0;
+      if (openTimer.current) { clearTimeout(openTimer.current); openTimer.current = null; }
       if (scaleValue.current > 1.01) resetZoom();
       else animateTo(2, 0, 0);
       return;
     }
     lastTapAt.current = now;
-  }, [animateTo, resetZoom]);
+    // Une pression simple ouvre la PLEIN ÉCRAN ; on laisse juste la fenêtre du
+    // double geste (zoom sur place) avant de basculer.
+    if (!onOpen) return;
+    openTimer.current = setTimeout(() => {
+      openTimer.current = null;
+      if (scaleValue.current <= 1.01) onOpen();
+    }, 320);
+  }, [animateTo, onOpen, resetZoom]);
 
   return (
     <Pressable
@@ -415,6 +437,7 @@ function ZoomableGalleryImage({
           fallbackUris={fallbackUris}
           contentFit="contain"
           blurRadius={blurRadius}
+          onSettled={onSettled}
           style={styles.fullscreenImage}
           testID={active ? 'lens-product-image-media' : undefined}
           decorative
@@ -569,6 +592,8 @@ export function LensProductView({
   const [addedClockOffset, setAddedClockOffset] = useState(0);
   const [confirmationOpen, setConfirmationOpen] = useState(false);
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
+  const [heroReady, setHeroReady] = useState(false);
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [sizeOpenRequest, setSizeOpenRequest] = useState(0);
   const [colorAttention, setColorAttention] = useState(false);
   const [zoomed, setZoomed] = useState(false);
@@ -694,6 +719,8 @@ export function LensProductView({
 
   useEffect(() => {
     setSizeGuideOpen(false);
+    setHeroReady(false);
+    setViewerIndex(null);
     setSelectedSize(candidate.sizes.length === 1 ? candidate.sizes[0] : '');
     setSelectedColor(candidate.colors.length === 1 ? candidate.colors[0] : '');
     setPage(0);
@@ -973,10 +1000,19 @@ export function LensProductView({
                 active={index === page}
                 blurRadius={hazeBlur}
                 onZoomChange={index === page ? setZoomed : () => undefined}
+                onOpen={index === page ? () => setViewerIndex(index) : undefined}
+                onSettled={index === 0 ? () => setHeroReady(true) : undefined}
               />
             ))}
           </ScrollView>
           <View style={styles.heroFade} pointerEvents="none" />
+          {/* Attente HONNÊTE (17/10/2026) : le cercle en pointillés occupe le cadre
+              de la photo jusqu'à ce qu'elle existe — jamais un rectangle vide. */}
+          {heroReady ? null : (
+            <View style={[styles.heroWaiting, { backgroundColor: theme.colors.surface }]} testID="lens-hero-waiting">
+              <LoadingSpinner size="md" testID="lens-hero-spinner" />
+            </View>
+          )}
           {/* Brouillard : la photo perd ses détails sous la fiche qui l'avale. */}
           <View
             pointerEvents="none"
@@ -1152,6 +1188,13 @@ export function LensProductView({
         />
       </View>
 
+      <LensGalleryViewer
+        visible={viewerIndex !== null}
+        media={gallery}
+        startIndex={viewerIndex ?? 0}
+        onClose={() => setViewerIndex(null)}
+      />
+
       <LensSizeGuide
         visible={sizeGuideOpen}
         candidate={candidate}
@@ -1240,6 +1283,7 @@ const styles = StyleSheet.create({
   gallery: { position: 'relative', overflow: 'hidden' },
   heroFade: { position: 'absolute', left: 0, right: 0, top: 0, height: 110, backgroundColor: veil(0.06) },
   heroHaze: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: frost(0.9) },
+  heroWaiting: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   // Cœur NU posé sur la photo (17/10/2026) : plus de pastille blanche — l'ombre
   // de glyphe suffit à le détacher du clair comme du sombre.
   favorite: {

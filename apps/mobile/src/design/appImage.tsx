@@ -37,6 +37,12 @@ export interface AppImageProps {
   /** Image purement décorative : cachée des lecteurs d'écran. */
   decorative?: boolean;
   /**
+   * Appelé UNE fois que le sort de l'image est scellé — chargée ou en panne.
+   * Sert à retirer l'écran d'attente posé sur la fiche produit : on n'attend
+   * jamais « au cas où », on attend le résultat réel du chargement.
+   */
+  onSettled?: () => void;
+  /**
    * Flou (en points) appliqué par `expo-image` — sert l'effet « photo qui se
    * voile » quand la fiche produit monte dessus (référence Zalando, 17/10/2026).
    * 0 = nette. La valeur est choisie par l'appelant, jamais devinée ici.
@@ -47,7 +53,7 @@ export interface AppImageProps {
 
 export function AppImage({
   uri, fallbackUri, fallbackUris = [], localSource, contentFit = 'cover', style,
-  accessibilityLabel, decorative = false, blurRadius = 0, testID,
+  accessibilityLabel, decorative = false, blurRadius = 0, onSettled, testID,
 }: AppImageProps) {
   const theme = useTheme();
   const t = useT();
@@ -72,6 +78,7 @@ export function AppImage({
       return;
     }
     setFailed(true);
+    onSettled?.();
   };
 
   // Pas de source ou chargement cassé : cadre de secours, jamais un trou muet.
@@ -103,6 +110,7 @@ export function AppImage({
       transition={theme.duration.fast}
       blurRadius={blurRadius}
       onError={onLoadError}
+      onLoad={() => onSettled?.()}
       accessibilityElementsHidden={decorative}
       accessibilityLabel={decorative ? undefined : accessibilityLabel}
       style={[{ backgroundColor: theme.colors.line }, style]}

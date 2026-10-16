@@ -173,6 +173,8 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
       'src/features/lens/LensSelectionView.tsx', // Z Lens : photo, voile, cadre de sélection et points posés les uns sur les autres
       'src/features/lens/LensLiveOverlay.tsx', // Z Lens Live : cadre et points posés sur l'aperçu caméra plein écran
       'src/features/lens/LensMenu.tsx', // menu ⋮ flottant au-dessus de la caméra, sous son bouton
+      'src/features/lens/LensGalleryViewer.tsx', // visionneuse plein écran : photo, voile noir, chrome et compteur au-dessus
+      'src/features/lens/LensSizeGuide.tsx', // guide des tailles : feuille modale au-dessus de la fiche
       'src/features/lens/LensSearchRing.tsx', // Z Lens : couronne de points et balayage posés sur le cadre, au-dessus de la photo
     ]);
     const offenders: string[] = [];

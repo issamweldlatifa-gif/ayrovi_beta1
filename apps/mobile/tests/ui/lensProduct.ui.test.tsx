@@ -240,6 +240,31 @@ describe('fiche produit Lens native', () => {
     await waitFor(() => expect(screen.queryByTestId('lens-size-guide-sheet')).toBeNull());
   });
 
+  it('montre le cercle d’attente tant que la photo n’existe pas, puis s’efface', async () => {
+    render(wrap(<LensProductView candidate={candidate()} onBack={() => {}} />));
+    expect(await screen.findByTestId('lens-product-view')).toBeOnTheScreen();
+    // Pas de rectangle muet : l'attente est le cercle en pointillés ZAYROVI.
+    expect(screen.getByTestId('lens-hero-waiting')).toBeOnTheScreen();
+
+    const images = screen.UNSAFE_getAllByType(require('expo-image').Image);
+    await act(async () => { images[0].props.onLoad?.(); });
+    await waitFor(() => expect(screen.queryByTestId('lens-hero-waiting')).toBeNull());
+  });
+
+  it('ouvre la photo en plein écran sur une pression, et la referme au bouton', async () => {
+    render(wrap(<LensProductView candidate={candidate({ images: ['https://images.example/third.jpg'] })} onBack={() => {}} />));
+    expect(await screen.findByTestId('lens-product-view')).toBeOnTheScreen();
+    expect(screen.queryByTestId('lens-gallery-viewer')).toBeNull();
+
+    fireEvent.press(screen.getByTestId('lens-gallery-zoom-image'));
+    // La pression simple laisse la fenêtre du double geste avant d'ouvrir.
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 380)); });
+    expect(await screen.findByTestId('lens-gallery-viewer')).toBeOnTheScreen();
+
+    fireEvent.press(screen.getByTestId('lens-gallery-viewer-close'));
+    await waitFor(() => expect(screen.queryByTestId('lens-gallery-viewer')).toBeNull());
+  });
+
   it('change la galerie et le prix avec les vrais choix image/variante', async () => {
     const product = candidate({
       colors: ['Rouge', 'Bleu'],
