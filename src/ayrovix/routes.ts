@@ -527,11 +527,27 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       if (error instanceof InvalidImageError || error?.code === 'INVALID_IMAGE') {
         return res.status(415).json({ success: false, code: 'INVALID_IMAGE', error: error.message });
       }
+      // Diagnostic COURT et sûr (codes par tentative + modèle, jamais le corps du
+      // fournisseur) : la sonde Live le lit sans accès aux journaux Render.
+      const reason = typeof error?.reason === 'string' ? error.reason.slice(0, 120) : undefined;
+      const model = typeof error?.model === 'string' ? error.model.slice(0, 80) : undefined;
       if (error instanceof AyrovixUnavailableError || error?.code === 'AYROVIX_UNAVAILABLE') {
-        return res.status(503).json({ success: false, code: 'AYROVIX_UNAVAILABLE', error: "La détection de produits est momentanément indisponible." });
+        return res.status(503).json({
+          success: false,
+          code: 'AYROVIX_UNAVAILABLE',
+          error: "La détection de produits est momentanément indisponible.",
+          ...(reason ? { reason } : {}),
+        });
       }
-      console.warn('[AYROVIX detect]', error?.message || 'unknown');
-      return res.status(422).json({ success: false, code: 'DETECTION_FAILED', error: 'Aucun produit n’a pu être repéré sur cette image.' });
+      // Avec `reason`, la détection a déjà journalisé l'échec (codes + modèle).
+      if (!reason) console.warn('[AYROVIX detect]', error?.message || 'unknown');
+      return res.status(422).json({
+        success: false,
+        code: 'DETECTION_FAILED',
+        error: 'Aucun produit n’a pu être repéré sur cette image.',
+        ...(reason ? { reason } : {}),
+        ...(model ? { model } : {}),
+      });
     }
   });
 

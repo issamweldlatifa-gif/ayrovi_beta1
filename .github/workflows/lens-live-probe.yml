@@ -28,6 +28,9 @@ on:
     branches: ['arena/*-ayrovi-beta1']
     paths:
       - '.github/workflows/lens-live-probe.yml'
+      # Tout changement du chemin de détection est vérifié sur le serveur publié.
+      - 'src/ayrovix/**'
+      - 'src/ai-core/**'
 
 permissions:
   contents: read
@@ -46,6 +49,27 @@ jobs:
       - uses: actions/checkout@v4
         with:
           sparse-checkout: client/public/media
+
+      # Un push qui déploie (sans « [skip render] ») : mesurer le NOUVEAU code,
+      # pas l'ancien encore en ligne pendant le déploiement Render.
+      - name: Attendre que Render serve ce commit
+        if: ${{ github.event_name == 'push' && !contains(github.event.head_commit.message, '[skip render]') }}
+        timeout-minutes: 12
+        run: |
+          set +e
+          EXPECTED=${GITHUB_SHA:0:12}
+          for ATTEMPT in $(seq 1 44); do
+            READY=$(curl -s --max-time 30 "$BASE/api/ready" 2>/dev/null)
+            SERVED=$(printf '%s' "$READY" | sed -n 's/.*"commit": *"\([a-f0-9]\{7,12\}\)".*/\1/p' | head -1)
+            if [ -n "$SERVED" ] && [ "$SERVED" = "${EXPECTED:0:${#SERVED}}" ]; then
+              echo "Render sert $SERVED (tentative $ATTEMPT)."
+              exit 0
+            fi
+            echo "Tentative $ATTEMPT/44 : serveur=${SERVED:-muet}, attendu=$EXPECTED"
+            sleep 15
+          done
+          echo "::warning title=Deploiement non termine::Render ne sert pas encore $EXPECTED ; la mesure ci-dessous porte sur le commit réellement servi."
+          exit 0
 
       - name: POST /api/ayrovix/detect avec une vraie photo
         run: |
@@ -85,17 +109,18 @@ jobs:
           rows=[r for r in (data.get("products") or []) if isinstance(r, dict)]
           names="|".join("_".join(str(r.get("name") or "?").split())[:40] for r in rows[:8]) or "none"
           boxes="|".join(",".join("%.2f" % float(v) for v in (r.get("box") or [])[:4]) for r in rows[:8]) or "none"
-          print("%d %s %s %s" % (len(rows), (d.get("code") if isinstance(d, dict) else None) or "none", names, boxes))')
-          set -- ${FACTS:-0 unreadable none none}
-          COUNT=${1:-0}; ERROR=${2:-unreadable}; NAMES=${3:-none}; BOXES=${4:-none}
+          get=lambda k: (str(d.get(k) or "none") if isinstance(d, dict) else "none").replace(" ", "_")[:120]
+          print("%d %s %s %s %s %s" % (len(rows), get("code"), names, boxes, get("reason"), get("model")))')
+          set -- ${FACTS:-0 unreadable none none none none}
+          COUNT=${1:-0}; ERROR=${2:-unreadable}; NAMES=${3:-none}; BOXES=${4:-none}; REASON=${5:-none}; MODEL=${6:-none}
 
           printf '## Détection Live sur `%s`\n\n' "$BASE" >> "$S"
-          printf -- '- Commit servi : `%s`\n- Fournisseur IA : `%s`\n- `POST /api/ayrovix/detect` : **%s** en %s ms, %s produit(s), code `%s`\n- Produits : `%s`\n- Boîtes [x,y,w,h] : `%s`\n' \
-            "${COMMIT:-?}" "$AI" "$CODE" "$MS" "$COUNT" "$ERROR" "$NAMES" "$BOXES" >> "$S"
+          printf -- '- Commit servi : `%s`\n- Fournisseur IA : `%s`\n- `POST /api/ayrovix/detect` : **%s** en %s ms, %s produit(s), code `%s`\n- Diagnostic : `%s` (modèle `%s`)\n- Produits : `%s`\n- Boîtes [x,y,w,h] : `%s`\n' \
+            "${COMMIT:-?}" "$AI" "$CODE" "$MS" "$COUNT" "$ERROR" "$REASON" "$MODEL" "$NAMES" "$BOXES" >> "$S"
 
           if [ "$CODE" = "200" ] && [ "$COUNT" -gt 0 ] 2>/dev/null; then
             echo "::notice title=Detection Live OK::code=$CODE ms=$MS products=$COUNT names=$NAMES boxes=$BOXES commit=${COMMIT:-?} $AI"
           else
-            echo "::warning title=Detection Live en panne::code=$CODE ms=$MS products=$COUNT error=$ERROR commit=${COMMIT:-?} $AI"
+            echo "::warning title=Detection Live en panne::code=$CODE ms=$MS products=$COUNT error=$ERROR reason=$REASON model=$MODEL commit=${COMMIT:-?} $AI"
           fi
           exit 0

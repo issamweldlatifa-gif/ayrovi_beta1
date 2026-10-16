@@ -32,6 +32,34 @@ function restoreEnv(name: string, value: string | undefined) {
   else process.env[name] = value;
 }
 
+/** Erreur HTTP au format de l'API Anthropic. */
+function anthropicError(status: number, message: string): Response {
+  return new Response(JSON.stringify({ type: 'error', error: { type: 'invalid_request_error', message } }), {
+    status,
+    headers: { 'content-type': 'application/json' },
+  });
+}
+
+/** Réponse en flux (SSE) d'Anthropic contenant `text`. */
+function anthropicStream(text: string, model = 'claude-haiku-4-5-20251001'): Response {
+  const events = [
+    { type: 'message_start', message: { model, usage: { input_tokens: 12 } } },
+    { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } },
+    { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text } },
+    { type: 'content_block_stop', index: 0 },
+    { type: 'message_delta', usage: { output_tokens: 40 } },
+    { type: 'message_stop' },
+  ];
+  const body = events.map((event) => `event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`).join('');
+  return new Response(body, { status: 200, headers: { 'content-type': 'text/event-stream' } });
+}
+
+/** Corps JSON envoyé à Anthropic par l'appel n° `index`. */
+function sentBody(mock: ReturnType<typeof vi.fn>, index: number): Record<string, any> {
+  const init = mock.mock.calls[index]?.[1] as RequestInit | undefined;
+  return JSON.parse(String(init?.body || '{}'));
+}
+
 describe('Z Lens — détection des produits (/api/ayrovix/detect)', () => {
   afterEach(() => { vi.unstubAllGlobals(); });
 
@@ -94,6 +122,78 @@ describe('Z Lens — détection des produits (/api/ayrovix/detect)', () => {
     }
   });
 
+  test('compte IA sans crédit → 422 avec un diagnostic court, sans relance inutile', async () => {
+    const previous = process.env.ANTHROPIC_API_KEY;
+    process.env.ANTHROPIC_API_KEY = 'test-anthropic-detect';
+    const fetchMock = vi.fn(async () => anthropicError(400, 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'));
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      const response = await request(app)
+        .post('/api/ayrovix/detect')
+        .attach('image', PNG_1PX, { filename: 'tenue.png', contentType: 'image/png' });
+      expect(response.status).toBe(422);
+      expect(response.body.code).toBe('DETECTION_FAILED');
+      expect(response.body.reason).toBe('structured:billing');
+      expect(typeof response.body.model).toBe('string');
+      // Le corps brut du fournisseur ne sort jamais.
+      expect(JSON.stringify(response.body)).not.toMatch(/credit balance|Plans & Billing/);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    } finally {
+      restoreEnv('ANTHROPIC_API_KEY', previous);
+    }
+  });
+
+  test('modèle configuré introuvable → relance JSON avec le modèle de secours → produits', async () => {
+    const previousKey = process.env.ANTHROPIC_API_KEY;
+    const previousModel = process.env.ANTHROPIC_MODEL;
+    process.env.ANTHROPIC_API_KEY = 'test-anthropic-detect';
+    process.env.ANTHROPIC_MODEL = 'claude-retired-test-model';
+    const fetchMock = vi.fn(async (_url: string, init: RequestInit = {}) => {
+      const body = JSON.parse(String(init.body || '{}'));
+      if (body.model === 'claude-retired-test-model') return anthropicError(404, 'model: claude-retired-test-model');
+      return anthropicStream('Voici : {"products":[{"name":"Baskets blanches","category":"shoes","box":[0.3,0.6,0.4,0.2]}]} (fin)');
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      const response = await request(app)
+        .post('/api/ayrovix/detect')
+        .attach('image', PNG_1PX, { filename: 'tenue.png', contentType: 'image/png' });
+      expect(response.status).toBe(200);
+      expect(response.body.data.products).toEqual([
+        { name: 'Baskets blanches', category: 'shoes', box: [0.3, 0.6, 0.4, 0.2] },
+      ]);
+      // 1) structuré sur le modèle configuré (404) ; 2) relance sans schéma, en flux, modèle configuré (404) ; 3) modèle de secours.
+      expect(sentBody(fetchMock, 0).output_config).toBeDefined();
+      expect(sentBody(fetchMock, 1).output_config).toBeUndefined();
+      expect(sentBody(fetchMock, 1).stream).toBe(true);
+      expect(sentBody(fetchMock, 2).model).toBe('claude-haiku-4-5-20251001');
+    } finally {
+      restoreEnv('ANTHROPIC_API_KEY', previousKey);
+      restoreEnv('ANTHROPIC_MODEL', previousModel);
+    }
+  });
+
+  test('deux réponses illisibles → 422 avec le code de chaque tentative', async () => {
+    const previous = process.env.ANTHROPIC_API_KEY;
+    process.env.ANTHROPIC_API_KEY = 'test-anthropic-detect';
+    const fetchMock = vi.fn(async (_url: string, init: RequestInit = {}) => {
+      const body = JSON.parse(String(init.body || '{}'));
+      if (body.stream) return anthropicStream('Je ne vois aucun produit.');
+      return new Response(JSON.stringify({ content: [{ type: 'text', text: '' }] }), { status: 200 });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      const response = await request(app)
+        .post('/api/ayrovix/detect')
+        .attach('image', PNG_1PX, { filename: 'tenue.png', contentType: 'image/png' });
+      expect(response.status).toBe(422);
+      expect(response.body.reason).toBe('structured:empty_output;json:parse_no_json');
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    } finally {
+      restoreEnv('ANTHROPIC_API_KEY', previous);
+    }
+  });
+
   test('a son propre compteur : Live ne consomme pas le quota des recherches', () => {
     const server = fs.readFileSync(path.resolve(__dirname, '../src/server.ts'), 'utf8');
     expect(server).toContain("rateLimit('ayrovix-detect'");
@@ -135,6 +235,20 @@ describe('parseDetections', () => {
     expect(result[0]).toEqual({ name: 'T-shirt', category: 'clothing', box: [0.1, 0.1, 0.5, 0.5] });
     expect(result.map((item) => item.name)).not.toContain('Bruit');
     expect(result.map((item) => item.name)).not.toContain('T-shirt (doublon)');
+  });
+
+  test('tableau nu, texte autour (avec accolades) et réponse tronquée', () => {
+    const bare = parseDetections('[{"name":"Sac","category":"bags","box":[0.1,0.2,0.3,0.4]}]');
+    expect(bare).toEqual([{ name: 'Sac', category: 'bags', box: [0.1, 0.2, 0.3, 0.4] }]);
+
+    const chatty = parseDetections('Voici {le résultat} :\n{"products":[{"name":"Lunettes","category":"accessories","box":[0.4,0.1,0.2,0.1]}]}\nNote : {aucune marque}.');
+    expect(chatty.map((item) => item.name)).toEqual(['Lunettes']);
+
+    const cut = parseDetections('{"products":[{"name":"Sweat","category":"clothing","box":[0.1,0.1,0.6,0.3]},{"name":"Jogging","category":"clothing","box":[0.2,0.45,0.5,0.3]},{"name":"Bask');
+    expect(cut.map((item) => item.name)).toEqual(['Sweat', 'Jogging']);
+
+    expect(() => parseDetections('')).toThrow(/vide/);
+    expect(() => parseDetections('{"products":[{"name":"A",')).toThrow(/invalide/);
   });
 
   test('catégorie inconnue → other ; réponse illisible → erreur explicite', () => {

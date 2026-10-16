@@ -455,23 +455,160 @@ function detectionIou(a: [number, number, number, number], b: [number, number, n
   return union > 0 ? inter / union : 0;
 }
 
+/** Réponse du détecteur illisible : `reason` dit pourquoi (aucun texte du modèle exposé). */
+export class AyrovixDetectionParseError extends AyrovixIdentificationError {
+  constructor(message: string, readonly reason: 'empty_output' | 'parse_no_json' | 'parse_invalid_json') {
+    super(message);
+  }
+}
+
 /**
- * Lit la réponse du détecteur. Tolère les deux écarts fréquents des modèles :
- * des coordonnées en PIXELS (ramenées à 0..1 avec la taille de l'image) et des
- * coins [x1, y1, x2, y2] au lieu de [x, y, largeur, hauteur]. Écarte le bruit
+ * Échec de détection, avec un diagnostic COURT et SÛR : un code par tentative
+ * (« structured:billing;json:billing ») et le modèle demandé. Jamais le corps
+ * brut du fournisseur ni un secret — mais assez pour savoir, sans accès aux
+ * journaux Render, si c'est le compte IA, le modèle, le schéma ou la lecture.
+ */
+export class AyrovixDetectionError extends AyrovixIdentificationError {
+  constructor(message: string, readonly reason: string, readonly model: string) {
+    super(message);
+  }
+}
+
+/** Code court qui classe un échec de détection (voir AyrovixDetectionError). */
+export function detectionFailureCode(error: unknown): string {
+  if (error instanceof AyrovixDetectionParseError) return error.reason;
+  if (error instanceof AiProviderError) {
+    const status = Number(error.status) || 0;
+    const detail = String(error.diagnostic || '').toLowerCase();
+    if (error.code === 'PROVIDER_TIMEOUT') return 'timeout';
+    if (error.code === 'PROVIDER_CIRCUIT_OPEN') return 'circuit_open';
+    if (error.code === 'PROVIDER_NOT_CONFIGURED') return 'not_configured';
+    if (error.code === 'PROVIDER_AUTHENTICATION_FAILED') return `auth_${status}`;
+    if (error.code === 'PROVIDER_RATE_LIMITED' || status === 429) return 'rate_limited';
+    if (/credit balance|billing|purchase credits|insufficient[_ ]quota|exceeded your current quota/.test(detail)) return 'billing';
+    if (error.code === 'PROVIDER_CAPABILITY_UNSUPPORTED') return 'schema_unsupported';
+    if (error.code === 'PROVIDER_MODEL_NOT_FOUND' || status === 404) return 'model_not_found';
+    if (status === 400) {
+      if (/image|media[_ ]type|base64/.test(detail)) return 'http_400_image';
+      if (/output_config|json_schema|schema/.test(detail)) return 'schema_unsupported';
+      if (/model/.test(detail)) return 'http_400_model';
+      if (/max_tokens|temperature/.test(detail)) return 'http_400_params';
+      return 'http_400';
+    }
+    if (status === 529) return 'overloaded';
+    if (status) return `http_${status}`;
+    return String(error.code || 'provider').toLowerCase();
+  }
+  if (error instanceof AyrovixUnavailableError) return 'unavailable';
+  if ((error as any)?.name === 'AbortError' || (error as any)?.name === 'TimeoutError') return 'timeout';
+  return 'internal';
+}
+
+/** Fin (inclusive) du bloc JSON équilibré qui commence à `start`, ou -1 s'il est tronqué. */
+function balancedJsonEnd(text: string, start: number): number {
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let index = start; index < text.length; index += 1) {
+    const char = text[index];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (char === '\\') escaped = true;
+      else if (char === '"') inString = false;
+      continue;
+    }
+    if (char === '"') inString = true;
+    else if (char === '{' || char === '[') depth += 1;
+    else if (char === '}' || char === ']') {
+      depth -= 1;
+      if (depth === 0) return index;
+      if (depth < 0) return -1;
+    }
+  }
+  return -1;
+}
+
+function tryJson(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return undefined;
+  }
+}
+
+/** Objets JSON COMPLETS contenus dans un texte tronqué (réponse coupée par la limite de jetons). */
+function completeJsonObjects(text: string): unknown[] {
+  const found: unknown[] = [];
+  let inString = false;
+  let escaped = false;
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (char === '\\') escaped = true;
+      else if (char === '"') inString = false;
+      continue;
+    }
+    if (char === '"') {
+      inString = true;
+      continue;
+    }
+    if (char !== '{') continue;
+    const end = balancedJsonEnd(text, index);
+    if (end < 0) continue; // objet englobant tronqué : on entre dedans.
+    const value = tryJson(text.slice(index, end + 1));
+    if (value && typeof value === 'object' && !Array.isArray(value) && 'box' in (value as object)) {
+      found.push(value);
+      index = end;
+    }
+  }
+  return found;
+}
+
+/**
+ * Liste brute des produits d'une réponse de modèle. Accepte l'objet attendu
+ * {"products":[…]}, un tableau nu, du texte autour (même avec des accolades)
+ * et une réponse TRONQUÉE (on garde chaque produit complet).
+ */
+function detectionItems(raw: string): unknown[] {
+  const cleaned = String(raw || '').replace(/```(?:json)?/gi, '').trim();
+  if (!cleaned) throw new AyrovixDetectionParseError('Réponse de détection vide.', 'empty_output');
+  let parsed = tryJson(cleaned);
+  // Texte autour du JSON : premier bloc de PREMIER niveau qui se lit (on ne
+  // descend pas dans un bloc illisible, sinon on ne garderait qu'un produit).
+  for (let index = 0; parsed === undefined && index < cleaned.length; index += 1) {
+    if (cleaned[index] !== '{' && cleaned[index] !== '[') continue;
+    const end = balancedJsonEnd(cleaned, index);
+    if (end < 0) break; // tronqué : la récupération produit par produit s'en charge.
+    parsed = tryJson(cleaned.slice(index, end + 1));
+    index = end;
+  }
+  if (parsed !== undefined) {
+    if (Array.isArray(parsed)) return parsed;
+    if (parsed && typeof parsed === 'object') {
+      const record = parsed as Record<string, unknown>;
+      if (Array.isArray(record.products)) return record.products;
+      const firstList = Object.values(record).find(Array.isArray);
+      if (firstList) return firstList as unknown[];
+      if ('box' in record) return [record];
+      return [];
+    }
+  }
+  const salvaged = completeJsonObjects(cleaned);
+  if (salvaged.length) return salvaged;
+  if (!/[{[]/.test(cleaned)) throw new AyrovixDetectionParseError('Réponse de détection inexploitable.', 'parse_no_json');
+  throw new AyrovixDetectionParseError('JSON de détection invalide.', 'parse_invalid_json');
+}
+
+/**
+ * Lit la réponse du détecteur. Tolère les écarts fréquents des modèles :
+ * des coordonnées en PIXELS (ramenées à 0..1 avec la taille de l'image), des
+ * coins [x1, y1, x2, y2] au lieu de [x, y, largeur, hauteur], un tableau nu,
+ * du texte autour du JSON et une réponse tronquée. Écarte le bruit
  * (< 0,25 % de l'image) et les doublons (IoU > 0,85).
  */
 export function parseDetections(raw: string, size?: { width: number; height: number }): AyrovixDetection[] {
-  const cleaned = String(raw || '').replace(/```(?:json)?/gi, '').trim();
-  const match = cleaned.match(/\{[\s\S]*\}/);
-  if (!match) throw new AyrovixIdentificationError('Réponse de détection inexploitable.');
-  let parsed: any;
-  try {
-    parsed = JSON.parse(match[0]);
-  } catch {
-    throw new AyrovixIdentificationError('JSON de détection invalide.');
-  }
-  const items: unknown[] = Array.isArray(parsed?.products) ? parsed.products : [];
+  const items = detectionItems(raw);
   const out: AyrovixDetection[] = [];
   for (const item of items as any[]) {
     const name = typeof item?.name === 'string' ? item.name.replace(/\s+/g, ' ').trim().slice(0, 80) : '';
@@ -498,20 +635,23 @@ export function parseDetections(raw: string, size?: { width: number; height: num
   return out;
 }
 
+type DetectionMode = 'structured' | 'json';
+
 async function requestDetections(
   image: Buffer,
   mime: string,
   timeoutMs: number,
-  structured: boolean,
+  mode: DetectionMode,
   size?: { width: number; height: number },
 ): Promise<AyrovixDetection[]> {
   const provider = getAyroviAiCore().responses();
+  const structured = mode === 'structured';
   const request: AiCompletionRequest = {
     workload: 'vision',
     modelClass: 'fast',
     instructions: structured
       ? DETECTION_PROMPT
-      : `${DETECTION_PROMPT}\nRéponds uniquement par un objet JSON valide {"products":[...]}, sans markdown ni texte autour.`,
+      : `${DETECTION_PROMPT}\nRéponds uniquement par un objet JSON compact {"products":[...]}, sans markdown ni texte autour.`,
     messages: [{
       role: 'user',
       content: [
@@ -519,20 +659,31 @@ async function requestDetections(
         { type: 'text', text: 'Liste les produits visibles avec leur boîte englobante.' },
       ],
     }],
-    maxOutputTokens: 600,
+    // 8 produits ≈ 400 jetons : la marge évite une réponse coupée (JSON illisible).
+    maxOutputTokens: 900,
     temperature: 0,
     ...(structured ? { outputSchema: { name: 'zlens_detection', schema: DETECTION_SCHEMA } } : {}),
   };
-  try {
-    const result = await provider.complete(request, AbortSignal.timeout(timeoutMs));
-    return parseDetections(result.textBlocks.join(''), size);
-  } catch (error) {
-    if (!(error instanceof AiProviderError)) throw error;
-    if (error.code === 'PROVIDER_AUTHENTICATION_FAILED') throw new AyrovixUnavailableError('Vision provider authentication failed');
-    if (error.code === 'PROVIDER_RATE_LIMITED') throw new AyrovixIdentificationError('Vision provider quota exceeded');
-    if (error.code === 'PROVIDER_TIMEOUT') throw new AyrovixIdentificationError('Vision provider timeout');
-    throw new AyrovixIdentificationError(`Vision provider HTTP ${error.status || 0}`);
-  }
+  const signal = AbortSignal.timeout(timeoutMs);
+  // La relance passe par le chemin de l'assistant (`stream`) : sans schéma, et
+  // avec les modèles de secours du fournisseur si le modèle configuré n'existe pas.
+  const result = structured
+    ? await provider.complete(request, signal)
+    : await provider.stream(request, {}, signal);
+  return parseDetections(result.textBlocks.join(''), size);
+}
+
+/** Échecs où une seconde tentative ne peut rien changer (ou aggraverait un quota). */
+function detectionRetryUseless(error: unknown): boolean {
+  if (error instanceof AyrovixUnavailableError) return true;
+  if (!(error instanceof AiProviderError)) return false;
+  return error.code === 'PROVIDER_AUTHENTICATION_FAILED'
+    || error.code === 'PROVIDER_NOT_CONFIGURED'
+    || error.code === 'PROVIDER_RATE_LIMITED'
+    || error.code === 'PROVIDER_CIRCUIT_OPEN'
+    || error.code === 'PROVIDER_TIMEOUT'
+    || error.status === 429
+    || detectionFailureCode(error) === 'billing';
 }
 
 /**
@@ -554,15 +705,40 @@ export async function detectProducts(
   }
   activeVisionRequests += 1;
   const timeoutMs = boundedEnvMs('AYROVIX_DETECT_TIMEOUT_MS', 9_000, 4_000, 20_000);
+  const model = provider.resolveModel('vision', 'fast');
+  const reasons: string[] = [];
+  const attempt = async (mode: DetectionMode) => {
+    try {
+      return await requestDetections(image, mime, timeoutMs, mode, size);
+    } catch (error) {
+      reasons.push(`${mode}:${detectionFailureCode(error)}`);
+      throw error;
+    }
+  };
   try {
     try {
-      return await requestDetections(image, mime, timeoutMs, true, size);
-    } catch (error: any) {
-      if (error instanceof AyrovixUnavailableError) throw error;
-      if (error instanceof AyrovixIdentificationError && /quota exceeded|timeout/.test(error.message)) throw error;
-      // Sortie structurée refusée ou illisible : une seule relance en JSON libre.
-      return await requestDetections(image, mime, timeoutMs, false, size);
+      return await attempt('structured');
+    } catch (error) {
+      if (detectionRetryUseless(error)) throw error;
+      // Schéma refusé, modèle introuvable, réponse illisible… : une seule relance en JSON libre.
+      return await attempt('json');
     }
+  } catch (error) {
+    const reason = reasons.join(';') || detectionFailureCode(error);
+    console.warn(`[AYROVIX detect] échec ${reason} (modèle ${model})`);
+    if (error instanceof AiProviderError && (error.code === 'PROVIDER_AUTHENTICATION_FAILED' || error.code === 'PROVIDER_NOT_CONFIGURED')) {
+      const unavailable = new AyrovixUnavailableError('Vision provider authentication failed');
+      (unavailable as any).reason = reason;
+      throw unavailable;
+    }
+    if (error instanceof AyrovixUnavailableError) {
+      (error as any).reason = reason;
+      throw error;
+    }
+    const message = /rate_limited|billing/.test(reason)
+      ? 'Vision provider quota exceeded'
+      : /timeout/.test(reason) ? 'Vision provider timeout' : 'Vision provider detection failed';
+    throw new AyrovixDetectionError(message, reason, model);
   } finally {
     activeVisionRequests = Math.max(0, activeVisionRequests - 1);
   }
