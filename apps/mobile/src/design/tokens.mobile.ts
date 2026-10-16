@@ -117,7 +117,8 @@ export const LENS_COLORS = {
   resultLine: NEUTRALS.border,
   resultMedia: BRAND.lightGray,
   cameraScrim: veil(0.48),
-  cameraControl: veil(0.68),
+  /** Voile translucide des commandes posées SUR la caméra (barre des modes, aide QR) : la caméra reste visible derrière. */
+  cameraControl: veil(0.5),
   white: BRAND.white,
   black: BRAND.black,
 } as const;

@@ -1203,9 +1203,11 @@ export default function LensScreen() {
           </View>
         ) : null}
 
-        {/* Panneau du bas : boutons AU-DESSUS, barre des modes TOUT EN BAS (demande du client). */}
+        {/* Panneau du bas : boutons AU-DESSUS, barre des modes TOUT EN BAS (demande du client).
+            TRANSPARENT : la caméra plein écran reste visible derrière les boutons, comme
+            Google Lens ; seuls les boutons et la barre portent un voile translucide. */}
         <View
-          style={[styles.panel, { paddingBottom: insets.bottom + 12, backgroundColor: LENS_COLORS.cameraControl, borderTopLeftRadius: theme.radius.sheet, borderTopRightRadius: theme.radius.sheet }]}
+          style={[styles.panel, { paddingBottom: insets.bottom + 12 }]}
           onLayout={(event) => setPanelHeight(Math.round(event.nativeEvent.layout.height))}
           testID="lens-panel"
         >
@@ -1215,7 +1217,7 @@ export default function LensScreen() {
                 <View style={styles.sideCircle}>
                   <Ionicons name="images-outline" size={theme.iconSize.md} color={LENS_COLORS.white} accessibilityElementsHidden />
                 </View>
-                <AppText variant="caption" weight="bold" color={LENS_COLORS.white}>{t('lens.gallery')}</AppText>
+                <AppText variant="caption" weight="bold" color={LENS_COLORS.white} style={styles.overCamera}>{t('lens.gallery')}</AppText>
               </Pressable>
               <Pressable
                 onPress={() => { void onPhoto(); }}
@@ -1234,7 +1236,7 @@ export default function LensScreen() {
                 <View style={styles.sideCircle}>
                   <Ionicons name="pricetag-outline" size={theme.iconSize.md} color={LENS_COLORS.white} accessibilityElementsHidden />
                 </View>
-                <AppText variant="caption" weight="bold" color={LENS_COLORS.white}>OCEREX</AppText>
+                <AppText variant="caption" weight="bold" color={LENS_COLORS.white} style={styles.overCamera}>OCEREX</AppText>
               </Pressable>
             </View>
           ) : null}
@@ -1346,6 +1348,8 @@ const styles = StyleSheet.create({
   // Galerie et OCEREX tout près du déclencheur (repère : la vignette galerie de Google Lens).
   captureRow: { alignItems: 'center', justifyContent: 'center', gap: 24 },
   side: { width: 72, alignItems: 'center', gap: 4 },
+  // Libellé blanc lisible sur une image claire (le panneau n'a plus de fond).
+  overCamera: { textShadowColor: veil(0.85), textShadowRadius: 4, textShadowOffset: { width: 0, height: 1 } },
   sideCircle: {
     width: SIDE, height: SIDE, borderRadius: SIDE / 2, borderWidth: 1.5, borderColor: LENS_COLORS.white,
     backgroundColor: veil(0.4), alignItems: 'center', justifyContent: 'center',
@@ -1360,9 +1364,13 @@ const styles = StyleSheet.create({
     width: SHUTTER_CORE, height: SHUTTER_CORE, borderRadius: SHUTTER_CORE / 2, backgroundColor: LENS_COLORS.white,
     alignItems: 'center', justifyContent: 'center',
   },
-  codeHint: { alignItems: 'flex-start', gap: 12, paddingHorizontal: 8, paddingVertical: 8 },
+  codeHint: {
+    alignItems: 'flex-start', gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 18,
+    backgroundColor: LENS_COLORS.cameraControl,
+  },
   codeHintCopy: { flex: 1, gap: 4 },
-  modePicker: { minHeight: 64, borderRadius: 28, padding: 4, backgroundColor: frost(0.13) },
+  // Barre posée sur la caméra : voile sombre translucide (la caméra se devine derrière).
+  modePicker: { minHeight: 64, borderRadius: 28, padding: 4, backgroundColor: LENS_COLORS.cameraControl },
   mode: { flex: 1, minHeight: 56, borderRadius: 24, alignItems: 'center', justifyContent: 'center', gap: 2, paddingHorizontal: 4 },
   // Mode choisi = état actif : pastille violet clair, libellé noir (10,4:1).
   modeActive: { backgroundColor: LENS_COLORS.activeSoft },

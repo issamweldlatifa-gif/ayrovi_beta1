@@ -208,6 +208,13 @@ describe('Z Lens — option 3 voulue par le client (16/10/2026)', () => {
     expect(lens).toContain('const SIDE = 54;');
   });
 
+  it('panneau du bas TRANSPARENT : la caméra plein écran reste visible derrière les boutons', () => {
+    const marker = lens.indexOf('testID="lens-panel"');
+    const panelTag = lens.slice(lens.lastIndexOf('<View', marker), marker);
+    expect(panelTag).not.toContain('backgroundColor');
+    expect(lens).toMatch(/<CameraView\s+ref=\{cameraRef\}\s+style=\{StyleSheet\.absoluteFill\}/);
+  });
+
   it('menu ⋮ : Informations, Historique, Politique de confidentialité, Conditions d’utilisation, Produits interdits', () => {
     for (const key of ['lens.menu.info', 'lens.menu.history', 'lens.menu.privacy', 'lens.menu.terms', 'lens.menu.rules']) {
       expect(menu).toContain(`'${key}'`);
