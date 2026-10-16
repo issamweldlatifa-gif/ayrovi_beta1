@@ -57,14 +57,17 @@ jobs:
           set +e +o pipefail
           S="${GITHUB_STEP_SUMMARY:-/dev/null}"
 
-          # Render peut dormir : le réveiller d'abord, sinon on mesure le réveil.
+          # Render peut dormir (ou renvoyer une page HTML pendant le spin-up) :
+          # attendre un VRAI json /api/ready, sinon on mesurerait le réveil.
           READY=""
-          for ATTEMPT in $(seq 1 12); do
+          COMMIT=""
+          for ATTEMPT in $(seq 1 40); do
             READY=$(curl -s --max-time 30 "$BASE/api/ready" 2>/dev/null)
-            [ -n "$READY" ] && break
-            sleep 10
+            COMMIT=$(printf '%s' "$READY" | sed -n 's/.*"commit": *"\([A-Za-z0-9]*\)".*/\1/p' | head -1)
+            [ -n "$COMMIT" ] && break
+            echo "Réveil $ATTEMPT/40 : pas encore de json /api/ready."
+            sleep 15
           done
-          COMMIT=$(printf '%s' "$READY" | sed -n 's/.*"commit": *"\([A-Za-z0-9]*\)".*/\1/p' | head -1)
 
           # Le corpus = le catalogue réel (image principale + images secondaires).
           curl -s --max-time 60 "$BASE/api/public/products?limit=50" -o /tmp/products.json 2>/dev/null
@@ -103,8 +106,14 @@ jobs:
             ENC=$(python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=""))' "$U")
             START=$(date +%s%3N)
             HDR=$(curl -s -o /dev/null -D - --max-time 90 "$BASE/api/public/media/card?u=$ENC&w=600" 2>/dev/null)
-            MS=$(( $(date +%s%3N) - START ))
             CODE=$(printf '%s' "$HDR" | head -1 | tr -dc '0-9')
+            # Silence réseau (000) : une seconde chance, le réveil peut être long.
+            if [ -z "$CODE" ]; then
+              sleep 20
+              HDR=$(curl -s -o /dev/null -D - --max-time 90 "$BASE/api/public/media/card?u=$ENC&w=600" 2>/dev/null)
+              CODE=$(printf '%s' "$HDR" | head -1 | tr -dc '0-9')
+            fi
+            MS=$(( $(date +%s%3N) - START ))
             KIND=$(printf '%s' "$HDR" | tr -d '\r' | sed -n 's/^x-ayrovi-card: *//Ip' | head -1)
             case "$KIND" in
               native-trim)   TRIM=$((TRIM+1)) ;;
@@ -125,5 +134,6 @@ jobs:
             "${COMMIT:-?}" "$TOTAL" "$TRIM" "$EXTEND" "$COMPOSED" "$LETTERBOX" "$OTHER" "$AVOID" "$TOTAL" "$PCT" >> "$S"
           cat /tmp/table.md >> "$S"
 
-          echo "::notice title=Carte native production::total=$TOTAL trim=$TRIM extend=$EXTEND composed=$COMPOSED letterbox=$LETTERBOX other=$OTHER avoided=$AVOID/$TOTAL ($PCT%) commit=${COMMIT:-?}"
+          CODES=$(cut -d'|' -f4 /tmp/table.md | tr -d ' ' | paste -sd, - | cut -c1-120)
+          echo "::notice title=Carte native production::total=$TOTAL trim=$TRIM extend=$EXTEND composed=$COMPOSED letterbox=$LETTERBOX other=$OTHER avoided=$AVOID/$TOTAL ($PCT%) codes=$CODES commit=${COMMIT:-?}"
           exit 0
