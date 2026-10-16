@@ -223,7 +223,7 @@ export const SocialAdminPage: React.FC = () => {
       </header>
       <div className="admin-actions" style={{ marginTop: 0 }}>
         {TABS.map((t) => (
-          <Button key={t} variant={tab === t ? 'primary' : 'secondary'} onClick={() => setTab(t)}>{t}</Button>
+          <Button key={t} variant="secondary" aria-pressed={tab === t} onClick={() => setTab(t)}>{t}</Button>
         ))}
       </div>
       {tab === 'Publication' && <PublicationsTab channels={channels} />}

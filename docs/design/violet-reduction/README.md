@@ -51,3 +51,51 @@ baissent ou restent à zéro (accueil, catalogue, barre du bas, 404, photo produ
 Écran le plus violet après : 360 × 800, connexion (app, 5,46 %) et panier (site,
 4,93 %) — un seul bouton principal par écran ; en dessous du plafond de sécurité par
 écran `accentAreaLimit` (10 %) utilisé par les audits CI.
+
+## Console d'administration (2026-10-16)
+
+Même règle v4.2.0 appliquée au back-office (modèle A « Console opérationnelle »), en
+modifiant uniquement les rôles existants : `client/src/styles/admin-console.css`
+(rôles `--bo-*`) et `client/src/admin/admin.css` (zéro littéral, tokens seulement).
+Aucun nouveau code hexadécimal ; les rôles d'accent de la console pointent désormais sur
+l'identité (`--ay-e-action-hover`, `--ay-e-on-action`, `--ay-e-accent-soft`).
+
+Avant = build du commit `78f3258`, après = build de cette branche ; mêmes données des deux
+côtés (base neuve, mêmes migrations, mêmes 5 commandes de démonstration). Captures à
+1440 × 900 (les 52 sections de la navigation + connexion), états interactifs, thème sombre,
+390 × 844 et 768 × 1024.
+
+| Fichier | Ce qui change |
+|---|---|
+| `admin-1-contenu.jpg` | Mon magazine : grand bandeau dégradé violet → encre, zone de dépôt grise. Agent magazine : en-tête dégradé violet, pastilles et compteur violets → encre. Social et Hero : l'onglet ou la langue choisis ne sont plus un bouton violet plein mais en encre — le violet reste à « Ajouter » / « Publier ». « Enregistrer les réglages » du Hero devient secondaire. |
+| `admin-2-commerce.jpg` | Prix & taux : « Actualiser les taux maintenant » et « Calculer » deviennent secondaires, « Enregistrer » reste violet. Promotions : « Créer la règle » secondaire, « Enregistrer la grille » reste violet. Clients : onglet choisi en encre. Commandes : le filtre choisi garde un contour violet (option choisie). |
+| `admin-3-etats.jpg` | Rail : la ligne active n'a plus de fond lavande (`#EEE9FE`) — fond neutre + filet violet `#571EF6`. Files « À traiter » : filet et icônes violets → encre (vide = gris, en attente = encre). Fiche commande : étape en cours en `#571EF6` avec un anneau violet clair. Recherche : terme trouvé surligné en violet clair `#C5B2F4`, texte noir. Champ actif : contour violet + halo violet clair. |
+| `admin-4-sombre-telephone.jpg` | Thème sombre : la ligne active du rail n'est plus violet foncé (`#1C1239`) ; les contours choisis passent au violet « sur sombre » `#926DF9` (le violet plein n'y fait que 2,4:1). Les pastilles posées sur les bandeaux sombres de l'agent restent lisibles (blanc / noir fixes). Téléphone 390 : même règle, sans changement de mise en page. |
+
+Le violet qui reste, vérifié élément par élément dans le DOM rendu (styles calculés) :
+le bouton principal de chaque écran, le filet de l'onglet de service actif, le repère de
+l'entrée active du rail, le filet de l'onglet actif du studio interface, le contour du
+filtre de commandes choisi, l'étape en cours et le focus (contour violet + halo violet
+clair). Dans le code seulement (état non capturé) : la ligne de dépôt d'un
+glisser-déposer et le contour du magasin choisi (Arrivals CRM). Restent aussi, parce que ce sont des
+**aperçus de données** (la couleur configurée de la vitrine), les pastilles de thème et
+l'aperçu CTA de « Développement & design », l'aperçu de la section LENS et l'aperçu
+d'icône du studio interface.
+
+| Console (1440 × 900, 53 captures, UI seule) | Violet avant → après | Violet clair avant → après | Total avant → après |
+|---|---|---|---|
+| Moyenne | 0,59 % → 0,31 % | 0,57 % → 0,01 % | 1,15 % → 0,32 % |
+
+Mesure : teinte 245–290°, saturation ≥ 0,30 (les gris légèrement violacés hérités ne
+sont pas comptés). Écrans les plus touchés : Mon magazine 11,16 % → 0,36 %, Agent
+magazine 2,77 % → 0,03 %, Prix & taux 1,55 % → 0,33 %, Promotions 1,62 % → 0,48 %.
+Écran le plus violet après : « Développement & design » (1,59 %, aperçus de palette).
+
+**Laissé tel quel, à décider** : la fiche commande peut montrer deux boutons principaux
+selon l'état (« Valider le virement » / « Émettre la facture » / « Enregistrer la
+livraison ») — paiement et commandes, non modifiés sans demande. « Create Arrival »
+apparaît deux fois quand la liste est vide (même action). Défauts préexistants observés,
+non corrigés : sous 900 px de large, l'ombre du tiroir fermé (`0 0 0 100vmax`) voile
+tout l'écran de la console (visible sur les captures 390) ; en thème sombre, la pastille
+de domaine choisie est blanche sur blanc et la carte « Arrivages Standard actifs » reste
+blanche.

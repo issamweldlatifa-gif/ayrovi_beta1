@@ -189,7 +189,7 @@ export const PromosPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) => {
               <Field label="Début (ISO, optionnel)"><input value={draft.starts_at} onChange={(event) => setDraft({ ...draft, starts_at: event.target.value })} placeholder="2026-10-01T00:00:00.000Z" /></Field>
               <Field label="Fin (ISO, optionnel)"><input value={draft.ends_at} onChange={(event) => setDraft({ ...draft, ends_at: event.target.value })} placeholder="2026-10-31T23:59:59.000Z" /></Field>
             </div>
-            <Button type="submit" busy={busy}>Créer la règle</Button>
+            <Button type="submit" variant="secondary" busy={busy}>Créer la règle</Button>
           </Form>
         )}
       </section>

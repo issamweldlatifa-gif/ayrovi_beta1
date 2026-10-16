@@ -332,8 +332,8 @@ export function HeroSlidesManagePage({ canWrite }: { canWrite: boolean }) {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
             <strong>Aperçu visiteur (brouillons inclus)</strong>
             <div role="group" aria-label="Langue de l’aperçu" style={{ display: 'flex', gap: 4 }}>
-              <Button variant={previewLang === 'fr' ? 'primary' : 'secondary'} onClick={() => setPreviewLang('fr')}>FR · LTR</Button>
-              <Button variant={previewLang === 'ar' ? 'primary' : 'secondary'} onClick={() => setPreviewLang('ar')}>AR · RTL</Button>
+              <Button variant="secondary" aria-pressed={previewLang === 'fr'} onClick={() => setPreviewLang('fr')}>FR · LTR</Button>
+              <Button variant="secondary" aria-pressed={previewLang === 'ar'} onClick={() => setPreviewLang('ar')}>AR · RTL</Button>
             </div>
           </div>
           <div dir={previewLang === 'ar' ? 'rtl' : 'ltr'} data-testid="hero-preview" style={{ border: '1px solid var(--admin-line)', borderRadius: 16, padding: 16, background: sectionBg }}>

@@ -85,7 +85,7 @@ export function HeroSettingsPanel({ canWrite, onSaved }: { canWrite: boolean; on
         </Field>
       </div>
       <div style={{ marginTop: 16 }}>
-        <Button onClick={() => void save()} busy={busy} disabled={disabled}>Enregistrer les réglages</Button>
+        <Button variant="secondary" onClick={() => void save()} busy={busy} disabled={disabled}>Enregistrer les réglages</Button>
       </div>
     </section>
   );

@@ -346,9 +346,10 @@ describe('accent — une seule source', () => {
       const oranges = (body.match(/var\(--ayrovi-cta\)|var\(--admin-yellow\)/g) ?? []).length;
       expect(oranges, file).toBeGreaterThanOrEqual(0);
     }
-    // la coquille et la fiche agent héritent : aucune nouvelle declaration locale d'accent
+    // la coquille hérite de l'accent ; la fiche agent n'emprunte plus l'accent pour son décor
+    // (v4.2.0, violet au minimum) : ses pastilles passent à l'encre — toujours sans littéral local
     expect(withoutComments(read('client/src/admin/admin.css'))).toMatch(
-      /\.mag-agent\s*{[^}]*--mag-yellow:\s*var\(--ayrovi-cta\)/,
+      /\.mag-agent\s*{[^}]*--mag-yellow:\s*var\(--admin-ink-strong\)/,
     );
     expect(withoutComments(read('client/src/admin/admin.css'))).toMatch(
       /\.bo-shell\s*{[^}]*--bo-accent:\s*var\(--ayrovi-cta\)/,

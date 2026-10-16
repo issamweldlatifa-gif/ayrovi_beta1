@@ -353,3 +353,74 @@ describe('5. violet au minimum (v4.2.0) : seule l’action principale est violet
     expect(journey).toMatch(/li\.is-complete>span\{border-color:var\(--ayrovi-text-primary\);background:var\(--ayrovi-text-primary\)/);
   });
 });
+
+describe('6. console d’administration — violet au minimum (v4.2.0)', () => {
+  const consoleCss = withoutComments(read('client/src/styles/admin-console.css'));
+  const adminCss = withoutComments(read('client/src/admin/admin.css'));
+
+  test('les rôles d’accent de la console pointent sur l’identité (aucune teinte violette privée)', () => {
+    expect(consoleCss).toMatch(/--bo-accent-hover:\s*var\(--ay-e-action-hover\)/);
+    expect(consoleCss).toMatch(/--bo-on-accent:\s*var\(--ay-e-on-action\)/);
+    expect(consoleCss).toMatch(/--bo-accent-soft:\s*var\(--ay-e-accent-soft\)/);
+    // l'ancienne teinte de sélection (#EEE9FE), sa variante sombre (#1C1239) et le survol recopié ont disparu
+    expect(consoleCss).not.toMatch(/#eee9fe|#1c1239|#491acc/i);
+  });
+
+  test('le violet clair n’est plus qu’un halo de focus, jamais un fond', () => {
+    const uses = consoleCss.split('\n').filter((line) => line.includes('var(--bo-accent-soft)') && !/^\s*--bo-accent-soft:/.test(line));
+    expect(uses.length).toBeGreaterThan(0);
+    for (const line of uses) expect(line, line.trim()).toMatch(/box-shadow:\s*0 0 0 \d+px var\(--bo-accent-soft\)/);
+    expect(consoleCss).not.toMatch(/background:\s*var\(--bo-accent-soft\)/);
+  });
+
+  test('navigation active et lignes choisies : fond neutre + filet violet', () => {
+    expect(consoleCss).toMatch(/\.admin-sidebar nav button\.is-active \{ background: var\(--bo-hover\)/);
+    expect(consoleCss).toMatch(/\.admin-sidebar nav button\.is-active i \{[^}]*background: var\(--bo-accent\)/);
+    expect(consoleCss).toMatch(/tr\.is-selected td,[^{]*\{\s*background: var\(--bo-hover\); box-shadow: inset 2px 0 0 var\(--bo-accent\)/);
+  });
+
+  test('un bouton-bascule montre son choix en encre : le violet plein reste l’action de l’écran', () => {
+    expect(consoleCss).toMatch(/\.admin-button--secondary\[aria-pressed='true'\] \{ background: var\(--bo-ink\)/);
+    const offenders = walk('client/src/admin', /\.tsx$/).filter((rel) => {
+      const source = read(rel);
+      return /variant=\{[^}]*\?\s*'primary'/.test(source) || /\?\s*'admin-button admin-button--primary'/.test(source);
+    });
+    expect(offenders).toEqual([]);
+  });
+
+  test('aucune teinte violette décorative ne reste dans la feuille d’application', () => {
+    // plus aucune consommation des teintes d'accent (sélection / décor) ni du violet nommé
+    expect(adminCss).not.toMatch(/--admin-accent-tint-\d+/);
+    expect(adminCss).not.toMatch(/var\(--admin-violet\)/);
+    // ni d'un ton saturé de la famille violette (teinte 245–290°, saturation ≥ 0,30)
+    const tokens = read('client/src/design/tokens.css');
+    const values = new Map([...tokens.matchAll(/(--admin-tone-[a-z0-9-]+)\s*:\s*([^;]+);/gi)].map((m) => [m[1], m[2].trim()]));
+    const rgbOf = (name: string): number[] | null => {
+      const value = values.get(name) ?? '';
+      const hexValue = value.match(/^#([0-9a-f]{6})$/i);
+      if (hexValue) return [0, 2, 4].map((i) => parseInt(hexValue[1].slice(i, i + 2), 16));
+      const rgba = value.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+      return rgba ? rgba.slice(1, 4).map(Number) : null;
+    };
+    const violet = [...new Set(adminCss.match(/--admin-tone-[a-z0-9-]+/g) ?? [])].filter((name) => {
+      const rgb = rgbOf(name);
+      if (!rgb) return false;
+      const [r, g, b] = rgb;
+      const max = Math.max(r, g, b), min = Math.min(r, g, b), c = max - min;
+      if (c < 10) return false;
+      let h = max === r ? ((g - b) / c) % 6 : max === g ? (b - r) / c + 2 : (r - g) / c + 4;
+      h = (h * 60 + 360) % 360;
+      const l = (max + min) / 510;
+      const s = c / 255 / (1 - Math.abs(2 * l - 1) || 1);
+      return h >= 245 && h <= 290 && s >= 0.3;
+    });
+    expect(violet).toEqual([]);
+  });
+
+  test('agent magazine en encre ; contours choisis et étape en cours gardent le violet officiel', () => {
+    expect(adminCss).toMatch(/\.mag-agent \{[^}]*--mag-yellow: var\(--admin-ink-strong\); --mag-on-yellow: var\(--admin-on-dark\);/);
+    expect(adminCss).toMatch(/\.mag-library-head \{[^}]*background:var\(--admin-ink-strong\); \}/);
+    expect(adminCss).toMatch(/\.admin-order-kpi\.is-active \{ border-color: var\(--ayrovi-cta\);/);
+    expect(adminCss).toMatch(/\.admin-pipeline li\.is-current i \{ background: var\(--ayrovi-cta\); box-shadow: 0 0 0 4px var\(--ayrovi-accent-soft\); \}/);
+  });
+});
