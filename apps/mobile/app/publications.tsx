@@ -69,7 +69,17 @@ export default function PublicationsScreen() {
         renderItem={({ item }) => {
           const countsFor = counts.data?.[item.id];
           return (
-            <View style={[styles.card, { backgroundColor: theme.colors.surface, borderRadius: theme.radius.card }]}>
+            <View
+              style={[
+                styles.card,
+                {
+                  backgroundColor: theme.colors.surface,
+                  borderRadius: theme.radius.card,
+                  borderWidth: StyleSheet.hairlineWidth,
+                  borderColor: theme.colors.line,
+                },
+              ]}
+            >
               {item.imageUrl ? (
                 <AppImage uri={mediaUrl(item.imageUrl)} style={styles.image} contentFit="cover" accessibilityLabel={item.title ?? undefined} decorative={!item.title} />
               ) : null}

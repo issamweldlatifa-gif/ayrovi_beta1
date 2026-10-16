@@ -201,8 +201,12 @@ describe('identité couleur officielle', () => {
   it('fond blanc, texte noir, action et focus violets, gris clair secondaire (mode clair)', () => {
     const light = COLORS.light;
     expect(light.canvas).toBe(BRAND.white);
-    expect(light.surface).toBe(BRAND.lightGray);
-    expect(light.infoSoft).toBe(BRAND.lightGray);
+    // 17/10/2026 — décision client n° 1 : plus aucun fond gris. La surface et
+    // les blocs d'information sont BLANCS ; seules les lignes (« line »)
+    // séparent les sections. Le gris clair reste au squelette de chargement.
+    expect(light.surface).toBe(BRAND.white);
+    expect(light.infoSoft).toBe(BRAND.white);
+    expect(light.line).not.toBe(BRAND.white);
     expect(light.ink).toBe(BRAND.black);
     for (const key of ['action', 'accent', 'accentText', 'focus'] as const) expect(light[key]).toBe(BRAND.violet);
     expect(light.onAction).toBe(BRAND.white);
@@ -325,7 +329,8 @@ describe('couleurs de statut', () => {
     expect(LENS_COLORS.black).toBe(BRAND.black);
     expect(LENS_COLORS.white).toBe(BRAND.white);
     expect(LENS_COLORS.resultMuted).toBe(NEUTRALS.textSecondary);
-    expect(LENS_COLORS.resultMedia).toBe(BRAND.lightGray);
+    // Cadre de vignette : blanc, comme toute surface (décision n° 1).
+    expect(LENS_COLORS.resultMedia).toBe(BRAND.white);
   });
 });
 

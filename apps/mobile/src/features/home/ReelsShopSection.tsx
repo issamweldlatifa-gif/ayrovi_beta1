@@ -76,6 +76,8 @@ export function ReelsShopSection() {
                       height: tileHeight,
                       borderRadius: theme.radius.card,
                       backgroundColor: theme.colors.surface,
+                      borderWidth: StyleSheet.hairlineWidth,
+                      borderColor: theme.colors.line,
                     },
                   ]}
                 >

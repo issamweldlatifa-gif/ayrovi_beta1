@@ -17,9 +17,13 @@ describe('ZAYROVI A — enforceable identity', () => {
   test('has only the two approved local families and the official palette', () => {
     expect(BRAND.fonts.map(f => f.family)).toEqual(['Zalando Sans', 'Noto Sans Arabic']);
     // Palette officielle du 2026-10-15 : noir #0A0A0A · blanc · violet électrique #571EF6 · gris clair #F2F2F2.
+    // Décision client n° 1 du 17/10/2026 : la SURFACE passe au blanc — plus aucun
+    // fond gris, les sections se séparent par un filet (`line`). Le gris clair
+    // ne subsiste que dans le rôle `shimmer` (squelette de chargement).
     expect(BRAND.colors.canvas).toBe('#FFFFFF');
     expect(BRAND.colors.ink).toBe('#0A0A0A');
-    expect(BRAND.colors.surface).toBe('#F2F2F2');
+    expect(BRAND.colors.surface).toBe('#FFFFFF');
+    expect(BRAND.colors.shimmer).toBe('#F2F2F2');
     expect(BRAND.colors.accent).toBe('#571EF6'); // L'orange #FF7900 est retiré.
     expect(BRAND.colors.action).toBe('#571EF6');
     expect(BRAND.colors.onAction).toBe('#FFFFFF');

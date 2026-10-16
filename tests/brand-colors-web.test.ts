@@ -72,7 +72,10 @@ describe('1. une seule palette pour le site et l’application', () => {
     const c = identity.colors;
     expect(hex(c.canvas)).toBe(OFFICIAL.white);
     expect(hex(c.ink)).toBe(OFFICIAL.black);
-    expect(hex(c.surface)).toBe(OFFICIAL.lightGray);
+    // 17/10/2026 — décision client n° 1 : la surface n'est PLUS grise, elle est
+    // blanche ; seuls les filets (« line ») séparent les sections. Le gris clair
+    // survit uniquement dans le rôle `shimmer` (squelette de chargement).
+    expect(hex(c.surface)).toBe(OFFICIAL.white);
     for (const role of ['action', 'accent', 'accentText', 'focus']) expect(hex(c[role]), role).toBe(OFFICIAL.violet);
     expect(hex(c.onAction)).toBe(OFFICIAL.white);
     expect(hex(identity.darkColors.canvas)).toBe(OFFICIAL.black);

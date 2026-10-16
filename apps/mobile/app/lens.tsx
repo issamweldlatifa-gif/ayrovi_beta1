@@ -1067,7 +1067,8 @@ export default function LensScreen() {
           ) : null}
           {stage.kind === 'error' && errorCopy ? (
             <View style={styles.errorState} testID="lens-search-error">
-              <View style={[styles.errorIcon, { backgroundColor: theme.colors.infoSoft }]}>
+              {/* Décision n° 1 : le rond gris disparaît, l'icône reste nue. */}
+              <View style={styles.errorIcon}>
                 <Ionicons name="camera-outline" size={theme.iconSize.lg} color={theme.colors.ink} accessibilityElementsHidden />
               </View>
               <AppText variant="title" weight="bold" align="center">{t(errorCopy.title)}</AppText>
@@ -1388,7 +1389,7 @@ const styles = StyleSheet.create({
   sheetHandle: { width: 48, height: 5, borderRadius: 3, alignSelf: 'center', marginBottom: 10 },
   sheetDragHandle: { marginBottom: 0 },
   errorState: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 16, paddingHorizontal: 24, paddingBottom: 24 },
-  errorIcon: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center' },
+  errorIcon: { width: 72, height: 72, alignItems: 'center', justifyContent: 'center' },
   helpRoot: { flex: 1, justifyContent: 'flex-end' },
   helpScrim: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: LENS_COLORS.cameraScrim },
   helpSheet: { maxHeight: '82%', paddingHorizontal: 20, paddingTop: 12, gap: 12 },

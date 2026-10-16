@@ -18,14 +18,14 @@
 }
 :root, [data-ay-design="editorial"] {
   --ay-e-canvas: #FFFFFF;
-  --ay-e-surface: #F2F2F2;
+  --ay-e-surface: #FFFFFF;
   --ay-e-ink: #0A0A0A;
   --ay-e-action: #571EF6;
   --ay-e-action-hover: #491ACC;
   --ay-e-on-action: #FFFFFF;
   --ay-e-muted: #666666;
   --ay-e-info: #666666;
-  --ay-e-info-soft: #F2F2F2;
+  --ay-e-info-soft: #FFFFFF;
   --ay-e-line: #E5E5E5;
   --ay-e-line-control: #888888;
   --ay-e-accent: #571EF6;
@@ -37,6 +37,7 @@
   --ay-e-danger: #A52D2D;
   --ay-e-focus: #571EF6;
   --ay-e-secondary: #333333;
+  --ay-e-shimmer: #F2F2F2;
   --ay-e-cta-radius: 999px;
   --ay-e-control-radius: 12px;
   --ay-e-card-radius: 16px;
@@ -67,6 +68,7 @@
   --ay-e-danger: #FFABAB;
   --ay-e-focus: #926DF9;
   --ay-e-secondary: #E5E5E5;
+  --ay-e-shimmer: #171717;
 }
 html { font-family: var(--ay-font-stack); font-synthesis: none; }
 body { margin: 0; font-family: var(--ay-font-stack); color: var(--ay-e-ink); background: var(--ay-e-canvas); }

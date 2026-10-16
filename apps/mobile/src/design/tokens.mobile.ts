@@ -115,7 +115,12 @@ export const LENS_COLORS = {
   /** Neutres fixes des cartes résultats, dont la zone texte reste blanche. */
   resultMuted: NEUTRALS.textSecondary,
   resultLine: NEUTRALS.border,
-  resultMedia: BRAND.lightGray,
+  /**
+   * Fond de la vignette AVANT la photo : blanc depuis le 17/10/2026 (décision
+   * n° 1 — plus d'aplat gris). La photo arrive par-dessus ; quand elle manque,
+   * le cadre reste blanc et se lit par le liseré de la carte, pas par du gris.
+   */
+  resultMedia: BRAND.white,
   cameraScrim: veil(0.48),
   /** Voile translucide des commandes posées SUR la caméra (barre des modes, aide QR) : la caméra reste visible derrière. */
   cameraControl: veil(0.5),
@@ -394,6 +399,8 @@ export interface DerivablePalette {
   ink: string;
   muted: string;
   focus: string;
+  /** Gris de chargement (« shimmer ») : le seul aplat gris de l'interface. */
+  shimmer: string;
 }
 
 /**
@@ -408,8 +415,16 @@ export interface DerivablePalette {
  */
 export function derivedColors(colors: DerivablePalette) {
   return {
-    /** Surface posée sur une surface : carte dans une carte, menu. */
-    elevatedSurface: mix(colors.surface, colors.ink, 0.055),
+    /**
+     * Surface posée sur une surface : carte dans une carte, menu.
+     *
+     * 17/10/2026 — décision client n° 1 : **plus aucun fond gris**. Une surface
+     * posée sur une surface est donc BLANCHE comme le canvas et se détache par
+     * un filet (`line`), plus par une nuance de gris. En mode sombre la valeur
+     * reste celle de la palette (#171717) : le principe est le même, seule la
+     * nuance du thème change.
+     */
+    elevatedSurface: colors.surface,
     /** Voile d'arrière-plan d'une feuille/modale. */
     overlay: veil(0.56),
     /** Voile plus dense : modale bloquante, permission. */
@@ -418,10 +433,14 @@ export function derivedColors(colors: DerivablePalette) {
      * ⚠️ `warning` n'est PAS défini ici : il appartient à `STATUS`. Deux
      * définitions du même jeton seraient une duplication (§22).
      */
-    /** Fond d'un contrôle inactif : la surface, à peine éclaircie. */
-    disabled: mix(colors.surface, colors.ink, 0.03),
-    /** Texte inactif : `muted`, ramené vers la surface. */
-    disabledText: mix(colors.muted, colors.surface, 0.45),
+    /**
+     * Fond d'un contrôle inactif : le canvas à peine éclairci (3 % d'encre) —
+     * calculé sur le CANVAS et non sur la surface, depuis que la surface est
+     * blanche, sinon le contrôle inactif deviendrait invisible.
+     */
+    disabled: mix(colors.canvas, colors.ink, 0.03),
+    /** Texte inactif : `muted`, ramené vers le canvas. */
+    disabledText: mix(colors.muted, colors.canvas, 0.45),
     /** Séparateur faible, distinct de `line` (bordure de contrôle). */
     divider: mix(colors.canvas, colors.ink, 0.08),
     /** Bordure mise en avant (focus, sélection) : le violet lisible du mode. */
@@ -429,10 +448,15 @@ export function derivedColors(colors: DerivablePalette) {
     /** Surlignage d'un texte sélectionné dans un champ (Android) : violet translucide. */
     selection: alpha(colors.focus, 0.3),
     /**
-     * Squelette de chargement : le GRIS CLAIR de l'identité (`surface` =
-     * #F2F2F2 en clair). Un seul gris de chargement pour tout le shell.
+     * Squelette de chargement : 5 % d'encre sur le canvas — #F2F2F2 en clair,
+     * #171717 en sombre, les deux valeurs historiques, mais calculées sur le
+     * CANVAS depuis que la surface est blanche.
+     *
+     * C'est le SEUL aplat gris qui subsiste (décision n° 1 du 17/10/2026) : un
+     * squelette blanc n'existerait pas à l'écran. Il ne recouvre qu'un état
+     * transitoire, jamais une section de l'interface.
      */
-    skeleton: colors.surface,
+    skeleton: colors.shimmer,
     /**
      * Texte posé sur un MÉDIA (photo, vignette vidéo) : blanc dans les DEUX
      * modes, et c'est volontairement une des rares couleurs qui ne suivent pas

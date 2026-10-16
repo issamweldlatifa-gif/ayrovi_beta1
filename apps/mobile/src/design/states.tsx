@@ -26,7 +26,11 @@ export function LoadingBlock({ labelKey }: { labelKey?: TranslationKey }) {
   return (
     <View
       accessibilityRole="progressbar"
-      style={[styles.block, { backgroundColor: theme.colors.surface, borderRadius: theme.radius.card }]}
+      style={[
+        styles.block,
+        // 17/10/2026 — décision n° 1 : plus de bloc gris, un filet le détache.
+        { backgroundColor: theme.colors.surface, borderColor: theme.colors.line, borderRadius: theme.radius.card },
+      ]}
     >
       <LoadingSpinner testID="loading-spinner" />
       {labelKey ? (
@@ -112,12 +116,20 @@ export function RetryButton({ onPress }: { onPress: () => void }) {
 export function EmptyBlock({ children }: { children: ReactNode }) {
   const theme = useTheme();
   return (
-    <View style={[styles.block, { backgroundColor: theme.colors.surface, borderRadius: theme.radius.card }]}>
+    <View
+      style={[
+        styles.block,
+        { backgroundColor: theme.colors.surface, borderColor: theme.colors.line, borderRadius: theme.radius.card },
+      ]}
+    >
       <AppText variant="caption" color={theme.colors.muted} align="center">{children}</AppText>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  block: { gap: 10, alignItems: 'center', justifyContent: 'center', padding: 20 },
+  block: {
+    gap: 10, alignItems: 'center', justifyContent: 'center', padding: 20,
+    borderWidth: StyleSheet.hairlineWidth, // le gris ne sépare plus : le filet sépare.
+  },
 });

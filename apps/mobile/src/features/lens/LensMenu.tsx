@@ -50,7 +50,12 @@ export function LensMenu({ visible, top, onClose, onPick }: {
               accessibilityRole="menuitem"
               style={({ pressed }) => [
                 styles.item,
-                { flexDirection: theme.isRTL ? 'row-reverse' : 'row', backgroundColor: pressed ? LENS_COLORS.skeleton : LENS_COLORS.white },
+                {
+                  flexDirection: theme.isRTL ? 'row-reverse' : 'row',
+                  backgroundColor: LENS_COLORS.white,
+                  // Décision n° 1 : l'appui se lit par l'opacité, plus par un fond gris.
+                  opacity: pressed ? theme.opacity.subtle : 1,
+                },
               ]}
               testID={`lens-menu-${item.id}`}
             >

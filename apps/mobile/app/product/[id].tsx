@@ -150,7 +150,13 @@ export default function ProductScreen() {
           ))}
         </ScrollView>
       ) : (
-        <View style={[styles.image, styles.imageEmpty, { backgroundColor: theme.colors.surface }]}>
+        <View
+          style={[
+            styles.image,
+            styles.imageEmpty,
+            { backgroundColor: theme.colors.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: theme.colors.line },
+          ]}
+        >
           <AppText variant="caption" color={theme.colors.muted}>{t('catalog.noImage')}</AppText>
         </View>
       )}

@@ -200,6 +200,37 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
    * filets (`line`, `lineControl`) et aux textes secondaires — soit bien moins
    * de 2 % de la surface. Verrouillé pour ne pas y revenir.
    */
+  /**
+   * 17/10/2026 — décision client n° 1, application entière : « les fonds gris
+   * sont remplacés par du blanc, sauf les filets qui séparent les sections ».
+   * Le gris clair ne survit QUE dans le squelette de chargement (un bloc blanc
+   * n'existerait pas à l'écran) ; partout ailleurs c'est du blanc + un filet.
+   */
+  it('décision n° 1 : plus aucun fond gris, du blanc et des filets', () => {
+    const offenders: string[] = [];
+    for (const rel of FILES) {
+      const text = code(rel);
+      for (const match of text.matchAll(/backgroundColor: theme\.colors\.(infoSoft|divider)/g)) {
+        const line = text.slice(0, match.index).split('\n').length;
+        offenders.push(`${rel}:${line} ${match[0]}`);
+      }
+    }
+    expect(offenders, 'Un fond gris subsiste : passer la surface en `theme.colors.surface` (blanc) et séparer par un filet.').toEqual([]);
+
+    // Le seul aplat gris toléré : le squelette de chargement, et lui seul.
+    const skeletonTolerant = new Set(['src/features/lens/LensSearchSkeleton.tsx']);
+    const grey: string[] = [];
+    for (const rel of FILES) {
+      if (skeletonTolerant.has(rel)) continue;
+      const text = code(rel);
+      for (const match of text.matchAll(/LENS_COLORS\.skeleton/g)) {
+        const line = text.slice(0, match.index).split('\n').length;
+        grey.push(`${rel}:${line}`);
+      }
+    }
+    expect(grey, 'Le gris clair est réservé au squelette de chargement.').toEqual([]);
+  });
+
   it('aucun fond gris dans les écrans Lens : du blanc, le gris reste un filet', () => {
     const offenders: string[] = [];
     for (const rel of FILES) {

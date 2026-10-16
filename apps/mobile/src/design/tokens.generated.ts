@@ -3,21 +3,21 @@
  *
  * Couleurs   : apps/mobile/src/design/brand.json
  *              ZAYROVI App — Official Brand Colors · version 4.2.0
- *              sha256 : 51f9ff3d859b2c52488ff5c11da8c184b495ea1bead299ea5f90d0797fe160f6
+ *              sha256 : 69e920a38d630e8fb75f48c49ce56df6e964f69da700341995893235d7417e19
  * Structure  : client/src/design/editorial/identity.json
  *              ZAYROVI A — Official Identity · version 4.2.0
- *              sha256 : 76f8d6a2f5d433f66bd018109f6f24d584668086da68b32dc33b11f3167b994b
+ *              sha256 : 049c7f0b569425c1d3b0a21931b1c4f50238514298176a249497c3fbb1116812
  *
  * Régénérer : npm run tokens:build   ·   vérifier : npm run tokens:check
  */
 /** Provenance de ces jetons (couleurs de l’application + structure partagée avec le site). */
 export const IDENTITY = {
   name: "ZAYROVI App — Official Brand Colors",
-  sha256: "51f9ff3d859b2c52488ff5c11da8c184b495ea1bead299ea5f90d0797fe160f6",
+  sha256: "69e920a38d630e8fb75f48c49ce56df6e964f69da700341995893235d7417e19",
   source: "apps/mobile/src/design/brand.json",
   structure: {
     name: "ZAYROVI A — Official Identity",
-    sha256: "76f8d6a2f5d433f66bd018109f6f24d584668086da68b32dc33b11f3167b994b",
+    sha256: "049c7f0b569425c1d3b0a21931b1c4f50238514298176a249497c3fbb1116812",
     source: "client/src/design/editorial/identity.json",
     version: "4.2.0",
   },
@@ -71,6 +71,7 @@ export const COLORS = {
     onAccentSoft: "#0A0A0A",
     onAction: "#FFFFFF",
     secondary: "#E5E5E5",
+    shimmer: "#171717",
     success: "#90D6AF",
     surface: "#171717",
   },
@@ -84,7 +85,7 @@ export const COLORS = {
     danger: "#A52D2D",
     focus: "#571EF6",
     info: "#666666",
-    infoSoft: "#F2F2F2",
+    infoSoft: "#FFFFFF",
     ink: "#0A0A0A",
     line: "#E5E5E5",
     lineControl: "#888888",
@@ -93,8 +94,9 @@ export const COLORS = {
     onAccentSoft: "#0A0A0A",
     onAction: "#FFFFFF",
     secondary: "#333333",
+    shimmer: "#F2F2F2",
     success: "#236044",
-    surface: "#F2F2F2",
+    surface: "#FFFFFF",
   },
 } as const;
 

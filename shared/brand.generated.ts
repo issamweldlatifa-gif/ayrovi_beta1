@@ -3,14 +3,14 @@ export const BRAND = {
   "version": "4.2.0",
   "colors": {
     "canvas": "#FFFFFF",
-    "surface": "#F2F2F2",
+    "surface": "#FFFFFF",
     "ink": "#0A0A0A",
     "action": "#571EF6",
     "actionHover": "#491ACC",
     "onAction": "#FFFFFF",
     "muted": "#666666",
     "info": "#666666",
-    "infoSoft": "#F2F2F2",
+    "infoSoft": "#FFFFFF",
     "line": "#E5E5E5",
     "lineControl": "#888888",
     "accent": "#571EF6",
@@ -21,7 +21,8 @@ export const BRAND = {
     "success": "#236044",
     "danger": "#A52D2D",
     "focus": "#571EF6",
-    "secondary": "#333333"
+    "secondary": "#333333",
+    "shimmer": "#F2F2F2"
   },
   "darkColors": {
     "canvas": "#0A0A0A",
@@ -43,7 +44,8 @@ export const BRAND = {
     "success": "#90D6AF",
     "danger": "#FFABAB",
     "focus": "#926DF9",
-    "secondary": "#E5E5E5"
+    "secondary": "#E5E5E5",
+    "shimmer": "#171717"
   },
   "typography": {
     "preset": "ayrovi-a",

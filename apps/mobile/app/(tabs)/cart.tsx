@@ -242,7 +242,13 @@ export default function AyroviCartScreen() {
             <KeyValue label={t('cart.delivery')} value={`${cart.deliveryTND.toFixed(2)} TND`} />
             <KeyValue label={t('cart.total')} value={`${cart.totalTND.toFixed(2)} TND`} />
             {quoteDeadline ? (
-              <View style={[styles.quoteTimer, { backgroundColor: theme.colors.infoSoft }]}>
+              <View
+                style={[
+                  styles.quoteTimer,
+                  // Décision n° 1 : plus d'aplat gris — du blanc et un filet.
+                  { backgroundColor: theme.colors.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: theme.colors.line },
+                ]}
+              >
                 <AppText variant="caption" weight="bold" style={{ color: quoteExpired ? theme.status.danger.fg : theme.colors.ink }}>
                   {quoteExpired ? t('cart.quoteExpired') : t('cart.quoteCountdown', { time: quoteCountdown })}
                 </AppText>
