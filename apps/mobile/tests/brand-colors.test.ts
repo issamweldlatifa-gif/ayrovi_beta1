@@ -277,9 +277,14 @@ describe('contraste (WCAG)', () => {
     expect(derivedColors(COLORS.dark).focusRing).toBe(COLORS.dark.focus);
   });
 
-  it('le chargement utilise le gris clair officiel', () => {
-    expect(derivedColors(COLORS.light).skeleton).toBe(BRAND.lightGray);
-    expect(LENS_COLORS.skeleton).toBe(BRAND.lightGray);
+  it('le chargement ne pose PLUS d’aplat gris : l’emplacement est tracé, pas rempli', () => {
+    // Décision n° 1 (17/10/2026), sans exception : le squelette est un filet.
+    expect(COLORS.light).not.toHaveProperty('shimmer');
+    expect(COLORS.dark).not.toHaveProperty('shimmer');
+    expect(LENS_COLORS).not.toHaveProperty('skeleton');
+    // Restent : le blanc des surfaces et le filet qui sépare.
+    expect(COLORS.light.surface).toBe(BRAND.white);
+    expect(COLORS.light.line).toBe(NEUTRALS.border);
   });
 
   it('le violet posé sur un média est la version éclaircie (≥ 4,5:1 sur noir)', () => {

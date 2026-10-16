@@ -1039,8 +1039,15 @@ export default function LensScreen() {
           </View>
         ) : null}
         {sessionPhoto && tip ? (
-          <View pointerEvents="none" style={[styles.tip, { top: photoTop + 8, backgroundColor: veil(0.78) }]} accessibilityLiveRegion="polite" testID="lens-selection-tip">
-            <AppText variant="caption" color={LENS_COLORS.white} align="center">{t(tip.key, { count: tip.count ?? 0 })}</AppText>
+          /* Décision n° 1 : la bande grise devient une pastille BLANCHE filetée,
+             encre noire — lisible sur la photo, sans aplat gris. */
+          <View
+            pointerEvents="none"
+            style={[styles.tip, { top: photoTop + 8, backgroundColor: LENS_COLORS.white, borderColor: theme.colors.line }]}
+            accessibilityLiveRegion="polite"
+            testID="lens-selection-tip"
+          >
+            <AppText variant="caption" color={theme.colors.ink} align="center">{t(tip.key, { count: tip.count ?? 0 })}</AppText>
           </View>
         ) : null}
         <View style={[styles.resultTop, { paddingTop: insets.top + 6, flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
@@ -1380,7 +1387,11 @@ const styles = StyleSheet.create({
   thumbs: { position: 'absolute', left: 12, right: 12, alignItems: 'center', gap: 8, zIndex: 2 },
   thumb: { width: 48, height: 48, borderWidth: 2, overflow: 'hidden' },
   thumbCount: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
-  tip: { position: 'absolute', alignSelf: 'center', maxWidth: '88%', borderRadius: 18, paddingHorizontal: 16, paddingVertical: 8, zIndex: 3 },
+  tip: {
+    position: 'absolute', alignSelf: 'center', maxWidth: '88%', borderRadius: 18,
+    paddingHorizontal: 16, paddingVertical: 8, zIndex: 3,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
   resultTop: { position: 'absolute', top: 0, left: 8, right: 8, alignItems: 'center', zIndex: 3 },
   resultTitle: { flex: 1, textShadowColor: veil(0.5), textShadowRadius: 2, textShadowOffset: { width: 0, height: 1 } },
   // Au-dessus de tout le reste (en-tête, aide, vignettes) : plein écran, elle les couvre.

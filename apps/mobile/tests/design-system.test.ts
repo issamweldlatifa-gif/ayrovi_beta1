@@ -203,8 +203,8 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
   /**
    * 17/10/2026 — décision client n° 1, application entière : « les fonds gris
    * sont remplacés par du blanc, sauf les filets qui séparent les sections ».
-   * Le gris clair ne survit QUE dans le squelette de chargement (un bloc blanc
-   * n'existerait pas à l'écran) ; partout ailleurs c'est du blanc + un filet.
+   * Application SANS EXCEPTION : le squelette de chargement lui-même n'est plus
+   * un aplat gris mais un emplacement TRACÉ au filet. Partout : blanc + filet.
    */
   it('décision n° 1 : plus aucun fond gris, du blanc et des filets', () => {
     const offenders: string[] = [];
@@ -217,18 +217,16 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
     }
     expect(offenders, 'Un fond gris subsiste : passer la surface en `theme.colors.surface` (blanc) et séparer par un filet.').toEqual([]);
 
-    // Le seul aplat gris toléré : le squelette de chargement, et lui seul.
-    const skeletonTolerant = new Set(['src/features/lens/LensSearchSkeleton.tsx']);
+    // Aucune tolérance : plus un seul aplat gris, y compris pendant le chargement.
     const grey: string[] = [];
     for (const rel of FILES) {
-      if (skeletonTolerant.has(rel)) continue;
       const text = code(rel);
-      for (const match of text.matchAll(/LENS_COLORS\.skeleton/g)) {
+      for (const match of text.matchAll(/LENS_COLORS\.skeleton|colors\.skeleton/g)) {
         const line = text.slice(0, match.index).split('\n').length;
-        grey.push(`${rel}:${line}`);
+        grey.push(`${rel}:${line} ${match[0]}`);
       }
     }
-    expect(grey, 'Le gris clair est réservé au squelette de chargement.').toEqual([]);
+    expect(grey, 'Un aplat gris subsiste : l\u2019emplacement d\u2019attente se TRACE (`theme.colors.line`), il ne se remplit pas.').toEqual([]);
   });
 
   it('aucun fond gris dans les écrans Lens : du blanc, le gris reste un filet', () => {

@@ -3,21 +3,21 @@
  *
  * Couleurs   : apps/mobile/src/design/brand.json
  *              ZAYROVI App — Official Brand Colors · version 4.2.0
- *              sha256 : 69e920a38d630e8fb75f48c49ce56df6e964f69da700341995893235d7417e19
+ *              sha256 : 76eb5e4808eb9fae63f396fb4cd295285fc63d949ec344641d008e1fe26b17ae
  * Structure  : client/src/design/editorial/identity.json
  *              ZAYROVI A — Official Identity · version 4.2.0
- *              sha256 : 049c7f0b569425c1d3b0a21931b1c4f50238514298176a249497c3fbb1116812
+ *              sha256 : 563455b33c71913809377684b0878a527a8464fdd27b6e3150af50125e1bb1ff
  *
  * Régénérer : npm run tokens:build   ·   vérifier : npm run tokens:check
  */
 /** Provenance de ces jetons (couleurs de l’application + structure partagée avec le site). */
 export const IDENTITY = {
   name: "ZAYROVI App — Official Brand Colors",
-  sha256: "69e920a38d630e8fb75f48c49ce56df6e964f69da700341995893235d7417e19",
+  sha256: "76eb5e4808eb9fae63f396fb4cd295285fc63d949ec344641d008e1fe26b17ae",
   source: "apps/mobile/src/design/brand.json",
   structure: {
     name: "ZAYROVI A — Official Identity",
-    sha256: "049c7f0b569425c1d3b0a21931b1c4f50238514298176a249497c3fbb1116812",
+    sha256: "563455b33c71913809377684b0878a527a8464fdd27b6e3150af50125e1bb1ff",
     source: "client/src/design/editorial/identity.json",
     version: "4.2.0",
   },
@@ -71,7 +71,6 @@ export const COLORS = {
     onAccentSoft: "#0A0A0A",
     onAction: "#FFFFFF",
     secondary: "#E5E5E5",
-    shimmer: "#171717",
     success: "#90D6AF",
     surface: "#171717",
   },
@@ -94,7 +93,6 @@ export const COLORS = {
     onAccentSoft: "#0A0A0A",
     onAction: "#FFFFFF",
     secondary: "#333333",
-    shimmer: "#F2F2F2",
     success: "#236044",
     surface: "#FFFFFF",
   },

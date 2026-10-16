@@ -82,7 +82,7 @@ export function auditBrand(root=process.cwd()) {
   // fond gris, les sections se séparent par un filet (`line`). Le gris clair
   // garde un seul rôle, `shimmer` : le squelette de chargement, qui n'existerait
   // pas sur fond blanc.
-  const official={canvas:'#FFFFFF',ink:'#0A0A0A',surface:'#FFFFFF',shimmer:'#F2F2F2',action:'#571EF6',accent:'#571EF6',onAction:'#FFFFFF',accentSoft:'#C5B2F4',onAccentSoft:'#0A0A0A'};
+  const official={canvas:'#FFFFFF',ink:'#0A0A0A',surface:'#FFFFFF',action:'#571EF6',accent:'#571EF6',onAction:'#FFFFFF',accentSoft:'#C5B2F4',onAccentSoft:'#0A0A0A'};
   for(const [role,value] of Object.entries(official)) if(identity.colors[role]!==value) errors.push(`official palette changed: ${role}`);
   for(const role of ['accentSoft','onAccentSoft']) if(identity.darkColors[role]!==official[role]) errors.push(`official palette changed: dark ${role}`);
   const share=identity.accentShare||{};

@@ -42,8 +42,7 @@
     "info": "#666666",
     "infoSoft": "#FFFFFF",
     "success": "#236044",
-    "danger": "#A52D2D",
-    "shimmer": "#F2F2F2"
+    "danger": "#A52D2D"
   },
   "darkColors": {
     "canvas": "#0A0A0A",
@@ -65,7 +64,6 @@
     "info": "#BDBDBD",
     "infoSoft": "#171717",
     "success": "#90D6AF",
-    "danger": "#FFABAB",
-    "shimmer": "#171717"
+    "danger": "#FFABAB"
   }
 }

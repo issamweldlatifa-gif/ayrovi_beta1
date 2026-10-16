@@ -23,7 +23,8 @@ describe('ZAYROVI A — enforceable identity', () => {
     expect(BRAND.colors.canvas).toBe('#FFFFFF');
     expect(BRAND.colors.ink).toBe('#0A0A0A');
     expect(BRAND.colors.surface).toBe('#FFFFFF');
-    expect(BRAND.colors.shimmer).toBe('#F2F2F2');
+    // Aucun rôle « gris » ne subsiste : le chargement est tracé, pas rempli.
+    expect(BRAND.colors).not.toHaveProperty('shimmer');
     expect(BRAND.colors.accent).toBe('#571EF6'); // L'orange #FF7900 est retiré.
     expect(BRAND.colors.action).toBe('#571EF6');
     expect(BRAND.colors.onAction).toBe('#FFFFFF');

@@ -110,8 +110,6 @@ export const LENS_COLORS = {
   /** Fond d'un choix actif (mode caméra choisi) : violet clair, libellé noir (10,4:1). */
   activeSoft: BRAND.violetLight,
   star: BRAND.black,
-  /** Squelette : le gris clair officiel (§ « Skeleton Loading » de l'identité). */
-  skeleton: BRAND.lightGray,
   /** Neutres fixes des cartes résultats, dont la zone texte reste blanche. */
   resultMuted: NEUTRALS.textSecondary,
   resultLine: NEUTRALS.border,
@@ -399,8 +397,6 @@ export interface DerivablePalette {
   ink: string;
   muted: string;
   focus: string;
-  /** Gris de chargement (« shimmer ») : le seul aplat gris de l'interface. */
-  shimmer: string;
 }
 
 /**
@@ -447,16 +443,7 @@ export function derivedColors(colors: DerivablePalette) {
     focusRing: colors.focus,
     /** Surlignage d'un texte sélectionné dans un champ (Android) : violet translucide. */
     selection: alpha(colors.focus, 0.3),
-    /**
-     * Squelette de chargement : 5 % d'encre sur le canvas — #F2F2F2 en clair,
-     * #171717 en sombre, les deux valeurs historiques, mais calculées sur le
-     * CANVAS depuis que la surface est blanche.
-     *
-     * C'est le SEUL aplat gris qui subsiste (décision n° 1 du 17/10/2026) : un
-     * squelette blanc n'existerait pas à l'écran. Il ne recouvre qu'un état
-     * transitoire, jamais une section de l'interface.
-     */
-    skeleton: colors.shimmer,
+
     /**
      * Texte posé sur un MÉDIA (photo, vignette vidéo) : blanc dans les DEUX
      * modes, et c'est volontairement une des rares couleurs qui ne suivent pas

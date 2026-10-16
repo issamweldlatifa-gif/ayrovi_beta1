@@ -37,7 +37,6 @@
   --ay-e-danger: #A52D2D;
   --ay-e-focus: #571EF6;
   --ay-e-secondary: #333333;
-  --ay-e-shimmer: #F2F2F2;
   --ay-e-cta-radius: 999px;
   --ay-e-control-radius: 12px;
   --ay-e-card-radius: 16px;
@@ -68,7 +67,6 @@
   --ay-e-danger: #FFABAB;
   --ay-e-focus: #926DF9;
   --ay-e-secondary: #E5E5E5;
-  --ay-e-shimmer: #171717;
 }
 html { font-family: var(--ay-font-stack); font-synthesis: none; }
 body { margin: 0; font-family: var(--ay-font-stack); color: var(--ay-e-ink); background: var(--ay-e-canvas); }

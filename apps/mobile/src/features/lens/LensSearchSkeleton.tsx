@@ -17,13 +17,13 @@ function ProductSkeleton({ index }: { index: number }) {
   const mediaHeight = lensCardMediaHeight(width);
   return (
     <View testID={`lens-skeleton-card-${index}`} style={styles.card}>
-      <Skeleton color={LENS_COLORS.skeleton} minOpacity={0.48} height={mediaHeight} radius={0} />
+      <Skeleton minOpacity={0.48} height={mediaHeight} radius={0} />
       <View style={styles.copy}>
-        <Skeleton color={LENS_COLORS.skeleton} minOpacity={0.48} height={13} width="45%" />
-        <Skeleton color={LENS_COLORS.skeleton} minOpacity={0.48} height={18} width="88%" />
-        <Skeleton color={LENS_COLORS.skeleton} minOpacity={0.48} height={12} width="70%" />
-        <Skeleton color={LENS_COLORS.skeleton} minOpacity={0.48} height={12} width="58%" />
-        <Skeleton color={LENS_COLORS.skeleton} minOpacity={0.48} height={14} width="48%" />
+        <Skeleton minOpacity={0.48} height={13} width="45%" />
+        <Skeleton minOpacity={0.48} height={18} width="88%" />
+        <Skeleton minOpacity={0.48} height={12} width="70%" />
+        <Skeleton minOpacity={0.48} height={12} width="58%" />
+        <Skeleton minOpacity={0.48} height={14} width="48%" />
       </View>
     </View>
   );

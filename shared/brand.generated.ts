@@ -21,8 +21,7 @@ export const BRAND = {
     "success": "#236044",
     "danger": "#A52D2D",
     "focus": "#571EF6",
-    "secondary": "#333333",
-    "shimmer": "#F2F2F2"
+    "secondary": "#333333"
   },
   "darkColors": {
     "canvas": "#0A0A0A",
@@ -44,8 +43,7 @@ export const BRAND = {
     "success": "#90D6AF",
     "danger": "#FFABAB",
     "focus": "#926DF9",
-    "secondary": "#E5E5E5",
-    "shimmer": "#171717"
+    "secondary": "#E5E5E5"
   },
   "typography": {
     "preset": "ayrovi-a",

@@ -100,7 +100,14 @@ describe('chargement et résultats Lens', () => {
     expect(nativeTokens).toContain('sale: PRICE_DROP_RED');
     expect(nativeTokens).toContain('active: BRAND.violet');
     expect(nativeTokens).toContain('star: BRAND.black');
-    expect(nativeTokens).toContain('skeleton: BRAND.lightGray');
+    // Aucun gris, même pour l'attente : l'emplacement est tracé (`line`), pas rempli.
+    // On isole le bloc LENS_COLORS : le mot « skeleton » survit ailleurs (opacité, commentaires).
+    const lensColors = nativeTokens.slice(
+      nativeTokens.indexOf('export const LENS_COLORS'),
+      nativeTokens.indexOf('};', nativeTokens.indexOf('export const LENS_COLORS')),
+    );
+    expect(lensColors).not.toContain('skeleton');
+    expect(lensColors).not.toContain('lightGray');
     expect(contrastWithWhite('#CF1322')).toBeGreaterThanOrEqual(4.5);
     expect(contrastWithWhite('#571EF6')).toBeGreaterThanOrEqual(4.5);
     // Plus aucun dégradé d'attente : l'attente est le cercle en pointillés (LoadingSpinner).

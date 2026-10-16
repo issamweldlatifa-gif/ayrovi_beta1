@@ -6,8 +6,10 @@
  * STRUCTURE attendue : la perception de vitesse augmente sans inventer de
  * donnée (règle du projet : jamais de contenu fictif).
  *
- * Le jeton `theme.opacity.skeleton` existait dans `tokens.mobile.ts` sans
- * composant pour le porter : c'est ici qu'il vit maintenant.
+ * 17/10/2026 — décision client n° 1, sans exception : **plus aucun aplat gris**.
+ * Le squelette n'est donc plus un bloc gris mais un emplacement **tracé** :
+ * contour au filet (`line`), intérieur blanc. La pulsation reste (elle dit
+ * « ça charge »), seul le gris disparaît.
  *
  * Accessibilité : un `AccessibilityInfo.isReduceMotionEnabled()` actif (ou le
  * jeton `motion.reduced`) fige le bloc — pas de pulsation pour qui a demandé
@@ -26,9 +28,9 @@ export function Skeleton({
   height?: number;
   radius?: number;
   testID?: string;
-  /** Une surface spécifique peut renforcer le gris sans créer un autre composant. */
+  /** Couleur du CONTOUR (par défaut le filet du thème) — jamais un aplat. */
   color?: string;
-  /** Opacité la plus faible de la pulsation (Lens demande un squelette plus net). */
+  /** Opacité la plus faible de la pulsation (Lens demande un emplacement plus net). */
   minOpacity?: number;
 }) {
   const theme = useTheme();
@@ -68,8 +70,10 @@ export function Skeleton({
           width,
           height,
           borderRadius: radius ?? theme.radius.sm,
-          // Gris clair officiel (#F2F2F2) : la couleur de chargement de l'identité.
-          backgroundColor: color ?? theme.colors.skeleton,
+          // Emplacement TRACÉ, pas rempli : plus d'aplat gris nulle part.
+          backgroundColor: theme.colors.surface,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: color ?? theme.colors.line,
           // Mouvement réduit : bloc pleinement visible, seulement immobile.
           opacity: reduced ? 1 : pulse,
         },
