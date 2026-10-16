@@ -11,6 +11,8 @@
  *     cartouche d'état alimenté par `/api/health`, œil du mot de passe à état accessible, titre
  *     d'onglet propre à la console ;
  *  5. la console est protégée contre la mise en cadre (clickjacking) dans TOUS les environnements.
+ *  6. (2026-10-16) chaque état de la coquille reste lisible : le tiroir fermé ne voile plus la
+ *     console sous 900 px.
  */
 import { readFileSync } from 'node:fs';
 // @vitest-environment jsdom
@@ -201,5 +203,42 @@ describe('5. Durcissement de la console', () => {
     // console serait invisible dans l'aperçu — qui est lui-même rendu dans un cadre.
     expect(server).toContain("const frameAncestors = !isProd ? '' :");
     expect(server).toMatch(/if \(isProd\) \{\s*res\.setHeader\('X-Frame-Options'/);
+  });
+});
+
+describe('6. Chaque état de la coquille reste lisible', () => {
+  const css = read('client/src/styles/admin-console.css').replace(/\/\*[\s\S]*?\*\//g, '');
+  const shell = read('client/src/admin/back-office/BackOfficeShell.tsx');
+
+  /** Contenu d'un bloc `@media …` (accolades équilibrées). */
+  const atBlock = (prelude: string): string => {
+    const open = css.indexOf('{', css.indexOf(prelude));
+    for (let i = open, depth = 0; i < css.length; i++) {
+      if (css[i] === '{') depth++;
+      else if (css[i] === '}' && --depth === 0) return css.slice(open + 1, i);
+    }
+    return '';
+  };
+  /** Déclarations de la règle dont le sélecteur est EXACTEMENT `selector` (dernière occurrence). */
+  const rule = (selector: string, source = css): Record<string, string> | null => {
+    const pattern = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+');
+    const found = [...source.matchAll(new RegExp(`(?:^|[{};])\\s*${pattern}\\s*\\{([^}]*)\\}`, 'g'))].at(-1);
+    if (!found) return null;
+    return Object.fromEntries(found[1].split(';').map((entry) => entry.trim()).filter(Boolean)
+      .map((entry) => [entry.slice(0, entry.indexOf(':')).trim(), entry.slice(entry.indexOf(':') + 1).trim()]));
+  };
+
+  it('sous 900 px, le voile du tiroir n’existe que tiroir ouvert (la console n’est plus voilée au repos)', () => {
+    const drawer = atBlock('@media (max-width: 900px)');
+    const closed = rule('.bo-shell .admin-sidebar', drawer);
+    expect(closed).not.toBeNull();
+    expect(closed!['box-shadow']).toBeUndefined();
+    expect(rule('.bo-shell .admin-sidebar.is-open', drawer)?.['box-shadow']).toMatch(/0 0 0 100vmax/);
+    // aucun autre voile plein écran dans la feuille
+    const scrims = [...css.matchAll(/([^{};]+)\{[^}]*100vmax[^}]*\}/g)].map((match) => match[1].trim());
+    expect(scrims).toEqual(['.bo-shell .admin-sidebar.is-open']);
+    // `is-open` et le fond cliquable suivent le même état que le bouton « Ouvrir le menu »
+    expect(shell).toContain("<aside className={`admin-sidebar ${mobile ? 'is-open' : ''}`}>");
+    expect(shell).toContain('{mobile && <button className="admin-sidebar-overlay" onClick={() => setMobile(false)}');
   });
 });

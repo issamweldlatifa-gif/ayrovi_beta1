@@ -456,7 +456,11 @@ html[data-theme='dark'] .bo-shell .bo-notice { border-color: #3A3018; color: #E8
    navigation reste UNE décision, pas deux qui se contredisent. */
 @media (max-width: 900px) {
   .bo-shell .admin-workspace { margin-inline-start: 0; }
-  .bo-shell .admin-sidebar { top: 0; z-index: 60; box-shadow: 0 0 0 100vmax rgba(17, 17, 16, .35); }
+  .bo-shell .admin-sidebar { top: 0; z-index: 60; }
+  /* Le voile (ombre de 100vmax) n'existe que tiroir OUVERT. Défaut corrigé : posé sur le rail
+     fermé — sorti de l'écran par translateX, mais dont l'ombre couvre toujours tout —, il voilait
+     la console entière à 35 % sur tablette et téléphone, comme si une fenêtre restait ouverte. */
+  .bo-shell .admin-sidebar.is-open { box-shadow: 0 0 0 100vmax rgba(17, 17, 16, .35); }
   .bo-rail-head button { display: grid; place-items: center; }
   .bo-topbar { gap: 10px; padding: 0 12px; }
   .bo-topbar-brand span { display: none; }

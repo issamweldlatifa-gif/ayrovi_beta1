@@ -94,8 +94,12 @@ magazine 2,77 % → 0,03 %, Prix & taux 1,55 % → 0,33 %, Promotions 1,62 % →
 **Laissé tel quel, à décider** : la fiche commande peut montrer deux boutons principaux
 selon l'état (« Valider le virement » / « Émettre la facture » / « Enregistrer la
 livraison ») — paiement et commandes, non modifiés sans demande. « Create Arrival »
-apparaît deux fois quand la liste est vide (même action). Défauts préexistants observés,
-non corrigés : sous 900 px de large, l'ombre du tiroir fermé (`0 0 0 100vmax`) voile
-tout l'écran de la console (visible sur les captures 390) ; en thème sombre, la pastille
-de domaine choisie est blanche sur blanc et la carte « Arrivages Standard actifs » reste
-blanche.
+apparaît deux fois quand la liste est vide (même action).
+
+**Défauts préexistants observés pendant ce lot** (hors violet, corrigés ensuite dans des
+commits séparés — voir « Fixed » du CHANGELOG) :
+- sous 900 px de large, l'ombre du tiroir fermé (`0 0 0 100vmax`) voilait tout l'écran de
+  la console — c'est le voile gris des captures « Téléphone 390 » de `admin-4`, prises avant
+  la correction. **Corrigé** : le voile n'existe plus que tiroir ouvert ;
+- en thème sombre, la pastille de domaine choisie est blanche sur blanc et la carte
+  « Arrivages Standard actifs » reste blanche (non corrigés à ce stade).
