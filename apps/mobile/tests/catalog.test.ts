@@ -106,6 +106,14 @@ describe('صفحة المنتوج — قرار موثّق', () => {
     expect(source).not.toMatch(/addCartItem|addAyWebsCartItem/);
   });
 
+  it('«زيد للسلّة» يبعث معرّف جلسة الزائر، والزر يستنّى حتى يتحضّر', () => {
+    // بلا `x-session-id` الخادم يرد 400 على `/api/cart/catalog` — نفس المعرّف اللي تقرا بيه السلّة.
+    const source = screen();
+    expect(source).toContain("import { useSessionId } from '@/session/session';");
+    expect(source).toContain('addCatalogToCart({ productId: String(id), sessionId })');
+    expect(source).toContain('disabled={addToCart.isSuccess || !sessionId}');
+  });
+
   it('الزر **ما يبانش** كان ما فمّاش سعر أو كان نافد (موّش زر يفشل)', () => {
     // نفس قاعدة الخادم: `NO_PRICE` و`OUT_OF_STOCK` يرفضو الإضافة، فإظهار زر
     // يفشل هو «الزر الميّت» الممنوع.

@@ -178,13 +178,19 @@ export interface ExternalCartResult extends CatalogCartResult {
 
 export async function addCatalogToCart(input: {
   productId: string;
+  /** معرّف جلسة الزائر — نفس اللي تقرا بيه شاشة السلّة. */
+  sessionId: string;
   quantity?: number;
   requestedSize?: string;
   requestedColor?: string;
   customerNote?: string;
 }, options: RequestOptions = {}): Promise<CatalogCartResult> {
+  // `x-session-id` إلزامي على الكتابة (`requireSessionId` في الخادم): بلاه الخادم يرد 400
+  // «Session client invalide ou absente.» قبل ما يقرا المنتوج — كان هذا حال زر «زيد للسلّة»
+  // في صفحة المنتوج. وبنفس المعرّف، السطر يظهر في السلّة اللي تقرا بـ`fetchAyroviCart`.
   const payload = await apiSendEnvelope<Record<string, unknown>>('POST', '/api/cart/catalog', {
     ...options,
+    headers: { 'x-session-id': input.sessionId, ...(options.headers ?? {}) },
     body: {
       productId: input.productId,
       ...(input.quantity ? { quantity: input.quantity } : {}),

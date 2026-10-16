@@ -30,6 +30,7 @@ import { addCatalogToCart } from '@/api/cart';
 import { isApiError } from '@/api/errors';
 import { fetchCatalogProduct, fetchCatalogProducts, normalizeStockStatus } from '@/api/catalog';
 import { useSession } from '@/state/session';
+import { useSessionId } from '@/session/session';
 
 export default function ProductScreen() {
   const theme = useTheme();
@@ -38,6 +39,8 @@ export default function ProductScreen() {
   const session = useSession();
   // `status` moّش `authenticated`: واجهة الجلسة تعطي حالة صريحة.
   const signedIn = session.status === 'signedIn';
+  // معرّف جلسة الزائر: إلزامي على `/api/cart/catalog` (بلاه 400). `''` = مازال ما تحضّرش.
+  const sessionId = useSessionId();
   const queryClient = useQueryClient();
 
   const products = useQuery({
@@ -72,7 +75,7 @@ export default function ProductScreen() {
    * `final_price` المنشور ⇒ **سعر واحد**، هو سعر المتجر، `VERIFIED`.
    */
   const addToCart = useMutation({
-    mutationFn: () => addCatalogToCart({ productId: String(id) }),
+    mutationFn: () => addCatalogToCart({ productId: String(id), sessionId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cart'] });
     },
@@ -189,7 +192,7 @@ export default function ProductScreen() {
             tone="main"
             onPress={() => addToCart.mutate()}
             busy={addToCart.isPending}
-            disabled={addToCart.isSuccess}
+            disabled={addToCart.isSuccess || !sessionId}
             testID="product-add-to-cart"
           />
         ) : outOfStock ? (

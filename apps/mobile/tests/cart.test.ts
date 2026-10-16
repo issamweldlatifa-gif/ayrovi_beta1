@@ -7,7 +7,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
-  ayroviCartReadiness, fetchAyroviCart, parseAyroviCart, removeAyroviCartItem, updateAyroviCartQuantity,
+  addCatalogToCart, ayroviCartReadiness, fetchAyroviCart, parseAyroviCart, removeAyroviCartItem, updateAyroviCartQuantity,
 } from '../src/api/cart';
 import { API_BASE_URL } from '../src/api/config';
 
@@ -165,6 +165,19 @@ describe('الشبكة', () => {
     stubFetch(() => json({ success: true }));
     await expect(removeAyroviCartItem({ itemId: 'ci_1', sessionId: SESSION }))
       .rejects.toMatchObject({ kind: 'malformed' });
+  });
+
+  it('زيد من الكتالوج: POST `/api/cart/catalog` مع `x-session-id` (بلاه الخادم يرد 400)', async () => {
+    // كان الطلب يخرج بلا معرّف الجلسة ⇒ «Session client invalide ou absente.» (400) على كل ضغطة.
+    const spy = stubFetch(() => json({ success: true, cartItem: { id: 'ci_9' }, totalItemsCount: 3, totalTND: 120.5, deliveryTND: 7 }));
+    const out = await addCatalogToCart({ productId: 'prod_1', sessionId: SESSION, quantity: 2 });
+
+    const [url, init] = spy.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`${API_BASE_URL}/api/cart/catalog`);
+    expect(init.method).toBe('POST');
+    expect(headersOf(init)['x-session-id']).toBe(SESSION);
+    expect(bodyOf(init)).toEqual({ productId: 'prod_1', quantity: 2 });
+    expect(out).toEqual({ cartItemId: 'ci_9', totalItemsCount: 3, totalTND: 120.5, deliveryTND: 7 });
   });
 
   it('رفض الخادم يوصل بكوده ونصّه (بلا تلميع)', async () => {
