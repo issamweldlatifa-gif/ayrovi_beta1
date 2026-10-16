@@ -18,6 +18,7 @@ import { AppImage } from '@/design/appImage';
 import { useTheme } from '@/design/theme';
 import { frost, veil } from '@/design/tokens.mobile';
 import { useT } from '@/i18n';
+import { LensSearchRing } from './LensSearchRing';
 import { LENS_COLORS } from './lensPalette';
 import {
   boxToRect, containRect, cornerAt, iou, moveSelection, pointInImage, productIndexAt, rectContains,
@@ -40,6 +41,12 @@ interface Props {
   selection: LensBox;
   selectedIndex: number;
   detecting: boolean;
+  /**
+   * La zone encadrée est EN TRAIN d'être cherchée (16/10/2026) : une couronne
+   * de points et un balayage la désignent, et le reste de la photo s'assombrit
+   * davantage — on voit où porte la recherche, sans jamais l'inventer.
+   */
+  searching?: boolean;
   onCommit: (commit: SelectionCommit) => void;
 }
 
@@ -48,7 +55,7 @@ type Drag = { kind: 'resize'; corner: Corner } | { kind: 'move' } | { kind: 'tap
 const DRAG_SLOP = 6;
 
 export function LensSelectionView({
-  uri, imageWidth, imageHeight, top, height, width, products, selection, selectedIndex, detecting, onCommit,
+  uri, imageWidth, imageHeight, top, height, width, products, selection, selectedIndex, detecting, searching, onCommit,
 }: Props) {
   const theme = useTheme();
   const t = useT();
@@ -137,6 +144,16 @@ export function LensSelectionView({
     return () => loop.stop();
   }, [detecting, pulse, theme.motion.reduced]);
 
+  // Voile hors cadre : il s'épaissit pendant la recherche pour isoler la zone lue.
+  const dimLevel = useRef(new Animated.Value(DIM_REST)).current;
+  useEffect(() => {
+    const to = searching ? DIM_SEARCH : DIM_REST;
+    if (theme.motion.reduced === 0) { dimLevel.setValue(to); return undefined; }
+    const anim = Animated.timing(dimLevel, { toValue: to, duration: 220, useNativeDriver: false });
+    anim.start();
+    return () => anim.stop();
+  }, [dimLevel, searching, theme.motion.reduced]);
+
   return (
     <View style={[styles.area, { top, height }]} testID="lens-selection">
       <View
@@ -154,10 +171,10 @@ export function LensSelectionView({
           />
         </View>
         {/* Voile hors du cadre : la zone cherchée reste seule en pleine lumière. */}
-        <View pointerEvents="none" style={[styles.dim, { left: 0, top: 0, width: image.w, height: frame.y }]} />
-        <View pointerEvents="none" style={[styles.dim, { left: 0, top: frame.y + frame.h, width: image.w, height: Math.max(0, image.h - frame.y - frame.h) }]} />
-        <View pointerEvents="none" style={[styles.dim, { left: 0, top: frame.y, width: frame.x, height: frame.h }]} />
-        <View pointerEvents="none" style={[styles.dim, { left: frame.x + frame.w, top: frame.y, width: Math.max(0, image.w - frame.x - frame.w), height: frame.h }]} />
+        <Animated.View pointerEvents="none" style={[styles.dim, { left: 0, top: 0, width: image.w, height: frame.y, opacity: dimLevel }]} />
+        <Animated.View pointerEvents="none" style={[styles.dim, { left: 0, top: frame.y + frame.h, width: image.w, height: Math.max(0, image.h - frame.y - frame.h), opacity: dimLevel }]} />
+        <Animated.View pointerEvents="none" style={[styles.dim, { left: 0, top: frame.y, width: frame.x, height: frame.h, opacity: dimLevel }]} />
+        <Animated.View pointerEvents="none" style={[styles.dim, { left: frame.x + frame.w, top: frame.y, width: Math.max(0, image.w - frame.x - frame.w), height: frame.h, opacity: dimLevel }]} />
         <Animated.View
           pointerEvents="none"
           style={[styles.frame, { left: frame.x, top: frame.y, width: frame.w, height: frame.h, opacity: pulse }]}
@@ -170,6 +187,11 @@ export function LensSelectionView({
           <View style={[styles.corner, styles.cornerTR]} />
           <View style={[styles.corner, styles.cornerBL]} />
           <View style={[styles.corner, styles.cornerBR]} />
+          {searching ? (
+            <View style={StyleSheet.absoluteFill} pointerEvents="none">
+              <LensSearchRing width={frame.w} height={frame.h} />
+            </View>
+          ) : null}
         </Animated.View>
         {detecting ? null : products.map((product, index) => {
           if (index === selectedIndex) return null;
@@ -194,11 +216,14 @@ export function LensSelectionView({
 const DOT = 30;
 const CORNER = 34;
 const STROKE = 5;
+/** Voile hors cadre : 0.45 au repos, 0.66 pendant la recherche (zone lue isolée). */
+const DIM_REST = 0.45;
+const DIM_SEARCH = 0.66;
 
 const styles = StyleSheet.create({
   area: { position: 'absolute', left: 0, right: 0 },
   image: { position: 'absolute', overflow: 'hidden' },
-  dim: { position: 'absolute', backgroundColor: veil(0.45) },
+  dim: { position: 'absolute', backgroundColor: veil(1) },
   frame: { position: 'absolute' },
   corner: { position: 'absolute', width: CORNER, height: CORNER, borderColor: LENS_COLORS.white },
   cornerTL: { top: 0, left: 0, borderTopWidth: STROKE, borderLeftWidth: STROKE, borderTopLeftRadius: 16 },

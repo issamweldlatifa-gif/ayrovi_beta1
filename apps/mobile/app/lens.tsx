@@ -1006,6 +1006,7 @@ export default function LensScreen() {
             selection={sessionPhoto.selection}
             selectedIndex={sessionPhoto.selected}
             detecting={sessionPhoto.detection === 'pending'}
+            searching={stage.kind === 'busy' && sessionPhoto.detection !== 'pending'}
             onCommit={onSelectionCommit}
           />
         ) : previewUri ? (

@@ -150,6 +150,36 @@ describe('caméra Lens directe', () => {
     expect(mockAnalyzeImage).toHaveBeenCalledTimes(2);
   });
 
+  it('montre la couronne de recherche autour du produit cherché, puis la retire', async () => {
+    let resolveSearch!: (value: typeof EMPTY_RESULT) => void;
+    mockDetect.mockResolvedValue(OUTFIT);
+    mockAnalyzeImage.mockReturnValue(new Promise((resolve) => { resolveSearch = resolve; }));
+
+    render(wrap(<LensScreen />));
+    const capture = await screen.findByTestId('lens-capture');
+    await waitFor(() => expect(capture.props.accessibilityState.disabled).toBe(false));
+    fireEvent.press(capture);
+
+    // Pendant la recherche : 8 points autour du cadre + le trait de balayage.
+    expect(await screen.findByTestId('lens-search-ring')).toBeTruthy();
+    expect(screen.getByTestId('lens-search-scan')).toBeTruthy();
+    for (let index = 0; index < 8; index += 1) {
+      expect(screen.getByTestId(`lens-search-dot-${index}`)).toBeTruthy();
+    }
+
+    // Toucher les baskets : la couronne suit, la zone lue change.
+    fireEvent.press(await screen.findByTestId('lens-product-dot-2'));
+    expect(screen.getByTestId('lens-search-ring')).toBeTruthy();
+
+    // Résultat rendu : plus aucune attente affichée.
+    // Les deux recherches (cadre initial, puis produit touché) partagent la
+    // même réponse : une fois rendue, la photo n'est plus en attente nulle part.
+    resolveSearch(EMPTY_RESULT);
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 50)); });
+    await waitFor(() => expect(screen.queryByTestId('lens-search-ring')).toBeNull());
+    expect(screen.queryByTestId('lens-search-scan')).toBeNull();
+  });
+
   it('barre des modes sous les boutons, menu ⋮ et Produits interdits', async () => {
     render(wrap(<LensScreen />));
     expect(await screen.findByTestId('lens-capture')).toBeTruthy();

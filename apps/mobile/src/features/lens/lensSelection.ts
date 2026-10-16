@@ -209,3 +209,29 @@ export function clampRectToArea(
   const y2 = clamp(rect.y + rect.h, y1 + min, Math.max(y1 + min, area.bottom));
   return { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
 }
+
+export interface RingPoint { x: number; y: number }
+
+/**
+ * Points d'attente autour d'un cadre (16/10/2026) : `count` points répartis à
+ * intervalles réguliers sur le pourtour du rectangle (0,0,w,h), dans le sens
+ * horaire. Sert à montrer OÙ porte la recherche pendant l'analyse.
+ */
+export function ringPoints(width: number, height: number, count = 8): RingPoint[] {
+  const w = Math.max(1, width);
+  const h = Math.max(1, height);
+  const perimeter = 2 * (w + h);
+  const step = perimeter / count;
+  const points: RingPoint[] = [];
+  for (let index = 0; index < count; index += 1) {
+    let distance = (step * index + step / 2) % perimeter;
+    if (distance < w) { points.push({ x: distance, y: 0 }); continue; }
+    distance -= w;
+    if (distance < h) { points.push({ x: w, y: distance }); continue; }
+    distance -= h;
+    if (distance < w) { points.push({ x: w - distance, y: h }); continue; }
+    distance -= w;
+    points.push({ x: 0, y: h - distance });
+  }
+  return points;
+}
