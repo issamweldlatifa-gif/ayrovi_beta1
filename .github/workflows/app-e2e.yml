@@ -17,7 +17,11 @@ name: App — parcours complet (CI)
 on:
   workflow_dispatch:
   push:
-    branches: [arena/c0321e79-ayrovi-beta1, main]
+    # Toute branche de travail Arena + `main`. La liste écrite à la main
+    # (`arena/c0321e79-ayrovi-beta1`) datait de trois sessions : chaque
+    # branche nouvelle se croyait couverte, et le parcours complet n'était
+    # vérifié sur aucune d'elles — en silence.
+    branches: [main, 'arena/**']
     paths:
       - "src/**"
       - "shared/**"

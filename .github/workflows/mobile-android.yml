@@ -11,6 +11,18 @@ name: Mobile — APK Android (démo)
 # s'installe À CÔTÉ de l'application existante, sans la toucher. C'est le choix
 # assumé tant que le keystore d'origine n'est pas disponible pour une mise à
 # jour en place.
+#
+# ⚠️ FENNE GITHUB À CONNAÎTRE (coûte une heure de confusion le 16/10/2026)
+#
+# Une branche NOUVELLE créée sur un commit DÉJÀ présent ailleurs NE DÉCLENCHE
+# AUCUN workflow. Constaté : `arena/b1aac3a9-ayrovi-beta1` et
+# `arena/b3539284-ayrovi-beta1` pointaient sur un commit déjà poussé ailleurs —
+# 0 check-suite, 0 run, aucun APK, et AUCUN message d'erreur. Le même commit,
+# poussé sur une branche EXISTANTE, construit normalement.
+#
+# Règle : après avoir copié un autre branche, il faut pousser au moins UN
+# nouveau commit sur la branche neuve pour que la CI démarre. C'est exactement
+# ce que fait le commit qui ajoute cette documentation.
 on:
   # ⚠️ GitHub n'accepte `workflow_dispatch` que pour un workflow présent sur la
   # branche PAR DÉFAUT. Tant que ce fichier n'est pas sur `main`, on déclenche
@@ -24,15 +36,20 @@ on:
         required: true
         default: "https://ayrovi-beta1-moo8.onrender.com"
   push:
-    # TOUTE branche de travail Arena (`arena/<session>-ayrovi-beta1`) : l'APK
-    # démo se reconstruit après chaque mise à jour de l'application, quelle que
-    # soit la session. Avant, chaque nouvelle session devait ajouter sa branche
-    # à une liste écrite à la main (c0321e79, bc19f283, a41a200d, dbcc3118,
+    # TOUTE branche de travail Arena (`arena/<session>-...`) : l'APK démo se
+    # reconstruit après chaque mise à jour de l'application, quelle que soit la
+    # session. Avant, chaque nouvelle session devait ajouter sa branche à une
+    # liste écrite à la main (c0321e79, bc19f283, a41a200d, dbcc3118,
     # 6c61a279, 9fd9a9fc…) ; une branche oubliée = aucun APK, en silence.
-    branches: ['arena/*-ayrovi-beta1']
+    # Le motif `arena/**` épuise la famille : plus aucune liste à tenir à la main.
+    branches: ['arena/**']
     paths:
       - 'apps/mobile/**'
       - '.github/workflows/mobile-android.yml'
+      # Un changement de CE workflow doit se tester lui-même : sans cette
+      # ligne, corriger le pipeline (ou y ajouter une étape) ne se vérifierait
+      # qu'au push suivant qui touche `apps/mobile/`.
+      - '.github/workflows/mobile-release-aab.yml'
 
 concurrency:
   group: mobile-apk-${{ github.ref }}
@@ -292,6 +309,74 @@ jobs:
           gh release create "$TAG" "$APK" --target "$GITHUB_SHA" --prerelease \
             --title "APK démo ${SHORT}" --notes "$NOTES" \
             || echo "::warning::publication de la Release impossible"
+
+      - name: Publier la démo « toujours la plus récente » (lien permanent)
+        # UN SEUL LIEN, TOUJOURS À JOUR :
+        #   https://github.com/<dépôt>/releases/download/apk-demo-latest/ZAYROVI-Demo.apk
+        #
+        # Pourquoi ce doublon de la Release par commit (`apk-<commit>` ci-dessus) :
+        # la Release par commit est IMMUABLE — elle dit « voici exactement ce qui a
+        # été testé », et rien n'y est écrasé. Mais son lien change à chaque
+        # commit : il faut les chaser un par un dans l'onglet Releases, et on
+        # installe souvent la VIEILLE version par automatisme. Ce tag mobile,
+        # lui, est remplacé à chaque build réussi : on garde le même lien dans
+        # son marque-page, on le télécharge, et c'est la dernière version.
+        #
+        # L'APK de démo s'installe PAR-DESSUS le précédent (même package
+        # `app.ayrovi.mobile.demo`, même clé de démo fixe) : c'est une mise à
+        # jour, pas une deuxième application à désinstaller.
+        if: success() && github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -uo pipefail
+          TAG="apk-demo-latest"
+          OUT="$GITHUB_WORKSPACE/apps/mobile/android/app/build/outputs/apk/release"
+
+          # On privilégie l'APK arm64-v8a : c'est l'architecture de tous les
+          # téléphones d'aujourd'hui, et le fichier pèse bien moins que
+          # l'universel (qui embarque les deux). Repli sur l'universel, puis
+          # sur le premier fichier produit — on ne devine jamais : on publie
+          # ce que Gradle a réellement sorti.
+          APK_SRC=""
+          for candidate in "$OUT"/app-arm64-v8a-release.apk "$OUT"/app-release.apk; do
+            if [ -f "$candidate" ]; then APK_SRC="$candidate"; break; fi
+          done
+          if [ -z "$APK_SRC" ]; then
+            APK_SRC=$(ls -1 "$OUT"/*.apk 2>/dev/null | head -n 1 || true)
+          fi
+          if [ -z "$APK_SRC" ]; then
+            echo "::warning::APK introuvable dans $OUT — pas de démo « latest »"
+            ls -la "$OUT" 2>/dev/null || true
+            exit 0
+          fi
+          echo "APK publié : $(basename "$APK_SRC") ($(du -h "$APK_SRC" | cut -f1))"
+
+          APK="$RUNNER_TEMP/ZAYROVI-Demo.apk"
+          cp "$APK_SRC" "$APK"
+          NOTES="Démo ZAYROVI — dernier build réussi (commit \`${GITHUB_SHA}\`). Build : https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            # Release déjà là : on REMPLACE l'asset (même nom) et on déplace le
+            # tag sur le commit courant. `--clobber` écrase l'asset existant ;
+            # sans lui, le deuxième build se heurterait à un nom déjà pris.
+            gh release upload "$TAG" "$APK" --clobber \
+              || echo "::warning::remplacement de l'asset « latest » impossible"
+            # Le tag doit suivre le commit : c'est lui qui dit de quelle version
+            # il s'agit. `force=true` : un tag n'est jamais « bloqué », ici on
+            # veut explicitement le déplacer.
+            gh api -X PATCH "repos/${GITHUB_REPOSITORY}/git/refs/tags/${TAG}" \
+              -f sha="$GITHUB_SHA" -F force=true >/dev/null \
+              || echo "::warning::déplacement du tag « latest » impossible"
+            gh release edit "$TAG" --notes "$NOTES" --prerelease \
+              --title "ZAYROVI Démo (dernière version)" >/dev/null \
+              || echo "::warning::mise à jour des notes impossible"
+          else
+            gh release create "$TAG" "$APK" --target "$GITHUB_SHA" --prerelease \
+              --title "ZAYROVI Démo (dernière version)" --notes "$NOTES" \
+              || echo "::warning::publication de la démo « latest » impossible"
+          fi
+          echo "::notice title=Démo prête::https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/ZAYROVI-Demo.apk"
       - name: Publier la mesure dans le dépôt
         # ⚠️ Deux leçons, payées par un build rouge :
         #

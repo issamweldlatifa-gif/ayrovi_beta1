@@ -5,10 +5,10 @@ name: Mobile — ZAYROVI app
 # de l'application, et inversement (règle de frontière, apps/mobile/PLAN.md §9).
 on:
   push:
-    # `main` + toute branche de travail Arena (`arena/<session>-ayrovi-beta1`) :
+    # `main` + toute branche de travail Arena (`arena/<session>-...`) :
     # typecheck · tokens · tests tournent après chaque mise à jour de
     # l'application, pas seulement à la fusion — sans liste à tenir à la main.
-    branches: [main, 'arena/*-ayrovi-beta1']
+    branches: [main, 'arena/**']
     paths:
       - 'apps/mobile/**'
       - '.github/workflows/mobile.yml'

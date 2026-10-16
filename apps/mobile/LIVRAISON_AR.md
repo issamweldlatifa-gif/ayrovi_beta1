@@ -84,7 +84,13 @@
 | المخرج | الأمر | أين يلقاه |
 |---|---|---|
 | APK تجريبي | workflow `Mobile — APK Android (démo)` | artefact `ZAYROVI-demo-apk` |
+| **APK تجريبي (آخر نسخة، رابط واحد دائم)** | نفس الـ workflow | `releases/download/apk-demo-latest/ZAYROVI-Demo.apk` |
 | AAB للنشر | workflow `mobile-release-aab` | artefact / الإصدار |
+
+**الرابط الدائم** (`apk-demo-latest`) يتبدّل مع كل بناء ناجح: نفس العنوان، ملف
+جديد. الإصدارات بالكوميت (`apk-<commit>`) تبقى موجودة وما يتكسّرش — هي تاريخ
+«شنوّة تبرّجت بالضبط». الـ APK ديال الديمو يثبت **فوق** اللي قبلو (نفس
+المعرّف `app.ayrovi.mobile.demo` ونفس المفتاح)، فالتحديث ولا تنصيب من جديد.
 
 **التقسيم على ABI مفعّل** (`arm64-v8a` + `armeabi-v7a`) ⇒ يخرج **أكثر من APK**،
 موش APK واحد شامل. هذا التغيير هو اللي يخرّج الحجم من 123 م.ب لأقلّ من نصّها

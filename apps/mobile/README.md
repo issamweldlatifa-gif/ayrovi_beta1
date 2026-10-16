@@ -53,6 +53,24 @@ npm run android        # أو مباشرةً على محاكي/جهاز متصل
 npm run web            # معاينة في المتصفح
 ```
 
+## النسخة الجاهزة (بلا ما تبني)
+
+كل push على فرع `arena/**` يبدّي بناءً في GitHub (`.github/workflows/mobile-android.yml`).
+ما تستنّاش بناءً محلياً: نزّل الـ APK من الرابط الدائم — نفس العنوان، والملف
+يتبدّل مع كل بناء ناجح:
+
+```
+https://github.com/issamweldlatifa-gif/ayrovi_beta1/releases/download/apk-demo-latest/ZAYROVI-Demo.apk
+```
+
+- يثبت **فوق** النسخة السابقة (المعرّف `app.ayrovi.mobile.demo` + مفتاح الديمو
+  الثابت) ⇒ تحديث، موش تنصيب ثانٍ.
+- الإصدارات بالكوميت (`apk-<commit>`) تبقى في تبويب Releases: تاريخ «شنوّة
+  تبرّجت بالضبط».
+- الحجم الحقيقي ديال آخر بناء في `APK_SIZES.md` (يكتبو CI بنفسو).
+- ⚠️ لو الـ APK قديم بزّاف: GitHub يخدم من الـ cache — استنّى دقيقة ولا
+  زيد `?v=<commit>` على الرابط.
+
 ## الفحوص
 
 ```bash
