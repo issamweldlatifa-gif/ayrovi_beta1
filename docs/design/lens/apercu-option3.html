@@ -51,6 +51,7 @@ input { font: inherit; }
 /* ── Live : détection en direct ─────────────────────────────────── */
 .live-stage { position: absolute; left: 0; right: 0; top: 0; bottom: 176px; overflow: hidden; }
 .live-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 35%; pointer-events: none; }
+.live-stage::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 64px; background: linear-gradient(rgba(10,10,10,0), #0A0A0A); pointer-events: none; }
 .ldots { position: absolute; inset: 0; }
 .dot { position: absolute; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 5px rgba(255,255,255,.3), 0 2px 10px rgba(0,0,0,.35); animation: pop .32s ease-out; }
 .dot::after { content: ''; position: absolute; inset: -12px; border-radius: 50%; }
@@ -98,8 +99,8 @@ input { font: inherit; }
 .side { width: 66px; display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; letter-spacing: .02em; }
 .side .c { width: 54px; height: 54px; border-radius: 50%; background: rgba(10,10,10,.5); border: 1.5px solid rgba(255,255,255,.9); display: flex; align-items: center; justify-content: center; }
 .side:active .c { background: rgba(255,255,255,.18); }
-.shutter { width: 88px; height: 88px; border-radius: 50%; background: rgba(255,255,255,.35); display: flex; align-items: center; justify-content: center; margin-bottom: 19px; }
-.shutter .d { width: 72px; height: 72px; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; transition: transform .12s; }
+.shutter { width: 104px; height: 104px; border-radius: 50%; background: rgba(255,255,255,.35); display: flex; align-items: center; justify-content: center; margin-bottom: 19px; box-shadow: 0 6px 20px rgba(0,0,0,.35); }
+.shutter .d { width: 88px; height: 88px; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; transition: transform .12s; }
 .shutter:active .d { transform: scale(.92); }
 .hint { position: absolute; left: 22px; right: 22px; top: 42px; gap: 14px; align-items: flex-start; }
 .hint b { display: block; font-size: 15px; font-weight: 600; line-height: 1.35; }
@@ -183,7 +184,7 @@ input { font: inherit; }
     <section class="panel">
       <div class="pc pc-live capture">
         <button class="side" data-act="gallery"><span class="c"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="color:#fff;flex:none" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2.5"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L5 21"/></svg></span><span>Galerie</span></button>
-        <button class="shutter" data-act="shoot" aria-label="Prendre la photo"><span class="d"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#0A0A0A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:#0A0A0A;flex:none" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg></span></button>
+        <button class="shutter" data-act="shoot" aria-label="Prendre la photo"><span class="d"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#0A0A0A" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="color:#0A0A0A;flex:none" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg></span></button>
         <button class="side" data-act="ocerex"><span class="c"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="color:#fff;flex:none" aria-hidden="true"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.4" fill="currentColor" stroke="none"/></svg></span><span>OCEREX</span></button>
       </div>
       <div class="pc pc-qr hint"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="color:#fff;flex:none" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h2v2h-2zM18 18h2v2h-2zM14 18h2M18 14h2"/></svg><div><b>Placez le QR code ou le code-barres dans le cadre.</b><span>La recherche démarre toute seule.</span></div></div>
