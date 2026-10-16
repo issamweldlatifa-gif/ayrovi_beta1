@@ -8,8 +8,12 @@ import { readLimitedText } from '../../services/safeUrl';
 
 /**
  * AYROVIX owns product discovery for text, QR/barcodes and Lens fallback.
- * SerpApi Google Shopping is the primary product provider when its server-side
- * key exists; ZAYROVI AI Core remains a no-price link fallback.
+ *
+ * 17/10/2026 — décision client : **la recherche = SerpApi** (Google Shopping
+ * rend un prix actionnable). La recherche Web du modèle (Anthropic Web Search)
+ * est DÉSACTIVÉE : elle ne repart QUE si un déploiement l'active explicitement
+ * (`AYROVIX_AI_WEB_SEARCH=true`), et seulement en dernier recours, quand
+ * SerpApi n'a rien rendu. Le modèle sert à COMPRENDRE, pas à CHERCHER.
  */
 
 const STOPWORDS = new Set(['the', 'and', 'pour', 'avec', 'les', 'des', 'une', 'femme', 'homme', 'femmes', 'hommes', 'new', 'style', 'mode', 'de', 'du', 'en', 'au', 'aux']);
@@ -36,8 +40,13 @@ function aiCoreWebSearchEnabled(): boolean {
     && getAyroviAiCore().responses().isConfigured();
 }
 
+/**
+ * La recherche externe existe si et seulement si SerpApi est configuré.
+ * Anthropic n'ouvre PLUS la recherche : sans clé SerpApi, il n'y a pas de
+ * recherche produit (plutôt qu'une recherche facturée sans prix).
+ */
 function externalWebSearchEnabled(): boolean {
-  return serpApiShoppingEnabled() || aiCoreWebSearchEnabled();
+  return serpApiShoppingEnabled();
 }
 
 function remainingSearchMs(deadline: number, perRequestMax: number): number {
@@ -356,9 +365,12 @@ export async function providerWebSearch(
   deadline = Date.now() + searchBudgetMs(),
 ): Promise<AyrovixCandidate[]> {
   if (!externalWebSearchEnabled() || !searchHasTime(deadline, 500)) return [];
-  if (serpApiShoppingEnabled()) {
-    const shopping = await serpApiShoppingSearch(query, limit, deadline);
-    if (shopping.length) return shopping;
+  const shopping = await serpApiShoppingSearch(query, limit, deadline);
+  if (shopping.length) return shopping;
+  // Repli modèle : explicitement réactivé par le déploiement, jamais par défaut.
+  if (!aiCoreWebSearchEnabled()) {
+    console.log('[AYROVIX search] SerpApi sans résultat — recherche Web du modèle désactivée (AYROVIX_AI_WEB_SEARCH=false)');
+    return [];
   }
   return aiCoreWebSearch(query, limit, deadline);
 }

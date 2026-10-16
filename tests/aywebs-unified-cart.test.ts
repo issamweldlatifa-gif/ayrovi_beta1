@@ -63,7 +63,7 @@ function harness() {
       availability: 'in_stock' as any,
       condition: undefined,
       brand: isAmazon ? 'Test' : 'SHEIN',
-      priceVerified: true, currencyVerified: true, verificationProvider: 'direct', verificationMethod: 'json_ld',
+      priceVerified: true, currencyVerified: true, verificationProvider: 'brightdata', verificationMethod: 'json_ld',
       verificationFailureCode: null, scrapedAt: new Date().toISOString(),
     };
   });

@@ -139,7 +139,7 @@ function fakeScraper(options: {
       condition: options.condition,
       brand: isAmazon ? 'Nike' : 'SHEIN',
       priceVerified: options.priceVerified ?? true, currencyVerified: options.currencyVerified ?? true,
-      verificationProvider: 'direct', verificationMethod: 'json_ld',
+      verificationProvider: 'brightdata', verificationMethod: 'json_ld',
       verificationFailureCode: null, scrapedAt: new Date().toISOString(),
     };
   });

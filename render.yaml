@@ -148,8 +148,11 @@ services:
         value: 10000
       - key: AYROVIX_LENS_COUNTRY
         value: fr
+      # 17/10/2026 — décision client : recherche = SerpApi, kachf = Bright Data.
+      # La recherche Web du modèle est DÉSACTIVÉE (elle consommait du crédit
+      # Anthropic pour rendre des liens sans prix).
       - key: AYROVIX_AI_WEB_SEARCH
-        value: true
+        value: false
       - key: AYROVIX_PROVIDER_TIMEOUT_MS
         value: 12000
       - key: AYROVIX_QUOTE_SECRET

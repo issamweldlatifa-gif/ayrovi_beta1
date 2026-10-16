@@ -60,6 +60,7 @@ import type { ArrivalIngestionDependencies } from '../arrival-ingestion/types';
 import { getAyrovixStats } from '../ayrovix/events';
 import { ayrovixAiReady, getActiveProviders } from '../ayrovix/services/ai';
 import { checkProviderSearchHealth } from '../ayrovix/services/search';
+import { brightDataReady } from '../scraper/brightData';
 import { checkSerpApiVisualHealth } from '../ayrovix/services/visualSearch';
 import { sanitizeProductUrl } from '../ayrovix/services/product';
 import {
@@ -1926,6 +1927,13 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
           vision: { configured: ayrovixAiReady(), activeProviders: getActiveProviders(), label: 'AI Core Vision — compréhension et prix visible' },
           visualSearch: checkSerpApiVisualHealth(),
           search: checkProviderSearchHealth(),
+          // 17/10/2026 — décision client : le kachf des fiches passe UNIQUEMENT
+          // par Bright Data (aucune lecture directe depuis le serveur).
+          scrape: {
+            provider: 'brightdata',
+            configured: brightDataReady(),
+            label: 'Bright Data Web Unlocker — lecture des fiches marchandes',
+          },
         },
       },
     });

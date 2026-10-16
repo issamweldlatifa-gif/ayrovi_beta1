@@ -353,7 +353,7 @@ function scrapedProduct(overrides: Partial<ScrapedProduct> = {}): ScrapedProduct
     variants: { colors: [], sizes: [], details: [] },
     availability: 'in_stock', brand: 'TestBrand',
     priceVerified: true, currencyVerified: true,
-    verificationProvider: 'direct', verificationMethod: 'json_ld', verificationFailureCode: null,
+    verificationProvider: 'brightdata', verificationMethod: 'json_ld', verificationFailureCode: null,
     scrapedAt: new Date().toISOString(),
     ...overrides,
   };

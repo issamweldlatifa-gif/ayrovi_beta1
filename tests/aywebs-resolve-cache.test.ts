@@ -82,7 +82,7 @@ function fakeScraper(options: { price?: number; delayMs?: number } = {}) {
         : { colors: [], sizes: [], details: [] },
       availability: 'in_stock' as const,
       brand: store === 'amazon' ? 'Nike' : 'SHEIN',
-      priceVerified: price > 0, currencyVerified: true, verificationProvider: 'direct', verificationMethod: 'json_ld',
+      priceVerified: price > 0, currencyVerified: true, verificationProvider: 'brightdata', verificationMethod: 'json_ld',
       verificationFailureCode: price > 0 ? null : 'PRICE_NOT_FOUND',
       scrapedAt: new Date().toISOString(),
     };

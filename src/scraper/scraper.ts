@@ -52,7 +52,12 @@ export interface MerchantScrapeResult {
    * côté client, re-parsée ici par le MÊME parseur, et non une donnée fabriquée
    * par le client. Le prix reste calculé côté serveur (§45).
    */
-  provider: 'direct' | 'none' | 'brightdata' | 'webview';
+  /**
+   * Fournisseur ayant réellement lu la fiche. `direct` a quitté l'union le
+   * 17/10/2026 : plus aucune lecture directe depuis le serveur, Bright Data est
+   * le seul chemin réseau (`webview` = page rendue fournie par le client).
+   */
+  provider: 'none' | 'brightdata' | 'webview';
   method: ParsedProductPage['priceSource'] | 'none';
   failureCode: string | null;
 }

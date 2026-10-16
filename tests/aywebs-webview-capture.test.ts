@@ -124,7 +124,7 @@ function harness(options: { price?: number } = {}) {
     brand: 'TestBrand',
     priceVerified: true,
     currencyVerified: true,
-    verificationProvider: 'direct',
+    verificationProvider: 'brightdata',
     verificationMethod: 'json_ld',
     verificationFailureCode: null,
     scrapedAt: new Date().toISOString(),

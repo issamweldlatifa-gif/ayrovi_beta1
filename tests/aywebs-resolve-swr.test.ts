@@ -91,7 +91,7 @@ function harness() {
       brand: 'Nike',
       priceVerified: true,
       currencyVerified: true,
-      verificationProvider: 'direct',
+      verificationProvider: 'brightdata',
       verificationMethod: 'json_ld',
       verificationFailureCode: null,
       scrapedAt: new Date().toISOString(),

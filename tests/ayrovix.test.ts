@@ -500,7 +500,7 @@ describe('AYROVIX Lens', () => {
     </head><body><h1>Nike Air Max 95 Navy</h1></body></html>`;
     const scrapeSpy = vi.spyOn(scraper, 'scrapeParsedPage').mockImplementation(async (url: string) => {
       expect(url).toBe('https://shop.example.com/nike-air-max-95-navy');
-      return { data: parseProductPageHtml(merchantHtml, url, 'generic'), verified: true, provider: 'direct', method: 'json_ld', failureCode: null };
+      return { data: parseProductPageHtml(merchantHtml, url, 'generic'), verified: true, provider: 'brightdata', method: 'json_ld', failureCode: null };
     });
     try {
       const response = await request(app)
@@ -604,7 +604,72 @@ describe('AYROVIX Lens', () => {
     expect(response.body.code).toBe('INVALID_URL');
   });
 
-  test('Claude Web Search transforme les résultats officiels Anthropic en candidats sans SerpApi', async () => {
+  /**
+   * 17/10/2026 — décision client : **la recherche = SerpApi**. Même avec une clé
+   * Anthropic présente, aucune requête ne part vers le modèle : le crédit
+   * Anthropic sert à COMPRENDRE (vision, rédaction), pas à CHERCHER.
+   */
+  test('recherche produit : aucun appel Anthropic tant que le repli n’est pas explicitement réactivé', async () => {
+    const previousKey = process.env.ANTHROPIC_API_KEY;
+    const previousModel = process.env.ANTHROPIC_MODEL;
+    const previousSearch = process.env.AYROVIX_AI_WEB_SEARCH;
+    const previousSerp = process.env.SERPAPI_KEY;
+    const previousSerpAlias = process.env.SERPAPI_API_KEY;
+    process.env.ANTHROPIC_API_KEY = 'anthropic-should-not-be-called';
+    process.env.ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001';
+    delete process.env.AYROVIX_AI_WEB_SEARCH; // absent = désactivé (opt-in strict)
+    process.env.SERPAPI_KEY = 'serpapi-with-empty-result';
+    delete process.env.SERPAPI_API_KEY;
+    const fetchMock = vi.fn(async (_url: string | URL | Request) => new Response(JSON.stringify({ shopping_results: [] }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      const results = await providerWebSearch('Nike Air Max 95 introuvable', 6, Date.now() + 2_000);
+      expect(results).toEqual([]);
+      // SerpApi a bien été interrogé… et le modèle jamais.
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(String(fetchMock.mock.calls[0][0])).toContain('serpapi.com/search.json');
+      expect(fetchMock.mock.calls.some(([url]) => String(url).includes('api.anthropic.com'))).toBe(false);
+    } finally {
+      restoreEnv('ANTHROPIC_API_KEY', previousKey);
+      restoreEnv('ANTHROPIC_MODEL', previousModel);
+      restoreEnv('AYROVIX_AI_WEB_SEARCH', previousSearch);
+      restoreEnv('SERPAPI_KEY', previousSerp);
+      restoreEnv('SERPAPI_API_KEY', previousSerpAlias);
+    }
+  });
+
+  test('recherche produit : sans clé SerpApi il n’y a pas de recherche du tout (le modèle ne remplace pas)', async () => {
+    const previousKey = process.env.ANTHROPIC_API_KEY;
+    const previousSearch = process.env.AYROVIX_AI_WEB_SEARCH;
+    const previousSerp = process.env.SERPAPI_KEY;
+    const previousSerpAlias = process.env.SERPAPI_API_KEY;
+    process.env.ANTHROPIC_API_KEY = 'anthropic-configured';
+    process.env.AYROVIX_AI_WEB_SEARCH = 'true'; // même réactivé côté Gate…
+    delete process.env.SERPAPI_KEY;
+    delete process.env.SERPAPI_API_KEY;
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      const results = await providerWebSearch('Nike Air Max 95', 6, Date.now() + 2_000);
+      // …la recherche externe n'existe pas sans SerpApi : zéro appel, zéro coût.
+      expect(results).toEqual([]);
+      expect(fetchMock).not.toHaveBeenCalled();
+    } finally {
+      restoreEnv('ANTHROPIC_API_KEY', previousKey);
+      restoreEnv('AYROVIX_AI_WEB_SEARCH', previousSearch);
+      restoreEnv('SERPAPI_KEY', previousSerp);
+      restoreEnv('SERPAPI_API_KEY', previousSerpAlias);
+    }
+  });
+
+  /**
+   * Repli EXPLICITE : déploiement qui remet `AYROVIX_AI_WEB_SEARCH=true` — le
+   * modèle ne part alors qu'en DERNIER recours, SerpApi configuré mais vide.
+   */
+  test('repli modèle explicitement réactivé : il part après un SerpApi vide, pas avant', async () => {
     const previousKey = process.env.ANTHROPIC_API_KEY;
     const previousModel = process.env.ANTHROPIC_MODEL;
     const previousSearch = process.env.AYROVIX_AI_WEB_SEARCH;
@@ -613,27 +678,34 @@ describe('AYROVIX Lens', () => {
     process.env.ANTHROPIC_API_KEY = 'test-anthropic-web-search';
     process.env.ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001';
     process.env.AYROVIX_AI_WEB_SEARCH = 'true';
-    delete process.env.SERPAPI_KEY;
+    process.env.SERPAPI_KEY = 'serpapi-without-result';
     delete process.env.SERPAPI_API_KEY;
-    const fetchMock = vi.fn(async (_url: string, _init: RequestInit = {}) => new Response(JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      content: [{
-        type: 'web_search_tool_result',
-        content: [
-          { type: 'web_search_result', title: 'Nike Air Max 95 Navy Grey', url: 'https://stockx.com/nike-air-max-95-navy-grey' },
-          { type: 'web_search_result', title: 'Nike Air Max 95 listing', url: 'https://www.ebay.com/itm/123' },
-        ],
-      }],
-      usage: { server_tool_use: { web_search_requests: 1 } },
-    }), { status: 200, headers: { 'content-type': 'application/json' } }));
+    const fetchMock = vi.fn(async (url: string | URL | Request, _init: RequestInit = {}) => {
+      if (String(url).startsWith('https://serpapi.com/search.json?')) {
+        return new Response(JSON.stringify({ shopping_results: [] }), { status: 200, headers: { 'content-type': 'application/json' } });
+      }
+      return new Response(JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        content: [{
+          type: 'web_search_tool_result',
+          content: [
+            { type: 'web_search_result', title: 'Nike Air Max 95 Navy Grey', url: 'https://stockx.com/nike-air-max-95-navy-grey' },
+            { type: 'web_search_result', title: 'Nike Air Max 95 listing', url: 'https://www.ebay.com/itm/123' },
+          ],
+        }],
+        usage: { server_tool_use: { web_search_requests: 1 } },
+      }), { status: 200, headers: { 'content-type': 'application/json' } });
+    });
     vi.stubGlobal('fetch', fetchMock);
     try {
       const results = await providerWebSearch('Nike Air Max 95 navy grey', 6, Date.now() + 2_000);
       expect(results).toHaveLength(2);
       expect(results[0]).toMatchObject({ source: 'StockX', kind: 'external' });
       expect(results[1].source).toBe('eBay');
-      expect(fetchMock).toHaveBeenCalledTimes(1);
-      const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      // SerpApi d'ABORD, le modèle ENSUITE.
+      expect(String(fetchMock.mock.calls[0][0])).toContain('serpapi.com/search.json');
+      const body = JSON.parse(String(fetchMock.mock.calls[1][1]?.body));
       expect(body.tools[0]).toMatchObject({ type: 'web_search_20250305', max_uses: 1 });
     } finally {
       restoreEnv('ANTHROPIC_API_KEY', previousKey);

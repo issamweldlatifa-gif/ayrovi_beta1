@@ -48,7 +48,7 @@ function fixture() {
       estimatedShippingTND: 0, serviceFeeTND: 0, totalPriceTND: 0,
       variants: { colors: ['Black'], sizes: ['42'], details: [] },
       availability: 'in_stock' as const, brand: 'Nike', priceVerified: true, currencyVerified: true,
-      verificationProvider: 'direct', verificationMethod: 'json_ld', verificationFailureCode: null,
+      verificationProvider: 'brightdata', verificationMethod: 'json_ld', verificationFailureCode: null,
       scrapedAt: '2026-10-02T12:00:00.000Z',
     };
   });

@@ -110,7 +110,7 @@ function countedScraper(options: {
     brand: 'Nike',
     priceVerified: price > 0,
     currencyVerified: true,
-    verificationProvider: 'direct',
+    verificationProvider: 'brightdata',
     verificationMethod: 'json_ld',
     verificationFailureCode: null,
     scrapedAt: new Date().toISOString(),
