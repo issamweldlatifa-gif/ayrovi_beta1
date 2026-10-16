@@ -106,3 +106,10 @@ commits séparés — voir « Fixed » du CHANGELOG) :
 - en thème sombre, la carte « Arrivages Standard actifs » restait blanche — c'est la carte
   claire de « Thème sombre : tableau de bord » dans `admin-4`, prise avant la correction.
   **Corrigé** : en sombre, elle prend l'encre des barres, comme « Arrivages Express actifs ».
+
+Planche `admin-5-correctifs.jpg` : avant = build de `a49a43d`, après = build des trois
+correctifs, même base et mêmes données. Contrôle pixel à pixel (Chromium, 26 états + sondes) :
+à 390 × 844 et 768 × 1024, chaque pixel « avant » est le pixel « après » sous un voile d'encre
+à 35 % (10 captures ; seuls 12 pixels d'anticrénelage s'en écartent) — rien d'autre ne bouge ;
+tiroir ouvert, thème clair (bandeaux, pastilles, 8 états interactifs) : 0 pixel changé ; thème
+sombre : seuls le bandeau et le texte de la pastille choisie changent.
