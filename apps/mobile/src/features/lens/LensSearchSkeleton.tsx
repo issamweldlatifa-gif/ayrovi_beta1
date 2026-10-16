@@ -4,6 +4,7 @@ import { Skeleton } from '@/design/skeleton';
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
+import { lensCardMediaHeight } from './lensCard';
 import { LENS_COLORS } from './lensPalette';
 import { useLensSheetScroll } from './lensSheetScroll';
 
@@ -12,7 +13,8 @@ const GRID_GAP = 4;
 
 function ProductSkeleton({ index }: { index: number }) {
   const { width } = useWindowDimensions();
-  const mediaHeight = Math.max(1, ((width - GRID_PADDING * 2 - GRID_GAP) / 2) * 5 / 4);
+  // Même vignette que la carte réelle (2/3) : le squelette ne rétrécit pas.
+  const mediaHeight = lensCardMediaHeight(width);
   return (
     <View testID={`lens-skeleton-card-${index}`} style={styles.card}>
       <Skeleton color={LENS_COLORS.skeleton} minOpacity={0.48} height={mediaHeight} radius={0} />

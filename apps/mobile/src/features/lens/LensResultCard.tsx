@@ -7,6 +7,7 @@ import { AppImage } from '@/design/appImage';
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
+import { LENS_CARD_MEDIA_RATIO } from './lensCard';
 import { lensMediaChain } from './lensMedia';
 import { LensPriceBlock } from './LensPriceBlock';
 import { LENS_COLORS } from './lensPalette';
@@ -21,9 +22,11 @@ type Props = {
 /**
  * Carte éditoriale Lens à deux colonnes.
  *
- * La géométrie suit la référence commerce : grand média 4:5, gouttière blanche
- * minimale, puis marque, nom et prix directement sous l’image. Aucun panneau,
- * aucune ombre et aucun carrousel interne ne viennent agrandir la carte.
+ * La géométrie suit la référence commerce : grand média 2:3 (mesuré 0,667 sur
+ * le modèle), gouttière blanche minimale, puis marque, nom et prix directement
+ * sous l’image. Aucun panneau, aucune ombre et aucun carrousel interne ne
+ * viennent agrandir la carte. Le rapport vit dans `lensCard.ts`, partagé avec
+ * le squelette : la vignette ne change pas de hauteur à l'arrivée des résultats.
  */
 function LensResultCardComponent({ candidate, favorite, onOpen, onFavorite }: Props) {
   const theme = useTheme();
@@ -122,7 +125,7 @@ export const LensResultCard = memo(LensResultCardComponent);
 const styles = StyleSheet.create({
   card: { width: '100%', backgroundColor: LENS_COLORS.white },
   pressable: { flex: 1, backgroundColor: LENS_COLORS.white },
-  mediaWrap: { position: 'relative', width: '100%', aspectRatio: 4 / 5, backgroundColor: LENS_COLORS.resultMedia, overflow: 'hidden' },
+  mediaWrap: { position: 'relative', width: '100%', aspectRatio: LENS_CARD_MEDIA_RATIO, backgroundColor: LENS_COLORS.resultMedia, overflow: 'hidden' },
   media: { width: '100%', height: '100%' },
   mediaFallback: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   promoBadge: {

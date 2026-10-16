@@ -8,6 +8,7 @@ const lens = read('../app/lens.tsx');
 const skeleton = read('../src/features/lens/LensSearchSkeleton.tsx');
 const grid = read('../src/features/lens/LensResultsGrid.tsx');
 const card = read('../src/features/lens/LensResultCard.tsx');
+const cardGeometry = read('../src/features/lens/lensCard.ts');
 const product = read('../src/features/lens/LensProductView.tsx');
 const help = read('../src/features/lens/LensHelpView.tsx');
 const palette = read('../src/features/lens/lensPalette.ts');
@@ -81,7 +82,13 @@ describe('chargement et résultats Lens', () => {
     expect(card).toContain('numberOfLines={2}');
     expect(card).toContain('lens-favorite-');
     expect(card).toContain('event.stopPropagation()');
-    expect(card).toContain('aspectRatio: 4 / 5');
+    // Vignette allongée au 2/3 mesuré sur le modèle commerce (17/10/2026) :
+    // un seul rapport, partagé avec le squelette — plus de littéral local.
+    expect(card).toContain('aspectRatio: LENS_CARD_MEDIA_RATIO');
+    expect(card).toContain("from './lensCard'");
+    expect(cardGeometry).toContain('LENS_CARD_MEDIA_RATIO = 2 / 3');
+    expect(skeleton).toContain('lensCardMediaHeight(width)');
+    expect(card).not.toContain('aspectRatio: 4 / 5');
     expect(card).toContain('candidate.brand?.trim() || candidate.source.trim()');
     expect(card).not.toContain('cardOptions');
   });
