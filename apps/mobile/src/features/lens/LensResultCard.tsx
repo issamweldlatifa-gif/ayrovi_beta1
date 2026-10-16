@@ -6,7 +6,6 @@ import type { LensCandidate } from '@/api/lens';
 import { AppImage } from '@/design/appImage';
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
-import { frost } from '@/design/tokens.mobile';
 import { useT } from '@/i18n';
 import { lensMediaChain } from './lensMedia';
 import { LensPriceBlock } from './LensPriceBlock';
@@ -131,9 +130,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center', backgroundColor: LENS_COLORS.sale, paddingHorizontal: 8, paddingVertical: 4,
   },
   promoText: { color: LENS_COLORS.white },
+  // Cœur NU sur la vignette (17/10/2026) : la pastille blanche masquait le produit.
   favorite: {
-    position: 'absolute', top: 8, width: 38, height: 38, borderRadius: 19,
-    backgroundColor: frost(0.96), alignItems: 'center', justifyContent: 'center',
+    position: 'absolute', top: 6, width: 38, height: 38, alignItems: 'center', justifyContent: 'center',
   },
   favoriteLTR: { right: 8 },
   favoriteRTL: { left: 8 },

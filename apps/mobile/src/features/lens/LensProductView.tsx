@@ -211,7 +211,9 @@ function ColorSelector({
                 {
                   borderColor: selected ? theme.colors.focus : theme.colors.lineControl,
                   borderRadius: theme.radius.control,
-                  backgroundColor: theme.colors.infoSoft,
+                  // Pastille de couleur sur BLANC (17/10/2026) : le gris teintait
+                  // la vignette et faussait la lecture de la couleur réelle.
+                  backgroundColor: theme.colors.surface,
                   opacity: unavailable ? 0.35 : 1,
                 },
               ]}
@@ -1019,7 +1021,7 @@ export function LensProductView({
             <AppText variant="caption" color={theme.status.danger.fg} accessibilityRole="alert">{t(favoriteNote)}</AppText>
           ) : null}
           {resolvedSize || resolvedColor ? (
-            <View style={[styles.choiceSummary, { backgroundColor: theme.colors.infoSoft, borderRadius: theme.radius.control }]}>
+            <View style={styles.choiceSummary}>
               <AppText variant="caption" color={theme.colors.muted}>
                 {[resolvedSize && `${candidate.optionLabel || t('lens.product.size')}: ${resolvedSize}`, resolvedColor && `${t('lens.product.color')}: ${resolvedColor}`]
                   .filter(Boolean).join('  ·  ')}
@@ -1134,7 +1136,7 @@ export function LensProductView({
               backgroundColor: theme.colors.surface,
             },
           ]}>
-            <View style={[styles.confirmationIcon, { backgroundColor: theme.colors.infoSoft }]}>
+            <View style={[styles.confirmationIcon, { borderColor: theme.colors.line }]}>
               <Ionicons name="checkmark" size={26} color={theme.status.success.fg} accessibilityElementsHidden />
             </View>
             <AppText variant="title" weight="bold" align="center" accessibilityRole="header">
@@ -1142,7 +1144,7 @@ export function LensProductView({
             </AppText>
             <AppText color={theme.colors.muted} align="center">{t('lens.cart.addedBody')}</AppText>
             {deadline ? (
-              <View style={[styles.confirmationTimer, { backgroundColor: theme.colors.infoSoft }]}>
+              <View style={[styles.confirmationTimer, { borderColor: theme.colors.line }]}>
                 <Ionicons name="time-outline" size={19} color={theme.colors.ink} accessibilityElementsHidden />
                 <AppText weight="bold" style={{ color: theme.colors.ink }}>
                   {countdownExpired ? t('lens.cart.expired') : t('lens.cart.validFor', { time: countdown })}
@@ -1193,10 +1195,10 @@ const styles = StyleSheet.create({
   gallery: { position: 'relative', overflow: 'hidden' },
   heroFade: { position: 'absolute', left: 0, right: 0, top: 0, height: 110, backgroundColor: veil(0.06) },
   heroHaze: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: frost(0.9) },
+  // Cœur NU posé sur la photo (17/10/2026) : plus de pastille blanche — l'ombre
+  // de glyphe suffit à le détacher du clair comme du sombre.
   favorite: {
-    position: 'absolute', width: 44, height: 44, borderRadius: 22,
-    backgroundColor: frost(0.94), alignItems: 'center', justifyContent: 'center',
-    shadowColor: LENS_COLORS.black, shadowOpacity: 0.1, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 3,
+    position: 'absolute', width: 44, height: 44, alignItems: 'center', justifyContent: 'center',
   },
   favoriteLTR: { right: 14 },
   favoriteRTL: { left: 14 },
@@ -1204,10 +1206,13 @@ const styles = StyleSheet.create({
   promoBadgeLTR: { left: 14 },
   promoBadgeRTL: { right: 14 },
   promoText: { color: LENS_COLORS.white },
-  counter: { position: 'absolute', bottom: 18, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: frost(0.9) },
+  counter: { position: 'absolute', bottom: 16, paddingHorizontal: 4, paddingVertical: 4 },
   counterLTR: { right: 14 },
   counterRTL: { left: 14 },
-  counterText: { color: LENS_COLORS.black },
+  counterText: {
+    color: LENS_COLORS.white,
+    textShadowColor: veil(0.55), textShadowRadius: 3, textShadowOffset: { width: 0, height: 1 },
+  },
   detailsSheet: {
     marginTop: -SPACE[4], minHeight: 500,
     paddingHorizontal: 16, paddingTop: 4, paddingBottom: 24, gap: 8,
@@ -1218,7 +1223,8 @@ const styles = StyleSheet.create({
   brand: { fontSize: 19, lineHeight: 24, marginTop: 2 },
   productTitle: { fontSize: 17, lineHeight: 23, marginBottom: 4 },
   ratingRow: { alignItems: 'center', gap: 6, minHeight: 24 },
-  choiceSummary: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 8 },
+  // Résumé du choix : du TEXTE sur blanc, plus une pastille grise (17/10/2026).
+  choiceSummary: { alignSelf: 'flex-start', paddingVertical: 2 },
   optionsArea: { gap: 12, marginTop: 4 },
   optionBlock: { gap: 8, paddingTop: 4 },
   selector: { minHeight: 58, borderWidth: 1.5, paddingHorizontal: 16, alignItems: 'center', gap: 12 },
@@ -1250,8 +1256,8 @@ const styles = StyleSheet.create({
   },
   confirmationBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: veil(0.46) },
   confirmationSheet: { paddingHorizontal: 24, paddingTop: 24, gap: 12, alignItems: 'center' },
-  confirmationIcon: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
-  confirmationTimer: { minHeight: 44, alignSelf: 'stretch', borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 12 },
+  confirmationIcon: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', borderWidth: StyleSheet.hairlineWidth },
+  confirmationTimer: { minHeight: 44, alignSelf: 'stretch', borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 12, borderWidth: StyleSheet.hairlineWidth },
   continueShopping: { minHeight: 44, alignSelf: 'stretch', justifyContent: 'center' },
   zoomViewport: { overflow: 'hidden' },
   zoomContent: { flex: 1 },

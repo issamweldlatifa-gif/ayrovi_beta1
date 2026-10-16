@@ -192,6 +192,51 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
   });
 
   /**
+   * 17/10/2026 — consigne client : « استعمال مكثف للون رمادي » (trop de gris).
+   * Les écrans Lens ne peignent PLUS de fond gris (`infoSoft`) : cartes,
+   * pastilles de couleur et résumés de choix sont BLANCS, le gris reste aux
+   * filets (`line`, `lineControl`) et aux textes secondaires — soit bien moins
+   * de 2 % de la surface. Verrouillé pour ne pas y revenir.
+   */
+  it('aucun fond gris dans les écrans Lens : du blanc, le gris reste un filet', () => {
+    const offenders: string[] = [];
+    for (const rel of FILES) {
+      if (!rel.startsWith('src/features/lens/')) continue;
+      const text = code(rel);
+      for (const match of text.matchAll(/infoSoft/g)) {
+        const line = text.slice(0, match.index).split('\n').length;
+        offenders.push(`${rel}:${line}`);
+      }
+    }
+    expect(offenders, 'Le gris de fond est réservé aux filets : passer la surface en `theme.colors.surface`.').toEqual([]);
+  });
+
+  /**
+   * Même consigne, autre conséquence : plus de PASTILLE (rond clair) autour
+   * d'une icône posée sur une image. L'icône est nue, lisible par son ombre de
+   * glyphe. Un rond `frost(...)` + `borderRadius` servant de conteneur
+   * d'icône est ce que le client a demandé de retirer.
+   */
+  it('aucune pastille blanche servant de conteneur d’icône', () => {
+    const offenders: string[] = [];
+    for (const rel of FILES) {
+      const text = code(rel);
+      // Un bloc de style = une pastille quand il cumule un fond givré ET un
+      // rayon de rond/pilule : c'est exactement le conteneur retiré le
+      // 17/10/2026. Un voile sans rayon (fondu de la photo) reste légitime.
+      for (const match of text.matchAll(/\{([^{}]*)\}/g)) {
+        const block = match[1];
+        if (!/backgroundColor:\s*frost\(/.test(block)) continue;
+        const radius = /borderRadius:\s*(\d+(?:\.\d+)?)/.exec(block);
+        if (!radius || Number(radius[1]) < 16) continue;
+        const line = text.slice(0, match.index).split('\n').length;
+        offenders.push(`${rel}:${line}`);
+      }
+    }
+    expect(offenders, 'Poser l’icône à même le média (ombre de glyphe) au lieu d’une pastille rapportée.').toEqual([]);
+  });
+
+  /**
    * §4.3 : la zone sûre se règle UNE fois, dans `AppScreen`. Une marge basse
    * arbitraire pour « faire passer » sur un appareil est l'anti-patron que la
    * consigne interdit nommément.

@@ -23,7 +23,7 @@ export function LensHelpView() {
       <View style={styles.tips}>
         {TIPS.map(({ key, icon }) => (
           <View key={key} style={styles.row}>
-            <View style={[styles.icon, { backgroundColor: theme.colors.infoSoft }]}>
+            <View style={styles.icon}>
               <Ionicons name={icon} size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
             </View>
             <AppText style={styles.text}>{t(key)}</AppText>

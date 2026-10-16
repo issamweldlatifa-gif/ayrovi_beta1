@@ -37,7 +37,7 @@ export function LensResultsGrid({
   if (candidates.length === 0) {
     return (
       <View style={styles.empty} testID="lens-empty-results">
-        <View style={[styles.emptyIcon, { backgroundColor: theme.colors.infoSoft }]}>
+        <View style={styles.emptyIcon}>
           <Ionicons name="search-outline" size={theme.iconSize.lg} color={theme.colors.ink} accessibilityElementsHidden />
         </View>
         <AppText variant="title" align="center">{t('lens.emptyTitle')}</AppText>

@@ -74,9 +74,9 @@ export function LensHistoryView({ onOpen }: { onOpen: (item: LensHistoryItem) =>
               testID={`lens-history-${item.id}`}
             >
               {item.imageUrl ? (
-                <AppImage uri={item.imageUrl} style={[styles.thumb, { borderRadius: theme.radius.sm, backgroundColor: theme.colors.infoSoft }]} decorative />
+                <AppImage uri={item.imageUrl} style={[styles.thumb, { borderRadius: theme.radius.sm }]} decorative />
               ) : (
-                <View style={[styles.thumb, styles.thumbIcon, { borderRadius: theme.radius.sm, backgroundColor: theme.colors.infoSoft }]}>
+                <View style={[styles.thumb, styles.thumbIcon, { borderRadius: theme.radius.sm, borderColor: theme.colors.line }]}>
                   <Ionicons name="search-outline" size={theme.iconSize.sm} color={theme.colors.ink} accessibilityElementsHidden />
                 </View>
               )}
@@ -101,6 +101,6 @@ const styles = StyleSheet.create({
   list: { flexGrow: 0, flexShrink: 1 },
   row: { alignItems: 'center', gap: 12, paddingVertical: 8 },
   thumb: { width: 48, height: 48 },
-  thumbIcon: { alignItems: 'center', justifyContent: 'center' },
+  thumbIcon: { alignItems: 'center', justifyContent: 'center', borderWidth: StyleSheet.hairlineWidth },
   copy: { flex: 1, gap: 2 },
 });
