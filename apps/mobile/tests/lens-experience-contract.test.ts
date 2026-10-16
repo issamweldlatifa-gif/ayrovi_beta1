@@ -252,7 +252,10 @@ describe('Z Lens — option 3 voulue par le client (16/10/2026)', () => {
     expect(lens).toContain('padBox(products[selected].box)');
     expect(lens).toContain("commit.kind === 'product'");
     expect(lens).toContain('const roi = toRoi(photo.selection)');
-    expect(lens).toContain('{ roi, signal }');
+    // L'analyse reçoit la zone cliquée ET le signal d'annulation — désormais
+    // en flux (SSE) : l'identification et les fiches arrivent au fil de l'eau.
+    expect(lens).toContain('analyzeImageStream(');
+    expect(lens).toMatch(/roi,\s*\n\s*signal,/);
     expect(selectionView).toContain('resizeSelection(');
     expect(selectionView).toContain('moveSelection(');
     expect(selectionView).toContain('productIndexAt(found, point)');

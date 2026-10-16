@@ -39,12 +39,17 @@ import { useT, type TranslationKey } from '@/i18n';
 import { ApiError, isApiError } from '@/api/errors';
 import { addExternalFavorite } from '@/api/account';
 import {
-  analyzeBarcode, analyzeCode, analyzeImage, analyzeText, analyzeUrl, detectProducts, markChosen,
-  type LensBox, type LensCandidate, type LensDetectedProduct, type LensHistoryItem, type LensSearchResult,
+  analyzeBarcode, analyzeCode, analyzeText, analyzeUrl, detectProducts, markChosen,
+  type LensBox, type LensCandidate, type LensDetectedProduct, type LensHistoryItem, type LensIdentification,
+  type LensSearchResult,
 } from '@/api/lens';
+import { analyzeImageStream, type LensStreamProgress } from '@/api/lensStream';
 import { isOpenableSourceUrl, uniqueCandidates } from '@/features/lens/lensView';
 import { LensResultsGrid } from '@/features/lens/LensResultsGrid';
 import { LensSearchSkeleton } from '@/features/lens/LensSearchSkeleton';
+import { LensProgressLine, lensProgressLabel } from '@/features/lens/LensProgressLine';
+import { LensOverviewCard } from '@/features/lens/LensOverviewCard';
+import { LensSearchBar } from '@/features/lens/LensSearchBar';
 import { OcerexFlow } from '@/features/lens/ocerex/OcerexFlow';
 import { LensProductView } from '@/features/lens/LensProductView';
 import { LensHelpView } from '@/features/lens/LensHelpView';
@@ -66,9 +71,20 @@ import { SHEET_SPRING } from '@/design/sheet/sheetPhysics';
 
 type Mode = 'live' | 'code' | 'link' | 'text';
 type ResultsStage = { kind: 'results'; candidates: LensCandidate[]; eventId: string; excluded: number };
+/**
+ * Attente PROGRESSIVE : le serveur parle en flux (`progress`, `card`, `done`).
+ * On garde l'étape d'avancement, l'identification (dès qu'elle est connue) et
+ * les fiches déjà lues — l'écran n'est donc jamais un mur de squelettes.
+ */
+type BusyStage = {
+  kind: 'busy';
+  progress: LensStreamProgress | null;
+  identification: LensIdentification | null;
+  cards: LensCandidate[];
+};
 type Stage =
   | { kind: 'idle' }
-  | { kind: 'busy' }
+  | BusyStage
   | ResultsStage
   | { kind: 'product'; candidate: LensCandidate; back: ResultsStage; enriching: boolean }
   | { kind: 'error'; error: unknown };
@@ -377,6 +393,8 @@ export default function LensScreen() {
   const showSearch = useCallback((
     result: LensSearchResult | { candidates: LensCandidate[]; eventId: string; excluded?: number },
     cacheKey?: string,
+    /** Le résultat n'écrase que l'attente : l'utilisateur a pu ouvrir une fiche entre-temps. */
+    onlyIfBusy = false,
   ) => {
     const candidates = uniqueCandidates(result.candidates);
     const next: ResultsStage = {
@@ -385,7 +403,15 @@ export default function LensScreen() {
     };
     if (cacheKey) resultsCache.current.set(cacheKey, next);
     setFavoriteNote(null);
-    setStage(next);
+    setStage((current) => {
+      if (!onlyIfBusy) return next;
+      if (current.kind === 'busy') return next;
+      // L'utilisateur a ouvert une fiche pendant la recherche : on ne casse
+      // pas sa lecture. Mais si la grille affichée vient encore de l'attente
+      // (pas de `eventId`), elle est remplacée par le résultat complet.
+      if (current.kind === 'results' && !current.eventId) return next;
+      return current;
+    });
   }, []);
 
   const run = useCallback(async (job: SearchJob, remember = true) => {
@@ -393,7 +419,7 @@ export default function LensScreen() {
     const controller = new AbortController();
     requestRef.current = controller;
     if (remember) lastJobRef.current = job;
-    setStage({ kind: 'busy' });
+    setStage({ kind: 'busy', progress: null, identification: null, cards: [] });
     try {
       await job(controller.signal);
     } catch (error) {
@@ -442,8 +468,31 @@ export default function LensScreen() {
     }
     const roi = toRoi(photo.selection);
     const job: SearchJob = async (signal) => {
-      const result = await analyzeImage({ uri: photo.uri, name: 'capture.jpg', type: 'image/jpeg' }, { roi, signal });
-      if (!signal.aborted) showSearch({ ...result, excluded: result.excluded?.count ?? 0 }, key);
+      // FLUX : le serveur émet `progress`, `card`, `done`. Les fiches arrivent
+      // au fil de l'eau et l'identification dès la première étape — au lieu
+      // d'un écran de squelettes jusqu'à la fin.
+      const result = await analyzeImageStream(
+        { uri: photo.uri, name: 'capture.jpg', type: 'image/jpeg' },
+        {
+          roi,
+          signal,
+          onProgress: (progress) => {
+            if (signal.aborted) return;
+            setStage((current) => (current.kind === 'busy'
+              ? { ...current, progress, identification: progress.identification ?? current.identification }
+              : current));
+          },
+          onCard: (candidate) => {
+            if (signal.aborted) return;
+            setStage((current) => {
+              if (current.kind !== 'busy') return current;
+              if (current.cards.some((item) => item.sourceUrl === candidate.sourceUrl)) return current;
+              return { ...current, cards: [...current.cards, candidate] };
+            });
+          },
+        },
+      );
+      if (!signal.aborted) showSearch({ ...result, excluded: result.excluded?.count ?? 0 }, key, true);
     };
     void run(job);
   }, [run, showSearch]);
@@ -462,7 +511,7 @@ export default function LensScreen() {
     const controller = new AbortController();
     detectRef.current = controller;
     requestRef.current?.abort();
-    setStage({ kind: 'busy' });
+    setStage({ kind: 'busy', progress: null, identification: null, cards: [] });
     showTip('lens.select.detecting', undefined, 0);
     const small = await shrinkImage(photo.uri, DETECT_EDGE, 0.7, { width: photo.width, height: photo.height });
     let products: LensDetectedProduct[] = [];
@@ -838,12 +887,19 @@ export default function LensScreen() {
   }, [mode, resetLive]);
 
   const onOpen = useCallback((candidate: LensCandidate) => {
-    if (!isOpenableSourceUrl(candidate.sourceUrl) || stage.kind !== 'results') return;
-    void markChosen(stage.eventId);
+    // Pendant la recherche, une fiche déjà lue est COMPLÈTE (prix lu sur la
+    // page marchande) : elle s'ouvre. Le retour ramène la grille partielle.
+    const source: ResultsStage | null = stage.kind === 'results'
+      ? stage
+      : stage.kind === 'busy'
+        ? { kind: 'results', candidates: stage.cards, eventId: '', excluded: 0 }
+        : null;
+    if (!source || !isOpenableSourceUrl(candidate.sourceUrl)) return;
+    void markChosen(source.eventId);
     enrichmentRef.current?.abort();
     const controller = new AbortController();
     enrichmentRef.current = controller;
-    setStage({ kind: 'product', candidate, back: stage, enriching: true });
+    setStage({ kind: 'product', candidate, back: source, enriching: true });
 
     // Affichage immédiat de la carte, puis surcouche progressive depuis la
     // page marchande + SerpApi. Un retour ou un autre produit annule la lecture.
@@ -931,6 +987,14 @@ export default function LensScreen() {
     if (sessionPhoto.selected >= 0) return sessionPhoto.products[sessionPhoto.selected]?.name;
     return isFullFrame(sessionPhoto.selection) ? undefined : t('lens.select.zone');
   }, [sessionPhoto, t]);
+
+  /** Le texte de la barre flottante : l'étape pendant la recherche, le produit trouvé après. */
+  const barLabel = useMemo(() => {
+    if (stage.kind === 'busy') return lensProgressLabel(stage.progress, t);
+    if (stage.kind === 'results') return resultTitle || t('lens.resultsTitle');
+    if (stage.kind === 'error') return t('lens.resultsTitle');
+    return t('lens.bar.placeholder');
+  }, [stage, resultTitle, t]);
 
   const infoModal = (
     <Modal visible={panel !== null} transparent animationType="slide" onRequestClose={() => setPanel(null)}>
@@ -1047,12 +1111,41 @@ export default function LensScreen() {
           <Pressable onPress={reset} accessibilityRole="button" accessibilityLabel={t('common.back')} style={styles.overlayButton} hitSlop={HIT_SLOP}>
             <Ionicons name={theme.isRTL ? 'arrow-forward' : 'arrow-back'} size={theme.iconSize.lg} color={LENS_COLORS.white} style={styles.crisp} accessibilityElementsHidden />
           </Pressable>
-          <AppText variant="title" weight="semibold" color={LENS_COLORS.white} align="center" style={styles.resultTitle}>{t('lens.title')}</AppText>
+          {/* Barre flottante : elle remplace le titre quand une photo est
+              analysée — la photo, son cadre et l'étape restent visibles. */}
+          {sessionPhoto ? (
+            <LensSearchBar uri={sessionPhoto.uri} label={barLabel} onCancel={cancelSearch} busy={stage.kind === 'busy'} />
+          ) : (
+            <AppText variant="title" weight="semibold" color={LENS_COLORS.white} align="center" style={styles.resultTitle}>{t('lens.title')}</AppText>
+          )}
           <View style={styles.headerSpacer} />
         </View>
 
         <SearchSheet geometry={sheet}>
-          {stage.kind === 'busy' ? <LensSearchSkeleton onCancel={cancelSearch} title={resultTitle} /> : null}
+          {stage.kind === 'busy' ? (
+            <>
+              {/* L'identification arrive dès la première étape : la réponse en
+                  clair s'affiche avant la première fiche marchande. */}
+              {stage.identification ? <LensOverviewCard identification={stage.identification} /> : null}
+              {stage.cards.length > 0 ? (
+                <>
+                  <LensProgressLine progress={stage.progress} />
+                  <LensResultsGrid
+                    candidates={stage.cards}
+                    excluded={0}
+                    favorited={favorited}
+                    favoriteNote={favoriteNote}
+                    onOpen={onOpen}
+                    onFavorite={onFavorite}
+                    onNewSearch={reset}
+                    title={resultTitle}
+                  />
+                </>
+              ) : (
+                <LensSearchSkeleton onCancel={cancelSearch} title={resultTitle} progress={stage.progress} />
+              )}
+            </>
+          ) : null}
           {stage.kind === 'results' ? (
             <LensResultsGrid
               candidates={stage.candidates}

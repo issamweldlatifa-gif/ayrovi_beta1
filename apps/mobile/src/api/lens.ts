@@ -395,7 +395,7 @@ function parseVariantOptions(value: unknown): LensVariantOption[] {
 const parseCandidates = (value: unknown): LensCandidate[] =>
   Array.isArray(value) ? value.map(parseCandidate) : [];
 
-function parseIdentification(value: unknown): LensIdentification {
+export function parseIdentification(value: unknown): LensIdentification {
   const raw = isRecord(value) ? value : {};
   return {
     inputKind: str(raw.input_kind) || 'product_photo',
@@ -409,7 +409,7 @@ function parseIdentification(value: unknown): LensIdentification {
   };
 }
 
-function parseExcluded(value: unknown): LensImageResult['excluded'] {
+export function parseExcluded(value: unknown): LensImageResult['excluded'] {
   if (!isRecord(value)) return null;
   const reasons: Record<string, number> = {};
   if (isRecord(value.reasons)) {

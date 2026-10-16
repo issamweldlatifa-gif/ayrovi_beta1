@@ -194,6 +194,13 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       if (!stream || res.writableEnded) return;
       res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
     };
+    // ANNULATION — le client peut fermer la connexion (« Annuler » dans
+    // l'application). Sans ce drapeau, le serveur continue de lire les pages
+    // marchandes (quota Bright Data, temps Render) pour un résultat que
+    // personne ne verra. `writableEnded` distingue la fin normale d'une
+    // fermeture par le client.
+    let cancelled = false;
+    res.on('close', () => { if (!res.writableEnded) cancelled = true; });
     if (stream) {
       res.status(200);
       res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
@@ -355,7 +362,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       }
       mark(trace, 'pipelineCacheHit', false);
 
-      emit('progress', { step: 'identified' });
+      emit('progress', { step: 'identified', identification });
       const effectiveQuery = buildSearchQuery(identification);
       emit('progress', { step: 'searching' });
       const tSearch = Date.now();
@@ -388,6 +395,9 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
         },
         onReady: (candidate) => {
           readyCount += 1;
+          // Le client a fermé la connexion : plus rien à émettre, et la lecture
+          // des pages suivantes ne sert plus personne.
+          if (cancelled) return;
           emit('progress', { step: 'reading', done: readyCount, total: candidates.length });
           if (streamedUrls.has(candidate.sourceUrl)) return;
           streamedUrls.add(candidate.sourceUrl);
@@ -398,6 +408,9 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       mark(trace, 'liveStockFetched', liveStock.fetched);
       mark(trace, 'liveStockCacheHits', liveStock.cacheHits);
       mark(trace, 'liveStockApplied', liveStock.applied);
+      // Annulé en cours de route : on s'arrête ici (pas de fiche en base, pas
+      // de cache pollutionné, pas de travail inutile).
+      if (cancelled) { endTrace(trace); return; }
       /*
        * FILTRE D'ACHETABILITÉ — on cache la rupture CONFIRMÉE. Page illisible
        * ou stock muet reste visible (sinon 8/8 écartés dès que Render est bloqué).

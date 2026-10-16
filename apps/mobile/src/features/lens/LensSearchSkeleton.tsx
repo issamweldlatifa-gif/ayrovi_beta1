@@ -4,8 +4,10 @@ import { Skeleton } from '@/design/skeleton';
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
+import type { LensStreamProgress } from '@/api/lensStream';
 import { lensCardMediaHeight } from './lensCard';
 import { LENS_COLORS } from './lensPalette';
+import { LensProgressLine } from './LensProgressLine';
 import { useLensSheetScroll } from './lensSheetScroll';
 
 const GRID_PADDING = 4;
@@ -30,7 +32,16 @@ function ProductSkeleton({ index }: { index: number }) {
 }
 
 /** Structure exacte des résultats pendant la recherche — aucun faux contenu. */
-export function LensSearchSkeleton({ onCancel, title }: { onCancel: () => void; title?: string }) {
+export function LensSearchSkeleton({
+  onCancel,
+  title,
+  progress,
+}: {
+  onCancel: () => void;
+  title?: string;
+  /** Étape d'avancement (flux du serveur) : « Produit identifié », « Lecture 4/8 »… */
+  progress?: LensStreamProgress | null;
+}) {
   const theme = useTheme();
   const t = useT();
   const onSheetScroll = useLensSheetScroll();
@@ -51,6 +62,12 @@ export function LensSearchSkeleton({ onCancel, title }: { onCancel: () => void; 
         </Pressable>
       </View>
       <AppText color={theme.colors.muted}>{t('lens.searchingFriendly')}</AppText>
+      {/* L'avancement : une phrase honnête, pas un pourcentage inventé. */}
+      {progress ? (
+        <View style={styles.progress} testID="lens-search-skeleton-progress">
+          <LensProgressLine progress={progress} />
+        </View>
+      ) : null}
       <ScrollView
         style={styles.scroll}
         showsVerticalScrollIndicator={false}
@@ -77,4 +94,5 @@ const styles = StyleSheet.create({
   copy: { gap: 8, paddingHorizontal: 8, paddingTop: 8, paddingBottom: 12 },
   cancel: { minHeight: 48, justifyContent: 'center', paddingHorizontal: 8 },
   cancelText: { textDecorationLine: 'underline' },
+  progress: { paddingHorizontal: 4, paddingBottom: 4 },
 });

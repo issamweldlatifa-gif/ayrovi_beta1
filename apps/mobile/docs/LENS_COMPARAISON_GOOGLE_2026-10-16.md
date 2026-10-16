@@ -202,3 +202,30 @@ déjà SSE. Le P0 est **uniquement** un nouveau chemin de transport côté tél�
 | Client mobile actuel (bloquant) | `apps/mobile/src/api/lens.ts:541` · `apps/mobile/src/api/nativeUpload.ts:41` |
 | Écran d'attente actuel | `apps/mobile/src/features/lens/LensSearchSkeleton.tsx` · `apps/mobile/app/lens.tsx:1055` |
 | Copie existante | `apps/mobile/src/i18n/fr.ts:603-604` (`lens.searchingFriendly`, `lens.resultsTitle`) |
+
+---
+
+## 8. État d'implémentation (16/10/2026)
+
+Les corrections décrites ci-dessus sont **en code** (branche `arena/b3539284-ayrovi-beta1`).
+
+| Écart | Corrigé | Où |
+|---|---|---|
+| E1 — aucun retour progressif | Le serveur émet `progress` **avec l'identification** dès la première étape | `src/ayrovix/routes.ts` (`emit('progress', { step: 'identified', identification })`) |
+| E2 — pas d'« AI Overview » | Carte « ce que nous avons reconnu » : description / marque / modèle / catégorie **publiées par le serveur** | `apps/mobile/src/features/lens/LensOverviewCard.tsx` |
+| E3 — résultats non streamés | Lecture SSE sur téléphone (XHR + `responseText` incrémental) ; chaque fiche lue s'affiche | `apps/mobile/src/api/lensStream.ts` · `apps/mobile/app/lens.tsx` (`onCard`) |
+| E4 — le délai serveur jette le travail | Les fiches déjà lues restent affichées ; le flux est clos proprement si le serveur s'arrête (`STREAM_INCOMPLETE`) | `apps/mobile/src/api/lensStream.ts` |
+| E6 — « Annuler » n'arrête que le client | Le serveur voit la fermeture de la connexion et cesse de lire les pages marchandes | `src/ayrovix/routes.ts` (`res.on('close')` → `cancelled`) |
+
+Ajouts :
+
+- **Ligne d'avancement honnête** : « Produit identifié » → « Recherche de produits similaires » →
+  « Lecture des fiches 4/8 ». Barre déterministe quand le serveur donne `done/total`,
+  indéterminée sinon (jamais de pourcentage inventé) — `LensProgressLine.tsx`.
+- **Barre flottante en haut** (fiche 2) : vignette + étape + annulation, posée sur la photo,
+  visible pendant que le tiroir garde la photo à l'écran — `LensSearchBar.tsx`.
+- **Les tests** : `apps/mobile/tests/lensStream.test.ts` (13 cas : découpage SSE, ordre des
+  événements, doublons, flux coupé, annulation, délai, repli JSON).
+
+**Ce qui n'est pas fait (volontairement, cf. § 6)** : ni onglets « AI Mode / All », ni
+conversation, ni prix estimé. La détection multi-cibles (D1/D2/D3 de la fiche 2) reste à faire.
