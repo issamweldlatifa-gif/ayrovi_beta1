@@ -290,6 +290,9 @@ function errorCopyKey(error: unknown): { title: TranslationKey; body: Translatio
     if (['BLURRY_IMAGE', 'IMAGE_TOO_BLURRY'].includes(error.code)) return { title: 'lens.error.blurryTitle', body: 'lens.error.blurryBody' };
     if (['LOW_LIGHT', 'IMAGE_TOO_DARK'].includes(error.code)) return { title: 'lens.error.darkTitle', body: 'lens.error.darkBody' };
     if (['PRODUCT_TOO_SMALL', 'NO_SUBJECT'].includes(error.code)) return { title: 'lens.error.subjectTitle', body: 'lens.error.subjectBody' };
+    // SerpApi est l'entrée de la recherche : quand elle ne répond pas, on le
+    // dit — pas « la recherche n'a pas abouti ».
+    if (error.code === 'VISUAL_SEARCH_FAILED') return { title: 'lens.error.visualTitle', body: 'lens.error.visualBody' };
   }
   return { title: 'lens.error.serviceTitle', body: 'lens.error.serviceBody' };
 }

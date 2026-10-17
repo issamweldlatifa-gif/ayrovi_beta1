@@ -157,10 +157,14 @@ déjà SSE. Le P0 est **uniquement** un nouveau chemin de transport côté tél�
 |---|---|---|
 | 0 s | clic « Rechercher » | le tiroir monte, « Recherche des produits de la photo… » |
 | ~0,3 s | upload + normalisation + recadrage ROI | — |
-| ≤ 8 s | vision (ou reconnaissance SerpApi) | **étape « Produit identifié » + la réponse en clair** (E2) |
-| ≤ 12 s | recherche visuelle (SerpApi) | **étape « Recherche de produits similaires »** ; les premières cartes apparaissent |
-| ≤ 20 s | lecture des fiches marchandes (3,5 s par page, en parallèle) | **« Lecture des fiches 4/8 »** + barre qui avance |
+| ≤ 20 s | **recherche visuelle SerpApi (SEULE entrée)** | **étape « Produit identifié » + la réponse en clair** (E2) |
+| ≤ 20 s | lecture des fiches marchandes (Bright Data, 3,5 s par page, en parallèle) | **« Lecture des fiches 4/8 »** + barre qui avance |
 | 45 s | deadline serveur | les résultats **partiels restent affichés** (E4) |
+
+> **Règle du 17/10/2026 : SerpApi EST l'entrée de la recherche — et la seule.**
+> Quand SerpApi ne rend aucun lien, la recherche s'arrête et le dit
+> (`VISUAL_SEARCH_FAILED`) : aucun autre fournisseur ne prend le relais en silence.
+> La vision IA (Anthropic) n'intervient plus dans la recherche.
 
 ### 5.3 Critères de recette (mesurables)
 
@@ -179,8 +183,8 @@ déjà SSE. Le P0 est **uniquement** un nouveau chemin de transport côté tél�
 
 - **Ne pas inventer de prix ni de disponibilité.** Règle du dépôt : le prix vient de la page
   marchande, jamais de l'image. Un prix « estimé » reste interdit (`priceOrigin`, `priceToken`).
-- **Ne pas nommer la marque avant que le serveur l'ait dit.** `identification.brand` vient de la
-  vision/SerpApi : on l'affiche tel quel, ou pas du tout.
+- **Ne pas nommer la marque avant que le serveur l'ait dit.** `identification.brand` vient de
+  SerpApi (le titre de la meilleure page) : on l'affiche tel quel, ou pas du tout.
 - **Ne pas afficher de carte « vide » pour remplir l'écran.** Un squelette est un squelette :
   il annonce une forme, il n'invente pas un produit.
 - **L'« AI Overview » de Google est une réponse de modèle.** Le nôtre doit rester une
@@ -197,7 +201,7 @@ déjà SSE. Le P0 est **uniquement** un nouveau chemin de transport côté tél�
 |---|---|
 | Contrat SSE du serveur | `src/ayrovix/routes.ts` (`/analyze-image`, `emit(...)`) |
 | Délai global + paliers | `src/ayrovix/services/lensDeadline.ts` |
-| Budgets par étape | `src/ayrovix/services/ai.ts` (vision 8 s) · `search.ts` (SerpApi 3,5 s / ai-core 4,2 s) · `productEnrichment.ts` (3,5 s) |
+| Budgets par étape | `src/ayrovix/services/visualSearch.ts` (SerpApi 18–25 s) · `src/ayrovix/services/lensEngine.ts` (MATCHES 22 s) · `productEnrichment.ts` (3,5 s) |
 | Modèle à porter (web) | `client/src/ayrovix/services/lensApi.ts` · `client/src/ayrovix/services/lensStream.ts` · `client/src/ayrovix/components/LensLauncher.tsx:373-430` |
 | Client mobile actuel (bloquant) | `apps/mobile/src/api/lens.ts:541` · `apps/mobile/src/api/nativeUpload.ts:41` |
 | Écran d'attente actuel | `apps/mobile/src/features/lens/LensSearchSkeleton.tsx` · `apps/mobile/app/lens.tsx:1055` |

@@ -631,6 +631,8 @@ export const fr = {
   'lens.error.darkBody': 'Placez le produit dans un endroit plus lumineux, sans reflet direct.',
   'lens.error.subjectTitle': 'Le produit est trop éloigné',
   'lens.error.subjectBody': 'Cadrez le produit seul et faites-lui occuper une plus grande partie de l’image.',
+  'lens.error.visualTitle': 'Recherche visuelle indisponible',
+  'lens.error.visualBody': 'La recherche de produits n’a pas répondu. Réessayez dans un instant.',
   'lens.error.serviceTitle': 'La recherche n’a pas abouti',
   'lens.error.serviceBody': 'Réessayez dans quelques instants ou utilisez une autre photo.',
   'lens.priceUnpublished': 'Prix non publié',

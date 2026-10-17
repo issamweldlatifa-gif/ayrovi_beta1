@@ -66,6 +66,32 @@ function restoreEnv(name: string, value: string | undefined) {
   else process.env[name] = value;
 }
 
+/**
+ * SerpApi — SEULE entrée de la recherche (17/10/2026). Un lien + un prix sur
+ * la page marchande : c'est la page qui fait foi, jamais l'image.
+ */
+function stubSerpApiVisual(title = 'Sac à main noir Zara — 49.99 EUR', link = 'https://shop.example.com/sac-noir') {
+  const mock = vi.fn(async (url: string) => {
+    if (String(url) === 'https://serpapi.com/image') {
+      return new Response(JSON.stringify({ image_id: 'image-id-sac' }), { status: 200 });
+    }
+    if (String(url).startsWith('https://serpapi.com/search.json?')) {
+      return new Response(JSON.stringify({
+        visual_matches: [{
+          title,
+          link,
+          source: 'Example Shop',
+          thumbnail: 'https://encrypted-tbn.example.com/sac.jpg',
+          price: { extracted_value: 49.99, currency: '€' },
+        }],
+      }), { status: 200 });
+    }
+    throw new Error(`Unexpected request: ${url}`);
+  });
+  vi.stubGlobal('fetch', mock);
+  return mock;
+}
+
 describe('AYROVIX Lens', () => {
   /*
    * Ces scénarios rejouent la MÊME image pour éprouver des comportements
@@ -465,7 +491,7 @@ describe('AYROVIX Lens', () => {
     }
   });
 
-  test('analyze-image continue avec Google Lens si Claude Vision échoue', async () => {
+  test('analyze-image passe par SerpApi même si la vision IA est en panne', async () => {
     const previousAnthropic = process.env.ANTHROPIC_API_KEY;
     const previousSerp = process.env.SERPAPI_KEY;
     process.env.ANTHROPIC_API_KEY = 'test-anthropic-down';
@@ -521,15 +547,10 @@ describe('AYROVIX Lens', () => {
     }
   });
 
-  test('un prix visible sur l’image n’est plus jamais proposé (vision = intitulé seulement)', async () => {
-    const previousKey = process.env.ANTHROPIC_API_KEY;
-    process.env.ANTHROPIC_API_KEY = 'test-anthropic-price';
-    const fetchMock = stubAnthropic(JSON.stringify({
-      input_kind: 'product_screenshot', category: 'handbag', brand: 'Zara', model: null,
-      color: ['black'], visible_text: ['49.99 EUR'], possible_model_codes: [],
-      description: 'Sac à main noir.', confidence: 0.88,
-      detected_price: { amount: 49.99, currency: 'EUR', label: 'product_price', confidence: 0.96 },
-    }));
+  test('un prix visible sur l’image n’est plus jamais proposé (SerpApi = intitulé seulement)', async () => {
+    const previousSerp = process.env.SERPAPI_KEY;
+    process.env.SERPAPI_KEY = 'test-serpapi-price';
+    stubSerpApiVisual();
     try {
       const response = await request(app)
         .post('/api/ayrovix/analyze-image')
@@ -539,25 +560,18 @@ describe('AYROVIX Lens', () => {
       // page marchande derrière un lien fait foi.
       expect(response.body.data.detectedPrice).toBeNull();
       expect(response.body.data.identification.detected_price.amount).toBe(0);
-      const requestBody = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
-      expect(requestBody.output_config.format.type).toBe('json_schema');
-      const schemaJson = JSON.stringify(requestBody.output_config.format.schema);
-      expect(schemaJson).not.toMatch(/"(?:minimum|maximum|minItems|maxItems|pattern|format)"/);
-      expect(requestBody.tools).toBeUndefined();
+      // 17/10/2026 : l'intitulé vient de SerpApi (le titre de la page), pas d'un
+      // modèle qui aurait « deviné » le produit.
+      expect(response.body.data.identification.description).toContain('Sac à main');
     } finally {
-      restoreEnv('ANTHROPIC_API_KEY', previousKey);
+      restoreEnv('SERPAPI_KEY', previousSerp);
     }
   });
 
   test("un ancien prix barré n'est jamais accepté comme prix de commande", async () => {
-    const previousKey = process.env.ANTHROPIC_API_KEY;
-    process.env.ANTHROPIC_API_KEY = 'test-anthropic-old-price';
-    stubAnthropic(JSON.stringify({
-      input_kind: 'product_screenshot', category: 'shoes', brand: 'Nike', model: null,
-      color: ['white'], visible_text: ['99.00 EUR'], possible_model_codes: [],
-      description: 'Chaussures blanches.', confidence: 0.8,
-      detected_price: { amount: 99, currency: 'EUR', label: 'old_price', confidence: 0.99 },
-    }));
+    const previousSerp = process.env.SERPAPI_KEY;
+    process.env.SERPAPI_KEY = 'test-serpapi-old-price';
+    stubSerpApiVisual('Chaussures blanches Nike — 99.00 EUR', 'https://shop.example.com/chaussures-blanches');
     try {
       const response = await request(app)
         .post('/api/ayrovix/analyze-image')
@@ -566,7 +580,7 @@ describe('AYROVIX Lens', () => {
       expect(response.body.data.detectedPrice).toBeNull();
       expect(response.body.data).not.toHaveProperty('ocrPrice');
     } finally {
-      restoreEnv('ANTHROPIC_API_KEY', previousKey);
+      restoreEnv('SERPAPI_KEY', previousSerp);
     }
   });
 

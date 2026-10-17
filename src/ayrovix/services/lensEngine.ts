@@ -136,7 +136,7 @@ export async function recognizeImage(
       : cached.matches
       ? Promise.resolve(cached.matches)
       : timed(
-          withDeadline(serpApiVisualSearch(image, matchLimit), deadlineMs('MATCHES', 14_000), 'matches'),
+          withDeadline(serpApiVisualSearch(image, matchLimit), deadlineMs('MATCHES', 22_000), 'matches'),
           (ms) => { matchesMs = ms; },
         ),
     !withSignals

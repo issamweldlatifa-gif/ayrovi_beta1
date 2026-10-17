@@ -24,7 +24,9 @@ describe('délai global de /analyze-image', () => {
     expect(block.match(/if \(timedOut\) return;/g)?.length).toBeGreaterThanOrEqual(2);
   });
   it('émet la progression : image lue, recherche, lecture des fiches', () => {
-    expect(block).toContain("emit('progress', { step: 'identified' })");
+    // L'identification voyage avec la première étape : la réponse en clair
+    // s'affiche avant la première fiche marchande.
+    expect(block).toContain("emit('progress', { step: 'identified', identification })");
     expect(block).toContain("emit('progress', { step: 'searching' })");
     expect(block).toContain("emit('progress', { step: 'reading', done: readyCount, total: candidates.length })");
   });

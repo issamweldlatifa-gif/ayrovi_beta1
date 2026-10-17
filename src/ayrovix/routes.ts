@@ -51,6 +51,17 @@ export function pipelineKey(buf: Buffer, intent: string | null): string {
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const CHANNELS = new Set<AyrovixChannel>(['image', 'url', 'qr']);
 
+/**
+ * Message de la recherche visuelle (SerpApi), le MÊME pour le flux et pour le
+ * JSON : il dit CE QUI A MANQUÉ — lent, vide, ou fournisseur muet. Jamais un
+ * code brut dans l'interface.
+ */
+function visualSearchMessage(code: string): string {
+  if (code === 'SERPAPI_TIMEOUT') return "La recherche visuelle a mis trop de temps. Réessayez dans un instant.";
+  if (code === 'SERPAPI_NO_MATCHES') return "Aucun produit correspondant trouvé sur la photo. Essayez une photo plus nette et centrée.";
+  return "La recherche visuelle est temporairement indisponible. Réessayez dans un instant.";
+}
+
 function reviewSessionId(req: Request): string | null {
   const raw = Array.isArray(req.headers['x-session-id']) ? req.headers['x-session-id'][0] : req.headers['x-session-id'];
   const value = String(raw || '').trim();
@@ -273,12 +284,14 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
         } catch { /* ignore malformed roi — fallback to full image */ }
       }
       mark(trace, 'imageBytesIn', effectiveBuffer.length);
-      if (!serpApiVisualReady() && !ayrovixAiReady()) {
+      // SerpApi EST l'entrée de la recherche : sans elle, la recherche ne peut
+      // pas commencer. (La vision IA ne la remplace plus — 17/10/2026.)
+      if (!serpApiVisualReady()) {
         return res.status(503).json({ success: false, code: 'AYROVIX_UNAVAILABLE', error: "AYROVIX n'est pas encore activé. Réessayez bientôt." });
       }
 
       /*
-       * UN SEUL CHEMIN (décision produit du 02/10/2026).
+       * UN SEUL CHEMIN (décision produit du 02/10/2026, confirmée le 17/10/2026).
        *
        *   photo → SerpApi (liens) → pages marchandes (vérité) → calculateur,
        *   promo, isolation → compréhension produit → écran adapté.
@@ -286,9 +299,12 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
        * Tout ce qui DEVINAIT a été retiré de ce chemin : prix lu sur l'image,
        * OCR, requête IA « optimisée », re-scoring IA de pertinence, recherche
        * web textuelle. SerpApi ne sert qu'à trouver les pages ; ce qui s'affiche
-       * vient des pages. La vision IA ne reste qu'en DERNIER RECOURS, quand
-       * SerpApi ne rend aucun lien : elle fournit alors un intitulé de recherche
-       * (catalogue + web), jamais un prix.
+       * vient des pages.
+       *
+       * SERPAPI EST L'ENTRÉE — ET LA SEULE (17/10/2026). La vision IA n'est
+       * PLUS un dernier recours de la recherche : quand SerpApi ne rend aucun
+       * lien, la recherche s'arrête là et le DIT (VISUAL_SEARCH_FAILED). Aucun
+       * autre fournisseur ne prend le relais en silence.
        */
       const recognition = await recognizeImage(effectiveBuffer, effectiveMime, { withVision: false, withSignals: false });
       res.setHeader('X-Ayrovix-Cache', recognition.cacheHit);
@@ -312,14 +328,15 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
         // L'intitulé de la grille est celui de la meilleure page trouvée — pas une devinette.
         identification = fallbackIdentification(visualCandidates[0].title);
       } else {
-        if (!ayrovixAiReady()) throw recognition.matchesError || new Error('IDENTIFICATION_FAILED');
-        const lastResort = await recognizeImage(effectiveBuffer, effectiveMime, { withMatches: false, withSignals: false });
-        mark(trace, 'anthropicVisionMs', lastResort.timings.visionMs);
-        if (!lastResort.identification) {
-          throw recognition.matchesError || lastResort.identificationError || new Error('IDENTIFICATION_FAILED');
-        }
-        identification = lastResort.identification;
-        console.warn('[AYROVIX analyze-image] SerpApi sans lien — vision en dernier recours (intitulé seulement)');
+        /*
+         * SERPAPI SEUL. Pas de vision IA en secours : SerpApi EST l'entrée de
+         * la recherche. Sans lien, on s'arrête ici et on le dit clairement —
+         * plutôt que d'appeler un autre fournisseur en silence (et d'afficher
+         * une erreur de facturation à l'utilisateur).
+         */
+        throw recognition.matchesError instanceof SerpApiVisualError
+          ? recognition.matchesError
+          : new SerpApiVisualError('NO_MATCHES');
       }
       // Aucun prix ne vient de l'image : ni de la vision, ni de l'OCR.
       identification.detected_price = { amount: 0, currency: '', label: 'none', confidence: 0 };
@@ -484,7 +501,9 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
     } catch (error: any) {
       if (timedOut) return;
       if (stream && !res.writableEnded) {
-        emit('error', { code: error?.code || 'IDENTIFICATION_FAILED', error: error?.message || 'IDENTIFICATION_FAILED' });
+        emit('error', error instanceof SerpApiVisualError
+          ? { code: 'VISUAL_SEARCH_FAILED', error: visualSearchMessage(error.code) }
+          : { code: error?.code || 'IDENTIFICATION_FAILED', error: error?.message || 'IDENTIFICATION_FAILED' });
         return res.end();
       }
       if (error instanceof InvalidImageError || error?.code === 'INVALID_IMAGE') {
@@ -495,11 +514,12 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       }
       if (error instanceof SerpApiVisualError) {
         console.warn('[AYROVIX analyze-image]', error.code);
+        // Le message dit CE QUI A MANQUÉ : lent, vide, ou fournisseur muet.
         return res.status(502).json({
           success: false,
           code: 'VISUAL_SEARCH_FAILED',
           providerCode: error.code,
-          error: "La recherche visuelle est temporairement indisponible. Réessayez dans un instant.",
+          error: visualSearchMessage(error.code),
         });
       }
       console.warn('[AYROVIX analyze-image]', error?.code || error?.message || 'unknown');

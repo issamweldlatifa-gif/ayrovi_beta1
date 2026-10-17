@@ -55,8 +55,15 @@ export function serpApiVisualReady(): boolean {
 }
 
 function timeoutMs(): number {
+  /*
+   * SerpApi EST l'entrée de la recherche (17/10/2026) : son budget n'est pas
+   * un détail, c'est la recherche elle-même. Le moteur Google Lens met
+   * couramment 8 à 15 s (téléversement + indexation + recherche) : sous 18 s,
+   * le fournisseur « expire » avant d'avoir répondu (SERPAPI_TIMEOUT en boucle).
+   * L'échéance reste plafonnée : au-delà de 25 s, on perd le délai global.
+   */
   const configured = Number(process.env.AYROVIX_VISUAL_SEARCH_TIMEOUT_MS);
-  return Number.isFinite(configured) ? Math.min(25_000, Math.max(10_000, configured)) : 14_000;
+  return Number.isFinite(configured) ? Math.min(25_000, Math.max(18_000, configured)) : 20_000;
 }
 
 function remainingMs(deadline: number, cap: number): number {

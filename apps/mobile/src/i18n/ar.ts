@@ -631,6 +631,8 @@ export const ar = {
   'lens.error.darkBody': 'حط المنتوج في ضوء أوضح ومن غير انعكاس مباشر.',
   'lens.error.subjectTitle': 'المنتوج بعيد برشة',
   'lens.error.subjectBody': 'خلي المنتوج وحدو في الإطار وقرّبو أكثر.',
+  'lens.error.visualTitle': 'البحث البصري ما نجحش',
+  'lens.error.visualBody': 'ما جاوبش البحث على منتجات. عاود بعد شوية.',
   'lens.error.serviceTitle': 'البحث ما كملش',
   'lens.error.serviceBody': 'عاود بعد شوية ولا استعمل صورة أخرى.',
   'lens.priceUnpublished': 'السعر موش منشور',

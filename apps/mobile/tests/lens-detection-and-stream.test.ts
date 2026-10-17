@@ -64,4 +64,12 @@ describe('Z Lens — la détection parle, la recherche progresse', () => {
     expect(lens).toContain("busy={stage.kind === 'busy'}");
     expect(bar).toContain('testID="lens-search-bar-cancel"');
   });
+
+  it('l’échec de la recherche visuelle est dit comme tel', () => {
+    // SerpApi est l’entrée de la recherche : quand elle ne répond pas, le
+    // message le dit (pas « la recherche n'a pas abouti »).
+    expect(lens).toContain("error.code === 'VISUAL_SEARCH_FAILED'");
+    expect(lens).toContain("'lens.error.visualTitle'");
+    expect(lens).toContain("'lens.error.visualBody'");
+  });
 });

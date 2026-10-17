@@ -19,9 +19,11 @@ const engine = readFileSync('src/ayrovix/services/lensEngine.ts', 'utf8');
 describe('une seule orchestration', () => {
   it('la route publique n’appelle plus les moteurs elle-même', () => {
     const block = routes.split("router.post('/analyze-image'")[1].split("router.post('/analyze-url'")[0];
-    // 02/10/2026 : SerpApi d'abord (vision coupée) ; la vision ne revient qu'en dernier recours.
+    // 17/10/2026 : SerpApi EST l'entrée de la recherche — et la SEULE. La
+    // vision IA n'est plus un dernier recours : sans lien SerpApi, la
+    // recherche s'arrête et le dit (VISUAL_SEARCH_FAILED).
     expect(block).toContain('recognizeImage(effectiveBuffer, effectiveMime, { withVision: false, withSignals: false })');
-    expect(block).toContain('recognizeImage(effectiveBuffer, effectiveMime, { withMatches: false, withSignals: false })');
+    expect(block).not.toContain('{ withMatches: false, withSignals: false }');
     expect(block).not.toContain('identifyProduct(effectiveBuffer');
     expect(block).not.toContain('serpApiVisualSearch(effectiveBuffer');
     expect(block).not.toContain('readLensSignals(effectiveBuffer');
@@ -52,15 +54,38 @@ describe('une seule orchestration', () => {
   it('les erreurs des fournisseurs sont transmises, pas avalées : l’appelant décide s’il continue', () => {
     expect(engine).toContain('identificationError');
     expect(engine).toContain('matchesError');
-    expect(routes).toContain('throw recognition.matchesError || lastResort.identificationError || new Error(\'IDENTIFICATION_FAILED\');');
+    // L'échec SerpApi remonte tel quel : la route le transforme en
+    // VISUAL_SEARCH_FAILED, sans appeler un autre fournisseur.
+    expect(routes).toContain('recognition.matchesError instanceof SerpApiVisualError');
+    expect(routes).not.toContain('lastResort.identificationError');
   });
 
   it('chaque moteur est mesuré séparément', () => {
     expect(engine).toContain('visionMs');
     expect(engine).toContain('matchesMs');
     expect(engine).toContain('signalsMs');
-    expect(routes).toContain("mark(trace, 'anthropicVisionMs', lastResort.timings.visionMs)");
+    // Plus de mesure « anthropicVisionMs » : la recherche n'appelle plus la vision.
+    expect(routes).not.toContain('anthropicVisionMs');
     expect(routes).toContain("mark(trace, 'serpApiTotalMs', recognition.timings.matchesMs)");
+  });
+
+  it('SerpApi est l’entrée UNIQUE de la recherche (17/10/2026)', () => {
+    const block = routes.split("router.post('/analyze-image'")[1].split("router.post('/analyze-url'")[0];
+    // Un seul appel de reconnaissance, la vision coupée.
+    expect(block.match(/recognizeImage\(/g)?.length).toBe(1);
+    expect(block).toContain('{ withVision: false, withSignals: false }');
+    // Sans lien SerpApi : la recherche s'arrête et le dit — pas d'autre fournisseur.
+    expect(block).toContain('recognition.matchesError instanceof SerpApiVisualError');
+    expect(block).toContain("new SerpApiVisualError('NO_MATCHES')");
+    // L'échec remonte en VISUAL_SEARCH_FAILED, avec un message qui dit ce qui manque.
+    expect(routes).toContain("code: 'VISUAL_SEARCH_FAILED'");
+    expect(routes).toContain("code === 'SERPAPI_TIMEOUT'");
+    expect(routes).toContain("code === 'SERPAPI_NO_MATCHES'");
+    // Le même message part par le flux ET par le JSON.
+    expect(routes).toContain('visualSearchMessage(error.code)');
+    // Et SerpApi a le budget qu'il faut : sous 18 s, le moteur Google Lens expire.
+    const visual = readFileSync('src/ayrovix/services/visualSearch.ts', 'utf8');
+    expect(visual).toContain('Math.max(18_000, configured)');
   });
 });
 
