@@ -2,7 +2,7 @@
 
 **Phase : DISCOVERY UNIQUEMENT. Aucune ligne de production n'a été modifiée par ce travail.**
 Date : 2026-09-05 · Branche `main` · `HEAD` observé : `aed5c48` · Version applicative `3.10.4`
-Auteurs des sources lues intégralement : `AUDIT_ERP_2026-09-05.md` (106 108 octets, 995 l., commit audité `f4c96a1`), `ERP_CORE_P0_P1_REPORT.md`, `ERP_CORE_P1_CLOSURE_REPORT.md`, `P2_1_CATALOGUE_INVENTORY.md`, `P2_1_CATALOGUE_REPORT.md`, **et le code actuel** (serveur, base, routes, permissions, tests, front admin).
+Auteurs des sources lues intégralement : `../erp-core/AUDIT_2026-09-05.md` (106 108 octets, 995 l., commit audité `f4c96a1`), `../erp-core/P0_P1_REPORT.md`, `../erp-core/P1_CLOSURE_REPORT.md`, `P2_1_CATALOGUE_INVENTORY.md`, `P2_1_CATALOGUE_REPORT.md`, **et le code actuel** (serveur, base, routes, permissions, tests, front admin).
 
 > Règle appliquée partout : **le code et les rapports font foi, pas cette commande.**
 > Chaque fois qu'une affirmation de la consigne MASTER COMMAND V2 divergeait de la réalité mesurée,

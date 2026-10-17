@@ -2,7 +2,7 @@
 **Date:** 2026-09-18 — **Scope:** Lens flow + Product page — **Environment:** `main` @ `28ef35e`
 **Rule:** CLEAN FIRST — NO ACCUMULATION — KEEP CURRENT LENS, FIX FLOW, MAKE PRODUCT FIRST
 
-> This audit was done by reading the actual code only (no guessing). Backend lens performance (Anthropic Vision + SerpApi) is **not** re-audited here — see `AYROVIX_LENS_PERFORMANCE_AUDIT.md` (6 pushes, 730/730). This order is **FLOW + FRONTEND UX + RESPONSIVE CLEANUP** only.
+> This audit was done by reading the actual code only (no guessing). Backend lens performance (Anthropic Vision + SerpApi) is **not** re-audited here — see `LENS_PERFORMANCE_AUDIT.md` (6 pushes, 730/730). This order is **FLOW + FRONTEND UX + RESPONSIVE CLEANUP** only.
 
 ---
 

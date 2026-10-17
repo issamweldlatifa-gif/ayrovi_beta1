@@ -19,11 +19,11 @@ s'ajouter à l'existant sans le réécrire :
   domaine `CRM` existe déjà, un groupe de navigation « CRM » (ordre entre Commerce et ERP) porte
   les six écrans du module ; l'écran « Clients » legacy reste l'une des portes vers le relationnel.
 
-Ordre d'exécution E0→E7 (défini dans `AYROVI_CRM_BASELINE_AUDIT.md`, §10) :
+Ordre d'exécution E0→E7 (défini dans `BASELINE_AUDIT.md`, §10) :
 
 | Étape | Livré dans | Commit |
 |---|---|---|
-| E0 baseline | `AYROVI_CRM_BASELINE_AUDIT.md` | `4ab8b96` |
+| E0 baseline | `BASELINE_AUDIT.md` | `4ab8b96` |
 | E1/E2 backend complet (parties, contacts, relations, activités, tâches/follow-ups, notes, issues, timeline, dashboard) | — | `5fe7a7a` |
 | E5 écrans back-office + `/crm/meta` | `client/src/admin/CrmPages.tsx` | `ed8e333` |
 | E6 tests matrice / recherche étendue / indexation prouvée / revue sécurité | `tests/crm-*` + `search.ts` | `1eb2ab5` |

@@ -240,7 +240,7 @@ Le plan d'exécution du CRM se cale sur l'existant au lieu de le contourner :
 - **REC-07 — Recherche.** Étendre `back-office/search.ts` par de nouvelles sources (parties, contacts, tâches, issues) sans enlever les existantes.
 - **REC-08 — Vocabulaires.** Ajouter dans `domain/statuses.ts` les états CRM (`activity`, `task`, `issue`, `party`) avec libellés FR/AR — une source, pas d'invention dans les écrans.
 - **REC-09 — Porte de sortie à chaque phase** : `tsc` 0, `tsc -p tsconfig.client.json` 0, `npm run build` ok, `npm test` ≥ baseline **sans aucun test affaibli**, worktree propre, commit+push.
-- **REC-10 — Docs miroir de la commande** : `AYROVI_CRM_ARCHITECTURE.md`, `AYROVI_CRM_DOMAIN_MODEL.md`, `AYROVI_CRM_API.md`, `AYROVI_CRM_PERMISSIONS.md`, `AYROVI_CRM_WORKFLOWS.md`, `AYROVI_CRM_TEST_MATRIX.md`, `AYROVI_CRM_CLOSURE_REPORT.md`.
+- **REC-10 — Docs miroir de la commande** : `ARCHITECTURE.md`, `DOMAIN_MODEL.md`, `API.md`, `PERMISSIONS.md`, `WORKFLOWS.md`, `TEST_MATRIX.md`, `CLOSURE_REPORT.md`.
 
 ### Ordre d'exécution proposé (map sur les phases de la commande)
 | Étape | Contenu | Correspondance commande |

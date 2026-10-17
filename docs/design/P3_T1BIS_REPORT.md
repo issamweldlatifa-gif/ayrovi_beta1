@@ -4,7 +4,7 @@
 **Commis de la phase :** `e7906c3` (a) → `3cf36a2` (b) → `10b0cff` (c) → `3b813a7` (d) → le présent commit (e).
 
 **Note de numérotation, à lire avant tout le reste.** J'ai d'abord intitulé ce travail « P3/T2 », puis j'ai
-écrit par-dessus la ligne T2 du plan. C'était une erreur de rattachement : dans `PLAN_EVOLUTION_AYROVI_P2_P5.md`
+écrit par-dessus la ligne T2 du plan. C'était une erreur de rattachement : dans `../plans/EVOLUTION_AYROVI_P2_P5.md`
 §5, **T2 est le pas des composants primitifs** (~18 éléments que le moteur réexporte) — il n'est **pas entamé**.
 Le travail décrit ici prolonge **T1** (lequel prévoyait déjà « une famille de noirs », « un seul orange » et des
 noms sémantiques) : il est donc renommé **T1-bis**, la ligne T2 du plan a été restaurée mot pour mot, et le

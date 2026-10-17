@@ -172,7 +172,7 @@ All below require **zero new credentials** and **no new backend**:
 8. **Trust badge placement** — move `ShieldCheck` trust row from bottom of results to directly under `best` card to reinforce "verified" vs "pending_manual" distinction. CSS only.
 9. **Empty-state CTA** — `LensResults` empty dashed card currently suggests "Essayez le lien direct" but button is only "Nouvelle recherche" — add secondary "Coller un lien" that autofocuses URL input on `home` stage (requires `replaceStage('home')` + focus ref). No API.
 10. **History affordance** — surface top-3 `LensHistory` items on `home` as chips ("Vos recherches récentes") using `client/src/ayrovix/services/history.ts` (localStorage reads). Already has `AyrovixHistoryItem`. No API.
-11. **RTL & monochrome polish** — verified `LensResults` already respects `direction` via `useLocale`; keep orange cap <3% (currently `ay-cta-orange` only). No change needed; confirms Zalando audit `DESIGN_P4_T1_ZALANDO_REPORT.md` compliance.
+11. **RTL & monochrome polish** — verified `LensResults` already respects `direction` via `useLocale`; keep orange cap <3% (currently `ay-cta-orange` only). No change needed; confirms Zalando audit `../design/P4_T1_ZALANDO_REPORT.md` compliance.
 
 **All items above are feasible in a single UI-only PR, testable offline (`npm test` without keys).**
 
@@ -237,7 +237,7 @@ All listed deps present in `package.json` and installed.
 **Phase 5 — Observability (requires credentials)**
 * Expose `GET /api/admin/ayrovix/health` (already partially `checkProviderSearchHealth`/`checkSerpApiVisualHealth`) to CMS. Surface counts of `visual_matches`, `pricing.confidence`, `warnings`. Enables AI Discovery dashboard (docs `LENS_AUDIT_2026-08-14` §8) without leaking keys.
 
-Each phase keeps `filterDisplayableCandidates` gate, signed `priceToken`, and `P2_1_CATALOGUE_REPORT` invariants intact.
+Each phase keeps `filterDisplayableCandidates` gate, signed `priceToken`, and `../plans/P2_1_CATALOGUE_REPORT` invariants intact.
 
 ---
 

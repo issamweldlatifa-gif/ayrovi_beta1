@@ -8,7 +8,7 @@
 
 | Étape | Contenu | Preuve | Commit |
 |---|---|---|---|
-| E0 | Audit de baseline mesuré (101 tables, ordre d'exécution) | `AYROVI_CRM_BASELINE_AUDIT.md` | `4ab8b96` |
+| E0 | Audit de baseline mesuré (101 tables, ordre d'exécution) | `BASELINE_AUDIT.md` | `4ab8b96` |
 | E1/E2 | Module `crm360` : DDL, parties, contacts, relations, raccordements, activités, tâches/follow-ups, notes, issues, timeline, dashboard | suite CRM (parties) + porte verte 626 → 645 | `5fe7a7a` |
 | E3 | Permissions crm360 en données + audit unique + notifications (canal existant) | tests autorisation/audit/notif | dans `5fe7a7a` |
 | E4 | Dashboard KPI réels + recherche globale étendue (REC-07) | `dashboard.ts` + sources crm360 (finalisées en E6) | `5fe7a7a` / `1eb2ab5` |

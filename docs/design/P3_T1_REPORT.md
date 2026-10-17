@@ -2,7 +2,7 @@
 
 **Date :** 2026-09-06 · **Branche :** `main` · **Périmètre décidé :** `/admin` uniquement (décision D‑02 de la session P3) · **Garantie maîtresse :** aucun changement de rendu, pixel pour pixel.
 
-Rapport de phase T1 du plan `PLAN_EVOLUTION_AYROVI_P2_P5.md` §5. Ce que T1 **ne fait pas** : consolider les teintes, renommer les variables héritées, toucher la vitrine, ni installer le mode sombre — tout cela est explicitement reporté en T2/T3 parce que cela changerait le rendu et demande un consentement.
+Rapport de phase T1 du plan `../plans/EVOLUTION_AYROVI_P2_P5.md` §5. Ce que T1 **ne fait pas** : consolider les teintes, renommer les variables héritées, toucher la vitrine, ni installer le mode sombre — tout cela est explicitement reporté en T2/T3 parce que cela changerait le rendu et demande un consentement.
 
 ---
 

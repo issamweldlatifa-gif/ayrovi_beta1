@@ -1,7 +1,7 @@
 # AYROVI — rapport de phase P2.3 (Achats)
 
 Commit de la phase : `281235d` (`feat(purchasing): P2.3 — fournisseurs, commandes d'achat, réceptions liées au stock`), poussé sur `origin/main`.
-Contexte : `PLAN_EVOLUTION_AYROVI_P2_P5.md` §4 (ligne P2.3) et décision D-03 (Stock → Achats → thème).
+Contexte : `../plans/EVOLUTION_AYROVI_P2_P5.md` §4 (ligne P2.3) et décision D-03 (Stock → Achats → thème).
 Baseline entrante : 509 tests / 46 fichiers, `origin/main = 153debb`, arbre propre.
 
 ---
