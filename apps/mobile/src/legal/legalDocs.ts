@@ -217,7 +217,7 @@ export const LEGAL_DOCS: Record<LegalDocId, Partial<Record<'fr' | 'ar', LegalVer
     },
     {
       "kind": "p",
-      "text": "Demandes relatives aux données : contact@zayrovi.tn. Cette adresse doit être rendue opérationnelle avant l’ouverture publique générale."
+      "text": "Demandes relatives aux données : contact@your-zayrovi-domain.example. Cette adresse doit être rendue opérationnelle avant l’ouverture publique générale."
     }
   ]
 },

@@ -31,7 +31,7 @@ let content: { agent: any; csrf: string };
 let orders: { agent: any; csrf: string };
 
 async function makeSession(role: 'CONTENT_MANAGER' | 'ORDER_MANAGER') {
-  const email = `cat-${role.toLowerCase()}-${suffix}@test.zayrovi.tn`;
+  const email = `cat-${role.toLowerCase()}-${suffix}@test.your-zayrovi-domain.example`;
   const password = 'CatalogueSecure2026!';
   const created = await superAgent.post('/api/admin/users').set('x-csrf-token', superCsrf)
     .send({ name: `Catalogue ${role}`, email, password, role });
@@ -58,7 +58,7 @@ describe('catalogue foundation (P2.1)', () => {
   beforeAll(async () => {
     superAgent = request.agent(app);
     const login = await superAgent.set('User-Agent', 'ZAYROVI-CatalogueTest/1.0 (vitest)')
-      .post('/api/admin/auth/login').send({ email: 'admin@zayrovi.tn', password: 'ZayroviBeta2026!' });
+      .post('/api/admin/auth/login').send({ email: 'admin@your-zayrovi-domain.example', password: 'ZayroviBeta2026!' });
     expect(login.status).toBe(200);
     superCsrf = login.body.data.csrfToken;
     content = await makeSession('CONTENT_MANAGER');

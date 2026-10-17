@@ -12,7 +12,7 @@
  *    tout passe par l'origine de l'aperçu : aucune adresse à connaître, aucun
  *    CORS à configurer ;
  *  • en production (build natif), `EXPO_PUBLIC_API_BASE_URL` est défini à
- *    l'origine réelle (`https://zayrovi.tn`) : le proxy n'existe plus.
+ *    l'origine réelle (`https://your-zayrovi-domain.example`) : le proxy n'existe plus.
  */
 const { getDefaultConfig } = require('expo/metro-config');
 

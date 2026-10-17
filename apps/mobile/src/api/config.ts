@@ -9,12 +9,12 @@
 /**
  * الأصل الافتراضي = **الخادم اللي موجود فعلاً**، موش النطاق اللي نحلمو بيه.
  *
- * `zayrovi.tn` ما فيهش خادم يجاوب (07/10/2026): أي حزمة تتبنى بالأصل هذا
+ * `your-zayrovi-domain.example` ما فيهش خادم يجاوب (07/10/2026): أي حزمة تتبنى بالأصل هذا
  * تلقى «ما فماش شبكة» في كل شاشة. الأصل الحقيقي هو خدمة Render اللي يعلن
  * عليها الخادم نفسه (`client/src/services/apiOrigin.ts`، و
  * `android/app/build.gradle` قبلها).
  *
- * لمّا `zayrovi.tn` يولّي حيّ، التبديل = سطر واحد + بناء جديد — موش أكثر.
+ * لمّا `your-zayrovi-domain.example` يولّي حيّ، التبديل = سطر واحد + بناء جديد — موش أكثر.
  */
 export const DEFAULT_API_BASE_URL = 'https://zayrovi-beta1-moo8.onrender.com';
 

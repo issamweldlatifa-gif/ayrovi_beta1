@@ -29,7 +29,7 @@ describe('transactional mail readiness', () => {
     process.env.MAIL_FROM = 'not-an-email';
     expect(mailerReady()).toBe(false);
 
-    process.env.MAIL_FROM = 'ZAYROVI <no-reply@zayrovi.tn>';
+    process.env.MAIL_FROM = 'ZAYROVI <no-reply@your-zayrovi-domain.example>';
     expect(mailerReady()).toBe(true);
 
     process.env.MAIL_PROVIDER = 'unsupported';

@@ -828,7 +828,7 @@ describe('AYSONIC platform', () => {
       .field('transferReference','FOREIGN').attach('proof',png,'recu.png');
     expect(foreignProof.status).toBe(404);
 
-    const reviewer=request.agent(app); const login=await reviewer.post('/api/admin/auth/login').send({email:'admin@zayrovi.tn',password:'ZayroviBeta2026!'});
+    const reviewer=request.agent(app); const login=await reviewer.post('/api/admin/auth/login').send({email:'admin@your-zayrovi-domain.example',password:'ZayroviBeta2026!'});
     const reviewerCsrf=login.body.data.csrfToken;
     const pending=await reviewer.get('/api/admin/payment-proofs/pending');
     expect(pending.body.data.some((item:any)=>item.order_id===orderId)).toBe(true);
@@ -905,7 +905,7 @@ describe('AYSONIC platform', () => {
       expect(db.get<any>('SELECT status,payment_status FROM orders WHERE id=?',orderId)).toMatchObject({status:'CONFIRMED',payment_status:'PAID'});
       expect(db.get<any>('SELECT status FROM payment_transactions WHERE order_id=?',orderId).status).toBe('PAID');
 
-      const reviewer=request.agent(app);const login=await reviewer.post('/api/admin/auth/login').send({email:'admin@zayrovi.tn',password:'ZayroviBeta2026!'});
+      const reviewer=request.agent(app);const login=await reviewer.post('/api/admin/auth/login').send({email:'admin@your-zayrovi-domain.example',password:'ZayroviBeta2026!'});
       const manualApproval=await reviewer.post(`/api/admin/orders/${orderId}/deposit/review`).set('x-csrf-token',login.body.data.csrfToken).send({decision:'approve'});
       expect(manualApproval.status).toBe(409);
 
@@ -929,7 +929,7 @@ describe('AYSONIC platform', () => {
 
   test('finance reports combine income, expenses and profit with strict validation', async () => {
     const reviewer = request.agent(app);
-    const login = await reviewer.post('/api/admin/auth/login').send({ email: 'admin@zayrovi.tn', password: 'ZayroviBeta2026!' });
+    const login = await reviewer.post('/api/admin/auth/login').send({ email: 'admin@your-zayrovi-domain.example', password: 'ZayroviBeta2026!' });
     const csrf = login.body.data.csrfToken;
     const today = new Date().toISOString().slice(0, 10);
 
@@ -958,7 +958,7 @@ describe('AYSONIC platform', () => {
     const profile = await customerAgent
       .put('/api/customer/account/profile')
       .set('x-csrf-token', customerCsrf)
-      .send({ displayName: 'Client Test', email: 'client.test@zayrovi.tn', marketingOptIn: true });
+      .send({ displayName: 'Client Test', email: 'client.test@your-zayrovi-domain.example', marketingOptIn: true });
     expect(profile.status).toBe(200);
     expect(profile.body.data.displayName).toBe('Client Test');
     expect(profile.body.data.emailVerified).toBe(false);
@@ -1097,13 +1097,13 @@ describe('AYSONIC platform', () => {
     const identity = await request(app).get('/api/admin/auth/me');
     expect(identity.status).toBe(401);
     expect(identity.headers['set-cookie'][0]).toContain('Max-Age=0');
-    const failedLogin = await request(app).post('/api/admin/auth/login').send({ email: 'admin@zayrovi.tn', password: 'incorrect-password' });
+    const failedLogin = await request(app).post('/api/admin/auth/login').send({ email: 'admin@your-zayrovi-domain.example', password: 'incorrect-password' });
     expect(failedLogin.status).toBe(401);
   });
 
   test('super admin login establishes an HttpOnly session and rotating CSRF token', async () => {
     const loginResponse = await superAdmin.post('/api/admin/auth/login').send({
-      email: 'admin@zayrovi.tn',
+      email: 'admin@your-zayrovi-domain.example',
       password: 'ZayroviBeta2026!',
     });
     expect(loginResponse.status).toBe(200);
@@ -1329,9 +1329,9 @@ describe('AYSONIC platform', () => {
 
   test('RBAC separates content, order, admin and super-admin capabilities', async () => {
     const users = [
-      { name: 'Content User', email: 'content@test.zayrovi.tn', password: 'ContentSecure2026!', role: 'CONTENT_MANAGER' },
-      { name: 'Order User', email: 'orders@test.zayrovi.tn', password: 'OrdersSecure2026!', role: 'ORDER_MANAGER' },
-      { name: 'Admin User', email: 'admin-role@test.zayrovi.tn', password: 'AdminSecure2026!', role: 'ADMIN' },
+      { name: 'Content User', email: 'content@test.your-zayrovi-domain.example', password: 'ContentSecure2026!', role: 'CONTENT_MANAGER' },
+      { name: 'Order User', email: 'orders@test.your-zayrovi-domain.example', password: 'OrdersSecure2026!', role: 'ORDER_MANAGER' },
+      { name: 'Admin User', email: 'admin-role@test.your-zayrovi-domain.example', password: 'AdminSecure2026!', role: 'ADMIN' },
     ];
     for (const user of users) {
       const created = await superAdmin.post('/api/admin/users').set('x-csrf-token', adminCsrf).send(user);

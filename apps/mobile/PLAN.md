@@ -854,7 +854,7 @@ Android تخرج كاملة (Hermes 3.2 MB) — يعني الاستيراد ال
 | Workflow AAB موقّع | ✅ | `.github/workflows/mobile-release-aab.yml` — يفشل **قبل** أي بناء كان الأسرار ناقصة |
 | رفض التوقيع التجريبي | ✅ | خطوة أخيرة تتحقّق من البصمة وترفض `Android Debug` |
 | ضبط الإصدار | ✅ | `version_name` / `version_code` من مدخلات التشغيل (كود Play لا يرجع) |
-| روابط عميقة | ✅ | `app.json` → `intentFilters` لـ`zayrovi.tn` + `www.zayrovi.tn` (`autoVerify`) |
+| روابط عميقة | ✅ | `app.json` → `intentFilters` لـ`your-zayrovi-domain.example` + `www.your-zayrovi-domain.example` (`autoVerify`) |
 | دليل التنفيذ | ✅ | `docs/RELEASE_PLAY_AR_2026-10-07.md` (مفاتيح، أسرار، Play، assetlinks، خادم API) |
 | **موقوف على قرار المستعمل**: خادم الإصدار | ⏳ | `EXPO_PUBLIC_API_BASE_URL` يتچرى وقت البناء — القرار في الدليل §6 |
 | **موقوف على مفاتيح المستعمل**: FCM / بوابة الكارطة / Apple | ❌ | مشروع Firebase، مفاتيح Konnect، حساب Apple — كلها متاع المالك |
@@ -875,7 +875,7 @@ Android تخرج كاملة (Hermes 3.2 MB) — يعني الاستيراد ال
 | شاشة الروابط غير المعروفة | ✅ | `app/+not-found.tsx` — تعرض المسار، وتفتحو في المتصفّح، ولا ترجع للرئيسية |
 | مفاتيح ar/fr | ✅ | `notFound.*` — 5 مفاتيح في القاموسين |
 
-**علاش**: مع `intentFilters`، روابط `https://zayrovi.tn/...` تفتح التطبيق — ومسارات
+**علاش**: مع `intentFilters`، روابط `https://your-zayrovi-domain.example/...` تفتح التطبيق — ومسارات
 الموقع (منتوج، عرض، صفحة قوانين) ما عندهاش شاشة أصلية بعد. الشاشة الفارغة تولّي
 «التطبيق مكسور» في ذهن المستعمل؛ هذي تقول الحقيقة وتعطي باباً حقيقياً.
 
@@ -994,8 +994,8 @@ Android تخرج كاملة (Hermes 3.2 MB) — يعني الاستيراد ال
 
 | البند | الحالة | الدليل |
 |---|---|---|
-| السبب | ✅ | الحزمة كانت تتبنى بـ`https://zayrovi.tn` — **ما فماش خادم بهذا الاسم** ⇒ كل شاشة «ما فماش شبكة» |
-| الأصل الحقيقي | ✅ | `https://zayrovi-beta1-1.onrender.com` (مرجعان: `client/src/services/apiOrigin.ts` + `android/app/build.gradle`) |
+| السبب | ✅ | الحزمة كانت تتبنى بـ`https://your-zayrovi-domain.example` — **ما فماش خادم بهذا الاسم** ⇒ كل شاشة «ما فماش شبكة» |
+| الأصل الحقيقي | ✅ | `https://zayrovi-beta1-moo8.onrender.com` (مرجعان: `client/src/services/apiOrigin.ts` + `android/app/build.gradle`) |
 | التصحيح | ✅ | `src/api/config.ts` + ورشتَا APK/AAB (افتراضي وارتكاز) + `release-preflight` + `app/+not-found.tsx` |
 | منع الرجوع | ✅ | `tests/origin.test.ts` — 5 اختبارات تربط الافتراضي بالورشات وبـ`app.json` |
 | رابط عميق على الخادم الحيّ | ✅ | `app.json` يعلن `zayrovi-beta1-1.onrender.com` كذلك (التحقّق وقت النشر) |
@@ -1011,7 +1011,7 @@ Android تخرج كاملة (Hermes 3.2 MB) — يعني الاستيراد ال
 
 | القياس (07/10) | النتيجة |
 |---|---|
-| `https://zayrovi-beta1-1.onrender.com/api/health` | **200** — الخادم حيّ |
+| `https://zayrovi-beta1-moo8.onrender.com/api/health` | **200** — الخادم حيّ |
 | `…/api/ready` | **200** و`commit:"local"` — **موش منشور من Git** |
 | `…/.well-known/assetlinks.json` | 200 لكن **HTML** ⇒ طريج الفرع ما موجودش |
 | `…/api/v1/aywebs/health` | 200 بلا `stats` ⇒ الكود من `main` |
@@ -1020,7 +1020,7 @@ Android تخرج كاملة (Hermes 3.2 MB) — يعني الاستيراد ال
 **أداة القياس**: `.github/workflows/server-probe.yml` — تشغيل يدوي، بلا أسرار،
 والنتيجة تتطبع كـannotation مقروءة عبر الـAPI. تمنع البحث في المكان الغالط.
 
-**النتيجة**: المستعمل يشوف «التطبيق ما يخدمش» خاطر الحزمة كانت على `zayrovi.tn`
+**النتيجة**: المستعمل يشوف «التطبيق ما يخدمش» خاطر الحزمة كانت على `your-zayrovi-domain.example`
 (بلا خادم) — تصلّحت اليوم؛ والدخول يبقى محجوب خاطر الخادم يشغّل `main`.
 
 ### P6 — «الخادم على أي فرع؟»: سؤال ولّى عندو جواب (منجز 07/10/2026)

@@ -41,7 +41,7 @@ const created: string[] = [];
 type Session = { agent: ReturnType<typeof request.agent>; csrf: string };
 
 async function loginAs(role: (typeof ALL_ROLES)[number], superAgent: any, superCsrf: string): Promise<Session> {
-  const email = `boundary-${role.toLowerCase()}-${suffix}@test.zayrovi.tn`;
+  const email = `boundary-${role.toLowerCase()}-${suffix}@test.your-zayrovi-domain.example`;
   const password = 'BoundarySecure2026!x';
   const insert = await superAgent.post('/api/admin/users').set('x-csrf-token', superCsrf)
     .send({ name: `Boundary ${role}`, email, password, role });
@@ -64,7 +64,7 @@ describe('frontières de permission des surfaces d\'exploitation', () => {
   beforeAll(async () => {
     superAgent = request.agent(app);
     const superLogin = await superAgent.post('/api/admin/auth/login')
-      .send({ email: 'admin@zayrovi.tn', password: 'ZayroviBeta2026!' });
+      .send({ email: 'admin@your-zayrovi-domain.example', password: 'ZayroviBeta2026!' });
     expect(superLogin.status).toBe(200);
     admin = await loginAs('ADMIN', superAgent, superLogin.body.data.csrfToken);
     content = await loginAs('CONTENT_MANAGER', superAgent, superLogin.body.data.csrfToken);

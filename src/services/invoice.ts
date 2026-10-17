@@ -88,7 +88,7 @@ export function buildInvoiceHtml(db: QatafoDatabase, orderId: string): string {
 
   const company = {
     name: String(setting('company_legal_name', '') || setting('company_name', 'ZAYROVI')),
-    email: String(setting('company_email', 'contact@zayrovi.tn')),
+    email: String(setting('company_email', 'contact@your-zayrovi-domain.example')),
     phone: String(setting('company_phone', '')),
     address: String(setting('company_address', 'Tunis, Tunisie')),
   };

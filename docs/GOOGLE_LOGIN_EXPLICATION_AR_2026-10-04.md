@@ -21,7 +21,7 @@
 1. افتح: `https://github.com/issamweldlatifa-gif/ayrovi_beta1/pull/new/fix/aywebs-ui-remarks`
 2. أنشئ Pull Request وادمجه في `main` (بعد نجاح فحص `typecheck-test`).
 3. انتظر إعادة النشر التلقائي على Render ودقّقه عبر
-   `https://zayrovi-beta1-1.onrender.com/api/customer/auth/config`.
+   `https://zayrovi-beta1-moo8.onrender.com/api/customer/auth/config`.
 
 عندها فقط يبدأ الدخول بجوجل في العمل من الهاتف.
 

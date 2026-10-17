@@ -165,7 +165,7 @@ function signIn(db: QatafoDatabase) {
   db.run(
     `INSERT INTO customer_accounts (id,display_name,email,phone,email_verified_at,phone_verified_at,status,locale,created_at,updated_at)
      VALUES (?,?,?,?,?,?,?,?,?,?)`,
-    accountId, 'Client AyWebs', 'client@zayrovi.tn', '22334455', now, now, 'ACTIVE', 'fr-TN', now, now,
+    accountId, 'Client AyWebs', 'client@your-zayrovi-domain.example', '22334455', now, now, 'ACTIVE', 'fr-TN', now, now,
   );
   const session = createCustomerSession(db, accountId, { ip: '127.0.0.1', headers: {} } as any);
   return {

@@ -21,11 +21,11 @@ describe('sitemap — engendré depuis le contrat partagé', () => {
     expect(response.status).toBe(200);
     expect(String(response.headers['content-type'])).toContain('application/xml');
 
-    const urls = sitemapRoutes().map((route) => `https://zayrovi.tn${route.path}`);
+    const urls = sitemapRoutes().map((route) => `https://your-zayrovi-domain.example${route.path}`);
     const locs = [...String(response.text).matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1]);
     expect(locs).toEqual(urls);
     // Quatre pages réelles : l'accueil et les trois destinations publiques.
-    expect(locs).toEqual(['https://zayrovi.tn/', 'https://zayrovi.tn/arrivage', 'https://zayrovi.tn/gift-cards', 'https://zayrovi.tn/magazine']);
+    expect(locs).toEqual(['https://your-zayrovi-domain.example/', 'https://your-zayrovi-domain.example/arrivage', 'https://your-zayrovi-domain.example/gift-cards', 'https://your-zayrovi-domain.example/magazine']);
     // La console n'est jamais annoncée à un moteur — même non indexable, elle n'a rien à y faire.
     expect(String(response.text)).not.toContain('/admin');
     // Un seul fichier sitemap peut répondre : le statique a été supprimé, pas doublé.
@@ -65,7 +65,7 @@ describe('le <head> statique ne peut plus diverger en silence', () => {
     const home = PUBLIC_SEO_ROUTES.find((route) => route.path === '/')!;
     expect(html).toContain(`<title>${home.titleFr}</title>`);
     expect(html).toContain(`<meta name="description" content="${home.descriptionFr}" />`);
-    expect(html).toContain('<link rel="canonical" href="https://zayrovi.tn/" />');
+    expect(html).toContain('<link rel="canonical" href="https://your-zayrovi-domain.example/" />');
     expect(html).toContain(`<meta property="og:title" content="${home.titleFr}" />`);
   });
 });

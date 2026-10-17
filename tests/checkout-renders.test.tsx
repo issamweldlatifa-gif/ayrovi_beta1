@@ -16,7 +16,7 @@ vi.mock('../client/src/services/publicApi', () => ({
 
 const session = {
   csrfToken: 'token',
-  account: { id: 'a1', displayName: 'Issam Test', email: 'i@zayrovi.tn', phone: '98123456', emailVerified: true, phoneVerified: false },
+  account: { id: 'a1', displayName: 'Issam Test', email: 'i@your-zayrovi-domain.example', phone: '98123456', emailVerified: true, phoneVerified: false },
 } as any;
 
 let root: Root;

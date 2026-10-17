@@ -2,7 +2,7 @@
  * Contrat SEO public — une seule liste de pages, lue par le serveur ET le client.
  *
  * Historique du défaut : le `<head>` était écrit une fois pour toutes dans `index.html`, avec
- * `canonical = https://zayrovi.tn/`. Comme l'application est une SPA servie par le même
+ * `canonical = https://your-zayrovi-domain.example/`. Comme l'application est une SPA servie par le même
  * `index.html`, `/arrivage`, `/gift-cards` et `/magazine` se déclaraient « copies de la
  * page d'accueil » — la pire instruction possible pour un moteur de recherche. Et toute
  * adresse inconnue recevait un `200` (soft-404) : le site répondait « tout va bien » même

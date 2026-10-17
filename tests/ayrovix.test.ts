@@ -781,7 +781,7 @@ describe('ZAYROVIX Lens', () => {
 
     expect((await request(app).get('/api/admin/ayrovix-reviews')).status).toBe(401);
     const reviewer = request.agent(app);
-    const login = await reviewer.post('/api/admin/auth/login').send({ email: 'admin@zayrovi.tn', password: 'ZayroviBeta2026!' });
+    const login = await reviewer.post('/api/admin/auth/login').send({ email: 'admin@your-zayrovi-domain.example', password: 'ZayroviBeta2026!' });
     expect(login.status).toBe(200);
     const csrf = login.body.data.csrfToken;
 

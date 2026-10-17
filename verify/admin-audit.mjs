@@ -19,7 +19,7 @@ import fs from 'node:fs';
 
 const base = process.env.ZAYROVI_BASE_URL;
 if (!base) { console.error('ZAYROVI_BASE_URL est requis.'); process.exit(1); }
-const email = process.env.ZAYROVI_ADMIN_EMAIL || 'admin@zayrovi.tn';
+const email = process.env.ZAYROVI_ADMIN_EMAIL || 'admin@your-zayrovi-domain.example';
 const password = process.env.ZAYROVI_ADMIN_PASSWORD || 'ZayroviBeta2026!';
 const output = 'docs/admin-model-a/audit';
 fs.mkdirSync(output, { recursive: true });

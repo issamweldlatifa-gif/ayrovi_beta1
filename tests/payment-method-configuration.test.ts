@@ -38,7 +38,7 @@ const readSource = (relative: string) => fs.readFileSync(path.resolve(process.cw
 async function loginSuperAdmin() {
   const agent = request.agent(app);
   const login = await agent.post('/api/admin/auth/login').send({
-    email: 'admin@zayrovi.tn',
+    email: 'admin@your-zayrovi-domain.example',
     password: 'ZayroviBeta2026!',
   });
   expect(login.status).toBe(200);

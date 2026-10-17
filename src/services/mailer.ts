@@ -36,7 +36,7 @@ function parseFrom(raw: string): { email: string; name?: string } {
 export async function sendMail(input: MailInput): Promise<MailResult> {
   const provider = (process.env.MAIL_PROVIDER || '').trim().toLowerCase();
   const apiKey = (process.env.MAIL_API_KEY || '').trim();
-  const from = (process.env.MAIL_FROM || '').trim() || 'ZAYROVI <no-reply@zayrovi.tn>';
+  const from = (process.env.MAIL_FROM || '').trim() || 'ZAYROVI <no-reply@your-zayrovi-domain.example>';
 
   if (!mailerReady()) {
     console.info(`[Mail] (غير مفعّل — MAIL_PROVIDER=${provider || 'غير مضبوط'}) إلى=${input.to} الموضوع="${input.subject}"`);

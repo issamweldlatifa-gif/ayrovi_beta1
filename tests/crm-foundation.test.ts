@@ -51,7 +51,7 @@ async function createAdminUser(name: string, email: string, role: string): Promi
 
 describe('CRM 360 (E1/E2)', () => {
   beforeAll(async () => {
-    adminCsrf = await login(admin, 'admin@zayrovi.tn', adminPassword);
+    adminCsrf = await login(admin, 'admin@your-zayrovi-domain.example', adminPassword);
     await createAdminUser('CRM Order', operatorEmail, 'ORDER_MANAGER');
     await createAdminUser('CRM Content', contentEmail, 'CONTENT_MANAGER');
     operator = request.agent(app);
@@ -388,7 +388,7 @@ describe('CRM 360 (E1/E2)', () => {
 
     test('l’affectation d’une tâche à AUTRUI notifie le propriétaire via le canal existant', async () => {
       // Le propriétaire est l'employé ADMIN ; c'est l'opérateur (autre acteur) qui l'affecte.
-      const adminUser = db.get<{ id: string }>('SELECT id FROM admin_users WHERE email=?', 'admin@zayrovi.tn');
+      const adminUser = db.get<{ id: string }>('SELECT id FROM admin_users WHERE email=?', 'admin@your-zayrovi-domain.example');
       const owner = db.get<{ id: string }>('SELECT id FROM erp_employees WHERE user_id=?', adminUser!.id);
       if (!owner) return; // pas d'employé ADMIN : rien à prouver ici
       const party = await operator
@@ -548,7 +548,7 @@ describe('CRM 360 (E1/E2)', () => {
       // L'agent partagé porte un x-csrf-token par défaut : on ouvre une session neuve pour prouver
       // que le jeton est réellement exigé (pas seulement présent dans le harnais de test).
       const fresh = request.agent(app);
-      await login(fresh, 'admin@zayrovi.tn', adminPassword);
+      await login(fresh, 'admin@your-zayrovi-domain.example', adminPassword);
       const probe = await fresh.post('/api/admin/crm/parties')
         .send({ partyType: 'INDIVIDUAL', kind: 'CUSTOMER', name: `Sans CSRF ${SUFFIX}` });
       expect(probe.status).toBe(403);

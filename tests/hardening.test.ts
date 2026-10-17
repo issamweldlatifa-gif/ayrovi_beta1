@@ -133,7 +133,7 @@ describe('ZAYROVI production hardening', () => {
   test('Admin media upload rejects a spoofed image before writing it', async () => {
     const admin = request.agent(app);
     const login = await admin.post('/api/admin/auth/login').send({
-      email: 'admin@zayrovi.tn',
+      email: 'admin@your-zayrovi-domain.example',
       password: 'ZayroviBeta2026!',
     });
     expect(login.status).toBe(200);

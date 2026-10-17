@@ -17,7 +17,7 @@ page.on('console', (message) => { if (message.type() === 'error') errors.push(me
 page.on('pageerror', (error) => errors.push(`PAGEERROR ${String(error).slice(0, 200)}`));
 
 await page.goto('http://127.0.0.1:3000/admin', { waitUntil: 'domcontentloaded' });
-await page.fill('input[type="email"]', 'admin@zayrovi.tn');
+await page.fill('input[type="email"]', 'admin@your-zayrovi-domain.example');
 await page.fill('input[type="password"]', 'ZayroviBeta2026!');
 await page.click('button[type="submit"]');
 await page.waitForTimeout(2500);

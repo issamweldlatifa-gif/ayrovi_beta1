@@ -22,7 +22,7 @@ describe('Admin CIF desk', () => {
   });
 
   test('super admin opens the desk with millime CIF and 20% deposit', async () => {
-    const login = await admin.post('/api/admin/auth/login').send({ email: 'admin@zayrovi.tn', password: 'ZayroviBeta2026!' });
+    const login = await admin.post('/api/admin/auth/login').send({ email: 'admin@your-zayrovi-domain.example', password: 'ZayroviBeta2026!' });
     expect(login.status).toBe(200);
     csrf = login.body.data.csrfToken;
 
@@ -99,7 +99,7 @@ describe('Admin CIF desk', () => {
 
   test('content manager cannot write the desk', async () => {
     const created = await admin.post('/api/admin/users').set('x-csrf-token', csrf).send({
-      name: 'Content Desk', email: `content-desk-${Date.now()}@test.zayrovi.tn`, password: 'ContentSecure2026!', role: 'CONTENT_MANAGER',
+      name: 'Content Desk', email: `content-desk-${Date.now()}@test.your-zayrovi-domain.example`, password: 'ContentSecure2026!', role: 'CONTENT_MANAGER',
     });
     expect(created.status).toBe(201);
     const content = request.agent(app);

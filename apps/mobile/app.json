@@ -28,20 +28,11 @@
           "data": [
             {
               "scheme": "https",
-              "host": "zayrovi.tn"
+              "host": "your-zayrovi-domain.example"
             },
             {
               "scheme": "https",
-              "host": "www.zayrovi.tn"
-            },
-            {
-              "scheme": "https",
-              "host": "zayrovi-beta1-1.onrender.com"
-            },
-            {
-              "scheme": "https",
-              "host": "zayrovi-beta1-moo8.onrender.com",
-              "pathPrefix": "/"
+              "host": "www.your-zayrovi-domain.example"
             }
           ]
         }

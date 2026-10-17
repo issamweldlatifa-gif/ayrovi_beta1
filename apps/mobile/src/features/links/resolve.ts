@@ -31,7 +31,7 @@ import { DEEP_LINK_SCHEME } from '@/config/deepLinks';
  * écrire l'origine du serveur à deux endroits ; le jour où elle change, un
  * lien profond continuerait d'être refusé sans que rien ne l'explique.
  */
-const BRAND_HOSTS = ['zayrovi.tn', 'www.zayrovi.tn'] as const;
+const BRAND_HOSTS = ['your-zayrovi-domain.example', 'www.your-zayrovi-domain.example'] as const;
 
 function hostOf(value: string): string {
   try {

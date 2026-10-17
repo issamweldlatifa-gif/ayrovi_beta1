@@ -98,7 +98,7 @@ AYWEBS_RESOLVE_CACHE_MAX=400        # عدد المدخلات المحفوظة
 
 ## 2.5) قياس حقيقي على الإنتاج (06/10/2026) — من GitHub Actions إلى Render
 
-شُغّلت السonde الفعلية على الموقع المنشور (`https://zayrovi-beta1.onrender.com`)، على المنتج
+شُغّلت السonde الفعلية على الموقع المنشور (`https://zayrovi-beta1-moo8.onrender.com`)، على المنتج
 `https://www.amazon.com/dp/B0GYM3V9H5` (أمازون يقدّم لخوادم Render صفحة قشرة — أي أصعب حالة):
 
 | القياس | النتيجة |
@@ -150,7 +150,7 @@ npm run build                                       # بناء الخادم وا
 
 ```bash
 node scripts/aywebs-latency-probe.mjs \
-  --base https://zayrovi-beta1.onrender.com \
+  --base https://zayrovi-beta1-moo8.onrender.com \
   --url "https://www.amazon.com/dp/B0GYM3V9H5"
 # أو: npm run verify:aywebs-latency -- --base <origine> --url <رابط>
 ```

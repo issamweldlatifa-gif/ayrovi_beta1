@@ -34,7 +34,7 @@
  * s'annonce lui-même sous `zayrovi-beta1-1.onrender.com` : c'est l'origine
  * qu'il met dans le `redirect_uri` envoyé à Google. Vérifié en direct :
  *
- *   GET https://zayrovi-beta1.onrender.com/api/customer/auth/google/start…
+ *   GET https://zayrovi-beta1-moo8.onrender.com/api/customer/auth/google/start…
  *     → 302 accounts.google.com/…&redirect_uri=https%3A%2F%2Fzayrovi-beta1-1
  *       .onrender.com%2Fapi%2Fcustomer%2Fauth%2Fgoogle%2Fcallback
  *
@@ -44,7 +44,7 @@
  * dans l'onglet mais laisse l'application déconnectée. Les deux hôtes doivent
  * être le même, et c'est celui que le serveur déclare qui fait foi.
  */
-const PRODUCTION_ORIGIN = 'https://zayrovi-beta1-1.onrender.com';
+const PRODUCTION_ORIGIN = 'https://zayrovi-beta1-moo8.onrender.com';
 
 /** Normalise une origine : trim, sans barre finale, et HTTPS/HTTP valide seulement. */
 export function normalizeApiOrigin(raw: string | undefined | null): string {

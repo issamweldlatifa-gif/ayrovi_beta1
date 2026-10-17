@@ -2812,7 +2812,7 @@ export class QatafoDatabase {
     `);
     const settings = [
       ['setting_name', 'GENERAL', 'company_name', 'ZAYROVI', 'STRING', 'Nom de la plateforme'],
-      ['setting_email', 'GENERAL', 'company_email', 'contact@zayrovi.tn', 'STRING', 'Email'],
+      ['setting_email', 'GENERAL', 'company_email', 'contact@your-zayrovi-domain.example', 'STRING', 'Email'],
       ['setting_phone', 'GENERAL', 'company_phone', '+216 00 000 000', 'STRING', 'Téléphone'],
       ['setting_address', 'GENERAL', 'company_address', 'Tunis, Tunisie', 'STRING', 'Adresse'],
       ['setting_currency', 'COMMERCE', 'default_currency', 'TND', 'STRING', 'Devise'],

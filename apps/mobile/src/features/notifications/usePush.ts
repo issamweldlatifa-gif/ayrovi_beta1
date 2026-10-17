@@ -46,7 +46,7 @@ export interface PushState {
 function routeFromNotification(response: Notifications.NotificationResponse): string | null {
   const data = (response.notification.request.content.data ?? {}) as Record<string, unknown>;
   const direct = typeof data.actionUrl === 'string' ? data.actionUrl : '';
-  if (direct && direct.startsWith('/')) return resolveDeepLink(`https://zayrovi.tn${direct}`);
+  if (direct && direct.startsWith('/')) return resolveDeepLink(`https://your-zayrovi-domain.example${direct}`);
   return null;
 }
 

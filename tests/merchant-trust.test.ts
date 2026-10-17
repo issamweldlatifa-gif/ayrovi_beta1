@@ -31,7 +31,7 @@ function candidate(overrides: Partial<ZayrovixCandidate>): ZayrovixCandidate {
 
 describe('merchantTrust — la preuve avant la priorité', () => {
   it('catalogue interne = trusted', () => {
-    expect(merchantTrust(candidate({ kind: 'catalog', sourceUrl: 'https://zayrovi.tn/p/1' }))).toBe<MerchantTrust>('trusted');
+    expect(merchantTrust(candidate({ kind: 'catalog', sourceUrl: 'https://your-zayrovi-domain.example/p/1' }))).toBe<MerchantTrust>('trusted');
   });
 
   it('marchand prouvé via registerTrustedMerchantHost = trusted', () => {
@@ -62,7 +62,7 @@ describe('merchantTrust — la preuve avant la priorité', () => {
 
   it('affichage : un unknown à 95% de match passe APRÈS un trusted à 80%', () => {
     const trusted = candidate({
-      id: 'trusted', kind: 'catalog', sourceUrl: 'https://zayrovi.tn/p/2', match: 80,
+      id: 'trusted', kind: 'catalog', sourceUrl: 'https://your-zayrovi-domain.example/p/2', match: 80,
     });
     const unknown = candidate({
       id: 'unknown', match: 95,

@@ -25,7 +25,7 @@ const indexCss = readFileSync('client/src/index.css', 'utf8');
 
 describe('Dashboard is the single source of truth for Hero, LENS and home sections', () => {
   test('super admin authenticates', async () => {
-    const login = await admin.post('/api/admin/auth/login').send({ email: 'admin@zayrovi.tn', password: 'ZayroviBeta2026!' });
+    const login = await admin.post('/api/admin/auth/login').send({ email: 'admin@your-zayrovi-domain.example', password: 'ZayroviBeta2026!' });
     expect(login.status).toBe(200);
     csrf = login.body.data.csrfToken;
   });
@@ -89,14 +89,14 @@ describe('Dashboard is the single source of truth for Hero, LENS and home sectio
 
     const updated = await admin.put('/api/admin/hero-content').set('x-csrf-token', csrf).send({
       eyebrow: 'Livraison Tunisie', title: 'Trouvez.\nZAYROVI livre.', description: 'Nouveau sous-titre.',
-      ctaLabel: 'Commencer', ctaUrl: 'https://zayrovi.tn/arrivages', elementOrder: 'title,eyebrow,description,cta',
+      ctaLabel: 'Commencer', ctaUrl: 'https://your-zayrovi-domain.example/arrivages', elementOrder: 'title,eyebrow,description,cta',
     });
     expect(updated.status).toBe(200);
 
     const published = await request(app).get('/api/public/hero-content');
     expect(published.body.data).toMatchObject({
       eyebrow: 'Livraison Tunisie', title: 'Trouvez.\nZAYROVI livre.', description: 'Nouveau sous-titre.',
-      ctaLabel: 'Commencer', ctaUrl: 'https://zayrovi.tn/arrivages', elementOrder: 'title,eyebrow,description,cta',
+      ctaLabel: 'Commencer', ctaUrl: 'https://your-zayrovi-domain.example/arrivages', elementOrder: 'title,eyebrow,description,cta',
     });
 
     const empty = await admin.put('/api/admin/hero-content').set('x-csrf-token', csrf).send({ title: '   ' });

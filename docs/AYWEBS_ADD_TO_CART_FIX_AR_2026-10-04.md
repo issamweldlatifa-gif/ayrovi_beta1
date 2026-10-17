@@ -35,7 +35,7 @@ AyWebs هي **وسيط شراء** (proxy-shopping / shopping agent)، أي نف�
 ### أ) ما قاله الخادم الحيّ
 
 ```
-POST https://zayrovi-beta1.onrender.com/api/v1/aywebs/product/resolve
+POST https://zayrovi-beta1-moo8.onrender.com/api/v1/aywebs/product/resolve
      { "url": "https://www.amazon.com/dp/B0GYM3V9H5" }
 
 HTTP 201 في 21.7 ثانية
@@ -168,7 +168,7 @@ WebView → JS يقرأ HTML الصفحة المعروضة (يُنزع منه م
 ## 5) ما يبقى على عاتق المستخدم (خطوة واحدة)
 
 الكود مصلَح ومختبر، لكن **التطبيق يتصل بالخادم المنشور** على
-`https://zayrovi-beta1.onrender.com` — وهو ما زال يشغّل النسخة القديمة. لذلك
+`https://zayrovi-beta1-moo8.onrender.com` — وهو ما زال يشغّل النسخة القديمة. لذلك
 حتى يُثبَّت الـ APK الجديد، يجب نشر هذا الإصلاح على الخادم:
 
 ```bash

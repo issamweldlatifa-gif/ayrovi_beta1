@@ -42,7 +42,7 @@ const httpError = (status: number, code: string) =>
   new ApiError('http', `${status} ${code}`, { status, code });
 
 const accountRow = {
-  id: 'account_1', displayName: 'Amine', email: 'amine@zayrovi.tn', phone: '+21620123456',
+  id: 'account_1', displayName: 'Amine', email: 'amine@your-zayrovi-domain.example', phone: '+21620123456',
   avatarUrl: 'data:image/jpeg;base64,AAA', emailVerified: true, phoneVerified: true,
   status: 'ACTIVE', locale: 'fr', marketingOptIn: true,
 };
@@ -61,17 +61,17 @@ describe('mot de passe oublié', () => {
     const fetchMock = respond(() => json({ success: true, data: { status: 'accepted', retryAfterSeconds: 60 } }, 202));
     vi.stubGlobal('fetch', fetchMock);
 
-    await requestPasswordReset('  Amine@zayrovi.tn ', 'ar');
+    await requestPasswordReset('  Amine@your-zayrovi-domain.example ', 'ar');
 
     const { url, init } = lastCall(fetchMock);
     expect(url).toBe(`${API_BASE_URL}/api/customer/auth/password/request`);
     expect(init.method).toBe('POST');
-    expect(JSON.parse(String(init.body))).toEqual({ email: 'Amine@zayrovi.tn', locale: 'ar' });
+    expect(JSON.parse(String(init.body))).toEqual({ email: 'Amine@your-zayrovi-domain.example', locale: 'ar' });
   });
 
   it('remonte le code RESET_UNAVAILABLE quand le serveur ne peut pas envoyer', async () => {
     vi.stubGlobal('fetch', respond(() => json({ success: false, code: 'RESET_UNAVAILABLE' }, 503)));
-    await expect(requestPasswordReset('amine@zayrovi.tn', 'fr')).rejects.toMatchObject({ code: 'RESET_UNAVAILABLE', status: 503 });
+    await expect(requestPasswordReset('amine@your-zayrovi-domain.example', 'fr')).rejects.toMatchObject({ code: 'RESET_UNAVAILABLE', status: 503 });
   });
 });
 

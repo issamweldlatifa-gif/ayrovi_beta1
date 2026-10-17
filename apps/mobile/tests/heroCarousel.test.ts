@@ -83,7 +83,7 @@ describe('parseHeroSlides — contrat serveur, défensif', () => {
     expect(parseHeroSlides([{ ...CARD, href: '' }])).toEqual([]);
     expect(parseHeroSlides([{ ...CARD, href: 'javascript:alert(1)' }])).toEqual([]);
     expect(parseHeroSlides([{ ...CARD, href: '/promotions' }])).toHaveLength(1);
-    expect(parseHeroSlides([{ ...CARD, href: 'https://zayrovi.tn/x' }])).toHaveLength(1);
+    expect(parseHeroSlides([{ ...CARD, href: 'https://your-zayrovi-domain.example/x' }])).toHaveLength(1);
   });
 
   it('champs manquants ⇒ chaînes vides, pas d’exception', () => {
@@ -103,7 +103,7 @@ describe('parseHeroSlides — contrat serveur, défensif', () => {
 describe('safeHeroHref — défense en profondeur', () => {
   it('routes internes et https acceptées', () => {
     expect(safeHeroHref('/catalog?arrivalId=arr_1')).toBe('/catalog?arrivalId=arr_1');
-    expect(safeHeroHref('https://zayrovi.tn/promo')).toBe('https://zayrovi.tn/promo');
+    expect(safeHeroHref('https://your-zayrovi-domain.example/promo')).toBe('https://your-zayrovi-domain.example/promo');
   });
 
   it('protocoles dangereux ou chemins relatifs refusés', () => {

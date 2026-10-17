@@ -295,7 +295,7 @@ app.use('/reset-password', (_req, res, next) => {
 app.get('/sitemap.xml', (_req, res) => {
   const urls = sitemapRoutes().map((route) => [
     '  <url>',
-    `    <loc>https://zayrovi.tn${route.path}</loc>`,
+    `    <loc>https://your-zayrovi-domain.example${route.path}</loc>`,
     `    <changefreq>${route.changeFrequency}</changefreq>`,
     `    <priority>${route.priority.toFixed(1)}</priority>`,
     '  </url>',

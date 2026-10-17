@@ -69,10 +69,10 @@ const CONTEXT: BackOfficeContextPayload = {
   frameworkVersion: 'p2.0', role: 'ADMIN', legacyPermissions: ['content:write'],
   employee: { code: 'EMP-014', label: 'Rania Ben Salah', jobTitle: 'Ops', status: 'ACTIVE', branch: 'Nabeul', department: 'Ventes' },
   counts: NAVIGATION.counts, domains: NAVIGATION.domains, roadmap: NAVIGATION.roadmap,
-  session: { name: 'Rania', email: 'admin@zayrovi.tn' },
+  session: { name: 'Rania', email: 'admin@your-zayrovi-domain.example' },
 };
 
-const IDENTITY = { name: 'Rania', email: 'admin@zayrovi.tn', role: 'ADMIN', permissions: ['content:write', 'dashboard:read'] };
+const IDENTITY = { name: 'Rania', email: 'admin@your-zayrovi-domain.example', role: 'ADMIN', permissions: ['content:write', 'dashboard:read'] };
 
 let store: any = {
   context: CONTEXT, navigation: NAVIGATION, resources: [PRODUCTS_DESCRIPTOR], loading: false, error: '', retry: vi.fn(),

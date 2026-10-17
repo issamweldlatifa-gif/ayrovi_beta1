@@ -124,7 +124,7 @@ jobs:
           # déterministe, donc le bandeau campagne existe réellement et la mesure
           # porte sur quelque chose. Une base vide ferait passer le garde à vide.
           NODE_ENV=development PORT=3210 \
-            ADMIN_EMAIL=admin@zayrovi.tn ADMIN_PASSWORD='ZayroviBeta2026!' \
+            ADMIN_EMAIL=admin@your-zayrovi-domain.example ADMIN_PASSWORD='ZayroviBeta2026!' \
             nohup node dist/server.js > /tmp/zayrovi-server.log 2>&1 &
           for i in $(seq 1 60); do
             if curl -sf http://127.0.0.1:3210/api/public/commerce-config > /dev/null; then

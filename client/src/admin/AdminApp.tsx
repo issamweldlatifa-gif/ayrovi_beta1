@@ -201,7 +201,7 @@ const LoginPage: React.FC<{ onAuthenticated: (user: UserIdentity) => void }> = (
           <p>Connectez-vous avec le compte administrateur configuré sur le serveur.</p>
           <Form onSubmit={submit}>
             <Field label="Adresse email" required full>
-              <input type="email" name="email" value={email} autoComplete="username" inputMode="email" autoFocus aria-describedby="admin-login-email-help" onChange={(e) => setEmail(e.target.value)} placeholder="admin@zayrovi.tn" required />
+              <input type="email" name="email" value={email} autoComplete="username" inputMode="email" autoFocus aria-describedby="admin-login-email-help" onChange={(e) => setEmail(e.target.value)} placeholder="admin@your-zayrovi-domain.example" required />
             </Field>
             <Field label="Mot de passe" required full>
               <div className="admin-password">

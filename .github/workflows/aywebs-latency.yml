@@ -18,7 +18,7 @@ on:
       base_url:
         description: 'Origine du site à mesurer'
         required: true
-        default: 'https://zayrovi-beta1.onrender.com'
+        default: 'https://zayrovi-beta1-moo8.onrender.com'
       product_url:
         description: 'Lien produit à mesurer (fiche réelle)'
         required: true

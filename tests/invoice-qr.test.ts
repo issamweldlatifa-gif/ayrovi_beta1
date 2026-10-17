@@ -17,7 +17,7 @@ const input = {
   orderNumber: 'AYR-518234',
   issuedOn: '2026-09-25',
   totalTnd: 118.9,
-  verifyUrl: 'https://zayrovi.tn/facture/FAC-2026-0042',
+  verifyUrl: 'https://your-zayrovi-domain.example/facture/FAC-2026-0042',
 };
 
 describe('charge utile du QR', () => {

@@ -56,7 +56,7 @@ function cookieValue(token: string, maxAgeSeconds: number): string {
 }
 
 export function ensureBootstrapAdmin(db: QatafoDatabase) {
-  const email = (process.env.ADMIN_EMAIL || 'admin@zayrovi.tn').trim().toLowerCase();
+  const email = (process.env.ADMIN_EMAIL || 'admin@your-zayrovi-domain.example').trim().toLowerCase();
   const configuredPassword = process.env.ADMIN_PASSWORD;
   const resetToken = String(process.env.ADMIN_BOOTSTRAP_RESET || '').trim();
   const forceReset = resetToken.length > 0;
@@ -126,7 +126,7 @@ export function ensureBootstrapAdmin(db: QatafoDatabase) {
   try {
     backfillEmployeesFromAdminUsers(db);
   } catch { /* identity is additive: never block the login bootstrap over it */ }
-  if (!configuredPassword) console.warn('[Admin] Compte de développement créé: admin@zayrovi.tn (changez ADMIN_PASSWORD avant production).');
+  if (!configuredPassword) console.warn('[Admin] Compte de développement créé: admin@your-zayrovi-domain.example (changez ADMIN_PASSWORD avant production).');
   if (forceReset) console.info(`[Admin] Compte administrateur créé en mode reset pour ${email}.`);
 }
 

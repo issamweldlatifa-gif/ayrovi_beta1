@@ -42,7 +42,7 @@ VITE_ZAYROVI_API_ORIGIN=https://xxxxx.trycloudflare.com npx vite build
 npx cap sync android && cd android && sh ./gradlew assembleDebug
 ```
 
-وبدون هذا المتغيّر يعود السلوك إلى `https://zayrovi-beta1.onrender.com`
+وبدون هذا المتغيّر يعود السلوك إلى `https://zayrovi-beta1-moo8.onrender.com`
 بالضبط كما كان (لا انحدار). مُتحقَّق منه: بنيت النسختين وفحصت الحزمة الناتجة.
 
 ### تفصيل الخيار (ب) خطوة بخطوة (على حاسوبك، لا هنا)

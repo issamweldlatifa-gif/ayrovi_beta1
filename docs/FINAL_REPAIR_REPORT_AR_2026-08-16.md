@@ -26,7 +26,7 @@
 
 المعاينة المحلية لا تحتوي أسرار الإنتاج. في Render أصبحت Google وAI وVisual Search والصوت ووكيل مجلتي/بحث الصور/بحث Stock مفعّلة فعليًا. Facebook مدمج لكنه غير مفعّل لغياب تطبيق Meta، ويبقى البريد وOTP SMS غير مفعّلين حتى توثيق نطاق البريد واختيار مزود SMS تونسي.
 
-### فحص Render الفعلي — `https://zayrovi-beta1-1.onrender.com/`
+### فحص Render الفعلي — `https://zayrovi-beta1-moo8.onrender.com/`
 
 دُمج Commit `586abb8` إلى `main` ونشر Render النسخة **3.2.0** بنجاح. أعيد تنفيذ Smoke test غير تخريبي، والنتائج:
 
@@ -42,7 +42,7 @@
 
 - `/api/ready`: `assistant=true`, `magazineAgent=true`, `magazineImageSearch=true`, `magazineStockVideo=true`, `visualSearch=true`, `voice=true`, `googleLogin=true`, `facebookLogin=false`, `sms=false`, `mail=false`.
 - `/api/customer/auth/config`: `google.enabled=true`, `facebook.enabled=false`, و`phoneOtp.enabled=false`.
-- `/api/customer/auth/google/start`: يعيد 302 إلى `accounts.google.com` مع callback صحيح إلى `https://zayrovi-beta1-1.onrender.com/api/customer/auth/google/callback`، وScopes هي `openid email profile`، مع وجود `state`.
+- `/api/customer/auth/google/start`: يعيد 302 إلى `accounts.google.com` مع callback صحيح إلى `https://zayrovi-beta1-moo8.onrender.com/api/customer/auth/google/callback`، وScopes هي `openid email profile`، مع وجود `state`.
 
 بذلك تأكد استمرار Google OAuth بعد نشر 3.2.0: البداية تعيد 302 إلى Google مع callback الصحيح و`state`. صفحة الخصوصية `/privacy.html` وصفحة حذف البيانات `/data-deletion.html` تعيدان 200، ومحاولة حذف الحساب بلا جلسة تعيد 401، وFacebook غير المهيأ يعيد 503 بدل بدء تدفق ناقص. لم يُستكمل تسجيل دخول حقيقي أو طلب/بريد/SMS فعلي أثناء الفحص غير التخريبي حتى لا ننشئ بيانات إنتاج دون إذن.
 
@@ -308,7 +308,7 @@ Twilio غير معتمد تشغيليًا لأن المالك أوضح أنه ل
 
 - الشروط العامة للبيع/الوساطة وسياسة الإلغاء والإرجاع والاسترجاع.
 - الاسم القانوني للشركة، المعرف الجبائي/السجل عند الاقتضاء، العنوان ووسائل الاتصال.
-- تشغيل `contact@zayrovi.tn` فعليًا.
+- تشغيل `contact@your-zayrovi-domain.example` فعليًا.
 - تثبيت مدد الاحتفاظ القانونية بالمرفقات وإثباتات الدفع والفواتير والمحادثات.
 - سياسة Cookies إذا أضيفت أدوات تحليل أو تسويق.
 

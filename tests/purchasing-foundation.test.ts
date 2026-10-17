@@ -38,7 +38,7 @@ let admin: { agent: any; csrf: string };
 let outsider: { agent: any; csrf: string };
 
 async function makeSession(role: 'CONTENT_MANAGER') {
-  const email = `purch-${role.toLowerCase()}-${suffix}@test.zayrovi.tn`;
+  const email = `purch-${role.toLowerCase()}-${suffix}@test.your-zayrovi-domain.example`;
   const password = 'PurchasingSecure2026!';
   const created = await admin.agent.post('/api/admin/users').set('x-csrf-token', admin.csrf)
     .send({ name: `Achats ${role}`, email, password, role });
@@ -79,7 +79,7 @@ describe('ZAYROVI Achats (P2.3)', () => {
 
   beforeAll(async () => {
     const agent = request.agent(app);
-    const login = await agent.post('/api/admin/auth/login').send({ email: 'admin@zayrovi.tn', password: 'ZayroviBeta2026!' });
+    const login = await agent.post('/api/admin/auth/login').send({ email: 'admin@your-zayrovi-domain.example', password: 'ZayroviBeta2026!' });
     expect(login.status).toBe(200);
     admin = { agent, csrf: login.body.data.csrfToken };
     outsider = await makeSession('CONTENT_MANAGER');

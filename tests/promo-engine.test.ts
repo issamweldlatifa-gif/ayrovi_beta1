@@ -177,7 +177,7 @@ describe('Moteur de promotions — panier, estimations et commandes', () => {
 describe('Moteur de promotions — administration', () => {
   const login = async () => {
     const agent = request.agent(app);
-    const response = await agent.post('/api/admin/auth/login').send({ email: 'admin@zayrovi.tn', password: 'ZayroviBeta2026!' });
+    const response = await agent.post('/api/admin/auth/login').send({ email: 'admin@your-zayrovi-domain.example', password: 'ZayroviBeta2026!' });
     return { agent, csrf: response.body.data.csrfToken };
   };
 
@@ -228,14 +228,14 @@ describe('Moteur de promotions — administration', () => {
   test('un rôle sans pricing:write est refusé en écriture', async () => {
     const superAdmin = await login();
     const created = await superAdmin.agent.post('/api/admin/users').set('x-csrf-token', superAdmin.csrf)
-      .send({ name: 'Order Promo', email: 'order-promo@test.zayrovi.tn', password: 'OrderPromo2026!', role: 'ORDER_MANAGER' });
+      .send({ name: 'Order Promo', email: 'order-promo@test.your-zayrovi-domain.example', password: 'OrderPromo2026!', role: 'ORDER_MANAGER' });
     expect(created.status).toBe(201);
     const agent = request.agent(app);
-    const response = await agent.post('/api/admin/auth/login').send({ email: 'order-promo@test.zayrovi.tn', password: 'OrderPromo2026!' });
+    const response = await agent.post('/api/admin/auth/login').send({ email: 'order-promo@test.your-zayrovi-domain.example', password: 'OrderPromo2026!' });
     const csrf = response.body.data.csrfToken;
     expect((await agent.get('/api/admin/promos').set('x-csrf-token', csrf)).status).toBe(200); // commerce:read OK
     expect((await agent.put('/api/admin/promos/day_1').set('x-csrf-token', csrf).send({ percent: 3 })).status).toBe(403);
     expect((await agent.post('/api/admin/promos').set('x-csrf-token', csrf).send({ scope: 'CATEGORY', target: 'fashion_shoes', percent: 3 })).status).toBe(403);
-    db.run('DELETE FROM admin_users WHERE email=?', 'order-promo@test.zayrovi.tn');
+    db.run('DELETE FROM admin_users WHERE email=?', 'order-promo@test.your-zayrovi-domain.example');
   });
 });

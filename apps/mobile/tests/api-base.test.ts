@@ -15,7 +15,7 @@ import { TARGETS, currentBase, retarget, validateBase } from '../scripts/set-api
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const MOBILE = path.resolve(HERE, '..');
 const REPO = path.resolve(MOBILE, '../..');
-const NEW = 'https://zayrovi-beta2.onrender.com';
+const NEW = 'https://zayrovi-beta1-moo8.onrender.com';
 const temporary: string[] = [];
 
 /** نسخة كاملة من الشجرة الحقيقية (نفس المسارات النسبية) في مجلّد مؤقّت. */
@@ -46,11 +46,11 @@ const read = (root: string, relative: string) => readFileSync(path.join(root, re
 
 describe('أداة تبديل عنوان الخادم', () => {
   it('ترفض العناوين غير الصالحة (بلا https، فيها مسار، بلا نطاق)', () => {
-    expect(() => validateBase('http://zayrovi-beta2.onrender.com')).toThrow(/https/);
-    expect(() => validateBase('https://zayrovi-beta2.onrender.com/api')).toThrow(/مسار/);
+    expect(() => validateBase('https://zayrovi-beta1-moo8.onrender.com')).toThrow(/https/);
+    expect(() => validateBase('https://zayrovi-beta1-moo8.onrender.com/api')).toThrow(/مسار/);
     expect(() => validateBase('https://localhost')).toThrow(/نطاق/);
     expect(() => validateBase('موش عنوان')).toThrow(/غير صالح/);
-    expect(validateBase('https://zayrovi-beta2.onrender.com').hostname).toBe('zayrovi-beta2.onrender.com');
+    expect(validateBase('https://zayrovi-beta1-moo8.onrender.com').hostname).toBe('zayrovi-beta2.onrender.com');
   });
 
   it('يقرأ العنوان الحالي من الرمز (مرجع واحد)، ويبدّل المواضع الكل', () => {
@@ -78,7 +78,7 @@ describe('أداة تبديل عنوان الخادم', () => {
     );
     expect(hosts).toContain('zayrovi-beta2.onrender.com');
     expect(hosts).toContain(new URL(before).hostname);
-    expect(hosts).toContain('zayrovi.tn');
+    expect(hosts).toContain('your-zayrovi-domain.example');
   });
 
   it('ما يعاودش الكتابة كي العنوان راهو نفسو (بلا تغيير في الـgit)', () => {

@@ -410,7 +410,7 @@ describe('ZAYROVI Claude assistant', () => {
     expect(second.presentation?.ticket.duplicate).toBe(true);
 
     const reviewer = request.agent(app);
-    const login = await reviewer.post('/api/admin/auth/login').send({ email: 'admin@zayrovi.tn', password: 'ZayroviBeta2026!' });
+    const login = await reviewer.post('/api/admin/auth/login').send({ email: 'admin@your-zayrovi-domain.example', password: 'ZayroviBeta2026!' });
     expect(login.status).toBe(200);
     const listed = await reviewer.get('/api/admin/assistant-support').query({ search: first.presentation?.ticket.id });
     expect(listed.status).toBe(200);

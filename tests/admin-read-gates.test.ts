@@ -30,7 +30,7 @@ const created: string[] = [];
 type Session = { agent: ReturnType<typeof request.agent>; csrf: string };
 
 async function loginAs(role: (typeof ALL_ROLES)[number], superAgent: any, superCsrf: string): Promise<Session> {
-  const email = `gate-${role.toLowerCase()}-${suffix}@test.zayrovi.tn`;
+  const email = `gate-${role.toLowerCase()}-${suffix}@test.your-zayrovi-domain.example`;
   const password = 'GateSecure2026!x';
   const insert = await superAgent.post('/api/admin/users').set('x-csrf-token', superCsrf)
     .send({ name: `Gate ${role}`, email, password, role });
@@ -52,7 +52,7 @@ describe('admin read gates (P1 closure gate)', () => {
   beforeAll(async () => {
     superAgent = request.agent(app);
     const superLogin = await superAgent.post('/api/admin/auth/login')
-      .send({ email: 'admin@zayrovi.tn', password: 'ZayroviBeta2026!' });
+      .send({ email: 'admin@your-zayrovi-domain.example', password: 'ZayroviBeta2026!' });
     expect(superLogin.status).toBe(200);
     superCsrf = superLogin.body.data.csrfToken;
     admin = await loginAs('ADMIN', superAgent, superCsrf);
@@ -106,7 +106,7 @@ describe('admin read gates (P1 closure gate)', () => {
         expect(allowed.status).toBe(200);
         // read stays read: managing accounts still requires the legacy write right
         const write = await content.agent.post('/api/admin/users').set('x-csrf-token', content.csrf)
-          .send({ name: 'Should Fail', email: `nope-${suffix}@test.zayrovi.tn`, password: 'NopeSecure2026!', role: 'ADMIN' });
+          .send({ name: 'Should Fail', email: `nope-${suffix}@test.your-zayrovi-domain.example`, password: 'NopeSecure2026!', role: 'ADMIN' });
         expect(write.status).toBe(403);
       } finally {
         db.run("DELETE FROM erp_role_permissions WHERE id='erpperm_GATE_TEST_users_read'");
@@ -211,9 +211,9 @@ describe('admin read gates (P1 closure gate)', () => {
   describe('untouched gates (regression surface)', () => {
     test('users POST/PUT still require users:write', async () => {
       const blocked = await admin.agent.post('/api/admin/users').set('x-csrf-token', admin.csrf)
-        .send({ name: 'Blocked', email: `blocked-${suffix}@test.zayrovi.tn`, password: 'BlockedSecure2026!', role: 'ADMIN' });
+        .send({ name: 'Blocked', email: `blocked-${suffix}@test.your-zayrovi-domain.example`, password: 'BlockedSecure2026!', role: 'ADMIN' });
       expect(blocked.status).toBe(403);
-      expect(db.get<any>('SELECT id FROM admin_users WHERE email=?', `blocked-${suffix}@test.zayrovi.tn`)).toBeFalsy();
+      expect(db.get<any>('SELECT id FROM admin_users WHERE email=?', `blocked-${suffix}@test.your-zayrovi-domain.example`)).toBeFalsy();
     });
 
     test('a write without a CSRF token is still refused, whatever the permission model', async () => {

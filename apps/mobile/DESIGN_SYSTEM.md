@@ -887,7 +887,7 @@ App Shell
 ## 13.5 الروابط العميقة
 
 - المضيفون مشتقّون من `API_BASE_URL` (لا قائمة مكتوبة يدوياً) ✅
-- `assetlinks.json` مطلوب على `zayrovi.tn` و`www.zayrovi.tn` — أداة جاهزة
+- `assetlinks.json` مطلوب على `your-zayrovi-domain.example` و`www.your-zayrovi-domain.example` — أداة جاهزة
   `scripts/assetlinks.mjs` ✅
 
 ---

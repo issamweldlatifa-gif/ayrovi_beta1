@@ -53,12 +53,12 @@
 
 ## 3. الروابط العميقة — حاجتين لازم تكملوهوم من جهة الخادم
 
-التطبيق يعلن `intentFilters` بـ`autoVerify` على `zayrovi.tn` و`www.zayrovi.tn`.
+التطبيق يعلن `intentFilters` بـ`autoVerify` على `your-zayrovi-domain.example` و`www.your-zayrovi-domain.example`.
 باش Android يقبلها بلا ما يسأل المستعمل، لازم:
 
-1. `https://zayrovi.tn/.well-known/assetlinks.json` فيه بصمة SHA-256 مفتاح
+1. `https://your-zayrovi-domain.example/.well-known/assetlinks.json` فيه بصمة SHA-256 مفتاح
    التوقيع (مفتاح الـrelease، موش الـdebug).
-2. نفس الملف على `www.zayrovi.tn`.
+2. نفس الملف على `www.your-zayrovi-domain.example`.
 
 بلا هاذي: الرابط يفتح التطبيق لكن Android يعرض **نافذة اختيار** — التجربة
 تبان «موش مضبوطة» والسبب موش في التطبيق.

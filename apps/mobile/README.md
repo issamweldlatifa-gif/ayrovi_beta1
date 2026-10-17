@@ -115,7 +115,7 @@ cd apps/mobile && npx expo start --web --port 8081
 في البناء الحقيقي (EAS) نحدّد العنوان صريحاً:
 
 ```bash
-EXPO_PUBLIC_API_BASE_URL=https://zayrovi.tn eas build --profile preview
+EXPO_PUBLIC_API_BASE_URL=https://your-zayrovi-domain.example eas build --profile preview
 ```
 
 ## الحالة

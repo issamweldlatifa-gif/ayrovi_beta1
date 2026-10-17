@@ -14,7 +14,7 @@
  *
  * Utilisation :
  *   node scripts/aywebs-latency-probe.mjs \
- *     --base https://zayrovi-beta1.onrender.com \
+ *     --base https://zayrovi-beta1-moo8.onrender.com \
  *     --url "https://www.amazon.com/dp/B0GYM3V9H5"
  *
  * Options :
@@ -47,7 +47,7 @@ const session = option('session', `probe-${Date.now()}-${Math.random().toString(
 
 if (!productUrl) {
   console.error('Usage : node scripts/aywebs-latency-probe.mjs --base <origine> --url <lien produit>');
-  console.error('Exemple : node scripts/aywebs-latency-probe.mjs --base https://zayrovi-beta1.onrender.com --url "https://www.amazon.com/dp/B0GYM3V9H5"');
+  console.error('Exemple : node scripts/aywebs-latency-probe.mjs --base https://zayrovi-beta1-moo8.onrender.com --url "https://www.amazon.com/dp/B0GYM3V9H5"');
   process.exit(2);
 }
 

@@ -28,7 +28,7 @@ npm start
 
 L’application utilise `http://localhost:3000` par défaut. L’Admin est disponible sur `/admin`.
 
-En développement, si `ADMIN_PASSWORD` n’est pas défini, un compte local `admin@zayrovi.tn` est créé avec le mot de passe de démonstration `ZayroviBeta2026!`. En production, `ADMIN_EMAIL` et un `ADMIN_PASSWORD` unique d’au moins 12 caractères doivent être définis.
+En développement, si `ADMIN_PASSWORD` n’est pas défini, un compte local `admin@your-zayrovi-domain.example` est créé avec le mot de passe de démonstration `ZayroviBeta2026!`. En production, `ADMIN_EMAIL` et un `ADMIN_PASSWORD` unique d’au moins 12 caractères doivent être définis.
 
 ## Validation
 

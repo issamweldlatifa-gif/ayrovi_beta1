@@ -297,7 +297,7 @@
 
     if (top.k === 'results') {
       const srcLbl = top.src === 'qr' ? t('fromQr') : top.src === 'code' ? t('fromCode') : t('fromPhoto');
-      const chip = top.src !== 'photo' ? `<div class="codechip">${esc(top.code || 'https://zayrovi.tn/p/casque-anc')}</div>` : '';
+      const chip = top.src !== 'photo' ? `<div class="codechip">${esc(top.code || 'https://your-zayrovi-domain.example/p/casque-anc')}</div>` : '';
       const cards = RESULTS.map((r, i) => `
         <div class="card">
           <div class="img" style="background:${r.c}">
@@ -395,7 +395,7 @@
     shutter: () => openLayer('results', { src: 'photo' }),
     gallery: () => openLayer('results', { src: 'photo' }),
     ocerex: () => openOcerex(),
-    qr: () => { S.detected = true; render(); setTimeout(() => { if (S.mode === 'live') { S.detected = false; openLayer('results', { src: 'qr', code: 'https://zayrovi.tn/p/casque-anc' }); } }, 700); },
+    qr: () => { S.detected = true; render(); setTimeout(() => { if (S.mode === 'live') { S.detected = false; openLayer('results', { src: 'qr', code: 'https://your-zayrovi-domain.example/p/casque-anc' }); } }, 700); },
     search: () => { if (S.code.trim().length >= 2) openLayer('results', { src: 'code', code: S.code.trim() }); },
     'ocx-tab': el => { S.ocx.tab = el.dataset.v; render(); },
     'ocx-next': () => { S.ocx.step = Math.min(6, S.ocx.step + 1); render(); },

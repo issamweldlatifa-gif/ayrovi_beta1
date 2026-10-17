@@ -27,7 +27,7 @@ const code = (source: string) => source.replace(/\/\*[\s\S]*?\*\//g, '').replace
 
 describe('LENS editorial block — content comes from the dashboard', () => {
   test('super admin authenticates', async () => {
-    const login = await admin.post('/api/admin/auth/login').send({ email: 'admin@zayrovi.tn', password: 'ZayroviBeta2026!' });
+    const login = await admin.post('/api/admin/auth/login').send({ email: 'admin@your-zayrovi-domain.example', password: 'ZayroviBeta2026!' });
     expect(login.status).toBe(200);
     csrf = login.body.data.csrfToken;
   });

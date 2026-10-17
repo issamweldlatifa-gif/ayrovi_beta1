@@ -31,11 +31,11 @@ old-phone\toffline
     ID: 1234
     Signatures: [8e20]
     Domain verification state:
-      zayrovi.tn: legacy_failure
+      your-zayrovi-domain.example: legacy_failure
       zayrovi-beta1-moo8.onrender.com: verified
 `);
     expect(states).toEqual({
-      'zayrovi.tn': 'legacy_failure',
+      'your-zayrovi-domain.example': 'legacy_failure',
       'zayrovi-beta1-moo8.onrender.com': 'verified',
     });
   });

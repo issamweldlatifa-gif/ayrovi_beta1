@@ -34,7 +34,7 @@ describe('safeChannelUrl — ما يُنشر للعميل', () => {
   it('`data:` والبروتوكولات المخصّصة ⇒ مرفوضة', () => {
     expect(safeChannelUrl('data:text/html,<script>')).toBeNull();
     expect(safeChannelUrl('zayrovi://account')).toBeNull();
-    expect(safeChannelUrl('mailto:hi@zayrovi.tn')).toBeNull();
+    expect(safeChannelUrl('mailto:hi@your-zayrovi-domain.example')).toBeNull();
   });
 
   it('بيانات اعتماد داخل الرابط ⇒ مرفوض (وسيلة تضليل معروفة)', () => {

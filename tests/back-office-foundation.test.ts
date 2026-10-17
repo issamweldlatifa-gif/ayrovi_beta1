@@ -23,7 +23,7 @@ const suffix = Date.now();
 type Session = { agent: ReturnType<typeof request.agent>; csrf: string };
 
 async function loginAs(role: 'ADMIN' | 'CONTENT_MANAGER' | 'ORDER_MANAGER', superAgent: any, superCsrf: string): Promise<Session> {
-  const email = `bo-${role.toLowerCase()}-${suffix}@test.zayrovi.tn`;
+  const email = `bo-${role.toLowerCase()}-${suffix}@test.your-zayrovi-domain.example`;
   const password = 'BackOffice2026!x';
   const insert = await superAgent.post('/api/admin/users').set('x-csrf-token', superCsrf)
     .send({ name: `BackOffice ${role}`, email, password, role });
@@ -42,7 +42,7 @@ describe('back office shell (P2.0)', () => {
 
   beforeAll(async () => {
     const agent = request.agent(app);
-    const login = await agent.post('/api/admin/auth/login').send({ email: 'admin@zayrovi.tn', password: 'ZayroviBeta2026!' });
+    const login = await agent.post('/api/admin/auth/login').send({ email: 'admin@your-zayrovi-domain.example', password: 'ZayroviBeta2026!' });
     expect(login.status).toBe(200);
     superAdmin = { agent, csrf: login.body.data.csrfToken };
     admin = await loginAs('ADMIN', superAdmin.agent, superAdmin.csrf);
