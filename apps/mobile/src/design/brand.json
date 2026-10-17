@@ -1,0 +1,71 @@
+{
+  "name": "ZAYROVI App — Official Brand Colors",
+  "version": "4.2.0",
+  "updated": "2026-10-17",
+  "brand": {
+    "black": "#0A0A0A",
+    "white": "#FFFFFF",
+    "violet": "#571EF6",
+    "violetLight": "#C5B2F4",
+    "lightGray": "#F2F2F2"
+  },
+  "share": {
+    "white": 0.5,
+    "black": 0.35,
+    "violet": 0.02,
+    "violetLight": 0.01,
+    "lightGray": 0.05
+  },
+  "neutrals": {
+    "border": "#E5E5E5",
+    "textSecondary": "#666666",
+    "textStrong": "#333333",
+    "controlBorder": "#888888"
+  },
+  "colors": {
+    "canvas": "#FFFFFF",
+    "surface": "#FFFFFF",
+    "ink": "#0A0A0A",
+    "secondary": "#333333",
+    "muted": "#666666",
+    "line": "#E5E5E5",
+    "lineControl": "#888888",
+    "action": "#571EF6",
+    "actionHover": "#491ACC",
+    "onAction": "#FFFFFF",
+    "accent": "#571EF6",
+    "accentText": "#571EF6",
+    "onAccent": "#FFFFFF",
+    "accentSoft": "#C5B2F4",
+    "onAccentSoft": "#0A0A0A",
+    "focus": "#571EF6",
+    "info": "#666666",
+    "infoSoft": "#FFFFFF",
+    "success": "#236044",
+    "danger": "#A52D2D",
+    "shimmer": "#F2F2F2"
+  },
+  "darkColors": {
+    "canvas": "#0A0A0A",
+    "surface": "#171717",
+    "ink": "#FFFFFF",
+    "secondary": "#E5E5E5",
+    "muted": "#BDBDBD",
+    "line": "#525252",
+    "lineControl": "#6E6E6E",
+    "action": "#571EF6",
+    "actionHover": "#491ACC",
+    "onAction": "#FFFFFF",
+    "accent": "#571EF6",
+    "accentText": "#926DF9",
+    "onAccent": "#FFFFFF",
+    "accentSoft": "#C5B2F4",
+    "onAccentSoft": "#0A0A0A",
+    "focus": "#926DF9",
+    "info": "#BDBDBD",
+    "infoSoft": "#171717",
+    "success": "#90D6AF",
+    "danger": "#FFABAB",
+    "shimmer": "#171717"
+  }
+}

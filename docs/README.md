@@ -9,6 +9,7 @@ datés. Tous les chemins relatifs entre documents ont été mis à jour.
 
 | Dossier | Contenu | Type |
 |---|---|---|
+| `../apps/mobile/` | **Application mobile native (React Native + Expo SDK 57, Expo Router)** — 287 fichiers, écrans natifs, WebView pour les pages marchands uniquement. Voir `apps/mobile/PLAN.md`. | Application |
 | `admin/` | Admin CMS (référence stable) | Manuel |
 | `architecture/` | Architecture à l’échelle, garde-fous | Manuel |
 | `audits/` | Audits ponctuels datés (rapports) | Historique |
