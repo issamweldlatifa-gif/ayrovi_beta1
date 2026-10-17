@@ -13,9 +13,6 @@
     "test": "vitest run",
     "audit:design": "node verify/zalando-audit.mjs",
     "backup": "node scripts/backup-sqlite.mjs",
-    "android:assets": "node scripts/cap-assets.mjs && capacitor-assets generate --android",
-    "android:sync": "cap sync android",
-    "android:open": "cap open android",
     "design:inventory": "node scripts/inventory-customer-design.mjs",
     "design:build": "node scripts/build-editorial-design.mjs",
     "design:check": "node scripts/build-editorial-design.mjs --check && node scripts/inventory-customer-design.mjs --check && npm run icons:check && npm run identity:check",
@@ -47,8 +44,6 @@
     "verify:lens-probe": "esbuild verify/lens-probe.ts --bundle --platform=node --format=cjs --packages=external --outfile=.cache/lens-probe.cjs --log-level=error && node .cache/lens-probe.cjs",
     "verify:customer-auth": "esbuild verify/customer-auth-functional.ts --bundle --platform=node --packages=external --outfile=.cache/auth-functional.cjs --log-level=error && node .cache/auth-functional.cjs",
     "verify:setup": "npx playwright install --with-deps chromium firefox",
-    "android:check": "node scripts/check-android-shell.mjs",
-    "android:apk": "cd android && ./gradlew :app:assembleDebug",
     "verify:aywebs-latency": "node scripts/aywebs-latency-probe.mjs"
   },
   "keywords": [
@@ -64,9 +59,6 @@
   "author": "AYROVI Team",
   "license": "ISC",
   "dependencies": {
-    "@capacitor/android": "^7.6.9",
-    "@capacitor/core": "^7.6.9",
-    "@capacitor/status-bar": "^7.0.6",
     "@pdf-lib/fontkit": "^1.1.1",
     "@tailwindcss/vite": "^4.3.3",
     "@types/canvas-confetti": "^1.9.0",
@@ -101,8 +93,6 @@
     "vite": "^8.2.1"
   },
   "devDependencies": {
-    "@capacitor/assets": "^3.0.5",
-    "@capacitor/cli": "^7.6.9",
     "@types/better-sqlite3": "^7.6.10",
     "@types/compression": "^1.8.1",
     "@types/cors": "^2.8.17",
@@ -122,10 +112,6 @@
     "qs": "^6.16.0",
     "mailparser": {
       "nodemailer": "^10.0.12"
-    },
-    "@capacitor/assets": {
-      "@capacitor/cli": "$@capacitor/cli",
-      "sharp": "$sharp"
     },
     "xcode": {
       "uuid": "^11.1.1"

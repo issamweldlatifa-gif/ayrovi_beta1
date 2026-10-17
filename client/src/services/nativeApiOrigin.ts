@@ -1,7 +1,20 @@
-import { getNativeSessionToken, isNativeApp } from './nativeShell';
+/**
+ * Web-only stub — `services/nativeApiOrigin`.
+ *
+ * L'APK Capacitor a été retiré (cf. `nativeShell.ts` pour le contexte).
+ * Ce module exportait un patch sur `fetch` et `XMLHttpRequest` qui réécrivait
+ * les chemins `/api/…` relatifs vers l'origine absolue du backend. Sur le web
+ * pur, l'API est same-origin, donc le patch est inutile.
+ *
+ * On garde l'export `AYROVI_API_ORIGIN` (utilisé par d'autres modules qui
+ * construisent des URLs absolues côté web) et la fonction `installNativeApiOrigin`
+ * qui devient un no-op. Les signatures sont préservées pour ne casser aucun
+ * import.
+ */
+
 import { AYROVI_API_ORIGIN, normalizeApiOrigin } from './apiOrigin';
+
 export { AYROVI_API_ORIGIN };
-const PATCH_FLAG = '__ayroviApiOriginPatched';
 
 /** Only bundled API paths move to the API. Assets and third-party URLs do not. */
 export function nativeTarget(input: string | URL, base: string, origin: string): URL {
@@ -13,36 +26,14 @@ export function nativeTarget(input: string | URL, base: string, origin: string):
   return url;
 }
 
-export function installNativeApiOrigin(origin: string = AYROVI_API_ORIGIN): void {
-  if (!isNativeApp()) return;
-  const trusted = normalizeApiOrigin(origin);
-  if (!trusted) throw new TypeError('HTTPS_API_ORIGIN_REQUIRED');
-  const w = window as unknown as Record<string, unknown>;
-  if (w[PATCH_FLAG]) return;
-  w[PATCH_FLAG] = true;
-  const originalFetch = window.fetch.bind(window);
-  window.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
-    const url = nativeTarget(input instanceof Request ? input.url : input, location.href, trusted);
-    const targetTrusted = url.origin === trusted && url.protocol === 'https:';
-    if (!targetTrusted) return originalFetch(input, init);
-    // Clone instead of consuming/mutating the caller's Request. RequestInit has
-    // its standard override semantics, including replacement of headers.
-    const request = input instanceof Request
-      ? new Request(url.href, new Request(input.clone(), init))
-      : new Request(url.href, init);
-    const headers = new Headers(request.headers);
-    if (!headers.has('x-ayrovi-native')) headers.set('x-ayrovi-native', '1');
-    const token = getNativeSessionToken();
-    if (token && !headers.has('Authorization')) headers.set('Authorization', `Bearer ${token}`);
-    // Never forward custom session headers over a redirect, even same-site.
-    return originalFetch(new Request(request, { headers, redirect: 'error' }));
-  }) as typeof window.fetch;
-
-  // XHR deliberately remains credential-free: it cannot reliably disable
-  // redirects. Authenticated native requests use fetch above.
-  const originalOpen = XMLHttpRequest.prototype.open;
-  XMLHttpRequest.prototype.open = function (this: XMLHttpRequest, method: string, url: string | URL, ...rest: unknown[]) {
-    const target = nativeTarget(url, location.href, trusted);
-    return (originalOpen as unknown as (...args: unknown[]) => void).call(this, method, target.href, ...rest);
-  } as typeof XMLHttpRequest.prototype.open;
+export function installNativeApiOrigin(_origin: string = AYROVI_API_ORIGIN): void {
+  // No-op on the web: fetch/XHR are already same-origin. The original
+  // implementation monkey-patched globalThis.fetch and XMLHttpRequest.prototype
+  // to redirect /api calls to the absolute API origin. That bridge existed
+  // because the Capacitor APK served the bundle from https://localhost while
+  // the backend lived on a different host. With Capacitor removed, the
+  // web build is served from the same origin as the API and no rewrite is
+  // needed. `normalizeApiOrigin` is still imported above so future
+  // implementations can reuse it without re-deriving the rule.
+  void normalizeApiOrigin;
 }

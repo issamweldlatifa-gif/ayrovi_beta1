@@ -340,25 +340,32 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
       // Le `null` n'est pas une erreur — c'est « cet appareil ne peut pas »
       // (pas de services Google Play, SHA-1 pas encore déclaré, ou annulation)
       // et l'onglet prend le relais juste en dessous.
+      //
+      // 2026-10-17 : la coque Capacitor a été retirée. Le sélecteur natif et
+      // la session « sans sortir » ne sont disponibles que dans l'app
+      // React Native (apps/mobile/). Sur le web, `signInWithGoogleNatively`
+      // renvoie toujours null et l'onglet standard prend le relais.
       if (provider === 'google') {
         const nativeSession = await signInWithGoogleNatively(getSessionId());
         if (nativeSession) {
           rememberNativeSessionToken(nativeSession.native_session_token);
-          onSession({ account: nativeSession.account, csrfToken: nativeSession.csrfToken });
-          setNotice(tr('Content de vous revoir !', 'سعداء بعودتك!'));
-          onCartChanged();
-          return;
+          if (nativeSession.account && nativeSession.csrfToken) {
+            onSession({ account: nativeSession.account as never, csrfToken: nativeSession.csrfToken });
+            setNotice(tr('Content de vous revoir !', 'سعداء بعودتك!'));
+            onCartChanged();
+            return;
+          }
         }
       }
       const query = `cartSessionId=${encodeURIComponent(getSessionId())}&returnTo=${encodeURIComponent('/')}`;
       await openProviderInAppTab(oauthStartUrl(provider, query, handoff));
       const result = await claimNativeSession(handoff);
-      if (!result) {
+      if (!result || !result.account || !result.csrfToken) {
         setError(tr('Connexion non terminée. Réessayez.', 'لم تكتمل عملية الدخول. أعد المحاولة.'));
         return;
       }
       rememberNativeSessionToken(result.native_session_token);
-      onSession({ account: result.account, csrfToken: result.csrfToken });
+      onSession({ account: result.account as never, csrfToken: result.csrfToken });
       setNotice(tr('Content de vous revoir !', 'سعداء بعودتك!'));
       onCartChanged();
     } catch {

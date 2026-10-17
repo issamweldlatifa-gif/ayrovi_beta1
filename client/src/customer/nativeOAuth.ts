@@ -1,189 +1,85 @@
-import { registerPlugin } from '@capacitor/core';
-import { AYROVI_API_ORIGIN } from '../services/apiOrigin';
+/**
+ * Web-only stub — `customer/nativeOAuth`.
+ *
+ * L'APK Capacitor a été retiré (cf. `services/nativeShell.ts`). L'ancien
+ * `nativeOAuth` pilotait un onglet natif in-app via `@capacitor/browser` /
+ * `AyWebsBrowseActivity` pour OAuth (Google refuse les WebView embarquées
+ * avec `disallowed_useragent`). Sur le web, on retombe sur le flux
+ * standard `window.open` vers `/api/customer/auth/{provider}/start` —
+ * même comportement que les utilisateurs non-Capacitor historique.
+ *
+ * Les signatures exportées sont conservées pour ne casser aucun import
+ * (`CustomerAccountPage.tsx`, `LensLauncher.tsx`, etc.).
+ */
+
 import { isNativeApp } from '../services/nativeShell';
 
-/**
- * Connexion par fournisseur (Google / Facebook / Apple) DANS l'application.
- *
- * ── Le défaut corrigé (04/10/2026) : « erreur 404 à la connexion Google » ────
- * Le bouton était un lien RELATIF `/api/customer/auth/google/start`. Dans
- * l'APK, l'interface est servie depuis `https://localhost` (paquet Capacitor) ;
- * le pont `nativeApiOrigin` ne réécrit que `fetch` et XHR, jamais une
- * NAVIGATION. Le clic partait donc vers `https://localhost/api/customer/auth/
- * google/start`, où aucun serveur n'écoute → 404. Et même si l'URL avait été
- * absolue, deux murs suivaient :
- *   1. Google refuse les WebView embarquées (`disallowed_useragent`) ;
- *   2. le cookie de session déposé sur l'origine de l'API n'atteint jamais
- *      l'origine de la coque : l'utilisateur serait resté déconnecté.
- *
- * ── Ce que fait ce module ───────────────────────────────────────────────────
- * 1. il tire un code de remise aléatoire (32 octets) ;
- * 2. il ouvre `…/start?nativeHandoff=…` dans le NAVIGATEUR SYSTÈME (la coque
- *    n'autorise aucune navigation externe : Capacitor délègue à Android) ;
- * 3. il réclame ensuite le jeton de session à `POST /auth/native/claim`,
- *    endpoint à usage unique. Tant que l'utilisateur n'a pas fini, le serveur
- *    répond 404 `HANDOFF_PENDING` et on attend — sans jamais afficher un état
- *    « connecté » qui n'existe pas.
- *
- * Sur le WEB ce module n'est pas utilisé : le lien relatif reste le parcours
- * normal, cookie same-origin compris. Aucune régression.
- */
 export type OAuthProvider = 'google' | 'facebook' | 'apple';
 
+// Minimal shape: keeps the structural type that the former native flow
+// exposed (account, csrfToken, native_session_token) but every field is
+// optional. The web flow never produces a real NativeOAuthSession — the
+// helpers below all return null on web — so consumers must defensively
+// check for null before reading any property.
 export interface NativeOAuthSession {
-  account: any;
-  csrfToken: string;
-  expiresAt?: string;
+  provider: OAuthProvider;
+  account?: unknown;
+  csrfToken?: string;
   native_session_token?: string;
+  expiresAt?: number;
+  handoff?: string;
 }
 
-/** Code de remise : seul secret du parcours, jamais réutilisé. */
 export function createHandoffCode(): string {
-  const bytes = new Uint8Array(32);
-  crypto.getRandomValues(bytes);
-  let binary = '';
-  bytes.forEach((value) => { binary += String.fromCharCode(value); });
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  // Web path: no APK to hand off to. Return a random opaque string so
+  // server-side code that joins it to callback URLs remains well-typed;
+  // the value is unused on web (no native session will claim it).
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `web-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-/**
- * URL de démarrage : ABSOLUE dans l'application (sinon 404 sur l'origine de la
- * coque), RELATIVE sur le web (même origine, cookie conservé).
- */
-export function oauthStartUrl(provider: OAuthProvider, query: string, handoff = ''): string {
-  const path = `/api/customer/auth/${provider}/start?${query}${handoff ? `&nativeHandoff=${encodeURIComponent(handoff)}` : ''}`;
-  return isNativeApp() ? `${AYROVI_API_ORIGIN}${path}` : path;
+export function oauthStartUrl(
+  provider: OAuthProvider,
+  query: string,
+  handoff: string = '',
+): string {
+  // Web only — same-origin /api path. Handoff is appended for parity with
+  // the native flow; server endpoints are expected to ignore it on web.
+  const params = new URLSearchParams(query);
+  if (handoff) params.set('handoff', handoff);
+  const qs = params.toString();
+  return `/api/customer/auth/${provider}/start${qs ? `?${qs}` : ''}`;
 }
 
 export interface ClaimOptions {
-  /** Durée maximale d'attente ; au-delà, l'utilisateur a abandonné. */
   timeoutMs?: number;
-  intervalMs?: number;
-  signal?: AbortSignal;
+  pollIntervalMs?: number;
 }
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-/**
- * Réclame la session une fois le navigateur système revenu. Retourne `null`
- * quand le délai expire : c'est une absence de connexion, pas une erreur à
- * inventer.
- */
-export async function claimNativeSession(handoff: string, options: ClaimOptions = {}): Promise<NativeOAuthSession | null> {
-  const timeoutMs = options.timeoutMs ?? 5 * 60_000;
-  const intervalMs = options.intervalMs ?? 2_000;
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    if (options.signal?.aborted) return null;
-    try {
-      const response = await fetch(`${AYROVI_API_ORIGIN}/api/customer/auth/native/claim`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-ayrovi-native': '1' },
-        body: JSON.stringify({ handoff }),
-        signal: options.signal,
-      });
-      if (response.ok) {
-        const payload = await response.json().catch(() => null);
-        if (payload?.success && payload.data?.account) return payload.data as NativeOAuthSession;
-      }
-    } catch {
-      /* réseau coupé pendant l'attente : on retentera au prochain tour */
-    }
-    await sleep(intervalMs);
-  }
+export async function claimNativeSession(
+  _handoff: string,
+  _options: ClaimOptions = {},
+): Promise<NativeOAuthSession | null> {
+  // No native session store on web. The web flow completes via the standard
+  // server-issued cookies once the provider redirects back.
   return null;
 }
 
-interface AuthTabBridge {
-  open(options: { url: string }): Promise<{ opened: boolean }>;
-  signInWithGoogle(): Promise<{ available: boolean; idToken?: string; reason?: string }>;
-}
-
-/**
- * Connexion Google par le SÉLECTEUR DE COMPTE DU SYSTÈME (3e passe,
- * 04/10/2026).
- *
- * ── Pourquoi aller plus loin que l'onglet personnalisé ──────────────────────
- * L'onglet restait une page web qui se déplie par-dessus l'application : le
- * client l'a lue comme « je sors ». Android sait faire mieux — Credential
- * Manager affiche la liste des comptes déjà présents sur le téléphone, en
- * feuille native, sans charger la moindre page. Aucun mot de passe à taper,
- * aucune redirection, aucune bascule.
- *
- * ── Ce qu'on reçoit, et ce qu'on n'en fait PAS ──────────────────────────────
- * Le système rend un jeton d'identité signé par Google. On ne l'interprète
- * pas ici : un jeton lu côté client ne prouve rien, puisque le client est
- * justement ce qu'on cherche à authentifier. Il part tel quel vers
- * POST /auth/google/native, qui le fait valider par Google avant d'ouvrir une
- * session.
- *
- * ── Repli ───────────────────────────────────────────────────────────────────
- * Services Google Play absents, aucun compte sur l'appareil, SHA-1 non encore
- * déclaré chez Google, ou simple annulation : on retourne `null` et l'appelant
- * reprend l'onglet personnalisé. Pas d'écran de panne pour un chemin qui a un
- * substitut qui marche.
- */
-export async function signInWithGoogleNatively(cartSessionId = ''): Promise<NativeOAuthSession | null> {
-  if (!isNativeApp()) return null;
-  let idToken = '';
-  try {
-    const plugin = registerPlugin<AuthTabBridge>('AyroviAuthTab');
-    const picked = await plugin.signInWithGoogle();
-    if (!picked?.available || !picked.idToken) return null;
-    idToken = picked.idToken;
-  } catch {
-    return null; // coque antérieure : la méthode n'existe pas encore
-  }
-  try {
-    const response = await fetch(`${AYROVI_API_ORIGIN}/api/customer/auth/google/native`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-ayrovi-native': '1' },
-      body: JSON.stringify({ idToken, cartSessionId }),
-    });
-    if (!response.ok) return null;
-    const payload = await response.json().catch(() => null);
-    if (payload?.success && payload.data?.account) return payload.data as NativeOAuthSession;
-  } catch {
-    /* réseau : l'appelant retombera sur l'onglet */
-  }
+export async function signInWithGoogleNatively(_cartSessionId: string = ''): Promise<NativeOAuthSession | null> {
+  // No native in-app browser on web. Caller is expected to fall back to the
+  // standard `window.open` flow when this returns null.
+  if (isNativeApp()) return null;
   return null;
 }
 
-/**
- * Ouvre le flux du fournisseur SANS quitter l'application.
- *
- * ── Correction du 04/10/2026 (deuxième passe) ───────────────────────────────
- * La première version appelait `window.open`, que la coque délègue à Android :
- * l'utilisateur basculait dans Chrome, une AUTRE application, et devait
- * revenir à la main. Le client l'a refusé : « تسجيل دخول بش ولي داخل تطبيق لا
- * خروج من تطبيق ».
- *
- * On passe donc par un ONGLET PERSONNALISÉ, qui s'ouvre dans notre propre
- * tâche et se referme seul. Ce n'est pas un détail cosmétique : c'est la seule
- * voie qui satisfasse les deux contraintes à la fois —
- *   • Google REFUSE les WebView embarquées (`disallowed_useragent`), donc on
- *     ne peut pas afficher sa page dans notre WebView ;
- *   • le navigateur système fait sortir de l'application.
- * L'onglet personnalisé est le moteur de Chrome (agent utilisateur accepté,
- * mot de passe invisible pour AYROVI) hébergé dans notre pile d'activités.
- *
- * Repli honnête : hors coque, ou si aucun navigateur compatible n'existe, on
- * retombe sur l'ancien comportement plutôt que de ne rien faire.
- */
 export async function openProviderInAppTab(url: string): Promise<void> {
-  if (isNativeApp()) {
-    try {
-      const plugin = registerPlugin<AuthTabBridge>('AyroviAuthTab');
-      const result = await plugin.open({ url });
-      if (result?.opened) return;
-    } catch {
-      /* plugin absent (ancienne coque) : repli ci-dessous */
-    }
-  }
+  if (typeof window === 'undefined') return;
   window.open(url, '_blank', 'noopener,noreferrer');
 }
 
-/** @deprecated conservé pour le web ; préférez openProviderInAppTab. */
 export function openProviderInSystemBrowser(url: string): void {
-  void openProviderInAppTab(url);
+  if (typeof window === 'undefined') return;
+  window.open(url, '_blank', 'noopener,noreferrer');
 }

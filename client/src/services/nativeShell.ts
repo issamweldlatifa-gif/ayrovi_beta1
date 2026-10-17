@@ -1,96 +1,49 @@
-import { Capacitor, registerPlugin } from '@capacitor/core';
-import { AYROVI_API_ORIGIN } from './apiOrigin';
-import { getSessionId } from '../utils/session';
-
 /**
- * Coque native (APK Capacitor) — un seul point de détection pour tout l'app.
- * Le web ignore ces helpers ; l'UI est identique dans les deux modes.
+ * Web-only stub — `services/nativeShell`.
+ *
+ * L'APK Capacitor a été retiré : la coque Android n'est plus construite ici.
+ * L'application mobile est désormais React Native (apps/mobile/) et consomme
+ * l'API directement via HTTP, sans WebView. Le site web public est donc la
+ * seule surface qui dépendait de ces helpers — et ces helpers n'ont plus de
+ * raison d'être sur le web.
+ *
+ * Ce module conserve les MÊMES signatures d'export que l'ancien
+ * `nativeShell.ts` afin de ne casser aucun import existant. Tous les appels
+ * deviennent des no-op ou des fallbacks web équivalents :
+ *   - `isNativeApp()`        → false (toujours web)
+ *   - jetons de session      → no-op (les cookies same-origin suffisent)
+ *   - `openMerchantPage()`   → window.open en tab sécurisé
+ *   - `setNativeStatusBarForSurface()` → no-op (pas de status bar native)
+ *
+ * Si l'application React Native devait un jour réintégrer une coque
+ * Capacitor, ce fichier sera supprimé et `nativeShell.ts` réintroduit.
  */
-const NATIVE_TOKEN_KEY = 'ayrovi_native_session_token';
 
-/**
- * Application native (paquet embarqué) : le jeton de session client est gardé
- * hors cookie (origins croisés Capacitor → API) et rejoué en en-tête Bearer
- * par le pont nativeApiOrigin. Le web n'écrit jamais cette clé.
- */
-export function rememberNativeSessionToken(token: string | undefined | null): void {
-  if (!isNativeApp() || !token) return;
-  try { window.localStorage.setItem(NATIVE_TOKEN_KEY, String(token)); } catch { /* silencieux */ }
+export function rememberNativeSessionToken(_token: string | undefined | null): void {
+  // Web only — no native token storage.
 }
 
 export function getNativeSessionToken(): string {
-  if (!isNativeApp()) return '';
-  try { return window.localStorage.getItem(NATIVE_TOKEN_KEY) || ''; } catch { return ''; }
+  return '';
 }
 
 export function clearNativeSessionToken(): void {
-  if (!isNativeApp()) return;
-  try { window.localStorage.removeItem(NATIVE_TOKEN_KEY); } catch { /* silencieux */ }
-  void registerPlugin<AyWebsBrowseBridge>('AyWebsBrowse').clearMerchantData().catch(() => undefined);
+  // Web only — no native token storage.
 }
 
-export const isNativeApp = (): boolean => {
-  try {
-    return typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform();
-  } catch {
-    return false;
-  }
-};
+export const isNativeApp = (): boolean => false;
 
-interface AyWebsBrowseBridge {
-  clearMerchantData(): Promise<void>;
-  open(options: { url: string; sessionId: string; customerToken: string }): Promise<{ opened: boolean }>;
-}
-
-/**
- * §9 — navigation marchande DANS l'app (parcours proxy-shopping reconstruit) :
- * la coque ouvre une WebView native avec barre flottante « Add to Cart » ;
- * la classification et le panier restent serveurs (§11, §16). Hors coque :
- * onglet externe (comportement web historique, §2 non destructif).
- */
 export async function openAyWebsNativeBrowser(url: string): Promise<boolean> {
-  if (!isNativeApp()) return false;
-  try {
-    const plugin = registerPlugin<AyWebsBrowseBridge>('AyWebsBrowse');
-    // L'origine de l'API est TRANSMISE à la coque : ses appels privés
-    // (analyse de page, résolution produit, ajout au panier) ne peuvent pas
-    // partir de `https://localhost` — le paquet embarqué n'héberge aucun
-    // serveur. C'est la cause du bouton « Add to Cart » figé sur « Loading… ».
-    // Le jeton de session CLIENT accompagne l'ouverture : le tiroir
-    // « Favoris » du navigateur marchand lit l'API du compte, qui ne connaît
-    // pas la session panier. Vide tant que personne n'est connecté — le tiroir
-    // affiche alors « connectez-vous », ce qui est la vérité.
-    await plugin.open({
-      url,
-      sessionId: getSessionId(),
-      customerToken: getNativeSessionToken(),
-    });
-    return true;
-  } catch {
-    return false;
-  }
+  if (typeof window === 'undefined') return false;
+  const w = window.open(url, '_blank', 'noopener,noreferrer');
+  return w !== null;
 }
 
 export function openMerchantPage(url: string): void {
-  if (!isNativeApp()) {
-    window.open(url, '_blank', 'noopener,noreferrer');
-    return;
-  }
-  void openAyWebsNativeBrowser(url).then((handled) => {
-    if (!handled) window.open(url, '_blank', 'noopener,noreferrer');
-  });
+  if (typeof window === 'undefined') return;
+  window.open(url, '_blank', 'noopener,noreferrer');
 }
 
-/**
- * Barre système : icônes claires sur les surfaces sombres (Lens/caméra),
- * foncées sur le blanc marchand. Cosmétique → ne casse jamais l'UI.
- */
-export async function setNativeStatusBarForSurface(darkSurface: boolean): Promise<void> {
-  if (!isNativeApp()) return;
-  try {
-    const { StatusBar, Style } = await import('@capacitor/status-bar');
-    await StatusBar.setStyle({ style: darkSurface ? Style.Light : Style.Dark });
-  } catch {
-    /* no-op : hors coque native le plugin n'existe pas */
-  }
+export async function setNativeStatusBarForSurface(_darkSurface: boolean): Promise<void> {
+  // No native status bar on web.
 }

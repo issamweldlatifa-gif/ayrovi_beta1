@@ -25,7 +25,16 @@ datés. Tous les chemins relatifs entre documents ont été mis à jour.
 | `lens/` | Audits Lens, plan de stock live, phase 0 | Historique |
 | `plans/` | Plans stratégiques (P2 → P5, Boutique v2, transformation Back-Office, catalogue P2.1, plan de correction) | Référence |
 | `product/` | Moteur de composition d’images (référence produit) | Manuel |
-| `android/` | Guide de l’application Android (référence plateforme) | Manuel |
+
+> **Note (2026-10-17) :** L'ancienne application Android **Capacitor 7** a été
+> retirée du dépôt. L'application mobile est désormais **React Native + Expo**
+> dans `apps/mobile/`. Toute la documemtation liée à la coque Capacitor
+> (`docs/ANDROID_APP_AR.md`, `docs/android/ANDROID_APP.md`, rapports
+> `AYROVI_APP_FIXES_2026-10-03_AR.md`) a été supprimée. Le pont
+> `client/src/services/nativeShell.ts` et ses voisins (`nativeApiOrigin.ts`,
+> `customer/nativeOAuth.ts`) sont devenus des stubs no-op équivalents pour
+> le web. Le site public sert désormais la même API que l'app RN, sans
+> intermédiaire.
 
 ## Fichiers de racine
 
