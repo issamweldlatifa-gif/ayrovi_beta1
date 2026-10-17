@@ -6,7 +6,7 @@
  *   1. le client mobile déclaré reçoit un jeton ; un navigateur n'en reçoit JAMAIS ;
  *   2. l'ancienne coque Capacitor continue de fonctionner à l'identique ;
  *   3. « se déconnecter » révoque réellement la session, en Bearer comme en cookie ;
- *   4. les limites de débit comptent la SESSION avant l'IP (abonnés derrière un CGNAT).
+ *   4. les limites de débit comptent le compte d'une session vérifiée avant l'IP (CGNAT).
  */
 import { randomUUID } from 'node:crypto';
 import { describe, expect, test } from 'vitest';
@@ -136,25 +136,42 @@ describe('session Bearer mobile', () => {
 });
 
 describe('clé de limitation de débit', () => {
-  test('compte la session avant l’IP — un opérateur n’est pas un client', () => {
+  test('un jeton Bearer choisi par l’appelant retombe sur l’IP', () => {
     const sharedIp = { ip: '41.226.0.7', headers: {} } as any;
-    const phoneA = clientRateLimitKey(sharedIp);
-    const phoneB = clientRateLimitKey(sharedIp);
-    expect(phoneA).toBe(phoneB);
-    expect(phoneA).toContain('41.226.0.7');
+    const anonymousKey = clientRateLimitKey(sharedIp, db);
+    expect(anonymousKey).toBe('ip:41.226.0.7');
 
-    const aliceSameNat = clientRateLimitKey({ ip: '41.226.0.7', headers: { authorization: 'Bearer jeton-alice' } } as any);
-    const bobSameNat = clientRateLimitKey({ ip: '41.226.0.7', headers: { authorization: 'Bearer jeton-bob' } } as any);
-    expect(aliceSameNat).not.toBe(bobSameNat);
-    expect(aliceSameNat.startsWith('session:')).toBe(true);
-    // Le jeton lui-même ne doit jamais apparaître dans la clé.
-    expect(aliceSameNat).not.toContain('jeton-alice');
+    const fakeAlice = clientRateLimitKey({ ip: '41.226.0.7', headers: { authorization: 'Bearer jeton-alice' } } as any, db);
+    const fakeBob = clientRateLimitKey({ ip: '41.226.0.7', headers: { authorization: 'Bearer jeton-bob' } } as any, db);
+    // De faux jetons ne permettent plus de fabriquer un bucket par requête.
+    expect(fakeAlice).toBe(anonymousKey);
+    expect(fakeBob).toBe(anonymousKey);
   });
 
-  test('accepte aussi le cookie du web', () => {
-    const web = clientRateLimitKey({ ip: '41.226.0.7', headers: { cookie: 'ayrovi_customer_session=jeton-web' } } as any);
-    expect(web.startsWith('session:')).toBe(true);
-    expect(web).not.toContain('jeton-web');
+  test('des sessions actives du même compte partagent le bucket, les comptes distincts non', async () => {
+    const phone = uniquePhone();
+    const aliceFirst = await mobileLogin(phone, { 'x-ayrovi-client': MOBILE });
+    const aliceSecond = await mobileLogin(phone, { 'x-ayrovi-client': MOBILE });
+    const bob = await mobileLogin(uniquePhone(), { 'x-ayrovi-client': MOBILE });
+    const keyFor = (token: string) => clientRateLimitKey({
+      ip: '41.226.0.7',
+      headers: { authorization: `Bearer ${token}` },
+    } as any, db);
+
+    const aliceToken = aliceFirst.body.data.session_token;
+    const aliceKey = keyFor(aliceToken);
+    expect(keyFor(aliceSecond.body.data.session_token)).toBe(aliceKey);
+    expect(clientRateLimitKey({
+      ip: '41.226.0.7',
+      headers: { cookie: `ayrovi_customer_session=${aliceToken}` },
+    } as any, db)).toBe(aliceKey);
+    expect(keyFor(bob.body.data.session_token)).not.toBe(aliceKey);
+    expect(aliceKey.startsWith('account:')).toBe(true);
+  });
+
+  test('un cookie web invalide retombe aussi sur l’IP', () => {
+    const web = clientRateLimitKey({ ip: '41.226.0.7', headers: { cookie: 'ayrovi_customer_session=jeton-web' } } as any, db);
+    expect(web).toBe('ip:41.226.0.7');
   });
 });
 
