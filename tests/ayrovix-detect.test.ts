@@ -170,7 +170,7 @@ describe('Z Lens — correspondances visuelles (/api/ayrovix/detect)', () => {
     expect(ai).not.toContain('export async function detectProducts');
     expect(ai).not.toContain('export function parseDetections');
     expect(routes).not.toContain('detectProducts(');
-    // La route appelle SerpApi, et rien d'autre.
-    expect(routes).toContain('serpApiVisualSearch(small.data, 12)');
+    // La route appelle SerpApi (France, Royaume-Uni, États-Unis), et rien d'autre.
+    expect(routes).toContain('serpApiVisualSearch(small.data, 12, { countries: LENS_LIVE_SEARCH_COUNTRIES })');
   });
 });

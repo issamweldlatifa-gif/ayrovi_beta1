@@ -5,7 +5,7 @@ import type { QatafoDatabase } from '../db/database';
 import type { SmartLinkScraper } from '../scraper/scraper';
 import { buildSearchQuery, AyrovixUnavailableError, fallbackIdentification } from './services/ai';
 import { catalogSearch, externalProductSearch, groupOffers, scoreCandidate, searchCandidates } from './services/search';
-import { SerpApiVisualError, serpApiVisualReady, serpApiVisualSearch } from './services/visualSearch';
+import { LENS_LIVE_SEARCH_COUNTRIES, SerpApiVisualError, serpApiVisualReady, serpApiVisualSearch } from './services/visualSearch';
 import { recognizeImage } from './services/lensEngine';
 import { enrichCandidatesLiveStock, filterPurchasable, purchaseBlocker, refreshLiveStock } from './services/lensLiveStock';
 import { deduplicateCandidates } from './services/candidateDedup';
@@ -647,7 +647,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
         .resize({ width: 768, height: 768, fit: 'inside', withoutEnlargement: true })
         .jpeg({ quality: 82, mozjpeg: true })
         .toBuffer({ resolveWithObject: true });
-      const matches = await serpApiVisualSearch(small.data, 12);
+      const matches = await serpApiVisualSearch(small.data, 12, { countries: LENS_LIVE_SEARCH_COUNTRIES });
       res.setHeader('Cache-Control', 'no-store');
       return res.json({
         success: true,

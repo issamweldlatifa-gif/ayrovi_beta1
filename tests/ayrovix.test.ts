@@ -8,7 +8,7 @@ import sharp from 'sharp';
 import { app, db, scraper } from '../src/server';
 import { buildSearchQuery } from '../src/ayrovix/services/ai';
 import { catalogSearch, providerWebSearch, scoreCandidate, searchCandidates } from '../src/ayrovix/services/search';
-import { serpApiVisualSearch } from '../src/ayrovix/services/visualSearch';
+import { checkSerpApiVisualHealth, serpApiVisualSearch } from '../src/ayrovix/services/visualSearch';
 import { filterDisplayableCandidates } from '../src/ayrovix/services/candidatePolicy';
 import { extractProductFromUrl } from '../src/ayrovix/services/product';
 import { parseProductPageHtml } from '../src/scraper/productPageParser';
@@ -214,7 +214,11 @@ describe('AYROVIX Lens', () => {
 
   test('SerpApi Google Lens envoie la clé dans le multipart officiel et demande visual_matches', async () => {
     const previousKey = process.env.SERPAPI_KEY;
+    const previousCountries = process.env.AYROVIX_LENS_COUNTRIES;
+    const previousCountry = process.env.AYROVIX_LENS_COUNTRY;
     process.env.SERPAPI_KEY = 'test-serpapi-key';
+    process.env.AYROVIX_LENS_COUNTRIES = 'fr';
+    process.env.AYROVIX_LENS_COUNTRY = 'fr';
     const timeoutSpy = vi.spyOn(AbortSignal, 'timeout');
     const fetchMock = vi.fn(async (url: string, init: RequestInit = {}) => {
       if (url === 'https://serpapi.com/image') {
@@ -277,12 +281,18 @@ describe('AYROVIX Lens', () => {
     } finally {
       timeoutSpy.mockRestore();
       restoreEnv('SERPAPI_KEY', previousKey);
+      restoreEnv('AYROVIX_LENS_COUNTRIES', previousCountries);
+      restoreEnv('AYROVIX_LENS_COUNTRY', previousCountry);
     }
   });
 
   test('SerpApi Lens réessaie une seule fois si image_id vient juste d’être créé', async () => {
     const previousKey = process.env.SERPAPI_KEY;
+    const previousCountries = process.env.AYROVIX_LENS_COUNTRIES;
+    const previousCountry = process.env.AYROVIX_LENS_COUNTRY;
     process.env.SERPAPI_KEY = 'test-serpapi-key';
+    process.env.AYROVIX_LENS_COUNTRIES = 'fr';
+    process.env.AYROVIX_LENS_COUNTRY = 'fr';
     let lensRequests = 0;
     const fetchMock = vi.fn(async (url: string) => {
       if (url === 'https://serpapi.com/image') {
@@ -315,6 +325,78 @@ describe('AYROVIX Lens', () => {
       expect(fetchMock).toHaveBeenCalledTimes(3);
     } finally {
       restoreEnv('SERPAPI_KEY', previousKey);
+      restoreEnv('AYROVIX_LENS_COUNTRIES', previousCountries);
+      restoreEnv('AYROVIX_LENS_COUNTRY', previousCountry);
+    }
+  });
+
+  test('SerpApi cherche dans les marchés majeurs, garde France, exclut Tunisie et fusionne les doublons', async () => {
+    const previousKey = process.env.SERPAPI_KEY;
+    const previousCountries = process.env.AYROVIX_LENS_COUNTRIES;
+    const previousCountry = process.env.AYROVIX_LENS_COUNTRY;
+    try {
+      process.env.SERPAPI_KEY = 'test-serpapi-multicountry';
+      delete process.env.AYROVIX_LENS_COUNTRIES;
+      delete process.env.AYROVIX_LENS_COUNTRY;
+      expect(checkSerpApiVisualHealth().countries).toEqual(['fr', 'de', 'it', 'es', 'uk', 'us', 'ca', 'tr', 'ae']);
+      process.env.AYROVIX_LENS_COUNTRIES = 'de,tn,us';
+      process.env.AYROVIX_LENS_COUNTRY = 'fr';
+      const requestedCountries: string[] = [];
+      let germanyAttempts = 0;
+      const fetchMock = vi.fn(async (url: string) => {
+        if (url === 'https://serpapi.com/image') {
+          return new Response(JSON.stringify({ image_id: 'multi-market-image' }), { status: 200 });
+        }
+        if (!url.startsWith('https://serpapi.com/search.json?')) {
+          throw new Error(`Unexpected request: ${url}`);
+        }
+        const country = new URL(url).searchParams.get('country') || '';
+        requestedCountries.push(country);
+        if (country === 'de') {
+          germanyAttempts += 1;
+          return new Response(JSON.stringify({ error: 'temporary market failure' }), { status: 503 });
+        }
+        const visualMatches = country === 'fr'
+          ? [
+              { title: 'Sac commun — France', link: 'https://shop.test/common-bag', thumbnail: 'https://cdn.test/common-fr.jpg', price: { extracted_value: 45, currency: 'EUR' } },
+              ...Array.from({ length: 7 }, (_, index) => ({
+                title: `Sac français ${index + 1}`,
+                link: `https://shop.test/fr-bag-${index + 1}`,
+                thumbnail: `https://cdn.test/fr-${index + 1}.jpg`,
+              })),
+            ]
+          : [
+              { title: 'Sac commun — US', link: 'https://shop.test/common-bag', thumbnail: 'https://cdn.test/common-us.jpg' },
+              { title: 'Sac américain', link: 'https://shop.test/us-bag', thumbnail: 'https://cdn.test/us.jpg' },
+            ];
+        return new Response(JSON.stringify({ visual_matches: visualMatches }), { status: 200 });
+      });
+      vi.stubGlobal('fetch', fetchMock);
+      expect(checkSerpApiVisualHealth().countries).toEqual(['fr', 'de', 'us']);
+      const uniqueImage = await sharp(PNG_1PX).extend({ top: 1, background: '#f0f0f0' }).png().toBuffer();
+      const matches = await serpApiVisualSearch(uniqueImage, 8);
+      expect([...new Set(requestedCountries)]).toEqual(['fr', 'de', 'us']);
+      expect(requestedCountries).not.toContain('tn');
+      expect(germanyAttempts).toBe(2);
+      expect(matches).toHaveLength(8);
+      expect(matches[0].sourceUrl).toBe('https://shop.test/common-bag');
+      expect(matches.some((item) => item.sourceUrl === 'https://shop.test/us-bag')).toBe(true);
+      expect(matches[0].images).toEqual(expect.arrayContaining([
+        'https://cdn.test/common-fr.jpg',
+        'https://cdn.test/common-us.jpg',
+      ]));
+      expect(matches[0]).toMatchObject({ price: 45, currency: 'EUR' });
+
+      // Changing the country scope must not reuse the previous multi-market cache entry.
+      process.env.AYROVIX_LENS_COUNTRIES = 'fr';
+      const franceOnly = await serpApiVisualSearch(uniqueImage, 8);
+      expect(franceOnly.some((item) => item.sourceUrl === 'https://shop.test/us-bag')).toBe(false);
+      expect(requestedCountries.slice(4)).toEqual(['fr']);
+    } finally {
+      vi.unstubAllGlobals();
+      restoreEnv('SERPAPI_KEY', previousKey);
+      restoreEnv('AYROVIX_LENS_COUNTRIES', previousCountries);
+      restoreEnv('AYROVIX_LENS_COUNTRY', previousCountry);
     }
   });
 
