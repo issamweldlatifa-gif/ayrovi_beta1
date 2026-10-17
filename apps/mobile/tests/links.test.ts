@@ -22,6 +22,8 @@ describe('traduction des URL du site', () => {
     expect(resolveDeepLink('https://ayrovi.tn/catalog')).toBe('/catalog');
     expect(resolveDeepLink('https://ayrovi.tn/orders')).toBe('/orders');
     expect(resolveDeepLink('https://ayrovi.tn/panier')).toBe('/(tabs)/cart');
+    expect(resolveDeepLink('https://ayrovi.tn/aywebs')).toBe('/(tabs)/aywebs');
+    expect(resolveDeepLink('https://ayrovi.tn/ay-webs')).toBe('/(tabs)/aywebs');
   });
 
   it('barre oblique finale : même écran, pas deux routes', () => {
@@ -46,6 +48,10 @@ describe('refus — un lien inconnu ne navigue pas', () => {
   it('hôte étranger : ignoré, même avec un chemin connu', () => {
     expect(resolveDeepLink('https://site-malin.tn/orders/42')).toBeNull();
     expect(resolveDeepLink('https://ayrovi.tn.evil.com/orders')).toBeNull();
+  });
+
+  it('un lien profond AYWEBs ne peut pas choisir l’adresse du WebView marchand', () => {
+    expect(resolveDeepLink('https://ayrovi.tn/aywebs/browser?url=https://evil.test')).toBe('/(tabs)/aywebs');
   });
 
   it('un préfixe ne colle pas au milieu d’un segment', () => {

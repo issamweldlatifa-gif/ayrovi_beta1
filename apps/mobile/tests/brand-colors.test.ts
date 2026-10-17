@@ -433,10 +433,12 @@ describe('violet au minimum : le violet plein est réservé à l’action princi
     }
     expect(counts).toEqual({
       'app/(tabs)/cart.tsx': 1,            // passer à la caisse
+      'app/aywebs/browser.tsx': 1,          // ajouter depuis le WebView
       'app/checkout.tsx': 1,               // valider la commande
       'app/forgot.tsx': 1,                 // envoyer le lien de réinitialisation
       'app/product/[id].tsx': 1,           // ajouter au panier
       'app/sign-in.tsx': 6,                // une validation par étape de connexion
+      'src/features/aywebs/AddToCartSheet.tsx': 2, // ajouter au marchand · voir le panier
       'src/features/lens/LensProductView.tsx': 2, // ajouter au panier · voir le panier
       'src/features/lens/ocerex/OcerexFlow.tsx': 1, // confirmer la commande OCEREX
     });

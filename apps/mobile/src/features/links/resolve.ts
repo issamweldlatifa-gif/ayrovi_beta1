@@ -63,6 +63,9 @@ const ROUTES: { prefix: string; route: string | ((rest: string) => string | null
   { prefix: '/commandes', route: '/orders' },
   { prefix: '/checkout', route: '/checkout' },
   { prefix: '/lens', route: '/lens' },
+  // AYWEBs links open the native hub only; no deep link may supply a merchant URL to its WebView.
+  { prefix: '/aywebs', route: '/(tabs)/aywebs' },
+  { prefix: '/ay-webs', route: '/(tabs)/aywebs' },
   { prefix: '/panier', route: '/(tabs)/cart' },
   { prefix: '/cart', route: '/(tabs)/cart' },
   { prefix: '/account/notifications', route: '/account/notifications' },
