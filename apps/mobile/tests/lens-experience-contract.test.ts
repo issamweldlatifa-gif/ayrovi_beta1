@@ -238,8 +238,8 @@ describe('Z Lens — option 3 voulue par le client (16/10/2026)', () => {
     expect(lens).toContain("router.push('/legal/terms')");
   });
 
-  it('Live = repérage en direct par le serveur, déclenché quand le téléphone se stabilise', () => {
-    expect(lens).toContain('detectProducts(');
+  it('Live = recherche visuelle SerpApi, déclenchée quand le téléphone se stabilise', () => {
+    expect(lens).toContain('searchVisualMatches(');
     expect(lens).toContain('shouldDetect(');
     expect(lens).toContain("import('expo-sensors')");
     expect(lens).toContain('shutterSound: false');
@@ -247,10 +247,12 @@ describe('Z Lens — option 3 voulue par le client (16/10/2026)', () => {
     expect(liveOverlay).toContain('productIndexAt(');
   });
 
-  it('le cadre se pose sur le seul produit ou le plus grand, et suit le produit touché', () => {
-    expect(lens).toContain('biggestProductIndex(products)');
-    expect(lens).toContain('padBox(products[selected].box)');
-    expect(lens).toContain("commit.kind === 'product'");
+  it('le cadre reste MANUEL : SerpApi ne rend pas de boîtes', () => {
+    // 17/10/2026 : la détection passe par SerpApi, qui rend des PAGES
+    // ressemblantes, pas des itinéraires. Le cadre est donc celui de
+    // l'utilisateur (toute la photo au départ), jamais une boîte devinée.
+    expect(lens).toContain('selection: FULL_BOX');
+    expect(lens).not.toContain('biggestProductIndex(');
     expect(lens).toContain('const roi = toRoi(photo.selection)');
     // L'analyse reçoit la zone cliquée ET le signal d'annulation — désormais
     // en flux (SSE) : l'identification et les fiches arrivent au fil de l'eau.

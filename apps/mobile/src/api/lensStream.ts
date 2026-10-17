@@ -47,9 +47,9 @@ export interface LensStreamProgress {
   /** Fiches à lire (étape « reading »). */
   total?: number;
   /**
-   * L'identification du produit — envoyée DÈS l'étape « identified », pour
-   * que la réponse en clair s'affiche avant la première fiche marchande.
-   * Elle vient du serveur (SerpApi ou vision Anthropic) : jamais devinée ici.
+   * L'intitulé du produit — envoyé DÈS l'étape « identified », pour
+   * l'afficher avant la première fiche. Il vient du titre SerpApi nettoyé ;
+   * aucune vision Anthropic ne prend le relais dans Lens.
    */
   identification?: LensIdentification | null;
 }
@@ -155,7 +155,7 @@ export interface LensStreamOptions {
   signal?: AbortSignal;
   /** Étape d'avancement : « identified », « searching », « reading ». */
   onProgress?: (progress: LensStreamProgress) => void;
-  /** Une fiche marchande, dès qu'elle est lue. */
+  /** Une fiche dès la découverte SerpApi, puis mise à jour après lecture marchande. */
   onCard?: (candidate: LensCandidate) => void;
   /** Délai maximal d'inactivité (défaut : `LENS_STREAM_IDLE_MS`). */
   idleMs?: number;
@@ -238,10 +238,13 @@ export function analyzeImageStream(
         return;
       }
       if (item.type === 'card') {
-        if (!cards.some((entry) => entry.sourceUrl === item.candidate.sourceUrl)) {
-          cards.push(item.candidate);
-          options.onCard?.(item.candidate);
-        }
+        // SerpApi publishes a title/image/link first; Bright Data may later
+        // publish the same link with merchant facts. Replace, do not discard,
+        // that update. A link still occupies only one grid card.
+        const existing = cards.findIndex((entry) => entry.sourceUrl === item.candidate.sourceUrl);
+        if (existing < 0) cards.push(item.candidate);
+        else cards[existing] = item.candidate;
+        options.onCard?.(item.candidate);
         return;
       }
       sawDone = true;

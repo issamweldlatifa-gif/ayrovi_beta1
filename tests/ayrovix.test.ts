@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
+import sharp from 'sharp';
 import { app, db, scraper } from '../src/server';
 import { buildSearchQuery } from '../src/ayrovix/services/ai';
 import { catalogSearch, providerWebSearch, scoreCandidate, searchCandidates } from '../src/ayrovix/services/search';
@@ -70,7 +71,7 @@ function restoreEnv(name: string, value: string | undefined) {
  * SerpApi — SEULE entrée de la recherche (17/10/2026). Un lien + un prix sur
  * la page marchande : c'est la page qui fait foi, jamais l'image.
  */
-function stubSerpApiVisual(title = 'Sac à main noir Zara — 49.99 EUR', link = 'https://shop.example.com/sac-noir') {
+function stubSerpApiVisual(title = 'Sac à main noir Zara — 49.99 EUR', link = 'https://shop.example.com/sac-noir', inStock?: boolean) {
   const mock = vi.fn(async (url: string) => {
     if (String(url) === 'https://serpapi.com/image') {
       return new Response(JSON.stringify({ image_id: 'image-id-sac' }), { status: 200 });
@@ -83,6 +84,7 @@ function stubSerpApiVisual(title = 'Sac à main noir Zara — 49.99 EUR', link =
           source: 'Example Shop',
           thumbnail: 'https://encrypted-tbn.example.com/sac.jpg',
           price: { extracted_value: 49.99, currency: '€' },
+          ...(inStock === undefined ? {} : { in_stock: inStock }),
         }],
       }), { status: 200 });
     }
@@ -213,6 +215,7 @@ describe('AYROVIX Lens', () => {
   test('SerpApi Google Lens envoie la clé dans le multipart officiel et demande visual_matches', async () => {
     const previousKey = process.env.SERPAPI_KEY;
     process.env.SERPAPI_KEY = 'test-serpapi-key';
+    const timeoutSpy = vi.spyOn(AbortSignal, 'timeout');
     const fetchMock = vi.fn(async (url: string, init: RequestInit = {}) => {
       if (url === 'https://serpapi.com/image') {
         expect(init.method).toBe('POST');
@@ -258,6 +261,7 @@ describe('AYROVIX Lens', () => {
         match: 99,
       });
       expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(timeoutSpy.mock.calls.map(([ms]) => ms)).toEqual(expect.arrayContaining([5_000, 18_000]));
 
       const cachedVisual = await serpApiVisualSearch(PNG_1PX, 8);
       expect(cachedVisual).toEqual(visual);
@@ -271,6 +275,7 @@ describe('AYROVIX Lens', () => {
       ]));
       expect(fetchMock).not.toHaveBeenCalled();
     } finally {
+      timeoutSpy.mockRestore();
       restoreEnv('SERPAPI_KEY', previousKey);
     }
   });
@@ -550,11 +555,15 @@ describe('AYROVIX Lens', () => {
   test('un prix visible sur l’image n’est plus jamais proposé (SerpApi = intitulé seulement)', async () => {
     const previousSerp = process.env.SERPAPI_KEY;
     process.env.SERPAPI_KEY = 'test-serpapi-price';
-    stubSerpApiVisual();
+    stubSerpApiVisual(undefined, undefined, false);
+    const scrapeSpy = vi.spyOn(scraper, 'scrapeParsedPage').mockRejectedValue(new Error('merchant page unavailable'));
     try {
+      // Évite de réutiliser la clé du cache visuel d'un scénario précédent :
+      // le contenu normalisé doit être distinct, pas seulement le nom de fichier.
+      const uniquePng = await sharp(PNG_1PX).extend({ right: 1, background: '#fff' }).png().toBuffer();
       const response = await request(app)
         .post('/api/ayrovix/analyze-image')
-        .attach('image', PNG_1PX, { filename: 'capture-produit.png', contentType: 'image/png' });
+        .attach('image', uniquePng, { filename: 'capture-produit.png', contentType: 'image/png' });
       expect(response.status).toBe(200);
       // 02/10/2026 : un prix lu sur l'image n'est plus jamais proposé — seule la
       // page marchande derrière un lien fait foi.
@@ -563,7 +572,67 @@ describe('AYROVIX Lens', () => {
       // 17/10/2026 : l'intitulé vient de SerpApi (le titre de la page), pas d'un
       // modèle qui aurait « deviné » le produit.
       expect(response.body.data.identification.description).toContain('Sac à main');
+      expect(response.body.data.identification.description).not.toContain('49.99');
+      // Une page marchande illisible ne peut plus effacer la découverte SerpApi,
+      // mais son extrait prix/stock ne devient pas une preuve d'achat.
+      expect(response.body.data.candidates).toHaveLength(1);
+      expect(response.body.data.candidates[0].title).not.toContain('49.99');
+      expect(response.body.data.candidates[0]).toMatchObject({
+        title: expect.stringContaining('Sac à main'),
+        sourceUrl: 'https://shop.example.com/sac-noir',
+        description: null,
+        price: null,
+        currency: null,
+        priceTnd: null,
+        priceToken: null,
+        availability: 'unknown',
+      });
+      expect(response.body.data.excluded.count).toBe(0);
     } finally {
+      scrapeSpy.mockRestore();
+      restoreEnv('SERPAPI_KEY', previousSerp);
+    }
+  });
+
+  test('un extrait de page marchand contenant un prix regex ne réintroduit pas un montant dans le texte', async () => {
+    const previousSerp = process.env.SERPAPI_KEY;
+    process.env.SERPAPI_KEY = 'test-serpapi-description';
+    stubSerpApiVisual(undefined, undefined, false);
+    const scrapeSpy = vi.spyOn(scraper, 'scrapeParsedPage').mockImplementation(async () => ({
+      data: {
+        title: 'Sac à main noir Zara — 49.99 EUR',
+        price: 39.99,
+        currency: 'EUR',
+        priceSource: 'context_regex',
+        description: 'Prix de lancement : 49,99 EUR, offre disponible dès maintenant.',
+        availability: 'in_stock',
+        variants: { sizes: [], colors: [], details: [] },
+        images: ['https://cdn.example.com/sac-noir.jpg'],
+      } as any,
+      verified: true,
+      provider: 'direct',
+      method: 'json_ld',
+      failureCode: null,
+    } as any));
+    try {
+      const uniquePng = await sharp(PNG_1PX).extend({ bottom: 1, background: '#fff' }).png().toBuffer();
+      const response = await request(app)
+        .post('/api/ayrovix/analyze-image')
+        .attach('image', uniquePng, { filename: 'sac-description.png', contentType: 'image/png' });
+      expect(response.status).toBe(200);
+      expect(scrapeSpy).toHaveBeenCalled();
+      expect(response.body.data.identification.description).not.toMatch(/49[.,]99/);
+      expect(response.body.data.candidates).toHaveLength(1);
+      expect(response.body.data.candidates[0]).toMatchObject({
+        title: 'Sac à main noir Zara',
+        description: null,
+        price: null,
+        priceTnd: null,
+        priceToken: null,
+      });
+      expect(JSON.stringify(response.body.data.candidates[0])).not.toMatch(/49[.,]99|39\.99/);
+    } finally {
+      scrapeSpy.mockRestore();
       restoreEnv('SERPAPI_KEY', previousSerp);
     }
   });

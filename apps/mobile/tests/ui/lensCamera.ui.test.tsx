@@ -39,7 +39,7 @@ jest.mock('expo-sensors', () => ({ Accelerometer: { isAvailableAsync: async () =
 
 jest.mock('@/api/lens', () => ({
   analyzeImage: (...args: unknown[]) => mockAnalyzeImage(...args),
-  detectProducts: (...args: unknown[]) => mockDetect(...args),
+  searchVisualMatches: (...args: unknown[]) => mockDetect(...args),
   analyzeUrl: jest.fn(),
   analyzeCode: jest.fn(),
   analyzeBarcode: jest.fn(),
@@ -77,11 +77,15 @@ function wrap(node: React.ReactNode) {
 /** Seules les vraies photos (pas les petites images Live) comptent ici. */
 const shutterCalls = () => mockTakePicture.mock.calls.filter(([options]) => !(options as { shutterSound?: boolean } | undefined)?.hasOwnProperty('shutterSound'));
 
-const OUTFIT = {
-  products: [
-    { name: 'Jogging jaune', category: 'clothing', box: { x: 0.34, y: 0.43, w: 0.4, h: 0.3 } },
-    { name: 'Sweat à capuche jaune', category: 'clothing', box: { x: 0.12, y: 0.17, w: 0.74, h: 0.29 } },
-    { name: 'Baskets blanches', category: 'shoes', box: { x: 0.33, y: 0.62, w: 0.4, h: 0.21 } },
+/**
+ * 17/10/2026 : la détection passe par SerpApi, qui rend des PAGES
+ * ressemblantes — PAS de boîtes. Le cadre reste donc manuel.
+ */
+const MATCHES = {
+  products: [],
+  matches: [
+    { name: 'Sweat à capuche jaune', image: '', url: 'https://shop.test/sweat', source: 'Shop' },
+    { name: 'Baskets blanches', image: '', url: 'https://shop.test/baskets', source: 'Shop' },
   ],
   width: 768,
   height: 1024,
@@ -100,7 +104,6 @@ describe('caméra Lens directe', () => {
 
   it('capture une seule fois, garde la photo sous les squelettes et annule sans résultat périmé', async () => {
     let resolveSearch!: (value: typeof EMPTY_RESULT) => void;
-    mockDetect.mockResolvedValue({ products: [], width: null, height: null });
     mockAnalyzeImage.mockReturnValue(new Promise((resolve) => { resolveSearch = resolve; }));
 
     render(wrap(<LensScreen />));
@@ -113,9 +116,11 @@ describe('caméra Lens directe', () => {
     expect(await screen.findByTestId('lens-search-skeleton')).toBeTruthy();
     expect(screen.getByTestId('lens-captured-preview')).toBeTruthy();
     expect(shutterCalls()).toHaveLength(1);
-    // Aucun produit repéré → recherche sur toute la photo, sans `roi`.
+    // Cadre manuel, cadre = toute la photo → recherche sur toute la photo, sans `roi`.
     await waitFor(() => expect(mockAnalyzeImage).toHaveBeenCalledTimes(1));
     expect(mockAnalyzeImage.mock.calls[0][1].roi).toBeUndefined();
+    // Une seule requête de reconnaissance visuelle : pas de détection séparée.
+    expect(mockDetect).not.toHaveBeenCalled();
 
     const signal = mockAnalyzeImage.mock.calls[0][1].signal as AbortSignal;
     fireEvent.press(screen.getByTestId('lens-search-cancel'));
@@ -127,8 +132,8 @@ describe('caméra Lens directe', () => {
     expect(mockAnalyzeImage).toHaveBeenCalledTimes(1);
   });
 
-  it('pose le cadre sur le plus grand produit, puis relance la recherche sur le produit touché', async () => {
-    mockDetect.mockResolvedValue(OUTFIT);
+  it('cherche sur toute la photo : le cadre reste manuel, à l’utilisateur', async () => {
+    mockDetect.mockResolvedValue(MATCHES);
     mockAnalyzeImage.mockResolvedValue(EMPTY_RESULT);
 
     render(wrap(<LensScreen />));
@@ -136,29 +141,16 @@ describe('caméra Lens directe', () => {
     await waitFor(() => expect(capture.props.accessibilityState.disabled).toBe(false));
     fireEvent.press(capture);
 
-    // Plusieurs produits → le plus grand (le sweat, index 1) est cherché d'office.
+    // SerpApi ne rend pas de boîtes : le cadre part sur TOUTE la photo.
     await waitFor(() => expect(mockAnalyzeImage).toHaveBeenCalledTimes(1));
-    const firstRoi = mockAnalyzeImage.mock.calls[0][1].roi;
-    expect(firstRoi.x).toBeCloseTo(10.5, 0);
-    expect(firstRoi.w).toBeCloseTo(77, 0);
+    expect(mockAnalyzeImage.mock.calls[0][1].roi).toBeUndefined();
     expect(await screen.findByTestId('lens-selection-frame')).toBeTruthy();
-
-    // Toucher le point des baskets : le cadre saute dessus et la recherche se relance.
-    fireEvent.press(await screen.findByTestId('lens-product-dot-2'));
-    await waitFor(() => expect(mockAnalyzeImage).toHaveBeenCalledTimes(2));
-    const secondRoi = mockAnalyzeImage.mock.calls[1][1].roi;
-    expect(secondRoi.y).toBeCloseTo(60.5, 0);
-    expect(secondRoi.h).toBeCloseTo(24, 0);
-
-    // Revenir au sweat ne relance pas de recherche : le résultat est déjà connu.
-    fireEvent.press(await screen.findByTestId('lens-product-dot-1'));
-    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 300)); });
-    expect(mockAnalyzeImage).toHaveBeenCalledTimes(2);
+    // Aucun point de produit : ce sont les pages, pas des zones, qu'on montre.
+    expect(screen.queryByTestId('lens-product-dot-0')).toBeNull();
   });
 
   it('montre la couronne de recherche autour du produit cherché, puis la retire', async () => {
     let resolveSearch!: (value: typeof EMPTY_RESULT) => void;
-    mockDetect.mockResolvedValue(OUTFIT);
     mockAnalyzeImage.mockReturnValue(new Promise((resolve) => { resolveSearch = resolve; }));
 
     render(wrap(<LensScreen />));
@@ -173,13 +165,7 @@ describe('caméra Lens directe', () => {
       expect(screen.getByTestId(`lens-search-dot-${index}`)).toBeTruthy();
     }
 
-    // Toucher les baskets : la couronne suit, la zone lue change.
-    fireEvent.press(await screen.findByTestId('lens-product-dot-2'));
-    expect(screen.getByTestId('lens-search-ring')).toBeTruthy();
-
     // Résultat rendu : plus aucune attente affichée.
-    // Les deux recherches (cadre initial, puis produit touché) partagent la
-    // même réponse : une fois rendue, la photo n'est plus en attente nulle part.
     resolveSearch(EMPTY_RESULT);
     await act(async () => { await new Promise((resolve) => setTimeout(resolve, 50)); });
     await waitFor(() => expect(screen.queryByTestId('lens-search-ring')).toBeNull());

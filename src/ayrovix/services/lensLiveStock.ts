@@ -308,15 +308,26 @@ export function applyLiveStock(candidate: AyrovixCandidate, entry: LiveStockEntr
     }
     applied = true;
   }
-  if (entry.description && entry.description.length > (candidate.description || '').trim().length) {
-    candidate.description = entry.description;
+  // A visual-search snippet is not merchant copy. Once the page is read, replace
+  // it with the page description or clear it; never keep an older snippet merely
+  // because it happens to be longer.
+  const pageDescription = entry.description || null;
+  if ((candidate.description || null) !== pageDescription) {
+    candidate.description = pageDescription;
     applied = true;
   }
   if (entry.brand && !candidate.brand) {
     candidate.brand = entry.brand;
     applied = true;
   }
-  if (entry.availability && entry.availability !== 'unknown') {
+  if (entry.availability === 'unknown') {
+    // SerpApi's `in_stock` is a stale search-index hint, not live merchant
+    // proof. Once the page itself was read and stayed silent, clear it.
+    if (candidate.availability && candidate.availability !== 'unknown') {
+      candidate.availability = 'unknown';
+      applied = true;
+    }
+  } else if (candidate.availability !== entry.availability) {
     candidate.availability = entry.availability;
     applied = true;
   }
@@ -482,9 +493,14 @@ export type PurchaseBlocker = 'page_non_lue' | 'prix_non_lu' | 'rupture' | 'stoc
  * `AYROVI_LENS_REQUIRE_PROOF=false` désactive (debug).
  */
 export function purchaseBlocker(candidate: AyrovixCandidate): PurchaseBlocker | null {
-  if (candidate.kind !== 'external') return null;
+  // Internal stock is authoritative too: never expose a catalogue item the
+  // inventory marks explicitly out of stock.
+  if (candidate.kind !== 'external') return candidate.availability === 'out_of_stock' ? 'rupture' : null;
   if (!candidate.sourceRead) return 'page_non_lue';
-  if (candidate.priceOrigin !== 'merchant' || !(candidate.price! > 0) || !candidate.currency) return 'prix_non_lu';
+  if (candidate.priceOrigin !== 'merchant'
+    || candidate.priceVerificationStatus !== 'VERIFIED'
+    || !(candidate.price! > 0)
+    || !candidate.currency) return 'prix_non_lu';
   if (candidate.availability === 'out_of_stock') return 'rupture';
   /* A size-level positive cannot prove a colour combination. If the merchant
      exposes a colour axis, at least one positive source row must name its

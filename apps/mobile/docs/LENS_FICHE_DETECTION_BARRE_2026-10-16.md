@@ -5,6 +5,12 @@
 les produits *dans* la photo, (2) la barre de recherche qu'on veut remonter en haut, toujours
 visible, sans que le tiroir mange l'écran.
 
+> **Note de version — 17/10/2026 :** les sections ci-dessous sont un état historique (16/10),
+> avant le choix SerpApi. La détection par boîtes Anthropic a été retirée : `/detect` renvoie
+> maintenant des pages visuelles (titre, image, lien), sans boîte; le cadre reste manuel.
+> `/analyze-image` conserve les matches quand la lecture marchande échoue, en masquant tout
+> prix/stock non vérifié. Voir `LENS_SERPAPI_RECOVERY_2026-10-17.md` pour l'état courant.
+
 ---
 
 ## الخلاصة (AR)

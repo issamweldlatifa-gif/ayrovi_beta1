@@ -149,15 +149,32 @@ export interface LensBox {
   h: number;
 }
 
-/** Produit repéré par `/detect` (cadre de sélection + Live). Aucun prix. */
+/** Boîte de détection héritée (le fournisseur visuel actuel ne renvoie pas de boîtes). */
 export interface LensDetectedProduct {
   name: string;
   category: string;
   box: LensBox;
 }
 
-export interface LensDetection {
-  products: LensDetectedProduct[];
+/**
+ * Une « correspondance visuelle » : une page marchande que la recherche
+ * visuelle (SerpApi) juge ressemblante à la photo. PAS de cadre : SerpApi ne
+ * rend pas de boîtes — c'est la page qui est la preuve, pas la position.
+ */
+export interface LensVisualMatch {
+  /** Titre de la page (l'intitulé reconnu). */
+  name: string;
+  /** Vignette de la page (URL absolue déjà résolue par le serveur). */
+  image: string;
+  /** Lien de la page marchande. */
+  url: string;
+  /** Nom du marchand. */
+  source: string;
+}
+
+export interface LensVisualSearchResult {
+  /** Correspondances visuelles (pages ressemblantes) — sans prix : le prix vient de la page. */
+  matches: LensVisualMatch[];
   /** Taille de l'image analysée (après redressement EXIF côté serveur). */
   width: number | null;
   height: number | null;
@@ -435,24 +452,27 @@ export function parseImageResult(value: unknown): LensImageResult {
 }
 
 /**
- * Réponse de `/detect`. Une boîte hors de 0..1 ou trop petite est écartée
- * (jamais « corrigée » au hasard) : mieux vaut un cadre manuel qu'un cadre faux.
+ * Réponse de `/detect` : les PAGES visuellement ressemblantes, pas des boîtes.
  */
-export function parseDetection(value: unknown): LensDetection {
-  if (!isRecord(value)) throw malformed('détection');
-  const products: LensDetectedProduct[] = [];
-  for (const item of Array.isArray(value.products) ? value.products : []) {
-    if (!isRecord(item) || !Array.isArray(item.box) || item.box.length !== 4) continue;
+export function parseVisualSearch(value: unknown): LensVisualSearchResult {
+  if (!isRecord(value)) throw malformed('correspondances visuelles');
+  const matches: LensVisualMatch[] = [];
+  for (const item of Array.isArray(value.matches) ? value.matches : []) {
+    if (!isRecord(item)) continue;
     const name = str(item.name).trim();
-    const [x, y, w, h] = item.box.map((part) => num(part));
-    if (!name || x === null || y === null || w === null || h === null) continue;
-    if (x < 0 || y < 0 || w < 0.01 || h < 0.01 || x + w > 1.001 || y + h > 1.001) continue;
-    products.push({ name: name.slice(0, 80), category: str(item.category) || 'other', box: { x, y, w: Math.min(w, 1 - x), h: Math.min(h, 1 - y) } });
-    if (products.length >= 8) break;
+    const url = str(item.url).trim();
+    if (!name || !url) continue;
+    matches.push({
+      name: name.slice(0, 120),
+      image: str(item.image).trim(),
+      url,
+      source: str(item.source).trim(),
+    });
+    if (matches.length >= 12) break;
   }
   const width = num(value.width);
   const height = num(value.height);
-  return { products, width: width && width > 0 ? width : null, height: height && height > 0 ? height : null };
+  return { matches, width: width && width > 0 ? width : null, height: height && height > 0 ? height : null };
 }
 
 export function parseSearchResult(value: unknown): LensSearchResult {
@@ -556,21 +576,20 @@ export async function analyzeImage(
 }
 
 /**
- * Produits visibles + boîtes (Z Lens : cadre de sélection et Live). Délai court :
- * une détection en retard ne doit jamais bloquer la recherche — l'écran retombe
- * alors sur un cadre manuel couvrant toute la photo.
+ * Correspondances visuelles SerpApi (mode Live). Pas de boîtes : le cadre
+ * reste manuel. Timeout aligné sur le serveur (24 s SerpApi + marge transport).
  */
-export const LENS_DETECT_TIMEOUT_MS = 15_000;
+export const LENS_VISUAL_SEARCH_TIMEOUT_MS = 27_000;
 
-export async function detectProducts(
+export async function searchVisualMatches(
   file: { uri: string; name: string; type: string },
   options: { signal?: AbortSignal; timeoutMs?: number } = {},
-): Promise<LensDetection> {
+): Promise<LensVisualSearchResult> {
   const data = await apiUploadFileData<unknown>(`${LENS_BASE}/detect`, 'image', file, {
-    timeoutMs: options.timeoutMs ?? LENS_DETECT_TIMEOUT_MS,
+    timeoutMs: options.timeoutMs ?? LENS_VISUAL_SEARCH_TIMEOUT_MS,
     signal: options.signal,
   });
-  return parseDetection(data);
+  return parseVisualSearch(data);
 }
 
 export async function analyzeUrl(

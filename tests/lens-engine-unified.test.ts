@@ -237,6 +237,6 @@ describe('échéance de reconnaissance', () => {
     const engine = readFileSync('src/ayrovix/services/lensEngine.ts', 'utf8');
     expect(engine).toContain('Math.min(30_000, Math.max(2_000, raw))');
     expect(engine).toContain("deadlineMs('VISION', 18_000)");
-    expect(engine).toContain("deadlineMs('MATCHES', 14_000)");
+    expect(engine).toContain("deadlineMs('MATCHES', 26_000)");
   });
 });

@@ -41,11 +41,18 @@ export function isSteady(state: MotionState, now: number, ms = STEADY_MS): boole
   return state.steadySince !== null && now - state.steadySince >= ms;
 }
 
-/** Délai minimal entre deux repérages, et rythme de repli sans capteur. */
-export const LIVE_MIN_INTERVAL_MS = 2_500;
-export const LIVE_FALLBACK_INTERVAL_MS = 4_500;
-/** Plafond par ouverture de Live : protège la dépense même si le téléphone tremble sans arrêt. */
-export const LIVE_SESSION_BUDGET = 40;
+/**
+ * Délai minimal entre deux repérages, et rythme de repli sans capteur.
+ *
+ * Le repérage passe par la recherche visuelle (SerpApi) : la réponse met
+ * quelques secondes, on ne peut donc pas interroger comme une IA rapide.
+ * Le rythme suit le fournisseur, et le budget par session protège le quota
+ * quand le téléphone tremble sans arrêt.
+ */
+export const LIVE_MIN_INTERVAL_MS = 8_000;
+export const LIVE_FALLBACK_INTERVAL_MS = 12_000;
+/** Plafond par ouverture de Live : chaque repérage est une requête SerpApi. */
+export const LIVE_SESSION_BUDGET = 8;
 
 export interface LiveScheduleInput {
   now: number;

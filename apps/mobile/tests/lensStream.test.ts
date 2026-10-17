@@ -197,21 +197,23 @@ describe('Lens — analyse en flux', () => {
     expect(result.excluded?.count).toBe(2);
   });
 
-  it('ne compte pas deux fois la même fiche', async () => {
+  it('remplace la carte SerpApi par sa mise à jour Bright Data sans doubler le lien', async () => {
     vi.stubGlobal('XMLHttpRequest', FakeXhr as unknown as typeof XMLHttpRequest);
-    const cards: string[] = [];
+    const updates: Array<number | null> = [];
     const pending = analyzeImageStream(
       { uri: 'file:///tmp/photo.jpg', name: 'capture.jpg', type: 'image/jpeg' },
-      { onCard: (c) => cards.push(c.sourceUrl) },
+      { onCard: (c) => updates.push(c.priceTnd) },
     );
     const xhr = FakeXhr.instances[0];
-    xhr.push(block('card', card('c1')));
-    xhr.push(block('card', card('c1')));
+    xhr.push(block('card', { ...card('c1'), price: null, currency: null, priceTnd: null, priceToken: null }));
+    xhr.push(block('card', { ...card('c1'), title: 'Fiche marchand lue', price: 99, currency: 'EUR', priceTnd: 385, priceOrigin: 'merchant' }));
     xhr.push(block('done', { eventId: 'e1', query: 'sac' }));
     xhr.finish();
     const result = await pending;
-    expect(cards).toHaveLength(1);
+    expect(updates).toEqual([null, 385]);
     expect(result.candidates).toHaveLength(1);
+    expect(result.candidates[0].title).toBe('Fiche marchand lue');
+    expect(result.candidates[0].priceTnd).toBe(385);
   });
 
   it('un flux coupé sans « done » est une erreur, jamais un résultat vide silencieux', async () => {

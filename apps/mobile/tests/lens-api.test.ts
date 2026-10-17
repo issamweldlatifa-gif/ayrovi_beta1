@@ -140,32 +140,37 @@ describe('Lens — historique', () => {
   });
 });
 
-describe('Z Lens — détection des produits (/detect)', () => {
-  it('lit noms et boîtes 0..1 ; écarte les boîtes hors image, trop petites ou sans nom', async () => {
-    const { parseDetection } = await import('../src/api/lens');
-    const parsed = parseDetection({
-      products: [
-        { name: 'Sweat à capuche jaune', category: 'clothing', box: [0.12, 0.17, 0.74, 0.29] },
-        { name: 'Hors image', category: 'other', box: [0.8, 0.8, 0.5, 0.5] },
-        { name: 'Minuscule', category: 'other', box: [0.5, 0.5, 0.001, 0.2] },
-        { name: '', category: 'other', box: [0.1, 0.1, 0.2, 0.2] },
-        { name: 'Boîte cassée', category: 'other', box: [0.1, 'x', 0.2, 0.2] },
-        { name: 'Baskets blanches', box: [0.33, 0.62, 0.4, 0.21] },
+describe('Z Lens — correspondances visuelles (/detect)', () => {
+  it('lit les correspondances (nom, image, lien, marchand) et écarte les entrées sans nom ou sans lien', async () => {
+    const { parseVisualSearch } = await import('../src/api/lens');
+    const parsed = parseVisualSearch({
+      // SerpApi ne rend pas de boîtes : seules les pages sont renvoyées.
+      matches: [
+        { name: 'Sweat à capuche jaune', image: 'https://cdn.test/a.jpg', url: 'https://shop.test/a', source: 'Shop' },
+        { name: '', image: 'https://cdn.test/b.jpg', url: 'https://shop.test/b', source: 'Shop' },
+        { name: 'Sans lien', image: 'https://cdn.test/c.jpg', url: '', source: 'Shop' },
       ],
       width: 768,
       height: 1050,
     });
-    expect(parsed.products).toEqual([
-      { name: 'Sweat à capuche jaune', category: 'clothing', box: { x: 0.12, y: 0.17, w: 0.74, h: 0.29 } },
-      { name: 'Baskets blanches', category: 'other', box: { x: 0.33, y: 0.62, w: 0.4, h: 0.21 } },
+    expect(parsed.matches).toEqual([
+      { name: 'Sweat à capuche jaune', image: 'https://cdn.test/a.jpg', url: 'https://shop.test/a', source: 'Shop' },
     ]);
     expect(parsed.width).toBe(768);
     expect(parsed.height).toBe(1050);
   });
 
-  it('réponse sans objet → malformed ; liste absente → aucun produit (cadre manuel)', async () => {
-    const { parseDetection } = await import('../src/api/lens');
-    expect(() => parseDetection(null)).toThrow(ApiError);
-    expect(parseDetection({})).toEqual({ products: [], width: null, height: null });
+  it('une correspondance n’est jamais un prix deviné : aucun champ de prix', async () => {
+    const { parseVisualSearch } = await import('../src/api/lens');
+    const parsed = parseVisualSearch({
+      matches: [{ name: 'Article', image: '', url: 'https://shop.test/a', source: 'Shop', price: 12.5 }],
+    });
+    expect(Object.keys(parsed.matches[0]).sort()).toEqual(['image', 'name', 'source', 'url']);
+  });
+
+  it('réponse sans objet → malformed ; réponse vide → aucune correspondance (cadre manuel)', async () => {
+    const { parseVisualSearch } = await import('../src/api/lens');
+    expect(() => parseVisualSearch(null)).toThrow(ApiError);
+    expect(parseVisualSearch({})).toEqual({ matches: [], width: null, height: null });
   });
 });

@@ -113,14 +113,14 @@ describe('Z Lens Live — quand interroger la caméra', () => {
     expect(shouldDetect({ ...base, lastDetectAt: base.now - LIVE_MIN_INTERVAL_MS + 100 })).toBe(false);
     expect(shouldDetect({ ...base, lastDetectAt: base.now - LIVE_MIN_INTERVAL_MS - 1 })).toBe(true);
     expect(shouldDetect({ ...base, failures: 3, lastDetectAt: base.now - 10_000 })).toBe(false);
-    expect(shouldDetect({ ...base, failures: 3, lastDetectAt: base.now - 21_000 })).toBe(true);
+    expect(shouldDetect({ ...base, failures: 3, lastDetectAt: base.now - 31_000 })).toBe(true);
     expect(shouldDetect({ ...base, detections: LIVE_SESSION_BUDGET })).toBe(false);
   });
 
   it('sans capteur : rythme lent et borné', () => {
     expect(shouldDetect({ ...base, sensor: false, steady: false })).toBe(true);
     expect(shouldDetect({ ...base, sensor: false, hasResult: true, lastDetectAt: base.now - 5_000 })).toBe(false);
-    expect(shouldDetect({ ...base, sensor: false, hasResult: true, lastDetectAt: base.now - 9_500 })).toBe(true);
+    expect(shouldDetect({ ...base, sensor: false, hasResult: true, lastDetectAt: base.now - 25_000 })).toBe(true);
   });
 
   it('l’accéléromètre distingue un geste franc d’un téléphone tenu immobile', () => {

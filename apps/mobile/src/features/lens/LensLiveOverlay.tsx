@@ -1,24 +1,25 @@
 /**
  * Z Lens — Live : le cadre aux coins arrondis posé sur l'aperçu caméra.
  *
- * Tant qu'aucun produit n'est repéré, le cadre attend au centre et « respire ».
- * Dès qu'un repérage revient, il glisse sur le produit choisi (le seul, ou le
- * plus grand) avec son nom ; un point blanc marque chaque autre produit.
- * Toucher un point — ou le produit lui-même — le sélectionne.
+ * SerpApi renvoie des pages visuellement ressemblantes, pas des boîtes : le
+ * cadre reste donc un viseur manuel au centre. Les matches s'affichent comme
+ * des cartes ouvrables en bas de l'aperçu. Le rendu de boîtes reste inactif
+ * tant qu'aucun fournisseur ne renvoie des coordonnées fiables.
  *
- * Les boîtes sont normalisées sur l'image capturée ; l'aperçu remplit l'écran
- * en débordant (`cover`), d'où `coverRect` pour les replacer à l'écran.
+ * `coverRect` permet de replacer une éventuelle boîte normalisée sur l'aperçu
+ * qui remplit l'écran en débordant (`cover`), sans jamais en inventer.
  */
 import { useEffect, useMemo, useRef } from 'react';
 import { Animated, Pressable, StyleSheet, View, type GestureResponderEvent } from 'react-native';
 
-import type { LensDetectedProduct } from '@/api/lens';
+import type { LensDetectedProduct, LensVisualMatch } from '@/api/lens';
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { frost, veil } from '@/design/tokens.mobile';
 import { useT } from '@/i18n';
 import { LENS_COLORS } from './lensPalette';
 import { boxToRect, clampRectToArea, coverRect, pointInImage, productIndexAt, type Rect } from './lensSelection';
+import { LensVisualMatches } from './LensVisualMatches';
 
 interface Props {
   detected: boolean;
@@ -32,6 +33,10 @@ interface Props {
   visibleTop: number;
   visibleBottom: number;
   onSelect: (index: number) => void;
+  /** Correspondances visuelles (SerpApi) : des PAGES, pas des boîtes. */
+  matches?: readonly LensVisualMatch[];
+  /** Ouvrir la fiche d'une correspondance (le prix est lu sur sa page). */
+  onOpenMatch?: (match: LensVisualMatch) => void;
 }
 
 const PAD = 8;
@@ -39,6 +44,7 @@ const CHIP_H = 30;
 
 export function LensLiveOverlay({
   detected, products, selected, photo, width, height, visibleTop, visibleBottom, onSelect,
+  matches = [], onOpenMatch,
 }: Props) {
   const theme = useTheme();
   const t = useT();
@@ -135,6 +141,14 @@ export function LensLiveOverlay({
           </View>
         ) : null}
       </Animated.View>
+      {matches.length && onOpenMatch ? (
+        <View
+          style={[styles.matches, { bottom: Math.max(0, height - visibleBottom) }]}
+          pointerEvents="box-none"
+        >
+          <LensVisualMatches matches={matches} onOpen={onOpenMatch} />
+        </View>
+      ) : null}
       {detected && image ? products.map((product, index) => {
         if (index === selected) return null;
         const rect = boxToRect(product.box, image);
@@ -160,6 +174,7 @@ export function LensLiveOverlay({
 const DOT = 30;
 
 const styles = StyleSheet.create({
+  matches: { position: 'absolute', left: 0, right: 0 },
   frame: { position: 'absolute' },
   arc: { position: 'absolute' },
   chip: { position: 'absolute', height: CHIP_H, maxWidth: 260, borderRadius: CHIP_H / 2, paddingHorizontal: 12, alignItems: 'center', gap: 8 },

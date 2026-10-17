@@ -3,10 +3,9 @@
  * Overview » de Google Lens.
  *
  * RÈGLE ABSOLUE : on n'affiche QUE ce que le serveur a publié.
- *   • `description` — soit le titre de la meilleure page trouvée par la
- *     recherche visuelle (SerpApi), soit la description donnée par la vision
- *     (Anthropic) quand SerpApi n'a rien trouvé. Jamais une phrase écrite
- *     par l'application.
+ *   • `description` — le titre nettoyé de la meilleure page trouvée par
+ *     SerpApi. Sans correspondance SerpApi, la recherche s'arrête : aucune
+ *     autre vision ne prend le relais et aucun texte n'est inventé.
  *   • `brand` / `model` / `category` — les mêmes champs, tels quels.
  *
  * Aucun prix, aucune disponibilité, aucun « ça ressemble à » : le prix vient

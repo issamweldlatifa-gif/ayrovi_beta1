@@ -6,13 +6,12 @@
  *    Produits interdits).
  *  • Panneau du bas : Galerie · déclencheur (plus grand) · OCEREX AU-DESSUS ;
  *    la barre Live · QR code · Lien · Mot clé TOUT EN BAS, sous les boutons.
- *  • Live = détection en direct : quand le téléphone se stabilise, une petite
- *    image part au serveur (`/detect`) ; le cadre aux coins arrondis se pose
- *    sur le seul produit, ou sur le plus grand ; toucher un autre produit le
- *    sélectionne.
- *  • Photo prise ou importée (une ou plusieurs) : même règle ; le cadre
- *    s'étire par ses coins, se déplace, ou saute sur un autre produit touché —
- *    et la recherche se relance sur cette zone (`roi`).
+ *  • Live = recherche visuelle SerpApi : à l'arrêt du téléphone, `/detect`
+ *    renvoie des fiches ressemblantes (jamais des boîtes). Le cadre reste
+ *    manuel ; le client peut ouvrir un match dans la liste.
+ *  • Photo prise ou importée (une ou plusieurs) : le cadre commence sur toute
+ *    la photo et reste MANUEL (déplaçable/étirable) ; la recherche se relance
+ *    sur la zone choisie (`roi`).
  *
  * Une action = une seule recherche annulable ; l'image reste visible sous une
  * feuille de résultats ajustable. Les diagnostics restent côté serveur.
@@ -39,8 +38,9 @@ import { useT, type TranslationKey } from '@/i18n';
 import { ApiError, isApiError } from '@/api/errors';
 import { addExternalFavorite } from '@/api/account';
 import {
-  analyzeBarcode, analyzeCode, analyzeText, analyzeUrl, detectProducts, markChosen,
+  analyzeBarcode, analyzeCode, analyzeText, analyzeUrl, searchVisualMatches, markChosen, parseCandidate,
   type LensBox, type LensCandidate, type LensDetectedProduct, type LensHistoryItem, type LensIdentification,
+  type LensVisualMatch,
   type LensSearchResult,
 } from '@/api/lens';
 import { analyzeImageStream, type LensStreamProgress } from '@/api/lensStream';
@@ -50,7 +50,6 @@ import { LensSearchSkeleton } from '@/features/lens/LensSearchSkeleton';
 import { LensProgressLine, lensProgressLabel } from '@/features/lens/LensProgressLine';
 import { LensOverviewCard } from '@/features/lens/LensOverviewCard';
 import { LensSearchBar } from '@/features/lens/LensSearchBar';
-import { LensDetectedChips } from '@/features/lens/LensDetectedChips';
 import { OcerexFlow } from '@/features/lens/ocerex/OcerexFlow';
 import { LensProductView } from '@/features/lens/LensProductView';
 import { LensHelpView } from '@/features/lens/LensHelpView';
@@ -62,7 +61,7 @@ import { LensSelectionView, type SelectionCommit } from '@/features/lens/LensSel
 import { LENS_COLORS } from '@/features/lens/lensPalette';
 import { mergeLensProduct } from '@/features/lens/productEnrichment';
 import { shrinkImage } from '@/features/lens/lensImage';
-import { FULL_BOX, biggestProductIndex, isFullFrame, keepSelection, padBox, selectionKey, toRoi } from '@/features/lens/lensSelection';
+import { FULL_BOX, isFullFrame, padBox, selectionKey, toRoi } from '@/features/lens/lensSelection';
 import { initialMotion, isSteady, nextMotion, shouldDetect, type MotionState } from '@/features/lens/lensLive';
 import {
   clampLensSheet, lensSheetGeometry, lensSheetOwnsPan, snapLensSheet, toggleLensSheet, type LensSheetGeometry,
@@ -96,6 +95,8 @@ type InfoPanel = 'help' | 'history' | 'rules';
 interface LiveView {
   status: 'scanning' | 'detected' | 'empty' | 'unavailable';
   products: LensDetectedProduct[];
+  /** Correspondances visuelles (SerpApi) : des PAGES ressemblantes, pas des boîtes. */
+  matches: LensVisualMatch[];
   selected: number;
   /** Taille de l'image analysée (les boîtes lui sont relatives). */
   photo: { width: number; height: number } | null;
@@ -129,7 +130,6 @@ const MODES: ReadonlyArray<[Mode, TranslationKey, keyof typeof Ionicons.glyphMap
 ];
 /** Bords maximaux des copies envoyées : recherche, repérage d'une photo, image Live. */
 const SEARCH_EDGE = 1600;
-const DETECT_EDGE = 768;
 const LIVE_EDGE = 640;
 /** Galerie : plusieurs photos d'un coup, bornées (chaque photo coûte une recherche). */
 const GALLERY_LIMIT = 5;
@@ -297,7 +297,7 @@ function errorCopyKey(error: unknown): { title: TranslationKey; body: Translatio
   return { title: 'lens.error.serviceTitle', body: 'lens.error.serviceBody' };
 }
 
-const IDLE_LIVE: LiveView = { status: 'scanning', products: [], selected: -1, photo: null };
+const IDLE_LIVE: LiveView = { status: 'scanning', products: [], matches: [], selected: -1, photo: null };
 
 export default function LensScreen() {
   const theme = useTheme();
@@ -329,7 +329,6 @@ export default function LensScreen() {
   const photoLock = useRef(false);
   const favoriteLocks = useRef(new Set<string>());
   const requestRef = useRef<AbortController | null>(null);
-  const detectRef = useRef<AbortController | null>(null);
   const enrichmentRef = useRef<AbortController | null>(null);
   const lastJobRef = useRef<SearchJob | null>(null);
   const ownedPreviewRef = useRef<string | null>(null);
@@ -358,8 +357,6 @@ export default function LensScreen() {
     sessionRef.current = null;
     resultsCache.current.clear();
     if (searchTimer.current) clearTimeout(searchTimer.current);
-    detectRef.current?.abort();
-    detectRef.current = null;
     current?.photos.forEach((photo) => photo.cleanup.forEach(removePrivateCapture));
     setSession(null);
     setTip(null);
@@ -372,7 +369,6 @@ export default function LensScreen() {
       mountedRef.current = false;
       subscription.remove();
       requestRef.current?.abort();
-      detectRef.current?.abort();
       enrichmentRef.current?.abort();
       if (searchTimer.current) clearTimeout(searchTimer.current);
       if (tipTimer.current) clearTimeout(tipTimer.current);
@@ -490,8 +486,11 @@ export default function LensScreen() {
             if (signal.aborted) return;
             setStage((current) => {
               if (current.kind !== 'busy') return current;
-              if (current.cards.some((item) => item.sourceUrl === candidate.sourceUrl)) return current;
-              return { ...current, cards: [...current.cards, candidate] };
+              const index = current.cards.findIndex((item) => item.sourceUrl === candidate.sourceUrl);
+              const cards = [...current.cards];
+              if (index < 0) cards.push(candidate);
+              else cards[index] = candidate;
+              return { ...current, cards };
             });
           },
         },
@@ -501,46 +500,31 @@ export default function LensScreen() {
     void run(job);
   }, [run, showSearch]);
 
-  /** Repère les produits de la photo (si besoin), pose le cadre, puis lance la recherche. */
+  /** Garde le cadre manuel de la photo, puis lance la recherche SerpApi. */
+  /*
+   * PAS DE DÉTECTION SÉPARÉE (17/10/2026) : SerpApi EST l'entrée de la
+   * recherche visuelle, et la recherche le fait UNE seule fois. Un appel de
+   * détection en plus, c'est une requête SerpApi de plus pour la même photo.
+   * SerpApi ne rend pas de boîtes de toute façon : le cadre reste MANUEL
+   * (toute la photo), et ce sont les résultats qui disent ce qu'on a trouvé.
+   */
   const preparePhoto = useCallback(async (photoKey: string) => {
     const photo = sessionRef.current?.photos.find((item) => item.key === photoKey);
     if (!photo) return;
     if (photo.detection !== 'pending') {
-      if (photo.products.length > 1) showTip('lens.select.tipMany', photo.products.length);
-      else if (photo.products.length === 1) showTip('lens.select.tipOne');
       searchSelection(photo);
       return;
     }
-    detectRef.current?.abort();
-    const controller = new AbortController();
-    detectRef.current = controller;
     requestRef.current?.abort();
     setStage({ kind: 'busy', progress: null, identification: null, cards: [] });
-    showTip('lens.select.detecting', undefined, 0);
-    const small = await shrinkImage(photo.uri, DETECT_EDGE, 0.7, { width: photo.width, height: photo.height });
-    let products: LensDetectedProduct[] = [];
-    let failed = false;
-    try {
-      products = (await detectProducts({ uri: small.uri, name: 'lens-detect.jpg', type: 'image/jpeg' }, { signal: controller.signal })).products;
-    } catch {
-      failed = true;
-    } finally {
-      if (small.created) removePrivateCapture(small.uri);
-      if (detectRef.current === controller) detectRef.current = null;
-    }
-    if (controller.signal.aborted || !mountedRef.current) return;
-    // Règle du client : un seul produit → lui ; plusieurs → le plus grand ; aucun → toute la photo.
-    const selected = biggestProductIndex(products);
     const updated = patchPhoto(photoKey, {
-      detection: failed ? 'failed' : 'done',
-      products,
-      selected,
-      selection: selected >= 0 ? padBox(products[selected].box) : FULL_BOX,
+      detection: 'done',
+      products: [],
+      selected: -1,
+      selection: FULL_BOX,
     });
     if (!updated) return;
-    if (products.length > 1) showTip('lens.select.tipMany', products.length);
-    else if (products.length === 1) showTip('lens.select.tipOne');
-    else showTip('lens.select.tipNone');
+    showTip('lens.select.frame');
     if (sessionRef.current?.photos[sessionRef.current.index]?.key === photoKey) searchSelection(updated);
   }, [patchPhoto, searchSelection, showTip]);
 
@@ -587,8 +571,8 @@ export default function LensScreen() {
     setLive(next);
   }, []);
 
-  // Capteur de mouvement : le téléphone bouge → les cadres périmés s'effacent ;
-  // il se stabilise → un nouveau repérage peut partir.
+  // Capteur de mouvement : le téléphone bouge → les correspondances périmées s'effacent ;
+  // il se stabilise → une nouvelle recherche visuelle peut partir.
   useEffect(() => {
     if (!liveActive) return undefined;
     let cancelled = false;
@@ -619,7 +603,7 @@ export default function LensScreen() {
     };
   }, [liveActive, writeLive]);
 
-  // Boucle de repérage (chaîne de minuteries, jamais d'intervalle fixe).
+  // Boucle Live SerpApi (chaîne de minuteries, jamais d'intervalle fixe).
   useEffect(() => {
     if (!liveActive) return undefined;
     let stopped = false;
@@ -650,17 +634,21 @@ export default function LensScreen() {
       }
       const small = await shrinkImage(snapshot.uri, LIVE_EDGE, 0.6, { width: snapshot.width, height: snapshot.height });
       try {
-        const result = await detectProducts({ uri: small.uri, name: 'lens-live.jpg', type: 'image/jpeg' }, { signal: controller.signal, timeoutMs: 10_000 });
+        // SerpApi est l'unique entrée Lens : attendre le vrai délai de recherche
+        // visuelle au lieu d'afficher un fallback d'identification différent.
+        const result = await searchVisualMatches({ uri: small.uri, name: 'lens-live.jpg', type: 'image/jpeg' }, { signal: controller.signal });
         if (stopped || controller.signal.aborted) return;
         state.failures = 0;
         // Le téléphone a bougé pendant la requête : ces cadres ne correspondent plus à l'aperçu.
         if (motionRef.current.movedAt > startedAt) return;
         state.doneAt = Date.now();
-        const previous = state.view.status === 'detected' ? state.view.products[state.view.selected] ?? null : null;
         writeLive({
-          status: result.products.length ? 'detected' : 'empty',
-          products: result.products,
-          selected: keepSelection(previous, result.products),
+          // Les résultats sont des pages visuelles ; le viseur ne prétend pas
+          // identifier une position sans boîte fournie par le fournisseur.
+          status: result.matches.length ? 'detected' : 'empty',
+          products: [],
+          matches: result.matches,
+          selected: -1,
           photo: { width: small.width || snapshot.width, height: small.height || snapshot.height },
         });
       } catch (error) {
@@ -705,11 +693,10 @@ export default function LensScreen() {
     setLive(IDLE_LIVE);
   }, []);
 
-  const onLiveSelect = useCallback((index: number) => {
-    const view = liveRef.current.view;
-    if (view.status !== 'detected' || !view.products[index]) return;
-    writeLive({ ...view, selected: index });
-  }, [writeLive]);
+  const onLiveSelect = useCallback((_index: number) => {
+    // Pas de boîtes SerpApi : les pages visuelles s'ouvrent depuis leur carte,
+    // et le cadre de sélection photo reste manuel.
+  }, []);
 
   /* ── Déclencheur, galerie, codes, lien, mot clé ────────────────────────── */
 
@@ -890,23 +877,18 @@ export default function LensScreen() {
     setMode(value);
   }, [mode, resetLive]);
 
-  const onOpen = useCallback((candidate: LensCandidate) => {
-    // Pendant la recherche, une fiche déjà lue est COMPLÈTE (prix lu sur la
-    // page marchande) : elle s'ouvre. Le retour ramène la grille partielle.
-    const source: ResultsStage | null = stage.kind === 'results'
-      ? stage
-      : stage.kind === 'busy'
-        ? { kind: 'results', candidates: stage.cards, eventId: '', excluded: 0 }
-        : null;
-    if (!source || !isOpenableSourceUrl(candidate.sourceUrl)) return;
+  /**
+   * Ouvrir une fiche : la carte s'affiche tout de suite, puis la PAGE
+   * marchande est lue (prix, stock, tailles). Un retour ou un autre produit
+   * annule la lecture.
+   */
+  const openProduct = useCallback((candidate: LensCandidate, source: ResultsStage) => {
     void markChosen(source.eventId);
     enrichmentRef.current?.abort();
     const controller = new AbortController();
     enrichmentRef.current = controller;
     setStage({ kind: 'product', candidate, back: source, enriching: true });
 
-    // Affichage immédiat de la carte, puis surcouche progressive depuis la
-    // page marchande + SerpApi. Un retour ou un autre produit annule la lecture.
     void analyzeUrl(candidate.sourceUrl, 'url', false, controller.signal)
       .then((result) => {
         if (controller.signal.aborted || !mountedRef.current) return;
@@ -927,7 +909,45 @@ export default function LensScreen() {
       .finally(() => {
         if (enrichmentRef.current === controller) enrichmentRef.current = null;
       });
-  }, [stage]);
+  }, []);
+
+  const onOpen = useCallback((candidate: LensCandidate) => {
+    // Pendant la recherche, une fiche déjà lue est COMPLÈTE (prix lu sur la
+    // page marchande) : elle s'ouvre. Le retour ramène la grille partielle.
+    const source: ResultsStage | null = stage.kind === 'results'
+      ? stage
+      : stage.kind === 'busy'
+        ? { kind: 'results', candidates: stage.cards, eventId: '', excluded: 0 }
+        : null;
+    if (!source || !isOpenableSourceUrl(candidate.sourceUrl)) return;
+    openProduct(candidate, source);
+  }, [openProduct, stage]);
+
+  /**
+   * Live : ouvrir la page d'une CORRESPONDANCE visuelle. SerpApi a trouvé des
+   * pages qui ressemblent à la photo ; on lit la page pour le prix — jamais
+   * de prix deviné à partir de la photo.
+   */
+  const onOpenLiveMatch = useCallback((match: LensVisualMatch) => {
+    if (!isOpenableSourceUrl(match.url)) return;
+    let candidate: LensCandidate;
+    try {
+      candidate = parseCandidate({
+        id: `live-${match.url}`,
+        kind: 'external',
+        title: match.name,
+        sourceUrl: match.url,
+        source: match.source,
+        image: match.image,
+        price: null,
+        currency: null,
+        availability: 'unknown',
+      });
+    } catch {
+      return;
+    }
+    openProduct(candidate, { kind: 'results', candidates: [candidate], eventId: '', excluded: 0 });
+  }, [openProduct]);
 
   const onFavorite = useCallback(async (candidate: LensCandidate) => {
     const key = candidate.sourceUrl;
@@ -999,26 +1019,6 @@ export default function LensScreen() {
     if (stage.kind === 'error') return t('lens.resultsTitle');
     return t('lens.bar.placeholder');
   }, [stage, resultTitle, t]);
-
-  /**
-   * L'état de la détection, DIT à l'utilisateur (jamais de silence) :
-   *   • `detected`   — au moins un objet repéré ;
-   *   • `noObject`   — la vision a répondu « rien » : on le dit ;
-   *   • `unavailable`— le fournisseur a été lent ou HS : on le dit aussi,
-   *                    c'est le SEUL cas qui justifie de chercher « dans
-   *                    toute la photo ».
-   */
-  const detectionState = useMemo<'detected' | 'noObject' | 'unavailable' | 'pending' | 'none'>(() => {
-    if (!sessionPhoto) return 'none';
-    if (sessionPhoto.detection === 'pending') return 'pending';
-    if (sessionPhoto.detection === 'failed') return 'unavailable';
-    return sessionPhoto.products.length > 0 ? 'detected' : 'noObject';
-  }, [sessionPhoto]);
-
-  /** Choisir une cible repérée : la recherche repart sur cette zone. */
-  const onSelectTarget = useCallback((index: number) => {
-    onSelectionCommit({ kind: 'product', index });
-  }, [onSelectionCommit]);
 
   const infoModal = (
     <Modal visible={panel !== null} transparent animationType="slide" onRequestClose={() => setPanel(null)}>
@@ -1146,29 +1146,6 @@ export default function LensScreen() {
         </View>
 
         <SearchSheet geometry={sheet}>
-          {/* Les objets REPÉRÉS dans la photo restent accessibles même quand la
-              feuille monte : une puce = une cible, la photo revient visible. */}
-          {sessionPhoto && sessionPhoto.products.length > 0 ? (
-            <LensDetectedChips
-              products={sessionPhoto.products}
-              selectedIndex={sessionPhoto.selected}
-              resultCount={stage.kind === 'results' ? stage.candidates.length : undefined}
-              onSelect={onSelectTarget}
-            />
-          ) : null}
-          {/* La détection ne doit JAMAIS échouer en silence : l'utilisateur
-              sait s'il a eu un repérage, rien, ou une panne du fournisseur. */}
-          {detectionState === 'unavailable' || detectionState === 'noObject' ? (
-            <View
-              style={[styles.detectNotice, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}
-              testID="lens-detect-notice"
-            >
-              <Ionicons name="information-circle-outline" size={16} color={theme.colors.muted} accessibilityElementsHidden />
-              <AppText variant="caption" color={theme.colors.muted} style={styles.detectNoticeText}>
-                {t(detectionState === 'unavailable' ? 'lens.detect.unavailable' : 'lens.detect.noObject')}
-              </AppText>
-            </View>
-          ) : null}
           {stage.kind === 'busy' ? (
             <>
               {/* L'identification arrive dès la première étape : la réponse en
@@ -1227,10 +1204,10 @@ export default function LensScreen() {
   const cameraAllowed = permission?.granted === true;
   const showCamera = cameraMode && cameraAllowed && focused;
   const headerBottom = insets.top + 58;
-  const liveCount = live.products.length;
+  const liveCount = live.matches.length;
   const livePill: string = live.status === 'detected'
-    ? (liveCount === 1 ? t('lens.live.detectedOne') : t('lens.live.detectedMany', { count: liveCount }))
-    : live.status === 'empty' ? t('lens.live.empty')
+    ? (liveCount === 1 ? t('lens.live.matchOne') : t('lens.live.matchMany', { count: liveCount }))
+    : live.status === 'empty' ? t('lens.live.noMatch')
       : live.status === 'unavailable' ? t('lens.cameraHint') : t('lens.live.scanning');
   return (
     <View style={[styles.scene, { backgroundColor: LENS_COLORS.black }]} testID="lens-camera-experience">
@@ -1266,6 +1243,8 @@ export default function LensScreen() {
             // Le cadre s'arrête au-dessus de la pastille d'état (posée sur le panneau).
             visibleBottom={height - panelHeight - 52}
             onSelect={onLiveSelect}
+            matches={live.matches}
+            onOpenMatch={onOpenLiveMatch}
           />
         ) : null}
 

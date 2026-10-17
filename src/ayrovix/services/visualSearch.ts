@@ -57,13 +57,14 @@ export function serpApiVisualReady(): boolean {
 function timeoutMs(): number {
   /*
    * SerpApi EST l'entrée de la recherche (17/10/2026) : son budget n'est pas
-   * un détail, c'est la recherche elle-même. Le moteur Google Lens met
-   * couramment 8 à 15 s (téléversement + indexation + recherche) : sous 18 s,
-   * le fournisseur « expire » avant d'avoir répondu (SERPAPI_TIMEOUT en boucle).
-   * L'échéance reste plafonnée : au-delà de 25 s, on perd le délai global.
+   * un détail, c'est la recherche elle-même. Les journaux Render montrent
+   * SERPAPI_TIMEOUT après ~14 s ; l'ancienne recherche.json avait un plafond
+   * caché de 12 s, même quand le budget global était plus long.
+   * Le plafond monte à 18 s pour la recherche (24 s total upload + indexation),
+   * sans dépasser la deadline globale de /analyze-image.
    */
   const configured = Number(process.env.AYROVIX_VISUAL_SEARCH_TIMEOUT_MS);
-  return Number.isFinite(configured) ? Math.min(25_000, Math.max(18_000, configured)) : 20_000;
+  return Number.isFinite(configured) ? Math.min(25_000, Math.max(18_000, configured)) : 24_000;
 }
 
 function remainingMs(deadline: number, cap: number): number {
@@ -243,7 +244,9 @@ async function runSerpApiVisualSearch(image: Buffer, limit: number): Promise<Ayr
       const searchUrl = `https://serpapi.com/search.json?${params.toString()}`;
       for (let attempt = 0; attempt < 2; attempt += 1) {
         const response = await fetch(searchUrl, {
-          signal: AbortSignal.timeout(remainingMs(deadline, 12_000)),
+          // Lens can take longer to propagate image_id; allow up to 18 s for
+          // the actual search, bounded by the full upload+search deadline.
+          signal: AbortSignal.timeout(remainingMs(deadline, 18_000)),
         });
         if (!response.ok) {
           const transientHttp = response.status === 408 || response.status === 425 || response.status >= 500;

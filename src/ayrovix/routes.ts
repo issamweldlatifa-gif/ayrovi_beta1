@@ -3,11 +3,11 @@ import type { NextFunction, Request, Response } from 'express';
 import multer from 'multer';
 import type { QatafoDatabase } from '../db/database';
 import type { SmartLinkScraper } from '../scraper/scraper';
-import { buildSearchQuery, AyrovixUnavailableError, ayrovixAiReady, detectProducts, fallbackIdentification } from './services/ai';
+import { buildSearchQuery, AyrovixUnavailableError, fallbackIdentification } from './services/ai';
 import { catalogSearch, externalProductSearch, groupOffers, scoreCandidate, searchCandidates } from './services/search';
-import { SerpApiVisualError, serpApiVisualReady } from './services/visualSearch';
+import { SerpApiVisualError, serpApiVisualReady, serpApiVisualSearch } from './services/visualSearch';
 import { recognizeImage } from './services/lensEngine';
-import { enrichCandidatesLiveStock, filterPurchasable, refreshLiveStock } from './services/lensLiveStock';
+import { enrichCandidatesLiveStock, filterPurchasable, purchaseBlocker, refreshLiveStock } from './services/lensLiveStock';
 import { deduplicateCandidates } from './services/candidateDedup';
 import { estimateWithDb } from './services/currency';
 import { extractProductFromUrl, ExtractionFailedError, InvalidUrlError, sanitizeProductUrl } from './services/product';
@@ -18,7 +18,7 @@ import type { AyrovixCandidate, AyrovixChannel, AyrovixIdentification, AyrovixPr
 import { InvalidImageError, normalizeUploadedImage } from '../services/imageValidation';
 import { createAyrovixPriceToken, type AyrovixQuoteStatus } from './priceQuote';
 import { listAyrovixHistory, recordAyrovixHistory, type AyrovixHistoryInput } from './history';
-import { filterWithFallback, withDisplayRating } from './services/candidatePolicy';
+import { filterLenientCandidates, filterWithFallback, isConfirmedOutOfStockCandidate, withDisplayRating } from './services/candidatePolicy';
 import { startTrace, mark, endTrace } from './services/lensPerformanceTrace';
 import { armLensDeadline, lensAnalyzeDeadlineMs } from './services/lensDeadline';
 import { warmIsolation } from '../services/imageIsolation';
@@ -126,6 +126,61 @@ function tokenizedCandidates(items: AyrovixCandidate[]): AyrovixCandidate[] {
   return filtered.map(tokenizedCandidate);
 }
 
+const PRICE_LIKE_TEXT = /(?:(?:€|[$£]|\b(?:TND|EUR|USD|GBP|CAD|AED|DT)\b|د\.?\s?ت)\s*(?:\d{1,3}(?:[ .,'’\u00a0\u202f]\d{3})+(?:[.,]\d{1,2})?|\d{1,6}(?:[.,]\d{1,2})?)|(?:\d{1,3}(?:[ .,'’\u00a0\u202f]\d{3})+(?:[.,]\d{1,2})?|\d{1,6}(?:[.,]\d{1,2})?)\s*(?:€|[$£]|\b(?:TND|EUR|USD|GBP|CAD|AED|DT)\b|د\.?\s?ت))/giu;
+
+/** Supprime les montants de recherche : un titre/snippet n'est pas une preuve de prix. */
+function stripPriceLikeText(value: unknown): string {
+  return String(value || '')
+    .replace(PRICE_LIKE_TEXT, ' ')
+    .replace(/\s+/g, ' ')
+    .replace(/(?:\s*[|•,;:—–-]\s*){2,}/gu, ' ')
+    .replace(/^[\s|•,;:—–-]+|[\s|•,;:—–-]+$/gu, '')
+    .trim();
+}
+/**
+ * SerpApi discovery card: keep the title, image and merchant URL visible while
+ * Bright Data reads the page. A SerpApi snippet is NOT a current merchant price
+ * or stock proof, so hide it until the merchant page supplies it.
+ */
+function safeVisualDiscoveryCandidate(candidate: AyrovixCandidate): AyrovixCandidate {
+  if (candidate.kind === 'catalog') return candidate;
+  const cleanTitle = stripPriceLikeText(candidate.title);
+  const hasPagePrice = Boolean(candidate.sourceRead)
+    && candidate.priceOrigin === 'merchant'
+    && candidate.priceVerificationStatus === 'VERIFIED'
+    && Number.isFinite(candidate.price)
+    && Number(candidate.price) > 0
+    && Boolean(candidate.currency);
+  const safeCopy: AyrovixCandidate = {
+    ...candidate,
+    title: cleanTitle.length >= 4 ? cleanTitle : 'Produit repéré',
+    // applyLiveStock replaces an index snippet with the merchant description (or null).
+    // Remove embedded amounts even from page copy so the structured verified price is
+    // the only price claim shown by Lens.
+    description: candidate.sourceRead ? (stripPriceLikeText(candidate.description) || null) : null,
+  };
+  if (hasPagePrice) return safeCopy;
+  return {
+    ...safeCopy,
+    // The card needs only title/image/link when the page price is not verified.
+    description: null,
+    details: [],
+    sourceCondition: null,
+    offers: undefined,
+    price: null,
+    currency: null,
+    priceTnd: null,
+    originalPrice: null,
+    originalPriceTnd: null,
+    promo: null,
+    priceOrigin: null,
+    priceVerificationStatus: 'PENDING_MANUAL',
+    priceToken: null,
+    // `in_stock` / `out_of_stock` in a visual-search snippet is not live proof.
+    ...(candidate.sourceRead ? {} : { availability: 'unknown' as const }),
+  };
+}
+
 function tokenizedProduct(product: AyrovixProduct): AyrovixProduct {
   const status: AyrovixQuoteStatus = product.priceVerified ? 'VERIFIED' : 'PENDING_MANUAL';
   return {
@@ -200,7 +255,6 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
     // expose requestId for client correlation (no PII)
     res.setHeader('X-Ayrovix-Request-Id', requestId);
     const stream = String(req.headers.accept || '').includes('text/event-stream');
-    const streamedUrls = new Set<string>();
     const emit = (event: string, data: unknown) => {
       if (!stream || res.writableEnded) return;
       res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
@@ -325,8 +379,9 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
 
       let identification: AyrovixIdentification;
       if (visualCandidates.length) {
-        // L'intitulé de la grille est celui de la meilleure page trouvée — pas une devinette.
-        identification = fallbackIdentification(visualCandidates[0].title);
+        // L'intitulé vient de la meilleure page, mais un prix du titre SerpApi
+        // n'est ni actuel ni vérifié : seul le texte produit est conservé.
+        identification = fallbackIdentification(stripPriceLikeText(visualCandidates[0].title) || 'Produit visuellement similaire');
       } else {
         /*
          * SERPAPI SEUL. Pas de vision IA en secours : SerpApi EST l'entrée de
@@ -396,10 +451,25 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       mark(trace, 'dedupMs', Date.now() - tDedup);
 
       /*
-       * VÉRITÉ MARCHANDE — la page produit derrière CHAQUE lien SerpApi (budget
-       * 8 = toute la grille) : prix du jour, prix barré, stock, tailles,
-       * couleurs, photos, description. Le prix lu repasse par le calculateur
-       * ZAYROVI ; l'extrait SerpApi n'est qu'un repli en attendant la page.
+       * SerpApi matches are useful BEFORE merchant scraping completes: publish
+       * title + thumbnail + link as soon as they arrive. Never pass its price
+       * snippet/stock hint through as live merchant proof; the card is clearly
+       * marked « price not published » until the page is read.
+       */
+      const discoveryCandidates = filterLenientCandidates(candidates, 24)
+        .filter((candidate) => !isConfirmedOutOfStockCandidate(candidate))
+        .map(safeVisualDiscoveryCandidate);
+      if (stream && !cancelled) {
+        for (const candidate of discoveryCandidates) {
+          emit('card', tokenizedCandidate(candidate));
+        }
+      }
+
+      /*
+       * VÉRITÉ MARCHANDE — Bright Data lit les liens SerpApi en parallèle :
+       * prix du jour, disponibilité, tailles, photos, description. La fiche
+       * visuelle reste affichée si Bright Data ne peut pas lire la page, mais
+       * son prix reste masqué.
        */
       const tLiveStock = Date.now();
       let readyCount = 0;
@@ -416,9 +486,9 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
           // des pages suivantes ne sert plus personne.
           if (cancelled) return;
           emit('progress', { step: 'reading', done: readyCount, total: candidates.length });
-          if (streamedUrls.has(candidate.sourceUrl)) return;
-          streamedUrls.add(candidate.sourceUrl);
-          emit('card', tokenizedCandidate(candidate));
+          // Peut remplacer la carte de découverte déjà émise par SerpApi :
+          // le client met à jour le même lien avec les faits de la page.
+          emit('card', tokenizedCandidate(safeVisualDiscoveryCandidate(candidate)));
         },
       });
       mark(trace, 'liveStockMs', Date.now() - tLiveStock);
@@ -429,21 +499,42 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       // de cache pollutionné, pas de travail inutile).
       if (cancelled) { endTrace(trace); return; }
       /*
-       * FILTRE D'ACHETABILITÉ — on cache la rupture CONFIRMÉE. Page illisible
-       * ou stock muet reste visible (sinon 8/8 écartés dès que Render est bloqué).
-       * Preuve stricte : AYROVI_LENS_REQUIRE_PROOF=true.
+       * ACHETABILITÉ ≠ DÉCOUVERTE VISUELLE.
+       * Les fiches avec prix + stock prouvés restent les premières cartes.
+       * Les autres matches SerpApi restent visibles (titre, image, lien), mais
+       * sans prix SerpApi/non vérifié et sans action d'achat. Une rupture
+       * confirmée reste cachée.
        */
       const purchasable = filterPurchasable(liveCandidates);
       mark(trace, 'purchasableKept', purchasable.report.kept);
-      mark(trace, 'purchasableExcluded', purchasable.report.excluded);
-      if (purchasable.report.excluded) {
-        console.info(`[AYROVIX analyze-image] ${purchasable.report.excluded} fiche(s) écartée(s) : ${JSON.stringify(purchasable.report.reasons)}`);
+      mark(trace, 'purchasableBlocked', purchasable.report.excluded);
+      const purchasableUrls = new Set(purchasable.candidates.map((candidate) => candidate.sourceUrl));
+      const visualFallback = filterLenientCandidates(liveCandidates, 24)
+        .filter((candidate) => !isConfirmedOutOfStockCandidate(candidate))
+        .filter((candidate) => !purchasableUrls.has(candidate.sourceUrl));
+      const excludedReasons: Record<string, number> = { ...purchasable.report.reasons };
+      for (const candidate of visualFallback) {
+        const blocker = purchaseBlocker(candidate);
+        if (!blocker) continue;
+        const remaining = Math.max(0, (excludedReasons[blocker] || 0) - 1);
+        if (remaining) excludedReasons[blocker] = remaining;
+        else delete excludedReasons[blocker];
+      }
+      const excludedCount = Object.values(excludedReasons).reduce((sum, count) => sum + count, 0);
+      mark(trace, 'visualFallbackKept', visualFallback.length);
+      mark(trace, 'excludedCount', excludedCount);
+      mark(trace, 'excludedReasons', excludedReasons);
+      if (visualFallback.length || excludedCount) {
+        console.info(`[AYROVIX analyze-image] ${visualFallback.length} match(s) SerpApi conservé(s) sans prix non vérifié ; ${excludedCount} fiche(s) masquée(s) : ${JSON.stringify(excludedReasons)}`);
       }
       const title = [identification.brand, identification.model].filter(Boolean).join(' ')
         || identification.description
         || 'Produit détecté par AYROVIX';
       const query = effectiveQuery;
-      const securedCandidates = tokenizedCandidates(purchasable.candidates);
+      const securedCandidates = [
+        ...purchasable.candidates.map(safeVisualDiscoveryCandidate),
+        ...visualFallback.map(safeVisualDiscoveryCandidate),
+      ].slice(0, 24).map(tokenizedCandidate);
       // Chauffe le cache d'isolation/redimensionnement pendant que le client lit la grille.
       const candidateMedia = [...securedCandidates.map((item) => item.image), ...securedCandidates.flatMap((item) => item.images || [])];
       warmIsolation(candidateMedia, 8);
@@ -479,7 +570,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
         // Plus aucun prix ne vient de l'image (02/10/2026) : le champ reste pour le contrat client.
         detectedPrice: null,
         liveStock: { fetched: liveStock.fetched, cacheHits: liveStock.cacheHits, applied: liveStock.applied, budget: liveStock.budget },
-        excluded: { count: purchasable.report.excluded, reasons: purchasable.report.reasons },
+        excluded: { count: excludedCount, reasons: excludedReasons },
       };
       if (!isTest) {
         if (pipelineCache.size > 300) pipelineCache.delete(pipelineCache.keys().next().value as string);
@@ -489,9 +580,9 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       mark(trace, 'totalBackendMs', Date.now() - tStart);
       endTrace(trace);
       if (stream) {
+        // Final cards replace the initial SerpApi-only cards by sourceUrl,
+        // attaching Bright Data facts/prices where a page was successfully read.
         for (const candidate of securedCandidates) {
-          if (streamedUrls.has(candidate.sourceUrl)) continue;
-          streamedUrls.add(candidate.sourceUrl);
           emit('card', candidate);
         }
         emit('done', { eventId, query, identification, excluded: responseData.excluded, liveStock: responseData.liveStock });
@@ -530,10 +621,13 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
   });
 
   /*
-   * Z Lens mobile — DÉTECTION SEULE : noms + boîtes des produits visibles, pour
-   * poser le cadre de sélection (le seul produit, ou le plus grand) et pour le
-   * mode Live. Aucun appel SerpApi, aucune page marchande, aucun historique,
-   * aucun prix : la recherche reste `/analyze-image` (avec `roi` = le cadre).
+   * Z Lens mobile — DÉTECTION : ce que la photo fait ressembler, en
+   * « correspondances visuelles ». SerpApi EST l'entrée (17/10/2026) : il rend
+   * les PAGES qui ressemblent à la photo, pas des boîtes. Donc pas de cadre
+   * automatique — le cadre reste manuel — et la liste des correspondances est
+   * ce que l'utilisateur voit (mode Live).
+   *
+   * Aucun prix ici : le prix vient de la page marchande, quand on l'ouvre.
    */
   router.post('/detect', upload.single('image'), async (req: Request, res: Response) => {
     const file = req.file;
@@ -543,43 +637,51 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
     if (!ALLOWED_MIME.has(file.mimetype)) {
       return res.status(415).json({ success: false, code: 'UNSUPPORTED_IMAGE', error: 'Format non supporté — JPEG, PNG ou WebP uniquement.' });
     }
-    if (!ayrovixAiReady()) {
-      return res.status(503).json({ success: false, code: 'AYROVIX_UNAVAILABLE', error: "La détection de produits n'est pas encore activée." });
+    if (!serpApiVisualReady()) {
+      return res.status(503).json({ success: false, code: 'AYROVIX_UNAVAILABLE', error: "La recherche visuelle n'est pas encore activée." });
     }
     try {
       const normalized = await normalizeUploadedImage(file.buffer, file.mimetype);
-      // 768 px suffisent pour situer des produits : moins de jetons, réponse plus rapide.
+      // 768 px : SerpApi n'a pas besoin de plus, et la requête reste légère.
       const small = await sharp(normalized.buffer)
         .resize({ width: 768, height: 768, fit: 'inside', withoutEnlargement: true })
         .jpeg({ quality: 82, mozjpeg: true })
         .toBuffer({ resolveWithObject: true });
-      const products = await detectProducts(small.data, 'image/jpeg', { width: small.info.width, height: small.info.height });
+      const matches = await serpApiVisualSearch(small.data, 12);
       res.setHeader('Cache-Control', 'no-store');
-      return res.json({ success: true, data: { products, width: normalized.width, height: normalized.height } });
+      return res.json({
+        success: true,
+        data: {
+          // SerpApi ne rend pas d'itinéraires (boîtes) : pas de cadre automatique.
+          products: [],
+          matches: matches.map((match) => ({
+            name: stripPriceLikeText(match.title) || 'Produit repéré',
+            image: match.image,
+            url: match.sourceUrl,
+            source: match.source,
+          })),
+          width: normalized.width,
+          height: normalized.height,
+        },
+      });
     } catch (error: any) {
       if (error instanceof InvalidImageError || error?.code === 'INVALID_IMAGE') {
         return res.status(415).json({ success: false, code: 'INVALID_IMAGE', error: error.message });
       }
-      // Diagnostic COURT et sûr (codes par tentative + modèle, jamais le corps du
-      // fournisseur) : la sonde Live le lit sans accès aux journaux Render.
-      const reason = typeof error?.reason === 'string' ? error.reason.slice(0, 120) : undefined;
-      const model = typeof error?.model === 'string' ? error.model.slice(0, 80) : undefined;
-      if (error instanceof AyrovixUnavailableError || error?.code === 'AYROVIX_UNAVAILABLE') {
-        return res.status(503).json({
+      if (error instanceof SerpApiVisualError) {
+        console.warn('[AYROVIX detect]', error.code);
+        return res.status(502).json({
           success: false,
-          code: 'AYROVIX_UNAVAILABLE',
-          error: "La détection de produits est momentanément indisponible.",
-          ...(reason ? { reason } : {}),
+          code: 'VISUAL_SEARCH_FAILED',
+          providerCode: error.code,
+          error: visualSearchMessage(error.code),
         });
       }
-      // Avec `reason`, la détection a déjà journalisé l'échec (codes + modèle).
-      if (!reason) console.warn('[AYROVIX detect]', error?.message || 'unknown');
+      console.warn('[AYROVIX detect]', error?.message || 'unknown');
       return res.status(422).json({
         success: false,
         code: 'DETECTION_FAILED',
         error: 'Aucun produit n’a pu être repéré sur cette image.',
-        ...(reason ? { reason } : {}),
-        ...(model ? { model } : {}),
       });
     }
   });

@@ -39,7 +39,11 @@ export interface LensTrace {
   liveStockCacheHits?: number;
   liveStockApplied?: number;
   purchasableKept?: number;
-  purchasableExcluded?: number;
+  /** Blocked from purchase, not necessarily hidden from visual discovery. */
+  purchasableBlocked?: number;
+  visualFallbackKept?: number;
+  excludedCount?: number;
+  excludedReasons?: Record<string, number>;
   pricingMs?: number;
   totalBackendMs?: number;
   // Frontend render (يُقاس في LensLauncher بعد setCandidatesView)
