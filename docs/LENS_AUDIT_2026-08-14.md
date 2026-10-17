@@ -1,4 +1,4 @@
-# AYROVI — Audit Lens / Vision & Intelligence Layer (2026-08-14)
+# ZAYROVI — Audit Lens / Vision & Intelligence Layer (2026-08-14)
 
 ## 1. Trace complet (avant → après)
 
@@ -33,7 +33,7 @@ Customer → Image Upload (multipart, 6 Mo, MIME + magic-bytes) → normalizeUpl
 ## 4. Architecture (abstraction provider)
 
 ```
-AYROVI Chat → assistant tools (lens_search) → lensPipeline (orchestration)
+ZAYROVI Chat → assistant tools (lens_search) → lensPipeline (orchestration)
    → Vision Provider (Claude) | OCR Provider (Tesseract) | Codes (ZXing) | Visual (SerpApi)
    → résultat standard LensStandardResult (image_id, products, pricing, seller, url, confidence, verified, warnings)
 ```

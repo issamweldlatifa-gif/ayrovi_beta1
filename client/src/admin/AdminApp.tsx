@@ -90,10 +90,10 @@ const resources: Record<string, ResourceDefinition> = {
     ],
   },
   news: {
-    title: 'مجلتي', singular: 'محتوى مجلتي', description: 'مجلة AYROVI التحريرية المرتبطة بالمنتجات، مع مسودات وكيل مجلتي ومراجعة بشرية قبل النشر.', endpoint: '/news', keyField: 'title', statusField: 'status', permission: 'content:write',
-    defaults: { title: '', summary: '', content: '', image: '', category: 'AYROVI', arrival_id: '', product_id: '', author: 'Équipe AYROVI', published_at: new Date().toISOString(), status: 'DRAFT' },
+    title: 'مجلتي', singular: 'محتوى مجلتي', description: 'مجلة ZAYROVI التحريرية المرتبطة بالمنتجات، مع مسودات وكيل مجلتي ومراجعة بشرية قبل النشر.', endpoint: '/news', keyField: 'title', statusField: 'status', permission: 'content:write',
+    defaults: { title: '', summary: '', content: '', image: '', category: 'ZAYROVI', arrival_id: '', product_id: '', author: 'Équipe ZAYROVI', published_at: new Date().toISOString(), status: 'DRAFT' },
     fields: [
-      { key: 'title', label: 'Titre', type: 'text', required: true }, { key: 'category', label: 'Catégorie', type: 'select', options: ['NEW_ARRIVAL','NEW_BRAND','PROMOTION','DELIVERY','AYROVI','INFORMATION','OTHER'] },
+      { key: 'title', label: 'Titre', type: 'text', required: true }, { key: 'category', label: 'Catégorie', type: 'select', options: ['NEW_ARRIVAL','NEW_BRAND','PROMOTION','DELIVERY','ZAYROVI','INFORMATION','OTHER'] },
       { key: 'summary', label: 'Résumé', type: 'textarea', full: true }, { key: 'content', label: 'Contenu', type: 'textarea', required: true, full: true }, { key: 'image', label: 'Image', type: 'image', full: true },
       { key: 'arrival_id', label: 'ID arrivage', type: 'text' }, { key: 'product_id', label: 'ID produit', type: 'text' }, { key: 'author', label: 'Auteur', type: 'text' },
       { key: 'published_at', label: 'Publication', type: 'date', required: true }, { key: 'status', label: 'Statut', type: 'select', options: ['DRAFT','SCHEDULED','PUBLISHED','ARCHIVED'] },
@@ -109,7 +109,7 @@ const resources: Record<string, ResourceDefinition> = {
     ],
   },
   hero: {
-    title: 'Hero Slider', singular: 'slide', description: 'Les slides publiques conservent la promesse AYROVI et le défilement plein écran.', endpoint: '/hero-slides', keyField: 'title', statusField: 'active', permission: 'content:write',
+    title: 'Hero Slider', singular: 'slide', description: 'Les slides publiques conservent la promesse ZAYROVI et le défilement plein écran.', endpoint: '/hero-slides', keyField: 'title', statusField: 'active', permission: 'content:write',
     defaults: { image: '', video: '', title: 'Toute la mode du monde, livrée chez vous.', subtitle: '', cta: '', target_url: '', display_order: 0, active: true },
     fields: [
       { key: 'title', label: 'Titre', type: 'text', required: true }, { key: 'subtitle', label: 'Sous-titre', type: 'text' }, { key: 'image', label: 'Image', type: 'image', required: true, full: true },
@@ -118,7 +118,7 @@ const resources: Record<string, ResourceDefinition> = {
     ],
   },
   ticker: {
-    title: 'Ticker annonces', singular: 'message', description: 'Messages du bandeau supérieur AYROVI — contenu uniquement, le design reste fixe.', endpoint: '/announcements', keyField: 'text', statusField: 'active', permission: 'content:write',
+    title: 'Ticker annonces', singular: 'message', description: 'Messages du bandeau supérieur ZAYROVI — contenu uniquement, le design reste fixe.', endpoint: '/announcements', keyField: 'text', statusField: 'active', permission: 'content:write',
     defaults: { text: '', display_order: 0, active: true },
     fields: [
       { key: 'text', label: 'Message affiché', type: 'text', required: true, full: true },
@@ -126,7 +126,7 @@ const resources: Record<string, ResourceDefinition> = {
     ],
   },
   assistant: {
-    title: 'Assistant IA', singular: 'connaissance', description: 'Source administrable des réponses commerciales critiques de l’Assistant AYROVI.', endpoint: '/ai-knowledge', keyField: 'question', statusField: 'active', permission: 'ai:write',
+    title: 'Assistant IA', singular: 'connaissance', description: 'Source administrable des réponses commerciales critiques de l’Assistant ZAYROVI.', endpoint: '/ai-knowledge', keyField: 'question', statusField: 'active', permission: 'ai:write',
     defaults: { category: 'FAQ', question: '', answer: '', keywords: [], priority: 0, active: true },
     fields: [
       { key: 'category', label: 'Catégorie', type: 'select', options: ['FAQ','PREDEFINED_RESPONSE','DELIVERY','PAYMENT','BRAND','ARRIVAL','PROMOTION','GENERAL'] },
@@ -171,7 +171,7 @@ const LoginPage: React.FC<{ onAuthenticated: (user: UserIdentity) => void }> = (
       {/* Identité : le verrou A.ROVI porte le nom une seule fois (emblème + « YROVI »), ici en
           version blanche puisque le panneau est en encre. La ligne de service dit ce qu'on ouvre. */}
       <section className="admin-login-brand">
-        <img src="/media/logo-ayrovi-lockup-white-orange.svg" alt="AYROVI" className="admin-login-brand__lockup" />
+        <img src="/media/logo-zayrovi-lockup-white-orange.svg" alt="ZAYROVI" className="admin-login-brand__lockup" />
         <span>CONSOLE D’EXPLOITATION</span>
         <h1>Le commerce mondial,<br />piloté depuis Tunis.</h1>
         <p>Contenu, arrivages, commandes, tarification et assistance — une seule source de vérité, la même que le site public.</p>
@@ -187,7 +187,7 @@ const LoginPage: React.FC<{ onAuthenticated: (user: UserIdentity) => void }> = (
       </section>
       <section className="admin-login-panel">
         <div className="admin-login-box">
-          <div className="admin-login-mobile-logo"><img src="/media/logo-ayrovi-lockup-black-orange.svg" alt="AYROVI" style={{ height: 20, width: 'auto', objectFit: 'contain' }} /></div>
+          <div className="admin-login-mobile-logo"><img src="/media/logo-zayrovi-lockup-black-orange.svg" alt="ZAYROVI" style={{ height: 20, width: 'auto', objectFit: 'contain' }} /></div>
           {/* Cartouche d'état : la sonde est réelle, donc le chiffre affiché est celui du serveur en face. */}
           <div className="admin-login-status" data-state={health.state} role="status" aria-live="polite">
             <i aria-hidden="true" />
@@ -201,7 +201,7 @@ const LoginPage: React.FC<{ onAuthenticated: (user: UserIdentity) => void }> = (
           <p>Connectez-vous avec le compte administrateur configuré sur le serveur.</p>
           <Form onSubmit={submit}>
             <Field label="Adresse email" required full>
-              <input type="email" name="email" value={email} autoComplete="username" inputMode="email" autoFocus aria-describedby="admin-login-email-help" onChange={(e) => setEmail(e.target.value)} placeholder="admin@ayrovi.tn" required />
+              <input type="email" name="email" value={email} autoComplete="username" inputMode="email" autoFocus aria-describedby="admin-login-email-help" onChange={(e) => setEmail(e.target.value)} placeholder="admin@zayrovi.tn" required />
             </Field>
             <Field label="Mot de passe" required full>
               <div className="admin-password">
@@ -314,7 +314,7 @@ const DashboardPage: React.FC<{ navigate: (section: string, request?: string) =>
     { label: 'Panier moyen', value: formatMoney(data.metrics.averageBasket), change: data.metrics.changes.averageBasket, icon: ShoppingBag },
   ];
   return <>
-    <PageHeader title="Tableau de bord" description="L’activité AYROVI consolidée en temps réel depuis SQLite." action={<Select value={days} onChange={(event) => setDays(Number(event.target.value))} options={[{value:'7',label:'7 jours'},{value:'30',label:'30 jours'},{value:'90',label:'90 jours'},{value:'365',label:'12 mois'}]} />} />
+    <PageHeader title="Tableau de bord" description="L’activité ZAYROVI consolidée en temps réel depuis SQLite." action={<Select value={days} onChange={(event) => setDays(Number(event.target.value))} options={[{value:'7',label:'7 jours'},{value:'30',label:'30 jours'},{value:'90',label:'90 jours'},{value:'365',label:'12 mois'}]} />} />
     <WorkbenchQueues navigate={navigate} />
     <div className="admin-metrics">{cards.map(({ label, value, change }) => <article key={label} className="admin-metric"><div><span>{label}</span><strong>{value}</strong><small className={change >= 0 ? 'positive' : 'negative'}>{change >= 0 ? '+' : ''}{change}% vs période précédente</small></div></article>)}</div>
     <div className="admin-arrival-summary"><article><span>Arrivages Standard actifs</span><strong>{data.metrics.activeStandardArrivals}</strong><Calendar /></article><article><span>Arrivages Express actifs</span><strong>{data.metrics.activeExpressArrivals}</strong><Truck /></article></div>
@@ -783,7 +783,7 @@ const AssistantSupportPage: React.FC<{ canWrite: boolean; requestedId?: string }
     finally { setBusy(false); }
   };
   return <>
-    <PageHeader title="Support IA" description="Demandes transférées par l’assistant à l’équipe AYROVI, avec identité vérifiée ou contact visiteur." />
+    <PageHeader title="Support IA" description="Demandes transférées par l’assistant à l’équipe ZAYROVI, avec identité vérifiée ou contact visiteur." />
     <section className="admin-list-card">
       <div className="admin-list-toolbar"><Search value={search} onChange={setSearch} placeholder="Référence, client, contact ou motif…"/><Select value={status} onChange={event=>setStatus(event.target.value)} options={[{value:'',label:'Tous les statuts'},...options(['PENDING','IN_PROGRESS','RESOLVED','CLOSED'])]}/></div>
       <DataTable rows={rows} loading={loading} emptyText="Aucun ticket support." onRowClick={open} columns={[
@@ -881,7 +881,7 @@ const AuditPage:React.FC=()=>{
         <Button variant="secondary" type="button" onClick={()=>void load(page.page)} busy={loading}>Rafraîchir</Button>
         <Button variant="secondary" type="button" disabled={loading||rows.length===0}
           title={rows.length===0?'Aucune entrée à exporter sur cette page.':`Exporter les ${rows.length} entrées affichées en CSV`}
-          onClick={()=>downloadCsv(csvFileName('ayrovi-journal-audit'),AUDIT_COLUMNS,rows)}>Exporter CSV</Button>
+          onClick={()=>downloadCsv(csvFileName('zayrovi-journal-audit'),AUDIT_COLUMNS,rows)}>Exporter CSV</Button>
       </div>
     }/>
     <section className="admin-list-card"><DataTable rows={rows} loading={loading} columns={[
@@ -916,7 +916,7 @@ const ReportsPage:React.FC<{canWrite:boolean}>=({canWrite})=>{
   <div className="admin-report-grid">
     <section className="admin-card"><CardTitle title="6 derniers mois" subtitle="Revenus vs dépenses (TND)"/><div className="admin-chart">{((report?.monthly||[]) as any[]).map(m=><div key={m.month} className="admin-chart-col"><div className="admin-chart-bars"><i className="is-income" style={{height:`${Math.max(2,Math.round((m.income/maxMonthly)*110))}px`}} title={`Revenus ${formatMoney(m.income)}`}/><i className="is-expense" style={{height:`${Math.max(2,Math.round((m.expenses/maxMonthly)*110))}px`}} title={`Dépenses ${formatMoney(m.expenses)}`}/></div><span>{m.month.slice(5)}/{m.month.slice(2,4)}</span></div>)}<div className="admin-chart-legend"><i className="is-income"/>Revenus<i className="is-expense"/>Dépenses</div></div></section>
       <section className="admin-card"><CardTitle title="Dépenses par catégorie" subtitle="Période sélectionnée"/><div className="admin-settings-list">{((report?.expensesByCategory||[]) as any[]).length===0&&<p className="admin-block-small">Aucune dépense sur la période.</p>}{((report?.expensesByCategory||[]) as any[]).map(row=><div key={row.category} className="admin-cat-row"><span>{({ADS:'Publicité',SHIPPING:'Transport',STOCK:'Stock',SERVICES:'Services',SALARIES:'Salaires',FEES:'Frais',OTHER:'Autres'} as any)[row.category]||row.category}</span><strong>{formatMoney(row.total)}</strong></div>)}</div></section>
-      {ayx&&<section className="admin-card"><CardTitle title="AYROVIX Lens · 7 derniers jours" subtitle="Usage du scan produit (image / lien / QR) — données anonymes"/>
+      {ayx&&<section className="admin-card"><CardTitle title="ZAYROVIX Lens · 7 derniers jours" subtitle="Usage du scan produit (image / lien / QR) — données anonymes"/>
         {ayx.providers&&<div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:12}}>
           <Badge tone={ayx.providers.vision?.configured?'success':'warning'}>{ayx.providers.vision?.configured?<CheckCircle2 size={16}/>:<AlertCircle size={16}/>} AI Core Vision : {ayx.providers.vision?.configured?'Prix et compréhension actifs':'Fournisseur non configuré'}</Badge>
           <Badge tone={ayx.providers.visualSearch?.configured?'success':'warning'}>{ayx.providers.visualSearch?.configured?<CheckCircle2 size={16}/>:<AlertCircle size={16}/>} Google Lens : {ayx.providers.visualSearch?.configured?'SerpApi configuré · produits visuels actifs':'Clé manquante — SERPAPI_KEY'}</Badge>
@@ -942,14 +942,14 @@ const ReportsPage:React.FC<{canWrite:boolean}>=({canWrite})=>{
 
 // ===== قسم التطوير: ثيم المنصة بالكامل + القنوات + نص الفوتر =====
 const THEME_PRESETS=[
-  {id:'noir',label:'Noir AYROVI',primary:'#111318',primaryDark:'#050505',primaryLight:'#3f3f46',accent:'#ff6900',gradient:'linear-gradient(135deg,#050505 0%,#111318 100%)',font:FONT_STACK},
+  {id:'noir',label:'Noir ZAYROVI',primary:'#111318',primaryDark:'#050505',primaryLight:'#3f3f46',accent:'#ff6900',gradient:'linear-gradient(135deg,#050505 0%,#111318 100%)',font:FONT_STACK},
   {id:'nuit',label:'Bleu nuit',primary:'#2563eb',primaryDark:'#1d4ed8',primaryLight:'#60a5fa',accent:'#ff6900',gradient:'linear-gradient(135deg,#0b1e4b 0%,#2563eb 100%)',font:FONT_STACK},
   {id:'emeraude',label:'Émeraude',primary:'#059669',primaryDark:'#047857',primaryLight:'#34d399',accent:'#ff6900',gradient:'linear-gradient(135deg,#064e3b 0%,#059669 100%)',font:FONT_STACK},
   {id:'framboise',label:'Framboise',primary:'#db2777',primaryDark:'#be185d',primaryLight:'#f472b6',accent:'#ff6900',gradient:'linear-gradient(135deg,#500724 0%,#db2777 100%)',font:FONT_STACK},
   {id:'sable',label:'Sable doré',primary:'#b45309',primaryDark:'#92400e',primaryLight:'#d97706',accent:'#ff6900',gradient:'linear-gradient(135deg,#431407 0%,#b45309 100%)',font:FONT_STACK},
   {id:'charbon',label:'Charbon chic',primary:'#334155',primaryDark:'#1e293b',primaryLight:'#64748b',accent:'#ff6900',gradient:'linear-gradient(135deg,#0f172a 0%,#334155 100%)',font:FONT_STACK},
 ];
-const FONT_OPTIONS=[{value:FONT_STACK,label:'AYROVI A — identité verrouillée'}];
+const FONT_OPTIONS=[{value:FONT_STACK,label:'ZAYROVI A — identité verrouillée'}];
 const DesignPage:React.FC<{canWrite:boolean}>=({canWrite})=>{
   const [rows,setRows]=useState<any[]>([]);const [theme,setTheme]=useState<any>(THEME_PRESETS[0]);const [footerAbout,setFooterAbout]=useState('');
   const [channels,setChannels]=useState({facebook:'',instagram:'',tiktok:'',whatsapp:''});
@@ -965,15 +965,15 @@ const DesignPage:React.FC<{canWrite:boolean}>=({canWrite})=>{
   const saveRow=(key:string,value:any)=>{const row=rows.find((r:any)=>r.setting_key===key);if(!row)return Promise.resolve();return adminApi(`/settings/${row.id}`,{method:'PUT',body:JSON.stringify({value})});};
   const save=async()=>{setBusy(true);try{await Promise.all([saveRow('site_theme',theme),saveRow('footer_about',footerAbout),saveRow('facebook_url',channels.facebook),saveRow('instagram_url',channels.instagram),saveRow('tiktok_url',channels.tiktok),saveRow('whatsapp_url',channels.whatsapp)]);await load();setToast({message:'Design publié — la boutique adopte le nouveau thème (rechargement des pages).',tone:'success'});}catch(e:any){setToast({message:e.message,tone:'error'});}finally{setBusy(false);}};
   const applyPreset=(preset:any)=>setTheme({...theme,...preset,preset:preset.id});
-  return <><PageHeader title="Développement & design" description="Système AYROVI 70% blanc / 25% noir / 5% orange. Inter + Noto Sans Arabic unifient latin et arabe." action={canWrite?<Button busy={busy} onClick={save}>Publier le design</Button>:undefined}/>
+  return <><PageHeader title="Développement & design" description="Système ZAYROVI 70% blanc / 25% noir / 5% orange. Inter + Noto Sans Arabic unifient latin et arabe." action={canWrite?<Button busy={busy} onClick={save}>Publier le design</Button>:undefined}/>
   <div className="admin-report-grid">
     <section className="admin-card"><CardTitle title="Modèles prêts" subtitle="Choisissez un modèle, personnalisez ensuite ses couleurs"/><div className="admin-theme-grid">{THEME_PRESETS.map(preset=><button key={preset.id} type="button" disabled={!canWrite} className={`admin-theme-card ${theme.preset===preset.id?'is-active':''}`} onClick={()=>applyPreset(preset)}><i style={{background:preset.gradient}}/><span>{preset.label}</span><small>{preset.primary} · {preset.accent}</small></button>)}</div>
     <div className="admin-form-row" style={{marginTop:16}}><Field label="Couleur principale" full><input type="color" value={theme.primary} disabled={!canWrite} onChange={e=>setTheme({...theme,preset:'custom',primary:e.target.value})}/></Field><Field label="Accent (promos)" full><input type="color" value={theme.accent} disabled={!canWrite} onChange={e=>setTheme({...theme,preset:'custom',accent:e.target.value})}/></Field><Field label="Police" full><Select disabled value={FONT_STACK} onChange={e=>setTheme({...theme,preset:'custom',font:FONT_STACK})} options={FONT_OPTIONS}/></Field></div>
-    <div className="admin-theme-preview" style={{background:theme.gradient}}><strong>Boutique AYROVI</strong><span>70% blanc · 25% noir · 5% orange</span><button style={{background:theme.accent,color:'#fff'}} type="button">CTA</button></div></section>
+    <div className="admin-theme-preview" style={{background:theme.gradient}}><strong>Boutique ZAYROVI</strong><span>70% blanc · 25% noir · 5% orange</span><button style={{background:theme.accent,color:'#fff'}} type="button">CTA</button></div></section>
     <section className="admin-card"><CardTitle title="Canaux & pied de page" subtitle="Liens affichés dans la section « Nos canaux » du site"/><div className="admin-settings-list">
-      <Field label="Facebook" full><input disabled={!canWrite} value={channels.facebook} onChange={e=>setChannels({...channels,facebook:e.target.value})} placeholder="https://facebook.com/ayrovi"/></Field>
-      <Field label="Instagram" full><input disabled={!canWrite} value={channels.instagram} onChange={e=>setChannels({...channels,instagram:e.target.value})} placeholder="https://instagram.com/ayrovi"/></Field>
-      <Field label="TikTok" full><input disabled={!canWrite} value={channels.tiktok} onChange={e=>setChannels({...channels,tiktok:e.target.value})} placeholder="https://tiktok.com/@ayrovi"/></Field>
+      <Field label="Facebook" full><input disabled={!canWrite} value={channels.facebook} onChange={e=>setChannels({...channels,facebook:e.target.value})} placeholder="https://facebook.com/zayrovi"/></Field>
+      <Field label="Instagram" full><input disabled={!canWrite} value={channels.instagram} onChange={e=>setChannels({...channels,instagram:e.target.value})} placeholder="https://instagram.com/zayrovi"/></Field>
+      <Field label="TikTok" full><input disabled={!canWrite} value={channels.tiktok} onChange={e=>setChannels({...channels,tiktok:e.target.value})} placeholder="https://tiktok.com/@zayrovi"/></Field>
       <Field label="WhatsApp" full><input disabled={!canWrite} value={channels.whatsapp} onChange={e=>setChannels({...channels,whatsapp:e.target.value})} placeholder="https://wa.me/21600000000"/></Field>
       <Field label="Texte du pied de page" full><textarea rows={4} disabled={!canWrite} value={footerAbout} onChange={e=>setFooterAbout(e.target.value)}/></Field>
     </div></section>
@@ -1019,7 +1019,7 @@ export const AdminApp:React.FC=()=>{
   const[user,setUser]=useState<UserIdentity|null>(null);const[loading,setLoading]=useState(true);
   // Le titre de l'onglet : la console s'annonce comme console, pas avec le titre marketing du site.
   useEffect(()=>{
-    const previous=document.title;document.title='AYROVI · Console d’exploitation';
+    const previous=document.title;document.title='ZAYROVI · Console d’exploitation';
     return()=>{document.title=previous;};
   },[]);
   useEffect(()=>{
@@ -1029,7 +1029,7 @@ export const AdminApp:React.FC=()=>{
     loadIdentity().then((identity)=>{if(active)setUser(identity);}).catch((e)=>{if(!(e instanceof ApiError&&e.status===401))console.warn(e);}).finally(()=>{if(active)setLoading(false);});
     return()=>{active=false;window.removeEventListener(ADMIN_SESSION_EXPIRED_EVENT,resetExpiredSession);};
   },[]);
-  if(loading)return <div className="admin-boot"><img src="/media/logo-ayrovi.png" alt="" className="ay-boot-mark" style={{width:52,height:52,objectFit:'contain'}} /><span/></div>;
+  if(loading)return <div className="admin-boot"><img src="/media/logo-zayrovi.png" alt="" className="ay-boot-mark" style={{width:52,height:52,objectFit:'contain'}} /><span/></div>;
   if(!user)return <LoginPage onAuthenticated={setUser}/>;
   // Un seul provider pour tout le back office : contexte, navigation et descripteurs partagés.
   return <BackOfficeProvider><AdminShell user={user} onLogout={async()=>{await logout();setUser(null);}}/></BackOfficeProvider>;

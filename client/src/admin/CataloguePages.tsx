@@ -1,5 +1,5 @@
 /**
- * AYROVI Administration — Catalogue screens (P2.1).
+ * ZAYROVI Administration — Catalogue screens (P2.1).
  *
  * Additive only: the legacy « Produits » and « Marques » screens (the generic CRUD loop on
  * /api/admin/products and /api/admin/brands) are untouched and keep working. These three
@@ -23,7 +23,7 @@ import {
 type ToastValue = { message: string; tone: 'success' | 'error' } | null;
 type Capabilities = Record<string, Record<string, boolean>>;
 
-const CatalogueHeader: React.FC<{ title: string; description: string; action?: React.ReactNode }> = (props) => <PageHeader {...props} eyebrow="AYROVI CATALOGUE" />;
+const CatalogueHeader: React.FC<{ title: string; description: string; action?: React.ReactNode }> = (props) => <PageHeader {...props} eyebrow="ZAYROVI CATALOGUE" />;
 
 const options = (values: Array<string | { value: string; label: string }>) =>
   values.map((value) => (typeof value === 'string' ? { value, label: value } : value));

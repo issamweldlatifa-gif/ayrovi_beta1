@@ -56,7 +56,7 @@ function cookieValue(token: string, maxAgeSeconds: number): string {
 }
 
 export function ensureBootstrapAdmin(db: QatafoDatabase) {
-  const email = (process.env.ADMIN_EMAIL || 'admin@ayrovi.tn').trim().toLowerCase();
+  const email = (process.env.ADMIN_EMAIL || 'admin@zayrovi.tn').trim().toLowerCase();
   const configuredPassword = process.env.ADMIN_PASSWORD;
   const resetToken = String(process.env.ADMIN_BOOTSTRAP_RESET || '').trim();
   const forceReset = resetToken.length > 0;
@@ -66,7 +66,7 @@ export function ensureBootstrapAdmin(db: QatafoDatabase) {
   // Comportement normal : ne créer un compte que s'il n'existe aucun administrateur.
   if (hasAdmins && !forceReset) return;
 
-  const password = configuredPassword || (process.env.NODE_ENV === 'production' ? '' : 'AyroviBeta2026!');
+  const password = configuredPassword || (process.env.NODE_ENV === 'production' ? '' : 'ZayroviBeta2026!');
   if (!password) {
     console.warn('[Admin] Aucun compte créé. Définissez ADMIN_EMAIL et ADMIN_PASSWORD puis redémarrez.');
     return;
@@ -119,14 +119,14 @@ export function ensureBootstrapAdmin(db: QatafoDatabase) {
       if (!claimed.changes) throw new Error('ADMIN_BOOTSTRAP_RESET token already consumed.');
     }
     db.run(`INSERT INTO admin_users (id,email,name,password_hash,role,active,created_at,updated_at)
-      VALUES (?,?,?,?, 'SUPER_ADMIN',1,?,?)`, `admin_${randomUUID()}`, email, 'AYROVI Admin', hashPassword(password), now, now);
+      VALUES (?,?,?,?, 'SUPER_ADMIN',1,?,?)`, `admin_${randomUUID()}`, email, 'ZAYROVI Admin', hashPassword(password), now, now);
   });
   // Every login credential gets an employee identity immediately, so audit rows
   // written by the very first session already carry an EMP- code.
   try {
     backfillEmployeesFromAdminUsers(db);
   } catch { /* identity is additive: never block the login bootstrap over it */ }
-  if (!configuredPassword) console.warn('[Admin] Compte de développement créé: admin@ayrovi.tn (changez ADMIN_PASSWORD avant production).');
+  if (!configuredPassword) console.warn('[Admin] Compte de développement créé: admin@zayrovi.tn (changez ADMIN_PASSWORD avant production).');
   if (forceReset) console.info(`[Admin] Compte administrateur créé en mode reset pour ${email}.`);
 }
 

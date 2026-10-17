@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * AYROVI — P3/T1 design-token sweep (back-office only).
+ * ZAYROVI — P3/T1 design-token sweep (back-office only).
  *
  * Removes every literal colour from the back-office *system* stylesheets and points them at
  * tokens declared in client/src/design/tokens.css, with ZERO visual change:
@@ -193,11 +193,11 @@ preEdit('client/src/admin/admin.css', [
    '   `AdminApp.tsx` continuent de les référencer. Le renommage en noms sémantiques est en T2. */\n'],
   ['.mag-agent { --mag-ink:#111318; --mag-purple:#111318; --mag-deep:#050505; --mag-yellow:#ff6900; color:var(--mag-ink); }',
    '/* P3/T1 : la fiche agent prend les tokens du back-office — valeurs identiques, aucun littéral. */\n' +
-   '.mag-agent { --mag-ink: var(--admin-purple); --mag-purple: var(--admin-purple); --mag-deep: var(--admin-purple-dark); --mag-yellow: var(--ayrovi-cta); color: var(--mag-ink); }'],
+   '.mag-agent { --mag-ink: var(--admin-purple); --mag-purple: var(--admin-purple); --mag-deep: var(--admin-purple-dark); --mag-yellow: var(--zayrovi-cta); color: var(--mag-ink); }'],
 ]);
 preEdit('client/src/admin/back-office/back-office.css', [
   ['.bo-shell { --bo-accent: #ff6900; }',
-   '.bo-shell { --bo-accent: var(--ayrovi-cta); /* accent partagé avec la vitrine (valeur unique) */ }'],
+   '.bo-shell { --bo-accent: var(--zayrovi-cta); /* accent partagé avec la vitrine (valeur unique) */ }'],
 ]);
 
 /* --------------------------------------------------------------- sweep */

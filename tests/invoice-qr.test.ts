@@ -11,19 +11,19 @@ import { readFileSync } from 'node:fs';
 import { buildInvoiceQrPayload, invoiceQrSvg, renderInvoiceQrSvg } from '../src/services/invoiceQr';
 
 const input = {
-  issuer: 'AYROVI SARL',
+  issuer: 'ZAYROVI SARL',
   taxId: '1234567/A/M/000',
   invoiceNumber: 'FAC-2026-0042',
   orderNumber: 'AYR-518234',
   issuedOn: '2026-09-25',
   totalTnd: 118.9,
-  verifyUrl: 'https://ayrovi.tn/facture/FAC-2026-0042',
+  verifyUrl: 'https://zayrovi.tn/facture/FAC-2026-0042',
 };
 
 describe('charge utile du QR', () => {
   it('identifie la pièce : émetteur, numéro, commande, date, total, devise', () => {
     const payload = buildInvoiceQrPayload(input);
-    expect(payload).toContain('ISS:AYROVI SARL');
+    expect(payload).toContain('ISS:ZAYROVI SARL');
     expect(payload).toContain('INV:FAC-2026-0042');
     expect(payload).toContain('ORD:AYR-518234');
     expect(payload).toContain('DATE:2026-09-25');
@@ -63,7 +63,7 @@ describe('rendu du QR', () => {
   });
 
   it('reste lisible : fond blanc, modules noirs, marge normalisée', () => {
-    const svg = renderInvoiceQrSvg('AYROVI:1|INV:X', { size: 120 });
+    const svg = renderInvoiceQrSvg('ZAYROVI:1|INV:X', { size: 120 });
     expect(svg).toContain('fill="#ffffff"');
     expect(svg).toContain('fill="#000000"');
     expect(svg).toMatch(/viewBox="0 0 \d+ \d+"/);

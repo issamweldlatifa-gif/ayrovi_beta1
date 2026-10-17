@@ -5,7 +5,7 @@ import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { useNavigationHistory } from '../navigation/NavigationHistory';
 import { ShopProductScreen } from '../shop';
 import { resolveProductSelection } from '../ayrovix/services/productSelection';
-import type { AyrovixProduct } from '../ayrovix/types';
+import type { ZayrovixProduct } from '../ayrovix/types';
 import { trackAyWebsEvent } from '../features/aywebs/api';
 
 interface ProductDrawerProps {
@@ -52,7 +52,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const activeRequestRef = useRef<AbortController | null>(null);
 
-  const ayrovixProduct: AyrovixProduct | null = React.useMemo(() => {
+  const ayrovixProduct: ZayrovixProduct | null = React.useMemo(() => {
     if (!product) return null;
     return {
       title: product.title,
@@ -251,7 +251,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
               </div>
               <div>
                 <h3 id="lens-page-title" className="font-extrabold text-base sm:text-lg text-ink">
-                  AYROVIX Lens — Nouvelle commande
+                  ZAYROVIX Lens — Nouvelle commande
                 </h3>
                 <p className="text-xs text-muted font-medium">Conversion transparente et garantie</p>
               </div>
@@ -297,7 +297,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                 disabled={isUploading || isScraping}
                 className="ay-dark-feature-card group relative flex min-h-[190px] w-full cursor-pointer flex-col justify-between overflow-hidden rounded-card p-6 text-left text-white disabled:cursor-wait disabled:opacity-90"
               >
-                {/* تجربة AYROVI Lens: معاينة الصورة مع مسح ضوئي أثناء التحليل */}
+                {/* تجربة ZAYROVI Lens: معاينة الصورة مع مسح ضوئي أثناء التحليل */}
                 {isUploading && uploadPreview && (
                   <>
                     <img src={uploadPreview} alt="Capture en cours d’analyse" className="absolute inset-0 h-full w-full object-cover" />

@@ -6,11 +6,11 @@ import { AppHeader } from '../../design/AppHeader';
 import React, { useEffect, useRef, useState } from 'react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import type {
-  AyrovixCandidate, AyrovixHistoryItem, AyrovixOrderPayload, AyrovixProduct, AyrovixUrlResult,
+  ZayrovixCandidate, ZayrovixHistoryItem, ZayrovixOrderPayload, ZayrovixProduct, ZayrovixUrlResult,
 } from '../types';
-import { analyzeBarcode, analyzeCode, analyzeImage, analyzeText, analyzeUrl, markChosen, AyrovixApiError } from '../services/lensApi';
+import { analyzeBarcode, analyzeCode, analyzeImage, analyzeText, analyzeUrl, markChosen, ZayrovixApiError } from '../services/lensApi';
 import { prepareImage } from '../services/imagePrep';
-import { readLocalAyrovixHistory, rememberAyrovixHistory } from '../services/history';
+import { readLocalZayrovixHistory, rememberZayrovixHistory } from '../services/history';
 import { getCommerceConfig } from '../../services/publicApi';
 import { setNativeStatusBarForSurface } from '../../services/nativeShell';
 
@@ -20,7 +20,7 @@ import { LensHistory } from './LensHistory';
 import { LensCamera } from './LensCamera';
 import { LensUpload } from './LensUpload';
 import { ProductCandidates } from './ProductCandidates';
-import type { AyrovixOrderSelection } from '../../shop';
+import type { ZayrovixOrderSelection } from '../../shop';
 import { ShopProductScreen } from '../../shop';
 import { useNavigationHistory } from '../../navigation/NavigationHistory';
 import { isDisplayableProduct } from '../services/resultPolicy';
@@ -36,7 +36,7 @@ interface LensLauncherProps {
   historyScope?: string | null;
   customerSession?: CustomerSession | null;
   onOpenFavorites?: () => void;
-  onOrder: (payload: AyrovixOrderPayload) => Promise<void>;
+  onOrder: (payload: ZayrovixOrderPayload) => Promise<void>;
   cartCount: number;
   onOpenCart: () => void;
   darkMode: boolean;
@@ -47,13 +47,13 @@ type Stage = 'live' | 'home' | 'analyzing' | 'candidates' | 'product' | 'barcode
 
 interface CandidatesView {
   queryLabel: string | null;
-  list: AyrovixCandidate[];
+  list: ZayrovixCandidate[];
   eventId: string;
   /** Fiches écartées côté serveur faute de preuve d'achat (page marchande). */
   excludedCount?: number;
 }
 
-function toStoreKey(sourceUrl: string): AyrovixOrderPayload['store'] {
+function toStoreKey(sourceUrl: string): ZayrovixOrderPayload['store'] {
   const host = sourceUrl.toLowerCase();
   if (host.includes('shein')) return 'shein';
   if (host.includes('amazon')) return 'amazon';
@@ -62,7 +62,7 @@ function toStoreKey(sourceUrl: string): AyrovixOrderPayload['store'] {
   return 'generic';
 }
 
-function candidateToProduct(candidate: AyrovixCandidate): AyrovixProduct {
+function candidateToProduct(candidate: ZayrovixCandidate): ZayrovixProduct {
   return {
     title: candidate.title,
     brand: candidate.brand,
@@ -112,7 +112,7 @@ function candidateToProduct(candidate: AyrovixCandidate): AyrovixProduct {
   };
 }
 
-function productToFavoriteCandidate(product: AyrovixProduct): AyrovixCandidate {
+function productToFavoriteCandidate(product: ZayrovixProduct): ZayrovixCandidate {
   return {
     id: product.sourceUrl || product.title,
     kind: 'external',
@@ -146,10 +146,10 @@ function errorGuidance(code: string, tr: (fr:string, ar:string)=>string): { titl
     UNSUPPORTED_IMAGE: { fr:'Format non supporté', ar:'صيغة غير مدعومة', hintFr:'Utilisez JPEG, PNG ou WebP uniquement.', hintAr:'استخدم JPEG أو PNG أو WebP فقط.', retryFr:'Choisir une autre image', retryAr:'اختر صورة أخرى' },
     INVALID_IMAGE: { fr:'Image invalide', ar:'صورة غير صالحة', hintFr:'Le fichier n’est pas une image valide. Réessayez avec une photo plus nette.', hintAr:'الملف ليس صورة صالحة. حاول بصورة أوضح.', retryFr:'Choisir une autre image', retryAr:'اختر صورة أخرى' },
     LIMIT_FILE_SIZE: { fr:'Image trop volumineuse', ar:'الصورة كبيرة جدًا', hintFr:'Limite 6 Mo. Réduisez la taille ou rognée la photo.', hintAr:'الحد 6 ميغابايت. قلّل الحجم أو اقتص الصورة.', retryFr:'Choisir une image plus légère', retryAr:'اختر صورة أخف' },
-    AYROVIX_UNAVAILABLE: { fr:'AYROVIX arrive très bientôt', ar:'AYROVIX قادمة قريبًا', hintFr:"Le service n’est pas encore activé. Réessayez bientôt.", hintAr:'الخدمة غير مفعّلة بعد. حاول لاحقًا.', retryFr:'Fermer', retryAr:'إغلاق' },
+    ZAYROVIX_UNAVAILABLE: { fr:'ZAYROVIX arrive très bientôt', ar:'ZAYROVIX قادمة قريبًا', hintFr:"Le service n’est pas encore activé. Réessayez bientôt.", hintAr:'الخدمة غير مفعّلة بعد. حاول لاحقًا.', retryFr:'Fermer', retryAr:'إغلاق' },
     IDENTIFICATION_FAILED: { fr:'Produit non reconnu', ar:'تعذر التعرف على المنتج', hintFr:'Photo floue ou trop sombre. Cadrez le produit en bon éclairage ou collez son lien.', hintAr:'صورة ضبابية أو مظلمة. صوّر المنتج بإضاءة جيدة أو ألصق رابطه.', retryFr:'Reprendre la photo', retryAr:'إعادة التصوير' },
     INVALID_URL: { fr:'Lien invalide', ar:'رابط غير صالح', hintFr:'Vérifiez le format https://. Copiez le lien exact de la page produit.', hintAr:'تحقق من الصيغة https://. انسخ الرابط الدقيق لصفحة المنتج.', retryFr:'Corriger le lien', retryAr:'صحح الرابط' },
-    EXTRACTION_FAILED: { fr:'Fiche non lue', ar:'تعذر قراءة الصفحة', hintFr:'La boutique bloque la lecture auto. Photographiez la page produit : AYROVIX la lira.', hintAr:'المتجر يمنع القراءة التلقائية. صوّر صفحة المنتج وستقرأها AYROVIX.', retryFr:'Photographier la page', retryAr:'تصوير الصفحة' },
+    EXTRACTION_FAILED: { fr:'Fiche non lue', ar:'تعذر قراءة الصفحة', hintFr:'La boutique bloque la lecture auto. Photographiez la page produit : ZAYROVIX la lira.', hintAr:'المتجر يمنع القراءة التلقائية. صوّر صفحة المنتج وستقرأها ZAYROVIX.', retryFr:'Photographier la page', retryAr:'تصوير الصفحة' },
     INVALID_CODE: { fr:'QR illisible', ar:'رمز QR غير مقروء', hintFr:'Contenu vide. Rapprochez-vous ou saisissez le texte manuellement.', hintAr:'المحتوى فارغ. اقترب أو اكتب النص يدويًا.', retryFr:'Réessayer', retryAr:'إعادة المحاولة' },
     CODE_SEARCH_FAILED: { fr:'Recherche QR échouée', ar:'فشل بحث QR', hintFr:'Vérifiez la connexion ou photographiez le produit.', hintAr:'تحقق من الاتصال أو صوّر المنتج.', retryFr:'Réessayer', retryAr:'إعادة المحاولة' },
     INVALID_BARCODE: { fr:'Code-barres illisible', ar:'رمز شريطي غير مقروء', hintFr:'6 à 14 chiffres requis. Rapprochez-vous.', hintAr:'يلزم 6 إلى 14 رقمًا. اقترب أكثر.', retryFr:'Réessayer', retryAr:'إعادة المحاولة' },
@@ -191,8 +191,8 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [candidatesView, setCandidatesView] = useState<CandidatesView | null>(null);
-  const [urlResult, setUrlResult] = useState<AyrovixUrlResult | null>(null);
-  const [product, setProduct] = useState<AyrovixProduct | null>(null);
+  const [urlResult, setUrlResult] = useState<ZayrovixUrlResult | null>(null);
+  const [product, setProduct] = useState<ZayrovixProduct | null>(null);
   const [barcode, setBarcode] = useState<{ code: string; eventId: string } | null>(null);
   const [error, setError] = useState<{ code: string; message: string } | null>(null);
   const [ordering, setOrdering] = useState(false);
@@ -202,11 +202,11 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   const [menuOpen, setMenuOpen] = useState(false);
   const [liveEnabled, setLiveEnabled] = useState(false);
   const [textQuery, setTextQuery] = useState('');
-  const [recentItems, setRecentItems] = useState<AyrovixHistoryItem[]>([]);
+  const [recentItems, setRecentItems] = useState<ZayrovixHistoryItem[]>([]);
   const [detectedProducts, setDetectedProducts] = useState<Array<{ name: string; box: [number,number,number,number] | null; category: string }>>([]);
   const lastQueryRef = useRef<{ kind:'text'|'url'|'image'|'code'|'barcode'; value:string } | null>(null);
 
-  // Feature flag LIVE (AYROVIX_LENS_LIVE_ENABLED) — sans toucher les modes existants
+  // Feature flag LIVE (ZAYROVIX_LENS_LIVE_ENABLED) — sans toucher les modes existants
   useEffect(() => {
     let cancelled = false;
     getCommerceConfig()
@@ -256,7 +256,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   useEffect(() => {
     if (!isOpen || stage !== 'home') return;
     try {
-      const items = readLocalAyrovixHistory(historyScope).slice(0, 3);
+      const items = readLocalZayrovixHistory(historyScope).slice(0, 3);
       setRecentItems(items);
     } catch { setRecentItems([]); }
   }, [isOpen, stage, historyScope]);
@@ -379,7 +379,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
       const usable = result.identification.confidence > 0 && result.identification.description !== 'PRODUIT_NON_IDENTIFIE';
       if (!usable) { fail('IDENTIFICATION_FAILED', NEW_SCAN_MESSAGE); return; }
       const historyMatch = result.candidates[0];
-      rememberAyrovixHistory({
+      rememberZayrovixHistory({
         id: result.eventId,
         kind: 'image',
         inputValue: '',
@@ -387,7 +387,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
         title: historyMatch?.title || result.identification.description || 'Recherche par photo',
         imageUrl: historyMatch?.image || '',
         sourceUrl: historyMatch?.sourceUrl || '',
-        source: historyMatch?.source || 'AYROVIX Vision',
+        source: historyMatch?.source || 'ZAYROVIX Vision',
         price: historyMatch?.price ?? null,
         currency: historyMatch?.currency ?? null,
         verificationStatus: historyMatch?.priceVerificationStatus || 'PENDING_MANUAL',
@@ -408,7 +408,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
       if (stage !== 'candidates') replaceStage('candidates');
     } catch (err: any) {
       if (controller.signal.aborted || err?.name === 'AbortError' || abortRef.current !== token) return;
-      const apiError = err instanceof AyrovixApiError ? err : null;
+      const apiError = err instanceof ZayrovixApiError ? err : null;
       fail(apiError?.code || 'UNKNOWN', apiError?.message || "L'analyse a échoué. Vérifiez votre connexion.");
     } finally {
       finishRequest(controller);
@@ -427,7 +427,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
       if (abortRef.current !== token) return;
       const merchantPriceVerified = result.product.priceVerificationStatus === 'VERIFIED';
       const historyMatch = result.product.price != null ? null : result.alternates[0];
-      rememberAyrovixHistory({
+      rememberZayrovixHistory({
         id: result.eventId, kind: channel, inputValue: url, queryLabel: result.product.title,
         title: historyMatch?.title || result.product.title, imageUrl: historyMatch?.image || result.product.image,
         sourceUrl: result.product.sourceUrl || url, source: historyMatch?.source || result.product.source,
@@ -451,11 +451,11 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
       }
     } catch (err: any) {
       if (controller.signal.aborted || err?.name === 'AbortError' || abortRef.current !== token) return;
-      const apiError = err instanceof AyrovixApiError ? err : null;
+      const apiError = err instanceof ZayrovixApiError ? err : null;
       fail(
         apiError?.code || 'UNKNOWN',
         apiError?.code === 'EXTRACTION_FAILED'
-          ? 'Impossible de récupérer toutes les informations automatiquement. Photographiez le produit ou sa page : AYROVIX le lira pour vous.'
+          ? 'Impossible de récupérer toutes les informations automatiquement. Photographiez le produit ou sa page : ZAYROVIX le lira pour vous.'
           : (apiError?.message || "L'analyse du lien a échoué."),
       );
     } finally {
@@ -476,7 +476,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
       const result = await analyzeText(clean, controller.signal);
       if (abortRef.current !== token) return;
       const historyMatch = result.candidates[0];
-      rememberAyrovixHistory({
+      rememberZayrovixHistory({
         id: result.eventId, kind: 'text', inputValue: clean, queryLabel: clean,
         title: historyMatch?.title || clean, imageUrl: historyMatch?.image || '',
         sourceUrl: historyMatch?.sourceUrl || '', source: historyMatch?.source || 'Recherche texte',
@@ -495,7 +495,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
       }
     } catch (err: any) {
       if (controller.signal.aborted || err?.name === 'AbortError' || abortRef.current !== token) return;
-      const apiError = err instanceof AyrovixApiError ? err : null;
+      const apiError = err instanceof ZayrovixApiError ? err : null;
       fail(apiError?.code || 'TEXT_SEARCH_FAILED', apiError?.message || "La recherche par mot-clé a échoué.");
     } finally {
       finishRequest(controller);
@@ -513,7 +513,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
       const result = await analyzeCode(value, controller.signal);
       if (abortRef.current !== token) return;
       const historyMatch = result.candidates[0];
-      rememberAyrovixHistory({
+      rememberZayrovixHistory({
         id: result.eventId, kind: 'code', inputValue: result.code, queryLabel: result.code,
         title: historyMatch?.title || `Code ${result.code}`, imageUrl: historyMatch?.image || '',
         sourceUrl: historyMatch?.sourceUrl || '', source: historyMatch?.source || 'QR',
@@ -532,7 +532,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
       }
     } catch (err: any) {
       if (controller.signal.aborted || err?.name === 'AbortError' || abortRef.current !== token) return;
-      const apiError = err instanceof AyrovixApiError ? err : null;
+      const apiError = err instanceof ZayrovixApiError ? err : null;
       fail(apiError?.code || 'UNKNOWN', apiError?.message || "La recherche du QR code a échoué.");
     } finally {
       finishRequest(controller);
@@ -550,7 +550,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
       const result = await analyzeBarcode(code, controller.signal);
       if (abortRef.current !== token) return;
       const historyMatch = result.candidates[0];
-      rememberAyrovixHistory({
+      rememberZayrovixHistory({
         id: result.eventId, kind: 'barcode', inputValue: result.code, queryLabel: result.code,
         title: historyMatch?.title || `Code-barres ${result.code}`, imageUrl: historyMatch?.image || '',
         sourceUrl: historyMatch?.sourceUrl || '', source: historyMatch?.source || 'Code-barres',
@@ -569,7 +569,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
       }
     } catch (err: any) {
       if (controller.signal.aborted || err?.name === 'AbortError' || abortRef.current !== token) return;
-      const apiError = err instanceof AyrovixApiError ? err : null;
+      const apiError = err instanceof ZayrovixApiError ? err : null;
       fail(apiError?.code || 'UNKNOWN', apiError?.message || "Lecture du code impossible. Réessayez.");
     } finally {
       finishRequest(controller);
@@ -577,7 +577,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   };
 
   // DIRECT: Voir le produit → product page instantly, no re-analyze (user requested)
-  const handleChooseCandidate = (candidate: AyrovixCandidate) => {
+  const handleChooseCandidate = (candidate: ZayrovixCandidate) => {
     if (candidatesView?.eventId) markChosen(candidatesView.eventId);
     setProduct(candidateToProduct(candidate));
     setVerifiedPriceUrl(candidate.priceVerificationStatus === 'VERIFIED');
@@ -608,7 +608,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
       .finally(() => finishRequest(controller));
   };
 
-  const handleOrder = async ({ size, color, quantity, customerNote, manualUrl }: AyrovixOrderSelection) => {
+  const handleOrder = async ({ size, color, quantity, customerNote, manualUrl }: ZayrovixOrderSelection) => {
     if (!product) throw new Error(tr(...productSelectionLabels.unavailable));
     const { option, offer } = resolveProductSelection(product, size, color);
     if (!completeProductOffer(offer)) {
@@ -650,7 +650,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
 
 
 
-  const repeatHistoryItem = (item: AyrovixHistoryItem) => {
+  const repeatHistoryItem = (item: ZayrovixHistoryItem) => {
     if (item.kind === 'text' && item.inputValue) { void runTextAnalysis(item.inputValue); return; }
     if (item.kind === 'barcode' && item.inputValue) { void runBarcodeAnalysis(item.inputValue); return; }
     if (item.kind === 'code' && item.inputValue) { void runCodeTextAnalysis(item.inputValue); return; }
@@ -741,7 +741,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   const productIsFavorite = favoriteCandidate ? productFavorites.isSaved(favoriteCandidate) : false;
 
   return (
-    <div className="ayrovix-theme-scope fixed inset-0 z-[75] flex flex-col bg-white text-ink" dir={direction} role="dialog" aria-modal="true" aria-label={tr('AYROVIX Lens', 'عدسة AYROVIX')}>
+    <div className="ayrovix-theme-scope fixed inset-0 z-[75] flex flex-col bg-white text-ink" dir={direction} role="dialog" aria-modal="true" aria-label={tr('ZAYROVIX Lens', 'عدسة ZAYROVIX')}>
       <div className="ayrovix-sheet flex h-full flex-col bg-white">
         {['home', 'error', 'barcode'].includes(stage) && (
           <AppHeader
@@ -840,7 +840,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
                   />
                   <button type="submit" disabled={textQuery.trim().length < 2} className="ay-btn-primary flex-none text-xs disabled:opacity-40">{tr('Rechercher', 'بحث')}</button>
                 </div>
-                <p className="text-xs font-medium text-muted leading-relaxed">{tr('Recherche dans le catalogue AYROVI + web marchand (même moteur que QR/lien). Aucun prix inventé.', 'بحث في مجموعة AYROVI + وِب المتاجر (نفس محرك QR/الرابط). لا سعر مخترع.')}</p>
+                <p className="text-xs font-medium text-muted leading-relaxed">{tr('Recherche dans le catalogue ZAYROVI + web marchand (même moteur que QR/lien). Aucun prix inventé.', 'بحث في مجموعة ZAYROVI + وِب المتاجر (نفس محرك QR/الرابط). لا سعر مخترع.')}</p>
               </form>
 
               <form
@@ -891,7 +891,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
               )}
 
               <p className="px-2 pt-1 text-center text-xs leading-relaxed text-muted">
-                {tr('Caméra inaccessible ? Importez une photo, saisissez un nom ou collez un lien — AYROVIX calcule son prix final en dinars.', 'الكاميرا غير متاحة؟ ارفع صورة أو اكتب اسمًا أو ألصق رابطًا — تحسب AYROVIX سعره النهائي بالدينار.')}
+                {tr('Caméra inaccessible ? Importez une photo, saisissez un nom ou collez un lien — ZAYROVIX calcule son prix final en dinars.', 'الكاميرا غير متاحة؟ ارفع صورة أو اكتب اسمًا أو ألصق رابطًا — تحسب ZAYROVIX سعره النهائي بالدينار.')}
               </p>
             </div>
           )}
@@ -958,7 +958,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
               <p className="text-sm font-extrabold text-ink">{tr('Code-barres détecté', 'تم اكتشاف الرمز الشريطي')}</p>
               <p className="mx-auto w-fit bg-surface px-5 py-3 ay-number text-lg font-bold tracking-[0.15em] text-ink">{barcode.code}</p>
               <p className="mx-auto max-w-xs text-xs leading-relaxed text-muted">
-                {tr("Aucune offre en ligne ne correspond à ce code pour le moment. Photographiez le produit : AYROVIX l'identifiera par l'image.", 'لا يطابق هذا الرمز أي عرض عبر الإنترنت حاليًا. صوّر المنتج وستتعرّف عليه AYROVIX من الصورة.')}
+                {tr("Aucune offre en ligne ne correspond à ce code pour le moment. Photographiez le produit : ZAYROVIX l'identifiera par l'image.", 'لا يطابق هذا الرمز أي عرض عبر الإنترنت حاليًا. صوّر المنتج وستتعرّف عليه ZAYROVIX من الصورة.')}
               </p>
               <div className="flex justify-center gap-2.5">
                 <button type="button" onClick={copyBarcode} className="ay-btn-secondary text-xs">
@@ -971,7 +971,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
 
           {stage === 'error' && error && (() => {
             const g = errorGuidance(error.code, tr);
-            const showPreview = Boolean(imageFile && !['AYROVIX_UNAVAILABLE', 'INVALID_TEXT', 'TEXT_SEARCH_FAILED', 'INVALID_URL'].includes(error.code));
+            const showPreview = Boolean(imageFile && !['ZAYROVIX_UNAVAILABLE', 'INVALID_TEXT', 'TEXT_SEARCH_FAILED', 'INVALID_URL'].includes(error.code));
             return (
             <div className="mx-auto max-w-md space-y-4 pt-6 text-center">
               <div className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-danger/5 text-danger">

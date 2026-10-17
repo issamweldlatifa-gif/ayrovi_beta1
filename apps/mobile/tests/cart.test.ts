@@ -7,7 +7,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
-  addCatalogToCart, ayroviCartReadiness, fetchAyroviCart, parseAyroviCart, removeAyroviCartItem, updateAyroviCartQuantity,
+  addCatalogToCart, ayroviCartReadiness, fetchZayroviCart, parseZayroviCart, removeZayroviCartItem, updateZayroviCartQuantity,
 } from '../src/api/cart';
 import { API_BASE_URL } from '../src/api/config';
 
@@ -75,7 +75,7 @@ const CART = {
 
 describe('قراءة السلّة', () => {
   it('تتقرا من الجذر (بلا غلاف data) والأرقام كما هي من الخادم', () => {
-    const cart = parseAyroviCart(CART);
+    const cart = parseZayroviCart(CART);
     expect(cart.items).toHaveLength(1);
     expect(cart.units).toBe(2);
     expect(cart.deliveryTND).toBe(7);
@@ -86,7 +86,7 @@ describe('قراءة السلّة', () => {
   });
 
   it('السطر يحوّل الحقول بصدق: العملة كبيرة، الاختيار، والبرومو', () => {
-    const line = parseAyroviCart(CART).items[0];
+    const line = parseZayroviCart(CART).items[0];
     expect(line.sourceCurrency).toBe('USD');
     expect(line.variant).toBe('M');
     expect(line.lineTotalTND).toBe(1166.02);
@@ -96,7 +96,7 @@ describe('قراءة السلّة', () => {
   });
 
   it('سطر STALE يتقال ويوقف: معرّفه في `blockedIds` والسبب مقروء', () => {
-    const cart = parseAyroviCart({
+    const cart = parseZayroviCart({
       ...CART,
       items: [{ ...LINE, priceTrust: 'STALE', priceTrustReason: 'TOKEN_EXPIRED_OR_ALTERED' }],
     });
@@ -108,18 +108,18 @@ describe('قراءة السلّة', () => {
   });
 
   it('`priceTrust` خارج القاموس ما يترقّاش: يولي فارغ (ما نخمّنوش FRESH)', () => {
-    const line = parseAyroviCart({ ...CART, items: [{ ...LINE, priceTrust: 'PROBABLEMENT' }] }).items[0];
+    const line = parseZayroviCart({ ...CART, items: [{ ...LINE, priceTrust: 'PROBABLEMENT' }] }).items[0];
     expect(line.priceTrust).toBe('');
-    expect(ayroviCartReadiness({ ...parseAyroviCart(CART), items: [line] }).canCheckout).toBe(true);
+    expect(ayroviCartReadiness({ ...parseZayroviCart(CART), items: [line] }).canCheckout).toBe(true);
   });
 
   it('سلّة بلا `items` = عقد مكسور، وسطر بلا معرّف كذلك', () => {
-    expect(() => parseAyroviCart({ success: true, totalTND: 0 })).toThrow(/panier/);
-    expect(() => parseAyroviCart({ ...CART, items: [{ title: 'بلا معرّف' }] })).toThrow(/ligne/);
+    expect(() => parseZayroviCart({ success: true, totalTND: 0 })).toThrow(/panier/);
+    expect(() => parseZayroviCart({ ...CART, items: [{ title: 'بلا معرّف' }] })).toThrow(/ligne/);
   });
 
   it('سلّة فارغة: باب الشراء مقفول بصراحة', () => {
-    const gate = ayroviCartReadiness(parseAyroviCart({ ...CART, items: [], totalItemsCount: 0, totalTND: 0, deliveryTND: 0 }));
+    const gate = ayroviCartReadiness(parseZayroviCart({ ...CART, items: [], totalItemsCount: 0, totalTND: 0, deliveryTND: 0 }));
     expect(gate.canCheckout).toBe(false);
     expect(gate.blockReason).toBe('EMPTY');
     expect(ayroviCartReadiness(null).blockReason).toBe('EMPTY');
@@ -129,7 +129,7 @@ describe('قراءة السلّة', () => {
 describe('الشبكة', () => {
   it('القراءة: GET مع `x-session-id` فقط، بلا حساب محلي', async () => {
     const spy = stubFetch(() => json(CART));
-    const cart = await fetchAyroviCart({ sessionId: SESSION });
+    const cart = await fetchZayroviCart({ sessionId: SESSION });
 
     const [url, init] = spy.mock.calls[0] as [string, RequestInit];
     expect(url).toBe(`${API_BASE_URL}/api/cart/items`);
@@ -140,7 +140,7 @@ describe('الشبكة', () => {
 
   it('تعديل الكمية: مطلق (2) على PATCH، والمعرّف مُرمّز في المسار', async () => {
     const spy = stubFetch(() => json({ success: true, cartItem: { ...LINE, id: 'ci/1', quantity: 3 } }));
-    const out = await updateAyroviCartQuantity({ itemId: 'ci/1', quantity: 3, sessionId: SESSION });
+    const out = await updateZayroviCartQuantity({ itemId: 'ci/1', quantity: 3, sessionId: SESSION });
 
     const [url, init] = spy.mock.calls[0] as [string, RequestInit];
     expect(url).toBe(`${API_BASE_URL}/api/cart/items/ci%2F1`);
@@ -151,19 +151,19 @@ describe('الشبكة', () => {
 
   it('كمية خارج 0..99: خطأ قبل أي شبكة (بلا طلب محكوم عليه بالرفض)', async () => {
     const spy = stubFetch(() => json(CART));
-    await expect(updateAyroviCartQuantity({ itemId: 'ci_1', quantity: 100, sessionId: SESSION }))
+    await expect(updateZayroviCartQuantity({ itemId: 'ci_1', quantity: 100, sessionId: SESSION }))
       .rejects.toMatchObject({ kind: 'malformed' });
-    await expect(updateAyroviCartQuantity({ itemId: 'ci_1', quantity: 2.5, sessionId: SESSION }))
+    await expect(updateZayroviCartQuantity({ itemId: 'ci_1', quantity: 2.5, sessionId: SESSION }))
       .rejects.toMatchObject({ kind: 'malformed' });
     expect(spy).not.toHaveBeenCalled();
   });
 
   it('الحذف: `removed:true` وحدها نجاح؛ بلاها عقد مكسور', async () => {
     stubFetch(() => json({ success: true, removed: true }));
-    await expect(removeAyroviCartItem({ itemId: 'ci_1', sessionId: SESSION })).resolves.toBeUndefined();
+    await expect(removeZayroviCartItem({ itemId: 'ci_1', sessionId: SESSION })).resolves.toBeUndefined();
 
     stubFetch(() => json({ success: true }));
-    await expect(removeAyroviCartItem({ itemId: 'ci_1', sessionId: SESSION }))
+    await expect(removeZayroviCartItem({ itemId: 'ci_1', sessionId: SESSION }))
       .rejects.toMatchObject({ kind: 'malformed' });
   });
 
@@ -182,7 +182,7 @@ describe('الشبكة', () => {
 
   it('رفض الخادم يوصل بكوده ونصّه (بلا تلميع)', async () => {
     stubFetch(() => json({ success: false, code: 'INVALID_CART_ITEM', error: 'Données produit incomplètes ou invalides.' }, 400));
-    await expect(fetchAyroviCart({ sessionId: SESSION })).rejects.toMatchObject({
+    await expect(fetchZayroviCart({ sessionId: SESSION })).rejects.toMatchObject({
       kind: 'http', code: 'INVALID_CART_ITEM',
     });
   });

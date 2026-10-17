@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { deduplicateCandidates } from './candidateDedup';
-import type { AyrovixCandidate } from '../types';
+import type { ZayrovixCandidate } from '../types';
 
 describe('Deduplicate', () => {
-  function cand(overrides: Partial<AyrovixCandidate> = {}): AyrovixCandidate {
+  function cand(overrides: Partial<ZayrovixCandidate> = {}): ZayrovixCandidate {
     return {
       id: `id_${Math.random().toString(36).slice(2,6)}`,
       kind: 'external',

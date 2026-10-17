@@ -9,7 +9,7 @@
  * URL (marchés d'occasion connus, mots-clés FR/AR/EN). Sans signal explicite,
  * la fiche marchand standard est considérée neuve (défaut de l'e-commerce).
  */
-import type { AyrovixCandidate } from '../types';
+import type { ZayrovixCandidate } from '../types';
 
 export type ProductCondition = 'new' | 'used' | 'unknown';
 
@@ -92,7 +92,7 @@ export function isUsedListing(input: {
   return detectProductCondition(input) === 'used';
 }
 
-export function filterOutUsedCandidates(candidates: AyrovixCandidate[]): AyrovixCandidate[] {
+export function filterOutUsedCandidates(candidates: ZayrovixCandidate[]): ZayrovixCandidate[] {
   return candidates.filter((candidate) => !isUsedListing({
     title: candidate.title,
     description: candidate.description,

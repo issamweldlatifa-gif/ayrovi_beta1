@@ -35,7 +35,7 @@ visible, sans que le tiroir mange l'écran.
 | Pièce | Où | Ce qu'elle fait | État |
 |---|---|---|---|
 | Détection serveur | `POST /api/ayrovix/detect` (`src/ayrovix/routes.ts:505`) | Réduit l'image à 768 px, appelle la vision, renvoie `products[]` = `{ name, category, box }` (boîtes normalisées 0..1) | ✅ en service |
-| Budget détection | `src/ayrovix/services/ai.ts:707` | `AYROVIX_DETECT_TIMEOUT_MS` = 9 s (4–20 s) | ✅ |
+| Budget détection | `src/ayrovix/services/ai.ts:707` | `ZAYROVIX_DETECT_TIMEOUT_MS` = 9 s (4–20 s) | ✅ |
 | Client mobile | `detectProducts` (`apps/mobile/src/api/lens.ts:565`) | 15 s de délai, après quoi **repli silencieux** sur le cadre manquant | ⚠️ |
 | Overlay Live | `LensLiveOverlay.tsx` | Dessine les boîtes **sur l'aperçu caméra**, tape pour choisir | ✅ |
 | Boîtes après photo | `LensSelectionView.tsx:196` | Dessine les boîtes détectées sur la photo, tape une boîte → cadre | ✅ |

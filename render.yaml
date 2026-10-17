@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: ayrovi
+    name: zayrovi
     runtime: node
     region: frankfurt
     plan: starter
@@ -8,7 +8,7 @@ services:
     startCommand: npm start
     healthCheckPath: /api/ready
     disk:
-      name: ayrovi-data
+      name: zayrovi-data
       mountPath: /opt/render/project/src/data
       sizeGB: 1
     envVars:
@@ -78,13 +78,13 @@ services:
         sync: false
       - key: MAIL_FROM
         sync: false
-      - key: AYROVI_LENS_LIVE_STOCK
+      - key: ZAYROVI_LENS_LIVE_STOCK
         value: 'true'
-      - key: AYROVI_LENS_LIVE_BUDGET
+      - key: ZAYROVI_LENS_LIVE_BUDGET
         value: '24'
-      - key: AYROVI_LENS_LIVE_CONCURRENCY
+      - key: ZAYROVI_LENS_LIVE_CONCURRENCY
         value: '8'
-      - key: AYROVI_LENS_LIVE_DEADLINE_MS
+      - key: ZAYROVI_LENS_LIVE_DEADLINE_MS
         value: '25000'
       - key: BACKUP_INTERVAL_HOURS
         value: 24
@@ -102,7 +102,7 @@ services:
       - key: BACKUP_S3_SECRET_ACCESS_KEY
         sync: false
       - key: BACKUP_S3_PREFIX
-        value: ayrovi/sqlite
+        value: zayrovi/sqlite
       - key: BACKUP_REQUIRE_EXTERNAL
         value: 'false'
       - key: ANTHROPIC_API_KEY
@@ -144,35 +144,35 @@ services:
         value: tts-1
       - key: SERPAPI_KEY
         sync: false
-      - key: AYROVIX_VISUAL_SEARCH_TIMEOUT_MS
+      - key: ZAYROVIX_VISUAL_SEARCH_TIMEOUT_MS
         value: 10000
-      - key: AYROVIX_LENS_COUNTRY
+      - key: ZAYROVIX_LENS_COUNTRY
         value: fr
-      - key: AYROVIX_AI_WEB_SEARCH
+      - key: ZAYROVIX_AI_WEB_SEARCH
         value: true
-      - key: AYROVIX_PROVIDER_TIMEOUT_MS
+      - key: ZAYROVIX_PROVIDER_TIMEOUT_MS
         value: 12000
-      - key: AYROVIX_QUOTE_SECRET
+      - key: ZAYROVIX_QUOTE_SECRET
         sync: false
-      - key: AYROVIX_RENDER_PROVIDER
+      - key: ZAYROVIX_RENDER_PROVIDER
         value: auto
-      - key: AYROVIX_RENDER_TIMEOUT_MS
+      - key: ZAYROVIX_RENDER_TIMEOUT_MS
         value: 18000
-      - key: AYROVIX_SCRAPER_COUNTRY
+      - key: ZAYROVIX_SCRAPER_COUNTRY
         value: fr
       - key: SCRAPERAPI_KEY
         sync: false
       - key: SCRAPINGBEE_API_KEY
         sync: false
-      - key: AYROVIX_SCRAPER_PREMIUM
+      - key: ZAYROVIX_SCRAPER_PREMIUM
         value: 'false'
-      - key: AYROVIX_SCRAPINGBEE_STEALTH
+      - key: ZAYROVIX_SCRAPINGBEE_STEALTH
         value: 'false'
       - key: BRIGHTDATA_API_TOKEN
         sync: false
       - key: BRIGHTDATA_UNLOCKER_ZONE
         sync: false
-      - key: AYROVIX_OCR_TIMEOUT_MS
+      - key: ZAYROVIX_OCR_TIMEOUT_MS
         value: 7000
-      - key: AYROVIX_SEARCH_TIMEOUT_MS
+      - key: ZAYROVIX_SEARCH_TIMEOUT_MS
         value: 7000

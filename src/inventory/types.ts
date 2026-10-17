@@ -1,5 +1,5 @@
 /**
- * AYROVI Inventory (P2.2) — vocabulaire du module.
+ * ZAYROVI Inventory (P2.2) — vocabulaire du module.
  *
  * Le contrat de la phase, écrit ici pour être lisible avant le code :
  *  • la quantité n'existe que dans `inventory_stock_items`. `products` ne gagne aucune

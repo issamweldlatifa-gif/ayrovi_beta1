@@ -8,7 +8,7 @@ async function run() {
     MAIL_PROVIDER: '', MAIL_API_KEY: '', MAIL_FROM: '',
     GOOGLE_CLIENT_ID: '', FACEBOOK_APP_ID: '', APPLE_CLIENT_ID: '', CUSTOMER_OTP_PROVIDER: 'console',
     ANTHROPIC_API_KEY: '', OPENAI_API_KEY: '', GROQ_API_KEY: '', GEMINI_API_KEY: '', GOOGLE_API_KEY: '',
-    SERPAPI_KEY: '', SCRAPERAPI_KEY: '', AYROVIX_AI_WEB_SEARCH: 'false',
+    SERPAPI_KEY: '', SCRAPERAPI_KEY: '', ZAYROVIX_AI_WEB_SEARCH: 'false',
   });
   const { app, db } = await import('../src/server');
   const server = app.listen(0, '127.0.0.1');
@@ -16,7 +16,7 @@ async function run() {
   const address = server.address() as { port: number };
   try {
     const child = spawn(process.execPath, ['verify/editorial-customer.mjs'], {
-      env: { ...process.env, AYROVI_BASE_URL: `http://127.0.0.1:${address.port}` }, stdio: 'inherit',
+      env: { ...process.env, ZAYROVI_BASE_URL: `http://127.0.0.1:${address.port}` }, stdio: 'inherit',
     });
     const timer = setTimeout(() => child.kill('SIGTERM'), 150_000);
     try {

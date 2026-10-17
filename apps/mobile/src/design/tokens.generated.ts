@@ -145,7 +145,7 @@ export const TYPOGRAPHY = {
   headingWidth: "100%",
   labelWeight: 700,
   letterSpacing: "0em",
-  preset: "ayrovi-a",
+  preset: "zayrovi-a",
   priceWeight: 600,
   stack: "'Zalando Sans', 'Noto Sans Arabic', sans-serif",
 } as const;

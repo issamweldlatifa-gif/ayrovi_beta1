@@ -1,5 +1,5 @@
 const CSRF_KEY = 'ayrovi_admin_csrf';
-export const ADMIN_SESSION_EXPIRED_EVENT = 'ayrovi:admin-session-expired';
+export const ADMIN_SESSION_EXPIRED_EVENT = 'zayrovi:admin-session-expired';
 
 export class ApiError extends Error {
   status: number;

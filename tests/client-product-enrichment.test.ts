@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { mergeProductEnrichment } from '../client/src/ayrovix/services/productEnrichment';
-import type { AyrovixProduct } from '../client/src/ayrovix/types';
+import type { ZayrovixProduct } from '../client/src/ayrovix/types';
 
-const product = (over: Partial<AyrovixProduct> = {}): AyrovixProduct => ({
+const product = (over: Partial<ZayrovixProduct> = {}): ZayrovixProduct => ({
   title: 'Phone X Pro 256 GB', brand: 'Brand', model: null, description: 'Short',
   image: 'https://shop.example/item/main.jpg', images: ['https://shop.example/item/main.jpg'],
   source: 'Shop', sourceUrl: 'https://shop.example/item?campaign=one',

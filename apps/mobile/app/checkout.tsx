@@ -34,7 +34,7 @@ import { rowDirectionFor } from '@/design/layoutLogic';
 import { useI18n } from '@/i18n';
 import { isApiError, userMessage } from '@/api/errors';
 import { fetchAddresses, type Address } from '@/api/account';
-import { ayroviCartReadiness, fetchAyroviCart } from '@/api/cart';
+import { ayroviCartReadiness, fetchZayroviCart } from '@/api/cart';
 import {
   availablePaymentChoices, checkoutRefusalText, fetchCommercePolicy, initiateCardPayment, paymentChoices,
   refuseCheckout, resolvePaymentMethod, submitCheckout, type CheckoutResult,
@@ -53,9 +53,9 @@ export default function CheckoutScreen() {
   const authenticated = session.status === 'signedIn' && Boolean(account);
 
   const cartQuery = useQuery({
-    queryKey: ['cart', 'ayrovi'],
+    queryKey: ['cart', 'zayrovi'],
     enabled: Boolean(sessionId),
-    queryFn: ({ signal }) => fetchAyroviCart({ sessionId, signal }),
+    queryFn: ({ signal }) => fetchZayroviCart({ sessionId, signal }),
     staleTime: 0,
   });
   const policyQuery = useQuery({
@@ -163,7 +163,7 @@ export default function CheckoutScreen() {
     onSuccess: (order) => {
       setResult(order);
       setNote('');
-      queryClient.invalidateQueries({ queryKey: ['cart', 'ayrovi'] });
+      queryClient.invalidateQueries({ queryKey: ['cart', 'zayrovi'] });
       queryClient.invalidateQueries({ queryKey: ['account', 'orders'] });
     },
     onError: (error) => {

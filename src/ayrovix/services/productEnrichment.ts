@@ -24,7 +24,7 @@
  *                source. Absent, elle vaut `unknown` : un silence n'est pas une
  *                disponibilité, ici comme partout ailleurs.
  *
- * `AYROVI_PRODUCT_ENRICH=false` coupe la dépense sans redéploiement.
+ * `ZAYROVI_PRODUCT_ENRICH=false` coupe la dépense sans redéploiement.
  */
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -55,7 +55,7 @@ const DEFAULT_DEADLINE_MS = 4000;
 const MATCH_THRESHOLD = 0.72;
 
 function enabled(): boolean {
-  return process.env.AYROVI_PRODUCT_ENRICH !== 'false' && Boolean(serpApiKey());
+  return process.env.ZAYROVI_PRODUCT_ENRICH !== 'false' && Boolean(serpApiKey());
 }
 
 function serpApiKey(): string {
@@ -89,7 +89,7 @@ function canonicalScope(value: string): string {
 }
 
 function cacheFile(title: string, scope = ''): string {
-  const dir = process.env.AYROVI_PRODUCT_ENRICH_CACHE_DIR
+  const dir = process.env.ZAYROVI_PRODUCT_ENRICH_CACHE_DIR
     || path.resolve(process.cwd(), 'data', 'product-enrichment');
   // Item titles are not unique; isolate merchant page data in cache identity.
   const key = crypto.createHash('sha256').update(`${normalizeTitle(title)}|${scope}`).digest('hex').slice(0, 32);
@@ -99,7 +99,7 @@ function cacheFile(title: string, scope = ''): string {
 function readCache(title: string, now: number, scope = ''): ProductEnrichment | null {
   try {
     const entry = JSON.parse(fs.readFileSync(cacheFile(title, scope), 'utf8')) as { at: number; value: ProductEnrichment };
-    const ttl = envInt('AYROVI_PRODUCT_ENRICH_TTL_MS', DEFAULT_TTL_MS, 60_000, 30 * 24 * 60 * 60 * 1000);
+    const ttl = envInt('ZAYROVI_PRODUCT_ENRICH_TTL_MS', DEFAULT_TTL_MS, 60_000, 30 * 24 * 60 * 60 * 1000);
     return now - entry.at <= ttl ? entry.value : null;
   } catch {
     return null;
@@ -191,7 +191,7 @@ export interface ProductFetchers {
 async function serpApiFind(title: string): Promise<{ title: string; productId: string; sourceUrl?: string } | null> {
   const params = new URLSearchParams({ engine: 'google_shopping', q: title.slice(0, 120), api_key: serpApiKey(), num: '5' });
   const response = await fetch(`https://serpapi.com/search.json?${params}`, {
-    signal: AbortSignal.timeout(envInt('AYROVI_PRODUCT_ENRICH_TIMEOUT_MS', 3500, 800, 10_000)),
+    signal: AbortSignal.timeout(envInt('ZAYROVI_PRODUCT_ENRICH_TIMEOUT_MS', 3500, 800, 10_000)),
   });
   if (!response.ok) throw new Error(`HTTP_${response.status}`);
   const payload = await response.json() as any;
@@ -212,7 +212,7 @@ async function serpApiFind(title: string): Promise<{ title: string; productId: s
 async function serpApiLoad(productId: string): Promise<any | null> {
   const params = new URLSearchParams({ engine: 'google_product', product_id: productId, api_key: serpApiKey() });
   const response = await fetch(`https://serpapi.com/search.json?${params}`, {
-    signal: AbortSignal.timeout(envInt('AYROVI_PRODUCT_ENRICH_TIMEOUT_MS', 3500, 800, 10_000)),
+    signal: AbortSignal.timeout(envInt('ZAYROVI_PRODUCT_ENRICH_TIMEOUT_MS', 3500, 800, 10_000)),
   });
   if (!response.ok) throw new Error(`HTTP_${response.status}`);
   const payload = await response.json() as any;
@@ -234,7 +234,7 @@ export async function enrichProduct(
 
   const findProduct = options.fetchers?.findProduct ?? serpApiFind;
   const loadProduct = options.fetchers?.loadProduct ?? serpApiLoad;
-  const deadline = envInt('AYROVI_PRODUCT_ENRICH_DEADLINE_MS', DEFAULT_DEADLINE_MS, 500, 15_000);
+  const deadline = envInt('ZAYROVI_PRODUCT_ENRICH_DEADLINE_MS', DEFAULT_DEADLINE_MS, 500, 15_000);
 
   const work = (async (): Promise<ProductEnrichment> => {
     const found = await findProduct(title);

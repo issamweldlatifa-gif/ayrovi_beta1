@@ -48,16 +48,16 @@ const DEFAULT_CONCURRENCY = 3;
 const LOOKUP_TIMEOUT_MS = 6000;
 
 function cacheDir(): string {
-  return process.env.AYROVI_VARIANT_CACHE_DIR || path.resolve(process.cwd(), 'data', 'variant-availability');
+  return process.env.ZAYROVI_VARIANT_CACHE_DIR || path.resolve(process.cwd(), 'data', 'variant-availability');
 }
 
 function ttlMs(): number {
-  const raw = Number(process.env.AYROVI_VARIANT_TTL_MS);
+  const raw = Number(process.env.ZAYROVI_VARIANT_TTL_MS);
   return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_TTL_MS;
 }
 
 function maxLookups(): number {
-  const raw = Number(process.env.AYROVI_VARIANT_MAX_LOOKUPS);
+  const raw = Number(process.env.ZAYROVI_VARIANT_MAX_LOOKUPS);
   return Number.isFinite(raw) && raw >= 0 ? raw : DEFAULT_MAX_LOOKUPS;
 }
 
@@ -164,7 +164,7 @@ export async function resolveVariants(variants: ResolvableVariant[], fetcher: Fe
 
   if (!pending.length) return resolved;
 
-  const enabled = process.env.AYROVI_VARIANT_LOOKUP !== 'false' && Boolean(serpApiKey() || fetcher !== defaultFetcher);
+  const enabled = process.env.ZAYROVI_VARIANT_LOOKUP !== 'false' && Boolean(serpApiKey() || fetcher !== defaultFetcher);
   if (!enabled) {
     for (const { index } of pending) {
       resolved[index] = { ...resolved[index], origin: 'disabled', reason: 'résolution désactivée (pas de clé) — stock non confirmé' };

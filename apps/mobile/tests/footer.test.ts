@@ -24,7 +24,7 @@ beforeEach(() => { apiGetData.mockClear(); apiGetData.mockResolvedValue(null); }
 
 describe('safeChannelUrl — ما يُنشر للعميل', () => {
   it('`https://` صالح ⇒ يُنشر', () => {
-    expect(safeChannelUrl('https://facebook.com/ayrovi')).toBe('https://facebook.com/ayrovi');
+    expect(safeChannelUrl('https://facebook.com/zayrovi')).toBe('https://facebook.com/zayrovi');
   });
 
   it('`javascript:` ⇒ مرفوض (ما ينفّذش سكريبت)', () => {
@@ -33,17 +33,17 @@ describe('safeChannelUrl — ما يُنشر للعميل', () => {
 
   it('`data:` والبروتوكولات المخصّصة ⇒ مرفوضة', () => {
     expect(safeChannelUrl('data:text/html,<script>')).toBeNull();
-    expect(safeChannelUrl('ayrovi://account')).toBeNull();
-    expect(safeChannelUrl('mailto:hi@ayrovi.tn')).toBeNull();
+    expect(safeChannelUrl('zayrovi://account')).toBeNull();
+    expect(safeChannelUrl('mailto:hi@zayrovi.tn')).toBeNull();
   });
 
   it('بيانات اعتماد داخل الرابط ⇒ مرفوض (وسيلة تضليل معروفة)', () => {
-    expect(safeChannelUrl('https://user:pass@facebook.com/ayrovi')).toBeNull();
+    expect(safeChannelUrl('https://user:pass@facebook.com/zayrovi')).toBeNull();
   });
 
   it('رابط ناقص أو موش نص ⇒ مرفوض، موش استثناء', () => {
     expect(safeChannelUrl('')).toBeNull();
-    expect(safeChannelUrl('facebook.com/ayrovi')).toBeNull();
+    expect(safeChannelUrl('facebook.com/zayrovi')).toBeNull();
     expect(safeChannelUrl(null)).toBeNull();
     expect(safeChannelUrl(42)).toBeNull();
     expect(safeChannelUrl(['https://a.tn'])).toBeNull();
@@ -54,7 +54,7 @@ describe('قراءة الفوتر — تتدهور وما تطيّحش', () => {
   it('القنوات الصالحة فقط تُعرض، والتالفة تُسقَط', async () => {
     apiGetData.mockResolvedValue({
       footerAbout: '  متجر تونسي  ',
-      channels: { facebook: 'https://fb.com/ayrovi', tiktok: 'javascript:alert(1)', whatsapp: '' },
+      channels: { facebook: 'https://fb.com/zayrovi', tiktok: 'javascript:alert(1)', whatsapp: '' },
       paymentMethods: ['cod', 'card'],
     });
     const info = await fetchFooterInfo({});

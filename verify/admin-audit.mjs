@@ -1,5 +1,5 @@
 /**
- * AYROVI — audit complet de l'admin (2026-09-22).
+ * ZAYROVI — audit complet de l'admin (2026-09-22).
  *
  * Ce que cet audit mesure, écran par écran, sur l'application RÉELLE :
  *   1. l'écran se rend (titre présent, pas d'état bloqué sur « Chargement… ») ;
@@ -12,15 +12,15 @@
  *      écriture exige le jeton CSRF, et le cookie de session porte les bons drapeaux.
  *
  * Sortie : `docs/admin-model-a/audit/*.json` + un rapport lisible `audit/RAPPORT.md`.
- * Usage  : AYROVI_BASE_URL=http://127.0.0.1:3000 AYROVI_ADMIN_PASSWORD=… node verify/admin-audit.mjs
+ * Usage  : ZAYROVI_BASE_URL=http://127.0.0.1:3000 ZAYROVI_ADMIN_PASSWORD=… node verify/admin-audit.mjs
  */
 import { chromium } from 'playwright';
 import fs from 'node:fs';
 
-const base = process.env.AYROVI_BASE_URL;
-if (!base) { console.error('AYROVI_BASE_URL est requis.'); process.exit(1); }
-const email = process.env.AYROVI_ADMIN_EMAIL || 'admin@ayrovi.tn';
-const password = process.env.AYROVI_ADMIN_PASSWORD || 'AyroviBeta2026!';
+const base = process.env.ZAYROVI_BASE_URL;
+if (!base) { console.error('ZAYROVI_BASE_URL est requis.'); process.exit(1); }
+const email = process.env.ZAYROVI_ADMIN_EMAIL || 'admin@zayrovi.tn';
+const password = process.env.ZAYROVI_ADMIN_PASSWORD || 'ZayroviBeta2026!';
 const output = 'docs/admin-model-a/audit';
 fs.mkdirSync(output, { recursive: true });
 

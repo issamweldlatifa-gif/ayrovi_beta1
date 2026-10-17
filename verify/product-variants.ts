@@ -24,7 +24,7 @@ import path from 'node:path';
 import { buildProductCard, decideOrder } from '../src/ayrovix/services/productVariants';
 
 // Le script est empaqueté dans .cache/ : on repart de la racine du dépôt.
-const FIXTURES = process.env.AYROVI_VARIANT_FIXTURES || path.join(process.cwd(), 'verify', 'fixtures', 'product-variants');
+const FIXTURES = process.env.ZAYROVI_VARIANT_FIXTURES || path.join(process.cwd(), 'verify', 'fixtures', 'product-variants');
 
 /** Attente par fiche : ce que le moteur DOIT comprendre, et rien de plus. */
 const EXPECTED: Record<string, {

@@ -1,5 +1,5 @@
 /**
- * AYROVI Catalogue (P2.1) — hierarchical categories.
+ * ZAYROVI Catalogue (P2.1) — hierarchical categories.
  *
  * Before this file the product "category" was a free-text column (`products.category`)
  * and the only real tree in the database was `crm_categories`, which belongs to the CRM

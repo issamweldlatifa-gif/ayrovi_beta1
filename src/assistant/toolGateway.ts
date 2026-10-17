@@ -259,7 +259,7 @@ function deniedExecution(
     modelResult: {
       success: false,
       code,
-      message: 'AYROVI a refusé cette proposition d’outil.',
+      message: 'ZAYROVI a refusé cette proposition d’outil.',
     },
     audit: auditContract(context, state, outcome, auditId),
   };
@@ -311,7 +311,7 @@ export function assistantWriteToolSecurityReadiness(): {
 }
 
 /**
- * Server-owned security boundary. A model emits a proposal only; AYROVI then
+ * Server-owned security boundary. A model emits a proposal only; ZAYROVI then
  * classifies, authenticates, authorizes, validates, checks approval and
  * idempotency, executes domain rules, and writes a canonical audit trail.
  */

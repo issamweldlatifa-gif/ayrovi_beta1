@@ -47,7 +47,7 @@ export interface AssistantMessage {
   /** New streamed turns remain incomplete until the server emits done. */
   incomplete?: boolean;
   attachments?: AssistantAttachment[];
-  products?: import('../../ayrovix/types').AyrovixCandidate[];
+  products?: import('../../ayrovix/types').ZayrovixCandidate[];
   priceBreakdown?: AssistantPriceBreakdown;
   orderStatuses?: AssistantOrderStatus[];
   suggestedActions?: Array<{ label: string; prompt: string }>;

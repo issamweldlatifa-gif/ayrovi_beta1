@@ -8,12 +8,12 @@
  *    + hairline + mix-blend-mode: multiply → le fond blanc des boutiques
  *    disparaît dans le canvas (plus de fond marchand « brut ») ;
  *  • le prix remisé est l'élément le plus fort de la carte et il est ROUGE
- *    (var(--ayrovi-promo), référence Zalando) ; l'original reste gris barré ;
+ *    (var(--zayrovi-promo), référence Zalando) ; l'original reste gris barré ;
  *  • le badge −X% est rouge — l'orange reste réservé aux CTA.
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import { Image as ImageIcon, Loader2 } from '../../components/QatafoIcons';
-import type { AyrovixPromo } from '../types';
+import type { ZayrovixPromo } from '../types';
 import { withIsolation } from '../services/mediaIsolation';
 import { useLocale } from '../../i18n/LocaleContext';
 import './quiet-card.css';
@@ -82,7 +82,7 @@ export const StudioImageFrame: React.FC<StudioImageFrameProps> = ({
 export interface QuietPromoPriceProps {
   priceTnd?: number | null;
   /** Promo du jour — seule la remise est requise (ligne panier : original via originalTnd). */
-  promo?: ({ percent: number } & Partial<Pick<AyrovixPromo, 'label' | 'priceTnd' | 'originalPriceTnd'>>) | null;
+  promo?: ({ percent: number } & Partial<Pick<ZayrovixPromo, 'label' | 'priceTnd' | 'originalPriceTnd'>>) | null;
   /** Total ligne original (panier) quand la promo ne porte pas le prix original. */
   originalTnd?: number | null;
   /** Formate un montant TND (ex. formatMoney de useLocale). */

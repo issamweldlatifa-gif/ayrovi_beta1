@@ -10,7 +10,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest';
 import { LensProductCard } from '../client/src/ayrovix/components/LensProductCard';
 import { LocaleProvider } from '../client/src/i18n/LocaleContext';
-import type { AyrovixCandidate } from '../client/src/ayrovix/types';
+import type { ZayrovixCandidate } from '../client/src/ayrovix/types';
 import type { LiveStockResult } from '../client/src/ayrovix/services/lensApi';
 
 const refreshMock = vi.hoisted(() => vi.fn());
@@ -18,11 +18,11 @@ vi.mock('../client/src/ayrovix/services/lensApi', () => ({ refreshLiveStock: ref
 
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 
-const candidate: AyrovixCandidate = {
+const candidate: ZayrovixCandidate = {
   id: 'hoody', kind: 'external', title: 'I Saw It First Zip Up Hoody', brand: null, model: null,
   colors: [], sizes: [], source: 'Sports Direct', sourceUrl: 'https://shop.example/hoody',
   image: '/hoody.jpg', price: 19, currency: 'EUR', priceTnd: 76, match: 90,
-} as AyrovixCandidate;
+} as ZayrovixCandidate;
 
 const fresh = (over: Partial<LiveStockResult> = {}): LiveStockResult => ({
   url: 'https://shop.example/hoody', availability: 'in_stock',
@@ -44,7 +44,7 @@ afterEach(async () => {
   vi.restoreAllMocks();
 });
 
-async function render(patch: Partial<AyrovixCandidate> = {}) {
+async function render(patch: Partial<ZayrovixCandidate> = {}) {
   await act(async () => {
     root.render(
       <LocaleProvider>

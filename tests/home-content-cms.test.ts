@@ -5,7 +5,7 @@ import { app } from '../src/server';
 
 /**
  * Dashboard = Control · Database/CMS = Source of Truth · Frontend = Presentation
- * + قاعدة AYROVI: Mobile width-first (العنوان في تدفق الصفحة، الـ slider بعرض الشاشة).
+ * + قاعدة ZAYROVI: Mobile width-first (العنوان في تدفق الصفحة، الـ slider بعرض الشاشة).
  */
 
 const admin = request.agent(app);
@@ -25,7 +25,7 @@ const indexCss = readFileSync('client/src/index.css', 'utf8');
 
 describe('Dashboard is the single source of truth for Hero, LENS and home sections', () => {
   test('super admin authenticates', async () => {
-    const login = await admin.post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
+    const login = await admin.post('/api/admin/auth/login').send({ email: 'admin@zayrovi.tn', password: 'ZayroviBeta2026!' });
     expect(login.status).toBe(200);
     csrf = login.body.data.csrfToken;
   });
@@ -48,7 +48,7 @@ describe('Dashboard is the single source of truth for Hero, LENS and home sectio
   test('editing LENS in the dashboard changes the public site without touching code', async () => {
     const updated = await admin.put('/api/admin/lens-hero').set('x-csrf-token', csrf)
       .field('title', 'Scannez. Comparez. Commandez.')
-      .field('proofLine', 'Vérifié par AYROVI.')
+      .field('proofLine', 'Vérifié par ZAYROVI.')
       .field('ctaLabel', 'Ouvrir le scanner')
       .field('ctaUrl', '/lens')
       .field('accentColor', '#123456')
@@ -60,7 +60,7 @@ describe('Dashboard is the single source of truth for Hero, LENS and home sectio
 
     const published = await request(app).get('/api/public/lens-hero');
     expect(published.body.data.title).toBe('Scannez. Comparez. Commandez.');
-    expect(published.body.data.proofLine).toBe('Vérifié par AYROVI.');
+    expect(published.body.data.proofLine).toBe('Vérifié par ZAYROVI.');
     expect(published.body.data.ctaUrl).toBe('/lens');
     expect(published.body.data.accentColor).toBe('#123456');
     expect(published.body.data.elementOrder).toBe('title,eyebrow,cta,description,proof');
@@ -83,20 +83,20 @@ describe('Dashboard is the single source of truth for Hero, LENS and home sectio
   test('hero copy comes from the CMS, is editable and refuses an empty title', async () => {
     const before = await request(app).get('/api/public/hero-content');
     expect(before.status).toBe(200);
-    expect(before.body.data.title).toBe('Vous le voyez.\nAYROVI vous le livre.');
-    expect(before.body.data.highlight).toBe('AYROVI');
+    expect(before.body.data.title).toBe('Vous le voyez.\nZAYROVI vous le livre.');
+    expect(before.body.data.highlight).toBe('ZAYROVI');
     expect(before.body.data.ctaLabel).toBe('');
 
     const updated = await admin.put('/api/admin/hero-content').set('x-csrf-token', csrf).send({
-      eyebrow: 'Livraison Tunisie', title: 'Trouvez.\nAYROVI livre.', description: 'Nouveau sous-titre.',
-      ctaLabel: 'Commencer', ctaUrl: 'https://ayrovi.tn/arrivages', elementOrder: 'title,eyebrow,description,cta',
+      eyebrow: 'Livraison Tunisie', title: 'Trouvez.\nZAYROVI livre.', description: 'Nouveau sous-titre.',
+      ctaLabel: 'Commencer', ctaUrl: 'https://zayrovi.tn/arrivages', elementOrder: 'title,eyebrow,description,cta',
     });
     expect(updated.status).toBe(200);
 
     const published = await request(app).get('/api/public/hero-content');
     expect(published.body.data).toMatchObject({
-      eyebrow: 'Livraison Tunisie', title: 'Trouvez.\nAYROVI livre.', description: 'Nouveau sous-titre.',
-      ctaLabel: 'Commencer', ctaUrl: 'https://ayrovi.tn/arrivages', elementOrder: 'title,eyebrow,description,cta',
+      eyebrow: 'Livraison Tunisie', title: 'Trouvez.\nZAYROVI livre.', description: 'Nouveau sous-titre.',
+      ctaLabel: 'Commencer', ctaUrl: 'https://zayrovi.tn/arrivages', elementOrder: 'title,eyebrow,description,cta',
     });
 
     const empty = await admin.put('/api/admin/hero-content').set('x-csrf-token', csrf).send({ title: '   ' });
@@ -137,7 +137,7 @@ describe('Dashboard is the single source of truth for Hero, LENS and home sectio
   });
 });
 
-describe('AYROVI mobile width-first layout rule', () => {
+describe('ZAYROVI mobile width-first layout rule', () => {
   test('the slider reaches the screen edges and stays swipeable on mobile', () => {
     // gap ثابت 16px بين البطاقات
     expect(indexCss).toContain('--ay-rail-gap: 16px;');

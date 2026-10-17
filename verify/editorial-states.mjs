@@ -2,7 +2,7 @@ import { chromium } from 'playwright';
 import fs from 'node:fs';
 import sharp from 'sharp';
 import { inspectEditorialIcons } from './editorial-icon-contract.mjs';
-const base=process.env.AYROVI_BASE_URL;
+const base=process.env.ZAYROVI_BASE_URL;
 const output='screenshots/editorial/complete-icons';fs.mkdirSync(output,{recursive:true});
 const checks=[],errors=[],orange=[];
 function check(label,pass,details){checks.push({label,pass:Boolean(pass),details});if(!pass)throw new Error(label+': '+JSON.stringify(details));}
@@ -12,7 +12,7 @@ try{
  for(const locale of ['fr','ar'])for(const width of [320,390,768])for(const height of [480,844])for(const dark of [false,true]){
   const key=`${locale}/${width}x${height}/${dark?'dark':'light'}`;
   const ctx=await browser.newContext({locale,viewport:{width,height},reducedMotion:width===320?'reduce':'no-preference'});
-  await ctx.addInitScript(locale=>localStorage.setItem('ayrovi.locale.v1',locale),locale);
+  await ctx.addInitScript(locale=>localStorage.setItem('zayrovi.locale.v1',locale),locale);
   const page=await ctx.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto(base+'/__verify/states');
   await page.locator('.editorial-voice').waitFor();await page.evaluate(async()=>{await document.fonts.load('16px "Noto Sans Arabic"');await document.fonts.load('16px "Zalando Sans"');await document.fonts.ready;});
   for(const state of ['idle','starting','listening','user_speaking','transcribing','thinking','speaking','muted','error']){
@@ -60,7 +60,7 @@ try{
  for(const locale of ['fr','ar'])for(const width of [320,390]){
   const key=`commerce-social/${locale}/${width}`;
   const ctx=await browser.newContext({viewport:{width,height:640},reducedMotion:'reduce'});
-  await ctx.addInitScript(locale=>localStorage.setItem('ayrovi.locale.v1',locale),locale);
+  await ctx.addInitScript(locale=>localStorage.setItem('zayrovi.locale.v1',locale),locale);
   const p=await ctx.newPage();p.on('pageerror',e=>errors.push(e.message));
   let readError=true,writeError=true,configError=true,checkoutCalls=0;
   const reply=(route,status,data)=>route.fulfill({status,contentType:'application/json',body:JSON.stringify({success:status<400,data})});
@@ -118,7 +118,7 @@ try{
  for(const locale of ['fr','ar'])for(const width of [320,390,768])for(const enlarged of [false,true]){
   const key=`content/${locale}/${width}/${enlarged?'200pct':'normal'}`;
   const ctx=await browser.newContext({viewport:{width,height:844},reducedMotion:'reduce'});
-  await ctx.addInitScript(locale=>localStorage.setItem('ayrovi.locale.v1',locale),locale);
+  await ctx.addInitScript(locale=>localStorage.setItem('zayrovi.locale.v1',locale),locale);
   const p=await ctx.newPage();p.on('pageerror',e=>errors.push(e.message));await p.goto(base+'/__verify/states');await p.locator('.editorial-voice').waitFor();
   await p.evaluate(enlarged=>{if(enlarged)document.documentElement.style.fontSize='32px';window.setEditorialFixture({kind:'messages'});},enlarged);
   await p.locator('[data-assistant-messages]').waitFor();

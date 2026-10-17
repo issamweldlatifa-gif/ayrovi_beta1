@@ -30,10 +30,10 @@ import {
  * AYWEBs — Cart Engine (§16, §17, §18).
  *
  * Principes :
- *  • le panier AYWEBs est AYROVI-propriétaire : ce n'est PAS le panier du
+ *  • le panier AYWEBs est ZAYROVI-propriétaire : ce n'est PAS le panier du
  *    marchand (§4). Plusieurs boutiques externes coexistent dans un seul panier ;
  *  • le client n'envoie JAMAIS de prix : il envoie `productId`, les attributs
- *    de variante et une quantité. Le prix, la devise, le devis AYROVI et la
+ *    de variante et une quantité. Le prix, la devise, le devis ZAYROVI et la
  *    disponibilité viennent du serveur (§45) ;
  *  • chaque ligne conserve un `variantSnapshot` et un `priceSnapshot` complets :
  *    l'identifiant produit externe seul ne suffit pas (§17) ;
@@ -115,7 +115,7 @@ export interface AyWebsCartView {
 export interface AddAyWebsCartItemInput {
   sessionId: string;
   accountId: string | null;
-  /** Identité AYROVI du produit résolu : le prix n'est jamais fourni par le client. */
+  /** Identité ZAYROVI du produit résolu : le prix n'est jamais fourni par le client. */
   productId?: string | null;
   /** Ou, à défaut, l'URL source — le serveur résout puis ajoute. */
   sourceUrl?: string | null;
@@ -155,8 +155,8 @@ export interface AddAyWebsCartItemResult {
   view: AyWebsCartView;
   /** True when the exact stored outcome for this idempotency key was replayed. */
   idempotentReplay: boolean;
-  /** Route-level AYROVI synchronization outcome, saved after the cart bridge. */
-  ayrovi?: { linked: boolean; cart_item_id: string | null; quantity: number | null; reason: string } | null;
+  /** Route-level ZAYROVI synchronization outcome, saved after the cart bridge. */
+  zayrovi?: { linked: boolean; cart_item_id: string | null; quantity: number | null; reason: string } | null;
   /** Transparence (§51) : le prix ajouté venait-il du devis signé, ou d'une relecture ? */
   quoteUsed: boolean;
   sourceReread: boolean;
@@ -485,7 +485,7 @@ export async function addAyWebsCartItem(
   }
 
   // 4. Prix source : variante exacte, sinon prix produit; le devis reste celui du
-  //    moteur AYROVI partagé. Le client ne fournit jamais de montant.
+  //    moteur ZAYROVI partagé. Le client ne fournit jamais de montant.
   const sourcePrice = decision.price ?? product.price;
   const sourceCurrency = decision.price != null
     ? (decision.currency || product.currency).trim().toUpperCase()
@@ -772,7 +772,7 @@ function replayAddRequest(
         ? snapshot.view as AyWebsCartView
         : readAyWebsCartView(db, input.sessionId, input.accountId),
       idempotentReplay: true,
-      ayrovi: snapshot.ayrovi && typeof snapshot.ayrovi === 'object' ? snapshot.ayrovi : null,
+      zayrovi: snapshot.zayrovi && typeof snapshot.zayrovi === 'object' ? snapshot.zayrovi : null,
       // Un rejeu renvoie l'état exact enregistré : on ne rejuge pas l'origine du prix.
       quoteUsed: Boolean(snapshot.quoteUsed),
       sourceReread: Boolean(snapshot.sourceReread),
@@ -808,7 +808,7 @@ function saveAddRequest(
       view: result.view,
       duplicate: result.duplicate,
       message: result.message,
-      ayrovi: result.ayrovi ?? null,
+      zayrovi: result.zayrovi ?? null,
     }),
     new Date().toISOString(),
   );
@@ -819,7 +819,7 @@ export function saveAyWebsCartAddBridgeOutcome(
   db: QatafoDatabase,
   input: Pick<AddAyWebsCartItemInput, 'sessionId' | 'accountId'>,
   idempotencyKeyValue: unknown,
-  outcome: NonNullable<AddAyWebsCartItemResult['ayrovi']>,
+  outcome: NonNullable<AddAyWebsCartItemResult['zayrovi']>,
 ): void {
   const idempotencyKey = normalizeAddIdempotencyKey(idempotencyKeyValue);
   if (!idempotencyKey) return;
@@ -829,7 +829,7 @@ export function saveAyWebsCartAddBridgeOutcome(
   try {
     const snapshot = JSON.parse(String(row.result_json || '{}'));
     if (!snapshot?.item || !snapshot?.cart) return;
-    snapshot.ayrovi = outcome;
+    snapshot.zayrovi = outcome;
     db.run('UPDATE ayweb_cart_add_requests SET result_json=? WHERE id=?', JSON.stringify(snapshot), row.id);
   } catch {
     // A malformed snapshot will be surfaced by the idempotency replay path.
@@ -991,7 +991,7 @@ export function updateAyWebsCartItem(
   if (String(cart.status) !== 'ACTIVE') throw new AyWebsDomainError('CART_LOCKED');
 
   const now = new Date().toISOString();
-  // Quantité 0 = retrait explicite de la ligne, comme dans le panier AYROVI.
+  // Quantité 0 = retrait explicite de la ligne, comme dans le panier ZAYROVI.
   if (Number(input.quantity) === 0) {
     const removal = removeAyWebsCartItem(db, input);
     return { item: null, removed: true, view: removal.view };

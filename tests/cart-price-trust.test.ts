@@ -12,7 +12,7 @@
 import { describe, expect, test } from 'vitest';
 import request from 'supertest';
 import { app, db } from '../src/server';
-import { createAyrovixPriceToken } from '../src/ayrovix/priceQuote';
+import { createZayrovixPriceToken } from '../src/ayrovix/priceQuote';
 import { verifyCartPriceTrust, CART_QUOTE_LEGACY_GRACE_MS } from '../src/services/cartPriceTrust';
 
 const uniqueSession = (label: string) => `pricetrust-${label}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -24,7 +24,7 @@ const TITLE = 'Sac test preuve de prix';
 const URL = 'https://www.shein.com/price-trust-p-382460230.html';
 
 const quote = (ttlMs = 30 * 60_000, over: Record<string, unknown> = {}) =>
-  createAyrovixPriceToken({ price: PRICE, currency: CURRENCY, title: TITLE, referenceUrl: '', status: 'VERIFIED', ...over }, ttlMs)!;
+  createZayrovixPriceToken({ price: PRICE, currency: CURRENCY, title: TITLE, referenceUrl: '', status: 'VERIFIED', ...over }, ttlMs)!;
 
 const cartItem = (body: Record<string, unknown> = {}) => ({
   store: 'shein',
@@ -40,7 +40,7 @@ const cartItem = (body: Record<string, unknown> = {}) => ({
 });
 
 const checkoutPayload = (over: Record<string, unknown> = {}) => ({
-  name: 'Client Preuve Prix', email: 'pricetrust@ayrovi.test', phone: '+216 98 123 456',
+  name: 'Client Preuve Prix', email: 'pricetrust@zayrovi.test', phone: '+216 98 123 456',
   city: 'Tunis', address: 'Avenue Habib Bourguiba, Tunis', deliveryMode: 'home',
   termsAccepted: true, locale: 'fr-TN', ...over,
 });

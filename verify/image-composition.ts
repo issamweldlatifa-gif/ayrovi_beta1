@@ -6,7 +6,7 @@
  * sur des images réelles de types, ratios, éclairages et fonds différents.
  *
  *   npm run verify:image-composition
- *   AYROVI_COMPOSITION_FIXTURES=/chemin/vers/images npm run verify:image-composition
+ *   ZAYROVI_COMPOSITION_FIXTURES=/chemin/vers/images npm run verify:image-composition
  *
  * Les images de référence sont versionnées dans verify/fixtures/image-composition/
  * (6 cas : chaussure, sac, vêtement porté, fond complexe, fond sombre, perspective).
@@ -20,9 +20,9 @@ import { isolateBuffer } from '../src/services/imageIsolation';
 import { segmentBuffer } from '../src/services/segmentation';
 import { acceptComposition, composeOnMockup } from '../src/services/imageComposition';
 
-const FIXTURES = process.env.AYROVI_COMPOSITION_FIXTURES
+const FIXTURES = process.env.ZAYROVI_COMPOSITION_FIXTURES
   || path.resolve(process.cwd(), 'verify', 'fixtures', 'image-composition');
-const OUTPUT = process.env.AYROVI_COMPOSITION_OUTPUT
+const OUTPUT = process.env.ZAYROVI_COMPOSITION_OUTPUT
   || path.resolve(process.cwd(), 'screenshots', 'image-composition');
 
 async function main(): Promise<void> {

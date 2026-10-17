@@ -33,7 +33,7 @@ jobs:
       - name: Check generated identity and source inventory
         run: npm run design:check
 
-      - name: Enforce official AYROVI A identity
+      - name: Enforce official ZAYROVI A identity
         run: npm run identity:check && npm run identity:test
 
       # Invariants de la coque Android (2026-10-03) : manifeste + tripwires Java.
@@ -124,19 +124,19 @@ jobs:
           # déterministe, donc le bandeau campagne existe réellement et la mesure
           # porte sur quelque chose. Une base vide ferait passer le garde à vide.
           NODE_ENV=development PORT=3210 \
-            ADMIN_EMAIL=admin@ayrovi.tn ADMIN_PASSWORD='AyroviBeta2026!' \
-            nohup node dist/server.js > /tmp/ayrovi-server.log 2>&1 &
+            ADMIN_EMAIL=admin@zayrovi.tn ADMIN_PASSWORD='ZayroviBeta2026!' \
+            nohup node dist/server.js > /tmp/zayrovi-server.log 2>&1 &
           for i in $(seq 1 60); do
             if curl -sf http://127.0.0.1:3210/api/public/commerce-config > /dev/null; then
               echo "Server ready after ${i}s"; exit 0
             fi
             sleep 1
           done
-          echo 'Server did not become ready:'; tail -40 /tmp/ayrovi-server.log; exit 1
+          echo 'Server did not become ready:'; tail -40 /tmp/zayrovi-server.log; exit 1
 
       - name: Enforce charter guards the build must never break again
         env:
-          AYROVI_BASE_URL: http://127.0.0.1:3210
+          ZAYROVI_BASE_URL: http://127.0.0.1:3210
         run: |
           # 2026-10-03 : chaque garde est NOMMÉE. Avant, un échec n'affichait que
           # « Process completed with exit code 1 » — le nom du garde fautif n'était

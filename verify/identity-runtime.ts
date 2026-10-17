@@ -35,7 +35,7 @@ async function main() {
         const remoteFonts: string[] = [];
         page.on('request', r => { if (r.resourceType() === 'font' && !r.url().startsWith(base)) remoteFonts.push(r.url()); });
         for (const locale of ['fr', 'ar']) {
-          await page.goto(base); await page.evaluate(l => localStorage.setItem('ayrovi.locale.v1', l), locale); await page.reload();
+          await page.goto(base); await page.evaluate(l => localStorage.setItem('zayrovi.locale.v1', l), locale); await page.reload();
           await page.locator('.editorial-hero__title').waitFor();
           check(name + ': actual locale ' + locale, (await page.locator('html').getAttribute('lang'))?.startsWith(locale));
           for (const width of [320, 390, 768, 1360]) {
@@ -49,7 +49,7 @@ async function main() {
         check(name + ': account created', register.ok());
         const id = (await register.json()).data.account.id, now = new Date().toISOString();
         db.run("INSERT INTO cart_items(id,session_id,account_id,store,source_url,title,source_price,source_currency,price_tnd,quantity,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)", `identity-${name}`, 'identity-fixture', id, 'OTHER', 'https://example.com/item', 'Everyday shoes — Édition 2026 — منتج', 10, 'TND', 10, 1, now, now);
-        await page.evaluate(() => localStorage.setItem('ayrovi.locale.v1', 'fr'));
+        await page.evaluate(() => localStorage.setItem('zayrovi.locale.v1', 'fr'));
         await page.goto(base + '/?customerAuth=login'); await page.locator('.ac-profile-card').waitFor();
         await page.locator('.ac-shortcuts').getByRole('button', { name: /Panier/ }).click();
         await page.locator('.ac-cart-description strong').waitFor();
@@ -93,10 +93,10 @@ async function main() {
       await p.screenshot({path:`${output}/invoice-sample.png`});
     } finally { await documentBrowser.close(); }
     await writeSimplePdf([
-      { text: 'AYROVI — Identité A / Validation PDF', size: 22, bold: true },
+      { text: 'ZAYROVI — Identité A / Validation PDF', size: 22, bold: true },
       { text: 'Éléonore — été, Noël, 189.900 TND, 90,00 €', size: 14 },
       { text: 'مرحبا بكم في أيروفي', size: 22, right: true },
-      { text: 'فاتورة AYROVI 189.900 TND (2026)', size: 18, right: true },
+      { text: 'فاتورة ZAYROVI 189.900 TND (2026)', size: 18, right: true },
       { text: 'Client: محمد علي', size: 16 },
       { text: 'هُوِيَّة أَيْرُوفِي', size: 22, right: true },
     ], `${output}/official-fonts.pdf`);

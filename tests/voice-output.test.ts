@@ -144,7 +144,7 @@ describe('VoiceOutput single-shot playback', () => {
     const onStart = vi.fn();
     const onEnd = vi.fn();
 
-    const playback = output.speak('Bonjour AYROVI.', 'fr-FR', { onStart, onEnd });
+    const playback = output.speak('Bonjour ZAYROVI.', 'fr-FR', { onStart, onEnd });
     await flush();
     await flush();
 

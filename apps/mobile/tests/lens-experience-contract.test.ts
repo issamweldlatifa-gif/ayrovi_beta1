@@ -21,7 +21,7 @@ function contrastWithWhite(hex: string): number {
   return 1.05 / (luminance + 0.05);
 }
 
-describe('parcours AYROVIX Lens unifié', () => {
+describe('parcours ZAYROVIX Lens unifié', () => {
   it('ouvre directement la caméra et traite le premier consentement sans lanceur intermédiaire', () => {
     expect(lens).toContain('testID="lens-camera-experience"');
     expect(lens).toContain('<CameraView');
@@ -200,7 +200,7 @@ describe('Z Lens — option 3 voulue par le client (16/10/2026)', () => {
 
   it('titre « Z Lens » écrit en texte, quatre modes Live · QR code · Lien · Mot clé', () => {
     expect(lens).toContain("t('lens.title')");
-    expect(lens).not.toContain('AYROVIX Lens</AppText>');
+    expect(lens).not.toContain('ZAYROVIX Lens</AppText>');
     expect(fr).toContain("'lens.title': 'Z Lens'");
     expect(fr).toContain("'lens.modeLive': 'Live'");
     expect(fr).toContain("'lens.modeCode': 'QR code'");

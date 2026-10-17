@@ -36,7 +36,7 @@ try {
   for (const locale of ['fr', 'ar']) for (const width of [320, 390]) {
     const ar = locale === 'ar', key = `${locale}/${width}`;
     const context = await browser.newContext({ viewport: { width, height: 844 }, reducedMotion: 'reduce' });
-    await context.addInitScript(language => localStorage.setItem('ayrovi.locale.v1', language), locale);
+    await context.addInitScript(language => localStorage.setItem('zayrovi.locale.v1', language), locale);
     page = await context.newPage();
     page.on('pageerror', error => errors.push(error.message));
     await page.route('**/api/public/pricing/cart-line', route => {
@@ -46,7 +46,7 @@ try {
         ? { success: false, error: 'Test quote unavailable' }
         : { success: true, data: { lineTotalTND, originalLineTotalTND: null, promo: null, pricingVersion: 2 } } });
     });
-    await page.goto(process.env.AYROVI_BASE_URL + '/__verify/sonim');
+    await page.goto(process.env.ZAYROVI_BASE_URL + '/__verify/sonim');
     await page.waitForFunction(() => typeof window.setVariantFixture === 'function');
     const card = page.locator('.s-product-page');
     const add = () => card.getByRole('button', { name: ar ? 'أضف إلى السلة' : 'Ajouter au panier', exact: true });

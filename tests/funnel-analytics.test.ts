@@ -51,7 +51,7 @@ async function customerLogin(cartSessionId: string, phone = uniquePhone()): Prom
 
 const checkoutPayload = (overrides: Record<string, unknown> = {}) => ({
   name: 'Client Parcours',
-  email: 'parcours@ayrovi.test',
+  email: 'parcours@zayrovi.test',
   phone: '+216 98 123 456',
   city: 'Tunis',
   address: 'Avenue Habib Bourguiba, Tunis',
@@ -63,7 +63,7 @@ const checkoutPayload = (overrides: Record<string, unknown> = {}) => ({
 
 async function loginSuperAdmin() {
   const agent = request.agent(app);
-  const login = await agent.post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
+  const login = await agent.post('/api/admin/auth/login').send({ email: 'admin@zayrovi.tn', password: 'ZayroviBeta2026!' });
   expect(login.status).toBe(200);
   return { agent, csrf: login.body.data.csrfToken as string };
 }
@@ -224,7 +224,7 @@ describe('parcours d\'achat mesuré', () => {
 
   test('le parcours n\'est lisible que par les rôles qui traitent les commandes', async () => {
     const superAdmin = await loginSuperAdmin();
-    const email = `funnel-content-${Date.now()}@test.ayrovi.tn`;
+    const email = `funnel-content-${Date.now()}@test.zayrovi.tn`;
     const created = await superAdmin.agent.post('/api/admin/users').set('x-csrf-token', superAdmin.csrf)
       .send({ name: 'Parcours Contenu', email, password: 'FunnelSecure2026!x', role: 'CONTENT_MANAGER' });
     expect(created.status, JSON.stringify(created.body)).toBe(201);

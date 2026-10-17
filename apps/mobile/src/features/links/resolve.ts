@@ -31,7 +31,7 @@ import { DEEP_LINK_SCHEME } from '@/config/deepLinks';
  * écrire l'origine du serveur à deux endroits ; le jour où elle change, un
  * lien profond continuerait d'être refusé sans que rien ne l'explique.
  */
-const BRAND_HOSTS = ['ayrovi.tn', 'www.ayrovi.tn'] as const;
+const BRAND_HOSTS = ['zayrovi.tn', 'www.zayrovi.tn'] as const;
 
 function hostOf(value: string): string {
   try {
@@ -81,7 +81,7 @@ const ROUTES: { prefix: string; route: string | ((rest: string) => string | null
   { prefix: '/sign-in', route: '/sign-in' },
 ];
 
-/** `ayrovi://orders/42` et `ayrovi:///orders/42` désignent la même chose. */
+/** `zayrovi://orders/42` et `zayrovi:///orders/42` désignent la même chose. */
 function normalizePathname(url: URL): string {
   let path = url.pathname || '/';
   if (!path.startsWith('/')) path = `/${path}`;
@@ -110,7 +110,7 @@ export function resolveDeepLink(rawUrl: string | null | undefined): string | nul
   const scheme = url.protocol.replace(/:$/, '').toLowerCase();
   if (scheme === DEEP_LINK_SCHEME || scheme === 'exp' || scheme === `exp+${DEEP_LINK_SCHEME}`) {
     // Schéma propre à l'application : l'hôte n'est pas un hôte, c'est parfois
-    // le début du chemin (`ayrovi://orders/42` ⇒ host « orders »).
+    // le début du chemin (`zayrovi://orders/42` ⇒ host « orders »).
     const path = url.host ? `/${url.host}${normalizePathname(url)}` : normalizePathname(url);
     return matchRoute(path.replace(/\/{2,}/g, '/'));
   }

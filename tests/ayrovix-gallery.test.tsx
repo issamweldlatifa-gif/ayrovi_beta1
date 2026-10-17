@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import { ShopProductScreen } from '../client/src/shop';
-import type { AyrovixProduct } from '../client/src/ayrovix/types';
+import type { ZayrovixProduct } from '../client/src/ayrovix/types';
 import { LocaleProvider } from '../client/src/i18n/LocaleContext';
 
 const images = [
@@ -15,9 +15,9 @@ const images = [
   '/fixtures/transparent-product.png',
 ];
 
-const product: AyrovixProduct = {
-  title: 'Chaussure AYROVI — galerie responsive',
-  brand: 'AYROVI',
+const product: ZayrovixProduct = {
+  title: 'Chaussure ZAYROVI — galerie responsive',
+  brand: 'ZAYROVI',
   model: 'Gallery Test',
   description: '',
   image: images[0],
@@ -44,7 +44,7 @@ function renderGallery() {
   );
 }
 
-describe('AYROVIX product gallery rendering', () => {
+describe('ZAYROVIX product gallery rendering', () => {
   it('renders the first four source photos as integrated swipe slides with matching progress segments', () => {
     const markup = renderGallery();
     expect(markup).toContain('class="s-media"');

@@ -36,7 +36,7 @@ const output: MagazineAgentOutput = {
   },
   publication: {
     caption: 'ليس كل بني متشابهًا. هذا الموسم نختار الكراميل لأنه أهدأ، أغنى، وأسهل في بناء الطبقات.',
-    hashtags: ['#Ayrovi', '#مجلتي', '#موضة', '#Caramel', '#FallStyle'],
+    hashtags: ['#Zayrovi', '#مجلتي', '#موضة', '#Caramel', '#FallStyle'],
     media_suggestion: 'لقطة تحريرية عمودية لخامات كراميل متعددة تحت إضاءة دافئة.',
   },
   story: {
@@ -83,7 +83,7 @@ describe('Magazine Agent persistence and product policy', () => {
   });
 
   test('only links explicit product requests to real read-only catalogue matches', () => {
-    const real = findMagazineProductContext(db, 'ولّد ريلز لمنتج SHEIN Ensemble tendance AYROVI');
+    const real = findMagazineProductContext(db, 'ولّد ريلز لمنتج SHEIN Ensemble tendance ZAYROVI');
     expect(real.requested).toBe(true);
     expect(real.matched).toBe(true);
     expect(real.products[0]?.id).toBe('product_demo_01');
@@ -109,7 +109,7 @@ describe('Magazine Agent persistence and product policy', () => {
 
   test('human confirmation materializes an editorial draft without publishing a reference-only image', () => {
     const editorial = listMagazineDrafts(db, { type: 'editorial' })[0];
-    const prepared = prepareMagazineDraft(db, editorial.id, { status: 'draft', category: 'AYROVI' });
+    const prepared = prepareMagazineDraft(db, editorial.id, { status: 'draft', category: 'ZAYROVI' });
     expect(prepared.target_resource).toBe('news');
     expect(prepared.target_id).toMatch(/^news_agent_/);
     const news = db.get<any>('SELECT * FROM news_items WHERE id=?', prepared.target_id);
@@ -134,16 +134,16 @@ describe('Magazine Agent persistence and product policy', () => {
   test('creates a real future publication schedule while blocking unlicensed social media', () => {
     const future = new Date(Date.now() + 86_400_000).toISOString();
     const editorial = listMagazineDrafts(db, { type: 'editorial' })[0];
-    const scheduled = prepareMagazineDraft(db, editorial.id, { status: 'scheduled', category: 'AYROVI', scheduledAt: future });
+    const scheduled = prepareMagazineDraft(db, editorial.id, { status: 'scheduled', category: 'ZAYROVI', scheduledAt: future });
     const news = db.get<any>('SELECT status,published_at FROM news_items WHERE id=?', scheduled.target_id);
     expect(news.status).toBe('SCHEDULED');
     expect(news.published_at).toBe(future);
-    const published = prepareMagazineDraft(db, editorial.id, { status: 'published', category: 'AYROVI' });
+    const published = prepareMagazineDraft(db, editorial.id, { status: 'published', category: 'ZAYROVI' });
     const publishedNews = db.get<any>('SELECT status,published_at FROM news_items WHERE id=?', published.target_id);
     expect(publishedNews.status).toBe('PUBLISHED');
     expect(new Date(publishedNews.published_at).getTime()).toBeLessThanOrEqual(Date.now());
     expect(published.status).toBe('published');
-    prepareMagazineDraft(db, editorial.id, { status: 'draft', category: 'AYROVI' });
+    prepareMagazineDraft(db, editorial.id, { status: 'draft', category: 'ZAYROVI' });
     expect(db.get<any>('SELECT status FROM news_items WHERE id=?', scheduled.target_id)?.status).toBe('DRAFT');
     const publication = listMagazineDrafts(db, { type: 'publication' })[0];
     expect(() => prepareMagazineDraft(db, publication.id, { status: 'scheduled', scheduledAt: future })).toThrow('MAGAZINE_MEDIA_REQUIRED');

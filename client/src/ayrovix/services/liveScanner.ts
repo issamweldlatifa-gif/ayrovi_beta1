@@ -1,7 +1,7 @@
-import type { AyrovixCandidate, AyrovixDetectedPrice } from '../types';
+import type { ZayrovixCandidate, ZayrovixDetectedPrice } from '../types';
 
 /**
- * AYROVIX LENS — LIVE multi-product vision (types + helpers légers).
+ * ZAYROVIX LENS — LIVE multi-product vision (types + helpers légers).
  *
  * Live est une modalité d'ENTRÉE uniquement : le matching, le ranking et le pricing
  * restent ceux du backend existant (analyzeImage → candidates → Core Engine).
@@ -18,8 +18,8 @@ export interface LiveDetectedObject {
   label: string;
   confidence: number;       // % du meilleur match
   image: string;            // aperçu recadré (dataURL) — seul élément envoyé/affiché
-  candidates: AyrovixCandidate[];
-  detectedPrice?: AyrovixDetectedPrice | null;
+  candidates: ZayrovixCandidate[];
+  detectedPrice?: ZayrovixDetectedPrice | null;
   status: 'tracking' | 'locked';
   box?: { x: number; y: number; w: number; h: number } | null; // rempli par un futur détecteur
   code?: { kind: 'qr' | 'barcode'; value: string } | null;

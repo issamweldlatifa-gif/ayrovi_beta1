@@ -3,7 +3,7 @@ import type { NextFunction, Request, Response } from 'express';
 import multer from 'multer';
 import type { QatafoDatabase } from '../db/database';
 import type { SmartLinkScraper } from '../scraper/scraper';
-import { buildSearchQuery, AyrovixUnavailableError, ayrovixAiReady, fallbackIdentification } from './services/ai';
+import { buildSearchQuery, ZayrovixUnavailableError, ayrovixAiReady, fallbackIdentification } from './services/ai';
 import { catalogSearch, externalProductSearch, groupOffers, scoreCandidate, searchCandidates } from './services/search';
 import { serpApiVisualReady } from './services/visualSearch';
 import { recognizeImage } from './services/lensEngine';
@@ -11,13 +11,13 @@ import { enrichCandidatesLiveStock, filterPurchasable, refreshLiveStock } from '
 import { deduplicateCandidates } from './services/candidateDedup';
 import { estimateWithDb } from './services/currency';
 import { extractProductFromUrl, ExtractionFailedError, InvalidUrlError, sanitizeProductUrl } from './services/product';
-import { markAyrovixChosen, recordAyrovixEvent } from './events';
-import { createAyrovixReviewRequest, getAyrovixReviewForOwner } from './reviews';
+import { markZayrovixChosen, recordZayrovixEvent } from './events';
+import { createZayrovixReviewRequest, getZayrovixReviewForOwner } from './reviews';
 import { resolveCustomer } from '../customer/auth';
-import type { AyrovixCandidate, AyrovixChannel, AyrovixIdentification, AyrovixProduct } from './types';
+import type { ZayrovixCandidate, ZayrovixChannel, ZayrovixIdentification, ZayrovixProduct } from './types';
 import { InvalidImageError, normalizeUploadedImage } from '../services/imageValidation';
-import { createAyrovixPriceToken, type AyrovixQuoteStatus } from './priceQuote';
-import { listAyrovixHistory, recordAyrovixHistory, type AyrovixHistoryInput } from './history';
+import { createZayrovixPriceToken, type ZayrovixQuoteStatus } from './priceQuote';
+import { listZayrovixHistory, recordZayrovixHistory, type ZayrovixHistoryInput } from './history';
 import { filterWithFallback, withDisplayRating } from './services/candidatePolicy';
 import { startTrace, mark, endTrace } from './services/lensPerformanceTrace';
 import { warmIsolation } from '../services/imageIsolation';
@@ -27,7 +27,7 @@ import { createHash } from 'node:crypto';
 import sharp from 'sharp';
 
 /**
- * AYROVIX public API — AI Core provides visual understanding, visible-price
+ * ZAYROVIX public API — AI Core provides visual understanding, visible-price
  * reading and text Web Search; SerpApi Google Lens adds reverse-image product
  * matches. QR/barcode decoding remains local on-device and product URLs are
  * fetched directly through the SSRF-safe metadata extractor.
@@ -48,7 +48,7 @@ export function pipelineKey(buf: Buffer, intent: string | null): string {
     .digest('hex');
 }
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp']);
-const CHANNELS = new Set<AyrovixChannel>(['image', 'url', 'qr']);
+const CHANNELS = new Set<ZayrovixChannel>(['image', 'url', 'qr']);
 
 function reviewSessionId(req: Request): string | null {
   const raw = Array.isArray(req.headers['x-session-id']) ? req.headers['x-session-id'][0] : req.headers['x-session-id'];
@@ -93,14 +93,14 @@ function publicReview(row: any) {
   };
 }
 
-function quoteToken(price: number | null, currency: string | null, title: string, referenceUrl: string, status: AyrovixQuoteStatus): string | null {
+function quoteToken(price: number | null, currency: string | null, title: string, referenceUrl: string, status: ZayrovixQuoteStatus): string | null {
   if (price == null || !currency) return null;
-  return createAyrovixPriceToken({ price, currency, title, referenceUrl, status });
+  return createZayrovixPriceToken({ price, currency, title, referenceUrl, status });
 }
 
-function tokenizedCandidate(candidate: AyrovixCandidate): AyrovixCandidate {
+function tokenizedCandidate(candidate: ZayrovixCandidate): ZayrovixCandidate {
   const normalized = withDisplayRating(candidate);
-  const status: AyrovixQuoteStatus = normalized.kind === 'catalog' ? 'VERIFIED' : 'PENDING_MANUAL';
+  const status: ZayrovixQuoteStatus = normalized.kind === 'catalog' ? 'VERIFIED' : 'PENDING_MANUAL';
   return {
     ...normalized,
     priceVerificationStatus: status,
@@ -108,14 +108,14 @@ function tokenizedCandidate(candidate: AyrovixCandidate): AyrovixCandidate {
   };
 }
 
-function tokenizedCandidates(items: AyrovixCandidate[]): AyrovixCandidate[] {
+function tokenizedCandidates(items: ZayrovixCandidate[]): ZayrovixCandidate[] {
   // D2-10: strict first, lenient PENDING fallback — never 0 when lens has matches without price
   const filtered = filterWithFallback(items, 24);
   return filtered.map(tokenizedCandidate);
 }
 
-function tokenizedProduct(product: AyrovixProduct): AyrovixProduct {
-  const status: AyrovixQuoteStatus = product.priceVerified ? 'VERIFIED' : 'PENDING_MANUAL';
+function tokenizedProduct(product: ZayrovixProduct): ZayrovixProduct {
+  const status: ZayrovixQuoteStatus = product.priceVerified ? 'VERIFIED' : 'PENDING_MANUAL';
   return {
     ...product,
     priceVerificationStatus: status,
@@ -130,24 +130,24 @@ function tokenizedProduct(product: AyrovixProduct): AyrovixProduct {
 function rememberAuthenticatedHistory(
   db: QatafoDatabase,
   req: Request,
-  input: Omit<AyrovixHistoryInput, 'accountId'>,
+  input: Omit<ZayrovixHistoryInput, 'accountId'>,
 ): void {
   try {
-    recordAyrovixHistory(db, { ...input, accountId: resolveCustomer(db, req)?.id });
+    recordZayrovixHistory(db, { ...input, accountId: resolveCustomer(db, req)?.id });
   } catch (error: any) {
     // History is a convenience and must never break Lens analysis/order flows.
-    console.warn('[AYROVIX history]', error?.message || 'write failed');
+    console.warn('[ZAYROVIX history]', error?.message || 'write failed');
   }
 }
 
 /** GLOBAL DISCOVERY — les doublons multi-sources deviennent un produit avec
  *  plusieurs offres AVANT la coupe finale, pour que la limite serve des produits
  *  distincts et non quatre fois le même. */
-function mergeCandidates(items: AyrovixCandidate[], limit = 8): AyrovixCandidate[] {
+function mergeCandidates(items: ZayrovixCandidate[], limit = 8): ZayrovixCandidate[] {
   return filterWithFallback(groupOffers(items), limit);
 }
 
-async function searchByCodeOrText(db: QatafoDatabase, value: string): Promise<AyrovixCandidate[]> {
+async function searchByCodeOrText(db: QatafoDatabase, value: string): Promise<ZayrovixCandidate[]> {
   const local = catalogSearch(db, null, value, 4)
     .map((candidate) => ({ ...candidate, match: scoreCandidate(null, value, candidate) }));
   const external = await externalProductSearch(value, 8).catch(() => []);
@@ -157,13 +157,13 @@ async function searchByCodeOrText(db: QatafoDatabase, value: string): Promise<Ay
   ]);
 }
 
-export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScraper): Router {
+export function createZayrovixRouter(db: QatafoDatabase, scraper: SmartLinkScraper): Router {
   const router = Router();
 
   router.get('/history', (req: Request, res: Response) => {
     const customer = resolveCustomer(db, req);
     if (!customer) return res.json({ success: true, data: [] });
-    return res.json({ success: true, data: listAyrovixHistory(db, customer.id, Number(req.query.limit) || 30) });
+    return res.json({ success: true, data: listZayrovixHistory(db, customer.id, Number(req.query.limit) || 30) });
   });
 
   // أحداث Live مجهولة (analytics منتج): لا صورة/لا IP/لا بيانات شخصية.
@@ -186,7 +186,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
     const requestId = `ayx_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`;
     const trace = startTrace(requestId);
     // expose requestId for client correlation (no PII)
-    res.setHeader('X-Ayrovix-Request-Id', requestId);
+    res.setHeader('X-Zayrovix-Request-Id', requestId);
     const stream = String(req.headers.accept || '').includes('text/event-stream');
     const streamedUrls = new Set<string>();
     const emit = (event: string, data: unknown) => {
@@ -248,7 +248,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       }
       mark(trace, 'imageBytesIn', effectiveBuffer.length);
       if (!serpApiVisualReady() && !ayrovixAiReady()) {
-        return res.status(503).json({ success: false, code: 'AYROVIX_UNAVAILABLE', error: "AYROVIX n'est pas encore activé. Réessayez bientôt." });
+        return res.status(503).json({ success: false, code: 'ZAYROVIX_UNAVAILABLE', error: "ZAYROVIX n'est pas encore activé. Réessayez bientôt." });
       }
 
       /*
@@ -265,7 +265,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
        * (catalogue + web), jamais un prix.
        */
       const recognition = await recognizeImage(effectiveBuffer, effectiveMime, { withVision: false, withSignals: false });
-      res.setHeader('X-Ayrovix-Cache', recognition.cacheHit);
+      res.setHeader('X-Zayrovix-Cache', recognition.cacheHit);
       mark(trace, 'cacheHit', {
         vision: false,
         serpApi: recognition.cacheHit === 'matches' || recognition.cacheHit === 'both',
@@ -275,7 +275,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       mark(trace, 'serpApiTotalMs', recognition.timings.matchesMs);
       const visualCandidates = recognition.matches;
 
-      let identification: AyrovixIdentification;
+      let identification: ZayrovixIdentification;
       if (visualCandidates.length) {
         // L'intitulé de la grille est celui de la meilleure page trouvée — pas une devinette.
         identification = fallbackIdentification(visualCandidates[0].title);
@@ -287,7 +287,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
           throw lastResort.identificationError || new Error('IDENTIFICATION_FAILED');
         }
         identification = lastResort.identification;
-        console.warn('[AYROVIX analyze-image] SerpApi sans lien — vision en dernier recours (intitulé seulement)');
+        console.warn('[ZAYROVIX analyze-image] SerpApi sans lien — vision en dernier recours (intitulé seulement)');
       }
       // Aucun prix ne vient de l'image : ni de la vision, ni de l'OCR.
       identification.detected_price = { amount: 0, currency: '', label: 'none', confidence: 0 };
@@ -319,8 +319,8 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       const effectiveQuery = buildSearchQuery(identification);
       const tSearch = Date.now();
       // Avec des liens SerpApi, `searchCandidates` n'appelle AUCUNE recherche web :
-      // il note, convertit (calculateur AYROVI) et regroupe les offres, puis
-      // ajoute le catalogue AYROVI (données réelles elles aussi).
+      // il note, convertit (calculateur ZAYROVI) et regroupe les offres, puis
+      // ajoute le catalogue ZAYROVI (données réelles elles aussi).
       const rawCandidates = (visualCandidates.length > 0 || identification.confidence >= 0.35) && effectiveQuery
         ? await searchCandidates(db, identification, effectiveQuery, visualCandidates)
         : [];
@@ -334,7 +334,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
        * VÉRITÉ MARCHANDE — la page produit derrière CHAQUE lien SerpApi (budget
        * 8 = toute la grille) : prix du jour, prix barré, stock, tailles,
        * couleurs, photos, description. Le prix lu repasse par le calculateur
-       * AYROVI ; l'extrait SerpApi n'est qu'un repli en attendant la page.
+       * ZAYROVI ; l'extrait SerpApi n'est qu'un repli en attendant la page.
        */
       const tLiveStock = Date.now();
       const { candidates: liveCandidates, report: liveStock } = await enrichCandidatesLiveStock(candidates, {
@@ -356,24 +356,24 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       /*
        * FILTRE D'ACHETABILITÉ — on cache la rupture CONFIRMÉE. Page illisible
        * ou stock muet reste visible (sinon 8/8 écartés dès que Render est bloqué).
-       * Preuve stricte : AYROVI_LENS_REQUIRE_PROOF=true.
+       * Preuve stricte : ZAYROVI_LENS_REQUIRE_PROOF=true.
        */
       const purchasable = filterPurchasable(liveCandidates);
       mark(trace, 'purchasableKept', purchasable.report.kept);
       mark(trace, 'purchasableExcluded', purchasable.report.excluded);
       if (purchasable.report.excluded) {
-        console.info(`[AYROVIX analyze-image] ${purchasable.report.excluded} fiche(s) écartée(s) : ${JSON.stringify(purchasable.report.reasons)}`);
+        console.info(`[ZAYROVIX analyze-image] ${purchasable.report.excluded} fiche(s) écartée(s) : ${JSON.stringify(purchasable.report.reasons)}`);
       }
       const title = [identification.brand, identification.model].filter(Boolean).join(' ')
         || identification.description
-        || 'Produit détecté par AYROVIX';
+        || 'Produit détecté par ZAYROVIX';
       const query = effectiveQuery;
       const securedCandidates = tokenizedCandidates(purchasable.candidates);
       // Chauffe le cache d'isolation/redimensionnement pendant que le client lit la grille.
       const candidateMedia = [...securedCandidates.map((item) => item.image), ...securedCandidates.flatMap((item) => item.images || [])];
       warmIsolation(candidateMedia, 8);
       warmComposition(candidateMedia, 8);
-      const eventId = recordAyrovixEvent(db, {
+      const eventId = recordZayrovixEvent(db, {
         channel: 'image',
         brand: identification.brand,
         query: query || identification.description,
@@ -387,7 +387,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
         title: historyMatch?.title || title,
         imageUrl: historyMatch?.image || '',
         sourceUrl: historyMatch?.sourceUrl || '',
-        source: historyMatch?.source || 'AYROVIX Vision',
+        source: historyMatch?.source || 'ZAYROVIX Vision',
         price: historyMatch?.price ?? null,
         currency: historyMatch?.currency ?? null,
         verificationStatus: historyMatch?.priceVerificationStatus || 'PENDING_MANUAL',
@@ -429,20 +429,20 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       if (error instanceof InvalidImageError || error?.code === 'INVALID_IMAGE') {
         return res.status(415).json({ success: false, code: 'INVALID_IMAGE', error: error.message });
       }
-      if (error instanceof AyrovixUnavailableError || error?.code === 'AYROVIX_UNAVAILABLE') {
-        return res.status(503).json({ success: false, code: 'AYROVIX_UNAVAILABLE', error: "AYROVIX n'est pas encore activé. Réessayez bientôt." });
+      if (error instanceof ZayrovixUnavailableError || error?.code === 'ZAYROVIX_UNAVAILABLE') {
+        return res.status(503).json({ success: false, code: 'ZAYROVIX_UNAVAILABLE', error: "ZAYROVIX n'est pas encore activé. Réessayez bientôt." });
       }
-      console.warn('[AYROVIX analyze-image]', error?.code || error?.message || 'unknown');
+      console.warn('[ZAYROVIX analyze-image]', error?.code || error?.message || 'unknown');
       return res.status(422).json({ success: false, code: 'IDENTIFICATION_FAILED', error: "Impossible d'identifier le produit. Essayez une photo plus nette et centrée." });
     }
   });
 
   router.post('/analyze-url', async (req: Request, res: Response) => {
     const url = req.body?.url;
-    const channel: AyrovixChannel = CHANNELS.has(req.body?.channel) ? req.body.channel : 'url';
+    const channel: ZayrovixChannel = CHANNELS.has(req.body?.channel) ? req.body.channel : 'url';
     try {
       const result = await extractProductFromUrl(db, scraper, String(url ?? ''));
-      const eventId = recordAyrovixEvent(db, {
+      const eventId = recordZayrovixEvent(db, {
         channel,
         brand: result.product.brand,
         query: result.product.title,
@@ -481,9 +481,9 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
         try {
           const fallbackQuery = String(url || '').slice(0, 160);
           const candidates = await externalProductSearch(fallbackQuery, 6);
-          const eventId = recordAyrovixEvent(db, { channel, query: fallbackQuery, candidatesCount: candidates.length });
+          const eventId = recordZayrovixEvent(db, { channel, query: fallbackQuery, candidatesCount: candidates.length });
           const securedAlternates = tokenizedCandidates(candidates);
-          const fallbackProduct: AyrovixProduct = {
+          const fallbackProduct: ZayrovixProduct = {
             title: `Produit ${fallbackQuery.slice(0, 60)}`,
             brand: null,
             model: null,
@@ -514,7 +514,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
           });
         } catch { /* clean error below */ }
       }
-      console.warn('[AYROVIX analyze-url]', error?.message || 'unknown');
+      console.warn('[ZAYROVIX analyze-url]', error?.message || 'unknown');
       return res.status(422).json({ success: false, code: 'EXTRACTION_FAILED', error: 'Impossible de récupérer les informations du produit.' });
     }
   });
@@ -527,7 +527,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
     try {
       const candidates = await searchByCodeOrText(db, value);
       const securedCandidates = tokenizedCandidates(candidates);
-      const eventId = recordAyrovixEvent(db, { channel: 'qr', query: `qr:${value}`, candidatesCount: candidates.length });
+      const eventId = recordZayrovixEvent(db, { channel: 'qr', query: `qr:${value}`, candidatesCount: candidates.length });
       const historyMatch = securedCandidates[0];
       rememberAuthenticatedHistory(db, req, {
         eventId, kind: 'code', inputValue: value, queryLabel: value,
@@ -538,7 +538,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       });
       return res.json({ success: true, data: { code: value, candidates: securedCandidates, eventId } });
     } catch (error: any) {
-      console.warn('[AYROVIX analyze-code]', error?.message || 'unknown');
+      console.warn('[ZAYROVIX analyze-code]', error?.message || 'unknown');
       return res.status(502).json({ success: false, code: 'CODE_SEARCH_FAILED', error: 'La recherche de ce QR code a échoué.' });
     }
   });
@@ -551,7 +551,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
     try {
       const candidates = await searchByCodeOrText(db, code);
       const securedCandidates = tokenizedCandidates(candidates);
-      const eventId = recordAyrovixEvent(db, { channel: 'qr', query: `barcode:${code}`, candidatesCount: candidates.length });
+      const eventId = recordZayrovixEvent(db, { channel: 'qr', query: `barcode:${code}`, candidatesCount: candidates.length });
       const historyMatch = securedCandidates[0];
       rememberAuthenticatedHistory(db, req, {
         eventId, kind: 'barcode', inputValue: code, queryLabel: code,
@@ -562,7 +562,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       });
       return res.json({ success: true, data: { code, candidates: securedCandidates, eventId } });
     } catch (error: any) {
-      console.warn('[AYROVIX analyze-barcode]', error?.message || 'unknown');
+      console.warn('[ZAYROVIX analyze-barcode]', error?.message || 'unknown');
       return res.status(502).json({ success: false, code: 'BARCODE_SEARCH_FAILED', error: 'La recherche par code a échoué. Essayez avec une photo.' });
     }
   });
@@ -576,7 +576,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
     try {
       const candidates = await searchByCodeOrText(db, raw);
       const securedCandidates = tokenizedCandidates(candidates);
-      const eventId = recordAyrovixEvent(db, { channel: 'text', query: raw, candidatesCount: candidates.length });
+      const eventId = recordZayrovixEvent(db, { channel: 'text', query: raw, candidatesCount: candidates.length });
       const historyMatch = securedCandidates[0];
       rememberAuthenticatedHistory(db, req, {
         eventId, kind: 'text', inputValue: raw, queryLabel: raw,
@@ -587,7 +587,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       });
       return res.json({ success: true, data: { query: raw, candidates: securedCandidates, eventId } });
     } catch (error: any) {
-      console.warn('[AYROVIX analyze-text]', error?.message || 'unknown');
+      console.warn('[ZAYROVIX analyze-text]', error?.message || 'unknown');
       return res.status(502).json({ success: false, code: 'TEXT_SEARCH_FAILED', error: 'La recherche par mot-clé a échoué. Vérifiez votre connexion.' });
     }
   });
@@ -642,7 +642,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
     const rawCurrency = String(req.body?.lensCurrency || '').trim().toUpperCase();
     const lensCurrency = lensPrice && /^[A-Z]{3}$/.test(rawCurrency) ? rawCurrency : null;
     const eventId = /^ayx_[a-zA-Z0-9-]{10,64}$/.test(String(req.body?.eventId || '')) ? String(req.body.eventId) : null;
-    const request = createAyrovixReviewRequest(db, {
+    const request = createZayrovixReviewRequest(db, {
       sessionId,
       accountId: customer?.id || null,
       eventId,
@@ -656,7 +656,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       desiredColor: String(req.body?.desiredColor || '').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 80),
       contact,
     });
-    if (eventId) markAyrovixChosen(db, eventId);
+    if (eventId) markZayrovixChosen(db, eventId);
     return res.status(request.duplicate ? 200 : 201).json({ success: true, data: publicReview(request) });
   });
 
@@ -667,7 +667,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       return res.status(400).json({ success: false, code: 'INVALID_REQUEST', error: 'Demande invalide.' });
     }
     const customer = resolveCustomer(db, req);
-    const row = getAyrovixReviewForOwner(db, id, sessionId, customer?.id || null);
+    const row = getZayrovixReviewForOwner(db, id, sessionId, customer?.id || null);
     if (!row) return res.status(404).json({ success: false, code: 'NOT_FOUND', error: 'Demande introuvable.' });
     return res.json({ success: true, data: publicReview(row) });
   });
@@ -702,13 +702,13 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       }));
       return res.json({ success: true, data: { results: signed } });
     } catch (error: any) {
-      console.warn(`[AYROVIX live-stock] ${String(error?.message || error).slice(0, 120)}`);
+      console.warn(`[ZAYROVIX live-stock] ${String(error?.message || error).slice(0, 120)}`);
       return res.status(502).json({ success: false, code: 'LIVE_STOCK_FAILED', error: 'Vérification du stock impossible pour le moment.' });
     }
   });
 
   router.post('/choose', (req: Request, res: Response) => {
-    markAyrovixChosen(db, String(req.body?.eventId || ''));
+    markZayrovixChosen(db, String(req.body?.eventId || ''));
     return res.json({ success: true });
   });
 
@@ -719,7 +719,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
         : 'Le fichier envoyé est invalide.';
       return res.status(400).json({ success: false, code: error.code, error: message });
     }
-    return res.status(500).json({ success: false, code: 'AYROVIX_INTERNAL_ERROR', error: 'Erreur interne du service.' });
+    return res.status(500).json({ success: false, code: 'ZAYROVIX_INTERNAL_ERROR', error: 'Erreur interne du service.' });
   });
 
   return router;

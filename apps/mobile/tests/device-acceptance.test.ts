@@ -27,21 +27,21 @@ old-phone\toffline
 
   it('يقرا حالة النطاق من pm get-app-links', () => {
     const states = parseDomainVerificationStates(`
-  app.ayrovi.mobile.demo:
+  app.zayrovi.mobile.demo:
     ID: 1234
     Signatures: [8e20]
     Domain verification state:
-      ayrovi.tn: legacy_failure
-      ayrovi-beta1-moo8.onrender.com: verified
+      zayrovi.tn: legacy_failure
+      zayrovi-beta1-moo8.onrender.com: verified
 `);
     expect(states).toEqual({
-      'ayrovi.tn': 'legacy_failure',
-      'ayrovi-beta1-moo8.onrender.com': 'verified',
+      'zayrovi.tn': 'legacy_failure',
+      'zayrovi-beta1-moo8.onrender.com': 'verified',
     });
   });
 
   it('يعرف الحزمة اللي اختارها resolver وما يقبلش Android Chooser', () => {
-    expect(parseResolvedPackage('app.ayrovi.mobile.demo/.MainActivity')).toBe(DEMO_PACKAGE);
+    expect(parseResolvedPackage('app.zayrovi.mobile.demo/.MainActivity')).toBe(DEMO_PACKAGE);
     expect(parseResolvedPackage('android/com.android.internal.app.ResolverActivity')).toBe('android');
     expect(parseResolvedPackage('No activity found')).toBeNull();
   });
@@ -56,7 +56,7 @@ old-phone\toffline
       },
     }];
     expect(validateAssetLinks(document, DEMO_PACKAGE, EXPECTED_SHA256).ok).toBe(true);
-    expect(validateAssetLinks(document, 'app.ayrovi.mobile', EXPECTED_SHA256)).toMatchObject({ ok: false });
+    expect(validateAssetLinks(document, 'app.zayrovi.mobile', EXPECTED_SHA256)).toMatchObject({ ok: false });
     expect(validateAssetLinks(document, DEMO_PACKAGE, `AA:${EXPECTED_SHA256.slice(3)}`)).toMatchObject({ ok: false });
     expect(validateAssetLinks({}, DEMO_PACKAGE, EXPECTED_SHA256)).toMatchObject({ ok: false });
   });

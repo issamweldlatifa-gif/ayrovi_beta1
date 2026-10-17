@@ -1,6 +1,6 @@
 # AYWEBs — تسريع مسار «Add to Cart»: من أكثر من 20 ثانية إلى ثوانٍ
 
-> **التاريخ:** 2026-10-05 · **الفرع:** `arena/f0cb5a18-ayrovi-beta1`
+> **التاريخ:** 2026-10-05 · **الفرع:** `arena/f0cb5a18-zayrovi-beta1`
 > **الشكوى:** «العميل ينتظر أكثر من عشرين ثانية ليظهر المنتج المضاف مع سعره»
 > **المرجع الملزم:** `docs/AYWEBS_ADD_TO_CART_ORDER.md` · **شرح المسار:** `docs/AYWEBS_ADD_TO_CART_STEPS_AR.md`
 
@@ -45,7 +45,7 @@
 - انتهاء مهلة مستقلة لكل سبْرة،
 - ميزانية عامة صارمة للسباق كله،
 - حفظ أفضل نتيجة غير مسعَّرة كاحتياط (عنوان/صور) وكل الأخطاء بأكوادها،
-- **بدء متأخر لقارئ Jina** (`AYROVIX_JINA_HEADSTART_MS=1200`) حتى لا يُستهلك نداء خارجي إن نجحت القراءة المباشرة.
+- **بدء متأخر لقارئ Jina** (`ZAYROVIX_JINA_HEADSTART_MS=1200`) حتى لا يُستهلك نداء خارجي إن نجحت القراءة المباشرة.
 
 `scrapeWithHttp` أعيدت كتابتها على مرحلتين:
 - **المرحلة A (مجانية، متوازية):** جوال + مكتب + Jina → تُوقف عند أول سعر.
@@ -86,10 +86,10 @@
 ### 5. مفاتيح تشغيل بدل أرقام مدفونة
 
 ```
-AYROVIX_DIRECT_TIMEOUT_MS=6500      # ميزانية القراءة المباشرة (جوال+مكتب، متوازيتان)
-AYROVIX_JINA_HEADSTART_MS=1200      # متى يبدأ قارئ Jina
-AYROVIX_JINA_TIMEOUT_MS=12000       # ميزانية قارئ Jina
-AYROVIX_RENDER_TIMEOUT_MS=18000     # المزوّد المدفوع (كما كان)
+ZAYROVIX_DIRECT_TIMEOUT_MS=6500      # ميزانية القراءة المباشرة (جوال+مكتب، متوازيتان)
+ZAYROVIX_JINA_HEADSTART_MS=1200      # متى يبدأ قارئ Jina
+ZAYROVIX_JINA_TIMEOUT_MS=12000       # ميزانية قارئ Jina
+ZAYROVIX_RENDER_TIMEOUT_MS=18000     # المزوّد المدفوع (كما كان)
 AYWEBS_RESOLVE_CACHE_TTL_MS=300000  # ذاكرة القراءة (0 = تعطيل)
 AYWEBS_RESOLVE_CACHE_MAX=400        # عدد المدخلات المحفوظة
 ```
@@ -98,7 +98,7 @@ AYWEBS_RESOLVE_CACHE_MAX=400        # عدد المدخلات المحفوظة
 
 ## 2.5) قياس حقيقي على الإنتاج (06/10/2026) — من GitHub Actions إلى Render
 
-شُغّلت السonde الفعلية على الموقع المنشور (`https://ayrovi-beta1.onrender.com`)، على المنتج
+شُغّلت السonde الفعلية على الموقع المنشور (`https://zayrovi-beta1.onrender.com`)، على المنتج
 `https://www.amazon.com/dp/B0GYM3V9H5` (أمازون يقدّم لخوادم Render صفحة قشرة — أي أصعب حالة):
 
 | القياس | النتيجة |
@@ -150,7 +150,7 @@ npm run build                                       # بناء الخادم وا
 
 ```bash
 node scripts/aywebs-latency-probe.mjs \
-  --base https://ayrovi-beta1.onrender.com \
+  --base https://zayrovi-beta1.onrender.com \
   --url "https://www.amazon.com/dp/B0GYM3V9H5"
 # أو: npm run verify:aywebs-latency -- --base <origine> --url <رابط>
 ```
@@ -195,4 +195,4 @@ curl -s https://<host>/api/v1/aywebs/health | jq '.data.resolve_cache'
 القراءة الأولى ≈21 ث لأن المزوّد المدفوع لا يُنادى إلا **بعد** انتهاء المجاني (6,5 ث مباشر + 12 ث
 Jina). لو بدأ المدفوع **بالتوازي** بعد مهلة صغيرة (مثلًا 4–6 ث) لأصبحت الأولى ≈7–9 ث، مع كلفة
 محتملة: نداء مدفوع قد يُهمَل إن نجح Jina بين المهلة و13 ث. مفتاح مقترح:
-`AYROVIX_RENDER_HEADSTART_MS` (0 = التعطيل = السلوك الحالي).
+`ZAYROVIX_RENDER_HEADSTART_MS` (0 = التعطيل = السلوك الحالي).

@@ -2,7 +2,7 @@ import React from 'react';
 import { twMerge } from 'tailwind-merge';
 
 /**
- * AYROVI DS v1.0 — Field / Input / Select / Textarea.
+ * ZAYROVI DS v1.0 — Field / Input / Select / Textarea.
  * Champ standard : label encre secondaire, fond surface, filet 1px,
  * focus VISIBLE (ring 2px encre + filet encre) — jamais outline-none sans
  * substitut. Erreur : filet + ring danger. Hauteur de contrôle 44px min.

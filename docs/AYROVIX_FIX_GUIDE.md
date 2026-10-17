@@ -1,13 +1,13 @@
-# AYROVIX Lens — configuration Claude + Google Lens
+# ZAYROVIX Lens — configuration Claude + Google Lens
 
 ## Architecture active
 
-AYROVIX Lens sépare compréhension et recherche visuelle :
+ZAYROVIX Lens sépare compréhension et recherche visuelle :
 
 - **Claude Vision** identifie le produit et lit un prix réellement visible dans l’image au cours d’une seule requête structurée.
 - **SerpApi Google Lens** recherche la photo elle-même et renvoie des produits visuellement correspondants avec images, liens et prix éventuels.
 - **Claude Web Search** reste le fallback texte lorsque Google Lens ne renvoie aucun produit, ainsi que pour les liens, QR et codes-barres.
-- Le catalogue AYROVI reste une source locale.
+- Le catalogue ZAYROVI reste une source locale.
 - Les QR codes et codes-barres sont décodés localement dans le navigateur.
 - Les pages produit sont lues par un fetch HTML sécurisé afin d’obtenir leurs métadonnées et leur prix direct. Aucun modèle n’invente le prix d’un magasin.
 
@@ -20,15 +20,15 @@ Toutes ces variables sont **serveur uniquement** :
 ```env
 ANTHROPIC_API_KEY=
 ANTHROPIC_MODEL=claude-haiku-4-5-20251001
-AYROVIX_PROVIDER_TIMEOUT_MS=12000
+ZAYROVIX_PROVIDER_TIMEOUT_MS=12000
 SERPAPI_KEY=
-AYROVIX_VISUAL_SEARCH_TIMEOUT_MS=10000
-AYROVIX_LENS_COUNTRY=fr
-AYROVIX_SEARCH_TIMEOUT_MS=7000
-AYROVIX_ANTHROPIC_WEB_SEARCH=true
+ZAYROVIX_VISUAL_SEARCH_TIMEOUT_MS=10000
+ZAYROVIX_LENS_COUNTRY=fr
+ZAYROVIX_SEARCH_TIMEOUT_MS=7000
+ZAYROVIX_ANTHROPIC_WEB_SEARCH=true
 # Optionnel pour les boutiques protégées par Akamai/Cloudflare
 SCRAPERAPI_KEY=
-AYROVIX_SCRAPER_COUNTRY=fr
+ZAYROVIX_SCRAPER_COUNTRY=fr
 ```
 
 Ne créez jamais de variable `VITE_*` pour la clé. Toute variable préfixée par `VITE_` est intégrée au JavaScript envoyé au navigateur.
@@ -72,5 +72,5 @@ npm audit --audit-level=high
 
 - Ne copiez jamais une clé réelle dans ce fichier, dans Git, dans un ticket ou dans le chat.
 - Faites tourner immédiatement toute clé déjà exposée.
-- Les images Lens sont validées et réencodées en mémoire; elles ne sont pas écrites dans les uploads AYROVI. Une copie JPEG de 500 Ko maximum est envoyée à l'Image API SerpApi pour obtenir un identifiant temporaire.
+- Les images Lens sont validées et réencodées en mémoire; elles ne sont pas écrites dans les uploads ZAYROVI. Une copie JPEG de 500 Ko maximum est envoyée à l'Image API SerpApi pour obtenir un identifiant temporaire.
 - La résolution DNS, les redirections et les adresses privées sont contrôlées avant la lecture d’un lien.

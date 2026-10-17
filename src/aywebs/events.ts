@@ -38,14 +38,14 @@ const CUSTOMER_NOTIFICATIONS: Partial<Record<AyWebsDomainEvent, { type: string; 
   AYWEB_PAYMENT_CONFIRMED: {
     type: 'AYWEBS_PAYMENT',
     titleFr: 'Paiement AyWebs confirmé', titleAr: 'تم تأكيد دفعة AyWebs',
-    bodyFr: 'Votre paiement est confirmé. AYROVI lance l’achat auprès du marchand.',
-    bodyAr: 'تم تأكيد دفعتك. ستبدأ AYROVI عملية الشراء من المتجر.',
+    bodyFr: 'Votre paiement est confirmé. ZAYROVI lance l’achat auprès du marchand.',
+    bodyAr: 'تم تأكيد دفعتك. ستبدأ ZAYROVI عملية الشراء من المتجر.',
   },
   AYWEB_PURCHASE_CONFIRMED: {
     type: 'AYWEBS_PURCHASE',
     titleFr: 'Achat confirmé auprès du marchand', titleAr: 'تم تأكيد الشراء من المتجر',
-    bodyFr: 'Le produit a été acheté. Nous suivons l’expédition vers l’entrepôt AYROVI.',
-    bodyAr: 'تم شراء المنتج. سنتابع شحنه إلى مستودع AYROVI.',
+    bodyFr: 'Le produit a été acheté. Nous suivons l’expédition vers l’entrepôt ZAYROVI.',
+    bodyAr: 'تم شراء المنتج. سنتابع شحنه إلى مستودع ZAYROVI.',
   },
   AYWEB_PURCHASE_FAILED: {
     type: 'AYWEBS_PURCHASE',
@@ -67,7 +67,7 @@ const CUSTOMER_NOTIFICATIONS: Partial<Record<AyWebsDomainEvent, { type: string; 
   },
   AYWEB_WAREHOUSE_RECEIVED: {
     type: 'AYWEBS_WAREHOUSE',
-    titleFr: 'Colis reçu à l’entrepôt AYROVI', titleAr: 'وصلت الشحنة إلى مستودع AYROVI',
+    titleFr: 'Colis reçu à l’entrepôt ZAYROVI', titleAr: 'وصلت الشحنة إلى مستودع ZAYROVI',
     bodyFr: 'Votre article est arrivé. Vous pouvez préparer le groupement et l’expédition.',
     bodyAr: 'وصل منتجك. يمكنك الآن تجهيز التجميع والشحن.',
   },

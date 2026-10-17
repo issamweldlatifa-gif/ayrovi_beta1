@@ -51,14 +51,14 @@ export class SmartLinkScraper {
    *   1. **Un taux inventé pour toute devise absente de la table** (le `|| 4.00`) :
    *      un article en SEK ou en CAD non listé était converti à 4 dinars pour 1,
    *      sans que rien ne le signale ;
-   *   2. **Deux vérités pour un même produit** : le calculateur AYROVI applique
+   *   2. **Deux vérités pour un même produit** : le calculateur ZAYROVI applique
    *      le taux EFFECTIF de `pricing_config` (marché × buffer, versionné), la
    *      table disait autre chose — l'écart exact que l'audit du 23/09 avait
    *      déjà dû corriger ailleurs ;
    *   3. **Un prix TND publié sans moteur** : `serviceFee = max(10, 8 %)` et
    *      `shipping = 25.00` étaient des constantes, pas des règles métier.
    *
-   * Désormais : le scraper publie le prix SOURCE et sa devise. Le prix AYROVI
+   * Désormais : le scraper publie le prix SOURCE et sa devise. Le prix ZAYROVI
    * (`convertedPriceTND`/`serviceFeeTND`/`estimatedShippingTND`/`totalPriceTND`)
    * est produit par `calculatePrice` sur les règles versionnées, à la couche qui
    * a la base (API / panier / AYWEBs). Les quatre champs restent à 0 ici :
@@ -386,9 +386,9 @@ export class SmartLinkScraper {
    * maintenant ensemble, la première qui publie un prix gagne, les autres sont
    * annulées.
    *
-   * Budgets (surchargeables) : mobile/bureau `AYROVIX_DIRECT_TIMEOUT_MS` (6,5 s),
-   * lecteur Jina `AYROVIX_JINA_TIMEOUT_MS` (12 s), rendu payant
-   * `AYROVIX_RENDER_TIMEOUT_MS` (18 s, filet de sécurité inchangé).
+   * Budgets (surchargeables) : mobile/bureau `ZAYROVIX_DIRECT_TIMEOUT_MS` (6,5 s),
+   * lecteur Jina `ZAYROVIX_JINA_TIMEOUT_MS` (12 s), rendu payant
+   * `ZAYROVIX_RENDER_TIMEOUT_MS` (18 s, filet de sécurité inchangé).
    *
    * Le lecteur Jina part différé de ~1,2 s : sur une fiche que la lecture
    * directe lit du premier coup, il n'est jamais appelé — aucun appel externe
@@ -412,8 +412,8 @@ export class SmartLinkScraper {
       }
     }
 
-    const directTimeoutMs = positiveIntEnv('AYROVIX_DIRECT_TIMEOUT_MS', 6_500, 250, 15_000);
-    const jinaTimeoutMs = positiveIntEnv('AYROVIX_JINA_TIMEOUT_MS', 12_000, 250, 30_000);
+    const directTimeoutMs = positiveIntEnv('ZAYROVIX_DIRECT_TIMEOUT_MS', 6_500, 250, 15_000);
+    const jinaTimeoutMs = positiveIntEnv('ZAYROVIX_JINA_TIMEOUT_MS', 12_000, 250, 30_000);
 
     /*
      * EMPREINTE DE LECTEUR FIXÉE (Phase 1, 06/10/2026 — readerFingerprint.ts).
@@ -429,8 +429,8 @@ export class SmartLinkScraper {
      * Maintenant : l'empreinte fixée par store part SEULE ; l'autre n'est qu'un
      * repli DIFFÉRÉ (readerFallbackDelayMs, 2,5 s par défaut) qui ne coûte rien
      * quand la première lit. Réglable sans redéploiement :
-     *   AYROVIX_READER_PROFILE_AMAZON=mobile|desktop  (ou AYROVIX_READER_PROFILE)
-     *   AYROVIX_READER_FALLBACK_MS=2500
+     *   ZAYROVIX_READER_PROFILE_AMAZON=mobile|desktop  (ou ZAYROVIX_READER_PROFILE)
+     *   ZAYROVIX_READER_FALLBACK_MS=2500
      */
     const attempts: ProbeAttempt<MerchantScrapeResult>[] = readerProbePlan(storeType).map((step) => ({
       id: step.id,
@@ -441,8 +441,8 @@ export class SmartLinkScraper {
 
     // Zalando/Alltricks coupent l'IP Render (timeout 0 octet / 403 Akamai).
     // r.jina.ai lit la page comme un navigateur et rend le HTML+JSON-LD.
-    // Coupure : AYROVI_JINA_READER=false
-    if (process.env.AYROVI_JINA_READER !== 'false') {
+    // Coupure : ZAYROVI_JINA_READER=false
+    if (process.env.ZAYROVI_JINA_READER !== 'false') {
       attempts.push({
         id: 'jina',
         timeoutMs: jinaTimeoutMs,
@@ -529,7 +529,7 @@ export class SmartLinkScraper {
       headers: {
         Accept: 'text/html,application/xhtml+xml,text/plain',
         'X-Return-Format': 'html',
-        'User-Agent': 'Mozilla/5.0 (compatible; AYROVI-reader/1.0)',
+        'User-Agent': 'Mozilla/5.0 (compatible; ZAYROVI-reader/1.0)',
       },
     });
     if (!response.ok) {

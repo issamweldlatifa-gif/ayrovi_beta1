@@ -9,7 +9,7 @@ import glyphs from '../client/src/design/editorial/glyphs.json';
 import { EditorialIcon, type EditorialIconName } from '../client/src/design/editorial/Icon';
 
 const names = Object.keys(glyphs) as EditorialIconName[];
-const oldCatalogue = readFileSync('client/src/components/icons/ayrovi/catalog.tsx', 'utf8');
+const oldCatalogue = readFileSync('client/src/components/icons/zayrovi/catalog.tsx', 'utf8');
 const aliases = readFileSync('client/src/components/QatafoIcons.tsx', 'utf8');
 function contrast(a: string, b: string) {
   const l = (hex: string) => {
@@ -22,12 +22,12 @@ function contrast(a: string, b: string) {
 
 describe('editorial identity, generated from one versioned source', () => {
   it('covers every existing concept and compatibility alias without deleting one', () => {
-    const expected = [...oldCatalogue.matchAll(/createAyroviIcon\('([^']+)'/g)].map(m => m[1]).sort();
+    const expected = [...oldCatalogue.matchAll(/createZayroviIcon\('([^']+)'/g)].map(m => m[1]).sort();
     expect(names.slice().sort()).toEqual(expected);
-    for (const m of aliases.matchAll(/export const \w+ = I\.Ayrovi(\w+);/g)) expect(names).toContain(m[1]);
+    for (const m of aliases.matchAll(/export const \w+ = I\.Zayrovi(\w+);/g)) expect(names).toContain(m[1]);
     // La famille est un système fermé : toute géométrie déclarée doit être joignable depuis la
     // porte d'entrée unique. Un dessin orphelin n'est pas un ajout, c'est un doublon en puissance.
-    const published = new Set([...aliases.matchAll(/export const \w+ = I\.Ayrovi(\w+);/g)].map(m => m[1]));
+    const published = new Set([...aliases.matchAll(/export const \w+ = I\.Zayrovi(\w+);/g)].map(m => m[1]));
     expect(names.filter(name => !published.has(name))).toEqual([]);
     // 99 = 96 concepts d'origine + Bank + Mail + l'identité fonctionnelle AyWebs.
     expect(names).toHaveLength(99);

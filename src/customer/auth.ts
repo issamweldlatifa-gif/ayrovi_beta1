@@ -4,7 +4,7 @@ import { QatafoDatabase } from '../db/database';
 
 const COOKIE_NAME = 'ayrovi_customer_session';
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
-const DEVELOPMENT_SECRET = 'ayrovi-development-customer-auth-secret-not-for-production';
+const DEVELOPMENT_SECRET = 'zayrovi-development-customer-auth-secret-not-for-production';
 
 export interface CustomerIdentity {
   id: string;
@@ -129,7 +129,7 @@ export function sessionTokenFromRequest(req: Request): string {
 
 /** Champ de réponse remis uniquement à un client native déclaré (§app réelle). */
 export function nativeSessionField(req: Request, token: string): Record<string, string> {
-  return String(req.headers['x-ayrovi-native'] || '') === '1' ? { native_session_token: token } : {};
+  return String(req.headers['x-zayrovi-native'] || '') === '1' ? { native_session_token: token } : {};
 }
 
 export function resolveCustomer(db: QatafoDatabase, req: Request): ResolvedCustomer | null {
@@ -159,7 +159,7 @@ export function requireCustomer(db: QatafoDatabase, options: { verifiedPhone?: b
     const customer = resolveCustomer(db, req);
     if (!customer) {
       clearCustomerCookie(res);
-      return res.status(401).json({ success: false, code: 'AUTH_REQUIRED', error: 'Connectez-vous à votre compte AYROVI.' });
+      return res.status(401).json({ success: false, code: 'AUTH_REQUIRED', error: 'Connectez-vous à votre compte ZAYROVI.' });
     }
     if (options.verifiedPhone && !customer.phoneVerified) {
       return res.status(403).json({ success: false, code: 'PHONE_VERIFICATION_REQUIRED', error: 'Vérifiez votre numéro de téléphone avant de confirmer la commande.' });

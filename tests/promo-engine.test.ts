@@ -140,13 +140,13 @@ describe('Moteur de promotions — panier, estimations et commandes', () => {
       const accountId = `promo_account_${Date.now()}`;
       const sessionId = `promo-order-${Date.now()}`;
       db.run(`INSERT INTO customer_accounts (id,display_name,email,email_verified_at,status,created_at,updated_at)
-        VALUES (?,'Client Promo','promo@ayrovi.test',?,'ACTIVE',?,?)`, accountId, now, now, now);
+        VALUES (?,'Client Promo','promo@zayrovi.test',?,'ACTIVE',?,?)`, accountId, now, now, now);
       db.addItem(sessionId, {
         store: 'shein', url: 'https://www.shein.com/sneakers-p-11.html', title: 'sneakers running',
         imageUrl: '/uploads/s.jpg', sourcePrice: 50, sourceCurrency: 'EUR', priceTND: 1, quantity: 1,
       }, accountId);
       const order = db.createOrderFromCart(sessionId, {
-        name: 'Client Promo', email: 'promo@ayrovi.test', phone: '98111001', governorate: 'Tunis', address: 'Tunis',
+        name: 'Client Promo', email: 'promo@zayrovi.test', phone: '98111001', governorate: 'Tunis', address: 'Tunis',
         paymentMethod: 'BANK_TRANSFER', latitude: null, longitude: null, termsAcceptedAt: now, locale: 'fr-TN',
       }, accountId);
       const item = db.get<any>('SELECT * FROM order_items WHERE order_id=?', order.orderId);
@@ -177,7 +177,7 @@ describe('Moteur de promotions — panier, estimations et commandes', () => {
 describe('Moteur de promotions — administration', () => {
   const login = async () => {
     const agent = request.agent(app);
-    const response = await agent.post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
+    const response = await agent.post('/api/admin/auth/login').send({ email: 'admin@zayrovi.tn', password: 'ZayroviBeta2026!' });
     return { agent, csrf: response.body.data.csrfToken };
   };
 
@@ -228,14 +228,14 @@ describe('Moteur de promotions — administration', () => {
   test('un rôle sans pricing:write est refusé en écriture', async () => {
     const superAdmin = await login();
     const created = await superAdmin.agent.post('/api/admin/users').set('x-csrf-token', superAdmin.csrf)
-      .send({ name: 'Order Promo', email: 'order-promo@test.ayrovi.tn', password: 'OrderPromo2026!', role: 'ORDER_MANAGER' });
+      .send({ name: 'Order Promo', email: 'order-promo@test.zayrovi.tn', password: 'OrderPromo2026!', role: 'ORDER_MANAGER' });
     expect(created.status).toBe(201);
     const agent = request.agent(app);
-    const response = await agent.post('/api/admin/auth/login').send({ email: 'order-promo@test.ayrovi.tn', password: 'OrderPromo2026!' });
+    const response = await agent.post('/api/admin/auth/login').send({ email: 'order-promo@test.zayrovi.tn', password: 'OrderPromo2026!' });
     const csrf = response.body.data.csrfToken;
     expect((await agent.get('/api/admin/promos').set('x-csrf-token', csrf)).status).toBe(200); // commerce:read OK
     expect((await agent.put('/api/admin/promos/day_1').set('x-csrf-token', csrf).send({ percent: 3 })).status).toBe(403);
     expect((await agent.post('/api/admin/promos').set('x-csrf-token', csrf).send({ scope: 'CATEGORY', target: 'fashion_shoes', percent: 3 })).status).toBe(403);
-    db.run('DELETE FROM admin_users WHERE email=?', 'order-promo@test.ayrovi.tn');
+    db.run('DELETE FROM admin_users WHERE email=?', 'order-promo@test.zayrovi.tn');
   });
 });

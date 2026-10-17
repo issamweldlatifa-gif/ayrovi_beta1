@@ -8,7 +8,7 @@ import { readAmazonAvailability, readAmazonPrice, readAmazonVariants } from '../
  * AMAZON — السعر والصور والمقاسات (04/10/2026).
  *
  * القاعدة المحفوظة هنا هي علة حقيقية ظهرت في التطبيق:
- *   « Le devis AYROVI est indisponible pour cet article. L'ajout reste bloqué. »
+ *   « Le devis ZAYROVI est indisponible pour cet article. L'ajout reste bloqué. »
  * سببها أن صفحة أمازون لا تنشر JSON-LD ولا meta للسعر، وتُفتّت السعر على ثلاثة
  * spans (`a-price-symbol` + `a-price-whole` + `a-price-fraction`) بينما
  * `.a-offscreen` **داخل** كتلة السعر يبقى فارغاً. لذلك كان السعر يُقرأ 0 ثم

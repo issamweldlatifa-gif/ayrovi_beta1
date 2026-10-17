@@ -69,18 +69,18 @@ export interface LensCacheRead<I, M, S = unknown> {
  * lui-même un répertoire isolé (ou l'active explicitement).
  */
 function cacheEnabled(): boolean {
-  if (process.env.AYROVI_LENS_CACHE === 'false') return false;
-  if (process.env.AYROVI_LENS_CACHE === 'true') return true;
-  if (process.env.VITEST || process.env.NODE_ENV === 'test') return Boolean(process.env.AYROVI_LENS_CACHE_DIR);
+  if (process.env.ZAYROVI_LENS_CACHE === 'false') return false;
+  if (process.env.ZAYROVI_LENS_CACHE === 'true') return true;
+  if (process.env.VITEST || process.env.NODE_ENV === 'test') return Boolean(process.env.ZAYROVI_LENS_CACHE_DIR);
   return true;
 }
 
 function cacheDir(): string {
-  return process.env.AYROVI_LENS_CACHE_DIR || path.resolve(process.cwd(), 'data', 'lens-recognition');
+  return process.env.ZAYROVI_LENS_CACHE_DIR || path.resolve(process.cwd(), 'data', 'lens-recognition');
 }
 
 function ttl(name: 'RECOGNITION' | 'MATCHES'): number {
-  const raw = Number(process.env[`AYROVI_LENS_${name}_TTL_MS`]);
+  const raw = Number(process.env[`ZAYROVI_LENS_${name}_TTL_MS`]);
   if (Number.isFinite(raw) && raw >= 0) return raw;
   return name === 'RECOGNITION' ? DEFAULT_RECOGNITION_TTL_MS : DEFAULT_MATCHES_TTL_MS;
 }

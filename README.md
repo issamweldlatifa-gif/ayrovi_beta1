@@ -1,11 +1,11 @@
-# AYROVI — Shopping international et Admin CMS
+# ZAYROVI — Shopping international et Admin CMS
 
-AYROVI est une plateforme Express, React et SQLite de shopping international en dinars tunisiens. Le site public, Lens, le panier, le checkout, l’Assistant et l’espace Admin utilisent le même backend et la même base de données.
+ZAYROVI est une plateforme Express, React et SQLite de shopping international en dinars tunisiens. Le site public, Lens, le panier, le checkout, l’Assistant et l’espace Admin utilisent le même backend et la même base de données.
 
 ## Fonctions principales
 
 - Site public responsive avec Hero administrable, marques partenaires et une navigation textuelle simple sous le Hero pour Arrivages, Promotions, Stories et Actualités.
-- Chaque libellé CMS ouvre une page plein écran dédiée avec l’en-tête AYROVI, une fermeture explicite et uniquement le contenu backend de la catégorie choisie.
+- Chaque libellé CMS ouvre une page plein écran dédiée avec l’en-tête ZAYROVI, une fermeture explicite et uniquement le contenu backend de la catégorie choisie.
 - Lens pour extraire un prix depuis une image ou un lien, avec prévisualisation tarifaire calculée côté serveur.
 - Connexion client séparée de l’Admin par Google, Facebook OAuth ou SMS OTP, avec validation OAuth côté serveur et état anti-CSRF lié au navigateur.
 - Espace « Mon compte » complet : profil, adresses, historique détaillé, favoris, panier sauvegardé, notifications et suppression autonome du compte.
@@ -28,7 +28,7 @@ npm start
 
 L’application utilise `http://localhost:3000` par défaut. L’Admin est disponible sur `/admin`.
 
-En développement, si `ADMIN_PASSWORD` n’est pas défini, un compte local `admin@ayrovi.tn` est créé avec le mot de passe de démonstration `AyroviBeta2026!`. En production, `ADMIN_EMAIL` et un `ADMIN_PASSWORD` unique d’au moins 12 caractères doivent être définis.
+En développement, si `ADMIN_PASSWORD` n’est pas défini, un compte local `admin@zayrovi.tn` est créé avec le mot de passe de démonstration `ZayroviBeta2026!`. En production, `ADMIN_EMAIL` et un `ADMIN_PASSWORD` unique d’au moins 12 caractères doivent être définis.
 
 ## Validation
 
@@ -61,12 +61,12 @@ Ensuite, chaque vérificateur de navigateur se lance **avec un serveur réel en
 cours** et la variable d’adresse :
 
 ```bash
-AYROVI_BASE_URL=http://localhost:3000 npm run audit:design
-AYROVI_BASE_URL=http://localhost:3000 npm run verify:public-nav
-AYROVI_BASE_URL=http://localhost:3000 npm run verify:footer-payments
+ZAYROVI_BASE_URL=http://localhost:3000 npm run audit:design
+ZAYROVI_BASE_URL=http://localhost:3000 npm run verify:public-nav
+ZAYROVI_BASE_URL=http://localhost:3000 npm run verify:footer-payments
 ```
 
-Sinon ils s’arrêtent sur `AYROVI_BASE_URL est requis.` Les runners
+Sinon ils s’arrêtent sur `ZAYROVI_BASE_URL est requis.` Les runners
 `verify:public-additions`, `verify:lens-*` et `verify:sonim-*` hébergent en
 revanche leur propre fixture et n’ont besoin de rien.
 
@@ -104,7 +104,7 @@ Les tarifs, moyens de paiement, gouvernorats et délais affichés publiquement p
 - `src/admin/` : authentification, permissions et API Admin, isolées de l’authentification client.
 - `client/src/admin/` : interface Admin responsive.
 - `client/src/components/` : site public, Lens, panier, checkout et Assistant.
-- `tests/ayrovi.test.ts` : tests d’intégration backend.
+- `tests/zayrovi.test.ts` : tests d’intégration backend.
 
 La description complète des fichiers, rôles, données et routes se trouve dans [`ADMIN_CMS.md`](./docs/ADMIN_CMS.md).
 

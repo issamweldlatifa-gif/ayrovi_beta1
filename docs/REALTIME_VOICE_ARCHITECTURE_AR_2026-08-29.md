@@ -1,10 +1,10 @@
-# قرار معمارية AYROVI Realtime Voice
+# قرار معمارية ZAYROVI Realtime Voice
 
 **التاريخ:** 2026-08-29
 
 **الحالة:** مقبول معماريًا — تفعيل Gemini مؤجل إلى حين إثبات الـquota على المشروع الفعلي
 
-**القاعدة غير القابلة للتفاوض:** Claude هو عقل AYROVI الوحيد، ومزوّد الصوت لا يملك قرار الحوار أو الأدوات.
+**القاعدة غير القابلة للتفاوض:** Claude هو عقل ZAYROVI الوحيد، ومزوّد الصوت لا يملك قرار الحوار أو الأدوات.
 
 ## 1. الحالة الفعلية الآن
 
@@ -14,7 +14,7 @@
 Microphone
   → MediaRecorder + VAD
   → Groq Whisper STT
-  → Claude AYROVI Agent + Tools
+  → Claude ZAYROVI Agent + Tools
   → Browser SpeechSynthesis
   → Speaker
 ```
@@ -32,7 +32,7 @@ Microphone
 | Model | `gemini-3.1-flash-tts-preview` |
 | Endpoint | `POST /v1beta/models/{model}:generateContent` |
 | Input | Text |
-| Output | Raw PCM 16-bit / 24 kHz، ويحوّله AYROVI إلى WAV |
+| Output | Raw PCM 16-bit / 24 kHz، ويحوّله ZAYROVI إلى WAV |
 | Runtime result السابق | HTTP 429 / quota exceeded |
 | Project identity | غير قابلة للاستخراج بأمان من API key داخل التطبيق |
 | Quota tier | يجب تأكيدها من Google AI Studio للمشروع نفسه |
@@ -81,9 +81,9 @@ Microphone (PCM stream)
   ↓
 Gemini 3.5 Transcribe Live (STT only — no assistant)
   ↓  interim + one finalized transcript
-Claude AYROVI Agent
+Claude ZAYROVI Agent
   ↓
-AYROVI Tools / AYROVIX / Orders / Tracking / CRM
+ZAYROVI Tools / ZAYROVIX / Orders / Tracking / CRM
   ↓  one authoritative final answer
 Gemini 3.1 Flash TTS streaming (voice rendering only)
   ↓
@@ -153,7 +153,7 @@ https://aistudio.google.com/rate-limit?timeRange=last-28-days
 
 - لا تغيير في ملكية reasoning.
 - نفس conversation ID، session ID، history وtools.
-- لا يستدعي Gemini أي أداة AYROVI.
+- لا يستدعي Gemini أي أداة ZAYROVI.
 - cancellation operation ID يمنع ghost responses.
 
 ### Phase 3 — Streaming voice renderer
@@ -167,7 +167,7 @@ https://aistudio.google.com/rate-limit?timeRange=last-28-days
 ### Phase 4 — Resilience
 
 - Ephemeral token: one use، بدء session خلال دقيقة، انتهاء قصير.
-- `gemini-3.5-transcribe-live` محدود حاليًا بعشر دقائق لكل session؛ يُجدّد الاتصال قبل الحد مع الحفاظ على دورة المحادثة في AYROVI.
+- `gemini-3.5-transcribe-live` محدود حاليًا بعشر دقائق لكل session؛ يُجدّد الاتصال قبل الحد مع الحفاظ على دورة المحادثة في ZAYROVI.
 - session resumption حيث يدعمها المسار، وإعادة اتصال مضبوطة من دون تكرار finalized transcript.
 - timeouts وحدود buffer وbackpressure.
 - circuit breaker مستقل لكل provider/model.

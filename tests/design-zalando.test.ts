@@ -1,12 +1,12 @@
 /**
- * AYROVI — P4/T1 « Zalando Strategy » : verrou du système de design.
+ * ZAYROVI — P4/T1 « Zalando Strategy » : verrou du système de design.
  *
  * Ce fichier ne teste pas des pixels : il teste la RÈGLE que la refonte était chargée
  * d'installer, et rend le retour en arrière impossible par inadvertance.
  *
  *   1. les six jetons canoniques existent, avec les valeurs exactes de la charte ;
  *   2. un seul orange dans tout le client : `#ff6900`, porté par un seul jeton ;
- *      `--ayrovi-cta`, `--ayrovi-orange` et `--ayrovi-accent` ne sont que des alias ;
+ *      `--zayrovi-cta`, `--zayrovi-orange` et `--zayrovi-accent` ne sont que des alias ;
  *   3. aucun littéral orange hérité ne survit dans `client/src` (ni CSS, ni TSX, ni TS) ;
  *   4. les surfaces LENS et les cartes éditoriales ne sont plus des aplats oranges :
  *      le lavis pêche, la diagonale et la bannière dégradée sont neutralisés ;
@@ -60,12 +60,12 @@ describe('jetons canoniques — la charte tient en six variables', () => {
   test('les six jetons existent avec leurs valeurs exactes', () => {
     const declared = new Map(declarations(read(TOKENS)).map(([, n, v]) => [n, v.trim().toLowerCase()]));
     const canonical: Record<string, string> = {
-      '--ayrovi-bg-main': '#ffffff',
-      '--ayrovi-bg-surface': '#f8f9fa',
-      '--ayrovi-border-soft': '#eaeaea',
-      '--ayrovi-text-primary': '#000000',
-      '--ayrovi-text-secondary': '#666666',
-      '--ayrovi-color-brand-orange': '#ff6900',
+      '--zayrovi-bg-main': '#ffffff',
+      '--zayrovi-bg-surface': '#f8f9fa',
+      '--zayrovi-border-soft': '#eaeaea',
+      '--zayrovi-text-primary': '#000000',
+      '--zayrovi-text-secondary': '#666666',
+      '--zayrovi-color-brand-orange': '#ff6900',
     };
     for (const [name, value] of Object.entries(canonical)) {
       expect(declared.get(name), `${name} doit être déclaré dans tokens.css`).toBe(value);
@@ -79,13 +79,13 @@ describe('jetons canoniques — la charte tient en six variables', () => {
       const alias = raw.match(/^var\((--[a-z0-9-]+)\)$/);
       return alias && depth < 6 ? resolve(alias[1], depth + 1) : raw;
     };
-    expect(resolve('--ayrovi-color-brand-orange')).toBe('#ff6900');
-    for (const alias of ['--ayrovi-cta', '--ayrovi-orange', '--ayrovi-accent']) {
+    expect(resolve('--zayrovi-color-brand-orange')).toBe('#ff6900');
+    for (const alias of ['--zayrovi-cta', '--zayrovi-orange', '--zayrovi-accent']) {
       expect(resolve(alias), `${alias} doit résoudre l'orange canonique`).toBe('#ff6900');
     }
     // et un seul jeton porte réellement la valeur : deux porteurs = deux vérités
     const bearers = [...declared.entries()].filter(([, v]) => v === '#ff6900').map(([n]) => n);
-    expect(bearers).toEqual(['--ayrovi-color-brand-orange']);
+    expect(bearers).toEqual(['--zayrovi-color-brand-orange']);
   });
 
   test('l’ancien accent « soft » n’est plus une teinte orange', () => {
@@ -95,7 +95,7 @@ describe('jetons canoniques — la charte tient en six variables', () => {
       const alias = raw.match(/^var\((--[a-z0-9-]+)\)$/);
       return alias && depth < 6 ? resolve(alias[1], depth + 1) : raw;
     };
-    expect(resolve('--ayrovi-accent-soft')).toBe('#f8f9fa');
+    expect(resolve('--zayrovi-accent-soft')).toBe('#f8f9fa');
   });
 });
 
@@ -106,7 +106,7 @@ describe('purge — plus aucun littéral orange hérité', () => {
   /**
    * `tokens.css` héberge aussi la couche back-office (`--admin-*`), dont le pêche
    * `--admin-warm-accent` est verrouillé par `design-tokens.test.ts` : on ne balaie
-   * que les déclarations de la couche vitrine (`--ayrovi-*`).
+   * que les déclarations de la couche vitrine (`--zayrovi-*`).
    */
   const storefrontTokens = (src: string) =>
     declarations(src)
@@ -170,7 +170,7 @@ describe('surfaces — l’orange n’est plus un papier peint', () => {
 
   test('la section LENS v2 n’a plus de lavis pêche', () => {
     const rule = css().match(/\.lens2\s*\{[^}]*\}/)?.[0] ?? '';
-    expect(rule).toMatch(/background:\s*var\(--ayrovi-bg-main\)/);
+    expect(rule).toMatch(/background:\s*var\(--zayrovi-bg-main\)/);
     expect(rule).not.toMatch(/gradient/);
   });
 
@@ -182,42 +182,42 @@ describe('surfaces — l’orange n’est plus un papier peint', () => {
 
   test('la bannière est une carte de surface à filet de 3px, pas un bloc orange', () => {
     const rule = css().match(/\.lens2__banner\s*\{[^}]*\}/)?.[0] ?? '';
-    expect(rule).toMatch(/background:\s*var\(--ayrovi-bg-surface\)/);
-    expect(rule).toMatch(/border-inline-start:\s*3px solid var\(--ayrovi-color-brand-orange\)/);
+    expect(rule).toMatch(/background:\s*var\(--zayrovi-bg-surface\)/);
+    expect(rule).toMatch(/border-inline-start:\s*3px solid var\(--zayrovi-color-brand-orange\)/);
     expect(rule).not.toMatch(/linear-gradient/);
   });
 
   test('le CTA de la bannière est rétrogradé en secondaire (un seul orange plein par écran)', () => {
     const rule = css().match(/\.lens2__banner-cta\s*\{[^}]*\}/)?.[0] ?? '';
-    expect(rule).toMatch(/background:\s*var\(--ayrovi-bg-main\)/);
-    expect(rule).not.toMatch(/var\(--ayrovi-color-brand-orange\)/);
+    expect(rule).toMatch(/background:\s*var\(--zayrovi-bg-main\)/);
+    expect(rule).not.toMatch(/var\(--zayrovi-color-brand-orange\)/);
   });
 
   test('le CTA client « Ouvrir LENS » reprend l’action capsule du système', () => {
     const rule = css().match(/\.lens2__cta\s*\{[^}]*\}/)?.[0] ?? '';
-    expect(rule).toMatch(/background:\s*var\(--ayrovi-cta\)/);
-    expect(rule).toMatch(/color:\s*var\(--ayrovi-cta-ink\)/);
-    expect(rule).toMatch(/border-radius:\s*var\(--ayrovi-radius-cta/);
+    expect(rule).toMatch(/background:\s*var\(--zayrovi-cta\)/);
+    expect(rule).toMatch(/color:\s*var\(--zayrovi-cta-ink\)/);
+    expect(rule).toMatch(/border-radius:\s*var\(--zayrovi-radius-cta/);
   });
 
   test('les flèches des prix marchands sont des cercles transparents à filet fin', () => {
     const rule = css().match(/\.lens2__merchant-go\s*\{[^}]*\}/)?.[0] ?? '';
     expect(rule).toMatch(/background:\s*transparent/);
-    expect(rule).toMatch(/border:\s*1px solid var\(--ayrovi-border-soft\)/);
-    expect(rule).not.toMatch(/var\(--ayrovi-color-brand-orange\)/);
+    expect(rule).toMatch(/border:\s*1px solid var\(--zayrovi-border-soft\)/);
+    expect(rule).not.toMatch(/var\(--zayrovi-color-brand-orange\)/);
   });
 
   test('le viseur LENS est neutre (Google Lens), pas orange', () => {
     const body = css();
     const scan = body.match(/\.lens-scan::before\s*\{[^}]*\}/)?.[0] ?? '';
-    expect(scan).toMatch(/var\(--ayrovi-white\)/);
-    expect(scan).not.toMatch(/var\(--ayrovi-cta\)/);
+    expect(scan).toMatch(/var\(--zayrovi-white\)/);
+    expect(scan).not.toMatch(/var\(--zayrovi-cta\)/);
     const beam = body.match(/\.lens-frame__beam\s*\{[^}]*\}/)?.[0] ?? '';
-    expect(beam).toMatch(/background:\s*var\(--ayrovi-white\)/);
+    expect(beam).toMatch(/background:\s*var\(--zayrovi-white\)/);
   });
 
   /**
-   * P4/T2 : la carte « Découvrez AYROVI » (bloc `transition`) a été SUPPRIMÉE du
+   * P4/T2 : la carte « Découvrez ZAYROVI » (bloc `transition`) a été SUPPRIMÉE du
    * projet avec `BrandsShowcase` et `LensHero` — la page d'accueil se limite au
    * Hero + Trust Bar. La règle qu'elle portait (surface grise + filet 3px) est
    * désormais portée par la primitive `.ay-surface-card`, verrouillée ci-dessous.
@@ -233,7 +233,7 @@ describe('surfaces — l’orange n’est plus un papier peint', () => {
     // le mécanisme de blocs reste branché mais ne rend plus rien
     expect(read('client/src/App.tsx')).toMatch(/DEFAULT_HOME_BLOCKS:\s*string\[\]\s*=\s*\[\]/);
     // et la règle de surface qu'ils portaient vit dans les primitives, pas dans un composant
-    expect(withoutComments(read(PRIMITIVES))).toMatch(/\.ay-surface-card\s*\{[^}]*--ayrovi-bg-surface/);
+    expect(withoutComments(read(PRIMITIVES))).toMatch(/\.ay-surface-card\s*\{[^}]*--zayrovi-bg-surface/);
   });
 });
 
@@ -253,8 +253,8 @@ describe('primitives de la charte', () => {
 
   test('la carte de surface porte le filet de 3px et jamais de fond orange', () => {
     const rule = withoutComments(read(PRIMITIVES)).match(/\.ay-surface-card\s*\{[^}]*\}/)?.[0] ?? '';
-    expect(rule).toMatch(/background:\s*var\(--ayrovi-bg-surface\)/);
-    expect(rule).toMatch(/border-inline-start:\s*3px solid var\(--ayrovi-color-brand-orange\)/);
+    expect(rule).toMatch(/background:\s*var\(--zayrovi-bg-surface\)/);
+    expect(rule).toMatch(/border-inline-start:\s*3px solid var\(--zayrovi-color-brand-orange\)/);
   });
 });
 
@@ -278,7 +278,7 @@ describe("DS v1.0 — verrous d\'échelle (2026-09-18)", () => {
   test('le CTA utilise le token sémantique de contraste, jamais une couleur fixe', () => {
     const primitives = withoutComments(read(PRIMITIVES));
     const rule = primitives.match(/\.ay-btn-cta\s*\{[^}]*\}/)?.[0] ?? '';
-    expect(rule).toMatch(/color:\s*var\(--ayrovi-cta-ink\)/);
+    expect(rule).toMatch(/color:\s*var\(--zayrovi-cta-ink\)/);
     const runtime = withoutComments(read('client/src/styles/interface-runtime.css'));
     expect(runtime.match(/\.ay-btn-cta\{[^}]*color:#fff/g) ?? []).toEqual([]);
   });
@@ -298,7 +298,7 @@ describe("DS v1.0 — verrous d\'échelle (2026-09-18)", () => {
   test('editorial customer tokens are scoped; legacy admin orange is not overwritten', () => {
     const app = withoutComments(read('client/src/App.tsx'));
     expect(app).not.toMatch(/color-brand-orange',\s*'#0A0A0A'/i);
-    expect(app).not.toMatch(/--ayrovi-cta',\s*'#0A0A0A'/i);
+    expect(app).not.toMatch(/--zayrovi-cta',\s*'#0A0A0A'/i);
     // v2 deliberately replaces global CMS writes with the approved customer boundary.
     expect(app).not.toContain('root.style.setProperty');
     expect(app).toContain('style={customerTheme(locale, interfaceConfig)}');

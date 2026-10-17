@@ -13,7 +13,7 @@ export function isolatedMediaUrl(url: string | null | undefined): string | null 
 
 
 /**
- * COMPOSITION AYROVI (phase 2, 25/09/2026) : l'image marchand revient DÉJÀ posée
+ * COMPOSITION ZAYROVI (phase 2, 25/09/2026) : l'image marchand revient DÉJÀ posée
  * sur notre mockup (9/13, #F0F2F2), produit détouré, échelle uniforme, centrage
  * sur le barycentre. Le serveur ne renvoie cette version QUE si le contrat
  * d'acceptation est tenu ; sinon il redirige vers l'original — la chaîne de repli
@@ -27,7 +27,7 @@ export function composedMediaUrl(url: string | null | undefined, width = 900): s
   return `${COMPOSED_PREFIX}?u=${encodeURIComponent(url)}&w=${width}`;
 }
 
-/** Vrai si l'URL affichée est une composition AYROVI (cadrage déjà fait côté serveur). */
+/** Vrai si l'URL affichée est une composition ZAYROVI (cadrage déjà fait côté serveur). */
 export function isComposedUrl(url: string | null | undefined): boolean {
   return Boolean(url && url.startsWith(COMPOSED_PREFIX));
 }
@@ -73,7 +73,7 @@ export function isolatedSrc(url: string, failures: Record<string, boolean> = {})
  * l'ISOLATION seule (phase 1). Même produit, deux rendus — le client l'a vu
  * immédiatement. Une seule chaîne sert désormais les deux surfaces :
  *
- *   1. composition AYROVI   → produit détouré sur notre fond studio ;
+ *   1. composition ZAYROVI   → produit détouré sur notre fond studio ;
  *   2. isolation seule      → si la composition n'est pas servie ;
  *   3. image marchand brute → dernier recours, jamais d'image cassée.
  *

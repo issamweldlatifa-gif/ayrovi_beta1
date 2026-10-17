@@ -30,18 +30,18 @@ interface ProviderRequest {
 }
 
 function countryCode(): string {
-  return /^[a-z]{2}$/i.test(process.env.AYROVIX_SCRAPER_COUNTRY || '')
-    ? String(process.env.AYROVIX_SCRAPER_COUNTRY).toLowerCase()
+  return /^[a-z]{2}$/i.test(process.env.ZAYROVIX_SCRAPER_COUNTRY || '')
+    ? String(process.env.ZAYROVIX_SCRAPER_COUNTRY).toLowerCase()
     : 'fr';
 }
 
 function timeoutMs(): number {
-  const configured = Number(process.env.AYROVIX_RENDER_TIMEOUT_MS || 18_000);
+  const configured = Number(process.env.ZAYROVIX_RENDER_TIMEOUT_MS || 18_000);
   return Number.isFinite(configured) ? Math.min(45_000, Math.max(5_000, configured)) : 18_000;
 }
 
 function providerOrder(): RenderProvider[] {
-  const preferred = String(process.env.AYROVIX_RENDER_PROVIDER || 'auto').trim().toLowerCase();
+  const preferred = String(process.env.ZAYROVIX_RENDER_PROVIDER || 'auto').trim().toLowerCase();
   const available: RenderProvider[] = [];
   if (process.env.SCRAPERAPI_KEY?.trim()) available.push('scraperapi');
   if (process.env.SCRAPINGBEE_API_KEY?.trim()) available.push('scrapingbee');
@@ -61,7 +61,7 @@ function requestFor(provider: RenderProvider, targetUrl: string): ProviderReques
       render: 'true',
       country_code: country,
     });
-    if (process.env.AYROVIX_SCRAPER_PREMIUM === 'true') params.set('premium', 'true');
+    if (process.env.ZAYROVIX_SCRAPER_PREMIUM === 'true') params.set('premium', 'true');
     return {
       provider,
       url: `https://api.scraperapi.com/?${params}`,
@@ -77,7 +77,7 @@ function requestFor(provider: RenderProvider, targetUrl: string): ProviderReques
       block_resources: 'false',
       wait: '1500',
     });
-    if (process.env.AYROVIX_SCRAPINGBEE_STEALTH === 'true') params.set('stealth_proxy', 'true');
+    if (process.env.ZAYROVIX_SCRAPINGBEE_STEALTH === 'true') params.set('stealth_proxy', 'true');
     else params.set('premium_proxy', 'true');
     return {
       provider,

@@ -19,7 +19,7 @@ jest.mock('@/api/cart', () => ({
     cartItemId: 'line-1', totalItemsCount: 1, totalTND: 85, deliveryTND: 0,
     quoteExpiresAt: '2026-10-14T09:00:00.000Z', serverNow: '2026-10-14T08:30:00.000Z',
   })),
-  fetchAyroviCart: jest.fn(async () => ({
+  fetchZayroviCart: jest.fn(async () => ({
     sessionId: 'mob_1234567890123456', serverNow: '2026-10-14T08:30:00.000Z', items: [],
     units: 0, productSubtotalTND: 0, deliveryTND: 0, totalTND: 0,
   })),
@@ -45,7 +45,7 @@ const candidate = (over: Partial<LensCandidate> = {}): LensCandidate => ({
   title: 'Sac de voyage',
   promo: null,
   description: 'Un sac léger et solide.',
-  brand: 'AYROVI',
+  brand: 'ZAYROVI',
   model: null,
   colors: ['Noir'],
   sizes: ['Standard'],

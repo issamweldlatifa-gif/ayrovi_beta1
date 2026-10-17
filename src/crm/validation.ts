@@ -1,5 +1,5 @@
 /**
- * AYROVI CRM 360 (E1) — validation partagée.
+ * ZAYROVI CRM 360 (E1) — validation partagée.
  *
  * Mêmes conventions que les autres modules : aucune valeur arbitraire ne vient d'un
  * `req.body` brut ; chaque champ passe par un nettoyeur typé et une limite de longueur.

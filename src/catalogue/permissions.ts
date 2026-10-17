@@ -1,5 +1,5 @@
 /**
- * AYROVI Catalogue (P2.1) — permissions as data, on the ERP engine.
+ * ZAYROVI Catalogue (P2.1) — permissions as data, on the ERP engine.
  *
  * The catalogue does not invent a permission system (P1 owns it). It does two things:
  *   1. seeds `erp_role_permissions` rows for module `catalog`, action

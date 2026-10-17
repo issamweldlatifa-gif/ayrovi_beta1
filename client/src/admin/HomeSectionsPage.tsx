@@ -12,7 +12,7 @@ import { moveHint } from './moveHint';
 interface BlockRow { id: string; sortOrder: number; visible: boolean; }
 
 const BLOCK_LABELS: Record<string, { title: string; hint: string }> = {
-  transition: { title: 'Carte de transition', hint: 'Carte orange « Découvrez AYROVI » sous le Trust Bar.' },
+  transition: { title: 'Carte de transition', hint: 'Carte orange « Découvrez ZAYROVI » sous le Trust Bar.' },
   discovery: { title: 'Discovery Hub', hint: 'Onglets Arrivages / Promotions / Communauté / Magazine.' },
   brands: { title: 'Marques', hint: 'Titre éditorial + slider de marques en pleine largeur.' },
   lens: { title: 'LENS', hint: 'Section LENS (contenu géré dans Contenu → LENS).' },

@@ -1,11 +1,11 @@
-import type { AyrovixCandidate } from '../types';
+import type { ZayrovixCandidate } from '../types';
 import { isUnsafeHostname } from '../../services/safeUrl';
 import { isUsedListing } from './productCondition';
 
 // NEUF UNIQUEMENT (demande client 24/09/2026) : toute annonce explicitement
 // d'occasion est écartée — une seule photo, pas de fiche complète, isolation
 // cassée. Appliqué aux deux niveaux (strict et lenient) ci-dessous.
-function notUsed(candidate: AyrovixCandidate): boolean {
+function notUsed(candidate: ZayrovixCandidate): boolean {
   return !isUsedListing({
     title: candidate.title,
     description: candidate.description,
@@ -15,7 +15,7 @@ function notUsed(candidate: AyrovixCandidate): boolean {
 }
 
 /**
- * One policy for every AYROVIX surface (Lens, QR, Assistant and alternates).
+ * One policy for every ZAYROVIX surface (Lens, QR, Assistant and alternates).
  * A visible shopping result must be actionable and auditable: positive price,
  * explicit ISO-like currency and a public merchant URL.
  */
@@ -64,12 +64,12 @@ export function isTrustedMerchantHost(rawUrl: string): boolean {
 }
 
 /** Disponibilité explicite uniquement — « unknown » n'est pas une preuve. */
-function hasExplicitAvailability(candidate: AyrovixCandidate): boolean {
+function hasExplicitAvailability(candidate: ZayrovixCandidate): boolean {
   const availability = (candidate as { availability?: string }).availability;
   return availability === 'in_stock' || availability === 'limited';
 }
 
-export function merchantTrust(candidate: AyrovixCandidate): MerchantTrust {
+export function merchantTrust(candidate: ZayrovixCandidate): MerchantTrust {
   if (candidate.kind === 'catalog' || isTrustedMerchantHost(candidate.sourceUrl)) return 'trusted';
   const images = new Set([candidate.image, ...(Array.isArray(candidate.images) ? candidate.images : [])].filter(Boolean));
   const hasEnoughImages = images.size >= 2;
@@ -80,12 +80,12 @@ export function merchantTrust(candidate: AyrovixCandidate): MerchantTrust {
 
 const TRUST_RANK: Record<MerchantTrust, number> = { trusted: 0, verified: 1, unknown: 2 };
 
-function byTrustThenMatch(left: AyrovixCandidate, right: AyrovixCandidate): number {
+function byTrustThenMatch(left: ZayrovixCandidate, right: ZayrovixCandidate): number {
   const tierDelta = TRUST_RANK[merchantTrust(left)] - TRUST_RANK[merchantTrust(right)];
   return tierDelta !== 0 ? tierDelta : right.match - left.match;
 }
 
-export function isDisplayableCandidate(candidate: AyrovixCandidate): boolean {
+export function isDisplayableCandidate(candidate: ZayrovixCandidate): boolean {
   return Number.isFinite(Number(candidate.price))
     && Number(candidate.price) > 0
     && typeof candidate.currency === 'string'
@@ -95,13 +95,13 @@ export function isDisplayableCandidate(candidate: AyrovixCandidate): boolean {
 
 // D2-10: lenient fallback — visual matches without price are still useful
 // (user can request manual quote PENDING_MANUAL instead of zero results)
-export function isLenientCandidate(candidate: AyrovixCandidate): boolean {
+export function isLenientCandidate(candidate: ZayrovixCandidate): boolean {
   return hasValidProductUrl(candidate.sourceUrl)
     && typeof candidate.title === 'string'
     && candidate.title.trim().length >= 4;
 }
 
-export function withDisplayRating(candidate: AyrovixCandidate): AyrovixCandidate {
+export function withDisplayRating(candidate: ZayrovixCandidate): ZayrovixCandidate {
   const merchantRating = Number(candidate.rating);
   if (Number.isFinite(merchantRating) && merchantRating > 0 && merchantRating <= 5) {
     return { ...candidate, rating: Math.round(merchantRating * 10) / 10, ratingKind: candidate.ratingKind || 'merchant' };
@@ -115,7 +115,7 @@ export function withDisplayRating(candidate: AyrovixCandidate): AyrovixCandidate
 }
 
 /** Carte « le client peut choisir » : photo + prix + pas de rupture, avec options si le marchand les a publiées. */
-export function shopperScore(candidate: AyrovixCandidate): number {
+export function shopperScore(candidate: ZayrovixCandidate): number {
   if (candidate.availability === 'out_of_stock') return -1;
   let score = 0;
   if (candidate.image || (candidate.images || []).length) score += 2;
@@ -127,7 +127,7 @@ export function shopperScore(candidate: AyrovixCandidate): number {
   return score;
 }
 
-export function filterDisplayableCandidates(items: AyrovixCandidate[], limit = 16): AyrovixCandidate[] {
+export function filterDisplayableCandidates(items: ZayrovixCandidate[], limit = 16): ZayrovixCandidate[] {
   const seen = new Set<string>();
   return items
     .filter(isDisplayableCandidate)
@@ -147,7 +147,7 @@ export function filterDisplayableCandidates(items: AyrovixCandidate[], limit = 1
     .slice(0, limit);
 }
 
-export function filterLenientCandidates(items: AyrovixCandidate[], limit = 16): AyrovixCandidate[] {
+export function filterLenientCandidates(items: ZayrovixCandidate[], limit = 16): ZayrovixCandidate[] {
   const seen = new Set<string>();
   return items
     .filter(isLenientCandidate)
@@ -163,16 +163,16 @@ export function filterLenientCandidates(items: AyrovixCandidate[], limit = 16): 
     .slice(0, limit);
 }
 
-export function filterWithFallback(items: AyrovixCandidate[], limit = 16): AyrovixCandidate[] {
+export function filterWithFallback(items: ZayrovixCandidate[], limit = 16): ZayrovixCandidate[] {
   const strict = filterDisplayableCandidates(items, limit);
   if (strict.length > 0) return strict;
   const lenient = filterLenientCandidates(items, limit);
-  if (lenient.length) console.warn(`[AYROVIX candidatePolicy] strict filter empty — lenient fallback ${lenient.length} PENDING candidates`);
+  if (lenient.length) console.warn(`[ZAYROVIX candidatePolicy] strict filter empty — lenient fallback ${lenient.length} PENDING candidates`);
   return lenient;
 }
 
 /** Filet de kacht : prix d'abord, puis les URLs sans prix SerpApi (la page les remplira). */
-export function harvestForScrape(items: AyrovixCandidate[], limit = 32): AyrovixCandidate[] {
+export function harvestForScrape(items: ZayrovixCandidate[], limit = 32): ZayrovixCandidate[] {
   const priced = filterDisplayableCandidates(items, limit).filter((item) => item.availability !== 'out_of_stock');
   if (priced.length >= limit) return priced;
   const seen = new Set(priced.map((item) => item.sourceUrl));

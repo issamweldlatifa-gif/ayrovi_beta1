@@ -3,7 +3,7 @@
  *
  * علاش هذا الاختبار: الحزمة تاخذ عنوان الخادم من `EXPO_PUBLIC_API_BASE_URL`،
  * والورشات (APK و AAB) عندها قيمة افتراضية خاصة بها. كانوا يتباعدوا، تلقى
- * حزمة تشير لنطاق ما فيهش خادم — وهذا بالضبط اللي صار: `ayrovi.tn` ما فيهش
+ * حزمة تشير لنطاق ما فيهش خادم — وهذا بالضبط اللي صار: `zayrovi.tn` ما فيهش
  * خادم يجاوب، والحزمة كانت تبنى عليه ⇒ «التطبيق ما يخدمش» في كل شاشة.
  *
  * لهذا القاعدة هنا: **الأصل الافتراضي في `src/api/config.ts` هو المرجع**،
@@ -51,6 +51,6 @@ describe('عنوان الخادم في البناء', () => {
     expect(MANIFEST.expo.android.intentFilters[0].autoVerify).toBe(true);
     expect(hosts).toContain(new URL(DEFAULT_API_BASE_URL).host);
     // النطاق المستقبلي يبقى معلناً: لمّا يولّي حيّ، الروابط تخدم بلا بناء جديد.
-    expect(hosts).toContain('ayrovi.tn');
+    expect(hosts).toContain('zayrovi.tn');
   });
 });

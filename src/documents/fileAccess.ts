@@ -1,5 +1,5 @@
 /**
- * AYROVI ERP Core — File access (P0 security).
+ * ZAYROVI ERP Core — File access (P0 security).
  *
  * Documents are read from disk only through this helper. It is deliberately
  * small and boring: the authorization decision belongs to the route, this file

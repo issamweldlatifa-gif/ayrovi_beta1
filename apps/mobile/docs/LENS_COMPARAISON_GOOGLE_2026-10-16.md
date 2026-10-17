@@ -78,7 +78,7 @@ deux côtés : le problème n'est pas la reconnaissance.
 
 Et le délai global existe aussi : `LENS_ANALYZE_DEADLINE_DEFAULT_MS = 45 s`
 (`src/ayrovix/services/lensDeadline.ts:7`), borné 15–90 s, piloté par
-`AYROVI_LENS_ANALYZE_DEADLINE_MS`.
+`ZAYROVI_LENS_ANALYZE_DEADLINE_MS`.
 
 > **Conclusion de la fiche : le serveur parle déjà SSE. Le téléphone ne l'écoute pas.**
 > C'est un travail de **transport côté client**, pas de re-ingénierie du moteur.
@@ -211,7 +211,7 @@ déjà SSE. Le P0 est **uniquement** un nouveau chemin de transport côté tél�
 
 ## 8. État d'implémentation (16/10/2026)
 
-Les corrections décrites ci-dessus sont **en code** (branche `arena/b3539284-ayrovi-beta1`).
+Les corrections décrites ci-dessus sont **en code** (branche `arena/b3539284-zayrovi-beta1`).
 
 | Écart | Corrigé | Où |
 |---|---|---|

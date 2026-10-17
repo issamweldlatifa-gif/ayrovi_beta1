@@ -1,4 +1,4 @@
-# AYROVI — خطة تطوير شاملة (دورة 2026-08-13)
+# ZAYROVI — خطة تطوير شاملة (دورة 2026-08-13)
 
 ## طلبات المستخدم (حرفية → مهام)
 1. [P1] إزالة بوابة تحقق الهاتف من إتمام الطلب نهائيًا (App.tsx يحجب !phoneVerified) — التحقق اختياري في إعدادات الحريف فقط
@@ -29,7 +29,7 @@
 - ربط بوابة دفع فعلية للبطاقة (يحتاج مفاتيح Paymee/Konnect — مؤجل)
 
 ## ملاحظات تقنية
-- Tailwind v4 + @tailwindcss/vite — `client/src/index.css` فيه متغيرات `--ayrovi-*`
+- Tailwind v4 + @tailwindcss/vite — `client/src/index.css` فيه متغيرات `--zayrovi-*`
 - الألوان ثابتة `[#673de6]` في المكونات — ستُستبدل بـ tokens قابلة للثيم عبر `@theme inline`
 - الثيم يُحمَّل من `/api/public/commerce-config` (setting `site_theme` JSON)
 - إشعارات العميل عند المراجعة موجودة؛ الناقص: إشعار الأدمن عند رفع الوصل
@@ -40,29 +40,29 @@
 - Emails admin via Nodemailer (MAIL_PROVIDER/MAIL_API_KEY/MAIL_FROM) avec repli console ; alerte à chaque capture d'acompte.
 - Env de test épinglé dans vitest.config.mts (admin email/password, OTP console) → tests déterministes sans .env. 32/32 verts. Déployé (commit 8333aaa).
 
-## AYROVIX Lens V1 (2026-08-13)
+## ZAYROVIX Lens V1 (2026-08-13)
 - **Nouvelle feature au-dessus du système existant** (zéro casse : auth, panier, calculator, commandes, acompte 20%, preuves, admin, factures intacts).
-- Server `src/ayrovix/` : `services/ai.ts` (Claude Vision, clé ANTHROPIC_API_KEY server-side only, jamais de VITE_*), `services/search.ts` (fournisseurs interchangeables : catalogue AYROVI toujours actif + Google Shopping optionnel via SERPAPI_KEY ; scoring déterministe code>marque>modèle>couleurs), `services/product.ts` (URL → scraper existant, SSRF bloqué, jamais de données devinées), `services/currency.ts` (réutilise pricing_config versionné), `events.ts` (analytics anonymes).
-- API : POST /api/ayrovix/analyze-image (multer 6 Mo, JPEG/PNG/WebP/GIF), /analyze-url (canal url|qr), /choose ; rate-limit 12/10 min ; 503 AYROVIX_UNAVAILABLE sans clé.
-- Admin : GET /api/admin/ayrovix/stats (reports:read) + carte AYROVIX dans Rapports (analyses 7j, taux de correspondance, top marques/requêtes).
+- Server `src/ayrovix/` : `services/ai.ts` (Claude Vision, clé ANTHROPIC_API_KEY server-side only, jamais de VITE_*), `services/search.ts` (fournisseurs interchangeables : catalogue ZAYROVI toujours actif + Google Shopping optionnel via SERPAPI_KEY ; scoring déterministe code>marque>modèle>couleurs), `services/product.ts` (URL → scraper existant, SSRF bloqué, jamais de données devinées), `services/currency.ts` (réutilise pricing_config versionné), `events.ts` (analytics anonymes).
+- API : POST /api/ayrovix/analyze-image (multer 6 Mo, JPEG/PNG/WebP/GIF), /analyze-url (canal url|qr), /choose ; rate-limit 12/10 min ; 503 ZAYROVIX_UNAVAILABLE sans clé.
+- Admin : GET /api/admin/ayrovix/stats (reports:read) + carte ZAYROVIX dans Rapports (analyses 7j, taux de correspondance, top marques/requêtes).
 - Client `client/src/ayrovix/` : LensLauncher (sheet plein écran, state machine home→preview→analyzing→candidates→product), LensCamera (capture=environment + fallback), LensUpload, QRScanner (BarcodeDetector natif + repli `@zxing/library` multi-format), ProductCandidates (plusieurs candidats, % match, jamais de réponse unique), ProductResult + ProductVariants. Commander → handleAddToCart existant → panier → checkout dépôt existant.
 - Env : ANTHROPIC_API_KEY / ANTHROPIC_MODEL / SERPAPI_KEY documentés dans .env.example. Tests 38/38 (image sans clé→503, mime→415, query builder, scoring, flux simulé end-to-end, SSRF QR).
 
-## AYROVIX Lens V1.1 — expérience caméra live façon Amazon Lens (2026-08-13)
-- Refonte UX : Lens ouvre DÉSORMAIS la caméra en direct (plus de menu) — barre haute (fermer · AYROVIX Lens · torche si supportée), viseur à coins + lens-scan, obturateur 74px.
+## ZAYROVIX Lens V1.1 — expérience caméra live façon Amazon Lens (2026-08-13)
+- Refonte UX : Lens ouvre DÉSORMAIS la caméra en direct (plus de menu) — barre haute (fermer · ZAYROVIX Lens · torche si supportée), viseur à coins + lens-scan, obturateur 74px.
 - 3 modes en bas : **Recherche** (capture frame → préparation 1400px → analyse Claude immédiate), **Importer** (galerie → même pipeline), **Code** (scan live QR + codes-barres EAN/UPC/Code128 via BarcodeDetector natif, repli client `@zxing/library` multi-format ; zone « coller un lien » intégrée).
 - QR avec URL → /analyze-url (canal qr) · code-barres → NOUVEAU POST /api/ayrovix/analyze-barcode (validation 6-14 chiffres, recherche SerpAPI si clé ; sinon réponse propre + carte code avec Copier/Photographier — jamais d'invention).
 - Sans caméra/permission refusée → menu de repli (photo, import, lien). Un seul flux getUserMedia pour toute la session ; tracks stoppés à la fermeture.
 - Tests 39/39 (validation barcode + réponse sans fournisseur). QRScanner.tsx supprimé : le scan vit dans LiveCamera (une seule caméra).
 
-## AYROVIX Lens V1.3 — retour Claude Vision (2026-08-13)
+## ZAYROVIX Lens V1.3 — retour Claude Vision (2026-08-13)
 - **Retour OpenAI → Anthropic** : `services/ai.ts` appelle `api.anthropic.com/v1/messages` (ANTHROPIC_API_KEY / ANTHROPIC_MODEL=claude-3-5-haiku-latest). Tests stub `content[0].text`. Admin badges + render.yaml mis à jour.
 - **Bug trouvé & corrigé** : Permissions-Policy était `camera=()` → caméra (donc flash) bloquée pour le site lui-même. Désormais `camera=(self)`.
 - **Torche** : toggleTorch durci (tente applyConstraints même si capabilities muet, hint utilisateur si l'appareil refuse).
 - **Bouton ⋮** à côté du flash → sheet sombre : Comment l'utiliser (4 étapes) + Conditions d'utilisation (IA indicative, prix confirmé au panier, photos non conservées, anti-abus…).
-- **SerpAPI vérifiée** : checkSerpApiHealth() (account.json, cache 60 s) exposé dans /api/admin/ayrovix/stats → badges d'état dans la carte AYROVIX des Rapports (Vision IA + SerpAPI, recherches restantes).
+- **SerpAPI vérifiée** : checkSerpApiHealth() (account.json, cache 60 s) exposé dans /api/admin/ayrovix/stats → badges d'état dans la carte ZAYROVIX des Rapports (Vision IA + SerpAPI, recherches restantes).
 
-## AYROVIX Lens V2 — Anthropic uniquement (2026-08-13, état courant)
+## ZAYROVIX Lens V2 — Anthropic uniquement (2026-08-13, état courant)
 - Cette section remplace les choix de fournisseurs documentés dans les versions historiques ci-dessus.
 - Claude Haiku 4.5 est l'unique fournisseur Vision de Lens. Une seule réponse structurée identifie le produit et lit le prix réellement visible, sans cascade IA ni résultat générique inventé.
 - Claude Web Search est l'unique recherche externe : `web_search_20250305`, `max_uses: 1`, cache 5 min et coalescing. Sans clé, seul le catalogue local reste disponible.
@@ -72,10 +72,10 @@
 - `.env.example`, `render.yaml` et les badges Admin Lens n'exposent plus que la configuration Anthropic.
 - Validation locale finale : TypeScript ✅, 47/47 tests ✅, build production ✅, audit 0 vulnérabilité ✅, `git diff --check` et contrôle des secrets ✅.
 
-## AYROVIX Lens V2.1 — recherche visuelle Google Lens (2026-08-13, état courant)
+## ZAYROVIX Lens V2.1 — recherche visuelle Google Lens (2026-08-13, état courant)
 - Cette section remplace l'architecture de recherche image Anthropic-only documentée en V2.
 - Une photo lance désormais Claude Vision et SerpApi Google Lens en parallèle : Claude lit le prix et les indices visibles; Google Lens renvoie produits, images, liens et prix éventuels.
-- L'image destinée à SerpApi est réencodée en mémoire en JPEG de 500 Ko maximum, sans fichier public ni upload AYROVI; `image_id` est temporaire.
+- L'image destinée à SerpApi est réencodée en mémoire en JPEG de 500 Ko maximum, sans fichier public ni upload ZAYROVI; `image_id` est temporaire.
 - Si Google Lens renvoie au moins un produit exploitable, Claude Web Search n'est pas facturé pour cette image. Il reste le fallback texte et le moteur des QR/codes-barres/liens.
 - Cache SHA-256 dix minutes et coalescing empêchent de refacturer les rescans identiques.
 - Les badges Admin distinguent Claude Vision, Google Lens et Claude Web Search.
@@ -83,8 +83,8 @@
 - Validation production : photo Nike Air Max 95 → HTTP 200 en 5,63 s, 8 correspondances Google Lens avec image et lien; modèle Air Max 95 reconnu par Claude. Une fiche Coproom a ensuite confirmé un prix direct de 255 EUR, distinct de l'estimation Lens.
 - Le client bloque désormais toute commande fondée seulement sur un prix Claude/Lens : le bouton n'est activé qu'après prix confirmé par la fiche marchand (ou prix du catalogue local). Les tailles/couleurs ne sont jamais annoncées si la source ne les fournit pas.
 
-## AYROVIX Lens V2.2 — fiches achetables, images résilientes et variantes réelles (2026-08-13)
-- Le brief `AYROVI-Lens-Brief-Dev.md` a été audité : le routeur QR/URL/image et les chemins Claude/Lens existaient déjà; les recommandations utiles retenues sont le parsing structuré renforcé et le fallback optionnel anti-bot.
+## ZAYROVIX Lens V2.2 — fiches achetables, images résilientes et variantes réelles (2026-08-13)
+- Le brief `ZAYROVI-Lens-Brief-Dev.md` a été audité : le routeur QR/URL/image et les chemins Claude/Lens existaient déjà; les recommandations utiles retenues sont le parsing structuré renforcé et le fallback optionnel anti-bot.
 - Les résultats Lens conservent maintenant miniature Google + image marchand. Le client essaie automatiquement les deux avec `referrerPolicy=no-referrer`, puis affiche un placeholder propre au lieu d'une image cassée.
 - Le parser marchand lit JSON-LD, Open Graph, sélecteurs HTML, états `application/json` et objets Shopify intégrés dans JavaScript.
 - Seules les tailles/couleurs réellement disponibles sont affichées. Les variantes indisponibles sont éliminées; l'identifiant et le prix propre à chaque variante sont transmis au panier.
@@ -93,35 +93,35 @@
 - Test réel Coproom : 10 pointures disponibles, couleur Noir, images et prix distincts par pointure extraits directement de la fiche.
 - Validation locale : TypeScript ✅, 49/49 tests ✅, build production ✅, audit 0 vulnérabilité ✅.
 
-## AYROVIX Lens V2.3 — طلب مراجعة السعر دون طريق مسدود (2026-08-13)
+## ZAYROVIX Lens V2.3 — طلب مراجعة السعر دون طريق مسدود (2026-08-13)
 - عندما لا تؤكد صفحة المتجر السعر، يمكن للعميل الآن إرسال طلب مراجعة محفوظ بدل الاعتماد على سعر Lens أو التوقف عند «تحقق من الرابط».
 - `POST /api/ayrovix/review-request` يتحقق من session والرابط ووسيلة الاتصال، يربط الحساب اختياريًا، يمنع التكرار عشر دقائق، ويرسل إشعار إدارة. `GET /api/ayrovix/review-request/:id` مقيد بملكية session أو الحساب ولا يكشف بيانات داخلية.
 - أضيفت قائمة إدارة **Demandes Lens** مع البحث والتصفية والتفاصيل، وتأكيد السعر/العملة/الvariant والرابط والحالة، ورسالة عميل منفصلة عن الملاحظة الداخلية. التحديثات محمية بصلاحيات وCSRF ومسجلة في audit.
 - يظل السعر الظاهر من Lens غير قابل للسلة أو الدفع. المسار المقبول هو سعر merchant/variant مؤكد، أو طلب مراجعة محفوظ.
 - التحقق المحلي: TypeScript ✅، **51/51** اختبارًا ✅، build إنتاجي ✅، و0 ثغرات npm ✅.
 
-## AYROVIX Lens V2.4 — commande non bloquante et achat manuel (2026-08-14, état courant)
+## ZAYROVIX Lens V2.4 — commande non bloquante et achat manuel (2026-08-14, état courant)
 - Cette section remplace explicitement le blocage de commande décrit en V2.1/V2.3 : un prix Lens/Claude/Google Lens estimé peut alimenter le panier et l’acompte de 20%; l’équipe garde la validation humaine avant achat.
 - Le lien exact saisi par le client est obligatoire dans tous les cas. Il ne relance aucune extraction et est conservé séparément de la référence Lens avec quantité, taille, couleur et commentaire dans le panier, le snapshot de commande, l’espace client et le détail Admin.
-- Les devis AYROVIX sont signés côté serveur (HMAC, expiration 30 minutes) sur prix/devise/titre/référence/statut; le panier recalcule toujours le prix TND et refuse toute altération du devis.
+- Les devis ZAYROVIX sont signés côté serveur (HMAC, expiration 30 minutes) sur prix/devise/titre/référence/statut; le panier recalcule toujours le prix TND et refuse toute altération du devis.
 - La vérification automatique tente le fetch direct puis un rendu JavaScript via ScraperAPI, ScrapingBee ou Bright Data. Les diagnostics fournisseur/timeout/blocage/absence de prix sont structurés; le parser priorise JSON-LD Product, meta prix, DOM/variants puis regex contextuelle.
 - Le résultat affiche `✅ Prix confirmé` en cas de succès ou un avertissement informatif `⏳` avec motif réel; l’échec n’est plus un blocker. Le prix Lens proposé reste inchangé quand la vérification automatique enrichit la fiche.
 - Le scan navigateur utilise désormais `@zxing/library@0.21.3` en fallback multi-format (QR, EAN/UPC, Code128/39/93, ITF, Data Matrix, Aztec, PDF417) après BarcodeDetector natif; aucun frame ne quitte le navigateur.
 - Validation locale : TypeScript ✅, **55/55** tests ✅, build production ✅, audit npm 0 vulnérabilité ✅ et smoke API devis → panier ✅.
 
-## AYROVIX Lens V2.5 — Header compact et historique hybride (2026-08-14, état courant)
-- Écran caméra : fermeture + flash regroupés à gauche; logo AYROVIX Lens centré; Historique + menu d'information regroupés à droite.
+## ZAYROVIX Lens V2.5 — Header compact et historique hybride (2026-08-14, état courant)
+- Écran caméra : fermeture + flash regroupés à gauche; logo ZAYROVIX Lens centré; Historique + menu d'information regroupés à droite.
 - Après le début d'un flux, le Header est réduit à une seule ligne sans subtitle : bouton Retour, logo Lens centré et accès Historique. Retour annule immédiatement toute requête en cours puis restaure l'écran précédent.
 - Historique hybride : métadonnées compactes dans un `localStorage` cloisonné invité/compte, synchronisation backend isolée par compte pour les clients connectés, fusion sans doublons dans l'UI. Les photos capturées/importées et les devis signés ne sont jamais conservés dans l'historique.
 - Les recherches photo, lien, QR, code texte et code-barres sont listées avec source, date, prix et action Relancer; la vérification automatique interne d'un candidat n'ajoute pas de doublon.
 - Validation locale : TypeScript ✅ et **56/56** tests ✅, dont isolation compte/invité et persistance automatique d'un scan code-barres.
 
-## AYROVI Chat Assistant UI V1 — Motion, messages et feedback hybride (2026-08-14, état courant)
-- Le symbole AYROVI à huit branches a été vectorisé depuis le visuel fourni. Le composant `AyroviMotion` prend en charge `idle`, `thinking`, `analyzing`, `reasoning` et `creating`; chaque état actif revient vers `idle` via le même settle de 680 ms, avec repli statique pour `prefers-reduced-motion`.
-- Header compact : Retour à gauche, symbole animé + AYROVI centré, Historique à droite. Le symbole reflète les quatre phases de génération puis reprend sa respiration idle sans saut.
-- Les messages client utilisent le tint violet AYROVI; chaque réponse assistant possède un avatar violet animé, une bulle neutre, copier/régénérer, 👍/👎 et un formulaire de commentaire accessible.
+## ZAYROVI Chat Assistant UI V1 — Motion, messages et feedback hybride (2026-08-14, état courant)
+- Le symbole ZAYROVI à huit branches a été vectorisé depuis le visuel fourni. Le composant `ZayroviMotion` prend en charge `idle`, `thinking`, `analyzing`, `reasoning` et `creating`; chaque état actif revient vers `idle` via le même settle de 680 ms, avec repli statique pour `prefers-reduced-motion`.
+- Header compact : Retour à gauche, symbole animé + ZAYROVI centré, Historique à droite. Le symbole reflète les quatre phases de génération puis reprend sa respiration idle sans saut.
+- Les messages client utilisent le tint violet ZAYROVI; chaque réponse assistant possède un avatar violet animé, une bulle neutre, copier/régénérer, 👍/👎 et un formulaire de commentaire accessible.
 - Les avis sont enregistrés côté serveur avec liaison au compte lorsqu'il est connecté, CSRF obligatoire pour ce cas, et hash irréversible de la session pour le visiteur. Aucun identifiant de session brut ni question client n'est stocké.
-- Le menu fictif a été remplacé par les actions AYROVI essentielles : nouvelle conversation, historique local cloisonné invité/compte, commandes, Lens, compte, aide et thème sombre. Les badges et messages placeholder ont été supprimés.
+- Le menu fictif a été remplacé par les actions ZAYROVI essentielles : nouvelle conversation, historique local cloisonné invité/compte, commandes, Lens, compte, aide et thème sombre. Les badges et messages placeholder ont été supprimés.
 - Les taux factices ne sont plus récités : l'assistant renvoie vers le calcul Lens basé sur la configuration publiée et le total réel avant confirmation.
 - Validation locale : TypeScript ✅, **57/57** tests ✅ (dont feedback invité/compte + CSRF), build production ✅, audit npm 0 vulnérabilité ✅ et smoke API feedback ✅.
 

@@ -3,7 +3,7 @@ import { chromium, firefox } from 'playwright';
 import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 const base = process.env.AUTH_TEST_URL || 'http://127.0.0.1:3000';
-const output = process.env.AYROVI_AUTH_OUTPUT || 'screenshots/auth-mobile';
+const output = process.env.ZAYROVI_AUTH_OUTPUT || 'screenshots/auth-mobile';
 await mkdir(output, { recursive: true });
 const config = { passwordReset: { enabled: true }, google: { enabled: true }, facebook: { enabled: false }, apple: { enabled: false }, email: { enabled: true }, phoneOtp: { enabled: true }, checkoutRequiresAuthentication: true };
 let checks = 0;
@@ -11,7 +11,7 @@ function check(value, label) { assert.ok(value, label); checks++; }
 async function open(browser, { width = 390, height = 844, locale = 'fr', providers = config, failConfig = false } = {}) {
   const context = await browser.newContext({ viewport: { width, height }, locale });
   await context.addInitScript(({locale}) => {
-    localStorage.setItem('ayrovi.locale.v1', locale);
+    localStorage.setItem('zayrovi.locale.v1', locale);
     history.replaceState({ __ayroviNavigationV1: { version: 1, depth: 0, stack: [{ id: 'app:account' }] } }, '');
   }, { locale });
   const page = await context.newPage();

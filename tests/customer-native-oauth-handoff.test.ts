@@ -99,7 +99,7 @@ describe('Remise de session native après OAuth', () => {
     const me = await request(app)
       .get('/api/customer/account/favorites')
       .set('Authorization', `Bearer ${token}`)
-      .set('x-ayrovi-native', '1');
+      .set('x-zayrovi-native', '1');
     expect(me.status).toBe(200);
     expect(me.body.success).toBe(true);
   });

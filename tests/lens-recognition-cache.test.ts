@@ -11,10 +11,10 @@ import { lensImageKey, readLensCache, writeLensCache } from '../src/ayrovix/serv
 let dir = '';
 beforeEach(() => {
   dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lens-cache-'));
-  process.env.AYROVI_LENS_CACHE_DIR = dir;
-  delete process.env.AYROVI_LENS_CACHE;
-  delete process.env.AYROVI_LENS_RECOGNITION_TTL_MS;
-  delete process.env.AYROVI_LENS_MATCHES_TTL_MS;
+  process.env.ZAYROVI_LENS_CACHE_DIR = dir;
+  delete process.env.ZAYROVI_LENS_CACHE;
+  delete process.env.ZAYROVI_LENS_RECOGNITION_TTL_MS;
+  delete process.env.ZAYROVI_LENS_MATCHES_TTL_MS;
 });
 afterEach(() => { fs.rmSync(dir, { recursive: true, force: true }); });
 
@@ -76,19 +76,19 @@ describe('cache de reconnaissance Lens', () => {
   it('sous test, le cache est INACTIF sans répertoire isolé — un test ne doit pas dépendre de l’exécution précédente', () => {
     const key = lensImageKey(Buffer.from('photo'));
     writeLensCache(key, { identification: ident, matches });
-    const isolated = process.env.AYROVI_LENS_CACHE_DIR;
-    delete process.env.AYROVI_LENS_CACHE_DIR;
+    const isolated = process.env.ZAYROVI_LENS_CACHE_DIR;
+    delete process.env.ZAYROVI_LENS_CACHE_DIR;
     try {
       expect(readLensCache(key).hit).toBe('none');
     } finally {
-      process.env.AYROVI_LENS_CACHE_DIR = isolated;
+      process.env.ZAYROVI_LENS_CACHE_DIR = isolated;
     }
   });
 
   it('le cache est désactivable en production sans redéploiement', () => {
     const key = lensImageKey(Buffer.from('photo'));
     writeLensCache(key, { identification: ident, matches });
-    process.env.AYROVI_LENS_CACHE = 'false';
+    process.env.ZAYROVI_LENS_CACHE = 'false';
     expect(readLensCache(key).hit).toBe('none');
   });
 });

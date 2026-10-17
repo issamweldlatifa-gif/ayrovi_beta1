@@ -46,6 +46,6 @@ describe('marque ZAYROVI', () => {
     wrap(<BrandMark size={30} />);
     await act(async () => {});
     expect(screen.getByText('ZAYROVI')).toBeTruthy();
-    expect(screen.queryByText('AYROVI')).toBeNull();
+    expect(screen.queryByText('ZAYROVI')).toBeNull();
   });
 });

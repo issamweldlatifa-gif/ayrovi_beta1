@@ -10,9 +10,9 @@ import { LiveVisionRuntime, type LiveDetection, type LiveVisionState } from '../
 
 export interface LiveResultsView {
   queryLabel: string | null;
-  list: import('../types').AyrovixCandidate[];
+  list: import('../types').ZayrovixCandidate[];
   eventId: string;
-  detectedPrice?: import('../types').AyrovixDetectedPrice | null;
+  detectedPrice?: import('../types').ZayrovixDetectedPrice | null;
 }
 
 interface LiveCameraProps {
@@ -36,7 +36,7 @@ type CameraPanel = 'help' | 'methods' | 'link' | 'scan';
 type CamMode = 'photo' | 'video';
 
 /**
- * AYROVIX Lens — photo capture + live product scanning.
+ * ZAYROVIX Lens — photo capture + live product scanning.
  * Entry/help panels suspend sampling; results retain their existing shell.
  * LIVE ≠ تسجيل فيديو. الزر المركزي في LIVE = التقاط الحالة الحالية للنتيجة.
  */
@@ -249,7 +249,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
   };
 
   return (
-    <div ref={shellRef} tabIndex={-1} className="lens-camera fixed inset-0 z-[76] flex flex-col bg-ink text-white" dir={direction} role="dialog" aria-modal="true" aria-label={tr('AYROVIX Lens — caméra', 'عدسة AYROVIX — الكاميرا')} onKeyDown={event => { if (event.key === 'Escape' && !photoUrl) { event.preventDefault(); event.stopPropagation(); if (panel) closePanel(); else onClose(); } }}>
+    <div ref={shellRef} tabIndex={-1} className="lens-camera fixed inset-0 z-[76] flex flex-col bg-ink text-white" dir={direction} role="dialog" aria-modal="true" aria-label={tr('ZAYROVIX Lens — caméra', 'عدسة ZAYROVIX — الكاميرا')} onKeyDown={event => { if (event.key === 'Escape' && !photoUrl) { event.preventDefault(); event.stopPropagation(); if (panel) closePanel(); else onClose(); } }}>
       <div className="lens-camera-stage" inert={Boolean(modal)} aria-hidden={modal ? true : undefined}>
       <video ref={videoRef} onCanPlay={() => setCameraReady(true)} muted playsInline className={`absolute inset-0 h-full w-full object-cover ${photoUrl ? 'invisible' : ''}`} />
       <div className={`pointer-events-none absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60 ${photoUrl ? 'hidden' : ''}`} />
@@ -262,7 +262,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
         <button type="button" onClick={panel === 'scan' ? closePanel : photoUrl && onPhotoClose ? onPhotoClose : onClose} className="lens-camera-icon" aria-label={photoUrl || panel === 'scan' ? tr('Retour à la caméra', 'العودة إلى الكاميرا') : tr('Quitter Lens', 'مغادرة Lens')}>
           <ArrowLeft size={22} />
         </button>
-        <p className="lens-camera-brand" dir="ltr">AYROVIX <span>Lens</span></p>
+        <p className="lens-camera-brand" dir="ltr">ZAYROVIX <span>Lens</span></p>
         {photoUrl ? null : (
           <div className="lens-camera-tools">
             <button type="button" className="lens-camera-icon" onClick={() => openPanel('help')} aria-label={tr('Aide et règles de Lens', 'مساعدة Lens وقواعد الاستخدام')} aria-haspopup="dialog"><Info size={22} /></button>

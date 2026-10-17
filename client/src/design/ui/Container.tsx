@@ -2,7 +2,7 @@ import React from 'react';
 import { twMerge } from 'tailwind-merge';
 
 /**
- * AYROVI DS v1.0 — Container.
+ * ZAYROVI DS v1.0 — Container.
  * Conteneur de contenu : max 1200px, gouttière 16/24/32px, centré.
  */
 export const Container: React.FC<React.HTMLAttributes<HTMLDivElement> & { narrow?: boolean }> = ({

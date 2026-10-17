@@ -1,4 +1,4 @@
-/* AYROVI DESIGN SYSTEM v1.1 — legacy compatibility tokens for screens outside
+/* ZAYROVI DESIGN SYSTEM v1.1 — legacy compatibility tokens for screens outside
    CustomerIdentity (notably the admin). Customer-facing v3.1 values are authored
    in editorial/identity.json and injected by customerTheme.ts. The legacy aliases
    below must not override that customer-scoped identity.
@@ -19,40 +19,40 @@
    3. Le NOIR (#0A0A0A) est l'encre premium des SURFACES : hero, announcement
       bar, coquille Lens, rails. Jamais une dixième nuance de noir.
    4. États : vert (#15803D) succès, rouge (#DC2626) erreur, neutre sinon.
-      Le token --ayrovi-warning (kهرماني) est supprimé : 0 usage UI (P4/T2 §1.2).
+      Le token --zayrovi-warning (kهرماني) est supprimé : 0 usage UI (P4/T2 §1.2).
    5. Rayons : 12 px contrôle · 16 px carte · 999 px chip. Ombres : xs/card/
       overlay (+dark). Mouvement : 140/200/320 ms, ease-out (.22, 1, .36, 1).
       Documentation complète : docs/DESIGN_SYSTEM.md. */
 @theme inline {
-  --color-brand: var(--ayrovi-primary);
-  --color-brand-dark: var(--ayrovi-primary-dark);
-  --color-brand-light: var(--ayrovi-primary-light);
-  --color-brand-deep: var(--ayrovi-neutral-950);
-  --color-ink-deep: var(--ayrovi-ink-deep);
-  --color-ink-soft: var(--ayrovi-ink-soft);
-  --color-cta: var(--ayrovi-cta);
-  --color-cta-dark: var(--ayrovi-cta-dark);
-  --color-cta-hover: var(--ayrovi-cta-hover);
-  --color-cta-active: var(--ayrovi-cta-active);
-  --color-cta-ink: var(--ayrovi-cta-ink);
-  --color-accent: var(--ayrovi-accent);
-  --color-accent-deep: var(--ayrovi-accent-deep);
-  --color-success: var(--ayrovi-success);
-  --color-success-soft: var(--ayrovi-success-soft);
-  --color-info: var(--ayrovi-info);
-  --color-info-soft: var(--ayrovi-info-soft);
-  --color-danger: var(--ayrovi-danger);
-  --color-danger-soft: var(--ayrovi-danger-soft);
-  --color-whatsapp: var(--ayrovi-whatsapp);
-  --color-whatsapp-hover: var(--ayrovi-whatsapp-hover);
-  --color-ink: var(--ayrovi-neutral-900);
-  --color-muted: var(--ayrovi-neutral-500);
-  --color-surface: var(--ayrovi-neutral-50);
-  --color-line: var(--ayrovi-neutral-200);
-  --radius-chip: var(--ayrovi-radius-chip);
-  --radius-icon: var(--ayrovi-radius-icon);
-  --shadow-xs: var(--ayrovi-shadow-xs);
-  --shadow-card-dark: var(--ayrovi-shadow-card-dark);
+  --color-brand: var(--zayrovi-primary);
+  --color-brand-dark: var(--zayrovi-primary-dark);
+  --color-brand-light: var(--zayrovi-primary-light);
+  --color-brand-deep: var(--zayrovi-neutral-950);
+  --color-ink-deep: var(--zayrovi-ink-deep);
+  --color-ink-soft: var(--zayrovi-ink-soft);
+  --color-cta: var(--zayrovi-cta);
+  --color-cta-dark: var(--zayrovi-cta-dark);
+  --color-cta-hover: var(--zayrovi-cta-hover);
+  --color-cta-active: var(--zayrovi-cta-active);
+  --color-cta-ink: var(--zayrovi-cta-ink);
+  --color-accent: var(--zayrovi-accent);
+  --color-accent-deep: var(--zayrovi-accent-deep);
+  --color-success: var(--zayrovi-success);
+  --color-success-soft: var(--zayrovi-success-soft);
+  --color-info: var(--zayrovi-info);
+  --color-info-soft: var(--zayrovi-info-soft);
+  --color-danger: var(--zayrovi-danger);
+  --color-danger-soft: var(--zayrovi-danger-soft);
+  --color-whatsapp: var(--zayrovi-whatsapp);
+  --color-whatsapp-hover: var(--zayrovi-whatsapp-hover);
+  --color-ink: var(--zayrovi-neutral-900);
+  --color-muted: var(--zayrovi-neutral-500);
+  --color-surface: var(--zayrovi-neutral-50);
+  --color-line: var(--zayrovi-neutral-200);
+  --radius-chip: var(--zayrovi-radius-chip);
+  --radius-icon: var(--zayrovi-radius-icon);
+  --shadow-xs: var(--zayrovi-shadow-xs);
+  --shadow-card-dark: var(--zayrovi-shadow-card-dark);
   --font-sans: var(--font-primary);
   --font-display: var(--font-primary);
   --font-body: var(--font-primary);
@@ -86,11 +86,11 @@
   --text-6xl--line-height: 1.167;
   --text-7xl: 2.25rem;
   --text-7xl--line-height: 1.167;
-  --radius-cta: var(--ayrovi-radius-cta);
-  --radius-control: var(--ayrovi-radius-control);
-  --radius-card: var(--ayrovi-radius-card);
-  --shadow-card: var(--ayrovi-shadow-card);
-  --shadow-overlay: var(--ayrovi-shadow-overlay);
+  --radius-cta: var(--zayrovi-radius-cta);
+  --radius-control: var(--zayrovi-radius-control);
+  --radius-card: var(--zayrovi-radius-card);
+  --shadow-card: var(--zayrovi-shadow-card);
+  --shadow-overlay: var(--zayrovi-shadow-overlay);
 }
 
 @layer base {
@@ -104,12 +104,12 @@
    ───────────────────────────────────────────────────────────────────────── */
 html[data-theme='dark'] {
   color-scheme: dark;
-  --admin-ink:var(--ayrovi-white);
+  --admin-ink:var(--zayrovi-white);
   --admin-ink-strong:var(--admin-ink);
   --admin-ink-black:var(--admin-ink);
   --admin-ink-muted:#bdbdbd;
   --admin-text-soft:var(--admin-ink-muted);
-  --admin-surface-page:var(--ayrovi-ink-deep);
+  --admin-surface-page:var(--zayrovi-ink-deep);
   --admin-surface-card:#171717;
   --admin-surface-sunken:var(--admin-surface-card);
   --admin-surface-tint:var(--admin-surface-card);
@@ -124,66 +124,66 @@ html[data-theme='dark'] {
   /* Rail & encre-sur-sombre découplés du texte dans le thème sombre : le rail
      reste sombre et son texte reste clair (valeurs sombres ≠ valeurs claires). */
   --admin-rail:var(--admin-surface-page);
-  --admin-on-dark:var(--ayrovi-white);
+  --admin-on-dark:var(--zayrovi-white);
 }
 
 :root {
     color-scheme: light;
 
     /* — les six jetons canoniques de la charte (verrouillés par tests/design-zalando.test.ts) — */
-    --ayrovi-bg-main: #ffffff;              /* Canvas — fond pur de toutes les pages */
-    --ayrovi-bg-surface: #f8f9fa;           /* Cartes, listes, écrans de comparaison */
-    --ayrovi-border-soft: #eaeaea;          /* Filets 1px, séparateurs fins */
-    --ayrovi-text-primary: #000000;         /* Encre : titres, marques, prix, texte */
-    --ayrovi-text-secondary: #666666;       /* Encre secondaire : légendes, méta */
-    --ayrovi-color-brand-orange: #ff6900;   /* Orange de marque (logo) — déclencheur d'action UNIQUE */
+    --zayrovi-bg-main: #ffffff;              /* Canvas — fond pur de toutes les pages */
+    --zayrovi-bg-surface: #f8f9fa;           /* Cartes, listes, écrans de comparaison */
+    --zayrovi-border-soft: #eaeaea;          /* Filets 1px, séparateurs fins */
+    --zayrovi-text-primary: #000000;         /* Encre : titres, marques, prix, texte */
+    --zayrovi-text-secondary: #666666;       /* Encre secondaire : légendes, méta */
+    --zayrovi-color-brand-orange: #ff6900;   /* Orange de marque (logo) — déclencheur d'action UNIQUE */
 
     /* — surfaces sombres premium : la SEULE famille de noir — */
-    --ayrovi-ink-deep: #000000;             /* Hero, announcement, coquille Lens, rails */
-    --ayrovi-ink-soft: #3f3f46;             /* Éléments doux sur sombre (liseré, icône au repos) */
+    --zayrovi-ink-deep: #000000;             /* Hero, announcement, coquille Lens, rails */
+    --zayrovi-ink-soft: #3f3f46;             /* Éléments doux sur sombre (liseré, icône au repos) */
 
     /* — chaîne accent : une seule source de vérité, dérivations incluses — */
-    --ayrovi-cta: var(--ayrovi-color-brand-orange);
-    --ayrovi-orange: var(--ayrovi-color-brand-orange);
-    --ayrovi-accent: var(--ayrovi-color-brand-orange);
-    --ayrovi-accent-soft: var(--ayrovi-bg-surface);
-    --ayrovi-cta-ink: var(--ayrovi-text-primary);      /* texte SUR orange : 6.54:1, AAA */
-    --ayrovi-cta-hover: color-mix(in srgb, var(--ayrovi-color-brand-orange) 87%, var(--ayrovi-text-primary));
-    --ayrovi-cta-active: color-mix(in srgb, var(--ayrovi-color-brand-orange) 72%, var(--ayrovi-text-primary));
-    --ayrovi-cta-dark: var(--ayrovi-cta-hover);        /* alias compat (hover) */
-    --ayrovi-accent-dark: var(--ayrovi-cta-hover);     /* alias compat */
-    --ayrovi-accent-deep: var(--ayrovi-cta-active);    /* alias compat (pressé) */
+    --zayrovi-cta: var(--zayrovi-color-brand-orange);
+    --zayrovi-orange: var(--zayrovi-color-brand-orange);
+    --zayrovi-accent: var(--zayrovi-color-brand-orange);
+    --zayrovi-accent-soft: var(--zayrovi-bg-surface);
+    --zayrovi-cta-ink: var(--zayrovi-text-primary);      /* texte SUR orange : 6.54:1, AAA */
+    --zayrovi-cta-hover: color-mix(in srgb, var(--zayrovi-color-brand-orange) 87%, var(--zayrovi-text-primary));
+    --zayrovi-cta-active: color-mix(in srgb, var(--zayrovi-color-brand-orange) 72%, var(--zayrovi-text-primary));
+    --zayrovi-cta-dark: var(--zayrovi-cta-hover);        /* alias compat (hover) */
+    --zayrovi-accent-dark: var(--zayrovi-cta-hover);     /* alias compat */
+    --zayrovi-accent-deep: var(--zayrovi-cta-active);    /* alias compat (pressé) */
 
     /* — états : succès / erreur uniquement ; le kهرماني est retiré (0 usage UI) — */
-    --ayrovi-success: #15803d;
-    --ayrovi-success-soft: #e6f5ec;
-    --ayrovi-info: var(--ay-e-info, #595959);
-    --ayrovi-info-soft: var(--ay-e-info-soft, #f5f5f5);
-    --ayrovi-danger: #dc2626;
-    --ayrovi-danger-soft: #fdecec;
+    --zayrovi-success: #15803d;
+    --zayrovi-success-soft: #e6f5ec;
+    --zayrovi-info: var(--ay-e-info, #595959);
+    --zayrovi-info-soft: var(--ay-e-info-soft, #f5f5f5);
+    --zayrovi-danger: #dc2626;
+    --zayrovi-danger-soft: #fdecec;
 
     /* — commerce : prix remisé + badge promo (référence Zalando, 2026-09-23) —
        SEUL accent rouge de la vitrine ; réservé au prix promo et à son badge. */
-    --ayrovi-promo: #dc2626;
+    --zayrovi-promo: #dc2626;
 
     /* — échelle neutre : alias de la canonique (la slate est absorbée, P0 P4/T2) — */
-    --ayrovi-primary: var(--ayrovi-text-primary);
-    --ayrovi-primary-dark: var(--ayrovi-ink-deep);
-    --ayrovi-primary-light: var(--ayrovi-ink-soft);
-    --ayrovi-neutral-50: var(--ayrovi-bg-surface);
-    --ayrovi-neutral-200: var(--ayrovi-border-soft);
-    --ayrovi-neutral-500: var(--ayrovi-text-secondary);
-    --ayrovi-neutral-900: var(--ayrovi-text-primary);
-    --ayrovi-neutral-950: var(--ayrovi-ink-deep);
-    --ayrovi-white: #ffffff;
-    --ayrovi-black: var(--ayrovi-ink-deep);
-    --ayrovi-whatsapp: #25d366;
-    --ayrovi-whatsapp-hover: #1fae53;
-    --ayrovi-gradient: linear-gradient(135deg, var(--ayrovi-ink-deep) 0%, var(--ayrovi-text-primary) 100%);
+    --zayrovi-primary: var(--zayrovi-text-primary);
+    --zayrovi-primary-dark: var(--zayrovi-ink-deep);
+    --zayrovi-primary-light: var(--zayrovi-ink-soft);
+    --zayrovi-neutral-50: var(--zayrovi-bg-surface);
+    --zayrovi-neutral-200: var(--zayrovi-border-soft);
+    --zayrovi-neutral-500: var(--zayrovi-text-secondary);
+    --zayrovi-neutral-900: var(--zayrovi-text-primary);
+    --zayrovi-neutral-950: var(--zayrovi-ink-deep);
+    --zayrovi-white: #ffffff;
+    --zayrovi-black: var(--zayrovi-ink-deep);
+    --zayrovi-whatsapp: #25d366;
+    --zayrovi-whatsapp-hover: #1fae53;
+    --zayrovi-gradient: linear-gradient(135deg, var(--zayrovi-ink-deep) 0%, var(--zayrovi-text-primary) 100%);
 
-    /* — focus ring (remplace l'alias mensonger --ayrovi-purple) — */
-    --ayrovi-focus-ring: var(--ayrovi-text-primary);
-    --ayrovi-focus-ring-inverse: var(--ayrovi-white);
+    /* — focus ring (remplace l'alias mensonger --zayrovi-purple) — */
+    --zayrovi-focus-ring: var(--zayrovi-text-primary);
+    --zayrovi-focus-ring-inverse: var(--zayrovi-white);
 
     --font-primary: var(--ay-font-stack);
     --font-weight-regular: 400;
@@ -212,78 +212,78 @@ html[data-theme='dark'] {
     --text-button--line-height: 1.25rem;
     --text-nav: 0.875rem;
     --text-nav--line-height: 1.25rem;
-    --ayrovi-font-display: var(--font-primary);
-    --ayrovi-font-body: var(--font-primary);
+    --zayrovi-font-display: var(--font-primary);
+    --zayrovi-font-body: var(--font-primary);
     /* — forme : 3 rayons, c'est tout (contrôle / carte / chip) — */
-    --ayrovi-radius-cta: var(--ay-e-cta-radius, 999px); /* capsule d’action client */
-    --ayrovi-radius-control: 0.75rem;      /* legacy controls */
-    --ayrovi-radius-card: 1rem;            /* cartes, panneaux, modales */
-    --ayrovi-radius-chip: 999px;           /* badges, pills, pastilles  */
-    --ayrovi-radius-icon: 0.625rem;        /* boutons-icônes carrés     */
-    --ayrovi-icon-stroke: 1.5;
+    --zayrovi-radius-cta: var(--ay-e-cta-radius, 999px); /* capsule d’action client */
+    --zayrovi-radius-control: 0.75rem;      /* legacy controls */
+    --zayrovi-radius-card: 1rem;            /* cartes, panneaux, modales */
+    --zayrovi-radius-chip: 999px;           /* badges, pills, pastilles  */
+    --zayrovi-radius-icon: 0.625rem;        /* boutons-icônes carrés     */
+    --zayrovi-icon-stroke: 1.5;
 
     /* — élévation : 3 niveaux clairs + 1 sombre — */
-    --ayrovi-shadow-xs: 0 1px 2px rgb(17 19 24 / 6%);
-    --ayrovi-shadow-card: 0 12px 30px -22px rgb(17 19 24 / 22%);
-    --ayrovi-shadow-overlay: 0 24px 70px -32px rgb(17 19 24 / 35%);
-    --ayrovi-shadow-card-dark: 0 12px 30px -18px rgb(0 0 0 / 55%);
+    --zayrovi-shadow-xs: 0 1px 2px rgb(17 19 24 / 6%);
+    --zayrovi-shadow-card: 0 12px 30px -22px rgb(17 19 24 / 22%);
+    --zayrovi-shadow-overlay: 0 24px 70px -32px rgb(17 19 24 / 35%);
+    --zayrovi-shadow-card-dark: 0 12px 30px -18px rgb(0 0 0 / 55%);
 
     /* Customer screens v1.1 — opt-in sizing, no global restyling. */
-    --ayrovi-space-1: 0.25rem;
-    --ayrovi-space-2: 0.5rem;
-    --ayrovi-space-3: 0.75rem;
-    --ayrovi-space-4: 1rem;
-    --ayrovi-space-5: 1.25rem;
-    --ayrovi-space-6: 1.5rem;
-    --ayrovi-space-8: 2rem;
-    --ayrovi-control-height: 3rem;
-    --ayrovi-touch-target: 2.75rem;
-    --ayrovi-form-max-width: 28.75rem;
-    --ayrovi-radius-sheet: 2rem;
-    --ayrovi-auth-title-size: 1.75rem;
+    --zayrovi-space-1: 0.25rem;
+    --zayrovi-space-2: 0.5rem;
+    --zayrovi-space-3: 0.75rem;
+    --zayrovi-space-4: 1rem;
+    --zayrovi-space-5: 1.25rem;
+    --zayrovi-space-6: 1.5rem;
+    --zayrovi-space-8: 2rem;
+    --zayrovi-control-height: 3rem;
+    --zayrovi-touch-target: 2.75rem;
+    --zayrovi-form-max-width: 28.75rem;
+    --zayrovi-radius-sheet: 2rem;
+    --zayrovi-auth-title-size: 1.75rem;
 
     /* — rythme de page : gouttières et sections — */
-    --ayrovi-gutter: 1rem;
-    --ayrovi-gutter-md: 1.5rem;
-    --ayrovi-gutter-lg: 2rem;
-    --ayrovi-container: 75rem;
-    --ayrovi-container-narrow: 56rem;
-    --ayrovi-section-y-mobile: 3rem;
-    --ayrovi-section-y-desktop: 4.5rem;
-    --ayrovi-page-gap-mobile: 2rem;
-    --ayrovi-page-gap-desktop: 3rem;
+    --zayrovi-gutter: 1rem;
+    --zayrovi-gutter-md: 1.5rem;
+    --zayrovi-gutter-lg: 2rem;
+    --zayrovi-container: 75rem;
+    --zayrovi-container-narrow: 56rem;
+    --zayrovi-section-y-mobile: 3rem;
+    --zayrovi-section-y-desktop: 4.5rem;
+    --zayrovi-page-gap-mobile: 2rem;
+    --zayrovi-page-gap-desktop: 3rem;
 
     /* — mouvement : 3 durées, 2 courbes ; respect de prefers-reduced-motion — */
-    --ayrovi-motion-fast: 140ms;
-    --ayrovi-motion-base: 200ms;
-    --ayrovi-motion-slow: 320ms;
-    --ayrovi-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-    --ayrovi-ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
+    --zayrovi-motion-fast: 140ms;
+    --zayrovi-motion-base: 200ms;
+    --zayrovi-motion-slow: 320ms;
+    --zayrovi-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --zayrovi-ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
 
     /* — calques : la seule échelle z autorisée dans la vitrine — */
-    --ayrovi-z-header: 20;
-    --ayrovi-z-fab: 25;
-    --ayrovi-z-bottomnav: 30;
-    --ayrovi-z-drawer: 40;
-    --ayrovi-z-lens: 45;
-    --ayrovi-z-modal: 50;
-    --ayrovi-z-toast: 60;
+    --zayrovi-z-header: 20;
+    --zayrovi-z-fab: 25;
+    --zayrovi-z-bottomnav: 30;
+    --zayrovi-z-drawer: 40;
+    --zayrovi-z-lens: 45;
+    --zayrovi-z-modal: 50;
+    --zayrovi-z-toast: 60;
 
     /* Alias d'historique (Admin legacy) : sans valeur propre, en voie de retrait. */
-    --ayrovi-purple: var(--ayrovi-primary);
-    --ayrovi-purple-dark: var(--ayrovi-primary-dark);
-    --ayrovi-purple-light: var(--ayrovi-primary-light);
-    --ayrovi-yellow: var(--ayrovi-accent);
-    --ayrovi-deep: var(--ayrovi-neutral-950);
-    --ayrovi-ink: var(--ayrovi-neutral-900);
-    --ayrovi-muted: var(--ayrovi-neutral-500);
-    --ayrovi-surface: var(--ayrovi-neutral-50);
-    --ayrovi-border: var(--ayrovi-neutral-200);
-    --ayrovi-shadow: var(--ayrovi-shadow-card);
-    --ayrovi-font: var(--ayrovi-font-body);
-    --hostinger-purple: var(--ayrovi-primary);
-    --hostinger-purple-dark: var(--ayrovi-primary-dark);
-    --hostinger-purple-light: var(--ayrovi-primary-light);
+    --zayrovi-purple: var(--zayrovi-primary);
+    --zayrovi-purple-dark: var(--zayrovi-primary-dark);
+    --zayrovi-purple-light: var(--zayrovi-primary-light);
+    --zayrovi-yellow: var(--zayrovi-accent);
+    --zayrovi-deep: var(--zayrovi-neutral-950);
+    --zayrovi-ink: var(--zayrovi-neutral-900);
+    --zayrovi-muted: var(--zayrovi-neutral-500);
+    --zayrovi-surface: var(--zayrovi-neutral-50);
+    --zayrovi-border: var(--zayrovi-neutral-200);
+    --zayrovi-shadow: var(--zayrovi-shadow-card);
+    --zayrovi-font: var(--zayrovi-font-body);
+    --hostinger-purple: var(--zayrovi-primary);
+    --hostinger-purple-dark: var(--zayrovi-primary-dark);
+    --hostinger-purple-light: var(--zayrovi-primary-light);
   }
 
   @media (min-width: 768px) {
@@ -320,7 +320,7 @@ html[data-theme='dark'] {
   --admin-warm-accent:#ffb070; /* pêche : « yellow » induisait en erreur */
   --admin-ink-muted:#595959; /* encre atténuée, pas une couleur « muette » */
   --admin-surface-page:var(--admin-surface-card); /* surface de page */
-  --admin-surface-card:var(--ayrovi-white); /* surface de carte */
+  --admin-surface-card:var(--zayrovi-white); /* surface de carte */
   --admin-rail: var(--admin-ink); /* même encre que le texte : une seule valeur dans le fichier */
 
   /* — alias dépréciés, conservés pour ne rien casser — */
@@ -348,7 +348,7 @@ html[data-theme='dark'] {
      teintes en mesurant l’écart. `tests/design-tokens.test.ts` interdit tout
      littéral dans les feuilles du back-office et fait baisser leur nombre de refs.
      ───────────────────────────────────────────────────────────────────────── */
-  --admin-ink:var(--ayrovi-text-primary); /* déplacé depuis admin.css — jamais renommé ni retouché */
+  --admin-ink:var(--zayrovi-text-primary); /* déplacé depuis admin.css — jamais renommé ni retouché */
   --admin-line:#d9d9d9; /* déplacé depuis admin.css — jamais renommé ni retouché */
   /* Frontière des CONTRÔLES (champs, listes déroulantes) : un rôle distinct de `--admin-line`,
      qui reste le filet décoratif des séparateurs. `--admin-line` vaut 1,41:1 sur blanc, sous le
@@ -364,13 +364,13 @@ html[data-theme='dark'] {
   --admin-line-soft:#e5e5e5; /* filet clair (listes, encadrés) */
   --admin-line-firm:var(--admin-line); /* filet renforcé (champs, séparateurs) */
   --admin-text-soft:var(--admin-ink-muted); /* texte tertiaire */
-  --admin-on-dark:var(--ayrovi-white); /* blanc unique : la carte et l'encre-sur-sombre partagent la valeur */
+  --admin-on-dark:var(--zayrovi-white); /* blanc unique : la carte et l'encre-sur-sombre partagent la valeur */
   --admin-danger-strong:#c9362b; /* danger soutenu (bandeaux, badges) */
   --admin-danger-text:#b42318; /* texte en erreur */
   --admin-danger-ink:#b6251c; /* erreur profonde (barre latérale) */
   --admin-violet:#673de6; /* accent produit (Lens, IA) */
   --admin-text: var(--admin-ink); /* P3/T2c — `arrival-ingestion.css:244` appelait ce nom sans qu'il existe ; alias, valeur = encre du thème */
-  --admin-danger: var(--ayrovi-danger); /* P3/T2 — AdminApp.tsx appelait cette variable sans qu'elle existe ; alias, aucune valeur nouvelle */
+  --admin-danger: var(--zayrovi-danger); /* P3/T2 — AdminApp.tsx appelait cette variable sans qu'elle existe ; alias, aucune valeur nouvelle */
 
   /* — tons verbatims : 164 valeurs longue traîne (à absorber en T2) — */
   --admin-tone-047857:#047857;

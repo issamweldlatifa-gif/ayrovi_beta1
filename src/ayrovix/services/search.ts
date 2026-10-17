@@ -1,30 +1,30 @@
 import type { QatafoDatabase } from '../../db/database';
-import type { AyrovixCandidate, AyrovixIdentification } from '../types';
+import type { ZayrovixCandidate, ZayrovixIdentification } from '../types';
 import { estimateWithDb } from './currency';
 import { filterDisplayableCandidates, filterWithFallback, harvestForScrape, withDisplayRating } from './candidatePolicy';
-import { getAyroviAiCore } from '../../ai-core/core';
+import { getZayroviAiCore } from '../../ai-core/core';
 import { isAiFeatureEnabled } from '../../ai-core/config';
 
 /**
- * AYROVIX owns text discovery for links, QR/barcodes and Lens fallback.
- * Provider web-search wire details stay behind AYROVI AI Core.
+ * ZAYROVIX owns text discovery for links, QR/barcodes and Lens fallback.
+ * Provider web-search wire details stay behind ZAYROVI AI Core.
  */
 
 const STOPWORDS = new Set(['the', 'and', 'pour', 'avec', 'les', 'des', 'une', 'femme', 'homme', 'femmes', 'hommes', 'new', 'style', 'mode', 'de', 'du', 'en', 'au', 'aux']);
 const EXTERNAL_CACHE_TTL_MS = 5 * 60_000;
-const externalSearchCache = new Map<string, { at: number; results: AyrovixCandidate[] }>();
-const externalSearchInFlight = new Map<string, Promise<AyrovixCandidate[]>>();
+const externalSearchCache = new Map<string, { at: number; results: ZayrovixCandidate[] }>();
+const externalSearchInFlight = new Map<string, Promise<ZayrovixCandidate[]>>();
 
 function searchBudgetMs(): number {
-  const configured = Number(process.env.AYROVIX_SEARCH_TIMEOUT_MS);
+  const configured = Number(process.env.ZAYROVIX_SEARCH_TIMEOUT_MS);
   return Number.isFinite(configured) ? Math.min(8_000, Math.max(1_200, configured)) : 4_200;
 }
 
 function externalWebSearchEnabled(): boolean {
   // This service owns only a provider-neutral capability flag. Adapter choice
-  // and credentials remain exclusively inside AYROVI AI Core.
+  // and credentials remain exclusively inside ZAYROVI AI Core.
   return isAiFeatureEnabled('web-search')
-    && getAyroviAiCore().responses().isConfigured();
+    && getZayroviAiCore().responses().isConfigured();
 }
 
 function remainingSearchMs(deadline: number, perRequestMax: number): number {
@@ -45,7 +45,7 @@ function clampMatch(value: number): number {
 }
 
 export function scoreCandidate(
-  identification: AyrovixIdentification | null,
+  identification: ZayrovixIdentification | null,
   query: string,
   candidate: { title: string; brand?: string | null },
 ): number {
@@ -74,10 +74,10 @@ export function scoreCandidate(
 
 export function catalogSearch(
   db: QatafoDatabase,
-  identification: AyrovixIdentification | null,
+  identification: ZayrovixIdentification | null,
   query: string,
   limit = 6,
-): AyrovixCandidate[] {
+): ZayrovixCandidate[] {
   const rows = db.all<any>(
     `SELECT id, name, brand_name, image, source_url, source_platform, stock_status,
             original_price, currency, final_price
@@ -95,7 +95,7 @@ export function catalogSearch(
       model: null,
       colors: [],
       sizes: [],
-      source: 'Collection AYROVI',
+      source: 'Collection ZAYROVI',
       sourceUrl: row.source_url || '',
       image: row.image || '',
       // An ACTIVE catalog listing is not proof of stock: use its recorded status.
@@ -109,7 +109,7 @@ export function catalogSearch(
         : (Number(row.final_price) > 0 ? Number(row.final_price) : (estimated?.priceTnd ?? null)),
       promo: estimated?.promo ?? null,
       match,
-    } satisfies AyrovixCandidate;
+    } satisfies ZayrovixCandidate;
   }).filter((candidate) => candidate.match >= 35);
   const displayable = filterDisplayableCandidates(candidates, limit);
   /* Keep recorded stock truth available to callers of the catalogue reader.
@@ -145,14 +145,14 @@ export async function providerWebSearch(
   query: string,
   limit = 6,
   deadline = Date.now() + searchBudgetMs(),
-): Promise<AyrovixCandidate[]> {
-  const provider = getAyroviAiCore().responses();
+): Promise<ZayrovixCandidate[]> {
+  const provider = getZayroviAiCore().responses();
   if (!externalWebSearchEnabled() || !searchHasTime(deadline, 500)) return [];
   try {
     const result = await provider.complete({
       workload: 'research',
       modelClass: 'fast',
-      instructions: 'You are AYROVI shopping search. Always run exactly one web search. Prefer direct merchant product pages. Exclude news, reviews and generic search pages. Keep the final answer very short.',
+      instructions: 'You are ZAYROVI shopping search. Always run exactly one web search. Prefer direct merchant product pages. Exclude news, reviews and generic search pages. Keep the final answer very short.',
       messages: [{
         role: 'user',
         content: [{ type: 'text', text: `Find direct product pages selling this exact item or code: ${query.slice(0, 200)}` }],
@@ -162,7 +162,7 @@ export async function providerWebSearch(
       webSearch: { enabled: true, maxUses: 1 },
     }, AbortSignal.timeout(remainingSearchMs(deadline, 4_200)));
 
-    const candidates: AyrovixCandidate[] = [];
+    const candidates: ZayrovixCandidate[] = [];
     for (const item of result.webResults) {
       const sourceUrl = String(item.url || '').trim();
       const title = String(item.title || '').replace(/\s+/g, ' ').trim();
@@ -186,21 +186,21 @@ export async function providerWebSearch(
       });
       if (candidates.length >= limit) break;
     }
-    console.log(`[AYROVIX provider-search] ${candidates.length} candidates, searches=${result.usage?.webSearchCalls || 0}`);
+    console.log(`[ZAYROVIX provider-search] ${candidates.length} candidates, searches=${result.usage?.webSearchCalls || 0}`);
     return candidates;
   } catch (error: any) {
-    console.warn(`[AYROVIX provider-search] ${error?.code === 'PROVIDER_TIMEOUT' || error?.name === 'TimeoutError' ? 'timeout' : 'unavailable'}`);
+    console.warn(`[ZAYROVIX provider-search] ${error?.code === 'PROVIDER_TIMEOUT' || error?.name === 'TimeoutError' ? 'timeout' : 'unavailable'}`);
     return [];
   }
 }
 
 /** Backward-compatible Phase 1 alias; new business code uses providerWebSearch. */
-/** Public AYROVIX service used by URL, image, QR and barcode flows. */
+/** Public ZAYROVIX service used by URL, image, QR and barcode flows. */
 export async function externalProductSearch(
   query: string,
   limit = 6,
   deadline = Date.now() + searchBudgetMs(),
-): Promise<AyrovixCandidate[]> {
+): Promise<ZayrovixCandidate[]> {
   const cacheKey = `${query.trim().toLowerCase()}|${limit}`;
   const cached = externalSearchCache.get(cacheKey);
   if (cached && Date.now() - cached.at < EXTERNAL_CACHE_TTL_MS) {
@@ -228,10 +228,10 @@ export async function externalProductSearch(
 /** Backward-compatible Phase 1 alias. */
 export async function searchCandidates(
   db: QatafoDatabase,
-  identification: AyrovixIdentification,
+  identification: ZayrovixIdentification,
   query: string,
-  visualCandidates: AyrovixCandidate[] = [],
-): Promise<AyrovixCandidate[]> {
+  visualCandidates: ZayrovixCandidate[] = [],
+): Promise<ZayrovixCandidate[]> {
   const catalog = catalogSearch(db, identification, query);
   const deadline = Date.now() + searchBudgetMs();
   // A real visual match is more useful than another text-only web search.
@@ -263,12 +263,12 @@ export async function searchCandidates(
  *
  * Identité produit par signaux disponibles : marque + recouvrement des tokens du
  * titre (Jaccard ≥ 0.6 ; le modèle/GTIN, quand il est dans le titre, participe
- * naturellement aux tokens). Le catalogue AYROVI reste à part : c'est l'offre
- * propre d'AYROVI, pas une offre externe à regrouper.
+ * naturellement aux tokens). Le catalogue ZAYROVI reste à part : c'est l'offre
+ * propre d'ZAYROVI, pas une offre externe à regrouper.
  */
-export function groupOffers(candidates: AyrovixCandidate[]): AyrovixCandidate[] {
+export function groupOffers(candidates: ZayrovixCandidate[]): ZayrovixCandidate[] {
   const passthrough = candidates.filter((candidate) => candidate.kind !== 'external');
-  const groups: Array<{ rep: AyrovixCandidate; tokens: Set<string>; brand: string; members: AyrovixCandidate[] }> = [];
+  const groups: Array<{ rep: ZayrovixCandidate; tokens: Set<string>; brand: string; members: ZayrovixCandidate[] }> = [];
   for (const candidate of candidates) {
     if (candidate.kind !== 'external') continue;
     const tokens = new Set(tokenize(`${candidate.brand || ''} ${candidate.title}`));
@@ -310,7 +310,7 @@ export interface ProviderSearchHealth {
 }
 
 export function checkProviderSearchHealth(): ProviderSearchHealth {
-  const provider = getAyroviAiCore().responses();
+  const provider = getZayroviAiCore().responses();
   return {
     configured: externalWebSearchEnabled(),
     model: provider.resolveModel('research', 'fast'),

@@ -1,9 +1,9 @@
 import { getSessionId } from '../../utils/session';
-import type { AyroviMotionState } from '../AyroviMotion';
+import type { ZayroviMotionState } from '../ZayroviMotion';
 import type { AssistantMessage } from './types';
 
 export type AssistantApiEvent =
-  | { type: 'state'; state: Exclude<AyroviMotionState, 'idle'> }
+  | { type: 'state'; state: Exclude<ZayroviMotionState, 'idle'> }
   | { type: 'delta'; text: string }
   | { type: 'tool'; name: string; data: Record<string, any> }
   | { type: 'done'; model: string }
@@ -104,7 +104,7 @@ export async function transcribeAssistantAudio(input: {
     : input.audio.type.includes('mpeg') ? 'mp3'
       : input.audio.type.includes('wav') ? 'wav'
         : input.audio.type.includes('mp4') ? 'm4a' : 'webm';
-  form.append('audio', input.audio, `ayrovi-voice.${extension}`);
+  form.append('audio', input.audio, `zayrovi-voice.${extension}`);
   const response = await fetch('/api/assistant/transcribe', {
     method: 'POST',
     credentials: 'same-origin',

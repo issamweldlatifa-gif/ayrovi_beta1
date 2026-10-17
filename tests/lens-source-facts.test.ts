@@ -9,13 +9,13 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { detectProductCondition, isUsedListing, filterOutUsedCandidates } from '../src/ayrovix/services/productCondition';
-import type { AyrovixCandidate } from '../src/ayrovix/types';
+import type { ZayrovixCandidate } from '../src/ayrovix/types';
 
-const candidate = (over: Partial<AyrovixCandidate>): AyrovixCandidate => ({
+const candidate = (over: Partial<ZayrovixCandidate>): ZayrovixCandidate => ({
   id: 'c', kind: 'external', title: 'Veste', brand: null, model: null, colors: [], sizes: [],
   source: 'Boutique', sourceUrl: 'https://boutique.example/p', image: '', price: 10, currency: 'EUR',
   priceTnd: null, match: 80, ...over,
-} as AyrovixCandidate);
+} as ZayrovixCandidate);
 
 describe('état du produit — la source parle en premier', () => {
   it('« Used » déclaré par la source écarte l’annonce, même sur une boutique classique', () => {

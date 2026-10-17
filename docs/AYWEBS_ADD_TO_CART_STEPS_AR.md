@@ -1,11 +1,11 @@
 # AYWEBs — مراحل «Add to Cart»: من ضغطة الزر إلى ظهور المنتج في السلة
 
-> **التاريخ:** 2026-10-05 · **الفرع:** `arena/f0cb5a18-ayrovi-beta1`
+> **التاريخ:** 2026-10-05 · **الفرع:** `arena/f0cb5a18-zayrovi-beta1`
 > **المرجع الملزم:** `docs/AYWEBS_ADD_TO_CART_ORDER.md` (أمر هندسي دائم)
 > **تشخيص سابق للإصلاح:** `docs/AYWEBS_ADD_TO_CART_FIX_AR_2026-10-04.md`
 
 هذا الملف **وصفي تنفيذي**: يتتبّع المسار في الكود الفعلي (أندرويد أصلي + ويب + خادم + قاعدة بيانات)،
-سطرًا بسطر، من لحظة الضغط على **Add to Cart** إلى ظهور المنتج في **سلة AYROVI**.
+سطرًا بسطر، من لحظة الضغط على **Add to Cart** إلى ظهور المنتج في **سلة ZAYROVI**.
 كل إشارة `ملف:سطر` يمكن التحقق منها في المستودع.
 
 ---
@@ -17,7 +17,7 @@
 | العميل (أندرويد / ويب) | يعرض المتجر والورقة ويرسل نيّة الإضافة فقط — **لا سعر ولا حالة** | `android/.../AyWebsBrowseActivity.java` · `client/src/features/aywebs/` |
 | خادم AYWEBs | يحلّ المنتج، يتحقق من المتغيّرة والتوفّر، **يحسب الثمن**، يكتب السطر | `src/aywebs/routes.ts` · `cart.ts` · `productResolver.ts` |
 | محرّك الحلّ (Resolver) | يجلب صفحة التاجر عبر الكاسط + المحوّل (`amazon` / `aliexpress` / `shein` / `temu`) ثم يطبّع | `src/aywebs/adapters/` · `src/aywebs/productNormalizer.ts` |
-| قاعدة البيانات + سلة AYROVI | تخزين السطر، الدليل، الأحداث، والجسر نحو نفس السلة الموحّدة | `src/aywebs/schema.ts` · `src/aywebs/ayroviBridge.ts` |
+| قاعدة البيانات + سلة ZAYROVI | تخزين السطر، الدليل، الأحداث، والجسر نحو نفس السلة الموحّدة | `src/aywebs/schema.ts` · `src/aywebs/ayroviBridge.ts` |
 
 ### المسار في سطر واحد
 
@@ -27,10 +27,10 @@
   → ورقة الاختيار (متغيّرات + كمية + سعر)
   → POST /api/v1/aywebs/cart/items                 (إضافة حقيقية)
   → INSERT في ayweb_cart_items                     (السطر مصدره AYWEBs)
-  → جسر idempotent إلى سلة AYROVI                  (نفس السطر في السلة الموحّدة)
+  → جسر idempotent إلى سلة ZAYROVI                  (نفس السطر في السلة الموحّدة)
   → 201 + شاشة تأكيد من بيانات الخادم
   → GET /api/v1/aywebs/cart                        (المجموعات حسب المتجر + linked_to_ayrovi)
-  → «المتابعة إلى صفحة الطلب» → checkout AYROVI
+  → «المتابعة إلى صفحة الطلب» → checkout ZAYROVI
 ```
 
 > **فرق مهم بين المنصّتين:**
@@ -97,7 +97,7 @@ POST /api/v1/aywebs/product/resolve
 2. **المحوّل** — `createAyWebsAdapter(store, scraper)` ثم `adapter.resolveProduct(url)`:
    جلب الصفحة (مع الكاش) واستخراج: العنوان، الصور، السعر، العملة، المتغيّرات، الحالة، معرّف المنتج المصدر.
 3. **`adapter.checkAvailability(...)`** — التوفّر يُقرأ من التاجر أو يبقى `UNKNOWN` (لا تخمين).
-4. **`calculatePrice(...)`** — **محرّك التسعير AYROVI** يحوّل السعر + الشحن + الديوانة + أتعاب الخدمة
+4. **`calculatePrice(...)`** — **محرّك التسعير ZAYROVI** يحوّل السعر + الشحن + الديوانة + أتعاب الخدمة
    إلى دينار: `ayrovi_pricing.total_tnd`. هذا هو المبلغ الوحيد الذي «يفعل» (§45).
 5. **`ayWebsEvidenceHash(...)`** — بصمة دليل قابلة للتحقق (رابط، سعر، عملة، متغيّرة، توفّر، محوّل، وقت).
 6. **`persistAyWebsProduct(...)`** — كتابة/تحديث:
@@ -121,7 +121,7 @@ POST /api/v1/aywebs/product/resolve
 
 **شرط الإضافة:**
 - أندرويد: `quoteReady = price > 0 && estimateTnd > 0`. إن اختلّ أحد الشرطين: زر التأكيد معطّل + رسالة
-  «devis AYROVI indisponible» — **ممنوع** إضافة بلا تسعير خادم.
+  «devis ZAYROVI indisponible» — **ممنوع** إضافة بلا تسعير خادم.
 - ويب: `missingRequired` يمنع التأكيد حتى تُختار كل المجموعات المطلوبة (المجموعات ذات القيمة الواحدة
   تُملأ تلقائيًا لأنها بيانات، لا خيارات).
 
@@ -134,7 +134,7 @@ POST /api/v1/aywebs/product/resolve
 ```
 POST /api/v1/aywebs/cart/items
 {
-  "product_id": "ayw_...",            // الهوية AYROVI المحفوظة في ayweb_products
+  "product_id": "ayw_...",            // الهوية ZAYROVI المحفوظة في ayweb_products
   "source_url": "https://www.amazon.com/dp/B0GYM3V9H5",
   "store_id": "amazon",
   "variant_attributes": { "color": "Black", "size": "M" },
@@ -175,26 +175,26 @@ POST /api/v1/aywebs/cart/items
 
 ---
 
-### المرحلة 7 — الجسر إلى سلة AYROVI (داخل نفس الطلب)
+### المرحلة 7 — الجسر إلى سلة ZAYROVI (داخل نفس الطلب)
 
 بعد نجاح الكتابة، وقبل إرسال الرد، يستدعي المسار الجسر بشكل **محمي**:
 
 ```ts
-bridgeAyWebsCartToAyrovi(db, { sessionId, accountId, itemIds: [result.item.id], requestId })
+bridgeAyWebsCartToZayrovi(db, { sessionId, accountId, itemIds: [result.item.id], requestId })
 ```
 
-- `bridgeAyWebsCartToAyrovi` — `src/aywebs/ayroviBridge.ts:66`
-- `addAyWebsItemToAyroviCart` — `ayroviBridge.ts:135`:
+- `bridgeAyWebsCartToZayrovi` — `src/aywebs/ayroviBridge.ts:66`
+- `addAyWebsItemToZayroviCart` — `ayroviBridge.ts:135`:
   - يتحقق من `checkoutReady` و`pricingTnd > 0` (السطر غير الجاهز **لا يعبر الجسر**)
-  - ينشئ `createAyrovixPriceToken(...)` (عقد السعر)
+  - ينشئ `createZayrovixPriceToken(...)` (عقد السعر)
   - يمرّر `store`, `externalId`, `url`, `title`, `imageUrl`, `sourcePrice`, `sourceCurrency`,
     `priceTND`, `variant` (تسمية المقاس/اللون)، `customerNote` تحمل معرّف AYWEBs `AYWITEM-…`
-  - ينادي `db.addItem(...)` ⇒ **السطر يظهر فعليًا في سلة AYROVI**
-- **المنع من المضاعفة:** إن وُجد سطر مطابق مسبقًا (`findAyroviCartLine` — `ayroviBridge.ts:231`، على أساس:
+  - ينادي `db.addItem(...)` ⇒ **السطر يظهر فعليًا في سلة ZAYROVI**
+- **المنع من المضاعفة:** إن وُجد سطر مطابق مسبقًا (`findZayroviCartLine` — `ayroviBridge.ts:231`، على أساس:
   المتجر + الرابط + المعرّف المصدر + المقاس + اللون) تُحدَّث الكمية إلى مستوى AYWEBs فقط
-  (`syncAyWebsItemToAyroviCart` — `ayroviBridge.ts:258`)، **بدون جمع**.
+  (`syncAyWebsItemToZayroviCart` — `ayroviBridge.ts:258`)، **بدون جمع**.
 - **الجسر لا يُسقط الإضافة أبدًا:** أي خطأ يُلتقط ويُسجَّل، ويبقى السطر في `ayweb_cart_items`
-  مصدرًا، والرد يحمل `ayrovi: { linked:false, reason }`.
+  مصدرًا، والرد يحمل `zayrovi: { linked:false, reason }`.
 
 الردّ النهائي `201`:
 
@@ -207,7 +207,7 @@ bridgeAyWebsCartToAyrovi(db, { sessionId, accountId, itemIds: [result.item.id], 
               "variant_label": "Color: Black · Size: M", "line_total_tnd": 412.55,
               "checkout_ready": true },
     "duplicate": false,
-    "ayrovi": { "linked": true, "cart_item_id": "…", "quantity": 1, "reason": "LINKED" }
+    "zayrovi": { "linked": true, "cart_item_id": "…", "quantity": 1, "reason": "LINKED" }
   },
   "cart": { "groups": [ /* حسب المتجر */ ], "totals": { "unlinked_units": 0 } }
 }
@@ -220,7 +220,7 @@ bridgeAyWebsCartToAyrovi(db, { sessionId, accountId, itemIds: [result.item.id], 
 | المنصّة | التفصيل |
 |---|---|
 | أندرويد | `showAddedDialog(item, product)` — `AyWebsBrowseActivity.java:632`. كل المعروض يأتي **من السطر المُعاد من الخادم**: الصورة، العنوان، الخيارات (`variant_label`)، الكمية، `unit_price`، `line_total_tnd`. زرّان فقط: **Checkout** (يفتح `/aywebs/cart`) و**Continue Shopping** (يغلق الورقة ويبقى في المتجر). |
-| ويب | `phase === 'added'` في `AyWebsVariantSheet.tsx`: «تمت الإضافة إلى سلة AYROVI» + ملخّص السطر + «متابعة الدفع» و«مواصلة التسوق». إن كان `linked:false` تظهر عبارة صريحة: «محفوظ في سلة AyWebs — ستُؤكَّد الإضافة عند خطوة سلة AYROVI». |
+| ويب | `phase === 'added'` في `AyWebsVariantSheet.tsx`: «تمت الإضافة إلى سلة ZAYROVI» + ملخّص السطر + «متابعة الدفع» و«مواصلة التسوق». إن كان `linked:false` تظهر عبارة صريحة: «محفوظ في سلة AyWebs — ستُؤكَّد الإضافة عند خطوة سلة ZAYROVI». |
 
 لا إعادة توجيه، لا بطاقة منتج كبيرة، لا بدء تلقائي للدفع — بند آمر في مرجع الـ flow.
 
@@ -238,25 +238,25 @@ bridgeAyWebsCartToAyrovi(db, { sessionId, accountId, itemIds: [result.item.id], 
   (عبر `linkedStateFor` → `ayWebsCartLinkedMap` — `ayroviBridge.ts:338`) و**`totals.unlinked_units`**.
 
 **عرض السلة:**
-- ويب: `AyWebsCartScreen.tsx` — عنوان، صورة، سعر الوحدة، الخيارات، «موجود بالفعل في سلة AYROVI»،
+- ويب: `AyWebsCartScreen.tsx` — عنوان، صورة، سعر الوحدة، الخيارات، «موجود بالفعل في سلة ZAYROVI»،
   الكمية، المجموع الفرعي، و≈ د.ت من `line_total_tnd`، مع بنّرة «يوجد {n} منتجات في سلتك» وإجمالي
   `product_subtotal_tnd` المحسوب على الخادم.
 - أندرويد: زرّ **Panier** يفتح **درجًا فوق الـ WebView** (`openListSheet`) — الزبون لا يغادر المتجر.
-- السلة موحّدة: لأن الجسر أضاف نفس السطر إلى سلة AYROVI، يظهر المنتج **أيضًا** في صفحة سلة AYROVI
+- السلة موحّدة: لأن الجسر أضاف نفس السطر إلى سلة ZAYROVI، يظهر المنتج **أيضًا** في صفحة سلة ZAYROVI
   العادية — قراءة واحدة، لا نسختان.
 
 ---
 
 ### المرحلة 10 — من السلة إلى الطلب
 
-- زر **«المتابعة إلى صفحة الطلب»** → `bridgeAyWebsCartToAyrovi()` من الواجهة
-  (`api.ts:475` → `POST /cart/bridge-to-ayrovi` — `routes.ts:891`): مزامنة idempotent لكل الأسطر
-  ثم فتح checkout AYROVI (سلة واحدة، دفع واحد).
+- زر **«المتابعة إلى صفحة الطلب»** → `bridgeAyWebsCartToZayrovi()` من الواجهة
+  (`api.ts:475` → `POST /cart/bridge-to-zayrovi` — `routes.ts:891`): مزامنة idempotent لكل الأسطر
+  ثم فتح checkout ZAYROVI (سلة واحدة، دفع واحد).
 - بعد ذلك:
   - تغيير الكمية ⇒ `PATCH /cart/items/:id` -> `updateAyWebsCartItem` (`cart.ts:558`)
-    + `syncAyWebsItemToAyroviCart` (تحديث الكمية في السلة الموحّدة).
+    + `syncAyWebsItemToZayroviCart` (تحديث الكمية في السلة الموحّدة).
   - الحذف ⇒ `DELETE /cart/items/:id` -> `removeAyWebsCartItem` (`cart.ts:620`) + إزالة السطر المرتبط
-    من سلة AYROVI (لا سطر يتيم).
+    من سلة ZAYROVI (لا سطر يتيم).
 
 ---
 
@@ -269,7 +269,7 @@ sequenceDiagram
   participant UI as الواجهة (Android WebView / Web)
   participant API as API AYWEBs
   participant RES as Resolver + Adapters
-  participant DB as قاعدة البيانات + سلة AYROVI
+  participant DB as قاعدة البيانات + سلة ZAYROVI
 
   Note over UI,API: المرحلة 0 — عند تحميل كل صفحة
   UI->>API: POST /page/analyze {url}
@@ -289,13 +289,13 @@ sequenceDiagram
   API->>API: selectVariant + توفّر + pricingTnd>0 + منع التكرار
   API->>DB: INSERT ayweb_cart_items + evidence + events + audit
   API->>DB: bridge → db.addItem/updateQuantity (idempotent)
-  API-->>UI: 201 {item, ayrovi:{linked:true}, cart}
+  API-->>UI: 201 {item, zayrovi:{linked:true}, cart}
 
-  UI->>C: «تمت الإضافة إلى سلة AYROVI» + خياران
+  UI->>C: «تمت الإضافة إلى سلة ZAYROVI» + خياران
   C->>UI: فتح السلة
-  UI->>API: GET /cart  (أو POST /cart/bridge-to-ayrovi)
+  UI->>API: GET /cart  (أو POST /cart/bridge-to-zayrovi)
   API-->>UI: groups حسب المتجر + linked_to_ayrovi + pricing_tnd
-  UI->>C: المنتج ظاهر في السلة (و في سلة AYROVI الموحّدة)
+  UI->>C: المنتج ظاهر في السلة (و في سلة ZAYROVI الموحّدة)
 ```
 
 ---
@@ -311,7 +311,7 @@ sequenceDiagram
 | `ayweb_evidence` | المرحلتان 3 و6 | بصمة الدليل + كل معطيات المصدر وقت الحلّ |
 | `ayweb_domain_events` | المرحلة 6 | `AYWEB_CART_ITEM_ADDED` / `AYWEB_CART_ITEM_UPDATED` / `AYWEB_VARIANT_UNAVAILABLE` |
 | `ayweb_audit_logs` | المرحلة 6 | `cart_item.add` / `cart_item.update` / `cart.bridge_to_ayrovi` |
-| **سلة AYROVI** (`cart_items` عبر `db.addItem`) | المرحلة 7 — الجسر الفوري | نفس عنوان المنتج، السعر بالدينار، المقاس/اللون، وملاحظة تحمل `AYWITEM-…` |
+| **سلة ZAYROVI** (`cart_items` عبر `db.addItem`) | المرحلة 7 — الجسر الفوري | نفس عنوان المنتج، السعر بالدينار، المقاس/اللون، وملاحظة تحمل `AYWITEM-…` |
 
 ---
 
@@ -329,7 +329,7 @@ sequenceDiagram
 | `PRICE_UNAVAILABLE` | `pricingTnd <= 0` (سعر/عملة/حظر) | إضافة ممنوعة حتى يُضبط الثمن |
 | `CART_LOCKED` | السلة في حالة `CHECKOUT/ORDERED` أو > 60 سطرًا | رسالة تصف الحالة |
 | `AYWEBS_DISABLED` / `CAPTURE_DISABLED` | الميزة مطفأة | رفض واضح |
-| جسر `linked:false` | فشل غير متوقّع في الجسر | السطر باقٍ في AYWEBs + سبب ظاهر + «ستُؤكَّد عند خطوة سلة AYROVI» |
+| جسر `linked:false` | فشل غير متوقّع في الجسر | السطر باقٍ في AYWEBs + سبب ظاهر + «ستُؤكَّد عند خطوة سلة ZAYROVI» |
 
 ---
 
@@ -350,7 +350,7 @@ sequenceDiagram
 
 | الملف | السطر | ما فيه |
 |---|---|---|
-| `android/app/src/main/java/app/ayrovi/mobile/AyWebsBrowseActivity.java` | 77 · 78 · 79 | `ANALYZE_PATH` · `RESOLVE_PATH` · `CART_ITEMS_PATH` |
+| `android/app/src/main/java/app/zayrovi/mobile/AyWebsBrowseActivity.java` | 77 · 78 · 79 | `ANALYZE_PATH` · `RESOLVE_PATH` · `CART_ITEMS_PATH` |
 | — | 256 | `addButton.setOnClickListener(v -> onAddToCart())` |
 | — | 378 | `POST /page/analyze` وتفعيل الزر |
 | — | 433 | `onAddToCart()` — طلب الحلّ |
@@ -359,12 +359,12 @@ sequenceDiagram
 | — | 632 | `showAddedDialog()` — التأكيد من بيانات الخادم |
 | `client/src/features/aywebs/components/AyWebsVariantSheet.tsx` | 140 · 145 | `submit()` → `addAyWebsCartItem(...)` |
 | `client/src/features/aywebs/components/AyWebsCartScreen.tsx` | — | عرض السلة: مجموعات حسب المتجر · `linked_to_ayrovi` · `Proceed to order page` |
-| `client/src/features/aywebs/api.ts` | 415 · 429 · 434 · 475 | `getAyWebsVariants` · `getAyWebsCart` · `addAyWebsCartItem` · `bridgeAyWebsCartToAyrovi` |
+| `client/src/features/aywebs/api.ts` | 415 · 429 · 434 · 475 | `getAyWebsVariants` · `getAyWebsCart` · `addAyWebsCartItem` · `bridgeAyWebsCartToZayrovi` |
 | `src/aywebs/routes.ts` | 123 · 420 · 470 · 532 · 726 · 738 | `rejectProvidedPage` · `/page/analyze` · `/product/resolve` · `/product/variants` · `GET /cart` · `POST /cart/items` |
-| — | 891 · 1255 · 1287 · 1333 | `/cart/bridge-to-ayrovi` · `cartItemPayload` · `cartPayload` · `linkedStateFor` |
+| — | 891 · 1255 · 1287 · 1333 | `/cart/bridge-to-zayrovi` · `cartItemPayload` · `cartPayload` · `linkedStateFor` |
 | `src/aywebs/cart.ts` | 137 · 171 · 205 · 257 · 489 | `getOrCreateAyWebsCart` · `readAyWebsCartView` · `groupByStore` · **`addAyWebsCartItem`** · `selectVariant` |
 | `src/aywebs/productResolver.ts` | 98 | `resolveAyWebsProduct()` |
-| `src/aywebs/ayroviBridge.ts` | 66 · 135 · 231 · 258 · 338 | `bridgeAyWebsCartToAyrovi` · `addAyWebsItemToAyroviCart` · `findAyroviCartLine` · `syncAyWebsItemToAyroviCart` · `ayWebsCartLinkedMap` |
+| `src/aywebs/ayroviBridge.ts` | 66 · 135 · 231 · 258 · 338 | `bridgeAyWebsCartToZayrovi` · `addAyWebsItemToZayroviCart` · `findZayroviCartLine` · `syncAyWebsItemToZayroviCart` · `ayWebsCartLinkedMap` |
 | `src/aywebs/schema.ts` | 100 · 135 · 151 · 164 · 331 · 353 · 366 | `ayweb_products` · `ayweb_product_variants` · `ayweb_carts` · `ayweb_cart_items` · `ayweb_evidence` · `ayweb_domain_events` · `ayweb_audit_logs` |
 
 ---

@@ -67,7 +67,7 @@ est une URL, deux produits ne peuvent pas revendiquer la même adresse à la cas
 | `src/public/routes.ts`, `src/customer/routes.ts`, `src/magazine/service.ts`, `src/ayrovix/services/search.ts` | lectures produit côté vitrine/client/IA | modules existants | site public | **KEEP INTACT** — ils lisent `products` : ils voient donc immédiatement la ligne canonique, aucun shim |
 | `client/src/admin/AdminApp.tsx` | coquille du back-office (nav, `?section=`, permissions de lecture côté UI) | back-office | — | **EXTEND** : un groupe de nav « Catalogue » + trois branches de rendu |
 | `client/src/admin/components.tsx`, `admin.css` | boutons, tableaux, modales, styles admin | back-office | toutes les écrans | **KEEP** ; 18 lignes de CSS **additives** pour six classes neuves |
-| `tests/ayrovi.test.ts`, `tests/erp-core-foundation.test.ts`, + 40 autres | contrat de non-régression | atelier | CI locale | **KEEP** — une seule attestation re-ciblée, documentée (`§registre`, voir rapport P2.1 §5) |
+| `tests/zayrovi.test.ts`, `tests/erp-core-foundation.test.ts`, + 40 autres | contrat de non-régression | atelier | CI locale | **KEEP** — une seule attestation re-ciblée, documentée (`§registre`, voir rapport P2.1 §5) |
 | `data/*.sqlite` | base de l'environnement de dev (vide dans cet atelier) | exploitation | serveur | **NON TOUCHÉ** |
 
 ---

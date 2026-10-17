@@ -18,7 +18,7 @@
  *    Un jeton inscrit alors que Firebase n'est pas configuré ne prévient de
  *    rien — l'afficher comme « activé » serait le mensonge qu'on s'interdit.
  *  • **le canal Android porte le même identifiant que le serveur**
- *    (`ayrovi-default`) : sans cet accord, Android 8+ livre la notification
+ *    (`zayrovi-default`) : sans cet accord, Android 8+ livre la notification
  *    SANS son ni affichage, et personne ne comprend pourquoi.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -29,7 +29,7 @@ import { registerDevice } from '@/api/devices';
 import { resolveDeepLink } from '@/features/links/resolve';
 
 /** Doit correspondre EXACTEMENT à `fcmMessageBody` côté serveur. */
-export const PUSH_CHANNEL_ID = 'ayrovi-default';
+export const PUSH_CHANNEL_ID = 'zayrovi-default';
 
 export interface PushState {
   /** Le serveur peut-il réellement envoyer ? C'est lui qui décide. */
@@ -46,7 +46,7 @@ export interface PushState {
 function routeFromNotification(response: Notifications.NotificationResponse): string | null {
   const data = (response.notification.request.content.data ?? {}) as Record<string, unknown>;
   const direct = typeof data.actionUrl === 'string' ? data.actionUrl : '';
-  if (direct && direct.startsWith('/')) return resolveDeepLink(`https://ayrovi.tn${direct}`);
+  if (direct && direct.startsWith('/')) return resolveDeepLink(`https://zayrovi.tn${direct}`);
   return null;
 }
 

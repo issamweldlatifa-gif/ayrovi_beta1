@@ -12,7 +12,7 @@ async function getOcrWorker() {
     ocrWorkerPromise = Tesseract.createWorker('eng+fra', 1, {
       logger: () => {},
       // Never let a worker error become an uncaught process-level exception.
-      errorHandler: (error) => console.warn('[AYROVIX OCR worker]', error?.message || error),
+      errorHandler: (error) => console.warn('[ZAYROVIX OCR worker]', error?.message || error),
     }).then(async (worker) => {
       await worker.setParameters({ tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT, preserve_interword_spaces: '1' });
       return worker;
@@ -69,7 +69,7 @@ async function recognizeDocument(imageBuffer: Buffer) {
   pendingOcrJobs += 1;
   const job = ocrQueue.then(async () => {
     const worker = await getOcrWorker();
-    const configuredTimeout = Number(process.env.AYROVIX_OCR_TIMEOUT_MS);
+    const configuredTimeout = Number(process.env.ZAYROVIX_OCR_TIMEOUT_MS);
     const timeoutMs = Number.isFinite(configuredTimeout)
       ? Math.min(15_000, Math.max(2_000, configuredTimeout))
       : 7_000;
@@ -117,7 +117,7 @@ export class VisualProductExtractor {
    * Même table en dur que le scraper (`EUR 4.00 … || 4.00`) et mêmes constantes
    * métier (`serviceFee = max(10, 8 %)`, `shipping = 25.00`) appliquées à un
    * prix lu par OCR. Trois conséquences, toutes fausses : un taux inventé pour
-   * toute devise absente, un total qui contredisait le calculateur AYROVI
+   * toute devise absente, un total qui contredisait le calculateur ZAYROVI
    * versionné, et une description qui publiait ce total (« … = 122.5 DT »)
    * comme un fait vérifié.
    *
@@ -162,7 +162,7 @@ export class VisualProductExtractor {
       title: title.trim(),
       titleSource: title.trim() ? 'merchant' : 'none',
       // Faits lus seulement — plus de total recalculé ici, plus de « Vérifié par
-      // AYROVI » (rien n'avait été vérifié : une capture n'est pas le marchand).
+      // ZAYROVI » (rien n'avait été vérifié : une capture n'est pas le marchand).
       description: isCartScreenshot
         ? 'Total de la commande lu sur la capture du panier.'
         : (priceText
@@ -231,7 +231,7 @@ export class VisualProductExtractor {
   private extractCartGrandTotal(text: string, _store: StoreType): { price: number; currency: string } {
     /* Devise VIDE par défaut : « EUR » était un choix par défaut jamais prouvé
        par la capture. Un montant « 129,99 » sans symbole ni code était donc
-       converti au taux EUR et publié comme un prix AYROVI. Sans preuve de
+       converti au taux EUR et publié comme un prix ZAYROVI. Sans preuve de
        devise, le prix reste lu mais aucun devis n'est possible — et le moteur
        tarifaire, lui, répond `null` (jamais un taux inventé). */
     let currency = '';

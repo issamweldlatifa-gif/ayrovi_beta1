@@ -8,7 +8,7 @@ import {
   RGBLuminanceSource,
 } from '@zxing/library';
 
-export interface AyrovixScannedCode {
+export interface ZayrovixScannedCode {
   kind: 'url' | 'barcode' | 'text';
   value: string;
   format: string;
@@ -30,7 +30,7 @@ const FORMATS = [
   BarcodeFormat.CODABAR,
 ];
 
-function classify(raw: string, format: string): AyrovixScannedCode | null {
+function classify(raw: string, format: string): ZayrovixScannedCode | null {
   const value = raw.replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 500);
   if (!value) return null;
   const url = value.match(/https?:\/\/[^\s"'<>]+/i)?.[0]?.replace(/[).,;]+$/, '');
@@ -41,7 +41,7 @@ function classify(raw: string, format: string): AyrovixScannedCode | null {
 }
 
 /** Decode QR and common retail barcodes from an uploaded image in memory. */
-export async function scanCodeFromImage(image: Buffer): Promise<AyrovixScannedCode | null> {
+export async function scanCodeFromImage(image: Buffer): Promise<ZayrovixScannedCode | null> {
   if (!image.length) return null;
   try {
     const { data, info } = await sharp(image, { failOn: 'warning', sequentialRead: true, limitInputPixels: 40_000_000 })

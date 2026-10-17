@@ -7,13 +7,13 @@ async function run() {
   Object.assign(process.env, {
     NODE_ENV: 'test', DATABASE_PATH: ':memory:',
     CUSTOMER_AUTH_SECRET: 'purchase-flow-test-only-auth-secret-0123456789',
-    AYROVIX_QUOTE_SECRET: 'purchase-flow-test-only-quote-secret-0123456789',
+    ZAYROVIX_QUOTE_SECRET: 'purchase-flow-test-only-quote-secret-0123456789',
     ADMIN_EMAIL: 'purchase-test@example.test', ADMIN_PASSWORD: 'Purchase-test-only-123!',
     MAIL_PROVIDER: '', MAIL_API_KEY: '', MAIL_FROM: '',
     GOOGLE_CLIENT_ID: '', FACEBOOK_APP_ID: '', APPLE_CLIENT_ID: '',
     CUSTOMER_OTP_PROVIDER: 'console', ANTHROPIC_API_KEY: '', OPENAI_API_KEY: '',
     GROQ_API_KEY: '', GEMINI_API_KEY: '', GOOGLE_API_KEY: '',
-    SERPAPI_KEY: '', SCRAPERAPI_KEY: '', AYROVIX_AI_WEB_SEARCH: 'false',
+    SERPAPI_KEY: '', SCRAPERAPI_KEY: '', ZAYROVIX_AI_WEB_SEARCH: 'false',
   });
   const { app, db } = await import('../src/server');
   const server = app.listen(0, '127.0.0.1');
@@ -27,7 +27,7 @@ async function run() {
   try {
     for (const [test, fixture] of scripts) {
       const child = spawn(process.execPath, ['verify/sonim-actions-runner.mjs', test, fixture], {
-        env: { ...process.env, AYROVI_API_URL: api }, stdio: 'inherit',
+        env: { ...process.env, ZAYROVI_API_URL: api }, stdio: 'inherit',
       });
       const exitCode = await new Promise<number>((resolve, reject) => {
         child.once('error', reject);

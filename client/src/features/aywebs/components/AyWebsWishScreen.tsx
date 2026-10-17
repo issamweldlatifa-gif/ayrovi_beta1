@@ -7,7 +7,7 @@ import type { AyWebsFavoritesApi } from '../useAyWebsFavorites';
 /**
  * §2 + §6 (04/10/2026) — onglet « Favoris » INTERNE à AyWebs.
  *
- * Avant, cet onglet renvoyait vers l'espace compte AYROVI : la moitié de la
+ * Avant, cet onglet renvoyait vers l'espace compte ZAYROVI : la moitié de la
  * barre gardait l'utilisateur dans AyWebs, l'autre moitié l'en sortait. C'est
  * exactement la sensation de « sortir de l'interface » signalée.
  *
@@ -42,7 +42,7 @@ export const AyWebsWishScreen: React.FC<AyWebsWishScreenProps> = ({
       {favorites.authRequired && (
         <div className="ayw-pad">
           <p className="ayw-notice">
-            {tr('Sign in to see the favorites saved on your AYROVI account.', 'سجّل الدخول لعرض المفضلة المحفوظة في حساب AYROVI.')}
+            {tr('Sign in to see the favorites saved on your ZAYROVI account.', 'سجّل الدخول لعرض المفضلة المحفوظة في حساب ZAYROVI.')}
           </p>
           <button type="button" className="ayw-cta" onClick={onOpenAccount}>{tr('Sign in', 'تسجيل الدخول')}</button>
         </div>

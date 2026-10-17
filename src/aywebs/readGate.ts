@@ -2,7 +2,7 @@
  * AYWEBs — PORTE DE LECTURE MARCHANDE (« Phase 1 », 06/10/2026).
  *
  * ── LE RISQUE RÉEL ──────────────────────────────────────────────────────────
- * AYWEBs partage son processus avec le reste d'AYROVI (Express, admin, ERP,
+ * AYWEBs partage son processus avec le reste d'ZAYROVI (Express, admin, ERP,
  * paiements). Une lecture marchande, c'est un `fetch` de 700 Ko à 1,9 Mo suivi
  * d'une analyse DOM complète. Mesure du 06/10/2026 : ~21 s de CPU pour 20
  * lectures. Rien ne bornait le nombre de lectures simultanées : cent requêtes

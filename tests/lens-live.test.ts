@@ -12,7 +12,7 @@ const liveSource = readFileSync('client/src/ayrovix/components/LiveCamera.tsx', 
 const launcherSource = readFileSync('client/src/ayrovix/components/LensLauncher.tsx', 'utf8');
 const runtimeSource = readFileSync('client/src/ayrovix/services/liveVisionRuntime.ts', 'utf8');
 
-describe('AYROVIX LENS — LIVE multi-product vision (flag-gated, reuses existing engines)', () => {
+describe('ZAYROVIX LENS — LIVE multi-product vision (flag-gated, reuses existing engines)', () => {
   it('exposes the LIVE feature flag via commerce-config (env-driven)', async () => {
     const res = await request(app).get('/api/public/commerce-config');
     expect(res.status).toBe(200);

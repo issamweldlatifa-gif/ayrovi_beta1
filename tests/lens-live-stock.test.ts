@@ -31,15 +31,15 @@ import {
   resetProbeState,
 } from '../src/scraper/hostCircuit';
 import type { ParsedProductPage } from '../src/scraper/productPageParser';
-import type { AyrovixCandidate } from '../src/ayrovix/types';
+import type { ZayrovixCandidate } from '../src/ayrovix/types';
 
 const TITLE = 'Champion Sportswear Open Hem Pants';
 
-const candidate = (over: Partial<AyrovixCandidate> = {}): AyrovixCandidate => ({
+const candidate = (over: Partial<ZayrovixCandidate> = {}): ZayrovixCandidate => ({
   id: 'c', kind: 'external', title: TITLE, brand: null, model: null,
   colors: [], sizes: [], source: 'Sports Direct', sourceUrl: 'https://shop.tn/pants',
   image: '', price: 35.95, currency: 'EUR', priceTnd: null, match: 90, ...over,
-} as AyrovixCandidate);
+} as ZayrovixCandidate);
 
 const page = (over: Partial<ParsedProductPage> = {}): ParsedProductPage => ({
   title: TITLE, price: 35.95, currency: 'EUR', images: [], externalId: 'X1',
@@ -54,21 +54,21 @@ const sizeDetail = (size: string, available = true) => ({
 let dir = '';
 beforeEach(() => {
   dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lens-live-stock-'));
-  process.env.AYROVI_LENS_LIVE_CACHE_DIR = dir;
+  process.env.ZAYROVI_LENS_LIVE_CACHE_DIR = dir;
   // Les contrats de variantes vivent sur disque : sans ce bac à sable, un
   // contrat écrit par un test précédent ferait « passer » le gardien d'un autre.
-  process.env.AYROVI_VARIANT_CACHE_DIR = path.join(dir, 'contracts');
-  delete process.env.AYROVI_LENS_LIVE_STOCK;
-  delete process.env.AYROVI_LENS_LIVE_BUDGET;
-  delete process.env.AYROVI_LENS_LIVE_DEADLINE_MS;
-  delete process.env.AYROVI_LENS_LIVE_TTL_MS;
-  delete process.env.AYROVI_LENS_LIVE_CONCURRENCY;
+  process.env.ZAYROVI_VARIANT_CACHE_DIR = path.join(dir, 'contracts');
+  delete process.env.ZAYROVI_LENS_LIVE_STOCK;
+  delete process.env.ZAYROVI_LENS_LIVE_BUDGET;
+  delete process.env.ZAYROVI_LENS_LIVE_DEADLINE_MS;
+  delete process.env.ZAYROVI_LENS_LIVE_TTL_MS;
+  delete process.env.ZAYROVI_LENS_LIVE_CONCURRENCY;
 });
 afterEach(() => { fs.rmSync(dir, { recursive: true, force: true }); vi.restoreAllMocks(); resetProbeState(); });
 
 describe('stock vivant — la dépense est bornée', () => {
   it('ne visite que les premières fiches, pas toute la grille', async () => {
-    process.env.AYROVI_LENS_LIVE_BUDGET = '2';
+    process.env.ZAYROVI_LENS_LIVE_BUDGET = '2';
     const fetcher = vi.fn<LiveStockFetcher>(async () => page({ availability: 'in_stock' }));
     const list = Array.from({ length: 8 }, (_, index) => candidate({ id: `c${index}` }));
     const { candidates: out, report } = await enrichCandidatesLiveStock(list, { fetcher });
@@ -98,7 +98,7 @@ describe('stock vivant — la dépense est bornée', () => {
   });
 
   it('se coupe entièrement sans redéploiement', async () => {
-    process.env.AYROVI_LENS_LIVE_STOCK = 'false';
+    process.env.ZAYROVI_LENS_LIVE_STOCK = 'false';
     const fetcher = vi.fn<LiveStockFetcher>();
     const { candidates: out } = await enrichCandidatesLiveStock([candidate({})], { fetcher });
     expect(fetcher).not.toHaveBeenCalled();
@@ -194,7 +194,7 @@ describe('stock vivant — ce que la page dit est posé tel quel', () => {
 
 describe('stock vivant — jamais bloquant', () => {
   it('rend ce qui est prêt à l’échéance, sans attendre le site lent', async () => {
-    process.env.AYROVI_LENS_LIVE_DEADLINE_MS = '60';
+    process.env.ZAYROVI_LENS_LIVE_DEADLINE_MS = '60';
     const slow = vi.fn<LiveStockFetcher>(async () => {
       await new Promise((resolve) => setTimeout(resolve, 5_000));
       return page({ availability: 'in_stock' });
@@ -417,7 +417,7 @@ describe('vérité marchande — le prix de la page remplace l’extrait SerpApi
     expect(entryFromPage(page({ price: 50, originalPrice: 69.9 }), 1).originalPrice).toBe(69.9);
   });
 
-  it('ne touche jamais au prix du catalogue AYROVI', () => {
+  it('ne touche jamais au prix du catalogue ZAYROVI', () => {
     const own = candidate({ kind: 'catalog', price: 80, currency: 'TND' });
     applyLiveStock(own, entryFromPage(page({ price: 20, currency: 'EUR' }), 1), reprice);
     expect(own.price).toBe(80);
@@ -436,7 +436,7 @@ describe('vérité marchande — le prix de la page remplace l’extrait SerpApi
     expect(results[0]).toMatchObject({ price: 228.95, currency: 'EUR', originalPrice: 309.95, priceTnd: 915.8, originalPriceTnd: 1239.8 });
   });
 
-  it('la route passe le calculateur AYROVI au lecteur de pages (grille ET relecture)', () => {
+  it('la route passe le calculateur ZAYROVI au lecteur de pages (grille ET relecture)', () => {
     expect(route.split('reprice: (price, currency) =>').length - 1).toBe(2);
     expect(route).toContain('estimateWithDb(db, price, currency)');
   });
@@ -457,7 +457,7 @@ describe('vérité marchande — le prix de la page remplace l’extrait SerpApi
  */
 describe('achetabilité — seules les fiches prouvées atteignent le client', () => {
   const reprice = (price: number, currency: string) => ({ priceTnd: price * 4, promo: null });
-  const proven = (over: Partial<AyrovixCandidate> = {}, pageOver: Partial<ParsedProductPage> = {}) => {
+  const proven = (over: Partial<ZayrovixCandidate> = {}, pageOver: Partial<ParsedProductPage> = {}) => {
     const item = candidate({ image: 'https://img/1.jpg', ...over });
     applyLiveStock(item, entryFromPage(page({
       availability: 'in_stock',
@@ -508,7 +508,7 @@ describe('achetabilité — seules les fiches prouvées atteignent le client', (
     expect(purchaseBlocker(proven({ image: '' }, { images: [] }))).toBe('sans_image');
   });
 
-  it('le catalogue AYROVI passe tel quel : il porte sa propre preuve de stock', () => {
+  it('le catalogue ZAYROVI passe tel quel : il porte sa propre preuve de stock', () => {
     expect(purchaseBlocker(candidate({ kind: 'catalog' }))).toBeNull();
   });
 
@@ -526,8 +526,8 @@ describe('achetabilité — seules les fiches prouvées atteignent le client', (
     expect(purchaseBlocker(proven({}, { variants: { sizes: [], colors: [], details: [] } }))).toBeNull();
   });
 
-  it('AYROVI_LENS_REQUIRE_PROOF=true réactive le filtre strict', () => {
-    process.env.AYROVI_LENS_REQUIRE_PROOF = 'true';
+  it('ZAYROVI_LENS_REQUIRE_PROOF=true réactive le filtre strict', () => {
+    process.env.ZAYROVI_LENS_REQUIRE_PROOF = 'true';
     try {
       const { candidates: kept, report } = filterPurchasable([
         proven({ id: 'ok' }),
@@ -536,14 +536,14 @@ describe('achetabilité — seules les fiches prouvées atteignent le client', (
       ]);
       expect(kept.map((item) => item.id)).toEqual(['ok']);
       expect(report).toEqual({ kept: 1, excluded: 2, reasons: { page_non_lue: 1, rupture: 1 } });
-    } finally { delete process.env.AYROVI_LENS_REQUIRE_PROOF; }
+    } finally { delete process.env.ZAYROVI_LENS_REQUIRE_PROOF; }
   });
 
   it('se relâche sans redéploiement', () => {
-    process.env.AYROVI_LENS_REQUIRE_PROOF = 'false';
+    process.env.ZAYROVI_LENS_REQUIRE_PROOF = 'false';
     try {
       expect(filterPurchasable([candidate()]).candidates).toHaveLength(1);
-    } finally { delete process.env.AYROVI_LENS_REQUIRE_PROOF; }
+    } finally { delete process.env.ZAYROVI_LENS_REQUIRE_PROOF; }
   });
 
   it('la route filtre APRÈS la lecture des pages et AVANT la réponse, et dit combien', () => {

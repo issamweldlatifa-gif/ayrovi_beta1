@@ -8,55 +8,55 @@ import { DEEP_LINK_HOSTS, resolveDeepLink } from '../src/features/links/resolve'
 
 describe('traduction des URL du site', () => {
   it('ouvre un produit, une commande, un article', () => {
-    expect(resolveDeepLink('https://ayrovi.tn/product/42')).toBe('/product/42');
-    expect(resolveDeepLink('https://ayrovi.tn/orders/ab-12')).toBe('/orders/ab-12');
-    expect(resolveDeepLink('https://ayrovi.tn/news/7')).toBe('/news/7');
+    expect(resolveDeepLink('https://zayrovi.tn/product/42')).toBe('/product/42');
+    expect(resolveDeepLink('https://zayrovi.tn/orders/ab-12')).toBe('/orders/ab-12');
+    expect(resolveDeepLink('https://zayrovi.tn/news/7')).toBe('/news/7');
   });
 
   it('la racine ouvre l’accueil', () => {
-    expect(resolveDeepLink('https://ayrovi.tn/')).toBe('/(tabs)');
-    expect(resolveDeepLink('https://www.ayrovi.tn')).toBe('/(tabs)');
+    expect(resolveDeepLink('https://zayrovi.tn/')).toBe('/(tabs)');
+    expect(resolveDeepLink('https://www.zayrovi.tn')).toBe('/(tabs)');
   });
 
   it('les listes et les onglets', () => {
-    expect(resolveDeepLink('https://ayrovi.tn/catalog')).toBe('/catalog');
-    expect(resolveDeepLink('https://ayrovi.tn/orders')).toBe('/orders');
-    expect(resolveDeepLink('https://ayrovi.tn/panier')).toBe('/(tabs)/cart');
+    expect(resolveDeepLink('https://zayrovi.tn/catalog')).toBe('/catalog');
+    expect(resolveDeepLink('https://zayrovi.tn/orders')).toBe('/orders');
+    expect(resolveDeepLink('https://zayrovi.tn/panier')).toBe('/(tabs)/cart');
   });
 
   it('barre oblique finale : même écran, pas deux routes', () => {
-    expect(resolveDeepLink('https://ayrovi.tn/orders/')).toBe('/orders');
-    expect(resolveDeepLink('https://ayrovi.tn/catalog/')).toBe('/catalog');
+    expect(resolveDeepLink('https://zayrovi.tn/orders/')).toBe('/orders');
+    expect(resolveDeepLink('https://zayrovi.tn/catalog/')).toBe('/catalog');
   });
 
   it('tous les anciens liens Lens reviennent au parcours caméra canonique', () => {
-    expect(resolveDeepLink('https://ayrovi.tn/lens')).toBe('/lens');
-    expect(resolveDeepLink('https://ayrovi.tn/lens/help')).toBe('/lens');
-    expect(resolveDeepLink('https://ayrovi.tn/lens/history')).toBe('/lens');
-    expect(resolveDeepLink('ayrovi:///lens/code')).toBe('/lens');
+    expect(resolveDeepLink('https://zayrovi.tn/lens')).toBe('/lens');
+    expect(resolveDeepLink('https://zayrovi.tn/lens/help')).toBe('/lens');
+    expect(resolveDeepLink('https://zayrovi.tn/lens/history')).toBe('/lens');
+    expect(resolveDeepLink('zayrovi:///lens/code')).toBe('/lens');
   });
 
   it('le plus long préfixe gagne — /orders/42 ne tombe pas sur /orders', () => {
-    expect(resolveDeepLink('https://ayrovi.tn/orders/42')).toBe('/orders/42');
-    expect(resolveDeepLink('https://ayrovi.tn/account/notifications')).toBe('/account/notifications');
+    expect(resolveDeepLink('https://zayrovi.tn/orders/42')).toBe('/orders/42');
+    expect(resolveDeepLink('https://zayrovi.tn/account/notifications')).toBe('/account/notifications');
   });
 });
 
 describe('refus — un lien inconnu ne navigue pas', () => {
   it('hôte étranger : ignoré, même avec un chemin connu', () => {
     expect(resolveDeepLink('https://site-malin.tn/orders/42')).toBeNull();
-    expect(resolveDeepLink('https://ayrovi.tn.evil.com/orders')).toBeNull();
+    expect(resolveDeepLink('https://zayrovi.tn.evil.com/orders')).toBeNull();
   });
 
   it('un préfixe ne colle pas au milieu d’un segment', () => {
-    expect(resolveDeepLink('https://ayrovi.tn/ordersomething')).toBeNull();
-    expect(resolveDeepLink('https://ayrovi.tn/catalogue')).toBeNull();
-    expect(resolveDeepLink('https://ayrovi.tn/lens')).toBe('/lens');
-    expect(resolveDeepLink('https://ayrovi.tn/lenses')).toBeNull();
+    expect(resolveDeepLink('https://zayrovi.tn/ordersomething')).toBeNull();
+    expect(resolveDeepLink('https://zayrovi.tn/catalogue')).toBeNull();
+    expect(resolveDeepLink('https://zayrovi.tn/lens')).toBe('/lens');
+    expect(resolveDeepLink('https://zayrovi.tn/lenses')).toBeNull();
   });
 
   it('schémas qui ne sont pas les nôtres', () => {
-    expect(resolveDeepLink('ftp://ayrovi.tn/orders')).toBeNull();
+    expect(resolveDeepLink('ftp://zayrovi.tn/orders')).toBeNull();
     expect(resolveDeepLink('javascript:alert(1)')).toBeNull();
     expect(resolveDeepLink('file:///etc/passwd')).toBeNull();
   });
@@ -69,32 +69,32 @@ describe('refus — un lien inconnu ne navigue pas', () => {
   });
 
   it('chemin inconnu sur un hôte autorisé : rien, plutôt qu’un écran 404', () => {
-    expect(resolveDeepLink('https://ayrovi.tn/route-inexistante')).toBeNull();
+    expect(resolveDeepLink('https://zayrovi.tn/route-inexistante')).toBeNull();
   });
 });
 
 describe('schéma propre à l’application', () => {
-  it('ayrovi://orders/42', () => {
-    expect(resolveDeepLink('ayrovi://orders/42')).toBe('/orders/42');
+  it('zayrovi://orders/42', () => {
+    expect(resolveDeepLink('zayrovi://orders/42')).toBe('/orders/42');
   });
 
   it('la forme à trois barres est équivalente', () => {
-    expect(resolveDeepLink('ayrovi:///orders/42')).toBe('/orders/42');
+    expect(resolveDeepLink('zayrovi:///orders/42')).toBe('/orders/42');
   });
 
-  it('ayrovi:// seul ouvre l’accueil', () => {
-    expect(resolveDeepLink('ayrovi://')).toBe('/(tabs)');
+  it('zayrovi:// seul ouvre l’accueil', () => {
+    expect(resolveDeepLink('zayrovi://')).toBe('/(tabs)');
   });
 
   it('les variantes Expo (développement) restent comprises', () => {
-    expect(resolveDeepLink('exp+ayrovi://orders/42')).toBe('/orders/42');
+    expect(resolveDeepLink('exp+zayrovi://orders/42')).toBe('/orders/42');
   });
 });
 
 describe('hôtes déclarés', () => {
   it('contient la liste qu’on publie réellement', () => {
-    expect(DEEP_LINK_HOSTS).toContain('ayrovi.tn');
-    expect(DEEP_LINK_HOSTS).toContain('www.ayrovi.tn');
+    expect(DEEP_LINK_HOSTS).toContain('zayrovi.tn');
+    expect(DEEP_LINK_HOSTS).toContain('www.zayrovi.tn');
   });
 
   it('les hôtes de préproduction sont acceptés (le paquet bêta les déclare)', () => {

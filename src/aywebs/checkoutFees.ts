@@ -20,7 +20,7 @@ import { AyWebsDomainError } from './errors';
  *     la livraison locale. Aucun double comptage, aucun montant caché.
  *
  * La source de vérité tarifaire reste `services/pricing.ts` (moteur central
- * AYROVI) : AYWEBs ne réinvente ni taux de change, ni douane, ni commission.
+ * ZAYROVI) : AYWEBs ne réinvente ni taux de change, ni douane, ni commission.
  */
 
 export interface AyWebsFeeLine {
@@ -46,7 +46,7 @@ export interface AyWebsCheckoutLine {
   quantity: number;
   sourceUnitPrice: number;
   sourceCurrency: string;
-  /** Montant produit AYROVI de la ligne (hors livraison locale). */
+  /** Montant produit ZAYROVI de la ligne (hors livraison locale). */
   productAmountTnd: number;
   serviceFeeTnd: number;
   importFeeTnd: number;
@@ -201,8 +201,8 @@ export function computeAyWebsCheckoutPreview(
       detail: { lines: lines.length, units: lines.reduce((sum, line) => sum + line.quantity, 0) },
     },
     {
-      kind: 'AYROVI_SERVICE', code: 'AYROVI_SERVICE_FEE',
-      labelFr: 'Service AYROVI', labelAr: 'خدمة AYROVI',
+      kind: 'ZAYROVI_SERVICE', code: 'ZAYROVI_SERVICE_FEE',
+      labelFr: 'Service ZAYROVI', labelAr: 'خدمة ZAYROVI',
       amountTnd: serviceFeeTnd, currency: 'TND', uncertain: false,
       detail: { commissionPercent: rules.commissionPercent, minimumCommissionTnd: rules.minimumCommissionTND },
     },
@@ -220,7 +220,7 @@ export function computeAyWebsCheckoutPreview(
       detail: {
         freightPerKgTnd: rules.freightPerKgTND,
         weightKg: round2(lines.reduce((sum, line) => sum + line.weightKg, 0)),
-        note: 'Le fret définitif est confirmé après pesée en entrepôt AYROVI.',
+        note: 'Le fret définitif est confirmé après pesée en entrepôt ZAYROVI.',
       },
     },
   ];

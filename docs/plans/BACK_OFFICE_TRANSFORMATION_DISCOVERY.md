@@ -1,4 +1,4 @@
-# AYROVI — BACK OFFICE TRANSFORMATION · DISCOVERY
+# ZAYROVI — BACK OFFICE TRANSFORMATION · DISCOVERY
 
 **Phase : DISCOVERY UNIQUEMENT. Aucune ligne de production n'a été modifiée par ce travail.**
 Date : 2026-09-05 · Branche `main` · `HEAD` observé : `aed5c48` · Version applicative `3.10.4`
@@ -55,7 +55,7 @@ graph TD
   subgraph Browser["Un seul build Vite → public/, servis par express.static"]
     PUB["PublicApp · /<br/>App.tsx 645 l., 13 sections"]
     ADM["AdminApp · /admin<br/>753 l. · 37 entrées de nav · 6 groupes"]
-    CUS["Customer account · Assistant · Ayrovix Lens · Social"]
+    CUS["Customer account · Assistant · Zayrovix Lens · Social"]
   end
   subgraph Server["src/server.ts (374 l.) — un processus, une instance db"]
     R1["/api/admin · 94 routes<br/>src/admin/routes.ts 1 987 l."]
@@ -99,7 +99,7 @@ forme n'a pas changé.
 **Le graphe de dépendances est une étoile, pas un domaine** : chaque module reçoit `db` nu
 (`server.ts:199-205`) et écrit son SQL soit dans le handler (`src/admin/routes.ts` recompté ce jour : **60** appels `db.get/all/prepare/run`,
 16 `INSERT`, 29 `UPDATE`, 10 `DELETE`), soit dans ses services (`arrival-ingestion`, `catalogue`).
-Les 4 tables `ayrovix_*` sont créées **hors** de `database.ts` (`ensureAyrovixReviewRequestsTable()` +
+Les 4 tables `ayrovix_*` sont créées **hors** de `database.ts` (`ensureZayrovixReviewRequestsTable()` +
 `WeakSet`) — 92 `CREATE TABLE` dans le code, **88** tables réellement présentes après boot : l'écart est
 entièrement dû à ce schéma paresseux (§30, finding `DUP-07`, et anomalie D12 de l'audit, **toujours vraie**).
 
@@ -153,8 +153,8 @@ Backend: `createOrderFromCart` (`database.ts:2460-2570`) · Database: **une tran
 **CAP-13 · Social / récits**
 `publications`, `reels`, `story_publishers`, `story_interactions` + `stories`/`news_items` (CMS) + `magazine_drafts` (IA) qui **écrit dans** `news_items` · 2 routes publiques volontairement `410 Gone` · Action: **RESTRUCTURE** (frontière de propriété éditoriale, un seul chemin de publication, relecture humaine **forcée** — aujourd'hui seulement commentée).
 
-**CAP-14 · Lens / Ayrovix (IA grand public)**
-`src/ayrovix/` 2 794 l./17 fichiers · 9 endpoints **sans authentification** (ratelimit par IP + exemption `GET /history`) · quota payant, `AYROVIX_QUOTE_SECRET` statique · tables `ayrovix_*` créées hors `database.ts` · Action: **IMPROVE** (ajouter l'identité + journalisation des lectures payantes — point A6/S7 de l'audit, non traité car hors P0/P1) · Future Domain: MANAGEMENT/Integrations.
+**CAP-14 · Lens / Zayrovix (IA grand public)**
+`src/ayrovix/` 2 794 l./17 fichiers · 9 endpoints **sans authentification** (ratelimit par IP + exemption `GET /history`) · quota payant, `ZAYROVIX_QUOTE_SECRET` statique · tables `ayrovix_*` créées hors `database.ts` · Action: **IMPROVE** (ajouter l'identité + journalisation des lectures payantes — point A6/S7 de l'audit, non traité car hors P0/P1) · Future Domain: MANAGEMENT/Integrations.
 
 **CAP-15 · Assistant & voix**
 `src/assistant/` 2 646 l. · router monté sur **deux chemins** (`/api/assistant`, `/api/voice`) · Gemini Live, TTS/STT (OpenAI/Groq), escalade humaine · `assistant_tool_audit` + `assistant_tool_idempotency` (patron d'idempotence réutilisable pour les actions ERP) · Action: **KEEP** · Future Domain: MANAGEMENT/AI.
@@ -205,7 +205,7 @@ Une classe **par capacité** (§6), déduite du §3. Répartition mesurée sur l
 | CAP-10 Prix | **RESTRUCTURE** | prix dans 3 représentations sans contrainte | un service, un chemin d'écriture |
 | CAP-13 Social/magazine | **RESTRUCTURE** | 3 couches éditoriales, `magazine_drafts → news_items` | une frontière de publication + relecture forcée |
 | CAP-21 Racines de fichiers | **IMPROVE** | 3 calculs de chemin (D11) | une fonction unique + test |
-| CAP-14 Ayrovix public | **IMPROVE** | 9 endpoints non authentifiés, quota payant | identité + audit de lecture |
+| CAP-14 Zayrovix public | **IMPROVE** | 9 endpoints non authentifiés, quota payant | identité + audit de lecture |
 | CAP-03 Support | **IMPROVE** | CHECK figés, pas de SLA/canal/messages | ticket générique, l'actuel = source |
 | CAP-06 Paiements | **IMPROVE** | `order_id UNIQUE` = 1 paiement/commande | table d'allocations additive |
 | CAP-07 Factures | **IMPROVE** | numéro par `COUNT+1`, statut binaire | séquence + cycle ; legacy en lecture seule |
@@ -406,7 +406,7 @@ ne peut pas avoir de droits nommés : **c'est le contrat que P2.0 doit faire res
    `ai-knowledge` en `settings:write` y compris en lecture (le CONTENT_MANAGER ne peut ni lire ni écrire la
    base de connaissances qu'il alimente) — **une ligne chacun, mais changement de comportement visible** →
    `UNKNOWN-002`, décision à prendre en P2.0 ;
-3. `ADMIN` ne peut pas lister les comptes : figé par `tests/ayrovi.test.ts:1232` ; le rendre possible est
+3. `ADMIN` ne peut pas lister les comptes : figé par `tests/zayrovi.test.ts:1232` ; le rendre possible est
    désormais **une donnée** (grant `users:read`), pas du code ;
 4. aucune permission de **champ** : indispensable avant Finance/Paie (coût d'achat masqué, etc.).
 
@@ -582,7 +582,7 @@ Dix duplications réelles, mesurées. Pour chacune : verdict, **sans suppression
 
 | Composant | Statut | Action future | Preuve de compatibilité |
 |---|---|---|---|
-| `src/admin/routes.ts` (1 987 l., 94 routes) | **ADAPTER** | extraire progressivement par module ; **les chemins actuels ne bougent pas** (les 41 cas de `tests/ayrovi.test.ts` les figent) | tests de non-régression P1+P2.1 |
+| `src/admin/routes.ts` (1 987 l., 94 routes) | **ADAPTER** | extraire progressivement par module ; **les chemins actuels ne bougent pas** (les 41 cas de `tests/zayrovi.test.ts` les figent) | tests de non-régression P1+P2.1 |
 | `src/db/database.ts` (2 946 l.) | **ADAPTER** | sortir le métier (checkout, facture, revue) vers des services ; garder DDL/helpers | les 421 tests passent par cette classe |
 | `permissions.ts` legacy (Set, 12 perms) | **KEEP (plancher)** | ne jamais retirer une permission ; reste la règle de compat dans `can()` | test P1 « élargir seulement » |
 | `audit_logs` legacy + écrans | **KEEP + ADAPTER** | colonnes additives déjà faites ; écran à merger | audit coverage endpoint |
@@ -594,7 +594,7 @@ Dix duplications réelles, mesurées. Pour chacune : verdict, **sans suppression
 | `/api/ayrovix` public sans auth | **UNKNOWN/IMPROVE** | protéger, sans casser le scan Lens client | audit A6 |
 
 **Morpholine interdite, confirmée par les nombres** : supprimer ou renommer en masse casserait au minimum les
-41 cas de `tests/ayrovi.test.ts`, les 14 d'`admin-read-gates.test.ts`, les 9 de `public-upload-policy.test.ts`,
+41 cas de `tests/zayrovi.test.ts`, les 14 d'`admin-read-gates.test.ts`, les 9 de `public-upload-policy.test.ts`,
 les 25 d'`ayrovix.test.ts`, les 31 d'`erp-core-foundation.test.ts` et les 48 de
 `catalogue-foundation.test.ts` — soit **168 cas sur 421 (40 %)** dont le rôle explicite est de **geler
 l'existant**. C'est un filet, pas
@@ -793,7 +793,7 @@ et s'il doit devenir durable, la table cible est `erp_events` (déjà存在) + u
 
 ```text
 ┌───────────────────────────────────────────────────────────────────────────────────┐
-│ AYROVI ▸ [MANAGEMENT | CONTENT | CRM]   ⌕ recherche globale   ⌘ commandes   🔔 3   👤 EMP-000042 · Tunis-Centre ▾ │
+│ ZAYROVI ▸ [MANAGEMENT | CONTENT | CRM]   ⌕ recherche globale   ⌘ commandes   🔔 3   👤 EMP-000042 · Tunis-Centre ▾ │
 ├───────────────────┬───────────────────────────────────────────────────────────────┤
 │ MANAGEMENT ▾      │  Ventes / Commandes            [vue: En attente d'acompte ▾]  │
 │  Catalogue  ▸     │  ───────────────────────────────────────────────────────────── │
@@ -1061,7 +1061,7 @@ contrôle ; (c) ignorer — inacceptable. Risque : R-03/R-08. Décideur : Ops + 
 `users:write`, et `ai-knowledge` passer en `content:read/write` ? Enjeu : un CONTENT_MANAGER ne peut
 ni lire ni écrire la base de connaissances qu'il alimente (bug fonctionnel confirmé). Preuve manquante :
 aucune — le correctif est une ligne chacun, mais c'est **un changement de comportement visible** ; de plus
-`tests/ayrovi.test.ts:1232` fige « ADMIN ne voit pas les comptes ». Options : (a) corriger `ai-knowledge`
+`tests/zayrovi.test.ts:1232` fige « ADMIN ne voit pas les comptes ». Options : (a) corriger `ai-knowledge`
 seul ; (b) les deux ; (c) accorder via grant ERP (données, pas de code). Risque : élargir un droit.
 Décideur : Product + Sécurité.
 
@@ -1076,7 +1076,7 @@ et documents sont-ils lisibles par un voisin sur le même hôte ? Options : (a) 
 (b) vérifier l'environnement Render et assumer. Décideur : Ops. **Priorité haute.**
 
 **UNKNOWN-005 — `/api/ayrovix` sans authentification** : le quota payant doit-il être adossé à la session
-cliente (le code a `AYROVIX_QUOTE_SECRET` + ratelimit par IP/session) ? Enjeu : coût + abus. Options : (a)
+cliente (le code a `ZAYROVIX_QUOTE_SECRET` + ratelimit par IP/session) ? Enjeu : coût + abus. Options : (a)
 session obligatoire sur les mutations ; (b) token de scan public signé et limité. Décideur : Product + Sec.
 
 **UNKNOWN-006 — `crm_stores` = marketplace source ou fournisseur ?** (le code dit « store/supplier » dans

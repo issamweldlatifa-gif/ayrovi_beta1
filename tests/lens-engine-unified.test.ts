@@ -67,8 +67,8 @@ describe('moteur — comportement réel', () => {
   let dir = '';
   beforeEach(() => {
     dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lens-engine-'));
-    process.env.AYROVI_LENS_CACHE_DIR = dir;
-    delete process.env.AYROVI_LENS_CACHE;
+    process.env.ZAYROVI_LENS_CACHE_DIR = dir;
+    delete process.env.ZAYROVI_LENS_CACHE;
     vi.resetModules();
   });
   afterEach(() => { fs.rmSync(dir, { recursive: true, force: true }); vi.restoreAllMocks(); vi.resetModules(); });
@@ -158,13 +158,13 @@ describe('échéance de reconnaissance', () => {
   let dir = '';
   beforeEach(() => {
     dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lens-deadline-'));
-    process.env.AYROVI_LENS_CACHE_DIR = dir;
+    process.env.ZAYROVI_LENS_CACHE_DIR = dir;
     vi.resetModules();
   });
   afterEach(() => {
     fs.rmSync(dir, { recursive: true, force: true });
-    delete process.env.AYROVI_LENS_VISION_DEADLINE_MS;
-    delete process.env.AYROVI_LENS_MATCHES_DEADLINE_MS;
+    delete process.env.ZAYROVI_LENS_VISION_DEADLINE_MS;
+    delete process.env.ZAYROVI_LENS_MATCHES_DEADLINE_MS;
     vi.restoreAllMocks();
     vi.resetModules();
   });
@@ -180,7 +180,7 @@ describe('échéance de reconnaissance', () => {
   }
 
   it('un moteur qui ne répond jamais n’immobilise plus la requête', async () => {
-    process.env.AYROVI_LENS_VISION_DEADLINE_MS = '2000';
+    process.env.ZAYROVI_LENS_VISION_DEADLINE_MS = '2000';
     const { recognizeImage } = await loadEngine(
       vi.fn(() => new Promise(() => {})),            // ne se résout jamais
       vi.fn().mockResolvedValue([{ id: 'offre' }]),
@@ -194,7 +194,7 @@ describe('échéance de reconnaissance', () => {
   });
 
   it('un résultat arrivé trop tard n’est ni rendu ni mémorisé', async () => {
-    process.env.AYROVI_LENS_VISION_DEADLINE_MS = '2000';
+    process.env.ZAYROVI_LENS_VISION_DEADLINE_MS = '2000';
     const late = vi.fn(() => new Promise((resolve) => setTimeout(() => resolve({ brand: 'Tardif' }), 4000)));
     const { recognizeImage } = await loadEngine(late, vi.fn().mockResolvedValue([{ id: 'offre' }]));
     const image = Buffer.from('tardif');

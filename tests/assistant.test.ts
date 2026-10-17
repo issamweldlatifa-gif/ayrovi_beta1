@@ -87,7 +87,7 @@ async function qrPng(value: string): Promise<Buffer> {
   return sharp(pixels, { raw: { width: matrix.getWidth(), height: matrix.getHeight(), channels: 4 } }).png().toBuffer();
 }
 
-describe('AYROVI Claude assistant', () => {
+describe('ZAYROVI Claude assistant', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
@@ -103,11 +103,11 @@ describe('AYROVI Claude assistant', () => {
     process.env.ANTHROPIC_API_KEY = 'assistant-help-test-key';
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
-    expect(isAssistantHelpQuestion('Comment utiliser l’assistant AYROVI et Lens ?')).toBe(true);
+    expect(isAssistantHelpQuestion('Comment utiliser l’assistant ZAYROVI et Lens ?')).toBe(true);
     const response = await request(app)
       .post('/api/assistant/chat')
       .set('x-session-id', unique('assistant-session'))
-      .send({ conversationId: unique('conversation'), messages: [{ role: 'user', text: 'Comment utiliser l’assistant AYROVI et Lens ?' }] });
+      .send({ conversationId: unique('conversation'), messages: [{ role: 'user', text: 'Comment utiliser l’assistant ZAYROVI et Lens ?' }] });
     expect(response.status).toBe(200);
     expect(response.text).toContain('Envoie une photo du produit');
     expect(response.text).toContain('\"type\":\"done\"');
@@ -236,9 +236,9 @@ describe('AYROVI Claude assistant', () => {
     expect(requestBody.system).not.toContain('must-also-stay-server-side');
     expect(requestBody.system).not.toContain('secret-preview');
     expect(requestBody.messages[0].content).toEqual(expect.arrayContaining([
-      expect.objectContaining({ type: 'text', text: 'AYROVI attachment id: image_test_1' }),
+      expect.objectContaining({ type: 'text', text: 'ZAYROVI attachment id: image_test_1' }),
       expect.objectContaining({ type: 'image', source: expect.objectContaining({ type: 'base64', media_type: 'image/png', data: imageData }) }),
-      expect.objectContaining({ type: 'text', text: 'AYROVI attachment id: image_url_1' }),
+      expect.objectContaining({ type: 'text', text: 'ZAYROVI attachment id: image_url_1' }),
       expect.objectContaining({ type: 'image', source: { type: 'url', url: 'https://cdn.example.org/products/shoe.webp' } }),
     ]));
     expect(requestBody.tools.some((tool: any) => tool.name === 'lens_search')).toBe(true);
@@ -284,7 +284,7 @@ describe('AYROVI Claude assistant', () => {
     expect(requestBody.tool_choice).toEqual({ type: 'tool', name: 'search_products' });
   });
 
-  test('lens_search sends a pasted product URL through the real AYROVIX extractor and opens the in-chat order product', async () => {
+  test('lens_search sends a pasted product URL through the real ZAYROVIX extractor and opens the in-chat order product', async () => {
     vi.spyOn(testScraper, 'scrapeProduct').mockResolvedValue({
       id: 'scraped_test', store: 'generic', storeName: 'Merchant Test',
       url: 'https://shop.example.org/products/air-max-95', externalId: 'sku-95',
@@ -321,7 +321,7 @@ describe('AYROVI Claude assistant', () => {
     expect(qrResult.presentation?.product.priceToken).toBeTruthy();
   });
 
-  test('server-side AYROVIX scanner reads QR links from assistant image attachments', async () => {
+  test('server-side ZAYROVIX scanner reads QR links from assistant image attachments', async () => {
     const code = await scanCodeFromImage(await qrPng('https://shop.example.org/products/qr-product'));
     expect(code).toMatchObject({ kind: 'url', value: 'https://shop.example.org/products/qr-product' });
   });
@@ -410,7 +410,7 @@ describe('AYROVI Claude assistant', () => {
     expect(second.presentation?.ticket.duplicate).toBe(true);
 
     const reviewer = request.agent(app);
-    const login = await reviewer.post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
+    const login = await reviewer.post('/api/admin/auth/login').send({ email: 'admin@zayrovi.tn', password: 'ZayroviBeta2026!' });
     expect(login.status).toBe(200);
     const listed = await reviewer.get('/api/admin/assistant-support').query({ search: first.presentation?.ticket.id });
     expect(listed.status).toBe(200);

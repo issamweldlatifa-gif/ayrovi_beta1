@@ -71,7 +71,7 @@ export async function initiateKonnectCardPayment(input: CardPaymentIdentity): Pr
       token: 'TND',
       amount,
       type: 'immediate',
-      description: `Acompte AYROVI ${input.orderNumber}`,
+      description: `Acompte ZAYROVI ${input.orderNumber}`,
       acceptedPaymentMethods: ['bank_card'],
       lifespan: 20,
       checkoutForm: false,

@@ -10,7 +10,7 @@ import {
   OpenAIResponsesAdapter,
   toOpenAiResponsesInput,
 } from '../src/ai-core/adapters/openai/OpenAIResponsesAdapter';
-import { AyroviAiCore, resetAyroviAiCoreForTests } from '../src/ai-core/core';
+import { ZayroviAiCore, resetZayroviAiCoreForTests } from '../src/ai-core/core';
 import { AiProviderError, providerErrorFromHttp, publicAiError } from '../src/ai-core/errors';
 import { AiProviderCircuitBreaker, PolicyResponsesAdapter } from '../src/ai-core/policy';
 import { getAssistantToolGateway } from '../src/assistant/toolGateway';
@@ -28,14 +28,14 @@ afterEach(() => {
     if (value === undefined) delete process.env[key];
     else process.env[key] = value;
   }
-  resetAyroviAiCoreForTests();
+  resetZayroviAiCoreForTests();
 });
 
 function request(overrides: Partial<AiCompletionRequest> = {}): AiCompletionRequest {
   return {
     workload: 'assistant',
     modelClass: 'fast',
-    instructions: 'AYROVI system policy',
+    instructions: 'ZAYROVI system policy',
     messages: [{ role: 'user', content: [{ type: 'text', text: 'Bonjour' }] }],
     maxOutputTokens: 300,
     ...overrides,
@@ -53,11 +53,11 @@ function sseResponse(events: unknown[]): Response {
   return new Response(stream, { status: 200, headers: { 'content-type': 'text/event-stream' } });
 }
 
-describe('AYROVI AI Core Phase 1 contracts and routing', () => {
+describe('ZAYROVI AI Core Phase 1 contracts and routing', () => {
   test('keeps Anthropic active even when OpenAI is configured', async () => {
     process.env.ANTHROPIC_API_KEY = 'anthropic-test';
     process.env.OPENAI_API_KEY = 'openai-test';
-    const core = new AyroviAiCore();
+    const core = new ZayroviAiCore();
     const snapshot = core.registrySnapshot();
 
     expect(core.responses().id).toBe('anthropic');
@@ -114,7 +114,7 @@ describe('AYROVI AI Core Phase 1 contracts and routing', () => {
     expect(event.cost?.source).toBe('metered');
   });
 
-  test('exposes neutral Assistant tool schemas through the AYROVI gateway', () => {
+  test('exposes neutral Assistant tool schemas through the ZAYROVI gateway', () => {
     const gateway = getAssistantToolGateway();
     expect(gateway.definitions.length).toBeGreaterThan(5);
     expect(gateway.definitions.find((tool) => tool.name === 'calculate_price')).toBeTruthy();
@@ -399,7 +399,7 @@ describe('AI Core errors and circuit policy', () => {
     expect(complete).toHaveBeenCalledTimes(1);
   });
 
-  test('isolates rate-limit circuits by provider and AYROVI workload', async () => {
+  test('isolates rate-limit circuits by provider and ZAYROVI workload', async () => {
     const complete = vi.fn(async (input: AiCompletionRequest) => {
       if (input.workload === 'assistant') {
         throw new AiProviderError('PROVIDER_RATE_LIMITED', 'fake-provider', 'Rate limited.', {

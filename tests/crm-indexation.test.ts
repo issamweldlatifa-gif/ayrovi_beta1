@@ -1,5 +1,5 @@
 /**
- * AYROVI CRM 360 (E6) — la performance n'est pas un vœu : le plan d'exécution.
+ * ZAYROVI CRM 360 (E6) — la performance n'est pas un vœu : le plan d'exécution.
  *
  * Chaque requête chaude du module (listes, filtres, vue 360°, notifications)
  * doit traverser un index — jamais un balayage complet. Ce fichier fige la preuve

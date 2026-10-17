@@ -32,7 +32,7 @@ export const PricingPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) => {
   const fields: Array<[string, string]> = [
     ['rateEUR', 'Taux EUR'], ['rateUSD', 'Taux USD'], ['rateGBP', 'Taux GBP'], ['rateJPY', 'Taux JPY'],
     ['exchangeBufferPercent', 'Marge change (%)'], ['freightPerKgTND', 'Fret international (TND/kg)'],
-    ['localDeliveryTND', 'Livraison locale (TND)'], ['commissionPercent', 'Commission AYROVI (%)'],
+    ['localDeliveryTND', 'Livraison locale (TND)'], ['commissionPercent', 'Commission ZAYROVI (%)'],
     ['minimumCommissionTND', 'Minimum commission (TND)'], ['rpdPercent', 'Redevance douane (%)'],
     ['rpdMinimumTND', 'Minimum redevance (TND)'], ['expressFeeTND', 'Supplément Express (TND)'],
   ];
@@ -105,7 +105,7 @@ export const PricingPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) => {
   return <>
     <div className="admin-page-header">
       <div>
-        <span className="admin-eyebrow">AYROVI ADMIN</span>
+        <span className="admin-eyebrow">ZAYROVI ADMIN</span>
         <h1>Prix, douane & acompte</h1>
         <p>Moteur CIF v{form.version}. Tout est calculé côté serveur au millime. Les commandes existantes ne bougent pas.</p>
       </div>

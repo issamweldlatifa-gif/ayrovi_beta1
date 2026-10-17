@@ -6,15 +6,15 @@
  * les chemins `/api/…` relatifs vers l'origine absolue du backend. Sur le web
  * pur, l'API est same-origin, donc le patch est inutile.
  *
- * On garde l'export `AYROVI_API_ORIGIN` (utilisé par d'autres modules qui
+ * On garde l'export `ZAYROVI_API_ORIGIN` (utilisé par d'autres modules qui
  * construisent des URLs absolues côté web) et la fonction `installNativeApiOrigin`
  * qui devient un no-op. Les signatures sont préservées pour ne casser aucun
  * import.
  */
 
-import { AYROVI_API_ORIGIN, normalizeApiOrigin } from './apiOrigin';
+import { ZAYROVI_API_ORIGIN, normalizeApiOrigin } from './apiOrigin';
 
-export { AYROVI_API_ORIGIN };
+export { ZAYROVI_API_ORIGIN };
 
 /** Only bundled API paths move to the API. Assets and third-party URLs do not. */
 export function nativeTarget(input: string | URL, base: string, origin: string): URL {
@@ -26,7 +26,7 @@ export function nativeTarget(input: string | URL, base: string, origin: string):
   return url;
 }
 
-export function installNativeApiOrigin(_origin: string = AYROVI_API_ORIGIN): void {
+export function installNativeApiOrigin(_origin: string = ZAYROVI_API_ORIGIN): void {
   // No-op on the web: fetch/XHR are already same-origin. The original
   // implementation monkey-patched globalThis.fetch and XMLHttpRequest.prototype
   // to redirect /api calls to the absolute API origin. That bridge existed

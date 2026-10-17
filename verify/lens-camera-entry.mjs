@@ -7,11 +7,11 @@ for(const [engine,type] of [['chromium',chromium],['firefox',firefox]]){
  const browser=await type.launch({headless:true});
  try{for(const locale of ['fr','ar']){
   const ar=locale==='ar';const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'});
-  await context.addInitScript(locale=>{localStorage.setItem('ayrovi.locale.v1',locale);window.BarcodeDetector=class{static async getSupportedFormats(){return ['qr_code','ean_13'];}async detect(){const v=window.codeToDetect;window.codeToDetect=null;return v?[{rawValue:v}]:[];}};},locale);
+  await context.addInitScript(locale=>{localStorage.setItem('zayrovi.locale.v1',locale);window.BarcodeDetector=class{static async getSupportedFormats(){return ['qr_code','ean_13'];}async detect(){const v=window.codeToDetect;window.codeToDetect=null;return v?[{rawValue:v}]:[];}};},locale);
   const p=await context.newPage();p.on('pageerror',e=>errors.push(e.message));
-  await p.route('**/*',r=>{const u=r.request().url();return /^https?:/.test(u)&&!u.startsWith(process.env.AYROVI_BASE_URL+'/')?r.abort():r.continue();});
+  await p.route('**/*',r=>{const u=r.request().url();return /^https?:/.test(u)&&!u.startsWith(process.env.ZAYROVI_BASE_URL+'/')?r.abort():r.continue();});
   await p.route('**/api/ayrovix/**',r=>r.fulfill({status:503,json:{success:false,error:'Verification: external analysis disabled'}}));
-  await p.goto(process.env.AYROVI_BASE_URL+'/__verify/sonim');await p.locator('[data-open]').click();await p.locator('.lens-consent .lens-panel-primary').waitFor();
+  await p.goto(process.env.ZAYROVI_BASE_URL+'/__verify/sonim');await p.locator('[data-open]').click();await p.locator('.lens-consent .lens-panel-primary').waitFor();
   check(`${engine}/${locale}: no media request before agreement`,await p.evaluate(()=>lensEntryTest.mediaRequests===0));
   check('agreement disabled by default',await p.locator('.lens-consent .lens-panel-primary').isDisabled());
   await p.screenshot({path:`${output}/${engine}-${locale}-consent.png`});

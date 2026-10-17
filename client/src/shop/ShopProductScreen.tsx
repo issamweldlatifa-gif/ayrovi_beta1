@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocale } from '../i18n/LocaleContext';
-import type { AyrovixProduct } from '../ayrovix/types';
+import type { ZayrovixProduct } from '../ayrovix/types';
 import { completeProductOffer, productSelectionLabels, resolveProductSelection } from '../ayrovix/services/productSelection';
 import { refreshLiveStock } from '../ayrovix/services/lensApi';
-import type { AyrovixVariantOption } from '../ayrovix/types';
+import type { ZayrovixVariantOption } from '../ayrovix/types';
 import { ProductPage } from './ProductPage';
 import { productToView } from './adapter';
 import type { AddToBagResult, SizeOption } from './types';
@@ -26,7 +26,7 @@ export interface ShopProductScreenProps {
   /** Mise de côté. Fourni par l'hôte quand la liste d'envies existe. */
   onFavorite?: () => void;
   favorite?: boolean;
-  product: AyrovixProduct;
+  product: ZayrovixProduct;
   ordering?: boolean;
   priceVerified?: boolean;
   onOrder: (selection: {
@@ -41,7 +41,7 @@ export interface ShopProductScreenProps {
   onBack?: () => void;
   onCalculateAnother?: () => void;
   onOpenCart?: () => void;
-  onHydrated?: (product: AyrovixProduct) => void;
+  onHydrated?: (product: ZayrovixProduct) => void;
 }
 
 interface CartLineQuote {
@@ -110,7 +110,7 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
       .then((rows) => {
         const live = rows.find((row) => row.url === url) || rows[0];
         if (!live || controller.signal.aborted) return;
-        const variantOptions: AyrovixVariantOption[] = (live.variants || []).map((variant, index) => ({
+        const variantOptions: ZayrovixVariantOption[] = (live.variants || []).map((variant, index) => ({
           id: `${variant.value}-${variant.color || index}`,
           label: variant.color ? `${variant.value} · ${variant.color}` : variant.value,
           size: variant.value,
@@ -141,7 +141,7 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
           availabilityCheckedAt: live.checkedAt || current.availabilityCheckedAt,
           availabilityExpiresAt: expires || current.availabilityExpiresAt,
           priceVerified: Boolean(live.price) || current.priceVerified,
-          priceVerificationStatus: (live.price ? 'VERIFIED' : current.priceVerificationStatus) as AyrovixProduct['priceVerificationStatus'],
+          priceVerificationStatus: (live.price ? 'VERIFIED' : current.priceVerificationStatus) as ZayrovixProduct['priceVerificationStatus'],
           priceToken: live.priceToken || current.priceToken,
           variantOptions: variantOptions.length ? variantOptions : current.variantOptions,
           description: /v[ée]rification manuelle/i.test(current.description || '') ? '' : current.description,

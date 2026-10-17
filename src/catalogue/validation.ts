@@ -1,5 +1,5 @@
 /**
- * AYROVI Catalogue (P2.1) — server-side validation.
+ * ZAYROVI Catalogue (P2.1) — server-side validation.
  *
  * The back office is not the authority: every rule that protects the integrity of the
  * catalogue (unique SKU, unique slug per namespace, known brand/category, controlled

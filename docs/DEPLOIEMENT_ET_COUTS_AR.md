@@ -38,11 +38,11 @@
 
 ```bash
 # بناء موجَّه إلى خادمك المحلي (عبر نفق) — بلا تعديل أي ملف
-VITE_AYROVI_API_ORIGIN=https://xxxxx.trycloudflare.com npx vite build
+VITE_ZAYROVI_API_ORIGIN=https://xxxxx.trycloudflare.com npx vite build
 npx cap sync android && cd android && sh ./gradlew assembleDebug
 ```
 
-وبدون هذا المتغيّر يعود السلوك إلى `https://ayrovi-beta1.onrender.com`
+وبدون هذا المتغيّر يعود السلوك إلى `https://zayrovi-beta1.onrender.com`
 بالضبط كما كان (لا انحدار). مُتحقَّق منه: بنيت النسختين وفحصت الحزمة الناتجة.
 
 ### تفصيل الخيار (ب) خطوة بخطوة (على حاسوبك، لا هنا)
@@ -58,7 +58,7 @@ cloudflared tunnel --url http://localhost:3000
 #   → https://quelque-chose.trycloudflare.com
 
 # 3) بناء APK موجَّه إلى ذلك العنوان
-VITE_AYROVI_API_ORIGIN=https://quelque-chose.trycloudflare.com npx vite build
+VITE_ZAYROVI_API_ORIGIN=https://quelque-chose.trycloudflare.com npx vite build
 npx cap sync android && (cd android && sh ./gradlew assembleDebug)
 ```
 

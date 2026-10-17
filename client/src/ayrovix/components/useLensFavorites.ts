@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { customerApi } from '../../customer/api';
 import type { CustomerFavorite, CustomerSession } from '../../types';
-import type { AyrovixCandidate } from '../types';
+import type { ZayrovixCandidate } from '../types';
 
 /** Uses the current account and CSRF token; never rotates auth/me or invents a saved state. */
 export function useLensFavorites(session?: CustomerSession | null, onOpenAccount?: () => void) {
@@ -28,8 +28,8 @@ export function useLensFavorites(session?: CustomerSession | null, onOpenAccount
       .finally(() => { if (epoch === generation.current) { locked.current = false; setBusy(false); } });
     return () => { generation.current++; controller.abort(); request.current?.abort(); };
   }, [accountId, csrfToken]);
-  const find = (list: CustomerFavorite[], candidate: AyrovixCandidate) => list.find(item => item.source_url === candidate.sourceUrl || (candidate.kind === 'catalog' && item.product_id === candidate.id));
-  const toggle = async (candidate: AyrovixCandidate) => {
+  const find = (list: CustomerFavorite[], candidate: ZayrovixCandidate) => list.find(item => item.source_url === candidate.sourceUrl || (candidate.kind === 'catalog' && item.product_id === candidate.id));
+  const toggle = async (candidate: ZayrovixCandidate) => {
     if (!accountId || !csrfToken) { setMessage('auth'); onOpenAccount?.(); return; }
     if (locked.current) return;
     locked.current = true; setBusy(true); setMessage(null);
@@ -63,5 +63,5 @@ export function useLensFavorites(session?: CustomerSession | null, onOpenAccount
       if (epoch === generation.current) { locked.current = false; setBusy(false); }
     }
   };
-  return { isSaved:(candidate:AyrovixCandidate)=>Boolean(accountId && owner.current === accountId && find(items,candidate)), toggle, busy, message };
+  return { isSaved:(candidate:ZayrovixCandidate)=>Boolean(accountId && owner.current === accountId && find(items,candidate)), toggle, busy, message };
 }

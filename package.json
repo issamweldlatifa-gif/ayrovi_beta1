@@ -1,7 +1,7 @@
 {
-  "name": "ayrovi",
+  "name": "zayrovi",
   "version": "3.10.4",
-  "description": "AYSONIC — Universal Cross-Border Shopping & Visual AI Platform (React + Vite + TypeScript)",
+  "description": "ZAYROVI — Universal Cross-Border Shopping & Visual AI Platform (React + Vite + TypeScript)",
   "main": "dist/server.js",
   "scripts": {
     "start": "node dist/server.js",
@@ -20,7 +20,7 @@
     "verify:editorial-customer": "esbuild verify/editorial-customer-runner.ts --bundle --platform=node --format=cjs --packages=external --outfile=.cache/editorial-customer-runner.cjs && node .cache/editorial-customer-runner.cjs",
     "icons:check": "node scripts/check-icon-contract.mjs",
     "verify:editorial-states": "esbuild verify/editorial-states-runner.ts --bundle --platform=node --format=cjs --packages=external --outfile=.cache/editorial-states-runner.cjs && node .cache/editorial-states-runner.cjs",
-    "verify:editorial-account": "esbuild verify/customer-account-functional.ts --bundle --platform=node --format=cjs --packages=external --outfile=.cache/editorial-account-runner.cjs && AYROVI_ACCOUNT_OUTPUT=screenshots/editorial/icon-correction/account node .cache/editorial-account-runner.cjs",
+    "verify:editorial-account": "esbuild verify/customer-account-functional.ts --bundle --platform=node --format=cjs --packages=external --outfile=.cache/editorial-account-runner.cjs && ZAYROVI_ACCOUNT_OUTPUT=screenshots/editorial/icon-correction/account node .cache/editorial-account-runner.cjs",
     "verify:sonim-actions": "node verify/sonim-actions-runner.mjs",
     "verify:sonim-history": "node verify/sonim-actions-runner.mjs verify/sonim-history.mjs",
     "verify:sonim-media": "node verify/sonim-actions-runner.mjs verify/sonim-media.mjs",
@@ -47,7 +47,7 @@
     "verify:aywebs-latency": "node scripts/aywebs-latency-probe.mjs"
   },
   "keywords": [
-    "ayrovi",
+    "zayrovi",
     "e-commerce",
     "react",
     "vite",
@@ -56,7 +56,7 @@
     "screenshot-scraper",
     "tunisia"
   ],
-  "author": "AYROVI Team",
+  "author": "ZAYROVI Team",
   "license": "ISC",
   "dependencies": {
     "@pdf-lib/fontkit": "^1.1.1",

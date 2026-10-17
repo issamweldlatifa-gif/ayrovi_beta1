@@ -1,4 +1,4 @@
-# AYROVIX LENS — تشخيص أداء شامل (من رفع الصورة إلى عرض النتائج)
+# ZAYROVIX LENS — تشخيص أداء شامل (من رفع الصورة إلى عرض النتائج)
 **التاريخ:** 2026-09-17 — **البيئة:** Tunis (Africa/Tunis) — **الفرع:** `main`
 **التحديث:** ✅ تم التنفيذ دون توقف — 6 دفعات (57f6a9f→56c164d) — كل Business Logic محفوظ — 730/730 كل مرة
 
@@ -11,7 +11,7 @@
 > - **دفعة 6 (56c164d):** D2-10 PENDING fallback — strict→lenient (isLenient/filterWithFallback, toCandidates lenient) + client isLenientCandidate + \"Prix à confirmer\" amber UI — never 0 when lens has matches; D3 WebP 85% (webp 90→85, jpeg 88→85, roi 86→85)
 > - **النتيجة:** 730/730 tests + vite build 1.05s بعد كل دفعة؛ لا حذف Anthropic/SerpApi، لا تغيير ترتيب قبل القياس، ROI backend + PENDING يحافظان على Business Logic.
 
-> هذا التقرير يجيب عن سؤال واحد: **لماذا ولات AyroviX Lens أبطأ بعد إضافة Anthropic وتحسين تحديد المنتج (Circle)؟** مع إثبات بالأدلة (ملف/دالة/زمن) وخطة تحسين تحافظ على الدقة والوظائف.
+> هذا التقرير يجيب عن سؤال واحد: **لماذا ولات ZayroviX Lens أبطأ بعد إضافة Anthropic وتحسين تحديد المنتج (Circle)؟** مع إثبات بالأدلة (ملف/دالة/زمن) وخطة تحسين تحافظ على الدقة والوظائف.
 
 ---
 
@@ -21,7 +21,7 @@
 |---|---|
 | **هل Anthropic هو السبب الوحيد؟** | لا. هو أحد الأسباب المحتملة لكنه ليس الوحيد ولا الإجباري في كل مسار. يوجد **3 مسارات متوازية** في `src/ayrovix/routes.ts:348-530` : `identifyProduct` (Anthropic Vision) و `serpApiVisualSearch` (SerpApi) يعملان **بالتوازي** عبر `Promise.allSettled`. البطء الحقيقي يأتي من **التسلسل اللاحق**: `generateOptimizedSearch (Anthropic research)` → `searchCandidates (Catalog+WebSearch)` → `analyzeResultRelevance (Anthropic research)` → `deduplicate` → `calculatePrice` → `render`. كل مرحلة لها Timeout و Cache مختلف، وتراكمها يخلق `>10s` عند غياب الـ Cache. |
 | **هل تحديد المنتج (Circle) يبطئ؟** | لا، إذا كان Tap خفيف (الحالي `selectedBox` 26%، `cropBoxToFile` 18% pad, jpeg 0.85). لكن النسخة القديمة كانت تقص الصورة في المتصفح عبر `canvas.toBlob` ثم تعيد رفعها كـ `File` → `runImageAnalysis(file)` → مسار كامل جديد (Vision + SerpApi) — هذا **طلب ثانٍ كامل** وليس مجرد تحديد. |
-| **أين الوقت الأكبر؟** | حسب الـ Timeouts في الكود: `AYROVIX_PROVIDER_TIMEOUT_MS 12s` (Vision)، `AYROVIX_VISUAL_SEARCH_TIMEOUT_MS 10s` (SerpApi: 5s upload + 10s search)، `AYROVIX_SEARCH_TIMEOUT_MS 4.2s` (WebSearch)، `generateOptimizedSearch 3.5s`، `analyzeResultRelevance 3.8s`. في أسوأ حالة بلا Cache: **Vision 12s + SerpApi 10s (متوازي) → Search 4.2s → Relevance 3.8s = 8-12s** قبل الـ Frontend. |
+| **أين الوقت الأكبر؟** | حسب الـ Timeouts في الكود: `ZAYROVIX_PROVIDER_TIMEOUT_MS 12s` (Vision)، `ZAYROVIX_VISUAL_SEARCH_TIMEOUT_MS 10s` (SerpApi: 5s upload + 10s search)، `ZAYROVIX_SEARCH_TIMEOUT_MS 4.2s` (WebSearch)، `generateOptimizedSearch 3.5s`، `analyzeResultRelevance 3.8s`. في أسوأ حالة بلا Cache: **Vision 12s + SerpApi 10s (متوازي) → Search 4.2s → Relevance 3.8s = 8-12s** قبل الـ Frontend. |
 | **هل توجد طلبات مكررة؟** | نعم — 3 أنواع: (1) `image_id` واحد لكن **AI Vision قد يُعاد مرتين** (structured → json fallback في `src/ayrovix/services/ai.ts:330-350`), (2) **Relevance قد تُستدعى مرتين** (مرة في Lens Intelligence ومرة ضمن Search إذا كان heuristic)، (3) **صورة الـ Circle تُرفع مرة ثانية** كطلب جديد. |
 | **هل تحويل العملة يبطئ؟** | لا. `calculatePrice` في `src/services/pricing.ts` و `estimateTnd` في `src/ayrovix/services/search.ts` هما **حساب محلي متزامن** (<5ms) يقرأ `pricing_rules` من DB، ليس API خارجي. لا ينتظر Network. |
 
@@ -58,11 +58,11 @@
    │     • متوازيان — لا ينتظر أحدهما الآخر. إذا فشل Vision لكن SerpApi نجح → fallbackIdentification()
    │
    ├─► src/ayrovix/services/ai.ts:identifyProduct()
-   │     • getAyroviAiCore().responses().isConfigured() ? 503 : continue
+   │     • getZayroviAiCore().responses().isConfigured() ? 503 : continue
    │     • requestIdentification(imageBase64, SYSTEM_PROMPT multi-product, outputSchema)
    │     • model: provider.resolveModel('vision','fast') → claude-haiku-4-5-20251001 (مثال)
-   │     • timeout: AYROVIX_PROVIDER_TIMEOUT_MS 12s (8-20s) — structured true → إذا فشل → retry json fallback (طلب ثانٍ!)
-   │     • يخرج AyrovixIdentification: { category, brand, model, color, visible_text, possible_model_codes, description, confidence, detected_price, pricing, products[8] avec box[0..1], input_kind }
+   │     • timeout: ZAYROVIX_PROVIDER_TIMEOUT_MS 12s (8-20s) — structured true → إذا فشل → retry json fallback (طلب ثانٍ!)
+   │     • يخرج ZayrovixIdentification: { category, brand, model, color, visible_text, possible_model_codes, description, confidence, detected_price, pricing, products[8] avec box[0..1], input_kind }
    │
    ├─► src/ayrovix/services/visualSearch.ts:serpApiVisualSearch()
    │     • serpApiKey() → SERPAPI_KEY env — إذا غائب → [] فوراً
@@ -102,7 +102,7 @@
    │     • normalizeUrl (strip hash/search) + seenUrl/seenId + brandModelKey/skuLike + Jaccard 0.88 + brand+source
    │
    ├─► calculatePrice / tokenizedCandidates — محلي فوري
-   │     • withDisplayRating + createAyrovixPriceToken (HMAC) — لا API
+   │     • withDisplayRating + createZayrovixPriceToken (HMAC) — لا API
    │
    └─► res.json({ identification, query, candidates, eventId, detectedPrice, message }) → Frontend
 
@@ -328,7 +328,7 @@ Total (until JSON): 5200ms — Total (until paint): 5380ms
 
 | # | التحسين | الملف | التأثير المتوقع | المخاطر |
 |---|---|---|---|---|
-| 1 | **تقليل `AYROVIX_PROVIDER_TIMEOUT_MS` 12s→8s** و `maxOutputTokens` Vision 700→550 | `src/ayrovix/services/ai.ts:boundedEnvMs` | -1.5s في المتوسط، -4s في أسوأ حالة | خطر قطع طلبات بطيئة — يُراقب عبر `PROVIDER_TIMEOUT` rate |
+| 1 | **تقليل `ZAYROVIX_PROVIDER_TIMEOUT_MS` 12s→8s** و `maxOutputTokens` Vision 700→550 | `src/ayrovix/services/ai.ts:boundedEnvMs` | -1.5s في المتوسط، -4s في أسوأ حالة | خطر قطع طلبات بطيئة — يُراقب عبر `PROVIDER_TIMEOUT` rate |
 | 2 | **جعل `generateOptimizedSearch` و `analyzeResultRelevance` background بالكامل** (كما في `a742508` لكن مع `isTest` guard) — لا `await` قبل `searchCandidates` | `src/ayrovix/routes.ts:370-410` | -3.5s (Optimize) — يصبح Search فوري | فقدان تحسين الاستعلام في أول طلب — يُعوض بالـ Cache للطلب الثاني |
 | 3 | **تقليل `prepareImageForSerpApi` إلى محاولتين فقط (1000/78, 700/58)** بدل 4 | `src/ayrovix/services/visualSearch.ts:prepareImageForSerpApi` | -100ms | قد يفشل في الوصول ≤500KB للصور الكبيرة جداً (نادر) |
 | 4 | **تقليل `MAX_OUTPUT_EDGE` 1800→1280** في `normalizeUploadedImage` | `src/services/imageValidation.ts:MAX_OUTPUT_EDGE` | -80ms + -30% حجم base64 → -200ms Network Anthropic | قد يقلل دقة قراءة النص الصغير — يُختبر على 20 صورة |

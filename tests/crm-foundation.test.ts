@@ -1,5 +1,5 @@
 /**
- * AYROVI CRM 360 (E1/E2) — tests d'acceptation du module relationnel.
+ * ZAYROVI CRM 360 (E1/E2) — tests d'acceptation du module relationnel.
  *
  * Ce qui est verrouillé ici :
  *  • fondation : schéma idempotent, séquences, grants en données, registre `crm360` ;
@@ -19,9 +19,9 @@ import { resourceDescriptorBySection } from '../src/back-office/resources';
 import { ensureCrmSchema, bootstrapCrm, CRM360_TABLES, CRM_SEQUENCES } from '../src/crm/bootstrap';
 
 const SUFFIX = `t${Date.now().toString(36)}`;
-const EMAIL = (local: string) => `${local}.${SUFFIX}@ayrovi.test`;
+const EMAIL = (local: string) => `${local}.${SUFFIX}@zayrovi.test`;
 
-const adminPassword = 'AyroviBeta2026!';
+const adminPassword = 'ZayroviBeta2026!';
 const operatorPassword = 'CrmTest-Password-2026!';
 const operatorEmail = EMAIL('crm.order');
 const contentEmail = EMAIL('crm.content');
@@ -35,7 +35,7 @@ const content = request.agent(app);
 
 async function login(agent: request.Agent, email: string, password: string): Promise<string> {
   const response = await agent
-    .set('User-Agent', 'AYROVI-CrmTest/1.0 (vitest)')
+    .set('User-Agent', 'ZAYROVI-CrmTest/1.0 (vitest)')
     .post('/api/admin/auth/login').send({ email, password });
   expect(response.status, `login ${email}`).toBe(200);
   return response.body.data.csrfToken;
@@ -51,7 +51,7 @@ async function createAdminUser(name: string, email: string, role: string): Promi
 
 describe('CRM 360 (E1/E2)', () => {
   beforeAll(async () => {
-    adminCsrf = await login(admin, 'admin@ayrovi.tn', adminPassword);
+    adminCsrf = await login(admin, 'admin@zayrovi.tn', adminPassword);
     await createAdminUser('CRM Order', operatorEmail, 'ORDER_MANAGER');
     await createAdminUser('CRM Content', contentEmail, 'CONTENT_MANAGER');
     operator = request.agent(app);
@@ -388,7 +388,7 @@ describe('CRM 360 (E1/E2)', () => {
 
     test('l’affectation d’une tâche à AUTRUI notifie le propriétaire via le canal existant', async () => {
       // Le propriétaire est l'employé ADMIN ; c'est l'opérateur (autre acteur) qui l'affecte.
-      const adminUser = db.get<{ id: string }>('SELECT id FROM admin_users WHERE email=?', 'admin@ayrovi.tn');
+      const adminUser = db.get<{ id: string }>('SELECT id FROM admin_users WHERE email=?', 'admin@zayrovi.tn');
       const owner = db.get<{ id: string }>('SELECT id FROM erp_employees WHERE user_id=?', adminUser!.id);
       if (!owner) return; // pas d'employé ADMIN : rien à prouver ici
       const party = await operator
@@ -548,7 +548,7 @@ describe('CRM 360 (E1/E2)', () => {
       // L'agent partagé porte un x-csrf-token par défaut : on ouvre une session neuve pour prouver
       // que le jeton est réellement exigé (pas seulement présent dans le harnais de test).
       const fresh = request.agent(app);
-      await login(fresh, 'admin@ayrovi.tn', adminPassword);
+      await login(fresh, 'admin@zayrovi.tn', adminPassword);
       const probe = await fresh.post('/api/admin/crm/parties')
         .send({ partyType: 'INDIVIDUAL', kind: 'CUSTOMER', name: `Sans CSRF ${SUFFIX}` });
       expect(probe.status).toBe(403);

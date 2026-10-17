@@ -49,7 +49,7 @@ export interface SizeOption {
 }
 
 export interface MediaView {
-  /** URL déjà passée par la composition AYROVI (produit détouré sur notre canvas). */
+  /** URL déjà passée par la composition ZAYROVI (produit détouré sur notre canvas). */
   src: string;
   /** Replis successifs, du meilleur rendu au plus sûr. */
   fallbacks: string[];
@@ -134,7 +134,7 @@ export function hasBrandScale(sizes: SizeOption[]): boolean {
  * écran : il a survécu à la fiche qui l'hébergeait et vit désormais avec la
  * boutique, seule responsable de la saisie.
  */
-export interface AyrovixOrderSelection {
+export interface ZayrovixOrderSelection {
   size: string;
   color: string;
   option: { id?: string | null; label?: string | null } | any;

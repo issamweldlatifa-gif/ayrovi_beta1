@@ -1,4 +1,4 @@
-# AYROVI — structure du site public : revue et découpe proposée
+# ZAYROVI — structure du site public : revue et découpe proposée
 
 Écrit le **2026-09-22**, après l'écran de connexion client. Ce document répond à deux choses :
 ce qui a été **corrigé tout de suite** sur la connexion, et la **découpe du site** en espaces de
@@ -17,7 +17,7 @@ Demande : *« تحسين واجهة دخول وحذف تكرار الكلمات 
 
 | Où | Avant | Après | Pourquoi |
 | --- | --- | --- | --- |
-| Sous-titre | « **Connectez-vous** à votre univers AYROVI. » sous le titre « **Connectez-vous.** » | « Vos commandes, vos favoris et votre panier, au même endroit. » | Le verbe était écrit deux fois de suite. Le sous-titre dit maintenant ce qu'il y a **derrière** la porte — la seule information utile à cet endroit. |
+| Sous-titre | « **Connectez-vous** à votre univers ZAYROVI. » sous le titre « **Connectez-vous.** » | « Vos commandes, vos favoris et votre panier, au même endroit. » | Le verbe était écrit deux fois de suite. Le sous-titre dit maintenant ce qu'il y a **derrière** la porte — la seule information utile à cet endroit. |
 | Champ e-mail | étiquette « Adresse e-mail » + *placeholder* « Votre adresse e-mail » | placeholder « vous@exemple.tn » | Un placeholder qui recopie l'étiquette occupe la place sans rien apprendre. Ici il **montre le format**. |
 | Champ mot de passe | étiquette « Mot de passe » + *placeholder* « Votre mot de passe » | aucun placeholder | L'étiquette suffit ; la règle des 8 caractères s'affiche sous le champ à l'inscription. |
 | Champ nom (inscription) | « Votre nom complet » | « Ex. Sarra Ben Ali » | Montre le format attendu au lieu de répéter « nom ». |
@@ -45,8 +45,8 @@ C'est fait, et c'est **réglable en un seul endroit** (`client/src/styles/custom
 
 ```css
 .ay-auth {
-  --ay-auth-legal-rule: var(--ayrovi-border-soft);                                  /* le filet */
-  --ay-auth-legal-wash: color-mix(in srgb, var(--ayrovi-text-primary) 1%, transparent); /* le lavis */
+  --ay-auth-legal-rule: var(--zayrovi-border-soft);                                  /* le filet */
+  --ay-auth-legal-wash: color-mix(in srgb, var(--zayrovi-text-primary) 1%, transparent); /* le lavis */
 }
 .ay-auth[data-legal-tone='blue'] {                       /* la variante bleue demandée */
   --ay-auth-legal-rule: color-mix(in srgb, #1c5db5 24%, transparent);
@@ -59,7 +59,7 @@ C'est fait, et c'est **réglable en un seul endroit** (`client/src/styles/custom
 - **Un filet au-dessus** détache le bloc du CTA, et un **lavis à 1 %** le groupe sans le repeindre
   (mesuré : `color(srgb 0 0 0 / 0.01)`).
 - Les liens sont soulignés d'un trait discret : un lien doit se voir.
-- Le bleu **n'est pas la valeur par défaut** : la charte AYROVI est monochrome + orange. Pour
+- Le bleu **n'est pas la valeur par défaut** : la charte ZAYROVI est monochrome + orange. Pour
   basculer, il suffit d'ajouter `data-legal-tone="blue"` sur `.ay-auth` — rien d'autre à toucher.
   Dis-moi « اعتمد الأزرق » et je le passe en défaut.
 
@@ -88,7 +88,7 @@ une passe, assez grand pour être jugé sur une intention.
 | **02** | **Découvrir** | Ce qui donne envie de revenir : le récit et le rythme | Arrivage, Gift & Cards, Magazine, Social, Marques, Bandeau | Contenu (barre publique, arrivages, promos, magazine, ticker, social) |
 | **03** | **Suivre** | L'après-achat, là où l'on gagne un client qui revient | Mon compte, Commandes + suivi, Acompte/paiement, Favoris, Adresses, Support | Commerce (commandes, clients) · Support · CRM 360 |
 | **04** | **Confiance** | Les pages qui répondent avant que la question ne se pose | À propos, Conditions, Confidentialité, Suppression des données, Contact et canaux, Livraison et retours | Système (réglages, واجهتي, canaux) · Journal d'audit |
-| **05** | **Assister** | La couche IA : elle aide à choisir, elle ne remplace pas l'humain | AYROVI AI, AYROVIX Lens, AYVISI Vision (bientôt), réponses vérifiées | Contenu · Assistant (base de connaissance) · LENS |
+| **05** | **Assister** | La couche IA : elle aide à choisir, elle ne remplace pas l'humain | ZAYROVI AI, ZAYROVIX Lens, AYVISI Vision (bientôt), réponses vérifiées | Contenu · Assistant (base de connaissance) · LENS |
 
 ### Le chrome permanent (visible partout)
 

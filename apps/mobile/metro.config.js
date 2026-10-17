@@ -3,7 +3,7 @@
  *
  * Le seul ajout au réglage par défaut d'Expo : un **proxy de développement**
  * qui relaie `/api` et `/media` vers le serveur ZAYROVI local (port 3000, ou
- * `AYROVI_DEV_API`).
+ * `ZAYROVI_DEV_API`).
  *
  * Pourquoi c'est nécessaire et pas un confort :
  *  • le navigateur qui affiche l'aperçu n'est PAS dans la machine de
@@ -12,13 +12,13 @@
  *    tout passe par l'origine de l'aperçu : aucune adresse à connaître, aucun
  *    CORS à configurer ;
  *  • en production (build natif), `EXPO_PUBLIC_API_BASE_URL` est défini à
- *    l'origine réelle (`https://ayrovi.tn`) : le proxy n'existe plus.
+ *    l'origine réelle (`https://zayrovi.tn`) : le proxy n'existe plus.
  */
 const { getDefaultConfig } = require('expo/metro-config');
 
 const config = getDefaultConfig(__dirname);
 
-const DEV_API_TARGET = process.env.AYROVI_DEV_API || 'http://localhost:3000';
+const DEV_API_TARGET = process.env.ZAYROVI_DEV_API || 'http://localhost:3000';
 const PROXY_PREFIXES = ['/api', '/media', '/uploads', '/stores'];
 
 /** Relais minimal, sans dépendance : suffisant pour du JSON et des médias. */

@@ -1,10 +1,10 @@
 /* Additive public navigation, real destinations, and approved advertising/footer treatment. */
 /* Bandeau campagne — arbitrage charte (2026-10-03) : la charte plafonne l'orange de
    marque à 3 % de la surface d'un écran ; une surface pleine #D3451F en occupait 29 %
-   (mesuré). Le bandeau reste sombre et premium via l'encre canonique (--ayrovi-ink-deep,
+   (mesuré). Le bandeau reste sombre et premium via l'encre canonique (--zayrovi-ink-deep,
    documentée « Hero, announcement, … ») et garde son identité par un filet orange de
    3 px : l'orange redevient un signal, pas une surface. */
-.public-campaign{background:var(--ayrovi-ink-deep);color:var(--ayrovi-white);border-bottom:3px solid var(--ayrovi-color-brand-orange)}
+.public-campaign{background:var(--zayrovi-ink-deep);color:var(--zayrovi-white);border-bottom:3px solid var(--zayrovi-color-brand-orange)}
 .public-campaign-inner{position:relative;max-width:1280px;margin:auto;padding:24px 16px 12px}
 .public-campaign h2,.public-campaign p{padding-inline-end:40px;margin:0;font-size:clamp(24px,3vw,36px);line-height:1.18;font-weight:500;overflow-wrap:anywhere}
 .public-campaign p{margin-top:4px}
@@ -33,7 +33,7 @@
 .public-content-state p{margin-top:12px;line-height:1.8;color:#595959}
 .public-content-state button{margin-top:18px;min-height:44px;border:0;padding:10px 22px;background:#000000;color:#FFFFFF;font-weight:700}
 /* Specificity keeps the admin-compatible footer adapter from repainting this black footer. */
-.ayrovi-app-shell .public-site-footer{background:#000000!important;color:#FFFFFF!important;text-align:center;padding:0 0 calc(var(--ayrovi-bottom-nav-height,72px) + env(safe-area-inset-bottom,0px) + 16px);margin-top:32px}
+.zayrovi-app-shell .public-site-footer{background:#000000!important;color:#FFFFFF!important;text-align:center;padding:0 0 calc(var(--zayrovi-bottom-nav-height,72px) + env(safe-area-inset-bottom,0px) + 16px);margin-top:32px}
 .public-footer-inner{display:grid;gap:18px;max-width:1120px;margin:auto;padding:26px 18px 2px}
 /* Bande structurante : canaux | moyens de paiement | accès utiles. Le filet supérieur
    remplace les filets épars — une seule ligne de conduite sur toute la largeur. */

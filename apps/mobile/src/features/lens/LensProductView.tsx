@@ -23,7 +23,7 @@ import { SPACE } from '@/design/tokens.generated';
 import { useTheme } from '@/design/theme';
 import { useT, type TranslationKey } from '@/i18n';
 import { ApiError } from '@/api/errors';
-import { addExternalToCart, fetchAyroviCart } from '@/api/cart';
+import { addExternalToCart, fetchZayroviCart } from '@/api/cart';
 import { useSessionId } from '@/session/session';
 import type { LensCandidate, LensProductFact } from '@/api/lens';
 import { lensGallery, lensMediaChain } from './lensMedia';
@@ -608,7 +608,7 @@ export function LensProductView({
 
   const cartQuery = useQuery({
     queryKey: ['cart', sessionId],
-    queryFn: ({ signal }) => fetchAyroviCart({ sessionId: sessionId || '', signal }),
+    queryFn: ({ signal }) => fetchZayroviCart({ sessionId: sessionId || '', signal }),
     enabled: Boolean(sessionId),
     staleTime: 15_000,
     retry: false,
@@ -874,7 +874,7 @@ export function LensProductView({
         if (error.code === 'VARIANT_AMBIGUOUS') setOrderMessage(t('lens.product.ambiguous'));
         else if (error.code === 'VARIANT_AVAILABILITY_UNKNOWN' || error.code === 'NO_CONTRACT') setOrderMessage(t('lens.product.availabilityUnknown'));
         else if (error.code === 'VARIANT_UNAVAILABLE' || error.code === 'VARIANT_SELECTION_INVALID' || error.code === 'VARIANT_NOT_FOUND') setOrderMessage(t('lens.product.variantRefused'));
-        else if (error.code === 'INVALID_AYROVIX_PRICE_TOKEN') setOrderMessage(t('lens.product.expired'));
+        else if (error.code === 'INVALID_ZAYROVIX_PRICE_TOKEN') setOrderMessage(t('lens.product.expired'));
         else setOrderMessage(error.message || t('lens.product.orderFailed'));
       } else {
         setOrderMessage(t('lens.product.orderFailed'));

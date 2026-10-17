@@ -11,7 +11,7 @@ async function run() {
   Object.assign(process.env, {
     NODE_ENV: 'test', DATABASE_PATH: ':memory:', CUSTOMER_AUTH_SECRET: 'auth-functional-test-only-secret-01234567890123456789',
     ADMIN_EMAIL: 'admin@example.com', ADMIN_PASSWORD: 'Test-admin-password-123!',
-    MAIL_PROVIDER: 'resend', MAIL_API_KEY: 'test-not-real', MAIL_FROM: 'AYROVI <no-reply@example.com>',
+    MAIL_PROVIDER: 'resend', MAIL_API_KEY: 'test-not-real', MAIL_FROM: 'ZAYROVI <no-reply@example.com>',
     GOOGLE_CLIENT_ID: '', FACEBOOK_APP_ID: '', APPLE_CLIENT_ID: '', CUSTOMER_OTP_PROVIDER: 'console',
   });
   const mails: any[] = [];
@@ -37,7 +37,7 @@ async function run() {
   const check = (value: unknown, message: string) => { assert.ok(value, message); count++; };
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
-  const output = process.env.AYROVI_AUTH_OUTPUT || 'screenshots/auth-functional';
+  const output = process.env.ZAYROVI_AUTH_OUTPUT || 'screenshots/auth-functional';
   await mkdir(output,{recursive:true});
   try {
     await page.goto(`${base}/?customerAuth=login`);
@@ -135,7 +135,7 @@ async function run() {
     await page.getByRole('button',{name:'Réessayer',exact:true}).click();
     await page.waitForFunction(()=>!document.querySelector<HTMLButtonElement>('button[type="submit"]')?.disabled);
     check(true,'retry re-checks actual backend readiness');
-    await page.evaluate(()=>localStorage.setItem('ayrovi.locale.v1','ar'));
+    await page.evaluate(()=>localStorage.setItem('zayrovi.locale.v1','ar'));
     await page.goto(`${base}/reset-password`);
     await page.getByRole('button',{name:'طلب رابط جديد',exact:true}).click();
     await page.locator('#recovery-email').waitFor();

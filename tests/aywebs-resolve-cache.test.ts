@@ -4,7 +4,7 @@
  * Le contrat protégé ici est un contrat de LATENCE ET D'HONNÊTETÉ :
  *  1. une fiche déjà lue n'est pas relue chez le marchand (le client n'attend
  *     plus vingt secondes pour revoir le même produit) ;
- *  2. le prix AYROVI est TOUJOURS recalculé par le serveur — le cache ne mémorise
+ *  2. le prix ZAYROVI est TOUJOURS recalculé par le serveur — le cache ne mémorise
  *     qu'une lecture, jamais un montant (§45) ;
  *  3. une relecture peut toujours être exigée (`refresh`), et la re-vérification
  *     du panier l'exige : un changement de prix marchand n'est jamais masqué
@@ -21,7 +21,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
-process.env.AYROVI_VARIANT_CACHE_DIR = join(mkdtempSync(join(tmpdir(), 'aywebs-resolve-cache-')), 'cache');
+process.env.ZAYROVI_VARIANT_CACHE_DIR = join(mkdtempSync(join(tmpdir(), 'aywebs-resolve-cache-')), 'cache');
 
 import { QatafoDatabase } from '../src/db/database';
 import { createAyWebsContext } from '../src/aywebs/context';
@@ -128,7 +128,7 @@ describe('AYWEBs — cache de résolution : la fiche n’est pas relue pour rien
     expect(second.productId).toBe(first.productId);
     expect(second.product.price).toBe(first.product.price);
     expect(second.evidenceHash).toBe(first.evidenceHash);
-    // …et le devis AYROVI reste recalculé côté serveur, jamais servi par le cache.
+    // …et le devis ZAYROVI reste recalculé côté serveur, jamais servi par le cache.
     expect(second.pricing?.totalTND).toBeGreaterThan(0);
     expect(second.pricing?.totalTND).toBe(first.pricing?.totalTND);
   });
@@ -136,7 +136,7 @@ describe('AYWEBs — cache de résolution : la fiche n’est pas relue pour rien
   test('les paramètres de suivi ne créent pas une seconde lecture pour le même article', async () => {
     const h = harness();
     await resolveAyWebsProduct(h.resolver, { url: AMAZON_URL, sessionId: SESSION_ID });
-    const tracked = `${AMAZON_URL}?ref_=nav_custrec_signin&th=1&utm_source=ayrovi`;
+    const tracked = `${AMAZON_URL}?ref_=nav_custrec_signin&th=1&utm_source=zayrovi`;
     const second = await resolveAyWebsProduct(h.resolver, { url: tracked, sessionId: SESSION_ID });
     expect(h.scrapeProduct).toHaveBeenCalledTimes(1);
     expect(second.fromCache).toBe(true);

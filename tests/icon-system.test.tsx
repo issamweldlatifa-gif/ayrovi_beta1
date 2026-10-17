@@ -6,11 +6,11 @@ import {
   AlertCircle, Bell, CheckCircle2, Grid, Heart, HeartFilled, Home, LayoutGrid,
   Menu, MessageCircle, Package, Search, ShoppingBag, Sparkles, Truck, User, X,
 } from '../client/src/components/QatafoIcons';
-import { AyroviBack, AyroviSearch, AyroviSparkles, AyroviUser } from '../client/src/components/icons/ayrovi';
+import { ZayroviBack, ZayroviSearch, ZayroviSparkles, ZayroviUser } from '../client/src/components/icons/zayrovi';
 
-const family = [Menu, AyroviBack, Search, User, Sparkles, Home, ShoppingBag, Heart, MessageCircle, Package, X, AlertCircle];
+const family = [Menu, ZayroviBack, Search, User, Sparkles, Home, ShoppingBag, Heart, MessageCircle, Package, X, AlertCircle];
 
-describe('AYROVI icon system', () => {
+describe('ZAYROVI icon system', () => {
   it('renders the family as independent 24px monoline SVG (editorial, stroke 1.5)', () => {
     for (const Icon of family) {
       const markup = renderToStaticMarkup(<Icon />);
@@ -27,14 +27,14 @@ describe('AYROVI icon system', () => {
     for (const Icon of family) {
       const markup = renderToStaticMarkup(<Icon />);
       expect(markup).not.toContain('#FF6A00');
-      expect(markup).not.toContain('data-ayrovi-signature');
-      expect(markup).not.toContain('data-ayrovi-accent');
+      expect(markup).not.toContain('data-zayrovi-signature');
+      expect(markup).not.toContain('data-zayrovi-accent');
     }
   });
 
-  it('wires public aliases to the AYROVI components (one icon per concept)', () => {
-    expect(Sparkles).toBe(AyroviSparkles);
-    expect(User).toBe(AyroviUser);
+  it('wires public aliases to the ZAYROVI components (one icon per concept)', () => {
+    expect(Sparkles).toBe(ZayroviSparkles);
+    expect(User).toBe(ZayroviUser);
     expect(Home).toBeTruthy();
     // Les doublons conceptuels pointent vers UNE seule icône
     expect(Grid).toBe(LayoutGrid);
@@ -45,7 +45,7 @@ describe('AYROVI icon system', () => {
       const markup = renderToStaticMarkup(<Icon />);
       expect(markup).toContain('viewBox="0 0 24 24"');
       expect(markup).toContain('stroke-width="1.5"');
-      expect(markup).toContain('data-ayrovi-icon=');
+      expect(markup).toContain('data-zayrovi-icon=');
     }
   });
 
@@ -58,11 +58,11 @@ describe('AYROVI icon system', () => {
   it('publishes the thin stroke token, with no lucide dependency and no signature system', () => {
     const tokens = readFileSync('client/src/design/tokens.css', 'utf8');
     const globalCss = readFileSync('client/src/index.css', 'utf8');
-    expect(tokens).toContain('--ayrovi-icon-stroke: 1.5');
-    expect(tokens).not.toContain('--ayrovi-icon-signature');
+    expect(tokens).toContain('--zayrovi-icon-stroke: 1.5');
+    expect(tokens).not.toContain('--zayrovi-icon-signature');
     expect(globalCss).not.toContain('stroke-width: 2px');
     expect(globalCss).toContain('vector-effect: none');
     expect(globalCss).not.toContain('.lucide');
-    expect(globalCss).not.toContain('data-ayrovi-signature');
+    expect(globalCss).not.toContain('data-zayrovi-signature');
   });
 });

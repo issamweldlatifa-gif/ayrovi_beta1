@@ -9,10 +9,10 @@
  * rail ses pastilles. Le symptôme ressemblait à « la page n'a pas changé », alors
  * que le code était bien déployé — seules ses règles étaient écrasées.
  *
- * On déclare donc une couche `ayrovi-shop` APRÈS les couches de Tailwind : une
+ * On déclare donc une couche `zayrovi-shop` APRÈS les couches de Tailwind : une
  * couche déclarée plus tard l'emporte, quelle que soit la spécificité.
  */
-@layer theme, base, components, utilities, ayrovi-shop;
+@layer theme, base, components, utilities, zayrovi-shop;
 
 @import "./design/tokens.css";
 @import "./styles/typography.css";
@@ -22,7 +22,7 @@
 @import "./styles/order-confirmation.css";
 /* Boutique v2 : chargee avec la feuille principale, jamais en morceau differe —
    un ecran d'achat sans sa CSS est un ecran de texte nu. */
-@import "./shop/shop.css" layer(ayrovi-shop);
+@import "./shop/shop.css" layer(zayrovi-shop);
 @import "./styles/drawers.css";
 @import "./styles/customer-auth.css";
 @import "./design/editorial/tokens.generated.css";
@@ -43,14 +43,14 @@
 
   html {
     scroll-behavior: smooth;
-    background: var(--ayrovi-white);
+    background: var(--zayrovi-white);
   }
 
   body {
     margin: 0;
     padding: 0;
-    background-color: var(--ayrovi-white);
-    color: var(--ayrovi-ink);
+    background-color: var(--zayrovi-white);
+    color: var(--zayrovi-ink);
     font-family: var(--font-primary);
     letter-spacing: 0;
     text-rendering: optimizeLegibility;
@@ -73,14 +73,14 @@
   }
 
   :focus-visible {
-    outline: 2px solid var(--ayrovi-focus-ring);
+    outline: 2px solid var(--zayrovi-focus-ring);
     outline-offset: 2px;
     outline-offset: 3px;
   }
 
   ::selection {
-    background: color-mix(in srgb, var(--ayrovi-primary) 20%, transparent);
-    color: var(--ayrovi-ink);
+    background: color-mix(in srgb, var(--zayrovi-primary) 20%, transparent);
+    color: var(--zayrovi-ink);
   }
 }
 
@@ -100,16 +100,16 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--ayrovi-neutral-50);
+  background: var(--zayrovi-neutral-50);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--ayrovi-neutral-200);
+  background: var(--zayrovi-neutral-200);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--ayrovi-primary);
+  background: var(--zayrovi-primary);
 }
 
 /* Mobile-first viewport: keep the page edge flush with the device while preserving scrolling. */
@@ -127,13 +127,13 @@
 
 /* Neutral Lens surfaces keep violet as a precise brand accent instead of a full-page wash. */
 .ay-dark-feature-card {
-  background: var(--ayrovi-ink-deep);
-  border: 1px solid var(--ayrovi-ink-soft);
-  color: var(--ayrovi-white);
-  transition: border-color var(--ayrovi-motion-fast) ease, transform var(--ayrovi-motion-fast) ease;
+  background: var(--zayrovi-ink-deep);
+  border: 1px solid var(--zayrovi-ink-soft);
+  color: var(--zayrovi-white);
+  transition: border-color var(--zayrovi-motion-fast) ease, transform var(--zayrovi-motion-fast) ease;
 }
 .ay-dark-feature-card:hover {
-  border-color: var(--ayrovi-ink-soft);
+  border-color: var(--zayrovi-ink-soft);
   transform: translateY(-2px);
 }
 
@@ -169,8 +169,8 @@
 }
 
 /* One SONIM glyph, with restrained state animation around canonical geometry. */
-.ayrovi-motion { display: inline-flex; align-items: center; justify-content: center; opacity: 1; transition: opacity 680ms ease; }
-.ayrovi-motion:is([data-state='thinking'],[data-state='analyzing'],[data-state='reasoning'],[data-state='creating']) { animation: sonimActivity 1.4s ease-in-out infinite; }
+.zayrovi-motion { display: inline-flex; align-items: center; justify-content: center; opacity: 1; transition: opacity 680ms ease; }
+.zayrovi-motion:is([data-state='thinking'],[data-state='analyzing'],[data-state='reasoning'],[data-state='creating']) { animation: sonimActivity 1.4s ease-in-out infinite; }
 @keyframes sonimActivity { 0%,100% { opacity: 1; } 50% { opacity: .55; } }
 
 /* Assistant (SONIM) : identité neutre, sur l'encre de la plateforme. */
@@ -192,16 +192,16 @@
   content: none;
 }
 
-/* Branded task cards: no emoji, just AYROVI vector icons and shared editorial surfaces. */
+/* Branded task cards: no emoji, just ZAYROVI vector icons and shared editorial surfaces. */
 .assistant-quick-card {
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--ayrovi-primary) 18%, transparent);
-  background: var(--ayrovi-white);
+  border: 1px solid color-mix(in srgb, var(--zayrovi-primary) 18%, transparent);
+  background: var(--zayrovi-white);
   box-shadow:
-    0 10px 24px -20px color-mix(in srgb, var(--ayrovi-primary-dark) 45%, transparent),
-    inset 0 1px 0 color-mix(in srgb, var(--ayrovi-white) 90%, transparent);
+    0 10px 24px -20px color-mix(in srgb, var(--zayrovi-primary-dark) 45%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--zayrovi-white) 90%, transparent);
 }
 
 .assistant-quick-card::before {
@@ -209,8 +209,8 @@
 }
 
 .assistant-quick-card:hover {
-  border-color: color-mix(in srgb, var(--ayrovi-primary) 34%, transparent);
-  box-shadow: 0 12px 26px -20px color-mix(in srgb, var(--ayrovi-primary-dark) 50%, transparent);
+  border-color: color-mix(in srgb, var(--zayrovi-primary) 34%, transparent);
+  box-shadow: 0 12px 26px -20px color-mix(in srgb, var(--zayrovi-primary-dark) 50%, transparent);
   transform: translateY(-1px);
 }
 
@@ -220,9 +220,9 @@
 }
 
 .assistant-quick-card--dark {
-  border-color: color-mix(in srgb, var(--ayrovi-primary) 18%, transparent);
-  background: var(--ayrovi-white);
-  color: var(--ayrovi-neutral-900);
+  border-color: color-mix(in srgb, var(--zayrovi-primary) 18%, transparent);
+  background: var(--zayrovi-white);
+  color: var(--zayrovi-neutral-900);
 }
 
 .assistant-quick-card__icon {
@@ -230,15 +230,15 @@
   width: 34px;
   height: 34px;
   place-items: center;
-  border: 1px solid color-mix(in srgb, var(--ayrovi-white) 30%, transparent);
+  border: 1px solid color-mix(in srgb, var(--zayrovi-white) 30%, transparent);
   border-radius: 11px;
-  color: var(--ayrovi-white);
-  background: var(--ayrovi-primary);
-  box-shadow: 0 6px 14px -9px color-mix(in srgb, var(--ayrovi-primary-dark) 55%, transparent);
+  color: var(--zayrovi-white);
+  background: var(--zayrovi-primary);
+  box-shadow: 0 6px 14px -9px color-mix(in srgb, var(--zayrovi-primary-dark) 55%, transparent);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ayrovi-motion,
+  .zayrovi-motion,
   .assistant-motion-badge,
   .assistant-quick-card {
     animation: none !important;
@@ -248,7 +248,7 @@
   }
 }
 
-/* Entrée douce de l'écran d'accueil AYROVI AI */
+/* Entrée douce de l'écran d'accueil ZAYROVI AI */
 .assistant-welcome {
   animation: assistantWelcomeIn 320ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
@@ -305,7 +305,7 @@
   to { transform: translateX(440%); opacity: 0; }
 }
 
-/* AYROVI assistant subview entrance animations */
+/* ZAYROVI assistant subview entrance animations */
 @keyframes assistantSideMenuIn {
   from { transform: translateX(-100%); }
   to { transform: translateX(0); }
@@ -340,15 +340,15 @@
 }
 
 /* Dégradé de marque (Utilisé pour les bannières hero/compte) */
-.bg-brand-gradient { background: var(--ayrovi-gradient); }
+.bg-brand-gradient { background: var(--zayrovi-gradient); }
 
 /* Barre de navigation « verre dépoli » */
 .glass-header {
-  background: color-mix(in oklab, var(--ayrovi-white) 72%, transparent);
+  background: color-mix(in oklab, var(--zayrovi-white) 72%, transparent);
   -webkit-backdrop-filter: saturate(1.6) blur(14px);
   backdrop-filter: saturate(1.6) blur(14px);
-  border-bottom: 1px solid color-mix(in oklab, var(--ayrovi-border) 65%, transparent);
-  box-shadow: 0 10px 30px -18px color-mix(in srgb, var(--ayrovi-neutral-950) 25%, transparent);
+  border-bottom: 1px solid color-mix(in oklab, var(--zayrovi-border) 65%, transparent);
+  box-shadow: 0 10px 30px -18px color-mix(in srgb, var(--zayrovi-neutral-950) 25%, transparent);
 }
 
 /* Effet de balayage « Google Lens » sur l'aperçu d'image analysée */
@@ -357,20 +357,20 @@
   content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none;
   /* Zalando strategy : le balayage reste une micro-interaction, mais en encre neutre
      (blanc sur la photo) — comme Google Lens / Apple, pas un lavis orange. */
-  background: linear-gradient(180deg, transparent 0%, color-mix(in oklab, var(--ayrovi-white) 22%, transparent) 46%, color-mix(in oklab, var(--ayrovi-white) 55%, transparent) 50%, color-mix(in oklab, var(--ayrovi-white) 22%, transparent) 54%, transparent 100%);
+  background: linear-gradient(180deg, transparent 0%, color-mix(in oklab, var(--zayrovi-white) 22%, transparent) 46%, color-mix(in oklab, var(--zayrovi-white) 55%, transparent) 50%, color-mix(in oklab, var(--zayrovi-white) 22%, transparent) 54%, transparent 100%);
   animation: lens-sweep 2.1s ease-in-out infinite;
 }
 .lens-scan::after {
   content: ""; position: absolute; inset: 10px; z-index: 2; pointer-events: none; border-radius: 12px;
   background:
-    linear-gradient(var(--ayrovi-white), var(--ayrovi-white)) top left / 22px 2px,
-    linear-gradient(var(--ayrovi-white), var(--ayrovi-white)) top left / 2px 22px,
-    linear-gradient(var(--ayrovi-white), var(--ayrovi-white)) top right / 22px 2px,
-    linear-gradient(var(--ayrovi-white), var(--ayrovi-white)) top right / 2px 22px,
-    linear-gradient(var(--ayrovi-white), var(--ayrovi-white)) bottom left / 22px 2px,
-    linear-gradient(var(--ayrovi-white), var(--ayrovi-white)) bottom left / 2px 22px,
-    linear-gradient(var(--ayrovi-white), var(--ayrovi-white)) bottom right / 22px 2px,
-    linear-gradient(var(--ayrovi-white), var(--ayrovi-white)) bottom right / 2px 22px;
+    linear-gradient(var(--zayrovi-white), var(--zayrovi-white)) top left / 22px 2px,
+    linear-gradient(var(--zayrovi-white), var(--zayrovi-white)) top left / 2px 22px,
+    linear-gradient(var(--zayrovi-white), var(--zayrovi-white)) top right / 22px 2px,
+    linear-gradient(var(--zayrovi-white), var(--zayrovi-white)) top right / 2px 22px,
+    linear-gradient(var(--zayrovi-white), var(--zayrovi-white)) bottom left / 22px 2px,
+    linear-gradient(var(--zayrovi-white), var(--zayrovi-white)) bottom left / 2px 22px,
+    linear-gradient(var(--zayrovi-white), var(--zayrovi-white)) bottom right / 22px 2px,
+    linear-gradient(var(--zayrovi-white), var(--zayrovi-white)) bottom right / 2px 22px;
   background-repeat: no-repeat;
   animation: lens-corners 2.1s ease-in-out infinite;
 }
@@ -397,7 +397,7 @@
 }
 @keyframes lens-dots-drift { from { background-position: 0 0, 12px 6px; } to { background-position: 24px 48px, 50px 44px; } }
 
-/* AYROVIX V2 - Glassmorphism Laser & Particles (legacy) + Google Lens Stars (new) */
+/* ZAYROVIX V2 - Glassmorphism Laser & Particles (legacy) + Google Lens Stars (new) */
 .lens-laser {
   top: 0;
   animation: lens-laser-move 2.4s ease-in-out infinite;
@@ -411,10 +411,10 @@
 }
 .lens-particles {
   background-image: 
-    radial-gradient(2px 2px at 20% 30%, var(--ayrovi-white), transparent),
-    radial-gradient(2px 2px at 40% 70%, var(--ayrovi-primary-light), transparent),
-    radial-gradient(1.5px 1.5px at 60% 20%, var(--ayrovi-white), transparent),
-    radial-gradient(1.5px 1.5px at 80% 50%, var(--ayrovi-primary), transparent);
+    radial-gradient(2px 2px at 20% 30%, var(--zayrovi-white), transparent),
+    radial-gradient(2px 2px at 40% 70%, var(--zayrovi-primary-light), transparent),
+    radial-gradient(1.5px 1.5px at 60% 20%, var(--zayrovi-white), transparent),
+    radial-gradient(1.5px 1.5px at 80% 50%, var(--zayrovi-primary), transparent);
   background-size: 100px 100px;
   animation: particles-drift 3s linear infinite;
   opacity: 0.6;
@@ -456,7 +456,7 @@
   position: absolute;
   inset: -4px;
   border-radius: 12px;
-  background: color-mix(in srgb, var(--ayrovi-text-primary) 18%, transparent);
+  background: color-mix(in srgb, var(--zayrovi-text-primary) 18%, transparent);
   animation: price-pulse-anim 1.8s ease-in-out infinite;
   z-index: -1;
 }
@@ -476,13 +476,13 @@
 
 /* Glassmorphism product card */
 .ayrovix-glass {
-  background: color-mix(in srgb, var(--ayrovi-white) 88%, transparent);
+  background: color-mix(in srgb, var(--zayrovi-white) 88%, transparent);
   backdrop-filter: blur(16px) saturate(1.4);
-  border: 1px solid color-mix(in srgb, var(--ayrovi-white) 40%, transparent);
-  box-shadow: 0 8px 32px color-mix(in srgb, var(--ayrovi-neutral-950) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--zayrovi-white) 40%, transparent);
+  box-shadow: 0 8px 32px color-mix(in srgb, var(--zayrovi-neutral-950) 12%, transparent);
 }
 
-/* AYROVIX product media — preserve every original image without cropping. */
+/* ZAYROVIX product media — preserve every original image without cropping. */
 .ayrovix-product-gallery {
   width: 100%;
   min-width: 0;
@@ -567,12 +567,12 @@
 .link-analyze { position: relative; overflow: hidden; }
 .link-analyze::after {
   content: ""; position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(110deg, transparent 30%, color-mix(in oklab, var(--ayrovi-ink-deep) 16%, transparent) 50%, transparent 70%);
+  background: linear-gradient(110deg, transparent 30%, color-mix(in oklab, var(--zayrovi-ink-deep) 16%, transparent) 50%, transparent 70%);
   animation: link-shimmer 1.4s linear infinite;
 }
 @keyframes link-shimmer { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
 
-/* AYROVIX Lens — montée plein écran façon caméra mobile */
+/* ZAYROVIX Lens — montée plein écran façon caméra mobile */
 .ayrovix-sheet { animation: ayrovix-sheet-in 340ms cubic-bezier(.22, .61, .36, 1); }
 @keyframes ayrovix-sheet-in { from { opacity: 0; transform: translateY(4vh); } to { opacity: 1; transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { .ayrovix-sheet, .lens-scan { animation: none !important; } }
@@ -621,8 +621,8 @@
 
 .public-site-header.is-over-hero .public-site-header-icon:hover,
 .public-site-header.is-over-hero .public-site-header-icon:focus-visible,
-.public-site-header.is-over-hero .public-site-header-icon:active { color: var(--ayrovi-color-brand-orange) !important; }
-.public-site-header.is-over-hero .public-site-header-icon { color: var(--ayrovi-bg-main) !important; }
+.public-site-header.is-over-hero .public-site-header-icon:active { color: var(--zayrovi-color-brand-orange) !important; }
+.public-site-header.is-over-hero .public-site-header-icon { color: var(--zayrovi-bg-main) !important; }
 
 /* الهيدر فوق الـ Hero: شفاف تماماً بلا زجاجية — بخصوصية أعلى من قاعدة public-site-header */
 .public-site-header.is-over-hero {
@@ -657,8 +657,8 @@
   .transition-card-fade, .discovery-panel { animation: none; }
 }
 
-/* ============ AYROVI — MOBILE WIDTH-FIRST LAYOUT RULE ============
-   قاعدة AYROVI: container النص = عرض مريح للقراءة،
+/* ============ ZAYROVI — MOBILE WIDTH-FIRST LAYOUT RULE ============
+   قاعدة ZAYROVI: container النص = عرض مريح للقراءة،
    أما الـvisual / slider / mockup = أقصى عرض متاح من الشاشة.
    كل المسافات الرأسية هنا محكومة بهذه المتغيرات (40–56px للأقسام). */
 :root {
@@ -688,7 +688,7 @@
 
 /* ============ BRANDS SHOWCASE — عنوان مستقل + slider بعرض الشاشة ============ */
 /* الهيكل: Section → Heading block → Title → Subtitle → 32px → Full-width slider */
-.brands-section { width: 100%; background: var(--ayrovi-bg-main); padding-block: var(--ay-section-y) 12px; }
+.brands-section { width: 100%; background: var(--zayrovi-bg-main); padding-block: var(--ay-section-y) 12px; }
 
 .brands-heading { padding-inline: var(--ay-gutter); text-align: left; }
 .brands-heading__title {
@@ -698,7 +698,7 @@
   font-weight: 800;
   line-height: 1.08;
   letter-spacing: -0.025em;
-  color: var(--ayrovi-ink-deep);
+  color: var(--zayrovi-ink-deep);
 }
 .brands-heading__subtitle {
   margin: var(--ay-heading-to-text) 0 0;
@@ -713,7 +713,7 @@
 }
 
 /* الوحدة البصرية: شريط داكن بعرض الشاشة على الهاتف، محصور ومُدوّر على Desktop */
-.brands-rail { position: relative; width: 100%; background: var(--ayrovi-ink-deep); padding-block: 22px; margin-top: var(--ay-heading-to-slider); }
+.brands-rail { position: relative; width: 100%; background: var(--zayrovi-ink-deep); padding-block: 22px; margin-top: var(--ay-heading-to-slider); }
 @media (max-width: 1023px) {
   /* الوحدة البصرية تخرج من أي container وتصل إلى حواف الشاشة */
   .brands-rail {
@@ -780,13 +780,13 @@
   flex-shrink: 0;
 }
 
-.brand-tile:hover { border-color: color-mix(in srgb, var(--ayrovi-color-brand-orange) 65%, transparent); background: rgba(255, 255, 255, 0.09); transform: translateY(-2px); }
+.brand-tile:hover { border-color: color-mix(in srgb, var(--zayrovi-color-brand-orange) 65%, transparent); background: rgba(255, 255, 255, 0.09); transform: translateY(-2px); }
 
 .brand-tile__logo { display: grid; place-items: center; width: 100%; height: 34px; }
 .brand-tile__logo img { max-height: 34px; max-width: 84px; object-fit: contain; }
-.brand-tile__letter { font-size: 18px; font-weight: 900; color: var(--ayrovi-bg-main)fff; }
+.brand-tile__letter { font-size: 18px; font-weight: 900; color: var(--zayrovi-bg-main)fff; }
 
-.brand-tile__name { font-size: 12.5px; font-weight: 700; color: var(--ayrovi-bg-main)fff; text-align: center; }
+.brand-tile__name { font-size: 12.5px; font-weight: 700; color: var(--zayrovi-bg-main)fff; text-align: center; }
 .brand-tile__cat { font-size: 10.5px; font-weight: 500; color: rgba(255, 255, 255, 0.55); }
 
 @media (prefers-reduced-motion: reduce) {
@@ -812,7 +812,7 @@
 /* ============ LENS v2 — مطابق للنموذج المرجعي ============ */
 /* Zalando strategy : section LENS entièrement blanche — outil d'IA professionnel
    (Google Lens / Apple), pas une affiche orange. */
-.lens2 { position: relative; width: 100%; overflow: hidden; background: var(--ayrovi-bg-main); padding-block: 40px; }
+.lens2 { position: relative; width: 100%; overflow: hidden; background: var(--zayrovi-bg-main); padding-block: 40px; }
 /* déprécié : dégradé orange décoratif en coin de section — interdit par la charte
    (l'orange n'est pas un outil de décoration). La règle est neutralisée, pas supprimée,
    pour que les maquettes héritées qui la rendent encore ne cassent pas. */
@@ -821,70 +821,70 @@
 .lens2__grid { display: grid; grid-template-columns: 1fr; gap: 28px; align-items: center; }
 @media (min-width: 1024px) { .lens2 { padding-block: 64px; } .lens2__grid { grid-template-columns: 1.05fr 0.95fr; gap: 48px; } }
 
-.lens2__eyebrow { margin: 0 0 10px; font-size: 12px; font-weight: 800; letter-spacing: 0.22em; text-transform: uppercase; color: var(--ayrovi-text-secondary); }
-.lens2__title { margin: 0; font-size: 34px; line-height: 1.12; font-weight: 800; letter-spacing: -0.02em; color: var(--ayrovi-text-primary); }
+.lens2__eyebrow { margin: 0 0 10px; font-size: 12px; font-weight: 800; letter-spacing: 0.22em; text-transform: uppercase; color: var(--zayrovi-text-secondary); }
+.lens2__title { margin: 0; font-size: 34px; line-height: 1.12; font-weight: 800; letter-spacing: -0.02em; color: var(--zayrovi-text-primary); }
 @media (min-width: 640px) { .lens2__title { font-size: 42px; } }
 @media (min-width: 1024px) { .lens2__title { font-size: 46px; } }
-.lens2__desc { margin: 12px 0 0; max-width: 46ch; font-size: 15px; line-height: 1.6; color: color-mix(in srgb, var(--ayrovi-text-primary) 62%, transparent); }
+.lens2__desc { margin: 12px 0 0; max-width: 46ch; font-size: 15px; line-height: 1.6; color: color-mix(in srgb, var(--zayrovi-text-primary) 62%, transparent); }
 /* Primary customer action: black capsule in light theme, white in dark theme. */
-.lens2__cta { display: inline-flex; align-items: center; gap: 9px; margin-top: 18px; padding: 14px 26px; border: 0; border-radius: var(--ayrovi-radius-cta,999px); background: var(--ayrovi-cta); color: var(--ayrovi-cta-ink); font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: 0 10px 24px -14px color-mix(in srgb, var(--ayrovi-cta) 45%, transparent); }
+.lens2__cta { display: inline-flex; align-items: center; gap: 9px; margin-top: 18px; padding: 14px 26px; border: 0; border-radius: var(--zayrovi-radius-cta,999px); background: var(--zayrovi-cta); color: var(--zayrovi-cta-ink); font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: 0 10px 24px -14px color-mix(in srgb, var(--zayrovi-cta) 45%, transparent); }
 .lens2__cta:hover { filter: brightness(0.95); }
 
 .lens2__minis { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; margin-top: 20px; }
-.lens2__mini { display: flex; align-items: center; gap: 9px; font-size: 13.5px; font-weight: 700; color: var(--ayrovi-text-primary); }
-.lens2__mini svg { color: var(--ayrovi-text-primary); flex-shrink: 0; }
+.lens2__mini { display: flex; align-items: center; gap: 9px; font-size: 13.5px; font-weight: 700; color: var(--zayrovi-text-primary); }
+.lens2__mini svg { color: var(--zayrovi-text-primary); flex-shrink: 0; }
 
-.lens2__ai { display: flex; gap: 12px; margin-top: 18px; padding: 14px; border-radius: 16px; background: rgba(255, 255, 255, 0.6); border: 1px solid color-mix(in srgb, var(--ayrovi-text-primary) 6%, transparent); }
-.lens2__ai svg { color: var(--ayrovi-text-primary); flex-shrink: 0; margin-top: 2px; }
-.lens2__ai strong { display: block; font-size: 14.5px; font-weight: 800; color: var(--ayrovi-text-primary); }
-.lens2__ai p { margin: 6px 0 0; font-size: 12.5px; line-height: 1.6; color: color-mix(in srgb, var(--ayrovi-text-primary) 60%, transparent); }
+.lens2__ai { display: flex; gap: 12px; margin-top: 18px; padding: 14px; border-radius: 16px; background: rgba(255, 255, 255, 0.6); border: 1px solid color-mix(in srgb, var(--zayrovi-text-primary) 6%, transparent); }
+.lens2__ai svg { color: var(--zayrovi-text-primary); flex-shrink: 0; margin-top: 2px; }
+.lens2__ai strong { display: block; font-size: 14.5px; font-weight: 800; color: var(--zayrovi-text-primary); }
+.lens2__ai p { margin: 6px 0 0; font-size: 12.5px; line-height: 1.6; color: color-mix(in srgb, var(--zayrovi-text-primary) 60%, transparent); }
 
 /* Règle « flèches des prix marchands » : plus de pastille orange à côté de chaque prix.
    Cercle transparent, filet fin 1px, flèche noire — confort visuel pendant la comparaison. */
-.lens2__merchant-go { width: 24px; height: 24px; border-radius: 999px; border: 1px solid var(--ayrovi-border-soft); background: transparent; color: var(--ayrovi-text-primary); display: grid; place-items: center; }
+.lens2__merchant-go { width: 24px; height: 24px; border-radius: 999px; border: 1px solid var(--zayrovi-border-soft); background: transparent; color: var(--zayrovi-text-primary); display: grid; place-items: center; }
 
 /* Comment ça marche */
-.lens2__steps { margin-top: 28px; background: var(--ayrovi-bg-main); border-radius: 20px; padding: 22px 18px; box-shadow: 0 16px 40px -30px color-mix(in srgb, var(--ayrovi-text-primary) 30%, transparent); }
-.lens2__steps-title { margin: 0 0 18px; text-align: center; font-size: 19px; font-weight: 800; color: var(--ayrovi-text-primary); }
+.lens2__steps { margin-top: 28px; background: var(--zayrovi-bg-main); border-radius: 20px; padding: 22px 18px; box-shadow: 0 16px 40px -30px color-mix(in srgb, var(--zayrovi-text-primary) 30%, transparent); }
+.lens2__steps-title { margin: 0 0 18px; text-align: center; font-size: 19px; font-weight: 800; color: var(--zayrovi-text-primary); }
 .lens2__steps-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 12px; }
 @media (min-width: 900px) { .lens2__steps-grid { grid-template-columns: repeat(4, 1fr); } }
 .lens2__step { position: relative; text-align: center; }
 /* Tracker : seule l'étape active est orange, les suivantes restent gris pâle. */
-.lens2__step-num { position: absolute; top: -8px; left: 50%; transform: translateX(-34px); width: 20px; height: 20px; border-radius: 999px; background: var(--ayrovi-border-soft); color: var(--ayrovi-text-secondary); font-size: 11px; font-weight: 800; display: grid; place-items: center; z-index: 2; }
-.lens2__step.is-active .lens2__step-num { background: var(--ayrovi-color-brand-orange); color: var(--ayrovi-bg-main); }
-.lens2__step-icon { width: 52px; height: 52px; border-radius: 14px; margin-inline: auto; display: grid; place-items: center; background: var(--ayrovi-bg-surface); color: var(--ayrovi-text-primary); }
-.lens2__step.is-active .lens2__step-icon { color: var(--ayrovi-color-brand-orange); }
-.lens2__step strong { display: block; margin-top: 12px; font-size: 13.5px; font-weight: 800; color: var(--ayrovi-text-primary); }
-.lens2__step p { margin: 6px 0 0; font-size: 11.5px; line-height: 1.5; color: color-mix(in srgb, var(--ayrovi-text-primary) 60%, transparent); }
+.lens2__step-num { position: absolute; top: -8px; left: 50%; transform: translateX(-34px); width: 20px; height: 20px; border-radius: 999px; background: var(--zayrovi-border-soft); color: var(--zayrovi-text-secondary); font-size: 11px; font-weight: 800; display: grid; place-items: center; z-index: 2; }
+.lens2__step.is-active .lens2__step-num { background: var(--zayrovi-color-brand-orange); color: var(--zayrovi-bg-main); }
+.lens2__step-icon { width: 52px; height: 52px; border-radius: 14px; margin-inline: auto; display: grid; place-items: center; background: var(--zayrovi-bg-surface); color: var(--zayrovi-text-primary); }
+.lens2__step.is-active .lens2__step-icon { color: var(--zayrovi-color-brand-orange); }
+.lens2__step strong { display: block; margin-top: 12px; font-size: 13.5px; font-weight: 800; color: var(--zayrovi-text-primary); }
+.lens2__step p { margin: 6px 0 0; font-size: 11.5px; line-height: 1.5; color: color-mix(in srgb, var(--zayrovi-text-primary) 60%, transparent); }
 
 /* banner */
 /* Bannière dépréciée en tant que bloc orange plein : elle devient une carte de surface
    (fond gris très clair, texte noir) dont la seule trace d'identité est le filet
    vertical de 3px sur le bord amont. */
-.lens2__banner { margin-top: 20px; display: flex; flex-direction: column; gap: 16px; align-items: flex-start; border-radius: 18px; padding: 18px 20px; background: var(--ayrovi-bg-surface); border: 1px solid var(--ayrovi-border-soft); border-inline-start: 3px solid var(--ayrovi-color-brand-orange); color: var(--ayrovi-text-primary); }
+.lens2__banner { margin-top: 20px; display: flex; flex-direction: column; gap: 16px; align-items: flex-start; border-radius: 18px; padding: 18px 20px; background: var(--zayrovi-bg-surface); border: 1px solid var(--zayrovi-border-soft); border-inline-start: 3px solid var(--zayrovi-color-brand-orange); color: var(--zayrovi-text-primary); }
 @media (min-width: 768px) { .lens2__banner { flex-direction: row; align-items: center; justify-content: space-between; } }
 .lens2__banner-text { display: flex; gap: 12px; }
 .lens2__banner-text svg { flex-shrink: 0; margin-top: 2px; }
-.lens2__banner-text strong { display: block; font-size: 15.5px; font-weight: 800; color: var(--ayrovi-text-primary); }
-.lens2__banner-text p { margin: 5px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--ayrovi-text-secondary); }
+.lens2__banner-text strong { display: block; font-size: 15.5px; font-weight: 800; color: var(--zayrovi-text-primary); }
+.lens2__banner-text p { margin: 5px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--zayrovi-text-secondary); }
 /* Un seul bouton orange plein par écran : le CTA de la bannière est rétrogradé en
    secondaire (fond blanc, filet fin, encre noire) au profit du CTA principal. */
-.lens2__banner-cta { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--ayrovi-border-soft); border-radius: 999px; background: var(--ayrovi-bg-main); color: var(--ayrovi-text-primary); font-size: 14px; font-weight: 800; padding: 12px 22px; cursor: pointer; flex-shrink: 0; }
-.lens2__banner-cta:hover { border-color: var(--ayrovi-text-primary); }
+.lens2__banner-cta { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--zayrovi-border-soft); border-radius: 999px; background: var(--zayrovi-bg-main); color: var(--zayrovi-text-primary); font-size: 14px; font-weight: 800; padding: 12px 22px; cursor: pointer; flex-shrink: 0; }
+.lens2__banner-cta:hover { border-color: var(--zayrovi-text-primary); }
 
-/* ============ AYROVIX LENS — الصفحة الأولى (home) + حالة التحليل ============ */
+/* ============ ZAYROVIX LENS — الصفحة الأولى (home) + حالة التحليل ============ */
 .lens-home { display: flex; flex-direction: column; gap: 18px; }
 .lens-home__intro { text-align: center; padding: 8px 4px 0; }
 .lens-home__title { margin: 0; font-size: 30px; line-height: 1.1; font-weight: 800; letter-spacing: -0.02em; }
-.lens-home__accent { color: var(--ayrovi-text-primary); }
+.lens-home__accent { color: var(--zayrovi-text-primary); }
 .lens-home__desc { margin: 12px auto 0; max-width: 34ch; font-size: 13.5px; line-height: 1.6; color: color-mix(in srgb, currentColor 62%, transparent); }
 .lens-home__benefits { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px 14px; margin-top: 16px; }
 .lens-home__benefit { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; color: color-mix(in srgb, currentColor 78%, transparent); }
-.lens-home__benefit svg { color: var(--ayrovi-text-primary); }
+.lens-home__benefit svg { color: var(--zayrovi-text-primary); }
 
-.lens-drop { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%; padding: 26px 16px; border-radius: 22px; border: 1.5px dashed var(--ayrovi-border-soft); background: var(--ayrovi-bg-surface); color: inherit; cursor: pointer; }
-.lens-drop:hover { border-color: var(--ayrovi-text-primary); }
-.lens-drop__icon { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 14px; background: var(--ayrovi-bg-main); border: 1px solid var(--ayrovi-border-soft); color: var(--ayrovi-text-primary); }
+.lens-drop { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%; padding: 26px 16px; border-radius: 22px; border: 1.5px dashed var(--zayrovi-border-soft); background: var(--zayrovi-bg-surface); color: inherit; cursor: pointer; }
+.lens-drop:hover { border-color: var(--zayrovi-text-primary); }
+.lens-drop__icon { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 14px; background: var(--zayrovi-bg-main); border: 1px solid var(--zayrovi-border-soft); color: var(--zayrovi-text-primary); }
 .lens-drop strong { font-size: 14px; font-weight: 800; }
 .lens-drop small { font-size: 11px; color: color-mix(in srgb, currentColor 60%, transparent); }
 .lens-home__actions { display: flex; flex-direction: column; gap: 10px; }
@@ -893,20 +893,20 @@
 .lens-frame { position: relative; overflow: hidden; border-radius: 22px; border: 1px solid color-mix(in srgb, currentColor 12%, transparent); background: color-mix(in srgb, currentColor 5%, transparent); }
 .lens-frame__img { display: block; width: 100%; max-height: 52vh; object-fit: cover; }
 .lens-frame__empty { display: grid; place-items: center; height: 220px; }
-.lens-frame__dots { position: absolute; inset: 0; pointer-events: none; background-image: radial-gradient(color-mix(in srgb, var(--ayrovi-white) 85%, transparent) 1.5px, transparent 1.6px); background-size: 22px 22px; opacity: .5; }
-.lens-frame__corner { position: absolute; width: 26px; height: 26px; border: 3px solid var(--ayrovi-white); z-index: 2; }
+.lens-frame__dots { position: absolute; inset: 0; pointer-events: none; background-image: radial-gradient(color-mix(in srgb, var(--zayrovi-white) 85%, transparent) 1.5px, transparent 1.6px); background-size: 22px 22px; opacity: .5; }
+.lens-frame__corner { position: absolute; width: 26px; height: 26px; border: 3px solid var(--zayrovi-white); z-index: 2; }
 .lens-frame__corner.tl { top: 14px; left: 14px; border-right: 0; border-bottom: 0; border-radius: 10px 0 0 0; }
 .lens-frame__corner.tr { top: 14px; right: 14px; border-left: 0; border-bottom: 0; border-radius: 0 10px 0 0; }
 .lens-frame__corner.bl { bottom: 14px; left: 14px; border-right: 0; border-top: 0; border-radius: 0 0 0 10px; }
 .lens-frame__corner.br { bottom: 14px; right: 14px; border-left: 0; border-top: 0; border-radius: 0 0 10px 0; }
-.lens-frame__beam { position: absolute; left: 6%; right: 6%; top: 45%; height: 2px; background: var(--ayrovi-white); box-shadow: 0 0 16px color-mix(in srgb, var(--ayrovi-white) 70%, transparent); animation: lensBeam 2.6s ease-in-out infinite; z-index: 2; }
+.lens-frame__beam { position: absolute; left: 6%; right: 6%; top: 45%; height: 2px; background: var(--zayrovi-white); box-shadow: 0 0 16px color-mix(in srgb, var(--zayrovi-white) 70%, transparent); animation: lensBeam 2.6s ease-in-out infinite; z-index: 2; }
 
-.lens-spinner { width: 34px; height: 34px; border-radius: 999px; border: 3px solid var(--ayrovi-text-primary); border-right-color: transparent; animation: lensSpin 0.9s linear infinite; }
+.lens-spinner { width: 34px; height: 34px; border-radius: 999px; border: 3px solid var(--zayrovi-text-primary); border-right-color: transparent; animation: lensSpin 0.9s linear infinite; }
 @keyframes lensSpin { to { transform: rotate(360deg); } }
 
 .lens-analyzing { display: flex; flex-direction: column; gap: 14px; }
 .lens-analyzing__head { display: flex; align-items: center; justify-content: center; gap: 8px; }
-.lens-analyzing__head svg { color: var(--ayrovi-text-primary); }
+.lens-analyzing__head svg { color: var(--zayrovi-text-primary); }
 .lens-analyzing__head strong { font-size: 16px; font-weight: 800; }
 .lens-analyzing__sub { margin: -6px auto 0; max-width: 36ch; text-align: center; font-size: 12.5px; line-height: 1.55; color: color-mix(in srgb, currentColor 62%, transparent); }
 
@@ -916,22 +916,22 @@
 .lens-step:not(:first-child)::before { content: ''; position: absolute; top: 11px; right: calc(50% + 14px); left: calc(-50% + 14px); height: 1.5px; background: color-mix(in srgb, currentColor 18%, transparent); }
 /* Tracker d'étapes — norme figée : trait ET point de l'étape active en orange,
    étapes futures en gris pâle. Aucun autre orange dans le rail. */
-.lens-step.is-done:not(:first-child)::before, .lens-step.is-active:not(:first-child)::before { background: var(--ayrovi-color-brand-orange); }
-.lens-step__dot { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 999px; border: 2px solid color-mix(in srgb, currentColor 25%, transparent); color: var(--ayrovi-bg-main); z-index: 1; }
-.lens-step.is-active .lens-step__dot { border-color: var(--ayrovi-color-brand-orange); background: var(--ayrovi-color-brand-orange); box-shadow: 0 0 0 4px color-mix(in srgb, var(--ayrovi-color-brand-orange) 18%, transparent); }
-.lens-step.is-done .lens-step__dot { border-color: var(--ayrovi-color-brand-orange); background: var(--ayrovi-color-brand-orange); }
+.lens-step.is-done:not(:first-child)::before, .lens-step.is-active:not(:first-child)::before { background: var(--zayrovi-color-brand-orange); }
+.lens-step__dot { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 999px; border: 2px solid color-mix(in srgb, currentColor 25%, transparent); color: var(--zayrovi-bg-main); z-index: 1; }
+.lens-step.is-active .lens-step__dot { border-color: var(--zayrovi-color-brand-orange); background: var(--zayrovi-color-brand-orange); box-shadow: 0 0 0 4px color-mix(in srgb, var(--zayrovi-color-brand-orange) 18%, transparent); }
+.lens-step.is-done .lens-step__dot { border-color: var(--zayrovi-color-brand-orange); background: var(--zayrovi-color-brand-orange); }
 .lens-step__label { font-size: 10px; font-weight: 700; color: color-mix(in srgb, currentColor 66%, transparent); }
-.lens-step.is-active .lens-step__label, .lens-step.is-done .lens-step__label { color: var(--ayrovi-text-primary); }
+.lens-step.is-active .lens-step__label, .lens-step.is-done .lens-step__label { color: var(--zayrovi-text-primary); }
 
 .lens-analyzing__card { display: flex; gap: 12px; align-items: flex-start; padding: 14px; border-radius: 16px; border: 1px solid color-mix(in srgb, currentColor 10%, transparent); background: color-mix(in srgb, currentColor 4%, transparent); }
-.lens-analyzing__cardicon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0; background: var(--ayrovi-bg-surface); border: 1px solid var(--ayrovi-border-soft); color: var(--ayrovi-text-primary); }
+.lens-analyzing__cardicon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0; background: var(--zayrovi-bg-surface); border: 1px solid var(--zayrovi-border-soft); color: var(--zayrovi-text-primary); }
 .lens-analyzing__card strong { display: block; font-size: 13.5px; font-weight: 800; }
 .lens-analyzing__card p { margin: 4px 0 0; font-size: 11.5px; line-height: 1.5; color: color-mix(in srgb, currentColor 62%, transparent); }
 
 @media (prefers-reduced-motion: reduce) { .lens-frame__beam, .lens-spinner { animation: none; } }
 
 /* Legacy class name retained for compatibility; customer actions use the semantic CTA token. */
-.ay-cta-orange { background: var(--ayrovi-cta); color: var(--ayrovi-cta-ink); border: 0; border-radius: var(--ayrovi-radius-cta, 999px); cursor: pointer; box-shadow: 0 10px 24px -14px color-mix(in srgb, var(--ayrovi-cta) 45%, transparent); }
+.ay-cta-orange { background: var(--zayrovi-cta); color: var(--zayrovi-cta-ink); border: 0; border-radius: var(--zayrovi-radius-cta, 999px); cursor: pointer; box-shadow: 0 10px 24px -14px color-mix(in srgb, var(--zayrovi-cta) 45%, transparent); }
 .ay-cta-orange:hover { filter: brightness(0.95); }
 
 /* ============================================================
@@ -949,7 +949,7 @@
   /* Écart interne : surtitre → titre → paragraphe → média → lien. */
   --lens-feature-step: clamp(16px, 3.8vw, 24px);
 
-  background: var(--ayrovi-bg-main);
+  background: var(--zayrovi-bg-main);
   padding-block: var(--lens-feature-gap);
   padding-inline: var(--lens-feature-gutter);
 }
@@ -962,7 +962,7 @@
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--ayrovi-text-secondary);
+  color: var(--zayrovi-text-secondary);
 }
 
 /* Le titre est LA hiérarchie de la section — nettement plus grand que le reste,
@@ -973,7 +973,7 @@
   line-height: 1.02;
   letter-spacing: -0.022em;
   font-weight: 800;
-  color: var(--ayrovi-text-primary);
+  color: var(--zayrovi-text-primary);
   max-width: 18ch;
   text-wrap: balance;
 }
@@ -982,7 +982,7 @@
   margin: var(--lens-feature-step) 0 0;
   font-size: clamp(16px, 4.2vw, 21px);
   line-height: 1.5;
-  color: var(--ayrovi-text-secondary);
+  color: var(--zayrovi-text-secondary);
   max-width: 48ch;
 }
 
@@ -995,8 +995,8 @@
   margin-inline: calc(-1 * var(--lens-feature-gutter));
   border-radius: 0;
   border: 0;
-  border-block: 1px solid var(--ayrovi-border-soft);
-  background: var(--ayrovi-bg-surface);
+  border-block: 1px solid var(--zayrovi-border-soft);
+  background: var(--zayrovi-bg-surface);
   aspect-ratio: var(--lens-feature-ratio, 16 / 9);
 }
 
@@ -1008,7 +1008,7 @@
   height: 100%;
   border: 0;
   object-fit: cover;
-  background: var(--ayrovi-bg-surface);
+  background: var(--zayrovi-bg-surface);
 }
 
 /* Lien d'action éditorial (style Zalando) : pas de bouton plein, juste un
@@ -1020,22 +1020,22 @@
   gap: 10px;
   padding: 0 0 5px;
   border: 0;
-  border-bottom: 1px solid var(--ayrovi-text-primary);
+  border-bottom: 1px solid var(--zayrovi-text-primary);
   background: none;
   cursor: pointer;
   font-size: clamp(15px, 3.7vw, 17px);
   font-weight: 700;
-  color: var(--ayrovi-text-primary);
+  color: var(--zayrovi-text-primary);
 }
 
-.lens-feature__cta svg { color: var(--ayrovi-color-brand-orange); transition: transform 0.18s ease; }
+.lens-feature__cta svg { color: var(--zayrovi-color-brand-orange); transition: transform 0.18s ease; }
 .lens-feature__cta:hover svg { transform: translateX(3px); }
-.lens-feature__cta:focus-visible { outline: 2px solid var(--ayrovi-text-primary); outline-offset: 4px; }
+.lens-feature__cta:focus-visible { outline: 2px solid var(--zayrovi-text-primary); outline-offset: 4px; }
 
 @media (min-width: 768px) {
   .lens-feature__media {
     margin-inline: 0;
-    border: 1px solid var(--ayrovi-border-soft);
+    border: 1px solid var(--zayrovi-border-soft);
     border-radius: 20px;
   }
 }
@@ -1073,8 +1073,8 @@
   --stories-showcase-interstice: clamp(9px, 2.22vw, 16px);
   --stories-showcase-card: min(77.4vw, 560px);
 
-  background: var(--ayrovi-text-primary);
-  color: var(--ayrovi-bg-main);
+  background: var(--zayrovi-text-primary);
+  color: var(--zayrovi-bg-main);
   padding-top: var(--stories-showcase-gap-top);
   padding-bottom: var(--stories-showcase-gap-bottom);
 }
@@ -1091,7 +1091,7 @@
   line-height: 1.1;
   letter-spacing: -0.018em;
   font-weight: 800;
-  color: var(--ayrovi-bg-main);
+  color: var(--zayrovi-bg-main);
 }
 
 .stories-showcase__subtitle {
@@ -1113,12 +1113,12 @@
   cursor: pointer;
   font-size: clamp(15px, 3.6vw, 17px);
   font-weight: 700;
-  color: var(--ayrovi-bg-main);
+  color: var(--zayrovi-bg-main);
 }
 
-.stories-showcase__cta > svg { color: var(--ayrovi-color-brand-orange); transition: transform 0.18s ease; }
+.stories-showcase__cta > svg { color: var(--zayrovi-color-brand-orange); transition: transform 0.18s ease; }
 .stories-showcase__cta:hover > svg { transform: translateX(3px); }
-.stories-showcase__cta:focus-visible { outline: 2px solid var(--ayrovi-bg-main); outline-offset: 4px; }
+.stories-showcase__cta:focus-visible { outline: 2px solid var(--zayrovi-bg-main); outline-offset: 4px; }
 
 /* Rail horizontal aimanté ; la barre de défilement est masquée. */
 .stories-showcase__rail {
@@ -1183,8 +1183,8 @@
   display: inline-block;
   padding: 4px 9px;
   border-radius: 999px;
-  background: var(--ayrovi-bg-main);
-  color: var(--ayrovi-text-primary);
+  background: var(--zayrovi-bg-main);
+  color: var(--zayrovi-text-primary);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.09em;

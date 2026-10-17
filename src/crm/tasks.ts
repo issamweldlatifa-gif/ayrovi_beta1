@@ -1,5 +1,5 @@
 /**
- * AYROVI CRM 360 (E2) — tâches et follow-ups.
+ * ZAYROVI CRM 360 (E2) — tâches et follow-ups.
  *
  * Une tâche a un propriétaire (employé), une priorité, une échéance, une marque
  * « follow-up » et un cycle de vie complet. Les tâches de suivi ne disparaissent jamais

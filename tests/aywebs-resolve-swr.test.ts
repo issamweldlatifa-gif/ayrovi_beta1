@@ -15,7 +15,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-process.env.AYROVI_VARIANT_CACHE_DIR = join(mkdtempSync(join(tmpdir(), 'aywebs-swr-')), 'cache');
+process.env.ZAYROVI_VARIANT_CACHE_DIR = join(mkdtempSync(join(tmpdir(), 'aywebs-swr-')), 'cache');
 
 import { QatafoDatabase } from '../src/db/database';
 import { DEFAULT_CUSTOMS_CATEGORIES, type PricingRules } from '../src/services/pricing';

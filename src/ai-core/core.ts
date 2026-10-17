@@ -20,11 +20,11 @@ export interface AiCapabilityReadiness {
 }
 
 /**
- * AYROVI owns routing. Phase 1 intentionally keeps the production-compatible
+ * ZAYROVI owns routing. Phase 1 intentionally keeps the production-compatible
  * adapter active so contract extraction is behavior-preserving. Environment
  * variables cannot silently promote the candidate before reviewed gates.
  */
-export class AyroviAiCore {
+export class ZayroviAiCore {
   private readonly activeResponsesAdapter: AiResponsesProviderAdapter;
   private readonly candidateResponsesAdapter: AiResponsesProviderAdapter;
   private readonly candidateRealtimeAdapter: AiRealtimeProviderAdapter;
@@ -116,14 +116,14 @@ export class AyroviAiCore {
   }
 }
 
-let singleton: AyroviAiCore | null = null;
+let singleton: ZayroviAiCore | null = null;
 
-export function getAyroviAiCore(): AyroviAiCore {
-  if (!singleton) singleton = new AyroviAiCore();
+export function getZayroviAiCore(): ZayroviAiCore {
+  if (!singleton) singleton = new ZayroviAiCore();
   return singleton;
 }
 
 /** Test-only dependency reset; production code should use the singleton. */
-export function resetAyroviAiCoreForTests(): void {
+export function resetZayroviAiCoreForTests(): void {
   singleton = null;
 }

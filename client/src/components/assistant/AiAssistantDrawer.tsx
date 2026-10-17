@@ -19,10 +19,10 @@ import { VoiceChatController } from './voice/VoiceChatController';
 import type { VoiceChatState } from './voice/types';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { getSessionId } from '../../utils/session';
-import { AyroviMotionState } from '../AyroviMotion';
+import { ZayroviMotionState } from '../ZayroviMotion';
 import { analyzeUrl, markChosen } from '../../ayrovix/services/lensApi';
-import type { AyrovixCandidate, AyrovixOrderPayload, AyrovixProduct } from '../../ayrovix/types';
-import type { AyrovixOrderSelection } from '../../shop';
+import type { ZayrovixCandidate, ZayrovixOrderPayload, ZayrovixProduct } from '../../ayrovix/types';
+import type { ZayrovixOrderSelection } from '../../shop';
 import { streamAssistantChat, transcribeAssistantAudio } from './assistantApi';
 import {
   AssistantConversation,
@@ -44,13 +44,13 @@ interface AiAssistantDrawerProps {
   onOpenLens: () => void;
   onOpenOrders: () => void;
   onOpenAccount: () => void;
-  onOrder: (payload: AyrovixOrderPayload) => Promise<void>;
+  onOrder: (payload: ZayrovixOrderPayload) => Promise<void>;
   onOpenCart: () => void;
 }
 
 const createConversationId = () => `conversation_${Date.now()}_${globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2)}`;
 
-const toStoreKey = (source: string): AyrovixOrderPayload['store'] => {
+const toStoreKey = (source: string): ZayrovixOrderPayload['store'] => {
   const value = source.toLowerCase();
   if (value.includes('shein')) return 'shein';
   if (value.includes('amazon')) return 'amazon';
@@ -59,7 +59,7 @@ const toStoreKey = (source: string): AyrovixOrderPayload['store'] => {
   return 'generic';
 };
 
-const candidateToProduct = (candidate: AyrovixCandidate): AyrovixProduct => ({
+const candidateToProduct = (candidate: ZayrovixCandidate): ZayrovixProduct => ({
   title: candidate.title,
   brand: candidate.brand,
   model: candidate.model,
@@ -111,7 +111,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   const [historySaveAttempt, setHistorySaveAttempt] = useState(0);
   const [input, setInput] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [motionState, setMotionState] = useState<AyroviMotionState>('idle');
+  const [motionState, setMotionState] = useState<ZayroviMotionState>('idle');
   const [lensActive, setLensActive] = useState(false);
   const [voiceNoteState, setVoiceNoteState] = useState<VoiceNoteState>('idle');
   const isRecording = voiceNoteState === 'recording';
@@ -129,7 +129,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   const [feedbackPending, setFeedbackPending] = useState<Record<string, boolean>>({});
   const [conversationId, setConversationId] = useState(createConversationId);
   const [conversations, setConversations] = useState<AssistantConversation[]>([]);
-  const [selectedProduct, setSelectedProduct] = useState<{ messageId: string; product: AyrovixProduct; priceVerified: boolean } | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<{ messageId: string; product: ZayrovixProduct; priceVerified: boolean } | null>(null);
   const [isStoredProduct, setIsStoredProduct] = useState(false);
   const [productBusyId, setProductBusyId] = useState('');
   const [isOrdering, setIsOrdering] = useState(false);
@@ -154,7 +154,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
 
   const isOpenRef = useRef(isOpen);
   isOpenRef.current = isOpen;
-  const openAssistantProduct = (next: { messageId: string; product: AyrovixProduct; priceVerified: boolean }) => {
+  const openAssistantProduct = (next: { messageId: string; product: ZayrovixProduct; priceVerified: boolean }) => {
     if (!isOpenRef.current) return;
     setIsStoredProduct(false);
     setSelectedProduct(next);
@@ -414,7 +414,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
 
     const isRtl = direction === 'rtl';
     const greeting = isRtl
-      ? (customerFirstName ? `مرحباً ${customerFirstName}، كيف يمكنني مساعدتك اليوم؟` : 'مرحباً بك في AYROVI، كيف يمكنني مساعدتك اليوم؟')
+      ? (customerFirstName ? `مرحباً ${customerFirstName}، كيف يمكنني مساعدتك اليوم؟` : 'مرحباً بك في ZAYROVI، كيف يمكنني مساعدتك اليوم؟')
       : (customerFirstName ? `Bonjour ${customerFirstName} ! Comment puis-je vous aider aujourd’hui ?` : 'Bonjour ! Comment puis-je vous aider aujourd’hui ?');
 
     const connected = await controller.start(greeting);
@@ -480,7 +480,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
           if (event.type === 'tool') {
             if (event.name === 'lens_search') setLensActive(true);
             if (event.name === 'lens_search' && event.data.product) {
-              const product = event.data.product as AyrovixProduct;
+              const product = event.data.product as ZayrovixProduct;
               openAssistantProduct({
                 messageId: responseId,
                 product,
@@ -496,7 +496,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
               }
               if (event.name === 'search_products' || event.name === 'lens_search') return {
                 ...message,
-                products: (event.data.products || []) as AyrovixCandidate[],
+                products: (event.data.products || []) as ZayrovixCandidate[],
                 suggestedActions: Array.isArray(event.data.suggestedActions) ? event.data.suggestedActions : undefined,
                 lensSummary: event.data.lens ? {
                   confidence: Number(event.data.lens.confidence || 0),
@@ -721,7 +721,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     void startAssistantReply(sourceMessages, responseId);
   };
 
-  const handleSelectProduct = async (messageId: string, candidate: AyrovixCandidate, restoring = false) => {
+  const handleSelectProduct = async (messageId: string, candidate: ZayrovixCandidate, restoring = false) => {
     if (productRequestRef.current) return;
     if (!validProductUrl(candidate.sourceUrl)) {
       showToast(tr('Lien produit indisponible. Relancez la recherche.', 'رابط المنتج غير متاح. أعد البحث.'));
@@ -752,13 +752,13 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     } catch (error: any) {
       if (!current()) return;
       if (!refreshRequired) openAssistantProduct({ messageId, product: candidateToProduct(candidate), priceVerified: false });
-      showToast(refreshRequired ? tr('Actualisation impossible. Le produit conservé n’a pas été remplacé. Réessayez.', 'تعذّر التحديث. لم يُستبدل المنتج المحفوظ. أعد المحاولة.') : error?.message || tr('Le lien sera vérifié manuellement par AYROVI.', 'ستتحقق AYROVI من الرابط يدويًا.'));
+      showToast(refreshRequired ? tr('Actualisation impossible. Le produit conservé n’a pas été remplacé. Réessayez.', 'تعذّر التحديث. لم يُستبدل المنتج المحفوظ. أعد المحاولة.') : error?.message || tr('Le lien sera vérifié manuellement par ZAYROVI.', 'ستتحقق ZAYROVI من الرابط يدويًا.'));
     } finally {
       if (productRequestRef.current === controller) { productRequestRef.current = null; setProductBusyId(''); }
     }
   };
 
-  const handleProductOrder = async ({ size, color, quantity, customerNote, manualUrl }: AyrovixOrderSelection) => {
+  const handleProductOrder = async ({ size, color, quantity, customerNote, manualUrl }: ZayrovixOrderSelection) => {
     const product = selectedProduct?.product;
     if (!product) throw new Error(tr(...productSelectionLabels.unavailable));
     if (isStoredProduct) throw new Error(tr('Actualisez d’abord le produit conservé.', 'حدّث المنتج المحفوظ أولًا.'));

@@ -24,14 +24,14 @@ import { deduplicateCandidates } from '../src/ayrovix/services/candidateDedup';
 import { filterWithFallback } from '../src/ayrovix/services/candidatePolicy';
 import { enrichCandidatesLiveStock, filterPurchasable, purchaseBlocker } from '../src/ayrovix/services/lensLiveStock';
 import { SmartLinkScraper } from '../src/scraper/scraper';
-import type { AyrovixCandidate } from '../src/ayrovix/types';
+import type { ZayrovixCandidate } from '../src/ayrovix/types';
 
 function fail(message: string): never {
   console.error(`\n✗ ${message}\n`);
   process.exit(1);
 }
 
-function fmtPrice(c: AyrovixCandidate): string {
+function fmtPrice(c: ZayrovixCandidate): string {
   if (c.price == null || !c.currency) return 'prix à confirmer';
   const tnd = c.priceTnd != null ? ` (≈ ${(c.priceTnd as number).toFixed(3)} TND)` : '';
   const origin = c.priceOrigin === 'merchant' ? ' · lu sur la page marchande' : ' · extrait SerpApi (page non lue)';
@@ -39,7 +39,7 @@ function fmtPrice(c: AyrovixCandidate): string {
   return `${c.price} ${c.currency}${tnd}${barred}${origin}`;
 }
 
-function printCard(index: number, c: AyrovixCandidate): void {
+function printCard(index: number, c: ZayrovixCandidate): void {
   console.log(`\n┌─ #${index + 1} ─ ${c.title}`);
   console.log(`│ Marchand   : ${c.source}  [${c.kind}]  match=${c.match}`);
   console.log(`│ Lien       : ${c.sourceUrl}`);
@@ -81,7 +81,7 @@ async function main(): Promise<void> {
   const absolute = path.resolve(String(imagePath));
   if (!fs.existsSync(absolute)) fail(`Image introuvable : ${absolute}`);
   const image = fs.readFileSync(absolute);
-  console.log(`\nAYROVI Lens — sonde moteur\nImage : ${absolute} (${(image.length / 1024).toFixed(0)} Ko)`);
+  console.log(`\nZAYROVI Lens — sonde moteur\nImage : ${absolute} (${(image.length / 1024).toFixed(0)} Ko)`);
 
   // 1. Google Lens via SerpApi — exactement l'appel du moteur (`lensEngine`).
   const t0 = Date.now();

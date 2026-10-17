@@ -1,13 +1,13 @@
-/* Scoped AYROVIX dark theme. Brand/runtime tokens stay authoritative; only Lens journey surfaces change. */
+/* Scoped ZAYROVIX dark theme. Brand/runtime tokens stay authoritative; only Lens journey surfaces change. */
 html[data-ayrovix-theme='dark'] .ayrovix-theme-scope {
-  --ayrovix-dark-canvas: color-mix(in srgb, var(--ayrovi-neutral-950) 82%, var(--ayrovi-black));
-  --ayrovix-dark-panel: color-mix(in srgb, var(--ayrovi-neutral-950) 68%, var(--ayrovi-black));
-  --ayrovix-dark-raised: color-mix(in srgb, var(--ayrovi-primary) 13%, var(--ayrovix-dark-panel));
-  --ayrovix-dark-line: color-mix(in srgb, var(--ayrovi-white) 16%, transparent);
-  --ayrovix-dark-muted: color-mix(in srgb, var(--ayrovi-white) 68%, transparent);
+  --ayrovix-dark-canvas: color-mix(in srgb, var(--zayrovi-neutral-950) 82%, var(--zayrovi-black));
+  --ayrovix-dark-panel: color-mix(in srgb, var(--zayrovi-neutral-950) 68%, var(--zayrovi-black));
+  --ayrovix-dark-raised: color-mix(in srgb, var(--zayrovi-primary) 13%, var(--ayrovix-dark-panel));
+  --ayrovix-dark-line: color-mix(in srgb, var(--zayrovi-white) 16%, transparent);
+  --ayrovix-dark-muted: color-mix(in srgb, var(--zayrovi-white) 68%, transparent);
   color-scheme: dark;
   background-color: var(--ayrovix-dark-canvas) !important;
-  color: var(--ayrovi-white) !important;
+  color: var(--zayrovi-white) !important;
 }
 
 html[data-ayrovix-theme='dark'] .ayrovix-theme-scope.bg-white,
@@ -24,7 +24,7 @@ html[data-ayrovix-theme='dark'] .ayrovix-theme-scope .ay-journey-progress li > s
 html[data-ayrovix-theme='dark'] .ayrovix-theme-scope .text-ink,
 html[data-ayrovix-theme='dark'] .ayrovix-theme-scope .ay-journey-progress li.is-current,
 html[data-ayrovix-theme='dark'] .ayrovix-theme-scope .ay-journey-progress li.is-complete {
-  color: var(--ayrovi-white) !important;
+  color: var(--zayrovi-white) !important;
 }
 
 html[data-ayrovix-theme='dark'] .ayrovix-theme-scope .text-muted,
@@ -44,7 +44,7 @@ html[data-ayrovix-theme='dark'] .ayrovix-theme-scope input,
 html[data-ayrovix-theme='dark'] .ayrovix-theme-scope select,
 html[data-ayrovix-theme='dark'] .ayrovix-theme-scope textarea {
   background-color: var(--ayrovix-dark-raised) !important;
-  color: var(--ayrovi-white) !important;
+  color: var(--zayrovi-white) !important;
 }
 
 html[data-ayrovix-theme='dark'] .ayrovix-theme-scope input::placeholder,
@@ -53,9 +53,9 @@ html[data-ayrovix-theme='dark'] .ayrovix-theme-scope textarea::placeholder {
 }
 
 html[data-ayrovix-theme='dark'] .ayrovix-theme-scope .ay-btn-secondary {
-  border-color: color-mix(in srgb, var(--ayrovi-primary-light) 72%, var(--ayrovi-white)) !important;
+  border-color: color-mix(in srgb, var(--zayrovi-primary-light) 72%, var(--zayrovi-white)) !important;
   background: var(--ayrovix-dark-raised) !important;
-  color: var(--ayrovi-white) !important;
+  color: var(--zayrovi-white) !important;
 }
 
 html[data-ayrovix-theme='dark'] .ayrovix-theme-scope .ay-journey-progress li:not(:first-child)::before {
@@ -74,7 +74,7 @@ html[data-ayrovix-theme='dark'] .ayrovix-theme-scope .shadow-overlay {
 }
 html[data-ayrovix-theme='dark'] .ayrovix-theme-scope .ay-journey-progress li.is-current::before,
 html[data-ayrovix-theme='dark'] .ayrovix-theme-scope .ay-journey-progress li.is-complete::before {
-  background-color: var(--ayrovi-cta);
+  background-color: var(--zayrovi-cta);
 }
 
 @media (max-width: 359px) {

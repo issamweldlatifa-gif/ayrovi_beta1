@@ -57,7 +57,7 @@ export const NEWS_CATEGORY_CODES = [
   'NEW_BRAND',
   'PROMOTION',
   'DELIVERY',
-  'AYROVI',
+  'ZAYROVI',
   'INFORMATION',
   'OTHER',
 ] as const;
@@ -121,7 +121,7 @@ const NEWS_CATEGORY_KEYS: Record<NewsCategoryCode, TranslationKey> = {
   NEW_BRAND: 'news.category.NEW_BRAND',
   PROMOTION: 'news.category.PROMOTION',
   DELIVERY: 'news.category.DELIVERY',
-  AYROVI: 'news.category.AYROVI',
+  ZAYROVI: 'news.category.ZAYROVI',
   INFORMATION: 'news.category.INFORMATION',
   OTHER: 'news.category.OTHER',
 };

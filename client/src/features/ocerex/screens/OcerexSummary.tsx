@@ -24,7 +24,7 @@ export const OcerexSummary: React.FC<{ extraction: OcerexExtraction; busy: boole
           <dd className="mt-1 font-black tabular-nums text-ink" dir="ltr">{extraction.referencePrice} {extraction.currency}</dd>
         </div>
         <div>
-          <dt className="text-xs font-bold uppercase tracking-[0.14em] text-cta">{tr('Prix Ayrovi', 'سعر Ayrovi')}</dt>
+          <dt className="text-xs font-bold uppercase tracking-[0.14em] text-cta">{tr('Prix Zayrovi', 'سعر Zayrovi')}</dt>
           <dd className="mt-1"><Price className="items-start" amount={Number(extraction.ayroviPrice || 0)} size="lg" currencyLabel="TND" /></dd>
         </div>
         <div>
@@ -32,7 +32,7 @@ export const OcerexSummary: React.FC<{ extraction: OcerexExtraction; busy: boole
           <dd className="mt-1 break-all text-xs font-semibold text-ink" dir="ltr">{resolved?.url || extraction.sourceUrl}</dd>
         </div>
       </dl>
-      <p className="mt-6 text-sm leading-6 text-muted">{tr('Le paiement se fait comme d’habitude via Ayrovi : acompte, puis le moyen choisi dans la commande.', 'الدفع يتم كالعادة عبر Ayrovi: العربون، ثم طريقة الدفع التي تختارها في الطلب.')}</p>
+      <p className="mt-6 text-sm leading-6 text-muted">{tr('Le paiement se fait comme d’habitude via Zayrovi : acompte, puis le moyen choisi dans la commande.', 'الدفع يتم كالعادة عبر Zayrovi: العربون، ثم طريقة الدفع التي تختارها في الطلب.')}</p>
       <Button className="mt-6 w-full" disabled={busy} onClick={onConfirm} aria-label={tr('Acheter / continuer la commande', 'شراء / متابعة الطلب')}>
         {tr('Acheter / continuer', 'شراء / متابعة الطلب')}
       </Button>

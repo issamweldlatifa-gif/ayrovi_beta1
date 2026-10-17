@@ -12,7 +12,7 @@ import {
   type AssistantStreamEvent,
 } from './service';
 import type { AssistantConversationLine, AssistantImageAttachment } from './tools';
-import { getAyroviAiCore } from '../ai-core/core';
+import { getZayroviAiCore } from '../ai-core/core';
 import {
   createGeminiVoiceSession,
   getGeminiTtsRuntimeStatus,
@@ -122,7 +122,7 @@ export function createAssistantRouter(db: QatafoDatabase, scraper: SmartLinkScra
   const router = Router();
 
   router.get('/status', (_req, res) => {
-    const responsesProvider = getAyroviAiCore().responses();
+    const responsesProvider = getZayroviAiCore().responses();
     const speechToTextReady = Boolean(process.env.GROQ_API_KEY?.trim() || process.env.OPENAI_API_KEY?.trim());
     const serverTtsReady = serverTextToSpeechReady();
     const browserOnlyTts = !serverTextToSpeechEnabled();
@@ -235,7 +235,7 @@ export function createAssistantRouter(db: QatafoDatabase, scraper: SmartLinkScra
     const key = groqKey || openaiKey;
 
     if (!key) {
-      return res.status(503).json({ success: false, code: 'VOICE_UNAVAILABLE', error: 'La transcription vocale AYROVI n’est pas encore activée.' });
+      return res.status(503).json({ success: false, code: 'VOICE_UNAVAILABLE', error: 'La transcription vocale ZAYROVI n’est pas encore activée.' });
     }
 
     const file = req.file;
@@ -254,11 +254,11 @@ export function createAssistantRouter(db: QatafoDatabase, scraper: SmartLinkScra
     if (groqKey) {
       try {
         const form = new FormData();
-        form.append('file', new Blob([new Uint8Array(file.buffer)], { type: baseType }), `ayrovi-voice.${extension}`);
+        form.append('file', new Blob([new Uint8Array(file.buffer)], { type: baseType }), `zayrovi-voice.${extension}`);
         form.append('model', String(process.env.GROQ_STT_MODEL || 'whisper-large-v3-turbo'));
         form.append('response_format', 'json');
         form.append('temperature', '0');
-        form.append('prompt', 'Conversation AYROVI en arabe tunisien, français ou anglais. Transcrire fidèlement les noms de marques, prix, devises et références de commande.');
+        form.append('prompt', 'Conversation ZAYROVI en arabe tunisien, français ou anglais. Transcrire fidèlement les noms de marques, prix, devises et références de commande.');
 
         const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
           method: 'POST', headers: { Authorization: `Bearer ${groqKey}` }, body: form, signal: AbortSignal.timeout(25_000),
@@ -279,7 +279,7 @@ export function createAssistantRouter(db: QatafoDatabase, scraper: SmartLinkScra
     if (openaiKey) {
       try {
         const form = new FormData();
-        form.append('file', new Blob([new Uint8Array(file.buffer)], { type: baseType }), `ayrovi-voice.${extension}`);
+        form.append('file', new Blob([new Uint8Array(file.buffer)], { type: baseType }), `zayrovi-voice.${extension}`);
         form.append('model', 'whisper-1');
         form.append('response_format', 'json');
         form.append('temperature', '0');
@@ -304,7 +304,7 @@ export function createAssistantRouter(db: QatafoDatabase, scraper: SmartLinkScra
 
   router.post('/chat', optionalCustomer(db), async (req: Request, res: Response) => {
     if (!assistantAiReady()) {
-      return res.status(503).json({ success: false, code: 'ASSISTANT_UNAVAILABLE', error: 'L’assistant AYROVI n’est pas encore disponible.' });
+      return res.status(503).json({ success: false, code: 'ASSISTANT_UNAVAILABLE', error: 'L’assistant ZAYROVI n’est pas encore disponible.' });
     }
     const sessionId = validSessionId(req);
     const conversationId = String(req.body?.conversationId || '').trim();
@@ -344,7 +344,7 @@ export function createAssistantRouter(db: QatafoDatabase, scraper: SmartLinkScra
         type: 'error',
         code: error instanceof AssistantUnavailableError ? error.code : 'ASSISTANT_ERROR',
         message: error instanceof AssistantUnavailableError
-          ? 'L’assistant AYROVI ne répond pas pour le moment. Réessayez dans quelques instants.'
+          ? 'L’assistant ZAYROVI ne répond pas pour le moment. Réessayez dans quelques instants.'
           : 'La réponse n’a pas pu être générée.',
       });
     } finally {

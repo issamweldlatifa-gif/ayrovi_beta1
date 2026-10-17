@@ -21,7 +21,7 @@
 import { prepareImageForAnalysis } from './imagePrep';
 import { ocrRecognize } from '../../services/vision';
 import { analyzeOcrText, type OcrPriceReport } from './ocrPrices';
-import { scanCodeFromImage, type AyrovixScannedCode } from './codeScanner';
+import { scanCodeFromImage, type ZayrovixScannedCode } from './codeScanner';
 
 export interface LensSignals {
   /** Rapport OCR de l'image entière (passe normale + passe rehaussée). */
@@ -29,7 +29,7 @@ export interface LensSignals {
   /** Rapports des segments, pour les captures d'écran très longues. */
   segments: OcrPriceReport[];
   /** Code-barres ou QR trouvé dans l'image, s'il y en a un. */
-  code: AyrovixScannedCode | null;
+  code: ZayrovixScannedCode | null;
   /** Nombre de caractères réellement lus — sert à juger la qualité, pas à décorer. */
   textLength: number;
 }
@@ -39,7 +39,7 @@ export const EMPTY_SIGNALS: LensSignals = { report: null, segments: [], code: nu
 const DEFAULT_BUDGET_MS = 4500;
 
 function budgetMs(): number {
-  const raw = Number(process.env.AYROVI_LENS_SIGNALS_BUDGET_MS);
+  const raw = Number(process.env.ZAYROVI_LENS_SIGNALS_BUDGET_MS);
   return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_BUDGET_MS;
 }
 
@@ -56,7 +56,7 @@ function withBudget<T>(work: Promise<T>, fallback: T, ms: number): Promise<T> {
 
 export async function readLensSignals(image: Buffer): Promise<LensSignals> {
   if (!image?.length) return EMPTY_SIGNALS;
-  if (process.env.AYROVI_LENS_SIGNALS === 'false') return EMPTY_SIGNALS;
+  if (process.env.ZAYROVI_LENS_SIGNALS === 'false') return EMPTY_SIGNALS;
 
   const ms = budgetMs();
   const work = (async (): Promise<LensSignals> => {

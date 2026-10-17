@@ -1,7 +1,7 @@
 import { PUBLIC_NAV_DESTINATIONS } from '../../shared/publicNavigation';
 
 /**
- * AYROVI Back Office (P2.0) — Resource Framework registry.
+ * ZAYROVI Back Office (P2.0) — Resource Framework registry.
  *
  * Le problème réglé ici : la description d'une ressource vivait à DEUX endroits — le moteur
  * générique du back office (`resources` dans src/admin/routes.ts : table, champs, permissions,
@@ -638,7 +638,7 @@ const CUSTOM_RESOURCES: BackOfficeResourceDescriptor[] = [
     section: 'lens-requests', nav: { group: 'Commerce', order: 230, icon: 'Sparkles' },
     surface: 'custom', component: 'LensRequestsPage', api: { prefix: '/ayrovix-reviews', kind: 'generic' },
     columns: [], fields: [], actions: ['list', 'view', 'edit', 'approve'], statusVocabulary: 'ayrovix.review',
-    audit: { module: 'AYROVIX', resourceType: 'ayrovix_review' },
+    audit: { module: 'ZAYROVIX', resourceType: 'ayrovix_review' },
   },
   {
     key: 'crm.party', label: 'Clients', singular: 'client', module: 'customers', domain: 'CRM',

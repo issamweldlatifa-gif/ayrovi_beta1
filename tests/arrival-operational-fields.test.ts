@@ -91,7 +91,7 @@ function createHarness(): Harness {
   ensureBootstrapAdmin(db);
   const admin = db.get<any>('SELECT * FROM admin_users ORDER BY created_at LIMIT 1');
   const session = createAdminSession(db, admin);
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ayrovi-operational-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'zayrovi-operational-'));
   const adapter = new OperationalAdapter();
   const module = createArrivalIngestionModule(db, { aiAdapter: adapter, sourceRoot: root, autoRunJobs: true });
   const app = express();

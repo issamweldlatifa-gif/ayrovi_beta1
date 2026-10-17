@@ -50,7 +50,7 @@ export const DEFAULT_HERO_VISUAL: ActiveHeroVisual = {
   ],
   mobileImageUrl: '',
   mobileSrcset: [],
-  altText: 'Sélectionner un produit en ligne et se faire livrer en Tunisie par AYROVI',
+  altText: 'Sélectionner un produit en ligne et se faire livrer en Tunisie par ZAYROVI',
   focalX: 0.5,
   focalY: 0.45,
   mobileFocalX: 0.5,

@@ -1,16 +1,16 @@
 import { createHash } from 'node:crypto';
 import type { QatafoDatabase } from '../../db/database';
 import type { OcrPriceReport } from './ocrPrices';
-import type { AyrovixScannedCode } from './codeScanner';
+import type { ZayrovixScannedCode } from './codeScanner';
 import { recognizeImage } from './lensEngine';
-import type { AyrovixCandidate, AyrovixIdentification } from '../types';
+import type { ZayrovixCandidate, ZayrovixIdentification } from '../types';
 import type { AiExecutionLane } from '../../ai-core/contracts';
 import { AiLaneBoundResult } from '../../ai-core/execution';
-import { getAyroviAiCore } from '../../ai-core/core';
+import { getZayroviAiCore } from '../../ai-core/core';
 import { readCanonicalLensCache, writeCanonicalLensCache } from './lensCache';
 
 /**
- * AYROVI Lens pipeline — SEE → READ → UNDERSTAND → EXTRACT → VERIFY.
+ * ZAYROVI Lens pipeline — SEE → READ → UNDERSTAND → EXTRACT → VERIFY.
  * Orchestre Vision via AI Core + OCR (Tesseract, image entière/améliorée/segments)
  * + codes (ZXing) + correspondances visuelles (Google Lens), puis fusionne en
  * un résultat standard avec confiance et avertissements. Aucune valeur inventée.
@@ -35,8 +35,8 @@ export interface LensStandardResult {
   verified: boolean;
   warnings: string[];
   cache_hit: boolean;
-  identification: AyrovixIdentification | null;
-  visual_matches: AyrovixCandidate[];
+  identification: ZayrovixIdentification | null;
+  visual_matches: ZayrovixCandidate[];
   sources: {
     vision: { confidence: number; identified: boolean };
     ocr: { text_chars: number; confidence: number; segments: number };
@@ -57,7 +57,7 @@ function close(a: number | null, b: number | null, tolerance = 0.015): boolean {
 
 /** Fusion Vision + OCR selon les règles de confiance (jamais de valeur inventée). */
 export function mergeVisionOcr(
-  vision: AyrovixIdentification | null,
+  vision: ZayrovixIdentification | null,
   ocr: OcrPriceReport | null,
   segmentReports: OcrPriceReport[],
 ): { pricing: LensPricing; confidence: number; verified: boolean; warnings: string[] } {
@@ -203,7 +203,7 @@ export async function runLensPipeline(
   };
 
   try {
-    const visionModel = getAyroviAiCore().responses().resolveModel('vision', 'fast');
+    const visionModel = getZayroviAiCore().responses().resolveModel('vision', 'fast');
     writeCanonicalLensCache(db, {
       imageHash,
       result,

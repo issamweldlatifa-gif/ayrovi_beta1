@@ -1,8 +1,8 @@
 # قبول ZAYROVI 2.0.7 على هاتف Android حقيقي
 
 **التاريخ:** 14/10/2026  
-**الحزمة التي نفحصها:** `app.ayrovi.mobile.demo`  
-**خادم Beta:** `https://ayrovi-beta1-moo8.onrender.com`
+**الحزمة التي نفحصها:** `app.zayrovi.mobile.demo`  
+**خادم Beta:** `https://zayrovi-beta1-moo8.onrender.com`
 
 > هذا الفحص هو آخر جزء لا يمكن للـCI أو المتصفح ادّعاء نجاحه: Android نفسه،
 > الكاميرا، المعرض، الرجوع من الخلفية وفتح رابط HTTPS مباشرة. السكريبت أدناه
@@ -24,7 +24,7 @@ adb devices
 نزّل APK الرسمي:
 
 - الإصدار: <https://github.com/issamweldlatifa-gif/ayrovi_beta1/releases/tag/apk-815a025>
-- الملف: `AYROVI-demo-815a025.apk`
+- الملف: `ZAYROVI-demo-815a025.apk`
 - SHA-256: `1363825b02c45220b78c80812636290b03fcf55a88f0ec51d52c396b85e1552f`
 
 ## 2. أمر واحد: تثبيت + App Links + فتح Lens
@@ -33,7 +33,7 @@ adb devices
 
 ```bash
 npm run device:acceptance -- \
-  --apk /المسار/AYROVI-demo-815a025.apk \
+  --apk /المسار/ZAYROVI-demo-815a025.apk \
   --launch
 ```
 
@@ -55,7 +55,7 @@ npm run device:acceptance -- --serial R58M123ABC --launch
 |---|---|
 | `server-assetlinks` | JSON المنشور فيه نفس package ونفس SHA-256 للشهادة الثابتة |
 | `device` | هاتف واحد مصرّح به عبر ADB |
-| `package` | `app.ayrovi.mobile.demo` مركّبة فعلاً |
+| `package` | `app.zayrovi.mobile.demo` مركّبة فعلاً |
 | `domain-verification` | على Android 12+: نطاق Beta حالته `verified` أو `system_configured` |
 | `resolver` | Android يختار ZAYROVI، وليس Chrome أو نافذة الاختيار |
 | `launch` | أمر النظام فتح الرابط بلا خطأ؛ الرؤية على الشاشة تبقى بنداً يدوياً |
@@ -63,7 +63,7 @@ npm run device:acceptance -- --serial R58M123ABC --launch
 للتقرير القابل للحفظ:
 
 ```bash
-npm run device:acceptance -- --launch --json > ayrovi-device-acceptance.json
+npm run device:acceptance -- --launch --json > zayrovi-device-acceptance.json
 ```
 
 ## 3. البنود اليدوية الإلزامية
@@ -94,8 +94,8 @@ npm run device:acceptance -- --launch --json > ayrovi-device-acceptance.json
 ### `domain-verification: legacy_failure` أو `missing`
 
 ```bash
-adb shell pm verify-app-links --re-verify app.ayrovi.mobile.demo
-adb shell pm get-app-links app.ayrovi.mobile.demo
+adb shell pm verify-app-links --re-verify app.zayrovi.mobile.demo
+adb shell pm get-app-links app.zayrovi.mobile.demo
 ```
 
 تأكد أيضاً أن الهاتف متصل بالإنترنت وأن الوقت والتاريخ صحيحان. السكريبت يفشل

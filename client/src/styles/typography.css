@@ -1,4 +1,4 @@
-/* AYROVI typography system — Official A: Zalando Sans + Noto Sans Arabic. Weights 400–700 only. */
+/* ZAYROVI typography system — Official A: Zalando Sans + Noto Sans Arabic. Weights 400–700 only. */
 html {
   font-family: var(--font-primary);
 }
@@ -71,7 +71,7 @@ h3, .ay-text-h3 {
   line-height: var(--text-button--line-height);
 }
 
-.ayrovi-glass-bottom-nav {
+.zayrovi-glass-bottom-nav {
   font-family: var(--font-primary);
   font-weight: var(--font-weight-medium);
 }

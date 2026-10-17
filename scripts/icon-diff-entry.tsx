@@ -1,13 +1,13 @@
 import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import * as OLD from '/tmp/old-icons/client/src/components/icons/ayrovi/catalog';
-import * as NEW from '../client/src/components/icons/ayrovi/catalog';
+import * as OLD from '/tmp/old-icons/client/src/components/icons/zayrovi/catalog';
+import * as NEW from '../client/src/components/icons/zayrovi/catalog';
 
 const isCmp = (v: unknown) => typeof v === 'function' || (typeof v === 'object' && v !== null && '$$typeof' in v);
 const pick = (ns: Record<string, unknown>) =>
   Object.entries(ns)
-    .filter(([n, v]) => n.startsWith('Ayrovi') && isCmp(v))
-    .filter(([n]) => !['AyroviSignature', 'AyroviSvg'].includes(n));
+    .filter(([n, v]) => n.startsWith('Zayrovi') && isCmp(v))
+    .filter(([n]) => !['ZayroviSignature', 'ZayroviSvg'].includes(n));
 
 export function renderDiff(): string {
   const oldMap = new Map(pick(OLD as Record<string, unknown>).map(([n, v]) => [n, v as React.ComponentType<any>]));
@@ -25,7 +25,7 @@ export function renderDiff(): string {
     const isNew = !O && N;
     if (!isChanged && !isNew) continue;
     if (isChanged) changed++; if (isNew) added++;
-    const label = name.replace(/^Ayrovi/, '');
+    const label = name.replace(/^Zayrovi/, '');
     rows.push(`<div class="row ${isChanged ? 'changed' : ''}">
   <div class="box"><span class="tag">قبل (git HEAD)</span>${O ? oldMark : '<span style="color:#9ca3af">—</span>'}</div>
   <div class="box"><span class="tag">بعد (الحالي)</span>${N ? newMark : ''}</div>

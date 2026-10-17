@@ -64,7 +64,7 @@ const LINKS = [{
   relation: ['delegate_permission/common.handle_all_urls'],
   target: {
     namespace: 'android_app',
-    package_name: 'app.ayrovi.mobile',
+    package_name: 'app.zayrovi.mobile',
     sha256_cert_fingerprints: [
       'C0:4A:9F:31:7B:2D:88:E4:5A:16:0C:D3:71:BE:42:9A:64:1F:07:B5:AE:38:D2:96:4C:81:F3:5E:20:79:AB:6D',
       '1D:33:88:07:F1:52:B9:6C:2E:0A:44:7F:C5:19:E3:8B:27:60:DA:14:9C:35:82:4E:A1:6B:00:7D:F8:22:59:C7',
@@ -125,13 +125,13 @@ describe('جهوزية الإصدار — الحكم', () => {
     expect(code).toBe(0); // موش فشل قاتل: التطبيق يخدم جزئياً، والمعلومة صريحة
     expect(byId['server-branch'].status).toBe('warn');
     expect(byId['server-branch'].detail).toContain('main');
-    expect(byId['server-branch'].detail).toContain('arena/9fd9a9fc-ayrovi-beta1');
+    expect(byId['server-branch'].detail).toContain('arena/9fd9a9fc-zayrovi-beta1');
   });
 
   it('بصمة واحدة ⇒ تحذير (Play يعيد التوقيع) بلا فشل', async () => {
     const stub = await startStub(baseRoutes({
       '/.well-known/assetlinks.json': {
-        body: [{ relation: ['x'], target: { namespace: 'android_app', package_name: 'app.ayrovi.mobile', sha256_cert_fingerprints: ['C0:4A:9F:31:7B:2D:88:E4:5A:16:0C:D3:71:BE:42:9A:64:1F:07:B5:AE:38:D2:96:4C:81:F3:5E:20:79:AB:6D'] } }],
+        body: [{ relation: ['x'], target: { namespace: 'android_app', package_name: 'app.zayrovi.mobile', sha256_cert_fingerprints: ['C0:4A:9F:31:7B:2D:88:E4:5A:16:0C:D3:71:BE:42:9A:64:1F:07:B5:AE:38:D2:96:4C:81:F3:5E:20:79:AB:6D'] } }],
       },
     }));
     openStubs.push(stub.close);
@@ -166,7 +166,7 @@ describe('جهوزية الإصدار — الحكم', () => {
     expect(code).toBe(1);
     expect(report.ok).toBe(false);
     expect(byId['assetlinks'].status).toBe('fail');
-    expect(byId['assetlinks'].detail).toContain('app.ayrovi.mobile');
+    expect(byId['assetlinks'].detail).toContain('app.zayrovi.mobile');
   });
 
   it('بلا بصمة في الخادم (404) ⇒ الفشل يسمّي المتغيّر', async () => {

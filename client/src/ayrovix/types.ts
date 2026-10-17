@@ -1,6 +1,6 @@
-/** AYROVIX — contrats client (miroir 1:1 de src/ayrovix/types.ts). */
+/** ZAYROVIX — contrats client (miroir 1:1 de src/ayrovix/types.ts). */
 
-export interface AyrovixDetectedProductItem {
+export interface ZayrovixDetectedProductItem {
   name: string;
   brand: string | null;
   category: string;
@@ -14,7 +14,7 @@ export interface AyrovixDetectedProductItem {
   material?: string | null;
 }
 
-export interface AyrovixPricingBlock {
+export interface ZayrovixPricingBlock {
   sale_price: number | null;
   original_price: number | null;
   shipping_price: number | null;
@@ -23,7 +23,7 @@ export interface AyrovixPricingBlock {
   discount_percent: number | null;
 }
 
-export interface AyrovixIdentification {
+export interface ZayrovixIdentification {
   input_kind: 'product_photo' | 'product_screenshot' | 'cart_screenshot' | 'barcode' | 'other';
   category: string;
   brand: string | null;
@@ -39,26 +39,26 @@ export interface AyrovixIdentification {
     label: 'none' | 'product_price' | 'old_price' | 'cart_total';
     confidence: number;
   };
-  pricing?: AyrovixPricingBlock;
-  products?: AyrovixDetectedProductItem[];
+  pricing?: ZayrovixPricingBlock;
+  products?: ZayrovixDetectedProductItem[];
   url?: string | null;
   seller?: string | null;
 }
 
 /** Promo moteur (management 23/09/2026) : prix remisé + original barré + badge. */
-export interface AyrovixPromo {
+export interface ZayrovixPromo {
   percent: number;
   label: string;
   priceTnd: number;
   originalPriceTnd: number;
 }
 
-export interface AyrovixCandidate {
+export interface ZayrovixCandidate {
   id: string;
   kind: 'catalog' | 'external';
   title: string;
   /** Promo du jour côté serveur — prix déjà remisé, original conservé. */
-  promo?: AyrovixPromo | null;
+  promo?: ZayrovixPromo | null;
   /** Optional descriptive text supplied by the merchant/search provider. */
   description?: string | null;
   brand: string | null;
@@ -82,7 +82,7 @@ export interface AyrovixCandidate {
   priceOrigin?: 'merchant' | 'search';
   /** Prix barré publié par le marchand (strictement > price), jamais déduit. */
   originalPrice?: number | null;
-  /** Le même prix barré, passé par le calculateur AYROVI (tout inclus). */
+  /** Le même prix barré, passé par le calculateur ZAYROVI (tout inclus). */
   originalPriceTnd?: number | null;
   /**
    * PREUVE D'ACHAT (02/10/2026) — la page marchande a-t-elle été lue, et que
@@ -113,11 +113,11 @@ export interface AyrovixCandidate {
     price: number | null;
     currency: string | null;
     priceTnd: number | null;
-    promo?: AyrovixPromo | null;
+    promo?: ZayrovixPromo | null;
   }>;
 }
 
-export interface AyrovixVariantOption {
+export interface ZayrovixVariantOption {
   id: string | null;
   label: string;
   size: string | null;
@@ -137,7 +137,7 @@ export interface AyrovixVariantOption {
   priceToken?: string | null;
 }
 
-export interface AyrovixProduct {
+export interface ZayrovixProduct {
   title: string;
   brand: string | null;
   model: string | null;
@@ -155,11 +155,11 @@ export interface AyrovixProduct {
   /** Prix barré publié par le marchand sur sa fiche (strictement > price). */
   originalPrice?: number | null;
   originalPriceTnd?: number | null;
-  promo?: AyrovixPromo | null;
+  promo?: ZayrovixPromo | null;
   colors: string[];
   sizes: string[];
   optionLabel?: string | null;
-  variantOptions?: AyrovixVariantOption[];
+  variantOptions?: ZayrovixVariantOption[];
   availability: 'in_stock' | 'limited' | 'out_of_stock' | 'unknown';
   /** Timestamp of the exact merchant-page fetch that supplied availability. */
   availabilityCheckedAt?: string | null;
@@ -176,7 +176,7 @@ export interface AyrovixProduct {
   ratingKind?: 'merchant' | 'match' | 'listing-quality';
 }
 
-export interface AyrovixDetectedPrice {
+export interface ZayrovixDetectedPrice {
   sourcePrice: number;
   sourceCurrency: string;
   convertedPriceTND: number | null;
@@ -190,25 +190,25 @@ export interface AyrovixDetectedPrice {
   priceToken?: string | null;
 }
 
-export interface AyrovixImageResult {
-  identification: AyrovixIdentification;
+export interface ZayrovixImageResult {
+  identification: ZayrovixIdentification;
   query: string;
-  candidates: AyrovixCandidate[];
+  candidates: ZayrovixCandidate[];
   eventId: string;
-  detectedPrice?: AyrovixDetectedPrice | null;
+  detectedPrice?: ZayrovixDetectedPrice | null;
   message?: string;
   /** Fiches écartées par le serveur : page marchande non lue, prix non lu, rupture… (02/10/2026). */
   excluded?: { count: number; reasons: Record<string, number> } | null;
 }
 
-export interface AyrovixUrlResult {
-  product: AyrovixProduct;
-  alternates: AyrovixCandidate[];
+export interface ZayrovixUrlResult {
+  product: ZayrovixProduct;
+  alternates: ZayrovixCandidate[];
   eventId: string;
   fallback?: boolean;
 }
 
-export interface AyrovixReviewRequest {
+export interface ZayrovixReviewRequest {
   id: string;
   status: 'PENDING' | 'IN_REVIEW' | 'QUOTED' | 'REJECTED' | 'CANCELLED';
   title: string;
@@ -229,8 +229,8 @@ export interface AyrovixReviewRequest {
   duplicate?: boolean;
 }
 
-/** Charge utile transmise au Calculator/panier AYROVI existant (aucun flow modifié). */
-export interface AyrovixHistoryItem {
+/** Charge utile transmise au Calculator/panier ZAYROVI existant (aucun flow modifié). */
+export interface ZayrovixHistoryItem {
   id: string;
   kind: 'image' | 'url' | 'qr' | 'barcode' | 'code' | 'text';
   inputValue: string;
@@ -246,7 +246,7 @@ export interface AyrovixHistoryItem {
   createdAt: string;
 }
 
-export interface AyrovixOrderPayload {
+export interface ZayrovixOrderPayload {
   store: 'amazon' | 'shein' | 'temu' | 'aliexpress' | 'generic';
   externalId: string | null;
   url: string;

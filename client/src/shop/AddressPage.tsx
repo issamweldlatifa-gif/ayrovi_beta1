@@ -4,7 +4,7 @@ import { EditorialIcon } from '../design/editorial/Icon';
 /**
  * ADRESSE DE LIVRAISON (boutique v2).
  *
- * Trois modes, parce que la Tunisie en a trois : chez soi, au bureau AYROVI, ou
+ * Trois modes, parce que la Tunisie en a trois : chez soi, au bureau ZAYROVI, ou
  * en point relais. Les champs CHANGENT avec le mode — un point relais n'a pas
  * besoin du numéro de rue du client, et prétendre le contraire fait abandonner.
  * Les modes proposés sont ceux que l'hôte déclare réellement servir : ce
@@ -29,7 +29,7 @@ export interface AddressPageProps {
   value: AddressValue;
   /** Modes réellement servis, fournis par l'hôte — jamais supposés. */
   modes: DeliveryMode[];
-  /** Points disponibles pour le mode courant (bureaux AYROVI ou relais). */
+  /** Points disponibles pour le mode courant (bureaux ZAYROVI ou relais). */
   points?: { id: string; name: string; detail: string }[];
   governorate: string;
   tr: (fr: string, ar: string) => string;
@@ -61,7 +61,7 @@ export const AddressPage: React.FC<AddressPageProps> = ({
 
   const label = (mode: DeliveryMode) => mode === 'home'
     ? tr('Mon adresse', 'عنواني')
-    : mode === 'desk' ? tr('Bureau AYROVI', 'مكتب AYROVI') : tr('Point relais', 'نقطة استلام');
+    : mode === 'desk' ? tr('Bureau ZAYROVI', 'مكتب ZAYROVI') : tr('Point relais', 'نقطة استلام');
 
   return (
     <div className="s-root s-page" dir={direction} data-ay-design="editorial">

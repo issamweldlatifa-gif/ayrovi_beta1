@@ -3,17 +3,17 @@ import { enforceBrandIdentity } from '../../../shared/identityPolicy';
 export const PUBLIC_SECTION_IDS = ['hero', 'cms', 'brands', 'about', 'footer'] as const;
 export type PublicSectionId = (typeof PUBLIC_SECTION_IDS)[number];
 
-export const AYROVI_FONT_STACK = FONT_STACK;
+export const ZAYROVI_FONT_STACK = FONT_STACK;
 
 export const INTERFACE_FONT_PRESETS = [{
-  id: 'ayrovi-a', label: 'AYROVI A — identité officielle',
+  id: 'zayrovi-a', label: 'ZAYROVI A — identité officielle',
   description: 'Zalando Sans + Noto Sans Arabic. Charte verrouillée, fontes locales.',
-  display: AYROVI_FONT_STACK, body: AYROVI_FONT_STACK,
+  display: ZAYROVI_FONT_STACK, body: ZAYROVI_FONT_STACK,
 }] as const;
 export type InterfaceFontPresetId = (typeof INTERFACE_FONT_PRESETS)[number]['id'];
 
 export const INTERFACE_ICON_LIBRARIES = [
-  { id: 'ayrovi', label: 'AYROVI', description: 'Pictogrammes maison — monoline fine' },
+  { id: 'zayrovi', label: 'ZAYROVI', description: 'Pictogrammes maison — monoline fine' },
 ] as const;
 export type InterfaceIconLibrary = (typeof INTERFACE_ICON_LIBRARIES)[number]['id'];
 
@@ -117,7 +117,7 @@ export interface PublicInterfaceConfig {
 }
 
 export const DEFAULT_INTERFACE_CONFIG: PublicInterfaceConfig = {
-  logoUrl: '/media/logo-ayrovi.png',
+  logoUrl: '/media/logo-zayrovi.png',
   sections: [
     { id: 'hero', visible: true, order: 10, title: 'Toute la mode du monde, livrée chez vous.', subtitle: '', image: '', backgroundColor: '#000000', textColor: '#ffffff', paddingY: 0, contained: false },
     { id: 'cms', visible: true, order: 20, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#000000', paddingY: 0, contained: false },
@@ -126,7 +126,7 @@ export const DEFAULT_INTERFACE_CONFIG: PublicInterfaceConfig = {
     { id: 'footer', visible: true, order: 50, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#000000', paddingY: 0, contained: false },
   ],
   typography: {
-    preset: 'ayrovi-a',
+    preset: 'zayrovi-a',
     body: INTERFACE_FONT_PRESETS[0].body,
     display: INTERFACE_FONT_PRESETS[0].display,
     baseSize: 16,
@@ -162,7 +162,7 @@ export const DEFAULT_INTERFACE_CONFIG: PublicInterfaceConfig = {
     background: '#000000', color: '#ffffff', secondaryBackground: '#ffffff', secondaryColor: '#000000',
     borderColor: '#000000', borderWidth: 1, radius: 12, height: 44, shape: 'soft',
   },
-  icons: { library: 'ayrovi', color: '#000000', activeColor: '#ff6900', size: 28, style: 'outline' },
+  icons: { library: 'zayrovi', color: '#000000', activeColor: '#ff6900', size: 28, style: 'outline' },
   navigation: {
     background: '#ffffff', color: '#000000', activeBackground: '#000000', showLabels: true, height: 56,
     homeLabel: 'Accueil', lensLabel: 'Lens', aiLabel: 'SONIM', cartLabel: 'Panier', accountLabel: 'Compte', visionLabel: 'Vision', aywebsLabel: 'AyWebs', ocerexLabel: 'OCEREX',
@@ -213,7 +213,7 @@ export function normalizeInterfaceConfig(input: unknown): PublicInterfaceConfig 
   const navigation = value.navigation || {} as PublicInterfaceConfig['navigation'];
   const slider = value.slider || {} as PublicInterfaceConfig['slider'];
   const layout = value.layout || {} as PublicInterfaceConfig['layout'];
-  const preset = fontPresetIds.has(String(typography.preset || '')) ? typography.preset as InterfaceFontPresetId : 'ayrovi-a';
+  const preset = fontPresetIds.has(String(typography.preset || '')) ? typography.preset as InterfaceFontPresetId : 'zayrovi-a';
   const presetFallback = INTERFACE_FONT_PRESETS.find((item) => item.id === preset) || INTERFACE_FONT_PRESETS[0];
   return {
     logoUrl: safeMedia(value.logoUrl) || DEFAULT_INTERFACE_CONFIG.logoUrl,
@@ -263,7 +263,7 @@ export function normalizeInterfaceConfig(input: unknown): PublicInterfaceConfig 
       shape: ['soft', 'pill', 'square'].includes(buttons.shape) ? buttons.shape : 'soft',
     },
     icons: {
-      library: iconLibraryIds.has(String(icons.library || '')) ? icons.library as InterfaceIconLibrary : 'ayrovi',
+      library: iconLibraryIds.has(String(icons.library || '')) ? icons.library as InterfaceIconLibrary : 'zayrovi',
       color: safeColor(icons.color, DEFAULT_INTERFACE_CONFIG.icons.color),
       activeColor: safeColor(icons.activeColor, DEFAULT_INTERFACE_CONFIG.icons.activeColor),
       size: safeNumber(icons.size, 28, 14, 44),

@@ -15,8 +15,8 @@
   box-sizing: border-box;
   overflow: hidden;
   padding: 0.5rem;
-  border: 1px solid var(--ayrovi-neutral-200, #e5e5e5);
-  border-radius: var(--ayrovi-radius-card, 14px);
+  border: 1px solid var(--zayrovi-neutral-200, #e5e5e5);
+  border-radius: var(--zayrovi-radius-card, 14px);
   background: #fff;
   contain: layout paint;
 }
@@ -53,7 +53,7 @@
 }
 
 /* 2. Prix : le prix remisé est l'élément le plus fort de la carte et il est
- *    ROUGE (--ayrovi-promo). L'original barré et la note restent gris. */
+ *    ROUGE (--zayrovi-promo). L'original barré et la note restent gris. */
 .ay-quiet-price {
   display: flex;
   flex-wrap: wrap;
@@ -71,14 +71,14 @@
 /* Règle client 24/09 : l'original barré est FIN et gris — le remisé (rouge,
    noir le plus fort) porte seul le poids de l'offre. */
 .ay-quiet-price__original {
-  color: var(--ayrovi-neutral-500, #595959);
+  color: var(--zayrovi-neutral-500, #595959);
   font-size: 0.8125rem;
   font-weight: 500;
   text-decoration: line-through;
 }
 
 .ay-quiet-price__current {
-  color: var(--ayrovi-text-primary, #000);
+  color: var(--zayrovi-text-primary, #000);
   font-weight: 700;
 }
 
@@ -86,7 +86,7 @@
 .ay-quiet-price--list .ay-quiet-price__current { font-size: 1.0625rem; line-height: 1.4; }
 
 /* Promo : prix remisé rouge — l'élément le plus fort de la carte. */
-.ay-quiet-price__current--promo { color: var(--ayrovi-promo, #dc2626); }
+.ay-quiet-price__current--promo { color: var(--zayrovi-promo, #dc2626); }
 
 .ay-quiet-price__badge {
   display: inline-flex;
@@ -94,7 +94,7 @@
   align-self: center;
   padding: 0.125rem 0.5rem;
   border-radius: 999px;
-  background: var(--ayrovi-promo, #dc2626);
+  background: var(--zayrovi-promo, #dc2626);
   color: #fff;
   font-size: 0.75rem;
   font-weight: 700;
@@ -107,25 +107,25 @@
   flex-wrap: wrap;
   gap: 4px;
   font-size: 0.75rem;
-  color: var(--ayrovi-neutral-500, #595959);
+  color: var(--zayrovi-neutral-500, #595959);
   line-height: 1.3;
 }
 
 .ay-quiet-price--grid .ay-quiet-price__ref-label {
-  color: var(--ayrovi-neutral-500, #595959);
+  color: var(--zayrovi-neutral-500, #595959);
   font-size: 0.75rem;
   font-weight: 400;
 }
 
 .ay-quiet-price--grid .ay-quiet-price__original {
-  color: var(--ayrovi-neutral-500, #595959);
+  color: var(--zayrovi-neutral-500, #595959);
   font-size: 0.75rem;
   font-weight: 400;
   text-decoration: line-through;
 }
 
 .ay-quiet-price--grid .ay-quiet-price__badge {
-  color: var(--ayrovi-promo, #dc2626);
+  color: var(--zayrovi-promo, #dc2626);
   background: transparent;
   padding: 0;
   border-radius: 0;
@@ -136,7 +136,7 @@
 
 .ay-quiet-price__note {
   flex-basis: 100%;
-  color: var(--ayrovi-neutral-500, #595959);
+  color: var(--zayrovi-neutral-500, #595959);
   font-size: 0.75rem;
   font-weight: 600;
 }
@@ -158,9 +158,9 @@
   min-height: 44px;
   min-width: 0;
   padding: 0.5rem 1rem;
-  border: 1px solid var(--ayrovi-text-primary, #000);
-  border-radius: var(--ayrovi-radius-control, 12px);
-  background: var(--ayrovi-text-primary, #000);
+  border: 1px solid var(--zayrovi-text-primary, #000);
+  border-radius: var(--zayrovi-radius-control, 12px);
+  background: var(--zayrovi-text-primary, #000);
   color: #fff;
   font-size: 0.875rem;
   font-weight: 800;
@@ -184,15 +184,15 @@
   min-width: 44px;
   height: 44px;
   padding: 0;
-  border: 1px solid var(--ayrovi-neutral-200, #e5e5e5);
-  border-radius: var(--ayrovi-radius-control, 12px);
+  border: 1px solid var(--zayrovi-neutral-200, #e5e5e5);
+  border-radius: var(--zayrovi-radius-control, 12px);
   background: #fff;
-  color: var(--ayrovi-text-primary, #000);
+  color: var(--zayrovi-text-primary, #000);
   cursor: pointer;
   transition: border-color 0.16s ease, background-color 0.16s ease, transform 0.16s ease;
 }
 
-.ay-quiet-actions__icon:hover { border-color: var(--ayrovi-text-primary, #000); }
+.ay-quiet-actions__icon:hover { border-color: var(--zayrovi-text-primary, #000); }
 .ay-quiet-actions__icon:active { transform: scale(0.96); }
 .ay-quiet-actions__icon:disabled { cursor: not-allowed; opacity: 0.45; transform: none; }
 

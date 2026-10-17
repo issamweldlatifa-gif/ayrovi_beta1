@@ -4,11 +4,11 @@ import { parseProductPageHtml } from '../src/scraper/productPageParser';
 import { isTrustedRenderTarget } from '../src/scraper/merchantDomains';
 
 describe('lecteur Jina — repli quand Zalando coupe le fetch direct', () => {
-  it('le scrape appelle r.jina.ai avec le HTML rendu, sauf si AYROVI_JINA_READER=false', () => {
+  it('le scrape appelle r.jina.ai avec le HTML rendu, sauf si ZAYROVI_JINA_READER=false', () => {
     const scraper = readFileSync('src/scraper/scraper.ts', 'utf8');
     expect(scraper).toContain('https://r.jina.ai/${url}');
     expect(scraper).toContain("provider: 'jina'");
-    expect(scraper).toContain("AYROVI_JINA_READER !== 'false'");
+    expect(scraper).toContain("ZAYROVI_JINA_READER !== 'false'");
     expect(scraper).toContain("'X-Return-Format': 'html'");
   });
 

@@ -9,16 +9,16 @@ function withLocale(node: React.ReactNode) {
   return renderToStaticMarkup(<LocaleProvider>{node}</LocaleProvider>);
 }
 
-describe('AYROVIX contextual navigation', () => {
+describe('ZAYROVIX contextual navigation', () => {
   it('keeps Camera contextual: exit, title, flash and menu without cart or standalone history', () => {
     const markup = withLocale(
       <LensContextHeader mode="camera" onExit={vi.fn()} onMenu={vi.fn()} flashControl={<button>Flash</button>} />,
     );
     expect(markup).toContain('data-lens-header="camera"');
-    expect(markup).toContain('Quitter AYROVIX Lens');
-    expect(markup).toContain('AYROVIX Lens');
+    expect(markup).toContain('Quitter ZAYROVIX Lens');
+    expect(markup).toContain('ZAYROVIX Lens');
     expect(markup).toContain('Flash');
-    expect(markup).toContain('Menu AYROVIX Lens');
+    expect(markup).toContain('Menu ZAYROVIX Lens');
     expect(markup).not.toContain('Panier');
     expect(markup).not.toContain('Historique Lens');
   });
@@ -31,7 +31,7 @@ describe('AYROVIX contextual navigation', () => {
     expect(result).toContain('aria-label="Retour"');
     expect(result).toContain('Panier, 3 article(s)');
     expect(result).toMatch(/>3<\/span>/);
-    expect(result).toContain('Menu AYROVIX Lens');
+    expect(result).toContain('Menu ZAYROVIX Lens');
   });
 
   it('provides one complete non-destructive Lens menu', () => {
@@ -43,7 +43,7 @@ describe('AYROVIX contextual navigation', () => {
       'Mode sombre',
       'Comment utiliser Lens',
       'Conditions d’utilisation de Lens',
-      'Service AYROVIX',
+      'Service ZAYROVIX',
       'Informations légales',
       'Fermer',
     ]) expect(markup).toContain(label);

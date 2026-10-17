@@ -58,7 +58,7 @@ export interface AyWebsSourceProduct {
   rating: number | null;
   reviewCount: number | null;
   merchant: { name: string | null; url: string | null };
-  /** Produit AYROVI historique conservé pour la compatibilité V1 (confirmation, panier). */
+  /** Produit ZAYROVI historique conservé pour la compatibilité V1 (confirmation, panier). */
   scrapedProduct: ScrapedProduct;
   capturedAt: string;
 }

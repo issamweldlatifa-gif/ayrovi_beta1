@@ -69,6 +69,6 @@ Vérifications : `npm run typecheck`, `npm test` (32 fichiers, 440 tests), `npm 
 | Miroir RTL | Rangées à ordre fixe restées LTR en arabe (steppers, en-têtes, grilles) | `rowDirectionFor`/`actionDirectionFor(isRTL)` purs + testés ; appliqués aux primitives (`KeyValue`, `LinkRow`, `DrawerItem`, `SubScreen`, `Segmented`, `ToggleRow`) et aux écrans (panier, aywebs, compte, assistant, navigateur, grilles catalogue/promotions/stories/sections, footer, tiroir SONIM) |
 | Textes de chargement | Objets `{fr, ar}` en dur dans les écrans | `LoadingBlock` prend une clé `labelKey` ; clés `loading.*` dans les deux langues |
 | testID | 1 seul dans l'application | `testID` sur les primitives (`Button`, `LinkRow`, `AppScreen`, `SubScreen`, `AppImage`) et les actions clés (kebab-case — un `testID` en `dot.case` serait pris pour une clé i18n) |
-| CI | L'APK ne se construisait que sur `arena/c0321e79-ayrovi-beta1` | `mobile-android.yml` et `mobile.yml` déclenchés aussi sur `arena/bc19f283-ayrovi-beta1` |
+| CI | L'APK ne se construisait que sur `arena/c0321e79-zayrovi-beta1` | `mobile-android.yml` et `mobile.yml` déclenchés aussi sur `arena/bc19f283-zayrovi-beta1` |
 
 **Non fait (volontairement) :** miroir RTL complet écran par écran (reste P6), vérification visuelle sur appareil (à faire sur l'APK démo reconstruit), liste virtualisée imbriquée dans un `ScrollView` (anti-patron).

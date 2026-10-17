@@ -2,7 +2,7 @@
 import React, { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { AyroviMotion } from '../client/src/components/AyroviMotion';
+import { ZayroviMotion } from '../client/src/components/ZayroviMotion';
 import { BottomNavBar } from '../client/src/components/BottomNavBar';
 import { LocaleProvider } from '../client/src/i18n/LocaleContext';
 import { NavigationHistoryProvider } from '../client/src/navigation/NavigationHistory';
@@ -27,8 +27,8 @@ describe('feature identity is consistent, not a brand exception',()=>{
  });
  it('uses SONIM in every activity state, settles and cleans up without old geometry',async()=>{
   vi.useFakeTimers();
-  for(const state of ['thinking','analyzing','reasoning','creating'] as const){await act(async()=>root.render(<AyroviMotion state={state} label="SONIM activity"/>));expect(host.querySelectorAll('[data-editorial-icon="Sonim"]')).toHaveLength(1);expect(host.querySelector('polygon,[data-brand-mark]')).toBeNull();}
-  await act(async()=>root.render(<AyroviMotion state="idle"/>));expect(host.querySelector('[data-state="settling"]')).not.toBeNull();
+  for(const state of ['thinking','analyzing','reasoning','creating'] as const){await act(async()=>root.render(<ZayroviMotion state={state} label="SONIM activity"/>));expect(host.querySelectorAll('[data-editorial-icon="Sonim"]')).toHaveLength(1);expect(host.querySelector('polygon,[data-brand-mark]')).toBeNull();}
+  await act(async()=>root.render(<ZayroviMotion state="idle"/>));expect(host.querySelector('[data-state="settling"]')).not.toBeNull();
   await act(async()=>vi.advanceTimersByTime(680));expect(host.querySelector('[data-state="idle"]')).not.toBeNull();
  });
 });

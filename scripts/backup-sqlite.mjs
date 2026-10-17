@@ -19,7 +19,7 @@ if (!fs.existsSync(databasePath)) {
 fs.mkdirSync(backupDirectory, { recursive: true });
 
 const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-const destination = path.join(backupDirectory, `ayrovi-${timestamp}.sqlite`);
+const destination = path.join(backupDirectory, `zayrovi-${timestamp}.sqlite`);
 const source = new Database(databasePath, { readonly: true, fileMustExist: true });
 
 try {
@@ -62,7 +62,7 @@ async function uploadS3Compatible(filePath) {
     region: String(process.env.BACKUP_S3_REGION || 'auto').trim(),
     accessKeyId: String(process.env.BACKUP_S3_ACCESS_KEY_ID || '').trim(),
     secretAccessKey: String(process.env.BACKUP_S3_SECRET_ACCESS_KEY || '').trim(),
-    prefix: String(process.env.BACKUP_S3_PREFIX || 'ayrovi/sqlite').trim().replace(/^\/+|\/+$/g, ''),
+    prefix: String(process.env.BACKUP_S3_PREFIX || 'zayrovi/sqlite').trim().replace(/^\/+|\/+$/g, ''),
   };
   const values = [config.endpoint, config.bucket, config.accessKeyId, config.secretAccessKey];
   const configured = values.every(Boolean);
@@ -132,7 +132,7 @@ try {
 const cutoff = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
 let removed = 0;
 for (const entry of fs.readdirSync(backupDirectory, { withFileTypes: true })) {
-  if (!entry.isFile() || !/^ayrovi-.*\.sqlite$/.test(entry.name)) continue;
+  if (!entry.isFile() || !/^zayrovi-.*\.sqlite$/.test(entry.name)) continue;
   const filePath = path.join(backupDirectory, entry.name);
   if (filePath === destination) continue;
   if (fs.statSync(filePath).mtimeMs < cutoff) {

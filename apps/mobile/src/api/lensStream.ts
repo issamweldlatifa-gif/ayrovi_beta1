@@ -255,7 +255,7 @@ export function analyzeImageStream(
     try {
       xhr.open('POST', apiUrl(`${LENS_BASE}/analyze-image`));
       xhr.setRequestHeader('Accept', 'text/event-stream');
-      xhr.setRequestHeader('x-ayrovi-native', '1');
+      xhr.setRequestHeader('x-zayrovi-native', '1');
       for (const [name, value] of Object.entries(authHeaders('POST'))) xhr.setRequestHeader(name, value);
     } catch (error) {
       fail(new ApiError('network', "Connexion impossible.", { code: 'NETWORK_ERROR', cause: error }));

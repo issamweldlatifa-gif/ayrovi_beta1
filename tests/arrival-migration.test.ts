@@ -12,7 +12,7 @@ afterEach(() => {
 
 describe('Arrival multi-store database migration', () => {
   test('creates and verifies a pre-DDL backup, migrates the legacy Store, and links existing sources/jobs/products', () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ayrovi-arrival-migration-'));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'zayrovi-arrival-migration-'));
     roots.push(root);
     const databasePath = path.join(root, 'legacy.sqlite');
     const legacy = new Database(databasePath);
@@ -123,7 +123,7 @@ describe('Arrival multi-store database migration', () => {
   });
 
   test('does not treat a post-migration database copy as a pre-DDL backup', () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ayrovi-arrival-fresh-'));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'zayrovi-arrival-fresh-'));
     roots.push(root);
     const databasePath = path.join(root, 'fresh.sqlite');
     const fresh = new QatafoDatabase(databasePath);

@@ -5,8 +5,8 @@ import { useLocale } from '../../../i18n/LocaleContext';
 
 const STEPS = [
   { n: '01', titleFr: 'Photographier', titleAr: 'صوّر', bodyFr: 'Prenez une capture du produit ou du panier où le prix est visible.', bodyAr: 'خذ Screenshot للمنتج أو للسلة التي يظهر فيها السعر.' },
-  { n: '02', titleFr: 'Extraire', titleAr: 'استخرج', bodyFr: 'Ocerex lit le prix sur l’image et applique le calcul Ayrovi.', bodyAr: 'Ocerex يقرأ السعر من الصورة ويطبّق حساب Ayrovi.' },
-  { n: '03', titleFr: 'Commander', titleAr: 'اطلب', bodyFr: 'Saisissez le lien du produit ou du panier pour terminer via Ayrovi.', bodyAr: 'أدخل رابط المنتج أو السلة لإكمال طلبك عبر Ayrovi.' },
+  { n: '02', titleFr: 'Extraire', titleAr: 'استخرج', bodyFr: 'Ocerex lit le prix sur l’image et applique le calcul Zayrovi.', bodyAr: 'Ocerex يقرأ السعر من الصورة ويطبّق حساب Zayrovi.' },
+  { n: '03', titleFr: 'Commander', titleAr: 'اطلب', bodyFr: 'Saisissez le lien du produit ou du panier pour terminer via Zayrovi.', bodyAr: 'أدخل رابط المنتج أو السلة لإكمال طلبك عبر Zayrovi.' },
 ] as const;
 
 export const OcerexOnboarding: React.FC<{ onStart: () => void }> = ({ onStart }) => {
@@ -15,11 +15,11 @@ export const OcerexOnboarding: React.FC<{ onStart: () => void }> = ({ onStart })
     { icon: Image, label: 'Screenshot' },
     { icon: ScanSearch, label: 'OCR' },
     { icon: Calculator, label: 'Calculation' },
-    { icon: ReceiptText, label: 'Ayrovi Price' },
+    { icon: ReceiptText, label: 'Zayrovi Price' },
   ];
   return (
     <div className="mx-auto flex w-full max-w-md flex-col px-5 py-6">
-      <p className="text-base font-semibold leading-7 text-ink">{tr('Transformez un prix en image en commande Ayrovi.', 'حوّل السعر من صورة إلى طلب مع Ayrovi.')}</p>
+      <p className="text-base font-semibold leading-7 text-ink">{tr('Transformez un prix en image en commande Zayrovi.', 'حوّل السعر من صورة إلى طلب مع Zayrovi.')}</p>
       <ol className="mt-6 flex items-center justify-between gap-1" aria-label={tr('Parcours OCEREX', 'مسار OCEREX')}>
         {flow.map((step, index) => (
           <li key={step.label} className="flex min-w-0 flex-1 items-center gap-1">

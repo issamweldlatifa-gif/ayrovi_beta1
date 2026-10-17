@@ -1,9 +1,9 @@
-import type { AyrovixImageResult, AyrovixReviewRequest, AyrovixUrlResult } from '../types';
+import type { ZayrovixImageResult, ZayrovixReviewRequest, ZayrovixUrlResult } from '../types';
 import { getSessionId } from '../../utils/session';
 
-/** AYROVIX · appels API — la clé IA reste côté serveur, le client n'envoie que l'entrée brute. */
+/** ZAYROVIX · appels API — la clé IA reste côté serveur, le client n'envoie que l'entrée brute. */
 
-export class AyrovixApiError extends Error {
+export class ZayrovixApiError extends Error {
   constructor(public code: string, message: string, public status: number) { super(message); }
 }
 
@@ -11,7 +11,7 @@ async function parseResponse<T>(response: Response): Promise<T> {
   let payload: any = null;
   try { payload = await response.json(); } catch { /* réponse non-JSON : traité ci-dessous */ }
   if (!response.ok || !payload?.success) {
-    throw new AyrovixApiError(
+    throw new ZayrovixApiError(
       String(payload?.code || 'UNKNOWN'),
       String(payload?.error || 'Une erreur est survenue. Réessayez.'),
       response.status,
@@ -24,8 +24,8 @@ export async function analyzeImage(
   file: File,
   signal?: AbortSignal,
   customerIntent?: string | null,
-  extra?: { cropMs?: number; uploadMs?: number; roi?: { x:number; y:number; w:number; h:number }; onCard?: (candidate: AyrovixImageResult['candidates'][number]) => void },
-): Promise<AyrovixImageResult> {
+  extra?: { cropMs?: number; uploadMs?: number; roi?: { x:number; y:number; w:number; h:number }; onCard?: (candidate: ZayrovixImageResult['candidates'][number]) => void },
+): Promise<ZayrovixImageResult> {
   const body = new FormData();
   body.append('image', file, file.name || 'ayrovix.jpg');
   if (customerIntent) body.append('customerIntent', String(customerIntent).slice(0,200));
@@ -35,15 +35,15 @@ export async function analyzeImage(
   if (extra?.uploadMs != null) headers['X-Lens-Upload-Ms'] = String(Math.round(extra.uploadMs));
   const response = await fetch('/api/ayrovix/analyze-image', { method: 'POST', body, headers, signal });
   const ctype = response.headers.get('content-type') || '';
-  if (!ctype.includes('event-stream')) return parseResponse<AyrovixImageResult>(response);
+  if (!ctype.includes('event-stream')) return parseResponse<ZayrovixImageResult>(response);
   if (!response.ok || !response.body) {
-    throw new AyrovixApiError('IDENTIFICATION_FAILED', "Impossible d'identifier le produit. Essayez une photo plus nette et centrée.", response.status);
+    throw new ZayrovixApiError('IDENTIFICATION_FAILED', "Impossible d'identifier le produit. Essayez une photo plus nette et centrée.", response.status);
   }
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
-  const candidates: AyrovixImageResult['candidates'] = [];
-  let doneMeta: Partial<AyrovixImageResult> = {};
+  const candidates: ZayrovixImageResult['candidates'] = [];
+  let doneMeta: Partial<ZayrovixImageResult> = {};
   const consume = (block: string) => {
     let event = 'message';
     let raw = '';
@@ -55,7 +55,7 @@ export async function analyzeImage(
     let payload: any;
     try { payload = JSON.parse(raw); } catch { return; }
     if (event === 'error') {
-      throw new AyrovixApiError(String(payload?.code || 'IDENTIFICATION_FAILED'), String(payload?.error || 'IDENTIFICATION_FAILED'), 422);
+      throw new ZayrovixApiError(String(payload?.code || 'IDENTIFICATION_FAILED'), String(payload?.error || 'IDENTIFICATION_FAILED'), 422);
     }
     if (event === 'card' && payload?.sourceUrl) {
       if (!candidates.some((item) => item.sourceUrl === payload.sourceUrl)) {
@@ -75,7 +75,7 @@ export async function analyzeImage(
   }
   if (buffer.trim()) consume(buffer);
   return {
-    identification: doneMeta.identification || { input_kind: 'product_photo', category: '', brand: null, model: null, color: [], visible_text: [], possible_model_codes: [], description: candidates[0]?.title || '', confidence: 0.7, detected_price: { amount: 0, currency: '', label: 'none', confidence: 0 } } as AyrovixImageResult['identification'],
+    identification: doneMeta.identification || { input_kind: 'product_photo', category: '', brand: null, model: null, color: [], visible_text: [], possible_model_codes: [], description: candidates[0]?.title || '', confidence: 0.7, detected_price: { amount: 0, currency: '', label: 'none', confidence: 0 } } as ZayrovixImageResult['identification'],
     query: String(doneMeta.query || candidates[0]?.title || ''),
     candidates,
     eventId: String(doneMeta.eventId || ''),
@@ -84,14 +84,14 @@ export async function analyzeImage(
   };
 }
 
-export async function analyzeUrl(url: string, channel: 'url' | 'qr', signal?: AbortSignal, recordHistory = true): Promise<AyrovixUrlResult> {
+export async function analyzeUrl(url: string, channel: 'url' | 'qr', signal?: AbortSignal, recordHistory = true): Promise<ZayrovixUrlResult> {
   const response = await fetch('/api/ayrovix/analyze-url', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ url, channel, recordHistory }),
     signal,
   });
-  return parseResponse<AyrovixUrlResult>(response);
+  return parseResponse<ZayrovixUrlResult>(response);
 }
 
 export async function requestManualReview(input: {
@@ -105,22 +105,22 @@ export async function requestManualReview(input: {
   desiredSize?: string;
   desiredColor?: string;
   contact: string;
-}, signal?: AbortSignal): Promise<AyrovixReviewRequest> {
+}, signal?: AbortSignal): Promise<ZayrovixReviewRequest> {
   const response = await fetch('/api/ayrovix/review-request', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-session-id': getSessionId() },
     body: JSON.stringify(input),
     signal,
   });
-  return parseResponse<AyrovixReviewRequest>(response);
+  return parseResponse<ZayrovixReviewRequest>(response);
 }
 
-export async function getManualReview(id: string, signal?: AbortSignal): Promise<AyrovixReviewRequest> {
+export async function getManualReview(id: string, signal?: AbortSignal): Promise<ZayrovixReviewRequest> {
   const response = await fetch(`/api/ayrovix/review-request/${encodeURIComponent(id)}`, {
     headers: { 'x-session-id': getSessionId() },
     signal,
   });
-  return parseResponse<AyrovixReviewRequest>(response);
+  return parseResponse<ZayrovixReviewRequest>(response);
 }
 
 /** Stock frais d'un lien produit — la page marchande est relue sans cache. */
@@ -170,8 +170,8 @@ export function markChosen(eventId: string): void {
   }).catch(() => {});
 }
 
-/** Recherche du contenu texte d'un QR via AYROVI Web Search. */
-export async function analyzeCode(value: string, signal?: AbortSignal): Promise<{ code: string; candidates: AyrovixImageResult['candidates']; eventId: string }> {
+/** Recherche du contenu texte d'un QR via ZAYROVI Web Search. */
+export async function analyzeCode(value: string, signal?: AbortSignal): Promise<{ code: string; candidates: ZayrovixImageResult['candidates']; eventId: string }> {
   const response = await fetch('/api/ayrovix/analyze-code', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -182,7 +182,7 @@ export async function analyzeCode(value: string, signal?: AbortSignal): Promise<
 }
 
 /** Recherche par code-barres (EAN/UPC) lu en direct. */
-export async function analyzeBarcode(code: string, signal?: AbortSignal): Promise<{ code: string; candidates: AyrovixImageResult['candidates']; eventId: string }> {
+export async function analyzeBarcode(code: string, signal?: AbortSignal): Promise<{ code: string; candidates: ZayrovixImageResult['candidates']; eventId: string }> {
   const response = await fetch('/api/ayrovix/analyze-barcode', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -192,8 +192,8 @@ export async function analyzeBarcode(code: string, signal?: AbortSignal): Promis
   return parseResponse(response);
 }
 
-/** Recherche par nom de produit (texte libre) via AYROVI Catalog + Web Search. */
-export async function analyzeText(query: string, signal?: AbortSignal): Promise<{ query: string; candidates: AyrovixImageResult['candidates']; eventId: string }> {
+/** Recherche par nom de produit (texte libre) via ZAYROVI Catalog + Web Search. */
+export async function analyzeText(query: string, signal?: AbortSignal): Promise<{ query: string; candidates: ZayrovixImageResult['candidates']; eventId: string }> {
   const response = await fetch('/api/ayrovix/analyze-text', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

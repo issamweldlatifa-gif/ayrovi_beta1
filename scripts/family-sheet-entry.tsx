@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import * as I from '../client/src/components/icons/ayrovi/catalog';
+import * as I from '../client/src/components/icons/zayrovi/catalog';
 
 const ORDER: Array<[string, string]> = [
   ['Menu', 'Menu'], ['Back', 'Retour'], ['Close', 'Fermer'], ['Options', 'Options'],
@@ -35,7 +35,7 @@ const ORDER: Array<[string, string]> = [
 export function renderAll(): string {
   const entries: Array<[string, React.ComponentType<any>]> = [];
   for (const [key, label] of ORDER) {
-    const cmp = (I as any)[`Ayrovi${key}`];
+    const cmp = (I as any)[`Zayrovi${key}`];
     if (typeof cmp === 'function' || (typeof cmp === 'object' && cmp !== null)) {
       entries.push([label, cmp as React.ComponentType<any>]);
     }
@@ -48,7 +48,7 @@ export function renderAll(): string {
   const parts = [
     `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="Inter,Helvetica,Arial,sans-serif">`,
     `<rect width="${W}" height="${H}" fill="#ffffff"/>`,
-    `<text x="16" y="28" font-size="17" font-weight="800" fill="#111">AYROVI Icon System — famille compacte (${entries.length} icônes)</text>`,
+    `<text x="16" y="28" font-size="17" font-weight="800" fill="#111">ZAYROVI Icon System — famille compacte (${entries.length} icônes)</text>`,
     `<text x="16" y="48" font-size="11" fill="#666">monoline 1.5 · grille 24 · coins arrondis · currentColor · point signature #FF6A00</text>`,
   ];
   entries.forEach(([label, Cmp], i) => {

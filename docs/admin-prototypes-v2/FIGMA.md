@@ -1,6 +1,6 @@
 # Travailler ces modèles dans Figma
 
-Ce dossier contient **4 modèles de console d'administration** pour AYROVI, dessinés selon les
+Ce dossier contient **4 modèles de console d'administration** pour ZAYROVI, dessinés selon les
 conventions opérationnelles d'Amazon Seller Central, Stripe, Google Cloud / AWS et Shopify Admin.
 Chaque modèle existe sous deux formes :
 
@@ -47,7 +47,7 @@ visuelle (non éditables) — utile seulement pour annoter, pas pour produire.
 1. Installer le plugin **Tokens Studio for Figma** (gratuit, dans la communauté Figma).
 2. Ouvrir le plugin → onglet **Tools → Import → fichier JSON**, choisir `figma/tokens.json`.
 3. Le fichier contient 5 jeux :
-   - `couleur`, `espace`, `rayon`, `typo` — la base AYROVI (encre #111110, papier #FFFFFF, accent #FF6900) ;
+   - `couleur`, `espace`, `rayon`, `typo` — la base ZAYROVI (encre #111110, papier #FFFFFF, accent #FF6900) ;
    - `modeles` — un jeu par modèle : `modele-1-amazon`, `modele-2-stripe`, `modele-3-cloud`, `modele-4-shopify`.
 4. Activer le jeu du modèle retenu, puis **Export → Create styles / variables** pour retrouver
    les couleurs et les typographies dans les panneaux natifs de Figma.
@@ -66,7 +66,7 @@ Si le plugin refuse un jeu, les valeurs se recopient à la main en deux minutes 
 | Texte secondaire | `#565959` | `#425466` | `#5F6368` | `#616161` |
 | Hauteur de ligne | 32 px | 40 px | 36 px | 44 px |
 
-Couleurs de marque, communes aux quatre : encre `#111110`, papier `#FFFFFF`, accent AYROVI
+Couleurs de marque, communes aux quatre : encre `#111110`, papier `#FFFFFF`, accent ZAYROVI
 `#FF6900`, succès `#0E7C4A`, alerte `#946200`, danger `#B3271E`, info `#1C5DB5`.
 
 ---
@@ -75,7 +75,7 @@ Couleurs de marque, communes aux quatre : encre `#111110`, papier `#FFFFFF`, acc
 
 - **Zalando Sans** (police de marque) : fichier dans `client/public/fonts/editorial/zalando-sans.woff2`.
   L'installer sur le poste, ou utiliser `Zalando Sans` si le compte Figma y a accès (police Google Fonts).
-- **Noto Sans Arabic** : nécessaire pour les libellés arabes (`وصلات جديدة`, `هدايا وبطاقات`, `مجلة AYROVI`).
+- **Noto Sans Arabic** : nécessaire pour les libellés arabes (`وصلات جديدة`, `هدايا وبطاقات`, `مجلة ZAYROVI`).
 - Les maquettes HTML embarquent la police en base64 : elles s'affichent correctement sans rien installer.
 
 ---
@@ -128,7 +128,7 @@ Le choix se fait sur une seule question : **quel écran ressemble au travail ré
 - Traçabilité et filtres précis, profils techniques → **C** (Cloud / AWS).
 - Boutique et contenu du site au même endroit → **D** (Shopify).
 
-Une fois la lettre choisie, la conversion de l'admin AYROVI se fait sur ce modèle : les écrans
+Une fois la lettre choisie, la conversion de l'admin ZAYROVI se fait sur ce modèle : les écrans
 (`Commandes`, `Arrivages`, `Barre sous l'en-tête`, `Magazine`, `Social`, `Rôles & permissions`)
 reprennent sa densité, ses couleurs et ses composants, et les jetons de `tokens.json` deviennent les
 variables du thème côté application.
@@ -142,4 +142,4 @@ variables du thème côté application.
   لـ Figma مباشرة وتلقى الطبقات مسمّاة والنص قابل للتعديل.
 - الألوان والمسافات والخطوط يولّي فيهم ملف `figma/tokens.json` عبر plugin **Tokens Studio**.
 - الخط: Zalando Sans موجود في الريبو، وزيد **Noto Sans Arabic** للنصوص العربية.
-- نستنى كلمة منك (A / B / C / D) وبعدها نحول admin AYROVI على الموديل اللي تختارو.
+- نستنى كلمة منك (A / B / C / D) وبعدها نحول admin ZAYROVI على الموديل اللي تختارو.

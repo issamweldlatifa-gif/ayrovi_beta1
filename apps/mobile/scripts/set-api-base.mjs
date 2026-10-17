@@ -5,11 +5,11 @@
  * علاش موجود: العنوان مكتوب في خمسة بلايص (الرمز الافتراضي، ورشتي APK/AAB،
  * سكريبت الجهوزية، وفحص «من البداية للآخر»). نبدّل واحد وننسى الثاني ⇒ حزمة
  * تشير لخادم آخر — وهذا هو بالضبط الغلط اللي خلّى «التطبيق ما يخدمش» (كان
- * يشير لـ`ayrovi.tn` اللي ما فيهش خادم).
+ * يشير لـ`zayrovi.tn` اللي ما فيهش خادم).
  *
  * الاستعمال:
- *   node scripts/set-api-base.mjs https://ayrovi-beta2.onrender.com
- *   node scripts/set-api-base.mjs https://ayrovi-beta2.onrender.com --dry-run
+ *   node scripts/set-api-base.mjs https://zayrovi-beta2.onrender.com
+ *   node scripts/set-api-base.mjs https://zayrovi-beta2.onrender.com --dry-run
  *
  * الاختبار `tests/origin.test.ts` يتحقّق من بعد أنّ المواضع الكل متّفقين؛
  * و`app.json` يزيد النطاق الجديد في الروابط العميقة (وما ينحّيش القديم:

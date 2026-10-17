@@ -53,7 +53,7 @@ export const PartnerBrandsSlider: React.FC<{ title?: string; subtitle?: string; 
         {coverImage && <><img src={coverImage} alt="" className="absolute inset-0 -z-20 h-full w-full object-cover" /><span className="absolute inset-0 -z-10 bg-white/88" /></>}
         <div className="mb-4 inline-flex items-center gap-3 text-xs font-extrabold uppercase tracking-[0.2em] text-ink sm:text-sm"><span className="h-[2px] w-7 bg-ink/25" />Marques partenaires<span className="h-[2px] w-7 bg-ink/25" /></div>
         <h2 className="text-3xl font-black leading-tight tracking-[-0.045em] text-ink sm:text-5xl">{title || 'Vos marques préférées, réunies au même endroit.'}</h2>
-        <p className="mx-auto mt-5 max-w-2xl text-sm font-medium leading-7 text-muted sm:text-base">{subtitle || 'Découvrez les enseignes disponibles avec AYROVI. Chaque carte présente le logo correspondant à la marque affichée.'}</p>
+        <p className="mx-auto mt-5 max-w-2xl text-sm font-medium leading-7 text-muted sm:text-base">{subtitle || 'Découvrez les enseignes disponibles avec ZAYROVI. Chaque carte présente le logo correspondant à la marque affichée.'}</p>
       </div>
       <div className="relative w-full overflow-hidden bg-ink py-10 shadow-overlay sm:py-14">
         <div className="pointer-events-none absolute left-1/2 top-0 h-72 w-[70%] -translate-x-1/2 rounded-full bg-ink/20 blur-[100px]" /><div className="pointer-events-none absolute inset-y-0 left-0 z-20 w-12 bg-gradient-to-r from-black to-transparent sm:w-28" /><div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-12 bg-gradient-to-l from-black to-transparent sm:w-28" />

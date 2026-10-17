@@ -37,9 +37,9 @@ Aucun fichier supprimé / renommé / dupliqué. Aucune nouvelle architecture. Pi
 **Décision : route dédiée minimale, analytics-safe, sans toucher au noyau pricing/search.**
 
 Implémenté :
-- `AyrovixChannel` étendu : `'image' | 'url' | 'code' | 'barcode' | 'qr' | 'text'` (`src/ayrovix/types.ts`, `client/src/ayrovix/types.ts`, `src/ayrovix/history.ts`, `client/src/ayrovix/services/history.ts`).
-- Migration SQLite idempotente dans `src/ayrovix/events.ts` (`migrateAyrovixChannel`) et `src/ayrovix/history.ts` (`migrateAyrovixSearchHistoryKind`) — réécriture des tables si CHECK ne contient pas `'text'`, sans perte hors colonnes existantes.
-- `AyrovixStats.last7d.text` ajouté (`src/ayrovix/events.ts`).
+- `ZayrovixChannel` étendu : `'image' | 'url' | 'code' | 'barcode' | 'qr' | 'text'` (`src/ayrovix/types.ts`, `client/src/ayrovix/types.ts`, `src/ayrovix/history.ts`, `client/src/ayrovix/services/history.ts`).
+- Migration SQLite idempotente dans `src/ayrovix/events.ts` (`migrateZayrovixChannel`) et `src/ayrovix/history.ts` (`migrateZayrovixSearchHistoryKind`) — réécriture des tables si CHECK ne contient pas `'text'`, sans perte hors colonnes existantes.
+- `ZayrovixStats.last7d.text` ajouté (`src/ayrovix/events.ts`).
 - `POST /api/ayrovix/analyze-text` dans `src/ayrovix/routes.ts` :
   - Validation `text: string 2–200 chars` après `replace(/[\u0000-\u001f\u007f]/g,' ')` + collapse whitespace + trim + `slice(0,200)`. Vide → `400 INVALID_TEXT`.
   - Recherche via `tokenizedCandidates = text.split(/\s+/).filter(Boolean)` → chaque token passé à `searchByCodeOrText(token)` (max 3 tokens via `searchCapabilities.max` implicite), puis `dedupe + filterDisplayableCandidates`. Aucune invention : seuls candidats avec `price>0 + currency + validProductUrl` passent.
@@ -51,7 +51,7 @@ Implémenté :
 ## 3. Améliorations UI (Scopes 2–6) — sans invention de données
 
 ### LensLauncher (`client/src/ayrovix/components/LensLauncher.tsx`) — réécriture ciblée
-- Import `analyzeText` + `readLocalAyrovixHistory` (vs ancien `searchByCodeOrText` polluant).
+- Import `analyzeText` + `readLocalZayrovixHistory` (vs ancien `searchByCodeOrText` polluant).
 - États `textQuery`, `recentItems` (localStorage, 3 derniers), `lastQueryRef` (anti-double envoi).
 - `runTextAnalysis(value)` : validation 2 chars, loading, `analyzeText`, `handleLensSuccess` avec `kind:'text'`, `queryLabel`, `errorGuidance(TEXT_SEARCH_FAILED→"Recherche texte indisponible…")`.
 - Recent chips (max 3) au-dessus du formulaire, cliquables, `aria-label`.
@@ -88,11 +88,11 @@ Implémenté :
 
 ## 4. Contraintes préservées (Scope 7)
 
-- **AYROVI visuel / RTL / i18n** : classes `ayrovix-theme-scope`, `direction`, `tr()` conservées.
+- **ZAYROVI visuel / RTL / i18n** : classes `ayrovix-theme-scope`, `direction`, `tr()` conservées.
 - **CMS source of truth** : aucune écriture CMS ; `source` reste label UI uniquement.
 - **Pricing** : `computePriceTnd`, `currency.ts`, `signed priceToken` inchangés.
 - **Candidate display policy** : `filterDisplayableCandidates` + `validProductUrl` seuls garde-fous.
-- **Order flow** : `createAyrovixReviewRequest` / `priceToken` / `review-request/:id` inchangés.
+- **Order flow** : `createZayrovixReviewRequest` / `priceToken` / `review-request/:id` inchangés.
 - **Secrets** : aucune nouvelle credential, aucun log de `SERPAPI_KEY`/`ANTHROPIC_API_KEY`.
 
 ## 5. Tests — commandes exactes & résultats
@@ -126,7 +126,7 @@ npx tsc -p tsconfig.client.json --noEmit --skipLibCheck
 - `TND final estimate and boutique price are clearly labeled` ✓ — `Prix final estimé` + `Estimation tout inclus` + `Prix boutique`
 - `empty state CTA is enriched and links to history` ✓ — `Aucune offre trouvée` + `Voir l’historique` + `Retour à l’accueil`
 - `error guidance maps existing API codes to retry suggestions` ✓ — 14 codes testés
-- `recent searches chips use existing history` ✓ — `readLocalAyrovixHistory` + `recentItems.slice(0,3)`
+- `recent searches chips use existing history` ✓ — `readLocalZayrovixHistory` + `recentItems.slice(0,3)`
 - `ProductResult shows amber warning when variants unavailable` ✓ — `Tailles/couleurs indisponibles` + `Voir la fiche marchande`
 
 **Suites existantes — toutes PASS**

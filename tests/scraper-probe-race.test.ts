@@ -135,15 +135,15 @@ describe('scraper — câblage de la course parallèle', () => {
   it('le lecteur Jina reste le repli documenté, avec son en-tête HTML', () => {
     expect(scraper).toContain('https://r.jina.ai/${url}');
     expect(scraper).toContain("provider: 'jina'");
-    expect(scraper).toContain("AYROVI_JINA_READER !== 'false'");
+    expect(scraper).toContain("ZAYROVI_JINA_READER !== 'false'");
     expect(scraper).toContain("'X-Return-Format': 'html'");
   });
 
   it('les budgets de sonde sont réglables par environnement', () => {
-    expect(scraper).toContain("positiveIntEnv('AYROVIX_DIRECT_TIMEOUT_MS'");
-    expect(scraper).toContain("positiveIntEnv('AYROVIX_JINA_TIMEOUT_MS'");
+    expect(scraper).toContain("positiveIntEnv('ZAYROVIX_DIRECT_TIMEOUT_MS'");
+    expect(scraper).toContain("positiveIntEnv('ZAYROVIX_JINA_TIMEOUT_MS'");
     // Le départ de Jina est calculé APRÈS le repli gratuit (readerFingerprint.ts),
-    // et reste surchargeable par AYROVIX_JINA_HEADSTART_MS.
+    // et reste surchargeable par ZAYROVIX_JINA_HEADSTART_MS.
     expect(scraper).toContain('readerJinaHeadstartMs()');
   });
 

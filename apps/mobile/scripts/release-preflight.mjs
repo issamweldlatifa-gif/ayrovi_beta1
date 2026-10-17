@@ -9,7 +9,7 @@
  * «يبدو جاهزاً».
  *
  * الاستعمال:
- *   node scripts/release-preflight.mjs --api-base https://ayrovi-beta1-moo8.onrender.com \
+ *   node scripts/release-preflight.mjs --api-base https://zayrovi-beta1-moo8.onrender.com \
  *        --version-name 2.0.8 --version-code 16
  *   node scripts/release-preflight.mjs --json          # تقرير للآلة
  *
@@ -23,11 +23,11 @@ import { execFileSync } from 'node:child_process';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULTS = {
-  apiBase: 'https://ayrovi-beta1-moo8.onrender.com',
-  origin: 'https://ayrovi-beta1-moo8.onrender.com',
-  packageName: 'app.ayrovi.mobile',
+  apiBase: 'https://zayrovi-beta1-moo8.onrender.com',
+  origin: 'https://zayrovi-beta1-moo8.onrender.com',
+  packageName: 'app.zayrovi.mobile',
   repo: 'issamweldlatifa-gif/ayrovi_beta1',
-  branch: 'arena/9fd9a9fc-ayrovi-beta1',
+  branch: 'arena/9fd9a9fc-zayrovi-beta1',
   timeoutMs: 8000,
 };
 /** الأسرار الأربعة اللي يستعملها `.github/workflows/mobile-release-aab.yml`. */
@@ -71,9 +71,9 @@ function usage() {
     'release-preflight — جهوزية الإصدار قبل بناء AAB',
     '',
     'المدخلات (كلها اختيارية):',
-    '  --api-base <url>     عنوان الخادم اللي يتچرى في الحزمة (افتراضي https://ayrovi-beta1-moo8.onrender.com)',
+    '  --api-base <url>     عنوان الخادم اللي يتچرى في الحزمة (افتراضي https://zayrovi-beta1-moo8.onrender.com)',
     '  --origin <url>       أصل الموقع اللي فيه assetlinks.json (افتراضي مثل الخادم)',
-    '  --package <id>       اسم الحزمة (افتراضي app.ayrovi.mobile)',
+    '  --package <id>       اسم الحزمة (افتراضي app.zayrovi.mobile)',
     '  --version-name <s>   الإصدار اللي باش يتنشر (لازم ≥ متاع app.json)',
     '  --version-code <n>   كود الإصدار (لازم > متاع app.json، يزيد دايماً)',
     '  --branch-commit <s>  SHA متاع الفرع بدل سؤال GitHub',

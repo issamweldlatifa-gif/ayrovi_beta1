@@ -1,5 +1,5 @@
 /**
- * AYROVI · Moteur de promotions (décisions management 23/09/2026).
+ * ZAYROVI · Moteur de promotions (décisions management 23/09/2026).
  *
  * Trois portées, par précédence : PRODUIT > CATÉGORIE > JOUR de la semaine.
  * La grille « jour » est le socle (léchelle légère approuvée par Issam :

@@ -9,7 +9,7 @@ import type {
 } from '../src/ai-core/contracts';
 import { AiProviderError } from '../src/ai-core/errors';
 import { AnthropicAdapter } from '../src/ai-core/adapters/anthropic/AnthropicAdapter';
-import { AyroviAIExtractionService } from '../src/arrival-ingestion/aiExtractionService';
+import { ZayroviAIExtractionService } from '../src/arrival-ingestion/aiExtractionService';
 import { inspectAnthropicSchema, ANTHROPIC_MAX_UNION_PARAMETERS } from '../src/ai-core/adapters/anthropic/schemaLimits';
 import { ARRIVAL_EXTRACTION_SCHEMA } from '../src/arrival-ingestion/arrivalExtractionSchema';
 import type { ExtractionRequestContext } from '../src/arrival-ingestion/types';
@@ -125,7 +125,7 @@ describe('Arrival AI structured-output compatibility policy', () => {
       'schema unsupported',
       { status: 400, retryable: false },
     ));
-    const result = await new AyroviAIExtractionService(adapter).extractUnit(context());
+    const result = await new ZayroviAIExtractionService(adapter).extractUnit(context());
     expect(adapter.requests).toHaveLength(2);
     expect(adapter.requests[0].outputSchema).toBeTruthy();
     expect(adapter.requests[1].outputSchema).toBeUndefined();
@@ -143,7 +143,7 @@ describe('Arrival AI structured-output compatibility policy', () => {
       status,
       retryable: code === 'PROVIDER_RATE_LIMITED',
     }));
-    await expect(new AyroviAIExtractionService(adapter).extractUnit(context())).rejects.toMatchObject({ code });
+    await expect(new ZayroviAIExtractionService(adapter).extractUnit(context())).rejects.toMatchObject({ code });
     expect(adapter.requests).toHaveLength(1);
   });
 

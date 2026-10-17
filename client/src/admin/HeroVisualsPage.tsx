@@ -18,7 +18,7 @@ interface HeroContentRow {
 }
 
 const HERO_CONTENT_EMPTY: HeroContentRow = {
-  eyebrow: '', title: '', highlight: 'AYROVI', description: '',
+  eyebrow: '', title: '', highlight: 'ZAYROVI', description: '',
   ctaLabel: '', ctaUrl: '', accentColor: '#FF6900', elementOrder: 'eyebrow,title,description,cta', enabled: true,
 };
 
@@ -298,11 +298,11 @@ export const HeroVisualsPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
         </div>
         <div className="admin-form">
           <Field label="Label (eyebrow)" hint="Vide = fine barre orange (identité actuelle)."><input disabled={!canWrite} value={content.eyebrow} maxLength={40} onChange={(event) => setContent((current) => ({ ...current, eyebrow: event.target.value }))} /></Field>
-          <Field label="Mot accentué" hint="Mot colorié dans le titre (AYROVI par défaut)."><input disabled={!canWrite} value={content.highlight} maxLength={40} onChange={(event) => setContent((current) => ({ ...current, highlight: event.target.value }))} /></Field>
+          <Field label="Mot accentué" hint="Mot colorié dans le titre (ZAYROVI par défaut)."><input disabled={!canWrite} value={content.highlight} maxLength={40} onChange={(event) => setContent((current) => ({ ...current, highlight: event.target.value }))} /></Field>
           <Field label="Titre principal" required full hint="Une ligne = un saut de ligne dans le Hero."><textarea disabled={!canWrite} rows={3} value={content.title} maxLength={200} onChange={(event) => setContent((current) => ({ ...current, title: event.target.value }))} /></Field>
           <Field label="Sous-titre / description" full><textarea disabled={!canWrite} rows={3} value={content.description} maxLength={400} onChange={(event) => setContent((current) => ({ ...current, description: event.target.value }))} /></Field>
           <Field label="Texte du CTA" hint="Vide = aucun bouton (design actuel)."><input disabled={!canWrite} value={content.ctaLabel} maxLength={40} onChange={(event) => setContent((current) => ({ ...current, ctaLabel: event.target.value }))} /></Field>
-          <Field label="Destination du CTA" hint="https://… ou chemin interne /…"><input disabled={!canWrite} value={content.ctaUrl} onChange={(event) => setContent((current) => ({ ...current, ctaUrl: event.target.value }))} placeholder="https://ayrovi.tn/…" /></Field>
+          <Field label="Destination du CTA" hint="https://… ou chemin interne /…"><input disabled={!canWrite} value={content.ctaUrl} onChange={(event) => setContent((current) => ({ ...current, ctaUrl: event.target.value }))} placeholder="https://zayrovi.tn/…" /></Field>
           <Field label="Couleur d’accent"><input disabled={!canWrite} type="color" value={content.accentColor} onChange={(event) => setContent((current) => ({ ...current, accentColor: event.target.value }))} /></Field>
           <Field label="Afficher le contenu" full>
             <Switch disabled={!canWrite} checked={content.enabled} onLabel="Contenu visible" offLabel="Contenu masqué" onChange={() => setContent((current) => ({ ...current, enabled: !current.enabled }))} />

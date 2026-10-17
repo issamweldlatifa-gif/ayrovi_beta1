@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * AYROVI CRM 360 (E7-bis) — la couche client n'est pas un vœu : chaque écran se monte,
+ * ZAYROVI CRM 360 (E7-bis) — la couche client n'est pas un vœu : chaque écran se monte,
  * reçoit ses données (fetch simulé), et s'affiche sans exception. Un deep link
  * `?id=party_…` (résultat de la recherche globale) ouvre la vue 360°.
  */

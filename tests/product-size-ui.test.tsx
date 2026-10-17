@@ -4,10 +4,10 @@ import { createRoot, type Root } from 'react-dom/client';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { LocaleProvider } from '../client/src/i18n/LocaleContext';
 import { ShopProductScreen } from '../client/src/shop';
-import type { AyrovixProduct } from '../client/src/ayrovix/types';
+import type { ZayrovixProduct } from '../client/src/ayrovix/types';
 
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
-const source: AyrovixProduct = {
+const source: ZayrovixProduct = {
   title: 'Chaussures de running', brand: 'Marque publiée', model: null, description: '',
   image: '/shoe.jpg', images: ['/shoe.jpg'], source: 'Boutique', sourceUrl: 'https://shop.example/shoe',
   price: 30, currency: 'EUR', priceTnd: 100, exchangeRate: 3.37,
@@ -21,7 +21,7 @@ beforeEach(() => {
   globalThis.fetch = vi.fn(async () => ({ ok: true, json: async () => ({ success: true, data: { lineTotalTND: 117.32, originalLineTotalTND: null, promo: null, pricingVersion: 2 } }) })) as unknown as typeof fetch;
 });
 afterEach(async () => { await act(async () => root.unmount()); host.remove(); globalThis.fetch = originalFetch; });
-const render = async (product: AyrovixProduct) => act(async () => root.render(<LocaleProvider><ShopProductScreen product={product} onOrder={vi.fn()} /></LocaleProvider>));
+const render = async (product: ZayrovixProduct) => act(async () => root.render(<LocaleProvider><ShopProductScreen product={product} onOrder={vi.fn()} /></LocaleProvider>));
 
 function button(text: string) {
   const match = [...host.querySelectorAll('button')].find(item => item.textContent?.includes(text));

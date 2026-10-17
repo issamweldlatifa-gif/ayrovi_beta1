@@ -12,7 +12,7 @@ import { ShopBagScreen } from '../client/src/shop/ShopBagScreen';
 import { ShopCheckoutScreen } from '../client/src/shop/ShopCheckoutScreen';
 import { NavigationHistoryProvider } from '../client/src/navigation/NavigationHistory';
 import type { CartItem, CustomerSession } from '../client/src/types';
-import type { AyrovixProduct } from '../client/src/ayrovix/types';
+import type { ZayrovixProduct } from '../client/src/ayrovix/types';
 const events:unknown[]=[];
 const session:CustomerSession={csrfToken:'test-only',account:{id:'fixture',displayName:'Test Fixture',email:'fixture@example.test',phone:'98123456',avatarUrl:'',emailVerified:true,phoneVerified:false,status:'ACTIVE',locale:'fr-TN',marketingOptIn:false}};
 const cartItem:CartItem={id:'fixture-item',sessionId:'fixture',store:'TEST FIXTURE',externalId:null,sourceUrl:'javascript:alert(1)',title:'Produit de test / منتج اختباري',imageUrl:'',sourcePrice:100,sourceCurrency:'TND',priceTND:100,variant:null,requestedSize:'',requestedColor:'',customerNote:'Données de test uniquement / بيانات اختبار فقط',referenceUrl:'',priceVerificationStatus:'PENDING_MANUAL',availability:'available',availabilitySource:'fixture source',availabilityCheckedAt:'2026-09-20T10:00:00Z',quantity:1,createdAt:'',updatedAt:''};
@@ -21,7 +21,7 @@ function Fixture(){
  const [state,setState]=useState<any>({kind:'voice',voice:'listening',dark:false,muted:false,speakerMuted:false});
  (window as any).setEditorialFixture=(next:any)=>setState((current:any)=>({...current,...next}));
  (window as any).editorialFixtureEvents=events;
- const product:AyrovixProduct={title:tr('Produit de test — titre volontairement long pour vérifier le téléphone','منتج اختباري بعنوان طويل للتحقق من القراءة والتفاف النص على الهاتف'),description:tr('Données fictives, exclusivement pour vérifier le composant.','بيانات اختبار فقط، ليست عرضًا للبيع.'),brand:null,model:null,image:'',images:[],source:'TEST FIXTURE',sourceUrl:'https://example.com/test-product',price:20,currency:'TND',priceTnd:30,exchangeRate:1,colors:[],sizes:[],availability:'in_stock',availabilityCheckedAt:new Date().toISOString(),availabilityExpiresAt:new Date(Date.now()+3600000).toISOString(),...state.product};
+ const product:ZayrovixProduct={title:tr('Produit de test — titre volontairement long pour vérifier le téléphone','منتج اختباري بعنوان طويل للتحقق من القراءة والتفاف النص على الهاتف'),description:tr('Données fictives, exclusivement pour vérifier le composant.','بيانات اختبار فقط، ليست عرضًا للبيع.'),brand:null,model:null,image:'',images:[],source:'TEST FIXTURE',sourceUrl:'https://example.com/test-product',price:20,currency:'TND',priceTnd:30,exchangeRate:1,colors:[],sizes:[],availability:'in_stock',availabilityCheckedAt:new Date().toISOString(),availabilityExpiresAt:new Date(Date.now()+3600000).toISOString(),...state.product};
  return <div data-fixture={state.kind} style={{position:'relative',height:'100dvh',overflow:'auto',padding:state.kind==='voice'?0:16}}>
   {state.kind==='voice'?<AssistantVoiceModeScreen state={state.voice} volumeLevel={.4} isDark={state.dark} isMuted={state.muted} isSpeakerMuted={state.speakerMuted}
    onToggleMute={()=>setState((s:any)=>({...s,muted:!s.muted}))} onToggleSpeaker={()=>setState((s:any)=>({...s,speakerMuted:!s.speakerMuted}))}

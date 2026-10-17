@@ -9,8 +9,8 @@ export async function inspectEditorialIcons(page, selector) {
     for(const svg of root.querySelectorAll('svg')){
       if(!svg.hasAttribute('data-editorial-icon') && !svg.hasAttribute('data-brand-icon') && !svg.hasAttribute('data-brand-mark') && !svg.hasAttribute('data-visualization')) errors.push('Unregistered SVG in rendered screen');
     }
-    for(const svg of root.querySelectorAll('svg[data-ayrovi-icon],svg[data-editorial-icon]')) {
-      const name=svg.getAttribute('data-ayrovi-icon') || svg.getAttribute('data-editorial-icon');
+    for(const svg of root.querySelectorAll('svg[data-zayrovi-icon],svg[data-editorial-icon]')) {
+      const name=svg.getAttribute('data-zayrovi-icon') || svg.getAttribute('data-editorial-icon');
       names.push(name);
       const glyph=glyphs[name];
       if(!glyph || svg.getAttribute('data-editorial-icon')!==name){errors.push(`${name}: legacy or unknown family`);continue;}

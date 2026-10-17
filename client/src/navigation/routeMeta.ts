@@ -9,7 +9,7 @@ import { seoRouteFor, type PublicSeoRoute } from '../../../shared/publicSeo';
  * cette fonction est la manière honnête de ne pas laisser chaque page se déclarer « accueil ».
  * Le sitemap et le 404, eux, sont côté serveur — voir `shared/publicSeo.ts` et `src/server.ts`.
  */
-const SITE_ORIGIN = 'https://ayrovi.tn';
+const SITE_ORIGIN = 'https://zayrovi.tn';
 const LOCALE_TAGS: Record<string, string> = { fr: 'fr_TN', ar: 'ar_TN' };
 
 function ensureMeta(selector: string, create: () => Element): Element {
@@ -51,7 +51,7 @@ export function applyRouteMeta(pathname: string, locale: string): PublicSeoRoute
     // Adresse inconnue : le serveur a déjà répondu 404 (voir `src/server.ts`), et le `<head>`
     // ne doit pas rester sur le `index,follow` d'une page précédente — ce serait inviter la
     // moteur d'indexation à enregistrer une page qui n'existe pas.
-    document.title = language === 'ar' ? 'الصفحة غير موجودة — أيروفي' : 'Page introuvable — AYROVI';
+    document.title = language === 'ar' ? 'الصفحة غير موجودة — أيروفي' : 'Page introuvable — ZAYROVI';
     setMeta('name', 'robots', 'noindex,follow');
     setDocumentLanguage(language);
     return null;
@@ -67,7 +67,7 @@ export function applyRouteMeta(pathname: string, locale: string): PublicSeoRoute
   setCanonical(canonical);
   setMeta('property', 'og:type', 'website');
   setMeta('property', 'og:locale', LOCALE_TAGS[language]);
-  setMeta('property', 'og:site_name', 'AYROVI');
+  setMeta('property', 'og:site_name', 'ZAYROVI');
   setMeta('property', 'og:title', title);
   setMeta('property', 'og:description', description);
   setMeta('property', 'og:url', canonical);

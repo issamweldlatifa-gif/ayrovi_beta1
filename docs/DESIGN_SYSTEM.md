@@ -1,4 +1,4 @@
-# AYROVI DESIGN SYSTEM v1.1
+# ZAYROVI DESIGN SYSTEM v1.1
 
 **Charte historique : « Monochrome Premium × Orange d'action »**
 Date : 2026-09-18 · Statut : compatibilité héritée hors du scope client courant.
@@ -10,7 +10,7 @@ Documents liés : `docs/DESIGN_AUDIT_2026-09-18.md` (audit) · `tests/design-zal
 
 ## 1. Identité
 
-AYROVI achète le monde pour la Tunisie, en dinars. La marque se lit comme :
+ZAYROVI achète le monde pour la Tunisie, en dinars. La marque se lit comme :
 
 - **confiance** → canvas clair, encre nette, hiérarchie évidente ;
 - **action** → l'orange de la marque, rare et mémorisable, pointe le bouton à presser ;
@@ -41,40 +41,40 @@ développeur, pour toujours.
 
 | Token | Valeur | Rôle |
 |---|---|---|
-| `--ayrovi-bg-main` | `#ffffff` | Canvas (≈ 95 % de la surface) |
-| `--ayrovi-bg-surface` | `#f8f9fa` | Cartes, listes, champs, maquettes de comparaison |
-| `--ayrovi-border-soft` | `#eaeaea` | Filets 1 px, séparateurs |
-| `--ayrovi-text-primary` | `#111111` | Encre : titres, prix, texte, texte sur orange |
-| `--ayrovi-text-secondary` | `#666666` | Légendes, méta, prix secondaires |
-| `--ayrovi-color-brand-orange` | `#ff6900` | La marque. Un seul porteur de la valeur. |
+| `--zayrovi-bg-main` | `#ffffff` | Canvas (≈ 95 % de la surface) |
+| `--zayrovi-bg-surface` | `#f8f9fa` | Cartes, listes, champs, maquettes de comparaison |
+| `--zayrovi-border-soft` | `#eaeaea` | Filets 1 px, séparateurs |
+| `--zayrovi-text-primary` | `#111111` | Encre : titres, prix, texte, texte sur orange |
+| `--zayrovi-text-secondary` | `#666666` | Légendes, méta, prix secondaires |
+| `--zayrovi-color-brand-orange` | `#ff6900` | La marque. Un seul porteur de la valeur. |
 
 **Surfaces sombres premium (la seule famille de noir) :**
 
 | Token | Valeur | Rôle |
 |---|---|---|
-| `--ayrovi-ink-deep` | `#0a0a0a` | Hero, announcement bar, coquille Lens, rails, carte « dark feature » |
-| `--ayrovi-ink-soft` | `#3f3f46` | Éléments doux sur sombre (liserés, icônes au repos, dégradés) |
+| `--zayrovi-ink-deep` | `#0a0a0a` | Hero, announcement bar, coquille Lens, rails, carte « dark feature » |
+| `--zayrovi-ink-soft` | `#3f3f46` | Éléments doux sur sombre (liserés, icônes au repos, dégradés) |
 
 **Chaîne CTA (une source, dérivations incluses) :**
 
 | Token | Valeur | Rôle |
 |---|---|---|
-| `--ayrovi-cta` / `--ayrovi-orange` / `--ayrovi-accent` | alias → orange | Un seul porteur réel |
-| `--ayrovi-cta-ink` | `#111111` | **Texte sur orange** (6.54:1 AAA — le blanc ne passe qu'à 2.89:1, interdit) |
-| `--ayrovi-cta-hover` | `color-mix(orange 87 % + encre)` | Survol (≈ `#e05e00`) |
-| `--ayrovi-cta-active` | `color-mix(orange 72 % + encre)` | Pressé (≈ `#c75200`) |
-| `--ayrovi-cta-dark` | alias → hover | Compat historique |
+| `--zayrovi-cta` / `--zayrovi-orange` / `--zayrovi-accent` | alias → orange | Un seul porteur réel |
+| `--zayrovi-cta-ink` | `#111111` | **Texte sur orange** (6.54:1 AAA — le blanc ne passe qu'à 2.89:1, interdit) |
+| `--zayrovi-cta-hover` | `color-mix(orange 87 % + encre)` | Survol (≈ `#e05e00`) |
+| `--zayrovi-cta-active` | `color-mix(orange 72 % + encre)` | Pressé (≈ `#c75200`) |
+| `--zayrovi-cta-dark` | alias → hover | Compat historique |
 
-**États :** `--ayrovi-success #15803d` (+`-soft #e6f5ec`) · `--ayrovi-danger #dc2626` (+`-soft #fdecec`).
-Plus de kهرماني : `--ayrovi-warning` est supprimé (0 usage UI) ; un avertissement se
+**États :** `--zayrovi-success #15803d` (+`-soft #e6f5ec`) · `--zayrovi-danger #dc2626` (+`-soft #fdecec`).
+Plus de kهرماني : `--zayrovi-warning` est supprimé (0 usage UI) ; un avertissement se
 signale en gris + icône.
 
-**Alias sans valeur propre** (compat, en voie de retrait) : `--ayrovi-primary(-dark/-light)`,
-`--ayrovi-neutral-50/200/500/900/950`, `--ayrovi-black`, `--ayrovi-ink/-muted/-surface/-border`.
+**Alias sans valeur propre** (compat, en voie de retrait) : `--zayrovi-primary(-dark/-light)`,
+`--zayrovi-neutral-50/200/500/900/950`, `--zayrovi-black`, `--zayrovi-ink/-muted/-surface/-border`.
 La vieille échelle slate (`#111318/#1d2130/#6b7280/#f8f9fe/#e2e8f0/#5b6472/#050505`) est
 **absorbée** : tout littéral slate dans la vitrine casse les tests.
 
-**Focus :** `--ayrovi-focus-ring` (encre) / `--ayrovi-focus-ring-inverse` (blanc, sur surfaces sombres).
+**Focus :** `--zayrovi-focus-ring` (encre) / `--zayrovi-focus-ring-inverse` (blanc, sur surfaces sombres).
 
 ### 2.2 Typographie
 
@@ -103,20 +103,20 @@ appareil — tailles d'affichage, jamais dans le UI réel.
 
 | Token | Valeur | Rôle |
 |---|---|---|
-| `--ayrovi-gutter` / `-md` / `-lg` | 16 / 24 / 32 px | Gouttières (mobile / tablette / desktop) |
-| `--ayrovi-container` / `-narrow` | 1200 / 896 px | Largeurs de contenu |
-| `--ayrovi-section-y-mobile` / `-desktop` | 48 / 72 px | Respiration verticale des sections |
+| `--zayrovi-gutter` / `-md` / `-lg` | 16 / 24 / 32 px | Gouttières (mobile / tablette / desktop) |
+| `--zayrovi-container` / `-narrow` | 1200 / 896 px | Largeurs de contenu |
+| `--zayrovi-section-y-mobile` / `-desktop` | 48 / 72 px | Respiration verticale des sections |
 | grille de base | pas de 4 px | Toute padding/gap/margin (1, 2, 3, 4, 6, 8, 12, 16, 24…) |
 
 ### 2.4 Forme, élévation, mouvement, calques
 
 | Famille | Jetons | Valeurs |
 |---|---|---|
-| Rayons | `--ayrovi-radius-control` / `-card` / `-chip` / `-icon` | 12 px / 16 px / 999 px / 10 px — **rien d'autre** |
-| Ombres | `--ayrovi-shadow-xs` / `-card` / `-overlay` / `-card-dark` | 4 niveaux, c'est tout |
-| Mouvement | `--ayrovi-motion-fast` / `-base` / `-slow` | 140 / 200 / 320 ms |
-| Courbes | `--ayrovi-ease-out` / `-in-out` | `.22,1,.36,1` / `.45,0,.55,1` |
-| Calques | `--ayrovi-z-header…-toast` | 20 / 25 / 30 / 40 / 45 / 50 / 60 (header, fab, bottom-nav, drawer, lens, modale, toast) |
+| Rayons | `--zayrovi-radius-control` / `-card` / `-chip` / `-icon` | 12 px / 16 px / 999 px / 10 px — **rien d'autre** |
+| Ombres | `--zayrovi-shadow-xs` / `-card` / `-overlay` / `-card-dark` | 4 niveaux, c'est tout |
+| Mouvement | `--zayrovi-motion-fast` / `-base` / `-slow` | 140 / 200 / 320 ms |
+| Courbes | `--zayrovi-ease-out` / `-in-out` | `.22,1,.36,1` / `.45,0,.55,1` |
+| Calques | `--zayrovi-z-header…-toast` | 20 / 25 / 30 / 40 / 45 / 50 / 60 (header, fab, bottom-nav, drawer, lens, modale, toast) |
 
 `prefers-reduced-motion` : toutes les animations décoratives s'arrêtent (les transitions
 de 1 ms restent).
@@ -183,7 +183,7 @@ propre verrouillée par `tests/design-tokens.test.ts`. Les 7 concepts partagés
 Une seule grille de champs (`inputClass` → tokens), statuts via `StatusBadge`,
 onglets en pills 999 px, états vides via `EmptyState`.
 
-### 4.4 Ayrovix Lens
+### 4.4 Zayrovix Lens
 Caractère distinct assumé (immersion caméra) **dans le même système** :
 - canvas `#0A0A0A` (`--ayrovix-theme-scope`), panneaux `color-mix` des encres ;
 - même rayons, même CTA orange (texte encre), même step-tracker, même motion ;
@@ -194,7 +194,7 @@ Caractère distinct assumé (immersion caméra) **dans le même système** :
 ### 4.5 Assistant (SONIM)
 Surface conversationnelle : bulles surface/encre, orbe + composer sur la même échelle,
 bouton d'envoi = `cta` (écran = une seule action). L'ancienne « identité violette »
-(aliases `--ayrovi-purple`, `.hostinger-purple-card`) est retirée du vocabulaire.
+(aliases `--zayrovi-purple`, `.hostinger-purple-card`) est retirée du vocabulaire.
 
 ---
 
@@ -237,7 +237,7 @@ tests/design-*.test.ts (verrous) + verify/zalando-audit.mjs (pixels)
 - [ ] Dark mode global (le système est prêt : 4 définitions suffisent)
 - [ ] `verify/contrast.mjs` : matrice de contraste générée depuis les tokens
 - [ ] Audit pixel dans le CI (exige un serveur de build)
-- [ ] Retrait progressif des alias morts (`--ayrovi-purple*`, `--hostinger-*`)
+- [ ] Retrait progressif des alias morts (`--zayrovi-purple*`, `--hostinger-*`)
 
 
 ## 12. Écrans client — mobile first (2026-09-19)
@@ -259,7 +259,7 @@ modification des règles de la vitrine et ne justifie pas de recolorer les autre
 
 - Palette existante, aucune nouvelle couleur brute. Pas de dégradé lourd ou de fond photo.
 - Inter / Noto Sans Arabic existants, labels 14px, champs **16px minimum**, titre auth 28px.
-- Échelle d’espacement : 4, 8, 12, 16, 20, 24, 32px (`--ayrovi-space-*`).
+- Échelle d’espacement : 4, 8, 12, 16, 20, 24, 32px (`--zayrovi-space-*`).
 - Champs et CTA : 48px minimum ; cible icône/lien d’action : 44px minimum.
 - Marge latérale 24px (16px sous 360px) ; largeur formulaire max 460px.
 - Mobile plein écran avec défilement naturel. Ne jamais centrer verticalement un

@@ -1,5 +1,5 @@
 import { isSelectableVariant } from '../../../../shared/variantPolicy';
-import type { AyrovixCandidate, AyrovixProduct, AyrovixVariantOption } from '../../ayrovix/types';
+import type { ZayrovixCandidate, ZayrovixProduct, ZayrovixVariantOption } from '../../ayrovix/types';
 import type { AssistantMessage, AssistantOrderStatus, AssistantPriceBreakdown } from './types';
 import { safePublicHref } from '../../utils/publicLinks';
 
@@ -7,7 +7,7 @@ export interface AssistantConversation {
   id: string;
   title: string;
   messages: AssistantMessage[];
-  selectedProduct?: { messageId: string; product: AyrovixProduct; priceVerified: boolean } | null;
+  selectedProduct?: { messageId: string; product: ZayrovixProduct; priceVerified: boolean } | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -34,7 +34,7 @@ const rating = (source: Record<string, unknown>) => ({
   ratingKind: source.ratingKind === 'merchant' ? 'merchant' as const : source.ratingKind === 'listing-quality' ? 'listing-quality' as const : 'match' as const,
 });
 
-function candidate(value: unknown): AyrovixCandidate {
+function candidate(value: unknown): ZayrovixCandidate {
   const source = object(value);
   return {
     id: id(source.id), kind: source.kind === 'catalog' ? 'catalog' : 'external',
@@ -47,12 +47,12 @@ function candidate(value: unknown): AyrovixCandidate {
     match: source.match == null ? 0 : number(source.match),
   };
 }
-function variant(value: unknown): AyrovixVariantOption {
+function variant(value: unknown): ZayrovixVariantOption {
   const source = object(value);
   return { id: nullableText(source.id), label: text(source.label), size: nullableText(source.size), color: nullableText(source.color), available: isSelectableVariant(source),
     price: nullableNumber(source.price), currency: nullableText(source.currency), priceTnd: nullableNumber(source.priceTnd), priceToken: nullableText(source.priceToken) };
 }
-function product(value: unknown): AyrovixProduct {
+function product(value: unknown): ZayrovixProduct {
   const source = object(value);
   return {
     title: id(source.title), brand: nullableText(source.brand), model: nullableText(source.model), description: text(source.description),

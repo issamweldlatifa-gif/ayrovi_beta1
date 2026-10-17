@@ -1,5 +1,5 @@
 /**
- * AYROVI Catalogue (P2.1) — brands, on the entity that already exists.
+ * ZAYROVI Catalogue (P2.1) — brands, on the entity that already exists.
  *
  * `brands` was already the canonical brand table: 10 rows, `name UNIQUE COLLATE NOCASE`,
  * a CHECKed `category`, `active`, `display_order`, read by the storefront, the CRM arrivals

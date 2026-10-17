@@ -1,6 +1,6 @@
 import type { QatafoDatabase } from '../db/database';
 import type { AddToCartRequest } from '../types';
-import { createAyrovixPriceToken } from '../ayrovix/priceQuote';
+import { createZayrovixPriceToken } from '../ayrovix/priceQuote';
 import { recordFunnelEvent, funnelVisitorKey } from '../analytics/funnel';
 import { findAyWebsStore } from '../../shared/aywebsStores';
 import { ensureAyWebsSchema } from './schema';
@@ -9,19 +9,19 @@ import { writeAyWebsAudit, emitAyWebsEvent } from './events';
 import { listAyWebsCartItems, readAyWebsCart, readAyWebsCartItem, type AyWebsCartItem } from './cart';
 
 /**
- * AYWEBs → AYROVI : le pont (§2, §16).
+ * AYWEBs → ZAYROVI : le pont (§2, §16).
  *
- * Le panier AYWEBs est AYROVI-propriétaire et distinct du panier marchand (§4),
- * mais AYROVI dispose déjà d'un panier, d'un checkout, d'un OMS et d'un système
+ * Le panier AYWEBs est ZAYROVI-propriétaire et distinct du panier marchand (§4),
+ * mais ZAYROVI dispose déjà d'un panier, d'un checkout, d'un OMS et d'un système
  * de paiement éprouvés. Ce module est le SEUL chemin qui fait passer une ligne
- * AYWEBs dans le panier AYROVI existant — sans dupliquer ce panier et sans
+ * AYWEBs dans le panier ZAYROVI existant — sans dupliquer ce panier et sans
  * court-circuiter ses gardes :
  *
- *  • le prix est signé avec le jeton de devis existant (`createAyrovixPriceToken`)
+ *  • le prix est signé avec le jeton de devis existant (`createZayrovixPriceToken`)
  *    car il provient d'une capture serveur vérifiée, exactement comme Lens ;
  *  • la porte de variante existante (`inspectVariantOrder`, appelée par
  *    `POST /api/cart/items`) continue de s'appliquer : AYWEBs n'affaiblit
- *    aucune garantie du panier AYROVI ;
+ *    aucune garantie du panier ZAYROVI ;
  *  • l'identité SOURCE (boutique, URL, identifiant marchand) est conservée, et
  *    l'identité AYWEBs (AYWITEM-…) est portée dans la note de ligne pour que la
  *    revue opérationnelle retrouve la trace (§53).
@@ -35,7 +35,7 @@ export interface AyWebsBridgeLine {
   title: string;
   quantity: number;
   priceTnd: number;
-  /** Une ligne AYROVI portant la MÊME identité existait déjà. */
+  /** Une ligne ZAYROVI portant la MÊME identité existait déjà. */
   duplicate: boolean;
   /**
    * `true` = la ligne existante a été SYNCHRONISÉE (quantité remise à celle du
@@ -62,8 +62,8 @@ export interface BridgeAyWebsCartInput {
   requestId?: string | null;
 }
 
-/** Transfère les lignes AYWEBs prêtes dans le panier AYROVI existant. */
-export function bridgeAyWebsCartToAyrovi(db: QatafoDatabase, input: BridgeAyWebsCartInput): AyWebsBridgeResult {
+/** Transfère les lignes AYWEBs prêtes dans le panier ZAYROVI existant. */
+export function bridgeAyWebsCartToZayrovi(db: QatafoDatabase, input: BridgeAyWebsCartInput): AyWebsBridgeResult {
   ensureAyWebsSchema(db);
   const cart = readAyWebsCart(db, input.sessionId, input.accountId);
   if (!cart) throw new AyWebsDomainError('CART_EMPTY');
@@ -92,18 +92,18 @@ export function bridgeAyWebsCartToAyrovi(db: QatafoDatabase, input: BridgeAyWebs
       continue;
     }
     if (!(item.pricingTnd > 0)) {
-      skipped.push({ aywebsItemId: item.id, code: 'PRICE_UNAVAILABLE', message: `Devis AYROVI indisponible pour « ${item.title} ».` });
+      skipped.push({ aywebsItemId: item.id, code: 'PRICE_UNAVAILABLE', message: `Devis ZAYROVI indisponible pour « ${item.title} ».` });
       continue;
     }
 
     try {
-      const line = addAyWebsItemToAyroviCart(db, item, input);
+      const line = addAyWebsItemToZayroviCart(db, item, input);
       moved.push(line);
     } catch (error) {
       skipped.push({
         aywebsItemId: item.id,
         code: error instanceof AyWebsDomainError ? String(error.code) : 'CART_ADD_FAILED',
-        message: error instanceof Error ? error.message : 'L’ajout au panier AYROVI a échoué.',
+        message: error instanceof Error ? error.message : 'L’ajout au panier ZAYROVI a échoué.',
       });
     }
   }
@@ -115,7 +115,7 @@ export function bridgeAyWebsCartToAyrovi(db: QatafoDatabase, input: BridgeAyWebs
     });
   }
 
-  const summary = summarizeAyroviCart(db, input.sessionId, input.accountId);
+  const summary = summarizeZayroviCart(db, input.sessionId, input.accountId);
   writeAyWebsAudit(db, {
     actorType: 'customer', actorId: input.accountId || input.sessionId, action: 'cart.bridge_to_ayrovi',
     resourceType: 'cart', resourceId: cart.id, detail: { moved: moved.length, skipped: skipped.length },
@@ -127,12 +127,12 @@ export function bridgeAyWebsCartToAyrovi(db: QatafoDatabase, input: BridgeAyWebs
     skipped,
     ...summary,
     message: skipped.length
-      ? `${moved.length} article(s) transféré(s) dans le panier AYROVI ; ${skipped.length} ligne(s) retenue(s).`
-      : `${moved.length} article(s) transféré(s) dans le panier AYROVI.`,
+      ? `${moved.length} article(s) transféré(s) dans le panier ZAYROVI ; ${skipped.length} ligne(s) retenue(s).`
+      : `${moved.length} article(s) transféré(s) dans le panier ZAYROVI.`,
   };
 }
 
-function addAyWebsItemToAyroviCart(db: QatafoDatabase, item: AyWebsCartItem, input: BridgeAyWebsCartInput): AyWebsBridgeLine {
+function addAyWebsItemToZayroviCart(db: QatafoDatabase, item: AyWebsCartItem, input: BridgeAyWebsCartInput): AyWebsBridgeLine {
   const store = findAyWebsStore(item.storeId);
   const attributes = (item.variantSnapshot?.attributes || {}) as Record<string, string>;
   const requestedColor = String(attributes.color || '').slice(0, 100);
@@ -146,7 +146,7 @@ function addAyWebsItemToAyroviCart(db: QatafoDatabase, item: AyWebsCartItem, inp
     item.availability === 'UNKNOWN' ? 'Stock marchand non publié' : '',
   ].filter(Boolean).join(' · ').slice(0, 1000);
 
-  const priceToken = createAyrovixPriceToken({
+  const priceToken = createZayrovixPriceToken({
     price: item.unitPrice,
     currency: item.currency,
     title: item.title,
@@ -155,14 +155,14 @@ function addAyWebsItemToAyroviCart(db: QatafoDatabase, item: AyWebsCartItem, inp
   });
   if (!priceToken) {
     throw new AyWebsDomainError('PRICE_UNAVAILABLE', {
-      technicalMessage: 'jeton de devis AYROVIX non signé (devise ou prix hors contrat)',
+      technicalMessage: 'jeton de devis ZAYROVIX non signé (devise ou prix hors contrat)',
     });
   }
 
-  const existing = findAyroviCartLine(db, input.sessionId, input.accountId, item);
+  const existing = findZayroviCartLine(db, input.sessionId, input.accountId, item);
   if (existing) {
     // ── Idempotence du pont (04/10/2026) ──────────────────────────────────────
-    // Avant : chaque appel de `/cart/bridge-to-ayrovi` repassait par `db.addItem`,
+    // Avant : chaque appel de `/cart/bridge-to-zayrovi` repassait par `db.addItem`,
     // qui INCRÉMENTE la quantité d'une ligne identique → appuyer deux fois sur
     // « Proceed to order page » doublait l'article. Désormais la ligne existante
     // est REMISE au niveau du panier AYWEBs (synchronisation), jamais additionnée.
@@ -192,7 +192,7 @@ function addAyWebsItemToAyroviCart(db: QatafoDatabase, item: AyWebsCartItem, inp
     imageUrl: item.images[0] || '',
     sourcePrice: item.unitPrice,
     sourceCurrency: item.currency,
-    // Le montant AYROVI est recalculé par la route du panier : on ne lui impose rien.
+    // Le montant ZAYROVI est recalculé par la route du panier : on ne lui impose rien.
     priceTND: item.pricingTnd,
     variant: variantLabel || null,
     requestedSize,
@@ -222,7 +222,7 @@ function addAyWebsItemToAyroviCart(db: QatafoDatabase, item: AyWebsCartItem, inp
 }
 
 /**
- * Clé d'identité d'une ligne AYWEBs dans le panier AYROVI.
+ * Clé d'identité d'une ligne AYWEBs dans le panier ZAYROVI.
  *
  * La note de ligne porte l'identité AYWEBs (`AyWebs AYWITEM-…`) : elle sert la
  * revue opérationnelle, PAS la correspondance — sinon la moindre retouche de
@@ -230,7 +230,7 @@ function addAyWebsItemToAyroviCart(db: QatafoDatabase, item: AyWebsCartItem, inp
  * marchand + taille + couleur demandées (et le titre en dernier recours quand le
  * marchand ne publie aucun identifiant).
  */
-export function findAyroviCartLine(
+export function findZayroviCartLine(
   db: QatafoDatabase,
   sessionId: string,
   accountId: string | null,
@@ -242,7 +242,7 @@ export function findAyroviCartLine(
   if (mapped?.ayrovi_cart_item_id) {
     const linkedLine = db.getItemById(String(mapped.ayrovi_cart_item_id), sessionId, accountId);
     if (linkedLine) return linkedLine;
-    // The AYROVI line was independently removed; discard only the stale mapping.
+    // The ZAYROVI line was independently removed; discard only the stale mapping.
     db.run(`DELETE FROM ayweb_cart_ayrovi_links WHERE aywebs_item_id=?`, item.id);
   }
 
@@ -264,8 +264,8 @@ export function findAyroviCartLine(
     && (externalId ? true : candidate.title === item.title)) || null;
 }
 
-/** Resolve an AYROVI cart row back to its AYWEBs source using the durable link. */
-export function findAyWebsItemForAyroviCartLine(
+/** Resolve an ZAYROVI cart row back to its AYWEBs source using the durable link. */
+export function findAyWebsItemForZayroviCartLine(
   db: QatafoDatabase,
   cartItemId: string,
   sessionId: string,
@@ -280,11 +280,11 @@ export function findAyWebsItemForAyroviCartLine(
     if (item) return item;
   }
 
-  // Backward compatibility for AYROVI rows created before durable links existed.
+  // Backward compatibility for ZAYROVI rows created before durable links existed.
   const cart = readAyWebsCart(db, sessionId, accountId);
   if (!cart) return null;
   return listAyWebsCartItems(db, cart.id).find((item) =>
-    findAyroviCartLine(db, sessionId, accountId, item)?.id === cartItemId,
+    findZayroviCartLine(db, sessionId, accountId, item)?.id === cartItemId,
   ) || null;
 }
 
@@ -309,19 +309,19 @@ function rememberAyWebsCartLink(
 }
 
 /**
- * Synchronise UNE ligne AYWEBs vers le panier AYROVI après une action client
+ * Synchronise UNE ligne AYWEBs vers le panier ZAYROVI après une action client
  * (ajout confirmé, changement de quantité, retrait). C'est le SEUL point de
- * liaison toléré par le §2 : le panier AYWEBs reste la source, le panier AYROVI
+ * liaison toléré par le §2 : le panier AYWEBs reste la source, le panier ZAYROVI
  * n'est jamais deviné ni dupliqué.
  */
-export function syncAyWebsItemToAyroviCart(
+export function syncAyWebsItemToZayroviCart(
   db: QatafoDatabase,
   input: { sessionId: string; accountId: string | null; aywebsItemId: string; requestId?: string | null },
 ): { linked: boolean; removed: boolean; cartItemId: string | null; quantity: number | null; reason: string } {
   ensureAyWebsSchema(db);
   const item = readAyWebsCartItem(db, input.aywebsItemId);
   if (!item) return { linked: false, removed: false, cartItemId: null, quantity: null, reason: 'AYWEBS_ITEM_NOT_FOUND' };
-  const existing = findAyroviCartLine(db, input.sessionId, input.accountId, item);
+  const existing = findZayroviCartLine(db, input.sessionId, input.accountId, item);
   if (!existing) return { linked: false, removed: false, cartItemId: null, quantity: null, reason: 'NOT_BRIDGED' };
 
   if (item.status === 'REMOVED') {
@@ -341,7 +341,7 @@ export function syncAyWebsItemToAyroviCart(
   return { linked: true, removed: false, cartItemId: String(existing.id), quantity: target, reason: 'SYNCED' };
 }
 
-function summarizeAyroviCart(db: QatafoDatabase, sessionId: string, accountId: string | null) {
+function summarizeZayroviCart(db: QatafoDatabase, sessionId: string, accountId: string | null) {
   const items = db.getItems(sessionId, accountId);
   const totalTnd = items.reduce((sum, item) => sum + (Number(item.priceTND) || 0) * (Number(item.quantity) || 1), 0);
   return {
@@ -352,10 +352,10 @@ function summarizeAyroviCart(db: QatafoDatabase, sessionId: string, accountId: s
 }
 
 /**
- * Signale au domaine AYWEBs qu'une commande AYROVI issue du pont a été payée :
+ * Signale au domaine AYWEBs qu'une commande ZAYROVI issue du pont a été payée :
  * la ligne AYWEBs reste traçable sans dupliquer l'OMS (§2 : non-destructif).
  */
-export function linkAyWebsOrderToAyroviOrder(
+export function linkAyWebsOrderToZayroviOrder(
   db: QatafoDatabase,
   input: { aywebOrderId: string; ayroviOrderId: string; ayroviOrderNumber?: string; detail?: Record<string, unknown> },
 ): void {
@@ -364,7 +364,7 @@ export function linkAyWebsOrderToAyroviOrder(
     `INSERT INTO ayweb_order_links (id,ayweb_order_id,link_type,external_id,external_number,detail,created_at)
      VALUES (?,?,?,?,?,?,?)`,
     `aywlnk_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-    input.aywebOrderId, 'AYROVI_ORDER', input.ayroviOrderId, String(input.ayroviOrderNumber || ''),
+    input.aywebOrderId, 'ZAYROVI_ORDER', input.ayroviOrderId, String(input.ayroviOrderNumber || ''),
     JSON.stringify(input.detail || {}).slice(0, 4000), new Date().toISOString(),
   );
   emitAyWebsEvent(db, {
@@ -372,7 +372,7 @@ export function linkAyWebsOrderToAyroviOrder(
     resourceType: 'order',
     resourceId: input.aywebOrderId,
     orderId: input.aywebOrderId,
-    payload: { bridgedToAyroviOrder: input.ayroviOrderId, orderNumber: input.ayroviOrderNumber || '' },
+    payload: { bridgedToZayroviOrder: input.ayroviOrderId, orderNumber: input.ayroviOrderNumber || '' },
   });
 }
 
@@ -390,8 +390,8 @@ export function listAyWebsOrderLinks(db: QatafoDatabase, aywebOrderId: string): 
 
 /**
  * Panier UNIFIÉ (04/10/2026) : pour chaque ligne AYWEBs, dit si elle est déjà
- * présente dans le panier AYROVI (synchronisation à l'ajout). Le client somme
- * alors `panier AYROVI + unités non liées` SANS jamais doubler les lignes
+ * présente dans le panier ZAYROVI (synchronisation à l'ajout). Le client somme
+ * alors `panier ZAYROVI + unités non liées` SANS jamais doubler les lignes
  * synchronisées — c'est la fin du « deux paniers, deux compteurs ».
  */
 export function ayWebsCartLinkedMap(
@@ -403,7 +403,7 @@ export function ayWebsCartLinkedMap(
   const byId: Record<string, boolean> = {};
   let unlinkedUnits = 0;
   for (const item of items) {
-    const linked = item.status !== 'REMOVED' && Boolean(findAyroviCartLine(db, sessionId, accountId, item));
+    const linked = item.status !== 'REMOVED' && Boolean(findZayroviCartLine(db, sessionId, accountId, item));
     byId[item.id] = linked;
     if (!linked) unlinkedUnits += item.quantity;
   }

@@ -12,7 +12,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('AYROVI voice transport and session subsystem', () => {
+describe('ZAYROVI voice transport and session subsystem', () => {
   it('initializes a hybrid voice session with verified voice configs and client VAD parameters', async () => {
     const res = await request(app)
       .post('/api/voice/session')

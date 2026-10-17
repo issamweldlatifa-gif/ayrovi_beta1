@@ -2,8 +2,8 @@ const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 
-const SID = fs.readFileSync('/tmp/ayrovi-session-id.txt', 'utf8').trim();
-const cookieLine = fs.readFileSync('/tmp/ayrovi-cookies.txt', 'utf8')
+const SID = fs.readFileSync('/tmp/zayrovi-session-id.txt', 'utf8').trim();
+const cookieLine = fs.readFileSync('/tmp/zayrovi-cookies.txt', 'utf8')
   .split('\n').find(l => l.includes('ayrovi_customer_session'));
 const COOKIE = cookieLine ? cookieLine.split('\t')[6] : '';
 const ROOT = 'screenshots';
@@ -42,7 +42,7 @@ async function closeOverlays(page) {
     try { await page.keyboard.press('Escape'); await sleep(250); } catch (e) {}
   }
   try {
-    const logo = page.locator('button[aria-label="AYROVI"]').first();
+    const logo = page.locator('button[aria-label="ZAYROVI"]').first();
     if (await logo.isVisible({ timeout: 500 })) { await logo.click({ timeout: 1500 }); await sleep(600); }
   } catch (e) {}
   try { await page.evaluate(() => window.scrollTo(0, 0)); } catch (e) {}

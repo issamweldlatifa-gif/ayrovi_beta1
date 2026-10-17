@@ -23,7 +23,7 @@ export interface PriceWatcherInput {
 
 /** Intervalle entre deux relectures D'UN MÊME watcher (6 h par défaut). */
 function watcherIntervalMs(): number {
-  const configured = Number(process.env.AYROVI_PRICE_WATCH_INTERVAL_MS || 6 * 3_600_000);
+  const configured = Number(process.env.ZAYROVI_PRICE_WATCH_INTERVAL_MS || 6 * 3_600_000);
   return Number.isFinite(configured) ? Math.min(24 * 3_600_000, Math.max(3_600_000, configured)) : 6 * 3_600_000;
 }
 
@@ -142,8 +142,8 @@ function watcherHashSuffix(): string {
 
 /** Planificateur — même gabarit que startFxRatesScheduler (timers unref). */
 export function startPriceWatchScheduler(db: QatafoDatabase, scraper: SmartLinkScraper): void {
-  if (process.env.AYROVI_PRICE_WATCH === 'false') {
-    console.log('[PriceWatch] veille prix désactivée (AYROVI_PRICE_WATCH=false).');
+  if (process.env.ZAYROVI_PRICE_WATCH === 'false') {
+    console.log('[PriceWatch] veille prix désactivée (ZAYROVI_PRICE_WATCH=false).');
     return;
   }
   let running = false;

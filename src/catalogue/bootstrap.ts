@@ -1,5 +1,5 @@
 /**
- * AYROVI Catalogue (P2.1) — schema + bootstrap.
+ * ZAYROVI Catalogue (P2.1) — schema + bootstrap.
  *
  * Database rules this file obeys (lessons already paid for in P1):
  *   • additive only: `CREATE TABLE IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`,

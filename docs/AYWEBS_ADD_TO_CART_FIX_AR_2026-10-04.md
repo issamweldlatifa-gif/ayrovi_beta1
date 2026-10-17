@@ -2,7 +2,7 @@
 
 > التاريخ: 2026-10-04 · الفرع الأساس: `main` @ `350daf5` · الجهاز: Honeywell (أندرويد)
 > الشكوى: لقطة شاشة تُظهر الورقة « Select your desired item » مع
-> **« Le devis AYROVI est indisponible pour cet article. L'ajout reste bloqué
+> **« Le devis ZAYROVI est indisponible pour cet article. L'ajout reste bloqué
 > jusqu'au rétablissement du prix. »** وزرّ ADD TO CART معطَّل.
 
 ---
@@ -13,10 +13,10 @@ AyWebs هي **وسيط شراء** (proxy-shopping / shopping agent)، أي نف�
 
 ```
 متجر أجنبي → صفحة المنتج في متصفح داخلي → «Add to Cart» → ورقة اختيار
-→ سطر في سلة AYROVI بثمن محسوب على الخادم → طلب → شراء بالنيابة + شحن
+→ سطر في سلة ZAYROVI بثمن محسوب على الخادم → طلب → شراء بالنيابة + شحن
 ```
 
-- الشراء لا يقع في متجر التاجر، بل في **سلة AYROVI** التي تحسب: سعر المنتج +
+- الشراء لا يقع في متجر التاجر، بل في **سلة ZAYROVI** التي تحسب: سعر المنتج +
   الشحن + الديوان + أتعاب الخدمة، بالدينار التونسي.
 - الملف الملزم للفريق: `docs/AYWEBS_ADD_TO_CART_ORDER.md` — يمنع أي تحويل
   المستخدم إلى صفحة أخرى، ويمنع عرض سعر غير محسوب على الخادم، ويفرض زرًا
@@ -35,7 +35,7 @@ AyWebs هي **وسيط شراء** (proxy-shopping / shopping agent)، أي نف�
 ### أ) ما قاله الخادم الحيّ
 
 ```
-POST https://ayrovi-beta1.onrender.com/api/v1/aywebs/product/resolve
+POST https://zayrovi-beta1.onrender.com/api/v1/aywebs/product/resolve
      { "url": "https://www.amazon.com/dp/B0GYM3V9H5" }
 
 HTTP 201 في 21.7 ثانية
@@ -168,7 +168,7 @@ WebView → JS يقرأ HTML الصفحة المعروضة (يُنزع منه م
 ## 5) ما يبقى على عاتق المستخدم (خطوة واحدة)
 
 الكود مصلَح ومختبر، لكن **التطبيق يتصل بالخادم المنشور** على
-`https://ayrovi-beta1.onrender.com` — وهو ما زال يشغّل النسخة القديمة. لذلك
+`https://zayrovi-beta1.onrender.com` — وهو ما زال يشغّل النسخة القديمة. لذلك
 حتى يُثبَّت الـ APK الجديد، يجب نشر هذا الإصلاح على الخادم:
 
 ```bash

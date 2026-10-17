@@ -1,4 +1,4 @@
-import type { AyrovixCandidate } from '../types';
+import type { ZayrovixCandidate } from '../types';
 
 /**
  * DÉDOUBLONNAGE DÉTERMINISTE des fiches Lens — un produit, une carte.
@@ -17,11 +17,11 @@ function normalizeUrl(url: string): string {
   } catch { return url.toLowerCase().trim(); }
 }
 
-export function deduplicateCandidates(candidates: AyrovixCandidate[]): AyrovixCandidate[] {
+export function deduplicateCandidates(candidates: ZayrovixCandidate[]): ZayrovixCandidate[] {
   const seenUrl = new Set<string>();
   const seenId = new Set<string>();
   const seenNorm = new Set<string>();
-  const result: AyrovixCandidate[] = [];
+  const result: ZayrovixCandidate[] = [];
   for (const c of candidates) {
     const normUrl = normalizeUrl(c.sourceUrl);
     const normTitle = normalizeTitle(c.title);

@@ -1,9 +1,9 @@
 import { analyzeImage } from './lensApi';
 import { frameSignature, signatureDistance, liveObjectId } from './liveScanner';
-import type { AyrovixCandidate, AyrovixDetectedPrice } from '../types';
+import type { ZayrovixCandidate, ZayrovixDetectedPrice } from '../types';
 
 /**
- * AYROVIX LENS — LiveVisionRuntime (REAL LIVE MODE, V0 category-agnostic).
+ * ZAYROVIX LENS — LiveVisionRuntime (REAL LIVE MODE, V0 category-agnostic).
  *
  * Pipeline: Camera → Frame Sampler → Product Detection → Tracking(DETECT→TRACK→
  * PREDICT→UPDATE) → Confidence(EMA) → Temporal Update → Live Overlay.
@@ -44,8 +44,8 @@ export interface LiveDetection {
   timestamp: number;
   misses: number;
   vx: number; vy: number;
-  candidates: AyrovixCandidate[];
-  detectedPrice?: AyrovixDetectedPrice | null;
+  candidates: ZayrovixCandidate[];
+  detectedPrice?: ZayrovixDetectedPrice | null;
   image?: string;
 }
 
@@ -103,7 +103,7 @@ export const adaptiveNextInterval = (current: number, latencyMs: number): number
   return Math.round(Math.min(4000, Math.max(1200, current * factor)));
 };
 
-interface RawDetection { label: string; category: string; subcategory: string | null; brand: string | null; confidence: number; box: LiveBox | null; visualFeatures: number[]; color: string[]; pattern: string | null; material: string | null; candidates: AyrovixCandidate[]; detectedPrice?: AyrovixDetectedPrice | null; image?: string; }
+interface RawDetection { label: string; category: string; subcategory: string | null; brand: string | null; confidence: number; box: LiveBox | null; visualFeatures: number[]; color: string[]; pattern: string | null; material: string | null; candidates: ZayrovixCandidate[]; detectedPrice?: ZayrovixDetectedPrice | null; image?: string; }
 
 const instanceId = (label: string, brand: string | null) => liveObjectId(`${brand || ''}::${label}`);
 
@@ -295,7 +295,7 @@ export class LiveVisionRuntime {
           }
         } catch { /* fallback to general scene thumb */ }
 
-        let productPrice: AyrovixDetectedPrice | null = null;
+        let productPrice: ZayrovixDetectedPrice | null = null;
         if (p.price != null && Number(p.price) > 0 && p.currency) {
           productPrice = {
             sourcePrice: Number(p.price),
@@ -324,7 +324,7 @@ export class LiveVisionRuntime {
           color: colors(p.color || id.color),
           pattern: str(p.pattern || p.motif || id.pattern),
           material: str(p.material || id.material),
-          candidates: (idx === 0 && result.candidates?.length) ? result.candidates : [] as AyrovixCandidate[],
+          candidates: (idx === 0 && result.candidates?.length) ? result.candidates : [] as ZayrovixCandidate[],
           detectedPrice: productPrice,
           image: productThumb,
         };

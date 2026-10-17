@@ -1,26 +1,26 @@
 import { createHash } from 'node:crypto';
-import type { AyrovixIdentification } from '../types';
+import type { ZayrovixIdentification } from '../types';
 import type { AiCompletionRequest } from '../../ai-core/contracts';
-import { getAyroviAiCore } from '../../ai-core/core';
+import { getZayroviAiCore } from '../../ai-core/core';
 import { AiProviderError } from '../../ai-core/errors';
 
 // D1-6: Vision inFlight dedup — prevents 3.2s duplicate on double tap / rapid Circle
-const visionInFlight = new Map<string, Promise<AyrovixIdentification>>();
+const visionInFlight = new Map<string, Promise<ZayrovixIdentification>>();
 const MAX_ACTIVE_VISION_REQUESTS = 6;
 let activeVisionRequests = 0;
 
 /**
- * AYROVIX Vision keeps ownership of identification and validation. Provider
- * image/message/schema wire details are isolated behind AYROVI AI Core.
+ * ZAYROVIX Vision keeps ownership of identification and validation. Provider
+ * image/message/schema wire details are isolated behind ZAYROVI AI Core.
  */
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
-export class AyrovixUnavailableError extends Error {
-  readonly code = 'AYROVIX_UNAVAILABLE';
+export class ZayrovixUnavailableError extends Error {
+  readonly code = 'ZAYROVIX_UNAVAILABLE';
 }
-export class AyrovixIdentificationError extends Error {
+export class ZayrovixIdentificationError extends Error {
   readonly code = 'IDENTIFICATION_FAILED';
 }
 
@@ -30,15 +30,15 @@ function boundedEnvMs(name: string, fallback: number, min: number, max: number):
 }
 
 export function ayrovixAiReady(): boolean {
-  return getAyroviAiCore().responses().isConfigured();
+  return getZayroviAiCore().responses().isConfigured();
 }
 
 export function getActiveProviders(): string[] {
-  const provider = getAyroviAiCore().responses();
+  const provider = getZayroviAiCore().responses();
   return provider.isConfigured() ? [provider.id] : [];
 }
 
-export function fallbackIdentification(description = 'Produit détecté visuellement'): AyrovixIdentification {
+export function fallbackIdentification(description = 'Produit détecté visuellement'): ZayrovixIdentification {
   const text = String(description || '').trim().slice(0, 400) || 'Produit détecté visuellement';
   return {
     input_kind: 'product_photo',
@@ -65,7 +65,7 @@ export function fallbackIdentification(description = 'Produit détecté visuelle
   };
 }
 
-const SYSTEM_PROMPT = `Tu es le moteur visuel et d'intelligence produit d'AYROVIX (AYROVIX Lens Multi-Product Intelligence Engine), assistant shopping tunisien.
+const SYSTEM_PROMPT = `Tu es le moteur visuel et d'intelligence produit d'ZAYROVIX (ZAYROVIX Lens Multi-Product Intelligence Engine), assistant shopping tunisien.
 Analyse l'image avec une intelligence multi-produits en temps réel.
 Identifie le produit principal ainsi que TOUS les produits distincts visibles dans la scène (ex. tenue complète : t-shirt, pantalon, chaussures, sac, montre, lunettes, ou plusieurs articles sur une table / un rayon). Ne t'arrête pas au premier produit.
 
@@ -116,7 +116,7 @@ const IDENTIFICATION_SCHEMA = {
     brand: { type: 'string' },
     model: { type: 'string' },
     // Runtime bounds are enforced again in parseIdentification() so provider
-    // output can never bypass AYROVIX validation.
+    // output can never bypass ZAYROVIX validation.
     color: { type: 'array', items: { type: 'string' } },
     visible_text: { type: 'array', items: { type: 'string' } },
     possible_model_codes: { type: 'array', items: { type: 'string' } },
@@ -191,15 +191,15 @@ export function normalizeBox(raw: unknown): [number, number, number, number] | n
   return [x, y, w, h];
 }
 
-function parseIdentification(raw: string): AyrovixIdentification {
+function parseIdentification(raw: string): ZayrovixIdentification {
   const cleaned = raw.replace(/```(?:json)?/gi, '').trim();
   const match = cleaned.match(/\{[\s\S]*\}/);
-  if (!match) throw new AyrovixIdentificationError('Réponse visuelle inexploitable.');
+  if (!match) throw new ZayrovixIdentificationError('Réponse visuelle inexploitable.');
   let parsed: any;
   try {
     parsed = JSON.parse(match[0]);
   } catch {
-    throw new AyrovixIdentificationError('JSON visuel invalide.');
+    throw new ZayrovixIdentificationError('JSON visuel invalide.');
   }
   const list = (value: unknown, max: number): string[] => Array.isArray(value)
     ? value.filter((item) => typeof item === 'string' && item.trim())
@@ -274,7 +274,7 @@ function parseIdentification(raw: string): AyrovixIdentification {
   };
 }
 
-export function buildSearchQuery(identification: AyrovixIdentification): string {
+export function buildSearchQuery(identification: ZayrovixIdentification): string {
   const parts: string[] = [];
   if (identification.possible_model_codes.length && identification.brand) {
     parts.push(identification.brand, identification.possible_model_codes[0]);
@@ -295,8 +295,8 @@ async function requestIdentification(
   mime: string,
   timeoutMs: number,
   structured: boolean,
-): Promise<AyrovixIdentification> {
-  const provider = getAyroviAiCore().responses();
+): Promise<ZayrovixIdentification> {
+  const provider = getZayroviAiCore().responses();
   const request: AiCompletionRequest = {
     workload: 'vision',
     modelClass: 'fast',
@@ -322,60 +322,60 @@ async function requestIdentification(
   } catch (error) {
     if (!(error instanceof AiProviderError)) throw error;
     if (error.code === 'PROVIDER_AUTHENTICATION_FAILED') {
-      throw new AyrovixUnavailableError('Vision provider authentication failed');
+      throw new ZayrovixUnavailableError('Vision provider authentication failed');
     }
     if (error.code === 'PROVIDER_RATE_LIMITED') {
-      throw new AyrovixIdentificationError('Vision provider quota exceeded');
+      throw new ZayrovixIdentificationError('Vision provider quota exceeded');
     }
     if (error.code === 'PROVIDER_TIMEOUT') throw error;
-    const mapped = new AyrovixIdentificationError(`Vision provider HTTP ${error.status || 0}`);
+    const mapped = new ZayrovixIdentificationError(`Vision provider HTTP ${error.status || 0}`);
     (mapped as any).httpStatus = error.status;
     throw mapped;
   }
 }
 
-async function identifyProductInner(image: Buffer, mime: string): Promise<AyrovixIdentification> {
-  const provider = getAyroviAiCore().responses();
+async function identifyProductInner(image: Buffer, mime: string): Promise<ZayrovixIdentification> {
+  const provider = getZayroviAiCore().responses();
   const model = provider.resolveModel('vision', 'fast');
-  const timeoutMs = boundedEnvMs('AYROVIX_PROVIDER_TIMEOUT_MS', 8_000, 5_000, 20_000);
+  const timeoutMs = boundedEnvMs('ZAYROVIX_PROVIDER_TIMEOUT_MS', 8_000, 5_000, 20_000);
   try {
-    console.log(`[AYROVIX] Trying ${provider.id} ${model}`);
+    console.log(`[ZAYROVIX] Trying ${provider.id} ${model}`);
     try {
       const result = await requestIdentification(image, mime, timeoutMs, true);
-      console.log(`[AYROVIX] Provider SUCCESS ${model}`);
+      console.log(`[ZAYROVIX] Provider SUCCESS ${model}`);
       return result;
     } catch (error: any) {
-      if (error instanceof AyrovixUnavailableError) throw error;
-      if (error instanceof AyrovixIdentificationError && error.message.includes('quota exceeded')) throw error;
+      if (error instanceof ZayrovixUnavailableError) throw error;
+      if (error instanceof ZayrovixIdentificationError && error.message.includes('quota exceeded')) throw error;
       if (error instanceof AiProviderError && error.code === 'PROVIDER_TIMEOUT') {
-        throw new AyrovixIdentificationError('Vision provider timeout');
+        throw new ZayrovixIdentificationError('Vision provider timeout');
       }
-      console.warn(`[AYROVIX] structured output failed (${error?.message || 'unknown'}) — retrying JSON`);
+      console.warn(`[ZAYROVIX] structured output failed (${error?.message || 'unknown'}) — retrying JSON`);
       const result = await requestIdentification(image, mime, timeoutMs, false);
-      console.log(`[AYROVIX] Provider SUCCESS ${model} (json fallback)`);
+      console.log(`[ZAYROVIX] Provider SUCCESS ${model} (json fallback)`);
       return result;
     }
   } catch (error: any) {
-    if (error instanceof AyrovixUnavailableError || error instanceof AyrovixIdentificationError) throw error;
+    if (error instanceof ZayrovixUnavailableError || error instanceof ZayrovixIdentificationError) throw error;
     const timeout = error instanceof AiProviderError && error.code === 'PROVIDER_TIMEOUT';
-    throw new AyrovixIdentificationError(timeout ? 'Vision provider timeout' : 'Vision provider request failed');
+    throw new ZayrovixIdentificationError(timeout ? 'Vision provider timeout' : 'Vision provider request failed');
   }
 }
 
-export async function identifyProduct(image: Buffer, mime: string): Promise<AyrovixIdentification> {
-  if (!ALLOWED_MIME.has(mime)) throw new AyrovixIdentificationError("Format d'image non supporté");
-  if (!image.length || image.length > MAX_IMAGE_BYTES) throw new AyrovixIdentificationError('Image trop lourde');
-  const provider = getAyroviAiCore().responses();
-  if (!provider.isConfigured()) throw new AyrovixUnavailableError('Vision provider is not configured');
+export async function identifyProduct(image: Buffer, mime: string): Promise<ZayrovixIdentification> {
+  if (!ALLOWED_MIME.has(mime)) throw new ZayrovixIdentificationError("Format d'image non supporté");
+  if (!image.length || image.length > MAX_IMAGE_BYTES) throw new ZayrovixIdentificationError('Image trop lourde');
+  const provider = getZayroviAiCore().responses();
+  if (!provider.isConfigured()) throw new ZayrovixUnavailableError('Vision provider is not configured');
 
   // dedup rapid double-tap / Circle re-search (<2s same image) — disabled in tests (1px PNG collision)
   const isTest = !!(process.env.VITEST || process.env.NODE_ENV === 'test');
   if (!isTest) {
     const key = `${createHash('sha256').update(image).digest('hex')}|${mime}`;
     const existing = visionInFlight.get(key);
-    if (existing) return existing.then((r) => ({ ...r, products: [...r.products] } as AyrovixIdentification));
+    if (existing) return existing.then((r) => ({ ...r, products: [...r.products] } as ZayrovixIdentification));
     if (activeVisionRequests >= MAX_ACTIVE_VISION_REQUESTS) {
-      throw new AyrovixUnavailableError('Vision provider is at its concurrency limit');
+      throw new ZayrovixUnavailableError('Vision provider is at its concurrency limit');
     }
     activeVisionRequests += 1;
     const task = identifyProductInner(image, mime);

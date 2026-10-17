@@ -12,10 +12,10 @@ describe('قراءة /api/ready', () => {
   it('يقرا الحقول كما هي، ومنها الفرع المنشور', () => {
     expect(parseServerReadiness({
       status: 'ready', database: 'ok', version: '3.10.4', commit: '4ae6c0d24e70',
-      branch: 'arena/c0321e79-ayrovi-beta1',
+      branch: 'arena/c0321e79-zayrovi-beta1',
     })).toEqual({
       status: 'ready', database: 'ok', version: '3.10.4', commit: '4ae6c0d24e70',
-      branch: 'arena/c0321e79-ayrovi-beta1',
+      branch: 'arena/c0321e79-zayrovi-beta1',
     });
   });
 
@@ -43,7 +43,7 @@ describe('قراءة /api/ready', () => {
 describe('دعم جلسة التطبيق على الخادم المنشور', () => {
   it('الحقل `branch` موجود ⇒ الخادم فيه كود الفرع', () => {
     expect(mobileSessionSupport(parseServerReadiness({
-      status: 'ready', commit: 'abc123', branch: 'arena/c0321e79-ayrovi-beta1',
+      status: 'ready', commit: 'abc123', branch: 'arena/c0321e79-zayrovi-beta1',
     }))).toBe('supported');
     // حتى `unknown` تعني «كود الفرع» — الحقل نفسو هو العلامة.
     expect(mobileSessionSupport(parseServerReadiness({ status: 'ready', commit: 'abc123', branch: 'unknown' })))

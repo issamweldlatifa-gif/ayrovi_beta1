@@ -4,9 +4,9 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import React from 'react';
 import { InteractiveLensResults } from '../client/src/ayrovix/components/InteractiveLensResults';
 import { LocaleProvider } from '../client/src/i18n/LocaleContext';
-import type { AyrovixCandidate } from '../client/src/ayrovix/types';
+import type { ZayrovixCandidate } from '../client/src/ayrovix/types';
 
-const candidate = (over: Partial<AyrovixCandidate>): AyrovixCandidate => ({
+const candidate = (over: Partial<ZayrovixCandidate>): ZayrovixCandidate => ({
   id: over.id || 'c',
   kind: 'external',
   title: over.title || 'Produit sans image',
@@ -103,14 +103,14 @@ describe('Lens Phase 0 UI improvements', () => {
     expect(src).toContain('INVALID_TEXT');
     expect(src).toContain('TEXT_SEARCH_FAILED');
     expect(src).toContain('IMAGE_REQUIRED');
-    expect(src).toContain('AYROVIX_UNAVAILABLE');
+    expect(src).toContain('ZAYROVIX_UNAVAILABLE');
     expect(src).toContain('INVALID_URL');
     expect(src).toContain('retryLast');
   });
 
   it('recent searches chips use existing history (localStorage)', () => {
     const src = readFileSync('client/src/ayrovix/components/LensLauncher.tsx','utf8');
-    expect(src).toContain('readLocalAyrovixHistory');
+    expect(src).toContain('readLocalZayrovixHistory');
     expect(src).toContain('Recherches récentes');
     expect(src).toContain('Voir tout');
   });

@@ -10,12 +10,12 @@ import { KNOWN_PAGE_PATHS, isKnownPagePath, sitemapRoutes } from '../shared/publ
 import { createHash, randomUUID } from 'node:crypto';
 import type { Server } from 'node:http';
 import { spawn } from 'node:child_process';
-import { QatafoDatabase as AyroviDatabase } from './db/database';
+import { QatafoDatabase as ZayroviDatabase } from './db/database';
 import { SmartLinkScraper } from './scraper/scraper';
 import { VisualProductExtractor } from './services/vision';
 import { createApiRouter } from './api/routes';
 import { observeCheckoutFunnel } from './analytics/funnel';
-import { createAyrovixRouter } from './ayrovix/routes';
+import { createZayrovixRouter } from './ayrovix/routes';
 import { createAdminRouter } from './admin/routes';
 import { createPublicRouter } from './public/routes';
 import { createCustomerRouter } from './customer/routes';
@@ -191,16 +191,16 @@ app.use('/api/assistant/chat', rateLimit('assistant-chat', process.env.NODE_ENV 
 app.use('/api/assistant/transcribe', rateLimit('assistant-voice', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000));
 app.use('/api/public/media', rateLimit('public-media-proxy', process.env.NODE_ENV === 'test' ? 1_000 : 300, 10 * 60_000));
 const ayrovixRateLimit = rateLimit('ayrovix', process.env.NODE_ENV === 'test' ? 1_000 : 12, 10 * 60_000);
-const configuredLensDailyLimit = Number(process.env.AYROVIX_LENS_IP_DAILY_LIMIT);
+const configuredLensDailyLimit = Number(process.env.ZAYROVIX_LENS_IP_DAILY_LIMIT);
 const lensDailyLimit = process.env.NODE_ENV === 'test' ? 1_000
   : Number.isInteger(configuredLensDailyLimit) ? Math.max(5, Math.min(200, configuredLensDailyLimit)) : 40;
 const ayrovixDailyCostLimit = rateLimit('ayrovix-daily-cost', lensDailyLimit, 24 * 60 * 60_000);
-const costlyAyrovixPaths = new Set(['/analyze-image', '/analyze-url', '/analyze-code', '/analyze-barcode', '/analyze-text']);
+const costlyZayrovixPaths = new Set(['/analyze-image', '/analyze-url', '/analyze-code', '/analyze-barcode', '/analyze-text']);
 app.use('/api/ayrovix', (req, res, next) => {
   // Reading compact history is free. Costly analyses also have a daily IP
   // ceiling so a long rolling 10-minute series cannot create unbounded vendor spend.
   if (req.method === 'GET' && req.path === '/history') return next();
-  if (costlyAyrovixPaths.has(req.path)) {
+  if (costlyZayrovixPaths.has(req.path)) {
     return ayrovixDailyCostLimit(req, res, () => ayrovixRateLimit(req, res, next));
   }
   return ayrovixRateLimit(req, res, next);
@@ -239,7 +239,7 @@ app.use(cors({
   origin: (origin, callback) => callback(null, !origin || allowedOrigins.has(origin)),
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-session-id', 'x-requested-with', 'x-csrf-token', 'x-ayrovi-native'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-session-id', 'x-requested-with', 'x-csrf-token', 'x-zayrovi-native'],
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
@@ -250,7 +250,7 @@ app.use('/api/customer/auth/otp/request', otpRequestTargetRateLimit);
 // Database, Scraper & Vision Engine
 // Tests must always be hermetic: never let a local .env DATABASE_PATH hijack the test run.
 const databasePath = process.env.NODE_ENV === 'test' ? ':memory:' : (process.env.DATABASE_PATH || undefined);
-const db = new AyroviDatabase(databasePath);
+const db = new ZayroviDatabase(databasePath);
 try { pruneCanonicalLensCache(db); } catch (error: any) { console.warn('[Lens cache] startup prune failed:', error?.message || 'unknown'); }
 const lensCacheCleanupTimer = setInterval(() => {
   try { pruneCanonicalLensCache(db); } catch (error: any) { console.warn('[Lens cache] scheduled prune failed:', error?.message || 'unknown'); }
@@ -295,7 +295,7 @@ app.use('/reset-password', (_req, res, next) => {
 app.get('/sitemap.xml', (_req, res) => {
   const urls = sitemapRoutes().map((route) => [
     '  <url>',
-    `    <loc>https://ayrovi.tn${route.path}</loc>`,
+    `    <loc>https://zayrovi.tn${route.path}</loc>`,
     `    <changefreq>${route.changeFrequency}</changefreq>`,
     `    <priority>${route.priority.toFixed(1)}</priority>`,
     '  </url>',
@@ -346,7 +346,7 @@ app.use('/api', (_req, res, next) => {
 // demain sans y penser. C'est la seule mesure de ce fichier qui ne dépend d'aucune liste.
 app.use('/api/checkout', observeCheckoutFunnel(db));
 app.use('/api/admin', createAdminRouter(db));
-app.use('/api/ayrovix', createAyrovixRouter(db, scraper));
+app.use('/api/ayrovix', createZayrovixRouter(db, scraper));
 app.use('/api/ocerex', createOcerexRouter(db, scraper));
 app.use('/api/customer', createCustomerRouter(db));
 app.use('/api/assistant', createAssistantRouter(db, scraper));
@@ -360,7 +360,7 @@ app.use('/api', createApiRouter(db, scraper, visionExtractor));
 app.get('/api/health', (_req, res) => {
   res.json({
     status: 'ok',
-    service: 'AYROVI Universal Shopping & Vision Platform',
+    service: 'ZAYROVI Universal Shopping & Vision Platform',
     version: '3.10.4',
     framework: 'React 19 + Vite + TypeScript + Express',
   });
@@ -379,7 +379,7 @@ app.get('/api/ready', (_req, res) => {
       status: 'ready',
       database: 'ok',
       version: process.env.npm_package_version || 'unknown',
-      commit: String(process.env.RENDER_GIT_COMMIT_SHA || process.env.AYROVI_BUILD_COMMIT || 'local').slice(0, 12),
+      commit: String(process.env.RENDER_GIT_COMMIT_SHA || process.env.ZAYROVI_BUILD_COMMIT || 'local').slice(0, 12),
     });
   } catch (error: any) {
     console.error(`[ready] request=${( _req as any).requestId || 'unknown'}`, error?.message || 'dependency unavailable');
@@ -426,7 +426,7 @@ const looksLikeAssetRequest = (pathname: string): boolean =>
 app.get('*', (req, res) => {
   const indexPath = path.join(publicDir, 'index.html');
   if (!fs.existsSync(indexPath)) {
-    res.status(404).send('AYROVI Frontend build not found.');
+    res.status(404).send('ZAYROVI Frontend build not found.');
     return;
   }
   const pathname = req.path.replace(/\/+$/, '') || '/';
@@ -460,7 +460,7 @@ function runBackupIfDue() {
   if (!backupIntervalMs || backupRunning || process.env.NODE_ENV === 'test') return;
   const backupDir = path.resolve(process.cwd(), process.env.BACKUP_DIR || 'data/backups');
   const newest = fs.existsSync(backupDir)
-    ? fs.readdirSync(backupDir).filter((name) => /^ayrovi-.*\.sqlite$/.test(name))
+    ? fs.readdirSync(backupDir).filter((name) => /^zayrovi-.*\.sqlite$/.test(name))
       .map((name) => fs.statSync(path.join(backupDir, name)).mtimeMs).reduce((max, value) => Math.max(max, value), 0)
     : 0;
   if (newest && Date.now() - newest < backupIntervalMs) return;
@@ -524,7 +524,7 @@ function shutdown(exitCode: number, reason: string) {
 if (process.env.NODE_ENV !== 'test') {
   httpServer = app.listen(Number(PORT), '0.0.0.0', () => {
     console.log('====================================================');
-    console.log('🚀 AYROVI React + Vite Platform running');
+    console.log('🚀 ZAYROVI React + Vite Platform running');
     console.log(`📍 Web Application: http://0.0.0.0:${PORT}/`);
     console.log('====================================================');
   });

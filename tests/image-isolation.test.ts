@@ -13,9 +13,9 @@ import request from 'supertest';
 import { analyzeEdges, chromaKey, chromaKeyConnected, getIsolatedImage, hasEnclosedTransparency, isPublicHttpUrl, isolateBuffer, type RawImage } from '../src/services/imageIsolation';
 import { app } from '../src/server';
 
-const cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ayrovi-isolated-'));
-process.env.AYROVI_ISOLATED_CACHE_DIR = cacheDir;
-process.env.AYROVI_SEGMENTATION = 'false'; // tests déterministes : pas de modèle ONNX
+const cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'zayrovi-isolated-'));
+process.env.ZAYROVI_ISOLATED_CACHE_DIR = cacheDir;
+process.env.ZAYROVI_SEGMENTATION = 'false'; // tests déterministes : pas de modèle ONNX
 afterAll(() => { fs.rmSync(cacheDir, { recursive: true, force: true }); });
 
 function rawImage(width: number, height: number, paint: (x: number, y: number) => [number, number, number]): RawImage {

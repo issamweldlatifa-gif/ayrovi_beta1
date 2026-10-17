@@ -1,5 +1,5 @@
 /**
- * AYROVI ERP Core — Module registry (P1).
+ * ZAYROVI ERP Core — Module registry (P1).
  *
  * Before this file, "which modules exist" was implicit: 28 hand-written nav
  * entries in client/src/admin/AdminApp.tsx, permission strings scattered across

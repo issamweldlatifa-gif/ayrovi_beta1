@@ -1,5 +1,5 @@
 /**
- * AYROVI Stock (P2.2) — tests d'acceptation.
+ * ZAYROVI Stock (P2.2) — tests d'acceptation.
  *
  * Ils couvrent, dans l'ordre du plan, ce que la phase a promis :
  *  • la quantité n'existe que dans le module — `products` ne gagne aucune colonne de stock ;
@@ -33,7 +33,7 @@ let admin: { agent: any; csrf: string };
 let reader: { agent: any; csrf: string };
 
 async function makeSession(role: 'CONTENT_MANAGER') {
-  const email = `inv-${role.toLowerCase()}-${suffix}@test.ayrovi.tn`;
+  const email = `inv-${role.toLowerCase()}-${suffix}@test.zayrovi.tn`;
   const password = 'StockSecure2026!';
   const created = await admin.agent.post('/api/admin/users').set('x-csrf-token', admin.csrf)
     .send({ name: `Stock ${role}`, email, password, role });
@@ -52,7 +52,7 @@ function auditCount(handle: QatafoDatabase, where: string, ...params: Array<stri
   return Number(handle.get<{ n: number }>(`SELECT COUNT(*) AS n FROM audit_logs WHERE ${where}`, ...params)?.n ?? 0);
 }
 
-describe('AYROVI Stock (P2.2)', () => {
+describe('ZAYROVI Stock (P2.2)', () => {
   const location = `TUN-${short}`;
   let productId = '';
   let productCode = '';
@@ -61,7 +61,7 @@ describe('AYROVI Stock (P2.2)', () => {
 
   beforeAll(async () => {
     const agent = request.agent(app);
-    const login = await agent.post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
+    const login = await agent.post('/api/admin/auth/login').send({ email: 'admin@zayrovi.tn', password: 'ZayroviBeta2026!' });
     expect(login.status).toBe(200);
     admin = { agent, csrf: login.body.data.csrfToken };
     reader = await makeSession('CONTENT_MANAGER');

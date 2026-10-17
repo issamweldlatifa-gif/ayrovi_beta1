@@ -10,15 +10,15 @@
  * Ce qu'on doit lire :
  *   1re passe : from_cache=false, cache_age_ms=null  → la fiche est réellement lue ;
  *   2e  passe : from_cache=true,  cache_age_ms=<âges> → aucune relecture marchande,
- *               et le prix reste celui du moteur AYROVI (jamais servi par le cache).
+ *               et le prix reste celui du moteur ZAYROVI (jamais servi par le cache).
  *
  * Utilisation :
  *   node scripts/aywebs-latency-probe.mjs \
- *     --base https://ayrovi-beta1.onrender.com \
+ *     --base https://zayrovi-beta1.onrender.com \
  *     --url "https://www.amazon.com/dp/B0GYM3V9H5"
  *
  * Options :
- *   --base   origine du site (défaut : variable AYROVI_BASE_URL, sinon localhost:3000)
+ *   --base   origine du site (défaut : variable ZAYROVI_BASE_URL, sinon localhost:3000)
  *   --url    lien produit à mesurer (obligatoire, sauf si --self-test)
  *   --runs   nombre de passes (défaut 2)
  *   --cold   force une LECTURE FRAÎCHE sur la première passe (`refresh:true`) :
@@ -38,7 +38,7 @@ function option(name, fallback = '') {
   return index >= 0 && args[index + 1] ? String(args[index + 1]) : fallback;
 }
 
-const base = (option('base', process.env.AYROVI_BASE_URL || 'http://localhost:3000')).replace(/\/+$/, '');
+const base = (option('base', process.env.ZAYROVI_BASE_URL || 'http://localhost:3000')).replace(/\/+$/, '');
 const productUrl = option('url', '');
 const runs = Math.max(1, Math.min(5, Number(option('runs', '2')) || 2));
 const store = option('store', '');
@@ -47,7 +47,7 @@ const session = option('session', `probe-${Date.now()}-${Math.random().toString(
 
 if (!productUrl) {
   console.error('Usage : node scripts/aywebs-latency-probe.mjs --base <origine> --url <lien produit>');
-  console.error('Exemple : node scripts/aywebs-latency-probe.mjs --base https://ayrovi-beta1.onrender.com --url "https://www.amazon.com/dp/B0GYM3V9H5"');
+  console.error('Exemple : node scripts/aywebs-latency-probe.mjs --base https://zayrovi-beta1.onrender.com --url "https://www.amazon.com/dp/B0GYM3V9H5"');
   process.exit(2);
 }
 

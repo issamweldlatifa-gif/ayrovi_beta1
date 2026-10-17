@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { QatafoDatabase } from '../db/database';
 import { recordAdminAudit, type AdminAuditActor } from '../admin/audit';
 import type { AiCompletionRequest, AiCompletionResult, AiResponsesProviderAdapter } from '../ai-core/contracts';
-import { getAyroviAiCore } from '../ai-core/core';
+import { getZayroviAiCore } from '../ai-core/core';
 import { ArrivalIngestionError } from './errors';
 import { CategoryMasterService, normalizeCategoryCode } from './categoryMasterService';
 import type {
@@ -18,7 +18,7 @@ import type {
  * Flow (unchanged Cards system, additive step):
  *
  *   SKU / Reference + Product Name
- *        -> AI (AYROVI AI Core, `arrival-ingestion` workload)
+ *        -> AI (ZAYROVI AI Core, `arrival-ingestion` workload)
  *        -> Category Master (official, DB-backed, ACTIVE entries only)
  *        -> confident            -> CLASSIFIED  (source=AI)
  *        -> not confident/invalid -> NEEDS_REVIEW -> manual selection (source=MANUAL)
@@ -63,7 +63,7 @@ export class CategoryClassificationService {
   constructor(
     private readonly db: QatafoDatabase,
     readonly categories: CategoryMasterService = new CategoryMasterService(db),
-    private readonly adapter: AiResponsesProviderAdapter = getAyroviAiCore().responses(),
+    private readonly adapter: AiResponsesProviderAdapter = getZayroviAiCore().responses(),
   ) {}
 
   /**
@@ -395,8 +395,8 @@ export class CategoryClassificationService {
       color: row.color || '',
     }));
     const instructions = [
-      'You are the AYROVI Arrival CRM product category classifier.',
-      'Task: map each product line to ONE category from the official AYROVI Warehouse Core Category Master.',
+      'You are the ZAYROVI Arrival CRM product category classifier.',
+      'Task: map each product line to ONE category from the official ZAYROVI Warehouse Core Category Master.',
       '',
       'ABSOLUTE RULES:',
       '1. Choose ONLY a code that appears in the CATEGORY MASTER below. Never invent, translate, abbreviate or derive a new code.',

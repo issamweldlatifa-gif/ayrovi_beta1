@@ -1,4 +1,4 @@
-# AYROVI — LENS + PRODUCT EXPERIENCE — AUDIT & IMPLEMENTATION PLAN
+# ZAYROVI — LENS + PRODUCT EXPERIENCE — AUDIT & IMPLEMENTATION PLAN
 **Date:** 2026-09-18 — **Scope:** Lens flow + Product page — **Environment:** `main` @ `28ef35e`
 **Rule:** CLEAN FIRST — NO ACCUMULATION — KEEP CURRENT LENS, FIX FLOW, MAKE PRODUCT FIRST
 
@@ -108,7 +108,7 @@ Risk: `stage === 'analyzing'` existed as separate stage that hid preview. Fixed 
 
 - `InteractiveLensResults` is **the only results renderer for Lens image** — correct, no separate page.
 - Structure: `relative h-[100dvh] flex-col overflow-hidden bg-[#0A0A0A] → containerRef flex-1 (image) + sheetRef absolute bottom-0 (results)`. Sheet heights: `peek 22% / half 45% / full 100%`, `rounded-t-[20px]` when not full, drag handle, `pl-14` left pad (as required).
-- Header inside sheet: `Résultats Lens • visible.length` + `query label max-w-[22ch] truncate` + two pills `Agrandir/Réduire` + `Nouvelle recherche` (flat white, orange only single CTA respects `tokens.css:137` / `App.tsx:139 --ayrovi-color-brand-orange = #0A0A0A`).
+- Header inside sheet: `Résultats Lens • visible.length` + `query label max-w-[22ch] truncate` + two pills `Agrandir/Réduire` + `Nouvelle recherche` (flat white, orange only single CTA respects `tokens.css:137` / `App.tsx:139 --zayrovi-color-brand-orange = #0A0A0A`).
 - Grid: `grid-cols-2 gap-3 auto-rows-fr` 12 items max, each `bg-white p-2.5 rounded-xl border border-line/50 flex flex-col`, `aspect-square overflow-hidden bg-surface` + `MatchBadge`, `line-clamp-2 title 12px`, `colors/sizes 10px`, `source 10px`, `Star rating`, `bg-surface px-2 py-1.5 price block`, `rounded-full bg-ink Voir le produit`.
 - **Strengths:** stays inside Lens, image behind, lazy image `loading=lazy decoding=async`, `displayRating` fallback, PENDING amber handling already shipped (`56c164d`).
 - **Gaps vs spec 4 & 9:**
@@ -132,7 +132,7 @@ Risk: `stage === 'analyzing'` existed as separate stage that hid preview. Fixed 
 | **Lens product** | `LensLauncher.tsx: product stage` → `ProductResult.tsx` inside bottom sheet + dimmed preview behind | After `handleChooseCandidate` inside Lens (stays in Lens) | `relative h-[calc(100vh-56px)] flex-col overflow-hidden bg-white → flex-1 bg-black (preview dim) → absolute bottom-0 max-h-[96%] rounded-t-[20px] bg-white` → sheet contains `ProductResult` + `Calculer un autre produit` + `Retour aux autres résultats` + `ProductCandidates` alternates | `product` state in LensLauncher, `verifiedPriceUrl` boolean |
 | **Generic product (legacy)** | `App.tsx: app:product` → `ProductDrawer.tsx` (659 lines) | From `ProductDrawer` input (screenshot/link) or `handleToggleProductDrawer` from hero | `fixed inset-0 z-[80] bg-white → section h-[100dvh] flex-col → header border-b bg-surface → flex-1 overflow-y p-5 space-y-5 → footer border-t bg-white` | `extractedProduct` state in App, `step = 'input'|'details'` via `product:*` navigation layer |
 
-These are **competing implementations of "product"** — violates CLEAN 3. The spec says **DO NOT create a second Lens page**, but `ProductDrawer` is effectively a second product flow that predates Lens and was kept for screenshot/link via `POST /api/extract-image` / `/api/scrape` (distinct from AYROVIX Lens `POST /api/ayrovix/analyze-image`). It should be **consolidated or retired** — not patched alongside.
+These are **competing implementations of "product"** — violates CLEAN 3. The spec says **DO NOT create a second Lens page**, but `ProductDrawer` is effectively a second product flow that predates Lens and was kept for screenshot/link via `POST /api/extract-image` / `/api/scrape` (distinct from ZAYROVIX Lens `POST /api/ayrovix/analyze-image`). It should be **consolidated or retired** — not patched alongside.
 
 ### C2. Product first viewport — `ProductResult.tsx` fails spec 5
 
@@ -212,7 +212,7 @@ Root cause of fixed rectangles: `h-[100dvh]`, `h-[calc(100vh-56px)]`, `min-h-[19
 | Exists | File | Lines | Reason to clean/consolidate |
 |---|---|---|---|
 | **Duplicate product flow** | `ProductDrawer.tsx` (659) vs `LensLauncher product + ProductResult` (283) | 659/283 | Both handle image/link → product → order. `ProductDrawer` uses old `POST /api/extract-image` & `/api/scrape` endpoints, not Lens `POST /api/ayrovix/analyze-*`. Keep Lens as authoritative; retire or hide `ProductDrawer` behind feature flag, or refactor it to reuse `ProductResult` (single product component). |
-| **Duplicate candidate list** | `ProductCandidates.tsx` (67) vs `InteractiveLensResults.tsx` grid (grid-cols-2) | 67/496 | Same data `AyrovixCandidate`. `ProductCandidates` used only for `urlResult.alternates` inside product sheet. Should reuse the same grid component or render alternates via the same `InteractiveLensResults` path. |
+| **Duplicate candidate list** | `ProductCandidates.tsx` (67) vs `InteractiveLensResults.tsx` grid (grid-cols-2) | 67/496 | Same data `ZayrovixCandidate`. `ProductCandidates` used only for `urlResult.alternates` inside product sheet. Should reuse the same grid component or render alternates via the same `InteractiveLensResults` path. |
 | **Duplicate capture** | `LensCamera.tsx` (48) + `LensUpload.tsx` (43) + `LiveCamera.tsx` (353) | 48+43+353 | Three ways to get an image. `LiveCamera` already handles photo/qr/barcode/link; `LensCamera`/`LensUpload` are thin wrappers for `home` stage. Keep `LiveCamera` as capture owner, reuse its callbacks. |
 | **Duplicate navigation wrappers** | `LensNavigation.tsx` (166) `LensContextHeader`/`LensMoreMenu` vs `App.tsx` `Navbar` vs `BottomNavBar` | 166 | Lens header is custom, but `LensMoreMenu` duplicates `MenuDrawer` logic for history/dark mode. Consolidate if needed, but keep as is for now — not critical. |
 | **Duplicate analyzing state** | `LensLauncher:stage 'analyzing'` vs `stage 'candidates' + isAnalyzing` | — | Two branches render same `InteractiveLensResults` with `isLoading` prop differing only. Merge to single `candidates` branch. |
@@ -265,7 +265,7 @@ Current is already close; fix remaining:
 - [ ] **1.1** Ensure `previewUrl` + `candidatesView` persist across `product` → `candidates` back. Already via `setProduct`/`setCandidatesView` not cleared on `enterStage('product')`. Add explicit `useEffect` guard: `enterStage('product')` must NOT `clearRuntime`. Already true — verify and add comment + test `lens.test.ts` "Lens preserves image after product open and back".
 - [ ] **1.2** Increase `InteractiveLensResults` peek from `22%` to `38%` on mobile, `45%` stays half, `100%` full — so results are immediately visible without pull. File: `InteractiveLensResults.tsx` `sheetHeight`.
 - [ ] **1.3** Add context line in sheet header: `"{name} • {visible.length} résultats — votre image ci-dessus"` (prove connection). Not a card, just `text-[11px] text-muted`.
-- [ ] **1.4** Keep `LensLauncher` mounted when `ProductResult` is opened (already via `lensSessionActive`). Add `App.tsx` guard: navigating to `app:cart` from Lens product must NOT call `clearRuntime`. Already `handleAyrovixOrder → onOrder → openAppView('app:cart')` but `lensSessionActive` stays true — verify.
+- [ ] **1.4** Keep `LensLauncher` mounted when `ProductResult` is opened (already via `lensSessionActive`). Add `App.tsx` guard: navigating to `app:cart` from Lens product must NOT call `clearRuntime`. Already `handleZayrovixOrder → onOrder → openAppView('app:cart')` but `lensSessionActive` stays true — verify.
 - [ ] **Verification:** Manual flow: upload → preview → analyze → candidates visible with image behind → tap results → product sheet inside same `fixed inset-0` → Back → candidates restored → image same object URL.
 
 ### Phase 2 — Product Page: Remove Card-on-Card + Make Product First (spec 5-6, 10, 17 Product)
@@ -368,5 +368,5 @@ Code quality
 
 Reply **`APPROVÉ — START PHASE 0`** and I will implement **Phase 0 → 1 → 2 → 3 → 4** sequentially, pushing after each phase with `730/730` + `vite build` verification and cleaning after each.
 
-*Audit done with no business logic change. Backend not touched. Visual identity (Inter+Noto, #FFC107, pl-14, Auto → AYROVIX) preserved.*
+*Audit done with no business logic change. Backend not touched. Visual identity (Inter+Noto, #FFC107, pl-14, Auto → ZAYROVIX) preserved.*
 

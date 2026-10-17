@@ -2,21 +2,21 @@ import { MerchantRating } from './MerchantRating';
 import React from 'react';
 import { motion } from 'motion/react';
 import { ArrowUpRight, MessageCircle, ArrowRightLeft, ShoppingBag } from '../../components/QatafoIcons';
-import type { AyrovixCandidate } from '../types';
+import type { ZayrovixCandidate } from '../types';
 import { isDisplayableCandidate } from '../services/resultPolicy';
 import { useLocale } from '../../i18n/LocaleContext';
 import { StudioImageFrame, QuietPromoPrice, QuietCardActions } from './quiet-card';
 
 interface ProductCandidatesProps {
-  candidates: AyrovixCandidate[];
-  onChoose: (candidate: AyrovixCandidate) => void;
+  candidates: ZayrovixCandidate[];
+  onChoose: (candidate: ZayrovixCandidate) => void;
   /** Quiet Card v2 : ajout direct depuis la carte (bouton principal encre). */
-  onQuickAdd?: (candidate: AyrovixCandidate) => void;
+  onQuickAdd?: (candidate: ZayrovixCandidate) => void;
   quickAddBusyId?: string | null;
   /** 💬 — ouvre l'assistant avec une question prête sur ce produit. */
-  onAskAssistant?: (candidate: AyrovixCandidate) => void;
+  onAskAssistant?: (candidate: ZayrovixCandidate) => void;
   /** ⇄ — relance une recherche de produits similaires. */
-  onFindSimilar?: (candidate: AyrovixCandidate) => void;
+  onFindSimilar?: (candidate: ZayrovixCandidate) => void;
 }
 
 /** Only actionable, priced merchant listings are rendered. */

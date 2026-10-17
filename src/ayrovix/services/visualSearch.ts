@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import sharp from 'sharp';
-import type { AyrovixCandidate } from '../types';
+import type { ZayrovixCandidate } from '../types';
 import { parsePublicHttpUrl, readLimitedText } from '../../services/safeUrl';
 import { fetchRemoteImage } from '../../services/imageIsolation';
 
@@ -15,14 +15,14 @@ const SERPAPI_IMAGE_LIMIT_BYTES = 500 * 1024;
 const CACHE_TTL_MS = 10 * 60_000;
 const MAX_CACHE_ENTRIES = 100;
 const MAX_IN_FLIGHT = 12;
-const cache = new Map<string, { at: number; results: AyrovixCandidate[] }>();
-const inFlight = new Map<string, Promise<AyrovixCandidate[]>>();
+const cache = new Map<string, { at: number; results: ZayrovixCandidate[] }>();
+const inFlight = new Map<string, Promise<ZayrovixCandidate[]>>();
 
 function boundedLimit(value: number): number {
   return Number.isFinite(value) ? Math.max(8, Math.min(40, Math.floor(value))) : 24;
 }
 
-function cacheResults(key: string, results: AyrovixCandidate[]): void {
+function cacheResults(key: string, results: ZayrovixCandidate[]): void {
   cache.delete(key);
   cache.set(key, { at: Date.now(), results });
   while (cache.size > MAX_CACHE_ENTRIES) cache.delete(cache.keys().next().value as string);
@@ -42,7 +42,7 @@ export function serpApiVisualReady(): boolean {
 }
 
 function timeoutMs(): number {
-  const configured = Number(process.env.AYROVIX_VISUAL_SEARCH_TIMEOUT_MS);
+  const configured = Number(process.env.ZAYROVIX_VISUAL_SEARCH_TIMEOUT_MS);
   return Number.isFinite(configured) ? Math.min(25_000, Math.max(10_000, configured)) : 14_000;
 }
 
@@ -85,7 +85,7 @@ async function prepareImageForSerpApi(image: Buffer): Promise<Buffer> {
   return last;
 }
 
-function toCandidates(payload: any, limit: number): AyrovixCandidate[] {
+function toCandidates(payload: any, limit: number): ZayrovixCandidate[] {
   const rows = Array.isArray(payload?.visual_matches) ? payload.visual_matches
     : Array.isArray(payload?.exact_matches) ? payload.exact_matches
       : [];
@@ -96,9 +96,9 @@ function toCandidates(payload: any, limit: number): AyrovixCandidate[] {
   return [...priced, ...extra].slice(0, limit);
 }
 
-function collectCandidates(rows: any[], limit: number, strict: boolean): AyrovixCandidate[] {
+function collectCandidates(rows: any[], limit: number, strict: boolean): ZayrovixCandidate[] {
   const seen = new Set<string>();
-  const results: AyrovixCandidate[] = [];
+  const results: ZayrovixCandidate[] = [];
   for (const row of rows) {
     const sourceUrl = String(row?.link || '').trim();
     const title = String(row?.title || '').replace(/\s+/g, ' ').trim();
@@ -167,7 +167,7 @@ function collectCandidates(rows: any[], limit: number, strict: boolean): Ayrovix
   return results;
 }
 
-async function runSerpApiVisualSearch(image: Buffer, limit: number): Promise<AyrovixCandidate[]> {
+async function runSerpApiVisualSearch(image: Buffer, limit: number): Promise<ZayrovixCandidate[]> {
   const key = serpApiKey();
   if (!key) return [];
   const deadline = Date.now() + timeoutMs();
@@ -181,19 +181,19 @@ async function runSerpApiVisualSearch(image: Buffer, limit: number): Promise<Ayr
       signal: AbortSignal.timeout(remainingMs(deadline, 5_000)),
     });
     if (!upload.ok) {
-      console.warn(`[AYROVIX serpapi-lens] image upload HTTP ${upload.status}`);
+      console.warn(`[ZAYROVIX serpapi-lens] image upload HTTP ${upload.status}`);
       return [];
     }
     const uploadPayload: any = await responseJson(upload, 256 * 1024);
     const imageId = String(uploadPayload?.image_id || '').trim();
     if (!imageId || deadline - Date.now() < 500) {
-      console.warn('[AYROVIX serpapi-lens] image upload returned no usable image_id');
+      console.warn('[ZAYROVIX serpapi-lens] image upload returned no usable image_id');
       return [];
     }
 
-    const configuredCountry = (process.env.AYROVIX_LENS_COUNTRY || '').trim().toLowerCase();
+    const configuredCountry = (process.env.ZAYROVIX_LENS_COUNTRY || '').trim().toLowerCase();
     const country = /^[a-z]{2}$/.test(configuredCountry) ? configuredCountry : 'fr';
-    const searchType = async (type: 'products' | 'visual_matches' | 'exact_matches'): Promise<AyrovixCandidate[]> => {
+    const searchType = async (type: 'products' | 'visual_matches' | 'exact_matches'): Promise<ZayrovixCandidate[]> => {
       const params = new URLSearchParams({
         engine: 'google_lens',
         type,
@@ -206,12 +206,12 @@ async function runSerpApiVisualSearch(image: Buffer, limit: number): Promise<Ayr
         signal: AbortSignal.timeout(remainingMs(deadline, 12_000)),
       });
       if (!response.ok) {
-        console.warn(`[AYROVIX serpapi-lens] ${type} HTTP ${response.status}`);
+        console.warn(`[ZAYROVIX serpapi-lens] ${type} HTTP ${response.status}`);
         return [];
       }
       const payload: any = await responseJson(response);
       if (payload?.error) {
-        console.warn(`[AYROVIX serpapi-lens] ${type} API error`);
+        console.warn(`[ZAYROVIX serpapi-lens] ${type} API error`);
         return [];
       }
       return toCandidates(payload, limit);
@@ -221,15 +221,15 @@ async function runSerpApiVisualSearch(image: Buffer, limit: number): Promise<Ayr
        second unconditional tab query doubled quota use and made one customer
        action produce an avoidable third network request after image upload. */
     const products = await searchType('products');
-    console.log(`[AYROVIX serpapi-lens] ${products.length} matches`);
+    console.log(`[ZAYROVIX serpapi-lens] ${products.length} matches`);
     return products;
   } catch (error: any) {
-    console.warn(`[AYROVIX serpapi-lens] ${error?.name === 'TimeoutError' ? 'timeout' : 'unavailable'}`);
+    console.warn(`[ZAYROVIX serpapi-lens] ${error?.name === 'TimeoutError' ? 'timeout' : 'unavailable'}`);
     return [];
   }
 }
 
-export async function serpApiVisualSearchUrl(imageUrl: string, limit = 24): Promise<AyrovixCandidate[]> {
+export async function serpApiVisualSearchUrl(imageUrl: string, limit = 24): Promise<ZayrovixCandidate[]> {
   if (!serpApiVisualReady()) return [];
   let normalized: string;
   try { normalized = parsePublicHttpUrl(imageUrl).toString(); } catch { return []; }
@@ -255,7 +255,7 @@ export async function serpApiVisualSearchUrl(imageUrl: string, limit = 24): Prom
   }
 }
 
-export async function serpApiVisualSearch(image: Buffer, limit = 24): Promise<AyrovixCandidate[]> {
+export async function serpApiVisualSearch(image: Buffer, limit = 24): Promise<ZayrovixCandidate[]> {
   if (!serpApiVisualReady() || !image.length || image.length > 8 * 1024 * 1024) return [];
   const safeLimit = boundedLimit(limit);
   const cacheKey = `${createHash('sha256').update(image).digest('hex')}|${safeLimit}`;

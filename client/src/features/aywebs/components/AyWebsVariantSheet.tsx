@@ -17,7 +17,7 @@ import {
  *    le publie (JSON-LD `itemCondition`), et il n'est JAMAIS un critère de
  *    correspondance de variante (régression du 03/10/2026 corrigée) ;
  *  • après ajout : confirmation avec la ligne réellement enregistrée, puis deux
- *    sorties — Proceed to Checkout (panier AYROVI) ou Return to Shopping.
+ *    sorties — Proceed to Checkout (panier ZAYROVI) ou Return to Shopping.
  *
  * Cartes de variantes (04/10/2026, captures marchand 1-2) : quand le marchand
  * publie une image ou un prix propre à chaque valeur d'un attribut (couleur…),
@@ -259,7 +259,7 @@ export const AyWebsVariantSheet: React.FC<AyWebsVariantSheetProps> = ({ url, sto
       if (!result.idempotentReplay) trackAyWebsEvent('add_to_cart_succeeded', { store: product.store_id });
       pendingAddRequestId.current = '';
       setAdded(result.item ?? null);
-      setLinked(result.ayrovi ? { linked: Boolean(result.ayrovi.linked), reason: String(result.ayrovi.reason || '') } : null);
+      setLinked(result.zayrovi ? { linked: Boolean(result.zayrovi.linked), reason: String(result.zayrovi.reason || '') } : null);
       setPhase('added');
     } catch (caught: any) {
       // Aucun faux succès : on reste sur la feuille, le message vient du serveur.
@@ -293,8 +293,8 @@ export const AyWebsVariantSheet: React.FC<AyWebsVariantSheetProps> = ({ url, sto
             {purchaseSupportAvailable && !purchaseSupportOpen && (
               <div className="ayw-support-panel">
                 <p>{tr(
-                  'This link cannot be added through product capture. Purchase Support sends it to the AYROVI team for review; it does not add an item to your cart or buy from the merchant.',
-                  'لا يمكن إضافة هذا الرابط عبر التقاط المنتج. يرسل دعم الشراء الرابط إلى فريق AYROVI للمراجعة؛ ولا يضيفه إلى السلة أو يشتريه آلياً من التاجر.',
+                  'This link cannot be added through product capture. Purchase Support sends it to the ZAYROVI team for review; it does not add an item to your cart or buy from the merchant.',
+                  'لا يمكن إضافة هذا الرابط عبر التقاط المنتج. يرسل دعم الشراء الرابط إلى فريق ZAYROVI للمراجعة؛ ولا يضيفه إلى السلة أو يشتريه آلياً من التاجر.',
                 )}</p>
                 <button type="button" className="ayw-cta" onClick={() => setPurchaseSupportOpen(true)}>
                   {tr('Request Purchase Support', 'طلب دعم الشراء')}
@@ -332,7 +332,7 @@ export const AyWebsVariantSheet: React.FC<AyWebsVariantSheetProps> = ({ url, sto
                 <p><strong>{tr('Request sent for human review', 'تم إرسال الطلب للمراجعة البشرية')}</strong></p>
                 <p>{tr('Reference', 'المرجع')}: {supportRequest.request_number}</p>
                 <p>{tr('Status', 'الحالة')}: {supportRequest.status}</p>
-                <p>{tr('This request is separate from the AYROVI cart and is not an automated merchant purchase.', 'هذا الطلب منفصل عن سلة AYROVI ولا يمثل شراءً آلياً من التاجر.')}</p>
+                <p>{tr('This request is separate from the ZAYROVI cart and is not an automated merchant purchase.', 'هذا الطلب منفصل عن سلة ZAYROVI ولا يمثل شراءً آلياً من التاجر.')}</p>
               </div>
             )}
           </div>
@@ -361,7 +361,7 @@ export const AyWebsVariantSheet: React.FC<AyWebsVariantSheetProps> = ({ url, sto
             )}
             {!quoteEvidenceComplete && (
               <p className="ayw-notice">
-                {tr('The merchant has not confirmed both the source price and currency. No AYROVI quote or cart addition is available yet.', 'لم يؤكد التاجر السعر وعملته معاً. لا يتوفر تقدير AYROVI أو إضافة إلى السلة حالياً.')}
+                {tr('The merchant has not confirmed both the source price and currency. No ZAYROVI quote or cart addition is available yet.', 'لم يؤكد التاجر السعر وعملته معاً. لا يتوفر تقدير ZAYROVI أو إضافة إلى السلة حالياً.')}
               </p>
             )}
 
@@ -456,7 +456,7 @@ export const AyWebsVariantSheet: React.FC<AyWebsVariantSheetProps> = ({ url, sto
               </p>
             )}
             {displayedPricingTnd == null && !missingRequired && !selectedVariantUnknown && (
-              <p className="ayw-notice">{tr('An AYROVI quote is not available for this source price.', 'لا يتوفر تقدير AYROVI لهذا السعر المصدر.')}</p>
+              <p className="ayw-notice">{tr('An ZAYROVI quote is not available for this source price.', 'لا يتوفر تقدير ZAYROVI لهذا السعر المصدر.')}</p>
             )}
 
             <button
@@ -477,7 +477,7 @@ export const AyWebsVariantSheet: React.FC<AyWebsVariantSheetProps> = ({ url, sto
               <ShoppingBag size={44} aria-hidden="true" />
               <CheckCircle2 size={22} aria-hidden="true" />
             </div>
-            <h2 className="ayw-sheet-title">{tr('Item added to AYROVI cart', 'تمت الإضافة إلى سلة AYROVI')}</h2>
+            <h2 className="ayw-sheet-title">{tr('Item added to ZAYROVI cart', 'تمت الإضافة إلى سلة ZAYROVI')}</h2>
             <div className="ayw-added-sum">
               {(added?.images[0] || product?.images[0]) && (
                 <img className="ayw-added-thumb" src={added?.images[0] || product?.images[0]} alt="" />
@@ -498,7 +498,7 @@ export const AyWebsVariantSheet: React.FC<AyWebsVariantSheetProps> = ({ url, sto
                 ) : null}
                 {linked && !linked.linked && (
                   <p className="ayw-added-meta">
-                    {tr('Kept in the AyWebs cart — the AYROVI cart step will confirm it.', 'محفوظ في سلة AyWebs — ستُؤكَّد الإضافة عند خطوة سلة AYROVI.')}
+                    {tr('Kept in the AyWebs cart — the ZAYROVI cart step will confirm it.', 'محفوظ في سلة AyWebs — ستُؤكَّد الإضافة عند خطوة سلة ZAYROVI.')}
                   </p>
                 )}
               </div>

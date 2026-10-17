@@ -3,12 +3,12 @@ import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { InteractiveLensResults } from '../client/src/ayrovix/components/InteractiveLensResults';
-import type { AyrovixCandidate } from '../client/src/ayrovix/types';
+import type { ZayrovixCandidate } from '../client/src/ayrovix/types';
 import { LocaleProvider } from '../client/src/i18n/LocaleContext';
 
 /** صفحة نتائج Lens تُعرض ببيانات حقيقية الشكل (نفس عقود الـ API) — لا Demo في التطبيق. */
 
-const candidate = (over: Partial<AyrovixCandidate>): AyrovixCandidate => ({
+const candidate = (over: Partial<ZayrovixCandidate>): ZayrovixCandidate => ({
   id: over.id || 'c',
   kind: 'external',
   title: 'Nike Dunk Low',
@@ -44,7 +44,7 @@ const render = () => renderToStaticMarkup(
   <LocaleProvider><InteractiveLensResults view={view as any} previewUrl={'/preview.jpg'} fallbackImage={null} onChoose={() => {}} onReset={() => {}} /></LocaleProvider>,
 );
 
-describe('AYROVIX LENS results screen (post-analysis, real-data shape)', () => {
+describe('ZAYROVIX LENS results screen (post-analysis, real-data shape)', () => {
   it('renders the reference composition: summary, best, others, trust, new search', () => {
     const html = render();
     expect(html).toContain('Résultats Lens');
@@ -106,7 +106,7 @@ describe('AYROVIX LENS results screen (post-analysis, real-data shape)', () => {
     expect(camera).not.toContain("tr('Auto'");
     expect(camera).not.toContain('Sparkles');
     // Wordmark + white flat header icons (no bg circle)
-    expect(camera).toContain('AYROVIX <span>Lens</span>');
+    expect(camera).toContain('ZAYROVIX <span>Lens</span>');
     expect(camera).toContain('className="lens-camera-icon"');
     // Bottom: Barcode label + transparent tiles
     expect(camera).toContain("tr('Lien / code', 'رابط أو رمز')");

@@ -16,7 +16,7 @@ export const TabHeader: React.FC<TabHeaderProps> = ({ title, onClose }) => {
     <AppHeader
       sticky
       title={title}
-      subtitle="AYROVI"
+      subtitle="ZAYROVI"
       onClose={onClose}
       actionLabel={tr(`Fermer ${title}`, `إغلاق ${title}`)}
     />

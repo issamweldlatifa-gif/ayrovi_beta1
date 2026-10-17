@@ -1,8 +1,8 @@
 import { describe, expect, test, beforeEach, vi } from 'vitest';
 import request from 'supertest';
 import { app, db } from '../src/server';
-import { getAyrovixStats } from '../src/ayrovix/events';
-import { listAyrovixHistory } from '../src/ayrovix/history';
+import { getZayrovixStats } from '../src/ayrovix/events';
+import { listZayrovixHistory } from '../src/ayrovix/history';
 import { createCustomerSession } from '../src/customer/auth';
 
 function seedCatalogProduct(name = 'Nike Air Max 270 React', brand = 'Nike', price = 59, currency = 'EUR') {
@@ -18,7 +18,7 @@ function seedCatalogProduct(name = 'Nike Air Max 270 React', brand = 'Nike', pri
   return id;
 }
 
-describe('AYROVIX Lens — product-name text search (Phase 0, analytics-safe)', () => {
+describe('ZAYROVIX Lens — product-name text search (Phase 0, analytics-safe)', () => {
   test('rejects short query', async () => {
     const res = await request(app).post('/api/ayrovix/analyze-text').send({ query: 'a' });
     expect(res.status).toBe(400);
@@ -58,13 +58,13 @@ describe('AYROVIX Lens — product-name text search (Phase 0, analytics-safe)', 
 
   test('text channel is recorded separately from qr (analytics-safe)', async () => {
     // Clean events for this check (use fresh stats comparison)
-    const before = getAyrovixStats(db).last7d;
+    const before = getZayrovixStats(db).last7d;
     // Create a text search and a qr code search
     seedCatalogProduct('Puma RS-X', 'Puma', 55, 'EUR');
     await request(app).post('/api/ayrovix/analyze-text').send({ query: 'Puma RS-X' });
     // mock provider search for qr without external provider to avoid counting external
     await request(app).post('/api/ayrovix/analyze-code').send({ value: 'Puma RS-X' });
-    const after = getAyrovixStats(db).last7d;
+    const after = getZayrovixStats(db).last7d;
     // text should have increased, qr should also have increased, but they are separate counters
     expect(after.text).toBeGreaterThan(before.text);
     expect(after.qr).toBeGreaterThan(before.qr);
@@ -87,7 +87,7 @@ describe('AYROVIX Lens — product-name text search (Phase 0, analytics-safe)', 
     expect(res.status).toBe(200);
     const eventId = res.body.data.eventId;
     expect(eventId).toMatch(/^ayx_/);
-    const history = listAyrovixHistory(db, accountId, 10);
+    const history = listZayrovixHistory(db, accountId, 10);
     const entry = history.find(h => h.id === eventId);
     expect(entry).toBeDefined();
     expect(entry?.kind).toBe('text');

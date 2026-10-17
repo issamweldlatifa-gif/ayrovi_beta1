@@ -13,7 +13,7 @@ import { validateQuoteSecret } from '../ayrovix/priceQuote';
  * (lecture froide). L'utilisateur payait donc deux fois la lecture du marchand.
  *
  * ── CE QUE FAIT CE MODULE ───────────────────────────────────────────────────
- * Au moment où le serveur a lui-même lu la fiche (et calculé son devis AYROVI),
+ * Au moment où le serveur a lui-même lu la fiche (et calculé son devis ZAYROVI),
  * il scelle un jeton HMAC-SHA256 contenant : produit, boutique, variante, prix
  * source, devise, état de stock, horodatage et expiration. Le client le renvoie
  * à l'ajout ; le panier l'accepte SANS relire le marchand, à trois conditions :
@@ -31,9 +31,9 @@ import { validateQuoteSecret } from '../ayrovix/priceQuote';
  *   • l'échantillon d'audit tombe (`AYWEBS_QUOTE_REVERIFY_SAMPLE`, défaut 5 %).
  *
  * ── SÉPARATION DES DOMAINES DE SIGNATURE ────────────────────────────────────
- * La clé est DÉRIVÉE par HKDF-SHA256 du secret de cotation AYROVIX avec une
+ * La clé est DÉRIVÉE par HKDF-SHA256 du secret de cotation ZAYROVIX avec une
  * étiquette propre à AYWEBs : un jeton de panier AYWEBs ne peut pas servir de
- * cotation AYROVIX, et inversement. Aucun secret nouveau n'est introduit.
+ * cotation ZAYROVIX, et inversement. Aucun secret nouveau n'est introduit.
  */
 
 export interface AyWebsQuoteClaims {
@@ -92,13 +92,13 @@ export function ayWebsQuoteSampleRate(): number {
   return numberEnv('AYWEBS_QUOTE_REVERIFY_SAMPLE', DEFAULT_SAMPLE_RATE, 0, 1);
 }
 
-/** Clé de signature AYWEBs, dérivée du secret AYROVIX (domaine séparé). */
+/** Clé de signature AYWEBs, dérivée du secret ZAYROVIX (domaine séparé). */
 function quoteKey(): Buffer {
   return Buffer.from(hkdfSync(
     'sha256',
     validateQuoteSecret(),
-    'ayrovi:aywebs-quote-salt:v1',
-    'ayrovi:aywebs-quote:v1',
+    'zayrovi:aywebs-quote-salt:v1',
+    'zayrovi:aywebs-quote:v1',
     32,
   ));
 }
@@ -184,7 +184,7 @@ export function shouldReverifyAyWebsQuote(
   if (threshold > 0 && Number(context.totalTND || 0) > threshold) return { reverify: true, reason: 'HIGH_VALUE' };
   const rate = ayWebsQuoteSampleRate();
   if (rate > 0) {
-    const digest = createHmac('sha256', 'ayrovi:aywebs-quote-sample:v1')
+    const digest = createHmac('sha256', 'zayrovi:aywebs-quote-sample:v1')
       .update(`${claims.qid}|${String(context.seed || '')}`)
       .digest();
     const draw = digest.readUInt32BE(0) / 0x1_0000_0000;

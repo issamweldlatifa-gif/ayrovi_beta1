@@ -1,5 +1,5 @@
 /**
- * AYWEBs / AYROVIX — ZÉRO MONTANT FABRIQUÉ (Phase 0, suite · 07/10/2026).
+ * AYWEBs / ZAYROVIX — ZÉRO MONTANT FABRIQUÉ (Phase 0, suite · 07/10/2026).
  *
  * Ce que cette suite verrouille, avec des valeurs mesurées et non des phrases :
  *
@@ -247,7 +247,7 @@ describe('Vision (OCR) — même règle qu’ailleurs', () => {
     expect(product.priceVerified).toBe(false);
     expect(product.currencyVerified).toBe(false);
     expect(product.verificationProvider).toBe('ocr');
-    expect(String(product.description)).not.toMatch(/Vérifié par AYROVI|DT\)/);
+    expect(String(product.description)).not.toMatch(/Vérifié par ZAYROVI|DT\)/);
   });
 
   it('l’identité vient du texte OCR : même capture ⇒ même identité, aucun aléatoire', async () => {

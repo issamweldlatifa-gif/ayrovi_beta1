@@ -2,7 +2,7 @@ import React from 'react';
 import { Badge, type BadgeVariant } from './Badge';
 
 /**
- * AYROVI DS v1.0 — StatusBadge.
+ * ZAYROVI DS v1.0 — StatusBadge.
  * Statuts d'ordre/paiement : vert = abouti, rouge = bloqué/échec,
  * gris = en attente, encre = confirmé. Pas d'orange (l'orange = action).
  */

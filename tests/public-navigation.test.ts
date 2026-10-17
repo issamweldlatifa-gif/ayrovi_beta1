@@ -24,7 +24,7 @@ const publicList = async () => {
 };
 
 async function loginAs(role: 'CONTENT_MANAGER' | 'ORDER_MANAGER', superAgent: any, superCsrf: string): Promise<Session> {
-  const email = `public-nav-${role.toLowerCase()}-${Date.now()}@test.ayrovi.tn`;
+  const email = `public-nav-${role.toLowerCase()}-${Date.now()}@test.zayrovi.tn`;
   const password = 'PublicNav2026!x';
   const insert = await superAgent.post('/api/admin/users').set('x-csrf-token', superCsrf).send({ name: `Nav ${role}`, email, password, role });
   expect(insert.status, JSON.stringify(insert.body)).toBe(201);
@@ -41,7 +41,7 @@ describe('barre publique sous l’en-tête', () => {
 
   beforeAll(async () => {
     const agent = request.agent(app);
-    const login = await agent.post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
+    const login = await agent.post('/api/admin/auth/login').send({ email: 'admin@zayrovi.tn', password: 'ZayroviBeta2026!' });
     expect(login.status).toBe(200);
     superAdmin = { agent, csrf: login.body.data.csrfToken };
     content = await loginAs('CONTENT_MANAGER', superAdmin.agent, superAdmin.csrf);

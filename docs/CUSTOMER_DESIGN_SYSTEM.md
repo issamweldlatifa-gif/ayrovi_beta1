@@ -1,4 +1,4 @@
-# AYROVI Customer Design System 3.1
+# ZAYROVI Customer Design System 3.1
 
 Current customer-facing visual contract: storefront, product and merchant flows, Lens, cart, checkout, account, login, and password recovery. The admin/back-office is intentionally out of scope.
 
@@ -17,16 +17,16 @@ Current customer-facing visual contract: storefront, product and merchant flows,
 | Primary action | `#000000` with white text | `#FFFFFF` with black text | Primary and CTA buttons |
 | Information | `#595959` on `#F5F5F5` | `#BDBDBD` on `#171717` | Quiet information, tips, and neutral status |
 | Success / error | Green / dark red tokens | Accessible light variants | Outcome states only |
-| Brand accent | AYROVI orange | AYROVI orange | Brand details, not the primary CTA |
+| Brand accent | ZAYROVI orange | ZAYROVI orange | Brand details, not the primary CTA |
 
-Use the semantic information tokens (`--ayrovi-info`, `--ayrovi-info-soft`) for new informational copy or surfaces. Do not use success/error colors to style neutral information.
+Use the semantic information tokens (`--zayrovi-info`, `--zayrovi-info-soft`) for new informational copy or surfaces. Do not use success/error colors to style neutral information.
 
 ## Geometry
 
-- **Primary CTA:** capsule, `999px` (`--ayrovi-radius-cta`).
-- **Fields and secondary controls:** softly rounded, `12px` (`--ayrovi-radius-control`).
-- **Cards:** `16px` (`--ayrovi-radius-card`).
-- **Sheets:** `32px` at the exposed edge (`--ayrovi-radius-sheet`).
+- **Primary CTA:** capsule, `999px` (`--zayrovi-radius-cta`).
+- **Fields and secondary controls:** softly rounded, `12px` (`--zayrovi-radius-control`).
+- **Cards:** `16px` (`--zayrovi-radius-card`).
+- **Sheets:** `32px` at the exposed edge (`--zayrovi-radius-sheet`).
 - **Product media:** stays full-bleed/square unless a component explicitly needs a different crop.
 - **Icon-only controls:** keep at least a `44px` touch target, with a bare glyph by default—no square tile, border, or persistent background. A selected/action state may use a circular indicator, never a square frame.
 

@@ -1,6 +1,6 @@
-# AYROVI A — developer contract
+# ZAYROVI A — developer contract
 
-Official interface identity: **Zalando Sans** for Latin text/numbers and **Noto Sans Arabic** for Arabic. These are licensed third-party OFL fonts, not proprietary AYROVI font designs. This change does not redesign the logo or change pricing/business rules.
+Official interface identity: **Zalando Sans** for Latin text/numbers and **Noto Sans Arabic** for Arabic. These are licensed third-party OFL fonts, not proprietary ZAYROVI font designs. This change does not redesign the logo or change pricing/business rules.
 
 ## Single source and usage
 

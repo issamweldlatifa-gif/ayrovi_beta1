@@ -12,7 +12,7 @@
       "Adresse email*",
       "Mot de passe*AfficherLe mot de passe n’e"
     ],
-    "title": "AYROVI · Console d’exploitation",
+    "title": "ZAYROVI · Console d’exploitation",
     "status": "ok",
     "passwordToggle": "Afficher le mot de passe",
     "screenshots": [
@@ -94,7 +94,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI ADMINTableau de bordL’activité AYROVI consolidée en temps réel depuis SQLite.7 jours30 jours90 jours12 moisÀ traiterFiles du jour, calculées en directAco",
+      "text": "ZAYROVI ADMINTableau de bordL’activité ZAYROVI consolidée en temps réel depuis SQLite.7 jours30 jours90 jours12 moisÀ traiterFiles du jour, calculées en directAco",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -121,7 +121,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI ADMINArrivagesPilotez plusieurs arrivages Standard et Express depuis les dates backend.NouveauTous les statutsBrouillonProgramméActifTerminéArchivéNomSta",
+      "text": "ZAYROVI ADMINArrivagesPilotez plusieurs arrivages Standard et Express depuis les dates backend.NouveauTous les statutsBrouillonProgramméActifTerminéArchivéNomSta",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -148,7 +148,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI ADMINProduitsCatalogue relié aux arrivages et tarifé exclusivement par le moteur backend.NouveauTous les statutsBrouillonActifInactifArchivéNomStatutDern",
+      "text": "ZAYROVI ADMINProduitsCatalogue relié aux arrivages et tarifé exclusivement par le moteur backend.NouveauTous les statutsBrouillonActifInactifArchivéNomStatutDern",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -175,7 +175,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI ADMINPromotionsCréez, programmez et mesurez les promotions reliées aux produits et arrivages.NouveauTous les statutsBrouillonProgramméActifExpiréArchivéN",
+      "text": "ZAYROVI ADMINPromotionsCréez, programmez et mesurez les promotions reliées aux produits et arrivages.NouveauTous les statutsBrouillonProgramméActifExpiréArchivéN",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -186,7 +186,7 @@
       "domain": "CONTENT",
       "moduleStatus": "legacy",
       "url": "/admin?section=social",
-      "heading": "Social Ayrovi",
+      "heading": "Social Zayrovi",
       "buttons": 8,
       "unnamedButtons": [],
       "disabledButtons": 0,
@@ -202,7 +202,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "Contenu → SocialSocial AyroviTrois contenus indépendants : publications du feed, reels vidéo et stories éphémères.PublicationReelStoryAjouterFormat conseillé : ",
+      "text": "Contenu → SocialSocial ZayroviTrois contenus indépendants : publications du feed, reels vidéo et stories éphémères.PublicationReelStoryAjouterFormat conseillé : ",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -229,7 +229,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI EDITORIAL AIوكيل مجلتيمحرر داخلي عبر AYROVI AI Core — لا يظهر لزوار الموقعAI Core غير مضبوطصور بدون APIStock روابط بحثالمحرر الذكيمحادثة داخلية ومحمية بص",
+      "text": "ZAYROVI EDITORIAL AIوكيل مجلتيمحرر داخلي عبر ZAYROVI AI Core — لا يظهر لزوار الموقعAI Core غير مضبوطصور بدون APIStock روابط بحثالمحرر الذكيمحادثة داخلية ومحمية بص",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -256,7 +256,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI ADMINمجلتيمجلة AYROVI التحريرية المرتبطة بالمنتجات، مع مسودات وكيل مجلتي ومراجعة بشرية قبل النشر.NouveauTous les statutsBrouillonProgramméPubliéArchivéTi",
+      "text": "ZAYROVI ADMINمجلتيمجلة ZAYROVI التحريرية المرتبطة بالمنتجات، مع مسودات وكيل مجلتي ومراجعة بشرية قبل النشر.NouveauTous les statutsBrouillonProgramméPubliéArchivéTi",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -283,7 +283,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI ADMINMarquesGérez les logos du bandeau noir automatique et leur ordre public.NouveauNomStatutDernière modificationZaraFASHIONActif22 sept. 2026, 2:57 AMD",
+      "text": "ZAYROVI ADMINMarquesGérez les logos du bandeau noir automatique et leur ordre public.NouveauNomStatutDernière modificationZaraFASHIONActif22 sept. 2026, 2:57 AMD",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -418,7 +418,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI ADMINTicker annoncesMessages du bandeau supérieur AYROVI — contenu uniquement, le design reste fixe.NouveauMessageStatutDernière modificationService clie",
+      "text": "ZAYROVI ADMINTicker annoncesMessages du bandeau supérieur ZAYROVI — contenu uniquement, le design reste fixe.NouveauMessageStatutDernière modificationService clie",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -445,7 +445,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI CATALOGUEProduitsLe produit canonique du catalogue: une ligne, un code PRD-, un slug, ses variantes/SKU, ses médias et ses attributs. Rien n’est dupliqué",
+      "text": "ZAYROVI CATALOGUEProduitsLe produit canonique du catalogue: une ligne, un code PRD-, un slug, ses variantes/SKU, ses médias et ses attributs. Rien n’est dupliqué",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -472,7 +472,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI CATALOGUECatégoriesHiérarchie libre: « Homme », « Femme », « Enfant » sont des lignes de cette table, pas du code. Profondeur, ordre et statut sont des d",
+      "text": "ZAYROVI CATALOGUECatégoriesHiérarchie libre: « Homme », « Femme », « Enfant » sont des lignes de cette table, pas du code. Profondeur, ordre et statut sont des d",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -499,7 +499,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI CATALOGUEMarquesUne seule table de marques pour tout le monde: produits, vitrine et CMS lisent la même ligne. Retirer une marque du catalogue se fait en ",
+      "text": "ZAYROVI CATALOGUEMarquesUne seule table de marques pour tout le monde: produits, vitrine et CMS lisent la même ligne. Retirer une marque du catalogue se fait en ",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -526,7 +526,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI ADMIN · CRMArrivalsUn client Arrival peut regrouper plusieurs Stores, chacun avec ses propres Sources et extractions.Gérer les StoresCreate ArrivalAI Ext",
+      "text": "ZAYROVI ADMIN · CRMArrivalsUn client Arrival peut regrouper plusieurs Stores, chacun avec ses propres Sources et extractions.Gérer les StoresCreate ArrivalAI Ext",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -553,7 +553,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI ADMINCommandesOMS persistant : clients, articles, paiements, livraisons et historique immuable.Exporter CSVToutes0Acompte en attente0À vérifier0Livrées0A",
+      "text": "ZAYROVI ADMINCommandesOMS persistant : clients, articles, paiements, livraisons et historique immuable.Exporter CSVToutes0Acompte en attente0À vérifier0Livrées0A",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -580,7 +580,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI ADMINSupport IADemandes transférées par l’assistant à l’équipe AYROVI, avec identité vérifiée ou contact visiteur.Tous les statutsEn attenteEn coursRésol",
+      "text": "ZAYROVI ADMINSupport IADemandes transférées par l’assistant à l’équipe ZAYROVI, avec identité vérifiée ou contact visiteur.Tous les statutsEn attenteEn coursRésol",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -607,7 +607,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI ADMINDemandes LensFile de vérification manuelle : prix marchand, stock et variante doivent être confirmés avant toute commande.Tous les statutsEn attente",
+      "text": "ZAYROVI ADMINDemandes LensFile de vérification manuelle : prix marchand, stock et variante doivent être confirmés avant toute commande.Tous les statutsEn attente",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -688,7 +688,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI ADMINClientsComptes enregistrés (Google / SMS) et fiches historiques de commande, réunis dans un seul espace.Comptes enregistrésFiches de commandeIdentit",
+      "text": "ZAYROVI ADMINClientsComptes enregistrés (Google / SMS) et fiches historiques de commande, réunis dans un seul espace.Comptes enregistrésFiches de commandeIdentit",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -715,7 +715,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI ADMINPrix, douane & acompteMoteur CIF v1. Tout est calculé côté serveur au millime. Les commandes existantes ne bougent pas.EnregistrerParamètres du mote",
+      "text": "ZAYROVI ADMINPrix, douane & acompteMoteur CIF v1. Tout est calculé côté serveur au millime. Les commandes existantes ne bougent pas.EnregistrerParamètres du mote",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -769,7 +769,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI ADMINRapports financiersRevenus encaissés (acomptes confirmés), dépenses et bénéfice net — calculés depuis la base.→Revenus encaissés0,000 TND0 acompte(s",
+      "text": "ZAYROVI ADMINRapports financiersRevenus encaissés (acomptes confirmés), dépenses et bénéfice net — calculés depuis la base.→Revenus encaissés0,000 TND0 acompte(s",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -796,7 +796,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI STOCKMouvements de stockJournal append-only : chaque unité entrée, sortie ou ajustée garde son solde avant/après et son motif. Une erreur se corrige par ",
+      "text": "ZAYROVI STOCKMouvements de stockJournal append-only : chaque unité entrée, sortie ou ajustée garde son solde avant/après et son motif. Une erreur se corrige par ",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -823,7 +823,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI STOCKInventaires physiquesOn photographie le stock théorique, on compte, on soumet, puis la validation applique les écarts — un droit séparé, parce que t",
+      "text": "ZAYROVI STOCKInventaires physiquesOn photographie le stock théorique, on compte, on soumet, puis la validation applique les écarts — un droit séparé, parce que t",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -877,7 +877,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI ACHATSCommandes d’achatUne commande engage l’argent : brouillon, soumission, approbation, puis réception. Les totaux sont lus sur les lignes — aucune col",
+      "text": "ZAYROVI ACHATSCommandes d’achatUne commande engage l’argent : brouillon, soumission, approbation, puis réception. Les totaux sont lus sur les lignes — aucune col",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -904,7 +904,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI ACHATSRéceptionsLa réception partielle est normale, la sur-réception est refusée. Un bon endommagé entre puis sort du stock — deux mouvements, jamais un ",
+      "text": "ZAYROVI ACHATSRéceptionsLa réception partielle est normale, la sur-réception est refusée. Un bon endommagé entre puis sort du stock — deux mouvements, jamais un ",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -931,7 +931,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI CRM 360Tableau de bord relationnelIndicateurs calculés sur les vraies données du module — une base vide affiche zéro.Clients actifs0module CRM 360 · E2Cl",
+      "text": "ZAYROVI CRM 360Tableau de bord relationnelIndicateurs calculés sur les vraies données du module — une base vide affiche zéro.Clients actifs0module CRM 360 · E2Cl",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -958,7 +958,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI CRM 360Fiches clients & partenairesLa fiche relationnelle : une identité, un historique, des prochaines actions — jamais de doublon silencieux.Nouvelle f",
+      "text": "ZAYROVI CRM 360Fiches clients & partenairesLa fiche relationnelle : une identité, un historique, des prochaines actions — jamais de doublon silencieux.Nouvelle f",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -985,7 +985,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI CRM 360ContactsInterlocuteurs rattachés à une fiche — l’unicité téléphone/e-mail est garantie par la base.Nouveau contactContactFiche rattachéeFonctionE-",
+      "text": "ZAYROVI CRM 360ContactsInterlocuteurs rattachés à une fiche — l’unicité téléphone/e-mail est garantie par la base.Nouveau contactContactFiche rattachéeFonctionE-",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -1012,7 +1012,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI CRM 360ActivitésAppels, rendez-vous, visites, e-mails — ce qui a réellement été fait ou reste à faire sur une fiche. PlanifierNatureSujetFichePlanifiéeSt",
+      "text": "ZAYROVI CRM 360ActivitésAppels, rendez-vous, visites, e-mails — ce qui a réellement été fait ou reste à faire sur une fiche. PlanifierNatureSujetFichePlanifiéeSt",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -1039,7 +1039,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI CRM 360Tâches & suivisLes prochaines actions : un propriétaire, une échéance, un statut — le retard se calcule, jamais ne se devine. Nouvelle tâcheTous s",
+      "text": "ZAYROVI CRM 360Tâches & suivisLes prochaines actions : un propriétaire, une échéance, un statut — le retard se calcule, jamais ne se devine. Nouvelle tâcheTous s",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -1066,7 +1066,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI CRM 360Issues & réclamationsDossiers support rattachés aux fiches — la résolution s’écrit, la clôture se trace. Ouvrir un dossierTous statutsDossierSujet",
+      "text": "ZAYROVI CRM 360Issues & réclamationsDossiers support rattachés aux fiches — la résolution s’écrit, la clôture se trace. Ouvrir un dossierTous statutsDossierSujet",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -1093,7 +1093,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI ERPEmployésIdentité ERP lisible (EMP-…), poste et rattachement. Elle complète le compte de connexion, elle ne le remplace jamais.Tous les statutsACTIVEON",
+      "text": "ZAYROVI ERPEmployésIdentité ERP lisible (EMP-…), poste et rattachement. Elle complète le compte de connexion, elle ne le remplace jamais.Tous les statutsACTIVEON",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -1120,7 +1120,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI ERPOrganisationOrganisation juridique, succursales, départements et équipes — base des portées de permission (all / organization / branch / department / ",
+      "text": "ZAYROVI ERPOrganisationOrganisation juridique, succursales, départements et équipes — base des portées de permission (all / organization / branch / department / ",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -1147,7 +1147,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI ERPRôles & permissionsModèle module:action:resource:scope stocké en table. Le rôle hérité (SUPER_ADMIN) reste la référence : aucune ligne ERP ne peut le ",
+      "text": "ZAYROVI ERPRôles & permissionsModèle module:action:resource:scope stocké en table. Le rôle hérité (SUPER_ADMIN) reste la référence : aucune ligne ERP ne peut le ",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -1174,7 +1174,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI ERPJournal d’audit (ERP)Un seul système pour le back-office et le CRM : qui (employé), quoi (action), quand, où (écran), sur quel enregistrement, avant/a",
+      "text": "ZAYROVI ERPJournal d’audit (ERP)Un seul système pour le back-office et le CRM : qui (employé), quoi (action), quand, où (écran), sur quel enregistrement, avant/a",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -1201,7 +1201,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI ERPÉvénementsÉvénements de domaine dérivés de chaque écriture auditée — la base des notifications, automatisations et réconciliations à venir.Activité de",
+      "text": "ZAYROVI ERPÉvénementsÉvénements de domaine dérivés de chaque écriture auditée — la base des notifications, automatisations et réconciliations à venir.Activité de",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -1228,7 +1228,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI ERPModules & environnementRegistre des modules (actif / hérité / planifié), politique de stockage des fichiers, auto-test de sécurité et séquences de num",
+      "text": "ZAYROVI ERPModules & environnementRegistre des modules (actif / hérité / planifié), politique de stockage des fichiers, auto-test de sécurité et séquences de num",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -1255,7 +1255,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI ADMIN · FULL INTERFACE CONTROLواجهتيStudio des contenus et de la mise en page. La typographie officielle A est verrouillée : Zalando Sans et Noto Sans Ar",
+      "text": "ZAYROVI ADMIN · FULL INTERFACE CONTROLواجهتيStudio des contenus et de la mise en page. La typographie officielle A est verrouillée : Zalando Sans et Noto Sans Ar",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -1282,7 +1282,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI ADMINDéveloppement & designSystème AYROVI 70% blanc / 25% noir / 5% orange. Inter + Noto Sans Arabic unifient latin et arabe.Publier le designModèles prê",
+      "text": "ZAYROVI ADMINDéveloppement & designSystème ZAYROVI 70% blanc / 25% noir / 5% orange. Inter + Noto Sans Arabic unifient latin et arabe.Publier le designModèles prê",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -1309,7 +1309,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI ADMINAssistant IASource administrable des réponses commerciales critiques de l’Assistant AYROVI.NouveauQuestionStatutDernière modificationQuels sont les ",
+      "text": "ZAYROVI ADMINAssistant IASource administrable des réponses commerciales critiques de l’Assistant ZAYROVI.NouveauQuestionStatutDernière modificationQuels sont les ",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -1336,7 +1336,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI ADMINParamètresConfiguration générale, commerce, livraison, paiements, canaux et design — sans secret dans le frontend.Général5 paramètresAdresseEnregist",
+      "text": "ZAYROVI ADMINParamètresConfiguration générale, commerce, livraison, paiements, canaux et design — sans secret dans le frontend.Général5 paramètresAdresseEnregist",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -1363,7 +1363,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI ADMINUtilisateursComptes internes et contrôle d’accès par rôle.Nouvel utilisateurUtilisateurRôleStatutDernière connexionAYROVI Adminadmin@ayrovi.tnSuper ",
+      "text": "ZAYROVI ADMINUtilisateursComptes internes et contrôle d’accès par rôle.Nouvel utilisateurUtilisateurRôleStatutDernière connexionZAYROVI Adminadmin@zayrovi.tnSuper ",
       "consoleErrors": [],
       "httpErrors": []
     },
@@ -1390,7 +1390,7 @@
       "stuck": false,
       "scrollWidth": 1440,
       "innerWidth": 1440,
-      "text": "AYROVI ADMINJournal d’auditQui a fait quoi, quand, sur quelle donnée — avec valeurs avant et après.RafraîchirExporter CSVDateActeurActionModuleCibleModification",
+      "text": "ZAYROVI ADMINJournal d’auditQui a fait quoi, quand, sur quelle donnée — avec valeurs avant et après.RafraîchirExporter CSVDateActeurActionModuleCibleModification",
       "consoleErrors": [],
       "httpErrors": []
     }

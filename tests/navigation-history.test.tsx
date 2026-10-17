@@ -44,7 +44,7 @@ afterEach(() => {
   window.history.replaceState({}, '', '/');
 });
 
-describe('AYROVI browser navigation history', () => {
+describe('ZAYROVI browser navigation history', () => {
   it('registers the landing page as depth zero without discarding other history state', () => {
     mountNavigation({ router: { scroll: 120 } });
 

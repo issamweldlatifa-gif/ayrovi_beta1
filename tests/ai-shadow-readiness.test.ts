@@ -281,7 +281,7 @@ describe('sanitized Shadow observability', () => {
   });
 });
 
-describe('AYROVIX execution-lane isolation', () => {
+describe('ZAYROVIX execution-lane isolation', () => {
   test('lane-bound Shadow/probe results cannot be serialized or published to UI', () => {
     const privateResult = { pricing: { sale_price: 99 }, productFact: 'candidate-only' };
     for (const executionLane of ['shadow', 'probe'] as const) {

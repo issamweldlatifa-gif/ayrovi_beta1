@@ -1,5 +1,5 @@
 /**
- * AYROVI — P4/T1 « Zalando Strategy » : mesure de la couverture orange.
+ * ZAYROVI — P4/T1 « Zalando Strategy » : mesure de la couverture orange.
  *
  * Le cahier des charges fixe une règle chiffrée : l'orange ne doit pas dépasser 3 %
  * de la surface d'un écran. Ce script ne fait pas confiance au code source : il
@@ -14,18 +14,18 @@ import sharp from 'sharp';
 import fs from 'node:fs';
 
 // 2026-10-03 — BUG DE FOND, corrigé ici.
-// Ce script n'honorait PAS `AYROVI_BASE_URL`, la convention de TOUS ses frères
+// Ce script n'honorait PAS `ZAYROVI_BASE_URL`, la convention de TOUS ses frères
 // (public-navigation, footer-payments, admin-audit, lens-*… lisent tous
-// process.env.AYROVI_BASE_URL). Il ne connaissait que son argument positionnel,
+// process.env.ZAYROVI_BASE_URL). Il ne connaissait que son argument positionnel,
 // avec `http://localhost:3000` en dur.
 // Conséquence en CI : le serveur y écoute sur 3210 et l'étape exporte
-// AYROVI_BASE_URL=http://127.0.0.1:3210 — les cinq autres gardes mesuraient donc
+// ZAYROVI_BASE_URL=http://127.0.0.1:3210 — les cinq autres gardes mesuraient donc
 // le bon serveur, et celui-ci partait sur localhost:3000, où personne n'écoute.
 // Il mourait sur son premier `goto` : le garde du budget orange était
 // INFIRANCHISSABLE par construction, et échouait avec un simple « exit code 1 »
 // sans jamais dire pourquoi. Ordre retenu : argument explicite, puis
 // environnement (la convention du dépôt), puis l'ancien défaut.
-const BASE = process.argv[2] || process.env.AYROVI_BASE_URL || 'http://localhost:3000';
+const BASE = process.argv[2] || process.env.ZAYROVI_BASE_URL || 'http://localhost:3000';
 const OUT = 'verify';
 
 // ── Pourquoi ces deux gestionnaires (2026-10-03) ─────────────────────────────
@@ -71,12 +71,12 @@ const browser = await chromium.launch();
 const report = [];
 
 /**
- * Ouvre AYROVIX LENS et mesure l'écran obtenu.
+ * Ouvre ZAYROVIX LENS et mesure l'écran obtenu.
  * P4/T2 : la section v2 ne fait plus partie de la page d'accueil, LENS s'ouvre
  * désormais depuis la navigation basse (bouton « Lens — recherche par image »).
  */
 async function measureLensScreen(page, tag) {
-  const cta = page.locator('.ayrovi-glass-bottom-nav button[aria-label*="Lens"]').first();
+  const cta = page.locator('.zayrovi-glass-bottom-nav button[aria-label*="Lens"]').first();
   if (!(await cta.count())) return { label: `écran LENS — ${tag}`, absent: true };
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(400);
@@ -132,7 +132,7 @@ for (const [w, h, tag] of [[390, 844, 'mobile'], [1440, 900, 'desktop']]) {
   report.push(await coverage(file, `accueil ${tag} (page entière)`));
 
   // surfaces nommées par le cahier des charges.
-  // P4/T2 : `.lens2` et la carte « Découvrez AYROVI » ont été retirés de la page
+  // P4/T2 : `.lens2` et la carte « Découvrez ZAYROVI » ont été retirés de la page
   // d'accueil ; on mesure donc le Hero, le Trust Bar et l'écran LENS ouvert.
   for (const [selector, name] of [
     ['.interface-hero, [data-public-section="hero"]', 'section Hero'],

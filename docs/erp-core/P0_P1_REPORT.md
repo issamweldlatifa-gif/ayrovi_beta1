@@ -1,4 +1,4 @@
-# AYROVI — Rapport d'exécution P0 + P1 (fondation ERP)
+# ZAYROVI — Rapport d'exécution P0 + P1 (fondation ERP)
 
 **Date :** 2026-09-05 · **Périmètre approuvé :** P0 (sécurité des fichiers + intégrité de l'audit) et P1 (fondation ERP uniquement) · **Hors périmètre :** P2 et au-delà (Catalogue, Stock, Achats, Comptabilité, Ventes, Expéditions, Workflow, IA, Automatisation) — **non commencés, comme convenu.**
 
@@ -97,7 +97,7 @@ Note d'honnêteté : une mesure intérimaire affichait « 41 fichiers / 352 test
 - `backfillEmployeesFromAdminUsers()` : idempotent, **chaque compte existant reçoit une fiche** (le prénom/nom est scindé sur le premier espace du champ `name` existant), et `ensureBootstrapAdmin()` l'appelle après création d'un compte → une connexion créée demain a sa fiche immédiatement.
 - `updateEmployee()` ne touche **jamais** l'email, le mot de passe ni le rôle : uniquement identité lisible + rattachements ; erreurs explicites `EMPLOYEE_MANAGER_SELF` / `EMPLOYEE_STATUS_INVALID` / `EMPLOYEE_NO_CHANGES`.
 - Le libellé d'audit devient `Salma Trabelsi (EMP-000001)`, ou `Système` pour un acteur sans fiche — jamais un identifiant brut.
-- Organisation par défaut créée au premier boot : `ORG-0001 AYROVI` + `BRC-0001 Siège — Tunis`.
+- Organisation par défaut créée au premier boot : `ORG-0001 ZAYROVI` + `BRC-0001 Siège — Tunis`.
 **Mesuré :** 1 compte admin en base de test → 1 employé avec `EMP-` conforme (`tests/erp-core-foundation.test.ts` > P1.2, 4 tests).
 
 ## 5. P1-B — Permissions : un modèle qui ne peut pas verrouiller

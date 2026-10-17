@@ -1,4 +1,4 @@
-# خطة التنفيذ: التوفر والمقاسات الحيّة في نتائج AYROVIX Lens
+# خطة التنفيذ: التوفر والمقاسات الحيّة في نتائج ZAYROVIX Lens
 
 > **المصدر:** طلب المطور (01/10/2026) — الاستفادة من رابط المنتج الذي يعيده SerpApi
 > لاستخراج التوفر والمقاسات والصور عبر كشط صفحة المنتج (PDP) داخل محركنا.
@@ -23,7 +23,7 @@
 | `client/.../LensProductCard.tsx` | ✏️ شارة توفر + رقائق مقاسات + زر «تحقّق من التوفر» + طابع زمني |
 | `client/.../lensApi.ts` | ✏️ `refreshLiveStock()` + نوع `LiveStockResult` |
 | `client/.../lens-product-card.css` | ✏️ أنماط الشارة/الرقائق/الزر |
-| `src/scraper/merchantDomains.ts` | ✏️ `AYROVI_TRUSTED_RENDER_HOSTS` (يعالج قيد sportsdirect.fr) |
+| `src/scraper/merchantDomains.ts` | ✏️ `ZAYROVI_TRUSTED_RENDER_HOSTS` (يعالج قيد sportsdirect.fr) |
 | `src/scraper/hostCircuit.ts` | 🆕 قاطع دائرة لكل مضيف (3 إخفاقات → 10 دقائق راحة) |
 | `.env.example` | ✏️ 7 مفاتيح بيئة موثّقة |
 | `tests/ayrovix.test.ts` | ✏️ 7 تأكيدات على allowlist الرندر |
@@ -87,7 +87,7 @@
 
 ### 2.2 الفجوة بالضبط
 
-1. **Lens لا يملأ التوفر/المقاسات من مصدر حقيقي.** نوع `AyrovixCandidate`
+1. **Lens لا يملأ التوفر/المقاسات من مصدر حقيقي.** نوع `ZayrovixCandidate`
    (`src/ayrovix/types.ts:54`) يحتوي **أصلاً** على `availability`, `sizes`, `images`,
    `priceVerificationStatus` — أي أن **عقد الـ API جاهز ولا يحتاج تغييراً** — لكن مسار
    Lens لا يملأ هذه الحقول من صفحة المنتج.
@@ -112,7 +112,7 @@
 | نقطة الملخص | الحالة في المستودع |
 |---|---|
 | `Promise.all()` للمعالجة المتوازية | ✅ نفس نمط `lensEnrichment.ts` (worker pool + concurrence) |
-| `timeout: 2500` لإسقاط المواقع البطيئة | ✅ نفس مبدأ `AYROVI_LENS_ENRICH_DEADLINE_MS` |
+| `timeout: 2500` لإسقاط المواقع البطيئة | ✅ نفس مبدأ `ZAYROVI_LENS_ENRICH_DEADLINE_MS` |
 | قراءة JSON المخفي (`runParameters` / `INITIAL_STATE`) | ✅ `productPageParser.ts` يفعل هذا فعلاً (+ JSON-LD + `__NEXT_DATA__`) |
 | استهداف أزرار المقاسات (`disabled` / `oos`) | ✅ `productPageParser.ts` يقرأ `variants` + `reportedVariantStock` |
 | فلترة النتائج النافدة قبل محرك الحساب | ✅ صحيحة لمسار الطلب (انظر التصحيح 4) |
@@ -155,13 +155,13 @@
 - **مفاتيح البيئة** (بنفس اصطلاح المستودع):
 
 ```bash
-AYROVI_LENS_LIVE_STOCK=true          # on/off دون إعادة نشر
-AYROVI_LENS_LIVE_BUDGET=4            # عدد الصفحات المكسوحة لكل بحث
-AYROVI_LENS_LIVE_CONCURRENCY=2
-AYROVI_LENS_LIVE_DEADLINE_MS=2500    # لا يتجاوز أبداً
-AYROVI_LENS_LIVE_TTL_MS=21600000     # 6 ساعات
-AYROVI_LENS_LIVE_CACHE_DIR=data/lens-live-stock
-AYROVI_LENS_LIVE_MATCH_THRESHOLD=0.6
+ZAYROVI_LENS_LIVE_STOCK=true          # on/off دون إعادة نشر
+ZAYROVI_LENS_LIVE_BUDGET=4            # عدد الصفحات المكسوحة لكل بحث
+ZAYROVI_LENS_LIVE_CONCURRENCY=2
+ZAYROVI_LENS_LIVE_DEADLINE_MS=2500    # لا يتجاوز أبداً
+ZAYROVI_LENS_LIVE_TTL_MS=21600000     # 6 ساعات
+ZAYROVI_LENS_LIVE_CACHE_DIR=data/lens-live-stock
+ZAYROVI_LENS_LIVE_MATCH_THRESHOLD=0.6
 ```
 
 ### المرحلة 1 — خدمة الإثراء الحيّة (القلب)
@@ -174,7 +174,7 @@ AYROVI_LENS_LIVE_MATCH_THRESHOLD=0.6
   2. miss → scrapeParsedPage(url)      [direct 7s → rendered fallback]
   3. parse → ParsedProductPage         [price, images, colorImages, variants, availability]
   4. PREUVE: titleOverlap ≥ 0.6 ؟ وإلا تجاهل كامل (لا نُلصق مخزون منتج آخر)
-  5. map → AyrovixCandidate:
+  5. map → ZayrovixCandidate:
        availability   ← parsed.availability           (in_stock | limited | out_of_stock | unknown)
        sizes[]        ← variants.details[].size        (+ per-variant stock من reportedVariantStock)
        colors[]       ← parsed.variants.colors
@@ -206,7 +206,7 @@ AYROVI_LENS_LIVE_MATCH_THRESHOLD=0.6
 - شارة توفر: ✅ متوفر / ⚠️ آخر القطع / ❌ نفد (بألوان الهوية الحالية).
 - رقائق المقاسات: النافد `disabled` مع `aria-disabled` (وفق `variantPolicy.ts`).
 - زر "تحديث التوفر" يستدعي نقطة نهاية المرحلة 3.
-- ملاحظة: `AyrovixCandidate` في `client/src/ayrovix/types.ts` يحمل `availability`
+- ملاحظة: `ZayrovixCandidate` في `client/src/ayrovix/types.ts` يحمل `availability`
   و`sizes` مسبقاً — لا تغيير في العقد.
 
 ### المرحلة 5 — المتانة والتوسيع
@@ -250,5 +250,5 @@ AYROVI_LENS_LIVE_MATCH_THRESHOLD=0.6
 
 ---
 
-*هذه الخطة تُنفَّذ على الفرع `arena/01a0f8b6-ayrovi-beta1`. المرحلة 1 جاهزة للتنفيذ فوراً
+*هذه الخطة تُنفَّذ على الفرع `arena/01a0f8b6-zayrovi-beta1`. المرحلة 1 جاهزة للتنفيذ فوراً
 بناء على الطلب.*

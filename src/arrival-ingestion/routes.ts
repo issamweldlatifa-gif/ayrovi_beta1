@@ -3,13 +3,13 @@ import multer from 'multer';
 import type { QatafoDatabase } from '../db/database';
 import { requireAdmin } from '../admin/auth';
 import { auditActorFromRequest } from '../admin/audit';
-import { getAyroviAiCore } from '../ai-core/core';
+import { getZayroviAiCore } from '../ai-core/core';
 import { ArrivalIngestionError, asArrivalIngestionError } from './errors';
 import { ArrivalService } from './arrivalService';
 import { ArrivalClientService } from './arrivalClientService';
 import { ArrivalSourceService } from './arrivalSourceService';
 import { SourceImportService } from './sourceImportService';
-import { AyroviAIExtractionService } from './aiExtractionService';
+import { ZayroviAIExtractionService } from './aiExtractionService';
 import { ExtractedProductService } from './extractedProductService';
 import { CategoryMasterService } from './categoryMasterService';
 import { CategoryClassificationService } from './categoryClassificationService';
@@ -51,14 +51,14 @@ export function createArrivalIngestionModule(
   // built first because ArrivalService/ProductService/WarehouseDispatch enforce
   // the category gate through the same instance.
   const categories = new CategoryMasterService(db);
-  const aiCore = getAyroviAiCore();
+  const aiCore = getZayroviAiCore();
   const aiAdapter = dependencies.aiAdapter || aiCore.responses();
   const classification = new CategoryClassificationService(db, categories, aiAdapter);
   const arrivals = new ArrivalService(db, classification);
   const clients = new ArrivalClientService(db, arrivals);
   const stores = new ArrivalStoreService(db);
   const sources = new ArrivalSourceService(db, clients, files);
-  const ai = new AyroviAIExtractionService(aiAdapter);
+  const ai = new ZayroviAIExtractionService(aiAdapter);
   const warehouseDispatch = new WarehouseDispatchService(db, classification);
   const shipments = new ShipmentService(db);
   const shipmentDispatch = new ShipmentDispatchService(db);
@@ -115,9 +115,9 @@ export function createArrivalIngestionModule(
     res.json({ success: true, data: stores.update(req.params.id, req.body || {}, auditActorFromRequest(req)) });
   });
 
-  // ---- Category Master (official AYROVI product taxonomy) ----
+  // ---- Category Master (official ZAYROVI product taxonomy) ----
   // The taxonomy is DATA, never code: Administration imports/edits the official
-  // AYROVI Warehouse Core list. The AI classifier may only pick from the ACTIVE
+  // ZAYROVI Warehouse Core list. The AI classifier may only pick from the ACTIVE
   // entries returned here; an empty master means nothing can be classified.
   router.get('/categories', requireAdmin(db, 'commerce:read'), (req, res) => {
     const includeInactive = String(req.query.includeInactive ?? 'true') !== 'false';

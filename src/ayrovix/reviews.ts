@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import type { QatafoDatabase } from '../db/database';
 
-export type AyrovixReviewStatus = 'PENDING' | 'IN_REVIEW' | 'QUOTED' | 'REJECTED' | 'CANCELLED';
+export type ZayrovixReviewStatus = 'PENDING' | 'IN_REVIEW' | 'QUOTED' | 'REJECTED' | 'CANCELLED';
 
-export interface CreateAyrovixReviewInput {
+export interface CreateZayrovixReviewInput {
   sessionId: string;
   accountId?: string | null;
   eventId?: string | null;
@@ -20,7 +20,7 @@ export interface CreateAyrovixReviewInput {
 
 const ensuredDatabases = new WeakSet<QatafoDatabase>();
 
-export function ensureAyrovixReviewRequestsTable(db: QatafoDatabase): void {
+export function ensureZayrovixReviewRequestsTable(db: QatafoDatabase): void {
   if (ensuredDatabases.has(db)) return;
   db.run(`CREATE TABLE IF NOT EXISTS ayrovix_review_requests (
     id TEXT PRIMARY KEY,
@@ -62,8 +62,8 @@ export function ensureAyrovixReviewRequestsTable(db: QatafoDatabase): void {
   ensuredDatabases.add(db);
 }
 
-export function createAyrovixReviewRequest(db: QatafoDatabase, input: CreateAyrovixReviewInput): any {
-  ensureAyrovixReviewRequestsTable(db);
+export function createZayrovixReviewRequest(db: QatafoDatabase, input: CreateZayrovixReviewInput): any {
+  ensureZayrovixReviewRequestsTable(db);
   const recentSince = new Date(Date.now() - 10 * 60_000).toISOString();
   const duplicate = db.get<any>(`SELECT * FROM ayrovix_review_requests
     WHERE session_id=? AND source_url=? AND status IN ('PENDING','IN_REVIEW') AND created_at>=?
@@ -88,16 +88,16 @@ export function createAyrovixReviewRequest(db: QatafoDatabase, input: CreateAyro
   return db.get<any>('SELECT * FROM ayrovix_review_requests WHERE id=?', id);
 }
 
-export function getAyrovixReviewForOwner(db: QatafoDatabase, id: string, sessionId: string, accountId?: string | null): any | null {
-  ensureAyrovixReviewRequestsTable(db);
+export function getZayrovixReviewForOwner(db: QatafoDatabase, id: string, sessionId: string, accountId?: string | null): any | null {
+  ensureZayrovixReviewRequestsTable(db);
   const row = accountId
     ? db.get<any>('SELECT * FROM ayrovix_review_requests WHERE id=? AND (account_id=? OR session_id=?)', id, accountId, sessionId)
     : db.get<any>('SELECT * FROM ayrovix_review_requests WHERE id=? AND session_id=?', id, sessionId);
   return row || null;
 }
 
-export interface AyrovixReviewAdminUpdate {
-  status: AyrovixReviewStatus;
+export interface ZayrovixReviewAdminUpdate {
+  status: ZayrovixReviewStatus;
   quotedPrice?: number | null;
   quotedCurrency?: string | null;
   verifiedVariant?: string;
@@ -107,11 +107,11 @@ export interface AyrovixReviewAdminUpdate {
   adminId: string;
 }
 
-export function listAyrovixReviews(
+export function listZayrovixReviews(
   db: QatafoDatabase,
-  options: { status?: AyrovixReviewStatus | ''; search?: string; page: number; pageSize: number },
+  options: { status?: ZayrovixReviewStatus | ''; search?: string; page: number; pageSize: number },
 ): { rows: any[]; total: number } {
-  ensureAyrovixReviewRequestsTable(db);
+  ensureZayrovixReviewRequestsTable(db);
   const where: string[] = [];
   const params: any[] = [];
   if (options.status) {
@@ -135,8 +135,8 @@ export function listAyrovixReviews(
   return { rows, total };
 }
 
-export function getAyrovixReviewForAdmin(db: QatafoDatabase, id: string): any | null {
-  ensureAyrovixReviewRequestsTable(db);
+export function getZayrovixReviewForAdmin(db: QatafoDatabase, id: string): any | null {
+  ensureZayrovixReviewRequestsTable(db);
   return db.get<any>(`SELECT r.*,a.display_name account_name,a.email account_email,a.phone account_phone,u.name resolved_by_name
     FROM ayrovix_review_requests r
     LEFT JOIN customer_accounts a ON a.id=r.account_id
@@ -144,9 +144,9 @@ export function getAyrovixReviewForAdmin(db: QatafoDatabase, id: string): any | 
     WHERE r.id=?`, id) || null;
 }
 
-export function updateAyrovixReview(db: QatafoDatabase, id: string, input: AyrovixReviewAdminUpdate): any | null {
-  ensureAyrovixReviewRequestsTable(db);
-  const existing = getAyrovixReviewForAdmin(db, id);
+export function updateZayrovixReview(db: QatafoDatabase, id: string, input: ZayrovixReviewAdminUpdate): any | null {
+  ensureZayrovixReviewRequestsTable(db);
+  const existing = getZayrovixReviewForAdmin(db, id);
   if (!existing) return null;
   const now = new Date().toISOString();
   const resolved = ['QUOTED', 'REJECTED', 'CANCELLED'].includes(input.status);
@@ -155,5 +155,5 @@ export function updateAyrovixReview(db: QatafoDatabase, id: string, input: Ayrov
     resolved_by=?,resolved_at=?,updated_at=? WHERE id=?`,
   input.status, input.quotedPrice ?? null, input.quotedCurrency || null, input.verifiedVariant || '', input.verifiedUrl || '',
   input.customerMessage || '', input.adminNote || '', input.status === 'PENDING' ? null : input.adminId, resolved ? now : null, now, id);
-  return getAyrovixReviewForAdmin(db, id);
+  return getZayrovixReviewForAdmin(db, id);
 }

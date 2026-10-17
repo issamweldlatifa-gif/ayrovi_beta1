@@ -40,7 +40,7 @@ export function inspectIconSource(file,text) {
     if(ts.isPropertyAssignment(node) && !exception && ['strokeWidth','strokeLinecap','strokeLinejoin'].includes(node.name.getText(src)))issue(node,'Inline style cannot override central icon geometry.');
     if(ts.isCallExpression(node)){
       const callee=node.expression.getText(src);
-      if(callee==='createAyroviIcon' && node.arguments.length!==1)issue(node,'Compatibility icons must reference a glyph name, never contain duplicate drawings.');
+      if(callee==='createZayroviIcon' && node.arguments.length!==1)issue(node,'Compatibility icons must reference a glyph name, never contain duplicate drawings.');
       if(/(?:createElement|createElementNS)$/.test(callee) && node.arguments.some(a=>ts.isStringLiteral(a)&&vectorTags.has(a.text)) && !exception)issue(node,'Programmatic inline SVG bypasses the icon renderer.');
     }
     if((ts.isStringLiteral(node)||ts.isNoSubstitutionTemplateLiteral(node)||ts.isJsxText(node)) && symbolIcon.test(node.text)){

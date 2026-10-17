@@ -68,7 +68,7 @@ Prix liés au Cart Item, jamais recalculés différemment d'un affichage à l'au
 
 ## Implémentation de référence (état actuel du dépôt)
 
-- Android natif : `android/app/src/main/java/app/ayrovi/mobile/AyWebsBrowseActivity.java`
+- Android natif : `android/app/src/main/java/app/zayrovi/mobile/AyWebsBrowseActivity.java`
   (bouton injecté `aywebs-capture-btn` « Add to Cart » + état chargement ; feuille de
   variantes `dialog_aywebs_variant_sheet.xml` en Dialog par-dessus le WebView, page
   marchand jamais rechargée ; variantes indisponibles désactivées via

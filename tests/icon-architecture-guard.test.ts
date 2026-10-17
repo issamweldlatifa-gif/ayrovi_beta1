@@ -23,10 +23,10 @@ describe('whole-application icon architecture gate',()=>{
     'const x=<span className="animate-spin border-2 border-t-transparent"/>;',
     'const x=<button>✓ Valider</button>;',
     'const x={label:"Caméra 📷"};',
-    'const x=createAyroviIcon("User",<path/>);',
+    'const x=createZayroviIcon("User",<path/>);',
   ])('rejects a bypass: %s',source=>expect(inspectIconSource(file,source).issues.length).toBeGreaterThan(0));
   it('allows the canonical renderer, genuine typography, and regular business text',()=>{
-    const source='import {User} from "./QatafoIcons"; const x=<User size={24} aria-label="Compte"/>; const y="© AYROVI · N° 3 · 360° · Paramètres → Compte"; // ✓ comment, not an icon';
+    const source='import {User} from "./QatafoIcons"; const x=<User size={24} aria-label="Compte"/>; const y="© ZAYROVI · N° 3 · 360° · Paramètres → Compte"; // ✓ comment, not an icon';
     expect(inspectIconSource(file,source).issues).toEqual([]);
   });
   it('cannot disguise an interface drawing as a new brand exception',()=>{

@@ -11,7 +11,7 @@ import { classifyProduct, extractCapacity, pricePer100, presentSizes, usesCapaci
 import { ProductCandidates } from '../client/src/ayrovix/components/ProductCandidates';
 import { ShopProductScreen } from '../client/src/shop';
 import { LocaleProvider } from '../client/src/i18n/LocaleContext';
-import type { AyrovixCandidate, AyrovixProduct } from '../client/src/ayrovix/types';
+import type { ZayrovixCandidate, ZayrovixProduct } from '../client/src/ayrovix/types';
 
 const read = (rel: string) => readFileSync(rel, 'utf8');
 
@@ -57,7 +57,7 @@ describe('P1 — compréhension produit (pure)', () => {
   });
 });
 
-const beautyProduct: AyrovixProduct = {
+const beautyProduct: ZayrovixProduct = {
   title: 'AXIS-Y COLLAGEN EYE SERUM — Soin des yeux 10 ml',
   brand: 'AXIS-Y', model: null,
   description: 'Sérum contour des yeux au collagène végétal et à la niacinamide — réduit les cernes et les poches.',
@@ -66,7 +66,7 @@ const beautyProduct: AyrovixProduct = {
   availability: 'unknown', rating: 4.7, ratingCount: 5017, ratingKind: 'merchant',
 };
 
-const shoesProduct: AyrovixProduct = {
+const shoesProduct: ZayrovixProduct = {
   title: 'AIR ZOOM ALPHAFLY NEXT 3 — Chaussures de running',
   brand: 'Nike Performance', model: null,
   description: 'Chaussure de compétition avec mousse ZoomX et plaque carbone.',
@@ -172,7 +172,7 @@ describe('P1 — la description atteint enfin les cartes', () => {
   });
 
   it('la carte liste : titre encre + description grise dessous + prix même style', () => {
-    const candidate: AyrovixCandidate = {
+    const candidate: ZayrovixCandidate = {
       id: 'serum', kind: 'external', title: 'AXIS-Y COLLAGEN EYE SERUM', brand: 'AXIS-Y', model: null,
       description: 'Sérum contour des yeux au collagène — 10 ml.',
       colors: [], sizes: [], source: 'Example', sourceUrl: 'https://shop.example/serum', image: '/serum.jpg',

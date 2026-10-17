@@ -257,7 +257,7 @@ describe('OCEREX HTTP', () => {
     const accountId = `ocerex_account_${Date.now()}`;
     const orderSession = `ocerex-order-${Date.now()}`;
     db.run(`INSERT INTO customer_accounts (id,display_name,email,email_verified_at,status,created_at,updated_at)
-      VALUES (?,'Client OCEREX','ocerex@ayrovi.test',?,'ACTIVE',?,?)`, accountId, now, now, now);
+      VALUES (?,'Client OCEREX','ocerex@zayrovi.test',?,'ACTIVE',?,?)`, accountId, now, now, now);
     const decision = resolveOcerexPrices([
       token('Panier', { y: 8 }),
       token('Original total', { y: 40 }),
@@ -285,7 +285,7 @@ describe('OCEREX HTTP', () => {
       quantity: 1,
     }, accountId);
     const order = db.createOrderFromCart(orderSession, {
-      name: 'Client OCEREX', email: 'ocerex@ayrovi.test', phone: '98111022', governorate: 'Tunis', address: 'Tunis',
+      name: 'Client OCEREX', email: 'ocerex@zayrovi.test', phone: '98111022', governorate: 'Tunis', address: 'Tunis',
       paymentMethod: 'BANK_TRANSFER', latitude: null, longitude: null, termsAcceptedAt: now, locale: 'fr-TN',
     }, accountId);
     expect(attachOcerexExtractionsToOrder(db, orderSession, accountId, order.orderId)).toBe(1);
@@ -322,7 +322,7 @@ describe('OCEREX copy and navigation', () => {
     const result = readFileSync('client/src/features/ocerex/screens/OcerexResult.tsx', 'utf8');
     const errors = readFileSync('client/src/features/ocerex/screens/OcerexError.tsx', 'utf8');
     const processing = readFileSync('client/src/features/ocerex/screens/OcerexProcessing.tsx', 'utf8');
-    expect(onboarding).toContain('حوّل السعر من صورة إلى طلب مع Ayrovi.');
+    expect(onboarding).toContain('حوّل السعر من صورة إلى طلب مع Zayrovi.');
     expect(onboarding).toContain('ابدأ مع Ocerex');
     expect(home).toContain('ارفع صورة السعر');
     expect(home).toContain('رفع صورة');

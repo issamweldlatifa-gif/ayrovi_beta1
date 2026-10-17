@@ -173,7 +173,7 @@ export abstract class BaseStoreAdapter implements AyWebsStoreAdapter {
 
   /**
    * Préparation d'achat (§22). Aucune intégration d'achat marchand automatisé
-   * n'existe encore dans AYROVI : l'état le dit explicitement, la commande
+   * n'existe encore dans ZAYROVI : l'état le dit explicitement, la commande
    * part en revue humaine. Simuler un achat réussi est interdit (§48).
    */
   async preparePurchase(): Promise<AyWebsPurchasePreparation> {

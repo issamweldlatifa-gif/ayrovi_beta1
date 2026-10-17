@@ -1,5 +1,5 @@
 /**
- * AYROVI CRM 360 (E1) — schéma + amorçage du module relationnel.
+ * ZAYROVI CRM 360 (E1) — schéma + amorçage du module relationnel.
  *
  * Règles identiques aux autres modules (aucun raccourci) :
  *  • additif uniquement : `CREATE TABLE IF NOT EXISTS` / `CREATE INDEX IF NOT EXISTS` ;

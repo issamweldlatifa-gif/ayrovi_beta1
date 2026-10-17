@@ -253,14 +253,14 @@ export const ProductPage: React.FC<ProductPageProps> = ({
 
           {!product.price && (
             <div className="s-price s-price--pending" role="status">
-              <span className="s-price__label">{tr('Prix AYROVI', 'سعر AYROVI')}</span>
+              <span className="s-price__label">{tr('Prix ZAYROVI', 'سعر ZAYROVI')}</span>
               <span>{priceChecking ? tr('Vérification du prix à la source…', 'نتثبّتو في السعر عند المصدر…') : tr('Prix à confirmer', 'السعر قيد التأكيد')}</span>
             </div>
           )}
           {product.price && (
             <>
               <div className="s-price" data-deal={Boolean(product.price.reference)}>
-                <span className="s-price__label">{product.price.verifiedAtSource ? tr('Prix AYROVI', 'سعر AYROVI') : tr('Prix AYROVI', 'سعر AYROVI')}</span>
+                <span className="s-price__label">{product.price.verifiedAtSource ? tr('Prix ZAYROVI', 'سعر ZAYROVI') : tr('Prix ZAYROVI', 'سعر ZAYROVI')}</span>
                 <strong data-product-price-tnd={product.price.current.tnd}>{formatMoney(product.price.current.tnd)}</strong>
                 {priceChecking && <span className="s-price__note" role="status">{tr('Vérification à la source…', 'نتثبّتو في السعر عند المصدر…')}</span>}
               </div>

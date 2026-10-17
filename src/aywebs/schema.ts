@@ -27,7 +27,7 @@ import {
  *
  * Discipline identique aux modules ERP existants (P1/P2.x) :
  *  • ADDITIF uniquement : `CREATE TABLE IF NOT EXISTS` / `CREATE INDEX IF NOT EXISTS`
- *    et `ALTER TABLE … ADD COLUMN` sur colonne manquante. Aucune table AYROVI
+ *    et `ALTER TABLE … ADD COLUMN` sur colonne manquante. Aucune table ZAYROVI
  *    existante n'est renommée, modifiée dans sa structure ou supprimée ;
  *  • DDL multi-instructions via `db.runSchema()` ;
  *  • idempotent : base fraîche, base existante et re-boot donnent la même forme ;
@@ -37,7 +37,7 @@ import {
  *    shipping) sont créées ici pour que le domaine soit cohérent d'un seul
  *    tenant — leurs SERVICES restent non implémentés et le disent (§48).
  *
- * Identités (§53) : chaque objet porte son identité AYROVI (`AYWITEM-…`,
+ * Identités (§53) : chaque objet porte son identité ZAYROVI (`AYWITEM-…`,
  * `AYW-…`) ET l'identité source (`source_product_id`, `source_url`). Les deux
  * ne sont jamais fusionnées.
  */
@@ -171,7 +171,7 @@ CREATE INDEX IF NOT EXISTS idx_ayweb_carts_session ON ayweb_carts(session_id, up
 
 CREATE TABLE IF NOT EXISTS ayweb_cart_items (
   id TEXT PRIMARY KEY,
-  /* Identité AYROVI de la ligne (AYWITEM-000123). L'identité source reste
+  /* Identité ZAYROVI de la ligne (AYWITEM-000123). L'identité source reste
      source_url / source_product_id : les deux ne sont jamais fusionnées (§53). */
   item_number TEXT NOT NULL DEFAULT '',
   cart_id TEXT NOT NULL REFERENCES ayweb_carts(id) ON DELETE CASCADE,
@@ -199,7 +199,7 @@ CREATE TABLE IF NOT EXISTS ayweb_cart_items (
 CREATE INDEX IF NOT EXISTS idx_ayweb_cart_items_cart ON ayweb_cart_items(cart_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_ayweb_cart_items_status ON ayweb_cart_items(status);
 
-/* Stable identity for the AYWEBs → AYROVI cart bridge. The customer note remains
+/* Stable identity for the AYWEBs → ZAYROVI cart bridge. The customer note remains
  * presentation/audit text only; editing it must not detach checkout safety. */
 CREATE TABLE IF NOT EXISTS ayweb_cart_ayrovi_links (
   aywebs_item_id TEXT PRIMARY KEY NOT NULL,
@@ -289,7 +289,7 @@ CREATE TABLE IF NOT EXISTS ayweb_payments (
   payment_number TEXT NOT NULL DEFAULT '',
   order_id TEXT NOT NULL REFERENCES ayweb_orders(id) ON DELETE CASCADE,
   account_id TEXT REFERENCES customer_accounts(id) ON DELETE SET NULL,
-  /* Moyen issu de la configuration commerciale AYROVI existante : AYWEBs ne
+  /* Moyen issu de la configuration commerciale ZAYROVI existante : AYWEBs ne
      crée ni moyen de paiement ni passerelle parallèle (§20). */
   method TEXT NOT NULL DEFAULT 'PENDING_SELECTION' CHECK(method IN ('PENDING_SELECTION','COD','D17','FLOUCI','CARD','BANK_TRANSFER','POSTE')),
   status TEXT NOT NULL DEFAULT 'PENDING' CHECK(status IN ('PENDING','PENDING_VERIFICATION','PAID','FAILED','REJECTED','REFUNDED','CANCELLED')),
@@ -315,9 +315,9 @@ CREATE INDEX IF NOT EXISTS idx_ayweb_payments_status ON ayweb_payments(status, c
 CREATE TABLE IF NOT EXISTS ayweb_order_links (
   id TEXT PRIMARY KEY,
   ayweb_order_id TEXT NOT NULL REFERENCES ayweb_orders(id) ON DELETE CASCADE,
-  /* Pont vers l'OMS AYROVI existant : la commande AYWEBs peut être transférée
-     dans le checkout AYROVI, sans jamais créer un second système de commande. */
-  link_type TEXT NOT NULL DEFAULT 'AYROVI_ORDER' CHECK(link_type IN ('AYROVI_ORDER','AYROVI_CART_ITEM','PURCHASE_REQUEST','WORKER_PACKAGE')),
+  /* Pont vers l'OMS ZAYROVI existant : la commande AYWEBs peut être transférée
+     dans le checkout ZAYROVI, sans jamais créer un second système de commande. */
+  link_type TEXT NOT NULL DEFAULT 'ZAYROVI_ORDER' CHECK(link_type IN ('ZAYROVI_ORDER','ZAYROVI_CART_ITEM','PURCHASE_REQUEST','WORKER_PACKAGE')),
   external_id TEXT NOT NULL,
   external_number TEXT NOT NULL DEFAULT '',
   detail TEXT NOT NULL DEFAULT '{}',
@@ -447,7 +447,7 @@ CREATE TABLE IF NOT EXISTS ayweb_checkout_fees (
   label TEXT NOT NULL DEFAULT '',
   amount_tnd REAL NOT NULL DEFAULT 0,
   currency TEXT NOT NULL DEFAULT 'TND',
-  source TEXT NOT NULL DEFAULT 'ayrovi',
+  source TEXT NOT NULL DEFAULT 'zayrovi',
   computed_at TEXT NOT NULL,
   detail TEXT NOT NULL DEFAULT '{}'
 );
@@ -514,9 +514,9 @@ CREATE INDEX IF NOT EXISTS idx_ayweb_shipping_package ON ayweb_shipping(package_
 /** Numérotation AYWEBs via le moteur `erp_sequences` existant — jamais un compteur maison. */
 export const AYWEBS_SEQUENCES = [
   { key: 'ayweb_order_number', prefix: 'AYW', padding: 6, yearScoped: 0, description: 'Référence client d’une commande AyWebs (AYW-000123)' },
-  { key: 'ayweb_cart_item_number', prefix: 'AYWITEM', padding: 6, yearScoped: 0, description: 'Identité AYROVI d’une ligne de panier AyWebs' },
+  { key: 'ayweb_cart_item_number', prefix: 'AYWITEM', padding: 6, yearScoped: 0, description: 'Identité ZAYROVI d’une ligne de panier AyWebs' },
   { key: 'ayweb_purchase_request_number', prefix: 'AYWREQ', padding: 6, yearScoped: 0, description: 'Demande d’achat avec URL (boutique non intégrée)' },
-  { key: 'ayweb_package_number', prefix: 'AYWPKG', padding: 6, yearScoped: 0, description: 'Colis consolidé en entrepôt AYROVI' },
+  { key: 'ayweb_package_number', prefix: 'AYWPKG', padding: 6, yearScoped: 0, description: 'Colis consolidé en entrepôt ZAYROVI' },
   { key: 'ayweb_payment_number', prefix: 'AYWPAY', padding: 6, yearScoped: 0, description: 'Transaction de paiement d’une commande AyWebs' },
 ] as const;
 

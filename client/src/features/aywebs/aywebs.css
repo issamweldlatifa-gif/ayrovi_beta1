@@ -1,11 +1,11 @@
 /* ==========================================================================
    AYWEBs — parcours proxy-shopping (référence Add-to-Buyee, captures 1-6).
-   Une seule feuille de style, tokens AYROVI d'abord, replis explicites.
+   Une seule feuille de style, tokens ZAYROVI d'abord, replis explicites.
    ========================================================================== */
 
 .ayw-screen {
   min-height: 100%;
-  background: var(--ayrovi-surface, #f5f5f5);
+  background: var(--zayrovi-surface, #f5f5f5);
   padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
 }
 
@@ -17,14 +17,14 @@
   align-items: center;
   justify-content: center;
   min-height: 3.25rem;
-  background: var(--ayrovi-surface, #fff);
-  border-bottom: 1px solid var(--ayrovi-line, #e4e4e4);
+  background: var(--zayrovi-surface, #fff);
+  border-bottom: 1px solid var(--zayrovi-line, #e4e4e4);
 }
 
 .ayw-title {
   font-size: 1.05rem;
   font-weight: 700;
-  color: var(--ayrovi-ink, #101828);
+  color: var(--zayrovi-ink, #101828);
 }
 
 /* --- recherche + chip boutique (capture 2) --- */
@@ -41,18 +41,18 @@
 .ayw-search {
   width: 100%;
   height: 2.9rem;
-  border: 1.5px solid var(--ayrovi-cta, #f18902);
+  border: 1.5px solid var(--zayrovi-cta, #f18902);
   border-radius: 999px;
-  background: var(--ayrovi-surface, #fff);
+  background: var(--zayrovi-surface, #fff);
   padding-inline: 2.4rem 1rem;
   font: inherit;
-  color: var(--ayrovi-ink, #101828);
+  color: var(--zayrovi-ink, #101828);
 }
 
 .ayw-search-icon {
   position: absolute;
   inset-inline-start: 1.7rem;
-  color: var(--ayrovi-cta, #f18902);
+  color: var(--zayrovi-cta, #f18902);
   pointer-events: none;
 }
 
@@ -62,8 +62,8 @@
   gap: .35rem;
   border: 0;
   border-radius: 999px;
-  background: var(--ayrovi-line, #ececec);
-  color: var(--ayrovi-ink, #101828);
+  background: var(--zayrovi-line, #ececec);
+  color: var(--zayrovi-ink, #101828);
   padding: .3rem .7rem;
   font: inherit;
   font-size: .85rem;
@@ -74,7 +74,7 @@
   margin: 1.2rem 1rem .6rem;
   font-size: 1rem;
   font-weight: 700;
-  color: var(--ayrovi-ink, #101828);
+  color: var(--zayrovi-ink, #101828);
 }
 
 /* --- cartes boutiques (capture 2) --- */
@@ -86,7 +86,7 @@
 }
 
 .ayw-storecard {
-  background: var(--ayrovi-surface, #fff);
+  background: var(--zayrovi-surface, #fff);
   border-radius: .5rem;
   padding: .9rem;
   box-shadow: 0 1px 2px rgb(16 24 40 / .06);
@@ -100,7 +100,7 @@
   height: 4.2rem;
   border: 0;
   border-radius: .4rem;
-  background: var(--ayrovi-surface, #fafafa);
+  background: var(--zayrovi-surface, #fafafa);
   cursor: pointer;
   padding: .5rem;
 }
@@ -115,32 +115,32 @@
   gap: .5rem;
 }
 
-.ayw-storename { font-weight: 600; color: var(--ayrovi-ink, #101828); }
+.ayw-storename { font-weight: 600; color: var(--zayrovi-ink, #101828); }
 
 .ayw-fav {
   border: 0;
-  background: var(--ayrovi-line, #ececec);
+  background: var(--zayrovi-line, #ececec);
   border-radius: 999px;
   width: 2rem;
   height: 2rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--ayrovi-ink-secondary, #667085);
+  color: var(--zayrovi-ink-secondary, #667085);
   cursor: pointer;
 }
 
-.ayw-fav.is-on { color: var(--ayrovi-cta, #f18902); background: rgb(241 137 2 / .12); }
+.ayw-fav.is-on { color: var(--zayrovi-cta, #f18902); background: rgb(241 137 2 / .12); }
 
 .ayw-storedesc {
   margin-top: .5rem;
   font-size: .82rem;
   line-height: 1.45;
-  color: var(--ayrovi-ink-secondary, #475467);
+  color: var(--zayrovi-ink-secondary, #475467);
 }
 
 /* --- barre d'onglets basse (capture 2) --- */
-/* §3 (04/10/2026) : z-index 40 ET hauteur FIXE. La barre AYROVI (z-30, racine)
+/* §3 (04/10/2026) : z-index 40 ET hauteur FIXE. La barre ZAYROVI (z-30, racine)
    est démontée pendant AyWebs (App.tsx) ; cette valeur garde la barre AyWebs
    au-dessus de tout ce qui vit DANS la couche AyWebs (z-25). */
 .ayw-tabs {
@@ -151,8 +151,8 @@
   height: calc(3.4rem + env(safe-area-inset-bottom));
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  background: var(--ayrovi-surface, #fff);
-  border-top: 1px solid var(--ayrovi-line, #e4e4e4);
+  background: var(--zayrovi-surface, #fff);
+  border-top: 1px solid var(--zayrovi-line, #e4e4e4);
   padding-bottom: env(safe-area-inset-bottom);
 }
 
@@ -165,12 +165,12 @@
   align-items: center;
   gap: .15rem;
   padding: .5rem 0 .45rem;
-  color: var(--ayrovi-ink, #101828);
+  color: var(--zayrovi-ink, #101828);
   font: inherit;
   cursor: pointer;
 }
 
-.ayw-tab.is-active { color: var(--ayrovi-cta, #f18902); }
+.ayw-tab.is-active { color: var(--zayrovi-cta, #f18902); }
 
 .ayw-tab-icon { position: relative; }
 
@@ -181,7 +181,7 @@
   min-width: 1rem;
   height: 1rem;
   border-radius: 999px;
-  background: var(--ayrovi-cta, #f18902);
+  background: var(--zayrovi-cta, #f18902);
   color: #fff;
   font-size: .68rem;
   line-height: 1rem;
@@ -207,7 +207,7 @@
   width: min(34rem, 100%);
   max-height: 82vh;
   overflow-y: auto;
-  background: var(--ayrovi-surface, #fff);
+  background: var(--zayrovi-surface, #fff);
   border-radius: 1rem 1rem 0 0;
   padding: 1.4rem 1.2rem calc(1.4rem + env(safe-area-inset-bottom));
 }
@@ -218,7 +218,7 @@
   inset-inline-end: .9rem;
   border: 0;
   background: none;
-  color: var(--ayrovi-ink, #101828);
+  color: var(--zayrovi-ink, #101828);
   cursor: pointer;
 }
 
@@ -229,40 +229,40 @@
   text-align: center;
   font-size: 1.1rem;
   font-weight: 700;
-  color: var(--ayrovi-ink, #101828);
+  color: var(--zayrovi-ink, #101828);
 }
 
 .ayw-sheet-product { display: flex; align-items: center; gap: .8rem; }
 .ayw-sheet-thumb { width: 4.6rem; height: 4.6rem; object-fit: contain; background: #f2f4f7; border-radius: .35rem; }
-.ayw-sheet-name { font-weight: 600; color: var(--ayrovi-ink, #101828); }
+.ayw-sheet-name { font-weight: 600; color: var(--zayrovi-ink, #101828); }
 
 .ayw-cond { border: 0; padding: 0; margin: 0; }
-.ayw-radio { display: inline-flex; align-items: center; gap: .5rem; cursor: pointer; color: var(--ayrovi-ink, #101828); }
-.ayw-radio input { accent-color: var(--ayrovi-cta, #f18902); width: 1.15rem; height: 1.15rem; }
+.ayw-radio { display: inline-flex; align-items: center; gap: .5rem; cursor: pointer; color: var(--zayrovi-ink, #101828); }
+.ayw-radio input { accent-color: var(--zayrovi-cta, #f18902); width: 1.15rem; height: 1.15rem; }
 
 .ayw-selectwrap { display: block; }
 
 .ayw-select {
   width: 100%;
   height: 3rem;
-  border: 1.5px solid var(--ayrovi-ink, #101828);
+  border: 1.5px solid var(--zayrovi-ink, #101828);
   border-radius: .35rem;
-  background: var(--ayrovi-surface, #fff);
+  background: var(--zayrovi-surface, #fff);
   padding-inline: .8rem;
   font: inherit;
-  color: var(--ayrovi-ink, #101828);
+  color: var(--zayrovi-ink, #101828);
   appearance: auto;
 }
 
-.ayw-price { text-align: center; font-weight: 600; color: var(--ayrovi-ink, #101828); }
-.ayw-price-tnd { color: var(--ayrovi-ink-secondary, #475467); font-weight: 500; }
+.ayw-price { text-align: center; font-weight: 600; color: var(--zayrovi-ink, #101828); }
+.ayw-price-tnd { color: var(--zayrovi-ink-secondary, #475467); font-weight: 500; }
 
 .ayw-cta {
   width: 100%;
   min-height: 3.1rem;
   border: 0;
   border-radius: .4rem;
-  background: var(--ayrovi-cta, #f18902);
+  background: var(--zayrovi-cta, #f18902);
   color: #fff;
   font: inherit;
   font-size: 1.02rem;
@@ -279,10 +279,10 @@
 .ayw-cta-outline {
   width: 100%;
   min-height: 3.1rem;
-  border: 1.5px solid var(--ayrovi-ink-secondary, #475467);
+  border: 1.5px solid var(--zayrovi-ink-secondary, #475467);
   border-radius: .4rem;
   background: none;
-  color: var(--ayrovi-ink-secondary, #344054);
+  color: var(--zayrovi-ink-secondary, #344054);
   font: inherit;
   font-size: 1.02rem;
   font-weight: 700;
@@ -291,18 +291,18 @@
 
 /* --- confirmation d'ajout (capture 4) --- */
 .ayw-added { align-items: stretch; }
-.ayw-added-icon { position: relative; align-self: center; color: var(--ayrovi-cta, #f18902); }
-.ayw-added-icon svg:last-child { position: absolute; top: -.5rem; inset-inline-end: -.6rem; color: var(--ayrovi-cta, #1d3f8f); }
-.ayw-added-sum { display: flex; gap: .9rem; align-items: center; border-block: 1px solid var(--ayrovi-line, #e4e4e4); padding: .9rem 0; }
+.ayw-added-icon { position: relative; align-self: center; color: var(--zayrovi-cta, #f18902); }
+.ayw-added-icon svg:last-child { position: absolute; top: -.5rem; inset-inline-end: -.6rem; color: var(--zayrovi-cta, #1d3f8f); }
+.ayw-added-sum { display: flex; gap: .9rem; align-items: center; border-block: 1px solid var(--zayrovi-line, #e4e4e4); padding: .9rem 0; }
 .ayw-added-thumb { width: 6.5rem; height: 8rem; object-fit: contain; background: #f2f4f7; border-radius: .35rem; }
-.ayw-added-title { font-weight: 700; color: var(--ayrovi-ink, #101828); }
-.ayw-added-meta { color: var(--ayrovi-ink-secondary, #475467); font-size: .9rem; margin-top: .3rem; }
+.ayw-added-title { font-weight: 700; color: var(--zayrovi-ink, #101828); }
+.ayw-added-meta { color: var(--zayrovi-ink-secondary, #475467); font-size: .9rem; margin-top: .3rem; }
 
 /* --- panier proxy (captures 5-6) --- */
 .ayw-cartline {
   display: flex;
   gap: .9rem;
-  background: var(--ayrovi-surface, #fff);
+  background: var(--zayrovi-surface, #fff);
   margin: .8rem 1rem;
   border-radius: .5rem;
   padding: .9rem;
@@ -311,33 +311,33 @@
 
 .ayw-cartline-img { width: 6rem; height: 7rem; object-fit: contain; background: #f2f4f7; border-radius: .3rem; flex: none; }
 .ayw-cartline-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .55rem; }
-.ayw-cartline-title { font-size: .98rem; font-weight: 700; color: var(--ayrovi-ink, #101828); }
+.ayw-cartline-title { font-size: .98rem; font-weight: 700; color: var(--zayrovi-ink, #101828); }
 
 .ayw-cartline-meta { display: grid; gap: .3rem; margin: 0; }
 .ayw-cartline-meta div { display: flex; gap: .5rem; font-size: .85rem; }
-.ayw-cartline-meta dt { color: var(--ayrovi-ink-secondary, #475467); min-width: 6.5rem; }
-.ayw-cartline-meta dd { margin: 0; color: var(--ayrovi-ink, #101828); font-weight: 600; }
+.ayw-cartline-meta dt { color: var(--zayrovi-ink-secondary, #475467); min-width: 6.5rem; }
+.ayw-cartline-meta dd { margin: 0; color: var(--zayrovi-ink, #101828); font-weight: 600; }
 
 .ayw-cartline-row { display: flex; flex-wrap: wrap; align-items: center; gap: .8rem; }
 
-.ayw-qty { display: flex; flex-direction: column; gap: .25rem; font-size: .8rem; color: var(--ayrovi-ink-secondary, #475467); }
+.ayw-qty { display: flex; flex-direction: column; gap: .25rem; font-size: .8rem; color: var(--zayrovi-ink-secondary, #475467); }
 
 .ayw-qty input {
   width: 4.2rem;
   height: 2.4rem;
-  border: 1px solid var(--ayrovi-line, #d0d5dd);
+  border: 1px solid var(--zayrovi-line, #d0d5dd);
   border-radius: .3rem;
   text-align: center;
   font: inherit;
-  color: var(--ayrovi-ink, #101828);
-  background: var(--ayrovi-surface, #fff);
+  color: var(--zayrovi-ink, #101828);
+  background: var(--zayrovi-surface, #fff);
 }
 
-.ayw-subtotal { margin: 0; display: flex; flex-direction: column; font-size: .8rem; color: var(--ayrovi-ink-secondary, #475467); }
-.ayw-subtotal strong { font-size: 1.05rem; color: var(--ayrovi-ink, #101828); }
+.ayw-subtotal { margin: 0; display: flex; flex-direction: column; font-size: .8rem; color: var(--zayrovi-ink-secondary, #475467); }
+.ayw-subtotal strong { font-size: 1.05rem; color: var(--zayrovi-ink, #101828); }
 
 /* --- équivalent TND sous le sous-total marchand : montant SERVEUR, jamais un calcul client --- */
-.ayw-line-tnd { font-style: normal; font-size: .8rem; color: var(--ayrovi-ink-secondary, #475467); }
+.ayw-line-tnd { font-style: normal; font-size: .8rem; color: var(--zayrovi-ink-secondary, #475467); }
 
 /* --- lien « voir chez le marchand » : ouvre la fiche source sans quitter AYWEBs --- */
 .ayw-source-link {
@@ -345,7 +345,7 @@
   background: none;
   padding: 0;
   margin: 0;
-  color: var(--ayrovi-ink-secondary, #344054);
+  color: var(--zayrovi-ink-secondary, #344054);
   font: inherit;
   font-size: .85rem;
   font-weight: 600;
@@ -355,10 +355,10 @@
 
 .ayw-delete {
   margin-inline-start: auto;
-  border: 1px solid var(--ayrovi-line, #d0d5dd);
+  border: 1px solid var(--zayrovi-line, #d0d5dd);
   border-radius: 999px;
-  background: var(--ayrovi-surface, #fff);
-  color: var(--ayrovi-ink-secondary, #344054);
+  background: var(--zayrovi-surface, #fff);
+  color: var(--zayrovi-ink-secondary, #344054);
   display: inline-flex;
   align-items: center;
   gap: .35rem;
@@ -369,7 +369,7 @@
 }
 
 .ayw-carttotal {
-  background: var(--ayrovi-surface, #fff);
+  background: var(--zayrovi-surface, #fff);
   margin: .8rem 1rem;
   border-radius: .5rem;
   padding: 1rem;
@@ -379,18 +379,18 @@
   box-shadow: 0 1px 2px rgb(16 24 40 / .06);
 }
 
-.ayw-carttotal-label { display: flex; flex-direction: column; gap: .2rem; color: var(--ayrovi-ink-secondary, #475467); font-size: .9rem; }
-.ayw-carttotal-value { font-size: 1.7rem; font-weight: 800; color: var(--ayrovi-ink, #101828); text-align: center; }
+.ayw-carttotal-label { display: flex; flex-direction: column; gap: .2rem; color: var(--zayrovi-ink-secondary, #475467); font-size: .9rem; }
+.ayw-carttotal-value { font-size: 1.7rem; font-weight: 800; color: var(--zayrovi-ink, #101828); text-align: center; }
 .ayw-carttotal-value span { font-size: 1rem; font-weight: 600; }
-.ayw-carttotal-note { font-size: .82rem; color: var(--ayrovi-ink-secondary, #475467); text-align: center; }
+.ayw-carttotal-note { font-size: .82rem; color: var(--zayrovi-ink-secondary, #475467); text-align: center; }
 
-.ayw-notice { color: var(--ayrovi-ink-secondary, #475467); font-size: .88rem; }
+.ayw-notice { color: var(--zayrovi-ink-secondary, #475467); font-size: .88rem; }
 .ayw-pad { padding: 1.5rem 1rem; text-align: center; }
 .ayw-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* --- cartes de variantes façon fiche marchand (captures 1-2, 04/10/2026) --- */
 .ayw-cardgroup { display: flex; flex-direction: column; gap: .5rem; }
-.ayw-cardgroup-label { font-size: .9rem; color: var(--ayrovi-ink-secondary, #475467); font-weight: 600; }
+.ayw-cardgroup-label { font-size: .9rem; color: var(--zayrovi-ink-secondary, #475467); font-weight: 600; }
 .ayw-cardrow { display: flex; gap: .7rem; overflow-x: auto; padding-bottom: .3rem; }
 .ayw-variantcard {
   flex: 0 0 8.2rem;
@@ -398,23 +398,23 @@
   flex-direction: column;
   align-items: flex-start;
   gap: .25rem;
-  border: 1.5px solid var(--ayrovi-line, #d0d5dd);
+  border: 1.5px solid var(--zayrovi-line, #d0d5dd);
   border-radius: .6rem;
-  background: var(--ayrovi-surface, #fff);
+  background: var(--zayrovi-surface, #fff);
   padding: .6rem;
   font: inherit;
   text-align: start;
   cursor: pointer;
 }
-.ayw-variantcard.is-on { border-color: var(--ayrovi-ink-secondary, #1d3f8f); box-shadow: 0 0 0 1.5px var(--ayrovi-ink-secondary, #1d3f8f); }
+.ayw-variantcard.is-on { border-color: var(--zayrovi-ink-secondary, #1d3f8f); box-shadow: 0 0 0 1.5px var(--zayrovi-ink-secondary, #1d3f8f); }
 .ayw-variantcard-img { width: 100%; height: 6.8rem; object-fit: contain; border-radius: .35rem; background: #f2f4f7; }
-.ayw-variantcard-name { font-weight: 700; color: var(--ayrovi-ink, #101828); font-size: .95rem; }
-.ayw-variantcard-price { color: var(--ayrovi-ink, #101828); font-size: .9rem; }
-.ayw-variantcard-stock { color: var(--ayrovi-ink-secondary, #475467); font-size: .8rem; }
+.ayw-variantcard-name { font-weight: 700; color: var(--zayrovi-ink, #101828); font-size: .95rem; }
+.ayw-variantcard-price { color: var(--zayrovi-ink, #101828); font-size: .9rem; }
+.ayw-variantcard-stock { color: var(--zayrovi-ink-secondary, #475467); font-size: .8rem; }
 
 /* --- panier groupé par boutique (capture 6, 04/10/2026) --- */
 .ayw-cartgroup {
-  background: var(--ayrovi-surface, #fff);
+  background: var(--zayrovi-surface, #fff);
   margin: .8rem 1rem 0;
   border-radius: .5rem;
   box-shadow: 0 1px 2px rgb(16 24 40 / .06);
@@ -423,11 +423,11 @@
 .ayw-cartgroup-head {
   padding: .8rem 1rem;
   font-weight: 700;
-  color: var(--ayrovi-ink, #101828);
-  border-bottom: 1px solid var(--ayrovi-line, #e4e4e4);
-  background: var(--ayrovi-surface-alt, #f8f9fa);
+  color: var(--zayrovi-ink, #101828);
+  border-bottom: 1px solid var(--zayrovi-line, #e4e4e4);
+  background: var(--zayrovi-surface-alt, #f8f9fa);
 }
-.ayw-cartgroup .ayw-cartline { margin: 0; box-shadow: none; border-radius: 0; border-bottom: 1px solid var(--ayrovi-line, #e4e4e4); }
+.ayw-cartgroup .ayw-cartline { margin: 0; box-shadow: none; border-radius: 0; border-bottom: 1px solid var(--zayrovi-line, #e4e4e4); }
 .ayw-cartgroup .ayw-cartline:last-child { border-bottom: 0; }
 
 /* --- rangée de cartes produit de l'écran boutiques (04/10/2026) --- */
@@ -447,15 +447,15 @@
   margin: .8rem 1rem 0;
   padding: .8rem 1rem;
   border-radius: .5rem;
-  background: var(--ayrovi-surface-alt, #fdf6ec);
-  color: var(--ayrovi-ink, #101828);
+  background: var(--zayrovi-surface-alt, #fdf6ec);
+  color: var(--zayrovi-ink, #101828);
   font-size: .92rem;
   font-weight: 600;
 }
 
 /* ==========================================================================
    §6 (04/10/2026) — Favoris AyWebs : tiroir + écran « Wish List ».
-   Le stockage est le compte AYROVI (/api/customer/account/favorites) : aucune
+   Le stockage est le compte ZAYROVI (/api/customer/account/favorites) : aucune
    copie locale, donc rien à resynchroniser. Les styles ci-dessous ne décrivent
    que la présentation.
    ========================================================================== */
@@ -469,8 +469,8 @@
   border-radius: .4rem;
   flex: none;
 }
-.ayw-favsheet-title { font-weight: 700; color: var(--ayrovi-ink, #101828); font-size: .98rem; }
-.ayw-favsheet-price { margin-top: .25rem; color: var(--ayrovi-ink-secondary, #475467); font-size: .9rem; }
+.ayw-favsheet-title { font-weight: 700; color: var(--zayrovi-ink, #101828); font-size: .98rem; }
+.ayw-favsheet-price { margin-top: .25rem; color: var(--zayrovi-ink-secondary, #475467); font-size: .9rem; }
 
 /* Carte produit : le cœur est AU-DESSUS du bouton d'ouverture, jamais dedans,
    sinon le clic « favori » est avalé par la navigation (§6.3). */
@@ -489,11 +489,11 @@
   align-items: center;
   justify-content: center;
   background: rgb(255 255 255 / .92);
-  color: var(--ayrovi-ink-secondary, #667085);
+  color: var(--zayrovi-ink-secondary, #667085);
   box-shadow: 0 1px 3px rgb(16 24 40 / .18);
   cursor: pointer;
 }
-.ayw-prodfav.is-on { color: var(--ayrovi-cta, #f18902); }
+.ayw-prodfav.is-on { color: var(--zayrovi-cta, #f18902); }
 
 /* Écran « Wish List » interne — même liste que « Mon compte ». */
 .ayw-wishlist { display: flex; flex-direction: column; gap: .8rem; padding: 0 1rem; }
@@ -501,7 +501,7 @@
   display: flex;
   gap: .9rem;
   align-items: center;
-  background: var(--ayrovi-surface, #fff);
+  background: var(--zayrovi-surface, #fff);
   border-radius: .5rem;
   padding: .8rem;
   box-shadow: 0 1px 2px rgb(16 24 40 / .06);
@@ -521,11 +521,11 @@
   padding: 0;
   font: inherit;
   font-weight: 700;
-  color: var(--ayrovi-ink, #101828);
+  color: var(--zayrovi-ink, #101828);
   text-align: start;
   cursor: pointer;
 }
-.ayw-wishline-price { color: var(--ayrovi-ink-secondary, #475467); font-size: .88rem; }
+.ayw-wishline-price { color: var(--zayrovi-ink-secondary, #475467); font-size: .88rem; }
 .ayw-linkbtn {
   border: 0;
   background: none;
@@ -533,7 +533,7 @@
   font: inherit;
   font-size: .85rem;
   font-weight: 600;
-  color: var(--ayrovi-ink-secondary, #344054);
+  color: var(--zayrovi-ink-secondary, #344054);
   text-decoration: underline;
   cursor: pointer;
 }
@@ -541,18 +541,18 @@
 .ayw-support-panel,
 .ayw-support-form { display: flex; flex-direction: column; gap: .8rem; text-align: start; }
 .ayw-support-form p,
-.ayw-support-panel p { margin: 0; color: var(--ayrovi-ink-secondary, #475467); font-size: .9rem; }
+.ayw-support-panel p { margin: 0; color: var(--zayrovi-ink-secondary, #475467); font-size: .9rem; }
 .ayw-support-field { display: flex; flex-direction: column; gap: .35rem; font-size: .88rem; font-weight: 600; }
 .ayw-support-field input,
 .ayw-support-field textarea,
 .ayw-support-field select {
   width: 100%;
   min-height: 2.7rem;
-  border: 1px solid var(--ayrovi-border, #d0d5dd);
+  border: 1px solid var(--zayrovi-border, #d0d5dd);
   border-radius: .45rem;
   padding: .55rem .7rem;
-  color: var(--ayrovi-ink, #101828);
-  background: var(--ayrovi-surface, #fff);
+  color: var(--zayrovi-ink, #101828);
+  background: var(--zayrovi-surface, #fff);
   font: inherit;
 }
 .ayw-support-field textarea { min-height: 5.5rem; resize: vertical; }

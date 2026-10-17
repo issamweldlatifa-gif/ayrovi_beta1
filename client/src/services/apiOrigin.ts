@@ -1,5 +1,5 @@
 /**
- * Origine de l'API AYROVI — SOURCE UNIQUE.
+ * Origine de l'API ZAYROVI — SOURCE UNIQUE.
  *
  * Pourquoi ce fichier existe (2026-10-03) : la constante vivait dans
  * `nativeApiOrigin.ts`, qui importe `nativeShell.ts`. Or c'est justement
@@ -21,21 +21,21 @@
  * La figer en dur obligeait à modifier le code pour viser un autre serveur :
  * impossible, donc, de tester l'application contre une préproduction, un
  * serveur local (tunnel) ou un autre hébergeur SANS toucher au dépôt.
- * Désormais la construction accepte `VITE_AYROVI_API_ORIGIN` :
+ * Désormais la construction accepte `VITE_ZAYROVI_API_ORIGIN` :
  *
- *   VITE_AYROVI_API_ORIGIN=https://mon-serveur.example npx vite build
+ *   VITE_ZAYROVI_API_ORIGIN=https://mon-serveur.example npx vite build
  *
  * La valeur de repli reste l'origine de production : sans variable, le
  * comportement est EXACTEMENT celui d'avant (aucune régression).
  */
 /**
  * ── Corrigé le 04/10/2026 (deuxième passe) ─────────────────────────────────
- * L'application visait `ayrovi-beta1.onrender.com`, mais le serveur déployé
- * s'annonce lui-même sous `ayrovi-beta1-1.onrender.com` : c'est l'origine
+ * L'application visait `zayrovi-beta1.onrender.com`, mais le serveur déployé
+ * s'annonce lui-même sous `zayrovi-beta1-1.onrender.com` : c'est l'origine
  * qu'il met dans le `redirect_uri` envoyé à Google. Vérifié en direct :
  *
- *   GET https://ayrovi-beta1.onrender.com/api/customer/auth/google/start…
- *     → 302 accounts.google.com/…&redirect_uri=https%3A%2F%2Fayrovi-beta1-1
+ *   GET https://zayrovi-beta1.onrender.com/api/customer/auth/google/start…
+ *     → 302 accounts.google.com/…&redirect_uri=https%3A%2F%2Fzayrovi-beta1-1
  *       .onrender.com%2Fapi%2Fcustomer%2Fauth%2Fgoogle%2Fcallback
  *
  * Conséquence concrète : le parcours démarrait sur un hôte et se terminait
@@ -44,7 +44,7 @@
  * dans l'onglet mais laisse l'application déconnectée. Les deux hôtes doivent
  * être le même, et c'est celui que le serveur déclare qui fait foi.
  */
-const PRODUCTION_ORIGIN = 'https://ayrovi-beta1-1.onrender.com';
+const PRODUCTION_ORIGIN = 'https://zayrovi-beta1-1.onrender.com';
 
 /** Normalise une origine : trim, sans barre finale, et HTTPS/HTTP valide seulement. */
 export function normalizeApiOrigin(raw: string | undefined | null): string {
@@ -62,19 +62,19 @@ export function normalizeApiOrigin(raw: string | undefined | null): string {
 
 /**
  * La valeur est injectée à la CONSTRUCTION par Vite (`define` dans
- * vite.config.mts, à partir de `VITE_AYROVI_API_ORIGIN`).
+ * vite.config.mts, à partir de `VITE_ZAYROVI_API_ORIGIN`).
  *
  * Pourquoi pas `import.meta.env` : `tsconfig.json` (celui du serveur) compile en
  * `module: commonjs`, où `import.meta` est interdit — même pour un fichier
  * client, dès qu'un test l'importe. Le projet utilisait déjà ce motif pour
- * `__AYROVI_BUILD_STAMP__` ; on le reprend plutôt que d'ouvrir une exception.
+ * `__ZAYROVI_BUILD_STAMP__` ; on le reprend plutôt que d'ouvrir une exception.
  * `typeof` protège l'exécution hors Vite (tests unitaires) : la constante
  * n'existe alors simplement pas, et le repli de production s'applique.
  */
-declare const __AYROVI_API_ORIGIN__: string | undefined;
+declare const __ZAYROVI_API_ORIGIN__: string | undefined;
 
-const rawOrigin = typeof __AYROVI_API_ORIGIN__ === 'undefined' ? '' : __AYROVI_API_ORIGIN__;
+const rawOrigin = typeof __ZAYROVI_API_ORIGIN__ === 'undefined' ? '' : __ZAYROVI_API_ORIGIN__;
 const configured = normalizeApiOrigin(rawOrigin);
 if (rawOrigin && !configured) throw new Error('HTTPS_API_ORIGIN_REQUIRED');
 
-export const AYROVI_API_ORIGIN = configured || PRODUCTION_ORIGIN;
+export const ZAYROVI_API_ORIGIN = configured || PRODUCTION_ORIGIN;

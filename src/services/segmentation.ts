@@ -38,7 +38,7 @@ export async function segmentationReady(): Promise<boolean> {
 }
 
 async function loadSession(): Promise<{ run: (input: Float32Array) => Promise<Float32Array> } | null> {
-  if (process.env.AYROVI_SEGMENTATION === 'false') return null;
+  if (process.env.ZAYROVI_SEGMENTATION === 'false') return null;
   if (sessionPromise) return sessionPromise;
   sessionPromise = (async () => {
     try {

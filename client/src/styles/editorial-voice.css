@@ -14,7 +14,7 @@
 .editorial-voice__talk:disabled { opacity:1; }
 .editorial-voice__talk>span { position:absolute; bottom:8px; inset-inline-end:8px; display:flex; }
 .editorial-voice-level { width:100%; height:100%; }
-.editorial-voice__signal h2 { font-family:var(--ayrovi-font-display); font-size:clamp(26px,4vw,36px); font-weight:var(--ay-font-heading-weight); line-height:var(--ay-font-heading-line-height); margin:0; overflow-wrap:anywhere; }
+.editorial-voice__signal h2 { font-family:var(--zayrovi-font-display); font-size:clamp(26px,4vw,36px); font-weight:var(--ay-font-heading-weight); line-height:var(--ay-font-heading-line-height); margin:0; overflow-wrap:anywhere; }
 .editorial-voice__signal p, .voice-caption { color:var(--ay-e-muted); font-size:13px; line-height:var(--ay-font-body-line-height); margin:8px 0 0; }
 .editorial-voice:lang(ar) .editorial-voice__signal p, .editorial-voice:lang(ar) .voice-caption { line-height:var(--ay-font-arabic-line-height); }
 .editorial-voice[data-voice-state=error] .editorial-voice__signal h2 { color:var(--ay-e-danger); }

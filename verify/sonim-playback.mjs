@@ -9,7 +9,7 @@ try {
     const ar=locale==='ar',key=`${locale}/${width}`;
     const context=await browser.newContext({viewport:{width,height:844},reducedMotion:'reduce'});
     await context.addInitScript(locale=>{
-      localStorage.setItem('ayrovi.locale.v1',locale);
+      localStorage.setItem('zayrovi.locale.v1',locale);
       const m=window.playbackTest={requests:[],decodes:[],sources:[],utterances:[],events:[],results:[],cancels:0};
       const original=window.fetch.bind(window);
       window.fetch=(url,init)=>String(url)==='/api/assistant/voice/tts'
@@ -29,7 +29,7 @@ try {
     },locale);
     page=await context.newPage();page.on('pageerror',error=>errors.push(error.message));
     await page.route('**/api/assistant/status',route=>route.fulfill({json:{success:true,data:{serverTextToSpeechReady:false}}}));
-    await page.goto(process.env.AYROVI_BASE_URL+'/__verify/sonim');await page.locator('[data-open]').waitFor();
+    await page.goto(process.env.ZAYROVI_BASE_URL+'/__verify/sonim');await page.locator('[data-open]').waitFor();
     const start=async({text=ar?'السعر {30 TND} item_code\n\nhttps://example.test/p#size':'Prix {30 TND} item_code\n\nhttps://example.test/p#size',server=true,settings={voiceId:'Puck',gender:'male',rate:.9}}={})=>{
       await page.evaluate(({text,server,settings,locale})=>{
         window.playback?.dispose();window.playback=new window.sonimTestVoiceOutput();

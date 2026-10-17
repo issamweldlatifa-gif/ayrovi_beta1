@@ -1,4 +1,4 @@
-# AYROVIX Lens — maquettes approuvées (application React Native)
+# ZAYROVIX Lens — maquettes approuvées (application React Native)
 
 Document de référence (dans le dépôt pour ne pas être perdu). Chaque section : ce que montre la maquette, la décision, et l'état réel dans `apps/mobile`.
 Les maquettes sont des visuels de référence : la mise en œuvre suit les **données réelles** du serveur (aucun prix, promo ou pourcentage inventé).

@@ -16,10 +16,10 @@ import path from 'node:path';
 import request from 'supertest';
 import { app, db } from '../src/server';
 import { groupOffers } from '../src/ayrovix/services/search';
-import type { AyrovixCandidate } from '../src/ayrovix/types';
+import type { ZayrovixCandidate } from '../src/ayrovix/types';
 
 const read = (rel: string) => fs.readFileSync(path.resolve(process.cwd(), rel), 'utf8');
-const candidate = (over: Partial<AyrovixCandidate>): AyrovixCandidate => ({
+const candidate = (over: Partial<ZayrovixCandidate>): ZayrovixCandidate => ({
   id: 'x', kind: 'external', title: 'Nike Air Max 90', brand: 'Nike', model: null,
   colors: [], sizes: [], source: 'Marché International', sourceUrl: 'https://example.com/p',
   image: '', price: 100, currency: 'EUR', priceTnd: 300, match: 80, ...over,
@@ -85,7 +85,7 @@ describe('GLOBAL DISCOVERY — architecture source-agnostique', () => {
       .set('x-session-id', sessionId)
       .set('x-csrf-token', csrf)
       .send({
-        email: 'global.discovery@ayrovi.test',
+        email: 'global.discovery@zayrovi.test',
         termsAccepted: true,
         locale: 'fr-TN',
         name: 'Client Global Discovery',
@@ -120,9 +120,9 @@ describe('GLOBAL DISCOVERY — architecture source-agnostique', () => {
     expect(single.offerCount).toBeUndefined();
   });
 
-  test('le catalogue AYROVI n’est jamais regroupé avec les offres externes', () => {
+  test('le catalogue ZAYROVI n’est jamais regroupé avec les offres externes', () => {
     const result = groupOffers([
-      candidate({ id: 'cat', kind: 'catalog', source: 'Collection AYROVI', title: 'Nike Air Max 90', priceTnd: 300, match: 90 }),
+      candidate({ id: 'cat', kind: 'catalog', source: 'Collection ZAYROVI', title: 'Nike Air Max 90', priceTnd: 300, match: 90 }),
       candidate({ id: 'ext', source: 'Boutique B', title: 'Nike Air Max 90', priceTnd: 280, match: 75 }),
     ]);
     expect(result).toHaveLength(2);

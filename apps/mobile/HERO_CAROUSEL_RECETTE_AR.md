@@ -1,6 +1,6 @@
 # recette carrousel Hero — à exécuter sur appareil / émulateur
 
-**Date** : 2026-10-09 · **Branche** : `arena/bc19f283-ayrovi-beta1` · **PR** : #27
+**Date** : 2026-10-09 · **Branche** : `arena/bc19f283-zayrovi-beta1` · **PR** : #27
 
 Cette matrice complète les tests automatisés (2555 racine + 442 mobile, tous verts) :
 elle valide le **rendu réel** sur un appareil, une fois les visuels uploadés.

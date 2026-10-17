@@ -1,5 +1,5 @@
 /**
- * AYROVI Catalogue (P2.1) — the canonical product service.
+ * ZAYROVI Catalogue (P2.1) — the canonical product service.
  *
  * `products` stays the product identity: it is the table the storefront (`GET
  * /api/public/products`), the cart, `order_items.product_id`, `promotion_products`,

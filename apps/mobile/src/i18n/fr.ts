@@ -203,7 +203,7 @@ export const fr = {
   'news.category.NEW_BRAND': 'Nouvelle marque',
   'news.category.PROMOTION': 'Promotion',
   'news.category.DELIVERY': 'Livraison',
-  'news.category.AYROVI': 'ZAYROVI',
+  'news.category.ZAYROVI': 'ZAYROVI',
   'news.category.INFORMATION': 'Information',
   'news.category.OTHER': 'Autre',
   'footer.about': 'À propos',

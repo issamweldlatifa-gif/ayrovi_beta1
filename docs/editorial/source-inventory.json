@@ -1307,7 +1307,7 @@
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
-          "onClick": "{()=>downloadCsv(csvFileName('ayrovi-journal-audit'),AUDIT_COLUMNS,rows)}",
+          "onClick": "{()=>downloadCsv(csvFileName('zayrovi-journal-audit'),AUDIT_COLUMNS,rows)}",
           "disabled": "{loading||rows.length===0}"
         },
         {
@@ -7789,7 +7789,7 @@
       "icons": [
         {
           "module": "../components/QatafoIcons",
-          "bindings": "{\n  ArrowDown, ArrowUp, AyWebs, Eye as AyroviEye, EyeOff, Heart, Home, Image as ImageIcon, LayoutGrid,\n  LensBox, Menu, Monitor, MousePointer2, Navigation, Palette, RotateCcw, Save, ScanSearch,\n  ShoppingBag, SlidersHorizontal, Sparkles, Type, User,\n}",
+          "bindings": "{\n  ArrowDown, ArrowUp, AyWebs, Eye as ZayroviEye, EyeOff, Heart, Home, Image as ImageIcon, LayoutGrid,\n  LensBox, Menu, Monitor, MousePointer2, Navigation, Palette, RotateCcw, Save, ScanSearch,\n  ShoppingBag, SlidersHorizontal, Sparkles, Type, User,\n}",
           "line": 2
         }
       ],
@@ -11252,7 +11252,7 @@
           "className": "\"inline-flex min-h-[44px] w-fit items-center gap-1 rounded-xl px-2 text-xs font-extrabold text-ink\"",
           "type": "\"button\"",
           "role": null,
-          "ariaLabel": "{tr('Retour à AYROVIX Lens', 'العودة إلى عدسة AYROVIX')}",
+          "ariaLabel": "{tr('Retour à ZAYROVIX Lens', 'العودة إلى عدسة ZAYROVIX')}",
           "onClick": "{onClose}",
           "disabled": null
         },
@@ -11574,7 +11574,7 @@
           "className": "{`grid h-11 w-11 place-items-center rounded-full ${control}`}",
           "type": "\"button\"",
           "role": null,
-          "ariaLabel": "{tr('Quitter AYROVIX Lens', 'مغادرة عدسة AYROVIX')}",
+          "ariaLabel": "{tr('Quitter ZAYROVIX Lens', 'مغادرة عدسة ZAYROVIX')}",
           "onClick": "{onExit}",
           "disabled": null
         },
@@ -11604,7 +11604,7 @@
           "className": "{`grid h-11 w-11 place-items-center rounded-full ${control}`}",
           "type": "\"button\"",
           "role": null,
-          "ariaLabel": "{tr('Menu AYROVIX Lens', 'قائمة عدسة AYROVIX')}",
+          "ariaLabel": "{tr('Menu ZAYROVIX Lens', 'قائمة عدسة ZAYROVIX')}",
           "onClick": "{onMenu}",
           "disabled": null
         },
@@ -12240,9 +12240,9 @@
         "../types"
       ],
       "exports": [
-        "readLocalAyrovixHistory",
-        "rememberAyrovixHistory",
-        "loadAyrovixHistory"
+        "readLocalZayrovixHistory",
+        "rememberZayrovixHistory",
+        "loadZayrovixHistory"
       ],
       "controls": [],
       "icons": [],
@@ -12279,7 +12279,7 @@
         "../../utils/session"
       ],
       "exports": [
-        "AyrovixApiError",
+        "ZayrovixApiError",
         "analyzeImage",
         "analyzeUrl",
         "requestManualReview",
@@ -13040,7 +13040,7 @@
         "./voice/types",
         "../../hooks/useBodyScrollLock",
         "../../utils/session",
-        "../AyroviMotion",
+        "../ZayroviMotion",
         "../../ayrovix/services/lensApi",
         "../../ayrovix/types",
         "../../shop",
@@ -13111,7 +13111,7 @@
       "lines": 132,
       "imports": [
         "../../utils/session",
-        "../AyroviMotion",
+        "../ZayroviMotion",
         "./types"
       ],
       "exports": [
@@ -13245,7 +13245,7 @@
       "lines": 29,
       "imports": [
         "react",
-        "../AyroviMotion"
+        "../ZayroviMotion"
       ],
       "exports": [
         "AssistantBrandMark"
@@ -13674,7 +13674,7 @@
         "./useMessageReader",
         "./composerPolicy",
         "../QatafoIcons",
-        "../AyroviMotion",
+        "../ZayroviMotion",
         "./AssistantBrandMark",
         "../../shop",
         "../../shop",
@@ -13999,7 +13999,7 @@
           "className": "\"voice-icon-button\"",
           "type": "\"button\"",
           "role": null,
-          "ariaLabel": "{onOpenLens ? tr('Scanner avec AYROVIX Lens','فحص مع AYROVIX Lens') : tr('Choisir une photo','اختيار صورة')}",
+          "ariaLabel": "{onOpenLens ? tr('Scanner avec ZAYROVIX Lens','فحص مع ZAYROVIX Lens') : tr('Choisir une photo','اختيار صورة')}",
           "onClick": "{() => onOpenLens ? onOpenLens() : fileRef.current?.click()}",
           "disabled": "{!onOpenLens && !onAddAttachment}"
         },
@@ -14429,7 +14429,7 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/components/AyroviMotion.tsx",
+      "file": "client/src/components/ZayroviMotion.tsx",
       "domain": "shell-content",
       "sha256": "12c42e205c69c22e02c779fcbeaefaf7fddc767d9fec6bd158f183daba41c45d",
       "lines": 32,
@@ -14438,7 +14438,7 @@
         "./QatafoIcons"
       ],
       "exports": [
-        "AyroviMotion"
+        "ZayroviMotion"
       ],
       "controls": [],
       "icons": [
@@ -14497,7 +14497,7 @@
           "className": "{NAV_ITEM}",
           "type": "\"button\"",
           "role": null,
-          "ariaLabel": "{tr(\"SONIM — l'assistant IA d'AYROVI\", 'SONIM — المساعد الذكي لـ AYROVI')}",
+          "ariaLabel": "{tr(\"SONIM — l'assistant IA d'ZAYROVI\", 'SONIM — المساعد الذكي لـ ZAYROVI')}",
           "onClick": "{onToggleAiDrawer}",
           "disabled": null
         },
@@ -15700,7 +15700,7 @@
           "className": null,
           "type": null,
           "role": null,
-          "ariaLabel": "{`${tr('AYROVI sur', 'AYROVI على')} ${label}`}",
+          "ariaLabel": "{`${tr('ZAYROVI sur', 'ZAYROVI على')} ${label}`}",
           "onClick": null,
           "disabled": null
         },
@@ -15817,7 +15817,7 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/components/icons/ayrovi/AyroviIcon.tsx",
+      "file": "client/src/components/icons/zayrovi/ZayroviIcon.tsx",
       "domain": "shared-design",
       "sha256": "72ebc78b35e780ce421febcfa8363c5ef566eef2c874250152550d7030d1026b",
       "lines": 25,
@@ -15829,10 +15829,10 @@
         "../../../design/editorial/glyphs.json"
       ],
       "exports": [
-        "AYROVI_ICON_SIZE",
-        "AYROVI_STROKE",
-        "AYROVI_CORNER",
-        "createAyroviIcon"
+        "ZAYROVI_ICON_SIZE",
+        "ZAYROVI_STROKE",
+        "ZAYROVI_CORNER",
+        "createZayroviIcon"
       ],
       "controls": [],
       "icons": [],
@@ -15842,113 +15842,113 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/components/icons/ayrovi/catalog.tsx",
+      "file": "client/src/components/icons/zayrovi/catalog.tsx",
       "domain": "shared-design",
       "sha256": "ab73a7859c7b024079401baf0c9b1a08056054cb6a55c3b2e40ed608f0c7c111",
       "lines": 104,
       "imports": [
-        "./AyroviIcon"
+        "./ZayroviIcon"
       ],
       "exports": [
-        "AyroviMenu",
-        "AyroviBack",
-        "AyroviClose",
-        "AyroviOptions",
-        "AyroviHome",
-        "AyroviChevronRight",
-        "AyroviChevronLeft",
-        "AyroviChevronDown",
-        "AyroviSearch",
-        "AyroviArrowRight",
-        "AyroviArrowUp",
-        "AyroviArrowDown",
-        "AyroviArrowUpRight",
-        "AyroviSwap",
-        "AyroviNav",
-        "AyroviPlus",
-        "AyroviStory",
-        "AyroviPerson",
-        "AyroviMinus",
-        "AyroviCheck",
-        "AyroviEdit",
-        "AyroviTrash",
-        "AyroviCopy",
-        "AyroviSave",
-        "AyroviShare",
-        "AyroviRefresh",
-        "AyroviUndo",
-        "AyroviLoader",
-        "AyroviPointer",
-        "AyroviSquare",
-        "AyroviPause",
-        "AyroviBag",
-        "AyroviHeart",
-        "AyroviHeartFilled",
-        "AyroviCube",
-        "AyroviPackageCheck",
-        "AyroviPercent",
-        "AyroviTag",
-        "AyroviGift",
-        "AyroviStar",
-        "AyroviCard",
-        "AyroviBank",
-        "AyroviMail",
-        "AyroviReceipt",
-        "AyroviTruck",
-        "AyroviCalculator",
-        "AyroviClipboard",
-        "AyroviHistory",
-        "AyroviChart",
-        "AyroviSparkles",
-        "AyroviLens",
-        "AyroviScan",
-        "AyroviEye",
-        "AyroviEyeOff",
-        "AyroviBarcode",
-        "AyroviCamera",
-        "AyroviPlug",
-        "AyroviLink",
-        "AyroviImage",
-        "AyroviZap",
-        "AyroviChat",
-        "AyroviMessage",
-        "AyroviPhone",
-        "AyroviBell",
-        "AyroviInfo",
-        "AyroviSuccess",
-        "AyroviAlert",
-        "AyroviThumbsUp",
-        "AyroviThumbsDown",
-        "AyroviMic",
-        "AyroviMicOff",
-        "AyroviVoiceWave",
-        "AyroviVideo",
-        "AyroviVolume",
-        "AyroviVolumeOff",
-        "AyroviUser",
-        "AyroviLock",
-        "AyroviLogout",
-        "AyroviPin",
-        "AyroviLocate",
-        "AyroviShield",
-        "AyroviMoon",
-        "AyroviSettings",
-        "AyroviSliders",
-        "AyroviGrid",
-        "AyroviBookmark",
-        "AyroviFile",
-        "AyroviCalendar",
-        "AyroviType",
-        "AyroviMonitor",
-        "AyroviPalette",
-        "AyroviGlobe",
-        "AyroviHourglass",
-        "AyroviExternal",
-        "AyroviPlay",
-        "AyroviGrip",
-        "AyroviSonim",
-        "AyroviVision",
-        "AyroviAyWebs"
+        "ZayroviMenu",
+        "ZayroviBack",
+        "ZayroviClose",
+        "ZayroviOptions",
+        "ZayroviHome",
+        "ZayroviChevronRight",
+        "ZayroviChevronLeft",
+        "ZayroviChevronDown",
+        "ZayroviSearch",
+        "ZayroviArrowRight",
+        "ZayroviArrowUp",
+        "ZayroviArrowDown",
+        "ZayroviArrowUpRight",
+        "ZayroviSwap",
+        "ZayroviNav",
+        "ZayroviPlus",
+        "ZayroviStory",
+        "ZayroviPerson",
+        "ZayroviMinus",
+        "ZayroviCheck",
+        "ZayroviEdit",
+        "ZayroviTrash",
+        "ZayroviCopy",
+        "ZayroviSave",
+        "ZayroviShare",
+        "ZayroviRefresh",
+        "ZayroviUndo",
+        "ZayroviLoader",
+        "ZayroviPointer",
+        "ZayroviSquare",
+        "ZayroviPause",
+        "ZayroviBag",
+        "ZayroviHeart",
+        "ZayroviHeartFilled",
+        "ZayroviCube",
+        "ZayroviPackageCheck",
+        "ZayroviPercent",
+        "ZayroviTag",
+        "ZayroviGift",
+        "ZayroviStar",
+        "ZayroviCard",
+        "ZayroviBank",
+        "ZayroviMail",
+        "ZayroviReceipt",
+        "ZayroviTruck",
+        "ZayroviCalculator",
+        "ZayroviClipboard",
+        "ZayroviHistory",
+        "ZayroviChart",
+        "ZayroviSparkles",
+        "ZayroviLens",
+        "ZayroviScan",
+        "ZayroviEye",
+        "ZayroviEyeOff",
+        "ZayroviBarcode",
+        "ZayroviCamera",
+        "ZayroviPlug",
+        "ZayroviLink",
+        "ZayroviImage",
+        "ZayroviZap",
+        "ZayroviChat",
+        "ZayroviMessage",
+        "ZayroviPhone",
+        "ZayroviBell",
+        "ZayroviInfo",
+        "ZayroviSuccess",
+        "ZayroviAlert",
+        "ZayroviThumbsUp",
+        "ZayroviThumbsDown",
+        "ZayroviMic",
+        "ZayroviMicOff",
+        "ZayroviVoiceWave",
+        "ZayroviVideo",
+        "ZayroviVolume",
+        "ZayroviVolumeOff",
+        "ZayroviUser",
+        "ZayroviLock",
+        "ZayroviLogout",
+        "ZayroviPin",
+        "ZayroviLocate",
+        "ZayroviShield",
+        "ZayroviMoon",
+        "ZayroviSettings",
+        "ZayroviSliders",
+        "ZayroviGrid",
+        "ZayroviBookmark",
+        "ZayroviFile",
+        "ZayroviCalendar",
+        "ZayroviType",
+        "ZayroviMonitor",
+        "ZayroviPalette",
+        "ZayroviGlobe",
+        "ZayroviHourglass",
+        "ZayroviExternal",
+        "ZayroviPlay",
+        "ZayroviGrip",
+        "ZayroviSonim",
+        "ZayroviVision",
+        "ZayroviAyWebs"
       ],
       "controls": [],
       "icons": [],
@@ -15958,7 +15958,7 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/components/icons/ayrovi/index.ts",
+      "file": "client/src/components/icons/zayrovi/index.ts",
       "domain": "shared-design",
       "sha256": "51bc0373abfd482100d8d4f0ed1256577f30b29a7f533cdbdff2aea43ad03340",
       "lines": 4,
@@ -16181,7 +16181,7 @@
           "className": "\"flex items-center bg-transparent\"",
           "type": "\"button\"",
           "role": null,
-          "ariaLabel": "\"AYROVI\"",
+          "ariaLabel": "\"ZAYROVI\"",
           "onClick": "{onGoHome}",
           "disabled": null
         },
@@ -16687,8 +16687,8 @@
       "sha256": "8134cca71fa6059134201daa4b8714641794639df5ede9a89d39d56d426df5e8",
       "lines": 129,
       "imports": [
-        "./icons/ayrovi",
-        "./icons/ayrovi/catalog"
+        "./icons/zayrovi",
+        "./icons/zayrovi/catalog"
       ],
       "exports": [
         "Menu",
@@ -16797,12 +16797,12 @@
       "controls": [],
       "icons": [
         {
-          "module": "./icons/ayrovi",
-          "bindings": "type { AyroviIconProps }",
+          "module": "./icons/zayrovi",
+          "bindings": "type { ZayroviIconProps }",
           "line": 6
         },
         {
-          "module": "./icons/ayrovi/catalog",
+          "module": "./icons/zayrovi/catalog",
           "bindings": "* as I",
           "line": 7
         }
@@ -17031,7 +17031,7 @@
       ],
       "exports": [
         "PUBLIC_SECTION_IDS",
-        "AYROVI_FONT_STACK",
+        "ZAYROVI_FONT_STACK",
         "INTERFACE_FONT_PRESETS",
         "INTERFACE_ICON_LIBRARIES",
         "DEFAULT_INTERFACE_CONFIG",
@@ -17848,7 +17848,7 @@
           "className": "\"shrink-0 bg-transparent\"",
           "type": "\"button\"",
           "role": null,
-          "ariaLabel": "\"AYROVI\"",
+          "ariaLabel": "\"ZAYROVI\"",
           "onClick": "{onLogoClick}",
           "disabled": null
         }
@@ -17967,10 +17967,10 @@
       "colors": [],
       "fontDeclarations": [
         "font-family: var(--ay-font-stack)",
-        "font-family: var(--ayrovi-font-display)",
-        "font-family: var(--ayrovi-font-display)",
-        "font-family: var(--ayrovi-font-display)",
-        "font-family: var(--ayrovi-font-display)"
+        "font-family: var(--zayrovi-font-display)",
+        "font-family: var(--zayrovi-font-display)",
+        "font-family: var(--zayrovi-font-display)",
+        "font-family: var(--zayrovi-font-display)"
       ],
       "apiReferences": []
     },
@@ -18128,8 +18128,8 @@
         "font-family: \"Noto Sans Arabic\"",
         "--ay-font-stack: 'Zalando Sans', 'Noto Sans Arabic', sans-serif",
         "--font-primary: var(--ay-font-stack)",
-        "--ayrovi-font-body: var(--ay-font-stack)",
-        "--ayrovi-font-display: var(--ay-font-stack)",
+        "--zayrovi-font-body: var(--ay-font-stack)",
+        "--zayrovi-font-display: var(--ay-font-stack)",
         "--ay-font-heading-width: 100%",
         "--ay-font-heading-weight: 650",
         "--ay-font-label-weight: 700",
@@ -18386,9 +18386,9 @@
         "--font-weight-medium: 500",
         "--font-weight-semibold: 600",
         "--font-weight-bold: 700",
-        "--ayrovi-font-display: var(--font-primary)",
-        "--ayrovi-font-body: var(--font-primary)",
-        "--ayrovi-font: var(--ayrovi-font-body)"
+        "--zayrovi-font-display: var(--font-primary)",
+        "--zayrovi-font-body: var(--font-primary)",
+        "--zayrovi-font: var(--zayrovi-font-body)"
       ],
       "apiReferences": []
     },
@@ -18776,7 +18776,7 @@
         "removeAyWebsCartItem",
         "acceptAyWebsCartPrice",
         "verifyAyWebsCart",
-        "bridgeAyWebsCartToAyrovi",
+        "bridgeAyWebsCartToZayrovi",
         "previewAyWebsCheckout",
         "createAyWebsOrder",
         "listAyWebsOrders",
@@ -20089,7 +20089,7 @@
       "imports": [],
       "exports": [
         "normalizeApiOrigin",
-        "AYROVI_API_ORIGIN"
+        "ZAYROVI_API_ORIGIN"
       ],
       "controls": [],
       "icons": [],
@@ -21738,7 +21738,7 @@
         "#1c5db5"
       ],
       "fontDeclarations": [
-        "font-family: var(--ayrovi-font-display)"
+        "font-family: var(--zayrovi-font-display)"
       ],
       "apiReferences": []
     },
@@ -21773,7 +21773,7 @@
       "colors": [],
       "fontDeclarations": [
         "font-family:var(--ay-font-stack)",
-        "font-family:var(--ayrovi-font-display)"
+        "font-family:var(--zayrovi-font-display)"
       ],
       "apiReferences": []
     },
@@ -21789,7 +21789,7 @@
       "inlineSvg": [],
       "colors": [],
       "fontDeclarations": [
-        "font-family:var(--ayrovi-font-body)"
+        "font-family:var(--zayrovi-font-body)"
       ],
       "apiReferences": []
     },

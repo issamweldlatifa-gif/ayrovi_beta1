@@ -67,20 +67,20 @@ export const Navbar: React.FC<NavbarProps> = ({
             <Menu className="h-6 w-6" />
           </Button>
         </div>
-        <button type="button" onClick={onGoHome} className="flex items-center bg-transparent" aria-label="AYROVI">
-          {logoUrl && logoUrl !== '/media/logo-ayrovi.png' ? (
+        <button type="button" onClick={onGoHome} className="flex items-center bg-transparent" aria-label="ZAYROVI">
+          {logoUrl && logoUrl !== '/media/logo-zayrovi.png' ? (
             <>
               <img
-                src={overHero ? '/media/logo-ayrovi-light.png' : logoUrl}
+                src={overHero ? '/media/logo-zayrovi-light.png' : logoUrl}
                 alt=""
                 className={`h-11 w-11 bg-transparent object-contain transition-opacity duration-300 sm:h-11 sm:w-11 ${overHero ? '' : 'brightness-0'}`}
               />
-              <strong className={`font-display text-lg font-black tracking-tight transition-colors duration-300 sm:text-xl ${overHero ? 'text-white' : 'text-ink'}`}>AYROVI</strong>
+              <strong className={`font-display text-lg font-black tracking-tight transition-colors duration-300 sm:text-xl ${overHero ? 'text-white' : 'text-ink'}`}>ZAYROVI</strong>
             </>
           ) : (
             <img
-              src={overHero ? '/media/logo-ayrovi-lockup-white-orange.svg' : '/media/logo-ayrovi-lockup-black-orange.svg'}
-              alt="AYROVI"
+              src={overHero ? '/media/logo-zayrovi-lockup-white-orange.svg' : '/media/logo-zayrovi-lockup-black-orange.svg'}
+              alt="ZAYROVI"
               className="h-7 w-auto bg-transparent object-contain transition-opacity duration-300 sm:h-8"
             />
           )}
@@ -105,7 +105,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={onOpenAccount}
             className={`relative ${iconButtonClass ?? ''}`}
             aria-label={tr('Ouvrir mon espace', 'فتح فضائي')}
-            title={isAuthenticated ? tr('Mon compte AYROVI', 'حسابي في AYROVI') : tr('Se connecter', 'تسجيل الدخول')}
+            title={isAuthenticated ? tr('Mon compte ZAYROVI', 'حسابي في ZAYROVI') : tr('Se connecter', 'تسجيل الدخول')}
           >
             <User className="h-6 w-6" />
             {isAuthenticated && <span className="absolute bottom-2 end-2 h-2.5 w-2.5 rounded-full border-2 border-white bg-ink" />}

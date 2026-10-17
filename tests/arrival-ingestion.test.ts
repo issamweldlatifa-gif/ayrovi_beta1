@@ -114,7 +114,7 @@ function createHarness(autoRunJobs = true): Harness {
   ensureBootstrapAdmin(db);
   const admin = db.get<any>('SELECT * FROM admin_users ORDER BY created_at LIMIT 1');
   const session = createAdminSession(db, admin);
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ayrovi-arrival-ingestion-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'zayrovi-arrival-ingestion-'));
   const adapter = new DeterministicIngestionAdapter();
   const module = createArrivalIngestionModule(db, { aiAdapter: adapter, sourceRoot: root, autoRunJobs });
   const app = express();

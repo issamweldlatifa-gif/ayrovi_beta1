@@ -1,5 +1,5 @@
 /**
- * AYROVI Purchasing (P2.3) — API du back-office.
+ * ZAYROVI Purchasing (P2.3) — API du back-office.
  *
  * Monté sous `/api/admin/purchasing` par le routeur admin existant : il hérite du cookie de
  * session (`Path=/api/admin`) et rien ici n'est atteignable anonymement. Chaque route compose les

@@ -1,5 +1,5 @@
 /**
- * AYROVI ERP Core — Central event foundation (P1).
+ * ZAYROVI ERP Core — Central event foundation (P1).
  *
  * No queue, no broker: an in-process typed bus plus a durable `erp_events`
  * record so that "what happened" is queryable before any consumer exists.

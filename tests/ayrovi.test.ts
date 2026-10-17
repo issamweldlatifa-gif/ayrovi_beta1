@@ -7,12 +7,12 @@ import { app, db, scraper } from '../src/server';
 import { DEFAULT_PAYMENT_METHODS, QatafoDatabase } from '../src/db/database';
 import { calculatePrice } from '../src/services/pricing';
 import { createCustomerSession, hashToken } from '../src/customer/auth';
-import { createAyrovixPriceToken } from '../src/ayrovix/priceQuote';
+import { createZayrovixPriceToken } from '../src/ayrovix/priceQuote';
 import { verifyKonnectCardPayment } from '../src/services/paymentGateway';
 
 const uniqueSession = (label: string) => `${label}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-const checkoutDefaults = { email: 'google.merge@ayrovi.test', termsAccepted: true, locale: 'fr-TN' };
+const checkoutDefaults = { email: 'google.merge@zayrovi.test', termsAccepted: true, locale: 'fr-TN' };
 
 const createCartItem = (title = 'Muchica Matching Set') => ({
   store: 'shein',
@@ -128,7 +128,7 @@ describe('AYSONIC platform', () => {
     };
     process.env.GOOGLE_CLIENT_ID = 'test-google-client';
     process.env.GOOGLE_CLIENT_SECRET = 'test-google-secret';
-    process.env.GOOGLE_CALLBACK_URL = 'https://ayrovi.example/api/customer/auth/google/callback';
+    process.env.GOOGLE_CALLBACK_URL = 'https://zayrovi.example/api/customer/auth/google/callback';
     try {
       const browser = request.agent(app);
       const started = await browser.get('/api/customer/auth/google/start?returnTo=/compte');
@@ -164,7 +164,7 @@ describe('AYSONIC platform', () => {
     };
     process.env.GOOGLE_CLIENT_ID = 'test-google-client';
     process.env.GOOGLE_CLIENT_SECRET = 'test-google-secret';
-    process.env.GOOGLE_CALLBACK_URL = 'https://ayrovi.example/api/customer/auth/google/callback';
+    process.env.GOOGLE_CALLBACK_URL = 'https://zayrovi.example/api/customer/auth/google/callback';
     const fetchMock = vi.spyOn(globalThis, 'fetch');
     const mockGoogle = (profile: Record<string, unknown>) => {
       fetchMock
@@ -175,13 +175,13 @@ describe('AYSONIC platform', () => {
       const now = new Date().toISOString();
       const googleSourceId = `google_source_${Date.now()}`;
       db.run(`INSERT INTO customer_accounts (id,display_name,email,email_verified_at,status,created_at,updated_at)
-        VALUES (?,'Compte Google','google.merge@ayrovi.test',?,'ACTIVE',?,?)`, googleSourceId, now, now, now);
+        VALUES (?,'Compte Google','google.merge@zayrovi.test',?,'ACTIVE',?,?)`, googleSourceId, now, now, now);
       db.run(`INSERT INTO customer_auth_identities (id,account_id,provider,provider_subject,created_at)
         VALUES (?,?, 'GOOGLE','google-merge-subject',?)`, `identity_${Date.now()}`, googleSourceId, now);
 
       const startedLink = await customerAgent.get('/api/customer/auth/google/start?returnTo=/compte');
       const linkState = new URL(startedLink.headers.location).searchParams.get('state');
-      mockGoogle({ sub: 'google-merge-subject', email: 'google.merge@ayrovi.test', email_verified: true, name: 'Compte Google', picture: 'https://example.com/avatar.jpg' });
+      mockGoogle({ sub: 'google-merge-subject', email: 'google.merge@zayrovi.test', email_verified: true, name: 'Compte Google', picture: 'https://example.com/avatar.jpg' });
       const linked = await customerAgent.get('/api/customer/auth/google/callback').query({ state: linkState, code: 'valid-link-code' });
       expect(linked.status).toBe(302);
       expect(linked.headers.location).toBe('/compte?customerAuth=success');
@@ -194,25 +194,25 @@ describe('AYSONIC platform', () => {
       const mergedAccount = db.get<any>('SELECT phone,email,phone_verified_at,email_verified_at FROM customer_accounts WHERE id=?', primaryAccountId);
       expect(mergedAccount.phone).toBe('+21698123456');
       expect(mergedAccount.phone_verified_at).toBeTruthy();
-      expect(mergedAccount.email).toBe('google.merge@ayrovi.test');
+      expect(mergedAccount.email).toBe('google.merge@zayrovi.test');
       expect(mergedAccount.email_verified_at).toBeTruthy();
       const refreshedPrimary = await customerAgent.get('/api/customer/auth/me');
       customerCsrf = refreshedPrimary.body.data.csrfToken;
 
       const squatterId = `email_squatter_${Date.now()}`;
       db.run(`INSERT INTO customer_accounts (id,display_name,email,status,created_at,updated_at)
-        VALUES (?,'Compte non vérifié','victim.google@ayrovi.test','ACTIVE',?,?)`, squatterId, now, now);
+        VALUES (?,'Compte non vérifié','victim.google@zayrovi.test','ACTIVE',?,?)`, squatterId, now, now);
       const victimBrowser = request.agent(app);
       const startedVictim = await victimBrowser.get('/api/customer/auth/google/start?returnTo=/compte');
       const victimState = new URL(startedVictim.headers.location).searchParams.get('state');
-      mockGoogle({ sub: 'verified-victim-subject', email: 'victim.google@ayrovi.test', email_verified: true, name: 'Client vérifié', picture: '' });
+      mockGoogle({ sub: 'verified-victim-subject', email: 'victim.google@zayrovi.test', email_verified: true, name: 'Client vérifié', picture: '' });
       const victimCallback = await victimBrowser.get('/api/customer/auth/google/callback').query({ state: victimState, code: 'valid-victim-code' });
       expect(victimCallback.status).toBe(302);
       expect(victimCallback.headers.location).toBe('/compte?customerAuth=success');
       const victimIdentity = await victimBrowser.get('/api/customer/auth/me');
       expect(victimIdentity.status).toBe(200);
       expect(victimIdentity.body.data.account.id).not.toBe(squatterId);
-      expect(victimIdentity.body.data.account.email).toBe('victim.google@ayrovi.test');
+      expect(victimIdentity.body.data.account.email).toBe('victim.google@zayrovi.test');
       expect(victimIdentity.body.data.account.emailVerified).toBe(true);
       expect(db.get<any>('SELECT email FROM customer_accounts WHERE id=?', squatterId).email).toBeNull();
     } finally {
@@ -235,7 +235,7 @@ describe('AYSONIC platform', () => {
     };
     process.env.FACEBOOK_APP_ID = '123456789012345';
     process.env.FACEBOOK_APP_SECRET = 'test-facebook-secret';
-    process.env.FACEBOOK_CALLBACK_URL = 'https://ayrovi.example/api/customer/auth/facebook/callback';
+    process.env.FACEBOOK_CALLBACK_URL = 'https://zayrovi.example/api/customer/auth/facebook/callback';
     process.env.FACEBOOK_GRAPH_VERSION = 'v26.0';
     try {
       const browser = request.agent(app);
@@ -274,11 +274,11 @@ describe('AYSONIC platform', () => {
     };
     process.env.FACEBOOK_APP_ID = '123456789012345';
     process.env.FACEBOOK_APP_SECRET = 'test-facebook-secret';
-    process.env.FACEBOOK_CALLBACK_URL = 'https://ayrovi.example/api/customer/auth/facebook/callback';
+    process.env.FACEBOOK_CALLBACK_URL = 'https://zayrovi.example/api/customer/auth/facebook/callback';
     process.env.FACEBOOK_GRAPH_VERSION = 'v26.0';
     const fetchMock = vi.spyOn(globalThis, 'fetch');
     const now = new Date().toISOString();
-    const email = `facebook-collision-${Date.now()}@ayrovi.test`;
+    const email = `facebook-collision-${Date.now()}@zayrovi.test`;
     const existingId = `facebook_email_owner_${Date.now()}`;
     db.run(`INSERT INTO customer_accounts (id,display_name,email,email_verified_at,status,created_at,updated_at)
       VALUES (?,'Compte Google existant',?,?,'ACTIVE',?,?)`, existingId, email, now, now, now);
@@ -319,7 +319,7 @@ describe('AYSONIC platform', () => {
     const accountId = `account_delete_${Date.now()}`;
     const now = new Date().toISOString();
     db.run("INSERT INTO customer_accounts (id,display_name,email,status,created_at,updated_at) VALUES (?,? ,?,'ACTIVE',?,?)",
-      accountId, 'Compte à supprimer', `delete-${Date.now()}@ayrovi.test`, now, now);
+      accountId, 'Compte à supprimer', `delete-${Date.now()}@zayrovi.test`, now, now);
     db.run(`INSERT INTO customer_auth_identities (id,account_id,provider,provider_subject,created_at)
       VALUES (?,?,'FACEBOOK',?,?)`, `identity_delete_${Date.now()}`, accountId, `facebook-delete-${Date.now()}`, now);
     const session = createCustomerSession(db, accountId, { ip: '127.0.0.1', headers: {} } as any);
@@ -402,7 +402,7 @@ describe('AYSONIC platform', () => {
       referenceUrl,
       status: 'PENDING_MANUAL' as const,
     };
-    const priceToken = createAyrovixPriceToken(quote);
+    const priceToken = createZayrovixPriceToken(quote);
     const payload = {
       store: 'generic', externalId: null, url: 'https://www.amazon.fr/dp/EXACTITEM', title,
       imageUrl: 'https://images.example/item.jpg', sourcePrice: quote.price, sourceCurrency: quote.currency,
@@ -429,7 +429,7 @@ describe('AYSONIC platform', () => {
 
       const tampered = await request(app).post('/api/cart/items').set('x-session-id', `${sessionId}-tampered`).send({ ...payload, sourcePrice: 5.75 });
       expect(tampered.status).toBe(400);
-      expect(tampered.body.code).toBe('INVALID_AYROVIX_PRICE_TOKEN');
+      expect(tampered.body.code).toBe('INVALID_ZAYROVIX_PRICE_TOKEN');
 
       const noManualLink = await request(app).post('/api/cart/items').set('x-session-id', `${sessionId}-link`).send({ ...payload, url: '' });
       expect(noManualLink.status).toBe(400);
@@ -473,7 +473,7 @@ describe('AYSONIC platform', () => {
 
       // Une quote Lens signée VERIFIED passe toujours VERIFIED (couverture anti-régression).
       const quote = { price: 21.99, currency: 'EUR', title: 'ensemble tendance', status: 'VERIFIED' as const };
-      const priceToken = createAyrovixPriceToken(quote);
+      const priceToken = createZayrovixPriceToken(quote);
       const lensAdd = await request(app).post('/api/cart/items').set('x-session-id', sessionId).send({
         ...createCartItem('ensemble tendance'), priceVerificationStatus: 'VERIFIED', priceToken,
       });
@@ -828,7 +828,7 @@ describe('AYSONIC platform', () => {
       .field('transferReference','FOREIGN').attach('proof',png,'recu.png');
     expect(foreignProof.status).toBe(404);
 
-    const reviewer=request.agent(app); const login=await reviewer.post('/api/admin/auth/login').send({email:'admin@ayrovi.tn',password:'AyroviBeta2026!'});
+    const reviewer=request.agent(app); const login=await reviewer.post('/api/admin/auth/login').send({email:'admin@zayrovi.tn',password:'ZayroviBeta2026!'});
     const reviewerCsrf=login.body.data.csrfToken;
     const pending=await reviewer.get('/api/admin/payment-proofs/pending');
     expect(pending.body.data.some((item:any)=>item.order_id===orderId)).toBe(true);
@@ -874,7 +874,7 @@ describe('AYSONIC platform', () => {
 
   test('card gateway success/failure is verified server-side and cannot be approved manually', async () => {
     const previous={key:process.env.KONNECT_API_KEY,wallet:process.env.KONNECT_WALLET_ID,base:process.env.PUBLIC_BASE_URL,environment:process.env.KONNECT_ENVIRONMENT};
-    process.env.KONNECT_API_KEY='konnect-test-key'; process.env.KONNECT_WALLET_ID='wallet-test'; process.env.PUBLIC_BASE_URL='https://ayrovi.example'; process.env.KONNECT_ENVIRONMENT='sandbox';
+    process.env.KONNECT_API_KEY='konnect-test-key'; process.env.KONNECT_WALLET_ID='wallet-test'; process.env.PUBLIC_BASE_URL='https://zayrovi.example'; process.env.KONNECT_ENVIRONMENT='sandbox';
     const fetchMock=vi.spyOn(globalThis,'fetch');
     try {
       fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({payment:{id:'PAYREFMISMATCH1',status:'completed',token:'TND',orderId:'AYR-EXPECTED:TXN-EXPECTED',reachedAmount:100001,transactions:[{status:'success'}]}}),{status:200,headers:{'Content-Type':'application/json'}}));
@@ -905,7 +905,7 @@ describe('AYSONIC platform', () => {
       expect(db.get<any>('SELECT status,payment_status FROM orders WHERE id=?',orderId)).toMatchObject({status:'CONFIRMED',payment_status:'PAID'});
       expect(db.get<any>('SELECT status FROM payment_transactions WHERE order_id=?',orderId).status).toBe('PAID');
 
-      const reviewer=request.agent(app);const login=await reviewer.post('/api/admin/auth/login').send({email:'admin@ayrovi.tn',password:'AyroviBeta2026!'});
+      const reviewer=request.agent(app);const login=await reviewer.post('/api/admin/auth/login').send({email:'admin@zayrovi.tn',password:'ZayroviBeta2026!'});
       const manualApproval=await reviewer.post(`/api/admin/orders/${orderId}/deposit/review`).set('x-csrf-token',login.body.data.csrfToken).send({decision:'approve'});
       expect(manualApproval.status).toBe(409);
 
@@ -929,7 +929,7 @@ describe('AYSONIC platform', () => {
 
   test('finance reports combine income, expenses and profit with strict validation', async () => {
     const reviewer = request.agent(app);
-    const login = await reviewer.post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
+    const login = await reviewer.post('/api/admin/auth/login').send({ email: 'admin@zayrovi.tn', password: 'ZayroviBeta2026!' });
     const csrf = login.body.data.csrfToken;
     const today = new Date().toISOString().slice(0, 10);
 
@@ -958,7 +958,7 @@ describe('AYSONIC platform', () => {
     const profile = await customerAgent
       .put('/api/customer/account/profile')
       .set('x-csrf-token', customerCsrf)
-      .send({ displayName: 'Client Test', email: 'client.test@ayrovi.tn', marketingOptIn: true });
+      .send({ displayName: 'Client Test', email: 'client.test@zayrovi.tn', marketingOptIn: true });
     expect(profile.status).toBe(200);
     expect(profile.body.data.displayName).toBe('Client Test');
     expect(profile.body.data.emailVerified).toBe(false);
@@ -1097,14 +1097,14 @@ describe('AYSONIC platform', () => {
     const identity = await request(app).get('/api/admin/auth/me');
     expect(identity.status).toBe(401);
     expect(identity.headers['set-cookie'][0]).toContain('Max-Age=0');
-    const failedLogin = await request(app).post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'incorrect-password' });
+    const failedLogin = await request(app).post('/api/admin/auth/login').send({ email: 'admin@zayrovi.tn', password: 'incorrect-password' });
     expect(failedLogin.status).toBe(401);
   });
 
   test('super admin login establishes an HttpOnly session and rotating CSRF token', async () => {
     const loginResponse = await superAdmin.post('/api/admin/auth/login').send({
-      email: 'admin@ayrovi.tn',
-      password: 'AyroviBeta2026!',
+      email: 'admin@zayrovi.tn',
+      password: 'ZayroviBeta2026!',
     });
     expect(loginResponse.status).toBe(200);
     expect(loginResponse.headers['set-cookie'][0]).toContain('HttpOnly');
@@ -1126,9 +1126,9 @@ describe('AYSONIC platform', () => {
     const row = settings.body.data.find((item: any) => item.setting_key === 'interface_config');
     expect(row).toBeTruthy();
     expect(row.setting_value.sections.map((section: any) => section.id)).toEqual(['hero', 'cms', 'brands', 'about', 'footer']);
-    expect(row.setting_value.typography.preset).toBe('ayrovi-a');
+    expect(row.setting_value.typography.preset).toBe('zayrovi-a');
     expect(row.setting_value.colors).toMatchObject({ pageBackground: '#ffffff', primary: '#000000', heroBackground: '#0a0a0a', announcementBackground: '#0a0a0a', accent: '#ff6900' }); // DS v1.0
-    expect(row.setting_value.icons).toMatchObject({ library: 'ayrovi', activeColor: '#ff6900' });
+    expect(row.setting_value.icons).toMatchObject({ library: 'zayrovi', activeColor: '#ff6900' });
     expect(row.setting_value.navigation.color).toBe('#111111'); // DS v1.0
 
     const malformed = await superAdmin.put(`/api/admin/settings/${row.id}`).set('x-csrf-token', adminCsrf).send({
@@ -1224,7 +1224,7 @@ describe('AYSONIC platform', () => {
     const product = await superAdmin
       .post('/api/admin/products')
       .set('x-csrf-token', adminCsrf)
-      .send({ name: 'Produit test API', description: 'Tarification centralisée', image: '/uploads/test.jpg', additional_images: [], brand_name: 'AYROVI', category: 'Mode', source_url: 'https://www.shein.com/', source_platform: 'SHEIN', original_price: 21.99, currency: 'EUR', express_available: true, stock_status: 'AVAILABLE', status: 'ACTIVE', arrival_ids: [createdArrivalId] });
+      .send({ name: 'Produit test API', description: 'Tarification centralisée', image: '/uploads/test.jpg', additional_images: [], brand_name: 'ZAYROVI', category: 'Mode', source_url: 'https://www.shein.com/', source_platform: 'SHEIN', original_price: 21.99, currency: 'EUR', express_available: true, stock_status: 'AVAILABLE', status: 'ACTIVE', arrival_ids: [createdArrivalId] });
     expect(product.status).toBe(201);
     createdProductId = product.body.data.id;
     expect(product.body.data.final_price).toBe(quoteEur(21.99, { title: 'Produit test API' }).totalTND);
@@ -1287,7 +1287,7 @@ describe('AYSONIC platform', () => {
       messageId: `assistant_${suffix}`,
       rating: 'down',
       comment: 'La réponse pourrait être plus précise.',
-      responseExcerpt: 'Réponse test AYROVI',
+      responseExcerpt: 'Réponse test ZAYROVI',
     };
     const guest = await request(app)
       .post('/api/public/assistant-feedback')
@@ -1329,9 +1329,9 @@ describe('AYSONIC platform', () => {
 
   test('RBAC separates content, order, admin and super-admin capabilities', async () => {
     const users = [
-      { name: 'Content User', email: 'content@test.ayrovi.tn', password: 'ContentSecure2026!', role: 'CONTENT_MANAGER' },
-      { name: 'Order User', email: 'orders@test.ayrovi.tn', password: 'OrdersSecure2026!', role: 'ORDER_MANAGER' },
-      { name: 'Admin User', email: 'admin-role@test.ayrovi.tn', password: 'AdminSecure2026!', role: 'ADMIN' },
+      { name: 'Content User', email: 'content@test.zayrovi.tn', password: 'ContentSecure2026!', role: 'CONTENT_MANAGER' },
+      { name: 'Order User', email: 'orders@test.zayrovi.tn', password: 'OrdersSecure2026!', role: 'ORDER_MANAGER' },
+      { name: 'Admin User', email: 'admin-role@test.zayrovi.tn', password: 'AdminSecure2026!', role: 'ADMIN' },
     ];
     for (const user of users) {
       const created = await superAdmin.post('/api/admin/users').set('x-csrf-token', adminCsrf).send(user);
@@ -1360,7 +1360,7 @@ describe('AYSONIC platform', () => {
     expect(audit.status).toBe(200);
     expect(audit.body.data.some((entry: any) => entry.action === 'CREATE' && entry.module === 'PRODUCTS' && entry.entity_id === createdProductId)).toBe(true);
     const pricingAudit = audit.body.data.find((entry: any) => entry.module === 'PRICING');
-    expect(pricingAudit.user_name).toBe('AYROVI Admin');
+    expect(pricingAudit.user_name).toBe('ZAYROVI Admin');
     expect(pricingAudit.old_value.version).toBe(originalPricingVersion);
     expect(pricingAudit.new_value.version).toBe(originalPricingVersion + 1);
   });
@@ -1372,7 +1372,7 @@ describe('AYSONIC platform', () => {
       summary: 'Résumé de publication',
       content: 'Contenu de publication',
       image: '',
-      category: 'AYROVI',
+      category: 'ZAYROVI',
       author: 'Test',
       published_at: new Date(before + 86_400_000).toISOString(),
       status: 'PUBLISHED',
@@ -1398,7 +1398,7 @@ describe('AYSONIC platform', () => {
     const future = new Date(Date.now() + 86_400_000).toISOString();
     const insert = (id: string, publishedAt: string) => db.run(`INSERT INTO news_items
       (id,title,summary,content,image,category,arrival_id,product_id,author,published_at,status,created_at,updated_at)
-      VALUES (?,?,?,'Contenu','', 'AYROVI',NULL,NULL,'Test',?,'SCHEDULED',?,?)`, id, `Magazine ${id}`, 'Résumé', publishedAt, now, now);
+      VALUES (?,?,?,'Contenu','', 'ZAYROVI',NULL,NULL,'Test',?,'SCHEDULED',?,?)`, id, `Magazine ${id}`, 'Résumé', publishedAt, now, now);
     try {
       insert(dueId, due);
       insert(futureId, future);
@@ -1438,7 +1438,7 @@ describe('AYSONIC platform', () => {
     // payment-methods / rebrand data migrations used to run on EVERY boot and
     // silently reverted admin CMS edits to stale defaults after a server restart.
     // Each migration must now run exactly once (applied_data_migrations marker).
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ayrovi-persist-'));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'zayrovi-persist-'));
     const file = path.join(dir, 'restart.sqlite');
     try {
       // Boot 1: fresh database, seeds applied, one-shot migrations run.

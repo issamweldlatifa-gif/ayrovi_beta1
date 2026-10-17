@@ -1,4 +1,4 @@
-import type { AyrovixProduct } from '../types';
+import type { ZayrovixProduct } from '../types';
 
 /** Only merge a full extraction from the exact merchant page Lens opened. */
 function sameMerchantProduct(left: string, right: string): boolean {
@@ -16,10 +16,10 @@ function sameMerchantProduct(left: string, right: string): boolean {
 }
 
 export function mergeProductEnrichment(
-  current: AyrovixProduct | null,
-  full: AyrovixProduct,
+  current: ZayrovixProduct | null,
+  full: ZayrovixProduct,
   requestedUrl: string,
-): AyrovixProduct | null {
+): ZayrovixProduct | null {
   if (!current || current.sourceUrl !== requestedUrl || !sameMerchantProduct(full.sourceUrl, requestedUrl)) return current;
 
   const images = [...new Set([...(current.images || []), ...(full.images || [])].filter(Boolean))];

@@ -1,18 +1,18 @@
 import { randomUUID } from 'node:crypto';
 import type { QatafoDatabase } from '../db/database';
-import type { AyrovixChannel } from './types';
+import type { ZayrovixChannel } from './types';
 
 /**
- * AYROVIX · journal d'usage minimaliste (analytics produit, pas de données personnelles).
+ * ZAYROVIX · journal d'usage minimaliste (analytics produit, pas de données personnelles).
  * Sert :
- *  1) à la carte « AYROVIX » du tableau Rapports admin,
+ *  1) à la carte « ZAYROVIX » du tableau Rapports admin,
  *  2) au taux de succès (identifications qui ont produit au moins un candidat).
  * Jamais : image, contenu, IP ni données personnelles.
  */
 
 let ensured = false;
 
-export function ensureAyrovixEventsTable(db: QatafoDatabase): void {
+export function ensureZayrovixEventsTable(db: QatafoDatabase): void {
   if (ensured) return;
   // Migrate legacy table that only allowed ('image','url','qr') to also allow 'text'.
   // SQLite does not support dropping a CHECK via ALTER, so we recreate if needed.
@@ -46,11 +46,11 @@ export function ensureAyrovixEventsTable(db: QatafoDatabase): void {
   ensured = true;
 }
 
-export function recordAyrovixEvent(
+export function recordZayrovixEvent(
   db: QatafoDatabase,
-  input: { channel: AyrovixChannel; brand?: string | null; query?: string | null; candidatesCount: number; chosen?: boolean },
+  input: { channel: ZayrovixChannel; brand?: string | null; query?: string | null; candidatesCount: number; chosen?: boolean },
 ): string {
-  ensureAyrovixEventsTable(db);
+  ensureZayrovixEventsTable(db);
   const id = `ayx_${randomUUID()}`;
   db.run(
     'INSERT INTO ayrovix_events (id,channel,brand,query,candidates_count,chosen,created_at) VALUES (?,?,?,?,?,?,?)',
@@ -65,20 +65,20 @@ export function recordAyrovixEvent(
   return id;
 }
 
-export function markAyrovixChosen(db: QatafoDatabase, eventId: string): void {
+export function markZayrovixChosen(db: QatafoDatabase, eventId: string): void {
   if (!/^ayx_[a-zA-Z0-9-]{10,64}$/.test(eventId)) return;
-  ensureAyrovixEventsTable(db);
+  ensureZayrovixEventsTable(db);
   db.run('UPDATE ayrovix_events SET chosen=1 WHERE id=?', eventId);
 }
 
-export interface AyrovixStats {
+export interface ZayrovixStats {
   last7d: { total: number; image: number; url: number; qr: number; text: number; withCandidates: number; chosen: number; matchRate: number };
   topBrands: Array<{ brand: string; count: number }>;
   topQueries: Array<{ query: string; count: number }>;
 }
 
-export function getAyrovixStats(db: QatafoDatabase): AyrovixStats {
-  ensureAyrovixEventsTable(db);
+export function getZayrovixStats(db: QatafoDatabase): ZayrovixStats {
+  ensureZayrovixEventsTable(db);
   const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const totals = db.get<any>(
     `SELECT COUNT(*) total,

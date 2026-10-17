@@ -39,7 +39,7 @@ export const LensContextHeader: React.FC<LensContextHeaderProps> = ({
       <div className="mx-auto grid h-16 w-full max-w-7xl grid-cols-[minmax(88px,1fr)_auto_minmax(88px,1fr)] items-center gap-2 px-3 sm:px-5">
         <div className="flex min-w-0 items-center gap-1.5 justify-self-start">
           {camera ? (
-            <button type="button" onClick={onExit} aria-label={tr('Quitter AYROVIX Lens', 'مغادرة عدسة AYROVIX')} className={`grid h-11 w-11 place-items-center rounded-full ${control}`}>
+            <button type="button" onClick={onExit} aria-label={tr('Quitter ZAYROVIX Lens', 'مغادرة عدسة ZAYROVIX')} className={`grid h-11 w-11 place-items-center rounded-full ${control}`}>
               <X className="h-5 w-5" />
             </button>
           ) : (
@@ -49,7 +49,7 @@ export const LensContextHeader: React.FC<LensContextHeaderProps> = ({
           )}
           {camera && flashControl}
         </div>
-        <strong className="max-w-[42vw] truncate text-center font-display text-sm font-black tracking-tight sm:max-w-none sm:text-base">AYROVIX Lens</strong>
+        <strong className="max-w-[42vw] truncate text-center font-display text-sm font-black tracking-tight sm:max-w-none sm:text-base">ZAYROVIX Lens</strong>
         <div className="flex min-w-0 items-center gap-1.5 justify-self-end">
           {!camera && onCart && (
             <button type="button" onClick={onCart} aria-label={tr(`Panier, ${count} article(s)`, `السلة، ${count} منتج`)} className={`relative grid h-11 w-11 place-items-center rounded-full ${control}`}>
@@ -57,7 +57,7 @@ export const LensContextHeader: React.FC<LensContextHeaderProps> = ({
               {count > 0 && <span className="absolute -end-0.5 -top-0.5 grid min-h-5 min-w-5 place-items-center rounded-full border-2 border-white bg-ink px-1 text-xs font-black leading-none text-white">{count}</span>}
             </button>
           )}
-          <button type="button" onClick={onMenu} aria-label={tr('Menu AYROVIX Lens', 'قائمة عدسة AYROVIX')} className={`grid h-11 w-11 place-items-center rounded-full ${control}`}>
+          <button type="button" onClick={onMenu} aria-label={tr('Menu ZAYROVIX Lens', 'قائمة عدسة ZAYROVIX')} className={`grid h-11 w-11 place-items-center rounded-full ${control}`}>
             <MoreVertical className="h-5 w-5" />
           </button>
         </div>
@@ -89,10 +89,10 @@ export const LensMoreMenu: React.FC<LensMoreMenuProps> = ({ open, dark, onToggle
   if (!open) return null;
 
   const title = {
-    menu: 'AYROVIX Lens',
+    menu: 'ZAYROVIX Lens',
     help: tr('Comment utiliser Lens', 'كيفية استخدام Lens'),
     terms: tr("Conditions d’utilisation de Lens", 'شروط استخدام Lens'),
-    service: tr('Service AYROVIX', 'خدمة AYROVIX'),
+    service: tr('Service ZAYROVIX', 'خدمة ZAYROVIX'),
     legal: tr('Informations légales', 'المعلومات القانونية'),
   }[section];
 
@@ -118,16 +118,16 @@ export const LensMoreMenu: React.FC<LensMoreMenuProps> = ({ open, dark, onToggle
             />
             <MenuButton label={tr('Comment utiliser Lens', 'كيفية استخدام Lens')} onClick={() => setSection('help')} />
             <MenuButton label={tr("Conditions d’utilisation de Lens", 'شروط استخدام Lens')} onClick={() => setSection('terms')} />
-            <MenuButton label={tr('Service AYROVIX', 'خدمة AYROVIX')} onClick={() => setSection('service')} />
+            <MenuButton label={tr('Service ZAYROVIX', 'خدمة ZAYROVIX')} onClick={() => setSection('service')} />
             <MenuButton label={tr('Informations légales', 'المعلومات القانونية')} onClick={() => setSection('legal')} />
           </div>}
 
           {section === 'help' && <ol className="space-y-3 text-sm leading-6 text-muted">
             {[
               tr('Photographiez le produit ou importez une image.', 'صوّر المنتج أو ارفع صورة.'),
-              tr("AYROVIX Lens analyse l’image.", 'تحلل AYROVIX Lens الصورة.'),
+              tr("ZAYROVIX Lens analyse l’image.", 'تحلل ZAYROVIX Lens الصورة.'),
               tr('Consultez les informations produit disponibles.', 'راجع معلومات المنتج المتاحة.'),
-              tr('Consultez le prix ou son estimation AYROVI.', 'راجع السعر أو تقدير AYROVI.'),
+              tr('Consultez le prix ou son estimation ZAYROVI.', 'راجع السعر أو تقدير ZAYROVI.'),
               tr('Vérifiez le résultat et les variantes.', 'تحقق من النتيجة والخيارات.'),
               tr('Ajoutez le produit au panier.', 'أضف المنتج إلى السلة.'),
               tr('Utilisez « Calculer un autre produit » pour continuer vos achats.', 'استخدم «حساب منتج آخر» لمواصلة التسوق.'),
@@ -146,8 +146,8 @@ export const LensMoreMenu: React.FC<LensMoreMenuProps> = ({ open, dark, onToggle
           </div>}
 
           {section === 'service' && <div className="space-y-3 text-sm leading-6 text-muted">
-            <p>{tr('AYROVIX est le service de recherche visuelle d’AYROVI. Il aide à identifier un produit, retrouver une offre exploitable et préparer son prix en dinars.', 'AYROVIX هي خدمة البحث البصري من AYROVI، تساعد على التعرف على المنتج والعثور على عرض قابل للاستخدام وتحضير سعره بالدينار.')}</p>
-            <p>{tr('Le produit choisi rejoint le panier partagé AYROVI, puis suit le parcours livraison, paiement, validation et suivi existant.', 'ينتقل المنتج المختار إلى سلة AYROVI المشتركة، ثم يتبع مسار التسليم والدفع والتحقق والتتبع الحالي.')}</p>
+            <p>{tr('ZAYROVIX est le service de recherche visuelle d’ZAYROVI. Il aide à identifier un produit, retrouver une offre exploitable et préparer son prix en dinars.', 'ZAYROVIX هي خدمة البحث البصري من ZAYROVI، تساعد على التعرف على المنتج والعثور على عرض قابل للاستخدام وتحضير سعره بالدينار.')}</p>
+            <p>{tr('Le produit choisi rejoint le panier partagé ZAYROVI, puis suit le parcours livraison, paiement, validation et suivi existant.', 'ينتقل المنتج المختار إلى سلة ZAYROVI المشتركة، ثم يتبع مسار التسليم والدفع والتحقق والتتبع الحالي.')}</p>
           </div>}
 
           {section === 'legal' && <div className="space-y-2 text-sm">

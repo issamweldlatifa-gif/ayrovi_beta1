@@ -7,7 +7,7 @@ import { createHash } from 'node:crypto';
 import postcss from 'postcss';
 import ts from 'typescript';
 const generated = new Set(['client/src/design/editorial/tokens.generated.css','client/public/identity.css']);
-const tokens = new Set(['--font-primary','--ay-font-stack','--ayrovi-font','--ayrovi-font-body','--ayrovi-font-display']);
+const tokens = new Set(['--font-primary','--ay-font-stack','--zayrovi-font','--zayrovi-font-body','--zayrovi-font-display']);
 const familyValue = value => value === 'inherit' || [...tokens].some(name => value === `var(${name})`);
 export function inspectBrandSource(file, text) {
   const errors = [];
@@ -29,7 +29,7 @@ export function inspectBrandSource(file, text) {
       if (!familyValue(value)) add(`unapproved font-family: ${value}`);
     }
     if (prop === 'font' && value !== 'inherit' && ![...tokens].some(t => value.endsWith(`var(${t})`))) add(`unapproved font shorthand: ${value}`);
-    if (/^--(?:font-(?:primary|sans|body|display|mono|serif)|ay-font-stack|ayrovi-font(?:-body|-display)?)$/.test(prop)) {
+    if (/^--(?:font-(?:primary|sans|body|display|mono|serif)|ay-font-stack|zayrovi-font(?:-body|-display)?)$/.test(prop)) {
       if (generated.has(file) && prop === '--ay-font-stack') return;
       if (!familyValue(value)) add(`unapproved stack token: ${prop}`);
     }
@@ -98,5 +98,5 @@ export function auditBrand(root=process.cwd()) {
 }
 if (process.argv[1] && path.resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
   const errors=auditBrand();
-  if(errors.length){console.error(errors.join('\n'));process.exitCode=1;}else console.log('AYROVI A: source, stack, pure neutrals, local assets and font hashes verified.');
+  if(errors.length){console.error(errors.join('\n'));process.exitCode=1;}else console.log('ZAYROVI A: source, stack, pure neutrals, local assets and font hashes verified.');
 }

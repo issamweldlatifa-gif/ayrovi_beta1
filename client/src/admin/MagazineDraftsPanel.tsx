@@ -22,7 +22,7 @@ function localScheduleDefault(): string {
 
 function categoriesFor(type: string) {
   if (type === 'editorial') return [
-    { value: 'AYROVI', label: 'AYROVI' }, { value: 'NEW_ARRIVAL', label: 'وصول جديد' },
+    { value: 'ZAYROVI', label: 'ZAYROVI' }, { value: 'NEW_ARRIVAL', label: 'وصول جديد' },
     { value: 'NEW_BRAND', label: 'علامة جديدة' }, { value: 'PROMOTION', label: 'عرض' },
     { value: 'INFORMATION', label: 'معلومة' }, { value: 'OTHER', label: 'أخرى' },
   ];
@@ -30,7 +30,7 @@ function categoriesFor(type: string) {
     { value: 'STYLE', label: 'ستايل' }, { value: 'NEW', label: 'جديد' }, { value: 'ARRIVAGE', label: 'وصول' },
     { value: 'PROMO', label: 'عرض' }, { value: 'INFO', label: 'معلومة' },
   ];
-  return [{ value: 'AYROVI', label: 'AYROVI' }, { value: 'STYLE', label: 'ستايل' }, { value: 'PROMO', label: 'عرض' }];
+  return [{ value: 'ZAYROVI', label: 'ZAYROVI' }, { value: 'STYLE', label: 'ستايل' }, { value: 'PROMO', label: 'عرض' }];
 }
 
 function preview(draft: MagazineDraft): string {
@@ -42,7 +42,7 @@ export const MagazineDraftsPanel: React.FC<MagazineDraftsPanelProps> = ({ canWri
   const [filter, setFilter] = useState('');
   const [type, setType] = useState('');
   const [selected, setSelected] = useState<MagazineDraft | null>(null);
-  const [transfer, setTransfer] = useState<{ status: 'draft' | 'scheduled' | 'published'; category: string; scheduledAt: string }>({ status: 'draft', category: 'AYROVI', scheduledAt: localScheduleDefault() });
+  const [transfer, setTransfer] = useState<{ status: 'draft' | 'scheduled' | 'published'; category: string; scheduledAt: string }>({ status: 'draft', category: 'ZAYROVI', scheduledAt: localScheduleDefault() });
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<any>(null);
@@ -112,7 +112,7 @@ export const MagazineDraftsPanel: React.FC<MagazineDraftsPanelProps> = ({ canWri
         onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; }}
         onDrop={(event) => {
           event.preventDefault();
-          const id = event.dataTransfer.getData('application/x-ayrovi-magazine-draft') || event.dataTransfer.getData('text/plain');
+          const id = event.dataTransfer.getData('application/x-zayrovi-magazine-draft') || event.dataTransfer.getData('text/plain');
           if (id.startsWith('mag_draft_')) void openTransfer(id);
         }}
       ><ArrowUp /><div><strong>أفلت بطاقة وكيل مجلتي هنا</strong><span>سنطلب التصنيف وموعد النشر قبل نقلها إلى نظام المحتوى.</span></div></div>

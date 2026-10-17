@@ -27,7 +27,7 @@ const code = (source: string) => source.replace(/\/\*[\s\S]*?\*\//g, '').replace
 
 describe('LENS editorial block — content comes from the dashboard', () => {
   test('super admin authenticates', async () => {
-    const login = await admin.post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
+    const login = await admin.post('/api/admin/auth/login').send({ email: 'admin@zayrovi.tn', password: 'ZayroviBeta2026!' });
     expect(login.status).toBe(200);
     csrf = login.body.data.csrfToken;
   });
@@ -155,14 +155,14 @@ describe('LENS editorial block — rythme et charte', () => {
     const block = /\.lens-feature[\s\S]*?@media \(prefers-reduced-motion/.exec(indexCss)?.[0] ?? '';
     // couleurs : uniquement les jetons de la charte
     expect(block).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
-    expect(block).toMatch(/var\(--ayrovi-bg-main\)/);
-    expect(block).toMatch(/var\(--ayrovi-text-primary\)/);
-    expect(block).toMatch(/var\(--ayrovi-text-secondary\)/);
-    expect(block).toMatch(/var\(--ayrovi-bg-surface\)/);
+    expect(block).toMatch(/var\(--zayrovi-bg-main\)/);
+    expect(block).toMatch(/var\(--zayrovi-text-primary\)/);
+    expect(block).toMatch(/var\(--zayrovi-text-secondary\)/);
+    expect(block).toMatch(/var\(--zayrovi-bg-surface\)/);
     // l'orange n'apparaît qu'une seule fois, sur la flèche du lien d'action
-    const orange = block.match(/--ayrovi-color-brand-orange/g) ?? [];
+    const orange = block.match(/--zayrovi-color-brand-orange/g) ?? [];
     expect(orange).toHaveLength(1);
-    expect(block).toMatch(/\.lens-feature__cta svg \{[^}]*--ayrovi-color-brand-orange/);
+    expect(block).toMatch(/\.lens-feature__cta svg \{[^}]*--zayrovi-color-brand-orange/);
   });
 
   test('the action is a text link, not a second filled button', () => {

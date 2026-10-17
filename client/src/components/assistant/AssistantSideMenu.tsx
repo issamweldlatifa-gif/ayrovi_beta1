@@ -57,7 +57,7 @@ export const AssistantSideMenu: React.FC<AssistantSideMenuProps> = ({
       <button type="button" onClick={onClose} className="absolute inset-0 z-30 bg-ink/40 backdrop-blur-[2px]" aria-label={tr('Fermer le menu', 'إغلاق القائمة')} />
       <aside ref={panelRef} tabIndex={-1} className={`assistant-side-menu ay-readable-label border-e border-line absolute inset-y-0 left-0 z-40 flex w-[91%] max-w-[430px] flex-col px-[18px] pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] shadow-overlay ${isDark ? 'bg-ink' : 'bg-white'}`} dir={direction} role="dialog" aria-modal="true" aria-label={tr('Menu SONIM', 'قائمة SONIM')}>
         <div className="flex items-center gap-2.5 pb-3">
-          <img src="/media/logo-ayrovi.png" alt="" className="h-8 w-8 bg-transparent object-contain" />
+          <img src="/media/logo-zayrovi.png" alt="" className="h-8 w-8 bg-transparent object-contain" />
           <strong className={`text-base font-extrabold ${isDark ? 'text-white' : 'text-ink'}`}>SONIM</strong>
         </div>
 
@@ -92,7 +92,7 @@ export const AssistantSideMenu: React.FC<AssistantSideMenuProps> = ({
           ) : null}
 
           <button type="button" onClick={onOpenOrders} className={mainItem}>{tr('Mes commandes', 'طلباتي')}</button>
-          <button type="button" onClick={onOpenLens} className={mainItem}>AYROVIX</button>
+          <button type="button" onClick={onOpenLens} className={mainItem}>ZAYROVIX</button>
 
           <p className={sectionLabel}>{tr('Paramètres', 'الإعدادات')}</p>
           <button type="button" onClick={onOpenAccount} className={mainItem}>{isAuthenticated ? tr('Mon compte', 'حسابي') : tr('Se connecter', 'تسجيل الدخول')}</button>

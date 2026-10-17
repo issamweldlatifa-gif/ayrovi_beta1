@@ -31,9 +31,9 @@ import {
 
 // Cache et contrats sont écrits dans un dossier jetable : la configuration est
 // relue à chaque appel, aucun état de test ne fuit vers data/.
-const workDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ayrovi-variants-'));
-process.env.AYROVI_VARIANT_CACHE_DIR = workDir;
-process.env.AYROVI_VARIANT_MAX_LOOKUPS = '8';
+const workDir = fs.mkdtempSync(path.join(os.tmpdir(), 'zayrovi-variants-'));
+process.env.ZAYROVI_VARIANT_CACHE_DIR = workDir;
+process.env.ZAYROVI_VARIANT_MAX_LOOKUPS = '8';
 
 afterAll(() => { fs.rmSync(workDir, { recursive: true, force: true }); });
 

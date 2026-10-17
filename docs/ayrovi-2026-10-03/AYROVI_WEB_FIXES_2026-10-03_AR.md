@@ -1,7 +1,7 @@
-# AYROVI — سجل الإصلاحات المنفَّذة والتحقّق منها
+# ZAYROVI — سجل الإصلاحات المنفَّذة والتحقّق منها
 
-**التاريخ:** 3 أكتوبر 2026 — **الإصدار:** `3.10.4` — **يعقب:** `AYROVI_المراجعة_العميقة_2026-10-03.md`
-**الرقعة:** `AYROVI_إصلاحات_2026-10-03.patch` (266 سطراً، 8 ملفات — تُطبَّق نظيفة على نسخة GitHub الأصلية، مُتحقَّق منها بـ `patch -p1 --dry-run` ✅)
+**التاريخ:** 3 أكتوبر 2026 — **الإصدار:** `3.10.4` — **يعقب:** `ZAYROVI_المراجعة_العميقة_2026-10-03.md`
+**الرقعة:** `ZAYROVI_إصلاحات_2026-10-03.patch` (266 سطراً، 8 ملفات — تُطبَّق نظيفة على نسخة GitHub الأصلية، مُتحقَّق منها بـ `patch -p1 --dry-run` ✅)
 
 ---
 
@@ -45,7 +45,7 @@ verify/public-additions.mjs:37
 
 ### 🧪 كشف إضافي: لا يستطيع أحد أن يكتب اللون «صواباً» — هناك برتقاليان
 
-عند محاولة كتابة التأكيد رمزياً اكتشفنا أن `--ayrovi-color-brand-orange` **يُحلّ إلى قيمتين مختلفتين حسب النطاق**:
+عند محاولة كتابة التأكيد رمزياً اكتشفنا أن `--zayrovi-color-brand-orange` **يُحلّ إلى قيمتين مختلفتين حسب النطاق**:
 
 ```
 النطاق            القيمة الفعلية
@@ -62,10 +62,10 @@ verify/public-additions.mjs:37
 .public-campaign{background:#D3451F;color:#FFFFFF;border-bottom:3px solid #9E3317}
 
 /* بعد */
-.public-campaign{background:var(--ayrovi-ink-deep);color:var(--ayrovi-white);
-                 border-bottom:3px solid var(--ayrovi-color-brand-orange)}
+.public-campaign{background:var(--zayrovi-ink-deep);color:var(--zayrovi-white);
+                 border-bottom:3px solid var(--zayrovi-color-brand-orange)}
 ```
-نستعمل `--ayrovi-ink-deep` — الرمز الرسمي الذي يصف نفسه في `tokens.css:143` بـ«Hero, **announcement**, coquille Lens, rails»، أي أنّه **مخصّص لهذا الشريط بالاسم**. البرتقالي يبقى موجوداً كـ**توقيع 3px** لا كمساحة.
+نستعمل `--zayrovi-ink-deep` — الرمز الرسمي الذي يصف نفسه في `tokens.css:143` بـ«Hero, **announcement**, coquille Lens, rails»، أي أنّه **مخصّص لهذا الشريط بالاسم**. البرتقالي يبقى موجوداً كـ**توقيع 3px** لا كمساحة.
 
 `verify/public-additions.mjs:37` — التأكيد صار **مقوداً بالرمز لا بالحرف**:
 ```js
@@ -74,7 +74,7 @@ check(`${locale}/${width}: approved ad treatment and white type`, await page.eva
   if (!el) return false;
   const s = getComputedStyle(el);
   const probe = document.createElement('span');
-  probe.style.color = 'var(--ayrovi-color-brand-orange)';
+  probe.style.color = 'var(--zayrovi-color-brand-orange)';
   el.appendChild(probe);                    // داخل نفس سياق التتالي — انظر الملاحظة أعلاه
   const orange = getComputedStyle(probe).color;
   probe.remove();
@@ -105,7 +105,7 @@ Couverture orange maximale mesurée : 2.193% (budget charte : 3%)     ← قبل
 `verify/zalando-audit.mjs:50-58` ينقر زر Lens ثم يبحث فوراً عن `.lens-home`. لكن `LensHelp.tsx:61` يضع قبله **بوابة موافقة إلزامية** (3 مربّعات: السنّ + القواعد + نقل الصورة إلى مزوّد خارجي) والزر `disabled` حتى تُقرأ كلها. الأداة كانت تفسّر الحاجب كغياب.
 
 ### ✅ التغيير
-تجاوز البوابة قبل القياس (نصّ الرقعة في `AYROVI_إصلاحات_2026-10-03.patch`)، مع تعليق يشرح أن البوابة **مطلب قانوني** لا عيب.
+تجاوز البوابة قبل القياس (نصّ الرقعة في `ZAYROVI_إصلاحات_2026-10-03.patch`)، مع تعليق يشرح أن البوابة **مطلب قانوني** لا عيب.
 
 ### 📊 الدليل بعد الإصلاح
 ```
@@ -129,15 +129,15 @@ Couverture orange maximale mesurée : 2.193% (budget charte : 3%)     ← قبل
   run: |
     npm run build:server
     NODE_ENV=development PORT=3210 ADMIN_EMAIL=… ADMIN_PASSWORD=… \
-      nohup node dist/server.js > /tmp/ayrovi-server.log 2>&1 &
+      nohup node dist/server.js > /tmp/zayrovi-server.log 2>&1 &
     for i in $(seq 1 60); do
       curl -sf http://127.0.0.1:3210/api/public/commerce-config >/dev/null && exit 0
       sleep 1
     done
-    tail -40 /tmp/ayrovi-server.log; exit 1
+    tail -40 /tmp/zayrovi-server.log; exit 1
 
 - name: Enforce charter guards the build must never break again
-  env: { AYROVI_BASE_URL: http://127.0.0.1:3210 }
+  env: { ZAYROVI_BASE_URL: http://127.0.0.1:3210 }
   run: |
     npm run verify:public-nav
     npm run verify:footer-payments
@@ -190,7 +190,7 @@ return {
 
 ### ✅ التغيير
 - `package.json`: سكريبت جديد `"verify:setup": "npx playwright install --with-deps chromium firefox"`.
-- `README.md`: قسم «Vérificateurs de navigateur — à lire avant le premier lancement» يشرح: الخطوة الإلزامية مرّة واحدة، الرسالة المضلّلة التي تظهر بدونها، `AYROVI_BASE_URL` لمن يحتاجه، وأيّ runners تُضيف خادمها بنفسها. وجدول يفرّق بين **مدقّق آلي** و**أداة يدوية** (`verify:lens-probe` تحتاج `SERPAPI_KEY` فعلياً وتستهلك حصة).
+- `README.md`: قسم «Vérificateurs de navigateur — à lire avant le premier lancement» يشرح: الخطوة الإلزامية مرّة واحدة، الرسالة المضلّلة التي تظهر بدونها، `ZAYROVI_BASE_URL` لمن يحتاجه، وأيّ runners تُضيف خادمها بنفسها. وجدول يفرّق بين **مدقّق آلي** و**أداة يدوية** (`verify:lens-probe` تحتاج `SERPAPI_KEY` فعلياً وتستهلك حصة).
 
 ---
 
@@ -217,7 +217,7 @@ $ npm run verify:lens-probe > /tmp/lp.log 2>&1; echo $?
 ## 7. 🔎 ملاحظتان جديدتان (لم تكونا في التقرير الأول)
 
 ### 7.1 مصيدة نطاق الرمز: برتقاليان لنفس الاسم
-`--ayrovi-color-brand-orange` = `#ff6900` على `:root` و`#FF7900` داخل `.ay-customer-root` (يحقنه `customerTheme.ts:15` من `identity.json`).
+`--zayrovi-color-brand-orange` = `#ff6900` على `:root` و`#FF7900` داخل `.ay-customer-root` (يحقنه `customerTheme.ts:15` من `identity.json`).
 **ليس خطأ** (موثّق كعقد تحريري مقصود)، لكنه فخّ: أي قياس أو اختبار يُنفَّذ خارج الجذر يقرأ قيمة أخرى. **التوصية:** لا تقارن ألواناً مكتوبة حرفياً في أي مدقّق — اقرأ الرمز من داخل نفس الجذر (هذا ما بُني عليه إصلاح `public-additions`).
 
 ### 7.2 اهتزاز المدقّقات تحت الحمل
@@ -276,9 +276,9 @@ Error: SONIM checks failed: 1
 **≫ 6,000 تأكيد أخضر. صفر فشل.**
 
 ### الرقعة
-`AYROVI_إصلاحات_2026-10-03.patch` — 266 سطراً، 8 ملفات، تُطبَّق بـ:
+`ZAYROVI_إصلاحات_2026-10-03.patch` — 266 سطراً، 8 ملفات، تُطبَّق بـ:
 ```bash
-git apply AYROVI_إصلاحات_2026-10-03.patch     # من جذر المستودع
+git apply ZAYROVI_إصلاحات_2026-10-03.patch     # من جذر المستودع
 ```
 مُتحقَّق منها: `patch -p1 --dry-run` على نسخة مطابقة لأصل GitHub → **تقبل الملفات الثمانية كلّها بلا رفض**.
 

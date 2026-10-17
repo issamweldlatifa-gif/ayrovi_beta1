@@ -21,14 +21,14 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-process.env.AYROVI_VARIANT_CACHE_DIR = join(mkdtempSync(join(tmpdir(), 'aywebs-quote-')), 'cache');
+process.env.ZAYROVI_VARIANT_CACHE_DIR = join(mkdtempSync(join(tmpdir(), 'aywebs-quote-')), 'cache');
 
 import { QatafoDatabase } from '../src/db/database';
 import { DEFAULT_CUSTOMS_CATEGORIES, type PricingRules } from '../src/services/pricing';
 import { createAyWebsContext } from '../src/aywebs/context';
 import { resolveAyWebsProduct } from '../src/aywebs/productResolver';
 import { addAyWebsCartItem, listAyWebsCartItems } from '../src/aywebs/cart';
-import { createAyrovixPriceToken } from '../src/ayrovix/priceQuote';
+import { createZayrovixPriceToken } from '../src/ayrovix/priceQuote';
 import {
   createAyWebsQuoteToken, inspectAyWebsQuoteToken, shouldReverifyAyWebsQuote,
 } from '../src/aywebs/quoteToken';
@@ -171,8 +171,8 @@ describe('AYWEBs Phase 1 — jeton de devis signé (unitaire)', () => {
     expect(createAyWebsQuoteToken({ ...base, productId: '' })).toBeNull();
   });
 
-  it('un jeton de cotation AYROVIX ne vaut pas comme devis AYWEBs (domaines séparés)', () => {
-    const ayrovixToken = createAyrovixPriceToken({
+  it('un jeton de cotation ZAYROVIX ne vaut pas comme devis AYWEBs (domaines séparés)', () => {
+    const ayrovixToken = createZayrovixPriceToken({
       price: 39.99, currency: 'USD', title: 'Nike Air Max shoes', status: 'VERIFIED',
     })!;
     expect(ayrovixToken.length).toBeGreaterThan(10);

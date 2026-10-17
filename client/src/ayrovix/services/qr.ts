@@ -8,7 +8,7 @@ import {
 } from '@zxing/library';
 
 /**
- * AYROVIX · scan local QR + codes-barres.
+ * ZAYROVIX · scan local QR + codes-barres.
  * BarcodeDetector natif est tenté en premier; ZXing couvre tous les navigateurs
  * et les formats QR, EAN, UPC, Code 39/128 et ITF sans envoyer de frame au serveur.
  */

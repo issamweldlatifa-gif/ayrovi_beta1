@@ -13,12 +13,12 @@ import { extractProductFromUrl } from '../src/ayrovix/services/product';
 import { parseProductPageHtml } from '../src/scraper/productPageParser';
 import { fetchRenderedProductPage, RenderedPageError } from '../src/scraper/renderedPageFetcher';
 import { detectMerchantStore, isTrustedRenderTarget } from '../src/scraper/merchantDomains';
-import { createAyrovixPriceToken, verifyAyrovixPriceToken } from '../src/ayrovix/priceQuote';
-import { recordAyrovixHistory } from '../src/ayrovix/history';
-import { getAyrovixStats } from '../src/ayrovix/events';
+import { createZayrovixPriceToken, verifyZayrovixPriceToken } from '../src/ayrovix/priceQuote';
+import { recordZayrovixHistory } from '../src/ayrovix/history';
+import { getZayrovixStats } from '../src/ayrovix/events';
 import { createCustomerSession } from '../src/customer/auth';
 import { isUnsafeIpAddress, resolveSafeHttpUrl } from '../src/services/safeUrl';
-import type { AyrovixIdentification } from '../src/ayrovix/types';
+import type { ZayrovixIdentification } from '../src/ayrovix/types';
 
 /** PNG 1x1 minimal — multer valide le mimetype déclaré, pas le contenu. */
 const PNG_1PX = Buffer.from(
@@ -26,7 +26,7 @@ const PNG_1PX = Buffer.from(
   'base64',
 );
 
-const NIKE_ID: AyrovixIdentification = {
+const NIKE_ID: ZayrovixIdentification = {
   input_kind: 'product_photo',
   category: 'sneakers',
   brand: 'Nike',
@@ -67,7 +67,7 @@ function restoreEnv(name: string, value: string | undefined) {
   else process.env[name] = value;
 }
 
-describe('AYROVIX Lens', () => {
+describe('ZAYROVIX Lens', () => {
   /*
    * Ces scénarios rejouent la MÊME image pour éprouver des comportements
    * différents (vision qui tombe, prix lu, etc.). Le cache de reconnaissance
@@ -75,12 +75,12 @@ describe('AYROVIX Lens', () => {
    * coupe explicitement ici. Le cache a ses propres tests
    * (tests/lens-recognition-cache.test.ts) — aucune garantie n'est perdue.
    */
-  const cacheBefore = process.env.AYROVI_LENS_CACHE;
-  const liveCacheBefore = process.env.AYROVI_LENS_LIVE_CACHE_DIR;
-  const variantCacheBefore = process.env.AYROVI_VARIANT_CACHE_DIR;
+  const cacheBefore = process.env.ZAYROVI_LENS_CACHE;
+  const liveCacheBefore = process.env.ZAYROVI_LENS_LIVE_CACHE_DIR;
+  const variantCacheBefore = process.env.ZAYROVI_VARIANT_CACHE_DIR;
   let liveCacheDir = '';
   beforeAll(() => {
-    process.env.AYROVI_LENS_CACHE = 'false';
+    process.env.ZAYROVI_LENS_CACHE = 'false';
     /*
      * Même raison pour les caches DISQUE (stock vivant, contrats de variantes) :
      * sans bac à sable, un passage précédent de `npm test` laisse des entrées
@@ -90,13 +90,13 @@ describe('AYROVIX Lens', () => {
      * tests/lens-live-stock.test.ts — aucune garantie n'est perdue.
      */
     liveCacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ayrovix-lens-live-'));
-    process.env.AYROVI_LENS_LIVE_CACHE_DIR = liveCacheDir;
-    process.env.AYROVI_VARIANT_CACHE_DIR = path.join(liveCacheDir, 'contracts');
+    process.env.ZAYROVI_LENS_LIVE_CACHE_DIR = liveCacheDir;
+    process.env.ZAYROVI_VARIANT_CACHE_DIR = path.join(liveCacheDir, 'contracts');
   });
   afterAll(() => {
-    restoreEnv('AYROVI_LENS_CACHE', cacheBefore);
-    restoreEnv('AYROVI_LENS_LIVE_CACHE_DIR', liveCacheBefore);
-    restoreEnv('AYROVI_VARIANT_CACHE_DIR', variantCacheBefore);
+    restoreEnv('ZAYROVI_LENS_CACHE', cacheBefore);
+    restoreEnv('ZAYROVI_LENS_LIVE_CACHE_DIR', liveCacheBefore);
+    restoreEnv('ZAYROVI_VARIANT_CACHE_DIR', variantCacheBefore);
     if (liveCacheDir) fs.rmSync(liveCacheDir, { recursive: true, force: true });
   });
 
@@ -132,12 +132,12 @@ describe('AYROVIX Lens', () => {
     expect((await request(app).get('/api/health')).status).toBe(200);
   });
 
-  test('analyze-image sans clé serveur → 503 AYROVIX_UNAVAILABLE (la clé ne part jamais au client)', async () => {
+  test('analyze-image sans clé serveur → 503 ZAYROVIX_UNAVAILABLE (la clé ne part jamais au client)', async () => {
     const response = await request(app)
       .post('/api/ayrovix/analyze-image')
       .attach('image', PNG_1PX, { filename: 'sneakers.png', contentType: 'image/png' });
     expect(response.status).toBe(503);
-    expect(response.body.code).toBe('AYROVIX_UNAVAILABLE');
+    expect(response.body.code).toBe('ZAYROVIX_UNAVAILABLE');
   });
 
   test('buildSearchQuery : code article prioritaire, sinon marque + modèle + couleurs', () => {
@@ -332,12 +332,12 @@ describe('AYROVIX Lens', () => {
 
   test('devis signé : lie prix, devise, titre, lien et statut et refuse altération ou expiration', () => {
     const quote = { price: 89.99, currency: 'EUR', title: 'Robe noire', referenceUrl: 'https://shop.example.org/robe', status: 'PENDING_MANUAL' as const };
-    const token = createAyrovixPriceToken(quote);
+    const token = createZayrovixPriceToken(quote);
     expect(token).toBeTruthy();
-    expect(verifyAyrovixPriceToken(token, quote)).toBe(true);
-    expect(verifyAyrovixPriceToken(token, { ...quote, price: 8.99 })).toBe(false);
-    expect(verifyAyrovixPriceToken(token, { ...quote, referenceUrl: 'https://evil.example/other' })).toBe(false);
-    expect(verifyAyrovixPriceToken(createAyrovixPriceToken(quote, -1), quote)).toBe(false);
+    expect(verifyZayrovixPriceToken(token, quote)).toBe(true);
+    expect(verifyZayrovixPriceToken(token, { ...quote, price: 8.99 })).toBe(false);
+    expect(verifyZayrovixPriceToken(token, { ...quote, referenceUrl: 'https://evil.example/other' })).toBe(false);
+    expect(verifyZayrovixPriceToken(createZayrovixPriceToken(quote, -1), quote)).toBe(false);
   });
 
   test('historique hybride : invité local côté client, compte authentifié isolé et synchronisé côté serveur', async () => {
@@ -352,7 +352,7 @@ describe('AYROVIX Lens', () => {
       accountId, 'Client historique Lens', now, now);
     try {
       const session = createCustomerSession(db, accountId, { ip: '127.0.0.1', headers: { 'user-agent': 'Vitest' } } as any);
-      recordAyrovixHistory(db, {
+      recordZayrovixHistory(db, {
         eventId, accountId, kind: 'url', inputValue: 'https://www.amazon.fr/dp/TESTHISTORY',
         queryLabel: 'Sneaker historique', title: 'Sneaker historique', imageUrl: 'https://images.example.org/history.jpg',
         sourceUrl: 'https://www.amazon.fr/dp/TESTHISTORY', source: 'Amazon', price: 79.99, currency: 'EUR',
@@ -387,7 +387,7 @@ describe('AYROVIX Lens', () => {
     expect(isTrustedRenderTarget('https://www.zalando.fr/nike-alphafly')).toBe(true);
     expect(isTrustedRenderTarget('https://www.alltricks.fr/p/x')).toBe(true);
     expect(isTrustedRenderTarget('https://www.sportsdirect.fr/hoody-991631')).toBe(false);
-    vi.stubEnv('AYROVI_TRUSTED_RENDER_HOSTS', 'sportsdirect.fr, zalando.fr');
+    vi.stubEnv('ZAYROVI_TRUSTED_RENDER_HOSTS', 'sportsdirect.fr, zalando.fr');
     expect(isTrustedRenderTarget('https://www.sportsdirect.fr/hoody-991631')).toBe(true);
     expect(isTrustedRenderTarget('https://fr.zalando.fr/robe')).toBe(true);
     // Une allowlist ne doit jamais devenir une porte ouverte : ni http, ni port
@@ -410,13 +410,13 @@ describe('AYROVIX Lens', () => {
       scrapingBee: process.env.SCRAPINGBEE_API_KEY,
       brightToken: process.env.BRIGHTDATA_API_TOKEN,
       brightZone: process.env.BRIGHTDATA_UNLOCKER_ZONE,
-      provider: process.env.AYROVIX_RENDER_PROVIDER,
+      provider: process.env.ZAYROVIX_RENDER_PROVIDER,
     };
     process.env.SCRAPERAPI_KEY = 'scraper-api-test';
     delete process.env.SCRAPINGBEE_API_KEY;
     delete process.env.BRIGHTDATA_API_TOKEN;
     delete process.env.BRIGHTDATA_UNLOCKER_ZONE;
-    process.env.AYROVIX_RENDER_PROVIDER = 'scraperapi';
+    process.env.ZAYROVIX_RENDER_PROVIDER = 'scraperapi';
     try {
       const fetchMock = vi.fn(async (url: string) => {
         const requestUrl = new URL(url);
@@ -434,7 +434,7 @@ describe('AYROVIX Lens', () => {
 
       delete process.env.SCRAPERAPI_KEY;
       process.env.SCRAPINGBEE_API_KEY = 'bee-test';
-      process.env.AYROVIX_RENDER_PROVIDER = 'scrapingbee';
+      process.env.ZAYROVIX_RENDER_PROVIDER = 'scrapingbee';
       vi.stubGlobal('fetch', vi.fn(async (url: string) => {
         const requestUrl = new URL(url);
         expect(requestUrl.hostname).toBe('app.scrapingbee.com');
@@ -446,7 +446,7 @@ describe('AYROVIX Lens', () => {
       delete process.env.SCRAPINGBEE_API_KEY;
       process.env.BRIGHTDATA_API_TOKEN = 'bright-token';
       process.env.BRIGHTDATA_UNLOCKER_ZONE = 'unlocker-zone';
-      process.env.AYROVIX_RENDER_PROVIDER = 'brightdata';
+      process.env.ZAYROVIX_RENDER_PROVIDER = 'brightdata';
       vi.stubGlobal('fetch', vi.fn(async (url: string, init: RequestInit = {}) => {
         expect(url).toBe('https://api.brightdata.com/request');
         expect((init.headers as Record<string, string>).Authorization).toBe('Bearer bright-token');
@@ -459,7 +459,7 @@ describe('AYROVIX Lens', () => {
       restoreEnv('SCRAPINGBEE_API_KEY', previous.scrapingBee);
       restoreEnv('BRIGHTDATA_API_TOKEN', previous.brightToken);
       restoreEnv('BRIGHTDATA_UNLOCKER_ZONE', previous.brightZone);
-      restoreEnv('AYROVIX_RENDER_PROVIDER', previous.provider);
+      restoreEnv('ZAYROVIX_RENDER_PROVIDER', previous.provider);
     }
   });
 
@@ -497,7 +497,7 @@ describe('AYROVIX Lens', () => {
       expect(choose.status).toBe(200);
       expect(db.get<any>('SELECT chosen FROM ayrovix_events WHERE id=?', data.eventId).chosen).toBe(1);
 
-      const stats = getAyrovixStats(db);
+      const stats = getZayrovixStats(db);
       expect(stats.last7d.total).toBeGreaterThanOrEqual(1);
       expect(stats.last7d.image).toBeGreaterThanOrEqual(1);
     } finally {
@@ -647,10 +647,10 @@ describe('AYROVIX Lens', () => {
   test('Claude Web Search transforme les résultats officiels Anthropic en candidats', async () => {
     const previousKey = process.env.ANTHROPIC_API_KEY;
     const previousModel = process.env.ANTHROPIC_MODEL;
-    const previousSearch = process.env.AYROVIX_AI_WEB_SEARCH;
+    const previousSearch = process.env.ZAYROVIX_AI_WEB_SEARCH;
     process.env.ANTHROPIC_API_KEY = 'test-anthropic-web-search';
     process.env.ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001';
-    process.env.AYROVIX_AI_WEB_SEARCH = 'true';
+    process.env.ZAYROVIX_AI_WEB_SEARCH = 'true';
     const fetchMock = vi.fn(async (_url: string, _init: RequestInit = {}) => new Response(JSON.stringify({
       model: 'claude-haiku-4-5-20251001',
       content: [{
@@ -674,15 +674,15 @@ describe('AYROVIX Lens', () => {
     } finally {
       restoreEnv('ANTHROPIC_API_KEY', previousKey);
       restoreEnv('ANTHROPIC_MODEL', previousModel);
-      restoreEnv('AYROVIX_AI_WEB_SEARCH', previousSearch);
+      restoreEnv('ZAYROVIX_AI_WEB_SEARCH', previousSearch);
     }
   });
 
   test('QR texte exclut toute page Web Search sans prix et lien marchand exploitables', async () => {
     const previousKey = process.env.ANTHROPIC_API_KEY;
-    const previousSearch = process.env.AYROVIX_AI_WEB_SEARCH;
+    const previousSearch = process.env.ZAYROVIX_AI_WEB_SEARCH;
     process.env.ANTHROPIC_API_KEY = 'test-anthropic-qr-search';
-    process.env.AYROVIX_AI_WEB_SEARCH = 'true';
+    process.env.ZAYROVIX_AI_WEB_SEARCH = 'true';
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
       content: [{ type: 'web_search_tool_result', content: [
         { type: 'web_search_result', title: 'Produit QR AYR-REF-2026', url: 'https://www.amazon.fr/dp/B000000001' },
@@ -703,15 +703,15 @@ describe('AYROVIX Lens', () => {
       }
     } finally {
       restoreEnv('ANTHROPIC_API_KEY', previousKey);
-      restoreEnv('AYROVIX_AI_WEB_SEARCH', previousSearch);
+      restoreEnv('ZAYROVIX_AI_WEB_SEARCH', previousSearch);
     }
   });
 
   test('Claude Web Search respecte une deadline globale déjà presque épuisée', async () => {
     const previousKey = process.env.ANTHROPIC_API_KEY;
-    const previousSearch = process.env.AYROVIX_AI_WEB_SEARCH;
+    const previousSearch = process.env.ZAYROVIX_AI_WEB_SEARCH;
     process.env.ANTHROPIC_API_KEY = 'test-anthropic-deadline';
-    process.env.AYROVIX_AI_WEB_SEARCH = 'true';
+    process.env.ZAYROVIX_AI_WEB_SEARCH = 'true';
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
     try {
@@ -722,7 +722,7 @@ describe('AYROVIX Lens', () => {
       expect(Date.now() - startedAt).toBeLessThan(300);
     } finally {
       restoreEnv('ANTHROPIC_API_KEY', previousKey);
-      restoreEnv('AYROVIX_AI_WEB_SEARCH', previousSearch);
+      restoreEnv('ZAYROVIX_AI_WEB_SEARCH', previousSearch);
     }
   });
 
@@ -781,7 +781,7 @@ describe('AYROVIX Lens', () => {
 
     expect((await request(app).get('/api/admin/ayrovix-reviews')).status).toBe(401);
     const reviewer = request.agent(app);
-    const login = await reviewer.post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
+    const login = await reviewer.post('/api/admin/auth/login').send({ email: 'admin@zayrovi.tn', password: 'ZayroviBeta2026!' });
     expect(login.status).toBe(200);
     const csrf = login.body.data.csrfToken;
 
@@ -799,7 +799,7 @@ describe('AYROVIX Lens', () => {
     });
     expect(quoted.status).toBe(200);
     expect(quoted.body.data).toMatchObject({ status: 'QUOTED', quoted_price: 389.5, quoted_currency: 'TND', verified_variant: 'M · Noir · en stock' });
-    expect(db.get<any>('SELECT action,module FROM audit_logs WHERE entity_id=? ORDER BY created_at DESC', id)).toMatchObject({ action: 'STATUS_CHANGE', module: 'AYROVIX_REVIEWS' });
+    expect(db.get<any>('SELECT action,module FROM audit_logs WHERE entity_id=? ORDER BY created_at DESC', id)).toMatchObject({ action: 'STATUS_CHANGE', module: 'ZAYROVIX_REVIEWS' });
 
     const publicStatus = await request(app).get(`/api/ayrovix/review-request/${id}`).set('x-session-id', sessionId);
     expect(publicStatus.status).toBe(200);

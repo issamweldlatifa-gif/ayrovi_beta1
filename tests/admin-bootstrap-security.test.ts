@@ -18,20 +18,20 @@ afterEach(() => {
 describe('admin bootstrap recovery token', () => {
   test('consumes a reset token once and never reapplies it on restart', () => {
     process.env.NODE_ENV = 'test';
-    process.env.ADMIN_EMAIL = 'first-admin@ayrovi.tn';
+    process.env.ADMIN_EMAIL = 'first-admin@zayrovi.tn';
     process.env.ADMIN_PASSWORD = 'First-unique-password-2026!';
     delete process.env.ADMIN_BOOTSTRAP_RESET;
     const db = new QatafoDatabase(':memory:');
     try {
       ensureBootstrapAdmin(db);
-      const initial = db.get<{ id: string; password_hash: string }>('SELECT id,password_hash FROM admin_users WHERE email=?', 'first-admin@ayrovi.tn')!;
+      const initial = db.get<{ id: string; password_hash: string }>('SELECT id,password_hash FROM admin_users WHERE email=?', 'first-admin@zayrovi.tn')!;
       expect(verifyPassword('First-unique-password-2026!', initial.password_hash)).toBe(true);
 
-      process.env.ADMIN_EMAIL = 'recovered-admin@ayrovi.tn';
+      process.env.ADMIN_EMAIL = 'recovered-admin@zayrovi.tn';
       process.env.ADMIN_PASSWORD = 'Second-unique-password-2026!';
       process.env.ADMIN_BOOTSTRAP_RESET = 'f2c8325926175c4e1c02dcf848e9b7a4f2b26036f1e35c2ed37f9908b1b4de71';
       ensureBootstrapAdmin(db);
-      const recovered = db.get<{ id: string; password_hash: string }>('SELECT id,password_hash FROM admin_users WHERE email=?', 'recovered-admin@ayrovi.tn')!;
+      const recovered = db.get<{ id: string; password_hash: string }>('SELECT id,password_hash FROM admin_users WHERE email=?', 'recovered-admin@zayrovi.tn')!;
       expect(recovered.id).toBe(initial.id);
       expect(verifyPassword('Second-unique-password-2026!', recovered.password_hash)).toBe(true);
 

@@ -35,11 +35,11 @@
 
 ## الهوية
 
-نفس التطبيق، موش تطبيق جديد: الاسم **ZAYROVI** والمعرّف `app.ayrovi.mobile` (نفس ما كان في
+نفس التطبيق، موش تطبيق جديد: الاسم **ZAYROVI** والمعرّف `app.zayrovi.mobile` (نفس ما كان في
 `capacitor.config.ts`)، و`versionCode` يبدا من **7** (القديم كان 6). كي نكمّلو بنفس المعرّف
 ونفس مفتاح التوقيع، اللي عندو النسخة القديمة **يترقّى** بلا ما يعاود ينصّب. التفاصيل في `PLAN.md` §1.
 
-Deep link: `ayrovi://` (نفس scheme القديم).
+Deep link: `zayrovi://` (نفس scheme القديم).
 
 ## كيفاش تشغّل
 
@@ -63,7 +63,7 @@ npm run web            # معاينة في المتصفح
 https://github.com/issamweldlatifa-gif/ayrovi_beta1/releases/download/apk-demo-latest/ZAYROVI-Demo.apk
 ```
 
-- يثبت **فوق** النسخة السابقة (المعرّف `app.ayrovi.mobile.demo` + مفتاح الديمو
+- يثبت **فوق** النسخة السابقة (المعرّف `app.zayrovi.mobile.demo` + مفتاح الديمو
   الثابت) ⇒ تحديث، موش تنصيب ثانٍ.
 - الإصدارات بالكوميت (`apk-<commit>`) تبقى في تبويب Releases: تاريخ «شنوّة
   تبرّجت بالضبط».
@@ -89,7 +89,7 @@ npm run device:acceptance -- --launch  # جهاز ADB حقيقي: App Links + ف
 |---|---|
 | `assets/fonts/*.ttf` + `*-OFL.txt` | `../../assets/fonts/` (نفس خطوط الموقع) |
 | `assets/images/icon.png` | `../../assets/icon.png` (شعار على `#FFFFFF`، النقطة بنفسجية `#571EF6` منذ 15/10/2026) |
-| `assets/images/adaptive-icon.png` · `splash-icon.png` · `favicon.png` | وُلّدت بـ sharp من `../../client/public/media/logo-ayrovi-512.png`، ثم النقطة البرتقالية لوّنت بنفسجي `#571EF6` (15/10/2026) |
+| `assets/images/adaptive-icon.png` · `splash-icon.png` · `favicon.png` | وُلّدت بـ sharp من `../../client/public/media/logo-zayrovi-512.png`، ثم النقطة البرتقالية لوّنت بنفسجي `#571EF6` (15/10/2026) |
 | `assets/images/splash-icon-dark.png` | نسخة `splash-icon.png` للوضع الداكن: حرف A أبيض + نقطة بنفسجية (على `#0A0A0A`) |
 
 الألوان والأبعاد كاملة تجي من `src/design/tokens.generated.ts` — **ما تصلّحش بيدك**، صلّح
@@ -109,13 +109,13 @@ npm run build && PORT=3000 node dist/server.js
 cd apps/mobile && npx expo start --web --port 8081
 ```
 
-البروكسي يوجّه افتراضياً لـ `http://localhost:3000`؛ بدّل بـ `AYROVI_DEV_API`،
+البروكسي يوجّه افتراضياً لـ `http://localhost:3000`؛ بدّل بـ `ZAYROVI_DEV_API`،
 وتجاهل الـ `/api` لو كان عنوان مطلقاً متاع نسخة مغلقة أو إنتاج.
 
 في البناء الحقيقي (EAS) نحدّد العنوان صريحاً:
 
 ```bash
-EXPO_PUBLIC_API_BASE_URL=https://ayrovi.tn eas build --profile preview
+EXPO_PUBLIC_API_BASE_URL=https://zayrovi.tn eas build --profile preview
 ```
 
 ## الحالة
@@ -128,7 +128,7 @@ EXPO_PUBLIC_API_BASE_URL=https://ayrovi.tn eas build --profile preview
 - **P2 — الحساب (الجزء الأوّل): منجز.** الدخول بالـ SMS (OTP) وبالبريد وكلمة السرّ،
   الجلسة في خزنة الجهاز (Keychain/Keystore) وترجع وحدها بعد إغلاق التطبيق، «الخروج»
   يلغي الجلسة في الخادم فعلاً، وشاشة الحساب والطلبات. الخادم: تصريح العميل
-  (`x-ayrovi-client`) + `Bearer`، وحدود معدّل بالجلسة قبل الـ IP.
+  (`x-zayrovi-client`) + `Bearer`، وحدود معدّل بالجلسة قبل الـ IP.
 - **P2.2 — بقية الحساب: منجز.** ملف الحساب، العناوين، المفضلة، الإشعارات،
   التفضيلات، الأمان (تبديل كلمة السرّ)، وقائمة الطلبات + تفاصيل الطلب بالتتبّع.
 - **P2.3 — كلمة السرّ المنسيّة وصورة الملف والمزوّدون: منجز.** طلب رابط

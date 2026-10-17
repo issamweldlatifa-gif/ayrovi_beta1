@@ -1,5 +1,5 @@
 /**
- * AYROVI — P3/T1 verrou des tokens de design (couche back-office).
+ * ZAYROVI — P3/T1 verrou des tokens de design (couche back-office).
  *
  * Ce fichier ne teste pas les couleurs une par une : il teste la STRUCTURE que la phase T1 était
  * chargée d'installer, et rend la dette impossible à aggraver par inadvertance.
@@ -18,7 +18,7 @@
  *  5. aucun `var(--x)` utilisé par une feuille système, ni par un style en ligne de la couche
  *     admin (`client/src/admin/**`), ne reste non résolu — à une seule exception allowlistée :
  *     `--bo-icon`, règle CSS morte de `back-office.css` (voir rapport P3/T1 §7, F-2) ;
- *  6. la couche admin ne connaît qu'un seul orange : la valeur de `--ayrovi-cta`.
+ *  6. la couche admin ne connaît qu'un seul orange : la valeur de `--zayrovi-cta`.
  *
  * Les nombres de ce fichier sont MESURÉS (scripts/design-token-sweep.cjs --check), pas déduits.
  */
@@ -322,9 +322,9 @@ describe('une valeur, un seul porteur', () => {
 });
 
 describe('accent — une seule source', () => {
-  test('l\u2019accent du back-office est la valeur unique de --ayrovi-cta', () => {
+  test('l\u2019accent du back-office est la valeur unique de --zayrovi-cta', () => {
     const tokens = read(TOKENS);
-    const cta = declarations(tokens).find(([, n]) => n === '--ayrovi-cta');
+    const cta = declarations(tokens).find(([, n]) => n === '--zayrovi-cta');
     expect(cta).toBeTruthy();
     /* P4/T1 « Zalando Strategy » : l'orange de marque n'est plus un littéral local — il
        alias le jeton canonique, qui est le seul porteur de la valeur. On résout la chaîne
@@ -335,20 +335,20 @@ describe('accent — une seule source', () => {
       const alias = raw.match(/^var\((--[a-z0-9-]+)\)$/);
       return alias && depth < 4 ? resolve(alias[1], depth + 1) : raw;
     };
-    expect(cta![2].trim().toLowerCase()).toBe('var(--ayrovi-color-brand-orange)');
-    expect(resolve('--ayrovi-cta')).toBe('#ff6900');
-    expect(resolve('--ayrovi-color-brand-orange')).toBe('#ff6900');
+    expect(cta![2].trim().toLowerCase()).toBe('var(--zayrovi-color-brand-orange)');
+    expect(resolve('--zayrovi-cta')).toBe('#ff6900');
+    expect(resolve('--zayrovi-color-brand-orange')).toBe('#ff6900');
     for (const file of SYSTEM_SHEETS) {
       const body = withoutComments(read(file));
-      const oranges = (body.match(/var\(--ayrovi-cta\)|var\(--admin-yellow\)/g) ?? []).length;
+      const oranges = (body.match(/var\(--zayrovi-cta\)|var\(--admin-yellow\)/g) ?? []).length;
       expect(oranges, file).toBeGreaterThanOrEqual(0);
     }
     // la coquille et la fiche agent héritent : aucune nouvelle declaration locale d'accent
     expect(withoutComments(read('client/src/admin/admin.css'))).toMatch(
-      /\.mag-agent\s*{[^}]*--mag-yellow:\s*var\(--ayrovi-cta\)/,
+      /\.mag-agent\s*{[^}]*--mag-yellow:\s*var\(--zayrovi-cta\)/,
     );
     expect(withoutComments(read('client/src/admin/admin.css'))).toMatch(
-      /\.bo-shell\s*{[^}]*--bo-accent:\s*var\(--ayrovi-cta\)/,
+      /\.bo-shell\s*{[^}]*--bo-accent:\s*var\(--zayrovi-cta\)/,
     );
   });
 });
@@ -362,7 +362,7 @@ describe('chrome back-office — zéro littéral en dur dans les styles inline (
    *     au magasin public, pas des couleurs d'interface admin) ;
    *   • LensSectionPage.tsx  → maquettes téléphone Lens (simulent l'écran public) ;
    *   • HeroVisualsPage.tsx  → défaut persisté d'accent du hero (valeur d'enregistrement) ;
-   *   • AdminApp.tsx         → une miniature « Boutique AYROVI » (blanc sur l'accent client, dynamique) ;
+   *   • AdminApp.tsx         → une miniature « Boutique ZAYROVI » (blanc sur l'accent client, dynamique) ;
    *   • SocialAdminPage.tsx  → un fond #000 derrière un <video> (constante média, jamais de thème).
    * Tout AUTRE fichier doit rester à zéro ; ajouter un littéral au chrome admin est une
    * régression bloquée par ce test.
@@ -371,7 +371,7 @@ describe('chrome back-office — zéro littéral en dur dans les styles inline (
     ['client/src/admin/InterfaceStudio.tsx', 'palettes boutique (données)'],
     ['client/src/admin/LensSectionPage.tsx', 'maquettes téléphone (simulent l\'écran public)'],
     ['client/src/admin/HeroVisualsPage.tsx', 'défaut persisté d\'accent du hero (valeur d\'enregistrement)'],
-    ['client/src/admin/AdminApp.tsx', 'miniature « Boutique AYROVI » (accent dynamique)'],
+    ['client/src/admin/AdminApp.tsx', 'miniature « Boutique ZAYROVI » (accent dynamique)'],
     ['client/src/admin/SocialAdminPage.tsx', 'fond #000 d\'un <video> (constante média)'],
   ]);
   const HEX = /#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{3})(?![0-9a-zA-Z_])/g;

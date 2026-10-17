@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * AYROVI — P3/T1-bis c : étendre la couche de tokens à une feuille restée en littéraux.
+ * ZAYROVI — P3/T1-bis c : étendre la couche de tokens à une feuille restée en littéraux.
  *
  * Même contrat que `design-token-sweep.cjs` (T1) : une valeur n'est remplacée que par un token
  * dont la valeur est STRICTEMENT égale (à la casse et à la forme courte près), sinon un ton
@@ -9,7 +9,7 @@
  *
  * Différence avec T1 : ce script peut tourner sur un dépôt déjà balayé. Il ne réécrit pas le bloc
  * de tokens existant, il n'y ajoute que les tons manquants, et il préfère un token existant de la
- * couche admin (`--admin-*`) au token public (`--ayrovi-*`) quand les deux portent la même valeur.
+ * couche admin (`--admin-*`) au token public (`--zayrovi-*`) quand les deux portent la même valeur.
  *
  * Usage : node scripts/design-token-extend.cjs --files client/src/admin/arrival-ingestion.css [--check]
  */
@@ -62,7 +62,7 @@ function withoutComments(text) {
 /* ---------------------------------------------------------------- tables */
 const tokensText = read(TOKENS);
 const adminTokens = new Map(); // valeur -> nom canonique de la couche admin
-const publicTokens = new Map(); //  valeur -> nom public (--ayrovi-*)
+const publicTokens = new Map(); //  valeur -> nom public (--zayrovi-*)
 const toneTokens = new Map(); //   valeur -> nom de ton déjà créé
 for (const m of tokensText.matchAll(/(--[a-z0-9-]+)\s*:\s*([^;]+);/g)) {
   const value = m[2].trim();
@@ -70,7 +70,7 @@ for (const m of tokensText.matchAll(/(--[a-z0-9-]+)\s*:\s*([^;]+);/g)) {
   const key = canon(value);
   if (m[1].startsWith('--admin-tone-')) { if (!toneTokens.has(key)) toneTokens.set(key, m[1]); continue; }
   if (m[1].startsWith('--admin-')) { if (!adminTokens.has(key)) adminTokens.set(key, m[1]); continue; }
-  if (m[1].startsWith('--ayrovi-')) { if (!publicTokens.has(key)) publicTokens.set(key, m[1]); }
+  if (m[1].startsWith('--zayrovi-')) { if (!publicTokens.has(key)) publicTokens.set(key, m[1]); }
 }
 const newTones = new Map();
 const report = { files: {}, replaced: 0, toExisting: 0, toTone: 0, newTones: 0 };

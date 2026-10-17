@@ -11,16 +11,16 @@
 | القرار | القيمة |
 |---|---|
 | الاسم | **ZAYROVI** |
-| معرّف التطبيق | `app.ayrovi.mobile` — **نفس المعرّف متاع تطبيق Capacitor الحالي** |
+| معرّف التطبيق | `app.zayrovi.mobile` — **نفس المعرّف متاع تطبيق Capacitor الحالي** |
 | التقنية | **React Native + Expo** (TypeScript) · Expo Router · EAS Build |
-| البلاصة | `apps/mobile/` داخل هذا المستودع → يُنقل إلى مستودع `ayrovi-mobile` لمّا يجهز |
+| البلاصة | `apps/mobile/` داخل هذا المستودع → يُنقل إلى مستودع `zayrovi-mobile` لمّا يجهز |
 | الشاشات | **أصلية (native)** للواجهة كلها · WebView **فقط** لصفحات التجّار (الكابتشر يستلزمها) |
 | الربط بالخادم | الـ API فقط — لا منطق تسعير ولا كشف ولا كابتشر داخل التطبيق |
 | الجمهور | العميل النهائي (يعوّض تطبيق Capacitor الحالي) |
 
 **نفس المعرّف = ترقية، موش تطبيق ثاني.**
 
-`app.ayrovi.mobile` هو المعرّف اللي كان في `capacitor.config.ts` (والاسم المعروض كان «ZAYROVI» أصلاً).
+`app.zayrovi.mobile` هو المعرّف اللي كان في `capacitor.config.ts` (والاسم المعروض كان «ZAYROVI» أصلاً).
 كي نكملو بنفس المعرّف **ونفس مفتاح التوقيع**:
 
 - اللي عندو التطبيق القديم **يترقّى** للتطبيق الجديد — بلا ما يعاود ينصّب.
@@ -90,7 +90,7 @@ React Native يصلّح هذا **كان إذا استعملناه صحّ**:
 | 16 | قائمة المتاجر وقدراتها | `GET /api/v1/aywebs/stores`, `/stores/:id`, `/stores/:id/capabilities` | P3 | أصلي |
 | 17 | **فتح صفحة التاجر + الكابتشر** | `GET /capture/script.js` → حقن في WebView → `POST /capture` | P3 | WebView |
 | 18 | صفحة المنتج: صور، خيارات، توفّر | `POST /product/variants`, `GET /product/:id/availability` | P3 | أصلي |
-| 19 | سلّة AYWEBs + الجسر للسلّة الرئيسية | `/cart`, `/cart/items`, `/cart/verify`, `/cart/bridge-to-ayrovi` | P3 | أصلي |
+| 19 | سلّة AYWEBs + الجسر للسلّة الرئيسية | `/cart`, `/cart/items`, `/cart/verify`, `/cart/bridge-to-zayrovi` | P3 | أصلي |
 | 20 | طلب شراء بالنيابة (مراجعة بشرية) | `POST /api/v1/aywebs/purchase-requests` | P3 | أصلي |
 | 21 | طلب إضافة متجر جديد | `POST /api/v1/aywebs/store-requests` | P3 | أصلي |
 
@@ -126,7 +126,7 @@ React Native يصلّح هذا **كان إذا استعملناه صحّ**:
 | 34 | إشعارات push (FCM) | P6 | أصلي + خادم |
 | 35 | إشعارات داخل التطبيق | P6 | أصلي |
 | 36 | تشارك مع ZAYROVI من أي تطبيق (`ACTION_SEND`) | P6 | نظام التشغيل |
-| 37 | روابط عميقة `ayrovi://` + روابط عالمية | P6 | نظام التشغيل |
+| 37 | روابط عميقة `zayrovi://` + روابط عالمية | P6 | نظام التشغيل |
 | 38 | الصفحات القانونية (خصوصية / شروط / حذف بيانات) | P6 | WebView |
 | 39 | i18n كامل + تدقيق RTL | P6 | أصلي |
 
@@ -176,7 +176,7 @@ apps/mobile/
 | الأسرار | على الخادم | **لا سر واحد في التطبيق** |
 | الرموز في الرابط | لا | لا — الرمز يُسلَّم مرة واحدة ثم يُعاد إلى التطبيق مباشرة |
 
-**ما نعاودوهش:** تجربة `nativeHandoff` و`ayrovi://...?code=` متاع Capacitor (مسار هشّ).
+**ما نعاودوهش:** تجربة `nativeHandoff` و`zayrovi://...?code=` متاع Capacitor (مسار هشّ).
 **الخادم:** مسار جديد **إضافي** `POST /api/customer/auth/mobile/exchange` (+ `refresh`, `revoke`)؛
 الويب ما يتحرّكش. الرموز تُخزَّن hash في قاعدة البيانات، والتجديد rotation كامل.
 
@@ -202,7 +202,7 @@ apps/mobile/
 
 | # | التغيير | علاش | المرحلة |
 |---|---|---|---|
-| 1 | ~~`POST /api/customer/auth/mobile/exchange` + `refresh` + `revoke`~~ → **ما ثمّةش حاجة ليه** | التبادل يتعمل بالتصريح `x-ayrovi-client: mobile/<version>` + `Authorization: Bearer`؛ الخادم يعطي `session_token` في جسم الردّ، و`/auth/me` يرجّع `expiresAt`. نقطة إضافية = سطح هجوم إضافي بلا فايدة | **منجز في P2** |
+| 1 | ~~`POST /api/customer/auth/mobile/exchange` + `refresh` + `revoke`~~ → **ما ثمّةش حاجة ليه** | التبادل يتعمل بالتصريح `x-zayrovi-client: mobile/<version>` + `Authorization: Bearer`؛ الخادم يعطي `session_token` في جسم الردّ، و`/auth/me` يرجّع `expiresAt`. نقطة إضافية = سطح هجوم إضافي بلا فايدة | **منجز في P2** |
 | 2 | `POST/DELETE /api/customer/devices` + جدول أجهزة | تخزين رمز FCM | P6 |
 | 3 | ~~**مراجعة حدود المعدّل (rate limit)**~~ → **منجز** | الجلسة قبل الـ IP (`clientRateLimitKey`)، حدود OTP لكل رقم بلا IP، سقف عام للـ SMS، وحدود IP موسّعة (120/دقيقة) للمشتركين اللي يخرجوا بـ IP واحد | **منجز في P2** |
 | 4 | بعد توقّف تطبيق Capacitor: حذف `/auth/native/claim`, `/auth/google/native`, `nativeToken.ts`، وأصول Capacitor من CORS | تنظيف | بعد P6 |
@@ -217,12 +217,12 @@ apps/mobile/
 | `android/` + `capacitor.config.ts` + سكربتات `android:*` | يتحذفوا كامل |
 | `NativeSession.java` + `client/src/customer/nativeToken.ts` | SecureStore + Bearer |
 | `client/src/customer/nativeOAuth.ts` + `NativeSession` | `expo-auth-session` (PKCE) |
-| `AyroviAuthTabPlugin.java` | `expo-web-browser` |
+| `ZayroviAuthTabPlugin.java` | `expo-web-browser` |
 | `AyWebsBrowseActivity.java` + `AyWebsBrowsePlugin.java` | `react-native-webview` + `injectJavaScript` (نفس سكريبت الخادم) |
 | `MerchantDataService.java` | يتحذف — الكابتشر يجي من السكريبت |
 | `ApiTrust.java` | certificate pinning في React Native (اختياري) |
 | `ACTION_SEND` في `MainActivity` | `expo-share-intent` |
-| `ayrovi://` | `expo-linking` |
+| `zayrovi://` | `expo-linking` |
 | `client/src/services/nativeApiOrigin.ts` | يتحذف — التطبيق يستعمل URL مطلقاً مباشرةً |
 | `tests/android-shell.test.ts` + `.github/workflows/android-apk.yml` | يتحذفوا |
 
@@ -244,7 +244,7 @@ apps/mobile/
 | الخطر | الأثر | الجواب |
 |---|---|---|
 | حدود IP (CGNAT) | التطبيق يتردّ لبرشة مستعملين | إصلاح الخادم قبل P2 (بند 7.3) |
-| مفتاح التوقيع القديم | بلا المفتاح، الترقية على نفس المعرّف مستحيلة | التأكّد من `AYROVI_KEYSTORE_BASE64` قبل P6 |
+| مفتاح التوقيع القديم | بلا المفتاح، الترقية على نفس المعرّف مستحيلة | التأكّد من `ZAYROVI_KEYSTORE_BASE64` قبل P6 |
 | Google Play: حساب، توقيع، Data Safety | توقف الإصدار | يبدأ التحضير في P5 |
 | Firebase/FCM | إشعارات ما تخدمش | مشروع Firebase + `google-services.json` كسر (خارج git) |
 | iOS | كان حبّيت | حساب Apple ($99/سنة) — مرحلة P7 منفصلة |
@@ -264,7 +264,7 @@ apps/mobile/
 
 | # | الخطوة | شكون | علاش |
 |---|---|---|---|
-| 1 | **خدمة Render جديدة من هذا الفرع** (Branch = `arena/c0321e79-ayrovi-beta1`) | المالك (2 دقائق) | الخادم الحيّ يشغّل `main` ⇒ الدخول ما يخدمش. الإنتاج ما يتلمسش |
+| 1 | **خدمة Render جديدة من هذا الفرع** (Branch = `arena/c0321e79-zayrovi-beta1`) | المالك (2 دقائق) | الخادم الحيّ يشغّل `main` ⇒ الدخول ما يخدمش. الإنتاج ما يتلمسش |
 | 2 | تحقّق: `curl <العنوان>/api/ready` يرجّع `branch` = الفرع | الاثنين | دليل قاطع أن الكود وصل |
 | 3 | بناء APK تجريبي على العنوان الجديد + تجربة كاملة (دخول، سلّة، طلب، AYWEBs، Lens) | المالك | اختبار ما يلمسش بيانات الإنتاج |
 | 4 | **مفتاح التوقيع + 4 أسرار في GitHub** ⇒ AAB موقّع | المالك (كلمة سرّ ما تتكتبش في المحادثة) | بلاها ما فماش نشر على Play |
@@ -300,7 +300,7 @@ apps/mobile/
 - **`expo install` ما خدمش في بيئة التطوير هذي** (الشبكة محجوبة على `api.expo.dev`)؛ النسخ
   المطابقة تاخذت من `node_modules/expo/bundledNativeModules.json` وثُبّتت بشكل صريح.
 - **`legacy-peer-deps=true`** في `.npmrc` : حلّ npm 10 الصارم يفشل على تقاطع Expo + vitest.
-- **معرّف التطبيق `app.ayrovi.mobile` + `versionCode 7`** : ترقية للتطبيق القديم (كان 6).
+- **معرّف التطبيق `app.zayrovi.mobile` + `versionCode 7`** : ترقية للتطبيق القديم (كان 6).
 
 **ما تثبّتش:** التطبيق ما تشغّلش على جهاز أندرويد حقيقي (ما فماش Android SDK في بيئة العمل).
 التأكّد الحالي: `typecheck` + اختبارات + حزمة Metro للأندرويد (977 وحدة) + معاينة الويب.
@@ -344,8 +344,8 @@ apps/mobile/
 
 | البند | الحالة | الدليل |
 |---|---|---|
-| تصريح العميل وجلسة التطبيق | ✅ | `src/customer/sessionExchange.ts` — `x-ayrovi-client: mobile/<version>` → `session_token` + `session_expires_at`؛ كوكي الويب ما تبدّلش |
-| القوقعة القديمة (Capacitor) | ✅ | `x-ayrovi-native: 1` → `native_session_token` حرفياً كيما قبل — بلا أي تبديل |
+| تصريح العميل وجلسة التطبيق | ✅ | `src/customer/sessionExchange.ts` — `x-zayrovi-client: mobile/<version>` → `session_token` + `session_expires_at`؛ كوكي الويب ما تبدّلش |
+| القوقعة القديمة (Capacitor) | ✅ | `x-zayrovi-native: 1` → `native_session_token` حرفياً كيما قبل — بلا أي تبديل |
 | «الخروج» يلغي الجلسة فعلاً | ✅ | `destroyCustomerSession` يقرا الرمز من الكوكي **ولا** Bearer → إلغاء حقيقي في القاعدة |
 | `/auth/me` يرجّع `expiresAt` | ✅ | التطبيق يعرف وقتاش تموت الجلسة قبل ما يجيه `401` |
 | حدود المعدّل: الجلسة قبل الـ IP | ✅ | `src/services/rateKey.ts` — `session:<sha256>` ثاني `ip:` |
@@ -550,7 +550,7 @@ Android تخرج كاملة (Hermes 3.2 MB) — يعني الاستيراد ال
 | بطاقات الخيارات من الخادم (أفضل جهد) | ✅ | `fetchAyWebsVariants` (`POST /product/variants`) + `variant_details` من `resolve` |
 | بوابة «قابل للإضافة؟» بنفس شروط الخادم | ✅ | `ayWebsAddReadiness` (اختيار كامل، توفّر مؤكّد، تسعير خادمي) |
 | سلّة AYWEBs كاملة في تبويب السلّة | ✅ | `app/(tabs)/cart.tsx` — مجموعات، كمية مطلقة، حذف، قبول سعر، تحقّق |
-| الجسر `/cart/bridge-to-ayrovi` + معالجة `409` | ✅ | `bridgeAyWebsCartToAyrovi` + `AYWEBS_SOURCE_VERIFICATION_REQUIRED` |
+| الجسر `/cart/bridge-to-zayrovi` + معالجة `409` | ✅ | `bridgeAyWebsCartToZayrovi` + `AYWEBS_SOURCE_VERIFICATION_REQUIRED` |
 | نصوص fr/ar + اختبارات | ✅ | 44 مفتاح جديد؛ `tests/aywebs.test.ts` — 35 اختبار؛ الحزمة **7 ملفات / 138** |
 
 **قواعد محفوظة (من `docs/AYWEBS_ADD_TO_CART_ORDER.md` — أمر دائم):**
@@ -565,7 +565,7 @@ Android تخرج كاملة (Hermes 3.2 MB) — يعني الاستيراد ال
   بلا تسعير خادمي ⇒ معطّل) والسبب يتقال بالكلمات. و«Add to Cart» في شاشة المتجر يتفعّل
   كان كي **الخادم** صنّف الصفحة كصفحة منتوج (`/page/analyze`).
 - **التأكيد من السطر اللي رجّعو الخادم**: العنوان، الاختيار، الكمية، سعر الوحدة،
-  والمجموع بالدينار — موش من نسخة محلية. وإذا `ayrovi.linked=false` تتقال العبارة
+  والمجموع بالدينار — موش من نسخة محلية. وإذا `zayrovi.linked=false` تتقال العبارة
   الصريحة: «محفوظ في سلّة AYWEBs — الربط يتأكّد في خطوة السلّة» + السبب.
 - **`request_id` ثابت للعملية الواحدة**: إعادة الإرسال = إعادة تشغيل عند الخادم
   (`idempotent_replay`)، موش سطر ثاني.
@@ -854,7 +854,7 @@ Android تخرج كاملة (Hermes 3.2 MB) — يعني الاستيراد ال
 | Workflow AAB موقّع | ✅ | `.github/workflows/mobile-release-aab.yml` — يفشل **قبل** أي بناء كان الأسرار ناقصة |
 | رفض التوقيع التجريبي | ✅ | خطوة أخيرة تتحقّق من البصمة وترفض `Android Debug` |
 | ضبط الإصدار | ✅ | `version_name` / `version_code` من مدخلات التشغيل (كود Play لا يرجع) |
-| روابط عميقة | ✅ | `app.json` → `intentFilters` لـ`ayrovi.tn` + `www.ayrovi.tn` (`autoVerify`) |
+| روابط عميقة | ✅ | `app.json` → `intentFilters` لـ`zayrovi.tn` + `www.zayrovi.tn` (`autoVerify`) |
 | دليل التنفيذ | ✅ | `docs/RELEASE_PLAY_AR_2026-10-07.md` (مفاتيح، أسرار، Play، assetlinks، خادم API) |
 | **موقوف على قرار المستعمل**: خادم الإصدار | ⏳ | `EXPO_PUBLIC_API_BASE_URL` يتچرى وقت البناء — القرار في الدليل §6 |
 | **موقوف على مفاتيح المستعمل**: FCM / بوابة الكارطة / Apple | ❌ | مشروع Firebase، مفاتيح Konnect، حساب Apple — كلها متاع المالك |
@@ -875,7 +875,7 @@ Android تخرج كاملة (Hermes 3.2 MB) — يعني الاستيراد ال
 | شاشة الروابط غير المعروفة | ✅ | `app/+not-found.tsx` — تعرض المسار، وتفتحو في المتصفّح، ولا ترجع للرئيسية |
 | مفاتيح ar/fr | ✅ | `notFound.*` — 5 مفاتيح في القاموسين |
 
-**علاش**: مع `intentFilters`، روابط `https://ayrovi.tn/...` تفتح التطبيق — ومسارات
+**علاش**: مع `intentFilters`، روابط `https://zayrovi.tn/...` تفتح التطبيق — ومسارات
 الموقع (منتوج، عرض، صفحة قوانين) ما عندهاش شاشة أصلية بعد. الشاشة الفارغة تولّي
 «التطبيق مكسور» في ذهن المستعمل؛ هذي تقول الحقيقة وتعطي باباً حقيقياً.
 
@@ -975,7 +975,7 @@ Android تخرج كاملة (Hermes 3.2 MB) — يعني الاستيراد ال
 | تخزين مؤقّت لـGradle | ✅ | `cache: gradle` في ورشة العرض + ورشة AAB — البناءات الجاية ما تعاودش تنزّل كل شي |
 
 **علاش**: المستعمل طلب APK تجريبي «توّا». البناء نجح من الفرع بلا مفاتيح ولا متجر،
-ومعرّفو `app.ayrovi.mobile.demo` ⇒ يتمشّى حَدّ التطبيق القديم.
+ومعرّفو `app.zayrovi.mobile.demo` ⇒ يتمشّى حَدّ التطبيق القديم.
 
 ### P6 — «الخادم ما يعرفش التطبيق»: السبب يتقال بالحرف (منجز 07/10/2026)
 
@@ -994,16 +994,16 @@ Android تخرج كاملة (Hermes 3.2 MB) — يعني الاستيراد ال
 
 | البند | الحالة | الدليل |
 |---|---|---|
-| السبب | ✅ | الحزمة كانت تتبنى بـ`https://ayrovi.tn` — **ما فماش خادم بهذا الاسم** ⇒ كل شاشة «ما فماش شبكة» |
-| الأصل الحقيقي | ✅ | `https://ayrovi-beta1-1.onrender.com` (مرجعان: `client/src/services/apiOrigin.ts` + `android/app/build.gradle`) |
+| السبب | ✅ | الحزمة كانت تتبنى بـ`https://zayrovi.tn` — **ما فماش خادم بهذا الاسم** ⇒ كل شاشة «ما فماش شبكة» |
+| الأصل الحقيقي | ✅ | `https://zayrovi-beta1-1.onrender.com` (مرجعان: `client/src/services/apiOrigin.ts` + `android/app/build.gradle`) |
 | التصحيح | ✅ | `src/api/config.ts` + ورشتَا APK/AAB (افتراضي وارتكاز) + `release-preflight` + `app/+not-found.tsx` |
 | منع الرجوع | ✅ | `tests/origin.test.ts` — 5 اختبارات تربط الافتراضي بالورشات وبـ`app.json` |
-| رابط عميق على الخادم الحيّ | ✅ | `app.json` يعلن `ayrovi-beta1-1.onrender.com` كذلك (التحقّق وقت النشر) |
+| رابط عميق على الخادم الحيّ | ✅ | `app.json` يعلن `zayrovi-beta1-1.onrender.com` كذلك (التحقّق وقت النشر) |
 
 **حقيقة الخادم الحيّ (`main`)**: عنده كل نقاط النهاية اللي يحتاجها التطبيق
 (`/api/ayrovix`, `/api/ocerex`, `/api/assistant`, `/api/v1/aywebs`,
 `/api/cart/items`, `/api/checkout`) **إلاّ** إعطاء جلسة التطبيق
-(`x-ayrovi-client`) — يعني: تصفّح كامل بلا حساب، والدخول يحتاج نشر الفرع.
+(`x-zayrovi-client`) — يعني: تصفّح كامل بلا حساب، والدخول يحتاج نشر الفرع.
 
 **تحقّق**: `typecheck` ✅ · **261 اختباراً في 17 ملفاً** ✅ · حزمة Metro ✅.
 
@@ -1011,7 +1011,7 @@ Android تخرج كاملة (Hermes 3.2 MB) — يعني الاستيراد ال
 
 | القياس (07/10) | النتيجة |
 |---|---|
-| `https://ayrovi-beta1-1.onrender.com/api/health` | **200** — الخادم حيّ |
+| `https://zayrovi-beta1-1.onrender.com/api/health` | **200** — الخادم حيّ |
 | `…/api/ready` | **200** و`commit:"local"` — **موش منشور من Git** |
 | `…/.well-known/assetlinks.json` | 200 لكن **HTML** ⇒ طريج الفرع ما موجودش |
 | `…/api/v1/aywebs/health` | 200 بلا `stats` ⇒ الكود من `main` |
@@ -1020,7 +1020,7 @@ Android تخرج كاملة (Hermes 3.2 MB) — يعني الاستيراد ال
 **أداة القياس**: `.github/workflows/server-probe.yml` — تشغيل يدوي، بلا أسرار،
 والنتيجة تتطبع كـannotation مقروءة عبر الـAPI. تمنع البحث في المكان الغالط.
 
-**النتيجة**: المستعمل يشوف «التطبيق ما يخدمش» خاطر الحزمة كانت على `ayrovi.tn`
+**النتيجة**: المستعمل يشوف «التطبيق ما يخدمش» خاطر الحزمة كانت على `zayrovi.tn`
 (بلا خادم) — تصلّحت اليوم؛ والدخول يبقى محجوب خاطر الخادم يشغّل `main`.
 
 ### P6 — «الخادم على أي فرع؟»: سؤال ولّى عندو جواب (منجز 07/10/2026)
@@ -1034,7 +1034,7 @@ Android تخرج كاملة (Hermes 3.2 MB) — يعني الاستيراد ال
 | في الجهوزية | ✅ | `release-preflight`: تحذير يسمّي الفرعين كي تكون الخدمة على فرع آخر (اختبار 9) |
 | القياس | ✅ | `server-probe` يفحص عدّة عناوين ويحكم main/branch من مسارات الكود |
 
-**نتيجة القياس (07/10)**: `ayrovi-beta1-1` و`ayrovi-beta1` — الزوز 200،
+**نتيجة القياس (07/10)**: `zayrovi-beta1-1` و`zayrovi-beta1` — الزوز 200،
 `commit:"local"`، `assetlinks=HTML`، `aywebs` بلا `stats` ⇒ **حتى واحد ما يشغّل
 كود الفرع**. القرار: **خدمة جديدة من الفرع، والإنتاج الحالي ما يتلمسش**.
 
@@ -1081,7 +1081,7 @@ Android تخرج كاملة (Hermes 3.2 MB) — يعني الاستيراد ال
 | الخطوة | النتيجة |
 |---|---|
 | `POST /auth/otp/request` (تلفون تونسي) | 201 + `challengeId` (و`developmentCode` في التنمية) |
-| `POST /auth/otp/verify` بـ`x-ayrovi-client: mobile/2.0.0` | 200 + **`session_token`** + `csrfToken` |
+| `POST /auth/otp/verify` بـ`x-zayrovi-client: mobile/2.0.0` | 200 + **`session_token`** + `csrfToken` |
 | `GET /auth/me` بـ`Bearer` | 200، `phoneVerified: true`، و**تدوير الـCSRF** |
 | `GET /cart/items` بـ`x-session-id` | 200 |
 | `POST /checkout` | 400 «سلّة فارغة» — الجلسة، الـCSRF، التحقّق، وبوّابة السلّة كاملين يخدمو |

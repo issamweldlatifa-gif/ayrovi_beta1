@@ -1,5 +1,5 @@
 /**
- * AYWEBs / AYROVIX — INTÉGRITÉ DU PRIX (« Phase 0 », 06/10/2026).
+ * AYWEBs / ZAYROVIX — INTÉGRITÉ DU PRIX (« Phase 0 », 06/10/2026).
  *
  * POURQUOI CE MODULE EXISTE
  * -------------------------

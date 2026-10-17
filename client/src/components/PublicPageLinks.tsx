@@ -49,7 +49,7 @@ export function PublicPageLinks() {
   }, []);
 
   if (!links.length) return null;
-  return <nav className="public-page-links" dir="ltr" aria-label={tr('Découvrir AYROVI', 'اكتشف AYROVI')} data-public-page-links={links.length}>
+  return <nav className="public-page-links" dir="ltr" aria-label={tr('Découvrir ZAYROVI', 'اكتشف ZAYROVI')} data-public-page-links={links.length}>
     {links.map(link => <a key={link.id} href={link.href} dir="auto">{isArabic ? link.labelAr : link.labelFr}</a>)}
   </nav>;
 }

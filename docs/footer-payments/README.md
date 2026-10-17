@@ -82,7 +82,7 @@ en orange `#FF7900` · aucun pied de page recopié dans les pages plein écran.
 ```bash
 npm test                        # 99 fichiers, 1547+ tests
 npm run design:check            # contrat d'icônes 0 violation, inventaire à jour
-AYROVI_BASE_URL=http://127.0.0.1:3000 npm run verify:footer-payments   # 68 / 68
+ZAYROVI_BASE_URL=http://127.0.0.1:3000 npm run verify:footer-payments   # 68 / 68
 ```
 
 Captures : `docs/footer-payments/evidence/{fr,ar}-{390,1360}-footer.png` (+ page complète en 390).

@@ -25,9 +25,9 @@ const round = (value: number): number => Math.round(value * 1000) / 1000;
 const malformed = (what: string): ApiError => new ApiError('malformed', `Réponse panier illisible : ${what}`);
 
 /** حالة الثقة في سعر السطر — قرار الخادم، موش تقدير الجهاز. */
-export type AyroviPriceTrust = 'FRESH' | 'MANUAL' | 'STALE';
+export type ZayroviPriceTrust = 'FRESH' | 'MANUAL' | 'STALE';
 
-export interface AyroviCartLine {
+export interface ZayroviCartLine {
   id: string;
   store: string;
   title: string;
@@ -41,7 +41,7 @@ export interface AyroviCartLine {
   customerNote: string;
   priceVerificationStatus: 'VERIFIED' | 'PENDING_MANUAL';
   /** `''` = الخادم ما قالش (نسخة قديمة من السطر) — ما نخمّنوش. */
-  priceTrust: AyroviPriceTrust | '';
+  priceTrust: ZayroviPriceTrust | '';
   priceTrustReason: string;
   priceTrustExpiresAt: string;
   availability: string;
@@ -53,10 +53,10 @@ export interface AyroviCartLine {
   updatedAt: string;
 }
 
-export interface AyroviCart {
+export interface ZayroviCart {
   sessionId: string;
   serverNow: string;
-  items: AyroviCartLine[];
+  items: ZayroviCartLine[];
   /** مجموع القطع (موش عدد السطور). */
   units: number;
   productSubtotalTND: number;
@@ -66,7 +66,7 @@ export interface AyroviCart {
   blockedIds: string[];
 }
 
-export function parseAyroviCartLine(payload: unknown): AyroviCartLine {
+export function parseZayroviCartLine(payload: unknown): ZayroviCartLine {
   if (!isRecord(payload) || !str(payload.id)) throw malformed('ligne');
   const trust = str(payload.priceTrust);
   const promo = isRecord(payload.promo) ? payload.promo : null;
@@ -96,9 +96,9 @@ export function parseAyroviCartLine(payload: unknown): AyroviCartLine {
   };
 }
 
-export function parseAyroviCart(payload: unknown): AyroviCart {
+export function parseZayroviCart(payload: unknown): ZayroviCart {
   if (!isRecord(payload) || !Array.isArray(payload.items)) throw malformed('panier');
-  const items = payload.items.map(parseAyroviCartLine);
+  const items = payload.items.map(parseZayroviCartLine);
   const deliveryTND = num(payload.deliveryTND) ?? 0;
   const totalTND = num(payload.totalTND) ?? 0;
   return {
@@ -115,22 +115,22 @@ export function parseAyroviCart(payload: unknown): AyroviCart {
 }
 
 /** `GET /api/cart/items` — السلّة كاملة بلا أي حساب في الجهاز. */
-export async function fetchAyroviCart(
+export async function fetchZayroviCart(
   options: RequestOptions & { sessionId: string },
-): Promise<AyroviCart> {
+): Promise<ZayroviCart> {
   const payload = await apiGetEnvelope<unknown>('/api/cart/items', {
     signal: options.signal,
     timeoutMs: options.timeoutMs,
     headers: { 'x-session-id': options.sessionId, ...(options.headers ?? {}) },
   });
-  return parseAyroviCart(payload);
+  return parseZayroviCart(payload);
 }
 
 /**
  * `PATCH /api/cart/items/:id` — الكمية **مطلقة** (0 = حذف في نفس المسار).
  * ما نبعثوش كمية نسبية: الجهاز ما يعرفش الحالة الحقيقية في الخادم.
  */
-export async function updateAyroviCartQuantity(
+export async function updateZayroviCartQuantity(
   input: { itemId: string; quantity: number; sessionId: string },
   options: RequestOptions = {},
 ): Promise<{ itemId: string; quantity: number }> {
@@ -187,7 +187,7 @@ export async function addCatalogToCart(input: {
 }, options: RequestOptions = {}): Promise<CatalogCartResult> {
   // `x-session-id` إلزامي على الكتابة (`requireSessionId` في الخادم): بلاه الخادم يرد 400
   // «Session client invalide ou absente.» قبل ما يقرا المنتوج — كان هذا حال زر «زيد للسلّة»
-  // في صفحة المنتوج. وبنفس المعرّف، السطر يظهر في السلّة اللي تقرا بـ`fetchAyroviCart`.
+  // في صفحة المنتوج. وبنفس المعرّف، السطر يظهر في السلّة اللي تقرا بـ`fetchZayroviCart`.
   const payload = await apiSendEnvelope<Record<string, unknown>>('POST', '/api/cart/catalog', {
     ...options,
     headers: { 'x-session-id': input.sessionId, ...(options.headers ?? {}) },
@@ -208,7 +208,7 @@ export async function addCatalogToCart(input: {
   };
 }
 
-export async function removeAyroviCartItem(
+export async function removeZayroviCartItem(
   input: { itemId: string; sessionId: string },
   options: RequestOptions = {},
 ): Promise<void> {
@@ -222,10 +222,10 @@ export async function removeAyroviCartItem(
 
 /* ── البوابة: واش يوقف الطلب قبل ما نبداو ──────────────────────────────── */
 
-export interface AyroviCartReadiness {
+export interface ZayroviCartReadiness {
   canCheckout: boolean;
   /** سطور يلزمها إعادة تحقّق من السعر قبل الطلب. */
-  staleLines: AyroviCartLine[];
+  staleLines: ZayroviCartLine[];
   /** سبب واحد للعرض: التوصيل/الدفع يزيدو يتحقّقوا في شاشة الشراء. */
   blockReason: '' | 'EMPTY' | 'PRICE_VERIFICATION_REQUIRED';
 }
@@ -235,7 +235,7 @@ export interface AyroviCartReadiness {
  * **سلّة فارغة ما تولّدش طلباً**، وسطر `STALE` يوقف الطلب كامل بسببه.
  * هذي بوابة عرض فقط — الخادم يبقى هو الحاكم.
  */
-export function ayroviCartReadiness(cart: AyroviCart | null): AyroviCartReadiness {
+export function ayroviCartReadiness(cart: ZayroviCart | null): ZayroviCartReadiness {
   if (!cart || cart.items.length === 0) return { canCheckout: false, staleLines: [], blockReason: 'EMPTY' };
   const staleLines = cart.items.filter((line) => line.priceTrust === 'STALE');
   if (staleLines.length) {
@@ -245,7 +245,7 @@ export function ayroviCartReadiness(cart: AyroviCart | null): AyroviCartReadines
 }
 
 /** رسالة السطر الموقوف — من كود الخادم، بلا تفسير مخترع. */
-export const AYROVI_PRICE_TRUST_REASONS: Record<string, string> = {
+export const ZAYROVI_PRICE_TRUST_REASONS: Record<string, string> = {
   TOKEN_EXPIRED_OR_ALTERED: 'QUOTE_EXPIRED',
   TOKEN_MISSING: 'QUOTE_MISSING',
   MANUAL_REVIEW_PATH: 'MANUAL_REVIEW',

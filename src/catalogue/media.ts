@@ -1,5 +1,5 @@
 /**
- * AYROVI Catalogue (P2.1) — product media, with the P0/P1 file policy inherited.
+ * ZAYROVI Catalogue (P2.1) — product media, with the P0/P1 file policy inherited.
  *
  * A media row is a *reference* (an https URL, or a path inside the public uploads tree),
  * never a file write: P2.1 opens no new public surface, so `PUBLIC_UPLOAD_DIRS` stays

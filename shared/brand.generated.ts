@@ -40,7 +40,7 @@ export const BRAND = {
     "secondary": "#E5E5E5"
   },
   "typography": {
-    "preset": "ayrovi-a",
+    "preset": "zayrovi-a",
     "stack": "'Zalando Sans', 'Noto Sans Arabic', sans-serif",
     "headingWidth": "100%",
     "bodyWeight": 500,

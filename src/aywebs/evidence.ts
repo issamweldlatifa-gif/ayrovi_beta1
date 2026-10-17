@@ -106,7 +106,7 @@ export function ayWebsVariantLabel(variant: AyWebsVariantSelection | null): stri
  * stockée sur le produit, la ligne de panier ou la ligne de commande. Sans
  * cette option, un appelant qui enrichit l'empreinte (marque, nombre de
  * variantes…) produirait une ligne de preuve introuvable par son propre hash —
- * la preuve doit être vérifiable par l'empreinte qu'Ayrovi affiche (§45).
+ * la preuve doit être vérifiable par l'empreinte qu'Zayrovi affiche (§45).
  */
 export function recordAyWebsEvidence(
   db: QatafoDatabase,

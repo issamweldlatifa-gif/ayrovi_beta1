@@ -1,6 +1,6 @@
 import { chromium } from 'playwright';
 import fs from 'node:fs';
-const base = process.env.AYROVI_BASE_URL;
+const base = process.env.ZAYROVI_BASE_URL;
 const output = 'docs/public-additions/evidence'; fs.mkdirSync(output, { recursive: true });
 const checks = [], errors = [];
 const check = (name, pass, details) => { checks.push({ name, pass: Boolean(pass), details }); if (!pass) throw new Error(name + ': ' + JSON.stringify(details)); };
@@ -8,7 +8,7 @@ const browser = await chromium.launch({ headless: true });
 try {
   for (const locale of ['fr', 'ar']) {
     const context = await browser.newContext({ viewport: { width: 390, height: 844 }, locale });
-    await context.addInitScript(locale => localStorage.setItem('ayrovi.locale.v1', locale), locale);
+    await context.addInitScript(locale => localStorage.setItem('zayrovi.locale.v1', locale), locale);
     const page = await context.newPage(); page.on('pageerror', e => errors.push(e.message));
 
     // Real application + isolated database. Force valid, deterministic CMS dates only in test responses.
@@ -45,7 +45,7 @@ try {
         if (!el) return false;
         const s = getComputedStyle(el);
         const probe = document.createElement('span');
-        probe.style.color = 'var(--ayrovi-color-brand-orange)';
+        probe.style.color = 'var(--zayrovi-color-brand-orange)';
         // Le jeton est surchargé sur `.ay-customer-root` (customerTheme) : la sonde doit
         // vivre DANS le même contexte de cascade que le bandeau, sinon elle lit la valeur
         // de :root et le contrôle échoue pour une mauvaise raison.
@@ -94,7 +94,7 @@ try {
         check(`${locale}: ${href}/${width} page fits`, await page.locator('[data-public-page]').evaluate(e => e.scrollWidth <= e.clientWidth));
       }
       await page.getByRole('button', { name: locale === 'ar' ? 'فتح القائمة' : 'Ouvrir le menu', exact: true }).click();
-      const menu = page.getByRole('dialog', { name: locale === 'ar' ? 'قائمة AYROVI' : 'Menu AYROVI', exact: true });
+      const menu = page.getByRole('dialog', { name: locale === 'ar' ? 'قائمة ZAYROVI' : 'Menu ZAYROVI', exact: true });
       await menu.waitFor();
       check(`${locale}: ${href} menu uses real destination links`, await menu.locator('a[href="/magazine"]').count() === 1);
       await menu.getByRole('button', { name: locale === 'ar' ? 'التواصل' : 'Social', exact: true }).click();

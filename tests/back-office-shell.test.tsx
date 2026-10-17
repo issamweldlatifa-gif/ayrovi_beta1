@@ -69,10 +69,10 @@ const CONTEXT: BackOfficeContextPayload = {
   frameworkVersion: 'p2.0', role: 'ADMIN', legacyPermissions: ['content:write'],
   employee: { code: 'EMP-014', label: 'Rania Ben Salah', jobTitle: 'Ops', status: 'ACTIVE', branch: 'Nabeul', department: 'Ventes' },
   counts: NAVIGATION.counts, domains: NAVIGATION.domains, roadmap: NAVIGATION.roadmap,
-  session: { name: 'Rania', email: 'admin@ayrovi.tn' },
+  session: { name: 'Rania', email: 'admin@zayrovi.tn' },
 };
 
-const IDENTITY = { name: 'Rania', email: 'admin@ayrovi.tn', role: 'ADMIN', permissions: ['content:write', 'dashboard:read'] };
+const IDENTITY = { name: 'Rania', email: 'admin@zayrovi.tn', role: 'ADMIN', permissions: ['content:write', 'dashboard:read'] };
 
 let store: any = {
   context: CONTEXT, navigation: NAVIGATION, resources: [PRODUCTS_DESCRIPTOR], loading: false, error: '', retry: vi.fn(),
@@ -562,7 +562,7 @@ describe('E8/E9 — thème sombre & direction RTL', () => {
     const roles = (block.match(/--admin-[a-z-]+:/g) ?? []).length;
     expect(roles).toBeGreaterThanOrEqual(15);
     // le bloc sombre est placé avant les blocs clairs (voirie à plat des verrous)
-    expect(start).toBeLessThan(tokens.indexOf('--admin-ink:var(--ayrovi-text-primary)'));
+    expect(start).toBeLessThan(tokens.indexOf('--admin-ink:var(--zayrovi-text-primary)'));
   });
 
   it('la feuille admin embarque les finitions sombres et une direction logique (E9)', () => {

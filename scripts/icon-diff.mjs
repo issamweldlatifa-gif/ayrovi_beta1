@@ -17,7 +17,7 @@ const { renderDiff } = await import(path.join(outDir, 'diff.cjs'));
 const body = renderDiff();
 
 const css = `
-:root { --ink:#111827; --muted:#6b7280; --line:#e8eaef; --sig:#FF6A00; --ayrovi-icon-stroke: 2; --ayrovi-icon-signature: #FF6A00; }
+:root { --ink:#111827; --muted:#6b7280; --line:#e8eaef; --sig:#FF6A00; --zayrovi-icon-stroke: 2; --zayrovi-icon-signature: #FF6A00; }
 * { box-sizing: border-box; }
 body { margin:0; background:#fff; color:var(--ink); font-family:Inter,Helvetica,Arial,sans-serif; padding:24px; }
 h1 { font-size:20px; margin:0 0 4px; letter-spacing:-.02em; }
@@ -29,16 +29,16 @@ h1 { font-size:20px; margin:0 0 4px; letter-spacing:-.02em; }
 .name { font-weight:700; font-size:13px; }
 .name small { display:block; color:var(--muted); font-weight:500; font-size:11px; margin-top:2px; }
 .badge { display:inline-block; margin-left:8px; font-size:10px; font-weight:700; color:#fff; background:var(--sig); border-radius:999px; padding:2px 8px; vertical-align:middle; }
-.ayrovi-icon,.lucide { display:block; margin:0 auto; overflow:visible; fill:none; stroke-linecap:round; stroke-linejoin:round; stroke-width:var(--ayrovi-icon-stroke,2); shape-rendering:geometricPrecision; }
-.ayrovi-icon > *:not([data-ayrovi-signature]), .lucide > *:not([data-ayrovi-signature]) { vector-effect:non-scaling-stroke; }
-.ayrovi-icon[data-ayrovi-icon='Profile'], .ayrovi-icon[data-ayrovi-icon='Profile'] > * { vector-effect:none !important; }
-.ayrovi-icon [data-ayrovi-signature], .lucide [data-ayrovi-signature] { fill:var(--ayrovi-icon-signature,#FF6A00) !important; stroke:none !important; }
-.ayrovi-icon [data-ayrovi-accent] { stroke:var(--ayrovi-icon-signature,#FF6A00) !important; fill:none !important; }
+.zayrovi-icon,.lucide { display:block; margin:0 auto; overflow:visible; fill:none; stroke-linecap:round; stroke-linejoin:round; stroke-width:var(--zayrovi-icon-stroke,2); shape-rendering:geometricPrecision; }
+.zayrovi-icon > *:not([data-zayrovi-signature]), .lucide > *:not([data-zayrovi-signature]) { vector-effect:non-scaling-stroke; }
+.zayrovi-icon[data-zayrovi-icon='Profile'], .zayrovi-icon[data-zayrovi-icon='Profile'] > * { vector-effect:none !important; }
+.zayrovi-icon [data-zayrovi-signature], .lucide [data-zayrovi-signature] { fill:var(--zayrovi-icon-signature,#FF6A00) !important; stroke:none !important; }
+.zayrovi-icon [data-zayrovi-accent] { stroke:var(--zayrovi-icon-signature,#FF6A00) !important; fill:none !important; }
 `;
 const page = `<!DOCTYPE html>
 <html lang="ar" dir="ltr"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>AYROVI — قبل / بعد</title><style>${css}</style></head><body>
-<h1>AYROVI Icon System — قبل / بعد (قبل = git HEAD، بعد = الكود الحالي)</h1>
+<title>ZAYROVI — قبل / بعد</title><style>${css}</style></head><body>
+<h1>ZAYROVI Icon System — قبل / بعد (قبل = git HEAD، بعد = الكود الحالي)</h1>
 <p class="sub">الصفوف البرتقالية = أيقونة تغيّرت هندسيًا أو في موضع نقطة الـ signature. الرموز في «قبل» مأخوذة مباشرة من آخر commit.</p>
 ${body}
 </body></html>`;

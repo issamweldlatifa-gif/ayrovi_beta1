@@ -1,5 +1,5 @@
 /**
- * AYROVI ERP Core — Permission engine (P1).
+ * ZAYROVI ERP Core — Permission engine (P1).
  *
  * Current system (kept, untouched): 4 roles, 12 `module:action` permissions in a
  * hard-coded `Record<AdminRole, Set<AdminPermission>>` (src/admin/permissions.ts),

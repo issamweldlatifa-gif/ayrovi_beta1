@@ -2,7 +2,7 @@
  * Compte et session de l'APPLICATION (phase P2).
  *
  * Ce que ces tests protègent, dans l'ordre d'importance :
- *   1. l'application se déclare comme client mobile (`x-ayrovi-client`) — sans
+ *   1. l'application se déclare comme client mobile (`x-zayrovi-client`) — sans
  *      cette déclaration, le serveur répond un cookie que l'application ne peut
  *      pas lire, et la connexion est perdue à la fermeture ;
  *   2. le jeton va dans le trousseau, jamais dans les préférences, et il est
@@ -60,7 +60,7 @@ afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); setCsrfRefresher(
 describe('en-têtes d’authentification', () => {
   it('déclare toujours le type de client, même visiteur', () => {
     const headers = authHeaders('GET');
-    expect(headers['x-ayrovi-client']).toBe('mobile/2.0.8');
+    expect(headers['x-zayrovi-client']).toBe('mobile/2.0.8');
     expect(headers.Authorization).toBeUndefined();
     expect(headers['x-csrf-token']).toBeUndefined();
   });
@@ -301,7 +301,7 @@ describe('appels du compte', () => {
     expect(challenge.developmentCode).toBe('654321');
     const call = lastCall(fetchMock);
     expect(call.url).toBe(`${API_BASE_URL}/api/customer/auth/otp/request`);
-    expect(call.headers['x-ayrovi-client']).toBe(CLIENT_HEADER);
+    expect(call.headers['x-zayrovi-client']).toBe(CLIENT_HEADER);
     expect(JSON.parse(String(call.init.body))).toEqual({ phone: '20 123 456' });
   });
 
@@ -397,7 +397,7 @@ describe('messages d’erreur', () => {
   });
 
   it('خادم قديم (بلا `session_token`) ⇒ السبب بالحرف، موش «فشل الطلب»', () => {
-    // هذا اللي يصير مع خادم ما يعرفش `x-ayrovi-client`: يرجّع كوكي للمتصفّح
+    // هذا اللي يصير مع خادم ما يعرفش `x-zayrovi-client`: يرجّع كوكي للمتصفّح
     // وما يرجّعش توكِن للتطبيق. المستعمل لازم يقرا السبب والعلاج.
     const oldServer = new ApiError('malformed', 'session_token absent', { code: 'SESSION_NOT_ISSUED' });
     expect(authMessageForCode('SESSION_NOT_ISSUED')).toBe('auth.error.noSession');

@@ -232,7 +232,7 @@ export const ResourceWorkspace: React.FC<{ descriptor: ResourceDescriptor; canWr
     () => buildColumns(descriptor).map((column) => ({ key: String(column.key), label: String(column.label ?? column.key) })),
     [descriptor],
   );
-  const exportRows = () => downloadCsv(csvFileName(`ayrovi-${descriptor.section}`), exportColumns, rows);
+  const exportRows = () => downloadCsv(csvFileName(`zayrovi-${descriptor.section}`), exportColumns, rows);
 
   const statusValues = descriptor.status?.values ?? [];
   return <section className="admin-list-card bo-workspace">

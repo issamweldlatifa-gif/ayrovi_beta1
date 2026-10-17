@@ -66,11 +66,11 @@ import { recordVariantContract } from '../ayrovix/services/variantAvailability';
  *       → adaptateur marchand (lecture via SmartLinkScraper)
  *       → normalisation (titre, prix, devise, images, variantes libres)
  *       → disponibilité (jamais UNKNOWN → AVAILABLE)
- *       → devis AYROVI recalculé côté SERVEUR (aucune formule de prix cliente)
+ *       → devis ZAYROVI recalculé côté SERVEUR (aucune formule de prix cliente)
  *       → preuve (§28) + persistance produit/variantes
  *       → événement domaine AYWEB_PRODUCT_RESOLVED (§39)
  *
- * Identités (§53) : `productId` est l'identité AYROVI, `sourceProductId` reste
+ * Identités (§53) : `productId` est l'identité ZAYROVI, `sourceProductId` reste
  * l'identité marchand. Les deux sont conservées, jamais fusionnées.
  */
 
@@ -121,7 +121,7 @@ export interface AyWebsResolveResult {
   captureId: string;
   productId: string;
   product: AyWebsResolvedProduct;
-  /** Contrat V1 conservé : le produit AYROVI historique + son prix recalculé. */
+  /** Contrat V1 conservé : le produit ZAYROVI historique + son prix recalculé. */
   scrapedProduct: ScrapedProduct;
   sourceProduct: AyWebsSourceProduct;
   analysis: AyWebsPageAnalysis;
@@ -249,7 +249,7 @@ export async function resolveAyWebsProduct(
    *
    * Une fiche déjà lue il y a quelques minutes — pendant l'ouverture ou
    * l'affichage initial de la feuille de variantes — peut réutiliser la lecture
-   * mémorisée. Le prix AYROVI est TOUJOURS recalculé ci-dessous par le moteur
+   * mémorisée. Le prix ZAYROVI est TOUJOURS recalculé ci-dessous par le moteur
    * tarifaire (§45 : le cache ne sert jamais un prix, seulement une lecture).
    *
    * `refresh: true` force une relecture fraîche pour toute nouvelle intention
@@ -451,7 +451,7 @@ export async function resolveAyWebsProduct(
     }
   }
 
-  // Le prix AYROVI est recalculé côté serveur, uniquement si le marchand a
+  // Le prix ZAYROVI est recalculé côté serveur, uniquement si le marchand a
   // confirmé le prix ET la devise. Une devise déduite de l'URL n'est pas un devis.
   const quoteEvidenceComplete = sourceProduct.scrapedProduct.priceVerified === true
     && sourceProduct.scrapedProduct.currencyVerified === true;
@@ -686,7 +686,7 @@ async function verifyWebviewCaptureInBackground(input: {
       emitAyWebsEvent(input.deps.db, {
         event: 'AYWEB_WEBVIEW_PRICE_MISMATCH',
         resourceType: 'product',
-        // Aucun produit AYROVI n'existe encore à ce stade (la lecture serveur
+        // Aucun produit ZAYROVI n'existe encore à ce stade (la lecture serveur
         // peut échouer) : l'identité de l'événement est l'URL visée + l'empreinte.
         resourceId: input.url.slice(0, 80),
         accountId: input.accountId || null,
@@ -917,7 +917,7 @@ export function persistAyWebsProduct(
 
 /**
  * Pont avec la porte de variantes existante (`ayrovix/variantAvailability`) :
- * AYWEBs alimente le contrat déjà utilisé par le panier AYROVI, il n'en crée
+ * AYWEBs alimente le contrat déjà utilisé par le panier ZAYROVI, il n'en crée
  * pas un second. Le silence marchand reste le chemin de revue historique.
  */
 function recordAyWebsVariantContract(sourceProduct: AyWebsSourceProduct, store: AyWebsStoreDefinition): void {

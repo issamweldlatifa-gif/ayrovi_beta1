@@ -54,16 +54,16 @@ import { registerFrameworkResources } from '../back-office/resources';
 import { PUBLIC_NAV_DESTINATION_IDS } from '../../shared/publicNavigation';
 import { createArrivalIngestionRouter } from '../arrival-ingestion/routes';
 import type { ArrivalIngestionDependencies } from '../arrival-ingestion/types';
-import { getAyrovixStats } from '../ayrovix/events';
+import { getZayrovixStats } from '../ayrovix/events';
 import { ayrovixAiReady, getActiveProviders } from '../ayrovix/services/ai';
 import { checkProviderSearchHealth } from '../ayrovix/services/search';
 import { checkSerpApiVisualHealth } from '../ayrovix/services/visualSearch';
 import { sanitizeProductUrl } from '../ayrovix/services/product';
 import {
-  AyrovixReviewStatus,
-  getAyrovixReviewForAdmin,
-  listAyrovixReviews,
-  updateAyrovixReview,
+  ZayrovixReviewStatus,
+  getZayrovixReviewForAdmin,
+  listZayrovixReviews,
+  updateZayrovixReview,
 } from '../ayrovix/reviews';
 import { lensPerformanceReport } from '../ayrovix/services/lensPerformanceTrace';
 import { funnelSummary } from '../analytics/funnel';
@@ -140,7 +140,7 @@ export const resources: Record<string, ResourceConfig> = {
     fields: ['title','summary','content','image','category','arrival_id','product_id','author','published_at','status'],
     required: ['title','category','published_at','status'], searchable: ['title','summary','content','author'],
     sortable: ['title','category','published_at','status','created_at'], defaultSort: 'published_at',
-    enums: { category: ['NEW_ARRIVAL','NEW_BRAND','PROMOTION','DELIVERY','AYROVI','INFORMATION','OTHER'], status: ['DRAFT','SCHEDULED','PUBLISHED','ARCHIVED'] },
+    enums: { category: ['NEW_ARRIVAL','NEW_BRAND','PROMOTION','DELIVERY','ZAYROVI','INFORMATION','OTHER'], status: ['DRAFT','SCHEDULED','PUBLISHED','ARCHIVED'] },
     softDelete: { status: 'ARCHIVED' },
   },
   brands: {
@@ -213,7 +213,7 @@ const orderStatuses = ['CREATED','AWAITING_DEPOSIT','AWAITING_PAYMENT_VERIFICATI
 const paymentStatuses = ['PENDING','PENDING_VERIFICATION','PAID','PARTIALLY_PAID','FAILED','REJECTED','REFUNDED'];
 const deliveryStatuses = ['PENDING','PREPARING','SHIPPED','IN_TRANSIT','OUT_FOR_DELIVERY','DELIVERED','FAILED','RETURNED'];
 const adminRoles: AdminRole[] = ['SUPER_ADMIN','ADMIN','CONTENT_MANAGER','ORDER_MANAGER'];
-const ayrovixReviewStatuses: AyrovixReviewStatus[] = ['PENDING','IN_REVIEW','QUOTED','REJECTED','CANCELLED'];
+const ayrovixReviewStatuses: ZayrovixReviewStatus[] = ['PENDING','IN_REVIEW','QUOTED','REJECTED','CANCELLED'];
 const loginAttempts = new Map<string, { count: number; resetAt: number }>();
 const MAX_LOGIN_ATTEMPT_BUCKETS = 50_000;
 const loginAttemptSweeper = setInterval(() => {
@@ -995,25 +995,25 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
   router.get('/ayrovix-reviews', requireAdmin(db, 'commerce:read'), (req, res) => {
     const page = parsePositiveInteger(req.query.page, 1, 100000);
     const pageSize = parsePositiveInteger(req.query.pageSize, 20, 100);
-    const requestedStatus = String(req.query.status || '').trim() as AyrovixReviewStatus | '';
+    const requestedStatus = String(req.query.status || '').trim() as ZayrovixReviewStatus | '';
     if (requestedStatus && !ayrovixReviewStatuses.includes(requestedStatus)) {
       return res.status(400).json({ success: false, error: 'Statut de demande invalide.' });
     }
     const search = String(req.query.search || '').trim().slice(0, 160);
-    const { rows, total } = listAyrovixReviews(db, { status: requestedStatus, search, page, pageSize });
+    const { rows, total } = listZayrovixReviews(db, { status: requestedStatus, search, page, pageSize });
     return res.json({ success: true, data: rows, pagination: { page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) } });
   });
 
   router.get('/ayrovix-reviews/:id', requireAdmin(db, 'commerce:read'), (req, res) => {
-    const request = getAyrovixReviewForAdmin(db, String(req.params.id || ''));
-    if (!request) return res.status(404).json({ success: false, error: 'Demande AYROVIX introuvable.' });
+    const request = getZayrovixReviewForAdmin(db, String(req.params.id || ''));
+    if (!request) return res.status(404).json({ success: false, error: 'Demande ZAYROVIX introuvable.' });
     return res.json({ success: true, data: request });
   });
 
   router.put('/ayrovix-reviews/:id', requireAdmin(db, 'orders:write'), (req, res) => {
-    const existing = getAyrovixReviewForAdmin(db, String(req.params.id || ''));
-    if (!existing) return res.status(404).json({ success: false, error: 'Demande AYROVIX introuvable.' });
-    const status = String(req.body?.status || '') as AyrovixReviewStatus;
+    const existing = getZayrovixReviewForAdmin(db, String(req.params.id || ''));
+    if (!existing) return res.status(404).json({ success: false, error: 'Demande ZAYROVIX introuvable.' });
+    const status = String(req.body?.status || '') as ZayrovixReviewStatus;
     if (!ayrovixReviewStatuses.includes(status)) return res.status(400).json({ success: false, error: 'Statut invalide.' });
     const rawPrice = req.body?.quotedPrice;
     const quotedPrice = rawPrice === '' || rawPrice == null ? null : Number(rawPrice);
@@ -1033,7 +1033,7 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
       verifiedUrl = parsed.toString();
     }
     const clean = (value: unknown, limit: number) => String(value || '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, limit);
-    const updated = updateAyrovixReview(db, existing.id, {
+    const updated = updateZayrovixReview(db, existing.id, {
       status,
       quotedPrice,
       quotedCurrency: quotedPrice == null ? null : quotedCurrency,
@@ -1043,9 +1043,9 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
       adminNote: clean(req.body?.adminNote, 2000),
       adminId: admin(req).id,
     });
-    audit(db, req, 'STATUS_CHANGE', 'AYROVIX_REVIEWS', existing.id, existing, updated);
+    audit(db, req, 'STATUS_CHANGE', 'ZAYROVIX_REVIEWS', existing.id, existing, updated);
     if (existing.account_id && existing.status !== status && ['QUOTED', 'REJECTED'].includes(status)) {
-      const title = status === 'QUOTED' ? 'Votre produit AYROVIX a été vérifié' : 'Mise à jour de votre demande AYROVIX';
+      const title = status === 'QUOTED' ? 'Votre produit ZAYROVIX a été vérifié' : 'Mise à jour de votre demande ZAYROVIX';
       const message = status === 'QUOTED'
         ? `Le prix et la disponibilité de « ${String(existing.title).slice(0, 100)} » ont été vérifiés.`
         : (clean(req.body?.customerMessage, 500) || `La demande pour « ${String(existing.title).slice(0, 100)} » ne peut pas être confirmée actuellement.`);
@@ -1088,7 +1088,7 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     return res.json({ success: true, data: row });
   });
 
-  /* ===== AYROVI Lens Test Lab + AI Discovery (évaluation humaine, aucun auto-changement) ===== */
+  /* ===== ZAYROVI Lens Test Lab + AI Discovery (évaluation humaine, aucun auto-changement) ===== */
   const labUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 6 * 1024 * 1024, files: 1 } });
 
   router.post('/lens-lab/run', requireAdmin(db, 'settings:write'), labUpload.single('image'), async (req, res) => {
@@ -1358,7 +1358,7 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     try {
       const draft = prepareMagazineDraft(db, req.params.id, {
         status,
-        category: typeof req.body?.category === 'string' ? req.body.category.slice(0, 80) : 'AYROVI',
+        category: typeof req.body?.category === 'string' ? req.body.category.slice(0, 80) : 'ZAYROVI',
         scheduledAt: typeof req.body?.scheduledAt === 'string' ? req.body.scheduledAt : null,
       });
       audit(db, req, 'TRANSFER_TO_CMS', 'MAGAZINE_AGENT', draft.id, null, {
@@ -1420,7 +1420,7 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     if (existing.account_id && existing.status !== status && status === 'RESOLVED') {
       db.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
         VALUES (?,?,?,?,?,?,?)`, `notification_${randomUUID()}`, existing.account_id, 'GENERAL',
-      'Votre demande de support a été traitée', 'L’équipe AYROVI a traité votre demande envoyée depuis l’assistant.', '/account?tab=notifications', now);
+      'Votre demande de support a été traitée', 'L’équipe ZAYROVI a traité votre demande envoyée depuis l’assistant.', '/account?tab=notifications', now);
     }
     return res.json({ success: true, data: {
       id: updated.id, status: updated.status, priority: updated.priority, admin_note: updated.admin_note,
@@ -1730,12 +1730,12 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     const to = datePattern.test(String(req.query.to || '')) ? String(req.query.to) : undefined;
     res.json({ success: true, data: db.listExpenses(from, to) });
   });
-  // AYROVIX Lens — AI Core understanding/search + SerpApi Google Lens matches.
+  // ZAYROVIX Lens — AI Core understanding/search + SerpApi Google Lens matches.
   router.get('/ayrovix/stats', requireAdmin(db, 'reports:read'), async (_req, res) => {
     res.json({
       success: true,
       data: {
-        ...getAyrovixStats(db),
+        ...getZayrovixStats(db),
         providers: {
           vision: { configured: ayrovixAiReady(), activeProviders: getActiveProviders(), label: 'AI Core Vision — compréhension et prix visible' },
           visualSearch: checkSerpApiVisualHealth(),
@@ -1803,14 +1803,14 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
         to: deliveryEmail,
         subject: `Facture ${order.invoice_number} — commande ${order.order_number}`,
         html: invoiceEmailHtml({
-          customerName: String(account.display_name || 'Client AYROVI'),
+          customerName: String(account.display_name || 'Client ZAYROVI'),
           orderNumber: String(order.order_number),
           invoiceNumber: String(order.invoice_number),
           trackingCode: String(updated?.tracking_code || ''),
           totalLabel: `${total.toFixed(3)} DT`,
           depositLabel: `${dep.toFixed(3)} DT`,
           balanceLabel: `${balance.toFixed(3)} DT`,
-          company: String(db.get<any>("SELECT setting_value FROM settings WHERE setting_key='company_legal_name'")?.setting_value || 'AYROVI'),
+          company: String(db.get<any>("SELECT setting_value FROM settings WHERE setting_key='company_legal_name'")?.setting_value || 'ZAYROVI'),
         }),
         attachments: updated?.invoice_path && fs.existsSync(String(updated.invoice_path)) ? [{ filename: `${order.invoice_number}.pdf`, path: String(updated.invoice_path) }] : [],
       });
@@ -2118,11 +2118,11 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
       }
     }
     if (current.setting_key === 'site_theme') {
-      if (received?.font !== undefined && received.font !== FONT_STACK) return res.status(400).json({ success: false, code: 'IDENTITY_LOCKED', error: 'La typographie AYROVI A est verrouillée.' });
+      if (received?.font !== undefined && received.font !== FONT_STACK) return res.status(400).json({ success: false, code: 'IDENTITY_LOCKED', error: 'La typographie ZAYROVI A est verrouillée.' });
       received = enforceLegacyTheme(received);
     }
     if (current.setting_key === 'interface_config') {
-      if (hasForbiddenFontSelection(received)) return res.status(400).json({ success: false, code: 'IDENTITY_LOCKED', error: 'La typographie AYROVI A est verrouillée.' });
+      if (hasForbiddenFontSelection(received)) return res.status(400).json({ success: false, code: 'IDENTITY_LOCKED', error: 'La typographie ZAYROVI A est verrouillée.' });
       received = enforceBrandIdentity(received);
       const sectionIds = new Set(['hero', 'cms', 'brands', 'about', 'footer']);
       const sections = received && typeof received === 'object' && !Array.isArray(received) ? received.sections : null;
@@ -2145,7 +2145,7 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
   // moteur ERP : `users:read` herite (SUPER_ADMIN) ou un grant en table (module users,
   // action read). `permissive:false` = pas de grant, pas d'acces : le comportement du
   // jour reste identique (ADMIN, CONTENT_MANAGER, ORDER_MANAGER recoivent toujours 403,
-  // comme le fige tests/ayrovi.test.ts), tandis que POST/PUT/DELETE exigent users:write.
+  // comme le fige tests/zayrovi.test.ts), tandis que POST/PUT/DELETE exigent users:write.
   router.get('/users', requireErpPermission(db, { module: 'users', action: 'read', resourceType: 'admin_user', permissive: false }), (_req, res) => {
     res.json({ success: true, data: db.all<any>('SELECT id,email,name,role,active,last_login_at,created_at,updated_at FROM admin_users ORDER BY created_at') });
   });
@@ -2250,7 +2250,7 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     const headers = ['order_number','customer','phone','status','payment_status','payment_method','source','total_tnd','governorate','created_at'];
     const csv = [headers.join(','), ...rows.map((row) => headers.map((key) => csvCell(row[key])).join(','))].join('\n');
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', 'attachment; filename="ayrovi-orders.csv"');
+    res.setHeader('Content-Disposition', 'attachment; filename="zayrovi-orders.csv"');
     // Bulk export of customer data is a read that must leave a trace (report item A5).
     audit(db, req, 'ACCESS', 'REPORTS', null, null, { resourceType: 'order_export', rows: rows.length, columns: headers.length });
     res.send(`\uFEFF${csv}`);

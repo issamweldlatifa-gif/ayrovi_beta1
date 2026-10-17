@@ -16,7 +16,7 @@ import request from 'supertest';
 import { beforeAll, describe, expect, test, vi } from 'vitest';
 
 // Le contrat de variantes est un cache disque : isolé par suite, jamais dans data/.
-process.env.AYROVI_VARIANT_CACHE_DIR = join(mkdtempSync(join(tmpdir(), 'aywebs-variant-')), 'cache');
+process.env.ZAYROVI_VARIANT_CACHE_DIR = join(mkdtempSync(join(tmpdir(), 'aywebs-variant-')), 'cache');
 
 import { QatafoDatabase } from '../src/db/database';
 import { AYWEBS_STORES, detectAyWebsStore } from '../shared/aywebsStores';
@@ -76,7 +76,7 @@ describe('AyWebs V1 foundation', () => {
     expect(detectAyWebsStore('https://amazon.com.evil.com/dp/B0ABCDEFGH')).toBeNull();
   });
 
-  test('recreates the durable AYWEBs-to-AYROVI link table after an older initialized schema', () => {
+  test('recreates the durable AYWEBs-to-ZAYROVI link table after an older initialized schema', () => {
     const db = new QatafoDatabase(':memory:');
     try {
       ensureAyWebsSchema(db);

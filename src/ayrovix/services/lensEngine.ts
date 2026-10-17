@@ -19,17 +19,17 @@
  *  • chaque moteur est mesuré SÉPARÉMENT, jamais deux fois la même durée ;
  *  • ce qui vient du cache n'est pas rappelé, et rien de vide n'est mémorisé.
  */
-import type { AyrovixCandidate, AyrovixIdentification } from '../types';
+import type { ZayrovixCandidate, ZayrovixIdentification } from '../types';
 import { identifyProduct } from './ai';
 import { serpApiVisualSearch } from './visualSearch';
 import { lensImageKey, readLensCache, writeLensCache } from './lensRecognitionCache';
 import { EMPTY_SIGNALS, readLensSignals, type LensSignals } from './lensSignals';
 
 export interface LensRecognition {
-  identification: AyrovixIdentification | null;
+  identification: ZayrovixIdentification | null;
   /** Raison de l'échec de la vision, laissée à l'appelant : lui seul sait s'il peut continuer. */
   identificationError: unknown;
-  matches: AyrovixCandidate[];
+  matches: ZayrovixCandidate[];
   signals: LensSignals;
   timings: { visionMs: number; matchesMs: number; signalsMs: number };
   /** Étapes abandonnées sur échéance — visibles dans le journal, jamais silencieuses. */
@@ -66,8 +66,8 @@ async function timed<T>(work: Promise<T>, onDone: (ms: number) => void): Promise
  * ÉCHÉANCE DE RECONNAISSANCE (25/09/2026).
  *
  * Chaque moteur a déjà sa propre coupure réseau : la vision s'arrête à
- * AYROVIX_PROVIDER_TIMEOUT_MS (8 s par défaut) et la recherche visuelle à
- * AYROVIX_VISUAL_SEARCH_TIMEOUT_MS (10 s). Mais la vision RÉESSAIE une fois en
+ * ZAYROVIX_PROVIDER_TIMEOUT_MS (8 s par défaut) et la recherche visuelle à
+ * ZAYROVIX_VISUAL_SEARCH_TIMEOUT_MS (10 s). Mais la vision RÉESSAIE une fois en
  * cas de réponse malformée : deux tentatives plus la latence réseau peuvent
  * donc dépasser vingt secondes, pendant lesquelles le client regarde un écran
  * qui ne dit rien. Aucun plafond ne couvrait ce cumul.
@@ -87,7 +87,7 @@ export class LensDeadlineError extends Error {
 }
 
 function deadlineMs(name: 'VISION' | 'MATCHES', fallback: number): number {
-  const raw = Number(process.env[`AYROVI_LENS_${name}_DEADLINE_MS`]);
+  const raw = Number(process.env[`ZAYROVI_LENS_${name}_DEADLINE_MS`]);
   if (!Number.isFinite(raw) || raw <= 0) return fallback;
   // Bornes de sûreté : une échéance trop courte transformerait chaque requête en
   // échec, une échéance trop longue ne protégerait plus personne.
@@ -113,7 +113,7 @@ export async function recognizeImage(
 
   const key = lensImageKey(image);
   const cached = useCache
-    ? readLensCache<AyrovixIdentification, AyrovixCandidate, LensSignals>(key)
+    ? readLensCache<ZayrovixIdentification, ZayrovixCandidate, LensSignals>(key)
     : { identification: null, matches: null, signals: null, hit: 'none' as const };
 
   let visionMs = 0;
@@ -130,7 +130,7 @@ export async function recognizeImage(
           (ms) => { visionMs = ms; },
         ),
     !withMatches
-      ? Promise.resolve([] as AyrovixCandidate[])
+      ? Promise.resolve([] as ZayrovixCandidate[])
       : cached.matches
       ? Promise.resolve(cached.matches)
       : timed(
@@ -149,7 +149,7 @@ export async function recognizeImage(
   const signals = signalsResult.status === 'fulfilled' ? signalsResult.value : EMPTY_SIGNALS;
 
   if (useCache) {
-    writeLensCache<AyrovixIdentification, AyrovixCandidate, LensSignals>(key, {
+    writeLensCache<ZayrovixIdentification, ZayrovixCandidate, LensSignals>(key, {
       identification: cached.identification || !withVision ? undefined : identification,
       matches: cached.matches || !withMatches ? undefined : matches,
       signals: cached.signals || signals === EMPTY_SIGNALS ? undefined : signals,
@@ -159,7 +159,7 @@ export async function recognizeImage(
   const timedOut: Array<'vision' | 'matches'> = [];
   if (visionResult.status === 'rejected' && visionResult.reason instanceof LensDeadlineError) timedOut.push('vision');
   if (matchesResult.status === 'rejected' && matchesResult.reason instanceof LensDeadlineError) timedOut.push('matches');
-  if (timedOut.length) console.warn(`[AYROVIX lens-engine] échéance dépassée : ${timedOut.join(', ')}`);
+  if (timedOut.length) console.warn(`[ZAYROVIX lens-engine] échéance dépassée : ${timedOut.join(', ')}`);
 
   return {
     identification,

@@ -15,7 +15,7 @@ export function customerPublicOrigin(): string {
 }
 export const passwordRecoveryReady = () => customerAuthReady() && mailerReady() && Boolean(customerPublicOrigin());
 const escape = (value: string) => value.replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]!));
-const key = () => createHash('sha256').update(`ayrovi-auth-mail-v1\0${requireCustomerAuthSecret()}`).digest();
+const key = () => createHash('sha256').update(`zayrovi-auth-mail-v1\0${requireCustomerAuthSecret()}`).digest();
 function seal(input: MailInput): string {
   const iv = randomBytes(12);
   const cipher = createCipheriv('aes-256-gcm', key(), iv);
@@ -29,7 +29,7 @@ function unseal(payload: string): MailInput {
   return JSON.parse(Buffer.concat([decipher.update(buffer.subarray(28)), decipher.final()]).toString('utf8'));
 }
 export function authMailTemplate(ar: boolean, title: string, body: string, action?: { label: string; url: string }): string {
-  return `<!doctype html><html lang="${ar ? 'ar' : 'fr'}" dir="${ar ? 'rtl' : 'ltr'}"><head><meta charset="utf-8">${mailIdentityStyle()}</head><body style="margin:0;background:#FFFFFF;font-family:${FONT_STACK};color:#000000"><div style="max-width:520px;margin:32px auto;background:#fff;border-radius:24px;overflow:hidden"><div style="background:#ff6900;padding:24px;text-align:center;font-weight:bold;letter-spacing:3px">AYROVI</div><div style="padding:32px;line-height:1.8"><h1 style="font-size:24px">${escape(title)}</h1>${body}${action ? `<p style="margin:28px 0"><a href="${escape(action.url)}" style="display:inline-block;background:#000000;color:#fff;padding:12px 24px;border-radius:24px;text-decoration:none;font-weight:bold">${escape(action.label)}</a></p>` : ''}<p style="font-size:12px;color:${BRAND.colors.muted}">${ar ? 'لن تطلب منك AYROVI كلمة المرور أو رمز التحقق عبر البريد.' : 'AYROVI ne vous demandera jamais votre mot de passe ou votre code de vérification par e-mail.'}</p></div></div></body></html>`;
+  return `<!doctype html><html lang="${ar ? 'ar' : 'fr'}" dir="${ar ? 'rtl' : 'ltr'}"><head><meta charset="utf-8">${mailIdentityStyle()}</head><body style="margin:0;background:#FFFFFF;font-family:${FONT_STACK};color:#000000"><div style="max-width:520px;margin:32px auto;background:#fff;border-radius:24px;overflow:hidden"><div style="background:#ff6900;padding:24px;text-align:center;font-weight:bold;letter-spacing:3px">ZAYROVI</div><div style="padding:32px;line-height:1.8"><h1 style="font-size:24px">${escape(title)}</h1>${body}${action ? `<p style="margin:28px 0"><a href="${escape(action.url)}" style="display:inline-block;background:#000000;color:#fff;padding:12px 24px;border-radius:24px;text-decoration:none;font-weight:bold">${escape(action.label)}</a></p>` : ''}<p style="font-size:12px;color:${BRAND.colors.muted}">${ar ? 'لن تطلب منك ZAYROVI كلمة المرور أو رمز التحقق عبر البريد.' : 'ZAYROVI ne vous demandera jamais votre mot de passe ou votre code de vérification par e-mail.'}</p></div></div></body></html>`;
 }
 export function enqueueAuthMail(db: QatafoDatabase, accountId: string, kind: string, input: MailInput, options: { dedupKey: string; expiresAt?: string; resetHash?: string }) {
   const now = new Date().toISOString();
@@ -41,13 +41,13 @@ export function enqueueWelcomeMail(db: QatafoDatabase, accountId: string) {
   const account = db.get<any>('SELECT * FROM customer_accounts WHERE id=?', accountId);
   if (!account?.email || account.status !== 'ACTIVE') return;
   const ar = account.locale?.startsWith('ar');
-  const title = ar ? 'مرحبًا بك في AYROVI!' : 'Bienvenue chez AYROVI !';
+  const title = ar ? 'مرحبًا بك في ZAYROVI!' : 'Bienvenue chez ZAYROVI !';
   const name = escape(account.display_name || (ar ? 'عميلنا العزيز' : 'cher client'));
   const origin = customerPublicOrigin();
   enqueueAuthMail(db, accountId, 'WELCOME', { to: account.email, subject: title, html: authMailTemplate(ar, title,
-    ar ? `<p>أهلًا ${name}،</p><p>تم إنشاء حسابك بنجاح. يمكنك الآن حفظ منتجاتك المفضلة ومتابعة طلباتك من حسابك.</p><p>شكرًا لاختيارك AYROVI.</p>`
-      : `<p>Bonjour ${name},</p><p>Votre compte a été créé. Retrouvez vos favoris et suivez vos commandes depuis votre espace personnel.</p><p>Merci de rejoindre AYROVI.</p>`,
-    origin ? { label: ar ? 'اكتشف AYROVI' : 'Découvrir AYROVI', url: origin } : undefined) }, { dedupKey: `welcome:${accountId}` });
+    ar ? `<p>أهلًا ${name}،</p><p>تم إنشاء حسابك بنجاح. يمكنك الآن حفظ منتجاتك المفضلة ومتابعة طلباتك من حسابك.</p><p>شكرًا لاختيارك ZAYROVI.</p>`
+      : `<p>Bonjour ${name},</p><p>Votre compte a été créé. Retrouvez vos favoris et suivez vos commandes depuis votre espace personnel.</p><p>Merci de rejoindre ZAYROVI.</p>`,
+    origin ? { label: ar ? 'اكتشف ZAYROVI' : 'Découvrir ZAYROVI', url: origin } : undefined) }, { dedupKey: `welcome:${accountId}` });
 }
 
 /** Single-process guard + database leases for multiple workers. Provider acceptance != inbox delivery. */

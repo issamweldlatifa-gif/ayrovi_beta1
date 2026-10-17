@@ -99,9 +99,9 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       paymentMethods: resolveAcceptedPaymentMethods(facts.payment_methods),
       deliveryDelay: String(facts.delivery_delay || ''),
       capabilities: { cardGateway: cardGatewayAvailable() },
-      // Feature flags — LIVE multi-product vision. مفعّل افتراضيًا؛ عطّله بـ AYROVIX_LENS_LIVE_ENABLED=false
+      // Feature flags — LIVE multi-product vision. مفعّل افتراضيًا؛ عطّله بـ ZAYROVIX_LENS_LIVE_ENABLED=false
       features: {
-        ayrovixLensLive: process.env.AYROVIX_LENS_LIVE_ENABLED !== 'false',
+        ayrovixLensLive: process.env.ZAYROVIX_LENS_LIVE_ENABLED !== 'false',
         aywebsEnabled: !['0', 'false', 'off', 'disabled'].includes(String(process.env.AYWEBS_ENABLED ?? 'true').trim().toLowerCase()),
       },
       // تعليمات دفع العربون المعروضة في نموذج الطلب (قابلة للتحرير من لوحة الأدمن)
@@ -161,7 +161,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
 
 
   // COMPOSITION D'IMAGE PRODUIT (phase 2, 25/09/2026) : le produit est détouré puis
-  // POSÉ sur le mockup AYROVI (9/13, #F0F2F2) avec une échelle UNIFORME et un
+  // POSÉ sur le mockup ZAYROVI (9/13, #F0F2F2) avec une échelle UNIFORME et un
   // centrage sur son barycentre — ratio conservé, aucun rognage, aucune règle
   // spécifique à une image. Contrat d'acceptation vérifié AVANT mise en cache.
   // Aucun échec de traitement ne redirige vers un hôte externe.
@@ -196,7 +196,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
      *
      * Décliner le détourage ne dispense pas de tenir le cadre : l'image est donc
      * posée ENTIÈRE (contain, ratio conservé, aucun rognage) sur le canvas
-     * AYROVI 9/13 #F0F2F2. Ce n'est pas une composition et on ne le prétend pas
+     * ZAYROVI 9/13 #F0F2F2. Ce n'est pas une composition et on ne le prétend pas
      * — l'en-tête le dit — mais la grille redevient homogène.
      */
     try {
@@ -214,7 +214,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
         .png()
         .toBuffer();
       res.setHeader('Content-Type', 'image/png');
-      res.setHeader('X-Ayrovi-Card', 'letterbox');
+      res.setHeader('X-Zayrovi-Card', 'letterbox');
       res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
       res.send(letterboxed);
       return;
@@ -240,7 +240,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     if (!PROXY_WIDTHS.has(width)) { res.status(400).json({ success: false, error: 'INVALID_WIDTH' }); return; }
     try {
       const crypto = await import('node:crypto');
-      const dir = process.env.AYROVI_PROXY_CACHE_DIR || path.resolve(process.cwd(), 'data', 'media-proxy');
+      const dir = process.env.ZAYROVI_PROXY_CACHE_DIR || path.resolve(process.cwd(), 'data', 'media-proxy');
       const key = crypto.createHash('sha256').update(`${width}|${url}`).digest('hex').slice(0, 32);
       const file = path.join(dir, `${key}.webp`);
       if (!fs.existsSync(file)) {
@@ -341,7 +341,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     res.json({ success: true, data: resolveActiveHeroVisual(db) });
   });
 
-  /** AYROVIX LENS HERO — إعدادات عامة (خلفية/محتوى) — كل المحتوى من الـ Dashboard */
+  /** ZAYROVIX LENS HERO — إعدادات عامة (خلفية/محتوى) — كل المحتوى من الـ Dashboard */
   router.get('/lens-hero', (_req, res) => {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     const row = db.get<any>("SELECT * FROM lens_hero_settings WHERE id='global'");
@@ -594,7 +594,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     const rows = db.all<any>(`SELECT i.id,i.text,i.created_at,c.display_name author
       FROM story_interactions i LEFT JOIN customer_accounts c ON c.id=i.account_id
       WHERE i.target_id=? AND i.type='comment' ORDER BY i.created_at DESC LIMIT 100`, id).reverse();
-    res.json({ success: true, data: rows.map((row) => ({ id: row.id, author: row.author || 'Membre AYROVI', text: row.text, createdAt: row.created_at })) });
+    res.json({ success: true, data: rows.map((row) => ({ id: row.id, author: row.author || 'Membre ZAYROVI', text: row.text, createdAt: row.created_at })) });
   });
 
   router.post('/social/interact', optionalCustomer(db), (req, res) => {
@@ -641,7 +641,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       const id = `int_${randomUUID()}`;
       db.run(`INSERT INTO story_interactions (id,target_id,target_kind,type,account_id,guest_hash,text,created_at)
         VALUES (?,?,?,?,?,NULL,?,?)`, id, targetId, target.kind, 'comment', accountId, text, now);
-      return res.status(201).json({ success: true, data: { id, author: customer.displayName || 'Membre AYROVI', text, createdAt: now } });
+      return res.status(201).json({ success: true, data: { id, author: customer.displayName || 'Membre ZAYROVI', text, createdAt: now } });
     }
 
     // Les vues et partages sont comptés par propriétaire unique afin d'éviter le gonflement artificiel.

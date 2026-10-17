@@ -1,5 +1,5 @@
 /**
- * AYROVIX Lens — عميل البحث، مطابق للموقع (`client/src/ayrovix/services/lensApi.ts`).
+ * ZAYROVIX Lens — عميل البحث، مطابق للموقع (`client/src/ayrovix/services/lensApi.ts`).
  *
  * المبادئ:
  *  • مفتاح الذكاء الاصطناعي يبقى على الخادم؛ التطبيق يرسل المدخل الخام فقط.
@@ -674,7 +674,7 @@ export async function getManualReview(id: string, sessionId: string): Promise<Le
   return parseReview(data);
 }
 
-/* ── السجل (نفس شكل `AyrovixHistoryItem` في الموقع) ───────────────────── */
+/* ── السجل (نفس شكل `ZayrovixHistoryItem` في الموقع) ───────────────────── */
 
 export type LensHistoryKind = 'image' | 'url' | 'qr' | 'barcode' | 'code' | 'text';
 

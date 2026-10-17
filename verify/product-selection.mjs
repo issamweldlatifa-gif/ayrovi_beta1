@@ -7,7 +7,7 @@ import path from 'node:path';
 // Test-only quotes make this browser suite hermetic. The cart/page price engine
 // itself is verified with the real API in cart-line-identity.test.ts.
 buildSync({ entryPoints: ['src/ayrovix/priceQuote.ts'], outfile: '.cache/selection-quote.cjs', bundle: true, platform: 'node', format: 'cjs' });
-const { createAyrovixPriceToken, verifyAyrovixPriceToken } = createRequire(import.meta.url)(path.resolve('.cache/selection-quote.cjs'));
+const { createZayrovixPriceToken, verifyZayrovixPriceToken } = createRequire(import.meta.url)(path.resolve('.cache/selection-quote.cjs'));
 const output = 'screenshots/editorial/product-selection';
 fs.mkdirSync(output, { recursive: true });
 const checks = [], errors = [];
@@ -22,7 +22,7 @@ const base = {
   priceTnd: null, exchangeRate: null, colors: ['Bleu', 'Rouge'], sizes: ['M', 'L'],
   availability: 'unknown', priceVerified: true, priceVerificationStatus: 'VERIFIED',
 };
-const token = (price, currency = 'EUR') => createAyrovixPriceToken({ price, currency, title: base.title, referenceUrl: base.sourceUrl, status: 'VERIFIED' });
+const token = (price, currency = 'EUR') => createZayrovixPriceToken({ price, currency, title: base.title, referenceUrl: base.sourceUrl, status: 'VERIFIED' });
 base.priceToken = token(20);
 const variant = (id, size, color, price) => ({ id, label: `${size} · ${color}`, size, color, price, currency: 'EUR', priceTnd: null, priceToken: token(price), available: true, availability: 'available' });
 const blue = variant('blue-M', 'M', 'Bleu', 27);
@@ -50,7 +50,7 @@ try {
     const ar = locale === 'ar', key = `${mode}/${locale}/${width}`;
     const context = await browser.newContext({ viewport: { width, height: 844 }, reducedMotion: 'reduce' });
     await context.addInitScript(({ locale, base }) => {
-      localStorage.setItem('ayrovi.locale.v1', locale);
+      localStorage.setItem('zayrovi.locale.v1', locale);
       Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: undefined });
       localStorage.setItem('ayrovi_assistant_conversations_v1_guest', JSON.stringify([{
         id: 'fixture', title: 'Stored fixture', messages: [{ id: 'product', role: 'assistant', text: 'Historical selection' }],
@@ -74,7 +74,7 @@ try {
     await page.route('**/api/ayrovix/analyze-url', route => route.fulfill({ json: { success: true, data: { product: fresh, alternates: [], eventId: '' } } }));
     for (const scenario of scenarios) {
       fresh = { ...base, variantOptions: scenario.options, availability: 'in_stock', availabilityCheckedAt: new Date().toISOString(), availabilityExpiresAt: new Date(Date.now() + 3_600_000).toISOString(), priceToken: scenario.rejectUnsigned ? null : base.priceToken };
-      await page.goto(process.env.AYROVI_BASE_URL + `/__verify/sonim?mode=${mode}&case=${scenario.name}`);
+      await page.goto(process.env.ZAYROVI_BASE_URL + `/__verify/sonim?mode=${mode}&case=${scenario.name}`);
       await page.locator('[data-open]').click();
       if (mode === 'lens') {
         await page.locator('.lens-access, #ayrovix-url-input').first().waitFor();
@@ -141,7 +141,7 @@ try {
       const sent = await page.evaluate(() => selectionTestOrders[0]);
       check(`${key}/${scenario.name}: only the exact source variant is passed`, sent.externalId, scenario.id);
       check(`${key}/${scenario.name}: selected monetary offer stays coherent`, [sent.sourcePrice, sent.sourceCurrency, sent.priceTND], [scenario.price, 'EUR', 0]);
-      check(`${key}/${scenario.name}: parent HMAC fields match source`, verifyAyrovixPriceToken(sent.priceToken, {
+      check(`${key}/${scenario.name}: parent HMAC fields match source`, verifyZayrovixPriceToken(sent.priceToken, {
         price: sent.sourcePrice, currency: sent.sourceCurrency, title: sent.title,
         referenceUrl: sent.referenceUrl, status: sent.priceVerificationStatus,
       }));

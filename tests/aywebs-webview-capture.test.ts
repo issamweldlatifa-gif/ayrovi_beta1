@@ -34,7 +34,7 @@ import express from 'express';
 import { JSDOM } from 'jsdom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-process.env.AYROVI_VARIANT_CACHE_DIR = join(mkdtempSync(join(tmpdir(), 'aywebs-capture-')), 'cache');
+process.env.ZAYROVI_VARIANT_CACHE_DIR = join(mkdtempSync(join(tmpdir(), 'aywebs-capture-')), 'cache');
 
 import { detectAyWebsStore } from '../shared/aywebsStores';
 import { QatafoDatabase } from '../src/db/database';
@@ -652,7 +652,7 @@ describe('AYWEBs 2.1 — contrat HTTP : la boutique externe passe par le même g
 });
 
 describe('AYWEBs 2.1 — la coque Android transporte la capture', () => {
-  const activity = () => readFileSync('android/app/src/main/java/app/ayrovi/mobile/AyWebsBrowseActivity.java', 'utf8');
+  const activity = () => readFileSync('android/app/src/main/java/app/zayrovi/mobile/AyWebsBrowseActivity.java', 'utf8');
 
   it('récupère le lecteur DU SERVEUR, l’exécute dans la WebView et joint le résultat', () => {
     const code = activity();

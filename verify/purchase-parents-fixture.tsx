@@ -8,7 +8,7 @@ import { NavigationHistoryProvider, useNavigationHistory } from '../client/src/n
 import { LensLauncher } from '../client/src/ayrovix/components/LensLauncher';
 import { AiAssistantDrawer } from '../client/src/components/assistant/AiAssistantDrawer';
 import { ShopBagScreen } from '../client/src/shop/ShopBagScreen';
-import type { AyrovixOrderPayload } from '../client/src/ayrovix/types';
+import type { ZayrovixOrderPayload } from '../client/src/ayrovix/types';
 import type { CartItem } from '../client/src/types';
 import { getSessionId } from '../client/src/utils/session';
 
@@ -25,7 +25,7 @@ function PurchaseParents() {
     if (!response.ok || !data.success) throw new Error(data.error || 'Cart unavailable');
     setItems(data.items); setTotalTND(data.totalTND); setDeliveryTND(data.deliveryTND);
   };
-  const onOrder = async (payload: AyrovixOrderPayload) => {
+  const onOrder = async (payload: ZayrovixOrderPayload) => {
     const response = await fetch('/api/cart/items', {
       method: 'POST', headers: { 'Content-Type': 'application/json', 'x-session-id': getSessionId() },
       body: JSON.stringify(payload),

@@ -15,7 +15,7 @@ page.on('request', request => { if (/^https?:/.test(request.url())) external.pus
 const reportDir = 'docs/editorial/verification';
 fs.mkdirSync(reportDir, {recursive: true});
 try {
-  await page.goto(pathToFileURL(path.resolve('docs/editorial/AYROVI-editorial-system.html')).href);
+  await page.goto(pathToFileURL(path.resolve('docs/editorial/ZAYROVI-editorial-system.html')).href);
   await page.evaluate(async fonts => { await Promise.all(fonts.map(font => document.fonts.load(`16px "${font.family}"`))); await document.fonts.ready; }, identity.fonts);
   check('both official self-hosted families load from embedded WOFF2', await page.evaluate(fonts => fonts.every(f => document.fonts.check(`16px "${f.family}"`)), identity.fonts));
   check('complete reference family', await page.locator('.glyph').count() === glyphCount);

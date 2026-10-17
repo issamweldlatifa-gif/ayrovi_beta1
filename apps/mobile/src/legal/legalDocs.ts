@@ -153,7 +153,7 @@ export const LEGAL_DOCS: Record<LegalDocId, Partial<Record<'fr' | 'ar', LegalVer
     },
     {
       "kind": "li",
-      "text": "Données AYROVIX Lens et Assistant : images, liens, codes lus, demandes, réponses et feedback nécessaires à la fonctionnalité utilisée."
+      "text": "Données ZAYROVIX Lens et Assistant : images, liens, codes lus, demandes, réponses et feedback nécessaires à la fonctionnalité utilisée."
     },
     {
       "kind": "li",
@@ -217,7 +217,7 @@ export const LEGAL_DOCS: Record<LegalDocId, Partial<Record<'fr' | 'ar', LegalVer
     },
     {
       "kind": "p",
-      "text": "Demandes relatives aux données : contact@ayrovi.tn. Cette adresse doit être rendue opérationnelle avant l’ouverture publique générale."
+      "text": "Demandes relatives aux données : contact@zayrovi.tn. Cette adresse doit être rendue opérationnelle avant l’ouverture publique générale."
     }
   ]
 },

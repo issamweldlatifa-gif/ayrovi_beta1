@@ -18,7 +18,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { currentBase, validateBase } from './set-api-base.mjs';
 
-export const DEMO_PACKAGE = 'app.ayrovi.mobile.demo';
+export const DEMO_PACKAGE = 'app.zayrovi.mobile.demo';
 export const DEFAULT_LINK_PATH = '/lens';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const FINGERPRINT_SOURCE = path.join(ROOT, 'shared/appLinks.ts');
@@ -149,13 +149,13 @@ function printHelp() {
     '',
     'الاستعمال:',
     '  npm run device:acceptance -- --launch',
-    '  npm run device:acceptance -- --apk /chemin/AYROVI-demo.apk --launch',
+    '  npm run device:acceptance -- --apk /chemin/ZAYROVI-demo.apk --launch',
     '',
     'الخيارات:',
     '  --serial <adb serial>  جهاز معيّن إذا مربوط أكثر من واحد',
     '  --origin <https://…>   خادم Beta (الافتراضي من src/api/config.ts)',
     '  --path </lens>         الرابط الذي نختبره',
-    '  --package <id>         الافتراضي app.ayrovi.mobile.demo',
+    '  --package <id>         الافتراضي app.zayrovi.mobile.demo',
     '  --apk <fichier.apk>    يثبّت APK بـ adb install -r قبل الفحص',
     '  --launch               يفتح الرابط فعلياً بعد التحقق',
     '  --json                 تقرير JSON للآلة',
@@ -282,7 +282,7 @@ if (invokedDirectly) {
     const report = await runAcceptance(options);
     if (options.json) console.log(JSON.stringify(report, null, 2));
     else {
-      console.log(`\nAYROVI Android — ${report.ok ? '✅ partie automatisable valide' : '❌ échec'}\n`);
+      console.log(`\nZAYROVI Android — ${report.ok ? '✅ partie automatisable valide' : '❌ échec'}\n`);
       for (const check of report.checks) {
         const icon = check.status === 'pass' ? '✅' : check.status === 'fail' ? '❌' : check.status === 'warn' ? '⚠️' : '👆';
         console.log(`${icon} ${check.id}: ${check.detail}`);

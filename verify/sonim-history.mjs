@@ -26,7 +26,7 @@ try {
     ], selectedProduct: { messageId: 'selected-only', product: storedProduct, priceVerified: true } }];
     const ctx = await browser.newContext({ viewport: { width, height: 844 }, reducedMotion: 'reduce' });
     await ctx.addInitScript(({ locale, storageKey, initial }) => {
-      localStorage.setItem('ayrovi.locale.v1', locale);
+      localStorage.setItem('zayrovi.locale.v1', locale);
       if (!sessionStorage.getItem('history-fixture-seeded')) { localStorage.setItem(storageKey, JSON.stringify(initial)); sessionStorage.setItem('history-fixture-seeded', 'yes'); }
       window.historyWriteFailure = false;
       window.holdHistoryStream = false;
@@ -73,7 +73,7 @@ try {
     const closeMenu = async () => { await page.keyboard.press('Escape'); await menu().waitFor({ state: 'hidden' }); };
     const send = async text => { const expected = replyNumber + 1; await page.getByRole('textbox', { name: ar ? 'رسالتك' : 'Votre message', exact: true }).fill(text); await page.getByRole('button', { name: ar ? 'إرسال' : 'Envoyer', exact: true }).click(); await page.getByText('LIVE_REPLY_'+expected, { exact: true }).waitFor(); };
     const persisted = () => page.evaluate(key => localStorage.getItem(key), storageKey);
-    await page.goto(process.env.AYROVI_BASE_URL + '/__verify/sonim'); await open();
+    await page.goto(process.env.ZAYROVI_BASE_URL + '/__verify/sonim'); await open();
     const prose = page.locator('p.whitespace-pre-wrap').filter({ hasText: 'LAST_PARAGRAPH' });
     check(`${key}: initial legacy long text is complete`, await prose.textContent() === longText);
     for (const marker of ['WARNING_LAST', 'ACTION_LAST', 'TICKET_LAST', 'ORDER_LAST', 'HISTORY_7', 'ATTACHMENT_LAST.png']) check(`${key}: restores ${marker} without prose`, (await page.locator('[data-assistant-messages]').innerText()).includes(marker));

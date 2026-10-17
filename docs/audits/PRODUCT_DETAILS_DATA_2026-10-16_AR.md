@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | التاريخ | 2026-10-16 |
-| الفرع | `arena/1b1c70c4-ayrovi-beta1` |
+| الفرع | `arena/1b1c70c4-zayrovi-beta1` |
 | نطاق التدقيق | طريقة تخزين وتمرير بيانات تفاصيل المنتج فقط (كشط → سيرفر → تطبيق) |
 | الحالة | **قراءة فقط** — لم يُعدَّل أي كود ولا قاعدة بيانات أثناء هذا التدقيق |
 | الأمثلة | حقيقية: مخرجات فعلية لدوال المستودع على captures وfixtures موجودة داخله |
@@ -150,7 +150,7 @@ export interface LensProductFact {
 - دبلجة بالمفتاح `label|value`_lowercase؛
 - سقف **18 حقيقة**.
 
-مثال حقيقي من تشغيل `readProductFacts` أعلاه (جهة السيرفر نفس البنية باسم `AyrovixProductFact`):
+مثال حقيقي من تشغيل `readProductFacts` أعلاه (جهة السيرفر نفس البنية باسم `ZayrovixProductFact`):
 
 ```json
 [
@@ -185,14 +185,14 @@ export interface LensProductFact {
 ## 5) صور الألوان: أين هي وكيف ترتبط بالـVariant
 
 - **المخزن:** `colorImages: Record<string, string[]>` — المفتاح اسم اللون lowercase والقيمة مصفوفة روابط الصور (مرجع Zalando، 24/09/2026، `productPageParser.ts:23-25`؛ ونفسه في `ScrapedProduct.colorImages`، `src/types/index.ts:53`).
-- **التمرير:** `toAyrovixProduct` (‏`src/ayrovix/services/product.ts:63`) يحوله كما هو إلى `LensCandidate.colorImages`، و`mergeLensProduct` يوحّد المجموعات بدون دبلجة روابط.
+- **التمرير:** `toZayrovixProduct` (‏`src/ayrovix/services/product.ts:63`) يحوله كما هو إلى `LensCandidate.colorImages`، و`mergeLensProduct` يوحّد المجموعات بدون دبلجة روابط.
 - **العرض:** منتقي الألوان في `LensProductView.tsx:180-224` يعرض thumbnail لكل لون من `colorImages[color]`.
 - **الربط بالـVariant:** تطابق اسم اللون نصاً — `variants.details[].color` و`variantOptions[].color` يحملان نفس اسم مفتاح `colorImages`. في capture الفستان الحقيقية `colorImages = {}` لأن أمازون لا ينشر galerie لكل لون، بينما `details[].color` موجود: الربط يعمل متى نشرت المصدر الصور، وغيباؤها لا يُختلق.
 
 ## 6) المقاسات ↔ Variants ↔ الأسعار ↔ التوفّر
 
 - **البنية المصدر:** `ProductVariantDetail` في `src/types/index.ts:14-31`: `{ id, label, size, color, attributes?, available, stock?, price? }` — مع فصل مقصود بين `available` (أهلية الانتقاء) و`stock` (المخزون كما ينشره التاجر: true/false/null حين يصمت).
-- **التحويل:** `toAyrovixProduct` (‏`product.ts:38-56`) يمرّر التفاصيل عبر `isSelectableVariant` (‏`shared/variantPolicy`) وينتج `LensVariantOption`: `{ id, label, size, color, available, availability, price, currency, priceTnd, … }`.
+- **التحويل:** `toZayrovixProduct` (‏`product.ts:38-56`) يمرّر التفاصيل عبر `isSelectableVariant` (‏`shared/variantPolicy`) وينتج `LensVariantOption`: `{ id, label, size, color, available, availability, price, currency, priceTnd, … }`.
 - **سعر كل Variant على حدة: نعم** — `detail.price` → `price` + `priceTnd` عبر محرك الأسعار `estimateWithDb`؛ وفي capture الفستان قيمته `null` لأن الصفحة لا تنشر سعراً لكل مقاس (لا يُختلق سعر).
 - **مخزون كل Variant على حدة: نعم، كما ينشره التاجر** — `detail.stock` → `reportedVariantStock` → `availability: 'available' | 'unavailable' | 'unknown'`؛ الصمت يبقى `unknown` ولا يصبح «متاحاً افتراضياً» أبداً (انظر في المثال 1: مقاس Large ‏`stock: false` بينما بقية المقاسات `true`).
 - **طبقة تحقق حيّة فوق ذلك:** عقد توفّر لكل variant عند الشراء (`recordVariantContract` في `variantAvailability.ts`)، وخطأ `VARIANT_AVAILABILITY_UNKNOWN` معالج في `LensProductView.tsx:754` — أي أن «المخزون المكشوط» لا يُصدَّق أعمى بل يُعاد التحقق منه لحظة الالتزام.
@@ -203,7 +203,7 @@ export interface LensProductFact {
 
 1. `parseProductPageHtml` — `src/scraper/productPageParser.ts:722` (HTML → `ParsedProductPage`)؛
 2. `SmartLinkScraper.scrapeParsedPage` — `src/scraper/scraper.ts` (‏`ParsedProductPage` → `ScrapedProduct`)؛
-3. **`toAyrovixProduct` — `src/ayrovix/services/product.ts:33`** ← نقطة التحويل المركزية (‏`ScrapedProduct` → `AyrovixProduct`: سعر TND عبر `estimateWithDb`، variantOptions، galerie، تحقق السعر)؛
+3. **`toZayrovixProduct` — `src/ayrovix/services/product.ts:33`** ← نقطة التحويل المركزية (‏`ScrapedProduct` → `ZayrovixProduct`: سعر TND عبر `estimateWithDb`، variantOptions، galerie، تحقق السعر)؛
 4. routes — `src/ayrovix/routes.ts` (‏`/detect:505`، `/analyze-url:554`) تُخرج JSON عبر HTTP؛
 5. `apps/mobile/src/api/lens.ts` — أنواع العقد (`LensCandidate`…) واستدعاءات الهاتف؛
 6. `mergeLensProduct` — `apps/mobile/src/features/lens/productEnrichment.ts` (دمج progressive بنفس الضمانات: لا سعر بلا `priceToken` موقّع، لا تقييم إلا `merchant`)؛

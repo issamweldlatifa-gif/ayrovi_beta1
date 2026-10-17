@@ -44,7 +44,7 @@ function money(amount: number): string {
  */
 export function buildInvoiceQrPayload(input: InvoiceQrInput): string {
   const fields: Array<[string, string]> = [
-    ['AYROVI', '1'],
+    ['ZAYROVI', '1'],
     ['ISS', input.issuer.trim()],
     ['TAX', String(input.taxId || '').trim()],
     ['INV', input.invoiceNumber.trim()],

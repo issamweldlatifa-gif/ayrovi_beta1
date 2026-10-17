@@ -1,10 +1,10 @@
-# AYROVI — P3 / T1-bis : noms sémantiques, feuille d'application unique, absorption de palette
+# ZAYROVI — P3 / T1-bis : noms sémantiques, feuille d'application unique, absorption de palette
 
 **Date :** 2026-09-06 · **Branche :** `main` · **Suite de :** `DESIGN_P3_T1_REPORT.md` (tokenisation 1:1)
 **Commis de la phase :** `e7906c3` (a) → `3cf36a2` (b) → `10b0cff` (c) → `3b813a7` (d) → le présent commit (e).
 
 **Note de numérotation, à lire avant tout le reste.** J'ai d'abord intitulé ce travail « P3/T2 », puis j'ai
-écrit par-dessus la ligne T2 du plan. C'était une erreur de rattachement : dans `../plans/EVOLUTION_AYROVI_P2_P5.md`
+écrit par-dessus la ligne T2 du plan. C'était une erreur de rattachement : dans `../plans/EVOLUTION_ZAYROVI_P2_P5.md`
 §5, **T2 est le pas des composants primitifs** (~18 éléments que le moteur réexporte) — il n'est **pas entamé**.
 Le travail décrit ici prolonge **T1** (lequel prévoyait déjà « une famille de noirs », « un seul orange » et des
 noms sémantiques) : il est donc renommé **T1-bis**, la ligne T2 du plan a été restaurée mot pour mot, et le
@@ -19,7 +19,7 @@ où la mesure le justifie. Tout le reste (aliasing, conversion, fusion) est prou
 
 | # | Contenu | Rendu | Preuve |
 |---|---|---|---|
-| **a** | correction des deux défauts mesurés en T1 : `--admin-danger` enfin définie (alias de `--ayrovi-danger`), et `NavIcon` qui rend un glyphe au lieu d'un carré CSS muet | **1 changement consenti** (le motif de refus passe en rouge) | 3 tests de contrat + garde élargi aux styles en ligne |
+| **a** | correction des deux défauts mesurés en T1 : `--admin-danger` enfin définie (alias de `--zayrovi-danger`), et `NavIcon` qui rend un glyphe au lieu d'un carré CSS muet | **1 changement consenti** (le motif de refus passe en rouge) | 3 tests de contrat + garde élargi aux styles en ligne |
 | **b** | 8 variables héritées mal nommées (`--admin-purple` = un noir, `--admin-yellow` = un pêche) → noms canoniques ; anciens noms conservés en alias | inchangé | 3472 comparaisons, 0 écart |
 | **c** | `arrival-ingestion.css` (135 littéraux, gelée depuis P2.0) convertie aux tokens ; 10 indirections mortes effacées ; `--admin-text` (jamais défini) aliasé sur l'encre | inchangé, **sauf** 1 écart consenti (`.arrival-store-empty strong` qui héritait d'une couleur) | 4403 comparaisons, 1 écart consenti |
 | **d** | les 4 feuilles de règles fondues dans `admin.css` (11 → 8 fichiers CSS ; la couche admin = `tokens.css` + `admin.css`) | inchangé | isomorphisme 4005 → 4005 déclarations, 0 perdue, 0 ajoutée |
@@ -27,7 +27,7 @@ où la mesure le justifie. Tout le reste (aliasing, conversion, fusion) est prou
 
 ## 2) Pas a — les deux défauts, et la correction d'une de mes affirmations
 
-**F‑1 (`--admin-danger`)** : `AdminApp.tsx:326` peignait le motif de refus d'une preuve `color: var(--admin-danger)`, variable déclarée nulle part → la couleur héritait. Correction : `--admin-danger: var(--ayrovi-danger);` dans `tokens.css` (alias, aucune valeur nouvelle). Le rouge voulu apparaît. Le garde couvre désormais **les styles en ligne de tout `client/src/admin/**`** (allowlist réduite à la règle `--bo-icon`), et une mutation (retirer l'alias) fait échouer le test en nommant le fichier fautif.
+**F‑1 (`--admin-danger`)** : `AdminApp.tsx:326` peignait le motif de refus d'une preuve `color: var(--admin-danger)`, variable déclarée nulle part → la couleur héritait. Correction : `--admin-danger: var(--zayrovi-danger);` dans `tokens.css` (alias, aucune valeur nouvelle). Le rouge voulu apparaît. Le garde couvre désormais **les styles en ligne de tout `client/src/admin/**`** (allowlist réduite à la règle `--bo-icon`), et une mutation (retirer l'alias) fait échouer le test en nommant le fichier fautif.
 
 **F‑2 (`--bo-icon`)** — *mon rapport T1 sur-estimait l'impact, je le corrige* : la mesure montre que les 43 entrées de navigation déclarent 27 noms d'icône et que **tous** figurent dans la carte `ICONS` ; aucune icône n'était donc cassée à l'écran. Le défaut était **latent** : un nom non couvert aurait produit un carré de 19 px (masque `-webkit-mask: var(--bo-icon)` sur une variable jamais définie, classes `.bo-nav-icon--*` absentes du dépôt). Corrigé par `ICONS[name] ?? Grid` et verrouillé par trois tests de contrat (registre → carte → sprite) : la classe CSS reste en place (rien n'est supprimé) mais n'est plus atteignable.
 
@@ -80,7 +80,7 @@ Toute autre dérive — un renommage qui change une valeur, une fusion qui perd 
 
 - **couleurs littérales hors `tokens.css`** : 449 → **0** (T1) ; `arrival-ingestion.css` 135 → **0** (pas c) ; reste la couche **publique** hors périmètre D‑02 : `index.css` 114, `interface-runtime.css` 18, `ayrovix-theme.css` 1, et les 40 styles en ligne de `AdminApp.tsx` (la T3/T4 du plan, pas oubliées : listées).
 - **12 → 3 feuilles CSS du système** : mesuré 11 avant P3 → **8** aujourd'hui ; la couche admin est à **2** fichiers (`tokens.css` + `admin.css`) ; les 6 restants appartiennent à la vitrine.
-- **un seul orange** : `--ayrovi-cta` `#fe7003`, consommé en `var()` par le rail, la coquille et la fiche agent ✓ ; le garde l'interdit d'ailleurs.
+- **un seul orange** : `--zayrovi-cta` `#fe7003`, consommé en `var()` par le rail, la coquille et la fiche agent ✓ ; le garde l'interdit d'ailleurs.
 - **famille de noirs unique** : `--admin-ink` / `--admin-ink-strong` / `--admin-ink-black` (3 porteurs, valeurs distinctes assumées) ; les 5 « noirs » du plan d'origine sont réduits à 3 + 1 alias de valeur dupliquée supprimée.
 
 ## 9) Restant (et ce qui n'est pas fini, à dire)

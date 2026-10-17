@@ -3,7 +3,7 @@
 ## النقطة الأولى: «التطبيق وحده لا يكفي»
 
 التطبيق على هاتفك ليس إلا **واجهة**. كل ما يخصّ الحسابات يحدث على **الخادم**
-(`ayrovi-beta1-1.onrender.com`). وتسلسل الدخول بجوجل كالتالي:
+(`zayrovi-beta1-1.onrender.com`). وتسلسل الدخول بجوجل كالتالي:
 
 1. التطبيق يفتح صفحة جوجل.
 2. جوجل يعيد المستخدم إلى **الخادم** على مسار `/auth/google/callback`.
@@ -21,7 +21,7 @@
 1. افتح: `https://github.com/issamweldlatifa-gif/ayrovi_beta1/pull/new/fix/aywebs-ui-remarks`
 2. أنشئ Pull Request وادمجه في `main` (بعد نجاح فحص `typecheck-test`).
 3. انتظر إعادة النشر التلقائي على Render ودقّقه عبر
-   `https://ayrovi-beta1-1.onrender.com/api/customer/auth/config`.
+   `https://zayrovi-beta1-1.onrender.com/api/customer/auth/config`.
 
 عندها فقط يبدأ الدخول بجوجل في العمل من الهاتف.
 
@@ -51,22 +51,22 @@ ChatGPT التي أرسلتها)، لا تكفي صفحة ويب: يجب أن ي
 
 | الحقل | القيمة |
 |---|---|
-| اسم الحزمة (Package name) | `app.ayrovi.mobile` |
+| اسم الحزمة (Package name) | `app.zayrovi.mobile` |
 | **SHA-1** | `2B:39:9D:A9:DE:A6:35:B2:5F:11:26:60:67:55:1A:AD:4A:85:B3:B5` |
 | SHA-256 | `99:CD:A0:44:36:15:72:C6:C5:47:32:FA:1D:B3:7F:86:D3:FE:57:B0:37:C7:69:4F:EA:70:7F:1F:CC:D8:01:55` |
-| ملف المفتاح | `ayrovi-release.jks` (كلمة السر والمفتاح: `AyroviBeta2026`، الاسم المستعار: `ayrovi`) |
+| ملف المفتاح | `zayrovi-release.jks` (كلمة السر والمفتاح: `ZayroviBeta2026`، الاسم المستعار: `zayrovi`) |
 
-> **احتفظ بملف `ayrovi-release.jks` في مكان آمن ولا تفقده.** إن ضاع، لن تستطيع
+> **احتفظ بملف `zayrovi-release.jks` في مكان آمن ولا تفقده.** إن ضاع، لن تستطيع
 > إصدار تحديث يُثبَّت فوق النسخ السابقة، وستضطرّ لتسجيل بصمة جديدة عند جوجل.
 > لا تضعه في المستودع العلني؛ ضعه كسرّ (secret) في GitHub باسم
-> `AYROVI_KEYSTORE_BASE64` إن أردت أن تبني الـ CI نُسخاً بالبصمة نفسها.
+> `ZAYROVI_KEYSTORE_BASE64` إن أردت أن تبني الـ CI نُسخاً بالبصمة نفسها.
 
 ### د) ما تفعله أنت في Google Cloud Console
 
 1. اذهب إلى **APIs & Services ← Credentials** في **نفس المشروع** الذي يحوي
    المعرّف أعلاه (`917317804534`).
 2. **Create credentials ← OAuth client ID ← Application type: Android**.
-3. Package name: `app.ayrovi.mobile`
+3. Package name: `app.zayrovi.mobile`
 4. SHA-1: `2B:39:9D:A9:DE:A6:35:B2:5F:11:26:60:67:55:1A:AD:4A:85:B3:B5`
 5. احفظ. (لا تحتاج أن ترسل لي معرّف العميل الأندرويدي — الأندرويد لا يستعمله
    في الكود؛ المستعمل في الكود هو **Web Client ID** الذي أرسلته.)
@@ -77,7 +77,7 @@ ChatGPT التي أرسلتها)، لا تكفي صفحة ويب: يجب أن ي
 
 نسخة 1.0.5 موقّعة بشهادة **جديدة**، لذلك سيرفض أندرويد تثبيتها فوق النسخ
 القديمة. **احذف التطبيق القديم أولاً** ثم ثبّت
-`AYROVI-1.0.5-signed-debug.apk`. هذه آخر مرة يحدث فيها ذلك: كل ما بعدها
+`ZAYROVI-1.0.5-signed-debug.apk`. هذه آخر مرة يحدث فيها ذلك: كل ما بعدها
 سيُوقَّع بالشهادة نفسها.
 
 ## ملاحظة أمانة بخصوص البطء
@@ -97,7 +97,7 @@ Render عندك.
 
 | الطبقة | ما أُضيف |
 |---|---|
-| أندرويد | `AyroviAuthTabPlugin.signInWithGoogle()` عبر **Credential Manager** + `GetGoogleIdOption` |
+| أندرويد | `ZayroviAuthTabPlugin.signInWithGoogle()` عبر **Credential Manager** + `GetGoogleIdOption` |
 | موارد | `google_web_client_id` في `strings.xml` — معرّفك بالضبط |
 | الواجهة | `signInWithGoogleNatively()` تُجرَّب **قبل** التبويب؛ عند الفشل يتولّى التبويب |
 | الخادم | `POST /api/customer/auth/google/native` يتحقّق من الجيتون عند جوجل |

@@ -3,7 +3,7 @@ import { customerApi } from '../../customer/api';
 import type { CustomerFavorite } from '../../types';
 
 /**
- * §6 (04/10/2026) — Favoris AyWebs : UN SEUL magasin, celui du compte AYROVI.
+ * §6 (04/10/2026) — Favoris AyWebs : UN SEUL magasin, celui du compte ZAYROVI.
  *
  * Ce qui existait : `AyWebsStoresScreen` gardait les favoris dans un
  * `useState<Set<string>>` local. L'état disparaissait au premier démontage,

@@ -4,7 +4,7 @@ import {
 } from '../client/src/config/interfaceConfig';
 
 describe('واجهتي full interface configuration', () => {
-  test('locks the 70/25/5 AYROVI palette on public defaults', () => {
+  test('locks the 70/25/5 ZAYROVI palette on public defaults', () => {
     expect(DEFAULT_INTERFACE_CONFIG.colors).toMatchObject({
       pageBackground: '#ffffff',
       primary: '#000000',
@@ -25,17 +25,17 @@ describe('واجهتي full interface configuration', () => {
     expect(INTERFACE_FONT_PRESETS[0].display).not.toContain('Plus Jakarta');
   });
 
-  test('publishes one locked font preset and the single AYROVI icon system', () => {
+  test('publishes one locked font preset and the single ZAYROVI icon system', () => {
     expect(INTERFACE_FONT_PRESETS).toHaveLength(1);
     expect(new Set(INTERFACE_FONT_PRESETS.map((preset) => preset.id)).size).toBe(1);
     expect(INTERFACE_FONT_PRESETS.every((preset) => preset.body && preset.display)).toBe(true);
     // Un seul système d'icônes : le système maison (lucide et les bibliothèques de comparaison ont été retirés).
-    expect(INTERFACE_ICON_LIBRARIES.map((library) => library.id)).toEqual(['ayrovi']);
+    expect(INTERFACE_ICON_LIBRARIES.map((library) => library.id)).toEqual(['zayrovi']);
   });
 
   test('upgrades a legacy واجهتي payload without losing its content', () => {
     const legacy = {
-      logoUrl: '/media/logo-ayrovi.png',
+      logoUrl: '/media/logo-zayrovi.png',
       sections: DEFAULT_INTERFACE_CONFIG.sections.map(({ id, visible, order, title, subtitle, image }) => ({ id, visible, order, title, subtitle, image })),
       typography: { body: DEFAULT_INTERFACE_CONFIG.typography.body, display: DEFAULT_INTERFACE_CONFIG.typography.display, baseSize: 17, align: 'center', headingColor: '#112233', textColor: '#445566' },
       buttons: { background: '#123456', color: '#ffffff', radius: 8, height: 46, shape: 'soft' },
@@ -50,8 +50,8 @@ describe('واجهتي full interface configuration', () => {
     expect(normalized.typography.headingColor).toBe('#000000');
     expect(normalized.colors.pageBackground).toBe('#ffffff');
     expect(normalized.buttons.secondaryColor).toBe('#000000');
-    // Les anciennes valeurs de bibliothèque (lucide…) sont recentrées sur le système AYROVI.
-    expect(normalized.icons).toMatchObject({ library: 'ayrovi', color: '#654321', activeColor: '#ff6900' });
+    // Les anciennes valeurs de bibliothèque (lucide…) sont recentrées sur le système ZAYROVI.
+    expect(normalized.icons).toMatchObject({ library: 'zayrovi', color: '#654321', activeColor: '#ff6900' });
     expect(normalized.layout).toMatchObject({ sectionGap: 24, maxWidth: 1320, cardRadius: 16, shadow: 'soft' });
   });
 
@@ -70,7 +70,7 @@ describe('واجهتي full interface configuration', () => {
     expect(normalized.colors.primary).toBe(DEFAULT_INTERFACE_CONFIG.colors.primary);
     expect(normalized.typography.baseSize).toBe(22);
     expect(normalized.typography.lineHeight).toBe(1.2);
-    expect(normalized.icons).toMatchObject({ library: 'ayrovi', size: 44 });
+    expect(normalized.icons).toMatchObject({ library: 'zayrovi', size: 44 });
     expect(normalized.layout.cardRadius).toBe(48);
     expect(normalized.sections[0].paddingY).toBe(160);
   });

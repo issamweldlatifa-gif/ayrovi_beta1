@@ -13,7 +13,7 @@
  *      accès à rien.
  *
  * Pourquoi une attente active plutôt qu'un schéma d'URL personnalisé : un lien
- * `ayrovi://` renvoyé par Google obligerait à déclarer et faire valider une
+ * `zayrovi://` renvoyé par Google obligerait à déclarer et faire valider une
  * redirection de plus ; le client, lui, veut voir le moins de navigateur
  * possible. On interroge donc `/auth/native/claim` — 404 `HANDOFF_PENDING` tant
  * que le consentement n'a pas abouti, 200 quand la session est déposée.

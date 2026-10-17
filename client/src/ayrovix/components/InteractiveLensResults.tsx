@@ -3,7 +3,7 @@ import { useLensFavorites } from './useLensFavorites';
 import type { CustomerSession } from '../../types';
 import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
 import { ArrowLeft, ScanSearch, Loader2, Image as ImageIcon } from '../../components/QatafoIcons';
-import type { AyrovixCandidate } from '../types';
+import type { ZayrovixCandidate } from '../types';
 import { isDisplayableCandidate, isLenientCandidate } from '../services/resultPolicy';
 import { useLocale } from '../../i18n/LocaleContext';
 
@@ -13,7 +13,7 @@ import './lens-results.css';
 
 export interface InteractiveLensView {
   queryLabel: string | null;
-  list: AyrovixCandidate[];
+  list: ZayrovixCandidate[];
   eventId: string;
   /** Fiches écartées côté serveur : on ne montre pas ce qu'on ne peut pas acheter. */
   excludedCount?: number;
@@ -25,7 +25,7 @@ interface Props {
   view: InteractiveLensView;
   previewUrl: string | null;
   fallbackImage: string | null;
-  onChoose: (candidate: AyrovixCandidate) => void;
+  onChoose: (candidate: ZayrovixCandidate) => void;
   onReset: () => void;
   onRoiSearch?: (roi: { x: number; y: number; w: number; h: number }) => void;
   onLassoSearch?: (file: File, cropMs?: number) => void;

@@ -3,7 +3,7 @@ import { EditorialIcon } from '../design/editorial/Icon';
 import type { StockState } from './types';
 
 /**
- * PANIER AYROVI — mobile-first, with source-backed purchase status and a
+ * PANIER ZAYROVI — mobile-first, with source-backed purchase status and a
  * checkout summary that stays visible while the product list scrolls.
  */
 export interface BagLine {
@@ -179,7 +179,7 @@ export const BagPage: React.FC<BagPageProps> = ({
             <div className="s-payment-strip" aria-label={tr('Moyens de paiement disponibles', 'وسائل الدفع المتاحة')}>
               <div className="s-payment-strip__heading">
                 <strong>{tr('Moyens de paiement', 'وسائل الدفع')}</strong>
-                <small>{tr('Disponibles sur AYROVI', 'المتاحة على AYROVI')}</small>
+                <small>{tr('Disponibles sur ZAYROVI', 'المتاحة على ZAYROVI')}</small>
               </div>
               <div className="s-payment-strip__marks">
                 {paymentMarks.map((mark) => (

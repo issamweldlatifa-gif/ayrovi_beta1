@@ -38,7 +38,7 @@ const rolePermissions: Record<AdminRole, Set<AdminPermission>> = {
     // `settings:write`, qui etait le gate reel des ressources IA. C'est un renommage
     // semantique, pas une elargissement.
     // `users:read` est volontairement absent : la separation « ADMIN gere les reglages
-    // mais ne voit pas les comptes » est une attente figee par tests/ayrovi.test.ts
+    // mais ne voit pas les comptes » est une attente figee par tests/zayrovi.test.ts
     // (RBAC). Le gate etant now nommable, l'accorder ne sera plus qu'une decision de
     // donnees (ligne dans erp_role_permissions), plus une modification de code.
     'dashboard:read','content:read','content:write','commerce:read','orders:write',

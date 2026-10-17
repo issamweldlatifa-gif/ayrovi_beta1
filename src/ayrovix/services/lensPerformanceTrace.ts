@@ -1,5 +1,5 @@
 /**
- * AYROVIX Lens — Performance Trace (Instrumentation آمن)
+ * ZAYROVIX Lens — Performance Trace (Instrumentation آمن)
  * لا يسجل الصور أو البيانات الشخصية — فقط أزمنة و أحجام و IDs
  * يُستخدم لتشخيص البطء من رفع الصورة إلى عرض النتائج
  *

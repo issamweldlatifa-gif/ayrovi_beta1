@@ -7,7 +7,7 @@ Les erreurs `SERPAPI_TIMEOUT` sont intermittentes, pas une panne totale : un app
 ## Comportement corrigé
 
 - SerpApi reste l'unique entrée de la recherche visuelle Lens. Aucun repli silencieux vers Anthropic.
-- La recherche complète interroge les marchés majeurs `fr,de,it,es,uk,us,ca,tr,ae` en parallèle; France est toujours incluse et `tn` est filtré. Les résultats sont fusionnés/dédoublonnés par URL. L'ancien `AYROVIX_LENS_COUNTRY` reste accepté sans remplacer la liste; `AYROVIX_LENS_COUNTRIES` permet de la régler (plafond de 9 pays).
+- La recherche complète interroge les marchés majeurs `fr,de,it,es,uk,us,ca,tr,ae` en parallèle; France est toujours incluse et `tn` est filtré. Les résultats sont fusionnés/dédoublonnés par URL. L'ancien `ZAYROVIX_LENS_COUNTRY` reste accepté sans remplacer la liste; `ZAYROVIX_LENS_COUNTRIES` permet de la régler (plafond de 9 pays).
 - Le mode Live, qui répète les recherches pendant l'ouverture de la caméra, utilise seulement `fr,uk,us` pour borner le coût et le délai.
 - `POST /detect` renvoie des correspondances visuelles (titre, vignette, lien, marchand), jamais des boîtes. Le viseur/cadre de sélection reste manuel.
 - `/analyze-image` émet d'abord les correspondances SerpApi sûres, puis émet une mise à jour pour la même URL après lecture réussie de la page marchande. Le client remplace la carte existante, sans doublon.

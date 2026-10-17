@@ -1,7 +1,7 @@
 import { FONT_STACK, BRAND, documentIdentityCss, mailIdentityStyle } from './brandDocuments';
 import { invoiceQrSvg } from './invoiceQr';
 /**
- * AYROVI Invoice Service — توليد فاتورة PDF محلية بدون متصفح headless.
+ * ZAYROVI Invoice Service — توليد فاتورة PDF محلية بدون متصفح headless.
  *
  * P0 (ERP foundation) — séparation Public Media / Private Documents :
  *   • NEW invoices and transfer proofs are written under
@@ -87,8 +87,8 @@ export function buildInvoiceHtml(db: QatafoDatabase, orderId: string): string {
   const setting = (key: string, fallback = '') => db.get<any>('SELECT setting_value FROM settings WHERE setting_key=?', key)?.setting_value ?? fallback;
 
   const company = {
-    name: String(setting('company_legal_name', '') || setting('company_name', 'AYROVI')),
-    email: String(setting('company_email', 'contact@ayrovi.tn')),
+    name: String(setting('company_legal_name', '') || setting('company_name', 'ZAYROVI')),
+    email: String(setting('company_email', 'contact@zayrovi.tn')),
     phone: String(setting('company_phone', '')),
     address: String(setting('company_address', 'Tunis, Tunisie')),
   };
@@ -172,7 +172,7 @@ export function buildInvoiceHtml(db: QatafoDatabase, orderId: string): string {
   <div class="meta">
     <div class="card">
       <h3>Facturé à</h3>
-      <p><strong>${escapeHtml(customer?.name || account?.display_name || 'Client AYROVI')}</strong><br>
+      <p><strong>${escapeHtml(customer?.name || account?.display_name || 'Client ZAYROVI')}</strong><br>
       ${escapeHtml(order.address)}<br>${escapeHtml(order.governorate)}<br>
       ${escapeHtml(order.phone)}${order.contact_email || account?.email ? `<br>${escapeHtml(order.contact_email || account.email)}` : ''}</p>
     </div>
@@ -193,7 +193,7 @@ export function buildInvoiceHtml(db: QatafoDatabase, orderId: string): string {
     <tr><td>Sous-total articles</td><td class="num">${money(order.subtotal_tnd)}</td></tr>
     ${Number(order.customs_tnd) ? `<tr><td>Douane & formalités</td><td class="num">${money(order.customs_tnd)}</td></tr>` : ''}
     ${Number(order.shipping_tnd) ? `<tr><td>Transport international</td><td class="num">${money(order.shipping_tnd)}</td></tr>` : ''}
-    ${Number(order.service_tnd) ? `<tr><td>Frais de service AYROVI</td><td class="num">${money(order.service_tnd)}</td></tr>` : ''}
+    ${Number(order.service_tnd) ? `<tr><td>Frais de service ZAYROVI</td><td class="num">${money(order.service_tnd)}</td></tr>` : ''}
     ${Number(order.express_tnd) ? `<tr><td>Express</td><td class="num">${money(order.express_tnd)}</td></tr>` : ''}
     ${Number(order.discount_tnd) ? `<tr><td>Remise</td><td class="num">−${money(order.discount_tnd)}</td></tr>` : ''}
     <tr class="grand"><td>Total de la commande</td><td class="num">${money(total)}</td></tr>
@@ -227,7 +227,7 @@ export function buildInvoiceLines(db: QatafoDatabase, orderId: string): PdfLine[
   const items = db.all<any>('SELECT * FROM order_items WHERE order_id=? ORDER BY created_at', orderId);
   const customer = db.get<any>('SELECT * FROM customers WHERE id=?', order.customer_id);
   const setting = (key: string, fallback = '') => db.get<any>('SELECT setting_value FROM settings WHERE setting_key=?', key)?.setting_value ?? fallback;
-  const company = String(setting('company_legal_name', '') || setting('company_name', 'AYROVI'));
+  const company = String(setting('company_legal_name', '') || setting('company_name', 'ZAYROVI'));
   const m = (v: any) => `${Number(v || 0).toFixed(3)} DT`;
   const deposit = Number(order.deposit_amount_tnd || 0);
   const balance = Math.max(0, Math.round((Number(order.total_tnd) - deposit) * 1000) / 1000);
@@ -241,7 +241,7 @@ export function buildInvoiceLines(db: QatafoDatabase, orderId: string): PdfLine[
     { text: String(order.invoice_number), size: 12, bold: true, color: PURPLE },
     { text: `Commande ${order.order_number} — ${new Date(order.created_at).toLocaleDateString('fr-FR')}`, size: 9, color: GREY },
     { text: '', size: 4 },
-    { text: `Facturé à : ${customer?.name || 'Client AYROVI'} — ${order.governorate} — ${order.phone}`, size: 10 },
+    { text: `Facturé à : ${customer?.name || 'Client ZAYROVI'} — ${order.governorate} — ${order.phone}`, size: 10 },
     { text: `Adresse : ${String(order.address).slice(0, 90)}`, size: 9, color: GREY },
     { text: `Paiement de l'acompte : ${methodLabel}`, size: 9, color: GREY },
     { text: '', size: 4 }, { text: '', rule: true },
@@ -311,7 +311,7 @@ export function invoiceEmailHtml(input: { customerName: string; orderNumber: str
         <tr><td style="padding:8px 0;color:${BRAND.colors.muted};">Solde à la livraison</td><td style="text-align:right;font-weight:700;">${e(input.balanceLabel)}</td></tr>
         ${input.trackingCode ? `<tr><td style="padding:8px 0;color:${BRAND.colors.muted};">Code de suivi</td><td style="text-align:right;font-weight:700;color:#000000;font-family:${FONT_STACK};font-variant-numeric:tabular-nums;">${e(input.trackingCode)}</td></tr>` : ''}
       </table>
-      <p style="line-height:1.6;color:${BRAND.colors.secondary};">Votre facture électronique est jointe à cet e-mail en PDF. Vous pouvez aussi la télécharger à tout moment depuis votre espace client AYROVI (Commandes → ${e(input.orderNumber)}).</p>
+      <p style="line-height:1.6;color:${BRAND.colors.secondary};">Votre facture électronique est jointe à cet e-mail en PDF. Vous pouvez aussi la télécharger à tout moment depuis votre espace client ZAYROVI (Commandes → ${e(input.orderNumber)}).</p>
       <p style="margin-top:22px;font-size:12px;color:${BRAND.colors.muted};">Merci de votre confiance — l'équipe ${e(input.company)}</p>
     </div>
   </div>

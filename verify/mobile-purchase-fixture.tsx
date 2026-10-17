@@ -8,19 +8,19 @@ import { NavigationHistoryProvider } from '../client/src/navigation/NavigationHi
 import { ShopProductScreen } from '../client/src/shop/ShopProductScreen';
 import { ShopBagScreen } from '../client/src/shop/ShopBagScreen';
 import { ShopCheckoutScreen } from '../client/src/shop/ShopCheckoutScreen';
-import type { AyrovixProduct } from '../client/src/ayrovix/types';
+import type { ZayrovixProduct } from '../client/src/ayrovix/types';
 import type { CartItem, CustomerSession } from '../client/src/types';
 import { getSessionId } from '../client/src/utils/session';
 
 const demoAccount = { account: { id: 'verification-only', displayName: 'Test Browser', email: 'buyer@example.org', phone: '98123456', emailVerified: true, phoneVerified: false }, csrfToken: '' } as CustomerSession;
 function TestFlow() {
-  const [product, setProduct] = useState<AyrovixProduct | null>(null);
+  const [product, setProduct] = useState<ZayrovixProduct | null>(null);
   const [items, setItems] = useState<CartItem[]>([]);
   const [cartTotal, setCartTotal] = useState(0);
   const [delivery, setDelivery] = useState(0);
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  React.useEffect(() => { (window as any).showPurchaseProduct = (value: AyrovixProduct) => { setCartOpen(false); setCheckoutOpen(false); setProduct({ ...value, availability: 'in_stock', availabilityCheckedAt: new Date().toISOString(), availabilityExpiresAt: new Date(Date.now() + 3600000).toISOString() }); }; }, []);
+  React.useEffect(() => { (window as any).showPurchaseProduct = (value: ZayrovixProduct) => { setCartOpen(false); setCheckoutOpen(false); setProduct({ ...value, availability: 'in_stock', availabilityCheckedAt: new Date().toISOString(), availabilityExpiresAt: new Date(Date.now() + 3600000).toISOString() }); }; }, []);
   const refreshCart = async () => {
     const response = await fetch('/api/cart/items', { headers: { 'x-session-id': getSessionId() } });
     const data = await response.json();

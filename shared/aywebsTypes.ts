@@ -1,5 +1,5 @@
 /**
- * AYROVI · AYWEBs — Master Engineering Order contract (shared).
+ * ZAYROVI · AYWEBs — Master Engineering Order contract (shared).
  *
  * Ce fichier est LA seule définition des vocabulaires AYWEBs partagés entre le
  * serveur, le client et l'Admin. Aucune chaîne d'état, aucun code d'erreur et
@@ -7,9 +7,9 @@
  * l'import vient d'ici.
  *
  * Règle maître (§53 du Master Order) : l'identité SOURCE (boutique externe +
- * identifiant marchand) n'est JAMAIS remplacée par l'identité AYROVI. Les deux
+ * identifiant marchand) n'est JAMAIS remplacée par l'identité ZAYROVI. Les deux
  * vivent côte à côte sur chaque objet : `source*` = le marchand, `id`/`number`
- * = AYROVI.
+ * = ZAYROVI.
  */
 
 /* ------------------------------------------------------------------ *
@@ -136,7 +136,7 @@ export type AyWebsOrderStatus = (typeof AYWEBS_ORDER_STATUSES)[number];
 /** Lignes de frais du devis d'achat (§19). Le calcul vit dans checkout/fees.ts. */
 export const AYWEBS_FEE_KINDS = [
   'PRODUCT_SUBTOTAL',
-  'AYROVI_SERVICE',
+  'ZAYROVI_SERVICE',
   'IMPORT_DUTY',
   'SHIPPING_ESTIMATE',
   'OTHER',
@@ -533,7 +533,7 @@ export interface AyWebsResolvedProduct {
   integrationType: AyWebsIntegrationType;
   capturedAt: string;
   evidenceHash: string;
-  /** Devis AYROVI recalculé côté serveur — aucune formule de prix dans le client. */
+  /** Devis ZAYROVI recalculé côté serveur — aucune formule de prix dans le client. */
   ayroviPricing: {
     totalTnd: number;
     pricingVersion: number;
@@ -567,7 +567,7 @@ export interface AyWebsSessionContext {
  * 15. Deep links (§25)
  * ------------------------------------------------------------------ */
 
-export const AYWEBS_DEEP_LINK_SCHEME = 'ayrovi';
+export const AYWEBS_DEEP_LINK_SCHEME = 'zayrovi';
 export const AYWEBS_DEEP_LINK_HOST = 'aywebs';
 
 export type AyWebsRoute =
@@ -607,7 +607,7 @@ export function ayWebsStorePath(storeId: string): string {
 const SAFE_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,120}$/;
 
 /**
- * Analyse un deep link `ayrovi://aywebs/...`, un chemin `/aywebs/...` ou une
+ * Analyse un deep link `zayrovi://aywebs/...`, un chemin `/aywebs/...` ou une
  * URL de partage Android. Retourne toujours une route, y compris `unknown` :
  * un lien non reconnu ne doit jamais ouvrir un écran vide ni planter.
  */
@@ -618,7 +618,7 @@ export function parseAyWebsDeepLink(raw: unknown): AyWebsRoute {
   let path = '';
   let query = '';
   try {
-    if (/^ayrovi:\/\//i.test(value)) {
+    if (/^zayrovi:\/\//i.test(value)) {
       const url = new URL(value);
       if (url.hostname.toLowerCase() !== AYWEBS_DEEP_LINK_HOST && !/^\/?aywebs/i.test(url.pathname)) {
         return { name: 'unknown', raw: value };

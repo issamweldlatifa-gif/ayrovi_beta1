@@ -8,10 +8,10 @@ import { enrichProduct, readImages, readSizes } from '../src/ayrovix/services/pr
 let dir = '';
 beforeEach(() => {
   dir = fs.mkdtempSync(path.join(os.tmpdir(), 'prod-enrich-'));
-  process.env.AYROVI_PRODUCT_ENRICH_CACHE_DIR = dir;
+  process.env.ZAYROVI_PRODUCT_ENRICH_CACHE_DIR = dir;
   process.env.SERPAPI_KEY = 'test-key';
-  delete process.env.AYROVI_PRODUCT_ENRICH;
-  delete process.env.AYROVI_PRODUCT_ENRICH_DEADLINE_MS;
+  delete process.env.ZAYROVI_PRODUCT_ENRICH;
+  delete process.env.ZAYROVI_PRODUCT_ENRICH_DEADLINE_MS;
 });
 afterEach(() => { fs.rmSync(dir, { recursive: true, force: true }); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
@@ -140,7 +140,7 @@ describe('enriching the opened merchant page', () => {
   });
 
   it('never delays the initial product page beyond its configured deadline', async () => {
-    process.env.AYROVI_PRODUCT_ENRICH_DEADLINE_MS = '500';
+    process.env.ZAYROVI_PRODUCT_ENRICH_DEADLINE_MS = '500';
     const f = { findProduct: vi.fn(() => new Promise<never>(() => {})), loadProduct: vi.fn() };
     const started = Date.now();
     const out = await enrichProduct(TITLE, { fetchers: f as any });
@@ -149,11 +149,11 @@ describe('enriching the opened merchant page', () => {
   });
 
   it('can be disabled without a deploy and network errors do not break the page', async () => {
-    process.env.AYROVI_PRODUCT_ENRICH = 'false';
+    process.env.ZAYROVI_PRODUCT_ENRICH = 'false';
     const f = fetchers();
     await enrichProduct(TITLE, { fetchers: f });
     expect(f.findProduct).not.toHaveBeenCalled();
-    delete process.env.AYROVI_PRODUCT_ENRICH;
+    delete process.env.ZAYROVI_PRODUCT_ENRICH;
     const broken = { findProduct: vi.fn(async () => { throw new Error('HTTP_500'); }), loadProduct: vi.fn() };
     await expect(enrichProduct(TITLE, { fetchers: broken as any })).resolves.toMatchObject({ images: [], sizes: [], optionLabel: null });
   });

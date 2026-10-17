@@ -67,20 +67,20 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onTo
     <>
       {isVisionOpen && (
         <section className="fixed inset-0 z-50 overflow-y-auto bg-surface" role="dialog" aria-modal="true" aria-label={tr('Vision — bientôt disponible', 'Vision — قريبًا')} dir={direction}>
-          <AppHeader title="AYROVI Vision" subtitle={tr('Nouveau module visuel', 'وحدة بصرية جديدة')} onClose={() => navigation.back()} />
+          <AppHeader title="ZAYROVI Vision" subtitle={tr('Nouveau module visuel', 'وحدة بصرية جديدة')} onClose={() => navigation.back()} />
           <div className="grid min-h-[calc(100dvh-5rem)] place-items-center px-5 pb-24 text-center">
             <div className="w-full max-w-sm rounded-card border border-line bg-white p-8 shadow-overlay">
               <span className="mx-auto grid h-11 w-11 place-items-center rounded-control bg-surface text-ink"><Vision className="h-11 w-11" /></span>
-              <p className="mt-5 text-xs font-extrabold uppercase tracking-[0.2em] text-ink">AYROVI Vision</p>
+              <p className="mt-5 text-xs font-extrabold uppercase tracking-[0.2em] text-ink">ZAYROVI Vision</p>
               <h2 className="mt-2 font-display text-3xl font-black text-ink">{tr('Bientôt disponible', 'قريبًا')}</h2>
-              <p className="mx-auto mt-3 max-w-xs text-sm leading-6 text-muted">{tr('Une nouvelle expérience visuelle AYROVI est en préparation.', 'نعمل على تجربة بصرية جديدة من AYROVI.')}</p>
+              <p className="mx-auto mt-3 max-w-xs text-sm leading-6 text-muted">{tr('Une nouvelle expérience visuelle ZAYROVI est en préparation.', 'نعمل على تجربة بصرية جديدة من ZAYROVI.')}</p>
             </div>
           </div>
         </section>
       )}
 
       <div
-        className={`ayrovi-glass-bottom-nav fixed inset-x-0 bottom-0 z-30 border-t px-3 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-1 ${isVisible ? 'is-visible' : 'is-hidden'}`}
+        className={`zayrovi-glass-bottom-nav fixed inset-x-0 bottom-0 z-30 border-t px-3 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-1 ${isVisible ? 'is-visible' : 'is-hidden'}`}
         aria-hidden={!isVisible}
         inert={isVisible ? undefined : true}
       >
@@ -89,7 +89,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onTo
             <LensBox className="interface-runtime-icon" style={iconStyle(false)} />
             {config.showLabels && <span className="max-w-full truncate">{config.lensLabel}</span>}
           </button>
-          <button type="button" onClick={onToggleAiDrawer} className={NAV_ITEM} aria-label={tr("SONIM — l'assistant IA d'AYROVI", 'SONIM — المساعد الذكي لـ AYROVI')} aria-pressed={isAiDrawerOpen}>
+          <button type="button" onClick={onToggleAiDrawer} className={NAV_ITEM} aria-label={tr("SONIM — l'assistant IA d'ZAYROVI", 'SONIM — المساعد الذكي لـ ZAYROVI')} aria-pressed={isAiDrawerOpen}>
             <Sonim className="interface-runtime-icon" style={iconStyle(isAiDrawerOpen)} />
             {config.showLabels && <span className={`max-w-full truncate ${isAiDrawerOpen ? 'text-cta' : ''}`}>{config.aiLabel}</span>}
           </button>

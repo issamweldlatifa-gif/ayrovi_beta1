@@ -37,7 +37,7 @@ describe('homepage close, sticky header and scroll-aware navigation', () => {
     expect(appSource).toContain('data-app-route="checkout"');
     expect(checkoutCss).toMatch(/\.shop-checkout-route\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?z-index:\s*100;/);
     expect(confirmationCss).toMatch(/\.order-confirmation-page\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?z-index:\s*50;/);
-    expect(runtimeCss).toMatch(/\.ayrovi-app-shell\{[^}]*isolation:isolate/);
+    expect(runtimeCss).toMatch(/\.zayrovi-app-shell\{[^}]*isolation:isolate/);
   });
 
   it('keeps all other full-screen experiences in the foreground overlay band', () => {
@@ -71,10 +71,10 @@ describe('homepage close, sticky header and scroll-aware navigation', () => {
     expect(bottomNavSource).toContain("window.addEventListener('scroll', onScroll, { passive: true })");
     expect(bottomNavSource).toContain('else if (delta > 8) setIsVisible(false)');
     expect(bottomNavSource).toContain('else if (delta < -8) setIsVisible(true)');
-    expect(runtimeCss).toMatch(/\.ayrovi-glass-bottom-nav\{[^}]*color-mix\(in srgb,var\(--ayrovi-white\) 72%,transparent\)[^}]*backdrop-filter:blur\(22px\)/); // DS v1.0 : fond du rail en token
-    expect(runtimeCss).toMatch(/\.ayrovi-glass-bottom-nav\.is-hidden\{[^}]*translate3d/);
+    expect(runtimeCss).toMatch(/\.zayrovi-glass-bottom-nav\{[^}]*color-mix\(in srgb,var\(--zayrovi-white\) 72%,transparent\)[^}]*backdrop-filter:blur\(22px\)/); // DS v1.0 : fond du rail en token
+    expect(runtimeCss).toMatch(/\.zayrovi-glass-bottom-nav\.is-hidden\{[^}]*translate3d/);
     // الأيقونات غير النشطة رمادية هادئة والنشطة برتقالية (الهوية الحالية)
-    expect(runtimeCss).toContain('.ayrovi-glass-bottom-nav .interface-runtime-icon{color:var(--ayrovi-text-secondary)}'); // DS v1.0
+    expect(runtimeCss).toContain('.zayrovi-glass-bottom-nav .interface-runtime-icon{color:var(--zayrovi-text-secondary)}'); // DS v1.0
     expect(runtimeCss).toContain("[aria-pressed='true'] .interface-runtime-icon");
   });
 
@@ -90,7 +90,7 @@ describe('homepage close, sticky header and scroll-aware navigation', () => {
     expect(aboutSource).not.toContain('300svh');
     expect(aboutSource).not.toContain('min-h-[300svh] overflow-clip');
     expect(aboutSource).not.toContain('paiement en espèces à la livraison');
-    expect(runtimeCss).toContain('.ayrovi-parallax{overflow:visible!important;contain:none}');
-    expect(runtimeCss).toContain('.ayrovi-parallax-media{position:sticky!important;top:0!important;will-change:transform}');
+    expect(runtimeCss).toContain('.zayrovi-parallax{overflow:visible!important;contain:none}');
+    expect(runtimeCss).toContain('.zayrovi-parallax-media{position:sticky!important;top:0!important;will-change:transform}');
   });
 });

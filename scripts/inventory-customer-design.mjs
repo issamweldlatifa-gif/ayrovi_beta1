@@ -36,7 +36,7 @@ const records = files.map(file => {
  return record;
 });
 const aliasesText=fs.readFileSync('client/src/components/QatafoIcons.tsx','utf8');
-const aliases=[...aliasesText.matchAll(/export const (\w+) = I\.Ayrovi(\w+);/g)].map(([,alias,glyph])=>({alias,glyph}));
+const aliases=[...aliasesText.matchAll(/export const (\w+) = I\.Zayrovi(\w+);/g)].map(([,alias,glyph])=>({alias,glyph}));
 const inventory={schemaVersion:1, scope:'Recursive static inventory of all client TypeScript/TSX/CSS; manual review tracked separately', totals:{files:records.length,customerAndSharedFiles:records.filter(r=>r.domain!=='admin').length,controls:records.filter(r=>r.domain!=='admin').reduce((n,r)=>n+r.controls.length,0),iconAliases:aliases.length,uniqueGlyphs:new Set(aliases.map(a=>a.glyph)).size},aliases,files:records};
 const output=JSON.stringify(inventory,null,2)+'\n';
 const dest='docs/editorial/source-inventory.json';

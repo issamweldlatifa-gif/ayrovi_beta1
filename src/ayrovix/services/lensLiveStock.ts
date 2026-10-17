@@ -8,7 +8,7 @@
  *   • le budget couvre TOUTE la grille (8 fiches, plus 4) — c'est le cœur de la
  *     recherche, pas un bonus ;
  *   • le prix lu remplace l'extrait SerpApi et repasse par le calculateur
- *     AYROVI (`reprice`) : un prix affiché a toujours sa date et sa source ;
+ *     ZAYROVI (`reprice`) : un prix affiché a toujours sa date et sa source ;
  *   • le prix barré du marchand est transmis tel quel (jamais déduit).
  *
  * Constat : Google Lens rend un titre, une boutique, un prix parfois, et un
@@ -32,14 +32,14 @@
  *   • SILENCE  : une page muette laisse `unknown`. Ici comme partout ailleurs,
  *                un silence n'est pas une disponibilité.
  *
- * `AYROVI_LENS_LIVE_STOCK=false` coupe la dépense sans redéploiement.
+ * `ZAYROVI_LENS_LIVE_STOCK=false` coupe la dépense sans redéploiement.
  */
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pruneDiskCache } from '../../services/diskCache';
 import { allowsMerchantVariantChoice } from '../../../shared/variantPolicy';
-import type { AyrovixCandidate } from '../types';
+import type { ZayrovixCandidate } from '../types';
 import { titleOverlap } from './titleMatch';
 import { recordVariantContract } from './variantAvailability';
 import type { ParsedProductPage } from '../../scraper/productPageParser';
@@ -69,12 +69,12 @@ const TRUSTED_PRICE_SOURCES: ReadonlySet<ParsedProductPage['priceSource']> = new
 /** Recalcul « tout inclus » d'un prix marchand — injecté par l'appelant (il a la base). */
 export type LiveStockRepricer = (price: number, currency: string) => {
   priceTnd: number;
-  promo?: AyrovixCandidate['promo'];
+  promo?: ZayrovixCandidate['promo'];
 } | null;
 
 /** Ce qu'une page marchande nous a appris, mémorisé tel quel (preuve datée). */
 export interface LiveStockEntry {
-  availability: NonNullable<AyrovixCandidate['availability']>;
+  availability: NonNullable<ZayrovixCandidate['availability']>;
   /** Prix courant publié par la page (0 = non lu). */
   price?: number;
   currency?: string;
@@ -96,7 +96,7 @@ export interface LiveStockEntry {
 /** Réponse d'une relecture fraîche (bouton « vérifier le stock »). */
 export interface LiveStockResult {
   url: string;
-  availability: NonNullable<AyrovixCandidate['availability']>;
+  availability: NonNullable<ZayrovixCandidate['availability']>;
   /** Prix FRAIS lus sur la page (null si la page ne les publie pas). */
   price: number | null;
   currency: string | null;
@@ -126,7 +126,7 @@ export interface LiveStockReport {
 }
 
 function enabled(): boolean {
-  return process.env.AYROVI_LENS_LIVE_STOCK !== 'false';
+  return process.env.ZAYROVI_LENS_LIVE_STOCK !== 'false';
 }
 
 function envInt(name: string, fallback: number, min: number, max: number): number {
@@ -136,15 +136,15 @@ function envInt(name: string, fallback: number, min: number, max: number): numbe
 }
 
 function cacheDir(): string {
-  return process.env.AYROVI_LENS_LIVE_CACHE_DIR || path.resolve(process.cwd(), 'data', 'lens-live-stock');
+  return process.env.ZAYROVI_LENS_LIVE_CACHE_DIR || path.resolve(process.cwd(), 'data', 'lens-live-stock');
 }
 
 function ttlMs(): number {
-  return envInt('AYROVI_LENS_LIVE_TTL_MS', DEFAULT_TTL_MS, 60_000, 7 * 24 * 60 * 60 * 1000);
+  return envInt('ZAYROVI_LENS_LIVE_TTL_MS', DEFAULT_TTL_MS, 60_000, 7 * 24 * 60 * 60 * 1000);
 }
 
 function matchThreshold(): number {
-  const raw = Number(process.env.AYROVI_LENS_LIVE_MATCH_THRESHOLD);
+  const raw = Number(process.env.ZAYROVI_LENS_LIVE_MATCH_THRESHOLD);
   return Number.isFinite(raw) && raw > 0 && raw <= 1 ? raw : DEFAULT_MATCH_THRESHOLD;
 }
 
@@ -275,12 +275,12 @@ function hasAnyFact(entry: LiveStockEntry): boolean {
  * un fait déjà présent (le catalogue interne, par exemple) n'est jamais écrasé
  * par une source externe.
  */
-export function applyLiveStock(candidate: AyrovixCandidate, entry: LiveStockEntry, reprice?: LiveStockRepricer): boolean {
+export function applyLiveStock(candidate: ZayrovixCandidate, entry: LiveStockEntry, reprice?: LiveStockRepricer): boolean {
   let applied = false;
   /*
    * LE PRIX DU MARCHAND PRIME (02/10/2026). L'extrait SerpApi est un index,
    * parfois vieux de semaines ; la page est le prix d'aujourd'hui. Il remplace
-   * donc l'extrait, repasse par le calculateur AYROVI, et le prix barré de la
+   * donc l'extrait, repasse par le calculateur ZAYROVI, et le prix barré de la
    * page voyage avec lui. Un prix lu par simple regex de contexte n'est pas
    * assez sûr pour écraser l'extrait : il ne s'applique que si l'extrait manque.
    */
@@ -386,20 +386,20 @@ async function fetchUrl(
 /* ── Enrichissement d'un lot ─────────────────────────────────────────────── */
 
 export async function enrichCandidatesLiveStock(
-  candidates: AyrovixCandidate[],
+  candidates: ZayrovixCandidate[],
   options: {
     fetcher?: LiveStockFetcher;
     now?: number;
     reprice?: LiveStockRepricer;
-    onReady?: (candidate: AyrovixCandidate) => void;
+    onReady?: (candidate: ZayrovixCandidate) => void;
   } = {},
-): Promise<{ candidates: AyrovixCandidate[]; report: LiveStockReport }> {
+): Promise<{ candidates: ZayrovixCandidate[]; report: LiveStockReport }> {
   // Plancher dur hors tests : un dashboard Render resté à budget=4 / 2500ms
   // ne doit plus couper le kacht. Les tests gardent des bornes basses.
   const isTest = Boolean(process.env.VITEST || process.env.NODE_ENV === 'test');
-  const budget = envInt('AYROVI_LENS_LIVE_BUDGET', DEFAULT_BUDGET, isTest ? 0 : 12, 24);
-  const deadline = envInt('AYROVI_LENS_LIVE_DEADLINE_MS', DEFAULT_DEADLINE_MS, isTest ? 50 : 8_000, 25_000);
-  const concurrency = envInt('AYROVI_LENS_LIVE_CONCURRENCY', DEFAULT_CONCURRENCY, isTest ? 1 : 6, 10);
+  const budget = envInt('ZAYROVI_LENS_LIVE_BUDGET', DEFAULT_BUDGET, isTest ? 0 : 12, 24);
+  const deadline = envInt('ZAYROVI_LENS_LIVE_DEADLINE_MS', DEFAULT_DEADLINE_MS, isTest ? 50 : 8_000, 25_000);
+  const concurrency = envInt('ZAYROVI_LENS_LIVE_CONCURRENCY', DEFAULT_CONCURRENCY, isTest ? 1 : 6, 10);
   const report: LiveStockReport = { fetched: 0, cacheHits: 0, applied: 0, budget, deadlineMs: deadline };
 
   const fetcher = options.fetcher;
@@ -475,13 +475,13 @@ export type PurchaseBlocker = 'page_non_lue' | 'prix_non_lu' | 'rupture' | 'stoc
 
 /**
  * Diagnostic de preuve d'achat (page lue / prix / stock / image).
- * Le catalogue AYROVI porte sa propre preuve et n'est jamais bloqué.
+ * Le catalogue ZAYROVI porte sa propre preuve et n'est jamais bloqué.
  *
  * Affichage (filterPurchasable) : par défaut seules les fiches avec page lue,
  * prix marchand, stock et tailles/couleurs arrivent au client.
- * `AYROVI_LENS_REQUIRE_PROOF=false` désactive (debug).
+ * `ZAYROVI_LENS_REQUIRE_PROOF=false` désactive (debug).
  */
-export function purchaseBlocker(candidate: AyrovixCandidate): PurchaseBlocker | null {
+export function purchaseBlocker(candidate: ZayrovixCandidate): PurchaseBlocker | null {
   if (candidate.kind !== 'external') return null;
   if (!candidate.sourceRead) return 'page_non_lue';
   if (candidate.priceOrigin !== 'merchant' || !(candidate.price! > 0) || !candidate.currency) return 'prix_non_lu';
@@ -510,16 +510,16 @@ export interface PurchasableReport {
   reasons: Partial<Record<PurchaseBlocker, number>>;
 }
 
-const STRICT_PROOF = () => process.env.AYROVI_LENS_REQUIRE_PROOF === 'true';
+const STRICT_PROOF = () => process.env.ZAYROVI_LENS_REQUIRE_PROOF === 'true';
 
-export function filterPurchasable(candidates: AyrovixCandidate[]): { candidates: AyrovixCandidate[]; report: PurchasableReport } {
+export function filterPurchasable(candidates: ZayrovixCandidate[]): { candidates: ZayrovixCandidate[]; report: PurchasableReport } {
   const report: PurchasableReport = { kept: 0, excluded: 0, reasons: {} };
   // Opt-out explicite seulement. Défaut = cartes prêtes (page lue + prix + stock + options).
-  if (process.env.AYROVI_LENS_REQUIRE_PROOF === 'false') {
+  if (process.env.ZAYROVI_LENS_REQUIRE_PROOF === 'false') {
     report.kept = candidates.length;
     return { candidates, report };
   }
-  const kept: AyrovixCandidate[] = [];
+  const kept: ZayrovixCandidate[] = [];
   for (const candidate of candidates) {
     const blocker = purchaseBlocker(candidate);
     const hide = blocker !== null;

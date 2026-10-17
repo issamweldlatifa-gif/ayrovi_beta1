@@ -4,8 +4,8 @@
 :root {
   --ay-font-stack: 'Zalando Sans', 'Noto Sans Arabic', sans-serif;
   --font-primary: var(--ay-font-stack);
-  --ayrovi-font-body: var(--ay-font-stack);
-  --ayrovi-font-display: var(--ay-font-stack);
+  --zayrovi-font-body: var(--ay-font-stack);
+  --zayrovi-font-display: var(--ay-font-stack);
   --ay-font-heading-width: 100%;
   --ay-font-heading-weight: 650;
   --ay-font-label-weight: 700;

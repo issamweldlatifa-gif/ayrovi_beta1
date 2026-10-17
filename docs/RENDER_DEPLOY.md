@@ -1,4 +1,4 @@
-# Déployer AYROVI sur Render
+# Déployer ZAYROVI sur Render
 
 Cette archive contient la plateforme complète : site public, interface Admin, backend Express, schéma SQLite, migrations, données initiales et build de production.
 
@@ -6,7 +6,7 @@ Cette archive contient la plateforme complète : site public, interface Admin, b
 
 1. Créez un dépôt privé avec le contenu de l’archive.
 2. Dans Render, choisissez **New > Blueprint** et sélectionnez ce dépôt.
-3. Render détecte `render.yaml` et crée le service `ayrovi` en région Frankfurt.
+3. Render détecte `render.yaml` et crée le service `zayrovi` en région Frankfurt.
 4. Saisissez les variables demandées par le Blueprint :
    - `ADMIN_EMAIL` : l’adresse du premier Super Admin.
    - `ADMIN_PASSWORD` : un mot de passe unique d’au moins 12 caractères.
@@ -14,7 +14,7 @@ Cette archive contient la plateforme complète : site public, interface Admin, b
    - `PUBLIC_BASE_URL` : l’URL HTTPS publique finale, sans barre oblique terminale.
    - `GOOGLE_CLIENT_ID` et `GOOGLE_CLIENT_SECRET` : identifiants OAuth Web créés dans Google Cloud.
    - `GOOGLE_CALLBACK_URL` : exactement `https://VOTRE-DOMAINE/api/customer/auth/google/callback`.
-   - `FACEBOOK_APP_ID` et `FACEBOOK_APP_SECRET` : identifiants de l’application AYROVI dans Meta Developers.
+   - `FACEBOOK_APP_ID` et `FACEBOOK_APP_SECRET` : identifiants de l’application ZAYROVI dans Meta Developers.
    - `FACEBOOK_CALLBACK_URL` : exactement `https://VOTRE-DOMAINE/api/customer/auth/facebook/callback`.
    - `CUSTOMER_OTP_PROVIDER` : `webhook` pour le fournisseur SMS tunisien.
    - `CUSTOMER_OTP_WEBHOOK_URL` et `CUSTOMER_OTP_WEBHOOK_TOKEN` : endpoint HTTPS et secret de l’adaptateur SMS.
@@ -31,7 +31,7 @@ Le build exécute `npm ci --include=dev && npm run build`, puis le service déma
 
 ## SQLite et fichiers persistants
 
-Le Blueprint utilise le plan Render **Starter**, car SQLite et les médias Admin doivent être conservés sur un disque persistant. Le disque `ayrovi-data` est monté sur :
+Le Blueprint utilise le plan Render **Starter**, car SQLite et les médias Admin doivent être conservés sur un disque persistant. Le disque `zayrovi-data` est monté sur :
 
 ```text
 /opt/render/project/src/data
@@ -61,22 +61,22 @@ Le script sait maintenant envoyer directement la copie vers AWS S3, Cloudflare R
 
 - `BACKUP_S3_ENDPOINT`, `BACKUP_S3_BUCKET`, `BACKUP_S3_REGION`.
 - `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY`.
-- `BACKUP_S3_PREFIX` (par défaut `ayrovi/sqlite`).
+- `BACKUP_S3_PREFIX` (par défaut `zayrovi/sqlite`).
 - Après un premier test réussi, `BACKUP_REQUIRE_EXTERNAL=true` afin qu’un échec d’upload fasse échouer et signaler le job.
 
 Une copie locale seule ne protège pas contre la perte du disque. Activez une politique Lifecycle/Retention sur le bucket externe et testez une restauration au moins une fois par mois.
 
 ## Connexion client : Google, Facebook et SMS OTP
 
-Dans Google Cloud, créez un client **Application Web**, ajoutez le domaine AYROVI aux origines autorisées et recopiez `GOOGLE_CALLBACK_URL` comme URI de redirection autorisée, caractère pour caractère.
+Dans Google Cloud, créez un client **Application Web**, ajoutez le domaine ZAYROVI aux origines autorisées et recopiez `GOOGLE_CALLBACK_URL` comme URI de redirection autorisée, caractère pour caractère.
 
-Dans Meta Developers, créez l’application AYROVI avec le cas d’usage **Authentication and account creation / Facebook Login**, puis ajoutez exactement `FACEBOOK_CALLBACK_URL` aux **Valid OAuth Redirect URIs**. Le flux utilise Graph API `v26.0`, les permissions minimales `public_profile,email`, un état anti-CSRF lié au navigateur, une validation serveur du jeton et l’identifiant Facebook app-scoped. Le jeton utilisateur n’est pas stocké. Avant de passer l’application Meta en Live, publiez les pages `/privacy.html` et `/data-deletion.html`, complétez l’identité juridique et rendez l’adresse de contact opérationnelle.
+Dans Meta Developers, créez l’application ZAYROVI avec le cas d’usage **Authentication and account creation / Facebook Login**, puis ajoutez exactement `FACEBOOK_CALLBACK_URL` aux **Valid OAuth Redirect URIs**. Le flux utilise Graph API `v26.0`, les permissions minimales `public_profile,email`, un état anti-CSRF lié au navigateur, une validation serveur du jeton et l’identifiant Facebook app-scoped. Le jeton utilisateur n’est pas stocké. Avant de passer l’application Meta en Live, publiez les pages `/privacy.html` et `/data-deletion.html`, complétez l’identité juridique et rendez l’adresse de contact opérationnelle.
 
 ### Fournisseur SMS tunisien
 
 1. Demandez une API OTP et un test à Orange Tunisie Messaging Pro et TunisieSMS.
 2. Vérifiez la livraison vers Orange, Ooredoo et Tunisie Telecom, le Sender ID et les Delivery Reports.
-3. Configurez un adaptateur HTTPS qui reçoit la requête AYROVI et appelle le fournisseur retenu.
+3. Configurez un adaptateur HTTPS qui reçoit la requête ZAYROVI et appelle le fournisseur retenu.
 4. Dans Render, gardez `CUSTOMER_OTP_PROVIDER=webhook`, puis saisissez `CUSTOMER_OTP_WEBHOOK_URL` et `CUSTOMER_OTP_WEBHOOK_TOKEN`.
 5. Redéployez et vérifiez que `/api/customer/auth/config` renvoie `phoneOtp.enabled=true`.
 

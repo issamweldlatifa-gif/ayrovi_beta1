@@ -351,7 +351,7 @@ export function isPublicHttpUrl(rawUrl: string): boolean {
 export async function fetchRemoteImage(rawUrl: string): Promise<Buffer> {
   const response = await fetchSafeRemote(rawUrl, {
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    headers: { 'user-agent': 'AyroviBot/1.0 (+https://ayrovi.com)', accept: 'image/avif,image/webp,image/png,image/jpeg,image/*;q=0.8' },
+    headers: { 'user-agent': 'ZayroviBot/1.0 (+https://zayrovi.com)', accept: 'image/avif,image/webp,image/png,image/jpeg,image/*;q=0.8' },
   });
   if (!response.ok) {
     await response.body?.cancel().catch(() => undefined);
@@ -367,7 +367,7 @@ export async function fetchRemoteImage(rawUrl: string): Promise<Buffer> {
 
 /* ── 5. Cache disque — un URL, un travail ───────────────────────── */
 function cacheDir(): string {
-  return process.env.AYROVI_ISOLATED_CACHE_DIR || path.resolve(process.cwd(), 'data', 'media-isolated');
+  return process.env.ZAYROVI_ISOLATED_CACHE_DIR || path.resolve(process.cwd(), 'data', 'media-isolated');
 }
 
 export interface CachedIsolation {

@@ -12,7 +12,7 @@ règle en FR et en AR · mesuré, pas supposé (390 px et 1360 px, 0 erreur, 0 d
 | --- | --- | --- | --- |
 | **D1** | L'entrée **« Tous les produits »** du menu ne menait à rien. | clic → `scrollY 0`, page inchangée, 0 carte produit | Le seul chemin vers le catalogue était mort. |
 | **D2** | Aucune surface produit à l'accueil : 1 produit servi par l'API, 0 carte affichée. | `/api/public/home` → `products: 1` ; `[data-product-id]` = 0 | Un visiteur ne pouvait atteindre aucun produit. |
-| **D3** | **Aucune entrée panier.** `Navbar` recevait `onOpenCart` et `cartCount`… et ne les rendait jamais. | en-tête : `[Menu] [AYROVI] [Mon espace]` uniquement | Le panier n'était joignable que par le menu, en trois niveaux. |
+| **D3** | **Aucune entrée panier.** `Navbar` recevait `onOpenCart` et `cartCount`… et ne les rendait jamais. | en-tête : `[Menu] [ZAYROVI] [Mon espace]` uniquement | Le panier n'était joignable que par le menu, en trois niveaux. |
 | **D4** | En arabe, les onglets publics et une partie du chrome restaient en **français**. | menu AR : `Arrivage, Gift & Cards, Magazine` | Un visiteur arabophone lisait une interface à moitié française. |
 
 Cause de D1, trouvée dans le code : `pageDefinitions` ne déclarait que
@@ -23,7 +23,7 @@ naviguait vers une vue que personne ne rendait.
 ## 2. Ce qui a été corrigé
 
 1. **Le catalogue est une page réelle** (`PublicCmsSections.tsx`) : `products` déclaré, avec accroche
-   et description FR/AR (« Le catalogue AYROVI » / « كتالوج AYROVI »), en **première** position de la
+   et description FR/AR (« Le catalogue ZAYROVI » / « كتالوج ZAYROVI »), en **première** position de la
    page — le chiffre avant le récit. L'entrée du menu ouvre désormais la grille servie par l'API.
 2. **Le catalogue mène à la commande** (`commerce/catalogProduct.ts` + `App.tsx`) : la carte produit
    expose une action unique « Commander » / « اطلب الآن » qui ouvre **le même tiroir de commande que

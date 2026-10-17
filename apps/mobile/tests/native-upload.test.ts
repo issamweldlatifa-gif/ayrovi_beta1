@@ -49,7 +49,7 @@ describe('upload natif des photos', () => {
       fieldName: 'image',
       mimeType: 'image/jpeg',
       parameters: { roi: '{"x":1}' },
-      headers: expect.objectContaining({ Accept: 'application/json', 'x-ayrovi-native': '1' }),
+      headers: expect.objectContaining({ Accept: 'application/json', 'x-zayrovi-native': '1' }),
     });
   });
 

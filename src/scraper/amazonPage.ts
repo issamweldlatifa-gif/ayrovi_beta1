@@ -8,7 +8,7 @@
  *   <span class="a-price-fraction">00</span>
  * و`.a-offscreen` **داخل** كتلة السعر فارغ (مسافة بيضاء فقط). أي قراءة
  * `textContent` للحاوية تُرجع « » أو « $ » وحده — وهو بالضبط سبب ظهور
- * « produit à 0 » ثم « Le devis AYROVI est indisponible » في التطبيق.
+ * « produit à 0 » ثم « Le devis ZAYROVI est indisponible » في التطبيق.
  *
  * قياس بتاريخ 04/10/2026 على https://www.amazon.com/dp/B0GYM3V9H5
  * (سطح مكتب 844 ك.ب · جوال 568 ك.ب) — المصادر الحقيقية الموجودة في الصفحة:

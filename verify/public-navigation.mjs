@@ -8,15 +8,15 @@
  *   4. le pied de page de l'accueil reste en place, en noir, avec ses documents légaux et la zone
  *      « Nos canaux officiels » (canaux non renseignés inertes, jamais inventés).
  *
- * Usage : AYROVI_BASE_URL=http://127.0.0.1:3000 AYROVI_ADMIN_PASSWORD=… node verify/public-navigation.mjs
+ * Usage : ZAYROVI_BASE_URL=http://127.0.0.1:3000 ZAYROVI_ADMIN_PASSWORD=… node verify/public-navigation.mjs
  */
 import { chromium } from 'playwright';
 import fs from 'node:fs';
 
-const base = process.env.AYROVI_BASE_URL;
-if (!base) { console.error('AYROVI_BASE_URL est requis.'); process.exit(1); }
-const email = process.env.AYROVI_ADMIN_EMAIL || 'admin@ayrovi.tn';
-const password = process.env.AYROVI_ADMIN_PASSWORD || 'AyroviBeta2026!';
+const base = process.env.ZAYROVI_BASE_URL;
+if (!base) { console.error('ZAYROVI_BASE_URL est requis.'); process.exit(1); }
+const email = process.env.ZAYROVI_ADMIN_EMAIL || 'admin@zayrovi.tn';
+const password = process.env.ZAYROVI_ADMIN_PASSWORD || 'ZayroviBeta2026!';
 const output = 'docs/public-navigation/evidence';
 fs.mkdirSync(output, { recursive: true });
 
@@ -71,13 +71,13 @@ try {
   const arrivals = list.find((row) => row.destination === 'arrivals' && row.active === 1);
   const others = list.filter((row) => row.id !== arrivals.id && row.active === 1);
 
-  const renamed = await adminApi(`/public-nav/${arrivals.id}`, 'PUT', { label_fr: 'Nouveautés AYROVI', label_ar: 'جديد AYROVI' });
+  const renamed = await adminApi(`/public-nav/${arrivals.id}`, 'PUT', { label_fr: 'Nouveautés ZAYROVI', label_ar: 'جديد ZAYROVI' });
   check('renommage accepté', renamed.status === 200, renamed.payload);
   await page.goto(base);
   // La barre est alimentée par `/api/public/navigation` : on attend le libellé publié,
   // jamais le repli local (qui n'est qu'un rendu immédiat avant réponse de l'API).
-  await page.locator('.public-page-links a', { hasText: 'Nouveautés AYROVI' }).waitFor({ timeout: 15000 });
-  check('le site sert le libellé publié', (await page.locator('.public-page-links a').first().innerText()).includes('Nouveautés AYROVI'));
+  await page.locator('.public-page-links a', { hasText: 'Nouveautés ZAYROVI' }).waitFor({ timeout: 15000 });
+  check('le site sert le libellé publié', (await page.locator('.public-page-links a').first().innerText()).includes('Nouveautés ZAYROVI'));
   await page.locator('.public-page-links').screenshot({ path: `${output}/tabstrip-renamed.png` });
 
   for (const row of others) await adminApi(`/public-nav/${row.id}`, 'PUT', { active: 0 });

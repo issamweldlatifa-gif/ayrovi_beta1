@@ -118,10 +118,10 @@ export const EvergreenHero: React.FC = () => {
     '--hero-pos-mobile': `${focal(visual.mobileFocalX)}% ${focal(visual.mobileFocalY)}%`,
   } as React.CSSProperties;
 
-  return <section data-hero data-hero-layout="editorial" id="home-hero" className="editorial-hero" aria-label={tr('AYROVI — achat international', 'AYROVI — التسوق الدولي')}>
+  return <section data-hero data-hero-layout="editorial" id="home-hero" className="editorial-hero" aria-label={tr('ZAYROVI — achat international', 'ZAYROVI — التسوق الدولي')}>
     <div className="editorial-hero__inner">
       {content?.enabled !== false && <div className="editorial-hero__copy" aria-busy={contentLoading}>
-        {contentLoading ? <div className="editorial-hero__loading" role="status">{tr('Chargement…', 'جارٍ التحميل…')}</div> : !content ? <><h1 className="editorial-hero__title">AYROVI</h1><p className="editorial-hero__desc">{tr('Le contenu est momentanément indisponible.', 'المحتوى غير متاح مؤقتًا.')}</p></> : keys.map(key => {
+        {contentLoading ? <div className="editorial-hero__loading" role="status">{tr('Chargement…', 'جارٍ التحميل…')}</div> : !content ? <><h1 className="editorial-hero__title">ZAYROVI</h1><p className="editorial-hero__desc">{tr('Le contenu est momentanément indisponible.', 'المحتوى غير متاح مؤقتًا.')}</p></> : keys.map(key => {
           if (key === 'eyebrow') return content.eyebrow?.trim() ? <p key={key} className="editorial-hero__eyebrow"><span className="ay-e-marker" aria-hidden="true" />{content.eyebrow}</p> : null;
           if (key === 'title') return titleLines.length > 0 ? <h1 key={key} className="editorial-hero__title" dir="auto">{titleLines.map((line, index) => <React.Fragment key={index}>{index > 0 && <br />}{highlighted(line)}</React.Fragment>)}</h1> : null;
           if (key === 'description') return content.description ? <p key={key} className="editorial-hero__desc" dir="auto">{content.description}</p> : null;

@@ -1,11 +1,11 @@
-# التقرير النهائي لإصلاح AYROVI
+# التقرير النهائي لإصلاح ZAYROVI
 
 **التاريخ:** 16 أغسطس 2026  
 **النسخة بعد الإصلاح:** `3.4.1`
 **نقطة البداية:** `a2a9b023b1b131c475616c6f6db808b3d8ab9c53`  
-**الحالة:** الإصلاحات البرمجية الحرجة وتحديث Social/الهوية/AYROVIX والمساعد ووكيل «مجلتي» داخل Admin مكتملة في النسخة `3.4.1`؛ التحقق المحلي كامل، والتحقق الإنتاجي موثق أدناه.
+**الحالة:** الإصلاحات البرمجية الحرجة وتحديث Social/الهوية/ZAYROVIX والمساعد ووكيل «مجلتي» داخل Admin مكتملة في النسخة `3.4.1`؛ التحقق المحلي كامل، والتحقق الإنتاجي موثق أدناه.
 
-> **الحالة الإنتاجية المؤكدة في 16 أغسطس 2026:** نُقلت قاعدة الإصلاح من `3.2.1` إلى `3.3.0` مع سجل تنقل داخلي شامل لزر Back وتحديث Social والهوية وAYROVIX والمساعد، ثم نُشرت النسخة `3.4.0` التي تضيف وكيل «مجلتي» المحرري داخل Admin فقط، وأتبعتها `3.4.1` لإصلاح قراءة جواب Claude متعدد الكتل مع مسار إصلاح تلقائي. تسجيل Google وAI وVisual Search والصوت جاهزة. أضيف Facebook OAuth كاملًا لكنه يبقى معطّلًا آمنًا إلى أن ينشئ المالك تطبيق Meta ويضبط أسراره. البريد وOTP SMS ما زالا غير مفعّلين. Twilio ليس الخيار التشغيلي لتونس؛ الافتراضي أصبح Webhook لمزود تونسي. خيار CARD يبقى تدفق تحصيل يدوي آمن ثم تأكيد من Admin.
+> **الحالة الإنتاجية المؤكدة في 16 أغسطس 2026:** نُقلت قاعدة الإصلاح من `3.2.1` إلى `3.3.0` مع سجل تنقل داخلي شامل لزر Back وتحديث Social والهوية وZAYROVIX والمساعد، ثم نُشرت النسخة `3.4.0` التي تضيف وكيل «مجلتي» المحرري داخل Admin فقط، وأتبعتها `3.4.1` لإصلاح قراءة جواب Claude متعدد الكتل مع مسار إصلاح تلقائي. تسجيل Google وAI وVisual Search والصوت جاهزة. أضيف Facebook OAuth كاملًا لكنه يبقى معطّلًا آمنًا إلى أن ينشئ المالك تطبيق Meta ويضبط أسراره. البريد وOTP SMS ما زالا غير مفعّلين. Twilio ليس الخيار التشغيلي لتونس؛ الافتراضي أصبح Webhook لمزود تونسي. خيار CARD يبقى تدفق تحصيل يدوي آمن ثم تأكيد من Admin.
 
 ---
 
@@ -26,7 +26,7 @@
 
 المعاينة المحلية لا تحتوي أسرار الإنتاج. في Render أصبحت Google وAI وVisual Search والصوت ووكيل مجلتي/بحث الصور/بحث Stock مفعّلة فعليًا. Facebook مدمج لكنه غير مفعّل لغياب تطبيق Meta، ويبقى البريد وOTP SMS غير مفعّلين حتى توثيق نطاق البريد واختيار مزود SMS تونسي.
 
-### فحص Render الفعلي — `https://ayrovi-beta1-1.onrender.com/`
+### فحص Render الفعلي — `https://zayrovi-beta1-1.onrender.com/`
 
 دُمج Commit `586abb8` إلى `main` ونشر Render النسخة **3.2.0** بنجاح. أعيد تنفيذ Smoke test غير تخريبي، والنتائج:
 
@@ -42,29 +42,29 @@
 
 - `/api/ready`: `assistant=true`, `magazineAgent=true`, `magazineImageSearch=true`, `magazineStockVideo=true`, `visualSearch=true`, `voice=true`, `googleLogin=true`, `facebookLogin=false`, `sms=false`, `mail=false`.
 - `/api/customer/auth/config`: `google.enabled=true`, `facebook.enabled=false`, و`phoneOtp.enabled=false`.
-- `/api/customer/auth/google/start`: يعيد 302 إلى `accounts.google.com` مع callback صحيح إلى `https://ayrovi-beta1-1.onrender.com/api/customer/auth/google/callback`، وScopes هي `openid email profile`، مع وجود `state`.
+- `/api/customer/auth/google/start`: يعيد 302 إلى `accounts.google.com` مع callback صحيح إلى `https://zayrovi-beta1-1.onrender.com/api/customer/auth/google/callback`، وScopes هي `openid email profile`، مع وجود `state`.
 
 بذلك تأكد استمرار Google OAuth بعد نشر 3.2.0: البداية تعيد 302 إلى Google مع callback الصحيح و`state`. صفحة الخصوصية `/privacy.html` وصفحة حذف البيانات `/data-deletion.html` تعيدان 200، ومحاولة حذف الحساب بلا جلسة تعيد 401، وFacebook غير المهيأ يعيد 503 بدل بدء تدفق ناقص. لم يُستكمل تسجيل دخول حقيقي أو طلب/بريد/SMS فعلي أثناء الفحص غير التخريبي حتى لا ننشئ بيانات إنتاج دون إذن.
 
 ### فحص إصلاح Back الشامل — النسخة `3.2.1`
 
-نُشر Commit `82e5a12` على `main` وعلى فرع الإصلاح، ثم أكد `/api/health` انتقال Render فعليًا إلى **3.2.1**. السبب الجذري كان أن الواجهة العامة تغيّر React state فقط، بلا `history.pushState`، لذلك كان أول ضغط على Back يعيد المستخدم إلى موقعه السابق خارج AYROVI. عولج ذلك بطبقة موحدة تحفظ مسار طبقات AYROVI وعمقه داخل `window.history.state` وتستعيده عبر `popstate`.
+نُشر Commit `82e5a12` على `main` وعلى فرع الإصلاح، ثم أكد `/api/health` انتقال Render فعليًا إلى **3.2.1**. السبب الجذري كان أن الواجهة العامة تغيّر React state فقط، بلا `history.pushState`، لذلك كان أول ضغط على Back يعيد المستخدم إلى موقعه السابق خارج ZAYROVI. عولج ذلك بطبقة موحدة تحفظ مسار طبقات ZAYROVI وعمقه داخل `window.history.state` وتستعيده عبر `popstate`.
 
 يشمل الإصلاح المنشور:
 
 - التنقل الرئيسي: القائمة، Product/Lens، المساعد، السلة، Checkout، الحساب، نجاح الطلب وAyvisi.
 - صفحات CMS الأربع، Stories، Reels، التعليقات والـoverlays الاجتماعية.
 - أقسام الحساب، تفاصيل الطلب، محرر العناوين، تسجيل/ربط الهاتف ومراحل OTP.
-- مراحل Product Drawer وAYROVIX Lens، سجل Lens ومعلومات الكاميرا.
+- مراحل Product Drawer وZAYROVIX Lens، سجل Lens ومعلومات الكاميرا.
 - قوائم المساعد، المرفقات، التعليقات/التقييم واختيار المنتج.
-- الحفاظ على سجل AYROVI عند تنظيف OAuth query أو تغيير أقسام Admin.
+- الحفاظ على سجل ZAYROVI عند تنظيف OAuth query أو تغيير أقسام Admin.
 - ضغط خطوات المصادقة المؤقتة بعد نجاح تسجيل الهاتف كي يصبح Back من Checkout عائدًا مباشرة إلى مصدره (السلة أو الصفحة السابقة).
 - استبدال Checkout بنجاح الطلب بدل إبقاء نموذج مُرسل قابلًا لإعادة التفعيل عبر Back؛ النتيجة المطلوبة أصبحت `نجاح الطلب → Back → السلة/المصدر`، بينما `Checkout → Back → السلة/المصدر` قبل الإرسال.
-- عدم السماح لزر Back بمغادرة AYROVI قبل استنفاد جميع إدخالات الموقع والوصول إلى الصفحة الرئيسية الفعلية.
+- عدم السماح لزر Back بمغادرة ZAYROVI قبل استنفاد جميع إدخالات الموقع والوصول إلى الصفحة الرئيسية الفعلية.
 
 أضيفت 6 اختبارات jsdom لسجل المتصفح: الجذر، Cart/Checkout/Success، الطبقات الاجتماعية، حفظ payload، توافق OAuth/Admin، ضغط مراحل المصادقة، و`goHome`. النتيجة الكاملة بعد الإصلاح: TypeScript ناجح، **117/117** اختبارًا ناجحًا، Build إنتاجي ناجح، `npm audit` بلا ثغرات، و`git diff --check` ناجح. أكد الفحص الحي أن Bundle الإنتاج يحتوي `__ayroviNavigationV1` وأن `/api/ready` حافظ على `assistant=true`, `visualSearch=true`, `voice=true`, `googleLogin=true`، مع بقاء Facebook/SMS/mail غير مفعلة للأسباب التشغيلية المذكورة أدناه.
 
-### تحديث Social والهوية وAYROVIX والمساعد — النسخة `3.3.0`
+### تحديث Social والهوية وZAYROVIX والمساعد — النسخة `3.3.0`
 
 نُفذ كراس شروط التحديث الشامل على البنية الحالية دون إعادة بناء تبويبات Social أو كسر تدفقات الطلب/الإدارة:
 
@@ -74,10 +74,10 @@
 - **Comments:** Sheet متحرك بـspring، composer مع avatar وحد 500 حرف وfocus state، مع الحفاظ على auth/CSRF والـAPI الحالية.
 - **Admin Social:** بقيت تبويبات Publication/Reel/Story الحالية، وأضيفت validation ورسائل خطأ وتوصيات 4:5 و9:16 دون نسف الشاشات القائمة.
 - **الشعار:** أُنتجت أصول PNG شفافة 192/512، حُذف JPG الأبيض، واستُبدل الشعار في Navbar وFooter وLogin/Profile وAdmin وSocial وfavicon وApple icon وOpenGraph وManifest.
-- **المكتبات:** أصبحت الأيقونات القياسية عبر gateway واحد مبني على `lucide-react 1.31.0`، وأيقونات الشبكات/OAuth عبر `react-icons 5.7.0`، والانتقالات المركبة عبر `motion 13.1.0`. بقيت رسومات AYROVI الحركية/العلامية فقط كأصول هوية مخصصة.
+- **المكتبات:** أصبحت الأيقونات القياسية عبر gateway واحد مبني على `lucide-react 1.31.0`، وأيقونات الشبكات/OAuth عبر `react-icons 5.7.0`، والانتقالات المركبة عبر `motion 13.1.0`. بقيت رسومات ZAYROVI الحركية/العلامية فقط كأصول هوية مخصصة.
 - **البطاقات:** صُغرت بطاقات الماركات من 270×330/340×400 إلى 200×250/240×290، وحُسن marquee مع GPU hint وpause و`prefers-reduced-motion`. أضيفت حركات خفيفة لبطاقات Social والنتائج دون تعطيل الأداء أو الوصول.
-- **الخط:** ثُبت Plus Jakarta Sans كنظام موحد في AYROVI وAYROVIX والصفحات القانونية، ولم يعد تبديل theme يخلق خطًا مختلفًا بين الواجهتين.
-- **Filters Engine:** أضيفت سياسة مركزية للخادم والعميل تمنع إظهار أي نتيجة بلا سعر موجب، devise صريحة، ورابط HTTP(S) عام صالح بلا credentials/host خاص. كل نتيجة مرئية تعرض السعر والتقييم والرابط؛ إن لم توجد note marchand موثوقة يُعرض بوضوح «pertinence AYROVIX» بدل اختلاق تقييم متجر.
+- **الخط:** ثُبت Plus Jakarta Sans كنظام موحد في ZAYROVI وZAYROVIX والصفحات القانونية، ولم يعد تبديل theme يخلق خطًا مختلفًا بين الواجهتين.
+- **Filters Engine:** أضيفت سياسة مركزية للخادم والعميل تمنع إظهار أي نتيجة بلا سعر موجب، devise صريحة، ورابط HTTP(S) عام صالح بلا credentials/host خاص. كل نتيجة مرئية تعرض السعر والتقييم والرابط؛ إن لم توجد note marchand موثوقة يُعرض بوضوح «pertinence ZAYROVIX» بدل اختلاق تقييم متجر.
 - **Lens/QR/Assistant:** صفحات Web Search التي لا تحمل سعرًا لم تعد تظهر كمنتج قابل للشراء؛ يستمر النظام في فحص النتائج اللاحقة والمصادر الحقيقية. أضيف test regression خاص بهذه السياسة.
 - **المساعد:** توسع السياق المتصل من 20 إلى 30 رسالة، أزيل تكرار knowledge من system prompt، حُظرت الإيموجي من prompt والعرض، وحُفظ conversationId/history والمنتج المحدد كما كان. نتائج المساعد تمر عبر سياسة السعر/الرابط نفسها وتعرض السعر والتقييم والرابط.
 - **Login/Profile/Forms:** شعار شفاف، بطاقات أكثر وضوحًا، أيقونات Google/Facebook رسمية من المكتبة، حقول 48px، autocomplete/inputMode/maxLength/pattern، profile responsive وvalidation محسنة، مع بقاء OAuth/OTP/CSRF وتدفق حذف الحساب كما هو.
@@ -96,7 +96,7 @@
 - رُبط الوكيل بخادم Anthropic الرسمي عبر `/v1/messages` مع System Prompt التحريري، وClaude Web Search، ومخرج JSON منظم مع fallback دفاعي إذا رفض المزود الجمع بين Structured Outputs وWeb Search.
 - التوليد بالجملة يدعم حتى 10 أفكار، يعرض Progress حقيقيًا، ويولّد النتائج تباعًا. كل فكرة تنتج أربع بطاقات: Editorial وPublication وStory وReel، بدل إغراق المحادثة بردود طويلة.
 - أُنشئ جدول SQLite دائم `magazine_drafts`؛ كل بطاقة تُحفظ تلقائيًا بحالة `draft` مع conversation/batch/model والمراجع والوسائط والمنتج، ويمكن الرجوع إليها بعد إغلاق المحادثة.
-- بحث المنتج Read-only: لا يقبل الوكيل `product_id` خارج قاعدة AYROVI، ويعيد الاسم والصورة والرابط والسعر من السجل الحقيقي فقط. التطابق الغامض أو المنتج غير الموجود يعيد طلب توضيح وقائمة مقترحات بدل اختراع بيانات.
+- بحث المنتج Read-only: لا يقبل الوكيل `product_id` خارج قاعدة ZAYROVI، ويعيد الاسم والصورة والرابط والسعر من السجل الحقيقي فقط. التطابق الغامض أو المنتج غير الموجود يعيد طلب توضيح وقائمة مقترحات بدل اختراع بيانات.
 - أضيف Drag & Drop من بطاقة الوكيل إلى تبويب «مجلتي» في Sidebar وإلى Drop Zone داخل صفحة المجلة، مع Modal تأكيد للتصنيف والحفظ كمسودة أو الجدولة.
 - الجدولة فعلية عبر حالة نشر مع تاريخ مستقبلي؛ Public APIs لا تعرض المحتوى قبل الموعد. لا تُجدول بطاقة Social بلا صورة مملوكة، ولا Reel/Story بلا فيديو Pexels/Pixabay مرخص أو وسيط منتج حقيقي.
 - الصور المرجعية تأتي من Google Images عبر SerpApi وتُخزن بعلامة **مرجعي فقط** ولا تنتقل تلقائيًا إلى حقول النشر.
@@ -158,7 +158,7 @@
 
 - Public API أصبح يعيد `id` و`slug` للناشرين.
 - العميل يطابق Publication/Reel مع `channel_id` الصحيح.
-- Stories تستمر في المطابقة حسب `slug`؛ لم يعد كل المحتوى يسقط على قناة AYROVI الرسمية بالخطأ.
+- Stories تستمر في المطابقة حسب `slug`؛ لم يعد كل المحتوى يسقط على قناة ZAYROVI الرسمية بالخطأ.
 
 ### د) CSP وHTTP/API
 
@@ -229,7 +229,7 @@
 ### ل) بنية OTP SMS وTwilio Verify الاختياري
 
 - إضافة Provider مباشر باسم `twilio_verify` دون إضافة SDK أو كشف أسرار للمتصفح.
-- Twilio يرسل الرمز ويفحصه عبر Verify API؛ AYROVI لا يحتاج معرفة الرمز الذي أنشأه Twilio.
+- Twilio يرسل الرمز ويفحصه عبر Verify API؛ ZAYROVI لا يحتاج معرفة الرمز الذي أنشأه Twilio.
 - تخزين Provider مع كل Challenge للحفاظ على توافق `console` وWebhook القديمين.
 - إبقاء حدود الهاتف/IP وخمس محاولات ومدة Challenge المحلية فوق حماية Twilio.
 - معالجة 429، فشل الإرسال، فشل التحقق، انتهاء الرمز، والرمز المستخدم مرتين برسائل API واضحة.
@@ -276,7 +276,7 @@
 
 #### 1. متغيرات الخدمات الخارجية — ✅ Google وAI فعّالة؛ ⚠️ Facebook والبريد وSMS متبقية
 
-فحص خدمة `ayrovi-beta1-1` بعد نشر 3.2.1 يثبت أن Google وAI وVisual Search والصوت فعالة. Facebook مدمج ويظهر `facebookLogin=false` حتى إنشاء تطبيق Meta وضبط `FACEBOOK_*`. يبقى `mail=false` حتى شراء نطاق وتوثيقه وضبط `MAIL_*`، و`sms=false` حتى اختيار مزود تونسي وربط API/Webhook.
+فحص خدمة `zayrovi-beta1-1` بعد نشر 3.2.1 يثبت أن Google وAI وVisual Search والصوت فعالة. Facebook مدمج ويظهر `facebookLogin=false` حتى إنشاء تطبيق Meta وضبط `FACEBOOK_*`. يبقى `mail=false` حتى شراء نطاق وتوثيقه وضبط `MAIL_*`، و`sms=false` حتى اختيار مزود تونسي وربط API/Webhook.
 
 #### 2. CARD — ✅ تدفق يدوي مقصود
 
@@ -288,7 +288,7 @@
 
 #### 3. إكمال Environment Variables في خدمة Render
 
-تأكدت صلاحية إعدادات Google وAI وVisual Search والصوت في خدمة `ayrovi-beta1-1`. يجب الحفاظ على `PUBLIC_BASE_URL` وGoogle callback للرابط الجديد. المتبقي هو:
+تأكدت صلاحية إعدادات Google وAI وVisual Search والصوت في خدمة `zayrovi-beta1-1`. يجب الحفاظ على `PUBLIC_BASE_URL` وGoogle callback للرابط الجديد. المتبقي هو:
 
 - إنشاء تطبيق Meta ثم ضبط `FACEBOOK_APP_ID`, `FACEBOOK_APP_SECRET`, `FACEBOOK_CALLBACK_URL`.
 - ضبط `MAIL_PROVIDER`, `MAIL_API_KEY`, `MAIL_FROM` بعد شراء نطاق وتوثيقه.
@@ -308,7 +308,7 @@ Twilio غير معتمد تشغيليًا لأن المالك أوضح أنه ل
 
 - الشروط العامة للبيع/الوساطة وسياسة الإلغاء والإرجاع والاسترجاع.
 - الاسم القانوني للشركة، المعرف الجبائي/السجل عند الاقتضاء، العنوان ووسائل الاتصال.
-- تشغيل `contact@ayrovi.tn` فعليًا.
+- تشغيل `contact@zayrovi.tn` فعليًا.
 - تثبيت مدد الاحتفاظ القانونية بالمرفقات وإثباتات الدفع والفواتير والمحادثات.
 - سياسة Cookies إذا أضيفت أدوات تحليل أو تسويق.
 

@@ -72,7 +72,7 @@ export function mapExtractedProduct(row: any) {
     fieldEvidence: parseJson(row.field_evidence, {}),
     sourceSpecific: parseJson(row.source_specific, []),
     // raw_extracted is retained server-side for audit/reprocessing and never
-    // crosses the AYROVI contract into the Administration frontend.
+    // crosses the ZAYROVI contract into the Administration frontend.
     reviewReasons: parseJson(row.review_reasons, []),
     manualEdits: parseJson(row.manual_edits, {}),
     // ---- Category classification (Category Code + Subcategory + provenance) ----

@@ -418,7 +418,7 @@ export function ayWebsWebviewVerifySample(): number {
 export function shouldVerifyWebviewCaptureInBackground(fingerprint: string, seed = ''): boolean {
   const rate = ayWebsWebviewVerifySample();
   if (rate <= 0) return false;
-  const digest = createHash('sha256').update(`ayrovi:aywebs-webview-verify:v1|${fingerprint}|${seed}`).digest();
+  const digest = createHash('sha256').update(`zayrovi:aywebs-webview-verify:v1|${fingerprint}|${seed}`).digest();
   const draw = digest.readUInt32BE(0) / 0x1_0000_0000;
   return draw < rate;
 }

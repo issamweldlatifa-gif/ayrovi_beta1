@@ -5,9 +5,9 @@ import { LensProductCard, lensCardCopy } from '../client/src/ayrovix/components/
 import { LocaleProvider } from '../client/src/i18n/LocaleContext';
 import { serpApiVisualSearch } from '../src/ayrovix/services/visualSearch';
 import { displayRating } from '../client/src/ayrovix/services/resultPolicy';
-import type { AyrovixCandidate } from '../client/src/ayrovix/types';
-const candidate: AyrovixCandidate={id:'jacket',kind:'external',title:'K-Way LIL — Veste mi-saison',brand:'K-Way',model:null,colors:[],sizes:[],source:'Example',sourceUrl:'https://shop.example/item',image:'/jacket.jpg',price:179.95,currency:'EUR',priceTnd:650,match:94,rating:4.3,ratingCount:27,ratingKind:'merchant'};
-const render=(patch:Partial<AyrovixCandidate>={})=>renderToStaticMarkup(<LocaleProvider><LensProductCard candidate={{...candidate,...patch}} onChoose={()=>{}} saved={false} busy={false} onFavorite={()=>{}}/></LocaleProvider>);
+import type { ZayrovixCandidate } from '../client/src/ayrovix/types';
+const candidate: ZayrovixCandidate={id:'jacket',kind:'external',title:'K-Way LIL — Veste mi-saison',brand:'K-Way',model:null,colors:[],sizes:[],source:'Example',sourceUrl:'https://shop.example/item',image:'/jacket.jpg',price:179.95,currency:'EUR',priceTnd:650,match:94,rating:4.3,ratingCount:27,ratingKind:'merchant'};
+const render=(patch:Partial<ZayrovixCandidate>={})=>renderToStaticMarkup(<LocaleProvider><LensProductCard candidate={{...candidate,...patch}} onChoose={()=>{}} saved={false} busy={false} onFavorite={()=>{}}/></LocaleProvider>);
 afterEach(()=>{vi.unstubAllEnvs();vi.unstubAllGlobals();});
 describe('reference Lens product card',()=>{
  it('shows brand, description, one unmodified TND price, and no redundant commercial copy',()=>{
@@ -19,7 +19,7 @@ describe('reference Lens product card',()=>{
   expect(lensCardCopy({...candidate,brand:null,description:'Description du marchand'}).description).toBe('Description du marchand');
  });
  it('uses real yellow-star geometry with the numerical value and review count',()=>{
-  const html=render();expect(html.match(/class="lens-rating-star"/g)).toHaveLength(5);expect(html).toContain('4.3/5');expect(html).toContain('(27)');expect(html).toContain('data-ayrovi-icon="Star"');
+  const html=render();expect(html.match(/class="lens-rating-star"/g)).toHaveLength(5);expect(html).toContain('4.3/5');expect(html).toContain('(27)');expect(html).toContain('data-zayrovi-icon="Star"');
  });
  it.each(['match','listing-quality',undefined])('does not convert %s scores into stars',kind=>{
   expect(render({ratingKind:kind as any})).not.toContain('data-merchant-rating');

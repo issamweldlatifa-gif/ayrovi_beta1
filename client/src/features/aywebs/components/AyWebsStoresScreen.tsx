@@ -14,7 +14,7 @@ import type { AyWebsFavoriteTarget } from '../useAyWebsFavorites';
  * Aucun magasin codé en dur ici : tout vient de GET /api/v1/aywebs/stores.
  *
  * §6 (04/10/2026) — les cœurs n'ont PLUS d'état local : ils ouvrent le tiroir
- * « Favoris », qui écrit dans le compte AYROVI. L'ancien
+ * « Favoris », qui écrit dans le compte ZAYROVI. L'ancien
  * `useState<Set<string>>` ne survivait pas au démontage et n'était lié à aucun
  * compte : un cœur décoratif.
  */
@@ -26,7 +26,7 @@ export interface AyWebsStoresScreenProps {
   onOpenProduct?: (url: string, storeId: string) => void;
   /** §6 : ouvre le tiroir Favoris pour l'élément visé (magasin ou produit). */
   onOpenFavorite: (target: AyWebsFavoriteTarget) => void;
-  /** §6 : vérité du compte AYROVI, jamais un état local d'écran. */
+  /** §6 : vérité du compte ZAYROVI, jamais un état local d'écran. */
   isFavorite: (sourceUrl: string) => boolean;
   cartCount: number;
 }
@@ -179,8 +179,8 @@ export const AyWebsStoresScreen: React.FC<AyWebsStoresScreenProps> = ({
               {tr(
                 store.id === 'amazon'
                   ? 'Test store #1 — proxy capture enabled.'
-                  : `Ships via AYROVI proxy — ${store.country || 'international'}.`,
-                store.id === 'amazon' ? 'متجر التجربة #1 — الالتقاط بالوكالة مفعّل.' : `يشحن عبر وكالة AYROVI — ${store.country || 'دولي'}.`,
+                  : `Ships via ZAYROVI proxy — ${store.country || 'international'}.`,
+                store.id === 'amazon' ? 'متجر التجربة #1 — الالتقاط بالوكالة مفعّل.' : `يشحن عبر وكالة ZAYROVI — ${store.country || 'دولي'}.`,
               )}
             </p>
           </div>

@@ -1,5 +1,5 @@
 /**
- * AYROVI Purchasing (P2.3) — schéma + amorçage.
+ * ZAYROVI Purchasing (P2.3) — schéma + amorçage.
  *
  * Règles appliquées (mêmes leçons que P1/P2.1/P2.2, aucun raccourci) :
  *  • additif uniquement : `CREATE TABLE IF NOT EXISTS` / `CREATE INDEX IF NOT EXISTS`.

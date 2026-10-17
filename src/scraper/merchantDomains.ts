@@ -36,7 +36,7 @@ export function detectMerchantStore(input: string): StoreType {
 
 /**
  * Hôtes de rendu ajoutés par l'exploitant (01/10/2026) — séparés par des
- * virgules, ex. `AYROVI_TRUSTED_RENDER_HOSTS=sportsdirect.fr,zalando.fr`.
+ * virgules, ex. `ZAYROVI_TRUSTED_RENDER_HOSTS=sportsdirect.fr,zalando.fr`.
  * Sans cette liste, seuls les quatre marchands connus ci-dessus passent au
  * rendu payant : un lien Lens vers une autre boutique retombait alors sur le
  * fetch direct seul, et échouait devant un bot-wall.
@@ -48,7 +48,7 @@ const DEFAULT_RENDER_ROOTS = [
 ];
 
 function extraRenderRoots(): string[] {
-  const extra = String(process.env.AYROVI_TRUSTED_RENDER_HOSTS || '')
+  const extra = String(process.env.ZAYROVI_TRUSTED_RENDER_HOSTS || '')
     .split(',')
     .map((value) => value.trim().toLowerCase().replace(/^www\./, ''))
     .filter((value) => /^[a-z0-9.-]+\.[a-z]{2,}$/.test(value));

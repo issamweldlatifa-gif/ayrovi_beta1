@@ -16,7 +16,7 @@ export function assertProductionConfiguration(env: NodeJS.ProcessEnv = process.e
   const databasePath = String(env.DATABASE_PATH || '').trim();
   const baseUrl = String(env.PUBLIC_BASE_URL || '').trim();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adminEmail)) missing.push('ADMIN_EMAIL');
-  if (adminPassword.length < 12 || /replace|placeholder|example|demo/i.test(adminPassword) || adminPassword === 'AyroviBeta2026!') missing.push('ADMIN_PASSWORD');
+  if (adminPassword.length < 12 || /replace|placeholder|example|demo/i.test(adminPassword) || adminPassword === 'ZayroviBeta2026!') missing.push('ADMIN_PASSWORD');
   if (customerSecret.length < 32 || /replace|placeholder|example|demo/i.test(customerSecret)) missing.push('CUSTOMER_AUTH_SECRET');
   if (!databasePath || !path.isAbsolute(databasePath)) missing.push('DATABASE_PATH (absolute persistent path)');
   try {

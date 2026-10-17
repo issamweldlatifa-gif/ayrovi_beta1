@@ -1,5 +1,5 @@
 /**
- * Modal — primitive du design system AYROVI.
+ * Modal — primitive du design system ZAYROVI.
  *
  * Primitive d'interface du back office, déplacée telle quelle depuis client/src/admin/components.tsx
  * (P3/T2) : le moteur ne définit plus ses propres composants, il les réexporte depuis la couche
@@ -10,7 +10,7 @@ import React, { useEffect } from 'react';
 import { X } from '../../components/QatafoIcons';
 
 export const Modal: React.FC<{ open: boolean; title: string; children: React.ReactNode; onClose: () => void; wide?: boolean; footer?: React.ReactNode; eyebrow?: string }> = ({
-  open, title, children, onClose, wide, footer, eyebrow = 'AYROVI CMS',
+  open, title, children, onClose, wide, footer, eyebrow = 'ZAYROVI CMS',
 }) => {
   useEffect(() => {
     if (!open) return;

@@ -7,7 +7,7 @@
  * الموقع وفي التطبيق : في CI يحمل اختصار كوميت GitHub (GITHUB_SHA)، ومحليًا
  * تاريخ البناء. يُحقن عبر `define` في vite.config.mts.
  */
-declare const __AYROVI_BUILD_STAMP__: string;
+declare const __ZAYROVI_BUILD_STAMP__: string;
 
 export const APP_BUILD_STAMP: string =
-  typeof __AYROVI_BUILD_STAMP__ === 'string' && __AYROVI_BUILD_STAMP__ ? __AYROVI_BUILD_STAMP__ : 'dev';
+  typeof __ZAYROVI_BUILD_STAMP__ === 'string' && __ZAYROVI_BUILD_STAMP__ ? __ZAYROVI_BUILD_STAMP__ : 'dev';

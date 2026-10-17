@@ -1,5 +1,5 @@
 /**
- * AYROVI Inventory (P2.2) — les permissions comme données, sur le moteur ERP.
+ * ZAYROVI Inventory (P2.2) — les permissions comme données, sur le moteur ERP.
  *
  * Le module n'invente pas de système d'autorisation (P1 en est un). Il fait deux choses :
  *  1. il sème des lignes `erp_role_permissions` pour le module `inventory`, action

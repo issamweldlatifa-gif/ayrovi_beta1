@@ -14,7 +14,7 @@ import { ApiError } from './errors';
 /* ── Contexte d'authentification ────────────────────────────────────────────
  *
  * L'application ne s'authentifie pas comme un navigateur :
- *   • elle DÉCLARE son type (`x-ayrovi-client: mobile/<version>`) pour que le
+ *   • elle DÉCLARE son type (`x-zayrovi-client: mobile/<version>`) pour que le
  *     serveur lui remette un jeton dans le corps de la réponse. Sans cette
  *     déclaration, le serveur pose un cookie HttpOnly que l'application ne peut
  *     ni lire ni ranger dans un trousseau ;
@@ -77,7 +77,7 @@ const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 export function authHeaders(method: string, context: AuthContext = authContext): Record<string, string> {
   const headers: Record<string, string> = {};
   const upper = method.toUpperCase();
-  if (context.clientHeader) headers['x-ayrovi-client'] = context.clientHeader;
+  if (context.clientHeader) headers['x-zayrovi-client'] = context.clientHeader;
   if (context.token) headers.Authorization = `Bearer ${context.token}`;
   if (context.csrfToken && WRITE_METHODS.has(upper)) headers['x-csrf-token'] = context.csrfToken;
   return headers;

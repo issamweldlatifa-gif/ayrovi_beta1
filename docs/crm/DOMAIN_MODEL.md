@@ -1,4 +1,4 @@
-# AYROVI CRM 360 — Modèle de domaine
+# ZAYROVI CRM 360 — Modèle de domaine
 
 Les entités, leurs statuts, leurs invariants et leurs règles d'intégrité — tels que la base les applique.
 

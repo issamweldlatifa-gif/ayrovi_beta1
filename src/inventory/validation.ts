@@ -1,5 +1,5 @@
 /**
- * AYROVI Inventory (P2.2) — validation côté serveur.
+ * ZAYROVI Inventory (P2.2) — validation côté serveur.
  *
  * Le back-office n'est pas l'autorité : toute règle qui protège l'intégrité du stock
  * (quantité entière positive, sens connu, motif connu, référence d'enregistrement valide,

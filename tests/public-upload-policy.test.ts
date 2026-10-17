@@ -57,8 +57,8 @@ describe('public upload policy (P0/P1 closure gate)', () => {
 
   beforeAll(async () => {
     const login = await admin
-      .set('User-Agent', 'AYROVI-UploadPolicyTest/1.0 (vitest)')
-      .post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
+      .set('User-Agent', 'ZAYROVI-UploadPolicyTest/1.0 (vitest)')
+      .post('/api/admin/auth/login').send({ email: 'admin@zayrovi.tn', password: 'ZayroviBeta2026!' });
     expect(login.status).toBe(200);
 
     // A file that exists on disk is the only honest probe: a 404 caused by an absent

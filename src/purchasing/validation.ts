@@ -1,5 +1,5 @@
 /**
- * AYROVI Purchasing (P2.3) — validation côté serveur, avant le moindre SQL.
+ * ZAYROVI Purchasing (P2.3) — validation côté serveur, avant le moindre SQL.
  *
  * Même exigence que pour le stock : l'écran n'est pas l'autorité. Une quantité, un coût,
  * une devise, une qualité sont validés ici et refusés avec un code du module — jamais un

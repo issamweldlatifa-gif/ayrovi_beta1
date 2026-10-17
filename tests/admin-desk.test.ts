@@ -22,7 +22,7 @@ describe('Admin CIF desk', () => {
   });
 
   test('super admin opens the desk with millime CIF and 20% deposit', async () => {
-    const login = await admin.post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
+    const login = await admin.post('/api/admin/auth/login').send({ email: 'admin@zayrovi.tn', password: 'ZayroviBeta2026!' });
     expect(login.status).toBe(200);
     csrf = login.body.data.csrfToken;
 
@@ -57,13 +57,13 @@ describe('Admin CIF desk', () => {
     const accountId = `desk_account_${Date.now()}`;
     const sessionId = `desk-session-${Date.now()}`;
     db.run(`INSERT INTO customer_accounts (id,display_name,email,email_verified_at,status,created_at,updated_at)
-      VALUES (?,'Desk Client',? ,?,'ACTIVE',?,?)`, accountId, `desk-${Date.now()}@ayrovi.test`, now, now, now);
+      VALUES (?,'Desk Client',? ,?,'ACTIVE',?,?)`, accountId, `desk-${Date.now()}@zayrovi.test`, now, now, now);
     db.addItem(sessionId, {
       store: 'shein', url: 'https://www.shein.com/sneakers-p-1.html', title: 'sneakers Nike Air Force 1',
       imageUrl: '/uploads/product.jpg', sourcePrice: 50, sourceCurrency: 'EUR', priceTND: 328.056, quantity: 1,
     }, accountId);
     const order = db.createOrderFromCart(sessionId, {
-      name: 'Desk Client', email: 'desk@ayrovi.test', phone: '98111000', governorate: 'Tunis', address: 'Tunis',
+      name: 'Desk Client', email: 'desk@zayrovi.test', phone: '98111000', governorate: 'Tunis', address: 'Tunis',
       paymentMethod: 'BANK_TRANSFER', latitude: null, longitude: null, termsAcceptedAt: now, locale: 'fr-TN',
     }, accountId);
     const frozenTotal = db.get<any>('SELECT total_tnd FROM orders WHERE id=?', order.orderId).total_tnd;
@@ -99,7 +99,7 @@ describe('Admin CIF desk', () => {
 
   test('content manager cannot write the desk', async () => {
     const created = await admin.post('/api/admin/users').set('x-csrf-token', csrf).send({
-      name: 'Content Desk', email: `content-desk-${Date.now()}@test.ayrovi.tn`, password: 'ContentSecure2026!', role: 'CONTENT_MANAGER',
+      name: 'Content Desk', email: `content-desk-${Date.now()}@test.zayrovi.tn`, password: 'ContentSecure2026!', role: 'CONTENT_MANAGER',
     });
     expect(created.status).toBe(201);
     const content = request.agent(app);

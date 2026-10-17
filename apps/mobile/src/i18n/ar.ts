@@ -203,7 +203,7 @@ export const ar = {
   'news.category.NEW_BRAND': 'علامة تجارية جديدة',
   'news.category.PROMOTION': 'عرض ترويجي',
   'news.category.DELIVERY': 'التوصيل',
-  'news.category.AYROVI': 'ZAYROVI',
+  'news.category.ZAYROVI': 'ZAYROVI',
   'news.category.INFORMATION': 'معلومة',
   'news.category.OTHER': 'أخرى',
   'footer.about': 'من نحن',

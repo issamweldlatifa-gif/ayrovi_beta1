@@ -1,5 +1,5 @@
 /**
- * AYROVI ERP Core — boot sequence (P1).
+ * ZAYROVI ERP Core — boot sequence (P1).
  *
  * Called once from src/server.ts right after the database instance exists, and
  * idempotent so a test can call it again. It only creates tables, mirrors the

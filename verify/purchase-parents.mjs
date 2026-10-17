@@ -6,9 +6,9 @@ import path from 'node:path';
 
 /* Both production parents must land on the current shared product + bag screens. */
 buildSync({ entryPoints: ['src/ayrovix/priceQuote.ts'], outfile: '.cache/purchase-parent-quote.cjs', bundle: true, platform: 'node', format: 'cjs' });
-const { createAyrovixPriceToken } = createRequire(import.meta.url)(path.resolve('.cache/purchase-parent-quote.cjs'));
-const origin = process.env.AYROVI_BASE_URL;
-const api = process.env.AYROVI_API_URL || 'http://127.0.0.1:3000';
+const { createZayrovixPriceToken } = createRequire(import.meta.url)(path.resolve('.cache/purchase-parent-quote.cjs'));
+const origin = process.env.ZAYROVI_BASE_URL;
+const api = process.env.ZAYROVI_API_URL || 'http://127.0.0.1:3000';
 const output = '.cache/purchase-parents-check';
 mkdirSync(output, { recursive: true });
 const checks = [];
@@ -19,7 +19,7 @@ const check = (name, actual, expected = true) => {
 };
 const sourceUrl = 'https://shop.example.com/parent-selection';
 const title = 'Chaussures de running source';
-const signed = price => createAyrovixPriceToken({ price, currency: 'EUR', title, referenceUrl: sourceUrl, status: 'VERIFIED' });
+const signed = price => createZayrovixPriceToken({ price, currency: 'EUR', title, referenceUrl: sourceUrl, status: 'VERIFIED' });
 const image = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 580"><rect width="400" height="580" fill="#eee"/><path d="M120 440h190v45H100z" fill="#aaa"/></svg>')}`;
 const checkedAt = new Date().toISOString();
 const product = {
@@ -41,7 +41,7 @@ try {
       Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: undefined });
     });
     if (mode === 'sonim') await context.addInitScript(value => {
-      localStorage.setItem('ayrovi.locale.v1', 'fr');
+      localStorage.setItem('zayrovi.locale.v1', 'fr');
       localStorage.setItem('ayrovi_assistant_conversations_v1_guest', JSON.stringify([{
         id: 'parent-fixture', title: 'Question produit', messages: [{ id: 'message', role: 'assistant', text: 'Produit enregistré pour vérification' }],
         selectedProduct: { messageId: 'message', product: value, priceVerified: true },

@@ -1,5 +1,5 @@
 /**
- * AYROVI Catalogue (P2.1) — acceptance tests.
+ * ZAYROVI Catalogue (P2.1) — acceptance tests.
  *
  * Covers what this phase promised, in the order the spec lists it: the canonical product
  * entity (created on the EXISTING `products` table, never a second one), variants with a
@@ -31,7 +31,7 @@ let content: { agent: any; csrf: string };
 let orders: { agent: any; csrf: string };
 
 async function makeSession(role: 'CONTENT_MANAGER' | 'ORDER_MANAGER') {
-  const email = `cat-${role.toLowerCase()}-${suffix}@test.ayrovi.tn`;
+  const email = `cat-${role.toLowerCase()}-${suffix}@test.zayrovi.tn`;
   const password = 'CatalogueSecure2026!';
   const created = await superAgent.post('/api/admin/users').set('x-csrf-token', superCsrf)
     .send({ name: `Catalogue ${role}`, email, password, role });
@@ -57,8 +57,8 @@ describe('catalogue foundation (P2.1)', () => {
 
   beforeAll(async () => {
     superAgent = request.agent(app);
-    const login = await superAgent.set('User-Agent', 'AYROVI-CatalogueTest/1.0 (vitest)')
-      .post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
+    const login = await superAgent.set('User-Agent', 'ZAYROVI-CatalogueTest/1.0 (vitest)')
+      .post('/api/admin/auth/login').send({ email: 'admin@zayrovi.tn', password: 'ZayroviBeta2026!' });
     expect(login.status).toBe(200);
     superCsrf = login.body.data.csrfToken;
     content = await makeSession('CONTENT_MANAGER');
@@ -209,7 +209,7 @@ describe('catalogue foundation (P2.1)', () => {
       const fields = db.all<{ field_name: string }>(`SELECT field_name FROM erp_audit_changes WHERE audit_id=?`, auditRow.id).map((row) => row.field_name);
       expect(fields).toContain('description');
       expect(fields).toContain('status');
-      expect(auditRow.user_name).toBe('AYROVI Admin');
+      expect(auditRow.user_name).toBe('ZAYROVI Admin');
       expect(typeof auditRow.employee_code).toBe('string');
 
       // A plain edit (no status movement) must stay an UPDATE, not masquerade as a status event.
@@ -591,7 +591,7 @@ describe('catalogue foundation (P2.1)', () => {
 
   describe('database safety: fresh, existing, repeated', () => {
     test('a fresh database gets the catalogue shape from the constructor alone', () => {
-      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ayrovi-cat-'));
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'zayrovi-cat-'));
       const fresh = new QatafoDatabase(path.join(dir, 'fresh.sqlite'));
       try {
         const tables = fresh.all<{ name: string }>(`SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'catalogue_%' ORDER BY name`).map((row) => row.name);

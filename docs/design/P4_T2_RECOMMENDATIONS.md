@@ -16,7 +16,7 @@
 
 ### 1.1 توحيد المقياس الرمادي (5 أسود، 5 أبيض، 3 رمادي — كلها مزدوجة)
 
-القياس الحالي لـ `--ayrovi-*` في `tokens.css`:
+القياس الحالي لـ `--zayrovi-*` في `tokens.css`:
 
 | الفئة | القيم الموجودة | العدد |
 |---|---|---:|
@@ -34,13 +34,13 @@
 
 | الفئة | Token | الاستخدامات |
 |---|---|---:|
-| `text-muted` | `--ayrovi-neutral-500` | 261 |
-| `text-ink` | `--ayrovi-neutral-900` | 215 |
-| `border-line` | `--ayrovi-neutral-200` | 180 |
-| `bg-surface` | `--ayrovi-neutral-50` | 107 |
-| `text-brand` | `--ayrovi-primary` | 99 |
-| `bg-brand` | `--ayrovi-primary` | 98 |
-| **المقياس المحايد الجديد** | `--ayrovi-bg-*` / `text-*` | ~15 |
+| `text-muted` | `--zayrovi-neutral-500` | 261 |
+| `text-ink` | `--zayrovi-neutral-900` | 215 |
+| `border-line` | `--zayrovi-neutral-200` | 180 |
+| `bg-surface` | `--zayrovi-neutral-50` | 107 |
+| `text-brand` | `--zayrovi-primary` | 99 |
+| `bg-brand` | `--zayrovi-primary` | 98 |
+| **المقياس المحايد الجديد** | `--zayrovi-bg-*` / `text-*` | ~15 |
 
 **الخبر الجيد:** لأن كل هذه الاستخدامات (≈ 1,074) تمرّ عبر 6 تعريفات فقط في كتلة `@theme inline`، **التوحيد تعديل ~10 أسطر في ملف واحد** — لا 1,074 تعديل.
 
@@ -49,26 +49,26 @@
 ```css
 :root {
   /* — échelle neutre canonique — la seule */
-  --ayrovi-bg-main:        #ffffff;
-  --ayrovi-bg-surface:     #f8f9fa;
-  --ayrovi-border-soft:    #eaeaea;
-  --ayrovi-text-primary:   #111111;
-  --ayrovi-text-secondary: #666666;
+  --zayrovi-bg-main:        #ffffff;
+  --zayrovi-bg-surface:     #f8f9fa;
+  --zayrovi-border-soft:    #eaeaea;
+  --zayrovi-text-primary:   #111111;
+  --zayrovi-text-secondary: #666666;
 
   /* — l'ancienne échelle slate devient un ALIAS (aucune valeur propre) — */
-  --ayrovi-neutral-50:  var(--ayrovi-bg-surface);
-  --ayrovi-neutral-200: var(--ayrovi-border-soft);
-  --ayrovi-neutral-500: var(--ayrovi-text-secondary);
-  --ayrovi-neutral-900: var(--ayrovi-text-primary);
-  --ayrovi-neutral-950: var(--ayrovi-text-primary);
-  --ayrovi-primary:      var(--ayrovi-text-primary);
-  --ayrovi-primary-dark: #000000;
-  --ayrovi-primary-light:#3f3f46;
+  --zayrovi-neutral-50:  var(--zayrovi-bg-surface);
+  --zayrovi-neutral-200: var(--zayrovi-border-soft);
+  --zayrovi-neutral-500: var(--zayrovi-text-secondary);
+  --zayrovi-neutral-900: var(--zayrovi-text-primary);
+  --zayrovi-neutral-950: var(--zayrovi-text-primary);
+  --zayrovi-primary:      var(--zayrovi-text-primary);
+  --zayrovi-primary-dark: #000000;
+  --zayrovi-primary-light:#3f3f46;
 }
 ```
 
 ⚠️ **نقطتان لا تُنسَيان:**
-- `App.tsx` يعيد حقن `--ayrovi-neutral-*` و`--ayrovi-primary` **تشغيلياً** من إعدادات الـ CMS. يجب تحديث **البذور** في `src/db/database.ts` (`#1d2130`, `#6b7280`, `#f8f9fe`, `#e2e8f0`, `#111318`) وإضافة ترحيل `rebrand_neutral_scale_v1` بنفس نمط ترحيل البرتقالي — وإلا سيعود المقياس القديم عند أول تشغيل.
+- `App.tsx` يعيد حقن `--zayrovi-neutral-*` و`--zayrovi-primary` **تشغيلياً** من إعدادات الـ CMS. يجب تحديث **البذور** في `src/db/database.ts` (`#1d2130`, `#6b7280`, `#f8f9fe`, `#e2e8f0`, `#111318`) وإضافة ترحيل `rebrand_neutral_scale_v1` بنفس نمط ترحيل البرتقالي — وإلا سيعود المقياس القديم عند أول تشغيل.
 - `.env`/قاعدة الإنتاج تحمل القيم القديمة محفوظة؛ الترحيل One-shot يعالجها.
 
 **التباين بعد التوحيد (مقيس):**
@@ -80,7 +80,7 @@
 | نص ثانوي `#666666` على أبيض | **5.74:1** | ✓ AA |
 | نص ثانوي `#666666` على `#F8F9FA` | **5.45:1** | ✓ AA |
 
-### 1.2 حذف `--ayrovi-warning` (`#b77900`)
+### 1.2 حذف `--zayrovi-warning` (`#b77900`)
 
 - عدد استخداماته في الواجهة العامة الآن: **0** (أزلتُها كلها في T1).
 - والسبب الأهم: **الكهرماني هو أقرب منافس للبرتقالي** على عجلة الألوان. إبقاؤه يعيد —بشكل أهدأ— نفس الضجيج اللوني الذي أزلناه. في نظام أحادي اللون، الحالات تُعبَّر عنها بـ: **الأخضر للنجاح، الأحمر للخطأ، والأسود/الرمادي لكل ما عداه**.
@@ -116,24 +116,24 @@
 
 ### 2.2 سلّم برتقالي كامل (بدل قيمة واحدة)
 
-حالياً: `--ayrovi-color-brand-orange` + `--ayrovi-cta-dark`. أضف:
+حالياً: `--zayrovi-color-brand-orange` + `--zayrovi-cta-dark`. أضف:
 
 ```css
---ayrovi-orange:        #ff6900;   /* CTA plein, étape active, filet 3px */
---ayrovi-orange-hover:  #e05e00;   /* survol  (blanc 3.5:1 · noir 5.6:1) */
---ayrovi-orange-active: #c75200;   /* pressé  (blanc 4.5:1 · noir 3.6:1) */
---ayrovi-orange-tint:   #fff1e8;   /* teinte rarissime : ligne de focus, halo ≤ 1px */
---ayrovi-orange-ink:    #111111;   /* texte SUR orange (choix 2.1-a) */
+--zayrovi-orange:        #ff6900;   /* CTA plein, étape active, filet 3px */
+--zayrovi-orange-hover:  #e05e00;   /* survol  (blanc 3.5:1 · noir 5.6:1) */
+--zayrovi-orange-active: #c75200;   /* pressé  (blanc 4.5:1 · noir 3.6:1) */
+--zayrovi-orange-tint:   #fff1e8;   /* teinte rarissime : ligne de focus, halo ≤ 1px */
+--zayrovi-orange-ink:    #111111;   /* texte SUR orange (choix 2.1-a) */
 ```
 
 ### 2.3 توكن صريح لحلقة التركيز (focus ring)
 
-حالياً `:focus-visible { outline: 2px solid var(--ayrovi-purple); }` — و`--ayrovi-purple` **اسم مضلّل يرمز إلى الأسود** (ورثناه من P3/T2). سمِّه باسمه:
+حالياً `:focus-visible { outline: 2px solid var(--zayrovi-purple); }` — و`--zayrovi-purple` **اسم مضلّل يرمز إلى الأسود** (ورثناه من P3/T2). سمِّه باسمه:
 
 ```css
---ayrovi-focus-ring: var(--ayrovi-text-primary);
+--zayrovi-focus-ring: var(--zayrovi-text-primary);
 ```
-وحلقة التركيز على خلفية داكنة (الفواتير، الـhero) تحتاج variant فاتح — أضف `--ayrovi-focus-ring-inverse: #ffffff`.
+وحلقة التركيز على خلفية داكنة (الفواتير، الـhero) تحتاج variant فاتح — أضف `--zayrovi-focus-ring-inverse: #ffffff`.
 
 ---
 
@@ -145,19 +145,19 @@
 
 ```css
 html[data-storefront-theme='dark'] {
-  --ayrovi-bg-main:      #0b0b0b;
-  --ayrovi-bg-surface:   #171717;
-  --ayrovi-border-soft:  #2a2a2a;
-  --ayrovi-text-primary: #fafafa;
-  --ayrovi-text-secondary:#a3a3a3;
-  --ayrovi-color-brand-orange: #ff7a1f; /* +1 palier : l'orange pur vibre sur fond noir */
+  --zayrovi-bg-main:      #0b0b0b;
+  --zayrovi-bg-surface:   #171717;
+  --zayrovi-border-soft:  #2a2a2a;
+  --zayrovi-text-primary: #fafafa;
+  --zayrovi-text-secondary:#a3a3a3;
+  --zayrovi-color-brand-orange: #ff7a1f; /* +1 palier : l'orange pur vibre sur fond noir */
 }
 ```
 لاحظ البرتقالي `#ff7a1f` في الداكن: نفس الهوية، وحدة أفتح — لأن `#FF6900` يهتز بصرياً على الأسود. النص الأسود عليه يعطي 7.24:1 ✓.
 
 ### 3.2 نظّف الأسماء المضلّلة الباقية
 
-`--ayrovi-purple` · `--ayrovi-yellow` · `--ayrovi-black` (مكرّر مع `--ayrovi-primary-dark`) · `--hostinger-purple*`.
+`--zayrovi-purple` · `--zayrovi-yellow` · `--zayrovi-black` (مكرّر مع `--zayrovi-primary-dark`) · `--hostinger-purple*`.
 هذه أسماء لوراثات قديمة (كان المشروع بنفسجياً ثم أسود). كل اسم كاذب هو خطأ مستقبلي ينتظر من يقرأه.
 
 ### 3.3 اربط التدقيق بـ CI
@@ -178,7 +178,7 @@ html[data-storefront-theme='dark'] {
 |---|---|
 | **إضافة لون تمييز ثانٍ (بنفسجي/أزرق)** | `--admin-violet:#673de6` لا يزال حياً في الـ back-office. إعادته للواجهة يهدم «أحادية اللون» من الجذور. |
 | **رفع سقف البرتقالي فوق 3% "لتحسين التحويل"** | القياس الحالي **1.1%** — الهامش المتبقي هو مساحة أمان، لا مساحة تصميم. التحويل يُقاس بـ A/B على الزر نفسه، لا بمساحة اللون. |
-| **إعادة `#ffb070` (الخوخي) كـ "accent ناعم"** | هو ما استبدلناه بـ `--ayrovi-bg-surface`. عودته تعيد اللافِه الخوخي الذي أزلناه من قسم LENS. |
+| **إعادة `#ffb070` (الخوخي) كـ "accent ناعم"** | هو ما استبدلناه بـ `--zayrovi-bg-surface`. عودته تعيد اللافِه الخوخي الذي أزلناه من قسم LENS. |
 | **تلوين الحالات بالبرتقالي** (تنبيه برتقالي، نقص مخزون برتقالي…) | البرتقالي = «اضغط». إذا صار يعني أيضاً «احذر»، فقد معناه. الحالات: أخضر/أحمر/رمادي. |
 | **تعديل المقياس الرمادي بالتدريج** | نصف تحويل أسوأ من لا تحويل: مقياسان جزئيان أصعب في الرصد من مقياسين كاملين. حوّل دفعة واحدة، أو انتظر. |
 
@@ -189,7 +189,7 @@ html[data-storefront-theme='dark'] {
 | # | المهمة | الحجم | الخطورة | الأثر |
 |---|---|---|---|---|
 | 1 | توحيد المقياس الرمادي (tokens + بذور + ترحيل) | ~10 أسطر + ترحيل | منخفضة (678 اختباراً + قياس البكسل يثبتان) | **عالٍ** |
-| 2 | حذف `--ayrovi-warning` | 2 سطر | منخفضة | متوسط |
+| 2 | حذف `--zayrovi-warning` | 2 سطر | منخفضة | متوسط |
 | 3 | قرار النص على البرتقالي (أ / ب / ج) | 3 أسطر | منخفضة | **عالٍ** (وصولية) |
 | 4 | سلّم البرتقالي (hover/active/tint/ink) | 4 أسطر | منخفضة | متوسط |
 | 5 | توكن focus صريح | 2 سطر | منخفضة | متوسط |

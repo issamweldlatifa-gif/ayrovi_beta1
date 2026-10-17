@@ -3,7 +3,7 @@ import { twMerge } from 'tailwind-merge';
 import { X } from '../../components/QatafoIcons';
 
 /**
- * AYROVI DS v1.0 — Modal.
+ * ZAYROVI DS v1.0 — Modal.
  * Dialog centré : calque 50, rayon carte, ombre overlay, Escape + clic calque,
  * focus initial, scroll verrouillé.
  */

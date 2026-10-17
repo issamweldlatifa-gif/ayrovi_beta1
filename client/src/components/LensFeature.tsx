@@ -3,7 +3,7 @@ import { safePublicHref } from '../utils/publicLinks';
 import React, { useEffect, useMemo, useState } from 'react';
 
 /**
- * AYROVIX LENS — BLOC ÉDITORIAL (référence : Zalando.fr)
+ * ZAYROVIX LENS — BLOC ÉDITORIAL (référence : Zalando.fr)
  * -----------------------------------------------------
  * Composition, de haut en bas : surtitre (eyebrow) → TITRE TRÈS GRAND →
  * paragraphe d'accompagnement → MÉDIA PLEINE LARGEUR → lien texte « Ouvrir LENS → ».

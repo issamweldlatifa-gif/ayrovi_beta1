@@ -1,5 +1,5 @@
 /**
- * MetricStrip — primitive du design system AYROVI.
+ * MetricStrip — primitive du design system ZAYROVI.
  *
  * Bande de chiffres d'en-tête de module. Deux écrans (Stock P2.2, Achats P2.3) portaient le même
  * shell à quelques libellés près ; le shell vit ici, les écrans ne gardent que leur correspondance

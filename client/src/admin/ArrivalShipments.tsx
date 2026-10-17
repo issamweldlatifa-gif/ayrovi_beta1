@@ -63,7 +63,7 @@ const EMPTY = {
   carrier_name: '', carrier_code: '', service_name: '',
   tracking_number: '', tracking_url: '', tracking_status: 'IN_TRANSIT',
   sender_name: '', sender_company: '', sender_country: '', sender_city: '',
-  destination_country: 'TN', destination_city: 'Tunis', destination_code: 'AYROVI-WH-TN',
+  destination_country: 'TN', destination_city: 'Tunis', destination_code: 'ZAYROVI-WH-TN',
   shipped_at: '', estimated_arrival_at: '',
   total_products: '0', total_units: '0', total_weight: '', weight_unit: 'kg',
   carton_count: '1',

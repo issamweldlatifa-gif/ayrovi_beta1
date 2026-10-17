@@ -78,7 +78,7 @@ describe('Shipment Card -> Warehouse dispatch', () => {
       carrier_code: 'DHL', carrier_name: 'DHL', service_name: 'Express',
       tracking_number: 'TRK123', tracking_status: 'IN_TRANSIT',
       sender_company: 'Example Co', sender_country: 'CN', sender_city: 'Shenzhen',
-      destination_country: 'TN', destination_city: 'Tunis', destination_code: 'AYROVI-WH-TN',
+      destination_country: 'TN', destination_city: 'Tunis', destination_code: 'ZAYROVI-WH-TN',
       shipped_at: now, estimated_arrival_at: now,
       total_products: 100, total_units: 127,
       cartons: [{}, {}, {}, {}, {}, {}, {}, {}], // 8 cartons, no overrides
@@ -108,7 +108,7 @@ describe('Shipment Card -> Warehouse dispatch', () => {
     expect(body.event).toBe('shipment.created');
     expect(body.shipment.carrier.code).toBe('DHL');
     expect(body.shipment.tracking.status).toBe('IN_TRANSIT');
-    expect(body.shipment.destination.code).toBe('AYROVI-WH-TN');
+    expect(body.shipment.destination.code).toBe('ZAYROVI-WH-TN');
     expect(body.shipment.summary.total_cartons).toBe(8);
     expect(body.shipment.cartons).toHaveLength(8);
     expect(wh.received[0].headers['idempotency-key']).toBe(created.shipment_code);

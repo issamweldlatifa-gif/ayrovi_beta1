@@ -1,6 +1,6 @@
 import { createHmac, hkdfSync, timingSafeEqual } from 'node:crypto';
 
-export type AyrovixQuoteStatus = 'VERIFIED' | 'PENDING_MANUAL';
+export type ZayrovixQuoteStatus = 'VERIFIED' | 'PENDING_MANUAL';
 
 interface QuoteClaims {
   v: 1;
@@ -8,7 +8,7 @@ interface QuoteClaims {
   currency: string;
   title: string;
   referenceUrl: string;
-  status: AyrovixQuoteStatus;
+  status: ZayrovixQuoteStatus;
   expiresAt: number;
 }
 
@@ -20,14 +20,14 @@ function strongSecret(value: string): boolean {
 let derivedNoticeShown = false;
 
 /**
- * Secret de signature des cotations AYROVIX.
+ * Secret de signature des cotations ZAYROVIX.
  *
  * ── Le défaut fermé ─────────────────────────────────────────────────────────
- * En production, l'absence de `AYROVIX_QUOTE_SECRET` retombait sur une constante
+ * En production, l'absence de `ZAYROVIX_QUOTE_SECRET` retombait sur une constante
  * PUBLIÉE DANS CE DÉPÔT : n'importe qui pouvait donc forger un prix « vérifié ».
  *
  * ── Ce qui se passe désormais ───────────────────────────────────────────────
- *  1. `AYROVIX_QUOTE_SECRET` présent et solide → il est utilisé ;
+ *  1. `ZAYROVIX_QUOTE_SECRET` présent et solide → il est utilisé ;
  *  2. absent en production → une clé est DÉRIVÉE de `CUSTOMER_AUTH_SECRET` par
  *     HKDF-SHA256, avec une étiquette de domaine distincte. Aucun secret n'est
  *     réutilisé tel quel : la clé de cotation ne peut pas servir à signer une
@@ -38,22 +38,22 @@ let derivedNoticeShown = false;
  *  4. développement/test → constante locale, comme avant.
  */
 export function validateQuoteSecret(): string {
-  const configured = String(process.env.AYROVIX_QUOTE_SECRET || '').trim();
+  const configured = String(process.env.ZAYROVIX_QUOTE_SECRET || '').trim();
   const customerSecret = String(process.env.CUSTOMER_AUTH_SECRET || '').trim();
   if (configured) {
-    if (!strongSecret(configured) || configured === customerSecret) throw new Error('AYROVIX_QUOTE_SECRET_INVALID');
+    if (!strongSecret(configured) || configured === customerSecret) throw new Error('ZAYROVIX_QUOTE_SECRET_INVALID');
     return configured;
   }
   if (!['development', 'test', undefined].includes(process.env.NODE_ENV)) {
-    if (!strongSecret(customerSecret)) throw new Error('AYROVIX_QUOTE_SECRET_NOT_CONFIGURED');
+    if (!strongSecret(customerSecret)) throw new Error('ZAYROVIX_QUOTE_SECRET_NOT_CONFIGURED');
     if (!derivedNoticeShown) {
       derivedNoticeShown = true;
-      console.warn('[AYROVIX] AYROVIX_QUOTE_SECRET absent : clé de cotation dérivée de CUSTOMER_AUTH_SECRET (HKDF). '
+      console.warn('[ZAYROVIX] ZAYROVIX_QUOTE_SECRET absent : clé de cotation dérivée de CUSTOMER_AUTH_SECRET (HKDF). '
         + 'Définissez un secret dédié pour séparer complètement les domaines de signature.');
     }
-    return Buffer.from(hkdfSync('sha256', customerSecret, 'ayrovi:quote-salt:v1', 'ayrovi:ayrovix-quote:v1', 32)).toString('hex');
+    return Buffer.from(hkdfSync('sha256', customerSecret, 'zayrovi:quote-salt:v1', 'zayrovi:ayrovix-quote:v1', 32)).toString('hex');
   }
-  return 'ayrovi-development-price-quote-secret-2026';
+  return 'zayrovi-development-price-quote-secret-2026';
 }
 
 function secret(): string { return validateQuoteSecret(); }
@@ -70,12 +70,12 @@ function cleanUrl(value: unknown): string {
   return String(value || '').trim().slice(0, 4096);
 }
 
-export function createAyrovixPriceToken(input: {
+export function createZayrovixPriceToken(input: {
   price: number;
   currency: string;
   title: string;
   referenceUrl?: string;
-  status: AyrovixQuoteStatus;
+  status: ZayrovixQuoteStatus;
 }, ttlMs = 30 * 60_000): string | null {
   if (!Number.isFinite(input.price) || input.price <= 0 || !/^[A-Z]{3}$/.test(input.currency)) return null;
   const claims: QuoteClaims = {
@@ -96,9 +96,9 @@ export function createAyrovixPriceToken(input: {
  * payload is never parsed into claims, so nothing downstream can treat
  * attacker-controlled JSON as a quote. Expiry is deliberately NOT checked here
  * — callers that only display when a quote lapses must still recognise a token
- * that was authentic but is now stale. `verifyAyrovixPriceToken` is the gate.
+ * that was authentic but is now stale. `verifyZayrovixPriceToken` is the gate.
  */
-export function inspectAyrovixPriceToken(token: unknown): QuoteClaims | null {
+export function inspectZayrovixPriceToken(token: unknown): QuoteClaims | null {
   if (typeof token !== 'string' || token.length > 5000) return null;
   const [payload, signature, extra] = token.split('.');
   if (!payload || !signature || extra) return null;
@@ -113,14 +113,14 @@ export function inspectAyrovixPriceToken(token: unknown): QuoteClaims | null {
   return claims;
 }
 
-export function verifyAyrovixPriceToken(token: unknown, expected: {
+export function verifyZayrovixPriceToken(token: unknown, expected: {
   price: number;
   currency: string;
   title: string;
   referenceUrl?: string;
-  status: AyrovixQuoteStatus;
+  status: ZayrovixQuoteStatus;
 }, now = Date.now()): boolean {
-  const claims = inspectAyrovixPriceToken(token);
+  const claims = inspectZayrovixPriceToken(token);
   if (!claims) return false;
   return claims.expiresAt >= now
     && Math.abs(Number(claims.price) - Math.round(expected.price * 100) / 100) < 0.001

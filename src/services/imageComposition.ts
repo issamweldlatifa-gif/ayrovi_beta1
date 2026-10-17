@@ -5,7 +5,7 @@
  * porté, fond complexe multi-pièces, fond sombre, perspective 3/4).
  * Chaîne prouvée, appliquée ici à TOUTE image produit (Lens / SerpApi / CMS) :
  *
- *   Source → Isolation → Transparent Asset → AYROVI Mockup → Smart Scale
+ *   Source → Isolation → Transparent Asset → ZAYROVI Mockup → Smart Scale
  *          → Smart Position → Final Card
  *
  * PRINCIPES NON NÉGOCIABLES (chaque règle est générique, exprimée en RATIOS) :
@@ -31,7 +31,7 @@ import { UnsafeUrlError } from './safeUrl';
 import { segmentBuffer } from './segmentation';
 import { pruneDiskCache } from './diskCache';
 
-/* ── Contrat visuel AYROVI — miroir de client/src/ayrovix/components/lens-product-card.css ──
+/* ── Contrat visuel ZAYROVI — miroir de client/src/ayrovix/components/lens-product-card.css ──
  * .lens-card-media { aspect-ratio: 9/13; border-radius: 16..18px; background: #F0F2F2 }
  * Toute évolution du CSS doit être répercutée ici (et le test le vérifie). */
 export const CARD_ASPECT_WIDTH = 9;
@@ -316,7 +316,7 @@ export interface CompositionOptions {
 }
 
 /**
- * Compose un PNG produit DÉJÀ ISOLÉ (fond transparent) sur le mockup AYROVI.
+ * Compose un PNG produit DÉJÀ ISOLÉ (fond transparent) sur le mockup ZAYROVI.
  * Retourne null si l'entrée n'a pas d'alpha exploitable — l'appelant garde alors
  * son repli habituel (image d'origine), jamais d'image cassée.
  */
@@ -406,7 +406,7 @@ export function acceptComposition(result: CompositionResult): { pass: boolean; c
 /**
  * Chaîne complète pour une image marchand DISTANTE :
  *   fetch → isolation (chroma-key connecté, sinon segmentation locale)
- *         → composition sur le mockup AYROVI → cache disque par (URL, largeur).
+ *         → composition sur le mockup ZAYROVI → cache disque par (URL, largeur).
  *
  * Retourne null dès qu'une étape n'est pas CERTAINE (pas d'alpha exploitable,
  * contrat d'acceptation non tenu…) : l'appelant sert alors l'image d'origine.
@@ -460,7 +460,7 @@ export async function getComposedCard(rawUrl: string, idealWidth = IDEAL_FRAME_W
 }
 
 export function composedCacheDir(): string {
-  return process.env.AYROVI_COMPOSED_CACHE_DIR || path.resolve(process.cwd(), 'data', 'media-composed');
+  return process.env.ZAYROVI_COMPOSED_CACHE_DIR || path.resolve(process.cwd(), 'data', 'media-composed');
 }
 
 export function readComposedPng(file: string): Buffer {

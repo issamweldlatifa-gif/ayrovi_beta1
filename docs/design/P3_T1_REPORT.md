@@ -1,8 +1,8 @@
-# AYROVI — P3 / T1 : توحيد الرموز (couche back-office)
+# ZAYROVI — P3 / T1 : توحيد الرموز (couche back-office)
 
 **Date :** 2026-09-06 · **Branche :** `main` · **Périmètre décidé :** `/admin` uniquement (décision D‑02 de la session P3) · **Garantie maîtresse :** aucun changement de rendu, pixel pour pixel.
 
-Rapport de phase T1 du plan `../plans/EVOLUTION_AYROVI_P2_P5.md` §5. Ce que T1 **ne fait pas** : consolider les teintes, renommer les variables héritées, toucher la vitrine, ni installer le mode sombre — tout cela est explicitement reporté en T2/T3 parce que cela changerait le rendu et demande un consentement.
+Rapport de phase T1 du plan `../plans/EVOLUTION_ZAYROVI_P2_P5.md` §5. Ce que T1 **ne fait pas** : consolider les teintes, renommer les variables héritées, toucher la vitrine, ni installer le mode sombre — tout cela est explicitement reporté en T2/T3 parce que cela changerait le rendu et demande un consentement.
 
 ---
 
@@ -40,15 +40,15 @@ Le solde n'est pas un échec : ce sont les deux dettes explicitement listées pl
 
 - les **9 variables `--admin-*` déplacées mot pour mot** depuis le `:root` d'`admin.css` (mêmes noms, mêmes valeurs) ;
 - **11 tokens sémantiques** créés pour les valeurs à rôle évident et fréquentes : `--admin-surface-sunken` `#faf9fc`, `--admin-surface-tint` `#faf8ff`, `--admin-surface-soft` `#fbfbfe`, `--admin-line-soft` `#e5e7eb`, `--admin-line-firm` `#f0eef7`, `--admin-text-soft` `#77727f`, `--admin-on-dark` `#ffffff`, `--admin-danger-strong` `#c9362b`, `--admin-danger-text` `#b42318`, `--admin-danger-ink` `#b6251c`, `--admin-violet` `#673de6` ;
-- **231 « tons verbatims » `--admin-tone-<valeur>`** pour la longue traîne, chacun portant exactement la valeur qu'il remplace, et **36 usages** rebasculés sur des tokens préexistants à valeur strictement égale (`#17151f`→`--admin-ink`, `#111318`→`--admin-purple`, `#fe7003`→`--ayrovi-cta`, `#6b7280`→`--ayrovi-neutral-500`, `#fff`→`--admin-card` en fond / `--admin-on-dark` en encre, etc.).
+- **231 « tons verbatims » `--admin-tone-<valeur>`** pour la longue traîne, chacun portant exactement la valeur qu'il remplace, et **36 usages** rebasculés sur des tokens préexistants à valeur strictement égale (`#17151f`→`--admin-ink`, `#111318`→`--admin-purple`, `#fe7003`→`--zayrovi-cta`, `#6b7280`→`--zayrovi-neutral-500`, `#fff`→`--admin-card` en fond / `--admin-on-dark` en encre, etc.).
 
 Règle non négociable appliquée partout : **égalité de caractères, jamais similarité**. `#6b7280` n'a pas été mappé sur `--admin-muted` (`#71717f`) « puisque c'est pareil à l'œil » : les deux valeurs restent distinctes et nommées.
 
 **Les trois feuilles système** — 435 remplacements par `scripts/design-token-sweep.cjs`, plus trois réécritures à la main :
 
 - suppression du bloc `:root` d'`admin.css` (déplacé, pas supprimé) ;
-- `.mag-agent { --mag-ink/--mag-purple/--mag-deep/--mag-yellow }` redéfinis **en alias de tokens** (`var(--admin-purple)`, `var(--admin-purple-dark)`, `var(--ayrovi-cta)`) ;
-- `.bo-shell { --bo-accent: #fe7003 }` → `var(--ayrovi-cta)`.
+- `.mag-agent { --mag-ink/--mag-purple/--mag-deep/--mag-yellow }` redéfinis **en alias de tokens** (`var(--admin-purple)`, `var(--admin-purple-dark)`, `var(--zayrovi-cta)`) ;
+- `.bo-shell { --bo-accent: #fe7003 }` → `var(--zayrovi-cta)`.
 
 Et **3 indirections mortes effacées** : `var(--line, #e5e7ef)` (et consorts) — `--line` n'est défini nulle part, le fallback s'appliquait toujours. La valeur est devenue un token explicite ; le calcul reste identique.
 
@@ -83,7 +83,7 @@ Dernier contrôle, côté artefact construit : le chunk `AdminApp-*.css` contien
 7. ratchet : `arrival-ingestion.css` ≤ **135** littéraux, et > 0 — la dette reste visible, pas masquée ;
 8. aucun `var(--x)` non résolu dans les feuilles système, hors allowlist fermée (une entrée, documentée) ;
 9. équilibre des accolades de chaque feuille touchée ;
-10. un seul orange : `--ayrovi-cta` = `#fe7003`, et `.mag-agent`/`.bo-shell` y sont branchés en `var()`.
+10. un seul orange : `--zayrovi-cta` = `#fe7003`, et `.mag-agent`/`.bo-shell` y sont branchés en `var()`.
 
 Deux mutations ont été injectées pour vérifier que le garde mord vraiment : une couleur littérale ajoutée dans `interface-studio.css` → test 1 en échec ; la valeur d'un ton changée de `#047857` à `#047850` → test 4 en échec. Fichiers restaurés ensuite.
 

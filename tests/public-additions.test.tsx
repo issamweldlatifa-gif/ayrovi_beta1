@@ -60,15 +60,15 @@ describe('additions without replacing the homepage', () => {
     expect(footerChannelLinks({})).toEqual([]);
     expect(footerChannelLinks(null)).toEqual([]);
     expect(footerChannelLinks({ facebook: 'javascript:alert(1)', instagram: 'https://a:b@instagram.com' })).toEqual([]);
-    expect(footerChannelLinks({ facebook: ' https://facebook.com/ayrovi ', tiktok: 'https://tiktok.com/@ayrovi' })).toEqual([
-      { id: 'facebook', label: 'Facebook', href: 'https://facebook.com/ayrovi' },
-      { id: 'tiktok', label: 'TikTok', href: 'https://tiktok.com/@ayrovi' },
+    expect(footerChannelLinks({ facebook: ' https://facebook.com/zayrovi ', tiktok: 'https://tiktok.com/@zayrovi' })).toEqual([
+      { id: 'facebook', label: 'Facebook', href: 'https://facebook.com/zayrovi' },
+      { id: 'tiktok', label: 'TikTok', href: 'https://tiktok.com/@zayrovi' },
     ]);
   });
   it('only removes the empty fallback eyebrow, not the title or hero image', () => {
     const hero = readFileSync('client/src/components/EvergreenHero.tsx', 'utf8');
     expect(hero).toContain("if (key === 'eyebrow') return content.eyebrow?.trim()");
-    expect(hero).not.toContain("content.eyebrow || 'AYROVI'");
+    expect(hero).not.toContain("content.eyebrow || 'ZAYROVI'");
     expect(hero).toContain('titleLines.map'); expect(hero).toContain('visual.imageUrl');
   });
 });
@@ -79,5 +79,5 @@ describe('truthful campaign and channel data', () => {
     [{ ...promo, starts_at: '2027-01-01' }], [{ ...promo, starts_at: 'invalid' }], [{ ...promo, name: ' ' }],
   ])('rejects inactive/missing campaign %j', rows => expect(publishedCampaign(rows, now)).toBeNull());
   it.each(['javascript:alert(1)', 'data:text/html,x', '//example.com', '', 'https://a:b@example.com', 'ftp://example.com', 'https://'])('rejects unsafe social URL %s', value => expect(safeChannelUrl(value)).toBeNull());
-  it('accepts a configured public https destination', () => expect(safeChannelUrl(' https://instagram.com/ayrovi ')).toBe('https://instagram.com/ayrovi'));
+  it('accepts a configured public https destination', () => expect(safeChannelUrl(' https://instagram.com/zayrovi ')).toBe('https://instagram.com/zayrovi'));
 });

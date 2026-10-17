@@ -5,7 +5,7 @@ export function safePublicHref(value: unknown): string | null {
   if (!href || /[\u0000-\u001f\u007f\\]/.test(href) || href.startsWith('//')) return null;
   if (!href.startsWith('/') && !href.startsWith('#') && !/^https?:\/\//i.test(href)) return null;
   try {
-    const url = new URL(href, 'https://ayrovi.invalid');
+    const url = new URL(href, 'https://zayrovi.invalid');
     if (!['https:', 'http:'].includes(url.protocol) || url.username || url.password) return null;
     return href;
   } catch { return null; }

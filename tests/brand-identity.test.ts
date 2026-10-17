@@ -13,7 +13,7 @@ import { documentIdentityCss, mailIdentityStyle } from '../src/services/brandDoc
 import { invoiceEmailHtml } from '../src/services/invoice';
 import { authMailTemplate } from '../src/customer/accountMail';
 
-describe('AYROVI A — enforceable identity', () => {
+describe('ZAYROVI A — enforceable identity', () => {
   test('has only the two approved local families and pure base neutrals', () => {
     expect(BRAND.fonts.map(f => f.family)).toEqual(['Zalando Sans', 'Noto Sans Arabic']);
     expect(BRAND.colors.canvas).toBe('#FFFFFF');
@@ -27,7 +27,7 @@ describe('AYROVI A — enforceable identity', () => {
     const result = enforceBrandIdentity(source);
     expect(result.typography.body).toBe(FONT_STACK);
     expect(result.typography.display).toBe(FONT_STACK);
-    expect(result.typography.preset).toBe('ayrovi-a');
+    expect(result.typography.preset).toBe('zayrovi-a');
     expect(result.colors.pageBackground).toBe('#ffffff');
     expect(result.price).toEqual(source.price);
     expect(result.sections).toEqual(source.sections);
@@ -42,7 +42,7 @@ describe('AYROVI A — enforceable identity', () => {
   test('rejects font switches on write, including the old site_theme channel', () => {
     expect(hasForbiddenFontSelection({ typography: { body: 'Arial' } })).toBe(true);
     expect(hasForbiddenFontSelection({ typography: { preset: 'system-clean' } })).toBe(true);
-    expect(hasForbiddenFontSelection({ typography: { body: FONT_STACK, display: FONT_STACK, preset: 'ayrovi-a' } })).toBe(false);
+    expect(hasForbiddenFontSelection({ typography: { body: FONT_STACK, display: FONT_STACK, preset: 'zayrovi-a' } })).toBe(false);
     expect(enforceLegacyTheme({ font: 'jakarta', custom: true })).toEqual({ font: FONT_STACK, custom: true });
   });
   test.each([
@@ -75,21 +75,21 @@ describe('AYROVI A — enforceable identity', () => {
     expect(html).not.toContain('<img src=x');
     expect(html).toContain(FONT_STACK);
     expect(mailIdentityStyle()).not.toContain('Arial');
-    const invoice = invoiceEmailHtml({customerName:'<img src=x>',orderNumber:'TEST',invoiceNumber:'TEST',trackingCode:'000123',totalLabel:'189.900 TND',depositLabel:'50.000 TND',balanceLabel:'139.900 TND',company:'AYROVI'});
+    const invoice = invoiceEmailHtml({customerName:'<img src=x>',orderNumber:'TEST',invoiceNumber:'TEST',trackingCode:'000123',totalLabel:'189.900 TND',depositLabel:'50.000 TND',balanceLabel:'139.900 TND',company:'ZAYROVI'});
     expect(invoice).toContain(FONT_STACK);
     expect(invoice).toContain('background:#ffffff');
     expect(invoice).toContain('&lt;img');
     expect(invoice).not.toContain('<img src=x>');
   });
   test('mixed Arabic/Latin PDF ordering keeps numeric amounts and Latin brands LTR', () => {
-    const runs = orderPdfTextRuns('فاتورة AYROVI 189.900 TND (2026)');
-    expect(runs[0].text).toBe('AYROVI 189.900 TND (2026)');
+    const runs = orderPdfTextRuns('فاتورة ZAYROVI 189.900 TND (2026)');
+    expect(runs[0].text).toBe('ZAYROVI 189.900 TND (2026)');
     expect(runs.at(-1)?.text).toBe('فاتورة');
     expect(runs.find(r => r.arabic)?.level % 2).toBe(1);
     expect(orderPdfTextRuns('Client: محمد علي — 189.900 TND').map(r=>r.text).join('')).toContain('189.900');
   });
   test('PDF embeds official fonts, paginates, preserves Unicode and writes atomically', async () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ayrovi-font-'));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'zayrovi-font-'));
     try {
       const target = path.join(dir, 'sample.pdf');
       await writeSimplePdf([{ text: 'Facture Éléonore — 189.900 TND', bold: true }, { text: 'مرحبا بكم في أيروفي' }, { text: 'هُوِيَّة أَيْرُوفِي', bold: true }, ...Array.from({ length: 110 }, (_, i) => ({ text: `Ligne ${i} — 90,00 €`, right: true }))], target);

@@ -8,8 +8,8 @@ import path from 'node:path';
 import { mkdirSync, writeFileSync } from 'node:fs';
 
 buildSync({ entryPoints: ['src/ayrovix/priceQuote.ts'], outfile: '.cache/lens-enrichment-quote.cjs', bundle: true, platform: 'node', format: 'cjs' });
-const { createAyrovixPriceToken } = createRequire(import.meta.url)(path.resolve('.cache/lens-enrichment-quote.cjs'));
-const origin = process.env.AYROVI_BASE_URL;
+const { createZayrovixPriceToken } = createRequire(import.meta.url)(path.resolve('.cache/lens-enrichment-quote.cjs'));
+const origin = process.env.ZAYROVI_BASE_URL;
 const output = '.cache/lens-enrichment-check';
 mkdirSync(output, { recursive: true });
 const checks = [];
@@ -21,7 +21,7 @@ function check(name, actual, expected = true) {
 const title = 'Chaussures de course source';
 const sourceUrl = 'https://shop.example.com/stocked-running';
 const status = 'PENDING_MANUAL';
-const signed = (price, currency) => createAyrovixPriceToken({ price, currency, title, referenceUrl: sourceUrl, status });
+const signed = (price, currency) => createZayrovixPriceToken({ price, currency, title, referenceUrl: sourceUrl, status });
 const candidate = {
   id: 'source-candidate', kind: 'external', title, brand: null, model: null,
   description: 'Description courte fournie par la recherche', source: 'Source marchande', sourceUrl,
@@ -43,7 +43,7 @@ let page;
 try {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
   await context.addInitScript(() => {
-    localStorage.setItem('ayrovi.locale.v1', 'fr');
+    localStorage.setItem('zayrovi.locale.v1', 'fr');
     Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: undefined });
   });
   page = await context.newPage();

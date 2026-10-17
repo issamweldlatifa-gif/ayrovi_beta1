@@ -33,12 +33,12 @@ crm_arrivals
 Store -> supported source type -> strategy key + extraction hints
 ```
 
-The AI service uses the existing provider-neutral AYROVI AI Core with the `arrival-ingestion` workload. `StoreExtractionStrategyRegistry` resolves the controlled profile to a profile-driven strategy, so a specialized strategy can be added without changing controllers, source storage, jobs or canonical records. Controllers contain no AI parsing logic. AI usage carries a one-way hash of the requesting administrator and the job ID for attribution; customer identity is not added to the model prompt.
+The AI service uses the existing provider-neutral ZAYROVI AI Core with the `arrival-ingestion` workload. `StoreExtractionStrategyRegistry` resolves the controlled profile to a profile-driven strategy, so a specialized strategy can be added without changing controllers, source storage, jobs or canonical records. Controllers contain no AI parsing logic. AI usage carries a one-way hash of the requesting administrator and the job ID for attribution; customer identity is not added to the model prompt.
 
 ## Product category classification
 
 Each line carries `SKU / Reference + Product Name + Quantity`. A dedicated AI
-pass maps it onto the **official Category Master** imported from the AYROVI
+pass maps it onto the **official Category Master** imported from the ZAYROVI
 Warehouse Core taxonomy.
 
 ```text

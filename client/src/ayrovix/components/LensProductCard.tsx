@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState, useId } from 'react';
 import { Heart, HeartFilled, Image as ImageIcon, RefreshCw } from '../../components/QatafoIcons';
 import { useLocale } from '../../i18n/LocaleContext';
-import type { AyrovixCandidate } from '../types';
+import type { ZayrovixCandidate } from '../types';
 import { refreshLiveStock, type LiveStockResult } from '../services/lensApi';
 import { MerchantRating } from './MerchantRating';
 import { QuietPromoPrice } from './quiet-card';
 import { isComposedUrl, withIsolation } from '../services/mediaIsolation';
 import './lens-product-card.css';
 
-export function lensCardCopy(candidate: AyrovixCandidate) {
+export function lensCardCopy(candidate: ZayrovixCandidate) {
   const brand = candidate.brand?.trim();
   const title = candidate.title.trim();
   let description = candidate.description?.trim() || '';
@@ -32,7 +32,7 @@ const AVAILABILITY_LABEL: Record<string, [string, string]> = {
   out_of_stock: ['Épuisé', 'نفدت الكمية'],
 };
 
-function StockBadge({ availability }: { availability: AyrovixCandidate['availability'] }) {
+function StockBadge({ availability }: { availability: ZayrovixCandidate['availability'] }) {
   const { tr } = useLocale();
   const label = availability ? AVAILABILITY_LABEL[availability] : undefined;
   if (!label) return null;
@@ -74,7 +74,7 @@ function SizeChips({ sizes, variants = [] }: { sizes: string[]; variants?: LiveS
   );
 }
 
-function CardImage({ candidate }: { candidate: AyrovixCandidate }) {
+function CardImage({ candidate }: { candidate: ZayrovixCandidate }) {
   const urls = useMemo(() => withIsolation([...new Set([candidate.image, ...(candidate.images || [])].filter(Boolean))]), [candidate.image, candidate.images]);
   const [index, setIndex] = useState(0);
   useEffect(() => setIndex(0), [candidate.id, candidate.image, candidate.images]);
@@ -88,8 +88,8 @@ function CardImage({ candidate }: { candidate: AyrovixCandidate }) {
 }
 
 export function LensProductCard({ candidate, onChoose, saved, busy, onFavorite }: {
-  candidate: AyrovixCandidate; onChoose: (candidate: AyrovixCandidate) => void;
-  saved: boolean; busy: boolean; onFavorite: (candidate: AyrovixCandidate) => void;
+  candidate: ZayrovixCandidate; onChoose: (candidate: ZayrovixCandidate) => void;
+  saved: boolean; busy: boolean; onFavorite: (candidate: ZayrovixCandidate) => void;
 }) {
   const { tr } = useLocale();
   const priceId = useId();

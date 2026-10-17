@@ -163,7 +163,7 @@ export class AyWebsRequestError extends Error {
   }
 }
 
-/** Jeton CSRF du compte AYROVI connecté : fourni par l'app, jamais stocké ici. */
+/** Jeton CSRF du compte ZAYROVI connecté : fourni par l'app, jamais stocké ici. */
 let ayWebsCsrfToken = '';
 export function setAyWebsCsrfToken(token: string): void {
   ayWebsCsrfToken = token || '';
@@ -318,7 +318,7 @@ export interface AyWebsCartItemPayload {
   customer_note: string;
   purchase_mode: string;
   checkout_ready: boolean;
-  /** Panier unifié : la ligne vit déjà dans le panier AYROVI (synchronisée). */
+  /** Panier unifié : la ligne vit déjà dans le panier ZAYROVI (synchronisée). */
   linked_to_ayrovi?: boolean;
 }
 
@@ -482,11 +482,11 @@ export async function addAyWebsCartItem(body: {
     sourceReread: Boolean(payload.data.source_reread),
     rereadReason: payload.data.reread_reason ? String(payload.data.reread_reason) : null,
     /**
-     * Liaison immédiate vers le panier AYROVI (point sûr : après persistance).
-     * `linked: true` ⇒ l'article figure déjà dans le panier AYROVI de l'app.
+     * Liaison immédiate vers le panier ZAYROVI (point sûr : après persistance).
+     * `linked: true` ⇒ l'article figure déjà dans le panier ZAYROVI de l'app.
      * `linked: false` ⇒ il reste dans le panier AYWEBs, la raison est donnée.
      */
-    ayrovi: (payload.data.ayrovi || null) as { linked: boolean; cart_item_id: string | null; quantity: number | null; reason: string } | null,
+    zayrovi: (payload.data.zayrovi || null) as { linked: boolean; cart_item_id: string | null; quantity: number | null; reason: string } | null,
   };
 }
 
@@ -513,9 +513,9 @@ export async function verifyAyWebsCart(recheckSource = false) {
   };
 }
 
-/** §2/§16 : pont vers le panier AYROVI existant (réponse en camelCase, comme le service). */
-export async function bridgeAyWebsCartToAyrovi(itemIds?: string[]) {
-  const payload = await ayWebsRequest<any>('/cart/bridge-to-ayrovi', { method: 'POST', body: { item_ids: itemIds || [] } });
+/** §2/§16 : pont vers le panier ZAYROVI existant (réponse en camelCase, comme le service). */
+export async function bridgeAyWebsCartToZayrovi(itemIds?: string[]) {
+  const payload = await ayWebsRequest<any>('/cart/bridge-to-zayrovi', { method: 'POST', body: { item_ids: itemIds || [] } });
   return payload.data as {
     moved: Array<{ aywebsItemId: string; aywebsItemNumber: string; cartItemId: string; store: string; title: string; quantity: number; priceTnd: number; duplicate: boolean; synced: boolean }>;
     skipped: Array<{ aywebsItemId: string; code: string; message: string }>;
@@ -559,7 +559,7 @@ export async function submitAyWebsOrder(orderId: string): Promise<AyWebsOrderPay
   return payload.data as AyWebsOrderPayload;
 }
 
-/** §20 : les moyens viennent de la configuration commerciale AYROVI existante. */
+/** §20 : les moyens viennent de la configuration commerciale ZAYROVI existante. */
 export async function getAyWebsPaymentMethods(signal?: AbortSignal) {
   const payload = await ayWebsRequest<any>('/payments/methods', { signal });
   return payload.data as { methods: string[]; card_gateway_available: boolean; note: string };
@@ -577,7 +577,7 @@ export async function createAyWebsPaymentIntent(body: { order_id: string; method
 }
 
 /**
- * §20 : la confirmation relit la passerelle AYROVI, elle ne décrète rien.
+ * §20 : la confirmation relit la passerelle ZAYROVI, elle ne décrète rien.
  * La route renvoie `{ success, data: { payment }, order }` — l'ordre est au
  * niveau racine, en snake_case comme le reste de la surface publique.
  */

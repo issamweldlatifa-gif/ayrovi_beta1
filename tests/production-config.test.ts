@@ -3,11 +3,11 @@ import { assertProductionConfiguration } from '../src/config/productionConfig';
 
 const validProductionEnv: NodeJS.ProcessEnv = {
   NODE_ENV: 'production',
-  ADMIN_EMAIL: 'admin@ayrovi.tn',
+  ADMIN_EMAIL: 'admin@zayrovi.tn',
   ADMIN_PASSWORD: 'a-unique-private-password-2026',
   CUSTOMER_AUTH_SECRET: '9f1d4db643c6aaf50e74fe2f9845b6a9a799c1bfc6ceafe228ae27e4015e13a4',
-  DATABASE_PATH: '/var/lib/ayrovi/data/qatafo.sqlite',
-  PUBLIC_BASE_URL: 'https://www.ayrovi.tn',
+  DATABASE_PATH: '/var/lib/zayrovi/data/qatafo.sqlite',
+  PUBLIC_BASE_URL: 'https://www.zayrovi.tn',
   TRUST_PROXY_HOPS: '1',
 };
 
@@ -32,7 +32,7 @@ describe('production configuration is fail-closed', () => {
       ADMIN_PASSWORD: 'replace-with-a-real-password',
       CUSTOMER_AUTH_SECRET: 'replace-with-a-real-customer-secret-long-enough',
       DATABASE_PATH: './data.sqlite',
-      PUBLIC_BASE_URL: 'http://ayrovi.tn',
+      PUBLIC_BASE_URL: 'http://zayrovi.tn',
       TRUST_PROXY_HOPS: '999',
     })).toThrow(/ADMIN_PASSWORD.*CUSTOMER_AUTH_SECRET.*DATABASE_PATH.*PUBLIC_BASE_URL.*TRUST_PROXY_HOPS/);
   });

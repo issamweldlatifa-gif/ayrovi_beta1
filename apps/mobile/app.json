@@ -1,8 +1,8 @@
 {
   "expo": {
     "name": "ZAYROVI",
-    "slug": "ayrovi",
-    "scheme": "ayrovi",
+    "slug": "zayrovi",
+    "scheme": "zayrovi",
     "version": "2.0.8",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -10,7 +10,7 @@
     "backgroundColor": "#FFFFFF",
     "primaryColor": "#571EF6",
     "android": {
-      "package": "app.ayrovi.mobile",
+      "package": "app.zayrovi.mobile",
       "versionCode": 15,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
@@ -28,19 +28,19 @@
           "data": [
             {
               "scheme": "https",
-              "host": "ayrovi.tn"
+              "host": "zayrovi.tn"
             },
             {
               "scheme": "https",
-              "host": "www.ayrovi.tn"
+              "host": "www.zayrovi.tn"
             },
             {
               "scheme": "https",
-              "host": "ayrovi-beta1-1.onrender.com"
+              "host": "zayrovi-beta1-1.onrender.com"
             },
             {
               "scheme": "https",
-              "host": "ayrovi-beta1-moo8.onrender.com",
+              "host": "zayrovi-beta1-moo8.onrender.com",
               "pathPrefix": "/"
             }
           ]
@@ -48,7 +48,7 @@
       ]
     },
     "ios": {
-      "bundleIdentifier": "app.ayrovi.mobile",
+      "bundleIdentifier": "app.zayrovi.mobile",
       "supportsTablet": true
     },
     "web": {

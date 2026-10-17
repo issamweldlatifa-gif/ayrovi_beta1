@@ -64,9 +64,9 @@ openssl x509 -in cert.pem -noout -fingerprint -sha256
 
 ```
 ANDROID_APP_LINK_SHA256 = 8E:20:…:52:53
-ANDROID_APP_LINK_PACKAGES = app.ayrovi.mobile.demo
+ANDROID_APP_LINK_PACKAGES = app.zayrovi.mobile.demo
 ```
 
-ما نربطوش `app.ayrovi.mobile` ببصمة الـdebug: خدمة الإنتاج تضبط حزمة الإنتاج
+ما نربطوش `app.zayrovi.mobile` ببصمة الـdebug: خدمة الإنتاج تضبط حزمة الإنتاج
 وحدها، مع بصمة مفتاح الإصدار وبصمة Google Play الحقيقية وقت يوفّرهم المالك.
 بهذا ما نخترعوش بصمة إنتاج وما نعطيوش مفتاحاً تجريبياً صلاحية حزمة الإنتاج.

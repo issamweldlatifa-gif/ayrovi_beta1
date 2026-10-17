@@ -9,7 +9,7 @@ try {
     const ar=locale==='ar',key=`${locale}/${width}`;
     const context=await browser.newContext({viewport:{width,height:844},reducedMotion:'reduce'});
     await context.addInitScript(locale=>{
-      localStorage.setItem('ayrovi.locale.v1',locale);
+      localStorage.setItem('zayrovi.locale.v1',locale);
       const m=window.handsfreeTest={level:128,tracks:[],recorders:[],held:[],holdStop:false,transcripts:[],utterances:[]};
       Object.defineProperty(navigator,'mediaDevices',{configurable:true,value:{getUserMedia:async()=>{
         const track={enabled:true,stopped:false,stop(){this.stopped=true;}};m.tracks.push(track);return {getTracks:()=>[track],getAudioTracks:()=>[track]};
@@ -36,7 +36,7 @@ try {
     await page.route('**/api/assistant/status',route=>route.fulfill({json:{success:true,data:{serverTextToSpeechReady:false}}}));
     const chats=[];
     await page.route('**/api/assistant/chat',route=>{chats.push(route.request().postDataJSON());return route.fulfill({contentType:'text/event-stream',body:`data: ${JSON.stringify({type:'delta',text:'HANDS_FREE_REPLY_'+chats.length})}\n\ndata: ${JSON.stringify({type:'done',model:'fixture'})}\n\n`});});
-    await page.goto(process.env.AYROVI_BASE_URL+'/__verify/sonim');await page.locator('[data-open]').click();await page.locator('[data-assistant-composer]').waitFor();
+    await page.goto(process.env.ZAYROVI_BASE_URL+'/__verify/sonim');await page.locator('[data-open]').click();await page.locator('[data-assistant-composer]').waitFor();
     const button=(fr,arabic)=>page.getByRole('button',{name:ar?arabic:fr,exact:true});
     const state=async value=>page.locator(`.editorial-voice[data-voice-state="${value}"]`).waitFor();
     const enter=async()=>{await button('Mode vocal','الوضع الصوتي').click();await state('listening');};

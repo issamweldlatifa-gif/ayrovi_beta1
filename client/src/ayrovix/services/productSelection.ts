@@ -1,5 +1,5 @@
 import { isSelectableVariant } from '../../../../shared/variantPolicy';
-import type { AyrovixProduct, AyrovixVariantOption } from '../types';
+import type { ZayrovixProduct, ZayrovixVariantOption } from '../types';
 
 export interface ProductOffer {
   price: number | null;
@@ -10,7 +10,7 @@ export interface ProductOffer {
 }
 export interface ProductSelection {
   kind: 'general' | 'manual' | 'ambiguous' | 'matched';
-  option: AyrovixVariantOption | null;
+  option: ZayrovixVariantOption | null;
   offer: ProductOffer;
   generalEstimate: boolean;
 }
@@ -21,7 +21,7 @@ const positive = (value: unknown): number | null => typeof value === 'number' &&
  * the first of several quotes. A manual request continues to use the general
  * offer, clearly labelled as such, without an invented variant identifier.
  */
-export function resolveProductSelection(product: AyrovixProduct, size: string, color: string): ProductSelection {
+export function resolveProductSelection(product: ZayrovixProduct, size: string, color: string): ProductSelection {
   const wantedSize = key(size), wantedColor = key(color);
   const requested = Boolean(wantedSize || wantedColor);
   const matches = requested ? (product.variantOptions || []).filter(option => isSelectableVariant(option)

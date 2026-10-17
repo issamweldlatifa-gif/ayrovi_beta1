@@ -1,5 +1,5 @@
 /**
- * AYROVI Purchasing (P2.3) — vocabulaire du module.
+ * ZAYROVI Purchasing (P2.3) — vocabulaire du module.
  *
  * Le contrat de la phase, écrit avant le code :
  *  • le module achète, il ne décrète jamais une quantité : une réception POSTÉE écrit des

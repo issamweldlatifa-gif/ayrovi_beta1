@@ -22,10 +22,10 @@ try{
   const browser=await type.launch();
   try{
    const context=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,reducedMotion:'reduce'});
-   await context.addInitScript(locale=>localStorage.setItem('ayrovi.locale.v1',locale),locale);
+   await context.addInitScript(locale=>localStorage.setItem('zayrovi.locale.v1',locale),locale);
    const p=await context.newPage();p.on('pageerror',e=>errors.push(e.message));
-   await p.route('**/*',r=>{const u=r.request().url();return /^https?:/.test(u)&&!u.startsWith(process.env.AYROVI_BASE_URL+'/')?r.abort():r.continue();});
-   await p.goto(process.env.AYROVI_BASE_URL+'/__verify/sonim');await p.locator('.lens-results-image img').waitFor();await p.evaluate(()=>document.fonts.ready);
+   await p.route('**/*',r=>{const u=r.request().url();return /^https?:/.test(u)&&!u.startsWith(process.env.ZAYROVI_BASE_URL+'/')?r.abort():r.continue();});
+   await p.goto(process.env.ZAYROVI_BASE_URL+'/__verify/sonim');await p.locator('.lens-results-image img').waitFor();await p.evaluate(()=>document.fonts.ready);
    check(`${engine}/${locale}: starts in peek`,await p.locator('.lens-results').getAttribute('data-expanded')==='false');
    check('analysis dots while request pending',await p.locator('.lens-analysis-dots').count()===1);
    check('no extra zoom/search/header buttons',await p.locator('.lens-results-chrome button').count()===1&&!await p.getByRole('button',{name:/^(Zoomer|Dézoomer|Agrandir|Réduire|Effacer|Nouvelle recherche)$/}).count());

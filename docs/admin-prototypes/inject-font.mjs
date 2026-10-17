@@ -1,5 +1,5 @@
 /**
- * Injecte la police officielle AYROVI (Zalando Sans, fichier local du dépôt) dans les prototypes
+ * Injecte la police officielle ZAYROVI (Zalando Sans, fichier local du dépôt) dans les prototypes
  * Admin : chaque maquette reste un fichier HTML autonome, lisible hors ligne et dans l'aperçu
  * sandboxé (aucune requête réseau, aucune police externe).
  *
@@ -17,7 +17,7 @@ const targets = fs.readdirSync(here).filter((file) => file.endsWith('.html'));
 for (const file of targets) {
   const full = path.join(here, file);
   const source = fs.readFileSync(full, 'utf8');
-  const marker = '/*AYROVI_FONT_PLACEHOLDER*/';
+  const marker = '/*ZAYROVI_FONT_PLACEHOLDER*/';
   const asset = 'assets/zalando-sans.woff2';
   let next = source;
   if (source.includes(marker)) {

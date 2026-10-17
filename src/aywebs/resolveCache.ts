@@ -14,7 +14,7 @@ import type { AyWebsSourceProduct } from './adapters/contract';
  *  • il mémorise la LECTURE de la fiche (titre, images, prix source, devise,
  *    variantes publiées) par (boutique + URL normalisée) pendant une durée
  *    courte et configurable ;
- *  • il ne sert JAMAIS un prix : le devis AYROVI est recalé à chaque appel par
+ *  • il ne sert JAMAIS un prix : le devis ZAYROVI est recalé à chaque appel par
  *    le moteur de tarification, côté serveur (§45) ;
  *  • il est toujours annonçable : l'appelant reçoit `fromCache` + l'âge réel de
  *    la lecture, et peut forcer une relecture fraîche (`refresh`) — c'est ce que

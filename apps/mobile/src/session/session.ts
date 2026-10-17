@@ -13,7 +13,7 @@ import * as Crypto from 'expo-crypto';
 
 import { formatSessionId, isValidSessionId } from './sessionId';
 
-export const SESSION_KEY = 'ayrovi.session';
+export const SESSION_KEY = 'zayrovi.session';
 
 /** المعرّف الجاري في هذي العملية — يتفادى قراءة التخزين في كل شاشة. */
 let cached: string | null = null;

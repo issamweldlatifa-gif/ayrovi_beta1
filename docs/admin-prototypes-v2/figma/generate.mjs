@@ -1,5 +1,5 @@
 /**
- * Générateur de cadres Figma (SVG) — consoles d'administration AYROVI, modèles « grande entreprise ».
+ * Générateur de cadres Figma (SVG) — consoles d'administration ZAYROVI, modèles « grande entreprise ».
  *
  * Pourquoi SVG et pas un .fig : le format Figma est propriétaire. Un SVG structuré est ce qui s'en
  * approche le plus — à l'import, Figma conserve le nom des calques (`id`), le texte reste éditable,
@@ -53,7 +53,7 @@ const navCounts = { Commandes: '12', 'Support IA': '4', 'Barre sous l’en-tête
 const barEditor = [
   ['Arrivage', 'وصلات جديدة', 'Arrivage — /arrivage', '10', true],
   ['Gift & Cards', 'هدايا وبطاقات', 'Gift & Cards — /gift-cards', '20', true],
-  ['Magazine', 'مجلة AYROVI', 'Magazine — /magazine', '30', false],
+  ['Magazine', 'مجلة ZAYROVI', 'Magazine — /magazine', '30', false],
 ];
 
 const STATUS_TONE = {
@@ -99,7 +99,7 @@ function modele1() {
   const children = [];
   // Chrome supérieur (Amazon : bandeau encre + second niveau de navigation)
   children.push(rect('chrome-haut', 0, 0, 1440, 48, { fill: p.chrome }));
-  children.push(text('marque', 20, 30, 'AYROVI', { size: 15, weight: 800, fill: p.chromeText, spacing: 2 }));
+  children.push(text('marque', 20, 30, 'ZAYROVI', { size: 15, weight: 800, fill: p.chromeText, spacing: 2 }));
   children.push(text('compte', 120, 29, 'Vendeur · Tunisie', { size: 11, weight: 500, fill: '#C9D2DA' }));
   children.push(rect('recherche', 320, 12, 460, 25, { fill: '#FFFFFF', r: 3 }));
   children.push(text('recherche-libelle', 332, 29, 'Rechercher une commande, un client, un produit…', { size: 11.5, fill: '#8B8B8B' }));
@@ -188,7 +188,7 @@ function modele2() {
   const children = [];
   children.push(rect('nav', 0, 0, 232, 900, { fill: p.card }));
   children.push(line('nav-separateur', 232, 0, 232, 900, { stroke: p.line }));
-  children.push(text('marque', 24, 40, 'AYROVI', { size: 14, weight: 800, spacing: 3 }));
+  children.push(text('marque', 24, 40, 'ZAYROVI', { size: 14, weight: 800, spacing: 3 }));
   children.push(rect('recherche', 24, 60, 184, 30, { fill: p.surfaceAlt, r: 6 }));
   children.push(text('recherche-libelle', 38, 80, 'Rechercher  ⌘K', { size: 11.5, fill: p.muted }));
   navItems.forEach((item, i) => {
@@ -253,9 +253,9 @@ function modele3() {
   const children = [];
   // Barre supérieure + navigation de service horizontale
   children.push(rect('chrome-haut', 0, 0, 1440, 52, { fill: p.chrome }));
-  children.push(text('marque', 20, 33, 'AYROVI Cloud Console', { size: 15, weight: 700 }));
+  children.push(text('marque', 20, 33, 'ZAYROVI Cloud Console', { size: 15, weight: 700 }));
   children.push(rect('selecteur-projet', 210, 14, 236, 26, { fill: '#F1F3F4', r: 4 }));
-  children.push(text('selecteur-projet-libelle', 226, 31, 'Projet : ayrovi-production', { size: 11.5, weight: 600, fill: p.text }));
+  children.push(text('selecteur-projet-libelle', 226, 31, 'Projet : zayrovi-production', { size: 11.5, weight: 600, fill: p.text }));
   children.push(rect('recherche-globale', 470, 14, 420, 26, { fill: '#F1F3F4', r: 4 }));
   children.push(text('recherche-libelle', 486, 31, 'Rechercher une ressource, un écran, une permission…', { size: 11.5, fill: p.muted }));
   children.push(text('assistance', 1180, 31, 'Aide  ·  Journal d’activité  ·  SA', { size: 11.5, fill: p.muted, anchor: 'end' }));
@@ -322,10 +322,10 @@ function modele4() {
   const p = { chrome: '#1A1A1A', chromeText: '#FFFFFF', accent: '#008060', link: '#005BD3', canvas: '#F6F6F7', card: '#FFFFFF', rowAlt: '#FFFFFF', headerBg: '#F7F7F7', surfaceAlt: '#F1F1F1', line: '#E1E3E5', text: '#303030', muted: '#616161', pillBg: '#F1F1F1', ok: '#008060', wait: '#916A00', info: '#005BD3', bad: '#D72C0D' };
   const children = [];
   children.push(rect('chrome-haut', 0, 0, 1440, 48, { fill: p.chrome }));
-  children.push(text('marque', 20, 30, 'AYROVI', { size: 14, weight: 800, fill: p.chromeText, spacing: 3 }));
+  children.push(text('marque', 20, 30, 'ZAYROVI', { size: 14, weight: 800, fill: p.chromeText, spacing: 3 }));
   children.push(rect('recherche', 180, 12, 420, 26, { fill: '#303030', r: 6 }));
   children.push(text('recherche-libelle', 196, 29, 'Rechercher  ⌘K', { size: 11.5, fill: '#B5B5B5' }));
-  children.push(text('boutique', 1330, 29, 'Boutique AYROVI · TN', { size: 11.5, fill: '#D4D4D4', anchor: 'end' }));
+  children.push(text('boutique', 1330, 29, 'Boutique ZAYROVI · TN', { size: 11.5, fill: '#D4D4D4', anchor: 'end' }));
   // Navigation latérale avec badges
   children.push(rect('nav', 0, 48, 224, 852, { fill: '#F1F1F1' }));
   navItems.slice(0, 15).forEach((item, i) => {

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { AiCompletionRequest, AiCompletionResult, AiResponsesProviderAdapter } from '../ai-core/contracts';
-import { getAyroviAiCore } from '../ai-core/core';
+import { getZayroviAiCore } from '../ai-core/core';
 import { AiProviderError } from '../ai-core/errors';
 import { ARRIVAL_EXTRACTION_SCHEMA, ProductExtractionNormalizer } from './productExtractionNormalizer';
 import { StoreExtractionStrategyRegistry } from './storeExtractionStrategy';
@@ -35,11 +35,11 @@ function buildMessageParts(
   return { instructions, content };
 }
 
-export class AyroviAIExtractionService implements AIExtractionService {
+export class ZayroviAIExtractionService implements AIExtractionService {
   private readonly normalizer: ProductExtractionNormalizer;
 
   constructor(
-    private readonly adapter: AiResponsesProviderAdapter = getAyroviAiCore().responses(),
+    private readonly adapter: AiResponsesProviderAdapter = getZayroviAiCore().responses(),
     normalizer = new ProductExtractionNormalizer(),
     private readonly strategyRegistry = new StoreExtractionStrategyRegistry(),
   ) {

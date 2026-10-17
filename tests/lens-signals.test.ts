@@ -35,7 +35,7 @@ describe('l’OCR ne touche jamais au prix (règle client du 25/09/2026)', () =>
   it('le prix garde son origine unique : la page marchande, puis notre formule', () => {
     const block = routes.split("router.post('/analyze-image'")[1].split("router.post('/analyze-url'")[0];
     // 02/10/2026 : plus de calcul sur un montant lu dans l'image ; le prix de la
-    // page marchande repasse par le calculateur AYROVI (`reprice`).
+    // page marchande repasse par le calculateur ZAYROVI (`reprice`).
     expect(block).not.toContain('calculatePrice(');
     expect(block).toContain('estimateWithDb(db, price, currency)');
     expect(block).toContain('detectedPrice: null');
@@ -70,8 +70,8 @@ describe('câblage sur la route client', () => {
 
   it('un budget de temps borne la lecture : jamais de client bloqué par l’OCR', () => {
     expect(source).toContain('withBudget');
-    expect(source).toContain('AYROVI_LENS_SIGNALS_BUDGET_MS');
-    expect(source).toContain("process.env.AYROVI_LENS_SIGNALS === 'false'");
+    expect(source).toContain('ZAYROVI_LENS_SIGNALS_BUDGET_MS');
+    expect(source).toContain("process.env.ZAYROVI_LENS_SIGNALS === 'false'");
   });
 
   it('aucun échec de lecture ne peut faire tomber la requête', () => {

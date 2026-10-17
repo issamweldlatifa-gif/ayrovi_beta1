@@ -5,14 +5,14 @@ import { enrichProduct } from './productEnrichment';
 import { createHash } from 'node:crypto';
 import type { SmartLinkScraper } from '../../scraper/scraper';
 import type { ScrapedProduct } from '../../types';
-import type { AyrovixCandidate, AyrovixProduct } from '../types';
+import type { ZayrovixCandidate, ZayrovixProduct } from '../types';
 import { estimateWithDb } from './currency';
 import { catalogSearch, scoreCandidate, externalProductSearch } from './search';
 import { isUnsafeHostname, UnsafeUrlError } from '../../services/safeUrl';
 import { filterDisplayableCandidates, registerTrustedMerchantHost } from './candidatePolicy';
 
 /**
- * AYROVI product-link layer.
+ * ZAYROVI product-link layer.
  * URL/QR links use SSRF-safe metadata extraction first, then AI Core web
  * search when merchant metadata is incomplete.
  */
@@ -33,7 +33,7 @@ export function sanitizeProductUrl(raw: unknown): string | null {
   return parsed.toString();
 }
 
-function toAyrovixProduct(db: QatafoDatabase, scraped: ScrapedProduct): AyrovixProduct {
+function toZayrovixProduct(db: QatafoDatabase, scraped: ScrapedProduct): ZayrovixProduct {
   const tnd = estimateWithDb(db, scraped.sourcePrice, scraped.sourceCurrency);
   const variantOptions = (scraped.variants?.details || []).filter(isSelectableVariant).map((detail) => {
     const variantTnd = estimateWithDb(db, detail.price || null, scraped.sourceCurrency);
@@ -97,7 +97,7 @@ function toAyrovixProduct(db: QatafoDatabase, scraped: ScrapedProduct): AyrovixP
 }
 
 /** Enriches only the opened page and only with same-merchant, title-matched data. */
-async function enrichSparseProduct(product: AyrovixProduct, url: string): Promise<void> {
+async function enrichSparseProduct(product: ZayrovixProduct, url: string): Promise<void> {
   if (product.images.length >= 4 && product.sizes.length > 0) return;
   const extra = await enrichProduct(product.title, { cacheScope: url });
   if (!product.optionLabel && extra.optionLabel) product.optionLabel = extra.optionLabel;
@@ -126,7 +126,7 @@ async function enrichSparseProduct(product: AyrovixProduct, url: string): Promis
   if (!product.description && extra.description) product.description = extra.description;
 }
 
-function recordProductAvailability(product: AyrovixProduct, checkedAt?: string | null): void {
+function recordProductAvailability(product: ZayrovixProduct, checkedAt?: string | null): void {
   const rawState = product.availability;
   const productAvailability = rawState === 'in_stock' || rawState === 'limited' ? 'available'
     : rawState === 'out_of_stock' ? 'unavailable' : 'unknown';
@@ -143,7 +143,7 @@ function recordProductAvailability(product: AyrovixProduct, checkedAt?: string |
     grouped.set(key, current);
   }
   const checkedMs = Date.parse(checkedAt || product.availabilityCheckedAt || '');
-  const configuredTtl = Number(process.env.AYROVI_VARIANT_TTL_MS);
+  const configuredTtl = Number(process.env.ZAYROVI_VARIANT_TTL_MS);
   const ttl = Number.isFinite(configuredTtl) && configuredTtl > 0 ? configuredTtl : 6 * 60 * 60 * 1000;
   product.availabilityExpiresAt = Number.isFinite(checkedMs) && checkedMs > 0 ? new Date(checkedMs + ttl).toISOString() : null;
   recordVariantContract(product.sourceUrl, {
@@ -164,7 +164,7 @@ function recordProductAvailability(product: AyrovixProduct, checkedAt?: string |
   }, Number.isFinite(checkedMs) && checkedMs > 0 ? checkedMs : 1);
 }
 
-function toFallbackProductFromUrl(rawUrl: string): AyrovixProduct {
+function toFallbackProductFromUrl(rawUrl: string): ZayrovixProduct {
   try {
     const parsed = new URL(rawUrl);
     const host = parsed.hostname.replace('www.', '');
@@ -174,7 +174,7 @@ function toFallbackProductFromUrl(rawUrl: string): AyrovixProduct {
     const title = decoded.length > 5 ? decoded : `Produit ${host}`;
     return {
       title: title.charAt(0).toUpperCase() + title.slice(1), brand: null, model: null,
-      description: `Lien partagé depuis ${host} — AYROVI cherchera des alternatives similaires.`,
+      description: `Lien partagé depuis ${host} — ZAYROVI cherchera des alternatives similaires.`,
       image: '', images: [], source: host, sourceUrl: rawUrl, price: null, currency: null,
       priceTnd: null, exchangeRate: null, colors: [], sizes: [], availability: 'unknown',
       priceVerified: false, priceVerificationStatus: 'PENDING_MANUAL', verificationFailureCode: 'MERCHANT_EXTRACTION_FAILED',
@@ -182,7 +182,7 @@ function toFallbackProductFromUrl(rawUrl: string): AyrovixProduct {
   } catch {
     return {
       title: `Produit ${rawUrl.slice(0, 50)}`, brand: null, model: null,
-      description: 'Lien partagé — AYROVI cherchera des alternatives.', image: '', images: [],
+      description: 'Lien partagé — ZAYROVI cherchera des alternatives.', image: '', images: [],
       source: 'Web', sourceUrl: rawUrl, price: null, currency: null, priceTnd: null,
       exchangeRate: null, colors: [], sizes: [], availability: 'unknown', priceVerified: false,
       priceVerificationStatus: 'PENDING_MANUAL', verificationFailureCode: 'MERCHANT_EXTRACTION_FAILED',
@@ -191,8 +191,8 @@ function toFallbackProductFromUrl(rawUrl: string): AyrovixProduct {
 }
 
 export interface UrlExtractionResult {
-  product: AyrovixProduct;
-  alternates: AyrovixCandidate[];
+  product: ZayrovixProduct;
+  alternates: ZayrovixCandidate[];
 }
 
 export async function extractProductFromUrl(db: QatafoDatabase, scraper: SmartLinkScraper, rawUrl: string): Promise<UrlExtractionResult> {
@@ -207,7 +207,7 @@ export async function extractProductFromUrl(db: QatafoDatabase, scraper: SmartLi
       'SELECT payload,fetched_at FROM product_profiles WHERE url_hash=?', urlHash,
     );
     if (cached && Date.now() - Date.parse(cached.fetched_at) < profileTtlMs) {
-      const product = JSON.parse(cached.payload) as AyrovixProduct;
+      const product = JSON.parse(cached.payload) as ZayrovixProduct;
       if (product?.title) {
         await enrichSparseProduct(product, url);
         recordProductAvailability(product, product.availabilityCheckedAt);
@@ -226,7 +226,7 @@ export async function extractProductFromUrl(db: QatafoDatabase, scraper: SmartLi
   try {
     const scraped = await scraper.scrapeProduct(url);
     if (scraped?.title) {
-      const product = toAyrovixProduct(db, scraped);
+      const product = toZayrovixProduct(db, scraped);
       await enrichSparseProduct(product, url);
       recordProductAvailability(product, product.availabilityCheckedAt);
       try {
@@ -251,10 +251,10 @@ export async function extractProductFromUrl(db: QatafoDatabase, scraper: SmartLi
     if (error instanceof UnsafeUrlError || (error as any)?.code === 'UNSAFE_URL') {
       throw new InvalidUrlError((error as Error).message);
     }
-    console.warn(`[AYROVIX scraper] Fallback for ${url} — ${error}`);
+    console.warn(`[ZAYROVIX scraper] Fallback for ${url} — ${error}`);
   }
 
-  console.log(`[AYROVIX] Using catalog + provider search fallback for URL: ${url}`);
+  console.log(`[ZAYROVIX] Using catalog + provider search fallback for URL: ${url}`);
   const fallbackProduct = toFallbackProductFromUrl(url);
   let query = '';
   try {

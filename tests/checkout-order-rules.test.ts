@@ -15,7 +15,7 @@ import {
 const identity = (over: Partial<CheckoutIdentity> = {}): CheckoutIdentity =>
   ({ authenticated: true, emailVerified: true, phoneVerified: false, ...over });
 const form = (over: Partial<CheckoutForm> = {}): CheckoutForm =>
-  ({ name: 'Issam', email: 'i@ayrovi.tn', phone: '98 123 456', address: 'Rue 1, Tunis', termsAccepted: true, ...over });
+  ({ name: 'Issam', email: 'i@zayrovi.tn', phone: '98 123 456', address: 'Rue 1, Tunis', termsAccepted: true, ...over });
 
 describe('refus de commande — la raison, jamais un simple « non »', () => {
   it('laisse passer une commande complète', () => {
@@ -54,8 +54,8 @@ describe('numéro tunisien', () => {
     expect(isTunisianPhone(raw)).toBe(false);
   });
 
-  it.each(['i@ayrovi.tn', 'a.b@c.io'])('accepte l’e-mail %s', (raw) => expect(isEmail(raw)).toBe(true));
-  it.each(['i@ayrovi', 'i ayrovi.tn', '@ayrovi.tn', ''])('refuse l’e-mail %s', (raw) => expect(isEmail(raw)).toBe(false));
+  it.each(['i@zayrovi.tn', 'a.b@c.io'])('accepte l’e-mail %s', (raw) => expect(isEmail(raw)).toBe(true));
+  it.each(['i@zayrovi', 'i zayrovi.tn', '@zayrovi.tn', ''])('refuse l’e-mail %s', (raw) => expect(isEmail(raw)).toBe(false));
 });
 
 describe('moyen de paiement soumis avec la commande', () => {

@@ -12,7 +12,7 @@
  *     toute recherche : l'écran l'annonce et n'invite pas à réessayer en boucle.
  *
  * Le changement de mot de passe lui-même se fait sur le site : le lien envoyé
- * pointe vers ayrovi.tn et le jeton n'est valable qu'une fois, 30 minutes.
+ * pointe vers zayrovi.tn et le jeton n'est valable qu'une fois, 30 minutes.
  */
 import { useEffect, useState } from 'react';
 import { goBack } from '@/design/navigation';

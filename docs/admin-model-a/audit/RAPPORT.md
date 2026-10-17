@@ -14,7 +14,7 @@ Généré le 2026-09-22T05:02:35.652Z · 49 écrans inspectés · base http://12
 ## Écran de connexion
 
 - champs : 2 (dont 1 mot de passe) · boutons : ["Afficher","Se connecter"]
-- autocomplete : 2 champ(s) · titre : AYROVI · Console d’exploitation
+- autocomplete : 2 champ(s) · titre : ZAYROVI · Console d’exploitation
 - étiquettes : ["Adresse email*","Mot de passe*AfficherLe mot de passe n’e"]
 - cartouche d’état : ok · œil du mot de passe : « Afficher le mot de passe »
 - captures : docs/admin-model-a/audit/login-desktop.png · mobile (marque masquée : true) : docs/admin-model-a/audit/login-mobile.png

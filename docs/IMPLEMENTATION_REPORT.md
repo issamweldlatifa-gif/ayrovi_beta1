@@ -1,4 +1,4 @@
-# AYROVI — Rapport d'implémentation Design System v1.0
+# ZAYROVI — Rapport d'implémentation Design System v1.0
 
 **Date :** 18 septembre 2026 · **Périmètre :** storefront (client) uniquement · **Repo :** `ayrovi_beta1`
 
@@ -34,7 +34,7 @@
 1. **Double source de vérité** : tokens de marque orphans d'un côté, ~60 valeurs hexadécimales sauvages de l'autre.
 2. **Palette slate infiltrante** : 6 tons slate (`#1d2130`, `#6b7280`, `#f8f9fe`, `#e2e8f0`, `#5b6472`, `#111318`…) dans le header, la nav, les inputs, les chips, les états vides — en concurrence directe avec la palette neutre de marque.
 3. **Blanc sur CTA orange** (contraste ≈ 3,0 : 1, sous AA) ; focus rings absents ou brisés (`focus:ring-black/10/10` — syntaxe invalide, silencieux).
-4. **Orange sur-diagonalisé** : override runtime `--ayrovi-brand:#0a0a0a` dans `App.tsx` (bug), orange sur liens, puces, états actifs hors CTA.
+4. **Orange sur-diagonalisé** : override runtime `--zayrovi-brand:#0a0a0a` dans `App.tsx` (bug), orange sur liens, puces, états actifs hors CTA.
 5. **Typographie hors échelle** : `text-[8/10/17/18/20/22/24/28/30px]` arbitraires.
 6. **Élévation et espacements ad hoc** : `z-[60]`, `z-[100]`, `gap-[10px]`, `shadow-[…]` uniques.
 7. **Composants dupliqués** : 2 jeux de primitives (`design/` + copies locales dans les écrans) ; aucun jeu « produit » réutilisable.
@@ -52,7 +52,7 @@ Direction détaillée : `docs/DESIGN_SYSTEM.md` §1–§2.
 client/src/
 ├── design/
 │   ├── tokens.css          ← tokens CANONIQUES (source unique de vérité)
-│   ├── Button.tsx          ← CTA (bg-cta, encre --ayrovi-cta-ink), outline, ghost, danger
+│   ├── Button.tsx          ← CTA (bg-cta, encre --zayrovi-cta-ink), outline, ghost, danger
 │   └── ui/                 ← NOUVELLE bibliothèque produit (12 primitives)
 │       Badge · Card · Container · EmptyState · Field(Input/Select/Textarea)
 │       · Modal · Price · SectionHeader · Skeleton/Spinner · StatusBadge · Toast
@@ -64,8 +64,8 @@ client/src/
 
 | Famille | Valeur |
 |---|---|
-| `--ayrovi-accent / --ayrovi-cta` | `#ff6900` (unique porteur de couleur) |
-| `--ayrovi-cta-ink` | `#111111` — encre de CTA (6,54 : 1 sur orange, AAA ; le blanc est interdit) |
+| `--zayrovi-accent / --zayrovi-cta` | `#ff6900` (unique porteur de couleur) |
+| `--zayrovi-cta-ink` | `#111111` — encre de CTA (6,54 : 1 sur orange, AAA ; le blanc est interdit) |
 | Surfaces | `#0A0A0A` (hero, announcement, LENS), `#3F3F46` (surface sombre) |
 | Échelle neutre | `#FFF / #F8F9FA / #EAEAEA / #111111 / #666666` |
 | États | success `#1a7f4b` · warning `#b45309` · danger `#c81e1e` · info `#1d4ed8` |
@@ -78,7 +78,7 @@ client/src/
 ## 5. Ce qui a été PRÉSERVÉ (fonctionnel — aucun changement)
 
 - **API, base de données, auth, CRM, back-office, ERP** : inchangés (migration visuelle client uniquement).
-- **Lens / Ayrovix** : 100 % du comportement (camera, import, QR/liens, comparaison de prix, historique, états de permission) — seules les classes visuelles ont été retokenisées.
+- **Lens / Zayrovix** : 100 % du comportement (camera, import, QR/liens, comparaison de prix, historique, états de permission) — seules les classes visuelles ont été retokenisées.
 - **Assistant SONIM** : messages, orb vocal, voix, feedback — intact.
 - **Panier, checkout, commandes, compte** : flux intact.
 - **Prix / devise, sursais de disponibilité, filtres** : logique inchangée.
@@ -91,7 +91,7 @@ client/src/
 |---|---|
 | `tokens.css` | Réécriture : 60+ variables orphanes → échelle canonique |
 | `interfaceConfig.ts` | Seeds slate → canon (`#111111`, `#0a0a0a`, `#fff`, `#eaeaea`) |
-| Header / nav / menu | Slate `#1d2130`/`#111318` → `#111111`/`#0A0A0A` ; nav glass `color-mix(var(--ayrovi-white) 72%, transparent)` ; focus rings réparés |
+| Header / nav / menu | Slate `#1d2130`/`#111318` → `#111111`/`#0A0A0A` ; nav glass `color-mix(var(--zayrovi-white) 72%, transparent)` ; focus rings réparés |
 | Boutons | Encre `#111111` sur orange (AAA) ; variantes canoniques `design/Button.tsx` ; danger `#c81e1e` |
 | Hero / announcement | Fond `#0A0A0A` unique ; rule orange d'eye-catch conservée (signature) |
 | Section LENS (accueil) | Éditoriale : titre display noir, CTA link « Ouvrir LENS → », plus aucun orange d'interface |
@@ -110,9 +110,9 @@ client/src/
 | Éliminé | Remplacé par | Raison |
 |---|---|---|
 | Hex slate (11 valeurs) dans le storefront | Échelle neutre canonique | Double palette concurrente au système de marque |
-| `#fff` comme encre de CTA | `--ayrovi-cta-ink: #111111` | Contraste 3,0 : 1 → 6,54 : 1 (WCAG AAA) |
+| `#fff` comme encre de CTA | `--zayrovi-cta-ink: #111111` | Contraste 3,0 : 1 → 6,54 : 1 (WCAG AAA) |
 | `#050505`, `#17181c`, `#171717`, `#23242c`, `#111217` (tons sombres ad hoc) | `#0A0A0A` / `#111111` | 1 surface sombre, 1 encre |
-| Override runtime `--ayrovi-brand:#0a0a0a` dans `App.tsx` | `--ayrovi-cta` piloté par l'accent CMS | **Bug** : neutralisait l'orange de marque partout |
+| Override runtime `--zayrovi-brand:#0a0a0a` dans `App.tsx` | `--zayrovi-cta` piloté par l'accent CMS | **Bug** : neutralisait l'orange de marque partout |
 | `focus:ring-black/10/10` (syntaxe invalide → anneau inexistant) | `focus-visible` canon 2 px | Accessibilité réelle |
 | 14 tailles `text-[Npx]` | Échelle Tailwind | Hiérarchie de lecture |
 | `z-[100]`, `z-[60]`, `shadow-[…]` uniques | Échelles de z et d'ombre | Prévisibilité |
@@ -121,7 +121,7 @@ client/src/
 ## 8. Gouvernance (verrous automatiques — `tests/design-zalando.test.ts`, describe « DS v1.0 »)
 
 1. **Interdiction des 11 hex slate** dans tout TSX/TS/CSS du storefront (admin et `tokens.css` exclus).
-2. **Encre de CTA verrouillée** : `.ay-btn-cta { color: var(--ayrovi-cta-ink) }` + aucune occurrence `#fff` dans `interface-runtime.css`.
+2. **Encre de CTA verrouillée** : `.ay-btn-cta { color: var(--zayrovi-cta-ink) }` + aucune occurrence `#fff` dans `interface-runtime.css`.
 3. **Zéro `text-[Npx]`** dans les TSX du storefront.
 4. **Verrou anti-régression du bug orange** : `App.tsx` ne doit plus surcharger la marque en `#0a0a0a`.
 5. Plafond orange : 23 usages `bg-cta/…` mesurés, allowlist 8 fichiers (CTA uniquement).

@@ -3,7 +3,7 @@ import request from 'supertest';
 import { app, db } from '../src/server';
 import { createCustomerSession } from '../src/customer/auth';
 
-describe('AYROVI production hardening', () => {
+describe('ZAYROVI production hardening', () => {
   test('security headers are unified and unknown API routes stay JSON 404', async () => {
     // Keep this assertion independent from the generated public/ build so a
     // clean CI checkout can verify the global middleware before `npm run build`.
@@ -133,8 +133,8 @@ describe('AYROVI production hardening', () => {
   test('Admin media upload rejects a spoofed image before writing it', async () => {
     const admin = request.agent(app);
     const login = await admin.post('/api/admin/auth/login').send({
-      email: 'admin@ayrovi.tn',
-      password: 'AyroviBeta2026!',
+      email: 'admin@zayrovi.tn',
+      password: 'ZayroviBeta2026!',
     });
     expect(login.status).toBe(200);
     const response = await admin

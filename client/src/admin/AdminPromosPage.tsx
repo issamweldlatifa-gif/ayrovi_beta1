@@ -104,7 +104,7 @@ export const PromosPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) => {
   return <>
     <div className="admin-page-header">
       <div>
-        <span className="admin-eyebrow">AYROVI ADMIN</span>
+        <span className="admin-eyebrow">ZAYROVI ADMIN</span>
         <h1>Promotions &amp; offres</h1>
         <p>
           {data.today

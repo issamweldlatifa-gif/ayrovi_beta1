@@ -58,10 +58,10 @@ ${items.map((item) => {
 const stripHtml = (p) => `
         <div class="navrow"><b>Arrivage · وصلات جديدة</b><span class="state on">active</span><small>/arrivage · order 10</small></div>
         <div class="navrow"><b>Gift &amp; Cards · هدايا وبطاقات</b><span class="state on">active</span><small>/gift-cards · order 20</small></div>
-        <div class="navrow"><b>Magazine · مجلة AYROVI</b><span class="state off">hidden</span><small>/magazine · order 30</small></div>`;
+        <div class="navrow"><b>Magazine · مجلة ZAYROVI</b><span class="state off">hidden</span><small>/magazine · order 30</small></div>`;
 
 const baseCss = (p) => `
-  @font-face{font-family:'Zalando Sans';src:url(/*AYROVI_FONT_PLACEHOLDER*/) format('woff2');font-weight:100 900;font-display:swap}
+  @font-face{font-family:'Zalando Sans';src:url(/*ZAYROVI_FONT_PLACEHOLDER*/) format('woff2');font-weight:100 900;font-display:swap}
   :root{--accent:${p.accent};--canvas:${p.canvas};--card:${p.card};--line:${p.line};--text:${p.text};--muted:${p.muted};
         --ok:${p.ok};--warn:${p.warn};--info:${p.info};--bad:${p.bad};--alt:${p.alt};--radius:${p.radius}}
   *{box-sizing:border-box}
@@ -119,10 +119,10 @@ const head = (title, p) => `<!DOCTYPE html>
 /* ── B · Stripe Dashboard ──────────────────────────────────────────────────────────────────── */
 function modeleB() {
   const p = palette.B;
-  return `${head('AYROVI Console — Model B · Stripe Dashboard style', p)}
+  return `${head('ZAYROVI Console — Model B · Stripe Dashboard style', p)}
 <div class="layout" style="display:grid;grid-template-columns:236px minmax(0,1fr);min-height:100vh">
   <nav class="navlist side" style="background:var(--card);border-inline-end:1px solid var(--line)">
-    <div style="padding:18px 16px 10px;font-weight:800;letter-spacing:.22em;font-size:14px">AYROVI</div>
+    <div style="padding:18px 16px 10px;font-weight:800;letter-spacing:.22em;font-size:14px">ZAYROVI</div>
     <div style="margin:0 14px 10px;background:var(--alt);border-radius:999px;padding:8px 14px;color:var(--muted);font-size:12px">Search  ⌘K</div>
 ${navHtml()}
     <div style="margin:16px 14px 0;background:#FFF6E5;border-radius:999px;padding:7px 12px;text-align:center;font-size:11px;font-weight:700;color:#8A6116">Test mode · production ready</div>
@@ -204,10 +204,10 @@ ${stripHtml(p)}
 /* ── C · Google Cloud / AWS console ───────────────────────────────────────────────────────── */
 function modeleC() {
   const p = palette.C;
-  return `${head('AYROVI Console — Model C · Cloud console style', p)}
+  return `${head('ZAYROVI Console — Model C · Cloud console style', p)}
 <header style="background:var(--card);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;padding:10px 18px;flex-wrap:wrap">
-  <span style="font-weight:800;letter-spacing:.06em">AYROVI Cloud Console</span>
-  <span style="background:var(--alt);border-radius:4px;padding:6px 12px;font-size:12px;font-weight:700">Project: ayrovi-production</span>
+  <span style="font-weight:800;letter-spacing:.06em">ZAYROVI Cloud Console</span>
+  <span style="background:var(--alt);border-radius:4px;padding:6px 12px;font-size:12px;font-weight:700">Project: zayrovi-production</span>
   <div style="margin-inline-start:auto;display:flex;align-items:center;gap:8px;background:var(--alt);border-radius:4px;padding:7px 14px;width:min(440px,36vw);min-width:0;white-space:nowrap;overflow:hidden;color:var(--muted);font-size:12px">Search resources, screens, permissions… <b style="margin-inline-start:auto;color:var(--text)">⌘K</b></div>
   <span style="color:var(--muted);font-size:12px">Help · Activity · SA</span>
 </header>
@@ -265,7 +265,7 @@ function modeleC() {
         <h4>Header strip — linked resources</h4>
         <div class="navrow"><b>arrivage → /arrivage</b><span class="state on">active</span><small>label FR « Arrivage » · label AR « وصلات جديدة » · order 10</small></div>
         <div class="navrow"><b>gift-cards → /gift-cards</b><span class="state on">active</span><small>label FR « Gift &amp; Cards » · label AR « هدايا وبطاقات » · order 20</small></div>
-        <div class="navrow"><b>magazine → /magazine</b><span class="state off">hidden</span><small>label FR « Magazine » · label AR « مجلة AYROVI » · order 30</small></div>
+        <div class="navrow"><b>magazine → /magazine</b><span class="state off">hidden</span><small>label FR « Magazine » · label AR « مجلة ZAYROVI » · order 30</small></div>
       </div>
       <div class="sec">
         <h4>Audit log (excerpt)</h4>
@@ -289,11 +289,11 @@ function modeleC() {
 /* ── D · Shopify Admin ────────────────────────────────────────────────────────────────────── */
 function modeleD() {
   const p = palette.D;
-  return `${head('AYROVI Console — Model D · Shopify Admin style', p)}
+  return `${head('ZAYROVI Console — Model D · Shopify Admin style', p)}
 <header style="background:#1A1A1A;color:#fff;display:flex;align-items:center;gap:16px;padding:10px 18px">
-  <span style="font-weight:800;letter-spacing:.2em">AYROVI</span>
+  <span style="font-weight:800;letter-spacing:.2em">ZAYROVI</span>
   <div style="display:flex;align-items:center;gap:8px;background:#303030;border-radius:10px;padding:7px 14px;width:min(460px,40vw);color:#B5B5B5;font-size:12px">Search  ⌘K</div>
-  <span style="margin-inline-start:auto;color:#D4D4D4;font-size:12px">Store AYROVI · TN · Issam</span>
+  <span style="margin-inline-start:auto;color:#D4D4D4;font-size:12px">Store ZAYROVI · TN · Issam</span>
 </header>
 <div class="layout" style="display:grid;grid-template-columns:224px minmax(0,1fr);align-items:start">
   <nav class="navlist side" style="background:var(--alt);min-height:calc(100vh - 44px)">
@@ -344,7 +344,7 @@ ${navHtml()}
           <span class="state on">active</span>
         </div>
         <div style="border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px">
-          <b style="font-size:12px">Magazine · مجلة AYROVI</b>
+          <b style="font-size:12px">Magazine · مجلة ZAYROVI</b>
           <div style="color:var(--muted);font-size:11px;margin-top:4px">/magazine · order 30</div>
           <span class="state off">hidden</span>
         </div>

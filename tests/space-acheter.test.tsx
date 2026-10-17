@@ -56,7 +56,7 @@ describe('espace 01 — acheter', () => {
 
   it('convertit un produit du catalogue sans recalculer les prix du serveur', () => {
     const scraped = catalogProductToScraped({
-      id: 'product_demo_01', name: 'Ensemble tendance AYROVI', description: 'Produit de démonstration.',
+      id: 'product_demo_01', name: 'Ensemble tendance ZAYROVI', description: 'Produit de démonstration.',
       image: '/media/hero-femme.jpg', additionalImages: [], brandName: 'SHEIN', sourcePlatform: 'SHEIN',
       sourceUrl: 'https://www.shein.com/', originalPrice: 21.99, currency: 'EUR',
       convertedPrice: 90.599, shippingFee: 14.5, serviceFee: 9.06, finalPrice: 177.273,
@@ -64,7 +64,7 @@ describe('espace 01 — acheter', () => {
     });
     expect(scraped.id).toBe('catalog:product_demo_01');
     expect(scraped.store).toBe('shein');
-    expect(scraped.title).toBe('Ensemble tendance AYROVI');
+    expect(scraped.title).toBe('Ensemble tendance ZAYROVI');
     expect(scraped.totalPriceTND).toBe(177.273);
     expect(scraped.convertedPriceTND).toBe(90.599);
     expect(scraped.estimatedShippingTND).toBe(14.5);
@@ -76,7 +76,7 @@ describe('espace 01 — acheter', () => {
   it('reste honnête sur une plateforme inconnue et sur un produit épuisé', () => {
     const unknown = catalogProductToScraped({ id: 'x', name: 'Article', sourcePlatform: '', originalPrice: 10, currency: 'EUR', finalPrice: 42, stockStatus: 'OUT_OF_STOCK' });
     expect(unknown.store).toBe('generic');
-    expect(unknown.storeName).toBe('AYROVI');
+    expect(unknown.storeName).toBe('ZAYROVI');
     expect(unknown.availability).toBe('out_of_stock');
     expect(unknown.variants).toEqual({});
     // Aucun prix inventé : un champ absent vaut 0, jamais NaN ni un montant deviné.

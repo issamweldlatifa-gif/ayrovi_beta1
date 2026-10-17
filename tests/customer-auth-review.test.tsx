@@ -19,7 +19,7 @@ describe('1. Plus de mots répétés', () => {
   const page = read(PAGE);
 
   it('le sous-titre ne répète plus le verbe du titre', () => {
-    expect(page).not.toContain("tr('Connectez-vous à votre univers AYROVI.'");
+    expect(page).not.toContain("tr('Connectez-vous à votre univers ZAYROVI.'");
     expect(page).toContain("tr('Vos commandes, vos favoris et votre panier, au même endroit.'");
   });
 
@@ -110,9 +110,9 @@ describe('3. Bloc Conditions / Confidentialité', () => {
   });
 
   it('le bloc porte un filet au-dessus ET un lavis de 1 %', () => {
-    expect(css).toContain(".ay-auth__footer { margin-block-start: var(--ayrovi-space-4); border-top: 1px solid var(--ay-auth-legal-rule); background: var(--ay-auth-legal-wash);");
+    expect(css).toContain(".ay-auth__footer { margin-block-start: var(--zayrovi-space-4); border-top: 1px solid var(--ay-auth-legal-rule); background: var(--ay-auth-legal-wash);");
     // Le lavis est bien à 1 % d'encre — pas une couleur pleine.
-    expect(css).toContain('--ay-auth-legal-wash: color-mix(in srgb, var(--ayrovi-text-primary) 1%, transparent);');
+    expect(css).toContain('--ay-auth-legal-wash: color-mix(in srgb, var(--zayrovi-text-primary) 1%, transparent);');
   });
 
   it('la variante bleue (demandée) existe et se régle en un attribut', () => {

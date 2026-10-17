@@ -2,7 +2,7 @@
  * Session du client : une seule source de vérité pour « qui est connecté ».
  *
  * Ce que ce fournisseur garantit :
- *   • l'application se DÉCLARE au serveur (`x-ayrovi-client`) avant toute
+ *   • l'application se DÉCLARE au serveur (`x-zayrovi-client`) avant toute
  *     connexion — sinon le serveur répondrait avec un cookie que l'application
  *     ne peut pas lire, et la connexion serait perdue à la fermeture ;
  *   • le jeton obtenu est rangé dans le trousseau de l'appareil, jamais dans les
@@ -35,7 +35,7 @@ import {
   type SecureBackend,
 } from './sessionStore';
 
-const PENDING_REVOKE_KEY = 'ayrovi.session.pending-revoke.v1';
+const PENDING_REVOKE_KEY = 'zayrovi.session.pending-revoke.v1';
 
 export type SessionStatus = 'loading' | 'signedOut' | 'signedIn';
 
@@ -236,7 +236,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
  * الخادم جاوب على الدخول **بلا `session_token`**.
  *
  * هذا يصير كان الخادم ما يعرفش التطبيق: طريقة إعطاء الجلسة في جسم الردّ
- * (`x-ayrovi-client: mobile/x.y.z`) موجودة في الخادم الجديد — خادم قديم
+ * (`x-zayrovi-client: mobile/x.y.z`) موجودة في الخادم الجديد — خادم قديم
  * يرجّع كوكي للمتصفّح وما يرجّعش توكِن للتطبيق. نرميو خطأ بكود، باش شاشة
  * الدخول تقول السبب بالحرف بدل «فشل الطلب».
  */

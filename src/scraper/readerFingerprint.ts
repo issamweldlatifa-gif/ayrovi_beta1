@@ -17,8 +17,8 @@
  *
  * ── CE QUI EXISTE MAINTENANT ────────────────────────────────────────────────
  *   • UNE empreinte fixée par store (documentée ci-dessous avec sa provenance),
- *     surchargeable sans redéploiement : `AYROVIX_READER_PROFILE_<STORE>` ou
- *     `AYROVIX_READER_PROFILE` (ex. `amazon=mobile`, `shein=desktop`) ;
+ *     surchargeable sans redéploiement : `ZAYROVIX_READER_PROFILE_<STORE>` ou
+ *     `ZAYROVIX_READER_PROFILE` (ex. `amazon=mobile`, `shein=desktop`) ;
  *   • l'autre empreinte reste disponible en repli DIFFÉRÉ : elle ne part que si
  *     la première n'a rien lu, jamais en même temps (voir `readerProbePlan`) ;
  *   • le lecteur Jina (et le rendu payant ensuite) part après ce repli gratuit,
@@ -94,8 +94,8 @@ function normalizeStore(storeType: unknown): string {
  */
 export function readerProfileForStore(storeType: unknown): ReaderProfile {
   const store = normalizeStore(storeType);
-  const scoped = store ? process.env[`AYROVIX_READER_PROFILE_${store.toUpperCase()}`] : undefined;
-  const global = process.env.AYROVIX_READER_PROFILE;
+  const scoped = store ? process.env[`ZAYROVIX_READER_PROFILE_${store.toUpperCase()}`] : undefined;
+  const global = process.env.ZAYROVIX_READER_PROFILE;
   for (const candidate of [scoped, global]) {
     const value = String(candidate || '').trim().toLowerCase();
     if (value === 'mobile' || value === 'desktop') return value;
@@ -116,7 +116,7 @@ export function readerHeaders(profile: ReaderProfile): Readonly<Record<string, s
 
 /** Délai avant le repli (empreinte secondaire) : il ne part que si rien n'est lu. */
 export function readerFallbackDelayMs(): number {
-  return integerEnv('AYROVIX_READER_FALLBACK_MS', 2_500, 0, 15_000);
+  return integerEnv('ZAYROVIX_READER_FALLBACK_MS', 2_500, 0, 15_000);
 }
 
 /**
@@ -124,7 +124,7 @@ export function readerFallbackDelayMs(): number {
  * externe (et 13–28 s d'attente) quand l'autre empreinte aurait suffi.
  */
 export function readerJinaHeadstartMs(): number {
-  return integerEnv('AYROVIX_JINA_HEADSTART_MS', readerFallbackDelayMs() + 500, 0, 10_000);
+  return integerEnv('ZAYROVIX_JINA_HEADSTART_MS', readerFallbackDelayMs() + 500, 0, 10_000);
 }
 
 export interface ReaderProbeStep {

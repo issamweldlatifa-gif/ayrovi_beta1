@@ -2,7 +2,7 @@ import { chromium } from 'playwright';
 import sharp from 'sharp';
 import fs from 'node:fs';
 import { inspectEditorialIcons } from './editorial-icon-contract.mjs';
-const base=process.env.AYROVI_BASE_URL || 'http://127.0.0.1:3000';
+const base=process.env.ZAYROVI_BASE_URL || 'http://127.0.0.1:3000';
 const output='screenshots/editorial/customer';fs.mkdirSync(output,{recursive:true});
 const checks=[], errors=[], failures=[], orange=[];
 function check(label,pass,details){checks.push({label,pass:Boolean(pass),...(details===undefined?{}:{details})});if(!pass)failures.push(label+': '+JSON.stringify(details??null));}
@@ -11,7 +11,7 @@ const browser=await chromium.launch({headless:true});
 try{
  for(const locale of ['fr','ar']){
   const ctx=await browser.newContext({locale,viewport:{width:390,height:844}});
-  await ctx.addInitScript(locale=>localStorage.setItem('ayrovi.locale.v1',locale),locale);
+  await ctx.addInitScript(locale=>localStorage.setItem('zayrovi.locale.v1',locale),locale);
   const p=await ctx.newPage();p.on('pageerror',e=>errors.push(e.message));
   for(const width of [320,360,390,768,1360]){
    await p.setViewportSize({width,height:844});await p.goto(base,{waitUntil:'domcontentloaded'});
@@ -24,11 +24,11 @@ try{
     check(`${locale}/${width}/${name}: orange area <= 3% (no exclusions)`,ratio<=.03,ratio);
     if(width===390||width===1360)fs.writeFileSync(`${output}/${name}-${locale}-${width}.png`,image);
    };
-   await inspect('home','.ayrovi-app-shell');
-   check(`${locale}/${width}: actual logo source preserved`,(await p.locator('.public-site-header img').getAttribute('src')).includes('logo-ayrovi'));
-   const navCount=await p.locator('.ayrovi-glass-bottom-nav nav>button').count();
+   await inspect('home','.zayrovi-app-shell');
+   check(`${locale}/${width}: actual logo source preserved`,(await p.locator('.public-site-header img').getAttribute('src')).includes('logo-zayrovi'));
+   const navCount=await p.locator('.zayrovi-glass-bottom-nav nav>button').count();
    check(`${locale}/${width}: five navigation destinations preserved`,navCount===5,{navCount});
-   for(const [area,selector,names] of [['header','.public-site-header',['Menu','User']],['navigation','.ayrovi-glass-bottom-nav',['Lens','Sonim','Vision','Scan']]]){
+   for(const [area,selector,names] of [['header','.public-site-header',['Menu','User']],['navigation','.zayrovi-glass-bottom-nav',['Lens','Sonim','Vision','Scan']]]){
     const icons=await inspectEditorialIcons(p,selector);
     check(`${locale}/${width}: ${area} matches editorial geometry and stroke`,icons.errors.length===0 && names.every(name=>icons.names.includes(name)),icons);
    }
@@ -48,16 +48,16 @@ try{
    check(`${locale}/${width}: auth uses new glyphs`,await p.locator('.ay-auth [data-editorial-icon]').count()>0);
    await p.goBack();await p.locator('.ay-auth').waitFor({state:'hidden'});
    await p.getByRole('button',{name:locale==='ar'?'فتح القائمة':'Ouvrir le menu',exact:true}).click();
-   const menu=p.getByRole('dialog',{name:locale==='ar'?'قائمة AYROVI':'Menu AYROVI',exact:true});
+   const menu=p.getByRole('dialog',{name:locale==='ar'?'قائمة ZAYROVI':'Menu ZAYROVI',exact:true});
    await inspect('menu','[role=dialog]');
    check(`${locale}/${width}: initial menu focus is close`,await p.locator('[data-dialog-autofocus]').evaluate(e=>e===document.activeElement));
    await p.keyboard.press('Shift+Tab');await p.keyboard.press('Shift+Tab');check(`${locale}/${width}: menu traps focus at the end`,await menu.getByRole('button',{name:'AR',exact:true}).evaluate(e=>e===document.activeElement));
    await p.keyboard.press('Tab');check(`${locale}/${width}: menu wraps focus to first target`,await menu.getByRole('button',{name:/Se connecter \/ Créer un compte|تسجيل الدخول \/ إنشاء حساب/}).evaluate(e=>e===document.activeElement));
-   await menu.getByRole('button',{name:locale==='ar'?'حول AYROVI':'À propos d’AYROVI',exact:true}).click();
-   await p.getByRole('dialog',{name:locale==='ar'?'حول AYROVI':'À propos d’AYROVI',exact:true}).waitFor();
-   check(`${locale}/${width}: About is a reachable screen`,await p.locator('#why-ayrovi-title').isVisible());
+   await menu.getByRole('button',{name:locale==='ar'?'حول ZAYROVI':'À propos d’ZAYROVI',exact:true}).click();
+   await p.getByRole('dialog',{name:locale==='ar'?'حول ZAYROVI':'À propos d’ZAYROVI',exact:true}).waitFor();
+   check(`${locale}/${width}: About is a reachable screen`,await p.locator('#why-zayrovi-title').isVisible());
    await p.keyboard.press('Escape');await menu.waitFor();await p.keyboard.press('Escape');await menu.waitFor({state:'hidden'});
-   await p.getByRole('button',{name:locale==='ar'?'SONIM — المساعد الذكي لـ AYROVI':"SONIM — l'assistant IA d'AYROVI",exact:true}).click();
+   await p.getByRole('button',{name:locale==='ar'?'SONIM — المساعد الذكي لـ ZAYROVI':"SONIM — l'assistant IA d'ZAYROVI",exact:true}).click();
    await p.locator('[data-assistant-composer]').waitFor();await inspect('sonim','[data-sonim-tone]');
    const boxes=await p.evaluate(()=>{const a=document.querySelector('.assistant-editorial-header').getBoundingClientRect(),b=document.querySelector('[data-assistant-messages]').getBoundingClientRect(),c=document.querySelector('[data-assistant-composer]').getBoundingClientRect();return {header:a.bottom,messagesTop:b.top,messagesBottom:b.bottom,composer:c.top};});
    check(`${locale}/${width}: controls do not cover conversation`,boxes.header<=boxes.messagesTop+1&&boxes.messagesBottom<=boxes.composer+1,boxes);
@@ -73,7 +73,7 @@ try{
  }
  // Dark SONIM + short viewport: actual control state, no AI request.
  const extra=await browser.newContext({viewport:{width:390,height:480},locale:'fr'});const p=await extra.newPage();p.on('pageerror',e=>errors.push(e.message));
- await p.goto(base,{waitUntil:'domcontentloaded'});await p.getByRole('button',{name:"SONIM — l'assistant IA d'AYROVI",exact:true}).click();await p.locator('[data-assistant-composer]').waitFor();
+ await p.goto(base,{waitUntil:'domcontentloaded'});await p.getByRole('button',{name:"SONIM — l'assistant IA d'ZAYROVI",exact:true}).click();await p.locator('[data-assistant-composer]').waitFor();
  await p.locator('.assistant-editorial-header').getByRole('button',{name:'Menu',exact:true}).click();
  await p.getByRole('switch',{name:'Mode sombre',exact:true}).click();
  await p.keyboard.press('Escape');await p.locator('[data-sonim-tone="dark"]').waitFor();

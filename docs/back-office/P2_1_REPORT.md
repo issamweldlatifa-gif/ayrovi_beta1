@@ -1,4 +1,4 @@
-# AYROVI·X — Rapport de phase P2.1 (consolidation des listes et du descripteur)
+# ZAYROVI·X — Rapport de phase P2.1 (consolidation des listes et du descripteur)
 
 **Commit :** `57fe0bb` + le correctif de vignettes et de rendu partagé de ce tour.
 **Baseline respectée :** 471 tests → **477 tests / 45 fichiers, tous verts**. Zéro test supprimé, zéro test existant modifié pour « passer ».

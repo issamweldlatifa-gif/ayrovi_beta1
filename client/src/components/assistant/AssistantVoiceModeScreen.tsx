@@ -83,12 +83,12 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
     { fr: 'Prix de livraison en Tunisie', ar: 'قداش التوصيل لتونس؟', icon: Truck },
   ];
   return <div ref={rootRef} tabIndex={-1} dir={direction} data-ay-design="editorial" data-tone={isDark ? 'dark' : 'light'} data-voice-state={state}
-    className="editorial-voice" role="dialog" aria-modal="true" aria-label={tr('Mode vocal AYROVI', 'الوضع الصوتي AYROVI')}
+    className="editorial-voice" role="dialog" aria-modal="true" aria-label={tr('Mode vocal ZAYROVI', 'الوضع الصوتي ZAYROVI')}
     onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); if (showSettings) setShowSettings(false); else onExit(); } }}>
     <input ref={fileRef} type="file" accept="image/*" hidden onChange={event => { const file = event.target.files?.[0]; if (file && onAddAttachment) onAddAttachment(file); event.target.value = ''; }} />
     <header className="editorial-voice__header" inert={showSettings}>
       <button type="button" className="voice-icon-button" onClick={onExit} aria-label={tr('Fermer le mode vocal', 'إغلاق الوضع الصوتي')}><X size={22}/></button>
-      <span className="editorial-voice__brand" dir="ltr"><i aria-hidden/>AYROVI VOICE</span>
+      <span className="editorial-voice__brand" dir="ltr"><i aria-hidden/>ZAYROVI VOICE</span>
       <button type="button" className="voice-icon-button" onClick={() => setShowSettings(true)} aria-haspopup="dialog" aria-expanded={showSettings} aria-label={tr('Options du mode vocal', 'خيارات الوضع الصوتي')}><SlidersHorizontal size={22}/></button>
     </header>
     <main className="editorial-voice__body" inert={showSettings}>
@@ -116,7 +116,7 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
     <footer className="editorial-voice__footer" inert={showSettings}>
       <div className="editorial-voice__controls">
         {onOpenAttachments && <button type="button" className="voice-icon-button" onClick={onOpenAttachments} aria-label={tr('Ajouter une photo','إضافة صورة')}><Plus size={22}/></button>}
-        <button type="button" className="voice-icon-button" disabled={!onOpenLens && !onAddAttachment} onClick={() => onOpenLens ? onOpenLens() : fileRef.current?.click()} aria-label={onOpenLens ? tr('Scanner avec AYROVIX Lens','فحص مع AYROVIX Lens') : tr('Choisir une photo','اختيار صورة')}>{onOpenLens ? <Camera size={22}/> : <ImageIcon size={22}/>}</button>
+        <button type="button" className="voice-icon-button" disabled={!onOpenLens && !onAddAttachment} onClick={() => onOpenLens ? onOpenLens() : fileRef.current?.click()} aria-label={onOpenLens ? tr('Scanner avec ZAYROVIX Lens','فحص مع ZAYROVIX Lens') : tr('Choisir une photo','اختيار صورة')}>{onOpenLens ? <Camera size={22}/> : <ImageIcon size={22}/>}</button>
         <button type="button" className="voice-icon-button" onClick={onToggleMute} disabled={state === 'error'} aria-pressed={isMuted} aria-label={isMuted ? tr('Activer le microphone','إلغاء كتم الصوت') : tr('Couper le microphone','كتم الصوت')}>{isMuted ? <MicOff size={22}/> : <Mic size={22}/>}</button>
         <button type="button" className="voice-icon-button voice-icon-button--exit" onClick={onExit} aria-label={tr('Quitter le mode vocal','إيقاف والخروج من الوضع الصوتي')}><X size={22}/></button>
         <button type="button" className="voice-icon-button" onClick={onToggleSpeaker} aria-pressed={!isSpeakerMuted} aria-label={isSpeakerMuted ? tr('Activer le haut-parleur','تشغيل الصوت') : tr('Couper le haut-parleur','إيقاف الصوت')}>{isSpeakerMuted ? <VolumeX size={22}/> : <Volume2 size={22}/>}</button>

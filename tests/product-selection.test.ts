@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { resolveProductSelection, completeProductOffer } from '../client/src/ayrovix/services/productSelection';
-import { createAyrovixPriceToken, verifyAyrovixPriceToken } from '../src/ayrovix/priceQuote';
-import type { AyrovixProduct, AyrovixVariantOption } from '../client/src/ayrovix/types';
+import { createZayrovixPriceToken, verifyZayrovixPriceToken } from '../src/ayrovix/priceQuote';
+import type { ZayrovixProduct, ZayrovixVariantOption } from '../client/src/ayrovix/types';
 const claims={price:20,currency:'EUR',title:'Product',referenceUrl:'https://example.org/product',status:'VERIFIED' as const};
-const token=(price:number,currency='EUR')=>createAyrovixPriceToken({...claims,price,currency})!;
-const option=(id:string,size:string,color:string,price:number):AyrovixVariantOption=>({id,label:`${size} · ${color}`,size,color,price,currency:'EUR',priceTnd:price*4,priceToken:token(price),available:true});
+const token=(price:number,currency='EUR')=>createZayrovixPriceToken({...claims,price,currency})!;
+const option=(id:string,size:string,color:string,price:number):ZayrovixVariantOption=>({id,label:`${size} · ${color}`,size,color,price,currency:'EUR',priceTnd:price*4,priceToken:token(price),available:true});
 const blue=option('blue','M','Bleu',27),red=option('red','M','Rouge',35),large=option('large','L','Bleu',40);
-const base:AyrovixProduct={title:claims.title,sourceUrl:claims.referenceUrl,brand:null,model:null,description:'',source:'Fixture',image:'',images:[],price:20,currency:'EUR',priceTnd:80,priceToken:token(20),exchangeRate:4,sizes:['M','L'],colors:['Bleu','Rouge'],availability:'unknown',priceVerificationStatus:'VERIFIED',variantOptions:[blue,red]};
-const resolve=(options:AyrovixVariantOption[],size='M',color='')=>resolveProductSelection({...base,variantOptions:options},size,color);
+const base:ZayrovixProduct={title:claims.title,sourceUrl:claims.referenceUrl,brand:null,model:null,description:'',source:'Fixture',image:'',images:[],price:20,currency:'EUR',priceTnd:80,priceToken:token(20),exchangeRate:4,sizes:['M','L'],colors:['Bleu','Rouge'],availability:'unknown',priceVerificationStatus:'VERIFIED',variantOptions:[blue,red]};
+const resolve=(options:ZayrovixVariantOption[],size='M',color='')=>resolveProductSelection({...base,variantOptions:options},size,color);
 describe('selection is deterministic and does not manufacture a specific variant',()=>{
  it('uses the general offer when no preference is given',()=>expect(resolve([blue,red],'','')).toMatchObject({kind:'general',option:null,offer:{price:20}}));
  it('accepts the one exact match with all its own quote fields',()=>expect(resolve([blue,red],'M','Bleu')).toMatchObject({kind:'matched',option:blue,offer:{price:27,currency:'EUR',priceTnd:108,priceToken:blue.priceToken,fromVariant:true}}));
@@ -33,8 +33,8 @@ describe('one monetary source, no independent fallback mixing',()=>{
  it('produces a quote the actual server verifier accepts, for both general and variant offers',()=>{
   for(const selected of [resolve([blue,red]),resolve([blue,red],'M','Bleu')]){
    expect(completeProductOffer(selected.offer)).toBe(true);
-   expect(verifyAyrovixPriceToken(selected.offer.priceToken,{...claims,price:selected.offer.price!,currency:selected.offer.currency!})).toBe(true);
+   expect(verifyZayrovixPriceToken(selected.offer.priceToken,{...claims,price:selected.offer.price!,currency:selected.offer.currency!})).toBe(true);
   }
  });
- it('the server rejects the former mixed base token / variant price',()=>expect(verifyAyrovixPriceToken(base.priceToken,{...claims,price:27})).toBe(false));
+ it('the server rejects the former mixed base token / variant price',()=>expect(verifyZayrovixPriceToken(base.priceToken,{...claims,price:27})).toBe(false));
 });

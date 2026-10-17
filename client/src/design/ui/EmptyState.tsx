@@ -2,7 +2,7 @@ import React from 'react';
 import { twMerge } from 'tailwind-merge';
 
 /**
- * AYROVI DS v1.0 — EmptyState / ErrorState.
+ * ZAYROVI DS v1.0 — EmptyState / ErrorState.
  * Le seul vocabulaire des états « rien » et « erreur » : icône dans une pastille
  * surface, titre encre, texte secondaire, action secondaire (jamais orange,
  * sauf CTA principal de l'écran).

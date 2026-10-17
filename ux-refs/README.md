@@ -1,13 +1,13 @@
 # Références UX — Admin CRM (modèle C retenu)
 
-Ce dossier documente le choix de direction visuelle du back office AYROVI
+Ce dossier documente le choix de direction visuelle du back office ZAYROVI
 (remodelage P3.1, 13/09/2026).
 
 ## Choix retenu : **Modèle C — Back-office e-commerce**
 
 Structure opérationnelle centrée sur le flux quotidien (commandes, acomptes,
 clients), habillée du style clair/propres du modèle A (shadcn) et des couleurs
-marque AYROVI (noir `#111318` / orange `#fe7003`).
+marque ZAYROVI (noir `#111318` / orange `#fe7003`).
 
 ## Application concrète (ce qui a été livré)
 

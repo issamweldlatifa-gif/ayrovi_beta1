@@ -42,7 +42,7 @@ export const TopAnnouncementBar: React.FC<TopAnnouncementBarProps> = () => {
     node.showModal();
     return () => { document.body.style.overflow = overflow; if (node.open) node.close(); };
   }, [infoOpen]);
-  const title = campaign?.title || tr('Découvrez les nouveautés AYROVI.', 'اكتشف جديد AYROVI.');
+  const title = campaign?.title || tr('Découvrez les nouveautés ZAYROVI.', 'اكتشف جديد ZAYROVI.');
   const description = campaign?.description || tr('Vos prochaines découvertes commencent ici.', 'اختياراتك الجديدة تبدأ من هنا.');
   return <>
     <section className="public-campaign relative z-10" aria-labelledby={titleId} data-public-campaign>

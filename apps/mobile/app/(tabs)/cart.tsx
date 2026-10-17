@@ -28,15 +28,15 @@ import { useI18n, useT } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import { isApiError, userMessage } from '@/api/errors';
 import {
-  AYROVI_PRICE_TRUST_REASONS, ayroviCartReadiness, fetchAyroviCart, removeAyroviCartItem,
-  updateAyroviCartQuantity, type AyroviCartLine,
+  ZAYROVI_PRICE_TRUST_REASONS, ayroviCartReadiness, fetchZayroviCart, removeZayroviCartItem,
+  updateZayroviCartQuantity, type ZayroviCartLine,
 } from '@/api/cart';
 import { useSessionId } from '@/session/session';
 import { earliestCartDeadline, formatCartCountdown, remainingMs, serverClockOffset } from '@/features/lens/lensCartStatus';
 
 const MAX_QUANTITY = 99;
 
-export default function AyroviCartScreen() {
+export default function ZayroviCartScreen() {
   const t = useT();
   const theme = useTheme();
   const { locale } = useI18n();
@@ -46,9 +46,9 @@ export default function AyroviCartScreen() {
   const [now, setNow] = useState(Date.now());
 
   const cartQuery = useQuery({
-    queryKey: ['cart', 'ayrovi'],
+    queryKey: ['cart', 'zayrovi'],
     enabled: Boolean(sessionId),
-    queryFn: ({ signal }) => fetchAyroviCart({ sessionId, signal }),
+    queryFn: ({ signal }) => fetchZayroviCart({ sessionId, signal }),
     staleTime: 0,
   });
 
@@ -60,7 +60,7 @@ export default function AyroviCartScreen() {
 
   const setQuantity = useMutation({
     mutationFn: (input: { itemId: string; quantity: number }) =>
-      updateAyroviCartQuantity({ ...input, sessionId }),
+      updateZayroviCartQuantity({ ...input, sessionId }),
     onSuccess: () => {
       setNote('');
       void queryClient.invalidateQueries({ queryKey: ['cart'] });
@@ -69,7 +69,7 @@ export default function AyroviCartScreen() {
   });
 
   const removeLine = useMutation({
-    mutationFn: (itemId: string) => removeAyroviCartItem({ itemId, sessionId }),
+    mutationFn: (itemId: string) => removeZayroviCartItem({ itemId, sessionId }),
     onSuccess: () => {
       setNote('');
       void queryClient.invalidateQueries({ queryKey: ['cart'] });
@@ -102,7 +102,7 @@ export default function AyroviCartScreen() {
 
   /** سطور مجموعة حسب المتجر — كما يجي التقسيم في المفهوم، بلا اختراع. */
   const groups = useMemo(() => {
-    const byStore = new Map<string, AyroviCartLine[]>();
+    const byStore = new Map<string, ZayroviCartLine[]>();
     for (const line of cart?.items ?? []) {
       const key = line.store || '—';
       byStore.set(key, [...(byStore.get(key) ?? []), line]);
@@ -110,15 +110,15 @@ export default function AyroviCartScreen() {
     return [...byStore.entries()];
   }, [cart]);
 
-  const trustLabel = useCallback((line: AyroviCartLine): string => {
+  const trustLabel = useCallback((line: ZayroviCartLine): string => {
     if (line.priceTrust === 'STALE') return t('cart.trust.STALE');
     if (line.priceTrust === 'MANUAL') return t('cart.trust.MANUAL');
     if (line.priceTrust === 'FRESH') return t('cart.trust.FRESH');
     return t('cart.trust.UNKNOWN');
   }, [t]);
 
-  const trustReasonKey = (line: AyroviCartLine): string => {
-    const code = AYROVI_PRICE_TRUST_REASONS[line.priceTrustReason] ?? '';
+  const trustReasonKey = (line: ZayroviCartLine): string => {
+    const code = ZAYROVI_PRICE_TRUST_REASONS[line.priceTrustReason] ?? '';
     switch (code) {
       case 'QUOTE_EXPIRED': return t('cart.trustReason.QUOTE_EXPIRED');
       case 'QUOTE_MISSING': return t('cart.trustReason.QUOTE_MISSING');
@@ -136,7 +136,7 @@ export default function AyroviCartScreen() {
     }
   };
 
-  const lineBlock = (line: AyroviCartLine) => {
+  const lineBlock = (line: ZayroviCartLine) => {
     const image = mediaUrl(line.imageUrl);
     const blocked = line.priceTrust === 'STALE';
     return (

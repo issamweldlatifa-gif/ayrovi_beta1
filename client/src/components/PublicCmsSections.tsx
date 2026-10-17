@@ -35,14 +35,14 @@ const pad = (value: number) => String(Math.max(0, value)).padStart(2, '0');
  * ici, en attendant une décision produit.
  */
 const cmsPageContent: Record<'arrivals' | 'promotions' | 'products' | 'stories' | 'news', { eyebrow: string; eyebrowAr: string; description: string; descriptionAr: string }> = {
-  arrivals: { eyebrow: 'Sélections à venir', eyebrowAr: 'اختيارات قادمة', description: 'Les dates officielles et les comptes à rebours AYROVI.', descriptionAr: 'المواعيد الرسمية والعدّ التنازلي لدى AYROVI.' },
+  arrivals: { eyebrow: 'Sélections à venir', eyebrowAr: 'اختيارات قادمة', description: 'Les dates officielles et les comptes à rebours ZAYROVI.', descriptionAr: 'المواعيد الرسمية والعدّ التنازلي لدى ZAYROVI.' },
   // Espace 01 ACHETER : l'entrée « Tous les produits » du menu existait mais ne menait à rien
   // (la page n'était pas déclarée). Le catalogue est désormais une page réelle, branchée sur les
   // produits ACTIFs servis par l'API — et sur rien d'autre.
-  products: { eyebrow: 'Le catalogue AYROVI', eyebrowAr: 'كتالوج AYROVI', description: 'Tout ce qui est commandable aujourd’hui, au prix final en dinars tunisiens.', descriptionAr: 'كل ما يمكن طلبه اليوم، بسعر نهائي بالدينار التونسي.' },
-  promotions: { eyebrow: 'Cadeaux, cartes et avantages', eyebrowAr: 'هدايا وبطاقات وامتيازات', description: 'Les avantages et codes publiés par l’équipe AYROVI. Seules les offres disponibles sont affichées.', descriptionAr: 'الامتيازات والرموز المنشورة من فريق AYROVI. نعرض فقط ما هو متاح فعليًا.' },
-  stories: { eyebrow: 'Social AYROVI', eyebrowAr: 'تواصل AYROVI', description: 'Stories et publications de la communauté AYROVI.', descriptionAr: 'قصص ومنشورات مجتمع AYROVI.' },
-  news: { eyebrow: 'Magazine AYROVI', eyebrowAr: 'مجلة AYROVI', description: 'Mode, tendances et choix éditoriaux reliés aux produits AYROVI.', descriptionAr: 'موضة واتجاهات واختيارات تحريرية مرتبطة بمنتجات AYROVI.' },
+  products: { eyebrow: 'Le catalogue ZAYROVI', eyebrowAr: 'كتالوج ZAYROVI', description: 'Tout ce qui est commandable aujourd’hui, au prix final en dinars tunisiens.', descriptionAr: 'كل ما يمكن طلبه اليوم، بسعر نهائي بالدينار التونسي.' },
+  promotions: { eyebrow: 'Cadeaux, cartes et avantages', eyebrowAr: 'هدايا وبطاقات وامتيازات', description: 'Les avantages et codes publiés par l’équipe ZAYROVI. Seules les offres disponibles sont affichées.', descriptionAr: 'الامتيازات والرموز المنشورة من فريق ZAYROVI. نعرض فقط ما هو متاح فعليًا.' },
+  stories: { eyebrow: 'Social ZAYROVI', eyebrowAr: 'تواصل ZAYROVI', description: 'Stories et publications de la communauté ZAYROVI.', descriptionAr: 'قصص ومنشورات مجتمع ZAYROVI.' },
+  news: { eyebrow: 'Magazine ZAYROVI', eyebrowAr: 'مجلة ZAYROVI', description: 'Mode, tendances et choix éditoriaux reliés aux produits ZAYROVI.', descriptionAr: 'موضة واتجاهات واختيارات تحريرية مرتبطة بمنتجات ZAYROVI.' },
 };
 /** Pages qui ne figurent pas dans la barre publique : leur libellé vit ici, dans les deux langues. */
 const localPageLabels: Partial<Record<CmsPage, { label: string; labelAr: string }>> = {
@@ -97,7 +97,7 @@ function Countdown({ target, serverOffset }: { target: string; serverOffset: num
 
 function EmptyContent({ label }: { label: string }) {
   const { tr } = useLocale();
-  return <div className="rounded-card border border-line bg-white px-6 py-16 text-center"><p className="text-xs font-black uppercase tracking-[0.2em] text-ink">AYROVI CMS</p><h2 className="mt-3 text-2xl font-black text-ink">{tr(`Aucun contenu ${label.toLowerCase()} pour le moment.`, `لا يوجد محتوى ${label} حاليًا.`)}</h2><p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-muted">{tr('Cette page se remplira dès qu’un contenu sera publié depuis l’espace Admin.', 'ستظهر المواد هنا فور نشرها من فضاء الإدارة.')}</p></div>;
+  return <div className="rounded-card border border-line bg-white px-6 py-16 text-center"><p className="text-xs font-black uppercase tracking-[0.2em] text-ink">ZAYROVI CMS</p><h2 className="mt-3 text-2xl font-black text-ink">{tr(`Aucun contenu ${label.toLowerCase()} pour le moment.`, `لا يوجد محتوى ${label} حاليًا.`)}</h2><p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-muted">{tr('Cette page se remplira dès qu’un contenu sera publié depuis l’espace Admin.', 'ستظهر المواد هنا فور نشرها من فضاء الإدارة.')}</p></div>;
 }
 
 function PageIntro({ definition }: { definition: (typeof pageDefinitions)[number] }) {
@@ -237,7 +237,7 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenti
 
                 {/* Typography Zalando standard: Bold Brand (700) + Regular title (400) */}
                 <h4 className="lens-card-title mt-2.5 text-sm font-bold text-ink truncate">
-                  {product.brandName || product.sourcePlatform || 'AYROVI'}
+                  {product.brandName || product.sourcePlatform || 'ZAYROVI'}
                 </h4>
                 <p className="lens-card-description mt-0.5 text-xs text-[#595959] line-clamp-2">
                   {product.name}
@@ -271,7 +271,7 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenti
 
     return home.news.length ? (
       <div className="grid gap-7 md:grid-cols-2 lg:grid-cols-3">{home.news.map((item) => (
-        <ContentCard key={item.id} variant="magazine" image={mediaSource(item.image, heroHomme)} title={item.title} description={item.summary} eyebrow={String(item.category || 'AYROVI').replaceAll('_', ' ')} dir="auto">
+        <ContentCard key={item.id} variant="magazine" image={mediaSource(item.image, heroHomme)} title={item.title} description={item.summary} eyebrow={String(item.category || 'ZAYROVI').replaceAll('_', ' ')} dir="auto">
           <p className="text-xs font-bold text-muted">{item.author}</p>
         </ContentCard>
       ))}</div>
@@ -296,8 +296,8 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenti
           {/* Strip stories au-dessus des cartes (cahier des charges §7) */}
           <HomeStoryStrip isAuthenticated={isAuthenticated} onRequireAuth={() => onOpenAccount?.()} onCta={handleStoryCta} />
 
-          <section id="arrivages" className="w-full border-y border-line bg-white" aria-label={tr('Contenus AYROVI', 'محتوى AYROVI')}>
-            <nav className="mx-auto w-full max-w-7xl px-2 py-6 sm:px-8 sm:py-10" aria-label="Contenus AYROVI">
+          <section id="arrivages" className="w-full border-y border-line bg-white" aria-label={tr('Contenus ZAYROVI', 'محتوى ZAYROVI')}>
+            <nav className="mx-auto w-full max-w-7xl px-2 py-6 sm:px-8 sm:py-10" aria-label="Contenus ZAYROVI">
               <div className="grid w-full grid-cols-4 items-center">
                 {pageDefinitions.map((definition) => (
                   <button
