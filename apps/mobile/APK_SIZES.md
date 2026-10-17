@@ -13,3 +13,5 @@ Ne pas éditer à la main : réécrit à chaque build.
 ## Mesure prévue
 
 2026-10-17 18:41 UTC — rebrandage ayrovi → zayrovi ; premier build sur la branche arena/fe023a83-ayrovi-beta1.
+
+Relance après diagnostic 18:43
