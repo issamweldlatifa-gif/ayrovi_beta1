@@ -9,7 +9,7 @@
  *    disparaît dans le canvas (plus de fond marchand « brut ») ;
  *  • le prix remisé est l'élément le plus fort de la carte et il est ROUGE
  *    (var(--ayrovi-promo), référence Zalando) ; l'original reste gris barré ;
- *  • le badge −X% est rouge — l'orange reste réservé aux CTA.
+ *  • le badge −X% est rouge — le violet reste réservé aux CTA.
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import { Image as ImageIcon, Loader2 } from '../../components/QatafoIcons';
@@ -132,7 +132,7 @@ export const QuietPromoPrice: React.FC<QuietPromoPriceProps> = ({ priceTnd, prom
 };
 
 /* ────────────────────────────────────────────────────────────────────
- * 3. Actions — UN bouton principal (encre, jamais orange : sur une carte
+ * 3. Actions — UN bouton principal (encre, jamais violet : sur une carte
  *    promo l'accent unique appartient au rouge du prix) + icônes 44px.
  * ──────────────────────────────────────────────────────────────────── */
 export interface QuietCardAction {

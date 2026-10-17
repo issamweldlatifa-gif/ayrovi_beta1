@@ -10,7 +10,7 @@ import { getAyroviAiCore } from '../../ai-core/core';
 import { readCanonicalLensCache, writeCanonicalLensCache } from './lensCache';
 
 /**
- * AYROVI Lens pipeline — SEE → READ → UNDERSTAND → EXTRACT → VERIFY.
+ * ZAYROVI Lens pipeline — SEE → READ → UNDERSTAND → EXTRACT → VERIFY.
  * Orchestre Vision via AI Core + OCR (Tesseract, image entière/améliorée/segments)
  * + codes (ZXing) + correspondances visuelles (Google Lens), puis fusionne en
  * un résultat standard avec confiance et avertissements. Aucune valeur inventée.

@@ -77,7 +77,7 @@ describe('§2 — les onglets restent dans AyWebs, sauf « Mon compte »', () =>
 });
 
 describe('§3 + §7 — une seule barre visible, rien sous la barre', () => {
-  test('la barre AYROVI est démontée pendant AyWebs', () => {
+  test('la barre ZAYROVI est démontée pendant AyWebs', () => {
     const app = read(ROOT_APP);
     expect(app).toMatch(/\{!isAyWebsOpen && \(\s*<BottomNavBar/);
   });
@@ -259,7 +259,7 @@ describe('§9 — Panier et Favoris restent DANS la boutique', () => {
 
   test('payer est la SEULE sortie restante ; se connecter se fait sur place', () => {
     const activity = read(BROWSE_ACTIVITY);
-    // Payer doit sortir : le tunnel de commande est une page AYROVI, pas une
+    // Payer doit sortir : le tunnel de commande est une page ZAYROVI, pas une
     // page marchande. Se connecter, au contraire, n'a aucune raison de coûter
     // la page qu'on est en train de regarder — c'était la remarque du client.
     expect(activity).toMatch(/cta\.setOnClickListener\(v -> \{ dialog\.dismiss\(\); openWebRoute\("\/aywebs\/cart"\); \}\)/);
@@ -360,7 +360,7 @@ describe('§11 — écran de connexion refondu d’après les captures', () => {
   });
 
   test('aucune question « cet e-mail existe-t-il ? » n’est posée au serveur', () => {
-    // Elle révélerait qui possède un compte chez AYROVI. C'est le serveur qui
+    // Elle révélerait qui possède un compte chez ZAYROVI. C'est le serveur qui
     // tranche à l'envoi du mot de passe.
     expect(read(ACCOUNT_PAGE)).not.toMatch(/auth\/email\/exists|checkEmailExists/);
   });
@@ -410,7 +410,7 @@ describe('Connexion Google sans navigateur', () => {
   test('l’identifiant client Web est une ressource, pas une constante perdue', () => {
     expect(readCode(PLUGIN)).toContain('R.string.google_web_client_id');
     expect(read('android/app/src/main/res/values/strings.xml'))
-      .toContain('917317804534-5v3d6fmlddpgrraj8bemu5tkju16066o.apps.googleusercontent.com');
+      .toContain('917317804534-e37d2kardhtac1g7fummsfk61dr86q3j.apps.googleusercontent.com');
   });
 
   test('un échec natif retombe sur l’onglet au lieu d’afficher une panne', () => {

@@ -7,7 +7,8 @@ import { app, db, scraper } from '../src/server';
 import { DEFAULT_PAYMENT_METHODS, QatafoDatabase } from '../src/db/database';
 import { calculatePrice } from '../src/services/pricing';
 import { createCustomerSession, hashToken } from '../src/customer/auth';
-import { createAyrovixPriceToken } from '../src/ayrovix/priceQuote';
+import { createAyrovixPriceToken, inspectAyrovixPriceToken } from '../src/ayrovix/priceQuote';
+import { recordVariantContract } from '../src/ayrovix/services/variantAvailability';
 import { verifyKonnectCardPayment } from '../src/services/paymentGateway';
 
 const uniqueSession = (label: string) => `${label}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -33,7 +34,7 @@ const quoteEur = (price = 21.99, extra: Record<string, unknown> = {}) => calcula
   express: extra.express === true,
 })!;
 
-describe('AYSONIC platform', () => {
+describe('ZAYROVI platform', () => {
   const primarySession = uniqueSession('primary');
   const isolatedSession = uniqueSession('isolated');
   const quantitySession = uniqueSession('quantity');
@@ -461,6 +462,40 @@ describe('AYSONIC platform', () => {
     }
   });
 
+  test('a source-confirmed Lens size with a signed product offer really enters the cart', async () => {
+    const sessionId = uniqueSession('lens-confirmed-size');
+    const cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lens-confirmed-size-'));
+    const previousCacheDir = process.env.AYROVI_VARIANT_CACHE_DIR;
+    process.env.AYROVI_VARIANT_CACHE_DIR = cacheDir;
+    const title = 'Pull marchand avec taille confirmée';
+    // Un domaine `.example` est volontairement refusé par le garde URL public.
+    // Utiliser une page marchande publique réaliste exerce donc le vrai contrat.
+    const url = 'https://www.amazon.fr/dp/PULLCONFIRMED';
+    const quote = { price: 35, currency: 'EUR', title, referenceUrl: url, status: 'PENDING_MANUAL' as const };
+    try {
+      recordVariantContract(url, {
+        attribute: 'Taille',
+        productAvailability: 'available',
+        source: 'Merchant',
+        variants: [{ value: 'M', availability: 'available', reason: 'Offre source avec prix.' }],
+      });
+      const added = await request(app).post('/api/cart/items').set('x-session-id', sessionId).send({
+        store: 'generic', externalId: 'variant-m', url, referenceUrl: url, title,
+        imageUrl: 'https://images.example/pull.jpg', sourcePrice: quote.price, sourceCurrency: quote.currency,
+        priceTND: 1, variant: 'M', requestedSize: 'M', requestedColor: '', customerNote: '',
+        priceVerificationStatus: quote.status, priceToken: createAyrovixPriceToken(quote), quantity: 1,
+      });
+      expect(added.status, JSON.stringify(added.body)).toBe(201);
+      expect(added.body.cartItem).toMatchObject({ requestedSize: 'M', sourceUrl: url });
+      expect(added.body.totalItemsCount).toBe(1);
+    } finally {
+      db.clearCart(sessionId);
+      if (previousCacheDir == null) delete process.env.AYROVI_VARIANT_CACHE_DIR;
+      else process.env.AYROVI_VARIANT_CACHE_DIR = previousCacheDir;
+      fs.rmSync(cacheDir, { recursive: true, force: true });
+    }
+  });
+
   test('manual cart items default to PENDING_MANUAL — only signed Lens quotes can claim VERIFIED', async () => {
     const sessionId = uniqueSession('manual-pending');
     try {
@@ -479,6 +514,9 @@ describe('AYSONIC platform', () => {
       });
       expect(lensAdd.status, JSON.stringify(lensAdd.body)).toBe(201);
       expect(lensAdd.body.cartItem.priceVerificationStatus).toBe('VERIFIED');
+      expect(lensAdd.body.quoteExpiresAt).toBe(new Date(inspectAyrovixPriceToken(priceToken)!.expiresAt).toISOString());
+      expect(Number.isFinite(Date.parse(lensAdd.body.serverNow))).toBe(true);
+      expect(lensAdd.body.totalItemsCount).toBe(2);
     } finally {
       db.clearCart(sessionId);
     }
@@ -1052,7 +1090,8 @@ describe('AYSONIC platform', () => {
     const home = await request(app).get('/api/public/home');
     expect(home.status).toBe(200);
     expect(home.body.success).toBe(true);
-    expect(home.body.data.hero.length).toBeGreaterThan(0);
+    // Le Hero n'est plus servi ici : seul /api/public/hero-slides (cartes publiées) fait foi.
+    expect(home.body.data.hero).toBeUndefined();
     expect(home.body.data.brands.length).toBeGreaterThan(0);
     expect(home.body.data.arrivals.length).toBeGreaterThan(0);
     expect(home.body.serverTime).toMatch(/^\d{4}-\d{2}-\d{2}T/);
@@ -1125,10 +1164,12 @@ describe('AYSONIC platform', () => {
     expect(settings.status).toBe(200);
     const row = settings.body.data.find((item: any) => item.setting_key === 'interface_config');
     expect(row).toBeTruthy();
-    expect(row.setting_value.sections.map((section: any) => section.id)).toEqual(['hero', 'cms', 'brands', 'about', 'footer']);
+    expect(row.setting_value.sections.map((section: any) => section.id)).toEqual(['hero', 'cms', 'brands', 'about', 'footer', 'announcement']);
     expect(row.setting_value.typography.preset).toBe('ayrovi-a');
-    expect(row.setting_value.colors).toMatchObject({ pageBackground: '#ffffff', primary: '#000000', heroBackground: '#0a0a0a', announcementBackground: '#0a0a0a', accent: '#ff6900' }); // DS v1.0
-    expect(row.setting_value.icons).toMatchObject({ library: 'ayrovi', activeColor: '#ff6900' });
+    // Palette officielle (2026-10-15) : la graine garde l'ancien orange en base, la lecture le rend en violet.
+    expect(row.setting_value.colors).toMatchObject({ pageBackground: '#ffffff', primary: '#0a0a0a', heroBackground: '#0a0a0a', announcementBackground: '#0a0a0a', accent: '#571ef6' }); // DS v1.0
+    expect(row.setting_value.icons).toMatchObject({ library: 'ayrovi', activeColor: '#571ef6' });
+    expect(row.setting_value.sections.find((section: any) => section.id === 'announcement').backgroundColor).toBe('#0a0a0a');
     expect(row.setting_value.navigation.color).toBe('#111111'); // DS v1.0
 
     const malformed = await superAdmin.put(`/api/admin/settings/${row.id}`).set('x-csrf-token', adminCsrf).send({
@@ -1287,7 +1328,7 @@ describe('AYSONIC platform', () => {
       messageId: `assistant_${suffix}`,
       rating: 'down',
       comment: 'La réponse pourrait être plus précise.',
-      responseExcerpt: 'Réponse test AYROVI',
+      responseExcerpt: 'Réponse test ZAYROVI',
     };
     const guest = await request(app)
       .post('/api/public/assistant-feedback')
@@ -1360,7 +1401,7 @@ describe('AYSONIC platform', () => {
     expect(audit.status).toBe(200);
     expect(audit.body.data.some((entry: any) => entry.action === 'CREATE' && entry.module === 'PRODUCTS' && entry.entity_id === createdProductId)).toBe(true);
     const pricingAudit = audit.body.data.find((entry: any) => entry.module === 'PRICING');
-    expect(pricingAudit.user_name).toBe('AYROVI Admin');
+    expect(pricingAudit.user_name).toBe('ZAYROVI Admin');
     expect(pricingAudit.old_value.version).toBe(originalPricingVersion);
     expect(pricingAudit.new_value.version).toBe(originalPricingVersion + 1);
   });

@@ -12,7 +12,7 @@ import { isUnsafeHostname, UnsafeUrlError } from '../../services/safeUrl';
 import { filterDisplayableCandidates, registerTrustedMerchantHost } from './candidatePolicy';
 
 /**
- * AYROVI product-link layer.
+ * ZAYROVI product-link layer.
  * URL/QR links use SSRF-safe metadata extraction first, then AI Core web
  * search when merchant metadata is incomplete.
  */
@@ -90,6 +90,18 @@ function toAyrovixProduct(db: QatafoDatabase, scraped: ScrapedProduct): AyrovixP
     verificationProvider: scraped.verificationProvider || 'none',
     verificationMethod: scraped.verificationMethod || 'none',
     verificationFailureCode: scraped.verificationFailureCode || null,
+    // Identités publiées par la page (16/10/2026) : transmises, jamais déduites.
+    gtin: scraped.gtin || null,
+    sku: scraped.sku || null,
+    seller: scraped.seller || null,
+    // Signaux de fiche : le texte du marchand, mot pour mot, ou rien.
+    sizeAdvice: scraped.sizeAdvice || null,
+    modelInfo: scraped.modelInfo || null,
+    manufacturingInfo: scraped.manufacturingInfo || null,
+    deliveryEstimate: scraped.deliveryEstimate || null,
+    promoCountdown: scraped.promoCountdown || null,
+    dimensionsInfo: scraped.dimensionsInfo || null,
+    returnsPolicy: scraped.returnsPolicy || null,
     rating: Number.isFinite(Number((scraped as any).rating)) && Number((scraped as any).rating) > 0 && Number((scraped as any).rating) <= 5 ? Number((scraped as any).rating) : null,
     ratingCount: Number.isFinite(Number((scraped as any).ratingCount)) ? Number((scraped as any).ratingCount) : null,
     ratingKind: Number.isFinite(Number((scraped as any).rating)) ? 'merchant' : 'listing-quality',
@@ -98,32 +110,72 @@ function toAyrovixProduct(db: QatafoDatabase, scraped: ScrapedProduct): AyrovixP
 
 /** Enriches only the opened page and only with same-merchant, title-matched data. */
 async function enrichSparseProduct(product: AyrovixProduct, url: string): Promise<void> {
-  if (product.images.length >= 4 && product.sizes.length > 0) return;
+  const key = (value: unknown) => String(value || '').normalize('NFKC').replace(/\s+/g, ' ').trim().toLocaleLowerCase();
+  const options = product.variantOptions || [];
+  // Une liste de tailles sans matrice vérifiée n’est PAS une fiche complète :
+  // elle s’affiche mais ne peut jamais être résolue au panier. C’était la source
+  // du faux cul-de-sac « taille choisie / disponibilité non confirmée ».
+  const hasVariantMatrix = product.sizes.length === 0 || product.sizes.every((size) => options.some((option) => (
+    key(option.size) === key(size) && (option.availability === 'available' || option.availability === 'unavailable')
+  )));
+  if (product.images.length >= 4 && product.sizes.length > 0 && hasVariantMatrix
+    && product.description.trim().length >= 40 && (product.details?.length ?? 0) > 0) return;
   const extra = await enrichProduct(product.title, { cacheScope: url });
   if (!product.optionLabel && extra.optionLabel) product.optionLabel = extra.optionLabel;
   if (extra.images.length) {
     product.images = [...new Set([...product.images, ...extra.images])];
     if (!product.image) product.image = product.images[0] || '';
   }
-  if (!product.sizes.length && extra.sizes.length) {
-    product.sizes = extra.sizes.map((size) => size.value);
-    product.variantOptions = [
-      ...(product.variantOptions || []),
-      ...extra.sizes.map((size) => ({
-        id: null,
-        label: size.label || size.value,
-        size: size.value,
-        color: null,
-        available: size.availability !== 'unavailable',
-        availability: size.availability,
-        price: null,
-        // This source has no per-variant prices; never copy the product price.
-        currency: null,
-        priceTnd: null,
-      })),
-    ];
+  if (extra.sizes.length) {
+    product.sizes = [...new Map(
+      [...product.sizes, ...extra.sizes.map((size) => size.value)].map((size) => [key(size), size]),
+    ).values()];
+    const options = [...(product.variantOptions || [])];
+    for (const size of extra.sizes) {
+      // Une option générique ne remplace jamais une combinaison taille/couleur.
+      const existing = options.find((option) => !option.color && key(option.size || option.label) === key(size.value));
+      if (!existing) {
+        options.push({
+          id: size.productId || null,
+          label: size.label || size.value,
+          size: size.value,
+          color: null,
+          available: size.availability !== 'unavailable',
+          availability: size.availability,
+          price: null,
+          // Cette source ne publie aucun prix par variante : le prix produit
+          // signé reste la seule offre, il n’est jamais copié dans l’option.
+          currency: null,
+          priceTnd: null,
+        });
+        continue;
+      }
+      if (!existing.id && size.productId) existing.id = size.productId;
+      const current = existing.availability === 'available' || existing.availability === 'unavailable'
+        ? existing.availability : 'unknown';
+      existing.availability = current === 'unknown' ? size.availability
+        : size.availability === 'unknown' || current === size.availability ? current
+          : 'unknown';
+      // Un refus marchand explicite reste non sélectionnable même si une autre
+      // lecture est contradictoire. Le conflit ne devient jamais du stock.
+      existing.available = existing.available !== false && existing.availability !== 'unavailable';
+    }
+    product.variantOptions = options;
+    if (extra.variantsCheckedAt) product.availabilityCheckedAt = extra.variantsCheckedAt;
+    if (product.availability === 'unknown' && extra.sizes.some((size) => size.availability === 'available')) {
+      product.availability = 'in_stock';
+    }
   }
-  if (!product.description && extra.description) product.description = extra.description;
+  if (extra.description && extra.description.trim().length > product.description.trim().length) {
+    product.description = extra.description;
+  }
+  if (extra.details.length) {
+    const known = new Set((product.details || []).map((fact) => `${fact.label.toLocaleLowerCase()}|${fact.value.toLocaleLowerCase()}`));
+    product.details = [
+      ...(product.details || []),
+      ...extra.details.filter((fact) => !known.has(`${fact.label.toLocaleLowerCase()}|${fact.value.toLocaleLowerCase()}`)),
+    ].slice(0, 18);
+  }
 }
 
 function recordProductAvailability(product: AyrovixProduct, checkedAt?: string | null): void {
@@ -174,7 +226,7 @@ function toFallbackProductFromUrl(rawUrl: string): AyrovixProduct {
     const title = decoded.length > 5 ? decoded : `Produit ${host}`;
     return {
       title: title.charAt(0).toUpperCase() + title.slice(1), brand: null, model: null,
-      description: `Lien partagé depuis ${host} — AYROVI cherchera des alternatives similaires.`,
+      description: `Lien partagé depuis ${host} — ZAYROVI cherchera des alternatives similaires.`,
       image: '', images: [], source: host, sourceUrl: rawUrl, price: null, currency: null,
       priceTnd: null, exchangeRate: null, colors: [], sizes: [], availability: 'unknown',
       priceVerified: false, priceVerificationStatus: 'PENDING_MANUAL', verificationFailureCode: 'MERCHANT_EXTRACTION_FAILED',
@@ -182,7 +234,7 @@ function toFallbackProductFromUrl(rawUrl: string): AyrovixProduct {
   } catch {
     return {
       title: `Produit ${rawUrl.slice(0, 50)}`, brand: null, model: null,
-      description: 'Lien partagé — AYROVI cherchera des alternatives.', image: '', images: [],
+      description: 'Lien partagé — ZAYROVI cherchera des alternatives.', image: '', images: [],
       source: 'Web', sourceUrl: rawUrl, price: null, currency: null, priceTnd: null,
       exchangeRate: null, colors: [], sizes: [], availability: 'unknown', priceVerified: false,
       priceVerificationStatus: 'PENDING_MANUAL', verificationFailureCode: 'MERCHANT_EXTRACTION_FAILED',

@@ -58,7 +58,7 @@ import java.util.concurrent.Executors;
  *   3. le serveur classe la page (POST /api/v1/aywebs/page/analyze) : fiche
  *      produit → bouton actif ; sinon désactivé, jamais de faux succès ;
  *   4. la feuille de variantes s'ouvre PAR-DESSUS la page marchand (§13) ;
- *   5. confirmation « ajouté au panier AYROVI » sans quitter le magasin (§15) ;
+ *   5. confirmation « ajouté au panier ZAYROVI » sans quitter le magasin (§15) ;
  *   6. Panier / Favoris renvoient vers les routes WEB de la coque (une seule
  *      UI, une seule session, §2) : aucune logique métier en Java.
  */
@@ -147,7 +147,7 @@ public class AyWebsBrowseActivity extends Activity {
   private String webBase = "https://localhost";
   /**
    * Origine des appels API PRIVÉS de la coque (analyse / résolution / panier).
-   * Distincte de `webBase` : `webBase` sert à ouvrir les routes WEB d'AYROVI
+   * Distincte de `webBase` : `webBase` sert à ouvrir les routes WEB de ZAYROVI
    * (paquet embarqué = https://localhost), tandis que l'API vit sur un autre
    * hôte. Les confondre était le défaut : les trois POST partaient vers
    * localhost, échouaient, et le bouton restait inerte ou bloqué sur
@@ -174,7 +174,7 @@ public class AyWebsBrowseActivity extends Activity {
   // Fenêtre courte et honnête : le résultat pré-résolu n'est réutilisé que pour
   // la MÊME URL et moins de deux minutes ; au-delà, la coque redemande la
   // résolution (le serveur applique alors son propre cache de lecture et
-  // recalcule toujours le prix AYROVI, §45).
+  // recalcule toujours le prix ZAYROVI, §45).
   private static final long PREFETCH_FRESH_MS = 120_000L;
   private volatile JSONObject prefetchedProduct;
   private volatile String prefetchedUrl = "";
@@ -301,7 +301,7 @@ public class AyWebsBrowseActivity extends Activity {
   }
 
   /**
-   * §5 — « X » REVIENT à AYROVI, il ne tue jamais l'application.
+   * §5 — « X » REVIENT à ZAYROVI, il ne tue jamais l'application.
    *
    * Deux situations réelles :
    *  • le navigateur marchand a été ouvert PAR-DESSUS l'app (cas normal) :
@@ -381,7 +381,7 @@ public class AyWebsBrowseActivity extends Activity {
   /**
    * Le service n'a pas répondu. Auparavant cette situation était présentée comme
    * « Page non éligible » : un mensonge — la page était peut-être parfaitement
-   * éligible, c'est AYROVI qui ne répondait pas. L'utilisateur cherche alors
+   * éligible, c'est ZAYROVI qui ne répondait pas. L'utilisateur cherche alors
    * pourquoi CE produit ne marche pas, au lieu de réessayer plus tard.
    */
   private void setAddUnavailable(boolean unavailable) {
@@ -1524,7 +1524,7 @@ public class AyWebsBrowseActivity extends Activity {
     return new JSONObject(text);
   }
 
-  /** Une seule UI : les écrans AYROVI sont les routes WEB de la coque. */
+  /** Une seule UI : les écrans ZAYROVI sont les routes WEB de la coque. */
   private void openWebRoute(String route) {
     // ── Corrigé le 2026-10-03 (P0 : « Ajouter au panier » ne faisait rien) ──
     // L'ancien code construisait l'intent ainsi :
@@ -1603,7 +1603,7 @@ public class AyWebsBrowseActivity extends Activity {
       //     retryAllowed, requiredAction } }
       // La coque jetait tout cela et affichait « Ajout impossible ». On remonte
       // donc le message destiné au client : « La boutique demande une connexion »,
-      // « Cette page est le panier de la boutique », « Le devis AYROVI est
+      // « Cette page est le panier de la boutique », « Le devis ZAYROVI est
       // indisponible pour cette devise »… — autant d'informations qui changent
       // ce que l'utilisateur peut faire ensuite.
       throw new AyWebsApiException(code, userMessageOf(text));

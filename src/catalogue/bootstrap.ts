@@ -1,5 +1,5 @@
 /**
- * AYROVI Catalogue (P2.1) — schema + bootstrap.
+ * ZAYROVI Catalogue (P2.1) — schema + bootstrap.
  *
  * Database rules this file obeys (lessons already paid for in P1):
  *   • additive only: `CREATE TABLE IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`,
@@ -110,6 +110,9 @@ const PRODUCT_COLUMN_ADDITIONS: Array<[string, string]> = [
   ['product_type', "TEXT NOT NULL DEFAULT 'STANDARD'"],
   ['created_by', 'TEXT'],
   ['updated_by', 'TEXT'],
+  // CATALOG = produit du catalogue (défaut, toutes les lignes existantes) ;
+  // CONTENT = produit temporaire créé depuis un Reel, une Story ou une Publication.
+  ['visibility', "TEXT NOT NULL DEFAULT 'CATALOG'"],
 ];
 
 /** `brands` is already the canonical brand entity; it only lacked a URL identity. */

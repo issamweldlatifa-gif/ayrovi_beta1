@@ -1,19 +1,20 @@
 import { FONT_STACK, BRAND } from '../../../shared/brand.generated';
 import { enforceBrandIdentity } from '../../../shared/identityPolicy';
-export const PUBLIC_SECTION_IDS = ['hero', 'cms', 'brands', 'about', 'footer'] as const;
+import { PUBLIC_NAV_DESTINATIONS } from '../../../shared/publicNavigation';
+export const PUBLIC_SECTION_IDS = ['hero', 'cms', 'brands', 'about', 'footer', 'announcement'] as const;
 export type PublicSectionId = (typeof PUBLIC_SECTION_IDS)[number];
 
 export const AYROVI_FONT_STACK = FONT_STACK;
 
 export const INTERFACE_FONT_PRESETS = [{
-  id: 'ayrovi-a', label: 'AYROVI A — identité officielle',
+  id: 'ayrovi-a', label: 'ZAYROVI A — identité officielle',
   description: 'Zalando Sans + Noto Sans Arabic. Charte verrouillée, fontes locales.',
   display: AYROVI_FONT_STACK, body: AYROVI_FONT_STACK,
 }] as const;
 export type InterfaceFontPresetId = (typeof INTERFACE_FONT_PRESETS)[number]['id'];
 
 export const INTERFACE_ICON_LIBRARIES = [
-  { id: 'ayrovi', label: 'AYROVI', description: 'Pictogrammes maison — monoline fine' },
+  { id: 'ayrovi', label: 'ZAYROVI', description: 'Pictogrammes maison — monoline fine' },
 ] as const;
 export type InterfaceIconLibrary = (typeof INTERFACE_ICON_LIBRARIES)[number]['id'];
 
@@ -28,7 +29,28 @@ export interface InterfaceSectionConfig {
   textColor: string;
   paddingY: number;
   contained: boolean;
+  /** Bloc « annonce » : média image ou vidéo (URL /uploads/, /media/ ou https). */
+  mediaType: 'image' | 'video';
+  videoUrl: string;
+  /** Bouton d’action : libellé, et cible INTERNE uniquement (voir `ANNOUNCEMENT_TARGETS`). */
+  ctaLabel: string;
+  ctaTarget: string;
 }
+
+/**
+ * Destinations autorisées pour le bouton d’une annonce. Liste fermée : l’admin ne peut pas
+ * saisir une URL externe. `app:*` = vues de l’application ; `/…` = pages publiques.
+ */
+export const ANNOUNCEMENT_TARGETS: ReadonlyArray<{ value: string; label: string }> = [
+  { value: 'app:lens', label: 'Lens' },
+  { value: 'app:aywebs', label: 'AYWEBs' },
+  { value: 'app:ocerex', label: 'OCEREX' },
+  { value: 'app:account', label: 'Compte' },
+  ...PUBLIC_NAV_DESTINATIONS.map((destination) => ({
+    value: destination.href,
+    label: destination.adminLabel,
+  })),
+];
 
 export interface PublicInterfaceConfig {
   logoUrl: string;
@@ -119,11 +141,13 @@ export interface PublicInterfaceConfig {
 export const DEFAULT_INTERFACE_CONFIG: PublicInterfaceConfig = {
   logoUrl: '/media/logo-ayrovi.png',
   sections: [
-    { id: 'hero', visible: true, order: 10, title: 'Toute la mode du monde, livrée chez vous.', subtitle: '', image: '', backgroundColor: '#000000', textColor: '#ffffff', paddingY: 0, contained: false },
-    { id: 'cms', visible: true, order: 20, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#000000', paddingY: 0, contained: false },
-    { id: 'brands', visible: true, order: 30, title: '', subtitle: '', image: '', backgroundColor: '#f8f9fa', textColor: '#000000', paddingY: 0, contained: false },
-    { id: 'about', visible: true, order: 40, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#000000', paddingY: 0, contained: false },
-    { id: 'footer', visible: true, order: 50, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#000000', paddingY: 0, contained: false },
+    { id: 'hero', visible: true, order: 10, title: 'Toute la mode du monde, livrée chez vous.', subtitle: '', image: '', backgroundColor: '#000000', textColor: '#ffffff', paddingY: 0, contained: false, mediaType: 'image', videoUrl: '', ctaLabel: '', ctaTarget: '' },
+    { id: 'cms', visible: true, order: 20, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#000000', paddingY: 0, contained: false, mediaType: 'image', videoUrl: '', ctaLabel: '', ctaTarget: '' },
+    { id: 'brands', visible: true, order: 30, title: '', subtitle: '', image: '', backgroundColor: '#f8f9fa', textColor: '#000000', paddingY: 0, contained: false, mediaType: 'image', videoUrl: '', ctaLabel: '', ctaTarget: '' },
+    { id: 'about', visible: true, order: 40, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#000000', paddingY: 0, contained: false, mediaType: 'image', videoUrl: '', ctaLabel: '', ctaTarget: '' },
+    { id: 'footer', visible: true, order: 50, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#000000', paddingY: 0, contained: false, mediaType: 'image', videoUrl: '', ctaLabel: '', ctaTarget: '' },
+    // Masquée par défaut : l’admin l’active et la remplit. Rendue DANS le bloc Stories/Reels.
+    { id: 'announcement', visible: false, order: 25, title: '', subtitle: '', image: '', backgroundColor: '#0a0a0a', textColor: '#ffffff', paddingY: 48, contained: false, mediaType: 'image', videoUrl: '', ctaLabel: 'Découvrir', ctaTarget: 'app:lens' },
   ],
   typography: {
     preset: 'ayrovi-a',
@@ -145,7 +169,7 @@ export const DEFAULT_INTERFACE_CONFIG: PublicInterfaceConfig = {
     primary: '#000000',
     primaryDark: '#000000',
     primaryLight: '#3f3f46',
-    accent: '#ff6900',
+    accent: '#571ef6',
     headerBackground: '#ffffff',
     headerText: '#000000',
     announcementBackground: '#000000',
@@ -162,7 +186,7 @@ export const DEFAULT_INTERFACE_CONFIG: PublicInterfaceConfig = {
     background: '#000000', color: '#ffffff', secondaryBackground: '#ffffff', secondaryColor: '#000000',
     borderColor: '#000000', borderWidth: 1, radius: 12, height: 44, shape: 'soft',
   },
-  icons: { library: 'ayrovi', color: '#000000', activeColor: '#ff6900', size: 28, style: 'outline' },
+  icons: { library: 'ayrovi', color: '#000000', activeColor: '#571ef6', size: 28, style: 'outline' },
   navigation: {
     background: '#ffffff', color: '#000000', activeBackground: '#000000', showLabels: true, height: 56,
     homeLabel: 'Accueil', lensLabel: 'Lens', aiLabel: 'SONIM', cartLabel: 'Panier', accountLabel: 'Compte', visionLabel: 'Vision', aywebsLabel: 'AyWebs', ocerexLabel: 'OCEREX',
@@ -204,6 +228,10 @@ export function normalizeInterfaceConfig(input: unknown): PublicInterfaceConfig 
       textColor: safeColor(candidate?.textColor, fallback.textColor),
       paddingY: safeNumber(candidate?.paddingY, fallback.paddingY, 0, 160),
       contained: candidate?.contained === true,
+      mediaType: (candidate?.mediaType === 'video' ? 'video' : 'image') as InterfaceSectionConfig['mediaType'],
+      videoUrl: safeMedia(candidate?.videoUrl),
+      ctaLabel: safeText(candidate?.ctaLabel, fallback.ctaLabel, 40),
+      ctaTarget: !candidate ? fallback.ctaTarget : (ANNOUNCEMENT_TARGETS.some((target) => target.value === candidate.ctaTarget) ? String(candidate.ctaTarget) : ''),
     };
   });
   const typography = value.typography || {} as PublicInterfaceConfig['typography'];

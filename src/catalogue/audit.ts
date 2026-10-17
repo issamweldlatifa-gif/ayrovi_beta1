@@ -1,5 +1,5 @@
 /**
- * AYROVI Catalogue (P2.1) — audit, through the ONE writer.
+ * ZAYROVI Catalogue (P2.1) — audit, through the ONE writer.
  *
  * The catalogue never writes `audit_logs` itself: every mutation goes through
  * `writeAuditEvent`, which is what gives this module, for free, the guarantees built in

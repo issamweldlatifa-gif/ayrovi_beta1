@@ -6,10 +6,10 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 const require = createRequire(path.resolve('package.json'));
 
-describe('security updates retain the APIs actually consumed by AYROVI', () => {
+describe('security updates retain the APIs actually consumed by ZAYROVI', () => {
   it('mailparser still parses MIME and international sender/recipient names through nodemailer', async () => {
     const {simpleParser}=require('mailparser');
-    const mail=await simpleParser('From: "AYROVI Client" <client@example.test>\r\nTo: support@example.test\r\nSubject: =?UTF-8?B?2LfZhNio?=\r\nContent-Type: text/plain; charset=utf-8\r\n\r\nBonjour — مرحبا');
+    const mail=await simpleParser('From: "ZAYROVI Client" <client@example.test>\r\nTo: support@example.test\r\nSubject: =?UTF-8?B?2LfZhNio?=\r\nContent-Type: text/plain; charset=utf-8\r\n\r\nBonjour — مرحبا');
     expect(mail.from.value[0].address).toBe('client@example.test');
     expect(mail.to.value[0].address).toBe('support@example.test');
     expect(mail.subject).toBe('طلب');expect(mail.text).toContain('مرحبا');
@@ -40,11 +40,16 @@ describe('security updates retain the APIs actually consumed by AYROVI', () => {
     const sharp=require('sharp');const dir=await mkdtemp(path.join(tmpdir(),'ayrovi-assets-'));
     try {
       await mkdir(path.join(dir,'client/public/media'),{recursive:true});
-      await sharp({create:{width:40,height:40,channels:4,background:'#000000'}}).png().toFile(path.join(dir,'client/public/media/logo-ayrovi-512.png'));
+      // Source = logo clair (Z blanc, 86 % de la largeur de son carré transparent) : on le simule par un carré blanc de 86 %.
+      const mark=await sharp({create:{width:86,height:86,channels:4,background:'#FFFFFF'}}).png().toBuffer();
+      await sharp({create:{width:100,height:100,channels:4,background:{r:0,g:0,b:0,alpha:0}}}).composite([{input:mark,left:7,top:7}]).png().toFile(path.join(dir,'client/public/media/logo-ayrovi-light.png'));
       execFileSync(process.execPath,[path.resolve('scripts/cap-assets.mjs')],{cwd:dir});
       expect(await sharp(path.join(dir,'assets/icon.png')).metadata()).toMatchObject({width:1024,height:1024});
-      expect((await sharp(path.join(dir,'assets/icon.png')).trim({background:'#FAFAFA',threshold:1}).toBuffer({resolveWithObject:true})).info.width).toBe(Math.round(1024*.62));
+      // fond noir de la palette, Z à 62 % de la largeur de l'icône
+      const trimmed=(await sharp(path.join(dir,'assets/icon.png')).trim({background:'#0A0A0A',threshold:60}).toBuffer({resolveWithObject:true})).info.width;
+      expect(Math.abs(trimmed-Math.round(1024*.62))).toBeLessThanOrEqual(10); // ±1 % : bord adouci par l'agrandissement
       expect(await sharp(path.join(dir,'assets/splash.png')).metadata()).toMatchObject({width:2732,height:2732});
+      expect(await sharp(path.join(dir,'assets/splash-dark.png')).metadata()).toMatchObject({width:2732,height:2732});
     } finally {await rm(dir,{recursive:true,force:true});}
   });
   it('Xcode retains its UUID generation API with the bounded CommonJS uuid release', () => {

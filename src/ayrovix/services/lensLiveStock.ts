@@ -8,7 +8,7 @@
  *   • le budget couvre TOUTE la grille (8 fiches, plus 4) — c'est le cœur de la
  *     recherche, pas un bonus ;
  *   • le prix lu remplace l'extrait SerpApi et repasse par le calculateur
- *     AYROVI (`reprice`) : un prix affiché a toujours sa date et sa source ;
+ *     ZAYROVI (`reprice`) : un prix affiché a toujours sa date et sa source ;
  *   • le prix barré du marchand est transmis tel quel (jamais déduit).
  *
  * Constat : Google Lens rend un titre, une boutique, un prix parfois, et un
@@ -280,7 +280,7 @@ export function applyLiveStock(candidate: AyrovixCandidate, entry: LiveStockEntr
   /*
    * LE PRIX DU MARCHAND PRIME (02/10/2026). L'extrait SerpApi est un index,
    * parfois vieux de semaines ; la page est le prix d'aujourd'hui. Il remplace
-   * donc l'extrait, repasse par le calculateur AYROVI, et le prix barré de la
+   * donc l'extrait, repasse par le calculateur ZAYROVI, et le prix barré de la
    * page voyage avec lui. Un prix lu par simple regex de contexte n'est pas
    * assez sûr pour écraser l'extrait : il ne s'applique que si l'extrait manque.
    */
@@ -308,15 +308,26 @@ export function applyLiveStock(candidate: AyrovixCandidate, entry: LiveStockEntr
     }
     applied = true;
   }
-  if (entry.description && entry.description.length > (candidate.description || '').trim().length) {
-    candidate.description = entry.description;
+  // A visual-search snippet is not merchant copy. Once the page is read, replace
+  // it with the page description or clear it; never keep an older snippet merely
+  // because it happens to be longer.
+  const pageDescription = entry.description || null;
+  if ((candidate.description || null) !== pageDescription) {
+    candidate.description = pageDescription;
     applied = true;
   }
   if (entry.brand && !candidate.brand) {
     candidate.brand = entry.brand;
     applied = true;
   }
-  if (entry.availability && entry.availability !== 'unknown') {
+  if (entry.availability === 'unknown') {
+    // SerpApi's `in_stock` is a stale search-index hint, not live merchant
+    // proof. Once the page itself was read and stayed silent, clear it.
+    if (candidate.availability && candidate.availability !== 'unknown') {
+      candidate.availability = 'unknown';
+      applied = true;
+    }
+  } else if (candidate.availability !== entry.availability) {
     candidate.availability = entry.availability;
     applied = true;
   }
@@ -475,16 +486,21 @@ export type PurchaseBlocker = 'page_non_lue' | 'prix_non_lu' | 'rupture' | 'stoc
 
 /**
  * Diagnostic de preuve d'achat (page lue / prix / stock / image).
- * Le catalogue AYROVI porte sa propre preuve et n'est jamais bloqué.
+ * Le catalogue ZAYROVI porte sa propre preuve et n'est jamais bloqué.
  *
  * Affichage (filterPurchasable) : par défaut seules les fiches avec page lue,
  * prix marchand, stock et tailles/couleurs arrivent au client.
  * `AYROVI_LENS_REQUIRE_PROOF=false` désactive (debug).
  */
 export function purchaseBlocker(candidate: AyrovixCandidate): PurchaseBlocker | null {
-  if (candidate.kind !== 'external') return null;
+  // Internal stock is authoritative too: never expose a catalogue item the
+  // inventory marks explicitly out of stock.
+  if (candidate.kind !== 'external') return candidate.availability === 'out_of_stock' ? 'rupture' : null;
   if (!candidate.sourceRead) return 'page_non_lue';
-  if (candidate.priceOrigin !== 'merchant' || !(candidate.price! > 0) || !candidate.currency) return 'prix_non_lu';
+  if (candidate.priceOrigin !== 'merchant'
+    || candidate.priceVerificationStatus !== 'VERIFIED'
+    || !(candidate.price! > 0)
+    || !candidate.currency) return 'prix_non_lu';
   if (candidate.availability === 'out_of_stock') return 'rupture';
   /* A size-level positive cannot prove a colour combination. If the merchant
      exposes a colour axis, at least one positive source row must name its

@@ -5,7 +5,7 @@ Premier tour (dossier `../admin-prototypes/`, conservé pour mémoire) : quatre 
 
 Ce deuxième tour part d'une autre question : **comment travaillent les grands ?** Chaque modèle
 reprend les conventions opérationnelles d'une plateforme que l'équipe connaît déjà, et les applique
-aux vrais écrans AYROVI (commandes en TND, acomptes à vérifier, arrivages, barre sous l'en-tête,
+aux vrais écrans ZAYROVI (commandes en TND, acomptes à vérifier, arrivages, barre sous l'en-tête,
 libellés FR + AR).
 
 | # | Modèle | Référence | Fichier HTML | Cadre Figma |
@@ -23,4 +23,4 @@ libellés FR + AR).
 - **Générateurs** : `figma/generate.mjs` (cadres SVG), `build-html.mjs` (maquettes B, C, D),
   `build-index.py` (page de comparaison), `figma/shoot.mjs` (captures dans `evidence/`).
 
-Dès que la lettre est choisie, la conversion de l'admin AYROVI se fait sur ce modèle.
+Dès que la lettre est choisie, la conversion de l'admin ZAYROVI se fait sur ce modèle.

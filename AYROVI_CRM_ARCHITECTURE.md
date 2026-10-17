@@ -1,4 +1,4 @@
-# AYROVI CRM 360 — Architecture
+# ZAYROVI CRM 360 — Architecture
 
 Document miroir de la commande (REC-10). La règle du dépôt : le code existant est la source de vérité, rien n'est réécrit, chaque ajout est additif et chaque phase est close par une porte verte.
 

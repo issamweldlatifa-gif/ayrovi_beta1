@@ -11,7 +11,7 @@ import { checkPriceText, priceFromText } from '../src/scraper/priceIntegrity';
  * 06/10/2026, à partir des pages réellement enregistrées ce jour-là :
  *
  *   1. /dp/B0D1XD1ZV3 (mobile, Amazon US) — la grappe de prix rendait
- *      « $6.99$6.99 » (prix hors-écran + visible concaténés) et AYROVI
+ *      « $6.99$6.99 » (prix hors-écran + visible concaténés) et ZAYROVI
  *      publiait **6996.99** avec `price_verified=true`.
  *   2. /dp/B0D1XD1ZV3 (Amazon DE, page rendue) — le seul montant « lisible »
  *      était **€18.74**, prix d'une PUBLICITÉ pour un autre ASIN

@@ -70,7 +70,7 @@ export const MenuDrawer: React.FC<MenuDrawerProps> = ({ isOpen, onClose, session
   const firstName = session?.account.displayName?.trim().split(/\s+/)[0] || tr('Client', 'حريف');
 
   return (
-    <div className="fixed inset-0 z-[85] overflow-hidden" dir={direction} role="dialog" aria-modal="true" aria-label={tr('Menu AYROVI', 'قائمة AYROVI')}>
+    <div className="fixed inset-0 z-[85] overflow-hidden" dir={direction} role="dialog" aria-modal="true" aria-label={tr('Menu ZAYROVI', 'قائمة ZAYROVI')}>
       <button type="button" onClick={onClose} className="absolute inset-0 h-full w-full cursor-default bg-ink/55 backdrop-blur-sm" aria-label={tr('Fermer le menu', 'إغلاق القائمة')} />
 
       <div className={`fixed inset-y-0 flex max-w-full ${direction === 'rtl' ? 'right-0' : 'left-0'}`}>
@@ -81,7 +81,7 @@ export const MenuDrawer: React.FC<MenuDrawerProps> = ({ isOpen, onClose, session
                 ? <img src={session.account.avatarUrl} alt="" className="h-11 w-11 rounded-full object-cover" />
                 : <span className="grid h-11 w-11 place-items-center rounded-full bg-ink text-sm font-black text-white">{session ? firstName.slice(0, 2).toUpperCase() : <User className="h-6 w-6" />}</span>}
               <div className="min-w-0">
-                <strong className="block truncate text-sm font-black text-ink">{session ? tr(`Bonjour, ${firstName}`, `مرحبًا، ${firstName}`) : 'AYROVI'}</strong>
+                <strong className="block truncate text-sm font-black text-ink">{session ? tr(`Bonjour, ${firstName}`, `مرحبًا، ${firstName}`) : 'ZAYROVI'}</strong>
                 <button type="button" onClick={() => onOpenAccount('home')} className="mt-0.5 min-h-11 text-xs font-bold text-ink underline-offset-4 hover:underline">{session ? tr('Mon compte', 'حسابي') : tr('Se connecter / Créer un compte', 'تسجيل الدخول / إنشاء حساب')}</button>
               </div>
             </div>
@@ -95,7 +95,7 @@ export const MenuDrawer: React.FC<MenuDrawerProps> = ({ isOpen, onClose, session
             </MenuGroup>
 
             <MenuGroup title={tr('Suite IA', 'مجموعة الذكاء الاصطناعي')}>
-              <MenuItem label="AYROVI AI" onClick={onOpenAssistant} />
+              <MenuItem label="ZAYROVI AI" onClick={onOpenAssistant} />
               <MenuItem label="AYROVIX Lens" onClick={onOpenLens} />
               <MenuItem label="OCEREX" onClick={() => { onClose(); navigation.navigate([{ id: 'app:ocerex' }]); }} />
               <MenuItem label="AYVISI Vision" badge={tr('Bientôt', 'قريبًا')} onClick={() => navigation.navigate([{ id: 'app:vision' }])} />
@@ -115,8 +115,8 @@ export const MenuDrawer: React.FC<MenuDrawerProps> = ({ isOpen, onClose, session
             <MenuGroup title={tr('Aide et informations', 'المساعدة والمعلومات')}>
               {supportUrl
                 ? <a href={supportUrl} target="_blank" rel="noopener noreferrer" className="flex min-h-11 items-center gap-3 rounded-control px-3 py-2.5 text-sm font-bold text-ink transition hover:bg-surface">{tr('Contacter le support', 'التواصل مع الدعم')}</a>
-                : <MenuItem label={tr('Contacter le support via AYROVI AI', 'التواصل مع الدعم عبر AYROVI AI')} onClick={onOpenAssistant} />}
-              <MenuItem label={tr('À propos d’AYROVI', 'حول AYROVI')} onClick={openAbout} />
+                : <MenuItem label={tr('Contacter le support via ZAYROVI AI', 'التواصل مع الدعم عبر ZAYROVI AI')} onClick={onOpenAssistant} />}
+              <MenuItem label={tr('À propos de ZAYROVI', 'حول ZAYROVI')} onClick={openAbout} />
               <a href="/terms.html" target="_blank" rel="noopener noreferrer" className="flex min-h-11 items-center gap-3 rounded-control px-3 py-2.5 text-sm font-bold text-ink transition hover:bg-surface">{tr('Conditions de vente et retours', 'شروط البيع والإرجاع')}</a>
               <div className="mt-2 flex items-center gap-2 rounded-card border border-line p-2">
                 <button type="button" onClick={() => setLocale('fr')} className={buttonClasses(locale === 'fr' ? 'primary' : 'ghost', 'sm', 'flex-1')}>FR</button>

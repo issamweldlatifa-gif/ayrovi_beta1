@@ -5,7 +5,7 @@ import { app } from '../src/server';
 
 /**
  * Dashboard = Control · Database/CMS = Source of Truth · Frontend = Presentation
- * + قاعدة AYROVI: Mobile width-first (العنوان في تدفق الصفحة، الـ slider بعرض الشاشة).
+ * + قاعدة ZAYROVI: Mobile width-first (العنوان في تدفق الصفحة، الـ slider بعرض الشاشة).
  */
 
 const admin = request.agent(app);
@@ -19,7 +19,7 @@ const appSource = readFileSync('client/src/App.tsx', 'utf8');
  * c'est que le contenu publié vient bien de la base (API) et que le Hero ne contient
  * toujours aucun texte figé.
  */
-const heroSource = readFileSync('client/src/components/EvergreenHero.tsx', 'utf8');
+const heroSource = readFileSync('client/src/components/HeroCarousel.tsx', 'utf8');
 const indexCss = readFileSync('client/src/index.css', 'utf8');
 
 
@@ -36,7 +36,8 @@ describe('Dashboard is the single source of truth for Hero, LENS and home sectio
     const data = response.body.data;
     expect(data.eyebrow).toBe('LENS');
     expect(data.title).toBe('Voyez-le.\nLENS le trouve.\nOn s’occupe du reste.');
-    expect(data.accentColor).toBe('#FF6900');
+    // la graine garde l'ancien orange en base ; l'API publie le violet officiel
+    expect(data.accentColor).toBe('#571EF6');
     // النموذج الجديد: المحتوى الموسّع كله من الـ DB (sections)
     expect(data.sections.miniFeatures).toHaveLength(4);
     expect(data.sections.steps.items).toHaveLength(4);
@@ -48,7 +49,7 @@ describe('Dashboard is the single source of truth for Hero, LENS and home sectio
   test('editing LENS in the dashboard changes the public site without touching code', async () => {
     const updated = await admin.put('/api/admin/lens-hero').set('x-csrf-token', csrf)
       .field('title', 'Scannez. Comparez. Commandez.')
-      .field('proofLine', 'Vérifié par AYROVI.')
+      .field('proofLine', 'Vérifié par ZAYROVI.')
       .field('ctaLabel', 'Ouvrir le scanner')
       .field('ctaUrl', '/lens')
       .field('accentColor', '#123456')
@@ -60,7 +61,7 @@ describe('Dashboard is the single source of truth for Hero, LENS and home sectio
 
     const published = await request(app).get('/api/public/lens-hero');
     expect(published.body.data.title).toBe('Scannez. Comparez. Commandez.');
-    expect(published.body.data.proofLine).toBe('Vérifié par AYROVI.');
+    expect(published.body.data.proofLine).toBe('Vérifié par ZAYROVI.');
     expect(published.body.data.ctaUrl).toBe('/lens');
     expect(published.body.data.accentColor).toBe('#123456');
     expect(published.body.data.elementOrder).toBe('title,eyebrow,cta,description,proof');
@@ -80,30 +81,15 @@ describe('Dashboard is the single source of truth for Hero, LENS and home sectio
     expect(stillSafe.body.data.ctaUrl).toBe('/lens');
   });
 
-  test('hero copy comes from the CMS, is editable and refuses an empty title', async () => {
-    const before = await request(app).get('/api/public/hero-content');
-    expect(before.status).toBe(200);
-    expect(before.body.data.title).toBe('Vous le voyez.\nAYROVI vous le livre.');
-    expect(before.body.data.highlight).toBe('AYROVI');
-    expect(before.body.data.ctaLabel).toBe('');
-
-    const updated = await admin.put('/api/admin/hero-content').set('x-csrf-token', csrf).send({
-      eyebrow: 'Livraison Tunisie', title: 'Trouvez.\nAYROVI livre.', description: 'Nouveau sous-titre.',
-      ctaLabel: 'Commencer', ctaUrl: 'https://ayrovi.tn/arrivages', elementOrder: 'title,eyebrow,description,cta',
-    });
-    expect(updated.status).toBe(200);
-
-    const published = await request(app).get('/api/public/hero-content');
-    expect(published.body.data).toMatchObject({
-      eyebrow: 'Livraison Tunisie', title: 'Trouvez.\nAYROVI livre.', description: 'Nouveau sous-titre.',
-      ctaLabel: 'Commencer', ctaUrl: 'https://ayrovi.tn/arrivages', elementOrder: 'title,eyebrow,description,cta',
-    });
-
-    const empty = await admin.put('/api/admin/hero-content').set('x-csrf-token', csrf).send({ title: '   ' });
-    expect(empty.status).toBe(400);
-
-    const unsafe = await admin.put('/api/admin/hero-content').set('x-csrf-token', csrf).send({ ctaUrl: 'javascript:alert(1)' });
-    expect(unsafe.status).toBe(400);
+  test('un seul Hero : les anciens modèles (visuels, contenu fixe) n’existent plus', async () => {
+    // Décision produit 2026-10-10 : le Hero est unique et dynamique (Admin → Hero).
+    expect((await request(app).get('/api/public/hero-content')).status).toBe(404);
+    expect((await request(app).get('/api/public/hero/active')).status).toBe(404);
+    expect((await admin.put('/api/admin/hero-content').set('x-csrf-token', csrf).send({ title: 'X' })).status).toBe(404);
+    expect((await admin.get('/api/admin/hero-visuals')).status).toBe(404);
+    // Le Hero dynamique reste administrable : réglages et cartes.
+    expect((await request(app).get('/api/public/hero-carousel-settings')).status).toBe(200);
+    expect((await request(app).get('/api/public/hero-slides')).status).toBe(200);
   });
 
   test('home sections are reordered and hidden from the dashboard', async () => {
@@ -132,12 +118,14 @@ describe('Dashboard is the single source of truth for Hero, LENS and home sectio
     expect(heroSource).not.toContain('Vous le voyez.');
     expect(heroSource).not.toContain('vous le livre.');
     expect(heroSource).not.toContain('Mode, beauté, technologie');
-    expect(heroSource).toMatch(/fetch\('\/api\/public\/hero-content'[,)]/);
-    expect(heroSource).toContain('controller.abort()');
+    expect(heroSource).toMatch(/fetch\('\/api\/public\/hero-slides'/);
+    expect(heroSource).toMatch(/fetch\('\/api\/public\/hero-carousel-settings'/);
+    expect(heroSource).not.toContain('hero-content');
+    expect(heroSource).not.toContain('hero/active');
   });
 });
 
-describe('AYROVI mobile width-first layout rule', () => {
+describe('ZAYROVI mobile width-first layout rule', () => {
   test('the slider reaches the screen edges and stays swipeable on mobile', () => {
     // gap ثابت 16px بين البطاقات
     expect(indexCss).toContain('--ay-rail-gap: 16px;');
@@ -154,7 +142,7 @@ describe('AYROVI mobile width-first layout rule', () => {
 
   test('the homepage ends at its own sections — no footer or content below them', () => {
     // الفوتر مستثنى من أقسام الصفحة الرئيسية المعروضة
-    expect(appSource).toContain("!['brands', 'about', 'footer'].includes(section.id)");
+    expect(appSource).toContain("!['brands', 'about', 'footer', 'announcement'].includes(section.id)");
     // قسم الـhero يُغلق بدون padding سفلي حتى تنتهي الصفحة عند LENS
     expect(indexCss).toContain(".managed-public-section[data-public-section='hero'] { padding-block-end: 0 !important; }");
   });

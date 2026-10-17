@@ -1,5 +1,5 @@
 /**
- * AYROVI Catalogue (P2.1) — the minimal, extensible attribute foundation.
+ * ZAYROVI Catalogue (P2.1) — the minimal, extensible attribute foundation.
  *
  * Not an attribute engine: two tables.
  *   • `catalogue_attributes` declares what exists (key, label, data type, whether it

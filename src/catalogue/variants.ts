@@ -1,5 +1,5 @@
 /**
- * AYROVI Catalogue (P2.1) — product variants (the sellable unit).
+ * ZAYROVI Catalogue (P2.1) — product variants (the sellable unit).
  *
  * A product is a *thing*; a variant is what is ordered, priced, stocked and shipped.
  * Before this file the app had no variant entity at all: `order_items` carried free-text

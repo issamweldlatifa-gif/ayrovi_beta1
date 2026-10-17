@@ -52,7 +52,7 @@ export function catalogProductToScraped(product: CatalogProduct): ScrapedProduct
     // L'identité garde la trace du catalogue : un produit du catalogue n'est pas une extraction.
     id: `catalog:${product.id}`,
     store: STORE_BY_PLATFORM[platform] ?? 'generic',
-    storeName: product.sourcePlatform || product.brandName || 'AYROVI',
+    storeName: product.sourcePlatform || product.brandName || 'ZAYROVI',
     url: product.sourceUrl || '',
     externalId: product.id,
     title: product.name,

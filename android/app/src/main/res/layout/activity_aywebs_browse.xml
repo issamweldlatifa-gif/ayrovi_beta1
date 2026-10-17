@@ -111,7 +111,7 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="2"
-            android:background="#F18902"
+            android:background="@color/aywebs_accent"
             android:text="@string/aywebs_add_to_cart"
             android:textColor="#FFFFFF"
             android:textStyle="bold" />

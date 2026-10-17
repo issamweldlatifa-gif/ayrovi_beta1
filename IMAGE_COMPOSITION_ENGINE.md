@@ -1,4 +1,4 @@
-# AYROVI — Image Composition Engine (المرحلة 2)
+# ZAYROVI — Image Composition Engine (المرحلة 2)
 
 > `Approved Prototype → Engineering Rules → Image Composition Engine` — منفَّذة.
 > المرجع: `prototype-image-composition/ENGINEERING_RULES.md` (خارج المستودع).

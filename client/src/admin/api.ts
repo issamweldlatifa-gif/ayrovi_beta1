@@ -5,11 +5,14 @@ export class ApiError extends Error {
   status: number;
   code?: string;
   details?: Record<string, unknown>;
-  constructor(message: string, status: number, payload?: { code?: string; details?: Record<string, unknown> }) {
+  /** Charge utile complète de la réponse (ex. `errors` par champ, `problems` par carte). */
+  body?: Record<string, any>;
+  constructor(message: string, status: number, payload?: { code?: string; details?: Record<string, unknown>; [key: string]: unknown }) {
     super(message);
     this.status = status;
     this.code = payload?.code;
     this.details = payload?.details;
+    this.body = payload as Record<string, any> | undefined;
   }
 }
 

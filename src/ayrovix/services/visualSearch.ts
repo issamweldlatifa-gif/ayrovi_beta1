@@ -15,11 +15,46 @@ const SERPAPI_IMAGE_LIMIT_BYTES = 500 * 1024;
 const CACHE_TTL_MS = 10 * 60_000;
 const MAX_CACHE_ENTRIES = 100;
 const MAX_IN_FLIGHT = 12;
+/** SerpApi country searches are separate billable requests. Keep the default to major markets. */
+const DEFAULT_LENS_COUNTRIES = ['fr', 'de', 'it', 'es', 'uk', 'us', 'ca', 'tr', 'ae'] as const;
+const MAX_LENS_COUNTRIES = DEFAULT_LENS_COUNTRIES.length;
+/** Live is called repeatedly while the camera is open; use three markets to bound spend/latency. */
+export const LENS_LIVE_SEARCH_COUNTRIES = ['fr', 'uk', 'us'] as const;
 const cache = new Map<string, { at: number; results: AyrovixCandidate[] }>();
 const inFlight = new Map<string, Promise<AyrovixCandidate[]>>();
 
+/** Safe provider-stage code: useful in logs/responses, never contains the key or provider body. */
+export class SerpApiVisualError extends Error {
+  constructor(public readonly code: string) {
+    super(code);
+    this.name = 'SerpApiVisualError';
+  }
+}
+
+function visualFailure(code: string): SerpApiVisualError {
+  return new SerpApiVisualError(`SERPAPI_${code.replace(/[^A-Z0-9_]/g, '_')}`);
+}
+
 function boundedLimit(value: number): number {
   return Number.isFinite(value) ? Math.max(8, Math.min(40, Math.floor(value))) : 24;
+}
+
+function normalizeCountries(countries: readonly string[]): string[] {
+  const normalized = countries
+    .map((country) => String(country || '').trim().toLowerCase())
+    .filter((country) => /^[a-z]{2}$/.test(country) && country !== 'tn');
+  return [...new Set(['fr', ...normalized])].slice(0, MAX_LENS_COUNTRIES);
+}
+
+function configuredCountries(): string[] {
+  const configured = String(process.env.AYROVIX_LENS_COUNTRIES || '').trim();
+  const countries = configured
+    ? configured.split(/[\s,;]+/)
+    : [...DEFAULT_LENS_COUNTRIES];
+  // Preserve legacy deployments, but a singular setting no longer replaces the
+  // major-market set. France is always included; Tunisia is always excluded.
+  const legacy = String(process.env.AYROVIX_LENS_COUNTRY || '').trim();
+  return normalizeCountries([...countries, ...(legacy ? [legacy] : [])]);
 }
 
 function cacheResults(key: string, results: AyrovixCandidate[]): void {
@@ -34,7 +69,8 @@ async function responseJson(response: Response, maxBytes = 2_000_000): Promise<a
 }
 
 function serpApiKey(): string | null {
-  return process.env.SERPAPI_KEY?.trim() || null;
+  // Alias accepté : SERPAPI_KEY (nom canonique) ou SERPAPI_API_KEY (utilisé par productEnrichment / variantAvailability).
+  return process.env.SERPAPI_KEY?.trim() || process.env.SERPAPI_API_KEY?.trim() || null;
 }
 
 export function serpApiVisualReady(): boolean {
@@ -42,12 +78,34 @@ export function serpApiVisualReady(): boolean {
 }
 
 function timeoutMs(): number {
+  /*
+   * SerpApi EST l'entrée de la recherche (17/10/2026) : son budget n'est pas
+   * un détail, c'est la recherche elle-même. Les journaux Render montrent
+   * SERPAPI_TIMEOUT après ~14 s ; l'ancienne recherche.json avait un plafond
+   * caché de 12 s, même quand le budget global était plus long.
+   * Le plafond monte à 18 s pour la recherche (24 s total upload + indexation),
+   * sans dépasser la deadline globale de /analyze-image.
+   */
   const configured = Number(process.env.AYROVIX_VISUAL_SEARCH_TIMEOUT_MS);
-  return Number.isFinite(configured) ? Math.min(25_000, Math.max(10_000, configured)) : 14_000;
+  return Number.isFinite(configured) ? Math.min(25_000, Math.max(18_000, configured)) : 24_000;
 }
 
 function remainingMs(deadline: number, cap: number): number {
   return Math.max(100, Math.min(cap, deadline - Date.now()));
+}
+
+function providerPause(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isTestRuntime(): boolean {
+  return Boolean(process.env.VITEST || process.env.NODE_ENV === 'test');
+}
+
+function retryableLensApiError(payload: any): boolean {
+  const message = String(payload?.error || '').toLowerCase();
+  // Billing/auth/configuration failures cannot heal during the same request.
+  return !/(api[_ ]?key|unauthori[sz]ed|forbidden|credit|billing|account|plan|invalid (engine|type|parameter))/.test(message);
 }
 
 function normalizeCurrency(raw: unknown): string | null {
@@ -94,6 +152,42 @@ function toCandidates(payload: any, limit: number): AyrovixCandidate[] {
   const seen = new Set(priced.map((item) => item.sourceUrl));
   const extra = all.filter((item) => !seen.has(item.sourceUrl));
   return [...priced, ...extra].slice(0, limit);
+}
+
+/** Merge country-specific Lens results by URL and interleave markets so France cannot crowd all others out. */
+function mergeCountryCandidates(groups: AyrovixCandidate[][], limit: number): AyrovixCandidate[] {
+  const byUrl = new Map<string, AyrovixCandidate>();
+  for (let rank = 0; rank < limit; rank += 1) {
+    for (const group of groups) {
+      const candidate = group[rank];
+      if (!candidate) continue;
+      const current = byUrl.get(candidate.sourceUrl);
+      if (!current) {
+        byUrl.set(candidate.sourceUrl, candidate);
+        if (byUrl.size >= limit) break;
+        continue;
+      }
+      const winner = candidate.match > current.match ? candidate : current;
+      const other = winner === candidate ? current : candidate;
+      const images = [...new Set([
+        current.image,
+        ...(current.images || []),
+        candidate.image,
+        ...(candidate.images || []),
+      ].filter((image): image is string => Boolean(image)))].slice(0, 12);
+      byUrl.set(candidate.sourceUrl, {
+        ...winner,
+        image: winner.image || images[0] || '',
+        images,
+        match: Math.max(current.match, candidate.match),
+        ...(winner.price == null && other.price != null
+          ? { price: other.price, currency: other.currency }
+          : {}),
+      });
+    }
+    if (byUrl.size >= limit) break;
+  }
+  return [...byUrl.values()];
 }
 
 function collectCandidates(rows: any[], limit: number, strict: boolean): AyrovixCandidate[] {
@@ -167,74 +261,121 @@ function collectCandidates(rows: any[], limit: number, strict: boolean): Ayrovix
   return results;
 }
 
-async function runSerpApiVisualSearch(image: Buffer, limit: number): Promise<AyrovixCandidate[]> {
+async function runSerpApiVisualSearch(image: Buffer, limit: number, countries: readonly string[]): Promise<AyrovixCandidate[]> {
   const key = serpApiKey();
   if (!key) return [];
   const deadline = Date.now() + timeoutMs();
   try {
     const prepared = await prepareImageForSerpApi(image);
     const form = new FormData();
+    // Image API requires the credential as a multipart field. Supplying it only
+    // in the query string returns an unusable upload on the live API. Keep the
+    // request aligned with SerpApi's official upload_image clients.
+    form.append('api_key', key);
+    form.append('source', 'ayrovi-server');
     form.append('image', new Blob([new Uint8Array(prepared)], { type: 'image/jpeg' }), 'ayrovix-lens.jpg');
-    const upload = await fetch(`https://serpapi.com/image?api_key=${encodeURIComponent(key)}`, {
+    const upload = await fetch('https://serpapi.com/image', {
       method: 'POST',
       body: form,
       signal: AbortSignal.timeout(remainingMs(deadline, 5_000)),
     });
-    if (!upload.ok) {
-      console.warn(`[AYROVIX serpapi-lens] image upload HTTP ${upload.status}`);
-      return [];
-    }
-    const uploadPayload: any = await responseJson(upload, 256 * 1024);
+    if (!upload.ok) throw visualFailure(`UPLOAD_HTTP_${upload.status}`);
+    let uploadPayload: any;
+    try { uploadPayload = await responseJson(upload, 256 * 1024); }
+    catch { throw visualFailure('UPLOAD_INVALID_JSON'); }
     const imageId = String(uploadPayload?.image_id || '').trim();
-    if (!imageId || deadline - Date.now() < 500) {
-      console.warn('[AYROVIX serpapi-lens] image upload returned no usable image_id');
-      return [];
-    }
+    if (!imageId) throw visualFailure('UPLOAD_NO_IMAGE_ID');
+    if (deadline - Date.now() < 500) throw visualFailure('UPLOAD_DEADLINE');
 
-    const configuredCountry = (process.env.AYROVIX_LENS_COUNTRY || '').trim().toLowerCase();
-    const country = /^[a-z]{2}$/.test(configuredCountry) ? configuredCountry : 'fr';
-    const searchType = async (type: 'products' | 'visual_matches' | 'exact_matches'): Promise<AyrovixCandidate[]> => {
+    /* `products` n'est plus un type valide. The current Image API contract
+       explicitly requests `visual_matches` for an uploaded image_id. */
+    const searchCountries = normalizeCountries(countries);
+    const lensSearch = async (country: string): Promise<AyrovixCandidate[]> => {
       const params = new URLSearchParams({
         engine: 'google_lens',
-        type,
         image_id: imageId,
+        type: 'visual_matches',
         hl: 'fr',
         country,
         api_key: key,
       });
-      const response = await fetch(`https://serpapi.com/search.json?${params.toString()}`, {
-        signal: AbortSignal.timeout(remainingMs(deadline, 12_000)),
-      });
-      if (!response.ok) {
-        console.warn(`[AYROVIX serpapi-lens] ${type} HTTP ${response.status}`);
-        return [];
+      const searchUrl = `https://serpapi.com/search.json?${params.toString()}`;
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        const response = await fetch(searchUrl, {
+          // Each market shares the same total deadline; parallel searches do not
+          // multiply user-visible latency by the number of countries.
+          signal: AbortSignal.timeout(remainingMs(deadline, 18_000)),
+        });
+        if (!response.ok) {
+          const transientHttp = response.status === 408 || response.status === 425 || response.status >= 500;
+          if (attempt === 0 && transientHttp && deadline - Date.now() > 1_200) {
+            await providerPause(isTestRuntime() ? 0 : 650);
+            continue;
+          }
+          throw visualFailure(`LENS_HTTP_${response.status}`);
+        }
+        let payload: any;
+        try { payload = await responseJson(response); }
+        catch { throw visualFailure('LENS_INVALID_JSON'); }
+        if (!payload?.error) return toCandidates(payload, limit);
+        // The Image API can return image_id before Google Lens can consume it.
+        // Retry this propagation race once per market; never retry billing/auth.
+        if (attempt === 0 && retryableLensApiError(payload) && deadline - Date.now() > 1_200) {
+          console.warn(`[AYROVIX serpapi-lens] image_id not ready country=${country} — retrying once`);
+          await providerPause(isTestRuntime() ? 0 : 650);
+          continue;
+        }
+        throw visualFailure('LENS_API_ERROR');
       }
-      const payload: any = await responseJson(response);
-      if (payload?.error) {
-        console.warn(`[AYROVIX serpapi-lens] ${type} API error`);
-        return [];
-      }
-      return toCandidates(payload, limit);
+      throw visualFailure('LENS_API_ERROR');
     };
-    /* One Lens query is enough: SerpApi's `products` response already exposes
-       its rows through the supported product/visual result collections. A
-       second unconditional tab query doubled quota use and made one customer
-       action produce an avoidable third network request after image upload. */
-    const products = await searchType('products');
-    console.log(`[AYROVIX serpapi-lens] ${products.length} matches`);
-    return products;
+    // The live provider occasionally exposes image_id a fraction before Lens
+    // indexes it. Pause once before launching all country-specific searches.
+    if (!isTestRuntime() && deadline - Date.now() > 1_500) await providerPause(450);
+    const outcomes = await Promise.all(searchCountries.map(async (country) => {
+      try {
+        return { country, candidates: await lensSearch(country), failure: null as SerpApiVisualError | null };
+      } catch (error: any) {
+        const failure = error instanceof SerpApiVisualError
+          ? error
+          : visualFailure(error?.name === 'TimeoutError' ? 'TIMEOUT' : 'UNAVAILABLE');
+        return { country, candidates: [] as AyrovixCandidate[], failure };
+      }
+    }));
+    const failures = outcomes.filter((outcome) => outcome.failure !== null);
+    for (const outcome of failures) {
+      console.warn(`[AYROVIX serpapi-lens] country=${outcome.country} ${outcome.failure!.code}`);
+    }
+    const successful = outcomes.filter((outcome) => outcome.failure === null);
+    if (!successful.length && failures.length) throw failures[0].failure!;
+    const matches = mergeCountryCandidates(successful.map((outcome) => outcome.candidates), limit);
+    console.log(`[AYROVIX serpapi-lens] countries=${searchCountries.join(',')} matches=${matches.length} failed=${failures.length}`);
+    return matches;
   } catch (error: any) {
-    console.warn(`[AYROVIX serpapi-lens] ${error?.name === 'TimeoutError' ? 'timeout' : 'unavailable'}`);
-    return [];
+    const failure = error instanceof SerpApiVisualError
+      ? error
+      : visualFailure(error?.name === 'TimeoutError' ? 'TIMEOUT' : 'UNAVAILABLE');
+    console.warn(`[AYROVIX serpapi-lens] ${failure.code}`);
+    throw failure;
   }
 }
 
-export async function serpApiVisualSearchUrl(imageUrl: string, limit = 24): Promise<AyrovixCandidate[]> {
+export interface SerpApiVisualSearchOptions {
+  /** One query per country; Tunisia is filtered and France is always retained. */
+  countries?: readonly string[];
+}
+
+export async function serpApiVisualSearchUrl(
+  imageUrl: string,
+  limit = 24,
+  options: SerpApiVisualSearchOptions = {},
+): Promise<AyrovixCandidate[]> {
   if (!serpApiVisualReady()) return [];
   let normalized: string;
   try { normalized = parsePublicHttpUrl(imageUrl).toString(); } catch { return []; }
   const safeLimit = boundedLimit(limit);
-  const cacheKey = `url:${createHash('sha256').update(normalized).digest('hex')}|${safeLimit}`;
+  const countries = normalizeCountries(options.countries ?? configuredCountries());
+  const cacheKey = `url:${createHash('sha256').update(normalized).digest('hex')}|${safeLimit}|${countries.join(',')}`;
   const cached = cache.get(cacheKey);
   if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.results.map((item) => ({ ...item }));
   if (cached) cache.delete(cacheKey);
@@ -244,7 +385,7 @@ export async function serpApiVisualSearchUrl(imageUrl: string, limit = 24): Prom
 
   // Never ask SerpApi to resolve a user-controlled URL itself. Fetch and validate
   // the public raster image here (DNS pinned locally), then upload only bytes.
-  const task = fetchRemoteImage(normalized).then((image) => runSerpApiVisualSearch(image, safeLimit));
+  const task = fetchRemoteImage(normalized).then((image) => runSerpApiVisualSearch(image, safeLimit, countries));
   inFlight.set(cacheKey, task);
   try {
     const results = await task;
@@ -255,10 +396,15 @@ export async function serpApiVisualSearchUrl(imageUrl: string, limit = 24): Prom
   }
 }
 
-export async function serpApiVisualSearch(image: Buffer, limit = 24): Promise<AyrovixCandidate[]> {
+export async function serpApiVisualSearch(
+  image: Buffer,
+  limit = 24,
+  options: SerpApiVisualSearchOptions = {},
+): Promise<AyrovixCandidate[]> {
   if (!serpApiVisualReady() || !image.length || image.length > 8 * 1024 * 1024) return [];
   const safeLimit = boundedLimit(limit);
-  const cacheKey = `${createHash('sha256').update(image).digest('hex')}|${safeLimit}`;
+  const countries = normalizeCountries(options.countries ?? configuredCountries());
+  const cacheKey = `${createHash('sha256').update(image).digest('hex')}|${safeLimit}|${countries.join(',')}`;
   const cached = cache.get(cacheKey);
   if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.results.map((item) => ({ ...item }));
   if (cached) cache.delete(cacheKey);
@@ -266,7 +412,7 @@ export async function serpApiVisualSearch(image: Buffer, limit = 24): Promise<Ay
   if (existing) return (await existing).map((item) => ({ ...item }));
   if (inFlight.size >= MAX_IN_FLIGHT) return [];
 
-  const task = runSerpApiVisualSearch(image, safeLimit);
+  const task = runSerpApiVisualSearch(image, safeLimit, countries);
   inFlight.set(cacheKey, task);
   try {
     const results = await task;
@@ -281,6 +427,7 @@ export interface SerpApiVisualHealth {
   configured: boolean;
   engine: 'google_lens';
   mode: 'products';
+  countries: string[];
   timeoutMs: number;
 }
 
@@ -289,6 +436,7 @@ export function checkSerpApiVisualHealth(): SerpApiVisualHealth {
     configured: serpApiVisualReady(),
     engine: 'google_lens',
     mode: 'products',
+    countries: configuredCountries(),
     timeoutMs: timeoutMs(),
   };
 }

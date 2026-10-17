@@ -35,7 +35,7 @@ function request(overrides: Partial<AiCompletionRequest> = {}): AiCompletionRequ
   return {
     workload: 'assistant',
     modelClass: 'fast',
-    instructions: 'AYROVI system policy',
+    instructions: 'ZAYROVI system policy',
     messages: [{ role: 'user', content: [{ type: 'text', text: 'Bonjour' }] }],
     maxOutputTokens: 300,
     ...overrides,
@@ -53,7 +53,7 @@ function sseResponse(events: unknown[]): Response {
   return new Response(stream, { status: 200, headers: { 'content-type': 'text/event-stream' } });
 }
 
-describe('AYROVI AI Core Phase 1 contracts and routing', () => {
+describe('ZAYROVI AI Core Phase 1 contracts and routing', () => {
   test('keeps Anthropic active even when OpenAI is configured', async () => {
     process.env.ANTHROPIC_API_KEY = 'anthropic-test';
     process.env.OPENAI_API_KEY = 'openai-test';
@@ -114,7 +114,7 @@ describe('AYROVI AI Core Phase 1 contracts and routing', () => {
     expect(event.cost?.source).toBe('metered');
   });
 
-  test('exposes neutral Assistant tool schemas through the AYROVI gateway', () => {
+  test('exposes neutral Assistant tool schemas through the ZAYROVI gateway', () => {
     const gateway = getAssistantToolGateway();
     expect(gateway.definitions.length).toBeGreaterThan(5);
     expect(gateway.definitions.find((tool) => tool.name === 'calculate_price')).toBeTruthy();
@@ -399,7 +399,7 @@ describe('AI Core errors and circuit policy', () => {
     expect(complete).toHaveBeenCalledTimes(1);
   });
 
-  test('isolates rate-limit circuits by provider and AYROVI workload', async () => {
+  test('isolates rate-limit circuits by provider and ZAYROVI workload', async () => {
     const complete = vi.fn(async (input: AiCompletionRequest) => {
       if (input.workload === 'assistant') {
         throw new AiProviderError('PROVIDER_RATE_LIMITED', 'fake-provider', 'Rate limited.', {

@@ -29,6 +29,7 @@
 import { createHash } from 'node:crypto';
 import type { ScrapedProduct } from '../types';
 import { checkPriceText } from '../scraper/priceIntegrity';
+import { detectAyWebsStore } from '../../shared/aywebsStores';
 import {
   AYWEBS_CAPTURE_LIMITS,
   AYWEBS_CAPTURE_VERSION,
@@ -41,6 +42,102 @@ import type { AyWebsAvailabilityState } from '../../shared/aywebsTypes';
 
 /** Ordre de fiabilité des sources de prix : machine d'abord, humain ensuite. */
 const SOURCE_RANK: Record<AyWebsCaptureSource, number> = { json_ld: 0, microdata: 1, meta: 2, dom: 3 };
+
+/**
+ * PREUVE DE DEVISE PAR SYMBOLE — liste FERMÉE, boutique par boutique (07/10/2026).
+ *
+ * Pourquoi une liste et pas une heuristique : un symbole n'est PAS une devise.
+ * `$` vaut USD, CAD, AUD, SGD, MXN ou BRL ; `£` vaut GBP — ou la livre
+ * égyptienne (`E£`) ; `¥` vaut JPY — ou CNY. Une règle globale produirait des
+ * montants libellés dans la mauvaise devise, exactement l'erreur que la Phase 0
+ * a éliminée.
+ *
+ * Chaque entrée dit donc : pour CETTE boutique (registre), ce symbole prouve ce
+ * code ISO — sauf sur les domaines listés, où le symbole désigne autre chose.
+ *
+ * Cas mesuré le 07/10/2026 : Amazon ne publie NI JSON-LD de prix NI code ISO ;
+ * la seule preuve lisible est « $109.00 » dans la zone d'achat. Sans cette
+ * table, la capture Amazon ne pouvait jamais prouver la devise — donc jamais de
+ * devis.
+ */
+interface AyWebsSymbolCurrencyRule {
+  iso: string;
+  pattern: RegExp;
+  /** Boutiques du registre où le symbole vaut ce code. */
+  stores: readonly string[];
+  /** Domaines (suffixes) où le symbole NE vaut PAS ce code. */
+  hostsExcluded?: readonly string[];
+}
+
+const AYWEBS_SYMBOL_CURRENCIES: readonly AyWebsSymbolCurrencyRule[] = [
+  { iso: 'EUR', pattern: /€/, stores: ['amazon', 'shein', 'temu', 'aliexpress'] },
+  /* E£ (livre égyptienne) porte le même signe : amazon.eg est exclu. */
+  { iso: 'GBP', pattern: /£/, stores: ['amazon', 'shein', 'temu', 'aliexpress'], hostsExcluded: ['amazon.eg'] },
+  /* ¥ = JPY sur amazon.co.jp, mais CNY ailleurs : réservé à Amazon. */
+  { iso: 'JPY', pattern: /[¥￥]/, stores: ['amazon'] },
+  { iso: 'TND', pattern: /د\.ت/, stores: ['amazon', 'shein', 'temu', 'aliexpress'] },
+  /* `$` non-USD : les domaines Amazon dont la devise nationale n'est pas l'USD. */
+  {
+    iso: 'USD',
+    pattern: /\$|US\s?\$/,
+    stores: ['amazon', 'shein', 'temu', 'aliexpress'],
+    hostsExcluded: ['amazon.ca', 'amazon.com.au', 'amazon.sg', 'amazon.com.mx', 'amazon.com.br'],
+  },
+];
+
+function hostMatchesAny(host: string, suffixes: readonly string[] | undefined): boolean {
+  if (!suffixes?.length) return false;
+  return suffixes.some((suffix) => host === suffix || host.endsWith(`.${suffix}`));
+}
+
+/* ── COMPTEURS (exposés par `/health`, jamais de contenu) ────────────────────
+   Que mesure-t-on : combien de captures sont jugées, acceptées, refusées et
+   pourquoi ; d'où vient le prix retenu ; comment la devise a été prouvée. Ces
+   compteurs sont la seule façon de voir en production si la règle « symbole »
+   travaille (et si la capture WebView sert vraiment à quelque chose). */
+interface AyWebsWebviewCaptureStats {
+  validated: number;
+  accepted: number;
+  rejected: number;
+  rejections: Record<string, number>;
+  price_sources: Record<string, number>;
+  currency_published: number;
+  currency_symbol: number;
+  currency_unproven: number;
+  single_source: number;
+}
+
+const captureStats: AyWebsWebviewCaptureStats = {
+  validated: 0, accepted: 0, rejected: 0,
+  rejections: {}, price_sources: {},
+  currency_published: 0, currency_symbol: 0, currency_unproven: 0, single_source: 0,
+};
+
+function bump(target: Record<string, number>, key: string): void {
+  if (!key) return;
+  target[key] = (target[key] || 0) + 1;
+}
+
+export function ayWebsWebviewCaptureStats(): AyWebsWebviewCaptureStats {
+  return {
+    ...captureStats,
+    rejections: { ...captureStats.rejections },
+    price_sources: { ...captureStats.price_sources },
+  };
+}
+
+/** Remise à zéro — réservée aux tests (les compteurs de production ne se remettent pas). */
+export function resetAyWebsWebviewCaptureStats(): void {
+  captureStats.validated = 0;
+  captureStats.accepted = 0;
+  captureStats.rejected = 0;
+  captureStats.rejections = {};
+  captureStats.price_sources = {};
+  captureStats.currency_published = 0;
+  captureStats.currency_symbol = 0;
+  captureStats.currency_unproven = 0;
+  captureStats.single_source = 0;
+}
 
 /**
  * Disponibilité — vocabulaire FERMÉ. Chaque entrée est une formulation
@@ -142,6 +239,8 @@ function fingerprintOf(parts: Record<string, unknown>): string {
 }
 
 function rejected(rejection: string, fingerprint = '', notes: string[] = []): AyWebsCaptureValidation {
+  captureStats.rejected += 1;
+  bump(captureStats.rejections, rejection);
   return {
     ok: false, rejection, scraped: null, price: 0, currency: '',
     priceVerified: false, currencyVerified: false,
@@ -171,6 +270,7 @@ export function validateAyWebsCapturedPage(
   requestUrl: string,
   options: AyWebsCaptureValidationOptions = {},
 ): AyWebsCaptureValidation {
+  captureStats.validated += 1;
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return rejected('NOT_AN_OBJECT');
   const payload = raw as AyWebsCapturedPage;
 
@@ -205,7 +305,7 @@ export function validateAyWebsCapturedPage(
      Chaque candidat est jugé par le verdict de la Phase 0. Le classement suit
      la fiabilité de la source ; à fiabilité égale, l'ordre d'arrivée. */
   const notes: string[] = [];
-  const candidates: Array<{ text: string; source: AyWebsCaptureSource; value: number; rank: number; index: number }> = [];
+  const candidates: Array<{ text: string; source: AyWebsCaptureSource; value: number; rank: number; index: number; hints: string[] }> = [];
   const rawCandidates = Array.isArray(payload.priceCandidates) ? payload.priceCandidates.slice(0, AYWEBS_CAPTURE_LIMITS.maxPriceCandidates) : [];
   rawCandidates.forEach((candidate: AyWebsCapturedPriceCandidate, index: number) => {
     const text = collapse(candidate?.text, AYWEBS_CAPTURE_LIMITS.maxTextLength);
@@ -217,7 +317,10 @@ export function validateAyWebsCapturedPage(
       return;
     }
     notes.push(`candidate_ok:${source}:${check.value}`);
-    candidates.push({ text, source, value: check.value, rank: SOURCE_RANK[source] ?? SOURCE_RANK.dom, index });
+    /* `currencyHints` : les devises que le TEXTE peut désigner, selon la table de
+       marqueurs de la Phase 0 (`$` ⇒ USD/CAD/AUD…, `€` ⇒ EUR, `¥` ⇒ JPY/CNY).
+       Sert à détecter une CONTRADICTION avec un code ISO publié — pas à deviner. */
+    candidates.push({ text, source, value: check.value, rank: SOURCE_RANK[source] ?? SOURCE_RANK.dom, index, hints: check.currencyHints });
   });
 
   if (!candidates.length) {
@@ -254,17 +357,53 @@ export function validateAyWebsCapturedPage(
   const price = primary.value;
   if (!(price > 0)) return rejected('PRICE_REJECTED', '', notes);
 
-  /* ── DEVISE : même règle que le lecteur serveur — code ISO explicite requis ── */
+  /* ── DEVISE ───────────────────────────────────────────────────────────────
+     1. Un code ISO publié par la page (JSON-LD `priceCurrency`, meta, ou le texte
+        même du montant) fait foi — comme avant.
+     2. Sinon, pour une boutique DU REGISTRE, un SYMBOLE de la liste fermée
+        ci-dessus prouve la devise de la zone d'achat (constat du 07/10/2026 :
+        Amazon ne publie aucun code ISO ; « $109.00 » est la seule preuve lisible).
+     3. CONTRADICTION (symbole incompatible avec le code publié, ou deux codes
+        publiés différents) ⇒ AUCUNE devise n'est prouvée : on ne choisit pas
+        entre deux devises, et le devis n'est pas publié. */
   const currencyEvidence = collapse(payload.currencyText, 60);
   const candidateCurrencyEvidence = sameValue.map((candidate) => candidate.text).join(' ');
-  const currencyVerified = /\b[A-Z]{3}\b/.test(currencyEvidence.toUpperCase())
-    || /\b(?:EUR|USD|GBP|JPY|TND)\b/.test(candidateCurrencyEvidence);
-  const currencyCode = currencyVerified
-    ? (currencyEvidence.toUpperCase().match(/\b[A-Z]{3}\b/)?.[0]
-      || candidateCurrencyEvidence.match(/\b(?:EUR|USD|GBP|JPY|TND)\b/)?.[0]
-      || '')
-    : '';
-  const currency = currencyCode;
+  const currencyTexts = `${currencyEvidence} ${candidateCurrencyEvidence}`;
+  const publishedIsos = new Set<string>();
+  (currencyEvidence.toUpperCase().match(/\b[A-Z]{3}\b/g) || []).forEach((code) => publishedIsos.add(code));
+  (candidateCurrencyEvidence.match(/\b(?:EUR|USD|GBP|JPY|TND)\b/g) || []).forEach((code) => publishedIsos.add(code));
+  const publishedIso = [...publishedIsos][0] || '';
+  /* Devises que le texte du montant peut désigner (table de la Phase 0). */
+  const hintSet = new Set<string>();
+  sameValue.forEach((candidate) => candidate.hints.forEach((hint) => hintSet.add(hint)));
+  const symbolSeen = AYWEBS_SYMBOL_CURRENCIES.some((entry) => entry.pattern.test(currencyTexts));
+  let contradiction = publishedIsos.size > 1;
+  if (!contradiction && publishedIso && symbolSeen) {
+    /* Le symbole et le code publié doivent désigner la même devise. */
+    contradiction = !(hintSet.size > 0 && hintSet.has(publishedIso));
+    if (contradiction) notes.push(`currency_symbol_contradicts_published:${publishedIso}`);
+  }
+  let symbolIso = '';
+  if (!contradiction && !publishedIso) {
+    const store = detectAyWebsStore(requestUrl);
+    if (store) {
+      for (const entry of AYWEBS_SYMBOL_CURRENCIES) {
+        if (!entry.stores.includes(store.id)) continue;
+        if (!entry.pattern.test(currencyTexts)) continue;
+        if (hostMatchesAny(requestHost, entry.hostsExcluded)) {
+          notes.push(`currency_symbol_host_ambiguous:${entry.iso}`);
+          continue;
+        }
+        symbolIso = entry.iso;
+        notes.push(`currency_symbol_registered_store:${entry.iso}`);
+        break;
+      }
+    } else if (symbolSeen) {
+      notes.push('currency_symbol_unregistered_store');
+    }
+  }
+  const currency = contradiction ? '' : (publishedIso || symbolIso);
+  const currencyVerified = !contradiction && Boolean(currency);
 
   /* ── DISPONIBILITÉ : vocabulaire fermé, sinon UNKNOWN ──────────────────── */
   const availabilityEvidence = [
@@ -372,6 +511,17 @@ export function validateAyWebsCapturedPage(
   notes.push(`price_source:${primary.source}`, corroborated ? 'corroborated' : 'single_source');
   if (variantTexts.length) notes.push(`variants_published:${variantTexts.slice(0, 8).join('|')}`);
   if (selectedVariantTexts.length) notes.push(`selection_observed:${selectedVariantTexts.join('|')}`);
+
+  /* Compteurs d'exploitation : ce qui a été jugé, et comment. */
+  captureStats.accepted += 1;
+  bump(captureStats.price_sources, primary.source);
+  if (currencyVerified) {
+    if (publishedIso) captureStats.currency_published += 1;
+    else if (symbolIso) captureStats.currency_symbol += 1;
+  } else {
+    captureStats.currency_unproven += 1;
+  }
+  if (!corroborated) captureStats.single_source += 1;
 
   return {
     ok: true,

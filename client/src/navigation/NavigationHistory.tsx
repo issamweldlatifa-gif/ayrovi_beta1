@@ -184,13 +184,13 @@ export function useNavigationHistory(): NavigationHistoryValue {
   return value;
 }
 
-/** Keep AYROVI navigation state while cleaning OAuth query parameters or changing the URL. */
+/** Keep ZAYROVI navigation state while cleaning OAuth query parameters or changing the URL. */
 export function replaceUrlPreservingNavigation(url: string) {
   const state = window.history.state && typeof window.history.state === 'object' ? window.history.state : {};
   window.history.replaceState(state, '', url);
 }
 
-/** Push a URL entry without discarding the AYROVI navigation payload. */
+/** Push a URL entry without discarding the ZAYROVI navigation payload. */
 export function pushUrlPreservingNavigation(url: string) {
   const state = window.history.state && typeof window.history.state === 'object' ? window.history.state : {};
   window.history.pushState(state, '', url);

@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════════════════════════════════════
-   AYROVI — Admin « Console opérationnelle » (modèle A retenu le 2026-09-22)
+   ZAYROVI — Admin « Console opérationnelle » (modèle A retenu le 2026-09-22)
 
    Ce que fait cette feuille, et pourquoi elle est SEULE à le faire :
    • Les 49 écrans de l'admin partagent une coquille et des primitives (`admin.css`, plus les
@@ -20,9 +20,15 @@
    4. UNE SEULE ACTION FORTE par écran (bouton primaire), le reste en boutons secondaires.
    5. Les files d'attente et les états vides disent quoi faire, pas seulement « aucune donnée ».
 
-   La PALETTE reste celle d'AYROVI (charte « Monochrome Premium × Orange d'action ») : ce n'est pas
-   Amazon qu'on copie, ce sont ses conventions de poste de travail. L'orange AYROVI #FF6900 reste le
-   seul déclencheur d'action ; les gris sont ceux de l'échelle neutre du dépôt.
+   La PALETTE reste celle de ZAYROVI (palette officielle du 2026-10-15 : noir #0A0A0A, blanc, violet
+   électrique #571EF6, gris clair #F2F2F2) : ce n'est pas Amazon qu'on copie, ce sont ses conventions
+   de poste de travail. Le violet ZAYROVI (jeton --ayrovi-color-brand-accent) est le seul déclencheur
+   d'action ; les gris sont ceux de l'échelle neutre du dépôt.
+   Charte v4.2.0 « violet au minimum » (2026-10-16) : dans la console comme dans la vitrine, le violet
+   ne sert qu'à l'action principale, à l'onglet / l'entrée de navigation active (un filet, pas un
+   fond), au contour d'une option choisie et au focus. Le violet clair officiel (#C5B2F4, jeton
+   --ay-e-accent-soft) n'est plus que le halo du focus, toujours avec son contour violet. Lignes
+   choisies, navigation, bandeaux et décor : neutres.
    ═════════════════════════════════════════════════════════════════════════════════════════════ */
 
 /* ── 1. Rôles du modèle A, portés par la racine de la coquille et par la porte d'entrée ────────
@@ -33,7 +39,7 @@
 .admin-login,
 .admin-boot {
   /* Chrome */
-  --bo-bar: #111110;          /* barre 1 — encre AYROVI */
+  --bo-bar: #111110;          /* barre 1 — encre ZAYROVI */
   --bo-bar-2: #262626;        /* barre 2 — un pas plus clair, repère de service */
   --bo-bar-ink: #EDEDED;
   --bo-bar-muted: #A3A3A3;
@@ -48,8 +54,10 @@
   --bo-soft: #6B7076;
   --bo-sunken: #F6F7F8;
   --bo-hover: #F3F3F4;
-  --bo-accent: #FF6900;       /* action unique — identité AYROVI */
-  --bo-accent-soft: #FFF3EA;
+  --bo-accent: var(--ayrovi-color-brand-accent); /* action unique — violet officiel ZAYROVI */
+  --bo-accent-hover: var(--ay-e-action-hover); /* survol de l'action (actionHover de l'identité, #491ACC) */
+  --bo-on-accent: var(--ay-e-on-action);        /* texte sur violet : 7,19:1 */
+  --bo-accent-soft: var(--ay-e-accent-soft);    /* violet clair officiel (#C5B2F4) : halo du focus, jamais un fond de ligne */
   --bo-ok: #0E7C4A;
   --bo-ok-soft: #EAF4EF;
   --bo-warn: #946200;
@@ -108,7 +116,6 @@ html[data-theme='dark'] .admin-boot {
   --bo-soft: #A0A0A0;
   --bo-sunken: #202020;
   --bo-hover: #242424;
-  --bo-accent-soft: #2A1B10;
   --bo-ok-soft: #12271E;
   --bo-warn-soft: #2A2314;
   --bo-danger-soft: #2A1816;
@@ -198,7 +205,10 @@ html[data-theme='dark'] .admin-boot {
   font: inherit; font-size: 10.5px; font-weight: 700; cursor: pointer;
 }
 .bo-domains button:hover { border-color: var(--bo-ink); color: var(--bo-ink); }
-.bo-domains button[aria-selected='true'] { background: var(--bo-ink); border-color: var(--bo-ink); color: #FFFFFF; }
+/* Pastille choisie = encre inversée : fond --bo-ink, texte --bo-card (même couple que le
+   bouton-bascule). Défaut corrigé : un texte #FFFFFF fixe restait blanc quand le thème sombre
+   éclaircit --bo-ink (#F5F5F5) — « Tous », « ERP »… devenaient blanc sur blanc (1,09:1). */
+.bo-domains button[aria-selected='true'] { background: var(--bo-ink); border-color: var(--bo-ink); color: var(--bo-card); }
 .bo-domains button small { font-size: 9.5px; font-weight: 700; opacity: .75; }
 
 .bo-shell .admin-sidebar nav { padding: 10px 8px 18px; }
@@ -214,10 +224,20 @@ html[data-theme='dark'] .admin-boot {
 html[data-theme='dark'] .bo-shell .admin-sidebar nav button { color: #D6D6D6; }
 .bo-shell .admin-sidebar nav button svg { width: 16px; height: 16px; flex: none; }
 .bo-shell .admin-sidebar nav button:hover { background: var(--bo-hover); color: var(--bo-ink); }
-.bo-shell .admin-sidebar nav button.is-active { background: var(--bo-accent-soft); color: var(--bo-ink); font-weight: 700; }
+/* Entrée active : fond neutre + filet violet (v4.2.0 — la navigation active porte un repère violet,
+   pas un fond violet). Sur le rail sombre, le filet prend le violet « sur sombre » de l'identité. */
+.bo-shell .admin-sidebar nav button.is-active { background: var(--bo-hover); color: var(--bo-ink); font-weight: 700; }
 .bo-shell .admin-sidebar nav button.is-active i {
   inset-inline-start: 0; inset-inline-end: auto; width: 3px; height: 18px; border-radius: 0 2px 2px 0;
+  background: var(--bo-accent);
 }
+html[data-theme='dark'] .bo-shell .admin-sidebar nav button.is-active i { background: var(--ayrovi-accent-on-dark); }
+/* Thème sombre : un contour ou un repère violet posé sur une surface sombre prend le violet « sur
+   sombre » de l'identité (#926DF9 = focus / accentText du thème sombre) ; le violet plein n'y fait
+   que 2,4:1. Le violet plein reste celui des boutons (texte blanc dessus). */
+html[data-theme='dark'] .bo-shell .admin-order-kpi.is-active,
+html[data-theme='dark'] .bo-shell .arrival-store-manager-list > button.is-active { border-color: var(--ayrovi-accent-on-dark); }
+html[data-theme='dark'] .bo-shell .admin-table tr.is-drag-over td { box-shadow: inset 0 2px 0 var(--ayrovi-accent-on-dark); }
 /* Le vocabulaire d'atelier (legacy / doublon) sort du rail : il reste dans l'infobulle et dans le
    bandeau « ancienne surface ». Un opérateur n'a pas à lire notre dette technique dans son menu. */
 .bo-shell .admin-sidebar nav .bo-tag { display: none; }
@@ -260,7 +280,7 @@ html[data-theme='dark'] .bo-shell .admin-sidebar nav button { color: #D6D6D6; }
 
 .bo-shell .admin-sidebar-foot { padding: 12px 14px; border-top: 1px solid var(--bo-line); }
 .bo-shell .admin-sidebar-foot a { color: var(--bo-ink); font-size: 12px; font-weight: 600; }
-.bo-shell .admin-sidebar-foot a:hover { color: var(--bo-accent); }
+.bo-shell .admin-sidebar-foot a:hover { color: var(--bo-ink); text-decoration: underline; }
 .bo-shell .admin-sidebar-foot > span { margin-top: 6px; color: var(--bo-soft); font-size: 9.5px; letter-spacing: .04em; }
 
 /* ── 4. En-tête d'écran : fil d'Ariane mince (le titre appartient à l'écran) ────────────────── */
@@ -276,7 +296,7 @@ html[data-theme='dark'] .bo-shell .admin-sidebar nav button { color: #D6D6D6; }
 .bo-screenbar .bo-screenbar-end { margin-inline-start: auto; display: flex; align-items: center; gap: 10px; }
 .bo-screenbar code { font-size: 10.5px; color: var(--bo-muted); background: var(--bo-sunken); border-radius: 3px; padding: 1px 6px; }
 .bo-screenbar a { color: var(--bo-ink); font-weight: 600; text-decoration: none; }
-.bo-screenbar a:hover { color: var(--bo-accent); }
+.bo-screenbar a:hover { color: var(--bo-ink); text-decoration: underline; }
 
 .bo-shell .admin-main { max-width: 1680px; padding: 18px 24px 64px; }
 
@@ -301,7 +321,7 @@ html[data-theme='dark'] .bo-shell .admin-sidebar nav button { color: #D6D6D6; }
 :is(.bo-shell, .admin-login) .admin-eyebrow { color: var(--bo-soft); font-size: 9.5px; font-weight: 800; letter-spacing: .15em; }
 
 /* Boutons : une action forte, le reste sobre. Rayon 3 px, pas d'ombre, pas de dégradé.
-   Portée étendue à `.admin-login` : la connexion doit montrer l'action forte en orange, comme
+   Portée étendue à `.admin-login` : la connexion doit montrer l'action forte en violet, comme
    partout ailleurs dans le poste de travail (avant ce correctif, elle restait en noir). */
 :is(.bo-shell, .admin-login) .admin-button {
   border-radius: var(--bo-radius-sm); border: 1px solid var(--bo-line-firm);
@@ -309,10 +329,13 @@ html[data-theme='dark'] .bo-shell .admin-sidebar nav button { color: #D6D6D6; }
 }
 :is(.bo-shell, .admin-login) .admin-button:hover { border-color: var(--bo-ink); }
 :is(.bo-shell, .admin-login) .admin-button--primary {
-  background: var(--bo-accent); border-color: var(--bo-accent); color: #111110;
+  background: var(--bo-accent); border-color: var(--bo-accent); color: var(--bo-on-accent);
 }
-:is(.bo-shell, .admin-login) .admin-button--primary:hover { background: #E85F00; border-color: #E85F00; color: #111110; }
+:is(.bo-shell, .admin-login) .admin-button--primary:hover { background: var(--bo-accent-hover); border-color: var(--bo-accent-hover); color: var(--bo-on-accent); }
 :is(.bo-shell, .admin-login) .admin-button--secondary { background: var(--bo-card); color: var(--bo-ink); }
+/* Bouton-bascule (onglets dessinés avec des boutons) : le choix courant est en encre, comme les
+   pastilles de domaine — le violet reste réservé à l'action principale de l'écran. */
+:is(.bo-shell, .admin-login) .admin-button--secondary[aria-pressed='true'] { background: var(--bo-ink); border-color: var(--bo-ink); color: var(--bo-card); }
 :is(.bo-shell, .admin-login) .admin-button--ghost { border-color: transparent; color: var(--bo-ink); }
 :is(.bo-shell, .admin-login) .admin-button--ghost:hover { background: var(--bo-hover); border-color: transparent; }
 :is(.bo-shell, .admin-login) .admin-button--danger { background: var(--bo-card); border-color: var(--bo-danger); color: var(--bo-danger); }
@@ -359,7 +382,7 @@ html[data-theme='dark'] .bo-shell .admin-sidebar nav button { color: #D6D6D6; }
 .bo-shell .admin-table tbody tr:hover td { background: var(--bo-hover); }
 .bo-shell .admin-table-row--clickable:hover td { background: var(--bo-hover); }
 .bo-shell .admin-table tbody tr.is-selected td, .bo-shell .admin-table tbody tr[aria-selected='true'] td {
-  background: var(--bo-accent-soft); box-shadow: inset 2px 0 0 var(--bo-accent);
+  background: var(--bo-hover); box-shadow: inset 2px 0 0 var(--bo-accent);
 }
 .bo-shell .bo-cell-money, .bo-shell .admin-cell-num { font-variant-numeric: tabular-nums; font-weight: 700; }
 .bo-shell .admin-entity > span { width: 30px; height: 30px; border-radius: var(--bo-radius-sm); }
@@ -395,10 +418,15 @@ html[data-theme='dark'] .bo-shell .admin-table-bulkbar { background: var(--bo-ca
 .bo-shell .admin-metric small { font-size: 10.5px; color: var(--bo-soft); }
 .bo-shell .admin-metric i { width: 30px; height: 30px; border-radius: var(--bo-radius-sm); background: var(--bo-sunken); color: var(--bo-muted); }
 .bo-shell .admin-metric i svg { width: 16px; }
+/* Bandeaux « Arrivages Standard / Express actifs » : deux bandeaux d'encre à texte blanc, dans les
+   deux thèmes. Défaut corrigé : le premier est peint avec --admin-ink, que la coquille relie à
+   --bo-ink ; le thème sombre éclaircit --bo-ink (#F5F5F5) et le bandeau devenait blanc, son
+   chiffre blanc illisible (1,09:1). En sombre, il prend l'encre des barres, comme le second. */
+html[data-theme='dark'] .bo-shell .admin-arrival-summary article:first-child { background: var(--bo-bar); }
 
 .bo-shell .admin-queues > header strong { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; }
 .bo-shell .admin-queues > header span { color: var(--bo-muted); font-size: 11.5px; }
-.bo-shell .admin-queue-card { border-inline-start: 3px solid var(--bo-accent); }
+.bo-shell .admin-queue-card { border-inline-start: 3px solid var(--bo-ink); } /* file en attente : encre ; vide : gris (ci-dessous) */
 .bo-shell .admin-queue-card > div > span { font-size: 12.5px; font-weight: 700; }
 .bo-shell .admin-queue-card > div > small { font-size: 11px; color: var(--bo-muted); }
 .bo-shell .admin-queue-card > strong { font-size: 19px; }
@@ -408,7 +436,7 @@ html[data-theme='dark'] .bo-shell .admin-table-bulkbar { background: var(--bo-ca
 .bo-shell .bo-notice {
   display: flex; align-items: center; gap: 10px;
   margin: 12px 24px 0; padding: 9px 12px;
-  background: var(--bo-warn-soft); border: 1px solid #F0DCB4; border-inline-start: 3px solid var(--bo-accent);
+  background: var(--bo-warn-soft); border: 1px solid #F0DCB4; border-inline-start: 3px solid var(--bo-warn);
   border-radius: var(--bo-radius-sm); color: #6B4A00; font-size: 12px;
 }
 html[data-theme='dark'] .bo-shell .bo-notice { border-color: #3A3018; color: #E8C98A; }
@@ -436,7 +464,11 @@ html[data-theme='dark'] .bo-shell .bo-notice { border-color: #3A3018; color: #E8
    navigation reste UNE décision, pas deux qui se contredisent. */
 @media (max-width: 900px) {
   .bo-shell .admin-workspace { margin-inline-start: 0; }
-  .bo-shell .admin-sidebar { top: 0; z-index: 60; box-shadow: 0 0 0 100vmax rgba(17, 17, 16, .35); }
+  .bo-shell .admin-sidebar { top: 0; z-index: 60; }
+  /* Le voile (ombre de 100vmax) n'existe que tiroir OUVERT. Défaut corrigé : posé sur le rail
+     fermé — sorti de l'écran par translateX, mais dont l'ombre couvre toujours tout —, il voilait
+     la console entière à 35 % sur tablette et téléphone, comme si une fenêtre restait ouverte. */
+  .bo-shell .admin-sidebar.is-open { box-shadow: 0 0 0 100vmax rgba(17, 17, 16, .35); }
   .bo-rail-head button { display: grid; place-items: center; }
   .bo-topbar { gap: 10px; padding: 0 12px; }
   .bo-topbar-brand span { display: none; }
@@ -472,7 +504,7 @@ html[data-theme='dark'] .bo-shell .bo-notice { border-color: #3A3018; color: #E8
 /* ── 12. Accès : connexion et création de compte portent le modèle A ────────────────────────────
    La porte d'entrée est la première impression du poste de travail : elle suit donc les mêmes
    conventions que les 49 écrans (deux surfaces, filets de 1 px, rayon 4 px, AUCUN dégradé, une
-   seule action forte en orange, densité compacte). Ce qui a changé par rapport à l'écran
+   seule action forte en violet, densité compacte). Ce qui a changé par rapport à l'écran
    précédent : plus de grands cercles décoratifs ni de dégradés, un cartouche de statut serveur
    réellement alimenté par /api/health, et une bande de pied qui dit quoi faire en cas de blocage.
    Tout est additif : la feuille historique reste intacte et le retour arrière consiste à retirer
@@ -498,7 +530,7 @@ html[data-theme='dark'] .bo-shell .bo-notice { border-color: #3A3018; color: #E8
   border: 1px solid rgba(255, 255, 255, .18); border-radius: var(--bo-radius);
   background: rgba(255, 255, 255, .06); color: #FFFFFF;
 }
-/* Verrou A.ROVI : il porte déjà le nom, donc plus de mot « AYROVI » à côté (identité 2026-09-22).
+/* Verrou A.ROVI : il porte déjà le nom, donc plus de mot « ZAYROVI » à côté (identité 2026-09-22).
    `align-self: flex-start` est indispensable : le panneau est un conteneur flex en colonne, où
    l'étirement transversal écrasait la hauteur imposée et centrait l'art dans une boîte trop large
    (l'emblème n'était plus aligné sur le titre). */
@@ -536,7 +568,7 @@ html[data-theme='dark'] .bo-shell .bo-notice { border-color: #3A3018; color: #E8
   border-color: var(--bo-accent); box-shadow: 0 0 0 3px var(--bo-accent-soft); outline: none;
 }
 .admin-login-box .admin-password button { border-radius: var(--bo-radius-sm); color: var(--bo-ink); font-size: 11px; }
-.admin-login-box .admin-password button:hover, .admin-login-box .admin-password button[aria-pressed='true'] { color: var(--bo-accent); }
+.admin-login-box .admin-password button:hover, .admin-login-box .admin-password button[aria-pressed='true'] { color: var(--bo-ink); text-decoration: underline; }
 .admin-login-box .admin-field { font-size: 11px; }
 .admin-login-submit { min-height: 46px; border-radius: var(--bo-radius-sm); font-size: 13px; }
 

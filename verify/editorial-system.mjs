@@ -43,7 +43,8 @@ try {
   await page.locator('#search').focus();
   check('keyboard focus has an outline', await page.locator('#search').evaluate(e=>getComputedStyle(e).outlineStyle)!=='none');
   await page.locator('#tone').click();
-  check('dark mode uses its own semantic tokens', await page.locator('body').evaluate(e=>getComputedStyle(e).backgroundColor)==='rgb(0, 0, 0)');
+  const darkCanvas=(hex=>{const n=parseInt(hex.slice(1),16);return `rgb(${n>>16&255}, ${n>>8&255}, ${n&255})`;})(identity.darkColors.canvas);
+  check('dark mode uses its own semantic tokens', await page.locator('body').evaluate(e=>getComputedStyle(e).backgroundColor)===darkCanvas);
   await page.locator('#tone').click();
   await page.evaluate(()=>scrollTo(0,0));
   await page.screenshot({path:reportDir+'/system-mobile-ar.png'});

@@ -1,5 +1,5 @@
 /**
- * AYROVI CRM 360 (E1) — fiches relationnelles (Party), contacts, relations, raccordements.
+ * ZAYROVI CRM 360 (E1) — fiches relationnelles (Party), contacts, relations, raccordements.
  *
  * Le modèle relationnel est ici : un PARTY (individu ou entreprise), catégorisé par sa
  * relation (client/partenaire/fournisseur/prospect/autre), avec des CONTACTS, des

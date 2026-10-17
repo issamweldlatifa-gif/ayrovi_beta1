@@ -24,6 +24,8 @@ async function inspect(page: Page, label: string) {
 async function main() {
   Object.assign(process.env, { NODE_ENV: 'test', DATABASE_PATH: ':memory:', ADMIN_EMAIL: 'admin@example.com', ADMIN_PASSWORD: 'Test-admin-password-123!', CUSTOMER_AUTH_SECRET: 'identity-test-secret-only-01234567890123456789', MAIL_PROVIDER: '', MAIL_API_KEY: '', MAIL_FROM: '', CUSTOMER_OTP_PROVIDER: 'console', GOOGLE_CLIENT_ID: '', FACEBOOK_APP_ID: '', APPLE_CLIENT_ID: '' });
   const { app, db } = await import('../src/server');
+  // Hero d'accueil : une carte PUBLIÉE est nécessaire (sans carte, le Hero ne s'affiche pas — règle produit).
+  { const t = new Date().toISOString(); const cols = ['id','image','video','title','subtitle','cta','target_url','display_order','active','created_at','updated_at','title_ar','subtitle_ar','cta_ar','destination_type','destination_value']; const vals: any[] = ['identity-hero-1','/media/hero-femme.jpg','','Nouvelle collection','Sélection ZAYROVI de la saison','Découvrir','',0,1,t,t,'مجموعة جديدة','اختيارات ZAYROVI لهذا الموسم','اكتشف','STORIES','']; db.run(`INSERT INTO hero_slides(${cols.join(',')}) VALUES(${cols.map(() => '?').join(',')})`, ...vals); }
   const server = app.listen(0, '127.0.0.1'); await new Promise<void>(r => server.once('listening', r));
   const base = `http://127.0.0.1:${(server.address() as any).port}`;
   try {
@@ -36,7 +38,7 @@ async function main() {
         page.on('request', r => { if (r.resourceType() === 'font' && !r.url().startsWith(base)) remoteFonts.push(r.url()); });
         for (const locale of ['fr', 'ar']) {
           await page.goto(base); await page.evaluate(l => localStorage.setItem('ayrovi.locale.v1', l), locale); await page.reload();
-          await page.locator('.editorial-hero__title').waitFor();
+          await page.locator('[data-hero-layout="carousel"]').waitFor();
           check(name + ': actual locale ' + locale, (await page.locator('html').getAttribute('lang'))?.startsWith(locale));
           for (const width of [320, 390, 768, 1360]) {
             await page.setViewportSize({ width, height: 900 });
@@ -93,10 +95,10 @@ async function main() {
       await p.screenshot({path:`${output}/invoice-sample.png`});
     } finally { await documentBrowser.close(); }
     await writeSimplePdf([
-      { text: 'AYROVI — Identité A / Validation PDF', size: 22, bold: true },
+      { text: 'ZAYROVI — Identité A / Validation PDF', size: 22, bold: true },
       { text: 'Éléonore — été, Noël, 189.900 TND, 90,00 €', size: 14 },
-      { text: 'مرحبا بكم في أيروفي', size: 22, right: true },
-      { text: 'فاتورة AYROVI 189.900 TND (2026)', size: 18, right: true },
+      { text: 'مرحبا بكم في زايروفي', size: 22, right: true },
+      { text: 'فاتورة ZAYROVI 189.900 TND (2026)', size: 18, right: true },
       { text: 'Client: محمد علي', size: 16 },
       { text: 'هُوِيَّة أَيْرُوفِي', size: 22, right: true },
     ], `${output}/official-fonts.pdf`);

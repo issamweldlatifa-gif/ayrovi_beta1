@@ -1,5 +1,5 @@
 /**
- * AYROVI Purchasing (P2.3) — réceptions de marchandise.
+ * ZAYROVI Purchasing (P2.3) — réceptions de marchandise.
  *
  * **Ce fichier est le seul endroit du module qui fait bouger une quantité**, et il ne le fait
  * pas à sa façon : il appelle `recordMovement` du module Stock (P2.2), qui est l'unique écriture

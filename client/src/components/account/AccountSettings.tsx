@@ -51,6 +51,6 @@ export function AccountSecurity({summary,session,onSession,onChanged}:{summary:C
         <p className="ac-note">{tr('8 à 100 caractères. Les anciennes sessions seront fermées, celle-ci sera renouvelée.','من 8 إلى 100 حرف. تُغلق الجلسات السابقة وتُجدّد جلستك الحالية.')}</p>
         <Button type="submit" disabled={busy||!current||!password||!confirm}>{busy&&<Loader2 className="h-5 w-5 animate-spin" aria-hidden/>}{tr('Modifier le mot de passe','تغيير كلمة المرور')}</Button>
       </fieldset>
-    </form>:<section className="ac-panel"><h2>{tr('Votre connexion est gérée par votre fournisseur','دخولك مرتبط بمزوّد الحساب')}</h2><p className="ac-note">{tr('Ce compte n’a pas de mot de passe AYROVI. Pour modifier le mot de passe Google, Apple ou Facebook, utilisez les paramètres de ce fournisseur. Pour un compte téléphone, utilisez votre code SMS.','هذا الحساب لا يملك كلمة مرور AYROVI. تغيير كلمة مرور Google أو Apple أو Facebook يتم في إعدادات المزوّد. حساب الهاتف يستعمل رمز SMS.')}</p></section>}
+    </form>:<section className="ac-panel"><h2>{tr('Votre connexion est gérée par votre fournisseur','دخولك مرتبط بمزوّد الحساب')}</h2><p className="ac-note">{tr('Ce compte n’a pas de mot de passe ZAYROVI. Pour modifier le mot de passe Google, Apple ou Facebook, utilisez les paramètres de ce fournisseur. Pour un compte téléphone, utilisez votre code SMS.','هذا الحساب لا يملك كلمة مرور ZAYROVI. تغيير كلمة مرور Google أو Apple أو Facebook يتم في إعدادات المزوّد. حساب الهاتف يستعمل رمز SMS.')}</p></section>}
   </div>;
 }

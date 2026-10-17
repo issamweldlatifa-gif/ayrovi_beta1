@@ -71,13 +71,13 @@ try {
   const arrivals = list.find((row) => row.destination === 'arrivals' && row.active === 1);
   const others = list.filter((row) => row.id !== arrivals.id && row.active === 1);
 
-  const renamed = await adminApi(`/public-nav/${arrivals.id}`, 'PUT', { label_fr: 'Nouveautés AYROVI', label_ar: 'جديد AYROVI' });
+  const renamed = await adminApi(`/public-nav/${arrivals.id}`, 'PUT', { label_fr: 'Nouveautés ZAYROVI', label_ar: 'جديد ZAYROVI' });
   check('renommage accepté', renamed.status === 200, renamed.payload);
   await page.goto(base);
   // La barre est alimentée par `/api/public/navigation` : on attend le libellé publié,
   // jamais le repli local (qui n'est qu'un rendu immédiat avant réponse de l'API).
-  await page.locator('.public-page-links a', { hasText: 'Nouveautés AYROVI' }).waitFor({ timeout: 15000 });
-  check('le site sert le libellé publié', (await page.locator('.public-page-links a').first().innerText()).includes('Nouveautés AYROVI'));
+  await page.locator('.public-page-links a', { hasText: 'Nouveautés ZAYROVI' }).waitFor({ timeout: 15000 });
+  check('le site sert le libellé publié', (await page.locator('.public-page-links a').first().innerText()).includes('Nouveautés ZAYROVI'));
   await page.locator('.public-page-links').screenshot({ path: `${output}/tabstrip-renamed.png` });
 
   for (const row of others) await adminApi(`/public-nav/${row.id}`, 'PUT', { active: 0 });

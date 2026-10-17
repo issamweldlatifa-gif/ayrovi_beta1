@@ -163,7 +163,7 @@ H = 60 + 3 * 330
 svg = [f'<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="{CELL}" height="{H}" viewBox="0 0 {CELL} {H}" font-family="Inter,Helvetica,Arial,sans-serif">']
 svg.append(f'<rect width="{CELL}" height="{H}" fill="#ffffff"/>')
 svg.append('<text x="24" y="34" font-size="20" font-weight="800" fill="#111">استنساخ حقيقي من المواقع الرسمية — كل ماركة بلغة مختلفة</text>')
-svg.append('<text x="24" y="54" font-size="12" fill="#666">أيقونات فعلية سُحبت من كود الموقع (Apple مباشر، Zalando وAmazon من أرشيف رسمي) + إعادة رسم أيقونات AYROVI الست بلغة كل ماركة</text>')
+svg.append('<text x="24" y="54" font-size="12" fill="#666">أيقونات فعلية سُحبت من كود الموقع (Apple مباشر، Zalando وAmazon من أرشيف رسمي) + إعادة رسم أيقونات ZAYROVI الست بلغة كل ماركة</text>')
 
 svg.append(brand_block('Apple', 'مستخرج من apple.com مباشرة (SF Symbols: وزن موحد، هندسة دقيقة، أسود #1d1d1f، بدون زخرفة)', apple_pick, APPLE, 2.1, INK_A, y0=70))
 svg.append(brand_block('Zalando', 'مستخرج من en.zalando.de (نظام zds-icon: خط 1.5، هندسة حادة أنحف، أحادي اللون)', zalando_pick, ZALANDO, 1.5, INK_Z, y0=400))
@@ -174,7 +174,7 @@ svg.append('</svg>')
 
 out_svg = '\n'.join(svg)
 html = ('<!DOCTYPE html><html lang="ar" dir="ltr"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>'
-        '<title>AYROVI — Brand Clone Study</title><style>body{margin:0;background:#fff;padding:12px}.wrap{max-width:1280px;margin:0 auto}</style></head>'
+        '<title>ZAYROVI — Brand Clone Study</title><style>body{margin:0;background:#fff;padding:12px}.wrap{max-width:1280px;margin:0 auto}</style></head>'
         '<body><div class="wrap">' + out_svg + '</div></body></html>')
 open('/home/user/ayrovi_beta1/docs/ayrovi-brand-clones.html', 'w').write(html)
 open('/tmp/brand-clones.svg', 'w').write(out_svg)

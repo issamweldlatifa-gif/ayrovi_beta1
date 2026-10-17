@@ -12,7 +12,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('AYROVI voice transport and session subsystem', () => {
+describe('ZAYROVI voice transport and session subsystem', () => {
   it('initializes a hybrid voice session with verified voice configs and client VAD parameters', async () => {
     const res = await request(app)
       .post('/api/voice/session')
@@ -243,7 +243,7 @@ describe('AYROVI voice transport and session subsystem', () => {
       const res = await request(app)
         .post('/api/assistant/voice/tts')
         .set('x-session-id', 'sess_voice_tts_001')
-        .send({ text: 'أهلاً بك في أيروفي', voice: 'Aoede' });
+        .send({ text: 'أهلاً بك في زايروفي', voice: 'Aoede' });
 
       expect(res.status).toBe(200);
       expect(res.headers['content-type']).toContain('audio/wav');

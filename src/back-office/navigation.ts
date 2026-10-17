@@ -1,5 +1,5 @@
 /**
- * AYROVI Back Office (P2.0) — navigation dérivée, pas recopiée.
+ * ZAYROVI Back Office (P2.0) — navigation dérivée, pas recopiée.
  *
  * La barre latérale était une liste de 37 entrées écrite à la main dans le client, avec ses
  * permissions dupliquées. Ici, la navigation est CALCULÉE à partir de trois systèmes qui

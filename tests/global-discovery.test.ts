@@ -120,9 +120,9 @@ describe('GLOBAL DISCOVERY — architecture source-agnostique', () => {
     expect(single.offerCount).toBeUndefined();
   });
 
-  test('le catalogue AYROVI n’est jamais regroupé avec les offres externes', () => {
+  test('le catalogue ZAYROVI n’est jamais regroupé avec les offres externes', () => {
     const result = groupOffers([
-      candidate({ id: 'cat', kind: 'catalog', source: 'Collection AYROVI', title: 'Nike Air Max 90', priceTnd: 300, match: 90 }),
+      candidate({ id: 'cat', kind: 'catalog', source: 'Collection ZAYROVI', title: 'Nike Air Max 90', priceTnd: 300, match: 90 }),
       candidate({ id: 'ext', source: 'Boutique B', title: 'Nike Air Max 90', priceTnd: 280, match: 75 }),
     ]);
     expect(result).toHaveLength(2);

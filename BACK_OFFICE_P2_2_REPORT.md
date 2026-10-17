@@ -1,4 +1,4 @@
-# AYROVI·X — Rapport de phase P2.2 (module Stock)
+# ZAYROVI·X — Rapport de phase P2.2 (module Stock)
 
 **Statut :** construite, tests verts, poussée (sha en fin de document).
 **Baseline :** 477 tests (P2.1) → **509 tests / 46 fichiers, tous verts**. Aucun test supprimé ; trois assertions de registre recalées **avec raison écrite** (§5).

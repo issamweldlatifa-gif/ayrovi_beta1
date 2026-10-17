@@ -10,7 +10,7 @@
  *                          pas une couleur : il groupe la ligne sans la repeindre.
  *
  * Le réglage est centralisé ici. La variante bleue s'active en ajoutant `data-legal-tone="blue"`
- * sur `.ay-auth` : la charte AYROVI est monochrome + orange, donc le bleu n'est pas la valeur par
+ * sur `.ay-auth` : la charte ZAYROVI est monochrome + violet, donc le bleu n'est pas la valeur par
  * défaut — mais il ne coûte qu'un attribut, et rien d'autre n'est à modifier.
  */
 .ay-auth {
@@ -27,8 +27,9 @@
   color: var(--ayrovi-text-primary);
   background: var(--ayrovi-bg-main);
   --ayrovi-button-height: var(--ayrovi-control-height);
-  --ayrovi-button-bg: var(--ayrovi-text-primary);
-  --ayrovi-button-color: var(--ayrovi-bg-main);
+  /* Palette officielle : l'action principale de la connexion est violette, texte blanc (7,19:1). */
+  --ayrovi-button-bg: var(--ayrovi-cta);
+  --ayrovi-button-color: var(--ayrovi-cta-ink);
   --ayrovi-button-border: var(--ayrovi-border-soft);
   --ayrovi-button-border-width: 1px;
   --ayrovi-button-secondary-bg: var(--ayrovi-bg-main);
@@ -37,13 +38,13 @@
 .ay-auth__container { width: 100%; max-width: var(--ayrovi-form-max-width); margin-inline: auto; }
 .ay-auth__container--utility { padding: max(var(--ayrovi-space-5), env(safe-area-inset-top)) var(--ayrovi-space-5) max(var(--ayrovi-space-6), env(safe-area-inset-bottom)); }
 .ay-auth__main { display: flex; flex-direction: column; min-width: 0; }
-/* White editorial header: the orange-area budget has no auth exception. */
+/* White editorial header: the accent-area budget has no auth exception. */
 .ay-auth__hero {
   position: relative; isolation: isolate; overflow: hidden;
   background: var(--ayrovi-bg-main); color: var(--ayrovi-text-primary);
   padding: max(var(--ayrovi-space-3), env(safe-area-inset-top)) max(var(--ayrovi-space-5), env(safe-area-inset-right)) 28px max(var(--ayrovi-space-5), env(safe-area-inset-left));
 }
-.ay-auth__hero::after { content: ""; position: absolute; width: 6px; height: 6px; bottom: 4px; inset-inline-start: calc(50% - 3px); background: var(--ayrovi-color-brand-orange); }
+.ay-auth__hero::after { content: ""; position: absolute; width: 6px; height: 6px; bottom: 4px; inset-inline-start: calc(50% - 3px); background: var(--ayrovi-color-brand-accent); }
 .ay-auth__header { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; min-height: 44px; }
 .ay-auth__header .ay-runtime-button--ghost { color: var(--ayrovi-text-primary) !important; }
 .ay-auth__brand { display: flex; align-items: center; justify-self: center; gap: 8px; font-size: 16px; font-weight: 700; letter-spacing: .1em; }
@@ -83,7 +84,7 @@
 /* Le bouton désactivé doit avoir l'air désactivé — et le redevenir actif dès
    qu'une adresse est saisie. Un bouton gris permanent est un bouton mort. */
 .ay-auth__step .ay-auth__submit:disabled { background: var(--ayrovi-bg-subtle); color: var(--ayrovi-text-secondary); box-shadow: none; }
-/* Le point orange de la marque séparait le titre du formulaire : à cet
+/* Le point violet de la marque séparait le titre du formulaire : à cet
    endroit il ressemblait à un défaut d'affichage. Il reste sur l'écran
    d'accueil, pas ici. */
 .ay-auth .ay-auth__hero::after { display: none; }

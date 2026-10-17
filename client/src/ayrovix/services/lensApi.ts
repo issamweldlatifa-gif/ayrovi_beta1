@@ -1,5 +1,6 @@
 import type { AyrovixImageResult, AyrovixReviewRequest, AyrovixUrlResult } from '../types';
 import { getSessionId } from '../../utils/session';
+import { parseLensSseBlock, type LensProgress } from './lensStream';
 
 /** AYROVIX · appels API — la clé IA reste côté serveur, le client n'envoie que l'entrée brute. */
 
@@ -20,68 +21,121 @@ async function parseResponse<T>(response: Response): Promise<T> {
   return payload.data as T;
 }
 
+/** Pas de nouvel événement pendant ce délai : le flux est considéré bloqué. */
+export const LENS_STREAM_IDLE_MS = 40_000;
+/** Délai total côté client pour la réponse JSON (filet de sécurité, le serveur répond avant). */
+export const LENS_JSON_TIMEOUT_MS = 60_000;
+
 export async function analyzeImage(
   file: File,
   signal?: AbortSignal,
   customerIntent?: string | null,
-  extra?: { cropMs?: number; uploadMs?: number; roi?: { x:number; y:number; w:number; h:number }; onCard?: (candidate: AyrovixImageResult['candidates'][number]) => void },
+  extra?: {
+    cropMs?: number;
+    uploadMs?: number;
+    roi?: { x:number; y:number; w:number; h:number };
+    onCard?: (candidate: AyrovixImageResult['candidates'][number]) => void;
+    onProgress?: (progress: LensProgress) => void;
+  },
 ): Promise<AyrovixImageResult> {
   const body = new FormData();
   body.append('image', file, file.name || 'ayrovix.jpg');
   if (customerIntent) body.append('customerIntent', String(customerIntent).slice(0,200));
   if (extra?.roi) body.append('roi', JSON.stringify(extra.roi));
-  const headers: Record<string, string> = extra?.onCard ? { Accept: 'text/event-stream' } : {};
+  const streaming = Boolean(extra?.onCard || extra?.onProgress);
+  const headers: Record<string, string> = streaming ? { Accept: 'text/event-stream' } : {};
   if (extra?.cropMs != null) headers['X-Lens-Crop-Ms'] = String(Math.round(extra.cropMs));
   if (extra?.uploadMs != null) headers['X-Lens-Upload-Ms'] = String(Math.round(extra.uploadMs));
-  const response = await fetch('/api/ayrovix/analyze-image', { method: 'POST', body, headers, signal });
-  const ctype = response.headers.get('content-type') || '';
-  if (!ctype.includes('event-stream')) return parseResponse<AyrovixImageResult>(response);
-  if (!response.ok || !response.body) {
-    throw new AyrovixApiError('IDENTIFICATION_FAILED', "Impossible d'identifier le produit. Essayez une photo plus nette et centrée.", response.status);
+
+  // Un seul contrôleur : annulation utilisateur (signal) OU délai client dépassé.
+  const controller = new AbortController();
+  let timedOut = false;
+  const onUserAbort = () => controller.abort();
+  if (signal) {
+    if (signal.aborted) controller.abort();
+    else signal.addEventListener('abort', onUserAbort, { once: true });
   }
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
-  const candidates: AyrovixImageResult['candidates'] = [];
-  let doneMeta: Partial<AyrovixImageResult> = {};
-  const consume = (block: string) => {
-    let event = 'message';
-    let raw = '';
-    for (const line of block.split('\n')) {
-      if (line.startsWith('event:')) event = line.slice(6).trim();
-      else if (line.startsWith('data:')) raw += line.slice(5).trim();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const armTimer = () => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => { timedOut = true; controller.abort(); }, streaming ? LENS_STREAM_IDLE_MS : LENS_JSON_TIMEOUT_MS);
+  };
+  const timeoutError = () => new AyrovixApiError(
+    'ANALYZE_TIMEOUT',
+    "L'analyse a pris trop de temps. Réessayez avec une photo plus nette ou dans un instant.",
+    504,
+  );
+
+  armTimer();
+  try {
+    let response: Response;
+    try {
+      response = await fetch('/api/ayrovix/analyze-image', { method: 'POST', body, headers, signal: controller.signal });
+    } catch (err: any) {
+      if (timedOut) throw timeoutError();
+      throw err;
     }
-    if (!raw) return;
-    let payload: any;
-    try { payload = JSON.parse(raw); } catch { return; }
-    if (event === 'error') {
-      throw new AyrovixApiError(String(payload?.code || 'IDENTIFICATION_FAILED'), String(payload?.error || 'IDENTIFICATION_FAILED'), 422);
+    const ctype = response.headers.get('content-type') || '';
+    if (!ctype.includes('event-stream')) return await parseResponse<AyrovixImageResult>(response);
+    if (!response.ok || !response.body) {
+      throw new AyrovixApiError('IDENTIFICATION_FAILED', "Impossible d'identifier le produit. Essayez une photo plus nette et centrée.", response.status);
     }
-    if (event === 'card' && payload?.sourceUrl) {
-      if (!candidates.some((item) => item.sourceUrl === payload.sourceUrl)) {
-        candidates.push(payload);
-        extra?.onCard?.(payload);
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    const candidates: AyrovixImageResult['candidates'] = [];
+    let doneMeta: Partial<AyrovixImageResult> | null = null;
+    const consume = (block: string) => {
+      const item = parseLensSseBlock(block);
+      if (!item) return;
+      armTimer(); // chaque événement prouve que le flux avance
+      if (item.type === 'error') throw new AyrovixApiError(item.code, item.message, 422);
+      if (item.type === 'progress') { extra?.onProgress?.(item.progress); return; }
+      if (item.type === 'card') {
+        const candidate = item.candidate;
+        if (!candidates.some((entry) => entry.sourceUrl === candidate.sourceUrl)) {
+          candidates.push(candidate);
+          extra?.onCard?.(candidate);
+        }
+        return;
       }
+      doneMeta = item.meta || {};
+    };
+    try {
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const parts = buffer.split('\n\n');
+        buffer = parts.pop() || '';
+        for (const block of parts) consume(block);
+      }
+      if (buffer.trim()) consume(buffer);
+    } catch (err: any) {
+      if (timedOut) throw timeoutError();
+      throw err;
     }
-    if (event === 'done') doneMeta = payload || {};
-  };
-  for (;;) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const parts = buffer.split('\n\n');
-    buffer = parts.pop() || '';
-    for (const block of parts) consume(block);
+    // Flux fermé sans « done » ni « error » : jamais de résultat vide silencieux.
+    if (!doneMeta) {
+      throw new AyrovixApiError(
+        'STREAM_INCOMPLETE',
+        "La connexion a été interrompue avant la fin de l'analyse. Réessayez.",
+        502,
+      );
+    }
+    const meta: Partial<AyrovixImageResult> = doneMeta;
+    return {
+      identification: meta.identification || { input_kind: 'product_photo', category: '', brand: null, model: null, color: [], visible_text: [], possible_model_codes: [], description: candidates[0]?.title || '', confidence: 0.7, detected_price: { amount: 0, currency: '', label: 'none', confidence: 0 } } as AyrovixImageResult['identification'],
+      query: String(meta.query || candidates[0]?.title || ''),
+      candidates,
+      eventId: String(meta.eventId || ''),
+      detectedPrice: null,
+      excluded: meta.excluded || null,
+    };
+  } finally {
+    if (timer) clearTimeout(timer);
+    signal?.removeEventListener('abort', onUserAbort);
   }
-  if (buffer.trim()) consume(buffer);
-  return {
-    identification: doneMeta.identification || { input_kind: 'product_photo', category: '', brand: null, model: null, color: [], visible_text: [], possible_model_codes: [], description: candidates[0]?.title || '', confidence: 0.7, detected_price: { amount: 0, currency: '', label: 'none', confidence: 0 } } as AyrovixImageResult['identification'],
-    query: String(doneMeta.query || candidates[0]?.title || ''),
-    candidates,
-    eventId: String(doneMeta.eventId || ''),
-    detectedPrice: null,
-    excluded: doneMeta.excluded || null,
-  };
 }
 
 export async function analyzeUrl(url: string, channel: 'url' | 'qr', signal?: AbortSignal, recordHistory = true): Promise<AyrovixUrlResult> {
@@ -170,7 +224,7 @@ export function markChosen(eventId: string): void {
   }).catch(() => {});
 }
 
-/** Recherche du contenu texte d'un QR via AYROVI Web Search. */
+/** Recherche du contenu texte d'un QR via ZAYROVI Web Search. */
 export async function analyzeCode(value: string, signal?: AbortSignal): Promise<{ code: string; candidates: AyrovixImageResult['candidates']; eventId: string }> {
   const response = await fetch('/api/ayrovix/analyze-code', {
     method: 'POST',
@@ -192,7 +246,7 @@ export async function analyzeBarcode(code: string, signal?: AbortSignal): Promis
   return parseResponse(response);
 }
 
-/** Recherche par nom de produit (texte libre) via AYROVI Catalog + Web Search. */
+/** Recherche par nom de produit (texte libre) via ZAYROVI Catalog + Web Search. */
 export async function analyzeText(query: string, signal?: AbortSignal): Promise<{ query: string; candidates: AyrovixImageResult['candidates']; eventId: string }> {
   const response = await fetch('/api/ayrovix/analyze-text', {
     method: 'POST',

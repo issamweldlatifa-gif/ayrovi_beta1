@@ -1,5 +1,5 @@
 /**
- * AYROVI — P3/T1 verrou des tokens de design (couche back-office).
+ * ZAYROVI — P3/T1 verrou des tokens de design (couche back-office).
  *
  * Ce fichier ne teste pas les couleurs une par une : il teste la STRUCTURE que la phase T1 était
  * chargée d'installer, et rend la dette impossible à aggraver par inadvertance.
@@ -18,7 +18,8 @@
  *  5. aucun `var(--x)` utilisé par une feuille système, ni par un style en ligne de la couche
  *     admin (`client/src/admin/**`), ne reste non résolu — à une seule exception allowlistée :
  *     `--bo-icon`, règle CSS morte de `back-office.css` (voir rapport P3/T1 §7, F-2) ;
- *  6. la couche admin ne connaît qu'un seul orange : la valeur de `--ayrovi-cta`.
+ *  6. la couche admin ne connaît qu'une seule couleur d'action : la valeur de `--ayrovi-cta`
+ *     (violet électrique #571EF6 depuis la palette officielle du 2026-10-15 ; l'orange est retiré).
  *
  * Les nombres de ce fichier sont MESURÉS (scripts/design-token-sweep.cjs --check), pas déduits.
  */
@@ -128,15 +129,15 @@ describe('couche back-office — plus aucune valeur de couleur en dur', () => {
   test('les valeurs canoniques de la couche admin sont exactes (P3/T2)', () => {
     const tokens = read(TOKENS);
     const canonical: Record<string, string> = {
-      '--admin-ink': '#000000',
+      '--admin-ink': '#0a0a0a',
       '--admin-line': '#d9d9d9',
-      '--admin-ink-strong': '#000000',
-      '--admin-ink-black': '#000000',
-      '--admin-warm-accent': '#ffb070',
+      '--admin-ink-strong': '#0a0a0a',
+      '--admin-ink-black': '#0a0a0a',
+      '--admin-warm-accent': '#926df9',
       '--admin-ink-muted': '#595959',
       '--admin-surface-page': '#ffffff',
       '--admin-surface-card': '#ffffff',
-      '--admin-rail': '#000000',
+      '--admin-rail': '#0a0a0a',
     };
     const declared = new Map(declarations(tokens).map(([, n, v]) => [n, v.trim()]));
     /** Une valeur de rôle peut être un alias d'un autre rôle (T2e) : on résout un saut. */
@@ -326,26 +327,29 @@ describe('accent — une seule source', () => {
     const tokens = read(TOKENS);
     const cta = declarations(tokens).find(([, n]) => n === '--ayrovi-cta');
     expect(cta).toBeTruthy();
-    /* P4/T1 « Zalando Strategy » : l'orange de marque n'est plus un littéral local — il
-       alias le jeton canonique, qui est le seul porteur de la valeur. On résout la chaîne
-       pour continuer à verrouiller la couleur elle-même. */
+    /* P4/T1 « Zalando Strategy » : la couleur de marque n'est plus un littéral local — elle
+       alias le jeton canonique, qui est le seul porteur de la valeur (violet #571EF6 depuis
+       la palette officielle du 2026-10-15). On résout la chaîne pour verrouiller la couleur. */
     const declared = new Map(declarations(tokens).map(([, n, v]) => [n, v.trim().toLowerCase()]));
     const resolve = (name: string, depth = 0): string => {
       const raw = declared.get(name) ?? '';
       const alias = raw.match(/^var\((--[a-z0-9-]+)\)$/);
       return alias && depth < 4 ? resolve(alias[1], depth + 1) : raw;
     };
-    expect(cta![2].trim().toLowerCase()).toBe('var(--ayrovi-color-brand-orange)');
-    expect(resolve('--ayrovi-cta')).toBe('#ff6900');
-    expect(resolve('--ayrovi-color-brand-orange')).toBe('#ff6900');
+    expect(cta![2].trim().toLowerCase()).toBe('var(--ayrovi-color-brand-accent)');
+    expect(resolve('--ayrovi-cta')).toBe('#571ef6');
+    expect(resolve('--ayrovi-color-brand-accent')).toBe('#571ef6');
+    // texte posé sur l'action : blanc (7,19:1), jamais l'encre noire de l'ancien orange
+    expect(resolve('--ayrovi-cta-ink')).toBe('#ffffff');
     for (const file of SYSTEM_SHEETS) {
       const body = withoutComments(read(file));
       const oranges = (body.match(/var\(--ayrovi-cta\)|var\(--admin-yellow\)/g) ?? []).length;
       expect(oranges, file).toBeGreaterThanOrEqual(0);
     }
-    // la coquille et la fiche agent héritent : aucune nouvelle declaration locale d'accent
+    // la coquille hérite de l'accent ; la fiche agent n'emprunte plus l'accent pour son décor
+    // (v4.2.0, violet au minimum) : ses pastilles passent à l'encre — toujours sans littéral local
     expect(withoutComments(read('client/src/admin/admin.css'))).toMatch(
-      /\.mag-agent\s*{[^}]*--mag-yellow:\s*var\(--ayrovi-cta\)/,
+      /\.mag-agent\s*{[^}]*--mag-yellow:\s*var\(--admin-ink-strong\)/,
     );
     expect(withoutComments(read('client/src/admin/admin.css'))).toMatch(
       /\.bo-shell\s*{[^}]*--bo-accent:\s*var\(--ayrovi-cta\)/,
@@ -361,18 +365,18 @@ describe('chrome back-office — zéro littéral en dur dans les styles inline (
    *   • InterfaceStudio.tsx  → palettes « presets » de la boutique (données de thème envoyées
    *     au magasin public, pas des couleurs d'interface admin) ;
    *   • LensSectionPage.tsx  → maquettes téléphone Lens (simulent l'écran public) ;
-   *   • HeroVisualsPage.tsx  → défaut persisté d'accent du hero (valeur d'enregistrement) ;
-   *   • AdminApp.tsx         → une miniature « Boutique AYROVI » (blanc sur l'accent client, dynamique) ;
+   *   • AdminApp.tsx         → une miniature « Boutique ZAYROVI » (blanc sur l'accent client, dynamique) ;
    *   • SocialAdminPage.tsx  → un fond #000 derrière un <video> (constante média, jamais de thème).
+   *   • HeroSlidesManagePage.tsx → aperçu visiteur des cartes (même raison que ci-dessus).
    * Tout AUTRE fichier doit rester à zéro ; ajouter un littéral au chrome admin est une
    * régression bloquée par ce test.
    */
   const DATA_OR_MOCK = new Map<string, string>([
     ['client/src/admin/InterfaceStudio.tsx', 'palettes boutique (données)'],
     ['client/src/admin/LensSectionPage.tsx', 'maquettes téléphone (simulent l\'écran public)'],
-    ['client/src/admin/HeroVisualsPage.tsx', 'défaut persisté d\'accent du hero (valeur d\'enregistrement)'],
-    ['client/src/admin/AdminApp.tsx', 'miniature « Boutique AYROVI » (accent dynamique)'],
+    ['client/src/admin/AdminApp.tsx', 'miniature « Boutique ZAYROVI » (accent dynamique)'],
     ['client/src/admin/SocialAdminPage.tsx', 'fond #000 d\'un <video> (constante média)'],
+    ['client/src/admin/HeroSlidesManagePage.tsx', 'aperçu visiteur du Hero (simule l\'écran public, couleurs dynamiques, encre sur luminance)'],
   ]);
   const HEX = /#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{3})(?![0-9a-zA-Z_])/g;
   test('seuls les fichiers données/maquettes/média portent un littéral', () => {

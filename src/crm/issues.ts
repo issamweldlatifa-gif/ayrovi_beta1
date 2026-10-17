@@ -1,5 +1,5 @@
 /**
- * AYROVI CRM 360 (E2) — dossiers support/issues et communications.
+ * ZAYROVI CRM 360 (E2) — dossiers support/issues et communications.
  *
  * Issue : un dossier (support ou interne) rattaché à une fiche/contact, avec une
  * référence lisible (ISU-…), un cycle de vie configurable (OPEN → IN_PROGRESS →

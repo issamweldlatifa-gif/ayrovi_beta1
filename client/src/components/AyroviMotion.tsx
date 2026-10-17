@@ -11,7 +11,7 @@ interface AyroviMotionProps {
   label?: string;
 }
 /** Compatibility API for SONIM activity. Never a separate logo/geometry exception.
- * The actual AYROVI brand asset is untouched. Activity changes motion, not identity.
+ * The actual ZAYROVI brand asset is untouched. Activity changes motion, not identity.
  */
 export const AyroviMotion: React.FC<AyroviMotionProps> = ({ state = 'idle', size = 28, color = 'currentColor', className = '', label }) => {
   const [renderedState, setRenderedState] = useState<RenderedMotionState>(state);

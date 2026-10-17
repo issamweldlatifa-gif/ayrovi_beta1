@@ -124,7 +124,7 @@ const DEFINITIONS: Record<string, ErrorDefinition> = {
   },
   PRICE_UNAVAILABLE: {
     httpStatus: 422, flowStatus: 'FAILED', recoverable: true, retryAllowed: true, requiredAction: 'RETRY',
-    userMessage: 'Le devis AYROVI est indisponible pour cet article. Vérifiez son prix et sa devise, puis réessayez.',
+    userMessage: 'Le devis ZAYROVI est indisponible pour cet article. Vérifiez son prix et sa devise, puis réessayez.',
     technicalMessage: 'aucun devis exploitable : prix source absent ou invalide, devise non prise en charge, taux de change indisponible ou restriction produit.',
   },
   PRICE_AMBIGUOUS: {
@@ -162,7 +162,7 @@ const DEFINITIONS: Record<string, ErrorDefinition> = {
   },
   AUTH_REQUIRED: {
     httpStatus: 401, flowStatus: 'FAILED', recoverable: true, retryAllowed: false, requiredAction: 'AUTHENTICATE',
-    userMessage: 'Connectez-vous à votre compte AYROVI pour continuer.',
+    userMessage: 'Connectez-vous à votre compte ZAYROVI pour continuer.',
     technicalMessage: 'Session client absente sur une opération propriétaire.',
   },
   CAPTCHA_REQUIRED: {
@@ -178,7 +178,7 @@ const DEFINITIONS: Record<string, ErrorDefinition> = {
   PAYMENT_FAILED: {
     httpStatus: 402, flowStatus: 'FAILED', recoverable: true, retryAllowed: true, requiredAction: 'CHOOSE_PAYMENT',
     userMessage: 'Le paiement n’a pas abouti.',
-    technicalMessage: 'Échec du provider de paiement AYROVI existant (aucun écosystème parallèle, §20).',
+    technicalMessage: 'Échec du provider de paiement ZAYROVI existant (aucun écosystème parallèle, §20).',
   },
   ORDER_NOT_FOUND: {
     httpStatus: 404, flowStatus: 'FAILED', recoverable: true, retryAllowed: true, requiredAction: 'RETRY',
@@ -217,7 +217,7 @@ const DEFINITIONS: Record<string, ErrorDefinition> = {
   },
   SESSION_REQUIRED: {
     httpStatus: 400, flowStatus: 'FAILED', recoverable: true, retryAllowed: true, requiredAction: 'RETRY',
-    userMessage: 'Session AYROVI invalide ou absente.',
+    userMessage: 'Session ZAYROVI invalide ou absente.',
     technicalMessage: 'x-session-id manquant ou malformé.',
   },
   NOT_IMPLEMENTED: {

@@ -101,6 +101,17 @@ export function isLenientCandidate(candidate: AyrovixCandidate): boolean {
     && candidate.title.trim().length >= 4;
 }
 
+/** Stock hints from visual-search snippets are not merchant confirmation. */
+export function isConfirmedOutOfStockCandidate(candidate: AyrovixCandidate): boolean {
+  if (candidate.kind === 'catalog') return candidate.availability === 'out_of_stock';
+  const proof = candidate.sourceRead;
+  if (!proof) return false;
+  const allVariantsUnavailable = proof.variantsAvailable === 0
+    && proof.variantsUnavailable > 0
+    && proof.variantsUnknown === 0;
+  return candidate.availability === 'out_of_stock' || allVariantsUnavailable;
+}
+
 export function withDisplayRating(candidate: AyrovixCandidate): AyrovixCandidate {
   const merchantRating = Number(candidate.rating);
   if (Number.isFinite(merchantRating) && merchantRating > 0 && merchantRating <= 5) {
@@ -163,19 +174,23 @@ export function filterLenientCandidates(items: AyrovixCandidate[], limit = 16): 
     .slice(0, limit);
 }
 
+/**
+ * Résultats affichés : UNIQUEMENT ceux qui ont un prix exploitable.
+ * Aucun repli sur des fiches sans prix : sans résultat fiable, la liste est vide.
+ */
 export function filterWithFallback(items: AyrovixCandidate[], limit = 16): AyrovixCandidate[] {
-  const strict = filterDisplayableCandidates(items, limit);
-  if (strict.length > 0) return strict;
-  const lenient = filterLenientCandidates(items, limit);
-  if (lenient.length) console.warn(`[AYROVIX candidatePolicy] strict filter empty — lenient fallback ${lenient.length} PENDING candidates`);
-  return lenient;
+  return filterDisplayableCandidates(items, limit);
 }
 
 /** Filet de kacht : prix d'abord, puis les URLs sans prix SerpApi (la page les remplira). */
 export function harvestForScrape(items: AyrovixCandidate[], limit = 32): AyrovixCandidate[] {
-  const priced = filterDisplayableCandidates(items, limit).filter((item) => item.availability !== 'out_of_stock');
+  const priced = filterDisplayableCandidates(items, limit)
+    .filter((item) => !isConfirmedOutOfStockCandidate(item));
   if (priced.length >= limit) return priced;
   const seen = new Set(priced.map((item) => item.sourceUrl));
-  const extra = filterLenientCandidates(items, limit).filter((item) => !seen.has(item.sourceUrl) && item.availability !== 'out_of_stock');
+  // An `out_of_stock` hint from SerpApi is not a merchant-confirmed rupture.
+  // Keep that visual URL so the page can verify it; drop only proven ruptures.
+  const extra = filterLenientCandidates(items, limit)
+    .filter((item) => !seen.has(item.sourceUrl) && !isConfirmedOutOfStockCandidate(item));
   return [...priced, ...extra].slice(0, limit);
 }

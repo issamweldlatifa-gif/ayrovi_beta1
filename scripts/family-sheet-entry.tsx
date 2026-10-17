@@ -48,7 +48,7 @@ export function renderAll(): string {
   const parts = [
     `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="Inter,Helvetica,Arial,sans-serif">`,
     `<rect width="${W}" height="${H}" fill="#ffffff"/>`,
-    `<text x="16" y="28" font-size="17" font-weight="800" fill="#111">AYROVI Icon System — famille compacte (${entries.length} icônes)</text>`,
+    `<text x="16" y="28" font-size="17" font-weight="800" fill="#111">ZAYROVI Icon System — famille compacte (${entries.length} icônes)</text>`,
     `<text x="16" y="48" font-size="11" fill="#666">monoline 1.5 · grille 24 · coins arrondis · currentColor · point signature #FF6A00</text>`,
   ];
   entries.forEach(([label, Cmp], i) => {

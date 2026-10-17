@@ -4,7 +4,7 @@
  * Le contrat protégé ici est un contrat de LATENCE ET D'HONNÊTETÉ :
  *  1. une fiche déjà lue n'est pas relue chez le marchand (le client n'attend
  *     plus vingt secondes pour revoir le même produit) ;
- *  2. le prix AYROVI est TOUJOURS recalculé par le serveur — le cache ne mémorise
+ *  2. le prix ZAYROVI est TOUJOURS recalculé par le serveur — le cache ne mémorise
  *     qu'une lecture, jamais un montant (§45) ;
  *  3. une relecture peut toujours être exigée (`refresh`), et la re-vérification
  *     du panier l'exige : un changement de prix marchand n'est jamais masqué
@@ -128,7 +128,7 @@ describe('AYWEBs — cache de résolution : la fiche n’est pas relue pour rien
     expect(second.productId).toBe(first.productId);
     expect(second.product.price).toBe(first.product.price);
     expect(second.evidenceHash).toBe(first.evidenceHash);
-    // …et le devis AYROVI reste recalculé côté serveur, jamais servi par le cache.
+    // …et le devis ZAYROVI reste recalculé côté serveur, jamais servi par le cache.
     expect(second.pricing?.totalTND).toBeGreaterThan(0);
     expect(second.pricing?.totalTND).toBe(first.pricing?.totalTND);
   });

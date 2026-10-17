@@ -13,8 +13,8 @@ export function AboutPage({ section, onClose }: { section?: InterfaceSectionConf
   useBodyScrollLock(true);
   useDialogFocus(ref, true);
   useEffect(() => { const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };document.addEventListener('keydown', onKey);return () => document.removeEventListener('keydown', onKey); }, [onClose]);
-  return <div ref={ref} role="dialog" aria-modal="true" aria-label={tr('À propos d’AYROVI', 'حول AYROVI')} dir={direction} tabIndex={-1} className="fixed inset-0 z-[85] flex flex-col bg-white outline-none">
-    <AppHeader title={tr('À propos d’AYROVI', 'حول AYROVI')} onBack={onClose} />
+  return <div ref={ref} role="dialog" aria-modal="true" aria-label={tr('À propos de ZAYROVI', 'حول ZAYROVI')} dir={direction} tabIndex={-1} className="fixed inset-0 z-[85] flex flex-col bg-white outline-none">
+    <AppHeader title={tr('À propos de ZAYROVI', 'حول ZAYROVI')} onBack={onClose} />
     <div className="min-h-0 flex-1 overflow-y-auto"><AboutSection coverImage={section?.image} title={section?.title} subtitle={section?.subtitle} /></div>
   </div>;
 }

@@ -1,6 +1,6 @@
 // QUIET CARD v2 (décision client 2026-09-23, référence Zalando) :
 //  • le prix remisé est ROUGE (var(--ayrovi-promo)) et l'original reste barré gris ;
-//  • le badge −X% est rouge — l'orange reste réservé aux CTA ;
+//  • le badge −X% est rouge — le violet reste réservé aux CTA ;
 //  • toute image produit vit dans le cadre studio unifié (blanc + hairline +
 //    mix-blend-mode: multiply) — plus de fond marchand brut, plus de crop cover.
 import React from 'react';
@@ -9,7 +9,6 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import { StudioImageFrame, QuietPromoPrice } from '../client/src/ayrovix/components/quiet-card';
 import { ProductCandidates } from '../client/src/ayrovix/components/ProductCandidates';
-import { LensProductCard } from '../client/src/ayrovix/components/LensProductCard';
 import { ShopProductScreen } from '../client/src/shop';
 import { LocaleProvider } from '../client/src/i18n/LocaleContext';
 import type { AyrovixCandidate, AyrovixProduct } from '../client/src/ayrovix/types';
@@ -62,9 +61,6 @@ describe('Quiet Card v2 — cadre studio unifié', () => {
     // La vignette du panier passe par la MÊME chaîne d'images que la fiche.
     expect(cart).toContain('withIsolation(');
     expect(read('client/src/shop/shop.css')).toMatch(/\.s-bag-line__media img\s*\{[^}]*object-fit: contain/);
-    const gridCss = read('client/src/ayrovix/components/lens-product-card.css');
-    expect(gridCss).toMatch(/\.lens-card-media\s*\{[^}]*background:#fff/);
-    expect(gridCss).toMatch(/\.lens-card-media>img\s*\{[^}]*mix-blend-mode:multiply/);
   });
 });
 
@@ -104,21 +100,6 @@ describe('Quiet Card v2 — promo rouge, référence Zalando', () => {
     expect(html).toContain('ay-quiet-price__current--promo');
     expect(html).toContain('ay-quiet-price__original');
     expect(html).toContain('ay-quiet-price__badge');
-  });
-
-  it('la carte grille porte la même promo rouge (barré + badge), prix intact sinon', () => {
-    const withPromo = renderToStaticMarkup(
-      <LocaleProvider><LensProductCard candidate={candidate} onChoose={() => {}} saved={false} busy={false} onFavorite={() => {}} /></LocaleProvider>,
-    );
-    expect(withPromo).toContain('ay-quiet-price__current--promo');
-    expect(withPromo).toContain('604.50 DT');
-    expect(withPromo).toContain('650.00 DT');
-    expect(withPromo).toContain('ay-quiet-price__badge');
-    const without = renderToStaticMarkup(
-      <LocaleProvider><LensProductCard candidate={{ ...candidate, priceTnd: 650, promo: undefined }} onChoose={() => {}} saved={false} busy={false} onFavorite={() => {}} /></LocaleProvider>,
-    );
-    expect(without).toContain('650.00 DT');
-    expect(without).not.toContain('ay-quiet-price__badge');
   });
 
   it('the product detail waits for the current cart quote, not an unrelated stale promotion object', () => {

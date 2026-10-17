@@ -22,7 +22,7 @@ const LIVE_TODAY = {
     percent: 20, cardDiscountPercent: 5, companyName: 'AYROVI',
     bankRib: '', posteAccount: '', flouciNumber: '',
     reviewDelay: 'Sous 1 jour ouvré après réception du justificatif',
-    unavailableRefundPolicy: 'Acompte remboursé si AYROVI ne peut pas valider ou acheter l’article demandé',
+    unavailableRefundPolicy: 'Acompte remboursé si ZAYROVI ne peut pas valider ou acheter l’article demandé',
   },
   capabilities: { cardGateway: false },
   governorates: ['Tunis', 'Ariana'],
@@ -100,7 +100,7 @@ describe('moyens de paiement du pied de page — la vérité, pas la vitrine', (
     expect(html).toContain('Acompte à la commande');
     expect(html).toContain('20 %');
     expect(html).toContain('Sous 1 jour ouvré après réception du justificatif');
-    expect(html).toContain('Acompte remboursé si AYROVI ne peut pas valider');
+    expect(html).toContain('Acompte remboursé si ZAYROVI ne peut pas valider');
     expect(html).toContain('href="/terms.html"');
     // Des conditions serveur invalides ne produisent aucune affirmation : la caisse bloque déjà.
     expect(() => parseCommercePolicy({ deposit: { percent: 0, cardDiscountPercent: 5 } })).toThrow('COMMERCE_TERMS_INVALID');

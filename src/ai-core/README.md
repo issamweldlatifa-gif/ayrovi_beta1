@@ -1,4 +1,4 @@
-# AYROVI AI Core — Phase 1
+# ZAYROVI AI Core — Phase 1
 
 This directory owns provider-neutral AI contracts and provider registration.
 

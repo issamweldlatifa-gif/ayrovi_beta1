@@ -3,7 +3,7 @@ import request from 'supertest';
 import { app, db } from '../src/server';
 import { createCustomerSession } from '../src/customer/auth';
 
-describe('AYROVI production hardening', () => {
+describe('ZAYROVI production hardening', () => {
   test('security headers are unified and unknown API routes stay JSON 404', async () => {
     // Keep this assertion independent from the generated public/ build so a
     // clean CI checkout can verify the global middleware before `npm run build`.

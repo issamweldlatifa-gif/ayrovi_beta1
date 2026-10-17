@@ -106,7 +106,7 @@ is strong.
 ## Deliberately deferred
 
 - **Release signing was waived for this delivery** (“دون توقيع اصدار”). The APK attached
-  is a **debug** build: it is not signed with the AYROVI production certificate, is not an
+  is a **debug** build: it is not signed with the ZAYROVI production certificate, is not an
   update for an installed production app, and is not a Play upload artifact. Delivering a
   signed AAB still requires the existing production keystore (and its passwords/alias) or
   an explicit decision to start a new signing key — plus the current Play `versionCode`,

@@ -290,7 +290,7 @@ function productSpecificRequest(command: string, rows: any[]): boolean {
 
 export function findMagazineProductContext(db: QatafoDatabase, command: string): MagazineProductContext {
   const rows = db.all<any>(`SELECT id,name,brand_name,category,description,image,additional_images,source_url,original_price,currency,final_price
-    FROM products WHERE status='ACTIVE' ORDER BY updated_at DESC LIMIT 300`);
+    FROM products WHERE status='ACTIVE' AND visibility='CATALOG' ORDER BY updated_at DESC LIMIT 300`);
   const queryTokens = tokens(command);
   const scored = rows.map((row) => {
     const candidate = new Set(tokens(`${row.brand_name || ''} ${row.name || ''} ${row.category || ''}`));
@@ -749,7 +749,7 @@ export async function generateMagazineContent(db: QatafoDatabase, input: Generat
   if (productContext.requested && !productContext.matched) {
     return {
       model: magazineModel(), batchId, drafts: [], needsClarification: true,
-      clarification: 'لم أجد تطابقًا مؤكدًا لهذا المنتج في قاعدة منتجات AYROVI. اختر منتجًا من القائمة أو أرسل اسمه الدقيق كما يظهر في الأدمين.',
+      clarification: 'لم أجد تطابقًا مؤكدًا لهذا المنتج في قاعدة منتجات ZAYROVI. اختر منتجًا من القائمة أو أرسل اسمه الدقيق كما يظهر في الأدمين.',
       suggestions: productContext.products,
     };
   }

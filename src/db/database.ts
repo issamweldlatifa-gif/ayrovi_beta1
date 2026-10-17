@@ -205,7 +205,7 @@ const ORDERS_TABLE_SQL = `CREATE TABLE IF NOT EXISTS orders (
   delivery_longitude REAL,
   /* Mode de livraison : sans lui, l'entrepot ne sait pas OU envoyer le colis. */
   delivery_mode TEXT NOT NULL DEFAULT 'home' CHECK(delivery_mode IN ('home','desk','pickup')),
-  /* Point de retrait choisi (bureau AYROVI ou relais). Vide pour une livraison à domicile. */
+  /* Point de retrait choisi (bureau ZAYROVI ou relais). Vide pour une livraison à domicile. */
   pickup_point_id TEXT NOT NULL DEFAULT '',
   terms_accepted_at TEXT,
   locale TEXT NOT NULL DEFAULT 'fr-TN',
@@ -231,15 +231,6 @@ const SETTINGS_TABLE_SQL = `CREATE TABLE IF NOT EXISTS settings (
   updated_by TEXT
 );`;
 
-const ANNOUNCEMENT_MESSAGES_TABLE_SQL = `CREATE TABLE IF NOT EXISTS announcement_messages (
-  id TEXT PRIMARY KEY,
-  text TEXT NOT NULL,
-  display_order INTEGER NOT NULL DEFAULT 0,
-  active INTEGER NOT NULL DEFAULT 1,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
-);`;
-
 /**
  * Barre publique sous l'en-tête (onglets Arrivage / Gift & Cards / Magazine).
  * `destination` est une clé de `shared/publicNavigation.ts` — jamais une URL libre : le chemin
@@ -256,23 +247,6 @@ const PUBLIC_NAV_ITEMS_TABLE_SQL = `CREATE TABLE IF NOT EXISTS public_nav_items 
   updated_at TEXT NOT NULL
 );`;
 
-const HERO_VISUALS_TABLE_SQL = `CREATE TABLE IF NOT EXISTS hero_visuals (
-  id TEXT PRIMARY KEY,
-  image_url TEXT NOT NULL DEFAULT '',
-  image_width INTEGER NOT NULL DEFAULT 0,
-  image_height INTEGER NOT NULL DEFAULT 0,
-  mobile_image_url TEXT NOT NULL DEFAULT '',
-  alt_text TEXT NOT NULL DEFAULT '',
-  focal_x REAL NOT NULL DEFAULT 0.5,
-  focal_y REAL NOT NULL DEFAULT 0.5,
-  status TEXT NOT NULL DEFAULT 'DRAFT' CHECK(status IN ('DRAFT','PUBLISHED','ARCHIVED')),
-  start_date TEXT,
-  end_date TEXT,
-  priority INTEGER NOT NULL DEFAULT 0,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL,
-  published_at TEXT
-);`;
 
 const PAYMENTS_TABLE_SQL = `CREATE TABLE IF NOT EXISTS payments (
   id TEXT PRIMARY KEY,
@@ -372,6 +346,72 @@ export class QatafoDatabase {
     this.initPurchasingSchema();
     this.initCrmSchema();
     this.seedCoreData();
+    this.rebrandZayroviV1();
+  }
+
+  /**
+   * AYROVI → ZAYROVI (2026-10-16) : la marque change partout, sauf le serveur et le
+   * nom de domaine. Le code et les graines disent déjà ZAYROVI ; cette migration
+   * one-shot met à jour les valeurs ENREGISTRÉES qui sont encore exactement les
+   * graines d'origine. Un texte modifié depuis le Dashboard n'est jamais touché
+   * (chaque UPDATE exige l'ancienne valeur exacte). Restent volontairement :
+   *  • la catégorie de news `AYROVI` (valeur d'énumération, CHECK en base — son
+   *    LIBELLÉ affiché devient ZAYROVI côté interfaces) ;
+   *  • « Client AYROVI », nom provisoire des comptes, comparé tel quel par la logique
+   *    des comptes clients ;
+   *  • les adresses e-mail et URL en `ayrovi.tn` (domaine).
+   * Appelée en dernier : toutes les tables existent, et sur une base neuve les
+   * graines viennent d'insérer les nouvelles valeurs — la migration n'y trouve rien.
+   */
+  private rebrandZayroviV1(): void {
+    this.runOnceDataMigration('rebrand_zayrovi_v1', () => {
+      const now = new Date().toISOString();
+      const exact: Array<[string, string, string, string, string]> = [
+        // [table, colonne, condition supplémentaire, ancienne valeur, nouvelle valeur]
+        ['settings', 'setting_value', "setting_key IN ('company_name','company_legal_name')", 'AYROVI', 'ZAYROVI'],
+        ['settings', 'setting_value', "setting_key='unavailable_refund_policy'",
+          'Acompte remboursé si AYROVI ne peut pas valider ou acheter l’article demandé',
+          'Acompte remboursé si ZAYROVI ne peut pas valider ou acheter l’article demandé'],
+        ['admin_users', 'name', '1=1', 'AYROVI Admin', 'ZAYROVI Admin'],
+        ['news_items', 'author', '1=1', 'Équipe AYROVI', 'Équipe ZAYROVI'],
+        ['news_items', 'title', "id='news_arrival_08'", 'Le nouvel arrivage AYROVI est ouvert', 'Le nouvel arrivage ZAYROVI est ouvert'],
+        ['news_items', 'content', "id='news_arrival_08'",
+          'Préparez vos liens et captures avec Lens. AYROVI centralise le calcul, l’achat et la livraison en Tunisie.',
+          'Préparez vos liens et captures avec Lens. ZAYROVI centralise le calcul, l’achat et la livraison en Tunisie.'],
+        ['products', 'name', "id='product_demo_01'", 'Ensemble tendance AYROVI', 'Ensemble tendance ZAYROVI'],
+        ['lens_hero_settings', 'phone_status_label', '1=1', 'AYROVI LENS', 'ZAYROVI LENS'],
+        ['stories_showcase_settings', 'title', "id='global'", 'Social AYROVI', 'Social ZAYROVI'],
+        ['story_publishers', 'name', "id='pub_ayrovi'", 'Ayrovi', 'Zayrovi'],
+        ['reels', 'title', "id='reel_demo_01'", 'La sélection AYROVI en mouvement', 'La sélection ZAYROVI en mouvement'],
+        ['stories', 'description', "id='story_demo_02'", 'Ce que l’équipe AYROVI a sélectionné pour vous.', 'Ce que l’équipe ZAYROVI a sélectionné pour vous.'],
+        ['ai_knowledge', 'answer', "id='ai_delivery'",
+          'AYROVI livre dans les 24 gouvernorats. Le délai indicatif configuré est de 5 à 8 jours ouvrés.',
+          'ZAYROVI livre dans les 24 gouvernorats. Le délai indicatif configuré est de 5 à 8 jours ouvrés.'],
+        ['ai_knowledge', 'answer', "id='ai_payment'",
+          'Les moyens gérés par AYROVI sont le paiement à la livraison, D17 et Flouci.',
+          'Les moyens gérés par ZAYROVI sont le paiement à la livraison, D17 et Flouci.'],
+        ['erp_organizations', 'name', "code='ORG-0001'", 'AYROVI', 'ZAYROVI'],
+        ['erp_organizations', 'legal_name', "code='ORG-0001'", 'AYROVI', 'ZAYROVI'],
+        // fiche employé miroir de l'admin d'origine (son ancien nom découpé en prénom / nom)
+        ['erp_employees', 'first_name', "last_name='Admin' AND user_id IN (SELECT id FROM admin_users WHERE name='ZAYROVI Admin')", 'AYROVI', 'ZAYROVI'],
+        ['erp_sequences', 'description', "sequence_key='ayweb_cart_item_number'", 'Identité AYROVI d’une ligne de panier AyWebs', 'Identité ZAYROVI d’une ligne de panier AyWebs'],
+        ['erp_sequences', 'description', "sequence_key='ayweb_package_number'", 'Colis consolidé en entrepôt AYROVI', 'Colis consolidé en entrepôt ZAYROVI'],
+        ['public_nav_items', 'label_ar', "destination='news'", 'مجلة AYROVI', 'مجلة ZAYROVI'],
+      ];
+      const hasTable = (table: string) => Boolean(this.get<any>("SELECT 1 AS ok FROM sqlite_master WHERE type='table' AND name=?", table));
+      const hasColumn = (table: string, column: string) => (this.all<any>(`PRAGMA table_info(${table})`) || []).some((c: any) => c.name === column);
+      for (const [table, column, where, before, after] of exact) {
+        if (!hasTable(table) || !hasColumn(table, column)) continue;
+        const stamp = hasColumn(table, 'updated_at') ? ',updated_at=?' : '';
+        const args: unknown[] = stamp ? [after, now, before] : [after, before];
+        this.run(`UPDATE ${table} SET ${column}=?${stamp} WHERE ${where} AND ${column}=?`, ...args);
+      }
+      // Contenu LENS v2 (JSON) : seules les deux mentions de la graine d'origine.
+      if (hasTable('lens_hero_settings') && hasColumn('lens_hero_settings', 'sections_json')) {
+        this.run(`UPDATE lens_hero_settings SET sections_json=REPLACE(REPLACE(sections_json,'Propulsé par l’IA AYROVI','Propulsé par l’IA ZAYROVI'),'"AYROVI LENS"','"ZAYROVI LENS"')
+          WHERE id='global' AND (sections_json LIKE '%Propulsé par l’IA AYROVI%' OR sections_json LIKE '%"AYROVI LENS"%')`);
+      }
+    });
   }
 
   /**
@@ -914,7 +954,7 @@ export class QatafoDatabase {
         category TEXT NOT NULL CHECK(category IN ('NEW_ARRIVAL','NEW_BRAND','PROMOTION','DELIVERY','AYROVI','INFORMATION','OTHER')),
         arrival_id TEXT REFERENCES arrivals(id) ON DELETE SET NULL,
         product_id TEXT REFERENCES products(id) ON DELETE SET NULL,
-        author TEXT NOT NULL DEFAULT 'Équipe AYROVI',
+        author TEXT NOT NULL DEFAULT 'Équipe ZAYROVI',
         published_at TEXT NOT NULL,
         status TEXT NOT NULL CHECK(status IN ('DRAFT','SCHEDULED','PUBLISHED','ARCHIVED')),
         created_at TEXT NOT NULL,
@@ -951,6 +991,32 @@ export class QatafoDatabase {
         updated_at TEXT NOT NULL
       );
       CREATE INDEX IF NOT EXISTS idx_hero_active_order ON hero_slides(active, display_order);
+
+      -- Brouillons du module Hero (Admin). Une ligne par carte modifiée ; jamais lue
+      -- par l'application publique : seule la publication copie vers hero_slides.
+      CREATE TABLE IF NOT EXISTS hero_slide_drafts (
+        id TEXT PRIMARY KEY,
+        change_type TEXT NOT NULL CHECK (change_type IN ('CREATE','UPDATE','DELETE')),
+        image TEXT NOT NULL DEFAULT '',
+        video TEXT NOT NULL DEFAULT '',
+        title TEXT NOT NULL DEFAULT '',
+        title_ar TEXT NOT NULL DEFAULT '',
+        subtitle TEXT NOT NULL DEFAULT '',
+        subtitle_ar TEXT NOT NULL DEFAULT '',
+        cta TEXT NOT NULL DEFAULT '',
+        cta_ar TEXT NOT NULL DEFAULT '',
+        destination_type TEXT NOT NULL DEFAULT '',
+        destination_value TEXT NOT NULL DEFAULT '',
+        bg_mode TEXT NOT NULL DEFAULT 'auto',
+        bg_color TEXT NOT NULL DEFAULT '',
+        display_order INTEGER NOT NULL DEFAULT 0,
+        active INTEGER NOT NULL DEFAULT 1,
+        published_from TEXT NOT NULL DEFAULT '',
+        published_to TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        updated_by TEXT NOT NULL DEFAULT ''
+      );
 
       CREATE TABLE IF NOT EXISTS customers (
         id TEXT PRIMARY KEY,
@@ -1080,6 +1146,22 @@ export class QatafoDatabase {
       CREATE INDEX IF NOT EXISTS idx_customer_otp_phone_created ON customer_otp_challenges(phone, created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_customer_otp_ip_created ON customer_otp_challenges(request_ip, created_at DESC);
 
+      /* Connexion par code e-mail (façon ChatGPT). Le code est haché, jamais stocké
+         en clair ; une seule demande active par adresse (les anciennes sont consommées). */
+      CREATE TABLE IF NOT EXISTS customer_email_code_challenges (
+        id TEXT PRIMARY KEY,
+        email TEXT NOT NULL,
+        code_hash TEXT NOT NULL,
+        expires_at TEXT NOT NULL,
+        consumed_at TEXT,
+        attempts INTEGER NOT NULL DEFAULT 0,
+        max_attempts INTEGER NOT NULL DEFAULT 5,
+        request_ip TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_customer_email_code_email_created ON customer_email_code_challenges(email, created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_customer_email_code_ip_created ON customer_email_code_challenges(request_ip, created_at DESC);
+
       CREATE TABLE IF NOT EXISTS customer_oauth_states (
         id TEXT PRIMARY KEY,
         account_id TEXT REFERENCES customer_accounts(id) ON DELETE SET NULL,
@@ -1109,6 +1191,46 @@ export class QatafoDatabase {
         created_at TEXT NOT NULL
       );
       CREATE INDEX IF NOT EXISTS idx_customer_native_handoff_expiry ON customer_native_handoffs(expires_at);
+
+      /*
+       * Appareils inscrits aux notifications push.
+       *
+       * 'account_id' PEUT être NULL : on accepte l'inscription AVANT la
+       * connexion, sinon personne ne serait jamais prévenu de la commande
+       * qu'il vient de passer en tant que visiteur — et c'est justement la
+       * notification qui compte le plus. L'appareil est rattaché au compte au
+       * moment de la connexion ('attachDevicesToAccount').
+       *
+       * Le jeton est l'identité de l'appareil d'un point de vue FCM : UNIQUE.
+       */
+      CREATE TABLE IF NOT EXISTS customer_push_devices (
+        id TEXT PRIMARY KEY,
+        account_id TEXT REFERENCES customer_accounts(id) ON DELETE CASCADE,
+        session_id TEXT NOT NULL DEFAULT '',
+        token TEXT NOT NULL UNIQUE,
+        platform TEXT NOT NULL DEFAULT 'android' CHECK(platform IN ('android','ios')),
+        locale TEXT NOT NULL DEFAULT 'fr',
+        enabled INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_customer_push_account ON customer_push_devices(account_id);
+
+      /*
+       * Journal d'envoi. L'index UNIQUE (appareil, notification) est la vraie
+       * garantie : sans lui, une notification repassée deux fois dans le
+       * répartiteur serait poussée deux fois sur le téléphone. On préfère
+       * perdre un envoi plutôt que de réveiller quelqu'un deux fois.
+       */
+      CREATE TABLE IF NOT EXISTS customer_push_dispatched (
+        id TEXT PRIMARY KEY,
+        device_id TEXT NOT NULL REFERENCES customer_push_devices(id) ON DELETE CASCADE,
+        notification_id TEXT NOT NULL,
+        status TEXT NOT NULL,
+        detail TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_customer_push_once ON customer_push_dispatched(device_id, notification_id);
 
       CREATE TABLE IF NOT EXISTS customer_addresses (
         id TEXT PRIMARY KEY,
@@ -1266,7 +1388,7 @@ export class QatafoDatabase {
       CREATE INDEX IF NOT EXISTS idx_assistant_support_account ON assistant_support_tickets(account_id, created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_assistant_support_conversation ON assistant_support_tickets(conversation_id, created_at DESC);
 
-      -- Canonical AYROVI tool security audit: no model arguments or provider
+      -- Canonical ZAYROVI tool security audit: no model arguments or provider
       -- payloads are stored here. Every proposal is classified before dispatch.
       CREATE TABLE IF NOT EXISTS assistant_tool_audit (
         id TEXT PRIMARY KEY,
@@ -1493,6 +1615,17 @@ export class QatafoDatabase {
     this.ensureColumn('crm_extraction_jobs', 'lease_expires_at', 'TEXT');
     this.ensureColumn('crm_extraction_jobs', 'retry_at', 'TEXT');
     this.ensureColumn('crm_extracted_products', 'arrival_client_store_id', 'TEXT REFERENCES crm_arrival_client_stores(id) ON DELETE CASCADE');
+    // Contenu « Shoppable » (Reels, Publications, Stories) : mode + produit lié.
+    // Additif et idempotent : les lignes existantes deviennent `normal` sans produit.
+    // `stories.product_id` existe déjà (ancienne colonne) : seul le mode est ajouté.
+    const contentMode = "TEXT NOT NULL DEFAULT 'normal' CHECK(content_mode IN ('normal','shoppable'))";
+    this.ensureColumn('reels', 'content_mode', contentMode);
+    this.ensureColumn('reels', 'product_id', 'TEXT REFERENCES products(id) ON DELETE SET NULL');
+    // Image de couverture du Reel (affichée sur la tuile et avant la lecture). Vide = pas de couverture.
+    this.ensureColumn('reels', 'poster_url', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('publications', 'content_mode', contentMode);
+    this.ensureColumn('publications', 'product_id', 'TEXT REFERENCES products(id) ON DELETE SET NULL');
+    this.ensureColumn('stories', 'content_mode', contentMode);
     // Operational line-item fields produced by the AI Extraction Schema and
     // carried through Normalization. Nullable at the DB level (application
     // model) — the AI schema itself stays union-free.
@@ -1610,10 +1743,10 @@ export class QatafoDatabase {
       CREATE INDEX IF NOT EXISTS idx_crm_ship_dispatch_shipment ON crm_shipment_dispatches(shipment_id);
       CREATE INDEX IF NOT EXISTS idx_crm_ship_dispatch_status ON crm_shipment_dispatches(status);
 
-      -- ---- Category Master (official AYROVI product taxonomy) ----
+      -- ---- Category Master (official ZAYROVI product taxonomy) ----
       -- The single authoritative list of product categories used by the Arrival
       -- CRM AI classifier. It is NEVER hardcoded in application code: rows are
-      -- imported/managed by Administration from the official AYROVI Warehouse
+      -- imported/managed by Administration from the official ZAYROVI Warehouse
       -- Core taxonomy. An empty master means nothing can be classified, so
       -- lines stay in review instead of being assigned an invented category.
       CREATE TABLE IF NOT EXISTS crm_categories (
@@ -1642,14 +1775,8 @@ export class QatafoDatabase {
     this.recordArrivalMultistoreMigration();
     seedArrivalStores(this);
 
-    // شريط الإعلانات العلوي (Trust Ticker) — إنشاء الجدول وزرع الرسائل الافتراضية مرة واحدة
-    this.db.exec(ANNOUNCEMENT_MESSAGES_TABLE_SQL);
-
     // Barre publique sous l'en-tête — les onglets sont pilotés depuis l'Admin (onglet de navigation).
     this.db.exec(PUBLIC_NAV_ITEMS_TABLE_SQL);
-
-    // نظام Hero — جدول visuals قابل للتوسع مستقبلاً (صور متعددة/موبايل)
-    this.db.exec(HERO_VISUALS_TABLE_SQL);
 
     // AYROVIX LENS HERO — إعدادات قابلة للإدارة من الـAdmin (المحتوى فقط)
     this.db.exec(`CREATE TABLE IF NOT EXISTS lens_hero_settings (
@@ -1679,7 +1806,7 @@ export class QatafoDatabase {
     this.ensureColumn('lens_hero_settings', 'element_order', "TEXT NOT NULL DEFAULT 'eyebrow,title,description,cta,proof'");
     this.ensureColumn('lens_hero_settings', 'sort_order', 'INTEGER NOT NULL DEFAULT 40');
     this.ensureColumn('lens_hero_settings', 'phone_image', "TEXT NOT NULL DEFAULT '/media/hero-femme.jpg'");
-    this.ensureColumn('lens_hero_settings', 'phone_status_label', "TEXT NOT NULL DEFAULT 'AYROVI LENS'");
+    this.ensureColumn('lens_hero_settings', 'phone_status_label', "TEXT NOT NULL DEFAULT 'ZAYROVI LENS'");
     this.ensureColumn('lens_hero_settings', 'phone_result_label', "TEXT NOT NULL DEFAULT 'Produit identifié'");
     this.ensureColumn('lens_hero_settings', 'phone_product_name', "TEXT NOT NULL DEFAULT 'Sneakers blanches — 89,00 €'");
     this.ensureColumn('lens_hero_settings', 'phone_price_chip', "TEXT NOT NULL DEFAULT '≈ 298,900 TND'");
@@ -1704,7 +1831,7 @@ export class QatafoDatabase {
     // depuis Admin → Stories → Bloc d'accueil — rien n'est figé dans le code.
     this.db.exec(`CREATE TABLE IF NOT EXISTS stories_showcase_settings (
       id TEXT PRIMARY KEY CHECK(id='global'),
-      title TEXT NOT NULL DEFAULT 'Social AYROVI',
+      title TEXT NOT NULL DEFAULT 'Social ZAYROVI',
       subtitle TEXT NOT NULL DEFAULT 'Le meilleur de la semaine',
       cta_label TEXT NOT NULL DEFAULT 'Explorer toutes les stories',
       cta_url TEXT NOT NULL DEFAULT '',
@@ -1734,11 +1861,11 @@ export class QatafoDatabase {
             { icon: 'zap', label: 'Rapide & précis' },
           ],
           aiCard: {
-            title: 'Propulsé par l’IA AYROVI',
+            title: 'Propulsé par l’IA ZAYROVI',
             text: 'Notre intelligence artificielle identifie les produits, compare des milliers d’options et vous aide à acheter mieux, au meilleur prix.',
           },
           phone: {
-            topLabel: 'AYROVI LENS',
+            topLabel: 'ZAYROVI LENS',
             image: '/media/lens-sneakers.jpg',
             resultLabel: 'Produit identifié',
             productName: 'Sneakers blanches',
@@ -1776,27 +1903,65 @@ export class QatafoDatabase {
       }
     }
 
-    // HERO — المحتوى (عنوان/وصف/CTA) يُدار من الـ Dashboard، لا من الكود
-    this.db.exec(`CREATE TABLE IF NOT EXISTS hero_content_settings (
+    // Suppression DÉFINITIVE des anciens modèles Hero (décision produit 2026-10-10) :
+    // « un seul Hero, dynamique ». Exception documentée à la règle « jamais de DROP ».
+    this.db.exec('DROP TABLE IF EXISTS hero_visuals');
+    this.db.exec('DROP TABLE IF EXISTS hero_content_settings');
+
+    // ── Carrousel Hero (09/10/2026) : slides administrables + fond adaptatif ──
+    // Colonnes additives uniquement (contrat initSchema : jamais de DROP/RENAME).
+    this.ensureColumn('hero_slides', 'title_ar', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('hero_slides', 'subtitle_ar', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('hero_slides', 'cta_ar', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('hero_slides', 'destination_type', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('hero_slides', 'destination_value', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('hero_slides', 'bg_mode', "TEXT NOT NULL DEFAULT 'auto'");
+    this.ensureColumn('hero_slides', 'bg_color', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('hero_slides', 'palette', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('hero_slides', 'published_from', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('hero_slides', 'published_to', "TEXT NOT NULL DEFAULT ''");
+
+    // Réglages du carrousel (singleton 'global') — même pattern que les autres singletons.
+    this.db.exec(`CREATE TABLE IF NOT EXISTS hero_carousel_settings (
       id TEXT PRIMARY KEY CHECK(id='global'),
-      eyebrow TEXT NOT NULL DEFAULT '',
-      title TEXT NOT NULL DEFAULT '',
-      highlight TEXT NOT NULL DEFAULT 'AYROVI',
-      description TEXT NOT NULL DEFAULT '',
-      cta_label TEXT NOT NULL DEFAULT '',
-      cta_url TEXT NOT NULL DEFAULT '',
-      accent_color TEXT NOT NULL DEFAULT '#FF6900',
-      element_order TEXT NOT NULL DEFAULT 'eyebrow,title,description,cta',
       enabled INTEGER NOT NULL DEFAULT 1,
-      sort_order INTEGER NOT NULL DEFAULT 10,
+      max_cards INTEGER NOT NULL DEFAULT 6,
+      autoplay INTEGER NOT NULL DEFAULT 0,
+      autoplay_interval_ms INTEGER NOT NULL DEFAULT 5000,
+      transition_ms INTEGER NOT NULL DEFAULT 300,
+      pagination_visible INTEGER NOT NULL DEFAULT 1,
       updated_at TEXT NOT NULL
     );`);
-    if (!(this.db.prepare("SELECT COUNT(*) count FROM hero_content_settings WHERE id='global'").get() as { count: number }).count) {
-      this.run(`INSERT INTO hero_content_settings (id,title,description,updated_at) VALUES ('global',?,?,?)`,
-        'Vous le voyez.\nAYROVI vous le livre.',
-        'Mode, beauté, technologie, maison… trouvez ce que vous cherchez. AYROVI s’occupe du reste.',
-        new Date().toISOString());
+    if (!(this.db.prepare("SELECT COUNT(*) count FROM hero_carousel_settings WHERE id='global'").get() as { count: number }).count) {
+      this.run('INSERT INTO hero_carousel_settings (id,updated_at) VALUES (?,?)', 'global', new Date().toISOString());
     }
+
+    // Section « à la une » de l'accueil mobile — réglages singleton 'global'.
+    // `source` = 'latest' (la plus récente publiée) ou 'pinned' (publication choisie).
+    this.db.exec(`CREATE TABLE IF NOT EXISTS home_featured_settings (
+      id TEXT PRIMARY KEY CHECK(id='global'),
+      enabled INTEGER NOT NULL DEFAULT 1,
+      source TEXT NOT NULL DEFAULT 'latest' CHECK(source IN ('latest','pinned')),
+      publication_id TEXT NOT NULL DEFAULT '',
+      cta_label TEXT NOT NULL DEFAULT '',
+      updated_at TEXT NOT NULL
+    );`);
+    if (!(this.db.prepare("SELECT COUNT(*) count FROM home_featured_settings WHERE id='global'").get() as { count: number }).count) {
+      this.run('INSERT INTO home_featured_settings (id,updated_at) VALUES (?,?)', 'global', new Date().toISOString());
+    }
+
+    // Télémétrie carrousel : impression / clic, sans donnée personnelle (même
+    // philosophie que le funnel d'achat — mesurer ne doit jamais planter).
+    this.db.exec(`CREATE TABLE IF NOT EXISTS hero_events (
+      id TEXT PRIMARY KEY,
+      card_id TEXT NOT NULL,
+      event TEXT NOT NULL CHECK(event IN ('impression','click')),
+      destination_type TEXT NOT NULL DEFAULT '',
+      locale TEXT NOT NULL DEFAULT '',
+      session TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL
+    );
+      CREATE INDEX IF NOT EXISTS idx_hero_events_card ON hero_events(card_id, created_at);`);
 
     // ترتيب كتل الصفحة الرئيسية (transition / discovery / brands / lens) — يُدار من الـ Dashboard
     this.db.exec(`CREATE TABLE IF NOT EXISTS home_blocks (
@@ -1809,22 +1974,6 @@ export class QatafoDatabase {
       const nowBlock = new Date().toISOString();
       const insertBlock = this.db.prepare('INSERT INTO home_blocks (id,sort_order,visible,updated_at) VALUES (?,?,1,?)');
       [['transition', 10], ['discovery', 20], ['brands', 30], ['lens', 40]].forEach(([id, order]) => insertBlock.run(id, order, nowBlock));
-    }
-
-    if (!(this.db.prepare('SELECT COUNT(*) count FROM announcement_messages').get() as { count: number }).count) {
-      const seededAt = new Date().toISOString();
-      const insertSeed = this.db.prepare('INSERT INTO announcement_messages (id,text,display_order,active,created_at,updated_at) VALUES (?,?,?,?,?,?)');
-      this.db.transaction(() => {
-        for (const [index, text] of [
-          'Prix confirmé avant commande',
-          'Dédouanement inclus',
-          'Acompte sécurisé 20 %',
-          'Livraison dans les 24 gouvernorats',
-          'Service client 7j/7',
-        ].entries()) {
-          insertSeed.run(`announcement_${randomUUID()}`, text, index + 1, 1, seededAt, seededAt);
-        }
-      })();
     }
 
     // Barre publique : les trois destinations officielles existent dès la première installation.
@@ -1869,12 +2018,6 @@ export class QatafoDatabase {
     this.ensureColumn('customer_otp_challenges', 'provider', "TEXT NOT NULL DEFAULT 'local'");
     this.ensureColumn('customer_accounts', 'password_hash', 'TEXT');
     this.ensureColumn('customer_accounts', 'avatar_source', "TEXT NOT NULL DEFAULT 'provider'");
-    this.ensureColumn('hero_visuals', 'mobile_focal_x', 'REAL NOT NULL DEFAULT 0.5');
-    this.ensureColumn('hero_visuals', 'mobile_focal_y', 'REAL NOT NULL DEFAULT 0.5');
-    this.ensureColumn('hero_visuals', 'overlay_mode', "TEXT NOT NULL DEFAULT 'AUTO' CHECK(overlay_mode IN ('AUTO','MANUAL'))");
-    this.ensureColumn('hero_visuals', 'overlay_strength', 'REAL');
-    this.ensureColumn('hero_visuals', 'analysis_json', "TEXT NOT NULL DEFAULT ''");
-    this.ensureColumn('hero_visuals', 'orientation_override', "TEXT NOT NULL DEFAULT 'AUTO' CHECK(orientation_override IN ('AUTO','LANDSCAPE','PORTRAIT'))");
     this.ensureColumn('customer_oauth_states', 'provider', "TEXT NOT NULL DEFAULT 'GOOGLE' CHECK(provider IN ('GOOGLE','FACEBOOK','APPLE'))");
     // ترقية القيود القديمة لتشمل دخول Apple (CHECK القديم لا يقبل 'APPLE')
     this.rebuildTableIfLegacy('customer_oauth_states', "'APPLE'", CUSTOMER_OAUTH_STATES_TABLE_SQL, [
@@ -1916,13 +2059,13 @@ export class QatafoDatabase {
     this.ensureColumn('cart_items', 'price_verification_status', "TEXT NOT NULL DEFAULT 'VERIFIED'");
     this.ensureColumn('cart_items', 'price_token', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('cart_items', 'ocerex_extraction_id', "TEXT NOT NULL DEFAULT ''");
-    // دفتر الشروط Stories : قنوات الناشرين (Ayrovi Official / Style / Promos / Actus).
+    // دفتر الشروط Stories : قنوات الناشرين (Zayrovi Official / Style / Promos / Actus).
     this.ensureColumn('stories', 'category', "TEXT NOT NULL DEFAULT 'ARRIVAGE'");
     this.ensureColumn('stories', 'secondary_images', "TEXT NOT NULL DEFAULT '[]'");
     if ((this.db.prepare('SELECT COUNT(*) AS count FROM story_publishers').get() as any).count === 0) {
       const ins = this.db.prepare(`INSERT INTO story_publishers (id,slug,name,subtitle,avatar,official,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)`);
       const nowP = new Date().toISOString();
-      ins.run('pub_ayrovi', 'ARRIVAGE', 'Ayrovi', 'Official', '', 1, nowP, nowP);
+      ins.run('pub_ayrovi', 'ARRIVAGE', 'Zayrovi', 'Official', '', 1, nowP, nowP);
       ins.run('pub_new', 'NEW', 'Nouveautés', 'Channel', '', 0, nowP, nowP);
       ins.run('pub_style', 'STYLE', 'Style', 'Channel', '', 0, nowP, nowP);
       ins.run('pub_actus', 'INFO', 'Actus', 'Channel', '', 0, nowP, nowP);
@@ -1937,7 +2080,7 @@ export class QatafoDatabase {
     if ((this.db.prepare('SELECT COUNT(*) AS count FROM reels').get() as any).count === 0) {
       const nowR = new Date().toISOString();
       this.db.prepare(`INSERT INTO reels (id,title,channel_id,description,video_url,duration_seconds,publish_at,status,views,likes,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,0,0,?,?)`)
-        .run('reel_demo_01', 'La sélection AYROVI en mouvement', 'pub_ayrovi', 'Découvrez la sélection en vidéo.', 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4', 8, nowR, 'publie', nowR, nowR);
+        .run('reel_demo_01', 'La sélection ZAYROVI en mouvement', 'pub_ayrovi', 'Découvrez la sélection en vidéo.', 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4', 8, nowR, 'publie', nowR, nowR);
     }
 
     this.ensureColumn('order_items', 'requested_size', "TEXT NOT NULL DEFAULT ''");
@@ -2496,7 +2639,7 @@ export class QatafoDatabase {
           cta: 'Voir l’arrivage', category: 'ARRIVAGE', priority: 95 },
         { id: 'story_demo_02', media_url: '/media/hero-homme.jpg',
           title: 'Nouveautés de la semaine',
-          description: 'Ce que l’équipe AYROVI a sélectionné pour vous.',
+          description: 'Ce que l’équipe ZAYROVI a sélectionné pour vous.',
           cta: 'Découvrir', category: 'NEW', priority: 90 },
         { id: 'story_demo_03', media_url: '/media/hero-enfants.jpg',
           title: 'Le dressing minimaliste',
@@ -2578,7 +2721,7 @@ export class QatafoDatabase {
   }
 
   /**
-   * AYROVI DESIGN SYSTEM v1.0 — unification de l'échelle neutre (P0 P4/T2).
+   * ZAYROVI DESIGN SYSTEM v1.0 — unification de l'échelle neutre (P0 P4/T2).
    * Les réglages persistés avant cette migration portent l'échelle slate
    * (#111318/#1d2130/#6b7280/#f8f9fe/#e2e8f0/#5b6472/#050505). Ils sont
    * ré-écrits UNE SEULE FOIS vers la canonique : #0A0A0A (surfaces sombres),
@@ -2811,7 +2954,7 @@ export class QatafoDatabase {
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
     const settings = [
-      ['setting_name', 'GENERAL', 'company_name', 'AYROVI', 'STRING', 'Nom de la plateforme'],
+      ['setting_name', 'GENERAL', 'company_name', 'ZAYROVI', 'STRING', 'Nom de la plateforme'],
       ['setting_email', 'GENERAL', 'company_email', 'contact@ayrovi.tn', 'STRING', 'Email'],
       ['setting_phone', 'GENERAL', 'company_phone', '+216 00 000 000', 'STRING', 'Téléphone'],
       ['setting_address', 'GENERAL', 'company_address', 'Tunis, Tunisie', 'STRING', 'Adresse'],
@@ -2823,8 +2966,8 @@ export class QatafoDatabase {
       ['setting_payment_methods', 'PAYMENT', 'payment_methods', JSON.stringify(DEFAULT_PAYMENT_METHODS), 'JSON', 'Méthodes de paiement de l’acompte'],
       ['setting_deposit_percent', 'PAYMENT', 'deposit_percent', '20', 'NUMBER', 'Pourcentage de l’acompte de confirmation (%)'],
       ['setting_deposit_review_delay', 'PAYMENT', 'deposit_review_delay', 'Sous 1 jour ouvré après réception du justificatif', 'STRING', 'Délai indicatif de vérification de l’acompte'],
-      ['setting_unavailable_refund', 'PAYMENT', 'unavailable_refund_policy', 'Acompte remboursé si AYROVI ne peut pas valider ou acheter l’article demandé', 'STRING', 'Politique si l’article ne peut pas être validé'],
-      ['setting_company_legal_name', 'PAYMENT', 'company_legal_name', 'AYROVI', 'STRING', 'Nom légal de l’entreprise (reçus/factures)'],
+      ['setting_unavailable_refund', 'PAYMENT', 'unavailable_refund_policy', 'Acompte remboursé si ZAYROVI ne peut pas valider ou acheter l’article demandé', 'STRING', 'Politique si l’article ne peut pas être validé'],
+      ['setting_company_legal_name', 'PAYMENT', 'company_legal_name', 'ZAYROVI', 'STRING', 'Nom légal de l’entreprise (reçus/factures)'],
       ['setting_bank_rib', 'PAYMENT', 'bank_rib', '', 'STRING', 'RIB pour le virement bancaire'],
       ['setting_poste_account', 'PAYMENT', 'poste_account', '', 'STRING', 'Compte courant postal (mandat poste)'],
       ['setting_flouci_number', 'PAYMENT', 'flouci_number', '', 'STRING', 'Numéro / identifiant Flouci'],
@@ -2848,6 +2991,7 @@ export class QatafoDatabase {
           { id: 'brands', visible: true, order: 30, title: '', subtitle: '', image: '', backgroundColor: '#f8f9fa', textColor: '#111111', paddingY: 0, contained: false },
           { id: 'about', visible: true, order: 40, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#111111', paddingY: 0, contained: false },
           { id: 'footer', visible: true, order: 50, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#111111', paddingY: 0, contained: false },
+          { id: 'announcement', visible: false, order: 25, title: '', subtitle: '', image: '', backgroundColor: '#ff6900', textColor: '#ffffff', paddingY: 48, contained: false, mediaType: 'image', videoUrl: '', ctaLabel: 'Découvrir', ctaTarget: 'app:lens' },
         ],
         typography: { preset: 'ayrovi-a', body: FONT_STACK, display: FONT_STACK, baseSize: 16, align: 'start', headingColor: '#111111', textColor: '#666666', lineHeight: 1.5, letterSpacing: -0.011, headingScale: 1 },
         colors: { pageBackground: '#ffffff', surfaceBackground: '#ffffff', surfaceAlt: '#f8f9fa', borderColor: '#eaeaea', primary: '#111111', primaryDark: '#0a0a0a', primaryLight: '#3f3f46', accent: '#ff6900', headerBackground: '#ffffff', headerText: '#111111', announcementBackground: '#0a0a0a', announcementText: '#ffffff', heroBackground: '#0a0a0a', heroText: '#ffffff', footerBackground: '#ffffff', footerText: '#111111', success: '#15803d', warning: '#666666', danger: '#dc2626' },
@@ -2870,6 +3014,26 @@ export class QatafoDatabase {
         ['hero_femme','/media/hero-femme.jpg','', 'Toute la mode du monde, livrée chez vous.','','','',2,1],
         ['hero_enfants','/media/hero-enfants.jpg','', 'Toute la mode du monde, livrée chez vous.','','','',3,1],
       ].forEach((row) => insert.run(...row, now, now));
+    }
+
+    // Carrousel Hero — six campagnes de découverte initiales, INACTIVES tant que
+    // l’Admin n’a pas uploadé les visuels approuvés (jamais d’image non approuvée
+    // en production). Destinations valides (contrat fermé), ordre déterministe.
+    const heroCampaigns: Array<[string, string, string, number]> = [
+      ['hero_card_tech', 'Tech & Électronique', 'تكنولوجيا وإلكترونيات', 10],
+      ['hero_card_mode_homme', 'Mode homme — AW25', 'أزياء رجالية', 20],
+      ['hero_card_mode_femme', 'Mode femme', 'أزياء نسائية', 30],
+      ['hero_card_sport', 'Sport & Fitness', 'رياضة ولياقة', 40],
+      ['hero_card_streetwear', 'Streetwear', 'أزياء كاجوال', 50],
+      ['hero_card_designer', 'Mode designer', 'أزياء مصمّمين', 60],
+    ];
+    const heroCampaignInsert = this.db.prepare(`INSERT INTO hero_slides
+      (id,image,video,title,title_ar,subtitle,subtitle_ar,cta,cta_ar,target_url,destination_type,destination_value,bg_mode,bg_color,palette,display_order,active,published_from,published_to,created_at,updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+    for (const [id, title, titleAr, order] of heroCampaigns) {
+      const exists = (this.db.prepare('SELECT COUNT(*) AS count FROM hero_slides WHERE id=?').get(id) as { count: number }).count;
+      if (exists) continue;
+      heroCampaignInsert.run(id, '', '', title, titleAr, '', '', '', '', '', 'CAMPAIGN', '', 'auto', '', '', order, 0, '', '', now, now);
     }
 
     if ((this.db.prepare('SELECT COUNT(*) AS count FROM brands').get() as any).count === 0) {
@@ -2910,7 +3074,7 @@ export class QatafoDatabase {
         (id,name,description,image,additional_images,brand_id,brand_name,category,source_url,source_platform,
          original_price,currency,converted_price,customs_fee,shipping_fee,service_fee,final_price,express_available,stock_status,status,created_at,updated_at)
         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
-          'product_demo_01','Ensemble tendance AYROVI','Produit de démonstration relié à l’arrivage actif.',
+          'product_demo_01','Ensemble tendance ZAYROVI','Produit de démonstration relié à l’arrivage actif.',
           '/media/hero-femme.jpg','[]','brand_shein','SHEIN','Mode','https://www.shein.com/','SHEIN',21.99,'EUR',
           breakdown.convertedPriceTND,breakdown.customsFeeTND,breakdown.shippingFeeTND,breakdown.serviceFeeTND,breakdown.totalTND,
           1,'AVAILABLE','ACTIVE',now,now,
@@ -2943,9 +3107,9 @@ export class QatafoDatabase {
       this.db.prepare(`INSERT INTO news_items
         (id,title,summary,content,image,category,arrival_id,product_id,author,published_at,status,created_at,updated_at)
         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
-          'news_arrival_08','Le nouvel arrivage AYROVI est ouvert','Les commandes pour l’arrivage #08 sont maintenant disponibles.',
-          'Préparez vos liens et captures avec Lens. AYROVI centralise le calcul, l’achat et la livraison en Tunisie.',
-          '/media/hero-homme.jpg','NEW_ARRIVAL','arrival_08','product_demo_01','Équipe AYROVI','2026-08-12T00:00:00.000Z','PUBLISHED',now,now,
+          'news_arrival_08','Le nouvel arrivage ZAYROVI est ouvert','Les commandes pour l’arrivage #08 sont maintenant disponibles.',
+          'Préparez vos liens et captures avec Lens. ZAYROVI centralise le calcul, l’achat et la livraison en Tunisie.',
+          '/media/hero-homme.jpg','NEW_ARRIVAL','arrival_08','product_demo_01','Équipe ZAYROVI','2026-08-12T00:00:00.000Z','PUBLISHED',now,now,
         );
     }
 
@@ -2954,10 +3118,10 @@ export class QatafoDatabase {
         (id,category,question,answer,keywords,priority,active,created_at,updated_at)
         VALUES (?,?,?,?,?,?,?,?,?)`);
       insert.run('ai_delivery','FAQ','Quels sont les délais de livraison ?',
-        'AYROVI livre dans les 24 gouvernorats. Le délai indicatif configuré est de 5 à 8 jours ouvrés.',
+        'ZAYROVI livre dans les 24 gouvernorats. Le délai indicatif configuré est de 5 à 8 jours ouvrés.',
         JSON.stringify(['livraison','délai','gouvernorat']),100,1,now,now);
       insert.run('ai_payment','FAQ','Quels moyens de paiement sont disponibles ?',
-        'Les moyens gérés par AYROVI sont le paiement à la livraison, D17 et Flouci.',
+        'Les moyens gérés par ZAYROVI sont le paiement à la livraison, D17 et Flouci.',
         JSON.stringify(['paiement','d17','flouci','livraison']),90,1,now,now);
       insert.run('ai_order','PREDEFINED_RESPONSE','Comment commander ?',
         'Ouvrez Lens, collez le lien du produit ou ajoutez une capture, puis confirmez le panier et vos coordonnées.',

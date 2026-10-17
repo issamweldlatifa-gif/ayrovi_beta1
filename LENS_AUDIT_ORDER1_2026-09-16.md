@@ -1,4 +1,4 @@
-# AYROVI LENS — AUDIT ORDER 1 — 2026-09-16
+# ZAYROVI LENS — AUDIT ORDER 1 — 2026-09-16
 ### CLEAN FIRST — NO ACCUMULATION | Audit only, no file modifications
 
 **Repository:** `issamweldlatifa-gif/ayrovi_beta1` @ `aaac4f2` (main)  
@@ -91,7 +91,7 @@ LensLauncher    →  /api/ayrovix/* →  Vision, Visual Search, Web Search, OCR,
 id, kind: 'catalog'|'external',
 title (≤180), brand|null, model|null,
 colors:[], sizes:[]               // ← always [] for external/visual/web
-source: "Collection AYROVI"|"Google Lens"|merchantLabel,
+source: "Collection ZAYROVI"|"Google Lens"|merchantLabel,
 sourceUrl: string (public https, no creds, no private IP),
 image: string, images?: string[2]  // SerpApi: thumbnail+image; web: '' ; catalog: single
 price: number|null, currency: string|null,  // source currency, never invented

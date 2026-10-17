@@ -83,12 +83,12 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
     { fr: 'Prix de livraison en Tunisie', ar: 'قداش التوصيل لتونس؟', icon: Truck },
   ];
   return <div ref={rootRef} tabIndex={-1} dir={direction} data-ay-design="editorial" data-tone={isDark ? 'dark' : 'light'} data-voice-state={state}
-    className="editorial-voice" role="dialog" aria-modal="true" aria-label={tr('Mode vocal AYROVI', 'الوضع الصوتي AYROVI')}
+    className="editorial-voice" role="dialog" aria-modal="true" aria-label={tr('Mode vocal ZAYROVI', 'الوضع الصوتي ZAYROVI')}
     onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); if (showSettings) setShowSettings(false); else onExit(); } }}>
     <input ref={fileRef} type="file" accept="image/*" hidden onChange={event => { const file = event.target.files?.[0]; if (file && onAddAttachment) onAddAttachment(file); event.target.value = ''; }} />
     <header className="editorial-voice__header" inert={showSettings}>
       <button type="button" className="voice-icon-button" onClick={onExit} aria-label={tr('Fermer le mode vocal', 'إغلاق الوضع الصوتي')}><X size={22}/></button>
-      <span className="editorial-voice__brand" dir="ltr"><i aria-hidden/>AYROVI VOICE</span>
+      <span className="editorial-voice__brand" dir="ltr"><i aria-hidden/>ZAYROVI VOICE</span>
       <button type="button" className="voice-icon-button" onClick={() => setShowSettings(true)} aria-haspopup="dialog" aria-expanded={showSettings} aria-label={tr('Options du mode vocal', 'خيارات الوضع الصوتي')}><SlidersHorizontal size={22}/></button>
     </header>
     <main className="editorial-voice__body" inert={showSettings}>

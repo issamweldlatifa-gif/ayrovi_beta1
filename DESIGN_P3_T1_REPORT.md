@@ -1,4 +1,4 @@
-# AYROVI — P3 / T1 : توحيد الرموز (couche back-office)
+# ZAYROVI — P3 / T1 : توحيد الرموز (couche back-office)
 
 **Date :** 2026-09-06 · **Branche :** `main` · **Périmètre décidé :** `/admin` uniquement (décision D‑02 de la session P3) · **Garantie maîtresse :** aucun changement de rendu, pixel pour pixel.
 

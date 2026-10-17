@@ -1,12 +1,12 @@
 /**
- * AYROVI Mailer — إرسال البريد عبر مزوّدات HTTP (بدون مكتبات إضافية).
+ * ZAYROVI Mailer — إرسال البريد عبر مزوّدات HTTP (بدون مكتبات إضافية).
  *
  * المزوّدات المدعومة عبر MAIL_PROVIDER:
  *   - resend    (https://resend.com)        → MAIL_API_KEY=re_...
  *   - brevo     (https://brevo.com)         → MAIL_API_KEY=xkeysib-...
  *   - sendgrid  (https://sendgrid.com)      → MAIL_API_KEY=SG....
  *
- * MAIL_FROM   : "AYROVI <no-reply@votredomaine.tn>" (يجب أن يكون مُتحققًا منه لدى المزوّد)
+ * MAIL_FROM   : "ZAYROVI <no-reply@votredomaine.tn>" (يجب أن يكون مُتحققًا منه لدى المزوّد)
  *
  * بدون إعداد → يكتب في السجل فقط (console) ولا يفشل أبدًا.
  */
@@ -36,7 +36,7 @@ function parseFrom(raw: string): { email: string; name?: string } {
 export async function sendMail(input: MailInput): Promise<MailResult> {
   const provider = (process.env.MAIL_PROVIDER || '').trim().toLowerCase();
   const apiKey = (process.env.MAIL_API_KEY || '').trim();
-  const from = (process.env.MAIL_FROM || '').trim() || 'AYROVI <no-reply@ayrovi.tn>';
+  const from = (process.env.MAIL_FROM || '').trim() || 'ZAYROVI <no-reply@ayrovi.tn>';
 
   if (!mailerReady()) {
     console.info(`[Mail] (غير مفعّل — MAIL_PROVIDER=${provider || 'غير مضبوط'}) إلى=${input.to} الموضوع="${input.subject}"`);

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""AYROVI high-precision icon tracer: PNG/JPG → SVG 24×24 + measurements.
+"""ZAYROVI high-precision icon tracer: PNG/JPG → SVG 24×24 + measurements.
 
 Separates black ink from the orange signature, measures real stroke width
 and bounding box, then traces geometry (circles + outline paths).
@@ -303,7 +303,7 @@ def trace(path: Path, epsilon: float = 0.0028, padding: float = 1.55) -> tuple[s
 
 
 def main() -> int:
-    p = argparse.ArgumentParser(description='Trace an AYROVI icon photo to 24×24 SVG')
+    p = argparse.ArgumentParser(description='Trace an ZAYROVI icon photo to 24×24 SVG')
     p.add_argument('images', nargs='+', type=Path)
     p.add_argument('-o', '--out-dir', type=Path, default=Path('docs/ayrovi-icon-refs/traced'))
     p.add_argument('--epsilon', type=float, default=0.0028)

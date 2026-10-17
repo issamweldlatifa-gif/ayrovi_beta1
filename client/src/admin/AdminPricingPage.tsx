@@ -32,7 +32,7 @@ export const PricingPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) => {
   const fields: Array<[string, string]> = [
     ['rateEUR', 'Taux EUR'], ['rateUSD', 'Taux USD'], ['rateGBP', 'Taux GBP'], ['rateJPY', 'Taux JPY'],
     ['exchangeBufferPercent', 'Marge change (%)'], ['freightPerKgTND', 'Fret international (TND/kg)'],
-    ['localDeliveryTND', 'Livraison locale (TND)'], ['commissionPercent', 'Commission AYROVI (%)'],
+    ['localDeliveryTND', 'Livraison locale (TND)'], ['commissionPercent', 'Commission ZAYROVI (%)'],
     ['minimumCommissionTND', 'Minimum commission (TND)'], ['rpdPercent', 'Redevance douane (%)'],
     ['rpdMinimumTND', 'Minimum redevance (TND)'], ['expressFeeTND', 'Supplément Express (TND)'],
   ];
@@ -105,7 +105,7 @@ export const PricingPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) => {
   return <>
     <div className="admin-page-header">
       <div>
-        <span className="admin-eyebrow">AYROVI ADMIN</span>
+        <span className="admin-eyebrow">ZAYROVI ADMIN</span>
         <h1>Prix, douane & acompte</h1>
         <p>Moteur CIF v{form.version}. Tout est calculé côté serveur au millime. Les commandes existantes ne bougent pas.</p>
       </div>
@@ -119,7 +119,7 @@ export const PricingPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) => {
           Synchronisation automatique sur le marché (ExchangeRate-API). La marge change (%) reste le seul markup appliqué au-dessus du taux réel.
           {form.fxSource === 'manual' ? ' Vous avez saisi un taux manuellement : la synchronisation est suspendue — « Actualiser » la réactive.' : ''}
         </p>
-        {canWrite ? <Button busy={fxBusy} onClick={refreshFx}>Actualiser les taux maintenant</Button> : undefined}
+        {canWrite ? <Button variant="secondary" busy={fxBusy} onClick={refreshFx}>Actualiser les taux maintenant</Button> : undefined}
       </section>
 
       <section className="admin-card">
@@ -144,7 +144,7 @@ export const PricingPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) => {
           <Field label="Quantité"><input name="quantity" type="number" min="1" defaultValue="1" /></Field>
           <Field label="Titre / mots-clés"><input name="title" type="text" defaultValue="sneakers Nike" /></Field>
           <Field label="Express"><input name="express" type="checkbox" /></Field>
-          <Button type="submit">Calculer</Button>
+          <Button type="submit" variant="secondary">Calculer</Button>
         </Form>
         {preview && (
           <div className="admin-price-result">

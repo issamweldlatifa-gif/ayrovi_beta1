@@ -1,5 +1,7 @@
 import { chromium } from 'playwright';
 import fs from 'node:fs';
+const identity=JSON.parse(fs.readFileSync('client/src/design/editorial/identity.json','utf8'));
+const rgb=hex=>{const n=parseInt(String(hex).slice(1),16);return `rgb(${n>>16&255}, ${n>>8&255}, ${n&255})`;};
 const output='screenshots/editorial/sonim-playback';fs.mkdirSync(output,{recursive:true});
 const checks=[],errors=[];let page;
 const check=(label,pass,details)=>{checks.push({label,pass:Boolean(pass),details});if(!pass)throw new Error(label+': '+JSON.stringify(details));};
@@ -84,8 +86,15 @@ try {
     await settings.getByRole('button',{name:/^Puck/}).click();await settings.getByRole('button',{name:'0.9x',exact:true}).click();
     check(`${key}: selected preset and rate match the controls`,await settings.locator('.voice-choices [aria-pressed=true]').innerText().then(text=>text.includes('Puck'))&&await settings.locator('.voice-rates [aria-pressed=true]').innerText()==='0.9x');
     // Wait for the inherited color transition too, not merely aria-pressed.
-    await page.waitForFunction(()=>{const button=document.querySelector('.voice-rates [aria-pressed=true]');return button&&getComputedStyle(button).backgroundColor==='rgb(0, 0, 0)'&&getComputedStyle(button.firstElementChild).color==='rgb(255, 255, 255)';});
-    check(`${key}: selected rate settles on readable action contrast`,await settings.locator('.voice-rates [aria-pressed=true]').evaluate(el=>getComputedStyle(el).color===getComputedStyle(el.firstElementChild).color));
+    // Charte v4.2.0 (violet au minimum) : un choix sélectionné = fond violet clair
+    // (accentSoft #C5B2F4), libellé noir (onAccentSoft, 10,4:1) et contour violet ;
+    // le violet plein reste réservé à l'action principale.
+    await page.waitForFunction(({soft,onSoft})=>{const button=document.querySelector('.voice-rates [aria-pressed=true]');return button&&getComputedStyle(button).backgroundColor===soft&&getComputedStyle(button.firstElementChild).color===onSoft;},{soft:rgb(identity.colors.accentSoft),onSoft:rgb(identity.colors.onAccentSoft)});
+    check(`${key}: selected rate settles on readable selected-state contrast`,await settings.locator('.voice-rates [aria-pressed=true]').evaluate(el=>getComputedStyle(el).color===getComputedStyle(el.firstElementChild).color));
+    // Le survol (`.editorial-voice button:hover`) noircit le contour du bouton qu'on vient
+    // de toucher : on écarte le pointeur avant de lire le contour de l'état sélectionné.
+    await page.mouse.move(1,1);
+    check(`${key}: selected rate keeps its violet outline`,await page.waitForFunction(outline=>{const button=document.querySelector('.voice-rates [aria-pressed=true]');return button&&getComputedStyle(button).borderTopColor===outline;},rgb(identity.colors.accent),{timeout:5000}).then(()=>true,()=>false));
     await page.screenshot({path:`${output}/settings-${locale}-${width}.png`});
     await page.evaluate(()=>document.documentElement.style.fontSize='200%');
     const bounds=await settings.evaluate(el=>({client:el.clientWidth,scroll:el.scrollWidth}));

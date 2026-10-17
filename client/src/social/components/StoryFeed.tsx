@@ -13,7 +13,7 @@ const PostHeader: React.FC<{ post: StoryPost; light?: boolean }> = ({ post, ligh
   return (
     <div className="flex items-center gap-2.5 px-4 pb-3 pt-4 sm:px-5">
       <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-white">
-        {post.publisher.official ? <img src="/media/logo-ayrovi.png" alt="" className="h-10 w-10 object-contain p-1" /> : post.publisher.avatar ? <img src={post.publisher.avatar} alt="" className="h-10 w-10 object-cover" /> : <span className="text-xs font-black text-ink">{post.publisher.name.slice(0, 2).toUpperCase()}</span>}
+        {post.publisher.official ? <img src="/media/logo-ayrovi.png?v=5.0" alt="" className="h-10 w-10 object-contain p-1" /> : post.publisher.avatar ? <img src={post.publisher.avatar} alt="" className="h-10 w-10 object-cover" /> : <span className="text-xs font-black text-ink">{post.publisher.name.slice(0, 2).toUpperCase()}</span>}
       </span>
       <div className="min-w-0 flex-1 leading-tight">
         <p className={`flex items-center gap-1 text-sm font-extrabold ${light ? 'text-white' : 'text-ink'}`}>
@@ -65,7 +65,7 @@ const PostMedia: React.FC<{ post: StoryPost; onOpenReels?: (post: StoryPost) => 
           setSlide(Math.round(element.scrollLeft / element.clientWidth));
         }}>
           {post.media.map((media, index) => (
-            <img key={index} src={media.url} alt="" loading="lazy" className="aspect-[4/5] w-full shrink-0 snap-center object-cover" />
+            <img key={index} src={media.url} alt="" loading="lazy" className="aspect-[3/4] w-full shrink-0 snap-center object-cover" />
           ))}
         </div>
         <span className="absolute end-3 top-3 rounded-full bg-black/60 px-2.5 py-1 text-xs font-black text-white">{slide + 1} / {post.media.length}</span>
@@ -87,7 +87,7 @@ const PostMedia: React.FC<{ post: StoryPost; onOpenReels?: (post: StoryPost) => 
       </button>
     );
   }
-  return <img src={post.media[0].url} alt="" loading="lazy" className="aspect-[4/5] w-full object-cover" />;
+  return <img src={post.media[0].url} alt="" loading="lazy" className="aspect-[3/4] w-full object-cover" />;
 };
 
 const PostActions: React.FC<{

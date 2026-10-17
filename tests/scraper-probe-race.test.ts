@@ -120,40 +120,22 @@ describe('raceProbes — la première sonde utile gagne', () => {
   });
 });
 
-describe('scraper — câblage de la course parallèle', () => {
+describe('scraper — lecture unique via Bright Data', () => {
   const scraper = readFileSync('src/scraper/scraper.ts', 'utf8');
 
-  it('la lecture d’une fiche passe par la course de sondes', () => {
-    expect(scraper).toContain("import { raceProbes, type ProbeAttempt } from './probeRace'");
-    expect(scraper).toContain('const raced = await raceProbes(attempts');
-    // Phase 1 (06/10/2026) : les deux empreintes ne partent plus en parallèle.
-    expect(scraper).toContain('readerProbePlan(storeType)');
-    expect(scraper).toContain('readerHeaders(step.profile)');
-    expect(scraper).not.toContain('direct_mobile: {');
+  it('aucune lecture directe du marchand : plus de sondes HTTP directes', () => {
+    expect(scraper).not.toContain('probeDirectHtml');
+    expect(scraper).not.toContain('fetchSafeRemote(');
+    expect(scraper).not.toContain('readerProbePlan');
+    expect(scraper).not.toContain('raceProbes');
   });
 
-  it('le lecteur Jina reste le repli documenté, avec son en-tête HTML', () => {
-    expect(scraper).toContain('https://r.jina.ai/${url}');
-    expect(scraper).toContain("provider: 'jina'");
-    expect(scraper).toContain("AYROVI_JINA_READER !== 'false'");
-    expect(scraper).toContain("'X-Return-Format': 'html'");
-  });
-
-  it('les budgets de sonde sont réglables par environnement', () => {
-    expect(scraper).toContain("positiveIntEnv('AYROVIX_DIRECT_TIMEOUT_MS'");
-    expect(scraper).toContain("positiveIntEnv('AYROVIX_JINA_TIMEOUT_MS'");
-    // Le départ de Jina est calculé APRÈS le repli gratuit (readerFingerprint.ts),
-    // et reste surchargeable par AYROVIX_JINA_HEADSTART_MS.
-    expect(scraper).toContain('readerJinaHeadstartMs()');
-  });
-
-  it('le rendu payant reste le dernier recours, jamais la première dépense', () => {
-    const stageB = scraper.indexOf('fetchRenderedProductPage(url)');
-    const stageA = scraper.indexOf('const raced = await raceProbes(attempts');
-    expect(stageA).toBeGreaterThan(0);
-    expect(stageB).toBeGreaterThan(stageA);
-    expect(scraper).toContain('ÉTAPE B — rendu payant, uniquement si');
-    expect(scraper).toContain('ÉTAPE A — course des sondes gratuites');
+  it('Bright Data est le seul chemin, sans clé = aucun appel', () => {
+    expect(scraper).not.toContain('r.jina.ai');
+    expect(scraper).toContain("provider: 'brightdata'");
+    expect(scraper).toContain('if (!brightDataReady())');
+    expect(scraper).toContain("'BRIGHTDATA_NOT_CONFIGURED'");
+    expect(scraper).toContain("positiveIntEnv('AYROVIX_BRIGHTDATA_TIMEOUT_MS'");
   });
 });
 

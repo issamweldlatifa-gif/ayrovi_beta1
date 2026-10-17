@@ -30,7 +30,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onTo
   const iconStyle = (active = false): React.CSSProperties => ({
     width: Math.max(iconConfig.size, 30),
     height: Math.max(iconConfig.size, 30),
-    color: active ? (iconConfig.activeColor || '#ff6900') : (iconConfig.color || '#000000'),
+    color: active ? (iconConfig.activeColor || 'var(--ay-e-accent-text)') : (iconConfig.color || '#000000'),
     fill: 'none',
   });
   useBodyScrollLock(isVisionOpen);
@@ -67,13 +67,13 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onTo
     <>
       {isVisionOpen && (
         <section className="fixed inset-0 z-50 overflow-y-auto bg-surface" role="dialog" aria-modal="true" aria-label={tr('Vision — bientôt disponible', 'Vision — قريبًا')} dir={direction}>
-          <AppHeader title="AYROVI Vision" subtitle={tr('Nouveau module visuel', 'وحدة بصرية جديدة')} onClose={() => navigation.back()} />
+          <AppHeader title="ZAYROVI Vision" subtitle={tr('Nouveau module visuel', 'وحدة بصرية جديدة')} onClose={() => navigation.back()} />
           <div className="grid min-h-[calc(100dvh-5rem)] place-items-center px-5 pb-24 text-center">
             <div className="w-full max-w-sm rounded-card border border-line bg-white p-8 shadow-overlay">
               <span className="mx-auto grid h-11 w-11 place-items-center rounded-control bg-surface text-ink"><Vision className="h-11 w-11" /></span>
-              <p className="mt-5 text-xs font-extrabold uppercase tracking-[0.2em] text-ink">AYROVI Vision</p>
+              <p className="mt-5 text-xs font-extrabold uppercase tracking-[0.2em] text-ink">ZAYROVI Vision</p>
               <h2 className="mt-2 font-display text-3xl font-black text-ink">{tr('Bientôt disponible', 'قريبًا')}</h2>
-              <p className="mx-auto mt-3 max-w-xs text-sm leading-6 text-muted">{tr('Une nouvelle expérience visuelle AYROVI est en préparation.', 'نعمل على تجربة بصرية جديدة من AYROVI.')}</p>
+              <p className="mx-auto mt-3 max-w-xs text-sm leading-6 text-muted">{tr('Une nouvelle expérience visuelle ZAYROVI est en préparation.', 'نعمل على تجربة بصرية جديدة من ZAYROVI.')}</p>
             </div>
           </div>
         </section>
@@ -89,7 +89,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onTo
             <LensBox className="interface-runtime-icon" style={iconStyle(false)} />
             {config.showLabels && <span className="max-w-full truncate">{config.lensLabel}</span>}
           </button>
-          <button type="button" onClick={onToggleAiDrawer} className={NAV_ITEM} aria-label={tr("SONIM — l'assistant IA d'AYROVI", 'SONIM — المساعد الذكي لـ AYROVI')} aria-pressed={isAiDrawerOpen}>
+          <button type="button" onClick={onToggleAiDrawer} className={NAV_ITEM} aria-label={tr("SONIM — l'assistant IA de ZAYROVI", 'SONIM — المساعد الذكي لـ ZAYROVI')} aria-pressed={isAiDrawerOpen}>
             <Sonim className="interface-runtime-icon" style={iconStyle(isAiDrawerOpen)} />
             {config.showLabels && <span className={`max-w-full truncate ${isAiDrawerOpen ? 'text-cta' : ''}`}>{config.aiLabel}</span>}
           </button>
@@ -102,7 +102,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onTo
           <button type="button" onClick={() => navigation.navigate([{ id: 'app:vision' }])} className={NAV_ITEM} aria-label={tr('Vision — bientôt disponible', 'Vision — قريبًا')} aria-current={isVisionOpen ? 'page' : undefined}>
             <Vision className="interface-runtime-icon" style={iconStyle(isVisionOpen)} />
             {config.showLabels && <span className={`max-w-full truncate ${isVisionOpen ? 'text-cta' : ''}`}>{config.visionLabel}</span>}
-            <span className="absolute end-2 top-1.5 h-1.5 w-1.5 rounded-full bg-cta" aria-hidden="true" />
+            <span className="absolute end-2 top-1.5 h-1.5 w-1.5 rounded-full bg-ink" aria-hidden="true" />
           </button>
           <button type="button" onClick={() => navigation.navigate([{ id: 'app:ocerex' }])} className={NAV_ITEM} aria-label={tr('OCEREX — prix depuis une image', 'OCEREX — السعر من صورة')} aria-current={isOcerexOpen ? 'page' : undefined}>
             <ScanSearch className="interface-runtime-icon" style={iconStyle(isOcerexOpen)} />

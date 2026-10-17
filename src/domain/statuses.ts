@@ -1,5 +1,5 @@
 /**
- * AYROVI Back Office (P2.0) — vocabulaires de statut partagés.
+ * ZAYROVI Back Office (P2.0) — vocabulaires de statut partagés.
  *
  * Anomalie mesurée en Discovery (DUP-03) : le vocabulaire des statuts de commande vivait en
  * 127 occurrences sur 7 fichiers (CHECK de la DDL, handlers admin, routes customer,

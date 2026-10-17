@@ -218,12 +218,13 @@ describe('câblage — le lien SerpApi est bien lu dans le pipeline Lens', () =>
   const scraper = readFileSync('src/scraper/scraper.ts', 'utf8');
 
   it('la grille Lens passe par l’enrichissement stock avant réponse', () => {
-    expect(route).toContain("import { enrichCandidatesLiveStock, filterPurchasable, refreshLiveStock } from './services/lensLiveStock'");
+    expect(route).toContain("import { enrichCandidatesLiveStock, filterPurchasable, purchaseBlocker, refreshLiveStock } from './services/lensLiveStock'");
     expect(route).toContain("router.post('/live-stock'");
     expect(route).toContain('fetcher: (url) => scraper.scrapeParsedPage(url).then((result) => result.data)');
     expect(route).toContain('await enrichCandidatesLiveStock(candidates');
     expect(route).toContain('filterPurchasable(liveCandidates)');
-    expect(route).toContain('tokenizedCandidates(purchasable.candidates)');
+    expect(route).toContain('...purchasable.candidates');
+    expect(route).toContain('visualFallback.map(safeVisualDiscoveryCandidate)');
   });
 
   it('le scraper est réutilisé, jamais recòpié : même chaîne de confiance', () => {
@@ -357,6 +358,12 @@ describe('applyLiveStock — pose des faits, jamais des suppositions', () => {
     expect(target.availability).toBeUndefined();
   });
 
+  it('une page muette efface le stock périmé de SerpApi', () => {
+    const target = candidate({ availability: 'in_stock', priceOrigin: 'search' });
+    applyLiveStock(target, { availability: 'unknown', sizes: [], colors: [], images: [], variants: [], at: Date.now() });
+    expect(target.availability).toBe('unknown');
+  });
+
   it('dédoublonne les images et complète l’image principale manquante', () => {
     const target = candidate({ image: '', images: [] });
     applyLiveStock(target, {
@@ -417,7 +424,7 @@ describe('vérité marchande — le prix de la page remplace l’extrait SerpApi
     expect(entryFromPage(page({ price: 50, originalPrice: 69.9 }), 1).originalPrice).toBe(69.9);
   });
 
-  it('ne touche jamais au prix du catalogue AYROVI', () => {
+  it('ne touche jamais au prix du catalogue ZAYROVI', () => {
     const own = candidate({ kind: 'catalog', price: 80, currency: 'TND' });
     applyLiveStock(own, entryFromPage(page({ price: 20, currency: 'EUR' }), 1), reprice);
     expect(own.price).toBe(80);
@@ -430,13 +437,19 @@ describe('vérité marchande — le prix de la page remplace l’extrait SerpApi
     expect(item.brand).toBe('Champion');
   });
 
+  it('une page lue sans description n’expose pas l’ancien extrait SerpApi', () => {
+    const item = candidate({ description: 'Prix en ligne : 49,99 EUR, stock disponible.' });
+    applyLiveStock(item, entryFromPage(page({ description: null, availability: 'in_stock' }), 1));
+    expect(item.description).toBeNull();
+  });
+
   it('la relecture fraîche rend aussi le prix du jour, recalculé', async () => {
     const fetcher = vi.fn<LiveStockFetcher>(async () => page({ price: 228.95, originalPrice: 309.95, availability: 'in_stock' }));
     const { results } = await refreshLiveStock(['https://shop.tn/pants'], { fetcher, reprice });
     expect(results[0]).toMatchObject({ price: 228.95, currency: 'EUR', originalPrice: 309.95, priceTnd: 915.8, originalPriceTnd: 1239.8 });
   });
 
-  it('la route passe le calculateur AYROVI au lecteur de pages (grille ET relecture)', () => {
+  it('la route passe le calculateur ZAYROVI au lecteur de pages (grille ET relecture)', () => {
     expect(route.split('reprice: (price, currency) =>').length - 1).toBe(2);
     expect(route).toContain('estimateWithDb(db, price, currency)');
   });
@@ -480,6 +493,13 @@ describe('achetabilité — seules les fiches prouvées atteignent le client', (
     expect(purchaseBlocker(item)).toBe('prix_non_lu');
   });
 
+  it('un prix regex non validé par la page ne passe pas le filtre d’achat', () => {
+    const item = proven({ price: null, currency: null }, { price: 35.95, priceSource: 'context_regex' });
+    expect(item.priceOrigin).toBe('merchant');
+    expect(item.priceVerificationStatus).not.toBe('VERIFIED');
+    expect(purchaseBlocker(item)).toBe('prix_non_lu');
+  });
+
   it('écarte une rupture annoncée, ou toutes les tailles indisponibles', () => {
     expect(purchaseBlocker(proven({}, { availability: 'out_of_stock' }))).toBe('rupture');
     // Les tailles explicitement indisponibles sont déjà retirées par le parseur :
@@ -508,8 +528,13 @@ describe('achetabilité — seules les fiches prouvées atteignent le client', (
     expect(purchaseBlocker(proven({ image: '' }, { images: [] }))).toBe('sans_image');
   });
 
-  it('le catalogue AYROVI passe tel quel : il porte sa propre preuve de stock', () => {
+  it('le catalogue ZAYROVI garde sa preuve, sauf rupture explicitement publiée', () => {
     expect(purchaseBlocker(candidate({ kind: 'catalog' }))).toBeNull();
+    expect(purchaseBlocker(candidate({ kind: 'catalog', availability: 'out_of_stock' }))).toBe('rupture');
+  });
+
+  it('un indice out-of-stock SerpApi ne suffit pas à masquer une correspondance', () => {
+    expect(purchaseBlocker(candidate({ availability: 'out_of_stock' }))).toBe('page_non_lue');
   });
 
   it('par défaut n\'affiche que les fiches prêtes (page + prix + stock + options)', () => {
@@ -550,7 +575,10 @@ describe('achetabilité — seules les fiches prouvées atteignent le client', (
     const route = readFileSync('src/ayrovix/routes.ts', 'utf8');
     const block = route.split("router.post('/analyze-image'")[1].split("router.post('/analyze-url'")[0];
     expect(block.indexOf('await enrichCandidatesLiveStock(')).toBeLessThan(block.indexOf('filterPurchasable(liveCandidates)'));
-    expect(block).toContain('tokenizedCandidates(purchasable.candidates)');
-    expect(block).toContain('excluded: { count: purchasable.report.excluded');
+    expect(block).toContain('filterLenientCandidates(liveCandidates, 24)');
+    expect(block).toContain('purchaseBlocker(candidate)');
+    expect(block).toContain('visualFallback.map(safeVisualDiscoveryCandidate)');
+    expect(block).toContain('excluded: { count: excludedCount, reasons: excludedReasons }');
+    expect(block).toContain('!isConfirmedOutOfStockCandidate(candidate)');
   });
 });

@@ -2,7 +2,7 @@ import React from 'react';
 import { twMerge } from 'tailwind-merge';
 
 /**
- * AYROVI DS v1.0 — Price.
+ * ZAYROVI DS v1.0 — Price.
  * Affichage canonique des montants TND : encre noire, tabulaires,
  * prix barré optionnel (gris secondaire) + libellé devise.
  */

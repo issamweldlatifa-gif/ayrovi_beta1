@@ -1,3 +1,4 @@
+import { availableProductParams, availableProductSql } from '../catalogue/contentProducts';
 import { Router, Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import { SmartLinkScraper } from '../scraper/scraper';
@@ -14,7 +15,7 @@ import { notifyNewOrder } from '../services/orderNotification';
 import { customerFromRequest, requireCustomer, resolveCustomer } from '../customer/auth';
 import { InvalidImageError, normalizeUploadedImage } from '../services/imageValidation';
 import { isUnsafeHostname, parsePublicHttpUrl, UnsafeUrlError } from '../services/safeUrl';
-import { verifyAyrovixPriceToken } from '../ayrovix/priceQuote';
+import { inspectAyrovixPriceToken, verifyAyrovixPriceToken } from '../ayrovix/priceQuote';
 import { attachOcerexExtractionsToOrder } from '../ocerex/store';
 import { recordOcerexEvent } from '../ocerex/analytics';
 import { funnelVisitorKey, recordFunnelEvent } from '../analytics/funnel';
@@ -33,7 +34,7 @@ export function createApiRouter(
   visionExtractor: VisualProductExtractor
 ): Router {
   const router = Router();
-  // The shared AYROVI checkout performs a conditional guard only for cart lines
+  // The shared ZAYROVI checkout performs a conditional guard only for cart lines
   // that came through AYWEBs; all other cart flows keep their existing contract.
   const ayWebsContext = createAyWebsContext(db, scraper);
 
@@ -239,6 +240,10 @@ export function createApiRouter(
       referenceUrl,
       status: priceVerificationStatus,
     });
+    // Exposer uniquement l'échéance d'une preuve authentique : le mobile peut
+    // afficher le même délai que la caisse, jamais un minuteur inventé.
+    const quoteClaims = quoteValid && ayrovixItem ? inspectAyrovixPriceToken(item.priceToken) : null;
+    const quoteExpiresAt = quoteClaims ? new Date(quoteClaims.expiresAt).toISOString() : null;
 
     if (
       typeof item.title !== 'string' || !item.title.trim() || item.title.length > 500 ||
@@ -319,6 +324,8 @@ export function createApiRouter(
         cartItem,
         duplicate: Boolean(existingItem),
         message: existingItem ? 'Cet article était déjà dans le panier ; sa quantité a été mise à jour.' : 'Article ajouté au panier.',
+        quoteExpiresAt,
+        serverNow: new Date().toISOString(),
         totalItemsCount: summary.items.reduce((sum, current) => sum + current.quantity, 0),
         totalTND: summary.totalTND,
         deliveryTND: summary.deliveryTND,
@@ -332,6 +339,97 @@ export function createApiRouter(
         success: false,
         error: 'Erreur lors de l\'enregistrement dans le panier.'
       });
+    }
+  });
+
+  /**
+   * POST /api/cart/catalog — ajouter un produit du CATALOGUE au panier.
+   *
+   * Pourquoi une route dédiée plutôt que `POST /api/cart/items` : cette
+   * dernière REcalcule le prix depuis `sourcePrice` + `sourceCurrency`. Or un
+   * produit du catalogue porte déjà le prix publié par la boutique
+   * (`final_price`) : le recalcul produirait un **deuxième** prix pour le même
+   * article — parfois différent (frais de catégorie, devise, arrondis) — et
+   * l'application afficherait deux chiffres pour une même chose. Un prix
+   * publié n'est pas une estimation à refaire : c'est **le** prix.
+   *
+   * Le statut de vérification est donc `VERIFIED` : la preuve, ici, c'est la
+   * ligne de la boutique elle-même, pas un jeton de lecture.
+   */
+  router.post('/cart/catalog', protectAuthenticatedCart, (req: Request, res: Response) => {
+    const sessionId = requireSessionId(req, res);
+    if (!sessionId) return;
+
+    const productId = String(req.body?.productId || '').trim();
+    if (!/^[A-Za-z0-9_-]{1,120}$/.test(productId)) {
+      return res.status(400).json({ success: false, code: 'INVALID_PRODUCT', error: 'Produit invalide.' });
+    }
+
+    // Même règle de disponibilité que la fiche produit : un produit temporaire n'entre au
+    // panier que s'il est lié à un contenu publié (voir catalogue/contentProducts.ts).
+    const product = db.get<any>(
+      `SELECT * FROM products WHERE id=? AND ${availableProductSql('products')}`, productId,
+      ...availableProductParams(new Date().toISOString()),
+    ) as Record<string, any> | null;
+    if (!product) {
+      return res.status(404).json({ success: false, code: 'PRODUCT_NOT_FOUND', error: 'Produit introuvable.' });
+    }
+
+    // Pas de prix publié ⇒ pas de panier. Un « 0.00 TND » dans un panier est
+    // un mensonge imprimé, et un article non commandable est un échec au
+    // dernier écran. On refuse AVANT, avec le bon mot.
+    const finalPrice = Number(product.final_price);
+    if (!Number.isFinite(finalPrice) || finalPrice <= 0) {
+      return res.status(409).json({ success: false, code: 'NO_PRICE', error: 'Produit sans prix publié.' });
+    }
+    if (String(product.stock_status || '').toLowerCase() === 'out_of_stock') {
+      return res.status(409).json({ success: false, code: 'OUT_OF_STOCK', error: 'Produit épuisé.' });
+    }
+
+    const quantity = Math.min(99, Math.max(1, Math.trunc(Number(req.body?.quantity ?? 1)) || 1));
+    const requestedSize = String(req.body?.requestedSize || '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 100);
+    const requestedColor = String(req.body?.requestedColor || '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 100);
+    const customerNote = String(req.body?.customerNote || '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 1000);
+
+    const sourcePrice = Number(product.original_price) > 0 ? Number(product.original_price) : finalPrice;
+    const sourceCurrency = String(product.currency || 'TND').toUpperCase();
+    const store = String(product.source_platform || 'ayrovi').toLowerCase().replace(/[^a-z0-9._-]/g, '') || 'ayrovi';
+
+    const item: AddToCartRequest = {
+      store,
+      externalId: `catalog-${product.id}`,
+      url: String(product.source_url || '').trim() || `https://catalog.local/${product.id}`,
+      title: String(product.name || '').trim().slice(0, 500) || 'Produit',
+      imageUrl: String(product.image || '').trim().slice(0, 4096),
+      sourcePrice,
+      sourceCurrency,
+      priceTND: finalPrice,
+      requestedSize,
+      requestedColor,
+      customerNote,
+      priceVerificationStatus: 'VERIFIED',
+      quantity,
+    };
+
+    try {
+      const accountId = cartAccountId(req, sessionId);
+      const cartItem = db.addItem(sessionId, item, accountId);
+      recordFunnelEvent(db, 'cart_item_added', { locale: null, visitorKey: funnelVisitorKey(sessionId) });
+      const summary = cartSummary()(db.getItems(sessionId, accountId));
+      return res.status(201).json({
+        success: true,
+        cartItem,
+        message: 'Article ajouté au panier.',
+        totalItemsCount: summary.items.reduce((sum, current) => sum + current.quantity, 0),
+        totalTND: summary.totalTND,
+        deliveryTND: summary.deliveryTND,
+      });
+    } catch (err: any) {
+      if (err instanceof RangeError && err.message === 'CART_QUANTITY_LIMIT') {
+        return res.status(400).json({ success: false, error: 'La quantité maximale par article est de 99.' });
+      }
+      console.error('[Cart Catalog Add Error]', err);
+      return res.status(500).json({ success: false, error: 'Erreur lors de l\'enregistrement dans le panier.' });
     }
   });
 
@@ -352,6 +450,7 @@ export function createApiRouter(
       return res.json({
         success: true,
         sessionId,
+        serverNow: new Date().toISOString(),
         itemCount: summary.items.length,
         totalItemsCount: summary.items.reduce((sum, item) => sum + item.quantity, 0),
         totalTND: summary.totalTND,
@@ -529,7 +628,7 @@ export function createApiRouter(
     try {
       attachAyWebsCartToAccount(db, sessionId, customer.id);
     } catch (error) {
-      // AYWEBs' additive attach must never take down an unrelated AYROVI checkout.
+      // AYWEBs' additive attach must never take down an unrelated ZAYROVI checkout.
       ayWebsAttachFailed = true;
       console.warn('[AYWEBs checkout attach]', error instanceof Error ? error.message : error);
     }
@@ -553,7 +652,7 @@ export function createApiRouter(
       });
     }
 
-    // AYWEBs lines are re-resolved from the merchant at the final AYROVI order
+    // AYWEBs lines are re-resolved from the merchant at the final ZAYROVI order
     // boundary. Their signed client price token is not a stock/variant proof.
     const linkedAyWebsLines = items.map((line) => ({
       ayroviLine: line,
@@ -592,7 +691,7 @@ export function createApiRouter(
           blockedLines.push({
             itemId: ayroviLine.id,
             code: 'AYWEBS_ITEM_REMOVED',
-            message: 'Cet article a été retiré du panier AYWEBs. Retirez-le du panier AYROVI avant de commander.',
+            message: 'Cet article a été retiré du panier AYWEBs. Retirez-le du panier ZAYROVI avant de commander.',
           });
         } else if (!currentSource.checkoutReady) {
           blockedLines.push({
@@ -606,7 +705,7 @@ export function createApiRouter(
           blockedLines.push({
             itemId: ayroviLine.id,
             code: 'AYWEBS_QUOTE_MISMATCH',
-            message: 'Le devis de la ligne AYROVI ne correspond plus au devis source AYWEBs. Synchronisez-la avant de commander.',
+            message: 'Le devis de la ligne ZAYROVI ne correspond plus au devis source AYWEBs. Synchronisez-la avant de commander.',
           });
         }
       }
@@ -695,12 +794,12 @@ export function createApiRouter(
       return res.json({
         success: true,
         ...result,
-        message: 'Votre commande a été enregistrée avec succès chez AYSONIC !'
+        message: 'Votre commande a été enregistrée avec succès chez ZAYROVI !'
       });
     } catch (error: any) {
       if (error?.message === 'EMPTY_CART') return res.status(400).json({ success: false, error: 'Votre panier est vide.' });
-      if (error?.message === 'ORDER_TOTAL_CAP') return res.status(400).json({ success: false, code: 'ORDER_TOTAL_CAP', error: 'Le montant total dépasse la limite des commandes en ligne. Contactez le support AYROVI : nous accompagnons les gros volumes personnellement.' });
-      if (error?.message === 'ACCOUNT_UNAVAILABLE') return res.status(403).json({ success: false, code: 'ACCOUNT_UNAVAILABLE', error: 'Votre compte n’est plus actif. Contactez le support AYROVI.' });
+      if (error?.message === 'ORDER_TOTAL_CAP') return res.status(400).json({ success: false, code: 'ORDER_TOTAL_CAP', error: 'Le montant total dépasse la limite des commandes en ligne. Contactez le support ZAYROVI : nous accompagnons les gros volumes personnellement.' });
+      if (error?.message === 'ACCOUNT_UNAVAILABLE') return res.status(403).json({ success: false, code: 'ACCOUNT_UNAVAILABLE', error: 'Votre compte n’est plus actif. Contactez le support ZAYROVI.' });
       console.error('[Checkout Error]', error);
       return res.status(500).json({ success: false, error: 'La commande n’a pas pu être enregistrée.' });
     }

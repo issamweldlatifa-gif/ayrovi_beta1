@@ -14,7 +14,7 @@
  *   5. commande AYWEBs (§21) : DRAFT → CHECKOUT → PAYMENT_PENDING → PAID →
  *      PURCHASE_PENDING → PURCHASING en PENDING_INTEGRATION (§48 : aucun faux
  *      achat) ;
- *   6. pont vers le panier AYROVI existant (§2/§16) sans détruire le panier
+ *   6. pont vers le panier ZAYROVI existant (§2/§16) sans détruire le panier
  *      AYWEBs ni écrire deux fois dans `cart_items` ;
  *   7. demande d'achat avec URL pour une boutique non supportée (§23) et
  *      décision Admin avec raison obligatoire au rejet ;
@@ -200,13 +200,13 @@ function cartItemsOf(h: ReturnType<typeof harness>) {
 }
 
 describe('AYWEBs — détection produit et normalisation (§11, §13, §14)', () => {
-  test('résout un produit externe en identité AYROVI + identité source distinctes', async () => {
+  test('résout un produit externe en identité ZAYROVI + identité source distinctes', async () => {
     const h = harness();
     const result = await resolveAyWebsProduct(h.resolver, { url: AMAZON_URL, sessionId: SESSION_ID });
 
     expect(h.scrapeProduct).toHaveBeenCalledTimes(1);
     expect(result.product.storeId).toBe('amazon');
-    // §53 : l'identité marchand n'est jamais écrasée par l'identité AYROVI.
+    // §53 : l'identité marchand n'est jamais écrasée par l'identité ZAYROVI.
     expect(result.product.sourceProductId).toBe('B0ABCDEFGH');
     expect(result.productId.startsWith('aywprd_')).toBe(true);
     expect(result.product.title).toBe('Nike Air Max shoes');
@@ -674,7 +674,7 @@ describe('AYWEBs — checkout et commande (§19, §21, §48)', () => {
   });
 });
 
-describe('AYWEBs — pont vers le panier AYROVI existant (§2, §16)', () => {
+describe('AYWEBs — pont vers le panier ZAYROVI existant (§2, §16)', () => {
   test('déplace les lignes prêtes dans cart_items sans détruire le panier AYWEBs', async () => {
     const h = harness();
     const added = await addToCart(h, { quantity: 2 });
@@ -690,9 +690,9 @@ describe('AYWEBs — pont vers le panier AYROVI existant (§2, §16)', () => {
     expect(ayroviLines[0].store).toBe('amazon');
     expect(Number(ayroviLines[0].quantity)).toBe(2);
     expect(Number(ayroviLines[0].price_tnd)).toBeGreaterThan(0);
-    // La ligne AYROVI garde un prix vérifié : le checkout existant fonctionne.
+    // La ligne ZAYROVI garde un prix vérifié : le checkout existant fonctionne.
     expect(String(ayroviLines[0].price_verification_status)).toBe('VERIFIED');
-    // La traçabilité AYWEBs suit la ligne dans le panier AYROVI.
+    // La traçabilité AYWEBs suit la ligne dans le panier ZAYROVI.
     expect(String(ayroviLines[0].customer_note)).toContain(added.item.itemNumber);
 
     // Rien n'est détruit côté AYWEBs.
@@ -1160,7 +1160,7 @@ describe('AYWEBs — parcours d’achat façon Buyee : les 12 cas du lot Q12', (
     expect(h.db.get<any>('SELECT quantity FROM cart_items')).toEqual({ quantity: 3 });
 
     // Replaying the first key after a later intentional add returns its first
-    // response snapshot; neither the AYWEBs line nor its AYROVI bridge is re-added.
+    // response snapshot; neither the AYWEBs line nor its ZAYROVI bridge is re-added.
     const replayAfterNewIntent = await request(h.app).post('/api/v1/aywebs/cart/items').set(ANONYMOUS)
       .send(legacyAddPayload({ quantity: 2, request_id: 'mobile-add-0001' }));
     expect(replayAfterNewIntent.status).toBe(201);
@@ -1214,7 +1214,7 @@ describe('AYWEBs — parcours d’achat façon Buyee : les 12 cas du lot Q12', (
     expect(line.line_total_tnd).toBeGreaterThan(0);
   });
 
-  test('10. panier AYROVI : liaison = synchronisation — jamais deux fois le même article', async () => {
+  test('10. panier ZAYROVI : liaison = synchronisation — jamais deux fois le même article', async () => {
     const h = harness();
     const first = await request(h.app).post('/api/v1/aywebs/cart/items').set(ANONYMOUS).send(legacyAddPayload({ quantity: 1 }));
     expect(first.status, JSON.stringify(first.body)).toBe(201);
@@ -1225,7 +1225,7 @@ describe('AYWEBs — parcours d’achat façon Buyee : les 12 cas du lot Q12', (
     expect(Number(lines[0].quantity)).toBe(1);
 
     // Deuxième ajout de la MÊME variante : la quantité AYWEBs passe à 2 et la ligne
-    // AYROVI est REMISE à 2 — elle ne devient pas 3 (c'était le double comptage).
+    // ZAYROVI est REMISE à 2 — elle ne devient pas 3 (c'était le double comptage).
     const second = await request(h.app).post('/api/v1/aywebs/cart/items').set(ANONYMOUS).send(legacyAddPayload({ quantity: 1 }));
     expect(second.status).toBe(201);
     expect(second.body.data.item.quantity).toBe(2);
@@ -1240,7 +1240,7 @@ describe('AYWEBs — parcours d’achat façon Buyee : les 12 cas du lot Q12', (
     expect(h.db.all<any>('SELECT * FROM cart_items WHERE session_id=?', SESSION_ID)).toHaveLength(1);
   });
 
-  test('11. panier : quantité et suppression suivent jusque dans le panier AYROVI, avec trace', async () => {
+  test('11. panier : quantité et suppression suivent jusque dans le panier ZAYROVI, avec trace', async () => {
     const h = harness();
     const added = await request(h.app).post('/api/v1/aywebs/cart/items').set(ANONYMOUS).send(legacyAddPayload({ quantity: 1 }));
     const itemId = added.body.data.item.id;
@@ -1256,7 +1256,7 @@ describe('AYWEBs — parcours d’achat façon Buyee : les 12 cas du lot Q12', (
     const removed = await request(h.app).delete(`/api/v1/aywebs/cart/items/${itemId}`).set(ANONYMOUS);
     expect(removed.status).toBe(200);
     expect(removed.body.data.removed).toBe(true);
-    // Aucun orphelin : la ligne quitte le panier AYROVI, et l'audit le prouve.
+    // Aucun orphelin : la ligne quitte le panier ZAYROVI, et l'audit le prouve.
     expect(h.db.all<any>('SELECT * FROM cart_items WHERE session_id=?', SESSION_ID)).toHaveLength(0);
     const audit = h.db.all<any>(
       `SELECT action, resource_id FROM ayweb_audit_logs WHERE resource_id=? AND action='cart.ayrovi_unlink'`, itemId,
@@ -1270,7 +1270,7 @@ describe('AYWEBs — parcours d’achat façon Buyee : les 12 cas du lot Q12', (
     const checkout = computeAyWebsCheckoutPreview(h.db, cartItemsOf(h).items);
 
     expect(added.item.quantity).toBe(2);
-    expect(added.item.pricingTnd).toBeGreaterThan(0); // devis unitaire conservé pour le pont AYROVI
+    expect(added.item.pricingTnd).toBeGreaterThan(0); // devis unitaire conservé pour le pont ZAYROVI
     expect(added.item.lineTotalTnd).toBeCloseTo(checkout.lines[0].lineTotalTnd, 2);
     expect(added.item.lineTotalTnd).not.toBeCloseTo(added.item.pricingTnd * 2, 2);
     expect(added.view.totals.productSubtotalTnd).toBeCloseTo(checkout.lines[0].lineTotalTnd, 2);

@@ -48,8 +48,8 @@ const primaryActions = [
 ] as const;
 
 const secondaryActions = [
-  { text: ['Découvrir AYROVI', 'اكتشف AYROVI'], prompt: ['Présente-moi les services AYROVI.', 'عرّفني بخدمات AYROVI.'] },
-  { text: ['Contacter le support', 'التواصل مع الدعم'], prompt: ['J’ai besoin d’aide du support AYROVI.', 'أحتاج إلى مساعدة دعم AYROVI.'] },
+  { text: ['Découvrir ZAYROVI', 'اكتشف ZAYROVI'], prompt: ['Présente-moi les services ZAYROVI.', 'عرّفني بخدمات ZAYROVI.'] },
+  { text: ['Contacter le support', 'التواصل مع الدعم'], prompt: ['J’ai besoin d’aide du support ZAYROVI.', 'أحتاج إلى مساعدة دعم ZAYROVI.'] },
 ] as const;
 
 const CandidateImage = ({ product }: { product: AyrovixCandidate }) => {
@@ -69,7 +69,7 @@ const ToolPresentations = ({ message, isDark, selectedProduct, productBusyId, is
       </article>
     ))}
     {message.priceBreakdown && <article className={`rounded-card border p-4 ${isDark ? 'border-white/10 bg-white/[0.04]' : 'border-success/15 bg-success/5'}`}>
-      <div className="flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-card bg-success text-lg text-white">د.ت</span><div><p className="text-xs font-bold uppercase tracking-[.12em] text-success">{tr('Estimation AYROVI', 'تقدير AYROVI')}</p><strong className="text-xl">{message.priceBreakdown.totalTND.toFixed(2)} TND</strong></div></div>
+      <div className="flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-card bg-success text-lg text-white">د.ت</span><div><p className="text-xs font-bold uppercase tracking-[.12em] text-success">{tr('Estimation ZAYROVI', 'تقدير ZAYROVI')}</p><strong className="text-xl">{message.priceBreakdown.totalTND.toFixed(2)} TND</strong></div></div>
       <dl className={`mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 border-t pt-3 text-xs ${isDark ? 'border-white/10 text-muted' : 'border-success/15 text-muted'}`}><dt>{tr('Produit converti', 'سعر المنتج المحوّل')}</dt><dd className="text-end">{message.priceBreakdown.convertedPriceTND.toFixed(2)} TND</dd><dt>{tr('Douane', 'الديوانة')}</dt><dd className="text-end">{message.priceBreakdown.customsFeeTND.toFixed(2)} TND</dd><dt>{tr('Livraison', 'التسليم')}</dt><dd className="text-end">{message.priceBreakdown.shippingFeeTND.toFixed(2)} TND</dd><dt>{tr('Service', 'الخدمة')}</dt><dd className="text-end">{message.priceBreakdown.serviceFeeTND.toFixed(2)} TND</dd>{message.priceBreakdown.expressFeeTND > 0 && <><dt>{tr('Express', 'السريع')}</dt><dd className="text-end">{message.priceBreakdown.expressFeeTND.toFixed(2)} TND</dd></>}</dl>
     </article>}
     {message.products?.some(isDisplayableCandidate) ? <div className="grid gap-3 sm:grid-cols-2">
@@ -83,7 +83,7 @@ const ToolPresentations = ({ message, isDark, selectedProduct, productBusyId, is
       </article>)}
     </div> : message.products?.length ? <p role="status" className="ay-readable border border-line p-3 text-sm text-muted">{tr('Aucun produit avec un prix et un lien exploitables dans cette réponse. Relancez la recherche.', 'لم يصل منتج بسعر ورابط صالحين في هذا الرد. أعد البحث.')}</p> : null}
     {selectedProduct?.messageId === message.id && <div className={`overflow-hidden rounded-card border p-2 ${isDark ? 'border-white/10 bg-white' : 'border-line bg-white'}`}><ShopProductScreen product={selectedProduct.product} priceVerified={selectedProduct.priceVerified} ordering={isOrdering} onOrder={onProductOrder} onOpenCart={onOpenCart} onBack={onProductBack} onCalculateAnother={onProductBack}/></div>}
-    {message.supportTicket && <article className={`flex items-start gap-3 rounded-card border p-4 ${isDark ? 'border-white/10 bg-white/[0.04]' : 'border-line bg-surface'}`}><span className="grid h-11 w-11 shrink-0 place-items-center rounded-card bg-surface text-ink"><MessageSquare size={30}/></span><div><p className="text-xs font-bold uppercase tracking-[.12em] text-muted">{tr('Support AYROVI', 'دعم AYROVI')}</p><h3 className="mt-0.5 text-sm font-extrabold">{tr('Ticket enregistré', 'تم تسجيل التذكرة')}</h3><p className="mt-1 break-all text-xs text-muted">{tr('Référence', 'المرجع')} : {message.supportTicket.id}</p></div></article>}
+    {message.supportTicket && <article className={`flex items-start gap-3 rounded-card border p-4 ${isDark ? 'border-white/10 bg-white/[0.04]' : 'border-line bg-surface'}`}><span className="grid h-11 w-11 shrink-0 place-items-center rounded-card bg-surface text-ink"><MessageSquare size={30}/></span><div><p className="text-xs font-bold uppercase tracking-[.12em] text-muted">{tr('Support ZAYROVI', 'دعم ZAYROVI')}</p><h3 className="mt-0.5 text-sm font-extrabold">{tr('Ticket enregistré', 'تم تسجيل التذكرة')}</h3><p className="mt-1 break-all text-xs text-muted">{tr('Référence', 'المرجع')} : {message.supportTicket.id}</p></div></article>}
   </div>;
 };
 
@@ -179,7 +179,7 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
                     state={isLastAssistantStreaming ? motionState : 'idle'}
                     size={43}
                     className="mt-1"
-                    label={isLastAssistantStreaming ? tr('AYROVI prépare la réponse', 'AYROVI تحضّر الرد') : 'AYROVI'}
+                    label={isLastAssistantStreaming ? tr('ZAYROVI prépare la réponse', 'ZAYROVI تحضّر الرد') : 'ZAYROVI'}
                   />
                 )}
                 <div className={message.role === 'user' ? 'min-w-0 max-w-[82%]' : hasPresentation ? 'min-w-0 flex-1 basis-[min(100%,20rem)]' : 'min-w-0 max-w-[82%]'}>
@@ -206,7 +206,7 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
                 </div>
               </div>;
             })}
-            {isGenerating && !lastAssistantHasContent && <div className="flex items-center gap-3 px-1 py-1"><AssistantBrandMark state={motionState} size={43} label={tr('AYROVI prépare la réponse', 'AYROVI تحضّر الرد')}/><div><p className={`text-xs font-bold ${isDark ? 'text-white/80' : 'text-ink'}`}>{motionState === 'thinking' ? tr('Recherche en cours…', 'جارٍ البحث…') : motionState === 'analyzing' ? tr('Vérification du produit…', 'جارٍ التحقق من المنتج…') : motionState === 'reasoning' ? tr('Récupération du prix…', 'جارٍ جلب السعر…') : tr('Création de la réponse…', 'جارٍ إنشاء الرد…')}</p><span className={`text-xs ${isDark ? 'text-muted' : 'text-muted'}`}>{tr('Les données de commande et de prix ne sont jamais inventées.', 'لا تُختلق أبدًا بيانات الطلبات والأسعار.')}</span></div></div>}
+            {isGenerating && !lastAssistantHasContent && <div className="flex items-center gap-3 px-1 py-1"><AssistantBrandMark state={motionState} size={43} label={tr('ZAYROVI prépare la réponse', 'ZAYROVI تحضّر الرد')}/><div><p className={`text-xs font-bold ${isDark ? 'text-white/80' : 'text-ink'}`}>{motionState === 'thinking' ? tr('Recherche en cours…', 'جارٍ البحث…') : motionState === 'analyzing' ? tr('Vérification du produit…', 'جارٍ التحقق من المنتج…') : motionState === 'reasoning' ? tr('Récupération du prix…', 'جارٍ جلب السعر…') : tr('Création de la réponse…', 'جارٍ إنشاء الرد…')}</p><span className={`text-xs ${isDark ? 'text-muted' : 'text-muted'}`}>{tr('Les données de commande et de prix ne sont jamais inventées.', 'لا تُختلق أبدًا بيانات الطلبات والأسعار.')}</span></div></div>}
           </div>
         )}
         <div aria-hidden="true" />

@@ -1,4 +1,4 @@
-# Déployer AYROVI sur Render
+# Déployer ZAYROVI sur Render
 
 Cette archive contient la plateforme complète : site public, interface Admin, backend Express, schéma SQLite, migrations, données initiales et build de production.
 
@@ -14,7 +14,7 @@ Cette archive contient la plateforme complète : site public, interface Admin, b
    - `PUBLIC_BASE_URL` : l’URL HTTPS publique finale, sans barre oblique terminale.
    - `GOOGLE_CLIENT_ID` et `GOOGLE_CLIENT_SECRET` : identifiants OAuth Web créés dans Google Cloud.
    - `GOOGLE_CALLBACK_URL` : exactement `https://VOTRE-DOMAINE/api/customer/auth/google/callback`.
-   - `FACEBOOK_APP_ID` et `FACEBOOK_APP_SECRET` : identifiants de l’application AYROVI dans Meta Developers.
+   - `FACEBOOK_APP_ID` et `FACEBOOK_APP_SECRET` : identifiants de l’application ZAYROVI dans Meta Developers.
    - `FACEBOOK_CALLBACK_URL` : exactement `https://VOTRE-DOMAINE/api/customer/auth/facebook/callback`.
    - `CUSTOMER_OTP_PROVIDER` : `webhook` pour le fournisseur SMS tunisien.
    - `CUSTOMER_OTP_WEBHOOK_URL` et `CUSTOMER_OTP_WEBHOOK_TOKEN` : endpoint HTTPS et secret de l’adaptateur SMS.
@@ -68,15 +68,15 @@ Une copie locale seule ne protège pas contre la perte du disque. Activez une po
 
 ## Connexion client : Google, Facebook et SMS OTP
 
-Dans Google Cloud, créez un client **Application Web**, ajoutez le domaine AYROVI aux origines autorisées et recopiez `GOOGLE_CALLBACK_URL` comme URI de redirection autorisée, caractère pour caractère.
+Dans Google Cloud, créez un client **Application Web**, ajoutez le domaine ZAYROVI aux origines autorisées et recopiez `GOOGLE_CALLBACK_URL` comme URI de redirection autorisée, caractère pour caractère.
 
-Dans Meta Developers, créez l’application AYROVI avec le cas d’usage **Authentication and account creation / Facebook Login**, puis ajoutez exactement `FACEBOOK_CALLBACK_URL` aux **Valid OAuth Redirect URIs**. Le flux utilise Graph API `v26.0`, les permissions minimales `public_profile,email`, un état anti-CSRF lié au navigateur, une validation serveur du jeton et l’identifiant Facebook app-scoped. Le jeton utilisateur n’est pas stocké. Avant de passer l’application Meta en Live, publiez les pages `/privacy.html` et `/data-deletion.html`, complétez l’identité juridique et rendez l’adresse de contact opérationnelle.
+Dans Meta Developers, créez l’application ZAYROVI avec le cas d’usage **Authentication and account creation / Facebook Login**, puis ajoutez exactement `FACEBOOK_CALLBACK_URL` aux **Valid OAuth Redirect URIs**. Le flux utilise Graph API `v26.0`, les permissions minimales `public_profile,email`, un état anti-CSRF lié au navigateur, une validation serveur du jeton et l’identifiant Facebook app-scoped. Le jeton utilisateur n’est pas stocké. Avant de passer l’application Meta en Live, publiez les pages `/privacy.html` et `/data-deletion.html`, complétez l’identité juridique et rendez l’adresse de contact opérationnelle.
 
 ### Fournisseur SMS tunisien
 
 1. Demandez une API OTP et un test à Orange Tunisie Messaging Pro et TunisieSMS.
 2. Vérifiez la livraison vers Orange, Ooredoo et Tunisie Telecom, le Sender ID et les Delivery Reports.
-3. Configurez un adaptateur HTTPS qui reçoit la requête AYROVI et appelle le fournisseur retenu.
+3. Configurez un adaptateur HTTPS qui reçoit la requête ZAYROVI et appelle le fournisseur retenu.
 4. Dans Render, gardez `CUSTOMER_OTP_PROVIDER=webhook`, puis saisissez `CUSTOMER_OTP_WEBHOOK_URL` et `CUSTOMER_OTP_WEBHOOK_TOKEN`.
 5. Redéployez et vérifiez que `/api/customer/auth/config` renvoie `phoneOtp.enabled=true`.
 
@@ -92,6 +92,71 @@ Le cookie client `ayrovi_customer_session` est séparé du cookie Admin. La conf
 - Readiness (utilisé par Render) : `https://VOTRE-SERVICE.onrender.com/api/ready`
 
 La route de liveness doit répondre avec `"status":"ok"`; la readiness vérifie en plus que SQLite est lisible et expose uniquement l’état configuré/non configuré des capacités externes. Connectez-vous ensuite à `/admin` avec `ADMIN_EMAIL` et `ADMIN_PASSWORD`.
+
+## Ce que la production REFUSE au démarrage (à connaître avant de déployer)
+
+Le serveur exécute `assertProductionConfiguration()` avant d’ouvrir le port. Si
+une seule de ces règles est violée, le service **quitte avec le code 1** et le
+journal affiche exactement :
+
+`Unsafe production configuration. Fix: <la liste>`
+
+| Variable | Règle exacte | Erreur typique |
+|---|---|---|
+| `NODE_ENV` | doit valoir `production` si `RENDER` est présent | service qui refuse de démarrer |
+| `DATABASE_PATH` | **chemin absolu** | `DATABASE_PATH (absolute persistent path)` |
+| `PUBLIC_BASE_URL` | origine **HTTPS seule** : pas de chemin, pas de `?`, pas de `#`, pas d’identifiants | `PUBLIC_BASE_URL (HTTPS origin only)` |
+| `ADMIN_EMAIL` | adresse e-mail valide | `ADMIN_EMAIL` |
+| `ADMIN_PASSWORD` | ≥ 12 caractères, sans `replace/placeholder/example/demo`, différent du mot de passe de démonstration | `ADMIN_PASSWORD` |
+| `CUSTOMER_AUTH_SECRET` | ≥ 32 caractères, sans `replace/placeholder/example/demo` | `CUSTOMER_AUTH_SECRET` |
+| `ADMIN_BOOTSTRAP_RESET` | si présent : ≥ 32 caractères | `ADMIN_BOOTSTRAP_RESET (one-time token, 32+ characters)` |
+| `TRUST_PROXY_HOPS` | si présent : entier entre 0 et 5 | `TRUST_PROXY_HOPS (integer 0..5)` |
+
+**Valeur à utiliser pour `DATABASE_PATH`** (identique à la production, et le
+dossier est créé automatiquement au démarrage) :
+
+```
+/opt/render/project/src/data/qatafo.sqlite
+```
+
+Deux conséquences à connaître :
+
+- **Avec un Disk** monté sur `/opt/render/project/src/data` (plan Starter ou
+  plus) : la base **survit** aux redéploiements — c’est ce qu’il faut pour un
+  test réaliste.
+- **Sans Disk** (plan Free) : le chemin fonctionne, mais le système de fichiers
+  est **éphémère** ⇒ les comptes et les commandes de test disparaissent à chaque
+  redéploiement/redémarrage. Suffisant pour un premier essai de bout en bout,
+  trompeur au-delà.
+
+## Service Beta à partir de la BRANCHE (test de l’application mobile)
+
+Le service de production sert `main`. Pour tester l’application ZAYROVI (session
+mobile, panier, caisse) sans toucher à la production, créez un **second service**
+avec `Branch = arena/c0321e79-ayrovi-beta1` (voir `docs/RELEASE_PLAY_AR_2026-10-07.md`
+§6). Configuration minimale pour que la connexion de l’appli fonctionne :
+
+| Variable | Valeur | Pourquoi |
+|---|---|---|
+| `NODE_ENV` | `production` | comportement de production (cookies `Secure`, OTP réel) |
+| `CUSTOMER_AUTH_SECRET` | ≥ 32 caractères, **la même valeur que la production** | sans elle : `customerAuthReady()` = faux ⇒ toutes les routes de connexion répondent 503 |
+| `PUBLIC_BASE_URL` | l’adresse de la nouvelle service | liens, redirections, e-mails |
+| `DATABASE_PATH` | `/opt/render/project/src/data/qatafo.sqlite` | identique au disque monté (base neuve = test propre) |
+| `AYROVIX_QUOTE_SECRET` | une valeur ≥ 32 caractères | jetons de devis AYWEBs |
+| `ANDROID_APP_LINK_SHA256` | l’empreinte du keystore d’émission | sinon `/.well-known/assetlinks.json` répond 404 (liens profonds inertes) |
+| `CUSTOMER_OTP_PROVIDER` + (webhook ou Twilio) | voir ci-dessus | sinon `POST /api/customer/auth/otp/request` répond 503 `OTP_UNAVAILABLE` (la connexion par e-mail, elle, fonctionne) |
+| `GOOGLE_CALLBACK_URL` | `https://VOTRE-SERVICE-BETA.onrender.com/api/customer/auth/google/callback` | copiée de la production, elle renvoie vos utilisateurs vers l’ANCIEN serveur ⇒ la connexion Google échoue. La même URI doit être déclarée dans Google Cloud Console (Authorized redirect URIs). |
+
+Après le déploiement, la vérification en une commande :
+
+```bash
+curl -s https://VOTRE-SERVICE-BETA.onrender.com/api/ready
+# doit contenir "branch":"arena/c0321e79-ayrovi-beta1" et un "commit"
+```
+
+Puis lancez le workflow `Serveur — test de bout en bout (appli)` avec l’adresse de
+ce service : il crée un compte jetable et vérifie inscription → `session_token` →
+Bearer → panier → caisse → commandes → assetlinks.
 
 ## Domaine personnalisé
 

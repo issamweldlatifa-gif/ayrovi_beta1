@@ -1,5 +1,5 @@
 /**
- * AYROVI Inventory (P2.2) — audit, par l'UNIQUE écriture du système.
+ * ZAYROVI Inventory (P2.2) — audit, par l'UNIQUE écriture du système.
  *
  * Le module n'écrit jamais dans `audit_logs` directement : chaque mutation passe par
  * `writeAuditEvent`, ce qui lui donne gratuitement les garanties posées en P1 — acteur +

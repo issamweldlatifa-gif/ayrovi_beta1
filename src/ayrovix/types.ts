@@ -50,6 +50,17 @@ export interface AyrovixIdentification {
 
 export type AyrovixChannel = 'image' | 'url' | 'qr' | 'text';
 
+export type AyrovixProductFactSection = 'details' | 'material' | 'fit';
+
+/** Fait marchand lisible : valeur publiée, jamais inférée ni inventée. */
+export interface AyrovixProductFact {
+  /** Clé canonique facultative pour traduire les libellés connus sur le mobile. */
+  key: string | null;
+  label: string;
+  value: string;
+  section: AyrovixProductFactSection;
+}
+
 /** Un candidat produit proposé à l'utilisateur pour confirmation humaine. */
 export interface AyrovixCandidate {
   id: string;
@@ -59,17 +70,19 @@ export interface AyrovixCandidate {
   promo?: AyrovixPromo | null;
   /** Optional descriptive text supplied by the merchant/search provider. */
   description?: string | null;
+  /** Structured facts published by the merchant or SerpApi product profile. */
+  details?: AyrovixProductFact[];
   brand: string | null;
   model: string | null;
   colors: string[];
   sizes: string[];
-  source: string;         // ex. "Collection AYROVI", "SHEIN", "Amazon"
+  source: string;         // ex. "Collection ZAYROVI", "SHEIN", "Amazon"
   sourceUrl: string;      // page produit (ou page interne)
   image: string;
   images?: string[];      // miniatures de repli si la source bloque l'image principale
   price: number | null;   // prix source (null si inconnu — jamais deviné)
   currency: string | null;
-  priceTnd: number | null; // estimation "tout inclus" via le calculator AYROVI
+  priceTnd: number | null; // estimation "tout inclus" via le calculator ZAYROVI
   /**
    * VÉRITÉ MARCHANDE (02/10/2026) — d'où vient `price` :
    *  'merchant' : lu sur la page produit derrière le lien (JSON-LD, meta, variante) ;
@@ -78,7 +91,7 @@ export interface AyrovixCandidate {
   priceOrigin?: 'merchant' | 'search';
   /** Prix barré publié par le marchand (strictement > price), jamais déduit. */
   originalPrice?: number | null;
-  /** Le même prix barré, passé par le calculateur AYROVI (tout inclus). */
+  /** Le même prix barré, passé par le calculateur ZAYROVI (tout inclus). */
   originalPriceTnd?: number | null;
   /**
    * PREUVE D'ACHAT (02/10/2026) — la page marchande a-t-elle été lue, et que
@@ -147,6 +160,8 @@ export interface AyrovixProduct {
   brand: string | null;
   model: string | null;
   description: string;
+  /** Détails progressifs, strictement lus dans une source produit. */
+  details?: AyrovixProductFact[];
   image: string;
   images: string[];
   /** Images par couleur (clé = couleur minuscule) — 24/09/2026. */
@@ -182,6 +197,27 @@ export interface AyrovixProduct {
   rating?: number | null;
   ratingCount?: number | null;
   ratingKind?: 'merchant' | 'match' | 'listing-quality';
+  /**
+   * IDENTITÉS MARCHANDES (16/10/2026, clonage de la fiche Zalando) — code-barres
+   * (`gtin`), référence marchand (`sku`/mpn) et vendeur de l'offre (`seller`) :
+   * lus par le parser (Phase 2.5), désormais transmis tels quels à la carte
+   * mobile. Absents quand la source ne les publie pas — jamais déduits.
+   */
+  gtin?: string | null;
+  sku?: string | null;
+  seller?: string | null;
+  /**
+   * SIGNAUX DE FICHE (17/10/2026) : texte publié par le marchand sur sa fiche
+   * (conseil de taille, mannequin, fabrication, livraison, fin d'offre).
+   * Transportés TELS QUELS — l'écran les affiche ou n'affiche rien.
+   */
+  sizeAdvice?: string | null;
+  modelInfo?: string | null;
+  manufacturingInfo?: string | null;
+  deliveryEstimate?: string | null;
+  promoCountdown?: string | null;
+  dimensionsInfo?: string | null;
+  returnsPolicy?: string | null;
 }
 
 export interface AyrovixDetectedPrice {

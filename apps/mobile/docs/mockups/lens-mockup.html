@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AYROVIX Lens — موكاب التنقل بالطبقات</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: #0d1117; color: #e6edf3; }
+  header { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid #21262d; }
+  header h1 { font-size: 16px; margin: 0; }
+  .bar button, .lang button { background: #21262d; color: #e6edf3; border: 1px solid #30363d; border-radius: 8px; padding: 6px 10px; font-size: 13px; cursor: pointer; margin: 2px; }
+  .bar button.on, .lang button.on { background: #1f6feb; border-color: #1f6feb; }
+  main { display: grid; grid-template-columns: minmax(300px, 380px) 1fr; gap: 24px; padding: 20px; align-items: start; }
+  @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+
+  /* ── téléphone ── */
+  .phone { width: 360px; height: 740px; margin: 0 auto; border-radius: 36px; border: 10px solid #000; background: #000; overflow: hidden; position: relative; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+  .statusbar { height: 26px; background: #000; color: #fff; font-size: 12px; display: flex; justify-content: space-between; padding: 6px 16px 0; flex: none; }
+  .screen { position: relative; flex: 1; overflow: hidden; background: #111; }
+  .androidbar { height: 42px; flex: none; background: #000; display: flex; justify-content: center; align-items: center; gap: 28px; }
+  .androidbar button { background: none; border: 0; color: #fff; font-size: 18px; cursor: pointer; padding: 6px 12px; }
+  .androidbar button.back { border: 1px solid #444; border-radius: 16px; font-size: 13px; }
+
+  /* base caméra (vue normale, pas une fenêtre) */
+  .base { position: absolute; inset: 0; display: flex; flex-direction: column; background: radial-gradient(circle at 50% 40%, #2a3340, #0b0e13 70%); }
+  .base .top { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; gap: 8px; z-index: 2; }
+  .icon { width: 38px; height: 38px; border-radius: 19px; background: rgba(0,0,0,.45); color: #fff; border: 0; font-size: 16px; display: grid; place-items: center; cursor: pointer; }
+  .modes { display: flex; background: rgba(0,0,0,.5); border-radius: 18px; padding: 3px; gap: 2px; }
+  .modes button { border: 0; background: transparent; color: #cbd5e1; font-size: 12px; padding: 6px 9px; border-radius: 15px; cursor: pointer; }
+  .modes button.on { background: #fff; color: #111; font-weight: 600; }
+  .frame { position: absolute; left: 14%; right: 14%; top: 30%; height: 34%; border: 2px dashed rgba(255,255,255,.45); border-radius: 14px; }
+  .frame.detected { border: 3px solid #3fb950; border-style: solid; }
+  .hint { position: absolute; top: 24%; left: 0; right: 0; text-align: center; font-size: 13px; color: #e6edf3; text-shadow: 0 1px 4px #000; }
+  .bottom { margin-top: auto; padding: 12px 14px 18px; display: flex; flex-direction: column; gap: 12px; z-index: 2; }
+  .shutterRow { display: flex; justify-content: space-between; align-items: center; }
+  .shutter { width: 72px; height: 72px; border-radius: 36px; border: 5px solid #fff; background: rgba(255,255,255,.2); cursor: pointer; }
+  .small { width: 46px; height: 46px; border-radius: 23px; background: rgba(0,0,0,.5); border: 0; color: #fff; cursor: pointer; font-size: 18px; }
+  .pill { align-self: center; background: rgba(0,0,0,.55); color: #fff; border: 1px solid rgba(255,255,255,.3); border-radius: 20px; padding: 9px 16px; font-size: 13px; cursor: pointer; }
+  .codebox { margin: 0 14px; padding: 16px; background: #161b22; border-radius: 14px; display: flex; flex-direction: column; gap: 10px; z-index: 2; margin-top: 70px; }
+  .codebox input { background: #0d1117; border: 1px solid #30363d; color: #e6edf3; border-radius: 10px; padding: 11px; font-size: 14px; }
+  .codebox .go { background: #1f6feb; color: #fff; border: 0; border-radius: 10px; padding: 11px; font-size: 14px; cursor: pointer; }
+  .disabled { opacity: .4; }
+
+  /* drawers (couches au-dessus de la base) */
+  .scrim { position: absolute; inset: 0; background: rgba(0,0,0,.45); z-index: 5; cursor: pointer; }
+  .drawer { position: absolute; left: 0; right: 0; bottom: 0; height: 80%; background: #fff; color: #111; border-radius: 20px 20px 0 0; z-index: 6; display: flex; flex-direction: column; animation: up .22s ease-out; box-shadow: 0 -8px 30px rgba(0,0,0,.35); }
+  @keyframes up { from { transform: translateY(40px); opacity: .2; } to { transform: none; opacity: 1; } }
+  .grip { width: 40px; height: 4px; background: #cbd5e1; border-radius: 2px; margin: 8px auto 4px; }
+  .dhead { display: flex; align-items: center; gap: 8px; padding: 6px 14px 10px; border-bottom: 1px solid #eef1f4; }
+  .dhead h2 { font-size: 16px; margin: 0; flex: 1; }
+  .dhead .x { border: 0; background: #f0f3f6; width: 34px; height: 34px; border-radius: 17px; cursor: pointer; font-size: 15px; }
+  .dbody { padding: 12px 14px 18px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 10px; }
+  .muted { color: #5b6573; font-size: 13px; line-height: 1.45; }
+  .seg { display: flex; background: #eef1f4; border-radius: 10px; padding: 3px; }
+  .seg button { flex: 1; border: 0; background: transparent; padding: 8px; border-radius: 8px; font-size: 13px; cursor: pointer; color: #3b4450; }
+  .seg button.on { background: #fff; font-weight: 600; color: #111; box-shadow: 0 1px 2px rgba(0,0,0,.1); }
+  .steps { display: flex; flex-direction: column; gap: 8px; }
+  .step { display: flex; gap: 10px; align-items: flex-start; padding: 10px; border-radius: 10px; border: 1px solid #eef1f4; font-size: 13px; }
+  .step .n { width: 24px; height: 24px; border-radius: 12px; background: #eef1f4; display: grid; place-items: center; font-size: 12px; flex: none; font-weight: 600; }
+  .step.done .n { background: #3fb950; color: #fff; }
+  .step.now { border-color: #1f6feb; }
+  .step.now .n { background: #1f6feb; color: #fff; }
+  .primary { background: #1f6feb; color: #fff; border: 0; border-radius: 12px; padding: 12px; font-size: 14px; cursor: pointer; }
+  .ghost { background: #eef1f4; color: #111; border: 0; border-radius: 12px; padding: 11px; font-size: 14px; cursor: pointer; }
+  .ok { color: #1a7f37; font-weight: 600; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .card { border: 1px solid #eef1f4; border-radius: 12px; overflow: hidden; background: #fff; }
+  .card .img { height: 92px; position: relative; }
+  .card .heart { position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; border-radius: 14px; background: rgba(255,255,255,.9); border: 0; cursor: pointer; font-size: 14px; }
+  .card .badge { position: absolute; left: 6px; top: 6px; background: #d1242f; color: #fff; font-size: 10px; border-radius: 6px; padding: 2px 6px; }
+  .card .txt { padding: 8px; font-size: 12px; display: flex; flex-direction: column; gap: 3px; }
+  .card .price { font-weight: 700; font-size: 14px; }
+  .card .was { text-decoration: line-through; color: #8b949e; font-size: 11px; }
+  .card .ver { font-size: 10px; color: #1a7f37; }
+  .card .ver.pending { color: #9a6700; }
+  .codechip { font-family: ui-monospace, Menlo, monospace; font-size: 12px; background: #f0f3f6; padding: 8px; border-radius: 8px; word-break: break-all; }
+  .toast { position: absolute; left: 20px; right: 20px; bottom: 90px; background: #111; color: #fff; padding: 10px 14px; border-radius: 10px; font-size: 13px; z-index: 9; text-align: center; }
+
+  /* panneau d'explication */
+  .notes { display: flex; flex-direction: column; gap: 16px; }
+  .panel { background: #161b22; border: 1px solid #21262d; border-radius: 14px; padding: 16px; }
+  .panel h3 { margin: 0 0 10px; font-size: 14px; color: #8b949e; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+  .stack { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+  .layer { padding: 8px 10px; border-radius: 8px; background: #0d1117; border: 1px solid #30363d; display: flex; justify-content: space-between; }
+  .layer.top { border-color: #1f6feb; }
+  .layer span:last-child { color: #8b949e; }
+  .rules { margin: 0; padding-inline-start: 18px; font-size: 13px; line-height: 1.7; }
+  .counter { font-size: 12px; color: #8b949e; }
+  pre.mermaid-note { white-space: pre-wrap; font-size: 12px; background: #0d1117; border-radius: 10px; padding: 12px; border: 1px solid #21262d; margin: 0; color: #c9d1d9; }
+  [dir="rtl"] .rules { padding-inline-start: 18px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1 id="title">AYROVIX Lens — موكاب التنقل بالطبقات</h1>
+  <div class="lang" id="langBar"></div>
+</header>
+
+<div style="padding:0 20px;">
+  <div class="bar" id="scenarios" style="margin-bottom:10px"></div>
+</div>
+
+<main>
+  <section>
+    <div class="phone" id="phone">
+      <div class="statusbar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="screen" id="screen"></div>
+      <div class="androidbar">
+        <button id="btnRecent" title="récents">▢</button>
+        <button id="btnBack" class="back" title="retour">◁ <span id="backLabel"></span></button>
+        <button id="btnHome" title="accueil">○</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="notes">
+    <div class="panel">
+      <h3 id="hStack"></h3>
+      <div class="stack" id="stackView"></div>
+      <div class="counter" id="counter" style="margin-top:10px"></div>
+    </div>
+    <div class="panel">
+      <h3 id="hRules"></h3>
+      <ul class="rules" id="rules"></ul>
+    </div>
+    <div class="panel">
+      <h3 id="hFlow"></h3>
+      <pre class="mermaid-note" id="flowNote"></pre>
+    </div>
+  </section>
+</main>
+
+<script>
+(() => {
+  /* ───────── Textes FR / AR (libellés du موكاب، à vérifier contre fr.ts/ar.ts à l'implémentation) ───────── */
+  const T = {
+    fr: {
+      title: 'AYROVIX Lens — موكاب التنقل بالطبقات',
+      photo: 'Photo', live: 'Scan en direct', code: 'Lien / code',
+      help: 'Aide Lens', ocerex: 'OCEREX', results: 'Résultats', close: 'Fermer', back: 'Retour',
+      shutterHint: 'Cadrez le produit, puis prenez la photo.',
+      liveHint: 'Pointez un QR ou un code-barres.',
+      liveDetected: 'Code lu — ouverture des résultats…',
+      codePh: 'ex. écouteurs bluetooth ou https://…', search: 'Chercher',
+      ocerexTitle: 'Prix vu sur une capture', ocerexOpen: 'Prix sur capture (OCEREX)',
+      tabCam: 'Prendre une photo', tabImp: 'Importer une image',
+      s1: 'Capture du prix', s2: 'Lecture (OCR) : 89 DT, confiance élevée', s3: 'Calcul du prix ZAYROVI : 92 DT',
+      s4: 'Lien exact du produit', s5: 'Créer la ligne de panier',
+      next: 'Étape suivante', done: 'Ligne créée. Fermez pour revenir à Lens.',
+      helpTitle: 'Règles de Lens', helpBody: 'Le serveur donne le sens du code ; le téléphone ne décide pas du prix. Les fiches viennent de pages marchandes réelles.',
+      resultsTitle: 'Résultats', resultsHint: 'Touchez une fiche pour l’ouvrir dans AYWEBs.',
+      fromPhoto: 'Source : photo', fromQr: 'Source : QR lu', fromCode: 'Source : texte saisi',
+      verified: 'Vérifié', pending: 'À confirmer', was: 'Prix barré', from: 'à partir de',
+      homeToast: 'Retour à l’accueil (racine des onglets)',
+      hStack: 'Pile des couches (ce que voit l’utilisateur)', hRules: 'Règles du retour', hFlow: 'Mode et couche',
+      base: 'Base', drawerLbl: 'Drawer', nothing: '— aucune couche —',
+      counter: n => `Couches ouvertes : ${n}`,
+      backLbl: 'Retour',
+      rules: [
+        'Le bouton retour (Android ou ←) ferme la couche du dessus.',
+        'S’il ne reste aucune couche : en mode Lien/Scan on revient au mode Photo.',
+        'En mode Photo sans couche : retour à l’accueil (racine des onglets).',
+        'Changer de mode ferme toutes les couches.',
+        'Un seul drawer à la fois. Ouvrir une fiche ferme le scan jusqu’à fermeture.',
+        'Avant toute navigation vers une autre page (ex. panier), on ferme les couches.',
+        'La caméra n’est jamais fermée ni rouverte par le retour.'
+      ],
+      flowNote: 'Photo ──► Scan en direct ──► Lien / code\n  │  ▲                       │\n  └──┴──── (mode, ferme couches) ┘\n\nCouches au-dessus de la base :\n  OCEREX · Aide · Résultats\n\nRetour :  couche ▸ mode Photo ▸ accueil'
+    },
+    ar: {
+      title: 'AYROVIX Lens — موكاب التنقل بالطبقات',
+      photo: 'صورة', live: 'مسح مباشر', code: 'رابط / رمز',
+      help: 'مساعدة Lens', ocerex: 'OCEREX', results: 'النتائج', close: 'إغلاق', back: 'رجوع',
+      shutterHint: 'ضع المنتج في الإطار ثم التقط الصورة.',
+      liveHint: 'وجّه الكاميرا نحو QR أو باركود.',
+      liveDetected: 'تمت القراءة — فتح النتائج…',
+      codePh: 'مثال: سماعات بلوتوث أو https://…', search: 'بحث',
+      ocerexTitle: 'السعر من لقطة', ocerexOpen: 'السعر من لقطة (OCEREX)',
+      tabCam: 'التقاط صورة', tabImp: 'استيراد صورة',
+      s1: 'التقاط السعر', s2: 'القراءة (OCR): 89 د.ت، ثقة عالية', s3: 'حساب سعر ZAYROVI: 92 د.ت',
+      s4: 'رابط المنتج الدقيق', s5: 'إنشاء سطر السلة',
+      next: 'الخطوة التالية', done: 'تم إنشاء السطر. أغلق للعودة إلى Lens.',
+      helpTitle: 'قواعد Lens', helpBody: 'الخادم يحدد معنى الرمز؛ الهاتف لا يقرر السعر. البطاقات تأتي من صفحات متاجر حقيقية.',
+      resultsTitle: 'النتائج', resultsHint: 'اضغط بطاقة لفتحها في AYWEBs.',
+      fromPhoto: 'المصدر: صورة', fromQr: 'المصدر: QR مقروء', fromCode: 'المصدر: نص مكتوب',
+      verified: 'متحقق', pending: 'للتأكيد', was: 'سعر مشطوب', from: 'ابتداءً من',
+      homeToast: 'العودة إلى الواجهة الرئيسية (جذر التبويبات)',
+      hStack: 'كومة الطبقات (ما يراه المستعمل)', hRules: 'قواعد الرجوع', hFlow: 'الوضع والطبقة',
+      base: 'القاعدة', drawerLbl: 'درج', nothing: '— لا توجد طبقة —',
+      counter: n => `الطبقات المفتوحة: ${n}`,
+      backLbl: 'رجوع',
+      rules: [
+        'زر الرجوع (Android أو ←) يغلق الطبقة العلوية.',
+        'إن لم تبقَ طبقة: في وضع الرابط أو المسح نعود إلى وضع الصورة.',
+        'في وضع الصورة دون طبقة: العودة إلى الواجهة الرئيسية.',
+        'تغيير الوضع يغلق كل الطبقات.',
+        'درج واحد في كل مرة. فتح نتيجة يوقف المسح حتى إغلاقها.',
+        'قبل أي انتقال إلى صفحة أخرى (مثل السلة) تُغلق الطبقات.',
+        'الكاميرا لا تُغلق ولا تُعاد فتحها بسبب الرجوع.'
+      ],
+      flowNote: 'صورة ──► مسح مباشر ──► رابط / رمز\n  │  ▲                       │\n  └──┴──── (الوضع، يغلق الطبقات) ┘\n\nطبقات فوق القاعدة:\n  OCEREX · مساعدة · نتائج\n\nالرجوع:  طبقة ▸ وضع الصورة ▸ الرئيسية'
+    }
+  };
+
+  const RESULTS = [
+    { t: 'Écouteurs Bluetooth ANC', p: '89 DT', was: '120 DT', ok: true,  c: '#c9d6e8' },
+    { t: 'Chargeur USB-C 65 W',     p: '59 DT', was: '',       ok: true,  c: '#e8d6c9' },
+    { t: 'Montre connectée',        p: '149 DT', was: '',      ok: false, c: '#d6e8c9' },
+    { t: 'Enceinte portable',       p: '205 DT', was: '240 DT', ok: true, c: '#e8c9e0' }
+  ];
+
+  const S = { lang: 'fr', mode: 'photo', stack: [], ocx: { tab: 'camera', step: 1 }, flash: false, code: '', toast: '', detected: false, src: 'photo' };
+  const t = k => T[S.lang][k];
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+
+  /* ───────── Rendu ───────── */
+  function base() {
+    const modes = ['photo', 'live', 'code'].map(m =>
+      `<button class="${S.mode === m ? 'on' : ''}" data-act="mode" data-v="${m}">${t(m)}</button>`).join('');
+    const top = `<div class="top">
+        <button class="icon" data-act="help" title="${t('help')}">?</button>
+        <div class="modes">${modes}</div>
+        <button class="icon" data-act="flash">${S.flash ? '⚡' : '✕'}</button>
+      </div>`;
+
+    if (S.mode === 'code') {
+      return `<div class="base">${top}
+        <div class="codebox">
+          <input id="codeInput" placeholder="${esc(t('codePh'))}" value="${esc(S.code)}" data-input="code">
+          <button class="go ${S.code.trim().length < 2 ? 'disabled' : ''}" data-act="search">${t('search')}</button>
+        </div>
+        <div class="bottom"><button class="pill" data-act="ocerex">🧾 ${t('ocerexOpen')}</button></div>
+      </div>`;
+    }
+    if (S.mode === 'live') {
+      return `<div class="base">${top}
+        <div class="frame ${S.detected ? 'detected' : ''}"></div>
+        <div class="hint">${S.detected ? t('liveDetected') : t('liveHint')}</div>
+        <div class="bottom">
+          <button class="pill" data-act="qr">▣ QR (simulation)</button>
+          <button class="pill" data-act="ocerex">🧾 ${t('ocerexOpen')}</button>
+        </div>
+      </div>`;
+    }
+    return `<div class="base">${top}
+      <div class="frame"></div>
+      <div class="hint">${t('shutterHint')}</div>
+      <div class="bottom">
+        <div class="shutterRow">
+          <button class="small" data-act="gallery" title="galerie">🖼</button>
+          <button class="shutter" data-act="shutter" aria-label="${t('photo')}"></button>
+          <button class="small" data-act="ocerex" title="${t('ocerex')}">🧾</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function scrimAndDrawer(top) {
+    if (!top) return '';
+    return `<div class="scrim" data-act="back"></div>` + drawer(top);
+  }
+
+  function drawer(top) {
+    const head = (title) => `<div class="grip"></div>
+      <div class="dhead"><button class="x" data-act="back" aria-label="${t('back')}">←</button>
+      <h2>${title}</h2>
+      <button class="x" data-act="close" aria-label="${t('close')}">✕</button></div>`;
+
+    if (top.k === 'help') {
+      return `<div class="drawer">${head(t('helpTitle'))}<div class="dbody">
+        <div class="muted">${t('helpBody')}</div></div></div>`;
+    }
+
+    if (top.k === 'ocerex') {
+      const o = S.ocx;
+      const steps = [t('s1'), t('s2'), t('s3'), t('s4'), t('s5')].map((label, i) => {
+        const n = i + 1;
+        const cls = n < o.step ? 'done' : (n === o.step ? 'now' : '');
+        return `<div class="step ${cls}"><span class="n">${n < o.step ? '✓' : n}</span><span>${label}</span></div>`;
+      }).join('');
+      const isDone = o.step > 5;
+      const cta = isDone
+        ? `<div class="ok">${t('done')}</div>`
+        : `<button class="primary" data-act="ocx-next">${t('next')}</button>`;
+      return `<div class="drawer">${head(t('ocerexTitle'))}<div class="dbody">
+        <div class="seg">
+          <button class="${o.tab === 'camera' ? 'on' : ''}" data-act="ocx-tab" data-v="camera">${t('tabCam')}</button>
+          <button class="${o.tab === 'import' ? 'on' : ''}" data-act="ocx-tab" data-v="import">${t('tabImp')}</button>
+        </div>
+        <div class="steps">${steps}</div>
+        ${cta}
+      </div></div>`;
+    }
+
+    if (top.k === 'results') {
+      const srcLbl = top.src === 'qr' ? t('fromQr') : top.src === 'code' ? t('fromCode') : t('fromPhoto');
+      const chip = top.src !== 'photo' ? `<div class="codechip">${esc(top.code || 'https://ayrovi.tn/p/casque-anc')}</div>` : '';
+      const cards = RESULTS.map((r, i) => `
+        <div class="card">
+          <div class="img" style="background:${r.c}">
+            ${r.was ? `<span class="badge">-${Math.round((1 - parseInt(r.p) / parseInt(r.was)) * 100)}%</span>` : ''}
+            <button class="heart" data-act="toast" data-v="${esc(t('results'))} : favori">♡</button>
+          </div>
+          <div class="txt">
+            <span>${r.t}</span>
+            ${r.was ? `<span class="was">${t('was')} ${r.was}</span>` : ''}
+            <span class="price">${i === 2 ? t('from') + ' ' : ''}${r.p}</span>
+            <span class="ver ${r.ok ? '' : 'pending'}">${r.ok ? '✓ ' + t('verified') : t('pending')}</span>
+          </div>
+        </div>`).join('');
+      return `<div class="drawer">${head(t('resultsTitle'))}<div class="dbody">
+        <div class="muted">${srcLbl}</div>${chip}
+        <div class="muted">${t('resultsHint')}</div>
+        <div class="grid">${cards}</div>
+      </div></div>`;
+    }
+    return '';
+  }
+
+  function stackView() {
+    const rows = [`<div class="layer"><span>${t('base')} · ${t(S.mode)}</span><span>${S.mode === 'photo' ? '' : '↳'}</span></div>`];
+    S.stack.forEach((l, i) => {
+      const name = l.k === 'ocerex' ? t('ocerex') : l.k === 'help' ? t('help') : t('results');
+      rows.push(`<div class="layer ${i === S.stack.length - 1 ? 'top' : ''}"><span>${t('drawerLbl')} · ${name}</span><span>${i + 1}</span></div>`);
+    });
+    if (!S.stack.length) rows.push(`<div class="layer"><span>${t('nothing')}</span><span></span></div>`);
+    return rows.join('');
+  }
+
+  function render() {
+    document.documentElement.lang = S.lang;
+    document.documentElement.dir = S.lang === 'ar' ? 'rtl' : 'ltr';
+    const top = S.stack[S.stack.length - 1];
+    $('screen').innerHTML = base() + scrimAndDrawer(top) + (S.toast ? `<div class="toast">${esc(S.toast)}</div>` : '');
+    $('stackView').innerHTML = stackView();
+    $('counter').textContent = t('counter')(S.stack.length);
+    $('title').textContent = t('title');
+    $('hStack').textContent = t('hStack');
+    $('hRules').textContent = t('hRules');
+    $('hFlow').textContent = t('hFlow');
+    $('rules').innerHTML = t('rules').map(r => `<li>${r}</li>`).join('');
+    $('flowNote').textContent = t('flowNote');
+    $('backLabel').textContent = t('backLbl');
+    $('langBar').innerHTML = ['fr', 'ar'].map(l => `<button class="${S.lang === l ? 'on' : ''}" data-act="lang" data-v="${l}">${l === 'fr' ? 'Français' : 'العربية'}</button>`).join('');
+    $('scenarios').innerHTML = [
+      ['photo', t('photo')], ['live', t('live')], ['code', t('code')],
+      ['ocerex', t('ocerex')], ['help', t('help')], ['results', t('results')]
+    ].map(([k, l]) => `<button data-act="scenario" data-v="${k}">${l}</button>`).join('');
+  }
+
+  /* ───────── Actions : une seule pile, un seul retour ───────── */
+  function toast(msg) {
+    S.toast = msg; render();
+    clearTimeout(toast.h);
+    toast.h = setTimeout(() => { S.toast = ''; render(); }, 1800);
+  }
+
+  function push(layer) { S.stack.push(layer); }
+
+  function back() {
+    if (S.stack.length) { S.stack.pop(); }
+    else if (S.mode !== 'photo') { S.mode = 'photo'; S.detected = false; }
+    else { toast(t('homeToast')); }
+    render();
+  }
+
+  function setMode(m) {
+    S.stack = [];                    // changer de mode ferme les couches
+    S.mode = m;
+    S.detected = false;
+    render();
+  }
+
+  function openOcerex() {
+    if (S.stack.some(l => l.k === 'ocerex')) return;   // un seul drawer à la fois
+    S.stack = [];                    // un seul drawer : remplace l'éventuel
+    S.ocx = { tab: 'camera', step: 1 };
+    push({ k: 'ocerex' }); render();
+  }
+
+  function openLayer(k, extra) {
+    S.stack = [];                    // un seul drawer à la fois
+    push(Object.assign({ k }, extra || {})); render();
+  }
+
+  const ACTS = {
+    mode: el => setMode(el.dataset.v),
+    help: () => openLayer('help'),
+    flash: () => { S.flash = !S.flash; render(); },
+    back: () => back(),
+    close: () => { S.stack = []; render(); },
+    shutter: () => openLayer('results', { src: 'photo' }),
+    gallery: () => openLayer('results', { src: 'photo' }),
+    ocerex: () => openOcerex(),
+    qr: () => { S.detected = true; render(); setTimeout(() => { if (S.mode === 'live') { S.detected = false; openLayer('results', { src: 'qr', code: 'https://ayrovi.tn/p/casque-anc' }); } }, 700); },
+    search: () => { if (S.code.trim().length >= 2) openLayer('results', { src: 'code', code: S.code.trim() }); },
+    'ocx-tab': el => { S.ocx.tab = el.dataset.v; render(); },
+    'ocx-next': () => { S.ocx.step = Math.min(6, S.ocx.step + 1); render(); },
+    toast: el => toast(el.dataset.v),
+    lang: el => { S.lang = el.dataset.v; render(); },
+    scenario: el => {
+      const v = el.dataset.v;
+      S.stack = []; S.detected = false;
+      if (v === 'photo' || v === 'live' || v === 'code') S.mode = v;
+      else if (v === 'ocerex') { S.mode = 'photo'; S.ocx = { tab: 'camera', step: 1 }; push({ k: 'ocerex' }); }
+      else if (v === 'help') { S.mode = 'photo'; push({ k: 'help' }); }
+      else if (v === 'results') { S.mode = 'photo'; push({ k: 'results', src: 'photo' }); }
+      render();
+    }
+  };
+
+  document.body.addEventListener('click', e => {
+    const el = e.target.closest('[data-act]');
+    if (!el) return;
+    const fn = ACTS[el.dataset.act];
+    if (fn) fn(el);
+  });
+
+  document.body.addEventListener('input', e => {
+    if (e.target.dataset.input === 'code') {
+      S.code = e.target.value;
+      const btn = document.querySelector('.codebox .go');
+      if (btn) btn.classList.toggle('disabled', S.code.trim().length < 2);
+    }
+  });
+
+  $('btnBack').addEventListener('click', back);
+  $('btnHome').addEventListener('click', () => { S.stack = []; S.mode = 'photo'; render(); });
+  $('btnRecent').addEventListener('click', () => toast(t('homeToast')));
+
+  render();
+})();
+</script>
+</body>
+</html>

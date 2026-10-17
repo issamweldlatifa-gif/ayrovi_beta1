@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * AYROVI — P3/T1-bis e : absorption de la longue traîne des tons verbatims.
+ * ZAYROVI — P3/T1-bis e : absorption de la longue traîne des tons verbatims.
  *
  * T1 avait déplacé 449 littéraux sans y toucher, en créant 231 « tons » portant la valeur exacte.
  * Ce script fait le pas que T1 refusait de faire sans accord : rapprocher une teinte d'un token

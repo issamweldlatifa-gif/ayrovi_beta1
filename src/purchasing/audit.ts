@@ -1,5 +1,5 @@
 /**
- * AYROVI Purchasing (P2.3) — audit, par l'UNIQUE écriture du système.
+ * ZAYROVI Purchasing (P2.3) — audit, par l'UNIQUE écriture du système.
  *
  * Le module n'écrit jamais dans `audit_logs` : chaque mutation passe par `writeAuditEvent`,
  * ce qui donne l'acteur + l'identité employé, la requête/session, le type et l'id de

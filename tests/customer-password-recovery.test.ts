@@ -17,7 +17,7 @@ beforeEach(() => {
   vi.stubEnv('PUBLIC_BASE_URL', 'https://shop.example.com');
   vi.stubEnv('MAIL_PROVIDER', 'resend');
   vi.stubEnv('MAIL_API_KEY', 'test-not-real');
-  vi.stubEnv('MAIL_FROM', 'AYROVI <no-reply@example.com>');
+  vi.stubEnv('MAIL_FROM', 'ZAYROVI <no-reply@example.com>');
   db = new QatafoDatabase(':memory:');
   app = express(); app.use(express.json()); app.use('/api/customer', createCustomerRouter(db));
   sent = [];

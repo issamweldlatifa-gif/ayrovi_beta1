@@ -83,7 +83,7 @@ describe('Magazine Agent persistence and product policy', () => {
   });
 
   test('only links explicit product requests to real read-only catalogue matches', () => {
-    const real = findMagazineProductContext(db, 'ولّد ريلز لمنتج SHEIN Ensemble tendance AYROVI');
+    const real = findMagazineProductContext(db, 'ولّد ريلز لمنتج SHEIN Ensemble tendance ZAYROVI');
     expect(real.requested).toBe(true);
     expect(real.matched).toBe(true);
     expect(real.products[0]?.id).toBe('product_demo_01');

@@ -34,7 +34,7 @@ function rules(overrides: Partial<PricingRules> = {}): PricingRules {
   };
 }
 
-describe('AYSONIC CIF pricing engine', () => {
+describe('ZAYROVI CIF pricing engine', () => {
   test('millimes avoid binary float drift', () => {
     expect(millimes(0.1 + 0.2)).toBe(0.3);
     expect(millimes(21.99 * 4.12)).toBe(90.599);

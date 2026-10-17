@@ -31,7 +31,9 @@ describe('AYROVIX Lens — product-name text search (Phase 0, analytics-safe)', 
     expect(res.body.code).toBe('INVALID_TEXT');
   });
 
-  test('text search uses catalog and returns priced candidate without inventing data', async () => {
+  // Catalogue ZAYROVI désactivé (AYROVI_CATALOG_SEARCH_ENABLED=false) : test à réactiver avec l'interrupteur.
+
+  test.skip('text search uses catalog and returns priced candidate without inventing data', async () => {
     const id = seedCatalogProduct('Adidas Ultra Boost 22', 'Adidas', 62, 'EUR');
     const res = await request(app).post('/api/ayrovix/analyze-text').send({ query: 'Adidas Ultra Boost' });
     expect(res.status).toBe(200);

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""يولّد 10 نماذج (أنماط) لتصميم عائلة أيقونات AYROVI — 5 أيقونات × 10 أنماط.
+"""يولّد 10 نماذج (أنماط) لتصميم عائلة أيقونات ZAYROVI — 5 أيقونات × 10 أنماط.
 المخرجات: docs/ayrovi-icon-styles.html + /tmp/icon-styles.png"""
 import re
 from pathlib import Path
@@ -60,7 +60,7 @@ ICONS = {
 }
 
 STYLES = [
-    ('1', 'Signature AYROVI (المرجع)', 'signature'),
+    ('1', 'Signature ZAYROVI (المرجع)', 'signature'),
     ('2', 'Duotone (تعبئة خفيفة)', 'duotone'),
     ('3', 'Solid (معبّأة)', 'solid'),
     ('4', 'Orange (برتقالي)', 'orange'),
@@ -134,7 +134,7 @@ def build():
     parts.append('<defs><linearGradient id="ayGrad" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">'
                  f'<stop offset="0" stop-color="{SIG}"/><stop offset="1" stop-color="{INK}"/>'
                  '</linearGradient></defs>')
-    parts.append(f'<text x="20" y="34" font-size="20" font-weight="700" fill="{INK}">AYROVI Icon Styles — 10 نماذج للاختيار</text>')
+    parts.append(f'<text x="20" y="34" font-size="20" font-weight="700" fill="{INK}">ZAYROVI Icon Styles — 10 نماذج للاختيار</text>')
     # ترويسة الأعمدة
     for c, key in enumerate(ICONS):
         parts.append(f'<text x="{260 + c * CELL + CELL / 2}" y="56" font-size="14" font-weight="700" '
@@ -158,7 +158,7 @@ def main():
     out = Path('/home/user/ayrovi_beta1/docs/ayrovi-icon-styles.html')
     html = ('<!DOCTYPE html><html lang="ar"><head><meta charset="utf-8"/>'
             '<meta name="viewport" content="width=device-width, initial-scale=1"/>'
-            '<title>AYROVI Icon Styles — 10 نماذج</title>'
+            '<title>ZAYROVI Icon Styles — 10 نماذج</title>'
             '<style>body{margin:0;background:#fff;padding:16px}'
             '.wrap{max-width:1240px;margin:0 auto}</style></head><body><div class="wrap">'
             + svg + '</div></body></html>')

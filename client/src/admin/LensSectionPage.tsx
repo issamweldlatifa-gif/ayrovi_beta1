@@ -3,6 +3,7 @@ import { Button, Field, Switch, Toast } from './components';
 import { adminApi } from './api';
 import { ArrowDown, ArrowUp, RefreshCw, Trash2 } from '../components/QatafoIcons';
 import { moveHint } from './moveHint';
+import { brandAccentColor } from '../../../shared/identityPolicy';
 
 /**
  * CONTENT → LENS — مصدر الحقيقة الوحيد لقسم LENS.
@@ -57,7 +58,7 @@ interface LensDraft {
 
 const EMPTY_DRAFT: LensDraft = {
   eyebrow: '', title: '', description: '', ctaLabel: '', ctaUrl: '', proofLine: '',
-  accentColor: '#FF6900', elementOrder: 'eyebrow,title,description,cta,proof',
+  accentColor: brandAccentColor(''), elementOrder: 'eyebrow,title,description,cta,proof',
   bgType: 'COLOR', bgColor: '#F6F7F9', bgImage: '', overlayStrength: 0.25, focalX: 0.5, focalY: 0.45,
   phoneEnabled: true, enabled: true, sortOrder: 40,
   phone: { image: '', statusLabel: '', resultLabel: '', productName: '', priceChip: '', metaChip: '', stockChip: '', ctaLabel: '' },
@@ -96,6 +97,7 @@ export const LensSectionPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
       const result = await adminApi<any>('/lens-hero');
       if (result.data) setDraft({
         ...EMPTY_DRAFT, ...result.data,
+        accentColor: brandAccentColor(result.data.accentColor),
         phone: { ...EMPTY_DRAFT.phone, ...(result.data.phone || {}) },
         media: { ...EMPTY_DRAFT.media, ...(result.data.media || {}) },
       });
@@ -174,6 +176,7 @@ export const LensSectionPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
       const result = await adminApi<any>('/lens-hero', { method: 'PUT', body: form });
       if (result.data) setDraft({
         ...EMPTY_DRAFT, ...result.data,
+        accentColor: brandAccentColor(result.data.accentColor),
         phone: { ...EMPTY_DRAFT.phone, ...(result.data.phone || {}) },
         media: { ...EMPTY_DRAFT.media, ...(result.data.media || {}) },
       });

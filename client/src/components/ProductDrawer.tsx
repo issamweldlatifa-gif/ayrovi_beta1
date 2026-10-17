@@ -297,7 +297,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                 disabled={isUploading || isScraping}
                 className="ay-dark-feature-card group relative flex min-h-[190px] w-full cursor-pointer flex-col justify-between overflow-hidden rounded-card p-6 text-left text-white disabled:cursor-wait disabled:opacity-90"
               >
-                {/* تجربة AYROVI Lens: معاينة الصورة مع مسح ضوئي أثناء التحليل */}
+                {/* تجربة ZAYROVI Lens: معاينة الصورة مع مسح ضوئي أثناء التحليل */}
                 {isUploading && uploadPreview && (
                   <>
                     <img src={uploadPreview} alt="Capture en cours d’analyse" className="absolute inset-0 h-full w-full object-cover" />

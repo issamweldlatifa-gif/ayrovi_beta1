@@ -10,7 +10,7 @@
  * Ce qu'on doit lire :
  *   1re passe : from_cache=false, cache_age_ms=null  → la fiche est réellement lue ;
  *   2e  passe : from_cache=true,  cache_age_ms=<âges> → aucune relecture marchande,
- *               et le prix reste celui du moteur AYROVI (jamais servi par le cache).
+ *               et le prix reste celui du moteur ZAYROVI (jamais servi par le cache).
  *
  * Utilisation :
  *   node scripts/aywebs-latency-probe.mjs \

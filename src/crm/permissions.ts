@@ -1,5 +1,5 @@
 /**
- * AYROVI CRM 360 (E1) — les permissions comme données, sur le moteur ERP.
+ * ZAYROVI CRM 360 (E1) — les permissions comme données, sur le moteur ERP.
  *
  * Même discipline que le stock et les achats :
  *  1. des lignes `erp_role_permissions` pour le module `crm360`, actions

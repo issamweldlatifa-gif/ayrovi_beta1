@@ -1,10 +1,10 @@
 /* Additive public navigation, real destinations, and approved advertising/footer treatment. */
-/* Bandeau campagne — arbitrage charte (2026-10-03) : la charte plafonne l'orange de
-   marque à 3 % de la surface d'un écran ; une surface pleine #D3451F en occupait 29 %
-   (mesuré). Le bandeau reste sombre et premium via l'encre canonique (--ayrovi-ink-deep,
-   documentée « Hero, announcement, … ») et garde son identité par un filet orange de
-   3 px : l'orange redevient un signal, pas une surface. */
-.public-campaign{background:var(--ayrovi-ink-deep);color:var(--ayrovi-white);border-bottom:3px solid var(--ayrovi-color-brand-orange)}
+/* Bandeau campagne — arbitrage charte (2026-10-03, palette officielle 2026-10-15) : la
+   couleur de marque n'est jamais une surface pleine (une surface pleine en occupait 29 %,
+   mesuré). Le bandeau reste sombre et premium via l'encre canonique (--ayrovi-ink-deep,
+   documentée « Hero, announcement, … ») et garde son identité par un filet violet de
+   3 px, éclairci pour le fond sombre : la marque est un signal, pas une surface. */
+.public-campaign{background:var(--ayrovi-ink-deep);color:var(--ayrovi-white);border-bottom:3px solid var(--ayrovi-accent-on-dark)}
 .public-campaign-inner{position:relative;max-width:1280px;margin:auto;padding:24px 16px 12px}
 .public-campaign h2,.public-campaign p{padding-inline-end:40px;margin:0;font-size:clamp(24px,3vw,36px);line-height:1.18;font-weight:500;overflow-wrap:anywhere}
 .public-campaign p{margin-top:4px}
@@ -31,7 +31,7 @@
 .public-content-state{padding:36px 20px;border:1px solid #D9D9D9;text-align:center;background:#FFFFFF;color:#000000}
 .public-content-state h2{font-size:24px;line-height:1.5;font-weight:500}
 .public-content-state p{margin-top:12px;line-height:1.8;color:#595959}
-.public-content-state button{margin-top:18px;min-height:44px;border:0;padding:10px 22px;background:#000000;color:#FFFFFF;font-weight:700}
+.public-content-state button{margin-top:18px;min-height:44px;border:0;padding:10px 22px;background:var(--ayrovi-text-primary);color:var(--ayrovi-white);font-weight:700}
 /* Specificity keeps the admin-compatible footer adapter from repainting this black footer. */
 .ayrovi-app-shell .public-site-footer{background:#000000!important;color:#FFFFFF!important;text-align:center;padding:0 0 calc(var(--ayrovi-bottom-nav-height,72px) + env(safe-area-inset-bottom,0px) + 16px);margin-top:32px}
 .public-footer-inner{display:grid;gap:18px;max-width:1120px;margin:auto;padding:26px 18px 2px}
@@ -64,7 +64,7 @@
 .public-footer-contacts>button:disabled{cursor:default}
 .public-footer-contacts svg{color:#BDBDBD;flex-shrink:0}
 .public-footer-contacts strong{display:block;font-size:13px;font-weight:700;color:#FFFFFF}
-.public-footer-contacts>:first-child strong{color:#FF7900}
+.public-footer-contacts>:first-child strong{color:var(--ayrovi-white)}
 .public-footer-contacts small{display:block;margin-top:2px;font-size:10.5px;color:#BDBDBD}
 /* Moyens de paiement : le bloc ne parle QUE de ce qui encaisse (voir FooterPaymentMethods).
    Zone alignée à gauche (liste et chiffres se lisent), largeur bornée pour rester lisible,
@@ -72,7 +72,7 @@
 .public-footer-payments{display:grid;gap:10px;justify-items:center;text-align:start;width:100%;max-width:520px;margin-inline:auto}
 .public-footer-payment-state{display:flex;align-items:center;gap:9px;margin:0;font-size:12.5px;line-height:1.6;color:#FFFFFF}
 .public-footer-payment-state strong{font-weight:700}
-.public-footer-payment-dot{width:7px;height:7px;border-radius:50%;background:#FF7900;flex-shrink:0}
+.public-footer-payment-dot{width:7px;height:7px;border-radius:50%;background:var(--ayrovi-white);flex-shrink:0}
 .public-footer-payment-note{margin:0;font-size:11.5px;line-height:1.7;color:#BDBDBD}
 .public-footer-payment-list{display:grid;gap:8px;justify-self:stretch;width:100%;margin:0;padding:0;list-style:none}
 .public-footer-payment{display:flex;align-items:center;gap:11px;min-height:48px;border:1px solid #262626;padding:8px 12px}

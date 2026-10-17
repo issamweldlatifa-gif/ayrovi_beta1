@@ -1,7 +1,7 @@
 import { FONT_STACK, BRAND, documentIdentityCss, mailIdentityStyle } from './brandDocuments';
 import { invoiceQrSvg } from './invoiceQr';
 /**
- * AYROVI Invoice Service — توليد فاتورة PDF محلية بدون متصفح headless.
+ * ZAYROVI Invoice Service — توليد فاتورة PDF محلية بدون متصفح headless.
  *
  * P0 (ERP foundation) — séparation Public Media / Private Documents :
  *   • NEW invoices and transfer proofs are written under
@@ -87,7 +87,7 @@ export function buildInvoiceHtml(db: QatafoDatabase, orderId: string): string {
   const setting = (key: string, fallback = '') => db.get<any>('SELECT setting_value FROM settings WHERE setting_key=?', key)?.setting_value ?? fallback;
 
   const company = {
-    name: String(setting('company_legal_name', '') || setting('company_name', 'AYROVI')),
+    name: String(setting('company_legal_name', '') || setting('company_name', 'ZAYROVI')),
     email: String(setting('company_email', 'contact@ayrovi.tn')),
     phone: String(setting('company_phone', '')),
     address: String(setting('company_address', 'Tunis, Tunisie')),
@@ -115,7 +115,7 @@ export function buildInvoiceHtml(db: QatafoDatabase, orderId: string): string {
   ${documentIdentityCss()}
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: ${FONT_STACK}; color: #000000; font-size: 13px; padding: 40px; }
-  .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #FF6900; padding-bottom: 20px; }
+  .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid ${BRAND.colors.ink}; padding-bottom: 20px; }
   .brand { font-size: 26px; font-weight: 900; color: #000000; letter-spacing: -0.5px; }
   .brand small { display: block; font-size: 11px; color: ${BRAND.colors.muted}; font-weight: 600; margin-top: 6px; letter-spacing: 0; }
   .doc { text-align: right; }
@@ -139,7 +139,7 @@ export function buildInvoiceHtml(db: QatafoDatabase, orderId: string): string {
   .deposit strong { color: #047857; }
   .deposit table { margin: 6px 0 0; }
   .deposit td { border: none; padding: 4px 0; }
-  .tracking { background: ${BRAND.colors.surface}; border: 1px dashed #FF6900; border-radius: 12px; padding: 14px 16px; margin-top: 16px; text-align: center; }
+  .tracking { background: ${BRAND.colors.surface}; border: 1px dashed ${BRAND.colors.ink}; border-radius: 12px; padding: 14px 16px; margin-top: 16px; text-align: center; }
   .tracking b { font-family: ${FONT_STACK}; font-size: 17px; color: #000000; letter-spacing: 1px; }
   footer { margin-top: 30px; padding-top: 14px; border-top: 1px solid ${BRAND.colors.line}; color: ${BRAND.colors.muted}; font-size: 11px; text-align: center; line-height: 1.6; }
 </style></head><body>
@@ -193,7 +193,7 @@ export function buildInvoiceHtml(db: QatafoDatabase, orderId: string): string {
     <tr><td>Sous-total articles</td><td class="num">${money(order.subtotal_tnd)}</td></tr>
     ${Number(order.customs_tnd) ? `<tr><td>Douane & formalités</td><td class="num">${money(order.customs_tnd)}</td></tr>` : ''}
     ${Number(order.shipping_tnd) ? `<tr><td>Transport international</td><td class="num">${money(order.shipping_tnd)}</td></tr>` : ''}
-    ${Number(order.service_tnd) ? `<tr><td>Frais de service AYROVI</td><td class="num">${money(order.service_tnd)}</td></tr>` : ''}
+    ${Number(order.service_tnd) ? `<tr><td>Frais de service ZAYROVI</td><td class="num">${money(order.service_tnd)}</td></tr>` : ''}
     ${Number(order.express_tnd) ? `<tr><td>Express</td><td class="num">${money(order.express_tnd)}</td></tr>` : ''}
     ${Number(order.discount_tnd) ? `<tr><td>Remise</td><td class="num">−${money(order.discount_tnd)}</td></tr>` : ''}
     <tr class="grand"><td>Total de la commande</td><td class="num">${money(total)}</td></tr>
@@ -227,7 +227,7 @@ export function buildInvoiceLines(db: QatafoDatabase, orderId: string): PdfLine[
   const items = db.all<any>('SELECT * FROM order_items WHERE order_id=? ORDER BY created_at', orderId);
   const customer = db.get<any>('SELECT * FROM customers WHERE id=?', order.customer_id);
   const setting = (key: string, fallback = '') => db.get<any>('SELECT setting_value FROM settings WHERE setting_key=?', key)?.setting_value ?? fallback;
-  const company = String(setting('company_legal_name', '') || setting('company_name', 'AYROVI'));
+  const company = String(setting('company_legal_name', '') || setting('company_name', 'ZAYROVI'));
   const m = (v: any) => `${Number(v || 0).toFixed(3)} DT`;
   const deposit = Number(order.deposit_amount_tnd || 0);
   const balance = Math.max(0, Math.round((Number(order.total_tnd) - deposit) * 1000) / 1000);
@@ -311,7 +311,7 @@ export function invoiceEmailHtml(input: { customerName: string; orderNumber: str
         <tr><td style="padding:8px 0;color:${BRAND.colors.muted};">Solde à la livraison</td><td style="text-align:right;font-weight:700;">${e(input.balanceLabel)}</td></tr>
         ${input.trackingCode ? `<tr><td style="padding:8px 0;color:${BRAND.colors.muted};">Code de suivi</td><td style="text-align:right;font-weight:700;color:#000000;font-family:${FONT_STACK};font-variant-numeric:tabular-nums;">${e(input.trackingCode)}</td></tr>` : ''}
       </table>
-      <p style="line-height:1.6;color:${BRAND.colors.secondary};">Votre facture électronique est jointe à cet e-mail en PDF. Vous pouvez aussi la télécharger à tout moment depuis votre espace client AYROVI (Commandes → ${e(input.orderNumber)}).</p>
+      <p style="line-height:1.6;color:${BRAND.colors.secondary};">Votre facture électronique est jointe à cet e-mail en PDF. Vous pouvez aussi la télécharger à tout moment depuis votre espace client ZAYROVI (Commandes → ${e(input.orderNumber)}).</p>
       <p style="margin-top:22px;font-size:12px;color:${BRAND.colors.muted};">Merci de votre confiance — l'équipe ${e(input.company)}</p>
     </div>
   </div>

@@ -1,5 +1,5 @@
 /**
- * AYROVI ERP Core — Notification foundation (P1).
+ * ZAYROVI ERP Core — Notification foundation (P1).
  *
  * The audit found 10 inline `INSERT INTO customer_notifications`/`admin_notifications`
  * scattered through src/db/database.ts and the routers: no channel, no delivery

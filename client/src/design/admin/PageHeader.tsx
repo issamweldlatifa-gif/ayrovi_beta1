@@ -1,5 +1,5 @@
 /**
- * PageHeader — primitive du design system AYROVI.
+ * PageHeader — primitive du design system ZAYROVI.
  *
  * Primitive d'interface du back office, déplacée telle quelle depuis client/src/admin/components.tsx
  * (P3/T2) : le moteur ne définit plus ses propres composants, il les réexporte depuis la couche
@@ -15,7 +15,7 @@ import React from 'react';
  */
 
 export const PageHeader: React.FC<{ title: string; description: string; action?: React.ReactNode; eyebrow?: string }> = ({
-  title, description, action, eyebrow = 'AYROVI ADMIN',
+  title, description, action, eyebrow = 'ZAYROVI ADMIN',
 }) => (
   <div className="admin-page-header"><div><span className="admin-eyebrow">{eyebrow}</span><h1>{title}</h1><p>{description}</p></div>{action}</div>
 );

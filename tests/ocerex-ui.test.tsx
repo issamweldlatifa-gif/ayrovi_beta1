@@ -27,7 +27,7 @@ afterEach(async () => {
 describe('OCEREX first-use screen', () => {
   it('shows the short Arabic onboarding once, then keeps it dismissed', async () => {
     await act(async () => root.render(<LocaleProvider><OcerexOnboarding onStart={() => markOcerexOnboardingComplete(window.localStorage, null)} /></LocaleProvider>));
-    expect(host.textContent).toContain('حوّل السعر من صورة إلى طلب مع Ayrovi.');
+    expect(host.textContent).toContain('حوّل السعر من صورة إلى طلب مع Zayrovi.');
     expect(host.textContent).toContain('كيف تستعمل Ocerex؟');
     expect(host.textContent).toContain('ابدأ مع Ocerex');
     const button = host.querySelector('button');

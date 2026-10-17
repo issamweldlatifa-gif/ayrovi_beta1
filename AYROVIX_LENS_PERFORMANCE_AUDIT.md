@@ -66,9 +66,9 @@
    │
    ├─► src/ayrovix/services/visualSearch.ts:serpApiVisualSearch()
    │     • serpApiKey() → SERPAPI_KEY env — إذا غائب → [] فوراً
-   │     • prepareImageForSerpApi: sharp 4 محاولات (1000/78, 850/68, 700/58, 560/48) حتى ≤500KB
-   │     • POST https://serpapi.com/image?api_key=KEY (FormData image) — timeout 5s
-   │     • → image_id → GET https://serpapi.com/search.json?engine=google_lens&type=products&image_id=...&hl=fr&country=fr — timeout 10s
+   │     • prepareImageForSerpApi: sharp محاولتان (1000/78 ثم 700/58) حتى ≤500KB
+   │     • POST https://serpapi.com/image (FormData api_key + image) — timeout 5s
+   │     • → image_id → GET https://serpapi.com/search.json?engine=google_lens&type=visual_matches&image_id=...&hl=fr&country=fr — timeout 12s
    │     • toCandidates(payload, limit): يفلتر visual_matches → فقط title≥4 + link https + price extracted_value>0 + currency — match 72-99
    │     • cache SHA256(image)|limit 10min, inFlight deduplication
    │

@@ -11,7 +11,7 @@ let activeVisionRequests = 0;
 
 /**
  * AYROVIX Vision keeps ownership of identification and validation. Provider
- * image/message/schema wire details are isolated behind AYROVI AI Core.
+ * image/message/schema wire details are isolated behind ZAYROVI AI Core.
  */
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;

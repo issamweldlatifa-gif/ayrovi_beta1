@@ -1,5 +1,5 @@
 /**
- * AYROVI CRM 360 (E2) — notes structurées.
+ * ZAYROVI CRM 360 (E2) — notes structurées.
  *
  * Une note est rattachée à une fiche (obligatoire pour rester dans le CRM), avec un
  * auteur, une date et éventuellement un contact/activité/tâche en contexte. Pas de

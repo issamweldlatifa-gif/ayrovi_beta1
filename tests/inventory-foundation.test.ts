@@ -1,5 +1,5 @@
 /**
- * AYROVI Stock (P2.2) — tests d'acceptation.
+ * ZAYROVI Stock (P2.2) — tests d'acceptation.
  *
  * Ils couvrent, dans l'ordre du plan, ce que la phase a promis :
  *  • la quantité n'existe que dans le module — `products` ne gagne aucune colonne de stock ;
@@ -52,7 +52,7 @@ function auditCount(handle: QatafoDatabase, where: string, ...params: Array<stri
   return Number(handle.get<{ n: number }>(`SELECT COUNT(*) AS n FROM audit_logs WHERE ${where}`, ...params)?.n ?? 0);
 }
 
-describe('AYROVI Stock (P2.2)', () => {
+describe('ZAYROVI Stock (P2.2)', () => {
   const location = `TUN-${short}`;
   let productId = '';
   let productCode = '';

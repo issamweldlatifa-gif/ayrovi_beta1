@@ -1,9 +1,12 @@
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    // الحدّ: اختبارات الموقع/الخادم هنا، واختبارات التطبيق داخل apps/mobile بوحدها.
+    // بلا هذا السطر، عدّاد الاختبارات هذا يلتقط ملفات التطبيق ويجرّبها ببيئة الخادم.
+    exclude: [...configDefaults.exclude, 'apps/**'],
     // Tests must be hermetic: pin the env BEFORE any module loads so a local
     // .env (dotenv n'écrase pas les variables déjà définies) cannot leak into the suite.
     env: {

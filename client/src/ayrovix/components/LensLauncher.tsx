@@ -9,6 +9,7 @@ import type {
   AyrovixCandidate, AyrovixHistoryItem, AyrovixOrderPayload, AyrovixProduct, AyrovixUrlResult,
 } from '../types';
 import { analyzeBarcode, analyzeCode, analyzeImage, analyzeText, analyzeUrl, markChosen, AyrovixApiError } from '../services/lensApi';
+import type { LensProgress } from '../services/lensStream';
 import { prepareImage } from '../services/imagePrep';
 import { readLocalAyrovixHistory, rememberAyrovixHistory } from '../services/history';
 import { getCommerceConfig } from '../../services/publicApi';
@@ -36,6 +37,8 @@ interface LensLauncherProps {
   historyScope?: string | null;
   customerSession?: CustomerSession | null;
   onOpenFavorites?: () => void;
+  /** Ouvre OCEREX depuis la caméra Lens. */
+  onOpenOcerex?: () => void;
   onOrder: (payload: AyrovixOrderPayload) => Promise<void>;
   cartCount: number;
   onOpenCart: () => void;
@@ -146,6 +149,8 @@ function errorGuidance(code: string, tr: (fr:string, ar:string)=>string): { titl
     UNSUPPORTED_IMAGE: { fr:'Format non supporté', ar:'صيغة غير مدعومة', hintFr:'Utilisez JPEG, PNG ou WebP uniquement.', hintAr:'استخدم JPEG أو PNG أو WebP فقط.', retryFr:'Choisir une autre image', retryAr:'اختر صورة أخرى' },
     INVALID_IMAGE: { fr:'Image invalide', ar:'صورة غير صالحة', hintFr:'Le fichier n’est pas une image valide. Réessayez avec une photo plus nette.', hintAr:'الملف ليس صورة صالحة. حاول بصورة أوضح.', retryFr:'Choisir une autre image', retryAr:'اختر صورة أخرى' },
     LIMIT_FILE_SIZE: { fr:'Image trop volumineuse', ar:'الصورة كبيرة جدًا', hintFr:'Limite 6 Mo. Réduisez la taille ou rognée la photo.', hintAr:'الحد 6 ميغابايت. قلّل الحجم أو اقتص الصورة.', retryFr:'Choisir une image plus légère', retryAr:'اختر صورة أخف' },
+    ANALYZE_TIMEOUT: { fr:'Analyse trop longue', ar:'التحليل أطول من المعتاد', hintFr:'Le service a mis trop de temps à répondre. Réessayez.', hintAr:'تأخرت الخدمة في الرد. أعد المحاولة.', retryFr:'Réessayer', retryAr:'إعادة المحاولة' },
+    STREAM_INCOMPLETE: { fr:'Connexion interrompue', ar:'انقطع الاتصال', hintFr:'La réponse s’est arrêtée avant la fin. Vérifiez votre connexion et réessayez.', hintAr:'توقف الرد قبل انتهائه. تحقق من الاتصال وأعد المحاولة.', retryFr:'Réessayer', retryAr:'إعادة المحاولة' },
     AYROVIX_UNAVAILABLE: { fr:'AYROVIX arrive très bientôt', ar:'AYROVIX قادمة قريبًا', hintFr:"Le service n’est pas encore activé. Réessayez bientôt.", hintAr:'الخدمة غير مفعّلة بعد. حاول لاحقًا.', retryFr:'Fermer', retryAr:'إغلاق' },
     IDENTIFICATION_FAILED: { fr:'Produit non reconnu', ar:'تعذر التعرف على المنتج', hintFr:'Photo floue ou trop sombre. Cadrez le produit en bon éclairage ou collez son lien.', hintAr:'صورة ضبابية أو مظلمة. صوّر المنتج بإضاءة جيدة أو ألصق رابطه.', retryFr:'Reprendre la photo', retryAr:'إعادة التصوير' },
     INVALID_URL: { fr:'Lien invalide', ar:'رابط غير صالح', hintFr:'Vérifiez le format https://. Copiez le lien exact de la page produit.', hintAr:'تحقق من الصيغة https://. انسخ الرابط الدقيق لصفحة المنتج.', retryFr:'Corriger le lien', retryAr:'صحح الرابط' },
@@ -171,6 +176,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   historyScope,
   customerSession,
   onOpenFavorites,
+  onOpenOcerex,
   onOrder,
   cartCount,
   onOpenCart,
@@ -199,6 +205,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   const [copied, setCopied] = useState(false);
   const [verifiedPriceUrl, setVerifiedPriceUrl] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisProgress, setAnalysisProgress] = useState<LensProgress | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [liveEnabled, setLiveEnabled] = useState(false);
   const [textQuery, setTextQuery] = useState('');
@@ -341,7 +348,10 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
     replaceStage(cameraCapable ? 'live' : 'home');
   };
 
-  const fail = (code: string, message: string) => { setError({ code, message }); setIsAnalyzing(false); replaceStage('error'); };
+  const fail = (code: string, message: string) => { setError({ code, message }); setIsAnalyzing(false); setAnalysisProgress(null); replaceStage('error'); };
+  // Annuler pendant le chargement : on coupe la requête et on revient à l'image de départ.
+  const cancelImageAnalysis = () => { requestAbortRef.current?.abort(); requestAbortRef.current = null; abortRef.current += 1; setIsAnalyzing(false); setAnalysisProgress(null); closeImage(); };
+  const retryImageAnalysis = () => { void runImageAnalysis(); };
   // D2-8 backend ROI: no canvas crop, just send roi% + original file → backend sharp crops (saves 80-150ms + 60KB upload)
   const handleRoiSearch = (roi: { x: number; y: number; w: number; h: number }) => {
     if (!imageFile) return;
@@ -367,12 +377,23 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
     setIsAnalyzing(true);
     // Google Lens style: no separate analyzing page, image stays visible + bottom sheet shows loading
     if (stage !== 'candidates') enterStage('candidates');
-    if (!candidatesView) setCandidatesView({ queryLabel: null, list: [], eventId: '' });
+    // Nouvelle analyse : on repart d'une grille vide ; les cartes arrivent au fil de l'eau.
+    setCandidatesView({ queryLabel: null, list: [], eventId: '' });
+    setAnalysisProgress(null);
     setError(null);
     try {
       const result = await analyzeImage(file, controller.signal, null, {
         ...(cropMs != null ? { cropMs } : {}),
         ...(roi ? { roi } : {}),
+        onProgress: (progress) => { if (abortRef.current === token) setAnalysisProgress(progress); },
+        onCard: (candidate) => {
+          if (abortRef.current !== token) return;
+          setCandidatesView((prev) => {
+            const base = prev || { queryLabel: null, list: [], eventId: '' };
+            if (base.list.some((item) => item.sourceUrl === candidate.sourceUrl)) return base;
+            return { ...base, list: [...base.list, candidate] };
+          });
+        },
       });
       // uploadMs could be measured as tUpload diff but fetch includes network; cropMs is primary
       if (abortRef.current !== token) return;
@@ -405,6 +426,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
       if (!roi && cropMs == null) setDetectedProducts((result.identification.products || []).map((p:any)=> ({ name: p.name || p.category || '', box: p.box || null, category: p.category || '' })));
       setVerifiedPriceUrl(false);
       setIsAnalyzing(false);
+      setAnalysisProgress(null);
       if (stage !== 'candidates') replaceStage('candidates');
     } catch (err: any) {
       if (controller.signal.aborted || err?.name === 'AbortError' || abortRef.current !== token) return;
@@ -698,6 +720,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
     return (
       <>
         {!historyOpen && <LiveCamera
+          onOpenOcerex={onOpenOcerex}
           onPhoto={(file) => void handleImage(file)}
           onQrUrl={(url) => void runUrlAnalysis(url, 'qr')}
           onBarcode={(code) => void runBarcodeAnalysis(code)}
@@ -720,6 +743,9 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
               onChoose={handleChooseCandidate}
               onReset={closeImage}
               isLoading={isAnalyzing}
+              analysisProgress={analysisProgress}
+              onCancelAnalysis={cancelImageAnalysis}
+              onRetryAnalysis={retryImageAnalysis}
               onRoiSearch={handleRoiSearch}
               onLassoSearch={(file, cropMs) => void runImageAnalysis(file, cropMs)}
               detectedProducts={detectedProducts}
@@ -840,7 +866,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
                   />
                   <button type="submit" disabled={textQuery.trim().length < 2} className="ay-btn-primary flex-none text-xs disabled:opacity-40">{tr('Rechercher', 'بحث')}</button>
                 </div>
-                <p className="text-xs font-medium text-muted leading-relaxed">{tr('Recherche dans le catalogue AYROVI + web marchand (même moteur que QR/lien). Aucun prix inventé.', 'بحث في مجموعة AYROVI + وِب المتاجر (نفس محرك QR/الرابط). لا سعر مخترع.')}</p>
+                <p className="text-xs font-medium text-muted leading-relaxed">{tr('Recherche dans le catalogue ZAYROVI + web marchand (même moteur que QR/lien). Aucun prix inventé.', 'بحث في مجموعة ZAYROVI + وِب المتاجر (نفس محرك QR/الرابط). لا سعر مخترع.')}</p>
               </form>
 
               <form
@@ -922,6 +948,9 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
               onChoose={handleChooseCandidate}
               onReset={reset}
               isLoading={isAnalyzing}
+              analysisProgress={analysisProgress}
+              onCancelAnalysis={cancelImageAnalysis}
+              onRetryAnalysis={retryImageAnalysis}
               onRoiSearch={handleRoiSearch}
               onLassoSearch={(file,cropMs)=> void runImageAnalysis(file,cropMs)}
               detectedProducts={detectedProducts}

@@ -1,4 +1,4 @@
-# Socle d'échelle AYROVI — architecture des ajouts (24/09/2026)
+# Socle d'échelle ZAYROVI — architecture des ajouts (24/09/2026)
 
 Ce document décrit les cinq couches ajoutées pour la **stabilité, la sécurité, la vitesse, la fiabilité et la transparence** du pipeline produit. Tout est **gratuit à l'exécution** (aucun API payant requis) et **dégrade silencieusement** : chaque couche absente laisse le comportement historique intact.
 

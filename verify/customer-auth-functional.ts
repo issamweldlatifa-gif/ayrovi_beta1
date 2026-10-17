@@ -11,7 +11,7 @@ async function run() {
   Object.assign(process.env, {
     NODE_ENV: 'test', DATABASE_PATH: ':memory:', CUSTOMER_AUTH_SECRET: 'auth-functional-test-only-secret-01234567890123456789',
     ADMIN_EMAIL: 'admin@example.com', ADMIN_PASSWORD: 'Test-admin-password-123!',
-    MAIL_PROVIDER: 'resend', MAIL_API_KEY: 'test-not-real', MAIL_FROM: 'AYROVI <no-reply@example.com>',
+    MAIL_PROVIDER: 'resend', MAIL_API_KEY: 'test-not-real', MAIL_FROM: 'ZAYROVI <no-reply@example.com>',
     GOOGLE_CLIENT_ID: '', FACEBOOK_APP_ID: '', APPLE_CLIENT_ID: '', CUSTOMER_OTP_PROVIDER: 'console',
   });
   const mails: any[] = [];

@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">AYROVI</string>
-    <string name="title_activity_main">AYROVI</string>
+    <string name="app_name">ZAYROVI</string>
+    <string name="title_activity_main">ZAYROVI</string>
     <string name="package_name">app.ayrovi.mobile</string>
     <string name="custom_url_scheme">app.ayrovi.mobile</string>
 
@@ -17,13 +17,13 @@
     <string name="aywebs_not_product_page">Page non éligible</string>
     <string name="aywebs_purchase_support">Purchase Support</string>
     <string name="aywebs_purchase_support_title">Demande de soutien à l’achat</string>
-    <string name="aywebs_purchase_support_message">Ce lien ne peut pas être capturé. Votre demande sera examinée par l’équipe AYROVI. Elle n’ajoute rien au panier et ne déclenche aucun achat automatique chez le marchand.</string>
+    <string name="aywebs_purchase_support_message">Ce lien ne peut pas être capturé. Votre demande sera examinée par l’équipe ZAYROVI. Elle n’ajoute rien au panier et ne déclenche aucun achat automatique chez le marchand.</string>
     <string name="aywebs_support_product_name">Nom du produit (facultatif)</string>
     <string name="aywebs_support_requirements">Version souhaitée ou détails de la demande</string>
     <string name="aywebs_support_quantity">Quantité</string>
     <string name="aywebs_support_send">Envoyer pour examen</string>
     <string name="aywebs_support_required">Indiquez le produit ou ses exigences.</string>
-    <string name="aywebs_support_sent">Demande envoyée à l’équipe AYROVI. Référence : %1$s · État : %2$s. Aucun achat automatique n’a été effectué.</string>
+    <string name="aywebs_support_sent">Demande envoyée à l’équipe ZAYROVI. Référence : %1$s · État : %2$s. Aucun achat automatique n’a été effectué.</string>
     <string name="aywebs_loading">Loading…</string>
     <!-- 2026-10-03 : dire la panne au lieu de la déguiser en « page non éligible ». -->
     <string name="aywebs_service_unavailable">Service indisponible</string>
@@ -32,12 +32,12 @@
     <string name="aywebs_login_required">Connectez-vous sur la boutique</string>
     <string name="aywebs_login_explained">La boutique demande une connexion. Connectez-vous dans ce navigateur, puis revenez sur la fiche du produit.</string>
     <string name="aywebs_merchant_cart">Panier de la boutique</string>
-    <string name="aywebs_merchant_cart_explained">Ceci est le panier de la boutique, pas celui d’AYROVI. Ouvrez la fiche du produit, puis appuyez sur Add to Cart.</string>
+    <string name="aywebs_merchant_cart_explained">Ceci est le panier de la boutique, pas celui de ZAYROVI. Ouvrez la fiche du produit, puis appuyez sur Add to Cart.</string>
     <string name="aywebs_captcha_page">Vérification anti-robot</string>
-    <string name="aywebs_add_failed">Ajout impossible : le service AYROVI n’a pas répondu. Réessayez.</string>
+    <string name="aywebs_add_failed">Ajout impossible : le service ZAYROVI n’a pas répondu. Réessayez.</string>
     <string name="aywebs_product_not_resolved">Produit non reconnu sur cette page.</string>
     <string name="aywebs_select_item">Select your desired item</string>
-    <string name="aywebs_quote_unavailable">Le devis AYROVI est indisponible pour cet article. L’ajout reste bloqué jusqu’au rétablissement du prix.</string>
+    <string name="aywebs_quote_unavailable">Le devis ZAYROVI est indisponible pour cet article. L’ajout reste bloqué jusqu’au rétablissement du prix.</string>
     <string name="aywebs_choose_option">— Choisir —</string>
     <string name="aywebs_choose_variants">Choisissez toutes les options pour vérifier le prix et le stock de cette configuration.</string>
     <string name="aywebs_variant_not_found">Cette combinaison exacte n’est pas publiée par la boutique.</string>
@@ -51,7 +51,7 @@
     <string name="aywebs_availability_in_stock">Disponible chez la boutique</string>
     <string name="aywebs_availability_low">Stock limité chez la boutique</string>
     <string name="aywebs_availability_out">Épuisé chez la boutique</string>
-    <string name="aywebs_added">Article ajouté au panier AYROVI</string>
+    <string name="aywebs_added">Article ajouté au panier ZAYROVI</string>
     <string name="aywebs_proceed_checkout">Proceed to Checkout</string>
     <string name="aywebs_continue_shopping">Return to Shopping</string>
     <!-- Tiroirs internes au navigateur marchand (04/10/2026) : le panier et
@@ -60,7 +60,7 @@
     <string name="aywebs_sheet_empty_cart">Votre panier est vide.</string>
     <string name="aywebs_sheet_empty_wish">Aucun favori pour l\'instant.</string>
     <string name="aywebs_sheet_failed">Chargement impossible. Vérifiez votre connexion.</string>
-    <string name="aywebs_sheet_login_required">Connectez-vous pour retrouver les favoris de votre compte AYROVI.</string>
+    <string name="aywebs_sheet_login_required">Connectez-vous pour retrouver les favoris de votre compte ZAYROVI.</string>
     <string name="aywebs_sheet_login">Se connecter</string>
     <string name="aywebs_sheet_checkout">Passer la commande</string>
     <string name="aywebs_sheet_quantity">Quantité : %1$d</string>
@@ -72,9 +72,9 @@
     <string name="aywebs_fav_add">Ajouter cette page aux favoris</string>
     <string name="aywebs_fav_added">Ajouté aux favoris.</string>
     <string name="aywebs_fav_not_product">Ouvrez une fiche produit pour l\'ajouter aux favoris.</string>
-    <!-- Identifiant client WEB du projet Google (fourni le 04/10/2026).
+    <!-- Identifiant client WEB du projet Google (mis à jour le 11/10/2026).
          Android s'en sert comme « serverClientId » : c'est l'audience que le
          serveur vérifiera sur le jeton d'identité. Ce n'est PAS un secret —
          il voyage dans chaque requête OAuth publique. -->
-    <string name="google_web_client_id" translatable="false">917317804534-5v3d6fmlddpgrraj8bemu5tkju16066o.apps.googleusercontent.com</string>
+    <string name="google_web_client_id" translatable="false">917317804534-e37d2kardhtac1g7fummsfk61dr86q3j.apps.googleusercontent.com</string>
 </resources>

@@ -24,14 +24,21 @@ export function customerTheme(locale: 'ar' | 'fr', config?: PublicInterfaceConfi
     '--ayrovi-text-secondary': c.muted, '--ayrovi-neutral-500': c.muted, '--ayrovi-text-color': c.ink,
     '--ayrovi-info': c.info, '--ayrovi-info-soft': c.infoSoft,
     '--ayrovi-info-dark': identity.darkColors.info, '--ayrovi-info-soft-dark': identity.darkColors.infoSoft,
-    '--ayrovi-ink': c.ink, '--ayrovi-ink-deep': c.action, '--ayrovi-neutral-950': c.action,
-    '--ayrovi-primary': c.ink, '--ayrovi-primary-dark': c.action, '--ayrovi-primary-light': c.muted,
-    '--ayrovi-color-brand-orange': c.accent, '--ayrovi-orange': c.accent,
-    '--ayrovi-accent': c.accent, '--ayrovi-accent-deep': c.accentText, '--ayrovi-accent-soft': c.surface,
+    // Encres profondes = le NOIR officiel. Elles pointaient sur `action` du temps où l'action était
+    // noire ; depuis que l'action est violette, elles repeignaient en violet les badges sombres, le
+    // voile des modales, le fond des vidéos et les panneaux du thème sombre.
+    '--ayrovi-ink': c.ink, '--ayrovi-ink-deep': c.ink, '--ayrovi-neutral-950': c.ink,
+    '--ayrovi-primary': c.ink, '--ayrovi-primary-dark': c.ink, '--ayrovi-primary-light': c.muted,
+    '--ayrovi-color-brand-accent': c.accent, '--ayrovi-on-accent': c.onAccent,
+    '--ayrovi-accent-on-dark': identity.darkColors.accentText,
+    '--ayrovi-accent': c.accent, '--ayrovi-accent-deep': c.accentText,
+    '--ayrovi-accent-soft': c.accentSoft, '--ayrovi-on-accent-soft': c.onAccentSoft,
     '--ayrovi-cta': c.action, '--ayrovi-cta-ink': c.onAction,
     '--ayrovi-cta-hover': c.actionHover, '--ayrovi-cta-active': c.ink, '--ayrovi-cta-dark': c.actionHover,
     '--ayrovi-success': c.success, '--ayrovi-danger': c.danger, '--ayrovi-focus-ring': c.focus,
-    '--ayrovi-button-bg': c.action, '--ayrovi-button-color': c.onAction,
+    // Bouton primaire générique = encre noire. Le violet plein est réservé à l'action principale
+    // (ajout au panier, caisse, paiement, connexion) via `--ayrovi-cta` / `.s-cta` / `.ay-btn-cta`.
+    '--ayrovi-button-bg': c.ink, '--ayrovi-button-color': c.canvas,
     '--ayrovi-button-secondary-bg': c.canvas, '--ayrovi-button-secondary-color': c.ink,
     '--ayrovi-button-border': c.line, '--ayrovi-button-border-width': '1px',
     '--ayrovi-button-height': `${identity.geometry.controlHeight}px`,

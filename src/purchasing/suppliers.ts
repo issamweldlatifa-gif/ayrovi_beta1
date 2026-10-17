@@ -1,5 +1,5 @@
 /**
- * AYROVI Purchasing (P2.3) — fournisseurs.
+ * ZAYROVI Purchasing (P2.3) — fournisseurs.
  *
  * Un fournisseur est une fiche d'engagement, pas une étiquette : devise de paiement, délai,
  * conditions et statut portent le coût et la planification des commandes. Trois règles

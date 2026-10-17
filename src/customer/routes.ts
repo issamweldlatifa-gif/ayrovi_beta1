@@ -1,3 +1,4 @@
+import { availableProductParams, availableProductSql } from '../catalogue/contentProducts';
 import { createSign, randomBytes, randomInt, randomUUID } from 'node:crypto';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -6,7 +7,7 @@ import { Request, Router } from 'express';
 import { QatafoDatabase } from '../db/database';
 import { invoiceAbsolutePath, depositWriteDir, proofRoots, invoiceRoots } from '../services/invoice';
 import { servePrivateDocument } from '../documents/fileAccess';
-import { sendMail } from '../services/mailer';
+import { mailerReady, sendMail } from '../services/mailer';
 import { createAccountSettingsRouter } from './accountSettings';
 import { hashPassword, verifyPassword } from './passwords';
 import { enqueueWelcomeMail, passwordRecoveryReady } from './accountMail';
@@ -27,8 +28,14 @@ import {
   rotateCustomerCsrf,
   safeEqualHash,
   setCustomerCookie,
-  nativeSessionField,
 } from './auth';
+import { attachDevicesToAccount, registerPushDevice, revokePushDevice } from '../services/pushDispatch';
+import { pushConfigured } from '../services/push';
+import { sessionExchangeFields } from './sessionExchange';
+import {
+  EMAIL_CODE_MAX_ATTEMPTS, EMAIL_CODE_PER_ADDRESS_MAX, EMAIL_CODE_PER_IP_MAX, EMAIL_CODE_TTL_MS, EMAIL_CODE_WINDOW_MS,
+  displayNameFromEmail, emailCodeHtml, emailCodeSubject, maskEmail,
+} from './emailCode';
 import { deliverOtp, otpProviderName, phoneOtpAvailable, verifyProviderOtp } from './otp';
 
 const OTP_TTL_MS = 5 * 60 * 1000;
@@ -364,7 +371,7 @@ function completePhoneVerification(db: QatafoDatabase, req: Request, phone: stri
   db.run('UPDATE customer_accounts SET phone=?,phone_verified_at=?,status=\'ACTIVE\',last_login_at=?,updated_at=? WHERE id=?', phone, now, now, now, accountId);
   ensurePhoneIdentity(db, accountId, phone);
   const linked = linkHistoricalOrders(db, accountId, phone);
-  if (created && !linked) notification(db, accountId, 'ACCOUNT', 'Bienvenue chez AYROVI', 'Votre compte est actif. Votre panier et vos commandes sont maintenant accessibles sur tous vos appareils.', '/compte');
+  if (created && !linked) notification(db, accountId, 'ACCOUNT', 'Bienvenue chez ZAYROVI', 'Votre compte est actif. Votre panier et vos commandes sont maintenant accessibles sur tous vos appareils.', '/compte');
   return { accountId, linked };
 }
 
@@ -390,7 +397,7 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
   router.use(createAccountSettingsRouter(db, publicAccount));
   cleanupCustomerAuth(db);
 
-  // Konnect sends only a payment reference. AYROVI always fetches the payment
+  // Konnect sends only a payment reference. ZAYROVI always fetches the payment
   // server-to-server and validates amount, currency and merchant order identity.
   router.get('/payments/konnect/webhook', async (req, res) => {
     const paymentRef = String(req.query.payment_ref || '').trim();
@@ -422,9 +429,13 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
     res.json({ success: true, data: {
       phoneOtp: { enabled: customerAuthReady() && phoneOtpAvailable() },
       google: { enabled: customerAuthReady() && google.ready },
+      // Google natif (sélecteur dans l'application) : seul l'identifiant Web est nécessaire,
+      // le secret ne sert qu'au flux navigateur.
+      googleNative: { enabled: customerAuthReady() && Boolean(google.clientId) },
       facebook: { enabled: customerAuthReady() && facebook.ready },
       apple: { enabled: customerAuthReady() && apple.ready },
       email: { enabled: customerAuthReady() },
+      emailCode: { enabled: customerAuthReady() && (mailerReady() || process.env.NODE_ENV !== 'production') },
       passwordReset: { enabled: passwordRecoveryReady() },
       checkoutRequiresAuthentication: true,
     } });
@@ -439,7 +450,14 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
     const cartSession = validCartSession(req.headers['x-session-id']);
     if (cartSession) db.attachCartToAccount(cartSession, customer.id);
     const csrfToken = rotateCustomerCsrf(db, req);
-    return res.json({ success: true, data: { account: publicAccount(accountRow(db, customer.id)), csrfToken } });
+    // `expiresAt` permet à l'application de savoir quand sa session mourra
+    // sans attendre un 401 : elle peut alors redemander une connexion au bon
+    // moment au lieu de faire échouer une commande en pleine confirmation.
+    return res.json({ success: true, data: {
+      account: publicAccount(accountRow(db, customer.id)),
+      csrfToken,
+      expiresAt: customer.expiresAt,
+    } });
   });
 
   router.post('/auth/otp/request', async (req, res) => {
@@ -452,7 +470,14 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
     const ip = req.ip || '';
     const phoneCount = Number(db.get<any>('SELECT COUNT(*) count FROM customer_otp_challenges WHERE phone=? AND created_at>=?', phone, phoneSince)?.count || 0);
     const ipCount = Number(db.get<any>('SELECT COUNT(*) count FROM customer_otp_challenges WHERE request_ip=? AND created_at>=?', ip, ipSince)?.count || 0);
-    if (phoneCount >= 3 || ipCount >= 10) return res.status(429).json({ success: false, error: 'Trop de demandes. Réessayez dans 15 minutes.' });
+    /*
+     * Le plafond par NUMÉRO reste serré (3 / 15 min) : c'est lui qui protège la
+     * personne et la facture SMS. Le plafond par IP passe à 100 / 15 min : à 10,
+     * une seule adresse d'opérateur (CGNAT) bloquait des centaines d'abonnés
+     * légitimes aux heures de pointe. Le plafond global du processus
+     * (`otp-request-global`) reste le garde-fou de dépense.
+     */
+    if (phoneCount >= 3 || ipCount >= 100) return res.status(429).json({ success: false, error: 'Trop de demandes. Réessayez dans 15 minutes.' });
 
     const challengeId = `otp_${randomUUID()}`;
     const code = String(randomInt(100000, 1000000));
@@ -524,11 +549,122 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
         csrfToken: session.csrfToken,
         expiresAt: session.expiresAt,
         linkedHistoricalOrders: linked,
-        ...nativeSessionField(req, session.token),
+        ...sessionExchangeFields(req, session),
       } });
     } catch (error: any) {
       if (error?.message === 'PHONE_CHANGE_NOT_SUPPORTED') return res.status(409).json({ success: false, error: 'Ce compte possède déjà un autre numéro vérifié.' });
       console.error('[Customer OTP Verification]', error);
+      return res.status(500).json({ success: false, error: 'La connexion n’a pas pu être finalisée.' });
+    }
+  });
+
+  /*
+   * Connexion par code e-mail, entièrement dans l'application (façon ChatGPT) :
+   *   1. /auth/email-code/request : envoie un code à 6 chiffres à l'adresse saisie ;
+   *   2. /auth/email-code/verify  : vérifie le code, crée le compte si l'adresse est
+   *      nouvelle, ouvre la session. Le code prouve la possession de l'adresse :
+   *      `email_verified_at` est renseigné.
+   * La réponse à la demande est identique qu'un compte existe ou non (pas
+   * d'énumération d'adresses).
+   */
+  router.post('/auth/email-code/request', async (req, res) => {
+    if (!customerAuthReady()) return res.status(503).json({ success: false, code: 'EMAIL_CODE_UNAVAILABLE', error: 'Authentification client non configurée.' });
+    const email = normalizedEmail(req.body?.email);
+    if (!EMAIL_PATTERN.test(email)) return res.status(400).json({ success: false, code: 'EMAIL_INVALID', error: 'Adresse e-mail invalide.' });
+    const ready = mailerReady();
+    const production = process.env.NODE_ENV === 'production';
+    // Sans service d'envoi : en production, refus clair ; en développement, le code
+    // est renvoyé à l'application (même principe que le SMS sans fournisseur).
+    if (!ready && production) return res.status(503).json({ success: false, code: 'EMAIL_CODE_UNAVAILABLE', error: 'La connexion par code e-mail n’est pas encore configurée.' });
+
+    const ip = req.ip || '';
+    const since = new Date(Date.now() - EMAIL_CODE_WINDOW_MS).toISOString();
+    const addressCount = Number(db.get<any>('SELECT COUNT(*) count FROM customer_email_code_challenges WHERE email=? AND created_at>=?', email, since)?.count || 0);
+    const ipCount = Number(db.get<any>('SELECT COUNT(*) count FROM customer_email_code_challenges WHERE request_ip=? AND created_at>=?', ip, since)?.count || 0);
+    if (addressCount >= EMAIL_CODE_PER_ADDRESS_MAX || ipCount >= EMAIL_CODE_PER_IP_MAX) {
+      return res.status(429).json({ success: false, code: 'EMAIL_CODE_RATE_LIMITED', error: 'Trop de demandes. Réessayez dans 15 minutes.' });
+    }
+
+    const now = new Date();
+    const challengeId = `ecode_${randomUUID()}`;
+    const code = String(randomInt(100000, 1000000));
+    const ar = req.body?.locale === 'ar';
+    db.run('UPDATE customer_email_code_challenges SET consumed_at=? WHERE email=? AND consumed_at IS NULL', now.toISOString(), email);
+    db.run(`INSERT INTO customer_email_code_challenges
+      (id,email,code_hash,expires_at,max_attempts,request_ip,created_at) VALUES (?,?,?,?,?,?,?)`,
+    challengeId, email, keyedHash(`${challengeId}:${email}:${code}`), new Date(now.getTime() + EMAIL_CODE_TTL_MS).toISOString(),
+    EMAIL_CODE_MAX_ATTEMPTS, ip, now.toISOString());
+
+    try {
+      const delivery = ready
+        ? await sendMail({ to: email, subject: emailCodeSubject(ar, code), html: emailCodeHtml(ar, code), idempotencyKey: challengeId })
+        : null;
+      if (delivery && !delivery.delivered) throw new Error(delivery.error || 'EMAIL_DELIVERY_FAILED');
+      if (!ready && production) throw new Error('EMAIL_CODE_UNAVAILABLE');
+      if (!ready && process.env.NODE_ENV !== 'test') console.info(`[Customer Email Code] ${email}: ${code}`);
+      return res.status(201).json({ success: true, data: {
+        challengeId,
+        maskedEmail: maskEmail(email),
+        expiresInSeconds: EMAIL_CODE_TTL_MS / 1000,
+        ...(!ready ? { developmentCode: code } : {}),
+      } });
+    } catch (error: any) {
+      db.run('DELETE FROM customer_email_code_challenges WHERE id=?', challengeId);
+      console.error('[Customer Email Code Delivery]', error?.message || error);
+      return res.status(503).json({ success: false, code: 'EMAIL_DELIVERY_FAILED', error: 'Le courriel n’a pas pu être envoyé. Réessayez dans un instant.' });
+    }
+  });
+
+  router.post('/auth/email-code/verify', (req, res) => {
+    if (!customerAuthReady()) return res.status(503).json({ success: false, error: 'Authentification client non configurée.' });
+    const challengeId = String(req.body?.challengeId || '');
+    const code = String(req.body?.code || '').replace(/\D/g, '');
+    const challenge = db.get<any>('SELECT * FROM customer_email_code_challenges WHERE id=?', challengeId);
+    const now = new Date().toISOString();
+    if (!challenge || challenge.consumed_at || challenge.expires_at <= now) return res.status(400).json({ success: false, code: 'EMAIL_CODE_EXPIRED', error: 'Ce code a expiré. Demandez un nouveau code.' });
+    if (Number(challenge.attempts) >= Number(challenge.max_attempts)) return res.status(429).json({ success: false, code: 'EMAIL_CODE_LOCKED', error: 'Trop de tentatives. Demandez un nouveau code.' });
+    if (code.length !== 6 || !safeEqualHash(`${challengeId}:${challenge.email}:${code}`, challenge.code_hash)) {
+      db.run('UPDATE customer_email_code_challenges SET attempts=attempts+1 WHERE id=?', challengeId);
+      return res.status(400).json({ success: false, code: 'EMAIL_CODE_INVALID', error: 'Le code saisi est incorrect.' });
+    }
+    try {
+      const claimed = db.run('UPDATE customer_email_code_challenges SET consumed_at=? WHERE id=? AND consumed_at IS NULL', now, challengeId);
+      if (!claimed.changes) return res.status(409).json({ success: false, code: 'EMAIL_CODE_ALREADY_USED', error: 'Ce code a déjà été utilisé.' });
+      const email: string = challenge.email;
+      let account = db.get<any>('SELECT * FROM customer_accounts WHERE email=? COLLATE NOCASE', email);
+      if (account && account.status !== 'ACTIVE') return res.status(403).json({ success: false, code: 'ACCOUNT_BLOCKED', error: 'Ce compte est bloqué. Contactez le support.' });
+      let accountId: string;
+      if (account) {
+        accountId = account.id;
+        if (!account.email_verified_at) db.run('UPDATE customer_accounts SET email_verified_at=?, updated_at=? WHERE id=?', now, now, accountId);
+      } else {
+        accountId = `account_${randomUUID()}`;
+        db.transaction(() => {
+          db.run(`INSERT INTO customer_accounts
+            (id,display_name,email,email_verified_at,password_hash,marketing_opt_in,status,last_login_at,created_at,updated_at)
+            VALUES (?,?,?,?,NULL,0,'ACTIVE',?,?,?)`,
+            accountId, displayNameFromEmail(email), email, now, now, now, now);
+          db.run('UPDATE customer_accounts SET locale=? WHERE id=?', req.body?.locale === 'ar' ? 'ar-TN' : 'fr-TN', accountId);
+          enqueueWelcomeMail(db, accountId);
+          notification(db, accountId, 'ACCOUNT', 'Bienvenue chez ZAYROVI', 'Votre compte est actif. Vérifiez votre téléphone avant votre première commande.', '/compte');
+        });
+        account = db.get<any>('SELECT * FROM customer_accounts WHERE id=?', accountId);
+      }
+      const cartSession = validCartSession(req.body?.cartSessionId || req.headers['x-session-id']);
+      if (cartSession) db.attachCartToAccount(cartSession, accountId);
+      const prior = resolveCustomer(db, req) as any;
+      if (prior?.sessionId) db.run('DELETE FROM customer_sessions WHERE id=?', prior.sessionId);
+      const session = createCustomerSession(db, accountId, req);
+      setCustomerCookie(res, session.token);
+      return res.json({ success: true, data: {
+        account: publicAccount(accountRow(db, accountId)),
+        csrfToken: session.csrfToken,
+        expiresAt: session.expiresAt,
+        linkedHistoricalOrders: 0,
+        ...sessionExchangeFields(req, session),
+      } });
+    } catch (error: any) {
+      console.error('[Customer Email Code Verification]', error?.message || error);
       return res.status(500).json({ success: false, error: 'La connexion n’a pas pu être finalisée.' });
     }
   });
@@ -555,7 +691,7 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
           accountId, displayName, email, hashPassword(password), marketingOptIn ? 1 : 0, now, now, now);
         db.run('UPDATE customer_accounts SET locale=? WHERE id=?', req.body?.locale === 'ar' ? 'ar-TN' : 'fr-TN', accountId);
         enqueueWelcomeMail(db, accountId);
-        notification(db, accountId, 'ACCOUNT', 'Bienvenue chez AYROVI', 'Votre compte est actif. Vérifiez votre téléphone avant votre première commande.', '/compte');
+        notification(db, accountId, 'ACCOUNT', 'Bienvenue chez ZAYROVI', 'Votre compte est actif. Vérifiez votre téléphone avant votre première commande.', '/compte');
         const cartSession = validCartSession(req.body?.cartSessionId || req.headers['x-session-id']);
         if (cartSession) db.attachCartToAccount(cartSession, accountId);
         const prior = resolveCustomer(db, req) as any;
@@ -567,7 +703,7 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
         account: publicAccount(accountRow(db, accountId)),
         csrfToken: session.csrfToken,
         expiresAt: session.expiresAt,
-        ...nativeSessionField(req, session.token),
+        ...sessionExchangeFields(req, session),
       } });
     } catch (error) {
       console.error('[Customer Email Register]', error);
@@ -603,7 +739,7 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
       account: publicAccount(accountRow(db, account.id)),
       csrfToken: session.csrfToken,
       expiresAt: session.expiresAt,
-      ...nativeSessionField(req, session.token),
+      ...sessionExchangeFields(req, session),
     } });
   };
   router.post('/auth/email/login', emailLoginHandler);
@@ -678,7 +814,7 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
           VALUES (?,?,?,?, 'ACTIVE', ?, ?, ?)`,
           accountId, 'Client AYROVI', emailVerifiedHere ? email : null, emailVerifiedHere ? nowIso : null, nowIso, nowIso, nowIso);
         enqueueWelcomeMail(db, accountId);
-        notification(db, accountId, 'ACCOUNT', 'Bienvenue chez AYROVI', 'Votre compte Apple est actif. Vérifiez votre téléphone avant votre première commande.', '/compte');
+        notification(db, accountId, 'ACCOUNT', 'Bienvenue chez ZAYROVI', 'Votre compte Apple est actif. Vérifiez votre téléphone avant votre première commande.', '/compte');
       } else {
         const currentAccount = accountRow(db, accountId);
         if (!currentAccount) throw new Error('ACCOUNT_MISSING');
@@ -711,7 +847,7 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
   });
 
 /**
- * Rattachement d'un profil Google a un compte AYROVI.
+ * Rattachement d'un profil Google a un compte ZAYROVI.
  *
  * Extrait tel quel du callback OAuth (04/10/2026) pour etre reutilise par la
  * connexion NATIVE : les deux chemins doivent fusionner les comptes, arbitrer
@@ -749,7 +885,7 @@ function linkGoogleProfile(db: QatafoDatabase, profile: any, linkToAccountId?: s
       VALUES (?,?,?,?,?,'ACTIVE',?,?,?)`, accountId, String(profile.name || 'Client AYROVI').slice(0, 100), email,
     String(profile.picture || '').slice(0, 1000), now, now, now, now);
     enqueueWelcomeMail(db, accountId);
-    notification(db, accountId, 'ACCOUNT', 'Bienvenue chez AYROVI', 'Votre compte Google est actif. Vérifiez votre téléphone avant votre première commande.', '/compte');
+    notification(db, accountId, 'ACCOUNT', 'Bienvenue chez ZAYROVI', 'Votre compte Google est actif. Vérifiez votre téléphone avant votre première commande.', '/compte');
   } else {
     for (const ownerId of new Set([identityOwnerId, verifiedLegacyEmailOwnerId].filter((id): id is string => Boolean(id)))) {
       if (ownerId !== accountId && accountRow(db, ownerId)) accountId = mergeAccounts(db, ownerId, accountId);
@@ -1002,7 +1138,7 @@ function linkGoogleProfile(db: QatafoDatabase, profile: any, linkToAccountId?: s
       const accessToken = String(tokens.access_token || '');
       if (!accessToken) throw new Error('FACEBOOK_TOKEN_INVALID');
 
-      // Confirm that Meta issued the token for this exact AYROVI app before trusting /me.
+      // Confirm that Meta issued the token for this exact ZAYROVI app before trusting /me.
       const debugUrl = new URL(`https://graph.facebook.com/${facebook.graphVersion}/debug_token`);
       debugUrl.search = new URLSearchParams({
         input_token: accessToken,
@@ -1050,7 +1186,7 @@ function linkGoogleProfile(db: QatafoDatabase, profile: any, linkToAccountId?: s
           (id,display_name,email,avatar_url,status,last_login_at,created_at,updated_at)
           VALUES (?,?,?,?, 'ACTIVE',?,?,?)`, accountId, displayName, email && !emailOwner ? email : null, avatarUrl, now, now, now);
         enqueueWelcomeMail(db, accountId);
-        notification(db, accountId, 'ACCOUNT', 'Bienvenue chez AYROVI', 'Votre compte Facebook est actif. Vous pouvez ajouter un téléphone à votre profil à tout moment.', '/compte');
+        notification(db, accountId, 'ACCOUNT', 'Bienvenue chez ZAYROVI', 'Votre compte Facebook est actif. Vous pouvez ajouter un téléphone à votre profil à tout moment.', '/compte');
       } else {
         const currentAccount = accountRow(db, accountId);
         if (!currentAccount) throw new Error('ACCOUNT_MERGE_FAILED');
@@ -1243,7 +1379,7 @@ function linkGoogleProfile(db: QatafoDatabase, profile: any, linkToAccountId?: s
         choices: ['CARD','BANK_TRANSFER','POSTE'],
         cardGatewayAvailable: cardGatewayAvailable(),
         transfer: {
-          companyName: setting('company_legal_name') || setting('company_name') || 'AYROVI',
+          companyName: setting('company_legal_name') || setting('company_name') || 'ZAYROVI',
           bankRib: setting('bank_rib'),
           posteAccount: setting('poste_account'),
           reviewDelay: setting('deposit_review_delay'),
@@ -1259,7 +1395,7 @@ function linkGoogleProfile(db: QatafoDatabase, profile: any, linkToAccountId?: s
     if (requested === 'BANK_TRANSFER' || requested === 'POSTE') {
       const settingKey = requested === 'POSTE' ? 'poste_account' : 'bank_rib';
       const coordinates = String(db.get<any>('SELECT setting_value FROM settings WHERE setting_key=?', settingKey)?.setting_value || '').trim();
-      if (!coordinates) return res.status(503).json({ success: false, code: 'TRANSFER_DETAILS_UNAVAILABLE', error: 'Les coordonnées officielles de ce moyen de paiement ne sont pas encore publiées par AYROVI.' });
+      if (!coordinates) return res.status(503).json({ success: false, code: 'TRANSFER_DETAILS_UNAVAILABLE', error: 'Les coordonnées officielles de ce moyen de paiement ne sont pas encore publiées par ZAYROVI.' });
     }
     try {
       const selected = db.selectDepositMethod(req.params.id, requested as 'CARD' | 'BANK_TRANSFER' | 'POSTE', account.id);
@@ -1486,7 +1622,9 @@ function linkGoogleProfile(db: QatafoDatabase, profile: any, linkToAccountId?: s
   router.post('/account/favorites', requireCustomer(db), (req, res) => {
     const account = customerFromRequest(req);
     const productId = req.body?.productId ? String(req.body.productId) : null;
-    const product = productId ? db.get<any>("SELECT * FROM products WHERE id=? AND status='ACTIVE'", productId) : null;
+    const product = productId
+      ? db.get<any>(`SELECT * FROM products WHERE id=? AND ${availableProductSql('products')}`, productId, ...availableProductParams(new Date().toISOString()))
+      : null;
     const sourceUrl = String(req.body?.sourceUrl || product?.source_url || '').trim().slice(0, 2000);
     const title = String(req.body?.title || product?.name || '').trim().slice(0, 250);
     if (!title || (!sourceUrl && !product)) return res.status(400).json({ success: false, error: 'Produit favori invalide.' });
@@ -1517,6 +1655,59 @@ function linkGoogleProfile(db: QatafoDatabase, profile: any, linkToAccountId?: s
     const now = new Date().toISOString();
     if (req.body?.id) db.run('UPDATE customer_notifications SET read_at=? WHERE id=? AND account_id=?', now, String(req.body.id), account.id);
     else db.run('UPDATE customer_notifications SET read_at=? WHERE account_id=? AND read_at IS NULL', now, account.id);
+    return res.json({ success: true });
+  });
+
+  /**
+   * Inscription d'un appareil aux notifications push.
+   *
+   * ── Volontairement SANS `requireCustomer` ────────────────────────────────
+   * Exiger une session connectée rendait muette la notification la plus
+   * attendue : celle de la commande passée EN VISITEUR. L'appareil est donc
+   * enregistré d'abord avec son identifiant de session, puis rattaché au
+   * compte dès que la personne se connecte.
+   *
+   * ── Ce que la réponse dit ────────────────────────────────────────────────
+   * `pushEnabled` vient du SERVEUR (`pushConfigured()`), pas de l'appareil :
+   * l'application doit pouvoir afficher « les notifications ne sont pas encore
+   * activées » au lieu de faire croire qu'un jeton enregistré suffit à être
+   * prévenu. C'est la même règle que `google.enabled` sur les fournisseurs.
+   */
+  router.post('/account/devices', (req, res) => {
+    const token = String(req.body?.token || '').trim();
+    if (!token || token.length > 4096) {
+      return res.status(400).json({ success: false, code: 'PUSH_TOKEN_INVALID', error: 'Jeton d\'appareil invalide.' });
+    }
+    const current = resolveCustomer(db, req) as { id?: string; sessionId?: string } | null | undefined;
+    const accountId = current?.id ? String(current.id) : null;
+    const sessionId = String(req.body?.sessionId || current?.sessionId || '').trim();
+    try {
+      const deviceId = registerPushDevice(db, {
+        token,
+        platform: String(req.body?.platform || 'android'),
+        locale: String(req.body?.locale || 'fr'),
+        accountId,
+        sessionId,
+      });
+      // Un appareil inscrit AVANT la connexion gardait `account_id` NULL. Le
+      // rattacher maintenant rattrape ce cas sans attendre une réinscription.
+      if (accountId && sessionId) attachDevicesToAccount(db, sessionId, accountId);
+      return res.json({
+        success: true,
+        data: { deviceId, attached: Boolean(accountId), pushEnabled: pushConfigured() },
+      });
+    } catch (error: any) {
+      return res.status(400).json({
+        success: false,
+        code: 'PUSH_REGISTER_FAILED',
+        error: String(error?.message || 'Inscription impossible.'),
+      });
+    }
+  });
+
+  /** Retrait volontaire : désactivation, jamais effacement (traçabilité). */
+  router.delete('/account/devices', (req, res) => {
+    revokePushDevice(db, String(req.body?.token || ''));
     return res.json({ success: true });
   });
 

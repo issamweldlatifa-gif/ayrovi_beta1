@@ -235,7 +235,7 @@ export function createAssistantRouter(db: QatafoDatabase, scraper: SmartLinkScra
     const key = groqKey || openaiKey;
 
     if (!key) {
-      return res.status(503).json({ success: false, code: 'VOICE_UNAVAILABLE', error: 'La transcription vocale AYROVI n’est pas encore activée.' });
+      return res.status(503).json({ success: false, code: 'VOICE_UNAVAILABLE', error: 'La transcription vocale ZAYROVI n’est pas encore activée.' });
     }
 
     const file = req.file;
@@ -258,7 +258,7 @@ export function createAssistantRouter(db: QatafoDatabase, scraper: SmartLinkScra
         form.append('model', String(process.env.GROQ_STT_MODEL || 'whisper-large-v3-turbo'));
         form.append('response_format', 'json');
         form.append('temperature', '0');
-        form.append('prompt', 'Conversation AYROVI en arabe tunisien, français ou anglais. Transcrire fidèlement les noms de marques, prix, devises et références de commande.');
+        form.append('prompt', 'Conversation ZAYROVI en arabe tunisien, français ou anglais. Transcrire fidèlement les noms de marques, prix, devises et références de commande.');
 
         const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
           method: 'POST', headers: { Authorization: `Bearer ${groqKey}` }, body: form, signal: AbortSignal.timeout(25_000),
@@ -304,7 +304,7 @@ export function createAssistantRouter(db: QatafoDatabase, scraper: SmartLinkScra
 
   router.post('/chat', optionalCustomer(db), async (req: Request, res: Response) => {
     if (!assistantAiReady()) {
-      return res.status(503).json({ success: false, code: 'ASSISTANT_UNAVAILABLE', error: 'L’assistant AYROVI n’est pas encore disponible.' });
+      return res.status(503).json({ success: false, code: 'ASSISTANT_UNAVAILABLE', error: 'L’assistant ZAYROVI n’est pas encore disponible.' });
     }
     const sessionId = validSessionId(req);
     const conversationId = String(req.body?.conversationId || '').trim();
@@ -344,7 +344,7 @@ export function createAssistantRouter(db: QatafoDatabase, scraper: SmartLinkScra
         type: 'error',
         code: error instanceof AssistantUnavailableError ? error.code : 'ASSISTANT_ERROR',
         message: error instanceof AssistantUnavailableError
-          ? 'L’assistant AYROVI ne répond pas pour le moment. Réessayez dans quelques instants.'
+          ? 'L’assistant ZAYROVI ne répond pas pour le moment. Réessayez dans quelques instants.'
           : 'La réponse n’a pas pu être générée.',
       });
     } finally {

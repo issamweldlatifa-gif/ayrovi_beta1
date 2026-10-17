@@ -34,7 +34,7 @@ import { computeAyWebsCheckoutPreview, type AyWebsCheckoutPreview } from './chec
  * écran : `DRAFT → CHECKOUT → PAYMENT_PENDING → PAID → PURCHASE_PENDING`.
  *
  * Paiement (§20) : AYWEBs n'installe AUCUN écosystème de paiement parallèle.
- * Les moyens viennent de la configuration commerciale AYROVI existante
+ * Les moyens viennent de la configuration commerciale ZAYROVI existante
  * (`resolveAcceptedPaymentMethods`) et la passerelle carte est celle déjà en
  * place (`services/paymentGateway.ts` → Konnect). La table `ayweb_payments`
  * n'est que la relation commande ↔ paiement, avec la référence passerelle.
@@ -357,7 +357,7 @@ export function submitAyWebsOrder(
 }
 
 /* ------------------------------------------------------------------ *
- * Paiement (§20) — passerelle AYROVI existante, aucun écosystème parallèle
+ * Paiement (§20) — passerelle ZAYROVI existante, aucun écosystème parallèle
  * ------------------------------------------------------------------ */
 
 export interface AyWebsPaymentIntent {
@@ -386,7 +386,7 @@ export function acceptedAyWebsPaymentMethods(db: QatafoDatabase): SelectablePaym
 
 /**
  * `POST /payments/intents` : démarre le paiement d'une commande AYWEBs avec la
- * configuration et la passerelle AYROVI existantes.
+ * configuration et la passerelle ZAYROVI existantes.
  *
  * Si la passerelle carte n'est pas configurée, la réponse le dit explicitement
  * (`CARD_GATEWAY_UNAVAILABLE`) — aucun débit simulé, aucun statut « payé »
@@ -629,7 +629,7 @@ export async function confirmAyWebsPayment(
   }
 
   throw new AyWebsDomainError('PAYMENT_FAILED', {
-    userMessage: 'Ce moyen de paiement nécessite un traitement par l’équipe AYROVI.',
+    userMessage: 'Ce moyen de paiement nécessite un traitement par l’équipe ZAYROVI.',
     technicalMessage: `method=${method} sans confirmation automatique disponible`,
     requiredAction: 'WAIT_FOR_REVIEW',
   });

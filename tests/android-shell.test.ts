@@ -34,7 +34,7 @@ const main = readFileSync('client/src/main.tsx', 'utf8');
 const gradle = readFileSync('android/app/build.gradle', 'utf8');
 const launcher = readFileSync('client/src/ayrovix/components/LensLauncher.tsx', 'utf8');
 
-describe('AYROVI Android shell (Capacitor) — application réelle', () => {
+describe('ZAYROVI Android shell (Capacitor) — application réelle', () => {
   it('config: paquet embarqué, AUCUN server.url (fin du wrapper), barre d’état réglée', () => {
     expect(cfg).toContain("webDir: 'public'");
     // 2026-10-03 — l'assertion précédente était `expect(cfg).toContain('handleBackButton: true')`.

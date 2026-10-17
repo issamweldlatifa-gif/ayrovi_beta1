@@ -11,6 +11,9 @@
  *     cartouche d'état alimenté par `/api/health`, œil du mot de passe à état accessible, titre
  *     d'onglet propre à la console ;
  *  5. la console est protégée contre la mise en cadre (clickjacking) dans TOUS les environnements.
+ *  6. (2026-10-16) chaque état de la coquille reste lisible : le tiroir fermé ne voile plus la
+ *     console sous 900 px ; en thème sombre, la pastille de domaine choisie et le bandeau
+ *     « Arrivages Standard actifs » gardent leur contraste.
  */
 import { readFileSync } from 'node:fs';
 // @vitest-environment jsdom
@@ -72,7 +75,7 @@ describe('2. Un bouton désactivé dit toujours pourquoi', () => {
   });
 
   it('les quatre écrans qui réordonnent partagent la même définition', () => {
-    for (const file of ['HeroVisualsPage', 'HomeSectionsPage', 'LensSectionPage', 'InterfaceStudio']) {
+    for (const file of ['HeroSlidesManagePage', 'HomeSectionsPage', 'LensSectionPage', 'InterfaceStudio']) {
       const source = read(`client/src/admin/${file}.tsx`);
       expect(source).toContain("from './moveHint'");
       expect(source).toContain('title={moveHint(');
@@ -169,18 +172,21 @@ describe('4. Écran de connexion aligné sur le modèle A', () => {
   });
 
   it('la console s’annonce comme console, pas avec le titre du site public', () => {
-    expect(login).toContain("document.title='AYROVI · Console d’exploitation'");
+    expect(login).toContain("document.title='ZAYROVI · Console d’exploitation'");
   });
 
   it('la connexion porte le verrou A.ROVI une seule fois (identité 2026-09-22)', () => {
-    expect(login).toContain('/media/logo-ayrovi-lockup-white-orange.svg');
-    expect(login).toContain('/media/logo-ayrovi-lockup-black-orange.svg');
+    expect(login).toContain('/media/logo-ayrovi-lockup-white-violet.svg');
+    expect(login).toContain('/media/logo-ayrovi-lockup-black-violet.svg');
     // Le nom n'est plus écrit une seconde fois à côté du verrou.
-    expect(login).not.toContain('<strong>AYROVI</strong>');
+    expect(login).not.toContain('<strong>ZAYROVI</strong>');
   });
 
-  it('l’action forte de la connexion est bien l’orange du modèle A', () => {
+  it('l’action forte de la connexion est bien le violet du modèle A, texte blanc', () => {
     expect(css).toContain(':is(.bo-shell, .admin-login) .admin-button--primary');
+    expect(css).toMatch(/--bo-accent:\s*var\(--ayrovi-color-brand-accent\)/);
+    expect(css).toMatch(/\.admin-button--primary \{\s*background: var\(--bo-accent\); border-color: var\(--bo-accent\); color: var\(--bo-on-accent\);/);
+    expect(css).not.toMatch(/#FF6900|#E85F00/i);
   });
 });
 
@@ -198,5 +204,95 @@ describe('5. Durcissement de la console', () => {
     // console serait invisible dans l'aperçu — qui est lui-même rendu dans un cadre.
     expect(server).toContain("const frameAncestors = !isProd ? '' :");
     expect(server).toMatch(/if \(isProd\) \{\s*res\.setHeader\('X-Frame-Options'/);
+  });
+});
+
+describe('6. Chaque état de la coquille reste lisible', () => {
+  const css = read('client/src/styles/admin-console.css').replace(/\/\*[\s\S]*?\*\//g, '');
+  const shell = read('client/src/admin/back-office/BackOfficeShell.tsx');
+
+  /** Contenu d'un bloc `@media …` (accolades équilibrées). */
+  const atBlock = (prelude: string): string => {
+    const open = css.indexOf('{', css.indexOf(prelude));
+    for (let i = open, depth = 0; i < css.length; i++) {
+      if (css[i] === '{') depth++;
+      else if (css[i] === '}' && --depth === 0) return css.slice(open + 1, i);
+    }
+    return '';
+  };
+  /** Déclarations de la règle dont le sélecteur est EXACTEMENT `selector` (dernière occurrence). */
+  const rule = (selector: string, source = css): Record<string, string> | null => {
+    const pattern = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+');
+    const found = [...source.matchAll(new RegExp(`(?:^|[{};])\\s*${pattern}\\s*\\{([^}]*)\\}`, 'g'))].at(-1);
+    if (!found) return null;
+    return Object.fromEntries(found[1].split(';').map((entry) => entry.trim()).filter(Boolean)
+      .map((entry) => [entry.slice(0, entry.indexOf(':')).trim(), entry.slice(entry.indexOf(':') + 1).trim()]));
+  };
+  /** Rôles de la coquille, thème clair puis sombre (le sombre ne redéfinit qu'une partie des rôles). */
+  const roles = {
+    light: rule('.bo-shell, .admin-login, .admin-boot')!,
+    dark: { ...rule('.bo-shell, .admin-login, .admin-boot')!, ...rule("html[data-theme='dark'] .bo-shell, html[data-theme='dark'] .admin-login, html[data-theme='dark'] .admin-boot")! },
+  };
+  const resolve = (value: string, theme: Record<string, string>): string => {
+    const reference = value.match(/^var\((--[\w-]+)\)$/);
+    return reference && theme[reference[1]] ? resolve(theme[reference[1]], theme) : value;
+  };
+  /** Contraste WCAG de deux couleurs #RRGGBB. */
+  const contrast = (first: string, second: string): number => {
+    const luminance = (hex: string) => {
+      const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+        .map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    const [light, dark] = [luminance(first), luminance(second)].sort((a, b) => b - a);
+    return (light + 0.05) / (dark + 0.05);
+  };
+
+  it('sous 900 px, le voile du tiroir n’existe que tiroir ouvert (la console n’est plus voilée au repos)', () => {
+    const drawer = atBlock('@media (max-width: 900px)');
+    const closed = rule('.bo-shell .admin-sidebar', drawer);
+    expect(closed).not.toBeNull();
+    expect(closed!['box-shadow']).toBeUndefined();
+    expect(rule('.bo-shell .admin-sidebar.is-open', drawer)?.['box-shadow']).toMatch(/0 0 0 100vmax/);
+    // aucun autre voile plein écran dans la feuille
+    const scrims = [...css.matchAll(/([^{};]+)\{[^}]*100vmax[^}]*\}/g)].map((match) => match[1].trim());
+    expect(scrims).toEqual(['.bo-shell .admin-sidebar.is-open']);
+    // `is-open` et le fond cliquable suivent le même état que le bouton « Ouvrir le menu »
+    expect(shell).toContain("<aside className={`admin-sidebar ${mobile ? 'is-open' : ''}`}>");
+    expect(shell).toContain('{mobile && <button className="admin-sidebar-overlay" onClick={() => setMobile(false)}');
+  });
+
+  it('pastille de domaine choisie : encre inversée lisible dans les deux thèmes (plus de blanc sur blanc en sombre)', () => {
+    const selected = rule(".bo-domains button[aria-selected='true']");
+    expect(selected).not.toBeNull();
+    for (const [name, theme] of Object.entries(roles)) {
+      const background = resolve(selected!.background, theme);
+      const text = resolve(selected!.color, theme);
+      expect(background, name).toMatch(/^#[0-9A-F]{6}$/i);
+      expect(text, name).toMatch(/^#[0-9A-F]{6}$/i);
+      expect(contrast(background, text), `${name} : ${text} sur ${background}`).toBeGreaterThanOrEqual(4.5);
+    }
+    // même couple que le bouton-bascule pressé : une seule manière de dire « choisi » dans la console
+    const pressed = rule(":is(.bo-shell, .admin-login) .admin-button--secondary[aria-pressed='true']");
+    expect([selected!.background, selected!.color]).toEqual([pressed!.background, pressed!.color]);
+  });
+
+  it('bandeaux « Arrivages actifs » : encre et texte blanc dans les deux thèmes (plus de bandeau blanc en sombre)', () => {
+    const admin = read('client/src/admin/admin.css').replace(/\/\*[\s\S]*?\*\//g, '');
+    const band = rule('.admin-arrival-summary article', admin)!;
+    const white = resolve(band.color, roles.dark);
+    // admin.css peint le premier bandeau avec --admin-ink, que la coquille relie à --bo-ink…
+    expect(band.background).toBe('var(--admin-ink)');
+    expect(roles.light['--admin-ink']).toBe('var(--bo-ink)');
+    expect(contrast(resolve(band.background, roles.light), white)).toBeGreaterThanOrEqual(4.5);
+    // … qui s'éclaircit en thème sombre : sans reprise, le chiffre blanc serait posé sur du blanc
+    expect(contrast(resolve(band.background, roles.dark), white)).toBeLessThan(1.5);
+    const fixed = rule("html[data-theme='dark'] .bo-shell .admin-arrival-summary article:first-child");
+    expect(fixed).not.toBeNull();
+    const background = resolve(fixed!.background, roles.dark);
+    const label = read('client/src/design/tokens.css').match(/--admin-tone-c4c0ca:\s*(#[0-9a-f]{6})/i)![1];
+    expect(background).toMatch(/^#[0-9A-F]{6}$/i);
+    expect(contrast(background, white), `chiffre ${white} sur ${background}`).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(background, label), `libellé ${label} sur ${background}`).toBeGreaterThanOrEqual(4.5);
   });
 });

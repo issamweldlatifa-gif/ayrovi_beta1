@@ -1,4 +1,4 @@
-# AYROVI CRM 360 — Closure Report (E7)
+# ZAYROVI CRM 360 — Closure Report (E7)
 
 > Rapport de clôture du programme CRM — 2026-09-07. Toute affirmation est mesurée dans le dépôt
 > (branche `main`), au moment de la rédaction : **651 tests verts sur 52 fichiers**, typecheck

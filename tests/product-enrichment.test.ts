@@ -3,12 +3,13 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { readFileSync } from 'node:fs';
-import { enrichProduct, readImages, readSizes } from '../src/ayrovix/services/productEnrichment';
+import { enrichProduct, readImages, readResolvedSizes, readSizes } from '../src/ayrovix/services/productEnrichment';
 
 let dir = '';
 beforeEach(() => {
   dir = fs.mkdtempSync(path.join(os.tmpdir(), 'prod-enrich-'));
   process.env.AYROVI_PRODUCT_ENRICH_CACHE_DIR = dir;
+  process.env.AYROVI_VARIANT_CACHE_DIR = path.join(dir, 'variants');
   process.env.SERPAPI_KEY = 'test-key';
   delete process.env.AYROVI_PRODUCT_ENRICH;
   delete process.env.AYROVI_PRODUCT_ENRICH_DEADLINE_MS;
@@ -76,6 +77,19 @@ describe('source product data readers', () => {
       Taille: [{ name: 'M', available: true }, { name: 'M', available: false }],
     } })).toEqual([{ value: 'M', label: null, availability: 'unknown' }]);
   });
+
+  it('resolves an identifiable unknown size from a dedicated source lookup', async () => {
+    const sizes = await readResolvedSizes({
+      title: 'Pull laine',
+      variations: { Taille: [{ name: 'M', product_id: 'variant-m' }] },
+    }, async (productId) => ({
+      product_results: { title: `Pull ${productId}` },
+      sellers_results: { online_sellers: [{ base_price: '35,00 €' }] },
+    }));
+    expect(sizes).toEqual([{
+      value: 'M', label: null, availability: 'available', productId: 'variant-m',
+    }]);
+  });
 });
 
 describe('enriching the opened merchant page', () => {
@@ -114,6 +128,13 @@ describe('enriching the opened merchant page', () => {
   it('rejects a title match from a different merchant host', async () => {
     const f = { findProduct: vi.fn(async () => found), loadProduct: vi.fn(async () => product) };
     const out = await enrichProduct(TITLE, { fetchers: f, cacheScope: 'https://other-shop.test/item' });
+    expect(out.images).toEqual([]);
+    expect(f.loadProduct).not.toHaveBeenCalled();
+  });
+
+  it('rejects a neighbouring product path on the same merchant', async () => {
+    const f = { findProduct: vi.fn(async () => found), loadProduct: vi.fn(async () => product) };
+    const out = await enrichProduct(TITLE, { fetchers: f, cacheScope: 'https://shop.test/another-item' });
     expect(out.images).toEqual([]);
     expect(f.loadProduct).not.toHaveBeenCalled();
   });
@@ -162,13 +183,16 @@ describe('enriching the opened merchant page', () => {
 describe('opened-page enrichment wiring', () => {
   const source = readFileSync('src/ayrovix/services/product.ts', 'utf8');
   it('enriches only a sparse opened page and scopes cache by its merchant URL', () => {
-    expect(source).toContain('if (product.images.length >= 4 && product.sizes.length > 0) return;');
+    expect(source).toContain('product.description.trim().length >= 40');
+    expect(source).toContain('(product.details?.length ?? 0) > 0');
     expect(source).toContain('enrichProduct(product.title, { cacheScope: url })');
     expect(source).toContain('await enrichSparseProduct(product, url);');
   });
-  it('preserves direct merchant data and uses source-only prices for variants', () => {
+  it('preserves direct merchant data and completes even an already-visible size list with source variants', () => {
     expect(source).toContain('[...new Set([...product.images, ...extra.images])]');
-    expect(source).toContain('if (!product.sizes.length && extra.sizes.length)');
+    expect(source).toContain('if (extra.sizes.length)');
+    expect(source).toContain('hasVariantMatrix');
+    expect(source).toContain('product.variantOptions = options');
     expect(source).toContain('price: null');
     expect(source).toContain('priceTnd: null');
     expect(source).toContain('availability: size.availability');

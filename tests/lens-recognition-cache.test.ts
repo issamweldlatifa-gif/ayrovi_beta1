@@ -99,7 +99,8 @@ describe('route Lens — usage du cache et mesure', () => {
 
   it('chaque moteur est mesuré séparément — plus deux fois la même durée', () => {
     expect(routes).not.toContain("Date.now() - tParallel");
-    expect(routes).toContain("mark(trace, 'anthropicVisionMs', lastResort.timings.visionMs)");
+    // SerpApi est l'entrée unique de la recherche : plus de mesure de vision.
+    expect(routes).not.toContain('anthropicVisionMs');
     expect(routes).toContain("mark(trace, 'serpApiTotalMs', recognition.timings.matchesMs)");
   });
 

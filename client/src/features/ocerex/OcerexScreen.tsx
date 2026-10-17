@@ -149,12 +149,12 @@ export const OcerexScreen: React.FC<{
         : step === 'currency' && extraction ? (
           <form className="mx-auto w-full max-w-md px-5 py-8" onSubmit={(event) => { event.preventDefault(); void priceIt(extraction, currency); }}>
             <h2 className="text-lg font-black text-ink">{tr('Confirmez la devise', 'أكّد العملة')}</h2>
-            <p className="mt-2 text-sm leading-6 text-muted">{tr('La devise n’est pas assez nette. Choisissez une devise prise en charge par Ayrovi.', 'العملة غير واضحة. اختر عملة يدعمها نظام Ayrovi.')}</p>
+            <p className="mt-2 text-sm leading-6 text-muted">{tr('La devise n’est pas assez nette. Choisissez une devise prise en charge par Zayrovi.', 'العملة غير واضحة. اختر عملة يدعمها نظام Zayrovi.')}</p>
             <label htmlFor="ocerex-currency" className="sr-only">{tr('Devise', 'العملة')}</label>
             <select id="ocerex-currency" className="mt-4 w-full min-h-11 rounded-control border border-line bg-white px-3 font-bold text-ink" value={currency} onChange={(event) => setCurrency(event.target.value)}>
               {extraction.supportedCurrencies.map((code) => <option key={code} value={code}>{code}</option>)}
             </select>
-            <Button className="mt-4 w-full" type="submit">{tr('Calculer le prix Ayrovi', 'احسب سعر Ayrovi')}</Button>
+            <Button className="mt-4 w-full" type="submit">{tr('Calculer le prix Zayrovi', 'احسب سعر Zayrovi')}</Button>
           </form>
         ) : step === 'result' && extraction ? <OcerexResult extraction={extraction} busy={busy} urlError={urlError} onSubmit={(url) => void onLink(url)} />
         : step === 'summary' && extraction ? <OcerexSummary extraction={extraction} busy={busy} onConfirm={() => void onConfirm()} />

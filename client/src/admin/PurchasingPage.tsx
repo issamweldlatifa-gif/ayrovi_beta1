@@ -1,5 +1,5 @@
 /**
- * AYROVI Purchasing (P2.3) — écrans fournisseurs, commandes d'achat, réceptions.
+ * ZAYROVI Purchasing (P2.3) — écrans fournisseurs, commandes d'achat, réceptions.
  *
  * Aucun troisième moteur ici : les listes sont dessinées par `DataTable` (la garde
  * `back-office-shell.test.tsx` refuse toute balise de table écrite à la main hors du moteur),
@@ -57,7 +57,7 @@ function usePurchasingMeta() {
 }
 
 // En-tête partagé du back office (./components) — le libellé du domaine reste local.
-const PurchasingHeader: React.FC<{ title: string; description: string; action?: React.ReactNode }> = (props) => <PageHeader {...props} eyebrow="AYROVI ACHATS" />;
+const PurchasingHeader: React.FC<{ title: string; description: string; action?: React.ReactNode }> = (props) => <PageHeader {...props} eyebrow="ZAYROVI ACHATS" />;
 
 const money = (value: unknown, currency = 'TND') => {
   const number = Number(value ?? 0);
@@ -258,7 +258,7 @@ export const PurchasingOrdersPage: React.FC = () => {
         <Pagination {...pagination} onChange={(page) => void load(page)} />
       </section>
 
-      <Modal open={Boolean(detail)} title={`Commande ${detail?.po_number ?? ''}`} eyebrow="AYROVI ACHATS" onClose={() => setDetail(null)} wide>
+      <Modal open={Boolean(detail)} title={`Commande ${detail?.po_number ?? ''}`} eyebrow="ZAYROVI ACHATS" onClose={() => setDetail(null)} wide>
         {detail ? (
           <>
             <div className="admin-detail-grid">
@@ -307,7 +307,7 @@ export const PurchasingOrdersPage: React.FC = () => {
         ) : null}
       </Modal>
 
-      <Modal open={creating} title="Nouvelle commande d’achat" eyebrow="AYROVI ACHATS" onClose={() => setCreating(false)} wide>
+      <Modal open={creating} title="Nouvelle commande d’achat" eyebrow="ZAYROVI ACHATS" onClose={() => setCreating(false)} wide>
         <div className="admin-form-row">
           <Field label="Identifiant fournisseur" required hint="Collé depuis la fiche fournisseur ; seul un fournisseur actif engage une commande.">
             <input value={form.supplier_id} onChange={(event) => setForm({ ...form, supplier_id: event.target.value })} placeholder="sup_…" />
@@ -355,7 +355,7 @@ export const PurchasingOrdersPage: React.FC = () => {
         </div>
       </Modal>
 
-      <Modal open={Boolean(deciding)} title={deciding === 'cancel' ? 'Annuler la commande' : 'Refuser la commande'} eyebrow="AYROVI ACHATS" onClose={() => { setDeciding(null); setReason(''); }}>
+      <Modal open={Boolean(deciding)} title={deciding === 'cancel' ? 'Annuler la commande' : 'Refuser la commande'} eyebrow="ZAYROVI ACHATS" onClose={() => { setDeciding(null); setReason(''); }}>
         <Field label="Motif" required full hint="Un refus ou une annulation s’écrit : il reste lisible sur la commande et dans l’audit.">
           <textarea rows={3} value={reason} onChange={(event) => setReason(event.target.value)} />
         </Field>
@@ -534,7 +534,7 @@ export const PurchasingReceiptsPage: React.FC = () => {
         <Pagination {...pagination} onChange={(page) => void load(page)} />
       </section>
 
-      <Modal open={Boolean(detail)} title={`Réception ${detail?.receipt_number ?? ''}`} eyebrow="AYROVI ACHATS" onClose={() => setDetail(null)} wide>
+      <Modal open={Boolean(detail)} title={`Réception ${detail?.receipt_number ?? ''}`} eyebrow="ZAYROVI ACHATS" onClose={() => setDetail(null)} wide>
         {detail ? (
           <>
             <div className="admin-detail-grid">
@@ -563,7 +563,7 @@ export const PurchasingReceiptsPage: React.FC = () => {
         ) : null}
       </Modal>
 
-      <Modal open={Boolean(draft)} title="Nouveau bon de réception" eyebrow="AYROVI ACHATS" onClose={() => setDraft(null)} wide>
+      <Modal open={Boolean(draft)} title="Nouveau bon de réception" eyebrow="ZAYROVI ACHATS" onClose={() => setDraft(null)} wide>
         <div className="admin-form-row">
           <Field label="Identifiant de la commande approuvée" required hint="Seule une commande APPROVED ou PARTIELLEMENT_REÇUE peut être réceptionnée.">
             <input value={draft?.orderId ?? ''} onChange={(event) => { void startDraft(event.target.value); }} placeholder="po_…" />

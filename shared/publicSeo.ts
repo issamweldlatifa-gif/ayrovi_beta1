@@ -28,8 +28,8 @@ export interface PublicSeoRoute {
   priority: number;
 }
 
-const HOME_TITLE_FR = 'AYROVI — Votre Shopping International en Dinars Tunisiens';
-const HOME_TITLE_AR = 'أيروفي — تسوّقك العالمي بالدينار التونسي';
+const HOME_TITLE_FR = 'ZAYROVI — Votre Shopping International en Dinars Tunisiens';
+const HOME_TITLE_AR = 'زايروفي — تسوّقك العالمي بالدينار التونسي';
 const HOME_DESCRIPTION_FR = "Découvrez et achetez n'importe quel produit du web mondial, directement en Dinars Tunisiens (DT) par photo ou lien, avec livraison dans les 24 gouvernorats.";
 const HOME_DESCRIPTION_AR = 'اكتشف واشترِ أي منتج من الويب العالمي مباشرة بالدينار التونسي، بصورة أو برابط، مع توصيل إلى 24 ولاية.';
 
@@ -47,10 +47,10 @@ export const PUBLIC_SEO_ROUTES: readonly PublicSeoRoute[] = [
   },
   {
     path: '/aywebs',
-    titleFr: 'AyWebs — shopping depuis le web avec AYROVI',
-    titleAr: 'AyWebs — التسوق من الويب عبر أيروفي',
-    descriptionFr: 'AyWebs est le point d’entrée AYROVI pour parcourir des boutiques externes et préparer des produits pour le panier AYROVI.',
-    descriptionAr: 'AyWebs هي بوابة أيروفي لتصفح المتاجر الخارجية وتجهيز المنتجات لإضافتها إلى سلة أيروفي.',
+    titleFr: 'AyWebs — shopping depuis le web avec ZAYROVI',
+    titleAr: 'AyWebs — التسوق من الويب عبر زايروفي',
+    descriptionFr: 'AyWebs est le point d’entrée ZAYROVI pour parcourir des boutiques externes et préparer des produits pour le panier ZAYROVI.',
+    descriptionAr: 'AyWebs هي بوابة زايروفي لتصفح المتاجر الخارجية وتجهيز المنتجات لإضافتها إلى سلة زايروفي.',
     indexable: false,
     inSitemap: false,
     changeFrequency: 'weekly',
@@ -58,10 +58,10 @@ export const PUBLIC_SEO_ROUTES: readonly PublicSeoRoute[] = [
   },
   {
     path: '/arrivage',
-    titleFr: 'Arrivage — nouvelles trouvailles AYROVI',
-    titleAr: 'وصلات جديدة — أحدث اكتشافات أيروفي',
-    descriptionFr: 'Les arrivages AYROVI : les produits fraîchement découverts, au prix transparent en dinars tunisiens, avec livraison dans toute la Tunisie.',
-    descriptionAr: 'وصلات أيروفي: أحدث المنتجات المكتشفة بأسعار شفافة بالدينار التونسي مع التوصيل إلى كامل ولايات تونس.',
+    titleFr: 'Arrivage — nouvelles trouvailles ZAYROVI',
+    titleAr: 'وصلات جديدة — أحدث اكتشافات زايروفي',
+    descriptionFr: 'Les arrivages ZAYROVI : les produits fraîchement découverts, au prix transparent en dinars tunisiens, avec livraison dans toute la Tunisie.',
+    descriptionAr: 'وصلات زايروفي: أحدث المنتجات المكتشفة بأسعار شفافة بالدينار التونسي مع التوصيل إلى كامل ولايات تونس.',
     indexable: true,
     inSitemap: true,
     changeFrequency: 'daily',
@@ -69,10 +69,10 @@ export const PUBLIC_SEO_ROUTES: readonly PublicSeoRoute[] = [
   },
   {
     path: '/gift-cards',
-    titleFr: 'Gift & Cards — idées cadeaux AYROVI',
-    titleAr: 'هدايا وبطاقات — أفكار هدايا أيروفي',
-    descriptionFr: 'Idées cadeaux et cartes AYROVI : choisissez un cadeau du monde entier, payez en dinars et faites-le livrer partout en Tunisie.',
-    descriptionAr: 'أفكار هدايا وبطاقات أيروفي: اختر هدية من العالم، وادفع بالدينار، ووصّلها إلى أي مكان في تونس.',
+    titleFr: 'Gift & Cards — idées cadeaux ZAYROVI',
+    titleAr: 'هدايا وبطاقات — أفكار هدايا زايروفي',
+    descriptionFr: 'Idées cadeaux et cartes ZAYROVI : choisissez un cadeau du monde entier, payez en dinars et faites-le livrer partout en Tunisie.',
+    descriptionAr: 'أفكار هدايا وبطاقات زايروفي: اختر هدية من العالم، وادفع بالدينار، ووصّلها إلى أي مكان في تونس.',
     indexable: true,
     inSitemap: true,
     changeFrequency: 'weekly',
@@ -80,10 +80,10 @@ export const PUBLIC_SEO_ROUTES: readonly PublicSeoRoute[] = [
   },
   {
     path: '/magazine',
-    titleFr: 'Magazine — le journal AYROVI',
-    titleAr: 'مجلة أيروفي',
-    descriptionFr: "Le Magazine AYROVI : sélections, tendances et guides d'achat pour mieux choisir depuis la Tunisie.",
-    descriptionAr: 'مجلة أيروفي: مختارات واتجاهات وأدلة شراء لاختيار أفضل من تونس.',
+    titleFr: 'Magazine — le journal ZAYROVI',
+    titleAr: 'مجلة زايروفي',
+    descriptionFr: "Le Magazine ZAYROVI : sélections, tendances et guides d'achat pour mieux choisir depuis la Tunisie.",
+    descriptionAr: 'مجلة زايروفي: مختارات واتجاهات وأدلة شراء لاختيار أفضل من تونس.',
     indexable: true,
     inSitemap: true,
     changeFrequency: 'weekly',
@@ -91,10 +91,10 @@ export const PUBLIC_SEO_ROUTES: readonly PublicSeoRoute[] = [
   },
   {
     path: '/admin',
-    titleFr: 'Administration — AYROVI',
-    titleAr: 'لوحة الإدارة — أيروفي',
-    descriptionFr: "Console d'administration AYROVI. Accès réservé.",
-    descriptionAr: 'لوحة إدارة أيروفي. الدخول محصور بالمصرّح لهم.',
+    titleFr: 'Administration — ZAYROVI',
+    titleAr: 'لوحة الإدارة — زايروفي',
+    descriptionFr: "Console d'administration ZAYROVI. Accès réservé.",
+    descriptionAr: 'لوحة إدارة زايروفي. الدخول محصور بالمصرّح لهم.',
     indexable: false,
     inSitemap: false,
     changeFrequency: 'monthly',
@@ -102,10 +102,10 @@ export const PUBLIC_SEO_ROUTES: readonly PublicSeoRoute[] = [
   },
   {
     path: '/reset-password',
-    titleFr: 'Réinitialiser le mot de passe — AYROVI',
-    titleAr: 'استعادة كلمة المرور — أيروفي',
-    descriptionFr: 'Réinitialisation du mot de passe AYROVI, réservée aux comptes clients.',
-    descriptionAr: 'استعادة كلمة مرور حساب العميل في أيروفي.',
+    titleFr: 'Réinitialiser le mot de passe — ZAYROVI',
+    titleAr: 'استعادة كلمة المرور — زايروفي',
+    descriptionFr: 'Réinitialisation du mot de passe ZAYROVI, réservée aux comptes clients.',
+    descriptionAr: 'استعادة كلمة مرور حساب العميل في زايروفي.',
     indexable: false,
     inSitemap: false,
     changeFrequency: 'monthly',

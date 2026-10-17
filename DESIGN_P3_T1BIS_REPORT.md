@@ -1,4 +1,4 @@
-# AYROVI — P3 / T1-bis : noms sémantiques, feuille d'application unique, absorption de palette
+# ZAYROVI — P3 / T1-bis : noms sémantiques, feuille d'application unique, absorption de palette
 
 **Date :** 2026-09-06 · **Branche :** `main` · **Suite de :** `DESIGN_P3_T1_REPORT.md` (tokenisation 1:1)
 **Commis de la phase :** `e7906c3` (a) → `3cf36a2` (b) → `10b0cff` (c) → `3b813a7` (d) → le présent commit (e).

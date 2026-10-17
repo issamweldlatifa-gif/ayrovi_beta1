@@ -71,18 +71,18 @@ export interface AssistantToolExecution {
 export const ASSISTANT_TOOLS = [
   {
     name: 'get_order_status',
-    description: 'Retrieve real AYROVI order status. For guests, both order_id and the matching delivery phone are required. Never guess an order status.',
+    description: 'Retrieve real ZAYROVI order status. For guests, both order_id and the matching delivery phone are required. Never guess an order status.',
     input_schema: {
       type: 'object',
       properties: {
-        order_id: { type: 'string', description: 'AYROVI order number or internal order id. May be omitted only for a signed-in customer asking for recent orders.' },
+        order_id: { type: 'string', description: 'ZAYROVI order number or internal order id. May be omitted only for a signed-in customer asking for recent orders.' },
         phone: { type: 'string', description: 'Delivery phone used on the order. Required for guests.' },
       },
     },
   },
   {
     name: 'calculate_price',
-    description: 'Calculate the real AYROVI all-inclusive TND price with the current backend pricing rules (Core Pricing Engine). Always use this tool for exchange rates, totals, duties or fees.',
+    description: 'Calculate the real ZAYROVI all-inclusive TND price with the current backend pricing rules (Core Pricing Engine). Always use this tool for exchange rates, totals, duties or fees.',
     input_schema: {
       type: 'object',
       properties: {
@@ -96,7 +96,7 @@ export const ASSISTANT_TOOLS = [
   },
   {
     name: 'search_products',
-    description: 'Search real available AYROVI catalogue products and direct merchant references. Always use this tool before naming or offering products.',
+    description: 'Search real available ZAYROVI catalogue products and direct merchant references. Always use this tool before naming or offering products.',
     input_schema: {
       type: 'object',
       properties: {
@@ -252,7 +252,7 @@ function getOrderStatus(input: any, context: AssistantToolContext): AssistantToo
   const requestedId = cleanText(input?.order_id, 120);
   if (!requestedId) {
     if (!context.customer) {
-      return { modelResult: { success: false, code: 'ORDER_AND_PHONE_REQUIRED', message: 'Demandez le numéro de commande AYROVI et le téléphone de livraison.' } };
+      return { modelResult: { success: false, code: 'ORDER_AND_PHONE_REQUIRED', message: 'Demandez le numéro de commande ZAYROVI et le téléphone de livraison.' } };
     }
     const orders = context.db.all<any>('SELECT * FROM orders WHERE account_id=? ORDER BY created_at DESC LIMIT 5', context.customer.id);
     if (!orders.length) return { modelResult: { success: true, orders: [], message: 'Aucune commande trouvée sur ce compte.' }, presentation: { orders: [] } };
@@ -292,7 +292,7 @@ function calculateRealPrice(input: any, context: AssistantToolContext): Assistan
     return { modelResult: { success: false, code: 'INVALID_PRICE_INPUT', message: 'Prix ou quantité invalide.' } };
   }
   const breakdown = calculatePrice(context.db.getPricingRules(), price, currency, { quantity, express, title: cleanText(input?.query || input?.title, 220) });
-  if (!breakdown || breakdown.restricted) return { modelResult: { success: false, code: breakdown?.restricted ? 'RESTRICTED_ITEM' : 'UNSUPPORTED_CURRENCY', message: breakdown?.restricted ? 'Ce type de produit nécessite une validation AYSONIC.' : 'Devise non prise en charge.' } };
+  if (!breakdown || breakdown.restricted) return { modelResult: { success: false, code: breakdown?.restricted ? 'RESTRICTED_ITEM' : 'UNSUPPORTED_CURRENCY', message: breakdown?.restricted ? 'Ce type de produit nécessite une validation ZAYROVI.' : 'Devise non prise en charge.' } };
   return { modelResult: { success: true, breakdown }, presentation: { breakdown } };
 }
 
@@ -493,7 +493,7 @@ async function lensSearch(input: any, context: AssistantToolContext): Promise<As
     title: detectedTitle,
     brand: detectedBrand,
     model: null,
-    description: 'Produit et prix courant lus dans l’image par AYROVI. Le lien marchand exact reste obligatoire.',
+    description: 'Produit et prix courant lus dans l’image par ZAYROVI. Le lien marchand exact reste obligatoire.',
     image: visual[0]?.image || '',
     images: visual[0]?.images || [],
     source: 'AYROVIX Vision',
@@ -593,7 +593,7 @@ function escalateToHuman(input: any, context: AssistantToolContext): AssistantTo
     return { modelResult: { success: true, ticket }, presentation: { ticket } };
   }
   const priority = input?.priority === 'HIGH' ? 'HIGH' : 'NORMAL';
-  const contextExcerpt = context.messages.slice(-8).map((line) => `${line.role === 'user' ? 'Client' : 'AYROVI'}: ${cleanText(line.text, 700)}`).join('\n').slice(0, 5000);
+  const contextExcerpt = context.messages.slice(-8).map((line) => `${line.role === 'user' ? 'Client' : 'ZAYROVI'}: ${cleanText(line.text, 700)}`).join('\n').slice(0, 5000);
   const id = `assistant_ticket_${randomUUID()}`;
   const now = new Date().toISOString();
   context.db.run(`INSERT INTO assistant_support_tickets

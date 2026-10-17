@@ -18,6 +18,8 @@ export interface OcerexExtraction {
   extractionId: string;
   type: OcerexScreenType | string;
   referencePrice: number | null;
+  /** Prix de référence en dinars (taux du serveur), null si la devise n'a pas de taux. */
+  referenceTnd?: number | null;
   currency: string | null;
   confidence: number;
   confidenceLevel: OcerexConfidenceLevel | string;

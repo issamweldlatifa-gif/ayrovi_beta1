@@ -1,5 +1,5 @@
 /**
- * AYROVI CRM 360 (E2) — notifications métier, SANS second canal.
+ * ZAYROVI CRM 360 (E2) — notifications métier, SANS second canal.
  *
  * Une affectation (tâche ou issue) notifie le propriétaire via le canal existant :
  * `notifyAdminUser` (bell in-app) + `queueDelivery` (outbox). Rien n'est inventé : on

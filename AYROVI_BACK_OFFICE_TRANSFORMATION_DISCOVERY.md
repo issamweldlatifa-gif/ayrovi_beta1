@@ -1,4 +1,4 @@
-# AYROVI — BACK OFFICE TRANSFORMATION · DISCOVERY
+# ZAYROVI — BACK OFFICE TRANSFORMATION · DISCOVERY
 
 **Phase : DISCOVERY UNIQUEMENT. Aucune ligne de production n'a été modifiée par ce travail.**
 Date : 2026-09-05 · Branche `main` · `HEAD` observé : `aed5c48` · Version applicative `3.10.4`
@@ -793,7 +793,7 @@ et s'il doit devenir durable, la table cible est `erp_events` (déjà存在) + u
 
 ```text
 ┌───────────────────────────────────────────────────────────────────────────────────┐
-│ AYROVI ▸ [MANAGEMENT | CONTENT | CRM]   ⌕ recherche globale   ⌘ commandes   🔔 3   👤 EMP-000042 · Tunis-Centre ▾ │
+│ ZAYROVI ▸ [MANAGEMENT | CONTENT | CRM]   ⌕ recherche globale   ⌘ commandes   🔔 3   👤 EMP-000042 · Tunis-Centre ▾ │
 ├───────────────────┬───────────────────────────────────────────────────────────────┤
 │ MANAGEMENT ▾      │  Ventes / Commandes            [vue: En attente d'acompte ▾]  │
 │  Catalogue  ▸     │  ───────────────────────────────────────────────────────────── │

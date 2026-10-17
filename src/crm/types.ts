@@ -1,5 +1,5 @@
 /**
- * AYROVI CRM 360 (E1) — types et constantes du module relationnel.
+ * ZAYROVI CRM 360 (E1) — types et constantes du module relationnel.
  *
  * Ce module construit le domaine « relation client / partenaire » qui n'existait pas :
  * Party / Contact / Relationship, Activités, Tâches & follow-ups, Notes, Issues/support,

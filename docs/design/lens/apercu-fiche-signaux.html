@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Aperçu — fiches et résultats Lens (signaux marchands, 17/10/2026)</title>
+<style>
+  :root {
+    --ink: #111111;
+    --muted: #666666;
+    --line: #eaeaea;
+    --surface: #ffffff;
+    --studio: #f4f4f4;
+    --sale: #CF1322;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 32px 24px 64px; background: var(--surface); color: var(--ink);
+    font-family: "Zalando Sans", "Helvetica Neue", Arial, sans-serif;
+  }
+  header { max-width: 1160px; margin: 0 auto 28px; }
+  h1 { font-size: 26px; line-height: 1.2; margin: 0 0 6px; font-weight: 700; }
+  header p { margin: 0; color: var(--muted); font-size: 14px; max-width: 70ch; }
+  .stage { max-width: 1160px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start; }
+  figure { margin: 0; }
+  figcaption { font-size: 13px; color: var(--muted); margin-top: 8px; max-width: 320px; }
+  figcaption b { color: var(--ink); font-weight: 700; }
+  .phone {
+    width: 320px; height: 640px; border: 1px solid var(--line); background: var(--surface);
+    position: relative; overflow: hidden; display: flex; flex-direction: column;
+  }
+  .studio { background: var(--studio); }
+  .hair { border: 0; border-top: 1px solid var(--line); margin: 0; }
+
+  /* ---------- 1) grille de résultats : vignettes au 2/3 ---------- */
+  .grid { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; }
+  .card { width: calc(50% - 2px); }
+  .thumb { width: 100%; aspect-ratio: 2 / 3; background: var(--studio); position: relative; }
+  .thumb .tag {
+    position: absolute; left: 8px; bottom: 8px; background: var(--sale); color: #fff;
+    font-size: 10px; font-weight: 700; padding: 3px 6px; letter-spacing: .02em;
+  }
+  .thumb .heart { position: absolute; top: 6px; right: 8px; width: 21px; height: 21px; }
+  .copy { padding: 8px 10px 12px; }
+  .brand { font-size: 13px; font-weight: 700; }
+  .name { font-size: 12px; color: var(--ink); margin: 2px 0 4px; line-height: 1.25; }
+  .price { font-size: 12px; font-weight: 700; }
+  .price s { color: var(--muted); font-weight: 400; margin-left: 4px; }
+
+  /* ---------- 2) cercle d'attente sur la photo ---------- */
+  .hero { position: relative; width: 100%; aspect-ratio: 2 / 3; background: var(--studio); }
+  .ring {
+    position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px 0 0 -23px;
+    border: 2px dotted var(--ink); border-radius: 50%; animation: spin 1.1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .ring { animation: none; } }
+
+  /* ---------- 3) fiche produit : signaux marchands ---------- */
+  .sheet { padding: 12px 12px 0; flex: 1; overflow: hidden; }
+  .model { font-size: 11px; color: var(--muted); }
+  .row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .brandbig { font-size: 15px; font-weight: 700; }
+  .pricemain { font-size: 15px; font-weight: 700; }
+  .strike { font-size: 11px; color: var(--muted); }
+  .title { font-size: 13px; font-weight: 700; margin: 6px 0 0; line-height: 1.3; }
+  .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .advice {
+    display: flex; gap: 8px; align-items: flex-start; margin-top: 10px; padding: 12px;
+    border: 1px solid var(--line); font-size: 11.5px; line-height: 1.4;
+  }
+  .line { display: flex; gap: 6px; align-items: center; min-height: 24px; font-size: 11.5px; }
+  .line b { font-weight: 700; }
+  .guide { font-size: 11.5px; text-decoration: underline; margin-top: 8px; display: inline-block; }
+  .sizebox {
+    margin-top: 10px; border: 1px solid var(--ink); padding: 10px 12px; font-size: 12px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .accordion { border-top: 1px solid var(--line); padding: 12px 0; font-size: 12.5px; display: flex; justify-content: space-between; }
+  .stickybar {
+    border-top: 1px solid var(--line); background: var(--surface); display: flex; align-items: center;
+    justify-content: space-between; gap: 8px; padding: 10px 12px; margin-top: auto;
+  }
+  .stickybar .count { font-size: 11px; font-weight: 700; }
+  .cta { background: var(--ink); color: #fff; font-size: 12px; font-weight: 700; padding: 12px 16px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ink); display: inline-block; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Aperçu — fiches et résultats Lens, d’après les captures Zalando</h1>
+  <p>Maquette de lecture seule : les textes affichés sont ceux que la fiche marchande publie réellement (relevés sur les captures du 16/10/2026). Chaque bloc disparaît quand la page ne le porte — aucune valeur n’est inventée, aucune équivalence de taille n’est fabriquée.</p>
+</header>
+
+<div class="stage">
+  <figure>
+    <div class="phone">
+      <div class="grid">
+        <div class="card">
+          <div class="thumb studio"><span class="tag">Dernières pièces</span><span class="heart">♡</span></div>
+          <div class="copy">
+            <div class="brand">Jordan</div>
+            <div class="name">AIR JORDAN 1 LOW SE CRAFT — Baskets basses</div>
+            <div class="price">65,90 € <s>139,99 €</s></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="thumb studio"><span class="heart">♡</span></div>
+          <div class="copy">
+            <div class="brand">Marks &amp; Spencer</div>
+            <div class="name">CREWNECK — Pullover - gris chiné</div>
+            <div class="price">18,50 €</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="thumb studio"><span class="heart">♡</span></div>
+          <div class="copy">
+            <div class="brand">Calvin Klein</div>
+            <div class="name">Ceinture en cuir — noir</div>
+            <div class="price">49,90 €</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="thumb studio"><span class="heart">♡</span></div>
+          <div class="copy">
+            <div class="brand">Severin</div>
+            <div class="name">Mousseur à lait — 500 W</div>
+            <div class="price">39,90 €</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <figcaption><b>1) Résultats.</b> Vignettes au <b>2/3</b> mesuré sur le modèle commerce (0,667) : 284 px de haut sur un écran de 390 px, au lieu de 236 px. Le squelette de chargement partage la même géométrie — la carte ne saute pas à l’arrivée des résultats.</figcaption>
+  </figure>
+
+  <figure>
+    <div class="phone">
+      <div class="hero">
+        <div class="ring" aria-hidden="true"></div>
+      </div>
+      <div class="stickybar">
+        <span class="count">Chargement de la fiche…</span>
+        <span class="cta">Ajouter au panier</span>
+      </div>
+    </div>
+    <figcaption><b>2) Attente honnête.</b> Le cercle en pointillés tourne <b>sur la photo</b> tant qu’elle n’est pas réellement affichée ; il disparaît à l’événement de chargement — jamais au bout d’un délai fixe. Pas de pastille, pas de fond gris.</figcaption>
+  </figure>
+
+  <figure>
+    <div class="phone" style="height:700px">
+      <div class="hero"><span class="tag" style="position:absolute;left:8px;bottom:8px;background:var(--sale);color:#fff;font-size:10px;font-weight:700;padding:3px 6px">Dernières pièces</span></div>
+      <div class="sheet">
+        <div class="model">Notre mannequin (190 cm) porte une taille XL</div>
+        <div class="row">
+          <span class="brandbig">Jordan</span>
+          <span class="pricemain">65,90 €</span>
+        </div>
+        <div class="strike">Prix conseillé 139,99</div>
+        <p class="title">AIR JORDAN 1 LOW SE CRAFT</p>
+        <div class="sub">Baskets basses - kaki</div>
+
+        <div class="advice">
+          <span aria-hidden="true">ⓘ</span>
+          <span>Nous vous recommandons de choisir une taille au-dessus de celle habituelle.</span>
+        </div>
+
+        <div class="line" style="margin-top:6px"><b>Fin de l’offre du marchand dans</b><span>1j4h22m</span><span style="color:var(--muted)">Publié par le marchand</span></div>
+        <div class="line"><b>Livraison annoncée par le marchand</b><span>23 octobre-29 octobre</span></div>
+        <div class="line"><b>Retours annoncés par le marchand</b><span>Retours gratuits</span></div>
+
+        <span class="guide">Guide des tailles</span>
+        <div class="sizebox"><span>Taille</span><span aria-hidden="true">›</span></div>
+
+        <div class="accordion" style="margin-top:12px"><span>Description</span><span aria-hidden="true">›</span></div>
+        <div class="accordion"><span>Caractéristiques</span><span aria-hidden="true">›</span></div>
+        <div class="accordion"><span>Matière et composition</span><span aria-hidden="true">›</span></div>
+        <div class="accordion"><span>Taille et coupe</span><span aria-hidden="true">›</span></div>
+        <div class="accordion"><span>Conseils d’entretien</span><span aria-hidden="true">›</span></div>
+        <div class="accordion"><span>Dimensions</span><span aria-hidden="true">›</span></div>
+      </div>
+      <div class="stickybar">
+        <span class="count"><span class="dot" aria-hidden="true"></span> Se termine dans 1j4h22m</span>
+        <span class="cta">Ajouter au panier</span>
+      </div>
+    </div>
+    <figcaption><b>3) Fiche.</b> De haut en bas : mention du mannequin, marque et prix, prix conseillé, conseil de taille encadré (fond blanc, liseré), puis les trois lignes <b>attribuées au marchand</b> — fin d’offre, livraison, retours. Le compte à rebours du bandeau reste celui de notre attache de prix ; celui du marchand est distinct et signé.</figcaption>
+  </figure>
+
+  <figure>
+    <div class="phone" style="height:520px">
+      <div class="sheet" style="padding:0">
+        <div class="accordion" style="padding:14px 12px"><span><b>Dimensions</b></span><span aria-hidden="true">⌄</span></div>
+        <div style="padding:0 12px 14px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div>
+            <div style="font-size:11px;color:var(--muted)">Dimensions</div>
+            <div style="font-size:12.5px">30 x 20 x 10 cm</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--muted)">Informations sur la fabrication</div>
+            <div style="font-size:12.5px">Turquie</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--muted)">Référence du modèle</div>
+            <div style="font-size:12.5px">LV040BM333</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--muted)">Code-barres</div>
+            <div style="font-size:12.5px">6CA22S0GI-C11</div>
+          </div>
+        </div>
+        <hr class="hair" />
+        <div class="accordion" style="padding:14px 12px"><span>Conseils d’entretien</span><span aria-hidden="true">›</span></div>
+      </div>
+    </div>
+    <figcaption><b>4) Caractéristiques.</b> Grille à deux colonnes, intitulé au-dessus de la valeur. La section <b>Dimensions</b> n’apparaît que si la fiche publie une mesure réelle (chiffre + unité) : « standard » ou « 30 x 20 » ne produisent rien.</figcaption>
+  </figure>
+</div>
+</body>
+</html>

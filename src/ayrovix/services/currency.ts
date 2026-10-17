@@ -4,7 +4,7 @@ import { resolvePromoForQuote } from '../../services/promotions';
 import type { PricingRules } from '../../services/pricing';
 
 /**
- * AYROVIX · Currency layer — réutilise EXCLUSIVEMENT les règles du Calculator AYROVI
+ * AYROVIX · Currency layer — réutilise EXCLUSIVEMENT les règles du Calculator ZAYROVI
  * (pricing_config versionné). Aucun taux en dur ici : la même source de vérité que le panier.
  */
 

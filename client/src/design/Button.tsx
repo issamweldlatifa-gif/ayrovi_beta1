@@ -5,7 +5,7 @@ import { twMerge } from 'tailwind-merge';
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'cta';
 export type ButtonSize = 'sm' | 'md' | 'icon';
 
-/* AYROVI customer DS v3.1 — primary actions use the capsule shape; secondary controls stay softly rounded. */
+/* ZAYROVI customer DS v3.1 — primary actions use the capsule shape; secondary controls stay softly rounded. */
 const variantClasses: Record<ButtonVariant, string> = {
   primary: 'ay-runtime-button--primary rounded-full border border-ink bg-ink text-white shadow-xs hover:bg-ink-deep',
   secondary: 'ay-runtime-button--secondary rounded-control border border-line bg-white text-ink hover:bg-surface',

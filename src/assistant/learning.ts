@@ -4,7 +4,7 @@ import { isCanonicalExecutionLane } from '../ai-core/execution';
 import type { QatafoDatabase } from '../db/database';
 
 /**
- * AYROVI Continuous Learning — couche d'observation sûre.
+ * ZAYROVI Continuous Learning — couche d'observation sûre.
  * Enregistre des SIGNAUX agrégés et anonymisés (jamais de conversations brutes
  * exposées), détecte les corrections clients, calcule un Resolution Score et
  * alimente le Discovery dashboard. Aucune modification automatique de prompts

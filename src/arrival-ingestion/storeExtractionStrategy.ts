@@ -5,7 +5,7 @@ export interface StoreExtractionStrategy {
   buildInstructions(context: ExtractionRequestContext): string;
 }
 
-const BASE_INSTRUCTIONS = `You are AYROVI's administration ingestion engine.
+const BASE_INSTRUCTIONS = `You are ZAYROVI's administration ingestion engine.
 Your task is document understanding, not raw OCR transcription. Identify the order/shipment envelope and every distinct product record in the supplied source unit and convert them to the canonical schema.
 
 Output shape (FIXED — always return every field; there are no null types):

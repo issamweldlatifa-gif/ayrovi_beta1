@@ -16,8 +16,8 @@ export function AccountHeader({section,onBack}: {section:AccountSection;onBack:(
   const item=accountSections.find(item=>item.id===section)!;
   return <header className="ac-header"><div className="ac-header__inner">
     <button type="button" onClick={onBack} className="ac-icon-button" aria-label={section==='home'?tr('Retour à la boutique','العودة للمتجر'):tr('Retour','رجوع')}><ArrowLeft className={`h-5 w-5 ${isArabic?'rotate-180':''}`} aria-hidden /></button>
-    <div><span className="ac-header__brand" dir="ltr">AYROVI</span><h1 tabIndex={-1} id="account-heading">{isArabic?item.labelAr:item.label}</h1></div>
-    <img src="/media/logo-ayrovi.png" alt="" width={32} height={32} />
+    <div><span className="ac-header__brand" dir="ltr">ZAYROVI</span><h1 tabIndex={-1} id="account-heading">{isArabic?item.labelAr:item.label}</h1></div>
+    <img src="/media/logo-ayrovi.png?v=5.0" alt="" width={32} height={32} />
   </div></header>;
 }
 export function AccountHome({account,overview,loading,error,onRetry,onOpen,onLogout,logoutBusy}: {

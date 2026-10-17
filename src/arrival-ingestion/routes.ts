@@ -115,9 +115,9 @@ export function createArrivalIngestionModule(
     res.json({ success: true, data: stores.update(req.params.id, req.body || {}, auditActorFromRequest(req)) });
   });
 
-  // ---- Category Master (official AYROVI product taxonomy) ----
+  // ---- Category Master (official ZAYROVI product taxonomy) ----
   // The taxonomy is DATA, never code: Administration imports/edits the official
-  // AYROVI Warehouse Core list. The AI classifier may only pick from the ACTIVE
+  // ZAYROVI Warehouse Core list. The AI classifier may only pick from the ACTIVE
   // entries returned here; an empty master means nothing can be classified.
   router.get('/categories', requireAdmin(db, 'commerce:read'), (req, res) => {
     const includeInactive = String(req.query.includeInactive ?? 'true') !== 'false';

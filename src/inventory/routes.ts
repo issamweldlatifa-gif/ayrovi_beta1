@@ -1,5 +1,5 @@
 /**
- * AYROVI Inventory (P2.2) — API du back-office.
+ * ZAYROVI Inventory (P2.2) — API du back-office.
  *
  * Monté sous `/api/admin/inventory` par le routeur admin existant : il hérite du cookie
  * de session (`Path=/api/admin`) et rien ici n'est atteignable anonymement. Chaque route

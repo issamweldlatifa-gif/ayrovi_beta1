@@ -16,7 +16,7 @@ const images = [
 ];
 
 const product: AyrovixProduct = {
-  title: 'Chaussure AYROVI — galerie responsive',
+  title: 'Chaussure ZAYROVI — galerie responsive',
   brand: 'AYROVI',
   model: 'Gallery Test',
   description: '',

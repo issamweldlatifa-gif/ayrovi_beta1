@@ -13,12 +13,20 @@ import { documentIdentityCss, mailIdentityStyle } from '../src/services/brandDoc
 import { invoiceEmailHtml } from '../src/services/invoice';
 import { authMailTemplate } from '../src/customer/accountMail';
 
-describe('AYROVI A — enforceable identity', () => {
-  test('has only the two approved local families and pure base neutrals', () => {
+describe('ZAYROVI A — enforceable identity', () => {
+  test('has only the two approved local families and the official palette', () => {
     expect(BRAND.fonts.map(f => f.family)).toEqual(['Zalando Sans', 'Noto Sans Arabic']);
+    // Palette officielle du 2026-10-15 : noir #0A0A0A · blanc · violet électrique #571EF6 · gris clair #F2F2F2.
+    // Décision client n° 1 du 17/10/2026 : la SURFACE passe au blanc — plus aucun
+    // fond gris, les sections se séparent par un filet (`line`). Le gris clair
+    // ne subsiste que dans le rôle `shimmer` (squelette de chargement).
     expect(BRAND.colors.canvas).toBe('#FFFFFF');
-    expect(BRAND.colors.ink).toBe('#000000');
-    expect(BRAND.colors.accent).toBe('#FF7900'); // Existing brand accent unchanged.
+    expect(BRAND.colors.ink).toBe('#0A0A0A');
+    expect(BRAND.colors.surface).toBe('#FFFFFF');
+    expect(BRAND.colors.shimmer).toBe('#F2F2F2');
+    expect(BRAND.colors.accent).toBe('#571EF6'); // L'orange #FF7900 est retiré.
+    expect(BRAND.colors.action).toBe('#571EF6');
+    expect(BRAND.colors.onAction).toBe('#FFFFFF');
     expect(auditBrand()).toEqual([]);
   });
   test('normalizes legacy/malicious CMS data without mutating content or price data', () => {
@@ -82,8 +90,8 @@ describe('AYROVI A — enforceable identity', () => {
     expect(invoice).not.toContain('<img src=x>');
   });
   test('mixed Arabic/Latin PDF ordering keeps numeric amounts and Latin brands LTR', () => {
-    const runs = orderPdfTextRuns('فاتورة AYROVI 189.900 TND (2026)');
-    expect(runs[0].text).toBe('AYROVI 189.900 TND (2026)');
+    const runs = orderPdfTextRuns('فاتورة ZAYROVI 189.900 TND (2026)');
+    expect(runs[0].text).toBe('ZAYROVI 189.900 TND (2026)');
     expect(runs.at(-1)?.text).toBe('فاتورة');
     expect(runs.find(r => r.arabic)?.level % 2).toBe(1);
     expect(orderPdfTextRuns('Client: محمد علي — 189.900 TND').map(r=>r.text).join('')).toContain('189.900');
@@ -92,7 +100,7 @@ describe('AYROVI A — enforceable identity', () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ayrovi-font-'));
     try {
       const target = path.join(dir, 'sample.pdf');
-      await writeSimplePdf([{ text: 'Facture Éléonore — 189.900 TND', bold: true }, { text: 'مرحبا بكم في أيروفي' }, { text: 'هُوِيَّة أَيْرُوفِي', bold: true }, ...Array.from({ length: 110 }, (_, i) => ({ text: `Ligne ${i} — 90,00 €`, right: true }))], target);
+      await writeSimplePdf([{ text: 'Facture Éléonore — 189.900 TND', bold: true }, { text: 'مرحبا بكم في زايروفي' }, { text: 'هُوِيَّة أَيْرُوفِي', bold: true }, ...Array.from({ length: 110 }, (_, i) => ({ text: `Ligne ${i} — 90,00 €`, right: true }))], target);
       const bytes = fs.readFileSync(target);
       expect(bytes.subarray(0,5).toString()).toBe('%PDF-');
       expect(fs.readdirSync(dir)).toEqual(['sample.pdf']);

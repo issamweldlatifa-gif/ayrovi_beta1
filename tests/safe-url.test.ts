@@ -72,7 +72,7 @@ describe('safe remote URL resolution and pinned transport', () => {
     };
 
     const response = await fetchSafeRemote('https://merchant.example.com/item', {
-      headers: { authorization: 'Bearer secret', cookie: 'session=secret', 'user-agent': 'AYROVI-test' },
+      headers: { authorization: 'Bearer secret', cookie: 'session=secret', 'user-agent': 'ZAYROVI-test' },
     }, 3, resolver, transport);
 
     expect(await response.text()).toBe('ok');
@@ -81,7 +81,7 @@ describe('safe remote URL resolution and pinned transport', () => {
     expect(observed[1].target.addresses).toEqual(['1.1.1.1']);
     expect(observed[1].headers.has('authorization')).toBe(false);
     expect(observed[1].headers.has('cookie')).toBe(false);
-    expect(observed[1].headers.get('user-agent')).toBe('AYROVI-test');
+    expect(observed[1].headers.get('user-agent')).toBe('ZAYROVI-test');
   });
 
   test('a DNS rebinding answer change cannot replace the IP pinned for the socket', async () => {

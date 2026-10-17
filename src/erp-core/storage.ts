@@ -1,5 +1,5 @@
 /**
- * AYROVI ERP Core — Storage (P0 security foundation).
+ * ZAYROVI ERP Core — Storage (P0 security foundation).
  *
  * One rule, enforced in code: a document under the private root is NEVER
  * reachable through a public URL. Public media keeps its existing shape

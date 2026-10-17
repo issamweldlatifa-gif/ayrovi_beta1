@@ -1,5 +1,5 @@
 /**
- * AYROVI CRM 360 (E5) — écrans du module relationnel.
+ * ZAYROVI CRM 360 (E5) — écrans du module relationnel.
  *
  * Mêmes règles que les autres écrans métier du back office :
  *  • les listes sont dessinées par `DataTable` (jamais de table écrite à la main) ;
@@ -68,7 +68,7 @@ function useCrmMeta() {
 }
 
 const CrmHeader: React.FC<{ title: string; description: string; action?: React.ReactNode }> =
-  (props) => <PageHeader {...props} eyebrow="AYROVI CRM 360" />;
+  (props) => <PageHeader {...props} eyebrow="ZAYROVI CRM 360" />;
 
 /** Recherche une fiche CRM par nom ou référence puis enregistre son identifiant réel. */
 const PartyPicker: React.FC<{ value: string; onChange: (partyId: string) => void; required?: boolean }> = ({ value, onChange, required }) => {
@@ -310,7 +310,7 @@ export const CrmPartiesPage: React.FC = () => {
       <Pagination {...pagination} onChange={(page) => void load(page)} />
 
       <Modal open={Boolean(detail)} title={detail ? `Fiche ${detail.party.party_code} — ${detail.party.name}` : ''}
-        eyebrow="AYROVI CRM 360" onClose={() => setDetail(null)} wide>
+        eyebrow="ZAYROVI CRM 360" onClose={() => setDetail(null)} wide>
         {detail && (
           <div className="admin-stack">
             <div className="admin-kv-grid">
@@ -357,7 +357,7 @@ export const CrmPartiesPage: React.FC = () => {
         )}
       </Modal>
 
-      <Modal open={creating} title="Nouvelle fiche relationnelle" eyebrow="AYROVI CRM 360" onClose={() => setCreating(false)}>
+      <Modal open={creating} title="Nouvelle fiche relationnelle" eyebrow="ZAYROVI CRM 360" onClose={() => setCreating(false)}>
         <div className="admin-form-grid">
           <Field label="Type de fiche"><Select value={form.partyType} onChange={(event) => setForm({ ...form, partyType: event.target.value })} options={[{ value: 'INDIVIDUAL', label: 'Individu' }, { value: 'COMPANY', label: 'Entreprise' }]} /></Field>
           <Field label="Relation" required><Select value={form.kind} onChange={(event) => setForm({ ...form, kind: event.target.value })} options={[{ value: 'CUSTOMER', label: 'Client' }, { value: 'PARTNER', label: 'Partenaire' }, { value: 'SUPPLIER', label: 'Fournisseur' }, { value: 'PROSPECT', label: 'Prospect' }, { value: 'OTHER', label: 'Autre' }]} /></Field>
@@ -464,7 +464,7 @@ export const CrmContactsPage: React.FC = () => {
       <DataTable columns={columns} rows={rows} loading={loading} error={error || undefined} onRetry={() => void load()}
         rowActions={rowActions} emptyText="Aucun contact." />
       <Pagination {...pagination} onChange={(page) => void load(page)} />
-      <Modal open={creating || Boolean(editing)} title={editing ? 'Modifier le contact' : 'Nouveau contact'} eyebrow="AYROVI CRM 360"
+      <Modal open={creating || Boolean(editing)} title={editing ? 'Modifier le contact' : 'Nouveau contact'} eyebrow="ZAYROVI CRM 360"
         onClose={() => { setCreating(false); setEditing(null); }}>
         <div className="admin-form-grid">
           <Field label="Fiche liée" required hint="Recherchez la fiche à laquelle ajouter ce contact.">
@@ -565,7 +565,7 @@ export const CrmActivitiesPage: React.FC = () => {
       <DataTable columns={columns} rows={rows} loading={loading} error={error || undefined} onRetry={() => void load()}
         rowActions={rowActions} emptyText="Aucune activité." />
       <Pagination {...pagination} onChange={(page) => void load(page)} />
-      <Modal open={creating} title="Planifier une activité" eyebrow="AYROVI CRM 360" onClose={() => setCreating(false)}>
+      <Modal open={creating} title="Planifier une activité" eyebrow="ZAYROVI CRM 360" onClose={() => setCreating(false)}>
         <div className="admin-form-grid">
           <Field label="Nature" required><Select value={form.kind} onChange={(event) => setForm({ ...form, kind: event.target.value })}
             options={['CALL', 'MEETING', 'EMAIL', 'MESSAGE', 'VISIT', 'FOLLOW_UP', 'INTERNAL', 'OTHER'].map((value) => ({ value, label: label(value) }))} /></Field>
@@ -682,7 +682,7 @@ export const CrmTasksPage: React.FC = () => {
       <DataTable columns={columns} rows={rows} loading={loading} error={error || undefined} onRetry={() => void load()}
         rowActions={rowActions} emptyText="Aucune tâche." />
       <Pagination {...pagination} onChange={(page) => void load(page)} />
-      <Modal open={creating} title="Nouvelle tâche" eyebrow="AYROVI CRM 360" onClose={() => setCreating(false)}>
+      <Modal open={creating} title="Nouvelle tâche" eyebrow="ZAYROVI CRM 360" onClose={() => setCreating(false)}>
         <div className="admin-form-grid">
           <Field label="Titre" required full><input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} /></Field>
           <Field label="Fiche liée" hint="Recherchez la fiche concernée (optionnel).">
@@ -786,7 +786,7 @@ export const CrmIssuesPage: React.FC = () => {
       <DataTable columns={columns} rows={rows} loading={loading} error={error || undefined} onRetry={() => void load()}
         rowActions={rowActions} emptyText="Aucun dossier." />
       <Pagination {...pagination} onChange={(page) => void load(page)} />
-      <Modal open={creating} title="Ouvrir un dossier" eyebrow="AYROVI CRM 360" onClose={() => setCreating(false)}>
+      <Modal open={creating} title="Ouvrir un dossier" eyebrow="ZAYROVI CRM 360" onClose={() => setCreating(false)}>
         <div className="admin-form-grid">
           <Field label="Fiche liée" hint="Recherchez la fiche concernée (optionnel).">
             <PartyPicker value={String(form.partyId ?? '')} onChange={(partyId) => setForm({ ...form, partyId })} />
@@ -800,7 +800,7 @@ export const CrmIssuesPage: React.FC = () => {
           <Button busy={busy} disabled={!form.subject} onClick={() => void create()}>Ouvrir</Button>
         </div>
       </Modal>
-      <Modal open={Boolean(deciding)} title={`Dossier ${deciding?.issue_no ?? ''}`} eyebrow="AYROVI CRM 360" onClose={() => setDeciding(null)}>
+      <Modal open={Boolean(deciding)} title={`Dossier ${deciding?.issue_no ?? ''}`} eyebrow="ZAYROVI CRM 360" onClose={() => setDeciding(null)}>
         <div className="admin-form-grid">
           <Field label="Nouveau statut" full><Select value={nextStatus} onChange={(event) => setNextStatus(event.target.value)}
             options={['OPEN', 'IN_PROGRESS', 'WAITING', 'RESOLVED', 'CLOSED'].map((value) => ({ value, label: label(value) }))} /></Field>

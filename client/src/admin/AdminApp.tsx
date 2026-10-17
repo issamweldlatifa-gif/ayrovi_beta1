@@ -1,4 +1,5 @@
 import { FONT_STACK } from '../../../shared/brand.generated';
+import { HERO_DESTINATION_TYPES } from '../../../shared/heroDestinations';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Check, RefreshCw, ExternalLink, AlertCircle, Bell, Calculator, Calendar, Camera, ChartLine, CheckCircle2, CreditCard, Eye, Gift, Globe2, Grid,
@@ -22,9 +23,10 @@ import { InventoryMovementsPage, InventoryStockPage, InventoryStocktakesPage } f
 import { PurchasingOrdersPage, PurchasingReceiptsPage, PurchasingSuppliersPage } from './PurchasingPage';
 import { CrmActivitiesPage, CrmContactsPage, CrmDashboardPage, CrmIssuesPage, CrmPartiesPage, CrmTasksPage } from './CrmPages';
 import { MagazineAgentPage } from './MagazineAgentPage';
-import { HeroVisualsPage } from './HeroVisualsPage';
+import { HeroSlidesManagePage } from './HeroSlidesManagePage';
 import { LensSectionPage } from './LensSectionPage';
 import { HomeSectionsPage } from './HomeSectionsPage';
+import { HomeFeaturedPage } from './HomeFeaturedPage';
 import { MagazineDraftsPanel } from './MagazineDraftsPanel';
 import { PricingPage } from './AdminPricingPage';
 import { PromosPage } from './AdminPromosPage';
@@ -90,8 +92,8 @@ const resources: Record<string, ResourceDefinition> = {
     ],
   },
   news: {
-    title: 'مجلتي', singular: 'محتوى مجلتي', description: 'مجلة AYROVI التحريرية المرتبطة بالمنتجات، مع مسودات وكيل مجلتي ومراجعة بشرية قبل النشر.', endpoint: '/news', keyField: 'title', statusField: 'status', permission: 'content:write',
-    defaults: { title: '', summary: '', content: '', image: '', category: 'AYROVI', arrival_id: '', product_id: '', author: 'Équipe AYROVI', published_at: new Date().toISOString(), status: 'DRAFT' },
+    title: 'مجلتي', singular: 'محتوى مجلتي', description: 'مجلة ZAYROVI التحريرية المرتبطة بالمنتجات، مع مسودات وكيل مجلتي ومراجعة بشرية قبل النشر.', endpoint: '/news', keyField: 'title', statusField: 'status', permission: 'content:write',
+    defaults: { title: '', summary: '', content: '', image: '', category: 'AYROVI', arrival_id: '', product_id: '', author: 'Équipe ZAYROVI', published_at: new Date().toISOString(), status: 'DRAFT' },
     fields: [
       { key: 'title', label: 'Titre', type: 'text', required: true }, { key: 'category', label: 'Catégorie', type: 'select', options: ['NEW_ARRIVAL','NEW_BRAND','PROMOTION','DELIVERY','AYROVI','INFORMATION','OTHER'] },
       { key: 'summary', label: 'Résumé', type: 'textarea', full: true }, { key: 'content', label: 'Contenu', type: 'textarea', required: true, full: true }, { key: 'image', label: 'Image', type: 'image', full: true },
@@ -109,24 +111,25 @@ const resources: Record<string, ResourceDefinition> = {
     ],
   },
   hero: {
-    title: 'Hero Slider', singular: 'slide', description: 'Les slides publiques conservent la promesse AYROVI et le défilement plein écran.', endpoint: '/hero-slides', keyField: 'title', statusField: 'active', permission: 'content:write',
-    defaults: { image: '', video: '', title: 'Toute la mode du monde, livrée chez vous.', subtitle: '', cta: '', target_url: '', display_order: 0, active: true },
+    title: 'Hero Slider', singular: 'slide', description: 'Carrousel Hero de l’accueil mobile : cartes 4:5, fond adaptatif, destinations validées. Réglages globaux dans « Carrousel Hero ».', endpoint: '/hero-slides', keyField: 'title', statusField: 'active', permission: 'content:write',
+    defaults: { image: '', video: '', title: '', title_ar: '', subtitle: '', subtitle_ar: '', cta: '', cta_ar: '', target_url: '', destination_type: 'CAMPAIGN', destination_value: '', bg_mode: 'auto', bg_color: '', display_order: 0, active: true, published_from: '', published_to: '' },
     fields: [
-      { key: 'title', label: 'Titre', type: 'text', required: true }, { key: 'subtitle', label: 'Sous-titre', type: 'text' }, { key: 'image', label: 'Image', type: 'image', required: true, full: true },
-      { key: 'video', label: 'URL vidéo', type: 'text' }, { key: 'cta', label: 'CTA', type: 'text' }, { key: 'target_url', label: 'Lien cible', type: 'text' },
+      { key: 'title', label: 'Titre (FR)', type: 'text', required: true }, { key: 'title_ar', label: 'Titre (AR)', type: 'text' },
+      { key: 'subtitle', label: 'Sous-titre (FR)', type: 'text' }, { key: 'subtitle_ar', label: 'Sous-titre (AR)', type: 'text' },
+      { key: 'cta', label: 'CTA (FR)', type: 'text' }, { key: 'cta_ar', label: 'CTA (AR)', type: 'text' },
+      { key: 'image', label: 'Image (4:5 recommandé)', type: 'image', required: true, full: true }, { key: 'video', label: 'URL vidéo', type: 'text' },
+      { key: 'destination_type', label: 'Destination', type: 'select', required: true, options: [...HERO_DESTINATION_TYPES] },
+      { key: 'destination_value', label: 'Valeur (ID, mot-clé…)', type: 'text', hint: 'Requise si la destination l’exige (collection, produit, lien externe).' },
+      { key: 'target_url', label: 'Lien cible (historique)', type: 'text', hint: 'Remplacé par la destination typée ci-dessus.' },
+      { key: 'bg_mode', label: 'Fond de carte', type: 'select', options: ['auto', 'manual'] },
+      { key: 'bg_color', label: 'Couleur manuelle', type: 'text', hint: '#RRGGBB — utilisée quand le fond est manuel.' },
+      { key: 'palette', label: 'Palette extraite', type: 'text', readonly: true, hint: 'Extraite automatiquement de l’image à l’enregistrement.' },
       { key: 'display_order', label: 'Ordre', type: 'number' }, { key: 'active', label: 'Visible', type: 'boolean' },
-    ],
-  },
-  ticker: {
-    title: 'Ticker annonces', singular: 'message', description: 'Messages du bandeau supérieur AYROVI — contenu uniquement, le design reste fixe.', endpoint: '/announcements', keyField: 'text', statusField: 'active', permission: 'content:write',
-    defaults: { text: '', display_order: 0, active: true },
-    fields: [
-      { key: 'text', label: 'Message affiché', type: 'text', required: true, full: true },
-      { key: 'display_order', label: 'Ordre d’affichage', type: 'number' }, { key: 'active', label: 'Publié', type: 'boolean' },
+      { key: 'published_from', label: 'Visible du', type: 'date' }, { key: 'published_to', label: 'Visible au', type: 'date' },
     ],
   },
   assistant: {
-    title: 'Assistant IA', singular: 'connaissance', description: 'Source administrable des réponses commerciales critiques de l’Assistant AYROVI.', endpoint: '/ai-knowledge', keyField: 'question', statusField: 'active', permission: 'ai:write',
+    title: 'Assistant IA', singular: 'connaissance', description: 'Source administrable des réponses commerciales critiques de l’Assistant ZAYROVI.', endpoint: '/ai-knowledge', keyField: 'question', statusField: 'active', permission: 'ai:write',
     defaults: { category: 'FAQ', question: '', answer: '', keywords: [], priority: 0, active: true },
     fields: [
       { key: 'category', label: 'Catégorie', type: 'select', options: ['FAQ','PREDEFINED_RESPONSE','DELIVERY','PAYMENT','BRAND','ARRIVAL','PROMOTION','GENERAL'] },
@@ -171,7 +174,7 @@ const LoginPage: React.FC<{ onAuthenticated: (user: UserIdentity) => void }> = (
       {/* Identité : le verrou A.ROVI porte le nom une seule fois (emblème + « YROVI »), ici en
           version blanche puisque le panneau est en encre. La ligne de service dit ce qu'on ouvre. */}
       <section className="admin-login-brand">
-        <img src="/media/logo-ayrovi-lockup-white-orange.svg" alt="AYROVI" className="admin-login-brand__lockup" />
+        <img src="/media/logo-ayrovi-lockup-white-violet.svg?v=5.0" alt="ZAYROVI" className="admin-login-brand__lockup" />
         <span>CONSOLE D’EXPLOITATION</span>
         <h1>Le commerce mondial,<br />piloté depuis Tunis.</h1>
         <p>Contenu, arrivages, commandes, tarification et assistance — une seule source de vérité, la même que le site public.</p>
@@ -187,7 +190,7 @@ const LoginPage: React.FC<{ onAuthenticated: (user: UserIdentity) => void }> = (
       </section>
       <section className="admin-login-panel">
         <div className="admin-login-box">
-          <div className="admin-login-mobile-logo"><img src="/media/logo-ayrovi-lockup-black-orange.svg" alt="AYROVI" style={{ height: 20, width: 'auto', objectFit: 'contain' }} /></div>
+          <div className="admin-login-mobile-logo"><img src="/media/logo-ayrovi-lockup-black-violet.svg?v=5.0" alt="ZAYROVI" style={{ height: 20, width: 'auto', objectFit: 'contain' }} /></div>
           {/* Cartouche d'état : la sonde est réelle, donc le chiffre affiché est celui du serveur en face. */}
           <div className="admin-login-status" data-state={health.state} role="status" aria-live="polite">
             <i aria-hidden="true" />
@@ -314,7 +317,7 @@ const DashboardPage: React.FC<{ navigate: (section: string, request?: string) =>
     { label: 'Panier moyen', value: formatMoney(data.metrics.averageBasket), change: data.metrics.changes.averageBasket, icon: ShoppingBag },
   ];
   return <>
-    <PageHeader title="Tableau de bord" description="L’activité AYROVI consolidée en temps réel depuis SQLite." action={<Select value={days} onChange={(event) => setDays(Number(event.target.value))} options={[{value:'7',label:'7 jours'},{value:'30',label:'30 jours'},{value:'90',label:'90 jours'},{value:'365',label:'12 mois'}]} />} />
+    <PageHeader title="Tableau de bord" description="L’activité ZAYROVI consolidée en temps réel depuis SQLite." action={<Select value={days} onChange={(event) => setDays(Number(event.target.value))} options={[{value:'7',label:'7 jours'},{value:'30',label:'30 jours'},{value:'90',label:'90 jours'},{value:'365',label:'12 mois'}]} />} />
     <WorkbenchQueues navigate={navigate} />
     <div className="admin-metrics">{cards.map(({ label, value, change }) => <article key={label} className="admin-metric"><div><span>{label}</span><strong>{value}</strong><small className={change >= 0 ? 'positive' : 'negative'}>{change >= 0 ? '+' : ''}{change}% vs période précédente</small></div></article>)}</div>
     <div className="admin-arrival-summary"><article><span>Arrivages Standard actifs</span><strong>{data.metrics.activeStandardArrivals}</strong><Calendar /></article><article><span>Arrivages Express actifs</span><strong>{data.metrics.activeExpressArrivals}</strong><Truck /></article></div>
@@ -783,7 +786,7 @@ const AssistantSupportPage: React.FC<{ canWrite: boolean; requestedId?: string }
     finally { setBusy(false); }
   };
   return <>
-    <PageHeader title="Support IA" description="Demandes transférées par l’assistant à l’équipe AYROVI, avec identité vérifiée ou contact visiteur." />
+    <PageHeader title="Support IA" description="Demandes transférées par l’assistant à l’équipe ZAYROVI, avec identité vérifiée ou contact visiteur." />
     <section className="admin-list-card">
       <div className="admin-list-toolbar"><Search value={search} onChange={setSearch} placeholder="Référence, client, contact ou motif…"/><Select value={status} onChange={event=>setStatus(event.target.value)} options={[{value:'',label:'Tous les statuts'},...options(['PENDING','IN_PROGRESS','RESOLVED','CLOSED'])]}/></div>
       <DataTable rows={rows} loading={loading} emptyText="Aucun ticket support." onRowClick={open} columns={[
@@ -817,8 +820,8 @@ const CustomersPage: React.FC<{ canWrite?: boolean }> = ({canWrite=false}) => {
   const changeAccountStatus=async(status:'ACTIVE'|'BLOCKED')=>{if(!accSelected||statusBusy)return;setStatusBusy(true);try{const r=await adminApi<any>(`/customer-accounts/${accSelected.id}/status`,{method:'PUT',body:JSON.stringify({status})});setAccSelected({...accSelected,status:r.data.status});loadAccounts(accPage.page||1);}finally{setStatusBusy(false);}};
   return <><PageHeader title="Clients" description="Comptes enregistrés (Google / SMS) et fiches historiques de commande, réunis dans un seul espace."/>
     <div style={{display:'flex',gap:8,marginBottom:16}}>
-      <button className={tab==='accounts'?'admin-button admin-button--primary':'admin-button admin-button--secondary'} onClick={()=>setTab('accounts')}>Comptes enregistrés</button>
-      <button className={tab==='files'?'admin-button admin-button--primary':'admin-button admin-button--secondary'} onClick={()=>setTab('files')}>Fiches de commande</button>
+      <button type="button" className="admin-button admin-button--secondary" aria-pressed={tab==='accounts'} onClick={()=>setTab('accounts')}>Comptes enregistrés</button>
+      <button type="button" className="admin-button admin-button--secondary" aria-pressed={tab==='files'} onClick={()=>setTab('files')}>Fiches de commande</button>
     </div>
     {tab==='accounts'&&<><section className="admin-list-card"><div className="admin-list-toolbar"><Search value={accSearch} onChange={setAccSearch} placeholder="Nom, e-mail ou téléphone…"/></div><DataTable rows={accRows} loading={accLoading} onRowClick={openAccount} columns={[
       {key:'display_name',label:'Identité',render:(r)=><div><strong>{r.display_name}</strong><small className="admin-block-small">{r.email||'Compte SMS'}</small></div>},
@@ -920,7 +923,7 @@ const ReportsPage:React.FC<{canWrite:boolean}>=({canWrite})=>{
         {ayx.providers&&<div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:12}}>
           <Badge tone={ayx.providers.vision?.configured?'success':'warning'}>{ayx.providers.vision?.configured?<CheckCircle2 size={16}/>:<AlertCircle size={16}/>} AI Core Vision : {ayx.providers.vision?.configured?'Prix et compréhension actifs':'Fournisseur non configuré'}</Badge>
           <Badge tone={ayx.providers.visualSearch?.configured?'success':'warning'}>{ayx.providers.visualSearch?.configured?<CheckCircle2 size={16}/>:<AlertCircle size={16}/>} Google Lens : {ayx.providers.visualSearch?.configured?'SerpApi configuré · produits visuels actifs':'Clé manquante — SERPAPI_KEY'}</Badge>
-          <Badge tone={ayx.providers.search?.configured?'success':'warning'}>{ayx.providers.search?.configured?<CheckCircle2 size={16}/>:<AlertCircle size={16}/>} AI Core Web Search : {ayx.providers.search?.configured?`Fallback texte actif · 1 recherche max/requête`:'Fournisseur non configuré'}</Badge>
+          <Badge tone={ayx.providers.search?.configured?'success':'warning'}>{ayx.providers.search?.configured?<CheckCircle2 size={16}/>:<AlertCircle size={16}/>} Recherche produits : {ayx.providers.search?.configured?(ayx.providers.search?.serpApiConfigured?`SerpApi Shopping principal${ayx.providers.search?.aiCoreConfigured?' · AI Core secours':''}`:'AI Core secours actif'):'Fournisseur non configuré'}</Badge>
         </div>}
         <div className="admin-kpi-grid" style={{marginBottom:12}}>
           <section className="admin-kpi"><span>Analyses</span><strong>{ayx.last7d.total}</strong><small className="flex flex-wrap items-center gap-2"><span className="inline-flex items-center gap-1"><Camera size={12} />{ayx.last7d.image}</span><span className="inline-flex items-center gap-1"><Link2 size={12} />{ayx.last7d.url}</span><span className="inline-flex items-center gap-1"><Grid size={12} />{ayx.last7d.qr}</span></small></section>
@@ -942,14 +945,14 @@ const ReportsPage:React.FC<{canWrite:boolean}>=({canWrite})=>{
 
 // ===== قسم التطوير: ثيم المنصة بالكامل + القنوات + نص الفوتر =====
 const THEME_PRESETS=[
-  {id:'noir',label:'Noir AYROVI',primary:'#111318',primaryDark:'#050505',primaryLight:'#3f3f46',accent:'#ff6900',gradient:'linear-gradient(135deg,#050505 0%,#111318 100%)',font:FONT_STACK},
-  {id:'nuit',label:'Bleu nuit',primary:'#2563eb',primaryDark:'#1d4ed8',primaryLight:'#60a5fa',accent:'#ff6900',gradient:'linear-gradient(135deg,#0b1e4b 0%,#2563eb 100%)',font:FONT_STACK},
-  {id:'emeraude',label:'Émeraude',primary:'#059669',primaryDark:'#047857',primaryLight:'#34d399',accent:'#ff6900',gradient:'linear-gradient(135deg,#064e3b 0%,#059669 100%)',font:FONT_STACK},
-  {id:'framboise',label:'Framboise',primary:'#db2777',primaryDark:'#be185d',primaryLight:'#f472b6',accent:'#ff6900',gradient:'linear-gradient(135deg,#500724 0%,#db2777 100%)',font:FONT_STACK},
-  {id:'sable',label:'Sable doré',primary:'#b45309',primaryDark:'#92400e',primaryLight:'#d97706',accent:'#ff6900',gradient:'linear-gradient(135deg,#431407 0%,#b45309 100%)',font:FONT_STACK},
-  {id:'charbon',label:'Charbon chic',primary:'#334155',primaryDark:'#1e293b',primaryLight:'#64748b',accent:'#ff6900',gradient:'linear-gradient(135deg,#0f172a 0%,#334155 100%)',font:FONT_STACK},
+  {id:'noir',label:'Noir ZAYROVI',primary:'#111318',primaryDark:'#050505',primaryLight:'#3f3f46',accent:'#571ef6',gradient:'linear-gradient(135deg,#050505 0%,#111318 100%)',font:FONT_STACK},
+  {id:'nuit',label:'Bleu nuit',primary:'#2563eb',primaryDark:'#1d4ed8',primaryLight:'#60a5fa',accent:'#571ef6',gradient:'linear-gradient(135deg,#0b1e4b 0%,#2563eb 100%)',font:FONT_STACK},
+  {id:'emeraude',label:'Émeraude',primary:'#059669',primaryDark:'#047857',primaryLight:'#34d399',accent:'#571ef6',gradient:'linear-gradient(135deg,#064e3b 0%,#059669 100%)',font:FONT_STACK},
+  {id:'framboise',label:'Framboise',primary:'#db2777',primaryDark:'#be185d',primaryLight:'#f472b6',accent:'#571ef6',gradient:'linear-gradient(135deg,#500724 0%,#db2777 100%)',font:FONT_STACK},
+  {id:'sable',label:'Sable doré',primary:'#b45309',primaryDark:'#92400e',primaryLight:'#d97706',accent:'#571ef6',gradient:'linear-gradient(135deg,#431407 0%,#b45309 100%)',font:FONT_STACK},
+  {id:'charbon',label:'Charbon chic',primary:'#334155',primaryDark:'#1e293b',primaryLight:'#64748b',accent:'#571ef6',gradient:'linear-gradient(135deg,#0f172a 0%,#334155 100%)',font:FONT_STACK},
 ];
-const FONT_OPTIONS=[{value:FONT_STACK,label:'AYROVI A — identité verrouillée'}];
+const FONT_OPTIONS=[{value:FONT_STACK,label:'ZAYROVI A — identité verrouillée'}];
 const DesignPage:React.FC<{canWrite:boolean}>=({canWrite})=>{
   const [rows,setRows]=useState<any[]>([]);const [theme,setTheme]=useState<any>(THEME_PRESETS[0]);const [footerAbout,setFooterAbout]=useState('');
   const [channels,setChannels]=useState({facebook:'',instagram:'',tiktok:'',whatsapp:''});
@@ -965,11 +968,11 @@ const DesignPage:React.FC<{canWrite:boolean}>=({canWrite})=>{
   const saveRow=(key:string,value:any)=>{const row=rows.find((r:any)=>r.setting_key===key);if(!row)return Promise.resolve();return adminApi(`/settings/${row.id}`,{method:'PUT',body:JSON.stringify({value})});};
   const save=async()=>{setBusy(true);try{await Promise.all([saveRow('site_theme',theme),saveRow('footer_about',footerAbout),saveRow('facebook_url',channels.facebook),saveRow('instagram_url',channels.instagram),saveRow('tiktok_url',channels.tiktok),saveRow('whatsapp_url',channels.whatsapp)]);await load();setToast({message:'Design publié — la boutique adopte le nouveau thème (rechargement des pages).',tone:'success'});}catch(e:any){setToast({message:e.message,tone:'error'});}finally{setBusy(false);}};
   const applyPreset=(preset:any)=>setTheme({...theme,...preset,preset:preset.id});
-  return <><PageHeader title="Développement & design" description="Système AYROVI 70% blanc / 25% noir / 5% orange. Inter + Noto Sans Arabic unifient latin et arabe." action={canWrite?<Button busy={busy} onClick={save}>Publier le design</Button>:undefined}/>
+  return <><PageHeader title="Développement & design" description="Palette officielle ZAYROVI : 50 % blanc · 35 % noir · 5 % gris clair · violet ≈ 3 % (2 % violet électrique + 1 % violet clair), réservé à l’action. Zalando Sans + Noto Sans Arabic unifient latin et arabe." action={canWrite?<Button busy={busy} onClick={save}>Publier le design</Button>:undefined}/>
   <div className="admin-report-grid">
     <section className="admin-card"><CardTitle title="Modèles prêts" subtitle="Choisissez un modèle, personnalisez ensuite ses couleurs"/><div className="admin-theme-grid">{THEME_PRESETS.map(preset=><button key={preset.id} type="button" disabled={!canWrite} className={`admin-theme-card ${theme.preset===preset.id?'is-active':''}`} onClick={()=>applyPreset(preset)}><i style={{background:preset.gradient}}/><span>{preset.label}</span><small>{preset.primary} · {preset.accent}</small></button>)}</div>
     <div className="admin-form-row" style={{marginTop:16}}><Field label="Couleur principale" full><input type="color" value={theme.primary} disabled={!canWrite} onChange={e=>setTheme({...theme,preset:'custom',primary:e.target.value})}/></Field><Field label="Accent (promos)" full><input type="color" value={theme.accent} disabled={!canWrite} onChange={e=>setTheme({...theme,preset:'custom',accent:e.target.value})}/></Field><Field label="Police" full><Select disabled value={FONT_STACK} onChange={e=>setTheme({...theme,preset:'custom',font:FONT_STACK})} options={FONT_OPTIONS}/></Field></div>
-    <div className="admin-theme-preview" style={{background:theme.gradient}}><strong>Boutique AYROVI</strong><span>70% blanc · 25% noir · 5% orange</span><button style={{background:theme.accent,color:'#fff'}} type="button">CTA</button></div></section>
+    <div className="admin-theme-preview" style={{background:theme.gradient}}><strong>Boutique ZAYROVI</strong><span>50 % blanc · 35 % noir · 5 % gris · violet ≈ 3 %</span><button style={{background:theme.accent,color:'#fff'}} type="button">CTA</button></div></section>
     <section className="admin-card"><CardTitle title="Canaux & pied de page" subtitle="Liens affichés dans la section « Nos canaux » du site"/><div className="admin-settings-list">
       <Field label="Facebook" full><input disabled={!canWrite} value={channels.facebook} onChange={e=>setChannels({...channels,facebook:e.target.value})} placeholder="https://facebook.com/ayrovi"/></Field>
       <Field label="Instagram" full><input disabled={!canWrite} value={channels.instagram} onChange={e=>setChannels({...channels,instagram:e.target.value})} placeholder="https://instagram.com/ayrovi"/></Field>
@@ -990,7 +993,7 @@ const AdminShell:React.FC<{user:UserIdentity;onLogout:()=>void}>=({user,onLogout
   const { descriptorFor } = useBackOffice();
   const renderSection=(ctx:BackOfficeRenderContext)=>{
     const {section,requestedReview,pendingMagazineDraft,openMagazineDraft,clearPendingMagazineDraft,can:has}=ctx;
-  let page:React.ReactNode;if(section==='dashboard')page=<DashboardPage navigate={ctx.navigate}/>;else if(section==='news')page=<MagazinePage canWrite={has('content:write')} pendingDraftId={pendingMagazineDraft||undefined} onPendingHandled={clearPendingMagazineDraft}/>;else if(section==='magazine-agent')page=<MagazineAgentPage canWrite={has('content:write')} onOpenMagazine={openMagazineDraft}/>;else if(resources[section])page=<ContentPage resource={section} canWrite={has(resources[section].permission)}/>;else if(section==='arrival-ingestion')page=<ArrivalIngestionPage canWrite={has('orders:write')} canManageStores={has('settings:write')}/>;else if(section==='orders')page=<OrdersPage canWrite={has('orders:write')} canPay={has('payments:write')} initialStatus={requestedReview||undefined}/>;else if(section==='lens-requests')page=<LensRequestsPage canWrite={has('orders:write')} requestedId={requestedReview||undefined}/>;else if(section==='assistant-support')page=<AssistantSupportPage canWrite={has('orders:write')} requestedId={requestedReview||undefined}/>;else if(section==='hero-visuals')page=<HeroVisualsPage canWrite={has('content:write')}/>;else if(section==='lens-section')page=<LensSectionPage canWrite={has('content:write')}/>;else if(section==='home-sections')page=<HomeSectionsPage canWrite={has('content:write')}/>;else if(section==='social')page=<SocialAdminPage/>;else if(section==='lens-lab')page=<LensLabPage/>;else if(section==='ai-discovery')page=<AiDiscoveryPage/>;else if(section==='customers')page=<CustomersPage canWrite={has('orders:write')}/>;else if(section==='pricing')page=<PricingPage canWrite={has('pricing:write')}/>;else if(section==='promos')page=<PromosPage canWrite={has('pricing:write')}/>;else if(section==='reports')page=<ReportsPage canWrite={has('reports:write')}/>;else if(section==='interface')page=<InterfaceStudio canWrite={has('settings:write')}/>;else if(section==='design')page=<DesignPage canWrite={has('settings:write')}/>;else if(section==='settings')page=<SettingsPage canWrite={has('settings:write')}/>;else if(section==='users')page=<UsersPage/>;else if(section==='audit')page=<AuditPage/>;else if(section==='catalogue-products')page=<CatalogueProductsPage/>;else if(section==='catalogue-categories')page=<CatalogueCategoriesPage/>;else if(section==='catalogue-brands')page=<CatalogueBrandsPage/>;else if(section==='erp-employees')page=<ErpEmployeesPage canManage={has('users:write')}/>;else if(section==='erp-organization')page=<ErpOrganizationPage canManage={has('users:write')}/>;else if(section==='erp-permissions')page=<ErpPermissionsPage canManage={has('users:write')} role={user.role}/>;else if(section==='erp-audit')page=<ErpAuditPage/>;else if(section==='erp-events')page=<ErpEventsPage/>;else if(section==='erp-environment')page=<ErpEnvironmentPage/>;
+  let page:React.ReactNode;if(section==='dashboard')page=<DashboardPage navigate={ctx.navigate}/>;else if(section==='news')page=<MagazinePage canWrite={has('content:write')} pendingDraftId={pendingMagazineDraft||undefined} onPendingHandled={clearPendingMagazineDraft}/>;else if(section==='magazine-agent')page=<MagazineAgentPage canWrite={has('content:write')} onOpenMagazine={openMagazineDraft}/>;else if(section==='hero')page=<HeroSlidesManagePage canWrite={has('content:write')}/>;else if(resources[section])page=<ContentPage resource={section} canWrite={has(resources[section].permission)}/>;else if(section==='arrival-ingestion')page=<ArrivalIngestionPage canWrite={has('orders:write')} canManageStores={has('settings:write')}/>;else if(section==='orders')page=<OrdersPage canWrite={has('orders:write')} canPay={has('payments:write')} initialStatus={requestedReview||undefined}/>;else if(section==='lens-requests')page=<LensRequestsPage canWrite={has('orders:write')} requestedId={requestedReview||undefined}/>;else if(section==='assistant-support')page=<AssistantSupportPage canWrite={has('orders:write')} requestedId={requestedReview||undefined}/>;else if(section==='lens-section')page=<LensSectionPage canWrite={has('content:write')}/>;else if(section==='home-sections')page=<HomeSectionsPage canWrite={has('content:write')}/>;else if(section==='home-featured')page=<HomeFeaturedPage canWrite={has('content:write')}/>;else if(section==='social')page=<SocialAdminPage/>;else if(section==='lens-lab')page=<LensLabPage/>;else if(section==='ai-discovery')page=<AiDiscoveryPage/>;else if(section==='customers')page=<CustomersPage canWrite={has('orders:write')}/>;else if(section==='pricing')page=<PricingPage canWrite={has('pricing:write')}/>;else if(section==='promos')page=<PromosPage canWrite={has('pricing:write')}/>;else if(section==='reports')page=<ReportsPage canWrite={has('reports:write')}/>;else if(section==='interface')page=<InterfaceStudio canWrite={has('settings:write')}/>;else if(section==='design')page=<DesignPage canWrite={has('settings:write')}/>;else if(section==='settings')page=<SettingsPage canWrite={has('settings:write')}/>;else if(section==='users')page=<UsersPage/>;else if(section==='audit')page=<AuditPage/>;else if(section==='catalogue-products')page=<CatalogueProductsPage/>;else if(section==='catalogue-categories')page=<CatalogueCategoriesPage/>;else if(section==='catalogue-brands')page=<CatalogueBrandsPage/>;else if(section==='erp-employees')page=<ErpEmployeesPage canManage={has('users:write')}/>;else if(section==='erp-organization')page=<ErpOrganizationPage canManage={has('users:write')}/>;else if(section==='erp-permissions')page=<ErpPermissionsPage canManage={has('users:write')} role={user.role}/>;else if(section==='erp-audit')page=<ErpAuditPage/>;else if(section==='erp-events')page=<ErpEventsPage/>;else if(section==='erp-environment')page=<ErpEnvironmentPage/>;
     else if(section==='inventory')page=<InventoryStockPage/>;
     else if(section==='inventory-movements')page=<InventoryMovementsPage/>;
     else if(section==='inventory-stocktakes')page=<InventoryStocktakesPage/>;
@@ -1019,7 +1022,7 @@ export const AdminApp:React.FC=()=>{
   const[user,setUser]=useState<UserIdentity|null>(null);const[loading,setLoading]=useState(true);
   // Le titre de l'onglet : la console s'annonce comme console, pas avec le titre marketing du site.
   useEffect(()=>{
-    const previous=document.title;document.title='AYROVI · Console d’exploitation';
+    const previous=document.title;document.title='ZAYROVI · Console d’exploitation';
     return()=>{document.title=previous;};
   },[]);
   useEffect(()=>{
@@ -1029,7 +1032,7 @@ export const AdminApp:React.FC=()=>{
     loadIdentity().then((identity)=>{if(active)setUser(identity);}).catch((e)=>{if(!(e instanceof ApiError&&e.status===401))console.warn(e);}).finally(()=>{if(active)setLoading(false);});
     return()=>{active=false;window.removeEventListener(ADMIN_SESSION_EXPIRED_EVENT,resetExpiredSession);};
   },[]);
-  if(loading)return <div className="admin-boot"><img src="/media/logo-ayrovi.png" alt="" className="ay-boot-mark" style={{width:52,height:52,objectFit:'contain'}} /><span/></div>;
+  if(loading)return <div className="admin-boot"><img src="/media/logo-ayrovi.png?v=5.0" alt="" className="ay-boot-mark" style={{width:52,height:52,objectFit:'contain'}} /><span/></div>;
   if(!user)return <LoginPage onAuthenticated={setUser}/>;
   // Un seul provider pour tout le back office : contexte, navigation et descripteurs partagés.
   return <BackOfficeProvider><AdminShell user={user} onLogout={async()=>{await logout();setUser(null);}}/></BackOfficeProvider>;

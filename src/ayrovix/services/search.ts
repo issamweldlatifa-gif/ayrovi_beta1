@@ -1,13 +1,15 @@
 import type { QatafoDatabase } from '../../db/database';
 import type { AyrovixCandidate, AyrovixIdentification } from '../types';
 import { estimateWithDb } from './currency';
-import { filterDisplayableCandidates, filterWithFallback, harvestForScrape, withDisplayRating } from './candidatePolicy';
+import { filterDisplayableCandidates, filterWithFallback, harvestForScrape, hasValidProductUrl, withDisplayRating } from './candidatePolicy';
 import { getAyroviAiCore } from '../../ai-core/core';
 import { isAiFeatureEnabled } from '../../ai-core/config';
+import { readLimitedText } from '../../services/safeUrl';
 
 /**
- * AYROVIX owns text discovery for links, QR/barcodes and Lens fallback.
- * Provider web-search wire details stay behind AYROVI AI Core.
+ * AYROVIX owns product discovery for text, QR/barcodes and Lens fallback.
+ * SerpApi Google Shopping is the primary product provider when its server-side
+ * key exists; ZAYROVI AI Core remains a no-price link fallback.
  */
 
 const STOPWORDS = new Set(['the', 'and', 'pour', 'avec', 'les', 'des', 'une', 'femme', 'homme', 'femmes', 'hommes', 'new', 'style', 'mode', 'de', 'du', 'en', 'au', 'aux']);
@@ -20,11 +22,22 @@ function searchBudgetMs(): number {
   return Number.isFinite(configured) ? Math.min(8_000, Math.max(1_200, configured)) : 4_200;
 }
 
-function externalWebSearchEnabled(): boolean {
-  // This service owns only a provider-neutral capability flag. Adapter choice
-  // and credentials remain exclusively inside AYROVI AI Core.
+function serpApiKey(): string | null {
+  // Keep both aliases aligned with Google Lens and product enrichment.
+  return process.env.SERPAPI_KEY?.trim() || process.env.SERPAPI_API_KEY?.trim() || null;
+}
+
+function serpApiShoppingEnabled(): boolean {
+  return Boolean(serpApiKey());
+}
+
+function aiCoreWebSearchEnabled(): boolean {
   return isAiFeatureEnabled('web-search')
     && getAyroviAiCore().responses().isConfigured();
+}
+
+function externalWebSearchEnabled(): boolean {
+  return serpApiShoppingEnabled() || aiCoreWebSearchEnabled();
 }
 
 function remainingSearchMs(deadline: number, perRequestMax: number): number {
@@ -72,16 +85,24 @@ export function scoreCandidate(
   return clampMatch(score);
 }
 
+/**
+ * Interrupteur du catalogue ZAYROVI dans les recherches (Lens, assistant, liens).
+ * DÉSACTIVÉ : aucune recherche ni résultat n'interroge le catalogue tant que le
+ * propriétaire ne l'a pas réactivé explicitement.
+ */
+export const AYROVI_CATALOG_SEARCH_ENABLED = false;
+
 export function catalogSearch(
   db: QatafoDatabase,
   identification: AyrovixIdentification | null,
   query: string,
   limit = 6,
 ): AyrovixCandidate[] {
+  if (!AYROVI_CATALOG_SEARCH_ENABLED) return [];
   const rows = db.all<any>(
     `SELECT id, name, brand_name, image, source_url, source_platform, stock_status,
             original_price, currency, final_price
-     FROM products WHERE status='ACTIVE' ORDER BY updated_at DESC LIMIT 400`,
+     FROM products WHERE status='ACTIVE' AND visibility='CATALOG' ORDER BY updated_at DESC LIMIT 400`,
   );
   const candidates = rows.map((row) => {
     const title = `${row.brand_name ? `${row.brand_name} ` : ''}${row.name}`;
@@ -95,7 +116,7 @@ export function catalogSearch(
       model: null,
       colors: [],
       sizes: [],
-      source: 'Collection AYROVI',
+      source: 'Collection ZAYROVI',
       sourceUrl: row.source_url || '',
       image: row.image || '',
       // An ACTIVE catalog listing is not proof of stock: use its recorded status.
@@ -140,19 +161,149 @@ function merchantLabel(sourceUrl: string): string {
   }
 }
 
-/** Provider-neutral server-side Web Search: one search at most per query. */
-export async function providerWebSearch(
+function normalizeShoppingCurrency(raw: unknown): string | null {
+  const value = String(raw || '').trim().toUpperCase();
+  const known: Record<string, string> = {
+    '$': 'USD', 'US$': 'USD', USD: 'USD',
+    '€': 'EUR', EUR: 'EUR',
+    '£': 'GBP', GBP: 'GBP',
+    'د.ت': 'TND', DT: 'TND', TND: 'TND',
+    'CA$': 'CAD', CAD: 'CAD',
+    'AU$': 'AUD', AUD: 'AUD',
+  };
+  return known[value] || (/^[A-Z]{3}$/.test(value) ? value : null);
+}
+
+function shoppingCurrency(row: any): string | null {
+  const explicit = normalizeShoppingCurrency(row?.currency ?? row?.price?.currency);
+  if (explicit) return explicit;
+  const rawPrice = typeof row?.price === 'string'
+    ? row.price
+    : String(row?.price?.raw ?? row?.price?.displayed_value ?? '');
+  const upper = `${rawPrice} ${String(row?.snippet || '')}`.toUpperCase();
+  // Specific dollar variants must be checked before the generic dollar sign.
+  if (/\bCAD\b|CA\$/.test(upper)) return 'CAD';
+  if (/\bAUD\b|AU\$/.test(upper)) return 'AUD';
+  if (/\bTND\b|د\.ت|\bDT\b/.test(upper)) return 'TND';
+  if (/\bEUR\b|€/.test(upper)) return 'EUR';
+  if (/\bGBP\b|£/.test(upper)) return 'GBP';
+  if (/\bUSD\b|US\$|\$/.test(upper)) return 'USD';
+  return null;
+}
+
+function shoppingPrice(row: any): number | null {
+  const direct = Number(row?.extracted_price ?? row?.price?.extracted_value ?? row?.price?.value);
+  if (Number.isFinite(direct) && direct > 0) return direct;
+  return null;
+}
+
+function shoppingCandidates(payload: any, limit: number): AyrovixCandidate[] {
+  const rows = Array.isArray(payload?.shopping_results) ? payload.shopping_results : [];
+  const candidates: AyrovixCandidate[] = [];
+  const seen = new Set<string>();
+  for (const row of rows) {
+    const sourceUrl = [row?.link, row?.merchant?.link, row?.product_link]
+      .map((value) => String(value || '').trim())
+      .find((value) => hasValidProductUrl(value));
+    const title = String(row?.title || '').replace(/\s+/g, ' ').trim();
+    const price = shoppingPrice(row);
+    const currency = shoppingCurrency(row);
+    if (!sourceUrl || title.length < 4 || !price || !currency || seen.has(sourceUrl)) continue;
+    seen.add(sourceUrl);
+    const index = candidates.length;
+    const image = String(row?.thumbnail || row?.image || '').trim();
+    const rating = Number(row?.rating ?? row?.product_rating);
+    const ratingCount = Number(row?.reviews ?? row?.reviews_count);
+    candidates.push({
+      id: `shopping_${index}_${Buffer.from(sourceUrl).toString('base64url').slice(0, 10)}`,
+      kind: 'external',
+      title: title.slice(0, 180),
+      description: typeof row?.snippet === 'string' ? row.snippet.trim().slice(0, 500) || null : null,
+      brand: typeof row?.brand === 'string' ? row.brand.trim().slice(0, 100) || null : null,
+      model: null,
+      colors: [],
+      sizes: [],
+      source: String(row?.source || row?.merchant?.name || merchantLabel(sourceUrl)).trim().slice(0, 80),
+      sourceUrl,
+      image: /^https?:\/\//i.test(image) ? image : '',
+      images: /^https?:\/\//i.test(image) ? [image] : [],
+      price,
+      currency,
+      priceTnd: null,
+      priceOrigin: 'search',
+      priceVerificationStatus: 'PENDING_MANUAL',
+      availability: row?.in_stock === true ? 'in_stock'
+        : row?.in_stock === false ? 'out_of_stock'
+          : 'unknown',
+      sourceCondition: typeof row?.condition === 'string' ? row.condition.trim().slice(0, 60) || null : null,
+      rating: Number.isFinite(rating) && rating > 0 && rating <= 5 ? rating : null,
+      ratingCount: Number.isFinite(ratingCount) && ratingCount >= 0 ? ratingCount : null,
+      ratingKind: Number.isFinite(rating) && rating > 0 && rating <= 5 ? 'merchant' : 'match',
+      match: clampMatch(94 - index * 2),
+    });
+    if (candidates.length >= limit) break;
+  }
+  return candidates;
+}
+
+/** One paid Google Shopping request at most per product query. */
+export async function serpApiShoppingSearch(
   query: string,
   limit = 6,
   deadline = Date.now() + searchBudgetMs(),
 ): Promise<AyrovixCandidate[]> {
+  const key = serpApiKey();
+  const normalizedQuery = query.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200);
+  if (!key || normalizedQuery.length < 2 || !searchHasTime(deadline, 500)) return [];
+  const configuredCountry = (process.env.AYROVIX_SHOPPING_COUNTRY || process.env.AYROVIX_LENS_COUNTRY || '').trim().toLowerCase();
+  const country = /^[a-z]{2}$/.test(configuredCountry) ? configuredCountry : 'fr';
+  const params = new URLSearchParams({
+    engine: 'google_shopping',
+    q: normalizedQuery,
+    hl: 'fr',
+    gl: country,
+    api_key: key,
+    num: String(Math.max(1, Math.min(20, Math.floor(limit)))),
+  });
+  try {
+    const response = await fetch(`https://serpapi.com/search.json?${params.toString()}`, {
+      signal: AbortSignal.timeout(remainingSearchMs(deadline, 3_500)),
+    });
+    if (!response.ok) {
+      console.warn(`[AYROVIX serpapi-shopping] HTTP ${response.status}`);
+      return [];
+    }
+    const text = await readLimitedText(response, 2_000_000);
+    let payload: any;
+    try { payload = JSON.parse(text); } catch {
+      console.warn('[AYROVIX serpapi-shopping] invalid JSON');
+      return [];
+    }
+    if (payload?.error) {
+      console.warn('[AYROVIX serpapi-shopping] API error');
+      return [];
+    }
+    const candidates = shoppingCandidates(payload, limit);
+    console.log(`[AYROVIX serpapi-shopping] ${candidates.length} priced candidates`);
+    return candidates;
+  } catch (error: any) {
+    console.warn(`[AYROVIX serpapi-shopping] ${error?.name === 'TimeoutError' ? 'timeout' : 'unavailable'}`);
+    return [];
+  }
+}
+
+async function aiCoreWebSearch(
+  query: string,
+  limit: number,
+  deadline: number,
+): Promise<AyrovixCandidate[]> {
   const provider = getAyroviAiCore().responses();
-  if (!externalWebSearchEnabled() || !searchHasTime(deadline, 500)) return [];
+  if (!aiCoreWebSearchEnabled() || !searchHasTime(deadline, 500)) return [];
   try {
     const result = await provider.complete({
       workload: 'research',
       modelClass: 'fast',
-      instructions: 'You are AYROVI shopping search. Always run exactly one web search. Prefer direct merchant product pages. Exclude news, reviews and generic search pages. Keep the final answer very short.',
+      instructions: 'You are ZAYROVI shopping search. Always run exactly one web search. Prefer direct merchant product pages. Exclude news, reviews and generic search pages. Keep the final answer very short.',
       messages: [{
         role: 'user',
         content: [{ type: 'text', text: `Find direct product pages selling this exact item or code: ${query.slice(0, 200)}` }],
@@ -166,7 +317,7 @@ export async function providerWebSearch(
     for (const item of result.webResults) {
       const sourceUrl = String(item.url || '').trim();
       const title = String(item.title || '').replace(/\s+/g, ' ').trim();
-      if (!/^https?:\/\//i.test(sourceUrl) || title.length < 5) continue;
+      if (!hasValidProductUrl(sourceUrl) || title.length < 5) continue;
       const index = candidates.length;
       candidates.push({
         id: `web_${index}_${Buffer.from(sourceUrl).toString('base64url').slice(0, 10)}`,
@@ -186,12 +337,30 @@ export async function providerWebSearch(
       });
       if (candidates.length >= limit) break;
     }
-    console.log(`[AYROVIX provider-search] ${candidates.length} candidates, searches=${result.usage?.webSearchCalls || 0}`);
+    console.log(`[AYROVIX ai-core-search] ${candidates.length} candidates, searches=${result.usage?.webSearchCalls || 0}`);
     return candidates;
   } catch (error: any) {
-    console.warn(`[AYROVIX provider-search] ${error?.code === 'PROVIDER_TIMEOUT' || error?.name === 'TimeoutError' ? 'timeout' : 'unavailable'}`);
+    console.warn(`[AYROVIX ai-core-search] ${error?.code === 'PROVIDER_TIMEOUT' || error?.name === 'TimeoutError' ? 'timeout' : 'unavailable'}`);
     return [];
   }
+}
+
+/**
+ * Product search shared by mobile text, QR/barcode and assistant flows.
+ * SerpApi is primary because Shopping returns actionable prices; AI Core is
+ * only tried when Shopping is unavailable or returns no priced merchant page.
+ */
+export async function providerWebSearch(
+  query: string,
+  limit = 6,
+  deadline = Date.now() + searchBudgetMs(),
+): Promise<AyrovixCandidate[]> {
+  if (!externalWebSearchEnabled() || !searchHasTime(deadline, 500)) return [];
+  if (serpApiShoppingEnabled()) {
+    const shopping = await serpApiShoppingSearch(query, limit, deadline);
+    if (shopping.length) return shopping;
+  }
+  return aiCoreWebSearch(query, limit, deadline);
 }
 
 /** Backward-compatible Phase 1 alias; new business code uses providerWebSearch. */
@@ -263,8 +432,8 @@ export async function searchCandidates(
  *
  * Identité produit par signaux disponibles : marque + recouvrement des tokens du
  * titre (Jaccard ≥ 0.6 ; le modèle/GTIN, quand il est dans le titre, participe
- * naturellement aux tokens). Le catalogue AYROVI reste à part : c'est l'offre
- * propre d'AYROVI, pas une offre externe à regrouper.
+ * naturellement aux tokens). Le catalogue ZAYROVI reste à part : c'est l'offre
+ * propre de ZAYROVI, pas une offre externe à regrouper.
  */
 export function groupOffers(candidates: AyrovixCandidate[]): AyrovixCandidate[] {
   const passthrough = candidates.filter((candidate) => candidate.kind !== 'external');
@@ -305,16 +474,25 @@ export function groupOffers(candidates: AyrovixCandidate[]): AyrovixCandidate[] 
 export interface ProviderSearchHealth {
   configured: boolean;
   model: string;
+  primary: 'serpapi-google-shopping' | 'ayrovi-ai-core' | null;
+  serpApiConfigured: boolean;
+  aiCoreConfigured: boolean;
   maxUsesPerQuery: number;
   timeoutMs: number;
 }
 
 export function checkProviderSearchHealth(): ProviderSearchHealth {
   const provider = getAyroviAiCore().responses();
+  const serpApiConfigured = serpApiShoppingEnabled();
+  const aiCoreConfigured = aiCoreWebSearchEnabled();
   return {
-    configured: externalWebSearchEnabled(),
-    model: provider.resolveModel('research', 'fast'),
-    maxUsesPerQuery: 1,
+    configured: serpApiConfigured || aiCoreConfigured,
+    model: serpApiConfigured ? 'serpapi/google_shopping' : provider.resolveModel('research', 'fast'),
+    primary: serpApiConfigured ? 'serpapi-google-shopping' : aiCoreConfigured ? 'ayrovi-ai-core' : null,
+    serpApiConfigured,
+    aiCoreConfigured,
+    // One Shopping query, then at most one AI Core fallback when no priced row exists.
+    maxUsesPerQuery: Number(serpApiConfigured) + Number(aiCoreConfigured),
     timeoutMs: searchBudgetMs(),
   };
 }

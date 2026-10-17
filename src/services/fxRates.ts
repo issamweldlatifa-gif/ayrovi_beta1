@@ -1,5 +1,5 @@
 /**
- * AYROVI · Taux de change LIVE (audit pricing 23/09/2026 — décision Issam).
+ * ZAYROVI · Taux de change LIVE (audit pricing 23/09/2026 — décision Issam).
  *
  * Pourquoi : les taux étaient des graines d'installation (EUR=4 → effectif 4.12)
  * jamais rafraîchies alors que le marché cotait ~3.38 TND/€, soit ~+20 % sur

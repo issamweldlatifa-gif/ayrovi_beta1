@@ -1,5 +1,5 @@
 /**
- * AYROVI CRM 360 (E1/E2) — tests d'acceptation du module relationnel.
+ * ZAYROVI CRM 360 (E1/E2) — tests d'acceptation du module relationnel.
  *
  * Ce qui est verrouillé ici :
  *  • fondation : schéma idempotent, séquences, grants en données, registre `crm360` ;
@@ -35,7 +35,7 @@ const content = request.agent(app);
 
 async function login(agent: request.Agent, email: string, password: string): Promise<string> {
   const response = await agent
-    .set('User-Agent', 'AYROVI-CrmTest/1.0 (vitest)')
+    .set('User-Agent', 'ZAYROVI-CrmTest/1.0 (vitest)')
     .post('/api/admin/auth/login').send({ email, password });
   expect(response.status, `login ${email}`).toBe(200);
   return response.body.data.csrfToken;

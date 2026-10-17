@@ -1,9 +1,12 @@
 /**
- * AYROVI — P4/T1 « Zalando Strategy » : mesure de la couverture orange.
+ * ZAYROVI — mesure de la couverture de la couleur de marque (violet électrique #571EF6).
  *
- * Le cahier des charges fixe une règle chiffrée : l'orange ne doit pas dépasser 3 %
- * de la surface d'un écran. Ce script ne fait pas confiance au code source : il
- * charge la page réelle, la photographie, et COMPTE les pixels.
+ * Le cahier des charges fixe une règle chiffrée : aucun écran mesuré ne dépasse le plafond de
+ * sécurité fixé par l'identité (identity.json → accentAreaLimit) — un garde-fou contre les
+ * grandes surfaces violettes. Ce n'est PAS l'objectif : depuis la v4.2.0 le repère global du
+ * violet est ≈ 3 % de l'application (identity.json → accentShare : 2 % #571EF6 + 1 % #C5B2F4),
+ * un repère d'ensemble et non un quota par écran. Ce script ne fait pas confiance au code
+ * source : il charge la page réelle, la photographie, et COMPTE les pixels.
  *
  *   node verify/zalando-audit.mjs [baseUrl]
  *
@@ -21,12 +24,14 @@ import fs from 'node:fs';
 // Conséquence en CI : le serveur y écoute sur 3210 et l'étape exporte
 // AYROVI_BASE_URL=http://127.0.0.1:3210 — les cinq autres gardes mesuraient donc
 // le bon serveur, et celui-ci partait sur localhost:3000, où personne n'écoute.
-// Il mourait sur son premier `goto` : le garde du budget orange était
+// Il mourait sur son premier `goto` : le garde du budget de couleur était
 // INFIRANCHISSABLE par construction, et échouait avec un simple « exit code 1 »
 // sans jamais dire pourquoi. Ordre retenu : argument explicite, puis
 // environnement (la convention du dépôt), puis l'ancien défaut.
 const BASE = process.argv[2] || process.env.AYROVI_BASE_URL || 'http://localhost:3000';
 const OUT = 'verify';
+/** Budget en % de la surface d'un écran — lu dans l'identité, jamais recopié ici. */
+const BUDGET = Number(JSON.parse(fs.readFileSync('client/src/design/editorial/identity.json', 'utf8')).accentAreaLimit) * 100;
 
 // ── Pourquoi ces deux gestionnaires (2026-10-03) ─────────────────────────────
 // Ce script tourne dans la porte CI « gardes de charte ». Quand il levait une
@@ -43,28 +48,28 @@ function publishFailure(error) {
 process.on('unhandledRejection', publishFailure);
 process.on('uncaughtException', publishFailure);
 
-/** Est-ce un pixel « orange de marque » ? Fenêtre large autour de #FF6900. */
-function isOrangePixel(r, g, b) {
+/** Est-ce un pixel « violet de marque » ? Fenêtre large autour de #571EF6 (et #926DF9). */
+function isAccentPixel(r, g, b) {
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
   if (max < 120) return false;            // trop sombre pour compter
   if (max - min < 60) return false;       // gris / blanc / noir : pas de teinte
-  // teinte orangée : rouge dominant, vert médian, bleu faible
-  return r > 190 && g > 55 && g < 190 && b < 110 && r - b > 110;
+  // teinte violette : bleu dominant, rouge médian, vert le plus faible
+  return b > 170 && b - g > 90 && r > g && r < 200;
 }
 
 /** Part de pixels « orange de marque » dans une image rendue. */
 async function coverage(png, label) {
   const { data, info } = await sharp(png).raw().toBuffer({ resolveWithObject: true });
   const channels = info.channels;
-  let orange = 0;
+  let accent = 0;
   let total = 0;
   for (let i = 0; i < data.length; i += channels) {
     total += 1;
-    if (isOrangePixel(data[i], data[i + 1], data[i + 2])) orange += 1;
+    if (isAccentPixel(data[i], data[i + 1], data[i + 2])) accent += 1;
   }
-  const pct = total ? (orange / total) * 100 : 0;
-  return { label, pixels: total, orange, pct: Number(pct.toFixed(3)) };
+  const pct = total ? (accent / total) * 100 : 0;
+  return { label, pixels: total, accent, pct: Number(pct.toFixed(3)) };
 }
 
 const browser = await chromium.launch();
@@ -132,7 +137,7 @@ for (const [w, h, tag] of [[390, 844, 'mobile'], [1440, 900, 'desktop']]) {
   report.push(await coverage(file, `accueil ${tag} (page entière)`));
 
   // surfaces nommées par le cahier des charges.
-  // P4/T2 : `.lens2` et la carte « Découvrez AYROVI » ont été retirés de la page
+  // P4/T2 : `.lens2` et la carte « Découvrez ZAYROVI » ont été retirés de la page
   // d'accueil ; on mesure donc le Hero, le Trust Bar et l'écran LENS ouvert.
   for (const [selector, name] of [
     ['.interface-hero, [data-public-section="hero"]', 'section Hero'],
@@ -155,7 +160,7 @@ for (const [w, h, tag] of [[390, 844, 'mobile'], [1440, 900, 'desktop']]) {
 await browser.close();
 console.log(JSON.stringify(report, null, 2));
 const worst = report.filter((r) => !r.absent).reduce((m, r) => Math.max(m, r.pct), 0);
-console.log(`\nCouverture orange maximale mesurée : ${worst}% (budget charte : 3%)`);
+console.log(`\nCouverture violette maximale mesurée : ${worst}% (budget charte : ${BUDGET}%)`);
 // ── Publication du résultat (2026-10-03) ──────────────────────────────────────
 // Ce garde s'exécutait sans jamais DIRE ce qu'il avait mesuré : en cas d'échec,
 // la sortie ne nommait ni la surface fautive ni sa valeur, et les journaux d'une
@@ -164,16 +169,16 @@ console.log(`\nCouverture orange maximale mesurée : ${worst}% (budget charte : 
 // Chaque mesure est maintenant publiée comme annotation (lisible publiquement sur
 // la page de l'exécution) et le détail complet part dans le résumé de l'étape.
 for (const r of report) {
-  console.log(`::notice title=Orange — ${r.label}::${r.absent ? 'absent' : `${r.pct}%`}`);
+  console.log(`::notice title=Violet — ${r.label}::${r.absent ? 'absent' : `${r.pct}%`}`);
 }
-if (worst > 3) {
-  console.log(`::error title=Budget orange dépassé::${worst}% > 3%`);
+if (worst > BUDGET) {
+  console.log(`::error title=Budget violet dépassé::${worst}% > ${BUDGET}%`);
 }
 if (process.env.GITHUB_STEP_SUMMARY) {
   const rows = report.map((r) => `| ${r.label} | ${r.absent ? 'absent' : `${r.pct}%`} |`);
   fs.appendFileSync(
     process.env.GITHUB_STEP_SUMMARY,
-    ['## Budget orange — surface par surface', '', '| Surface | Couverture mesurée |', '| --- | --- |', ...rows, '', `**Maximum mesuré : ${worst}%** — budget de charte : 3%`, ''].join('\n'),
+    ['## Budget violet — surface par surface', '', '| Surface | Couverture mesurée |', '| --- | --- |', ...rows, '', `**Maximum mesuré : ${worst}%** — budget de charte : ${BUDGET}%`, ''].join('\n'),
   );
 }
-process.exit(worst <= 3 ? 0 : 1);
+process.exit(worst <= BUDGET ? 0 : 1);

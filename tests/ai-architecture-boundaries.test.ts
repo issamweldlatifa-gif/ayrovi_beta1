@@ -85,7 +85,7 @@ describe('AI architecture boundaries', () => {
     expect(violationsFor(concreteAdapterImport, insideAiCore)).toEqual([]);
   });
 
-  test('prevents application code from bypassing the AYROVI Tool Gateway', () => {
+  test('prevents application code from bypassing the ZAYROVI Tool Gateway', () => {
     const domainDispatch = /\bexecuteAssistant(?:Write)?ToolDomain\b/g;
     const allowed = (file: string) => [
       'src/assistant/tools.ts',

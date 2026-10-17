@@ -57,7 +57,7 @@ describe('public upload policy (P0/P1 closure gate)', () => {
 
   beforeAll(async () => {
     const login = await admin
-      .set('User-Agent', 'AYROVI-UploadPolicyTest/1.0 (vitest)')
+      .set('User-Agent', 'ZAYROVI-UploadPolicyTest/1.0 (vitest)')
       .post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
     expect(login.status).toBe(200);
 

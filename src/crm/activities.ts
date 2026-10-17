@@ -1,5 +1,5 @@
 /**
- * AYROVI CRM 360 (E2) — activités relationnelles.
+ * ZAYROVI CRM 360 (E2) — activités relationnelles.
  *
  * Une activité est une interaction datée avec un party/contact (appel, rendez-vous,
  * e-mail, message, visite, suivi, interne, autre). Elle apparaît dans la timeline de la

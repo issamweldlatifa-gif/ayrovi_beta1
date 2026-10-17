@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * AYROVI — P3/T1 design-token sweep (back-office only).
+ * ZAYROVI — P3/T1 design-token sweep (back-office only).
  *
  * Removes every literal colour from the back-office *system* stylesheets and points them at
  * tokens declared in client/src/design/tokens.css, with ZERO visual change:

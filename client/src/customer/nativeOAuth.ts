@@ -165,7 +165,7 @@ export async function signInWithGoogleNatively(cartSessionId = ''): Promise<Nati
  *     ne peut pas afficher sa page dans notre WebView ;
  *   • le navigateur système fait sortir de l'application.
  * L'onglet personnalisé est le moteur de Chrome (agent utilisateur accepté,
- * mot de passe invisible pour AYROVI) hébergé dans notre pile d'activités.
+ * mot de passe invisible pour ZAYROVI) hébergé dans notre pile d'activités.
  *
  * Repli honnête : hors coque, ou si aucun navigateur compatible n'existe, on
  * retombe sur l'ancien comportement plutôt que de ne rien faire.

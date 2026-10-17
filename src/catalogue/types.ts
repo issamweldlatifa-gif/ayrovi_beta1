@@ -1,5 +1,5 @@
 /**
- * AYROVI Catalogue (P2.1) — shared types, statuses and error codes.
+ * ZAYROVI Catalogue (P2.1) — shared types, statuses and error codes.
  *
  * ONE canonical product entity: `products` (the table the storefront, the CRM cart,
  * the promotions engine and the AI search already read) stays the product identity.
@@ -124,6 +124,8 @@ export interface CatalogueProductRow {
   category: string | null;
   category_id: string | null;
   status: string;
+  /** `CATALOG` or `CONTENT` (temporary product). */
+  visibility?: string;
   source_platform: string;
   final_price: number | null;
   original_price: number | null;

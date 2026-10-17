@@ -4,15 +4,15 @@ import os from 'node:os';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
+import sharp from 'sharp';
 import { app, db, scraper } from '../src/server';
 import { buildSearchQuery } from '../src/ayrovix/services/ai';
 import { catalogSearch, providerWebSearch, scoreCandidate, searchCandidates } from '../src/ayrovix/services/search';
-import { serpApiVisualSearch } from '../src/ayrovix/services/visualSearch';
+import { checkSerpApiVisualHealth, serpApiVisualSearch } from '../src/ayrovix/services/visualSearch';
 import { filterDisplayableCandidates } from '../src/ayrovix/services/candidatePolicy';
 import { extractProductFromUrl } from '../src/ayrovix/services/product';
 import { parseProductPageHtml } from '../src/scraper/productPageParser';
-import { fetchRenderedProductPage, RenderedPageError } from '../src/scraper/renderedPageFetcher';
-import { detectMerchantStore, isTrustedRenderTarget } from '../src/scraper/merchantDomains';
+import { detectMerchantStore } from '../src/scraper/merchantDomains';
 import { createAyrovixPriceToken, verifyAyrovixPriceToken } from '../src/ayrovix/priceQuote';
 import { recordAyrovixHistory } from '../src/ayrovix/history';
 import { getAyrovixStats } from '../src/ayrovix/events';
@@ -65,6 +65,33 @@ function stubAnthropic(text: string) {
 function restoreEnv(name: string, value: string | undefined) {
   if (value === undefined) delete process.env[name];
   else process.env[name] = value;
+}
+
+/**
+ * SerpApi — SEULE entrée de la recherche (17/10/2026). Un lien + un prix sur
+ * la page marchande : c'est la page qui fait foi, jamais l'image.
+ */
+function stubSerpApiVisual(title = 'Sac à main noir Zara — 49.99 EUR', link = 'https://shop.example.com/sac-noir', inStock?: boolean) {
+  const mock = vi.fn(async (url: string) => {
+    if (String(url) === 'https://serpapi.com/image') {
+      return new Response(JSON.stringify({ image_id: 'image-id-sac' }), { status: 200 });
+    }
+    if (String(url).startsWith('https://serpapi.com/search.json?')) {
+      return new Response(JSON.stringify({
+        visual_matches: [{
+          title,
+          link,
+          source: 'Example Shop',
+          thumbnail: 'https://encrypted-tbn.example.com/sac.jpg',
+          price: { extracted_value: 49.99, currency: '€' },
+          ...(inStock === undefined ? {} : { in_stock: inStock }),
+        }],
+      }), { status: 200 });
+    }
+    throw new Error(`Unexpected request: ${url}`);
+  });
+  vi.stubGlobal('fetch', mock);
+  return mock;
 }
 
 describe('AYROVIX Lens', () => {
@@ -169,7 +196,8 @@ describe('AYROVIX Lens', () => {
     expect(weak).toBeGreaterThanOrEqual(0);
   });
 
-  test('le catalogue transmet le vrai statut de stock au produit, sans déduire « disponible » de ACTIVE', () => {
+  // Catalogue ZAYROVI désactivé (AYROVI_CATALOG_SEARCH_ENABLED=false) : test à réactiver avec l'interrupteur.
+  test.skip('le catalogue transmet le vrai statut de stock au produit, sans déduire « disponible » de ACTIVE', () => {
     const id = seedCatalogProduct();
     try {
       for (const [status, expected] of [
@@ -184,19 +212,28 @@ describe('AYROVIX Lens', () => {
     }
   });
 
-  test('SerpApi Google Lens renvoie produits, images et prix puis évite la recherche texte Claude', async () => {
+  test('SerpApi Google Lens envoie la clé dans le multipart officiel et demande visual_matches', async () => {
     const previousKey = process.env.SERPAPI_KEY;
+    const previousCountries = process.env.AYROVIX_LENS_COUNTRIES;
+    const previousCountry = process.env.AYROVIX_LENS_COUNTRY;
     process.env.SERPAPI_KEY = 'test-serpapi-key';
+    process.env.AYROVIX_LENS_COUNTRIES = 'fr';
+    process.env.AYROVIX_LENS_COUNTRY = 'fr';
+    const timeoutSpy = vi.spyOn(AbortSignal, 'timeout');
     const fetchMock = vi.fn(async (url: string, init: RequestInit = {}) => {
-      if (url.startsWith('https://serpapi.com/image?')) {
+      if (url === 'https://serpapi.com/image') {
         expect(init.method).toBe('POST');
         expect(init.body).toBeInstanceOf(FormData);
+        const form = init.body as FormData;
+        expect(form.get('api_key')).toBe('test-serpapi-key');
+        expect(form.get('source')).toBe('ayrovi-server');
+        expect(form.get('image')).toBeInstanceOf(Blob);
         return new Response(JSON.stringify({ image_id: 'temporary-image-id' }), { status: 200 });
       }
       if (url.startsWith('https://serpapi.com/search.json?')) {
         const parsed = new URL(url);
         expect(parsed.searchParams.get('engine')).toBe('google_lens');
-        expect(parsed.searchParams.get('type')).toBe('products');
+        expect(parsed.searchParams.get('type')).toBe('visual_matches');
         expect(parsed.searchParams.get('image_id')).toBe('temporary-image-id');
         return new Response(JSON.stringify({
           visual_matches: [{
@@ -228,6 +265,7 @@ describe('AYROVIX Lens', () => {
         match: 99,
       });
       expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(timeoutSpy.mock.calls.map(([ms]) => ms)).toEqual(expect.arrayContaining([5_000, 18_000]));
 
       const cachedVisual = await serpApiVisualSearch(PNG_1PX, 8);
       expect(cachedVisual).toEqual(visual);
@@ -241,7 +279,124 @@ describe('AYROVIX Lens', () => {
       ]));
       expect(fetchMock).not.toHaveBeenCalled();
     } finally {
+      timeoutSpy.mockRestore();
       restoreEnv('SERPAPI_KEY', previousKey);
+      restoreEnv('AYROVIX_LENS_COUNTRIES', previousCountries);
+      restoreEnv('AYROVIX_LENS_COUNTRY', previousCountry);
+    }
+  });
+
+  test('SerpApi Lens réessaie une seule fois si image_id vient juste d’être créé', async () => {
+    const previousKey = process.env.SERPAPI_KEY;
+    const previousCountries = process.env.AYROVIX_LENS_COUNTRIES;
+    const previousCountry = process.env.AYROVIX_LENS_COUNTRY;
+    process.env.SERPAPI_KEY = 'test-serpapi-key';
+    process.env.AYROVIX_LENS_COUNTRIES = 'fr';
+    process.env.AYROVIX_LENS_COUNTRY = 'fr';
+    let lensRequests = 0;
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url === 'https://serpapi.com/image') {
+        return new Response(JSON.stringify({ image_id: 'propagating-image-id' }), { status: 200 });
+      }
+      if (url.startsWith('https://serpapi.com/search.json?')) {
+        lensRequests += 1;
+        if (lensRequests === 1) {
+          return new Response(JSON.stringify({ error: 'Image is still processing' }), { status: 200 });
+        }
+        return new Response(JSON.stringify({
+          visual_matches: [{
+            title: 'Sneaker après propagation',
+            link: 'https://shop.example.com/propagated-sneaker',
+            source: 'Example Shop',
+          }],
+        }), { status: 200 });
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      // Trailing bytes are accepted by the PNG decoder and make a distinct
+      // cache key from the preceding success scenario.
+      const distinctImage = Buffer.concat([PNG_1PX, Buffer.from('provider-retry')]);
+      const visual = await serpApiVisualSearch(distinctImage, 8);
+      expect(visual).toHaveLength(1);
+      expect(visual[0].title).toBe('Sneaker après propagation');
+      expect(lensRequests).toBe(2);
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+    } finally {
+      restoreEnv('SERPAPI_KEY', previousKey);
+      restoreEnv('AYROVIX_LENS_COUNTRIES', previousCountries);
+      restoreEnv('AYROVIX_LENS_COUNTRY', previousCountry);
+    }
+  });
+
+  test('SerpApi cherche dans les marchés majeurs, garde France, exclut Tunisie et fusionne les doublons', async () => {
+    const previousKey = process.env.SERPAPI_KEY;
+    const previousCountries = process.env.AYROVIX_LENS_COUNTRIES;
+    const previousCountry = process.env.AYROVIX_LENS_COUNTRY;
+    try {
+      process.env.SERPAPI_KEY = 'test-serpapi-multicountry';
+      delete process.env.AYROVIX_LENS_COUNTRIES;
+      delete process.env.AYROVIX_LENS_COUNTRY;
+      expect(checkSerpApiVisualHealth().countries).toEqual(['fr', 'de', 'it', 'es', 'uk', 'us', 'ca', 'tr', 'ae']);
+      process.env.AYROVIX_LENS_COUNTRIES = 'de,tn,us';
+      process.env.AYROVIX_LENS_COUNTRY = 'fr';
+      const requestedCountries: string[] = [];
+      let germanyAttempts = 0;
+      const fetchMock = vi.fn(async (url: string) => {
+        if (url === 'https://serpapi.com/image') {
+          return new Response(JSON.stringify({ image_id: 'multi-market-image' }), { status: 200 });
+        }
+        if (!url.startsWith('https://serpapi.com/search.json?')) {
+          throw new Error(`Unexpected request: ${url}`);
+        }
+        const country = new URL(url).searchParams.get('country') || '';
+        requestedCountries.push(country);
+        if (country === 'de') {
+          germanyAttempts += 1;
+          return new Response(JSON.stringify({ error: 'temporary market failure' }), { status: 503 });
+        }
+        const visualMatches = country === 'fr'
+          ? [
+              { title: 'Sac commun — France', link: 'https://shop.test/common-bag', thumbnail: 'https://cdn.test/common-fr.jpg', price: { extracted_value: 45, currency: 'EUR' } },
+              ...Array.from({ length: 7 }, (_, index) => ({
+                title: `Sac français ${index + 1}`,
+                link: `https://shop.test/fr-bag-${index + 1}`,
+                thumbnail: `https://cdn.test/fr-${index + 1}.jpg`,
+              })),
+            ]
+          : [
+              { title: 'Sac commun — US', link: 'https://shop.test/common-bag', thumbnail: 'https://cdn.test/common-us.jpg' },
+              { title: 'Sac américain', link: 'https://shop.test/us-bag', thumbnail: 'https://cdn.test/us.jpg' },
+            ];
+        return new Response(JSON.stringify({ visual_matches: visualMatches }), { status: 200 });
+      });
+      vi.stubGlobal('fetch', fetchMock);
+      expect(checkSerpApiVisualHealth().countries).toEqual(['fr', 'de', 'us']);
+      const uniqueImage = await sharp(PNG_1PX).extend({ top: 1, background: '#f0f0f0' }).png().toBuffer();
+      const matches = await serpApiVisualSearch(uniqueImage, 8);
+      expect([...new Set(requestedCountries)]).toEqual(['fr', 'de', 'us']);
+      expect(requestedCountries).not.toContain('tn');
+      expect(germanyAttempts).toBe(2);
+      expect(matches).toHaveLength(8);
+      expect(matches[0].sourceUrl).toBe('https://shop.test/common-bag');
+      expect(matches.some((item) => item.sourceUrl === 'https://shop.test/us-bag')).toBe(true);
+      expect(matches[0].images).toEqual(expect.arrayContaining([
+        'https://cdn.test/common-fr.jpg',
+        'https://cdn.test/common-us.jpg',
+      ]));
+      expect(matches[0]).toMatchObject({ price: 45, currency: 'EUR' });
+
+      // Changing the country scope must not reuse the previous multi-market cache entry.
+      process.env.AYROVIX_LENS_COUNTRIES = 'fr';
+      const franceOnly = await serpApiVisualSearch(uniqueImage, 8);
+      expect(franceOnly.some((item) => item.sourceUrl === 'https://shop.test/us-bag')).toBe(false);
+      expect(requestedCountries.slice(4)).toEqual(['fr']);
+    } finally {
+      vi.unstubAllGlobals();
+      restoreEnv('SERPAPI_KEY', previousKey);
+      restoreEnv('AYROVIX_LENS_COUNTRIES', previousCountries);
+      restoreEnv('AYROVIX_LENS_COUNTRY', previousCountry);
     }
   });
 
@@ -374,96 +529,14 @@ describe('AYROVIX Lens', () => {
     }
   });
 
-  test('les domaines marchands sont appariés par suffixe exact et seuls les sites HTTPS fiables atteignent le renderer', async () => {
+  test('les domaines marchands sont appariés par suffixe exact', async () => {
     expect(detectMerchantStore('https://www.amazon.fr/dp/TEST')).toBe('amazon');
     expect(detectMerchantStore('https://amazon.evil.example/dp/TEST')).toBe('generic');
     expect(detectMerchantStore('https://notamazon.com/dp/TEST')).toBe('generic');
-    expect(isTrustedRenderTarget('https://fr.shein.com/robe')).toBe(true);
-    expect(isTrustedRenderTarget('http://www.amazon.fr/dp/TEST')).toBe(false);
-    expect(isTrustedRenderTarget('https://amazon.fr:8443/dp/TEST')).toBe(false);
-    expect(isTrustedRenderTarget('https://amazon.evil.example/dp/TEST')).toBe(false);
-    // Rendu étendu par l'exploitant (01/10/2026) : sans cette liste, un lien Lens
-    // vers sportsdirect.fr retombait sur le fetch direct seul et échouait.
-    expect(isTrustedRenderTarget('https://www.zalando.fr/nike-alphafly')).toBe(true);
-    expect(isTrustedRenderTarget('https://www.alltricks.fr/p/x')).toBe(true);
-    expect(isTrustedRenderTarget('https://www.sportsdirect.fr/hoody-991631')).toBe(false);
-    vi.stubEnv('AYROVI_TRUSTED_RENDER_HOSTS', 'sportsdirect.fr, zalando.fr');
-    expect(isTrustedRenderTarget('https://www.sportsdirect.fr/hoody-991631')).toBe(true);
-    expect(isTrustedRenderTarget('https://fr.zalando.fr/robe')).toBe(true);
-    // Une allowlist ne doit jamais devenir une porte ouverte : ni http, ni port
-    // exotique, ni hôte qui se contente de CONTENIR le nom autorisé.
-    expect(isTrustedRenderTarget('http://www.sportsdirect.fr/hoody')).toBe(false);
-    expect(isTrustedRenderTarget('https://www.sportsdirect.fr:8443/hoody')).toBe(false);
-    expect(isTrustedRenderTarget('https://sportsdirect.fr.evil.example/hoody')).toBe(false);
-    vi.unstubAllEnvs();
-    const fetchMock = vi.fn();
-    vi.stubGlobal('fetch', fetchMock);
-    await expect(fetchRenderedProductPage('https://amazon.evil.example/dp/TEST')).rejects.toMatchObject({
-      name: 'RenderedPageError', code: 'RENDER_TARGET_NOT_ALLOWED',
-    });
-    expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  test('rendu headless : ScraperAPI reçoit render=true et les erreurs conservent fournisseur et cause', async () => {
-    const previous = {
-      scraperApi: process.env.SCRAPERAPI_KEY,
-      scrapingBee: process.env.SCRAPINGBEE_API_KEY,
-      brightToken: process.env.BRIGHTDATA_API_TOKEN,
-      brightZone: process.env.BRIGHTDATA_UNLOCKER_ZONE,
-      provider: process.env.AYROVIX_RENDER_PROVIDER,
-    };
-    process.env.SCRAPERAPI_KEY = 'scraper-api-test';
-    delete process.env.SCRAPINGBEE_API_KEY;
-    delete process.env.BRIGHTDATA_API_TOKEN;
-    delete process.env.BRIGHTDATA_UNLOCKER_ZONE;
-    process.env.AYROVIX_RENDER_PROVIDER = 'scraperapi';
-    try {
-      const fetchMock = vi.fn(async (url: string) => {
-        const requestUrl = new URL(url);
-        expect(requestUrl.searchParams.get('render')).toBe('true');
-        expect(requestUrl.searchParams.get('url')).toBe('https://www.amazon.fr/dp/TEST');
-        return new Response('<html><body><span>Prix : 44,90 EUR</span></body></html>', { status: 200 });
-      });
-      vi.stubGlobal('fetch', fetchMock);
-      await expect(fetchRenderedProductPage('https://www.amazon.fr/dp/TEST#client-only-secret')).resolves.toMatchObject({ provider: 'scraperapi' });
-
-      vi.stubGlobal('fetch', vi.fn(async () => new Response('Forbidden', { status: 403 })));
-      await expect(fetchRenderedProductPage('https://fr.shein.com/test')).rejects.toMatchObject({
-        name: 'RenderedPageError', code: 'RENDER_ACCESS_DENIED', provider: 'scraperapi',
-      } satisfies Partial<RenderedPageError>);
-
-      delete process.env.SCRAPERAPI_KEY;
-      process.env.SCRAPINGBEE_API_KEY = 'bee-test';
-      process.env.AYROVIX_RENDER_PROVIDER = 'scrapingbee';
-      vi.stubGlobal('fetch', vi.fn(async (url: string) => {
-        const requestUrl = new URL(url);
-        expect(requestUrl.hostname).toBe('app.scrapingbee.com');
-        expect(requestUrl.searchParams.get('render_js')).toBe('true');
-        return new Response('<html><body>Prix : 60 EUR</body></html>', { status: 200 });
-      }));
-      await expect(fetchRenderedProductPage('https://fr.shein.com/test')).resolves.toMatchObject({ provider: 'scrapingbee' });
-
-      delete process.env.SCRAPINGBEE_API_KEY;
-      process.env.BRIGHTDATA_API_TOKEN = 'bright-token';
-      process.env.BRIGHTDATA_UNLOCKER_ZONE = 'unlocker-zone';
-      process.env.AYROVIX_RENDER_PROVIDER = 'brightdata';
-      vi.stubGlobal('fetch', vi.fn(async (url: string, init: RequestInit = {}) => {
-        expect(url).toBe('https://api.brightdata.com/request');
-        expect((init.headers as Record<string, string>).Authorization).toBe('Bearer bright-token');
-        expect(JSON.parse(String(init.body))).toMatchObject({ zone: 'unlocker-zone', url: 'https://www.amazon.fr/dp/TEST', format: 'raw' });
-        return new Response('<html><body>Prix : 60 EUR</body></html>', { status: 200 });
-      }));
-      await expect(fetchRenderedProductPage('https://www.amazon.fr/dp/TEST')).resolves.toMatchObject({ provider: 'brightdata' });
-    } finally {
-      restoreEnv('SCRAPERAPI_KEY', previous.scraperApi);
-      restoreEnv('SCRAPINGBEE_API_KEY', previous.scrapingBee);
-      restoreEnv('BRIGHTDATA_API_TOKEN', previous.brightToken);
-      restoreEnv('BRIGHTDATA_UNLOCKER_ZONE', previous.brightZone);
-      restoreEnv('AYROVIX_RENDER_PROVIDER', previous.provider);
-    }
-  });
-
-  test('image → identification Claude (simulée) → candidats catalogue → événement → choix', async () => {
+  // Catalogue ZAYROVI désactivé (AYROVI_CATALOG_SEARCH_ENABLED=false) : test à réactiver avec l'interrupteur.
+  test.skip('image → identification Claude (simulée) → candidats catalogue → événement → choix', async () => {
     seedCatalogProduct();
     process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
     stubAnthropic(JSON.stringify({
@@ -505,7 +578,7 @@ describe('AYROVIX Lens', () => {
     }
   });
 
-  test('analyze-image continue avec Google Lens si Claude Vision échoue', async () => {
+  test('analyze-image passe par SerpApi même si la vision IA est en panne', async () => {
     const previousAnthropic = process.env.ANTHROPIC_API_KEY;
     const previousSerp = process.env.SERPAPI_KEY;
     process.env.ANTHROPIC_API_KEY = 'test-anthropic-down';
@@ -514,7 +587,7 @@ describe('AYROVIX Lens', () => {
       if (String(url).includes('api.anthropic.com')) {
         return new Response('internal', { status: 500 });
       }
-      if (String(url).startsWith('https://serpapi.com/image?')) {
+      if (String(url) === 'https://serpapi.com/image') {
         return new Response(JSON.stringify({ image_id: 'temporary-image-id' }), { status: 200 });
       }
       if (String(url).startsWith('https://serpapi.com/search.json?')) {
@@ -561,43 +634,95 @@ describe('AYROVIX Lens', () => {
     }
   });
 
-  test('un prix visible sur l’image n’est plus jamais proposé (vision = intitulé seulement)', async () => {
-    const previousKey = process.env.ANTHROPIC_API_KEY;
-    process.env.ANTHROPIC_API_KEY = 'test-anthropic-price';
-    const fetchMock = stubAnthropic(JSON.stringify({
-      input_kind: 'product_screenshot', category: 'handbag', brand: 'Zara', model: null,
-      color: ['black'], visible_text: ['49.99 EUR'], possible_model_codes: [],
-      description: 'Sac à main noir.', confidence: 0.88,
-      detected_price: { amount: 49.99, currency: 'EUR', label: 'product_price', confidence: 0.96 },
-    }));
+  test('un prix visible sur l’image n’est plus jamais proposé (SerpApi = intitulé seulement)', async () => {
+    const previousSerp = process.env.SERPAPI_KEY;
+    process.env.SERPAPI_KEY = 'test-serpapi-price';
+    stubSerpApiVisual(undefined, undefined, false);
+    const scrapeSpy = vi.spyOn(scraper, 'scrapeParsedPage').mockRejectedValue(new Error('merchant page unavailable'));
     try {
+      // Évite de réutiliser la clé du cache visuel d'un scénario précédent :
+      // le contenu normalisé doit être distinct, pas seulement le nom de fichier.
+      const uniquePng = await sharp(PNG_1PX).extend({ right: 1, background: '#fff' }).png().toBuffer();
       const response = await request(app)
         .post('/api/ayrovix/analyze-image')
-        .attach('image', PNG_1PX, { filename: 'capture-produit.png', contentType: 'image/png' });
+        .attach('image', uniquePng, { filename: 'capture-produit.png', contentType: 'image/png' });
       expect(response.status).toBe(200);
       // 02/10/2026 : un prix lu sur l'image n'est plus jamais proposé — seule la
       // page marchande derrière un lien fait foi.
       expect(response.body.data.detectedPrice).toBeNull();
       expect(response.body.data.identification.detected_price.amount).toBe(0);
-      const requestBody = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
-      expect(requestBody.output_config.format.type).toBe('json_schema');
-      const schemaJson = JSON.stringify(requestBody.output_config.format.schema);
-      expect(schemaJson).not.toMatch(/"(?:minimum|maximum|minItems|maxItems|pattern|format)"/);
-      expect(requestBody.tools).toBeUndefined();
+      // 17/10/2026 : l'intitulé vient de SerpApi (le titre de la page), pas d'un
+      // modèle qui aurait « deviné » le produit.
+      expect(response.body.data.identification.description).toContain('Sac à main');
+      expect(response.body.data.identification.description).not.toContain('49.99');
+      // Une page marchande illisible ne peut plus effacer la découverte SerpApi,
+      // mais son extrait prix/stock ne devient pas une preuve d'achat.
+      expect(response.body.data.candidates).toHaveLength(1);
+      expect(response.body.data.candidates[0].title).not.toContain('49.99');
+      expect(response.body.data.candidates[0]).toMatchObject({
+        title: expect.stringContaining('Sac à main'),
+        sourceUrl: 'https://shop.example.com/sac-noir',
+        description: null,
+        price: null,
+        currency: null,
+        priceTnd: null,
+        priceToken: null,
+        availability: 'unknown',
+      });
+      expect(response.body.data.excluded.count).toBe(0);
     } finally {
-      restoreEnv('ANTHROPIC_API_KEY', previousKey);
+      scrapeSpy.mockRestore();
+      restoreEnv('SERPAPI_KEY', previousSerp);
+    }
+  });
+
+  test('un extrait de page marchand contenant un prix regex ne réintroduit pas un montant dans le texte', async () => {
+    const previousSerp = process.env.SERPAPI_KEY;
+    process.env.SERPAPI_KEY = 'test-serpapi-description';
+    stubSerpApiVisual(undefined, undefined, false);
+    const scrapeSpy = vi.spyOn(scraper, 'scrapeParsedPage').mockImplementation(async () => ({
+      data: {
+        title: 'Sac à main noir Zara — 49.99 EUR',
+        price: 39.99,
+        currency: 'EUR',
+        priceSource: 'context_regex',
+        description: 'Prix de lancement : 49,99 EUR, offre disponible dès maintenant.',
+        availability: 'in_stock',
+        variants: { sizes: [], colors: [], details: [] },
+        images: ['https://cdn.example.com/sac-noir.jpg'],
+      } as any,
+      verified: true,
+      provider: 'direct',
+      method: 'json_ld',
+      failureCode: null,
+    } as any));
+    try {
+      const uniquePng = await sharp(PNG_1PX).extend({ bottom: 1, background: '#fff' }).png().toBuffer();
+      const response = await request(app)
+        .post('/api/ayrovix/analyze-image')
+        .attach('image', uniquePng, { filename: 'sac-description.png', contentType: 'image/png' });
+      expect(response.status).toBe(200);
+      expect(scrapeSpy).toHaveBeenCalled();
+      expect(response.body.data.identification.description).not.toMatch(/49[.,]99/);
+      expect(response.body.data.candidates).toHaveLength(1);
+      expect(response.body.data.candidates[0]).toMatchObject({
+        title: 'Sac à main noir Zara',
+        description: null,
+        price: null,
+        priceTnd: null,
+        priceToken: null,
+      });
+      expect(JSON.stringify(response.body.data.candidates[0])).not.toMatch(/49[.,]99|39\.99/);
+    } finally {
+      scrapeSpy.mockRestore();
+      restoreEnv('SERPAPI_KEY', previousSerp);
     }
   });
 
   test("un ancien prix barré n'est jamais accepté comme prix de commande", async () => {
-    const previousKey = process.env.ANTHROPIC_API_KEY;
-    process.env.ANTHROPIC_API_KEY = 'test-anthropic-old-price';
-    stubAnthropic(JSON.stringify({
-      input_kind: 'product_screenshot', category: 'shoes', brand: 'Nike', model: null,
-      color: ['white'], visible_text: ['99.00 EUR'], possible_model_codes: [],
-      description: 'Chaussures blanches.', confidence: 0.8,
-      detected_price: { amount: 99, currency: 'EUR', label: 'old_price', confidence: 0.99 },
-    }));
+    const previousSerp = process.env.SERPAPI_KEY;
+    process.env.SERPAPI_KEY = 'test-serpapi-old-price';
+    stubSerpApiVisual('Chaussures blanches Nike — 99.00 EUR', 'https://shop.example.com/chaussures-blanches');
     try {
       const response = await request(app)
         .post('/api/ayrovix/analyze-image')
@@ -606,7 +731,7 @@ describe('AYROVIX Lens', () => {
       expect(response.body.data.detectedPrice).toBeNull();
       expect(response.body.data).not.toHaveProperty('ocrPrice');
     } finally {
-      restoreEnv('ANTHROPIC_API_KEY', previousKey);
+      restoreEnv('SERPAPI_KEY', previousSerp);
     }
   });
 
@@ -644,13 +769,17 @@ describe('AYROVIX Lens', () => {
     expect(response.body.code).toBe('INVALID_URL');
   });
 
-  test('Claude Web Search transforme les résultats officiels Anthropic en candidats', async () => {
+  test('Claude Web Search transforme les résultats officiels Anthropic en candidats sans SerpApi', async () => {
     const previousKey = process.env.ANTHROPIC_API_KEY;
     const previousModel = process.env.ANTHROPIC_MODEL;
     const previousSearch = process.env.AYROVIX_AI_WEB_SEARCH;
+    const previousSerp = process.env.SERPAPI_KEY;
+    const previousSerpAlias = process.env.SERPAPI_API_KEY;
     process.env.ANTHROPIC_API_KEY = 'test-anthropic-web-search';
     process.env.ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001';
     process.env.AYROVIX_AI_WEB_SEARCH = 'true';
+    delete process.env.SERPAPI_KEY;
+    delete process.env.SERPAPI_API_KEY;
     const fetchMock = vi.fn(async (_url: string, _init: RequestInit = {}) => new Response(JSON.stringify({
       model: 'claude-haiku-4-5-20251001',
       content: [{
@@ -675,6 +804,68 @@ describe('AYROVIX Lens', () => {
       restoreEnv('ANTHROPIC_API_KEY', previousKey);
       restoreEnv('ANTHROPIC_MODEL', previousModel);
       restoreEnv('AYROVIX_AI_WEB_SEARCH', previousSearch);
+      restoreEnv('SERPAPI_KEY', previousSerp);
+      restoreEnv('SERPAPI_API_KEY', previousSerpAlias);
+    }
+  });
+
+  test('recherche texte mobile utilise SerpApi Shopping en priorité et renvoie des prix malgré le crédit Anthropic épuisé', async () => {
+    const previousKey = process.env.ANTHROPIC_API_KEY;
+    const previousSearch = process.env.AYROVIX_AI_WEB_SEARCH;
+    const previousSerp = process.env.SERPAPI_KEY;
+    const previousSerpAlias = process.env.SERPAPI_API_KEY;
+    process.env.ANTHROPIC_API_KEY = 'anthropic-credit-exhausted';
+    process.env.AYROVIX_AI_WEB_SEARCH = 'true';
+    process.env.SERPAPI_KEY = 'test-serpapi-shopping';
+    delete process.env.SERPAPI_API_KEY;
+    const fetchMock = vi.fn(async (url: string | URL | Request) => {
+      const target = String(url);
+      if (!target.startsWith('https://serpapi.com/search.json?')) {
+        return new Response(JSON.stringify({ error: { message: 'credit balance is too low' } }), {
+          status: 400,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      return new Response(JSON.stringify({
+        shopping_results: [{
+          title: 'Nike Air Max 95 Essential',
+          source: 'Nike',
+          link: 'https://www.nike.com/fr/t/air-max-95-essential/TEST',
+          thumbnail: 'https://static.nike.com/air-max-95.jpg',
+          price: '189,99 €',
+          extracted_price: 189.99,
+          rating: 4.7,
+          reviews: 215,
+        }],
+      }), { status: 200, headers: { 'content-type': 'application/json' } });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      const response = await request(app)
+        .post('/api/ayrovix/analyze-text')
+        .send({ query: 'Nike Air Max 95 Essential test SerpApi' });
+      expect(response.status).toBe(200);
+      expect(response.body.data.candidates).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'external',
+          source: 'Nike',
+          price: 189.99,
+          currency: 'EUR',
+          priceOrigin: 'search',
+          priceVerificationStatus: 'PENDING_MANUAL',
+        }),
+      ]));
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      const requestUrl = new URL(String(fetchMock.mock.calls[0][0]));
+      expect(requestUrl.searchParams.get('engine')).toBe('google_shopping');
+      expect(requestUrl.searchParams.get('q')).toContain('Nike Air Max 95');
+      expect(requestUrl.searchParams.get('api_key')).toBe('test-serpapi-shopping');
+      expect(fetchMock.mock.calls.some(([url]) => String(url).includes('api.anthropic.com'))).toBe(false);
+    } finally {
+      restoreEnv('ANTHROPIC_API_KEY', previousKey);
+      restoreEnv('AYROVIX_AI_WEB_SEARCH', previousSearch);
+      restoreEnv('SERPAPI_KEY', previousSerp);
+      restoreEnv('SERPAPI_API_KEY', previousSerpAlias);
     }
   });
 

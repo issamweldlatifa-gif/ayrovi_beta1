@@ -1,5 +1,5 @@
 /**
- * AYROVI Administration — ERP Core screens (P1 foundation).
+ * ZAYROVI Administration — ERP Core screens (P1 foundation).
  *
  * Additive only: nothing here replaces an existing admin screen. The legacy
  * `Utilisateurs` page keeps managing login accounts (admin_users); these screens
@@ -15,7 +15,7 @@ import { Button, CardTitle, DataTable, Field, Filters, Form, Modal, PageHeader, 
 type ToastValue = { message: string; tone: 'success' | 'error' } | null;
 
 // Une seule implémentation de l'en-tête (./components) ; le libellé du domaine reste local.
-const ErpHeader: React.FC<{ title: string; description: string; action?: React.ReactNode }> = (props) => <PageHeader {...props} eyebrow="AYROVI ERP" />;
+const ErpHeader: React.FC<{ title: string; description: string; action?: React.ReactNode }> = (props) => <PageHeader {...props} eyebrow="ZAYROVI ERP" />;
 
 
 interface Employee {

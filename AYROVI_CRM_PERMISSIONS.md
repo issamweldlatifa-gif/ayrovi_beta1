@@ -1,4 +1,4 @@
-# AYROVI CRM 360 — Permissions
+# ZAYROVI CRM 360 — Permissions
 
 Les droits comme données, sur le moteur ERP, sans jamais verrouiller un rôle legacy.
 

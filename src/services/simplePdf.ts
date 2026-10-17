@@ -26,7 +26,7 @@ function localFont(file: string) {
 export async function writeSimplePdf(lines: PdfLine[], filePath: string): Promise<string> {
   const doc = await PDFDocument.create();
   doc.registerFontkit(fontkit);
-  doc.setProducer('AYROVI A — embedded official fonts');
+  doc.setProducer('ZAYROVI A — embedded official fonts');
   const regular = await doc.embedFont(localFont('assets/fonts/ZalandoSans-Regular.ttf'), { subset: true });
   const bold = await doc.embedFont(localFont('assets/fonts/ZalandoSans-Bold.ttf'), { subset: true });
   // Do not ship an Arabic font in Latin-only invoices unnecessarily.

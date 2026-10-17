@@ -1,6 +1,6 @@
 /* ==========================================================================
    AYWEBs — parcours proxy-shopping (référence Add-to-Buyee, captures 1-6).
-   Une seule feuille de style, tokens AYROVI d'abord, replis explicites.
+   Une seule feuille de style, tokens ZAYROVI d'abord, replis explicites.
    ========================================================================== */
 
 .ayw-screen {
@@ -41,7 +41,7 @@
 .ayw-search {
   width: 100%;
   height: 2.9rem;
-  border: 1.5px solid var(--ayrovi-cta, #f18902);
+  border: 1.5px solid var(--ayrovi-text-primary, #0a0a0a);
   border-radius: 999px;
   background: var(--ayrovi-surface, #fff);
   padding-inline: 2.4rem 1rem;
@@ -52,7 +52,7 @@
 .ayw-search-icon {
   position: absolute;
   inset-inline-start: 1.7rem;
-  color: var(--ayrovi-cta, #f18902);
+  color: var(--ayrovi-text-primary, #0a0a0a);
   pointer-events: none;
 }
 
@@ -130,7 +130,7 @@
   cursor: pointer;
 }
 
-.ayw-fav.is-on { color: var(--ayrovi-cta, #f18902); background: rgb(241 137 2 / .12); }
+.ayw-fav.is-on { color: var(--ayrovi-cta, #571ef6); background: var(--ayrovi-bg-surface, #f2f2f2); }
 
 .ayw-storedesc {
   margin-top: .5rem;
@@ -140,7 +140,7 @@
 }
 
 /* --- barre d'onglets basse (capture 2) --- */
-/* §3 (04/10/2026) : z-index 40 ET hauteur FIXE. La barre AYROVI (z-30, racine)
+/* §3 (04/10/2026) : z-index 40 ET hauteur FIXE. La barre ZAYROVI (z-30, racine)
    est démontée pendant AyWebs (App.tsx) ; cette valeur garde la barre AyWebs
    au-dessus de tout ce qui vit DANS la couche AyWebs (z-25). */
 .ayw-tabs {
@@ -170,7 +170,7 @@
   cursor: pointer;
 }
 
-.ayw-tab.is-active { color: var(--ayrovi-cta, #f18902); }
+.ayw-tab.is-active { color: var(--ayrovi-cta, #571ef6); }
 
 .ayw-tab-icon { position: relative; }
 
@@ -181,7 +181,7 @@
   min-width: 1rem;
   height: 1rem;
   border-radius: 999px;
-  background: var(--ayrovi-cta, #f18902);
+  background: var(--ayrovi-text-primary, #0a0a0a);
   color: #fff;
   font-size: .68rem;
   line-height: 1rem;
@@ -238,7 +238,7 @@
 
 .ayw-cond { border: 0; padding: 0; margin: 0; }
 .ayw-radio { display: inline-flex; align-items: center; gap: .5rem; cursor: pointer; color: var(--ayrovi-ink, #101828); }
-.ayw-radio input { accent-color: var(--ayrovi-cta, #f18902); width: 1.15rem; height: 1.15rem; }
+.ayw-radio input { accent-color: var(--ayrovi-cta, #571ef6); width: 1.15rem; height: 1.15rem; }
 
 .ayw-selectwrap { display: block; }
 
@@ -262,7 +262,7 @@
   min-height: 3.1rem;
   border: 0;
   border-radius: .4rem;
-  background: var(--ayrovi-cta, #f18902);
+  background: var(--ayrovi-cta, #571ef6);
   color: #fff;
   font: inherit;
   font-size: 1.02rem;
@@ -291,8 +291,8 @@
 
 /* --- confirmation d'ajout (capture 4) --- */
 .ayw-added { align-items: stretch; }
-.ayw-added-icon { position: relative; align-self: center; color: var(--ayrovi-cta, #f18902); }
-.ayw-added-icon svg:last-child { position: absolute; top: -.5rem; inset-inline-end: -.6rem; color: var(--ayrovi-cta, #1d3f8f); }
+.ayw-added-icon { position: relative; align-self: center; color: var(--ayrovi-text-primary, #0a0a0a); }
+.ayw-added-icon svg:last-child { position: absolute; top: -.5rem; inset-inline-end: -.6rem; color: var(--ayrovi-text-primary, #0a0a0a); }
 .ayw-added-sum { display: flex; gap: .9rem; align-items: center; border-block: 1px solid var(--ayrovi-line, #e4e4e4); padding: .9rem 0; }
 .ayw-added-thumb { width: 6.5rem; height: 8rem; object-fit: contain; background: #f2f4f7; border-radius: .35rem; }
 .ayw-added-title { font-weight: 700; color: var(--ayrovi-ink, #101828); }
@@ -455,7 +455,7 @@
 
 /* ==========================================================================
    §6 (04/10/2026) — Favoris AyWebs : tiroir + écran « Wish List ».
-   Le stockage est le compte AYROVI (/api/customer/account/favorites) : aucune
+   Le stockage est le compte ZAYROVI (/api/customer/account/favorites) : aucune
    copie locale, donc rien à resynchroniser. Les styles ci-dessous ne décrivent
    que la présentation.
    ========================================================================== */
@@ -493,7 +493,7 @@
   box-shadow: 0 1px 3px rgb(16 24 40 / .18);
   cursor: pointer;
 }
-.ayw-prodfav.is-on { color: var(--ayrovi-cta, #f18902); }
+.ayw-prodfav.is-on { color: var(--ayrovi-cta, #571ef6); }
 
 /* Écran « Wish List » interne — même liste que « Mon compte ». */
 .ayw-wishlist { display: flex; flex-direction: column; gap: .8rem; padding: 0 1rem; }

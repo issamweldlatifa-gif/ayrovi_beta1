@@ -1,8 +1,8 @@
-# AYROVI Admin CMS — architecture et API
+# ZAYROVI Admin CMS — architecture et API
 
 ## Vue d’ensemble
 
-L’Admin AYROVI est une application React servie par le serveur Express existant à `/admin`. Il n’existe pas de second backend : le site public, Lens, le panier, le checkout et l’Admin partagent la même instance SQLite et les mêmes services.
+L’Admin ZAYROVI est une application React servie par le serveur Express existant à `/admin`. Il n’existe pas de second backend : le site public, Lens, le panier, le checkout et l’Admin partagent la même instance SQLite et les mêmes services.
 
 Toutes les réponses JSON utilisent la forme générale `{ "success": true, "data": ... }`. Les erreurs utilisent `{ "success": false, "error": "..." }` avec un statut HTTP approprié.
 

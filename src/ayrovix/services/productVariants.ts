@@ -259,7 +259,7 @@ export function labelForKind(kind: ValueKind, fallback: string): string {
 /* ── TAXONOMY ─────────────────────────────────────────── */
 interface CategoryRule {
   category: ProductCategory;
-  /** Termes FR / EN / AR — le marché AYROVI est trilingue. */
+  /** Termes FR / EN / AR — le marché ZAYROVI est trilingue. */
   terms: string[];
 }
 

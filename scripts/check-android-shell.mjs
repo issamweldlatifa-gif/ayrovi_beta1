@@ -1,5 +1,5 @@
 /**
- * AYROVI — garde de la coque Android (ajouté le 2026-10-03).
+ * ZAYROVI — garde de la coque Android (ajouté le 2026-10-03).
  *
  * POURQUOI CE FICHIER EXISTE
  * La revue du 2026-10-03 a montré que rien, dans aucune porte automatique, ne
@@ -139,7 +139,7 @@ check(
 check(
   'MainActivity : bouton retour matériel câblé',
   /getOnBackPressedDispatcher\(\)/.test(main),
-  'sans onBackPressed, le retour système ferme l’application même quand un écran AYROVI est ouvert (Capacitor 7 n’en fournit aucun)'
+  'sans onBackPressed, le retour système ferme l’application même quand un écran ZAYROVI est ouvert (Capacitor 7 n’en fournit aucun)'
 );
 
 /* ── 3bis. AYWEBs : origine d'API + connexion marchande (2026-10-03) ───────── */
@@ -195,7 +195,7 @@ check(
   'même défaut que le X : présent dans le XML, absent du Java'
 );
 check(
-  'AyWebsBrowseActivity : X revient à AYROVI sans tuer l’application',
+  'AyWebsBrowseActivity : X revient à ZAYROVI sans tuer l’application',
   /onClosePressed/.test(browser) && /isTaskRoot\(\)/.test(browser),
   'un finish() inconditionnel ferme l’application quand le navigateur est la racine de la tâche (lien profond, partage)'
 );
@@ -347,7 +347,7 @@ const authTab = read('android/app/src/main/java/app/ayrovi/mobile/AyroviAuthTabP
 check(
   'AyroviAuthTabPlugin : onglet personnalisé présent',
   /CustomTabsIntent/.test(authTab) && /launchUrl/.test(authTab),
-  'sans lui, la connexion par fournisseur bascule vers Chrome et quitte AYROVI'
+  'sans lui, la connexion par fournisseur bascule vers Chrome et quitte ZAYROVI'
 );
 check(
   'AyroviAuthTabPlugin : l’onglet reste dans NOTRE tâche',

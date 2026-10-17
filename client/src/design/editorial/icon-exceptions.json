@@ -11,6 +11,12 @@
       "attribute": "data-visualization",
       "value": "audio-level",
       "reason": "Waveform driven by the real audio level, not a static icon."
+    },
+    "client/src/main.tsx": {
+      "count": 1,
+      "attribute": "data-brand",
+      "value": "zayrovi-loader",
+      "reason": "ZAYROVI loading screen: the official Z brand mark inside its ring (same drawing as the static loader of client/index.html), not an interface icon."
     }
   },
   "brandModule": "client/src/design/BrandIcon.tsx",

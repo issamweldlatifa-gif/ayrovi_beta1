@@ -140,8 +140,8 @@ describe('markup des primitives — figé par contrat', () => {
       '<label class="admin-field admin-field--full"><span>Nom<em>*</em></span><input/><small>3 min.</small><small class="admin-field-error">Trop court</small></label>'],
     ['Filters', <Filters><span>f</span></Filters>, '<div class="admin-filters"><span>f</span></div>'],
     ['Form', <Form onSubmit={() => {}} className="x"><span /></Form>, '<form class="admin-form x"><span></span></form>'],
-    ['PageHeader avec eyebrow de domaine', <PageHeader title="Stock" description="mouvements" eyebrow="AYROVI STOCK" />,
-      '<div class="admin-page-header"><div><span class="admin-eyebrow">AYROVI STOCK</span><h1>Stock</h1><p>mouvements</p></div></div>'],
+    ['PageHeader avec eyebrow de domaine', <PageHeader title="Stock" description="mouvements" eyebrow="ZAYROVI STOCK" />,
+      '<div class="admin-page-header"><div><span class="admin-eyebrow">ZAYROVI STOCK</span><h1>Stock</h1><p>mouvements</p></div></div>'],
     // Contrat amendé le 2026-09-22 : les deux flèches portent aussi un `title`. Un bouton grisé
     // (ici « page précédente » en page 1) doit dire pourquoi il l'est, à la souris comme au clavier.
     ['Pagination à la première page', <Pagination page={1} totalPages={3} total={1} onChange={() => {}} />,
@@ -165,7 +165,7 @@ describe('markup des primitives — figé par contrat', () => {
       '<div class="admin-date-input"><svg'],
     ['ImageUploader', <ImageUploader onChange={() => {}} />, '<div class="admin-image-uploader"><label class="admin-image-drop"><input type="file" accept="image/png,image/jpeg,image/webp,image/gif"/>'],
     ['Modal large avec pied', <Modal open title="T" onClose={() => {}} wide footer={<b>pied</b>}><i>corps</i></Modal>,
-      '<section class="admin-modal admin-modal--wide" role="dialog" aria-modal="true" aria-label="T"><header><div><span>AYROVI CMS</span><h2>T</h2></div>'],
+      '<section class="admin-modal admin-modal--wide" role="dialog" aria-modal="true" aria-label="T"><header><div><span>ZAYROVI CMS</span><h2>T</h2></div>'],
     ['ConfirmDialog', <ConfirmDialog open message="Sûr ?" onConfirm={() => {}} onCancel={() => {}} />,
       '<p class="admin-confirm-message">Sûr ?</p>'],
     ['DataTable — cellule sans render', <DataTable columns={[{ key: 'title', label: 'Titre' }] as any} rows={[{ id: '1', title: 'A' }]} />,
@@ -190,7 +190,7 @@ describe('markup des primitives — figé par contrat', () => {
 
 describe('extractions — la primitive rend ce que l’écran écrivait à la main', () => {
   /* Les formes manuscrites ci-dessous sont recopiées des écrans tels qu'ils étaient avant P3/T2
-     (HeroVisualsPage, HomeSectionsPage, InterfaceStudio, LensSectionPage, resource-ui,
+     (HomeSectionsPage, InterfaceStudio, LensSectionPage, resource-ui,
      AdminApp, AdminPricingPage, DataTable). L'égalité est faite sur le rendu, pas sur le code. */
   const noop = () => {};
 

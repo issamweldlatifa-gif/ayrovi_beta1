@@ -1,3 +1,4 @@
+import { HERO_DESTINATIONS } from '../../../../shared/heroDestinations';
 import { PUBLIC_NAV_DESTINATIONS } from '../../../../shared/publicNavigation';
 /**
  * P2.0 — primitives partagées du back office (une seule implémentation par fonction).
@@ -34,13 +35,16 @@ export const labels: Record<string, string> = {
   SHEIN: 'SHEIN', AMAZON: 'Amazon', TEMU: 'TEMU', ALIEXPRESS: 'AliExpress', OTHER: 'Autre', EUR: 'EUR', USD: 'USD', GBP: 'GBP', JPY: 'JPY', TND: 'TND',
   AVAILABLE: 'Disponible', LIMITED: 'Stock limité', OUT_OF_STOCK: 'Épuisé', INACTIVE: 'Inactif', PERCENTAGE: 'Pourcentage', FIXED: 'Montant fixe',
   IMAGE: 'Image', VIDEO: 'Vidéo', PUBLISHED: 'Publié', EXPIRED: 'Expiré', NEW_ARRIVAL: 'Nouvel arrivage', NEW_BRAND: 'Nouvelle marque', PROMOTION: 'Promotion',
-  DELIVERY: 'Livraison', AYROVI: 'AYROVI', INFORMATION: 'Information', FASHION: 'Mode', SPORT_LIFESTYLE: 'Sport & lifestyle', BEAUTY: 'Beauté', TECH: 'Tech', HOME: 'Maison',
+  DELIVERY: 'Livraison', AYROVI: 'ZAYROVI', INFORMATION: 'Information', FASHION: 'Mode', SPORT_LIFESTYLE: 'Sport & lifestyle', BEAUTY: 'Beauté', TECH: 'Tech', HOME: 'Maison',
   FAQ: 'FAQ', PREDEFINED_RESPONSE: 'Réponse prédéfinie', PAYMENT: 'Paiement', BRAND: 'Marque', ARRIVAL: 'Arrivage', GENERAL: 'Général',
   PENDING: 'En attente', IN_PROGRESS: 'En cours', RESOLVED: 'Résolu', CLOSED: 'Fermé', NORMAL: 'Normale', HIGH: 'Haute',
   SUPER_ADMIN: 'Super Admin', ADMIN: 'Admin', CONTENT_MANAGER: 'Contenu', ORDER_MANAGER: 'Commandes',
   // Destinations de la barre publique sous l'en-tête : libellés pris au contrat partagé,
   // jamais recopiés (l'Admin choisit une cible lisible, pas une URL libre).
   ...Object.fromEntries(PUBLIC_NAV_DESTINATIONS.map((destination) => [destination.id, destination.adminLabel])),
+  // Destinations du carrousel Hero — libellés pris au contrat partagé, même règle que la barre publique.
+  ...Object.fromEntries(HERO_DESTINATIONS.map((destination) => [destination.id, destination.adminLabel])),
+  auto: 'Automatique (palette extraite)', manual: 'Manuelle (couleur choisie)',
 };
 
 export const options = (values: string[]) => values.map((value) => ({ value, label: labels[value] || value }));

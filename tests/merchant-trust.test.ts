@@ -5,7 +5,7 @@
 // Le registre est volontairement en mémoire par process : la preuve se
 // ré-accumule depuis les profiles crawlés — aucune liste figée sans historique.
 import { describe, expect, it } from 'vitest';
-import { filterDisplayableCandidates, isTrustedMerchantHost, merchantTrust, registerTrustedMerchantHost, shopperScore, harvestForScrape, type MerchantTrust } from '../src/ayrovix/services/candidatePolicy';
+import { filterDisplayableCandidates, isConfirmedOutOfStockCandidate, isTrustedMerchantHost, merchantTrust, registerTrustedMerchantHost, shopperScore, harvestForScrape, type MerchantTrust } from '../src/ayrovix/services/candidatePolicy';
 import type { AyrovixCandidate } from '../src/ayrovix/types';
 
 function candidate(overrides: Partial<AyrovixCandidate>): AyrovixCandidate {
@@ -90,5 +90,16 @@ describe('harvest : plus de liens à kachter', () => {
     const bare = candidate({ id: 'b', sourceUrl: 'https://b.tn/p', price: null as any, currency: null as any, image: 'https://cdn.tn/b.jpg' });
     const harvested = harvestForScrape([priced, bare], 8);
     expect(harvested.map((item) => item.id)).toEqual(['p', 'b']);
+  });
+
+  it('un stock SerpApi négatif n’efface pas la découverte; une rupture marchande confirmée, oui', () => {
+    const hint = candidate({ id: 'hint', availability: 'out_of_stock' });
+    const confirmed = candidate({
+      id: 'confirmed', availability: 'out_of_stock',
+      sourceRead: { at: '2026-10-17T00:00:00.000Z', variantsAvailable: 0, variantsUnavailable: 1, variantsUnknown: 0 },
+    });
+    expect(isConfirmedOutOfStockCandidate(hint)).toBe(false);
+    expect(isConfirmedOutOfStockCandidate(confirmed)).toBe(true);
+    expect(harvestForScrape([hint, confirmed], 8).map((item) => item.id)).toEqual(['hint']);
   });
 });

@@ -1,5 +1,5 @@
 /**
- * AYROVI Purchasing (P2.3) — les permissions comme données, sur le moteur ERP.
+ * ZAYROVI Purchasing (P2.3) — les permissions comme données, sur le moteur ERP.
  *
  * Comme pour le stock (P2.2), le module n'installe aucune autorisation parallèle :
  *  1. il sème des lignes `erp_role_permissions` pour `purchasing`, actions

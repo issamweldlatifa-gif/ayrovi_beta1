@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Déclenchable à la main : le workflow APK (mobile-android.yml) rallume les
+  # vérifications PR sur le head après son commit bot « tailles mesurées ».
+  workflow_dispatch:
 
 jobs:
   typecheck-test:
@@ -33,7 +36,7 @@ jobs:
       - name: Check generated identity and source inventory
         run: npm run design:check
 
-      - name: Enforce official AYROVI A identity
+      - name: Enforce official ZAYROVI identity
         run: npm run identity:check && npm run identity:test
 
       # Invariants de la coque Android (2026-10-03) : manifeste + tripwires Java.

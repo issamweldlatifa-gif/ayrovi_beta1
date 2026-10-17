@@ -2,11 +2,14 @@ import { chromium } from 'playwright';
 import fs from 'node:fs';
 import sharp from 'sharp';
 import { inspectEditorialIcons } from './editorial-icon-contract.mjs';
+const identity=JSON.parse(fs.readFileSync('client/src/design/editorial/identity.json','utf8'));
+const rgb=hex=>{const n=parseInt(String(hex).slice(1),16);return `rgb(${n>>16&255}, ${n>>8&255}, ${n&255})`;};
+const surface=dark=>({bg:rgb(dark?identity.darkColors.canvas:identity.colors.canvas),ink:rgb(dark?identity.darkColors.ink:identity.colors.ink)});
 const base=process.env.AYROVI_BASE_URL;
 const output='screenshots/editorial/complete-icons';fs.mkdirSync(output,{recursive:true});
 const checks=[],errors=[],orange=[];
 function check(label,pass,details){checks.push({label,pass:Boolean(pass),details});if(!pass)throw new Error(label+': '+JSON.stringify(details));}
-async function area(image){const {data,info}=await sharp(image).removeAlpha().raw().toBuffer({resolveWithObject:true});let n=0;for(let i=0;i<data.length;i+=info.channels){const r=data[i]/255,g=data[i+1]/255,b=data[i+2]/255,max=Math.max(r,g,b),delta=max-Math.min(r,g,b);if(!delta||max<.4||delta/max<.55)continue;let h=(max===r?((g-b)/delta)%6:max===g?(b-r)/delta+2:(r-g)/delta+4)*60;h=(h+360)%360;if(h>=14&&h<=45)n++;}return n/(info.width*info.height);}
+async function area(image,lo=14,hi=45){const {data,info}=await sharp(image).removeAlpha().raw().toBuffer({resolveWithObject:true});let n=0;for(let i=0;i<data.length;i+=info.channels){const r=data[i]/255,g=data[i+1]/255,b=data[i+2]/255,max=Math.max(r,g,b),delta=max-Math.min(r,g,b);if(!delta||max<.4||delta/max<.55)continue;let h=(max===r?((g-b)/delta)%6:max===g?(b-r)/delta+2:(r-g)/delta+4)*60;h=(h+360)%360;if(h>=lo&&h<=hi)n++;}return n/(info.width*info.height);}
 const browser=await chromium.launch({headless:true});
 try{
  for(const locale of ['fr','ar'])for(const width of [320,390,768])for(const height of [480,844])for(const dark of [false,true]){
@@ -18,14 +21,14 @@ try{
   for(const state of ['idle','starting','listening','user_speaking','transcribing','thinking','speaking','muted','error']){
    await page.evaluate(({state,dark})=>window.setEditorialFixture({voice:state,dark,muted:state==='muted'}),{state,dark});
    await page.locator(`[data-voice-state="${state}"][data-tone="${dark?'dark':'light'}"]`).waitFor();
-   await page.waitForFunction(dark=>{const el=document.querySelector('.editorial-voice');return el && getComputedStyle(el).backgroundColor===(dark?'rgb(0, 0, 0)':'rgb(255, 255, 255)');},dark);
+   await page.waitForFunction(bg=>{const el=document.querySelector('.editorial-voice');return el && getComputedStyle(el).backgroundColor===bg;},surface(dark).bg);
    const layout=await page.locator('.editorial-voice').evaluate(el=>{const footer=el.querySelector('footer').getBoundingClientRect();return {width:el.clientWidth,scroll:el.scrollWidth,footer:footer.bottom,controls:[...el.querySelectorAll('button')].filter(e=>e.getClientRects().length&&!e.closest('[inert]')).map(e=>({w:e.getBoundingClientRect().width,h:e.getBoundingClientRect().height,label:e.getAttribute('aria-label')||e.textContent.trim()})),color:getComputedStyle(el).color,bg:getComputedStyle(el).backgroundColor};});
    check(`${key}/${state}: no overflow and footer remains reachable`,layout.scroll<=layout.width+1 && layout.footer<=height+1,layout);
    check(`${key}/${state}: named 44px controls`,layout.controls.every(c=>c.w>=43.9&&c.h>=43.9&&c.label),layout.controls);
-   check(`${key}/${state}: semantic readable surface`,layout.bg===(dark?'rgb(0, 0, 0)':'rgb(255, 255, 255)')&&layout.color===(dark?'rgb(255, 255, 255)':'rgb(0, 0, 0)'),layout);
+   check(`${key}/${state}: semantic readable surface`,layout.bg===surface(dark).bg&&layout.color===surface(dark).ink,layout);
    const icons=await inspectEditorialIcons(page,'.editorial-voice');check(`${key}/${state}: reference SVG geometry`,icons.count>0&&!icons.errors.length,icons);
    if(state==='listening'||state==='error'){
-    const shot=await page.screenshot();const ratio=await area(shot);orange.push({key,state,ratio});check(`${key}/${state}: orange <=3%`,ratio<=.03,ratio);
+    const shot=await page.screenshot();const ratio=await area(shot);const violet=await area(shot,245,275);orange.push({key,state,ratio,violet});check(`${key}/${state}: orange <=3%`,ratio<=.03,ratio);check(`${key}/${state}: violet <= ${identity.accentAreaLimit*100}%`,violet<=identity.accentAreaLimit,violet);
     if(width===390&&height===844)fs.writeFileSync(`${output}/voice-${state}-${locale}-${dark?'dark':'light'}.png`,shot);
    }
   }

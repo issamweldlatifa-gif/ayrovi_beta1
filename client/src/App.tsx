@@ -5,13 +5,13 @@ import { PublicPageLinks } from './components/PublicPageLinks';
 import { publicPageForPath } from './navigation/publicPages';
 import { isKnownPagePath } from '../../shared/publicSeo';
 import { NotFoundPage } from './components/NotFoundPage';
-import { TopAnnouncementBar } from './components/TopAnnouncementBar';
 import { Navbar } from './components/Navbar';
-import { EvergreenHero } from './components/EvergreenHero';
+import { HeroCarousel } from './components/HeroCarousel';
 import { StoriesShowcase } from './components/StoriesShowcase';
 import { LensFeature } from './components/LensFeature';
 import { PartnerBrandsSlider } from './components/PartnerBrandsSlider';
 import { PublicCmsSections } from './components/PublicCmsSections';
+import { AnnouncementSection } from './components/AnnouncementSection';
 import { AboutSection } from './components/AboutSection';
 import { BottomNavBar } from './components/BottomNavBar';
 import type { AyrovixOrderPayload } from './ayrovix/types';
@@ -217,8 +217,8 @@ export const App: React.FC = () => {
           openAppView('app:account', true);
           // Le téléphone est une seconde option de vérification; un e-mail vérifié suffit également.
           setAccountMessage(customerAuthResult === 'facebook_success'
-            ? tr('Connexion Facebook réussie. Bienvenue sur AYROVI !', 'تم تسجيل الدخول عبر Facebook. مرحبًا بك في AYROVI!')
-            : tr('Connexion Google réussie. Bienvenue sur AYROVI !', 'تم تسجيل الدخول عبر Google. مرحبًا بك في AYROVI!'));
+            ? tr('Connexion Facebook réussie. Bienvenue sur ZAYROVI !', 'تم تسجيل الدخول عبر Facebook. مرحبًا بك في ZAYROVI!')
+            : tr('Connexion Google réussie. Bienvenue sur ZAYROVI !', 'تم تسجيل الدخول عبر Google. مرحبًا بك في ZAYROVI!'));
         } else if (customerAuthResult === 'error' || customerAuthResult === 'facebook_error') {
           openAppView('app:account', true);
           setAccountMessage(tr(`Erreur : la connexion ${customerAuthResult === 'facebook_error' ? 'Facebook' : 'Google'} n’a pas abouti. Réessayez ou utilisez le code SMS.`, `تعذر تسجيل الدخول عبر ${customerAuthResult === 'facebook_error' ? 'Facebook' : 'Google'}. أعد المحاولة أو استخدم رمز SMS.`));
@@ -436,15 +436,22 @@ export const App: React.FC = () => {
 
   // Preserve the existing homepage composition and the CMS-controlled Stories/Lens order.
   // Discovery links and the shared footer are additions outside this unchanged content.
+  // Bloc « annonce » : rendu DANS le bloc Stories/Reels (juste après), pas comme section à part.
+  const announcementSection = interfaceConfig.sections.find((section) => section.id === 'announcement');
+  const handleAnnouncementCta = (target: string) => {
+    if (target.startsWith('app:')) navigation.navigate([{ id: target }]);
+    else if (target.startsWith('/')) window.location.assign(target);
+  };
+  const announcementBlock = announcementSection ? <AnnouncementSection section={announcementSection} onCta={handleAnnouncementCta} /> : null;
   const publicSections = [...interfaceConfig.sections]
-    .filter((section) => section.visible && !['brands', 'about', 'footer'].includes(section.id))
+    .filter((section) => section.visible && !['brands', 'about', 'footer', 'announcement'].includes(section.id))
     .sort((a, b) => a.order - b.order)
     .map((section) => {
       let content: React.ReactNode;
       // كتل الصفحة الرئيسية تُرتَّب وتُخفى من الـ Dashboard (Admin → Sections)
       if (section.id === 'hero') content = (
         <>
-          <EvergreenHero />
+          <HeroCarousel />
           {/*
             Ordre piloté par le Dashboard : par défaut le bloc LENS d'abord, la
             section Stories ENSUITE. Mettre « Position = au-dessus du bloc LENS »
@@ -457,6 +464,7 @@ export const App: React.FC = () => {
                 isAuthenticated={Boolean(customerSession)}
                 onRequireAuth={() => { setAccountInitialSection('home'); openAppView('app:account'); }}
               />
+              {announcementBlock}
             </>
           ) : (
             <>
@@ -464,6 +472,7 @@ export const App: React.FC = () => {
                 isAuthenticated={Boolean(customerSession)}
                 onRequireAuth={() => { setAccountInitialSection('home'); openAppView('app:account'); }}
               />
+              {announcementBlock}
               <LensFeature onOpenLens={handleOpenLens} />
             </>
           )}
@@ -480,7 +489,7 @@ export const App: React.FC = () => {
     <div className="ayrovi-app-shell interface-page-shell min-h-screen flex flex-col text-ink relative" style={customerTheme(locale, interfaceConfig)}>
       
 
-      {/* Header: Left Menu, Center Fig Logo + AYROVI, Right Profile */}
+      {/* Header: Left Menu, Center Fig Logo + ZAYROVI, Right Profile */}
       <div data-preserved-navigation style={{ display: 'contents' }}>
       <Navbar
         onOpenMenuDrawer={() => openAppView('app:menu')}
@@ -502,7 +511,7 @@ export const App: React.FC = () => {
       />
       </div>
 
-      {!publicPage && !unknownPath && <><TopAnnouncementBar /><PublicPageLinks /></>}
+      {!publicPage && !unknownPath && <><PublicPageLinks /></>}
 
       {appView === 'app:about' && <Suspense fallback={null}><AboutPage section={interfaceConfig.sections.find(section => section.id === 'about')} onClose={closeAppView} /></Suspense>}
 
@@ -544,7 +553,7 @@ export const App: React.FC = () => {
       {/* Floating Scroll To Top FAB Button */}
       <ScrollToTopButton hidden={navigation.stack.length > 0} />
 
-      {/* Compact RTL glass navigation: Ayvisi (left), Ayrovi (center), Ayrovix (right). */}
+      {/* Compact RTL glass navigation: Ayvisi (left), Zayrovi (center), Ayrovix (right). */}
       {/* §3 (04/10/2026) — JAMAIS deux barres. AyWebs s'ouvre dans une couche
           `fixed inset-0 z-[25]`, mais cette barre-ci vit à la racine en z-30 :
           elle RECOUVRAIT donc la barre AyWebs, qui devenait visible mais
@@ -592,7 +601,7 @@ export const App: React.FC = () => {
         </Suspense>
       )}
 
-      {/* Modular AYROVI assistant interface */}
+      {/* Modular ZAYROVI assistant interface */}
       {isAiDrawerOpen && (
         <Suspense fallback={null}>
           <AiAssistantDrawer
@@ -638,6 +647,7 @@ export const App: React.FC = () => {
           <LensLauncher
             customerSession={customerSession}
             onOpenFavorites={() => { setAccountInitialSection('favorites'); setAccountMessage(''); openAppView('app:account'); }}
+            onOpenOcerex={() => openAppView('app:ocerex')}
             isOpen={isLensOpen}
             historyScope={customerSession?.account.id || null}
             onClose={handleCloseLens}

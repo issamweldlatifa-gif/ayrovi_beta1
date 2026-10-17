@@ -1,5 +1,5 @@
 /**
- * AYROVI CRM 360 (E2) — tableau de bord relationnel.
+ * ZAYROVI CRM 360 (E2) — tableau de bord relationnel.
  *
  * Toutes les valeurs sont calculées depuis les vraies tables du module (et des tables
  * legacy via les raccordements quand pertinent). Aucune donnée de démonstration n'est

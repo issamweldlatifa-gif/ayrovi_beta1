@@ -37,8 +37,8 @@ h1 { font-size:20px; margin:0 0 4px; letter-spacing:-.02em; }
 `;
 const page = `<!DOCTYPE html>
 <html lang="ar" dir="ltr"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>AYROVI — قبل / بعد</title><style>${css}</style></head><body>
-<h1>AYROVI Icon System — قبل / بعد (قبل = git HEAD، بعد = الكود الحالي)</h1>
+<title>ZAYROVI — قبل / بعد</title><style>${css}</style></head><body>
+<h1>ZAYROVI Icon System — قبل / بعد (قبل = git HEAD، بعد = الكود الحالي)</h1>
 <p class="sub">الصفوف البرتقالية = أيقونة تغيّرت هندسيًا أو في موضع نقطة الـ signature. الرموز في «قبل» مأخوذة مباشرة من آخر commit.</p>
 ${body}
 </body></html>`;

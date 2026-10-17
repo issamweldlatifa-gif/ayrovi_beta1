@@ -119,7 +119,7 @@ export function ensureBootstrapAdmin(db: QatafoDatabase) {
       if (!claimed.changes) throw new Error('ADMIN_BOOTSTRAP_RESET token already consumed.');
     }
     db.run(`INSERT INTO admin_users (id,email,name,password_hash,role,active,created_at,updated_at)
-      VALUES (?,?,?,?, 'SUPER_ADMIN',1,?,?)`, `admin_${randomUUID()}`, email, 'AYROVI Admin', hashPassword(password), now, now);
+      VALUES (?,?,?,?, 'SUPER_ADMIN',1,?,?)`, `admin_${randomUUID()}`, email, 'ZAYROVI Admin', hashPassword(password), now, now);
   });
   // Every login credential gets an employee identity immediately, so audit rows
   // written by the very first session already carry an EMP- code.
