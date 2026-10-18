@@ -34,6 +34,7 @@ import {
 } from '@/api/aywebs';
 import { AddToCartSheet } from '@/features/aywebs/AddToCartSheet';
 import { ReadingProgress } from '@/features/aywebs/ReadingProgress';
+import { resolveWithCaptureFallback } from '@/features/aywebs/captureFallback';
 import { CAPTURE_BUDGET_MS, type ReadPhase } from '@/features/aywebs/phase';
 import { useSessionId } from '@/session/session';
 
@@ -191,10 +192,16 @@ export default function AyWebsBrowserScreen() {
   const addToCart = useCallback(async () => {
     if (!sessionId || !url || productPage !== true) return;
     try {
-      const capture = captureAllowed ? await requestCapture() : undefined;
-      startWaiting('resolving');
-      const result = await resolveAyWebsProductWithCapture(url, {
-        sessionId, storeId: storeId || undefined, capture,
+      /* الكابتشر مسرّع فقط: كان فشل (صفحة ساكتة، سكريبت ما وصلش، شبكة مقطوعة)،
+         نكمّلو بالقراءة من الخادم كيف الويب، والورقة تحل. */
+      const { outcome: result, capture } = await resolveWithCaptureFallback<AyWebsResolveOutcome>({
+        readCapture: captureAllowed ? requestCapture : undefined,
+        resolve: (captured) => {
+          startWaiting('resolving');
+          return resolveAyWebsProductWithCapture(url, {
+            sessionId, storeId: storeId || undefined, capture: captured,
+          });
+        },
       });
       setOutcome(result);
       setNote('');
