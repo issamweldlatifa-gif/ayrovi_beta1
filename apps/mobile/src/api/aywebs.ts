@@ -106,6 +106,8 @@ export interface AyWebsStore {
   capabilities: string[];
   browserMode: string;
   homeUrl: string;
+  /** Chemin du logo servi par le serveur (ex. `/stores/amazon.png`), `''` si aucun. */
+  logo: string;
   purchaseMode: string;
   popular: boolean;
 }
@@ -130,6 +132,7 @@ export function parseAyWebsStores(payload: unknown): AyWebsStore[] {
       capabilities: strList(entry.capabilities),
       browserMode: str(entry.browser_mode),
       homeUrl: str(entry.home_url),
+      logo: str(entry.logo),
       purchaseMode: str(entry.purchase_mode),
       popular: bool(entry.popular),
     };

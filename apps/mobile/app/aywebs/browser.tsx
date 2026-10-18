@@ -21,8 +21,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { WebView as RNWebView, type WebViewMessageEvent, type WebViewProps } from 'react-native-webview';
 import { decideWebNavigation, isWebPageUrl } from '@/features/aywebs/webNavigation';
+import { normalizeStoreAddress } from '@/features/aywebs/storeEntry';
 
-import { AppText, Button, Card, KeyValue } from '@/design/ui';
+import { AppText, Button, Card, Field, KeyValue } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { useI18n } from '@/i18n';
@@ -30,7 +31,7 @@ import { ApiError, isApiError, userMessage } from '@/api/errors';
 import {
   analyzeAyWebsPage, buildAyWebsCaptureInjection, fetchAyWebsCaptureScript,
   parseAyWebsCaptureMessage, resolveAyWebsProductWithCapture,
-  type AyWebsResolveOutcome,
+  type AyWebsPageAnalysis, type AyWebsResolveOutcome,
 } from '@/api/aywebs';
 import { AddToCartSheet } from '@/features/aywebs/AddToCartSheet';
 import { ReadingProgress } from '@/features/aywebs/ReadingProgress';
@@ -60,10 +61,12 @@ export default function AyWebsBrowserScreen() {
   const { t, locale } = useI18n();
   const sessionId = useSessionId();
 
-  const params = useLocalSearchParams<{ url?: string; storeId?: string; capture?: string }>();
+  const params = useLocalSearchParams<{ url?: string; storeId?: string; storeName?: string; capture?: string }>();
   const url = String(params.url ?? '');
   const storeId = String(params.storeId ?? '');
-  const captureAllowed = params.capture === '1';
+  /** السماح الأوّلي من شاشة المتجر؛ يتحدّث حسب الصفحة الحالية بعد التصنيف. */
+  const captureAllowedParam = params.capture === '1';
+  const storeName = String(params.storeName ?? '');
   /** رابط غير صالح (مخطط غريب أو فارغ) لا يُحمَّل أبداً في الـWebView. */
   const pageOk = isWebPageUrl(url);
 
@@ -78,6 +81,16 @@ export default function AyWebsBrowserScreen() {
   const [outcome, setOutcome] = useState<AyWebsResolveOutcome | null>(null);
   /** تصنيف الخادم للصفحة: `null` = مازال، و`false` = موش صفحة منتوج. */
   const [productPage, setProductPage] = useState<boolean | null>(null);
+  /* العنوان المحمَّل في الـWebView: يتغيّر فقط بزر «Ouvrir» — تغييره يعيد التحميل. */
+  const [loadUrl, setLoadUrl] = useState(url);
+  /* الصفحة الحالية كما يصرّح بها التنقّل داخل الـWebView (تتبع الروابط). */
+  const [pageUrl, setPageUrl] = useState(url);
+  const [address, setAddress] = useState(url);
+  /** تصنيف الخادم للصفحة الحالية: مصدر السماح بالقراءة وبالإضافة. */
+  const [pageAnalysis, setPageAnalysis] = useState<AyWebsPageAnalysis | null>(null);
+  const captureAllowed = pageAnalysis
+    ? (pageAnalysis.captureAllowed || pageAnalysis.externalCaptureAllowed)
+    : captureAllowedParam;
   const [classified, setClassified] = useState(false);
   /** الورقة: المنتوج + الكابتشر اللي بعثناه (باش الإضافة ما تعاودش تقرا التاجر). */
   const [sheet, setSheet] = useState<{ outcome: AyWebsResolveOutcome; capture?: unknown } | null>(null);
@@ -110,23 +123,25 @@ export default function AyWebsBrowserScreen() {
 
   /** تصنيف الصفحة — شرط تفعيل «Add to Cart» (لا تخمين من الرابط). */
   useEffect(() => {
-    if (!sessionId || !url || !pageOk) return;
+    if (!sessionId || !pageUrl || !isWebPageUrl(pageUrl)) return;
     let alive = true;
     setClassified(false);
-    analyzeAyWebsPage(url, { sessionId })
+    analyzeAyWebsPage(pageUrl, { sessionId })
       .then((analysis) => {
         if (!alive) return;
+        setPageAnalysis(analysis);
         setProductPage(analysis.isProductPage);
         setClassified(true);
       })
       .catch(() => {
         if (!alive) return;
         // ما نعرفوش: الزرّ يبقى معطّلاً والسبب يظهر — موش نفعّلوه بالتخمين.
+        setPageAnalysis(null);
         setProductPage(null);
         setClassified(true);
       });
     return () => { alive = false; };
-  }, [sessionId, url]);
+  }, [sessionId, pageUrl]);
 
   /**
    * يطلب قراءة الصفحة ويرجّع الوعد: يتفتح بالحقن، ويتسدّ بالرسالة اللي تجي من
@@ -166,12 +181,12 @@ export default function AyWebsBrowserScreen() {
 
   /** «اقرا هذه الصفحة»: قراءة + قرار الخادم، بلا أي إضافة. */
   const readPage = useCallback(async () => {
-    if (!captureAllowed || !sessionId || !url) return;
+    if (!captureAllowed || !sessionId || !pageUrl) return;
     try {
       const capture = await requestCapture();
       // المنعرج الثالث: الكلمة صارت للخادم (تصنيف، سعر، توفّر).
       startWaiting('resolving');
-      const result = await resolveAyWebsProductWithCapture(url, {
+      const result = await resolveAyWebsProductWithCapture(pageUrl, {
         sessionId, storeId: storeId || undefined, capture,
       });
       setOutcome(result);
@@ -183,14 +198,14 @@ export default function AyWebsBrowserScreen() {
       stopTimer();
       setBusy(false);
     }
-  }, [captureAllowed, endWaiting, fail, requestCapture, sessionId, startWaiting, storeId, url]);
+  }, [captureAllowed, endWaiting, fail, requestCapture, sessionId, startWaiting, storeId, pageUrl]);
 
   /**
    * «Add to Cart»: يقرا (كي مسموح)، يحلّ المنتوج، ثم يفتح ورقة الاختيار
    * **فوق هذه الصفحة** — الإضافة الحقيقية تجي في الورقة.
    */
   const addToCart = useCallback(async () => {
-    if (!sessionId || !url || productPage !== true) return;
+    if (!sessionId || !pageUrl || productPage !== true) return;
     try {
       /* الكابتشر مسرّع فقط: كان فشل (صفحة ساكتة، سكريبت ما وصلش، شبكة مقطوعة)،
          نكمّلو بالقراءة من الخادم كيف الويب، والورقة تحل. */
@@ -198,7 +213,7 @@ export default function AyWebsBrowserScreen() {
         readCapture: captureAllowed ? requestCapture : undefined,
         resolve: (captured) => {
           startWaiting('resolving');
-          return resolveAyWebsProductWithCapture(url, {
+          return resolveAyWebsProductWithCapture(pageUrl, {
             sessionId, storeId: storeId || undefined, capture: captured,
           });
         },
@@ -213,7 +228,7 @@ export default function AyWebsBrowserScreen() {
       stopTimer();
       setBusy(false);
     }
-  }, [captureAllowed, endWaiting, fail, productPage, requestCapture, sessionId, startWaiting, storeId, url]);
+  }, [captureAllowed, endWaiting, fail, productPage, requestCapture, sessionId, startWaiting, storeId, pageUrl]);
 
   const onMessage = useCallback((event: WebViewMessageEvent) => {
     stopTimer();
@@ -229,6 +244,19 @@ export default function AyWebsBrowserScreen() {
     setBusy(false);
     pending?.resolve(parsed.capture);
   }, [t]);
+
+  /** «Ouvrir» : العنوان المكتوب يصبح الصفحة المحمّلة، أو يُرفض بسبب واضح. */
+  const openAddress = useCallback(() => {
+    const next = normalizeStoreAddress(address);
+    if (!next) {
+      setNote(t('aywebs.storeAddressInvalid'));
+      return;
+    }
+    setNote('');
+    setLoadUrl(next);
+    setPageUrl(next);
+    setAddress(next);
+  }, [address, t]);
 
   const verdict = outcome?.capture ?? null;
   const addEnabled = productPage === true && !busy && Boolean(sessionId);
@@ -249,9 +277,38 @@ export default function AyWebsBrowserScreen() {
             accessibilityElementsHidden
           />
         </Pressable>
-        <AppText variant="title" numberOfLines={1} style={[styles.headerTitle, { [theme.isRTL ? 'paddingLeft' : 'paddingRight']: 8 }]}>
-          {t('aywebs.browserTitle')}
-        </AppText>
+        <View style={styles.titleBox}>
+          <AppText variant="title" numberOfLines={1}>{storeName || t('aywebs.browserTitle')}</AppText>
+          <AppText variant="caption" color={theme.colors.muted} numberOfLines={1}>{t('aywebs.storeSecure')}</AppText>
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('common.close')}
+          onPress={() => goBack('/(tabs)/aywebs')}
+          style={{ minHeight: theme.geometry.minTarget, minWidth: theme.geometry.minTarget, justifyContent: 'center', alignItems: 'center' }}
+        >
+          <Ionicons name="close" size={24} color={theme.colors.ink} accessibilityElementsHidden />
+        </Pressable>
+      </View>
+
+      <View style={styles.addressBox}>
+        <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.storeAddress')}</AppText>
+        <View style={[styles.addressRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+          <View style={styles.addressField}>
+            <Field
+              value={address}
+              onChangeText={setAddress}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+              inputMode="url"
+              accessibilityLabel={t('aywebs.storeAddress')}
+              onSubmitEditing={openAddress}
+              returnKeyType="go"
+            />
+          </View>
+          <Button label={t('aywebs.storeOpenAddress')} tone="quiet" onPress={openAddress} testID="aywebs-store-open" />
+        </View>
       </View>
 
       {outcome ? (
@@ -282,7 +339,7 @@ export default function AyWebsBrowserScreen() {
       {pageOk ? (
       <WebView
         ref={webRef}
-        source={{ uri: url }}
+        source={{ uri: loadUrl }}
         style={styles.web}
         /**
          * `'*'` عمداً: لو بقيت القائمة `https://*`، المكتبة تفتح كل عنوان خارجها
@@ -296,6 +353,11 @@ export default function AyWebsBrowserScreen() {
         }}
         javaScriptEnabled
         setSupportMultipleWindows={false}
+        onNavigationStateChange={(state) => {
+          if (!state.url) return;
+          setPageUrl(state.url);
+          setAddress(state.url);
+        }}
         onLoadEnd={() => setLoaded(true)}
         onMessage={onMessage}
         onError={() => setNote(t('aywebs.captureFailed'))}
@@ -332,25 +394,24 @@ export default function AyWebsBrowserScreen() {
           <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.addNotProductPage')}</AppText>
         ) : null}
 
-        <View style={styles.row}>
-          <Button
-            label={t('aywebs.readPage')}
-            tone="quiet"
-            block
-            style={styles.rowButton}
-            onPress={readPage}
-            busy={busy && !addEnabled}
-            disabled={!captureAllowed || !loaded || !sessionId}
-          />
-          <Button
-            label={t('aywebs.addToCart')}
-            block
-            style={styles.rowButton}
-            onPress={addToCart}
-            busy={busy && addEnabled}
-            disabled={!addEnabled}
-          />
-        </View>
+        <Button
+          label={t('aywebs.readPage')}
+          tone="quiet"
+          block
+          onPress={readPage}
+          busy={busy && !addEnabled}
+          disabled={!captureAllowed || !loaded || !sessionId}
+        />
+        <Button
+          label={t('aywebs.addToCart')}
+          tone="main"
+          block
+          onPress={addToCart}
+          busy={busy && addEnabled}
+          disabled={!addEnabled}
+          leading={<Ionicons name="pricetag-outline" size={18} color={theme.colors.onAction} />}
+          testID="aywebs-store-add-to-cart"
+        />
       </View>
 
       {sheet ? (
@@ -376,5 +437,9 @@ const styles = StyleSheet.create({
   loading: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   footer: { borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingTop: 8, gap: 6 },
   row: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  titleBox: { flex: 1, paddingHorizontal: 4 },
+  addressBox: { paddingHorizontal: 16, gap: 4, marginTop: 8 },
+  addressRow: { gap: 8, alignItems: 'center' },
+  addressField: { flex: 1 },
   rowButton: { flex: 1 },
 });
