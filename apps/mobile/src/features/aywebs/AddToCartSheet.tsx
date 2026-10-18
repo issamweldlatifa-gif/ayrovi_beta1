@@ -140,6 +140,7 @@ export function AddToCartSheet({
         variant: selected,
         quantity,
         capture,
+        refresh: true,
       });
       if (!fresh.quoteToken) throw new Error('QUOTE_MISSING');
       const result = await addAyWebsCartItem({

@@ -29,6 +29,11 @@ import {
   safeAyWebsStartUrl,
 } from '@/features/aywebs/merchantSecurity';
 import { AddToCartSheet } from '@/features/aywebs/AddToCartSheet';
+import {
+  AYWEBS_CAPTURE_EMPTY_PRICE_RETRY_DELAY_MS,
+  hasVerifiedAyWebsQuote,
+  shouldRetryAyWebsCaptureForPrice,
+} from '@/features/aywebs/captureFlow';
 
 const CAPTURE_RESPONSE_TIMEOUT_MS = 15_000;
 const SCRIPT_FAILURE_COPY: Record<string, string> = {
@@ -65,6 +70,9 @@ export default function AyWebsBrowserScreen() {
   const webViewRef = useRef<MerchantWebViewCommandRef | null>(null);
   const scriptRef = useRef('');
   const captureTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const captureRetryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const captureRetryCount = useRef(0);
+  const captureCycleId = useRef(0);
   const activeRequestId = useRef('');
   const captureBusyRef = useRef(false);
 
@@ -110,7 +118,24 @@ export default function AyWebsBrowserScreen() {
 
   useEffect(() => () => {
     if (captureTimer.current) clearTimeout(captureTimer.current);
+    if (captureRetryTimer.current) clearTimeout(captureRetryTimer.current);
+    captureCycleId.current += 1;
     captureBusyRef.current = false;
+    activeRequestId.current = '';
+  }, []);
+
+  const cancelPendingCapture = useCallback(() => {
+    if (captureTimer.current) clearTimeout(captureTimer.current);
+    if (captureRetryTimer.current) clearTimeout(captureRetryTimer.current);
+    captureTimer.current = null;
+    captureRetryTimer.current = null;
+    activeRequestId.current = '';
+    captureRetryCount.current = 0;
+    captureCycleId.current += 1;
+    if (captureBusyRef.current) {
+      captureBusyRef.current = false;
+      setCaptureBusy(false);
+    }
   }, []);
 
   const goToAddress = useCallback(() => {
@@ -122,82 +147,134 @@ export default function AyWebsBrowserScreen() {
       setNavigationWarning(t('aywebs.browser.navigationBlocked'));
       return;
     }
+    cancelPendingCapture();
     setNavigationWarning('');
     setLoaded(false);
     setCurrentUrl(normalized);
-  }, [address, store, t]);
+  }, [address, cancelPendingCapture, store, t]);
+
+  const injectCapture = useCallback(() => {
+    if (!webViewRef.current || !scriptRef.current) throw new Error('WEBVIEW_NOT_READY');
+    if (captureTimer.current) clearTimeout(captureTimer.current);
+    const requestId = Crypto.randomUUID();
+    activeRequestId.current = requestId;
+    captureBusyRef.current = true;
+    setCaptureBusy(true);
+    captureTimer.current = setTimeout(() => {
+      captureTimer.current = null;
+      activeRequestId.current = '';
+      captureBusyRef.current = false;
+      setCaptureBusy(false);
+      setCaptureError(t('aywebs.browser.capture.timeout'));
+    }, CAPTURE_RESPONSE_TIMEOUT_MS);
+    webViewRef.current.injectJavaScript(buildAyWebsCaptureInjection(scriptRef.current, requestId));
+  }, [t]);
 
   const capturePage = useCallback(async () => {
     if (!store || !sessionId || !currentUrl || !homeQuery.data?.features.captureEnabled || captureBusyRef.current) return;
+    if (captureRetryTimer.current) clearTimeout(captureRetryTimer.current);
+    captureRetryTimer.current = null;
+    captureRetryCount.current = 0;
+    const cycleId = ++captureCycleId.current;
     setCaptureError('');
     setNavigationWarning('');
     setCaptureBusy(true);
     captureBusyRef.current = true;
     try {
       if (!scriptRef.current) scriptRef.current = await fetchAyWebsCaptureScript();
-      if (!webViewRef.current) throw new Error('WEBVIEW_NOT_READY');
-      const requestId = Crypto.randomUUID();
-      activeRequestId.current = requestId;
-      captureTimer.current = setTimeout(() => {
-        captureTimer.current = null;
-        activeRequestId.current = '';
-        captureBusyRef.current = false;
-        setCaptureBusy(false);
-        setCaptureError(t('aywebs.browser.capture.timeout'));
-      }, CAPTURE_RESPONSE_TIMEOUT_MS);
-      webViewRef.current.injectJavaScript(buildAyWebsCaptureInjection(scriptRef.current, requestId));
+      if (cycleId !== captureCycleId.current) return;
+      injectCapture();
     } catch (error) {
+      if (cycleId !== captureCycleId.current) return;
       if (captureTimer.current) clearTimeout(captureTimer.current);
+      if (captureRetryTimer.current) clearTimeout(captureRetryTimer.current);
       captureTimer.current = null;
+      captureRetryTimer.current = null;
       activeRequestId.current = '';
       captureBusyRef.current = false;
       setCaptureBusy(false);
       setCaptureError(ayWebsErrorMessage(error, locale, t));
     }
-  }, [currentUrl, homeQuery.data?.features.captureEnabled, locale, sessionId, store, t]);
+  }, [currentUrl, homeQuery.data?.features.captureEnabled, injectCapture, locale, sessionId, store, t]);
 
   const onMessage = useCallback(async (event: { nativeEvent: { data: string } }) => {
     const message = parseAyWebsCaptureMessage(event.nativeEvent.data);
     if (!captureBusyRef.current || !activeRequestId.current || message.requestId !== activeRequestId.current) return;
+    const cycleId = captureCycleId.current;
     if (captureTimer.current) clearTimeout(captureTimer.current);
     captureTimer.current = null;
     activeRequestId.current = '';
-    captureBusyRef.current = false;
-    setCaptureBusy(false);
     if (!message.ok) {
+      captureBusyRef.current = false;
+      setCaptureBusy(false);
       const key = SCRIPT_FAILURE_COPY[message.code] ?? 'aywebs.browser.capture.badData';
       setCaptureError(t(key as never));
       return;
     }
     if (!store || !sessionId || !isAllowedAyWebsMerchantUrl(message.capture.url, store)) {
+      captureBusyRef.current = false;
+      setCaptureBusy(false);
       setCaptureError(t('aywebs.browser.navigationBlocked'));
       return;
     }
     const captureUrl = normalizeAyWebsUrl(message.capture.url);
     if (!captureUrl) {
+      captureBusyRef.current = false;
+      setCaptureBusy(false);
       setCaptureError(t('aywebs.browser.capture.badData'));
       return;
     }
-    setCaptureBusy(true);
+    if (shouldRetryAyWebsCaptureForPrice(message.capture.priceCandidates, captureRetryCount.current)) {
+      captureRetryCount.current += 1;
+      captureRetryTimer.current = setTimeout(() => {
+        captureRetryTimer.current = null;
+        if (cycleId !== captureCycleId.current) return;
+        try {
+          injectCapture();
+        } catch (error) {
+          if (captureTimer.current) clearTimeout(captureTimer.current);
+          captureTimer.current = null;
+          activeRequestId.current = '';
+          captureBusyRef.current = false;
+          setCaptureBusy(false);
+          setCaptureError(ayWebsErrorMessage(error, locale, t));
+        }
+      }, AYWEBS_CAPTURE_EMPTY_PRICE_RETRY_DELAY_MS);
+      return;
+    }
     try {
+      // Add est une intention explicite : contourner le mémo d'échec et relire
+      // le prix marchand au lieu de rouvrir une ancienne réponse à 0,00.
       const result = await resolveAyWebsProduct({
         url: captureUrl,
         storeId: store.id,
         sessionId,
         capture: message.capture,
+        refresh: true,
       });
+      if (cycleId !== captureCycleId.current) return;
       if (result.product.storeId !== store.id || !isAllowedAyWebsMerchantUrl(result.product.sourceUrl, store)) {
         setCaptureError(t('aywebs.browser.capture.badData'));
+        return;
+      }
+      if (!hasVerifiedAyWebsQuote(result.product, result.quoteToken)) {
+        // Ne jamais ouvrir la feuille d'options avec « 0,00 » ou un prix/devise
+        // que le serveur n'a pas vérifiés.
+        setCaptureError(t('aywebs.error.captureIncomplete'));
         return;
       }
       setCapturedPage(message.capture);
       setResolved(result);
     } catch (error) {
+      if (cycleId !== captureCycleId.current) return;
       setCaptureError(ayWebsErrorMessage(error, locale, t));
     } finally {
-      setCaptureBusy(false);
+      if (cycleId === captureCycleId.current) {
+        captureBusyRef.current = false;
+        setCaptureBusy(false);
+      }
     }
-  }, [locale, sessionId, store, t]);
+  }, [injectCapture, locale, sessionId, store, t]);
 
   const onShouldStartLoadWithRequest = useCallback((request: { url: string; isTopFrame?: boolean }) => {
     // Ignore only non-top-frame navigations when WebKit identifies them. The
@@ -215,12 +292,13 @@ export default function AyWebsBrowserScreen() {
     if (navigation.url && store && isAllowedAyWebsMerchantUrl(navigation.url, store)) {
       const normalized = normalizeAyWebsUrl(navigation.url);
       if (normalized) {
+        if (normalized !== currentUrl) cancelPendingCapture();
         setCurrentUrl(normalized);
         setAddress(normalized);
       }
     }
     setLoaded(!navigation.loading);
-  }, [store]);
+  }, [cancelPendingCapture, currentUrl, store]);
 
   const back = () => {
     if (router.canGoBack()) router.back();

@@ -196,11 +196,14 @@ describe('AYWEBs — contrat API mobile', () => {
       },
     })));
     vi.stubGlobal('fetch', fetchMock);
-    const result = await resolveAyWebsProduct({ url: product.sourceUrl, storeId: 'amazon', sessionId: 'session-123' });
+    const result = await resolveAyWebsProduct({
+      url: product.sourceUrl, storeId: 'amazon', sessionId: 'session-123', refresh: true,
+    });
     expect(result.product.productId).toBe('p-1');
     expect(result.quoteToken).toBe('signed-quote');
     expect(result.captureUsed).toBe(true);
     expect(fetchMock.mock.calls[0]?.[1]?.signal).toBeDefined();
+    expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body)).refresh).toBe(true);
     expect(AYWEBS_RESOLVE_TIMEOUT_MS).toBe(30_000);
   });
 
