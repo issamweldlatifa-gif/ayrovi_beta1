@@ -70,6 +70,14 @@ jobs:
           echo "::error title=Déploiement Beta périmé::Render ne sert toujours pas $EXPECTED; arrêter évite un faux diagnostic sur l'ancien code."
           exit 1
 
+      - name: Vérifier le script de capture AYWEBs publié
+        if: ${{ github.event_name == 'push' }}
+        run: |
+          set -euo pipefail
+          SCRIPT=$(curl -fsS --max-time 30 "$BASE/api/v1/aywebs/capture/script.js")
+          printf '%s' "$SCRIPT" | grep -q "getComputedStyle"
+          echo "Le script AYWEBs avec filtrage des parents masqués est servi par Render."
+
       - name: Test de bout en bout
         run: |
           set +e +o pipefail
