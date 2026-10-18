@@ -7,7 +7,7 @@
  * `GET /cart`. والكمية **تُضبط** (رقم مطلق يبعث للخادم)، ما تتجمعش في الجهاز:
  * هكذا ما تصيرش مضاعفة كي يتبدّل الرقم في بلاصة أخرى.
  *
- * الجسر (`/cart/bridge-to-ayrovi`) يربط نفس السطور في سلّة AYROVI — مزامنة،
+ * الجسر (`/cart/bridge-to-ayrovi`) يربط نفس السطور في سلّة ZAYROVI — مزامنة،
  * موش إضافة ثانية. والخادم يعيد التحقّق من المصادر قبل الربط: كان لقى تغييراً
  * يردّ `409`، وهنا نعرض السبب ونعاود نقرا السلّة — ما نكمّلوش على حالة قديمة.
  */
@@ -254,7 +254,7 @@ export default function AyWebsCartScreen() {
                     ))}
                   </>
                 ) : null}
-                {/* الربط صار فعلاً؛ السطور انتقلت إلى سلّة AYROVI، والزرّ يفتحها. */}
+                {/* الربط صار فعلاً؛ السطور انتقلت إلى سلّة ZAYROVI، والزرّ يفتحها. */}
                 <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.cartBridgeLater')}</AppText>
                 <Button label={t('aywebs.cartBridgeOpen')} tone="quiet" onPress={() => router.push('/cart')} />
               </View>

@@ -436,7 +436,7 @@ export async function resolveAyWebsProduct(
 }
 
 /* ══════════════════════════════════════════════════════════════════════════ *
- * P3 — الشريحة 3: الخيارات، التوفّر، سلّة AYWEBs، والجسر إلى سلّة AYROVI.
+ * P3 — الشريحة 3: الخيارات، التوفّر، سلّة AYWEBs، والجسر إلى سلّة ZAYROVI.
  *
  * قواعد ثابتة (من الأمر الهندسي الدائم `docs/AYWEBS_ADD_TO_CART_ORDER.md`):
  *  • «Add to Cart» = عملية إضافة حقيقية، موش فتح صفحة. والاختيار يجي فوق صفحة
@@ -748,7 +748,7 @@ export interface AyWebsCartItem {
   checkoutReady: boolean;
   /** مجموع السطر بالدينار — من الخادم. */
   lineTotalTnd: number | null;
-  /** `true` = نفس السطر موجود في سلّة AYROVI (جسر idempotent، بلا مضاعفة). */
+  /** `true` = نفس السطر موجود في سلّة ZAYROVI (جسر idempotent، بلا مضاعفة). */
   linkedToAyrovi: boolean | null;
   createdAt: string;
   updatedAt: string;
@@ -769,7 +769,7 @@ export interface AyWebsCartTotals {
   currency: string;
   blockedItems: number;
   checkoutReady: boolean;
-  /** وحدات مازالت **موش** في سلّة AYROVI — العميل يجمع الزوز بلا ما يضاعف. */
+  /** وحدات مازالت **موش** في سلّة ZAYROVI — العميل يجمع الزوز بلا ما يضاعف. */
   unlinkedUnits: number | null;
 }
 
@@ -956,7 +956,7 @@ export async function addAyWebsCartItem(
 
 /**
  * تعديل سطر: الكمية **رقم مطلق**، موش زيادة (`quantity: 3` = ثلاث قطع، موش +3).
- * الخادم يوصل نفس الرقم لسلّة AYROVI (مزامنة، بلا جمع) — وهذا اللي يمنع
+ * الخادم يوصل نفس الرقم لسلّة ZAYROVI (مزامنة، بلا جمع) — وهذا اللي يمنع
  * المضاعفة اللي صارت في التطبيق القديم.
  */
 export async function updateAyWebsCartItem(
@@ -1043,7 +1043,7 @@ export interface AyWebsBridgeOutcome {
 }
 
 /**
- * الجسر إلى سلّة AYROVI (`POST /cart/bridge-to-ayrovi`).
+ * الجسر إلى سلّة ZAYROVI (`POST /cart/bridge-to-ayrovi`).
  *
  * الخادم يعيد التحقّق من المصدر قبل أي مزامنة؛ إذا لقى تغييراً يرجّع `409`
  * بالرمز `AYWEBS_SOURCE_VERIFICATION_REQUIRED` — والعرض يعرض السبب ويعاود
