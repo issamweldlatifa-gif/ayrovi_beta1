@@ -1,9 +1,10 @@
 import { createHash } from 'node:crypto';
 import { ScrapedProduct, StoreType, ProductVariants } from '../types';
-import { resolveSafeHttpUrl } from '../services/safeUrl';
+import { fetchSafeRemote, readLimitedText, resolveSafeHttpUrl } from '../services/safeUrl';
 import { parseProductPageHtml, type ParsedProductPage } from './productPageParser';
 import { detectMerchantStore } from './merchantDomains';
-import { brightDataReady, fetchBrightDataHtml } from './brightData';
+import { raceProbes, type ProbeAttempt } from './probeRace';
+import { readerHeaders, readerJinaEnabled, readerJinaHeadstartMs, readerProbePlan } from './readerFingerprint';
 
 /** Entier d'environnement borné : une valeur absurde ne doit pas geler une lecture. */
 function positiveIntEnv(key: string, fallback: number, min: number, max: number): number {
@@ -52,7 +53,7 @@ export interface MerchantScrapeResult {
    * côté client, re-parsée ici par le MÊME parseur, et non une donnée fabriquée
    * par le client. Le prix reste calculé côté serveur (§45).
    */
-  provider: 'direct' | 'none' | 'brightdata' | 'webview';
+  provider: 'direct' | 'jina' | 'none' | 'webview';
   method: ParsedProductPage['priceSource'] | 'none';
   failureCode: string | null;
 }
@@ -214,8 +215,8 @@ export class SmartLinkScraper {
    * résultats Lens. `scrapeProduct` fabrique un panier complet (conversion,
    * frais, livraison) ; une grille de résultats n'a besoin que de la fiche
    * elle-même : disponibilité, tailles, couleurs, images. On expose donc la
-   * MÊME chaîne de confiance — URL assainie, direct 7 s, puis rendu chez le
-   * fournisseur — sans la dupliquer ni la contourner.
+   * MÊME chaîne de confiance — URL assainie, lecture directe puis repli Jina
+   * différé, ou DOM WebView fourni — sans la dupliquer ni la contourner.
    */
   public async scrapeParsedPage(rawUrl: string, options: ScrapeOptions = {}): Promise<MerchantScrapeResult> {
     const cleaned = this.cleanPastedUrl(rawUrl);
@@ -403,17 +404,13 @@ export class SmartLinkScraper {
   }
 
   /**
-   * Lecture d'une fiche : UNIQUEMENT via Bright Data Web Unlocker.
-   *
-   * Décision (12/10/2026) : aucun lien marchand n'est plus lu directement depuis
-   * le serveur. Sans BRIGHTDATA_API_KEY + BRIGHTDATA_ZONE, aucun appel n'est
-   * fait et la lecture échoue proprement (BRIGHTDATA_NOT_CONFIGURED).
-   * Budget : AYROVIX_BRIGHTDATA_TIMEOUT_MS (25 s par défaut).
+   * Lecture d'une fiche : page WebView fournie par le client en priorité,
+   * sinon sondes HTTP directes à empreinte déterministe, puis lecteur Jina
+   * différé en repli. Toutes les voies utilisent le même parseur et n'acceptent
+   * un prix que s'il est effectivement publié dans le HTML reçu.
    */
   private async scrapeWithHttp(url: string, storeType: StoreType, options: ScrapeOptions = {}): Promise<MerchantScrapeResult> {
     // ── 0. Page fournie par le client (WebView) : lecture locale, zéro réseau ──
-    // (le chemin AYWEBs reste « lien seul » ; cette entrée sert les parcours qui
-    // joignent la page réellement rendue sous les yeux du client).
     const providedPage = typeof options.pageHtml === 'string' ? options.pageHtml.trim() : '';
     if (providedPage) {
       const parsed = parseProductPageHtml(providedPage, options.pageUrl || url, storeType);
@@ -428,44 +425,108 @@ export class SmartLinkScraper {
       }
     }
 
-    const brightDataTimeoutMs = positiveIntEnv('AYROVIX_BRIGHTDATA_TIMEOUT_MS', 25_000, 250, 60_000);
+    const directTimeoutMs = positiveIntEnv('AYROVIX_DIRECT_TIMEOUT_MS', 6_500, 250, 15_000);
+    const jinaTimeoutMs = positiveIntEnv('AYROVIX_JINA_TIMEOUT_MS', 12_000, 250, 30_000);
     const startedAt = Date.now();
-    const outcome = await this.readViaBrightData(url, storeType, brightDataTimeoutMs);
+
+    /*
+     * Une seule empreinte directe part d'abord; l'autre ne démarre qu'après
+     * le délai configuré si la première n'a rien lu. Le lecteur Jina est un
+     * repli différé et peut être coupé avec AYROVIX_JINA_READER=false.
+     */
+    const attempts: ProbeAttempt<MerchantScrapeResult>[] = readerProbePlan(storeType).map((step) => ({
+      id: step.id,
+      timeoutMs: directTimeoutMs,
+      delayMs: step.delayMs,
+      run: (signal) => this.probeDirectHtml(url, storeType, readerHeaders(step.profile), signal),
+    }));
+
+    if (readerJinaEnabled()) {
+      attempts.push({
+        id: 'jina',
+        timeoutMs: jinaTimeoutMs,
+        delayMs: readerJinaHeadstartMs(),
+        run: (signal) => this.probeJinaReader(url, storeType, signal),
+      });
+    }
+
+    const raced = await raceProbes(attempts, {
+      isWinner: (result) => Number(result.data?.price || 0) > 0,
+      budgetMs: attempts.reduce((max, attempt) => Math.max(max, (attempt.delayMs || 0) + attempt.timeoutMs), 0),
+    });
+    if (raced.winner) {
+      logReadOutcome(url, storeType, raced.winner.value, Date.now() - startedAt);
+      return raced.winner.value;
+    }
+
+    // Sans prix publié, on peut conserver titre/images comme données partielles,
+    // mais le résultat reste explicitement non vérifié.
+    const partial = raced.fallback?.value ?? null;
+    const directFailure = raced.failures.find((failure) => failure.id.startsWith('direct_'))?.error
+      || (attempts.some((attempt) => attempt.id === 'direct_mobile') ? 'DIRECT_PRICE_NOT_FOUND' : 'DIRECT_UNAVAILABLE');
+    const outcome: MerchantScrapeResult = {
+      data: partial?.data ?? null,
+      verified: false,
+      provider: 'none',
+      method: 'none',
+      failureCode: directFailure,
+    };
     logReadOutcome(url, storeType, outcome, Date.now() - startedAt);
     return outcome;
   }
 
-  private async readViaBrightData(url: string, storeType: StoreType, timeoutMs: number): Promise<MerchantScrapeResult> {
-    if (!brightDataReady()) {
-      return { data: null, verified: false, provider: 'none', method: 'none', failureCode: 'BRIGHTDATA_NOT_CONFIGURED' };
+  /** Sonde directe : GET la page marchande avec un agent donné. Jamais de prix inventé. */
+  private async probeDirectHtml(
+    url: string,
+    storeType: StoreType,
+    headers: Readonly<Record<string, string>>,
+    signal: AbortSignal,
+  ): Promise<MerchantScrapeResult | null> {
+    const response = await fetchSafeRemote(url, { signal, headers });
+    if (!response.ok) {
+      await response.body?.cancel().catch(() => undefined);
+      throw new Error(`DIRECT_HTTP_${response.status}`);
     }
-    try {
-      const result = await this.probeBrightData(url, storeType, AbortSignal.timeout(timeoutMs));
-      if (result) return result;
-      return { data: null, verified: false, provider: 'none', method: 'none', failureCode: 'BRIGHTDATA_EMPTY_PAGE' };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : '';
-      const failureCode = error instanceof Error && error.name === 'TimeoutError'
-        ? 'BRIGHTDATA_TIMEOUT'
-        : message.startsWith('BRIGHTDATA_') ? message : 'BRIGHTDATA_FAILED';
-      return { data: null, verified: false, provider: 'none', method: 'none', failureCode };
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType && !contentType.includes('text/html') && !contentType.includes('application/xhtml+xml')) {
+      throw new Error('DIRECT_NOT_HTML');
     }
+    const parsed = parseProductPageHtml(await readLimitedText(response, 2_000_000), url, storeType);
+    if (parsed.price > 0) {
+      return { data: parsed, verified: true, provider: 'direct', method: parsed.priceSource, failureCode: null };
+    }
+    return parsed.title || parsed.images.length
+      ? { data: parsed, verified: false, provider: 'direct', method: 'none', failureCode: 'DIRECT_PRICE_NOT_FOUND' }
+      : null;
   }
 
-  /** Bright Data Web Unlocker : seul chemin de lecture d'une fiche marchande. */
-  private async probeBrightData(
+  /** Repli Jina : analyse le HTML renvoyé pour l'URL cible, sans inventer de champs. */
+  private async probeJinaReader(
     url: string,
     storeType: StoreType,
     signal: AbortSignal,
   ): Promise<MerchantScrapeResult | null> {
-    const html = await fetchBrightDataHtml(url, storeType, signal);
-    if (!html) return null;
+    const reader = `https://r.jina.ai/${url}`;
+    const response = await fetchSafeRemote(reader, {
+      signal,
+      headers: {
+        Accept: 'text/html,application/xhtml+xml,text/plain',
+        'X-Return-Format': 'html',
+        'User-Agent': 'Mozilla/5.0 (compatible; ZAYROVI-reader/1.0)',
+      },
+    });
+    if (!response.ok) {
+      await response.body?.cancel().catch(() => undefined);
+      throw new Error(`JINA_HTTP_${response.status}`);
+    }
+    const html = await readLimitedText(response, 2_000_000);
+    if (!html.trim() || !/<(?:html|body|script|meta)\b/i.test(html)) return null;
     const parsed = parseProductPageHtml(html, url, storeType);
     if (parsed.price > 0) {
-      return { data: parsed, verified: true, provider: 'brightdata', method: parsed.priceSource, failureCode: null };
+      return { data: parsed, verified: true, provider: 'jina', method: parsed.priceSource, failureCode: null };
     }
     return parsed.title || parsed.images.length
-      ? { data: parsed, verified: false, provider: 'brightdata', method: 'none', failureCode: 'BRIGHTDATA_PRICE_NOT_FOUND' }
+      ? { data: parsed, verified: false, provider: 'jina', method: 'none', failureCode: 'JINA_PRICE_NOT_FOUND' }
       : null;
   }
 

@@ -47,13 +47,13 @@ export const AYWEBS_ADAPTER_DESCRIPTORS: readonly AyWebsAdapterDescriptor[] = [
     id: 'shein', label: 'SHEIN', integrationType: 'PARTIALLY_SUPPORTED', purchaseMode: 'MANUAL_REVIEW',
     reads: ['product_page_url', 'title', 'price', 'currency', 'images', 'variants', 'availability'],
     implemented: true,
-    pendingIntegration: 'Bot-wall fréquent : rendered provider requis en production, achat en revue humaine.',
+    pendingIntegration: 'Bot-wall fréquent : la capture WebView fournit la page observée; achat en revue humaine.',
   },
   {
     id: 'temu', label: 'TEMU', integrationType: 'PARTIALLY_SUPPORTED', purchaseMode: 'MANUAL_REVIEW',
     reads: ['product_page_url', 'title', 'price', 'currency', 'images', 'variants', 'availability'],
     implemented: true,
-    pendingIntegration: 'Bot-wall fréquent : rendered provider requis en production, achat en revue humaine.',
+    pendingIntegration: 'Bot-wall fréquent : la capture WebView fournit la page observée; achat en revue humaine.',
   },
   {
     id: 'aliexpress', label: 'AliExpress', integrationType: 'PARTIALLY_SUPPORTED', purchaseMode: 'MANUAL_REVIEW',

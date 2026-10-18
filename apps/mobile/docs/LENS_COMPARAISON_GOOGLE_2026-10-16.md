@@ -158,7 +158,7 @@ déjà SSE. Le P0 est **uniquement** un nouveau chemin de transport côté tél�
 | 0 s | clic « Rechercher » | le tiroir monte, « Recherche des produits de la photo… » |
 | ~0,3 s | upload + normalisation + recadrage ROI | — |
 | ≤ 20 s | **recherche visuelle SerpApi (SEULE entrée)** | **étape « Produit identifié » + la réponse en clair** (E2) |
-| ≤ 20 s | lecture des fiches marchandes (Bright Data, 3,5 s par page, en parallèle) | **« Lecture des fiches 4/8 »** + barre qui avance |
+| ≤ 20 s | lecture des fiches marchandes (lecteur serveur configuré à l'époque, 3,5 s par page, en parallèle) | **« Lecture des fiches 4/8 »** + barre qui avance |
 | 45 s | deadline serveur | les résultats **partiels restent affichés** (E4) |
 
 > **Règle du 17/10/2026 : SerpApi EST l'entrée de la recherche — et la seule.**

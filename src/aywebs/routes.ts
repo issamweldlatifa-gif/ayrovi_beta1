@@ -5,7 +5,7 @@ import type { SmartLinkScraper } from '../scraper/scraper';
 import { calculatePrice, type PricingRules } from '../services/pricing';
 import { cardGatewayAvailable } from '../services/paymentGateway';
 import { ayWebsReadGateStats } from './readGate';
-import { readerFingerprintReport } from '../scraper/readerFingerprint';
+import { readerFingerprintReport, readerJinaEnabled } from '../scraper/readerFingerprint';
 import { AYWEBS_CAPTURE_LIMITS, AYWEBS_CAPTURE_VERSION } from '../../shared/aywebsCapture';
 import { AYWEBS_CAPTURE_SCRIPT } from './captureScript';
 import { ayWebsWebviewCaptureStats, ayWebsWebviewVerifySample } from './webviewCapture';
@@ -67,7 +67,6 @@ import {
   listAyWebsStoreRequests,
   readAyWebsPurchaseRequest,
 } from './purchaseRequests';
-import { brightDataReady } from '../scraper/brightData';
 import { ayWebsCartLinkedMap, bridgeAyWebsCartToAyrovi, listAyWebsOrderLinks, syncAyWebsItemToAyroviCart } from './ayroviBridge';
 import {
   createAyWebsContext,
@@ -189,21 +188,13 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
     };
 
   /**
-   * PHASE 0 (06/10/2026) — VÉRITÉ OPÉRATIONNELLE PAR BOUTIQUE.
-   * Certaines enseignes ne servent qu'une page « coquille » (JS) au serveur :
-   * leur lecture dépend d'un fournisseur de rendu payant. Tant que celui-ci
-   * n'est pas configuré (`rendered_provider_ready=false`, l'état constaté en
-   * production le 06/10/2026), ces boutiques restent navigables mais AUCUN
-   * prix ne peut être lu. L'API le dit désormais au lieu de laisser le client
-   * découvrir un panier vide.
+   * Une boutique est opérationnelle si sa capture WebView est réellement activée.
+   * Cela n'affirme pas qu'un produit précis possède un prix ou du stock lisible :
+   * ces champs ne sont acceptés qu'avec une preuve issue de la page capturée.
    */
-  const renderDependentStores = new Set(['shein', 'temu', 'aliexpress']);
   const operationalOf = (store: AyWebsStoreDefinition): { operational: boolean; operational_reason: string | null } => {
     if (!store.enabled || !ctx.storeCaptureEnabled(store)) {
       return { operational: false, operational_reason: 'CAPTURE_DISABLED_FOR_STORE' };
-    }
-    if (renderDependentStores.has(store.id)) {  // rendu payant retiré : aucun fournisseur
-      return { operational: false, operational_reason: 'RENDER_PROVIDER_NOT_CONFIGURED' };
     }
     return { operational: true, operational_reason: null };
   };
@@ -218,7 +209,7 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
     logo: store.logo,
     enabled: store.enabled,
     capture_supported: ctx.storeCaptureEnabled(store),
-    /** Opérationnel = la lecture produit fonctionne VRAIMENT aujourd'hui. */
+    /** Opérationnel = capture activée; les données d'un produit restent soumises à preuve. */
     ...operationalOf(store),
     adapter: store.adapter,
     status: store.status,
@@ -404,8 +395,8 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
         capture_enabled: flags.captureEnabled,
         active_adapters: stores.filter((store) => ctx.storeCaptureEnabled(store)).map((store) => store.id),
         deterministic_extraction: true,
-        rendered_provider: 'brightdata',
-        rendered_provider_ready: brightDataReady(),
+        direct_reader_enabled: true,
+        jina_reader_enabled: readerJinaEnabled(),
         /** Cache de résolution : taux de réutilisation réellement mesuré. */
         resolve_cache: ayWebsResolveCacheStats(),
         /** Phase 1 — mémo court des fiches ILLISIBLES (réessais rapides). */

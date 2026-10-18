@@ -139,8 +139,8 @@ function stripPriceLikeText(value: unknown): string {
 }
 /**
  * SerpApi discovery card: keep the title, image and merchant URL visible while
- * Bright Data reads the page. A SerpApi snippet is NOT a current merchant price
- * or stock proof, so hide it until the merchant page supplies it.
+ * the merchant-page reader checks the URL. A SerpApi snippet is NOT a current
+ * price or stock proof, so hide it until the merchant page supplies evidence.
  */
 function safeVisualDiscoveryCandidate(candidate: AyrovixCandidate): AyrovixCandidate {
   if (candidate.kind === 'catalog') return candidate;
@@ -261,7 +261,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
     };
     // ANNULATION — le client peut fermer la connexion (« Annuler » dans
     // l'application). Sans ce drapeau, le serveur continue de lire les pages
-    // marchandes (quota Bright Data, temps Render) pour un résultat que
+    // marchandes (requêtes externes et temps CPU) pour un résultat que
     // personne ne verra. `writableEnded` distingue la fin normale d'une
     // fermeture par le client.
     let cancelled = false;
@@ -466,10 +466,10 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       }
 
       /*
-       * VÉRITÉ MARCHANDE — Bright Data lit les liens SerpApi en parallèle :
-       * prix du jour, disponibilité, tailles, photos, description. La fiche
-       * visuelle reste affichée si Bright Data ne peut pas lire la page, mais
-       * son prix reste masqué.
+       * VÉRITÉ MARCHANDE — le lecteur vérifie les pages marchandes en parallèle :
+       * prix du jour, disponibilité, tailles, photos et description ne sont
+       * appliqués qu'à partir de données effectivement publiées par la page.
+       * Si la lecture échoue, la fiche visuelle reste sans prix vérifié.
        */
       const tLiveStock = Date.now();
       let readyCount = 0;
@@ -581,7 +581,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       endTrace(trace);
       if (stream) {
         // Final cards replace the initial SerpApi-only cards by sourceUrl,
-        // attaching Bright Data facts/prices where a page was successfully read.
+        // attaching verified page facts only where the merchant page was read.
         for (const candidate of securedCandidates) {
           emit('card', candidate);
         }

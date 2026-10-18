@@ -120,22 +120,30 @@ describe('raceProbes — la première sonde utile gagne', () => {
   });
 });
 
-describe('scraper — lecture unique via Bright Data', () => {
+describe('scraper — page WebView prioritaire et lectures serveur bornées', () => {
   const scraper = readFileSync('src/scraper/scraper.ts', 'utf8');
 
-  it('aucune lecture directe du marchand : plus de sondes HTTP directes', () => {
-    expect(scraper).not.toContain('probeDirectHtml');
-    expect(scraper).not.toContain('fetchSafeRemote(');
-    expect(scraper).not.toContain('readerProbePlan');
-    expect(scraper).not.toContain('raceProbes');
+  it('utilise la page réellement capturée, puis les sondes HTTP directes sécurisées', () => {
+    expect(scraper).toContain("typeof options.pageHtml === 'string'");
+    expect(scraper).toContain("provider: 'webview'");
+    expect(scraper).toContain('probeDirectHtml');
+    expect(scraper).toContain('fetchSafeRemote(url');
+    expect(scraper).toContain('readerProbePlan(storeType)');
+    expect(scraper).toContain('raceProbes(attempts');
   });
 
-  it('Bright Data est le seul chemin, sans clé = aucun appel', () => {
-    expect(scraper).not.toContain('r.jina.ai');
-    expect(scraper).toContain("provider: 'brightdata'");
-    expect(scraper).toContain('if (!brightDataReady())');
-    expect(scraper).toContain("'BRIGHTDATA_NOT_CONFIGURED'");
-    expect(scraper).toContain("positiveIntEnv('AYROVIX_BRIGHTDATA_TIMEOUT_MS'");
+  it('garde le lecteur Jina optionnel et différé, avec le même parseur de page', () => {
+    expect(scraper).toContain('readerJinaEnabled()');
+    expect(scraper).toContain('readerJinaHeadstartMs()');
+    expect(scraper).toContain('probeJinaReader');
+    expect(scraper).toContain("provider: 'jina'");
+    expect(scraper).toContain('parseProductPageHtml(html, url, storeType)');
+  });
+
+  it('documente uniquement les budgets des lecteurs actifs', () => {
+    const env = readFileSync('.env.example', 'utf8');
+    expect(env).toContain('AYROVIX_DIRECT_TIMEOUT_MS=');
+    expect(env).toContain('AYROVIX_JINA_TIMEOUT_MS=');
   });
 });
 

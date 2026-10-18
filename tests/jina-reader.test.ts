@@ -2,19 +2,15 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { parseProductPageHtml } from '../src/scraper/productPageParser';
 
-describe('Jina désactivé — Bright Data est le fournisseur unique de rendu', () => {
-  it('le scraper ne contacte plus r.jina.ai', () => {
+describe('Lecture de page marchande — direct et repli Jina', () => {
+  it('garde la page capturée en priorité et démarre Jina après les sondes directes', () => {
     const scraper = readFileSync('src/scraper/scraper.ts', 'utf8');
-    expect(scraper).not.toContain('r.jina.ai');
-    expect(scraper).not.toContain("provider: 'jina'");
-    expect(scraper).not.toContain('AYROVI_JINA_READER');
-    expect(scraper).toContain("provider: 'brightdata'");
-  });
-
-  it('le rendu passe par Bright Data, activé seulement avec clé et zone', () => {
-    const scraper = readFileSync('src/scraper/scraper.ts', 'utf8');
-    expect(scraper).toContain('if (!brightDataReady())');
-    expect(scraper).toContain('fetchBrightDataHtml(');
+    expect(scraper).toContain("typeof options.pageHtml === 'string'");
+    expect(scraper).toContain('readerProbePlan(storeType)');
+    expect(scraper).toContain('readerJinaEnabled()');
+    expect(scraper).toContain('readerJinaHeadstartMs()');
+    expect(scraper).toContain('https://r.jina.ai/');
+    expect(scraper).toContain("provider: 'jina'");
   });
 
   it('le parseur lit le JSON-LD Zalando (prix 309.95 EUR) comme le ferait le HTML rendu', () => {

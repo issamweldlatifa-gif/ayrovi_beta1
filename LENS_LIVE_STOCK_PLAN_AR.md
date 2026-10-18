@@ -76,9 +76,9 @@
 | محرّك Lens الموحّد | `src/ayrovix/services/lensEngine.ts` | `recognizeImage()`: vision + `serpApiVisualSearch` + signals، مع échéance لكل محرّك وذاكرة تخزين |
 | مسار Lens العام | `src/ayrovix/routes.ts:439` | `enrichCandidateDescriptions(deduped)` — **يثرِي الوصف فقط** |
 | البحث البصري | `src/ayrovix/services/visualSearch.ts:156` | `availability` تُضبط `in_stock` **فقط** إذا `row.in_stock === true` — وإلا `unknown` |
-| كشط PDP | `src/scraper/scraper.ts` | `SmartLinkScraper.scrapeProduct()`: direct fetch (7s) → parse → fallback rendered provider |
+| قراءة PDP | `src/scraper/scraper.ts` | `SmartLinkScraper.scrapeProduct()`: HTML WebView عند توفره، وإلا قراءة HTTP مباشرة ببصمتين متعاقبتين ثم Jina اختياري مؤجل؛ المحلل وحده يثبت الحقول |
 | محلّل PDP | `src/scraper/productPageParser.ts` (623 سطر) | **JSON-LD + JSON مدمّج (`__NEXT_DATA__`) + DOM عبر jsdom** → price / images / colorImages / **variants (sizes, colors, details)** / **availability** / externalId |
-| الجلب المصدَّر | `src/scraper/renderedPageFetcher.ts` | ScraperAPI / ScrapingBee / BrightData |
+| القارئ الاحتياطي | `src/scraper/scraper.ts` | Jina Reader اختياري ومؤجل؛ لا يُقبل سعر أو مخزون إلا إذا استخرجه المحلل من HTML المستلَم |
 | سياسة المتغيّرات | `shared/variantPolicy.ts` | `reportedVariantStock` / `allowsMerchantVariantChoice` — **العلم المنطقي (boolean) وحده هو دليل** |
 | إثراء SerpApi للتفاصيل | `src/ayrovix/services/productEnrichment.ts` | `google_shopping` + `google_product` → gallery + sizes + availability لكل مقاس — موصول بـ `product.ts` فقط |
 | عقد الطلب | `src/ayrovix/services/variantAvailability.ts` | `resolveVariants` + `inspectVariantOrder` (يُستعمل في `src/api/routes.ts:11`) |
@@ -127,14 +127,13 @@
    (progressive) عند فتح المنتج أو الضغط على "أضف للسلة".
 2. **لا يوجد Cache في الملخص — إلزامي.** المستودع يستخدم: `data/lens-descriptions`
    (TTL 7 أيام)، `data/variant-availability` (TTL 6 ساعات)، جدول `product_profiles`
-   (TTL 6 ساعات). بدون cache: كل تصفح = 8 طلبات مدفوعة (render providers).
+   (TTL 6 ساعات). بدون cache: كل تصفح قد يطلب قراءة 8 صفحات مباشرة؛ لا يبدأ Jina إلا كإعادة مؤجلة عند غياب سعر مقروء.
 3. **لا يوجد "دليل المطابقة" — خطر تعلّق مخزون منتج بآخر.** لازم
    `titleOverlap(candidate.title, parsed.title) ≥ 0.6` (نفس `MATCH_THRESHOLD` في
    `lensEnrichment.ts`) قبل قبول أي بيانات من الصفحة.
 4. **"حذف النتائج النافدة فوراً" — لا تحذفها من العرض.** اعرضها بشارة
    `out_of_stock` (الشفافية تمنع فقدان الثقة)، واستبعدها فقط من مسار إتمام الطلب.
-5. **تدوير User-Agent لا يكفي** لـ Sports Direct/Zalando — المستودع يملك الحل
-   (`renderedPageFetcher`) لكن محصوراً في 4 نطاقات؛ يجب توسيع القائمة أو adapter خاص.
+5. **تدوير User-Agent لا يكفي** لكل صفحات Sports Direct/Zalando؛ بعض الصفحات تحتاج DOM الفعلي من WebView. قارئ الخادم المباشر وJina المؤجل محاولتان فقط، ولا يُستبدل تعذر القراءة بسعر متوقع.
 6. **"تفعيل Ajouter au panier تلقائياً" — يحتاج قيداً:** مخزون وقت العرض ≠ مخزون وقت
    الطلب. المستودع يحل هذا بـ `inspectVariantOrder` (إعادة تحقّق وقت الإضافة). دون ذلك
    سنعيد إنتاج المشكلة الأصلية (طلب قطع نافدة).

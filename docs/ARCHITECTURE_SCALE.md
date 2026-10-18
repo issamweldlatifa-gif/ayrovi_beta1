@@ -72,7 +72,7 @@ Ce document décrit les cinq couches ajoutées pour la **stabilité, la sécurit
 ## Sécurité — rappels structurants
 - Le proxy et l'isolation réutilisent `isPublicHttpUrl`/`fetchRemoteImage` (garde SSRF, taille max, timeout) — **aucune nouvelle surface réseau ouverte**.
 - Les deux nouvelles tables sont **additives** (CREATE TABLE IF NOT EXISTS, contraintes CHECK, index) dans le bloc DDL idempotent existant.
-- Limites assumées : les marchands qui **bloquent le scraping** (ex. Zalando) nécessitent un fournisseur de rendu (`SCRAPERAPI_KEY`, `SCRAPINGBEE_API_KEY` ou `BRIGHTDATA_*` déjà supportés) pour servir le profil complet — sans clé, le repli SerpAPI s'affiche honnêtement.
+- Limites assumées : les marchands qui **bloquent la lecture serveur** (ex. certains parcours Zalando) peuvent refuser les requêtes directes ou le lecteur Jina optionnel. Les extraits SerpAPI restent des données de découverte, jamais une preuve de prix ou de stock; sans lecture effective de la page, ces champs restent non vérifiés.
 
 ## Reste recommandé (hors périmètre de ce lot)
 - **Protection de branche GitHub** (`main` : CI verte obligatoire + 1 review) — 2 minutes dans Settings → Branches ; l'API a besoin d'un token admin dédié.

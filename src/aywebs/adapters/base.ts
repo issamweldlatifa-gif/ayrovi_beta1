@@ -25,9 +25,9 @@ import {
  *
  * Ce que chaque adaptateur possède EN PROPRE : la reconnaissance d'URL
  * (`isProductPage`) et l'identité source. Tout le reste est commun :
- *  • la chaîne d'extraction reste `SmartLinkScraper` (structured data / état
- *    embarqué → DOM/meta → Bright Data (rendu, si configuré)) : aucune
- *    seconde chaîne d'extraction n'est créée ;
+ *  • la chaîne d'extraction reste `SmartLinkScraper` (page WebView réelle,
+ *    structured data / état embarqué → DOM/meta → lecture HTTP directe et
+ *    repli Jina optionnel) : aucune seconde chaîne d'extraction n'est créée ;
  *  • la classification de page partage les indices d'URL (login, CAPTCHA,
  *    checkout) et n'invente jamais un type de page sans preuve ;
  *  • l'achat n'est PAS simulé : tant qu'aucune intégration d'achat marchand

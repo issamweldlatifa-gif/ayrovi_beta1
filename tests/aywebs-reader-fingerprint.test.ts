@@ -15,6 +15,7 @@ import {
   readerFallbackDelayMs,
   readerFingerprintReport,
   readerHeaders,
+  readerJinaEnabled,
   readerJinaHeadstartMs,
   readerProfileForStore,
   readerProfileProvenance,
@@ -24,6 +25,7 @@ import {
 const TOUCHED_ENV = [
   'AYROVIX_READER_PROFILE', 'AYROVIX_READER_PROFILE_AMAZON', 'AYROVIX_READER_PROFILE_SHEIN',
   'AYROVIX_READER_FALLBACK_MS', 'AYROVIX_JINA_HEADSTART_MS',
+  'AYROVIX_JINA_READER', 'AYROVI_JINA_READER',
 ];
 
 afterEach(() => {
@@ -121,6 +123,17 @@ describe('AYWEBs Phase 1 — plan de sondes : une empreinte, puis un repli diff�
 });
 
 describe('AYWEBs Phase 1 — départ du lecteur Jina', () => {
+  it('activé par défaut, désactivable avec le nom canonique ou historique', () => {
+    delete process.env.AYROVIX_JINA_READER;
+    delete process.env.AYROVI_JINA_READER;
+    expect(readerJinaEnabled()).toBe(true);
+    process.env.AYROVIX_JINA_READER = 'false';
+    expect(readerJinaEnabled()).toBe(false);
+    delete process.env.AYROVIX_JINA_READER;
+    process.env.AYROVI_JINA_READER = 'false';
+    expect(readerJinaEnabled()).toBe(false);
+  });
+
   it('Jina part APRÈS le repli gratuit (jamais à sa place)', () => {
     expect(readerJinaHeadstartMs()).toBe(readerFallbackDelayMs() + 500);
     expect(readerJinaHeadstartMs()).toBeGreaterThan(readerFallbackDelayMs());

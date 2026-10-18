@@ -65,7 +65,8 @@ const SESSION_ID = 'capture-session-0000000001';
 
 const TOUCHED_ENV = [
   'AYWEBS_WEBVIEW_VERIFY_SAMPLE', 'AYWEBS_HOST_CIRCUIT', 'AYWEBS_RESOLVE_CACHE_TTL_MS',
-  'AYWEBS_QUOTE_REVERIFY_SAMPLE', 'AYWEBS_QUOTE_REVERIFY_TND',
+  'AYWEBS_QUOTE_REVERIFY_SAMPLE', 'AYWEBS_QUOTE_REVERIFY_TND', 'AYWEBS_CAPTURE_ENABLED',
+  'AYWEBS_SHEIN_CAPTURE_ENABLED', 'AYWEBS_TEMU_CAPTURE_ENABLED', 'AYWEBS_ALIEXPRESS_CAPTURE_ENABLED',
 ];
 afterEach(() => {
   for (const key of TOUCHED_ENV) delete process.env[key];
@@ -788,10 +789,31 @@ describe('AYWEBs 2.1 — contrat HTTP : la boutique externe passe par le même g
     expect(h.scrapeProduct).not.toHaveBeenCalled();
   });
 
+  it('/stores : les boutiques avec capture DOM activée restent opérationnelles', async () => {
+    process.env.AYWEBS_CAPTURE_ENABLED = 'true';
+    process.env.AYWEBS_SHEIN_CAPTURE_ENABLED = 'true';
+    process.env.AYWEBS_TEMU_CAPTURE_ENABLED = 'true';
+    process.env.AYWEBS_ALIEXPRESS_CAPTURE_ENABLED = 'true';
+    const h = harness();
+    const stores = await request(app(h)).get('/api/v1/aywebs/stores');
+    expect(stores.status).toBe(200);
+    for (const id of ['shein', 'temu', 'aliexpress']) {
+      expect(stores.body.data.find((store: any) => store.id === id)).toMatchObject({
+        capture_supported: true,
+        operational: true,
+        operational_reason: null,
+      });
+    }
+  });
+
   it('/health : la boutique externe est décrite, avec ZÉRO domaine', async () => {
     const h = harness();
     const health = await request(app(h)).get('/api/v1/aywebs/health');
     expect(health.status).toBe(200);
+    expect(health.body.data.direct_reader_enabled).toBe(true);
+    expect(typeof health.body.data.jina_reader_enabled).toBe('boolean');
+    expect(health.body.data).not.toHaveProperty('rendered_provider');
+    expect(health.body.data).not.toHaveProperty('rendered_provider_ready');
     const capture = health.body.data.webview_capture;
     expect(capture.contract_version).toBe(1);
     expect(capture.external_store).toMatchObject({
