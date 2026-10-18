@@ -12,7 +12,7 @@
  * on a physical Android WebView.
  */
 import { randomUUID } from 'node:crypto';
-import { appendFileSync } from 'node:fs';
+import { appendFileSync, writeFileSync } from 'node:fs';
 import { chromium, devices } from 'playwright';
 
 const BASE = 'https://ayrovi-beta1-moo8.onrender.com';
@@ -28,12 +28,21 @@ function writeSummary(markdown) {
   if (path) appendFileSync(path, `${markdown.trim()}\n`, 'utf8');
 }
 
+function writeReport(report) {
+  writeFileSync('aywebs-live-capture-report.json', `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+}
+
 function fail(message, diagnostic = {}) {
   const detail = Object.entries(diagnostic)
     .map(([key, value]) => `${key}=${JSON.stringify(value)}`)
     .join(' ');
   const line = `❌ ${message}${detail ? ` (${detail})` : ''}`;
   console.error(line);
+  // Surface the actual reason as a GitHub check annotation (the Actions log
+  // download host is not always reachable from the local agent environment).
+  const annotation = line.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
+  console.log(`::error title=AYWEBs live capture::${annotation}`);
+  writeReport({ status: 'failed', asin: EXPECTED_ASIN, message, diagnostic });
   writeSummary(`### AYWEBs live capture — ${EXPECTED_ASIN}\n\n${line}`);
   process.exitCode = 1;
 }
@@ -157,6 +166,26 @@ async function main() {
         console.log(line);
         console.log(`DOM candidates: ${JSON.stringify(capture.priceCandidates)}`);
         console.log(`Page: ${title}`);
+        writeReport({
+          status: 'verified',
+          asin: EXPECTED_ASIN,
+          productUrl: PRODUCT_URL,
+          resolvedUrl: requestedUrl.split('?')[0],
+          pageStatus: pageResponse?.status() ?? null,
+          title,
+          candidates: capture.priceCandidates,
+          server: {
+            status: resolveResponse.status,
+            price,
+            currency,
+            priceVerified: data.price_verified === true,
+            currencyVerified: data.currency_verified === true,
+            captureUsed: captureResult.used === true,
+            priceSource: captureResult.price_source || null,
+            corroborated: captureResult.corroborated === true,
+            quoteIssued,
+          },
+        });
         writeSummary([
           `### AYWEBs live capture — ${EXPECTED_ASIN}`,
           '',

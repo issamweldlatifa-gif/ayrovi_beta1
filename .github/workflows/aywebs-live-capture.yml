@@ -46,3 +46,12 @@ jobs:
 
       - name: Read the live Amazon page and verify the quote on Beta
         run: node scripts/aywebs-live-capture-probe.mjs
+
+      - name: Preserve the bounded probe report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aywebs-live-capture-report
+          path: aywebs-live-capture-report.json
+          if-no-files-found: warn
+          retention-days: 7
