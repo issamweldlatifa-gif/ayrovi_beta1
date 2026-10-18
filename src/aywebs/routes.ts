@@ -1375,9 +1375,11 @@ function ayWebsVariantPricingPayload(
 ) {
   return variants.map((variant) => {
     const hasVariantPrice = Number.isFinite(Number(variant.price)) && Number(variant.price) > 0;
-    const quotedPrice = hasVariantPrice ? Number(variant.price) : Number(product.price);
-    const quotedCurrency = (hasVariantPrice ? variant.currency || product.currency : product.currency).trim().toUpperCase();
-    const quote = quoteVerified && quotedPrice > 0 && quotedCurrency
+    /* Un prix produit ne prouve jamais le prix d'une variante différente ou
+       partielle. Seul un montant publié pour cette variante exacte est chiffré. */
+    const quotedPrice = hasVariantPrice ? Number(variant.price) : null;
+    const quotedCurrency = (variant.currency || product.currency).trim().toUpperCase();
+    const quote = quoteVerified && quotedPrice !== null && quotedCurrency
       ? calculatePrice(rules, quotedPrice, quotedCurrency, { title: product.title })
       : null;
     const usableQuote = quote && !quote.restricted && quote.totalTND > 0 ? quote : null;
@@ -1387,9 +1389,9 @@ function ayWebsVariantPricingPayload(
       label: variant.label,
       price: variant.price,
       currency: variant.currency,
-      quoted_price: quoteVerified && quotedPrice > 0 ? quotedPrice : null,
-      quoted_currency: quoteVerified ? quotedCurrency || null : null,
-      price_source: !quoteVerified ? 'UNKNOWN' : hasVariantPrice ? 'VARIANT' : quotedPrice > 0 ? 'PRODUCT' : 'UNKNOWN',
+      quoted_price: quoteVerified && quotedPrice !== null ? quotedPrice : null,
+      quoted_currency: quoteVerified && quotedPrice !== null ? quotedCurrency || null : null,
+      price_source: !quoteVerified ? 'UNKNOWN' : hasVariantPrice ? 'VARIANT' : 'UNKNOWN',
       availability: variant.availability,
       availability_reason: variant.availabilityReason,
       image: variant.image,

@@ -45,7 +45,14 @@ function confirmedUnavailable(
   value: string,
   groups: AyWebsVariantGroup[],
   variants: AyWebsVariantPrice[],
+  capturedGroups: AyWebsCapture['variantGroups'] = [],
 ): boolean {
+  const capturedGroup = capturedGroups.find((candidate) => candidate.attribute === group.attribute);
+  if (capturedGroup) {
+    // A value-level twister state may disable a choice, but never stands in for
+    // the stock of a complete size/color combination.
+    return capturedGroup.valueStates?.find((entry) => entry.value.toLowerCase() === value.toLowerCase())?.state === 'UNAVAILABLE';
+  }
   const candidates = variants.filter((variant) => optionValue(variant, group.attribute).toLowerCase() === value.toLowerCase());
   if (!candidates.length) return false;
   // Only a merchant's explicit OUT_OF_STOCK fact disables a value. UNKNOWN is
@@ -59,12 +66,14 @@ export function AddToCartSheet({
   resolved,
   capture,
   sessionId,
+  onVariantChange,
   onContinueShopping,
 }: {
   visible: boolean;
   resolved: AyWebsResolvedProduct;
   capture: AyWebsCapture | null;
   sessionId: string;
+  onVariantChange?: (selection: Record<string, string>) => Promise<void>;
   onContinueShopping: () => void;
 }) {
   const theme = useTheme();
@@ -80,17 +89,20 @@ export function AddToCartSheet({
   const [added, setAdded] = useState<AyWebsCartAddResult | null>(null);
   const requestId = useRef('');
   const product = resolved.product;
+  const hasFreshCapturedGroups = Boolean(capture?.variantGroups.length);
 
   const variantsQuery = useQuery({
     queryKey: ['aywebs', 'variants', product.productId],
-    enabled: visible && Boolean(sessionId && product.productId && product.variantGroups.length),
+    enabled: visible && !hasFreshCapturedGroups && Boolean(sessionId && product.productId && product.variantGroups.length),
     staleTime: 5 * 60_000,
     queryFn: ({ signal }) => fetchAyWebsVariants({ productId: product.productId, sessionId }, { signal }),
   });
 
   useEffect(() => {
     if (!visible) return;
-    setSelected({ ...product.selectedVariant });
+    setSelected(Object.keys(product.selectedVariant).length
+      ? { ...product.selectedVariant }
+      : { ...(capture?.selectedVariantAttributes || {}) });
     setQuantity(1);
     setBusy(false);
     setFailure('');
@@ -98,13 +110,21 @@ export function AddToCartSheet({
     requestId.current = '';
   }, [visible, product.productId]);
 
+  const capturedGroups = useMemo(
+    () => (capture?.variantGroups || []).map(({ attribute, values }) => ({ attribute, values })),
+    [capture?.variantGroups],
+  );
   const groups = useMemo(
-    () => variantsQuery.data?.groups.length ? variantsQuery.data.groups : product.variantGroups,
-    [product.variantGroups, variantsQuery.data?.groups],
+    () => hasFreshCapturedGroups
+      ? (product.variantGroups.length ? product.variantGroups : capturedGroups)
+      : (variantsQuery.data?.groups.length ? variantsQuery.data.groups : product.variantGroups),
+    [capturedGroups, hasFreshCapturedGroups, product.variantGroups, variantsQuery.data?.groups],
   );
   const variants = useMemo(
-    () => variantsQuery.data?.variants.length ? variantsQuery.data.variants : product.variantPrices,
-    [product.variantPrices, variantsQuery.data?.variants],
+    () => hasFreshCapturedGroups
+      ? product.variantPrices
+      : (variantsQuery.data?.variants.length ? variantsQuery.data.variants : product.variantPrices),
+    [hasFreshCapturedGroups, product.variantPrices, variantsQuery.data?.variants],
   );
   const readiness = useMemo(() => ayWebsAddReadiness({
     product,
@@ -118,11 +138,25 @@ export function AddToCartSheet({
   const selectedServerPrice = readiness.selectedVariant?.priceTnd ?? (!groups.length ? product.ayroviPriceTnd : null);
   const availabilityLabel = t(`aywebs.availability.${readiness.selectedVariant?.availability ?? product.availability}` as never);
 
-  const setOption = (attribute: string, value: string) => {
-    setSelected((current) => ({ ...current, [attribute]: value }));
+  const setOption = async (attribute: string, value: string) => {
+    if (selected[attribute] === value || busy) return;
+    const next = { ...selected, [attribute]: value };
+    setSelected(next);
     setFailure('');
     setAdded(null);
     requestId.current = '';
+    if (!hasFreshCapturedGroups || !onVariantChange) return;
+    setBusy(true);
+    try {
+      await onVariantChange(next);
+    } catch {
+      setSelected(Object.keys(product.selectedVariant).length
+        ? { ...product.selectedVariant }
+        : { ...(capture?.selectedVariantAttributes || {}) });
+      setFailure(t('aywebs.variant.refreshFailed'));
+    } finally {
+      setBusy(false);
+    }
   };
 
   const add = async () => {
@@ -142,7 +176,12 @@ export function AddToCartSheet({
         capture,
         refresh: true,
       });
-      if (!fresh.quoteToken) throw new Error('QUOTE_MISSING');
+      if (!fresh.quoteToken || !fresh.product.priceVerified || !fresh.product.currencyVerified) throw new Error('QUOTE_MISSING');
+      if (capture && !['AVAILABLE', 'LOW_STOCK'].includes(fresh.product.availability)) throw new Error('AVAILABILITY_UNKNOWN');
+      if (capture?.variantGroups.length && !groups.every((group) => (
+        Boolean(selected[group.attribute]?.trim())
+        && selected[group.attribute].trim().toLowerCase() === String(fresh.product.selectedVariant[group.attribute] || '').trim().toLowerCase()
+      ))) throw new Error('VARIANT_UNVERIFIED');
       const result = await addAyWebsCartItem({
         productId: fresh.product.productId,
         sourceUrl: fresh.product.sourceUrl,
@@ -262,18 +301,20 @@ export function AddToCartSheet({
 
               {groups.map((group) => (
                 <View key={group.attribute} style={styles.group}>
-                  <AppText variant="label" weight="bold">{t('aywebs.variant.choose', { attribute: group.attribute })}</AppText>
+                  <AppText variant="label" weight="bold">{t('aywebs.variant.choose', {
+                    attribute: capture?.variantGroups.find((candidate) => candidate.attribute === group.attribute)?.label || group.attribute,
+                  })}</AppText>
                   <View style={styles.options}>
                     {group.values.map((value) => {
                       const active = selected[group.attribute] === value;
-                      const unavailable = confirmedUnavailable(group, value, groups, variants);
+                      const unavailable = confirmedUnavailable(group, value, groups, variants, capture?.variantGroups || []);
                       return (
                         <Pressable
                           key={`${group.attribute}-${value}`}
                           accessibilityRole="button"
-                          accessibilityState={{ selected: active, disabled: unavailable || busy }}
-                          disabled={unavailable || busy}
-                          onPress={() => setOption(group.attribute, value)}
+                          accessibilityState={{ selected: active, disabled: unavailable || busy || (hasFreshCapturedGroups && !onVariantChange) }}
+                          disabled={unavailable || busy || (hasFreshCapturedGroups && !onVariantChange)}
+                          onPress={() => { void setOption(group.attribute, value); }}
                           style={[
                             styles.option,
                             {

@@ -158,6 +158,62 @@ describe('AYWEBs — lecteur Amazon : la fiche mesurée du 04/10/2026', () => {
     expect(parsed.availability).toBe('in_stock');
   });
 
+  it('lit les groupes du twister, l’état des valeurs et la sélection courante sans prix supposé', () => {
+    const { payload, validation } = captureFrom(FIXTURE);
+    expect(payload.variantGroups.map((group: any) => group.attribute).sort()).toEqual(['color', 'size']);
+    expect(payload.variantGroups.find((group: any) => group.sourceKey === 'size_name')?.values)
+      .toEqual(['X-Small', 'Small', 'Medium', 'Large', 'X-Large']);
+    expect(payload.selectedVariantAttributes).toEqual({ size: 'Small', color: 'Emerald Leaf' });
+    expect(validation.variantSelectionComplete).toBe(true);
+    expect(validation.selectedVariantAttributes).toEqual({ size: 'Small', color: 'Emerald Leaf' });
+    expect(validation.scraped?.variants.sizes).toEqual(['X-Small', 'Small', 'Medium', 'Large', 'X-Large']);
+    const exact = validation.scraped?.variants.details?.[0];
+    expect(exact?.attributes).toEqual({ size: 'Small', color: 'Emerald Leaf' });
+    expect(exact?.price).toBe(109);
+    expect(exact?.stock).toBe(true);
+    const large = validation.scraped?.variants.details?.find((detail) => detail.label === 'Large');
+    expect(large?.price).toBeNull();
+    expect(large?.available).toBe(false); // état publié du choix, pas un stock de combinaison
+    expect(large?.stock).toBeNull();
+  });
+
+  it('ignore un twister de publicité hors de la fiche produit', () => {
+    const decoy = `<!doctype html><html><head><title>Fiche</title></head><body>
+      <div id="dp-container"><div id="ppd"><div id="corePriceDisplay_desktop_feature_div"></div></div></div>
+      <aside><div id="twister_feature_div" data-feature-name="twister">
+        <script>{"sortedDimValuesForAllDims":{"size_name":[{"dimensionValueState":"SELECTED","dimensionValueDisplayText":"M"}]}}</script>
+      </div></aside>
+    </body></html>`;
+    const { payload } = captureFrom(decoy, FIXTURE_URL);
+    expect(payload.variantGroups).toEqual([]);
+    expect(payload.selectedVariantAttributes).toEqual({});
+  });
+
+  it('un état SELECTED contradictoire ne devient pas une variante choisie', () => {
+    const page = `<!doctype html><html><head><title>Fiche Amazon</title></head><body>
+      <div id="dp-container"><div id="ppd">
+        <div id="corePriceDisplay_desktop_feature_div">
+          <span id="apex-pricetopay-accessibility-label">$15.00</span>
+          <span class="a-price priceToPay"><span class="a-offscreen"></span><span aria-hidden="true">
+            <span class="a-price-symbol">$</span><span class="a-price-whole">15<span class="a-price-decimal">.</span></span>
+            <span class="a-price-fraction">00</span></span></span>
+        </div>
+        <div id="availability">In Stock</div>
+        <div id="twister_feature_div" data-feature-name="twister">
+          <script>{"sortedDimValuesForAllDims":{"size_name":[
+            {"dimensionValueState":"SELECTED","dimensionValueDisplayText":"Small"},
+            {"dimensionValueState":"SELECTED","dimensionValueDisplayText":"Medium"}
+          ]}}</script>
+        </div>
+      </div></div>
+    </body></html>`;
+    const { payload, validation } = captureFrom(page, FIXTURE_URL);
+    expect(validation.ok).toBe(true);
+    expect(payload.variantGroups[0].values).toEqual(['Small', 'Medium']);
+    expect(payload.selectedVariantAttributes).toEqual({});
+    expect(validation.variantSelectionComplete).toBe(false);
+  });
+
   it('images PRODUIT d’abord (data-old-hires), jamais les sprites de navigation', () => {
     const { payload } = captureFrom(FIXTURE);
     expect(payload.images[0]).toBe('https://m.media-amazon.com/images/I/71QK1MOCKUP._AC_UL1500_.jpg');

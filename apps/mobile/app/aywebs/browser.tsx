@@ -18,7 +18,7 @@ import { ErrorBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { useI18n, useT } from '@/i18n';
-import { buildAyWebsCaptureInjection, fetchAyWebsCaptureScript, fetchAyWebsHome, resolveAyWebsProduct, type AyWebsCapture, type AyWebsResolvedProduct } from '@/api/aywebs';
+import { buildAyWebsCaptureInjection, buildAyWebsVariantSelectionInjection, fetchAyWebsCaptureScript, fetchAyWebsHome, resolveAyWebsProduct, type AyWebsCapture, type AyWebsResolvedProduct } from '@/api/aywebs';
 import { useSessionId } from '@/session/session';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ayWebsErrorMessage } from '@/features/aywebs/errors';
@@ -75,6 +75,10 @@ export default function AyWebsBrowserScreen() {
   const captureCycleId = useRef(0);
   const activeRequestId = useRef('');
   const captureBusyRef = useRef(false);
+  const capturedPageRef = useRef<AyWebsCapture | null>(null);
+  const pendingVariantSelectionRef = useRef<Record<string, string> | null>(null);
+  const pendingVariantChangeRef = useRef<{ resolve: () => void; reject: (error: Error) => void } | null>(null);
+  const variantNavigationRef = useRef(false);
 
   const [address, setAddress] = useState('');
   const [currentUrl, setCurrentUrl] = useState('');
@@ -122,7 +126,30 @@ export default function AyWebsBrowserScreen() {
     captureCycleId.current += 1;
     captureBusyRef.current = false;
     activeRequestId.current = '';
+    pendingVariantChangeRef.current?.reject(new Error('CAPTURE_CANCELLED'));
+    pendingVariantChangeRef.current = null;
+    pendingVariantSelectionRef.current = null;
   }, []);
+
+  const failPendingVariantChange = useCallback((reason = 'VARIANT_SELECTION_UNVERIFIED') => {
+    const pending = pendingVariantChangeRef.current;
+    pendingVariantChangeRef.current = null;
+    pendingVariantSelectionRef.current = null;
+    variantNavigationRef.current = false;
+    if (captureTimer.current) clearTimeout(captureTimer.current);
+    if (captureRetryTimer.current) clearTimeout(captureRetryTimer.current);
+    captureTimer.current = null;
+    captureRetryTimer.current = null;
+    activeRequestId.current = '';
+    captureRetryCount.current = 0;
+    captureBusyRef.current = false;
+    setCaptureBusy(false);
+    capturedPageRef.current = null;
+    setCapturedPage(null);
+    setResolved(null);
+    setCaptureError(t('aywebs.variant.refreshFailed'));
+    pending?.reject(new Error(reason));
+  }, [t]);
 
   const cancelPendingCapture = useCallback(() => {
     if (captureTimer.current) clearTimeout(captureTimer.current);
@@ -132,11 +159,12 @@ export default function AyWebsBrowserScreen() {
     activeRequestId.current = '';
     captureRetryCount.current = 0;
     captureCycleId.current += 1;
+    if (pendingVariantChangeRef.current) failPendingVariantChange('CAPTURE_CANCELLED');
     if (captureBusyRef.current) {
       captureBusyRef.current = false;
       setCaptureBusy(false);
     }
-  }, []);
+  }, [failPendingVariantChange]);
 
   const goToAddress = useCallback(() => {
     Keyboard.dismiss();
@@ -162,19 +190,30 @@ export default function AyWebsBrowserScreen() {
     setCaptureBusy(true);
     captureTimer.current = setTimeout(() => {
       captureTimer.current = null;
+      if (pendingVariantChangeRef.current) {
+        failPendingVariantChange('CAPTURE_TIMEOUT');
+        return;
+      }
       activeRequestId.current = '';
       captureBusyRef.current = false;
       setCaptureBusy(false);
       setCaptureError(t('aywebs.browser.capture.timeout'));
     }, CAPTURE_RESPONSE_TIMEOUT_MS);
-    webViewRef.current.injectJavaScript(buildAyWebsCaptureInjection(scriptRef.current, requestId));
-  }, [t]);
+    const selection = pendingVariantSelectionRef.current;
+    const captured = capturedPageRef.current;
+    const injection = selection
+      ? buildAyWebsVariantSelectionInjection(scriptRef.current, requestId, captured?.variantGroups || [], selection)
+      : buildAyWebsCaptureInjection(scriptRef.current, requestId);
+    webViewRef.current.injectJavaScript(injection);
+  }, [failPendingVariantChange, t]);
 
   const capturePage = useCallback(async () => {
     if (!store || !sessionId || !currentUrl || !homeQuery.data?.features.captureEnabled || captureBusyRef.current) return;
     if (captureRetryTimer.current) clearTimeout(captureRetryTimer.current);
     captureRetryTimer.current = null;
     captureRetryCount.current = 0;
+    pendingVariantSelectionRef.current = null;
+    variantNavigationRef.current = false;
     const cycleId = ++captureCycleId.current;
     setCaptureError('');
     setNavigationWarning('');
@@ -197,14 +236,54 @@ export default function AyWebsBrowserScreen() {
     }
   }, [currentUrl, homeQuery.data?.features.captureEnabled, injectCapture, locale, sessionId, store, t]);
 
+  const captureSelectedVariant = useCallback(async (selection: Record<string, string>) => {
+    if (!store || !sessionId || !currentUrl || captureBusyRef.current) throw new Error('CAPTURE_BUSY');
+    if (!capturedPageRef.current?.variantGroups.length) throw new Error('VARIANT_GROUPS_MISSING');
+    if (captureRetryTimer.current) clearTimeout(captureRetryTimer.current);
+    captureRetryTimer.current = null;
+    captureRetryCount.current = 0;
+    pendingVariantSelectionRef.current = { ...selection };
+    variantNavigationRef.current = false;
+    const cycleId = ++captureCycleId.current;
+    let resolveCapture!: () => void;
+    let rejectCapture!: (error: Error) => void;
+    const completion = new Promise<void>((resolve, reject) => {
+      resolveCapture = resolve;
+      rejectCapture = reject;
+    });
+    pendingVariantChangeRef.current = { resolve: resolveCapture, reject: rejectCapture };
+    setCaptureError('');
+    setCaptureBusy(true);
+    captureBusyRef.current = true;
+    try {
+      if (!scriptRef.current) scriptRef.current = await fetchAyWebsCaptureScript();
+      if (cycleId !== captureCycleId.current) {
+        failPendingVariantChange('CAPTURE_CANCELLED');
+        return completion;
+      }
+      injectCapture();
+    } catch (error) {
+      if (cycleId === captureCycleId.current && pendingVariantChangeRef.current) {
+        failPendingVariantChange(error instanceof Error ? error.message : 'VARIANT_SELECTION_UNVERIFIED');
+      }
+    }
+    return completion;
+  }, [currentUrl, failPendingVariantChange, injectCapture, sessionId, store]);
+
   const onMessage = useCallback(async (event: { nativeEvent: { data: string } }) => {
     const message = parseAyWebsCaptureMessage(event.nativeEvent.data);
     if (!captureBusyRef.current || !activeRequestId.current || message.requestId !== activeRequestId.current) return;
     const cycleId = captureCycleId.current;
+    const pendingSelection = pendingVariantSelectionRef.current;
+    const hasPendingVariantChange = pendingVariantChangeRef.current !== null;
     if (captureTimer.current) clearTimeout(captureTimer.current);
     captureTimer.current = null;
     activeRequestId.current = '';
     if (!message.ok) {
+      if (hasPendingVariantChange) {
+        failPendingVariantChange('CAPTURE_SCRIPT_FAILED');
+        return;
+      }
       captureBusyRef.current = false;
       setCaptureBusy(false);
       const key = SCRIPT_FAILURE_COPY[message.code] ?? 'aywebs.browser.capture.badData';
@@ -212,16 +291,22 @@ export default function AyWebsBrowserScreen() {
       return;
     }
     if (!store || !sessionId || !isAllowedAyWebsMerchantUrl(message.capture.url, store)) {
-      captureBusyRef.current = false;
-      setCaptureBusy(false);
-      setCaptureError(t('aywebs.browser.navigationBlocked'));
+      if (hasPendingVariantChange) failPendingVariantChange('CAPTURE_URL_REJECTED');
+      else {
+        captureBusyRef.current = false;
+        setCaptureBusy(false);
+        setCaptureError(t('aywebs.browser.navigationBlocked'));
+      }
       return;
     }
     const captureUrl = normalizeAyWebsUrl(message.capture.url);
     if (!captureUrl) {
-      captureBusyRef.current = false;
-      setCaptureBusy(false);
-      setCaptureError(t('aywebs.browser.capture.badData'));
+      if (hasPendingVariantChange) failPendingVariantChange('CAPTURE_URL_REJECTED');
+      else {
+        captureBusyRef.current = false;
+        setCaptureBusy(false);
+        setCaptureError(t('aywebs.browser.capture.badData'));
+      }
       return;
     }
     if (shouldRetryAyWebsCaptureForPrice(message.capture.priceCandidates, captureRetryCount.current)) {
@@ -232,6 +317,10 @@ export default function AyWebsBrowserScreen() {
         try {
           injectCapture();
         } catch (error) {
+          if (hasPendingVariantChange) {
+            failPendingVariantChange(error instanceof Error ? error.message : 'CAPTURE_FAILED');
+            return;
+          }
           if (captureTimer.current) clearTimeout(captureTimer.current);
           captureTimer.current = null;
           activeRequestId.current = '';
@@ -243,38 +332,61 @@ export default function AyWebsBrowserScreen() {
       return;
     }
     try {
-      // Add est une intention explicite : contourner le mémo d'échec et relire
-      // le prix marchand au lieu de rouvrir une ancienne réponse à 0,00.
+      // Une sélection native est suivie d'une nouvelle lecture DOM, jamais d'un
+      // prix copié depuis une autre couleur/taille. Le serveur doit confirmer.
       const result = await resolveAyWebsProduct({
         url: captureUrl,
         storeId: store.id,
         sessionId,
+        ...(pendingSelection ? { variant: pendingSelection } : {}),
         capture: message.capture,
         refresh: true,
       });
       if (cycleId !== captureCycleId.current) return;
       if (result.product.storeId !== store.id || !isAllowedAyWebsMerchantUrl(result.product.sourceUrl, store)) {
-        setCaptureError(t('aywebs.browser.capture.badData'));
+        if (hasPendingVariantChange) failPendingVariantChange('RESOLVED_PRODUCT_MISMATCH');
+        else setCaptureError(t('aywebs.browser.capture.badData'));
         return;
       }
-      if (!hasVerifiedAyWebsQuote(result.product, result.quoteToken)) {
-        // Ne jamais ouvrir la feuille d'options avec « 0,00 » ou un prix/devise
-        // que le serveur n'a pas vérifiés.
+      if (pendingSelection) {
+        const capturedAttributes = message.capture.selectedVariantAttributes || {};
+        const resolvedAttributes = result.product.selectedVariant || {};
+        const requestMatchesCapture = Object.entries(pendingSelection).every(([attribute, value]) => (
+          String(capturedAttributes[attribute] || '').trim().toLowerCase() === String(value).trim().toLowerCase()
+          && String(resolvedAttributes[attribute] || '').trim().toLowerCase() === String(value).trim().toLowerCase()
+        ));
+        if (!result.captureUsed || !requestMatchesCapture) {
+          failPendingVariantChange('VARIANT_SELECTION_NOT_VERIFIED');
+          return;
+        }
+      } else if (!hasVerifiedAyWebsQuote(result.product, result.quoteToken)
+        && !result.product.variantGroups.some((group) => group.values.length > 0)) {
+        // Sans choix possibles, aucun devis incomplet ne doit ouvrir la feuille.
         setCaptureError(t('aywebs.error.captureIncomplete'));
         return;
       }
+      capturedPageRef.current = message.capture;
       setCapturedPage(message.capture);
       setResolved(result);
+      captureRetryCount.current = 0;
+      if (pendingSelection) {
+        const pending = pendingVariantChangeRef.current;
+        pendingVariantChangeRef.current = null;
+        pendingVariantSelectionRef.current = null;
+        variantNavigationRef.current = false;
+        pending?.resolve();
+      }
     } catch (error) {
       if (cycleId !== captureCycleId.current) return;
-      setCaptureError(ayWebsErrorMessage(error, locale, t));
+      if (hasPendingVariantChange) failPendingVariantChange(error instanceof Error ? error.message : 'CAPTURE_RESOLVE_FAILED');
+      else setCaptureError(ayWebsErrorMessage(error, locale, t));
     } finally {
       if (cycleId === captureCycleId.current) {
         captureBusyRef.current = false;
         setCaptureBusy(false);
       }
     }
-  }, [injectCapture, locale, sessionId, store, t]);
+  }, [failPendingVariantChange, injectCapture, locale, sessionId, store, t]);
 
   const onShouldStartLoadWithRequest = useCallback((request: { url: string; isTopFrame?: boolean }) => {
     // Ignore only non-top-frame navigations when WebKit identifies them. The
@@ -292,11 +404,15 @@ export default function AyWebsBrowserScreen() {
     if (navigation.url && store && isAllowedAyWebsMerchantUrl(navigation.url, store)) {
       const normalized = normalizeAyWebsUrl(navigation.url);
       if (normalized) {
-        if (normalized !== currentUrl) cancelPendingCapture();
+        if (normalized !== currentUrl) {
+          if (pendingVariantSelectionRef.current) variantNavigationRef.current = true;
+          else cancelPendingCapture();
+        }
         setCurrentUrl(normalized);
         setAddress(normalized);
       }
     }
+    if (pendingVariantSelectionRef.current && navigation.loading) variantNavigationRef.current = true;
     setLoaded(!navigation.loading);
   }, [cancelPendingCapture, currentUrl, store]);
 
@@ -356,8 +472,20 @@ export default function AyWebsBrowserScreen() {
     onShouldStartLoadWithRequest,
     onNavigationStateChange,
     onLoadStart: () => setLoaded(false),
-    onLoadEnd: () => setLoaded(true),
+    onLoadEnd: () => {
+      setLoaded(true);
+      if (pendingVariantSelectionRef.current && variantNavigationRef.current) {
+        variantNavigationRef.current = false;
+        if (captureRetryTimer.current) clearTimeout(captureRetryTimer.current);
+        captureRetryTimer.current = setTimeout(() => {
+          captureRetryTimer.current = null;
+          if (!pendingVariantSelectionRef.current || !captureBusyRef.current) return;
+          try { injectCapture(); } catch (error) { failPendingVariantChange(error instanceof Error ? error.message : 'CAPTURE_FAILED'); }
+        }, 300);
+      }
+    },
     onError: () => { setLoaded(true); setNavigationWarning(t('aywebs.browser.loadError')); },
+
     onHttpError: () => { setLoaded(true); setNavigationWarning(t('aywebs.browser.loadError')); },
     testID: 'aywebs-merchant-webview',
   } satisfies NativeWebViewProps & { ref: Ref<MerchantWebViewCommandRef> };
@@ -457,7 +585,14 @@ export default function AyWebsBrowserScreen() {
           resolved={resolved}
           capture={capturedPage}
           sessionId={sessionId}
-          onContinueShopping={() => { setResolved(null); setCapturedPage(null); }}
+          onVariantChange={captureSelectedVariant}
+          onContinueShopping={() => {
+            capturedPageRef.current = null;
+            pendingVariantSelectionRef.current = null;
+            variantNavigationRef.current = false;
+            setResolved(null);
+            setCapturedPage(null);
+          }}
         />
       ) : null}
     </View>

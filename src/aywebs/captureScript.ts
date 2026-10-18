@@ -30,11 +30,12 @@
 export const AYWEBS_CAPTURE_SCRIPT_PATH = '/api/v1/aywebs/capture/script.js';
 
 export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
-  var LIMITS = { priceCandidates: 5, variantTexts: 30, selectedTexts: 5, images: 4, label: 60, text: 300 };
+  var LIMITS = { priceCandidates: 5, variantTexts: 30, selectedTexts: 5, variantGroups: 12, variantValues: 30, selectedAttributes: 12, images: 4, label: 60, text: 300 };
   var out = {
     v: 1, url: '', canonicalUrl: null, title: null, brand: null,
     priceCandidates: [], currencyText: null, availabilityText: null,
     addToCartText: null, conditionText: null, selectedVariantTexts: [], variantTexts: [],
+    variantGroups: [], selectedVariantAttributes: {},
     images: [], capturedAt: null, pageLang: null
   };
 
@@ -48,6 +49,88 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     if (!v) return;
     for (var i = 0; i < list.length; i++) { if (list[i].toLowerCase() === v.toLowerCase()) return; }
     if (list.length < max) list.push(v);
+  }
+  function amazonDimensionAttribute(sourceKey) {
+    var key = String(sourceKey || '').toLowerCase();
+    var known = {
+      size_name: 'size', ring_size: 'size', color_name: 'color', style_name: 'style',
+      pattern_name: 'pattern', flavor_name: 'flavor', capacity: 'capacity',
+      format_name: 'format', model_name: 'model', material_name: 'material',
+      item_type_name: 'type', length_name: 'length', volume_name: 'volume'
+    };
+    if (Object.prototype.hasOwnProperty.call(known, key)) return known[key];
+    if (!/^[a-z0-9_]{1,40}$/.test(key)) return '';
+    return key.replace(/_name$/, '') || 'model';
+  }
+  /* Parse uniquement un objet JSON après un nom de donnée connu ; aucun eval de
+     script marchand. Le twister Amazon est parfois échappé dans un script JS. */
+  function jsonObjectAfterKey(raw, key) {
+    var original = String(raw || '');
+    var escapedQuote = String.fromCharCode(92) + '"';
+    var sources = [original, original.split(escapedQuote).join('"')];
+    var needle = '"' + key + '"';
+    for (var sourceIndex = 0; sourceIndex < sources.length; sourceIndex++) {
+      var source = sources[sourceIndex];
+      var cursor = 0;
+      while (cursor < source.length) {
+        var at = source.indexOf(needle, cursor);
+        if (at < 0) break;
+        cursor = at + needle.length;
+        var open = source.indexOf('{', cursor);
+        if (open < 0) break;
+        var depth = 0;
+        var inString = false;
+        var escaped = false;
+        for (var index = open; index < source.length && index < open + 250000; index++) {
+          var ch = source.charAt(index);
+          if (inString) {
+            if (escaped) escaped = false;
+            else if (ch === String.fromCharCode(92)) escaped = true;
+            else if (ch === '"') inString = false;
+            continue;
+          }
+          if (ch === '"') { inString = true; continue; }
+          if (ch === '{') depth++;
+          else if (ch === '}') {
+            depth--;
+            if (depth === 0) {
+              try { return JSON.parse(source.slice(open, index + 1)); } catch (e) { break; }
+            }
+          }
+        }
+      }
+    }
+    return null;
+  }
+  function variantTextFromNode(node) {
+    if (!node) return '';
+    var sources = [
+      node.getAttribute && node.getAttribute('title'),
+      node.getAttribute && node.getAttribute('aria-label'),
+      node.getAttribute && node.getAttribute('data-attribute-value'),
+      node.getAttribute && node.getAttribute('data-value')
+    ];
+    var labelledBy = node.getAttribute && node.getAttribute('aria-labelledby');
+    if (labelledBy) {
+      var labelNode = document.getElementById(labelledBy.split(String.fromCharCode(32))[0]);
+      if (labelNode) sources.push(labelNode.textContent);
+    }
+    try {
+      var inner = node.querySelector('.a-button-text, .swatchText, [class*="dimension-text" i], label');
+      if (inner) sources.push(inner.textContent);
+    } catch (e) {}
+    sources.push(node.textContent);
+    for (var sourceIndex = 0; sourceIndex < sources.length; sourceIndex++) {
+      var candidate = cut(sources[sourceIndex], LIMITS.label);
+      if (candidate) return candidate;
+    }
+    /* Les swatches image-only portent parfois leur libellé sur le <li> parent. */
+    var parent = node.parentNode;
+    for (var hop = 0; parent && hop < 2; hop++, parent = parent.parentNode) {
+      var parentTitle = parent.getAttribute && (parent.getAttribute('title') || parent.getAttribute('aria-label'));
+      if (parentTitle) return cut(parentTitle, LIMITS.label);
+    }
+    return '';
   }
   var CURRENCY_HINT = /[$\u20ac\u00a3\u00a5]|\b(EUR|USD|GBP|JPY|TND|DT|MAD|AED|SAR)\b|\bd\.?t\b/i;
   var HAS_DIGIT = /[0-9]/;
@@ -79,6 +162,17 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     || hasSelector('#buybox') || hasSelector('#desktop_buybox') || hasSelector('#apex_desktop')
     || hasSelector('#corePriceDisplay_desktop_feature_div') || hasSelector('#corePrice_desktop')
     || hasSelector('#corePrice_feature_div') || hasSelector('#corePrice_mobile_feature_div'));
+  var AMAZON_PRODUCT_ROOT = null;
+  var AMAZON_TWISTER_ROOT = null;
+  if (AMAZON_STRICT) {
+    try {
+      AMAZON_PRODUCT_ROOT = document.querySelector('#dp-container') || document.querySelector('#ppd')
+        || document.querySelector('#dp') || document.querySelector('#centerCol');
+      if (AMAZON_PRODUCT_ROOT) {
+        AMAZON_TWISTER_ROOT = AMAZON_PRODUCT_ROOT.querySelector('#twister_feature_div, [data-feature-name="twister"]');
+      }
+    } catch (e) { AMAZON_PRODUCT_ROOT = null; AMAZON_TWISTER_ROOT = null; }
+  }
   var AMAZON_ASIN = '';
   if (AMAZON_STRICT) {
     try {
@@ -671,6 +765,142 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
       pushUnique(out.variantTexts, candidate, LIMITS.variantTexts, LIMITS.label);
     }
   } catch (e) {}
+
+  /* ── 7b. Amazon twister : groupes publiés et choix COURANT, sans prix ──────
+     Les noms viennent des dimensions twister (pas d'un sélecteur variation_* supposé) :
+     le fixture Amazon.de réel utilise #twister_feature_div / inline-twister-*
+     et peut ne pas contenir ces anciens IDs. Les contrôles DOM ne servent qu'à
+     confirmer les valeurs visibles ; seuls les faits prix/stock seront relus
+     après un changement de choix. */
+  if (AMAZON_STRICT) {
+    try {
+      var dimensionData = null;
+      var displayLabels = {};
+      var twistScripts = AMAZON_TWISTER_ROOT ? AMAZON_TWISTER_ROOT.querySelectorAll('script') : [];
+      for (var ts = 0; ts < twistScripts.length; ts++) {
+        var scriptText = String(twistScripts[ts].textContent || '');
+        var allDimensions = jsonObjectAfterKey(scriptText, 'sortedDimValuesForAllDims');
+        if (allDimensions && typeof allDimensions === 'object' && Object.keys(allDimensions).length) dimensionData = allDimensions;
+        var labelsData = jsonObjectAfterKey(scriptText, 'variationDisplayLabels');
+        if (labelsData && typeof labelsData === 'object' && Object.keys(labelsData).length) displayLabels = labelsData;
+      }
+      if (!Object.keys(displayLabels).length && AMAZON_PRODUCT_ROOT) {
+        var productScripts = AMAZON_PRODUCT_ROOT.querySelectorAll('script');
+        for (var ps = 0; ps < productScripts.length; ps++) {
+          var productScriptText = String(productScripts[ps].textContent || '');
+          var productLabels = jsonObjectAfterKey(productScriptText, 'variationDisplayLabels');
+          if (productLabels && typeof productLabels === 'object' && Object.keys(productLabels).length) displayLabels = productLabels;
+        }
+      }
+
+      function ensureAmazonVariantGroup(sourceKey, label) {
+        var attribute = amazonDimensionAttribute(sourceKey);
+        if (!attribute || attribute === '__proto__' || attribute === 'constructor' || attribute === 'prototype') return null;
+        for (var existingIndex = 0; existingIndex < out.variantGroups.length; existingIndex++) {
+          if (out.variantGroups[existingIndex].attribute === attribute) {
+            return out.variantGroups[existingIndex].sourceKey === sourceKey ? out.variantGroups[existingIndex] : null;
+          }
+        }
+        if (out.variantGroups.length >= LIMITS.variantGroups) return null;
+        var group = { attribute: attribute, sourceKey: sourceKey, label: cut(label || attribute, LIMITS.label), values: [], valueStates: [] };
+        out.variantGroups.push(group);
+        return group;
+      }
+      function pushAmazonVariantValue(group, rawValue) {
+        var value = cut(rawValue, LIMITS.label);
+        if (!group || !value || /^(select|choose|please|--|search|department)/i.test(value)) return '';
+        pushUnique(group.values, value, LIMITS.variantValues, LIMITS.label);
+        pushUnique(out.variantTexts, value, LIMITS.variantTexts, LIMITS.label);
+        return group.values.filter(function (candidate) { return candidate.toLowerCase() === value.toLowerCase(); })[0] || value;
+      }
+      function matchAmazonVariantValue(group, rawValue) {
+        var value = cut(rawValue, LIMITS.label).toLowerCase();
+        if (!group || !value) return '';
+        for (var valueIndex = 0; valueIndex < group.values.length; valueIndex++) {
+          if (group.values[valueIndex].toLowerCase() === value) return group.values[valueIndex];
+        }
+        return '';
+      }
+      function setAmazonSelected(group, value) {
+        if (!group || !value) return;
+        if (Object.keys(out.selectedVariantAttributes).length >= LIMITS.selectedAttributes
+          && !Object.prototype.hasOwnProperty.call(out.selectedVariantAttributes, group.attribute)) return;
+        out.selectedVariantAttributes[group.attribute] = value;
+        pushUnique(out.selectedVariantTexts, value, LIMITS.selectedTexts, LIMITS.label);
+      }
+
+      if (dimensionData && typeof dimensionData === 'object') {
+        var dimensionKeys = Object.keys(dimensionData);
+        for (var dk = 0; dk < dimensionKeys.length && out.variantGroups.length < LIMITS.variantGroups; dk++) {
+          var sourceKey = String(dimensionKeys[dk] || '').toLowerCase();
+          var entries = dimensionData[sourceKey];
+          if (!Array.isArray(entries) || !entries.length) continue;
+          var group = ensureAmazonVariantGroup(sourceKey, displayLabels[sourceKey] || amazonDimensionAttribute(sourceKey));
+          if (!group) continue;
+          var selectedDataValue = '';
+          var selectedDataAmbiguous = false;
+          for (var de = 0; de < entries.length && group.values.length < LIMITS.variantValues; de++) {
+            var entry = entries[de] || {};
+            var value = pushAmazonVariantValue(group, entry.dimensionValueDisplayText || entry.dimensionValue || '');
+            var state = String(entry.dimensionValueState || '').toUpperCase();
+            if (value && (state === 'AVAILABLE' || state === 'UNAVAILABLE' || state === 'SELECTED')) {
+              var stateFound = false;
+              for (var vs = 0; vs < group.valueStates.length; vs++) {
+                if (group.valueStates[vs].value.toLowerCase() === value.toLowerCase()) {
+                  group.valueStates[vs].state = state;
+                  stateFound = true;
+                  break;
+                }
+              }
+              if (!stateFound) group.valueStates.push({ value: value, state: state });
+            }
+            if (value && state === 'SELECTED') {
+              if (selectedDataValue && selectedDataValue.toLowerCase() !== value.toLowerCase()) selectedDataAmbiguous = true;
+              else selectedDataValue = value;
+            }
+          }
+          if (selectedDataAmbiguous) {
+            for (var unknownState = 0; unknownState < group.valueStates.length; unknownState++) {
+              if (group.valueStates[unknownState].state === 'SELECTED') group.valueStates[unknownState].state = 'UNKNOWN';
+            }
+            delete out.selectedVariantAttributes[group.attribute];
+          } else if (selectedDataValue) {
+            setAmazonSelected(group, selectedDataValue);
+          }
+        }
+      }
+
+      var variantContainers = AMAZON_TWISTER_ROOT ? AMAZON_TWISTER_ROOT.querySelectorAll('[id^="variation_"]') : [];
+      for (var vc = 0; vc < variantContainers.length && out.variantGroups.length < LIMITS.variantGroups; vc++) {
+        var container = variantContainers[vc];
+        var containerId = String(container.id || '');
+        var sourceKeyFromDom = containerId.slice('variation_'.length).toLowerCase();
+        if (!sourceKeyFromDom) continue;
+        var domGroup = ensureAmazonVariantGroup(sourceKeyFromDom, displayLabels[sourceKeyFromDom] || amazonDimensionAttribute(sourceKeyFromDom));
+        if (!domGroup) continue;
+        var optionNodes = container.querySelectorAll('select option, li[title], [role="option"], [role="radio"], [data-attribute-value], [data-value], .a-button, button[title]');
+        for (var on = 0; on < optionNodes.length && domGroup.values.length < LIMITS.variantValues; on++) {
+          pushAmazonVariantValue(domGroup, variantTextFromNode(optionNodes[on]));
+        }
+        var selectedNodes = container.querySelectorAll('select option:checked, [aria-checked="true"], [aria-selected="true"], .a-button-selected, li[class*="selected" i], button[class*="selected" i]');
+        var selectedValue = '';
+        var selectedAmbiguous = false;
+        for (var sn = 0; sn < selectedNodes.length; sn++) {
+          var matchedSelectedValue = matchAmazonVariantValue(domGroup, variantTextFromNode(selectedNodes[sn]));
+          if (!matchedSelectedValue) { selectedAmbiguous = true; continue; }
+          if (selectedValue && selectedValue.toLowerCase() !== matchedSelectedValue.toLowerCase()) selectedAmbiguous = true;
+          else selectedValue = matchedSelectedValue;
+        }
+        if (selectedNodes.length) {
+          if (!selectedAmbiguous && selectedValue) setAmazonSelected(domGroup, selectedValue);
+          else if (Object.prototype.hasOwnProperty.call(out.selectedVariantAttributes, domGroup.attribute)) {
+            delete out.selectedVariantAttributes[domGroup.attribute];
+          }
+        }
+      }
+      out.variantGroups = out.variantGroups.filter(function (group) { return group.values.length > 0; });
+    } catch (e) {}
+  }
 
   /* ── 8. Titre de secours et images visibles ─────────────────────────────── */
   if (!out.title) { try { out.title = cut(document.title, LIMITS.text) || null; } catch (e) {} }

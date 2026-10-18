@@ -42,6 +42,10 @@ export const AYWEBS_CAPTURE_LIMITS = {
   maxTitleLength: 300,
   maxVariantTexts: 30,
   maxSelectedVariantTexts: 5,
+  maxVariantGroups: 12,
+  maxVariantValuesPerGroup: 30,
+  maxVariantSourceKeyLength: 40,
+  maxSelectedVariantAttributes: 12,
   maxImages: 4,
   /** Au-delà, la capture est refusée : une page ouverte il y a une heure n'est pas une preuve. */
   maxAgeMs: 10 * 60_000,
@@ -58,6 +62,20 @@ export interface AyWebsCapturedPriceCandidate {
   /** `dom_accessibility` est réservé au libellé Amazon screen-reader et ne compte
    * qu'en paire exacte avec le prix courant visible du buybox Amazon. */
   source: AyWebsCaptureSource;
+}
+
+/** Options publiées par les dimensions twister — jamais des prix ou des stocks. */
+export interface AyWebsCapturedVariantGroup {
+  /** Attribut normalisé par le lecteur (size, color, style…). */
+  attribute: string;
+  /** Clé de dimension publiée par Amazon et requise pour retrouver son contrôle DOM. */
+  sourceKey: string;
+  /** Libellé source (ex. Size, Colour), limité à du texte brut. */
+  label: string;
+  /** Valeurs que la page publie ; chacune doit être relue avant un devis. */
+  values: string[];
+  /** État twister publié pour cette valeur seule (ne prouve pas le stock d'une combinaison). */
+  valueStates?: Array<{ value: string; state: 'AVAILABLE' | 'UNAVAILABLE' | 'SELECTED' | 'UNKNOWN' }>;
 }
 
 export interface AyWebsCapturedPage {
@@ -84,6 +102,13 @@ export interface AyWebsCapturedPage {
   selectedVariantTexts?: string[];
   /** Options publiées par la page (libellés bruts, bornés). */
   variantTexts?: string[];
+  /**
+   * Groupes Amazon structurés lus dans le twister. Ces libellés ne prouvent ni
+   * le prix ni le stock ; l'état de chaque choix doit être recapturé sur la page.
+   */
+  variantGroups?: AyWebsCapturedVariantGroup[];
+  /** Valeurs actuellement sélectionnées et visibles par dimension, si lisibles. */
+  selectedVariantAttributes?: Record<string, string>;
   /** Images trouvées (URLs http/https seulement). */
   images?: string[];
   /** Horodatage ISO de la lecture, dans le navigateur du client. */

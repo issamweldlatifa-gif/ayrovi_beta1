@@ -29,9 +29,10 @@
  * normalisés (espaces insécables, longueur) et journalisés.
  */
 import { createHash } from 'node:crypto';
-import type { ScrapedProduct } from '../types';
+import type { ScrapedProduct, ProductVariantDetail } from '../types';
 import { checkPriceText } from '../scraper/priceIntegrity';
 import { detectAyWebsStore } from '../../shared/aywebsStores';
+import { normalizeAttributeName } from './productNormalizer';
 import {
   AYWEBS_CAPTURE_LIMITS,
   AYWEBS_CAPTURE_VERSION,
@@ -39,6 +40,7 @@ import {
   type AyWebsCaptureOutcome,
   type AyWebsCapturedPage,
   type AyWebsCapturedPriceCandidate,
+  type AyWebsCapturedVariantGroup,
 } from '../../shared/aywebsCapture';
 import type { AyWebsAvailabilityState } from '../../shared/aywebsTypes';
 
@@ -143,6 +145,58 @@ export function resetAyWebsWebviewCaptureStats(): void {
   captureStats.single_source = 0;
 }
 
+/** A captured quote is usable only for a complete, verified selection. */
+export function hasUnstructuredAyWebsVariantEvidence(input: {
+  variantGroups: Array<Pick<AyWebsCapturedVariantGroup, 'attribute' | 'values'>>;
+  variantTexts: string[];
+  selectedVariantTexts: string[];
+  requestedAttributes?: Record<string, string> | null;
+}): boolean {
+  const attributes = new Set(input.variantGroups.map((group) => group.attribute.trim().toLowerCase()));
+  const values = new Set(input.variantGroups.flatMap((group) => group.values).map((value) => value.trim().toLowerCase()));
+  const unmappedText = [...input.variantTexts, ...input.selectedVariantTexts]
+    .some((value) => !values.has(value.trim().toLowerCase()));
+  const unmappedAttribute = Object.keys(input.requestedAttributes || {})
+    .some((attribute) => !attributes.has(attribute.trim().toLowerCase()));
+  return unmappedText || unmappedAttribute;
+}
+
+export function isAyWebsCaptureVariantSelectionVerified(input: {
+  variantGroups: AyWebsCapturedVariantGroup[];
+  requestedAttributes: Record<string, string> | null;
+  capturedAttributes: Record<string, string>;
+  selectionComplete: boolean;
+  selectionBacked: boolean;
+  unstructuredVariantEvidence: boolean;
+}): boolean {
+  if (!input.selectionBacked || input.unstructuredVariantEvidence) return false;
+  const attributes = input.variantGroups.map((group) => group.attribute);
+  if (!attributes.length) return true;
+  if (!input.selectionComplete || Object.keys(input.requestedAttributes || {}).length !== attributes.length) return false;
+  return attributes.every((attribute) => {
+    const requested = String(input.requestedAttributes?.[attribute] || '').trim().toLowerCase();
+    const captured = String(input.capturedAttributes[attribute] || '').trim().toLowerCase();
+    const group = input.variantGroups.find((candidate) => candidate.attribute === attribute);
+    const valueState = group?.valueStates?.find((candidate) => candidate.value.toLowerCase() === captured)?.state;
+    return Boolean(requested && captured && requested === captured && valueState !== 'UNAVAILABLE');
+  });
+}
+
+export function canIssueAyWebsCaptureQuote(input: {
+  captureUsed: boolean;
+  priceVerified: boolean;
+  currencyVerified: boolean;
+  selectionVerified: boolean;
+  availability: AyWebsAvailabilityState;
+  unstructuredVariantEvidence: boolean;
+}): boolean {
+  if (!input.priceVerified || !input.currencyVerified) return false;
+  if (!input.captureUsed) return true;
+  return input.selectionVerified
+    && !input.unstructuredVariantEvidence
+    && (input.availability === 'AVAILABLE' || input.availability === 'LOW_STOCK');
+}
+
 /**
  * Disponibilité — vocabulaire FERMÉ. Chaque entrée est une formulation
  * réellement publiée par les marchands (JSON-LD schema.org en anglais, ou texte
@@ -208,6 +262,73 @@ function cleanImageUrls(raw: unknown): string[] {
   return out;
 }
 
+const AMAZON_DIMENSION_ATTRIBUTES: Record<string, string> = {
+  size_name: 'size', ring_size: 'size', color_name: 'color', style_name: 'style',
+  pattern_name: 'pattern', flavor_name: 'flavor', capacity: 'capacity', format_name: 'format',
+  model_name: 'model', material_name: 'material', item_type_name: 'type',
+  length_name: 'length', volume_name: 'volume',
+};
+
+function cleanCapturedVariantGroups(raw: unknown, isAmazon: boolean): AyWebsCapturedVariantGroup[] {
+  if (!isAmazon || !Array.isArray(raw)) return [];
+  const groups: AyWebsCapturedVariantGroup[] = [];
+  const seenAttributes = new Set<string>();
+  for (const candidate of raw.slice(0, AYWEBS_CAPTURE_LIMITS.maxVariantGroups)) {
+    if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) continue;
+    const value = candidate as Record<string, unknown>;
+    const sourceKey = collapse(value.sourceKey, AYWEBS_CAPTURE_LIMITS.maxVariantSourceKeyLength).toLowerCase();
+    if (!/^[a-z0-9_]{1,40}$/.test(sourceKey)) continue;
+    const derived = AMAZON_DIMENSION_ATTRIBUTES[sourceKey]
+      || normalizeAttributeName(sourceKey.replace(/_name$/, ''));
+    const attribute = normalizeAttributeName(value.attribute);
+    if (!attribute || attribute !== derived || ['__proto__', 'prototype', 'constructor'].includes(attribute)) continue;
+    if (seenAttributes.has(attribute)) continue;
+    if (!Array.isArray(value.values) || value.values.length > AYWEBS_CAPTURE_LIMITS.maxVariantValuesPerGroup) continue;
+    const values: string[] = [];
+    for (const item of value.values) {
+      const text = collapse(item, AYWEBS_CAPTURE_LIMITS.maxTextLength);
+      if (!text || values.some((existing) => existing.toLowerCase() === text.toLowerCase())) continue;
+      values.push(text);
+    }
+    if (!values.length) continue;
+    const label = collapse(value.label, 60) || attribute;
+    const valueStates: Array<{ value: string; state: 'AVAILABLE' | 'UNAVAILABLE' | 'SELECTED' | 'UNKNOWN' }> = [];
+    if (Array.isArray(value.valueStates) && value.valueStates.length <= AYWEBS_CAPTURE_LIMITS.maxVariantValuesPerGroup) {
+      for (const rawState of value.valueStates) {
+        if (!rawState || typeof rawState !== 'object' || Array.isArray(rawState)) continue;
+        const stateRecord = rawState as Record<string, unknown>;
+        const stateValue = collapse(stateRecord.value, 60);
+        const publishedValue = values.find((item) => item.toLowerCase() === stateValue.toLowerCase());
+        const state = String(stateRecord.state || '').toUpperCase();
+        if (!publishedValue || !['AVAILABLE', 'UNAVAILABLE', 'SELECTED', 'UNKNOWN'].includes(state)) continue;
+        const previous = valueStates.find((entry) => entry.value.toLowerCase() === publishedValue.toLowerCase());
+        if (previous) previous.state = state as typeof previous.state;
+        else valueStates.push({ value: publishedValue, state: state as typeof valueStates[number]['state'] });
+      }
+    }
+    groups.push({ attribute, sourceKey, label, values, ...(valueStates.length ? { valueStates } : {}) });
+    seenAttributes.add(attribute);
+  }
+  return groups;
+}
+
+function cleanSelectedVariantAttributes(
+  raw: unknown,
+  groups: AyWebsCapturedVariantGroup[],
+): Record<string, string> {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const source = raw as Record<string, unknown>;
+  const result: Record<string, string> = {};
+  for (const group of groups.slice(0, AYWEBS_CAPTURE_LIMITS.maxSelectedVariantAttributes)) {
+    const entry = source[group.attribute];
+    const text = collapse(entry, 60);
+    if (!text) continue;
+    const publishedValue = group.values.find((value) => value.toLowerCase() === text.toLowerCase());
+    if (publishedValue) result[group.attribute] = publishedValue;
+  }
+  return result;
+}
+
 function hostOf(raw: string): string | null {
   try {
     return new URL(raw).hostname.toLowerCase().replace(/^www\./, '');
@@ -231,8 +352,16 @@ export interface AyWebsCaptureValidation {
   fingerprint: string;
   priceSource: AyWebsCaptureSource | null;
   corroborated: boolean;
+  /** Options que la page publie (libellés bruts bornés, sans combinaison supposée). */
+  variantTexts: string[];
   /** Options que le CLIENT avait choisies sur la page (libellés bruts bornés). */
   selectedVariantTexts: string[];
+  /** Dimensions et valeurs publiées par le twister Amazon (aucun prix/stock). */
+  variantGroups: AyWebsCapturedVariantGroup[];
+  /** Valeur réellement sélectionnée par dimension, si lue sur la page. */
+  selectedVariantAttributes: Record<string, string>;
+  /** Tous les groupes sont sélectionnés ; ne vaut jamais true par simple défaut. */
+  variantSelectionComplete: boolean;
   /** Piste d'audit lisible : quels candidats ont été vus, lesquels ont gagné. */
   notes: string[];
   outcome: AyWebsCaptureOutcome;
@@ -249,7 +378,8 @@ function rejected(rejection: string, fingerprint = '', notes: string[] = []): Ay
     ok: false, rejection, scraped: null, price: 0, currency: '',
     priceVerified: false, currencyVerified: false,
     availability: 'UNKNOWN', availabilityReason: `capture_rejected:${rejection}`,
-    condition: null, fingerprint, priceSource: null, corroborated: false, selectedVariantTexts: [], notes,
+    condition: null, fingerprint, priceSource: null, corroborated: false,
+    variantTexts: [], selectedVariantTexts: [], variantGroups: [], selectedVariantAttributes: {}, variantSelectionComplete: false, notes,
     outcome: { used: false, fingerprint: fingerprint || null, priceSource: null, corroborated: false, rejection },
   };
 }
@@ -465,10 +595,28 @@ export function validateAyWebsCapturedPage(
   const title = collapse(payload.title, AYWEBS_CAPTURE_LIMITS.maxTitleLength);
   const brand = collapse(payload.brand, 120) || null;
   const images = cleanImageUrls(payload.images);
+  const variantGroups = cleanCapturedVariantGroups(payload.variantGroups, requestStore?.id === 'amazon');
+  const selectedVariantAttributes = cleanSelectedVariantAttributes(payload.selectedVariantAttributes, variantGroups);
   const selectedVariantTexts = cleanTextArray(
-    payload.selectedVariantTexts, AYWEBS_CAPTURE_LIMITS.maxSelectedVariantTexts, 60,
+    [
+      ...(Array.isArray(payload.selectedVariantTexts) ? payload.selectedVariantTexts : []),
+      ...Object.values(selectedVariantAttributes),
+    ],
+    AYWEBS_CAPTURE_LIMITS.maxSelectedVariantTexts,
+    60,
   );
-  const variantTexts = cleanTextArray(payload.variantTexts, AYWEBS_CAPTURE_LIMITS.maxVariantTexts, 60);
+  const variantTexts = cleanTextArray(
+    [
+      ...(Array.isArray(payload.variantTexts) ? payload.variantTexts : []),
+      ...variantGroups.flatMap((group) => group.values),
+    ],
+    AYWEBS_CAPTURE_LIMITS.maxVariantTexts,
+    60,
+  );
+  const variantSelectionComplete = variantGroups.length === 0 || variantGroups.every((group) => {
+    const selected = selectedVariantAttributes[group.attribute];
+    return Boolean(selected && group.values.some((value) => value.toLowerCase() === selected.toLowerCase()));
+  });
 
   const fingerprint = fingerprintOf({
     url: pageUrl,
@@ -481,13 +629,60 @@ export function validateAyWebsCapturedPage(
     availability,
     availabilityEvidence,
     condition,
+    variantTexts,
     selectedVariantTexts,
+    variantGroups: variantGroups.map((group) => ({
+      attribute: group.attribute, sourceKey: group.sourceKey, values: group.values, valueStates: group.valueStates || [],
+    })),
+    selectedVariantAttributes,
     capturedAt: String(payload.capturedAt),
   });
 
   const summary = condition && selectedVariantTexts.length
     ? `${title} — ${condition} — ${selectedVariantTexts.join(' / ')}`
     : title;
+  const scrapedVariantDetails: ProductVariantDetail[] = [];
+  if (variantGroups.length && variantSelectionComplete) {
+    const exactAttributes = { ...selectedVariantAttributes };
+    const stock = availability === 'AVAILABLE' || availability === 'LOW_STOCK' ? true
+      : availability === 'OUT_OF_STOCK' ? false : null;
+    scrapedVariantDetails.push({
+      id: null,
+      label: Object.values(exactAttributes).join(' · '),
+      size: exactAttributes.size || null,
+      color: exactAttributes.color || null,
+      attributes: exactAttributes,
+      available: availability !== 'OUT_OF_STOCK',
+      stock,
+      price: corroborated && currencyVerified ? price : null,
+    });
+  }
+  for (const group of variantGroups) {
+    for (const value of group.values) {
+      const state = group.valueStates?.find((item) => item.value.toLowerCase() === value.toLowerCase())?.state;
+      const attributes = { [group.attribute]: value };
+      scrapedVariantDetails.push({
+        id: null,
+        label: value,
+        size: group.attribute === 'size' ? value : null,
+        color: group.attribute === 'color' ? value : null,
+        attributes,
+        available: state !== 'UNAVAILABLE',
+        /* L'état publié d'une valeur dimensionnelle n'est pas le stock d'une
+           combinaison : seule la sélection complète relue plus haut reçoit
+           une valeur `stock` et un prix. */
+        stock: null,
+        price: null,
+      });
+    }
+  }
+  const scrapedVariants: ScrapedProduct['variants'] = {
+    sizes: variantGroups.find((group) => group.attribute === 'size')?.values || [],
+    colors: variantGroups.find((group) => group.attribute === 'color')?.values || [],
+    styles: variantGroups.find((group) => group.attribute === 'style')?.values || [],
+    options: variantGroups.find((group) => group.attribute === 'model')?.values || [],
+    details: scrapedVariantDetails,
+  };
 
   /* Le `ScrapedProduct` produit ici est le MÊME objet que celui du lecteur
      serveur : le reste d'AYWEBs (normaliseur, disponibilité, panier) ne sait
@@ -508,12 +703,11 @@ export function validateAyWebsCapturedPage(
     estimatedShippingTND: 0,
     serviceFeeTND: 0,
     totalPriceTND: 0,
-    /* AUCUNE variante publiée : la capture prouve un prix et l'état du bouton
-       d'achat POUR LA COMBINAISON AFFICHÉE, pas le stock de chaque combinaison.
-       Exposer des options sans stock par option ferait exiger une sélection que
-       le serveur serait ensuite incapable de vérifier (blocage honnête mais
-       inutile). Les libellés publiés restent dans la piste d'audit. */
-    variants: { colors: [], sizes: [], details: [] },
+    /* Les groupes twister servent à présenter les choix, jamais à hériter d'un
+       prix ou d'un stock. Seule la combinaison explicitement sélectionnée reçoit
+       le prix et la disponibilité relus dans cette capture ; les autres valeurs
+       restent sans prix et sans stock confirmé jusqu'à une nouvelle lecture. */
+    variants: scrapedVariants,
     availability: availability === 'AVAILABLE' ? 'in_stock'
       : availability === 'LOW_STOCK' ? 'limited'
         : availability === 'OUT_OF_STOCK' ? 'out_of_stock'
@@ -557,7 +751,11 @@ export function validateAyWebsCapturedPage(
     fingerprint,
     priceSource: primary.source,
     corroborated,
+    variantTexts,
     selectedVariantTexts,
+    variantGroups,
+    selectedVariantAttributes,
+    variantSelectionComplete,
     notes,
     outcome: {
       used: true,

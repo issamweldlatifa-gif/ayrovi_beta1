@@ -3,6 +3,7 @@ import {
   addAyWebsCartItem,
   AYWEBS_RESOLVE_TIMEOUT_MS,
   buildAyWebsCaptureInjection,
+  buildAyWebsVariantSelectionInjection,
   fetchAyWebsHome,
   parseAyWebsCapture,
   resolveAyWebsProduct,
@@ -54,6 +55,8 @@ const capture: AyWebsCapture = {
   conditionText: null,
   selectedVariantTexts: [],
   variantTexts: [],
+  variantGroups: [],
+  selectedVariantAttributes: {},
   images: ['https://images.example.test/product.jpg'],
   capturedAt: '2026-10-17T10:00:00.000Z',
   pageLang: 'en-US',
@@ -112,6 +115,39 @@ describe('AYWEBs — URL et WebView marchand sécurisés', () => {
     const injection = buildAyWebsCaptureInjection('(function(){return "{}";})();', 'request-token');
     expect(injection).toContain('request-token');
     expect(injection).toContain('ReactNativeWebView.postMessage');
+
+    const groups = [{
+      attribute: 'size', sourceKey: 'size_name', label: 'Size', values: ['Small', 'Medium'],
+      valueStates: [{ value: 'Small', state: 'SELECTED' as const }, { value: 'Medium', state: 'AVAILABLE' as const }],
+    }];
+    const structured = parseAyWebsCapture({
+      ...capture,
+      variantGroups: groups,
+      selectedVariantAttributes: { size: 'Small' },
+    });
+    expect(structured.variantGroups).toEqual(groups);
+    expect(structured.selectedVariantAttributes).toEqual({ size: 'Small' });
+    expect(parseAyWebsCapture({ ...capture, variantGroups: undefined, selectedVariantAttributes: undefined }).variantGroups).toEqual([]);
+
+    const selectionInjection = buildAyWebsVariantSelectionInjection(
+      '(function(){return "{}";})();', 'variant-request', groups, { size: 'Medium' },
+    );
+    expect(selectionInjection).toContain('variation_');
+    expect(selectionInjection).toContain('Medium');
+    expect(selectionInjection).toContain('aywebs_capture');
+    expect(() => buildAyWebsVariantSelectionInjection(
+      '(function(){return "{}";})();', 'bad-request', groups, { size: 'Not published' },
+    )).toThrow(ApiError);
+    const unavailableGroups = [{
+      ...groups[0], values: [...groups[0].values, 'Large'],
+      valueStates: [...groups[0].valueStates, { value: 'Large', state: 'UNAVAILABLE' as const }],
+    }];
+    expect(() => buildAyWebsVariantSelectionInjection(
+      '(function(){return "{}";})();', 'unavailable-request', unavailableGroups, { size: 'Large' },
+    )).toThrow(ApiError);
+    expect(parseAyWebsCapture({
+      ...capture, variantGroups: [{ ...groups[0], sourceKey: 'bad"selector' }],
+    }).variantGroups).toEqual([]);
   });
 });
 

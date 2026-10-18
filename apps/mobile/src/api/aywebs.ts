@@ -130,6 +130,14 @@ export interface AyWebsProduct {
   integrationType: string;
 }
 
+export interface AyWebsCapturedVariantGroup {
+  attribute: string;
+  sourceKey: string;
+  label: string;
+  values: string[];
+  valueStates?: Array<{ value: string; state: 'AVAILABLE' | 'UNAVAILABLE' | 'SELECTED' | 'UNKNOWN' }>;
+}
+
 export interface AyWebsCapture {
   v: 1;
   url: string;
@@ -143,6 +151,8 @@ export interface AyWebsCapture {
   conditionText: string | null;
   selectedVariantTexts: string[];
   variantTexts: string[];
+  variantGroups: AyWebsCapturedVariantGroup[];
+  selectedVariantAttributes: Record<string, string>;
   images: string[];
   capturedAt: string;
   pageLang: string | null;
@@ -512,6 +522,60 @@ export function parseAyWebsCapture(value: unknown): AyWebsCapture {
   const images = stringArray(value.images, 4, 600).filter((image) => {
     try { return ['http:', 'https:'].includes(new URL(image).protocol); } catch { return false; }
   });
+  const dimensionAttributes: Record<string, string> = {
+    size_name: 'size', ring_size: 'size', color_name: 'color', style_name: 'style',
+    pattern_name: 'pattern', flavor_name: 'flavor', capacity: 'capacity', format_name: 'format',
+    model_name: 'model', material_name: 'material', item_type_name: 'type',
+    length_name: 'length', volume_name: 'volume',
+  };
+  const rawGroups = value.variantGroups ?? [];
+  if (!Array.isArray(rawGroups) || rawGroups.length > 12) throw malformed('groupes de variantes');
+  const variantGroups: AyWebsCapturedVariantGroup[] = [];
+  const seenAttributes = new Set<string>();
+  for (const rawGroup of rawGroups) {
+    if (!isRecord(rawGroup)) continue;
+    const sourceKey = text(rawGroup.sourceKey).toLowerCase();
+    const attribute = text(rawGroup.attribute).toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 40);
+    const derived = dimensionAttributes[sourceKey] ?? sourceKey.replace(/_name$/, '').replace(/[^a-z0-9_-]/g, '').slice(0, 40);
+    if (!/^[a-z0-9_]{1,40}$/.test(sourceKey) || !attribute || attribute !== derived
+      || ['__proto__', 'prototype', 'constructor'].includes(attribute) || seenAttributes.has(attribute)) continue;
+    if (!Array.isArray(rawGroup.values) || rawGroup.values.length > 30) throw malformed('valeurs de variante');
+    const values = [...new Set(rawGroup.values.flatMap((item) => {
+      const candidate = text(item).slice(0, 60);
+      return candidate ? [candidate] : [];
+    }))];
+    if (!values.length) continue;
+    const valueStates: NonNullable<AyWebsCapturedVariantGroup['valueStates']> = [];
+    if (rawGroup.valueStates !== undefined) {
+      if (!Array.isArray(rawGroup.valueStates) || rawGroup.valueStates.length > 30) throw malformed('états de variante');
+      for (const rawState of rawGroup.valueStates) {
+        if (!isRecord(rawState)) continue;
+        const stateValue = text(rawState.value).slice(0, 60);
+        const publishedValue = values.find((candidate) => candidate.toLowerCase() === stateValue.toLowerCase());
+        const state = text(rawState.state).toUpperCase();
+        if (publishedValue && ['AVAILABLE', 'UNAVAILABLE', 'SELECTED', 'UNKNOWN'].includes(state)) {
+          valueStates.push({ value: publishedValue, state: state as NonNullable<AyWebsCapturedVariantGroup['valueStates']>[number]['state'] });
+        }
+      }
+    }
+    variantGroups.push({
+      attribute,
+      sourceKey,
+      label: text(rawGroup.label).slice(0, 60) || attribute,
+      values,
+      ...(valueStates.length ? { valueStates } : {}),
+    });
+    seenAttributes.add(attribute);
+  }
+  const selectedVariantAttributes: Record<string, string> = {};
+  const rawSelected = value.selectedVariantAttributes;
+  if (rawSelected !== undefined && !isRecord(rawSelected)) throw malformed('sélection de variante');
+  if (isRecord(rawSelected) && Object.keys(rawSelected).length > 12) throw malformed('sélection de variante');
+  for (const group of variantGroups) {
+    const candidate = isRecord(rawSelected) ? text(rawSelected[group.attribute]).slice(0, 60) : '';
+    const selectedValue = group.values.find((item) => item.toLowerCase() === candidate.toLowerCase());
+    if (selectedValue) selectedVariantAttributes[group.attribute] = selectedValue;
+  }
   return {
     v: 1,
     url: url.slice(0, 2_000),
@@ -525,6 +589,8 @@ export function parseAyWebsCapture(value: unknown): AyWebsCapture {
     conditionText: cleanText(value.conditionText),
     selectedVariantTexts: stringArray(value.selectedVariantTexts, 5, 60),
     variantTexts: stringArray(value.variantTexts, 30, 60),
+    variantGroups,
+    selectedVariantAttributes,
     images,
     capturedAt,
     pageLang: cleanText(value.pageLang, 20),
@@ -536,6 +602,121 @@ export function buildAyWebsCaptureInjection(script: string, requestId = 'capture
   if (!script.trim() || script.length > 120_000) throw malformed('script de capture');
   const id = JSON.stringify(requestId.slice(0, 80));
   return `;(function(){try{var result=(0,eval)(${JSON.stringify(script)});window.ReactNativeWebView.postMessage(JSON.stringify({type:"aywebs_capture",requestId:${id},payload:result}));}catch(e){window.ReactNativeWebView.postMessage(JSON.stringify({type:"aywebs_capture_error",requestId:${id}}));}})();true;`;
+}
+
+/**
+ * Ask the merchant page to apply the exact visible selection, then run a fresh
+ * capture. Option labels are matched exactly; no variant price or stock is
+ * copied from another choice.
+ */
+export function buildAyWebsVariantSelectionInjection(
+  script: string,
+  requestId: string,
+  groups: AyWebsCapturedVariantGroup[],
+  selection: Record<string, string>,
+): string {
+  if (!script.trim() || script.length > 120_000) throw malformed('script de capture');
+  if (!Array.isArray(groups) || groups.length > 12 || !selection || typeof selection !== 'object') throw malformed('sélection de variante');
+  const entries = Object.entries(selection);
+  if (!entries.length || entries.length > 12) throw malformed('sélection de variante');
+  const plan = entries.map(([attribute, rawValue]) => {
+    const group = groups.find((candidate) => candidate.attribute === attribute);
+    const value = text(rawValue).slice(0, 60);
+    if (!group || !value || !/^[a-z0-9_]{1,40}$/.test(group.sourceKey)) throw malformed('sélection de variante');
+    const exact = group.values.find((candidate) => candidate.toLowerCase() === value.toLowerCase());
+    if (!exact) throw malformed('valeur de variante non publiée');
+    const state = group.valueStates?.find((candidate) => candidate.value.toLowerCase() === exact.toLowerCase())?.state;
+    if (state === 'UNAVAILABLE') throw malformed('variante publiée indisponible');
+    return { attribute: group.attribute, sourceKey: group.sourceKey, value: exact };
+  });
+  const id = JSON.stringify(requestId.slice(0, 80));
+  const planJson = JSON.stringify(plan);
+  const scriptJson = JSON.stringify(script);
+  return String.raw`;(function(){
+    var requestId=${id}, plan=${planJson}, reader=${scriptJson};
+    function norm(value){return String(value||"").replace(/\s+/g," ").trim().toLowerCase();}
+    function postError(){try{window.ReactNativeWebView.postMessage(JSON.stringify({type:"aywebs_capture_error",requestId:requestId}));}catch(e){}}
+    function getContainer(item){
+      var productRoot=document.querySelector('#dp-container')||document.querySelector('#ppd')||document.querySelector('#dp')||document.querySelector('#centerCol');
+      var root=productRoot&&productRoot.querySelector('#twister_feature_div,[data-feature-name="twister"]');
+      if(!root)return null;
+      var container=root.querySelector('[id="variation_'+item.sourceKey+'"]');
+      if(container)return container;
+      try{
+        container=root.querySelector('[data-dimension="'+item.sourceKey+'"],[data-dimension-name="'+item.sourceKey+'"]');
+        if(container)return container;
+      }catch(e){}
+      var current=root.querySelector('[id="inline-twister-expanded-dimension-text-'+item.sourceKey+'"]');
+      return current&&current.parentNode?current.parentNode:null;
+    }
+    function labels(node){
+      var values=[];
+      if(!node)return values;
+      var attrs=["title","aria-label","data-attribute-value","data-value"];
+      for(var a=0;a<attrs.length;a++){var attr=node.getAttribute&&node.getAttribute(attrs[a]);if(attr)values.push(attr);}
+      var labelledBy=node.getAttribute&&node.getAttribute("aria-labelledby");
+      if(labelledBy){var ref=document.getElementById(labelledBy.split(" ")[0]);if(ref)values.push(ref.textContent);}
+      try{var textNode=node.querySelector(".a-button-text,.swatchText,[class*=dimension-text i],label");if(textNode)values.push(textNode.textContent);}catch(e){}
+      if(node.textContent)values.push(node.textContent);
+      return values;
+    }
+    function textMatches(node,value){var wanted=norm(value), candidates=labels(node);for(var i=0;i<candidates.length;i++){if(norm(candidates[i])===wanted)return true;}return false;}
+    function disabled(node){
+      if(!node)return true;
+      var aria=node.getAttribute&&node.getAttribute("aria-disabled");
+      var klass=String(node.className||"").toLowerCase();
+      return node.disabled===true||aria==="true"||(node.getAttribute&&node.getAttribute("disabled")!==null)||/a-button-disabled|unavailable|out.of.stock/.test(klass);
+    }
+    function selected(node){
+      if(!node)return false;
+      if(node.selected===true)return true;
+      var aria=node.getAttribute&&node.getAttribute("aria-checked");
+      var ariaSelected=node.getAttribute&&node.getAttribute("aria-selected");
+      var klass=String(node.className||"").toLowerCase();
+      return aria==="true"||ariaSelected==="true"||/selected|swatchselect/.test(klass);
+    }
+    function findSelected(container,item){
+      var candidates=[];
+      try{candidates=container.querySelectorAll('select option:checked,[aria-checked="true"],[aria-selected="true"],.a-button-selected,li[class*="selected" i],button[class*="selected" i]');}catch(e){}
+      for(var i=0;i<candidates.length;i++){if(textMatches(candidates[i],item.value))return true;}
+      return false;
+    }
+    function selectValue(item){
+      var container=getContainer(item);if(!container)return false;
+      var selects=[];try{selects=container.querySelectorAll("select");}catch(e){}
+      for(var s=0;s<selects.length;s++){
+        var options=selects[s].options||[];
+        for(var o=0;o<options.length;o++){
+          if(!textMatches(options[o],item.value))continue;
+          if(disabled(options[o]))return false;
+          if(options[o].selected)return true;
+          selects[s].selectedIndex=o;
+          try{selects[s].dispatchEvent(new Event("input",{bubbles:true}));selects[s].dispatchEvent(new Event("change",{bubbles:true}));}catch(e){}
+          return true;
+        }
+      }
+      var candidates=[];try{candidates=container.querySelectorAll('li,[role="radio"],[role="option"],button,.a-button,[data-attribute-value],[data-value]');}catch(e){}
+      for(var c=0;c<candidates.length;c++){
+        var candidate=candidates[c];if(!textMatches(candidate,item.value))continue;
+        if(disabled(candidate))return false;
+        if(selected(candidate))return true;
+        try{candidate.click();return true;}catch(e){return false;}
+      }
+      return findSelected(container,item);
+    }
+    try{
+      for(var p=0;p<plan.length;p++){if(!selectValue(plan[p])){postError();return true;}}
+      var attempts=0;
+      function captureAfterSelection(){
+        var ready=true;
+        for(var q=0;q<plan.length;q++){var box=getContainer(plan[q]);if(!box||!findSelected(box,plan[q])){ready=false;break;}}
+        if(ready){setTimeout(function(){try{var result=(0,eval)(reader);window.ReactNativeWebView.postMessage(JSON.stringify({type:"aywebs_capture",requestId:requestId,payload:result}));}catch(e){postError();}},350);return;}
+        attempts++;if(attempts<24){setTimeout(captureAfterSelection,150);return;}postError();
+      }
+      setTimeout(captureAfterSelection,150);
+    }catch(e){postError();}
+    return true;
+  })();true;`;
 }
 
 /** Resolve from the server; the signed quote remains server-issued. */
