@@ -99,6 +99,12 @@ export interface AyWebsStoreAdapter {
   canHandle(url: string | URL): boolean;
   /** Type de page : PRODUCT, SEARCH, CATEGORY, HOME, LOGIN, CHECKOUT, CAPTCHA… (§10) */
   classifyPage(url: string | URL): AyWebsPageClassification;
+  /**
+   * Forme canonique de la fiche, utilisée comme clé de cache : deux liens vers
+   * le même produit (suivi, slug, entités) ne doivent pas payer deux lectures.
+   * `null` ou absent : la clé reste l'URL normalisée par défaut.
+   */
+  canonicalUrl?(url: string): string | null;
   /** Lecture et normalisation du produit source (§11). */
   resolveProduct(url: string, options?: ScrapeOptions): Promise<AyWebsSourceProduct>;
   /** Variantes d'un produit déjà résolu (§13). */

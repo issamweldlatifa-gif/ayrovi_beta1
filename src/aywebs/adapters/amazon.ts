@@ -73,6 +73,11 @@ export class AmazonAdapter extends BaseStoreAdapter {
     return super.classifyPage(parsed);
   }
 
+  /** Clé de cache : la fiche `/dp/<ASIN>`, quel que soit le lien collé. */
+  canonicalUrl(url: string): string | null {
+    return amazonCanonicalProductUrl(url);
+  }
+
   /* Pas de `async` ici : un wrapper ajoute un tour de microtâche et décale la
      relecture d'arrière-plan (cf. tests/aywebs-resolve-swr). On rend la promesse
      du parent telle quelle. */

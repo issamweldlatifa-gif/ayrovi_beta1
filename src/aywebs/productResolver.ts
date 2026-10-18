@@ -280,7 +280,9 @@ export async function resolveAyWebsProduct(
     });
   }
 
-  const cacheKey = ayWebsResolveCacheKey(store.id, url.toString());
+  /* Clé de cache sur la forme canonique de la boutique (ex. Amazon : /dp/<ASIN>),
+     pour qu'un même produit collé sous deux liens n'ait qu'une seule entrée. */
+  const cacheKey = ayWebsResolveCacheKey(store.id, adapter.canonicalUrl?.(url.toString()) ?? url.toString());
   const cacheAllowed = !input.refresh && !input.pageHtml && !captureUsed;
   const cached = cacheAllowed ? readAyWebsResolveCache(deps.scraper, cacheKey, { allowStale: true }) : null;
   /* Mémo « fiche illisible » : une lecture SANS prix échoue en 13–17 s (sondes

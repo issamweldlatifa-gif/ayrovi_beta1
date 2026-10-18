@@ -169,6 +169,14 @@ describe('lien collé — routes HTTP AYWEBs', () => {
     expect(response.body.data).toMatchObject({ store_id: 'amazon', page_type: 'PRODUCT', is_product_page: true });
   });
 
+  it('deux liens vers la même fiche partagent UNE entrée de cache (une seule lecture payée)', async () => {
+    const { server, scrapeProduct } = app();
+    const other = 'https://www.amazon.com/dp/B0H4Z118GH?ref=sr_1_1&tag=anything';
+    await request(server).post('/api/v1/aywebs/product/resolve').set(LINK_SESSION).send({ url: PASTED_URL });
+    await request(server).post('/api/v1/aywebs/product/resolve').set(LINK_SESSION).send({ url: other });
+    expect(scrapeProduct).toHaveBeenCalledTimes(1);
+  });
+
   it('/product/resolve : la capture part de la forme canonique /dp/<ASIN>', async () => {
     const { server, scrapeProduct } = app();
     await request(server).post('/api/v1/aywebs/product/resolve').set(LINK_SESSION).send({ url: PASTED_URL });

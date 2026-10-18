@@ -140,7 +140,10 @@ describe('AYWEBs Phase 1 — SWR (stale-while-revalidate)', () => {
     expect(second.cacheKind).toBe('read');
     expect(second.product.price).toBe(39.99);    // …avec la dernière lecture connue
 
-    await until(() => h.scrapeProduct.mock.calls.length >= 2); // …et relu derrière
+    // …et relu derrière. On attend la FIN de la relecture (entrée en vol retirée,
+    // donc cache écrit) — pas seulement l'appel : sinon la lecture suivante peut
+    // partir avant l'écriture et voir l'ancienne entrée (course, 60 ms de TTL).
+    await until(() => h.scrapeProduct.mock.calls.length >= 2 && ayWebsResolveCacheStats().in_flight === 0);
     expect(h.scrapeProduct).toHaveBeenCalledTimes(2);
 
     const third = await resolveAyWebsProduct(h.resolver, { url: OK_URL, sessionId: SESSION_ID });
