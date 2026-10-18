@@ -10,9 +10,11 @@
  *   2. identité de la page : même hôte que l'URL demandée, horodatage plausible ;
  *   3. PRIX : chaque texte candidat passe par le verdict d'intégrité de la
  *      Phase 0 (`checkPriceText`) ; le meilleur candidat est retenu selon
- *      l'ordre de fiabilité JSON-LD > microdata > meta > DOM, et il n'est dit
- *      « corroboré » que si un JSON-LD le publie OU si deux sources
- *      indépendantes donnent le même montant ;
+ *      l'ordre JSON-LD > microdata > meta > DOM visible > DOM accessibility ;
+ *      il n'est dit « corroboré » que si un JSON-LD le publie OU si deux sources
+ *      indépendantes donnent le même montant ; exception encadrée pour Amazon
+ *      du registre : le libellé screen-reader et le buybox visible doivent
+ *      publier exactement le même montant (deux représentations, aucun choix).
  *   4. DEVISE : prouvée par un code ISO explicite (même règle que le lecteur
  *      serveur : `/\b[A-Z]{3}\b/` sur l'évidence) — un symbole seul ne suffit pas ;
  *   5. DISPONIBILITÉ : traduite depuis une liste de formulations FERMÉE et
@@ -41,7 +43,9 @@ import {
 import type { AyWebsAvailabilityState } from '../../shared/aywebsTypes';
 
 /** Ordre de fiabilité des sources de prix : machine d'abord, humain ensuite. */
-const SOURCE_RANK: Record<AyWebsCaptureSource, number> = { json_ld: 0, microdata: 1, meta: 2, dom: 3 };
+const SOURCE_RANK: Record<AyWebsCaptureSource, number> = {
+  json_ld: 0, microdata: 1, meta: 2, dom: 3, dom_accessibility: 4,
+};
 
 /**
  * PREUVE DE DEVISE PAR SYMBOLE — liste FERMÉE, boutique par boutique (07/10/2026).
@@ -334,9 +338,25 @@ export function validateAyWebsCapturedPage(
   const sameValue = candidates.filter((candidate) => Math.abs(candidate.value - primary.value) < 0.005);
 
   /* Corroboration : un JSON-LD suffit (donnée machine publiée par le marchand) ;
-     sinon il faut DEUX sources indépendantes d'accord sur le même montant. */
-  const distinctSources = new Set(sameValue.map((candidate) => candidate.source));
+     sinon il faut DEUX sources d'accord. Pour Amazon du registre seulement,
+     le prix courant visible et son label screen-reader peuvent se corroborer
+     s'ils portent le même montant : le lecteur client ne publie jamais ce label
+     seul, et toute divergence déclenche l'abstention. Hors Amazon, ce label est
+     ramené à une simple lecture DOM et ne crée pas une seconde source. */
+  const requestStore = detectAyWebsStore(requestUrl);
+  const sameValueHasAmazonPair = requestStore?.id === 'amazon'
+    && sameValue.some((candidate) => candidate.source === 'dom')
+    && sameValue.some((candidate) => candidate.source === 'dom_accessibility');
+  const trustedSameValue = sameValue.filter((candidate) =>
+    candidate.source !== 'dom_accessibility' || sameValueHasAmazonPair,
+  );
+  const distinctSources = new Set(trustedSameValue.map((candidate) => candidate.source));
   const corroborated = primary.source === 'json_ld' || distinctSources.size >= 2;
+  if (sameValueHasAmazonPair) notes.push('amazon_buybox_visible_accessibility_match');
+  if (sameValue.length > 0 && trustedSameValue.length === 0) {
+    notes.push('accessibility_label_requires_visible_buybox');
+    return rejected('PRICE_NOT_CORROBORATED', '', notes);
+  }
 
   /* Un désaccord entre sources n'est pas « ambigu » au sens du refus : le
      JSON-LD fait foi et l'écart est noté. Mais s'il n'y a PAS de JSON-LD et que
@@ -385,7 +405,7 @@ export function validateAyWebsCapturedPage(
   }
   let symbolIso = '';
   if (!contradiction && !publishedIso) {
-    const store = detectAyWebsStore(requestUrl);
+    const store = requestStore;
     if (store) {
       for (const entry of AYWEBS_SYMBOL_CURRENCIES) {
         if (!entry.stores.includes(store.id)) continue;

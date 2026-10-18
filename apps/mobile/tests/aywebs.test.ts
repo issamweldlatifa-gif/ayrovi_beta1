@@ -98,7 +98,17 @@ describe('AYWEBs — URL et WebView marchand sécurisés', () => {
   it('valide les bornes de la capture et injecte le script avec un ID de requête', () => {
     expect(parseAyWebsCapture(capture)).toEqual(capture);
     expect(() => parseAyWebsCapture({ ...capture, v: 2 })).toThrow(ApiError);
-    expect(() => parseAyWebsCapture({ ...capture, priceCandidates: Array(5).fill(capture.priceCandidates[0]) })).toThrow(ApiError);
+    const amazonPair = {
+      ...capture,
+      priceCandidates: [
+        { text: '$15.00', source: 'dom' as const },
+        { text: '$15.00', source: 'dom_accessibility' as const },
+      ],
+    };
+    expect(parseAyWebsCapture(amazonPair).priceCandidates).toEqual(amazonPair.priceCandidates);
+    const fiveCandidates = { ...capture, priceCandidates: Array(5).fill(capture.priceCandidates[0]) };
+    expect(parseAyWebsCapture(fiveCandidates).priceCandidates).toHaveLength(5);
+    expect(() => parseAyWebsCapture({ ...capture, priceCandidates: Array(6).fill(capture.priceCandidates[0]) })).toThrow(ApiError);
     const injection = buildAyWebsCaptureInjection('(function(){return "{}";})();', 'request-token');
     expect(injection).toContain('request-token');
     expect(injection).toContain('ReactNativeWebView.postMessage');

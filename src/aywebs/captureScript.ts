@@ -18,7 +18,8 @@
  *   • ES5 uniquement (vieux WebViews), aucune balise de gabarit, aucun backtick ;
  *   • jamais d'exception qui remonte : chaque section est isolée par try/catch ;
  *   • aucune donnée privée : pas de cookies, pas de localStorage, pas de champs
- *     de formulaire, pas de HTML. Uniquement des textes visibles et des métas ;
+ *     de formulaire ni de HTML. Uniquement des textes DOM/métas et le libellé
+ *     screen-reader du buybox Amazon — jamais de screenshot ou d'OCR ;
  *   • bornes strictes (longueurs, nombre d'éléments) côté client ET côté serveur ;
  *   • un texte de prix SANS chiffre ET sans devise n'est pas candidat : cela
  *     évite le piège des prix « coupés » (Amazon publie la partie entière et la
@@ -29,7 +30,7 @@
 export const AYWEBS_CAPTURE_SCRIPT_PATH = '/api/v1/aywebs/capture/script.js';
 
 export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
-  var LIMITS = { priceCandidates: 4, variantTexts: 30, selectedTexts: 5, images: 4, label: 60, text: 300 };
+  var LIMITS = { priceCandidates: 5, variantTexts: 30, selectedTexts: 5, images: 4, label: 60, text: 300 };
   var out = {
     v: 1, url: '', canonicalUrl: null, title: null, brand: null,
     priceCandidates: [], currencyText: null, availabilityText: null,
@@ -174,19 +175,39 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     return true;
   }
   /**
-   * Amazon mobile peut enrichir l'étiquette d'accessibilité du prix avec un
-   * pourcentage (« $179.98 with 10 percent savings »). Ce n'est pas un deuxième
-   * prix : on extrait le montant seulement si aucun autre chiffre ne subsiste.
-   * Deux montants (prix + prix barré / remise) ⇒ l'étiquette est écartée ; le
-   * lecteur attend alors le prix courant dédié au sélecteur priceToPay.
+   * Amazon mobile peut enrichir l'étiquette d'accessibilité avec un pourcentage
+   * (« $179.98 with 10 percent savings »). Seul un suffixe de remise reconnu
+   * est retiré, et ce texte ne corrobore le prix que s'il égale le buybox visible.
+   * Toute autre valeur chiffrée dans l'étiquette entraîne l'abstention.
    */
+  function amazonFindAmount(raw) {
+    return String(raw || '').match(/(?:[$\u20ac\u00a3\u00a5\uffe5]\s*)?\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{1,2})?(?:\s*[$\u20ac\u00a3\u00a5\uffe5]|\s*(?:EUR|USD|GBP|JPY|TND))?/i);
+  }
   function amazonSingleAmount(value) {
     var raw = text(value);
     if (!raw || !CURRENCY_HINT.test(raw)) return '';
-    var match = raw.match(/(?:[$\u20ac\u00a3\u00a5\uffe5]\s*)?\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{1,2})?(?:\s*[$\u20ac\u00a3\u00a5\uffe5]|\s*(?:EUR|USD|GBP|JPY|TND))?/i);
+    var match = amazonFindAmount(raw);
     if (!match || !CURRENCY_HINT.test(match[0])) return '';
     var rest = raw.slice(0, match.index) + raw.slice(match.index + match[0].length);
     if (HAS_DIGIT.test(rest)) return '';
+    return text(match[0]);
+  }
+  /**
+   * Screen-reader label may append one explicit savings percentage. It is
+   * usable only as a cross-check against the visible current-price node; it is
+   * never emitted alone. Other extra numbers keep the label rejected.
+   */
+  function amazonAccessibilityAmount(value) {
+    var raw = text(value);
+    if (!raw || !CURRENCY_HINT.test(raw)) return '';
+    var plain = amazonSingleAmount(raw);
+    if (plain) return plain;
+    var match = amazonFindAmount(raw);
+    if (!match || !CURRENCY_HINT.test(match[0])) return '';
+    var prefix = raw.slice(0, match.index);
+    var suffix = raw.slice(match.index + match[0].length);
+    if (HAS_DIGIT.test(prefix)) return '';
+    if (!/^\s*(?:with\s+)?\d{1,3}(?:[.,]\d+)?\s*(?:%|percent)\s+(?:savings|off|discount)\s*$/i.test(suffix)) return '';
     return text(match[0]);
   }
   /** Tous les produits publiés (JSON-LD) — mode Amazon : on choisit par ASIN. */
@@ -455,8 +476,14 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
          Sélecteurs mesurés sur les fiches réelles des 04 et 06/10/2026. Aucun
          sélecteur large («.a-price») : deux prix de publicité sur la même page, et
          c'est le mauvais qui gagne. */
+      var amazonA11yReading = '';
+      try {
+        var amazonA11yLabel = document.querySelector('#apex-pricetopay-accessibility-label');
+        if (amazonA11yLabel && !amazonBlocked(amazonA11yLabel)) {
+          amazonA11yReading = amazonAccessibilityAmount(amazonA11yLabel.textContent);
+        }
+      } catch (e) {}
       var AMAZON_PRICE_SELECTORS = [
-        '#apex-pricetopay-accessibility-label',
         '#corePriceDisplay_desktop_feature_div .priceToPay',
         '#corePriceDisplay_desktop_feature_div .a-price:not(.a-text-price)',
         '#corePrice_feature_div .a-price:not(.a-text-price)',
@@ -500,15 +527,21 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
       }
       var amazonDistinctCount = 0;
       for (var key in amazonDistinct) { if (Object.prototype.hasOwnProperty.call(amazonDistinct, key)) amazonDistinctCount++; }
-      /* Un seul montant distinct dans la zone d'achat ⇒ on publie UNE lecture
-         (la première : l'étiquette d'accessibilité d'Amazon, que le lecteur
-         serveur lit aussi en premier). Deux lectures du même montant venant de
-         la MÊME famille de preuve ne sont pas une corroboration : le crible
-         serveur les verrait comme un prix non corroboré à deux candidats, donc
-         « ambigu » — un refus pour rien. Plus d'un montant distinct ⇒
-         ABSTENTION : la page a des prix concurrents, on ne choisit pas. */
+      /* Prix courant dédié + label accessible qui donne exactement le même
+         montant : deux représentations concordantes du même buybox Amazon.
+         Le label accessible n'est jamais suffisant seul ; les copies responsive
+         masquées restent exclues et tout montant visuel concurrent impose
+         l'abstention. */
       if (amazonDistinctCount === 1) {
-        out.priceCandidates.push({ text: cut(amazonReadings[0], LIMITS.text), source: 'dom' });
+        var visibleAmount = cut(amazonReadings[0], LIMITS.text);
+        var visibleKey = visibleAmount.replace(/[\s\u00a0\u202f]+/g, '').toLowerCase();
+        var accessibilityKey = amazonA11yReading.replace(/[\s\u00a0\u202f]+/g, '').toLowerCase();
+        if (!amazonA11yReading || accessibilityKey === visibleKey) {
+          out.priceCandidates.push({ text: visibleAmount, source: 'dom' });
+          if (amazonA11yReading) {
+            out.priceCandidates.push({ text: amazonA11yReading, source: 'dom_accessibility' });
+          }
+        }
       }
     } else {
     /* Le PANIER D'ACHAT d'abord : les sélecteurs de bloc d'achat des grandes

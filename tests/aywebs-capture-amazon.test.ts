@@ -131,7 +131,10 @@ describe('AYWEBs — lecteur Amazon : la fiche mesurée du 04/10/2026', () => {
   it('lit le prix (spans), la devise (symbole) et le stock — en accord avec le lecteur serveur', () => {
     const { payload, validation } = captureFrom(FIXTURE);
 
-    expect(payload.priceCandidates).toEqual([{ text: '$109.00', source: 'dom' }]);
+    expect(payload.priceCandidates).toEqual([
+      { text: '$109.00', source: 'dom' },
+      { text: '$109.00', source: 'dom_accessibility' },
+    ]);
     expect(payload.currencyText).toBeNull();
     expect(payload.availabilityText).toBe('In Stock');
     expect(payload.addToCartText).toBeNull(); // la fiche ne publie pas de bouton
@@ -140,13 +143,14 @@ describe('AYWEBs — lecteur Amazon : la fiche mesurée du 04/10/2026', () => {
     expect(validation.price).toBe(109);
     expect(validation.currency).toBe('USD');
     expect(validation.currencyVerified).toBe(true);
+    expect(validation.corroborated).toBe(true);
     expect(validation.availability).toBe('AVAILABLE');
     expect(validation.priceSource).toBe('dom');
     expect(validation.notes.join(' ')).toContain('currency_symbol_registered_store:USD');
 
     /* TEST CROISÉ : le lecteur SERVEUR, sur la même page, dit la même chose.
-       (Une seule source ⇒ `priceVerified=false`, donc aucun devis signé : la
-       conséquence est documentée, pas cachée.) */
+       Amazon publie ici le même montant dans le buybox visible et son label
+       accessible : le pair concordant corrobore la capture sans choisir un prix. */
     const parsed = parseProductPageHtml(FIXTURE, FIXTURE_URL, 'amazon');
     expect(parsed.price).toBe(validation.price);
     expect(parsed.currency).toBe(validation.currency);
@@ -192,7 +196,10 @@ describe('AYWEBs — lecteur Amazon : la zone d’achat seulement', () => {
         <span class="a-price a-text-price" data-a-strike="true"><span class="a-offscreen">$149.00</span></span>
       </div>`);
     const { payload, validation } = captureFrom(page);
-    expect(payload.priceCandidates).toEqual([{ text: '$109.00', source: 'dom' }]);
+    expect(payload.priceCandidates).toEqual([
+      { text: '$109.00', source: 'dom' },
+      { text: '$109.00', source: 'dom_accessibility' },
+    ]);
     expect(priceTrace(payload)).not.toContain('6.99');
     expect(priceTrace(payload)).not.toContain('263.86');
     expect(priceTrace(payload)).not.toContain('149.00');
@@ -212,7 +219,10 @@ describe('AYWEBs — lecteur Amazon : la zone d’achat seulement', () => {
         <span class="a-price"><span class="a-offscreen">$129.00</span></span>
       </div>`);
     const { payload, validation } = captureFrom(page);
-    expect(payload.priceCandidates).toEqual([{ text: '$109.00', source: 'dom' }]);
+    expect(payload.priceCandidates).toEqual([
+      { text: '$109.00', source: 'dom' },
+      { text: '$109.00', source: 'dom_accessibility' },
+    ]);
     expect(priceTrace(payload)).not.toContain('119.00');
     expect(priceTrace(payload)).not.toContain('129.00');
     expect(validation.price).toBe(109);
@@ -233,12 +243,23 @@ describe('AYWEBs — lecteur Amazon : la zone d’achat seulement', () => {
       </div>`);
     const { payload, validation } = captureFrom(page);
 
-    expect(payload.priceCandidates).toEqual([{ text: '$179.98', source: 'dom' }]);
+    expect(payload.priceCandidates).toEqual([
+      { text: '$179.98', source: 'dom' },
+      { text: '$179.98', source: 'dom_accessibility' },
+    ]);
     expect(validation.ok).toBe(true);
     expect(validation.price).toBe(179.98);
     expect(validation.currency).toBe('USD');
     expect(validation.currencyVerified).toBe(true);
-    expect(validation.priceVerified).toBe(false); // une lecture DOM reste non corroborée
+    expect(validation.priceVerified).toBe(true); // buybox visible + label accessible concordants
+  });
+
+  it('label accessible seul : aucune capture de prix', () => {
+    const page = amazonPage('<span id="apex-pricetopay-accessibility-label" class="aok-offscreen">$109.00</span>');
+    const { payload, validation } = captureFrom(page);
+    expect(payload.priceCandidates).toEqual([]);
+    expect(validation.ok).toBe(false);
+    expect(validation.rejection).toBe('NO_PRICE_TEXT');
   });
 
   it('deux montants DISTINCTS dans la zone d’achat ⇒ abstention totale', () => {
@@ -251,6 +272,23 @@ describe('AYWEBs — lecteur Amazon : la zone d’achat seulement', () => {
     expect(payload.priceCandidates).toEqual([]);
     expect(validation.ok).toBe(false);
     expect(validation.rejection).toBe('NO_PRICE_TEXT');
+
+    const labelOnly = validateAyWebsCapturedPage({
+      ...payload,
+      priceCandidates: [{ text: '$109.00', source: 'dom_accessibility' }],
+    }, FIXTURE_URL);
+    expect(labelOnly.ok).toBe(false);
+    expect(labelOnly.rejection).toBe('PRICE_NOT_CORROBORATED');
+
+    const conflictingEvidence = validateAyWebsCapturedPage({
+      ...payload,
+      priceCandidates: [
+        { text: '$109.00', source: 'dom_accessibility' },
+        { text: '$119.00', source: 'dom' },
+      ],
+    }, FIXTURE_URL);
+    expect(conflictingEvidence.ok).toBe(false);
+    expect(conflictingEvidence.rejection).toBe('AMBIGUOUS_PRICE');
   });
 
   it('un texte collé (« $6.99$6.99 ») n’est jamais publié — et le serveur le refuse aussi', () => {
@@ -298,14 +336,22 @@ describe('AYWEBs — lecteur Amazon : bouton d’achat', () => {
 
 describe('AYWEBs — lecteur Amazon : preuve de devise', () => {
   it('`€` sur amazon.fr ⇒ EUR (table fermée, boutique du registre)', () => {
-    const page = amazonPage('<span id="apex-pricetopay-accessibility-label" class="aok-offscreen">109,00 €</span>');
+    const page = amazonPage(`
+      <span id="apex-pricetopay-accessibility-label" class="aok-offscreen">109,00 €</span>
+      <div id="corePriceDisplay_mobile_feature_div">
+        <span class="a-price priceToPay"><span class="a-offscreen">109,00 €</span></span>
+      </div>`);
     const { validation } = captureFrom(page, 'https://www.amazon.fr/dp/B0GYM3V9H5');
     expect(validation.currency).toBe('EUR');
     expect(validation.currencyVerified).toBe(true);
   });
 
   it('`$` sur amazon.ca ⇒ AUCUNE preuve (dollar canadien) — le serveur relira', () => {
-    const page = amazonPage('<span id="apex-pricetopay-accessibility-label" class="aok-offscreen">$109.00</span>');
+    const page = amazonPage(`
+      <span id="apex-pricetopay-accessibility-label" class="aok-offscreen">$109.00</span>
+      <div id="corePriceDisplay_mobile_feature_div">
+        <span class="a-price priceToPay"><span class="a-offscreen">$109.00</span></span>
+      </div>`);
     const { validation } = captureFrom(page, 'https://www.amazon.ca/dp/B0GYM3V9H5');
     expect(validation.currency).toBe('');
     expect(validation.currencyVerified).toBe(false);
@@ -378,7 +424,10 @@ describe('AYWEBs — lecteur Amazon : JSON-LD', () => {
        "offers":{"@type":"Offer","price":"42.00","priceCurrency":"USD"}}
       </script>`);
     const { payload } = captureFrom(multiPage);
-    expect(payload.priceCandidates).toEqual([{ text: '$109.00', source: 'dom' }]);
+    expect(payload.priceCandidates).toEqual([
+      { text: '$109.00', source: 'dom' },
+      { text: '$109.00', source: 'dom_accessibility' },
+    ]);
   });
 });
 
@@ -429,7 +478,7 @@ describe('AYWEBs — lecteur Amazon : compteurs d’exploitation', () => {
     expect(stats.rejections.NO_PRICE_TEXT).toBe(1);
     expect(stats.price_sources.dom).toBe(1);
     expect(stats.currency_symbol).toBe(1);
-    expect(stats.single_source).toBe(1);
+    expect(stats.single_source).toBe(0); // le buybox visible + le label concordant se corroborent sur Amazon
   });
 
   it('/health expose les compteurs (aucun contenu, seulement des nombres)', async () => {

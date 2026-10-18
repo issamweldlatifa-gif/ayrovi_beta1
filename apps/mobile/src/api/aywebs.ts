@@ -18,7 +18,7 @@ export const AYWEBS_API = '/api/v1/aywebs';
 export const AYWEBS_RESOLVE_TIMEOUT_MS = 30_000;
 
 export type AyWebsAvailabilityState = 'AVAILABLE' | 'LOW_STOCK' | 'OUT_OF_STOCK' | 'UNKNOWN';
-export type AyWebsCaptureSource = 'json_ld' | 'microdata' | 'meta' | 'dom';
+export type AyWebsCaptureSource = 'json_ld' | 'microdata' | 'meta' | 'dom' | 'dom_accessibility';
 
 export interface AyWebsStore {
   id: string;
@@ -491,12 +491,12 @@ export function parseAyWebsCapture(value: unknown): AyWebsCapture {
   const url = requiredText(value.url, 'URL de capture');
   const capturedAt = requiredText(value.capturedAt, 'date de capture');
   if (!Number.isFinite(Date.parse(capturedAt))) throw malformed('date de capture invalide');
-  if (!Array.isArray(value.priceCandidates) || value.priceCandidates.length > 4) throw malformed('textes de prix');
+  if (!Array.isArray(value.priceCandidates) || value.priceCandidates.length > 5) throw malformed('textes de prix');
   const priceCandidates = value.priceCandidates.flatMap((candidate) => {
     if (!isRecord(candidate)) return [];
     const candidateText = text(candidate.text).slice(0, 300);
     const source = candidate.source;
-    if (!candidateText || !(source === 'json_ld' || source === 'microdata' || source === 'meta' || source === 'dom')) return [];
+    if (!candidateText || !(source === 'json_ld' || source === 'microdata' || source === 'meta' || source === 'dom' || source === 'dom_accessibility')) return [];
     return [{ text: candidateText, source: source as AyWebsCaptureSource }];
   });
   const stringArray = (input: unknown, max: number, maxLength: number): string[] => {

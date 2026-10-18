@@ -241,6 +241,20 @@ describe('AYWEBs 2.1 — lecteur client : des TEXTES, jamais des nombres', () =>
     expect(validation.notes).toContain('single_source');
   });
 
+  it('le label Amazon accessibility ne devient pas une seconde source hors Amazon', () => {
+    const payload = {
+      ...captureFrom(JSON_LD_PAGE).payload,
+      priceCandidates: [
+        { text: '129.99 EUR', source: 'dom' },
+        { text: '129.99 EUR', source: 'dom_accessibility' },
+      ],
+    };
+    const validation = validateAyWebsCapturedPage(payload, PRODUCT_URL, { requireCorroboration: true });
+    expect(validation.ok).toBe(false);
+    expect(validation.rejection).toBe('AMBIGUOUS_PRICE');
+    expect(validation.corroborated).toBe(false);
+  });
+
   it('deux sources indépendantes d’accord ⇒ corroboré, devise prouvée', () => {
     const { validation } = captureFrom(CORROBORATED_PAGE);
     expect(validation.price).toBe(79.5);
