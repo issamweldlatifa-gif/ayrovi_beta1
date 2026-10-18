@@ -1,0 +1,48 @@
+name: AYWEBs — live Amazon capture check
+
+# Read-only product resolution for the ASIN reported by the customer. The probe
+# runs the server-served reader on a mobile-layout public Amazon page, then asks
+# Beta to validate that bounded capture and issue a signed quote. It never adds
+# a cart item and is NOT a physical Android WebView acceptance test.
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - arena/fc3cce38-ayrovi-beta1
+    paths:
+      - ".github/workflows/aywebs-live-capture.yml"
+      - "scripts/aywebs-live-capture-probe.mjs"
+      - "src/aywebs/captureScript.ts"
+      - "src/aywebs/webviewCapture.ts"
+      - "src/aywebs/productResolver.ts"
+      - "apps/mobile/app/aywebs/browser.tsx"
+      - "apps/mobile/src/api/aywebs.ts"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aywebs-live-capture-beta
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    name: Mobile DOM capture + verified quote
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install JavaScript dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Read the live Amazon page and verify the quote on Beta
+        run: node scripts/aywebs-live-capture-probe.mjs
