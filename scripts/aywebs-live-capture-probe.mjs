@@ -71,6 +71,56 @@ async function readCapture(page, script) {
   return payload;
 }
 
+/** Small DOM facts only: no page HTML, cookies, screenshots, or form values. */
+async function inspectAmazonPage(page) {
+  return page.evaluate(() => {
+    const productSelectors = [
+      '#dp-container', '#dp', '#ppd', '#centerCol', '#buybox', '#desktop_buybox',
+      '#apex_desktop', '#corePriceDisplay_desktop_feature_div', '#corePrice_desktop',
+      '#corePrice_feature_div', '#corePrice_mobile_feature_div', '#corePriceDisplay_mobile_feature_div',
+    ];
+    const priceSelectors = [
+      '#apex-pricetopay-accessibility-label',
+      '#corePriceDisplay_desktop_feature_div .priceToPay',
+      '#corePriceDisplay_desktop_feature_div .a-price:not(.a-text-price)',
+      '#corePrice_feature_div .a-price:not(.a-text-price)',
+      '#corePrice_desktop .a-price:not(.a-text-price)',
+      '#corePrice_mobile_feature_div .a-price:not(.a-text-price)',
+      '#corePriceDisplay_mobile_feature_div .a-price:not(.a-text-price)',
+      '.priceToPay', '#price_inside_buybox', '#priceblock_ourprice', '#priceblock_dealprice',
+      '#newBuyBoxPrice', '.a-price .a-offscreen',
+    ];
+    const displayed = (element) => {
+      for (let node = element, hops = 0; node && hops < 10; node = node.parentElement, hops += 1) {
+        const style = getComputedStyle(node);
+        if (node.hidden || node.getAttribute('aria-hidden') === 'true'
+          || style.display === 'none' || style.visibility === 'hidden' || style.visibility === 'collapse') return false;
+      }
+      return true;
+    };
+    const sample = (element) => ({
+      tag: element.tagName.toLowerCase(),
+      id: String(element.id || '').slice(0, 80),
+      className: String(typeof element.className === 'string' ? element.className : '').slice(0, 120),
+      visibleByStyle: displayed(element),
+      text: String(element.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 120),
+    });
+    const rootSelector = productSelectors.find((selector) => document.querySelector(selector)) || 'body';
+    const root = document.querySelector(rootSelector) || document.body;
+    return {
+      readyState: document.readyState,
+      productMarkers: Object.fromEntries(productSelectors.map((selector) => [selector, Boolean(document.querySelector(selector))])),
+      priceSelectors: priceSelectors.map((selector) => {
+        const elements = Array.from(document.querySelectorAll(selector)).slice(0, 3);
+        return { selector, matches: document.querySelectorAll(selector).length, samples: elements.map(sample) };
+      }),
+      productRoot: rootSelector,
+      aPriceNodesInRoot: root ? root.querySelectorAll('.a-price').length : 0,
+      accessibilityPriceLabel: Boolean(document.querySelector('#apex-pricetopay-accessibility-label')),
+    };
+  });
+}
+
 async function main() {
   let browser;
   try {
@@ -220,6 +270,7 @@ async function main() {
     // this late read is diagnostic only and is not submitted as an app capture.
     await page.waitForTimeout(4_000);
     const settledCapture = await readCapture(page, script);
+    const amazonDom = await inspectAmazonPage(page);
     fail('No price candidate appeared within the mobile retry budget.', {
       http: pageResponse?.status() ?? null,
       title,
@@ -227,6 +278,7 @@ async function main() {
       candidateCountAfterExtraWait: settledCapture.priceCandidates?.length ?? 0,
       lateCandidates: settledCapture.priceCandidates || [],
       pageUrl: page.url().split('?')[0],
+      amazonDom,
     });
   } catch (error) {
     fail('Live capture probe could not complete.', {
