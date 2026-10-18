@@ -49,7 +49,9 @@ export const AYWEBS_CAPTURE_LIMITS = {
 } as const;
 
 /** D'où vient un texte de prix — conservé pour l'audit et la corroboration. */
-export type AyWebsCaptureSource = 'json_ld' | 'microdata' | 'meta' | 'dom';
+/** `embedded_json` : donnée machine publiée dans un script de la page (Amazon :
+ *  « displayPrice »). Famille de preuve distincte du DOM. */
+export type AyWebsCaptureSource = 'json_ld' | 'embedded_json' | 'microdata' | 'meta' | 'dom';
 
 export interface AyWebsCapturedPriceCandidate {
   /** Texte de prix TEL QU'AFFICHÉ par la page (« 1 299,00 € », « $6.99 »). */

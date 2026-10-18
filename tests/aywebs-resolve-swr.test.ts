@@ -186,6 +186,27 @@ describe('AYWEBs Phase 1 — coupe-circuit par hôte', () => {
     expect(elapsedMs).toBeLessThan(1_000);
   });
 
+  it('trois liens que la boutique ne sert pas (erreur de SAISIE) ne coupent PAS l’hôte', async () => {
+    /* Régression (18/10/2026) : la décision « STORE_MISMATCH » comptait contre
+       l'hôte entier. Trois mauvais liens mettaient toute la boutique au repos
+       10 min : les vrais produits répondaient « refuse temporairement ». */
+    const WRONG_URL = 'https://www.amazon.com/dp/B0WRONGLNK';
+    const h = harness();
+    const base = h.scrapeProduct.getMockImplementation()!;
+    h.scrapeProduct.mockImplementation(async (url: string) => {
+      if (url.includes('B0WRONGLNK')) return { ...(await base(OK_URL)), store: 'autre_boutique' } as any;
+      return base(url);
+    });
+
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      await resolveAyWebsProduct(h.resolver, { url: WRONG_URL, sessionId: SESSION_ID }).catch(() => null);
+    }
+    expect(probeCooldowns()).toEqual([]);
+
+    const good = await resolveAyWebsProduct(h.resolver, { url: OK_URL, sessionId: SESSION_ID });
+    expect(good.product.price).toBe(39.99);
+  });
+
   it('le coupe-circuit se désactive par configuration (AYWEBS_HOST_CIRCUIT=off)', async () => {
     const h = harness();
     await openCircuit(h);

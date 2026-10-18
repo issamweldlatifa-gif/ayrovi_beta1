@@ -487,6 +487,44 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
       if (amazonDistinctCount === 1) {
         out.priceCandidates.push({ text: cut(amazonReadings[0], LIMITS.text), source: 'dom' });
       }
+      /* Source MACHINE d'Amazon : « "displayPrice":"$109.00" » dans les scripts de la
+         page (mesuré le 04/10/2026, et lu par le lecteur serveur). Ce n'est PAS la
+         même famille de preuve que le DOM : si elle désigne le même montant que la
+         zone d'achat, elle la CORROBORE. Si elle désigne un autre montant, elle est
+         aussi envoyée — le serveur voit alors deux sources en désaccord et refuse
+         (ABSTENTION, jamais un choix). Elle n'est lue que si elle désigne UN seul
+         montant : une page qui liste plusieurs prix (carrousels) n'en désigne aucun. */
+      if (amazonDistinctCount === 1) {
+        try {
+          var amzDisplay = [];
+          var amzScripts = document.querySelectorAll('script:not([src])');
+          for (var amzSc = 0; amzSc < amzScripts.length && amzSc < 80 && amzDisplay.length < 12; amzSc++) {
+            var amzCode = amzScripts[amzSc].textContent || '';
+            if (!amzCode || amzCode.length > 600000 || amzCode.indexOf('displayPrice') < 0) continue;
+            var amzRe = /"displayPrice"\s*:\s*"([^"]{1,40})"/g;
+            var amzHit = amzRe.exec(amzCode);
+            while (amzHit && amzDisplay.length < 12) {
+              amzDisplay.push(amzHit[1]);
+              amzHit = amzRe.exec(amzCode);
+            }
+          }
+          var amzAmounts = {};
+          var amzAmountCount = 0;
+          for (var amzA = 0; amzA < amzDisplay.length; amzA++) {
+            var amzKey = amzDisplay[amzA].replace(/\D/g, '');
+            if (!amzKey) continue;
+            if (!amzAmounts[amzKey]) { amzAmounts[amzKey] = true; amzAmountCount++; }
+          }
+          if (amzAmountCount === 1) {
+            var amzValue = '';
+            for (var amzV = 0; amzV < amzDisplay.length && !amzValue; amzV++) {
+              var amzCandidate = text(amzDisplay[amzV]);
+              if (HAS_DIGIT.test(amzCandidate) && CURRENCY_HINT.test(amzCandidate) && amazonPlausible(amzCandidate)) amzValue = amzCandidate;
+            }
+            if (amzValue) out.priceCandidates.push({ text: cut(amzValue, LIMITS.text), source: 'embedded_json' });
+          }
+        } catch (e) {}
+      }
     } else {
     /* Le PANIER D'ACHAT d'abord : les sélecteurs de bloc d'achat des grandes
        plateformes (Amazon, Shopify, WooCommerce) désignent le prix VENDU, pas
@@ -615,6 +653,38 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
       pushUnique(out.variantTexts, candidate, LIMITS.variantTexts, LIMITS.label);
     }
   } catch (e) {}
+
+  /* ── 7 bis. Amazon : le twister (pastilles couleur, taille, modèle) ───────
+     Amazon ne met pas ses options dans un <select> mais dans des blocs
+     «#variation_<dimension>_name» : la valeur CHOISIE est affichée dans «.selection»,
+     les autres pastilles portent leur nom en «img[alt]» ou «li[title]». Sans cette
+     lecture, une fiche à couleur + taille ne publie aucune option choisie, et le
+     serveur ne peut pas vérifier la combinaison que le client a sélectionnée. */
+  if (AMAZON_STRICT) {
+    try {
+      var twisterBlocks = document.querySelectorAll('[id^="variation_"][id$="_name"], #twister');
+      for (var tb = 0; tb < twisterBlocks.length && tb < 12; tb++) {
+        var twisterBlock = twisterBlocks[tb];
+        if (isInNavigation(twisterBlock)) continue;
+        var chosenNodes = twisterBlock.querySelectorAll('.selection, .a-button-selected img[alt], li.swatchSelect img[alt], li.swatchSelect[title]');
+        for (var tc = 0; tc < chosenNodes.length && out.selectedVariantTexts.length < LIMITS.selectedTexts; tc++) {
+          var chosenNode = chosenNodes[tc];
+          var chosenText = text(chosenNode.getAttribute && (chosenNode.getAttribute('alt') || chosenNode.getAttribute('title'))) || text(chosenNode.textContent);
+          chosenText = text(String(chosenText).replace(/^click to select\s*/i, ''));
+          if (!chosenText || chosenText.length > LIMITS.label || NOT_A_CHOICE.test(chosenText)) continue;
+          pushUnique(out.selectedVariantTexts, chosenText, LIMITS.selectedTexts, LIMITS.label);
+        }
+        var twisterOptions = twisterBlock.querySelectorAll('li img[alt], li[title], select option');
+        for (var to = 0; to < twisterOptions.length && out.variantTexts.length < LIMITS.variantTexts; to++) {
+          var optionNode = twisterOptions[to];
+          var optionLabel = text(optionNode.getAttribute && (optionNode.getAttribute('alt') || optionNode.getAttribute('title'))) || text(optionNode.textContent);
+          optionLabel = text(String(optionLabel).replace(/^click to select\s*/i, ''));
+          if (!optionLabel || optionLabel.length > LIMITS.label || NOT_A_CHOICE.test(optionLabel)) continue;
+          pushUnique(out.variantTexts, optionLabel, LIMITS.variantTexts, LIMITS.label);
+        }
+      }
+    } catch (e) {}
+  }
 
   /* ── 8. Titre de secours et images visibles ─────────────────────────────── */
   if (!out.title) { try { out.title = cut(document.title, LIMITS.text) || null; } catch (e) {} }

@@ -379,7 +379,11 @@ export async function resolveAyWebsProduct(
           recordProbeSuccess(url.toString());
           return read;
         } catch (error) {
-          recordProbeFailure(url.toString());
+          /* Un lien que la boutique ne sert pas (autre boutique, page non produit)
+             est une erreur de SAISIE, pas une panne de l'hôte. Elle ne compte donc
+             PAS contre l'hôte : sinon trois mauvais liens mettaient TOUTE la boutique
+             au repos 10 min, et les vrais produits répondaient « refuse temporairement ». */
+          if (!(error instanceof AyWebsCaptureError)) recordProbeFailure(url.toString());
           if (error instanceof AyWebsCaptureError) {
             throw new AyWebsDomainError(error.code === 'PRODUCT_PAGE_REQUIRED' ? 'PRODUCT_PAGE_REQUIRED' : 'STORE_MISMATCH', {
               userMessage: error.message,
