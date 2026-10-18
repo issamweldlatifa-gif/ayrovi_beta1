@@ -30,8 +30,28 @@ jobs:
     name: Mobile DOM capture + verified quote
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      BASE: https://ayrovi-beta1-moo8.onrender.com
     steps:
       - uses: actions/checkout@v4
+
+      - name: Wait for Render to serve the tested commit
+        timeout-minutes: 8
+        run: |
+          set -euo pipefail
+          EXPECTED=${GITHUB_SHA:0:12}
+          for ATTEMPT in $(seq 1 28); do
+            READY=$(curl -s --max-time 30 "$BASE/api/ready" 2>/dev/null || true)
+            SERVED=$(printf '%s' "$READY" | sed -n 's/.*"commit": *"\([a-f0-9]\{7,12\}\)".*/\1/p' | head -1)
+            if [ -n "$SERVED" ] && [ "$SERVED" = "${EXPECTED:0:${#SERVED}}" ]; then
+              echo "Render serves $SERVED (attempt $ATTEMPT)."
+              exit 0
+            fi
+            echo "Attempt $ATTEMPT/28: server=${SERVED:-silent}, expected=$EXPECTED"
+            sleep 15
+          done
+          echo "::error title=Beta deployment stale::Render does not serve $EXPECTED; do not run the live capture against an older script."
+          exit 1
 
       - uses: actions/setup-node@v4
         with:
