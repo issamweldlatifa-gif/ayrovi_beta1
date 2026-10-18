@@ -199,6 +199,25 @@ describe('AYWEBs — lecteur Amazon : la zone d’achat seulement', () => {
     expect(validation.price).toBe(109);
   });
 
+  it('ignore les copies responsive masquées et les prix aria-hidden sans perdre le prix visible', () => {
+    const page = amazonPage(`
+      ${BUYBOX_109}
+      <style>#hidden-price-copy { display: none; }</style>
+      <div id="hidden-price-copy">
+        <div id="corePrice_mobile_feature_div">
+          <span class="a-price priceToPay"><span class="a-offscreen">$119.00</span></span>
+        </div>
+      </div>
+      <div aria-hidden="true">
+        <span class="a-price"><span class="a-offscreen">$129.00</span></span>
+      </div>`);
+    const { payload, validation } = captureFrom(page);
+    expect(payload.priceCandidates).toEqual([{ text: '$109.00', source: 'dom' }]);
+    expect(priceTrace(payload)).not.toContain('119.00');
+    expect(priceTrace(payload)).not.toContain('129.00');
+    expect(validation.price).toBe(109);
+  });
+
   it('deux montants DISTINCTS dans la zone d’achat ⇒ abstention totale', () => {
     const page = amazonPage(`
       <span id="apex-pricetopay-accessibility-label" class="aok-offscreen"> $109.00 </span>

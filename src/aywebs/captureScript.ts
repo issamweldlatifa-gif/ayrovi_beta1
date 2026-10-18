@@ -110,15 +110,23 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     if (!element) return true;
     if (isInNavigation(element)) return true;
     var node = element;
-    for (var hops = 0; node && hops < 8; hops++) {
+    for (var hops = 0; node && hops < 10; hops++) {
       var descriptor = String((node.id || '') + ' ' + (node.className || '')).toLowerCase();
       if (/sponsored|sp-sponsored|carousel|nav-assist|similar|recommendation|adplace|a-text-price|deal-badge|apex_desktop_right/.test(descriptor)) return true;
+      if (node.nodeType === 1 && node.getAttribute) {
+        if (node.getAttribute('aria-hidden') === 'true' || (node.hasAttribute && node.hasAttribute('hidden'))) return true;
+        var style = String(node.getAttribute('style') || '');
+        if (/display:\s*none|visibility:\s*(?:hidden|collapse)/i.test(style)) return true;
+        /* Amazon garde parfois une copie responsive différente du prix dans le
+           DOM. Lire seulement le style inline de l'élément ne suffit pas : le
+           parent de la copie peut être masqué par une règle CSS ou un media query. */
+        try {
+          var view = document.defaultView;
+          var computed = view && typeof view.getComputedStyle === 'function' ? view.getComputedStyle(node) : null;
+          if (computed && (computed.display === 'none' || computed.visibility === 'hidden' || computed.visibility === 'collapse')) return true;
+        } catch (e) {}
+      }
       node = node.parentNode;
-    }
-    if (element.getAttribute) {
-      if (element.getAttribute('aria-hidden') === 'true') return true;
-      var style = String(element.getAttribute('style') || '');
-      if (/display:\s*none|visibility:\s*hidden/i.test(style)) return true;
     }
     return false;
   }
