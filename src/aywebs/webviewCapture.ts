@@ -15,8 +15,8 @@
  *      indépendantes donnent le même montant ; exception encadrée pour Amazon
  *      du registre : le libellé screen-reader et le buybox visible doivent
  *      publier exactement le même montant (deux représentations, aucun choix).
- *   4. DEVISE : prouvée par un code ISO explicite (même règle que le lecteur
- *      serveur : `/\b[A-Z]{3}\b/` sur l'évidence) — un symbole seul ne suffit pas ;
+ *   4. DEVISE : code ISO explicite ou symbole univoque dans la liste fermée des
+ *      boutiques enregistrées ; les symboles ambigus restent sans devise.
  *   5. DISPONIBILITÉ : traduite depuis une liste de formulations FERMÉE et
  *      documentée ; tout le reste vaut UNKNOWN (et le panier refusera — c'est
  *      voulu : on n'affirme pas un stock qu'on n'a pas lu) ;
@@ -76,19 +76,27 @@ interface AyWebsSymbolCurrencyRule {
 }
 
 const AYWEBS_SYMBOL_CURRENCIES: readonly AyWebsSymbolCurrencyRule[] = [
-  { iso: 'EUR', pattern: /€/, stores: ['amazon', 'shein', 'temu', 'aliexpress'] },
+  { iso: 'EUR', pattern: /€/, stores: ['amazon', 'shein', 'temu', 'aliexpress', 'zalando'] },
   /* E£ (livre égyptienne) porte le même signe : amazon.eg est exclu. */
-  { iso: 'GBP', pattern: /£/, stores: ['amazon', 'shein', 'temu', 'aliexpress'], hostsExcluded: ['amazon.eg'] },
+  { iso: 'GBP', pattern: /£/, stores: ['amazon', 'shein', 'temu', 'aliexpress', 'zalando'], hostsExcluded: ['amazon.eg'] },
   /* ¥ = JPY sur amazon.co.jp, mais CNY ailleurs : réservé à Amazon. */
   { iso: 'JPY', pattern: /[¥￥]/, stores: ['amazon'] },
-  { iso: 'TND', pattern: /د\.ت/, stores: ['amazon', 'shein', 'temu', 'aliexpress'] },
+  { iso: 'TND', pattern: /د\.ت/, stores: ['amazon', 'shein', 'temu', 'aliexpress', 'zalando'] },
+  { iso: 'INR', pattern: /₹/, stores: ['shein', 'temu', 'aliexpress', 'zalando'] },
+  { iso: 'TRY', pattern: /₺/, stores: ['shein', 'temu', 'aliexpress', 'zalando'] },
+  { iso: 'RUB', pattern: /₽/, stores: ['shein', 'temu', 'aliexpress', 'zalando'] },
+  { iso: 'KRW', pattern: /₩/, stores: ['shein', 'temu', 'aliexpress', 'zalando'] },
+  { iso: 'ILS', pattern: /₪/, stores: ['shein', 'temu', 'aliexpress', 'zalando'] },
   /* `$` non-USD : les domaines Amazon dont la devise nationale n'est pas l'USD. */
   {
     iso: 'USD',
-    pattern: /\$|US\s?\$/,
-    stores: ['amazon', 'shein', 'temu', 'aliexpress'],
+    pattern: /\$/,
+    stores: ['amazon'],
     hostsExcluded: ['amazon.ca', 'amazon.com.au', 'amazon.sg', 'amazon.com.mx', 'amazon.com.br'],
   },
+  /* A bare dollar sign can be CAD/AUD/etc.; only an explicitly published
+     US$ marker identifies USD on the native merchant pages without an ISO code. */
+  { iso: 'USD', pattern: /\bUS\s?\$/i, stores: ['shein', 'temu', 'aliexpress', 'zalando'] },
 ];
 
 function hostMatchesAny(host: string, suffixes: readonly string[] | undefined): boolean {
@@ -205,11 +213,7 @@ export function canIssueAyWebsCaptureQuote(input: {
 const AVAILABILITY_VOCABULARY: Array<{ state: AyWebsAvailabilityState; reason: string; patterns: RegExp[] }> = [
   {
     state: 'OUT_OF_STOCK', reason: 'merchant_out_of_stock',
-    patterns: [
-      /outofstock|sold\s*out|out\s*of\s*stock|unavailable|currently\s+unavailable/i,
-      /rupture|épuis|indisponible|non\s+disponible/i,
-      /غير\s+متوفر|نفد/i,
-    ],
+    patterns: [/outofstock|sold\s*out|out\s*of\s*stock|unavailable|currently\s+unavailable/i, /rupture|épuis|indisponible|non\s+disponible/i, /غير\s+متوفر|نفد/i],
   },
   {
     state: 'LOW_STOCK', reason: 'merchant_limited_stock',
@@ -218,6 +222,31 @@ const AVAILABILITY_VOCABULARY: Array<{ state: AyWebsAvailabilityState; reason: s
   {
     state: 'AVAILABLE', reason: 'merchant_in_stock',
     patterns: [/instock|in\s*stock|available|add\s*to\s*(?:cart|basket|bag)|buy\s*now|add\s*to\s*cart/i, /en\s+stock|ajouter\s+au\s+panier|acheter/i, /أضف\s+إلى\s+السلة|متوفر/i],
+  },
+];
+
+/** Native-store phrasing is validated separately so the existing Amazon vocabulary stays unchanged. */
+const AYWEBS_NATIVE_AVAILABILITY_VOCABULARY: Array<{ state: AyWebsAvailabilityState; reason: string; patterns: RegExp[] }> = [
+  {
+    state: 'OUT_OF_STOCK', reason: 'merchant_out_of_stock',
+    patterns: [
+      /outofstock|sold[\s_-]*out|out[\s_-]*of[\s_-]*stock|unavailable|currently\s+unavailable/i,
+      /rupture|épuis|indisponible|non\s+disponible|nicht\s+verfügbar|derzeit\s+nicht\s+verfügbar|ausverkauft/i,
+      /غير\s+متوفر|نفد/i,
+    ],
+  },
+  {
+    state: 'LOW_STOCK', reason: 'merchant_limited_stock',
+    patterns: [/limitedavailability|limited[\s_-]*stock|low[\s_-]*stock|only\s*\d+\s*left|plus\s+que\s*\d+/i, /derniers?\s+exemplaires?|nur\s+noch\s*\d+|nur\s+wenige\s+verfügbar/i],
+  },
+  {
+    state: 'AVAILABLE', reason: 'merchant_in_stock',
+    patterns: [
+      /instock|in[\s_-]*stock|(^|[^a-z])available([^a-z]|$)|add\s*to\s*(?:cart|basket|bag)|buy\s*now/i,
+      /en\s+stock|ajouter\s+(?:au\s+)?(?:panier|sac|cabas)|acheter|disponible/i,
+      /in\s+den\s+warenkorb|in\s+die\s+tasche|zum\s+warenkorb|jetzt\s+kaufen|lieferbar|verfügbar/i,
+      /أضف\s+إلى\s+السلة|متوفر/i,
+    ],
   },
 ];
 
@@ -269,8 +298,9 @@ const AMAZON_DIMENSION_ATTRIBUTES: Record<string, string> = {
   length_name: 'length', volume_name: 'volume',
 };
 
-function cleanCapturedVariantGroups(raw: unknown, isAmazon: boolean): AyWebsCapturedVariantGroup[] {
-  if (!isAmazon || !Array.isArray(raw)) return [];
+function cleanCapturedVariantGroups(raw: unknown, storeId: string | null | undefined): AyWebsCapturedVariantGroup[] {
+  const supportedStore = ['amazon', 'shein', 'temu', 'aliexpress', 'zalando'].includes(String(storeId || ''));
+  if (!supportedStore || !Array.isArray(raw)) return [];
   const groups: AyWebsCapturedVariantGroup[] = [];
   const seenAttributes = new Set<string>();
   for (const candidate of raw.slice(0, AYWEBS_CAPTURE_LIMITS.maxVariantGroups)) {
@@ -332,6 +362,40 @@ function cleanSelectedVariantAttributes(
 function hostOf(raw: string): string | null {
   try {
     return new URL(raw).hostname.toLowerCase().replace(/^www\./, '');
+  } catch {
+    return null;
+  }
+}
+
+/** Product identifiers embedded in the merchant's own product URL are stable
+ * identity evidence; no identifier is synthesized when the URL has none. */
+function merchantExternalId(rawUrl: string, storeId: string | null | undefined): string | null {
+  try {
+    const url = new URL(rawUrl);
+    const path = url.pathname;
+    if (storeId === 'shein') {
+      const id = url.searchParams.get('goods_id')?.match(/^\d+$/)?.[0]
+        || path.match(/-p-(\d+)[^/]*\.html$/i)?.[1]
+        || path.match(/\/(\d+)\.html$/i)?.[1];
+      return id ? `SH-${id}` : null;
+    }
+    if (storeId === 'temu') {
+      const queryId = url.searchParams.get('goods_id') || url.searchParams.get('goodsId') || '';
+      const pathId = path.match(/(?:goods-[^/]*?-|(?:^|\/)g-)(\d{6,})\.html$/i)?.[1] || '';
+      const id = /^\d{6,}$/.test(queryId) ? queryId : pathId;
+      return id ? `TEMU-${id}` : null;
+    }
+    if (storeId === 'aliexpress') {
+      const queryId = url.searchParams.get('productId') || '';
+      const pathId = path.match(/\/(?:item|i)\/(\d{6,})\.html$/i)?.[1] || '';
+      const id = /^\d{6,}$/.test(queryId) ? queryId : pathId;
+      return id ? `AE-${id}` : null;
+    }
+    if (storeId === 'zalando') {
+      const sku = path.match(/-([a-z0-9]{5,}-[a-z0-9]{2,})\.html$/i)?.[1];
+      return sku ? `ZALANDO-${sku.toUpperCase()}` : null;
+    }
+    return null;
   } catch {
     return null;
   }
@@ -466,6 +530,12 @@ export function validateAyWebsCapturedPage(
   candidates.sort((a, b) => (a.rank - b.rank) || (a.index - b.index));
   const primary = candidates[0];
   const sameValue = candidates.filter((candidate) => Math.abs(candidate.value - primary.value) < 0.005);
+  const requestStore = detectAyWebsStore(requestUrl);
+  const nativeMerchantPage = ['shein', 'temu', 'aliexpress', 'zalando'].includes(requestStore?.id || '');
+  if (nativeMerchantPage && new Set(candidates.map((candidate) => candidate.value.toFixed(2))).size > 1) {
+    notes.push('merchant_current_price_sources_disagree');
+    return rejected('AMBIGUOUS_PRICE', '', notes);
+  }
 
   /* Corroboration : un JSON-LD suffit (donnée machine publiée par le marchand) ;
      sinon il faut DEUX sources d'accord. Pour Amazon du registre seulement,
@@ -473,7 +543,6 @@ export function validateAyWebsCapturedPage(
      s'ils portent le même montant : le lecteur client ne publie jamais ce label
      seul, et toute divergence déclenche l'abstention. Hors Amazon, ce label est
      ramené à une simple lecture DOM et ne crée pas une seconde source. */
-  const requestStore = detectAyWebsStore(requestUrl);
   const sameValueHasAmazonPair = requestStore?.id === 'amazon'
     && sameValue.some((candidate) => candidate.source === 'dom')
     && sameValue.some((candidate) => candidate.source === 'dom_accessibility');
@@ -571,13 +640,34 @@ export function validateAyWebsCapturedPage(
     availabilityReason = 'capture_add_control_disabled';
     notes.push('add_control_disabled');
   } else if (availabilityEvidence) {
-    const match = AVAILABILITY_VOCABULARY.find((entry) => entry.patterns.some((pattern) => pattern.test(availabilityEvidence)));
-    if (match) {
-      availability = match.state;
-      availabilityReason = `${match.reason}_capture`;
+    if (nativeMerchantPage) {
+      const matches = AYWEBS_NATIVE_AVAILABILITY_VOCABULARY.filter((entry) => entry.patterns.some((pattern) => pattern.test(availabilityEvidence)));
+      const states = new Set(matches.map((entry) => entry.state));
+      const conflictingStockEvidence = states.has('OUT_OF_STOCK')
+        && (states.has('LOW_STOCK') || states.has('AVAILABLE'));
+      const matchedState = states.has('OUT_OF_STOCK') ? 'OUT_OF_STOCK'
+        : states.has('LOW_STOCK') ? 'LOW_STOCK'
+          : states.has('AVAILABLE') ? 'AVAILABLE' : null;
+      if (conflictingStockEvidence) {
+        availabilityReason = 'capture_stock_evidence_conflict';
+        notes.push('availability_evidence_conflict');
+      } else if (matchedState) {
+        const match = matches.find((entry) => entry.state === matchedState)!;
+        availability = match.state;
+        availabilityReason = `${match.reason}_capture`;
+      } else {
+        availabilityReason = 'capture_stock_wording_unrecognized';
+        notes.push('availability_wording_unrecognized');
+      }
     } else {
-      availabilityReason = 'capture_stock_wording_unrecognized';
-      notes.push('availability_wording_unrecognized');
+      const match = AVAILABILITY_VOCABULARY.find((entry) => entry.patterns.some((pattern) => pattern.test(availabilityEvidence)));
+      if (match) {
+        availability = match.state;
+        availabilityReason = `${match.reason}_capture`;
+      } else {
+        availabilityReason = 'capture_stock_wording_unrecognized';
+        notes.push('availability_wording_unrecognized');
+      }
     }
   } else {
     notes.push('availability_evidence_absent');
@@ -595,7 +685,8 @@ export function validateAyWebsCapturedPage(
   const title = collapse(payload.title, AYWEBS_CAPTURE_LIMITS.maxTitleLength);
   const brand = collapse(payload.brand, 120) || null;
   const images = cleanImageUrls(payload.images);
-  const variantGroups = cleanCapturedVariantGroups(payload.variantGroups, requestStore?.id === 'amazon');
+  const externalId = merchantExternalId(pageUrl, requestStore?.id);
+  const variantGroups = cleanCapturedVariantGroups(payload.variantGroups, requestStore?.id);
   const selectedVariantAttributes = cleanSelectedVariantAttributes(payload.selectedVariantAttributes, variantGroups);
   const selectedVariantTexts = cleanTextArray(
     [
@@ -641,6 +732,8 @@ export function validateAyWebsCapturedPage(
   const summary = condition && selectedVariantTexts.length
     ? `${title} — ${condition} — ${selectedVariantTexts.join(' / ')}`
     : title;
+  const publishedDescription = collapse(payload.description, AYWEBS_CAPTURE_LIMITS.maxTextLength);
+  const description = nativeMerchantPage ? publishedDescription : summary || title;
   const scrapedVariantDetails: ProductVariantDetail[] = [];
   if (variantGroups.length && variantSelectionComplete) {
     const exactAttributes = { ...selectedVariantAttributes };
@@ -692,9 +785,9 @@ export function validateAyWebsCapturedPage(
     store: pageHost,
     storeName: pageHost,
     url: pageUrl || requestUrl,
-    externalId: null,
+    externalId,
     title,
-    description: summary || title,
+    description,
     images,
     mainImage: images[0] || '',
     sourcePrice: price,

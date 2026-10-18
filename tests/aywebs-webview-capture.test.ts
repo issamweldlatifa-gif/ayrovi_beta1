@@ -248,6 +248,14 @@ describe('AYWEBs 2.1 — lecteur client : des TEXTES, jamais des nombres', () =>
     expect(validation.notes).toContain('single_source');
   });
 
+  it('EUR est reconnue sur les domaines Zalando enregistrés, sans valider seule le prix DOM', () => {
+    const zalandoUrl = 'https://www.zalando.fr/nike-sportswear-club-tee-t-shirt-basic-black-ni121d0a2-q11.html';
+    const { validation } = captureFrom(DOM_ONLY_PAGE, zalandoUrl);
+    expect(validation.currency).toBe('EUR');
+    expect(validation.currencyVerified).toBe(true);
+    expect(validation.priceVerified).toBe(false);
+  });
+
   it('le label Amazon accessibility ne devient pas une seconde source hors Amazon', () => {
     const payload = {
       ...captureFrom(JSON_LD_PAGE).payload,

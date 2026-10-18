@@ -32,7 +32,7 @@ export const AYWEBS_CAPTURE_SCRIPT_PATH = '/api/v1/aywebs/capture/script.js';
 export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
   var LIMITS = { priceCandidates: 5, variantTexts: 30, selectedTexts: 5, variantGroups: 12, variantValues: 30, selectedAttributes: 12, images: 4, label: 60, text: 300 };
   var out = {
-    v: 1, url: '', canonicalUrl: null, title: null, brand: null,
+    v: 1, url: '', canonicalUrl: null, title: null, description: null, brand: null,
     priceCandidates: [], currencyText: null, availabilityText: null,
     addToCartText: null, conditionText: null, selectedVariantTexts: [], variantTexts: [],
     variantGroups: [], selectedVariantAttributes: {},
@@ -151,6 +151,11 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
   var host = '';
   try { host = String(location.hostname || '').toLowerCase().replace(/^(?:www|smile)\./, ''); } catch (e) { host = ''; }
   var IS_AMAZON = /^amazon\.[a-z]{2,3}(?:\.[a-z]{2})?$/.test(host);
+  var AYWEBS_STORE = /(^|\.)shein\.com$/i.test(host) || /(^|\.)shein\.co\.uk$/i.test(host) ? 'shein'
+    : /(^|\.)temu\.com$/i.test(host) ? 'temu'
+      : /(^|\.)aliexpress\.com$/i.test(host) ? 'aliexpress'
+        : /(^|\.)zalando\.(?:fr|de)$/i.test(host) ? 'zalando' : '';
+  var AYWEBS_CURRENCY_HINT = /[$\u20ac\u00a3\u00a5\u20b9\u20ba\u20bd\u20a9\u20aa]|\b(EUR|USD|GBP|JPY|CNY|RMB|TND|DT|MAD|AED|SAR|CHF|CAD|AUD|SGD|NZD|HKD|MXN|BRL|INR|TRY|RUB|KRW|SEK|NOK|DKK|PLN|CZK|HUF|RON|BGN|ZAR|QAR|KWD|BHD|OMR|JOD|EGP|TWD|THB|MYR|IDR|PHP|VND)\b|\bd\.?t\b/i;
   function hasSelector(selector) {
     try { return !!document.querySelector(selector); } catch (e) { return false; }
   }
@@ -398,6 +403,8 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
   /* ── 1. JSON-LD : la seule donnée MACHINE publiée par le marchand ───────── */
   var jsonLd = null;
   var jsonProducts = [];
+  var merchantJsonProducts = [];
+  var merchantJsonSeen = [];
   try {
     var blocks = document.querySelectorAll('script[type="application/ld+json"]');
     for (var b = 0; b < blocks.length; b++) {
@@ -408,6 +415,8 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
       if (AMAZON_STRICT) {
         collectProducts(parsed, 0, jsonProducts);
         if (jsonProducts.length > 8) break;
+      } else if (AYWEBS_STORE) {
+        collectMerchantProducts(parsed, merchantJsonProducts, merchantJsonSeen, 0);
       } else if (!jsonLd) {
         jsonLd = findProduct(parsed);
       }
@@ -417,6 +426,106 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
      produit de la page » (une fiche Amazon publie souvent le JSON-LD de plusieurs
      articles : accessoires, versions, publicités). */
   if (AMAZON_STRICT) jsonLd = amazonPickProduct(jsonProducts);
+  if (AYWEBS_STORE) jsonLd = merchantPickProduct(merchantJsonProducts);
+
+  function collectMerchantProducts(root, output, seen, depth) {
+    depth = depth || 0;
+    if (!root || typeof root !== 'object' || depth > 8 || output.length >= 120 || seen.indexOf(root) >= 0) return;
+    if (Object.prototype.toString.call(root) === '[object Array]') {
+      for (var i = 0; i < root.length && output.length < 120; i++) collectMerchantProducts(root[i], output, seen, depth + 1);
+      return;
+    }
+    seen.push(root);
+    var type = root['@type'];
+    var types = Object.prototype.toString.call(type) === '[object Array]' ? type : [type];
+    for (var t = 0; t < types.length; t++) {
+      var productType = String(types[t] || '').toLowerCase();
+      if (productType === 'product' || productType === 'productgroup') { output.push(root); break; }
+    }
+    var keys = ['@graph', 'mainEntity', 'itemListElement', 'item', 'hasVariant'];
+    for (var k = 0; k < keys.length && output.length < 120; k++) {
+      if (root[keys[k]]) collectMerchantProducts(root[keys[k]], output, seen, depth + 1);
+    }
+  }
+  function merchantPickProduct(candidates) {
+    function normalize(value) { return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, ''); }
+    if (!candidates || !candidates.length) return null;
+    var uniqueCandidates = [];
+    var seenObjects = [];
+    var seenIdentities = [];
+    for (var uniqueIndex = 0; uniqueIndex < candidates.length; uniqueIndex++) {
+      var candidate = candidates[uniqueIndex];
+      if (!candidate || seenObjects.indexOf(candidate) >= 0) continue;
+      seenObjects.push(candidate);
+      var identity = normalize(candidate.productGroupID || candidate.sku || candidate.productID || candidate.url || candidate['@id']);
+      if (identity && seenIdentities.indexOf(identity) >= 0) continue;
+      if (identity) seenIdentities.push(identity);
+      uniqueCandidates.push(candidate);
+    }
+    candidates = uniqueCandidates;
+    if (!candidates.length) return null;
+    function normalizedUrl(raw) {
+      if (!String(raw || '').trim()) return '';
+      try {
+        var value = new URL(String(raw), out.url || location.href);
+        return String(value.hostname || '').toLowerCase().replace(/^www\./, '') + String(value.pathname || '').replace(/\/+$/, '');
+      } catch (e) { return ''; }
+    }
+    function metaValue(selector) {
+      try { var element = document.querySelector(selector); return text(element && element.getAttribute('content')); } catch (e) { return ''; }
+    }
+    var currentUrl = normalizedUrl(out.url || location.href);
+    var canonicalNode = null;
+    try { canonicalNode = document.querySelector('link[rel="canonical"]'); } catch (e) {}
+    var canonicalUrl = normalizedUrl(canonicalNode && canonicalNode.href || metaValue('meta[property="og:url"]'));
+    var currentTitle = text(document.querySelector('h1') && document.querySelector('h1').textContent)
+      || metaValue('meta[property="og:title"]') || text(document.title);
+    var expectedNames = [normalize(currentTitle), normalize(metaValue('meta[property="og:title"]'))].filter(function (value) { return value.length >= 8; });
+    var pageIds = [];
+    function addPageId(value) { var normalized = normalize(value); if (normalized.length >= 5 && pageIds.indexOf(normalized) < 0) pageIds.push(normalized); }
+    try {
+      var pageUrl = new URL(out.url || location.href);
+      addPageId(pageUrl.searchParams.get('goods_id'));
+      addPageId(pageUrl.searchParams.get('goodsId'));
+      addPageId(pageUrl.searchParams.get('productId'));
+      var path = pageUrl.pathname;
+      var pathId = AYWEBS_STORE === 'shein' ? (path.match(/-p-(\d+)/i) || [])[1]
+        : AYWEBS_STORE === 'temu' ? (path.match(/(?:goods-[^/]*?-|(?:^|\/)g-)(\d{6,})\.html$/i) || [])[1]
+          : AYWEBS_STORE === 'aliexpress' ? (path.match(/\/(?:item|i)\/(\d{6,})\.html$/i) || [])[1]
+            : (path.match(/-([a-z0-9]{5,}-[a-z0-9]{2,})\.html$/i) || [])[1];
+      addPageId(pathId);
+    } catch (e) {}
+    var ranked = candidates.map(function (product) {
+      var type = product && product['@type'];
+      var types = Object.prototype.toString.call(type) === '[object Array]' ? type : [type];
+      var isGroup = types.some(function (value) { return String(value || '').toLowerCase() === 'productgroup'; });
+      var variants = Object.prototype.toString.call(product && product.hasVariant) === '[object Array]'
+        ? product.hasVariant : product && product.hasVariant ? [product.hasVariant] : [];
+      var productUrls = [product && product.url, product && product['@id']];
+      var urlMatch = productUrls.some(function (value) {
+        var normalized = normalizedUrl(value);
+        return Boolean(normalized && (normalized === currentUrl || normalized === canonicalUrl));
+      });
+      var ids = [product && product.sku, product && product.productID, product && product.productGroupID, product && product.mpn, product && product.gtin, product && product.gtin13];
+      for (var i = 0; i < variants.length && i < 120; i++) ids.push(variants[i] && variants[i].sku, variants[i] && variants[i].productID, variants[i] && variants[i].mpn);
+      var idMatch = ids.some(function (value) { return pageIds.indexOf(normalize(value)) >= 0; });
+      var name = normalize(product && product.name);
+      var nameMatch = expectedNames.some(function (expected) {
+        return expected === name || (Math.min(expected.length, name.length) >= 12 && (expected.indexOf(name) >= 0 || name.indexOf(expected) >= 0));
+      });
+      var score = (urlMatch ? 1000 : 0) + (idMatch ? 500 : 0) + (nameMatch ? 200 : 0)
+        + (isGroup && variants.length ? 50 : 0) + (product && product.offers ? 5 : 0);
+      return { product: product, score: score, isGroup: isGroup, hasVariants: variants.length > 0 };
+    }).sort(function (a, b) { return b.score - a.score; });
+    if (ranked[0] && ranked[0].score > 0 && (!ranked[1] || ranked[1].score !== ranked[0].score)) return ranked[0].product;
+    if (ranked[0] && ranked[0].score > 0 && ranked[1] && ranked[1].score === ranked[0].score) {
+      var tiedGroups = ranked.filter(function (candidate) { return candidate.score === ranked[0].score && candidate.isGroup && candidate.hasVariants; });
+      return tiedGroups.length === 1 ? tiedGroups[0].product : null;
+    }
+    var variantGroups = ranked.filter(function (candidate) { return candidate.isGroup && candidate.hasVariants; });
+    if (variantGroups.length === 1) return variantGroups[0].product;
+    return candidates.length === 1 ? candidates[0] : null;
+  }
 
   function findProduct(node, depth) {
     depth = depth || 0;
@@ -429,19 +538,87 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     var type = node['@type'];
     var types = Object.prototype.toString.call(type) === '[object Array]' ? type : [type];
     for (var t = 0; t < types.length; t++) {
-      if (String(types[t] || '').toLowerCase() === 'product') return node;
+      var productType = String(types[t] || '').toLowerCase();
+      if (productType === 'product' || (AYWEBS_STORE && productType === 'productgroup')) return node;
     }
     var keys = ['@graph', 'mainEntity', 'itemListElement', 'item'];
+    if (AYWEBS_STORE) keys.push('hasVariant');
     for (var k = 0; k < keys.length; k++) {
       if (node[keys[k]]) { var child = findProduct(node[keys[k]], depth + 1); if (child) return child; }
     }
     return null;
   }
+  function merchantProductOffers(product, output, depth) {
+    depth = depth || 0;
+    if (!product || depth > 5 || output.length > 30) return;
+    var offers = product.offers;
+    if (Object.prototype.toString.call(offers) === '[object Array]') {
+      for (var i = 0; i < offers.length && output.length < 30; i++) if (offers[i] && typeof offers[i] === 'object') output.push(offers[i]);
+    } else if (offers && typeof offers === 'object') output.push(offers);
+    var variants = product.hasVariant;
+    if (Object.prototype.toString.call(variants) === '[object Array]') {
+      for (var v = 0; v < variants.length && output.length < 30; v++) merchantProductOffers(variants[v], output, depth + 1);
+    } else if (variants && typeof variants === 'object') merchantProductOffers(variants, output, depth + 1);
+  }
   function firstOffer(product) {
     if (!product) return null;
-    var offers = product.offers;
-    if (Object.prototype.toString.call(offers) === '[object Array]') return offers[0] || null;
-    return offers && typeof offers === 'object' ? offers : null;
+    if (!AYWEBS_STORE) {
+      var genericOffers = product.offers;
+      if (Object.prototype.toString.call(genericOffers) === '[object Array]') return genericOffers[0] || null;
+      return genericOffers && typeof genericOffers === 'object' ? genericOffers : null;
+    }
+    /* ProductGroup offers are evidence for the displayed selection only when
+       every published leaf offer agrees. Never borrow the first size's stock. */
+    var offers = [];
+    merchantProductOffers(product, offers, 0);
+    if (!offers.length || offers.length > 30) return null;
+    var currencyRows = {};
+    for (var c = 0; c < offers.length; c++) {
+      var publishedCurrency = offerField(offers[c], ['priceCurrency']).toUpperCase();
+      if (/^[A-Z]{3}$/.test(publishedCurrency)) currencyRows[publishedCurrency] = true;
+    }
+    var currencyKeys = Object.keys(currencyRows);
+    if (currencyKeys.length && !out.currencyText) out.currencyText = currencyKeys.join(' ');
+    var priceRows = {};
+    var rowCount = 0;
+    var selectedPrice = '';
+    var selectedCurrency = '';
+    for (var i = 0; i < offers.length; i++) {
+      var candidate = offers[i];
+      var price = offerField(candidate, ['price']);
+      var currency = offerField(candidate, ['priceCurrency']).toUpperCase();
+      if (!price || !HAS_DIGIT.test(price)) return null;
+      var key = String(price) + '|' + String(currency);
+      if (!Object.prototype.hasOwnProperty.call(priceRows, key)) {
+        priceRows[key] = true;
+        rowCount++;
+        selectedPrice = String(price);
+        selectedCurrency = String(currency);
+      }
+    }
+    if (rowCount !== 1) return null;
+    var availabilityRows = {};
+    var availabilityCount = 0;
+    var availabilityComplete = true;
+    for (var a = 0; a < offers.length; a++) {
+      var availability = offerField(offers[a], ['availability', 'inventoryLevel']);
+      if (!availability) { availabilityComplete = false; continue; }
+      var availabilityKey = String(availability).toLowerCase();
+      if (!Object.prototype.hasOwnProperty.call(availabilityRows, availabilityKey)) {
+        availabilityRows[availabilityKey] = String(availability);
+        availabilityCount++;
+      }
+    }
+    var result = { price: selectedPrice, priceCurrency: selectedCurrency };
+    if (availabilityComplete && availabilityCount === 1) result.availability = availabilityRows[Object.keys(availabilityRows)[0]];
+    else if (availabilityComplete && availabilityCount > 1) result.availability = Object.keys(availabilityRows).map(function (key) { return availabilityRows[key]; }).join(' | ');
+    var conditionRows = {};
+    for (var q = 0; q < offers.length; q++) {
+      var condition = offerField(offers[q], ['itemCondition', 'condition']);
+      if (condition) conditionRows[String(condition).toLowerCase()] = condition;
+    }
+    if (Object.keys(conditionRows).length === 1) result.itemCondition = conditionRows[Object.keys(conditionRows)[0]];
+    return result;
   }
   function offerField(offer, names) {
     if (!offer) return '';
@@ -465,6 +642,7 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
   try {
     if (jsonLd) {
       out.title = cut(jsonLd.name, LIMITS.text) || out.title;
+      out.description = cut(jsonLd.description, LIMITS.text) || out.description;
       var brand = jsonLd.brand;
       if (Object.prototype.toString.call(brand) === '[object Array]') brand = brand[0];
       if (brand && typeof brand === 'object') brand = brand.name;
@@ -507,6 +685,10 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     }
     if (metaCurrency && !out.currencyText) out.currencyText = cut(metaCurrency, LIMITS.label);
     if (!out.title) out.title = cut(meta(['meta[property="og:title"]']), LIMITS.text) || null;
+    if (!out.description) out.description = cut(meta([
+      'meta[name="description"]', 'meta[property="og:description"]',
+      'meta[property="product:description"]', 'meta[name="twitter:description"]',
+    ]), LIMITS.text) || null;
     var ogImage = meta(['meta[property="og:image"]', 'meta[name="twitter:image"]']);
     if (ogImage && /^https?:\/\//i.test(ogImage)) pushUnique(out.images, ogImage, LIMITS.images, 600);
     out.canonicalUrl = cut(meta(['meta[property="og:url"]']), 600) || null;
@@ -556,6 +738,55 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     try {
       var amazonAvailability = amazonAvailabilityText();
       if (amazonAvailability) out.availabilityText = cut(amazonAvailability, LIMITS.text);
+    } catch (e) {}
+  }
+  if (AYWEBS_STORE && !AMAZON_STRICT) {
+    try {
+      var merchantStockSelectors = AYWEBS_STORE === 'shein'
+        ? ['[data-testid*="availability" i]', '[data-testid*="stock" i]', '[class*="product-intro__stock" i]', '[class*="stock-status" i]', '[class*="sold-out" i]']
+        : AYWEBS_STORE === 'temu'
+          ? ['[data-testid*="availability" i]', '[data-testid*="sold-out" i]', '[class*="goods-status" i]', '[class*="stock-status" i]', '[class*="sold-out" i]']
+          : AYWEBS_STORE === 'aliexpress'
+            ? ['[data-testid*="availability" i]', '[data-pl*="quantity" i]', '[class*="product-quantity" i]', '[class*="stock-status" i]', '[class*="sold-out" i]']
+            : ['[data-testid*="availability" i]', '[data-testid*="stock" i]', '[class*="availability-message" i]', '[class*="product-status" i]', '[class*="sold-out" i]'];
+      var stockWords = /outofstock|out[\s_-]*of[\s_-]*stock|sold[\s_-]*out|unavailable|currently\s+unavailable|ausverkauft|nicht\s+verfügbar|rupture|épuis|indisponible|in[\s_-]*stock|instock|\bavailable\b|lieferbar|verfügbar|en\s+stock|disponible|nur\s+noch|nur wenige verfügbar|only\s+\d+\s+left|plus\s+que\s+\d+/i;
+      var stockEvidence = out.availabilityText ? [out.availabilityText] : [];
+      var stockSeen = {};
+      for (var se = 0; se < stockEvidence.length; se++) stockSeen[stockEvidence[se].toLowerCase()] = true;
+      for (var ms = 0; ms < merchantStockSelectors.length && stockEvidence.length < 5; ms++) {
+        var stockNodes = [];
+        try { stockNodes = document.querySelectorAll(merchantStockSelectors[ms]); } catch (e) { continue; }
+        for (var mn = 0; mn < stockNodes.length && stockEvidence.length < 5; mn++) {
+          var stockNode = stockNodes[mn];
+          if (isInNavigation(stockNode)) continue;
+          var stockParent = stockNode;
+          var excludedStock = false;
+          for (var sh = 0; stockParent && sh < 7; sh++, stockParent = stockParent.parentNode) {
+            var stockDescriptor = String((stockParent.id || '') + ' ' + (stockParent.className || '') + ' '
+              + (stockParent.getAttribute && (stockParent.getAttribute('data-testid') || stockParent.getAttribute('data-component-type')) || '')).toLowerCase();
+            if (/sponsor|advert|recommend|related|carousel|cross.?sell|upsell/.test(stockDescriptor)
+              || (stockParent.getAttribute && (stockParent.getAttribute('aria-hidden') === 'true' || stockParent.hasAttribute('hidden')))) {
+              excludedStock = true;
+              break;
+            }
+          }
+          if (excludedStock) continue;
+          var stockRaw = text([
+            stockNode.getAttribute && stockNode.getAttribute('data-availability'),
+            stockNode.getAttribute && stockNode.getAttribute('data-stock-status'),
+            stockNode.getAttribute && stockNode.getAttribute('aria-label'),
+            stockNode.getAttribute && stockNode.getAttribute('title'),
+            stockNode.textContent,
+          ].filter(Boolean).join(' '));
+          if (!stockRaw || stockRaw.length > LIMITS.text || !stockWords.test(stockRaw)) continue;
+          var stockKey = stockRaw.toLowerCase();
+          if (!Object.prototype.hasOwnProperty.call(stockSeen, stockKey)) {
+            stockSeen[stockKey] = true;
+            stockEvidence.push(stockRaw);
+          }
+        }
+      }
+      if (stockEvidence.length) out.availabilityText = cut(stockEvidence.join(' | '), LIMITS.text);
     } catch (e) {}
   }
 
@@ -638,33 +869,91 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
         }
       }
     } else {
-    /* Le PANIER D'ACHAT d'abord : les sélecteurs de bloc d'achat des grandes
-       plateformes (Amazon, Shopify, WooCommerce) désignent le prix VENDU, pas
-       un prix de publicité ou d'un article recommandé — c'est précisément le
-       piège mesuré le 06/10 (deux candidats « dom » à 6,99 et 263,86 sur la
-       même page Amazon). Les sélecteurs génériques viennent après. */
-    var selectors = [
-      '#corePriceDisplay_desktop_feature_div .a-offscreen',
-      '#corePrice_feature_div .a-offscreen',
-      '#price_inside_buybox',
-      '#priceblock_ourprice, #priceblock_dealprice',
-      '.a-price .a-offscreen',
-      '[data-testid*="price" i]',
-      '[data-price]',
-      '.product-price, .price-value, .price__value, .product__price, .price-current',
-      '[class*="price" i] [class*="offscreen" i]'
-    ];
-    var taken = 0;
-    for (var s = 0; s < selectors.length && taken < 2; s++) {
-      var nodes = [];
-      try { nodes = document.querySelectorAll(selectors[s]); } catch (e) { continue; }
-      for (var n = 0; n < nodes.length && taken < 2; n++) {
-        var el = nodes[n];
-        var value = text(el.getAttribute && el.getAttribute('data-price')) || text(el.textContent);
-        if (!value || !HAS_DIGIT.test(value) || !CURRENCY_HINT.test(value)) continue;
-        if (value.length > LIMITS.text) continue;
-        out.priceCandidates.push({ text: cut(value, LIMITS.text), source: 'dom' });
-        taken++;
+    if (AYWEBS_STORE) {
+      /* Chaque adapter lit les sélecteurs de PRIX COURANT de sa fiche produit.
+         On ne descend jamais dans un carrousel, une annonce ou un prix barré,
+         et plusieurs montants contradictoires restent plusieurs preuves afin
+         que le serveur refuse le devis au lieu d'en choisir un arbitrairement. */
+      var merchantPriceSelectors = AYWEBS_STORE === 'shein'
+        ? ['[data-testid="product-intro__head-price"]', '.product-intro__head-price', '[class*="product-intro__price" i]', '[data-testid*="price-current" i]']
+        : AYWEBS_STORE === 'temu'
+          ? ['[data-testid="goods-price-current"]', '[data-testid*="goods-price" i]', '[class*="goods-price__current" i]', '[class*="price--current" i]']
+          : AYWEBS_STORE === 'aliexpress'
+            ? ['[data-pl="product-price"]', '[class*="price--currentPriceText" i]', '[class*="product-price-value" i]', '[data-testid="product-price"]']
+            : ['[data-testid="pdp-price"]', '[data-testid="product-price"]', '[data-testid="price"]', '[class*="price__final" i]', '[class*="z-price-pdp" i]'];
+      /* The documented, merchant-published product price class is a last-resort
+         fallback for storefront versions without the current PDP test IDs. */
+      merchantPriceSelectors.push('[itemprop="price"]', '.product-price', '.price-value', '.price__value', '.price-current');
+      var merchantPriceRead = false;
+      for (var mp = 0; mp < merchantPriceSelectors.length && !merchantPriceRead; mp++) {
+        var merchantPriceNodes = [];
+        try { merchantPriceNodes = document.querySelectorAll(merchantPriceSelectors[mp]); } catch (e) { continue; }
+        var merchantReadings = [];
+        for (var mn2 = 0; mn2 < merchantPriceNodes.length && merchantReadings.length < 6; mn2++) {
+          var priceNode = merchantPriceNodes[mn2];
+          if (isInNavigation(priceNode)) continue;
+          var priceParent = priceNode;
+          var secondaryPrice = false;
+          for (var ph = 0; priceParent && ph < 8; ph++, priceParent = priceParent.parentNode) {
+            var priceDescriptor = String((priceParent.id || '') + ' ' + (priceParent.className || '')).toLowerCase();
+            if (/sponsored|recommend|related|carousel|cross.?sell|upsell|old.price|compare.at|was.price|regular.price|strikethrough/.test(priceDescriptor)
+              || (priceParent.getAttribute && (priceParent.getAttribute('aria-hidden') === 'true' || priceParent.hasAttribute('hidden')))) {
+              secondaryPrice = true;
+              break;
+            }
+          }
+          if (secondaryPrice) continue;
+          var priceValue = text(priceNode.getAttribute && (priceNode.getAttribute('content') || priceNode.getAttribute('data-price')))
+            || text(priceNode.textContent);
+          var publishedCurrency = '';
+          var currencyNode = priceNode;
+          for (var ch = 0; currencyNode && ch < 4; ch++, currencyNode = currencyNode.parentNode) {
+            var currencyCandidate = text(currencyNode.getAttribute && (currencyNode.getAttribute('data-currency')
+              || currencyNode.getAttribute('data-price-currency') || currencyNode.getAttribute('data-currency-code')
+              || currencyNode.getAttribute('currency'))).toUpperCase();
+            if (/^[A-Z]{3}$/.test(currencyCandidate)) { publishedCurrency = currencyCandidate; break; }
+          }
+          if (publishedCurrency && !new RegExp('\\b' + publishedCurrency + '\\b', 'i').test(priceValue)) {
+            priceValue = text(priceValue + ' ' + publishedCurrency);
+          }
+          if (!priceValue || !HAS_DIGIT.test(priceValue) || !AYWEBS_CURRENCY_HINT.test(priceValue) || priceValue.length > LIMITS.text) continue;
+          var normalizedReading = priceValue.replace(/[\s\u00a0\u202f]+/g, ' ').toLowerCase();
+          if (merchantReadings.indexOf(normalizedReading) < 0) merchantReadings.push(normalizedReading);
+          if (publishedCurrency && !out.currencyText) out.currencyText = publishedCurrency;
+        }
+        if (merchantReadings.length) {
+          for (var mr = 0; mr < merchantReadings.length && out.priceCandidates.length < LIMITS.priceCandidates; mr++) {
+            out.priceCandidates.push({ text: cut(merchantReadings[mr], LIMITS.text), source: 'dom' });
+          }
+          merchantPriceRead = true;
+        }
+      }
+    } else {
+      /* Generic fallback kept separate: merchant-specific adapters never use a
+         broad class selector that can return a recommendation. */
+      var selectors = [
+        '#corePriceDisplay_desktop_feature_div .a-offscreen',
+        '#corePrice_feature_div .a-offscreen',
+        '#price_inside_buybox',
+        '#priceblock_ourprice, #priceblock_dealprice',
+        '.a-price .a-offscreen',
+        '[data-testid*="price" i]',
+        '[data-price]',
+        '.product-price, .price-value, .price__value, .product__price, .price-current',
+        '[class*="price" i] [class*="offscreen" i]'
+      ];
+      var taken = 0;
+      for (var s = 0; s < selectors.length && taken < 2; s++) {
+        var nodes = [];
+        try { nodes = document.querySelectorAll(selectors[s]); } catch (e) { continue; }
+        for (var n = 0; n < nodes.length && taken < 2; n++) {
+          var el = nodes[n];
+          var value = text(el.getAttribute && el.getAttribute('data-price')) || text(el.textContent);
+          if (!value || !HAS_DIGIT.test(value) || !CURRENCY_HINT.test(value)) continue;
+          if (value.length > LIMITS.text) continue;
+          out.priceCandidates.push({ text: cut(value, LIMITS.text), source: 'dom' });
+          taken++;
+        }
       }
     }
     }
@@ -681,6 +970,7 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
   /* ── 6. Bouton d'achat : libellé ET état (désactivé = pas de stock prouvé) ─ */
   try {
     var ADD_TEXT = /add\s*to\s*(cart|basket|bag)|buy\s*now|ajouter\s+au\s+panier|acheter|أضف\s*إلى\s*السلة|اشترِ/i;
+    var NATIVE_ADD_TEXT = /add\s*to\s*(cart|basket|bag)|buy\s*now|ajouter\s+(?:au\s+)?(?:panier|sac|cabas)|acheter|in\s+den\s+warenkorb|in\s+die\s+tasche|zum\s+warenkorb|jetzt\s+kaufen|أضف\s*إلى\s*السلة|اشترِ/i;
     if (AMAZON_STRICT) {
       /* Correction du 07/10/2026 : un contrôle d'achat DÉSACTIVÉ ne publie RIEN.
          Son libellé dit « Add to Cart » — un texte qui, lu seul, prouverait un
@@ -704,7 +994,7 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     for (var i2 = 0; i2 < controls.length && !out.addToCartText; i2++) {
       var control = controls[i2];
       var label = text(control.value) || text(control.textContent) || text(control.getAttribute && control.getAttribute('aria-label'));
-      if (!label || !ADD_TEXT.test(label)) continue;
+      if (!label || !(AYWEBS_STORE ? NATIVE_ADD_TEXT : ADD_TEXT).test(label)) continue;
       /* « Add to basket shift + ALT + K » est un libellé d'accessibilité, pas un
          bouton : le raccourci clavier est retiré, et un libellé qui n'est QUE
          cela est écarté (mesuré le 06/10/2026 sur une page amazon.de rendue). */
@@ -899,6 +1189,180 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
         }
       }
       out.variantGroups = out.variantGroups.filter(function (group) { return group.values.length > 0; });
+    } catch (e) {}
+  }
+
+  /* ── 7c. Options produit des adapters SHEIN / TEMU / AliExpress / Zalando ──
+     Les dimensions viennent des libellés de contrôles produit (select, fieldset,
+     groupes aria, data-attribute-name, sku-property). On ne forme jamais de
+     combinaisons cartésiennes ni de stock depuis une pastille activée. */
+  if (!AMAZON_STRICT && AYWEBS_STORE) {
+    try {
+      function genericDimension(raw) {
+        var label = text(raw).toLowerCase().replace(/[_-]+/g, ' ');
+        var dimensions = [
+          { key: 'size', pattern: /\b(size|sizes|taille|tailles|pointure|pointures|shoe size|größe|gr[oö]sse)\b/i },
+          { key: 'color', pattern: /\b(color|colour|couleur|couleurs|farbe|coloris)\b/i },
+          { key: 'capacity', pattern: /\b(capacity|capacite|capacité|volume|contenance)\b/i },
+          { key: 'storage', pattern: /\b(storage|stockage|memory|mémoire|ram|ssd)\b/i },
+          { key: 'model', pattern: /\b(model|modèle|modele|variant|variante)\b/i },
+          { key: 'style', pattern: /\b(style|style name|coupe|fit)\b/i },
+          { key: 'pattern', pattern: /\b(pattern|motif|print)\b/i },
+          { key: 'material', pattern: /\b(material|matière|matiere|fabric|tissu)\b/i },
+          { key: 'format', pattern: /\b(format|edition|édition|type|bundle|lot)\b/i },
+          { key: 'length', pattern: /\b(length|longueur)\b/i },
+          { key: 'width', pattern: /\b(width|largeur)\b/i },
+        ];
+        for (var di = 0; di < dimensions.length; di++) {
+          if (dimensions[di].pattern.test(label)) return { attribute: dimensions[di].key, sourceKey: dimensions[di].key, label: cut(raw, LIMITS.label) };
+        }
+        return null;
+      }
+      function groupDescriptor(node) {
+        var parts = [];
+        var current = node;
+        for (var up = 0; current && up < 3; up++, current = current.parentNode) {
+          if (!current.getAttribute) continue;
+          var attrs = ['data-attribute-name', 'data-attribute', 'data-dimension', 'data-dimension-name', 'data-variant-attribute', 'data-variant-name', 'aria-label', 'name', 'id', 'data-testid', 'class'];
+          for (var ai = 0; ai < attrs.length; ai++) {
+            var raw = current.getAttribute(attrs[ai]);
+            if (raw) parts.push(raw);
+          }
+          try {
+            var labelNodes = current.querySelectorAll('legend,label,[data-attribute-name],[data-dimension],[class*="title" i],[class*="label" i],[class*="name" i]');
+            for (var li = 0; li < labelNodes.length && li < 4; li++) {
+              var labelText = text(labelNodes[li].textContent);
+              if (labelText && labelText.length <= LIMITS.label) parts.push(labelText);
+            }
+          } catch (e) {}
+        }
+        for (var p = 0; p < parts.length; p++) {
+          var dimension = genericDimension(parts[p]);
+          if (dimension) return dimension;
+        }
+        return null;
+      }
+      function genericValueNodes(container) {
+        if (!container) return [];
+        var result = [];
+        try {
+          var nodes = container.querySelectorAll('select option,[role="option"],[role="radio"],[data-attribute-value],[data-value],[data-size],[data-color],button,li[title],.sku-item,input[type="radio"]');
+          for (var ni = 0; ni < nodes.length && result.length < LIMITS.variantValues; ni++) result.push(nodes[ni]);
+        } catch (e) {}
+        return result;
+      }
+      function addGenericGroupValue(group, rawValue, isDisabled) {
+        var value = cut(rawValue, LIMITS.label);
+        if (!group || !value || NOT_A_CHOICE.test(value)
+          || /^(?:size|sizes|taille|color|colour|couleur|choose|select|default title|one option)$/i.test(value)) return '';
+        var existing = '';
+        for (var vi = 0; vi < group.values.length; vi++) if (group.values[vi].toLowerCase() === value.toLowerCase()) existing = group.values[vi];
+        if (!existing && group.values.length < LIMITS.variantValues) {
+          group.values.push(value);
+          pushUnique(out.variantTexts, value, LIMITS.variantTexts, LIMITS.label);
+        }
+        var published = existing || value;
+        if (isDisabled && group.valueStates.length < LIMITS.variantValues) {
+          var hasState = false;
+          for (var st = 0; st < group.valueStates.length; st++) if (group.valueStates[st].value.toLowerCase() === published.toLowerCase()) hasState = true;
+          if (!hasState) group.valueStates.push({ value: published, state: 'UNAVAILABLE' });
+        }
+        return published;
+      }
+      function nodeDisabled(node) {
+        if (!node) return false;
+        var aria = node.getAttribute && node.getAttribute('aria-disabled');
+        var klass = String(node.className || '').toLowerCase();
+        return node.disabled === true || aria === 'true' || (node.getAttribute && node.getAttribute('disabled') !== null)
+          || /disabled|sold.?out|unavailable|out.of.stock/.test(klass);
+      }
+      function selectedGenericNode(node) {
+        if (!node) return false;
+        var aria = node.getAttribute && (node.getAttribute('aria-checked') || node.getAttribute('aria-selected') || node.getAttribute('aria-pressed') || node.getAttribute('data-selected'));
+        var klass = String(node.className || '').toLowerCase();
+        return node.selected === true || aria === 'true' || /(?:^|[ _-])(selected|active|current|is-checked|checked)(?:$|[ _-])/.test(klass);
+      }
+      function ensureGenericGroup(dimension) {
+        if (!dimension) return null;
+        for (var gi = 0; gi < out.variantGroups.length; gi++) {
+          if (out.variantGroups[gi].attribute === dimension.attribute) return out.variantGroups[gi].sourceKey === dimension.sourceKey ? out.variantGroups[gi] : null;
+        }
+        if (out.variantGroups.length >= LIMITS.variantGroups) return null;
+        var group = { attribute: dimension.attribute, sourceKey: dimension.sourceKey, label: dimension.label || dimension.attribute, values: [], valueStates: [] };
+        out.variantGroups.push(group);
+        return group;
+      }
+      function matchGenericValue(group, rawValue) {
+        var value = cut(rawValue, LIMITS.label).toLowerCase();
+        for (var vi = 0; group && vi < group.values.length; vi++) if (group.values[vi].toLowerCase() === value) return group.values[vi];
+        return '';
+      }
+      function setGenericSelected(group, value) {
+        if (!group || !value) return;
+        if (Object.keys(out.selectedVariantAttributes).length >= LIMITS.selectedAttributes
+          && !Object.prototype.hasOwnProperty.call(out.selectedVariantAttributes, group.attribute)) return;
+        out.selectedVariantAttributes[group.attribute] = value;
+        pushUnique(out.selectedVariantTexts, value, LIMITS.selectedTexts, LIMITS.label);
+      }
+
+      var genericGroupSelectors = 'select,fieldset,[role="group"],[data-attribute-name],[data-attribute],[data-dimension],[data-dimension-name],[data-variant-attribute],[data-variant-name],[class*="sku-property" i],[class*="sku-prop" i],[class*="goods-sku" i],[class*="variant" i],[class*="swatch" i],[class*="size" i],[class*="taille" i],[class*="color" i],[class*="colour" i],[class*="couleur" i],[data-testid*="size" i],[data-testid*="color" i],[data-testid*="variant" i]';
+      var genericCandidates = [];
+      try { genericCandidates = document.querySelectorAll(genericGroupSelectors); } catch (e) {}
+      var unknownVariantValues = [];
+      var unknownSelectedValues = [];
+      var seenCandidate = [];
+      for (var gc = 0; gc < genericCandidates.length && gc < 240; gc++) {
+        var groupContainer = genericCandidates[gc];
+        if (seenCandidate.indexOf(groupContainer) >= 0 || isInNavigation(groupContainer)) continue;
+        seenCandidate.push(groupContainer);
+        var dimension = groupDescriptor(groupContainer);
+        var values = genericValueNodes(groupContainer);
+        if (!values.length) continue;
+        if (!dimension) {
+          var unknownDescriptor = String((groupContainer.id || '') + ' ' + (groupContainer.className || '') + ' '
+            + (groupContainer.getAttribute && (groupContainer.getAttribute('data-variant-attribute') || groupContainer.getAttribute('data-testid')) || '')).toLowerCase();
+          if (/variant|sku|swatch|option|attribute|dimension/.test(unknownDescriptor)) {
+            for (var uv = 0; uv < values.length && unknownVariantValues.length < LIMITS.variantTexts; uv++) {
+              var unknownValue = variantTextFromNode(values[uv]);
+              if (!unknownValue || NOT_A_CHOICE.test(unknownValue)) continue;
+              pushUnique(unknownVariantValues, unknownValue, LIMITS.variantTexts, LIMITS.label);
+              if (selectedGenericNode(values[uv])) pushUnique(unknownSelectedValues, unknownValue, LIMITS.selectedTexts, LIMITS.label);
+            }
+          }
+          continue;
+        }
+        var group = ensureGenericGroup(dimension);
+        if (!group) continue;
+        var selectedMatches = [];
+        for (var gv = 0; gv < values.length; gv++) {
+          var optionNode = values[gv];
+          var optionText = variantTextFromNode(optionNode);
+          if (!optionText && String(optionNode.tagName || '').toLowerCase() === 'select') {
+            try { optionText = variantTextFromNode(optionNode.options[optionNode.selectedIndex]); } catch (e) {}
+          }
+          var publishedValue = addGenericGroupValue(group, optionText, nodeDisabled(optionNode));
+          if (publishedValue && selectedGenericNode(optionNode)) {
+            var selectedDuplicate = false;
+            for (var sm = 0; sm < selectedMatches.length; sm++) if (selectedMatches[sm].toLowerCase() === publishedValue.toLowerCase()) selectedDuplicate = true;
+            if (!selectedDuplicate) selectedMatches.push(publishedValue);
+          }
+        }
+        if (selectedMatches.length === 1) setGenericSelected(group, selectedMatches[0]);
+      }
+      if (AYWEBS_STORE) {
+        out.variantTexts = [];
+        out.selectedVariantTexts = [];
+        for (var og = 0; og < out.variantGroups.length; og++) {
+          for (var ov = 0; ov < out.variantGroups[og].values.length; ov++) pushUnique(out.variantTexts, out.variantGroups[og].values[ov], LIMITS.variantTexts, LIMITS.label);
+        }
+        for (var os = 0; os < Object.keys(out.selectedVariantAttributes).length; os++) {
+          var selectedKey = Object.keys(out.selectedVariantAttributes)[os];
+          pushUnique(out.selectedVariantTexts, out.selectedVariantAttributes[selectedKey], LIMITS.selectedTexts, LIMITS.label);
+        }
+        for (var uvi = 0; uvi < unknownVariantValues.length; uvi++) pushUnique(out.variantTexts, unknownVariantValues[uvi], LIMITS.variantTexts, LIMITS.label);
+        for (var usi = 0; usi < unknownSelectedValues.length; usi++) pushUnique(out.selectedVariantTexts, unknownSelectedValues[usi], LIMITS.selectedTexts, LIMITS.label);
+      }
+      out.variantGroups = out.variantGroups.filter(function (item) { return item.values.length > 0; });
     } catch (e) {}
   }
 

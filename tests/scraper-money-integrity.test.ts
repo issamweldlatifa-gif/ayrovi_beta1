@@ -82,6 +82,20 @@ const EUR_PAGE = SEK_PAGE.replace('"priceCurrency":"SEK"', '"priceCurrency":"EUR
 const EUR_URL = 'https://www.kaffeboden.se/produkter/casque-eur';
 
 describe('Scraper — le prix TND n’est plus produit ici', () => {
+  it.each([
+    ['shein', 'https://www.shein.com/Women-Shirt-p-382460229.html', '<span data-testid="product-intro__head-price">$89.99</span>'],
+    ['temu', 'https://www.temu.com/g-601099512340123.html', '<span data-testid="goods-price-current">$89.99</span>'],
+    ['aliexpress', 'https://www.aliexpress.com/item/1005006123456.html?currency=USD', '<span data-pl="product-price">$89.99</span>'],
+    ['zalando', 'https://www.zalando.fr/nike-shirt-ni121d0a2-q11.html', '<span data-testid="pdp-price">$89.99</span>'],
+  ])('%s ne déduit pas la devise depuis le domaine ou les paramètres URL', async (_store, url, priceMarkup) => {
+    const product = await scraper.scrapeProduct(url, {
+      pageHtml: `<!doctype html><html><body>${priceMarkup}</body></html>`,
+    });
+    expect(product.sourcePrice).toBe(89.99);
+    expect(product.sourceCurrency).toBe('');
+    expect(product.currencyVerified).toBe(false);
+  });
+
   it('devise publiée hors ancienne table (SEK) : lue et vérifiée, mais AUCUN prix TND inventé', async () => {
     const product = await scraper.scrapeProduct(SEK_URL, { pageHtml: SEK_PAGE });
 

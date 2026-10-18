@@ -104,6 +104,134 @@ function parsePrice(raw: unknown): number {
   return priceFromText(raw);
 }
 
+const AYWEBS_NATIVE_STORES = new Set(['shein', 'temu', 'aliexpress', 'zalando']);
+
+/** Sélecteurs mesurés/nommés par marchand, limités au prix courant de la fiche. */
+const STORE_CURRENT_PRICE_SELECTORS: Partial<Record<string, readonly string[]>> = {
+  shein: [
+    '[data-testid="product-intro__head-price"]',
+    '.product-intro__head-price',
+    '[class*="product-intro__head-price" i]',
+    '[class*="product-intro__price" i]',
+    '[data-testid*="price-current" i]',
+  ],
+  temu: [
+    '[data-testid="goods-price-current"]',
+    '[data-testid*="goods-price" i]',
+    '[class*="goods-price__current" i]',
+    '[class*="price--current" i]',
+    '[data-testid="product-price"]',
+  ],
+  aliexpress: [
+    '[data-pl="product-price"]',
+    '[class*="price--currentPriceText" i]',
+    '[class*="product-price-value" i]',
+    '[data-testid="product-price"]',
+    '[class*="price-current" i]',
+  ],
+  zalando: [
+    '[data-testid="pdp-price"]',
+    '[data-testid="product-price"]',
+    '[data-testid="price"]',
+    '[class*="price__final" i]',
+    '[class*="z-price-pdp" i]',
+  ],
+};
+
+function merchantCurrentPriceEvidence(
+  document: Document,
+  storeType: string,
+  metaCurrencyCode = '',
+): { text: string; conflict: boolean; currencyConflict: boolean } {
+  const merchantSelectors = STORE_CURRENT_PRICE_SELECTORS[storeType];
+  if (!merchantSelectors) return { text: '', conflict: false, currencyConflict: false };
+  const selectors = [
+    ...merchantSelectors,
+    // Generic selectors are strictly last-resort: some locale/A-B variants
+    // omit the merchant test ID, but still publish one product-page price.
+    '[itemprop="price"]', '.product-price', '.price-value', '.price__value', '.price-current',
+  ];
+  const unwantedAncestor = /sponsor|advert|recommend|related|carousel|cross.?sell|upsell|other.?seller|old.price|compare.at|was.price|regular.price|strikethrough/i;
+  const isExcluded = (node: Element): boolean => {
+    let current: Element | null = node;
+    for (let depth = 0; current && depth < 8; depth += 1, current = current.parentElement) {
+      const descriptor = `${current.id || ''} ${typeof current.className === 'string' ? current.className : ''}`;
+      if (unwantedAncestor.test(descriptor) || current.hasAttribute('hidden')
+        || current.getAttribute('aria-hidden') === 'true'
+        || /display\s*:\s*none|visibility\s*:\s*hidden/i.test(current.getAttribute('style') || '')) return true;
+      if (['header', 'nav', 'footer'].includes(current.tagName.toLowerCase())) return true;
+    }
+    return false;
+  };
+  const currencyCode = (node: Element): string => {
+    let current: Element | null = node;
+    for (let depth = 0; current && depth < 4; depth += 1, current = current.parentElement) {
+      for (const attribute of ['data-currency', 'data-price-currency', 'data-currency-code', 'currency']) {
+        const value = String(current.getAttribute(attribute) || '').trim().toUpperCase();
+        if (/^[A-Z]{3}$/.test(value)) return value;
+      }
+    }
+    return '';
+  };
+
+  for (const selector of selectors) {
+    let nodes: Element[] = [];
+    try { nodes = Array.from(document.querySelectorAll(selector)).slice(0, 12); } catch { continue; }
+    const observations = new Map<string, { evidence: string; value: number; currency: string }>();
+    let currencyConflict = false;
+    for (const node of nodes) {
+      if (isExcluded(node)) continue;
+      const raw = String(node.getAttribute('content') || node.getAttribute('data-price') || node.textContent || '')
+        .replace(/\s+/g, ' ').trim();
+      const code = currencyCode(node) || (/^[A-Z]{3}$/.test(metaCurrencyCode.trim().toUpperCase()) ? metaCurrencyCode.trim().toUpperCase() : '');
+      const evidence = `${raw} ${code}`.trim();
+      const check = checkPriceText(evidence);
+      if (!check.ok) {
+        if (check.reason === 'CURRENCY_CONFLICT') currencyConflict = true;
+        continue;
+      }
+      const observedCurrency = code || check.currencyHints.join(',');
+      const key = `${check.value.toFixed(2)}|${observedCurrency}`;
+      if (!observations.has(key)) observations.set(key, { evidence, value: check.value, currency: observedCurrency });
+    }
+    if (observations.size === 1 && !currencyConflict) {
+      return { text: [...observations.values()][0].evidence, conflict: false, currencyConflict: false };
+    }
+    // A current-price selector with contradictory values is ambiguous: never
+    // choose one variant, responsive copy or promotion arbitrarily, and do not
+    // silently fall through to a stale metadata/JSON-LD amount.
+    if (observations.size > 1) {
+      const currencies = new Set([...observations.values()].map((row) => row.currency).filter(Boolean));
+      return { text: '', conflict: true, currencyConflict: currencyConflict || currencies.size > 1 };
+    }
+    if (currencyConflict) return { text: '', conflict: true, currencyConflict: true };
+  }
+  return { text: '', conflict: false, currencyConflict: false };
+}
+
+function consistentSaleFromOffers(offers: any[]): { price: number; currency: string } {
+  const rows = offers.flatMap((offer) => {
+    const type = String(offer?.['@type'] || '').toLowerCase();
+    if (type.includes('aggregateoffer')) return [];
+    const price = parsePrice(offer?.price);
+    const currency = String(offer?.priceCurrency || '').trim().toUpperCase();
+    return price > 0 ? [{ price, currency }] : [];
+  });
+  const unique = new Map(rows.map((row) => [`${row.price.toFixed(2)}|${row.currency}`, row]));
+  return unique.size === 1 ? [...unique.values()][0] : { price: 0, currency: '' };
+}
+
+function currencyFromOffers(offers: any[]): { currency: string; conflict: boolean } {
+  const currencies = new Set<string>();
+  for (const offer of offers) {
+    if (String(offer?.['@type'] || '').toLowerCase().includes('aggregateoffer')) continue;
+    if (!(parsePrice(offer?.price) > 0)) continue;
+    const currency = String(offer?.priceCurrency || '').trim().toUpperCase();
+    if (/^[A-Z]{3}$/.test(currency)) currencies.add(currency);
+  }
+  return { currency: currencies.size === 1 ? [...currencies][0] : '', conflict: currencies.size > 1 };
+}
+
 
 /**
  * NETTOYAGE DE DESCRIPTION (fix 24/09/2026 — captures client) : le DOM d'une
@@ -158,6 +286,11 @@ function currencyCode(raw: string): string {
   if (value.includes('£')) return 'GBP';
   if (value.includes('د.ت') || value.includes('DT')) return 'TND';
   if (value.includes('¥')) return 'JPY';
+  if (value.includes('₹')) return 'INR';
+  if (value.includes('₺')) return 'TRY';
+  if (value.includes('₽')) return 'RUB';
+  if (value.includes('₩')) return 'KRW';
+  if (value.includes('₪')) return 'ILS';
   if (value.includes('$')) return 'USD';
   return '';
 }
@@ -336,6 +469,20 @@ function flattenJsonLd(raw: any, output: any[] = []): any[] {
   return output;
 }
 
+/** Variants must descend from the actual ProductGroup, never from a related product in @graph. */
+function productVariantTreeNodes(root: any, output: any[] = [], seen = new Set<any>(), depth = 0): any[] {
+  if (!root || typeof root !== 'object' || seen.has(root) || depth > 5 || output.length >= 300) return output;
+  if (Array.isArray(root)) {
+    for (const item of root.slice(0, 120)) productVariantTreeNodes(item, output, seen, depth + 1);
+    return output;
+  }
+  seen.add(root);
+  if (isProductNode(root)) output.push(root);
+  const variants = Array.isArray(root.hasVariant) ? root.hasVariant : root.hasVariant ? [root.hasVariant] : [];
+  for (const variant of variants.slice(0, 120)) productVariantTreeNodes(variant, output, seen, depth + 1);
+  return output;
+}
+
 /* ── CHAMPS ÉTENDUS (Phase 2.5) — lecture et bornage ─────────────────────── */
 
 /**
@@ -417,6 +564,77 @@ function isOfferNode(node: any): boolean {
   return type === 'Offer' || type === 'AggregateOffer' || (Array.isArray(type) && (type.includes('Offer') || type.includes('AggregateOffer')));
 }
 
+function selectNativeProductNode(nodes: any[], baseUrl: string, document: Document): any {
+  const normalize = (raw: unknown) => String(raw || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+  const products: any[] = [];
+  const seenObjects = new Set<any>();
+  const seenIdentities = new Set<string>();
+  for (const node of nodes) {
+    if (!isProductNode(node) || seenObjects.has(node)) continue;
+    seenObjects.add(node);
+    const identity = normalize(node?.productGroupID || node?.sku || node?.productID || node?.url || node?.['@id']);
+    if (identity && seenIdentities.has(identity)) continue;
+    if (identity) seenIdentities.add(identity);
+    products.push(node);
+  }
+  if (!products.length) return {};
+  const expectedNames = [
+    document.querySelector('h1')?.textContent,
+    document.querySelector('meta[property="og:title"]')?.getAttribute('content'),
+  ].map(normalize).filter((value) => value.length >= 8);
+  const pageIds = new Set<string>();
+  const addPageId = (raw: unknown) => {
+    const value = normalize(raw);
+    if (value.length >= 5) pageIds.add(value);
+  };
+  try {
+    const pageUrl = new URL(baseUrl);
+    [pageUrl.searchParams.get('goods_id'), pageUrl.searchParams.get('goodsId'), pageUrl.searchParams.get('productId')].forEach(addPageId);
+    const path = pageUrl.pathname;
+    const pathId = /shein/i.test(pageUrl.hostname) ? path.match(/-p-(\d+)/i)?.[1]
+      : /temu/i.test(pageUrl.hostname) ? path.match(/(?:goods-[^/]*?-|(?:^|\/)g-)(\d{6,})\.html$/i)?.[1]
+        : /aliexpress/i.test(pageUrl.hostname) ? path.match(/\/(?:item|i)\/(\d{6,})\.html$/i)?.[1]
+          : path.match(/-([a-z0-9]{5,}-[a-z0-9]{2,})\.html$/i)?.[1];
+    addPageId(pathId);
+  } catch { /* base URL is validated by the calling adapter */ }
+
+  const normalizeUrl = (raw: unknown): string => {
+    if (!String(raw || '').trim()) return '';
+    try {
+      const value = new URL(String(raw), baseUrl);
+      return `${value.hostname.toLowerCase().replace(/^www\./, '')}${value.pathname.replace(/\/+$/, '')}`;
+    } catch { return ''; }
+  };
+  const currentUrl = normalizeUrl(baseUrl);
+  const ranked = products.map((product) => {
+    const types = Array.isArray(product?.['@type']) ? product['@type'] : [product?.['@type']];
+    const isGroup = types.some((type: unknown) => String(type).toLowerCase() === 'productgroup');
+    const productUrls = [product?.url, product?.['@id']];
+    const exactUrl = productUrls.some((url) => currentUrl && normalizeUrl(url) === currentUrl);
+    const candidateIds = [product?.sku, product?.productID, product?.productGroupID, product?.mpn, product?.gtin, product?.gtin13];
+    const variants = Array.isArray(product?.hasVariant) ? product.hasVariant : product?.hasVariant ? [product.hasVariant] : [];
+    for (const variant of variants.slice(0, 120)) candidateIds.push(variant?.sku, variant?.productID, variant?.mpn);
+    const idMatch = candidateIds.some((id) => {
+      const normalized = normalize(id);
+      return normalized.length >= 5 && pageIds.has(normalized);
+    });
+    const name = normalize(product?.name);
+    const nameMatch = expectedNames.some((expected) => expected === name
+      || (Math.min(expected.length, name.length) >= 12 && (expected.includes(name) || name.includes(expected))));
+    const score = (exactUrl ? 1_000 : 0) + (idMatch ? 500 : 0) + (nameMatch ? 200 : 0)
+      + (isGroup && variants.length ? 50 : 0) + (product?.offers ? 5 : 0);
+    return { product, score, isGroup, hasVariants: variants.length > 0 };
+  }).sort((a, b) => b.score - a.score);
+  if (ranked[0]?.score > 0 && ranked[1]?.score !== ranked[0].score) return ranked[0].product;
+  if (ranked[0]?.score > 0 && ranked[1]?.score === ranked[0].score) {
+    const tiedGroups = ranked.filter((candidate) => candidate.score === ranked[0].score && candidate.isGroup && candidate.hasVariants);
+    return tiedGroups.length === 1 ? tiedGroups[0].product : {};
+  }
+  const variantGroups = ranked.filter((candidate) => candidate.isGroup && candidate.hasVariants);
+  if (variantGroups.length === 1) return variantGroups[0].product;
+  return products.length === 1 ? products[0] : {};
+}
+
 /** Tous les Offer JSON-LD (y compris imbriqués), pour un prix Zalando qui n'est pas sur le ProductGroup. */
 function collectJsonLdOffers(nodes: any[]): any[] {
   const offers: any[] = [];
@@ -427,6 +645,19 @@ function collectJsonLdOffers(nodes: any[]): any[] {
     else if (nested && typeof nested === 'object') offers.push(nested);
   }
   return offers;
+}
+
+function collectProductOffers(product: any, output: any[] = [], seen = new Set<any>(), depth = 0): any[] {
+  if (!product || typeof product !== 'object' || seen.has(product) || depth > 5 || output.length >= 300) return output;
+  seen.add(product);
+  const offers = Array.isArray(product.offers) ? product.offers : product.offers ? [product.offers] : [];
+  for (const offer of offers.slice(0, 30)) {
+    if (offer && typeof offer === 'object') output.push(offer);
+    if (output.length >= 300) break;
+  }
+  const variants = Array.isArray(product.hasVariant) ? product.hasVariant : product.hasVariant ? [product.hasVariant] : [];
+  for (const variant of variants.slice(0, 120)) collectProductOffers(variant, output, seen, depth + 1);
+  return output;
 }
 
 function saleFromOffers(offers: any[]): { price: number; currency: string } {
@@ -545,7 +776,7 @@ function variantAttributeKey(raw: unknown): string {
     .slice(0, 40);
 }
 
-function variantsFromProduct(product: any): ProductVariantDetail[] {
+function variantsFromProduct(product: any, includeNamedOptions = false): ProductVariantDetail[] {
   if (!Array.isArray(product?.variants)) return [];
   const names = optionNames(product);
   const details: ProductVariantDetail[] = [];
@@ -581,7 +812,7 @@ function variantsFromProduct(product: any): ProductVariantDetail[] {
       if (combo.size) size = size || combo.size;
       if (combo.color) color = color || combo.color;
     }
-    if (!size && !color) continue;
+    if (!size && !color && !(includeNamedOptions && Object.keys(attributes).length)) continue;
     const price = variantPrice(variant);
     details.push({
       id: String(variant.id ?? variant.sku ?? '').trim() || null,
@@ -604,6 +835,69 @@ function variantsFromProduct(product: any): ProductVariantDetail[] {
     seen.add(key);
     return true;
   }).slice(0, 120);
+}
+
+function variantsFromJsonLd(nodes: any[]): ProductVariantDetail[] {
+  const products = nodes.filter(isProductNode);
+  const variants = products.filter((node) => node?.isVariantOf || node?.productGroupID || node?.size || node?.color
+    || node?.additionalProperty || node?.sku && products.some((candidate) => Array.isArray(candidate?.hasVariant)));
+  const details: ProductVariantDetail[] = [];
+  for (const product of variants.slice(0, 120)) {
+    const attributes: Record<string, string> = {};
+    const readValue = (raw: any): string => cleanLabel(
+      raw && typeof raw === 'object' ? raw.name ?? raw.value ?? raw['@value'] ?? '' : raw,
+    );
+    const directAttributes: Array<[string, unknown]> = [
+      ['size', product.size], ['color', product.color], ['model', product.model],
+      ['style', product.style], ['material', product.material], ['pattern', product.pattern],
+      ['capacity', product.capacity], ['format', product.format], ['width', product.width],
+    ];
+    for (const [key, raw] of directAttributes) {
+      const value = readValue(raw);
+      if (value) attributes[key] = value;
+    }
+    const properties = Array.isArray(product.additionalProperty) ? product.additionalProperty
+      : product.additionalProperty ? [product.additionalProperty] : [];
+    for (const property of properties.slice(0, 20)) {
+      const key = variantAttributeKey(property?.name || property?.propertyID);
+      const value = readValue(property?.value);
+      if (key && value && !['__proto__', 'prototype', 'constructor'].includes(key)) attributes[key] = value;
+    }
+    if (!Object.keys(attributes).length) continue;
+
+    const rawOffers = Array.isArray(product.offers) ? product.offers : product.offers ? [product.offers] : [];
+    const offerRows = rawOffers.flatMap((offer: any) => {
+      const type = String(offer?.['@type'] || '').toLowerCase();
+      if (type.includes('aggregateoffer')) return [];
+      const price = parsePrice(offer?.price);
+      const availability = String(offer?.availability || '').toLowerCase();
+      const stock = /(?:^|\/)instock$/.test(availability) ? true
+        : /(?:^|\/)outofstock$/.test(availability) ? false : null;
+      return [{ price, stock }];
+    });
+    const prices: number[] = [...new Set<number>(offerRows.map((offer: any) => Number(offer.price)).filter((price: number) => price > 0))];
+    const stocks: boolean[] = [...new Set<boolean>(
+      offerRows.map((offer: any) => offer.stock).filter((stock: boolean | null): stock is boolean => stock !== null),
+    )];
+    const label = readValue(product.name) || Object.values(attributes).join(' · ');
+    details.push({
+      id: cleanLabel(product.sku || product.productID || product.mpn) || null,
+      label,
+      size: attributes.size || null,
+      color: attributes.color || null,
+      attributes,
+      available: true,
+      stock: stocks.length === 1 && offerRows.every((offer: any) => offer.stock !== null) ? stocks[0] : null,
+      price: prices.length === 1 ? prices[0] : null,
+    });
+  }
+  const seen = new Set<string>();
+  return details.filter((detail) => {
+    const key = `${JSON.stringify(detail.attributes)}|${detail.price || ''}`.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 function collectNamedStrings(root: any, matcher: RegExp, output: string[], depth = 0, seen = new Set<any>()): void {
@@ -670,13 +964,21 @@ function absoluteImages(values: unknown[], baseUrl: string): string[] {
   return output;
 }
 
-function availabilityFrom(productLd: any, embeddedProduct: any): ParsedProductPage['availability'] {
+function availabilityFrom(
+  productLd: any,
+  embeddedProduct: any,
+  publishedOffers: any[] = [],
+  includeEmbeddedVariantStock = true,
+): ParsedProductPage['availability'] {
   // An extracted size/color is a manual choice, not positive stock evidence.
-  const variants = Array.isArray(embeddedProduct?.variants) ? embeddedProduct.variants : [];
+  // Native merchant variant lists are deliberately ignored here: without a
+  // linked selected combination, their boolean flags cannot describe this page.
+  const variants = includeEmbeddedVariantStock && Array.isArray(embeddedProduct?.variants) ? embeddedProduct.variants : [];
   const flags = variants.slice(0, 300).map(reportedVariantStock);
   const variantStock = flags.includes(true) ? 'in_stock'
     : flags.length && variants.length <= 300 && flags.every(flag => flag === false) ? 'out_of_stock' : 'unknown';
-  const offers = Array.isArray(productLd?.offers) ? productLd.offers : productLd?.offers ? [productLd.offers] : [];
+  const offers = publishedOffers.length ? publishedOffers
+    : Array.isArray(productLd?.offers) ? productLd.offers : productLd?.offers ? [productLd.offers] : [];
   if (offers.length > 300) return 'unknown'; // No certainty from a partial oversized offer collection.
   const known = new Set<ParsedProductPage['availability']>();
   let unreportedOffer = false;
@@ -691,6 +993,67 @@ function availabilityFrom(productLd: any, embeddedProduct: any): ParsedProductPa
   if (!schemaStock) return variantStock;
   if (variantStock !== 'unknown' && (variantStock === 'out_of_stock') !== (schemaStock === 'out_of_stock')) return 'unknown';
   return schemaStock; // In particular, keep an explicit limited-stock report.
+}
+
+function hasConflictingPublishedAvailability(offers: any[]): boolean {
+  if (offers.length > 300) return true;
+  const known = new Set<string>();
+  let unreportedOffer = false;
+  for (const offer of offers) {
+    const raw = typeof offer?.availability === 'string' ? offer.availability.trim() : '';
+    const match = /^(?:https?:\/\/schema\.org\/)?(InStock|OutOfStock|LimitedAvailability)$/i.exec(raw);
+    if (!match) unreportedOffer = true;
+    else known.add(match[1].toLowerCase());
+  }
+  return known.size > 1 || (known.size > 0 && unreportedOffer);
+}
+
+const STORE_AVAILABILITY_SELECTORS: Partial<Record<string, readonly string[]>> = {
+  shein: ['[data-testid*="availability" i]', '[data-testid*="stock" i]', '[class*="product-intro__stock" i]', '[class*="stock-status" i]', '[class*="sold-out" i]'],
+  temu: ['[data-testid*="availability" i]', '[data-testid*="sold-out" i]', '[class*="goods-status" i]', '[class*="stock-status" i]', '[class*="sold-out" i]'],
+  aliexpress: ['[data-testid*="availability" i]', '[data-pl*="quantity" i]', '[class*="product-quantity" i]', '[class*="stock-status" i]', '[class*="sold-out" i]'],
+  zalando: ['[data-testid*="availability" i]', '[data-testid*="stock" i]', '[class*="availability-message" i]', '[class*="product-status" i]', '[class*="sold-out" i]'],
+};
+
+function availabilityFromMerchantDom(document: Document, storeType: string): ParsedProductPage['availability'] {
+  const selectors = STORE_AVAILABILITY_SELECTORS[storeType] || [];
+  const statuses = new Set<ParsedProductPage['availability']>();
+  for (const selector of selectors) {
+    let nodes: Element[] = [];
+    try { nodes = Array.from(document.querySelectorAll(selector)).slice(0, 12); } catch { continue; }
+    for (const node of nodes) {
+      let excluded = false;
+      let parent: Element | null = node;
+      for (let depth = 0; parent && depth < 7; depth += 1, parent = parent.parentElement) {
+        const descriptor = `${parent.id || ''} ${typeof parent.className === 'string' ? parent.className : ''}`;
+        if (/sponsor|advert|recommend|related|carousel|cross.?sell|upsell/i.test(descriptor)
+          || parent.hasAttribute('hidden') || parent.getAttribute('aria-hidden') === 'true') {
+          excluded = true;
+          break;
+        }
+      }
+      if (excluded) continue;
+      const raw = [
+        node.getAttribute('data-availability'), node.getAttribute('data-stock-status'),
+        node.getAttribute('aria-label'), node.getAttribute('title'), node.textContent,
+      ].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim().slice(0, 300);
+      if (!raw) continue;
+      if (/outofstock|out\s*of\s*stock|sold\s*out|unavailable|currently\s+unavailable|ausverkauft|nicht\s+verfügbar|rupture|épuis|indisponible/i.test(raw)) statuses.add('out_of_stock');
+      else if (/limitedavailability|limited\s*stock|low\s*stock|only\s*\d+\s*left|nur\s+noch\s*\d+|nur\s+wenige\s+verfügbar|plus\s+que\s*\d+/i.test(raw)) statuses.add('limited');
+      else if (/instock|in\s*stock|available|lieferbar|verfügbar|en\s+stock|disponible/i.test(raw)) statuses.add('in_stock');
+    }
+    if (statuses.size > 1) return 'unknown';
+  }
+  return statuses.size === 1 ? [...statuses][0] : 'unknown';
+}
+
+function combineMerchantAvailability(
+  structured: ParsedProductPage['availability'],
+  dom: ParsedProductPage['availability'],
+): ParsedProductPage['availability'] {
+  if (structured === 'unknown') return dom;
+  if (dom === 'unknown' || structured === dom) return structured;
+  return 'unknown';
 }
 
 function amazonAvailability(
@@ -738,6 +1101,7 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
     const document = dom.window.document;
     const meta = (selector: string) => document.querySelector(selector)?.getAttribute('content')?.trim() || '';
     const text = (selector: string) => document.querySelector(selector)?.textContent?.replace(/\s+/g, ' ').trim() || '';
+    const nativeMerchantPage = AYWEBS_NATIVE_STORES.has(storeType);
 
     /* AMAZON (04/10/2026) — lu AVANT le nettoyage DOM ci-dessous, et depuis le
      * HTML ORIGINAL pour le twister : le nettoyage retire les <script> non-DATA,
@@ -760,7 +1124,9 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
     for (const node of Array.from(document.querySelectorAll('script[type="application/ld+json"]')).slice(0, 30)) {
       try { flattenJsonLd(JSON.parse(node.textContent || 'null'), jsonLd); } catch { /* malformed merchant JSON-LD */ }
     }
-    const productLd = jsonLd.find((node) => isProductNode(node) && (node.offers || node.hasVariant)) || jsonLd.find(isProductNode) || {};
+    const productLd = nativeMerchantPage
+      ? selectNativeProductNode(jsonLd, baseUrl, document)
+      : jsonLd.find((node) => isProductNode(node) && (node.offers || node.hasVariant)) || jsonLd.find(isProductNode) || {};
 
     const embeddedProducts: any[] = [];
     for (const node of Array.from(document.querySelectorAll('script[type="application/json"]')).slice(0, 40)) {
@@ -779,10 +1145,55 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
         if (parsed) collectEmbeddedProducts(parsed, embeddedProducts, new Set(), { value: 20_000 });
       }
     }
-    const embeddedProduct = embeddedProducts.sort((a, b) => {
+    const embeddedProduct = (() => {
       const score = (item: any) => (item?.title || item?.name ? 10 : 0) + Math.min(20, item?.variants?.length || 0) + (item?.options ? 5 : 0);
-      return score(b) - score(a);
-    })[0] || null;
+      if (!embeddedProducts.length) return null;
+      if (!nativeMerchantPage) return [...embeddedProducts].sort((a, b) => score(b) - score(a))[0] || null;
+
+      // Some merchant states include recommendations in the same JSON payload.
+      // For the four native adapters, only attach a variant tree that matches
+      // the page's published product name or identifiers; never pick the largest
+      // unrelated recommendation as if it belonged to the current product.
+      const normalizeIdentity = (raw: unknown) => String(raw || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+      const expectedNames = [productLd?.name, meta('meta[property="og:title"]'), text('h1')]
+        .map(normalizeIdentity).filter((value) => value.length >= 8);
+      const expectedIds = new Set<string>();
+      const addExpectedId = (raw: unknown) => {
+        const value = normalizeIdentity(raw);
+        if (value.length >= 5) expectedIds.add(value);
+      };
+      [productLd?.sku, productLd?.productID, productLd?.productGroupID].forEach(addExpectedId);
+      const groupVariants = Array.isArray(productLd?.hasVariant) ? productLd.hasVariant : productLd?.hasVariant ? [productLd.hasVariant] : [];
+      for (const variant of groupVariants.slice(0, 120)) [variant?.sku, variant?.productID, variant?.mpn].forEach(addExpectedId);
+      try {
+        const pageUrl = new URL(baseUrl);
+        [pageUrl.searchParams.get('goods_id'), pageUrl.searchParams.get('goodsId'), pageUrl.searchParams.get('productId')].forEach(addExpectedId);
+        const path = pageUrl.pathname;
+        const pathId = storeType === 'shein' ? path.match(/-p-(\d+)/i)?.[1]
+          : storeType === 'temu' ? path.match(/(?:goods-[^/]*?-|(?:^|\/)g-)(\d{6,})\.html$/i)?.[1]
+            : storeType === 'aliexpress' ? path.match(/\/(?:item|i)\/(\d{6,})\.html$/i)?.[1]
+              : path.match(/-([a-z0-9]{5,}-[a-z0-9]{2,})\.html$/i)?.[1];
+        addExpectedId(pathId);
+      } catch { /* invalid URL was rejected by the adapter before parsing */ }
+
+      const ranked = embeddedProducts.map((item) => {
+        const candidateIds = [item?.id, item?.sku, item?.productId, item?.product_id, item?.handle, item?.barcode];
+        for (const variant of Array.isArray(item?.variants) ? item.variants.slice(0, 120) : []) {
+          candidateIds.push(variant?.id, variant?.sku, variant?.productId, variant?.product_id);
+        }
+        const identityMatch = candidateIds.some((value) => {
+          const normalized = normalizeIdentity(value);
+          return normalized.length >= 5 && expectedIds.has(normalized);
+        });
+        const candidateName = normalizeIdentity(item?.title || item?.name);
+        const nameMatch = expectedNames.some((name) => name === candidateName
+          || (Math.min(name.length, candidateName.length) >= 12 && (name.includes(candidateName) || candidateName.includes(name))));
+        return { item, matchScore: identityMatch ? 200 : nameMatch ? 100 : 0, fallbackScore: score(item) };
+      }).sort((a, b) => b.matchScore - a.matchScore || b.fallbackScore - a.fallbackScore);
+      if (ranked[0]?.matchScore > 0 && ranked[1]?.matchScore !== ranked[0].matchScore) return ranked[0].item;
+      if (ranked[0]?.matchScore > 0 && ranked[1]?.matchScore === ranked[0].matchScore) return null;
+      return embeddedProducts.length === 1 ? embeddedProducts[0] : null;
+    })();
 
     // HYGIÈNE DOM (fix 24/09/2026) : les <script>/<style> inline polluent tout
     // textContent (gaDataLayer, GTM…) — purgés APRÈS l'extraction des données
@@ -796,7 +1207,7 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
     let title = meta('meta[property="og:title"]') || meta('meta[name="twitter:title"]')
       || text('#productTitle, h1.product-title-word-break, h1, [class*="product-intro__name"], [class*="goods-name"]')
       || String(productLd?.name || embeddedProduct?.title || embeddedProduct?.name || document.title || '');
-    title = title.replace(/\s*\|\s*(SHEIN|Amazon|TEMU|AliExpress).*$/i, '')
+    title = title.replace(/\s*\|\s*(SHEIN|Amazon|TEMU|AliExpress|Zalando).*$/i, '')
       .replace(/\s*:\s*Amazon\.[a-z.]+/i, '').trim();
 
     const ldBrand = productLd?.brand?.name || (typeof productLd?.brand === 'string' ? productLd.brand : '') || embeddedProduct?.vendor || embeddedProduct?.brand || '';
@@ -823,7 +1234,9 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
        VARIANTE, pas sur le groupe : on lit donc la liste ordonnée
        [produit principal, …autres nœuds Product], premier champ publié gagnant.
        Aucune fusion entre produits, aucune valeur prise à un autre article. */
-    const extendedLd: any[] = [productLd, ...jsonLd.filter((node) => isProductNode(node))];
+    const extendedLd: any[] = nativeMerchantPage
+      ? productVariantTreeNodes(productLd)
+      : [productLd, ...jsonLd.filter((node) => isProductNode(node))];
     const ldField = (keys: string[]): any => {
       for (const node of extendedLd) {
         for (const key of keys) {
@@ -912,18 +1325,33 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
     const ratingFinal = rating ?? normalizeRating(markerRating);
     const reviewCountFinal = reviewCount ?? normalizeReviewCount(markerReview);
 
-    const ldOffers = collectJsonLdOffers(jsonLd);
+    const ldOffers = nativeMerchantPage ? collectProductOffers(productLd) : collectJsonLdOffers(jsonLd);
     const offers = ldOffers[0] || (Array.isArray(productLd?.offers) ? productLd.offers[0] : productLd?.offers);
-    const ldSale = saleFromOffers(ldOffers);
+    const metaCurrency = meta('meta[property="product:price:currency"]') || meta('meta[property="og:price:currency"]');
+    // A ProductGroup may publish one Offer per size/color. For the four AYWEBs
+    // integrations, a range/minimum is not the current selection's price: accept
+    // structured data only when every published offer agrees on amount + currency.
+    const ldSale = nativeMerchantPage ? consistentSaleFromOffers(ldOffers) : saleFromOffers(ldOffers);
+    const nativePriceEvidence = nativeMerchantPage
+      ? merchantCurrentPriceEvidence(document, storeType, metaCurrency)
+      : { text: '', conflict: false, currencyConflict: false };
     const selectorPrice = storeType === 'amazon'
       ? text('.apexPriceToPay .a-offscreen, #corePriceDisplay_desktop_feature_div .a-price:not(.a-text-price) .a-offscreen, #priceblock_dealprice, #newBuyBoxPrice')
-      : storeType === 'shein'
-        ? text('[class*="price"]:not([style*="line-through"])')
+      : nativeMerchantPage
+        ? nativePriceEvidence.text
         : text('[itemprop="price"], [data-price], [class*="price"]');
     // Amazon : la lecture dédiée remplace le sélecteur historique, qui ne pouvait
     // pas voir un prix éclaté en spans `a-price-whole`/`a-price-fraction`.
     const amazonPriceText = amazon?.price.current || '';
-    const details = variantsFromProduct(embeddedProduct);
+    const details = variantsFromProduct(embeddedProduct, nativeMerchantPage);
+    const structuredVariantDetails = nativeMerchantPage ? variantsFromJsonLd(productVariantTreeNodes(productLd)) : [];
+    const seenDetailKeys = new Set(details.map((detail) => `${JSON.stringify(detail.attributes || {})}|${detail.price || ''}`.toLowerCase()));
+    for (const detail of structuredVariantDetails) {
+      const key = `${JSON.stringify(detail.attributes || {})}|${detail.price || ''}`.toLowerCase();
+      if (seenDetailKeys.has(key)) continue;
+      seenDetailKeys.add(key);
+      details.push(detail);
+    }
     if (amazon?.variants.details.length) {
       const seen = new Set(details.map((detail) => `${detail.size || ''}|${detail.color || ''}|${detail.label}`));
       for (const detail of amazon.variants.details) {
@@ -934,7 +1362,9 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
       }
     }
     const detailPrices = details.map((detail) => detail.price || 0).filter((value) => value > 0);
-    const jsonLdPrice = ldSale.price || parsePrice(offers?.price || offers?.lowPrice);
+    const jsonLdPrice = nativeMerchantPage
+      ? ldSale.price
+      : ldSale.price || parsePrice(offers?.price || offers?.lowPrice);
     const metaPrice = parsePrice(
       meta('meta[property="product:price:amount"]') || meta('meta[property="og:price:amount"]') || meta('meta[itemprop="price"]'),
     );
@@ -945,44 +1375,87 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
     /* Structured product offers are the authoritative source. Do not compare
        unrelated page numbers and pick the smallest one: meta/DOM values can be
        instalments, accessories or stale theme data. Fall through only when the
-       stronger source is absent. */
-    const price = jsonLdPrice || metaPrice || domPrice || variantFloor || regexPrice?.price || 0;
-    const priceSource: ParsedProductPage['priceSource'] = jsonLdPrice && price === jsonLdPrice ? 'json_ld'
-      : metaPrice && price === metaPrice ? 'meta'
-        : jsonLdPrice ? 'json_ld'
-      : metaPrice ? 'meta'
-        : domPrice ? 'dom'
-          : variantFloor ? 'embedded_variant'
-            : regexPrice ? 'context_regex'
-              : 'none';
+       stronger source is absent. Store-specific pages require all available
+       direct price sources to agree; a ProductGroup's cheapest variant is not
+       the price of the selection currently shown in the browser. */
+    const nativePriceRows = [
+      { value: jsonLdPrice, source: 'json_ld' as const },
+      { value: metaPrice, source: 'meta' as const },
+      { value: domPrice, source: 'dom' as const },
+    ].filter((row) => row.value > 0);
+    const offerCurrency = nativeMerchantPage ? currencyFromOffers(ldOffers) : { currency: '', conflict: false };
+    const domCurrencyCode = (selectorPrice.toUpperCase().match(/\b[A-Z]{3}\b/) || [])[0] || '';
+    const nativeCurrencyCodes = new Set([
+      ldSale.currency,
+      offerCurrency.currency,
+      metaCurrency,
+      domCurrencyCode,
+    ].map((value) => String(value || '').trim().toUpperCase()).filter((value) => /^[A-Z]{3}$/.test(value)));
+    const domCurrencyHints = checkPriceText(selectorPrice).currencyHints;
+    const nativeCurrencyConflict = nativeMerchantPage && (
+      offerCurrency.conflict
+      || nativePriceEvidence.currencyConflict
+      || nativeCurrencyCodes.size > 1
+      || (domCurrencyHints.length > 0 && [...nativeCurrencyCodes].some((currency) => !domCurrencyHints.includes(currency)))
+    );
+    const nativePriceConflict = nativeMerchantPage && (
+      nativePriceEvidence.conflict
+      || new Set(nativePriceRows.map((row) => row.value.toFixed(2))).size > 1
+      || nativeCurrencyConflict
+    );
+    const price = nativeMerchantPage
+      ? nativePriceConflict ? 0 : jsonLdPrice || metaPrice || domPrice
+      : jsonLdPrice || metaPrice || domPrice || variantFloor || regexPrice?.price || 0;
+    const nativeSource = nativePriceRows.find((row) => row.value === price)?.source;
+    const priceSource: ParsedProductPage['priceSource'] = nativeMerchantPage
+      ? nativePriceConflict || !nativeSource ? 'none' : nativeSource
+      : jsonLdPrice && price === jsonLdPrice ? 'json_ld'
+        : metaPrice && price === metaPrice ? 'meta'
+          : jsonLdPrice ? 'json_ld'
+            : metaPrice ? 'meta'
+              : domPrice ? 'dom'
+                : variantFloor ? 'embedded_variant'
+                  : regexPrice ? 'context_regex'
+                    : 'none';
     /* Télémétrie honnête (Phase 0) : quand aucun prix n'est publiable, garder
        POURQUOI — un montant dupliqué/ambigu (« $6.99$6.99 ») n'est pas la même
        panne qu'une page sans prix, et le support doit pouvoir le distinguer. */
     const rejectedPriceCandidates = [amazonPriceText, selectorPrice].filter((candidate) => String(candidate || '').trim());
     const priceRejection: PriceRejectionReason | null = price > 0
       ? null
-      : rejectedPriceCandidates.length
-        ? priceRejectionOf(rejectedPriceCandidates[0])
-        : 'EMPTY';
-    const metaCurrency = meta('meta[property="product:price:currency"]') || meta('meta[property="og:price:currency"]');
+      : nativePriceConflict
+        ? 'MULTIPLE_AMOUNTS'
+        : rejectedPriceCandidates.length
+          ? priceRejectionOf(rejectedPriceCandidates[0])
+          : 'EMPTY';
+    const pageOfferCurrency = nativeMerchantPage ? offerCurrency.currency : '';
+    const fallbackOfferCurrency = nativeMerchantPage ? pageOfferCurrency : String(offers?.priceCurrency || '');
     const currencyEvidenceBySource: Record<ParsedProductPage['priceSource'], string> = {
-      json_ld: String(ldSale.currency || offers?.priceCurrency || metaCurrency || ''),
-      meta: String(metaCurrency || offers?.priceCurrency || ''),
+      json_ld: String(ldSale.currency || fallbackOfferCurrency || metaCurrency || ''),
+      meta: String(metaCurrency || fallbackOfferCurrency || ''),
       // Prefer explicit ISO codes; a bare '$' or '¥' is ambiguous and is not a quote currency.
-      dom: String(metaCurrency || offers?.priceCurrency
+      dom: String(metaCurrency || fallbackOfferCurrency
         || (amazon?.extras.currencyVerified ? amazon.extras.currency : '')
         || selectorPrice || amazonPriceText || ''),
-      embedded_variant: String(embeddedProduct?.currency || metaCurrency || offers?.priceCurrency || ''),
-      context_regex: String(regexPrice?.currencyEvidence || metaCurrency || offers?.priceCurrency || ''),
-      none: String(metaCurrency || offers?.priceCurrency || embeddedProduct?.currency || ''),
+      embedded_variant: String(embeddedProduct?.currency || metaCurrency || fallbackOfferCurrency || ''),
+      context_regex: String(regexPrice?.currencyEvidence || metaCurrency || fallbackOfferCurrency || ''),
+      none: String(metaCurrency || fallbackOfferCurrency || embeddedProduct?.currency || ''),
     };
     const currencyEvidence = currencyEvidenceBySource[priceSource];
     const normalizedCurrencyEvidence = String(currencyEvidence || '').trim().toUpperCase();
     const parsedCurrencyCode = currencyCode(currencyEvidence);
-    const currencyVerified = /\b[A-Z]{3}\b/.test(normalizedCurrencyEvidence)
+    const currencyVerified = !nativeCurrencyConflict && (
+      /\b[A-Z]{3}\b/.test(normalizedCurrencyEvidence)
       || (parsedCurrencyCode === 'EUR' && normalizedCurrencyEvidence.includes('€'))
       || (parsedCurrencyCode === 'GBP' && normalizedCurrencyEvidence.includes('£'))
-      || (parsedCurrencyCode === 'TND' && normalizedCurrencyEvidence.includes('د.ت'));
+      || (parsedCurrencyCode === 'TND' && normalizedCurrencyEvidence.includes('د.ت'))
+      || (nativeMerchantPage && parsedCurrencyCode === 'USD' && /\bUS\s?\$/i.test(normalizedCurrencyEvidence))
+      || (nativeMerchantPage && parsedCurrencyCode === 'INR' && normalizedCurrencyEvidence.includes('₹'))
+      || (nativeMerchantPage && parsedCurrencyCode === 'TRY' && normalizedCurrencyEvidence.includes('₺'))
+      || (nativeMerchantPage && parsedCurrencyCode === 'RUB' && normalizedCurrencyEvidence.includes('₽'))
+      || (nativeMerchantPage && parsedCurrencyCode === 'KRW' && normalizedCurrencyEvidence.includes('₩'))
+      || (nativeMerchantPage && parsedCurrencyCode === 'ILS' && normalizedCurrencyEvidence.includes('₪'))
+    );
     // Return a currency code only when the source evidence is authoritative.
     // In particular, `currencyCode('$') === 'USD'` is a guess, not evidence.
     const currency = currencyVerified ? parsedCurrencyCode || normalizedCurrencyEvidence : '';
@@ -1144,6 +1617,13 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
       const only = colors[0].toLocaleLowerCase();
       colorImages[only] = [...new Set([...(colorImages[only] || []), ...images])].slice(0, 48);
     }
+    const structuredAvailability = amazon?.availability
+      || availabilityFrom({ ...productLd, offers: (ldOffers.length ? ldOffers : productLd?.offers) }, embeddedProduct, ldOffers, !nativeMerchantPage);
+    const structuredAvailabilityConflict = nativeMerchantPage && hasConflictingPublishedAvailability(ldOffers);
+    const merchantAvailability = nativeMerchantPage
+      ? structuredAvailabilityConflict ? 'unknown'
+        : combineMerchantAvailability(structuredAvailability, availabilityFromMerchantDom(document, storeType))
+      : structuredAvailability;
 
     return {
       title,
@@ -1155,7 +1635,7 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
       originalPrice,
       images,
       colorImages,
-      externalId: String(productLd?.sku || productLd?.productID || embeddedProduct?.id || embeddedProduct?.sku || ''),
+      externalId: String(productLd?.sku || productLd?.productID || productLd?.productGroupID || embeddedProduct?.id || embeddedProduct?.sku || ''),
       /* Phase 2.5 — les champs étendus sortent TELLS QUELS (ou absents). */
       gtin: gtin || undefined,
       sku: skuFinal || undefined,
@@ -1165,11 +1645,10 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
       reviewCount: reviewCountFinal,
       variants: { sizes, colors, details },
     availability: amazonAvailability(
-      // Amazon publie son état dans `#availability` (« In Stock », « Only 3 left »).
-      // Quand la page ne dit RIEN, on garde la valeur calculée ailleurs : `null`
-      // n'écrase jamais une information, il signifie « non publié ».
-      amazon?.availability
-        || availabilityFrom({ ...productLd, offers: (ldOffers.length ? ldOffers : productLd?.offers) }, embeddedProduct),
+      // Amazon publie son état dans `#availability`; les quatre autres adapters
+      // utilisent des marqueurs de disponibilité produit, sans déduire le stock
+      // d'un simple bouton actif ni des listes séparées de tailles/couleurs.
+      merchantAvailability,
       document.body?.textContent || '',
       storeType,
     ),

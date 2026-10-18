@@ -87,6 +87,8 @@ export interface AyWebsCapturedPage {
   canonicalUrl?: string | null;
   /** Titre affiché (og:title / <title> / JSON-LD name) — texte brut. */
   title?: string | null;
+  /** Description publiée par JSON-LD ou les meta tags, jamais synthétisée. */
+  description?: string | null;
   brand?: string | null;
   /** 1 à 5 textes de prix lus (JSON-LD, meta, DOM… ; certains sont des paires liées). */
   priceCandidates: AyWebsCapturedPriceCandidate[];
@@ -103,8 +105,9 @@ export interface AyWebsCapturedPage {
   /** Options publiées par la page (libellés bruts, bornés). */
   variantTexts?: string[];
   /**
-   * Groupes Amazon structurés lus dans le twister. Ces libellés ne prouvent ni
-   * le prix ni le stock ; l'état de chaque choix doit être recapturé sur la page.
+   * Groupes d'options structurés lus dans les contrôles produit des boutiques
+   * prises en charge. Ces libellés ne prouvent ni le prix ni le stock ; l'état
+   * de chaque choix doit être recapturé sur la page.
    */
   variantGroups?: AyWebsCapturedVariantGroup[];
   /** Valeurs actuellement sélectionnées et visibles par dimension, si lisibles. */

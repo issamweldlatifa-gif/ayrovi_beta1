@@ -288,8 +288,12 @@ export async function resolveAyWebsProduct(
   const cached = cacheAllowed ? readAyWebsResolveCache(deps.scraper, cacheKey, { allowStale: true }) : null;
   /* Mémo « fiche illisible » : une lecture SANS prix échoue en 13–17 s (sondes
      vouées à l'échec). Le mémo, séparé et à TTL court (90 s), évite de repayer
-     ce coût à chaque réessai — sans jamais se faire passer pour un succès. */
-  const failedCached = cached ? null : readAyWebsResolveFailureCache(deps.scraper, cacheKey);
+     ce coût à chaque réessai — sans jamais se faire passer pour un succès.
+     Les captures/HTML clients ne sont pas des lectures serveur et ne doivent
+     jamais contaminer ce mémo ni le consulter comme s'il s'agissait d'un échec réseau. */
+  const failedCached = cacheAllowed && !cached
+    ? readAyWebsResolveFailureCache(deps.scraper, cacheKey)
+    : null;
 
   let sourceProduct: AyWebsSourceProduct;
   let fromCache = false;
@@ -399,7 +403,7 @@ export async function resolveAyWebsProduct(
   /* Une lecture fraîche qui n'a pas su lire de prix est mémorisée 90 s : les
      réessais suivants répondent « prix non lu » en quelques ms au lieu de
      relancer 13–17 s de sondes. Le succès, lui, passe par le cache normal. */
-  const freshRead = !cached && !failedCached;
+  const freshRead = !captureUsed && !input.pageHtml && !cached && !failedCached;
   if (freshRead && missing.length) {
     writeAyWebsResolveFailureCache(deps.scraper, cacheKey, sourceProduct);
   }

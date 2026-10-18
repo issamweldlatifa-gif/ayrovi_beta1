@@ -636,27 +636,87 @@ export function buildAyWebsVariantSelectionInjection(
     var requestId=${id}, plan=${planJson}, reader=${scriptJson};
     function norm(value){return String(value||"").replace(/\s+/g," ").trim().toLowerCase();}
     function postError(){try{window.ReactNativeWebView.postMessage(JSON.stringify({type:"aywebs_capture_error",requestId:requestId}));}catch(e){}}
+    function isAmazon(){return /(^|\.)amazon\.[a-z]{2,3}(?:\.[a-z]{2})?$/i.test(String(location.hostname||""));}
+    function isNavigation(node){
+      for(var n=node,h=0;n&&h<6;h++,n=n.parentNode){
+        var tag=String(n.tagName||"").toLowerCase();
+        var descriptor=String((n.id||"")+" "+(n.className||"")).toLowerCase();
+        if(tag==="header"||tag==="nav"||/navbar|nav-|search|department/.test(descriptor))return true;
+        if(n.getAttribute&&n.getAttribute("role")==="search")return true;
+      }
+      return false;
+    }
+    function dimensionForText(raw){
+      var value=String(raw||"").toLowerCase().replace(/[_-]+/g," ");
+      var rules=[
+        ["size",/\b(size|sizes|taille|tailles|pointure|pointures|shoe size|größe|gr[oö]sse)\b/i],
+        ["color",/\b(color|colour|couleur|couleurs|farbe|coloris)\b/i],
+        ["capacity",/\b(capacity|capacite|capacité|volume|contenance)\b/i],
+        ["storage",/\b(storage|stockage|memory|mémoire|ram|ssd)\b/i],
+        ["model",/\b(model|modèle|modele|variant|variante)\b/i],
+        ["style",/\b(style|coupe|fit)\b/i],
+        ["pattern",/\b(pattern|motif|print)\b/i],
+        ["material",/\b(material|matière|matiere|fabric|tissu)\b/i],
+        ["format",/\b(format|edition|édition|type|bundle|lot)\b/i],
+        ["length",/\b(length|longueur)\b/i],
+        ["width",/\b(width|largeur)\b/i]
+      ];
+      for(var r=0;r<rules.length;r++)if(rules[r][1].test(value))return rules[r][0];
+      return "";
+    }
+    function genericDimension(node){
+      var parts=[];
+      for(var current=node,up=0;current&&up<3;up++,current=current.parentNode){
+        if(!current.getAttribute)continue;
+        var attrs=["data-attribute-name","data-attribute","data-dimension","data-dimension-name","data-variant-attribute","data-variant-name","aria-label","name","id","data-testid","class"];
+        for(var a=0;a<attrs.length;a++){var value=current.getAttribute(attrs[a]);if(value)parts.push(value);}
+        try{var labels=current.querySelectorAll("legend,label,[data-attribute-name],[data-dimension],[class*=title i],[class*=label i],[class*=name i]");for(var l=0;l<labels.length&&l<4;l++)if(labels[l].textContent)parts.push(labels[l].textContent);}catch(e){}
+      }
+      for(var p=0;p<parts.length;p++){var dimension=dimensionForText(parts[p]);if(dimension)return dimension;}
+      return "";
+    }
+    function hasOptionControls(node){
+      if(String(node.tagName||"").toLowerCase()==="select")return true;
+      try{return node.querySelectorAll('select option,[role="option"],[role="radio"],[data-attribute-value],[data-value],button,li[title],.sku-item,input[type="radio"]').length>0;}catch(e){return false;}
+    }
+    function genericContainer(item){
+      var root=document.querySelector('main,[role="main"],[itemtype*="Product" i]')||document.body;
+      var selectors='select,fieldset,[role="group"],[data-attribute-name],[data-attribute],[data-dimension],[data-dimension-name],[data-variant-attribute],[data-variant-name],[class*="sku-property" i],[class*="sku-prop" i],[class*="goods-sku" i],[class*="variant" i],[class*="swatch" i],[class*="size" i],[class*="taille" i],[class*="color" i],[class*="colour" i],[class*="couleur" i],[data-testid*="size" i],[data-testid*="color" i],[data-testid*="variant" i]';
+      var candidates=[];try{candidates=root.querySelectorAll(selectors);}catch(e){}
+      for(var i=0;i<candidates.length;i++){
+        var candidate=candidates[i];
+        if(isNavigation(candidate)||genericDimension(candidate)!==item.attribute||!hasOptionControls(candidate))continue;
+        return candidate;
+      }
+      return null;
+    }
     function getContainer(item){
-      var productRoot=document.querySelector('#dp-container')||document.querySelector('#ppd')||document.querySelector('#dp')||document.querySelector('#centerCol');
-      var root=productRoot&&productRoot.querySelector('#twister_feature_div,[data-feature-name="twister"]');
-      if(!root)return null;
-      var container=root.querySelector('[id="variation_'+item.sourceKey+'"]');
-      if(container)return container;
-      try{
-        container=root.querySelector('[data-dimension="'+item.sourceKey+'"],[data-dimension-name="'+item.sourceKey+'"]');
+      if(isAmazon()){
+        var productRoot=document.querySelector('#dp-container')||document.querySelector('#ppd')||document.querySelector('#dp')||document.querySelector('#centerCol');
+        var root=productRoot&&productRoot.querySelector('#twister_feature_div,[data-feature-name="twister"]');
+        if(!root)return null;
+        var container=root.querySelector('[id="variation_'+item.sourceKey+'"]');
         if(container)return container;
-      }catch(e){}
-      var current=root.querySelector('[id="inline-twister-expanded-dimension-text-'+item.sourceKey+'"]');
-      return current&&current.parentNode?current.parentNode:null;
+        try{
+          container=root.querySelector('[data-dimension="'+item.sourceKey+'"],[data-dimension-name="'+item.sourceKey+'"]');
+          if(container)return container;
+        }catch(e){}
+        var current=root.querySelector('[id="inline-twister-expanded-dimension-text-'+item.sourceKey+'"]');
+        return current&&current.parentNode?current.parentNode:null;
+      }
+      return genericContainer(item);
     }
     function labels(node){
       var values=[];
       if(!node)return values;
-      var attrs=["title","aria-label","data-attribute-value","data-value"];
+      var attrs=isAmazon()?["title","aria-label","data-attribute-value","data-value"]:["title","aria-label","data-attribute-value","data-value","data-size","data-color"];
       for(var a=0;a<attrs.length;a++){var attr=node.getAttribute&&node.getAttribute(attrs[a]);if(attr)values.push(attr);}
       var labelledBy=node.getAttribute&&node.getAttribute("aria-labelledby");
       if(labelledBy){var ref=document.getElementById(labelledBy.split(" ")[0]);if(ref)values.push(ref.textContent);}
       try{var textNode=node.querySelector(".a-button-text,.swatchText,[class*=dimension-text i],label");if(textNode)values.push(textNode.textContent);}catch(e){}
+      if(!isAmazon()&&String(node.tagName||"").toLowerCase()==="input"){
+        try{var parent=node.parentNode;if(parent&&String(parent.tagName||"").toLowerCase()==="label")values.push(parent.textContent);}catch(e){}
+      }
       if(node.textContent)values.push(node.textContent);
       return values;
     }
@@ -665,25 +725,30 @@ export function buildAyWebsVariantSelectionInjection(
       if(!node)return true;
       var aria=node.getAttribute&&node.getAttribute("aria-disabled");
       var klass=String(node.className||"").toLowerCase();
-      return node.disabled===true||aria==="true"||(node.getAttribute&&node.getAttribute("disabled")!==null)||/a-button-disabled|unavailable|out.of.stock/.test(klass);
+      return node.disabled===true||aria==="true"||(node.getAttribute&&node.getAttribute("disabled")!==null)
+        ||(isAmazon()?/a-button-disabled|unavailable|out.of.stock/.test(klass):/disabled|sold.?out|unavailable|out.of.stock/.test(klass));
     }
     function selected(node){
       if(!node)return false;
       if(node.selected===true)return true;
       var aria=node.getAttribute&&node.getAttribute("aria-checked");
       var ariaSelected=node.getAttribute&&node.getAttribute("aria-selected");
+      var ariaPressed=node.getAttribute&&node.getAttribute("aria-pressed");
+      var dataSelected=node.getAttribute&&node.getAttribute("data-selected");
       var klass=String(node.className||"").toLowerCase();
-      return aria==="true"||ariaSelected==="true"||/selected|swatchselect/.test(klass);
+      if(isAmazon())return aria==="true"||ariaSelected==="true"||/selected|swatchselect/.test(klass);
+      return aria==="true"||ariaSelected==="true"||ariaPressed==="true"||dataSelected==="true"||/(^|[ _-])(selected|active|current|is-checked|checked)([ _-]|$)|swatchselect/.test(klass);
     }
     function findSelected(container,item){
       var candidates=[];
-      try{candidates=container.querySelectorAll('select option:checked,[aria-checked="true"],[aria-selected="true"],.a-button-selected,li[class*="selected" i],button[class*="selected" i]');}catch(e){}
+      var selector=isAmazon()?'select option:checked,[aria-checked="true"],[aria-selected="true"],.a-button-selected,li[class*="selected" i],button[class*="selected" i]':'select option:checked,input[type="radio"]:checked,[aria-checked="true"],[aria-selected="true"],[aria-pressed="true"],[data-selected="true"],.a-button-selected,[class*="selected" i],[class*="active" i]';
+      try{candidates=container.querySelectorAll(selector);}catch(e){}
       for(var i=0;i<candidates.length;i++){if(textMatches(candidates[i],item.value))return true;}
       return false;
     }
     function selectValue(item){
       var container=getContainer(item);if(!container)return false;
-      var selects=[];try{selects=container.querySelectorAll("select");}catch(e){}
+      var selects=[];try{if(!isAmazon()&&String(container.tagName||"").toLowerCase()==="select")selects=[container];else selects=container.querySelectorAll("select");}catch(e){}
       for(var s=0;s<selects.length;s++){
         var options=selects[s].options||[];
         for(var o=0;o<options.length;o++){
@@ -695,7 +760,9 @@ export function buildAyWebsVariantSelectionInjection(
           return true;
         }
       }
-      var candidates=[];try{candidates=container.querySelectorAll('li,[role="radio"],[role="option"],button,.a-button,[data-attribute-value],[data-value]');}catch(e){}
+      var candidates=[];
+      var choiceSelector=isAmazon()?'li,[role="radio"],[role="option"],button,.a-button,[data-attribute-value],[data-value]':'li,[role="radio"],[role="option"],input[type="radio"],button,.a-button,[data-attribute-value],[data-value]';
+      try{candidates=container.querySelectorAll(choiceSelector);}catch(e){}
       for(var c=0;c<candidates.length;c++){
         var candidate=candidates[c];if(!textMatches(candidate,item.value))continue;
         if(disabled(candidate))return false;

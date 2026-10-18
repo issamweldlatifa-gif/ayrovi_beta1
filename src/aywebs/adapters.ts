@@ -4,7 +4,7 @@
  * Le contrat, la base partagée, les adaptateurs marchand et le registre vivent
  * désormais dans `./adapters/` (§8 du Master Order). Ce module ré-exporte le
  * contrat V1 — `AyWebsStoreAdapter`, `AyWebsCaptureError`,
- * `createAyWebsAdapter` et les quatre adaptateurs — afin que les routes
+ * `createAyWebsAdapter` et les cinq adaptateurs — afin que les routes
  * existantes et les tests en place continuent d'importer depuis le même chemin.
  */
 export {
@@ -27,6 +27,7 @@ export { AmazonAdapter } from './adapters/amazon';
 export { SheinAdapter } from './adapters/shein';
 export { TemuAdapter } from './adapters/temu';
 export { AliExpressAdapter } from './adapters/aliexpress';
+export { ZalandoAdapter } from './adapters/zalando';
 export {
   AYWEBS_ADAPTER_DESCRIPTORS,
   ayWebsAdapterDescriptor,
