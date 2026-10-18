@@ -218,6 +218,29 @@ describe('AYWEBs — lecteur Amazon : la zone d’achat seulement', () => {
     expect(validation.price).toBe(109);
   });
 
+  it('Amazon mobile : ignore le pourcentage ajouté au libellé accessible et lit le prix courant visible', () => {
+    const page = amazonPage(`
+      <span id="apex-pricetopay-accessibility-label" class="aok-offscreen">$179.98 with 10 percent savings</span>
+      <div id="corePriceDisplay_mobile_feature_div">
+        <span class="a-price priceToPay apex-pricetopay-value">
+          <span class="a-offscreen"></span>
+          <span aria-hidden="true">
+            <span class="a-price-symbol">$</span>
+            <span class="a-price-whole">179<span class="a-price-decimal">.</span></span>
+            <span class="a-price-fraction">98</span>
+          </span>
+        </span>
+      </div>`);
+    const { payload, validation } = captureFrom(page);
+
+    expect(payload.priceCandidates).toEqual([{ text: '$179.98', source: 'dom' }]);
+    expect(validation.ok).toBe(true);
+    expect(validation.price).toBe(179.98);
+    expect(validation.currency).toBe('USD');
+    expect(validation.currencyVerified).toBe(true);
+    expect(validation.priceVerified).toBe(false); // une lecture DOM reste non corroborée
+  });
+
   it('deux montants DISTINCTS dans la zone d’achat ⇒ abstention totale', () => {
     const page = amazonPage(`
       <span id="apex-pricetopay-accessibility-label" class="aok-offscreen"> $109.00 </span>

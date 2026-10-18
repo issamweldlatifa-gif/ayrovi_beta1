@@ -136,7 +136,10 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     if (!element) return '';
     var offscreen = '';
     try { var off = element.querySelector('.a-offscreen'); offscreen = text(off && off.textContent); } catch (e) {}
-    if (offscreen && HAS_DIGIT.test(offscreen)) return offscreen;
+    if (offscreen && HAS_DIGIT.test(offscreen)) {
+      var offscreenAmount = amazonSingleAmount(offscreen);
+      if (offscreenAmount) return offscreenAmount;
+    }
     var whole = '';
     var fraction = '';
     var symbol = '';
@@ -153,7 +156,9 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
       /* Pas de spans : l'étiquette d'accessibilité d'Amazon porte le prix en
          clair (« $109.00 ») — c'est une LECTURE, pas une reconstruction. */
       var ownText = text(element.textContent);
-      if (ownText && HAS_DIGIT.test(ownText) && CURRENCY_HINT.test(ownText) && ownText.length <= LIMITS.text) return ownText;
+      if (ownText && HAS_DIGIT.test(ownText) && ownText.length <= LIMITS.text) {
+        return amazonSingleAmount(ownText);
+      }
       return '';
     }
     return symbol + whole + (fraction ? '.' + fraction : '');
@@ -167,6 +172,22 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     if (!normalized) return false;
     if (/^(.{3,})\1$/.test(normalized)) return false;
     return true;
+  }
+  /**
+   * Amazon mobile peut enrichir l'étiquette d'accessibilité du prix avec un
+   * pourcentage (« $179.98 with 10 percent savings »). Ce n'est pas un deuxième
+   * prix : on extrait le montant seulement si aucun autre chiffre ne subsiste.
+   * Deux montants (prix + prix barré / remise) ⇒ l'étiquette est écartée ; le
+   * lecteur attend alors le prix courant dédié au sélecteur priceToPay.
+   */
+  function amazonSingleAmount(value) {
+    var raw = text(value);
+    if (!raw || !CURRENCY_HINT.test(raw)) return '';
+    var match = raw.match(/(?:[$\u20ac\u00a3\u00a5\uffe5]\s*)?\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{1,2})?(?:\s*[$\u20ac\u00a3\u00a5\uffe5]|\s*(?:EUR|USD|GBP|JPY|TND))?/i);
+    if (!match || !CURRENCY_HINT.test(match[0])) return '';
+    var rest = raw.slice(0, match.index) + raw.slice(match.index + match[0].length);
+    if (HAS_DIGIT.test(rest)) return '';
+    return text(match[0]);
   }
   /** Tous les produits publiés (JSON-LD) — mode Amazon : on choisit par ASIN. */
   function collectProducts(node, depth, list) {
