@@ -113,6 +113,12 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     for (var hops = 0; node && hops < 8; hops++) {
       var descriptor = String((node.id || '') + ' ' + (node.className || '')).toLowerCase();
       if (/sponsored|sp-sponsored|carousel|nav-assist|similar|recommendation|adplace|a-text-price|deal-badge|apex_desktop_right/.test(descriptor)) return true;
+      /* Offres annexes de la zone d'achat. Constaté sur une fiche US récupérée le
+         18/10/2026 (texte rendu, pas le DOM) : « Add a protection plan » avec
+         2-Year Protection Plan $39.99 et Complete Protect $16.99/month, affiché
+         dans la colonne d'achat. Ces prix ne sont pas le prix vendu : sans ce
+         filtre, deux montants distincts font abstenir le lecteur sur une fiche saine. */
+      if (/attach|protection|warranty|insurance|popover|a-modal|upsell|add-?on|cross-?sell/.test(descriptor)) return true;
       node = node.parentNode;
     }
     if (element.getAttribute) {
