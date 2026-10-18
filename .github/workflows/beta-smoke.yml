@@ -34,6 +34,10 @@ on:
       - "src/api/**"
       - "src/ayrovix/**"
       - "src/customer/**"
+      # Le parcours AYWEBs et la capture marchande dépendent aussi de la résolution
+      # produit/scraper : valider le déploiement beta après chaque évolution.
+      - "src/aywebs/**"
+      - "src/scraper/**"
 
 permissions:
   contents: read
