@@ -1,14 +1,14 @@
 /**
  * AYWEBs — P3، الشريحتان 2 و3: صفحة المتجر داخل WebView + الكابتشر + «Add to Cart».
  *
- * الرحلة كما في العقد: المستعمل يشوف الصفحة الحقيقية للمتجر (نفسها، بلا وسيط).
- * الزرّان يفعلان ما هو مكتوب عليهما:
+ * الرحلة: الصفحة الحقيقية للمتجر تبان كاملة (بلا شريط عنوان ولا زر قراءة).
+ * الشريط العلوي: الرجوع، اسم المتجر، والإغلاق. الشريط السفلي: زر «Add to Cart» فقط،
+ * مع سطر حالة صغير وقت القراءة.
  *
- *  • «اقرا هذه الصفحة» — يقراها بس: السكريبت الّلي **يجي من الخادم** يقرا وقائع
- *    نصّية ويبعثها للجسر، والخادم يقبل/يرفض ويحسب الثمن، ونعرضو قراره.
- *  • «Add to Cart» — نفس القراءة، ثم **ورقة الاختيار فوق هذه الصفحة**، ثم إضافة
- *    حقيقية في سلّة AYWEBs على الخادم. المستعمل **ما يخرجش** من المتجر،
- *    والصفحة (HTML) **ما تتبعثش أبداً**، ولا سعر ولا حالة تخرج من الجهاز.
+ *  • «Add to Cart» — يقرا الصفحة (كابتشر + قراءة من الخادم بالتوازي)، ثم **ورقة
+ *    الاختيار فوق هذه الصفحة**، ثم إضافة حقيقية في سلّة AYWEBs على الخادم. المستعمل
+ *    **ما يخرجش** من المتجر، والصفحة (HTML) **ما تتبعثش أبداً**، ولا سعر ولا حالة
+ *    تخرج من الجهاز.
  *
  * شرط تفعيل «Add to Cart» هو نفسه في العقد: **الخادم** صنّف الصفحة كصفحة
  * منتوج. قبل التصنيف الزرّ معطّل والسبب مكتوب — زر ما ينجمش ينجح ما يتفعّلش.
@@ -21,9 +21,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { WebView as RNWebView, type WebViewMessageEvent, type WebViewProps } from 'react-native-webview';
 import { decideWebNavigation, isWebPageUrl } from '@/features/aywebs/webNavigation';
-import { normalizeStoreAddress } from '@/features/aywebs/storeEntry';
 
-import { AppText, Button, Card, Field, KeyValue } from '@/design/ui';
+import { AppText, Button, Card, KeyValue } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { useI18n } from '@/i18n';
@@ -75,17 +74,15 @@ export default function AyWebsBrowserScreen() {
   /** الوعد الجاري لقراءة الصفحة: يتفتح بالحقن ويتسدّ بالرسالة (ولا بالمهلة). */
   const waiter = useRef<{ resolve: (capture: Record<string, unknown>) => void; reject: (error: unknown) => void } | null>(null);
 
-  const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
   const [outcome, setOutcome] = useState<AyWebsResolveOutcome | null>(null);
   /** تصنيف الخادم للصفحة: `null` = مازال، و`false` = موش صفحة منتوج. */
   const [productPage, setProductPage] = useState<boolean | null>(null);
-  /* العنوان المحمَّل في الـWebView: يتغيّر فقط بزر «Ouvrir» — تغييره يعيد التحميل. */
-  const [loadUrl, setLoadUrl] = useState(url);
+  /* العنوان المحمَّل في الـWebView: ثابت — شريط العنوان ما بقاش فوق. */
+  const [loadUrl] = useState(url);
   /* الصفحة الحالية كما يصرّح بها التنقّل داخل الـWebView (تتبع الروابط). */
   const [pageUrl, setPageUrl] = useState(url);
-  const [address, setAddress] = useState(url);
   /** تصنيف الخادم للصفحة الحالية: مصدر السماح بالقراءة وبالإضافة. */
   const [pageAnalysis, setPageAnalysis] = useState<AyWebsPageAnalysis | null>(null);
   const captureAllowed = pageAnalysis
@@ -180,26 +177,6 @@ export default function AyWebsBrowserScreen() {
   }, [endWaiting, locale, t]);
 
   /** «اقرا هذه الصفحة»: قراءة + قرار الخادم، بلا أي إضافة. */
-  const readPage = useCallback(async () => {
-    if (!captureAllowed || !sessionId || !pageUrl) return;
-    try {
-      const capture = await requestCapture();
-      // المنعرج الثالث: الكلمة صارت للخادم (تصنيف، سعر، توفّر).
-      startWaiting('resolving');
-      const result = await resolveAyWebsProductWithCapture(pageUrl, {
-        sessionId, storeId: storeId || undefined, capture,
-      });
-      setOutcome(result);
-      setNote('');
-      endWaiting('done');
-    } catch (error) {
-      fail(error);
-    } finally {
-      stopTimer();
-      setBusy(false);
-    }
-  }, [captureAllowed, endWaiting, fail, requestCapture, sessionId, startWaiting, storeId, pageUrl]);
-
   /**
    * «Add to Cart»: يقرا (كي مسموح)، يحلّ المنتوج، ثم يفتح ورقة الاختيار
    * **فوق هذه الصفحة** — الإضافة الحقيقية تجي في الورقة.
@@ -246,19 +223,6 @@ export default function AyWebsBrowserScreen() {
     pending?.resolve(parsed.capture);
   }, [t]);
 
-  /** «Ouvrir» : العنوان المكتوب يصبح الصفحة المحمّلة، أو يُرفض بسبب واضح. */
-  const openAddress = useCallback(() => {
-    const next = normalizeStoreAddress(address);
-    if (!next) {
-      setNote(t('aywebs.storeAddressInvalid'));
-      return;
-    }
-    setNote('');
-    setLoadUrl(next);
-    setPageUrl(next);
-    setAddress(next);
-  }, [address, t]);
-
   const verdict = outcome?.capture ?? null;
   const addEnabled = productPage === true && !busy && Boolean(sessionId);
 
@@ -280,7 +244,6 @@ export default function AyWebsBrowserScreen() {
         </Pressable>
         <View style={styles.titleBox}>
           <AppText variant="title" numberOfLines={1}>{storeName || t('aywebs.browserTitle')}</AppText>
-          <AppText variant="caption" color={theme.colors.muted} numberOfLines={1}>{t('aywebs.storeSecure')}</AppText>
         </View>
         <Pressable
           accessibilityRole="button"
@@ -290,26 +253,6 @@ export default function AyWebsBrowserScreen() {
         >
           <Ionicons name="close" size={24} color={theme.colors.ink} accessibilityElementsHidden />
         </Pressable>
-      </View>
-
-      <View style={styles.addressBox}>
-        <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.storeAddress')}</AppText>
-        <View style={[styles.addressRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-          <View style={styles.addressField}>
-            <Field
-              value={address}
-              onChangeText={setAddress}
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="url"
-              inputMode="url"
-              accessibilityLabel={t('aywebs.storeAddress')}
-              onSubmitEditing={openAddress}
-              returnKeyType="go"
-            />
-          </View>
-          <Button label={t('aywebs.storeOpenAddress')} tone="quiet" onPress={openAddress} testID="aywebs-store-open" />
-        </View>
       </View>
 
       {outcome ? (
@@ -357,9 +300,7 @@ export default function AyWebsBrowserScreen() {
         onNavigationStateChange={(state) => {
           if (!state.url) return;
           setPageUrl(state.url);
-          setAddress(state.url);
         }}
-        onLoadEnd={() => setLoaded(true)}
         onMessage={onMessage}
         onError={() => setNote(t('aywebs.captureFailed'))}
         startInLoadingState
@@ -382,6 +323,7 @@ export default function AyWebsBrowserScreen() {
             elapsedMs={elapsed}
             labels={[t('aywebs.phase.preparing'), t('aywebs.phase.reading'), t('aywebs.phase.resolving')]}
             countdownPrefix={t('aywebs.phase.remaining')}
+            compact
           />
         ) : null}
         {note ? <AppText variant="caption" color={theme.status.danger.fg}>{note}</AppText> : null}
@@ -396,19 +338,11 @@ export default function AyWebsBrowserScreen() {
         ) : null}
 
         <Button
-          label={t('aywebs.readPage')}
-          tone="quiet"
-          block
-          onPress={readPage}
-          busy={busy && !addEnabled}
-          disabled={!captureAllowed || !loaded || !sessionId}
-        />
-        <Button
           label={t('aywebs.addToCart')}
           tone="main"
           block
           onPress={addToCart}
-          busy={busy && addEnabled}
+          busy={busy}
           disabled={!addEnabled}
           leading={<Ionicons name="pricetag-outline" size={18} color={theme.colors.onAction} />}
           testID="aywebs-store-add-to-cart"
@@ -433,14 +367,8 @@ export default function AyWebsBrowserScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   header: { alignItems: 'center', gap: 4, paddingHorizontal: 8 },
-  headerTitle: { flex: 1 },
+  titleBox: { flex: 1, paddingHorizontal: 4 },
   web: { flex: 1, marginTop: 8 },
   loading: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   footer: { borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingTop: 8, gap: 6 },
-  row: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-  titleBox: { flex: 1, paddingHorizontal: 4 },
-  addressBox: { paddingHorizontal: 16, gap: 4, marginTop: 8 },
-  addressRow: { gap: 8, alignItems: 'center' },
-  addressField: { flex: 1 },
-  rowButton: { flex: 1 },
 });

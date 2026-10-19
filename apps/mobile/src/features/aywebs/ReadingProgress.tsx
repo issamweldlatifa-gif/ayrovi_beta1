@@ -36,9 +36,11 @@ export interface ReadingProgressProps {
   labels: string[];
   /** Préfixe du décompte (ex. « reste »). */
   countdownPrefix?: string;
+  /** Une seule ligne : l'étape en cours + le décompte (pas la liste complète). */
+  compact?: boolean;
 }
 
-export function ReadingProgress({ phase, elapsedMs, labels, countdownPrefix = '' }: ReadingProgressProps) {
+export function ReadingProgress({ phase, elapsedMs, labels, countdownPrefix = '', compact = false }: ReadingProgressProps) {
   const theme = useTheme();
   const pulse = useRef(new Animated.Value(1)).current;
   const loop = useRef<Animated.CompositeAnimation | null>(null);
@@ -63,6 +65,19 @@ export function ReadingProgress({ phase, elapsedMs, labels, countdownPrefix = ''
 
   const seconds = remainingSeconds(elapsedMs);
   const terminal = isTerminalPhase(phase);
+
+  if (compact) {
+    const activeIndex = WAITING_PHASES.findIndex((_, index) => stepState(index, phase) === 'active');
+    if (activeIndex < 0) return null;
+    return (
+      <View style={styles.compactWrap} accessibilityRole="progressbar">
+        <AppText variant="caption" color={theme.colors.muted}>
+          {labels[activeIndex] ?? WAITING_PHASES[activeIndex]}
+          {!terminal ? ` · ${countdownPrefix} ${seconds}s` : ''}
+        </AppText>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.wrap} accessibilityRole="progressbar">
@@ -109,4 +124,5 @@ const styles = StyleSheet.create({
   wrap: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 10 },
   step: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   marker: { width: 16, alignItems: 'center', justifyContent: 'center' },
+  compactWrap: { minHeight: 16, justifyContent: 'center' },
 });
