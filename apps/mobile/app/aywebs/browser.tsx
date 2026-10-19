@@ -13,9 +13,10 @@
  * شرط تفعيل «Add to Cart» هو نفسه في العقد: **الخادم** صنّف الصفحة كصفحة
  * منتوج. قبل التصنيف الزرّ معطّل والسبب مكتوب — زر ما ينجمش ينجح ما يتفعّلش.
  */
-import { useCallback, useEffect, useRef, useState, type ComponentType, type Ref } from 'react';
+import { useCallback, useEffect, useRef, useState, type ComponentProps, type ComponentType, type Ref } from 'react';
 import { goBack } from '@/design/navigation';
 import { Pressable, StyleSheet, View } from 'react-native';
+import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -27,6 +28,9 @@ import { useTheme } from '@/design/theme';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { useI18n } from '@/i18n';
 import { ApiError, isApiError, userMessage } from '@/api/errors';
+import { fetchFavorites } from '@/api/account';
+import { StoreCartSheet, StoreFavoriteSheet } from '@/features/aywebs/StoreSheets';
+import { canonicalSourceUrl, isPageSaved } from '@/features/aywebs/storeShopping';
 import {
   analyzeAyWebsPage, buildAyWebsCaptureInjection, fetchAyWebsCaptureScript,
   parseAyWebsCaptureMessage, resolveAyWebsProductWithCapture,
@@ -46,7 +50,7 @@ const CAPTURE_TIMEOUT_MS = CAPTURE_BUDGET_MS;
  * و`WebViewProps & undefined` = `never`، فتفسير JSX يرفض كل خاصية. الإصلاح محلي:
  * المكوّن + مرجع فيه `injectJavaScript` (اللي موجود فعلاً في وقت التنفيذ).
  */
-type WebViewHandle = { injectJavaScript: (script: string) => void };
+type WebViewHandle = { injectJavaScript: (script: string) => void; goBack: () => void; goForward: () => void };
 const WebView = RNWebView as unknown as ComponentType<
   WebViewProps & { ref?: Ref<WebViewHandle> }
 >;
@@ -75,6 +79,10 @@ export default function AyWebsBrowserScreen() {
   const waiter = useRef<{ resolve: (capture: Record<string, unknown>) => void; reject: (error: unknown) => void } | null>(null);
 
   const [busy, setBusy] = useState(false);
+  /** Barre du bas : précédent / suivant (dans le magasin), titre de la page, volets. */
+  const [nav, setNav] = useState({ canGoBack: false, canGoForward: false, title: '' });
+  const [cartOpen, setCartOpen] = useState(false);
+  const [favOpen, setFavOpen] = useState(false);
   const [note, setNote] = useState('');
   const [outcome, setOutcome] = useState<AyWebsResolveOutcome | null>(null);
   /** تصنيف الخادم للصفحة: `null` = مازال، و`false` = موش صفحة منتوج. */
@@ -226,6 +234,18 @@ export default function AyWebsBrowserScreen() {
   const verdict = outcome?.capture ?? null;
   const addEnabled = productPage === true && !busy && Boolean(sessionId);
 
+  /* Favoris : seulement pour une page produit. La liste sert à afficher le cœur plein. */
+  const favorites = useQuery({
+    queryKey: ['account', 'favorites'],
+    queryFn: ({ signal }) => fetchFavorites({ signal }),
+    enabled: productPage === true,
+    retry: false,
+  });
+  const saved = isPageSaved(favorites.data ?? [], pageUrl);
+  const outcomeMatchesPage = Boolean(outcome && pageUrl
+    && canonicalSourceUrl(outcome.product.sourceUrl) === canonicalSourceUrl(pageUrl));
+  const favoriteTitle = (outcomeMatchesPage ? outcome?.product.title : '') || nav.title || storeName;
+
   return (
     <View style={[styles.screen, { backgroundColor: theme.colors.canvas, paddingTop: insets.top + theme.space[2] }]}>
       <View style={[styles.header, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
@@ -300,6 +320,7 @@ export default function AyWebsBrowserScreen() {
         onNavigationStateChange={(state) => {
           if (!state.url) return;
           setPageUrl(state.url);
+          setNav({ canGoBack: state.canGoBack, canGoForward: state.canGoForward, title: state.title ?? '' });
         }}
         onMessage={onMessage}
         onError={() => setNote(t('aywebs.captureFailed'))}
@@ -337,16 +358,47 @@ export default function AyWebsBrowserScreen() {
           <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.addNotProductPage')}</AppText>
         ) : null}
 
-        <Button
-          label={t('aywebs.addToCart')}
-          tone="main"
-          block
-          onPress={addToCart}
-          busy={busy}
-          disabled={!addEnabled}
-          leading={<Ionicons name="pricetag-outline" size={18} color={theme.colors.onAction} />}
-          testID="aywebs-store-add-to-cart"
-        />
+        <View style={[styles.toolbar, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+          <ToolIcon
+            name={theme.isRTL ? 'chevron-forward' : 'chevron-back'}
+            label={t('aywebs.nav.back')}
+            disabled={!nav.canGoBack}
+            onPress={() => webRef.current?.goBack()}
+            testID="aywebs-store-back"
+          />
+          <ToolIcon
+            name={theme.isRTL ? 'chevron-back' : 'chevron-forward'}
+            label={t('aywebs.nav.forward')}
+            disabled={!nav.canGoForward}
+            onPress={() => webRef.current?.goForward()}
+            testID="aywebs-store-forward"
+          />
+          <ToolIcon
+            name={saved ? 'heart' : 'heart-outline'}
+            label={t('aywebs.fav.open')}
+            disabled={productPage !== true}
+            onPress={() => setFavOpen(true)}
+            testID="aywebs-store-fav"
+          />
+          <ToolIcon
+            name="cart-outline"
+            label={t('aywebs.cart.open')}
+            onPress={() => setCartOpen(true)}
+            testID="aywebs-store-cart"
+          />
+          <View style={styles.addBox}>
+            <Button
+              label={t('aywebs.addToCart')}
+              tone="main"
+              block
+              onPress={addToCart}
+              busy={busy}
+              disabled={!addEnabled}
+              leading={<Ionicons name="pricetag-outline" size={18} color={theme.colors.onAction} />}
+              testID="aywebs-store-add-to-cart"
+            />
+          </View>
+        </View>
       </View>
 
       {sheet ? (
@@ -360,7 +412,47 @@ export default function AyWebsBrowserScreen() {
           onClose={() => setSheet(null)}
         />
       ) : null}
+
+      {cartOpen ? (
+        <StoreCartSheet visible onClose={() => setCartOpen(false)} sessionId={sessionId} storeId={storeId} />
+      ) : null}
+      {favOpen ? (
+        <StoreFavoriteSheet
+          visible
+          onClose={() => setFavOpen(false)}
+          sourceUrl={pageUrl}
+          title={favoriteTitle}
+          saved={saved}
+        />
+      ) : null}
     </View>
+  );
+}
+
+/** Icône de la barre du bas : cible tactile complète, grisée quand l'action n'est pas possible. */
+function ToolIcon({ name, label, onPress, disabled = false, testID }: {
+  name: ComponentProps<typeof Ionicons>['name'];
+  label: string;
+  onPress: () => void;
+  disabled?: boolean;
+  testID?: string;
+}) {
+  const theme = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled }}
+      disabled={disabled}
+      onPress={onPress}
+      testID={testID}
+      style={({ pressed }) => [
+        styles.toolIcon,
+        { minWidth: theme.geometry.minTarget, minHeight: theme.geometry.minTarget, opacity: disabled ? 0.35 : pressed ? 0.7 : 1 },
+      ]}
+    >
+      <Ionicons name={name} size={22} color={theme.colors.ink} accessibilityElementsHidden />
+    </Pressable>
   );
 }
 
@@ -369,6 +461,9 @@ const styles = StyleSheet.create({
   header: { alignItems: 'center', gap: 4, paddingHorizontal: 8 },
   titleBox: { flex: 1, paddingHorizontal: 4 },
   web: { flex: 1, marginTop: 8 },
+  toolbar: { alignItems: 'center', gap: 2 },
+  toolIcon: { alignItems: 'center', justifyContent: 'center' },
+  addBox: { flex: 1, marginStart: 4 },
   loading: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   footer: { borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingTop: 8, gap: 6 },
 });
