@@ -1,3 +1,4 @@
+import { AYWEBS_CATALOG_STORES } from './aywebsStoreCatalog';
 import type {
   AyWebsIntegrationType,
   AyWebsStoreCapability,
@@ -21,7 +22,8 @@ export type AyWebsAdapterId = 'amazon' | 'shein' | 'temu' | 'aliexpress' | 'gene
  * `displayName`, `logo`) s'ajoutent sans rien renommer.
  */
 export interface AyWebsStoreDefinition {
-  id: AyWebsAdapterId;
+  /** Identifiant de la boutique (ex. `amazon`, `creema`) — distinct de l'adaptateur. */
+  id: string;
   name: string;
   /** Libellé marchand tel qu'affiché au client (peut différer de `name`). */
   displayName: string;
@@ -127,7 +129,7 @@ export const AYWEBS_STORES: readonly AyWebsStoreDefinition[] = [
     browserMode: 'external',
     homeUrl: 'https://www.temu.com/',
     searchUrlTemplate: 'https://www.temu.com/search_result.html?search_key={query}',
-    categories: ['home', 'electronics', 'fashion'],
+    categories: ['marketplace', 'home', 'electronics', 'fashion'],
     popular: true,
     phase: 2,
   },
@@ -148,7 +150,7 @@ export const AYWEBS_STORES: readonly AyWebsStoreDefinition[] = [
     browserMode: 'external',
     homeUrl: 'https://www.aliexpress.com/',
     searchUrlTemplate: 'https://www.aliexpress.com/wholesale?SearchText={query}',
-    categories: ['electronics', 'home', 'fashion', 'beauty'],
+    categories: ['marketplace', 'electronics', 'home', 'fashion', 'beauty'],
     popular: true,
     phase: 2,
   },
@@ -159,19 +161,19 @@ export const AYWEBS_STORES: readonly AyWebsStoreDefinition[] = [
  * jamais un identifiant technique à l'écran.
  */
 export const AYWEBS_CATEGORIES: ReadonlyArray<{ id: string; labelFr: string; labelAr: string }> = [
-  { id: 'marketplace', labelFr: 'Marketplace', labelAr: 'المتاجر العامة والمتنوعة' },
+  { id: 'marketplace', labelFr: 'Marketplace', labelAr: 'متاجر متنوعة' },
   { id: 'fashion', labelFr: 'Mode', labelAr: 'الملابس والأزياء' },
   { id: 'shoes', labelFr: 'Chaussures & sneakers', labelAr: 'الأحذية' },
   { id: 'electronics', labelFr: 'High-tech', labelAr: 'الإلكترونيات' },
-  { id: 'smartphones', labelFr: 'Smartphones & accessoires', labelAr: 'الهواتف وإكسسواراتها' },
+  { id: 'smartphones', labelFr: 'Smartphones & accessoires', labelAr: 'الهواتف والإكسسوارات' },
   { id: 'gaming', labelFr: 'Jeux vidéo', labelAr: 'الألعاب الإلكترونية' },
-  { id: 'beauty', labelFr: 'Beauté & cosmétiques', labelAr: 'مستحضرات التجميل' },
+  { id: 'beauty', labelFr: 'Beauté & cosmétiques', labelAr: 'الجمال والتجميل' },
   { id: 'perfumes', labelFr: 'Parfums', labelAr: 'العطور' },
   { id: 'home', labelFr: 'Maison & mobilier', labelAr: 'المنزل والأثاث' },
   { id: 'kitchen', labelFr: 'Cuisine & électroménager', labelAr: 'المطبخ والأجهزة المنزلية' },
   { id: 'sports', labelFr: 'Sport & plein air', labelAr: 'الرياضة والأنشطة الخارجية' },
   { id: 'luxury', labelFr: 'Luxe & griffes', labelAr: 'الماركات الفاخرة' },
-  { id: 'toys', labelFr: 'Jouets & bébé', labelAr: 'الألعاب ومستلزمات الأطفال' },
+  { id: 'toys', labelFr: 'Jouets & bébé', labelAr: 'الألعاب والأطفال' },
   { id: 'books', labelFr: 'Livres & médias', labelAr: 'الكتب والوسائط' },
   { id: 'pets', labelFr: 'Animalerie', labelAr: 'مستلزمات الحيوانات' },
   { id: 'grocery', labelFr: 'Épicerie & supermarchés', labelAr: 'المواد الغذائية' },
@@ -180,8 +182,8 @@ export const AYWEBS_CATEGORIES: ReadonlyArray<{ id: string; labelFr: string; lab
   { id: 'bags', labelFr: 'Sacs & bagages', labelAr: 'الحقائب وحقائب السفر' },
   { id: 'tools', labelFr: 'Outils & bricolage', labelAr: 'الأدوات ومعدات البناء' },
   { id: 'arts', labelFr: 'Arts & loisirs créatifs', labelAr: 'الفنون والأشغال اليدوية' },
-  { id: 'garden', labelFr: 'Jardin & extérieur', labelAr: 'الحدائق والمستلزمات الخارجية' },
-  { id: 'health', labelFr: 'Santé & hygiène', labelAr: 'الصحة والعناية الشخصية' },
+  { id: 'garden', labelFr: 'Jardin & extérieur', labelAr: 'الحديقة والخارج' },
+  { id: 'health', labelFr: 'Santé & hygiène', labelAr: 'العناية الشخصية' },
   { id: 'bedding', labelFr: 'Literie & matelas', labelAr: 'الفراش والمراتب' },
   { id: 'music', labelFr: 'Instruments de musique', labelAr: 'الآلات الموسيقية' },
   { id: 'photography', labelFr: 'Photo & caméras', labelAr: 'التصوير والكاميرات' },
@@ -298,7 +300,7 @@ export function ayWebsStoresForCategory(categoryId: string): AyWebsStoreDefiniti
  * Renvoie la liste des problèmes (vide = registre sain).
  */
 export function validateAyWebsStoreRegistry(
-  stores: readonly AyWebsStoreDefinition[] = AYWEBS_STORES,
+  stores: readonly AyWebsStoreDefinition[] = [...AYWEBS_STORES, ...AYWEBS_CATALOG_STORES],
   categories: ReadonlyArray<{ id: string }> = AYWEBS_CATEGORIES,
 ): string[] {
   const problems: string[] = [];

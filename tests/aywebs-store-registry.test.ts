@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
-  AYWEBS_CATEGORIES, AYWEBS_STORES, validateAyWebsStoreRegistry, type AyWebsStoreDefinition,
+  AYWEBS_CATEGORIES, AYWEBS_STORES, detectAyWebsStore, validateAyWebsStoreRegistry, type AyWebsStoreDefinition,
 } from '../shared/aywebsStores';
+import { AYWEBS_CATALOG_STORES } from '../shared/aywebsStoreCatalog';
 
 const base = AYWEBS_STORES[0];
 const store = (overrides: Partial<AyWebsStoreDefinition>): AyWebsStoreDefinition => ({ ...base, ...overrides });
@@ -58,5 +59,66 @@ describe('registre des boutiques AYWEBs — contrôle avant publication', () => 
       store({ id: 'a', displayName: 'A', domains: ['a.test'], categories: ['fashion', 'fashion'] }),
     ]);
     expect(problems.some((p) => p.includes('catégorie répétée'))).toBe(true);
+  });
+});
+
+describe('catalogue des boutiques (liste de référence, non ouvertes)', () => {
+  it('toutes les boutiques du catalogue sont désactivées, sans capacité ni adaptateur de capture', () => {
+    expect(AYWEBS_CATALOG_STORES.length).toBeGreaterThan(300);
+    for (const entry of AYWEBS_CATALOG_STORES) {
+      expect(entry.enabled).toBe(false);
+      expect(entry.capabilities).toEqual([]);
+      expect(entry.captureSupported).toBe(false);
+      expect(entry.integrationType).toBe('URL_REQUEST');
+    }
+  });
+
+  it('une boutique du catalogue n\'est jamais détectée par domaine (la détection ne change pas)', () => {
+    expect(detectAyWebsStore('https://www.ebay.com/itm/123')).toBeNull();
+    expect(detectAyWebsStore('https://www.zara.com/fr/')).toBeNull();
+    expect(detectAyWebsStore('https://www.amazon.com/dp/B000000000')?.id).toBe('amazon');
+  });
+
+  it('un marchand présent dans plusieurs catégories reste UNE entrée avec toutes ses catégories', () => {
+    const samsung = AYWEBS_CATALOG_STORES.filter((s) => s.domains.includes('samsung.com'));
+    expect(samsung).toHaveLength(1);
+    expect(samsung[0].categories).toEqual(expect.arrayContaining(['electronics', 'smartphones', 'kitchen']));
+    const razer = AYWEBS_CATALOG_STORES.filter((s) => s.domains.includes('razer.com'));
+    expect(razer).toHaveLength(1);
+    expect(razer[0].categories).toEqual(expect.arrayContaining(['electronics', 'gaming']));
+  });
+
+  it('les boutiques existantes gardent leur identifiant et leur adresse', () => {
+    const byId = Object.fromEntries(AYWEBS_STORES.map((s) => [s.id, s.homeUrl]));
+    expect(byId.amazon).toBe('https://www.amazon.com/');
+    expect(byId.shein).toBeTruthy();
+    expect(byId.temu).toBeTruthy();
+    expect(byId.aliexpress).toBeTruthy();
+    const catalogIds = new Set(AYWEBS_CATALOG_STORES.map((s) => s.id));
+    for (const id of Object.keys(byId)) expect(catalogIds.has(id)).toBe(false);
+  });
+
+  it('marketplace inclut les quatre marchés de la liste (AliExpress, Temu, Amazon)', () => {
+    for (const id of ['amazon', 'aliexpress', 'temu']) {
+      const store = AYWEBS_STORES.find((s) => s.id === id);
+      expect(store?.categories).toContain('marketplace');
+    }
+  });
+
+  it('chaque catégorie a au moins une boutique (catalogue + registre)', () => {
+    const all = [...AYWEBS_STORES, ...AYWEBS_CATALOG_STORES];
+    for (const category of AYWEBS_CATEGORIES) {
+      expect(all.some((s) => s.categories.includes(category.id)), category.id).toBe(true);
+    }
+  });
+
+  it('les libellés arabes des catégories suivent le tableau validé', () => {
+    const ar = Object.fromEntries(AYWEBS_CATEGORIES.map((c) => [c.id, c.labelAr]));
+    expect(ar.marketplace).toBe('متاجر متنوعة');
+    expect(ar.smartphones).toBe('الهواتف والإكسسوارات');
+    expect(ar.beauty).toBe('الجمال والتجميل');
+    expect(ar.toys).toBe('الألعاب والأطفال');
+    expect(ar.garden).toBe('الحديقة والخارج');
+    expect(ar.health).toBe('العناية الشخصية');
   });
 });

@@ -383,10 +383,10 @@ export default function AyWebsScreen() {
         <LoadingBlock labelKey="loading.stores" />
       ) : stores.isError ? (
         <ErrorBlock error={stores.error} onRetry={reload} />
-      ) : (stores.data ?? []).length === 0 ? (
+      ) : (stores.data ?? []).filter((store) => store.enabled).length === 0 ? (
         <EmptyBlock>{t('aywebs.storesEmpty')}</EmptyBlock>
       ) : (
-        (stores.data ?? []).map(renderStore)
+        (stores.data ?? []).filter((store) => store.enabled).map(renderStore)
       )}
     </AppScreen>
   );
