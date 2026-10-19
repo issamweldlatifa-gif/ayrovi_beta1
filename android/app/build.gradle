@@ -14,7 +14,7 @@ android {
     compileSdk rootProject.ext.compileSdkVersion
     buildFeatures { buildConfig true }
     defaultConfig {
-        def apiOrigin = System.getenv('VITE_AYROVI_API_ORIGIN') ?: 'https://ayrovi-beta1-moo8.onrender.com'
+        def apiOrigin = System.getenv('VITE_AYROVI_API_ORIGIN') ?: 'https://ayrovi-beta1-1.onrender.com'
         def apiUri = new URI(apiOrigin)
         if (apiUri.scheme != 'https' || !apiUri.host || apiUri.userInfo || apiUri.query || apiUri.fragment || (apiUri.path && apiUri.path != '/') || (apiUri.port != -1 && apiUri.port != 443)) {
             throw new GradleException('HTTPS_API_ORIGIN_REQUIRED')
