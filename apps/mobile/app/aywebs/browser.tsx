@@ -39,6 +39,9 @@ import {
 import { AddToCartSheet } from '@/features/aywebs/AddToCartSheet';
 import { ReadingProgress } from '@/features/aywebs/ReadingProgress';
 import { resolveWithParallelCapture, waitForPageIdle } from '@/features/aywebs/captureFallback';
+import {
+  AYWEBS_CAPTURE_EMPTY_PRICE_RETRY_DELAY_MS, hasVerifiedAyWebsQuote, priceCandidatesOf, shouldRetryAyWebsCaptureForPrice,
+} from '@/features/aywebs/captureFlow';
 import { CAPTURE_BUDGET_MS, type ReadPhase } from '@/features/aywebs/phase';
 import { useSessionId } from '@/session/session';
 import { useSession } from '@/state/session';
@@ -80,6 +83,9 @@ export default function AyWebsBrowserScreen() {
   const waiter = useRef<{ resolve: (capture: Record<string, unknown>) => void; reject: (error: unknown) => void } | null>(null);
   /** Vrai pendant que la page charge (mis à jour par onNavigationStateChange). */
   const pageLoadingRef = useRef(false);
+  /** Nombre de relances de capture faute de prix, et dernier script chargé. */
+  const captureRetries = useRef(0);
+  const lastScript = useRef<string | null>(null);
 
   const [busy, setBusy] = useState(false);
   /** Barre du bas : précédent / suivant (dans le magasin), titre de la page, volets. */
@@ -160,7 +166,33 @@ export default function AyWebsBrowserScreen() {
       setBusy(true);
       setNote('');
       startWaiting('preparing');
-      waiter.current = { resolve, reject };
+      captureRetries.current = 0;
+      const armTimeout = () => {
+        stopTimer();
+        timer.current = setTimeout(() => {
+          waiter.current = null;
+          setBusy(false);
+          reject(captureTimeout());
+        }, CAPTURE_TIMEOUT_MS);
+      };
+      const inject = (script: string) => {
+        startWaiting('reading');
+        webRef.current?.injectJavaScript(buildAyWebsCaptureInjection(script));
+        armTimeout();
+      };
+      /* Prix absent de la capture ⇒ relance bornée (fc3cce38 / captureFlow.ts). */
+      const onCaptured = (capture: Record<string, unknown>) => {
+        const script = lastScript.current;
+        if (script && shouldRetryAyWebsCaptureForPrice(priceCandidatesOf(capture), captureRetries.current)) {
+          captureRetries.current += 1;
+          waiter.current = { resolve: onCaptured, reject };
+          stopTimer();
+          setTimeout(() => inject(script), AYWEBS_CAPTURE_EMPTY_PRICE_RETRY_DELAY_MS);
+          return;
+        }
+        resolve(capture);
+      };
+      waiter.current = { resolve: onCaptured, reject };
       fetchAyWebsCaptureScript()
         // الصفحة لازم تكمّل تحميلها قبل القراءة (Amazon يعطي DOM ناقص ⇒ NO_PRICE_TEXT).
         .then(async (script) => {
@@ -169,14 +201,8 @@ export default function AyWebsBrowserScreen() {
         })
         .then((script) => {
           // الحقن هو المنعرج الثاني: من توّا الكلمة صارت للصفحة.
-          startWaiting('reading');
-          webRef.current?.injectJavaScript(buildAyWebsCaptureInjection(script));
-          stopTimer();
-          timer.current = setTimeout(() => {
-            waiter.current = null;
-            setBusy(false);
-            reject(captureTimeout());
-          }, CAPTURE_TIMEOUT_MS);
+          lastScript.current = script;
+          inject(script);
         })
         .catch((error) => {
           waiter.current = null;
@@ -213,6 +239,12 @@ export default function AyWebsBrowserScreen() {
         }),
         onPhase: () => startWaiting('resolving'),
       });
+      /* Jamais de feuille avec 0,00 ou un prix/devise non vérifiés par le serveur. */
+      if (!hasVerifiedAyWebsQuote(result.product, result.quoteToken ?? '')) {
+        setNote(t('aywebs.captureFailed'));
+        endWaiting('failed');
+        return;
+      }
       setOutcome(result);
       setNote('');
       setSheet({ outcome: result, capture });
