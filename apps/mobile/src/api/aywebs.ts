@@ -428,6 +428,21 @@ export interface AyWebsResolveOutcome {
  * نبعثو `capture` كما رجّعها السكريبت **بلا أي تصرّف**: لا تعديل لا تلخيص.
  * الخادم هو اللي يقبل/يرفض ويحسب السعر — وهنا نقراو قراره باش نعرضوه.
  */
+/**
+ * Lecture serveur incomplète : le serveur répond 201 avec `missing` (titre, prix, devise…)
+ * et une fiche vide. Sans titre, la fiche n'est pas utilisable : on le dit par son code
+ * (`CAPTURE_INCOMPLETE`) au lieu de « réponse illisible » (ce n'est pas un problème de format).
+ */
+export function incompleteCaptureError(envelope: Record<string, unknown>): ApiError | null {
+  const data = isRecord(envelope.data) ? envelope.data : null;
+  if (!data || str(data.title).trim()) return null;
+  if (strList(envelope.missing).length === 0) return null;
+  return new ApiError('http', 'Nous n’avons pas pu lire toutes les informations du produit.', {
+    status: 422,
+    code: 'CAPTURE_INCOMPLETE',
+  });
+}
+
 export async function resolveAyWebsProductWithCapture(
   url: string,
   options: AyWebsSessionOptions & { storeId?: string; quantity?: number; refresh?: boolean; capture?: unknown },
@@ -443,6 +458,9 @@ export async function resolveAyWebsProductWithCapture(
     signal: options.signal,
     timeoutMs: options.timeoutMs ?? AYWEBS_RESOLVE_TIMEOUT_MS,
   });
+
+  const incomplete = incompleteCaptureError(envelope);
+  if (incomplete) throw incomplete;
 
   const product = parseAyWebsResolvedProduct(envelope.data);
   const rawCapture = isRecord(envelope.capture) ? envelope.capture : null;

@@ -65,6 +65,13 @@ export function userMessage(error: unknown): LocalizedMessage {
   if (!isApiError(error)) {
     return { fr: 'Une erreur inattendue est survenue.', ar: 'صار خطأ غير متوقّع.' };
   }
+  // Lecture AYWEBs incomplète : le serveur a répondu, mais le titre ou le prix manque.
+  if (error.code === 'CAPTURE_INCOMPLETE') {
+    return {
+      fr: 'Nous n’avons pas pu lire le titre ou le prix de ce produit. Réessayez, ou ouvrez la fiche depuis la boutique.',
+      ar: 'ما قدرناش نقراو الاسم ولا الثمن متاع المنتوج. عاود جرّب، ولا حلّ الفيش من المتجر.',
+    };
+  }
   switch (error.kind) {
     case 'network':
       return { fr: 'Pas de connexion. Vérifiez votre réseau.', ar: 'ما فماش اتصال. تحقّق من الشبكة.' };
