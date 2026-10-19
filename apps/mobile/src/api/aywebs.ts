@@ -10,7 +10,7 @@
  *  • كل طلب معلّم بـ `x-session-id`: الخادم يرفض بلاها (`SESSION_REQUIRED`).
  *    المعرّف يتولّد مرّة ويتخزّن (`features/aywebs/session`).
  */
-import { apiGetData, apiGetText, apiSendData, apiSendEnvelope, type RequestOptions } from './client';
+import { apiGetData, apiGetEnvelope, apiGetText, apiSendData, apiSendEnvelope, type RequestOptions } from './client';
 import { ApiError } from './errors';
 
 export const AYWEBS_BASE = '/api/v1/aywebs';
@@ -110,6 +110,17 @@ export interface AyWebsStore {
   logo: string;
   purchaseMode: string;
   popular: boolean;
+  /** Identifiants de catégories (une boutique peut en avoir plusieurs, sans être dupliquée). */
+  categories: string[];
+  /** Description courte de la carte ; `''` = la carte affiche ses catégories. */
+  description: string;
+}
+
+/** Catégorie marchand — libellés bilingues, comme ceux du serveur. */
+export interface AyWebsCategory {
+  id: string;
+  labelFr: string;
+  labelAr: string;
 }
 
 export function parseAyWebsStores(payload: unknown): AyWebsStore[] {
@@ -135,7 +146,17 @@ export function parseAyWebsStores(payload: unknown): AyWebsStore[] {
       logo: str(entry.logo),
       purchaseMode: str(entry.purchase_mode),
       popular: bool(entry.popular),
+      categories: strList(entry.categories),
+      description: str(entry.description),
     };
+  });
+}
+
+export function parseAyWebsCategories(payload: unknown): AyWebsCategory[] {
+  if (!Array.isArray(payload)) return [];
+  return payload.flatMap((entry) => {
+    if (!isRecord(entry) || !str(entry.id)) return [];
+    return [{ id: str(entry.id), labelFr: str(entry.labelFr), labelAr: str(entry.labelAr) }];
   });
 }
 
@@ -272,6 +293,21 @@ export interface ResolveAyWebsProductOptions extends AyWebsSessionOptions {
 export async function fetchAyWebsStores(options: RequestOptions = {}): Promise<AyWebsStore[]> {
   const data = await apiGetData<unknown>(`${AYWEBS_BASE}/stores`, options);
   return parseAyWebsStores(data);
+}
+
+/**
+ * Registre complet pour l'écran Stores : boutiques + catégories, en une seule lecture.
+ * `fetchAyWebsStores` reste inchangé pour les écrans qui n'ont besoin que des boutiques.
+ */
+export async function fetchAyWebsStoreCatalog(
+  options: RequestOptions = {},
+): Promise<{ stores: AyWebsStore[]; categories: AyWebsCategory[] }> {
+  const payload = await apiGetEnvelope<unknown>(`${AYWEBS_BASE}/stores`, options);
+  const body = isRecord(payload) ? payload : {};
+  return {
+    stores: parseAyWebsStores(body.data),
+    categories: parseAyWebsCategories(body.categories),
+  };
 }
 
 

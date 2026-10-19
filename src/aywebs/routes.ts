@@ -230,6 +230,7 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
     home_url: store.homeUrl,
     search_url_template: store.searchUrlTemplate,
     categories: [...store.categories],
+    description: store.description ?? '',
     popular: store.popular,
     phase: store.phase,
     /** Mode d'achat réel — jamais « supported » par simple présence au registre. */

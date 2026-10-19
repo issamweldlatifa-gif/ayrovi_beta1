@@ -25,6 +25,8 @@ const base: AyWebsStore = {
   logo: '/stores/amazon.png',
   purchaseMode: 'MANUAL_REVIEW',
   popular: true,
+  categories: ['marketplace'],
+  description: '',
 };
 
 describe('storeEntryTarget', () => {

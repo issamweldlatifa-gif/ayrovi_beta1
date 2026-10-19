@@ -373,6 +373,12 @@ export default function AyWebsScreen() {
       </Card>
 
       <SectionHeader title={t('aywebs.chooseStore')} hint={t('aywebs.chooseStoreHint')} />
+      <Button
+        label={t('aywebs.stores.open')}
+        tone="quiet"
+        onPress={() => router.push('/aywebs/stores')}
+        testID="aywebs-open-stores"
+      />
       {stores.isPending ? (
         <LoadingBlock labelKey="loading.stores" />
       ) : stores.isError ? (
