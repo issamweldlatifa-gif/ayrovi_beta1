@@ -288,7 +288,10 @@ export async function resolveAyWebsProduct(
   /* Mémo « fiche illisible » : une lecture SANS prix échoue en 13–17 s (sondes
      vouées à l'échec). Le mémo, séparé et à TTL court (90 s), évite de repayer
      ce coût à chaque réessai — sans jamais se faire passer pour un succès. */
-  const failedCached = cached ? null : readAyWebsResolveFailureCache(deps.scraper, cacheKey);
+  /* Ancienne mémoire d'échec : jamais servie à une demande `refresh` (Add au
+     clic) ni à une lecture avec page fournie (19/10/2026). Sinon une lecture
+     sans prix, mémorisée pendant 90 s, revenait en 0.00 malgré la relecture. */
+  const failedCached = cached || !cacheAllowed ? null : readAyWebsResolveFailureCache(deps.scraper, cacheKey);
 
   let sourceProduct: AyWebsSourceProduct;
   let fromCache = false;

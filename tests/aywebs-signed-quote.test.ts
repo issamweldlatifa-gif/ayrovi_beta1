@@ -335,6 +335,15 @@ describe('AYWEBs Phase 1 — mémo « fiche illisible »', () => {
     expect(h.scrapeProduct).toHaveBeenCalledTimes(2);
   });
 
+  it('une demande refresh (Add au clic) ne sert jamais le mémo d’échec (19/10/2026)', async () => {
+    const h = harness({ price: 0 });
+    await resolveAyWebsProduct(h.resolver, { url: AMAZON_URL, sessionId: SESSION_ID });
+    expect(h.scrapeProduct).toHaveBeenCalledTimes(1);
+    const refreshed = await resolveAyWebsProduct(h.resolver, { url: AMAZON_URL, sessionId: SESSION_ID, refresh: true });
+    expect(h.scrapeProduct).toHaveBeenCalledTimes(2);
+    expect(refreshed.cacheKind).toBeNull();
+  });
+
   it('un succès n’entre jamais dans le mémo d’échec', async () => {
     const h = harness();
     const resolved = await resolveAyWebsProduct(h.resolver, { url: AMAZON_URL, sessionId: SESSION_ID });

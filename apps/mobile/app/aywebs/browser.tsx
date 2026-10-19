@@ -207,8 +207,9 @@ export default function AyWebsBrowserScreen() {
          capture réussie l'emporte (résolution avec capture, rapide). */
       const { outcome: result, capture } = await resolveWithParallelCapture<AyWebsResolveOutcome>({
         readCapture: captureAllowed ? requestCapture : undefined,
+        // refresh : une intention Add ne sert jamais une lecture mémorisée (19/10/2026).
         resolve: (captured) => resolveAyWebsProductWithCapture(pageUrl, {
-          sessionId, storeId: storeId || undefined, capture: captured,
+          sessionId, storeId: storeId || undefined, capture: captured, refresh: true,
         }),
         onPhase: () => startWaiting('resolving'),
       });
