@@ -393,6 +393,12 @@ describe('Logos des boutiques et hôte de l’API', () => {
     expect(origin).not.toMatch(/ayrovi-beta1-1\.onrender\.com/);
     expect(origin).not.toMatch(/ayrovi-beta1\.onrender\.com/);
   });
+
+  test('APK Capacitor : origine native par défaut = moo8 (même serveur que le web)', () => {
+    const gradle = readCode('android/app/build.gradle');
+    expect(gradle).toContain("?: 'https://ayrovi-beta1-moo8.onrender.com'");
+    expect(gradle).not.toMatch(/ayrovi-beta1-1\.onrender\.com/);
+  });
 });
 
 /* ── Connexion Google NATIVE (04/10/2026, identifiant fourni par le client) ─ */
