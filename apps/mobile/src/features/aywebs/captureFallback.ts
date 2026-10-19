@@ -52,3 +52,56 @@ export async function resolveWithCaptureFallback<T>(
     return { outcome: await input.resolve(undefined), capture: undefined };
   }
 }
+
+/**
+ * Variante PARALLÈLE (18/10/2026): la lecture serveur part AVANT la fin de la
+ * capture, pour que le serveur travaille pendant que la page se lit.
+ *
+ * En série, un Amazon dont la capture échoue coûte 15 s d'attente + 13–17 s de
+ * lecture serveur (≈ 32 s). En parallèle: ≈ 17 s. Coût assumé: la lecture
+ * serveur part même si la capture réussit ensuite (une lecture serveur de plus).
+ *
+ *  • capture réussie ⇒ résolution AVEC capture (rapide, sans requête marchande) ;
+ *  • capture échouée ou absente ⇒ on attend la lecture parallèle déjà en route ;
+ *  • capture réussie mais résolution coupée par le réseau ⇒ repli sur la lecture parallèle ;
+ *  • annulation (écran fermé) ⇒ on propage.
+ *
+ * `onPhase` dit à l'écran ce qui se passe, pour que la progression ne mente pas.
+ */
+export type ParallelPhase = 'capture-ok' | 'server-only';
+
+export interface ParallelCaptureInput<T> extends CaptureFallbackInput<T> {
+  onPhase?: (phase: ParallelPhase) => void;
+}
+
+export async function resolveWithParallelCapture<T>(
+  input: ParallelCaptureInput<T>,
+): Promise<CaptureFallbackResult<T>> {
+  // Lecture serveur sans capture, lancée tout de suite.
+  const serverRead = input.resolve(undefined);
+  // Évite un rejet « non géré » si la capture l'emporte et qu'on ne l'attend pas.
+  serverRead.catch(() => undefined);
+
+  let capture: unknown | undefined;
+  if (input.readCapture) {
+    try {
+      capture = await input.readCapture();
+    } catch (error) {
+      if (isAbortedFailure(error)) throw error;
+      capture = undefined;
+    }
+  }
+
+  if (capture !== undefined) {
+    input.onPhase?.('capture-ok');
+    try {
+      return { outcome: await input.resolve(capture), capture };
+    } catch (error) {
+      if (!isNetworkFailure(error)) throw error;
+      // Repli: la lecture parallèle est déjà en route, on l'attend.
+    }
+  }
+
+  input.onPhase?.('server-only');
+  return { outcome: await serverRead, capture: undefined };
+}

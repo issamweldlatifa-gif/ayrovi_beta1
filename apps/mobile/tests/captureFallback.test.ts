@@ -5,7 +5,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { ApiError } from '@/api/errors';
-import { resolveWithCaptureFallback } from '@/features/aywebs/captureFallback';
+import { resolveWithCaptureFallback, resolveWithParallelCapture } from '@/features/aywebs/captureFallback';
 
 const CAPTURE = { used: true, fingerprint: 'fp-1' };
 
@@ -75,3 +75,77 @@ describe('resolveWithCaptureFallback', () => {
     expect(resolve).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('resolveWithParallelCapture — lecture serveur lancée avant la fin de la capture', () => {
+  const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  it('la lecture serveur part AVANT que la capture soit finie (pas de série)', async () => {
+    const order: string[] = [];
+    const readCapture = vi.fn(async () => { await delay(20); order.push('capture-done'); return CAPTURE; });
+    const resolve = vi.fn(async (capture: unknown) => {
+      order.push(capture === undefined ? 'server-started' : 'resolved-with-capture');
+      return { seen: capture };
+    });
+
+    await resolveWithParallelCapture({ readCapture, resolve });
+
+    expect(order[0]).toBe('server-started');
+    expect(resolve.mock.calls[0][0]).toBeUndefined();
+  });
+
+  it('capture réussie : résultat AVEC capture, et la phase le dit', async () => {
+    const onPhase = vi.fn();
+    const resolve = vi.fn(async (capture: unknown) => ({ seen: capture }));
+
+    const result = await resolveWithParallelCapture({ readCapture: async () => CAPTURE, resolve, onPhase });
+
+    expect(result.capture).toEqual(CAPTURE);
+    expect(result.outcome).toEqual({ seen: CAPTURE });
+    expect(onPhase).toHaveBeenCalledWith('capture-ok');
+    expect(onPhase).not.toHaveBeenCalledWith('server-only');
+  });
+
+  it('capture échouée : on attend la lecture serveur déjà en route, sans capture', async () => {
+    const onPhase = vi.fn();
+    const readCapture = vi.fn(async () => { throw new ApiError('timeout', 'page muette'); });
+    const resolve = vi.fn(async (capture: unknown) => ({ seen: capture ?? 'server' }));
+
+    const result = await resolveWithParallelCapture({ readCapture, resolve, onPhase });
+
+    expect(result).toEqual({ outcome: { seen: 'server' }, capture: undefined });
+    expect(resolve).toHaveBeenCalledTimes(1);
+    expect(onPhase).toHaveBeenLastCalledWith('server-only');
+  });
+
+  it('capture réussie mais résolution coupée par le réseau : repli sur la lecture serveur', async () => {
+    const resolve = vi.fn(async (capture: unknown) => {
+      if (capture !== undefined) throw new ApiError('network', 'réseau coupé');
+      return { seen: 'server' };
+    });
+
+    const result = await resolveWithParallelCapture({ readCapture: async () => CAPTURE, resolve });
+
+    expect(result).toEqual({ outcome: { seen: 'server' }, capture: undefined });
+  });
+
+  it('pas de capture permise : résolution serveur seule', async () => {
+    const resolve = vi.fn(async () => ({ seen: 'server' }));
+    const result = await resolveWithParallelCapture({ resolve });
+    expect(result).toEqual({ outcome: { seen: 'server' }, capture: undefined });
+    expect(resolve).toHaveBeenCalledTimes(1);
+  });
+
+  it('annulation (écran fermé) : propagée, sans relance', async () => {
+    const readCapture = vi.fn(async () => { throw new ApiError('aborted', 'annulé'); });
+    const resolve = vi.fn(async () => ({ seen: 'server' }));
+
+    await expect(resolveWithParallelCapture({ readCapture, resolve })).rejects.toBeInstanceOf(ApiError);
+    expect(resolve).toHaveBeenCalledTimes(1);
+  });
+
+  it('erreur serveur métier pendant la lecture parallèle : propagée telle quelle', async () => {
+    const resolve = vi.fn(async () => { throw new ApiError('http', 'produit introuvable', { status: 404 }); });
+    await expect(resolveWithParallelCapture({ resolve })).rejects.toBeInstanceOf(ApiError);
+  });
+});
+

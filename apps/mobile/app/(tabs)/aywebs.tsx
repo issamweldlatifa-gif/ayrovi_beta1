@@ -323,13 +323,13 @@ export default function AyWebsScreen() {
           ) : null}
           {/* «Add to Cart»: يفتح ورقة الاختيار. الإضافة الحقيقية في الورقة —
               نيّة فقط تخرج من الجهاز، والخادم هو اللي يكتب السطر ويحسب الثمن. */}
-          {product.purchaseMode === 'SUPPORTED' || product.purchaseMode === '' ? (
-            <Button
-              label={t('aywebs.addToCart')}
-              onPress={() => setSheetOpen(true)}
-              disabled={!sessionId}
-            />
-          ) : null}
+          {/* Tous les modes : `MANUAL_REVIEW` (boutique sans achat automatisé) s'ajoute
+              aussi au panier — l'achat passe alors par la revue humaine côté serveur. */}
+          <Button
+            label={t('aywebs.addToCart')}
+            onPress={() => setSheetOpen(true)}
+            disabled={!sessionId}
+          />
           {/* متجر ما يسمحش بالشراء المباشر: الطلب يمشي لمراجعة بشرية — بالكلمات،
               بلا ما نوعدو بالمستحيل. */}
           {ayWebsNeedsHumanRequest(product.purchaseMode) ? (

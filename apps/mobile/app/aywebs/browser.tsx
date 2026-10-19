@@ -35,7 +35,7 @@ import {
 } from '@/api/aywebs';
 import { AddToCartSheet } from '@/features/aywebs/AddToCartSheet';
 import { ReadingProgress } from '@/features/aywebs/ReadingProgress';
-import { resolveWithCaptureFallback } from '@/features/aywebs/captureFallback';
+import { resolveWithParallelCapture } from '@/features/aywebs/captureFallback';
 import { CAPTURE_BUDGET_MS, type ReadPhase } from '@/features/aywebs/phase';
 import { useSessionId } from '@/session/session';
 
@@ -209,14 +209,15 @@ export default function AyWebsBrowserScreen() {
     try {
       /* الكابتشر مسرّع فقط: كان فشل (صفحة ساكتة، سكريبت ما وصلش، شبكة مقطوعة)،
          نكمّلو بالقراءة من الخادم كيف الويب، والورقة تحل. */
-      const { outcome: result, capture } = await resolveWithCaptureFallback<AyWebsResolveOutcome>({
+      /* Lecture serveur lancée TOUT DE SUITE (sans capture), en parallèle de la
+         lecture de la page: le serveur travaille pendant que le téléphone lit. Une
+         capture réussie l'emporte (résolution avec capture, rapide). */
+      const { outcome: result, capture } = await resolveWithParallelCapture<AyWebsResolveOutcome>({
         readCapture: captureAllowed ? requestCapture : undefined,
-        resolve: (captured) => {
-          startWaiting('resolving');
-          return resolveAyWebsProductWithCapture(pageUrl, {
-            sessionId, storeId: storeId || undefined, capture: captured,
-          });
-        },
+        resolve: (captured) => resolveAyWebsProductWithCapture(pageUrl, {
+          sessionId, storeId: storeId || undefined, capture: captured,
+        }),
+        onPhase: () => startWaiting('resolving'),
       });
       setOutcome(result);
       setNote('');
