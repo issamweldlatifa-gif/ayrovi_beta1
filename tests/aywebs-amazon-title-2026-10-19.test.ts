@@ -13,6 +13,7 @@ import { describe, expect, it } from 'vitest';
 
 import { AYWEBS_CAPTURE_SCRIPT } from '../src/aywebs/captureScript';
 import { parseProductPageHtml } from '../src/scraper/productPageParser';
+import { amazonAsinFromUrl, amazonCanonicalProductUrl } from '../src/aywebs/adapters/amazon';
 
 const DIR = join(__dirname, 'fixtures/aywebs');
 const fixture = (name: string) => readFileSync(join(DIR, name), 'utf8');
@@ -56,4 +57,24 @@ describe('titre Amazon — lecteur WebView (captureScript)', () => {
     expect(title).toContain('AirPods');
     expect(title).not.toMatch(/^Amazon\.com/i);
   }, 30_000);
+});
+
+describe('Amazon — og:title et format ancien /exec/obidos/ASIN/ (adapter)', () => {
+  it('og:title « Amazon.com: <produit> » : le titre est le produit (lecteur WebView)', () => {
+    const html = '<html><head><meta property="og:title" content="Amazon.com: Casque Test Bluetooth"></head>'
+      + '<body><p>texte</p></body></html>';
+    expect(captureTitle(html, URL_US)).toBe('Casque Test Bluetooth');
+  });
+
+  it('format ancien /exec/obidos/ASIN/<ASIN> : même ASIN, forme canonique /dp/<ASIN>', () => {
+    const url = 'https://www.amazon.com/exec/obidos/ASIN/B0D1XD1ZV3/ref=foo';
+    expect(amazonAsinFromUrl(url)).toBe('B0D1XD1ZV3');
+    expect(amazonCanonicalProductUrl(url)).toBe('https://www.amazon.com/dp/B0D1XD1ZV3');
+  });
+
+  it('les formes actuelles ne changent pas', () => {
+    expect(amazonCanonicalProductUrl('https://www.amazon.de/Titre-Produit/dp/B0D1XD1ZV3?ref=x'))
+      .toBe('https://www.amazon.de/dp/B0D1XD1ZV3');
+    expect(amazonCanonicalProductUrl('https://www.amazon.fr/gp/product/B0D1XD1ZV3')).toBe('https://www.amazon.fr/dp/B0D1XD1ZV3');
+  });
 });

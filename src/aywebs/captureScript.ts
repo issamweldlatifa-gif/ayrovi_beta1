@@ -368,7 +368,12 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
       out.priceCandidates.push({ text: cut(metaPrice + ' ' + metaCurrency, LIMITS.text), source: 'meta' });
     }
     if (metaCurrency && !out.currencyText) out.currencyText = cut(metaCurrency, LIMITS.label);
-    if (!out.title) out.title = cut(meta(['meta[property="og:title"]']), LIMITS.text) || null;
+    if (!out.title) {
+      var ogTitle = String(meta(['meta[property="og:title"]']) || '');
+      /* Même règle que document.title : sur Amazon, « Amazon.com: <produit> » n'est pas le produit. */
+      if (IS_AMAZON) ogTitle = ogTitle.replace(/^\s*Amazon\.[a-z.]{2,6}\s*:\s*/i, '').trim();
+      out.title = cut(ogTitle, LIMITS.text) || null;
+    }
     var ogImage = meta(['meta[property="og:image"]', 'meta[name="twitter:image"]']);
     if (ogImage && /^https?:\/\//i.test(ogImage)) pushUnique(out.images, ogImage, LIMITS.images, 600);
     out.canonicalUrl = cut(meta(['meta[property="og:url"]']), 600) || null;

@@ -4,10 +4,10 @@ import { BaseStoreAdapter } from './base';
 import type { AyWebsPageClassification, AyWebsSourceProduct } from './contract';
 
 /**
- * Motif de fiche produit Amazon : `/dp/`, `/gp/product/`, `/gp/aw/d/`, `/product/`
- * suivi d'un ASIN de 10 caractères. Motif V1 conservé à l'identique.
+ * Motif de fiche produit Amazon : `/dp/`, `/gp/product/`, `/gp/aw/d/`, `/product/` et
+ * l'ancien `/exec/obidos/ASIN/`, suivi d'un ASIN de 10 caractères.
  */
-const ASIN_PATH = /\/(?:dp|gp\/(?:product|aw\/d)|product)\/([A-Z0-9]{10})(?:[/?]|$)/i;
+const ASIN_PATH = /\/(?:dp|gp\/(?:product|aw\/d)|product|exec\/obidos\/ASIN)\/([A-Z0-9]{10})(?:[/?]|$)/i;
 
 /**
  * ASIN d'une URL Amazon, ou `null`. Lu sur le CHEMIN seul : le slug (titre du
