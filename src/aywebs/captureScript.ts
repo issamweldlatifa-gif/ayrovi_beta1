@@ -687,7 +687,18 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
   }
 
   /* ── 8. Titre de secours et images visibles ─────────────────────────────── */
-  if (!out.title) { try { out.title = cut(document.title, LIMITS.text) || null; } catch (e) {} }
+  if (!out.title) {
+    try {
+      var rawTitle = String(document.title || '');
+      if (IS_AMAZON) {
+        /* document.title d'Amazon : « Amazon.com: <produit> ». Le préfixe n'est pas le
+           produit, et « Amazon.com » seul (page coquille) n'est pas un titre. */
+        rawTitle = rawTitle.replace(/^\s*Amazon\.[a-z.]{2,6}\s*:\s*/i, '').trim();
+        if (/^amazon(\.[a-z.]{2,6})?$/i.test(rawTitle)) rawTitle = '';
+      }
+      out.title = cut(rawTitle, LIMITS.text) || null;
+    } catch (e) {}
+  }
   if (AMAZON_STRICT) {
     /* Images PRODUIT d'abord. Mesuré le 06/10/2026 : la lecture générique
        («img[src^=http]») rapportait les sprites de la barre de navigation — donc
