@@ -375,12 +375,14 @@ export default function AyWebsBrowserScreen() {
             onPress={() => webRef.current?.goForward()}
             testID="aywebs-store-forward"
           />
-          <TextTool
+          <ToolIcon
+            name="bag-outline"
             label={t('aywebs.bar.cart')}
             onPress={() => setCartOpen(true)}
             testID="aywebs-store-cart"
           />
-          <TextTool
+          <ToolIcon
+            name={saved ? 'heart' : 'heart-outline'}
             label={t('aywebs.bar.favorites')}
             disabled={productPage !== true}
             active={saved}
@@ -413,58 +415,27 @@ export default function AyWebsBrowserScreen() {
         />
       ) : null}
 
-      {cartOpen ? (
-        <StoreCartSheet visible onClose={() => setCartOpen(false)} sessionId={sessionId} storeId={storeId} />
+      {sessionId ? (
+        <StoreCartSheet visible={cartOpen} onClose={() => setCartOpen(false)} sessionId={sessionId} storeId={storeId} />
       ) : null}
-      {favOpen ? (
-        <StoreFavoriteSheet
-          visible
-          onClose={() => setFavOpen(false)}
-          sourceUrl={pageUrl}
-          title={favoriteTitle}
-          saved={saved}
-        />
-      ) : null}
+      <StoreFavoriteSheet
+        visible={favOpen}
+        onClose={() => setFavOpen(false)}
+        sourceUrl={pageUrl}
+        title={favoriteTitle}
+        saved={saved}
+      />
     </View>
   );
 }
 
-/** Libellé d'action de la barre du bas (PANIER, FAVORIS), en capitales comme la référence. */
-function TextTool({ label, onPress, disabled = false, active = false, testID }: {
-  label: string;
-  onPress: () => void;
-  disabled?: boolean;
-  active?: boolean;
-  testID?: string;
-}) {
-  const theme = useTheme();
-  const color = disabled ? theme.colors.muted : theme.colors.ink;
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ disabled, selected: active }}
-      disabled={disabled}
-      onPress={onPress}
-      testID={testID}
-      style={({ pressed }) => [
-        styles.textTool,
-        { minHeight: theme.geometry.minTarget, opacity: pressed ? 0.7 : 1 },
-      ]}
-    >
-      <AppText variant="label" weight="bold" color={color} style={styles.textToolLabel}>
-        {label}
-      </AppText>
-    </Pressable>
-  );
-}
-
 /** Icône de la barre du bas : cible tactile complète, grisée quand l'action n'est pas possible. */
-function ToolIcon({ name, label, onPress, disabled = false, testID }: {
+function ToolIcon({ name, label, onPress, disabled = false, active = false, testID }: {
   name: ComponentProps<typeof Ionicons>['name'];
   label: string;
   onPress: () => void;
   disabled?: boolean;
+  active?: boolean;
   testID?: string;
 }) {
   const theme = useTheme();
@@ -481,7 +452,7 @@ function ToolIcon({ name, label, onPress, disabled = false, testID }: {
         { minWidth: 36, minHeight: theme.geometry.minTarget, opacity: disabled ? 0.35 : pressed ? 0.7 : 1 },
       ]}
     >
-      <Ionicons name={name} size={22} color={theme.colors.ink} accessibilityElementsHidden />
+      <Ionicons name={name} size={22} color={active ? theme.colors.accentText : theme.colors.ink} accessibilityElementsHidden />
     </Pressable>
   );
 }
@@ -493,8 +464,6 @@ const styles = StyleSheet.create({
   web: { flex: 1, marginTop: 8 },
   toolbar: { alignItems: 'center', gap: 2 },
   toolIcon: { alignItems: 'center', justifyContent: 'center' },
-  textTool: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
-  textToolLabel: { textTransform: 'uppercase' },
   addBox: { flex: 1, marginStart: 4 },
   loading: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   footer: { borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingTop: 8, gap: 6 },

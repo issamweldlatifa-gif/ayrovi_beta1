@@ -819,6 +819,7 @@ export const fr = {
   'aywebs.fav.saved': "Déjà dans vos favoris",
   'aywebs.fav.done': "Ajouté à vos favoris",
   'aywebs.fav.openList': "Voir mes favoris",
+  'aywebs.fav.title': "Mettre en favori",
   'aywebs.fav.login': "Connectez-vous pour enregistrer",
   'aywebs.sheetTitle': "Choix et quantité",
   'aywebs.sheetNoOptions': "Le marchand ne publie aucune option pour cet article : l’ajout se fait directement.",
