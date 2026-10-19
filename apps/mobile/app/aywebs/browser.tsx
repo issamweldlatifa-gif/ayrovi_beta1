@@ -373,28 +373,26 @@ export default function AyWebsBrowserScreen() {
             onPress={() => webRef.current?.goForward()}
             testID="aywebs-store-forward"
           />
-          <ToolIcon
-            name={saved ? 'heart' : 'heart-outline'}
-            label={t('aywebs.fav.open')}
-            disabled={productPage !== true}
-            onPress={() => setFavOpen(true)}
-            testID="aywebs-store-fav"
-          />
-          <ToolIcon
-            name="cart-outline"
-            label={t('aywebs.cart.open')}
+          <TextTool
+            label={t('aywebs.bar.cart')}
             onPress={() => setCartOpen(true)}
             testID="aywebs-store-cart"
           />
+          <TextTool
+            label={t('aywebs.bar.favorites')}
+            disabled={productPage !== true}
+            active={saved}
+            onPress={() => setFavOpen(true)}
+            testID="aywebs-store-fav"
+          />
           <View style={styles.addBox}>
             <Button
-              label={t('aywebs.addToCart')}
+              label={busy ? t('aywebs.loading') : t('aywebs.addToCart')}
               tone="main"
               block
               onPress={addToCart}
               busy={busy}
               disabled={!addEnabled}
-              leading={<Ionicons name="pricetag-outline" size={18} color={theme.colors.onAction} />}
               testID="aywebs-store-add-to-cart"
             />
           </View>
@@ -429,6 +427,36 @@ export default function AyWebsBrowserScreen() {
   );
 }
 
+/** Libellé d'action de la barre du bas (PANIER, FAVORIS), en capitales comme la référence. */
+function TextTool({ label, onPress, disabled = false, active = false, testID }: {
+  label: string;
+  onPress: () => void;
+  disabled?: boolean;
+  active?: boolean;
+  testID?: string;
+}) {
+  const theme = useTheme();
+  const color = disabled ? theme.colors.muted : theme.colors.ink;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled, selected: active }}
+      disabled={disabled}
+      onPress={onPress}
+      testID={testID}
+      style={({ pressed }) => [
+        styles.textTool,
+        { minHeight: theme.geometry.minTarget, opacity: pressed ? 0.7 : 1 },
+      ]}
+    >
+      <AppText variant="label" weight="bold" color={color} style={styles.textToolLabel}>
+        {label}
+      </AppText>
+    </Pressable>
+  );
+}
+
 /** Icône de la barre du bas : cible tactile complète, grisée quand l'action n'est pas possible. */
 function ToolIcon({ name, label, onPress, disabled = false, testID }: {
   name: ComponentProps<typeof Ionicons>['name'];
@@ -448,7 +476,7 @@ function ToolIcon({ name, label, onPress, disabled = false, testID }: {
       testID={testID}
       style={({ pressed }) => [
         styles.toolIcon,
-        { minWidth: theme.geometry.minTarget, minHeight: theme.geometry.minTarget, opacity: disabled ? 0.35 : pressed ? 0.7 : 1 },
+        { minWidth: 36, minHeight: theme.geometry.minTarget, opacity: disabled ? 0.35 : pressed ? 0.7 : 1 },
       ]}
     >
       <Ionicons name={name} size={22} color={theme.colors.ink} accessibilityElementsHidden />
@@ -463,6 +491,8 @@ const styles = StyleSheet.create({
   web: { flex: 1, marginTop: 8 },
   toolbar: { alignItems: 'center', gap: 2 },
   toolIcon: { alignItems: 'center', justifyContent: 'center' },
+  textTool: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
+  textToolLabel: { textTransform: 'uppercase' },
   addBox: { flex: 1, marginStart: 4 },
   loading: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   footer: { borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingTop: 8, gap: 6 },

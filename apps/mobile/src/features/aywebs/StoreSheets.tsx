@@ -6,8 +6,9 @@
  *  • StoreFavoriteSheet : mettre la page produit courante dans les favoris du client.
  *    Le serveur reçoit l'adresse et le titre ; le prix n'est pas envoyé d'ici.
  */
-import { useState } from 'react';
+import { useState, type ComponentProps } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -19,6 +20,7 @@ import { fetchAyWebsCart } from '@/api/aywebs';
 import { fetchAyroviCart } from '@/api/cart';
 import { addExternalFavorite } from '@/api/account';
 import { userMessage } from '@/api/errors';
+import { rowDirectionFor } from '@/design/layoutLogic';
 import {
   STORE_CART_SEGMENTS, storeCartSections, type StoreCartSegment,
 } from './storeShopping';
@@ -108,7 +110,7 @@ export function StoreCartSheet({ visible, onClose, sessionId, storeId }: StoreCa
             {sections.map((section) => (
               <Card key={section.storeKey} title={section.storeName}>
                 {section.rows.map((row) => (
-                  <View key={row.id} style={styles.row}>
+                  <View key={row.id} style={styles.cartRow}>
                     <View style={styles.rowText}>
                       <AppText variant="label" weight="bold" numberOfLines={2}>{row.title}</AppText>
                       {row.variant ? (
@@ -143,6 +145,44 @@ export interface StoreFavoriteSheetProps {
   saved: boolean;
 }
 
+/** Une ligne d'action du volet (comme « Add to Wish List » / « View Wish List »). */
+function SheetRow({ label, icon, onPress, disabled = false, busy = false, testID }: {
+  label: string;
+  icon: ComponentProps<typeof Ionicons>['name'];
+  onPress: () => void;
+  disabled?: boolean;
+  busy?: boolean;
+  testID?: string;
+}) {
+  const theme = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: disabled || busy, busy }}
+      disabled={disabled || busy}
+      onPress={onPress}
+      testID={testID}
+      style={({ pressed }) => [
+        styles.row,
+        {
+          flexDirection: rowDirectionFor(theme.isRTL),
+          minHeight: theme.geometry.minTarget + 12,
+          borderBottomColor: theme.colors.line,
+          opacity: disabled ? 0.5 : pressed ? 0.7 : 1,
+        },
+      ]}
+    >
+      <AppText variant="body" weight="bold" style={styles.rowLabel}>{label}</AppText>
+      {busy ? (
+        <ActivityIndicator color={theme.colors.ink} />
+      ) : (
+        <Ionicons name={icon} size={22} color={theme.colors.ink} accessibilityElementsHidden />
+      )}
+    </Pressable>
+  );
+}
+
 export function StoreFavoriteSheet({ visible, onClose, sourceUrl, title, saved }: StoreFavoriteSheetProps) {
   const theme = useTheme();
   const { t, locale } = useI18n();
@@ -162,35 +202,38 @@ export function StoreFavoriteSheet({ visible, onClose, sourceUrl, title, saved }
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.backdrop}>
-        <Pressable style={styles.backdropTouch} accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={onClose} />
+        <Pressable style={StyleSheet.absoluteFill} accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={onClose} />
         <View style={[styles.sheet, { backgroundColor: theme.colors.canvas, borderTopLeftRadius: theme.radius.sheet, borderTopRightRadius: theme.radius.sheet }]}>
-          <ScrollView contentContainerStyle={styles.body}>
-            <AppText variant="title">{t('aywebs.fav.title')}</AppText>
-            <AppText variant="lead" weight="bold" numberOfLines={3}>{title}</AppText>
+          <View style={[styles.sheetHead, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('common.close')}
+              onPress={onClose}
+              style={[styles.closeButton, { minWidth: theme.geometry.minTarget, minHeight: theme.geometry.minTarget }]}
+            >
+              <Ionicons name="close" size={26} color={theme.colors.ink} accessibilityElementsHidden />
+            </Pressable>
+          </View>
 
-            {add.isError ? (
-              <AppText accessibilityRole="alert" variant="label" color={theme.status.danger.fg}>
-                {userMessage(add.error)[locale]}
-              </AppText>
-            ) : null}
-
-            {isSaved ? (
-              <>
-                <AppText variant="label" weight="bold" color={theme.status.success.fg}>
-                  {done ? t('aywebs.fav.done') : t('aywebs.fav.saved')}
-                </AppText>
-                <Button label={t('aywebs.fav.openList')} tone="quiet" block onPress={() => { onClose(); router.push('/account/favorites'); }} />
-              </>
-            ) : (
-              <Button
-                label={t('aywebs.fav.add')}
-                block
-                busy={add.isPending}
-                disabled={!sourceUrl || !title}
-                onPress={() => add.mutate()}
-              />
-            )}
-          </ScrollView>
+          <SheetRow
+            testID="aywebs-fav-add"
+            label={isSaved ? (done ? t('aywebs.fav.done') : t('aywebs.fav.saved')) : t('aywebs.fav.add')}
+            icon={isSaved ? 'heart' : 'heart-outline'}
+            disabled={isSaved || !sourceUrl || !title}
+            busy={add.isPending}
+            onPress={() => add.mutate()}
+          />
+          {add.isError ? (
+            <AppText accessibilityRole="alert" variant="label" color={theme.status.danger.fg} style={styles.note}>
+              {userMessage(add.error)[locale]}
+            </AppText>
+          ) : null}
+          <SheetRow
+            testID="aywebs-fav-view"
+            label={t('aywebs.fav.openList')}
+            icon={theme.isRTL ? 'chevron-back' : 'chevron-forward'}
+            onPress={() => { onClose(); router.push('/account/favorites'); }}
+          />
         </View>
       </View>
     </Modal>
@@ -200,10 +243,15 @@ export function StoreFavoriteSheet({ visible, onClose, sourceUrl, title, saved }
 const styles = StyleSheet.create({
   backdrop: { flex: 1, justifyContent: 'flex-end' },
   backdropTouch: { ...StyleSheet.absoluteFill },
-  sheet: { maxHeight: '85%' },
+  sheet: { maxHeight: '85%', paddingBottom: 24 },
   body: { padding: 20, gap: 12 },
+  sheetHead: { justifyContent: 'flex-end', paddingHorizontal: 8, paddingTop: 8 },
+  closeButton: { alignItems: 'center', justifyContent: 'center' },
+  rowLabel: { flex: 1 },
+  note: { paddingHorizontal: 20, paddingTop: 8 },
   segments: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   segment: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 16, justifyContent: 'center' },
-  row: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 },
+  cartRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 },
   rowText: { flex: 1, gap: 2 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, borderBottomWidth: StyleSheet.hairlineWidth },
 });
