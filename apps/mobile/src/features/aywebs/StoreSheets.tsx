@@ -11,6 +11,7 @@ import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, View } fro
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSession } from '@/state/session';
 
 import { AppText, Button, Card } from '@/design/ui';
 import { useTheme } from '@/design/theme';
@@ -186,6 +187,9 @@ function SheetRow({ label, icon, onPress, disabled = false, busy = false, testID
 export function StoreFavoriteSheet({ visible, onClose, sourceUrl, title, saved }: StoreFavoriteSheetProps) {
   const theme = useTheme();
   const { t, locale } = useI18n();
+  /* Les favoris exigent un compte : hors connexion, la première ligne mène à la connexion. */
+  const { status } = useSession();
+  const signedIn = status === 'signedIn';
   const queryClient = useQueryClient();
   const [done, setDone] = useState(false);
 
@@ -215,25 +219,36 @@ export function StoreFavoriteSheet({ visible, onClose, sourceUrl, title, saved }
             </Pressable>
           </View>
 
-          <SheetRow
-            testID="aywebs-fav-add"
-            label={isSaved ? (done ? t('aywebs.fav.done') : t('aywebs.fav.saved')) : t('aywebs.fav.add')}
-            icon={isSaved ? 'heart' : 'heart-outline'}
-            disabled={isSaved || !sourceUrl || !title}
-            busy={add.isPending}
-            onPress={() => add.mutate()}
-          />
+          {signedIn ? (
+            <SheetRow
+              testID="aywebs-fav-add"
+              label={isSaved ? (done ? t('aywebs.fav.done') : t('aywebs.fav.saved')) : t('aywebs.fav.add')}
+              icon={isSaved ? 'heart' : 'heart-outline'}
+              disabled={isSaved || !sourceUrl || !title}
+              busy={add.isPending}
+              onPress={() => add.mutate()}
+            />
+          ) : (
+            <SheetRow
+              testID="aywebs-fav-login"
+              label={t('aywebs.fav.login')}
+              icon={theme.isRTL ? 'chevron-back' : 'chevron-forward'}
+              onPress={() => { onClose(); router.push('/sign-in'); }}
+            />
+          )}
           {add.isError ? (
             <AppText accessibilityRole="alert" variant="label" color={theme.status.danger.fg} style={styles.note}>
               {userMessage(add.error)[locale]}
             </AppText>
           ) : null}
-          <SheetRow
-            testID="aywebs-fav-view"
-            label={t('aywebs.fav.openList')}
-            icon={theme.isRTL ? 'chevron-back' : 'chevron-forward'}
-            onPress={() => { onClose(); router.push('/account/favorites'); }}
-          />
+          {signedIn ? (
+            <SheetRow
+              testID="aywebs-fav-view"
+              label={t('aywebs.fav.openList')}
+              icon={theme.isRTL ? 'chevron-back' : 'chevron-forward'}
+              onPress={() => { onClose(); router.push('/account/favorites'); }}
+            />
+          ) : null}
         </View>
       </View>
     </Modal>

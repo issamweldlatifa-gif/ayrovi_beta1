@@ -819,6 +819,7 @@ export const ar = {
   'aywebs.fav.saved': "موجود في المفضلة متاعك",
   'aywebs.fav.done': "تزاد للمفضلة",
   'aywebs.fav.openList': "شوف المفضلة",
+  'aywebs.fav.login': "سجّل الدخول باش تحفظ في المفضلة",
   'aywebs.sheetTitle': "الاختيار والكمية",
   'aywebs.sheetNoOptions': "التاجر ما نشرش خيارات لهذا المنتوج: الإضافة تجي مباشرة.",
   'aywebs.quantity': "الكمية",

@@ -41,6 +41,7 @@ import { ReadingProgress } from '@/features/aywebs/ReadingProgress';
 import { resolveWithParallelCapture } from '@/features/aywebs/captureFallback';
 import { CAPTURE_BUDGET_MS, type ReadPhase } from '@/features/aywebs/phase';
 import { useSessionId } from '@/session/session';
+import { useSession } from '@/state/session';
 
 /** كي الصفحة ما تبعثش شي: مانبقاوش نستنّوا بلا نهاية. */
 const CAPTURE_TIMEOUT_MS = CAPTURE_BUDGET_MS;
@@ -235,10 +236,11 @@ export default function AyWebsBrowserScreen() {
   const addEnabled = productPage === true && !busy && Boolean(sessionId);
 
   /* Favoris : seulement pour une page produit. La liste sert à afficher le cœur plein. */
+  const { status: accountStatus } = useSession();
   const favorites = useQuery({
     queryKey: ['account', 'favorites'],
     queryFn: ({ signal }) => fetchFavorites({ signal }),
-    enabled: productPage === true,
+    enabled: productPage === true && accountStatus === 'signedIn',
     retry: false,
   });
   const saved = isPageSaved(favorites.data ?? [], pageUrl);
