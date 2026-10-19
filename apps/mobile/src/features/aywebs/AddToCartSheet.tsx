@@ -14,13 +14,14 @@
  *   • التأكيد مكتوب من **السطر اللي رجّعو الخادم**، موش من عندنا.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 
 import { AppText, Button, KeyValue } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { AppImage } from '@/design/appImage';
-import { veil } from '@/design/tokens.mobile';
+import { AppSheet } from '@/design/sheet/AppSheet';
+import { SheetHeader } from '@/design/sheet/SheetHeader';
 import { useI18n } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import { isApiError, userMessage } from '@/api/errors';
@@ -202,19 +203,20 @@ export function AddToCartSheet({
   const itemsCount = groups.reduce((sum, group) => sum + group.values.length, 0);
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.backdrop}>
-        <Pressable
-          style={styles.backdropTouch}
-          accessibilityRole="button"
-          accessibilityLabel={t('common.cancel')}
-          onPress={onClose}
+    <AppSheet
+      open={visible}
+      onDismiss={onClose}
+      header={(
+        <SheetHeader
+          title={added ? t('aywebs.added') : t('aywebs.sheetTitle')}
+          subtitle={added ? undefined : product.title}
+          onClose={onClose}
         />
-        <View style={[styles.sheet, { backgroundColor: theme.colors.canvas, borderTopLeftRadius: theme.radius.sheet, borderTopRightRadius: theme.radius.sheet }]}>
+      )}
+    >
           <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
             {added ? (
               <>
-                <AppText variant="title">{t('aywebs.added')}</AppText>
                 {added.item.images[0] ? (
                   <AppImage uri={mediaUrl(added.item.images[0])} style={styles.image} contentFit="contain" accessibilityLabel={added.item.title} />
                 ) : null}
@@ -252,9 +254,6 @@ export function AddToCartSheet({
               </>
             ) : (
               <>
-                <AppText variant="title">{t('aywebs.sheetTitle')}</AppText>
-                <AppText variant="caption" color={theme.colors.muted}>{product.title}</AppText>
-
                 {groups.map((group) => {
                   const key = group.attribute.trim().toLowerCase();
                   const chosen = selection[key] ?? '';
@@ -361,16 +360,11 @@ export function AddToCartSheet({
               </>
             )}
           </ScrollView>
-        </View>
-      </View>
-    </Modal>
+    </AppSheet>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: veil(0.45), justifyContent: 'flex-end' },
-  backdropTouch: { flex: 1 },
-  sheet: { maxHeight: '88%', paddingHorizontal: 16, paddingTop: 16 },
   body: { gap: 10, paddingBottom: 24 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
   image: { width: '100%', height: 160, marginBottom: 4 },
