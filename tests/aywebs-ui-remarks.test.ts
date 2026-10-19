@@ -386,11 +386,10 @@ describe('Logos des boutiques et hôte de l’API', () => {
   });
 
   test('parle à l’hôte qui répond réellement', () => {
-    // Choix du propriétaire (2026-10-19) : serveur moo8. Le contrôle
-    // « hôte qui répond » vaut pour l'origine réellement configurée.
+    // Mesuré au curl : l’hôte sans « -1 » renvoie 404 sur les routes d’auth,
+    // et c’est l’hôte « -1 » que le serveur met lui-même dans son redirect_uri.
     const origin = readCode('client/src/services/apiOrigin.ts');
-    expect(origin).toContain('https://ayrovi-beta1-moo8.onrender.com');
-    expect(origin).not.toMatch(/ayrovi-beta1-1\.onrender\.com/);
+    expect(origin).toContain('https://ayrovi-beta1-1.onrender.com');
     expect(origin).not.toMatch(/ayrovi-beta1\.onrender\.com/);
   });
 });

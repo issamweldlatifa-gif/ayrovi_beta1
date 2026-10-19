@@ -44,10 +44,7 @@
  * dans l'onglet mais laisse l'application déconnectée. Les deux hôtes doivent
  * être le même, et c'est celui que le serveur déclare qui fait foi.
  */
-// 2026-10-19 : serveur API choisi par le propriétaire (ayrovi-beta1-moo8).
-// Attention : l'ancienne valeur (ayrovi-beta1-1) était celle déclarée au
-// redirect_uri Google ; si la connexion Google échoue, vérifier ce point.
-const PRODUCTION_ORIGIN = 'https://ayrovi-beta1-moo8.onrender.com';
+const PRODUCTION_ORIGIN = 'https://ayrovi-beta1-1.onrender.com';
 
 /** Normalise une origine : trim, sans barre finale, et HTTPS/HTTP valide seulement. */
 export function normalizeApiOrigin(raw: string | undefined | null): string {
