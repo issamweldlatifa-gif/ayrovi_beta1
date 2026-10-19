@@ -13,7 +13,7 @@ import { describe, expect, it } from 'vitest';
 
 import { AYWEBS_CAPTURE_SCRIPT } from '../src/aywebs/captureScript';
 import { parseProductPageHtml } from '../src/scraper/productPageParser';
-import { amazonAsinFromUrl, amazonCanonicalProductUrl } from '../src/aywebs/adapters/amazon';
+import { AmazonAdapter, amazonAsinFromUrl, amazonCanonicalProductUrl } from '../src/aywebs/adapters/amazon';
 
 const DIR = join(__dirname, 'fixtures/aywebs');
 const fixture = (name: string) => readFileSync(join(DIR, name), 'utf8');
@@ -76,5 +76,24 @@ describe('Amazon — og:title et format ancien /exec/obidos/ASIN/ (adapter)', ()
     expect(amazonCanonicalProductUrl('https://www.amazon.de/Titre-Produit/dp/B0D1XD1ZV3?ref=x'))
       .toBe('https://www.amazon.de/dp/B0D1XD1ZV3');
     expect(amazonCanonicalProductUrl('https://www.amazon.fr/gp/product/B0D1XD1ZV3')).toBe('https://www.amazon.fr/dp/B0D1XD1ZV3');
+  });
+});
+
+describe('Amazon — page de vérification /checkpoint/ (19/10/2026)', () => {
+  // Constat : Amazon renvoie /checkpoint/continue (« Continue shopping ») à une lecture
+  // automatisée, même sur la fiche /dp/ nue. Ce n'est pas une fiche : il faut le dire.
+  const adapter = new AmazonAdapter({} as any);
+
+  it('l’URL de vérification est classée CAPTCHA (action : vérifier dans le navigateur)', () => {
+    const verdict = adapter.classifyPage('https://www.amazon.com/checkpoint/continue?token=v1.abc');
+    expect(verdict.pageType).toBe('CAPTCHA');
+    expect(verdict.isProductPage).toBe(false);
+    expect(verdict.customerActionRequired).toBe('CAPTCHA');
+  });
+
+  it('une vraie fiche produit reste PRODUCT', () => {
+    const verdict = adapter.classifyPage('https://www.amazon.com/Nike-Fleece-Jogger/dp/B0DLTC7BBY/ref=pd_aw_ci');
+    expect(verdict.pageType).toBe('PRODUCT');
+    expect(verdict.isProductPage).toBe(true);
   });
 });
