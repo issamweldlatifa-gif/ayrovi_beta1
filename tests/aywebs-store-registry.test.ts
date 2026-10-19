@@ -3,6 +3,8 @@ import {
   AYWEBS_CATEGORIES, AYWEBS_STORES, detectAyWebsStore, validateAyWebsStoreRegistry, type AyWebsStoreDefinition,
 } from '../shared/aywebsStores';
 import { AYWEBS_CATALOG_STORES } from '../shared/aywebsStoreCatalog';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 
 const base = AYWEBS_STORES[0];
 const store = (overrides: Partial<AyWebsStoreDefinition>): AyWebsStoreDefinition => ({ ...base, ...overrides });
@@ -120,5 +122,28 @@ describe('catalogue des boutiques (liste de référence, non ouvertes)', () => {
     expect(ar.toys).toBe('الألعاب والأطفال');
     expect(ar.garden).toBe('الحديقة والخارج');
     expect(ar.health).toBe('العناية الشخصية');
+  });
+});
+
+describe('logos du catalogue — fichiers présents (main.pdf)', () => {
+  const LOGO_DIR = join(__dirname, '..', 'client', 'public');
+
+  it('chaque logo déclaré existe sous client/public', () => {
+    const missing = AYWEBS_CATALOG_STORES
+      .filter((s) => s.logo)
+      .filter((s) => !existsSync(join(LOGO_DIR, s.logo)))
+      .map((s) => s.id);
+    expect(missing).toEqual([]);
+  });
+
+  it('les marchands sans logo dans main.pdf gardent une chaîne vide (lettre affichée)', () => {
+    const noLogo = AYWEBS_CATALOG_STORES.filter((s) => !s.logo).map((s) => s.id).sort();
+    expect(noLogo).toEqual(['chain-reaction-cycles', 'joann', 'ninja-kitchen', 'oshkosh-b-gosh']);
+  });
+
+  it('le logo suit le modèle /stores/<id>.png', () => {
+    for (const s of AYWEBS_CATALOG_STORES.filter((x) => x.logo)) {
+      expect(s.logo).toBe(`/stores/${s.id}.png`);
+    }
   });
 });

@@ -11,7 +11,7 @@
  * apparaît automatiquement. Les textes marqués « figés » sont ceux du cahier des charges.
  */
 import { useState, type ComponentProps, type ReactNode } from 'react';
-import { Pressable, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
@@ -31,7 +31,7 @@ import { storeEntryTarget } from '@/features/aywebs/storeEntry';
 import { useSavedStoreIds } from '@/features/aywebs/savedStores';
 import {
   categoryEntries, categoryLabel, chunkRows, filterStoresByQuery, normalizeSearchText,
-  savedStoresInOrder, storeDisplayName, storeDomain, storeSubtitle, storesInCategory,
+  savedStoresInOrder, storeDisplayName, storeDomain, storeSubtitle, storesInCategory, storeVisitUrl,
   type StoresLocale,
 } from '@/features/aywebs/storesCatalog';
 
@@ -324,6 +324,7 @@ function StoreCard({ store, subtitle, enabled, saved, onOpen, onToggle }: {
   const name = storeDisplayName(store);
   const logo = mediaUrl(store.logo);
   const domain = storeDomain(store);
+  const visitUrl = storeVisitUrl(store);
   return (
     <Pressable
       accessibilityRole="button"
@@ -376,6 +377,19 @@ function StoreCard({ store, subtitle, enabled, saved, onOpen, onToggle }: {
         {domain ? (
           <AppText variant="caption" color={theme.colors.muted} numberOfLines={1}>{domain}</AppText>
         ) : null}
+        {visitUrl ? (
+          <Pressable
+            accessibilityRole="link"
+            accessibilityLabel={`${t('aywebs.stores.visit')} — ${name}`}
+            onPress={() => { Linking.openURL(visitUrl).catch(() => undefined); }}
+            hitSlop={8}
+            testID={`aywebs-store-visit-${store.id}`}
+            style={[styles.visit, { flexDirection: rowDirectionFor(theme.isRTL) }]}
+          >
+            <Ionicons name="open-outline" size={16} color={theme.colors.accentText} accessibilityElementsHidden />
+            <AppText variant="caption" weight="bold" color={theme.colors.accentText}>{t('aywebs.stores.visit')}</AppText>
+          </Pressable>
+        ) : null}
       </View>
     </Pressable>
   );
@@ -417,6 +431,7 @@ const styles = StyleSheet.create({
   },
   logo: { width: '100%', height: '100%' },
   cardBody: { padding: 12, gap: 6 },
+  visit: { alignItems: 'center', alignSelf: 'flex-start', gap: 6, minHeight: 36, paddingVertical: 4 },
   nameRow: { alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   name: { flex: 1 },
   heart: {

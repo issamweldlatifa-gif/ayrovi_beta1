@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { AyWebsCategory, AyWebsStore } from '@/api/aywebs';
 import {
   categoryEntries, categoryLabel, chunkRows, filterStoresByQuery, normalizeSearchText,
-  parseSavedStoreIds, savedStoresInOrder, storeDomain, storeSubtitle, storesInCategory,
+  parseSavedStoreIds, savedStoresInOrder, storeDomain, storeSubtitle, storesInCategory, storeVisitUrl,
   toggleSavedStoreId,
 } from '@/features/aywebs/storesCatalog';
 
@@ -130,5 +130,21 @@ describe('chunkRows', () => {
   it('returns no rows for an empty list and never loops on a bad width', () => {
     expect(chunkRows([], 2)).toEqual([]);
     expect(chunkRows([1, 2], 0)).toEqual([[1], [2]]);
+  });
+});
+
+describe('storeVisitUrl', () => {
+  it('renvoie l\'adresse d\'accueil en https', () => {
+    expect(storeVisitUrl(store({ id: 'amazon', homeUrl: 'https://www.amazon.com' }))).toBe('https://www.amazon.com/');
+  });
+
+  it('accepte http', () => {
+    expect(storeVisitUrl(store({ id: 'old', homeUrl: 'http://old.example' }))).toBe('http://old.example/');
+  });
+
+  it('refuse les schémas non web et les adresses invalides', () => {
+    expect(storeVisitUrl(store({ id: 'x', homeUrl: 'javascript:alert(1)' }))).toBe('');
+    expect(storeVisitUrl(store({ id: 'y', homeUrl: 'intent://x' }))).toBe('');
+    expect(storeVisitUrl(store({ id: 'z', homeUrl: '' }))).toBe('');
   });
 });

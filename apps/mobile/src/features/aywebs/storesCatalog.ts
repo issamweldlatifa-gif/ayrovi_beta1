@@ -88,6 +88,19 @@ export function storeDomain(store: AyWebsStore): string {
   }
 }
 
+/**
+ * Adresse « Visiter le site » d'une boutique : seulement une adresse web (http/https),
+ * sinon `''` (pas de lien affiché). Ouverte à l'extérieur de l'application.
+ */
+export function storeVisitUrl(store: AyWebsStore): string {
+  try {
+    const url = new URL(store.homeUrl);
+    return url.protocol === 'https:' || url.protocol === 'http:' ? url.toString() : '';
+  } catch {
+    return '';
+  }
+}
+
 /** Boutiques enregistrées, dans l'ordre du catalogue (un identifiant disparu est ignoré). */
 export function savedStoresInOrder(stores: readonly AyWebsStore[], savedIds: readonly string[]): AyWebsStore[] {
   const saved = new Set(savedIds);

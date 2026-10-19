@@ -793,6 +793,7 @@ export const ar = {
   'aywebs.stores.noStores': 'ما فماش متاجر في هالفئة توّا.',
   'aywebs.stores.savedEmpty': 'حط القلب على متجر باش يتسجّل هنا.',
   'aywebs.stores.save': 'احفظ المتجر',
+  'aywebs.stores.visit': 'زيارة الموقع',
   'aywebs.stores.unsave': 'أزيل المتجر من المحفوظ',
   'aywebs.storeNotOperational': "مازالت ما تجهّزتش",
   'aywebs.storeEnterUnavailable': "الدخول غير متاح: هذا المتجر ما عندوش صفحة رئيسية عمومية.",

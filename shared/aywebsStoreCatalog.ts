@@ -9,7 +9,8 @@
  * avec son adaptateur et son logo. Identifiants et adresses ne changent pas.
  *
  * Un marchand présent dans plusieurs catégories n'est écrit qu'une fois.
- * Logos : aucun fichier pour l'instant (lettre initiale affichée).
+ * Logos : fichiers dans `client/public/stores/<id>.png` (source : main.pdf, icônes
+ * des sites). Sans fichier, la lettre initiale est affichée.
  */
 import type { AyWebsStoreDefinition } from './aywebsStores';
 
@@ -397,13 +398,18 @@ const CATALOG_ROWS: ReadonlyArray<readonly [string, string, string, readonly str
   ["vivienne-westwood", "Vivienne Westwood", "https://www.viviennewestwood.com", ["accessories"]],
 ];
 
+/** Marchands du catalogue sans logo fourni dans main.pdf : lettre initiale affichée. */
+const WITHOUT_LOGO_FILE: ReadonlySet<string> = new Set([
+  'chain-reaction-cycles', 'joann', 'ninja-kitchen', 'oshkosh-b-gosh',
+]);
+
 function catalogStore([id, name, homeUrl, categories]: (typeof CATALOG_ROWS)[number]): AyWebsStoreDefinition {
   let domain = '';
   try { domain = new URL(homeUrl).hostname.toLowerCase().replace(/^www\./, ''); } catch { domain = ''; }
   return {
     id, name, displayName: name,
     domains: domain ? [domain] : [],
-    country: '', currency: '', logo: '',
+    country: '', currency: '', logo: WITHOUT_LOGO_FILE.has(id) ? '' : `/stores/${id}.png`,
     enabled: false, captureSupported: false,
     adapter: 'generic', status: 'planned', integrationType: 'URL_REQUEST',
     capabilities: [], browserMode: 'external',

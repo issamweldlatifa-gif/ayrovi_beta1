@@ -793,6 +793,7 @@ export const fr = {
   'aywebs.stores.noStores': 'Aucune boutique dans cette catégorie pour le moment.',
   'aywebs.stores.savedEmpty': 'Touchez le cœur d’une boutique pour l’enregistrer ici.',
   'aywebs.stores.save': 'Enregistrer la boutique',
+  'aywebs.stores.visit': 'Visiter le site',
   'aywebs.stores.unsave': 'Retirer la boutique des enregistrées',
   'aywebs.storeNotOperational': "Pas encore prête",
   'aywebs.storeEnterUnavailable': "Entrée indisponible : cette boutique n’a pas de page d’accueil publique.",
