@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 
 import { QatafoDatabase } from '../src/db/database';
 import { ensureAyWebsSchema } from '../src/aywebs/schema';
+import { readAyWebsOrderById } from '../src/aywebs/orders';
 import {
   approveAyWebsTransferPayment, confirmAyWebsPurchase, recordAyWebsTransferProof, startAyWebsPurchase,
 } from '../src/aywebs/orders';
@@ -47,6 +48,10 @@ describe('AYWEBs post-payment flow — virement', () => {
     const proof = db.get<any>('SELECT proof_submitted_at, purchase_due_at FROM ayweb_orders WHERE id=?', orderId);
     expect(Date.parse(proof.proof_submitted_at)).toBeGreaterThanOrEqual(before);
     expect(Date.parse(proof.purchase_due_at) - Date.parse(proof.proof_submitted_at)).toBe(24 * 60 * 60 * 1000);
+
+    // La file « Achats AYWEBs » lit l'échéance interne par l'API admin : elle doit suivre la base.
+    const readBack = readAyWebsOrderById(db, orderId);
+    expect(readBack?.purchaseDueAt).toBe(proof.purchase_due_at);
 
     // Validation tardive : l'échéance reste celle du justificatif, pas de la validation.
     const approved = approveAyWebsTransferPayment(db, { orderId, adminId: 'admin-1' });

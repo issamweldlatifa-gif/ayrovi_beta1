@@ -94,6 +94,8 @@ export interface AyWebsOrder {
   paymentMethod: string;
   paymentReference: string;
   paidAt: string | null;
+  /** Échéance interne d'achat (carte = paiement ; virement = justificatif + 24 h). Jamais affichée au client. */
+  purchaseDueAt: string | null;
   submittedAt: string | null;
   notes: string;
   shippingAddress: Record<string, unknown>;
@@ -993,6 +995,7 @@ function hydrateOrder(db: QatafoDatabase, row: any): AyWebsOrder {
     paymentMethod: payment ? String(payment.method) : 'PENDING_SELECTION',
     paymentReference: String(row.payment_reference || ''),
     paidAt: row.paid_at ? String(row.paid_at) : null,
+    purchaseDueAt: row.purchase_due_at ? String(row.purchase_due_at) : null,
     submittedAt: row.submitted_at ? String(row.submitted_at) : null,
     notes: String(row.notes || ''),
     shippingAddress: parseJsonObject(row.shipping_address),
