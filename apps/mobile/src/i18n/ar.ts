@@ -771,8 +771,6 @@ export const ar = {
   'aywebs.stores.visit': 'زيارة الموقع',
   'aywebs.stores.unsave': 'أزيل المتجر من المحفوظ',
   'aywebs.storeEnterUnavailable': "الدخول غير متاح: هذا المتجر ما عندوش صفحة رئيسية عمومية.",
-  'aywebs.cartCardTitle': "سلّة الشراء",
-  'aywebs.cartCardCount': "{count} منتوج في سلّة AYWEBs.",
   'aywebs.browserTitle': "صفحة المتجر",
   'aywebs.phase.preparing': "نجهّز القارئ",
   'aywebs.phase.reading': "نقرا صفحة التاجر",

@@ -1,4 +1,4 @@
-// Onglet AYWEBs : il ouvre la page Stores (et plus le collage de lien), le panier reste.
+// Onglet AYWEBs : il ouvre la page Stores seule (ni collage de lien, ni carte panier).
 import { render, screen, waitFor } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -84,9 +84,10 @@ describe('onglet AYWEBs — page Stores', () => {
     expect(screen.queryByTestId('aywebs-resolve')).toBeNull();
   });
 
-  it('garde l\'accès au panier AYWEBs', async () => {
+  it('n\'affiche pas la carte panier dans l\'onglet', async () => {
     renderTab();
     await waitFor(() => expect(screen.getByTestId('aywebs-store-store-0')).toBeTruthy(), { timeout: 5000 });
-    expect(screen.getByTestId('aywebs-open-cart')).toBeTruthy();
+    expect(screen.queryByTestId('aywebs-open-cart')).toBeNull();
+    expect(screen.queryByText('Panier d’achat')).toBeNull();
   });
 });

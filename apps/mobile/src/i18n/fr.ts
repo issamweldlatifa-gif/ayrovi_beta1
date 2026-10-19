@@ -771,8 +771,6 @@ export const fr = {
   'aywebs.stores.visit': 'Visiter le site',
   'aywebs.stores.unsave': 'Retirer la boutique des enregistrées',
   'aywebs.storeEnterUnavailable': "Entrée indisponible : cette boutique n’a pas de page d’accueil publique.",
-  'aywebs.cartCardTitle': "Panier d’achat",
-  'aywebs.cartCardCount': "{count} produit(s) dans le panier AYWEBs.",
   'aywebs.browserTitle': "Page marchande",
   'aywebs.phase.preparing': "Préparation du lecteur",
   'aywebs.phase.reading': "Lecture de la page",
