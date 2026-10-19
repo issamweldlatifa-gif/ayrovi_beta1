@@ -105,3 +105,30 @@ export async function resolveWithParallelCapture<T>(
   input.onPhase?.('server-only');
   return { outcome: await serverRead, capture: undefined };
 }
+
+/**
+ * Attend que la page finisse de charger avant de la lire (19/10/2026).
+ *
+ * Sans ça, « Add to Cart » peut lancer la capture pendant que la page Amazon
+ * charge encore : le script lit un DOM incomplet (prix absent ⇒ NO_PRICE_TEXT).
+ * On attend donc la fin du chargement, avec une borne : une page qui ne finit
+ * jamais de charger (publicités, scripts) ne bloque pas l'ajout — on lit quand
+ * même après `timeoutMs`.
+ *
+ * Renvoie `true` si la page est prête, `false` si la borne est atteinte.
+ */
+export async function waitForPageIdle(
+  isLoading: () => boolean,
+  options: { timeoutMs?: number; intervalMs?: number; wait?: (ms: number) => Promise<void> } = {},
+): Promise<boolean> {
+  const timeoutMs = options.timeoutMs ?? 8_000;
+  const intervalMs = options.intervalMs ?? 250;
+  const wait = options.wait ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+  let waited = 0;
+  while (isLoading()) {
+    if (waited >= timeoutMs) return false;
+    await wait(intervalMs);
+    waited += intervalMs;
+  }
+  return true;
+}

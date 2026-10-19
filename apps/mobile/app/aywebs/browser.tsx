@@ -38,7 +38,7 @@ import {
 } from '@/api/aywebs';
 import { AddToCartSheet } from '@/features/aywebs/AddToCartSheet';
 import { ReadingProgress } from '@/features/aywebs/ReadingProgress';
-import { resolveWithParallelCapture } from '@/features/aywebs/captureFallback';
+import { resolveWithParallelCapture, waitForPageIdle } from '@/features/aywebs/captureFallback';
 import { CAPTURE_BUDGET_MS, type ReadPhase } from '@/features/aywebs/phase';
 import { useSessionId } from '@/session/session';
 import { useSession } from '@/state/session';
@@ -78,6 +78,8 @@ export default function AyWebsBrowserScreen() {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** الوعد الجاري لقراءة الصفحة: يتفتح بالحقن ويتسدّ بالرسالة (ولا بالمهلة). */
   const waiter = useRef<{ resolve: (capture: Record<string, unknown>) => void; reject: (error: unknown) => void } | null>(null);
+  /** Vrai pendant que la page charge (mis à jour par onNavigationStateChange). */
+  const pageLoadingRef = useRef(false);
 
   const [busy, setBusy] = useState(false);
   /** Barre du bas : précédent / suivant (dans le magasin), titre de la page, volets. */
@@ -160,6 +162,11 @@ export default function AyWebsBrowserScreen() {
       startWaiting('preparing');
       waiter.current = { resolve, reject };
       fetchAyWebsCaptureScript()
+        // الصفحة لازم تكمّل تحميلها قبل القراءة (Amazon يعطي DOM ناقص ⇒ NO_PRICE_TEXT).
+        .then(async (script) => {
+          await waitForPageIdle(() => pageLoadingRef.current);
+          return script;
+        })
         .then((script) => {
           // الحقن هو المنعرج الثاني: من توّا الكلمة صارت للصفحة.
           startWaiting('reading');
@@ -320,6 +327,7 @@ export default function AyWebsBrowserScreen() {
         javaScriptEnabled
         setSupportMultipleWindows={false}
         onNavigationStateChange={(state) => {
+          pageLoadingRef.current = state.loading === true;
           if (!state.url) return;
           setPageUrl(state.url);
           setNav({ canGoBack: state.canGoBack, canGoForward: state.canGoForward, title: state.title ?? '' });

@@ -5,7 +5,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { ApiError } from '@/api/errors';
-import { resolveWithCaptureFallback, resolveWithParallelCapture } from '@/features/aywebs/captureFallback';
+import { resolveWithCaptureFallback, resolveWithParallelCapture, waitForPageIdle } from '@/features/aywebs/captureFallback';
 
 const CAPTURE = { used: true, fingerprint: 'fp-1' };
 
@@ -149,3 +149,24 @@ describe('resolveWithParallelCapture — lecture serveur lancée avant la fin de
   });
 });
 
+
+describe('waitForPageIdle — ne lire la page qu’après son chargement', () => {
+  it('ne attend pas si la page est déjà chargée', async () => {
+    const wait = vi.fn(async () => {});
+    expect(await waitForPageIdle(() => false, { wait })).toBe(true);
+    expect(wait).not.toHaveBeenCalled();
+  });
+
+  it('attend la fin du chargement puis renvoie true', async () => {
+    let loading = true;
+    const wait = vi.fn(async () => { loading = false; });
+    expect(await waitForPageIdle(() => loading, { wait, intervalMs: 250 })).toBe(true);
+    expect(wait).toHaveBeenCalledTimes(1);
+  });
+
+  it('borne l’attente : une page qui ne finit jamais ne bloque pas', async () => {
+    const wait = vi.fn(async () => {});
+    expect(await waitForPageIdle(() => true, { wait, timeoutMs: 1000, intervalMs: 250 })).toBe(false);
+    expect(wait).toHaveBeenCalledTimes(4);
+  });
+});
