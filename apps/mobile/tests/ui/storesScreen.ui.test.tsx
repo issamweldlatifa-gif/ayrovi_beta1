@@ -48,7 +48,7 @@ const mockStores: AyWebsStore[] = Array.from({ length: 380 }, (_, i) => {
     adapter: 'generic',
     status: 'planned',
     integrationType: 'URL_REQUEST',
-    capabilities: [],
+    capabilities: ['browse'],
     browserMode: 'external',
     homeUrl: `https://www.store${i}.example`,
     logo: i % 2 === 0 ? `/stores/${id}.png` : '',
@@ -112,6 +112,13 @@ describe('écran Magasins — catalogue complet', () => {
     expect(screen.getByText(/erreur inattendue/i)).toBeTruthy();
     fireEvent.press(screen.getByRole('button'));
     expect(retry).toHaveBeenCalledTimes(1);
+  });
+
+  it('toucher une boutique du catalogue l\'ouvre dans le navigateur intégré (barre AYWEBs)', async () => {
+    renderScreen();
+    await waitFor(() => expect(screen.getByTestId('aywebs-store-store-1')).toBeTruthy(), { timeout: 5000 });
+    await act(async () => { fireEvent.press(screen.getByTestId('aywebs-store-store-1')); });
+    expect(mockPush).toHaveBeenCalledWith(expect.objectContaining({ pathname: '/aywebs/browser' }));
   });
 
   it('ouvre la liste complète sans erreur', async () => {

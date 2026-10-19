@@ -2,8 +2,9 @@
  * BOUTIQUES DU CATALOGUE — liste de référence des magasins par catégorie.
  *
  * Ces boutiques sont AFFICHÉES (accueil des magasins, recherche, catégories) mais
- * NON OUVERTES : `enabled: false`, aucune capacité, mode `URL_REQUEST` (la commande
- * passe par « Order with URL »). Elles ne participent ni à la détection de domaine
+ * Capacité `browse` seulement : elles s'ouvrent dans le navigateur intégré (page d'accueil),
+ * mais restent `enabled: false` — ni achat, ni capture, ni panier. Mode `URL_REQUEST`
+ * (la commande passe par « Order with URL »). Elles ne participent ni à la détection de domaine
  * (`detectAyWebsStore`), ni aux adaptateurs, ni au panier : ce sont des entrées de
  * catalogue. Pour en ouvrir une, on la sort d'ici et on l'ajoute à `AYWEBS_STORES`
  * avec son adaptateur et son logo. Identifiants et adresses ne changent pas.
@@ -412,7 +413,7 @@ function catalogStore([id, name, homeUrl, categories]: (typeof CATALOG_ROWS)[num
     country: '', currency: '', logo: WITHOUT_LOGO_FILE.has(id) ? '' : `/stores/${id}.png`,
     enabled: false, captureSupported: false,
     adapter: 'generic', status: 'planned', integrationType: 'URL_REQUEST',
-    capabilities: [], browserMode: 'external',
+    capabilities: ['browse'], browserMode: 'external',
     homeUrl, searchUrlTemplate: '',
     categories, popular: false, phase: 2,
   };

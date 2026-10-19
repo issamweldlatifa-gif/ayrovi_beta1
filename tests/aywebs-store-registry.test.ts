@@ -69,7 +69,7 @@ describe('catalogue des boutiques (liste de référence, non ouvertes)', () => {
     expect(AYWEBS_CATALOG_STORES.length).toBeGreaterThan(300);
     for (const entry of AYWEBS_CATALOG_STORES) {
       expect(entry.enabled).toBe(false);
-      expect(entry.capabilities).toEqual([]);
+      expect(entry.capabilities).toEqual(['browse']);
       expect(entry.captureSupported).toBe(false);
       expect(entry.integrationType).toBe('URL_REQUEST');
     }

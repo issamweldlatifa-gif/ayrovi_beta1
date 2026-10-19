@@ -16,8 +16,12 @@ export interface StoreEntryTarget {
   params: { url: string; storeId: string; storeName: string; capture: '0' | '1' };
 }
 
+/**
+ * Une boutique s'ouvre dès qu'elle sait naviguer (`browse`) et qu'elle a une page d'accueil
+ * HTTPS. `enabled` ne décide que de l'achat, pas de l'ouverture : une boutique du catalogue
+ * s'ouvre dans le navigateur intégré (avec la barre AYWEBs) sans être activée pour l'achat.
+ */
 export function storeEntryTarget(store: AyWebsStore): StoreEntryTarget | null {
-  if (!store.enabled) return null;
   if (!store.capabilities.includes('browse')) return null;
   const home = store.homeUrl.trim();
   if (!isWebPageUrl(home)) return null;

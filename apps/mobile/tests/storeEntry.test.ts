@@ -41,12 +41,15 @@ describe('storeEntryTarget', () => {
     expect(storeEntryTarget({ ...base, operational: false })).not.toBeNull();
   });
 
-  it('une boutique désactivée ne s’ouvre pas', () => {
-    expect(storeEntryTarget({ ...base, enabled: false })).toBeNull();
+  it('une boutique du catalogue (non activée pour l’achat) s’ouvre dans le navigateur intégré', () => {
+    const target = storeEntryTarget({ ...base, enabled: false, capabilities: ['browse'] });
+    expect(target?.pathname).toBe('/aywebs/browser');
+    expect(target?.params.capture).toBe('0');
   });
 
   it('sans capacité « browse », pas d’entrée', () => {
     expect(storeEntryTarget({ ...base, capabilities: ['product'] })).toBeNull();
+    expect(storeEntryTarget({ ...base, enabled: false, capabilities: [] })).toBeNull();
   });
 
   it('une boutique sans page d’accueil (générique) reste fermée', () => {
