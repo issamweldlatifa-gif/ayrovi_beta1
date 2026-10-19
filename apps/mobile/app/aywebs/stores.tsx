@@ -44,6 +44,19 @@ type StoresView =
 const GRID_GAP = 12;
 const TWO_COLUMNS_MAX_WIDTH = 600;
 
+/**
+ * Filet de sécurité de la route : une erreur de rendu sur la page Magasins affiche
+ * le bloc d'erreur avec « Réessayer » au lieu de fermer toute l'application.
+ * expo-router appelle ce composant à la place de l'écran cassé.
+ */
+export function ErrorBoundary({ error, retry }: { error: Error; retry: () => void }) {
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', padding: 24 }}>
+      <ErrorBlock error={error} onRetry={retry} />
+    </View>
+  );
+}
+
 export default function StoresScreen() {
   const theme = useTheme();
   const { t, locale } = useI18n();
