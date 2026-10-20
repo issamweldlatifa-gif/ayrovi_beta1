@@ -433,6 +433,7 @@ describe('violet au minimum : le violet plein est réservé à l’action princi
     }
     expect(counts).toEqual({
       'app/(tabs)/cart.tsx': 1,            // passer à la caisse
+      'app/aywebs/browser.tsx': 1,         // ajouter au panier, sur la page de la boutique (AYWEBs)
       'app/checkout.tsx': 1,               // valider la commande
       'app/forgot.tsx': 1,                 // envoyer le lien de réinitialisation
       'app/product/[id].tsx': 1,           // ajouter au panier
