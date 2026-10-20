@@ -97,6 +97,8 @@ export default function AyWebsBrowserScreen() {
   const lastScript = useRef<string | null>(null);
 
   const [busy, setBusy] = useState(false);
+  /* Lecture à l'ouverture en cours : le bouton « Add » tourne jusqu'à la fin, puis revient à son état normal. */
+  const [prefetchReading, setPrefetchReading] = useState(false);
   /** Barre du bas : précédent / suivant (dans le magasin), titre de la page, volets. */
   const [nav, setNav] = useState({ canGoBack: false, canGoForward: false, title: '' });
   const [cartOpen, setCartOpen] = useState(false);
@@ -237,11 +239,20 @@ export default function AyWebsBrowserScreen() {
       promise: Promise.resolve({}),
     };
     entry.promise = requestCapture(controller.signal, true).then(
-      (capture) => { entry.status = 'ok'; entry.at = Date.now(); return capture; },
-      (error: unknown) => { entry.status = 'failed'; throw error; },
+      (capture) => {
+        entry.status = 'ok'; entry.at = Date.now();
+        if (prefetch.current === entry) setPrefetchReading(false);
+        return capture;
+      },
+      (error: unknown) => {
+        entry.status = 'failed';
+        if (prefetch.current === entry) setPrefetchReading(false);
+        throw error;
+      },
     );
     entry.promise.catch(() => undefined);
     prefetch.current = entry;
+    setPrefetchReading(true);
   }, [requestCapture]);
 
   useEffect(() => {
@@ -330,7 +341,7 @@ export default function AyWebsBrowserScreen() {
   }, [t]);
 
   const verdict = outcome?.capture ?? null;
-  const addEnabled = productPage === true && !busy && Boolean(sessionId);
+  const addEnabled = productPage === true && !busy && !prefetchReading && Boolean(sessionId);
 
   /* Favoris : seulement pour une page produit. La liste sert à afficher le cœur plein. */
   const { status: accountStatus } = useSession();
@@ -490,11 +501,11 @@ export default function AyWebsBrowserScreen() {
           />
           <View style={styles.addBox}>
             <Button
-              label={busy ? t('aywebs.loading') : t('aywebs.addToCart')}
+              label={busy || prefetchReading ? t('aywebs.loading') : t('aywebs.addToCart')}
               tone="main"
               block
               onPress={addToCart}
-              busy={busy}
+              busy={busy || prefetchReading}
               disabled={!addEnabled}
               testID="aywebs-store-add-to-cart"
             />
