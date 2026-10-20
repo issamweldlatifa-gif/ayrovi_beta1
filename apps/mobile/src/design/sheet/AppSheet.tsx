@@ -157,7 +157,12 @@ export function AppSheet({ open, onDismiss, onClosed, header, children }: AppShe
   return (
     <View
       style={StyleSheet.absoluteFill}
-      pointerEvents="box-none"
+      /**
+       * Fermé : le tiroir ne reçoit plus aucun toucher. Sans cela, le voile transparent
+       * (opacité 0) couvre tout l'écran et bloque les boutons de la page dessous
+       * (retour, fermer, barre du bas) — c'était le cas de la page boutique.
+       */
+      pointerEvents={open ? 'box-none' : 'none'}
       onLayout={(event) => setMeasuredHeight(event.nativeEvent.layout.height)}
     >
       <SheetBackdrop opacity={backdrop} onPress={onDismiss} />

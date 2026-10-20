@@ -24,10 +24,11 @@ export function normalizeAyWebsUrl(raw: string): string | null {
 
 export function isAllowedAyWebsMerchantUrl(raw: string, store: AyWebsStore): boolean {
   const normalized = normalizeAyWebsUrl(raw);
-  if (!normalized || !store.enabled || !store.domains.length) return false;
+  const domains = store.domains ?? [];
+  if (!normalized || !store.enabled || !domains.length) return false;
   try {
     const host = new URL(normalized).hostname.toLowerCase().replace(/\.$/, '');
-    return store.domains.some((entry) => {
+    return domains.some((entry) => {
       const domain = String(entry).trim().toLowerCase().replace(/^\.+|\.+$/g, '');
       return Boolean(domain) && (host === domain || host.endsWith(`.${domain}`));
     });

@@ -658,13 +658,19 @@ describe('AYWEBs 2.1 — boutique EXTERNE : le chemin « Add-to-Buyee »', () =>
     expect(bare.code).toBe('DOMAIN_NOT_ALLOWED');
     expect(h.scrapeProduct).not.toHaveBeenCalled();
 
-    /* La MÊME capture, avec la combinaison réellement affichée sur la page,
-       passe : la preuve est locale à ce que le client avait sous les yeux. */
-    const observed = await resolveAyWebsProduct(h.resolver, {
+    /* Hors registre (boutique externe sans groupes structurés), une option brute
+       dans le DOM reste non structurée (`UNKNOWN`), tandis que la capture sans
+       option non structurée ni sélection hors groupe reste `AVAILABLE`. */
+    const unstructuredExternal = await resolveAyWebsProduct(h.resolver, {
       url: PRODUCT_URL, sessionId: SESSION_ID, capture: captureFrom(
         JSON_LD_PAGE.replace('<h1>', '<select id="size"><option selected>42</option></select><h1>'),
       ).payload,
       selectedVariant: { size: '42' },
+    });
+    expect(unstructuredExternal.product.availability.state).toBe('UNKNOWN');
+
+    const observed = await resolveAyWebsProduct(h.resolver, {
+      url: PRODUCT_URL, sessionId: SESSION_ID, capture: captureFrom(JSON_LD_PAGE).payload,
     });
     expect(observed.product.availability.state).toBe('AVAILABLE');
   });

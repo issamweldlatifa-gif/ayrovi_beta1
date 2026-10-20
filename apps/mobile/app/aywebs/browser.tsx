@@ -18,8 +18,18 @@ import { ErrorBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { useI18n, useT } from '@/i18n';
-import { buildAyWebsCaptureInjection, buildAyWebsVariantSelectionInjection, fetchAyWebsCaptureScript, fetchAyWebsHome, resolveAyWebsProduct, type AyWebsCapture, type AyWebsResolvedProduct } from '@/api/aywebs';
+import {
+  buildAyWebsCaptureInjection,
+  buildAyWebsVariantSelectionInjection,
+  fetchAyWebsCaptureScript,
+  fetchAyWebsHome,
+  resolveAyWebsProduct,
+  type AyWebsCapture,
+  type AyWebsResolvedProduct,
+} from '@/api/aywebs';
+import { fetchFavorites } from '@/api/account';
 import { useSessionId } from '@/session/session';
+import { useSession } from '@/state/session';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ayWebsErrorMessage } from '@/features/aywebs/errors';
 import {
@@ -34,6 +44,9 @@ import {
   hasVerifiedAyWebsQuote,
   shouldRetryAyWebsCaptureForPrice,
 } from '@/features/aywebs/captureFlow';
+import { StoreCartSheet, StoreFavoriteSheet } from '@/features/aywebs/StoreSheets';
+import { isPageSaved } from '@/features/aywebs/storeShopping';
+import { decideWebNavigation } from '@/features/aywebs/webNavigation';
 
 const CAPTURE_RESPONSE_TIMEOUT_MS = 15_000;
 const SCRIPT_FAILURE_COPY: Record<string, string> = {
@@ -45,7 +58,11 @@ const SCRIPT_FAILURE_COPY: Record<string, string> = {
   BAD_CAPTURE: 'aywebs.browser.capture.badData',
 };
 
-type MerchantWebViewCommandRef = { injectJavaScript: (javascript: string) => void };
+type MerchantWebViewCommandRef = {
+  injectJavaScript: (javascript: string) => void;
+  goBack?: () => void;
+  goForward?: () => void;
+};
 /**
  * react-native-webview 13.17 implements `forwardRef` at runtime but declares a
  * FunctionComponent without its imperative ref. This local type narrows that
@@ -64,8 +81,14 @@ export default function AyWebsBrowserScreen() {
   const { locale } = useI18n();
   const insets = useSafeAreaInsets();
   const sessionId = useSessionId();
-  const params = useLocalSearchParams<{ storeId?: string | string[]; url?: string | string[] }>();
+  const { status: accountStatus } = useSession();
+  const params = useLocalSearchParams<{
+    storeId?: string | string[];
+    storeName?: string | string[];
+    url?: string | string[];
+  }>();
   const storeId = routeParam(params.storeId);
+  const storeNameParam = routeParam(params.storeName);
   const requestedUrl = routeParam(params.url);
   const webViewRef = useRef<MerchantWebViewCommandRef | null>(null);
   const scriptRef = useRef('');
@@ -80,9 +103,13 @@ export default function AyWebsBrowserScreen() {
   const pendingVariantChangeRef = useRef<{ resolve: () => void; reject: (error: Error) => void } | null>(null);
   const variantNavigationRef = useRef(false);
 
-  const [address, setAddress] = useState('');
-  const [currentUrl, setCurrentUrl] = useState('');
+  const initialSafeUrl = normalizeAyWebsUrl(requestedUrl) ?? '';
+  const [address, setAddress] = useState(initialSafeUrl || requestedUrl);
+  const [currentUrl, setCurrentUrl] = useState(initialSafeUrl);
   const [loaded, setLoaded] = useState(false);
+  const [nav, setNav] = useState({ canGoBack: false, canGoForward: false, title: '' });
+  const [cartOpen, setCartOpen] = useState(false);
+  const [favOpen, setFavOpen] = useState(false);
   const [captureBusy, setCaptureBusy] = useState(false);
   const [captureError, setCaptureError] = useState('');
   const [navigationWarning, setNavigationWarning] = useState('');
@@ -101,23 +128,47 @@ export default function AyWebsBrowserScreen() {
   );
   const safeHomeUrl = store ? safeAyWebsStartUrl(store.homeUrl, store) : null;
   const open = store
-    ? (currentUrl ? safeAyWebsStartUrl(currentUrl, store) : (!requestedUrl ? safeHomeUrl : null))
-    : null;
+    ? (currentUrl ? safeAyWebsStartUrl(currentUrl, store) : (!requestedUrl ? safeHomeUrl : safeAyWebsStartUrl(requestedUrl, store)))
+    : normalizeAyWebsUrl(currentUrl || requestedUrl);
   const source = useMemo(() => (open ? { uri: open } : { uri: '' }), [open]);
 
+  const favorites = useQuery({
+    queryKey: ['account', 'favorites'],
+    queryFn: ({ signal }) => fetchFavorites({ signal }),
+    enabled: Boolean(currentUrl) && accountStatus === 'signedIn',
+    retry: false,
+  });
+  const saved = isPageSaved(favorites.data ?? [], currentUrl);
+  const displayStoreName = store?.displayName || storeNameParam || t('aywebs.browserTitle');
+  const favoriteTitle = resolved?.product.title || nav.title || displayStoreName;
+
   useEffect(() => {
-    if (!store) return;
-    const start = requestedUrl ? safeAyWebsStartUrl(requestedUrl, store) : safeAyWebsStartUrl(store.homeUrl, store);
-    if (!start) {
-      setCurrentUrl('');
-      setAddress(requestedUrl);
-      setNavigationWarning(t('aywebs.browser.navigationBlocked'));
+    if (store) {
+      const start = requestedUrl ? safeAyWebsStartUrl(requestedUrl, store) : safeAyWebsStartUrl(store.homeUrl, store);
+      if (!start) {
+        setCurrentUrl('');
+        setAddress(requestedUrl);
+        setNavigationWarning(t('aywebs.browser.navigationBlocked'));
+        return;
+      }
+      setCurrentUrl(start);
+      setAddress(start);
+      setLoaded(false);
+      setNavigationWarning('');
       return;
     }
-    setCurrentUrl(start);
-    setAddress(start);
-    setLoaded(false);
-    setNavigationWarning('');
+    if (requestedUrl) {
+      const normalized = normalizeAyWebsUrl(requestedUrl);
+      if (!normalized) {
+        setCurrentUrl('');
+        setAddress(requestedUrl);
+        setNavigationWarning(t('aywebs.browser.navigationBlocked'));
+        return;
+      }
+      setCurrentUrl(normalized);
+      setAddress(normalized);
+      setNavigationWarning('');
+    }
   }, [requestedUrl, store, t]);
 
   useEffect(() => () => {
@@ -169,9 +220,8 @@ export default function AyWebsBrowserScreen() {
   const goToAddress = useCallback(() => {
     Keyboard.dismiss();
     setCaptureError('');
-    if (!store) return;
     const normalized = normalizeAyWebsUrl(address);
-    if (!normalized || !isAllowedAyWebsMerchantUrl(normalized, store)) {
+    if (!normalized || (store && !isAllowedAyWebsMerchantUrl(normalized, store))) {
       setNavigationWarning(t('aywebs.browser.navigationBlocked'));
       return;
     }
@@ -207,8 +257,14 @@ export default function AyWebsBrowserScreen() {
     webViewRef.current.injectJavaScript(injection);
   }, [failPendingVariantChange, t]);
 
+  const captureEnabled = store
+    ? store.captureSupported
+      && homeQuery.data?.features.enabled === true
+      && homeQuery.data.features.captureEnabled === true
+    : homeQuery.data?.features.enabled !== false && homeQuery.data?.features.captureEnabled !== false;
+
   const capturePage = useCallback(async () => {
-    if (!store || !sessionId || !currentUrl || !homeQuery.data?.features.captureEnabled || captureBusyRef.current) return;
+    if (!sessionId || !currentUrl || !captureEnabled || captureBusyRef.current) return;
     if (captureRetryTimer.current) clearTimeout(captureRetryTimer.current);
     captureRetryTimer.current = null;
     captureRetryCount.current = 0;
@@ -234,10 +290,10 @@ export default function AyWebsBrowserScreen() {
       setCaptureBusy(false);
       setCaptureError(ayWebsErrorMessage(error, locale, t));
     }
-  }, [currentUrl, homeQuery.data?.features.captureEnabled, injectCapture, locale, sessionId, store, t]);
+  }, [captureEnabled, currentUrl, injectCapture, locale, sessionId, t]);
 
   const captureSelectedVariant = useCallback(async (selection: Record<string, string>) => {
-    if (!store || !sessionId || !currentUrl || captureBusyRef.current) throw new Error('CAPTURE_BUSY');
+    if (!sessionId || !currentUrl || captureBusyRef.current) throw new Error('CAPTURE_BUSY');
     if (!capturedPageRef.current?.variantGroups.length) throw new Error('VARIANT_GROUPS_MISSING');
     if (captureRetryTimer.current) clearTimeout(captureRetryTimer.current);
     captureRetryTimer.current = null;
@@ -268,7 +324,7 @@ export default function AyWebsBrowserScreen() {
       }
     }
     return completion;
-  }, [currentUrl, failPendingVariantChange, injectCapture, sessionId, store]);
+  }, [currentUrl, failPendingVariantChange, injectCapture, sessionId]);
 
   const onMessage = useCallback(async (event: { nativeEvent: { data: string } }) => {
     const message = parseAyWebsCaptureMessage(event.nativeEvent.data);
@@ -290,7 +346,7 @@ export default function AyWebsBrowserScreen() {
       setCaptureError(t(key as never));
       return;
     }
-    if (!store || !sessionId || !isAllowedAyWebsMerchantUrl(message.capture.url, store)) {
+    if (!sessionId || (store && !isAllowedAyWebsMerchantUrl(message.capture.url, store))) {
       if (hasPendingVariantChange) failPendingVariantChange('CAPTURE_URL_REJECTED');
       else {
         captureBusyRef.current = false;
@@ -334,16 +390,17 @@ export default function AyWebsBrowserScreen() {
     try {
       // Une sélection native est suivie d'une nouvelle lecture DOM, jamais d'un
       // prix copié depuis une autre couleur/taille. Le serveur doit confirmer.
+      const resolvedStoreId = store?.id || 'generic';
       const result = await resolveAyWebsProduct({
         url: captureUrl,
-        storeId: store.id,
+        storeId: resolvedStoreId,
         sessionId,
         ...(pendingSelection ? { variant: pendingSelection } : {}),
         capture: message.capture,
         refresh: true,
       });
       if (cycleId !== captureCycleId.current) return;
-      if (result.product.storeId !== store.id || !isAllowedAyWebsMerchantUrl(result.product.sourceUrl, store)) {
+      if (store && (result.product.storeId !== store.id || !isAllowedAyWebsMerchantUrl(result.product.sourceUrl, store))) {
         if (hasPendingVariantChange) failPendingVariantChange('RESOLVED_PRODUCT_MISMATCH');
         else setCaptureError(t('aywebs.browser.capture.badData'));
         return;
@@ -389,10 +446,12 @@ export default function AyWebsBrowserScreen() {
   }, [failPendingVariantChange, injectCapture, locale, sessionId, store, t]);
 
   const onShouldStartLoadWithRequest = useCallback((request: { url: string; isTopFrame?: boolean }) => {
-    // Ignore only non-top-frame navigations when WebKit identifies them. The
-    // page and any top-level redirect must remain on the selected store.
     if (request.isTopFrame === false) return true;
-    if (!store || !isAllowedAyWebsMerchantUrl(request.url, store)) {
+    if (decideWebNavigation(request.url) !== 'allow') {
+      setNavigationWarning(t('aywebs.blockedScheme'));
+      return false;
+    }
+    if (store && !isAllowedAyWebsMerchantUrl(request.url, store)) {
       setNavigationWarning(t('aywebs.browser.navigationBlocked'));
       return false;
     }
@@ -400,8 +459,19 @@ export default function AyWebsBrowserScreen() {
     return true;
   }, [store, t]);
 
-  const onNavigationStateChange = useCallback((navigation: { url: string; loading: boolean }) => {
-    if (navigation.url && store && isAllowedAyWebsMerchantUrl(navigation.url, store)) {
+  const onNavigationStateChange = useCallback((navigation: {
+    url: string;
+    loading: boolean;
+    canGoBack?: boolean;
+    canGoForward?: boolean;
+    title?: string;
+  }) => {
+    setNav({
+      canGoBack: Boolean(navigation.canGoBack),
+      canGoForward: Boolean(navigation.canGoForward),
+      title: navigation.title ?? '',
+    });
+    if (navigation.url && (!store || isAllowedAyWebsMerchantUrl(navigation.url, store))) {
       const normalized = normalizeAyWebsUrl(navigation.url);
       if (normalized) {
         if (normalized !== currentUrl) {
@@ -421,42 +491,41 @@ export default function AyWebsBrowserScreen() {
     else router.replace('/(tabs)/aywebs' as never);
   };
 
-  if (!sessionId || homeQuery.isLoading) {
-    return (
-      <View style={[styles.center, { backgroundColor: theme.colors.canvas, paddingTop: insets.top + 24 }]}>
-        <ActivityIndicator color={theme.colors.accentText} />
-        <AppText variant="caption" color={theme.colors.muted}>{t('loading.server')}</AppText>
-      </View>
-    );
+  if (!open && !requestedUrl) {
+    if (!sessionId || homeQuery.isLoading) {
+      return (
+        <View style={[styles.center, { backgroundColor: theme.colors.canvas, paddingTop: insets.top + 24 }]}>
+          <ActivityIndicator color={theme.colors.accentText} />
+          <AppText variant="caption" color={theme.colors.muted}>{t('loading.server')}</AppText>
+        </View>
+      );
+    }
+
+    if (homeQuery.isError) {
+      return (
+        <View style={[styles.center, { backgroundColor: theme.colors.canvas, padding: 24, paddingTop: insets.top + 24 }]}>
+          <ErrorBlock error={homeQuery.error} onRetry={() => { void homeQuery.refetch(); }} />
+          <Button label={t('common.back')} tone="quiet" onPress={back} />
+        </View>
+      );
+    }
+
+    if (!store) {
+      return (
+        <View style={[styles.center, { backgroundColor: theme.colors.canvas, padding: 24, paddingTop: insets.top + 24 }]}>
+          <Ionicons name="alert-circle-outline" size={32} color={theme.status.danger.fg} accessibilityElementsHidden />
+          <AppText variant="label" color={theme.status.danger.fg} align="center">{t('aywebs.browser.storeMissing')}</AppText>
+          <Button label={t('common.back')} tone="quiet" onPress={back} />
+        </View>
+      );
+    }
   }
 
-  if (homeQuery.isError) {
-    return (
-      <View style={[styles.center, { backgroundColor: theme.colors.canvas, padding: 24, paddingTop: insets.top + 24 }]}>
-        <ErrorBlock error={homeQuery.error} onRetry={() => { void homeQuery.refetch(); }} />
-        <Button label={t('common.back')} tone="quiet" onPress={back} />
-      </View>
-    );
-  }
-
-  if (!store) {
-    return (
-      <View style={[styles.center, { backgroundColor: theme.colors.canvas, padding: 24, paddingTop: insets.top + 24 }]}>
-        <Ionicons name="alert-circle-outline" size={32} color={theme.status.danger.fg} accessibilityElementsHidden />
-        <AppText variant="label" color={theme.status.danger.fg} align="center">{t('aywebs.browser.storeMissing')}</AppText>
-        <Button label={t('common.back')} tone="quiet" onPress={back} />
-      </View>
-    );
-  }
-
-  const captureEnabled = store.captureSupported
-    && homeQuery.data?.features.enabled === true
-    && homeQuery.data.features.captureEnabled === true;
   const webViewProps = {
     ref: webViewRef,
     source: source ?? { uri: '' },
     style: styles.webView,
-    originWhitelist: ['https://*'],
+    originWhitelist: ['*'],
     javaScriptEnabled: true,
     domStorageEnabled: true,
     sharedCookiesEnabled: false,
@@ -485,9 +554,8 @@ export default function AyWebsBrowserScreen() {
       }
     },
     onError: () => { setLoaded(true); setNavigationWarning(t('aywebs.browser.loadError')); },
-
     onHttpError: () => { setLoaded(true); setNavigationWarning(t('aywebs.browser.loadError')); },
-    testID: 'aywebs-merchant-webview',
+    testID: 'webview',
   } satisfies NativeWebViewProps & { ref: Ref<MerchantWebViewCommandRef> };
 
   return (
@@ -503,7 +571,7 @@ export default function AyWebsBrowserScreen() {
             <Ionicons name={theme.isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={theme.colors.ink} />
           </Pressable>
           <View style={{ flex: 1 }}>
-            <AppText variant="label" weight="bold" numberOfLines={1}>{store.displayName}</AppText>
+            <AppText variant="label" weight="bold" numberOfLines={1}>{displayStoreName}</AppText>
             <AppText variant="caption" color={theme.colors.muted} numberOfLines={1}>{t('aywebs.browser.secure')}</AppText>
           </View>
           <Pressable
@@ -566,17 +634,49 @@ export default function AyWebsBrowserScreen() {
       ) : null}
 
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, theme.space[2]), borderTopColor: theme.colors.line, backgroundColor: theme.colors.canvas }]}>
-        <Button
-          label={t('aywebs.addToCart')}
-          busy={captureBusy}
-          disabled={!captureEnabled || !loaded || Platform.OS === 'web' || !open}
-          tone="main"
-          block
-          onPress={() => { void capturePage(); }}
-          leading={<Ionicons name="pricetags-outline" size={18} color={theme.colors.onAction} />}
-          testID="aywebs-capture-product"
-        />
         {!captureEnabled ? <AppText variant="caption" color={theme.colors.muted} align="center">{t('aywebs.disabled.capture')}</AppText> : null}
+        <View style={[styles.toolbar, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+          <ToolIcon
+            name={theme.isRTL ? 'chevron-forward' : 'chevron-back'}
+            label={t('aywebs.nav.back')}
+            disabled={!nav.canGoBack}
+            onPress={() => webViewRef.current?.goBack?.()}
+            testID="aywebs-store-back"
+          />
+          <ToolIcon
+            name={theme.isRTL ? 'chevron-back' : 'chevron-forward'}
+            label={t('aywebs.nav.forward')}
+            disabled={!nav.canGoForward}
+            onPress={() => webViewRef.current?.goForward?.()}
+            testID="aywebs-store-forward"
+          />
+          <ToolIcon
+            name="bag-outline"
+            label={t('aywebs.bar.cart')}
+            onPress={() => setCartOpen(true)}
+            testID="aywebs-store-cart"
+          />
+          <ToolIcon
+            name={saved ? 'heart' : 'heart-outline'}
+            label={t('aywebs.bar.favorites')}
+            disabled={!currentUrl}
+            active={saved}
+            onPress={() => setFavOpen(true)}
+            testID="aywebs-store-fav"
+          />
+          <View style={styles.addBox}>
+            <Button
+              label={t('aywebs.addToCart')}
+              busy={captureBusy}
+              disabled={!captureEnabled || !loaded || Platform.OS === 'web' || !open}
+              tone="main"
+              block
+              onPress={() => { void capturePage(); }}
+              leading={<Ionicons name="pricetags-outline" size={18} color={theme.colors.onAction} />}
+              testID="aywebs-store-add-to-cart"
+            />
+          </View>
+        </View>
       </View>
 
       {resolved ? (
@@ -595,7 +695,45 @@ export default function AyWebsBrowserScreen() {
           }}
         />
       ) : null}
+
+      {sessionId ? (
+        <StoreCartSheet visible={cartOpen} onClose={() => setCartOpen(false)} sessionId={sessionId} storeId={storeId} />
+      ) : null}
+      <StoreFavoriteSheet
+        visible={favOpen}
+        onClose={() => setFavOpen(false)}
+        sourceUrl={currentUrl}
+        title={favoriteTitle}
+        saved={saved}
+      />
     </View>
+  );
+}
+
+function ToolIcon({ name, label, onPress, disabled = false, active = false, testID }: {
+  name: ComponentProps<typeof Ionicons>['name'];
+  label: string;
+  onPress: () => void;
+  disabled?: boolean;
+  active?: boolean;
+  testID?: string;
+}) {
+  const theme = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled }}
+      disabled={disabled}
+      onPress={onPress}
+      testID={testID}
+      style={({ pressed }) => [
+        styles.toolIcon,
+        { minWidth: 36, minHeight: theme.geometry.minTarget, opacity: disabled ? 0.35 : pressed ? 0.7 : 1 },
+      ]}
+    >
+      <Ionicons name={name} size={22} color={active ? theme.colors.accentText : theme.colors.ink} accessibilityElementsHidden />
+    </Pressable>
   );
 }
 
@@ -609,6 +747,9 @@ const styles = StyleSheet.create({
   webView: { flex: 1 },
   loadingOverlay: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', gap: 10 },
   footer: { paddingTop: 10, paddingHorizontal: 16, borderTopWidth: StyleSheet.hairlineWidth, gap: 6 },
+  toolbar: { alignItems: 'center', gap: 2 },
+  toolIcon: { alignItems: 'center', justifyContent: 'center' },
+  addBox: { flex: 1, marginStart: 4 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
-  notice: { marginHorizontal: 12, marginVertical: 6, padding: 12, borderWidth: 1, borderRadius: 12, gap: 8 }
+  notice: { marginHorizontal: 12, marginVertical: 6, padding: 12, borderWidth: 1, borderRadius: 12, gap: 8 },
 });

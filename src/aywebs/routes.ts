@@ -19,6 +19,7 @@ import {
   findAyWebsStore,
   type AyWebsStoreDefinition,
 } from '../../shared/aywebsStores';
+import { AYWEBS_CATALOG_STORES } from '../../shared/aywebsStoreCatalog';
 import { AYWEBS_FUNNEL_EVENTS } from '../../shared/aywebsTypes';
 import { AYWEBS_ADAPTER_DESCRIPTORS } from './adapters/registry';
 import { AyWebsCaptureError, type AyWebsSourceProduct } from './adapters/contract';
@@ -223,6 +224,7 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
     categories: [...store.categories],
     popular: store.popular,
     phase: store.phase,
+    description: store.description ?? '',
     /** Mode d'achat réel — jamais « supported » par simple présence au registre. */
     purchase_mode: store.capabilities.includes('purchase') ? 'SUPPORTED'
       : store.integrationType === 'URL_REQUEST' || store.integrationType === 'BLOCKED' ? 'URL_REQUEST'
@@ -235,7 +237,10 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
 
   router.get('/stores', handle((req, res) => {
     const flags = ctx.flags;
-    const stores = AYWEBS_STORES.filter((store) => store.enabled).map(publicStore);
+    const stores = [
+      ...AYWEBS_STORES.filter((store) => store.enabled),
+      ...AYWEBS_CATALOG_STORES,
+    ].map(publicStore);
     res.json({
       success: true,
       data: stores,

@@ -7,8 +7,10 @@
  */
 import { ApiError } from './errors';
 import {
+  apiGetData,
   apiGetEnvelope,
   apiGetText,
+  apiSendData,
   apiSendEnvelope,
   type RequestOptions,
 } from './client';
@@ -24,7 +26,7 @@ export interface AyWebsStore {
   id: string;
   name: string;
   displayName: string;
-  domains: string[];
+  domains?: string[];
   country: string;
   currency: string;
   logo: string;
@@ -32,16 +34,25 @@ export interface AyWebsStore {
   captureSupported: boolean;
   operational: boolean;
   operationalReason: string;
+  adapter?: string;
+  status?: string;
   integrationType: string;
   capabilities: string[];
-  canBrowse: boolean;
-  browserMode: 'embedded' | 'external';
+  canBrowse?: boolean;
+  browserMode: string;
   homeUrl: string;
-  searchUrlTemplate: string;
+  searchUrlTemplate?: string;
   categories: string[];
   popular: boolean;
-  phase: number | null;
+  phase?: number | null;
   purchaseMode: string;
+  description?: string;
+}
+
+export interface AyWebsCategory {
+  id: string;
+  labelFr: string;
+  labelAr: string;
 }
 
 export interface AyWebsFeatures {
@@ -276,6 +287,8 @@ function parseStore(value: unknown): AyWebsStore {
     captureSupported: bool(value.capture_supported),
     operational: bool(value.operational),
     operationalReason: text(value.operational_reason),
+    adapter: text(value.adapter),
+    status: text(value.status),
     integrationType: text(value.integration_type),
     capabilities: stringList(value.capabilities, 40),
     canBrowse: typeof can.browse === 'boolean' ? can.browse : stringList(value.capabilities).includes('browse'),
@@ -286,6 +299,36 @@ function parseStore(value: unknown): AyWebsStore {
     popular: bool(value.popular),
     phase: numberOrNull(value.phase),
     purchaseMode: text(value.purchase_mode),
+    description: text(value.description),
+  };
+}
+
+export function parseAyWebsStores(payload: unknown): AyWebsStore[] {
+  if (!Array.isArray(payload)) throw malformed('liste des boutiques');
+  return payload.map(parseStore);
+}
+
+export function parseAyWebsCategories(payload: unknown): AyWebsCategory[] {
+  if (!Array.isArray(payload)) return [];
+  return payload.flatMap((entry) => {
+    if (!isRecord(entry) || !text(entry.id)) return [];
+    return [{ id: text(entry.id), labelFr: text(entry.labelFr), labelAr: text(entry.labelAr) }];
+  });
+}
+
+export async function fetchAyWebsStores(options: RequestOptions = {}): Promise<AyWebsStore[]> {
+  const data = await apiGetData<unknown>(`${AYWEBS_API}/stores`, options);
+  return parseAyWebsStores(data);
+}
+
+export async function fetchAyWebsStoreCatalog(
+  options: RequestOptions = {},
+): Promise<{ stores: AyWebsStore[]; categories: AyWebsCategory[] }> {
+  const payload = await apiGetEnvelope<unknown>(`${AYWEBS_API}/stores`, options);
+  const body = isRecord(payload) ? payload : {};
+  return {
+    stores: parseAyWebsStores(body.data),
+    categories: parseAyWebsCategories(body.categories),
   };
 }
 
@@ -863,3 +906,446 @@ export async function addAyWebsCartItem(input: {
   });
   return parseCartAdd(raw);
 }
+
+export interface AyWebsSessionOptions {
+  sessionId: string;
+  signal?: AbortSignal;
+  timeoutMs?: number;
+}
+
+const sessionHeaders = (sessionId: string): Record<string, string> => ({
+  'x-session-id': sessionId,
+});
+
+const attributesOf = (value: unknown): Record<string, string> => {
+  if (!isRecord(value)) return {};
+  const out: Record<string, string> = {};
+  for (const [rawKey, rawValue] of Object.entries(value)) {
+    const name = String(rawKey ?? '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 40);
+    const strVal = typeof rawValue === 'string' ? rawValue.trim().slice(0, 120) : '';
+    if (name && strVal) out[name] = strVal;
+  }
+  return out;
+};
+
+export interface AyWebsCartItem {
+  id: string;
+  itemNumber: string;
+  productId: string;
+  storeId: string;
+  storeName: string;
+  sourceUrl: string;
+  title: string;
+  images: string[];
+  unitPrice: number | null;
+  currency: string;
+  variantLabel: string;
+  quantity: number;
+  availability: string;
+  status: string;
+  statusReason: string;
+  customerNote: string;
+  purchaseMode: string;
+  checkoutReady: boolean;
+  lineTotalTnd: number | null;
+  linkedToAyrovi: boolean | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AyWebsCartGroup {
+  storeId: string;
+  storeName: string;
+  integrationType: string;
+  subtotalTnd: number | null;
+  blockedItems: number;
+  items: AyWebsCartItem[];
+}
+
+export interface AyWebsCartTotals {
+  units: number;
+  productSubtotalTnd: number | null;
+  currency: string;
+  blockedItems: number;
+  checkoutReady: boolean;
+  unlinkedUnits: number | null;
+}
+
+export interface AyWebsCartBlocker {
+  itemId: string;
+  code: string;
+  message: string;
+  action: string;
+}
+
+export interface AyWebsCart {
+  hasCart: boolean;
+  items: AyWebsCartItem[];
+  groups: AyWebsCartGroup[];
+  totals: AyWebsCartTotals;
+  blockers: AyWebsCartBlocker[];
+}
+
+export function parseAyWebsCartItem(entry: unknown): AyWebsCartItem {
+  if (!isRecord(entry) || !text(entry.id)) throw malformed('ligne de panier');
+  return {
+    id: text(entry.id),
+    itemNumber: text(entry.item_number),
+    productId: text(entry.product_id),
+    storeId: text(entry.store_id),
+    storeName: text(entry.store_name),
+    sourceUrl: text(entry.source_url),
+    title: text(entry.title),
+    images: stringList(entry.images),
+    unitPrice: numberOrNull(entry.unit_price),
+    currency: text(entry.currency),
+    variantLabel: text(entry.variant_label),
+    quantity: numberOrNull(entry.quantity) ?? 0,
+    availability: text(entry.availability),
+    status: text(entry.status),
+    statusReason: text(entry.status_reason),
+    customerNote: text(entry.customer_note),
+    purchaseMode: text(entry.purchase_mode),
+    checkoutReady: bool(entry.checkout_ready),
+    lineTotalTnd: numberOrNull(entry.line_total_tnd),
+    linkedToAyrovi: typeof entry.linked_to_ayrovi === 'boolean' ? entry.linked_to_ayrovi : null,
+    createdAt: text(entry.created_at),
+    updatedAt: text(entry.updated_at),
+  };
+}
+
+export function parseAyWebsCart(payload: unknown): AyWebsCart {
+  if (!isRecord(payload)) throw malformed('panier');
+  const totals = isRecord(payload.totals) ? payload.totals : {};
+  const groups = payload.groups === undefined || payload.groups === null
+    ? []
+    : Array.isArray(payload.groups)
+      ? payload.groups.map((group) => {
+        if (!isRecord(group) || !text(group.store_id)) throw malformed('groupe de panier');
+        return {
+          storeId: text(group.store_id),
+          storeName: text(group.store_name),
+          integrationType: text(group.integration_type),
+          subtotalTnd: numberOrNull(group.subtotal_tnd),
+          blockedItems: numberOrNull(group.blocked_items) ?? 0,
+          items: Array.isArray(group.items) ? group.items.map(parseAyWebsCartItem) : [],
+        };
+      })
+      : (() => { throw malformed('groupes de panier'); })();
+  const blockers = payload.blockers === undefined || payload.blockers === null
+    ? []
+    : Array.isArray(payload.blockers)
+      ? payload.blockers.map((blocker) => {
+        if (!isRecord(blocker)) throw malformed('blocage de panier');
+        return {
+          itemId: text(blocker.itemId ?? blocker.item_id),
+          code: text(blocker.code),
+          message: text(blocker.message),
+          action: text(blocker.action),
+        };
+      })
+      : (() => { throw malformed('blocages de panier'); })();
+  return {
+    hasCart: isRecord(payload.cart),
+    items: payload.items === undefined || payload.items === null
+      ? []
+      : Array.isArray(payload.items)
+        ? payload.items.map(parseAyWebsCartItem)
+        : (() => { throw malformed('lignes de panier'); })(),
+    groups,
+    totals: {
+      units: numberOrNull(totals.units) ?? 0,
+      productSubtotalTnd: numberOrNull(totals.product_subtotal_tnd),
+      currency: text(totals.currency),
+      blockedItems: numberOrNull(totals.blocked_items) ?? 0,
+      checkoutReady: bool(totals.checkout_ready),
+      unlinkedUnits: numberOrNull(totals.unlinked_units),
+    },
+    blockers,
+  };
+}
+
+export async function fetchAyWebsCart(options: AyWebsSessionOptions): Promise<AyWebsCart> {
+  const data = await apiGetData<unknown>(`${AYWEBS_API}/cart`, {
+    headers: sessionHeaders(options.sessionId),
+    signal: options.signal,
+    timeoutMs: options.timeoutMs,
+  });
+  return parseAyWebsCart(data);
+}
+
+export async function updateAyWebsCartItem(
+  itemId: string,
+  changes: { quantity?: number; variant?: Record<string, string> | null; customerNote?: string },
+  options: AyWebsSessionOptions,
+): Promise<{ item: AyWebsCartItem | null; removed: boolean; cart: AyWebsCart }> {
+  const body: Record<string, unknown> = {};
+  if (typeof changes.quantity === 'number') body.quantity = changes.quantity;
+  if (changes.variant) body.variant_attributes = changes.variant;
+  if (changes.customerNote !== undefined) body.customer_note = changes.customerNote;
+  const envelope = await apiSendEnvelope<Record<string, unknown>>(
+    'PATCH',
+    `${AYWEBS_API}/cart/items/${encodeURIComponent(itemId)}`,
+    { body, headers: sessionHeaders(options.sessionId), signal: options.signal, timeoutMs: options.timeoutMs },
+  );
+  const data = isRecord(envelope.data) ? envelope.data : {};
+  return {
+    item: isRecord(data.item) ? parseAyWebsCartItem(data.item) : null,
+    removed: bool(data.removed),
+    cart: parseAyWebsCart(data.cart ?? envelope.cart),
+  };
+}
+
+export async function removeAyWebsCartItem(itemId: string, options: AyWebsSessionOptions): Promise<AyWebsCart> {
+  const envelope = await apiSendEnvelope<Record<string, unknown>>(
+    'DELETE',
+    `${AYWEBS_API}/cart/items/${encodeURIComponent(itemId)}`,
+    { headers: sessionHeaders(options.sessionId), signal: options.signal, timeoutMs: options.timeoutMs },
+  );
+  return parseAyWebsCart(envelope.cart);
+}
+
+export async function acceptAyWebsCartPriceChange(
+  itemId: string,
+  options: AyWebsSessionOptions,
+): Promise<{ item: AyWebsCartItem; cart: AyWebsCart }> {
+  const envelope = await apiSendEnvelope<Record<string, unknown>>(
+    'POST',
+    `${AYWEBS_API}/cart/items/${encodeURIComponent(itemId)}/accept-price`,
+    { body: {}, headers: sessionHeaders(options.sessionId), signal: options.signal, timeoutMs: options.timeoutMs },
+  );
+  const data = isRecord(envelope.data) ? envelope.data : {};
+  return { item: parseAyWebsCartItem(data.item), cart: parseAyWebsCart(envelope.cart) };
+}
+
+export interface AyWebsCartChange {
+  itemId: string;
+  code: string;
+  message: string;
+}
+
+export async function verifyAyWebsCart(
+  options: AyWebsSessionOptions & { recheckSource?: boolean },
+): Promise<{ changes: AyWebsCartChange[]; cart: AyWebsCart }> {
+  const envelope = await apiSendEnvelope<Record<string, unknown>>('POST', `${AYWEBS_API}/cart/verify`, {
+    body: { recheck_source: options.recheckSource === true },
+    headers: sessionHeaders(options.sessionId),
+    signal: options.signal,
+    timeoutMs: options.timeoutMs,
+  });
+  const data = isRecord(envelope.data) ? envelope.data : {};
+  const changes = Array.isArray(data.changes)
+    ? data.changes.filter(isRecord).map((change) => ({
+      itemId: text(change.itemId ?? change.item_id),
+      code: text(change.code),
+      message: text(change.message),
+    }))
+    : [];
+  return { changes, cart: parseAyWebsCart(envelope.cart) };
+}
+
+export interface AyWebsBridgeOutcome {
+  moved: Array<{
+    aywebsItemId: string; aywebsItemNumber: string; cartItemId: string; store: string;
+    title: string; quantity: number; priceTnd: number | null; duplicate: boolean; synced: boolean;
+  }>;
+  skipped: Array<{ aywebsItemId: string; code: string; message: string }>;
+  totalItemsCount: number;
+  totalTnd: number | null;
+  message: string;
+}
+
+export async function bridgeAyWebsCartToAyrovi(
+  options: AyWebsSessionOptions & { itemIds?: string[] },
+): Promise<AyWebsBridgeOutcome> {
+  const envelope = await apiSendEnvelope<Record<string, unknown>>('POST', `${AYWEBS_API}/cart/bridge-to-ayrovi`, {
+    body: { item_ids: options.itemIds ?? [] },
+    headers: sessionHeaders(options.sessionId),
+    signal: options.signal,
+    timeoutMs: options.timeoutMs,
+  });
+  const data = isRecord(envelope.data) ? envelope.data : {};
+  const moved = Array.isArray(data.moved) ? data.moved.filter(isRecord).map((line) => ({
+    aywebsItemId: text(line.aywebsItemId ?? line.aywebs_item_id),
+    aywebsItemNumber: text(line.aywebsItemNumber ?? line.aywebs_item_number),
+    cartItemId: text(line.cartItemId ?? line.cart_item_id),
+    store: text(line.store),
+    title: text(line.title),
+    quantity: numberOrNull(line.quantity) ?? 0,
+    priceTnd: numberOrNull(line.priceTnd ?? line.price_tnd),
+    duplicate: bool(line.duplicate),
+    synced: bool(line.synced),
+  })) : [];
+  const skipped = Array.isArray(data.skipped) ? data.skipped.filter(isRecord).map((line) => ({
+    aywebsItemId: text(line.aywebsItemId ?? line.aywebs_item_id),
+    code: text(line.code),
+    message: text(line.message),
+  })) : [];
+  return {
+    moved,
+    skipped,
+    totalItemsCount: numberOrNull(data.totalItemsCount ?? data.total_items_count) ?? 0,
+    totalTnd: numberOrNull(data.totalTnd ?? data.total_tnd),
+    message: text(data.message),
+  };
+}
+
+export const AYWEBS_SOURCE_VERIFICATION_REQUIRED = 'AYWEBS_SOURCE_VERIFICATION_REQUIRED';
+
+export type AyWebsNextAction = 'WAIT_FOR_REVIEW' | 'PROVIDE_MORE_DETAILS' | 'VIEW_ORDER' | 'CONTACT_SUPPORT' | '';
+
+export interface AyWebsPurchaseRequest {
+  id: string;
+  requestNumber: string;
+  storeId: string;
+  storeName: string;
+  registeredStore: boolean;
+  productUrl: string;
+  sourceDomain: string;
+  quantity: number;
+  productName: string;
+  variantAttributes: Record<string, string>;
+  requirements: string;
+  customerNotes: string;
+  status: string;
+  reason: string;
+  decisionNote: string;
+  decidedAt: string;
+  orderId: string;
+  nextAction: AyWebsNextAction;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const nextActionOf = (value: unknown): AyWebsNextAction => {
+  const str = text(value);
+  return str === 'WAIT_FOR_REVIEW' || str === 'PROVIDE_MORE_DETAILS' || str === 'VIEW_ORDER' || str === 'CONTACT_SUPPORT'
+    ? str
+    : '';
+};
+
+export function parseAyWebsPurchaseRequest(entry: unknown): AyWebsPurchaseRequest {
+  if (!isRecord(entry) || !text(entry.id) || !text(entry.request_number)) {
+    throw malformed('demande d’achat');
+  }
+  return {
+    id: text(entry.id),
+    requestNumber: text(entry.request_number),
+    storeId: text(entry.store_id),
+    storeName: text(entry.store_name),
+    registeredStore: bool(entry.registered_store),
+    productUrl: text(entry.product_url),
+    sourceDomain: text(entry.source_domain),
+    quantity: numberOrNull(entry.quantity) ?? 0,
+    productName: text(entry.product_name),
+    variantAttributes: attributesOf(entry.variant_attributes),
+    requirements: text(entry.requirements),
+    customerNotes: text(entry.customer_notes),
+    status: text(entry.status),
+    reason: text(entry.reason),
+    decisionNote: text(entry.decision_note),
+    decidedAt: text(entry.decided_at),
+    orderId: text(entry.order_id),
+    nextAction: nextActionOf(entry.next_action),
+    createdAt: text(entry.created_at),
+    updatedAt: text(entry.updated_at),
+  };
+}
+
+export interface AyWebsStoreRequest {
+  id: string;
+  storeUrl: string;
+  storeName: string;
+  sourceDomain: string;
+  intent: string;
+  notes: string;
+  status: string;
+  decisionNote: string;
+  decidedAt: string;
+  promotedStoreId: string;
+  createdAt: string;
+}
+
+export function parseAyWebsStoreRequest(entry: unknown): AyWebsStoreRequest {
+  if (!isRecord(entry) || !text(entry.id) || !text(entry.store_url)) {
+    throw malformed('demande de boutique');
+  }
+  return {
+    id: text(entry.id),
+    storeUrl: text(entry.store_url),
+    storeName: text(entry.store_name),
+    sourceDomain: text(entry.source_domain),
+    intent: text(entry.intent),
+    notes: text(entry.notes),
+    status: text(entry.status),
+    decisionNote: text(entry.decision_note),
+    decidedAt: text(entry.decided_at),
+    promotedStoreId: text(entry.promoted_store_id),
+    createdAt: text(entry.created_at),
+  };
+}
+
+export async function createAyWebsPurchaseRequest(
+  input: {
+    productUrl: string;
+    productName?: string;
+    variant?: Record<string, string> | null;
+    quantity?: number;
+    requirements?: string;
+    customerNotes?: string;
+    storeId?: string;
+  },
+  options: AyWebsSessionOptions,
+): Promise<AyWebsPurchaseRequest> {
+  const body: Record<string, unknown> = { product_url: input.productUrl };
+  if (input.productName) body.product_name = input.productName;
+  if (input.variant && Object.keys(input.variant).length) body.variant_attributes = input.variant;
+  if (typeof input.quantity === 'number' && input.quantity > 0) body.quantity = input.quantity;
+  if (input.requirements) body.requirements = input.requirements;
+  if (input.customerNotes) body.customer_notes = input.customerNotes;
+  if (input.storeId) body.store_id = input.storeId;
+  const data = await apiSendData<unknown>('POST', `${AYWEBS_API}/purchase-requests`, {
+    body, headers: sessionHeaders(options.sessionId), signal: options.signal, timeoutMs: options.timeoutMs,
+  });
+  return parseAyWebsPurchaseRequest(data);
+}
+
+export async function fetchAyWebsPurchaseRequests(
+  options: AyWebsSessionOptions & { limit?: number },
+): Promise<AyWebsPurchaseRequest[]> {
+  const limit = options.limit && options.limit > 0 ? `?limit=${Math.min(200, Math.floor(options.limit))}` : '';
+  const data = await apiGetData<unknown>(`${AYWEBS_API}/purchase-requests${limit}`, {
+    headers: sessionHeaders(options.sessionId), signal: options.signal, timeoutMs: options.timeoutMs,
+  });
+  if (!Array.isArray(data)) throw malformed('demandes d’achat');
+  return data.map(parseAyWebsPurchaseRequest);
+}
+
+export async function createAyWebsStoreRequest(
+  input: { storeUrl: string; storeName?: string; intent?: string; notes?: string },
+  options: AyWebsSessionOptions,
+): Promise<AyWebsStoreRequest> {
+  const body: Record<string, unknown> = { store_url: input.storeUrl };
+  if (input.storeName) body.store_name = input.storeName;
+  if (input.intent) body.intent = input.intent;
+  if (input.notes) body.notes = input.notes;
+  const data = await apiSendData<unknown>('POST', `${AYWEBS_API}/store-requests`, {
+    body, headers: sessionHeaders(options.sessionId), signal: options.signal, timeoutMs: options.timeoutMs,
+  });
+  return parseAyWebsStoreRequest(data);
+}
+
+export async function fetchAyWebsStoreRequests(
+  options: AyWebsSessionOptions & { limit?: number },
+): Promise<AyWebsStoreRequest[]> {
+  const limit = options.limit && options.limit > 0 ? `?limit=${Math.min(200, Math.floor(options.limit))}` : '';
+  const data = await apiGetData<unknown>(`${AYWEBS_API}/store-requests${limit}`, {
+    headers: sessionHeaders(options.sessionId), signal: options.signal, timeoutMs: options.timeoutMs,
+  });
+  if (!Array.isArray(data)) throw malformed('demandes de boutique');
+  return data.map(parseAyWebsStoreRequest);
+}
+
+export const ayWebsNeedsHumanRequest = (purchaseMode: string): boolean =>
+  purchaseMode !== '' && purchaseMode !== 'SUPPORTED';
+

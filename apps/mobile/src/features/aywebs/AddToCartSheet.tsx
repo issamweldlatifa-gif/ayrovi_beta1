@@ -198,6 +198,8 @@ export function AddToCartSheet({
       void queryClient.invalidateQueries({ queryKey: ['cart'] });
       void queryClient.invalidateQueries({ queryKey: ['aywebs', 'home'] });
       void queryClient.invalidateQueries({ queryKey: ['aywebs', 'cart'] });
+      void queryClient.invalidateQueries({ queryKey: ['store-sheet', 'aywebs-cart'] });
+      void queryClient.invalidateQueries({ queryKey: ['store-sheet', 'ayrovi-cart'] });
     } catch (error) {
       if (isApiError(error) && error.isAborted) return;
       setFailure(ayWebsErrorMessage(error, locale, t));

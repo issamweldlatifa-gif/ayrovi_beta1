@@ -1,5 +1,5 @@
 /**
- * Barre du bas — AYWEBs et Profil.
+ * Barre du bas — AYWEBs (وكيل الشراء) et Profil.
  *
  * L’accueil se atteint par le LOGO de l’en-tête, le panier par son icône, les
  * notifications par la cloche. `index` (l’accueil) et `cart` restent des routes
@@ -31,8 +31,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
 const ICONS: Record<string, { active: IoniconName; inactive: IoniconName }> = {
-  account: { active: 'person', inactive: 'person-outline' },
   aywebs: { active: 'pricetags', inactive: 'pricetags-outline' },
+  account: { active: 'person', inactive: 'person-outline' },
 };
 
 export default function TabsLayout() {
@@ -102,9 +102,9 @@ export default function TabsLayout() {
         },
       })}
     >
-      {/* Deux destinations visibles : Profil et AYWEBs. */}
-      <Tabs.Screen name="account" options={{ title: t('tabs.account') }} />
+      {/* Barre : AYWEBs (وكيل الشراء) puis Profil. */}
       <Tabs.Screen name="aywebs" options={{ title: t('tabs.aywebs') }} />
+      <Tabs.Screen name="account" options={{ title: t('tabs.account') }} />
 
       {/* Route conservée, retirée de la barre : l’accueil s’atteint par le logo. */}
       <Tabs.Screen name="index" options={{ href: null }} />
