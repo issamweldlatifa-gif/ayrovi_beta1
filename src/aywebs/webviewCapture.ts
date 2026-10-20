@@ -67,6 +67,8 @@ interface AyWebsSymbolCurrencyRule {
   stores: readonly string[];
   /** Domaines (suffixes) où le symbole NE vaut PAS ce code. */
   hostsExcluded?: readonly string[];
+  /** Domaines (suffixes) où la règle ne s'applique QU'ici (ex. `$` = CAD sur amazon.ca). */
+  hostsOnly?: readonly string[];
 }
 
 const AYWEBS_SYMBOL_CURRENCIES: readonly AyWebsSymbolCurrencyRule[] = [
@@ -83,6 +85,14 @@ const AYWEBS_SYMBOL_CURRENCIES: readonly AyWebsSymbolCurrencyRule[] = [
     stores: ['amazon', 'shein', 'temu', 'aliexpress'],
     hostsExcluded: ['amazon.ca', 'amazon.com.au', 'amazon.sg', 'amazon.com.mx', 'amazon.com.br'],
   },
+  /* Devises locales des domaines Amazon non-USD (19/10/2026). Chaque règle ne vaut
+     que pour SON domaine et ne reconnaît que le symbole NON ambigu : un `$` nu reste
+     ambigu (CAD, AUD, MXN…) et n'est prouvé que par un code ISO publié (golden amazon.ca). */
+  { iso: 'CAD', pattern: /\bCA\$|C\$/, stores: ['amazon'], hostsOnly: ['amazon.ca'] },
+  { iso: 'AUD', pattern: /\bAU\$|A\$/, stores: ['amazon'], hostsOnly: ['amazon.com.au'] },
+  { iso: 'SGD', pattern: /\bSG\$|S\$/, stores: ['amazon'], hostsOnly: ['amazon.sg'] },
+  { iso: 'MXN', pattern: /\bMX\$/, stores: ['amazon'], hostsOnly: ['amazon.com.mx'] },
+  { iso: 'BRL', pattern: /R\$/, stores: ['amazon'], hostsOnly: ['amazon.com.br'] },
 ];
 
 function hostMatchesAny(host: string, suffixes: readonly string[] | undefined): boolean {
@@ -390,6 +400,7 @@ export function validateAyWebsCapturedPage(
       for (const entry of AYWEBS_SYMBOL_CURRENCIES) {
         if (!entry.stores.includes(store.id)) continue;
         if (!entry.pattern.test(currencyTexts)) continue;
+        if (entry.hostsOnly && !hostMatchesAny(requestHost, entry.hostsOnly)) continue;
         if (hostMatchesAny(requestHost, entry.hostsExcluded)) {
           notes.push(`currency_symbol_host_ambiguous:${entry.iso}`);
           continue;

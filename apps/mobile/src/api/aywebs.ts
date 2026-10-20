@@ -436,10 +436,12 @@ export interface AyWebsResolveOutcome {
 export function incompleteCaptureError(envelope: Record<string, unknown>): ApiError | null {
   const data = isRecord(envelope.data) ? envelope.data : null;
   if (!data || str(data.title).trim()) return null;
-  if (strList(envelope.missing).length === 0) return null;
+  const missing = strList(envelope.missing);
+  if (missing.length === 0) return null;
   return new ApiError('http', 'Nous n’avons pas pu lire toutes les informations du produit.', {
     status: 422,
     code: 'CAPTURE_INCOMPLETE',
+    missingFields: missing,
   });
 }
 

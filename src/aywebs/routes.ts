@@ -620,6 +620,7 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
         /** SWR : fiche servie périmée (une relecture est relancée derrière). */
         served_stale: result.servedStale,
         missing: result.missing,
+        missing_fields: result.missingFields,
         /**
          * Phase 2.1 — issue de la capture WebView : `used`, `fingerprint`,
          * `price_source`, `corroborated`, et `rejection` quand la capture a été
@@ -770,6 +771,7 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
           code: failureCode,
           price_rejection: priceRejection,
           missing: result.missing,
+          missing_fields: result.missingFields,
           product: result.scrapedProduct,
           error: 'Nous n’avons pas pu lire toutes les informations du produit.',
           fallback: ['retry', 'product_link', 'screenshot'],

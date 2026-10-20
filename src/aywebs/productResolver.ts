@@ -127,7 +127,10 @@ export interface AyWebsResolveResult {
   analysis: AyWebsPageAnalysis;
   pricing: PriceBreakdown | null;
   evidenceHash: string;
+  /** Champs BLOQUANTS (titre, prix, devise, vérifications). La photo n'en fait pas partie. */
   missing: string[];
+  /** Tous les champs non lus, photo incluse — pour le journal et le diagnostic. */
+  missingFields: string[];
   resolvedAt: string;
   /** Lecture servie depuis le cache de résolution (âge réel fourni). */
   fromCache: boolean;
@@ -401,7 +404,8 @@ export async function resolveAyWebsProduct(
     writeAyWebsResolveCache(deps.scraper, cacheKey, sourceProduct);
   }
 
-  const missing = missingProductFields(sourceProduct);
+  const missingFields = missingProductFields(sourceProduct);
+  const missing = blockingMissingFields(missingFields);
   /* Une lecture fraîche qui n'a pas su lire de prix est mémorisée 90 s : les
      réessais suivants répondent « prix non lu » en quelques ms au lieu de
      relancer 13–17 s de sondes. Le succès, lui, passe par le cache normal. */
@@ -562,6 +566,7 @@ export async function resolveAyWebsProduct(
       availability: availability.state,
       purchaseMode: product.purchaseMode,
       missing,
+      missing_fields: missingFields,
     },
   });
 
@@ -632,6 +637,7 @@ export async function resolveAyWebsProduct(
     pricing,
     evidenceHash,
     missing,
+    missingFields,
     resolvedAt: sourceProduct.capturedAt,
     fromCache,
     cacheAgeMs,
@@ -721,6 +727,13 @@ async function verifyWebviewCaptureInBackground(input: {
 }
 
 /** Champs normalisés manquants : la liste est renvoyée au client, jamais devinée. */
+/** La photo ne bloque jamais l'ajout : elle n'est pas une preuve de prix (19/10/2026). */
+export const AYWEBS_OPTIONAL_FIELDS: readonly string[] = ['image'];
+
+export function blockingMissingFields(fields: readonly string[]): string[] {
+  return fields.filter((field) => !AYWEBS_OPTIONAL_FIELDS.includes(field));
+}
+
 export function missingProductFields(product: AyWebsSourceProduct): string[] {
   return [
     !product.title?.trim() ? 'title' : '',

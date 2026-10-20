@@ -29,9 +29,11 @@ export class ApiError extends Error {
   readonly code: string;
   /** المدة قبل ما ينجم يُعاد المحاولة، من `Retry-After` (بالمللي ثانية). */
   readonly retryAfterMs: number;
+  /** Champs non lus renvoyés par le serveur (ex. `price`, `currency`), pour dire lequel manque. */
+  readonly missingFields: string[];
 
   constructor(kind: ApiErrorKind, message: string, options: {
-    status?: number; code?: string; retryAfterMs?: number; cause?: unknown;
+    status?: number; code?: string; retryAfterMs?: number; cause?: unknown; missingFields?: string[];
   } = {}) {
     super(message);
     this.name = 'ApiError';
@@ -39,6 +41,7 @@ export class ApiError extends Error {
     this.status = options.status ?? 0;
     this.code = options.code ?? '';
     this.retryAfterMs = options.retryAfterMs ?? 0;
+    this.missingFields = options.missingFields ?? [];
     if (options.cause !== undefined) this.cause = options.cause;
   }
 
@@ -61,12 +64,37 @@ export const isApiError = (value: unknown): value is ApiError => value instanceo
  */
 export interface LocalizedMessage { fr: string; ar: string }
 
+/** Nom lisible du champ manquant (FR / AR), pour dire au client lequel manque. */
+const MISSING_FIELD_LABELS: Record<string, { fr: string; ar: string }> = {
+  title: { fr: 'le titre', ar: 'الاسم' },
+  price: { fr: 'le prix', ar: 'الثمن' },
+  verified_price: { fr: 'un prix confirmé', ar: 'ثمن مثبت' },
+  currency: { fr: 'la devise', ar: 'العملة' },
+  verified_currency: { fr: 'une devise confirmée', ar: 'عملة مثبتة' },
+};
+
+function missingFieldLabels(fields: readonly string[]): { fr: string; ar: string } | null {
+  const known = fields.filter((field) => MISSING_FIELD_LABELS[field]);
+  if (!known.length) return null;
+  const frLabels = known.map((field) => MISSING_FIELD_LABELS[field]!.fr);
+  const fr = frLabels.length > 1
+    ? `${frLabels.slice(0, -1).join(', ')} et ${frLabels[frLabels.length - 1]}`
+    : frLabels[0]!;
+  const ar = known.map((field) => MISSING_FIELD_LABELS[field]!.ar).join(' و');
+  return {
+    fr: `Nous n’avons pas pu lire ${fr} de ce produit. Réessayez, ou ouvrez la fiche depuis la boutique.`,
+    ar: `ما قدرناش نقراو ${ar} متاع المنتوج. عاود جرّب، ولا حلّ الفيش من المتجر.`,
+  };
+}
+
 export function userMessage(error: unknown): LocalizedMessage {
   if (!isApiError(error)) {
     return { fr: 'Une erreur inattendue est survenue.', ar: 'صار خطأ غير متوقّع.' };
   }
   // Lecture AYWEBs incomplète : le serveur a répondu, mais le titre ou le prix manque.
   if (error.code === 'CAPTURE_INCOMPLETE') {
+    const missing = missingFieldLabels(error.missingFields);
+    if (missing) return missing;
     return {
       fr: 'Nous n’avons pas pu lire le titre ou le prix de ce produit. Réessayez, ou ouvrez la fiche depuis la boutique.',
       ar: 'ما قدرناش نقراو الاسم ولا الثمن متاع المنتوج. عاود جرّب، ولا حلّ الفيش من المتجر.',

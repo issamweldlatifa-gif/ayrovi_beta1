@@ -777,7 +777,7 @@ describe('lecture AYWEBs incomplète (CAPTURE_INCOMPLETE, Render : product_resol
 
   it('le message est lisible et ne parle plus de réponse illisible', () => {
     const message = userMessage(incompleteCaptureError(INCOMPLETE));
-    expect(message.fr).toMatch(/titre ou le prix/);
+    expect(message.fr).toContain('le titre, le prix et la devise'); // champs réellement manquants, nommés
     expect(message.fr).not.toMatch(/illisible/i);
   });
 
