@@ -168,6 +168,8 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
       'src/design/sheet/AppSheet.tsx', // درج موحّد: الورقة والظل فوق المحتوى (إيماءة سحب، بلا Modal)
       'src/design/sheet/SheetBackdrop.tsx', // الظل الخلفي للدرج، يغطي الشاشة تحت الورقة
       'app/lens.tsx', // caméra plein écran : commandes, cadre et feuille au-dessus du flux vidéo
+      'app/aywebs/browser.tsx', // voile plein écran pendant le chargement de la page marchande dans le WebView
+      'src/features/aywebs/AddToCartSheet.tsx', // voile Modal plein écran derrière la feuille d’ajout
       'src/features/lens/LensProductView.tsx', // galerie : en-tête fixe, badges et aide zoom au-dessus des images
       'src/features/lens/LensResultCard.tsx', // badge promo et favori posés sur la vignette produit
       'src/features/lens/LensSelectionView.tsx', // Z Lens : photo, voile, cadre de sélection et points posés les uns sur les autres

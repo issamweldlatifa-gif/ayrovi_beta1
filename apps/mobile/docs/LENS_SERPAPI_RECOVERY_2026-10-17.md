@@ -2,7 +2,7 @@
 
 ## Diagnostic des journaux Render
 
-Les erreurs `SERPAPI_TIMEOUT` sont intermittentes, pas une panne totale : un appel a bien rendu **24 correspondances en 10 065 ms**. Le blocage principal venait ensuite : Bright Data n'a pas pu lire la plupart des pages marchandes, puis le filtre d'achat a masqué **23 fiches** (`22 page_non_lue`, `1 prix_non_lu`) et n'en a laissé qu'une. Cela donnait l'impression que SerpApi n'avait rien trouvé.
+Les erreurs `SERPAPI_TIMEOUT` sont intermittentes, pas une panne totale : un appel a bien rendu **24 correspondances en 10 065 ms**. Le blocage principal venait ensuite : le lecteur serveur n'a pas pu lire la plupart des pages marchandes, puis le filtre d'achat a masqué **23 fiches** (`22 page_non_lue`, `1 prix_non_lu`) et n'en a laissé qu'une. Cela donnait l'impression que SerpApi n'avait rien trouvé.
 
 ## Comportement corrigé
 

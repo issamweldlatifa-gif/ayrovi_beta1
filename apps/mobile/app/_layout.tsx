@@ -100,6 +100,8 @@ function Navigation() {
           <Stack.Screen name="sign-in" options={{ presentation: 'modal' }} />
           <Stack.Screen name="forgot" options={{ presentation: 'modal' }} />
           <Stack.Screen name="orders" />
+          {/* WebView marchand natif, ouvert uniquement depuis le flux AYWEBs interne. */}
+          <Stack.Screen name="aywebs/browser" options={{ animation: 'slide_from_right' }} />
         </Stack>
       </View>
     </View>

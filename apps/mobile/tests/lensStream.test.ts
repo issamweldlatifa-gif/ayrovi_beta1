@@ -197,7 +197,7 @@ describe('Lens — analyse en flux', () => {
     expect(result.excluded?.count).toBe(2);
   });
 
-  it('remplace la carte SerpApi par sa mise à jour Bright Data sans doubler le lien', async () => {
+  it('remplace la carte SerpApi par sa mise à jour vérifiée sans doubler le lien', async () => {
     vi.stubGlobal('XMLHttpRequest', FakeXhr as unknown as typeof XMLHttpRequest);
     const updates: Array<number | null> = [];
     const pending = analyzeImageStream(

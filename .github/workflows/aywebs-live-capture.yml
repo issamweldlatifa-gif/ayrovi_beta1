@@ -1,0 +1,77 @@
+name: AYWEBs — live Amazon capture check
+
+# Read-only product resolution for the ASIN reported by the customer. The probe
+# runs the server-served reader on a mobile-layout public Amazon page, then asks
+# Beta to validate that bounded capture and issue a signed quote. It never adds
+# a cart item and is NOT a physical Android WebView acceptance test.
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - arena/fc3cce38-ayrovi-beta1
+    paths:
+      - ".github/workflows/aywebs-live-capture.yml"
+      - "scripts/aywebs-live-capture-probe.mjs"
+      - "src/aywebs/captureScript.ts"
+      - "src/aywebs/webviewCapture.ts"
+      - "src/aywebs/productResolver.ts"
+      - "apps/mobile/app/aywebs/browser.tsx"
+      - "apps/mobile/src/api/aywebs.ts"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aywebs-live-capture-beta
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    name: Mobile DOM capture + verified quote
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      BASE: https://ayrovi-beta1-moo8.onrender.com
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Wait for Render to serve the tested commit
+        timeout-minutes: 8
+        run: |
+          set -euo pipefail
+          EXPECTED=${GITHUB_SHA:0:12}
+          for ATTEMPT in $(seq 1 28); do
+            READY=$(curl -s --max-time 30 "$BASE/api/ready" 2>/dev/null || true)
+            SERVED=$(printf '%s' "$READY" | sed -n 's/.*"commit": *"\([a-f0-9]\{7,12\}\)".*/\1/p' | head -1)
+            if [ -n "$SERVED" ] && [ "$SERVED" = "${EXPECTED:0:${#SERVED}}" ]; then
+              echo "Render serves $SERVED (attempt $ATTEMPT)."
+              exit 0
+            fi
+            echo "Attempt $ATTEMPT/28: server=${SERVED:-silent}, expected=$EXPECTED"
+            sleep 15
+          done
+          echo "::error title=Beta deployment stale::Render does not serve $EXPECTED; do not run the live capture against an older script."
+          exit 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install JavaScript dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Read the live Amazon page and verify the quote on Beta
+        run: node scripts/aywebs-live-capture-probe.mjs
+
+      - name: Preserve the bounded probe report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aywebs-live-capture-report
+          path: aywebs-live-capture-report.json
+          if-no-files-found: warn
+          retention-days: 7

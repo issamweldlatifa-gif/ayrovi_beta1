@@ -42,7 +42,7 @@ AyWebs ليست متجرًا أو تطبيقًا أو سلة مستقلة. هي 
 
 - `GET /stores`: المتاجر وحالات الدعم وRuntime Feature Flags.
 - `GET /session`: يؤكد أن AyWebs يستخدم Session وسلة ZAYROVI المشتركة.
-- `GET /health`: جاهزية Adapters وJina وRendered Provider وAI Provider دون كشف أسرار.
+- `GET /health`: حالة Adapters والقراءة المباشرة وقارئ Jina الاختياري وAI Provider دون كشف أسرار.
 - `POST /capture`: يتحقق من الرابط والمتجر، يستدعي Adapter، يطبّع المنتج، ويحسب السعر.
 - `POST /price-quote`: يعيد تسعيرًا خلفيًا فقط؛ لا توجد معادلة سعر في Frontend.
 - `POST /events`: أحداث رحلة AyWebs من دون بيانات شخصية.
@@ -94,13 +94,12 @@ AyWebs ليست متجرًا أو تطبيقًا أو سلة مستقلة. هي 
 ## ما أُكمل في المرحلة الثانية
 
 1. Adapters مخصصة لـ SHEIN وTEMU وAliExpress مع اختبارات contract لكل متجر.
-2. سلسلة استخراج مرتبة: Structured Data/Embedded State ثم DOM/Meta ثم Jina ثم Rendered Provider المسموح.
+2. سلسلة قراءة واحدة: HTML/DOM الحقيقي الملتقط من WebView أولاً؛ وفي مسار الخادم تُجرَّب القراءة المباشرة ثم Jina الاختياري المؤجل، مع قبول الحقول التي يثبتها المحلل فقط.
 3. Feature Flag مستقل لكل Adapter لإيقاف متجر واحد دون تعطيل Browser Layer.
 4. لوحة تشغيل داخل Dashboard تعرض نجاح الالتقاط حسب المتجر وأهم أسباب الفشل ونسبة Capture → Cart.
 5. ربط `capture_id` بأحداث السلة، وتحديث سطر السلة الموجود بدل إنشاء duplicate.
 
 ## تشغيل الإنتاج المتبقي
 
-1. ضبط Rendered Provider واحد على الأقل في بيئة الإنتاج للمتاجر التي تفرض bot-wall.
-2. تشغيل روابط staging حقيقية دورية لكل نطاق ومراقبة تغيّر DOM ومعدلات الحظر.
-3. إبقاء AI extraction مغلقًا افتراضيًا؛ لا يُفعّل إلا عند وجود Provider مضبوط وعتبة ثقة وعرض مصدر واضح للمستخدم.
+1. تشغيل روابط staging حقيقية دورية لكل نطاق ومراقبة تغيّر DOM ومعدلات الحظر؛ صفحات bot-wall تُلتقط من WebView الفعلي ولا تُستبدل ببيانات متوقعة.
+2. إبقاء AI extraction مغلقًا افتراضيًا؛ لا يُفعّل إلا عند وجود AI Provider مضبوط وعتبة ثقة وعرض مصدر واضح للمستخدم.

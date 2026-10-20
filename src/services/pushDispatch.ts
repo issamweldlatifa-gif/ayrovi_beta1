@@ -15,10 +15,10 @@
  * appelant de « penser à envoyer ».
  *
  * ── La garantie anti-double ────────────────────────────────────────────────
- * `idx_customer_push_once` (appareil, notification) est UNIQUE : une
- * notification déjà poussée ne l'est jamais deux fois, même si le
- * répartiteur repasse. Réveiller quelqu'un deux fois pour la même commande
- * est pire que ne pas le prévenir du tout.
+ * `idx_customer_push_once` (appareil, notification) est UNIQUE. Le répartiteur
+ * réserve chaque couple AVANT l'appel réseau : même deux cycles concurrents ne
+ * peuvent envoyer la même notification. Nous préférons perdre un envoi si le
+ * processus s'arrête après réservation plutôt que réveiller quelqu'un deux fois.
  *
  * ── Ce qu'on ne fait PAS ───────────────────────────────────────────────────
  * iOS n'est PAS poussé : un jeton APNs ne se délivre pas par l'API FCM v1.
@@ -164,16 +164,26 @@ export async function dispatchPushNotifications(
 
   const targets = pendingPushTargets(db, options.limit ?? PUSH_BATCH_LIMIT);
   for (const target of targets) {
+    const claimedAt = new Date().toISOString();
+    // INSERT is the atomic claim. A second worker/cycle that selected the same
+    // pending row either sees this reservation in its query or loses the UNIQUE
+    // insert race and must not call FCM. The row also acts as an at-most-once
+    // marker if this process dies after FCM accepts the message.
+    const claim = db.run(`INSERT OR IGNORE INTO customer_push_dispatched
+      (id,device_id,notification_id,status,detail,created_at) VALUES (?,?,?,?,?,?)`,
+      `push_${randomUUID()}`, target.deviceId, target.notificationId, 'in_flight', 'reserved', claimedAt);
+    if (!claim.changes) continue;
+
     const outcome = await sendFcmNotification(
       target.token,
       { title: target.title, body: target.body, data: target.actionUrl ? { actionUrl: target.actionUrl, notificationId: target.notificationId } : { notificationId: target.notificationId } },
       { config: options.config, fetchImpl: options.fetchImpl },
     );
     const now = new Date().toISOString();
-    db.run(`INSERT OR IGNORE INTO customer_push_dispatched
-      (id,device_id,notification_id,status,detail,created_at) VALUES (?,?,?,?,?,?)`,
-      `push_${randomUUID()}`, target.deviceId, target.notificationId, outcome.status,
-      'reason' in outcome ? outcome.reason : 'sent', now);
+    db.run(`UPDATE customer_push_dispatched SET status=?,detail=?,created_at=?
+      WHERE device_id=? AND notification_id=?`,
+      outcome.status, 'reason' in outcome ? outcome.reason : 'sent', now,
+      target.deviceId, target.notificationId);
 
     if (outcome.status === 'sent') summary.sent += 1;
     else if (outcome.status === 'invalid') {

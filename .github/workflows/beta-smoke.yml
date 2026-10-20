@@ -34,6 +34,10 @@ on:
       - "src/api/**"
       - "src/ayrovix/**"
       - "src/customer/**"
+      # Le parcours AYWEBs et la capture marchande dépendent aussi de la résolution
+      # produit/scraper : valider le déploiement beta après chaque évolution.
+      - "src/aywebs/**"
+      - "src/scraper/**"
 
 permissions:
   contents: read
@@ -65,6 +69,14 @@ jobs:
           done
           echo "::error title=Déploiement Beta périmé::Render ne sert toujours pas $EXPECTED; arrêter évite un faux diagnostic sur l'ancien code."
           exit 1
+
+      - name: Vérifier le script de capture AYWEBs publié
+        if: ${{ github.event_name == 'push' }}
+        run: |
+          set -euo pipefail
+          SCRIPT=$(curl -fsS --max-time 30 "$BASE/api/v1/aywebs/capture/script.js")
+          printf '%s' "$SCRIPT" | grep -q "getComputedStyle"
+          echo "Le script AYWEBs avec filtrage des parents masqués est servi par Render."
 
       - name: Test de bout en bout
         run: |

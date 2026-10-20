@@ -25,9 +25,9 @@ import {
  *
  * Ce que chaque adaptateur possède EN PROPRE : la reconnaissance d'URL
  * (`isProductPage`) et l'identité source. Tout le reste est commun :
- *  • la chaîne d'extraction reste `SmartLinkScraper` (structured data / état
- *    embarqué → DOM/meta → Bright Data (rendu, si configuré)) : aucune
- *    seconde chaîne d'extraction n'est créée ;
+ *  • la chaîne d'extraction reste `SmartLinkScraper` (page WebView réelle,
+ *    structured data / état embarqué → DOM/meta → lecture HTTP directe et
+ *    repli Jina optionnel) : aucune seconde chaîne d'extraction n'est créée ;
  *  • la classification de page partage les indices d'URL (login, CAPTCHA,
  *    checkout) et n'invente jamais un type de page sans preuve ;
  *  • l'achat n'est PAS simulé : tant qu'aucune intégration d'achat marchand
@@ -191,6 +191,41 @@ export abstract class BaseStoreAdapter implements AyWebsStoreAdapter {
       requiredAction: 'MANUAL_REVIEW',
       adapter: this.id,
     };
+  }
+
+  /**
+   * Capture commune aux adaptateurs marchands à URL produit identifiable.
+   * Le SKU n'est repris de l'URL qu'en secours, si le lecteur de page n'a pas
+   * trouvé d'identité publiée. Aucun prix, devise, variante ou stock n'est
+   * complété ici : ces champs viennent exclusivement de SmartLinkScraper.
+   */
+  protected async captureMerchantProduct(
+    rawUrl: string,
+    options: ScrapeOptions,
+    sourceIdFromUrl: (url: URL) => string,
+  ): Promise<ScrapedProduct> {
+    let parsed: URL;
+    try {
+      parsed = new URL(this.scraper.cleanPastedUrl(rawUrl));
+    } catch {
+      throw new AyWebsCaptureError('PRODUCT_PAGE_REQUIRED', 'L’URL ne correspond pas à une fiche produit valide.');
+    }
+    if (parsed.protocol !== 'https:' || !this.canHandle(parsed)) {
+      throw new AyWebsCaptureError('STORE_MISMATCH', `Le lien ne correspond pas à une fiche ${this.id} prise en charge.`);
+    }
+    if (!this.isProductPage(parsed)) {
+      throw new AyWebsCaptureError('PRODUCT_PAGE_REQUIRED', `Une fiche produit ${this.id} est requise.`);
+    }
+
+    const product = await this.scraper.scrapeProduct(parsed.toString(), options);
+    if (product.store !== this.id) {
+      throw new AyWebsCaptureError('STORE_MISMATCH', `Le lien ne correspond pas à une fiche ${this.id} prise en charge.`);
+    }
+    const pageId = sourceIdFromUrl(parsed);
+    if (pageId && (!product.externalId || /^UNRESOLVED-/i.test(product.externalId))) {
+      return { ...product, externalId: pageId };
+    }
+    return product;
   }
 
   /* ---- Contrat V1 ---- */

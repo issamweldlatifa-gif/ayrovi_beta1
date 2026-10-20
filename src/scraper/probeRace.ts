@@ -1,13 +1,12 @@
 /**
  * SCRAPER — COURSE DE SONDES PARALLÈLES (05/10/2026).
  *
- * Pourquoi ce module : la lecture d'une fiche marchande essayait ses sources
- * UNE PAR UNE (mobile → bureau → lecteur → rendu payant). Sur une fiche où la
+ * Pourquoi ce module : l'ancienne lecture d'une fiche marchande enchaînait
+ * ses sources (mobile → bureau → lecteur secondaire). Sur une fiche où la
  * première sonde échoue — cas mesuré d'Amazon qui sert une coquille aux IP de
- * centre de données — le client attendait la somme des budgets : 7 s + 6 s +
- * 18 s + 18 s ≈ 49 s, et « plus de vingt secondes » avant de voir un produit
- * chiffré. Or ces sondes sont INDÉPENDANTES : rien n'oblige à attendre la
- * première pour lancer la seconde.
+ * centre de données — le client attendait la somme des budgets avant de voir un
+ * prix. Or ces sondes sont INDÉPENDANTES : rien n'oblige à attendre la première
+ * pour lancer la suivante.
  *
  * Contrat de cette course :
  *  • toutes les sondes partent ensemble (une sonde peut être différée d'un
@@ -19,7 +18,7 @@
  *  • un résultat non gagnant mais exploitable est conservé comme repli, dans
  *    l'ordre de priorité des sondes — jamais inventé ;
  *  • les échecs sont conservés avec leur code : l'appelant garde la trace qu'il
- *    exposait déjà (`DIRECT_HTTP_403`, `RENDER_TIMEOUT`, …).
+ *    exposait déjà (`DIRECT_HTTP_403`, `JINA_HTTP_403`, …).
  *
  * Aucune décision métier ici : ce module ne dit pas quel prix est vrai, il dit
  * seulement quelle sonde a répondu en premier.
