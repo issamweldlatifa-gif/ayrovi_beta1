@@ -108,6 +108,42 @@ export function userMessage(error: unknown): LocalizedMessage {
       ar: 'ما قدرناش نقراو الاسم ولا الثمن متاع المنتوج. عاود جرّب، ولا حلّ الفيش من المتجر.',
     };
   }
+  if (error.code === 'OUT_OF_STOCK' || error.code === 'PRODUCT_UNAVAILABLE') {
+    return {
+      fr: 'Le marchand indique cet article épuisé.',
+      ar: 'التاجر يقول هذا المنتوج وفى.',
+    };
+  }
+  if (error.code === 'VARIANT_NOT_PROVEN' || error.code === 'VARIANT_UNKNOWN') {
+    return {
+      fr: 'La variante choisie (prix ou disponibilité) n’est pas confirmée sur cette page.',
+      ar: 'النسخة المختارة (السعر ولا التوفّر) ما تأكّدتش في هالصفحة.',
+    };
+  }
+  if (error.code === 'VARIANT_UNAVAILABLE') {
+    return {
+      fr: 'La version choisie n’est plus disponible : choisissez-en une autre.',
+      ar: 'النسخة المختارة ما عادتش متوفّرة: اختار وحدة أخرى.',
+    };
+  }
+  if (error.code === 'PRICE_CHANGED' || error.code === 'PRICE_AMBIGUOUS') {
+    return {
+      fr: 'Le prix a changé depuis la lecture de la fiche — vérifiez la fiche puis réessayez.',
+      ar: 'السعر تبدّل من وقت قراءة الصفحة — ثبّت في الصفحة وعاود جرّب.',
+    };
+  }
+  if (error.code === 'STOCK_UNKNOWN') {
+    return {
+      fr: 'Stock non confirmé par le marchand : l’ajout est refusé jusqu’à confirmation.',
+      ar: 'التوفّر ما تأكّدش من التاجر: الإضافة تتوقّف حتى التأكيد.',
+    };
+  }
+  if (error.code === 'PRICE_UNAVAILABLE') {
+    return {
+      fr: 'Pas de devis serveur en dinars : ajout impossible sans prix calculé.',
+      ar: 'ما فماش تسعير بالدينار من الخادم: الإضافة ممنوعة بلا ثمن محسوب.',
+    };
+  }
   switch (error.kind) {
     case 'network':
       return { fr: 'Pas de connexion. Vérifiez votre réseau.', ar: 'ما فماش اتصال. تحقّق من الشبكة.' };

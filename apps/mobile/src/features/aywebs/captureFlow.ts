@@ -7,12 +7,25 @@
  *  • Jamais de feuille d'options avec un prix nul, non vérifié par le serveur,
  *    ou une devise non ISO-3 : on affiche un échec explicite à la place.
  */
-import type { AyWebsResolveOutcome, AyWebsResolvedProduct } from '@/api/aywebs';
+import {
+  ayWebsAddReadiness,
+  type AyWebsResolveOutcome,
+  type AyWebsResolvedProduct,
+  type AyWebsVariantGroup,
+  type AyWebsVariantOption,
+} from '@/api/aywebs';
 import { ApiError } from '@/api/errors';
 import { resolveWithCaptureFallback } from '@/features/aywebs/captureFallback';
 
 export const AYWEBS_CAPTURE_EMPTY_PRICE_RETRIES = 2;
 export const AYWEBS_CAPTURE_EMPTY_PRICE_RETRY_DELAY_MS = 450;
+
+/**
+ * Filet de sécurité silencieux (20 s) sur `requestCapture` :
+ * aucun compte à rebours ni minuteur visible à l'écran, mais si la WebView
+ * ne renvoie jamais `postMessage`, le bouton ne reste pas bloqué indéfiniment.
+ */
+export const AYWEBS_CAPTURE_SAFETY_TIMEOUT_MS = 20_000;
 
 export interface AyWebsPriceCandidate {
   text: string;
@@ -205,4 +218,343 @@ export function canReuseVerified(entry: { url: string; at: number } | null | und
   if (!entry || entry.url !== url) return false;
   const age = now - entry.at;
   return age >= 0 && age < AYWEBS_VERIFIED_REUSE_MS;
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+const normalizeAttributeKey = (value: string): string =>
+  value.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '') || value.trim().toLowerCase();
+
+export interface LocalCaptureEntry {
+  url: string;
+  status: 'pending' | 'ok' | 'failed';
+  capture?: unknown;
+}
+
+/**
+ * Une capture locale déjà lue pour cette `url` est directement réutilisable
+ * pour ouvrir la feuille sans appel serveur.
+ */
+export function canReuseLocalCapture(
+  entry: LocalCaptureEntry | null | undefined,
+  pageUrl: string,
+): entry is LocalCaptureEntry & { status: 'ok'; capture: Record<string, unknown> } {
+  if (!entry || entry.url !== pageUrl || entry.status !== 'ok') return false;
+  return canOpenLocalSheetFromCapture(entry.capture);
+}
+
+/**
+ * Vérifie que la capture locale contient assez de matière (titre ou candidat-prix)
+ * pour ouvrir la feuille locale.
+ */
+export function canOpenLocalSheetFromCapture(capture: unknown): capture is Record<string, unknown> {
+  if (!isRecord(capture)) return false;
+  const title = typeof capture.title === 'string' ? capture.title.trim() : '';
+  const hasPrice = hasAyWebsPriceCandidate(priceCandidatesOf(capture));
+  return Boolean(title && hasPrice);
+}
+
+export interface LocalCaptureSheetData {
+  title: string;
+  url: string;
+  images: string[];
+  groups: AyWebsVariantGroup[];
+  options: AyWebsVariantOption[];
+  initialSelection: Record<string, string>;
+}
+
+/**
+ * Extrait localement de la capture WebView :
+ *  - le titre et l'URL de la fiche,
+ *  - les groupes de variantes (tailles, couleurs, options Amazon ou génériques),
+ *  - la disponibilité connue de chaque option,
+ *  - la sélection initiale (options marquées `selected` sur la page ou groupe à valeur unique).
+ * Aucun appel serveur.
+ */
+export function extractCaptureSheetData(capture: unknown): LocalCaptureSheetData {
+  if (!isRecord(capture)) {
+    return { title: '', url: '', images: [], groups: [], options: [], initialSelection: {} };
+  }
+  const title = typeof capture.title === 'string' ? capture.title.trim() : '';
+  const url = typeof capture.url === 'string' ? capture.url.trim() : '';
+  const images = Array.isArray(capture.images)
+    ? capture.images.filter((entry): entry is string => typeof entry === 'string' && entry.trim().length > 0)
+    : [];
+
+  const groupMap = new Map<string, AyWebsVariantGroup>();
+  const options: AyWebsVariantOption[] = [];
+  const initialSelection: Record<string, string> = {};
+
+  const addGroupValue = (rawAttr: string, rawVal: string): string => {
+    const key = normalizeAttributeKey(rawAttr);
+    const val = rawVal.trim();
+    if (!key || !val) return '';
+    let group = groupMap.get(key);
+    if (!group) {
+      group = { attribute: key, values: [] };
+      groupMap.set(key, group);
+    }
+    const existing = group.values.find((entry) => entry.toLowerCase() === val.toLowerCase());
+    if (existing) return existing;
+    group.values.push(val);
+    return val;
+  };
+
+  if (isRecord(capture.amazon)) {
+    const amazon = capture.amazon;
+    const selectedAsin = typeof amazon.selectedAsin === 'string' ? amazon.selectedAsin.trim() : '';
+
+    if (Array.isArray(amazon.options)) {
+      for (const item of amazon.options) {
+        if (!isRecord(item)) continue;
+        const rawDim = typeof item.dimension === 'string' ? item.dimension : '';
+        const rawVal = typeof item.value === 'string' ? item.value : '';
+        const dimKey = normalizeAttributeKey(rawDim);
+        const canonicalVal = addGroupValue(rawDim, rawVal);
+        if (!dimKey || !canonicalVal) continue;
+        const asin = typeof item.asin === 'string' ? item.asin.trim() : '';
+        const selected = item.selected === true;
+        const evidence = typeof item.availabilityEvidence === 'string' ? item.availabilityEvidence : 'unknown';
+        const availability = evidence === 'unavailable'
+          ? 'OUT_OF_STOCK'
+          : evidence === 'available'
+            ? 'AVAILABLE'
+            : 'UNKNOWN';
+        options.push({
+          sourceVariantId: asin || `${dimKey}:${canonicalVal}`,
+          attributes: { [dimKey]: canonicalVal },
+          label: canonicalVal,
+          price: null,
+          currency: '',
+          quotedPrice: null,
+          quotedCurrency: '',
+          priceSource: 'UNKNOWN',
+          availability,
+          availabilityReason: `amazon_option_${evidence}`,
+          image: '',
+          totalTnd: null,
+        });
+        if (selected && evidence !== 'unavailable' && !initialSelection[dimKey]) {
+          initialSelection[dimKey] = canonicalVal;
+        }
+      }
+    }
+
+    if (Array.isArray(amazon.variants)) {
+      for (const item of amazon.variants) {
+        if (!isRecord(item)) continue;
+        const asin = typeof item.asin === 'string' ? item.asin.trim() : '';
+        const selected = item.selected === true || (Boolean(selectedAsin) && asin === selectedAsin);
+        const dims = Array.isArray(item.dimensions) ? item.dimensions : [];
+        const attrs: Record<string, string> = {};
+        for (const dim of dims) {
+          if (!isRecord(dim)) continue;
+          const rawName = typeof dim.name === 'string' ? dim.name : '';
+          const rawVal = typeof dim.value === 'string' ? dim.value : '';
+          const dimKey = normalizeAttributeKey(rawName);
+          const canonicalVal = addGroupValue(rawName, rawVal);
+          if (!dimKey || !canonicalVal) continue;
+          attrs[dimKey] = canonicalVal;
+          if (selected && !initialSelection[dimKey]) {
+            initialSelection[dimKey] = canonicalVal;
+          }
+        }
+        if (Object.keys(attrs).length > 0 && !options.some((opt) =>
+          Object.keys(attrs).every((k) => opt.attributes[k]?.toLowerCase() === attrs[k]?.toLowerCase())
+          && Object.keys(opt.attributes).length === Object.keys(attrs).length,
+        )) {
+          options.push({
+            sourceVariantId: asin || Object.entries(attrs).map(([k, v]) => `${k}:${v}`).join('|'),
+            attributes: attrs,
+            label: Object.values(attrs).join(' / '),
+            price: null,
+            currency: '',
+            quotedPrice: null,
+            quotedCurrency: '',
+            priceSource: 'UNKNOWN',
+            availability: selected ? 'AVAILABLE' : 'UNKNOWN',
+            availabilityReason: selected ? 'amazon_selected_variant' : 'amazon_variant',
+            image: '',
+            totalTnd: null,
+          });
+        }
+      }
+    }
+  }
+
+  if (Array.isArray(capture.variantGroups)) {
+    for (const group of capture.variantGroups) {
+      if (!isRecord(group) || typeof group.attribute !== 'string' || !Array.isArray(group.values)) continue;
+      for (const value of group.values) {
+        if (typeof value === 'string') addGroupValue(group.attribute, value);
+      }
+    }
+  }
+
+  if (Array.isArray(capture.sizes)) {
+    for (const value of capture.sizes) {
+      if (typeof value === 'string') addGroupValue('size', value);
+    }
+  }
+  if (Array.isArray(capture.colors)) {
+    for (const value of capture.colors) {
+      if (typeof value === 'string') addGroupValue('color', value);
+    }
+  }
+  if (isRecord(capture.variants)) {
+    if (Array.isArray(capture.variants.sizes)) {
+      for (const value of capture.variants.sizes) {
+        if (typeof value === 'string') addGroupValue('size', value);
+      }
+    }
+    if (Array.isArray(capture.variants.colors)) {
+      for (const value of capture.variants.colors) {
+        if (typeof value === 'string') addGroupValue('color', value);
+      }
+    }
+  }
+
+  const variantTexts = Array.isArray(capture.variantTexts)
+    ? capture.variantTexts.filter((entry): entry is string => typeof entry === 'string' && entry.trim().length > 0)
+    : [];
+  const selectedVariantTexts = Array.isArray(capture.selectedVariantTexts)
+    ? capture.selectedVariantTexts.filter((entry): entry is string => typeof entry === 'string' && entry.trim().length > 0)
+    : [];
+
+  if (groupMap.size === 0 && variantTexts.length > 0) {
+    for (const text of variantTexts) {
+      addGroupValue('option', text);
+    }
+  }
+
+  const groups = Array.from(groupMap.values()).filter((group) => group.values.length > 0);
+  for (const group of groups) {
+    if (initialSelection[group.attribute]) continue;
+    if (group.values.length === 1) {
+      initialSelection[group.attribute] = group.values[0]!;
+      continue;
+    }
+    if (selectedVariantTexts.length > 0) {
+      const matched = group.values.find((val) =>
+        selectedVariantTexts.some((sel) => sel.trim().toLowerCase() === val.toLowerCase()),
+      );
+      if (matched) initialSelection[group.attribute] = matched;
+    }
+  }
+
+  return {
+    title,
+    url,
+    images,
+    groups,
+    options,
+    initialSelection,
+  };
+}
+
+export type ConfirmValidationCode =
+  | 'OUT_OF_STOCK'
+  | 'VARIANT_NOT_PROVEN'
+  | 'VARIANT_UNAVAILABLE'
+  | 'VARIANT_REQUIRED'
+  | 'PRICE_CHANGED'
+  | 'CAPTURE_INCOMPLETE'
+  | 'STOCK_UNKNOWN'
+  | 'PRICE_UNAVAILABLE';
+
+export type ConfirmValidationDecision =
+  | { ok: true }
+  | { ok: false; code: ConfirmValidationCode; missingFields?: string[] };
+
+/**
+ * Valide le verdict serveur (`/product/resolve`) au clic sur le bouton de
+ * confirmation de la feuille, AVANT tout appel à `addAyWebsCartItem` :
+ *  - `OUT_OF_STOCK` ou `UNKNOWN` ne va jamais au panier ;
+ *  - `VARIANT_NOT_PROVEN` bloque si la variante choisie n'est pas prouvée ;
+ *  - `PRICE_CHANGED` bloque en cas de rejet/changement de prix ;
+ *  - aucun ajout sans devis serveur signé valide (`quoteToken` + `totalTnd > 0`).
+ */
+export function validateConfirmResolution(
+  outcome: AyWebsResolveOutcome,
+  chosenVariant: Record<string, string> | null,
+): ConfirmValidationDecision {
+  if (outcome.capture && !outcome.capture.used) {
+    const rejection = outcome.capture.rejection;
+    if (rejection === 'OUT_OF_STOCK') return { ok: false, code: 'OUT_OF_STOCK' };
+    if (rejection === 'VARIANT_NOT_PROVEN') return { ok: false, code: 'VARIANT_NOT_PROVEN' };
+    if (
+      rejection === 'AMBIGUOUS_PRICE'
+      || rejection === 'PRICE_REJECTED'
+      || rejection === 'BUYBOX_ASIN_MISMATCH'
+      || rejection === 'PRICE_NOT_CORROBORATED'
+    ) {
+      return { ok: false, code: 'PRICE_CHANGED' };
+    }
+    return {
+      ok: false,
+      code: 'CAPTURE_INCOMPLETE',
+      missingFields: outcome.missing.length ? outcome.missing : ['title', 'price'],
+    };
+  }
+
+  if (outcome.priceRejection) {
+    return { ok: false, code: 'PRICE_CHANGED' };
+  }
+
+  const availState = outcome.product.availability.state;
+  const availReason = outcome.product.availability.reason || '';
+  if (availState === 'OUT_OF_STOCK') {
+    return { ok: false, code: 'OUT_OF_STOCK' };
+  }
+  if (availState !== 'AVAILABLE' && availState !== 'LOW_STOCK') {
+    if (
+      availReason.startsWith('selection_not_verified_by_capture')
+      || availReason.includes('variant')
+      || (chosenVariant && Object.keys(chosenVariant).length > 0)
+    ) {
+      return { ok: false, code: 'VARIANT_NOT_PROVEN' };
+    }
+    return { ok: false, code: 'STOCK_UNKNOWN' };
+  }
+
+  if (
+    !hasVerifiedAyWebsQuote(outcome.product, outcome.quoteToken ?? '')
+    || !(outcome.product.ayroviPricing?.totalTnd && outcome.product.ayroviPricing.totalTnd > 0)
+  ) {
+    if (outcome.missing?.length) {
+      return { ok: false, code: 'CAPTURE_INCOMPLETE', missingFields: outcome.missing };
+    }
+    return { ok: false, code: 'PRICE_UNAVAILABLE' };
+  }
+
+  if (outcome.product.variantGroups.length > 0) {
+    const sel = chosenVariant ?? {};
+    for (const group of outcome.product.variantGroups) {
+      if (!group.values.length) continue;
+      const key = normalizeAttributeKey(group.attribute);
+      const picked = sel[key] ?? sel[group.attribute] ?? '';
+      if (!picked.trim()) {
+        return { ok: false, code: 'VARIANT_REQUIRED' };
+      }
+    }
+  }
+
+  if (outcome.product.variantDetails.length > 0) {
+    const readiness = ayWebsAddReadiness({
+      groups: outcome.product.variantGroups,
+      options: outcome.product.variantDetails,
+      productAvailability: outcome.product.availability.state,
+      productQuotedTnd: outcome.product.ayroviPricing?.totalTnd ?? null,
+      selection: chosenVariant ?? {},
+    });
+    if (!readiness.ready && readiness.code) {
+      return {
+        ok: false,
+        code: readiness.code === 'VARIANT_UNKNOWN' ? 'VARIANT_NOT_PROVEN' : readiness.code,
+      };
+    }
+  }
+
+  return { ok: true };
 }

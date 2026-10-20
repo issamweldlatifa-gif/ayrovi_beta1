@@ -59,11 +59,20 @@ export function parseRetryAfter(value: string | null, now = Date.now()): number 
 
 /** يقرأ غلافاً فاشلاً من جسم غير معروف (يُستعمل عند ردود غير 2xx). */
 export function failureFrom(status: number, payload: unknown, retryAfterMs = 0): ApiError {
-  const code = isRecord(payload) && typeof payload.code === 'string' ? payload.code : '';
+  const rawCode = isRecord(payload) && typeof payload.code === 'string' ? payload.code : '';
+  const captureRejection = isRecord(payload) && isRecord(payload.capture) && typeof payload.capture.rejection === 'string'
+    ? payload.capture.rejection
+    : '';
+  const code = rawCode === 'CAPTURE_INCOMPLETE' && (captureRejection === 'OUT_OF_STOCK' || captureRejection === 'VARIANT_NOT_PROVEN')
+    ? captureRejection
+    : rawCode;
   const text = isRecord(payload) && typeof payload.error === 'string' ? payload.error.trim() : '';
+  const missingFields = isRecord(payload) && Array.isArray(payload.missing)
+    ? payload.missing.filter((field): field is string => typeof field === 'string')
+    : [];
   // Le CODE est conservé même quand le serveur n'a pas joint de texte : c'est
   // lui qui permet à l'écran de dire la vérité (503 RESET_UNAVAILABLE n'est pas
   // « erreur serveur », c'est « l'envoi d'e-mails n'est pas configuré »).
-  if (text) return new ApiError('http', text, { status, code, retryAfterMs });
-  return new ApiError('http', `HTTP ${status}`, { status, code, retryAfterMs });
+  if (text) return new ApiError('http', text, { status, code, retryAfterMs, missingFields });
+  return new ApiError('http', `HTTP ${status}`, { status, code, retryAfterMs, missingFields });
 }

@@ -458,13 +458,20 @@ export function incompleteCaptureError(envelope: Record<string, unknown>): ApiEr
 
 export async function resolveAyWebsProductWithCapture(
   url: string,
-  options: AyWebsSessionOptions & { storeId?: string; quantity?: number; refresh?: boolean; capture?: unknown },
+  options: AyWebsSessionOptions & {
+    storeId?: string;
+    quantity?: number;
+    refresh?: boolean;
+    capture?: unknown;
+    variant?: Record<string, string> | null;
+  },
 ): Promise<AyWebsResolveOutcome> {
   const body: Record<string, unknown> = { url };
   if (options.storeId) body.store_id = options.storeId;
   if (typeof options.quantity === 'number' && options.quantity > 0) body.quantity = options.quantity;
   if (options.refresh === true) body.refresh = true;
   if (options.capture !== undefined && options.capture !== null) body.capture = options.capture;
+  if (options.variant && Object.keys(options.variant).length > 0) body.variant = options.variant;
   const envelope = await apiSendEnvelope<Record<string, unknown>>('POST', `${AYWEBS_BASE}/product/resolve`, {
     body,
     headers: sessionHeaders(options.sessionId),
