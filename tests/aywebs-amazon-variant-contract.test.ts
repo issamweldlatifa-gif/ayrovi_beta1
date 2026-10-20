@@ -27,12 +27,12 @@ import type { AyWebsCapturedPage } from '../shared/aywebsCapture';
 const DIR = join(__dirname, 'fixtures', 'aywebs', 'amazon-in');
 /** Les fixtures ne sont pas versionnées (source sans licence) : tests sautés si absentes, signalés. */
 const FIXTURES_PRESENT = existsSync(join(DIR, 'amazon-in-variants-unavailable-B0CC4WHYRQ.html'));
-const ASIN_OF = (file: string): string => file.match(/B0[A-Z0-9]{8}/)![0];
+const ASIN_OF = (file: string): string => file.match(/B0[A-Z0-9]{8}|\d{10}/)![0];
 
-function readPage(file: string): { capture: AyWebsCapturedPage; url: string } {
+function readPage(file: string, dir = DIR, host = 'www.amazon.in'): { capture: AyWebsCapturedPage; url: string } {
   const asin = ASIN_OF(file);
-  const url = `https://www.amazon.in/dp/${asin}`;
-  const dom = new JSDOM(readFileSync(join(DIR, file), 'utf8'), { url });
+  const url = `https://${host}/dp/${asin}`;
+  const dom = new JSDOM(readFileSync(join(dir, file), 'utf8'), { url });
   const evaluate = new Function('document', 'location', 'URL', `return ${AYWEBS_CAPTURE_SCRIPT}`);
   const capture = JSON.parse(String(evaluate(dom.window.document, dom.window.location, URL))) as AyWebsCapturedPage;
   return { capture: { ...capture, capturedAt: new Date().toISOString() }, url };
@@ -181,6 +181,33 @@ describe.skipIf(!FIXTURES_PRESENT)('lecture du titre Amazon (#productTitle)', ()
       const { capture } = readPage(file);
       expect(typeof capture.title).toBe('string');
       expect((capture.title || '').length).toBeGreaterThan(5);
+    });
+  }
+});
+
+/** Pages amazon.com en rupture (urp2015, Apache-2.0), nettoyées — `#availability` = « Currently unavailable ». */
+const US_DIR = join(__dirname, 'fixtures', 'aywebs', 'amazon-us');
+const US_FIXTURES_PRESENT = existsSync(join(US_DIR, 'amazon-us-oos-simple-0641674791.html'));
+
+describe.skipIf(!US_FIXTURES_PRESENT)('pages en rupture de stock (amazon.com)', () => {
+  for (const file of [
+    'amazon-us-oos-simple-0641674791.html',
+    'amazon-us-oos-simple-B0000224VM.html',
+    'amazon-us-oos-swatches-0000037214.html',
+  ]) {
+    it(`titre et disponibilité lus, aucun prix accepté : ${file}`, () => {
+      process.env.AYWEBS_AMAZON_VARIANT_CONTRACT = '1';
+      try {
+        const { capture, url } = readPage(file, US_DIR, 'www.amazon.com');
+        expect((capture.title || '').length).toBeGreaterThan(5);
+        expect(capture.availabilityText || '').toMatch(/currently unavailable/i);
+        expect(capture.priceCandidates).toEqual([]);
+        const result = validateAyWebsCapturedPage(capture, url);
+        expect(result.ok).toBe(false);
+        expect(result.price).toBe(0);
+      } finally {
+        delete process.env.AYWEBS_AMAZON_VARIANT_CONTRACT;
+      }
     });
   }
 });
