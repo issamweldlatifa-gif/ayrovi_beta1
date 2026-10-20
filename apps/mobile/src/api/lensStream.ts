@@ -238,8 +238,8 @@ export function analyzeImageStream(
         return;
       }
       if (item.type === 'card') {
-        // SerpApi publishes a title/image/link first; Bright Data may later
-        // publish the same link with merchant facts. Replace, do not discard,
+        // SerpApi publishes a title/image/link first; the merchant-page reader
+        // may later publish the same link with verified facts. Replace, do not discard,
         // that update. A link still occupies only one grid card.
         const existing = cards.findIndex((entry) => entry.sourceUrl === item.candidate.sourceUrl);
         if (existing < 0) cards.push(item.candidate);

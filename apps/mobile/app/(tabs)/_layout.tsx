@@ -1,5 +1,5 @@
 /**
- * Barre du bas — Profil seul pour l’instant.
+ * Barre du bas — AYWEBs et Profil.
  *
  * L’accueil se atteint par le LOGO de l’en-tête, le panier par son icône, les
  * notifications par la cloche. `index` (l’accueil) et `cart` restent des routes
@@ -32,6 +32,7 @@ type IoniconName = keyof typeof Ionicons.glyphMap;
 
 const ICONS: Record<string, { active: IoniconName; inactive: IoniconName }> = {
   account: { active: 'person', inactive: 'person-outline' },
+  aywebs: { active: 'pricetags', inactive: 'pricetags-outline' },
 };
 
 export default function TabsLayout() {
@@ -101,8 +102,9 @@ export default function TabsLayout() {
         },
       })}
     >
-      {/* Barre : Profil. */}
+      {/* Deux destinations visibles : Profil et AYWEBs. */}
       <Tabs.Screen name="account" options={{ title: t('tabs.account') }} />
+      <Tabs.Screen name="aywebs" options={{ title: t('tabs.aywebs') }} />
 
       {/* Route conservée, retirée de la barre : l’accueil s’atteint par le logo. */}
       <Tabs.Screen name="index" options={{ href: null }} />

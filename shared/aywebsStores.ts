@@ -5,7 +5,7 @@ import type {
 
 export type AyWebsStoreStatus = 'active' | 'beta' | 'planned';
 export type AyWebsBrowserMode = 'embedded' | 'external';
-export type AyWebsAdapterId = 'amazon' | 'shein' | 'temu' | 'aliexpress' | 'generic';
+export type AyWebsAdapterId = 'amazon' | 'shein' | 'temu' | 'aliexpress' | 'zalando' | 'generic';
 
 /**
  * Store Registry (§7) — le registre CENTRALISÉ des boutiques.
@@ -147,6 +147,27 @@ export const AYWEBS_STORES: readonly AyWebsStoreDefinition[] = [
     homeUrl: 'https://www.aliexpress.com/',
     searchUrlTemplate: 'https://www.aliexpress.com/wholesale?SearchText={query}',
     categories: ['electronics', 'home', 'fashion', 'beauty'],
+    popular: true,
+    phase: 2,
+  },
+  {
+    id: 'zalando',
+    name: 'Zalando',
+    displayName: 'Zalando',
+    domains: ['zalando.fr', 'zalando.de'],
+    country: 'FR',
+    currency: 'EUR',
+    logo: '',
+    enabled: true,
+    captureSupported: true,
+    adapter: 'zalando',
+    status: 'beta',
+    integrationType: 'PARTIALLY_SUPPORTED',
+    capabilities: REVIEW_PURCHASE_CAPABILITIES,
+    browserMode: 'external',
+    homeUrl: 'https://www.zalando.fr/',
+    searchUrlTemplate: 'https://www.zalando.fr/catalog/?q={query}',
+    categories: ['fashion'],
     popular: true,
     phase: 2,
   },

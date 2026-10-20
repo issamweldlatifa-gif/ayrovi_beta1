@@ -36,10 +36,15 @@ import { assertProductionConfiguration } from './config/productionConfig';
 import { pruneCanonicalLensCache } from './ayrovix/services/lensCache';
 import { dispatchPushNotifications } from './services/pushDispatch';
 import { pushConfigured } from './services/push';
-import { clientRateLimitKey } from './services/rateKey';
+import { clientRateLimitKey as verifiedClientRateLimitKey } from './services/rateKey';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+// Rate-limit middleware is registered before the database is initialized, but
+// it only runs after this module finishes loading. Late-bind the handle so
+// account-based buckets can verify the supplied session against SQLite.
+let rateLimitDatabase: AyroviDatabase | null = null;
+const clientRateLimitKey = (req: Request) => verifiedClientRateLimitKey(req, rateLimitDatabase);
 
 assertProductionConfiguration();
 
@@ -303,6 +308,7 @@ app.use('/api/customer/auth/otp/verify', rateLimit('otp-verify-challenge', 10, 5
 // Tests must always be hermetic: never let a local .env DATABASE_PATH hijack the test run.
 const databasePath = process.env.NODE_ENV === 'test' ? ':memory:' : (process.env.DATABASE_PATH || undefined);
 const db = new AyroviDatabase(databasePath);
+rateLimitDatabase = db;
 try { pruneCanonicalLensCache(db); } catch (error: any) { console.warn('[Lens cache] startup prune failed:', error?.message || 'unknown'); }
 /*
  * Répartiteur de notifications push.

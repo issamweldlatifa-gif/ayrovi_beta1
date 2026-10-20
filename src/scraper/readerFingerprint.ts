@@ -21,8 +21,7 @@
  *     `AYROVIX_READER_PROFILE` (ex. `amazon=mobile`, `shein=desktop`) ;
  *   • l'autre empreinte reste disponible en repli DIFFÉRÉ : elle ne part que si
  *     la première n'a rien lu, jamais en même temps (voir `readerProbePlan`) ;
- *   • le rendu Bright Data part après ce repli gratuit,
- *     et non plus en parallèle de lui.
+ *   • le lecteur Jina optionnel part après ce repli, et non en parallèle.
  *
  * Aucune décision métier ici : ce module ne dit pas quel prix est vrai, il dit
  * avec quelle empreinte on frappe à la porte — et pourquoi.
@@ -72,8 +71,8 @@ const GENERIC_PROFILE: ReaderProfile = 'desktop';
 
 const PROVENANCE: Readonly<Record<string, string>> = Object.freeze({
   amazon: 'Mesures 04–06/10/2026 : agent mobile → fiche 693 Ko avec a-price-whole (prix lu) ; agent bureau → 3 coquilles de 3,8 Ko + une page de 842 Ko sans aucune ancre de prix.',
-  shein: 'Boutique rendue côté client : la lecture directe ne rend pas un prix (mesures 05/10 : coquilles JS). Profil bureau par défaut ; le prix dépend du rendu Bright Data.',
-  temu: 'Boutique rendue côté client : la lecture directe ne rend pas un prix. Profil bureau par défaut ; le prix dépend du rendu Bright Data.',
+  shein: 'Boutique rendue côté client : les mesures 05/10 ont renvoyé des coquilles JS en lecture directe. Profil bureau par défaut ; le prix doit venir du HTML réellement lu (capture WebView ou lecteur serveur).',
+  temu: 'Boutique rendue côté client : la lecture directe peut renvoyer une coquille JS. Profil bureau par défaut ; le prix doit venir du HTML réellement lu (capture WebView ou lecteur serveur).',
   aliexpress: 'Accès produit non obtenu dans cette infrastructure (302 / coquille x5secdata). Profil bureau par défaut, sans revendication de succès.',
 });
 
@@ -120,11 +119,17 @@ export function readerFallbackDelayMs(): number {
 }
 
 /**
- * Départ du rendu Bright Data : APRÈS le repli gratuit, pour ne pas dépenser un appel
- * externe (et 13–28 s d'attente) quand l'autre empreinte aurait suffi.
+ * Délai de départ du lecteur Jina : après le repli direct, afin de ne pas faire
+ * d'appel externe quand l'une des empreintes marchandes a déjà fourni un prix.
  */
 export function readerJinaHeadstartMs(): number {
   return integerEnv('AYROVIX_JINA_HEADSTART_MS', readerFallbackDelayMs() + 500, 0, 10_000);
+}
+
+/** Jina est activé par défaut; les deux noms acceptent le réglage historique. */
+export function readerJinaEnabled(): boolean {
+  const configured = process.env.AYROVIX_JINA_READER ?? process.env.AYROVI_JINA_READER;
+  return String(configured || '').trim().toLowerCase() !== 'false';
 }
 
 export interface ReaderProbeStep {

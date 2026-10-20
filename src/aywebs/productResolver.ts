@@ -46,6 +46,9 @@ import { AyWebsDomainError } from './errors';
 import { ayWebsQuoteTtlMs, createAyWebsQuoteToken } from './quoteToken';
 import { withAyWebsReadSlot } from './readGate';
 import {
+  canIssueAyWebsCaptureQuote,
+  hasUnstructuredAyWebsVariantEvidence,
+  isAyWebsCaptureVariantSelectionVerified,
   shouldVerifyWebviewCaptureInBackground,
   validateAyWebsCapturedPage,
   webviewCaptureDivergence,
@@ -285,8 +288,12 @@ export async function resolveAyWebsProduct(
   const cached = cacheAllowed ? readAyWebsResolveCache(deps.scraper, cacheKey, { allowStale: true }) : null;
   /* Mémo « fiche illisible » : une lecture SANS prix échoue en 13–17 s (sondes
      vouées à l'échec). Le mémo, séparé et à TTL court (90 s), évite de repayer
-     ce coût à chaque réessai — sans jamais se faire passer pour un succès. */
-  const failedCached = cached ? null : readAyWebsResolveFailureCache(deps.scraper, cacheKey);
+     ce coût à chaque réessai — sans jamais se faire passer pour un succès.
+     Les captures/HTML clients ne sont pas des lectures serveur et ne doivent
+     jamais contaminer ce mémo ni le consulter comme s'il s'agissait d'un échec réseau. */
+  const failedCached = cacheAllowed && !cached
+    ? readAyWebsResolveFailureCache(deps.scraper, cacheKey)
+    : null;
 
   let sourceProduct: AyWebsSourceProduct;
   let fromCache = false;
@@ -396,37 +403,61 @@ export async function resolveAyWebsProduct(
   /* Une lecture fraîche qui n'a pas su lire de prix est mémorisée 90 s : les
      réessais suivants répondent « prix non lu » en quelques ms au lieu de
      relancer 13–17 s de sondes. Le succès, lui, passe par le cache normal. */
-  const freshRead = !cached && !failedCached;
+  const freshRead = !captureUsed && !input.pageHtml && !cached && !failedCached;
   if (freshRead && missing.length) {
     writeAyWebsResolveFailureCache(deps.scraper, cacheKey, sourceProduct);
   }
   // Le client peut joindre des métadonnées de contexte (ex. `condition`) : elles
   // n'identifient pas la variante et ne doivent jamais la faire « disparaître ».
+  const requestedVariant = input.selectedVariant && Object.keys(input.selectedVariant).length
+    ? input.selectedVariant
+    : captureUsed ? captureValidation!.selectedVariantAttributes : null;
   const { matching: matchingAttributes, metadata: variantMetadata } = ayWebsSplitVariantSelection(
     { variantGroups: sourceProduct.variantGroups, variants: sourceProduct.variants },
-    input.selectedVariant || null,
+    requestedVariant,
   );
   let availability = await adapter.checkAvailability(sourceProduct, matchingAttributes);
 
+  let captureVariantSelectionVerified = !captureUsed;
+  let captureHasUnstructuredVariantEvidence = false;
   if (captureUsed) {
-    /* La capture prouve l'état du bouton d'achat POUR LA COMBINAISON AFFICHÉE
-       chez le client. Si l'écran demande une AUTRE combinaison, cette preuve ne
-       dit rien d'elle : on répond UNKNOWN (et le panier refusera) au lieu
-       d'étendre la preuve à une variante qu'on n'a pas vue. */
-    /* Toute valeur demandée doit avoir été VUE sur la page — y compris celles
-       que le produit ne publie pas comme options (métadonnées de contexte).
-       Pourquoi si large : une capture ne publie AUCUN stock par option, donc
-       rien ne permet de dire si une valeur demandée est un attribut de variante
-       ou une simple annotation. Le risque est asymétrique — un faux UNKNOWN
-       coûte un refus honnête (« impossible de confirmer »), un faux AVAILABLE
-       coûte une commande invendable sur un produit jamais affiché. */
+    /* Le prix et l'état du bouton décrivent une seule combinaison affichée. Les
+       groupes twister ne deviennent un choix achetable qu'après comparaison
+       exacte entre la sélection demandée et celle relue dans cette capture. */
     const requestedSelection = { ...(matchingAttributes || {}), ...(variantMetadata || {}) };
     const requestedValues = Object.values(requestedSelection).map((value) => String(value).trim().toLowerCase());
-    const observed = captureValidation!.selectedVariantTexts.map((value) => value.toLowerCase());
-    const selectionBacked = !requestedValues.length
-      || requestedValues.every((value) => observed.some((label) => label.includes(value)));
+    const observedTexts = captureValidation!.selectedVariantTexts.map((value) => value.toLowerCase());
+    const capturedAttributes = captureValidation!.selectedVariantAttributes;
+    const groupAttributes = captureValidation!.variantGroups.map((group) => group.attribute);
+    const hasStructuredGroups = groupAttributes.length > 0;
+    captureHasUnstructuredVariantEvidence = hasUnstructuredAyWebsVariantEvidence({
+      variantGroups: captureValidation!.variantGroups,
+      variantTexts: captureValidation!.variantTexts,
+      selectedVariantTexts: captureValidation!.selectedVariantTexts,
+      requestedAttributes: input.selectedVariant,
+    });
+    const matchingAttributesBacked = Object.entries(matchingAttributes || {}).every(([attribute, value]) => {
+      if (hasStructuredGroups && groupAttributes.includes(attribute)) {
+        return String(capturedAttributes[attribute] || '').trim().toLowerCase() === String(value).trim().toLowerCase();
+      }
+      const text = String(value).trim().toLowerCase();
+      return observedTexts.some((label) => label.includes(text));
+    });
+    const metadataBacked = Object.values(variantMetadata || {}).every((value) => {
+      const text = String(value).trim().toLowerCase();
+      return observedTexts.some((label) => label.includes(text));
+    });
+    const selectionBacked = matchingAttributesBacked && metadataBacked;
+    captureVariantSelectionVerified = isAyWebsCaptureVariantSelectionVerified({
+      variantGroups: captureValidation!.variantGroups,
+      requestedAttributes: matchingAttributes,
+      capturedAttributes,
+      selectionComplete: captureValidation!.variantSelectionComplete,
+      selectionBacked,
+      unstructuredVariantEvidence: captureHasUnstructuredVariantEvidence,
+    });
     const checkedAt = new Date().toISOString();
-    if (selectionBacked) {
+    if (captureVariantSelectionVerified) {
       availability = {
         ...ayWebsAvailabilityRecord(
           captureValidation!.availability,
@@ -447,7 +478,9 @@ export async function resolveAyWebsProduct(
         ),
         variantAvailable: null,
       };
-      captureValidation!.notes.push('selection_not_in_capture');
+      captureValidation!.notes.push(hasStructuredGroups
+        ? 'variant_selection_not_exact_in_capture'
+        : 'selection_not_in_capture');
     }
   }
 
@@ -600,7 +633,15 @@ export async function resolveAyWebsProduct(
     void verifyWebviewCaptureInBackground(verificationInput).catch(() => undefined);
   }
 
-  const quoteToken = quoteEvidenceComplete
+  const captureQuoteAllowed = canIssueAyWebsCaptureQuote({
+    captureUsed,
+    priceVerified: sourceProduct.scrapedProduct.priceVerified === true,
+    currencyVerified: sourceProduct.scrapedProduct.currencyVerified === true,
+    selectionVerified: captureVariantSelectionVerified,
+    availability: availability.state,
+    unstructuredVariantEvidence: captureHasUnstructuredVariantEvidence,
+  });
+  const quoteToken = quoteEvidenceComplete && captureQuoteAllowed
     ? createAyWebsQuoteToken({
         productId,
         storeId: store.id,

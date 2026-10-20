@@ -233,6 +233,43 @@ describe('répartiteur', () => {
     expect(pendingPushTargets(db)).toHaveLength(0);
   });
 
+  it('deux cycles chevauchés ne poussent pas deux fois le même couple appareil/notification', async () => {
+    const db = freshDb();
+    account(db);
+    const device = registerPushDevice(db, { token: 't-overlap', accountId: 'acc_1' });
+    notify(db, 'acc_1', 'n-overlap', new Date().toISOString());
+
+    let releaseFcm!: () => void;
+    let markFcmStarted!: () => void;
+    const fcmGate = new Promise<void>((resolve) => { releaseFcm = resolve; });
+    const fcmStarted = new Promise<void>((resolve) => { markFcmStarted = resolve; });
+    let fcmCalls = 0;
+    const fetchImpl: FetchImpl = async (url) => {
+      if (url.includes('oauth2')) {
+        const payload = { access_token: 'AT', expires_in: 3600 };
+        return { ok: true, status: 200, text: async () => JSON.stringify(payload), json: async () => payload };
+      }
+      fcmCalls += 1;
+      markFcmStarted();
+      await fcmGate;
+      return { ok: true, status: 200, text: async () => '{}', json: async () => ({}) };
+    };
+
+    const firstRun = dispatchPushNotifications(db, { config, fetchImpl });
+    await fcmStarted;
+    // The first worker has reserved the row but has not received FCM's reply.
+    const secondRun = await dispatchPushNotifications(db, { config, fetchImpl });
+    expect(secondRun.sent).toBe(0);
+    expect(secondRun.failed).toBe(0);
+    expect(fcmCalls).toBe(1);
+
+    releaseFcm();
+    const first = await firstRun;
+    expect(first.sent).toBe(1);
+    expect(fcmCalls).toBe(1);
+    expect(db.get('SELECT status FROM customer_push_dispatched WHERE device_id=? AND notification_id=?', device, 'n-overlap')?.status).toBe('sent');
+  });
+
   it('appareil disparu ⇒ DÉSACTIVÉ, pour ne pas réessayer à chaque passage', async () => {
     const db = freshDb();
     account(db);

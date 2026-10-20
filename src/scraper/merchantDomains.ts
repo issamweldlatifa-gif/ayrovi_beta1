@@ -13,6 +13,7 @@ const MERCHANT_DOMAINS: ReadonlyArray<{ store: StoreType; roots: readonly string
   { store: 'shein', roots: ['shein.com', 'shein.co.uk'] },
   { store: 'temu', roots: ['temu.com'] },
   { store: 'aliexpress', roots: ['aliexpress.com'] },
+  { store: 'zalando', roots: ['zalando.fr', 'zalando.de'] },
 ];
 
 function hostnameOf(input: string): string | null {

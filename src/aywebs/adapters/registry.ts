@@ -7,6 +7,7 @@ import { AmazonAdapter } from './amazon';
 import { SheinAdapter } from './shein';
 import { TemuAdapter } from './temu';
 import { AliExpressAdapter } from './aliexpress';
+import { ZalandoAdapter } from './zalando';
 
 /**
  * AYWEBs — registre des adaptateurs (§8).
@@ -26,6 +27,7 @@ const ADAPTER_FACTORIES: Record<AyWebsAdapterId, AdapterFactory> = {
   shein: (scraper) => new SheinAdapter(scraper),
   temu: (scraper) => new TemuAdapter(scraper),
   aliexpress: (scraper) => new AliExpressAdapter(scraper),
+  zalando: (scraper) => new ZalandoAdapter(scraper),
   generic: (scraper) => new GenericStoreAdapter(scraper),
 };
 
@@ -45,19 +47,25 @@ export const AYWEBS_ADAPTER_DESCRIPTORS: readonly AyWebsAdapterDescriptor[] = [
     id: 'shein', label: 'SHEIN', integrationType: 'PARTIALLY_SUPPORTED', purchaseMode: 'MANUAL_REVIEW',
     reads: ['product_page_url', 'title', 'price', 'currency', 'images', 'variants', 'availability'],
     implemented: true,
-    pendingIntegration: 'Bot-wall fréquent : rendered provider requis en production, achat en revue humaine.',
+    pendingIntegration: 'Bot-wall fréquent : la capture WebView fournit la page observée; achat en revue humaine.',
   },
   {
     id: 'temu', label: 'TEMU', integrationType: 'PARTIALLY_SUPPORTED', purchaseMode: 'MANUAL_REVIEW',
     reads: ['product_page_url', 'title', 'price', 'currency', 'images', 'variants', 'availability'],
     implemented: true,
-    pendingIntegration: 'Bot-wall fréquent : rendered provider requis en production, achat en revue humaine.',
+    pendingIntegration: 'Bot-wall fréquent : la capture WebView fournit la page observée; achat en revue humaine.',
   },
   {
     id: 'aliexpress', label: 'AliExpress', integrationType: 'PARTIALLY_SUPPORTED', purchaseMode: 'MANUAL_REVIEW',
     reads: ['product_page_url', 'title', 'price', 'currency', 'images', 'variants', 'availability'],
     implemented: true,
     pendingIntegration: 'Variantes parfois incomplètes : achat en revue humaine.',
+  },
+  {
+    id: 'zalando', label: 'Zalando', integrationType: 'PARTIALLY_SUPPORTED', purchaseMode: 'MANUAL_REVIEW',
+    reads: ['product_page_url', 'title', 'price', 'currency', 'images', 'variants', 'availability'],
+    implemented: true,
+    pendingIntegration: 'Lecture disponible sur les domaines Zalando .fr/.de ; achat marchand non intégré, revue humaine requise.',
   },
   {
     id: 'generic', label: 'Boutique générique', integrationType: 'URL_REQUEST', purchaseMode: 'URL_REQUEST',

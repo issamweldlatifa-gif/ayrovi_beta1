@@ -4,7 +4,7 @@
  * acceptée sans modification du code. La source est une métadonnée
  * (registre `discovery_sources`), jamais l'architecture.
  */
-export type StoreType = 'amazon' | 'shein' | 'temu' | 'aliexpress' | 'generic' | (string & {});
+export type StoreType = 'amazon' | 'shein' | 'temu' | 'aliexpress' | 'zalando' | 'generic' | (string & {});
 export type PriceVerificationStatus = 'VERIFIED' | 'PENDING_MANUAL';
 
 export interface ProductVariantDetail {

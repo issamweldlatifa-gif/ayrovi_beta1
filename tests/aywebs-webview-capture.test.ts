@@ -44,7 +44,14 @@ import { resolveAyWebsProduct } from '../src/aywebs/productResolver';
 import { addAyWebsCartItem } from '../src/aywebs/cart';
 import { createAyWebsRouter } from '../src/aywebs/routes';
 import { AYWEBS_CAPTURE_SCRIPT, AYWEBS_CAPTURE_SCRIPT_PATH } from '../src/aywebs/captureScript';
-import { validateAyWebsCapturedPage, shouldVerifyWebviewCaptureInBackground } from '../src/aywebs/webviewCapture';
+import { buildAyWebsVariantSelectionInjection } from '../apps/mobile/src/api/aywebs';
+import {
+  canIssueAyWebsCaptureQuote,
+  hasUnstructuredAyWebsVariantEvidence,
+  isAyWebsCaptureVariantSelectionVerified,
+  validateAyWebsCapturedPage,
+  shouldVerifyWebviewCaptureInBackground,
+} from '../src/aywebs/webviewCapture';
 import { clearAyWebsResolveCache } from '../src/aywebs/resolveCache';
 import { clearAyWebsResolveFailureCache } from '../src/aywebs/resolveCache';
 import { resetAyWebsReadGate } from '../src/aywebs/readGate';
@@ -58,7 +65,8 @@ const SESSION_ID = 'capture-session-0000000001';
 
 const TOUCHED_ENV = [
   'AYWEBS_WEBVIEW_VERIFY_SAMPLE', 'AYWEBS_HOST_CIRCUIT', 'AYWEBS_RESOLVE_CACHE_TTL_MS',
-  'AYWEBS_QUOTE_REVERIFY_SAMPLE', 'AYWEBS_QUOTE_REVERIFY_TND',
+  'AYWEBS_QUOTE_REVERIFY_SAMPLE', 'AYWEBS_QUOTE_REVERIFY_TND', 'AYWEBS_CAPTURE_ENABLED',
+  'AYWEBS_SHEIN_CAPTURE_ENABLED', 'AYWEBS_TEMU_CAPTURE_ENABLED', 'AYWEBS_ALIEXPRESS_CAPTURE_ENABLED',
 ];
 afterEach(() => {
   for (const key of TOUCHED_ENV) delete process.env[key];
@@ -241,6 +249,28 @@ describe('AYWEBs 2.1 — lecteur client : des TEXTES, jamais des nombres', () =>
     expect(validation.notes).toContain('single_source');
   });
 
+  it('EUR est reconnue sur les domaines Zalando enregistrés, sans valider seule le prix DOM', () => {
+    const zalandoUrl = 'https://www.zalando.fr/nike-sportswear-club-tee-t-shirt-basic-black-ni121d0a2-q11.html';
+    const { validation } = captureFrom(DOM_ONLY_PAGE, zalandoUrl);
+    expect(validation.currency).toBe('EUR');
+    expect(validation.currencyVerified).toBe(true);
+    expect(validation.priceVerified).toBe(false);
+  });
+
+  it('le label Amazon accessibility ne devient pas une seconde source hors Amazon', () => {
+    const payload = {
+      ...captureFrom(JSON_LD_PAGE).payload,
+      priceCandidates: [
+        { text: '129.99 EUR', source: 'dom' },
+        { text: '129.99 EUR', source: 'dom_accessibility' },
+      ],
+    };
+    const validation = validateAyWebsCapturedPage(payload, PRODUCT_URL, { requireCorroboration: true });
+    expect(validation.ok).toBe(false);
+    expect(validation.rejection).toBe('AMBIGUOUS_PRICE');
+    expect(validation.corroborated).toBe(false);
+  });
+
   it('deux sources indépendantes d’accord ⇒ corroboré, devise prouvée', () => {
     const { validation } = captureFrom(CORROBORATED_PAGE);
     expect(validation.price).toBe(79.5);
@@ -288,6 +318,126 @@ describe('AYWEBs 2.1 — lecteur client : des TEXTES, jamais des nombres', () =>
       <div class="product-price">€14.80</div></body></html>`;
     const { payload } = captureFrom(page);
     expect(payload.currencyText).toBe(null);
+  });
+});
+
+describe('AYWEBs mobile — sélection exacte dans le WebView', () => {
+  it('change taille et couleur dans le DOM, puis relit la sélection avant de répondre', async () => {
+    const dom = new JSDOM(`<!doctype html><html><body>
+      <div id="dp-container"><div id="ppd"><div id="twister_feature_div">
+        <div id="variation_size_name"><select><option>Small</option><option>Medium</option></select></div>
+        <div id="variation_color_name"><select><option>Emerald Leaf</option><option>Classic Navy</option></select></div>
+      </div></div></div>
+    </body></html>`, { runScripts: 'outside-only' });
+    const messages: string[] = [];
+    (dom.window as any).ReactNativeWebView = { postMessage: (message: string) => messages.push(message) };
+    const groups = [
+      { attribute: 'size', sourceKey: 'size_name', label: 'Size', values: ['Small', 'Medium'] },
+      { attribute: 'color', sourceKey: 'color_name', label: 'Color', values: ['Emerald Leaf', 'Classic Navy'] },
+    ];
+    const reader = `(function(){return JSON.stringify({
+      size: document.querySelector('#variation_size_name select').selectedOptions[0].textContent,
+      color: document.querySelector('#variation_color_name select').selectedOptions[0].textContent
+    });})()`;
+    const injection = buildAyWebsVariantSelectionInjection(
+      reader, 'variant-read-1', groups, { size: 'Medium', color: 'Classic Navy' },
+    );
+
+    dom.window.eval(injection);
+    await new Promise((resolve) => setTimeout(resolve, 700));
+
+    expect(messages).toHaveLength(1);
+    const message = JSON.parse(messages[0]);
+    expect(message).toMatchObject({ type: 'aywebs_capture', requestId: 'variant-read-1' });
+    expect(JSON.parse(message.payload)).toEqual({ size: 'Medium', color: 'Classic Navy' });
+    dom.window.close();
+  }, 10_000);
+});
+
+describe('AYWEBs 2.1 — devis de capture : choix exact, prix et disponibilité prouvés', () => {
+  const complete = {
+    captureUsed: true,
+    priceVerified: true,
+    currencyVerified: true,
+    selectionVerified: true,
+    availability: 'AVAILABLE' as const,
+    unstructuredVariantEvidence: false,
+  };
+
+  it('n’autorise que les captures complètes, structurées et disponibles', () => {
+    expect(canIssueAyWebsCaptureQuote(complete)).toBe(true);
+    expect(canIssueAyWebsCaptureQuote({ ...complete, availability: 'LOW_STOCK' })).toBe(true);
+    expect(canIssueAyWebsCaptureQuote({ ...complete, selectionVerified: false })).toBe(false);
+    expect(canIssueAyWebsCaptureQuote({ ...complete, priceVerified: false })).toBe(false);
+    expect(canIssueAyWebsCaptureQuote({ ...complete, currencyVerified: false })).toBe(false);
+    expect(canIssueAyWebsCaptureQuote({ ...complete, availability: 'UNKNOWN' })).toBe(false);
+    expect(canIssueAyWebsCaptureQuote({ ...complete, availability: 'OUT_OF_STOCK' })).toBe(false);
+    expect(canIssueAyWebsCaptureQuote({ ...complete, unstructuredVariantEvidence: true })).toBe(false);
+  });
+
+  it('ne traite pas des options non structurées ou hors groupe comme une sélection vérifiée', () => {
+    const variantGroups = [
+      { attribute: 'size', values: ['Small', 'Medium'] },
+      { attribute: 'color', values: ['Emerald Leaf', 'Classic Navy'] },
+    ];
+    expect(hasUnstructuredAyWebsVariantEvidence({
+      variantGroups,
+      variantTexts: ['Small', 'Medium', 'Emerald Leaf', 'Classic Navy'],
+      selectedVariantTexts: ['Medium', 'Classic Navy'],
+      requestedAttributes: { size: 'Medium', color: 'Classic Navy' },
+    })).toBe(false);
+    expect(hasUnstructuredAyWebsVariantEvidence({
+      variantGroups,
+      variantTexts: ['Small', 'Medium', 'Emerald Leaf', 'Classic Navy', 'Default Title'],
+      selectedVariantTexts: [],
+    })).toBe(true);
+    expect(hasUnstructuredAyWebsVariantEvidence({
+      variantGroups,
+      variantTexts: [],
+      selectedVariantTexts: [],
+      requestedAttributes: { size: 'Medium', condition: 'new' },
+    })).toBe(true);
+    expect(hasUnstructuredAyWebsVariantEvidence({
+      variantGroups: [],
+      variantTexts: ['Medium'],
+      selectedVariantTexts: [],
+    })).toBe(true);
+  });
+
+  it('verifie chaque groupe exact et refuse un choix twister explicitement indisponible', () => {
+    const variantGroups = [
+      {
+        attribute: 'size', sourceKey: 'size_name', label: 'Size', values: ['Small', 'Medium'],
+        valueStates: [
+          { value: 'Small', state: 'UNAVAILABLE' as const },
+          { value: 'Medium', state: 'SELECTED' as const },
+        ],
+      },
+      {
+        attribute: 'color', sourceKey: 'color_name', label: 'Color', values: ['Classic Navy'],
+        valueStates: [{ value: 'Classic Navy', state: 'AVAILABLE' as const }],
+      },
+    ];
+    const valid = {
+      variantGroups,
+      requestedAttributes: { size: 'Medium', color: 'Classic Navy' },
+      capturedAttributes: { size: 'Medium', color: 'Classic Navy' },
+      selectionComplete: true,
+      selectionBacked: true,
+      unstructuredVariantEvidence: false,
+    };
+    expect(isAyWebsCaptureVariantSelectionVerified(valid)).toBe(true);
+    expect(isAyWebsCaptureVariantSelectionVerified({
+      ...valid,
+      requestedAttributes: { size: 'Small', color: 'Classic Navy' },
+      capturedAttributes: { size: 'Small', color: 'Classic Navy' },
+    })).toBe(false);
+    expect(isAyWebsCaptureVariantSelectionVerified({ ...valid, selectionComplete: false })).toBe(false);
+    expect(isAyWebsCaptureVariantSelectionVerified({ ...valid, unstructuredVariantEvidence: true })).toBe(false);
+    expect(isAyWebsCaptureVariantSelectionVerified({
+      ...valid,
+      capturedAttributes: { size: 'Small', color: 'Classic Navy' },
+    })).toBe(false);
   });
 });
 
@@ -639,10 +789,31 @@ describe('AYWEBs 2.1 — contrat HTTP : la boutique externe passe par le même g
     expect(h.scrapeProduct).not.toHaveBeenCalled();
   });
 
+  it('/stores : les boutiques avec capture DOM activée restent opérationnelles', async () => {
+    process.env.AYWEBS_CAPTURE_ENABLED = 'true';
+    process.env.AYWEBS_SHEIN_CAPTURE_ENABLED = 'true';
+    process.env.AYWEBS_TEMU_CAPTURE_ENABLED = 'true';
+    process.env.AYWEBS_ALIEXPRESS_CAPTURE_ENABLED = 'true';
+    const h = harness();
+    const stores = await request(app(h)).get('/api/v1/aywebs/stores');
+    expect(stores.status).toBe(200);
+    for (const id of ['shein', 'temu', 'aliexpress']) {
+      expect(stores.body.data.find((store: any) => store.id === id)).toMatchObject({
+        capture_supported: true,
+        operational: true,
+        operational_reason: null,
+      });
+    }
+  });
+
   it('/health : la boutique externe est décrite, avec ZÉRO domaine', async () => {
     const h = harness();
     const health = await request(app(h)).get('/api/v1/aywebs/health');
     expect(health.status).toBe(200);
+    expect(health.body.data.direct_reader_enabled).toBe(true);
+    expect(typeof health.body.data.jina_reader_enabled).toBe('boolean');
+    expect(health.body.data).not.toHaveProperty('rendered_provider');
+    expect(health.body.data).not.toHaveProperty('rendered_provider_ready');
     const capture = health.body.data.webview_capture;
     expect(capture.contract_version).toBe(1);
     expect(capture.external_store).toMatchObject({

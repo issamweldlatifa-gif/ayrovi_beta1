@@ -19,6 +19,7 @@ import { ar } from '../src/i18n/ar';
 import { fr } from '../src/i18n/fr';
 import {
   dynamicPrefixes,
+  exactCopyProblems,
   keyReferences,
   missingKeys,
   placeholderDrift,
@@ -75,11 +76,17 @@ describe('عقد النصوص — القاموس', () => {
   it('ما فماش لغة غالطة داخل النص', () => {
     // الاستثناءان الوحيدان: اسم اللغة نفسها، مكتوب بلغتها.
     expect(wrongLanguage(FR, 'fr', ['language.ar']).map((f) => `${f.key}: ${f.detail}`)).toEqual([]);
-    expect(wrongLanguage(AR, 'ar', ['language.fr']).map((f) => `${f.key}: ${f.detail}`)).toEqual([]);
+    expect(wrongLanguage(AR, 'ar', ['language.fr', 'aywebs.addToCart']).map((f) => `${f.key}: ${f.detail}`)).toEqual([]);
   });
 
   it('المتغيّرات متاع `{}` متطابقة بين اللغتين', () => {
     expect(placeholderDrift(AR, FR).map((f) => `${f.key}: ${f.detail}`)).toEqual([]);
+  });
+
+  it('Add to Cart يبقى بالحرف كيف ما فرض الأمر الدائم', () => {
+    const expectation = [{ key: 'aywebs.addToCart', value: 'Add to Cart', why: 'AYWEBs add-to-cart contract' }];
+    expect(exactCopyProblems(FR, expectation)).toEqual([]);
+    expect(exactCopyProblems(AR, expectation)).toEqual([]);
   });
 });
 
@@ -92,16 +99,16 @@ describe('عقد النصوص — المفاتيح المتكوّنة في ال�
     }
     /**
      * Modèle de navigation en vigueur :
-     *   • la barre du bas ne porte plus que le profil ;
-     *   • `index` (l’accueil), `account` et `cart` restent des ROUTES — l’en-tête
-     *     et le tiroir pointent dessus — mais sont retirés de la barre
-     *     (`href: null`). Un onglet masqué n’est pas un onglet supprimé : on ne
-     *     casse pas les liens existants pour un changement de navigation.
+     *   • AYWEBs et le profil sont visibles dans la barre ;
+     *   • `index` (l’accueil) et `cart` restent des ROUTES — l’en-tête et le
+     *     tiroir pointent dessus — mais sont retirés de la barre (`href: null`).
+     *     Un onglet masqué n’est pas un onglet supprimé : on ne casse pas les
+     *     liens existants pour un changement de navigation.
      * Ce test ne fige donc pas une liste décorative : il garantit que tout
      * onglet déclaré — visible ou non — possède ses textes dans les deux langues.
      */
     expect([...tabs].sort()).toEqual([
-      'account', 'cart', 'index',
+      'account', 'aywebs', 'cart', 'index',
     ]);
     /**
      * ── Ce que ce contrat exigeait, et pourquoi il a changé ───────────────

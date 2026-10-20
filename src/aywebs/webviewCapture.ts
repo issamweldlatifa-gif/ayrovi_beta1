@@ -10,11 +10,13 @@
  *   2. identité de la page : même hôte que l'URL demandée, horodatage plausible ;
  *   3. PRIX : chaque texte candidat passe par le verdict d'intégrité de la
  *      Phase 0 (`checkPriceText`) ; le meilleur candidat est retenu selon
- *      l'ordre de fiabilité JSON-LD > microdata > meta > DOM, et il n'est dit
- *      « corroboré » que si un JSON-LD le publie OU si deux sources
- *      indépendantes donnent le même montant ;
- *   4. DEVISE : prouvée par un code ISO explicite (même règle que le lecteur
- *      serveur : `/\b[A-Z]{3}\b/` sur l'évidence) — un symbole seul ne suffit pas ;
+ *      l'ordre JSON-LD > microdata > meta > DOM visible > DOM accessibility ;
+ *      il n'est dit « corroboré » que si un JSON-LD le publie OU si deux sources
+ *      indépendantes donnent le même montant ; exception encadrée pour Amazon
+ *      du registre : le libellé screen-reader et le buybox visible doivent
+ *      publier exactement le même montant (deux représentations, aucun choix).
+ *   4. DEVISE : code ISO explicite ou symbole univoque dans la liste fermée des
+ *      boutiques enregistrées ; les symboles ambigus restent sans devise.
  *   5. DISPONIBILITÉ : traduite depuis une liste de formulations FERMÉE et
  *      documentée ; tout le reste vaut UNKNOWN (et le panier refusera — c'est
  *      voulu : on n'affirme pas un stock qu'on n'a pas lu) ;
@@ -27,9 +29,10 @@
  * normalisés (espaces insécables, longueur) et journalisés.
  */
 import { createHash } from 'node:crypto';
-import type { ScrapedProduct } from '../types';
+import type { ScrapedProduct, ProductVariantDetail } from '../types';
 import { checkPriceText } from '../scraper/priceIntegrity';
 import { detectAyWebsStore } from '../../shared/aywebsStores';
+import { normalizeAttributeName } from './productNormalizer';
 import {
   AYWEBS_CAPTURE_LIMITS,
   AYWEBS_CAPTURE_VERSION,
@@ -37,11 +40,14 @@ import {
   type AyWebsCaptureOutcome,
   type AyWebsCapturedPage,
   type AyWebsCapturedPriceCandidate,
+  type AyWebsCapturedVariantGroup,
 } from '../../shared/aywebsCapture';
 import type { AyWebsAvailabilityState } from '../../shared/aywebsTypes';
 
 /** Ordre de fiabilité des sources de prix : machine d'abord, humain ensuite. */
-const SOURCE_RANK: Record<AyWebsCaptureSource, number> = { json_ld: 0, microdata: 1, meta: 2, dom: 3 };
+const SOURCE_RANK: Record<AyWebsCaptureSource, number> = {
+  json_ld: 0, microdata: 1, meta: 2, dom: 3, dom_accessibility: 4,
+};
 
 /**
  * PREUVE DE DEVISE PAR SYMBOLE — liste FERMÉE, boutique par boutique (07/10/2026).
@@ -70,19 +76,27 @@ interface AyWebsSymbolCurrencyRule {
 }
 
 const AYWEBS_SYMBOL_CURRENCIES: readonly AyWebsSymbolCurrencyRule[] = [
-  { iso: 'EUR', pattern: /€/, stores: ['amazon', 'shein', 'temu', 'aliexpress'] },
+  { iso: 'EUR', pattern: /€/, stores: ['amazon', 'shein', 'temu', 'aliexpress', 'zalando'] },
   /* E£ (livre égyptienne) porte le même signe : amazon.eg est exclu. */
-  { iso: 'GBP', pattern: /£/, stores: ['amazon', 'shein', 'temu', 'aliexpress'], hostsExcluded: ['amazon.eg'] },
+  { iso: 'GBP', pattern: /£/, stores: ['amazon', 'shein', 'temu', 'aliexpress', 'zalando'], hostsExcluded: ['amazon.eg'] },
   /* ¥ = JPY sur amazon.co.jp, mais CNY ailleurs : réservé à Amazon. */
   { iso: 'JPY', pattern: /[¥￥]/, stores: ['amazon'] },
-  { iso: 'TND', pattern: /د\.ت/, stores: ['amazon', 'shein', 'temu', 'aliexpress'] },
+  { iso: 'TND', pattern: /د\.ت/, stores: ['amazon', 'shein', 'temu', 'aliexpress', 'zalando'] },
+  { iso: 'INR', pattern: /₹/, stores: ['shein', 'temu', 'aliexpress', 'zalando'] },
+  { iso: 'TRY', pattern: /₺/, stores: ['shein', 'temu', 'aliexpress', 'zalando'] },
+  { iso: 'RUB', pattern: /₽/, stores: ['shein', 'temu', 'aliexpress', 'zalando'] },
+  { iso: 'KRW', pattern: /₩/, stores: ['shein', 'temu', 'aliexpress', 'zalando'] },
+  { iso: 'ILS', pattern: /₪/, stores: ['shein', 'temu', 'aliexpress', 'zalando'] },
   /* `$` non-USD : les domaines Amazon dont la devise nationale n'est pas l'USD. */
   {
     iso: 'USD',
-    pattern: /\$|US\s?\$/,
-    stores: ['amazon', 'shein', 'temu', 'aliexpress'],
+    pattern: /\$/,
+    stores: ['amazon'],
     hostsExcluded: ['amazon.ca', 'amazon.com.au', 'amazon.sg', 'amazon.com.mx', 'amazon.com.br'],
   },
+  /* A bare dollar sign can be CAD/AUD/etc.; only an explicitly published
+     US$ marker identifies USD on the native merchant pages without an ISO code. */
+  { iso: 'USD', pattern: /\bUS\s?\$/i, stores: ['shein', 'temu', 'aliexpress', 'zalando'] },
 ];
 
 function hostMatchesAny(host: string, suffixes: readonly string[] | undefined): boolean {
@@ -139,6 +153,58 @@ export function resetAyWebsWebviewCaptureStats(): void {
   captureStats.single_source = 0;
 }
 
+/** A captured quote is usable only for a complete, verified selection. */
+export function hasUnstructuredAyWebsVariantEvidence(input: {
+  variantGroups: Array<Pick<AyWebsCapturedVariantGroup, 'attribute' | 'values'>>;
+  variantTexts: string[];
+  selectedVariantTexts: string[];
+  requestedAttributes?: Record<string, string> | null;
+}): boolean {
+  const attributes = new Set(input.variantGroups.map((group) => group.attribute.trim().toLowerCase()));
+  const values = new Set(input.variantGroups.flatMap((group) => group.values).map((value) => value.trim().toLowerCase()));
+  const unmappedText = [...input.variantTexts, ...input.selectedVariantTexts]
+    .some((value) => !values.has(value.trim().toLowerCase()));
+  const unmappedAttribute = Object.keys(input.requestedAttributes || {})
+    .some((attribute) => !attributes.has(attribute.trim().toLowerCase()));
+  return unmappedText || unmappedAttribute;
+}
+
+export function isAyWebsCaptureVariantSelectionVerified(input: {
+  variantGroups: AyWebsCapturedVariantGroup[];
+  requestedAttributes: Record<string, string> | null;
+  capturedAttributes: Record<string, string>;
+  selectionComplete: boolean;
+  selectionBacked: boolean;
+  unstructuredVariantEvidence: boolean;
+}): boolean {
+  if (!input.selectionBacked || input.unstructuredVariantEvidence) return false;
+  const attributes = input.variantGroups.map((group) => group.attribute);
+  if (!attributes.length) return true;
+  if (!input.selectionComplete || Object.keys(input.requestedAttributes || {}).length !== attributes.length) return false;
+  return attributes.every((attribute) => {
+    const requested = String(input.requestedAttributes?.[attribute] || '').trim().toLowerCase();
+    const captured = String(input.capturedAttributes[attribute] || '').trim().toLowerCase();
+    const group = input.variantGroups.find((candidate) => candidate.attribute === attribute);
+    const valueState = group?.valueStates?.find((candidate) => candidate.value.toLowerCase() === captured)?.state;
+    return Boolean(requested && captured && requested === captured && valueState !== 'UNAVAILABLE');
+  });
+}
+
+export function canIssueAyWebsCaptureQuote(input: {
+  captureUsed: boolean;
+  priceVerified: boolean;
+  currencyVerified: boolean;
+  selectionVerified: boolean;
+  availability: AyWebsAvailabilityState;
+  unstructuredVariantEvidence: boolean;
+}): boolean {
+  if (!input.priceVerified || !input.currencyVerified) return false;
+  if (!input.captureUsed) return true;
+  return input.selectionVerified
+    && !input.unstructuredVariantEvidence
+    && (input.availability === 'AVAILABLE' || input.availability === 'LOW_STOCK');
+}
+
 /**
  * Disponibilité — vocabulaire FERMÉ. Chaque entrée est une formulation
  * réellement publiée par les marchands (JSON-LD schema.org en anglais, ou texte
@@ -147,11 +213,7 @@ export function resetAyWebsWebviewCaptureStats(): void {
 const AVAILABILITY_VOCABULARY: Array<{ state: AyWebsAvailabilityState; reason: string; patterns: RegExp[] }> = [
   {
     state: 'OUT_OF_STOCK', reason: 'merchant_out_of_stock',
-    patterns: [
-      /outofstock|sold\s*out|out\s*of\s*stock|unavailable|currently\s+unavailable/i,
-      /rupture|épuis|indisponible|non\s+disponible/i,
-      /غير\s+متوفر|نفد/i,
-    ],
+    patterns: [/outofstock|sold\s*out|out\s*of\s*stock|unavailable|currently\s+unavailable/i, /rupture|épuis|indisponible|non\s+disponible/i, /غير\s+متوفر|نفد/i],
   },
   {
     state: 'LOW_STOCK', reason: 'merchant_limited_stock',
@@ -160,6 +222,31 @@ const AVAILABILITY_VOCABULARY: Array<{ state: AyWebsAvailabilityState; reason: s
   {
     state: 'AVAILABLE', reason: 'merchant_in_stock',
     patterns: [/instock|in\s*stock|available|add\s*to\s*(?:cart|basket|bag)|buy\s*now|add\s*to\s*cart/i, /en\s+stock|ajouter\s+au\s+panier|acheter/i, /أضف\s+إلى\s+السلة|متوفر/i],
+  },
+];
+
+/** Native-store phrasing is validated separately so the existing Amazon vocabulary stays unchanged. */
+const AYWEBS_NATIVE_AVAILABILITY_VOCABULARY: Array<{ state: AyWebsAvailabilityState; reason: string; patterns: RegExp[] }> = [
+  {
+    state: 'OUT_OF_STOCK', reason: 'merchant_out_of_stock',
+    patterns: [
+      /outofstock|sold[\s_-]*out|out[\s_-]*of[\s_-]*stock|unavailable|currently\s+unavailable/i,
+      /rupture|épuis|indisponible|non\s+disponible|nicht\s+verfügbar|derzeit\s+nicht\s+verfügbar|ausverkauft/i,
+      /غير\s+متوفر|نفد/i,
+    ],
+  },
+  {
+    state: 'LOW_STOCK', reason: 'merchant_limited_stock',
+    patterns: [/limitedavailability|limited[\s_-]*stock|low[\s_-]*stock|only\s*\d+\s*left|plus\s+que\s*\d+/i, /derniers?\s+exemplaires?|nur\s+noch\s*\d+|nur\s+wenige\s+verfügbar/i],
+  },
+  {
+    state: 'AVAILABLE', reason: 'merchant_in_stock',
+    patterns: [
+      /instock|in[\s_-]*stock|(^|[^a-z])available([^a-z]|$)|add\s*to\s*(?:cart|basket|bag)|buy\s*now/i,
+      /en\s+stock|ajouter\s+(?:au\s+)?(?:panier|sac|cabas)|acheter|disponible/i,
+      /in\s+den\s+warenkorb|in\s+die\s+tasche|zum\s+warenkorb|jetzt\s+kaufen|lieferbar|verfügbar/i,
+      /أضف\s+إلى\s+السلة|متوفر/i,
+    ],
   },
 ];
 
@@ -204,9 +291,111 @@ function cleanImageUrls(raw: unknown): string[] {
   return out;
 }
 
+const AMAZON_DIMENSION_ATTRIBUTES: Record<string, string> = {
+  size_name: 'size', ring_size: 'size', color_name: 'color', style_name: 'style',
+  pattern_name: 'pattern', flavor_name: 'flavor', capacity: 'capacity', format_name: 'format',
+  model_name: 'model', material_name: 'material', item_type_name: 'type',
+  length_name: 'length', volume_name: 'volume',
+};
+
+function cleanCapturedVariantGroups(raw: unknown, storeId: string | null | undefined): AyWebsCapturedVariantGroup[] {
+  const supportedStore = ['amazon', 'shein', 'temu', 'aliexpress', 'zalando'].includes(String(storeId || ''));
+  if (!supportedStore || !Array.isArray(raw)) return [];
+  const groups: AyWebsCapturedVariantGroup[] = [];
+  const seenAttributes = new Set<string>();
+  for (const candidate of raw.slice(0, AYWEBS_CAPTURE_LIMITS.maxVariantGroups)) {
+    if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) continue;
+    const value = candidate as Record<string, unknown>;
+    const sourceKey = collapse(value.sourceKey, AYWEBS_CAPTURE_LIMITS.maxVariantSourceKeyLength).toLowerCase();
+    if (!/^[a-z0-9_]{1,40}$/.test(sourceKey)) continue;
+    const derived = AMAZON_DIMENSION_ATTRIBUTES[sourceKey]
+      || normalizeAttributeName(sourceKey.replace(/_name$/, ''));
+    const attribute = normalizeAttributeName(value.attribute);
+    if (!attribute || attribute !== derived || ['__proto__', 'prototype', 'constructor'].includes(attribute)) continue;
+    if (seenAttributes.has(attribute)) continue;
+    if (!Array.isArray(value.values) || value.values.length > AYWEBS_CAPTURE_LIMITS.maxVariantValuesPerGroup) continue;
+    const values: string[] = [];
+    for (const item of value.values) {
+      const text = collapse(item, AYWEBS_CAPTURE_LIMITS.maxTextLength);
+      if (!text || values.some((existing) => existing.toLowerCase() === text.toLowerCase())) continue;
+      values.push(text);
+    }
+    if (!values.length) continue;
+    const label = collapse(value.label, 60) || attribute;
+    const valueStates: Array<{ value: string; state: 'AVAILABLE' | 'UNAVAILABLE' | 'SELECTED' | 'UNKNOWN' }> = [];
+    if (Array.isArray(value.valueStates) && value.valueStates.length <= AYWEBS_CAPTURE_LIMITS.maxVariantValuesPerGroup) {
+      for (const rawState of value.valueStates) {
+        if (!rawState || typeof rawState !== 'object' || Array.isArray(rawState)) continue;
+        const stateRecord = rawState as Record<string, unknown>;
+        const stateValue = collapse(stateRecord.value, 60);
+        const publishedValue = values.find((item) => item.toLowerCase() === stateValue.toLowerCase());
+        const state = String(stateRecord.state || '').toUpperCase();
+        if (!publishedValue || !['AVAILABLE', 'UNAVAILABLE', 'SELECTED', 'UNKNOWN'].includes(state)) continue;
+        const previous = valueStates.find((entry) => entry.value.toLowerCase() === publishedValue.toLowerCase());
+        if (previous) previous.state = state as typeof previous.state;
+        else valueStates.push({ value: publishedValue, state: state as typeof valueStates[number]['state'] });
+      }
+    }
+    groups.push({ attribute, sourceKey, label, values, ...(valueStates.length ? { valueStates } : {}) });
+    seenAttributes.add(attribute);
+  }
+  return groups;
+}
+
+function cleanSelectedVariantAttributes(
+  raw: unknown,
+  groups: AyWebsCapturedVariantGroup[],
+): Record<string, string> {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const source = raw as Record<string, unknown>;
+  const result: Record<string, string> = {};
+  for (const group of groups.slice(0, AYWEBS_CAPTURE_LIMITS.maxSelectedVariantAttributes)) {
+    const entry = source[group.attribute];
+    const text = collapse(entry, 60);
+    if (!text) continue;
+    const publishedValue = group.values.find((value) => value.toLowerCase() === text.toLowerCase());
+    if (publishedValue) result[group.attribute] = publishedValue;
+  }
+  return result;
+}
+
 function hostOf(raw: string): string | null {
   try {
     return new URL(raw).hostname.toLowerCase().replace(/^www\./, '');
+  } catch {
+    return null;
+  }
+}
+
+/** Product identifiers embedded in the merchant's own product URL are stable
+ * identity evidence; no identifier is synthesized when the URL has none. */
+function merchantExternalId(rawUrl: string, storeId: string | null | undefined): string | null {
+  try {
+    const url = new URL(rawUrl);
+    const path = url.pathname;
+    if (storeId === 'shein') {
+      const id = url.searchParams.get('goods_id')?.match(/^\d+$/)?.[0]
+        || path.match(/-p-(\d+)[^/]*\.html$/i)?.[1]
+        || path.match(/\/(\d+)\.html$/i)?.[1];
+      return id ? `SH-${id}` : null;
+    }
+    if (storeId === 'temu') {
+      const queryId = url.searchParams.get('goods_id') || url.searchParams.get('goodsId') || '';
+      const pathId = path.match(/(?:goods-[^/]*?-|(?:^|\/)g-)(\d{6,})\.html$/i)?.[1] || '';
+      const id = /^\d{6,}$/.test(queryId) ? queryId : pathId;
+      return id ? `TEMU-${id}` : null;
+    }
+    if (storeId === 'aliexpress') {
+      const queryId = url.searchParams.get('productId') || '';
+      const pathId = path.match(/\/(?:item|i)\/(\d{6,})\.html$/i)?.[1] || '';
+      const id = /^\d{6,}$/.test(queryId) ? queryId : pathId;
+      return id ? `AE-${id}` : null;
+    }
+    if (storeId === 'zalando') {
+      const sku = path.match(/-([a-z0-9]{5,}-[a-z0-9]{2,})\.html$/i)?.[1];
+      return sku ? `ZALANDO-${sku.toUpperCase()}` : null;
+    }
+    return null;
   } catch {
     return null;
   }
@@ -227,8 +416,16 @@ export interface AyWebsCaptureValidation {
   fingerprint: string;
   priceSource: AyWebsCaptureSource | null;
   corroborated: boolean;
+  /** Options que la page publie (libellés bruts bornés, sans combinaison supposée). */
+  variantTexts: string[];
   /** Options que le CLIENT avait choisies sur la page (libellés bruts bornés). */
   selectedVariantTexts: string[];
+  /** Dimensions et valeurs publiées par le twister Amazon (aucun prix/stock). */
+  variantGroups: AyWebsCapturedVariantGroup[];
+  /** Valeur réellement sélectionnée par dimension, si lue sur la page. */
+  selectedVariantAttributes: Record<string, string>;
+  /** Tous les groupes sont sélectionnés ; ne vaut jamais true par simple défaut. */
+  variantSelectionComplete: boolean;
   /** Piste d'audit lisible : quels candidats ont été vus, lesquels ont gagné. */
   notes: string[];
   outcome: AyWebsCaptureOutcome;
@@ -245,7 +442,8 @@ function rejected(rejection: string, fingerprint = '', notes: string[] = []): Ay
     ok: false, rejection, scraped: null, price: 0, currency: '',
     priceVerified: false, currencyVerified: false,
     availability: 'UNKNOWN', availabilityReason: `capture_rejected:${rejection}`,
-    condition: null, fingerprint, priceSource: null, corroborated: false, selectedVariantTexts: [], notes,
+    condition: null, fingerprint, priceSource: null, corroborated: false,
+    variantTexts: [], selectedVariantTexts: [], variantGroups: [], selectedVariantAttributes: {}, variantSelectionComplete: false, notes,
     outcome: { used: false, fingerprint: fingerprint || null, priceSource: null, corroborated: false, rejection },
   };
 }
@@ -332,11 +530,32 @@ export function validateAyWebsCapturedPage(
   candidates.sort((a, b) => (a.rank - b.rank) || (a.index - b.index));
   const primary = candidates[0];
   const sameValue = candidates.filter((candidate) => Math.abs(candidate.value - primary.value) < 0.005);
+  const requestStore = detectAyWebsStore(requestUrl);
+  const nativeMerchantPage = ['shein', 'temu', 'aliexpress', 'zalando'].includes(requestStore?.id || '');
+  if (nativeMerchantPage && new Set(candidates.map((candidate) => candidate.value.toFixed(2))).size > 1) {
+    notes.push('merchant_current_price_sources_disagree');
+    return rejected('AMBIGUOUS_PRICE', '', notes);
+  }
 
   /* Corroboration : un JSON-LD suffit (donnée machine publiée par le marchand) ;
-     sinon il faut DEUX sources indépendantes d'accord sur le même montant. */
-  const distinctSources = new Set(sameValue.map((candidate) => candidate.source));
+     sinon il faut DEUX sources d'accord. Pour Amazon du registre seulement,
+     le prix courant visible et son label screen-reader peuvent se corroborer
+     s'ils portent le même montant : le lecteur client ne publie jamais ce label
+     seul, et toute divergence déclenche l'abstention. Hors Amazon, ce label est
+     ramené à une simple lecture DOM et ne crée pas une seconde source. */
+  const sameValueHasAmazonPair = requestStore?.id === 'amazon'
+    && sameValue.some((candidate) => candidate.source === 'dom')
+    && sameValue.some((candidate) => candidate.source === 'dom_accessibility');
+  const trustedSameValue = sameValue.filter((candidate) =>
+    candidate.source !== 'dom_accessibility' || sameValueHasAmazonPair,
+  );
+  const distinctSources = new Set(trustedSameValue.map((candidate) => candidate.source));
   const corroborated = primary.source === 'json_ld' || distinctSources.size >= 2;
+  if (sameValueHasAmazonPair) notes.push('amazon_buybox_visible_accessibility_match');
+  if (sameValue.length > 0 && trustedSameValue.length === 0) {
+    notes.push('accessibility_label_requires_visible_buybox');
+    return rejected('PRICE_NOT_CORROBORATED', '', notes);
+  }
 
   /* Un désaccord entre sources n'est pas « ambigu » au sens du refus : le
      JSON-LD fait foi et l'écart est noté. Mais s'il n'y a PAS de JSON-LD et que
@@ -385,7 +604,7 @@ export function validateAyWebsCapturedPage(
   }
   let symbolIso = '';
   if (!contradiction && !publishedIso) {
-    const store = detectAyWebsStore(requestUrl);
+    const store = requestStore;
     if (store) {
       for (const entry of AYWEBS_SYMBOL_CURRENCIES) {
         if (!entry.stores.includes(store.id)) continue;
@@ -421,13 +640,34 @@ export function validateAyWebsCapturedPage(
     availabilityReason = 'capture_add_control_disabled';
     notes.push('add_control_disabled');
   } else if (availabilityEvidence) {
-    const match = AVAILABILITY_VOCABULARY.find((entry) => entry.patterns.some((pattern) => pattern.test(availabilityEvidence)));
-    if (match) {
-      availability = match.state;
-      availabilityReason = `${match.reason}_capture`;
+    if (nativeMerchantPage) {
+      const matches = AYWEBS_NATIVE_AVAILABILITY_VOCABULARY.filter((entry) => entry.patterns.some((pattern) => pattern.test(availabilityEvidence)));
+      const states = new Set(matches.map((entry) => entry.state));
+      const conflictingStockEvidence = states.has('OUT_OF_STOCK')
+        && (states.has('LOW_STOCK') || states.has('AVAILABLE'));
+      const matchedState = states.has('OUT_OF_STOCK') ? 'OUT_OF_STOCK'
+        : states.has('LOW_STOCK') ? 'LOW_STOCK'
+          : states.has('AVAILABLE') ? 'AVAILABLE' : null;
+      if (conflictingStockEvidence) {
+        availabilityReason = 'capture_stock_evidence_conflict';
+        notes.push('availability_evidence_conflict');
+      } else if (matchedState) {
+        const match = matches.find((entry) => entry.state === matchedState)!;
+        availability = match.state;
+        availabilityReason = `${match.reason}_capture`;
+      } else {
+        availabilityReason = 'capture_stock_wording_unrecognized';
+        notes.push('availability_wording_unrecognized');
+      }
     } else {
-      availabilityReason = 'capture_stock_wording_unrecognized';
-      notes.push('availability_wording_unrecognized');
+      const match = AVAILABILITY_VOCABULARY.find((entry) => entry.patterns.some((pattern) => pattern.test(availabilityEvidence)));
+      if (match) {
+        availability = match.state;
+        availabilityReason = `${match.reason}_capture`;
+      } else {
+        availabilityReason = 'capture_stock_wording_unrecognized';
+        notes.push('availability_wording_unrecognized');
+      }
     }
   } else {
     notes.push('availability_evidence_absent');
@@ -445,10 +685,29 @@ export function validateAyWebsCapturedPage(
   const title = collapse(payload.title, AYWEBS_CAPTURE_LIMITS.maxTitleLength);
   const brand = collapse(payload.brand, 120) || null;
   const images = cleanImageUrls(payload.images);
+  const externalId = merchantExternalId(pageUrl, requestStore?.id);
+  const variantGroups = cleanCapturedVariantGroups(payload.variantGroups, requestStore?.id);
+  const selectedVariantAttributes = cleanSelectedVariantAttributes(payload.selectedVariantAttributes, variantGroups);
   const selectedVariantTexts = cleanTextArray(
-    payload.selectedVariantTexts, AYWEBS_CAPTURE_LIMITS.maxSelectedVariantTexts, 60,
+    [
+      ...(Array.isArray(payload.selectedVariantTexts) ? payload.selectedVariantTexts : []),
+      ...Object.values(selectedVariantAttributes),
+    ],
+    AYWEBS_CAPTURE_LIMITS.maxSelectedVariantTexts,
+    60,
   );
-  const variantTexts = cleanTextArray(payload.variantTexts, AYWEBS_CAPTURE_LIMITS.maxVariantTexts, 60);
+  const variantTexts = cleanTextArray(
+    [
+      ...(Array.isArray(payload.variantTexts) ? payload.variantTexts : []),
+      ...variantGroups.flatMap((group) => group.values),
+    ],
+    AYWEBS_CAPTURE_LIMITS.maxVariantTexts,
+    60,
+  );
+  const variantSelectionComplete = variantGroups.length === 0 || variantGroups.every((group) => {
+    const selected = selectedVariantAttributes[group.attribute];
+    return Boolean(selected && group.values.some((value) => value.toLowerCase() === selected.toLowerCase()));
+  });
 
   const fingerprint = fingerprintOf({
     url: pageUrl,
@@ -461,13 +720,62 @@ export function validateAyWebsCapturedPage(
     availability,
     availabilityEvidence,
     condition,
+    variantTexts,
     selectedVariantTexts,
+    variantGroups: variantGroups.map((group) => ({
+      attribute: group.attribute, sourceKey: group.sourceKey, values: group.values, valueStates: group.valueStates || [],
+    })),
+    selectedVariantAttributes,
     capturedAt: String(payload.capturedAt),
   });
 
   const summary = condition && selectedVariantTexts.length
     ? `${title} — ${condition} — ${selectedVariantTexts.join(' / ')}`
     : title;
+  const publishedDescription = collapse(payload.description, AYWEBS_CAPTURE_LIMITS.maxTextLength);
+  const description = nativeMerchantPage ? publishedDescription : summary || title;
+  const scrapedVariantDetails: ProductVariantDetail[] = [];
+  if (variantGroups.length && variantSelectionComplete) {
+    const exactAttributes = { ...selectedVariantAttributes };
+    const stock = availability === 'AVAILABLE' || availability === 'LOW_STOCK' ? true
+      : availability === 'OUT_OF_STOCK' ? false : null;
+    scrapedVariantDetails.push({
+      id: null,
+      label: Object.values(exactAttributes).join(' · '),
+      size: exactAttributes.size || null,
+      color: exactAttributes.color || null,
+      attributes: exactAttributes,
+      available: availability !== 'OUT_OF_STOCK',
+      stock,
+      price: corroborated && currencyVerified ? price : null,
+    });
+  }
+  for (const group of variantGroups) {
+    for (const value of group.values) {
+      const state = group.valueStates?.find((item) => item.value.toLowerCase() === value.toLowerCase())?.state;
+      const attributes = { [group.attribute]: value };
+      scrapedVariantDetails.push({
+        id: null,
+        label: value,
+        size: group.attribute === 'size' ? value : null,
+        color: group.attribute === 'color' ? value : null,
+        attributes,
+        available: state !== 'UNAVAILABLE',
+        /* L'état publié d'une valeur dimensionnelle n'est pas le stock d'une
+           combinaison : seule la sélection complète relue plus haut reçoit
+           une valeur `stock` et un prix. */
+        stock: null,
+        price: null,
+      });
+    }
+  }
+  const scrapedVariants: ScrapedProduct['variants'] = {
+    sizes: variantGroups.find((group) => group.attribute === 'size')?.values || [],
+    colors: variantGroups.find((group) => group.attribute === 'color')?.values || [],
+    styles: variantGroups.find((group) => group.attribute === 'style')?.values || [],
+    options: variantGroups.find((group) => group.attribute === 'model')?.values || [],
+    details: scrapedVariantDetails,
+  };
 
   /* Le `ScrapedProduct` produit ici est le MÊME objet que celui du lecteur
      serveur : le reste d'AYWEBs (normaliseur, disponibilité, panier) ne sait
@@ -477,9 +785,9 @@ export function validateAyWebsCapturedPage(
     store: pageHost,
     storeName: pageHost,
     url: pageUrl || requestUrl,
-    externalId: null,
+    externalId,
     title,
-    description: summary || title,
+    description,
     images,
     mainImage: images[0] || '',
     sourcePrice: price,
@@ -488,12 +796,11 @@ export function validateAyWebsCapturedPage(
     estimatedShippingTND: 0,
     serviceFeeTND: 0,
     totalPriceTND: 0,
-    /* AUCUNE variante publiée : la capture prouve un prix et l'état du bouton
-       d'achat POUR LA COMBINAISON AFFICHÉE, pas le stock de chaque combinaison.
-       Exposer des options sans stock par option ferait exiger une sélection que
-       le serveur serait ensuite incapable de vérifier (blocage honnête mais
-       inutile). Les libellés publiés restent dans la piste d'audit. */
-    variants: { colors: [], sizes: [], details: [] },
+    /* Les groupes twister servent à présenter les choix, jamais à hériter d'un
+       prix ou d'un stock. Seule la combinaison explicitement sélectionnée reçoit
+       le prix et la disponibilité relus dans cette capture ; les autres valeurs
+       restent sans prix et sans stock confirmé jusqu'à une nouvelle lecture. */
+    variants: scrapedVariants,
     availability: availability === 'AVAILABLE' ? 'in_stock'
       : availability === 'LOW_STOCK' ? 'limited'
         : availability === 'OUT_OF_STOCK' ? 'out_of_stock'
@@ -537,7 +844,11 @@ export function validateAyWebsCapturedPage(
     fingerprint,
     priceSource: primary.source,
     corroborated,
+    variantTexts,
     selectedVariantTexts,
+    variantGroups,
+    selectedVariantAttributes,
+    variantSelectionComplete,
     notes,
     outcome: {
       used: true,
