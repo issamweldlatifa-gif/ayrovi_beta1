@@ -40,7 +40,7 @@ import { AddToCartSheet } from '@/features/aywebs/AddToCartSheet';
 import { ReadingProgress } from '@/features/aywebs/ReadingProgress';
 import { waitForPageIdle } from '@/features/aywebs/captureFallback';
 import {
-  AYWEBS_CAPTURE_EMPTY_PRICE_RETRY_DELAY_MS, priceCandidatesOf, resolveAddToCart, shouldRetryAyWebsCaptureForPrice,
+  AYWEBS_CAPTURE_EMPTY_PRICE_RETRY_DELAY_MS, AYWEBS_ADD_TO_CART_BUDGET_MS, priceCandidatesOf, resolveAddToCart, shouldRetryAyWebsCaptureForPrice,
 } from '@/features/aywebs/captureFlow';
 import { CAPTURE_BUDGET_MS, type ReadPhase } from '@/features/aywebs/phase';
 import { useSessionId } from '@/session/session';
@@ -251,8 +251,13 @@ export default function AyWebsBrowserScreen() {
     try {
       /* UNE capture, puis UNE résolution (avec capture, ou sans si la capture échoue ou
          tarde). Pas de seconde requête serveur quand la capture réussit (19/10/2026). */
+      /* Délai de 7 s : la page est lue dans le navigateur du client. Au-delà, on arrête la lecture
+         et on explique ce qui manque, sans relancer une lecture serveur (lente et bloquée sur Amazon). */
+      const budgetStop = new AbortController();
       const { decision, outcome: result, capture } = await resolveAddToCart({
-        readCapture: captureAllowed ? () => requestCapture(controller.signal) : undefined,
+        readCapture: captureAllowed ? () => requestCapture(budgetStop.signal) : undefined,
+        budgetMs: AYWEBS_ADD_TO_CART_BUDGET_MS,
+        onBudgetExceeded: () => budgetStop.abort(),
         // refresh : une intention Add ne sert jamais une lecture mémorisée (19/10/2026).
         resolve: (captured) => resolveAyWebsProductWithCapture(pageUrl, {
           sessionId, storeId: storeId || undefined, capture: captured, refresh: true, signal: controller.signal,
@@ -264,6 +269,11 @@ export default function AyWebsBrowserScreen() {
       /* Pas de feuille sans prix, devise ou devis vérifiés : la décision NOMME les champs manquants. */
       if (decision.kind === 'refused') {
         setNote(decision.error.code === 'CAPTURE_INCOMPLETE' ? userMessage(decision.error)[locale] : t('aywebs.captureFailed'));
+        endWaiting('failed');
+        return;
+      }
+      if (!result) {
+        setNote(t('aywebs.captureFailed'));
         endWaiting('failed');
         return;
       }

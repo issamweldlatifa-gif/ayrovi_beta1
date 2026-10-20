@@ -84,22 +84,85 @@ export function addToCartDecision(outcome: AyWebsResolveOutcome): AddToCartDecis
 }
 
 /**
- * Parcours « Add to Cart » complet (19/10/2026), sans écran : une capture, UNE
- * résolution (avec capture, ou sans si elle échoue ou tarde), puis la décision.
- * Aucune requête panier ici : la feuille (et l'ajout) ne s'ouvre qu'ensuite.
+ * Délai accordé au bouton « Add to Cart » avant d'ouvrir la feuille (20/10/2026).
+ * Tout compris : préparation du lecteur, attente de la page, lecture. Au-delà,
+ * le bouton n'attend plus : il explique ce qui manque.
+ */
+export const AYWEBS_ADD_TO_CART_BUDGET_MS = 7_000;
+
+const BUDGET_EXCEEDED: unique symbol = Symbol('ayweb-add-budget-exceeded');
+
+/** Course entre une promesse et le délai : rend la valeur, ou `BUDGET_EXCEEDED`. */
+function withBudget<T>(promise: Promise<T>, ms: number): Promise<T | typeof BUDGET_EXCEEDED> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => resolve(BUDGET_EXCEEDED), ms);
+    promise.then(
+      (value) => { clearTimeout(timer); resolve(value); },
+      (error: unknown) => { clearTimeout(timer); reject(error); },
+    );
+  });
+}
+
+/** Refus clair quand la page n'a pas été lue à temps : nomme les deux champs. */
+function captureRefusal(): ApiError {
+  return new ApiError('http', 'Nous n’avons pas pu lire le titre ou le prix de ce produit.', {
+    status: 422,
+    code: 'CAPTURE_INCOMPLETE',
+    missingFields: ['title', 'price'],
+  });
+}
+
+/**
+ * Parcours « Add to Cart » (20/10/2026, réécrit) :
+ *
+ *  1. la page est lue DANS le navigateur du client, pendant au plus `budgetMs` ;
+ *  2. lecture réussie ⇒ UNE résolution serveur AVEC cette lecture (vérification) ;
+ *  3. lecture en échec OU délai dépassé ⇒ refus immédiat `CAPTURE_INCOMPLETE`,
+ *     SANS lecture serveur de repli (elle prend 10 s et échoue sur Amazon) ;
+ *  4. annulation (écran fermé, nouvel appui) ⇒ on propage, sans rien ouvrir.
+ *
+ * Sans `budgetMs`, l'ancien chemin (repli serveur) reste disponible pour les
+ * appelants qui le demandent explicitement.
  */
 export interface AddToCartFlowInput {
   readCapture?: () => Promise<unknown>;
   resolve: (capture: unknown | undefined) => Promise<AyWebsResolveOutcome>;
   signal?: AbortSignal;
   onPhase?: (phase: 'reading' | 'resolving' | 'server-fallback') => void;
+  /** Délai de lecture de la page (défaut : pas de délai, chemin historique). */
+  budgetMs?: number;
+  /** Appelé quand le délai expire, pour libérer la page en cours de lecture. */
+  onBudgetExceeded?: () => void;
 }
 
-export async function resolveAddToCart(input: AddToCartFlowInput): Promise<{
+export interface AddToCartFlowResult {
   decision: AddToCartDecision;
-  outcome: AyWebsResolveOutcome;
+  /** Absent quand la page n'a pas été lue (aucune résolution n'a eu lieu). */
+  outcome: AyWebsResolveOutcome | undefined;
   capture: unknown | undefined;
-}> {
+}
+
+export async function resolveAddToCart(input: AddToCartFlowInput): Promise<AddToCartFlowResult> {
+  if (input.budgetMs !== undefined && input.readCapture) {
+    if (input.signal?.aborted) throw new ApiError('aborted', 'Requête interrompue.');
+    input.onPhase?.('reading');
+    let captured: unknown | typeof BUDGET_EXCEEDED;
+    try {
+      captured = await withBudget(input.readCapture(), input.budgetMs);
+    } catch (error) {
+      if (input.signal?.aborted || (error instanceof ApiError && error.isAborted)) throw error;
+      captured = undefined;
+    }
+    if (input.signal?.aborted) throw new ApiError('aborted', 'Requête interrompue.');
+    if (captured === BUDGET_EXCEEDED) input.onBudgetExceeded?.();
+    if (captured === BUDGET_EXCEEDED || captured === undefined) {
+      return { decision: { kind: 'refused', error: captureRefusal() }, outcome: undefined, capture: undefined };
+    }
+    input.onPhase?.('resolving');
+    const outcome = await input.resolve(captured);
+    return { decision: addToCartDecision(outcome), outcome, capture: captured };
+  }
+
   const { outcome, capture } = await resolveWithCaptureFallback<AyWebsResolveOutcome>(input);
   return { decision: addToCartDecision(outcome), outcome, capture };
 }
