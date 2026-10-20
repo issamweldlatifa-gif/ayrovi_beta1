@@ -383,12 +383,22 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     }
     return false;
   }
+  /** Prix barré (ancien prix) : attribut data-a-strike, balise <s>/<del>/<strike>, ou line-through en style inline. */
+  function isStruckNode(node) {
+    var tag = String(node.tagName || '').toLowerCase();
+    if (tag === 's' || tag === 'del' || tag === 'strike') return true;
+    if (node.getAttribute && node.getAttribute('data-a-strike') !== null) return true;
+    var style = node.style;
+    if (style && /line-through/i.test(String(style.textDecoration || '') + ' ' + String(style.textDecorationLine || ''))) return true;
+    return false;
+  }
   /** Contexte publicitaire / navigation / prix barré / caché — jamais un prix vendu. */
   function amazonBlocked(element) {
     if (!element) return true;
     if (isInNavigation(element)) return true;
     var node = element;
     for (var hops = 0; node && hops < 8; hops++) {
+      if (isStruckNode(node)) return true;
       var descriptor = String((node.id || '') + ' ' + (node.className || '')).toLowerCase();
       if (/sponsored|sp-sponsored|carousel|nav-assist|similar|recommendation|adplace|a-text-price|deal-badge|apex_desktop_right/.test(descriptor)) return true;
       /* Offres annexes de la zone d'achat. Constaté sur une fiche US récupérée le
