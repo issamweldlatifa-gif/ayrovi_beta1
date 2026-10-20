@@ -24,7 +24,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import {
-  isTerminalPhase, remainingSeconds, stepState, WAITING_PHASES,
+  isTerminalPhase, stepState, WAITING_PHASES,
   type ReadPhase,
 } from './phase';
 
@@ -40,7 +40,7 @@ export interface ReadingProgressProps {
   compact?: boolean;
 }
 
-export function ReadingProgress({ phase, elapsedMs, labels, countdownPrefix = '', compact = false }: ReadingProgressProps) {
+export function ReadingProgress({ phase, labels, compact = false }: ReadingProgressProps) {
   const theme = useTheme();
   const pulse = useRef(new Animated.Value(1)).current;
   const loop = useRef<Animated.CompositeAnimation | null>(null);
@@ -63,8 +63,7 @@ export function ReadingProgress({ phase, elapsedMs, labels, countdownPrefix = ''
 
   if (phase === 'idle') return null;
 
-  const seconds = remainingSeconds(elapsedMs);
-  const terminal = isTerminalPhase(phase);
+  /* Pas de compte à rebours : le bouton reste en chargement jusqu'à la fin de la lecture. */
 
   if (compact) {
     const activeIndex = WAITING_PHASES.findIndex((_, index) => stepState(index, phase) === 'active');
@@ -73,7 +72,6 @@ export function ReadingProgress({ phase, elapsedMs, labels, countdownPrefix = ''
       <View style={styles.compactWrap} accessibilityRole="progressbar">
         <AppText variant="caption" color={theme.colors.muted}>
           {labels[activeIndex] ?? WAITING_PHASES[activeIndex]}
-          {!terminal ? ` · ${countdownPrefix} ${seconds}s` : ''}
         </AppText>
       </View>
     );
@@ -111,11 +109,6 @@ export function ReadingProgress({ phase, elapsedMs, labels, countdownPrefix = ''
         );
       })}
 
-      {!terminal ? (
-        <AppText variant="caption" color={theme.colors.muted}>
-          {countdownPrefix} {seconds}s
-        </AppText>
-      ) : null}
     </View>
   );
 }

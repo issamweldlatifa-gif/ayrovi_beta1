@@ -88,7 +88,6 @@ export function addToCartDecision(outcome: AyWebsResolveOutcome): AddToCartDecis
  * Tout compris : préparation du lecteur, attente de la page, lecture. Au-delà,
  * le bouton n'attend plus : il explique ce qui manque.
  */
-export const AYWEBS_ADD_TO_CART_BUDGET_MS = 7_000;
 
 /**
  * Âge maximal d'une lecture faite à l'ouverture de la page (20/10/2026). Au-delà, on relit
@@ -138,9 +137,10 @@ function captureRefusal(): ApiError {
 /**
  * Parcours « Add to Cart » (20/10/2026, réécrit) :
  *
- *  1. la page est lue DANS le navigateur du client, pendant au plus `budgetMs` ;
+ *  1. la page est lue DANS le navigateur du client, jusqu'à la fin de la lecture
+ *     (sans minuteur : `waitForCapture`). Le bouton reste en chargement ;
  *  2. lecture réussie ⇒ UNE résolution serveur AVEC cette lecture (vérification) ;
- *  3. lecture en échec OU délai dépassé ⇒ refus immédiat `CAPTURE_INCOMPLETE`,
+ *  3. lecture en échec ⇒ refus immédiat `CAPTURE_INCOMPLETE`,
  *     SANS lecture serveur de repli (elle prend 10 s et échoue sur Amazon) ;
  *  4. annulation (écran fermé, nouvel appui) ⇒ on propage, sans rien ouvrir.
  *
@@ -152,8 +152,10 @@ export interface AddToCartFlowInput {
   resolve: (capture: unknown | undefined) => Promise<AyWebsResolveOutcome>;
   signal?: AbortSignal;
   onPhase?: (phase: 'reading' | 'resolving' | 'server-fallback') => void;
-  /** Délai de lecture de la page (défaut : pas de délai, chemin historique). */
+  /** Délai de lecture (optionnel). Le bouton « Add » ne le passe PAS : il attend la lecture. */
   budgetMs?: number;
+  /** Attendre la fin de la lecture, sans délai ni minuteur (succès ou échec seulement). */
+  waitForCapture?: boolean;
   /** Appelé quand le délai expire, pour libérer la page en cours de lecture. */
   onBudgetExceeded?: () => void;
 }
@@ -166,12 +168,14 @@ export interface AddToCartFlowResult {
 }
 
 export async function resolveAddToCart(input: AddToCartFlowInput): Promise<AddToCartFlowResult> {
-  if (input.budgetMs !== undefined && input.readCapture) {
+  if ((input.budgetMs !== undefined || input.waitForCapture === true) && input.readCapture) {
     if (input.signal?.aborted) throw new ApiError('aborted', 'Requête interrompue.');
     input.onPhase?.('reading');
     let captured: unknown | typeof BUDGET_EXCEEDED;
     try {
-      captured = await withBudget(input.readCapture(), input.budgetMs);
+      captured = input.budgetMs !== undefined
+        ? await withBudget(input.readCapture(), input.budgetMs)
+        : await input.readCapture();
     } catch (error) {
       if (input.signal?.aborted || (error instanceof ApiError && error.isAborted)) throw error;
       captured = undefined;

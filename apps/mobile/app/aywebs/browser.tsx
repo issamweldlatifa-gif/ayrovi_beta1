@@ -40,14 +40,13 @@ import { AddToCartSheet } from '@/features/aywebs/AddToCartSheet';
 import { ReadingProgress } from '@/features/aywebs/ReadingProgress';
 import { waitForPageIdle } from '@/features/aywebs/captureFallback';
 import {
-  AYWEBS_CAPTURE_EMPTY_PRICE_RETRY_DELAY_MS, AYWEBS_ADD_TO_CART_BUDGET_MS, canReusePrefetch, priceCandidatesOf, resolveAddToCart, shouldRetryAyWebsCaptureForPrice,
+  AYWEBS_CAPTURE_EMPTY_PRICE_RETRY_DELAY_MS, canReusePrefetch, priceCandidatesOf, resolveAddToCart, shouldRetryAyWebsCaptureForPrice,
 } from '@/features/aywebs/captureFlow';
-import { CAPTURE_BUDGET_MS, type ReadPhase } from '@/features/aywebs/phase';
+import type { ReadPhase } from '@/features/aywebs/phase';
 import { useSessionId } from '@/session/session';
 import { useSession } from '@/state/session';
 
 /** كي الصفحة ما تبعثش شي: مانبقاوش نستنّوا بلا نهاية. */
-const CAPTURE_TIMEOUT_MS = CAPTURE_BUDGET_MS;
 
 /**
  * باغ أنواع عند `react-native-webview` (13.17): الصنف معلن `WebView<P = undefined>`
@@ -60,7 +59,6 @@ const WebView = RNWebView as unknown as ComponentType<
 >;
 
 /** كي الكابتشر ما يجيش في الوقت: سبب صريح، موش انتظار أبدي. */
-const captureTimeout = () => new ApiError('timeout', 'Capture : la page n’a rien renvoyé dans le délai.');
 
 export default function AyWebsBrowserScreen() {
   const theme = useTheme();
@@ -171,7 +169,8 @@ export default function AyWebsBrowserScreen() {
 
   /**
    * يطلب قراءة الصفحة ويرجّع الوعد: يتفتح بالحقن، ويتسدّ بالرسالة اللي تجي من
-   * الجسر. كي ما تجي شي: مهلة 15 ثانية ثم سبب صريح.
+   * الجسر. ما فماش مهلة: الزر يبقى في التحميل حتى تجي القراءة، أو تتلغى بإعادة الضغط
+   * أو بغلق الشاشة (الإلغاء يمرّ عبر signal).
    */
   const requestCapture = useCallback((signal?: AbortSignal, quiet = false): Promise<Record<string, unknown>> => {
     return new Promise<Record<string, unknown>>((resolveOuter, rejectOuter) => {
@@ -191,18 +190,9 @@ export default function AyWebsBrowserScreen() {
       signal?.addEventListener('abort', onAbort);
       if (!quiet) { setBusy(true); setNote(''); startWaiting('preparing'); }
       captureRetries.current = 0;
-      const armTimeout = () => {
-        stopTimer();
-        timer.current = setTimeout(() => {
-          waiter.current = null;
-          if (!quiet) setBusy(false);
-          reject(captureTimeout());
-        }, CAPTURE_TIMEOUT_MS);
-      };
       const inject = (script: string) => {
         if (!quiet) startWaiting('reading');
         webRef.current?.injectJavaScript(buildAyWebsCaptureInjection(script));
-        armTimeout();
       };
       /* Prix absent de la capture ⇒ relance bornée (fc3cce38 / captureFlow.ts). */
       const onCaptured = (capture: Record<string, unknown>) => {
@@ -280,17 +270,15 @@ export default function AyWebsBrowserScreen() {
     try {
       /* UNE capture, puis UNE résolution (avec capture, ou sans si la capture échoue ou
          tarde). Pas de seconde requête serveur quand la capture réussit (19/10/2026). */
-      /* Délai de 7 s : la page est lue dans le navigateur du client. Au-delà, on arrête la lecture
-         et on explique ce qui manque, sans relancer une lecture serveur (lente et bloquée sur Amazon). */
-      const budgetStop = new AbortController();
+      /* Pas de délai : la page est lue dans le navigateur du client jusqu'au bout. Le bouton reste
+         en chargement ; si la lecture échoue, on explique ce qui manque (sans lecture serveur de repli). */
       const { decision, outcome: result, capture } = await resolveAddToCart({
         readCapture: captureAllowed ? () => {
           const entry = prefetch.current;
           if (entry && canReusePrefetch(entry, pageUrl, Date.now())) return entry.promise;
-          return requestCapture(budgetStop.signal);
+          return requestCapture(controller.signal);
         } : undefined,
-        budgetMs: AYWEBS_ADD_TO_CART_BUDGET_MS,
-        onBudgetExceeded: () => budgetStop.abort(),
+        waitForCapture: true,
         // refresh : une intention Add ne sert jamais une lecture mémorisée (19/10/2026).
         resolve: (captured) => resolveAyWebsProductWithCapture(pageUrl, {
           sessionId, storeId: storeId || undefined, capture: captured, refresh: true, signal: controller.signal,
