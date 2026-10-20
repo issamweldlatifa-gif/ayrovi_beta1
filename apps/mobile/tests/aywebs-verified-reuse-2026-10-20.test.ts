@@ -119,9 +119,11 @@ describe('capture locale WebView et extraction pour la feuille', () => {
     },
   };
 
-  it('réutilise la capture locale si elle est prête pour la même URL avec titre et candidat-prix', () => {
+  it('réutilise la capture locale si elle est prête pour la même URL (ou même URL canonique) avec titre ou candidat-prix', () => {
     expect(canOpenLocalSheetFromCapture(CAPTURE_WITH_VARIANTS)).toBe(true);
+    expect(canOpenLocalSheetFromCapture({ url: URL_A, title: 'Pull en laine mérinos', priceCandidates: [] })).toBe(true);
     expect(canReuseLocalCapture({ url: URL_A, status: 'ok', capture: CAPTURE_WITH_VARIANTS }, URL_A)).toBe(true);
+    expect(canReuseLocalCapture({ url: `${URL_A}/#customerReviews`, status: 'ok', capture: CAPTURE_WITH_VARIANTS }, URL_A)).toBe(true);
     expect(canReuseLocalCapture({ url: URL_B, status: 'ok', capture: CAPTURE_WITH_VARIANTS }, URL_A)).toBe(false);
     expect(canReuseLocalCapture({ url: URL_A, status: 'pending', capture: CAPTURE_WITH_VARIANTS }, URL_A)).toBe(false);
     expect(canOpenLocalSheetFromCapture({ url: URL_A, title: '', priceCandidates: [] })).toBe(false);

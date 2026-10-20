@@ -37,7 +37,6 @@ import {
   type AyWebsPageAnalysis, type AyWebsResolveOutcome,
 } from '@/api/aywebs';
 import { AddToCartSheet } from '@/features/aywebs/AddToCartSheet';
-import { ReadingProgress } from '@/features/aywebs/ReadingProgress';
 import { waitForPageIdle } from '@/features/aywebs/captureFallback';
 import {
   AYWEBS_CAPTURE_EMPTY_PRICE_RETRY_DELAY_MS,
@@ -47,7 +46,6 @@ import {
   priceCandidatesOf,
   shouldRetryAyWebsCaptureForPrice,
 } from '@/features/aywebs/captureFlow';
-import type { ReadPhase } from '@/features/aywebs/phase';
 import { useSessionId } from '@/session/session';
 import { useSession } from '@/state/session';
 
@@ -126,30 +124,9 @@ export default function AyWebsBrowserScreen() {
   /** Feuille ouverte depuis la capture locale : la confirmation serveur se fait au clic sur Confirmer. */
   const [sheet, setSheet] = useState<{ url: string; storeId: string; capture: Record<string, unknown> } | null>(null);
 
-  /**
-   * مرحلة القراءة + الزمن المستهلك: **جايان من مجريات حقيقية**، موش من عدّاد.
-   * كل مرحلة تتعيّن عند منعرج فعلي في الكود (جلب السكريبت، الحقن، نداء الخادم).
-   */
-  const [phase, setPhase] = useState<ReadPhase>('idle');
-  const [elapsed, setElapsed] = useState(0);
-  const tick = useRef<ReturnType<typeof setInterval> | null>(null);
-  const startedAt = useRef(0);
-
-  const startWaiting = useCallback((first: ReadPhase) => {
-    startedAt.current = Date.now();
-    setElapsed(0);
-    setPhase(first);
-    if (tick.current) clearInterval(tick.current);
-    tick.current = setInterval(() => setElapsed(Date.now() - startedAt.current), 500);
-  }, []);
-  const endWaiting = useCallback((last: ReadPhase) => {
-    if (tick.current) { clearInterval(tick.current); tick.current = null; }
-    setPhase(last);
-  }, []);
   const stopTimer = useCallback(() => {
     if (timer.current) { clearTimeout(timer.current); timer.current = null; }
   }, []);
-  useEffect(() => () => { if (tick.current) clearInterval(tick.current); }, []);
   useEffect(() => () => {
     stopTimer();
     prefetch.current?.controller.abort();
@@ -161,6 +138,7 @@ export default function AyWebsBrowserScreen() {
     if (!sessionId || !pageUrl || !isWebPageUrl(pageUrl)) return;
     let alive = true;
     setClassified(false);
+    setProductPage(null);
     analyzeAyWebsPage(pageUrl, { sessionId })
       .then((analysis) => {
         if (!alive) return;
@@ -186,6 +164,12 @@ export default function AyWebsBrowserScreen() {
   const requestCapture = useCallback((signal?: AbortSignal, quiet = false): Promise<Record<string, unknown>> => {
     return new Promise<Record<string, unknown>>((resolveOuter, rejectOuter) => {
       let settled = false;
+      let activeWaiter: { resolve: (capture: Record<string, unknown>) => void; reject: (error: unknown) => void } | null = null;
+      const clearOwnWaiter = () => {
+        if (activeWaiter && waiter.current === activeWaiter) {
+          waiter.current = null;
+        }
+      };
       const finish = () => {
         settled = true;
         stopTimer();
@@ -197,20 +181,20 @@ export default function AyWebsBrowserScreen() {
       const onAbort = () => {
         if (settled) return;
         stopTimer();
-        waiter.current = null;
-        if (!quiet) { setBusy(false); endWaiting('failed'); }
+        clearOwnWaiter();
+        if (!quiet) { setBusy(false); }
         reject(new ApiError('aborted', 'Requête interrompue.'));
       };
       if (signal?.aborted) { reject(new ApiError('aborted', 'Requête interrompue.')); return; }
       signal?.addEventListener('abort', onAbort);
-      if (!quiet) { setBusy(true); setNote(''); startWaiting('preparing'); }
+      if (!quiet) { setBusy(true); setNote(''); }
       captureRetries.current = 0;
       const armSafetyTimer = () => {
         stopTimer();
         timer.current = setTimeout(() => {
           if (settled) return;
-          waiter.current = null;
-          if (!quiet) { setBusy(false); endWaiting('failed'); }
+          clearOwnWaiter();
+          if (!quiet) { setBusy(false); }
           reject(new ApiError('http', 'Nous n’avons pas pu lire le titre ou le prix de ce produit.', {
             status: 422,
             code: 'CAPTURE_INCOMPLETE',
@@ -220,23 +204,30 @@ export default function AyWebsBrowserScreen() {
         (timer.current as { unref?: () => void } | null)?.unref?.();
       };
       const inject = (script: string) => {
-        if (!quiet) startWaiting('reading');
+        if (settled) return;
         armSafetyTimer();
         webRef.current?.injectJavaScript(buildAyWebsCaptureInjection(script));
       };
       /* Prix absent de la capture ⇒ relance bornée (fc3cce38 / captureFlow.ts). */
       const onCaptured = (capture: Record<string, unknown>) => {
+        if (settled) return;
         const script = lastScript.current;
         if (script && shouldRetryAyWebsCaptureForPrice(priceCandidatesOf(capture), captureRetries.current)) {
           captureRetries.current += 1;
-          waiter.current = { resolve: onCaptured, reject };
+          activeWaiter = { resolve: onCaptured, reject };
+          waiter.current = activeWaiter;
           stopTimer();
-          setTimeout(() => inject(script), AYWEBS_CAPTURE_EMPTY_PRICE_RETRY_DELAY_MS);
+          const retryTimer = setTimeout(() => {
+            if (settled) return;
+            inject(script);
+          }, AYWEBS_CAPTURE_EMPTY_PRICE_RETRY_DELAY_MS);
+          (retryTimer as { unref?: () => void } | null)?.unref?.();
           return;
         }
         resolve(capture);
       };
-      waiter.current = { resolve: onCaptured, reject };
+      activeWaiter = { resolve: onCaptured, reject };
+      waiter.current = activeWaiter;
       fetchAyWebsCaptureScript()
         // الصفحة لازم تكمّل تحميلها قبل القراءة (Amazon يعطي DOM ناقص ⇒ NO_PRICE_TEXT).
         .then(async (script) => {
@@ -244,17 +235,19 @@ export default function AyWebsBrowserScreen() {
           return script;
         })
         .then((script) => {
+          if (settled) return;
           // الحقن هو المنعرج الثاني: من توّا الكلمة صارت للصفحة.
           lastScript.current = script;
           inject(script);
         })
         .catch((error) => {
-          waiter.current = null;
+          if (settled) return;
+          clearOwnWaiter();
           if (!quiet) setBusy(false);
           reject(error);
         });
     });
-  }, [endWaiting, startWaiting, stopTimer]);
+  }, [stopTimer]);
 
   /**
    * Lit la page en silence dès qu'elle est chargée et reconnue comme fiche produit.
@@ -263,7 +256,9 @@ export default function AyWebsBrowserScreen() {
    */
   const startPrefetch = useCallback((targetUrl: string) => {
     const current = prefetch.current;
-    if (current && current.url === targetUrl && current.status !== 'failed') return;
+    const sameUrl = current
+      && (current.url === targetUrl || canonicalSourceUrl(current.url) === canonicalSourceUrl(targetUrl));
+    if (sameUrl && current.status !== 'failed') return;
     current?.controller.abort();
     const controller = new AbortController();
     const entry: NonNullable<typeof prefetch.current> = {
@@ -293,15 +288,14 @@ export default function AyWebsBrowserScreen() {
   }, [requestCapture]);
 
   useEffect(() => {
-    if (!captureAllowed || productPage !== true || !pageReady || !pageUrl) return;
+    if (!captureAllowed || productPage !== true || !pageUrl) return;
     startPrefetch(pageUrl);
   }, [captureAllowed, productPage, pageReady, pageUrl, startPrefetch]);
 
   const fail = useCallback((error: unknown) => {
-    endWaiting('failed');
     setBusy(false);
     setNote(isApiError(error) ? userMessage(error)[locale] : t('aywebs.captureFailed'));
-  }, [endWaiting, locale, t]);
+  }, [locale, t]);
 
   /**
    * «Add to Cart» :
@@ -312,19 +306,19 @@ export default function AyWebsBrowserScreen() {
   const addToCart = useCallback(async () => {
     if (!sessionId || !pageUrl || productPage !== true) return;
     const currentPrefetch = prefetch.current;
-    if (currentPrefetch && currentPrefetch.url === pageUrl && currentPrefetch.status === 'reading') {
+    const matchesCurrentUrl = currentPrefetch
+      && (currentPrefetch.url === pageUrl || canonicalSourceUrl(currentPrefetch.url) === canonicalSourceUrl(pageUrl));
+    if (matchesCurrentUrl && currentPrefetch.status === 'reading') {
       return;
     }
     if (
-      currentPrefetch
-      && currentPrefetch.url === pageUrl
+      matchesCurrentUrl
       && currentPrefetch.status === 'ok'
       && currentPrefetch.capture !== undefined
     ) {
       if (canReuseLocalCapture({ url: currentPrefetch.url, status: 'ok', capture: currentPrefetch.capture }, pageUrl)) {
         setNote('');
         setSheet({ url: pageUrl, storeId, capture: currentPrefetch.capture });
-        endWaiting('done');
         return;
       }
     }
@@ -337,7 +331,6 @@ export default function AyWebsBrowserScreen() {
         missingFields: ['title', 'price'],
       });
       setNote(userMessage(incomplete)[locale]);
-      endWaiting('failed');
       return;
     }
 
@@ -354,7 +347,6 @@ export default function AyWebsBrowserScreen() {
           missingFields: ['title', 'price'],
         });
         setNote(userMessage(incomplete)[locale]);
-        endWaiting('failed');
         return;
       }
       prefetch.current = {
@@ -367,7 +359,6 @@ export default function AyWebsBrowserScreen() {
       };
       setNote('');
       setSheet({ url: pageUrl, storeId, capture: captured });
-      endWaiting('done');
     } catch (error) {
       if (controller.signal.aborted) return;
       fail(error);
@@ -378,7 +369,7 @@ export default function AyWebsBrowserScreen() {
         addController.current = null;
       }
     }
-  }, [captureAllowed, endWaiting, fail, locale, pageUrl, productPage, requestCapture, sessionId, stopTimer, storeId]);
+  }, [captureAllowed, fail, locale, pageUrl, productPage, requestCapture, sessionId, stopTimer, storeId]);
 
   const onMessage = useCallback((event: WebViewMessageEvent) => {
     stopTimer();
@@ -487,14 +478,25 @@ export default function AyWebsBrowserScreen() {
           setPageReady(state.loading !== true);
           if (!state.url) return;
           setPageUrl((prev) => {
-            if (prev !== state.url) {
-              setSheet(null);
-              setOutcome(null);
-              setNote('');
+            if (prev === state.url || canonicalSourceUrl(prev) === canonicalSourceUrl(state.url)) {
+              return prev;
             }
+            setSheet(null);
+            setOutcome(null);
+            setNote('');
             return state.url;
           });
           setNav({ canGoBack: state.canGoBack, canGoForward: state.canGoForward, title: state.title ?? '' });
+        }}
+        onLoadEnd={() => {
+          pageLoadingRef.current = false;
+          setPageReady(true);
+        }}
+        onLoadProgress={(event) => {
+          if (event?.nativeEvent?.progress === 1) {
+            pageLoadingRef.current = false;
+            setPageReady(true);
+          }
         }}
         onMessage={onMessage}
         onError={() => setNote(t('aywebs.captureFailed'))}
@@ -512,15 +514,6 @@ export default function AyWebsBrowserScreen() {
       )}
 
       <View style={[styles.footer, { borderTopColor: theme.colors.line, paddingBottom: insets.bottom + theme.space[2] }]}>
-        {phase !== 'idle' ? (
-          <ReadingProgress
-            phase={phase}
-            elapsedMs={elapsed}
-            labels={[t('aywebs.phase.preparing'), t('aywebs.phase.reading'), t('aywebs.phase.resolving')]}
-            countdownPrefix={t('aywebs.phase.remaining')}
-            compact
-          />
-        ) : null}
         {note ? <AppText variant="caption" color={theme.status.danger.fg}>{note}</AppText> : null}
         {!captureAllowed ? (
           <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.readNotAllowed')}</AppText>

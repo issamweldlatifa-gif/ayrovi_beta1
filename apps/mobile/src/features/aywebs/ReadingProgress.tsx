@@ -40,6 +40,20 @@ export interface ReadingProgressProps {
   compact?: boolean;
 }
 
+export function defaultReadingProgressLabels(t: (key: string) => string): {
+  labels: string[];
+  countdownPrefix: string;
+} {
+  return {
+    labels: [
+      t('aywebs.phase.preparing'),
+      t('aywebs.phase.reading'),
+      t('aywebs.phase.resolving'),
+    ],
+    countdownPrefix: t('aywebs.phase.remaining'),
+  };
+}
+
 export function ReadingProgress({ phase, labels, compact = false }: ReadingProgressProps) {
   const theme = useTheme();
   const pulse = useRef(new Animated.Value(1)).current;

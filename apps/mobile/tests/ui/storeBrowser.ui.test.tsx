@@ -521,4 +521,34 @@ describe('AYWEBs « Add to Cart » — lecture auto, feuille locale et confirmat
       jest.useRealTimers();
     }
   });
+
+  it('Android WebView : quand onNavigationStateChange garde loading=true puis onLoadEnd se déclenche, la lecture auto démarre et la feuille s\'ouvre immédiatement au clic', async () => {
+    renderBrowser();
+    const onNav = latestWebViewProps.onNavigationStateChange as ((state: Record<string, unknown>) => void) | undefined;
+    const onLoadEnd = latestWebViewProps.onLoadEnd as (() => void) | undefined;
+
+    // Android WebView envoie loading: true pendant le chargement des sous-ressources, puis onLoadEnd.
+    act(() => {
+      onNav?.({ url: PRODUCT_URL, loading: true, canGoBack: true, canGoForward: false, title: 'Pull en laine mérinos' });
+      onLoadEnd?.();
+    });
+
+    await waitFor(() => expect(mockInjectJavaScript).toHaveBeenCalledTimes(1));
+    expect(screen.getByTestId('aywebs-store-add-to-cart').props.accessibilityState?.busy).toBe(true);
+
+    emitWebViewCapture(SAMPLE_CAPTURE);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('aywebs-store-add-to-cart').props.accessibilityState?.busy).toBe(false);
+    });
+
+    // Même si Amazon émet une mise à jour d'ancre (#) sur la même fiche, la capture reste réutilisable.
+    act(() => {
+      onNav?.({ url: `${PRODUCT_URL}#customerReviews`, loading: false, canGoBack: true, canGoForward: false, title: 'Pull en laine mérinos' });
+    });
+
+    fireEvent.press(screen.getByTestId('aywebs-store-add-to-cart'));
+    expect(screen.getByTestId('aywebs-sheet-confirm')).toBeTruthy();
+    expect(mockResolveAyWebsProductWithCapture).not.toHaveBeenCalled();
+  });
 });

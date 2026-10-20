@@ -16,6 +16,7 @@ import {
 } from '@/api/aywebs';
 import { ApiError } from '@/api/errors';
 import { resolveWithCaptureFallback } from '@/features/aywebs/captureFallback';
+import { canonicalSourceUrl } from '@/features/aywebs/storeShopping';
 
 export const AYWEBS_CAPTURE_EMPTY_PRICE_RETRIES = 2;
 export const AYWEBS_CAPTURE_EMPTY_PRICE_RETRY_DELAY_MS = 450;
@@ -240,7 +241,10 @@ export function canReuseLocalCapture(
   entry: LocalCaptureEntry | null | undefined,
   pageUrl: string,
 ): entry is LocalCaptureEntry & { status: 'ok'; capture: Record<string, unknown> } {
-  if (!entry || entry.url !== pageUrl || entry.status !== 'ok') return false;
+  if (!entry || entry.status !== 'ok') return false;
+  const sameUrl = entry.url === pageUrl
+    || (Boolean(entry.url) && Boolean(pageUrl) && canonicalSourceUrl(entry.url) === canonicalSourceUrl(pageUrl));
+  if (!sameUrl) return false;
   return canOpenLocalSheetFromCapture(entry.capture);
 }
 
@@ -252,7 +256,7 @@ export function canOpenLocalSheetFromCapture(capture: unknown): capture is Recor
   if (!isRecord(capture)) return false;
   const title = typeof capture.title === 'string' ? capture.title.trim() : '';
   const hasPrice = hasAyWebsPriceCandidate(priceCandidatesOf(capture));
-  return Boolean(title && hasPrice);
+  return Boolean(title || hasPrice);
 }
 
 export interface LocalCaptureSheetData {
