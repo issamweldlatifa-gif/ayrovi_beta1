@@ -38,9 +38,9 @@ import {
 } from '@/api/aywebs';
 import { AddToCartSheet } from '@/features/aywebs/AddToCartSheet';
 import { ReadingProgress } from '@/features/aywebs/ReadingProgress';
-import { resolveWithParallelCapture, waitForPageIdle } from '@/features/aywebs/captureFallback';
+import { waitForPageIdle } from '@/features/aywebs/captureFallback';
 import {
-  AYWEBS_CAPTURE_EMPTY_PRICE_RETRY_DELAY_MS, hasVerifiedAyWebsQuote, priceCandidatesOf, shouldRetryAyWebsCaptureForPrice,
+  AYWEBS_CAPTURE_EMPTY_PRICE_RETRY_DELAY_MS, priceCandidatesOf, resolveAddToCart, shouldRetryAyWebsCaptureForPrice,
 } from '@/features/aywebs/captureFlow';
 import { CAPTURE_BUDGET_MS, type ReadPhase } from '@/features/aywebs/phase';
 import { useSessionId } from '@/session/session';
@@ -85,6 +85,8 @@ export default function AyWebsBrowserScreen() {
   const pageLoadingRef = useRef(false);
   /** Nombre de relances de capture faute de prix, et dernier script chargé. */
   const captureRetries = useRef(0);
+  /** Contrôleur de l'appui « Add » en cours : un nouvel appui, ou la sortie de l'écran, l'annule. */
+  const addController = useRef<AbortController | null>(null);
   const lastScript = useRef<string | null>(null);
 
   const [busy, setBusy] = useState(false);
@@ -130,6 +132,7 @@ export default function AyWebsBrowserScreen() {
     setPhase(last);
   }, []);
   useEffect(() => () => { if (tick.current) clearInterval(tick.current); }, []);
+  useEffect(() => () => { addController.current?.abort(); }, []);
 
   const stopTimer = () => {
     if (timer.current) { clearTimeout(timer.current); timer.current = null; }
@@ -161,8 +164,23 @@ export default function AyWebsBrowserScreen() {
    * يطلب قراءة الصفحة ويرجّع الوعد: يتفتح بالحقن، ويتسدّ بالرسالة اللي تجي من
    * الجسر. كي ما تجي شي: مهلة 15 ثانية ثم سبب صريح.
    */
-  const requestCapture = useCallback((): Promise<Record<string, unknown>> => {
-    return new Promise<Record<string, unknown>>((resolve, reject) => {
+  const requestCapture = useCallback((signal?: AbortSignal): Promise<Record<string, unknown>> => {
+    return new Promise<Record<string, unknown>>((resolveOuter, rejectOuter) => {
+      let settled = false;
+      const finish = () => { settled = true; signal?.removeEventListener('abort', onAbort); };
+      const resolve = (value: Record<string, unknown>) => { if (settled) return; finish(); resolveOuter(value); };
+      const reject = (error: unknown) => { if (settled) return; finish(); rejectOuter(error); };
+      /* Annulation (nouvel appui ou écran fermé) : on libère la page et le minuteur. */
+      const onAbort = () => {
+        if (settled) return;
+        stopTimer();
+        waiter.current = null;
+        setBusy(false);
+        endWaiting('failed');
+        reject(new ApiError('aborted', 'Requête interrompue.'));
+      };
+      if (signal?.aborted) { reject(new ApiError('aborted', 'Requête interrompue.')); return; }
+      signal?.addEventListener('abort', onAbort);
       setBusy(true);
       setNote('');
       startWaiting('preparing');
@@ -225,23 +243,27 @@ export default function AyWebsBrowserScreen() {
    */
   const addToCart = useCallback(async () => {
     if (!sessionId || !pageUrl || productPage !== true) return;
+    /* Un nouvel appui remplace le précédent : l'ancien est annulé, il ne touche plus l'écran. */
+    addController.current?.abort();
+    const controller = new AbortController();
+    addController.current = controller;
+    const isCurrent = () => addController.current === controller;
     try {
-      /* الكابتشر مسرّع فقط: كان فشل (صفحة ساكتة، سكريبت ما وصلش، شبكة مقطوعة)،
-         نكمّلو بالقراءة من الخادم كيف الويب، والورقة تحل. */
-      /* Lecture serveur lancée TOUT DE SUITE (sans capture), en parallèle de la
-         lecture de la page: le serveur travaille pendant que le téléphone lit. Une
-         capture réussie l'emporte (résolution avec capture, rapide). */
-      const { outcome: result, capture } = await resolveWithParallelCapture<AyWebsResolveOutcome>({
-        readCapture: captureAllowed ? requestCapture : undefined,
+      /* UNE capture, puis UNE résolution (avec capture, ou sans si la capture échoue ou
+         tarde). Pas de seconde requête serveur quand la capture réussit (19/10/2026). */
+      const { decision, outcome: result, capture } = await resolveAddToCart({
+        readCapture: captureAllowed ? () => requestCapture(controller.signal) : undefined,
         // refresh : une intention Add ne sert jamais une lecture mémorisée (19/10/2026).
         resolve: (captured) => resolveAyWebsProductWithCapture(pageUrl, {
-          sessionId, storeId: storeId || undefined, capture: captured, refresh: true,
+          sessionId, storeId: storeId || undefined, capture: captured, refresh: true, signal: controller.signal,
         }),
-        onPhase: () => startWaiting('resolving'),
+        signal: controller.signal,
+        onPhase: (phase) => { if (phase !== 'reading') startWaiting('resolving'); },
       });
-      /* Jamais de feuille avec 0,00 ou un prix/devise non vérifiés par le serveur. */
-      if (!hasVerifiedAyWebsQuote(result.product, result.quoteToken ?? '')) {
-        setNote(t('aywebs.captureFailed'));
+      if (controller.signal.aborted) return;
+      /* Pas de feuille sans prix, devise ou devis vérifiés : la décision NOMME les champs manquants. */
+      if (decision.kind === 'refused') {
+        setNote(decision.error.code === 'CAPTURE_INCOMPLETE' ? userMessage(decision.error)[locale] : t('aywebs.captureFailed'));
         endWaiting('failed');
         return;
       }
@@ -250,12 +272,16 @@ export default function AyWebsBrowserScreen() {
       setSheet({ outcome: result, capture });
       endWaiting('done');
     } catch (error) {
+      if (controller.signal.aborted) return;
       fail(error);
     } finally {
-      stopTimer();
-      setBusy(false);
+      if (isCurrent()) {
+        stopTimer();
+        setBusy(false);
+        addController.current = null;
+      }
     }
-  }, [captureAllowed, endWaiting, fail, productPage, requestCapture, sessionId, startWaiting, storeId, pageUrl]);
+  }, [captureAllowed, endWaiting, fail, locale, productPage, requestCapture, sessionId, startWaiting, storeId, pageUrl, t]);
 
   const onMessage = useCallback((event: WebViewMessageEvent) => {
     stopTimer();

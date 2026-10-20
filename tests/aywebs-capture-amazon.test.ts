@@ -206,9 +206,10 @@ describe('AYWEBs — lecteur Amazon : la zone d’achat seulement', () => {
         <span class="a-price priceToPay"><span class="a-offscreen">$119.00</span></span>
       </div>`);
     const { payload, validation } = captureFrom(page);
-    expect(payload.priceCandidates).toEqual([]);
+    expect(payload.priceCandidates).toEqual([]); // rien publié : aucun des deux montants
+    expect(payload.diagnostics).toContain('price:ambiguous_buybox:2'); // le lecteur dit pourquoi
     expect(validation.ok).toBe(false);
-    expect(validation.rejection).toBe('NO_PRICE_TEXT');
+    expect(validation.rejection).toBe('AMBIGUOUS_PRICE'); // motif explicite (19/10/2026)
   });
 
   it('un texte collé (« $6.99$6.99 ») n’est jamais publié — et le serveur le refuse aussi', () => {
@@ -384,7 +385,7 @@ describe('AYWEBs — lecteur Amazon : compteurs d’exploitation', () => {
     expect(stats.validated).toBe(2);
     expect(stats.accepted).toBe(1);
     expect(stats.rejected).toBe(1);
-    expect(stats.rejections.NO_PRICE_TEXT).toBe(1);
+    expect(stats.rejections.AMBIGUOUS_PRICE).toBe(1);
     expect(stats.price_sources.dom).toBe(1);
     expect(stats.currency_symbol).toBe(1);
     expect(stats.single_source).toBe(1);

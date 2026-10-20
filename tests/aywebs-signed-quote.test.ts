@@ -313,6 +313,27 @@ describe('AYWEBs Phase 1 — l’ajout au panier ne relit plus le marchand (int�
 });
 
 describe('AYWEBs Phase 1 — mémo « fiche illisible »', () => {
+  it('lecture incomplète : product_resolve_total journalise missing_fields et le diagnostic (sans page)', async () => {
+    const h = harness({ price: 0 });
+    const logs: string[] = [];
+    const spy = vi.spyOn(console, 'log').mockImplementation((line: unknown) => { logs.push(String(line)); });
+    try {
+      const result = await resolveAyWebsProduct(h.resolver, { url: AMAZON_URL, sessionId: SESSION_ID });
+      expect(result.missing).toContain('price');
+      expect(result.missingFields).toEqual(expect.arrayContaining(['price', 'verified_price']));
+    } finally {
+      spy.mockRestore();
+    }
+    const total = logs.map((line) => JSON.parse(line)).find((entry) => entry.operation === 'product_resolve_total');
+    expect(total).toBeDefined();
+    expect(total.errorCode).toBe('CAPTURE_INCOMPLETE');
+    expect(total.missing_fields).toEqual(expect.arrayContaining(['price', 'verified_price']));
+    expect(total.details.price_read).toBe(false);
+    expect(total.details.capture_used).toBe(false);
+    // Aucun contenu de page ni donnée privée dans le journal.
+    expect(JSON.stringify(total)).not.toMatch(/<html|cookie|token|password/i);
+  });
+
   it('un réessai sur une fiche illisible ne repaie pas les sondes (et reste marqué)', async () => {
     const h = harness({ price: 0 });
     const first = await resolveAyWebsProduct(h.resolver, { url: AMAZON_URL, sessionId: SESSION_ID });

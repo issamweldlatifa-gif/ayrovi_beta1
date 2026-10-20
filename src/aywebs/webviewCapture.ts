@@ -315,6 +315,16 @@ export function validateAyWebsCapturedPage(
      Chaque candidat est jugé par le verdict de la Phase 0. Le classement suit
      la fiabilité de la source ; à fiabilité égale, l'ordre d'arrivée. */
   const notes: string[] = [];
+  /* Diagnostics du lecteur : codes courts seulement (pas de texte de page). */
+  const clientDiagnostics = Array.isArray(payload.diagnostics)
+    ? payload.diagnostics
+      .slice(0, 12)
+      .map((entry) => collapse(entry, 60))
+      .filter((entry) => /^[a-z0-9_:.,=-]+$/i.test(entry))
+    : [];
+  clientDiagnostics.forEach((code) => notes.push(`client:${code}`));
+  const storeForPrice = detectAyWebsStore(requestUrl);
+  const isAmazon = storeForPrice?.id === 'amazon';
   const candidates: Array<{ text: string; source: AyWebsCaptureSource; value: number; rank: number; index: number; hints: string[] }> = [];
   const rawCandidates = Array.isArray(payload.priceCandidates) ? payload.priceCandidates.slice(0, AYWEBS_CAPTURE_LIMITS.maxPriceCandidates) : [];
   rawCandidates.forEach((candidate: AyWebsCapturedPriceCandidate, index: number) => {
@@ -334,9 +344,19 @@ export function validateAyWebsCapturedPage(
   });
 
   if (!candidates.length) {
+    // La zone d'achat a tranché avant nous : deux prix (AMBIGUOUS) ou un autre article (ASIN).
+    if (clientDiagnostics.includes('price:buybox_asin_mismatch')) return rejected('BUYBOX_ASIN_MISMATCH', '', notes);
+    if (clientDiagnostics.some((code) => code.startsWith('price:ambiguous_buybox'))) return rejected('AMBIGUOUS_PRICE', '', notes);
     // Distinguer « aucun texte » de « textes tous refusés » : le support doit
     // savoir si la page n'a rien affiché ou si quelque chose a été écarté.
     return rejected(rawCandidates.length ? 'PRICE_REJECTED' : 'NO_PRICE_TEXT', '', notes);
+  }
+
+  /* Amazon : un prix publié (JSON-LD) qui ne concorde pas avec la zone d'achat
+     est un CONFLIT, pas une source qui fait foi. On refuse plutôt que de choisir. */
+  if (isAmazon && new Set(candidates.map((candidate) => candidate.value.toFixed(2))).size > 1) {
+    notes.push('amazon_price_sources_disagree');
+    return rejected('AMBIGUOUS_PRICE', '', notes);
   }
 
   candidates.sort((a, b) => (a.rank - b.rank) || (a.index - b.index));

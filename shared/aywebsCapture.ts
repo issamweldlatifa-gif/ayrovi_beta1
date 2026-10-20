@@ -60,6 +60,8 @@ export interface AyWebsCapturedPriceCandidate {
 export interface AyWebsCapturedPage {
   /** Version du contrat : un serveur ancien refuse une capture future. */
   v: number;
+  /** Codes courts du lecteur (ex. « price:buybox », « title:visible ») — jamais de texte de page. */
+  diagnostics?: string[];
   /** URL de la page réellement affichée dans le WebView. */
   url: string;
   /** `<link rel="canonical">` ou `og:url`, quand la page les publie. */
@@ -121,6 +123,8 @@ export const AYWEBS_CAPTURE_REJECTIONS = [
    * indépendantes d'accord — sinon le montant n'est pas exploitable.
    */
   'PRICE_NOT_CORROBORATED',
+  /** Zone d'achat Amazon désignant un AUTRE article que l'URL (ASIN différent). */
+  'BUYBOX_ASIN_MISMATCH',
   'NO_AVAILABILITY_EVIDENCE',
 ] as const;
 

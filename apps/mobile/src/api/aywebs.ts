@@ -212,8 +212,18 @@ export interface AyWebsResolvedProduct {
 }
 
 export function parseAyWebsResolvedProduct(payload: unknown): AyWebsResolvedProduct {
-  if (!isRecord(payload) || !str(payload.product_id).trim() || !str(payload.title).trim()) {
-    throw malformed('fiche produit');
+  if (!isRecord(payload)) throw malformed('fiche produit (données absentes)');
+  /* Contrat minimal : product_id et title. Un champ absent est NOMMÉ (CONTRACT_MISMATCH),
+     pour ne pas confondre un format de réponse cassé avec une lecture incomplète. */
+  const absent = [
+    str(payload.product_id).trim() ? '' : 'product_id',
+    str(payload.title).trim() ? '' : 'title',
+  ].filter(Boolean);
+  if (absent.length) {
+    throw new ApiError('malformed', `Réponse AYWEBs non conforme au contrat (fiche produit) : ${absent.join(', ')} absent(s)`, {
+      code: 'CONTRACT_MISMATCH',
+      missingFields: absent,
+    });
   }
   const availability = isRecord(payload.availability) ? payload.availability : {};
   const pricing = isRecord(payload.ayrovi_pricing) ? payload.ayrovi_pricing : null;
@@ -435,9 +445,10 @@ export interface AyWebsResolveOutcome {
  */
 export function incompleteCaptureError(envelope: Record<string, unknown>): ApiError | null {
   const data = isRecord(envelope.data) ? envelope.data : null;
-  if (!data || str(data.title).trim()) return null;
   const missing = strList(envelope.missing);
   if (missing.length === 0) return null;
+  // Fiche présente avec un titre : lecture normale (le reste se traite au choix de variante).
+  if (data && str(data.title).trim()) return null;
   return new ApiError('http', 'Nous n’avons pas pu lire toutes les informations du produit.', {
     status: 422,
     code: 'CAPTURE_INCOMPLETE',

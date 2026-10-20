@@ -772,6 +772,8 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
           price_rejection: priceRejection,
           missing: result.missing,
           missing_fields: result.missingFields,
+          /* Motif de refus de la capture WebView (null si aucune capture n'a été envoyée). */
+          capture_rejection: result.capture?.rejection ?? null,
           product: result.scrapedProduct,
           error: 'Nous n’avons pas pu lire toutes les informations du produit.',
           fallback: ['retry', 'product_link', 'screenshot'],

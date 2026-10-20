@@ -91,6 +91,14 @@ export function userMessage(error: unknown): LocalizedMessage {
   if (!isApiError(error)) {
     return { fr: 'Une erreur inattendue est survenue.', ar: 'صار خطأ غير متوقّع.' };
   }
+  // Format de réponse non conforme : ce n'est PAS une lecture incomplète, on le dit.
+  if (error.code === 'CONTRACT_MISMATCH') {
+    const fields = error.missingFields.length ? ` (${error.missingFields.join(', ')})` : '';
+    return {
+      fr: `Le serveur a répondu dans un format inattendu${fields}. Réessayez ; si cela persiste, signalez-le au support.`,
+      ar: `الخادم رجّع الجواب بصيغة ما نعرفهاش${fields}. عاود جرّب؛ وإذا تكرّر، قولها للدعم.`,
+    };
+  }
   // Lecture AYWEBs incomplète : le serveur a répondu, mais le titre ou le prix manque.
   if (error.code === 'CAPTURE_INCOMPLETE') {
     const missing = missingFieldLabels(error.missingFields);

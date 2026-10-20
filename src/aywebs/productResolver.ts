@@ -280,6 +280,12 @@ export async function resolveAyWebsProduct(
       sessionId: input.sessionId || null,
       result: 'failure',
       errorCode: captureValidation.rejection,
+      details: {
+        client_codes: (captureValidation.notes || [])
+          .filter((note) => note.startsWith('client:'))
+          .map((note) => note.slice('client:'.length))
+          .join(',') || null,
+      },
     });
   }
 
@@ -570,6 +576,12 @@ export async function resolveAyWebsProduct(
     },
   });
 
+  /* Diagnostic de lecture (19/10/2026) : quels champs manquent et pourquoi. Codes et
+     nombres seulement — la capture refusée et ses codes client, jamais la page. */
+  const clientCodes = (captureValidation?.notes || [])
+    .filter((note) => note.startsWith('client:'))
+    .map((note) => note.slice('client:'.length))
+    .join(',');
   logAyWebsOperation({
     operation: 'product_resolve_total',
     storeId: store.id,
@@ -578,6 +590,22 @@ export async function resolveAyWebsProduct(
     durationMs: Date.now() - startedAt,
     result: missing.length ? 'failure' : 'success',
     errorCode: missing.length ? 'CAPTURE_INCOMPLETE' : null,
+    missingFields,
+    details: {
+      blocking_missing: missing.join(',') || null,
+      capture_used: captureUsed,
+      capture_rejection: captureValidation?.rejection ?? null,
+      capture_price_source: captureValidation?.priceSource ?? null,
+      capture_corroborated: captureValidation?.corroborated ?? null,
+      capture_client_codes: clientCodes || null,
+      title_read: Boolean(sourceProduct.title?.trim()),
+      price_read: Number(sourceProduct.price) > 0,
+      currency_read: /^[A-Z]{3}$/.test(String(sourceProduct.currency || '')),
+      price_verified: sourceProduct.scrapedProduct?.priceVerified === true,
+      currency_verified: sourceProduct.scrapedProduct?.currencyVerified === true,
+      image_read: Boolean(sourceProduct.images?.length),
+      cache_kind: cacheKind,
+    },
   });
 
   /* Devis signé — émis ici, au seul endroit où le serveur connaît à la fois le

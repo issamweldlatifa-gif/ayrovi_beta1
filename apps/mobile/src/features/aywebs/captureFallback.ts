@@ -14,14 +14,20 @@
  *  • timeout serveur → pas de reprise (30 s de plus n'aident pas) ;
  *  • annulation (écran fermé) → on propage, sans rien relancer.
  */
-import { isApiError } from '@/api/errors';
+import { ApiError, isApiError } from '@/api/errors';
 
 export interface CaptureFallbackInput<T> {
   /** Lecture de la page par le pont. Absente quand la capture n'est pas permise. */
   readCapture?: () => Promise<unknown>;
   /** Résolution serveur ; `capture` vaut `undefined` quand on résout sans capture. */
   resolve: (capture: unknown | undefined) => Promise<T>;
+  /** Écran fermé / nouvel appui : on ne lance plus aucune requête. */
+  signal?: AbortSignal;
+  /** Ce que vit l'écran : lecture de la page, puis résolution (ou repli). */
+  onPhase?: (phase: 'reading' | 'resolving' | 'server-fallback') => void;
 }
+
+const abortedError = (): ApiError => new ApiError('aborted', 'Requête interrompue.');
 
 export interface CaptureFallbackResult<T> {
   outcome: T;
@@ -32,23 +38,42 @@ export interface CaptureFallbackResult<T> {
 const isAbortedFailure = (error: unknown): boolean => isApiError(error) && error.isAborted;
 const isNetworkFailure = (error: unknown): boolean => isApiError(error) && error.isOffline;
 
+/**
+ * Lecture SÉQUENTIELLE (19/10/2026) : la capture d'abord, UNE seule résolution.
+ *
+ *  • capture obtenue (acceptée OU refusée par le serveur) ⇒ une résolution AVEC capture.
+ *    Un refus, c'est le serveur qui relit lui-même, dans cette même requête : pas de
+ *    seconde requête ;
+ *  • capture échouée ou délai dépassé ⇒ UNE résolution SANS capture (le repli) ;
+ *  • résolution avec capture coupée par le réseau ⇒ une seule reprise sans capture ;
+ *  • annulation (écran fermé, nouvel appui) ⇒ on propage, sans rien relancer.
+ *
+ * Le coût assumé : sur un Amazon dont la capture échoue, la lecture serveur ne part
+ * qu'après l'échec de la capture (plus lent que la version parallèle, mais sans lecture
+ * marchande en double quand la capture réussit).
+ */
 export async function resolveWithCaptureFallback<T>(
   input: CaptureFallbackInput<T>,
 ): Promise<CaptureFallbackResult<T>> {
+  if (input.signal?.aborted) throw abortedError();
   let capture: unknown | undefined;
   if (input.readCapture) {
+    input.onPhase?.('reading');
     try {
       capture = await input.readCapture();
     } catch (error) {
-      if (isAbortedFailure(error)) throw error;
+      if (isAbortedFailure(error) || input.signal?.aborted) throw error;
       capture = undefined;
     }
   }
+  if (input.signal?.aborted) throw abortedError();
 
+  input.onPhase?.('resolving');
   try {
     return { outcome: await input.resolve(capture), capture };
   } catch (error) {
-    if (capture === undefined || !isNetworkFailure(error)) throw error;
+    if (capture === undefined || !isNetworkFailure(error) || input.signal?.aborted) throw error;
+    input.onPhase?.('server-fallback');
     return { outcome: await input.resolve(undefined), capture: undefined };
   }
 }
@@ -70,7 +95,7 @@ export async function resolveWithCaptureFallback<T>(
  */
 export type ParallelPhase = 'capture-ok' | 'server-only';
 
-export interface ParallelCaptureInput<T> extends CaptureFallbackInput<T> {
+export interface ParallelCaptureInput<T> extends Omit<CaptureFallbackInput<T>, 'onPhase'> {
   onPhase?: (phase: ParallelPhase) => void;
 }
 

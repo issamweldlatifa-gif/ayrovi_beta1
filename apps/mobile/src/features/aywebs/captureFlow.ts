@@ -7,7 +7,9 @@
  *  • Jamais de feuille d'options avec un prix nul, non vérifié par le serveur,
  *    ou une devise non ISO-3 : on affiche un échec explicite à la place.
  */
-import type { AyWebsResolvedProduct } from '@/api/aywebs';
+import type { AyWebsResolveOutcome, AyWebsResolvedProduct } from '@/api/aywebs';
+import { ApiError } from '@/api/errors';
+import { resolveWithCaptureFallback } from '@/features/aywebs/captureFallback';
 
 export const AYWEBS_CAPTURE_EMPTY_PRICE_RETRIES = 2;
 export const AYWEBS_CAPTURE_EMPTY_PRICE_RETRY_DELAY_MS = 450;
@@ -53,4 +55,51 @@ export function hasVerifiedAyWebsQuote(
     && product.priceVerified
     && product.currencyVerified
     && Boolean(quoteToken.trim());
+}
+
+/**
+ * Décision après résolution (19/10/2026) : ouvrir la feuille « Ajouter au panier » ou
+ * expliquer pourquoi non. Une fiche sans prix/devise/titre vérifiés NE OUVRE PAS la
+ * feuille, et l'erreur NOMME les champs manquants (`CAPTURE_INCOMPLETE`), au lieu du
+ * message générique. Pur : aucune requête, aucune écriture de panier.
+ */
+export type AddToCartDecision =
+  | { kind: 'sheet' }
+  | { kind: 'refused'; error: ApiError };
+
+export function addToCartDecision(outcome: AyWebsResolveOutcome): AddToCartDecision {
+  if (hasVerifiedAyWebsQuote(outcome.product, outcome.quoteToken ?? '')) return { kind: 'sheet' };
+  const missing = outcome.missing ?? [];
+  if (missing.length) {
+    return {
+      kind: 'refused',
+      error: new ApiError('http', 'Nous n’avons pas pu lire toutes les informations du produit.', {
+        status: 422,
+        code: 'CAPTURE_INCOMPLETE',
+        missingFields: missing,
+      }),
+    };
+  }
+  return { kind: 'refused', error: new ApiError('http', 'Prix ou devise non vérifiés.', { code: 'PRICE_UNVERIFIED' }) };
+}
+
+/**
+ * Parcours « Add to Cart » complet (19/10/2026), sans écran : une capture, UNE
+ * résolution (avec capture, ou sans si elle échoue ou tarde), puis la décision.
+ * Aucune requête panier ici : la feuille (et l'ajout) ne s'ouvre qu'ensuite.
+ */
+export interface AddToCartFlowInput {
+  readCapture?: () => Promise<unknown>;
+  resolve: (capture: unknown | undefined) => Promise<AyWebsResolveOutcome>;
+  signal?: AbortSignal;
+  onPhase?: (phase: 'reading' | 'resolving' | 'server-fallback') => void;
+}
+
+export async function resolveAddToCart(input: AddToCartFlowInput): Promise<{
+  decision: AddToCartDecision;
+  outcome: AyWebsResolveOutcome;
+  capture: unknown | undefined;
+}> {
+  const { outcome, capture } = await resolveWithCaptureFallback<AyWebsResolveOutcome>(input);
+  return { decision: addToCartDecision(outcome), outcome, capture };
 }

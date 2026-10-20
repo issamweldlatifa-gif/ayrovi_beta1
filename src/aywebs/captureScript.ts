@@ -34,7 +34,7 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     v: 1, url: '', canonicalUrl: null, title: null, brand: null,
     priceCandidates: [], currencyText: null, availabilityText: null,
     addToCartText: null, conditionText: null, selectedVariantTexts: [], variantTexts: [],
-    images: [], capturedAt: null, pageLang: null
+    images: [], capturedAt: null, pageLang: null, diagnostics: []
   };
 
   function text(value) {
@@ -91,6 +91,86 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
       }
     } catch (e) {}
   }
+  /* Diagnostic BORNÉ : code court (ex. « price:buybox ») — jamais de texte de page. */
+  function diag(code) {
+    if (out.diagnostics.length < 12) out.diagnostics.push(cut(code, 60));
+  }
+  /* Zone d'achat d'Amazon : un élément n'est un prix de vente que s'il est dans
+     une de ces zones (soi compris ou un ancêtre). Hors zone : jamais lu. */
+  var BUYBOX_SCOPE = /corePrice|apex|buybox|price_inside|priceblock|newBuyBoxPrice|tp_price_block|apex-pricetopay|priceToPay/i;
+  function amazonInBuybox(element) {
+    var node = element;
+    for (var hops = 0; node && hops < 12; hops++) {
+      if (node.id && BUYBOX_SCOPE.test(String(node.id))) return true;
+      if (node.className && BUYBOX_SCOPE.test(String(node.className))) return true;
+      node = node.parentNode;
+    }
+    return false;
+  }
+  /* Barré (prix de liste, « prix antérieur ») : jamais un prix de vente. */
+  function strikeWithin(node, stop) {
+    var cur = node;
+    for (var hops = 0; cur && cur !== stop && hops < 8; hops++) {
+      var tag = String(cur.tagName || '').toLowerCase();
+      if (tag === 's' || tag === 'del' || tag === 'strike') return true;
+      if (/a-text-price|a-text-strike|a-price-strike/.test(String(cur.className || ''))) return true;
+      cur = cur.parentNode;
+    }
+    return false;
+  }
+  /* Texte «.a-offscreen» qui appartient à CE prix (pas à un prix barré imbriqué). */
+  function ownOffscreenText(element) {
+    var nodes = [];
+    try { nodes = element.querySelectorAll('.a-offscreen'); } catch (e) { return ''; }
+    for (var i = 0; i < nodes.length && i < 6; i++) {
+      if (strikeWithin(nodes[i], element)) continue;
+      var value = text(nodes[i].textContent);
+      if (value && HAS_DIGIT.test(value) && value.length <= LIMITS.text) return value;
+    }
+    return '';
+  }
+  /* ASIN du formulaire d'achat (dans la zone d'achat) différent de celui de l'URL :
+     la zone affiche alors le prix d'UN AUTRE article ⇒ aucun prix n'est publié. */
+  function amazonAsinMismatch() {
+    if (!AMAZON_ASIN) return false;
+    var inputs = [];
+    try { inputs = document.querySelectorAll('input#ASIN, input[name="ASIN"]'); } catch (e) { return false; }
+    for (var i = 0; i < inputs.length && i < 4; i++) {
+      if (!amazonInBuybox(inputs[i])) continue;
+      var value = String(inputs[i].getAttribute('value') || '').toUpperCase();
+      if (/^[A-Z0-9]{10}$/.test(value) && value !== AMAZON_ASIN) return true;
+    }
+    return false;
+  }
+  /* Titre Amazon : « Amazon.com: <produit> » ⇒ produit ; « Amazon.com » seul ⇒ rien. */
+  function amazonCleanTitle(value) {
+    var t = text(value);
+    t = text(t.replace(/^Amazon\.[a-z.]{2,6}\s*:\s*/i, '').replace(/\s*[|:-]\s*Amazon(\.[a-z.]{2,6})?\s*$/i, ''));
+    if (t.length < 3) return '';
+    if (/^amazon(\.[a-z.]{2,6})?$/i.test(t)) return '';
+    return cut(t, LIMITS.text);
+  }
+  /* Ordre : titre VISIBLE de la fiche, puis JSON-LD (produit de l'ASIN), og:title,
+     document.title. Rien de valable ⇒ null (jamais une page générique). */
+  function amazonTitle() {
+    var selectors = ['#productTitle', '#title_feature_div #title', '#title'];
+    for (var i = 0; i < selectors.length; i++) {
+      var el = null;
+      try { el = document.querySelector(selectors[i]); } catch (e) { continue; }
+      var visible = amazonCleanTitle(el && el.textContent);
+      if (visible) { diag('title:visible'); return visible; }
+    }
+    var fromJsonLd = jsonLd ? amazonCleanTitle(jsonLd.name) : '';
+    if (fromJsonLd) { diag('title:json_ld'); return fromJsonLd; }
+    var og = null;
+    try { og = document.querySelector('meta[property="og:title"]'); } catch (e) {}
+    var fromOg = amazonCleanTitle(og ? og.getAttribute('content') : '');
+    if (fromOg) { diag('title:og'); return fromOg; }
+    var fromDocument = amazonCleanTitle(document.title);
+    if (fromDocument) { diag('title:document'); return fromDocument; }
+    diag('title:none');
+    return null;
+  }
   /** Élément de navigation / recherche — jamais un choix produit ni un achat. */
   function isInNavigation(el) {
     var node = el;
@@ -112,7 +192,10 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     var node = element;
     for (var hops = 0; node && hops < 8; hops++) {
       var descriptor = String((node.id || '') + ' ' + (node.className || '')).toLowerCase();
-      if (/sponsored|sp-sponsored|carousel|nav-assist|similar|recommendation|adplace|a-text-price|deal-badge|apex_desktop_right/.test(descriptor)) return true;
+      if (/sponsored|sp-sponsored|carousel|nav-assist|similar|recommendation|adplace|a-text-price|a-text-strike|deal-badge|apex_desktop_right|protect|attach|popover|annex|upsell|warrant|insurance/.test(descriptor)) return true;
+      if (node.getAttribute && /sponsored/i.test(String(node.getAttribute('data-component-type') || ''))) return true;
+      var tagName = String(node.tagName || '').toLowerCase();
+      if (tagName === 's' || tagName === 'del' || tagName === 'strike') return true;
       node = node.parentNode;
     }
     if (element.getAttribute) {
@@ -126,9 +209,11 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
       à partir des spans (le cas MESURÉ : «.a-offscreen» vide dans le bloc). */
   function amazonPriceText(element) {
     if (!element) return '';
-    var offscreen = '';
-    try { var off = element.querySelector('.a-offscreen'); offscreen = text(off && off.textContent); } catch (e) {}
-    if (offscreen && HAS_DIGIT.test(offscreen)) return offscreen;
+    var offscreen = ownOffscreenText(element);
+    if (offscreen) return offscreen;
+    /* aria-label (ex. « $109.00 ») : un libellé déjà rendu, lu tel quel. */
+    var label = text(element.getAttribute && element.getAttribute('aria-label'));
+    if (label && HAS_DIGIT.test(label) && CURRENCY_HINT.test(label) && label.length <= LIMITS.text) return label;
     var whole = '';
     var fraction = '';
     var symbol = '';
@@ -320,7 +405,7 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
   var offer = AMAZON_STRICT ? amazonOffer(jsonLd) : firstOffer(jsonLd);
   try {
     if (jsonLd) {
-      out.title = cut(jsonLd.name, LIMITS.text) || out.title;
+      if (!AMAZON_STRICT) out.title = cut(jsonLd.name, LIMITS.text) || out.title;
       var brand = jsonLd.brand;
       if (Object.prototype.toString.call(brand) === '[object Array]') brand = brand[0];
       if (brand && typeof brand === 'object') brand = brand.name;
@@ -362,7 +447,7 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
       out.priceCandidates.push({ text: cut(metaPrice + ' ' + metaCurrency, LIMITS.text), source: 'meta' });
     }
     if (metaCurrency && !out.currencyText) out.currencyText = cut(metaCurrency, LIMITS.label);
-    if (!out.title) {
+    if (!out.title && !AMAZON_STRICT) {
       var ogTitle = String(meta(['meta[property="og:title"]']) || '');
       /* Même règle que document.title : sur Amazon, « Amazon.com: <produit> » n'est pas le produit. */
       if (IS_AMAZON) ogTitle = ogTitle.replace(/^\s*Amazon\.[a-z.]{2,6}\s*:\s*/i, '').trim();
@@ -431,6 +516,11 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
          Sélecteurs mesurés sur les fiches réelles des 04 et 06/10/2026. Aucun
          sélecteur large («.a-price») : deux prix de publicité sur la même page, et
          c'est le mauvais qui gagne. */
+      /* ── Zone d'achat SEULEMENT (19/10/2026) ───────────────────────────────
+         Un prix n'est lu que dans la zone d'achat (ancêtre « corePrice », « apex »,
+         « buybox »…). Hors zone : jamais lu — ni publicité, ni offre annexe
+         (protection), ni prix barré, ni prix d'un autre article. Si le formulaire
+         d'achat désigne un autre ASIN que celui de l'URL : aucun prix publié. */
       var AMAZON_PRICE_SELECTORS = [
         '#apex-pricetopay-accessibility-label',
         '#corePriceDisplay_desktop_feature_div .priceToPay',
@@ -450,41 +540,47 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
         '#desktop_buybox .a-price:not(.a-text-price)',
         '#mobile_buybox .a-price:not(.a-text-price)'
       ];
-      var amazonReadings = [];
-      var amazonNodes = [];
-      for (var s = 0; s < AMAZON_PRICE_SELECTORS.length && amazonReadings.length < 6; s++) {
-        var nodes = [];
-        try { nodes = document.querySelectorAll(AMAZON_PRICE_SELECTORS[s]); } catch (e) { continue; }
-        for (var n = 0; n < nodes.length && amazonReadings.length < 6; n++) {
-          var el = nodes[n];
-          if (amazonNodes.indexOf(el) >= 0) continue;
-          if (amazonBlocked(el)) continue;
-          var value = amazonPriceText(el);
-          if (!value || !HAS_DIGIT.test(value) || !CURRENCY_HINT.test(value)) continue;
-          if (value.length > LIMITS.text) continue;
-          /* Le montant lu par le span peut encore être un texte collé
-             (« $6.99$6.99 ») : le verdict de la Phase 0 est SERVEUR, mais on
-             n'envoie pas un texte manifestement dupliqué. */
-          if (!amazonPlausible(value)) continue;
-          amazonNodes.push(el);
-          amazonReadings.push(value);
+      if (amazonAsinMismatch()) {
+        diag('price:buybox_asin_mismatch');
+      } else {
+        var amazonReadings = [];
+        var amazonNodes = [];
+        var amazonExcluded = 0;
+        for (var s = 0; s < AMAZON_PRICE_SELECTORS.length && amazonReadings.length < 6; s++) {
+          var nodes = [];
+          try { nodes = document.querySelectorAll(AMAZON_PRICE_SELECTORS[s]); } catch (e) { continue; }
+          for (var n = 0; n < nodes.length && amazonReadings.length < 6; n++) {
+            var el = nodes[n];
+            if (amazonNodes.indexOf(el) >= 0) continue;
+            if (!amazonInBuybox(el)) continue;
+            if (amazonBlocked(el)) { amazonExcluded += 1; continue; }
+            var value = amazonPriceText(el);
+            if (!value || !HAS_DIGIT.test(value) || !CURRENCY_HINT.test(value)) continue;
+            if (value.length > LIMITS.text) continue;
+            /* Texte manifestement dupliqué (« $6.99$6.99 ») : on ne l'envoie pas. */
+            if (!amazonPlausible(value)) continue;
+            amazonNodes.push(el);
+            amazonReadings.push(value);
+          }
         }
-      }
-      var amazonDistinct = {};
-      for (var d = 0; d < amazonReadings.length; d++) {
-        amazonDistinct[amazonReadings[d].replace(/[\s\u00a0\u202f]+/g, '')] = true;
-      }
-      var amazonDistinctCount = 0;
-      for (var key in amazonDistinct) { if (Object.prototype.hasOwnProperty.call(amazonDistinct, key)) amazonDistinctCount++; }
-      /* Un seul montant distinct dans la zone d'achat ⇒ on publie UNE lecture
-         (la première : l'étiquette d'accessibilité d'Amazon, que le lecteur
-         serveur lit aussi en premier). Deux lectures du même montant venant de
-         la MÊME famille de preuve ne sont pas une corroboration : le crible
-         serveur les verrait comme un prix non corroboré à deux candidats, donc
-         « ambigu » — un refus pour rien. Plus d'un montant distinct ⇒
-         ABSTENTION : la page a des prix concurrents, on ne choisit pas. */
-      if (amazonDistinctCount === 1) {
-        out.priceCandidates.push({ text: cut(amazonReadings[0], LIMITS.text), source: 'dom' });
+        var amazonDistinct = {};
+        for (var d = 0; d < amazonReadings.length; d++) {
+          amazonDistinct[amazonReadings[d].replace(/[\s\u00a0\u202f]+/g, '')] = true;
+        }
+        var amazonDistinctCount = 0;
+        for (var key in amazonDistinct) { if (Object.prototype.hasOwnProperty.call(amazonDistinct, key)) amazonDistinctCount++; }
+        if (amazonExcluded) diag('price:excluded:' + amazonExcluded);
+        /* Un seul montant distinct dans la zone d'achat ⇒ UNE lecture publiée (la
+           première). Plus d'un montant ⇒ rien n'est publié : le diagnostic dit
+           pourquoi, et le serveur refuse (AMBIGUOUS_PRICE) au lieu de choisir. */
+        if (amazonDistinctCount === 1) {
+          out.priceCandidates.push({ text: cut(amazonReadings[0], LIMITS.text), source: 'dom' });
+          diag('price:buybox');
+        } else if (amazonDistinctCount > 1) {
+          diag('price:ambiguous_buybox:' + amazonDistinctCount);
+        } else {
+          diag('price:none_in_buybox');
+        }
       }
     } else {
     /* Le PANIER D'ACHAT d'abord : les sélecteurs de bloc d'achat des grandes
@@ -648,7 +744,9 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
   }
 
   /* ── 8. Titre de secours et images visibles ─────────────────────────────── */
-  if (!out.title) {
+  if (AMAZON_STRICT) {
+    try { out.title = amazonTitle(); } catch (e) { out.title = null; }
+  } else if (!out.title) {
     try {
       var rawTitle = String(document.title || '');
       if (IS_AMAZON) {
