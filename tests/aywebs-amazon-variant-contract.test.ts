@@ -193,7 +193,7 @@ describe.skipIf(!US_FIXTURES_PRESENT)('pages en rupture de stock (amazon.com)', 
   for (const file of [
     'amazon-us-oos-simple-0641674791.html',
     'amazon-us-oos-simple-B0000224VM.html',
-    'amazon-us-oos-swatches-0000037214.html',
+    'amazon-us-oos-simple-0000037214.html',
   ]) {
     it(`titre et disponibilité lus, aucun prix accepté : ${file}`, () => {
       process.env.AYWEBS_AMAZON_VARIANT_CONTRACT = '1';
@@ -205,9 +205,65 @@ describe.skipIf(!US_FIXTURES_PRESENT)('pages en rupture de stock (amazon.com)', 
         const result = validateAyWebsCapturedPage(capture, url);
         expect(result.ok).toBe(false);
         expect(result.price).toBe(0);
+        expect(result.rejection).toBe('OUT_OF_STOCK');
       } finally {
         delete process.env.AYWEBS_AMAZON_VARIANT_CONTRACT;
       }
     });
   }
+});
+
+describe('rupture : OUT_OF_STOCK (au lieu de NO_PRICE_TEXT)', () => {
+  const url = 'https://www.amazon.com/dp/B0000224VM';
+  const base = (availabilityText: string | null, withPrice = false) => ({
+    v: 1, url, canonicalUrl: url, title: 'Chapeau de test', brand: null, images: [],
+    priceCandidates: withPrice ? [{ text: '$19.99', source: 'dom' as const }] : [],
+    currencyText: null, availabilityText, addToCartText: null, conditionText: null,
+    selectedVariantTexts: [], variantTexts: [], capturedAt: new Date().toISOString(), diagnostics: [],
+    amazon: { readerVersion: 1, pageAsin: 'B0000224VM', selectedAsin: null, options: [], variants: [] },
+  }) as unknown as AyWebsCapturedPage;
+
+  it('texte « Currently unavailable » sans prix ⇒ OUT_OF_STOCK', () => {
+    expect(validateAyWebsCapturedPage(base('Currently unavailable. We don\'t know when or if this item will be back in stock.'), url).rejection).toBe('OUT_OF_STOCK');
+  });
+  it('variante française « Actuellement indisponible » sans prix ⇒ OUT_OF_STOCK', () => {
+    expect(validateAyWebsCapturedPage(base('Actuellement indisponible.'), url).rejection).toBe('OUT_OF_STOCK');
+  });
+  it('aucun texte de disponibilité et aucun prix ⇒ NO_PRICE_TEXT (inchangé)', () => {
+    expect(validateAyWebsCapturedPage(base(null), url).rejection).toBe('NO_PRICE_TEXT');
+  });
+  it('en stock sans prix ⇒ NO_PRICE_TEXT (pas OUT_OF_STOCK)', () => {
+    expect(validateAyWebsCapturedPage(base('In stock.'), url).rejection).toBe('NO_PRICE_TEXT');
+  });
+  it('un prix publié n\'est jamais écarté par OUT_OF_STOCK (refus par la règle de prix)', () => {
+    expect(validateAyWebsCapturedPage(base('Currently unavailable.', true), url).rejection).not.toBe('OUT_OF_STOCK');
+  });
+});
+
+describe.skipIf(!US_FIXTURES_PRESENT)('ancien tracé Amazon à variantes (amazon.com)', () => {
+  const file = 'amazon-us-variants-legacy-B00008I8YM.html';
+  it('lit le choix (ASIN de la fiche), et chaque taille avec son ASIN et son état', () => {
+    const { capture } = readPage(file, US_DIR, 'www.amazon.com');
+    expect(capture.amazon?.pageAsin).toBe('B00008I8YM');
+    expect(capture.amazon?.selectedAsin).toBe('B00008I8YM');
+    const sizes = (capture.amazon?.options || []).filter((o) => o.dimension === 'size');
+    expect(sizes.length).toBeGreaterThan(5);
+    expect(sizes.every((o) => /^[A-Z0-9]{10}$/.test(o.asin || ''))).toBe(true);
+    expect(sizes.some((o) => o.availabilityEvidence === 'available')).toBe(true);
+  });
+  it('le libellé est le texte visible, jamais l\'index de la liste (« 2,B0000ZC7J2 » ⇒ « 7 »)', () => {
+    const { capture } = readPage(file, US_DIR, 'www.amazon.com');
+    const seven = (capture.amazon?.options || []).find((o) => o.asin === 'B0000ZC7J2');
+    expect(seven?.value).toBe('7');
+  });
+  it('option choisie sans disponibilité prouvée ⇒ VARIANT_NOT_PROVEN (flag on)', () => {
+    process.env.AYWEBS_AMAZON_VARIANT_CONTRACT = '1';
+    try {
+      const { capture, url } = readPage(file, US_DIR, 'www.amazon.com');
+      const result = validateAyWebsCapturedPage(capture, url);
+      expect(result.rejection).toBe('VARIANT_NOT_PROVEN');
+    } finally {
+      delete process.env.AYWEBS_AMAZON_VARIANT_CONTRACT;
+    }
+  });
 });

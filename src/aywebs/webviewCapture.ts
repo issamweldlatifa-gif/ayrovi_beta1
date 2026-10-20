@@ -248,6 +248,12 @@ function fingerprintOf(parts: Record<string, unknown>): string {
   return createHash('sha256').update(JSON.stringify(parts)).digest('hex');
 }
 
+/** Texte de disponibilité qui déclare la fiche en rupture (EN/FR). Lu seulement depuis l'élément de disponibilité. */
+const OUT_OF_STOCK_TEXT = /currently unavailable|temporarily out of stock|out of stock|we don'?t know when or if this item will be back|actuellement indisponible|en rupture de stock|épuisé/i;
+function isOutOfStockText(value: unknown): boolean {
+  return typeof value === 'string' && OUT_OF_STOCK_TEXT.test(value);
+}
+
 /** Drapeau du contrat de variantes Amazon (désactivé par défaut : activation après test sur appareil). */
 export function variantContractEnabled(): boolean {
   return process.env.AYWEBS_AMAZON_VARIANT_CONTRACT === '1';
@@ -284,7 +290,9 @@ function amazonVariantRefusal(payload: AyWebsCapturedPage): string | null {
   if (!variants.some((v) => v.asin === selectedAsin)) return 'selected_not_in_variants';
   if (pageAsin !== selectedAsin) return 'selected_not_page';
 
-  const selectedOption = options.find((o) => o && o.selected === true);
+  // L'option CHOISIE est celle dont l'ASIN est l'ASIN choisi (une fiche peut avoir couleur ET taille).
+  const selectedOption = options.find((o) => o && o.selected === true && o.asin === selectedAsin)
+    || options.find((o) => o && o.selected === true);
   if (!selectedOption) return 'selected_option_unproven';
   if (selectedOption.availabilityEvidence === 'unavailable') return 'selected_unavailable';
   const pageSaysInStock = /in stock|en stock|disponible|auf lager/i.test(String(payload.availabilityText || ''));
@@ -401,6 +409,9 @@ export function validateAyWebsCapturedPage(
     if (clientDiagnostics.some((code) => code.startsWith('price:ambiguous_buybox'))) return rejected('AMBIGUOUS_PRICE', '', notes);
     // Distinguer « aucun texte » de « textes tous refusés » : le support doit
     // savoir si la page n'a rien affiché ou si quelque chose a été écarté.
+    // Page en rupture : l'élément de disponibilité le dit, et aucun prix n'est publié.
+    // On garde le refus (jamais de panier) mais la cause réelle est OUT_OF_STOCK, pas « pas de prix ».
+    if (!rawCandidates.length && isOutOfStockText(payload.availabilityText)) return rejected('OUT_OF_STOCK', '', notes);
     return rejected(rawCandidates.length ? 'PRICE_REJECTED' : 'NO_PRICE_TEXT', '', notes);
   }
 

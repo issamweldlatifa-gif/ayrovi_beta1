@@ -159,6 +159,11 @@ export const AYWEBS_CAPTURE_REJECTIONS = [
    * Actif seulement avec AYWEBS_AMAZON_VARIANT_CONTRACT=1.
    */
   'VARIANT_NOT_PROVEN',
+  /**
+   * Fiche en rupture : aucun prix publié ET l'élément de disponibilité dit « Currently unavailable »
+   * (ou équivalent). Refusée comme toute capture sans prix ; c'est la cause, pas « NO_PRICE_TEXT ».
+   */
+  'OUT_OF_STOCK',
 ] as const;
 
 export type AyWebsCaptureRejection = (typeof AYWEBS_CAPTURE_REJECTIONS)[number];

@@ -262,6 +262,8 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
         if (!label || label.length > AMAZON_EVIDENCE_LIMITS.label || NOT_A_CHOICE.test(label)) continue;
         var optionAsin = amazonAsinFromNode(item);
         var selected = amazonNodeIsSelected(item);
+        /* Ancien tracé : le swatch CHOISI porte data-dp-url vide = la fiche ouverte elle-même. */
+        if (selected && !optionAsin && AMAZON_ASIN && item.hasAttribute && item.hasAttribute('data-dp-url')) optionAsin = AMAZON_ASIN;
         var state = amazonNodeAvailability(item);
         amazonAddOption(result, dimension, label, optionAsin, selected, state, 'twister_dom');
         if (selected && optionAsin) pushUnique(selectedAsins, optionAsin, 10, 10);
@@ -299,9 +301,18 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
   function amazonAsinFromNode(element) {
     var node = element;
     for (var hop = 0; node && hop < 5; hop++) {
+      /* Liste déroulante Amazon : value = « <index>,<ASIN> ». L'index n'est jamais un nom ; seul l'ASIN est lu. */
+      if (String(node.tagName || '').toLowerCase() === 'option' && node.getAttribute) {
+        var pair = /^\d+,([A-Z0-9]{10})$/i.exec(node.getAttribute('value') || '');
+        if (pair) { var fromPair = amazonValidAsin(pair[1]); if (fromPair) return fromPair; }
+      }
       if (node.getAttribute) {
         var asin = amazonValidAsin(node.getAttribute('data-asin') || node.getAttribute('data-defaultasin') || node.getAttribute('asin'));
         if (asin) return asin;
+        /* Ancien tracé : data-dp-url="/dp/<ASIN>/…" désigne la variante de ce swatch. */
+        var dpUrl = node.getAttribute('data-dp-url') || '';
+        var dpMatch = /\/(?:dp|gp\/product)\/([A-Z0-9]{10})(?:[\/?#]|$)/i.exec(dpUrl);
+        if (dpMatch) { var fromDp = amazonValidAsin(dpMatch[1]); if (fromDp) return fromDp; }
       }
       node = node.parentNode;
     }
@@ -322,9 +333,9 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     var node = element;
     for (var hop = 0; node && hop < 3; hop++) {
       var className = String(node.className || '').toLowerCase();
-      if (/swatchunavailable|a-button-disabled|unavailable|outofstock/.test(className)
+      if (/swatchunavailable|dropdownunavailable|a-button-disabled|unavailable|outofstock/.test(className)
           || node.disabled === true || (node.getAttribute && node.getAttribute('aria-disabled') === 'true')) return 'unavailable';
-      if (/swatchavailable/.test(className) || (node.getAttribute && node.getAttribute('aria-disabled') === 'false')) return 'available';
+      if (/swatchavailable|dropdownavailable/.test(className) || (node.getAttribute && node.getAttribute('aria-disabled') === 'false')) return 'available';
       node = node.parentNode;
     }
     return 'unknown';
