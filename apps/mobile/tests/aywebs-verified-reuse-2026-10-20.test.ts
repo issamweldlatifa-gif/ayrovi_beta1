@@ -21,50 +21,35 @@ const URL_B = 'https://www.amazon.com/dp/B00008I8YM';
 function makeProduct(overrides: Partial<AyWebsResolvedProduct> = {}): AyWebsResolvedProduct {
   return {
     productId: 'ayw_prod_1',
-    sourceUrl: URL_A,
-    normalizedUrl: URL_A,
     storeId: 'amazon',
     storeName: 'Amazon',
-    integrationType: 'SCRAPER',
-    pageType: 'PRODUCT',
+    sourceUrl: URL_A,
+    sourceDomain: 'www.amazon.com',
     title: 'Pull en laine mérinos',
-    description: '',
     brand: 'Stanley',
-    sku: 'B0000224VM',
+    images: ['https://m.media-amazon.com/images/I/pull.jpg'],
     price: 109,
     currency: 'USD',
     priceVerified: true,
     currencyVerified: true,
-    availability: { state: 'AVAILABLE', label: 'En stock', reason: 'in_stock' },
-    images: ['https://m.media-amazon.com/images/I/pull.jpg'],
-    variants: { colors: [], sizes: [], options: [] },
+    availability: { state: 'AVAILABLE', reason: 'in_stock', checkedAt: '2026-10-20T12:00:00.000Z', source: 'capture', quantityHint: null },
+    purchaseMode: 'ASSISTED_CHECKOUT',
+    integrationType: 'SCRAPER',
+    ayroviPricing: {
+      totalTnd: 394,
+      pricingVersion: 1,
+      breakdown: {
+        convertedSourcePrice: 340,
+        shipping: 20,
+        customs: 0,
+        serviceFee: 34,
+        other: 0,
+      },
+    },
     variantGroups: [],
     variantDetails: [],
-    selectedVariant: null,
-    selectedVariantDetail: null,
-    weightKg: 0.4,
-    category: 'apparel',
-    confidence: 0.95,
-    missingFields: [],
-    ayroviPricing: {
-      available: true,
-      currency: 'TND',
-      quantity: 1,
-      unitBaseTnd: 340,
-      productSubtotalTnd: 340,
-      serviceFeeTnd: 34,
-      shippingTnd: 20,
-      customsTnd: 0,
-      handlingTnd: 0,
-      totalTnd: 394,
-      depositPercent: 30,
-      depositTnd: 118.2,
-      balanceAtDeliveryTnd: 275.8,
-      fxRateUsed: 3.12,
-      fxSourceCurrency: 'USD',
-      blockReason: '',
-    },
-    resolvedAt: '2026-10-20T12:00:00.000Z',
+    fromCache: false,
+    cacheAgeMs: null,
     ...overrides,
   };
 }
@@ -169,7 +154,9 @@ describe('validation serveur à la confirmation dans la feuille', () => {
     expect(validateConfirmResolution(rejectedCapture, null)).toEqual({ ok: false, code: 'OUT_OF_STOCK' });
 
     const outOfStockProduct = makeOutcome({
-      product: makeProduct({ availability: { state: 'OUT_OF_STOCK', label: 'Épuisé', reason: 'out_of_stock' } }),
+      product: makeProduct({
+        availability: { state: 'OUT_OF_STOCK', reason: 'out_of_stock', checkedAt: '', source: 'capture', quantityHint: null },
+      }),
     });
     expect(validateConfirmResolution(outOfStockProduct, null)).toEqual({ ok: false, code: 'OUT_OF_STOCK' });
   });
@@ -185,7 +172,13 @@ describe('validation serveur à la confirmation dans la feuille', () => {
 
     const unverifiedSelection = makeOutcome({
       product: makeProduct({
-        availability: { state: 'UNKNOWN', label: 'Inconnu', reason: 'selection_not_verified_by_capture:color:noir' },
+        availability: {
+          state: 'UNKNOWN',
+          reason: 'selection_not_verified_by_capture:color:noir',
+          checkedAt: '',
+          source: 'capture',
+          quantityHint: null,
+        },
       }),
     });
     expect(validateConfirmResolution(unverifiedSelection, { color: 'Noir' })).toEqual({

@@ -688,3 +688,94 @@ describe('AYWEBs 2.1 — le script est servi par le serveur (pas de version d’
     expect(response.text).not.toMatch(/token|secret|password/i);
   });
 });
+
+describe('confirmation serveur avec variante sur POST /product/resolve', () => {
+  const SESSION = { 'x-session-id': SESSION_ID };
+  const app = (h: ReturnType<typeof harness>) => {
+    const server = express();
+    server.use(express.json());
+    server.use('/api/v1/aywebs', createAyWebsRouter(h.db, h.scraper as any));
+    return server;
+  };
+
+  function amazonVariantPayload() {
+    const { payload } = captureFrom(REGISTERED_JSON_LD_PAGE, REGISTERED_URL);
+    return {
+      ...payload,
+      amazon: {
+        readerVersion: 1,
+        pageAsin: 'B0D1XD1ZV3',
+        selectedAsin: 'B0D1XD1ZV3',
+        options: [
+          { dimension: 'color', value: 'Vert', asin: 'B0D1XD1ZV3', selected: true, availabilityEvidence: 'available' as const },
+          { dimension: 'color', value: 'Noir', asin: 'B09N3ZNHTY', selected: false, availabilityEvidence: 'available' as const },
+          { dimension: 'color', value: 'Rouge', asin: 'B000099999', selected: false, availabilityEvidence: 'unavailable' as const },
+          { dimension: 'size', value: 'M', asin: 'B0D1XD1ZV3', selected: true, availabilityEvidence: 'available' as const },
+        ],
+        variants: [
+          { asin: 'B0D1XD1ZV3', selected: true, dimensions: [{ name: 'color', value: 'Vert' }, { name: 'size', value: 'M' }] },
+          { asin: 'B09N3ZNHTY', selected: false, dimensions: [{ name: 'color', value: 'Noir' }, { name: 'size', value: 'M' }] },
+        ],
+      },
+    };
+  }
+
+  it('variante choisie prouvée sur la page : acceptée avec devis signé, zéro lecture serveur', async () => {
+    const h = harness();
+    const res = await request(app(h))
+      .post('/api/v1/aywebs/product/resolve')
+      .set(SESSION)
+      .send({
+        url: REGISTERED_URL,
+        store_id: 'amazon',
+        capture: amazonVariantPayload(),
+        variant: { color: 'Vert', size: 'M' },
+        refresh: true,
+      });
+
+    expect(res.status).toBe(201);
+    expect(h.scrapeProduct).not.toHaveBeenCalled();
+    expect(res.body.capture).toMatchObject({ used: true, rejection: null });
+    expect(res.body.data.availability.state).toBe('AVAILABLE');
+    expect(res.body.quote_token).toBeTruthy();
+  });
+
+  it('variante choisie non prouvée sur la page ouverte : VARIANT_NOT_PROVEN, pas de devis ni de lecture serveur de repli', async () => {
+    const h = harness();
+    const res = await request(app(h))
+      .post('/api/v1/aywebs/product/resolve')
+      .set(SESSION)
+      .send({
+        url: REGISTERED_URL,
+        store_id: 'amazon',
+        capture: amazonVariantPayload(),
+        variant: { color: 'Noir', size: 'M' },
+        refresh: true,
+      });
+
+    expect(res.status).toBe(201);
+    expect(h.scrapeProduct).not.toHaveBeenCalled();
+    expect(res.body.capture).toMatchObject({ used: false, rejection: 'VARIANT_NOT_PROVEN' });
+    expect(res.body.quote_token).toBeNull();
+  });
+
+  it('variante choisie en rupture : OUT_OF_STOCK, pas de devis ni de lecture serveur de repli', async () => {
+    const h = harness();
+    const res = await request(app(h))
+      .post('/api/v1/aywebs/product/resolve')
+      .set(SESSION)
+      .send({
+        url: REGISTERED_URL,
+        store_id: 'amazon',
+        capture: amazonVariantPayload(),
+        variant: { color: 'Rouge', size: 'M' },
+        refresh: true,
+      });
+
+    expect(res.status).toBe(201);
+    expect(h.scrapeProduct).not.toHaveBeenCalled();
+    expect(res.body.capture).toMatchObject({ used: false, rejection: 'OUT_OF_STOCK' });
+    expect(res.body.data.availability.state).toBe('OUT_OF_STOCK');
+    expect(res.body.quote_token).toBeNull();
+  });
+});

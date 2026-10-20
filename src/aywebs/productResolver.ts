@@ -213,6 +213,7 @@ export async function resolveAyWebsProduct(
     ? validateAyWebsCapturedPage(input.capture, preliminary.normalizedUrl, {
         // Domaine hors registre : seuil plus haut (corroboration obligatoire).
         requireCorroboration: !preliminary.registered,
+        selectedVariant: input.selectedVariant,
       })
     : null;
   const captureUsed = captureValidation?.ok === true;
@@ -343,12 +344,55 @@ export async function resolveAyWebsProduct(
     });
   };
 
+  const captureRefusedForVariantOrStock = Boolean(
+    captureValidation
+    && !captureValidation.ok
+    && (captureValidation.rejection === 'VARIANT_NOT_PROVEN' || captureValidation.rejection === 'OUT_OF_STOCK'),
+  );
+
   if (captureUsed) {
     /* Lecture cliente ACCEPTÉE : on construit le produit avec le MÊME
        normaliseur que le lecteur serveur. Rien n'est mis en cache : une lecture
        cliente est ponctuelle et ne doit pas être servie à une autre session. */
     sourceProduct = ayWebsSourceProductFromScraped(
       captureValidation!.scraped!,
+      store.displayName || store.name || store.id,
+    );
+  } else if (captureRefusedForVariantOrStock) {
+    /* Refus explicite de variante ou de stock sur la capture (VARIANT_NOT_PROVEN /
+       OUT_OF_STOCK) : pas de seconde lecture serveur de repli, aucun devis publié. */
+    const rawCap = (typeof input.capture === 'object' && input.capture !== null)
+      ? (input.capture as Record<string, unknown>)
+      : {};
+    const rawTitle = typeof rawCap.title === 'string' ? rawCap.title.trim() : '';
+    const host = new URL(url.toString()).hostname;
+    sourceProduct = ayWebsSourceProductFromScraped(
+      {
+        id: `webview_${host}`,
+        store: host,
+        storeName: store.displayName || store.name || store.id,
+        url: url.toString(),
+        externalId: null,
+        title: rawTitle,
+        description: rawTitle,
+        images: [],
+        mainImage: '',
+        sourcePrice: 0,
+        sourceCurrency: '',
+        convertedPriceTND: 0,
+        estimatedShippingTND: 0,
+        serviceFeeTND: 0,
+        totalPriceTND: 0,
+        variants: { colors: [], sizes: [], details: [] },
+        availability: captureValidation!.rejection === 'OUT_OF_STOCK' ? 'out_of_stock' : 'unknown',
+        brand: undefined,
+        priceVerified: false,
+        currencyVerified: false,
+        verificationProvider: 'webview_client',
+        verificationMethod: 'dom',
+        verificationFailureCode: captureValidation!.rejection || 'VARIANT_NOT_PROVEN',
+        scrapedAt: new Date().toISOString(),
+      },
       store.displayName || store.name || store.id,
     );
   } else if (cached) {
@@ -415,7 +459,7 @@ export async function resolveAyWebsProduct(
   /* Une lecture fraîche qui n'a pas su lire de prix est mémorisée 90 s : les
      réessais suivants répondent « prix non lu » en quelques ms au lieu de
      relancer 13–17 s de sondes. Le succès, lui, passe par le cache normal. */
-  const freshRead = !cached && !failedCached;
+  const freshRead = !cached && !failedCached && !captureRefusedForVariantOrStock;
   if (freshRead && missing.length) {
     writeAyWebsResolveFailureCache(deps.scraper, cacheKey, sourceProduct);
   }
@@ -426,6 +470,17 @@ export async function resolveAyWebsProduct(
     input.selectedVariant || null,
   );
   let availability = await adapter.checkAvailability(sourceProduct, matchingAttributes);
+  if (captureRefusedForVariantOrStock) {
+    availability = {
+      ...ayWebsAvailabilityRecord(
+        captureValidation!.rejection === 'OUT_OF_STOCK' ? 'OUT_OF_STOCK' : 'UNKNOWN',
+        `capture_rejected:${captureValidation!.rejection}`,
+        'webview_client',
+        new Date().toISOString(),
+      ),
+      variantAvailable: null,
+    };
+  }
 
   if (captureUsed) {
     /* La capture prouve l'état du bouton d'achat POUR LA COMBINAISON AFFICHÉE

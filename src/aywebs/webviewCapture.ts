@@ -300,6 +300,87 @@ function amazonVariantRefusal(payload: AyWebsCapturedPage): string | null {
   return null;
 }
 
+/**
+ * Vérifie que la variante explicitement demandée par le client (`selectedVariant`)
+ * correspond à la variante prouvée sur la page Amazon ouverte.
+ * Retourne `{ rejection: 'OUT_OF_STOCK' | 'VARIANT_NOT_PROVEN', reason: string } | null`.
+ */
+function amazonRequestedVariantRefusal(
+  payload: AyWebsCapturedPage,
+  selectedVariant: Record<string, string>,
+): { rejection: 'OUT_OF_STOCK' | 'VARIANT_NOT_PROVEN'; reason: string } | null {
+  const entries = Object.entries(selectedVariant).filter(
+    ([dim, val]) => dim.trim().length > 0 && typeof val === 'string' && val.trim().length > 0,
+  );
+  if (!entries.length) return null;
+
+  const amazon = payload.amazon;
+  const options = Array.isArray(amazon?.options) ? amazon!.options! : [];
+  const variants = Array.isArray(amazon?.variants)
+    ? amazon!.variants!.filter((v) => v && typeof v.asin === 'string' && AMAZON_ASIN_SHAPE.test(v.asin))
+    : [];
+  const pageAsin = typeof amazon?.pageAsin === 'string' ? amazon.pageAsin : null;
+  const selectedAsin = typeof amazon?.selectedAsin === 'string' ? amazon.selectedAsin : null;
+
+  // 1. Si l'une des options choisies est explicitement marquée indisponible, c'est une rupture de stock.
+  for (const [rawDim, rawVal] of entries) {
+    const dim = rawDim.trim().toLowerCase();
+    const val = rawVal.trim().toLowerCase();
+    const matchingOpt = options.find(
+      (o) => o && String(o.dimension || '').trim().toLowerCase() === dim && String(o.value || '').trim().toLowerCase() === val,
+    );
+    if (matchingOpt && matchingOpt.availabilityEvidence === 'unavailable') {
+      return { rejection: 'OUT_OF_STOCK', reason: `selected_unavailable:${dim}` };
+    }
+  }
+
+  // 2. Si la capture porte des options/variantes Amazon, la sélection demandée doit correspondre
+  //    à la variante prouvée sur la page courante (selected === true et asin === pageAsin).
+  if (variants.length > 1 || options.length > 1) {
+    const baseRefusal = amazonVariantRefusal(payload);
+    if (baseRefusal === 'selected_unavailable') {
+      return { rejection: 'OUT_OF_STOCK', reason: baseRefusal };
+    }
+    if (baseRefusal) {
+      return { rejection: 'VARIANT_NOT_PROVEN', reason: baseRefusal };
+    }
+
+    for (const [rawDim, rawVal] of entries) {
+      const dim = rawDim.trim().toLowerCase();
+      const val = rawVal.trim().toLowerCase();
+
+      const dimOptions = options.filter((o) => o && String(o.dimension || '').trim().toLowerCase() === dim);
+      if (dimOptions.length > 0) {
+        const matched = dimOptions.find((o) => String(o.value || '').trim().toLowerCase() === val);
+        if (!matched) {
+          return { rejection: 'VARIANT_NOT_PROVEN', reason: `option_not_found:${dim}` };
+        }
+        if (matched.selected !== true || (selectedAsin && matched.asin && matched.asin !== selectedAsin)) {
+          return { rejection: 'VARIANT_NOT_PROVEN', reason: `option_not_selected_on_page:${dim}` };
+        }
+        const pageSaysInStock = /in stock|en stock|disponible|auf lager/i.test(String(payload.availabilityText || ''));
+        if (matched.availabilityEvidence !== 'available' && !pageSaysInStock) {
+          return { rejection: 'VARIANT_NOT_PROVEN', reason: `option_availability_unproven:${dim}` };
+        }
+      }
+
+      if (variants.length > 0 && selectedAsin) {
+        const activeVariant = variants.find((v) => v.asin === selectedAsin || v.selected === true);
+        const activeDims = Array.isArray(activeVariant?.dimensions) ? activeVariant!.dimensions! : [];
+        const activeDim = activeDims.find((d) => d && String(d.name || '').trim().toLowerCase() === dim);
+        if (activeDim && String(activeDim.value || '').trim().toLowerCase() !== val) {
+          return { rejection: 'VARIANT_NOT_PROVEN', reason: `variant_dimension_mismatch:${dim}` };
+        }
+      }
+    }
+    if (pageAsin && selectedAsin && pageAsin !== selectedAsin) {
+      return { rejection: 'VARIANT_NOT_PROVEN', reason: 'selected_not_page' };
+    }
+  }
+
+  return null;
+}
+
 function rejected(rejection: string, fingerprint = '', notes: string[] = []): AyWebsCaptureValidation {
   captureStats.rejected += 1;
   bump(captureStats.rejections, rejection);
@@ -325,6 +406,8 @@ export interface AyWebsCaptureValidationOptions {
    * connaissance marchande pour rattraper une lecture solitaire.
    */
   requireCorroboration?: boolean;
+  /** Variante choisie par le client lors de la confirmation dans la feuille. */
+  selectedVariant?: Record<string, string> | null;
 }
 
 export function validateAyWebsCapturedPage(
@@ -363,9 +446,16 @@ export function validateAyWebsCapturedPage(
   if (now - capturedAtMs > AYWEBS_CAPTURE_LIMITS.maxAgeMs) return rejected('STALE_CAPTURE');
   if (capturedAtMs - now > AYWEBS_CAPTURE_LIMITS.maxClockSkewMs) return rejected('FUTURE_CAPTURE');
 
-  /* ── VARIANTE AMAZON (contrat Phase 1 — derrière AYWEBS_AMAZON_VARIANT_CONTRACT=1) ──
+  /* ── VARIANTE AMAZON (contrat Phase 1 — derrière AYWEBS_AMAZON_VARIANT_CONTRACT=1,
+        ou quand le client confirme explicitement une variante choisie dans la feuille) ──
      Quand la fiche a plusieurs variantes, le prix de la zone d'achat ne vaut que pour
      l'option CHOISIE. On la refuse si elle n'est pas prouvée. */
+  if (isAmazonHost(requestUrl) && options.selectedVariant && Object.keys(options.selectedVariant).length > 0 && payload.amazon) {
+    const requestedRefusal = amazonRequestedVariantRefusal(payload, options.selectedVariant);
+    if (requestedRefusal) {
+      return rejected(requestedRefusal.rejection, '', [`variant:${requestedRefusal.reason}`]);
+    }
+  }
   if (variantContractEnabled() && isAmazonHost(requestUrl)) {
     const variantRefusal = amazonVariantRefusal(payload);
     if (variantRefusal) return rejected('VARIANT_NOT_PROVEN', '', [`variant:${variantRefusal}`]);
@@ -539,8 +629,30 @@ export function validateAyWebsCapturedPage(
   const title = collapse(payload.title, AYWEBS_CAPTURE_LIMITS.maxTitleLength);
   const brand = collapse(payload.brand, 120) || null;
   const images = cleanImageUrls(payload.images);
+  const rawSelectedTexts: unknown[] = Array.isArray(payload.selectedVariantTexts)
+    ? [...payload.selectedVariantTexts]
+    : [];
+  if (payload.amazon) {
+    const selectedAsin = typeof payload.amazon.selectedAsin === 'string' ? payload.amazon.selectedAsin : '';
+    if (Array.isArray(payload.amazon.options)) {
+      for (const opt of payload.amazon.options) {
+        if (opt && opt.selected === true && opt.availabilityEvidence !== 'unavailable' && typeof opt.value === 'string') {
+          rawSelectedTexts.push(opt.value);
+        }
+      }
+    }
+    if (Array.isArray(payload.amazon.variants)) {
+      for (const variant of payload.amazon.variants) {
+        if (variant && (variant.selected === true || (selectedAsin && variant.asin === selectedAsin)) && Array.isArray(variant.dimensions)) {
+          for (const dim of variant.dimensions) {
+            if (dim && typeof dim.value === 'string') rawSelectedTexts.push(dim.value);
+          }
+        }
+      }
+    }
+  }
   const selectedVariantTexts = cleanTextArray(
-    payload.selectedVariantTexts, AYWEBS_CAPTURE_LIMITS.maxSelectedVariantTexts, 60,
+    rawSelectedTexts, AYWEBS_CAPTURE_LIMITS.maxSelectedVariantTexts, 60,
   );
   const variantTexts = cleanTextArray(payload.variantTexts, AYWEBS_CAPTURE_LIMITS.maxVariantTexts, 60);
 
