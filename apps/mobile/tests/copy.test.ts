@@ -101,7 +101,7 @@ describe('عقد النصوص — المفاتيح المتكوّنة في ال�
      * onglet déclaré — visible ou non — possède ses textes dans les deux langues.
      */
     expect([...tabs].sort()).toEqual([
-      'account', 'cart', 'index',
+      'account', 'aywebs', 'cart', 'index',
     ]);
     /**
      * ── Ce que ce contrat exigeait, et pourquoi il a changé ───────────────

@@ -1,3 +1,4 @@
+import { AYWEBS_CATALOG_STORES } from './aywebsStoreCatalog';
 import type {
   AyWebsIntegrationType,
   AyWebsStoreCapability,
@@ -21,7 +22,8 @@ export type AyWebsAdapterId = 'amazon' | 'shein' | 'temu' | 'aliexpress' | 'gene
  * `displayName`, `logo`) s'ajoutent sans rien renommer.
  */
 export interface AyWebsStoreDefinition {
-  id: AyWebsAdapterId;
+  /** Identifiant de la boutique (ex. `amazon`, `creema`) — distinct de l'adaptateur. */
+  id: string;
   name: string;
   /** Libellé marchand tel qu'affiché au client (peut différer de `name`). */
   displayName: string;
@@ -51,6 +53,8 @@ export interface AyWebsStoreDefinition {
   searchUrlTemplate: string;
   /** Catégories marchand utilisées par l'accueil AYWEBs (§6). */
   categories: readonly string[];
+  /** Description courte de la carte (vide = la carte affiche ses catégories). */
+  description?: string;
   popular: boolean;
   phase: 1 | 2;
 }
@@ -83,7 +87,7 @@ export const AYWEBS_STORES: readonly AyWebsStoreDefinition[] = [
     browserMode: 'external',
     homeUrl: 'https://www.amazon.com/',
     searchUrlTemplate: 'https://www.amazon.com/s?k={query}',
-    categories: ['electronics', 'fashion', 'home', 'beauty'],
+    categories: ['marketplace', 'electronics', 'fashion', 'home', 'beauty'],
     popular: true,
     phase: 1,
   },
@@ -125,7 +129,7 @@ export const AYWEBS_STORES: readonly AyWebsStoreDefinition[] = [
     browserMode: 'external',
     homeUrl: 'https://www.temu.com/',
     searchUrlTemplate: 'https://www.temu.com/search_result.html?search_key={query}',
-    categories: ['home', 'electronics', 'fashion'],
+    categories: ['marketplace', 'home', 'electronics', 'fashion'],
     popular: true,
     phase: 2,
   },
@@ -146,7 +150,7 @@ export const AYWEBS_STORES: readonly AyWebsStoreDefinition[] = [
     browserMode: 'external',
     homeUrl: 'https://www.aliexpress.com/',
     searchUrlTemplate: 'https://www.aliexpress.com/wholesale?SearchText={query}',
-    categories: ['electronics', 'home', 'fashion', 'beauty'],
+    categories: ['marketplace', 'electronics', 'home', 'fashion', 'beauty'],
     popular: true,
     phase: 2,
   },
@@ -157,12 +161,36 @@ export const AYWEBS_STORES: readonly AyWebsStoreDefinition[] = [
  * jamais un identifiant technique à l'écran.
  */
 export const AYWEBS_CATEGORIES: ReadonlyArray<{ id: string; labelFr: string; labelAr: string }> = [
-  { id: 'fashion', labelFr: 'Mode', labelAr: 'أزياء' },
-  { id: 'electronics', labelFr: 'High-tech', labelAr: 'إلكترونيات' },
-  { id: 'beauty', labelFr: 'Beauté', labelAr: 'جمال وعناية' },
-  { id: 'home', labelFr: 'Maison', labelAr: 'المنزل' },
-  { id: 'sports', labelFr: 'Sport', labelAr: 'رياضة' },
-  { id: 'toys', labelFr: 'Jouets', labelAr: 'ألعاب' },
+  { id: 'marketplace', labelFr: 'Marketplace', labelAr: 'متاجر متنوعة' },
+  { id: 'fashion', labelFr: 'Mode', labelAr: 'الملابس والأزياء' },
+  { id: 'shoes', labelFr: 'Chaussures & sneakers', labelAr: 'الأحذية' },
+  { id: 'electronics', labelFr: 'High-tech', labelAr: 'الإلكترونيات' },
+  { id: 'smartphones', labelFr: 'Smartphones & accessoires', labelAr: 'الهواتف والإكسسوارات' },
+  { id: 'gaming', labelFr: 'Jeux vidéo', labelAr: 'الألعاب الإلكترونية' },
+  { id: 'beauty', labelFr: 'Beauté & cosmétiques', labelAr: 'الجمال والتجميل' },
+  { id: 'perfumes', labelFr: 'Parfums', labelAr: 'العطور' },
+  { id: 'home', labelFr: 'Maison & mobilier', labelAr: 'المنزل والأثاث' },
+  { id: 'kitchen', labelFr: 'Cuisine & électroménager', labelAr: 'المطبخ والأجهزة المنزلية' },
+  { id: 'sports', labelFr: 'Sport & plein air', labelAr: 'الرياضة والأنشطة الخارجية' },
+  { id: 'luxury', labelFr: 'Luxe & griffes', labelAr: 'الماركات الفاخرة' },
+  { id: 'toys', labelFr: 'Jouets & bébé', labelAr: 'الألعاب والأطفال' },
+  { id: 'books', labelFr: 'Livres & médias', labelAr: 'الكتب والوسائط' },
+  { id: 'pets', labelFr: 'Animalerie', labelAr: 'مستلزمات الحيوانات' },
+  { id: 'grocery', labelFr: 'Épicerie & supermarchés', labelAr: 'المواد الغذائية' },
+  { id: 'automotive', labelFr: 'Automobile', labelAr: 'السيارات وقطع الغيار' },
+  { id: 'jewelry', labelFr: 'Bijoux & montres', labelAr: 'المجوهرات والساعات' },
+  { id: 'bags', labelFr: 'Sacs & bagages', labelAr: 'الحقائب وحقائب السفر' },
+  { id: 'tools', labelFr: 'Outils & bricolage', labelAr: 'الأدوات ومعدات البناء' },
+  { id: 'arts', labelFr: 'Arts & loisirs créatifs', labelAr: 'الفنون والأشغال اليدوية' },
+  { id: 'garden', labelFr: 'Jardin & extérieur', labelAr: 'الحديقة والخارج' },
+  { id: 'health', labelFr: 'Santé & hygiène', labelAr: 'العناية الشخصية' },
+  { id: 'bedding', labelFr: 'Literie & matelas', labelAr: 'الفراش والمراتب' },
+  { id: 'music', labelFr: 'Instruments de musique', labelAr: 'الآلات الموسيقية' },
+  { id: 'photography', labelFr: 'Photo & caméras', labelAr: 'التصوير والكاميرات' },
+  { id: 'office', labelFr: 'Bureau & papeterie', labelAr: 'المكتب والقرطاسية' },
+  { id: 'travel', labelFr: 'Accessoires de voyage', labelAr: 'مستلزمات السفر' },
+  { id: 'kids', labelFr: 'Vêtements enfants', labelAr: 'ملابس الأطفال' },
+  { id: 'accessories', labelFr: 'Accessoires', labelAr: 'الإكسسوارات' },
 ];
 
 /**
@@ -262,3 +290,42 @@ export function ayWebsStoresForCategory(categoryId: string): AyWebsStoreDefiniti
   if (!normalized) return [];
   return AYWEBS_STORES.filter((store) => store.enabled && store.categories.includes(normalized));
 }
+
+/**
+ * Contrôle du registre des boutiques avant qu'il serve l'application.
+ *  • identifiant unique ; • domaine non partagé entre deux boutiques ;
+ *  • nom affiché unique (sans tenir compte de la casse) ;
+ *  • catégories connues, et au moins une par boutique ;
+ *  • une boutique peut appartenir à plusieurs catégories SANS être dupliquée.
+ * Renvoie la liste des problèmes (vide = registre sain).
+ */
+export function validateAyWebsStoreRegistry(
+  stores: readonly AyWebsStoreDefinition[] = [...AYWEBS_STORES, ...AYWEBS_CATALOG_STORES],
+  categories: ReadonlyArray<{ id: string }> = AYWEBS_CATEGORIES,
+): string[] {
+  const problems: string[] = [];
+  const ids = new Set<string>();
+  const domains = new Map<string, string>();
+  const names = new Map<string, string>();
+  const categoryIds = new Set(categories.map((category) => category.id));
+  for (const store of stores) {
+    if (ids.has(store.id)) problems.push(`identifiant en double : ${store.id}`);
+    ids.add(store.id);
+    for (const domain of store.domains) {
+      const owner = domains.get(domain);
+      if (owner && owner !== store.id) problems.push(`domaine partagé : ${domain} (${owner}, ${store.id})`);
+      domains.set(domain, store.id);
+    }
+    const nameKey = store.displayName.trim().toLowerCase();
+    const nameOwner = names.get(nameKey);
+    if (nameOwner && nameOwner !== store.id) problems.push(`nom en double : ${store.displayName} (${nameOwner}, ${store.id})`);
+    names.set(nameKey, store.id);
+    if (store.categories.length === 0) problems.push(`aucune catégorie : ${store.id}`);
+    for (const category of store.categories) {
+      if (!categoryIds.has(category)) problems.push(`catégorie inconnue : ${category} (${store.id})`);
+    }
+    if (new Set(store.categories).size !== store.categories.length) problems.push(`catégorie répétée : ${store.id}`);
+  }
+  return problems;
+}
+
