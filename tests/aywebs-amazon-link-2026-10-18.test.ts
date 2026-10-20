@@ -104,14 +104,14 @@ function captureFrom(pageHtml: string, url: string) {
 }
 
 describe('lecteur client — zone d’achat seulement', () => {
-  it.skip('lit le prix vendu et ignore les offres annexes (protection) de la colonne d’achat', () => {
+  it('lit le prix vendu et ignore les offres annexes (protection) de la colonne d’achat', () => {
     const { payload } = captureFrom(PAGE, CANONICAL);
     const texts = (payload.priceCandidates as Array<{ text: string }>).map((c) => c.text);
     expect(texts.some((t) => /153\.89/.test(t))).toBe(true);
     expect(texts.some((t) => /39\.99|16\.99/.test(t))).toBe(false);
   });
 
-  it.skip('le serveur accepte la capture : prix 153.89 USD, disponibilité en stock', () => {
+  it('le serveur accepte la capture : prix 153.89 USD, disponibilité en stock', () => {
     const { validation } = captureFrom(PAGE, CANONICAL);
     expect(validation.ok).toBe(true);
     expect(validation.price).toBe(153.89);

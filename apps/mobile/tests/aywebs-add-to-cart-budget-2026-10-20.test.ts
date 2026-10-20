@@ -12,7 +12,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { ApiError } from '@/api/errors';
 import type { AyWebsResolveOutcome } from '@/api/aywebs';
-import { AYWEBS_ADD_TO_CART_BUDGET_MS, resolveAddToCart } from '@/features/aywebs/captureFlow';
+import { AYWEBS_ADD_TO_CART_BUDGET_MS, AYWEBS_PREFETCH_MAX_AGE_MS, canReusePrefetch, resolveAddToCart } from '@/features/aywebs/captureFlow';
 
 const CAPTURE = { v: 1, priceCandidates: [{ text: '$109.00', source: 'dom' }] };
 
@@ -110,5 +110,35 @@ describe('délai de 7 secondes', () => {
     const result = await resolveAddToCart({ readCapture: async () => CAPTURE, resolve });
     expect(resolve).toHaveBeenCalledTimes(2);
     expect(result.decision.kind).toBe('sheet');
+  });
+});
+
+describe('lecture à l\'ouverture de la page (réutilisée au clic)', () => {
+  const URL_A = 'https://www.amazon.com/dp/B0GYM3V9H5';
+  const URL_B = 'https://www.amazon.com/dp/B0OTHER001';
+  const NOW = 1_000_000;
+
+  it('lecture en cours pour cette page ⇒ on attend la même (pas de seconde lecture)', () => {
+    expect(canReusePrefetch({ url: URL_A, at: 0, status: 'reading' }, URL_A, NOW)).toBe(true);
+  });
+
+  it('lecture terminée il y a peu ⇒ réutilisée', () => {
+    expect(canReusePrefetch({ url: URL_A, at: NOW - 5_000, status: 'ok' }, URL_A, NOW)).toBe(true);
+  });
+
+  it('lecture trop ancienne ⇒ relecture au clic', () => {
+    expect(canReusePrefetch({ url: URL_A, at: NOW - AYWEBS_PREFETCH_MAX_AGE_MS - 1, status: 'ok' }, URL_A, NOW)).toBe(false);
+  });
+
+  it('lecture échouée ⇒ relecture au clic', () => {
+    expect(canReusePrefetch({ url: URL_A, at: NOW, status: 'failed' }, URL_A, NOW)).toBe(false);
+  });
+
+  it('lecture d\'une autre page ⇒ jamais réutilisée', () => {
+    expect(canReusePrefetch({ url: URL_B, at: NOW, status: 'ok' }, URL_A, NOW)).toBe(false);
+  });
+
+  it('aucune lecture ⇒ relecture au clic', () => {
+    expect(canReusePrefetch(null, URL_A, NOW)).toBe(false);
   });
 });

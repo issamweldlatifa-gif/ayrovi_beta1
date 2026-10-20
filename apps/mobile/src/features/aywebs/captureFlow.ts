@@ -90,6 +90,29 @@ export function addToCartDecision(outcome: AyWebsResolveOutcome): AddToCartDecis
  */
 export const AYWEBS_ADD_TO_CART_BUDGET_MS = 7_000;
 
+/**
+ * Âge maximal d'une lecture faite à l'ouverture de la page (20/10/2026). Au-delà, on relit
+ * la page : le client a pu changer de taille ou de couleur sans que l'URL change.
+ */
+export const AYWEBS_PREFETCH_MAX_AGE_MS = 30_000;
+
+export interface PrefetchEntry {
+  url: string;
+  at: number;
+  status: 'reading' | 'ok' | 'failed';
+}
+
+/**
+ * Faut-il réutiliser la lecture faite à l'ouverture (20/10/2026) ? Oui si elle est pour cette
+ * page, et soit encore en cours, soit terminée depuis moins de `AYWEBS_PREFETCH_MAX_AGE_MS`.
+ * Sinon (absente, en échec, périmée, autre page) : on relit au moment du clic.
+ */
+export function canReusePrefetch(entry: PrefetchEntry | null, pageUrl: string, now: number): boolean {
+  if (!entry || entry.url !== pageUrl) return false;
+  if (entry.status === 'reading') return true;
+  return entry.status === 'ok' && now - entry.at < AYWEBS_PREFETCH_MAX_AGE_MS;
+}
+
 const BUDGET_EXCEEDED: unique symbol = Symbol('ayweb-add-budget-exceeded');
 
 /** Course entre une promesse et le délai : rend la valeur, ou `BUDGET_EXCEEDED`. */
