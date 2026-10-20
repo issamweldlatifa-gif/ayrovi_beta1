@@ -46,6 +46,9 @@ import { AyWebsDomainError } from './errors';
 import { ayWebsQuoteTtlMs, createAyWebsQuoteToken } from './quoteToken';
 import { withAyWebsReadSlot } from './readGate';
 import {
+  canIssueAyWebsCaptureQuote,
+  hasUnstructuredAyWebsVariantEvidence,
+  isAyWebsCaptureVariantSelectionVerified,
   shouldVerifyWebviewCaptureInBackground,
   validateAyWebsCapturedPage,
   webviewCaptureDivergence,
@@ -127,7 +130,10 @@ export interface AyWebsResolveResult {
   analysis: AyWebsPageAnalysis;
   pricing: PriceBreakdown | null;
   evidenceHash: string;
+  /** Champs BLOQUANTS (titre, prix, devise, vérifications). La photo n'en fait pas partie. */
   missing: string[];
+  /** Tous les champs non lus, photo incluse — pour le journal et le diagnostic. */
+  missingFields: string[];
   resolvedAt: string;
   /** Lecture servie depuis le cache de résolution (âge réel fourni). */
   fromCache: boolean;
@@ -277,16 +283,27 @@ export async function resolveAyWebsProduct(
       sessionId: input.sessionId || null,
       result: 'failure',
       errorCode: captureValidation.rejection,
+      details: {
+        client_codes: (captureValidation.notes || [])
+          .filter((note) => note.startsWith('client:'))
+          .map((note) => note.slice('client:'.length))
+          .join(',') || null,
+      },
     });
   }
 
-  const cacheKey = ayWebsResolveCacheKey(store.id, url.toString());
+  /* Clé de cache sur la forme canonique de la boutique (ex. Amazon : /dp/<ASIN>),
+     pour qu'un même produit collé sous deux liens n'ait qu'une seule entrée. */
+  const cacheKey = ayWebsResolveCacheKey(store.id, adapter.canonicalUrl?.(url.toString()) ?? url.toString());
   const cacheAllowed = !input.refresh && !input.pageHtml && !captureUsed;
   const cached = cacheAllowed ? readAyWebsResolveCache(deps.scraper, cacheKey, { allowStale: true }) : null;
   /* Mémo « fiche illisible » : une lecture SANS prix échoue en 13–17 s (sondes
      vouées à l'échec). Le mémo, séparé et à TTL court (90 s), évite de repayer
      ce coût à chaque réessai — sans jamais se faire passer pour un succès. */
-  const failedCached = cached ? null : readAyWebsResolveFailureCache(deps.scraper, cacheKey);
+  /* Ancienne mémoire d'échec : jamais servie à une demande `refresh` (Add au
+     clic) ni à une lecture avec page fournie (19/10/2026). Sinon une lecture
+     sans prix, mémorisée pendant 90 s, revenait en 0.00 malgré la relecture. */
+  const failedCached = cached || !cacheAllowed ? null : readAyWebsResolveFailureCache(deps.scraper, cacheKey);
 
   let sourceProduct: AyWebsSourceProduct;
   let fromCache = false;
@@ -377,7 +394,11 @@ export async function resolveAyWebsProduct(
           recordProbeSuccess(url.toString());
           return read;
         } catch (error) {
-          recordProbeFailure(url.toString());
+          /* Un lien que la boutique ne sert pas (autre boutique, page non produit)
+             est une erreur de SAISIE, pas une panne de l'hôte. Elle ne compte donc
+             PAS contre l'hôte : sinon trois mauvais liens mettaient TOUTE la boutique
+             au repos 10 min, et les vrais produits répondaient « refuse temporairement ». */
+          if (!(error instanceof AyWebsCaptureError)) recordProbeFailure(url.toString());
           if (error instanceof AyWebsCaptureError) {
             throw new AyWebsDomainError(error.code === 'PRODUCT_PAGE_REQUIRED' ? 'PRODUCT_PAGE_REQUIRED' : 'STORE_MISMATCH', {
               userMessage: error.message,
@@ -392,7 +413,8 @@ export async function resolveAyWebsProduct(
     writeAyWebsResolveCache(deps.scraper, cacheKey, sourceProduct);
   }
 
-  const missing = missingProductFields(sourceProduct);
+  const missingFields = missingProductFields(sourceProduct);
+  const missing = blockingMissingFields(missingFields);
   /* Une lecture fraîche qui n'a pas su lire de prix est mémorisée 90 s : les
      réessais suivants répondent « prix non lu » en quelques ms au lieu de
      relancer 13–17 s de sondes. Le succès, lui, passe par le cache normal. */
@@ -402,31 +424,55 @@ export async function resolveAyWebsProduct(
   }
   // Le client peut joindre des métadonnées de contexte (ex. `condition`) : elles
   // n'identifient pas la variante et ne doivent jamais la faire « disparaître ».
+  const requestedVariant = input.selectedVariant && Object.keys(input.selectedVariant).length
+    ? input.selectedVariant
+    : captureUsed ? captureValidation!.selectedVariantAttributes : null;
   const { matching: matchingAttributes, metadata: variantMetadata } = ayWebsSplitVariantSelection(
     { variantGroups: sourceProduct.variantGroups, variants: sourceProduct.variants },
-    input.selectedVariant || null,
+    requestedVariant,
   );
   let availability = await adapter.checkAvailability(sourceProduct, matchingAttributes);
 
+  let captureVariantSelectionVerified = !captureUsed;
+  let captureHasUnstructuredVariantEvidence = false;
   if (captureUsed) {
-    /* La capture prouve l'état du bouton d'achat POUR LA COMBINAISON AFFICHÉE
-       chez le client. Si l'écran demande une AUTRE combinaison, cette preuve ne
-       dit rien d'elle : on répond UNKNOWN (et le panier refusera) au lieu
-       d'étendre la preuve à une variante qu'on n'a pas vue. */
-    /* Toute valeur demandée doit avoir été VUE sur la page — y compris celles
-       que le produit ne publie pas comme options (métadonnées de contexte).
-       Pourquoi si large : une capture ne publie AUCUN stock par option, donc
-       rien ne permet de dire si une valeur demandée est un attribut de variante
-       ou une simple annotation. Le risque est asymétrique — un faux UNKNOWN
-       coûte un refus honnête (« impossible de confirmer »), un faux AVAILABLE
-       coûte une commande invendable sur un produit jamais affiché. */
+    /* Le prix et l'état du bouton décrivent une seule combinaison affichée. Les
+       groupes twister ne deviennent un choix achetable qu'après comparaison
+       exacte entre la sélection demandée et celle relue dans cette capture. */
     const requestedSelection = { ...(matchingAttributes || {}), ...(variantMetadata || {}) };
     const requestedValues = Object.values(requestedSelection).map((value) => String(value).trim().toLowerCase());
-    const observed = captureValidation!.selectedVariantTexts.map((value) => value.toLowerCase());
-    const selectionBacked = !requestedValues.length
-      || requestedValues.every((value) => observed.some((label) => label.includes(value)));
+    const observedTexts = captureValidation!.selectedVariantTexts.map((value) => value.toLowerCase());
+    const capturedAttributes = captureValidation!.selectedVariantAttributes;
+    const groupAttributes = captureValidation!.variantGroups.map((group) => group.attribute);
+    const hasStructuredGroups = groupAttributes.length > 0;
+    captureHasUnstructuredVariantEvidence = hasUnstructuredAyWebsVariantEvidence({
+      variantGroups: captureValidation!.variantGroups,
+      variantTexts: captureValidation!.variantTexts,
+      selectedVariantTexts: captureValidation!.selectedVariantTexts,
+      requestedAttributes: input.selectedVariant,
+    });
+    const matchingAttributesBacked = Object.entries(matchingAttributes || {}).every(([attribute, value]) => {
+      if (hasStructuredGroups && groupAttributes.includes(attribute)) {
+        return String(capturedAttributes[attribute] || '').trim().toLowerCase() === String(value).trim().toLowerCase();
+      }
+      const text = String(value).trim().toLowerCase();
+      return observedTexts.some((label) => label.includes(text));
+    });
+    const metadataBacked = Object.values(variantMetadata || {}).every((value) => {
+      const text = String(value).trim().toLowerCase();
+      return observedTexts.some((label) => label.includes(text));
+    });
+    const selectionBacked = matchingAttributesBacked && metadataBacked;
+    captureVariantSelectionVerified = isAyWebsCaptureVariantSelectionVerified({
+      variantGroups: captureValidation!.variantGroups,
+      requestedAttributes: matchingAttributes,
+      capturedAttributes,
+      selectionComplete: captureValidation!.variantSelectionComplete,
+      selectionBacked,
+      unstructuredVariantEvidence: captureHasUnstructuredVariantEvidence,
+    });
     const checkedAt = new Date().toISOString();
-    if (selectionBacked) {
+    if (captureVariantSelectionVerified) {
       availability = {
         ...ayWebsAvailabilityRecord(
           captureValidation!.availability,
@@ -447,7 +493,9 @@ export async function resolveAyWebsProduct(
         ),
         variantAvailable: null,
       };
-      captureValidation!.notes.push('selection_not_in_capture');
+      captureValidation!.notes.push(hasStructuredGroups
+        ? 'variant_selection_not_exact_in_capture'
+        : 'selection_not_in_capture');
     }
   }
 
@@ -553,9 +601,16 @@ export async function resolveAyWebsProduct(
       availability: availability.state,
       purchaseMode: product.purchaseMode,
       missing,
+      missing_fields: missingFields,
     },
   });
 
+  /* Diagnostic de lecture (19/10/2026) : quels champs manquent et pourquoi. Codes et
+     nombres seulement — la capture refusée et ses codes client, jamais la page. */
+  const clientCodes = (captureValidation?.notes || [])
+    .filter((note) => note.startsWith('client:'))
+    .map((note) => note.slice('client:'.length))
+    .join(',');
   logAyWebsOperation({
     operation: 'product_resolve_total',
     storeId: store.id,
@@ -564,6 +619,22 @@ export async function resolveAyWebsProduct(
     durationMs: Date.now() - startedAt,
     result: missing.length ? 'failure' : 'success',
     errorCode: missing.length ? 'CAPTURE_INCOMPLETE' : null,
+    missingFields,
+    details: {
+      blocking_missing: missing.join(',') || null,
+      capture_used: captureUsed,
+      capture_rejection: captureValidation?.rejection ?? null,
+      capture_price_source: captureValidation?.priceSource ?? null,
+      capture_corroborated: captureValidation?.corroborated ?? null,
+      capture_client_codes: clientCodes || null,
+      title_read: Boolean(sourceProduct.title?.trim()),
+      price_read: Number(sourceProduct.price) > 0,
+      currency_read: /^[A-Z]{3}$/.test(String(sourceProduct.currency || '')),
+      price_verified: sourceProduct.scrapedProduct?.priceVerified === true,
+      currency_verified: sourceProduct.scrapedProduct?.currencyVerified === true,
+      image_read: Boolean(sourceProduct.images?.length),
+      cache_kind: cacheKind,
+    },
   });
 
   /* Devis signé — émis ici, au seul endroit où le serveur connaît à la fois le
@@ -600,7 +671,16 @@ export async function resolveAyWebsProduct(
     void verifyWebviewCaptureInBackground(verificationInput).catch(() => undefined);
   }
 
-  const quoteToken = quoteEvidenceComplete
+  const captureQuoteAllowed = canIssueAyWebsCaptureQuote({
+    captureUsed,
+    priceVerified: sourceProduct.scrapedProduct.priceVerified === true,
+    currencyVerified: sourceProduct.scrapedProduct.currencyVerified === true,
+    selectionVerified: captureVariantSelectionVerified,
+    availability: availability.state,
+    unstructuredVariantEvidence: captureHasUnstructuredVariantEvidence,
+  });
+  const quoteToken = quoteEvidenceComplete && captureQuoteAllowed
+
     ? createAyWebsQuoteToken({
         productId,
         storeId: store.id,
@@ -623,6 +703,7 @@ export async function resolveAyWebsProduct(
     pricing,
     evidenceHash,
     missing,
+    missingFields,
     resolvedAt: sourceProduct.capturedAt,
     fromCache,
     cacheAgeMs,
@@ -712,6 +793,13 @@ async function verifyWebviewCaptureInBackground(input: {
 }
 
 /** Champs normalisés manquants : la liste est renvoyée au client, jamais devinée. */
+/** La photo ne bloque jamais l'ajout : elle n'est pas une preuve de prix (19/10/2026). */
+export const AYWEBS_OPTIONAL_FIELDS: readonly string[] = ['image'];
+
+export function blockingMissingFields(fields: readonly string[]): string[] {
+  return fields.filter((field) => !AYWEBS_OPTIONAL_FIELDS.includes(field));
+}
+
 export function missingProductFields(product: AyWebsSourceProduct): string[] {
   return [
     !product.title?.trim() ? 'title' : '',
