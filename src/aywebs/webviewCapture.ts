@@ -41,7 +41,7 @@ import {
 import type { AyWebsAvailabilityState } from '../../shared/aywebsTypes';
 
 /** Ordre de fiabilité des sources de prix : machine d'abord, humain ensuite. */
-const SOURCE_RANK: Record<AyWebsCaptureSource, number> = { json_ld: 0, embedded_json: 1, microdata: 2, meta: 3, dom: 4 };
+const SOURCE_RANK: Record<AyWebsCaptureSource, number> = { json_ld: 0, microdata: 1, meta: 2, dom: 3 };
 
 /**
  * PREUVE DE DEVISE PAR SYMBOLE — liste FERMÉE, boutique par boutique (07/10/2026).

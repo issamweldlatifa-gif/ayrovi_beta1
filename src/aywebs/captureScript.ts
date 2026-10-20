@@ -113,12 +113,6 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     for (var hops = 0; node && hops < 8; hops++) {
       var descriptor = String((node.id || '') + ' ' + (node.className || '')).toLowerCase();
       if (/sponsored|sp-sponsored|carousel|nav-assist|similar|recommendation|adplace|a-text-price|deal-badge|apex_desktop_right/.test(descriptor)) return true;
-      /* Offres annexes de la zone d'achat. Constaté sur une fiche US récupérée le
-         18/10/2026 (texte rendu, pas le DOM) : « Add a protection plan » avec
-         2-Year Protection Plan $39.99 et Complete Protect $16.99/month, affiché
-         dans la colonne d'achat. Ces prix ne sont pas le prix vendu : sans ce
-         filtre, deux montants distincts font abstenir le lecteur sur une fiche saine. */
-      if (/attach|protection|warranty|insurance|popover|a-modal|upsell|add-?on|cross-?sell/.test(descriptor)) return true;
       node = node.parentNode;
     }
     if (element.getAttribute) {
@@ -491,44 +485,6 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
          ABSTENTION : la page a des prix concurrents, on ne choisit pas. */
       if (amazonDistinctCount === 1) {
         out.priceCandidates.push({ text: cut(amazonReadings[0], LIMITS.text), source: 'dom' });
-      }
-      /* Source MACHINE d'Amazon : « "displayPrice":"$109.00" » dans les scripts de la
-         page (mesuré le 04/10/2026, et lu par le lecteur serveur). Ce n'est PAS la
-         même famille de preuve que le DOM : si elle désigne le même montant que la
-         zone d'achat, elle la CORROBORE. Si elle désigne un autre montant, elle est
-         aussi envoyée — le serveur voit alors deux sources en désaccord et refuse
-         (ABSTENTION, jamais un choix). Elle n'est lue que si elle désigne UN seul
-         montant : une page qui liste plusieurs prix (carrousels) n'en désigne aucun. */
-      if (amazonDistinctCount === 1) {
-        try {
-          var amzDisplay = [];
-          var amzScripts = document.querySelectorAll('script:not([src])');
-          for (var amzSc = 0; amzSc < amzScripts.length && amzSc < 80 && amzDisplay.length < 12; amzSc++) {
-            var amzCode = amzScripts[amzSc].textContent || '';
-            if (!amzCode || amzCode.length > 600000 || amzCode.indexOf('displayPrice') < 0) continue;
-            var amzRe = /"displayPrice"\s*:\s*"([^"]{1,40})"/g;
-            var amzHit = amzRe.exec(amzCode);
-            while (amzHit && amzDisplay.length < 12) {
-              amzDisplay.push(amzHit[1]);
-              amzHit = amzRe.exec(amzCode);
-            }
-          }
-          var amzAmounts = {};
-          var amzAmountCount = 0;
-          for (var amzA = 0; amzA < amzDisplay.length; amzA++) {
-            var amzKey = amzDisplay[amzA].replace(/\D/g, '');
-            if (!amzKey) continue;
-            if (!amzAmounts[amzKey]) { amzAmounts[amzKey] = true; amzAmountCount++; }
-          }
-          if (amzAmountCount === 1) {
-            var amzValue = '';
-            for (var amzV = 0; amzV < amzDisplay.length && !amzValue; amzV++) {
-              var amzCandidate = text(amzDisplay[amzV]);
-              if (HAS_DIGIT.test(amzCandidate) && CURRENCY_HINT.test(amzCandidate) && amazonPlausible(amzCandidate)) amzValue = amzCandidate;
-            }
-            if (amzValue) out.priceCandidates.push({ text: cut(amzValue, LIMITS.text), source: 'embedded_json' });
-          }
-        } catch (e) {}
       }
     } else {
     /* Le PANIER D'ACHAT d'abord : les sélecteurs de bloc d'achat des grandes
