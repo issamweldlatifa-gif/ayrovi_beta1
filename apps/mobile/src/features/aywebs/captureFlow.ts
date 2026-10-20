@@ -193,3 +193,16 @@ export async function resolveAddToCart(input: AddToCartFlowInput): Promise<AddTo
   const { outcome, capture } = await resolveWithCaptureFallback<AyWebsResolveOutcome>(input);
   return { decision: addToCartDecision(outcome), outcome, capture };
 }
+
+/**
+ * Fenêtre pendant laquelle une fiche DÉJÀ vérifiée par le serveur (au chargement de la page)
+ * sert à ouvrir la feuille. Alignée sur la validité de la facture serveur (10 min par défaut).
+ * Passé ce délai, « Add » relance la vérification (le bouton tourne).
+ */
+export const AYWEBS_VERIFIED_REUSE_MS = 10 * 60_000;
+
+export function canReuseVerified(entry: { url: string; at: number } | null | undefined, url: string, now: number): boolean {
+  if (!entry || entry.url !== url) return false;
+  const age = now - entry.at;
+  return age >= 0 && age < AYWEBS_VERIFIED_REUSE_MS;
+}

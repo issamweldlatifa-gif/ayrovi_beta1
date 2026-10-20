@@ -40,7 +40,7 @@ import { AddToCartSheet } from '@/features/aywebs/AddToCartSheet';
 import { ReadingProgress } from '@/features/aywebs/ReadingProgress';
 import { waitForPageIdle } from '@/features/aywebs/captureFallback';
 import {
-  AYWEBS_CAPTURE_EMPTY_PRICE_RETRY_DELAY_MS, canReusePrefetch, priceCandidatesOf, resolveAddToCart, shouldRetryAyWebsCaptureForPrice,
+  AYWEBS_CAPTURE_EMPTY_PRICE_RETRY_DELAY_MS, canReusePrefetch, canReuseVerified, priceCandidatesOf, resolveAddToCart, shouldRetryAyWebsCaptureForPrice,
 } from '@/features/aywebs/captureFlow';
 import type { ReadPhase } from '@/features/aywebs/phase';
 import { useSessionId } from '@/session/session';
@@ -96,6 +96,8 @@ export default function AyWebsBrowserScreen() {
   const addController = useRef<AbortController | null>(null);
   const lastScript = useRef<string | null>(null);
 
+  /* Fiche vérifiée par le serveur au chargement (réutilisée à l'ouverture de la feuille). */
+  const verified = useRef<{ url: string; capture: unknown; outcome: AyWebsResolveOutcome; at: number } | null>(null);
   const [busy, setBusy] = useState(false);
   /* Lecture à l'ouverture en cours : le bouton « Add » tourne jusqu'à la fin, puis revient à son état normal. */
   const [prefetchReading, setPrefetchReading] = useState(false);
@@ -252,8 +254,20 @@ export default function AyWebsBrowserScreen() {
     );
     entry.promise.catch(() => undefined);
     prefetch.current = entry;
+    verified.current = null;
     setPrefetchReading(true);
-  }, [requestCapture]);
+    /* Vérification serveur À L'OUVERTURE : le bouton tourne jusqu'à ce que la fiche soit prouvée. */
+    entry.promise
+      .then((capture) => resolveAyWebsProductWithCapture(url, {
+        sessionId: sessionId || '', storeId: storeId || undefined, capture, signal: controller.signal,
+      }).then((outcome) => ({ capture, outcome })))
+      .then(({ capture, outcome }) => {
+        if (controller.signal.aborted || prefetch.current !== entry) return;
+        verified.current = { url, capture, outcome, at: Date.now() };
+      })
+      .catch(() => undefined)
+      .finally(() => { if (prefetch.current === entry) setPrefetchReading(false); });
+  }, [requestCapture, sessionId, storeId]);
 
   useEffect(() => {
     if (!captureAllowed || productPage !== true || !pageReady || !pageUrl) return;
@@ -275,6 +289,14 @@ export default function AyWebsBrowserScreen() {
     if (!sessionId || !pageUrl || productPage !== true) return;
     /* Un nouvel appui remplace le précédent : l'ancien est annulé, il ne touche plus l'écran. */
     addController.current?.abort();
+    /* Fiche déjà vérifiée il y a moins de 10 min : la feuille s'ouvre tout de suite, sans appel serveur. */
+    const reuse = verified.current;
+    if (reuse && canReuseVerified(reuse, pageUrl, Date.now())) {
+      setOutcome(reuse.outcome);
+      setNote('');
+      setSheet({ outcome: reuse.outcome, capture: reuse.capture });
+      return;
+    }
     const controller = new AbortController();
     addController.current = controller;
     const isCurrent = () => addController.current === controller;
