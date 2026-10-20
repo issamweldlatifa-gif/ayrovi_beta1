@@ -4,7 +4,7 @@
  * Ce que cette suite verrouille, avec des pages MESURÉES (04 et 06/10/2026) et
  * un test croisé contre le lecteur serveur (`src/scraper/amazonPage.ts`) :
  *
- *   1. LA FICHE RÉELLE : `tests/fixtures/amazon-product-page.html` (relevée sur
+ *   1. LA FICHE RÉELLE : `tests/fixtures/amazon-product-page-fc3cce38.html` (relevée sur
  *      /dp/B0GYM3V9H5) → le client lit `$109.00` en reconstruction de spans,
  *      prouve USD par le symbole (Amazon ne publie AUCUN code ISO), lit « In
  *      Stock » et les images produit — et il est D'ACCORD avec le lecteur serveur
@@ -52,7 +52,7 @@ const FIXTURE_DIR = join(__dirname, 'fixtures');
 const REAL_DIR = join(FIXTURE_DIR, 'aywebs');
 
 const FIXTURE_URL = 'https://www.amazon.com/dp/B0GYM3V9H5';
-const FIXTURE = readFileSync(join(FIXTURE_DIR, 'amazon-product-page.html'), 'utf8');
+const FIXTURE = readFileSync(join(FIXTURE_DIR, 'amazon-product-page-fc3cce38.html'), 'utf8');
 const REAL_SHELL = readFileSync(join(REAL_DIR, 'amazon-shell.html'), 'utf8');
 const REAL_DESKTOP_DE = readFileSync(join(REAL_DIR, 'real-amazon-de-desktop-2026-10-06.html'), 'utf8');
 const REAL_SPONSORED_DE = readFileSync(join(REAL_DIR, 'amazon-de-rendered-sponsored-price.html'), 'utf8');
@@ -131,7 +131,10 @@ describe('AYWEBs — lecteur Amazon : la fiche mesurée du 04/10/2026', () => {
   it('lit le prix (spans), la devise (symbole) et le stock — en accord avec le lecteur serveur', () => {
     const { payload, validation } = captureFrom(FIXTURE);
 
-    expect(payload.priceCandidates).toEqual([{ text: '$109.00', source: 'dom' }]);
+    expect(payload.priceCandidates).toEqual([
+      { text: '$109.00', source: 'dom' },
+      { text: '$109.00', source: 'dom_accessibility' },
+    ]);
     expect(payload.currencyText).toBeNull();
     expect(payload.availabilityText).toBe('In Stock');
     expect(payload.addToCartText).toBeNull(); // la fiche ne publie pas de bouton
@@ -140,18 +143,75 @@ describe('AYWEBs — lecteur Amazon : la fiche mesurée du 04/10/2026', () => {
     expect(validation.price).toBe(109);
     expect(validation.currency).toBe('USD');
     expect(validation.currencyVerified).toBe(true);
+    expect(validation.corroborated).toBe(true);
     expect(validation.availability).toBe('AVAILABLE');
     expect(validation.priceSource).toBe('dom');
     expect(validation.notes.join(' ')).toContain('currency_symbol_registered_store:USD');
 
     /* TEST CROISÉ : le lecteur SERVEUR, sur la même page, dit la même chose.
-       (Une seule source ⇒ `priceVerified=false`, donc aucun devis signé : la
-       conséquence est documentée, pas cachée.) */
+       Amazon publie ici le même montant dans le buybox visible et son label
+       accessible : le pair concordant corrobore la capture sans choisir un prix. */
     const parsed = parseProductPageHtml(FIXTURE, FIXTURE_URL, 'amazon');
     expect(parsed.price).toBe(validation.price);
     expect(parsed.currency).toBe(validation.currency);
     expect(parsed.currencyVerified).toBe(true);
     expect(parsed.availability).toBe('in_stock');
+  });
+
+  it('lit les groupes du twister, l’état des valeurs et la sélection courante sans prix supposé', () => {
+    const { payload, validation } = captureFrom(FIXTURE);
+    expect(payload.variantGroups.map((group: any) => group.attribute).sort()).toEqual(['color', 'size']);
+    expect(payload.variantGroups.find((group: any) => group.sourceKey === 'size_name')?.values)
+      .toEqual(['X-Small', 'Small', 'Medium', 'Large', 'X-Large']);
+    expect(payload.selectedVariantAttributes).toEqual({ size: 'Small', color: 'Emerald Leaf' });
+    expect(validation.variantSelectionComplete).toBe(true);
+    expect(validation.selectedVariantAttributes).toEqual({ size: 'Small', color: 'Emerald Leaf' });
+    expect(validation.scraped?.variants.sizes).toEqual(['X-Small', 'Small', 'Medium', 'Large', 'X-Large']);
+    const exact = validation.scraped?.variants.details?.[0];
+    expect(exact?.attributes).toEqual({ size: 'Small', color: 'Emerald Leaf' });
+    expect(exact?.price).toBe(109);
+    expect(exact?.stock).toBe(true);
+    const large = validation.scraped?.variants.details?.find((detail) => detail.label === 'Large');
+    expect(large?.price).toBeNull();
+    expect(large?.available).toBe(false); // état publié du choix, pas un stock de combinaison
+    expect(large?.stock).toBeNull();
+  });
+
+  it('ignore un twister de publicité hors de la fiche produit', () => {
+    const decoy = `<!doctype html><html><head><title>Fiche</title></head><body>
+      <div id="dp-container"><div id="ppd"><div id="corePriceDisplay_desktop_feature_div"></div></div></div>
+      <aside><div id="twister_feature_div" data-feature-name="twister">
+        <script>{"sortedDimValuesForAllDims":{"size_name":[{"dimensionValueState":"SELECTED","dimensionValueDisplayText":"M"}]}}</script>
+      </div></aside>
+    </body></html>`;
+    const { payload } = captureFrom(decoy, FIXTURE_URL);
+    expect(payload.variantGroups).toEqual([]);
+    expect(payload.selectedVariantAttributes).toEqual({});
+  });
+
+  it('un état SELECTED contradictoire ne devient pas une variante choisie', () => {
+    const page = `<!doctype html><html><head><title>Fiche Amazon</title></head><body>
+      <div id="dp-container"><div id="ppd">
+        <div id="corePriceDisplay_desktop_feature_div">
+          <span id="apex-pricetopay-accessibility-label">$15.00</span>
+          <span class="a-price priceToPay"><span class="a-offscreen"></span><span aria-hidden="true">
+            <span class="a-price-symbol">$</span><span class="a-price-whole">15<span class="a-price-decimal">.</span></span>
+            <span class="a-price-fraction">00</span></span></span>
+        </div>
+        <div id="availability">In Stock</div>
+        <div id="twister_feature_div" data-feature-name="twister">
+          <script>{"sortedDimValuesForAllDims":{"size_name":[
+            {"dimensionValueState":"SELECTED","dimensionValueDisplayText":"Small"},
+            {"dimensionValueState":"SELECTED","dimensionValueDisplayText":"Medium"}
+          ]}}</script>
+        </div>
+      </div></div>
+    </body></html>`;
+    const { payload, validation } = captureFrom(page, FIXTURE_URL);
+    expect(validation.ok).toBe(true);
+    expect(payload.variantGroups[0].values).toEqual(['Small', 'Medium']);
+    expect(payload.selectedVariantAttributes).toEqual({});
+    expect(validation.variantSelectionComplete).toBe(false);
   });
 
   it('images PRODUIT d’abord (data-old-hires), jamais les sprites de navigation', () => {
@@ -192,11 +252,70 @@ describe('AYWEBs — lecteur Amazon : la zone d’achat seulement', () => {
         <span class="a-price a-text-price" data-a-strike="true"><span class="a-offscreen">$149.00</span></span>
       </div>`);
     const { payload, validation } = captureFrom(page);
-    expect(payload.priceCandidates).toEqual([{ text: '$109.00', source: 'dom' }]);
+    expect(payload.priceCandidates).toEqual([
+      { text: '$109.00', source: 'dom' },
+      { text: '$109.00', source: 'dom_accessibility' },
+    ]);
     expect(priceTrace(payload)).not.toContain('6.99');
     expect(priceTrace(payload)).not.toContain('263.86');
     expect(priceTrace(payload)).not.toContain('149.00');
     expect(validation.price).toBe(109);
+  });
+
+  it('ignore les copies responsive masquées et les prix aria-hidden sans perdre le prix visible', () => {
+    const page = amazonPage(`
+      ${BUYBOX_109}
+      <style>#hidden-price-copy { display: none; }</style>
+      <div id="hidden-price-copy">
+        <div id="corePrice_mobile_feature_div">
+          <span class="a-price priceToPay"><span class="a-offscreen">$119.00</span></span>
+        </div>
+      </div>
+      <div aria-hidden="true">
+        <span class="a-price"><span class="a-offscreen">$129.00</span></span>
+      </div>`);
+    const { payload, validation } = captureFrom(page);
+    expect(payload.priceCandidates).toEqual([
+      { text: '$109.00', source: 'dom' },
+      { text: '$109.00', source: 'dom_accessibility' },
+    ]);
+    expect(priceTrace(payload)).not.toContain('119.00');
+    expect(priceTrace(payload)).not.toContain('129.00');
+    expect(validation.price).toBe(109);
+  });
+
+  it('Amazon mobile : ignore le pourcentage ajouté au libellé accessible et lit le prix courant visible', () => {
+    const page = amazonPage(`
+      <span id="apex-pricetopay-accessibility-label" class="aok-offscreen">$179.98 with 10 percent savings</span>
+      <div id="corePriceDisplay_mobile_feature_div">
+        <span class="a-price priceToPay apex-pricetopay-value">
+          <span class="a-offscreen"></span>
+          <span aria-hidden="true">
+            <span class="a-price-symbol">$</span>
+            <span class="a-price-whole">179<span class="a-price-decimal">.</span></span>
+            <span class="a-price-fraction">98</span>
+          </span>
+        </span>
+      </div>`);
+    const { payload, validation } = captureFrom(page);
+
+    expect(payload.priceCandidates).toEqual([
+      { text: '$179.98', source: 'dom' },
+      { text: '$179.98', source: 'dom_accessibility' },
+    ]);
+    expect(validation.ok).toBe(true);
+    expect(validation.price).toBe(179.98);
+    expect(validation.currency).toBe('USD');
+    expect(validation.currencyVerified).toBe(true);
+    expect(validation.priceVerified).toBe(true); // buybox visible + label accessible concordants
+  });
+
+  it('label accessible seul : aucune capture de prix', () => {
+    const page = amazonPage('<span id="apex-pricetopay-accessibility-label" class="aok-offscreen">$109.00</span>');
+    const { payload, validation } = captureFrom(page);
+    expect(payload.priceCandidates).toEqual([]);
+    expect(validation.ok).toBe(false);
+    expect(validation.rejection).toBe('NO_PRICE_TEXT');
   });
 
   it('deux montants DISTINCTS dans la zone d’achat ⇒ abstention totale', () => {
@@ -209,6 +328,23 @@ describe('AYWEBs — lecteur Amazon : la zone d’achat seulement', () => {
     expect(payload.priceCandidates).toEqual([]);
     expect(validation.ok).toBe(false);
     expect(validation.rejection).toBe('NO_PRICE_TEXT');
+
+    const labelOnly = validateAyWebsCapturedPage({
+      ...payload,
+      priceCandidates: [{ text: '$109.00', source: 'dom_accessibility' }],
+    }, FIXTURE_URL);
+    expect(labelOnly.ok).toBe(false);
+    expect(labelOnly.rejection).toBe('PRICE_NOT_CORROBORATED');
+
+    const conflictingEvidence = validateAyWebsCapturedPage({
+      ...payload,
+      priceCandidates: [
+        { text: '$109.00', source: 'dom_accessibility' },
+        { text: '$119.00', source: 'dom' },
+      ],
+    }, FIXTURE_URL);
+    expect(conflictingEvidence.ok).toBe(false);
+    expect(conflictingEvidence.rejection).toBe('AMBIGUOUS_PRICE');
   });
 
   it('un texte collé (« $6.99$6.99 ») n’est jamais publié — et le serveur le refuse aussi', () => {
@@ -256,14 +392,22 @@ describe('AYWEBs — lecteur Amazon : bouton d’achat', () => {
 
 describe('AYWEBs — lecteur Amazon : preuve de devise', () => {
   it('`€` sur amazon.fr ⇒ EUR (table fermée, boutique du registre)', () => {
-    const page = amazonPage('<span id="apex-pricetopay-accessibility-label" class="aok-offscreen">109,00 €</span>');
+    const page = amazonPage(`
+      <span id="apex-pricetopay-accessibility-label" class="aok-offscreen">109,00 €</span>
+      <div id="corePriceDisplay_mobile_feature_div">
+        <span class="a-price priceToPay"><span class="a-offscreen">109,00 €</span></span>
+      </div>`);
     const { validation } = captureFrom(page, 'https://www.amazon.fr/dp/B0GYM3V9H5');
     expect(validation.currency).toBe('EUR');
     expect(validation.currencyVerified).toBe(true);
   });
 
   it('`$` sur amazon.ca ⇒ AUCUNE preuve (dollar canadien) — le serveur relira', () => {
-    const page = amazonPage('<span id="apex-pricetopay-accessibility-label" class="aok-offscreen">$109.00</span>');
+    const page = amazonPage(`
+      <span id="apex-pricetopay-accessibility-label" class="aok-offscreen">$109.00</span>
+      <div id="corePriceDisplay_mobile_feature_div">
+        <span class="a-price priceToPay"><span class="a-offscreen">$109.00</span></span>
+      </div>`);
     const { validation } = captureFrom(page, 'https://www.amazon.ca/dp/B0GYM3V9H5');
     expect(validation.currency).toBe('');
     expect(validation.currencyVerified).toBe(false);
@@ -336,7 +480,10 @@ describe('AYWEBs — lecteur Amazon : JSON-LD', () => {
        "offers":{"@type":"Offer","price":"42.00","priceCurrency":"USD"}}
       </script>`);
     const { payload } = captureFrom(multiPage);
-    expect(payload.priceCandidates).toEqual([{ text: '$109.00', source: 'dom' }]);
+    expect(payload.priceCandidates).toEqual([
+      { text: '$109.00', source: 'dom' },
+      { text: '$109.00', source: 'dom_accessibility' },
+    ]);
   });
 });
 
@@ -387,7 +534,7 @@ describe('AYWEBs — lecteur Amazon : compteurs d’exploitation', () => {
     expect(stats.rejections.NO_PRICE_TEXT).toBe(1);
     expect(stats.price_sources.dom).toBe(1);
     expect(stats.currency_symbol).toBe(1);
-    expect(stats.single_source).toBe(1);
+    expect(stats.single_source).toBe(0); // le buybox visible + le label concordant se corroborent sur Amazon
   });
 
   it('/health expose les compteurs (aucun contenu, seulement des nombres)', async () => {

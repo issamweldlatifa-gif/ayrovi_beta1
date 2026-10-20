@@ -35,3 +35,5 @@ export {
   listAyWebsAdapterDescriptors,
   resolveAyWebsAdapter,
 } from './adapters/registry';
+
+export { ZalandoAdapter } from './adapters/zalando';

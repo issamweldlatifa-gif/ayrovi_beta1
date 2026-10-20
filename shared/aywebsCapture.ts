@@ -10,7 +10,8 @@
  *   • quel montant est lisible et exploitable ;
  *   • si la devise est prouvée (code ISO explicite — même règle que le lecteur
  *     serveur, `productPageParser.ts`) ;
- *   • si le prix est CORROBORÉ (JSON-LD, ou deux sources indépendantes d'accord) ;
+ *   • si le prix est CORROBORÉ (JSON-LD, deux sources indépendantes d'accord,
+ *     ou — sur Amazon du registre seulement — label accessible + buybox visible concordants) ;
  *   • l'état de disponibilité, d'après une liste de formulations limitée et
  *     documentée.
  *
@@ -36,11 +37,15 @@ export const AYWEBS_CAPTURE_VERSION = 1;
 export const AYWEBS_CAPTURE_LIMITS = {
   /** Taille maximale du JSON de capture (octets). Une page pèse 1–2 Mo : ici, quelques ko. */
   maxBytes: 64_000,
-  maxPriceCandidates: 4,
+  maxPriceCandidates: 5,
   maxTextLength: 300,
   maxTitleLength: 300,
   maxVariantTexts: 30,
   maxSelectedVariantTexts: 5,
+  maxVariantGroups: 12,
+  maxVariantValuesPerGroup: 30,
+  maxVariantSourceKeyLength: 40,
+  maxSelectedVariantAttributes: 12,
   maxImages: 4,
   /** Au-delà, la capture est refusée : une page ouverte il y a une heure n'est pas une preuve. */
   maxAgeMs: 10 * 60_000,
@@ -49,25 +54,66 @@ export const AYWEBS_CAPTURE_LIMITS = {
 } as const;
 
 /** D'où vient un texte de prix — conservé pour l'audit et la corroboration. */
-export type AyWebsCaptureSource = 'json_ld' | 'microdata' | 'meta' | 'dom';
+export type AyWebsCaptureSource = 'json_ld' | 'microdata' | 'meta' | 'dom' | 'dom_accessibility';
 
 export interface AyWebsCapturedPriceCandidate {
   /** Texte de prix TEL QU'AFFICHÉ par la page (« 1 299,00 € », « $6.99 »). */
   text: string;
+  /** `dom_accessibility` est réservé au libellé Amazon screen-reader et ne compte
+   * qu'en paire exacte avec le prix courant visible du buybox Amazon. */
   source: AyWebsCaptureSource;
+}
+
+/** Options publiées par les dimensions twister — jamais des prix ou des stocks. */
+export interface AyWebsCapturedVariantGroup {
+  /** Attribut normalisé par le lecteur (size, color, style…). */
+  attribute: string;
+  /** Clé de dimension publiée par Amazon et requise pour retrouver son contrôle DOM. */
+  sourceKey: string;
+  /** Libellé source (ex. Size, Colour), limité à du texte brut. */
+  label: string;
+  /** Valeurs que la page publie ; chacune doit être relue avant un devis. */
+  values: string[];
+  /** État twister publié pour cette valeur seule (ne prouve pas le stock d'une combinaison). */
+  valueStates?: Array<{ value: string; state: 'AVAILABLE' | 'UNAVAILABLE' | 'SELECTED' | 'UNKNOWN' }>;
+}
+
+export interface AyWebsAmazonEvidence {
+  readerVersion?: number;
+  pageAsin?: string | null;
+  selectedAsin?: string | null;
+  options?: Array<{
+    dimension: string;
+    value: string;
+    asin?: string | null;
+    selected?: boolean;
+    availabilityEvidence?: 'available' | 'unavailable' | 'unknown';
+    source?: string;
+  }>;
+  variants?: Array<{
+    asin: string;
+    selected?: boolean;
+    dimensions?: Array<{ name: string; value: string }>;
+    source?: string;
+  }>;
 }
 
 export interface AyWebsCapturedPage {
   /** Version du contrat : un serveur ancien refuse une capture future. */
   v: number;
+  /** Retained for compatibility with 651cd581 clients. */
+  diagnostics?: string[];
+  amazon?: AyWebsAmazonEvidence | null;
   /** URL de la page réellement affichée dans le WebView. */
   url: string;
   /** `<link rel="canonical">` ou `og:url`, quand la page les publie. */
   canonicalUrl?: string | null;
   /** Titre affiché (og:title / <title> / JSON-LD name) — texte brut. */
   title?: string | null;
+  /** Description publiée par JSON-LD ou les meta tags, jamais synthétisée. */
+  description?: string | null;
   brand?: string | null;
-  /** 1 à 4 lectures de prix indépendantes (JSON-LD, meta, DOM…). */
+  /** 1 à 5 textes de prix lus (JSON-LD, meta, DOM… ; certains sont des paires liées). */
   priceCandidates: AyWebsCapturedPriceCandidate[];
   /** Preuve de devise telle qu'affichée : « € », « EUR », « د.ت », « $ ». */
   currencyText?: string | null;
@@ -81,6 +127,14 @@ export interface AyWebsCapturedPage {
   selectedVariantTexts?: string[];
   /** Options publiées par la page (libellés bruts, bornés). */
   variantTexts?: string[];
+  /**
+   * Groupes d'options structurés lus dans les contrôles produit des boutiques
+   * prises en charge. Ces libellés ne prouvent ni le prix ni le stock ; l'état
+   * de chaque choix doit être recapturé sur la page.
+   */
+  variantGroups?: AyWebsCapturedVariantGroup[];
+  /** Valeurs actuellement sélectionnées et visibles par dimension, si lisibles. */
+  selectedVariantAttributes?: Record<string, string>;
   /** Images trouvées (URLs http/https seulement). */
   images?: string[];
   /** Horodatage ISO de la lecture, dans le navigateur du client. */
@@ -122,6 +176,10 @@ export const AYWEBS_CAPTURE_REJECTIONS = [
    */
   'PRICE_NOT_CORROBORATED',
   'NO_AVAILABILITY_EVIDENCE',
+  // Legacy rejection codes retained for existing API clients.
+  'BUYBOX_ASIN_MISMATCH',
+  'VARIANT_NOT_PROVEN',
+  'OUT_OF_STOCK',
 ] as const;
 
 export type AyWebsCaptureRejection = (typeof AYWEBS_CAPTURE_REJECTIONS)[number];

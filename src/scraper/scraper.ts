@@ -102,7 +102,7 @@ export class SmartLinkScraper {
 
     const store = this.detectStore(cleanUrl);
     const storeName = this.getStoreDisplayName(store, cleanUrl);
-    let currency = this.detectCurrencyFromUrl(cleanUrl);
+    let currency = store === 'zalando' ? '' : this.detectCurrencyFromUrl(cleanUrl);
     let currencyVerified = false;
 
     const urlInfo = this.extractDeepUrlInfo(cleanUrl, store);
@@ -238,7 +238,8 @@ export class SmartLinkScraper {
       lower === 'amazon.co.jp' ||
       lower === 'amazon.com' ||
       lower === 'shein' ||
-      lower === 'temu'
+      lower === 'temu' ||
+      lower === 'zalando'
     );
   }
 
@@ -481,6 +482,7 @@ export class SmartLinkScraper {
     if (store === 'shein') return 'SHEIN';
     if (store === 'temu') return 'TEMU';
     if (store === 'aliexpress') return 'AliExpress';
+    if (store === 'zalando') return 'Zalando';
     return 'Boutique Internationale';
   }
 
