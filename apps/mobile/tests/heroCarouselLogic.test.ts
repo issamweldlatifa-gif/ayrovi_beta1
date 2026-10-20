@@ -4,61 +4,35 @@
 import { describe, expect, it } from 'vitest';
 import {
   backdropLayerRange, CARD_GAP, CARD_MAX_WIDTH, CARD_MIN_WIDTH, carouselGeometry, indexForOffset,
-  isStillAfterDrag, nextIndex, scrollOffsetForIndex, shouldAutoplayAdvance,
+  isStillAfterDrag, nextIndex, shouldAutoplayAdvance,
 } from '../src/features/home/heroCarouselLogic';
 
 describe('carouselGeometry — dimensions selon l’écran', () => {
-  it.each([360, 390, 412, 430])('téléphone %i px : carte = 76 %, alignée sur la marge', (screen) => {
-    const g = carouselGeometry(screen, 16);
+  it.each([360, 390, 412, 430])('téléphone %i px : carte = 76 %, centrée', (screen) => {
+    const g = carouselGeometry(screen);
     expect(g.cardWidth).toBe(Math.round(screen * 0.76));
-    expect(g.sideInset).toBe(16);
+    // Le retrait symétrique centre la carte active : deux voisines visibles.
+    expect(g.sideInset * 2 + g.cardWidth).toBe(screen);
     expect(g.stride).toBe(g.cardWidth + CARD_GAP);
-    // La voisine de droite reste visible.
-    expect(screen - g.sideInset - g.cardWidth).toBeGreaterThan(0);
   });
 
   it('tablette : la carte est plafonnée', () => {
-    const g = carouselGeometry(1024, 24);
+    const g = carouselGeometry(1024);
     expect(g.cardWidth).toBe(CARD_MAX_WIDTH);
-    expect(g.sideInset).toBe(24);
+    expect(g.sideInset).toBeCloseTo((1024 - CARD_MAX_WIDTH) / 2);
   });
 
-  it('très petit écran : la carte tient entre les deux marges', () => {
-    const g = carouselGeometry(200, 16);
-    expect(g.cardWidth).toBeLessThanOrEqual(200 - 2 * 16);
+  it('très petit écran : la carte ne dépasse jamais l’écran', () => {
+    const g = carouselGeometry(200);
+    expect(g.cardWidth).toBeLessThanOrEqual(200);
     expect(g.cardWidth).toBeGreaterThanOrEqual(0);
+    expect(g.sideInset).toBeGreaterThanOrEqual(0);
     expect(CARD_MIN_WIDTH).toBeGreaterThan(200); // le plancher seul ne suffirait pas ici
   });
 
   it('largeur de carte toujours entière (pas de flou de pixel)', () => {
-    expect(Number.isInteger(carouselGeometry(390, 16).cardWidth)).toBe(true);
+    expect(Number.isInteger(carouselGeometry(390).cardWidth)).toBe(true);
   });
-
-  it('sans marge fournie : départ à 0', () => {
-    expect(carouselGeometry(390).sideInset).toBe(0);
-  });
-});
-
-describe('alignement sur les bords — début ET fin', () => {
-  // Décalage maximal du défilement = contenu − écran. Le contenu = marge + cartes + espaces + marge.
-  const contentWidth = (count: number, g: ReturnType<typeof carouselGeometry>) =>
-    2 * g.sideInset + count * g.cardWidth + (count - 1) * CARD_GAP;
-
-  it.each([[360, 2], [360, 4], [390, 3], [430, 6]])(
-    'écran %i, %i cartes : la 1re commence à la marge, la dernière finit à la marge droite',
-    (screen, count) => {
-      const inset = 16;
-      const g = carouselGeometry(screen, inset);
-      const maxScroll = contentWidth(count, g) - screen;
-      expect(maxScroll).toBeGreaterThan(0);
-      // Début : à défilement 0, la 1re carte commence à la marge.
-      expect(g.sideInset).toBe(inset);
-      // Fin : au défilement maximal, la dernière carte finit à screen − marge.
-      const lastLeftInContent = g.sideInset + (count - 1) * g.stride;
-      const lastRightOnScreen = lastLeftInContent + g.cardWidth - maxScroll;
-      expect(lastRightOnScreen).toBe(screen - inset);
-    },
-  );
 });
 
 describe('indexForOffset — la carte centrée donne l’index', () => {
@@ -126,13 +100,19 @@ describe('isStillAfterDrag — libérer la pause sans élan', () => {
   });
 });
 
-describe('voisine — aperçu de la carte suivante à droite (plus de symétrie)', () => {
-  it.each([320, 360, 390, 412, 430, 768])('écran %i px : la carte suivante dépasse à droite', (screen) => {
-    const { cardWidth, sideInset } = carouselGeometry(screen, 16);
+describe('voisines — même largeur de peek des deux côtés', () => {
+  it.each([320, 360, 390, 412, 430, 768])('écran %i px : bords visibles identiques', (screen) => {
+    const { cardWidth, sideInset } = carouselGeometry(screen);
+    // Positions réelles (repère de la liste, retrait inclus) :
+    const activeLeft = sideInset;
     const activeRight = sideInset + cardWidth;
+    const leftNeighbourRight = activeLeft - CARD_GAP;
     const rightNeighbourLeft = activeRight + CARD_GAP;
-    // Ce qui dépasse de la voisine de droite dans l'écran :
-    expect(screen - rightNeighbourLeft).toBeGreaterThan(0);
+    // Ce qui dépasse de chaque voisine dans l'écran :
+    const leftPeek = leftNeighbourRight;
+    const rightPeek = screen - rightNeighbourLeft;
+    expect(leftPeek).toBeGreaterThan(0);
+    expect(rightPeek).toBe(leftPeek);
   });
 });
 
@@ -148,17 +128,3 @@ describe('backdropLayerRange — fondu enchaîné des fonds, jamais une plage à
     expect(backdropLayerRange(3)).toEqual({ inputRange: [2, 3], outputRange: [0, 1] });
   });
 });
-
-describe('scrollOffsetForIndex — défilement automatique', () => {
-  it('LTR : un pas par carte, positif', () => {
-    expect(scrollOffsetForIndex(0, 300, false)).toBe(0);
-    expect(scrollOffsetForIndex(2, 300, false)).toBe(600);
-  });
-
-  it('RTL (liste inversée) : décalage négatif, relu correctement par indexForOffset', () => {
-    const offset = scrollOffsetForIndex(2, 300, true);
-    expect(offset).toBe(-600);
-    expect(indexForOffset(offset, 300, 4)).toBe(2);
-  });
-});
-

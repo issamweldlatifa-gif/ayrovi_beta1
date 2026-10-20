@@ -127,10 +127,7 @@ export interface AyWebsResolveResult {
   analysis: AyWebsPageAnalysis;
   pricing: PriceBreakdown | null;
   evidenceHash: string;
-  /** Champs BLOQUANTS (titre, prix, devise, vérifications). La photo n'en fait pas partie. */
   missing: string[];
-  /** Tous les champs non lus, photo incluse — pour le journal et le diagnostic. */
-  missingFields: string[];
   resolvedAt: string;
   /** Lecture servie depuis le cache de résolution (âge réel fourni). */
   fromCache: boolean;
@@ -280,12 +277,6 @@ export async function resolveAyWebsProduct(
       sessionId: input.sessionId || null,
       result: 'failure',
       errorCode: captureValidation.rejection,
-      details: {
-        client_codes: (captureValidation.notes || [])
-          .filter((note) => note.startsWith('client:'))
-          .map((note) => note.slice('client:'.length))
-          .join(',') || null,
-      },
     });
   }
 
@@ -297,10 +288,7 @@ export async function resolveAyWebsProduct(
   /* Mémo « fiche illisible » : une lecture SANS prix échoue en 13–17 s (sondes
      vouées à l'échec). Le mémo, séparé et à TTL court (90 s), évite de repayer
      ce coût à chaque réessai — sans jamais se faire passer pour un succès. */
-  /* Ancienne mémoire d'échec : jamais servie à une demande `refresh` (Add au
-     clic) ni à une lecture avec page fournie (19/10/2026). Sinon une lecture
-     sans prix, mémorisée pendant 90 s, revenait en 0.00 malgré la relecture. */
-  const failedCached = cached || !cacheAllowed ? null : readAyWebsResolveFailureCache(deps.scraper, cacheKey);
+  const failedCached = cached ? null : readAyWebsResolveFailureCache(deps.scraper, cacheKey);
 
   let sourceProduct: AyWebsSourceProduct;
   let fromCache = false;
@@ -391,11 +379,7 @@ export async function resolveAyWebsProduct(
           recordProbeSuccess(url.toString());
           return read;
         } catch (error) {
-          /* Un lien que la boutique ne sert pas (autre boutique, page non produit)
-             est une erreur de SAISIE, pas une panne de l'hôte. Elle ne compte donc
-             PAS contre l'hôte : sinon trois mauvais liens mettaient TOUTE la boutique
-             au repos 10 min, et les vrais produits répondaient « refuse temporairement ». */
-          if (!(error instanceof AyWebsCaptureError)) recordProbeFailure(url.toString());
+          recordProbeFailure(url.toString());
           if (error instanceof AyWebsCaptureError) {
             throw new AyWebsDomainError(error.code === 'PRODUCT_PAGE_REQUIRED' ? 'PRODUCT_PAGE_REQUIRED' : 'STORE_MISMATCH', {
               userMessage: error.message,
@@ -410,8 +394,7 @@ export async function resolveAyWebsProduct(
     writeAyWebsResolveCache(deps.scraper, cacheKey, sourceProduct);
   }
 
-  const missingFields = missingProductFields(sourceProduct);
-  const missing = blockingMissingFields(missingFields);
+  const missing = missingProductFields(sourceProduct);
   /* Une lecture fraîche qui n'a pas su lire de prix est mémorisée 90 s : les
      réessais suivants répondent « prix non lu » en quelques ms au lieu de
      relancer 13–17 s de sondes. Le succès, lui, passe par le cache normal. */
@@ -572,16 +555,9 @@ export async function resolveAyWebsProduct(
       availability: availability.state,
       purchaseMode: product.purchaseMode,
       missing,
-      missing_fields: missingFields,
     },
   });
 
-  /* Diagnostic de lecture (19/10/2026) : quels champs manquent et pourquoi. Codes et
-     nombres seulement — la capture refusée et ses codes client, jamais la page. */
-  const clientCodes = (captureValidation?.notes || [])
-    .filter((note) => note.startsWith('client:'))
-    .map((note) => note.slice('client:'.length))
-    .join(',');
   logAyWebsOperation({
     operation: 'product_resolve_total',
     storeId: store.id,
@@ -590,22 +566,6 @@ export async function resolveAyWebsProduct(
     durationMs: Date.now() - startedAt,
     result: missing.length ? 'failure' : 'success',
     errorCode: missing.length ? 'CAPTURE_INCOMPLETE' : null,
-    missingFields,
-    details: {
-      blocking_missing: missing.join(',') || null,
-      capture_used: captureUsed,
-      capture_rejection: captureValidation?.rejection ?? null,
-      capture_price_source: captureValidation?.priceSource ?? null,
-      capture_corroborated: captureValidation?.corroborated ?? null,
-      capture_client_codes: clientCodes || null,
-      title_read: Boolean(sourceProduct.title?.trim()),
-      price_read: Number(sourceProduct.price) > 0,
-      currency_read: /^[A-Z]{3}$/.test(String(sourceProduct.currency || '')),
-      price_verified: sourceProduct.scrapedProduct?.priceVerified === true,
-      currency_verified: sourceProduct.scrapedProduct?.currencyVerified === true,
-      image_read: Boolean(sourceProduct.images?.length),
-      cache_kind: cacheKind,
-    },
   });
 
   /* Devis signé — émis ici, au seul endroit où le serveur connaît à la fois le
@@ -665,7 +625,6 @@ export async function resolveAyWebsProduct(
     pricing,
     evidenceHash,
     missing,
-    missingFields,
     resolvedAt: sourceProduct.capturedAt,
     fromCache,
     cacheAgeMs,
@@ -755,13 +714,6 @@ async function verifyWebviewCaptureInBackground(input: {
 }
 
 /** Champs normalisés manquants : la liste est renvoyée au client, jamais devinée. */
-/** La photo ne bloque jamais l'ajout : elle n'est pas une preuve de prix (19/10/2026). */
-export const AYWEBS_OPTIONAL_FIELDS: readonly string[] = ['image'];
-
-export function blockingMissingFields(fields: readonly string[]): string[] {
-  return fields.filter((field) => !AYWEBS_OPTIONAL_FIELDS.includes(field));
-}
-
 export function missingProductFields(product: AyWebsSourceProduct): string[] {
   return [
     !product.title?.trim() ? 'title' : '',

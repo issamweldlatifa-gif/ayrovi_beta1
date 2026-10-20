@@ -67,8 +67,6 @@ interface AyWebsSymbolCurrencyRule {
   stores: readonly string[];
   /** Domaines (suffixes) où le symbole NE vaut PAS ce code. */
   hostsExcluded?: readonly string[];
-  /** Domaines (suffixes) où la règle ne s'applique QU'ici (ex. `$` = CAD sur amazon.ca). */
-  hostsOnly?: readonly string[];
 }
 
 const AYWEBS_SYMBOL_CURRENCIES: readonly AyWebsSymbolCurrencyRule[] = [
@@ -85,14 +83,6 @@ const AYWEBS_SYMBOL_CURRENCIES: readonly AyWebsSymbolCurrencyRule[] = [
     stores: ['amazon', 'shein', 'temu', 'aliexpress'],
     hostsExcluded: ['amazon.ca', 'amazon.com.au', 'amazon.sg', 'amazon.com.mx', 'amazon.com.br'],
   },
-  /* Devises locales des domaines Amazon non-USD (19/10/2026). Chaque règle ne vaut
-     que pour SON domaine et ne reconnaît que le symbole NON ambigu : un `$` nu reste
-     ambigu (CAD, AUD, MXN…) et n'est prouvé que par un code ISO publié (golden amazon.ca). */
-  { iso: 'CAD', pattern: /\bCA\$|C\$/, stores: ['amazon'], hostsOnly: ['amazon.ca'] },
-  { iso: 'AUD', pattern: /\bAU\$|A\$/, stores: ['amazon'], hostsOnly: ['amazon.com.au'] },
-  { iso: 'SGD', pattern: /\bSG\$|S\$/, stores: ['amazon'], hostsOnly: ['amazon.sg'] },
-  { iso: 'MXN', pattern: /\bMX\$/, stores: ['amazon'], hostsOnly: ['amazon.com.mx'] },
-  { iso: 'BRL', pattern: /R\$/, stores: ['amazon'], hostsOnly: ['amazon.com.br'] },
 ];
 
 function hostMatchesAny(host: string, suffixes: readonly string[] | undefined): boolean {
@@ -248,58 +238,6 @@ function fingerprintOf(parts: Record<string, unknown>): string {
   return createHash('sha256').update(JSON.stringify(parts)).digest('hex');
 }
 
-/** Texte de disponibilité qui déclare la fiche en rupture (EN/FR). Lu seulement depuis l'élément de disponibilité. */
-const OUT_OF_STOCK_TEXT = /currently unavailable|temporarily out of stock|out of stock|we don'?t know when or if this item will be back|actuellement indisponible|en rupture de stock|épuisé/i;
-function isOutOfStockText(value: unknown): boolean {
-  return typeof value === 'string' && OUT_OF_STOCK_TEXT.test(value);
-}
-
-/** Drapeau du contrat de variantes Amazon (désactivé par défaut : activation après test sur appareil). */
-export function variantContractEnabled(): boolean {
-  return process.env.AYWEBS_AMAZON_VARIANT_CONTRACT === '1';
-}
-
-function isAmazonHost(requestUrl: string): boolean {
-  const host = hostOf(requestUrl) || '';
-  return /(^|\.)amazon\.[a-z.]+$/.test(host);
-}
-
-const AMAZON_ASIN_SHAPE = /^[A-Z0-9]{10}$/;
-
-/**
- * Raison de refus du contrat de variantes, ou null si l'option choisie est prouvée.
- * - Fiche simple (aucune alternative) : rien à prouver.
- * - Fiche à variantes : l'ASIN choisi doit exister dans les variantes, être l'ASIN de la
- *   fiche ouverte, et avoir une disponibilité PROUVÉE (évidence de l'option ou texte de
- *   disponibilité en stock). « Présence d'un nom d'option » n'est jamais une preuve de stock.
- */
-function amazonVariantRefusal(payload: AyWebsCapturedPage): string | null {
-  const amazon = payload.amazon;
-  const variants = Array.isArray(amazon?.variants)
-    ? amazon!.variants!.filter((v) => v && typeof v.asin === 'string' && AMAZON_ASIN_SHAPE.test(v.asin))
-    : [];
-  const options = Array.isArray(amazon?.options) ? amazon!.options! : [];
-  const pageAsin = typeof amazon?.pageAsin === 'string' ? amazon.pageAsin : null;
-  const selectedAsin = typeof amazon?.selectedAsin === 'string' ? amazon.selectedAsin : null;
-
-  if (variants.length <= 1 && options.length <= 1) {
-    if (variants.length === 1 && pageAsin && variants[0].asin !== pageAsin) return 'page_variant_mismatch';
-    return null;
-  }
-  if (!selectedAsin) return 'selected_unproven';
-  if (!variants.some((v) => v.asin === selectedAsin)) return 'selected_not_in_variants';
-  if (pageAsin !== selectedAsin) return 'selected_not_page';
-
-  // L'option CHOISIE est celle dont l'ASIN est l'ASIN choisi (une fiche peut avoir couleur ET taille).
-  const selectedOption = options.find((o) => o && o.selected === true && o.asin === selectedAsin)
-    || options.find((o) => o && o.selected === true);
-  if (!selectedOption) return 'selected_option_unproven';
-  if (selectedOption.availabilityEvidence === 'unavailable') return 'selected_unavailable';
-  const pageSaysInStock = /in stock|en stock|disponible|auf lager/i.test(String(payload.availabilityText || ''));
-  if (selectedOption.availabilityEvidence !== 'available' && !pageSaysInStock) return 'selected_availability_unproven';
-  return null;
-}
-
 function rejected(rejection: string, fingerprint = '', notes: string[] = []): AyWebsCaptureValidation {
   captureStats.rejected += 1;
   bump(captureStats.rejections, rejection);
@@ -363,28 +301,10 @@ export function validateAyWebsCapturedPage(
   if (now - capturedAtMs > AYWEBS_CAPTURE_LIMITS.maxAgeMs) return rejected('STALE_CAPTURE');
   if (capturedAtMs - now > AYWEBS_CAPTURE_LIMITS.maxClockSkewMs) return rejected('FUTURE_CAPTURE');
 
-  /* ── VARIANTE AMAZON (contrat Phase 1 — derrière AYWEBS_AMAZON_VARIANT_CONTRACT=1) ──
-     Quand la fiche a plusieurs variantes, le prix de la zone d'achat ne vaut que pour
-     l'option CHOISIE. On la refuse si elle n'est pas prouvée. */
-  if (variantContractEnabled() && isAmazonHost(requestUrl)) {
-    const variantRefusal = amazonVariantRefusal(payload);
-    if (variantRefusal) return rejected('VARIANT_NOT_PROVEN', '', [`variant:${variantRefusal}`]);
-  }
-
   /* ── PRIX ────────────────────────────────────────────────────────────────
      Chaque candidat est jugé par le verdict de la Phase 0. Le classement suit
      la fiabilité de la source ; à fiabilité égale, l'ordre d'arrivée. */
   const notes: string[] = [];
-  /* Diagnostics du lecteur : codes courts seulement (pas de texte de page). */
-  const clientDiagnostics = Array.isArray(payload.diagnostics)
-    ? payload.diagnostics
-      .slice(0, 12)
-      .map((entry) => collapse(entry, 60))
-      .filter((entry) => /^[a-z0-9_:.,=-]+$/i.test(entry))
-    : [];
-  clientDiagnostics.forEach((code) => notes.push(`client:${code}`));
-  const storeForPrice = detectAyWebsStore(requestUrl);
-  const isAmazon = storeForPrice?.id === 'amazon';
   const candidates: Array<{ text: string; source: AyWebsCaptureSource; value: number; rank: number; index: number; hints: string[] }> = [];
   const rawCandidates = Array.isArray(payload.priceCandidates) ? payload.priceCandidates.slice(0, AYWEBS_CAPTURE_LIMITS.maxPriceCandidates) : [];
   rawCandidates.forEach((candidate: AyWebsCapturedPriceCandidate, index: number) => {
@@ -404,22 +324,9 @@ export function validateAyWebsCapturedPage(
   });
 
   if (!candidates.length) {
-    // La zone d'achat a tranché avant nous : deux prix (AMBIGUOUS) ou un autre article (ASIN).
-    if (clientDiagnostics.includes('price:buybox_asin_mismatch')) return rejected('BUYBOX_ASIN_MISMATCH', '', notes);
-    if (clientDiagnostics.some((code) => code.startsWith('price:ambiguous_buybox'))) return rejected('AMBIGUOUS_PRICE', '', notes);
     // Distinguer « aucun texte » de « textes tous refusés » : le support doit
     // savoir si la page n'a rien affiché ou si quelque chose a été écarté.
-    // Page en rupture : l'élément de disponibilité le dit, et aucun prix n'est publié.
-    // On garde le refus (jamais de panier) mais la cause réelle est OUT_OF_STOCK, pas « pas de prix ».
-    if (!rawCandidates.length && isOutOfStockText(payload.availabilityText)) return rejected('OUT_OF_STOCK', '', notes);
     return rejected(rawCandidates.length ? 'PRICE_REJECTED' : 'NO_PRICE_TEXT', '', notes);
-  }
-
-  /* Amazon : un prix publié (JSON-LD) qui ne concorde pas avec la zone d'achat
-     est un CONFLIT, pas une source qui fait foi. On refuse plutôt que de choisir. */
-  if (isAmazon && new Set(candidates.map((candidate) => candidate.value.toFixed(2))).size > 1) {
-    notes.push('amazon_price_sources_disagree');
-    return rejected('AMBIGUOUS_PRICE', '', notes);
   }
 
   candidates.sort((a, b) => (a.rank - b.rank) || (a.index - b.index));
@@ -483,7 +390,6 @@ export function validateAyWebsCapturedPage(
       for (const entry of AYWEBS_SYMBOL_CURRENCIES) {
         if (!entry.stores.includes(store.id)) continue;
         if (!entry.pattern.test(currencyTexts)) continue;
-        if (entry.hostsOnly && !hostMatchesAny(requestHost, entry.hostsOnly)) continue;
         if (hostMatchesAny(requestHost, entry.hostsExcluded)) {
           notes.push(`currency_symbol_host_ambiguous:${entry.iso}`);
           continue;

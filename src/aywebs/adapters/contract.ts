@@ -151,7 +151,7 @@ export const AYWEBS_ADAPTER_CONTRACT_VERSION = 2;
 
 /** Type de page déductible de l'URL seule, partagé par tous les adaptateurs. */
 export const AYWEBS_URL_PAGE_HINTS: ReadonlyArray<{ pattern: RegExp; pageType: AyWebsPageType; action: AyWebsPageClassification['customerActionRequired'] }> = [
-  { pattern: /(captcha|recaptcha|hcaptcha|challenge|robot|areyouhuman|verify\/human|\/checkpoint\/)/i, pageType: 'CAPTCHA', action: 'CAPTCHA' },
+  { pattern: /(captcha|recaptcha|hcaptcha|challenge|robot|areyouhuman|verify\/human)/i, pageType: 'CAPTCHA', action: 'CAPTCHA' },
   { pattern: /(signin|sign-in|login|log-in|auth|ap\/signin|account\/login|sso)/i, pageType: 'LOGIN', action: 'LOGIN' },
   { pattern: /(checkout|basket|cart|panier|order\/complete|payment|gc\/checkout)/i, pageType: 'CHECKOUT', action: 'NONE' },
 ];

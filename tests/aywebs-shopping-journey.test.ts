@@ -351,19 +351,6 @@ describe('AYWEBs — panier propriétaire (§16, §17)', () => {
     expect(ayWebsEvidenceByHash(h.db, added.item.evidenceHash)?.cartItemId).toBe(added.item.id);
   });
 
-  test('un produit MANUAL_REVIEW (boutique sans achat automatisé) s’ajoute au panier — la revue humaine suit', async () => {
-    /* Contrat relié à la carte produit (18/10/2026) : « Add to Cart » est offert
-       pour tous les modes. Amazon = MANUAL_REVIEW ; le serveur ne bloque pas
-       l'ajout sur le mode d'achat — seuls prix, stock et capture comptent. */
-    const h = harness();
-    const capabilities = await request(h.app).get('/api/v1/aywebs/stores/amazon/capabilities').set(ANONYMOUS);
-    expect(capabilities.body.data.purchase_mode).toBe('MANUAL_REVIEW');
-
-    const added = await addToCart(h, { quantity: 1 });
-    expect(added.item.status).toBe('ACTIVE');
-    expect(added.item.checkoutReady).toBe(true);
-  });
-
   test('même produit + même variante = quantité incrémentée, pas une ligne dupliquée', async () => {
     const h = harness();
     const first = await addToCart(h, { quantity: 1 });

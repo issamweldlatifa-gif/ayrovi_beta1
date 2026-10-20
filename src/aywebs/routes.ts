@@ -20,7 +20,6 @@ import {
   type AyWebsStoreDefinition,
 } from '../../shared/aywebsStores';
 import { AYWEBS_FUNNEL_EVENTS } from '../../shared/aywebsTypes';
-import { AYWEBS_CATALOG_STORES } from '../../shared/aywebsStoreCatalog';
 import { AYWEBS_ADAPTER_DESCRIPTORS } from './adapters/registry';
 import { AyWebsCaptureError, type AyWebsSourceProduct } from './adapters/contract';
 import { AyWebsDomainError } from './errors';
@@ -231,7 +230,6 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
     home_url: store.homeUrl,
     search_url_template: store.searchUrlTemplate,
     categories: [...store.categories],
-    description: store.description ?? '',
     popular: store.popular,
     phase: store.phase,
     /** Mode d'achat réel — jamais « supported » par simple présence au registre. */
@@ -246,8 +244,7 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
 
   router.get('/stores', handle((req, res) => {
     const flags = ctx.flags;
-    /* Le catalogue (boutiques non ouvertes) s'affiche aussi : enabled=false côté client. */
-    const stores = [...AYWEBS_STORES.filter((store) => store.enabled), ...AYWEBS_CATALOG_STORES].map(publicStore);
+    const stores = AYWEBS_STORES.filter((store) => store.enabled).map(publicStore);
     res.json({
       success: true,
       data: stores,
@@ -620,7 +617,6 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
         /** SWR : fiche servie périmée (une relecture est relancée derrière). */
         served_stale: result.servedStale,
         missing: result.missing,
-        missing_fields: result.missingFields,
         /**
          * Phase 2.1 — issue de la capture WebView : `used`, `fingerprint`,
          * `price_source`, `corroborated`, et `rejection` quand la capture a été
@@ -771,9 +767,6 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
           code: failureCode,
           price_rejection: priceRejection,
           missing: result.missing,
-          missing_fields: result.missingFields,
-          /* Motif de refus de la capture WebView (null si aucune capture n'a été envoyée). */
-          capture_rejection: result.capture?.rejection ?? null,
           product: result.scrapedProduct,
           error: 'Nous n’avons pas pu lire toutes les informations du produit.',
           fallback: ['retry', 'product_link', 'screenshot'],

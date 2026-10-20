@@ -34,11 +34,8 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     v: 1, url: '', canonicalUrl: null, title: null, brand: null,
     priceCandidates: [], currencyText: null, availabilityText: null,
     addToCartText: null, conditionText: null, selectedVariantTexts: [], variantTexts: [],
-    images: [], capturedAt: null, pageLang: null, amazon: null, diagnostics: []
+    images: [], capturedAt: null, pageLang: null
   };
-
-  /* Diagnostic BORNÉ : code court (ex. « price:buybox_asin_mismatch »), jamais de texte de page. */
-  function diag(code) { if (out.diagnostics.length < 16) out.diagnostics.push(code); }
 
   function text(value) {
     if (value === null || value === undefined) return '';
@@ -94,281 +91,6 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
       }
     } catch (e) {}
   }
-  var AMAZON_EVIDENCE_LIMITS = { options: 60, variants: 40, dimensions: 6, label: 60, scripts: 80, scriptChars: 500000 };
-  var AMAZON_ASIN_PATTERN = /^[A-Z0-9]{10}$/;
-  function amazonValidAsin(value) {
-    var candidate = text(value).toUpperCase();
-    return AMAZON_ASIN_PATTERN.test(candidate) ? candidate : '';
-  }
-  function amazonDimensionName(value, fallback) {
-    var name = text(value).toLowerCase();
-    name = name.replace(/^variation_/, '').replace(/_name$/, '').replace(/[_-]+/g, ' ');
-    if (/color|colour/.test(name)) return 'color';
-    if (/size|taille/.test(name)) return 'size';
-    if (/style|model/.test(name)) return 'style';
-    return name || fallback || 'option';
-  }
-  function amazonReadBalancedJson(source, start) {
-    var first = source.charAt(start);
-    if (first !== '{' && first !== '[') return null;
-    var stack = [];
-    var quote = '';
-    var escaped = false;
-    for (var i = start; i < source.length; i++) {
-      var ch = source.charAt(i);
-      if (quote) {
-        if (escaped) escaped = false;
-        else if (ch === '\\') escaped = true;
-        else if (ch === quote) quote = '';
-        continue;
-      }
-      if (ch === '"' || ch === "'") { quote = ch; continue; }
-      if (ch === '{' || ch === '[') stack.push(ch);
-      else if (ch === '}' || ch === ']') {
-        if (!stack.length) return null;
-        stack.pop();
-        if (!stack.length) {
-          try { return JSON.parse(source.slice(start, i + 1)); } catch (e) { return null; }
-        }
-      }
-    }
-    return null;
-  }
-  function amazonReadJsonValue(source, key) {
-    if (!source || source.indexOf(key) < 0) return null;
-    var markers = ['"' + key + '"', "'" + key + "'", key];
-    var searchFrom = 0;
-    for (var attempt = 0; attempt < 24; attempt++) {
-      var at = -1;
-      var marker = '';
-      for (var m = 0; m < markers.length; m++) {
-        var found = source.indexOf(markers[m], searchFrom);
-        if (found >= 0 && (at < 0 || found < at)) { at = found; marker = markers[m]; }
-      }
-      if (at < 0) return null;
-      var after = at + marker.length;
-      if (marker === key) {
-        var beforeChar = at > 0 ? source.charAt(at - 1) : '';
-        var afterChar = source.charAt(after);
-        if (/[A-Za-z0-9_$]/.test(beforeChar) || /[A-Za-z0-9_$]/.test(afterChar)) {
-          searchFrom = after;
-          continue;
-        }
-      }
-      while (after < source.length && /\s/.test(source.charAt(after))) after++;
-      var separator = source.charAt(after);
-      if (separator === ':' || separator === '=') {
-        after++;
-        while (after < source.length && /\s/.test(source.charAt(after))) after++;
-        var parsed = amazonReadBalancedJson(source, after);
-        if (parsed && typeof parsed === 'object') return parsed;
-      }
-      searchFrom = at + marker.length;
-    }
-    return null;
-  }
-  /* Un index (nombre, ou texte de chiffres dans une table d'index) n'est JAMAIS un nom d'option :
-     il ne devient une valeur que s'il pointe vers une entrée texte de « variationValues » pour la
-     MÊME dimension. Hors de cette table, il est écarté. */
-  function amazonIndexedValue(variationValues, key, index) {
-    if (!variationValues || typeof index !== 'number' || index % 1 !== 0 || index < 0) return '';
-    var list = variationValues[key];
-    if (Object.prototype.toString.call(list) !== '[object Array]' || index >= list.length) return '';
-    return typeof list[index] === 'string' ? text(list[index]) : '';
-  }
-  function amazonValueFrom(value, key, variationValues, indexSource) {
-    var isIndex = typeof value === 'number' || (indexSource && typeof value === 'string' && /^\d+$/.test(value));
-    if (isIndex) return amazonIndexedValue(variationValues, key, Number(value));
-    return typeof value === 'string' ? text(value) : '';
-  }
-  function amazonNormalizeDimensions(raw, dimensionKeys, variationValues, indexSource) {
-    var dimensions = [];
-    if (Object.prototype.toString.call(raw) === '[object Array]') {
-      for (var i = 0; i < raw.length && dimensions.length < AMAZON_EVIDENCE_LIMITS.dimensions; i++) {
-        var rawKey = dimensionKeys[i] || ('dimension_' + (i + 1));
-        var label = amazonValueFrom(raw[i], rawKey, variationValues, indexSource);
-        if (!label || label.length > AMAZON_EVIDENCE_LIMITS.label) continue;
-        dimensions.push({ name: amazonDimensionName(rawKey, 'dimension_' + (i + 1)), value: label });
-      }
-    } else if (raw && typeof raw === 'object') {
-      for (var key in raw) {
-        if (!Object.prototype.hasOwnProperty.call(raw, key) || dimensions.length >= AMAZON_EVIDENCE_LIMITS.dimensions) continue;
-        var objectLabel = amazonValueFrom(raw[key], key, variationValues, indexSource);
-        if (!objectLabel || objectLabel.length > AMAZON_EVIDENCE_LIMITS.label) continue;
-        dimensions.push({ name: amazonDimensionName(key, 'dimension_' + (dimensions.length + 1)), value: objectLabel });
-      }
-    }
-    return dimensions;
-  }
-  function collectAmazonEvidence() {
-    var result = { readerVersion: 1, pageAsin: AMAZON_ASIN || null, selectedAsin: null, options: [], variants: [] };
-    if (!AMAZON_STRICT) return result;
-    var variationValues = null;
-    var dimensionKeys = [];
-    var dimensionNames = [];
-    var scripts = [];
-    try { scripts = document.querySelectorAll('script:not([src])'); } catch (e) { scripts = []; }
-    for (var s = 0; s < scripts.length && s < AMAZON_EVIDENCE_LIMITS.scripts; s++) {
-      var source = scripts[s].textContent || '';
-      if (!source || source.length > AMAZON_EVIDENCE_LIMITS.scriptChars) continue;
-      if (!variationValues) variationValues = amazonReadJsonValue(source, 'variationValues');
-      if (variationValues && !dimensionNames.length) {
-        for (var dimensionKey in variationValues) {
-          if (!Object.prototype.hasOwnProperty.call(variationValues, dimensionKey) || dimensionNames.length >= AMAZON_EVIDENCE_LIMITS.dimensions) continue;
-          dimensionKeys.push(dimensionKey);
-          dimensionNames.push(amazonDimensionName(dimensionKey, 'dimension_' + (dimensionNames.length + 1)));
-        }
-      }
-      var displayMap = amazonReadJsonValue(source, 'dimensionValuesDisplayData');
-      if (displayMap && typeof displayMap === 'object') {
-        for (var displayAsin in displayMap) {
-          if (!Object.prototype.hasOwnProperty.call(displayMap, displayAsin) || result.variants.length >= AMAZON_EVIDENCE_LIMITS.variants) continue;
-          var validDisplayAsin = amazonValidAsin(displayAsin);
-          var displayDimensions = amazonNormalizeDimensions(displayMap[displayAsin], dimensionKeys, variationValues, false);
-          if (validDisplayAsin && displayDimensions.length) amazonMergeVariant(result, validDisplayAsin, displayDimensions, 'dimensionValuesDisplayData');
-        }
-      }
-      var asinMap = amazonReadJsonValue(source, 'asinVariationValues');
-      if (asinMap && typeof asinMap === 'object') {
-        for (var mappedAsin in asinMap) {
-          if (!Object.prototype.hasOwnProperty.call(asinMap, mappedAsin) || result.variants.length >= AMAZON_EVIDENCE_LIMITS.variants) continue;
-          var validMappedAsin = amazonValidAsin(mappedAsin);
-          var mappedDimensions = amazonNormalizeDimensions(asinMap[mappedAsin], dimensionKeys, variationValues, true);
-          if (validMappedAsin && mappedDimensions.length) amazonMergeVariant(result, validMappedAsin, mappedDimensions, 'asinVariationValues');
-        }
-      }
-    }
-    var blocks = [];
-    try { blocks = document.querySelectorAll('#twister [id^="variation_"], #twister [id^="inline-twister-row-"], [id^="variation_"][id$="_name"]'); } catch (e) { blocks = []; }
-    var selectedAsins = [];
-    for (var b = 0; b < blocks.length && b < 20; b++) {
-      var block = blocks[b];
-      var blockId = String(block.id || '');
-      var dimension = amazonDimensionName(blockId, 'option_' + (b + 1));
-      if (blockId.indexOf('inline-twister-row-') === 0) dimension = amazonDimensionName(blockId.replace('inline-twister-row-', ''), 'option_' + (b + 1));
-      var items = [];
-      try { items = block.querySelectorAll('li, select option, [role="radio"], [role="option"], [data-asin]'); } catch (e) { items = []; }
-      for (var o = 0; o < items.length && result.options.length < AMAZON_EVIDENCE_LIMITS.options; o++) {
-        var item = items[o];
-        /* data-value purement numérique = index de swatch : jamais un nom d'option. */
-        var dataValue = text(item.getAttribute && item.getAttribute('data-value'));
-        if (/^\d+$/.test(dataValue)) dataValue = '';
-        var label = text(dataValue || (item.getAttribute && (item.getAttribute('title') || item.getAttribute('aria-label'))));
-        if (!label) {
-          try { var imageLabel = item.querySelector('img[alt]'); label = text(imageLabel && imageLabel.getAttribute('alt')); } catch (e) {}
-        }
-        if (!label) label = text(item.textContent);
-        label = text(label.replace(/^click to select\s*/i, ''));
-        if (!label || label.length > AMAZON_EVIDENCE_LIMITS.label || NOT_A_CHOICE.test(label)) continue;
-        var optionAsin = amazonAsinFromNode(item);
-        var selected = amazonNodeIsSelected(item);
-        /* Ancien tracé : le swatch CHOISI porte data-dp-url vide = la fiche ouverte elle-même. */
-        if (selected && !optionAsin && AMAZON_ASIN && item.hasAttribute && item.hasAttribute('data-dp-url')) optionAsin = AMAZON_ASIN;
-        var state = amazonNodeAvailability(item);
-        amazonAddOption(result, dimension, label, optionAsin, selected, state, 'twister_dom');
-        if (selected && optionAsin) pushUnique(selectedAsins, optionAsin, 10, 10);
-      }
-    }
-    var selectedField = null;
-    try { selectedField = document.querySelector('#ASIN, input[name="ASIN"]'); } catch (e) {}
-    var fieldAsin = amazonValidAsin(selectedField && (selectedField.value || selectedField.getAttribute('value')));
-    if (fieldAsin) result.selectedAsin = fieldAsin;
-    else if (selectedAsins.length === 1) result.selectedAsin = selectedAsins[0];
-    for (var v = 0; v < result.variants.length; v++) {
-      result.variants[v].selected = !!result.selectedAsin && result.variants[v].asin === result.selectedAsin;
-    }
-    return result;
-  }
-  function amazonMergeVariant(result, asin, dimensions, source) {
-    if (!asin || !dimensions || !dimensions.length) return;
-    var variant = null;
-    for (var i = 0; i < result.variants.length; i++) { if (result.variants[i].asin === asin) { variant = result.variants[i]; break; } }
-    if (!variant) {
-      if (result.variants.length >= AMAZON_EVIDENCE_LIMITS.variants) return;
-      variant = { asin: asin, dimensions: [], source: source, selected: false };
-      result.variants.push(variant);
-    }
-    for (var d = 0; d < dimensions.length && variant.dimensions.length < AMAZON_EVIDENCE_LIMITS.dimensions; d++) {
-      var candidate = dimensions[d];
-      if (!candidate || !candidate.name || !candidate.value) continue;
-      var duplicate = false;
-      for (var x = 0; x < variant.dimensions.length; x++) {
-        if (variant.dimensions[x].name === candidate.name && variant.dimensions[x].value.toLowerCase() === candidate.value.toLowerCase()) duplicate = true;
-      }
-      if (!duplicate) variant.dimensions.push({ name: cut(candidate.name, 40), value: cut(candidate.value, AMAZON_EVIDENCE_LIMITS.label) });
-    }
-  }
-  function amazonAsinFromNode(element) {
-    var node = element;
-    for (var hop = 0; node && hop < 5; hop++) {
-      /* Liste déroulante Amazon : value = « <index>,<ASIN> ». L'index n'est jamais un nom ; seul l'ASIN est lu. */
-      if (String(node.tagName || '').toLowerCase() === 'option' && node.getAttribute) {
-        var pair = /^\d+,([A-Z0-9]{10})$/i.exec(node.getAttribute('value') || '');
-        if (pair) { var fromPair = amazonValidAsin(pair[1]); if (fromPair) return fromPair; }
-      }
-      if (node.getAttribute) {
-        var asin = amazonValidAsin(node.getAttribute('data-asin') || node.getAttribute('data-defaultasin') || node.getAttribute('asin'));
-        if (asin) return asin;
-        /* Ancien tracé : data-dp-url="/dp/<ASIN>/…" désigne la variante de ce swatch. */
-        var dpUrl = node.getAttribute('data-dp-url') || '';
-        var dpMatch = /\/(?:dp|gp\/product)\/([A-Z0-9]{10})(?:[\/?#]|$)/i.exec(dpUrl);
-        if (dpMatch) { var fromDp = amazonValidAsin(dpMatch[1]); if (fromDp) return fromDp; }
-      }
-      node = node.parentNode;
-    }
-    return '';
-  }
-  function amazonNodeIsSelected(element) {
-    var node = element;
-    for (var hop = 0; node && hop < 3; hop++) {
-      var className = String(node.className || '').toLowerCase();
-      if (/swatchselect|a-button-selected|\bselected\b/.test(className)) return true;
-      if (node.getAttribute && (node.getAttribute('aria-checked') === 'true' || node.getAttribute('aria-selected') === 'true')) return true;
-      if (String(node.tagName || '').toLowerCase() === 'option' && node.selected === true) return true;
-      node = node.parentNode;
-    }
-    return false;
-  }
-  function amazonNodeAvailability(element) {
-    var node = element;
-    for (var hop = 0; node && hop < 3; hop++) {
-      var className = String(node.className || '').toLowerCase();
-      if (/swatchunavailable|dropdownunavailable|a-button-disabled|unavailable|outofstock/.test(className)
-          || node.disabled === true || (node.getAttribute && node.getAttribute('aria-disabled') === 'true')) return 'unavailable';
-      if (/swatchavailable|dropdownavailable/.test(className) || (node.getAttribute && node.getAttribute('aria-disabled') === 'false')) return 'available';
-      node = node.parentNode;
-    }
-    return 'unknown';
-  }
-  /* Formulaire d'achat (zone d'achat) désignant un AUTRE ASIN que celui de l'URL : la zone affiche
-     le prix d'un autre article ⇒ aucun prix Amazon n'est publié. */
-  function amazonBuyboxAsinMismatch() {
-    if (!AMAZON_ASIN) return false;
-    var fields = [];
-    try { fields = document.querySelectorAll('input#ASIN, input[name="ASIN"]'); } catch (e) { return false; }
-    for (var i = 0; i < fields.length && i < 4; i++) {
-      var inBuybox = false;
-      for (var n = fields[i]; n && n.nodeType === 1; n = n.parentNode) {
-        var nodeId = String(n.id || '');
-        if (String(n.tagName || '').toUpperCase() === 'FORM' || /^(buybox|desktop_buybox|apex_desktop|corePrice_feature_div|corePriceDisplay_desktop_feature_div|addToCart)/.test(nodeId)) { inBuybox = true; break; }
-      }
-      if (!inBuybox) continue;
-      var fieldValue = String(fields[i].value || fields[i].getAttribute('value') || '').toUpperCase();
-      if (/^[A-Z0-9]{10}$/.test(fieldValue) && fieldValue !== AMAZON_ASIN) return true;
-    }
-    return false;
-  }
-  function amazonAddOption(result, dimension, value, asin, selected, state, source) {
-    var key = dimension + '|' + value.toLowerCase() + '|' + (asin || '');
-    for (var i = 0; i < result.options.length; i++) {
-      var old = result.options[i];
-      if ((old.dimension + '|' + old.value.toLowerCase() + '|' + (old.asin || '')) === key) return;
-    }
-    if (result.options.length < AMAZON_EVIDENCE_LIMITS.options) {
-      result.options.push({ dimension: cut(dimension, 40), value: cut(value, AMAZON_EVIDENCE_LIMITS.label), asin: asin || null, selected: !!selected, availabilityEvidence: state, source: source });
-    }
-    if (asin) amazonMergeVariant(result, asin, [{ name: dimension, value: value }], source);
-  }
   /** Élément de navigation / recherche — jamais un choix produit ni un achat. */
   function isInNavigation(el) {
     var node = el;
@@ -383,22 +105,12 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     }
     return false;
   }
-  /** Prix barré (ancien prix) : attribut data-a-strike, balise <s>/<del>/<strike>, ou line-through en style inline. */
-  function isStruckNode(node) {
-    var tag = String(node.tagName || '').toLowerCase();
-    if (tag === 's' || tag === 'del' || tag === 'strike') return true;
-    if (node.getAttribute && node.getAttribute('data-a-strike') !== null) return true;
-    var style = node.style;
-    if (style && /line-through/i.test(String(style.textDecoration || '') + ' ' + String(style.textDecorationLine || ''))) return true;
-    return false;
-  }
   /** Contexte publicitaire / navigation / prix barré / caché — jamais un prix vendu. */
   function amazonBlocked(element) {
     if (!element) return true;
     if (isInNavigation(element)) return true;
     var node = element;
     for (var hops = 0; node && hops < 8; hops++) {
-      if (isStruckNode(node)) return true;
       var descriptor = String((node.id || '') + ' ' + (node.className || '')).toLowerCase();
       if (/sponsored|sp-sponsored|carousel|nav-assist|similar|recommendation|adplace|a-text-price|deal-badge|apex_desktop_right/.test(descriptor)) return true;
       /* Offres annexes de la zone d'achat. Constaté sur une fiche US récupérée le
@@ -772,53 +484,11 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
          serveur les verrait comme un prix non corroboré à deux candidats, donc
          « ambigu » — un refus pour rien. Plus d'un montant distinct ⇒
          ABSTENTION : la page a des prix concurrents, on ne choisit pas. */
-      var buyboxMismatch = amazonBuyboxAsinMismatch();
-      if (buyboxMismatch) diag('price:buybox_asin_mismatch');
-      /* Plusieurs montants distincts dans la zone d'achat : abstention, motif explicite pour le serveur. */
-      if (amazonDistinctCount > 1) diag('price:ambiguous_buybox:' + amazonDistinctCount);
-      if (amazonDistinctCount === 1 && !buyboxMismatch) {
+      if (amazonDistinctCount === 1) {
         out.priceCandidates.push({ text: cut(amazonReadings[0], LIMITS.text), source: 'dom' });
       }
-      /* Source MACHINE d'Amazon : « "displayPrice":"$109.00" » dans les scripts de la
-         page (mesuré le 04/10/2026, et lu par le lecteur serveur). Ce n'est PAS la
-         même famille de preuve que le DOM : si elle désigne le même montant que la
-         zone d'achat, elle la CORROBORE. Si elle désigne un autre montant, elle est
-         aussi envoyée — le serveur voit alors deux sources en désaccord et refuse
-         (ABSTENTION, jamais un choix). Elle n'est lue que si elle désigne UN seul
-         montant : une page qui liste plusieurs prix (carrousels) n'en désigne aucun. */
-      if (amazonDistinctCount === 1 && !buyboxMismatch) {
-        try {
-          var amzDisplay = [];
-          var amzScripts = document.querySelectorAll('script:not([src])');
-          for (var amzSc = 0; amzSc < amzScripts.length && amzSc < 80 && amzDisplay.length < 12; amzSc++) {
-            var amzCode = amzScripts[amzSc].textContent || '';
-            if (!amzCode || amzCode.length > 600000 || amzCode.indexOf('displayPrice') < 0) continue;
-            var amzRe = /"displayPrice"\s*:\s*"([^"]{1,40})"/g;
-            var amzHit = amzRe.exec(amzCode);
-            while (amzHit && amzDisplay.length < 12) {
-              amzDisplay.push(amzHit[1]);
-              amzHit = amzRe.exec(amzCode);
-            }
-          }
-          var amzAmounts = {};
-          var amzAmountCount = 0;
-          for (var amzA = 0; amzA < amzDisplay.length; amzA++) {
-            var amzKey = amzDisplay[amzA].replace(/\D/g, '');
-            if (!amzKey) continue;
-            if (!amzAmounts[amzKey]) { amzAmounts[amzKey] = true; amzAmountCount++; }
-          }
-          if (amzAmountCount === 1) {
-            var amzValue = '';
-            for (var amzV = 0; amzV < amzDisplay.length && !amzValue; amzV++) {
-              var amzCandidate = text(amzDisplay[amzV]);
-              if (HAS_DIGIT.test(amzCandidate) && CURRENCY_HINT.test(amzCandidate) && amazonPlausible(amzCandidate)) amzValue = amzCandidate;
-            }
-            if (amzValue) out.priceCandidates.push({ text: cut(amzValue, LIMITS.text), source: 'embedded_json' });
-          }
-        } catch (e) {}
-      }
-    } else if (!IS_AMAZON) {
-    /* Hors Amazon seulement : sur amazon.* la lecture générique ramasserait des prix de publicité. Le PANIER D'ACHAT d'abord : les sélecteurs de bloc d'achat des grandes
+    } else {
+    /* Le PANIER D'ACHAT d'abord : les sélecteurs de bloc d'achat des grandes
        plateformes (Amazon, Shopify, WooCommerce) désignent le prix VENDU, pas
        un prix de publicité ou d'un article recommandé — c'est précisément le
        piège mesuré le 06/10 (deux candidats « dom » à 6,99 et 263,86 sur la
@@ -946,47 +616,7 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     }
   } catch (e) {}
 
-  /* ── 7 bis. Amazon : le twister (pastilles couleur, taille, modèle) ───────
-     Amazon ne met pas ses options dans un <select> mais dans des blocs
-     «#variation_<dimension>_name» : la valeur CHOISIE est affichée dans «.selection»,
-     les autres pastilles portent leur nom en «img[alt]» ou «li[title]». Sans cette
-     lecture, une fiche à couleur + taille ne publie aucune option choisie, et le
-     serveur ne peut pas vérifier la combinaison que le client a sélectionnée. */
-  if (AMAZON_STRICT) {
-    try {
-      var twisterBlocks = document.querySelectorAll('[id^="variation_"][id$="_name"], #twister');
-      for (var tb = 0; tb < twisterBlocks.length && tb < 12; tb++) {
-        var twisterBlock = twisterBlocks[tb];
-        if (isInNavigation(twisterBlock)) continue;
-        var chosenNodes = twisterBlock.querySelectorAll('.selection, .a-button-selected img[alt], li.swatchSelect img[alt], li.swatchSelect[title]');
-        for (var tc = 0; tc < chosenNodes.length && out.selectedVariantTexts.length < LIMITS.selectedTexts; tc++) {
-          var chosenNode = chosenNodes[tc];
-          var chosenText = text(chosenNode.getAttribute && (chosenNode.getAttribute('alt') || chosenNode.getAttribute('title'))) || text(chosenNode.textContent);
-          chosenText = text(String(chosenText).replace(/^click to select\s*/i, ''));
-          if (!chosenText || chosenText.length > LIMITS.label || NOT_A_CHOICE.test(chosenText)) continue;
-          pushUnique(out.selectedVariantTexts, chosenText, LIMITS.selectedTexts, LIMITS.label);
-        }
-        var twisterOptions = twisterBlock.querySelectorAll('li img[alt], li[title], select option');
-        for (var to = 0; to < twisterOptions.length && out.variantTexts.length < LIMITS.variantTexts; to++) {
-          var optionNode = twisterOptions[to];
-          var optionLabel = text(optionNode.getAttribute && (optionNode.getAttribute('alt') || optionNode.getAttribute('title'))) || text(optionNode.textContent);
-          optionLabel = text(String(optionLabel).replace(/^click to select\s*/i, ''));
-          if (!optionLabel || optionLabel.length > LIMITS.label || NOT_A_CHOICE.test(optionLabel)) continue;
-          pushUnique(out.variantTexts, optionLabel, LIMITS.variantTexts, LIMITS.label);
-        }
-      }
-    } catch (e) {}
-  }
-
   /* ── 8. Titre de secours et images visibles ─────────────────────────────── */
-  /* Amazon : le titre VISIBLE de la fiche (#productTitle) est lu en premier — c'est le produit de cette page. */
-  if (IS_AMAZON) {
-    try {
-      var amazonTitleEl = document.querySelector('#productTitle');
-      var amazonTitle = amazonTitleEl ? cut(amazonTitleEl.textContent, LIMITS.text) : '';
-      if (amazonTitle) out.title = amazonTitle;
-    } catch (e) {}
-  }
   if (!out.title) { try { out.title = cut(document.title, LIMITS.text) || null; } catch (e) {} }
   if (AMAZON_STRICT) {
     /* Images PRODUIT d'abord. Mesuré le 06/10/2026 : la lecture générique
@@ -1028,11 +658,6 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
       pushUnique(out.images, images[g].getAttribute('src'), LIMITS.images, 600);
     }
   } catch (e) {}
-
-  if (AMAZON_STRICT) {
-    try { out.amazon = collectAmazonEvidence(); }
-    catch (e) { out.amazon = { readerVersion: 1, pageAsin: AMAZON_ASIN || null, selectedAsin: null, options: [], variants: [] }; }
-  }
 
   /* ── 9. Bornes finales + sortie JSON ────────────────────────────────────── */
   if (out.priceCandidates.length > LIMITS.priceCandidates) out.priceCandidates = out.priceCandidates.slice(0, LIMITS.priceCandidates);

@@ -798,12 +798,6 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
       || String(productLd?.name || embeddedProduct?.title || embeddedProduct?.name || document.title || '');
     title = title.replace(/\s*\|\s*(SHEIN|Amazon|TEMU|AliExpress).*$/i, '')
       .replace(/\s*:\s*Amazon\.[a-z.]+/i, '').trim();
-    if (storeType === 'amazon') {
-      // document.title d'Amazon : « Amazon.com: <produit> ». Le préfixe n'est pas le nom du
-      // produit, et « Amazon.com » seul (page coquille) n'est pas un titre.
-      title = title.replace(/^\s*Amazon\.[a-z.]{2,6}\s*:\s*/i, '').trim();
-      if (/^amazon(\.[a-z.]{2,6})?$/i.test(title)) title = '';
-    }
 
     const ldBrand = productLd?.brand?.name || (typeof productLd?.brand === 'string' ? productLd.brand : '') || embeddedProduct?.vendor || embeddedProduct?.brand || '';
     const metaBrand = meta('meta[property="product:brand"]') || meta('meta[name="brand"]') || meta('meta[property="og:brand"]');

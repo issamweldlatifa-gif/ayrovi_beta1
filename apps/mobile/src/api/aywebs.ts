@@ -10,7 +10,7 @@
  *  • كل طلب معلّم بـ `x-session-id`: الخادم يرفض بلاها (`SESSION_REQUIRED`).
  *    المعرّف يتولّد مرّة ويتخزّن (`features/aywebs/session`).
  */
-import { apiGetData, apiGetEnvelope, apiGetText, apiSendData, apiSendEnvelope, type RequestOptions } from './client';
+import { apiGetData, apiGetText, apiSendData, apiSendEnvelope, type RequestOptions } from './client';
 import { ApiError } from './errors';
 
 export const AYWEBS_BASE = '/api/v1/aywebs';
@@ -110,17 +110,6 @@ export interface AyWebsStore {
   logo: string;
   purchaseMode: string;
   popular: boolean;
-  /** Identifiants de catégories (une boutique peut en avoir plusieurs, sans être dupliquée). */
-  categories: string[];
-  /** Description courte de la carte ; `''` = la carte affiche ses catégories. */
-  description: string;
-}
-
-/** Catégorie marchand — libellés bilingues, comme ceux du serveur. */
-export interface AyWebsCategory {
-  id: string;
-  labelFr: string;
-  labelAr: string;
 }
 
 export function parseAyWebsStores(payload: unknown): AyWebsStore[] {
@@ -146,17 +135,7 @@ export function parseAyWebsStores(payload: unknown): AyWebsStore[] {
       logo: str(entry.logo),
       purchaseMode: str(entry.purchase_mode),
       popular: bool(entry.popular),
-      categories: strList(entry.categories),
-      description: str(entry.description),
     };
-  });
-}
-
-export function parseAyWebsCategories(payload: unknown): AyWebsCategory[] {
-  if (!Array.isArray(payload)) return [];
-  return payload.flatMap((entry) => {
-    if (!isRecord(entry) || !str(entry.id)) return [];
-    return [{ id: str(entry.id), labelFr: str(entry.labelFr), labelAr: str(entry.labelAr) }];
   });
 }
 
@@ -212,18 +191,8 @@ export interface AyWebsResolvedProduct {
 }
 
 export function parseAyWebsResolvedProduct(payload: unknown): AyWebsResolvedProduct {
-  if (!isRecord(payload)) throw malformed('fiche produit (données absentes)');
-  /* Contrat minimal : product_id et title. Un champ absent est NOMMÉ (CONTRACT_MISMATCH),
-     pour ne pas confondre un format de réponse cassé avec une lecture incomplète. */
-  const absent = [
-    str(payload.product_id).trim() ? '' : 'product_id',
-    str(payload.title).trim() ? '' : 'title',
-  ].filter(Boolean);
-  if (absent.length) {
-    throw new ApiError('malformed', `Réponse AYWEBs non conforme au contrat (fiche produit) : ${absent.join(', ')} absent(s)`, {
-      code: 'CONTRACT_MISMATCH',
-      missingFields: absent,
-    });
+  if (!isRecord(payload) || !str(payload.product_id).trim() || !str(payload.title).trim()) {
+    throw malformed('fiche produit');
   }
   const availability = isRecord(payload.availability) ? payload.availability : {};
   const pricing = isRecord(payload.ayrovi_pricing) ? payload.ayrovi_pricing : null;
@@ -303,21 +272,6 @@ export interface ResolveAyWebsProductOptions extends AyWebsSessionOptions {
 export async function fetchAyWebsStores(options: RequestOptions = {}): Promise<AyWebsStore[]> {
   const data = await apiGetData<unknown>(`${AYWEBS_BASE}/stores`, options);
   return parseAyWebsStores(data);
-}
-
-/**
- * Registre complet pour l'écran Stores : boutiques + catégories, en une seule lecture.
- * `fetchAyWebsStores` reste inchangé pour les écrans qui n'ont besoin que des boutiques.
- */
-export async function fetchAyWebsStoreCatalog(
-  options: RequestOptions = {},
-): Promise<{ stores: AyWebsStore[]; categories: AyWebsCategory[] }> {
-  const payload = await apiGetEnvelope<unknown>(`${AYWEBS_BASE}/stores`, options);
-  const body = isRecord(payload) ? payload : {};
-  return {
-    stores: parseAyWebsStores(body.data),
-    categories: parseAyWebsCategories(body.categories),
-  };
 }
 
 
@@ -438,24 +392,6 @@ export interface AyWebsResolveOutcome {
  * نبعثو `capture` كما رجّعها السكريبت **بلا أي تصرّف**: لا تعديل لا تلخيص.
  * الخادم هو اللي يقبل/يرفض ويحسب السعر — وهنا نقراو قراره باش نعرضوه.
  */
-/**
- * Lecture serveur incomplète : le serveur répond 201 avec `missing` (titre, prix, devise…)
- * et une fiche vide. Sans titre, la fiche n'est pas utilisable : on le dit par son code
- * (`CAPTURE_INCOMPLETE`) au lieu de « réponse illisible » (ce n'est pas un problème de format).
- */
-export function incompleteCaptureError(envelope: Record<string, unknown>): ApiError | null {
-  const data = isRecord(envelope.data) ? envelope.data : null;
-  const missing = strList(envelope.missing);
-  if (missing.length === 0) return null;
-  // Fiche présente avec un titre : lecture normale (le reste se traite au choix de variante).
-  if (data && str(data.title).trim()) return null;
-  return new ApiError('http', 'Nous n’avons pas pu lire toutes les informations du produit.', {
-    status: 422,
-    code: 'CAPTURE_INCOMPLETE',
-    missingFields: missing,
-  });
-}
-
 export async function resolveAyWebsProductWithCapture(
   url: string,
   options: AyWebsSessionOptions & { storeId?: string; quantity?: number; refresh?: boolean; capture?: unknown },
@@ -471,9 +407,6 @@ export async function resolveAyWebsProductWithCapture(
     signal: options.signal,
     timeoutMs: options.timeoutMs ?? AYWEBS_RESOLVE_TIMEOUT_MS,
   });
-
-  const incomplete = incompleteCaptureError(envelope);
-  if (incomplete) throw incomplete;
 
   const product = parseAyWebsResolvedProduct(envelope.data);
   const rawCapture = isRecord(envelope.capture) ? envelope.capture : null;

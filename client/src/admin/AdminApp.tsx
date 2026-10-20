@@ -21,7 +21,6 @@ import { LensLabPage, AiDiscoveryPage } from './AiLabPages';
 import { SocialAdminPage } from './SocialAdminPage';
 import { InventoryMovementsPage, InventoryStockPage, InventoryStocktakesPage } from './InventoryPage';
 import { PurchasingOrdersPage, PurchasingReceiptsPage, PurchasingSuppliersPage } from './PurchasingPage';
-import { AyWebsPurchaseQueuePage } from './AyWebsPurchaseQueuePage';
 import { CrmActivitiesPage, CrmContactsPage, CrmDashboardPage, CrmIssuesPage, CrmPartiesPage, CrmTasksPage } from './CrmPages';
 import { MagazineAgentPage } from './MagazineAgentPage';
 import { HeroSlidesManagePage } from './HeroSlidesManagePage';
@@ -1003,7 +1002,6 @@ const AdminShell:React.FC<{user:UserIdentity;onLogout:()=>void}>=({user,onLogout
     else if(section==='purchasing')page=<PurchasingSuppliersPage/>;
     else if(section==='purchasing-orders')page=<PurchasingOrdersPage/>;
     else if(section==='purchasing-receipts')page=<PurchasingReceiptsPage/>;
-    else if(section==='aywebs-purchases')page=<AyWebsPurchaseQueuePage canWrite={has('orders:write')}/>;
     // E5 — CRM 360 : tableau de bord + cinq écrans métier. La navigation reste `commerce:read`,
     // chaque action d'écriture est décidée par l'écran lui-même via `/crm/meta` (grants `crm360:*`).
     else if(section==='crm-dashboard')page=<CrmDashboardPage/>;

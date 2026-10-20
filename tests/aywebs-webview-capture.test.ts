@@ -372,16 +372,14 @@ describe('AYWEBs 2.1 — boutique du REGISTRE : la capture remplace la lecture s
     const page = `<!doctype html><html><head><title>Ambigu</title></head><body>
       <div class="product-price">19,99 €</div><div class="product-price">24,99 €</div></body></html>`;
     const { payload, validation } = captureFrom(page, REGISTERED_URL);
-    /* Règle Amazon (20/10/2026) : sans zone d'achat, AUCUN prix DOM n'est lu sur amazon.* — les
-       prix hors zone d'achat sont souvent des publicités. Le motif est donc « aucun texte de prix ». */
-    expect(validation.rejection).toBe('NO_PRICE_TEXT');
+    expect(validation.rejection).toBe('AMBIGUOUS_PRICE');
 
     const resolved = await resolveAyWebsProduct(h.resolver, {
       url: REGISTERED_URL, sessionId: SESSION_ID, capture: payload,
     });
     expect(h.scrapeProduct).toHaveBeenCalledTimes(1);    // la lecture serveur a repris
     expect(resolved.capture?.used).toBe(false);
-    expect(resolved.capture?.rejection).toBe('NO_PRICE_TEXT');
+    expect(resolved.capture?.rejection).toBe('AMBIGUOUS_PRICE');
     expect(resolved.product.price).toBe(129.99);         // prix du serveur, pas du client
     expect(resolved.quoteToken).toBeTruthy();            // la fiche reste utilisable
   });

@@ -5,11 +5,9 @@
  * Le composant `HeroCarousel` n'y met que l'état et les effets.
  *
  * ── Décisions ──────────────────────────────────────────────────────────────
- * • La carte ALIGNÉE SUR LE BORD : la première carte commence exactement à la
- *   marge de la page (même `gutter` que les titres et le header), et la
- *   dernière finit exactement à la marge droite en fin de défilement. Pas de
- *   vide d'un côté ni de l'autre. La voisine apparaît sur le côté droit.
- *   L'index se lit directement depuis l'offset (un pas = une carte).
+ * • La carte active est CENTRÉE : `sideInset` = (largeur − carte) / 2. Les
+ *   deux voisines dépassent ainsi des deux côtés (référence Amazon), et
+ *   l'index se lit directement depuis l'offset, sans correction.
  * • La largeur de carte est une PART de l'écran (`CARD_WIDTH_RATIO`), bornée
  *   pour les tablettes. Aucune valeur fixe par appareil.
  * • Pas de boucle : à la dernière carte, le défilement automatique s'arrête.
@@ -27,39 +25,23 @@ export const CARD_MIN_WIDTH = 240;
 export const CARD_MAX_WIDTH = 400;
 
 export interface CarouselGeometry {
-  /** Largeur de la carte. */
+  /** Largeur de la carte active. */
   cardWidth: number;
   /** Pas entre deux cartes (carte + espace). */
   stride: number;
-  /** Marge de départ : la première carte commence à cette distance du bord. */
+  /** Retrait à gauche (et à droite) pour que la carte active soit centrée. */
   sideInset: number;
 }
 
-/**
- * Géométrie du carrousel. `edgeInset` = la marge de la page (le `gutter`), la
- * même que celle du header : la première carte s'aligne sur elle, et la dernière
- * (en fin de défilement) s'aligne sur la marge droite.
- */
-export function carouselGeometry(screenWidth: number, edgeInset = 0): CarouselGeometry {
-  const inset = Math.max(0, edgeInset);
-  const room = Math.max(0, screenWidth - 2 * inset);
+export function carouselGeometry(screenWidth: number): CarouselGeometry {
   const wanted = Math.round(screenWidth * CARD_WIDTH_RATIO);
-  // Jamais plus large que l'espace disponible entre les deux marges.
-  const cardWidth = Math.min(room, Math.min(CARD_MAX_WIDTH, Math.max(CARD_MIN_WIDTH, wanted)));
+  // Jamais plus large que l'écran lui-même (cas des très petits écrans).
+  const cardWidth = Math.min(screenWidth, Math.min(CARD_MAX_WIDTH, Math.max(CARD_MIN_WIDTH, wanted)));
   return {
     cardWidth,
     stride: cardWidth + CARD_GAP,
-    sideInset: inset,
+    sideInset: Math.max(0, (screenWidth - cardWidth) / 2),
   };
-}
-
-/**
- * Décalage de défilement pour atteindre la carte `index`. En RTL (liste
- * `inverted`), le décalage est négatif, comme le lit `indexForOffset`.
- */
-export function scrollOffsetForIndex(index: number, stride: number, rtl: boolean): number {
-  const offset = Math.max(0, index) * Math.max(0, stride);
-  return rtl ? -offset : offset;
 }
 
 /** Index de la carte qui se trouve au centre, pour un offset de défilement donné. */

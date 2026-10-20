@@ -516,23 +516,6 @@ const CUSTOM_RESOURCES: BackOfficeResourceDescriptor[] = [
     notes: 'La suppression est refusée par l’API tant que des commandes sont engagées — la fiche reste lisible.',
   },
   {
-    key: 'aywebs.purchase_queue', label: 'Achats AYWEBs', singular: 'achat AYWEBs', module: 'aywebs', domain: 'COMMERCE',
-    description: 'Commandes payées à acheter chez le marchand : lien du produit, informations du client, puis confirmation ou échec. Aucun achat automatique sans intégration.',
-    navPermission: 'commerce:read',
-    permissions: { list: 'sales:read', view: 'sales:read', edit: 'sales:write', approve: 'sales:write' },
-    section: 'aywebs-purchases', nav: { group: 'Commerce', order: 230, icon: 'Package' },
-    surface: 'custom', component: 'AyWebsPurchaseQueuePage', api: { prefix: '/aywebs/orders', kind: 'module' },
-    columns: [
-      { key: 'order_number', label: 'Référence', render: 'code', sortable: true },
-      { key: 'status', label: 'Statut', render: 'status', sortable: true },
-      { key: 'purchase_due_at', label: 'Échéance interne', render: 'datetime', sortable: true },
-    ],
-    fields: [],
-    actions: ['list', 'view', 'edit', 'approve'],
-    audit: { module: 'AYWEBS', resourceType: 'order' },
-    notes: 'File des achats AYWEBs : les actions passent par les routes /api/admin/aywebs/orders/:id/purchase/*.',
-  },
-  {
     key: 'purchasing.purchase_order', label: 'Commandes d’achat', singular: 'commande d’achat', module: 'purchasing', domain: 'COMMERCE',
     description: 'Commande fournisseur avec lignes, totaux calculés, soumission puis approbation ; la réception ne se décrète pas ici.',
     navPermission: 'commerce:read',

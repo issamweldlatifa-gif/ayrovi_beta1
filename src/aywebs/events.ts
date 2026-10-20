@@ -252,13 +252,6 @@ export interface AyWebsOperationLog {
   result?: 'success' | 'failure' | 'skipped';
   errorCode?: string | null;
   requestId?: string | null;
-  /** Champs bloquants non lus (ex. `title`, `price`) — noms seulement, jamais de valeur. */
-  missingFields?: readonly string[];
-  /**
-   * Diagnostic BORNÉ : codes et nombres (source du prix, corroboration, motif de
-   * refus de la capture…). Jamais de HTML, de texte de page, de cookie ni de compte.
-   */
-  details?: Record<string, string | number | boolean | null>;
 }
 
 /**
@@ -281,14 +274,6 @@ export function logAyWebsOperation(input: AyWebsOperationLog): void {
   if (input.durationMs != null) entry.durationMs = Math.round(input.durationMs);
   if (input.errorCode) entry.errorCode = input.errorCode;
   if (input.requestId) entry.requestId = input.requestId;
-  if (input.missingFields) entry.missing_fields = input.missingFields.slice(0, 12).map((field) => String(field).slice(0, 40));
-  if (input.details) {
-    const safe: Record<string, string | number | boolean | null> = {};
-    for (const [key, value] of Object.entries(input.details).slice(0, 16)) {
-      safe[key.slice(0, 40)] = typeof value === 'string' ? value.slice(0, 80) : value;
-    }
-    entry.details = safe;
-  }
   // stdout JSON : la collecte reste la responsabilité de la plateforme.
   console.log(JSON.stringify(entry));
 }

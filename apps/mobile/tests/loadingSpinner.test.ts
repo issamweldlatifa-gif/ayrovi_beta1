@@ -45,9 +45,6 @@ describe('LoadingSpinner — un cercle fin en pointillés qui tourne', () => {
     expect(source).toContain('Easing.linear');
     expect(source).toContain('useNativeDriver: true');
     expect(source).toContain('strokeLinecap="round"');
-    // Animation réduite = préférence système (useReduceMotion), pas le jeton de durée.
-    expect(source).toContain('useReduceMotion');
-    expect(source).not.toContain('theme.motion.reduced === 0');
   });
 
   it('les cinq barres violettes ont disparu de l’application', () => {

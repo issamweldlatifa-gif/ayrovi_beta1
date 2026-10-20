@@ -14,20 +14,14 @@
  *  • timeout serveur → pas de reprise (30 s de plus n'aident pas) ;
  *  • annulation (écran fermé) → on propage, sans rien relancer.
  */
-import { ApiError, isApiError } from '@/api/errors';
+import { isApiError } from '@/api/errors';
 
 export interface CaptureFallbackInput<T> {
   /** Lecture de la page par le pont. Absente quand la capture n'est pas permise. */
   readCapture?: () => Promise<unknown>;
   /** Résolution serveur ; `capture` vaut `undefined` quand on résout sans capture. */
   resolve: (capture: unknown | undefined) => Promise<T>;
-  /** Écran fermé / nouvel appui : on ne lance plus aucune requête. */
-  signal?: AbortSignal;
-  /** Ce que vit l'écran : lecture de la page, puis résolution (ou repli). */
-  onPhase?: (phase: 'reading' | 'resolving' | 'server-fallback') => void;
 }
-
-const abortedError = (): ApiError => new ApiError('aborted', 'Requête interrompue.');
 
 export interface CaptureFallbackResult<T> {
   outcome: T;
@@ -38,75 +32,9 @@ export interface CaptureFallbackResult<T> {
 const isAbortedFailure = (error: unknown): boolean => isApiError(error) && error.isAborted;
 const isNetworkFailure = (error: unknown): boolean => isApiError(error) && error.isOffline;
 
-/**
- * Lecture SÉQUENTIELLE (19/10/2026) : la capture d'abord, UNE seule résolution.
- *
- *  • capture obtenue (acceptée OU refusée par le serveur) ⇒ une résolution AVEC capture.
- *    Un refus, c'est le serveur qui relit lui-même, dans cette même requête : pas de
- *    seconde requête ;
- *  • capture échouée ou délai dépassé ⇒ UNE résolution SANS capture (le repli) ;
- *  • résolution avec capture coupée par le réseau ⇒ une seule reprise sans capture ;
- *  • annulation (écran fermé, nouvel appui) ⇒ on propage, sans rien relancer.
- *
- * Le coût assumé : sur un Amazon dont la capture échoue, la lecture serveur ne part
- * qu'après l'échec de la capture (plus lent que la version parallèle, mais sans lecture
- * marchande en double quand la capture réussit).
- */
 export async function resolveWithCaptureFallback<T>(
   input: CaptureFallbackInput<T>,
 ): Promise<CaptureFallbackResult<T>> {
-  if (input.signal?.aborted) throw abortedError();
-  let capture: unknown | undefined;
-  if (input.readCapture) {
-    input.onPhase?.('reading');
-    try {
-      capture = await input.readCapture();
-    } catch (error) {
-      if (isAbortedFailure(error) || input.signal?.aborted) throw error;
-      capture = undefined;
-    }
-  }
-  if (input.signal?.aborted) throw abortedError();
-
-  input.onPhase?.('resolving');
-  try {
-    return { outcome: await input.resolve(capture), capture };
-  } catch (error) {
-    if (capture === undefined || !isNetworkFailure(error) || input.signal?.aborted) throw error;
-    input.onPhase?.('server-fallback');
-    return { outcome: await input.resolve(undefined), capture: undefined };
-  }
-}
-
-/**
- * Variante PARALLÈLE (18/10/2026): la lecture serveur part AVANT la fin de la
- * capture, pour que le serveur travaille pendant que la page se lit.
- *
- * En série, un Amazon dont la capture échoue coûte 15 s d'attente + 13–17 s de
- * lecture serveur (≈ 32 s). En parallèle: ≈ 17 s. Coût assumé: la lecture
- * serveur part même si la capture réussit ensuite (une lecture serveur de plus).
- *
- *  • capture réussie ⇒ résolution AVEC capture (rapide, sans requête marchande) ;
- *  • capture échouée ou absente ⇒ on attend la lecture parallèle déjà en route ;
- *  • capture réussie mais résolution coupée par le réseau ⇒ repli sur la lecture parallèle ;
- *  • annulation (écran fermé) ⇒ on propage.
- *
- * `onPhase` dit à l'écran ce qui se passe, pour que la progression ne mente pas.
- */
-export type ParallelPhase = 'capture-ok' | 'server-only';
-
-export interface ParallelCaptureInput<T> extends Omit<CaptureFallbackInput<T>, 'onPhase'> {
-  onPhase?: (phase: ParallelPhase) => void;
-}
-
-export async function resolveWithParallelCapture<T>(
-  input: ParallelCaptureInput<T>,
-): Promise<CaptureFallbackResult<T>> {
-  // Lecture serveur sans capture, lancée tout de suite.
-  const serverRead = input.resolve(undefined);
-  // Évite un rejet « non géré » si la capture l'emporte et qu'on ne l'attend pas.
-  serverRead.catch(() => undefined);
-
   let capture: unknown | undefined;
   if (input.readCapture) {
     try {
@@ -117,43 +45,10 @@ export async function resolveWithParallelCapture<T>(
     }
   }
 
-  if (capture !== undefined) {
-    input.onPhase?.('capture-ok');
-    try {
-      return { outcome: await input.resolve(capture), capture };
-    } catch (error) {
-      if (!isNetworkFailure(error)) throw error;
-      // Repli: la lecture parallèle est déjà en route, on l'attend.
-    }
+  try {
+    return { outcome: await input.resolve(capture), capture };
+  } catch (error) {
+    if (capture === undefined || !isNetworkFailure(error)) throw error;
+    return { outcome: await input.resolve(undefined), capture: undefined };
   }
-
-  input.onPhase?.('server-only');
-  return { outcome: await serverRead, capture: undefined };
-}
-
-/**
- * Attend que la page finisse de charger avant de la lire (19/10/2026).
- *
- * Sans ça, « Add to Cart » peut lancer la capture pendant que la page Amazon
- * charge encore : le script lit un DOM incomplet (prix absent ⇒ NO_PRICE_TEXT).
- * On attend donc la fin du chargement, avec une borne : une page qui ne finit
- * jamais de charger (publicités, scripts) ne bloque pas l'ajout — on lit quand
- * même après `timeoutMs`.
- *
- * Renvoie `true` si la page est prête, `false` si la borne est atteinte.
- */
-export async function waitForPageIdle(
-  isLoading: () => boolean,
-  options: { timeoutMs?: number; intervalMs?: number; wait?: (ms: number) => Promise<void> } = {},
-): Promise<boolean> {
-  const timeoutMs = options.timeoutMs ?? 8_000;
-  const intervalMs = options.intervalMs ?? 250;
-  const wait = options.wait ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
-  let waited = 0;
-  while (isLoading()) {
-    if (waited >= timeoutMs) return false;
-    await wait(intervalMs);
-    waited += intervalMs;
-  }
-  return true;
 }

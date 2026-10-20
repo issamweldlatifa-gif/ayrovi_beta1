@@ -337,10 +337,7 @@ function readEnvelope<T>(payload: unknown, path: string): T {
     const message = typeof payload.error === 'string' && payload.error.trim()
       ? payload.error
       : `Réponse refusée (${path})`;
-    const missingFields = Array.isArray(payload.missing)
-      ? payload.missing.filter((field): field is string => typeof field === 'string')
-      : [];
-    throw new ApiError('http', message, { code, missingFields });
+    throw new ApiError('http', message, { code });
   }
   if (payload.success !== true) throw new ApiError('malformed', `Enveloppe absente (${path})`);
   return payload as T;

@@ -10,7 +10,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
-  incompleteCaptureError,
   AYWEBS_RESOLVE_TIMEOUT_MS,
   AYWEBS_SOURCE_VERIFICATION_REQUIRED,
   addAyWebsCartItem,
@@ -41,7 +40,7 @@ import {
   updateAyWebsCartItem,
   verifyAyWebsCart,
 } from '../src/api/aywebs';
-import { ApiError, userMessage } from '../src/api/errors';
+import { ApiError } from '../src/api/errors';
 import { API_BASE_URL } from '../src/api/config';
 import { formatSessionId, isValidSessionId } from '../src/session/sessionId';
 
@@ -756,36 +755,5 @@ describe('الطلبات (§37/§38)', () => {
     expect(ayWebsNeedsHumanRequest('MANUAL_REVIEW')).toBe(true);
     // '' = الخادم ما قالش: ما نستنتجوش، وما نزيدوش شاشة ما يستحقّهاش.
     expect(ayWebsNeedsHumanRequest('')).toBe(false);
-  });
-});
-
-describe('lecture AYWEBs incomplète (CAPTURE_INCOMPLETE, Render : product_resolve_total)', () => {
-  // Forme réelle du serveur : 201, fiche sans titre, `missing` renseigné.
-  const INCOMPLETE = {
-    success: true,
-    status: 'NEEDS_SELECTION',
-    missing: ['title', 'price', 'currency'],
-    data: { product_id: 'aywprd_1', store_id: 'amazon', title: '', availability: {} },
-  };
-
-  it('une fiche sans titre et avec des champs manquants devient une erreur CAPTURE_INCOMPLETE', () => {
-    const error = incompleteCaptureError(INCOMPLETE);
-    expect(error).toBeInstanceOf(ApiError);
-    expect(error?.code).toBe('CAPTURE_INCOMPLETE');
-    expect(error?.kind).toBe('http');
-  });
-
-  it('le message est lisible et ne parle plus de réponse illisible', () => {
-    const message = userMessage(incompleteCaptureError(INCOMPLETE));
-    expect(message.fr).toContain('le titre, le prix et la devise'); // champs réellement manquants, nommés
-    expect(message.fr).not.toMatch(/illisible/i);
-  });
-
-  it('une fiche avec un titre reste normale, même avec des champs manquants', () => {
-    expect(incompleteCaptureError({ ...INCOMPLETE, data: { ...INCOMPLETE.data, title: 'Tablette' } })).toBeNull();
-  });
-
-  it('pas de champ manquant : pas d’erreur de lecture (le refus de format reste celui de la fiche)', () => {
-    expect(incompleteCaptureError({ ...INCOMPLETE, missing: [] })).toBeNull();
   });
 });
