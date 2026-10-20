@@ -57,11 +57,37 @@ export interface AyWebsCapturedPriceCandidate {
   source: AyWebsCaptureSource;
 }
 
+export interface AyWebsAmazonEvidence {
+  readerVersion?: number;
+  pageAsin?: string | null;
+  selectedAsin?: string | null;
+  options?: Array<{
+    dimension: string;
+    value: string;
+    asin?: string | null;
+    selected?: boolean;
+    availabilityEvidence?: 'available' | 'unavailable' | 'unknown';
+    source?: string;
+  }>;
+  variants?: Array<{
+    asin: string;
+    selected?: boolean;
+    dimensions?: Array<{ name: string; value: string }>;
+    source?: string;
+  }>;
+}
+
 export interface AyWebsCapturedPage {
   /** Version du contrat : un serveur ancien refuse une capture future. */
   v: number;
   /** Codes courts du lecteur (ex. « price:buybox », « title:visible ») — jamais de texte de page. */
   diagnostics?: string[];
+  /**
+   * Amazon : variantes et option choisie (évidence structurée, sans texte libre).
+   * Les index numériques ne deviennent jamais des noms d'option : le lecteur les résout
+   * via variationValues, ou les écarte.
+   */
+  amazon?: AyWebsAmazonEvidence | null;
   /** URL de la page réellement affichée dans le WebView. */
   url: string;
   /** `<link rel="canonical">` ou `og:url`, quand la page les publie. */
@@ -126,6 +152,13 @@ export const AYWEBS_CAPTURE_REJECTIONS = [
   /** Zone d'achat Amazon désignant un AUTRE article que l'URL (ASIN différent). */
   'BUYBOX_ASIN_MISMATCH',
   'NO_AVAILABILITY_EVIDENCE',
+  /**
+   * Amazon, fiche à plusieurs variantes (couleur, taille…) : l'option CHOISIE n'est pas
+   * prouvée (absente, non confirmée, indisponible, ou pas la fiche ouverte). Le prix de
+   * la zone d'achat ne vaut que pour l'option choisie : on refuse plutôt que de deviner.
+   * Actif seulement avec AYWEBS_AMAZON_VARIANT_CONTRACT=1.
+   */
+  'VARIANT_NOT_PROVEN',
 ] as const;
 
 export type AyWebsCaptureRejection = (typeof AYWEBS_CAPTURE_REJECTIONS)[number];

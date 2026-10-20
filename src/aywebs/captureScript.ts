@@ -958,6 +958,14 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
   }
 
   /* ── 8. Titre de secours et images visibles ─────────────────────────────── */
+  /* Amazon : le titre VISIBLE de la fiche (#productTitle) est lu en premier — c'est le produit de cette page. */
+  if (IS_AMAZON) {
+    try {
+      var amazonTitleEl = document.querySelector('#productTitle');
+      var amazonTitle = amazonTitleEl ? cut(amazonTitleEl.textContent, LIMITS.text) : '';
+      if (amazonTitle) out.title = amazonTitle;
+    } catch (e) {}
+  }
   if (!out.title) { try { out.title = cut(document.title, LIMITS.text) || null; } catch (e) {} }
   if (AMAZON_STRICT) {
     /* Images PRODUIT d'abord. Mesuré le 06/10/2026 : la lecture générique

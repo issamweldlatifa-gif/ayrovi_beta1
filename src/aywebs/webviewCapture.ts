@@ -248,6 +248,50 @@ function fingerprintOf(parts: Record<string, unknown>): string {
   return createHash('sha256').update(JSON.stringify(parts)).digest('hex');
 }
 
+/** Drapeau du contrat de variantes Amazon (désactivé par défaut : activation après test sur appareil). */
+export function variantContractEnabled(): boolean {
+  return process.env.AYWEBS_AMAZON_VARIANT_CONTRACT === '1';
+}
+
+function isAmazonHost(requestUrl: string): boolean {
+  const host = hostOf(requestUrl) || '';
+  return /(^|\.)amazon\.[a-z.]+$/.test(host);
+}
+
+const AMAZON_ASIN_SHAPE = /^[A-Z0-9]{10}$/;
+
+/**
+ * Raison de refus du contrat de variantes, ou null si l'option choisie est prouvée.
+ * - Fiche simple (aucune alternative) : rien à prouver.
+ * - Fiche à variantes : l'ASIN choisi doit exister dans les variantes, être l'ASIN de la
+ *   fiche ouverte, et avoir une disponibilité PROUVÉE (évidence de l'option ou texte de
+ *   disponibilité en stock). « Présence d'un nom d'option » n'est jamais une preuve de stock.
+ */
+function amazonVariantRefusal(payload: AyWebsCapturedPage): string | null {
+  const amazon = payload.amazon;
+  const variants = Array.isArray(amazon?.variants)
+    ? amazon!.variants!.filter((v) => v && typeof v.asin === 'string' && AMAZON_ASIN_SHAPE.test(v.asin))
+    : [];
+  const options = Array.isArray(amazon?.options) ? amazon!.options! : [];
+  const pageAsin = typeof amazon?.pageAsin === 'string' ? amazon.pageAsin : null;
+  const selectedAsin = typeof amazon?.selectedAsin === 'string' ? amazon.selectedAsin : null;
+
+  if (variants.length <= 1 && options.length <= 1) {
+    if (variants.length === 1 && pageAsin && variants[0].asin !== pageAsin) return 'page_variant_mismatch';
+    return null;
+  }
+  if (!selectedAsin) return 'selected_unproven';
+  if (!variants.some((v) => v.asin === selectedAsin)) return 'selected_not_in_variants';
+  if (pageAsin !== selectedAsin) return 'selected_not_page';
+
+  const selectedOption = options.find((o) => o && o.selected === true);
+  if (!selectedOption) return 'selected_option_unproven';
+  if (selectedOption.availabilityEvidence === 'unavailable') return 'selected_unavailable';
+  const pageSaysInStock = /in stock|en stock|disponible|auf lager/i.test(String(payload.availabilityText || ''));
+  if (selectedOption.availabilityEvidence !== 'available' && !pageSaysInStock) return 'selected_availability_unproven';
+  return null;
+}
+
 function rejected(rejection: string, fingerprint = '', notes: string[] = []): AyWebsCaptureValidation {
   captureStats.rejected += 1;
   bump(captureStats.rejections, rejection);
@@ -310,6 +354,14 @@ export function validateAyWebsCapturedPage(
   const now = Date.now();
   if (now - capturedAtMs > AYWEBS_CAPTURE_LIMITS.maxAgeMs) return rejected('STALE_CAPTURE');
   if (capturedAtMs - now > AYWEBS_CAPTURE_LIMITS.maxClockSkewMs) return rejected('FUTURE_CAPTURE');
+
+  /* ── VARIANTE AMAZON (contrat Phase 1 — derrière AYWEBS_AMAZON_VARIANT_CONTRACT=1) ──
+     Quand la fiche a plusieurs variantes, le prix de la zone d'achat ne vaut que pour
+     l'option CHOISIE. On la refuse si elle n'est pas prouvée. */
+  if (variantContractEnabled() && isAmazonHost(requestUrl)) {
+    const variantRefusal = amazonVariantRefusal(payload);
+    if (variantRefusal) return rejected('VARIANT_NOT_PROVEN', '', [`variant:${variantRefusal}`]);
+  }
 
   /* ── PRIX ────────────────────────────────────────────────────────────────
      Chaque candidat est jugé par le verdict de la Phase 0. Le classement suit
