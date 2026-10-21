@@ -808,43 +808,53 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
           amazonA11yReading = amazonAccessibilityAmount(amazonA11yLabel.textContent);
         }
       } catch (e) {}
-      var AMAZON_PRICE_SELECTORS = [
-        '#corePriceDisplay_desktop_feature_div .priceToPay',
-        '#corePriceDisplay_desktop_feature_div .a-price:not(.a-text-price)',
-        '#corePrice_feature_div .a-price:not(.a-text-price)',
-        '#corePrice_desktop .a-price:not(.a-text-price)',
-        '#corePrice_mobile_feature_div .a-price:not(.a-text-price)',
-        '#corePriceDisplay_mobile_feature_div .a-price:not(.a-text-price)',
-        '#apex_desktop .a-price[data-a-color="base"]',
-        '.priceToPay',
-        '#price_inside_buybox',
-        '#priceblock_ourprice',
-        '#priceblock_dealprice',
-        '#newBuyBoxPrice',
-        '#tp_price_block_total_price_ww .a-offscreen',
-        '#buybox .a-price:not(.a-text-price)',
-        '#desktop_buybox .a-price:not(.a-text-price)',
-        '#mobile_buybox .a-price:not(.a-text-price)'
+      /* Prix courant recherché DANS des conteneurs Buy Box connus, desktop et
+         mobile. Ne jamais retomber sur les classes priceToPay/a-price à l'échelle de
+         toute la page : ces classes apparaissent aussi dans les recommandations.
+         Les anciens IDs de prix restent acceptés, mais seulement sous la racine
+         de la fiche Amazon. */
+      var AMAZON_PRICE_REGION_SELECTORS = [
+        '#corePriceDisplay_desktop_feature_div', '#corePrice_feature_div',
+        '#corePrice_desktop', '#corePrice_mobile_feature_div',
+        '#corePriceDisplay_mobile_feature_div', '#apex_desktop',
+        '#buybox', '#desktop_buybox', '#mobile_buybox'
       ];
+      var AMAZON_CURRENT_PRICE_SELECTOR = '.priceToPay, .a-price:not(.a-text-price)';
+      var AMAZON_LEGACY_PRICE_SELECTOR = '#price_inside_buybox, #priceblock_ourprice, #priceblock_dealprice, #newBuyBoxPrice, #tp_price_block_total_price_ww .a-offscreen';
       var amazonReadings = [];
       var amazonNodes = [];
-      for (var s = 0; s < AMAZON_PRICE_SELECTORS.length && amazonReadings.length < 6; s++) {
-        var nodes = [];
-        try { nodes = document.querySelectorAll(AMAZON_PRICE_SELECTORS[s]); } catch (e) { continue; }
-        for (var n = 0; n < nodes.length && amazonReadings.length < 6; n++) {
-          var el = nodes[n];
-          if (amazonNodes.indexOf(el) >= 0) continue;
-          if (amazonBlocked(el)) continue;
-          var value = amazonPriceText(el);
-          if (!value || !HAS_DIGIT.test(value) || !CURRENCY_HINT.test(value)) continue;
-          if (value.length > LIMITS.text) continue;
-          /* Le montant lu par le span peut encore être un texte collé
-             (« $6.99$6.99 ») : le verdict de la Phase 0 est SERVEUR, mais on
-             n'envoie pas un texte manifestement dupliqué. */
-          if (!amazonPlausible(value)) continue;
-          amazonNodes.push(el);
-          amazonReadings.push(value);
+      var amazonPriceCandidates = [];
+      for (var s = 0; s < AMAZON_PRICE_REGION_SELECTORS.length; s++) {
+        var regions = [];
+        try { regions = document.querySelectorAll(AMAZON_PRICE_REGION_SELECTORS[s]); } catch (e) { continue; }
+        for (var r = 0; r < regions.length; r++) {
+          var regionNodes = [];
+          try { regionNodes = regions[r].querySelectorAll(AMAZON_CURRENT_PRICE_SELECTOR); } catch (e) { continue; }
+          for (var rn = 0; rn < regionNodes.length; rn++) {
+            if (amazonPriceCandidates.indexOf(regionNodes[rn]) < 0) amazonPriceCandidates.push(regionNodes[rn]);
+          }
         }
+      }
+      if (AMAZON_PRODUCT_ROOT) {
+        var legacyNodes = [];
+        try { legacyNodes = AMAZON_PRODUCT_ROOT.querySelectorAll(AMAZON_LEGACY_PRICE_SELECTOR); } catch (e) {}
+        for (var ln = 0; ln < legacyNodes.length; ln++) {
+          if (amazonPriceCandidates.indexOf(legacyNodes[ln]) < 0) amazonPriceCandidates.push(legacyNodes[ln]);
+        }
+      }
+      for (var n = 0; n < amazonPriceCandidates.length && amazonReadings.length < 6; n++) {
+        var el = amazonPriceCandidates[n];
+        if (amazonNodes.indexOf(el) >= 0) continue;
+        if (amazonBlocked(el)) continue;
+        var value = amazonPriceText(el);
+        if (!value || !HAS_DIGIT.test(value) || !CURRENCY_HINT.test(value)) continue;
+        if (value.length > LIMITS.text) continue;
+        /* Le montant lu par le span peut encore être un texte collé
+           (« $6.99$6.99 ») : le verdict de la Phase 0 est SERVEUR, mais on
+           n'envoie pas un texte manifestement dupliqué. */
+        if (!amazonPlausible(value)) continue;
+        amazonNodes.push(el);
+        amazonReadings.push(value);
       }
       var amazonDistinct = {};
       for (var d = 0; d < amazonReadings.length; d++) {

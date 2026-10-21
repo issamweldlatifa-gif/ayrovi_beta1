@@ -262,6 +262,32 @@ describe('AYWEBs — lecteur Amazon : la zone d’achat seulement', () => {
     expect(validation.price).toBe(109);
   });
 
+  it('un montant hors Buy Box ne pollue pas le prix courant même si Amazon réutilise `.priceToPay`', () => {
+    const page = amazonPage(`
+      ${BUYBOX_109}
+      <section id="unrelated-product-widget">
+        <span class="a-price priceToPay"><span class="a-offscreen">$6.99</span></span>
+      </section>`);
+    const { payload, validation } = captureFrom(page);
+    expect(payload.priceCandidates).toEqual([
+      { text: '$109.00', source: 'dom' },
+      { text: '$109.00', source: 'dom_accessibility' },
+    ]);
+    expect(priceTrace(payload)).not.toContain('6.99');
+    expect(validation.price).toBe(109);
+  });
+
+  it('aucun Buy Box : une classe de prix générique ailleurs dans la fiche ne suffit pas', () => {
+    const page = amazonPage(`
+      <section id="unrelated-product-widget">
+        <span class="a-price priceToPay"><span class="a-offscreen">$6.99</span></span>
+      </section>`);
+    const { payload, validation } = captureFrom(page);
+    expect(payload.priceCandidates).toEqual([]);
+    expect(validation.ok).toBe(false);
+    expect(validation.rejection).toBe('NO_PRICE_TEXT');
+  });
+
   it('ignore les copies responsive masquées et les prix aria-hidden sans perdre le prix visible', () => {
     const page = amazonPage(`
       ${BUYBOX_109}
