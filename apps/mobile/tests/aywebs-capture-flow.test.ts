@@ -2,10 +2,6 @@ import { describe, expect, it } from 'vitest';
 import {
   AYWEBS_CAPTURE_EMPTY_PRICE_RETRIES,
   AYWEBS_CAPTURE_EMPTY_PRICE_RETRY_DELAY_MS,
-  AYWEBS_AMAZON_EMPTY_PRICE_RETRIES,
-  AYWEBS_AMAZON_EMPTY_PRICE_RETRY_DELAY_MS,
-  ayWebsCaptureRetryDelayMs,
-  canStartAyWebsCapture,
   hasAyWebsPriceCandidate,
   hasVerifiedAyWebsQuote,
   shouldRetryAyWebsCaptureForPrice,
@@ -19,14 +15,6 @@ const verifiedProduct = {
 };
 
 describe('AYWEBs — capture timing and verified quote gate', () => {
-  it('disables the reader action while reading and after rejecting a page', () => {
-    const ready = { enabled: true, loaded: true, native: true, busy: false, rejected: false };
-    expect(canStartAyWebsCapture(ready)).toBe(true);
-    expect(canStartAyWebsCapture({ ...ready, busy: true })).toBe(false);
-    expect(canStartAyWebsCapture({ ...ready, rejected: true })).toBe(false);
-    expect(canStartAyWebsCapture({ ...ready, loaded: false })).toBe(false);
-  });
-
   it('retries only a bounded number of times when the merchant DOM has no price yet', () => {
     expect(AYWEBS_CAPTURE_EMPTY_PRICE_RETRIES).toBe(2);
     expect(AYWEBS_CAPTURE_EMPTY_PRICE_RETRY_DELAY_MS).toBe(450);
@@ -35,16 +23,6 @@ describe('AYWEBs — capture timing and verified quote gate', () => {
     expect(shouldRetryAyWebsCaptureForPrice([], 1)).toBe(true);
     expect(shouldRetryAyWebsCaptureForPrice([], 2)).toBe(false);
     expect(shouldRetryAyWebsCaptureForPrice([{ text: '  $179.98  ' }], 0)).toBe(false);
-  });
-
-  it('gives Amazon extra bounded reads for its delayed mobile price while keeping other stores unchanged', () => {
-    expect(AYWEBS_AMAZON_EMPTY_PRICE_RETRIES).toBe(4);
-    expect(AYWEBS_AMAZON_EMPTY_PRICE_RETRY_DELAY_MS).toBe(900);
-    expect(ayWebsCaptureRetryDelayMs('amazon')).toBe(900);
-    expect(ayWebsCaptureRetryDelayMs('zalando')).toBe(450);
-    expect(shouldRetryAyWebsCaptureForPrice([], 3, 'amazon')).toBe(true);
-    expect(shouldRetryAyWebsCaptureForPrice([], 4, 'amazon')).toBe(false);
-    expect(shouldRetryAyWebsCaptureForPrice([{ text: '$129.99' }], 0, 'amazon')).toBe(false);
   });
 
   it('refuses to treat zero, unverified, currency-less, or unsigned data as a usable quote', () => {

@@ -30,8 +30,7 @@ import {
 } from '@/features/aywebs/merchantSecurity';
 import { AddToCartSheet } from '@/features/aywebs/AddToCartSheet';
 import {
-  ayWebsCaptureRetryDelayMs,
-  canStartAyWebsCapture,
+  AYWEBS_CAPTURE_EMPTY_PRICE_RETRY_DELAY_MS,
   hasVerifiedAyWebsQuote,
   shouldRetryAyWebsCaptureForPrice,
 } from '@/features/aywebs/captureFlow';
@@ -85,7 +84,6 @@ export default function AyWebsBrowserScreen() {
   const [currentUrl, setCurrentUrl] = useState('');
   const [loaded, setLoaded] = useState(false);
   const [captureBusy, setCaptureBusy] = useState(false);
-  const [captureRejected, setCaptureRejected] = useState(false);
   const [captureError, setCaptureError] = useState('');
   const [navigationWarning, setNavigationWarning] = useState('');
   const [resolved, setResolved] = useState<AyWebsResolvedProduct | null>(null);
@@ -149,7 +147,6 @@ export default function AyWebsBrowserScreen() {
     capturedPageRef.current = null;
     setCapturedPage(null);
     setResolved(null);
-    setCaptureRejected(true);
     setCaptureError(t('aywebs.variant.refreshFailed'));
     pending?.reject(new Error(reason));
   }, [t]);
@@ -171,6 +168,7 @@ export default function AyWebsBrowserScreen() {
 
   const goToAddress = useCallback(() => {
     Keyboard.dismiss();
+    setCaptureError('');
     if (!store) return;
     const normalized = normalizeAyWebsUrl(address);
     if (!normalized || !isAllowedAyWebsMerchantUrl(normalized, store)) {
@@ -178,8 +176,6 @@ export default function AyWebsBrowserScreen() {
       return;
     }
     cancelPendingCapture();
-    setCaptureRejected(false);
-    setCaptureError('');
     setNavigationWarning('');
     setLoaded(false);
     setCurrentUrl(normalized);
@@ -201,7 +197,6 @@ export default function AyWebsBrowserScreen() {
       activeRequestId.current = '';
       captureBusyRef.current = false;
       setCaptureBusy(false);
-      setCaptureRejected(true);
       setCaptureError(t('aywebs.browser.capture.timeout'));
     }, CAPTURE_RESPONSE_TIMEOUT_MS);
     const selection = pendingVariantSelectionRef.current;
@@ -237,7 +232,6 @@ export default function AyWebsBrowserScreen() {
       activeRequestId.current = '';
       captureBusyRef.current = false;
       setCaptureBusy(false);
-      setCaptureRejected(true);
       setCaptureError(ayWebsErrorMessage(error, locale, t));
     }
   }, [currentUrl, homeQuery.data?.features.captureEnabled, injectCapture, locale, sessionId, store, t]);
@@ -293,7 +287,6 @@ export default function AyWebsBrowserScreen() {
       captureBusyRef.current = false;
       setCaptureBusy(false);
       const key = SCRIPT_FAILURE_COPY[message.code] ?? 'aywebs.browser.capture.badData';
-      setCaptureRejected(true);
       setCaptureError(t(key as never));
       return;
     }
@@ -302,7 +295,6 @@ export default function AyWebsBrowserScreen() {
       else {
         captureBusyRef.current = false;
         setCaptureBusy(false);
-        setCaptureRejected(true);
         setCaptureError(t('aywebs.browser.navigationBlocked'));
       }
       return;
@@ -313,12 +305,11 @@ export default function AyWebsBrowserScreen() {
       else {
         captureBusyRef.current = false;
         setCaptureBusy(false);
-        setCaptureRejected(true);
         setCaptureError(t('aywebs.browser.capture.badData'));
       }
       return;
     }
-    if (shouldRetryAyWebsCaptureForPrice(message.capture.priceCandidates, captureRetryCount.current, store.id)) {
+    if (shouldRetryAyWebsCaptureForPrice(message.capture.priceCandidates, captureRetryCount.current)) {
       captureRetryCount.current += 1;
       captureRetryTimer.current = setTimeout(() => {
         captureRetryTimer.current = null;
@@ -335,10 +326,9 @@ export default function AyWebsBrowserScreen() {
           activeRequestId.current = '';
           captureBusyRef.current = false;
           setCaptureBusy(false);
-          setCaptureRejected(true);
           setCaptureError(ayWebsErrorMessage(error, locale, t));
         }
-      }, ayWebsCaptureRetryDelayMs(store.id));
+      }, AYWEBS_CAPTURE_EMPTY_PRICE_RETRY_DELAY_MS);
       return;
     }
     try {
@@ -355,10 +345,7 @@ export default function AyWebsBrowserScreen() {
       if (cycleId !== captureCycleId.current) return;
       if (result.product.storeId !== store.id || !isAllowedAyWebsMerchantUrl(result.product.sourceUrl, store)) {
         if (hasPendingVariantChange) failPendingVariantChange('RESOLVED_PRODUCT_MISMATCH');
-        else {
-          setCaptureRejected(true);
-          setCaptureError(t('aywebs.browser.capture.badData'));
-        }
+        else setCaptureError(t('aywebs.browser.capture.badData'));
         return;
       }
       if (pendingSelection) {
@@ -375,7 +362,6 @@ export default function AyWebsBrowserScreen() {
       } else if (!hasVerifiedAyWebsQuote(result.product, result.quoteToken)
         && !result.product.variantGroups.some((group) => group.values.length > 0)) {
         // Sans choix possibles, aucun devis incomplet ne doit ouvrir la feuille.
-        setCaptureRejected(true);
         setCaptureError(t('aywebs.error.captureIncomplete'));
         return;
       }
@@ -393,10 +379,7 @@ export default function AyWebsBrowserScreen() {
     } catch (error) {
       if (cycleId !== captureCycleId.current) return;
       if (hasPendingVariantChange) failPendingVariantChange(error instanceof Error ? error.message : 'CAPTURE_RESOLVE_FAILED');
-      else {
-        setCaptureRejected(true);
-        setCaptureError(ayWebsErrorMessage(error, locale, t));
-      }
+      else setCaptureError(ayWebsErrorMessage(error, locale, t));
     } finally {
       if (cycleId === captureCycleId.current) {
         captureBusyRef.current = false;
@@ -423,11 +406,7 @@ export default function AyWebsBrowserScreen() {
       if (normalized) {
         if (normalized !== currentUrl) {
           if (pendingVariantSelectionRef.current) variantNavigationRef.current = true;
-          else {
-            cancelPendingCapture();
-            setCaptureRejected(false);
-            setCaptureError('');
-          }
+          else cancelPendingCapture();
         }
         setCurrentUrl(normalized);
         setAddress(normalized);
@@ -577,35 +556,12 @@ export default function AyWebsBrowserScreen() {
           </View>
         ) : null}
       </View>
-      {captureBusy ? (
-        <View
-          accessibilityRole="progressbar"
-          accessibilityLabel={t('aywebs.browser.readingProduct')}
-          testID="aywebs-capture-progress"
-          style={[styles.captureProgress, { backgroundColor: theme.colors.surface, borderColor: theme.colors.line }]}
-        >
-          <ActivityIndicator color={theme.colors.accentText} />
-          <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.browser.readingProduct')}</AppText>
-        </View>
-      ) : null}
       {captureError ? (
         <View style={[styles.notice, { backgroundColor: theme.colors.surface, borderColor: theme.colors.line }]}>
           <AppText variant="caption" color={theme.status.danger.fg} accessibilityRole="alert">{captureError}</AppText>
-          <View style={[styles.noticeActions, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => {
-                setCaptureRejected(false);
-                setCaptureError('');
-                void capturePage();
-              }}
-            >
-              <AppText variant="caption" weight="bold" color={theme.colors.accentText}>{t('aywebs.browser.retryReading')}</AppText>
-            </Pressable>
-            <Pressable accessibilityRole="button" onPress={() => setCaptureError('')}>
-              <AppText variant="caption" weight="bold" color={theme.colors.accentText}>{t('common.close')}</AppText>
-            </Pressable>
-          </View>
+          <Pressable accessibilityRole="button" onPress={() => setCaptureError('')}>
+            <AppText variant="caption" weight="bold" color={theme.colors.accentText}>{t('common.close')}</AppText>
+          </Pressable>
         </View>
       ) : null}
 
@@ -613,13 +569,7 @@ export default function AyWebsBrowserScreen() {
         <Button
           label={t('aywebs.addToCart')}
           busy={captureBusy}
-          disabled={!open || !canStartAyWebsCapture({
-            enabled: captureEnabled,
-            loaded,
-            native: Platform.OS !== 'web',
-            busy: captureBusy,
-            rejected: captureRejected,
-          })}
+          disabled={!captureEnabled || !loaded || Platform.OS === 'web' || !open}
           tone="main"
           block
           onPress={() => { void capturePage(); }}
@@ -659,8 +609,6 @@ const styles = StyleSheet.create({
   webView: { flex: 1 },
   loadingOverlay: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', gap: 10 },
   footer: { paddingTop: 10, paddingHorizontal: 16, borderTopWidth: StyleSheet.hairlineWidth, gap: 6 },
-  captureProgress: { marginHorizontal: 12, marginVertical: 6, padding: 12, borderWidth: 1, borderRadius: 12, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  noticeActions: { alignItems: 'center', gap: 16 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   notice: { marginHorizontal: 12, marginVertical: 6, padding: 12, borderWidth: 1, borderRadius: 12, gap: 8 }
 });
