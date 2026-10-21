@@ -31,7 +31,7 @@ import { useTheme } from '@/design/theme';
 import { veil } from '@/design/tokens.mobile';
 import { useI18n, useT } from '@/i18n';
 import { ayWebsErrorMessage, ayWebsLinkMessage, ayWebsReadinessMessage } from './errors';
-import { ayWebsAddReadiness } from './variantLogic';
+import { ayWebsAddReadiness, ayWebsCaptureForOptions, ayWebsUsesServerVariantCatalog } from './variantLogic';
 
 const MAX_QUANTITY = 99;
 
@@ -88,12 +88,29 @@ export function AddToCartSheet({
   const [failure, setFailure] = useState('');
   const [added, setAdded] = useState<AyWebsCartAddResult | null>(null);
   const requestId = useRef('');
-  const product = resolved.product;
-  const hasFreshCapturedGroups = Boolean(capture?.variantGroups.length);
+  const usesServerVariantCatalog = ayWebsUsesServerVariantCatalog(resolved.product.storeId);
+  const optionCapture = ayWebsCaptureForOptions(resolved.product.storeId, capture);
+  const zalandoResolutionQuery = useQuery({
+    queryKey: ['aywebs', 'zalando-options-product', sessionId, resolved.product.sourceUrl],
+    enabled: visible && usesServerVariantCatalog && Boolean(sessionId && resolved.product.sourceUrl),
+    staleTime: 60_000,
+    queryFn: ({ signal }) => resolveAyWebsProduct({
+      url: resolved.product.sourceUrl,
+      storeId: resolved.product.storeId,
+      sessionId,
+    }, { signal }),
+  });
+  const sheetResolved = usesServerVariantCatalog ? (zalandoResolutionQuery.data ?? resolved) : resolved;
+  const product = sheetResolved.product;
+  const serverVariantDataReady = !usesServerVariantCatalog || Boolean(zalandoResolutionQuery.data);
+  const serverVariantDataLoading = usesServerVariantCatalog && visible && !zalandoResolutionQuery.data && zalandoResolutionQuery.isLoading;
+  const serverVariantDataFailed = usesServerVariantCatalog && zalandoResolutionQuery.isError;
+  const hasFreshCapturedGroups = Boolean(optionCapture?.variantGroups.length);
 
   const variantsQuery = useQuery({
-    queryKey: ['aywebs', 'variants', product.productId],
-    enabled: visible && !hasFreshCapturedGroups && Boolean(sessionId && product.productId && product.variantGroups.length),
+    queryKey: ['aywebs', 'variants', sessionId, product.productId],
+    enabled: visible && serverVariantDataReady && !hasFreshCapturedGroups
+      && Boolean(sessionId && product.productId && product.variantGroups.length),
     staleTime: 5 * 60_000,
     queryFn: ({ signal }) => fetchAyWebsVariants({ productId: product.productId, sessionId }, { signal }),
   });
@@ -102,29 +119,37 @@ export function AddToCartSheet({
     if (!visible) return;
     setSelected(Object.keys(product.selectedVariant).length
       ? { ...product.selectedVariant }
-      : { ...(capture?.selectedVariantAttributes || {}) });
+      : { ...(optionCapture?.selectedVariantAttributes || {}) });
     setQuantity(1);
     setBusy(false);
     setFailure('');
     setAdded(null);
     requestId.current = '';
-  }, [visible, product.productId]);
+  }, [optionCapture?.selectedVariantAttributes, product.productId, product.selectedVariant, sheetResolved.captureId, visible]);
 
   const capturedGroups = useMemo(
-    () => (capture?.variantGroups || []).map(({ attribute, values }) => ({ attribute, values })),
-    [capture?.variantGroups],
+    () => (optionCapture?.variantGroups || []).map(({ attribute, values }) => ({ attribute, values })),
+    [optionCapture?.variantGroups],
   );
   const groups = useMemo(
-    () => hasFreshCapturedGroups
-      ? (product.variantGroups.length ? product.variantGroups : capturedGroups)
-      : (variantsQuery.data?.groups.length ? variantsQuery.data.groups : product.variantGroups),
-    [capturedGroups, hasFreshCapturedGroups, product.variantGroups, variantsQuery.data?.groups],
+    () => !serverVariantDataReady
+      ? []
+      : hasFreshCapturedGroups
+        ? (product.variantGroups.length ? product.variantGroups : capturedGroups)
+        : usesServerVariantCatalog
+          ? (product.variantGroups.length ? product.variantGroups : variantsQuery.data?.groups || [])
+          : (variantsQuery.data?.groups.length ? variantsQuery.data.groups : product.variantGroups),
+    [capturedGroups, hasFreshCapturedGroups, product.variantGroups, serverVariantDataReady, usesServerVariantCatalog, variantsQuery.data?.groups],
   );
   const variants = useMemo(
-    () => hasFreshCapturedGroups
-      ? product.variantPrices
-      : (variantsQuery.data?.variants.length ? variantsQuery.data.variants : product.variantPrices),
-    [hasFreshCapturedGroups, product.variantPrices, variantsQuery.data?.variants],
+    () => !serverVariantDataReady
+      ? []
+      : hasFreshCapturedGroups
+        ? product.variantPrices
+        : usesServerVariantCatalog
+          ? (product.variantPrices.length ? product.variantPrices : variantsQuery.data?.variants || [])
+          : (variantsQuery.data?.variants.length ? variantsQuery.data.variants : product.variantPrices),
+    [hasFreshCapturedGroups, product.variantPrices, serverVariantDataReady, usesServerVariantCatalog, variantsQuery.data?.variants],
   );
   const readiness = useMemo(() => ayWebsAddReadiness({
     product,
@@ -132,11 +157,22 @@ export function AddToCartSheet({
     variants,
     selected,
     sessionId,
-    quoteToken: resolved.quoteToken,
-  }), [groups, product, quantity, resolved.quoteToken, selected, sessionId, variants]);
+    quoteToken: sheetResolved.quoteToken,
+  }), [groups, product, quantity, selected, sessionId, sheetResolved.quoteToken, variants]);
   const readinessMessage = ayWebsReadinessMessage(readiness.reason, t);
-  const selectedServerPrice = readiness.selectedVariant?.priceTnd ?? (!groups.length ? product.ayroviPriceTnd : null);
-  const availabilityLabel = t(`aywebs.availability.${readiness.selectedVariant?.availability ?? product.availability}` as never);
+  const selectedServerPrice = serverVariantDataReady
+    ? readiness.selectedVariant?.priceTnd ?? (!groups.length ? product.ayroviPriceTnd : null)
+    : null;
+  const selectedSourcePrice = groups.length
+    ? (readiness.selectedVariant?.priceVerified ? readiness.selectedVariant.sourcePrice ?? null : null)
+    : product.sourcePrice;
+  const selectedSourceCurrency = groups.length
+    ? (readiness.selectedVariant?.priceVerified ? readiness.selectedVariant.currency || '' : '')
+    : product.currency;
+  const selectedPriceVerified = groups.length
+    ? Boolean(readiness.selectedVariant?.priceVerified && selectedSourcePrice !== null)
+    : product.priceVerified && product.currencyVerified;
+  const availabilityLabel = t(`aywebs.availability.${readiness.selectedVariant?.availability ?? (serverVariantDataReady && !groups.length ? product.availability : 'UNKNOWN')}` as never);
 
   const setOption = async (attribute: string, value: string) => {
     if (selected[attribute] === value || busy) return;
@@ -152,7 +188,7 @@ export function AddToCartSheet({
     } catch {
       setSelected(Object.keys(product.selectedVariant).length
         ? { ...product.selectedVariant }
-        : { ...(capture?.selectedVariantAttributes || {}) });
+        : { ...(optionCapture?.selectedVariantAttributes || {}) });
       setFailure(t('aywebs.variant.refreshFailed'));
     } finally {
       setBusy(false);
@@ -173,12 +209,14 @@ export function AddToCartSheet({
         sessionId,
         variant: selected,
         quantity,
-        capture,
+        capture: optionCapture,
         refresh: true,
       });
       if (!fresh.quoteToken || !fresh.product.priceVerified || !fresh.product.currencyVerified) throw new Error('QUOTE_MISSING');
-      if (capture && !['AVAILABLE', 'LOW_STOCK'].includes(fresh.product.availability)) throw new Error('AVAILABILITY_UNKNOWN');
-      if (capture?.variantGroups.length && !groups.every((group) => (
+      if ((optionCapture || usesServerVariantCatalog) && !['AVAILABLE', 'LOW_STOCK'].includes(fresh.product.availability)) {
+        throw new Error('AVAILABILITY_UNKNOWN');
+      }
+      if ((optionCapture?.variantGroups.length || (usesServerVariantCatalog && groups.length)) && !groups.every((group) => (
         Boolean(selected[group.attribute]?.trim())
         && selected[group.attribute].trim().toLowerCase() === String(fresh.product.selectedVariant[group.attribute] || '').trim().toLowerCase()
       ))) throw new Error('VARIANT_UNVERIFIED');
@@ -190,7 +228,7 @@ export function AddToCartSheet({
         variant: selected,
         quantity,
         quoteToken: fresh.quoteToken,
-        capture,
+        capture: optionCapture,
         requestId: requestId.current,
       });
       setAdded(result);
@@ -282,13 +320,15 @@ export function AddToCartSheet({
                   <AppText variant="label" weight="bold" numberOfLines={2}>{product.title}</AppText>
                   <AppText variant="caption" color={theme.colors.muted}>{product.storeName}</AppText>
                   <AppText variant="caption" color={theme.colors.muted}>
-                    {product.sourcePrice === null ? t('aywebs.price.unavailable') : `${product.sourcePrice.toFixed(2)} ${product.currency || '—'}`}
+                    {!serverVariantDataReady || selectedSourcePrice === null || (groups.length > 0 && !selectedPriceVerified)
+                      ? t('aywebs.price.unavailable')
+                      : `${selectedSourcePrice.toFixed(2)} ${selectedSourceCurrency || '—'}`}
                   </AppText>
                 </View>
               </View>
 
-              <AppText variant="caption" color={product.priceVerified && product.currencyVerified ? theme.status.success.fg : theme.status.warning.fg}>
-                {product.priceVerified && product.currencyVerified ? t('aywebs.price.verified') : t('aywebs.price.unverified')}
+              <AppText variant="caption" color={serverVariantDataReady && selectedPriceVerified ? theme.status.success.fg : theme.status.warning.fg}>
+                {serverVariantDataReady && selectedPriceVerified ? t('aywebs.price.verified') : t('aywebs.price.unverified')}
               </AppText>
               <AppText variant="caption" color={theme.colors.muted}>
                 {t('aywebs.price.estimatedTnd', {
@@ -299,15 +339,24 @@ export function AddToCartSheet({
                 {t('aywebs.availability.label')}: {availabilityLabel}
               </AppText>
 
+              {serverVariantDataLoading ? <AppText variant="caption" color={theme.colors.muted}>{t('loading.server')}</AppText> : null}
+              {serverVariantDataFailed ? (
+                <AppText variant="caption" color={theme.status.warning.fg} accessibilityRole="alert">
+                  {t('aywebs.variant.refreshFailed')}
+                </AppText>
+              ) : null}
+
               {groups.map((group) => (
                 <View key={group.attribute} style={styles.group}>
                   <AppText variant="label" weight="bold">{t('aywebs.variant.choose', {
-                    attribute: capture?.variantGroups.find((candidate) => candidate.attribute === group.attribute)?.label || group.attribute,
+                    attribute: optionCapture?.variantGroups.find((candidate) => candidate.attribute === group.attribute)?.label
+                      || (group.attribute.toLowerCase() === 'size' ? t('lens.product.size')
+                        : group.attribute.toLowerCase() === 'color' ? t('lens.product.color') : group.attribute),
                   })}</AppText>
                   <View style={styles.options}>
                     {group.values.map((value) => {
                       const active = selected[group.attribute] === value;
-                      const unavailable = confirmedUnavailable(group, value, groups, variants, capture?.variantGroups || []);
+                      const unavailable = confirmedUnavailable(group, value, groups, variants, optionCapture?.variantGroups || []);
                       return (
                         <Pressable
                           key={`${group.attribute}-${value}`}
@@ -372,7 +421,7 @@ export function AddToCartSheet({
               <Button
                 label={t('aywebs.addToCart')}
                 busy={busy}
-                disabled={!readiness.ready || variantsQuery.isLoading}
+                disabled={!readiness.ready || !serverVariantDataReady || serverVariantDataFailed || serverVariantDataLoading || variantsQuery.isLoading}
                 tone="main"
                 block
                 onPress={() => { void add(); }}

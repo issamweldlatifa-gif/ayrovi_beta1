@@ -102,6 +102,10 @@ export interface AyWebsVariantPrice {
   availability: AyWebsAvailabilityState;
   availabilityReason: string;
   priceTnd: number | null;
+  /** Exact merchant price is present only when the server marks this variant quote as verified. */
+  sourcePrice?: number | null;
+  currency?: string;
+  priceVerified?: boolean;
 }
 
 export interface AyWebsProduct {
@@ -247,6 +251,12 @@ function parseVariantPrices(value: unknown): AyWebsVariantPrice[] {
         .map(([key, item]) => [key, String(item).slice(0, 100)]),
     );
     const pricing = record(entry.ayrovi_pricing);
+    const quotedPrice = numberOrNull(entry.quoted_price);
+    const quotedCurrency = text(entry.quoted_currency).toUpperCase();
+    const priceVerified = entry.price_source === 'VARIANT'
+      && quotedPrice !== null
+      && quotedPrice > 0
+      && /^[A-Z]{3}$/.test(quotedCurrency);
     return [{
       sourceVariantId: text(entry.source_variant_id),
       attributes,
@@ -254,6 +264,9 @@ function parseVariantPrices(value: unknown): AyWebsVariantPrice[] {
       availability: parseAvailability(entry.availability),
       availabilityReason: text(entry.availability_reason),
       priceTnd: numberOrNull(pricing.total_tnd),
+      sourcePrice: priceVerified ? quotedPrice : null,
+      currency: priceVerified ? quotedCurrency : '',
+      priceVerified,
     }];
   });
 }

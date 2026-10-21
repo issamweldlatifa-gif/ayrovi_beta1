@@ -1,8 +1,20 @@
 import type {
+  AyWebsCapture,
   AyWebsProduct,
   AyWebsVariantGroup,
   AyWebsVariantPrice,
 } from '@/api/aywebs';
+
+/** Zalando has a reliable server-side variant catalogue; do not replace it with
+ * the generic WebView DOM guess (for example an accordion header as a size). */
+export function ayWebsUsesServerVariantCatalog(storeId: string): boolean {
+  return storeId.trim().toLowerCase() === 'zalando';
+}
+
+/** Keep WebView evidence for other stores, but let Zalando resolve from its URL. */
+export function ayWebsCaptureForOptions(storeId: string, capture: AyWebsCapture | null): AyWebsCapture | null {
+  return ayWebsUsesServerVariantCatalog(storeId) ? null : capture;
+}
 
 export type AyWebsAddBlockReason =
   | 'SESSION_REQUIRED'

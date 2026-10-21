@@ -21,7 +21,11 @@ import {
   storeForAyWebsUrl,
 } from '../src/features/aywebs/merchantSecurity';
 import { ayWebsLinkMessage } from '../src/features/aywebs/errors';
-import { ayWebsAddReadiness } from '../src/features/aywebs/variantLogic';
+import {
+  ayWebsAddReadiness,
+  ayWebsCaptureForOptions,
+  ayWebsUsesServerVariantCatalog,
+} from '../src/features/aywebs/variantLogic';
 
 const amazon: AyWebsStore = {
   id: 'amazon', name: 'Amazon', displayName: 'Amazon',
@@ -86,6 +90,12 @@ describe('AYWEBs — URL et WebView marchand sécurisés', () => {
     expect(isAllowedAyWebsMerchantUrl('http://amazon.com/item', amazon)).toBe(false);
     expect(safeAyWebsStartUrl('https://www.amazon.com/dp/1', amazon)).toBe('https://www.amazon.com/dp/1');
     expect(storeForAyWebsUrl('amazon.com/dp/1', [amazon])?.id).toBe('amazon');
+    const reportedAmazonProduct = 'https://www.amazon.com/Keyboard-Android-Octa-Core-Widevine-Electronic/dp/B0H3KYZ9PG/ref/mp_s_a_1_1_sspa?_encoding=UTF8&content-id=amzn1.sym.a64ac9fc-2717-4051-ae96-b2a9a2a6b039&keywords=electronics+tablets';
+    expect(normalizeAyWebsUrl(reportedAmazonProduct)).toBe(reportedAmazonProduct);
+    expect(storeForAyWebsUrl(reportedAmazonProduct, [amazon])?.id).toBe('amazon');
+    const reportedAmazonVariantProduct = 'https://www.amazon.com/TSLA-Compression-Athletic-Workout-Crewneck/dp/B09YXZ7NHQ/ref=mp_s_a_1_2_sspa?keywords=fitness+clothing&psc=1';
+    expect(normalizeAyWebsUrl(reportedAmazonVariantProduct)).toBe(reportedAmazonVariantProduct);
+    expect(storeForAyWebsUrl(reportedAmazonVariantProduct, [amazon])?.id).toBe('amazon');
     expect(storeForAyWebsUrl('https://evil.test/dp/1', [amazon])).toBeNull();
   });
 
@@ -148,6 +158,15 @@ describe('AYWEBs — URL et WebView marchand sécurisés', () => {
     expect(parseAyWebsCapture({
       ...capture, variantGroups: [{ ...groups[0], sourceKey: 'bad"selector' }],
     }).variantGroups).toEqual([]);
+  });
+});
+
+describe('AYWEBs — catalogue de variantes Zalando', () => {
+  it('utilise les options serveur pour Zalando et conserve la capture WebView des autres magasins', () => {
+    expect(ayWebsUsesServerVariantCatalog('zalando')).toBe(true);
+    expect(ayWebsUsesServerVariantCatalog('amazon')).toBe(false);
+    expect(ayWebsCaptureForOptions('zalando', capture)).toBeNull();
+    expect(ayWebsCaptureForOptions('amazon', capture)).toBe(capture);
   });
 });
 
@@ -236,7 +255,20 @@ describe('AYWEBs — contrat API mobile', () => {
         product_id: 'p-1', store_id: 'amazon', store_name: 'Amazon', source_url: product.sourceUrl,
         source_domain: 'www.amazon.com', title: 'Product', description: '', brand: '', images: [],
         price: 15, currency: 'USD', price_verified: true, currency_verified: true,
-        variants: [], variant_details: [], variant_groups: [], selected_variant: null,
+        variants: [],
+        variant_details: [
+          {
+            source_variant_id: 'zalando-size-m', attributes: { size: 'M' }, label: 'M',
+            price: 15.5, currency: 'EUR', quoted_price: 15.5, quoted_currency: 'EUR', price_source: 'VARIANT',
+            availability: 'AVAILABLE', availability_reason: '', ayrovi_pricing: { total_tnd: 62 },
+          },
+          {
+            source_variant_id: 'zalando-size-l', attributes: { size: 'L' }, label: 'L',
+            price: 19, currency: 'EUR', quoted_price: null, quoted_currency: null, price_source: 'UNKNOWN',
+            availability: 'UNKNOWN', availability_reason: '', ayrovi_pricing: null,
+          },
+        ],
+        variant_groups: [{ attribute: 'size', values: ['M', 'L'] }], selected_variant: null,
         availability: { state: 'AVAILABLE', reason: '', source: 'merchant', checked_at: null },
         condition: null, seller: null, ayrovi_pricing: { total_tnd: 52 }, purchase_mode: 'MANUAL_REVIEW',
       },
@@ -246,6 +278,12 @@ describe('AYWEBs — contrat API mobile', () => {
       url: product.sourceUrl, storeId: 'amazon', sessionId: 'session-123', refresh: true,
     });
     expect(result.product.productId).toBe('p-1');
+    expect(result.product.variantPrices[0]).toMatchObject({
+      sourceVariantId: 'zalando-size-m', sourcePrice: 15.5, currency: 'EUR', priceVerified: true, priceTnd: 62,
+    });
+    expect(result.product.variantPrices[1]).toMatchObject({
+      sourceVariantId: 'zalando-size-l', sourcePrice: null, currency: '', priceVerified: false, priceTnd: null,
+    });
     expect(result.quoteToken).toBe('signed-quote');
     expect(result.captureUsed).toBe(true);
     expect(fetchMock.mock.calls[0]?.[1]?.signal).toBeDefined();
