@@ -5,7 +5,7 @@ import {
   AYWEBS_AMAZON_EMPTY_PRICE_RETRIES,
   AYWEBS_AMAZON_EMPTY_PRICE_RETRY_DELAY_MS,
   ayWebsCaptureRetryDelayMs,
-  canOpenAyWebsAddSheet,
+  canStartAyWebsCapture,
   hasAyWebsPriceCandidate,
   hasVerifiedAyWebsQuote,
   shouldRetryAyWebsCaptureForPrice,
@@ -19,15 +19,12 @@ const verifiedProduct = {
 };
 
 describe('AYWEBs — capture timing and verified quote gate', () => {
-  it('keeps Add to Cart locked until automatic page reading has resolved a product', () => {
-    const ready = {
-      enabled: true, loaded: true, native: true, busy: false, rejected: false, hasResolvedProduct: true,
-    };
-    expect(canOpenAyWebsAddSheet(ready)).toBe(true);
-    expect(canOpenAyWebsAddSheet({ ...ready, hasResolvedProduct: false })).toBe(false);
-    expect(canOpenAyWebsAddSheet({ ...ready, busy: true })).toBe(false);
-    expect(canOpenAyWebsAddSheet({ ...ready, rejected: true })).toBe(false);
-    expect(canOpenAyWebsAddSheet({ ...ready, loaded: false })).toBe(false);
+  it('disables the reader action while reading and after rejecting a page', () => {
+    const ready = { enabled: true, loaded: true, native: true, busy: false, rejected: false };
+    expect(canStartAyWebsCapture(ready)).toBe(true);
+    expect(canStartAyWebsCapture({ ...ready, busy: true })).toBe(false);
+    expect(canStartAyWebsCapture({ ...ready, rejected: true })).toBe(false);
+    expect(canStartAyWebsCapture({ ...ready, loaded: false })).toBe(false);
   });
 
   it('retries only a bounded number of times when the merchant DOM has no price yet', () => {

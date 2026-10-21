@@ -34,21 +34,15 @@ export function shouldRetryAyWebsCaptureForPrice(
     && !hasAyWebsPriceCandidate(candidates);
 }
 
-/** The Add to Cart action is unavailable until the page has a resolved product. */
-export function canOpenAyWebsAddSheet(input: {
+/** Keep the reader CTA unavailable while reading and after a rejected page. */
+export function canStartAyWebsCapture(input: {
   enabled: boolean;
   loaded: boolean;
   native: boolean;
   busy: boolean;
   rejected: boolean;
-  hasResolvedProduct: boolean;
 }): boolean {
-  return input.enabled
-    && input.loaded
-    && input.native
-    && !input.busy
-    && !input.rejected
-    && input.hasResolvedProduct;
+  return input.enabled && input.loaded && input.native && !input.busy && !input.rejected;
 }
 
 /** Never open the product/options sheet for an unverified or zero-price result. */

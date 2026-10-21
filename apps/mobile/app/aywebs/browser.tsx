@@ -18,7 +18,7 @@ import { ErrorBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { useI18n, useT } from '@/i18n';
-import { analyzeAyWebsPage, buildAyWebsCaptureInjection, buildAyWebsVariantSelectionInjection, fetchAyWebsCaptureScript, fetchAyWebsHome, resolveAyWebsProduct, type AyWebsCapture, type AyWebsPageAnalysis, type AyWebsResolvedProduct } from '@/api/aywebs';
+import { buildAyWebsCaptureInjection, buildAyWebsVariantSelectionInjection, fetchAyWebsCaptureScript, fetchAyWebsHome, resolveAyWebsProduct, type AyWebsCapture, type AyWebsResolvedProduct } from '@/api/aywebs';
 import { useSessionId } from '@/session/session';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ayWebsErrorMessage } from '@/features/aywebs/errors';
@@ -31,7 +31,7 @@ import {
 import { AddToCartSheet } from '@/features/aywebs/AddToCartSheet';
 import {
   ayWebsCaptureRetryDelayMs,
-  canOpenAyWebsAddSheet,
+  canStartAyWebsCapture,
   hasVerifiedAyWebsQuote,
   shouldRetryAyWebsCaptureForPrice,
 } from '@/features/aywebs/captureFlow';
@@ -74,7 +74,6 @@ export default function AyWebsBrowserScreen() {
   const captureRetryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const captureRetryCount = useRef(0);
   const captureCycleId = useRef(0);
-  const pageAnalysisSequence = useRef(0);
   const activeRequestId = useRef('');
   const captureBusyRef = useRef(false);
   const capturedPageRef = useRef<AyWebsCapture | null>(null);
@@ -85,9 +84,6 @@ export default function AyWebsBrowserScreen() {
   const [address, setAddress] = useState('');
   const [currentUrl, setCurrentUrl] = useState('');
   const [loaded, setLoaded] = useState(false);
-  const [pageAnalysisBusy, setPageAnalysisBusy] = useState(false);
-  const [pageAnalysis, setPageAnalysis] = useState<AyWebsPageAnalysis | null>(null);
-  const [sheetVisible, setSheetVisible] = useState(false);
   const [captureBusy, setCaptureBusy] = useState(false);
   const [captureRejected, setCaptureRejected] = useState(false);
   const [captureError, setCaptureError] = useState('');
@@ -130,7 +126,6 @@ export default function AyWebsBrowserScreen() {
     if (captureTimer.current) clearTimeout(captureTimer.current);
     if (captureRetryTimer.current) clearTimeout(captureRetryTimer.current);
     captureCycleId.current += 1;
-    pageAnalysisSequence.current += 1;
     captureBusyRef.current = false;
     activeRequestId.current = '';
     pendingVariantChangeRef.current?.reject(new Error('CAPTURE_CANCELLED'));
@@ -183,13 +178,6 @@ export default function AyWebsBrowserScreen() {
       return;
     }
     cancelPendingCapture();
-    pageAnalysisSequence.current += 1;
-    setPageAnalysisBusy(false);
-    setPageAnalysis(null);
-    setResolved(null);
-    setCapturedPage(null);
-    capturedPageRef.current = null;
-    setSheetVisible(false);
     setCaptureRejected(false);
     setCaptureError('');
     setNavigationWarning('');
@@ -253,39 +241,6 @@ export default function AyWebsBrowserScreen() {
       setCaptureError(ayWebsErrorMessage(error, locale, t));
     }
   }, [currentUrl, homeQuery.data?.features.captureEnabled, injectCapture, locale, sessionId, store, t]);
-
-  const analyzeAndReadPage = useCallback(async () => {
-    if (!store || !sessionId || !currentUrl || !store.captureSupported || !homeQuery.data?.features.enabled || !homeQuery.data.features.captureEnabled || !loaded || pageAnalysisBusy || captureBusyRef.current) return;
-    const sequence = ++pageAnalysisSequence.current;
-    const analyzedUrl = currentUrl;
-    setPageAnalysisBusy(true);
-    setCaptureError('');
-    setCaptureRejected(false);
-    setPageAnalysis(null);
-    try {
-      const analysis = await analyzeAyWebsPage({ url: analyzedUrl, sessionId });
-      if (sequence !== pageAnalysisSequence.current) return;
-      setPageAnalysis(analysis);
-      if (!analysis.isProductPage || !analysis.productDetected) return;
-      if (!analysis.captureAllowed || analysis.storeId !== store.id) {
-        setCaptureRejected(true);
-        setCaptureError(t('aywebs.browser.capture.badData'));
-        return;
-      }
-      await capturePage();
-    } catch (error) {
-      if (sequence !== pageAnalysisSequence.current) return;
-      setCaptureRejected(true);
-      setCaptureError(ayWebsErrorMessage(error, locale, t));
-    } finally {
-      if (sequence === pageAnalysisSequence.current) setPageAnalysisBusy(false);
-    }
-  }, [capturePage, currentUrl, homeQuery.data?.features.captureEnabled, homeQuery.data?.features.enabled, loaded, locale, pageAnalysisBusy, sessionId, store, t]);
-
-  useEffect(() => {
-    if (!loaded || pageAnalysis || pageAnalysisBusy || captureRejected || resolved) return;
-    void analyzeAndReadPage();
-  }, [analyzeAndReadPage, captureRejected, loaded, pageAnalysis, pageAnalysisBusy, resolved]);
 
   const captureSelectedVariant = useCallback(async (selection: Record<string, string>) => {
     if (!store || !sessionId || !currentUrl || captureBusyRef.current) throw new Error('CAPTURE_BUSY');
@@ -470,13 +425,6 @@ export default function AyWebsBrowserScreen() {
           if (pendingVariantSelectionRef.current) variantNavigationRef.current = true;
           else {
             cancelPendingCapture();
-            pageAnalysisSequence.current += 1;
-            setPageAnalysisBusy(false);
-            setPageAnalysis(null);
-            setResolved(null);
-            setCapturedPage(null);
-            capturedPageRef.current = null;
-            setSheetVisible(false);
             setCaptureRejected(false);
             setCaptureError('');
           }
@@ -629,7 +577,7 @@ export default function AyWebsBrowserScreen() {
           </View>
         ) : null}
       </View>
-      {captureBusy || pageAnalysisBusy ? (
+      {captureBusy ? (
         <View
           accessibilityRole="progressbar"
           accessibilityLabel={t('aywebs.browser.readingProduct')}
@@ -649,7 +597,7 @@ export default function AyWebsBrowserScreen() {
               onPress={() => {
                 setCaptureRejected(false);
                 setCaptureError('');
-                void analyzeAndReadPage();
+                void capturePage();
               }}
             >
               <AppText variant="caption" weight="bold" color={theme.colors.accentText}>{t('aywebs.browser.retryReading')}</AppText>
@@ -664,18 +612,17 @@ export default function AyWebsBrowserScreen() {
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, theme.space[2]), borderTopColor: theme.colors.line, backgroundColor: theme.colors.canvas }]}>
         <Button
           label={t('aywebs.addToCart')}
-          busy={captureBusy || pageAnalysisBusy}
-          disabled={!open || !canOpenAyWebsAddSheet({
+          busy={captureBusy}
+          disabled={!open || !canStartAyWebsCapture({
             enabled: captureEnabled,
             loaded,
             native: Platform.OS !== 'web',
-            busy: captureBusy || pageAnalysisBusy,
+            busy: captureBusy,
             rejected: captureRejected,
-            hasResolvedProduct: Boolean(resolved),
           })}
           tone="main"
           block
-          onPress={() => setSheetVisible(true)}
+          onPress={() => { void capturePage(); }}
           leading={<Ionicons name="pricetags-outline" size={18} color={theme.colors.onAction} />}
           testID="aywebs-capture-product"
         />
@@ -684,13 +631,12 @@ export default function AyWebsBrowserScreen() {
 
       {resolved ? (
         <AddToCartSheet
-          visible={sheetVisible}
+          visible
           resolved={resolved}
           capture={capturedPage}
           sessionId={sessionId}
           onVariantChange={captureSelectedVariant}
           onContinueShopping={() => {
-            setSheetVisible(false);
             capturedPageRef.current = null;
             pendingVariantSelectionRef.current = null;
             variantNavigationRef.current = false;
