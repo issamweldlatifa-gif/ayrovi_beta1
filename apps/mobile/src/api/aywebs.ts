@@ -364,17 +364,24 @@ export const AYWEBS_CAPTURE_MESSAGE_MAX_CHARS = 64_000;
  * تولّي رسالة صريحة (`__aywebs_error`) — كي ما يجي شي، الشاشة تعرف وتقول
  * «ما نجّمناش نقراو الصفحة»، موش تبقى تستنّى للأبد.
  */
-export function buildAyWebsCaptureInjection(script: string): string {
+export function buildAyWebsCaptureInjection(script: string, requestId?: string): string {
   if (!script || !script.trim()) {
     throw new ApiError('malformed', 'Script de capture vide : rien à injecter');
   }
+  const id = JSON.stringify(requestId ?? null);
   return [
     '(function () {',
+    `  var requestId = ${id};`,
     '  try {',
     '    var payload = (' + script + ');',
-    "    window.ReactNativeWebView.postMessage(String(payload));",
+    '    if (requestId !== null) {',
+    '      var capture = typeof payload === "string" ? JSON.parse(payload) : payload;',
+    '      capture.__aywebs_requestId = requestId;',
+    '      payload = JSON.stringify(capture);',
+    '    }',
+    '    window.ReactNativeWebView.postMessage(String(payload));',
     '  } catch (error) {',
-    "    window.ReactNativeWebView.postMessage(JSON.stringify({ __aywebs_error: String((error && error.message) || error) }));",
+    '    window.ReactNativeWebView.postMessage(JSON.stringify({ __aywebs_requestId: requestId, __aywebs_error: String((error && error.message) || error) }));',
     '  }',
     '})(); true;',
   ].join('\n');

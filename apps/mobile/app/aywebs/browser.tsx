@@ -32,12 +32,14 @@ import { fetchFavorites } from '@/api/account';
 import { StoreCartSheet, StoreFavoriteSheet } from '@/features/aywebs/StoreSheets';
 import { canonicalSourceUrl, isPageSaved } from '@/features/aywebs/storeShopping';
 import {
-  analyzeAyWebsPage, buildAyWebsCaptureInjection, fetchAyWebsCaptureScript,
+  AYWEBS_RESOLVE_TIMEOUT_MS, analyzeAyWebsPage, buildAyWebsCaptureInjection, fetchAyWebsCaptureScript,
   parseAyWebsCaptureMessage, resolveAyWebsProductWithCapture,
   type AyWebsPageAnalysis, type AyWebsResolveOutcome,
 } from '@/api/aywebs';
 import { AddToCartSheet } from '@/features/aywebs/AddToCartSheet';
 import { ReadingProgress } from '@/features/aywebs/ReadingProgress';
+import { CAPTURE_BUDGET_MS } from '@/features/aywebs/phase';
+import { withReadDeadline } from '@/features/aywebs/readDeadline';
 import { waitForPageIdle } from '@/features/aywebs/captureFallback';
 import {
   AYWEBS_CAPTURE_EMPTY_PRICE_RETRY_DELAY_MS, canReusePrefetch, canReuseVerified, priceCandidatesOf, resolveAddToCart, shouldRetryAyWebsCaptureForPrice,
@@ -76,9 +78,9 @@ export default function AyWebsBrowserScreen() {
   const pageOk = isWebPageUrl(url);
 
   const webRef = useRef<WebViewHandle>(null);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const captureSequence = useRef(0);
   /** الوعد الجاري لقراءة الصفحة: يتفتح بالحقن ويتسدّ بالرسالة (ولا بالمهلة). */
-  const waiter = useRef<{ resolve: (capture: Record<string, unknown>) => void; reject: (error: unknown) => void } | null>(null);
+  const waiter = useRef<{ id: string; resolve: (capture: Record<string, unknown>) => void; reject: (error: unknown) => void } | null>(null);
   /** Vrai pendant que la page charge (mis à jour par onNavigationStateChange). */
   const pageLoadingRef = useRef(false);
   /* Lecture faite À L'OUVERTURE de la page (20/10/2026) : « Add to Cart » la trouve prête. */
@@ -91,16 +93,15 @@ export default function AyWebsBrowserScreen() {
   } | null>(null);
   const [pageReady, setPageReady] = useState(false);
   /** Nombre de relances de capture faute de prix, et dernier script chargé. */
-  const captureRetries = useRef(0);
+
   /** Contrôleur de l'appui « Add » en cours : un nouvel appui, ou la sortie de l'écran, l'annule. */
   const addController = useRef<AbortController | null>(null);
-  const lastScript = useRef<string | null>(null);
+
 
   /* Fiche vérifiée par le serveur au chargement (réutilisée à l'ouverture de la feuille). */
   const verified = useRef<{ url: string; capture: unknown; outcome: AyWebsResolveOutcome; at: number } | null>(null);
   const [busy, setBusy] = useState(false);
-  /* Lecture à l'ouverture en cours : le bouton « Add » tourne jusqu'à la fin, puis revient à son état normal. */
-  const [prefetchReading, setPrefetchReading] = useState(false);
+  // Background prefetch must never disable the user's Add action.
   /** Barre du bas : précédent / suivant (dans le magasin), titre de la page, volets. */
   const [nav, setNav] = useState({ canGoBack: false, canGoForward: false, title: '' });
   const [cartOpen, setCartOpen] = useState(false);
@@ -113,6 +114,7 @@ export default function AyWebsBrowserScreen() {
   const [loadUrl] = useState(url);
   /* الصفحة الحالية كما يصرّح بها التنقّل داخل الـWebView (تتبع الروابط). */
   const [pageUrl, setPageUrl] = useState(url);
+  const pageUrlRef = useRef(url);
   /** تصنيف الخادم للصفحة الحالية: مصدر السماح بالقراءة وبالإضافة. */
   const [pageAnalysis, setPageAnalysis] = useState<AyWebsPageAnalysis | null>(null);
   const captureAllowed = pageAnalysis
@@ -143,18 +145,20 @@ export default function AyWebsBrowserScreen() {
     setPhase(last);
   }, []);
   useEffect(() => () => { if (tick.current) clearInterval(tick.current); }, []);
-  useEffect(() => () => { addController.current?.abort(); }, []);
-
-  const stopTimer = () => {
-    if (timer.current) { clearTimeout(timer.current); timer.current = null; }
-  };
+  useEffect(() => () => {
+    addController.current?.abort();
+    prefetch.current?.controller.abort();
+  }, []);
 
   /** تصنيف الصفحة — شرط تفعيل «Add to Cart» (لا تخمين من الرابط). */
   useEffect(() => {
     if (!sessionId || !pageUrl || !isWebPageUrl(pageUrl)) return;
     let alive = true;
+    const controller = new AbortController();
+    setPageAnalysis(null);
+    setProductPage(null);
     setClassified(false);
-    analyzeAyWebsPage(pageUrl, { sessionId })
+    withReadDeadline((signal) => analyzeAyWebsPage(pageUrl, { sessionId, signal }), { signal: controller.signal, timeoutMs: 15_000 })
       .then((analysis) => {
         if (!alive) return;
         setPageAnalysis(analysis);
@@ -168,67 +172,56 @@ export default function AyWebsBrowserScreen() {
         setProductPage(null);
         setClassified(true);
       });
-    return () => { alive = false; };
+    return () => { alive = false; controller.abort(); };
   }, [sessionId, pageUrl]);
 
-  /**
-   * يطلب قراءة الصفحة ويرجّع الوعد: يتفتح بالحقن، ويتسدّ بالرسالة اللي تجي من
-   * الجسر. ما فماش مهلة: الزر يبقى في التحميل حتى تجي القراءة، أو تتلغى بإعادة الضغط
-   * أو بغلق الشاشة (الإلغاء يمرّ عبر signal).
-   */
+  /** A capture owns its waiter, retries and deadline. Late messages cannot settle another read. */
   const requestCapture = useCallback((signal?: AbortSignal, quiet = false): Promise<Record<string, unknown>> => {
-    return new Promise<Record<string, unknown>>((resolveOuter, rejectOuter) => {
+    const id = `ayw_${++captureSequence.current}`;
+    if (!quiet) startWaiting('preparing');
+    return withReadDeadline((captureSignal) => new Promise<Record<string, unknown>>((resolve, reject) => {
+      let retryTimer: ReturnType<typeof setTimeout> | undefined;
+      let retries = 0;
+      let script = '';
       let settled = false;
-      const finish = () => { settled = true; signal?.removeEventListener('abort', onAbort); };
-      const resolve = (value: Record<string, unknown>) => { if (settled) return; finish(); resolveOuter(value); };
-      const reject = (error: unknown) => { if (settled) return; finish(); rejectOuter(error); };
-      /* Annulation (nouvel appui ou écran fermé) : on libère la page et le minuteur. */
-      const onAbort = () => {
+      const finish = (error: unknown, capture?: Record<string, unknown>) => {
         if (settled) return;
-        stopTimer();
-        waiter.current = null;
-        if (!quiet) { setBusy(false); endWaiting('failed'); }
-        reject(new ApiError('aborted', 'Requête interrompue.'));
+        settled = true;
+        clearTimeout(retryTimer);
+        captureSignal.removeEventListener('abort', onAbort);
+        if (waiter.current?.id === id) waiter.current = null;
+        if (error) reject(error); else resolve(capture!);
       };
-      if (signal?.aborted) { reject(new ApiError('aborted', 'Requête interrompue.')); return; }
-      signal?.addEventListener('abort', onAbort);
-      if (!quiet) { setBusy(true); setNote(''); startWaiting('preparing'); }
-      captureRetries.current = 0;
-      const inject = (script: string) => {
-        if (!quiet) startWaiting('reading');
-        webRef.current?.injectJavaScript(buildAyWebsCaptureInjection(script));
+      const onAbort = () => finish(new ApiError('aborted', 'Lecture annulée.'));
+      const inject = () => {
+        if (settled || captureSignal.aborted) return;
+        try {
+          if (!webRef.current) throw new ApiError('device', 'Navigateur indisponible.');
+          if (!quiet) setPhase('reading');
+          webRef.current.injectJavaScript(buildAyWebsCaptureInjection(script, id));
+        } catch (error) { finish(error); }
       };
-      /* Prix absent de la capture ⇒ relance bornée (fc3cce38 / captureFlow.ts). */
       const onCaptured = (capture: Record<string, unknown>) => {
-        const script = lastScript.current;
-        if (script && shouldRetryAyWebsCaptureForPrice(priceCandidatesOf(capture), captureRetries.current)) {
-          captureRetries.current += 1;
-          waiter.current = { resolve: onCaptured, reject };
-          stopTimer();
-          setTimeout(() => inject(script), AYWEBS_CAPTURE_EMPTY_PRICE_RETRY_DELAY_MS);
-          return;
-        }
-        resolve(capture);
+        if (settled) return;
+        if (shouldRetryAyWebsCaptureForPrice(priceCandidatesOf(capture), retries)) {
+          retries += 1;
+          retryTimer = setTimeout(inject, AYWEBS_CAPTURE_EMPTY_PRICE_RETRY_DELAY_MS);
+        } else finish(null, capture);
       };
-      waiter.current = { resolve: onCaptured, reject };
-      fetchAyWebsCaptureScript()
-        // الصفحة لازم تكمّل تحميلها قبل القراءة (Amazon يعطي DOM ناقص ⇒ NO_PRICE_TEXT).
-        .then(async (script) => {
-          await waitForPageIdle(() => pageLoadingRef.current);
-          return script;
+      // There must be only one active bridge reader.
+      waiter.current?.reject(new ApiError('aborted', 'Lecture remplacée.'));
+      waiter.current = { id, resolve: onCaptured, reject: (error) => finish(error) };
+      captureSignal.addEventListener('abort', onAbort, { once: true });
+      fetchAyWebsCaptureScript({ signal: captureSignal })
+        .then(async (value) => {
+          await waitForPageIdle(() => !captureSignal.aborted && pageLoadingRef.current);
+          if (settled || captureSignal.aborted) return;
+          script = value;
+          inject();
         })
-        .then((script) => {
-          // الحقن هو المنعرج الثاني: من توّا الكلمة صارت للصفحة.
-          lastScript.current = script;
-          inject(script);
-        })
-        .catch((error) => {
-          waiter.current = null;
-          if (!quiet) setBusy(false);
-          reject(error);
-        });
-    });
-  }, []);
+        .catch((error) => finish(error));
+    }), { signal, timeoutMs: CAPTURE_BUDGET_MS });
+  }, [startWaiting]);
 
   /** Lit la page en silence, dès qu'elle est chargée et reconnue comme fiche produit. */
   const startPrefetch = useCallback((url: string) => {
@@ -237,36 +230,34 @@ export default function AyWebsBrowserScreen() {
     current?.controller.abort();
     const controller = new AbortController();
     const entry: NonNullable<typeof prefetch.current> = {
-      url, at: 0, status: 'reading', controller,
+      url, at: Date.now(), status: 'reading', controller,
       promise: Promise.resolve({}),
     };
     entry.promise = requestCapture(controller.signal, true).then(
       (capture) => {
         entry.status = 'ok'; entry.at = Date.now();
-        if (prefetch.current === entry) setPrefetchReading(false);
         return capture;
       },
       (error: unknown) => {
         entry.status = 'failed';
-        if (prefetch.current === entry) setPrefetchReading(false);
         throw error;
       },
     );
     entry.promise.catch(() => undefined);
     prefetch.current = entry;
     verified.current = null;
-    setPrefetchReading(true);
-    /* Vérification serveur À L'OUVERTURE : le bouton tourne jusqu'à ce que la fiche soit prouvée. */
+    /* Verify in the background without locking the Add button. */
     entry.promise
-      .then((capture) => resolveAyWebsProductWithCapture(url, {
-        sessionId: sessionId || '', storeId: storeId || undefined, capture, signal: controller.signal,
-      }).then((outcome) => ({ capture, outcome })))
+      .then((capture) => withReadDeadline((signal) => resolveAyWebsProductWithCapture(url, {
+        sessionId: sessionId || '', storeId: storeId || undefined, capture, signal,
+      }), { signal: controller.signal, timeoutMs: AYWEBS_RESOLVE_TIMEOUT_MS }).then((outcome) => ({ capture, outcome })))
       .then(({ capture, outcome }) => {
         if (controller.signal.aborted || prefetch.current !== entry) return;
-        verified.current = { url, capture, outcome, at: Date.now() };
+        if (outcome.quoteToken && outcome.missing.length === 0) {
+          verified.current = { url, capture, outcome, at: Date.now() };
+        }
       })
-      .catch(() => undefined)
-      .finally(() => { if (prefetch.current === entry) setPrefetchReading(false); });
+      .catch(() => undefined);
   }, [requestCapture, sessionId, storeId]);
 
   useEffect(() => {
@@ -289,37 +280,43 @@ export default function AyWebsBrowserScreen() {
     if (!sessionId || !pageUrl || productPage !== true) return;
     /* Un nouvel appui remplace le précédent : l'ancien est annulé, il ne touche plus l'écran. */
     addController.current?.abort();
+    addController.current = null;
+    setBusy(false);
     /* Fiche déjà vérifiée il y a moins de 10 min : la feuille s'ouvre tout de suite, sans appel serveur. */
     const reuse = verified.current;
     if (reuse && canReuseVerified(reuse, pageUrl, Date.now())) {
       setOutcome(reuse.outcome);
       setNote('');
       setSheet({ outcome: reuse.outcome, capture: reuse.capture });
+      endWaiting('done');
       return;
     }
     const controller = new AbortController();
     addController.current = controller;
-    const isCurrent = () => addController.current === controller;
+    const isCurrent = () => addController.current === controller && pageUrlRef.current === pageUrl;
+    setBusy(true);
+    setNote('');
+    startWaiting('reading');
     try {
       /* UNE capture, puis UNE résolution (avec capture, ou sans si la capture échoue ou
          tarde). Pas de seconde requête serveur quand la capture réussit (19/10/2026). */
-      /* Pas de délai : la page est lue dans le navigateur du client jusqu'au bout. Le bouton reste
-         en chargement ; si la lecture échoue, on explique ce qui manque (sans lecture serveur de repli). */
-      const { decision, outcome: result, capture } = await resolveAddToCart({
+      // Bound bridge waiting and server resolution; never leave Add spinning indefinitely.
+      const { decision, outcome: result, capture } = await withReadDeadline((signal) => resolveAddToCart({
         readCapture: captureAllowed ? () => {
           const entry = prefetch.current;
           if (entry && canReusePrefetch(entry, pageUrl, Date.now())) return entry.promise;
-          return requestCapture(controller.signal);
+          return requestCapture(signal);
         } : undefined,
-        waitForCapture: true,
+        budgetMs: CAPTURE_BUDGET_MS,
+        onBudgetExceeded: () => { prefetch.current?.controller.abort(); },
         // refresh : une intention Add ne sert jamais une lecture mémorisée (19/10/2026).
         resolve: (captured) => resolveAyWebsProductWithCapture(pageUrl, {
-          sessionId, storeId: storeId || undefined, capture: captured, refresh: true, signal: controller.signal,
+          sessionId, storeId: storeId || undefined, capture: captured, refresh: true, signal,
         }),
-        signal: controller.signal,
-        onPhase: (phase) => { if (phase !== 'reading') startWaiting('resolving'); },
-      });
-      if (controller.signal.aborted) return;
+        signal,
+        onPhase: (phase) => { if (isCurrent() && phase !== 'reading') setPhase('resolving'); },
+      }), { signal: controller.signal, timeoutMs: CAPTURE_BUDGET_MS + AYWEBS_RESOLVE_TIMEOUT_MS });
+      if (controller.signal.aborted || !isCurrent()) return;
       /* Pas de feuille sans prix, devise ou devis vérifiés : la décision NOMME les champs manquants. */
       if (decision.kind === 'refused') {
         setNote(decision.error.code === 'CAPTURE_INCOMPLETE' ? userMessage(decision.error)[locale] : t('aywebs.captureFailed'));
@@ -336,11 +333,10 @@ export default function AyWebsBrowserScreen() {
       setSheet({ outcome: result, capture });
       endWaiting('done');
     } catch (error) {
-      if (controller.signal.aborted) return;
+      if (controller.signal.aborted || !isCurrent()) return;
       fail(error);
     } finally {
       if (isCurrent()) {
-        stopTimer();
         setBusy(false);
         addController.current = null;
       }
@@ -348,22 +344,40 @@ export default function AyWebsBrowserScreen() {
   }, [captureAllowed, endWaiting, fail, locale, productPage, requestCapture, sessionId, startWaiting, storeId, pageUrl, t]);
 
   const onMessage = useCallback((event: WebViewMessageEvent) => {
-    stopTimer();
     const pending = waiter.current;
-    waiter.current = null;
+    if (!pending) return;
+    // Ignore merchant messages and replies from an earlier page/read.
+    let envelope: Record<string, unknown>;
+    try { envelope = JSON.parse(event.nativeEvent.data); } catch { return; }
+    if (!envelope || envelope.__aywebs_requestId !== pending.id) return;
     const parsed = parseAyWebsCaptureMessage(event.nativeEvent.data);
     if (!parsed.ok) {
-      setBusy(false);
-      setNote(`${t('aywebs.captureFailed')} — ${parsed.reason}`);
-      pending?.reject(new ApiError('malformed', `Capture refusée : ${parsed.reason}`));
+      pending.reject(new ApiError('malformed', `Capture refusée : ${parsed.reason}`));
       return;
     }
+    pending.resolve(parsed.capture);
+  }, []);
+
+  const invalidatePageRead = useCallback(() => {
+    addController.current?.abort();
+    addController.current = null;
+    prefetch.current?.controller.abort();
+    prefetch.current = null;
+    verified.current = null;
+    waiter.current?.reject(new ApiError('aborted', 'Page remplacée.'));
+    waiter.current = null;
     setBusy(false);
-    pending?.resolve(parsed.capture);
-  }, [t]);
+    setSheet(null);
+    setOutcome(null);
+    setNote('');
+    setProductPage(null);
+    setPageAnalysis(null);
+    setClassified(false);
+    endWaiting('idle');
+  }, [endWaiting]);
 
   const verdict = outcome?.capture ?? null;
-  const addEnabled = productPage === true && !busy && !prefetchReading && Boolean(sessionId);
+  const addEnabled = productPage === true && !busy && Boolean(sessionId);
 
   /* Favoris : seulement pour une page produit. La liste sert à afficher le cœur plein. */
   const { status: accountStatus } = useSession();
@@ -453,11 +467,17 @@ export default function AyWebsBrowserScreen() {
           pageLoadingRef.current = state.loading === true;
           setPageReady(state.loading !== true);
           if (!state.url) return;
-          setPageUrl(state.url);
+          if (state.url !== pageUrlRef.current) {
+            pageUrlRef.current = state.url;
+            invalidatePageRead();
+            setPageUrl(state.url);
+          }
           setNav({ canGoBack: state.canGoBack, canGoForward: state.canGoForward, title: state.title ?? '' });
         }}
         onMessage={onMessage}
-        onError={() => setNote(t('aywebs.captureFailed'))}
+        onError={() => { invalidatePageRead(); setNote(t('aywebs.captureFailed')); }}
+        onContentProcessDidTerminate={() => { invalidatePageRead(); setNote(t('aywebs.captureFailed')); }}
+        onRenderProcessGone={() => { invalidatePageRead(); setNote(t('aywebs.captureFailed')); }}
         startInLoadingState
         renderLoading={() => (
           <View style={[styles.loading, { backgroundColor: theme.colors.canvas }]}>
@@ -523,11 +543,11 @@ export default function AyWebsBrowserScreen() {
           />
           <View style={styles.addBox}>
             <Button
-              label={busy || prefetchReading ? t('aywebs.loading') : t('aywebs.addToCart')}
+              label={busy ? t('aywebs.loading') : t('aywebs.addToCart')}
               tone="main"
               block
               onPress={addToCart}
-              busy={busy || prefetchReading}
+              busy={busy}
               disabled={!addEnabled}
               testID="aywebs-store-add-to-cart"
             />

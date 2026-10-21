@@ -133,7 +133,11 @@ describe('lecture à l\'ouverture de la page (réutilisée au clic)', () => {
   const NOW = 1_000_000;
 
   it('lecture en cours pour cette page ⇒ on attend la même (pas de seconde lecture)', () => {
-    expect(canReusePrefetch({ url: URL_A, at: 0, status: 'reading' }, URL_A, NOW)).toBe(true);
+    expect(canReusePrefetch({ url: URL_A, at: NOW, status: 'reading' }, URL_A, NOW)).toBe(true);
+  });
+
+  it('lecture en cours périmée ⇒ jamais réutilisée indéfiniment', () => {
+    expect(canReusePrefetch({ url: URL_A, at: NOW - AYWEBS_PREFETCH_MAX_AGE_MS, status: 'reading' }, URL_A, NOW)).toBe(false);
   });
 
   it('lecture terminée il y a peu ⇒ réutilisée', () => {

@@ -108,7 +108,7 @@ export interface PrefetchEntry {
  */
 export function canReusePrefetch(entry: PrefetchEntry | null, pageUrl: string, now: number): boolean {
   if (!entry || entry.url !== pageUrl) return false;
-  if (entry.status === 'reading') return true;
+  if (entry.status === 'reading') return now - entry.at >= 0 && now - entry.at < AYWEBS_PREFETCH_MAX_AGE_MS;
   return entry.status === 'ok' && now - entry.at < AYWEBS_PREFETCH_MAX_AGE_MS;
 }
 
@@ -152,7 +152,7 @@ export interface AddToCartFlowInput {
   resolve: (capture: unknown | undefined) => Promise<AyWebsResolveOutcome>;
   signal?: AbortSignal;
   onPhase?: (phase: 'reading' | 'resolving' | 'server-fallback') => void;
-  /** Délai de lecture (optionnel). Le bouton « Add » ne le passe PAS : il attend la lecture. */
+  /** Budget de lecture. L'écran Add le passe pour ne jamais bloquer le bouton. */
   budgetMs?: number;
   /** Attendre la fin de la lecture, sans délai ni minuteur (succès ou échec seulement). */
   waitForCapture?: boolean;
@@ -177,7 +177,7 @@ export async function resolveAddToCart(input: AddToCartFlowInput): Promise<AddTo
         ? await withBudget(input.readCapture(), input.budgetMs)
         : await input.readCapture();
     } catch (error) {
-      if (input.signal?.aborted || (error instanceof ApiError && error.isAborted)) throw error;
+      if (input.signal?.aborted || (error instanceof ApiError && (error.isAborted || error.kind === 'timeout'))) throw error;
       captured = undefined;
     }
     if (input.signal?.aborted) throw new ApiError('aborted', 'Requête interrompue.');
