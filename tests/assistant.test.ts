@@ -358,7 +358,9 @@ describe('ZAYROVI Claude assistant', () => {
     expect(result.presentation?.product.priceToken).toBeTruthy();
     expect(result.presentation?.product.priceTnd).toBeGreaterThan(0);
     expect(result.modelResult.products[0].priceToken).toBeUndefined();
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const fetchUrls = fetchMock.mock.calls.map(([url]) => String(url));
+    expect(fetchUrls).toContain('https://serpapi.com/image');
+    expect(fetchUrls.some((url) => url.includes('engine=google_lens') && url.includes('type=visual_matches'))).toBe(true);
   });
 
   test('voice endpoint validates audio and returns Groq Whisper transcription', async () => {

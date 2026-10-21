@@ -34,7 +34,7 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     v: 1, url: '', canonicalUrl: null, title: null, brand: null,
     priceCandidates: [], currencyText: null, availabilityText: null,
     addToCartText: null, conditionText: null, selectedVariantTexts: [], variantTexts: [],
-    images: [], capturedAt: null, pageLang: null
+    images: [], capturedAt: null, pageLang: null, amazon: null
   };
 
   function text(value) {
@@ -90,6 +90,266 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
         if (canonicalMatch) AMAZON_ASIN = canonicalMatch[1].toUpperCase();
       }
     } catch (e) {}
+  }
+  var AMAZON_EVIDENCE_LIMITS = { options: 60, variants: 40, dimensions: 6, label: 60, scripts: 80, scriptChars: 500000 };
+  var AMAZON_ASIN_PATTERN = /^[A-Z0-9]{10}$/;
+  function amazonValidAsin(value) {
+    var candidate = text(value).toUpperCase();
+    return AMAZON_ASIN_PATTERN.test(candidate) ? candidate : '';
+  }
+  function amazonDimensionName(value, fallback) {
+    var name = text(value).toLowerCase();
+    name = name.replace(/^variation_/, '').replace(/_name$/, '').replace(/[_-]+/g, ' ');
+    if (/color|colour/.test(name)) return 'color';
+    if (/size|taille/.test(name)) return 'size';
+    if (/style|model/.test(name)) return 'style';
+    return name || fallback || 'option';
+  }
+  function amazonReadBalancedJson(source, start) {
+    var first = source.charAt(start);
+    if (first !== '{' && first !== '[') return null;
+    var stack = [];
+    var quote = '';
+    var escaped = false;
+    for (var i = start; i < source.length; i++) {
+      var ch = source.charAt(i);
+      if (quote) {
+        if (escaped) escaped = false;
+        else if (ch === '\\') escaped = true;
+        else if (ch === quote) quote = '';
+        continue;
+      }
+      if (ch === '"' || ch === "'") { quote = ch; continue; }
+      if (ch === '{' || ch === '[') stack.push(ch);
+      else if (ch === '}' || ch === ']') {
+        if (!stack.length) return null;
+        stack.pop();
+        if (!stack.length) {
+          try { return JSON.parse(source.slice(start, i + 1)); } catch (e) { return null; }
+        }
+      }
+    }
+    return null;
+  }
+  function amazonReadJsonValue(source, key) {
+    if (!source || source.indexOf(key) < 0) return null;
+    var markers = ['"' + key + '"', "'" + key + "'", key];
+    var searchFrom = 0;
+    for (var attempt = 0; attempt < 24; attempt++) {
+      var at = -1;
+      var marker = '';
+      for (var m = 0; m < markers.length; m++) {
+        var found = source.indexOf(markers[m], searchFrom);
+        if (found >= 0 && (at < 0 || found < at)) { at = found; marker = markers[m]; }
+      }
+      if (at < 0) return null;
+      var after = at + marker.length;
+      if (marker === key) {
+        var beforeChar = at > 0 ? source.charAt(at - 1) : '';
+        var afterChar = source.charAt(after);
+        if (/[A-Za-z0-9_$]/.test(beforeChar) || /[A-Za-z0-9_$]/.test(afterChar)) {
+          searchFrom = after;
+          continue;
+        }
+      }
+      while (after < source.length && /\s/.test(source.charAt(after))) after++;
+      var separator = source.charAt(after);
+      if (separator === ':' || separator === '=') {
+        after++;
+        while (after < source.length && /\s/.test(source.charAt(after))) after++;
+        var parsed = amazonReadBalancedJson(source, after);
+        if (parsed && typeof parsed === 'object') return parsed;
+      }
+      searchFrom = at + marker.length;
+    }
+    return null;
+  }
+  function amazonNormalizeDimensions(raw, dimensionNames, variationValues) {
+    var dimensions = [];
+    if (Object.prototype.toString.call(raw) === '[object Array]') {
+      for (var i = 0; i < raw.length && dimensions.length < AMAZON_EVIDENCE_LIMITS.dimensions; i++) {
+        var value = raw[i];
+        var label = '';
+        if (typeof value === 'string') {
+          label = text(value);
+          if (/^\d+$/.test(label) && variationValues) {
+            var indexedOptions = variationValues[Object.keys(variationValues)[i]];
+            var optionIndex = parseInt(label, 10);
+            if (Object.prototype.toString.call(indexedOptions) === '[object Array]' && indexedOptions[optionIndex] !== undefined) label = text(indexedOptions[optionIndex]);
+          }
+        } else if (typeof value === 'number' && variationValues) {
+          var numericOptions = variationValues[Object.keys(variationValues)[i]];
+          if (Object.prototype.toString.call(numericOptions) === '[object Array]' && numericOptions[value] !== undefined) label = text(numericOptions[value]);
+        }
+        if (!label || label.length > AMAZON_EVIDENCE_LIMITS.label) continue;
+        var name = dimensionNames[i] || ('dimension_' + (i + 1));
+        dimensions.push({ name: name, value: label });
+      }
+    } else if (raw && typeof raw === 'object') {
+      for (var key in raw) {
+        if (!Object.prototype.hasOwnProperty.call(raw, key) || dimensions.length >= AMAZON_EVIDENCE_LIMITS.dimensions) continue;
+        var objectValue = raw[key];
+        if (typeof objectValue !== 'string' && typeof objectValue !== 'number') continue;
+        var objectLabel = text(objectValue);
+        if (!objectLabel || objectLabel.length > AMAZON_EVIDENCE_LIMITS.label) continue;
+        dimensions.push({ name: amazonDimensionName(key, 'dimension_' + (dimensions.length + 1)), value: objectLabel });
+      }
+    }
+    return dimensions;
+  }
+  function collectAmazonEvidence() {
+    var result = { readerVersion: 2, pageAsin: AMAZON_ASIN || null, selectedAsin: null, selectedPriceEvidence: [], options: [], variants: [] };
+    if (!AMAZON_STRICT) return result;
+    var variationValues = null;
+    var dimensionNames = [];
+    var scripts = [];
+    try { scripts = document.querySelectorAll('script:not([src])'); } catch (e) { scripts = []; }
+    for (var s = 0; s < scripts.length && s < AMAZON_EVIDENCE_LIMITS.scripts; s++) {
+      var source = scripts[s].textContent || '';
+      if (!source || source.length > AMAZON_EVIDENCE_LIMITS.scriptChars) continue;
+      if (!variationValues) variationValues = amazonReadJsonValue(source, 'variationValues');
+      if (variationValues && !dimensionNames.length) {
+        for (var dimensionKey in variationValues) {
+          if (!Object.prototype.hasOwnProperty.call(variationValues, dimensionKey) || dimensionNames.length >= AMAZON_EVIDENCE_LIMITS.dimensions) continue;
+          dimensionNames.push(amazonDimensionName(dimensionKey, 'dimension_' + (dimensionNames.length + 1)));
+        }
+      }
+      var displayMap = amazonReadJsonValue(source, 'dimensionValuesDisplayData');
+      if (displayMap && typeof displayMap === 'object') {
+        for (var displayAsin in displayMap) {
+          if (!Object.prototype.hasOwnProperty.call(displayMap, displayAsin) || result.variants.length >= AMAZON_EVIDENCE_LIMITS.variants) continue;
+          var validDisplayAsin = amazonValidAsin(displayAsin);
+          var displayDimensions = amazonNormalizeDimensions(displayMap[displayAsin], dimensionNames, variationValues);
+          if (validDisplayAsin && displayDimensions.length) amazonMergeVariant(result, validDisplayAsin, displayDimensions, 'dimensionValuesDisplayData');
+        }
+      }
+      var asinMap = amazonReadJsonValue(source, 'asinVariationValues');
+      if (asinMap && typeof asinMap === 'object') {
+        for (var mappedAsin in asinMap) {
+          if (!Object.prototype.hasOwnProperty.call(asinMap, mappedAsin) || result.variants.length >= AMAZON_EVIDENCE_LIMITS.variants) continue;
+          var validMappedAsin = amazonValidAsin(mappedAsin);
+          var mappedDimensions = amazonNormalizeDimensions(asinMap[mappedAsin], dimensionNames, variationValues);
+          if (validMappedAsin && mappedDimensions.length) amazonMergeVariant(result, validMappedAsin, mappedDimensions, 'asinVariationValues');
+        }
+      }
+    }
+    var blocks = [];
+    try { blocks = document.querySelectorAll('#twister [id^="variation_"], #twister [id^="inline-twister-row-"], [id^="variation_"][id$="_name"]'); } catch (e) { blocks = []; }
+    var selectedAsins = [];
+    for (var b = 0; b < blocks.length && b < 20; b++) {
+      var block = blocks[b];
+      var blockId = String(block.id || '');
+      var dimension = amazonDimensionName(blockId, 'option_' + (b + 1));
+      if (blockId.indexOf('inline-twister-row-') === 0) dimension = amazonDimensionName(blockId.replace('inline-twister-row-', ''), 'option_' + (b + 1));
+      var items = [];
+      try { items = block.querySelectorAll('li, select option, [role="radio"], [role="option"], [data-asin]'); } catch (e) { items = []; }
+      for (var o = 0; o < items.length && result.options.length < AMAZON_EVIDENCE_LIMITS.options; o++) {
+        var item = items[o];
+        var label = text(item.getAttribute && (item.getAttribute('data-value') || item.getAttribute('title') || item.getAttribute('aria-label')));
+        if (!label) {
+          try { var imageLabel = item.querySelector('img[alt]'); label = text(imageLabel && imageLabel.getAttribute('alt')); } catch (e) {}
+        }
+        if (!label) label = text(item.textContent);
+        label = text(label.replace(/^click to select\s*/i, ''));
+        if (!label || label.length > AMAZON_EVIDENCE_LIMITS.label || NOT_A_CHOICE.test(label)) continue;
+        var optionAsin = amazonAsinFromNode(item);
+        var selected = amazonNodeIsSelected(item);
+        var state = amazonNodeAvailability(item);
+        amazonAddOption(result, dimension, label, optionAsin, selected, state, 'twister_dom');
+        if (selected && optionAsin) pushUnique(selectedAsins, optionAsin, 10, 10);
+      }
+    }
+    var selectedField = null;
+    try { selectedField = document.querySelector('#ASIN, input[name="ASIN"]'); } catch (e) {}
+    var fieldAsin = amazonValidAsin(selectedField && (selectedField.value || selectedField.getAttribute('value')));
+    if (fieldAsin) result.selectedAsin = fieldAsin;
+    else if (selectedAsins.length === 1) result.selectedAsin = selectedAsins[0];
+    for (var v = 0; v < result.variants.length; v++) {
+      result.variants[v].selected = !!result.selectedAsin && result.variants[v].asin === result.selectedAsin;
+    }
+    if (result.selectedAsin) {
+      for (var p = 0; p < out.priceCandidates.length && result.selectedPriceEvidence.length < LIMITS.priceCandidates; p++) {
+        var priceCandidate = out.priceCandidates[p];
+        if (priceCandidate && typeof priceCandidate.text === 'string' && typeof priceCandidate.source === 'string') {
+          result.selectedPriceEvidence.push({ text: cut(priceCandidate.text, LIMITS.text), source: priceCandidate.source });
+        }
+      }
+    }
+    return result;
+  }
+  function amazonMergeVariant(result, asin, dimensions, source) {
+    if (!asin || !dimensions || !dimensions.length) return;
+    var variant = null;
+    for (var i = 0; i < result.variants.length; i++) { if (result.variants[i].asin === asin) { variant = result.variants[i]; break; } }
+    if (!variant) {
+      if (result.variants.length >= AMAZON_EVIDENCE_LIMITS.variants) return;
+      variant = { asin: asin, dimensions: [], source: source, selected: false };
+      result.variants.push(variant);
+    }
+    for (var d = 0; d < dimensions.length && variant.dimensions.length < AMAZON_EVIDENCE_LIMITS.dimensions; d++) {
+      var candidate = dimensions[d];
+      if (!candidate || !candidate.name || !candidate.value) continue;
+      var duplicate = false;
+      for (var x = 0; x < variant.dimensions.length; x++) {
+        if (variant.dimensions[x].name === candidate.name && variant.dimensions[x].value.toLowerCase() === candidate.value.toLowerCase()) duplicate = true;
+      }
+      if (!duplicate) variant.dimensions.push({ name: cut(candidate.name, 40), value: cut(candidate.value, AMAZON_EVIDENCE_LIMITS.label) });
+    }
+  }
+  function amazonAsinFromNode(element) {
+    var node = element;
+    for (var hop = 0; node && hop < 5; hop++) {
+      if (node.getAttribute) {
+        var asin = amazonValidAsin(node.getAttribute('data-asin') || node.getAttribute('data-defaultasin') || node.getAttribute('asin'));
+        if (asin) return asin;
+        var dataUrl = node.getAttribute('data-dp-url') || node.getAttribute('data-a-url') || node.getAttribute('href') || '';
+        var urlMatch = String(dataUrl).match(/\/(?:dp|gp\/product)\/([A-Z0-9]{10})(?:[/?#]|$)/i);
+        if (urlMatch) return amazonValidAsin(urlMatch[1]);
+        try {
+          var nested = node.querySelector && node.querySelector('[data-asin], [data-defaultasin], [asin], a[href]');
+          var nestedAsin = nested && amazonValidAsin(nested.getAttribute('data-asin') || nested.getAttribute('data-defaultasin') || nested.getAttribute('asin'));
+          if (nestedAsin) return nestedAsin;
+          var nestedHref = nested && nested.getAttribute('href');
+          var nestedMatch = String(nestedHref || '').match(/\/(?:dp|gp\/product)\/([A-Z0-9]{10})(?:[/?#]|$)/i);
+          if (nestedMatch) return amazonValidAsin(nestedMatch[1]);
+        } catch (e) {}
+      }
+      node = node.parentNode;
+    }
+    return '';
+  }
+  function amazonNodeIsSelected(element) {
+    var node = element;
+    for (var hop = 0; node && hop < 3; hop++) {
+      var className = String(node.className || '').toLowerCase();
+      if (/swatchselect|a-button-selected|\bselected\b/.test(className)) return true;
+      if (node.getAttribute && (node.getAttribute('aria-checked') === 'true' || node.getAttribute('aria-selected') === 'true')) return true;
+      if (String(node.tagName || '').toLowerCase() === 'option' && node.selected === true) return true;
+      node = node.parentNode;
+    }
+    return false;
+  }
+  function amazonNodeAvailability(element) {
+    var node = element;
+    for (var hop = 0; node && hop < 3; hop++) {
+      var className = String(node.className || '').toLowerCase();
+      if (/swatchunavailable|a-button-disabled|unavailable|outofstock/.test(className)
+          || node.disabled === true || (node.getAttribute && node.getAttribute('aria-disabled') === 'true')) return 'unavailable';
+      if (/swatchavailable/.test(className) || (node.getAttribute && node.getAttribute('aria-disabled') === 'false')) return 'available';
+      node = node.parentNode;
+    }
+    return 'unknown';
+  }
+  function amazonAddOption(result, dimension, value, asin, selected, state, source) {
+    var key = dimension + '|' + value.toLowerCase() + '|' + (asin || '');
+    for (var i = 0; i < result.options.length; i++) {
+      var old = result.options[i];
+      if ((old.dimension + '|' + old.value.toLowerCase() + '|' + (old.asin || '')) === key) return;
+    }
+    if (result.options.length < AMAZON_EVIDENCE_LIMITS.options) {
+      result.options.push({ dimension: cut(dimension, 40), value: cut(value, AMAZON_EVIDENCE_LIMITS.label), asin: asin || null, selected: !!selected, availabilityEvidence: state, source: source });
+    }
+    if (asin) amazonMergeVariant(result, asin, [{ name: dimension, value: value }], source);
   }
   /** Élément de navigation / recherche — jamais un choix produit ni un achat. */
   function isInNavigation(el) {
@@ -652,6 +912,11 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
       pushUnique(out.images, images[g].getAttribute('src'), LIMITS.images, 600);
     }
   } catch (e) {}
+
+  if (AMAZON_STRICT) {
+    try { out.amazon = collectAmazonEvidence(); }
+    catch (e) { out.amazon = { readerVersion: 2, pageAsin: AMAZON_ASIN || null, selectedAsin: null, selectedPriceEvidence: [], options: [], variants: [] }; }
+  }
 
   /* ── 9. Bornes finales + sortie JSON ────────────────────────────────────── */
   if (out.priceCandidates.length > LIMITS.priceCandidates) out.priceCandidates = out.priceCandidates.slice(0, LIMITS.priceCandidates);

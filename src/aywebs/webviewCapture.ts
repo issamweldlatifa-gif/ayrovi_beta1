@@ -33,6 +33,7 @@ import { detectAyWebsStore } from '../../shared/aywebsStores';
 import {
   AYWEBS_CAPTURE_LIMITS,
   AYWEBS_CAPTURE_VERSION,
+  type AyWebsAmazonCaptureEvidence,
   type AyWebsCaptureSource,
   type AyWebsCaptureOutcome,
   type AyWebsCapturedPage,
@@ -212,6 +213,85 @@ function hostOf(raw: string): string | null {
   }
 }
 
+const AMAZON_ASIN_RE = /^[A-Z0-9]{10}$/;
+const AMAZON_VARIANT_SOURCES = new Set(['dimensionValuesDisplayData', 'asinVariationValues', 'twister_dom']);
+
+function cleanAmazonEvidence(raw: unknown, requestHost: string, pageUrl: string): AyWebsAmazonCaptureEvidence | null {
+  if (!/^amazon\.[a-z]{2,3}(?:\.[a-z]{2})?$/.test(requestHost) || !raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const input = raw as Record<string, unknown>;
+  if (Number(input.readerVersion) !== 2) return null;
+  const pageAsinRaw = collapse(input.pageAsin, 10).toUpperCase();
+  const selectedAsinRaw = collapse(input.selectedAsin, 10).toUpperCase();
+  const pageAsin = AMAZON_ASIN_RE.test(pageAsinRaw) ? pageAsinRaw : null;
+  if (!pageAsin) return null;
+  let urlAsin: string | null = null;
+  try {
+    const path = new URL(pageUrl).pathname;
+    const match = path.match(/\/(?:dp|gp\/(?:product|aw\/d)|product)\/([A-Z0-9]{10})(?:[/?]|$)/i);
+    if (match) urlAsin = match[1].toUpperCase();
+  } catch { /* page URL was host-validated earlier */ }
+  if (urlAsin && urlAsin !== pageAsin) return null;
+
+  const variants: AyWebsAmazonCaptureEvidence['variants'] = [];
+  const rawVariants = Array.isArray(input.variants) ? input.variants.slice(0, 40) : [];
+  for (const item of rawVariants) {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) continue;
+    const variant = item as Record<string, unknown>;
+    const asin = collapse(variant.asin, 10).toUpperCase();
+    const source = String(variant.source || '');
+    if (!AMAZON_ASIN_RE.test(asin) || !AMAZON_VARIANT_SOURCES.has(source) || !Array.isArray(variant.dimensions)) continue;
+    const dimensions: Array<{ name: string; value: string }> = [];
+    for (const dimensionRaw of variant.dimensions.slice(0, 6)) {
+      if (!dimensionRaw || typeof dimensionRaw !== 'object' || Array.isArray(dimensionRaw)) continue;
+      const dimension = dimensionRaw as Record<string, unknown>;
+      const name = collapse(dimension.name, 40).toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+      const value = collapse(dimension.value, 60);
+      if (!name || !value || dimensions.some((entry) => entry.name === name)) continue;
+      dimensions.push({ name, value });
+    }
+    if (dimensions.length) variants.push({
+      asin,
+      dimensions,
+      source: source as AyWebsAmazonCaptureEvidence['variants'][number]['source'],
+      selected: variant.selected === true,
+    });
+  }
+  const selectedAsin = AMAZON_ASIN_RE.test(selectedAsinRaw) && variants.some((variant) => variant.asin === selectedAsinRaw)
+    ? selectedAsinRaw
+    : null;
+  const options: AyWebsAmazonCaptureEvidence['options'] = [];
+  const rawOptions = Array.isArray(input.options) ? input.options.slice(0, 60) : [];
+  for (const item of rawOptions) {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) continue;
+    const option = item as Record<string, unknown>;
+    const dimension = collapse(option.dimension, 40).toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+    const value = collapse(option.value, 60);
+    const asinValue = collapse(option.asin, 10).toUpperCase();
+    const asin = AMAZON_ASIN_RE.test(asinValue) ? asinValue : null;
+    const state = option.availabilityEvidence === 'available' || option.availabilityEvidence === 'unavailable'
+      ? option.availabilityEvidence
+      : 'unknown';
+    if (!dimension || !value) continue;
+    options.push({
+      dimension, value, asin, selected: option.selected === true,
+      availabilityEvidence: state,
+      source: 'twister_dom',
+    });
+  }
+  const selectedPriceEvidence: AyWebsAmazonCaptureEvidence['selectedPriceEvidence'] = [];
+  if (Array.isArray(input.selectedPriceEvidence)) {
+    for (const item of input.selectedPriceEvidence.slice(0, 4)) {
+      if (!item || typeof item !== 'object' || Array.isArray(item)) continue;
+      const candidate = item as Record<string, unknown>;
+      const text = collapse(candidate.text, AYWEBS_CAPTURE_LIMITS.maxTextLength);
+      const source = String(candidate.source || '');
+      if (!text || !['json_ld', 'embedded_json', 'microdata', 'meta', 'dom'].includes(source)) continue;
+      selectedPriceEvidence.push({ text, source: source as AyWebsCaptureSource });
+    }
+  }
+  return { readerVersion: 2, pageAsin, selectedAsin, selectedPriceEvidence, options, variants };
+}
+
 export interface AyWebsCaptureValidation {
   ok: boolean;
   rejection: string | null;
@@ -229,6 +309,8 @@ export interface AyWebsCaptureValidation {
   corroborated: boolean;
   /** Options que le CLIENT avait choisies sur la page (libellés bruts bornés). */
   selectedVariantTexts: string[];
+  /** Amazon-only ASIN/variant evidence, normalized and host-bound. */
+  amazonEvidence: AyWebsAmazonCaptureEvidence | null;
   /** Piste d'audit lisible : quels candidats ont été vus, lesquels ont gagné. */
   notes: string[];
   outcome: AyWebsCaptureOutcome;
@@ -245,7 +327,7 @@ function rejected(rejection: string, fingerprint = '', notes: string[] = []): Ay
     ok: false, rejection, scraped: null, price: 0, currency: '',
     priceVerified: false, currencyVerified: false,
     availability: 'UNKNOWN', availabilityReason: `capture_rejected:${rejection}`,
-    condition: null, fingerprint, priceSource: null, corroborated: false, selectedVariantTexts: [], notes,
+    condition: null, fingerprint, priceSource: null, corroborated: false, selectedVariantTexts: [], amazonEvidence: null, notes,
     outcome: { used: false, fingerprint: fingerprint || null, priceSource: null, corroborated: false, rejection },
   };
 }
@@ -449,6 +531,58 @@ export function validateAyWebsCapturedPage(
     payload.selectedVariantTexts, AYWEBS_CAPTURE_LIMITS.maxSelectedVariantTexts, 60,
   );
   const variantTexts = cleanTextArray(payload.variantTexts, AYWEBS_CAPTURE_LIMITS.maxVariantTexts, 60);
+  let amazonEvidence = cleanAmazonEvidence(payload.amazon, requestHost, pageUrl);
+  if (payload.amazon && !amazonEvidence) notes.push('amazon_evidence_rejected');
+  if (amazonEvidence?.selectedAsin) {
+    const selectedVariant = amazonEvidence.variants.find((variant) => variant.asin === amazonEvidence?.selectedAsin);
+    const observedLabels = selectedVariantTexts.map((value) => value.toLowerCase());
+    const optionEvidenceBacked = Boolean(selectedVariant?.dimensions.length)
+      && Boolean(selectedVariant?.selected)
+      && selectedVariant!.dimensions.every((dimension) => amazonEvidence!.options.some((option) =>
+        option.selected
+        && option.dimension === dimension.name
+        && option.value.toLowerCase() === dimension.value.toLowerCase()
+        && (!option.asin || option.asin === selectedVariant!.asin)));
+    const legacyTextBacked = Boolean(selectedVariant?.dimensions.length)
+      && Boolean(selectedVariant?.selected)
+      && selectedVariant!.dimensions.every((dimension) => observedLabels.some((label) => label.includes(dimension.value.toLowerCase())));
+    const selectionBacked = optionEvidenceBacked || legacyTextBacked;
+    if (!selectionBacked) {
+      amazonEvidence = {
+        ...amazonEvidence,
+        selectedAsin: null,
+        selectedPriceEvidence: [],
+        variants: amazonEvidence.variants.map((variant) => ({ ...variant, selected: false })),
+      };
+      notes.push('amazon_selected_asin_not_backed_by_visible_dimensions');
+    }
+  }
+
+  const amazonDetails = amazonEvidence?.variants.map((variant) => {
+    const attributes: Record<string, string> = {};
+    let size: string | null = null;
+    let color: string | null = null;
+    for (const dimension of variant.dimensions) {
+      if (dimension.name === 'size') size = dimension.value;
+      else if (dimension.name === 'color' || dimension.name === 'colour') color = dimension.value;
+      else attributes[dimension.name] = dimension.value;
+    }
+    const isSelected = variant.asin === amazonEvidence.selectedAsin;
+    const stock = isSelected
+      ? availability === 'AVAILABLE' || availability === 'LOW_STOCK' ? true
+        : availability === 'OUT_OF_STOCK' ? false : null
+      : null;
+    return {
+      id: variant.asin,
+      label: [color, size, ...Object.values(attributes)].filter(Boolean).join(' · ') || variant.asin,
+      size,
+      color,
+      attributes,
+      available: true,
+      stock,
+      price: isSelected && price > 0 ? price : null,
+    };
+  }) || [];
 
   const fingerprint = fingerprintOf({
     url: pageUrl,
@@ -462,6 +596,11 @@ export function validateAyWebsCapturedPage(
     availabilityEvidence,
     condition,
     selectedVariantTexts,
+    amazon: amazonEvidence ? {
+      pageAsin: amazonEvidence.pageAsin,
+      selectedAsin: amazonEvidence.selectedAsin,
+      variants: amazonEvidence.variants,
+    } : null,
     capturedAt: String(payload.capturedAt),
   });
 
@@ -488,12 +627,10 @@ export function validateAyWebsCapturedPage(
     estimatedShippingTND: 0,
     serviceFeeTND: 0,
     totalPriceTND: 0,
-    /* AUCUNE variante publiée : la capture prouve un prix et l'état du bouton
-       d'achat POUR LA COMBINAISON AFFICHÉE, pas le stock de chaque combinaison.
-       Exposer des options sans stock par option ferait exiger une sélection que
-       le serveur serait ensuite incapable de vérifier (blocage honnête mais
-       inutile). Les libellés publiés restent dans la piste d'audit. */
-    variants: { colors: [], sizes: [], details: [] },
+    /* Seules les combinaisons Amazon liées explicitement à un child ASIN entrent
+       dans details. Le stock et le prix du buybox ne sont appliqués qu'au child
+       actuellement affiché ; les autres restent UNKNOWN / sans prix. */
+    variants: { colors: [], sizes: [], details: amazonDetails },
     availability: availability === 'AVAILABLE' ? 'in_stock'
       : availability === 'LOW_STOCK' ? 'limited'
         : availability === 'OUT_OF_STOCK' ? 'out_of_stock'
@@ -538,6 +675,7 @@ export function validateAyWebsCapturedPage(
     priceSource: primary.source,
     corroborated,
     selectedVariantTexts,
+    amazonEvidence,
     notes,
     outcome: {
       used: true,

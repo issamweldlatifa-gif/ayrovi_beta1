@@ -57,6 +57,28 @@ export interface AyWebsCapturedPriceCandidate {
   source: AyWebsCaptureSource;
 }
 
+/** Evidence produced by the Amazon-only WebView reader; never a server verdict. */
+export interface AyWebsAmazonCaptureEvidence {
+  readerVersion: 2;
+  pageAsin: string | null;
+  selectedAsin: string | null;
+  selectedPriceEvidence: AyWebsCapturedPriceCandidate[];
+  options: Array<{
+    dimension: string;
+    value: string;
+    asin: string | null;
+    selected: boolean;
+    availabilityEvidence: 'available' | 'unavailable' | 'unknown';
+    source: 'twister_dom';
+  }>;
+  variants: Array<{
+    asin: string;
+    dimensions: Array<{ name: string; value: string }>;
+    source: 'dimensionValuesDisplayData' | 'asinVariationValues' | 'twister_dom';
+    selected: boolean;
+  }>;
+}
+
 export interface AyWebsCapturedPage {
   /** Version du contrat : un serveur ancien refuse une capture future. */
   v: number;
@@ -87,6 +109,8 @@ export interface AyWebsCapturedPage {
   capturedAt: string;
   /** Langue de la page, si disponible (diagnostic de la lecture de prix). */
   pageLang?: string | null;
+  /** Amazon evidence only; server must validate before using it. */
+  amazon?: AyWebsAmazonCaptureEvidence | null;
 }
 
 /** Résumé de ce qui a été retenu — renvoyé au client et journalisé. */
