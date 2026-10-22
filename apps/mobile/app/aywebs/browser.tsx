@@ -110,6 +110,12 @@ export default function AyWebsBrowserScreen() {
   const [cartOpen, setCartOpen] = useState(false);
   const [favOpen, setFavOpen] = useState(false);
   const [note, setNote] = useState('');
+  /* TEMPORAIRE (diagnostic du blocage de lecture) — à retirer après le test. */
+  const [diag, setDiag] = useState<string[]>([]);
+  const pushDiag = useCallback((line: string) => {
+    const at = new Date().toLocaleTimeString('fr-FR');
+    setDiag((prev) => [...prev.slice(-7), `${at} ${line}`]);
+  }, []);
   const [outcome, setOutcome] = useState<AyWebsResolveOutcome | null>(null);
   /** تصنيف الخادم للصفحة: `null` = مازال، و`false` = موش صفحة منتوج. */
   const [productPage, setProductPage] = useState<boolean | null>(null);
@@ -198,6 +204,7 @@ export default function AyWebsBrowserScreen() {
       };
       if (signal?.aborted) { reject(new ApiError('aborted', 'Requête interrompue.')); return; }
       signal?.addEventListener('abort', onAbort);
+      pushDiag(quiet ? 'lecture silencieuse demandée' : 'lecture demandée');
       if (!quiet) { setBusy(true); setNote(''); startWaiting('preparing'); }
       captureRetries.current = 0;
       /* Filet de sécurité (20 s) : si le WebView ne renvoie jamais la capture, on rend la main.
@@ -206,6 +213,7 @@ export default function AyWebsBrowserScreen() {
         stopTimer();
         timer.current = setTimeout(() => {
           timer.current = null;
+          pushDiag('20 s sans retour de la page : arrêt');
           waiter.current = null;
           if (!quiet) { setBusy(false); endWaiting('failed'); }
           reject(new ApiError('timeout', 'La lecture de la page a pris trop de temps. Réessayez.'));
@@ -214,6 +222,7 @@ export default function AyWebsBrowserScreen() {
       const inject = (script: string) => {
         if (!quiet) startWaiting('reading');
         armWatchdog();
+        pushDiag('script injecté, attente du retour');
         webRef.current?.injectJavaScript(buildAyWebsCaptureInjection(script));
       };
       /* Prix absent de la capture ⇒ relance bornée (fc3cce38 / captureFlow.ts). */
@@ -261,11 +270,13 @@ export default function AyWebsBrowserScreen() {
     entry.promise = requestCapture(controller.signal, true).then(
       (capture) => {
         entry.status = 'ok'; entry.at = Date.now();
+        pushDiag('lecture silencieuse terminée');
         if (prefetch.current === entry) setPrefetchReading(false);
         return capture;
       },
       (error: unknown) => {
         entry.status = 'failed';
+        pushDiag('lecture silencieuse échouée');
         if (prefetch.current === entry) setPrefetchReading(false);
         throw error;
       },
@@ -311,6 +322,7 @@ export default function AyWebsBrowserScreen() {
           variantDetails: optionsFromVariants(variants),
         };
         setNote('');
+        pushDiag('feuille ouverte depuis la lecture locale');
         setSheet({ product: localProduct, options: localProduct.variantDetails, capture: captured, local: true });
         endWaiting('done');
         return;
@@ -365,7 +377,9 @@ export default function AyWebsBrowserScreen() {
     stopTimer();
     const pending = waiter.current;
     waiter.current = null;
+    pushDiag(pending ? 'retour reçu de la page' : 'retour reçu sans lecture en attente');
     const parsed = parseAyWebsCaptureMessage(event.nativeEvent.data);
+    pushDiag(parsed.ok ? 'capture valide' : `capture refusée : ${parsed.reason}`);
     if (!parsed.ok) {
       setBusy(false);
       setNote(`${t('aywebs.captureFailed')} — ${parsed.reason}`);
@@ -496,6 +510,7 @@ export default function AyWebsBrowserScreen() {
           />
         ) : null}
         {note ? <AppText variant="caption" color={theme.status.danger.fg}>{note}</AppText> : null}
+        {diag.length ? <AppText variant="caption" color={theme.colors.muted}>{diag.join('\n')}</AppText> : null}
         {!captureAllowed ? (
           <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.readNotAllowed')}</AppText>
         ) : null}
