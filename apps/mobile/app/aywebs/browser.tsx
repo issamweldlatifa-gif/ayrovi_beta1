@@ -34,9 +34,12 @@ import { canonicalSourceUrl, isPageSaved } from '@/features/aywebs/storeShopping
 import {
   analyzeAyWebsPage, buildAyWebsCaptureInjection, fetchAyWebsCaptureScript,
   parseAyWebsCaptureMessage, resolveAyWebsProductWithCapture,
-  type AyWebsPageAnalysis, type AyWebsResolveOutcome,
+  type AyWebsPageAnalysis, type AyWebsResolveOutcome, type AyWebsResolvedProduct, type AyWebsVariantOption,
 } from '@/api/aywebs';
 import { AddToCartSheet } from '@/features/aywebs/AddToCartSheet';
+import {
+  groupsFromVariants, localVariantsFromCapture, optionsFromVariants, productFromCapture,
+} from '@/features/aywebs/localProduct';
 import { VariantReader, type VariantReaderHandle } from '@/features/aywebs/VariantReader';
 import { ReadingProgress } from '@/features/aywebs/ReadingProgress';
 import { waitForPageIdle } from '@/features/aywebs/captureFallback';
@@ -121,7 +124,9 @@ export default function AyWebsBrowserScreen() {
     : captureAllowedParam;
   const [classified, setClassified] = useState(false);
   /** الورقة: المنتوج + الكابتشر اللي بعثناه (باش الإضافة ما تعاودش تقرا التاجر). */
-  const [sheet, setSheet] = useState<{ outcome: AyWebsResolveOutcome; capture?: unknown } | null>(null);
+  const [sheet, setSheet] = useState<{
+    product: AyWebsResolvedProduct; options: AyWebsVariantOption[]; capture?: unknown; quoteToken?: string; local: boolean;
+  } | null>(null);
 
   /**
    * مرحلة القراءة + الزمن المستهلك: **جايان من مجريات حقيقية**، موش من عدّاد.
@@ -294,6 +299,22 @@ export default function AyWebsBrowserScreen() {
     addController.current = controller;
     const isCurrent = () => addController.current === controller;
     try {
+      /* Lecture locale : la feuille s'ouvre dès que la capture est prête — aucun appel au serveur à l'appui. */
+      if (captureAllowed) {
+        const entry = prefetch.current;
+        const captured = await (canReusePrefetch(entry, pageUrl, Date.now()) && entry ? entry.promise : requestCapture(controller.signal));
+        if (controller.signal.aborted) return;
+        const variants = localVariantsFromCapture(captured);
+        const localProduct: AyWebsResolvedProduct = {
+          ...productFromCapture(captured, pageUrl, storeId, storeName),
+          variantGroups: groupsFromVariants(variants),
+          variantDetails: optionsFromVariants(variants),
+        };
+        setNote('');
+        setSheet({ product: localProduct, options: localProduct.variantDetails, capture: captured, local: true });
+        endWaiting('done');
+        return;
+      }
       /* UNE capture, puis UNE résolution (avec capture, ou sans si la capture échoue ou
          tarde). Pas de seconde requête serveur quand la capture réussit (19/10/2026). */
       /* Pas de délai : la page est lue dans le navigateur du client jusqu'au bout. Le bouton reste
@@ -326,7 +347,7 @@ export default function AyWebsBrowserScreen() {
       }
       setOutcome(result);
       setNote('');
-      setSheet({ outcome: result, capture });
+      setSheet({ product: result.product, options: result.product.variantDetails, capture, quoteToken: result.quoteToken, local: false });
       endWaiting('done');
     } catch (error) {
       if (controller.signal.aborted) return;
@@ -532,10 +553,11 @@ export default function AyWebsBrowserScreen() {
         <AddToCartSheet
           visible
           sessionId={sessionId}
-          product={sheet.outcome.product}
-          options={sheet.outcome.product.variantDetails}
+          product={sheet.product}
+          options={sheet.options}
           capture={sheet.capture}
-          quoteToken={sheet.outcome.quoteToken}
+          quoteToken={sheet.quoteToken}
+          local={sheet.local}
           readVariant={(url: string) => (variantReader.current
             ? variantReader.current.read(url)
             : Promise.reject(new ApiError('device', 'Lecteur de variante indisponible.')))}

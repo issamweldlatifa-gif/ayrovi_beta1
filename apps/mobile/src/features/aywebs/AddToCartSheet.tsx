@@ -32,6 +32,7 @@ import {
 } from '@/api/aywebs';
 import { newAyWebsRequestId } from '@/features/aywebs/requestId';
 import { variantPageUrlFor } from '@/features/aywebs/variantPage';
+import { localAddReadiness } from '@/features/aywebs/localProduct';
 
 export interface AddToCartSheetProps {
   visible: boolean;
@@ -45,6 +46,8 @@ export interface AddToCartSheetProps {
   quoteToken?: string;
   /** قراءة صفحة المقاس المختار (WebView مخفي). مطلوب لأمازون عند اختيار مقاس غير المعروض. */
   readVariant?: (url: string) => Promise<Record<string, unknown>>;
+  /** ورقة من القراءة المحلية (بلا نداء للخادم عند الفتح). التأكيد يعيد قراءة الاختيار ثم يسأل الخادم. */
+  local?: boolean;
   onClose: () => void;
   /** للسطر الجديد (يتستعمل في شاشة المتجر باش تحدّث الأثر). */
   onAdded?: (item: AyWebsCartItem) => void;
@@ -53,7 +56,7 @@ export interface AddToCartSheetProps {
 const MAX_QUANTITY = 99;
 
 export function AddToCartSheet({
-  visible, sessionId, product, options, capture, quoteToken, readVariant, onClose, onAdded,
+  visible, sessionId, product, options, capture, quoteToken, readVariant, local = false, onClose, onAdded,
 }: AddToCartSheetProps) {
   const theme = useTheme();
   const { t, locale } = useI18n();
@@ -94,7 +97,7 @@ export function AddToCartSheet({
    * مفتوحة بالبيانات اللي عندنا. نفس سلوك الويب بالضبط.
    */
   useEffect(() => {
-    if (!visible || !sessionId) return;
+    if (!visible || !sessionId || local) return;
     const needsGroups = product.variantGroups.length === 0;
     const needsOptions = !(options?.length || product.variantDetails.length);
     if (!needsGroups && !needsOptions) return;
@@ -110,15 +113,33 @@ export function AddToCartSheet({
       })
       .catch(() => { /* أفضل جهد: الفشل ما يمنعش الإضافة */ });
     return () => { alive = false; };
-  }, [options, product.productId, product.sourceUrl, product.storeId, product.variantDetails.length, product.variantGroups.length, sessionId, visible]);
+  }, [local, options, product.productId, product.sourceUrl, product.storeId, product.variantDetails.length, product.variantGroups.length, sessionId, visible]);
 
-  const readiness = useMemo(() => ayWebsAddReadiness({
-    groups,
-    options: variantOptions,
-    productAvailability: product.availability.state,
-    productQuotedTnd: product.ayroviPricing?.totalTnd ?? null,
-    selection,
-  }), [groups, product.availability.state, product.ayroviPricing, selection, variantOptions]);
+  const pageInStock = /in stock|en stock|disponible|auf lager/i.test(
+    String((capture as { availabilityText?: unknown } | null | undefined)?.availabilityText ?? ''),
+  );
+  const readiness = useMemo(() => {
+    if (local) {
+      const res = localAddReadiness({
+        groups,
+        variants: variantOptions.map((option) => ({
+          asin: option.sourceVariantId,
+          attributes: option.attributes,
+          availability: option.availability === 'AVAILABLE' ? 'AVAILABLE' : option.availability === 'OUT_OF_STOCK' ? 'OUT_OF_STOCK' : 'UNKNOWN',
+        })),
+        selection,
+        pageInStockText: pageInStock,
+      });
+      return { ready: res.ready, code: res.code, missingAttributes: res.missingAttributes, availability: '', quotedTotalTnd: null };
+    }
+    return ayWebsAddReadiness({
+      groups,
+      options: variantOptions,
+      productAvailability: product.availability.state,
+      productQuotedTnd: product.ayroviPricing?.totalTnd ?? null,
+      selection,
+    });
+  }, [groups, local, pageInStock, product.availability.state, product.ayroviPricing, selection, variantOptions]);
 
   /** الاختيار الوحيد يُملأ تلقائياً: قيمة واحدة = بيانات، موش خيار. */
   const singleValueGroups = useMemo(
@@ -178,22 +199,36 @@ export function AddToCartSheet({
     setBusy(true);
     setError('');
     try {
-      /* Choix ≠ page affichée : on relit la page du choix, et le serveur la vérifie avant l'ajout. */
       let productId = product.productId;
       let sourceUrl = product.sourceUrl;
       let cartCapture = capture;
       let cartQuote = quoteToken;
-      const variantUrl = variantPageUrl();
-      if (variantUrl) {
+      if (local) {
+        /* Ajout depuis la lecture locale : on relit la page du choix, puis le serveur fixe le prix et le devis. */
         if (!readVariant) throw new Error('variant-reader-missing');
-        const variantCapture = await readVariant(variantUrl);
-        const verified = await resolveAyWebsProductWithCapture(variantUrl, {
-          sessionId, storeId: product.storeId || undefined, capture: variantCapture, refresh: true,
+        const target = variantPageUrl() ?? product.sourceUrl;
+        const fresh = await readVariant(target);
+        const verified = await resolveAyWebsProductWithCapture(target, {
+          sessionId, storeId: product.storeId || undefined, capture: fresh, refresh: true,
         });
         productId = verified.product.productId;
-        sourceUrl = variantUrl;
-        cartCapture = variantCapture;
+        sourceUrl = target;
+        cartCapture = fresh;
         cartQuote = verified.quoteToken;
+      } else {
+        /* Ancien chemin (page sans lecture locale) : même vérification de la variante choisie. */
+        const variantUrl = variantPageUrl();
+        if (variantUrl) {
+          if (!readVariant) throw new Error('variant-reader-missing');
+          const variantCapture = await readVariant(variantUrl);
+          const verified = await resolveAyWebsProductWithCapture(variantUrl, {
+            sessionId, storeId: product.storeId || undefined, capture: variantCapture, refresh: true,
+          });
+          productId = verified.product.productId;
+          sourceUrl = variantUrl;
+          cartCapture = variantCapture;
+          cartQuote = verified.quoteToken;
+        }
       }
       const outcome = await addAyWebsCartItem({
         productId,
@@ -220,7 +255,7 @@ export function AddToCartSheet({
     } finally {
       setBusy(false);
     }
-  }, [capture, locale, onAdded, product.productId, product.sourceUrl, product.storeId, quantity, quoteToken,
+  }, [capture, local, locale, onAdded, product.productId, product.sourceUrl, product.storeId, quantity, quoteToken,
     readVariant, readiness.ready, selection, sessionId, t, variantPageUrl]);
 
   const availabilityLabel = (state: string | null): string => {
