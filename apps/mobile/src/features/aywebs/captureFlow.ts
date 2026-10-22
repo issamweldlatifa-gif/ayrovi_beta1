@@ -194,3 +194,6 @@ export async function resolveAddToCart(input: AddToCartFlowInput): Promise<AddTo
   return { decision: addToCartDecision(outcome), outcome, capture };
 }
 
+
+/** Filet de sécurité de la lecture WebView : au-delà, on rend la main (le bouton redevient normal). */
+export const AYWEBS_CAPTURE_WATCHDOG_MS = 20_000;

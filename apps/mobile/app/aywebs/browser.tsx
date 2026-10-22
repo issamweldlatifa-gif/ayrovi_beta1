@@ -40,7 +40,7 @@ import { AddToCartSheet } from '@/features/aywebs/AddToCartSheet';
 import { ReadingProgress } from '@/features/aywebs/ReadingProgress';
 import { waitForPageIdle } from '@/features/aywebs/captureFallback';
 import {
-  AYWEBS_CAPTURE_EMPTY_PRICE_RETRY_DELAY_MS, canReusePrefetch, priceCandidatesOf, resolveAddToCart, shouldRetryAyWebsCaptureForPrice,
+  AYWEBS_CAPTURE_EMPTY_PRICE_RETRY_DELAY_MS, canReusePrefetch, AYWEBS_CAPTURE_WATCHDOG_MS, priceCandidatesOf, resolveAddToCart, shouldRetryAyWebsCaptureForPrice,
 } from '@/features/aywebs/captureFlow';
 import type { ReadPhase } from '@/features/aywebs/phase';
 import { useSessionId } from '@/session/session';
@@ -177,7 +177,7 @@ export default function AyWebsBrowserScreen() {
   const requestCapture = useCallback((signal?: AbortSignal, quiet = false): Promise<Record<string, unknown>> => {
     return new Promise<Record<string, unknown>>((resolveOuter, rejectOuter) => {
       let settled = false;
-      const finish = () => { settled = true; signal?.removeEventListener('abort', onAbort); };
+      const finish = () => { settled = true; stopTimer(); signal?.removeEventListener('abort', onAbort); };
       const resolve = (value: Record<string, unknown>) => { if (settled) return; finish(); resolveOuter(value); };
       const reject = (error: unknown) => { if (settled) return; finish(); rejectOuter(error); };
       /* Annulation (nouvel appui ou écran fermé) : on libère la page et le minuteur. */
@@ -192,8 +192,20 @@ export default function AyWebsBrowserScreen() {
       signal?.addEventListener('abort', onAbort);
       if (!quiet) { setBusy(true); setNote(''); startWaiting('preparing'); }
       captureRetries.current = 0;
+      /* Filet de sécurité (20 s) : si le WebView ne renvoie jamais la capture, on rend la main.
+         Le bouton revient à son état normal, et l'appui suivant relance la lecture. */
+      const armWatchdog = () => {
+        stopTimer();
+        timer.current = setTimeout(() => {
+          timer.current = null;
+          waiter.current = null;
+          if (!quiet) { setBusy(false); endWaiting('failed'); }
+          reject(new ApiError('timeout', 'La lecture de la page a pris trop de temps. Réessayez.'));
+        }, AYWEBS_CAPTURE_WATCHDOG_MS);
+      };
       const inject = (script: string) => {
         if (!quiet) startWaiting('reading');
+        armWatchdog();
         webRef.current?.injectJavaScript(buildAyWebsCaptureInjection(script));
       };
       /* Prix absent de la capture ⇒ relance bornée (fc3cce38 / captureFlow.ts). */
