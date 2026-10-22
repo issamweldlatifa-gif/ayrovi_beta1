@@ -37,6 +37,7 @@ import {
   type AyWebsPageAnalysis, type AyWebsResolveOutcome,
 } from '@/api/aywebs';
 import { AddToCartSheet } from '@/features/aywebs/AddToCartSheet';
+import { VariantReader, type VariantReaderHandle } from '@/features/aywebs/VariantReader';
 import { ReadingProgress } from '@/features/aywebs/ReadingProgress';
 import { waitForPageIdle } from '@/features/aywebs/captureFallback';
 import {
@@ -76,6 +77,8 @@ export default function AyWebsBrowserScreen() {
   const pageOk = isWebPageUrl(url);
 
   const webRef = useRef<WebViewHandle>(null);
+  /* Lecteur masqué de la page de variante (confirmation d'un choix ≠ page affichée). */
+  const variantReader = useRef<VariantReaderHandle>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** الوعد الجاري لقراءة الصفحة: يتفتح بالحقن ويتسدّ بالرسالة (ولا بالمهلة). */
   const waiter = useRef<{ resolve: (capture: Record<string, unknown>) => void; reject: (error: unknown) => void } | null>(null);
@@ -533,9 +536,14 @@ export default function AyWebsBrowserScreen() {
           options={sheet.outcome.product.variantDetails}
           capture={sheet.capture}
           quoteToken={sheet.outcome.quoteToken}
+          readVariant={(url: string) => (variantReader.current
+            ? variantReader.current.read(url)
+            : Promise.reject(new ApiError('device', 'Lecteur de variante indisponible.')))}
           onClose={() => setSheet(null)}
         />
       ) : null}
+
+      <VariantReader ref={variantReader} />
 
       {sessionId ? (
         <StoreCartSheet visible={cartOpen} onClose={() => setCartOpen(false)} sessionId={sessionId} storeId={storeId} />
