@@ -111,6 +111,7 @@ export default function AyWebsBrowserScreen() {
   const [favOpen, setFavOpen] = useState(false);
   const [note, setNote] = useState('');
   /* TEMPORAIRE (diagnostic du blocage de lecture) — à retirer après le test. */
+  /* (commentaire seul : relance du build APK après annulation du run précédent.) */
   const [diag, setDiag] = useState<string[]>([]);
   const pushDiag = useCallback((line: string) => {
     const at = new Date().toLocaleTimeString('fr-FR');
