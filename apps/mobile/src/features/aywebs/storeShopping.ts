@@ -3,7 +3,7 @@
  *
  *  • Panier : trois vues. « Ce magasin » (le groupe AYWEBs du magasin courant),
  *    « Tous les magasins » (tous les groupes AYWEBs), « Lens & Shop » (le panier
- *    Ayrovi). Le panier Ayrovi mélange Lens et Shop : l'API ne les distingue pas
+ *    le même panier). Le panier mélange Lens et Shop : l'API ne les distingue pas
  *    encore, donc on ne prétend pas les séparer.
  *  • Favori : une page est « déjà enregistrée » si son adresse (sans fragment ni
  *    barre finale) correspond à une favorite existante.

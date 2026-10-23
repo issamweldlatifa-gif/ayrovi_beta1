@@ -2,10 +2,10 @@
  * AYWEBs — les deux volets ouverts depuis la barre du bas du navigateur marchand.
  *
  * Ils utilisent le tiroir unifié de l'application (`AppSheet` + `SheetHeader`) et
- * les jetons du thème : même apparence que les autres tiroirs d'Ayrovi.
+ * les jetons du thème : même apparence que les autres tiroirs de l'application.
  *
  *  • StoreCartSheet : « mes achats » — même panier que l'onglet Panier, filtré :
- *    ce magasin / tous les magasins (AYWEBs) / Lens & Shop (panier Ayrovi).
+ *    ce magasin / tous les magasins (AYWEBs) / Lens & Shop (panier unique).
  *  • StoreFavoriteSheet : mettre la page produit courante dans les favoris du client.
  *    Les favoris exigent un compte : hors connexion, la ligne mène à la connexion.
  *    Le serveur reçoit l'adresse et le titre ; le prix n'est pas envoyé d'ici.

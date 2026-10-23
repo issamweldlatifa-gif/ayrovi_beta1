@@ -17,16 +17,43 @@
  *   3. LA RÈGLE de nature de page est UNE, et la copie de l'application ne
  *      dérive pas de celle du serveur (comparaison sur les 64 signaux).
  */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
 import { analyzeAyWebsUrl, captureInjectionFor } from '../src/aywebs/browser';
 import {
   ayWebsPageSignalsOf, classifyAyWebsCapturedPage, validateAyWebsCapturedPage,
 } from '../src/aywebs/webviewCapture';
-import {
-  classifyPageSignals as mobileClassify, pageSignalsOf as mobileSignals,
-} from '../apps/mobile/src/features/aywebs/pageKind';
 import { AYWEBS_CAPTURE_VERSION, type AyWebsPageSignals } from '../shared/aywebsCapture';
+
+/**
+ * Le miroir applicatif est chargé **comme il est livré** : le fichier est lu,
+ * transpilé, évalué. Un `import` direct ferait lire `apps/mobile/tsconfig.json`
+ * (qui étend `expo/tsconfig.base`, absent d'une installation à la racine) et le
+ * transformateur échouerait avant la moindre assertion. Ici, le texte comparé
+ * est exactement celui qui part dans l'APK.
+ */
+function loadMobileMirror() {
+  const file = join(__dirname, '..', 'apps', 'mobile', 'src', 'features', 'aywebs', 'pageKind.ts');
+  const source = readFileSync(file, 'utf8');
+  const { outputText } = ts.transpileModule(source, {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+    fileName: file,
+  });
+  const loaded = { exports: {} as Record<string, unknown> };
+  new Function('exports', 'module', outputText)(loaded.exports, loaded);
+  return loaded.exports as {
+    pageSignalsOf: (capture: unknown) => AyWebsPageSignals;
+    classifyPageSignals: (signals: AyWebsPageSignals) => { kind: string; reason: string };
+    captureIsProductCard: (capture: unknown) => boolean;
+  };
+}
+
+const mobile = loadMobileMirror();
+const mobileClassify = mobile.classifyPageSignals;
+const mobileSignals = mobile.pageSignalsOf;
 
 const ZALANDO_HOME = 'https://www.zalando.de/';
 const ZALANDO_PRODUCT = 'https://www.zalando.de/nike-air-force-1-weiss-ni111a0s2-a0011.html';

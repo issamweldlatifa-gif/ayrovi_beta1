@@ -172,14 +172,14 @@ const QueueCard: React.FC<{
               {link ? (
                 <a href={link} target="_blank" rel="noopener noreferrer">Ouvrir la page du produit</a>
               ) : (
-                <span style={{ color: '#b00020' }}>Lien produit invalide : ne pas acheter avant vérification.</span>
+                <span style={{ color: 'var(--admin-danger-strong)' }}>Lien produit invalide : ne pas acheter avant vérification.</span>
               )}
             </li>
           );
         })}
       </ul>
 
-      <div style={{ borderTop: '1px solid #ddd', paddingTop: 12 }}>
+      <div style={{ borderTop: '1px solid var(--admin-line-soft)', paddingTop: 12 }}>
         <div>{address.name || '—'} · {address.phone || '—'}</div>
         <div>{[address.city, address.line].filter(Boolean).join(' — ') || '—'}</div>
         <Button variant="secondary" onClick={onCopy} style={{ marginTop: 8 }}>Copier les informations du client</Button>

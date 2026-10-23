@@ -92,6 +92,12 @@ export interface AyWebsPurchasePreparation {
 
 export interface AyWebsStoreAdapter {
   readonly id: AyWebsAdapterId;
+  /**
+   * Définition du registre servie par cet adaptateur (`null` si aucune entrée
+   * nommée). Un adaptateur COLLECTIF (« catalogue ») sert N boutiques : c'est
+   * cette définition qui porte le motif d'URL et la devise de la ligne.
+   */
+  readonly store: AyWebsStoreDefinition | null;
   readonly integrationType: AyWebsIntegrationType;
   readonly purchaseMode: AyWebsPurchaseMode;
 
