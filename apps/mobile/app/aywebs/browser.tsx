@@ -195,11 +195,19 @@ export default function AyWebsBrowserScreen() {
       const finish = () => { settled = true; stopTimer(); signal?.removeEventListener('abort', onAbort); };
       const resolve = (value: Record<string, unknown>) => { if (settled) return; finish(); resolveOuter(value); };
       const reject = (error: unknown) => { if (settled) return; finish(); rejectOuter(error); };
+      /* Une seule lecture à la fois dans le WebView : la nouvelle REJETTE l'ancienne.
+         Sans ça, l'appelant de l'ancienne attend pour toujours (bouton « Chargement » bloqué). */
+      const previous = waiter.current;
+      if (previous) {
+        waiter.current = null;
+        stopTimer();
+        previous.reject(new ApiError('aborted', 'Lecture remplacée par une nouvelle lecture. Réessayez.'));
+      }
       /* Annulation (nouvel appui ou écran fermé) : on libère la page et le minuteur. */
       const onAbort = () => {
         if (settled) return;
         stopTimer();
-        waiter.current = null;
+        if (waiter.current?.reject === reject) waiter.current = null;
         if (!quiet) { setBusy(false); endWaiting('failed'); }
         reject(new ApiError('aborted', 'Requête interrompue.'));
       };
@@ -215,7 +223,8 @@ export default function AyWebsBrowserScreen() {
         timer.current = setTimeout(() => {
           timer.current = null;
           pushDiag('20 s sans retour de la page : arrêt');
-          waiter.current = null;
+          if (settled) return;
+          if (waiter.current?.reject === reject) waiter.current = null;
           if (!quiet) { setBusy(false); endWaiting('failed'); }
           reject(new ApiError('timeout', 'La lecture de la page a pris trop de temps. Réessayez.'));
         }, AYWEBS_CAPTURE_WATCHDOG_MS);
