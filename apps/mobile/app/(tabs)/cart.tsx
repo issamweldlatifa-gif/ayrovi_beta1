@@ -31,6 +31,8 @@ import {
   AYROVI_PRICE_TRUST_REASONS, ayroviCartReadiness, fetchAyroviCart, removeAyroviCartItem,
   updateAyroviCartQuantity, type AyroviCartLine,
 } from '@/api/cart';
+import { bridgeAyWebsCartToAyrovi, fetchAyWebsCart } from '@/api/aywebs';
+import { pendingAyWebsLines, pendingAyWebsUnits } from '@/features/aywebs/storeShopping';
 import { useSessionId } from '@/session/session';
 import { earliestCartDeadline, formatCartCountdown, remainingMs, serverClockOffset } from '@/features/lens/lensCartStatus';
 
@@ -54,7 +56,20 @@ export default function AyroviCartScreen() {
 
   const reload = useCallback(() => { cartQuery.refetch(); }, [cartQuery]);
 
-  const onNote = useCallback((error: unknown, fallbackKey: 'cart.failed' | 'cart.updateFailed' | 'cart.removeFailed') => {
+  /**
+   * Le panier AYWEBs (navigateur) nourrit ce panier par le pont du serveur.
+   * On lit SON état ici pour ne plus jamais perdre une ligne à l'écran :
+   * une ligne non liée (prix refusé, jeton, incident) s'affiche avec son
+   * motif et un bouton qui la relie — elle n'est pas « disparue ».
+   */
+  const aywebsQuery = useQuery({
+    queryKey: ['aywebs', 'cart', sessionId],
+    enabled: Boolean(sessionId),
+    queryFn: ({ signal }) => fetchAyWebsCart({ sessionId, signal }),
+    staleTime: 0,
+  });
+
+  const onNote = useCallback((error: unknown, fallbackKey: 'cart.failed' | 'cart.updateFailed' | 'cart.removeFailed' | 'cart.linkFailed') => {
     setNote(isApiError(error) ? userMessage(error)[locale] : t(fallbackKey));
   }, [locale, t]);
 
@@ -75,6 +90,25 @@ export default function AyroviCartScreen() {
       void queryClient.invalidateQueries({ queryKey: ['cart'] });
     },
     onError: (error) => onNote(error, 'cart.removeFailed'),
+  });
+
+  const pendingLines = useMemo(
+    () => pendingAyWebsLines(aywebsQuery.data?.items ?? []),
+    [aywebsQuery.data],
+  );
+  const pendingUnits = useMemo(
+    () => pendingAyWebsUnits(aywebsQuery.data?.items ?? []),
+    [aywebsQuery.data],
+  );
+
+  const linkPending = useMutation({
+    mutationFn: () => bridgeAyWebsCartToAyrovi({ sessionId }),
+    onSuccess: () => {
+      setNote('');
+      void queryClient.invalidateQueries({ queryKey: ['cart'] });
+      void queryClient.invalidateQueries({ queryKey: ['aywebs'] });
+    },
+    onError: (error) => onNote(error, 'cart.linkFailed'),
   });
 
   const cart = cartQuery.data ?? null;
@@ -282,6 +316,29 @@ export default function AyroviCartScreen() {
           </>
         )}
       </Card>
+
+      {pendingLines.length ? (
+        <Card title={t('cart.pendingTitle')}>
+          <AppText variant="caption" color={theme.colors.muted}>
+            {t('cart.pendingBody', { count: pendingUnits })}
+          </AppText>
+          {pendingLines.map((item) => (
+            <KeyValue
+              key={item.id}
+              label={item.title}
+              value={item.lineTotalTnd != null
+                ? `${item.quantity} · ${item.lineTotalTnd.toFixed(2)} TND`
+                : `${item.quantity} · ${item.unitPrice ?? '?'} ${item.currency}`}
+            />
+          ))}
+          <Button
+            label={t('cart.pendingLink')}
+            onPress={() => linkPending.mutate()}
+            busy={linkPending.isPending}
+            testID="cart-link-pending"
+          />
+        </Card>
+      ) : null}
 
       {groups.map(([store, lines]) => (
         <Card key={store} title={store}>

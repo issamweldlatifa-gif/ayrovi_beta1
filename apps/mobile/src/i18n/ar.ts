@@ -481,6 +481,10 @@ export const ar = {
   'cart.failed': 'ما نجّمناش نقراو السلّة.',
   'cart.updateFailed': 'ما تبدّلتش الكمية.',
   'cart.removeFailed': 'ما تحيّدش السطر.',
+  'cart.pendingTitle': 'مختار في المتصفّح، مازال موش في هالسلّة',
+  'cart.pendingBody': '{count} منتوج AYWEBs يستنّى الربط. السلّة تاخذهم بثمن الخادم — بلا حساب هنا.',
+  'cart.pendingLink': 'اربطهم بالسلّة',
+  'cart.linkFailed': 'الربط ما كمّلش: المنتوج باقي في AYWEBs، ما ضاع شي.',
   /* ── P3.4: طلب شراء بالنيابة + طلب إضافة متجر (§37/§38). ─────────────────── */
   /* ── P4.1: Lens — صورة ولا كلمة ⇒ فيشات متاجر حقيقية. ─────────────────────── */
   'sheet.close': 'إغلاق',
@@ -781,6 +785,7 @@ export const ar = {
   'aywebs.captureFailed': "ما نجّمناش نقراو الصفحة",
   'aywebs.blockedScheme': "هالرابط يحلّ تطبيق آخر: تمنّع هنا.",
   'aywebs.badUrl': "عنوان الصفحة غير صالح.",
+  'aywebs.requestPurchase': 'اطلب هذا الشراء (مراجعة بشرية)',
   'aywebs.addToCart': "Add to Cart",
   'aywebs.bar.cart': "السلّة",
   'aywebs.bar.favorites': "المفضلة",

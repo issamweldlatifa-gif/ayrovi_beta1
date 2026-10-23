@@ -3,7 +3,7 @@ import type { AyWebsCart, AyWebsCartItem } from '../src/api/aywebs';
 import type { AyroviCart, AyroviCartLine } from '../src/api/cart';
 import type { Favorite } from '../src/api/account';
 import {
-  canonicalSourceUrl, isPageSaved, storeCartSections,
+  canonicalSourceUrl, isPageSaved, pendingAyWebsLines, pendingAyWebsUnits, storeCartSections,
 } from '../src/features/aywebs/storeShopping';
 
 function awItem(overrides: Partial<AyWebsCartItem>): AyWebsCartItem {
@@ -104,5 +104,31 @@ describe('isPageSaved — la page est-elle déjà en favori ?', () => {
 
   it('pas d’adresse, pas de favori', () => {
     expect(isPageSaved([fav('https://a.com')], '')).toBe(false);
+  });
+});
+
+describe('lignes AYWEBs en attente de liaison (23/10/2026)', () => {
+  it('seules les lignes que le serveur dit NON liées sont en attente', () => {
+    const items = [
+      awItem({ id: 'a', linkedToAyrovi: true }),
+      awItem({ id: 'b', linkedToAyrovi: false }),
+      /* `null` = le serveur n'a rien dit : ni liée, ni « perdue ». */
+      awItem({ id: 'c', linkedToAyrovi: null }),
+    ];
+    expect(pendingAyWebsLines(items).map((item) => item.id)).toEqual(['b']);
+  });
+
+  it('les unités en attente s’additionnent (le client voit le nombre réel)', () => {
+    const items = [
+      awItem({ id: 'a', linkedToAyrovi: false, quantity: 2 }),
+      awItem({ id: 'b', linkedToAyrovi: false, quantity: 3 }),
+      awItem({ id: 'c', linkedToAyrovi: true, quantity: 4 }),
+    ];
+    expect(pendingAyWebsUnits(items)).toBe(5);
+  });
+
+  it('panier vide ou tout lié ⇒ rien à signaler', () => {
+    expect(pendingAyWebsLines([])).toEqual([]);
+    expect(pendingAyWebsUnits([awItem({ linkedToAyrovi: true, quantity: 2 })])).toBe(0);
   });
 });

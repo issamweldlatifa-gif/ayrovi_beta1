@@ -52,6 +52,7 @@ import { LensOverviewCard } from '@/features/lens/LensOverviewCard';
 import { LensSearchBar } from '@/features/lens/LensSearchBar';
 import { OcerexFlow } from '@/features/lens/ocerex/OcerexFlow';
 import { LensProductView } from '@/features/lens/LensProductView';
+import { lensOpenDecision } from '@/features/lens/lensOpen';
 import { LensHelpView } from '@/features/lens/LensHelpView';
 import { LensHistoryView } from '@/features/lens/LensHistoryView';
 import { LensRulesView } from '@/features/lens/LensRulesView';
@@ -920,6 +921,27 @@ export default function LensScreen() {
         ? { kind: 'results', candidates: stage.cards, eventId: '', excluded: 0 }
         : null;
     if (!source || !isOpenableSourceUrl(candidate.sourceUrl)) return;
+
+    /*
+     * VENTE EXTERNE = NAVIGATEUR INTÉGRÉ (23/10/2026, décision du propriétaire).
+     *
+     * La petite carte porte déjà l'adresse marchande : l'appui ouvre CETTE page
+     * dans le navigateur AYWEBs, le client choisit couleur/taille sur le site,
+     * et « Add to Cart » relit la page (capture) avant d'ajouter. On ne passe
+     * plus par la grande fiche : elle relisait la page pour la réafficher, ce
+     * qui n'ajoutait rien au choix — et elle cachait le vrai prix de la page.
+     *
+     * La fiche reste pour la vente INTERNE (catalogue ZAYROVI) : là, c'est
+     * notre propre stock et notre propre page qui font foi.
+     */
+    const decision = lensOpenDecision(candidate);
+    if (decision.screen === 'browser') {
+      void markChosen(source.eventId);
+      router.push(decision.target);
+      return;
+    }
+    // URL refusée par le navigateur (schéma inattendu) : repli honnête sur la
+    // fiche, qui relit la page côté serveur au lieu de deviner.
     openProduct(candidate, source);
   }, [openProduct, stage]);
 
@@ -944,6 +966,13 @@ export default function LensScreen() {
         availability: 'unknown',
       });
     } catch {
+      return;
+    }
+    /* Correspondance visuelle : c'est une page marchande externe, donc le
+       navigateur intégré — jamais la fiche. */
+    const decision = lensOpenDecision(candidate);
+    if (decision.screen === 'browser') {
+      router.push(decision.target);
       return;
     }
     openProduct(candidate, { kind: 'results', candidates: [candidate], eventId: '', excluded: 0 });

@@ -536,7 +536,8 @@ export function AddToCartSheet({
           <View style={styles.actions}>
             <Button
               label={t('aywebs.goToCart')}
-              onPress={() => { onClose(); router.push('/aywebs/cart'); }}
+              /* Un seul panier visible pour le client : le panier principal. */
+              onPress={() => { onClose(); router.push('/cart'); }}
             />
             <Button label={t('aywebs.continueShopping')} tone="quiet" onPress={onClose} />
           </View>

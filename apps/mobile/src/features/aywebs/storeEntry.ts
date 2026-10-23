@@ -47,3 +47,36 @@ export function normalizeStoreAddress(raw: string): string | null {
     return null;
   }
 }
+
+/**
+ * Entrer dans une boutique **à la page d'un produit** (23/10/2026).
+ *
+ * C'est le chemin de la vente EXTERNE : une carte Lens (ou une correspondance
+ * visuelle) porte déjà l'URL marchande ; on ouvre cette page telle quelle dans
+ * le navigateur intégré, le client choisit sur le site, et c'est la capture qui
+ * prouve le prix et la variante. Aucune réécriture d'URL : si elle ne passe pas
+ * le contrôle (`isWebPageUrl`), on renvoie `null` et l'appelant garde la fiche.
+ *
+ * `capture: '0'` — on ne promet pas un droit de lecture AVANT le verdict du
+ * serveur : c'est `analyzeAyWebsPage` qui décide, page par page.
+ */
+export interface ProductEntryTarget {
+  pathname: '/aywebs/browser';
+  params: { url: string; storeName: string; capture: '0' };
+}
+
+export function productEntryTarget(rawUrl: string, storeName = ''): ProductEntryTarget | null {
+  const url = String(rawUrl ?? '').trim();
+  if (!isWebPageUrl(url)) return null;
+  try {
+    /* Le navigateur intégré ne charge que HTTPS : une adresse http serait
+       bloquée par la politique de navigation, donc refusée ici aussi. */
+    if (new URL(url).protocol !== 'https:') return null;
+  } catch {
+    return null;
+  }
+  return {
+    pathname: '/aywebs/browser',
+    params: { url, storeName: String(storeName ?? '').trim().slice(0, 80), capture: '0' },
+  };
+}

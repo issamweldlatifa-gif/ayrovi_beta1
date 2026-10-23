@@ -118,3 +118,24 @@ export function isPageSaved(favorites: Favorite[], pageUrl: string): boolean {
   const wanted = canonicalSourceUrl(pageUrl);
   return favorites.some((favorite) => favorite.sourceUrl && canonicalSourceUrl(favorite.sourceUrl) === wanted);
 }
+
+/**
+ * Lignes choisies dans le navigateur qui ne sont PAS encore dans le panier
+ * principal (23/10/2026).
+ *
+ * Le pont du serveur relie chaque ajout ; quand il n'a pas pu (prix refusé,
+ * preuve absente, incident), la ligne reste dans AYWEBs. Avant, elle
+ * disparaissait de la vue du client : il croyait l'avoir perdue. Ici on la
+ * nomme, avec son motif, et l'écran du panier propose de la relier.
+ *
+ * `null` = le serveur n'a rien dit (ancienne réponse) : on ne prétend pas
+ * qu'elle est en attente, et on ne prétend pas non plus qu'elle est liée.
+ */
+export function pendingAyWebsLines(items: readonly AyWebsCartItem[]): AyWebsCartItem[] {
+  return items.filter((item) => item.linkedToAyrovi === false);
+}
+
+/** Unités en attente de liaison — le nombre que le client doit voir. */
+export function pendingAyWebsUnits(items: readonly AyWebsCartItem[]): number {
+  return pendingAyWebsLines(items).reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
+}

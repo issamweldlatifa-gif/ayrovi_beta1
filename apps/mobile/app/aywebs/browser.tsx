@@ -17,7 +17,7 @@ import { useCallback, useEffect, useRef, useState, type ComponentProps, type Com
 import { goBack } from '@/design/navigation';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { WebView as RNWebView, type WebViewMessageEvent, type WebViewProps } from 'react-native-webview';
@@ -599,6 +599,26 @@ export default function AyWebsBrowserScreen() {
             />
           </View>
         </View>
+
+        {/*
+         * Page que le serveur n'a pas reconnue comme fiche produit (accueil,
+         * catégorie, boutique hors registre) : l'ajout automatique n'a pas de
+         * preuve, donc on ne le propose pas. Le client garde une issue :
+         * une demande d'achat relue par un humain, avec la page sous les yeux.
+         * Sans cela, il resterait dans un cul-de-sac (23/10/2026).
+         */}
+        {productPage === false && pageOk ? (
+          <Button
+            label={t('aywebs.requestPurchase')}
+            tone="quiet"
+            block
+            onPress={() => router.push({
+              pathname: '/aywebs/request',
+              params: { url: pageUrl, title: nav.title || '', storeId: pageAnalysis?.storeId || storeId },
+            })}
+            testID="aywebs-store-request"
+          />
+        ) : null}
       </View>
 
       {sheet ? (
@@ -620,7 +640,12 @@ export default function AyWebsBrowserScreen() {
       <VariantReader ref={variantReader} />
 
       {sessionId ? (
-        <StoreCartSheet visible={cartOpen} onClose={() => setCartOpen(false)} sessionId={sessionId} storeId={storeId} />
+        <StoreCartSheet
+          visible={cartOpen}
+          onClose={() => setCartOpen(false)}
+          sessionId={sessionId}
+          storeId={pageAnalysis?.storeId || storeId}
+        />
       ) : null}
       <StoreFavoriteSheet
         visible={favOpen}

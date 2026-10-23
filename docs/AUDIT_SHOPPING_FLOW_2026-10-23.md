@@ -50,6 +50,28 @@
 dure (aucun prix deviné, aucune disponibilité inventée) et c'est exactement ce
 que le client nous a reproché les 23/10.
 
+**État au 23/10/2026 — ce qui est livré dans ce lot (branche `arena/`).**
+
+| Lot | Contenu | État |
+|---|---|---|
+| **L3** | Carte Lens → navigateur AYWEBs à la page du produit (`lensOpenDecision`, `productEntryTarget`) ; fiche conservée pour la vente interne | **livré** |
+| **L0 (vue)** | Le panier principal lit le panier AYWEBs, nomme les lignes non liées et propose de les relier ; après ajout, la feuille renvoie à `/cart` | **livré** |
+| **L0 (rattrapage)** | Rattrapage en masse des lignes anciennes non liées | à faire (le bouton relie à la demande) |
+| **L1** | Identité boutique unique (`storeKeyFor`) | à faire |
+| **L2** | Clé d'idempotence sur `POST /api/cart/items` | à faire — le chemin externe passe désormais par AYWEBs, qui la porte déjà |
+| **L4** | Écran de panier unique (fusion des deux écrans) | partiel : la vue est unifiée, les deux routes existent encore |
+
+Deux constats d'exécution, utiles au lot suivant :
+- `POST /api/checkout` **vide le panier dans la même transaction** qui crée la commande
+  (`database.ts::createOrderFromCart` → `clearCart`), et `POST /aywebs/orders` revérifie
+  avant de créer : un second appui tombe sur `EMPTY_CART` / `CART_EMPTY`. Ce n'est pas
+  une clé d'idempotence, mais c'est un vrai garde-fou ; le trou restant est le **retry
+  réseau** après une réponse perdue (le client reçoit une erreur alors que la commande
+  existe — elle est visible dans l'historique).
+- La boutique d'une ligne reste écrite dans trois vocabulaires (§4.5) ; tant que L1
+  n'est pas fait, une même enseigne peut produire deux lignes distinctes — jamais une
+  fusion silencieuse, ce qui est le comportement prudent.
+
 **Ma recommandation.** Ne pas créer de troisième panier, ne pas enterrer la fiche
 Lens : **faire du panier ZAYROVI la vérité de caisse, du panier AYWEBs l'antichambre
 de preuve, et rendre le pont automatique et visible**. Lens devient une entrée

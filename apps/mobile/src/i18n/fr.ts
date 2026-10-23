@@ -481,6 +481,10 @@ export const fr = {
   'cart.failed': 'Impossible de lire le panier.',
   'cart.updateFailed': 'La quantité n’a pas été modifiée.',
   'cart.removeFailed': 'La ligne n’a pas été retirée.',
+  'cart.pendingTitle': 'Choisis dans le navigateur, pas encore dans ce panier',
+  'cart.pendingBody': '{count} article(s) AYWEBs attendent leur liaison. Le panier les reprend au prix du serveur — sans rien recalculer ici.',
+  'cart.pendingLink': 'Lier ces articles',
+  'cart.linkFailed': 'La liaison n’a pas abouti : l’article reste dans AYWEBs, rien n’est perdu.',
   /* ── P3.4 : demande d'achat par procuration + demande de boutique (§37/§38). ─ */
   /* ── P4.1 : Lens — photo / texte → fiches marchandes réelles. ─────────────── */
   'sheet.close': 'Fermer',
@@ -781,6 +785,7 @@ export const fr = {
   'aywebs.captureFailed': "Lecture de la page impossible",
   'aywebs.blockedScheme': "Ce lien ouvre une autre application : il est bloqué ici.",
   'aywebs.badUrl': "Adresse de la page invalide.",
+  'aywebs.requestPurchase': 'Demander cet achat (revue humaine)',
   'aywebs.addToCart': "Add to Cart",
   'aywebs.bar.cart': "Panier",
   'aywebs.bar.favorites': "Favoris",
