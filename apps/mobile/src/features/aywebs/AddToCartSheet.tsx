@@ -33,8 +33,9 @@ import {
 import { newAyWebsRequestId } from '@/features/aywebs/requestId';
 import { variantPageUrlFor } from '@/features/aywebs/variantPage';
 import {
-  defaultSelectionFromCapture, displayPriceForSelection, localAddReadiness, pageAvailabilityFromCapture,
-  priceDependsOnOption, selectionIsShown, stockForSelection,
+  defaultSelectionFromCapture, displayPriceForSelection, localAddReadiness, localVariantsFromCapture,
+  pageAvailabilityFromCapture, priceDependsOnOption, selectionIsShown, stockForSelection,
+  type LocalVariant,
 } from '@/features/aywebs/localProduct';
 
 export interface AddToCartSheetProps {
@@ -149,6 +150,20 @@ export function AddToCartSheet({
     () => (local && captureRecord ? pageAvailabilityFromCapture(captureRecord) : 'UNKNOWN'),
     [captureRecord, local],
   );
+  /**
+   * Variantes LUES dans la capture, indexées par ASIN : elles portent le prix
+   * de carte et le stock annoncé (« Only 6 left in stock »). Les options du
+   * serveur ne les ont pas — sans cette jointure, la disposition manquait de
+   * deux champs et le typage refusait le passage à `localAddReadiness`.
+   */
+  const captureVariants = useMemo<LocalVariant[]>(
+    () => (local && captureRecord ? localVariantsFromCapture(captureRecord) : []),
+    [captureRecord, local],
+  );
+  const captureVariantByAsin = useMemo(
+    () => new Map(captureVariants.map((variant) => [variant.asin, variant])),
+    [captureVariants],
+  );
   /** هل الاختيار هو التركيبة المعروضة؟ دليل الصفحة يخصّها وحدها. */
   const shownSelection = useMemo(
     () => (local && captureRecord ? selectionIsShown(captureRecord, selection) : false),
@@ -158,11 +173,16 @@ export function AddToCartSheet({
     if (local) {
       const res = localAddReadiness({
         groups,
-        variants: variantOptions.map((option) => ({
-          asin: option.sourceVariantId,
-          attributes: option.attributes,
-          availability: option.availability === 'AVAILABLE' ? 'AVAILABLE' : option.availability === 'OUT_OF_STOCK' ? 'OUT_OF_STOCK' : 'UNKNOWN',
-        })),
+        variants: variantOptions.map((option) => {
+          const shown = captureVariantByAsin.get(option.sourceVariantId);
+          return {
+            asin: option.sourceVariantId,
+            attributes: option.attributes,
+            availability: (option.availability === 'AVAILABLE' ? 'AVAILABLE' : option.availability === 'OUT_OF_STOCK' ? 'OUT_OF_STOCK' : 'UNKNOWN') as LocalVariant['availability'],
+            cardPrice: shown?.cardPrice ?? '',
+            stock: shown?.stock ?? null,
+          };
+        }),
         selection,
         pageInStockText: pageAvailability === 'AVAILABLE',
         pageAvailability,
@@ -182,7 +202,7 @@ export function AddToCartSheet({
       productQuotedTnd: product.ayroviPricing?.totalTnd ?? null,
       selection,
     });
-  }, [groups, local, pageAvailability, shownSelection, product.availability.state, product.ayroviPricing, selection, variantOptions]);
+  }, [captureVariantByAsin, groups, local, pageAvailability, shownSelection, product.availability.state, product.ayroviPricing, selection, variantOptions]);
 
   /**
    * الكمية المتوفّرة المعلنة لهذا الاختيار، إن نشرتها الصفحة (« Only 6 left in
