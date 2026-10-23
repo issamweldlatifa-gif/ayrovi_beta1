@@ -16,7 +16,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { AyWebsVariantQuote } from '@/api/aywebs';
-import { selectionQuote } from '@/features/aywebs/selectionQuote';
+import { quantityLimit, selectionQuote } from '@/features/aywebs/selectionQuote';
 
 const quote = (overrides: Partial<AyWebsVariantQuote>): AyWebsVariantQuote => ({
   group: 'Couleur', value: 'Color Blue', availability: 'UNKNOWN', stock: null,
@@ -115,5 +115,25 @@ describe('prix et disponibilité du choix courant', () => {
     });
     /* La combinaison est celle de la page : le stock de page prime. */
     expect(result.availability).toBe('AVAILABLE');
+  });
+});
+
+describe('quantityLimit — la quantité ne dépasse jamais le stock publié', () => {
+  it('un produit qui en publie 5 plafonne à 5 — jamais 20', () => {
+    expect(quantityLimit({ stock: 5 })).toBe(5);
+  });
+
+  it('un stock inconnu ne plafonne pas : on ne l’invente pas', () => {
+    expect(quantityLimit({ stock: null })).toBe(99);
+  });
+
+  it('le maximum de commande du marchand s’applique aussi (le plus petit gagne)', () => {
+    expect(quantityLimit({ stock: 12, merchantMax: 3 })).toBe(3);
+    expect(quantityLimit({ stock: 2, merchantMax: 30 })).toBe(2);
+  });
+
+  it('stock 0 ou négatif ne donne jamais une quantité à zéro', () => {
+    expect(quantityLimit({ stock: 0 })).toBe(99);
+    expect(quantityLimit({ stock: -4 })).toBe(99);
   });
 });

@@ -127,3 +127,27 @@ export function selectionQuote(input: SelectionQuoteInput): SelectionQuote {
     fromValue: true,
   };
 }
+
+/**
+ * Combien de pièces on laisse commander — jamais plus que ce que la page
+ * publie (23/10/2026, retour client : « le produit en a cinq, on peut en
+ * mettre vingt »).
+ *
+ * Un stock inconnu ne plafonne pas la quantité (on ne sait pas, on ne
+ * l'invente pas) ; un stock publié la plafonne, et le maximum de commande du
+ * marchand (la liste « quantité » de sa fiche) plafonne aussi. Le plafond
+ * d'interface (`cap`, 99) reste le dernier mot pour ne pas casser la fiche.
+ */
+export function quantityLimit(input: {
+  stock: number | null;
+  merchantMax?: number | null;
+  cap?: number;
+}): number {
+  const ceilings: number[] = [];
+  const cap = input.cap ?? 99;
+  if (Number.isFinite(cap) && cap > 0) ceilings.push(cap);
+  for (const value of [input.stock, input.merchantMax]) {
+    if (typeof value === 'number' && Number.isFinite(value) && value > 0) ceilings.push(value);
+  }
+  return Math.max(1, Math.min(...ceilings.map((value) => Math.floor(value))));
+}

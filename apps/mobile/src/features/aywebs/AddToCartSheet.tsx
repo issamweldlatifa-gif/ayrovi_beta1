@@ -42,7 +42,7 @@ import {
 } from '@/features/aywebs/localProduct';
 import { choiceGroupKind, choiceGroupKey } from '@/features/aywebs/choiceGroup';
 import { ChoiceField, type ChoiceOption } from '@/features/aywebs/ChoiceField';
-import { selectionQuote, type AvailabilityState } from '@/features/aywebs/selectionQuote';
+import { quantityLimit, selectionQuote, type AvailabilityState } from '@/features/aywebs/selectionQuote';
 
 export interface AddToCartSheetProps {
   visible: boolean;
@@ -62,8 +62,6 @@ export interface AddToCartSheetProps {
   /** للسطر الجديد (يتستعمل في شاشة المتجر باش تحدّث الأثر). */
   onAdded?: (item: AyWebsCartItem) => void;
 }
-
-const MAX_QUANTITY = 99;
 
 /** Devise affichée pour le montant marchand (celle de la page, jamais supposée). */
 const moneyText = (price: number | null | undefined, currency: string | null | undefined): string => {
@@ -228,6 +226,17 @@ export function AddToCartSheet({
     quotes: pageQuote?.quotes ?? [],
     selection,
   }), [pageQuote, selection]);
+
+  /**
+   * سقف الكمية: اللي تنشرو الصفحة هو السقف — منتوج فيه 5 ما نخلّيوش 20.
+   * كي المخزون ما معروفش، ما نخترعوش سقف؛ و«99» برك حدّ الواجهة.
+   */
+  const maxQuantity = useMemo(() => quantityLimit({ stock: quote.stock }), [quote.stock]);
+
+  /* كي يتبدّل الاختيار وينقص المخزون، الكمية تنزل للسقف — بلا رسالة خطأ. */
+  useEffect(() => {
+    setQuantity((value) => (value > maxQuantity ? maxQuantity : value));
+  }, [maxQuantity]);
 
   /** ثمن القيمة المنشور على الصفحة (نصّها كما كتبتو) — كي ما فماش دينار. */
   const merchantShown = useMemo(
@@ -483,21 +492,23 @@ export function AddToCartSheet({
           ) : (
             <>
               {/* الثمن اللي يهمّ المستعمل: بالدينار، محسوب في الخادم. */}
+              {/* الرقم الكبير بالدينار برك. المبلغ بالدولار/الأورو يمشي سطر صغير
+                  تحت كدليل على ثمن المتجر — ماعادش يتقرا كثمن نهائي (23/10). */}
               {sourceLine ? (
                 <AppText variant="title" weight="bold">{sourceLine}</AppText>
               ) : quoting ? (
                 <AppText variant="title" weight="bold" color={theme.colors.muted}>
                   {t('aywebs.pricePending')}
                 </AppText>
-              ) : merchantLine ? (
-                <AppText variant="title" weight="bold">{merchantLine}</AppText>
-              ) : null}
-              {sourceLine && merchantLine ? (
+              ) : (
+                <AppText variant="title" weight="bold" color={theme.colors.muted}>
+                  {t('aywebs.priceAtAdd')}
+                </AppText>
+              )}
+              {merchantLine ? (
                 <AppText variant="caption" color={theme.colors.muted}>
                   {t('aywebs.merchantPriceLine', { price: merchantLine })}
                 </AppText>
-              ) : !sourceLine && merchantLine ? (
-                <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.priceAtAdd')}</AppText>
               ) : null}
               {!sourceLine && !merchantLine && merchantPrice.note ? (
                 <AppText variant="caption" color={theme.colors.muted}>{merchantPrice.note}</AppText>
@@ -567,12 +578,12 @@ export function AddToCartSheet({
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={t('aywebs.quantityMore')}
-                disabled={quantity >= MAX_QUANTITY || busy}
-                onPress={() => setQuantity((value) => Math.min(MAX_QUANTITY, value + 1))}
+                disabled={quantity >= maxQuantity || busy}
+                onPress={() => setQuantity((value) => Math.min(maxQuantity, value + 1))}
                 style={styles.stepperButton}
                 testID="aywebs-quantity-more"
               >
-                <Ionicons name="add" size={theme.iconSize.md} color={quantity >= MAX_QUANTITY ? theme.colors.muted : theme.colors.ink} />
+                <Ionicons name="add" size={theme.iconSize.md} color={quantity >= maxQuantity ? theme.colors.muted : theme.colors.ink} />
               </Pressable>
             </View>
           </View>
