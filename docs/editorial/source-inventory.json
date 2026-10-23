@@ -18508,8 +18508,8 @@
     {
       "file": "client/src/design/editorial/tokens.generated.css",
       "domain": "shared-design",
-      "sha256": "3b64c976e10bed6ae1fc6ad4745c69b19fbd68c92508ae4d1a0b2c5433162835",
-      "lines": 78,
+      "sha256": "c809b6d8233799d303b577d57eb74a7f59024ab28174e65dd618cd0d02f87707",
+      "lines": 76,
       "imports": [],
       "exports": [],
       "controls": [],

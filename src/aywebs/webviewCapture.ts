@@ -33,7 +33,6 @@ import { detectAyWebsStore } from '../../shared/aywebsStores';
 import {
   AYWEBS_CAPTURE_LIMITS,
   AYWEBS_CAPTURE_VERSION,
-  type AyWebsAmazonCaptureEvidence,
   type AyWebsCaptureSource,
   type AyWebsCaptureOutcome,
   type AyWebsCapturedPage,
@@ -68,6 +67,8 @@ interface AyWebsSymbolCurrencyRule {
   stores: readonly string[];
   /** Domaines (suffixes) où le symbole NE vaut PAS ce code. */
   hostsExcluded?: readonly string[];
+  /** Domaines (suffixes) où la règle ne s'applique QU'ici (ex. `$` = CAD sur amazon.ca). */
+  hostsOnly?: readonly string[];
 }
 
 const AYWEBS_SYMBOL_CURRENCIES: readonly AyWebsSymbolCurrencyRule[] = [
@@ -84,6 +85,14 @@ const AYWEBS_SYMBOL_CURRENCIES: readonly AyWebsSymbolCurrencyRule[] = [
     stores: ['amazon', 'shein', 'temu', 'aliexpress'],
     hostsExcluded: ['amazon.ca', 'amazon.com.au', 'amazon.sg', 'amazon.com.mx', 'amazon.com.br'],
   },
+  /* Devises locales des domaines Amazon non-USD (19/10/2026). Chaque règle ne vaut
+     que pour SON domaine et ne reconnaît que le symbole NON ambigu : un `$` nu reste
+     ambigu (CAD, AUD, MXN…) et n'est prouvé que par un code ISO publié (golden amazon.ca). */
+  { iso: 'CAD', pattern: /\bCA\$|C\$/, stores: ['amazon'], hostsOnly: ['amazon.ca'] },
+  { iso: 'AUD', pattern: /\bAU\$|A\$/, stores: ['amazon'], hostsOnly: ['amazon.com.au'] },
+  { iso: 'SGD', pattern: /\bSG\$|S\$/, stores: ['amazon'], hostsOnly: ['amazon.sg'] },
+  { iso: 'MXN', pattern: /\bMX\$/, stores: ['amazon'], hostsOnly: ['amazon.com.mx'] },
+  { iso: 'BRL', pattern: /R\$/, stores: ['amazon'], hostsOnly: ['amazon.com.br'] },
 ];
 
 function hostMatchesAny(host: string, suffixes: readonly string[] | undefined): boolean {
@@ -213,85 +222,6 @@ function hostOf(raw: string): string | null {
   }
 }
 
-const AMAZON_ASIN_RE = /^[A-Z0-9]{10}$/;
-const AMAZON_VARIANT_SOURCES = new Set(['dimensionValuesDisplayData', 'asinVariationValues', 'twister_dom']);
-
-function cleanAmazonEvidence(raw: unknown, requestHost: string, pageUrl: string): AyWebsAmazonCaptureEvidence | null {
-  if (!/^amazon\.[a-z]{2,3}(?:\.[a-z]{2})?$/.test(requestHost) || !raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
-  const input = raw as Record<string, unknown>;
-  if (Number(input.readerVersion) !== 2) return null;
-  const pageAsinRaw = collapse(input.pageAsin, 10).toUpperCase();
-  const selectedAsinRaw = collapse(input.selectedAsin, 10).toUpperCase();
-  const pageAsin = AMAZON_ASIN_RE.test(pageAsinRaw) ? pageAsinRaw : null;
-  if (!pageAsin) return null;
-  let urlAsin: string | null = null;
-  try {
-    const path = new URL(pageUrl).pathname;
-    const match = path.match(/\/(?:dp|gp\/(?:product|aw\/d)|product)\/([A-Z0-9]{10})(?:[/?]|$)/i);
-    if (match) urlAsin = match[1].toUpperCase();
-  } catch { /* page URL was host-validated earlier */ }
-  if (urlAsin && urlAsin !== pageAsin) return null;
-
-  const variants: AyWebsAmazonCaptureEvidence['variants'] = [];
-  const rawVariants = Array.isArray(input.variants) ? input.variants.slice(0, 40) : [];
-  for (const item of rawVariants) {
-    if (!item || typeof item !== 'object' || Array.isArray(item)) continue;
-    const variant = item as Record<string, unknown>;
-    const asin = collapse(variant.asin, 10).toUpperCase();
-    const source = String(variant.source || '');
-    if (!AMAZON_ASIN_RE.test(asin) || !AMAZON_VARIANT_SOURCES.has(source) || !Array.isArray(variant.dimensions)) continue;
-    const dimensions: Array<{ name: string; value: string }> = [];
-    for (const dimensionRaw of variant.dimensions.slice(0, 6)) {
-      if (!dimensionRaw || typeof dimensionRaw !== 'object' || Array.isArray(dimensionRaw)) continue;
-      const dimension = dimensionRaw as Record<string, unknown>;
-      const name = collapse(dimension.name, 40).toLowerCase().replace(/[^a-z0-9_-]/g, '_');
-      const value = collapse(dimension.value, 60);
-      if (!name || !value || dimensions.some((entry) => entry.name === name)) continue;
-      dimensions.push({ name, value });
-    }
-    if (dimensions.length) variants.push({
-      asin,
-      dimensions,
-      source: source as AyWebsAmazonCaptureEvidence['variants'][number]['source'],
-      selected: variant.selected === true,
-    });
-  }
-  const selectedAsin = AMAZON_ASIN_RE.test(selectedAsinRaw) && variants.some((variant) => variant.asin === selectedAsinRaw)
-    ? selectedAsinRaw
-    : null;
-  const options: AyWebsAmazonCaptureEvidence['options'] = [];
-  const rawOptions = Array.isArray(input.options) ? input.options.slice(0, 60) : [];
-  for (const item of rawOptions) {
-    if (!item || typeof item !== 'object' || Array.isArray(item)) continue;
-    const option = item as Record<string, unknown>;
-    const dimension = collapse(option.dimension, 40).toLowerCase().replace(/[^a-z0-9_-]/g, '_');
-    const value = collapse(option.value, 60);
-    const asinValue = collapse(option.asin, 10).toUpperCase();
-    const asin = AMAZON_ASIN_RE.test(asinValue) ? asinValue : null;
-    const state = option.availabilityEvidence === 'available' || option.availabilityEvidence === 'unavailable'
-      ? option.availabilityEvidence
-      : 'unknown';
-    if (!dimension || !value) continue;
-    options.push({
-      dimension, value, asin, selected: option.selected === true,
-      availabilityEvidence: state,
-      source: 'twister_dom',
-    });
-  }
-  const selectedPriceEvidence: AyWebsAmazonCaptureEvidence['selectedPriceEvidence'] = [];
-  if (Array.isArray(input.selectedPriceEvidence)) {
-    for (const item of input.selectedPriceEvidence.slice(0, 4)) {
-      if (!item || typeof item !== 'object' || Array.isArray(item)) continue;
-      const candidate = item as Record<string, unknown>;
-      const text = collapse(candidate.text, AYWEBS_CAPTURE_LIMITS.maxTextLength);
-      const source = String(candidate.source || '');
-      if (!text || !['json_ld', 'embedded_json', 'microdata', 'meta', 'dom'].includes(source)) continue;
-      selectedPriceEvidence.push({ text, source: source as AyWebsCaptureSource });
-    }
-  }
-  return { readerVersion: 2, pageAsin, selectedAsin, selectedPriceEvidence, options, variants };
-}
-
 export interface AyWebsCaptureValidation {
   ok: boolean;
   rejection: string | null;
@@ -309,8 +239,6 @@ export interface AyWebsCaptureValidation {
   corroborated: boolean;
   /** Options que le CLIENT avait choisies sur la page (libellés bruts bornés). */
   selectedVariantTexts: string[];
-  /** Amazon-only ASIN/variant evidence, normalized and host-bound. */
-  amazonEvidence: AyWebsAmazonCaptureEvidence | null;
   /** Piste d'audit lisible : quels candidats ont été vus, lesquels ont gagné. */
   notes: string[];
   outcome: AyWebsCaptureOutcome;
@@ -320,6 +248,58 @@ function fingerprintOf(parts: Record<string, unknown>): string {
   return createHash('sha256').update(JSON.stringify(parts)).digest('hex');
 }
 
+/** Texte de disponibilité qui déclare la fiche en rupture (EN/FR). Lu seulement depuis l'élément de disponibilité. */
+const OUT_OF_STOCK_TEXT = /currently unavailable|temporarily out of stock|out of stock|we don'?t know when or if this item will be back|actuellement indisponible|en rupture de stock|épuisé/i;
+function isOutOfStockText(value: unknown): boolean {
+  return typeof value === 'string' && OUT_OF_STOCK_TEXT.test(value);
+}
+
+/** Drapeau du contrat de variantes Amazon (désactivé par défaut : activation après test sur appareil). */
+export function variantContractEnabled(): boolean {
+  return process.env.AYWEBS_AMAZON_VARIANT_CONTRACT === '1';
+}
+
+function isAmazonHost(requestUrl: string): boolean {
+  const host = hostOf(requestUrl) || '';
+  return /(^|\.)amazon\.[a-z.]+$/.test(host);
+}
+
+const AMAZON_ASIN_SHAPE = /^[A-Z0-9]{10}$/;
+
+/**
+ * Raison de refus du contrat de variantes, ou null si l'option choisie est prouvée.
+ * - Fiche simple (aucune alternative) : rien à prouver.
+ * - Fiche à variantes : l'ASIN choisi doit exister dans les variantes, être l'ASIN de la
+ *   fiche ouverte, et avoir une disponibilité PROUVÉE (évidence de l'option ou texte de
+ *   disponibilité en stock). « Présence d'un nom d'option » n'est jamais une preuve de stock.
+ */
+function amazonVariantRefusal(payload: AyWebsCapturedPage): string | null {
+  const amazon = payload.amazon;
+  const variants = Array.isArray(amazon?.variants)
+    ? amazon!.variants!.filter((v) => v && typeof v.asin === 'string' && AMAZON_ASIN_SHAPE.test(v.asin))
+    : [];
+  const options = Array.isArray(amazon?.options) ? amazon!.options! : [];
+  const pageAsin = typeof amazon?.pageAsin === 'string' ? amazon.pageAsin : null;
+  const selectedAsin = typeof amazon?.selectedAsin === 'string' ? amazon.selectedAsin : null;
+
+  if (variants.length <= 1 && options.length <= 1) {
+    if (variants.length === 1 && pageAsin && variants[0].asin !== pageAsin) return 'page_variant_mismatch';
+    return null;
+  }
+  if (!selectedAsin) return 'selected_unproven';
+  if (!variants.some((v) => v.asin === selectedAsin)) return 'selected_not_in_variants';
+  if (pageAsin !== selectedAsin) return 'selected_not_page';
+
+  // L'option CHOISIE est celle dont l'ASIN est l'ASIN choisi (une fiche peut avoir couleur ET taille).
+  const selectedOption = options.find((o) => o && o.selected === true && o.asin === selectedAsin)
+    || options.find((o) => o && o.selected === true);
+  if (!selectedOption) return 'selected_option_unproven';
+  if (selectedOption.availabilityEvidence === 'unavailable') return 'selected_unavailable';
+  const pageSaysInStock = /in stock|en stock|disponible|auf lager/i.test(String(payload.availabilityText || ''));
+  if (selectedOption.availabilityEvidence !== 'available' && !pageSaysInStock) return 'selected_availability_unproven';
+  return null;
+}
+
 function rejected(rejection: string, fingerprint = '', notes: string[] = []): AyWebsCaptureValidation {
   captureStats.rejected += 1;
   bump(captureStats.rejections, rejection);
@@ -327,7 +307,7 @@ function rejected(rejection: string, fingerprint = '', notes: string[] = []): Ay
     ok: false, rejection, scraped: null, price: 0, currency: '',
     priceVerified: false, currencyVerified: false,
     availability: 'UNKNOWN', availabilityReason: `capture_rejected:${rejection}`,
-    condition: null, fingerprint, priceSource: null, corroborated: false, selectedVariantTexts: [], amazonEvidence: null, notes,
+    condition: null, fingerprint, priceSource: null, corroborated: false, selectedVariantTexts: [], notes,
     outcome: { used: false, fingerprint: fingerprint || null, priceSource: null, corroborated: false, rejection },
   };
 }
@@ -383,10 +363,28 @@ export function validateAyWebsCapturedPage(
   if (now - capturedAtMs > AYWEBS_CAPTURE_LIMITS.maxAgeMs) return rejected('STALE_CAPTURE');
   if (capturedAtMs - now > AYWEBS_CAPTURE_LIMITS.maxClockSkewMs) return rejected('FUTURE_CAPTURE');
 
+  /* ── VARIANTE AMAZON (contrat Phase 1 — derrière AYWEBS_AMAZON_VARIANT_CONTRACT=1) ──
+     Quand la fiche a plusieurs variantes, le prix de la zone d'achat ne vaut que pour
+     l'option CHOISIE. On la refuse si elle n'est pas prouvée. */
+  if (variantContractEnabled() && isAmazonHost(requestUrl)) {
+    const variantRefusal = amazonVariantRefusal(payload);
+    if (variantRefusal) return rejected('VARIANT_NOT_PROVEN', '', [`variant:${variantRefusal}`]);
+  }
+
   /* ── PRIX ────────────────────────────────────────────────────────────────
      Chaque candidat est jugé par le verdict de la Phase 0. Le classement suit
      la fiabilité de la source ; à fiabilité égale, l'ordre d'arrivée. */
   const notes: string[] = [];
+  /* Diagnostics du lecteur : codes courts seulement (pas de texte de page). */
+  const clientDiagnostics = Array.isArray(payload.diagnostics)
+    ? payload.diagnostics
+      .slice(0, 12)
+      .map((entry) => collapse(entry, 60))
+      .filter((entry) => /^[a-z0-9_:.,=-]+$/i.test(entry))
+    : [];
+  clientDiagnostics.forEach((code) => notes.push(`client:${code}`));
+  const storeForPrice = detectAyWebsStore(requestUrl);
+  const isAmazon = storeForPrice?.id === 'amazon';
   const candidates: Array<{ text: string; source: AyWebsCaptureSource; value: number; rank: number; index: number; hints: string[] }> = [];
   const rawCandidates = Array.isArray(payload.priceCandidates) ? payload.priceCandidates.slice(0, AYWEBS_CAPTURE_LIMITS.maxPriceCandidates) : [];
   rawCandidates.forEach((candidate: AyWebsCapturedPriceCandidate, index: number) => {
@@ -406,9 +404,22 @@ export function validateAyWebsCapturedPage(
   });
 
   if (!candidates.length) {
+    // La zone d'achat a tranché avant nous : deux prix (AMBIGUOUS) ou un autre article (ASIN).
+    if (clientDiagnostics.includes('price:buybox_asin_mismatch')) return rejected('BUYBOX_ASIN_MISMATCH', '', notes);
+    if (clientDiagnostics.some((code) => code.startsWith('price:ambiguous_buybox'))) return rejected('AMBIGUOUS_PRICE', '', notes);
     // Distinguer « aucun texte » de « textes tous refusés » : le support doit
     // savoir si la page n'a rien affiché ou si quelque chose a été écarté.
+    // Page en rupture : l'élément de disponibilité le dit, et aucun prix n'est publié.
+    // On garde le refus (jamais de panier) mais la cause réelle est OUT_OF_STOCK, pas « pas de prix ».
+    if (!rawCandidates.length && isOutOfStockText(payload.availabilityText)) return rejected('OUT_OF_STOCK', '', notes);
     return rejected(rawCandidates.length ? 'PRICE_REJECTED' : 'NO_PRICE_TEXT', '', notes);
+  }
+
+  /* Amazon : un prix publié (JSON-LD) qui ne concorde pas avec la zone d'achat
+     est un CONFLIT, pas une source qui fait foi. On refuse plutôt que de choisir. */
+  if (isAmazon && new Set(candidates.map((candidate) => candidate.value.toFixed(2))).size > 1) {
+    notes.push('amazon_price_sources_disagree');
+    return rejected('AMBIGUOUS_PRICE', '', notes);
   }
 
   candidates.sort((a, b) => (a.rank - b.rank) || (a.index - b.index));
@@ -472,6 +483,7 @@ export function validateAyWebsCapturedPage(
       for (const entry of AYWEBS_SYMBOL_CURRENCIES) {
         if (!entry.stores.includes(store.id)) continue;
         if (!entry.pattern.test(currencyTexts)) continue;
+        if (entry.hostsOnly && !hostMatchesAny(requestHost, entry.hostsOnly)) continue;
         if (hostMatchesAny(requestHost, entry.hostsExcluded)) {
           notes.push(`currency_symbol_host_ambiguous:${entry.iso}`);
           continue;
@@ -531,58 +543,6 @@ export function validateAyWebsCapturedPage(
     payload.selectedVariantTexts, AYWEBS_CAPTURE_LIMITS.maxSelectedVariantTexts, 60,
   );
   const variantTexts = cleanTextArray(payload.variantTexts, AYWEBS_CAPTURE_LIMITS.maxVariantTexts, 60);
-  let amazonEvidence = cleanAmazonEvidence(payload.amazon, requestHost, pageUrl);
-  if (payload.amazon && !amazonEvidence) notes.push('amazon_evidence_rejected');
-  if (amazonEvidence?.selectedAsin) {
-    const selectedVariant = amazonEvidence.variants.find((variant) => variant.asin === amazonEvidence?.selectedAsin);
-    const observedLabels = selectedVariantTexts.map((value) => value.toLowerCase());
-    const optionEvidenceBacked = Boolean(selectedVariant?.dimensions.length)
-      && Boolean(selectedVariant?.selected)
-      && selectedVariant!.dimensions.every((dimension) => amazonEvidence!.options.some((option) =>
-        option.selected
-        && option.dimension === dimension.name
-        && option.value.toLowerCase() === dimension.value.toLowerCase()
-        && (!option.asin || option.asin === selectedVariant!.asin)));
-    const legacyTextBacked = Boolean(selectedVariant?.dimensions.length)
-      && Boolean(selectedVariant?.selected)
-      && selectedVariant!.dimensions.every((dimension) => observedLabels.some((label) => label.includes(dimension.value.toLowerCase())));
-    const selectionBacked = optionEvidenceBacked || legacyTextBacked;
-    if (!selectionBacked) {
-      amazonEvidence = {
-        ...amazonEvidence,
-        selectedAsin: null,
-        selectedPriceEvidence: [],
-        variants: amazonEvidence.variants.map((variant) => ({ ...variant, selected: false })),
-      };
-      notes.push('amazon_selected_asin_not_backed_by_visible_dimensions');
-    }
-  }
-
-  const amazonDetails = amazonEvidence?.variants.map((variant) => {
-    const attributes: Record<string, string> = {};
-    let size: string | null = null;
-    let color: string | null = null;
-    for (const dimension of variant.dimensions) {
-      if (dimension.name === 'size') size = dimension.value;
-      else if (dimension.name === 'color' || dimension.name === 'colour') color = dimension.value;
-      else attributes[dimension.name] = dimension.value;
-    }
-    const isSelected = variant.asin === amazonEvidence.selectedAsin;
-    const stock = isSelected
-      ? availability === 'AVAILABLE' || availability === 'LOW_STOCK' ? true
-        : availability === 'OUT_OF_STOCK' ? false : null
-      : null;
-    return {
-      id: variant.asin,
-      label: [color, size, ...Object.values(attributes)].filter(Boolean).join(' · ') || variant.asin,
-      size,
-      color,
-      attributes,
-      available: true,
-      stock,
-      price: isSelected && price > 0 ? price : null,
-    };
-  }) || [];
 
   const fingerprint = fingerprintOf({
     url: pageUrl,
@@ -596,11 +556,6 @@ export function validateAyWebsCapturedPage(
     availabilityEvidence,
     condition,
     selectedVariantTexts,
-    amazon: amazonEvidence ? {
-      pageAsin: amazonEvidence.pageAsin,
-      selectedAsin: amazonEvidence.selectedAsin,
-      variants: amazonEvidence.variants,
-    } : null,
     capturedAt: String(payload.capturedAt),
   });
 
@@ -627,10 +582,12 @@ export function validateAyWebsCapturedPage(
     estimatedShippingTND: 0,
     serviceFeeTND: 0,
     totalPriceTND: 0,
-    /* Seules les combinaisons Amazon liées explicitement à un child ASIN entrent
-       dans details. Le stock et le prix du buybox ne sont appliqués qu'au child
-       actuellement affiché ; les autres restent UNKNOWN / sans prix. */
-    variants: { colors: [], sizes: [], details: amazonDetails },
+    /* AUCUNE variante publiée : la capture prouve un prix et l'état du bouton
+       d'achat POUR LA COMBINAISON AFFICHÉE, pas le stock de chaque combinaison.
+       Exposer des options sans stock par option ferait exiger une sélection que
+       le serveur serait ensuite incapable de vérifier (blocage honnête mais
+       inutile). Les libellés publiés restent dans la piste d'audit. */
+    variants: { colors: [], sizes: [], details: [] },
     availability: availability === 'AVAILABLE' ? 'in_stock'
       : availability === 'LOW_STOCK' ? 'limited'
         : availability === 'OUT_OF_STOCK' ? 'out_of_stock'
@@ -675,7 +632,6 @@ export function validateAyWebsCapturedPage(
     priceSource: primary.source,
     corroborated,
     selectedVariantTexts,
-    amazonEvidence,
     notes,
     outcome: {
       used: true,
