@@ -612,6 +612,30 @@ describe('AYWEBs 2.1 — contrat HTTP : la boutique externe passe par le même g
     expect(registered.body.data.external_capture_allowed).toBe(false);
   });
 
+  it('/page/analyze : Zalando.com ET zalando.de — fiche ⇒ product_page, accueil ⇒ never', async () => {
+    /* Le 23/10, `zalando.de` n'était reconnu par aucune boutique : le serveur
+       répondait `on_demand` même sur l'accueil, et le client pouvait injecter
+       le lecteur sur une page de magasin. Le contrat est maintenant explicite
+       au niveau HTTP, pour la vitrine comme pour la fiche. */
+    const h = harness();
+    const analyze = async (url: string) => (await request(app(h))
+      .post('/api/v1/aywebs/page/analyze').set(SESSION).send({ url })).body.data;
+    for (const home of ['https://www.zalando.com/', 'https://www.zalando.de/']) {
+      const page = await analyze(home);
+      expect(page.registered, home).toBe(true);
+      expect(page.capture_injection, home).toBe('never');
+    }
+    for (const product of [
+      'https://www.zalando.com/nike-air-force-1-weiss-ni111a0s2-a0011.html',
+      'https://www.zalando.de/nike-air-force-1-weiss-ni111a0s2-a0011.html',
+    ]) {
+      const page = await analyze(product);
+      expect(page.registered, product).toBe(true);
+      expect(page.capture_injection, product).toBe('product_page');
+    }
+    expect(h.scrapeProduct).not.toHaveBeenCalled();
+  });
+
   it('POST /product/resolve : capture corroborée acceptée, zéro requête marchande', async () => {
     const h = harness();
     const { payload } = captureFrom(JSON_LD_PAGE);

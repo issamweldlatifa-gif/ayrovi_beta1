@@ -99,7 +99,7 @@ Walmart · Target · Etsy · Best Buy · Newegg · MediaMarkt · OTTO · Kauflan
 6. المجموعات : التسمية، الترتيب، الحدود، إسقاط الأرقام، وإسقاط المجموعات المشوّهة بلا ما يطيح الثمن.
 7. السكربت الحقيقي في jsdom : يقرا Taille (select) + Couleur (radios) مع القيمة المعروضة، وما ينشرش الكمية، وAmazon يبقى بلا مجموعات.
 
-بالإضافة : `tests/aywebs-store-registry.test.ts` (23) · `tests/aywebs-store-capabilities.test.ts` (1) · `tests/aywebs-capture-script.test.ts` (19) · `tests/aywebs-webview-capture.test.ts` (37) · `tests/aywebs-page-kind-2026-10-23.test.ts` (11) · تطبيق الموبايل : 784 اختبار أخضر.
+بالإضافة : `tests/aywebs-store-registry.test.ts` (23) · `tests/aywebs-store-capabilities.test.ts` (1) · `tests/aywebs-capture-script.test.ts` (19) · `tests/aywebs-webview-capture.test.ts` (38) · `tests/aywebs-page-kind-2026-10-23.test.ts` (11) · تطبيق الموبايل : 784 اختبار أخضر.
 
 ---
 
