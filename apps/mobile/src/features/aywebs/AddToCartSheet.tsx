@@ -34,8 +34,9 @@ import { newAyWebsRequestId } from '@/features/aywebs/requestId';
 import { variantPageUrlFor } from '@/features/aywebs/variantPage';
 import {
   defaultSelectionFromCapture, displayPriceForSelection, localAddReadiness, localVariantsFromCapture,
-  pageAvailabilityFromCapture, priceDependsOnOption, selectionIsShown, stockForSelection,
-  type LocalVariant,
+  pageAvailabilityFromCapture, priceDependsOnOption, selectionHasPublishedPrice, selectionIsShown,
+  splitMerchantPrice, stockForSelection, valueStatesFromCapture,
+  type LocalVariant, type LocalValueStates,
 } from '@/features/aywebs/localProduct';
 
 export interface AddToCartSheetProps {
@@ -84,6 +85,21 @@ export function AddToCartSheet({
   const [added, setAdded] = useState<{ item: AyWebsCartItem; linked: boolean; reason: string } | null>(null);
   const [fetched, setFetched] = useState<AyWebsVariantOption[]>([]);
   const [fetchedGroups, setFetchedGroups] = useState<AyWebsVariantGroup[] | null>(null);
+  /** Choix relu ET tarifé par le serveur depuis la feuille (23/10/2026). */
+  const [verified, setVerified] = useState<{
+    key: string; product: AyWebsResolvedProduct; capture: unknown; quoteToken: string; url: string;
+  } | null>(null);
+  const [verifying, setVerifying] = useState(false);
+  /**
+   * Devis du serveur pour CE choix précis (prix marchand + total TND + jeton).
+   * Depuis le 23/10/2026 le serveur le rend aussi pour une AUTRE couleur que
+   * celle affichée, à partir du prix publié sous la pastille : plus besoin de
+   * relire la page à chaque changement de couleur.
+   */
+  const [quote, setQuote] = useState<{
+    key: string; productId: string; price: number | null; currency: string;
+    totalTnd: number | null; quoteToken: string;
+  } | null>(null);
   const requestId = useRef('');
 
   const groups = useMemo<AyWebsVariantGroup[]>(
@@ -113,6 +129,9 @@ export function AddToCartSheet({
     setBusy(false);
     setFetched([]);
     setFetchedGroups(null);
+    setVerified(null);
+    setVerifying(false);
+    setQuote(null);
     // القصد: نعيد الضبط عند **كل فتح** فقط — تبديل المجموعات وسط الورقة ما يمسحش اختيار المستعمل.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
@@ -164,12 +183,38 @@ export function AddToCartSheet({
     () => new Map(captureVariants.map((variant) => [variant.asin, variant])),
     [captureVariants],
   );
+  /**
+   * États/prix publiés POUR CHAQUE VALEUR (23/10/2026) : la feuille les affiche
+   * sous chaque pastille, sans réinjecter le lecteur à chaque changement.
+   */
+  const valueStates = useMemo<LocalValueStates>(
+    () => (local && captureRecord ? valueStatesFromCapture(captureRecord) : {}),
+    [captureRecord, local],
+  );
   /** هل الاختيار هو التركيبة المعروضة؟ دليل الصفحة يخصّها وحدها. */
   const shownSelection = useMemo(
     () => (local && captureRecord ? selectionIsShown(captureRecord, selection) : false),
     [captureRecord, local, selection],
   );
+  /** Clé stable du choix : sert à savoir si le devis/la vérification le couvre. */
+  const selectionKey = useMemo(
+    () => Object.entries(selection).map(([name, value]) => `${name}=${String(value).toLowerCase()}`).sort().join('|'),
+    [selection],
+  );
   const readiness = useMemo(() => {
+    /* Une lecture faite DEPUIS la feuille (appui « vérifier ») fait foi : c'est
+       le serveur qui a jugé ce choix précis, pas la page d'une autre couleur. */
+    if (verified && verified.key === selectionKey) {
+      const state = verified.product.availability.state;
+      const ready = state === 'AVAILABLE' || state === 'LOW_STOCK';
+      return {
+        ready,
+        code: (ready ? '' : state === 'OUT_OF_STOCK' ? 'OUT_OF_STOCK' : 'STOCK_UNKNOWN') as AyWebsAddBlockCode,
+        missingAttributes: [] as string[],
+        availability: state,
+        quotedTotalTnd: verified.product.ayroviPricing?.totalTnd ?? null,
+      };
+    }
     if (local) {
       const res = localAddReadiness({
         groups,
@@ -187,6 +232,7 @@ export function AddToCartSheet({
         pageInStockText: pageAvailability === 'AVAILABLE',
         pageAvailability,
         pageShowsSelection: shownSelection,
+        valueStates,
       });
       /* Le stock vient de la capture : une version d'application plus ancienne du
          serveur n'a pas à le connaître pour remplir la feuille. */
@@ -202,7 +248,8 @@ export function AddToCartSheet({
       productQuotedTnd: product.ayroviPricing?.totalTnd ?? null,
       selection,
     });
-  }, [captureVariantByAsin, groups, local, pageAvailability, shownSelection, product.availability.state, product.ayroviPricing, selection, variantOptions]);
+  }, [captureVariantByAsin, groups, local, pageAvailability, selectionKey, shownSelection, product.availability.state,
+    product.ayroviPricing, selection, valueStates, variantOptions, verified]);
 
   /**
    * الكمية المتوفّرة المعلنة لهذا الاختيار، إن نشرتها الصفحة (« Only 6 left in
@@ -287,6 +334,94 @@ export function AddToCartSheet({
     [product.sourceUrl, product.storeId, selection, variantOptions],
   );
 
+  /**
+   * Ce choix peut-il être chiffré DEPUIS la capture, sans relire la page ?
+   *
+   *   • aucune variante publiée ⇒ le prix de la page décrit le produit ;
+   *   • la combinaison est celle AFFICHÉE ⇒ le prix/bouton de la page sont pour
+   *     elle, c'est la preuve la plus forte ;
+   *   • sinon, chaque valeur choisie publie SON prix ferme (pas un « à partir
+   *     de ») ⇒ le serveur sait chiffrer cette couleur (23/10/2026).
+   *
+   * Hors de ces cas, la feuille ne demande pas de prix : le serveur répondrait
+   * celui d'une autre combinaison, et c'est exactement ce qu'on s'interdit.
+   */
+  const valuePricePublished = useMemo(
+    () => (local && captureRecord ? selectionHasPublishedPrice(captureRecord, selection) : false),
+    [captureRecord, local, selection],
+  );
+  const captureQuotesSelection = !groups.length || shownSelection || valuePricePublished;
+  const verifiedForSelection = verified && verified.key === selectionKey ? verified : null;
+  const quoteForSelection = quote && quote.key === selectionKey ? quote : null;
+
+  useEffect(() => {
+    if (!visible || !local || !captureRecord || !sessionId) return;
+    if (!readiness.ready || !captureQuotesSelection) return;
+    if (quoteForSelection || verifiedForSelection) return;
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      resolveAyWebsProductWithCapture(product.sourceUrl, {
+        sessionId,
+        storeId: product.storeId || undefined,
+        capture: captureRecord,
+        refresh: false,
+        /* Le choix part AVEC la requête : le serveur chiffre CETTE couleur à
+           partir du prix publié pour elle — jamais celui d'une autre. */
+        variant: groups.length ? selection : null,
+        signal: controller.signal,
+      })
+        .then((outcome) => {
+          if (controller.signal.aborted) return;
+          if (!outcome.quoteToken) return; /* pas de devis ⇒ pas de prix inventé */
+          setQuote({
+            key: selectionKey,
+            productId: outcome.product.productId,
+            price: outcome.product.price,
+            currency: outcome.product.currency,
+            totalTnd: outcome.product.ayroviPricing?.totalTnd ?? null,
+            quoteToken: outcome.quoteToken,
+          });
+        })
+        .catch(() => { /* la feuille écrit « calculé par le serveur » — aucun prix inventé */ });
+    }, 400);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [captureQuotesSelection, captureRecord, groups.length, local, product.sourceUrl, product.storeId,
+    quoteForSelection, readiness.ready, selection, selectionKey, sessionId, verifiedForSelection, visible]);
+
+  /**
+   * « Vérifier ce choix » (23/10/2026) : UNE lecture, à la demande, quand la page
+   * ne publie ni le stock ni le prix de la combinaison choisie. Elle se fait
+   * DEPUIS la feuille — le client ne ressort pas, ne rappuie pas sur Add, et le
+   * résultat (prix + stock + devis) s'affiche ici même.
+   */
+  const verifySelection = useCallback(async () => {
+    if (!sessionId || !readVariant || verifying || !selectionKey) return;
+    setVerifying(true);
+    setError('');
+    try {
+      const target = variantPageUrl() ?? product.sourceUrl;
+      const fresh = await readVariant(target);
+      const outcome = await resolveAyWebsProductWithCapture(target, {
+        sessionId,
+        storeId: product.storeId || undefined,
+        capture: fresh,
+        refresh: true,
+        variant: selection,
+      });
+      setVerified({
+        key: selectionKey,
+        product: outcome.product,
+        capture: fresh,
+        quoteToken: outcome.quoteToken,
+        url: target,
+      });
+    } catch (caught) {
+      setError(isApiError(caught) ? userMessage(caught)[locale] : t('aywebs.captureFailed'));
+    } finally {
+      setVerifying(false);
+    }
+  }, [locale, product.sourceUrl, product.storeId, readVariant, selection, selectionKey, sessionId, t, variantPageUrl, verifying]);
+
   const confirm = useCallback(async () => {
     if (!sessionId || !requestId.current || !readiness.ready) return;
     setBusy(true);
@@ -313,20 +448,41 @@ export function AddToCartSheet({
          *     ⇒ on relit la page du choix, puis le serveur tranche.
          */
         const target = variantPageUrl() ?? product.sourceUrl;
-        const reuse = Boolean(shownSelection && capture && captureIsFresh(capture) && shownPrice);
-        if (reuse) {
-          const verified = await resolveAyWebsProductWithCapture(target, {
-            sessionId, storeId: product.storeId || undefined, capture, refresh: true,
-          });
-          productId = verified.product.productId;
+        /* 1. Une vérification faite DEPUIS la feuille couvre ce choix précis :
+              aucune relecture, le serveur a déjà jugé et chiffré. */
+        if (verifiedForSelection) {
+          productId = verifiedForSelection.product.productId;
+          sourceUrl = verifiedForSelection.url;
+          cartCapture = verifiedForSelection.capture;
+          cartQuote = verifiedForSelection.quoteToken;
+        } else if (quoteForSelection && capture && captureIsFresh(capture)) {
+          /* 2. Le serveur a DÉJÀ chiffré ce choix à partir de cette capture (prix
+                de la pastille ou de la page affichée). Aucune relecture : le
+                devis signé porte le montant de la combinaison choisie. */
+          productId = quoteForSelection.productId;
           sourceUrl = target;
           cartCapture = capture;
-          cartQuote = verified.quoteToken;
+          cartQuote = quoteForSelection.quoteToken;
+        } else if (captureQuotesSelection && capture) {
+          /* 3. La capture publie de quoi chiffrer ce choix : une seule requête,
+                sans relire la page ni réinjecter le lecteur. */
+          const resolved = await resolveAyWebsProductWithCapture(target, {
+            sessionId, storeId: product.storeId || undefined, capture, refresh: true,
+            variant: groups.length ? selection : null,
+          });
+          productId = resolved.product.productId;
+          sourceUrl = target;
+          cartCapture = capture;
+          cartQuote = resolved.quoteToken;
+          if (!cartQuote) throw new Error('variant-quote-missing');
         } else {
+          /* 4. La page ne publie ni le prix ni l'état de cette combinaison : une
+                lecture de SA page est le seul chemin honnête. */
           if (!readVariant) throw new Error('variant-reader-missing');
           const fresh = await readVariant(target);
           const verified = await resolveAyWebsProductWithCapture(target, {
             sessionId, storeId: product.storeId || undefined, capture: fresh, refresh: true,
+            variant: groups.length ? selection : null,
           });
           productId = verified.product.productId;
           sourceUrl = target;
@@ -365,7 +521,7 @@ export function AddToCartSheet({
       });
       onAdded?.(outcome.item);
     } catch (caught) {
-      if (caught instanceof Error && caught.message === 'variant-reader-missing') {
+      if (caught instanceof Error && (caught.message === 'variant-reader-missing' || caught.message === 'variant-quote-missing')) {
         setError(t('aywebs.captureFailed'));
       } else {
         setError(isApiError(caught) ? userMessage(caught)[locale] : t('aywebs.captureFailed'));
@@ -373,8 +529,9 @@ export function AddToCartSheet({
     } finally {
       setBusy(false);
     }
-  }, [capture, local, locale, onAdded, product.productId, product.sourceUrl, product.storeId, quantity, quoteToken,
-    readVariant, readiness.ready, selection, sessionId, shownPrice, shownSelection, t, variantPageUrl]);
+  }, [capture, local, locale, onAdded, product.productId, product.sourceUrl, product.storeId, quantity, quoteForSelection,
+    quoteToken, readVariant, readiness.ready, selection, selectionKey, sessionId, shownPrice, shownSelection, t,
+    variantPageUrl, verifiedForSelection]);
 
   const availabilityLabel = (state: string | null): string => {
     if (!state) return '';
@@ -385,6 +542,16 @@ export function AddToCartSheet({
   };
 
   const itemsCount = groups.reduce((sum, group) => sum + group.values.length, 0);
+  /** Montant + note : « 12,95 € » d'un côté, « TVA incluse · 150 ml » de l'autre. */
+  const merchantPrice = useMemo(
+    () => (shownPrice ? splitMerchantPrice(shownPrice.text) : { amount: '', note: '' }),
+    [shownPrice],
+  );
+  /** Total en dinars calculé par le serveur — `null` tant qu'il n'a pas répondu. */
+  const serverTotal = verifiedForSelection?.product.ayroviPricing?.totalTnd
+    ?? quoteForSelection?.totalTnd
+    ?? readiness.quotedTotalTnd
+    ?? null;
 
   return (
     <AppSheet
@@ -448,7 +615,12 @@ export function AddToCartSheet({
                       </AppText>
                       <View style={styles.chips}>
                         {group.values.map((value) => {
-                          const state = optionAvailability(group.attribute, value);
+                          /* Ce que la page dit de CETTE valeur (prix, état) — lu
+                             une seule fois, dans la capture qui a ouvert la feuille. */
+                          const published = valueStates[key]?.[value.toLowerCase()];
+                          const state = (published?.state === 'OUT_OF_STOCK' ? 'OUT_OF_STOCK' : optionAvailability(group.attribute, value))
+                            ?? published?.state
+                            ?? null;
                           const unavailable = state === 'OUT_OF_STOCK';
                           const active = chosen.toLowerCase() === value.toLowerCase();
                           return (
@@ -472,8 +644,17 @@ export function AddToCartSheet({
                               <AppText variant="label" color={active ? theme.colors.onAction : theme.colors.ink}>
                                 {value}
                               </AppText>
+                              {published?.price ? (
+                                <AppText variant="caption" color={active ? theme.colors.onAction : theme.colors.muted}>
+                                  {published.priceFrom ? `${t('aywebs.priceFrom')} ${published.price}` : published.price}
+                                </AppText>
+                              ) : null}
                               {unavailable ? (
                                 <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.notAvailable')}</AppText>
+                              ) : published?.state === 'AVAILABLE' ? (
+                                <AppText variant="caption" color={active ? theme.colors.onAction : theme.colors.muted}>
+                                  {t('aywebs.valueAvailable')}
+                                </AppText>
                               ) : null}
                             </Pressable>
                           );
@@ -503,16 +684,27 @@ export function AddToCartSheet({
                 </View>
 
                 {shownPrice ? (
-                  <KeyValue label={t('aywebs.merchantPrice')} value={shownPrice.text} />
+                  <>
+                    <KeyValue label={t('aywebs.merchantPrice')} value={merchantPrice.amount} />
+                    {merchantPrice.note ? (
+                      <AppText variant="caption" color={theme.colors.muted}>{merchantPrice.note}</AppText>
+                    ) : null}
+                    {shownPrice.priceFrom ? (
+                      <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.priceFromNote')}</AppText>
+                    ) : null}
+                  </>
                 ) : null}
                 {!shownPrice && priceVaries ? (
                   <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.priceVaries')}</AppText>
                 ) : null}
-                {readiness.quotedTotalTnd != null ? (
-                  <KeyValue
-                    label={t('aywebs.totalTnd')}
-                    value={`${readiness.quotedTotalTnd.toFixed(2)} TND`}
-                  />
+                {/* Le prix qui compte : celui du SERVEUR (produit + livraison),
+                    calculé par la formule de prix. Jamais un prix fabriqué ici. */}
+                {serverTotal != null ? (
+                  <KeyValue label={t('aywebs.serverTotal')} value={`${serverTotal.toFixed(2)} TND`} />
+                ) : readiness.ready && local ? (
+                  <AppText variant="caption" color={theme.colors.muted}>
+                    {captureQuotesSelection ? t('aywebs.quotePending') : t('aywebs.priceNeedsCheck')}
+                  </AppText>
                 ) : null}
                 <KeyValue
                   label={t('aywebs.availability')}
@@ -532,6 +724,20 @@ export function AddToCartSheet({
                     {blockedMessage(readiness.code)}
                   </AppText>
                 )}
+                {/* La page ne dit rien de CETTE combinaison : une seule lecture, ici. */}
+                {local && groups.length > 0
+                  && ((!readiness.ready && (readiness.code === 'STOCK_UNKNOWN' || readiness.code === 'VARIANT_UNKNOWN'))
+                    /* Disponible mais sans prix ferme publié : c'est la MÊME
+                       lecture, depuis la page de CE choix, qui donne le prix. */
+                    || (readiness.ready && !captureQuotesSelection)) ? (
+                    <Button
+                      label={verifying ? t('aywebs.verifying') : t('aywebs.verifyChoice')}
+                      tone="quiet"
+                      onPress={verifySelection}
+                      busy={verifying}
+                      disabled={verifying || busy}
+                    />
+                  ) : null}
                 {error ? (
                   <AppText variant="caption" color={theme.status.danger.fg} accessibilityRole="alert">{error}</AppText>
                 ) : null}
@@ -551,7 +757,7 @@ export function AddToCartSheet({
                     <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.adding')}</AppText>
                   </View>
                 ) : null}
-                {itemsCount === 0 && groups.length === 0 ? (
+                {itemsCount === 0 && groups.length === 0 && readiness.ready ? (
                   <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.sheetNoOptions')}</AppText>
                 ) : null}
               </>

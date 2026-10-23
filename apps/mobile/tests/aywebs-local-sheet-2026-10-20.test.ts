@@ -38,7 +38,7 @@ describe('variantes depuis la capture', () => {
     const variants = localVariantsFromCapture(CAPTURE);
     expect(variants.find((v) => v.asin === 'B0SIZEMM01')).toEqual({
       asin: 'B0SIZEMM01', attributes: { size: 'M', color: 'Noir' }, availability: 'AVAILABLE',
-      cardPrice: '', stock: null,
+      cardPrice: '', priceFrom: false, stock: null,
     });
     expect(variants.find((v) => v.asin === 'B0SIZELL02')?.availability).toBe('OUT_OF_STOCK');
   });
@@ -173,12 +173,12 @@ describe('الثمن المعروض للمستعمل', () => {
   const groups = groupsFromVariants(localVariantsFromCapture(SHOWN));
 
   it('سعر صفحة واحد (قراءتان متّفقتان) يظهر كما كتبتو الصفحة', () => {
-    expect(displayPriceForSelection(SHOWN, defaultSelectionFromCapture(SHOWN, groups))).toEqual({ text: '$109.00' });
+    expect(displayPriceForSelection(SHOWN, defaultSelectionFromCapture(SHOWN, groups))).toEqual({ text: '$109.00', priceFrom: false });
   });
 
   it('سعر بطاقة الاختيار يغلب سعر الصفحة (لون آخر، بطاقة تنشر ثمنها ومخزونها)', () => {
     const selection = { size: 'Small', color: 'Ruby Red' };
-    expect(displayPriceForSelection(SHOWN, selection)).toEqual({ text: '$89.99' });
+    expect(displayPriceForSelection(SHOWN, selection)).toEqual({ text: '$89.99', priceFrom: false });
     expect(stockForSelection(SHOWN, selection)).toBe(6);
   });
 

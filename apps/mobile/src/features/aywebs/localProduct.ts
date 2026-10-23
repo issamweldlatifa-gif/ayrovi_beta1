@@ -23,55 +23,263 @@ export interface LocalVariant {
   availability: 'AVAILABLE' | 'OUT_OF_STOCK' | 'UNKNOWN';
   /** Prix affiché SUR LA CARTE de ce choix (texte tel quel) — jamais un devis. */
   cardPrice: string;
+  /** `true` quand ce prix est une entrée de gamme (« à partir de », « from »). */
+  priceFrom?: boolean;
   /** Stock annoncé sur la carte ; `null` quand la page n'en publie pas. */
   stock: number | null;
 }
 
+/**
+ * Ce que la page publie pour UNE valeur d'un groupe (23/10/2026).
+ *
+ * Constat du client sur Amazon : la feuille ne montrait ni le prix ni l'état de
+ * l'autre couleur, et il fallait réinjecter le lecteur à chaque changement. Or
+ * la page publie, sur la carte de chaque valeur, un prix (« $88.00 »,
+ * « 5 options from $56.32 ») et parfois l'état (« In Stock »). On les lit UNE
+ * fois et la feuille les affiche pour toutes les valeurs.
+ */
+export interface LocalValueState {
+  state: 'AVAILABLE' | 'OUT_OF_STOCK' | 'UNKNOWN';
+  price: string;
+  priceFrom: boolean;
+  stock: number | null;
+}
+export type LocalValueStates = Record<string, Record<string, LocalValueState>>;
+
+const VALUE_AVAILABILITY: Record<string, LocalValueState['state']> = {
+  available: 'AVAILABLE', unavailable: 'OUT_OF_STOCK',
+};
+
 /** Variantes publiées dans la capture Amazon, avec leur ASIN, leurs attributs et leur disponibilité prouvée. */
 export function localVariantsFromCapture(capture: Json): LocalVariant[] {
+  const out: LocalVariant[] = [];
+  const seen = new Set<string>();
   const amazon = isRecord(capture.amazon) ? capture.amazon : null;
-  if (!amazon) return [];
-  const evidenceByAsin = new Map<string, string>();
-  const cardByAsin = new Map<string, { price: string; stock: number | null }>();
-  if (Array.isArray(amazon.options)) {
+  /* Index des prix/états publiés par valeur : par ASIN, et par (dimension, valeur).
+     Le second index existe parce que beaucoup de cartes de twister n'exposent PAS
+     d'ASIN pour les valeurs non choisies — sans lui, le prix de la couleur
+     affichée était perdu et la feuille disait « le prix dépend de l'option ». */
+  const cardByAsin = new Map<string, { price: string; priceFrom: boolean; stock: number | null }>();
+  const cardByValue = new Map<string, { price: string; priceFrom: boolean; stock: number | null }>();
+  const stateByValue = new Map<string, LocalVariant['availability']>();
+  if (amazon && Array.isArray(amazon.options)) {
+    for (const option of amazon.options) {
+      if (!isRecord(option)) continue;
+      const value = text(option.value);
+      const dimension = text(option.dimension).toLowerCase();
+      const key = dimension && value ? `${dimension}=${value.toLowerCase()}` : '';
+      const asin = text(option.asin).toUpperCase();
+      const price = text(option.price);
+      const info = {
+        price,
+        priceFrom: option.priceFrom === true,
+        stock: Number.isFinite(Number(option.stock)) && Number(option.stock) > 0 ? Math.floor(Number(option.stock)) : null,
+      };
+      if (key && (info.price || info.stock != null)) {
+        const known = cardByValue.get(key);
+        cardByValue.set(key, {
+          price: known?.price || info.price,
+          priceFrom: info.priceFrom,
+          stock: known?.stock ?? info.stock,
+        });
+      }
+      const evidence = text(option.availabilityEvidence).toLowerCase();
+      if (key && VALUE_AVAILABILITY[evidence]) stateByValue.set(key, VALUE_AVAILABILITY[evidence]);
+      if (ASIN.test(asin)) {
+        if (info.price || info.stock != null) {
+          const known = cardByAsin.get(asin);
+          cardByAsin.set(asin, {
+            price: known?.price || info.price,
+            priceFrom: info.priceFrom,
+            stock: known?.stock ?? info.stock,
+          });
+        }
+        if (VALUE_AVAILABILITY[evidence]) stateByValue.set(`asin=${asin}`, VALUE_AVAILABILITY[evidence]);
+      }
+    }
+  }
+  const stateFor = (asin: string, attributes: Record<string, string>): LocalVariant['availability'] => {
+    if (asin && stateByValue.has(`asin=${asin}`)) return stateByValue.get(`asin=${asin}`)!;
+    for (const [name, value] of Object.entries(attributes)) {
+      const state = stateByValue.get(`${name.toLowerCase()}=${String(value).toLowerCase()}`);
+      if (state) return state;
+    }
+    return 'UNKNOWN';
+  };
+  const cardFor = (asin: string, attributes: Record<string, string>) => {
+    if (asin && cardByAsin.has(asin)) return cardByAsin.get(asin)!;
+    for (const [name, value] of Object.entries(attributes)) {
+      const card = cardByValue.get(`${name.toLowerCase()}=${String(value).toLowerCase()}`);
+      if (card) return card;
+    }
+    return null;
+  };
+
+  const pushVariant = (asin: string, attributes: Record<string, string>) => {
+    const dedupe = asin || Object.entries(attributes).map(([k, v]) => `${k}=${v.toLowerCase()}`).sort().join('|');
+    if (!dedupe || seen.has(dedupe)) return;
+    seen.add(dedupe);
+    const card = cardFor(asin, attributes);
+    out.push({
+      asin,
+      attributes,
+      availability: stateFor(asin, attributes),
+      cardPrice: card?.price ?? '',
+      priceFrom: card?.priceFrom ?? false,
+      stock: card?.stock ?? null,
+    });
+  };
+
+  if (amazon && Array.isArray(amazon.variants) && amazon.variants.length) {
+    for (const variant of amazon.variants) {
+      if (!isRecord(variant)) continue;
+      const asin = text(variant.asin).toUpperCase();
+      if (!ASIN.test(asin)) continue;
+      const attributes: Record<string, string> = {};
+      if (Array.isArray(variant.dimensions)) {
+        for (const dimension of variant.dimensions) {
+          if (!isRecord(dimension)) continue;
+          const name = text(dimension.name).toLowerCase();
+          const value = text(dimension.value);
+          if (name && value) attributes[name] = value;
+        }
+      }
+      pushVariant(asin, attributes);
+    }
+  }
+  /* Twister sans table de variantes : les OPTIONS portent déjà l'ASIN et le nom.
+     Les ignorer vidait la feuille de ses couleurs alors que la page les affichait. */
+  if (amazon && Array.isArray(amazon.options)) {
+    const byAsin = new Map<string, Record<string, string>>();
     for (const option of amazon.options) {
       if (!isRecord(option)) continue;
       const asin = text(option.asin).toUpperCase();
-      if (!ASIN.test(asin)) continue;
-      evidenceByAsin.set(asin, text(option.availabilityEvidence).toLowerCase());
-      const price = text(option.price);
-      const stock = Number(option.stock);
-      const known = cardByAsin.get(asin);
-      const next = {
-        price: known?.price || price,
-        stock: known?.stock ?? (Number.isFinite(stock) && stock > 0 ? Math.floor(stock) : null),
-      };
-      if (next.price || next.stock != null) cardByAsin.set(asin, next);
+      const dimension = text(option.dimension).toLowerCase();
+      const value = text(option.value);
+      if (!ASIN.test(asin) || !dimension || !value) continue;
+      byAsin.set(asin, { ...(byAsin.get(asin) ?? {}), [dimension]: value });
     }
+    for (const [asin, attributes] of byAsin) pushVariant(asin, attributes);
   }
-  const out: LocalVariant[] = [];
-  const seen = new Set<string>();
-  if (!Array.isArray(amazon.variants)) return out;
-  for (const variant of amazon.variants) {
-    if (!isRecord(variant)) continue;
-    const asin = text(variant.asin).toUpperCase();
-    if (!ASIN.test(asin) || seen.has(asin)) continue;
-    seen.add(asin);
-    const attributes: Record<string, string> = {};
-    if (Array.isArray(variant.dimensions)) {
-      for (const dimension of variant.dimensions) {
-        if (!isRecord(dimension)) continue;
-        const name = text(dimension.name).toLowerCase();
-        const value = text(dimension.value);
-        if (name && value) attributes[name] = value;
+
+  /* Boutiques SANS lecteur dédié (23/10/2026) : les groupes nommés de la capture
+     deviennent les options de la feuille. Chaque valeur est une « variante » à
+     un seul attribut ; le serveur reçoit `variant: {couleur: "Rouge"}` — c'est
+     exactement ce qu'il attend pour une fiche qui ne publie pas de combinaisons. */
+  if (!out.length && Array.isArray(capture.variantGroups)) {
+    for (const group of capture.variantGroups) {
+      if (!isRecord(group)) continue;
+      const published = text(group.name);
+      const name = published.toLowerCase();
+      const values = Array.isArray(group.values) ? group.values.map(text).filter(Boolean) : [];
+      if (!name || !values.length) continue;
+      const states = new Map<string, LocalValueState>();
+      if (Array.isArray(group.options)) {
+        for (const option of group.options) {
+          if (!isRecord(option)) continue;
+          const value = text(option.value).toLowerCase();
+          if (!value) continue;
+          states.set(value, {
+            state: option.available === false ? 'OUT_OF_STOCK' : option.available === true ? 'AVAILABLE' : 'UNKNOWN',
+            price: text(option.price),
+            priceFrom: option.priceFrom === true,
+            stock: Number.isFinite(Number(option.stock)) && Number(option.stock) > 0 ? Math.floor(Number(option.stock)) : null,
+          });
+        }
+      }
+      for (const value of values) {
+        const state = states.get(value.toLowerCase());
+        const asin = `${name}:${value.toLowerCase()}`;
+        if (seen.has(asin)) continue;
+        seen.add(asin);
+        out.push({
+          asin,
+          attributes: { [published]: value },
+          availability: state?.state ?? 'UNKNOWN',
+          cardPrice: state?.price ?? '',
+          priceFrom: state?.priceFrom ?? false,
+          stock: state?.stock ?? null,
+        });
       }
     }
-    const evidence = evidenceByAsin.get(asin) ?? '';
-    const availability = evidence === 'available' ? 'AVAILABLE' : evidence === 'unavailable' ? 'OUT_OF_STOCK' : 'UNKNOWN';
-    const card = cardByAsin.get(asin);
-    out.push({ asin, attributes, availability, cardPrice: card?.price ?? '', stock: card?.stock ?? null });
   }
   return out;
+}
+
+/**
+ * États/prix par valeur, indépendamment de toute combinaison publiée.
+ * Utilisé par la feuille pour écrire sous chaque pastille ce que la page dit —
+ * et par la disposition (`localAddReadiness`) pour prouver un choix complet
+ * quand la page ne publie pas la table des combinaisons.
+ */
+export function valueStatesFromCapture(capture: Json): LocalValueStates {
+  const out: LocalValueStates = {};
+  if (!capture || typeof capture !== 'object') return out;
+  const put = (name: string, value: string, state: LocalValueState) => {
+    const group = name.trim().toLowerCase();
+    const key = value.trim().toLowerCase();
+    if (!group || !key) return;
+    const bucket = out[group] ?? (out[group] = {});
+    const known = bucket[key];
+    if (!known) { bucket[key] = state; return; }
+    /* Le négatif gagne : une valeur déclarée indisponible quelque part ne
+       devient jamais disponible par une autre lecture. */
+    if (known.state !== 'OUT_OF_STOCK' && state.state === 'OUT_OF_STOCK') known.state = 'OUT_OF_STOCK';
+    else if (known.state === 'UNKNOWN' && state.state !== 'UNKNOWN') known.state = state.state;
+    if (!known.price && state.price) { known.price = state.price; known.priceFrom = state.priceFrom; }
+    if (known.stock == null && state.stock != null) known.stock = state.stock;
+  };
+  const amazon = isRecord(capture.amazon) ? capture.amazon : null;
+  if (amazon && Array.isArray(amazon.options)) {
+    for (const option of amazon.options) {
+      if (!isRecord(option)) continue;
+      const evidence = text(option.availabilityEvidence).toLowerCase();
+      put(text(option.dimension), text(option.value), {
+        state: VALUE_AVAILABILITY[evidence] ?? 'UNKNOWN',
+        price: text(option.price),
+        priceFrom: option.priceFrom === true,
+        stock: Number.isFinite(Number(option.stock)) && Number(option.stock) > 0 ? Math.floor(Number(option.stock)) : null,
+      });
+    }
+  }
+  if (Array.isArray(capture.variantGroups)) {
+    for (const group of capture.variantGroups) {
+      if (!isRecord(group) || !Array.isArray(group.options)) continue;
+      const name = text(group.name);
+      for (const option of group.options) {
+        if (!isRecord(option)) continue;
+        put(name, text(option.value), {
+          state: option.available === false ? 'OUT_OF_STOCK' : option.available === true ? 'AVAILABLE' : 'UNKNOWN',
+          price: text(option.price),
+          priceFrom: option.priceFrom === true,
+          stock: Number.isFinite(Number(option.stock)) && Number(option.stock) > 0 ? Math.floor(Number(option.stock)) : null,
+        });
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * Groupes de la feuille : la table des variantes si elle existe, sinon les
+ * groupes NOMMÉS lus sur la page. Sans ce second chemin, une fiche Zalando
+ * n'avait aucune option — la feuille disait « le marchand ne publie aucune
+ * option » alors que sa page affichait une couleur et une taille.
+ */
+export function groupsFromCapture(capture: Json, variants = localVariantsFromCapture(capture)): AyWebsVariantGroup[] {
+  const fromVariants = groupsFromVariants(variants);
+  if (fromVariants.length) return fromVariants;
+  if (!capture || typeof capture !== 'object' || !Array.isArray(capture.variantGroups)) return [];
+  const groups: AyWebsVariantGroup[] = [];
+  for (const group of capture.variantGroups) {
+    if (!isRecord(group)) continue;
+    const attribute = text(group.name);
+    const values = Array.isArray(group.values) ? group.values.map(text).filter(Boolean) : [];
+    if (!attribute || !values.length) continue;
+    if (groups.some((known) => known.attribute.toLowerCase() === attribute.toLowerCase())) continue;
+    groups.push({ attribute, values });
+  }
+  return groups;
 }
 
 /**
@@ -131,6 +339,27 @@ function pagePriceText(capture: Json): string {
 }
 
 /**
+ * هل الصفحة تنشر **ثمن كل قيمة** في هذا الاختيار؟ (23/10/2026)
+ *
+ * سؤال واحد، وجواب واحد: هل نقدر نطلب من الخادم ثمن هذه التركيبة من **نفس**
+ * الكابتشر، بلا ما نعاود نقرا الصفحة ولا نحقن القارئ؟
+ *
+ * « نعم » فقط إذا كل قيمة مختارة عندها ثمن **مؤكّد** منشور (موش « à partir
+ * de »). ثمن « à partir de » يبقى تشكيلة، ما ينفعش كسعر لتركيبة معيّنة.
+ * اختيار فارغ = لا، لأنّ السؤال ما عندوش معنى بلا قيم.
+ */
+export function selectionHasPublishedPrice(capture: Json, selection: Record<string, string>): boolean {
+  if (!capture || typeof capture !== 'object') return false;
+  const entries = Object.entries(selection || {});
+  if (!entries.length) return false;
+  const states = valueStatesFromCapture(capture);
+  return entries.every(([name, value]) => {
+    const state = states[name.trim().toLowerCase()]?.[String(value).trim().toLowerCase()];
+    return Boolean(state && state.price && !state.priceFrom);
+  });
+}
+
+/**
  * السعر **المعروض** للاختيار الحالي: سعر بطاقة الاختيار إن نشرتو، وإلاّ سعر
  * الصفحة إن كان الاختيار هو المعروض فيها. نصّ كما كتبتو الصفحة (« $89.99 »)،
  * موش رقم محسوب: المجموع بالدينار يجي من الخادم عند الإضافة.
@@ -138,26 +367,59 @@ function pagePriceText(capture: Json): string {
 export function displayPriceForSelection(
   capture: Json,
   selection: Record<string, string>,
-): { text: string } | null {
+): { text: string; priceFrom: boolean } | null {
   if (!capture || typeof capture !== 'object') return null;
   const variants = localVariantsFromCapture(capture);
   const chosen = variants.find((variant) => matchesSelection(variant.attributes, selection));
   if (chosen) {
-    if (chosen.cardPrice) return { text: chosen.cardPrice };
+    if (chosen.cardPrice) return { text: chosen.cardPrice, priceFrom: chosen.priceFrom === true };
     const amazon = isRecord(capture.amazon) ? capture.amazon : null;
     const shownAsin = amazon ? text(amazon.selectedAsin).toUpperCase() : '';
     if (shownAsin && shownAsin === chosen.asin) {
       const page = pagePriceText(capture);
-      return page ? { text: page } : null;
+      return page ? { text: page, priceFrom: false } : null;
     }
     return null;
   }
-  /* بلا اختيار (أو بلا خيارات منشورة): سعر الصفحة يخصّ المنتوج المعروض. */
+  /* Pas de table de combinaisons : le prix publié SUR chaque valeur choisie.
+     S'il y en a plusieurs et qu'ils diffèrent, on n'en invente pas un — on ne
+     renvoie rien, et la feuille explique que le prix dépend de l'option. */
+  const states = valueStatesFromCapture(capture);
+  const prices = Object.entries(selection)
+    .map(([name, value]) => states[name.trim().toLowerCase()]?.[String(value).trim().toLowerCase()])
+    .filter((state): state is LocalValueState => Boolean(state && state.price));
+  if (prices.length === Object.keys(selection).length && prices.length > 0) {
+    const distinct = new Set(prices.map((state) => state.price.replace(/\s+/g, ' ').toLowerCase()));
+    if (distinct.size === 1) return { text: prices[0].price, priceFrom: prices[0].priceFrom };
+  }
+  /* Sans choix (ou sans options publiées) : le prix de page décrit l'article affiché. */
   if (Object.keys(selection).length === 0) {
     const page = pagePriceText(capture);
-    return page ? { text: page } : null;
+    return page ? { text: page, priceFrom: false } : null;
   }
   return null;
+}
+
+/**
+ * Sépare le MONTANT de son baratin, pour l'écran.
+ *
+ * Mesuré le 23/10/2026 (Zalando) : « 12,95 €TVA incluse150 ml (8,63 € / 100 ml) »
+ * s'affichait d'un bloc. Le montant reste 12,95 € ; le reste (TVA, contenance,
+ * prix au litre) est une NOTE, jamais recollée au nombre.
+ */
+export function splitMerchantPrice(text: string): { amount: string; note: string } {
+  const raw = String(text || '').replace(/\s+/g, ' ').trim();
+  if (!raw) return { amount: '', note: '' };
+  const match = /([0-9][0-9\s.,\u00a0]*?)\s*([$€£¥]|\b(?:EUR|USD|GBP|TND|DT|MAD|AED|SAR)\b|d\.?t\b)/i.exec(raw);
+  if (!match) return { amount: raw.slice(0, 40), note: '' };
+  const amount = `${match[1].trim()} ${match[2]}`.replace(/\s+/g, ' ').trim();
+  const note = raw.slice((match.index ?? 0) + match[0].length)
+    .replace(/^[\s,;:·–—-]+/, '')
+    .replace(/([a-zéèêàùç])(\d)/gi, '$1 $2')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 90);
+  return { amount, note };
 }
 
 /**
@@ -228,11 +490,21 @@ export function selectionIsShown(capture: Json, selection: Record<string, string
   const amazon = isRecord(capture.amazon) ? capture.amazon : null;
   const shownAsin = amazon ? text(amazon.selectedAsin).toUpperCase() : '';
   const variants = localVariantsFromCapture(capture);
-  if (!variants.length) return false;
-  const match = variants.find((variant) => matchesSelection(variant.attributes, selection));
-  if (!match) return false;
-  if (!shownAsin) return false;
-  return match.asin === shownAsin;
+  if (variants.length) {
+    const match = variants.find((variant) => matchesSelection(variant.attributes, selection));
+    if (match && shownAsin) return match.asin === shownAsin;
+  }
+  /* Boutique sans table de variantes : la page dit elle-même quelle valeur est
+     affichée (`variantGroups[].selected`). Si chaque valeur choisie est celle
+     qu'elle affiche, la preuve de page porte bien sur cette combinaison. */
+  if (!Array.isArray(capture.variantGroups)) return false;
+  for (const [name, value] of Object.entries(selection)) {
+    const group = capture.variantGroups.find((entry) => isRecord(entry)
+      && text(entry.name).toLowerCase() === name.trim().toLowerCase());
+    if (!group || !isRecord(group) || !Array.isArray(group.selected)) return false;
+    if (!group.selected.some((selected) => text(selected).toLowerCase() === String(value).toLowerCase())) return false;
+  }
+  return true;
 }
 
 /** « Only 6 left in stock », « plus que 3 », « nur noch 2 auf Lager » ⇒ nombre borné. */
@@ -324,6 +596,8 @@ export function localAddReadiness(input: {
   variants: LocalVariant[];
   selection: Record<string, string>;
   pageInStockText: boolean;
+  /** États publiés par valeur (23/10/2026) — prouvent un choix sans table de combinaisons. */
+  valueStates?: LocalValueStates;
   /**
    * حالة التوفّر كما نشرتها الصفحة، و`pageShowsSelection` = الاختيار هو
    * التركيبة المعروضة. الصفحة تشهد على **تركيبتها** فقط: كي المستعمل يبدّل
@@ -346,10 +620,32 @@ export function localAddReadiness(input: {
       ? { ready: true, code: '', missingAttributes: [], availability: 'AVAILABLE' }
       : { ready: false, code: page === 'OUT_OF_STOCK' ? 'OUT_OF_STOCK' : 'STOCK_UNKNOWN', missingAttributes: [], availability: page };
   }
+  const chosenValues = Object.entries(input.selection)
+    .map(([name, value]) => input.valueStates?.[name.trim().toLowerCase()]?.[String(value).trim().toLowerCase()])
+    .filter((state): state is LocalValueState => Boolean(state));
+  /* Une valeur publiée INDISPONIBLE bloque, même si la table des combinaisons ne
+     la connaît pas : c'est la page qui le dit, pas nous. */
+  if (chosenValues.some((state) => state.state === 'OUT_OF_STOCK')) {
+    return { ready: false, code: 'VARIANT_UNAVAILABLE', missingAttributes: [], availability: 'OUT_OF_STOCK' };
+  }
   const chosen = Object.entries(input.selection).map(([k, v]) => `${k}=${v.toLowerCase()}`).sort().join('|');
   const match = input.variants.find((variant) => Object.entries(variant.attributes)
     .map(([k, v]) => `${k}=${v.toLowerCase()}`).sort().join('|') === chosen);
-  if (!match) return { ready: false, code: 'VARIANT_UNKNOWN', missingAttributes: [], availability: 'UNKNOWN' };
+  if (!match) {
+    /* Toutes les valeurs choisies sont publiées DISPONIBLES ⇒ le marchand a dit,
+       valeur par valeur, que ce choix est achetable. Aucune combinaison n'est
+       inventée : on ne fait que lire ce que la page affiche sur les pastilles. */
+    const allPublished = chosenValues.length === Object.keys(input.selection).length
+      && chosenValues.length > 0
+      && chosenValues.every((state) => state.state === 'AVAILABLE');
+    if (allPublished) {
+      const stock = chosenValues.reduce<number | null>((min, state) => (
+        state.stock != null && (min == null || state.stock < min) ? state.stock : min
+      ), null);
+      return { ready: true, code: '', missingAttributes: [], availability: stock != null ? 'LOW_STOCK' : 'AVAILABLE' };
+    }
+    return { ready: false, code: 'VARIANT_UNKNOWN', missingAttributes: [], availability: 'UNKNOWN' };
+  }
   if (match.availability === 'OUT_OF_STOCK') {
     return { ready: false, code: 'VARIANT_UNAVAILABLE', missingAttributes: [], availability: 'OUT_OF_STOCK' };
   }

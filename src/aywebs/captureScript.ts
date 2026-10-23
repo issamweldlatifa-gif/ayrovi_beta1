@@ -297,6 +297,14 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     }
     return distinct === 1 ? value : '';
   }
+  /* La carte dit-elle ELLE-MÊME que ce choix est épuisé ? Vocabulaire fermé,
+     borné à la carte : une couleur CSS ou un texte de pied de page ne compte
+     pas. */
+  function amazonCardOutOfStock(element) {
+    var raw = text(element.textContent);
+    if (!raw || raw.length > 300) return false;
+    return /sold\s*out|out\s*of\s*stock|unavailable|not available|\u00e9puis|epuise|rupture|ausverkauft|agotado|esaurito|non disponible/i.test(raw);
+  }
   /* Stock annoncé SUR LA CARTE (« Only 6 left in stock », « nur noch 3 auf
      Lager ») : nombre borné, ou rien. */
   function amazonCardStock(element) {
@@ -452,8 +460,22 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
         if (addedOption) {
           var cardPrice = amazonCardPrice(item);
           if (cardPrice && !addedOption.price) addedOption.price = cut(cardPrice, LIMITS.text);
+          /* « 5 options from $56.32 » : c'est un prix d'ENTRÉE de gamme, pas le
+             prix de cette couleur. La feuille l'affiche comme « à partir de » et
+             ne le présente jamais comme le prix de l'article. */
+          if (cardPrice) addedOption.priceFrom = isFromPrice(item);
           var cardStock = amazonCardStock(item);
-          if (cardStock && !addedOption.stock) addedOption.stock = cardStock;
+          if (cardStock) {
+            if (!addedOption.stock) addedOption.stock = cardStock;
+            /* Un NOMBRE de pièces annoncé sur la carte est une preuve POSITIVE :
+               la page dit combien elle en a. Ce n'est pas une déduction. */
+            if (addedOption.availabilityEvidence === 'unknown') addedOption.availabilityEvidence = 'available';
+          }
+          /* « Sold out » écrit sur la carte, sans marqueur de classe : c'est un
+             fait de la page, pas une absence de donnée. */
+          if (addedOption.availabilityEvidence === 'unknown' && amazonCardOutOfStock(item)) {
+            addedOption.availabilityEvidence = 'unavailable';
+          }
         }
         if (selected && optionAsin) pushUnique(selectedAsins, optionAsin, 10, 10);
       }
@@ -1146,7 +1168,11 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
 
   /* ── 6. Bouton d'achat : libellé ET état (désactivé = pas de stock prouvé) ─ */
   try {
-    var ADD_TEXT = /add\s*to\s*(cart|basket|bag)|buy\s*now|ajouter\s+au\s+panier|acheter|أضف\s*إلى\s*السلة|اشترِ/i;
+    /* Libellés d'achat, plusieurs langues. Le panier doit être nommé : « Add »
+       tout court peut être « Add to wishlist », et un bouton de liste d'envies
+       ne prouve aucun stock. */
+    var ADD_TEXT = /add\s*to\s*(cart|basket|bag)|buy\s*now|in\s*den\s*warenkorb|ajouter(?:\s+(?:au\s+)?panier|\s+le\s+produit)?|acheter|aggiungi(?:\s+al\s+carrello)?|a(?:ñ|n)adir(?:\s+(?:a\s+la\s+)?(?:cesta|carrito))?|أضف\s*إلى\s*السلة|أضف\s*للسلة|اشترِ/i;
+    var NOT_ADD_TEXT = /wish\s*list|wishlist|favoris|favorites|liste\s+d'envies|merkliste|envies/i;
     if (AMAZON_STRICT) {
       /* Correction du 07/10/2026 : un contrôle d'achat DÉSACTIVÉ ne publie RIEN.
          Son libellé dit « Add to Cart » — un texte qui, lu seul, prouverait un
@@ -1157,7 +1183,7 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
         var amazonControl = amazonControls[i3];
         if (isInNavigation(amazonControl)) continue;
         var amazonLabel = text(amazonControl.value) || text(amazonControl.textContent) || text(amazonControl.getAttribute && amazonControl.getAttribute('aria-label'));
-        if (!amazonLabel || !ADD_TEXT.test(amazonLabel)) continue;
+        if (!amazonLabel || !ADD_TEXT.test(amazonLabel) || NOT_ADD_TEXT.test(amazonLabel)) continue;
         amazonLabel = text(amazonLabel.replace(/\s*(?:shift|alt|ctrl|cmd|⌘|press)[^a-z0-9]*[+][^]*$/i, ''));
         if (!amazonLabel) continue;
         var amazonDisabled = amazonControl.disabled === true
@@ -1170,7 +1196,7 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     for (var i2 = 0; i2 < controls.length && !out.addToCartText; i2++) {
       var control = controls[i2];
       var label = text(control.value) || text(control.textContent) || text(control.getAttribute && control.getAttribute('aria-label'));
-      if (!label || !ADD_TEXT.test(label)) continue;
+      if (!label || !ADD_TEXT.test(label) || NOT_ADD_TEXT.test(label)) continue;
       /* « Add to basket shift + ALT + K » est un libellé d'accessibilité, pas un
          bouton : le raccourci clavier est retiré, et un libellé qui n'est QUE
          cela est écarté (mesuré le 06/10/2026 sur une page amazon.de rendue). */
@@ -1195,7 +1221,13 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     for (var v = 0; v < selected.length && out.selectedVariantTexts.length < LIMITS.selectedTexts; v++) {
       var option = selected[v];
       if (isInNavigation(option)) continue;
-      var optionText = text(option.getAttribute && option.getAttribute('title')) || text(option.textContent) || text(option.getAttribute && option.getAttribute('aria-label'));
+      /* Une CARTE de variante (li aria-checked) contient son prix et son stock :
+         son texte entier n'est pas un libellé. L'image porte le nom. */
+      var optionImg = option.querySelector && option.querySelector('img[alt]');
+      var optionText = text(option.getAttribute && option.getAttribute('title'))
+        || text(option.getAttribute && option.getAttribute('aria-label'))
+        || text(optionImg && optionImg.getAttribute('alt'))
+        || text(option.textContent);
       if (!optionText || optionText.length > LIMITS.label) continue;
       if (NOT_A_CHOICE.test(optionText)) continue;
       pushUnique(out.selectedVariantTexts, optionText, LIMITS.selectedTexts, LIMITS.label);
@@ -1281,7 +1313,52 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
      pas comme choix, et le serveur refuserait l'ajout (« sélection non prouvée »)
      pour une raison qui n'a rien à voir avec le produit. */
   var NOT_A_VARIANT_GROUP = /^(sort|sort by|sortby|trier|tri|order by|orderby|quantit|quantity|qty|nombre|view|view by|affichage|filter|filtre|page|pages|lang|langue|language|devise|currency|pays|country|region|région|per page|items per page|afficher)\b/i;
-  function pushVariantGroup(name, values, selected) {
+  /**
+   * Prix écrit SUR une valeur (« 88,00 € », « 12,95 € TVA incluse »).
+   *
+   * On ne compose rien : on prend le texte de l'élément de prix s'il existe,
+   * sinon la première séquence « nombre + devise » du libellé. Un texte sans
+   * devise ou sans chiffre n'est pas un prix.
+   */
+  function priceOnValue(node) {
+    if (!node) return '';
+    try {
+      var priceNodes = node.querySelectorAll('[class*="price" i], [data-testid*="price" i], [itemprop="price"]');
+      for (var pn = 0; pn < priceNodes.length && pn < 3; pn++) {
+        var priceText = text(priceNodes[pn].getAttribute && priceNodes[pn].getAttribute('content')) || text(priceNodes[pn].textContent);
+        if (priceText && HAS_DIGIT.test(priceText) && CURRENCY_HINT.test(priceText)) return cut(priceText, LIMITS.label);
+      }
+    } catch (e) {}
+    var raw = text(node.getAttribute && (node.getAttribute('aria-label') || node.getAttribute('title'))) || text(node.textContent);
+    if (!raw || raw.length > 120) return '';
+    var match = /([0-9][0-9\s.,\u00a0]*)\s*([$\u20ac\u00a3\u00a5]|\b(?:EUR|USD|GBP|TND|DT|MAD|AED|SAR)\b|\bd\.?t\b)/i.exec(raw);
+    return match ? cut(match[0], LIMITS.label) : '';
+  }
+  /* Le libellé d'une pastille contient souvent son prix (« 150 ml 12,95 € »).
+     On retire le prix du libellé quand on le publie à part — sinon la feuille
+     l'écrirait deux fois. */
+  function labelWithoutPrice(label, price) {
+    if (!label || !price) return label;
+    if (label.indexOf(price) < 0) return label;
+    return text(label.replace(price, ' '));
+  }
+  /* « à partir de 56,32 $ » : le prix n'est pas encore celui de la valeur. */
+  function isFromPrice(node) {
+    var raw = text(node && node.textContent);
+    return /\bfrom\b|\bà\s+partir\s+de\b|\bab\s|\bstart(?:ing)?\s+(?:at|from)\b/i.test(raw);
+  }
+  /* État publié pour UNE valeur : false seulement si la page la désactive. */
+  function valueAvailability(node) {
+    if (!node) return null;
+    if (node.disabled === true) return false;
+    var ariaDisabled = node.getAttribute && node.getAttribute('aria-disabled');
+    if (ariaDisabled === 'true') return false;
+    var descriptor = String((node.className && String(node.className)) || '');
+    var dataState = (node.getAttribute && (node.getAttribute('data-state') || node.getAttribute('data-availability'))) || '';
+    if (/disabled|unavailable|out[-_ ]?of[-_ ]?stock|sold[-_ ]?out|rupture|epuise/i.test(descriptor + ' ' + String(dataState))) return false;
+    return null;
+  }
+  function pushVariantGroup(name, values, selected, options) {
     if (!name || !values.length) return;
     var label = cut(name, LIMITS.label);
     if (!label || NOT_A_CHOICE.test(label) || NOT_A_VARIANT_GROUP.test(label)) return;
@@ -1293,7 +1370,42 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
       if (out.variantGroups[g].name.toLowerCase() === label.toLowerCase()) return;
     }
     if (out.variantGroups.length >= LIMITS.variantGroups) return;
-    out.variantGroups.push({ name: label, values: values.slice(0, LIMITS.variantValues), selected: selected.slice(0, LIMITS.variantValues) });
+    var publishedValues = values.slice(0, LIMITS.variantValues);
+    var publishedOptions = [];
+    if (options && options.length) {
+      for (var po = 0; po < options.length && publishedOptions.length < LIMITS.variantValues; po++) {
+        var option = options[po];
+        if (!option || !option.value) continue;
+        var known = false;
+        for (var pv = 0; pv < publishedValues.length; pv++) {
+          if (publishedValues[pv].toLowerCase() === String(option.value).toLowerCase()) { known = true; break; }
+        }
+        if (!known) continue;
+        var optionPrice = option.price ? cut(option.price, LIMITS.label) : null;
+        var optionState = option.available === true ? true : option.available === false ? false : null;
+        var optionStock = typeof option.stock === 'number' && option.stock > 0 && option.stock <= 999 ? option.stock : null;
+        /* Rien de publié pour cette valeur (ni état, ni prix, ni stock) = pas de
+           ligne. Un état « inconnu » n'est pas un fait : le publier encombrerait
+           la capture sans rien prouver. */
+        if (optionState === null && !optionPrice && optionStock === null) continue;
+        publishedOptions.push({
+          value: cut(option.value, LIMITS.label),
+          available: optionState,
+          price: optionPrice,
+          priceFrom: option.priceFrom === true,
+          stock: optionStock,
+        });
+      }
+    }
+    var groupEntry = {
+      name: label,
+      values: publishedValues,
+      selected: selected.slice(0, LIMITS.variantValues),
+    };
+    /* Absent quand la page ne publie rien de plus que les libellés : un tableau
+       vide ferait croire à une lecture qui n'a rien trouvé. */
+    if (publishedOptions.length) groupEntry.options = publishedOptions;
+    out.variantGroups.push(groupEntry);
     /* La valeur affichée entre dans l'ÉVIDENCE des options choisies : le serveur
        vérifie que la combinaison demandée a bien été VUE sur la page, et les
        boutons radio natifs n'ont pas d'aria-checked pour l'alimenter. */
@@ -1321,6 +1433,7 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
         if (!groupName) groupName = text(selectNode.getAttribute && selectNode.getAttribute('name'));
         var values = [];
         var chosen = [];
+        var valueOptions = [];
         for (var oi = 0; oi < selectNode.options.length && values.length < LIMITS.variantValues; oi++) {
           var opt = selectNode.options[oi];
           var optLabel = text(opt.textContent);
@@ -1328,8 +1441,15 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
           if (values.join('|').toLowerCase().indexOf(optLabel.toLowerCase()) >= 0) continue;
           values.push(optLabel);
           if (opt.selected) chosen.push(optLabel);
+          valueOptions.push({
+            value: optLabel,
+            available: opt.disabled === true ? false : null,
+            price: priceOnValue(opt) || null,
+            priceFrom: isFromPrice(opt),
+            stock: null,
+          });
         }
-        if (values.length > 1) pushVariantGroup(groupName, values, chosen);
+        if (values.length > 1) pushVariantGroup(groupName, values, chosen, valueOptions);
       }
 
       /* Groupes de boutons radio : <fieldset><legend>Couleur</legend>… */
@@ -1344,23 +1464,91 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
         if (!fsName) fsName = text(radios[0].getAttribute && radios[0].getAttribute('name'));
         var fsValues = [];
         var fsChosen = [];
+        var fsOptions = [];
         for (var ri = 0; ri < radios.length && fsValues.length < LIMITS.variantValues; ri++) {
           var radio = radios[ri];
           var radioLabel = '';
+          var radioScope = null;
           try {
             if (radio.id) {
               var radioFor = document.querySelector('label[for="' + String(radio.id).replace(/"/g, '') + '"]');
               radioLabel = text(radioFor && radioFor.textContent);
+              radioScope = radioFor || null;
             }
           } catch (e) {}
           if (!radioLabel) radioLabel = text(radio.getAttribute && radio.getAttribute('aria-label'));
+          if (!radioScope) radioScope = radio.parentNode || null;
           if (!radioLabel) radioLabel = text(radio.getAttribute && radio.getAttribute('value'));
           if (!radioLabel || radioLabel.length > LIMITS.label || NOT_A_CHOICE.test(radioLabel)) continue;
           fsValues.push(radioLabel);
           if (radio.checked) fsChosen.push(radioLabel);
+          fsOptions.push({
+            value: radioLabel,
+            available: valueAvailability(radio) === false || valueAvailability(radioScope) === false ? false : null,
+            price: priceOnValue(radioScope) || priceOnValue(radio) || null,
+            priceFrom: isFromPrice(radioScope || radio),
+            stock: null,
+          });
         }
-        if (fsValues.length > 1) pushVariantGroup(fsName, fsValues, fsChosen);
+        if (fsValues.length > 1) pushVariantGroup(fsName, fsValues, fsChosen, fsOptions);
       }
+
+      /* ── Boutons-pastilles / cartes de valeurs (23/10/2026) ───────────────
+         Beaucoup de boutiques du catalogue n'utilisent ni <select> ni <fieldset> :
+         elles rendent des boutons ou des cartes (« Rouge », « 42 », « 150 ml »)
+         dans un conteneur dont le nom vient d'un aria-label, d'un data-testid ou
+         d'une classe. C'est là que se trouve, pour CHAQUE valeur, son état
+         (désactivée ⇒ indisponible) et parfois son prix.
+
+         Bornes strictes : conteneur nommé, ≤ 12 conteneurs, ≤ 20 valeurs, libellé
+         ≤ 40 caractères, jamais dans la navigation, valeurs d'index écartées.
+         Aucun clic : on ne lit que ce qui est rendu. */
+      try {
+        var groupHosts = document.querySelectorAll(
+          '[role="radiogroup"], [class*="swatch" i], [class*="variant" i], [class*="color" i], '
+          + '[class*="colour" i], [class*="size" i], [class*="taille" i], [class*="couleur" i], '
+          + '[data-testid*="variant" i], [data-testid*="size" i], [data-testid*="color" i]'
+        );
+        for (var gh = 0; gh < groupHosts.length && out.variantGroups.length < LIMITS.variantGroups && gh < 12; gh++) {
+          var host = groupHosts[gh];
+          if (!host || isInNavigation(host)) continue;
+          var hostDescriptor = text(host.getAttribute && (host.getAttribute('aria-label') || host.getAttribute('data-testid')))
+            || text(String(host.id || '').replace(/[-_]+/g, ' '))
+            || text(String(host.className || '').replace(/[-_]+/g, ' '));
+          if (!hostDescriptor || hostDescriptor.length > LIMITS.label) continue;
+          if (NOT_A_CHOICE.test(hostDescriptor) || NOT_A_VARIANT_GROUP.test(hostDescriptor)) continue;
+          var valueNodes = [];
+          try { valueNodes = host.querySelectorAll('[role="radio"], [role="option"], button, li, label, a'); } catch (e) { valueNodes = []; }
+          var hostValues = [];
+          var hostChosen = [];
+          var hostOptions = [];
+          for (var vn = 0; vn < valueNodes.length && hostValues.length < LIMITS.variantValues && vn < 40; vn++) {
+            var valueNode = valueNodes[vn];
+            if (isInNavigation(valueNode)) continue;
+            var valueLabel = text(valueNode.getAttribute && valueNode.getAttribute('aria-label'))
+              || text(valueNode.getAttribute && valueNode.getAttribute('title'))
+              || text(valueNode.textContent);
+            if (!valueLabel || valueLabel.length > 40 || NOT_A_CHOICE.test(valueLabel) || isIndexValue(valueLabel)) continue;
+            if (hostValues.join('|').toLowerCase().indexOf(valueLabel.toLowerCase()) >= 0) continue;
+            var checked = String(valueNode.getAttribute && (valueNode.getAttribute('aria-checked') || valueNode.getAttribute('aria-selected')) || '').toLowerCase();
+            var classText = String(valueNode.className || '');
+            var isChosen = checked === 'true' || /(^|\s)(selected|active|checked|is-selected)(\s|$)/i.test(classText);
+            var valuePrice = priceOnValue(valueNode);
+            var cleanLabel = labelWithoutPrice(valueLabel, valuePrice) || valueLabel;
+            if (hostValues.join('|').toLowerCase().indexOf(cleanLabel.toLowerCase()) >= 0) continue;
+            hostValues.push(cleanLabel);
+            if (isChosen) hostChosen.push(cleanLabel);
+            hostOptions.push({
+              value: cleanLabel,
+              available: valueAvailability(valueNode),
+              price: valuePrice || null,
+              priceFrom: isFromPrice(valueNode),
+              stock: null,
+            });
+          }
+          if (hostValues.length > 1) pushVariantGroup(hostDescriptor, hostValues, hostChosen, hostOptions);
+        }
+      } catch (e) {}
     } catch (e) {}
   }
 

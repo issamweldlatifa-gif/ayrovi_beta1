@@ -38,7 +38,7 @@ import {
 } from '@/api/aywebs';
 import { AddToCartSheet } from '@/features/aywebs/AddToCartSheet';
 import {
-  groupsFromVariants, localVariantsFromCapture, optionsFromVariants, productFromCapture,
+  groupsFromCapture, localVariantsFromCapture, optionsFromVariants, productFromCapture,
 } from '@/features/aywebs/localProduct';
 import { captureIsProductCard } from '@/features/aywebs/pageKind';
 import { VariantReader, type VariantReaderHandle } from '@/features/aywebs/VariantReader';
@@ -115,6 +115,8 @@ export default function AyWebsBrowserScreen() {
   /* TEMPORAIRE (diagnostic du blocage de lecture) — à retirer après le test. */
   /* (commentaire seul : relance du build APK après annulation du run précédent.) */
   const [diag, setDiag] = useState<string[]>([]);
+  /** Journal de lecture REPLIÉ par défaut : l'écran ne montre qu'une ligne. */
+  const [diagOpen, setDiagOpen] = useState(false);
   const pushDiag = useCallback((line: string) => {
     const at = new Date().toLocaleTimeString('fr-FR');
     setDiag((prev) => [...prev.slice(-7), `${at} ${line}`]);
@@ -405,7 +407,10 @@ export default function AyWebsBrowserScreen() {
         const variants = localVariantsFromCapture(captured);
         const localProduct: AyWebsResolvedProduct = {
           ...productFromCapture(captured, pageUrl, storeId, storeName),
-          variantGroups: groupsFromVariants(variants),
+          /* Les groupes viennent de la TABLE DES VARIANTES, et à défaut des
+             groupes NOMMÉS lus sur la page (23/10/2026) : une fiche Zalando
+             avait sinon une feuille sans couleur ni taille. */
+          variantGroups: groupsFromCapture(captured, variants),
           variantDetails: optionsFromVariants(variants),
         };
         setNote('');
@@ -597,7 +602,22 @@ export default function AyWebsBrowserScreen() {
           />
         ) : null}
         {note ? <AppText variant="caption" color={theme.status.danger.fg}>{note}</AppText> : null}
-        {diag.length ? <AppText variant="caption" color={theme.colors.muted}>{diag.join('\n')}</AppText> : null}
+        {diag.length ? (
+          <View style={{ gap: 2 }}>
+            <AppText variant="caption" color={theme.colors.muted}>
+              {diagOpen ? diag.join('\n') : diag[diag.length - 1]}
+            </AppText>
+            <Pressable
+              onPress={() => setDiagOpen((open) => !open)}
+              accessibilityRole="button"
+              testID="aywebs-read-details"
+            >
+              <AppText variant="caption" color={theme.colors.action}>
+                {diagOpen ? t('aywebs.diagHide') : t('aywebs.diagShow')}
+              </AppText>
+            </Pressable>
+          </View>
+        ) : null}
         {!captureAllowed ? (
           <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.readNotAllowed')}</AppText>
         ) : null}

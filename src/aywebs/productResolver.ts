@@ -52,6 +52,7 @@ import {
   webviewCaptureDivergence,
 } from './webviewCapture';
 import type { AyWebsCaptureOutcome } from '../../shared/aywebsCapture';
+import { ayWebsSelectionEvidence } from './variantEvidence';
 import type { AyWebsAvailabilityState } from '../../shared/aywebsTypes';
 import { ayWebsEvidenceHash, canonicalVariant, recordAyWebsEvidence } from './evidence';
 import { emitAyWebsEvent, logAyWebsOperation, measureAyWebsOperation } from './events';
@@ -450,47 +451,131 @@ export async function resolveAyWebsProduct(
   );
   let availability = await adapter.checkAvailability(sourceProduct, matchingAttributes);
 
+  /* Prix marchand qui s'applique à la RÉSOLUTION : celui de la page tant que la
+     combinaison demandée est celle qui est affichée ; celui de la VALEUR quand la
+     capture publie un prix pour elle (23/10/2026). Jamais celui d'une autre
+     couleur. */
+  let merchantPrice = sourceProduct.price;
+  let merchantPriceFromValue = false;
+
   if (captureUsed) {
-    /* La capture prouve l'état du bouton d'achat POUR LA COMBINAISON AFFICHÉE
-       chez le client. Si l'écran demande une AUTRE combinaison, cette preuve ne
-       dit rien d'elle : on répond UNKNOWN (et le panier refusera) au lieu
-       d'étendre la preuve à une variante qu'on n'a pas vue. */
-    /* Toute valeur demandée doit avoir été VUE sur la page — y compris celles
-       que le produit ne publie pas comme options (métadonnées de contexte).
-       Pourquoi si large : une capture ne publie AUCUN stock par option, donc
-       rien ne permet de dire si une valeur demandée est un attribut de variante
-       ou une simple annotation. Le risque est asymétrique — un faux UNKNOWN
-       coûte un refus honnête (« impossible de confirmer »), un faux AVAILABLE
-       coûte une commande invendable sur un produit jamais affiché. */
+    /* La capture prouve, pour CHAQUE valeur publiée, son état et parfois son
+       prix. La combinaison demandée est résolue valeur par valeur : on ne
+       transporte jamais l'état du bouton d'achat d'une couleur vers une autre. */
     const requestedSelection = { ...(matchingAttributes || {}), ...(variantMetadata || {}) };
+    const variantEvidence = ayWebsSelectionEvidence(
+      captureValidation!.variantGroups,
+      requestedSelection,
+      { currency: captureValidation!.currency },
+    );
+    variantEvidence.notes.forEach((note) => captureValidation!.notes.push(note));
+    /* Repli historique : les libellés que le client avait VUS sélectionnés sur la
+       page prouvent la combinaison affichée (utile quand la page ne nomme pas ses
+       groupes). */
     const requestedValues = Object.values(requestedSelection).map((value) => String(value).trim().toLowerCase());
     const observed = captureValidation!.selectedVariantTexts.map((value) => value.toLowerCase());
-    const selectionBacked = !requestedValues.length
+    const textBacked = !requestedValues.length
       || requestedValues.every((value) => observed.some((label) => label.includes(value)));
+    const pageProof = textBacked || variantEvidence.shownCombination;
     const checkedAt = new Date().toISOString();
-    if (selectionBacked) {
+    const selectionKey = ayWebsVariantKey(requestedSelection);
+    const publishedStock = variantEvidence.attributes
+      .map((attribute) => attribute.stock)
+      .filter((stock): stock is number => typeof stock === 'number' && stock > 0);
+
+    if (variantEvidence.blocked) {
+      /* Le négatif gagne : une valeur explicitement indisponible ne devient
+         jamais disponible parce que la page, elle, est achetable pour une autre. */
+      availability = {
+        ...ayWebsAvailabilityRecord(
+          'OUT_OF_STOCK',
+          `selection_option_out_of_stock:${selectionKey}`.slice(0, 200),
+          'webview_client',
+          checkedAt,
+          publishedStock.length ? Math.min(...publishedStock) : null,
+        ),
+        variantAvailable: false,
+      };
+    } else if (pageProof) {
+      /* Combinaison AFFICHÉE : c'est le constat de la page qui fait foi. */
       availability = {
         ...ayWebsAvailabilityRecord(
           captureValidation!.availability,
           captureValidation!.availabilityReason,
           'webview_client',
           checkedAt,
+          publishedStock.length ? Math.min(...publishedStock) : null,
         ),
         variantAvailable: availability.variantAvailable ?? null,
       };
       if (requestedValues.length) captureValidation!.notes.push('selection_matches_captured_page');
+    } else if (variantEvidence.available) {
+      /* Autre combinaison, MAIS chaque valeur publiée dit « disponible » : la
+         capture le prouve valeur par valeur, sans étendre la preuve de la page. */
+      availability = {
+        ...ayWebsAvailabilityRecord(
+          'AVAILABLE',
+          `selection_option_available:${selectionKey}`.slice(0, 200),
+          'webview_client',
+          checkedAt,
+          publishedStock.length ? Math.min(...publishedStock) : null,
+        ),
+        variantAvailable: true,
+      };
+      captureValidation!.notes.push('selection_available_by_value');
     } else {
       availability = {
         ...ayWebsAvailabilityRecord(
           'UNKNOWN',
-          `selection_not_verified_by_capture:${ayWebsVariantKey(requestedSelection)}`,
+          `selection_not_verified_by_capture:${selectionKey}`.slice(0, 200),
           'webview_client',
           checkedAt,
+          publishedStock.length ? Math.min(...publishedStock) : null,
         ),
         variantAvailable: null,
       };
       captureValidation!.notes.push('selection_not_in_capture');
     }
+
+    /* ── PRIX DE LA COMBINAISON ─────────────────────────────────────────────
+       Trois cas, et aucun autre :
+       1. la capture publie un prix FERME, sans conflit et dans la devise
+          prouvée ⇒ c'est le prix marchand de cette combinaison ;
+       2. le prix ferme manque mais la combinaison est celle AFFICHÉE sur la
+          page ⇒ le prix de la page s'applique (comportement historique) ;
+       3. sinon, le prix de la page appartient à une AUTRE combinaison : on
+          refuse de coter plutôt que d'annoncer le prix d'une autre couleur. */
+    const optionPriceProven = !variantEvidence.blocked
+      && variantEvidence.price != null
+      && !variantEvidence.priceConflict
+      && !variantEvidence.priceFrom
+      && !variantEvidence.currencyMismatch;
+    if (optionPriceProven) {
+      merchantPrice = variantEvidence.price as number;
+      merchantPriceFromValue = true;
+      captureValidation!.notes.push('selection_priced_from_value');
+    } else if (!pageProof && !variantEvidence.blocked && variantEvidence.groupsMatched > 0) {
+      const unpublished = variantEvidence.attributes.find((attribute) => attribute.groupFound && !attribute.found);
+      if (unpublished) {
+        throw new AyWebsDomainError('VARIANT_UNKNOWN', {
+          technicalMessage: `variant_value_not_published:${ayWebsVariantKey(requestedSelection)}`.slice(0, 200),
+        });
+      }
+      throw new AyWebsDomainError('PRICE_UNAVAILABLE', {
+        technicalMessage: `variant_price_not_published:${ayWebsVariantKey(requestedSelection)}`.slice(0, 200),
+      });
+    }
+  }
+
+  /* Le prix marchand retenu pour CETTE résolution remplace celui de la page :
+     devis, moteur tarifaire, panier et empreinte doivent tous désigner le même
+     montant. `sourceProduct` reste la lecture brute de la page. */
+  if (merchantPriceFromValue && Math.abs(merchantPrice - sourceProduct.price) >= 0.005) {
+    sourceProduct = {
+      ...sourceProduct,
+      price: merchantPrice,
+      scrapedProduct: { ...sourceProduct.scrapedProduct, sourcePrice: merchantPrice },
+    };
   }
 
   // Le prix ZAYROVI est recalculé côté serveur, uniquement si le marchand a

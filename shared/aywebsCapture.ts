@@ -44,6 +44,8 @@ export const AYWEBS_CAPTURE_LIMITS = {
   /** Groupes de variantes nommés (23/10/2026) : mêmes bornes que le script client. */
   maxVariantGroups: 4,
   maxVariantGroupValues: 20,
+  /** Prix publiés par valeur : texte borné, même règle que les prix de page. */
+  maxVariantValuePriceLength: 60,
   maxImages: 4,
   /** Au-delà, la capture est refusée : une page ouverte il y a une heure n'est pas une preuve. */
   maxAgeMs: 10 * 60_000,
@@ -51,12 +53,43 @@ export const AYWEBS_CAPTURE_LIMITS = {
   maxClockSkewMs: 60_000,
 } as const;
 
+/**
+ * Ce que la page publie pour UNE valeur d'un groupe (« Rouge », « 42 », « 150 ml »).
+ *
+ * Constat du 23/10/2026 (capture d'écran du client, Amazon) : la feuille de choix
+ * demandait au client de RÉINJECTER le lecteur à chaque changement de couleur, et
+ * ne savait pas dire si l'autre couleur était disponible. Or la page publiait déjà,
+ * sur la carte de chaque valeur : un prix (« $88.00 », « 5 options from $56.32 »)
+ * et, quand il existe, l'état de stock (« In Stock »). Ces faits sont lus UNE fois,
+ * dans la même capture, et la feuille les affiche.
+ *
+ * Aucun champ n'est deviné : `available` vaut `false` seulement quand la page
+ * désactive explicitement la valeur (`disabled`, `aria-disabled="true"`, classe
+ * « out-of-stock ») ; il reste `null` quand la page ne dit rien.
+ */
+export interface AyWebsCapturedVariantValue {
+  value: string;
+  available?: boolean | null;
+  /** Prix affiché SUR CETTE VALEUR, tel qu'écrit (« $88.00 », « 12,95 € »). */
+  price?: string | null;
+  /** `true` quand le prix est une entrée de gamme (« à partir de », « from »). */
+  priceFrom?: boolean;
+  /** Stock annoncé sur la valeur (« Only 6 left ») — jamais déduit. */
+  stock?: number | null;
+}
+
 /** Groupe de variantes nommé, tel que lu par le script du client. */
 export interface AyWebsCapturedVariantGroup {
   name: string;
   values: string[];
   /** Valeur affichée sur la page — une seule, ou vide. */
   selected?: string[];
+  /**
+   * États et prix PUBLIÉS pour chaque valeur (23/10/2026). Le même ordre n'est
+   * pas garanti : `value` fait foi. Absent = la page ne publie rien de plus que
+   * le libellé — la feuille le dit au lieu de bloquer sans explication.
+   */
+  options?: AyWebsCapturedVariantValue[];
 }
 
 /**
@@ -92,6 +125,11 @@ export interface AyWebsAmazonEvidence {
     availabilityEvidence?: 'available' | 'unavailable' | 'unknown';
     /** Prix affiché SUR LA CARTE de ce choix, tel qu'écrit ; jamais un devis. */
     price?: string | null;
+    /**
+     * Le prix de la carte est un « à partir de » (« 5 options from $56.32 ») :
+     * une entrée de gamme, jamais le prix de cette valeur (23/10/2026).
+     */
+    priceFrom?: boolean;
     /** Stock annoncé sur la carte (« Only 6 left in stock »). */
     stock?: number | null;
     source?: string;

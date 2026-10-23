@@ -40,6 +40,7 @@ import {
   type AyWebsCapturedPage,
   type AyWebsCapturedPriceCandidate,
   type AyWebsCapturedVariantGroup,
+  type AyWebsCapturedVariantValue,
 } from '../../shared/aywebsCapture';
 import type { AyWebsAvailabilityState } from '../../shared/aywebsTypes';
 import { detectAyWebsCatalogStore } from '../../shared/aywebsStoreCatalog';
@@ -332,8 +333,31 @@ function cleanVariantGroups(raw: unknown): AyWebsCapturedVariantGroup[] {
       .filter((value) => values.some((known) => known.toLowerCase() === value.toLowerCase()));
     /* Sans valeur affichée, il n'y a rien à vérifier — sauf valeur unique. */
     if (!selected.length && values.length > 1) continue;
+    /* États/prix PAR VALEUR (23/10/2026). Une valeur inconnue n'est jamais
+       ajoutée ; un état `null` reste `null` (la page n'a rien dit). */
+    const options: AyWebsCapturedVariantValue[] = [];
+    const rawOptions = (entry as { options?: unknown }).options;
+    if (Array.isArray(rawOptions)) {
+      for (const option of rawOptions) {
+        if (options.length >= AYWEBS_CAPTURE_LIMITS.maxVariantGroupValues) break;
+        if (!option || typeof option !== 'object') continue;
+        const record = option as Record<string, unknown>;
+        const value = collapse(record.value, 60);
+        if (!value || !values.some((known) => known.toLowerCase() === value.toLowerCase())) continue;
+        if (options.some((known) => known.value.toLowerCase() === value.toLowerCase())) continue;
+        const priceText = collapse(record.price, AYWEBS_CAPTURE_LIMITS.maxVariantValuePriceLength);
+        const stockNumber = Math.floor(Number(record.stock));
+        const available = record.available === true ? true : record.available === false ? false : null;
+        const price = priceText && /[0-9]/.test(priceText) ? priceText : null;
+        const stock = Number.isFinite(stockNumber) && stockNumber > 0 && stockNumber <= 999 ? stockNumber : null;
+        /* Une ligne sans état, sans prix et sans stock n'apprend rien : elle est
+           écartée (le groupe garde ses libellés). */
+        if (available === null && !price && stock === null) continue;
+        options.push({ value, available, price, priceFrom: record.priceFrom === true, stock });
+      }
+    }
     seen.add(key);
-    out.push({ name, values, selected: selected.slice(0, 1) });
+    out.push({ name, values, selected: selected.slice(0, 1), ...(options.length ? { options } : {}) });
   }
   return out;
 }
@@ -424,12 +448,24 @@ function amazonVariantRefusal(payload: AyWebsCapturedPage): string | null {
   if (pageAsin !== selectedAsin) return 'selected_not_page';
 
   // L'option CHOISIE est celle dont l'ASIN est l'ASIN choisi (une fiche peut avoir couleur ET taille).
+  const selectedValues = (Array.isArray(amazon?.selectedValues) ? amazon!.selectedValues! : [])
+    .map((value) => String(value || '').trim().toLowerCase())
+    .filter(Boolean);
   const selectedOption = options.find((o) => o && o.selected === true && o.asin === selectedAsin)
-    || options.find((o) => o && o.selected === true);
+    || options.find((o) => o && o.selected === true)
+    /* Le twister ne marque pas toujours l'option choisie : les valeurs
+       AFFICHÉES comme choisies (`selectedValues`) la désignent alors. */
+    || options.find((o) => o && selectedValues.includes(String(o.value || '').trim().toLowerCase()));
   if (!selectedOption) return 'selected_option_unproven';
   if (selectedOption.availabilityEvidence === 'unavailable') return 'selected_unavailable';
+  /* Preuve POSITIVE par valeur (23/10/2026) : la carte de ce choix annonce un
+     nombre de pièces. Un stock publié n'est pas une déduction — c'est un fait. */
+  const optionStock = Number(selectedOption.stock);
+  const optionStockProven = Number.isFinite(optionStock) && optionStock > 0;
   const pageSaysInStock = /in stock|en stock|disponible|auf lager/i.test(String(payload.availabilityText || ''));
-  if (selectedOption.availabilityEvidence !== 'available' && !pageSaysInStock) return 'selected_availability_unproven';
+  if (selectedOption.availabilityEvidence !== 'available' && !optionStockProven && !pageSaysInStock) {
+    return 'selected_availability_unproven';
+  }
   return null;
 }
 
@@ -457,6 +493,82 @@ function captureRejected(
     condition: null, fingerprint, priceSource: null, corroborated: false, selectedVariantTexts: [], variantGroups: [], notes,
     outcome: { used: false, fingerprint: fingerprint || null, priceSource: null, corroborated: false, rejection },
   };
+}
+
+/**
+ * GROUPES DEPUIS LES OPTIONS AMAZON (23/10/2026).
+ *
+ * Sur Amazon, la rangée de pastilles est lue par le lecteur DÉDIÉ (ASIN, prix et
+ * stock SUR la carte, état de disponibilité par valeur) et non par le lecteur
+ * générique : `payload.variantGroups` reste donc vide. Sans cette conversion, le
+ * serveur ne voyait que la valeur affichée alors que la capture publiait déjà
+ * tout — c'est la cause du « choix non confirmé » quand le client changeait de
+ * couleur dans la feuille.
+ *
+ * On ne fabrique rien : chaque valeur vient de `amazon.options`, avec SON état,
+ * SON prix et SON stock. Une dimension sans valeur lisible est ignorée.
+ */
+function variantGroupsFromAmazonOptions(
+  amazon: AyWebsCapturedPage['amazon'],
+): AyWebsCapturedVariantGroup[] {
+  const options = Array.isArray(amazon?.options) ? amazon!.options! : [];
+  if (!options.length) return [];
+  const groups: AyWebsCapturedVariantGroup[] = [];
+  const byName = new Map<string, AyWebsCapturedVariantGroup>();
+  for (const option of options) {
+    if (!option || typeof option !== 'object') continue;
+    const name = collapse(option.dimension, 60);
+    const value = collapse(option.value, 60);
+    if (!name || !value || NOT_A_VARIANT_GROUP.test(name)) continue;
+    if (groups.length >= AYWEBS_CAPTURE_LIMITS.maxVariantGroups && !byName.has(name.toLowerCase())) break;
+    let group = byName.get(name.toLowerCase());
+    if (!group) {
+      group = { name, values: [], selected: [] };
+      byName.set(name.toLowerCase(), group);
+      groups.push(group);
+    }
+    if (group.values.some((known) => known.toLowerCase() === value.toLowerCase())) continue;
+    if (group.values.length >= AYWEBS_CAPTURE_LIMITS.maxVariantGroupValues) continue;
+    group.values.push(value);
+  }
+  /* Valeurs affichées comme choisies : la donnée du twister, jamais l'ordre. */
+  const selectedValues = (Array.isArray(amazon?.selectedValues) ? amazon!.selectedValues! : [])
+    .map((value) => collapse(value, 60).toLowerCase())
+    .filter(Boolean);
+  for (const option of options) {
+    const name = collapse(option?.dimension, 60);
+    const value = collapse(option?.value, 60);
+    if (!name || !value) continue;
+    const group = byName.get(name.toLowerCase());
+    if (!group) continue;
+    if (!(option!.selected === true || selectedValues.includes(value.toLowerCase()))) continue;
+    const published = group.values.find((known) => known.toLowerCase() === value.toLowerCase());
+    if (published && !group.selected!.length) group.selected!.push(published);
+  }
+  /* États/prix par valeur — même contrat que le lecteur générique. */
+  for (const option of options) {
+    const name = collapse(option?.dimension, 60);
+    const value = collapse(option?.value, 60);
+    if (!name || !value) continue;
+    const group = byName.get(name.toLowerCase());
+    if (!group) continue;
+    const published = group.values.find((known) => known.toLowerCase() === value.toLowerCase());
+    if (!published) continue;
+    const priceText = collapse(option?.price, AYWEBS_CAPTURE_LIMITS.maxVariantValuePriceLength);
+    const price = priceText && /[0-9]/.test(priceText) ? priceText : null;
+    const stockNumber = Math.floor(Number(option?.stock));
+    const stock = Number.isFinite(stockNumber) && stockNumber > 0 && stockNumber <= 999 ? stockNumber : null;
+    const evidence = option?.availabilityEvidence;
+    const available = evidence === 'available' ? true : evidence === 'unavailable' ? false : null;
+    if (available === null && !price && stock === null) continue;
+    const bucket = group.options ?? (group.options = []);
+    if (bucket.some((known) => known.value.toLowerCase() === published.toLowerCase())) continue;
+    bucket.push({ value: published, available, price, priceFrom: option?.priceFrom === true, stock });
+  }
+  /* On garde les groupes même quand ils ne publient que des libellés : la
+     feuille a besoin de leurs valeurs, et le résolveur saura dire « pas publié »
+     plutôt que d'inventer un état. */
+  return groups;
 }
 
 /**
@@ -757,7 +869,17 @@ export function validateAyWebsCapturedPage(
     payload.selectedVariantTexts, AYWEBS_CAPTURE_LIMITS.maxSelectedVariantTexts, 60,
   );
   const variantTexts = cleanTextArray(payload.variantTexts, AYWEBS_CAPTURE_LIMITS.maxVariantTexts, 60);
-  const variantGroups = cleanVariantGroups(payload.variantGroups);
+  /* Deux lecteurs, un seul contrat : le générique (boutiques sans adaptateur) et
+     le dédié Amazon (pastilles + ASIN). Les groupes génériques gagnent ; ceux
+     d'Amazon complètent les dimensions qu'ils n'ont pas nommées. */
+  const genericGroups = cleanVariantGroups(payload.variantGroups);
+  const amazonGroups = variantGroupsFromAmazonOptions(payload.amazon);
+  const variantGroups = [...genericGroups];
+  for (const group of amazonGroups) {
+    if (variantGroups.some((known) => known.name.toLowerCase() === group.name.toLowerCase())) continue;
+    variantGroups.push(group);
+  }
+  variantGroups.splice(AYWEBS_CAPTURE_LIMITS.maxVariantGroups);
 
   const fingerprint = fingerprintOf({
     url: pageUrl,
