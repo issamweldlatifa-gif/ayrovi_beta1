@@ -292,21 +292,39 @@ export function defaultSelectionFromCapture(
   capture: Json,
   groups: AyWebsVariantGroup[],
 ): Record<string, string> {
+  if (!groups.length) return {};
   const amazon = isRecord(capture.amazon) ? capture.amazon : null;
-  if (!amazon || !groups.length) return {};
-  const selectedAsin = text(amazon.selectedAsin).toUpperCase();
-  const entries = Array.isArray(amazon.variants) ? amazon.variants.filter(isRecord) : [];
-  const shown = entries.find((variant) => selectedAsin !== '' && text(variant.asin).toUpperCase() === selectedAsin)
-    ?? entries.find((variant) => variant.selected === true);
-  const dimensions = shown && Array.isArray(shown.dimensions) ? shown.dimensions.filter(isRecord) : [];
   const selection: Record<string, string> = {};
+  if (amazon) {
+    const selectedAsin = text(amazon.selectedAsin).toUpperCase();
+    const entries = Array.isArray(amazon.variants) ? amazon.variants.filter(isRecord) : [];
+    const shown = entries.find((variant) => selectedAsin !== '' && text(variant.asin).toUpperCase() === selectedAsin)
+      ?? entries.find((variant) => variant.selected === true);
+    const dimensions = shown && Array.isArray(shown.dimensions) ? shown.dimensions.filter(isRecord) : [];
+    for (const group of groups) {
+      const key = group.attribute.trim().toLowerCase();
+      const match = dimensions.find((dimension) => text(dimension.name).toLowerCase() === key);
+      const value = match ? text(match.value) : '';
+      if (value && group.values.some((candidate) => candidate.toLowerCase() === value.toLowerCase())) {
+        selection[key] = value;
+      }
+    }
+    return selection;
+  }
+  /* Boutique catalogue (Zalando, …) : la page publie elle-même la valeur
+     affichée de chaque groupe (`variantGroups[].selected`). On ouvre donc la
+     feuille SUR la combinaison affichée, comme le client la voit. Sans cela,
+     prix et disponibilité de la page ne s'appliquaient à aucune sélection et
+     la feuille semblait vide alors que la fiche était complète (23/10/2026). */
+  if (!Array.isArray(capture.variantGroups)) return selection;
   for (const group of groups) {
     const key = group.attribute.trim().toLowerCase();
-    const match = dimensions.find((dimension) => text(dimension.name).toLowerCase() === key);
-    const value = match ? text(match.value) : '';
-    if (value && group.values.some((candidate) => candidate.toLowerCase() === value.toLowerCase())) {
-      selection[key] = value;
-    }
+    const entry = capture.variantGroups.find((candidate) => isRecord(candidate)
+      && text(candidate.name).toLowerCase() === key);
+    if (!entry || !isRecord(entry) || !Array.isArray(entry.selected)) continue;
+    const value = entry.selected.map(text)
+      .find((shown) => shown && group.values.some((candidate) => candidate.toLowerCase() === shown.toLowerCase()));
+    if (value) selection[key] = value;
   }
   return selection;
 }
@@ -397,6 +415,14 @@ export function displayPriceForSelection(
     const page = pagePriceText(capture);
     return page ? { text: page, priceFrom: false } : null;
   }
+  /* L'option choisie EST celle que la page affiche : son prix est le prix de la
+     page (23/10/2026, Zalando). Ce n'est pas une déduction — c'est la même
+     règle que le serveur applique : la preuve de page vaut pour la combinaison
+     affichée, et pour elle seule. */
+  if (selectionIsShown(capture, selection)) {
+    const page = pagePriceText(capture);
+    if (page) return { text: page, priceFrom: false };
+  }
   return null;
 }
 
@@ -448,7 +474,12 @@ export function stockForSelection(capture: Json, selection: Record<string, strin
   if (chosen?.stock != null) return chosen.stock;
   const amazon = isRecord(capture.amazon) ? capture.amazon : null;
   const shownAsin = amazon ? text(amazon.selectedAsin).toUpperCase() : '';
-  const isShown = chosen ? shownAsin !== '' && chosen.asin === shownAsin : Object.keys(selection).length === 0;
+  /* Sans table de variantes, `selectionIsShown` reconnaît la combinaison que la
+     page affiche (groupes nommés + `selected`) : le stock annoncé sur la fiche
+     est le sien, pas celui d'un autre choix. */
+  const isShown = chosen
+    ? shownAsin !== '' && chosen.asin === shownAsin
+    : (Object.keys(selection).length === 0 || selectionIsShown(capture, selection));
   return isShown ? stockFromAvailabilityText(capture.availabilityText) : null;
 }
 
@@ -638,6 +669,22 @@ export function localAddReadiness(input: {
     const allPublished = chosenValues.length === Object.keys(input.selection).length
       && chosenValues.length > 0
       && chosenValues.every((state) => state.state === 'AVAILABLE');
+    /* Le choix EST celui que la page affiche (taille présélectionnée, Zalando) :
+       son bandeau « en stock » porte sur LUI. Sans cette règle, une fiche dont la
+       page ne publie pas de prix par valeur répondait « stock non confirmé »
+       alors qu'elle affichait la taille choisie et « Ajouter au panier ». */
+    if (shown && page === 'OUT_OF_STOCK') {
+      return { ready: false, code: 'OUT_OF_STOCK', missingAttributes: [], availability: 'OUT_OF_STOCK' };
+    }
+    if (shown && page === 'AVAILABLE') {
+      const stock = chosenValues
+        .map((state) => state.stock)
+        .filter((value): value is number => typeof value === 'number' && value > 0);
+      return {
+        ready: true, code: '', missingAttributes: [],
+        availability: stock.length ? 'LOW_STOCK' : 'AVAILABLE',
+      };
+    }
     if (allPublished) {
       const stock = chosenValues.reduce<number | null>((min, state) => (
         state.stock != null && (min == null || state.stock < min) ? state.stock : min

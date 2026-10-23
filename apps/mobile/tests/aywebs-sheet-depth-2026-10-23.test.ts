@@ -20,8 +20,9 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  displayPriceForSelection, groupsFromCapture, localAddReadiness, localVariantsFromCapture,
-  selectionHasPublishedPrice, selectionIsShown, splitMerchantPrice, valueStatesFromCapture,
+  defaultSelectionFromCapture, displayPriceForSelection, groupsFromCapture, localAddReadiness,
+  localVariantsFromCapture, selectionHasPublishedPrice, selectionIsShown, splitMerchantPrice,
+  valueStatesFromCapture,
 } from '@/features/aywebs/localProduct';
 
 /* ── 1. Amazon : trois couleurs, un seul clic, toutes les données ───────── */
@@ -128,6 +129,19 @@ describe('Zalando — les groupes nommés remplissent la feuille', () => {
     expect(blocked).toMatchObject({ ready: false, code: 'VARIANT_UNAVAILABLE', availability: 'OUT_OF_STOCK' });
   });
 
+  it('la feuille s’ouvre SUR la combinaison affichée, avec SON prix', () => {
+    /* Zalando présélectionne une taille : la feuille doit s'ouvrir dessus, sinon
+       le prix de page ne s'applique à rien et le client croit la fiche vide. */
+    const selection = defaultSelectionFromCapture(ZALANDO, groups);
+    expect(selection).toEqual({ taille: '150 ml' });
+    expect(displayPriceForSelection(ZALANDO, selection)).toEqual({ text: '12,95 €', priceFrom: false });
+  });
+
+  it('une autre valeur garde SON prix publié — jamais celui de la page', () => {
+    expect(displayPriceForSelection(ZALANDO, { taille: '250 ml' }))
+      .toEqual({ text: '19,95 €', priceFrom: false });
+  });
+
   it('la valeur affichée est prouvée par la page : ajout permis', () => {
     const ready = localAddReadiness({
       groups, variants, selection: { taille: '150 ml' }, pageInStockText: true,
@@ -225,10 +239,10 @@ describe('ce qui reste refusé', () => {
     const result = localAddReadiness({
       groups: [{ attribute: 'Taille', values: ['150 ml', '250 ml'] }],
       variants: [], selection: { taille: '250 ml' }, pageInStockText: true,
-      pageAvailability: 'AVAILABLE', pageShowsSelection: true, valueStates: {},
+      pageAvailability: 'AVAILABLE', pageShowsSelection: false, valueStates: {},
     });
     /* « page AVAILABLE » ne prouve que la valeur AFFICHÉE (150 ml) ; 250 ml
-       n'a aucune évidence ⇒ UNKNOWN, pas AVAILABLE. */
+       n'est pas celle que la page affiche ⇒ UNKNOWN, pas AVAILABLE. */
     expect(result.ready).toBe(false);
     expect(result.availability).toBe('UNKNOWN');
   });

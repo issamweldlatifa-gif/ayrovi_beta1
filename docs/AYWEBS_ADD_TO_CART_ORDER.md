@@ -50,6 +50,33 @@ Product images · Current price · Currency · Availability · Quantity · Varia
   variantes requises ; pas de substitution silencieuse (§30).
 - Actions : **Done / Confirm** → ajout réel au panier.
 
+## Feuille de choix — langage du client (2026-10-23)
+
+La feuille est un **sélecteur d'article**, pas un rapport de lecture. Ordre imposé :
+
+1. Image du produit (92 × 112) + titre + prix **tel que la page l'écrit** (le montant
+   et sa note séparément : « 12,95 € » / « TVA incluse »).
+2. Un champ **replié** par groupe publié — Taille, Couleur, Volume, Matière, Modèle,
+   Type (libellé traduit) sinon le nom publié — qui s'ouvre sur ses valeurs ; chaque
+   valeur affiche son prix publié, et « indisponible » quand la page le dit (la valeur
+   n'est alors jamais sélectionnable). Un seul champ ouvert à la fois.
+3. Quantité − 1 + (1…99).
+4. **Un** bouton « Add to Cart » pleine largeur, avec état de chargement.
+5. Vue « Article ajouté » : quantité, prix source, total TND, rattachement, puis
+   **Cart** ou **Continue Shopping**.
+
+La feuille s'ouvre **sur la combinaison que la page affiche** (ASIN Amazon, ou
+`variantGroups[].selected` pour une boutique du catalogue : Zalando présélectionne sa
+taille). Aucun appel serveur à l'ouverture, aucun au changement de couleur : **la
+lecture est celle du bouton Add**. Elle réutilise la capture qui a ouvert la feuille
+quand elle porte le prix ferme et l'état de cette combinaison ; sinon elle lit **une
+seule fois** la page du choix, puis `product/resolve` reçoit cette capture. Le serveur
+reste le seul juge du prix, du stock et de l'ajout.
+
+Aucune ligne technique n'est visible : ni journal de lecture, ni phases, ni compte à
+rebours, ni « lecture serveur », ni classification de page. Une erreur réelle s'écrit
+en clair, une seule fois.
+
 ## Cart Item (après Done/Confirm)
 
 Store · Product · Product URL · Product ID · Image · Product Name ·

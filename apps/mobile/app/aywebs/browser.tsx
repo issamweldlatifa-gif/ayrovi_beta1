@@ -42,13 +42,11 @@ import {
 } from '@/features/aywebs/localProduct';
 import { captureIsProductCard } from '@/features/aywebs/pageKind';
 import { VariantReader, type VariantReaderHandle } from '@/features/aywebs/VariantReader';
-import { ReadingProgress } from '@/features/aywebs/ReadingProgress';
 import { waitForPageIdle } from '@/features/aywebs/captureFallback';
 import {
   AYWEBS_CAPTURE_EMPTY_PRICE_RETRY_DELAY_MS, canReusePrefetch, AYWEBS_CAPTURE_WATCHDOG_MS, priceCandidatesOf, readDecision, resolveAddToCart, shouldRetryAyWebsCaptureForPrice,
   type ReadIntent,
 } from '@/features/aywebs/captureFlow';
-import type { ReadPhase } from '@/features/aywebs/phase';
 import { useSessionId } from '@/session/session';
 import { useSession } from '@/state/session';
 
@@ -112,15 +110,6 @@ export default function AyWebsBrowserScreen() {
   const [cartOpen, setCartOpen] = useState(false);
   const [favOpen, setFavOpen] = useState(false);
   const [note, setNote] = useState('');
-  /* TEMPORAIRE (diagnostic du blocage de lecture) — à retirer après le test. */
-  /* (commentaire seul : relance du build APK après annulation du run précédent.) */
-  const [diag, setDiag] = useState<string[]>([]);
-  /** Journal de lecture REPLIÉ par défaut : l'écran ne montre qu'une ligne. */
-  const [diagOpen, setDiagOpen] = useState(false);
-  const pushDiag = useCallback((line: string) => {
-    const at = new Date().toLocaleTimeString('fr-FR');
-    setDiag((prev) => [...prev.slice(-7), `${at} ${line}`]);
-  }, []);
   const [outcome, setOutcome] = useState<AyWebsResolveOutcome | null>(null);
   /** تصنيف الخادم للصفحة: `null` = مازال، و`false` = موش صفحة منتوج. */
   const [productPage, setProductPage] = useState<boolean | null>(null);
@@ -179,33 +168,18 @@ export default function AyWebsBrowserScreen() {
   const autoPrefetchAllowed = pageAnalysis
     ? pageAnalysis.captureInjection === 'product_page'
     : productPage === true;
-  const [classified, setClassified] = useState(false);
   /** الورقة: المنتوج + الكابتشر اللي بعثناه (باش الإضافة ما تعاودش تقرا التاجر). */
   const [sheet, setSheet] = useState<{
     product: AyWebsResolvedProduct; options: AyWebsVariantOption[]; capture?: unknown; quoteToken?: string; local: boolean;
   } | null>(null);
 
   /**
-   * مرحلة القراءة + الزمن المستهلك: **جايان من مجريات حقيقية**، موش من عدّاد.
-   * كل مرحلة تتعيّن عند منعرج فعلي في الكود (جلب السكريبت، الحقن، نداء الخادم).
+   * لا نعرض مراحل القراءة ولا عدّادها (23/10/2026): المستعمل ما يهمّوش كيفاش
+   * نقراو. الزرّ يدور أثناء العمل، وهذا كل شي. تبقّى الدالتان فراغين باش
+   * مسار القراءة يبقى مقروءاً بلا أن نلمس منطقه.
    */
-  const [phase, setPhase] = useState<ReadPhase>('idle');
-  const [elapsed, setElapsed] = useState(0);
-  const tick = useRef<ReturnType<typeof setInterval> | null>(null);
-  const startedAt = useRef(0);
-
-  const startWaiting = useCallback((first: ReadPhase) => {
-    startedAt.current = Date.now();
-    setElapsed(0);
-    setPhase(first);
-    if (tick.current) clearInterval(tick.current);
-    tick.current = setInterval(() => setElapsed(Date.now() - startedAt.current), 500);
-  }, []);
-  const endWaiting = useCallback((last: ReadPhase) => {
-    if (tick.current) { clearInterval(tick.current); tick.current = null; }
-    setPhase(last);
-  }, []);
-  useEffect(() => () => { if (tick.current) clearInterval(tick.current); }, []);
+  const startWaiting = useCallback((_first?: string) => undefined, []);
+  const endWaiting = useCallback((_last?: string) => undefined, []);
   useEffect(() => () => { addController.current?.abort(); }, []);
 
   const stopTimer = () => {
@@ -216,20 +190,17 @@ export default function AyWebsBrowserScreen() {
   useEffect(() => {
     if (!sessionId || !pageUrl || !isWebPageUrl(pageUrl)) return;
     let alive = true;
-    setClassified(false);
     analyzeAyWebsPage(pageUrl, { sessionId })
       .then((analysis) => {
         if (!alive) return;
         setPageAnalysis(analysis);
         setProductPage(analysis.isProductPage);
-        setClassified(true);
       })
       .catch(() => {
         if (!alive) return;
         // ما نعرفوش: الزرّ يبقى معطّلاً والسبب يظهر — موش نفعّلوه بالتخمين.
         setPageAnalysis(null);
         setProductPage(null);
-        setClassified(true);
       });
     return () => { alive = false; };
   }, [sessionId, pageUrl]);
@@ -247,7 +218,6 @@ export default function AyWebsBrowserScreen() {
        lecture du client jetée en « Requête interrompue » (constaté le 23/10/2026). */
     if (inFlight && inFlight.status === 'pending'
       && readDecision(inFlight, intent, pageUrlRef.current) === 'join') {
-      pushDiag('lecture silencieuse rattachée à la lecture en cours');
       return inFlight.promise;
     }
     const promise = new Promise<Record<string, unknown>>((resolveOuter, rejectOuter) => {
@@ -274,7 +244,6 @@ export default function AyWebsBrowserScreen() {
       };
       if (signal?.aborted) { reject(new ApiError('aborted', 'Requête interrompue.')); return; }
       signal?.addEventListener('abort', onAbort);
-      pushDiag(quiet ? 'lecture silencieuse demandée' : 'lecture demandée');
       if (!quiet) { setBusy(true); setNote(''); startWaiting('preparing'); }
       captureRetries.current = 0;
       /* Filet de sécurité (20 s) : si le WebView ne renvoie jamais la capture, on rend la main.
@@ -283,7 +252,6 @@ export default function AyWebsBrowserScreen() {
         stopTimer();
         timer.current = setTimeout(() => {
           timer.current = null;
-          pushDiag('20 s sans retour de la page : arrêt');
           if (settled) return;
           if (waiter.current?.reject === reject) waiter.current = null;
           if (!quiet) { setBusy(false); endWaiting('failed'); }
@@ -293,7 +261,6 @@ export default function AyWebsBrowserScreen() {
       const inject = (script: string) => {
         if (!quiet) startWaiting('reading');
         armWatchdog();
-        pushDiag(quiet ? 'script injecté (pré-lecture), attente du retour' : 'script injecté, attente du retour');
         webRef.current?.injectJavaScript(buildAyWebsCaptureInjection(script));
       };
       /* Prix absent de la capture ⇒ relance bornée (fc3cce38 / captureFlow.ts). */
@@ -351,13 +318,11 @@ export default function AyWebsBrowserScreen() {
     entry.promise = requestCapture(controller.signal, true).then(
       (capture) => {
         entry.status = 'ok'; entry.at = Date.now();
-        pushDiag('lecture silencieuse terminée');
         if (prefetch.current === entry) setPrefetchReading(false);
         return capture;
       },
       (error: unknown) => {
         entry.status = 'failed';
-        pushDiag('lecture silencieuse échouée');
         if (prefetch.current === entry) setPrefetchReading(false);
         throw error;
       },
@@ -399,7 +364,6 @@ export default function AyWebsBrowserScreen() {
         /* Une capture n'est pas une fiche : accueil / rayon / bannière n'ouvrent
            pas de feuille. Le serveur applique LA MÊME règle de son côté. */
         if (!captureIsProductCard(captured)) {
-          pushDiag('page sans article : feuille non ouverte');
           setNote(t('aywebs.notAProductPage'));
           endWaiting('failed');
           return;
@@ -414,7 +378,6 @@ export default function AyWebsBrowserScreen() {
           variantDetails: optionsFromVariants(variants),
         };
         setNote('');
-        pushDiag('feuille ouverte depuis la lecture locale');
         setSheet({ product: localProduct, options: localProduct.variantDetails, capture: captured, local: true });
         endWaiting('done');
         return;
@@ -469,9 +432,7 @@ export default function AyWebsBrowserScreen() {
     stopTimer();
     const pending = waiter.current;
     waiter.current = null;
-    pushDiag(pending ? 'retour reçu de la page' : 'retour reçu sans lecture en attente');
     const parsed = parseAyWebsCaptureMessage(event.nativeEvent.data);
-    pushDiag(parsed.ok ? 'capture valide' : `capture refusée : ${parsed.reason}`);
     if (!parsed.ok) {
       setBusy(false);
       setNote(`${t('aywebs.captureFailed')} — ${parsed.reason}`);
@@ -592,43 +553,10 @@ export default function AyWebsBrowserScreen() {
       )}
 
       <View style={[styles.footer, { borderTopColor: theme.colors.line, paddingBottom: insets.bottom + theme.space[2] }]}>
-        {phase !== 'idle' ? (
-          <ReadingProgress
-            phase={phase}
-            elapsedMs={elapsed}
-            labels={[t('aywebs.phase.preparing'), t('aywebs.phase.reading'), t('aywebs.phase.resolving')]}
-            countdownPrefix={t('aywebs.phase.remaining')}
-            compact
-          />
-        ) : null}
+        {/* Le client ne lit PAS notre cuisine : aucun journal de lecture, aucune
+            ligne « lecture serveur ». Le bouton qui tourne dit ce qu'il fait, et
+            une erreur réelle s'écrit en clair (23/10/2026). */}
         {note ? <AppText variant="caption" color={theme.status.danger.fg}>{note}</AppText> : null}
-        {diag.length ? (
-          <View style={{ gap: 2 }}>
-            <AppText variant="caption" color={theme.colors.muted}>
-              {diagOpen ? diag.join('\n') : diag[diag.length - 1]}
-            </AppText>
-            <Pressable
-              onPress={() => setDiagOpen((open) => !open)}
-              accessibilityRole="button"
-              testID="aywebs-read-details"
-            >
-              <AppText variant="caption" color={theme.colors.action}>
-                {diagOpen ? t('aywebs.diagHide') : t('aywebs.diagShow')}
-              </AppText>
-            </Pressable>
-          </View>
-        ) : null}
-        {!captureAllowed ? (
-          <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.readNotAllowed')}</AppText>
-        ) : null}
-        {/* السبب بالكلمات: تصنيف الخادم يقرّر إذا الزرّ يتفعّل ولا لا. */}
-        {!classified ? (
-          <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.classifying')}</AppText>
-        ) : productPage !== true && browserRead ? (
-          <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.addReadsInBrowser')}</AppText>
-        ) : productPage !== true ? (
-          <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.addNotProductPage')}</AppText>
-        ) : null}
 
         <View style={[styles.toolbar, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
           <ToolIcon
