@@ -42,8 +42,14 @@ import {
 import type { AyWebsAvailabilityState } from '../../shared/aywebsTypes';
 import { detectAyWebsCatalogStore } from '../../shared/aywebsStoreCatalog';
 
-/** Ordre de fiabilité des sources de prix : machine d'abord, humain ensuite. */
-const SOURCE_RANK: Record<AyWebsCaptureSource, number> = { json_ld: 0, microdata: 1, meta: 2, dom: 3 };
+/**
+ * Ordre de fiabilité des sources de prix : la donnée machine du marchand d'abord,
+ * le texte publié ensuite. `a11y_label` (chaîne complète écrite par la page) passe
+ * avant `dom` (montant recomposé par nous depuis ses fragments).
+ */
+const SOURCE_RANK: Record<AyWebsCaptureSource, number> = {
+  json_ld: 0, microdata: 1, embedded_json: 2, meta: 3, a11y_label: 4, dom: 5,
+};
 
 /**
  * PREUVE DE DEVISE PAR SYMBOLE — liste FERMÉE, boutique par boutique (07/10/2026).

@@ -59,8 +59,18 @@ export interface AyWebsCapturedVariantGroup {
   selected?: string[];
 }
 
-/** D'où vient un texte de prix — conservé pour l'audit et la corroboration. */
-export type AyWebsCaptureSource = 'json_ld' | 'microdata' | 'meta' | 'dom';
+/**
+ * D'où vient un texte de prix — conservé pour l'audit et la corroboration.
+ *
+ * `a11y_label` : étiquette d'accessibilité de la zone d'achat (Amazon), c'est-à-dire
+ * une CHAÎNE COMPLÈTE écrite par la page — par opposition à `dom`, où le montant est
+ * reconstruit par nous depuis ses fragments (symbole + entier + décimale). Les deux
+ * familles d'accord corroborent ; deux lectures d'une même famille ne le font pas.
+ *
+ * `embedded_json` : prix publié dans un script de la page (« "displayPrice":"$109.00" »),
+ * lu tel quel, jamais recomposé.
+ */
+export type AyWebsCaptureSource = 'json_ld' | 'microdata' | 'embedded_json' | 'meta' | 'a11y_label' | 'dom';
 
 export interface AyWebsCapturedPriceCandidate {
   /** Texte de prix TEL QU'AFFICHÉ par la page (« 1 299,00 € », « $6.99 »). */
@@ -72,12 +82,18 @@ export interface AyWebsAmazonEvidence {
   readerVersion?: number;
   pageAsin?: string | null;
   selectedAsin?: string | null;
+  /** Valeurs AFFICHÉES comme choisies (lues dans les données du twister). */
+  selectedValues?: string[];
   options?: Array<{
     dimension: string;
     value: string;
     asin?: string | null;
     selected?: boolean;
     availabilityEvidence?: 'available' | 'unavailable' | 'unknown';
+    /** Prix affiché SUR LA CARTE de ce choix, tel qu'écrit ; jamais un devis. */
+    price?: string | null;
+    /** Stock annoncé sur la carte (« Only 6 left in stock »). */
+    stock?: number | null;
     source?: string;
   }>;
   variants?: Array<{

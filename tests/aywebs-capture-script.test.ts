@@ -53,10 +53,26 @@ describe('script AYWEBs — fiche réelle', () => {
     const capture = run(FIXTURE);
     expect(capture.v).toBe(1);
     expect(String(capture.title)).toContain('Vince Camuto');
-    expect(priceTexts(capture)).toHaveLength(1);
     expect(priceTexts(capture)[0]).toContain('109');
     expect(String(capture.availabilityText)).toMatch(/in stock/i);
     expect(Array.isArray(capture.diagnostics)).toBe(true);
+  });
+
+  it('publie le prix en DEUX familles de preuve qui s’accordent (étiquette + bloc)', () => {
+    /* Mesure du 23/10/2026 : Amazon ne publie pas de JSON-LD, et le bloc de prix a
+       son « .a-offscreen » vide. Une seule lecture « dom » ne pouvait donc JAMAIS
+       être corroborée — le serveur refusait « verified_price » sur une fiche
+       parfaitement lisible. L'étiquette d'accessibilité est une chaîne COMPLÈTE
+       écrite par la page : deux familles d'accord, même montant. */
+    const capture = run(FIXTURE) as { priceCandidates: Array<{ text: string; source: string }> };
+    const sources = capture.priceCandidates.map((candidate) => candidate.source);
+    expect(sources).toEqual(['a11y_label', 'dom']);
+    expect(new Set(capture.priceCandidates.map((candidate) => candidate.text))).toEqual(new Set(['$109.00']));
+  });
+
+  it('une fiche SANS étiquette d’accessibilité ne publie qu’une famille (pas de fausse corroboration)', () => {
+    const capture = run(page(`${BUYBOX(PRICE_SPAN('109'))}`)) as { priceCandidates: Array<{ source: string }> };
+    expect(capture.priceCandidates.map((candidate) => candidate.source)).toEqual(['dom']);
   });
 });
 

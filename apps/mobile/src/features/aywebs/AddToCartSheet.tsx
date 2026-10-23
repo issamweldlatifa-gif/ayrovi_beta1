@@ -32,7 +32,9 @@ import {
 } from '@/api/aywebs';
 import { newAyWebsRequestId } from '@/features/aywebs/requestId';
 import { variantPageUrlFor } from '@/features/aywebs/variantPage';
-import { localAddReadiness } from '@/features/aywebs/localProduct';
+import {
+  defaultSelectionFromCapture, displayPriceForSelection, localAddReadiness, stockForSelection,
+} from '@/features/aywebs/localProduct';
 
 export interface AddToCartSheetProps {
   visible: boolean;
@@ -70,19 +72,6 @@ export function AddToCartSheet({
   const [fetchedGroups, setFetchedGroups] = useState<AyWebsVariantGroup[] | null>(null);
   const requestId = useRef('');
 
-  /** كل فتح للورقة = نيّة إضافة جديدة: مفتاح جديد، اختيار نظيف، كمية 1. */
-  useEffect(() => {
-    if (!visible) return;
-    requestId.current = newAyWebsRequestId();
-    setSelection({});
-    setQuantity(1);
-    setError('');
-    setAdded(null);
-    setBusy(false);
-    setFetched([]);
-    setFetchedGroups(null);
-  }, [visible]);
-
   const groups = useMemo<AyWebsVariantGroup[]>(
     () => (product.variantGroups.length ? product.variantGroups : (fetchedGroups ?? [])),
     [fetchedGroups, product.variantGroups],
@@ -91,6 +80,29 @@ export function AddToCartSheet({
     const given = options?.length ? options : product.variantDetails;
     return given.length ? given : fetched;
   }, [fetched, options, product.variantDetails]);
+
+  /**
+   * كل فتح للورقة = نيّة إضافة جديدة: مفتاح جديد، كمية 1.
+   *
+   * الاختيار ما يبداش فارغاً: الصفحة مفتوحة على تركيبة معيّنة (لون ومقاس
+   * معروضين)، والورقة تعرضها مختارة. بلا هذا، ورقةٌ على فصلةٍ بمجموعات
+   * فارغة تبدو «التاجر ما نشر حتى خيار» وزرّ الإضافة يبقى مقفولاً على منتوج
+   * معروض كامل. الاختيار يبقى **من الصفحة فقط**: ما نخترعوش قيمة.
+   */
+  useEffect(() => {
+    if (!visible) return;
+    requestId.current = newAyWebsRequestId();
+    setSelection(local && capture ? defaultSelectionFromCapture(capture as Record<string, unknown>, groups) : {});
+    setQuantity(1);
+    setError('');
+    setAdded(null);
+    setBusy(false);
+    setFetched([]);
+    setFetchedGroups(null);
+    // القصد: نعيد الضبط عند **كل فتح** فقط — تبديل المجموعات وسط الورقة ما يمسحش اختيار المستعمل.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
+
 
   /**
    * بطاقات الخيارات من الخادم — **أفضل جهد** فقط: كان الطلب فشل، الورقة تبقى
@@ -140,6 +152,31 @@ export function AddToCartSheet({
       selection,
     });
   }, [groups, local, pageInStock, product.availability.state, product.ayroviPricing, selection, variantOptions]);
+
+  /**
+   * الكمية المتوفّرة المعلنة لهذا الاختيار، إن نشرتها الصفحة (« Only 6 left in
+   * stock »). ما نستنبطوهاش: `null` = غير معلنة، والسقف يبقى سقف التطبيق.
+   */
+  const stock = useMemo(
+    () => (local && capture ? stockForSelection(capture as Record<string, unknown>, selection) : null),
+    [capture, local, selection],
+  );
+  const maxQuantity = useMemo(
+    () => (stock != null ? Math.max(1, Math.min(MAX_QUANTITY, stock)) : MAX_QUANTITY),
+    [stock],
+  );
+  /* الكمية ما تفوتش المخزون المعلن: كي المستعمل ينقص اللون لمخزون أقل، الكمية ترجع للسقف. */
+  useEffect(() => {
+    setQuantity((current) => Math.min(current, maxQuantity));
+  }, [maxQuantity]);
+  /**
+   * السعر **المعروض**: نصّ الصفحة (« $89.99 ») أو سعر بطاقة الاختيار. موش
+   * حساب: التحويل للدينار والمجموع يجي من الخادم لحظة الإضافة (الفاتورة).
+   */
+  const shownPrice = useMemo(
+    () => (local && capture ? displayPriceForSelection(capture as Record<string, unknown>, selection) : null),
+    [capture, local, selection],
+  );
 
   /** الاختيار الوحيد يُملأ تلقائياً: قيمة واحدة = بيانات، موش خيار. */
   const singleValueGroups = useMemo(
@@ -378,12 +415,15 @@ export function AddToCartSheet({
                     <Button
                       label="+"
                       tone="quiet"
-                      disabled={quantity >= MAX_QUANTITY || busy}
-                      onPress={() => setQuantity((value) => Math.min(MAX_QUANTITY, value + 1))}
+                      disabled={quantity >= maxQuantity || busy}
+                      onPress={() => setQuantity((value) => Math.min(maxQuantity, value + 1))}
                     />
                   </View>
                 </View>
 
+                {shownPrice ? (
+                  <KeyValue label={t('aywebs.merchantPrice')} value={shownPrice.text} />
+                ) : null}
                 {readiness.quotedTotalTnd != null ? (
                   <KeyValue
                     label={t('aywebs.totalTnd')}
@@ -394,7 +434,14 @@ export function AddToCartSheet({
                   label={t('aywebs.availability')}
                   value={availabilityLabel(readiness.availability)}
                 />
-                <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.quoteServer')}</AppText>
+                {stock != null ? (
+                  <AppText variant="caption" color={theme.colors.muted}>
+                    {t('aywebs.stockLeft', { count: stock })}
+                  </AppText>
+                ) : null}
+                <AppText variant="caption" color={theme.colors.muted}>
+                  {local ? t('aywebs.priceServerNote') : t('aywebs.quoteServer')}
+                </AppText>
 
                 {readiness.ready ? null : (
                   <AppText variant="caption" color={theme.status.danger.fg}>

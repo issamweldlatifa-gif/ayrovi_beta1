@@ -8,7 +8,8 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  groupsFromVariants, localAddReadiness, localVariantsFromCapture, optionsFromVariants, productFromCapture,
+  defaultSelectionFromCapture, displayPriceForSelection, groupsFromVariants, localAddReadiness,
+  localVariantsFromCapture, optionsFromVariants, productFromCapture, stockForSelection, stockFromAvailabilityText,
 } from '@/features/aywebs/localProduct';
 
 const CAPTURE = {
@@ -37,6 +38,7 @@ describe('variantes depuis la capture', () => {
     const variants = localVariantsFromCapture(CAPTURE);
     expect(variants.find((v) => v.asin === 'B0SIZEMM01')).toEqual({
       asin: 'B0SIZEMM01', attributes: { size: 'M', color: 'Noir' }, availability: 'AVAILABLE',
+      cardPrice: '', stock: null,
     });
     expect(variants.find((v) => v.asin === 'B0SIZELL02')?.availability).toBe('OUT_OF_STOCK');
   });
@@ -111,5 +113,99 @@ describe('prêt à confirmer (règles locales)', () => {
   it('produit sans variante : prêt seulement si la page dit « en stock »', () => {
     expect(localAddReadiness({ groups: [], variants: [], selection: {}, pageInStockText: true }).ready).toBe(true);
     expect(localAddReadiness({ groups: [], variants: [], selection: {}, pageInStockText: false })).toMatchObject({ ready: false, code: 'STOCK_UNKNOWN' });
+  });
+});
+
+/**
+ * ورقة الجهاز (23/10/2026) — الثلاثة اللي كانوا ناقصين: الاختيار الافتراضي،
+ * الثمن المعروض، والمخزون المعلن. المصدر هو نفس capture اللي تبعثو الصفحة.
+ */
+const SHOWN = {
+  title: 'Vince Camuto dress',
+  availabilityText: 'In stock',
+  priceCandidates: [
+    { text: '$109.00', source: 'a11y_label' },
+    { text: '$109.00', source: 'dom' },
+  ],
+  amazon: {
+    pageAsin: 'B0GYM3V9H5',
+    selectedAsin: 'B0GYM3V9H5',
+    selectedValues: ['Small', 'Emerald Leaf'],
+    options: [
+      { dimension: 'size', value: 'Small', asin: 'B0GYM3V9H5', selected: true, availabilityEvidence: 'available' },
+      { dimension: 'size', value: 'Large', asin: 'B0GYMKWMFW', selected: false, availabilityEvidence: 'unavailable' },
+      { dimension: 'color', value: 'Emerald Leaf', asin: 'B0GYM3V9H5', selected: true, availabilityEvidence: 'available' },
+      { dimension: 'color', value: 'Ruby Red', asin: 'B0RUBY0001', selected: false, availabilityEvidence: 'available', price: '$89.99', stock: 6 },
+    ],
+    variants: [
+      { asin: 'B0GYM3V9H5', selected: true, dimensions: [{ name: 'size', value: 'Small' }, { name: 'color', value: 'Emerald Leaf' }] },
+      { asin: 'B0GYMKWMFW', selected: false, dimensions: [{ name: 'size', value: 'Large' }, { name: 'color', value: 'Emerald Leaf' }] },
+      { asin: 'B0RUBY0001', selected: false, dimensions: [{ name: 'size', value: 'Small' }, { name: 'color', value: 'Ruby Red' }] },
+    ],
+  },
+};
+
+describe('الورقة تفتح على الاختيار المعروض', () => {
+  const groups = groupsFromVariants(localVariantsFromCapture(SHOWN));
+
+  it('اللون والمقاس المعروضين مختارين من الأوّل — الورقة ما تفتحش فارغة', () => {
+    expect(defaultSelectionFromCapture(SHOWN, groups)).toEqual({ size: 'Small', color: 'Emerald Leaf' });
+  });
+
+  it('ما نزيدوش قيمة ما نشرتهاش الصفحة', () => {
+    const partial = { ...SHOWN, amazon: { ...SHOWN.amazon, variants: [] as unknown[] } };
+    expect(defaultSelectionFromCapture(partial, groups)).toEqual({});
+  });
+
+  it('الاختيار المعروض جاهز للإضافة فوراً (توفّر مثبت)', () => {
+    const selection = defaultSelectionFromCapture(SHOWN, groups);
+    const r = localAddReadiness({
+      groups,
+      variants: localVariantsFromCapture(SHOWN),
+      selection,
+      pageInStockText: true,
+    });
+    expect(r).toMatchObject({ ready: true, code: '' });
+  });
+});
+
+describe('الثمن المعروض للمستعمل', () => {
+  const groups = groupsFromVariants(localVariantsFromCapture(SHOWN));
+
+  it('سعر صفحة واحد (قراءتان متّفقتان) يظهر كما كتبتو الصفحة', () => {
+    expect(displayPriceForSelection(SHOWN, defaultSelectionFromCapture(SHOWN, groups))).toEqual({ text: '$109.00' });
+  });
+
+  it('سعر بطاقة الاختيار يغلب سعر الصفحة (لون آخر، بطاقة تنشر ثمنها ومخزونها)', () => {
+    const selection = { size: 'Small', color: 'Ruby Red' };
+    expect(displayPriceForSelection(SHOWN, selection)).toEqual({ text: '$89.99' });
+    expect(stockForSelection(SHOWN, selection)).toBe(6);
+  });
+
+  it('اختيار بلا ثمن منشور ⇒ لا رقم (ما نعرضوش ثمن الصفحة لتركيبة أخرى)', () => {
+    expect(displayPriceForSelection(SHOWN, { size: 'Large', color: 'Emerald Leaf' })).toBeNull();
+  });
+
+  it('قراءتان مختلفتان للثمن ⇒ لا ثمن معروض', () => {
+    const conflicting = { ...SHOWN, priceCandidates: [{ text: '$109.00' }, { text: '$99.00' }] };
+    expect(displayPriceForSelection(conflicting, { size: 'Small', color: 'Emerald Leaf' })).toBeNull();
+  });
+});
+
+describe('المخزون المعلن', () => {
+  it('« Only 6 left in stock » ⇒ 6 ; بلا رقم ⇒ لا سقف', () => {
+    expect(stockFromAvailabilityText('Only 6 left in stock - order soon.')).toBe(6);
+    expect(stockFromAvailabilityText('In Stock')).toBeNull();
+    expect(stockFromAvailabilityText('il ne reste plus que 3')).toBe(3);
+    expect(stockFromAvailabilityText('نشر 0')).toBeNull();
+  });
+
+  it('نصّ توفّر الصفحة يُستعمل فقط كي الاختيار هو المعروض', () => {
+    const capture = { ...SHOWN, availabilityText: 'Only 4 left in stock' };
+    const variants = localVariantsFromCapture(capture);
+    /* الاختيار المعروض ما عندوش مخزون على بطاقتو ⇒ الرقم يجي من نصّ الصفحة. */
+    expect(variants.find((v) => v.asin === 'B0GYM3V9H5')!.stock).toBeNull();
+    expect(stockForSelection(capture, { size: 'Small', color: 'Emerald Leaf' })).toBe(4);
+    expect(stockForSelection(capture, { size: 'Large', color: 'Emerald Leaf' })).toBeNull();
   });
 });

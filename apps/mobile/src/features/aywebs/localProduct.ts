@@ -21,6 +21,10 @@ export interface LocalVariant {
   asin: string;
   attributes: Record<string, string>;
   availability: 'AVAILABLE' | 'OUT_OF_STOCK' | 'UNKNOWN';
+  /** Prix affiché SUR LA CARTE de ce choix (texte tel quel) — jamais un devis. */
+  cardPrice: string;
+  /** Stock annoncé sur la carte ; `null` quand la page n'en publie pas. */
+  stock: number | null;
 }
 
 /** Variantes publiées dans la capture Amazon, avec leur ASIN, leurs attributs et leur disponibilité prouvée. */
@@ -28,12 +32,21 @@ export function localVariantsFromCapture(capture: Json): LocalVariant[] {
   const amazon = isRecord(capture.amazon) ? capture.amazon : null;
   if (!amazon) return [];
   const evidenceByAsin = new Map<string, string>();
+  const cardByAsin = new Map<string, { price: string; stock: number | null }>();
   if (Array.isArray(amazon.options)) {
     for (const option of amazon.options) {
       if (!isRecord(option)) continue;
       const asin = text(option.asin).toUpperCase();
       if (!ASIN.test(asin)) continue;
       evidenceByAsin.set(asin, text(option.availabilityEvidence).toLowerCase());
+      const price = text(option.price);
+      const stock = Number(option.stock);
+      const known = cardByAsin.get(asin);
+      const next = {
+        price: known?.price || price,
+        stock: known?.stock ?? (Number.isFinite(stock) && stock > 0 ? Math.floor(stock) : null),
+      };
+      if (next.price || next.stock != null) cardByAsin.set(asin, next);
     }
   }
   const out: LocalVariant[] = [];
@@ -55,9 +68,125 @@ export function localVariantsFromCapture(capture: Json): LocalVariant[] {
     }
     const evidence = evidenceByAsin.get(asin) ?? '';
     const availability = evidence === 'available' ? 'AVAILABLE' : evidence === 'unavailable' ? 'OUT_OF_STOCK' : 'UNKNOWN';
-    out.push({ asin, attributes, availability });
+    const card = cardByAsin.get(asin);
+    out.push({ asin, attributes, availability, cardPrice: card?.price ?? '', stock: card?.stock ?? null });
   }
   return out;
+}
+
+/**
+ * الاختيار الافتراضي = **اللي تعرضو الصفحة**. الصفحة تفتح على تركيبة معيّنة
+ * (Amazon: ASIN الصفحة هو التركيبة المعروضة) ; بلا هذا، الورقة تفتح فارغة
+ * والمستعمل يظنّ «التاجر ما نشرش خيارات» ثمّ يلقى زر الإضافة مقفولاً.
+ * ما نضيفوش قيمة ما شفناهاش: كل قيمة لازم تكون موجودة في مجموعات الصفحة.
+ */
+export function defaultSelectionFromCapture(
+  capture: Json,
+  groups: AyWebsVariantGroup[],
+): Record<string, string> {
+  const amazon = isRecord(capture.amazon) ? capture.amazon : null;
+  if (!amazon || !groups.length) return {};
+  const selectedAsin = text(amazon.selectedAsin).toUpperCase();
+  const entries = Array.isArray(amazon.variants) ? amazon.variants.filter(isRecord) : [];
+  const shown = entries.find((variant) => selectedAsin !== '' && text(variant.asin).toUpperCase() === selectedAsin)
+    ?? entries.find((variant) => variant.selected === true);
+  const dimensions = shown && Array.isArray(shown.dimensions) ? shown.dimensions.filter(isRecord) : [];
+  const selection: Record<string, string> = {};
+  for (const group of groups) {
+    const key = group.attribute.trim().toLowerCase();
+    const match = dimensions.find((dimension) => text(dimension.name).toLowerCase() === key);
+    const value = match ? text(match.value) : '';
+    if (value && group.values.some((candidate) => candidate.toLowerCase() === value.toLowerCase())) {
+      selection[key] = value;
+    }
+  }
+  return selection;
+}
+
+/** هل الاختيار يطابق تركيبة منشورة؟ مقارنة تامّة (نفس الأسماء، نفس القيم) — بلا تخمين. */
+function matchesSelection(attributes: Record<string, string>, selection: Record<string, string>): boolean {
+  const chosen = new Map(Object.entries(selection).map(([name, value]) => [name.trim().toLowerCase(), String(value)]));
+  const published = new Map(Object.entries(attributes).map(([name, value]) => [name.trim().toLowerCase(), String(value)]));
+  if (!chosen.size || chosen.size !== published.size) return false;
+  for (const [name, value] of chosen) {
+    const candidate = published.get(name);
+    if (candidate == null || candidate.toLowerCase() !== value.toLowerCase()) return false;
+  }
+  return true;
+}
+
+/** سعر واحد فقط من القراءة (كل القراءات تتفق على نفس المبلغ) — وإلاّ لا سعر. */
+function pagePriceText(capture: Json): string {
+  const candidates = Array.isArray(capture.priceCandidates) ? capture.priceCandidates : [];
+  const amounts = new Set<string>();
+  let first = '';
+  for (const candidate of candidates) {
+    const value = isRecord(candidate) ? text(candidate.text) : text(candidate);
+    const digits = value.replace(/\D/g, '');
+    if (!digits) continue;
+    if (!first) first = value;
+    amounts.add(digits);
+  }
+  return amounts.size === 1 ? first : '';
+}
+
+/**
+ * السعر **المعروض** للاختيار الحالي: سعر بطاقة الاختيار إن نشرتو، وإلاّ سعر
+ * الصفحة إن كان الاختيار هو المعروض فيها. نصّ كما كتبتو الصفحة (« $89.99 »)،
+ * موش رقم محسوب: المجموع بالدينار يجي من الخادم عند الإضافة.
+ */
+export function displayPriceForSelection(
+  capture: Json,
+  selection: Record<string, string>,
+): { text: string } | null {
+  if (!capture || typeof capture !== 'object') return null;
+  const variants = localVariantsFromCapture(capture);
+  const chosen = variants.find((variant) => matchesSelection(variant.attributes, selection));
+  if (chosen) {
+    if (chosen.cardPrice) return { text: chosen.cardPrice };
+    const amazon = isRecord(capture.amazon) ? capture.amazon : null;
+    const shownAsin = amazon ? text(amazon.selectedAsin).toUpperCase() : '';
+    if (shownAsin && shownAsin === chosen.asin) {
+      const page = pagePriceText(capture);
+      return page ? { text: page } : null;
+    }
+    return null;
+  }
+  /* بلا اختيار (أو بلا خيارات منشورة): سعر الصفحة يخصّ المنتوج المعروض. */
+  if (Object.keys(selection).length === 0) {
+    const page = pagePriceText(capture);
+    return page ? { text: page } : null;
+  }
+  return null;
+}
+
+/**
+ * المخزون المعلن للاختيار: بطاقة الاختيار أوّلاً، وإلاّ نصّ الصفحة كي الاختيار
+ * هو المعروض (« Only 6 left in stock »). `null` = ما نشرش ⇒ ما نمنعوش، الخادم
+ * يبقى الحكم على التوفّر.
+ */
+export function stockForSelection(capture: Json, selection: Record<string, string>): number | null {
+  if (!capture || typeof capture !== 'object') return null;
+  const variants = localVariantsFromCapture(capture);
+  const chosen = variants.find((variant) => matchesSelection(variant.attributes, selection));
+  if (chosen?.stock != null) return chosen.stock;
+  const amazon = isRecord(capture.amazon) ? capture.amazon : null;
+  const shownAsin = amazon ? text(amazon.selectedAsin).toUpperCase() : '';
+  const isShown = chosen ? shownAsin !== '' && chosen.asin === shownAsin : Object.keys(selection).length === 0;
+  return isShown ? stockFromAvailabilityText(capture.availabilityText) : null;
+}
+
+/** « Only 6 left in stock », « plus que 3 », « nur noch 2 auf Lager » ⇒ nombre borné. */
+export function stockFromAvailabilityText(value: unknown): number | null {
+  const raw = text(value);
+  if (!raw) return null;
+  const match = /(?:only\s+)?(\d{1,3})\s+(?:left in stock|remaining|available)/i.exec(raw)
+    ?? /(?:il ne reste plus que|plus que)\s*(\d{1,3})/i.exec(raw)
+    ?? /(?:nur noch|noch)\s*(\d{1,3})\s*(?:auf lager|verfügbar|verfuegbar)/i.exec(raw)
+    ?? /(?:بقي|متبقي)\s*(\d{1,3})/.exec(raw);
+  if (!match) return null;
+  const count = Number(match[1]);
+  return Number.isInteger(count) && count > 0 && count <= 999 ? count : null;
 }
 
 /** Groupes d'attributs (taille, couleur…) dans l'ordre de la page. */

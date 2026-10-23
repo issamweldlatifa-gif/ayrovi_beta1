@@ -155,7 +155,15 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
           continue;
         }
       }
-      while (after < source.length && /\s/.test(source.charAt(after))) after++;
+      /* Collage : certaines pages sérialisent leurs données DANS une chaîne
+         (« "sortedDimValuesForAllDims\" : … »). Entre la clé et les deux-points
+         il n'y a alors que des antislashs et des guillemets — jamais un
+         séparateur. On les saute, bornés, avant de conclure au refus. */
+      for (var glue = 0; glue < 6 && after < source.length; glue++) {
+        var joint = source.charAt(after);
+        if (joint === '\\' || joint === '"' || (/\s/.test(joint))) { after++; continue; }
+        break;
+      }
       var separator = source.charAt(after);
       if (separator === ':' || separator === '=') {
         after++;
@@ -166,6 +174,15 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
       searchFrom = at + marker.length;
     }
     return null;
+  }
+  /* Données échappées : une seconde lecture sur le texte déséchappé, avant
+     d'abandonner. Une seule passe, bornée — on ne réécrit pas la page, on la
+     relit autrement. */
+  function amazonReadScriptJson(source, key) {
+    var value = amazonReadJsonValue(source, key);
+    if (value) return value;
+    if (!source || source.indexOf('\\"') < 0) return null;
+    return amazonReadJsonValue(source.split('\\"').join('"'), key);
   }
   /* Un index (nombre, ou texte de chiffres dans une table d'index) n'est JAMAIS un nom d'option :
      il ne devient une valeur que s'il pointe vers une entrée texte de « variationValues » pour la
@@ -200,26 +217,159 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     }
     return dimensions;
   }
+  /* ── DONNÉES DU TWISTER (source STRUCTURÉE du choix couleur / taille) ──────
+     La fiche publie, en plus du DOM, une table
+     « sortedDimValuesForAllDims » : pour chaque dimension, la liste de ses
+     valeurs avec «dimensionValueDisplayText», «dimensionValueState»
+     (SELECTED / AVAILABLE / UNAVAILABLE) et «defaultAsin». C'est la seule
+     source qui donne, valeur par valeur, l'ASIN ET l'état de stock — une
+     pastille non rendue (liste paresseuse, écran étroit) ne prive donc plus la
+     feuille de ses couleurs. Bornes et refus : uniquement des tableaux non
+     vides d'objets qui portent un libellé ; toute autre clé de la page
+     (« twister-js-init-dpx-data »…) est ignorée. */
+  function amazonTwisterData() {
+    var dims = [];
+    var scripts = [];
+    try { scripts = document.querySelectorAll('script:not([src])'); } catch (e) { return dims; }
+    for (var s = 0; s < scripts.length && s < AMAZON_EVIDENCE_LIMITS.scripts && !dims.length; s++) {
+      var source = scripts[s].textContent || '';
+      if (!source || source.length > AMAZON_EVIDENCE_LIMITS.scriptChars) continue;
+      if (source.indexOf('sortedDimValuesForAllDims') < 0) continue;
+      var raw = amazonReadScriptJson(source, 'sortedDimValuesForAllDims');
+      if (!raw || typeof raw !== 'object') continue;
+      for (var key in raw) {
+        if (!Object.prototype.hasOwnProperty.call(raw, key)) continue;
+        if (dims.length >= AMAZON_EVIDENCE_LIMITS.dimensions) break;
+        var list = raw[key];
+        if (Object.prototype.toString.call(list) !== '[object Array]' || !list.length) continue;
+        var values = [];
+        for (var i = 0; i < list.length && values.length < 60; i++) {
+          var entry = list[i];
+          if (!entry || typeof entry !== 'object') continue;
+          var label = text(entry.dimensionValueDisplayText || entry.dimensionValueDisplayName);
+          if (!label || label.length > AMAZON_EVIDENCE_LIMITS.label) continue;
+          if (NOT_A_CHOICE.test(label)) continue;
+          var state = text(entry.dimensionValueState).toLowerCase();
+          values.push({
+            label: label,
+            asin: amazonValidAsin(entry.defaultAsin),
+            state: state === 'selected' ? 'selected' : state === 'available' ? 'available' : state === 'unavailable' ? 'unavailable' : 'unknown'
+          });
+        }
+        if (!values.length) continue;
+        dims.push({ key: key, name: amazonDimensionName(key, 'option_' + (dims.length + 1)), values: values });
+      }
+    }
+    return dims;
+  }
+  /* Noms AFFICHÉS des dimensions (« size_name » ⇒ « Size »), publiés à part :
+     ils servent de repli quand la table des valeurs n'est pas lisible. */
+  function amazonVariationLabels() {
+    var labels = null;
+    var scripts = [];
+    try { scripts = document.querySelectorAll('script:not([src])'); } catch (e) { return null; }
+    for (var s = 0; s < scripts.length && s < AMAZON_EVIDENCE_LIMITS.scripts && !labels; s++) {
+      var source = scripts[s].textContent || '';
+      if (!source || source.length > AMAZON_EVIDENCE_LIMITS.scriptChars) continue;
+      if (source.indexOf('variationDisplayLabels') < 0) continue;
+      var raw = amazonReadScriptJson(source, 'variationDisplayLabels');
+      if (raw && typeof raw === 'object') labels = raw;
+    }
+    return labels;
+  }
+  /* Prix affiché SUR LA CARTE du choix (pastille couleur) : un seul montant
+     distinct, jamais un prix barré. NULL quand la carte n'en publie pas —
+     on ne prend pas le prix de la fiche à sa place. */
+  function amazonCardPrice(element) {
+    var nodes = [];
+    try { nodes = element.querySelectorAll('.a-price:not(.a-text-price)'); } catch (e) { return ''; }
+    var seen = {};
+    var distinct = 0;
+    var value = '';
+    for (var i = 0; i < nodes.length && i < 4; i++) {
+      var reading = amazonPriceText(nodes[i]);
+      if (!reading || !amazonPlausible(reading)) continue;
+      var digits = reading.replace(/[^0-9]/g, '');
+      if (!digits || seen[digits]) continue;
+      seen[digits] = true;
+      distinct++;
+      value = reading;
+    }
+    return distinct === 1 ? value : '';
+  }
+  /* Stock annoncé SUR LA CARTE (« Only 6 left in stock », « nur noch 3 auf
+     Lager ») : nombre borné, ou rien. */
+  function amazonCardStock(element) {
+    var raw = text(element.textContent);
+    if (!raw || raw.length > 400) return null;
+    var match = /(?:only\s+)?(\d{1,3})\s+(?:left in stock|remaining|available)/i.exec(raw)
+      || /(?:il ne reste plus que|plus que)\s*(\d{1,3})/i.exec(raw)
+      || /(?:nur noch|noch)\s*(\d{1,3})\s*(?:auf lager|verf\u00fcgbar|verfuegbar)/i.exec(raw)
+      || /(?:\u0628\u0642\u064a|\u0645\u062a\u0628\u0642\u064a)\s*(\d{1,3})/.exec(raw);
+    if (!match) return null;
+    var count = Number(match[1]);
+    return count > 0 && count <= 999 ? count : null;
+  }
   function collectAmazonEvidence() {
-    var result = { readerVersion: 1, pageAsin: AMAZON_ASIN || null, selectedAsin: null, options: [], variants: [] };
+    var result = { readerVersion: 2, pageAsin: AMAZON_ASIN || null, selectedAsin: null, selectedValues: [], options: [], variants: [] };
     if (!AMAZON_STRICT) return result;
     var variationValues = null;
     var dimensionKeys = [];
     var dimensionNames = [];
+    var variationKeysFromTable = false;
+    /* Ordre des DIMENSIONS : la table du twister (ou, à défaut, les libellés
+       affichés) nomme les colonnes de «dimensionValuesDisplayData». Sans lui,
+       une fiche qui ne publie pas «variationValues» donnait « dimension 1 » et
+       « dimension 2 » — des noms que la feuille ne pouvait pas présenter. */
+    var twisterDims = amazonTwisterData();
+    for (var td = 0; td < twisterDims.length && dimensionKeys.length < AMAZON_EVIDENCE_LIMITS.dimensions; td++) {
+      dimensionKeys.push(twisterDims[td].key);
+      dimensionNames.push(twisterDims[td].name);
+    }
+    if (!dimensionKeys.length) {
+      var displayLabels = amazonVariationLabels();
+      for (var dl in displayLabels) {
+        if (!Object.prototype.hasOwnProperty.call(displayLabels, dl)) continue;
+        if (dimensionKeys.length >= AMAZON_EVIDENCE_LIMITS.dimensions) break;
+        if (!/^(?:variation_)?[a-z][a-z0-9_-]*(?:_name)?$/i.test(dl)) continue;
+        dimensionKeys.push(dl);
+        dimensionNames.push(amazonDimensionName(dl, 'dimension_' + (dimensionKeys.length)));
+      }
+    }
     var scripts = [];
     try { scripts = document.querySelectorAll('script:not([src])'); } catch (e) { scripts = []; }
     for (var s = 0; s < scripts.length && s < AMAZON_EVIDENCE_LIMITS.scripts; s++) {
       var source = scripts[s].textContent || '';
       if (!source || source.length > AMAZON_EVIDENCE_LIMITS.scriptChars) continue;
-      if (!variationValues) variationValues = amazonReadJsonValue(source, 'variationValues');
-      if (variationValues && !dimensionNames.length) {
-        for (var dimensionKey in variationValues) {
-          if (!Object.prototype.hasOwnProperty.call(variationValues, dimensionKey) || dimensionNames.length >= AMAZON_EVIDENCE_LIMITS.dimensions) continue;
-          dimensionKeys.push(dimensionKey);
-          dimensionNames.push(amazonDimensionName(dimensionKey, 'dimension_' + (dimensionNames.length + 1)));
+      /* « variationValues : {} » n'est PAS une table : une table VIDE ne doit ni
+         arrêter la recherche, ni empêcher de nommer les dimensions autrement. */
+      if (!variationValues) {
+        var foundVariation = amazonReadScriptJson(source, 'variationValues');
+        if (foundVariation && typeof foundVariation === 'object') {
+          for (var fk in foundVariation) {
+            if (!Object.prototype.hasOwnProperty.call(foundVariation, fk)) continue;
+            variationValues = foundVariation;
+            break;
+          }
         }
       }
-      var displayMap = amazonReadJsonValue(source, 'dimensionValuesDisplayData');
+      if (variationValues && !variationKeysFromTable) {
+        var tableKeys = [];
+        for (var dimensionKey in variationValues) {
+          if (!Object.prototype.hasOwnProperty.call(variationValues, dimensionKey)) continue;
+          if (tableKeys.length >= AMAZON_EVIDENCE_LIMITS.dimensions) break;
+          tableKeys.push(dimensionKey);
+        }
+        /* La table de valeurs fait foi pour l'ORDRE des colonnes ; les noms
+           viennent d'elle, à défaut du twister déjà lu. */
+        if (tableKeys.length) {
+          dimensionKeys = tableKeys;
+          variationKeysFromTable = true;
+          dimensionNames = [];
+          for (var tn = 0; tn < tableKeys.length; tn++) dimensionNames.push(amazonDimensionName(tableKeys[tn], 'dimension_' + (tn + 1)));
+        }
+      }
+      var displayMap = amazonReadScriptJson(source, 'dimensionValuesDisplayData');
       if (displayMap && typeof displayMap === 'object') {
         for (var displayAsin in displayMap) {
           if (!Object.prototype.hasOwnProperty.call(displayMap, displayAsin) || result.variants.length >= AMAZON_EVIDENCE_LIMITS.variants) continue;
@@ -228,7 +378,7 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
           if (validDisplayAsin && displayDimensions.length) amazonMergeVariant(result, validDisplayAsin, displayDimensions, 'dimensionValuesDisplayData');
         }
       }
-      var asinMap = amazonReadJsonValue(source, 'asinVariationValues');
+      var asinMap = amazonReadScriptJson(source, 'asinVariationValues');
       if (asinMap && typeof asinMap === 'object') {
         for (var mappedAsin in asinMap) {
           if (!Object.prototype.hasOwnProperty.call(asinMap, mappedAsin) || result.variants.length >= AMAZON_EVIDENCE_LIMITS.variants) continue;
@@ -238,8 +388,38 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
         }
       }
     }
+    /* Options et CHOIX depuis les données du twister : la seule source qui donne,
+       valeur par valeur, l'ASIN et l'état publié. Une pastille non rendue (liste
+       paresseuse) ne prive plus la feuille de ses couleurs et de ses tailles. */
+    var twisterSelectedAsins = [];
+    for (var t = 0; t < twisterDims.length; t++) {
+      var twisterDim = twisterDims[t];
+      for (var tp = 0; tp < twisterDim.values.length && result.options.length < AMAZON_EVIDENCE_LIMITS.options; tp++) {
+        var twisterValue = twisterDim.values[tp];
+        var twisterChosen = twisterValue.state === 'selected';
+        var twisterEvidence = twisterChosen || twisterValue.state === 'available'
+          ? 'available'
+          : twisterValue.state === 'unavailable' ? 'unavailable' : 'unknown';
+        amazonAddOption(result, twisterDim.name, twisterValue.label, twisterValue.asin, twisterChosen, twisterEvidence, 'twister_data');
+        if (!twisterChosen) continue;
+        pushUnique(result.selectedValues, twisterValue.label, 6, AMAZON_EVIDENCE_LIMITS.label);
+        if (twisterValue.asin) pushUnique(twisterSelectedAsins, twisterValue.asin, 10, 10);
+      }
+    }
     var blocks = [];
-    try { blocks = document.querySelectorAll('#twister [id^="variation_"], #twister [id^="inline-twister-row-"], [id^="variation_"][id$="_name"]'); } catch (e) { blocks = []; }
+    try { blocks = document.querySelectorAll('[id^="inline-twister-row-"], #twister [id^="variation_"], [id^="variation_"][id$="_name"], #twister [id^="inline-twister-row-"]'); } catch (e) { blocks = []; }
+    /* Un bloc qui en CONTIENT un autre ne décrit pas une dimension à lui seul :
+       on ne garde que les blocs les plus internes (bornés, ≤ 40 nœuds). */
+    var keptBlocks = [];
+    for (var kb = 0; kb < blocks.length && kb < 40; kb++) {
+      var nested = false;
+      for (var kn = 0; kn < blocks.length && kn < 40; kn++) {
+        if (kn === kb || blocks[kn] === blocks[kb]) continue;
+        if (blocks[kn].contains && blocks[kn].contains(blocks[kb])) { nested = true; break; }
+      }
+      if (!nested) keptBlocks.push(blocks[kb]);
+    }
+    blocks = keptBlocks;
     var selectedAsins = [];
     for (var b = 0; b < blocks.length && b < 20; b++) {
       var block = blocks[b];
@@ -265,7 +445,16 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
         /* Ancien tracé : le swatch CHOISI porte data-dp-url vide = la fiche ouverte elle-même. */
         if (selected && !optionAsin && AMAZON_ASIN && item.hasAttribute && item.hasAttribute('data-dp-url')) optionAsin = AMAZON_ASIN;
         var state = amazonNodeAvailability(item);
-        amazonAddOption(result, dimension, label, optionAsin, selected, state, 'twister_dom');
+        var addedOption = amazonAddOption(result, dimension, label, optionAsin, selected, state, 'twister_dom');
+        /* Prix et stock AFFICHÉS SUR LA CARTE de ce choix. Ce sont des faits de
+           la page, pas un devis : le serveur recalcule (et le prix d'une carte
+           n'est jamais présenté comme le total en dinars). */
+        if (addedOption) {
+          var cardPrice = amazonCardPrice(item);
+          if (cardPrice && !addedOption.price) addedOption.price = cut(cardPrice, LIMITS.text);
+          var cardStock = amazonCardStock(item);
+          if (cardStock && !addedOption.stock) addedOption.stock = cardStock;
+        }
         if (selected && optionAsin) pushUnique(selectedAsins, optionAsin, 10, 10);
       }
     }
@@ -273,6 +462,7 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     try { selectedField = document.querySelector('#ASIN, input[name="ASIN"]'); } catch (e) {}
     var fieldAsin = amazonValidAsin(selectedField && (selectedField.value || selectedField.getAttribute('value')));
     if (fieldAsin) result.selectedAsin = fieldAsin;
+    else if (twisterSelectedAsins.length === 1) result.selectedAsin = twisterSelectedAsins[0];
     else if (selectedAsins.length === 1) result.selectedAsin = selectedAsins[0];
     for (var v = 0; v < result.variants.length; v++) {
       result.variants[v].selected = !!result.selectedAsin && result.variants[v].asin === result.selectedAsin;
@@ -313,6 +503,12 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
         var dpUrl = node.getAttribute('data-dp-url') || '';
         var dpMatch = /\/(?:dp|gp\/product)\/([A-Z0-9]{10})(?:[\/?#]|$)/i.exec(dpUrl);
         if (dpMatch) { var fromDp = amazonValidAsin(dpMatch[1]); if (fromDp) return fromDp; }
+        /* Tracé des cartes de choix actuelles : data-csa-c-item-id="asin.<ASIN>". */
+        var csaId = String(node.getAttribute('data-csa-c-item-id') || node.getAttribute('data-csa-c-asin') || '');
+        if (csaId) {
+          var csaAsin = amazonValidAsin(csaId.replace(/^asin\./i, ''));
+          if (csaAsin) return csaAsin;
+        }
       }
       node = node.parentNode;
     }
@@ -332,6 +528,15 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
   function amazonNodeAvailability(element) {
     var node = element;
     for (var hop = 0; node && hop < 3; hop++) {
+      /* L'état peut être porté par un ENFANT de la carte (« <li …><span
+         class="swatchUnavailable"> ») : on regarde la carte elle-même avant de
+         remonter. Borné aux marqueurs explicites, jamais à une couleur CSS. */
+      if (hop === 0 && node.querySelector) {
+        try {
+          if (node.querySelector('.swatchUnavailable, .dropdownUnavailable, .a-button-disabled, [aria-disabled="true"]')) return 'unavailable';
+          if (node.querySelector('.swatchAvailable, .dropdownAvailable, [aria-disabled="false"]')) return 'available';
+        } catch (e) {}
+      }
       var className = String(node.className || '').toLowerCase();
       if (/swatchunavailable|dropdownunavailable|a-button-disabled|unavailable|outofstock/.test(className)
           || node.disabled === true || (node.getAttribute && node.getAttribute('aria-disabled') === 'true')) return 'unavailable';
@@ -358,16 +563,26 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     }
     return false;
   }
+  /* Retourne l'option (nouvelle, ou déjà connue) : l'appelant peut y attacher le
+     prix et le stock lus sur la carte, même si la valeur venait des données du
+     twister. NULL quand la borne d'options est atteinte. */
   function amazonAddOption(result, dimension, value, asin, selected, state, source) {
     var key = dimension + '|' + value.toLowerCase() + '|' + (asin || '');
     for (var i = 0; i < result.options.length; i++) {
-      var old = result.options[i];
-      if ((old.dimension + '|' + old.value.toLowerCase() + '|' + (old.asin || '')) === key) return;
+      var existing = result.options[i];
+      if ((existing.dimension + '|' + existing.value.toLowerCase() + '|' + (existing.asin || '')) === key) {
+        if (selected && !existing.selected) existing.selected = true;
+        if (state !== 'unknown' && existing.availabilityEvidence === 'unknown') existing.availabilityEvidence = state;
+        return existing;
+      }
     }
+    var added = null;
     if (result.options.length < AMAZON_EVIDENCE_LIMITS.options) {
-      result.options.push({ dimension: cut(dimension, 40), value: cut(value, AMAZON_EVIDENCE_LIMITS.label), asin: asin || null, selected: !!selected, availabilityEvidence: state, source: source });
+      added = { dimension: cut(dimension, 40), value: cut(value, AMAZON_EVIDENCE_LIMITS.label), asin: asin || null, selected: !!selected, availabilityEvidence: state, source: source };
+      result.options.push(added);
     }
     if (asin) amazonMergeVariant(result, asin, [{ name: dimension, value: value }], source);
+    return added;
   }
   /** Élément de navigation / recherche — jamais un choix produit ni un achat. */
   function isInNavigation(el) {
@@ -415,6 +630,18 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
       if (/display:\s*none|visibility:\s*hidden/i.test(style)) return true;
     }
     return false;
+  }
+  /** Famille de preuve d'une lecture de prix dans la zone d'achat. L'étiquette
+      d'accessibilité est une chaîne complète publiée par la page ; tout le reste
+      est le bloc de prix, que NOUS reconstruisons quand son «.a-offscreen» est
+      vide (cas mesuré). Deux familles différentes d'accord = corroboration. */
+  function amazonReadingSource(element) {
+    var node = element;
+    for (var hop = 0; node && hop < 2; hop++) {
+      if (String(node.id || '') === 'apex-pricetopay-accessibility-label') return 'a11y_label';
+      node = node.parentNode;
+    }
+    return 'dom';
   }
   /** Prix d'un élément Amazon : «.a-offscreen» s'il est rempli, sinon reconstruction
       à partir des spans (le cas MESURÉ : «.a-offscreen» vide dans le bloc). */
@@ -741,6 +968,7 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
       ];
       var amazonReadings = [];
       var amazonNodes = [];
+      var amazonSources = [];
       for (var s = 0; s < AMAZON_PRICE_SELECTORS.length && amazonReadings.length < 6; s++) {
         var nodes = [];
         try { nodes = document.querySelectorAll(AMAZON_PRICE_SELECTORS[s]); } catch (e) { continue; }
@@ -757,6 +985,7 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
           if (!amazonPlausible(value)) continue;
           amazonNodes.push(el);
           amazonReadings.push(value);
+          amazonSources.push(amazonReadingSource(el));
         }
       }
       var amazonDistinct = {};
@@ -765,19 +994,32 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
       }
       var amazonDistinctCount = 0;
       for (var key in amazonDistinct) { if (Object.prototype.hasOwnProperty.call(amazonDistinct, key)) amazonDistinctCount++; }
-      /* Un seul montant distinct dans la zone d'achat ⇒ on publie UNE lecture
-         (la première : l'étiquette d'accessibilité d'Amazon, que le lecteur
-         serveur lit aussi en premier). Deux lectures du même montant venant de
-         la MÊME famille de preuve ne sont pas une corroboration : le crible
-         serveur les verrait comme un prix non corroboré à deux candidats, donc
-         « ambigu » — un refus pour rien. Plus d'un montant distinct ⇒
-         ABSTENTION : la page a des prix concurrents, on ne choisit pas. */
+      /* Un seul montant distinct dans la zone d'achat ⇒ on publie UNE lecture PAR
+         FAMILLE DE PREUVE (au plus deux) :
+           • «a11y_label» — l'étiquette d'accessibilité d'Amazon, une CHAÎNE
+             COMPLÈTE écrite par la page (« $109.00 ») ;
+           • «dom» — le bloc de prix, reconstruit par NOUS depuis ses fragments
+             (symbole + entier + décimale), et lu par le serveur.
+         Deux familles d'accord = corroboration (le serveur l'exige pour les
+         boutiques à motif d'URL, dont Amazon). Deux lectures de la MÊME famille
+         ne seraient pas une preuve : une régression de reconstruction passerait
+         pour confirmée. La corroboration ne remplace pas les gardes de zone
+         d'achat (publicités exclues, panier d'achat d'un autre ASIN refusé) :
+         elle vérifie seulement que le montant publié est lu deux fois pareil.
+         Plus d'un montant distinct ⇒ ABSTENTION : la page a des prix
+         concurrents, on ne choisit pas. */
       var buyboxMismatch = amazonBuyboxAsinMismatch();
       if (buyboxMismatch) diag('price:buybox_asin_mismatch');
       /* Plusieurs montants distincts dans la zone d'achat : abstention, motif explicite pour le serveur. */
       if (amazonDistinctCount > 1) diag('price:ambiguous_buybox:' + amazonDistinctCount);
       if (amazonDistinctCount === 1 && !buyboxMismatch) {
-        out.priceCandidates.push({ text: cut(amazonReadings[0], LIMITS.text), source: 'dom' });
+        var publishedFamilies = {};
+        for (var fr = 0; fr < amazonReadings.length && out.priceCandidates.length < LIMITS.priceCandidates; fr++) {
+          var family = amazonSources[fr] || 'dom';
+          if (publishedFamilies[family]) continue;
+          publishedFamilies[family] = true;
+          out.priceCandidates.push({ text: cut(amazonReadings[fr], LIMITS.text), source: family });
+        }
       }
       /* Source MACHINE d'Amazon : « "displayPrice":"$109.00" » dans les scripts de la
          page (mesuré le 04/10/2026, et lu par le lecteur serveur). Ce n'est PAS la
@@ -1131,7 +1373,17 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
 
   if (AMAZON_STRICT) {
     try { out.amazon = collectAmazonEvidence(); }
-    catch (e) { out.amazon = { readerVersion: 1, pageAsin: AMAZON_ASIN || null, selectedAsin: null, options: [], variants: [] }; }
+    catch (e) { out.amazon = { readerVersion: 2, pageAsin: AMAZON_ASIN || null, selectedAsin: null, selectedValues: [], options: [], variants: [] }; }
+    /* Les valeurs AFFICHÉES COMME CHOISIES dans les données du twister entrent
+       dans l'évidence de sélection : le serveur vérifie que la combinaison
+       demandée à l'ajout a bien été VUE sur la page. Une fiche rendue sans le DOM
+       du twister n'en publiait aucune — l'ajout était refusé « stock non
+       confirmé » alors que la page affichait la couleur et la taille choisies. */
+    if (out.amazon && out.amazon.selectedValues) {
+      for (var sv = 0; sv < out.amazon.selectedValues.length && out.selectedVariantTexts.length < LIMITS.selectedTexts; sv++) {
+        pushUnique(out.selectedVariantTexts, out.amazon.selectedValues[sv], LIMITS.selectedTexts, LIMITS.label);
+      }
+    }
   }
 
   /* ── 9. Bornes finales + sortie JSON ────────────────────────────────────── */
