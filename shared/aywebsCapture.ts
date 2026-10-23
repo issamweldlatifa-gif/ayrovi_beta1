@@ -198,6 +198,39 @@ export const AYWEBS_CAPTURE_REJECTIONS = [
    * (ou équivalent). Refusée comme toute capture sans prix ; c'est la cause, pas « NO_PRICE_TEXT ».
    */
   'OUT_OF_STOCK',
+  /**
+   * La capture ne décrit PAS une fiche produit : aucun prix, aucune commande
+   * d'achat, aucune variante, aucun repère de fiche (23/10/2026). C'est la page
+   * d'accueil, un rayon, une page de recherche ou une bannière — le lecteur a
+   * été injecté au mauvais endroit, ou la boutique a servi une page de
+   * redirection pays. Refus explicite : ce n'est pas « un prix illisible ».
+   */
+  'NOT_A_PRODUCT_PAGE',
 ] as const;
+
+/**
+ * Nature de la PAGE lue — décidée par le SERVEUR à partir de la capture, jamais
+ * par le client (23/10/2026 : « le script ne s'injecte que sur une fiche »).
+ *
+ *   • `PRODUCT_CARD` — une fiche : un article identifié (titre) ET au moins un
+ *     repère de vente (prix publié, commande d'achat, variantes, ou la coquille
+ *     produit Amazon avec son ASIN) ;
+ *   • `STOREFRONT`   — une page de magasin : aucun repère de vente (accueil,
+ *     rayon, recherche, redirection pays) ;
+ *   • `AD`           — un prix SANS identité d'article : bannière, encart
+ *     sponsorisé, page promotionnelle. Un prix seul n'est jamais une fiche.
+ */
+export type AyWebsPageKind = 'PRODUCT_CARD' | 'STOREFRONT' | 'AD';
+
+/** Ce que la page PUBLIE, réduit à des booléens — aucune donnée personnelle. */
+export interface AyWebsPageSignals {
+  hasTitle: boolean;
+  hasPrice: boolean;
+  hasPurchaseControl: boolean;
+  hasVariants: boolean;
+  hasImages: boolean;
+  /** Coquille produit Amazon (`#dp`, ASIN) : une fiche même sans prix lisible. */
+  hasProductShell: boolean;
+}
 
 export type AyWebsCaptureRejection = (typeof AYWEBS_CAPTURE_REJECTIONS)[number];

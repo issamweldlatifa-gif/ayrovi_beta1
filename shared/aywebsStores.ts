@@ -228,6 +228,22 @@ interface CaptureStoreRow {
    * façon fiable, donc on ne le devine pas.
    */
   productUrlPattern?: string;
+  /**
+   * Domaines SUPPLÉMENTAIRES de la même boutique (miroirs pays).
+   *
+   * Constat du 23/10/2026 : le registre ne dérivait le domaine que de
+   * `homeUrl`. Une fiche `zalando.de` n'était donc reconnue par AUCUNE
+   * boutique : elle retombait dans « domaine inconnu », et le serveur y
+   * autorisait la lecture à la demande — d'où la pré-lecture qui partait sur
+   * une page de magasin. Le domaine d'accueil reste dérivé ; cette liste
+   * ajoute les miroirs pays.
+   *
+   * RÈGLE D'ADMISSION : un miroir n'est ajouté que si sa devise est celle de
+   * la ligne. Un `zalando.ch` (CHF) ou `zalando.se` (SEK) sous une ligne en
+   * EUR publierait un prix libellé dans la mauvaise devise : il reste hors
+   * registre (capture externe, à la demande, comme avant).
+   */
+  domains?: readonly string[];
 }
 
 const CAPTURE_WAVE_1: readonly CaptureStoreRow[] = [
@@ -240,8 +256,8 @@ const CAPTURE_WAVE_1: readonly CaptureStoreRow[] = [
   /* Allemagne / Europe — même règle : motif vérifié ou rien. */
   { id: 'otto', displayName: 'OTTO', country: 'DE', currency: 'EUR', homeUrl: 'https://www.otto.de', categories: ['marketplace'], productUrlPattern: '^/p/[^/]+-\\d+' },
   { id: 'kaufland', displayName: 'Kaufland', country: 'DE', currency: 'EUR', homeUrl: 'https://www.kaufland.de', categories: ['marketplace'], productUrlPattern: '^/product/\\d+' },
-  { id: 'zalando', displayName: 'Zalando', country: 'DE', currency: 'EUR', homeUrl: 'https://www.zalando.com', categories: ['fashion'], productUrlPattern: '^/[^/]*-[A-Z0-9]{6,}\\.html' },
-  { id: 'mediamarkt', displayName: 'MediaMarkt', country: 'DE', currency: 'EUR', homeUrl: 'https://www.mediamarkt.com', categories: ['electronics'] },
+  { id: 'zalando', displayName: 'Zalando', country: 'DE', currency: 'EUR', homeUrl: 'https://www.zalando.com', categories: ['fashion'], productUrlPattern: '^/[^/]*-[A-Z0-9]{6,}(?:-[A-Z0-9]{2,})?\\.html$', domains: ['zalando.de', 'zalando.fr', 'zalando.it', 'zalando.es', 'zalando.nl', 'zalando.be', 'zalando.at'] },
+  { id: 'mediamarkt', displayName: 'MediaMarkt', country: 'DE', currency: 'EUR', homeUrl: 'https://www.mediamarkt.com', categories: ['electronics'], domains: ['mediamarkt.de', 'mediamarkt.at', 'mediamarkt.es', 'mediamarkt.it', 'mediamarkt.nl', 'mediamarkt.be', 'mediamarkt.pt', 'mediamarkt.fr'] },
   { id: 'asos', displayName: 'ASOS', country: 'GB', currency: 'GBP', homeUrl: 'https://www.asos.com', categories: ['fashion'], productUrlPattern: '^/[^/]*/prd/\\d+' },
   { id: 'h-m', displayName: 'H&M', country: 'SE', currency: 'EUR', homeUrl: 'https://www.hm.com', categories: ['fashion', 'kids'], productUrlPattern: '^/[a-z]{2}_[a-z]{2}/productpage\\.\\d+\\.html' },
   /* France / Pologne — motif non vérifiable de façon fiable : capture seule. */
@@ -258,11 +274,14 @@ function captureStore(row: CaptureStoreRow): AyWebsStoreDefinition {
   const { id, displayName, country, currency, homeUrl, categories, productUrlPattern } = row;
   let domain = '';
   try { domain = new URL(homeUrl).hostname.toLowerCase().replace(/^\.?www\./, ''); } catch { domain = ''; }
+  const domains = [domain, ...(row.domains || [])]
+    .map((value) => String(value || '').trim().toLowerCase().replace(/^\.?www\./, '').replace(/\.+$/, ''))
+    .filter((value, index, all) => value.length > 0 && all.indexOf(value) === index);
   return {
     id,
     name: displayName,
     displayName,
-    domains: domain ? [domain] : [],
+    domains,
     country,
     currency,
     logo: `/stores/${id}.png`,

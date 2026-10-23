@@ -34,6 +34,8 @@ import {
   AYWEBS_CAPTURE_LIMITS,
   AYWEBS_CAPTURE_VERSION,
   type AyWebsCaptureSource,
+  type AyWebsPageKind,
+  type AyWebsPageSignals,
   type AyWebsCaptureOutcome,
   type AyWebsCapturedPage,
   type AyWebsCapturedPriceCandidate,
@@ -470,6 +472,55 @@ export interface AyWebsCaptureValidationOptions {
    * connaissance marchande pour rattraper une lecture solitaire.
    */
   requireCorroboration?: boolean;
+  /**
+   * Exige que la capture décrive une FICHE (23/10/2026). Utilisé quand l'URL ne
+   * peut pas le prouver : boutique sans motif (`capture`) ou domaine inconnu —
+   * c'est-à-dire exactement les cas où le client injecte « à la demande ». Un
+   * prix sur une bannière n'est pas un article : refus `NOT_A_PRODUCT_PAGE`.
+   */
+  requireProductPage?: boolean;
+}
+
+/**
+ * Nature de la PAGE, décidée ici et nulle part ailleurs (23/10/2026).
+ *
+ * Le constat : sur Zalando, le lecteur partait sur « Zalando is available in
+ * Austria » — une page de magasin — et le journal disait trois fois « capture
+ * valide ». Une capture « valide » n'est pas une fiche : sans un article
+ * identifié et un repère de vente, il n'y a rien à ajouter au panier.
+ *
+ * Règle fermée, positive seulement :
+ *   • un prix + une identité (`hasTitle`) ⇒ fiche, ou bannière si l'identité
+ *     manque — un prix sans titre n'est pas un article ;
+ *   • une coquille produit (Amazon : `#dp`/ASIN) ou une commande d'achat ou des
+ *     variantes ⇒ fiche, même quand le prix est illisible (rupture, prix caché) ;
+ *   • sinon ⇒ page de magasin.
+ */
+export function classifyAyWebsCapturedPage(signals: AyWebsPageSignals): { kind: AyWebsPageKind; reason: string } {
+  const selling = signals.hasPurchaseControl || signals.hasVariants || signals.hasProductShell;
+  if (signals.hasPrice && signals.hasTitle) return { kind: 'PRODUCT_CARD', reason: 'prix_et_titre' };
+  if (selling && signals.hasTitle) return { kind: 'PRODUCT_CARD', reason: signals.hasProductShell ? 'coquille_produit' : 'commande_ou_variantes' };
+  if (signals.hasPrice) return { kind: 'AD', reason: 'prix_sans_identite' };
+  if (signals.hasProductShell && signals.hasImages) return { kind: 'PRODUCT_CARD', reason: 'coquille_produit_sans_titre' };
+  return { kind: 'STOREFRONT', reason: 'aucun_repere_de_fiche' };
+}
+
+/** Signaux d'une capture — bornés, jamais de texte de page. */
+export function ayWebsPageSignalsOf(payload: AyWebsCapturedPage): AyWebsPageSignals {
+  const title = collapse(payload?.title, AYWEBS_CAPTURE_LIMITS.maxTitleLength);
+  const amazon = payload?.amazon;
+  return {
+    hasTitle: Boolean(title),
+    hasPrice: Array.isArray(payload?.priceCandidates)
+      ? payload.priceCandidates.some((candidate) => Boolean(collapse(candidate?.text, AYWEBS_CAPTURE_LIMITS.maxTextLength)))
+      : false,
+    hasPurchaseControl: Boolean(collapse(payload?.addToCartText, AYWEBS_CAPTURE_LIMITS.maxTextLength)),
+    hasVariants: (Array.isArray(payload?.variantGroups) && payload.variantGroups.length > 0)
+      || (Array.isArray(amazon?.variants) && amazon.variants.length > 0)
+      || (Array.isArray(amazon?.options) && amazon.options.length > 0),
+    hasImages: Array.isArray(payload?.images) && payload.images.length > 0,
+    hasProductShell: Boolean(amazon && typeof amazon.pageAsin === 'string' && AMAZON_ASIN_SHAPE.test(amazon.pageAsin)),
+  };
 }
 
 export function validateAyWebsCapturedPage(
@@ -515,6 +566,16 @@ export function validateAyWebsCapturedPage(
   const now = Date.now();
   if (now - capturedAtMs > AYWEBS_CAPTURE_LIMITS.maxAgeMs) return rejected('STALE_CAPTURE');
   if (capturedAtMs - now > AYWEBS_CAPTURE_LIMITS.maxClockSkewMs) return rejected('FUTURE_CAPTURE');
+
+  /* ── NATURE DE LA PAGE ─────────────────────────────────────────────────────
+     Avant le prix : une capture de page d'accueil ne doit pas être jugée
+     « prix illisible », elle doit être dite « pas une fiche ». Le refus est donc
+     distinct et arrive en premier — c'est ce que l'écran affichera. */
+  const pageSignals = ayWebsPageSignalsOf(payload);
+  const pageKind = classifyAyWebsCapturedPage(pageSignals);
+  if (options.requireProductPage === true && pageKind.kind !== 'PRODUCT_CARD') {
+    return rejected('NOT_A_PRODUCT_PAGE', '', [`page_kind:${pageKind.kind}`, `page_reason:${pageKind.reason}`]);
+  }
 
   /* ── VARIANTE AMAZON (contrat Phase 1 — derrière AYWEBS_AMAZON_VARIANT_CONTRACT=1) ──
      Quand la fiche a plusieurs variantes, le prix de la zone d'achat ne vaut que pour

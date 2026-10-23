@@ -89,7 +89,7 @@ Walmart · Target · Etsy · Best Buy · Newegg · MediaMarkt · OTTO · Kauflan
 
 ## 6. الاختبارات (شنوّة يمنع الرجوع للخلف)
 
-`tests/aywebs-catalogue-wave.test.ts` — 20 اختبار :
+`tests/aywebs-catalogue-wave.test.ts` — 31 اختبار :
 
 1. كل متجر موجود **مرّة واحدة** في الريكيستري، وما عادش في الكاتالوغ.
 2. كل متجر : بلا `purchase`/`tracking`، عندو `availability`، `PARTIALLY_SUPPORTED`، و`recognition = capture`.
@@ -99,7 +99,7 @@ Walmart · Target · Etsy · Best Buy · Newegg · MediaMarkt · OTTO · Kauflan
 6. المجموعات : التسمية، الترتيب، الحدود، إسقاط الأرقام، وإسقاط المجموعات المشوّهة بلا ما يطيح الثمن.
 7. السكربت الحقيقي في jsdom : يقرا Taille (select) + Couleur (radios) مع القيمة المعروضة، وما ينشرش الكمية، وAmazon يبقى بلا مجموعات.
 
-بالإضافة : `tests/aywebs-store-registry.test.ts` (18) · `tests/aywebs-store-capabilities.test.ts` (1) · `tests/aywebs-capture-script.test.ts` (17) · تطبيق الموبايل : 775 اختبار أخضر.
+بالإضافة : `tests/aywebs-store-registry.test.ts` (23) · `tests/aywebs-store-capabilities.test.ts` (1) · `tests/aywebs-capture-script.test.ts` (19) · `tests/aywebs-webview-capture.test.ts` (37) · `tests/aywebs-page-kind-2026-10-23.test.ts` (11) · تطبيق الموبايل : 784 اختبار أخضر.
 
 ---
 
@@ -160,5 +160,72 @@ Walmart · Target · Etsy · Best Buy · Newegg · MediaMarkt · OTTO · Kauflan
 - الورقة تفتح على التركيبة المعروضة (pré-remplie من `selectedAsin`) ; والكمية مسقّفة بالمخزون المعلن.
 
 **شنوّة مازال (مكتوب، موش مخفي) :** سطر السلّة ما زال ما يعرضش اسم التركيبة المختارة على منتوج
-قراءتو ما تنشرش variantes (الخادم يحفظ دليل الملاحظة، العرض ناقص) ; و**تصنيف الصفحة على الخادم**
-(بطاقة منتوج / واجهة متجر / إعلان) مازال ما تنفّذش — هو شرط قبل أي حقن على المتاجر الأخرى.
+قراءتو ما تنشرش variantes (الخادم يحفظ دليل الملاحظة، العرض ناقص).
+
+تصنيف الصفحة على الخادم (بطاقة منتوج / واجهة متجر / إعلان) تنفّذ في §11.
+
+---
+
+## 11. حقن القارئ : القرار في الخادم، والعارض في التطبيق (23/10/2026)
+
+اللقطة اللي بعثتها : على `zalando.de` القارئ يتحقن **وحدو**، بلا زر، على صفحة
+« Zalando is available in Austria » — والمكتوب في السجلّ « capture valide ». هذا موش عيب
+قراءة، هذا **عيب قرار** : كان السيرفر يخلي الكابتشر مفتوح لكل صفحة في الكاتالوغ.
+
+### 11.1 السبب الأوّل : `zalando.de` ما كانش معروف
+الريكيستري كان يستخرج المجال من `homeUrl` وحدها (`zalando.com`)، فـ`www.zalando.de`
+ما طابقش حتى متجر ⇒ « domaine inconnu » ⇒ الخادم يسمح بالقراءة **À LA DEMANDE** (وهذا
+كان معقول : مجال غريب يُقرا غير كي يطلب المستعمل). النتيجة : الصفحة الرئيسية، اللي هي
+مجال غريب بالنسبة للريكيستري، خذات نفس الإذن.
+
+- الاصلاح : `CaptureStoreRow.domains` — مرايا البلد تتكتب في **معطيات**، وتنجمّع مع
+  مجال `homeUrl` (بلا تكرار، بلا `www.`، حروف صغيرة).
+- **قاعدة القبول** : المرآة تتزاد غير كي **عملتها هي عملة السطر**. `zalando.ch` (CHF)،
+  `.se` (SEK)، `.pl` (PLN)، `.co.uk` (GBP) بقاو برّا الريكيستري : ما ننشروش ثمن بعملة
+  غالطة. هكّا `zalando.de` / `.fr` / `.it` / `.es` / `.nl` / `.be` / `.at` معروفين،
+  و`.ch` يرجع « à la demande » كي مجال غريب.
+- نفس الشي لـMediaMarkt (`.de .at .es .it .nl .be .pt .fr`) وكلها EUR.
+
+### 11.2 السبب الثاني : `capturePage` كانت تعني « كل صفحة »
+الخادم ولّى يعطي في `/page/analyze` حقل واحد صريح : `capture_injection`
+
+| القيمة | وقتاش |
+|---|---|
+| `product_page` | متجر مسجّل، عندو `productUrlPattern`، والرابط يطابق الفيشة، والتصنيف يسمح |
+| `on_demand` | متجر مسجّل بلا motif، ولا مجال خارج الريكيستري مفتوح للكابتشر |
+| `never` | المتجر مسجّل والرابط موش فيشة (رئيسية، رايون، إعلان) |
+
+التطبيق ما يعاودش يقرّر : يقرا الحقل. `product_page` ⇒ pré-lecture ; `on_demand` ⇒
+غير كي يضغط المستعمل ; `never` ⇒ ما يتحقنش السكربت أصلاً.
+
+### 11.3 السبب الثالث : الصفحة تت‑تصنّف **قبل** ما تنشر ثمن
+`classifyAyWebsCapturedPage` (خادم) و`classifyPageSignals` (تطبيق، مرآة) :
+
+- ثمن + عنوان ⇒ `PRODUCT_CARD` (`prix_et_titre`) ;
+- (زرّ شراء | variantes | coquille ASIN) + عنوان ⇒ `PRODUCT_CARD` ;
+- ثمن بلا هوية مقال ⇒ `AD` (`prix_sans_identite`) — هذا هو الإعلان؛
+- coquille ASIN + صور ⇒ `PRODUCT_CARD` (`coquille_produit_sans_titre`) ;
+- ما فماش ولا علامة ⇒ `STOREFRONT` (`aucun_repere_de_fiche`).
+
+`requireProductPage` يرفض غير البطاقة بـ`NOT_A_PRODUCT_PAGE` (مع `page_kind:*` في
+الملاحظات)، **قبل** فحص الثمن والاختيارات — باش الرسالة تقول « موش صفحة منتوج »
+موش « الثمن ما تقراش ». واختبار `64 combinaison` يضمن أن المرآة في التطبيق ما
+تخرجش على الخادم.
+
+### 11.4 المخزون : « Stock non confirmé » على Oura
+الصفحة تقول `In Stock` / `Currently unavailable`، لكن هذي **للتركيبة المعروضة**.
+- المخزون من الصفحة يثبت غير كي الاختيار = التركيبة المعروضة (`selectionIsShown`) ;
+- `OUT_OF_STOCK` يغلب `AVAILABLE` ;
+- كي التركيبة المعروضة مختارة والكابتشر حديثة (8 دقايق هامش) ⇒ ما نعاودوش نقراو
+  الـWebView : نستعملو نفس الكابتشر. هذا اللي حيّد « ما نجمّناش نقراو… » اللي كان
+  يسكّر الورقة بلا سبب.
+
+### 11.5 الثمن على Amazon : « total avec livraison » موش ثمن
+بلوك `#tp_price_block_total_price_ww` (ثمن + توصيل) كان يتعدّ **مبلغاً ثانياً** ⇒
+تعارض ⇒ `PRICE_NOT_CORROBORATED`. ولّى عندنا **tiers** : tier 1 = ثمن المقال (هو
+الوحيد اللي يقرّر)، tier 2 = بلوك المجموع (يتجاهل). والمدى (`$29.99 - $38.99`)،
+و« à partir de »، والمبالغ الملحقة (ضريبة/توصيل) تتخطّى بدياغنوستيك
+`price:range` / `price:from` / `price:annex_amount`.
+
+**شنوّة ما تبدّلش :** شرط التصديق (JSON-LD ولا زوز عائلات مختلفة) ; لا شراء تلقائي ;
+لا تتبّع ; والصفحة اللي موش فيشة ما تولّيش فيشة.

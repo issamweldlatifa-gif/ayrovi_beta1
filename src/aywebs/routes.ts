@@ -566,6 +566,13 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
          * chance réelle d'aboutir (23/10/2026).
          */
         product_recognition: analysis.productRecognition,
+        /**
+         * Autorisation d'INJECTION pour CETTE page (23/10/2026) : une boutique
+         * dont le motif de fiche ne répond pas à l'URL n'est pas une fiche —
+         * accueil, rayon, recherche. Le client ne lit que sur `product_page`
+         * (pré-lecture) ou `on_demand` (appui du client).
+         */
+        capture_injection: analysis.captureInjection,
         customer_action_required: analysis.customerActionRequired,
         browser_mode: analysis.browserMode,
         /** Piste explicite quand la boutique n'est pas intégrée (§23). */

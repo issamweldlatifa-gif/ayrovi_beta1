@@ -57,6 +57,21 @@ export interface AyWebsPageAnalysis {
    * une chance réelle d'aboutir.
    */
   productRecognition: AyWebsStoreRecognition | 'none';
+  /**
+   * Le serveur décide si le client a le droit d'INJECTER le lecteur sur cette
+   * page — et pas seulement « la capture est autorisée pour cette boutique »
+   * (23/10/2026, constat Zalando : le script partait sur une page d'accueil
+   * « Zalando is available in Austria », sans qu'aucun bouton ne soit pressé).
+   *
+   *   • `product_page` — le motif de fiche de la boutique répond à CETTE URL :
+   *     lecture silencieuse permise, c'est une fiche ;
+   *   • `on_demand`    — aucun motif d'URL ne peut trancher (boutique
+   *     `capture`, domaine inconnu) : le lecteur ne part JAMAIS tout seul, le
+   *     client ne l'injecte qu'à la demande explicite (« Ajouter au panier ») ;
+   *   • `never`        — une boutique à motif reconnaît son site mais PAS cette
+   *     page (accueil, rayon, recherche) : aucune injection, et l'écran le dit.
+   */
+  captureInjection: 'product_page' | 'on_demand' | 'never';
   customerActionRequired: AyWebsPageClassification['customerActionRequired'];
   reason: string;
   /** Mode de navigation décidé par le registre, jamais par l'écran. */
@@ -80,6 +95,30 @@ export interface AyWebsPageAnalysisOptions {
     corroborated: boolean;
     title: string;
   };
+}
+
+/**
+ * Faut-il laisser le client injecter le lecteur sur cette page ?
+ *
+ * Règle : une boutique qui déclare un motif de fiche sait reconnaître son propre
+ * site ; si le motif ne répond pas, la page n'est pas une fiche et le lecteur
+ * n'a rien à y faire. Une boutique sans motif (`capture`) ou un domaine inconnu
+ * ne peuvent pas trancher avant d'avoir lu : la lecture reste possible, mais
+ * SEULEMENT à la demande — jamais en pré-lecture silencieuse.
+ */
+export function captureInjectionFor(input: {
+  registered: boolean;
+  recognition: AyWebsStoreRecognition | 'none';
+  isProductPage: boolean;
+  captureAllowed: boolean;
+  externalCaptureAllowed: boolean;
+}): AyWebsPageAnalysis['captureInjection'] {
+  if (input.registered) {
+    if (!input.captureAllowed) return 'never';
+    if (input.recognition === 'capture') return 'on_demand';
+    return input.isProductPage ? 'product_page' : 'never';
+  }
+  return input.externalCaptureAllowed ? 'on_demand' : 'never';
 }
 
 /**
@@ -146,6 +185,13 @@ export function analyzeAyWebsUrl(
     pageType: classification.pageType,
     isProductPage: classification.isProductPage,
     productRecognition: store ? ayWebsStoreRecognition(store) : 'none',
+    captureInjection: captureInjectionFor({
+      registered,
+      recognition: store ? ayWebsStoreRecognition(store) : 'none',
+      isProductPage: classification.isProductPage,
+      captureAllowed,
+      externalCaptureAllowed,
+    }),
     customerActionRequired: classification.customerActionRequired,
     reason: classification.reason,
     browserMode: store?.browserMode || 'external',

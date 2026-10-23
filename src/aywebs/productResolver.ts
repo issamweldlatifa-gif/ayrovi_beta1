@@ -221,6 +221,12 @@ export async function resolveAyWebsProduct(
   const captureValidation = captureProvided
     ? validateAyWebsCapturedPage(input.capture, preliminary.normalizedUrl, {
         requireCorroboration: !preliminary.registered || captureRecognition,
+        /* L'URL ne prouve pas la fiche (boutique `capture`, ou domaine inconnu) :
+           la capture doit alors PROUVER qu'elle décrit un article, pas une page
+           de magasin (Zalando « available in Austria », 23/10/2026). Demander la
+           nature de la page seulement là où l'URL ne dit rien évite de refuser
+           une fiche Amazon dont le prix est momentanément illisible. */
+        requireProductPage: !preliminary.registered || captureRecognition,
       })
     : null;
   const captureUsed = captureValidation?.ok === true;

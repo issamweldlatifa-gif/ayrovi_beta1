@@ -40,6 +40,7 @@ import { AddToCartSheet } from '@/features/aywebs/AddToCartSheet';
 import {
   groupsFromVariants, localVariantsFromCapture, optionsFromVariants, productFromCapture,
 } from '@/features/aywebs/localProduct';
+import { captureIsProductCard } from '@/features/aywebs/pageKind';
 import { VariantReader, type VariantReaderHandle } from '@/features/aywebs/VariantReader';
 import { ReadingProgress } from '@/features/aywebs/ReadingProgress';
 import { waitForPageIdle } from '@/features/aywebs/captureFallback';
@@ -157,7 +158,25 @@ export default function AyWebsBrowserScreen() {
    */
   const browserRead = pageAnalysis?.productRecognition === 'capture'
     || pageAnalysis?.productRecognition === 'pattern';
-  const capturePage = productPage === true || (browserRead && captureAllowed);
+  /**
+   * Le SERVEUR dit si cette page peut être lue (23/10/2026) :
+   *   • `product_page` — motif de fiche vérifié : lecture permise, y compris la
+   *     pré-lecture silencieuse ;
+   *   • `on_demand`    — aucune reconnaissance d'URL possible : on ne lit QUE si
+   *     le client appuie (jamais de script tout seul) ;
+   *   • `never`        — la boutique a un motif, la page n'y répond pas : accueil,
+   *     rayon, recherche. Rien n'est injecté, et l'écran le dit.
+   * Avant, `capturePage` était vrai pour TOUTE page d'une boutique du catalogue :
+   * le lecteur partait sur « Zalando is available in Austria » sans un appui.
+   */
+  const injection = pageAnalysis?.captureInjection;
+  const capturePage = injection
+    ? injection !== 'never'
+    : productPage === true || (browserRead && captureAllowed);
+  /** Pré-lecture silencieuse : SEULEMENT là où le serveur a reconnu une fiche. */
+  const autoPrefetchAllowed = pageAnalysis
+    ? pageAnalysis.captureInjection === 'product_page'
+    : productPage === true;
   const [classified, setClassified] = useState(false);
   /** الورقة: المنتوج + الكابتشر اللي بعثناه (باش الإضافة ما تعاودش تقرا التاجر). */
   const [sheet, setSheet] = useState<{
@@ -347,9 +366,9 @@ export default function AyWebsBrowserScreen() {
   }, [requestCapture]);
 
   useEffect(() => {
-    if (!captureAllowed || !capturePage || !pageReady || !pageUrl) return;
+    if (!captureAllowed || !autoPrefetchAllowed || !pageReady || !pageUrl) return;
     startPrefetch(pageUrl);
-  }, [captureAllowed, capturePage, pageReady, pageUrl, startPrefetch]);
+  }, [autoPrefetchAllowed, captureAllowed, pageReady, pageUrl, startPrefetch]);
 
   const fail = useCallback((error: unknown) => {
     endWaiting('failed');
@@ -375,6 +394,14 @@ export default function AyWebsBrowserScreen() {
         const entry = prefetch.current;
         const captured = await (canReusePrefetch(entry, pageUrl, Date.now()) && entry ? entry.promise : requestCapture(controller.signal));
         if (controller.signal.aborted) return;
+        /* Une capture n'est pas une fiche : accueil / rayon / bannière n'ouvrent
+           pas de feuille. Le serveur applique LA MÊME règle de son côté. */
+        if (!captureIsProductCard(captured)) {
+          pushDiag('page sans article : feuille non ouverte');
+          setNote(t('aywebs.notAProductPage'));
+          endWaiting('failed');
+          return;
+        }
         const variants = localVariantsFromCapture(captured);
         const localProduct: AyWebsResolvedProduct = {
           ...productFromCapture(captured, pageUrl, storeId, storeName),

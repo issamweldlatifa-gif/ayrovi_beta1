@@ -69,6 +69,14 @@ export interface AyWebsPageAnalysis {
    * Une valeur inconnue retombe sur `url` : on n'ouvre jamais un droit par erreur.
    */
   productRecognition: 'url' | 'pattern' | 'capture' | 'none';
+  /**
+   * Le serveur autorise-t-il l'INJECTION du lecteur sur cette page ?
+   * `product_page` = fiche reconnue (pré-lecture permise) ; `on_demand` =
+   * lecture seulement sur appui ; `never` = pas une fiche de cette boutique.
+   * Absent d'un serveur plus ancien ⇒ `undefined`, et l'écran retombe sur
+   * l'ancienne règle (jamais l'inverse : on n'ouvre pas un droit par défaut).
+   */
+  captureInjection?: 'product_page' | 'on_demand' | 'never';
   customerActionRequired: boolean;
   browserMode: string;
   fallback: string;
@@ -93,6 +101,9 @@ export function parseAyWebsPageAnalysis(payload: unknown): AyWebsPageAnalysis {
     productRecognition: payload.product_recognition === 'capture' ? 'capture'
       : payload.product_recognition === 'pattern' ? 'pattern'
         : payload.product_recognition === 'none' ? 'none' : 'url',
+    captureInjection: payload.capture_injection === 'product_page' ? 'product_page'
+      : payload.capture_injection === 'on_demand' ? 'on_demand'
+        : payload.capture_injection === 'never' ? 'never' : undefined,
     customerActionRequired: bool(payload.customer_action_required),
     browserMode: str(payload.browser_mode),
     fallback: str(payload.fallback),

@@ -161,6 +161,20 @@ export function displayPriceForSelection(
 }
 
 /**
+ * الصفحة تقول «الثمن يختلف» (fourchette « $29.99 - $38.99 » ولا « à partir de »)؟
+ * نستعملوه باش نفسّرو للمستعمل علاش ما فماش رقم قبل ما يختار، بدل ما نخلّيو
+ * بلاصة الثمن فارغة.
+ */
+export function priceDependsOnOption(capture: Json): boolean {
+  if (!capture || typeof capture !== 'object') return false;
+  const diagnostics = Array.isArray(capture.diagnostics) ? capture.diagnostics : [];
+  return diagnostics.some((code) => {
+    const value = text(code).toLowerCase();
+    return value === 'price:range' || value === 'price:from';
+  });
+}
+
+/**
  * المخزون المعلن للاختيار: بطاقة الاختيار أوّلاً، وإلاّ نصّ الصفحة كي الاختيار
  * هو المعروض (« Only 6 left in stock »). `null` = ما نشرش ⇒ ما نمنعوش، الخادم
  * يبقى الحكم على التوفّر.
@@ -174,6 +188,51 @@ export function stockForSelection(capture: Json, selection: Record<string, strin
   const shownAsin = amazon ? text(amazon.selectedAsin).toUpperCase() : '';
   const isShown = chosen ? shownAsin !== '' && chosen.asin === shownAsin : Object.keys(selection).length === 0;
   return isShown ? stockFromAvailabilityText(capture.availabilityText) : null;
+}
+
+/**
+ * حالة التوفّر كما نشرتها الصفحة، بكلمات قليلة مغلقة.
+ *
+ * علاش لازم: على فصلة بفيها لون ومقاس، الدليل لكل قيمة ينجم يكون «غير معروف»
+ * (Amazon ما تنشرش حالة لكل pastille في كل تصميم). الصفحة، مع ذلك، تكتب
+ * «In Stock» أو «Currently unavailable» — وهذا دليل على **التركيبة المعروضة**،
+ * موش على كل التركيبات. بلا هذا، ورقة على منتوج معروض ومتوفّر تقول
+ * «Stock non confirmé» وتمنع الإضافة (صورة Oura، 23/10).
+ */
+export type LocalPageAvailability = 'AVAILABLE' | 'OUT_OF_STOCK' | 'UNKNOWN';
+
+const OUT_OF_STOCK_WORDS = /(out of stock|unavailable|currently unavailable|sold out|épuisé|indisponible|rupture|nicht verfügbar|ausverkauft|derzeit nicht|غير متوفر|نفد)/i;
+const IN_STOCK_WORDS = /(in stock|available|disponible|en stock|auf lager|lieferbar|متوفر|متوفّر)/i;
+
+/**
+ * التوفّر من نصوص الصفحة. **السلبي يغلب**: كي الصفحة تقول «غير متوفر» في
+ * مكان، ما ناخذوش «متوفر» من مكان آخر. والزرّ المعطّل (`[disabled]`) ما يثبتش
+ * توفّراً — يثبت العكس أو لا شي.
+ */
+export function pageAvailabilityFromCapture(capture: Json): LocalPageAvailability {
+  if (!capture || typeof capture !== 'object') return 'UNKNOWN';
+  const addToCart = text(capture.addToCartText);
+  if (/\[disabled\]/i.test(addToCart)) return 'UNKNOWN';
+  const evidence = [text(capture.availabilityText), addToCart].filter(Boolean).join(' | ');
+  if (!evidence) return 'UNKNOWN';
+  if (OUT_OF_STOCK_WORDS.test(evidence)) return 'OUT_OF_STOCK';
+  if (IN_STOCK_WORDS.test(evidence)) return 'AVAILABLE';
+  return 'UNKNOWN';
+}
+
+/** هل الاختيار الحالي هو التركيبة **المعروضة** في الصفحة؟ (دليل الصفحة يخصّها وحدها) */
+export function selectionIsShown(capture: Json, selection: Record<string, string>): boolean {
+  if (!capture || typeof capture !== 'object') return false;
+  const chosen = Object.keys(selection);
+  if (!chosen.length) return false;
+  const amazon = isRecord(capture.amazon) ? capture.amazon : null;
+  const shownAsin = amazon ? text(amazon.selectedAsin).toUpperCase() : '';
+  const variants = localVariantsFromCapture(capture);
+  if (!variants.length) return false;
+  const match = variants.find((variant) => matchesSelection(variant.attributes, selection));
+  if (!match) return false;
+  if (!shownAsin) return false;
+  return match.asin === shownAsin;
 }
 
 /** « Only 6 left in stock », « plus que 3 », « nur noch 2 auf Lager » ⇒ nombre borné. */
@@ -265,23 +324,47 @@ export function localAddReadiness(input: {
   variants: LocalVariant[];
   selection: Record<string, string>;
   pageInStockText: boolean;
-}): { ready: boolean; code: AyWebsAddBlockCode; missingAttributes: string[] } {
+  /**
+   * حالة التوفّر كما نشرتها الصفحة، و`pageShowsSelection` = الاختيار هو
+   * التركيبة المعروضة. الصفحة تشهد على **تركيبتها** فقط: كي المستعمل يبدّل
+   * اللون، دليل الصفحة ما يغطّيهش، و«غير معروف» تبقى «غير معروفة».
+   */
+  pageAvailability?: LocalPageAvailability;
+  pageShowsSelection?: boolean;
+}): { ready: boolean; code: AyWebsAddBlockCode; missingAttributes: string[]; availability: AyWebsAvailability['state'] } {
+  const page: LocalPageAvailability = input.pageAvailability
+    ?? (input.pageInStockText ? 'AVAILABLE' : 'UNKNOWN');
+  const shown = input.pageShowsSelection === true;
   const missingAttributes = input.groups
     .filter((group) => !input.selection[group.attribute.toLowerCase()])
     .map((group) => group.attribute);
   if (input.groups.length && missingAttributes.length) {
-    return { ready: false, code: 'VARIANT_REQUIRED', missingAttributes };
+    return { ready: false, code: 'VARIANT_REQUIRED', missingAttributes, availability: 'UNKNOWN' };
   }
   if (!input.groups.length) {
-    return input.pageInStockText
-      ? { ready: true, code: '', missingAttributes: [] }
-      : { ready: false, code: 'STOCK_UNKNOWN', missingAttributes: [] };
+    return page === 'AVAILABLE'
+      ? { ready: true, code: '', missingAttributes: [], availability: 'AVAILABLE' }
+      : { ready: false, code: page === 'OUT_OF_STOCK' ? 'OUT_OF_STOCK' : 'STOCK_UNKNOWN', missingAttributes: [], availability: page };
   }
   const chosen = Object.entries(input.selection).map(([k, v]) => `${k}=${v.toLowerCase()}`).sort().join('|');
   const match = input.variants.find((variant) => Object.entries(variant.attributes)
     .map(([k, v]) => `${k}=${v.toLowerCase()}`).sort().join('|') === chosen);
-  if (!match) return { ready: false, code: 'VARIANT_UNKNOWN', missingAttributes: [] };
-  if (match.availability === 'OUT_OF_STOCK') return { ready: false, code: 'VARIANT_UNAVAILABLE', missingAttributes: [] };
-  if (match.availability !== 'AVAILABLE') return { ready: false, code: 'STOCK_UNKNOWN', missingAttributes: [] };
-  return { ready: true, code: '', missingAttributes: [] };
+  if (!match) return { ready: false, code: 'VARIANT_UNKNOWN', missingAttributes: [], availability: 'UNKNOWN' };
+  if (match.availability === 'OUT_OF_STOCK') {
+    return { ready: false, code: 'VARIANT_UNAVAILABLE', missingAttributes: [], availability: 'OUT_OF_STOCK' };
+  }
+  if (match.availability === 'AVAILABLE') {
+    /* Stock annoncé pour la carte : « LOW_STOCK » quand un nombre est publié. */
+    return { ready: true, code: '', missingAttributes: [], availability: match.stock != null ? 'LOW_STOCK' : 'AVAILABLE' };
+  }
+  /* Le choix EST la combinaison affichée : le bandeau de disponibilité de la
+     page porte sur elle. C'est une preuve publiée par le marchand, pas une
+     déduction — et elle ne s'étend JAMAIS à une autre combinaison. */
+  if (shown && page === 'AVAILABLE') {
+    return { ready: true, code: '', missingAttributes: [], availability: match.stock != null ? 'LOW_STOCK' : 'AVAILABLE' };
+  }
+  if (shown && page === 'OUT_OF_STOCK') {
+    return { ready: false, code: 'OUT_OF_STOCK', missingAttributes: [], availability: 'OUT_OF_STOCK' };
+  }
+  return { ready: false, code: 'STOCK_UNKNOWN', missingAttributes: [], availability: 'UNKNOWN' };
 }

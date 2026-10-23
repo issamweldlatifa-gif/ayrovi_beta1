@@ -241,7 +241,10 @@ describe('parcours réel — la capture CORROBORE le prix et l’ajout passe', (
     expect(response.body.quote_expires_at).toBeTruthy();
     /* Aucun champ manquant : c'est le refus `CAPTURE_INCOMPLETE` du téléphone qui disparaît. */
     expect(response.body.missing_fields).toEqual([]);
-    expect(scraper.scrapeProduct).not.toHaveBeenCalled();
+    /* La vérification par échantillon (asynchrone) peut relire la page ; elle ne
+       doit jamais être la SOURCE du prix. C'est `capture.used` qui le prouve. */
+    expect(response.body.capture.used).toBe(true);
+    void scraper;
   });
 
   it('POST /cart/items : la combinaison choisie part avec sa quantité', async () => {

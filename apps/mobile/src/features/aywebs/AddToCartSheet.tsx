@@ -33,7 +33,8 @@ import {
 import { newAyWebsRequestId } from '@/features/aywebs/requestId';
 import { variantPageUrlFor } from '@/features/aywebs/variantPage';
 import {
-  defaultSelectionFromCapture, displayPriceForSelection, localAddReadiness, stockForSelection,
+  defaultSelectionFromCapture, displayPriceForSelection, localAddReadiness, pageAvailabilityFromCapture,
+  priceDependsOnOption, selectionIsShown, stockForSelection,
 } from '@/features/aywebs/localProduct';
 
 export interface AddToCartSheetProps {
@@ -56,6 +57,18 @@ export interface AddToCartSheetProps {
 }
 
 const MAX_QUANTITY = 99;
+
+/**
+ * La capture est-elle encore une preuve valable ? Le serveur refuse une capture
+ * de plus de 10 minutes ; on garde une marge de 2 minutes, pour ne pas envoyer
+ * une capture qui expirera pendant l'aller-retour.
+ */
+function captureIsFresh(capture: unknown, now = Date.now()): boolean {
+  const at = Date.parse(String((capture as { capturedAt?: unknown } | null | undefined)?.capturedAt ?? ''));
+  if (!Number.isFinite(at)) return false;
+  const age = now - at;
+  return age >= -60_000 && age <= 8 * 60_000;
+}
 
 export function AddToCartSheet({
   visible, sessionId, product, options, capture, quoteToken, readVariant, local = false, onClose, onAdded,
@@ -127,8 +140,19 @@ export function AddToCartSheet({
     return () => { alive = false; };
   }, [local, options, product.productId, product.sourceUrl, product.storeId, product.variantDetails.length, product.variantGroups.length, sessionId, visible]);
 
-  const pageInStock = /in stock|en stock|disponible|auf lager/i.test(
-    String((capture as { availabilityText?: unknown } | null | undefined)?.availabilityText ?? ''),
+  const captureRecord = useMemo(
+    () => (capture && typeof capture === 'object' ? capture as Record<string, unknown> : null),
+    [capture],
+  );
+  /** التوفّر كما نشرتو الصفحة (`In Stock` / `Currently unavailable` / بلا شي). */
+  const pageAvailability = useMemo(
+    () => (local && captureRecord ? pageAvailabilityFromCapture(captureRecord) : 'UNKNOWN'),
+    [captureRecord, local],
+  );
+  /** هل الاختيار هو التركيبة المعروضة؟ دليل الصفحة يخصّها وحدها. */
+  const shownSelection = useMemo(
+    () => (local && captureRecord ? selectionIsShown(captureRecord, selection) : false),
+    [captureRecord, local, selection],
   );
   const readiness = useMemo(() => {
     if (local) {
@@ -140,9 +164,16 @@ export function AddToCartSheet({
           availability: option.availability === 'AVAILABLE' ? 'AVAILABLE' : option.availability === 'OUT_OF_STOCK' ? 'OUT_OF_STOCK' : 'UNKNOWN',
         })),
         selection,
-        pageInStockText: pageInStock,
+        pageInStockText: pageAvailability === 'AVAILABLE',
+        pageAvailability,
+        pageShowsSelection: shownSelection,
       });
-      return { ready: res.ready, code: res.code, missingAttributes: res.missingAttributes, availability: '', quotedTotalTnd: null };
+      /* Le stock vient de la capture : une version d'application plus ancienne du
+         serveur n'a pas à le connaître pour remplir la feuille. */
+      return {
+        ready: res.ready, code: res.code, missingAttributes: res.missingAttributes,
+        availability: res.availability, quotedTotalTnd: null,
+      };
     }
     return ayWebsAddReadiness({
       groups,
@@ -151,7 +182,7 @@ export function AddToCartSheet({
       productQuotedTnd: product.ayroviPricing?.totalTnd ?? null,
       selection,
     });
-  }, [groups, local, pageInStock, product.availability.state, product.ayroviPricing, selection, variantOptions]);
+  }, [groups, local, pageAvailability, shownSelection, product.availability.state, product.ayroviPricing, selection, variantOptions]);
 
   /**
    * الكمية المتوفّرة المعلنة لهذا الاختيار، إن نشرتها الصفحة (« Only 6 left in
@@ -176,6 +207,11 @@ export function AddToCartSheet({
   const shownPrice = useMemo(
     () => (local && capture ? displayPriceForSelection(capture as Record<string, unknown>, selection) : null),
     [capture, local, selection],
+  );
+  /** Fourchette / prix « à partir de » : le prix n'existe qu'une fois l'option choisie. */
+  const priceVaries = useMemo(
+    () => Boolean(local && captureRecord && priceDependsOnOption(captureRecord)),
+    [captureRecord, local],
   );
 
   /** الاختيار الوحيد يُملأ تلقائياً: قيمة واحدة = بيانات، موش خيار. */
@@ -241,17 +277,42 @@ export function AddToCartSheet({
       let cartCapture = capture;
       let cartQuote = quoteToken;
       if (local) {
-        /* Ajout depuis la lecture locale : on relit la page du choix, puis le serveur fixe le prix et le devis. */
-        if (!readVariant) throw new Error('variant-reader-missing');
+        /**
+         * Ajout depuis la lecture locale.
+         *
+         * Deux cas, et le second évite une lecture inutile — celle qui a produit
+         * « nous n'avons pas pu lire le titre, le prix… » sur le téléphone
+         * (23/10) : un WebView caché qui relit la MÊME page peut échouer sans
+         * raison, alors que la capture qui vient de remplir la feuille est déjà
+         * la preuve du produit affiché.
+         *
+         *   • le choix EST la combinaison affichée, la capture est fraîche et son
+         *     prix est publié ⇒ on envoie cette capture telle quelle (aucune
+         *     relecture, le serveur refait le prix et signe le devis) ;
+         *   • sinon (autre couleur/taille, capture périmée, prix en fourchette)
+         *     ⇒ on relit la page du choix, puis le serveur tranche.
+         */
         const target = variantPageUrl() ?? product.sourceUrl;
-        const fresh = await readVariant(target);
-        const verified = await resolveAyWebsProductWithCapture(target, {
-          sessionId, storeId: product.storeId || undefined, capture: fresh, refresh: true,
-        });
-        productId = verified.product.productId;
-        sourceUrl = target;
-        cartCapture = fresh;
-        cartQuote = verified.quoteToken;
+        const reuse = Boolean(shownSelection && capture && captureIsFresh(capture) && shownPrice);
+        if (reuse) {
+          const verified = await resolveAyWebsProductWithCapture(target, {
+            sessionId, storeId: product.storeId || undefined, capture, refresh: true,
+          });
+          productId = verified.product.productId;
+          sourceUrl = target;
+          cartCapture = capture;
+          cartQuote = verified.quoteToken;
+        } else {
+          if (!readVariant) throw new Error('variant-reader-missing');
+          const fresh = await readVariant(target);
+          const verified = await resolveAyWebsProductWithCapture(target, {
+            sessionId, storeId: product.storeId || undefined, capture: fresh, refresh: true,
+          });
+          productId = verified.product.productId;
+          sourceUrl = target;
+          cartCapture = fresh;
+          cartQuote = verified.quoteToken;
+        }
       } else {
         /* Ancien chemin (page sans lecture locale) : même vérification de la variante choisie. */
         const variantUrl = variantPageUrl();
@@ -293,7 +354,7 @@ export function AddToCartSheet({
       setBusy(false);
     }
   }, [capture, local, locale, onAdded, product.productId, product.sourceUrl, product.storeId, quantity, quoteToken,
-    readVariant, readiness.ready, selection, sessionId, t, variantPageUrl]);
+    readVariant, readiness.ready, selection, sessionId, shownPrice, shownSelection, t, variantPageUrl]);
 
   const availabilityLabel = (state: string | null): string => {
     if (!state) return '';
@@ -423,6 +484,9 @@ export function AddToCartSheet({
 
                 {shownPrice ? (
                   <KeyValue label={t('aywebs.merchantPrice')} value={shownPrice.text} />
+                ) : null}
+                {!shownPrice && priceVaries ? (
+                  <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.priceVaries')}</AppText>
                 ) : null}
                 {readiness.quotedTotalTnd != null ? (
                   <KeyValue

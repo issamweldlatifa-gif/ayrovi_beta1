@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  AYWEBS_CATEGORIES, AYWEBS_STORES, detectAyWebsStore, validateAyWebsStoreRegistry, type AyWebsStoreDefinition,
+  AYWEBS_CATEGORIES, AYWEBS_STORES, ayWebsHostnameMatches, ayWebsProductUrlPattern, detectAyWebsStore,
+  findAyWebsStore, validateAyWebsStoreRegistry, type AyWebsStoreDefinition,
 } from '../shared/aywebsStores';
 import { AYWEBS_CATALOG_STORES } from '../shared/aywebsStoreCatalog';
 import { existsSync } from 'node:fs';
@@ -144,6 +145,73 @@ describe('logos du catalogue — fichiers présents (main.pdf)', () => {
   it('le logo suit le modèle /stores/<id>.png', () => {
     for (const s of AYWEBS_CATALOG_STORES.filter((x) => x.logo)) {
       expect(s.logo).toBe(`/stores/${s.id}.png`);
+    }
+  });
+});
+
+/**
+ * Miroirs pays — le défaut du 23/10/2026 (Zalando Allemagne).
+ *
+ * Le registre ne dérivait le domaine que de `homeUrl` : une fiche
+ * `www.zalando.de` n'était reconnue par AUCUNE boutique ouverte. Elle tombait
+ * donc dans « domaine inconnu », où le serveur autorise la lecture À LA
+ * DEMANDE — et c'est précisément ce qui a laissé le lecteur partir sur une
+ * page de magasin. Ces trois contrôles rendent la faute impossible à
+ * réintroduire : une boutique doit reconnaître sa propre adresse, chacun de
+ * ses miroirs, et aucun domaine ne doit en éclipser un autre par suffixe.
+ */
+describe('domaines des boutiques ouvertes — reconnaissance et miroirs', () => {
+  it('chaque boutique ouverte reconnaît sa propre adresse d’accueil', () => {
+    for (const entry of AYWEBS_STORES) {
+      expect(detectAyWebsStore(entry.homeUrl)?.id, `${entry.id} (${entry.homeUrl})`).toBe(entry.id);
+    }
+  });
+
+  it('chaque domaine déclaré ramène à SA boutique, écrit sans « www. »', () => {
+    for (const entry of AYWEBS_STORES) {
+      for (const domain of entry.domains) {
+        expect(domain, `${entry.id} : domaine non normalisé`).toBe(domain.toLowerCase().replace(/^www\./, ''));
+        expect(detectAyWebsStore(`https://${domain}/`)?.id, `${domain}`).toBe(entry.id);
+      }
+    }
+  });
+
+  it('aucun domaine n’en éclipse un autre par suffixe (endsWith)', () => {
+    const all = [...AYWEBS_STORES, ...AYWEBS_CATALOG_STORES];
+    const shadows: string[] = [];
+    for (const a of all) for (const b of all) {
+      if (a.id === b.id) continue;
+      for (const da of a.domains) for (const db of b.domains) {
+        if (da !== db && ayWebsHostnameMatches(da, [db])) shadows.push(`${a.id}:${da} sous ${b.id}:${db}`);
+      }
+    }
+    expect(shadows).toEqual([]);
+  });
+
+  it('Zalando : les miroirs euro sont reconnus, un miroir hors euro reste hors registre', () => {
+    for (const domain of ['zalando.com', 'zalando.de', 'zalando.fr', 'zalando.it', 'zalando.es', 'zalando.nl', 'zalando.be', 'zalando.at']) {
+      expect(detectAyWebsStore(`https://www.${domain}/`)?.id, domain).toBe('zalando');
+    }
+    /* CHF, SEK, DKK, NOK, PLN, CZK, GBP : la ligne est en EUR, donc on ne
+       promet pas un prix dans la bonne devise. Hors registre = capture
+       externe, à la demande, comme n'importe quel domaine inconnu. */
+    for (const domain of ['zalando.ch', 'zalando.se', 'zalando.dk', 'zalando.no', 'zalando.pl', 'zalando.cz', 'zalando.co.uk']) {
+      expect(detectAyWebsStore(`https://www.${domain}/`), domain).toBeNull();
+    }
+  });
+
+  it('Zalando : la fiche moderne (identifiant en minuscules) est reconnue, le rayon ne l’est pas', () => {
+    const pattern = ayWebsProductUrlPattern(findAyWebsStore('zalando'));
+    expect(pattern).not.toBeNull();
+    for (const path of [
+      '/nike-air-force-1-weiss-ni111a0s2-a0011.html',
+      '/sneaker-ZA21A0B.html',
+      '/damen-pullover-weiss-ni111a0s2-a12.html',
+    ]) {
+      expect(pattern!.test(path), path).toBe(true);
+    }
+    for (const path of ['/', '/sneakers/', '/herren-schuhe/', '/kategorie/neu/']) {
+      expect(pattern!.test(path), path).toBe(false);
     }
   });
 });

@@ -100,7 +100,13 @@ describe('vague 1 — identité au registre', () => {
       expect(store.capabilities).not.toContain('purchase');
       expect(store.capabilities).not.toContain('tracking');
       expect(store.capabilities).toContain('availability');
-      expect(store.domains.length).toBe(1);
+      /* Un domaine d'accueil au minimum, puis les miroirs pays déclarés en
+         données (23/10/2026 : `zalando.de` n'était reconnu par personne). Le
+         PREMIER domaine reste celui de `homeUrl` — c'est lui qui sert de
+         référence à l'écran et au back-office. */
+      expect(store.domains.length).toBeGreaterThanOrEqual(1);
+      expect(store.domains[0]).toBe(new URL(store.homeUrl).hostname.replace(/^www\./, ''));
+      expect(new Set(store.domains).size).toBe(store.domains.length);
       expect(store.logo).toBe(`/stores/${store.id}.png`);
     }
   });

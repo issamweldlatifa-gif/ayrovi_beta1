@@ -631,6 +631,32 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     }
     return false;
   }
+  /** Nombre de MONTANTS distincts dans un texte (« $29.99 - $38.99 » ⇒ 2). */
+  function amazonAmountCount(value) {
+    var normalized = String(value || '').replace(/[\s\u00a0\u202f]+/g, '');
+    var found = normalized.match(/\d+(?:[.,]\d{2})?/g);
+    if (!found) return 0;
+    var seen = {};
+    var count = 0;
+    for (var i = 0; i < found.length; i++) {
+      var key = found[i].replace(/[.,]/g, '');
+      if (!key || seen[key]) continue;
+      seen[key] = true;
+      count++;
+    }
+    return count;
+  }
+  /** « À partir de », « from », « ab » : un prix de départ n'est pas un prix vendu. */
+  function amazonFromPrice(element, value) {
+    if (/\b(?:from|ab|a partir de|à partir de|desde|da)\b\s*$/i.test(String(value || '').trim().replace(/\s+/g, ' '))) return true;
+    var node = element;
+    for (var hop = 0; node && hop < 2; hop++) {
+      var descriptor = String((node.className || '') + ' ' + (node.id || '')).toLowerCase();
+      if (/price-range|pricerange|from-price|basisprice/.test(descriptor)) return true;
+      node = node.parentNode;
+    }
+    return false;
+  }
   /** Famille de preuve d'une lecture de prix dans la zone d'achat. L'étiquette
       d'accessibilité est une chaîne complète publiée par la page ; tout le reste
       est le bloc de prix, que NOUS reconstruisons quand son «.a-offscreen» est
@@ -947,31 +973,41 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
          Sélecteurs mesurés sur les fiches réelles des 04 et 06/10/2026. Aucun
          sélecteur large («.a-price») : deux prix de publicité sur la même page, et
          c'est le mauvais qui gagne. */
+      /* Deux RANGS, et cette distinction a un sens mesuré (23/10/2026).
+         Rang 1 = le prix VENDU de l'article (zone d'achat). Rang 2 = un montant
+         ANNEXE de la même zone : « total avec livraison » (#tp_price_block…), qui
+         diffère légitimement du prix de l'article. Compter les deux comme deux
+         lectures « distinctes » faisait ABSTENIR le lecteur sur une fiche saine :
+         aucune lecture publiée ⇒ capture refusée par le serveur ⇒ « nous n'avons
+         pas pu lire le titre, le prix… ». Le rang 2 ne décide plus du prix ; il
+         ne sert qu'au diagnostic. */
       var AMAZON_PRICE_SELECTORS = [
-        '#apex-pricetopay-accessibility-label',
-        '#corePriceDisplay_desktop_feature_div .priceToPay',
-        '#corePriceDisplay_desktop_feature_div .a-price:not(.a-text-price)',
-        '#corePrice_feature_div .a-price:not(.a-text-price)',
-        '#corePrice_desktop .a-price:not(.a-text-price)',
-        '#corePrice_mobile_feature_div .a-price:not(.a-text-price)',
-        '#corePriceDisplay_mobile_feature_div .a-price:not(.a-text-price)',
-        '#apex_desktop .a-price[data-a-color="base"]',
-        '.priceToPay',
-        '#price_inside_buybox',
-        '#priceblock_ourprice',
-        '#priceblock_dealprice',
-        '#newBuyBoxPrice',
-        '#tp_price_block_total_price_ww .a-offscreen',
-        '#buybox .a-price:not(.a-text-price)',
-        '#desktop_buybox .a-price:not(.a-text-price)',
-        '#mobile_buybox .a-price:not(.a-text-price)'
+        ['#apex-pricetopay-accessibility-label', 1],
+        ['#corePriceDisplay_desktop_feature_div .priceToPay', 1],
+        ['#corePriceDisplay_desktop_feature_div .a-price:not(.a-text-price)', 1],
+        ['#corePrice_feature_div .a-price:not(.a-text-price)', 1],
+        ['#corePrice_desktop .a-price:not(.a-text-price)', 1],
+        ['#corePrice_mobile_feature_div .a-price:not(.a-text-price)', 1],
+        ['#corePriceDisplay_mobile_feature_div .a-price:not(.a-text-price)', 1],
+        ['#apex_desktop .a-price[data-a-color="base"]', 1],
+        ['.priceToPay', 1],
+        ['#price_inside_buybox', 1],
+        ['#priceblock_ourprice', 1],
+        ['#priceblock_dealprice', 1],
+        ['#newBuyBoxPrice', 1],
+        ['#buybox .a-price:not(.a-text-price)', 1],
+        ['#desktop_buybox .a-price:not(.a-text-price)', 1],
+        ['#mobile_buybox .a-price:not(.a-text-price)', 1],
+        ['#tp_price_block_total_price_ww .a-offscreen', 2]
       ];
       var amazonReadings = [];
       var amazonNodes = [];
       var amazonSources = [];
       for (var s = 0; s < AMAZON_PRICE_SELECTORS.length && amazonReadings.length < 6; s++) {
+        var selector = AMAZON_PRICE_SELECTORS[s][0];
+        var tier = AMAZON_PRICE_SELECTORS[s][1];
         var nodes = [];
-        try { nodes = document.querySelectorAll(AMAZON_PRICE_SELECTORS[s]); } catch (e) { continue; }
+        try { nodes = document.querySelectorAll(selector); } catch (e) { continue; }
         for (var n = 0; n < nodes.length && amazonReadings.length < 6; n++) {
           var el = nodes[n];
           if (amazonNodes.indexOf(el) >= 0) continue;
@@ -983,6 +1019,14 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
              (« $6.99$6.99 ») : le verdict de la Phase 0 est SERVEUR, mais on
              n'envoie pas un texte manifestement dupliqué. */
           if (!amazonPlausible(value)) continue;
+          /* Une FOURCHETTE (« $29.99 - $38.99 ») ou un prix « à partir de » n'est
+             pas un prix : c'est l'aveu que la page ne vend pas encore CETTE
+             combinaison. On ne le publie jamais (le serveur le refuserait, à
+             raison) ; on le DIT au client pour qu'il aille lire la fiche du
+             choix. Mesuré sur les fiches à variantes (23/10/2026). */
+          if (amazonAmountCount(value) > 1) { diag('price:range'); continue; }
+          if (amazonFromPrice(el, value)) { diag('price:from'); continue; }
+          if (tier === 2) { diag('price:annex_amount'); continue; }
           amazonNodes.push(el);
           amazonReadings.push(value);
           amazonSources.push(amazonReadingSource(el));

@@ -818,6 +818,8 @@ export const fr = {
   'aywebs.notAvailable': "Indisponible",
   'aywebs.quoteServer': "Le prix affiché vient du serveur : il est calculé au moment de l’ajout.",
   'aywebs.merchantPrice': "Prix affiché par le marchand",
+  'aywebs.notAProductPage': "Cette page n'est pas une fiche produit : ouvrez la fiche de l'article (photo, prix, « Ajouter au panier ») pour l'ajouter.",
+  'aywebs.priceVaries': "Le prix dépend de l'option choisie : le serveur le lit sur la page du choix au moment de l'ajout.",
   'aywebs.priceServerNote': "Le total en dinars (article + livraison) est calculé par le serveur au moment de l’ajout.",
   'aywebs.stockLeft': "Le marchand annonce {count} en stock — pas plus par commande.",
   'aywebs.avail.LOW_STOCK': "Stock faible",
