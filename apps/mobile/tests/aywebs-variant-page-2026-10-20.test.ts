@@ -42,4 +42,43 @@ describe('page du choix', () => {
   it('URL source invalide ⇒ pas de relecture', () => {
     expect(variantPageUrlFor({ sourceUrl: 'pas une url', storeId: 'amazon', selection: { size: 'L' }, options: OPTIONS })).toBeNull();
   });
+
+  /* 23/10/2026 — le twister ne publie pas l'ASIN de la COMBINAISON, seulement
+     celui de la couleur à la taille affichée. Exiger les deux dimensions
+     rendait toute autre couleur illisible, et l'ajout finissait en
+     « stock non confirmé » alors que la page de la couleur existait. */
+  it('couleur + taille choisies, ASIN publié pour la couleur ⇒ on lit la page de la couleur', () => {
+    const COLOURS = [
+      { attributes: { couleur: 'Color Blue', taille: '38' }, sourceVariantId: 'B0PAGE0001' },
+      { attributes: { couleur: 'Dark Gray', taille: '38' }, sourceVariantId: 'B0GRAY0002' },
+    ];
+    expect(variantPageUrlFor({
+      sourceUrl: SOURCE, storeId: 'amazon',
+      selection: { couleur: 'Dark Gray', taille: '40' }, options: COLOURS,
+    })).toBe('https://www.amazon.com/dp/B0GRAY0002');
+  });
+
+  it('la page courante ne prend pas la place d’une page qui montre le choix', () => {
+    /* Les deux options couvrent UNE dimension ; celle de la page courante ne
+       prouve rien de nouveau : on va vers l'autre. */
+    const COLOURS = [
+      { attributes: { couleur: 'Color Blue', taille: '38' }, sourceVariantId: 'B0PAGE0001' },
+      { attributes: { couleur: 'Dark Gray', taille: '40' }, sourceVariantId: 'B0GRAY0002' },
+    ];
+    expect(variantPageUrlFor({
+      sourceUrl: SOURCE, storeId: 'amazon',
+      selection: { couleur: 'Dark Gray', taille: '38' }, options: COLOURS,
+    })).toBe('https://www.amazon.com/dp/B0GRAY0002');
+  });
+
+  it('une valeur qui n’existe dans aucune option ne fabrique pas d’URL', () => {
+    const COLOURS = [
+      { attributes: { couleur: 'Color Blue', taille: '38' }, sourceVariantId: 'B0PAGE0001' },
+      { attributes: { couleur: 'Dark Gray', taille: '38' }, sourceVariantId: 'B0GRAY0002' },
+    ];
+    expect(variantPageUrlFor({
+      sourceUrl: SOURCE, storeId: 'amazon',
+      selection: { couleur: 'Mauve', taille: '40' }, options: COLOURS,
+    })).toBeNull();
+  });
 });

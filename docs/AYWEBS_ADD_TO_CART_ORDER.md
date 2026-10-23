@@ -77,6 +77,26 @@ Aucune ligne technique n'est visible : ni journal de lecture, ni phases, ni comp
 rebours, ni « lecture serveur », ni classification de page. Une erreur réelle s'écrit
 en clair, une seule fois.
 
+## Prix affiché dans la feuille (2026-10-23)
+
+Le prix qui compte est **en dinars, calculé par le serveur** — jamais en devise
+marchande seule, jamais calculé par l'application.
+
+- `POST /product/resolve` publie `variant_quotes` : pour chaque valeur publiée
+  (couleur, taille, volume…), le montant marchand lu sur la page **et** son devis
+  en dinars (`calculatePrice`). Un « à partir de » n'obtient aucun montant ferme,
+  une valeur sans prix n'en reçoit aucun, et sans preuve de prix + devise aucun
+  devis n'est publié.
+- La feuille ouvre avec **une seule** lecture (la capture) qui rapporte le devis
+  de la combinaison affichée et tous les devis par valeur. Changer de couleur, de
+  taille ou de quantité ne déclenche **aucun** appel : le prix en dinars et le
+  total estimé suivent le choix. Le montant marchand reste visible en second.
+- Deux valeurs en désaccord sur le montant ⇒ aucun prix. Le silence du marchand
+  sur le stock reste « inconnu » et s'écrit « Stock vérifié au moment de l'ajout ».
+- Ajout : jugement sur la page décrite par la capture ; si le choix n'est pas
+  prouvé, lecture des pages des valeurs choisies (deux au plus, ASIN du twister)
+  puis ajout. Sinon, refus **expliqué** avec le code du serveur traduit.
+
 ## Cart Item (après Done/Confirm)
 
 Store · Product · Product URL · Product ID · Image · Product Name ·

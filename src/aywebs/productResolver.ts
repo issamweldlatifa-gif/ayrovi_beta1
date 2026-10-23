@@ -51,7 +51,7 @@ import {
   validateAyWebsCapturedPage,
   webviewCaptureDivergence,
 } from './webviewCapture';
-import type { AyWebsCaptureOutcome } from '../../shared/aywebsCapture';
+import type { AyWebsCaptureOutcome, AyWebsCapturedVariantGroup } from '../../shared/aywebsCapture';
 import { ayWebsSelectionEvidence } from './variantEvidence';
 import type { AyWebsAvailabilityState } from '../../shared/aywebsTypes';
 import { ayWebsEvidenceHash, canonicalVariant, recordAyWebsEvidence } from './evidence';
@@ -168,6 +168,13 @@ export interface AyWebsResolveResult {
    * motif (`rejection`) explique pourquoi la capture n'a pas servi.
    */
   capture: AyWebsCaptureOutcome | null;
+  /**
+   * Groupes publiés par la capture CLIENTE, avec ce que la page dit de chaque
+   * valeur (prix, état, stock). Servent au devis PAR VALEUR (23/10/2026) : la
+   * feuille affiche le prix en dinars de chaque couleur sans relire la page.
+   * Absent quand la capture n'a pas servi.
+   */
+  capturedVariantGroups: AyWebsCapturedVariantGroup[];
 }
 
 /** Coupe-circuit AYWEBs : actif par défaut, désactivable (AYWEBS_HOST_CIRCUIT=off). */
@@ -785,6 +792,7 @@ export async function resolveAyWebsProduct(
     capture: captureValidation
       ? { ...captureValidation.outcome, used: captureUsed }
       : null,
+    capturedVariantGroups: captureUsed ? (captureValidation!.variantGroups || []) : [],
   };
 }
 

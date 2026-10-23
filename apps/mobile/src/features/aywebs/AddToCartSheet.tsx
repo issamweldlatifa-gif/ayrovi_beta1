@@ -1,18 +1,20 @@
 /**
- * ورقة الإضافة — «اختر ما تريد» فوق صفحة التاجر (نسخة 23/10/2026).
+ * ورقة الإضافة — «اختر ما تريد» فوق صفحة التاجر (نسخة 23/10/2026، مراجعة السعر بالدينار).
  *
- * الشكل اتّبع نمط الخدمات الوسيطة (Add to Buyee): صورة المنتوج وعنوانه، ثمنه،
- * ثم حقول قليلة تُفتح عند الضغط (المقاس، اللون، النوع، الحجم…)، الكمية، وزرّ
- * واحد كبير. ما فماش أسطر تقنية ولا شروح عن الخادم: المستعمل ما يهمّوش كيفاش
- * نقراو، يهمّه يلقى اللي يختار ويضيف.
+ * الشكل: صورة المنتوج وعنوانه، **ثمنه بالدينار محسوب في الخادم**، ثم حقول قليلة
+ * تُفتح عند الضغط (المقاس، اللون، النوع، الحجم…)، الكمية، وزرّ واحد كبير.
  *
  * قواعد ثابتة:
- *   • **قراءة واحدة عند الإضافة**، موش عند كل تبديل لون: المستعمل يبدّل ما
- *     يحبّ، والورقة ما تطلبش من الخادم شي حتى يضغط «Add to Cart». هي التي
- *     تجيب الثمن والتوفّر منشورين في الصفحة، والإضافة تعيد الحكم على الخادم.
- *   • ما نكتبوش ثمن ما شفناهش: قيمة بلا ثمن منشور تبقى بلا ثمن، والقيمة
- *     المنشورة «غير متوفرة» ما تتخيّرش.
- *   • التأكيد مكتوب من **السطر اللي رجّعو الخادم** (نفس مبدأ 03/10).
+ *   • **الثمن بالدينار يجي من الخادم**، من ثمن الصفحة أو من ثمن القيمة المنشورة
+ *     تحت اللون/المقاس. التطبيق ما يحسبش ثمن، وما يخمّنش: قيمة ما نشرتش ثمنها
+ *     تبقى بلا ثمن بالدينار، ونكتب «الثمن وقت الإضافة».
+ *   • **قراءة واحدة عند الفتح** (كابتشر الصفحة اللي فتحت الورقة) تجيب: ثمن
+ *     التركيبة المعروضة، وثمن كل قيمة، وحالة كل قيمة. تبديل اللون/المقاس ما
+ *     يعاودش يقرا ولا يرجع للخادم.
+ *   • **الضغط على Add** هو القراءة الوحيدة: إذا الكابتشر ما يغطّيش الاختيار،
+ *     تتقرا صفحة الاختيار مرّة واحدة (إذا عندها عنوان)، والخادم هو اللي يحكم.
+ *   • ما نكدبوش على المستعمل في التوفّر: قيمة ما نشرتش حالتها تبقى «غير معروفة»،
+ *     والزرّ يقول شنوّة لازم يصير — موش «La demande n'a pas abouti».
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -23,23 +25,24 @@ import { AppText, Button, KeyValue } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { AppImage } from '@/design/appImage';
 import { AppSheet } from '@/design/sheet/AppSheet';
-import { useI18n } from '@/i18n';
+import { useI18n, type Translate } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import { isApiError, userMessage } from '@/api/errors';
 import {
   addAyWebsCartItem, fetchAyWebsVariants, resolveAyWebsProductWithCapture,
   type AyWebsAddBlockCode, type AyWebsCartItem, type AyWebsResolvedProduct,
-  type AyWebsVariantGroup, type AyWebsVariantOption,
+  type AyWebsVariantGroup, type AyWebsVariantOption, type AyWebsVariantQuote,
 } from '@/api/aywebs';
 import { newAyWebsRequestId } from '@/features/aywebs/requestId';
 import { variantPageUrlFor } from '@/features/aywebs/variantPage';
 import {
-  defaultSelectionFromCapture, displayPriceForSelection, localAddReadiness, localVariantsFromCapture,
-  pageAvailabilityFromCapture, selectionIsShown, splitMerchantPrice, stockForSelection, valueStatesFromCapture,
+  defaultSelectionFromCapture, displayPriceForSelection, localVariantsFromCapture, optionsFromVariants,
+  splitMerchantPrice, valueStatesFromCapture,
   type LocalValueStates,
 } from '@/features/aywebs/localProduct';
 import { choiceGroupKind, choiceGroupKey } from '@/features/aywebs/choiceGroup';
 import { ChoiceField, type ChoiceOption } from '@/features/aywebs/ChoiceField';
+import { selectionQuote, type AvailabilityState } from '@/features/aywebs/selectionQuote';
 
 export interface AddToCartSheetProps {
   visible: boolean;
@@ -62,21 +65,27 @@ export interface AddToCartSheetProps {
 
 const MAX_QUANTITY = 99;
 
-/**
- * La capture est-elle encore une preuve valable ? Le serveur refuse une capture
- * de plus de 10 minutes ; on garde une marge de 2 minutes.
- */
-function captureIsFresh(capture: unknown, now = Date.now()): boolean {
-  const at = Date.parse(String((capture as { capturedAt?: unknown } | null | undefined)?.capturedAt ?? ''));
-  if (!Number.isFinite(at)) return false;
-  const age = now - at;
-  return age >= -60_000 && age <= 8 * 60_000;
-}
-
-function moneyText(price: number | null | undefined, currency: string | null | undefined): string {
+/** Devise affichée pour le montant marchand (celle de la page, jamais supposée). */
+const moneyText = (price: number | null | undefined, currency: string | null | undefined): string => {
   if (!(typeof price === 'number' && price > 0)) return '';
   const iso = String(currency || '').trim();
   return iso ? `${price.toFixed(2)} ${iso}` : price.toFixed(2);
+};
+
+/** Montant en dinars, tel que le serveur l'a calculé. */
+const tndText = (value: number | null | undefined): string =>
+  (typeof value === 'number' && Number.isFinite(value) && value > 0 ? `${value.toFixed(2)} TND` : '');
+
+/** Ce que la feuille sait du choix courant, à partir du devis serveur. */
+interface PageQuote {
+  selection: Record<string, string>;
+  unitTnd: number | null;
+  availability: AvailabilityState;
+  stock: number | null;
+  sourcePrice: number | null;
+  sourceCurrency: string;
+  quotes: AyWebsVariantQuote[];
+  quoteToken: string;
 }
 
 export function AddToCartSheet({
@@ -92,35 +101,90 @@ export function AddToCartSheet({
   const [added, setAdded] = useState<{ item: AyWebsCartItem; linked: boolean; reason: string } | null>(null);
   const [fetched, setFetched] = useState<AyWebsVariantOption[]>([]);
   const [fetchedGroups, setFetchedGroups] = useState<AyWebsVariantGroup[] | null>(null);
+  const [pageQuote, setPageQuote] = useState<PageQuote | null>(null);
+  const [quoting, setQuoting] = useState(false);
   /** الحقل المفتوح — واحد برك في كل وقت (الورقة تبقى قصيرة). */
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const requestId = useRef('');
+  const alive = useRef(true);
+  useEffect(() => () => { alive.current = false; }, []);
 
   const groups = useMemo<AyWebsVariantGroup[]>(
     () => (product.variantGroups.length ? product.variantGroups : (fetchedGroups ?? [])),
     [fetchedGroups, product.variantGroups],
   );
+  const groupsRef = useRef(groups);
+  groupsRef.current = groups;
   const variantOptions = useMemo<AyWebsVariantOption[]>(() => {
     const given = options?.length ? options : product.variantDetails;
     return given.length ? given : fetched;
   }, [fetched, options, product.variantDetails]);
 
+  const captureRecord = useMemo(
+    () => (capture && typeof capture === 'object' ? capture as Record<string, unknown> : null),
+    [capture],
+  );
+  /** États/prix publiés POUR CHAQUE VALEUR — نفس القراءة اللي فتحت الورقة. */
+  const valueStates = useMemo<LocalValueStates>(
+    () => (local && captureRecord ? valueStatesFromCapture(captureRecord) : {}),
+    [captureRecord, local],
+  );
+
+  /**
+   * النداء الوحيد اللي يجي مع فتح الورقة: كابتشر الصفحة + الاختيار المعروض.
+   * يرجّع ثمن التركيبة المعروضة **بالدينار**، وثمن كل قيمة، وحالة كل قيمة.
+   * ما يعاودش يتسمّى عند تبديل اللون: النتائج تتخزّن هنا.
+   */
+  const loadQuote = useCallback(async (captureToUse: unknown, picked: Record<string, string>) => {
+    if (!sessionId || !captureToUse) return;
+    setQuoting(true);
+    try {
+      const resolved = await resolveAyWebsProductWithCapture(product.sourceUrl, {
+        sessionId,
+        storeId: product.storeId || undefined,
+        capture: captureToUse,
+        refresh: false,
+        variant: Object.keys(picked).length ? picked : null,
+      });
+      if (!alive.current) return;
+      setPageQuote({
+        selection: picked,
+        unitTnd: resolved.product.ayroviPricing?.totalTnd ?? null,
+        availability: stateOf(resolved.product.availability.state),
+        stock: resolved.product.availability.quantityHint ?? null,
+        sourcePrice: resolved.product.price,
+        sourceCurrency: resolved.product.currency,
+        quotes: resolved.product.variantQuotes,
+        quoteToken: resolved.quoteToken,
+      });
+    } catch {
+      /* أفضل جهد: بلا خادم، الورقة تعرض ثمن الصفحة وتقول إن الدينار يجي وقت الإضافة. */
+      if (alive.current) setPageQuote(null);
+    } finally {
+      if (alive.current) setQuoting(false);
+    }
+  }, [product.sourceUrl, product.storeId, sessionId]);
+
   /**
    * كل فتح للورقة = نيّة إضافة جديدة: مفتاح جديد، كمية 1، واختيار = **اللي
-   * تعرضو الصفحة**. بلا هذا، الورقة تفتح فارغة على منتوج معروض كامل.
+   * تعرضو الصفحة**.بلا هذا، الورقة تفتح فارغة على منتوج معروض كامل.
    */
   useEffect(() => {
     if (!visible) return;
+    alive.current = true;
     requestId.current = newAyWebsRequestId();
-    setSelection(local && capture ? defaultSelectionFromCapture(capture as Record<string, unknown>, groups) : {});
+    const initial = local && capture ? defaultSelectionFromCapture(capture as Record<string, unknown>, groupsRef.current) : {};
+    setSelection(initial);
     setQuantity(1);
     setError('');
     setAdded(null);
     setBusy(false);
     setFetched([]);
     setFetchedGroups(null);
+    setPageQuote(null);
     setOpenGroup(null);
-    // القصد: إعادة الضبط عند **كل فتح** فقط — تبديل المجموعات وسط الورقة ما يمسحش اختيار المستعمل.
+    if (local && capture) void loadQuote(capture, initial);
+    // القصد: إعادة الضبط عند **كل فتح** فقط.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
@@ -130,78 +194,77 @@ export function AddToCartSheet({
     const needsGroups = product.variantGroups.length === 0;
     const needsOptions = !(options?.length || product.variantDetails.length);
     if (!needsGroups && !needsOptions) return;
-    let alive = true;
+    let on = true;
     fetchAyWebsVariants(
       { productId: product.productId, url: product.sourceUrl, storeId: product.storeId || undefined },
       { sessionId },
     )
       .then((payload) => {
-        if (!alive) return;
+        if (!on) return;
         setFetched(payload.variants);
         setFetchedGroups(payload.variantGroups);
       })
       .catch(() => { /* أفضل جهد: الفشل ما يمنعش الإضافة */ });
-    return () => { alive = false; };
+    return () => { on = false; };
   }, [local, options, product.productId, product.sourceUrl, product.storeId, product.variantDetails.length, product.variantGroups.length, sessionId, visible]);
 
-  const captureRecord = useMemo(
-    () => (capture && typeof capture === 'object' ? capture as Record<string, unknown> : null),
-    [capture],
-  );
-
-  /** États/prix publiés POUR CHAQUE VALEUR — نفس القراءة اللي فتحت الورقة. */
-  const valueStates = useMemo<LocalValueStates>(
-    () => (local && captureRecord ? valueStatesFromCapture(captureRecord) : {}),
-    [captureRecord, local],
-  );
-  const pageAvailability = useMemo(
-    () => (local && captureRecord ? pageAvailabilityFromCapture(captureRecord) : 'UNKNOWN'),
-    [captureRecord, local],
-  );
-  const shownSelection = useMemo(
-    () => (local && captureRecord ? selectionIsShown(captureRecord, selection) : false),
-    [captureRecord, local, selection],
-  );
   const selectionComplete = useMemo(
     () => groups.every((group) => Boolean(selection[group.attribute.trim().toLowerCase()])),
     [groups, selection],
   );
-  /** الثمن اللي تعرضو الصفحة لهذا الاختيار (نصّ كما كتبتو، موش حساب). */
-  const shownPrice = useMemo(
+
+  /** الثمن والتوفّر لهذا الاختيار — كيما نشروهم الخادم، بلا حساب هنا. */
+  const quote = useMemo(() => selectionQuote({
+    page: pageQuote
+      ? {
+        selection: pageQuote.selection,
+        unitTnd: pageQuote.unitTnd,
+        availability: pageQuote.availability,
+        stock: pageQuote.stock,
+        sourcePrice: pageQuote.sourcePrice,
+        sourceCurrency: pageQuote.sourceCurrency,
+      }
+      : null,
+    quotes: pageQuote?.quotes ?? [],
+    selection,
+  }), [pageQuote, selection]);
+
+  /** ثمن القيمة المنشور على الصفحة (نصّها كما كتبتو) — كي ما فماش دينار. */
+  const merchantShown = useMemo(
     () => (local && captureRecord ? displayPriceForSelection(captureRecord, selection) : null),
     [captureRecord, local, selection],
   );
   const merchantPrice = useMemo(
-    () => (shownPrice ? splitMerchantPrice(shownPrice.text) : { amount: '', note: '' }),
-    [shownPrice],
+    () => (merchantShown ? splitMerchantPrice(merchantShown.text) : { amount: '', note: '' }),
+    [merchantShown],
   );
-  const priceText = merchantPrice.amount
-    || moneyText(product.price, product.currency)
-    || '';
-  /** Stock annoncé pour ce choix (« plus que 3 »), sinon `null` — nul n'invente. */
-  const stock = useMemo(
-    () => (local && captureRecord ? stockForSelection(captureRecord, selection) : null),
-    [captureRecord, local, selection],
-  );
-  /** حالة التوفّر المعروضة: غير المعروفة ما تتكتبش (ما نكدّبوش على المستعمل). */
-  const availabilityState = useMemo(() => {
-    const candidate = local
-      ? localAddReadiness({
-        groups,
-        variants: localVariantsFromCapture(captureRecord ?? {}),
-        selection,
-        pageInStockText: pageAvailability === 'AVAILABLE',
-        pageAvailability,
-        pageShowsSelection: shownSelection,
-        valueStates,
-      }).availability
-      : product.availability.state;
-    return candidate === 'AVAILABLE' || candidate === 'LOW_STOCK' || candidate === 'OUT_OF_STOCK' ? candidate : null;
-  }, [captureRecord, groups, local, pageAvailability, product.availability.state, selection, shownSelection, valueStates]);
+  /**
+   * سطر المتجر: المبلغ المنشور على الصفحة (دولار/أورو…) — دليل على الثمن، موش
+   * الثمن اللي يخلّصو المستعمل. « à partir de » تتكتب كيف ما هي.
+   */
+  const merchantLine = useMemo(() => {
+    const fromQuote = moneyText(quote.sourcePrice, quote.sourceCurrency);
+    if (fromQuote) return merchantShown?.priceFrom || quote.priceFrom
+      ? `${t('aywebs.priceFrom')} ${fromQuote}`
+      : fromQuote;
+    if (merchantPrice.amount) {
+      return merchantShown?.priceFrom
+        ? `${t('aywebs.priceFrom')} ${merchantPrice.amount}`
+        : merchantPrice.amount;
+    }
+    return moneyText(product.price, product.currency);
+  }, [merchantPrice.amount, merchantShown?.priceFrom, product.currency, product.price, quote.priceFrom, quote.sourceCurrency, quote.sourcePrice, t]);
+
+  const availabilityLabel = useCallback((state: AvailabilityState): string => {
+    if (state === 'AVAILABLE') return t('aywebs.avail.AVAILABLE');
+    if (state === 'LOW_STOCK') return t('aywebs.avail.LOW_STOCK');
+    if (state === 'OUT_OF_STOCK') return t('aywebs.avail.OUT_OF_STOCK');
+    return t('aywebs.availUnknownTitle');
+  }, [t]);
 
   /**
-   * حقل واحد لكل مجموعة: القيم كما نشرتها الصفحة، ومع كل قيمة ثمنها وحالتها.
-   * القيمة المنشورة «غير متوفرة» ما تتخيّرش (§30: بلا تبديل صامت).
+   * حقل واحد لكل مجموعة: القيم كما نشرتها الصفحة، ومع كل قيمة ثمنها بالدينار
+   * (من الخادم) وحالتها. القيمة المنشورة «غير متوفرة» ما تتخيّرش (§30).
    */
   const fields = useMemo(() => groups.map((group) => {
     const key = group.attribute.trim().toLowerCase();
@@ -210,25 +273,32 @@ export function AddToCartSheet({
     const label = groupKey ? t(groupKey) : groupName;
     const values: ChoiceOption[] = group.values.map((value) => {
       const published = valueStates[key]?.[value.trim().toLowerCase()];
+      const serverQuote = pageQuote?.quotes.find((entry) => entry.group.trim().toLowerCase() === key
+        && entry.value.trim().toLowerCase() === value.trim().toLowerCase());
       const availability = variantAvailability(groupName, value, selection, variantOptions);
-      const state = published?.state === 'OUT_OF_STOCK' ? 'OUT_OF_STOCK' : availability ?? published?.state;
+      const unavailable = published?.state === 'OUT_OF_STOCK'
+        || serverQuote?.availability === 'OUT_OF_STOCK'
+        || availability === 'OUT_OF_STOCK';
       return {
         value,
-        price: published?.price || undefined,
-        priceFrom: published?.priceFrom === true,
-        unavailable: state === 'OUT_OF_STOCK',
-        available: state === 'AVAILABLE',
+        price: serverQuote?.totalTnd != null ? tndText(serverQuote.totalTnd) : (published?.price || undefined),
+        priceFrom: published?.priceFrom === true || serverQuote?.priceFrom === true,
+        unavailable,
+        available: published?.state === 'AVAILABLE' || serverQuote?.availability === 'AVAILABLE' || availability === 'AVAILABLE',
       };
     });
     return { key, groupName, label, kind: choiceGroupKind(groupName), values };
-  }), [groups, selection, t, valueStates, variantOptions]);
+  }), [groups, pageQuote, selection, t, valueStates, variantOptions]);
 
   /** هل القيمة المختارة معلنة «غير متوفرة»؟ — عندها الزرّ معطّل، بسبب مكتوب. */
-  const chosenUnavailable = useMemo(() => Object.entries(selection).some(([name, value]) => {
-    const published = valueStates[name.trim().toLowerCase()]?.[String(value).trim().toLowerCase()];
-    if (published?.state === 'OUT_OF_STOCK') return true;
-    return variantAvailability(name, value, selection, variantOptions) === 'OUT_OF_STOCK';
-  }), [selection, valueStates, variantOptions]);
+  const chosenUnavailable = useMemo(() => {
+    if (quote.availability === 'OUT_OF_STOCK') return true;
+    return Object.entries(selection).some(([name, value]) => {
+      const published = valueStates[name.trim().toLowerCase()]?.[String(value).trim().toLowerCase()];
+      if (published?.state === 'OUT_OF_STOCK') return true;
+      return variantAvailability(name, value, selection, variantOptions) === 'OUT_OF_STOCK';
+    });
+  }, [quote.availability, selection, valueStates, variantOptions]);
 
   const blockedCode = useMemo<AyWebsAddBlockCode | ''>(() => {
     if (chosenUnavailable) return 'VARIANT_UNAVAILABLE';
@@ -236,7 +306,7 @@ export function AddToCartSheet({
     return '';
   }, [chosenUnavailable, selectionComplete]);
 
-  const blockedMessage = (code: AyWebsAddBlockCode): string => {
+  const blockedMessage = useCallback((code: AyWebsAddBlockCode): string => {
     switch (code) {
       case 'VARIANT_REQUIRED': return t('aywebs.block.VARIANT_REQUIRED');
       case 'VARIANT_UNKNOWN': return t('aywebs.block.VARIANT_UNKNOWN');
@@ -246,19 +316,13 @@ export function AddToCartSheet({
       case 'PRICE_UNAVAILABLE': return t('aywebs.block.PRICE_UNAVAILABLE');
       default: return '';
     }
-  };
-
-  /** Adresse de la page du choix (Amazon, ASIN différent de la page affichée). */
-  const variantPageUrl = useCallback(
-    () => variantPageUrlFor({ sourceUrl: product.sourceUrl, storeId: product.storeId, selection, options: variantOptions }),
-    [product.sourceUrl, product.storeId, selection, variantOptions],
-  );
+  }, [t]);
 
   /**
    * «Add to Cart» = **القراءة الوحيدة**. المستعمل يبدّل اللون والمقاس كيف ما
-   * يحبّ بلا ما نطلب من الخادم شي؛ الضغط هو اللي يقرا (من الكابتشر إذا كانت
-   * تحمل ثمن وتوفّر هذا الاختيار، وإلا من صفحة الاختيار مرّة واحدة)، والخادم
-   * يعاود يحسب ويسجّل السطر.
+   * يحبّ بلا ما نطلب من الخادم شي؛ الضغط هو اللي يحلّ الاختيار عند الخادم من
+   * نفس الكابتشر، وإذا الكابتشر ما يغطّيش الاختيار تتقرا صفحة الاختيار مرّة
+   * واحدة (كي عندها عنوان). والخادم هو اللي يسجّل السطر ويثبّت الثمن.
    */
   const confirm = useCallback(async () => {
     if (!sessionId || !requestId.current || busy) return;
@@ -266,57 +330,93 @@ export function AddToCartSheet({
     setBusy(true);
     setError('');
     try {
-      const target = variantPageUrl() ?? product.sourceUrl;
       const variant = groups.length ? selection : null;
-      let productId = product.productId;
-      let sourceUrl = target;
-      let cartCapture: unknown = capture;
-      let cartQuote = quoteToken || '';
+      /* Le premier jugement porte sur la page que la capture décrit — jamais sur
+         une autre URL : sinon la preuve et l'adresse ne parlent pas du même
+         article. Les pages des autres valeurs sont lues ensuite, une par une. */
+      let target = product.sourceUrl;
+      let captureToUse: unknown = capture;
 
-      /* هل الكابتشر تغطّي هذا الاختيار؟ (معروض في الصفحة، ولا كل قيمة عندها
-         ثمنها المنشور) — نفس قاعدة الخادم، باش ما نقراوش صفحة بلا لزوم. */
-      const provenByCapture = !groups.length
-        || shownSelection
-        || Object.entries(selection).every(([name, value]) => {
-          const state = valueStates[name.trim().toLowerCase()]?.[String(value).trim().toLowerCase()];
-          return Boolean(state && state.price && !state.priceFrom);
-        });
-
-      if (local) {
-        if (!cartCapture || !captureIsFresh(cartCapture) || !provenByCapture) {
-          if (!readVariant) throw new Error('variant-reader-missing');
-          cartCapture = await readVariant(target);
-        }
-        const resolved = await resolveAyWebsProductWithCapture(target, {
-          sessionId,
+      /* الورقة اللي تجي من قراءة الخادم (بلا كابتشر) وعندها فاتورة موقّعة على
+         التركيبة كاملة: ما نعاودوش نقراو التاجر — الإضافة تستعمل الفاتورة. */
+      if (!local && quoteToken && !groups.length) {
+        const fast = await addAyWebsCartItem({
+          productId: product.productId,
+          sourceUrl: product.sourceUrl,
           storeId: product.storeId || undefined,
-          capture: cartCapture,
-          refresh: true,
           variant,
+          quantity,
+          quoteToken,
+          requestId: requestId.current,
+        }, { sessionId });
+        if (!alive.current) return;
+        setAdded({ item: fast.item, linked: fast.ayrovi?.linked === true, reason: fast.ayrovi?.reason || '' });
+        onAdded?.(fast.item);
+        return;
+      }
+
+      /* 1. الحكم الأوّل: الكابتشر الحالية + هذا الاختيار (بلا قراءة تاجر). */
+      let resolved = await resolveAyWebsProductWithCapture(target, {
+        sessionId,
+        storeId: product.storeId || undefined,
+        capture: captureToUse,
+        refresh: false,
+        variant,
+      });
+
+      /* 2. الخادم ما قدرش يثبّت التوفّر لهذا الاختيار ⇒ نقراو صفحات الاختيار،
+         وحدة بعد الأخرى (زوز كحدّ أقصى)، وكل مرّة الخادم يعاود يحكم.
+         علاش: على Amazon، ASIN اللون هو «هذا اللون بالمقاس المعروض»، وASIN
+         المقاس هو «هذا المقاس باللون المعروض». تبديل اللون برك ⇒ قراية وحدة.
+         تبديل اللون والمقاس ⇒ قراية اللون، ومن صفحتها عنوان المقاس. */
+      let reads = 0;
+      let seenUrl = target;
+      while (reads < 2 && local && readVariant
+        && (resolved.product.availability.state === 'UNKNOWN' || resolved.product.ayroviPricing?.totalTnd == null)) {
+        const optionsNow = optionsFromVariants(localVariantsFromCapture(
+          (captureToUse && typeof captureToUse === 'object' ? captureToUse : {}) as Record<string, unknown>,
+        ));
+        const nextUrl = variantPageUrlFor({
+          sourceUrl: seenUrl, storeId: product.storeId, selection, options: optionsNow,
         });
-        productId = resolved.product.productId;
-        cartQuote = resolved.quoteToken;
-      } else if (!cartQuote) {
-        /* Chemin serveur : une seule relecture de la page du choix, puis l'ajout. */
-        const shot = readVariant ? await readVariant(target) : undefined;
-        const resolved = await resolveAyWebsProductWithCapture(target, {
-          sessionId, storeId: product.storeId || undefined, capture: shot, refresh: true, variant,
-        });
-        productId = resolved.product.productId;
-        cartCapture = shot;
-        cartQuote = resolved.quoteToken;
+        if (!nextUrl || nextUrl === seenUrl || reads >= 2) break;
+        reads += 1;
+        try {
+          const fresh = await readVariant(nextUrl);
+          if (!fresh) break;
+          captureToUse = fresh;
+          target = nextUrl;
+          seenUrl = nextUrl;
+          resolved = await resolveAyWebsProductWithCapture(target, {
+            sessionId,
+            storeId: product.storeId || undefined,
+            capture: fresh,
+            refresh: false,
+            variant,
+          });
+        } catch {
+          /* القراءة فشلت: نكمّل بالحكم الأخير — والخادم يقول كلمتو. */
+          break;
+        }
+      }
+
+      /* 3. ما نطلبوش من الخادم إضافة يعرف أنّه باش يرفضها: السبب يتكتب للمستعمل. */
+      if (resolved.product.availability.state === 'UNKNOWN') {
+        setError(t('aywebs.selectionUnverified'));
+        return;
       }
 
       const outcome = await addAyWebsCartItem({
-        productId,
-        sourceUrl,
+        productId: resolved.product.productId || product.productId,
+        sourceUrl: target,
         storeId: product.storeId || undefined,
         variant,
         quantity,
-        capture: cartCapture,
-        quoteToken: cartQuote,
+        capture: captureToUse,
+        quoteToken: resolved.quoteToken,
         requestId: requestId.current,
       }, { sessionId });
+      if (!alive.current) return;
       setAdded({
         item: outcome.item,
         linked: outcome.ayrovi?.linked === true,
@@ -324,24 +424,18 @@ export function AddToCartSheet({
       });
       onAdded?.(outcome.item);
     } catch (caught) {
-      if (caught instanceof Error && caught.message === 'variant-reader-missing') {
-        setError(t('aywebs.captureFailed'));
-      } else {
-        setError(isApiError(caught) ? userMessage(caught)[locale] : t('aywebs.captureFailed'));
-      }
+      if (!alive.current) return;
+      setError(addErrorMessage(caught, locale, t));
     } finally {
-      setBusy(false);
+      if (alive.current) setBusy(false);
     }
-  }, [busy, capture, chosenUnavailable, groups.length, locale, local, onAdded, product.productId, product.sourceUrl,
-    product.storeId, quantity, quoteToken, readVariant, selection, selectionComplete, sessionId, shownSelection, t,
-    valueStates, variantPageUrl]);
+  }, [busy, capture, chosenUnavailable, groups.length, local, locale, onAdded, product.productId,
+    product.sourceUrl, product.storeId, quantity, quoteToken, readVariant, selection, selectionComplete, sessionId, t]);
 
-  const availabilityLabel = (state: string): string => {
-    if (state === 'AVAILABLE') return t('aywebs.avail.AVAILABLE');
-    if (state === 'LOW_STOCK') return t('aywebs.avail.LOW_STOCK');
-    if (state === 'OUT_OF_STOCK') return t('aywebs.avail.OUT_OF_STOCK');
-    return '';
-  };
+  const sourceLine = tndText(quote.unitTnd);
+  const totalLine = quote.unitTnd != null ? tndText(quote.unitTnd * quantity) : '';
+  const title = added?.item.title || product.title;
+  const imageUri = added?.item.images[0] || product.images[0] || '';
 
   const closeButton = (
     <Pressable
@@ -354,9 +448,6 @@ export function AddToCartSheet({
       <Ionicons name="close" size={theme.iconSize.md} color={theme.colors.ink} />
     </Pressable>
   );
-
-  const imageUri = added?.item.images[0] || product.images[0] || '';
-  const title = added?.item.title || product.title;
 
   return (
     <AppSheet
@@ -389,15 +480,30 @@ export function AddToCartSheet({
             <AppText variant="caption" color={theme.colors.muted}>
               {added.item.variantLabel || ''}
             </AppText>
-          ) : priceText ? (
-            <AppText variant="title" weight="bold">{priceText}</AppText>
-          ) : null}
-          {!added && merchantPrice.note ? (
-            <AppText variant="caption" color={theme.colors.muted}>{merchantPrice.note}</AppText>
-          ) : null}
-          {!added && shownPrice?.priceFrom ? (
-            <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.priceFromNote')}</AppText>
-          ) : null}
+          ) : (
+            <>
+              {/* الثمن اللي يهمّ المستعمل: بالدينار، محسوب في الخادم. */}
+              {sourceLine ? (
+                <AppText variant="title" weight="bold">{sourceLine}</AppText>
+              ) : quoting ? (
+                <AppText variant="title" weight="bold" color={theme.colors.muted}>
+                  {t('aywebs.pricePending')}
+                </AppText>
+              ) : merchantLine ? (
+                <AppText variant="title" weight="bold">{merchantLine}</AppText>
+              ) : null}
+              {sourceLine && merchantLine ? (
+                <AppText variant="caption" color={theme.colors.muted}>
+                  {t('aywebs.merchantPriceLine', { price: merchantLine })}
+                </AppText>
+              ) : !sourceLine && merchantLine ? (
+                <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.priceAtAdd')}</AppText>
+              ) : null}
+              {!sourceLine && !merchantLine && merchantPrice.note ? (
+                <AppText variant="caption" color={theme.colors.muted}>{merchantPrice.note}</AppText>
+              ) : null}
+            </>
+          )}
         </View>
       </View>
 
@@ -411,7 +517,7 @@ export function AddToCartSheet({
               : t('aywebs.noPrice')}
           />
           {added.item.lineTotalTnd != null ? (
-            <KeyValue label={t('aywebs.totalTnd')} value={`${added.item.lineTotalTnd.toFixed(2)} TND`} />
+            <KeyValue label={t('aywebs.totalTnd')} value={tndText(added.item.lineTotalTnd)} />
           ) : null}
           <AppText variant="caption" color={theme.colors.muted}>
             {added.linked ? t('aywebs.addedLinked') : t('aywebs.addedUnlinked')}
@@ -471,16 +577,22 @@ export function AddToCartSheet({
             </View>
           </View>
 
-          {availabilityState || stock != null ? (
-            <AppText
-              variant="caption"
-              color={availabilityState === 'OUT_OF_STOCK' ? theme.status.danger.fg : theme.colors.muted}
-            >
-              {availabilityState ? availabilityLabel(availabilityState) : ''}
-              {availabilityState && stock != null ? ' · ' : ''}
-              {stock != null ? t('aywebs.stockLeft', { count: stock }) : ''}
-            </AppText>
+          {quote.unitTnd != null && quantity > 1 ? (
+            <View style={styles.totalRow}>
+              <AppText variant="body" weight="semibold">{t('aywebs.estimatedTotal')}</AppText>
+              <AppText variant="body" weight="bold">{totalLine}</AppText>
+            </View>
           ) : null}
+
+          <AppText
+            variant="caption"
+            color={quote.availability === 'OUT_OF_STOCK' ? theme.status.danger.fg : theme.colors.muted}
+          >
+            {quote.availability === 'UNKNOWN'
+              ? t('aywebs.availUnknown')
+              : `${availabilityLabel(quote.availability)}${quote.stock != null ? ` · ${t('aywebs.stockLeft', { count: quote.stock })}` : ''}`}
+          </AppText>
+
           {blockedCode ? (
             <AppText variant="caption" color={theme.status.danger.fg}>
               {blockedMessage(blockedCode)}
@@ -502,6 +614,33 @@ export function AddToCartSheet({
       )}
     </AppSheet>
   );
+}
+
+const stateOf = (value: string | undefined): AvailabilityState => {
+  if (value === 'AVAILABLE' || value === 'LOW_STOCK' || value === 'OUT_OF_STOCK') return value;
+  return 'UNKNOWN';
+};
+
+/**
+ * رسالة الخطأ كما يفهمها المستعمل: كود الخادم يُترجم إلى جملة واحدة واضحة،
+ * موش «La demande n'a pas abouti» على كل رفض (23/10/2026).
+ */
+function addErrorMessage(caught: unknown, locale: 'fr' | 'ar', t: Translate): string {
+  if (isApiError(caught)) {
+    switch (caught.code) {
+      case 'STOCK_UNKNOWN': return t('aywebs.selectionUnverified');
+      case 'OUT_OF_STOCK':
+      case 'VARIANT_UNAVAILABLE': return t('aywebs.block.VARIANT_UNAVAILABLE');
+      case 'VARIANT_UNKNOWN': return t('aywebs.block.VARIANT_UNKNOWN');
+      case 'VARIANT_REQUIRED': return t('aywebs.block.VARIANT_REQUIRED');
+      case 'PRICE_UNAVAILABLE': return t('aywebs.block.PRICE_UNAVAILABLE');
+      case 'PRICE_CHANGED': return t('aywebs.priceChanged');
+      case 'CAPTURE_INCOMPLETE': return t('aywebs.captureFailed');
+      default: break;
+    }
+    return userMessage(caught)[locale];
+  }
+  return t('aywebs.captureFailed');
 }
 
 /** Disponibilité d'une valeur dans la table des combinaisons du serveur (si elle existe). */
@@ -538,5 +677,6 @@ const styles = StyleSheet.create({
   quantityRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   stepper: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   stepperButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  totalRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   actions: { flexDirection: 'row', gap: 8, marginTop: 8 },
 });

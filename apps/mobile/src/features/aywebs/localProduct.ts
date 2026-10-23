@@ -611,6 +611,7 @@ export function productFromCapture(capture: Json, url: string, storeId: string, 
     ayroviPricing: null,
     variantGroups: [],
     variantDetails: [],
+    variantQuotes: [],
     fromCache: false,
     cacheAgeMs: null,
   };

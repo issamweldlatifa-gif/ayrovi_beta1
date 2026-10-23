@@ -209,6 +209,24 @@ export interface AyWebsPricing {
   breakdown: AyWebsPricingBreakdown | null;
 }
 
+/**
+ * Devis serveur d'UNE valeur publiée (couleur, taille, volume…) — 23/10/2026.
+ * Le montant marchand vient de la page (prix écrit sous la pastille) ; la
+ * conversion en dinars est faite par le serveur. `totalTnd: null` = aucun prix
+ * ferme publié pour cette valeur : on n'en invente pas.
+ */
+export interface AyWebsVariantQuote {
+  group: string;
+  value: string;
+  availability: 'AVAILABLE' | 'LOW_STOCK' | 'OUT_OF_STOCK' | 'UNKNOWN';
+  stock: number | null;
+  sourcePrice: number | null;
+  currency: string;
+  priceFrom: boolean;
+  totalTnd: number | null;
+  pricingVersion: number | null;
+}
+
 export interface AyWebsResolvedProduct {
   productId: string;
   storeId: string;
@@ -232,6 +250,8 @@ export interface AyWebsResolvedProduct {
   variantGroups: AyWebsVariantGroup[];
   /** الخيارات المنشورة مع سعرها بالدينار — نفس الّي تعرضه الخادم في `variant_details`. */
   variantDetails: AyWebsVariantOption[];
+  /** ثمن كل قيمة (لون، مقاس…) بالدينار، محسوب في الخادم من ثمن الصفحة. */
+  variantQuotes: AyWebsVariantQuote[];
   fromCache: boolean;
   cacheAgeMs: number | null;
 }
@@ -292,6 +312,7 @@ export function parseAyWebsResolvedProduct(payload: unknown): AyWebsResolvedProd
       : null,
     variantGroups: variantGroupList(payload.variant_groups),
     variantDetails: variantOptionList(payload.variant_details),
+    variantQuotes: variantQuoteList(payload.variant_quotes),
     fromCache: bool(payload.from_cache),
     cacheAgeMs: numOrNull(payload.cache_age_ms),
   };
@@ -657,6 +678,32 @@ function variantGroupList(value: unknown): AyWebsVariantGroup[] {
     if (!isRecord(group) || !str(group.attribute)) throw malformed('groupe de variantes');
     return { attribute: str(group.attribute), values: strList(group.values) };
   });
+}
+
+/** Liste des devis par valeur. Un champ absent = aucun devis (jamais une erreur). */
+function variantQuoteList(value: unknown): AyWebsVariantQuote[] {
+  if (value === undefined || value === null) return [];
+  if (!Array.isArray(value)) throw malformed('devis par valeur');
+  const out: AyWebsVariantQuote[] = [];
+  for (const entry of value) {
+    if (!isRecord(entry)) continue;
+    const group = str(entry.group).trim();
+    const label = str(entry.value).trim();
+    if (!group || !label) continue;
+    const state = str(entry.availability).toUpperCase();
+    out.push({
+      group,
+      value: label,
+      availability: state === 'AVAILABLE' || state === 'LOW_STOCK' || state === 'OUT_OF_STOCK' ? state : 'UNKNOWN',
+      stock: numOrNull(entry.stock),
+      sourcePrice: numOrNull(entry.source_price),
+      currency: str(entry.currency),
+      priceFrom: bool(entry.price_from),
+      totalTnd: numOrNull(entry.total_tnd),
+      pricingVersion: numOrNull(entry.pricing_version),
+    });
+  }
+  return out;
 }
 
 function variantOptionList(value: unknown): AyWebsVariantOption[] {

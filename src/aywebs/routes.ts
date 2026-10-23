@@ -6,7 +6,7 @@ import { calculatePrice, type PricingRules } from '../services/pricing';
 import { cardGatewayAvailable } from '../services/paymentGateway';
 import { ayWebsReadGateStats } from './readGate';
 import { readerFingerprintReport } from '../scraper/readerFingerprint';
-import { AYWEBS_CAPTURE_LIMITS, AYWEBS_CAPTURE_VERSION } from '../../shared/aywebsCapture';
+import { AYWEBS_CAPTURE_LIMITS, AYWEBS_CAPTURE_VERSION, type AyWebsCapturedVariantGroup } from '../../shared/aywebsCapture';
 import { AYWEBS_CAPTURE_SCRIPT } from './captureScript';
 import { AYWEBS_CAPTURE_TRACKED_STORES, ayWebsWebviewCaptureStats, ayWebsWebviewVerifySample } from './webviewCapture';
 import { getAyroviAiCore } from '../ai-core/core';
@@ -50,6 +50,7 @@ import {
   updateAyWebsCartItem,
   verifyAyWebsCart,
 } from './cart';
+import { ayWebsVariantQuotes } from './variantQuotes';
 import { ayWebsCheckoutPreviewPayload, computeAyWebsCheckoutPreview } from './checkoutFees';
 import {
   acceptedAyWebsPaymentMethods,
@@ -646,6 +647,7 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
           result.sourceProduct.variants,
           db.getPricingRules(),
           { priceVerified: result.scrapedProduct.priceVerified === true, currencyVerified: result.scrapedProduct.currencyVerified === true },
+          result.capturedVariantGroups,
         ),
         // Honnêteté (§51) : le client sait si la fiche vient d'être relue ou
         // servie depuis la lecture mémorisée, et depuis combien de temps.
@@ -1450,6 +1452,8 @@ function productPayload(
   sourceVariants: AyWebsSourceProduct['variants'] = [],
   pricingRules?: PricingRules,
   quoteEvidence: { priceVerified: boolean; currencyVerified: boolean } = { priceVerified: false, currencyVerified: false },
+  /** Groupes publiés par la capture CLIENTE — devis par valeur (23/10/2026). */
+  capturedVariantGroups: AyWebsCapturedVariantGroup[] = [],
 ) {
   return {
     product_id: product.productId,
@@ -1479,6 +1483,21 @@ function productPayload(
         )
       : [],
     variant_groups: product.variantGroups,
+    /**
+     * DEVIS PAR VALEUR : pour chaque couleur / taille / volume publié, ce que la
+     * page dit de lui (état, stock) et son prix en DINARS calculé ICI. La feuille
+     * affiche ce nombre quand le client change de valeur — sans relire la page,
+     * et sans jamais calculer un prix elle-même. Une valeur sans prix ferme
+     * publié garde `total_tnd: null` : on ne devine pas.
+     */
+    variant_quotes: pricingRules
+      ? ayWebsVariantQuotes({
+          groups: capturedVariantGroups,
+          rules: pricingRules,
+          product: { title: product.title, price: product.price, currency: product.currency },
+          quoteVerified: quoteEvidence.priceVerified && quoteEvidence.currencyVerified,
+        })
+      : [],
     // État publié par la source ('' → null) : la coque ne doit jamais écrire
     // « New » par défaut, seulement recopier une donnée vérifiable.
     condition: product.condition || null,
