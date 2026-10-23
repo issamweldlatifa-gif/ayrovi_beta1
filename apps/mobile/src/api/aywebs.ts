@@ -61,12 +61,14 @@ export interface AyWebsPageAnalysis {
   /**
    * Qui prouve la fiche produit :
    *   • `url`     — l'adaptateur de la boutique reconnaît le motif d'URL ;
-   *   • `capture` — boutique du catalogue : c'est la capture du navigateur qui
-   *     la prouve (le serveur exige un prix corroboré et un titre) ;
+   *   • `pattern` — boutique du catalogue dont le motif d'URL de fiche est
+   *     déclaré au registre (indice de navigation, jamais une preuve de prix) ;
+   *   • `capture` — boutique du catalogue sans motif : c'est la capture du
+   *     navigateur qui prouve la fiche (prix corroboré + titre exigés) ;
    *   • `none`    — domaine hors registre.
    * Une valeur inconnue retombe sur `url` : on n'ouvre jamais un droit par erreur.
    */
-  productRecognition: 'url' | 'capture' | 'none';
+  productRecognition: 'url' | 'pattern' | 'capture' | 'none';
   customerActionRequired: boolean;
   browserMode: string;
   fallback: string;
@@ -89,7 +91,8 @@ export function parseAyWebsPageAnalysis(payload: unknown): AyWebsPageAnalysis {
     isProductPage: bool(payload.is_product_page),
     productDetected: bool(payload.product_detected),
     productRecognition: payload.product_recognition === 'capture' ? 'capture'
-      : payload.product_recognition === 'none' ? 'none' : 'url',
+      : payload.product_recognition === 'pattern' ? 'pattern'
+        : payload.product_recognition === 'none' ? 'none' : 'url',
     customerActionRequired: bool(payload.customer_action_required),
     browserMode: str(payload.browser_mode),
     fallback: str(payload.fallback),

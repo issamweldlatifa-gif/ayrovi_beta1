@@ -8,7 +8,7 @@ import { ayWebsReadGateStats } from './readGate';
 import { readerFingerprintReport } from '../scraper/readerFingerprint';
 import { AYWEBS_CAPTURE_LIMITS, AYWEBS_CAPTURE_VERSION } from '../../shared/aywebsCapture';
 import { AYWEBS_CAPTURE_SCRIPT } from './captureScript';
-import { ayWebsWebviewCaptureStats, ayWebsWebviewVerifySample } from './webviewCapture';
+import { AYWEBS_CAPTURE_TRACKED_STORES, ayWebsWebviewCaptureStats, ayWebsWebviewVerifySample } from './webviewCapture';
 import { getAyroviAiCore } from '../ai-core/core';
 import { ayWebsResolveCacheStats, ayWebsResolveFailureCacheStats } from './resolveCache';
 import {
@@ -434,6 +434,20 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
           /** Compteurs réels : captures jugées / acceptées / refusées, et comment
               la devise a été prouvée (code publié, symbole de boutique, ou rien). */
           stats: ayWebsWebviewCaptureStats(),
+          /**
+           * MESURE PAR BOUTIQUE (23/10/2026) — la donnée qui tranche entre
+           * « adaptateur dédié » et « adaptateur collectif ». `stats.by_store`
+           * donne, pour chaque domaine réellement capturé : captures jugées,
+           * acceptées, taux, motifs de refus (bornés), sources uniques, et si la
+           * page publiait des groupes de variantes.
+           *   `registre:*`  = boutique OUVERTE (adaptateur dédié ou collectif)
+           *   `catalogue:*` = boutique PRÉVUE mais fermée → demande réelle
+           *   `external`    = domaine hors catalogue
+           */
+          store_tracking: {
+            max: AYWEBS_CAPTURE_TRACKED_STORES,
+            over_limit_bucket: 'autres',
+          },
           /**
            * Boutique externe (hors registre) : quel identifiant est écrit sur un
            * produit capturé, et combien de domaines elle revendique. Zéro domaine,

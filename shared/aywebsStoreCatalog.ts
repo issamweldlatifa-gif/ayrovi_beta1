@@ -407,3 +407,43 @@ function catalogStore([id, name, homeUrl, categories]: (typeof CATALOG_ROWS)[num
 }
 
 export const AYWEBS_CATALOG_STORES: readonly AyWebsStoreDefinition[] = CATALOG_ROWS.map(catalogStore);
+
+/**
+ * Domaine → boutique du CATALOGUE (23/10/2026).
+ *
+ * Le registre ne reconnaît que les boutiques OUVERTES (`detectAyWebsStore`) :
+ * une visite chez eBay n'y a pas d'identité. Or c'est exactement ce qu'il faut
+ * mesurer pour décider quelle boutique ouvrir ensuite. On répond donc à une
+ * question plus faible, et on le dit : « ce domaine est une boutique PRÉVUE »,
+ * pas « cette boutique est reconnue ». Aucune garde ne s'appuie sur cette
+ * fonction — elle ne sert qu'à l'attribution des mesures.
+ */
+const CATALOG_BY_DOMAIN = new Map<string, AyWebsStoreDefinition>();
+for (const store of AYWEBS_CATALOG_STORES) {
+  for (const domain of store.domains) {
+    const key = domain.toLowerCase().replace(/^\.?www\./, '');
+    if (key && !CATALOG_BY_DOMAIN.has(key)) CATALOG_BY_DOMAIN.set(key, store);
+  }
+}
+
+export function detectAyWebsCatalogStore(rawUrl: unknown): AyWebsStoreDefinition | null {
+  if (typeof rawUrl !== 'string') return null;
+  let host = '';
+  try {
+    host = new URL(rawUrl.trim()).hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+  if (!host) return null;
+  const bare = host.replace(/^\.?www\./, '');
+  const direct = CATALOG_BY_DOMAIN.get(bare);
+  if (direct) return direct;
+  /* Sous-domaine (« shop.zalando.com ») : on remonte les étiquettes, jamais au-delà
+     du domaine enregistré — pas de correspondance par suffixe approximatif. */
+  const parts = bare.split('.');
+  for (let index = 1; index < parts.length - 1; index += 1) {
+    const candidate = CATALOG_BY_DOMAIN.get(parts.slice(index).join('.'));
+    if (candidate) return candidate;
+  }
+  return null;
+}

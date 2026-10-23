@@ -214,7 +214,10 @@ export async function resolveAyWebsProduct(
      prouvée que par la capture du client, donc le seuil est celui d'un domaine
      hors registre — corroboration obligatoire, jamais un prix d'une seule source. */
   const preliminaryStore = preliminary.storeId ? findAyWebsStore(preliminary.storeId) : null;
-  const captureRecognition = ayWebsStoreRecognition(preliminaryStore) === 'capture';
+  /* Tout le catalogue (motif déclaré OU capture seule) exige la corroboration :
+     aucun de ces marchands n'a d'adaptateur écrit à la main pour rattraper une
+     lecture solitaire. */
+  const captureRecognition = ayWebsStoreRecognition(preliminaryStore) !== 'url';
   const captureValidation = captureProvided
     ? validateAyWebsCapturedPage(input.capture, preliminary.normalizedUrl, {
         requireCorroboration: !preliminary.registered || captureRecognition,

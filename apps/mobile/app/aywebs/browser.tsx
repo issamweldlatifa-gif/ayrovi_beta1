@@ -148,12 +148,16 @@ export default function AyWebsBrowserScreen() {
    * Page qu'on a le DROIT d'essayer de lire (23/10/2026) :
    *   • fiche reconnue par l'URL (Amazon, SHEIN…) : `productPage === true` ;
    *   • boutique du catalogue (`productRecognition === 'capture'`) : aucune
-   *     reconnaissance d'URL n'existe, c'est la capture qui prouve la fiche.
-   *     Le bouton reste donc actif, et c'est le SERVEUR qui accepte ou refuse
-   *     (prix corroboré + titre), avec un message explicite en cas de refus.
+   *     reconnaissance d'URL n'existe, c'est la capture qui prouve la fiche ;
+   *   • boutique du catalogue avec motif déclaré (`'pattern'`) : le motif n'est
+   *     qu'un INDICE — il ne fixe pas de prix, donc le bouton reste actif même
+   *     quand la page courante n'y répond pas.
+   *     Dans les deux cas c'est le SERVEUR qui accepte ou refuse (prix corroboré
+   *     + titre), avec un message explicite en cas de refus.
    */
-  const capturePage = productPage === true
-    || (pageAnalysis?.productRecognition === 'capture' && captureAllowed);
+  const browserRead = pageAnalysis?.productRecognition === 'capture'
+    || pageAnalysis?.productRecognition === 'pattern';
+  const capturePage = productPage === true || (browserRead && captureAllowed);
   const [classified, setClassified] = useState(false);
   /** الورقة: المنتوج + الكابتشر اللي بعثناه (باش الإضافة ما تعاودش تقرا التاجر). */
   const [sheet, setSheet] = useState<{
@@ -573,7 +577,7 @@ export default function AyWebsBrowserScreen() {
         {/* السبب بالكلمات: تصنيف الخادم يقرّر إذا الزرّ يتفعّل ولا لا. */}
         {!classified ? (
           <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.classifying')}</AppText>
-        ) : productPage !== true && pageAnalysis?.productRecognition === 'capture' ? (
+        ) : productPage !== true && browserRead ? (
           <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.addReadsInBrowser')}</AppText>
         ) : productPage !== true ? (
           <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.addNotProductPage')}</AppText>

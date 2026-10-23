@@ -229,15 +229,18 @@ export function assertAyWebsProductPage(
     });
   }
 
-  /* ── BOUTIQUE SANS MOTIF D'URL : la CAPTURE STRUCTURÉE fait preuve ──────
-     Le modèle « lecture dans le navigateur du client » appliqué à une boutique
-     du registre (vague 1 du catalogue, 23/10/2026). Le seuil est celui d'un
-     domaine hors registre — capture acceptée ET prix corroboré ET titre publié —
-     sinon la page reste non reconnue et l'écran dit pourquoi. Rien n'est deviné
-     depuis l'URL : un `/ip/…` ou un `/p/…` ne prouve rien en soi. */
+  /* ── CATALOGUE : quand l'URL ne suffit pas, la CAPTURE STRUCTURÉE fait preuve ──
+     Vague 1 du catalogue (23/10/2026), deux cas :
+       • `pattern` — le motif déclaré n'a pas matché (page inattendue), mais la
+         capture est concluante : on l'accepte, à preuve égale ;
+       • `capture` — aucun motif n'existe : la capture est le SEUL chemin.
+     Le seuil est celui d'un domaine hors registre — capture acceptée ET prix
+     corroboré ET titre publié — sinon la page reste non reconnue et l'écran dit
+     pourquoi. Rien n'est deviné : un `/ip/…` ou un `/p/…` ne prouve rien en soi. */
   const proof = options.captureProof;
+  const recognition = ayWebsStoreRecognition(store);
   let captureProvesPage = false;
-  if (!classification.isProductPage && ayWebsStoreRecognition(store) === 'capture') {
+  if (!classification.isProductPage && (recognition === 'capture' || recognition === 'pattern')) {
     captureProvesPage = proof?.accepted === true
       && proof?.corroborated === true
       && Boolean(String(proof?.title || '').trim());
@@ -246,7 +249,7 @@ export function assertAyWebsProductPage(
   if (!classification.isProductPage && !captureProvesPage) {
     throw new AyWebsDomainError('PRODUCT_PAGE_REQUIRED', {
       technicalMessage: `pageType=${classification.pageType} — aucune identité produit exploitable`
-        + (ayWebsStoreRecognition(store) === 'capture' ? ' (capture cliente absente ou non concluante)' : ''),
+        + (recognition === 'capture' || recognition === 'pattern' ? ' (capture cliente absente ou non concluante)' : ''),
     });
   }
 
@@ -257,7 +260,7 @@ export function assertAyWebsProductPage(
         pageType: 'PRODUCT',
         isProductPage: true,
         reason: 'capture_client_corroboree',
-        productRecognition: 'capture',
+        productRecognition: recognition === 'pattern' ? 'pattern' : 'capture',
       }
       : analysis,
     store,

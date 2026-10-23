@@ -40,6 +40,7 @@ import {
   type AyWebsCapturedVariantGroup,
 } from '../../shared/aywebsCapture';
 import type { AyWebsAvailabilityState } from '../../shared/aywebsTypes';
+import { detectAyWebsCatalogStore } from '../../shared/aywebsStoreCatalog';
 
 /** Ordre de fiabilité des sources de prix : machine d'abord, humain ensuite. */
 const SOURCE_RANK: Record<AyWebsCaptureSource, number> = { json_ld: 0, microdata: 1, meta: 2, dom: 3 };
@@ -106,6 +107,22 @@ function hostMatchesAny(host: string, suffixes: readonly string[] | undefined): 
    pourquoi ; d'où vient le prix retenu ; comment la devise a été prouvée. Ces
    compteurs sont la seule façon de voir en production si la règle « symbole »
    travaille (et si la capture WebView sert vraiment à quelque chose). */
+/** Mesure PAR BOUTIQUE : la seule façon de choisir entre adaptateur dédié et
+ *  adaptateur collectif avec des chiffres, pas des impressions (23/10/2026). */
+export interface AyWebsWebviewCaptureStoreStats {
+  validated: number;
+  accepted: number;
+  rejected: number;
+  /** Taux d'acceptation, arrondi à 3 décimales ; `null` tant qu'on n'a rien jugé. */
+  acceptance_rate: number | null;
+  /** Motifs de refus les plus fréquents (bornés). */
+  rejections: Record<string, number>;
+  /** Prix prouvé par UNE seule source : le signe d'une page mal balisée. */
+  single_source: number;
+  /** La page a-t-elle publié des groupes de variantes nommés ? */
+  variant_groups_seen: number;
+}
+
 interface AyWebsWebviewCaptureStats {
   validated: number;
   accepted: number;
@@ -116,13 +133,69 @@ interface AyWebsWebviewCaptureStats {
   currency_symbol: number;
   currency_unproven: number;
   single_source: number;
+  /** Attribution par boutique — bornée, voir `storeKeyOf`. */
+  by_store: Record<string, AyWebsWebviewCaptureStoreStats>;
 }
 
 const captureStats: AyWebsWebviewCaptureStats = {
   validated: 0, accepted: 0, rejected: 0,
   rejections: {}, price_sources: {},
   currency_published: 0, currency_symbol: 0, currency_unproven: 0, single_source: 0,
+  by_store: {},
 };
+
+/**
+ * Combien de boutiques on suit, et combien de motifs par boutique.
+ *
+ * Un compteur qui grandit avec le trafic est une fuite mémoire déguisée : le
+ * domaine d'une capture vient du CLIENT. On borne donc les deux dimensions, et
+ * au-delà on range sous `autres` — on perd le détail, jamais la mesure globale.
+ */
+const MAX_TRACKED_STORES = 64;
+/** Exposé par `/health` : le client sait combien de boutiques sont suivies. */
+export const AYWEBS_CAPTURE_TRACKED_STORES = MAX_TRACKED_STORES;
+const MAX_TRACKED_REJECTIONS = 12;
+const OTHER_STORE_KEY = 'autres';
+
+/**
+ * Clé d'attribution d'une capture (23/10/2026) : boutique du REGISTRE si le
+ * domaine y est (boutique ouverte), sinon boutique du CATALOGUE (prévue mais
+ * fermée — savoir qu'on la visite est ce qui décide de l'ouvrir), sinon
+ * `external`. Le préfixe dit toujours dans quel monde on est :
+ *   `registre:walmart` · `catalogue:ebay` · `external` · `url_invalide`.
+ */
+export function ayWebsCaptureStoreKey(requestUrl: string): string {
+  try {
+    const url = new URL(String(requestUrl || '').trim());
+    const registered = detectAyWebsStore(url.toString());
+    if (registered) return `registre:${registered.id}`;
+    const planned = detectAyWebsCatalogStore(url.toString());
+    if (planned) return `catalogue:${planned.id}`;
+    return 'external';
+  } catch {
+    return 'url_invalide';
+  }
+}
+
+function storeBucket(key: string): AyWebsWebviewCaptureStoreStats {
+  const existing = captureStats.by_store[key];
+  if (existing) return existing;
+  const known = Object.keys(captureStats.by_store);
+  /* Une place est réservée à `autres` : le plafond est un plafond de MÉMOIRE
+     (nombre de seaux), pas un plafond de boutiques nommées. */
+  const target = known.length >= MAX_TRACKED_STORES - 1 ? OTHER_STORE_KEY : key;
+  if (!captureStats.by_store[target]) {
+    captureStats.by_store[target] = {
+      validated: 0, accepted: 0, rejected: 0, acceptance_rate: null,
+      rejections: {}, single_source: 0, variant_groups_seen: 0,
+    };
+  }
+  return captureStats.by_store[target];
+}
+
+function finishStoreBucket(bucket: AyWebsWebviewCaptureStoreStats): void {
+  bucket.acceptance_rate = bucket.validated ? Math.round((bucket.accepted / bucket.validated) * 1000) / 1000 : null;
+}
 
 function bump(target: Record<string, number>, key: string): void {
   if (!key) return;
@@ -130,10 +203,16 @@ function bump(target: Record<string, number>, key: string): void {
 }
 
 export function ayWebsWebviewCaptureStats(): AyWebsWebviewCaptureStats {
+  const byStore: Record<string, AyWebsWebviewCaptureStoreStats> = {};
+  for (const [key, bucket] of Object.entries(captureStats.by_store)) {
+    finishStoreBucket(bucket);
+    byStore[key] = { ...bucket, rejections: { ...bucket.rejections } };
+  }
   return {
     ...captureStats,
     rejections: { ...captureStats.rejections },
     price_sources: { ...captureStats.price_sources },
+    by_store: byStore,
   };
 }
 
@@ -148,6 +227,7 @@ export function resetAyWebsWebviewCaptureStats(): void {
   captureStats.currency_symbol = 0;
   captureStats.currency_unproven = 0;
   captureStats.single_source = 0;
+  captureStats.by_store = {};
 }
 
 /**
@@ -345,9 +425,23 @@ function amazonVariantRefusal(payload: AyWebsCapturedPage): string | null {
   return null;
 }
 
-function rejected(rejection: string, fingerprint = '', notes: string[] = []): AyWebsCaptureValidation {
+function captureRejected(
+  storeKey: string,
+  rejection: string,
+  fingerprint = '',
+  notes: string[] = [],
+): AyWebsCaptureValidation {
   captureStats.rejected += 1;
   bump(captureStats.rejections, rejection);
+  const bucket = storeBucket(storeKey);
+  /* `validated` est déjà compté à l'entrée de `validateAyWebsCapturedPage` :
+     on n'ajoute ici que le refus, sinon une capture refusée compterait double. */
+  bucket.rejected += 1;
+  if (Object.keys(bucket.rejections).length < MAX_TRACKED_REJECTIONS || bucket.rejections[rejection]) {
+    bump(bucket.rejections, rejection);
+  } else {
+    bump(bucket.rejections, 'autre');
+  }
   return {
     ok: false, rejection, scraped: null, price: 0, currency: '',
     priceVerified: false, currencyVerified: false,
@@ -378,6 +472,14 @@ export function validateAyWebsCapturedPage(
   options: AyWebsCaptureValidationOptions = {},
 ): AyWebsCaptureValidation {
   captureStats.validated += 1;
+  /* Attribution AVANT toute lecture : même une capture illisible est comptée
+     pour la boutique qu'on regardait — sinon les refus les plus fréquents
+     (`NOT_AN_OBJECT`, `BAD_VERSION`) disparaîtraient de la mesure. */
+  const storeKey = ayWebsCaptureStoreKey(requestUrl);
+  const bucket = storeBucket(storeKey);
+  bucket.validated += 1;
+  const rejected = (rejection: string, fingerprint = '', notes: string[] = []) =>
+    captureRejected(storeKey, rejection, fingerprint, notes);
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return rejected('NOT_AN_OBJECT');
   const payload = raw as AyWebsCapturedPage;
 
@@ -667,6 +769,9 @@ export function validateAyWebsCapturedPage(
     captureStats.currency_unproven += 1;
   }
   if (!corroborated) captureStats.single_source += 1;
+  bucket.accepted += 1;
+  if (!corroborated) bucket.single_source += 1;
+  if (variantGroups.length) bucket.variant_groups_seen += 1;
 
   return {
     ok: true,

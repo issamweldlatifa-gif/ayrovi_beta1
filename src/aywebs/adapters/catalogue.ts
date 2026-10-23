@@ -1,5 +1,5 @@
 import type { AyWebsAdapterId, AyWebsStoreDefinition } from '../../../shared/aywebsStores';
-import { findAyWebsStore } from '../../../shared/aywebsStores';
+import { ayWebsProductUrlPattern, findAyWebsStore } from '../../../shared/aywebsStores';
 import type { ScrapeOptions } from '../../scraper/scraper';
 import { BaseStoreAdapter } from './base';
 import {
@@ -17,9 +17,10 @@ import {
  * sans écrire 380 adaptateurs.
  *
  * ── CE QU'IL NE FAIT PAS (et c'est le cœur de sa garantie) ────────────────
- *   • il ne DEVINE aucune fiche produit à partir de l'URL : `isProductPage`
- *     répond toujours `false`. Un `/dp/…` ou un `/ip/…` ne prouve rien pour un
- *     marchand dont on n'a pas écrit l'adaptateur ;
+ *   • il ne DEVINE aucune fiche produit : il ne reconnaît que le motif d'URL
+ *     DÉCLARÉ par la boutique dans le registre (`productUrlPattern`). Une
+ *     boutique sans motif répond `false` — et un `/ip/…` ne prouve rien pour
+ *     un marchand dont on n'a pas écrit le motif ;
  *   • il ne lit PAS la page côté serveur : `resolveProduct` refuse explicitement.
  *     Ces boutiques se lisent dans le navigateur du CLIENT (capture structurée :
  *     JSON-LD du marchand, prix corroboré, titre publié), qui est ensuite jugée
@@ -42,9 +43,16 @@ export class CatalogueStoreAdapter extends BaseStoreAdapter {
     return this.definition ?? findAyWebsStore(this.id);
   }
 
-  /** Aucune connaissance d'URL : la fiche est prouvée par la capture du client. */
-  isProductPage(): boolean {
-    return false;
+  /**
+   * Reconnaissance par MOTIF DÉCLARÉ — jamais deviné ici.
+   *
+   * Le motif vit dans le Store Registry (donnée, pas code) : ouvrir une boutique
+   * ne demande plus d'écrire une classe, seulement de déclarer son motif. Le
+   * motif ne fixe AUCUN prix : il autorise la lecture, la capture la prouve.
+   */
+  isProductPage(url: URL): boolean {
+    const pattern = ayWebsProductUrlPattern(this.store);
+    return Boolean(pattern && pattern.test(url.pathname));
   }
 
   /**

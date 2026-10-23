@@ -13,14 +13,18 @@ export type AyWebsAdapterId = 'amazon' | 'shein' | 'temu' | 'aliexpress' | 'cata
  *
  *   • `url`     — l'adaptateur reconnaît le motif d'URL de la fiche (Amazon :
  *     `/dp/<ASIN>`, SHEIN : `-p-<id>.html`…). Le serveur décide sans lire la page.
- *   • `capture` — la boutique n'a pas d'adaptateur dédié : c'est la CAPTURE
- *     STRUCTURÉE du navigateur du client (JSON-LD du marchand + prix corroboré)
- *     qui PROUVE que la page est une fiche produit. Aucune devinette d'URL.
+ *   • `pattern` — la boutique n'a pas d'adaptateur écrit à la main, mais son
+ *     motif d'URL de fiche est DÉCLARÉ en données (`productUrlPattern`). C'est
+ *     un INDICE de navigation : il autorise à ouvrir la lecture, il ne fixe
+ *     jamais un prix — le prix vient de la capture, comme pour `capture`.
+ *   • `capture` — aucun motif d'URL : seule la CAPTURE STRUCTURÉE du navigateur
+ *     du client (JSON-LD du marchand + prix corroboré) peut PROUVER que la page
+ *     est une fiche produit. Aucune devinette d'URL.
  *
  * Ce champ n'ouvre aucun droit à lui seul : il dit seulement QUI a le droit de
  * dire « ceci est une fiche produit » (voir `assertAyWebsProductPage`).
  */
-export type AyWebsStoreRecognition = 'url' | 'capture';
+export type AyWebsStoreRecognition = 'url' | 'pattern' | 'capture';
 
 /**
  * Store Registry (§7) — le registre CENTRALISÉ des boutiques.
@@ -70,10 +74,21 @@ export interface AyWebsStoreDefinition {
   /** Description courte de la carte (vide = la carte affiche ses catégories). */
   description?: string;
   /**
-   * Qui prouve la fiche produit : le motif d'URL de l'adaptateur (`url`, défaut)
-   * ou la capture structurée du client (`capture`). Voir `AyWebsStoreRecognition`.
+   * Qui prouve la fiche produit : le motif d'URL de l'adaptateur (`url`, défaut),
+   * un motif déclaré en données (`pattern`) ou la capture du client (`capture`).
+   * Voir `AyWebsStoreRecognition`.
    */
   recognition?: AyWebsStoreRecognition;
+  /**
+   * Motif d'URL de la FICHE PRODUIT, pour une boutique sans adaptateur écrit à
+   * la main (`recognition: 'pattern'`). Expression régulière ANCRÉE sur le chemin
+   * (`^…` ajouté d'office, 120 caractères max), évaluée sur `pathname` seul.
+   *
+   * Ce n'est pas une preuve de prix : c'est ce qui permet d'affirmer « cette page
+   * EST la fiche » pour laisser le client la lire. Le prix, la devise et le stock
+   * restent exigés de la capture, corroborés par le serveur.
+   */
+  productUrlPattern?: string;
   popular: boolean;
   phase: 1 | 2;
 }
@@ -196,29 +211,51 @@ const AYWEBS_CORE_STORES: readonly AyWebsStoreDefinition[] = [
  * reste du catalogue garde son contrat actuel : navigation seule, commande par
  * URL. Le passage d'une boutique d'une vague à l'autre est UNE ligne.
  */
-const CAPTURE_WAVE_1: readonly [string, string, string, string, string, readonly string[]][] = [
-  /* [id, nom affiché, pays, devise, adresse d'accueil, catégories] */
-  ['walmart', 'Walmart', 'US', 'USD', 'https://www.walmart.com', ['marketplace']],
-  ['target', 'Target', 'US', 'USD', 'https://www.target.com', ['marketplace']],
-  ['etsy', 'Etsy', 'US', 'USD', 'https://www.etsy.com', ['marketplace', 'arts']],
-  ['best-buy', 'Best Buy', 'US', 'USD', 'https://www.bestbuy.com', ['electronics']],
-  ['newegg', 'Newegg', 'US', 'USD', 'https://www.newegg.com', ['electronics']],
-  ['mediamarkt', 'MediaMarkt', 'DE', 'EUR', 'https://www.mediamarkt.com', ['electronics']],
-  ['otto', 'OTTO', 'DE', 'EUR', 'https://www.otto.de', ['marketplace']],
-  ['kaufland', 'Kaufland', 'DE', 'EUR', 'https://www.kaufland.de', ['marketplace']],
-  ['zalando', 'Zalando', 'DE', 'EUR', 'https://www.zalando.com', ['fashion']],
-  ['asos', 'ASOS', 'GB', 'GBP', 'https://www.asos.com', ['fashion']],
-  ['h-m', 'H&M', 'SE', 'EUR', 'https://www.hm.com', ['fashion', 'kids']],
-  ['cdiscount', 'Cdiscount', 'FR', 'EUR', 'https://www.cdiscount.com', ['marketplace']],
-  ['allegro', 'Allegro', 'PL', 'PLN', 'https://allegro.pl', ['marketplace']],
-] as const;
+interface CaptureStoreRow {
+  id: string;
+  displayName: string;
+  country: string;
+  currency: string;
+  homeUrl: string;
+  categories: readonly string[];
+  /**
+   * Motif de la fiche produit, ÉCRIT EN DONNÉES (voir `productUrlPattern`).
+   *
+   * Règle d'admission d'un motif : il doit être stable, public, et vérifiable
+   * sur au moins deux fiches réelles. Tant qu'il n'a pas été vérifié, la ligne
+   * ne porte AUCUN motif et la boutique reste en `capture` : c'est le cas de
+   * MediaMarkt et Cdiscount ci-dessous — leur motif d'URL n'est pas publié de
+   * façon fiable, donc on ne le devine pas.
+   */
+  productUrlPattern?: string;
+}
+
+const CAPTURE_WAVE_1: readonly CaptureStoreRow[] = [
+  /* Marchés anglo-saxons — motifs d'URL publics et stables. */
+  { id: 'walmart', displayName: 'Walmart', country: 'US', currency: 'USD', homeUrl: 'https://www.walmart.com', categories: ['marketplace'], productUrlPattern: '^/ip/(?:[^/]+/)?\\d+' },
+  { id: 'target', displayName: 'Target', country: 'US', currency: 'USD', homeUrl: 'https://www.target.com', categories: ['marketplace'], productUrlPattern: '^/p/(?:[^/]+/)?-/A-\\d+' },
+  { id: 'etsy', displayName: 'Etsy', country: 'US', currency: 'USD', homeUrl: 'https://www.etsy.com', categories: ['marketplace', 'arts'], productUrlPattern: '^/listing/\\d+' },
+  { id: 'best-buy', displayName: 'Best Buy', country: 'US', currency: 'USD', homeUrl: 'https://www.bestbuy.com', categories: ['electronics'], productUrlPattern: '^/site/[^?]*/\\d+\\.p' },
+  { id: 'newegg', displayName: 'Newegg', country: 'US', currency: 'USD', homeUrl: 'https://www.newegg.com', categories: ['electronics'], productUrlPattern: '^/p/[A-Za-z0-9-]+' },
+  /* Allemagne / Europe — même règle : motif vérifié ou rien. */
+  { id: 'otto', displayName: 'OTTO', country: 'DE', currency: 'EUR', homeUrl: 'https://www.otto.de', categories: ['marketplace'], productUrlPattern: '^/p/[^/]+-\\d+' },
+  { id: 'kaufland', displayName: 'Kaufland', country: 'DE', currency: 'EUR', homeUrl: 'https://www.kaufland.de', categories: ['marketplace'], productUrlPattern: '^/product/\\d+' },
+  { id: 'zalando', displayName: 'Zalando', country: 'DE', currency: 'EUR', homeUrl: 'https://www.zalando.com', categories: ['fashion'], productUrlPattern: '^/[^/]*-[A-Z0-9]{6,}\\.html' },
+  { id: 'mediamarkt', displayName: 'MediaMarkt', country: 'DE', currency: 'EUR', homeUrl: 'https://www.mediamarkt.com', categories: ['electronics'] },
+  { id: 'asos', displayName: 'ASOS', country: 'GB', currency: 'GBP', homeUrl: 'https://www.asos.com', categories: ['fashion'], productUrlPattern: '^/[^/]*/prd/\\d+' },
+  { id: 'h-m', displayName: 'H&M', country: 'SE', currency: 'EUR', homeUrl: 'https://www.hm.com', categories: ['fashion', 'kids'], productUrlPattern: '^/[a-z]{2}_[a-z]{2}/productpage\\.\\d+\\.html' },
+  /* France / Pologne — motif non vérifiable de façon fiable : capture seule. */
+  { id: 'cdiscount', displayName: 'Cdiscount', country: 'FR', currency: 'EUR', homeUrl: 'https://www.cdiscount.com', categories: ['marketplace'] },
+  { id: 'allegro', displayName: 'Allegro', country: 'PL', currency: 'PLN', homeUrl: 'https://allegro.pl', categories: ['marketplace'], productUrlPattern: '^/oferta/[^/]+-\\d+' },
+];
 
 /** Lecture cliente : navigation + fiche + variantes + stock ; JAMAIS l'achat. */
 const CAPTURE_READ_CAPABILITIES: readonly AyWebsStoreCapability[] = [
   'browse', 'product', 'variants', 'availability',
 ] as const;
 
-function captureStore([id, displayName, country, currency, homeUrl, categories]: (typeof CAPTURE_WAVE_1)[number]): AyWebsStoreDefinition {
+function captureStore(row: CaptureStoreRow): AyWebsStoreDefinition {
+  const { id, displayName, country, currency, homeUrl, categories, productUrlPattern } = row;
   let domain = '';
   try { domain = new URL(homeUrl).hostname.toLowerCase().replace(/^\.?www\./, ''); } catch { domain = ''; }
   return {
@@ -239,7 +276,8 @@ function captureStore([id, displayName, country, currency, homeUrl, categories]:
     homeUrl,
     searchUrlTemplate: '',
     categories,
-    recognition: 'capture',
+    recognition: productUrlPattern ? 'pattern' : 'capture',
+    productUrlPattern,
     popular: false,
     phase: 2,
   };
@@ -257,7 +295,32 @@ export const AYWEBS_STORES: readonly AyWebsStoreDefinition[] = [...AYWEBS_CORE_S
  */
 export function ayWebsStoreRecognition(store: AyWebsStoreDefinition | null | undefined): AyWebsStoreRecognition {
   if (!store) return 'url';
-  return store.recognition ?? (store.adapter === 'catalogue' ? 'capture' : 'url');
+  if (store.recognition) return store.recognition;
+  if (store.adapter === 'catalogue') return store.productUrlPattern ? 'pattern' : 'capture';
+  return 'url';
+}
+
+/**
+ * Compile le motif de fiche déclaré par une boutique — ou `null`.
+ *
+ * Borné et ancré à dessein : un motif fourni en données ne doit jamais pouvoir
+ * matcher « n'importe quoi ». 120 caractères max, `^` ajouté d'office, évalué
+ * sur le CHEMIN seul (les paramètres de suivi charrient des jetons opaques).
+ * Motif invalide = aucun motif : la boutique retombe sur la preuve par capture.
+ */
+const PATTERN_CACHE = new Map<string, RegExp | null>();
+export function ayWebsProductUrlPattern(store: AyWebsStoreDefinition | null | undefined): RegExp | null {
+  const source = String(store?.productUrlPattern || '').trim();
+  if (!source || source.length > 120) return null;
+  if (PATTERN_CACHE.has(source)) return PATTERN_CACHE.get(source) || null;
+  let compiled: RegExp | null = null;
+  try {
+    compiled = new RegExp(source.startsWith('^') ? source : `^${source}`, 'i');
+  } catch {
+    compiled = null;
+  }
+  PATTERN_CACHE.set(source, compiled);
+  return compiled;
 }
 
 /**

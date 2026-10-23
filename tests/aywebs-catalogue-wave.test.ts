@@ -27,6 +27,7 @@ import { describe, expect, it } from 'vitest';
 import {
   AYWEBS_CAPTURE_STORES,
   AYWEBS_STORES,
+  ayWebsProductUrlPattern,
   ayWebsStoreRecognition,
   findAyWebsStore,
 } from '../shared/aywebsStores';
@@ -69,6 +70,26 @@ describe('vague 1 — identité au registre', () => {
     }
   });
 
+  it('chaque boutique déclare QUI prouve sa fiche : motif ou capture', () => {
+    for (const store of AYWEBS_CAPTURE_STORES) {
+      const recognition = ayWebsStoreRecognition(store);
+      expect(['pattern', 'capture']).toContain(recognition);
+      /* Une déclaration sans motif serait un mensonge : le motif doit exister ET
+         être compilable, sinon la boutique retombe honnêtement sur `capture`. */
+      if (recognition === 'pattern') {
+        expect(ayWebsProductUrlPattern(store), `${store.id} : motif invalide`).not.toBeNull();
+      } else {
+        expect(store.productUrlPattern).toBeUndefined();
+      }
+    }
+  });
+
+  it('au moins une boutique reste en capture seule : le repli existe vraiment', () => {
+    const pure = AYWEBS_CAPTURE_STORES.filter((store) => ayWebsStoreRecognition(store) === 'capture');
+    expect(pure.length).toBeGreaterThan(0);
+    expect(pure.map((store) => store.id)).toContain('mediamarkt');
+  });
+
   it('toutes les boutiques de la vague sont au même contrat, sans achat', () => {
     for (const store of AYWEBS_CAPTURE_STORES) {
       expect(store.adapter).toBe('catalogue');
@@ -81,7 +102,6 @@ describe('vague 1 — identité au registre', () => {
       expect(store.capabilities).toContain('availability');
       expect(store.domains.length).toBe(1);
       expect(store.logo).toBe(`/stores/${store.id}.png`);
-      expect(ayWebsStoreRecognition(store)).toBe('capture');
     }
   });
 
@@ -104,12 +124,56 @@ describe('vague 1 — identité au registre', () => {
 });
 
 describe('vague 1 — reconnaissance de la fiche', () => {
-  it('l’adaptateur catalogue ne devine jamais une fiche produit', () => {
+  it('l’adaptateur catalogue reconnaît le MOTIF DÉCLARÉ, et rien d’autre', () => {
     const store = findAyWebsStore('walmart')!;
     const adapter = createAyWebsAdapter(store, scraper);
     expect(adapter.id).toBe('catalogue');
     expect(adapter.store?.id).toBe('walmart');
-    expect(adapter.isProductPage(new URL('https://www.walmart.com/ip/hanes-tee/123456'))).toBe(false);
+    /* Fiche réelle : oui. Rayon, recherche, panier : non. */
+    expect(adapter.isProductPage(new URL('https://www.walmart.com/ip/hanes-tee/123456'))).toBe(true);
+    expect(adapter.isProductPage(new URL('https://www.walmart.com/browse/clothing/5438'))).toBe(false);
+    expect(adapter.isProductPage(new URL('https://www.walmart.com/search?q=tshirt'))).toBe(false);
+    expect(adapter.isProductPage(new URL('https://www.walmart.com/cart'))).toBe(false);
+  });
+
+  it('un motif déclaré ne recharge pas la lecture serveur (prix = capture)', async () => {
+    const adapter = createAyWebsAdapter(findAyWebsStore('walmart')!, scraper);
+    await expect(adapter.resolveProduct('https://www.walmart.com/ip/hanes-tee/123456'))
+      .rejects.toMatchObject({ code: 'PRODUCT_PAGE_REQUIRED' });
+  });
+
+  it('sans motif déclaré, aucune fiche n’est reconnue (MediaMarkt)', () => {
+    const adapter = createAyWebsAdapter(findAyWebsStore('mediamarkt')!, scraper);
+    expect(adapter.isProductPage(new URL('https://www.mediamarkt.com/de/product/_tv-123456.html'))).toBe(false);
+  });
+
+  it('chaque motif reconnaît sa fiche ET refuse une page de rayon', () => {
+    const samples: Record<string, [string, string]> = {
+      walmart: ['https://www.walmart.com/ip/123456', 'https://www.walmart.com/browse/tv'],
+      target: ['https://www.target.com/p/-/A-12345', 'https://www.target.com/c/tv/-/N-1234'],
+      etsy: ['https://www.etsy.com/listing/123456/coussin', 'https://www.etsy.com/c/home'],
+      'best-buy': ['https://www.bestbuy.com/site/tv/123456.p', 'https://www.bestbuy.com/site/electronics/abcat0100.c'],
+      newegg: ['https://www.newegg.com/p/N82E16819113877', 'https://www.newegg.com/Desktop-PC/SubCategory/ID-2'],
+      otto: ['https://www.otto.de/p/kopfhoerer-1234567', 'https://www.otto.de/shoes/'],
+      kaufland: ['https://www.kaufland.de/product/123456/', 'https://www.kaufland.de/sortiment/tv/'],
+      zalando: ['https://www.zalando.com/sneaker-ZA21A0B.html'.replace('sneaker', 'sneaker').replace('.html', '.html'), 'https://www.zalando.com/sneakers/'],
+      asos: ['https://www.asos.com/abc/prd/201234567/p/', 'https://www.asos.com/men/'],
+      'h-m': ['https://www.hm.com/en_us/productpage.123456.html', 'https://www.hm.com/en_us/men/'],
+      allegro: ['https://allegro.pl/oferta/telefon-123456789', 'https://allegro.pl/kategoria/telefony'],
+    };
+    for (const [id, [product, category]] of Object.entries(samples)) {
+      const store = findAyWebsStore(id);
+      expect(store, id).not.toBeNull();
+      const pattern = ayWebsProductUrlPattern(store);
+      expect(pattern, `${id} : aucun motif`).not.toBeNull();
+      expect(pattern!.test(new URL(product).pathname), `${id} : fiche non reconnue (${product})`).toBe(true);
+      expect(pattern!.test(new URL(category).pathname), `${id} : rayon reconnu à tort (${category})`).toBe(false);
+    }
+  });
+
+  it('un motif dégradé est refusé, jamais appliqué à moitié', () => {
+    expect(ayWebsProductUrlPattern({ ...findAyWebsStore('walmart')!, productUrlPattern: '(' })).toBeNull();
+    expect(ayWebsProductUrlPattern({ ...findAyWebsStore('walmart')!, productUrlPattern: 'x'.repeat(200) })).toBeNull();
   });
 
   it('deux boutiques de la vague = deux identités distinctes', () => {
@@ -119,18 +183,18 @@ describe('vague 1 — reconnaissance de la fiche', () => {
     expect(b.store?.id).toBe('zalando');
   });
 
-  it('une URL nue est REFUSÉE : rien ne prouve la fiche', () => {
+  it('une URL nue est REFUSÉE quand aucun motif n’existe (MediaMarkt)', () => {
     expect(() => assertAyWebsProductPage(
-      'https://www.walmart.com/ip/hanes-tee/123456', scraper,
+      'https://www.mediamarkt.com/de/product/_tv-123456.html', scraper,
     )).toThrowError(/produit|product/i);
   });
 
   it('une capture corroborée AVEC titre prouve la fiche', () => {
-    const proof = { accepted: true, corroborated: true, title: 'Hanes Men’s T-Shirt' };
+    const proof = { accepted: true, corroborated: true, title: 'Samsung TV 55"' };
     const { analysis } = assertAyWebsProductPage(
-      'https://www.walmart.com/ip/hanes-tee/123456', scraper, { captureProof: proof },
+      'https://www.mediamarkt.com/de/product/_tv-123456.html', scraper, { captureProof: proof },
     );
-    expect(analysis.storeId).toBe('walmart');
+    expect(analysis.storeId).toBe('mediamarkt');
     expect(analysis.isProductPage).toBe(true);
     expect(analysis.pageType).toBe('PRODUCT');
     expect(analysis.productRecognition).toBe('capture');
@@ -138,7 +202,7 @@ describe('vague 1 — reconnaissance de la fiche', () => {
   });
 
   it('les preuves partielles ne suffisent pas (prix, titre, acceptation)', () => {
-    const url = 'https://www.walmart.com/ip/hanes-tee/123456';
+    const url = 'https://www.mediamarkt.com/de/product/_tv-123456.html';
     for (const proof of [
       { accepted: true, corroborated: false, title: 'Titre' },
       { accepted: true, corroborated: true, title: '   ' },
@@ -151,6 +215,23 @@ describe('vague 1 — reconnaissance de la fiche', () => {
   it('Amazon n’emprunte pas le chemin « capture »', () => {
     const { analysis } = assertAyWebsProductPage('https://www.amazon.com/dp/B0GYM3V9H5', scraper);
     expect(analysis.productRecognition).toBe('url');
+  });
+
+  it('le motif déclaré reconnaît la fiche sans capture (mais ne la prix pas)', () => {
+    const { analysis } = assertAyWebsProductPage('https://www.walmart.com/ip/hanes-tee/123456', scraper);
+    expect(analysis.storeId).toBe('walmart');
+    expect(analysis.isProductPage).toBe(true);
+    expect(analysis.productRecognition).toBe('pattern');
+  });
+
+  it('un motif qui ne matche pas retombe sur la preuve par capture', () => {
+    const url = 'https://www.walmart.com/nouvelle-forme/xyz';
+    expect(() => assertAyWebsProductPage(url, scraper)).toThrow();
+    const { analysis } = assertAyWebsProductPage(url, scraper, {
+      captureProof: { accepted: true, corroborated: true, title: 'Hanes Men’s T-Shirt' },
+    });
+    expect(analysis.isProductPage).toBe(true);
+    expect(analysis.reason).toBe('capture_client_corroboree');
   });
 });
 
