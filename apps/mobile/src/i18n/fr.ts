@@ -826,6 +826,7 @@ export const fr = {
   'aywebs.block.PRICE_UNAVAILABLE': "Pas de devis serveur en dinars : ajout impossible sans prix calculé.",
   'aywebs.classifying': "Le serveur classifie la page…",
   'aywebs.addNotProductPage': "Le serveur n’a pas classé cette page comme page produit : l’ajout reste arrêté.",
+  'aywebs.addReadsInBrowser': "Cette boutique n’a pas de reconnaissance d’URL : la fiche est lue dans le navigateur. « Ajouter au panier » la lit, et le serveur vérifie le prix et la disponibilité avant l’ajout.",
   'aywebs.cartTitle': "Panier AyWebs",
   'aywebs.cartHint': "Panier tenu par le serveur. Chaque chiffre vient du serveur, et chaque ligne dit si elle vit déjà dans le panier ZAYROVI.",
   'aywebs.cartEmpty': "Le panier est vide.",

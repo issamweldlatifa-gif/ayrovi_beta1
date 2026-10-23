@@ -16,6 +16,7 @@ import {
   AYWEBS_EXTERNAL_STORE,
   AYWEBS_STORES,
   ayWebsStoreCan,
+  ayWebsStoreRecognition,
   findAyWebsStore,
   type AyWebsStoreDefinition,
 } from '../../shared/aywebsStores';
@@ -222,6 +223,13 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
     /** Opérationnel = la lecture produit fonctionne VRAIMENT aujourd'hui. */
     ...operationalOf(store),
     adapter: store.adapter,
+    /**
+     * Qui prouve la fiche produit : `url` (adaptateur dédié), `capture` (boutique
+     * du catalogue : capture cliente exigée), `none` (hors registre, jamais ici).
+     * L'écran de boutique s'en sert pour expliquer ce qui marche AVANT d'ouvrir
+     * le navigateur (23/10/2026).
+     */
+    product_recognition: ayWebsStoreRecognition(store),
     status: store.status,
     integration_type: store.integrationType,
     capabilities: [...store.capabilities],
@@ -537,6 +545,13 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
         is_product_page: analysis.isProductPage,
         /** §11 : le pont de détection répond franchement « produit détecté ? ». */
         product_detected: analysis.isProductPage && Boolean(analysis.storeId),
+        /**
+         * Qui peut prouver la fiche : `url` (motif de l'adaptateur), `capture`
+         * (boutique du catalogue : capture structurée exigée) ou `none` (hors
+         * registre). L'application n'active « Ajouter » que si une lecture a une
+         * chance réelle d'aboutir (23/10/2026).
+         */
+        product_recognition: analysis.productRecognition,
         customer_action_required: analysis.customerActionRequired,
         browser_mode: analysis.browserMode,
         /** Piste explicite quand la boutique n'est pas intégrée (§23). */

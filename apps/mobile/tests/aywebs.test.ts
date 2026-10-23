@@ -121,6 +121,20 @@ describe('تحليل الصفحة', () => {
     expect(() => parseAyWebsPageAnalysis({ store_id: 'amazon' })).toThrow(ApiError);
     expect(() => parseAyWebsPageAnalysis(null)).toThrow(/illisible/);
   });
+
+  /**
+   * 23/10/2026 — boutiques du CATALOGUE : pas de reconnaissance d'URL, la fiche
+   * est prouvée par la capture du navigateur. L'écran doit le savoir AVANT
+   * d'ouvrir, sinon il refuse d'ajouter une fiche que la capture sait lire.
+   */
+  it('type de reconnaissance : url / capture / none', () => {
+    expect(parseAyWebsPageAnalysis({ ...ANALYSIS, product_recognition: 'url' }).productRecognition).toBe('url');
+    expect(parseAyWebsPageAnalysis({ ...ANALYSIS, product_recognition: 'capture' }).productRecognition).toBe('capture');
+    expect(parseAyWebsPageAnalysis({ ...ANALYSIS, product_recognition: 'none' }).productRecognition).toBe('none');
+    /* Valeur inconnue ou absente : on n'ouvre jamais un droit par erreur. */
+    expect(parseAyWebsPageAnalysis({ ...ANALYSIS, product_recognition: 'peut-etre' }).productRecognition).toBe('url');
+    expect(parseAyWebsPageAnalysis(ANALYSIS).productRecognition).toBe('url');
+  });
 });
 
 describe('قائمة المتاجر', () => {

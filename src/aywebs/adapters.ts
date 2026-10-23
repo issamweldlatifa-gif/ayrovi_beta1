@@ -27,6 +27,7 @@ export { AmazonAdapter } from './adapters/amazon';
 export { SheinAdapter } from './adapters/shein';
 export { TemuAdapter } from './adapters/temu';
 export { AliExpressAdapter } from './adapters/aliexpress';
+export { CatalogueStoreAdapter } from './adapters/catalogue';
 export {
   AYWEBS_ADAPTER_DESCRIPTORS,
   ayWebsAdapterDescriptor,

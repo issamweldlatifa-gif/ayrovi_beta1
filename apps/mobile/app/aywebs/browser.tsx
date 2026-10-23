@@ -144,6 +144,16 @@ export default function AyWebsBrowserScreen() {
   const captureAllowed = pageAnalysis
     ? (pageAnalysis.captureAllowed || pageAnalysis.externalCaptureAllowed)
     : captureAllowedParam;
+  /**
+   * Page qu'on a le DROIT d'essayer de lire (23/10/2026) :
+   *   • fiche reconnue par l'URL (Amazon, SHEIN…) : `productPage === true` ;
+   *   • boutique du catalogue (`productRecognition === 'capture'`) : aucune
+   *     reconnaissance d'URL n'existe, c'est la capture qui prouve la fiche.
+   *     Le bouton reste donc actif, et c'est le SERVEUR qui accepte ou refuse
+   *     (prix corroboré + titre), avec un message explicite en cas de refus.
+   */
+  const capturePage = productPage === true
+    || (pageAnalysis?.productRecognition === 'capture' && captureAllowed);
   const [classified, setClassified] = useState(false);
   /** الورقة: المنتوج + الكابتشر اللي بعثناه (باش الإضافة ما تعاودش تقرا التاجر). */
   const [sheet, setSheet] = useState<{
@@ -333,9 +343,9 @@ export default function AyWebsBrowserScreen() {
   }, [requestCapture]);
 
   useEffect(() => {
-    if (!captureAllowed || productPage !== true || !pageReady || !pageUrl) return;
+    if (!captureAllowed || !capturePage || !pageReady || !pageUrl) return;
     startPrefetch(pageUrl);
-  }, [captureAllowed, productPage, pageReady, pageUrl, startPrefetch]);
+  }, [captureAllowed, capturePage, pageReady, pageUrl, startPrefetch]);
 
   const fail = useCallback((error: unknown) => {
     endWaiting('failed');
@@ -349,7 +359,7 @@ export default function AyWebsBrowserScreen() {
    * **فوق هذه الصفحة** — الإضافة الحقيقية تجي في الورقة.
    */
   const addToCart = useCallback(async () => {
-    if (!sessionId || !pageUrl || productPage !== true) return;
+    if (!sessionId || !pageUrl || !capturePage) return;
     /* Un nouvel appui remplace le précédent : l'ancien est annulé, il ne touche plus l'écran. */
     addController.current?.abort();
     const controller = new AbortController();
@@ -417,7 +427,7 @@ export default function AyWebsBrowserScreen() {
         addController.current = null;
       }
     }
-  }, [captureAllowed, endWaiting, fail, locale, productPage, requestCapture, sessionId, startWaiting, storeId, pageUrl, t]);
+  }, [captureAllowed, capturePage, endWaiting, fail, locale, requestCapture, sessionId, startWaiting, storeId, pageUrl, t]);
 
   const onMessage = useCallback((event: WebViewMessageEvent) => {
     stopTimer();
@@ -437,14 +447,14 @@ export default function AyWebsBrowserScreen() {
   }, [t]);
 
   const verdict = outcome?.capture ?? null;
-  const addEnabled = productPage === true && !busy && !prefetchReading && Boolean(sessionId);
+  const addEnabled = capturePage && !busy && !prefetchReading && Boolean(sessionId);
 
   /* Favoris : seulement pour une page produit. La liste sert à afficher le cœur plein. */
   const { status: accountStatus } = useSession();
   const favorites = useQuery({
     queryKey: ['account', 'favorites'],
     queryFn: ({ signal }) => fetchFavorites({ signal }),
-    enabled: productPage === true && accountStatus === 'signedIn',
+    enabled: capturePage && accountStatus === 'signedIn',
     retry: false,
   });
   const saved = isPageSaved(favorites.data ?? [], pageUrl);
@@ -563,6 +573,8 @@ export default function AyWebsBrowserScreen() {
         {/* السبب بالكلمات: تصنيف الخادم يقرّر إذا الزرّ يتفعّل ولا لا. */}
         {!classified ? (
           <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.classifying')}</AppText>
+        ) : productPage !== true && pageAnalysis?.productRecognition === 'capture' ? (
+          <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.addReadsInBrowser')}</AppText>
         ) : productPage !== true ? (
           <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.addNotProductPage')}</AppText>
         ) : null}
@@ -591,7 +603,7 @@ export default function AyWebsBrowserScreen() {
           <ToolIcon
             name={saved ? 'heart' : 'heart-outline'}
             label={t('aywebs.bar.favorites')}
-            disabled={productPage !== true}
+            disabled={!capturePage}
             active={saved}
             onPress={() => setFavOpen(true)}
             testID="aywebs-store-fav"

@@ -826,6 +826,7 @@ export const ar = {
   'aywebs.block.PRICE_UNAVAILABLE': "ما فماش تسعير بالدينار من الخادم: الإضافة ممنوعة بلا ثمن محسوب.",
   'aywebs.classifying': "الخادم يصنّف الصفحة…",
   'aywebs.addNotProductPage': "الخادم ما صنّفش هذه الصفحة كصفحة منتوج: الإضافة تتوقّف.",
+  'aywebs.addReadsInBrowser': "هذه البوتيك ما عندهاش تعرّف آلي بالرابط: القراءة تجي من المتصفّح. اضغط «Add to Cart» باش نقراو الفيشة، والخادم يتحقّق من الثمن والتوفّر قبل الإضافة.",
   'aywebs.cartTitle': "سلّة AYWEBs",
   'aywebs.cartHint': "سلّة محفوظة في الخادم. كل رقم صادر من الخادم، وكل سطر يقول إذا كان مازال في سلّة ZAYROVI.",
   'aywebs.cartEmpty': "السلّة فارغة.",

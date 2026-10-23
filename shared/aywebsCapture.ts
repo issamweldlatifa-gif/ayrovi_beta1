@@ -41,12 +41,23 @@ export const AYWEBS_CAPTURE_LIMITS = {
   maxTitleLength: 300,
   maxVariantTexts: 30,
   maxSelectedVariantTexts: 5,
+  /** Groupes de variantes nommés (23/10/2026) : mêmes bornes que le script client. */
+  maxVariantGroups: 4,
+  maxVariantGroupValues: 20,
   maxImages: 4,
   /** Au-delà, la capture est refusée : une page ouverte il y a une heure n'est pas une preuve. */
   maxAgeMs: 10 * 60_000,
   /** Tolérance d'horloge (le téléphone du client peut avancer un peu). */
   maxClockSkewMs: 60_000,
 } as const;
+
+/** Groupe de variantes nommé, tel que lu par le script du client. */
+export interface AyWebsCapturedVariantGroup {
+  name: string;
+  values: string[];
+  /** Valeur affichée sur la page — une seule, ou vide. */
+  selected?: string[];
+}
 
 /** D'où vient un texte de prix — conservé pour l'audit et la corroboration. */
 export type AyWebsCaptureSource = 'json_ld' | 'microdata' | 'meta' | 'dom';
@@ -109,6 +120,13 @@ export interface AyWebsCapturedPage {
   selectedVariantTexts?: string[];
   /** Options publiées par la page (libellés bruts, bornés). */
   variantTexts?: string[];
+  /**
+   * Groupes de variantes NOMMÉS (« Taille », « Couleur ») avec leurs valeurs et
+   * celle qui est affichée. Lus uniquement sur les boutiques sans adaptateur
+   * d'URL (23/10/2026) : un `<label for>`, un `<legend>`, un `aria-label` ou le
+   * `name` du champ nomme le groupe. Bornes : 4 groupes, 20 valeurs, 60 car.
+   */
+  variantGroups?: AyWebsCapturedVariantGroup[];
   /** Images trouvées (URLs http/https seulement). */
   images?: string[];
   /** Horodatage ISO de la lecture, dans le navigateur du client. */

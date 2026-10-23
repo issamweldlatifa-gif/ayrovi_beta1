@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { QatafoDatabase } from '../db/database';
 import { parsePublicHttpUrl, UnsafeUrlError } from '../services/safeUrl';
-import { AYWEBS_EXTERNAL_STORE, AYWEBS_STORES, detectAyWebsStore, findAyWebsStore, type AyWebsStoreDefinition } from '../../shared/aywebsStores';
+import { AYWEBS_EXTERNAL_STORE, AYWEBS_STORES, ayWebsStoreRecognition, detectAyWebsStore, findAyWebsStore, type AyWebsStoreDefinition, type AyWebsStoreRecognition } from '../../shared/aywebsStores';
 import type { AyWebsPageType } from '../../shared/aywebsTypes';
 import { createAyWebsAdapter, resolveAyWebsAdapter } from './adapters/registry';
 import { AyWebsCaptureError, type AyWebsPageClassification } from './adapters/contract';
@@ -47,6 +47,16 @@ export interface AyWebsPageAnalysis {
   externalCaptureAllowed: boolean;
   pageType: AyWebsPageType;
   isProductPage: boolean;
+  /**
+   * Qui peut prouver qu'une page est une fiche produit (23/10/2026) :
+   *   • `url`     — l'adaptateur de la boutique reconnaît le motif d'URL ;
+   *   • `capture` — pas d'adaptateur dédié : seule la capture structurée du
+   *     client peut le prouver (prix corroboré + titre) ;
+   *   • `none`    — domaine hors registre (chemin « Add-to-Buyee »).
+   * L'application s'en sert pour n'activer « Ajouter » que là où une lecture a
+   * une chance réelle d'aboutir.
+   */
+  productRecognition: AyWebsStoreRecognition | 'none';
   customerActionRequired: AyWebsPageClassification['customerActionRequired'];
   reason: string;
   /** Mode de navigation décidé par le registre, jamais par l'écran. */
@@ -60,6 +70,16 @@ export interface AyWebsPageAnalysisOptions {
   captureEnabled?: boolean;
   /** `null` = domaine absent du Store Registry : la garde répond « non » (§7). */
   storeCaptureEnabled?: (store: AyWebsStoreDefinition | null | undefined) => boolean;
+  /**
+   * Preuve apportée par la capture du client, quand la boutique n'a pas
+   * d'adaptateur d'URL (`recognition: 'capture'`). Sans cette preuve, une page
+   * non reconnue reste non reconnue : la garde refuse, elle ne devine pas.
+   */
+  captureProof?: {
+    accepted: boolean;
+    corroborated: boolean;
+    title: string;
+  };
 }
 
 /**
@@ -125,6 +145,7 @@ export function analyzeAyWebsUrl(
     externalCaptureAllowed,
     pageType: classification.pageType,
     isProductPage: classification.isProductPage,
+    productRecognition: store ? ayWebsStoreRecognition(store) : 'none',
     customerActionRequired: classification.customerActionRequired,
     reason: classification.reason,
     browserMode: store?.browserMode || 'external',
@@ -208,13 +229,40 @@ export function assertAyWebsProductPage(
     });
   }
 
-  if (!classification.isProductPage) {
+  /* ── BOUTIQUE SANS MOTIF D'URL : la CAPTURE STRUCTURÉE fait preuve ──────
+     Le modèle « lecture dans le navigateur du client » appliqué à une boutique
+     du registre (vague 1 du catalogue, 23/10/2026). Le seuil est celui d'un
+     domaine hors registre — capture acceptée ET prix corroboré ET titre publié —
+     sinon la page reste non reconnue et l'écran dit pourquoi. Rien n'est deviné
+     depuis l'URL : un `/ip/…` ou un `/p/…` ne prouve rien en soi. */
+  const proof = options.captureProof;
+  let captureProvesPage = false;
+  if (!classification.isProductPage && ayWebsStoreRecognition(store) === 'capture') {
+    captureProvesPage = proof?.accepted === true
+      && proof?.corroborated === true
+      && Boolean(String(proof?.title || '').trim());
+  }
+
+  if (!classification.isProductPage && !captureProvesPage) {
     throw new AyWebsDomainError('PRODUCT_PAGE_REQUIRED', {
-      technicalMessage: `pageType=${classification.pageType} — aucune identité produit exploitable`,
+      technicalMessage: `pageType=${classification.pageType} — aucune identité produit exploitable`
+        + (ayWebsStoreRecognition(store) === 'capture' ? ' (capture cliente absente ou non concluante)' : ''),
     });
   }
 
-  return { analysis, store, url };
+  return {
+    analysis: captureProvesPage
+      ? {
+        ...analysis,
+        pageType: 'PRODUCT',
+        isProductPage: true,
+        reason: 'capture_client_corroboree',
+        productRecognition: 'capture',
+      }
+      : analysis,
+    store,
+    url,
+  };
 }
 
 /**

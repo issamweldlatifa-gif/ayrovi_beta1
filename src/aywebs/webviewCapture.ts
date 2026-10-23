@@ -37,6 +37,7 @@ import {
   type AyWebsCaptureOutcome,
   type AyWebsCapturedPage,
   type AyWebsCapturedPriceCandidate,
+  type AyWebsCapturedVariantGroup,
 } from '../../shared/aywebsCapture';
 import type { AyWebsAvailabilityState } from '../../shared/aywebsTypes';
 
@@ -214,6 +215,41 @@ function cleanImageUrls(raw: unknown): string[] {
   return out;
 }
 
+/**
+ * Groupes de variantes : bornes, dédoublonnage, et refus des libellés qui ne
+ * sont pas des noms d'option (index numériques, « choisir », navigation).
+ * Une entrée mal formée est écartée en silence ; elle ne fait jamais échouer la
+ * capture, car un groupe absent n'invalide pas un prix corroboré.
+ */
+const NOT_A_VARIANT_GROUP = /^(sort|sort by|sortby|trier|tri|order by|orderby|quantit|quantity|qty|nombre|view|view by|affichage|filter|filtre|page|pages|lang|langue|language|devise|currency|pays|country|region|région|per page|items per page|afficher)\b/i;
+
+function cleanVariantGroups(raw: unknown): AyWebsCapturedVariantGroup[] {
+  if (!Array.isArray(raw)) return [];
+  const out: AyWebsCapturedVariantGroup[] = [];
+  const seen = new Set<string>();
+  for (const entry of raw) {
+    if (out.length >= AYWEBS_CAPTURE_LIMITS.maxVariantGroups) break;
+    if (!entry || typeof entry !== 'object') continue;
+    const name = collapse((entry as { name?: unknown }).name, 60);
+    if (!name) continue;
+    const key = name.toLowerCase();
+    if (seen.has(key)) continue;
+    /* Tri, quantité, filtre, langue… ne sont pas des variantes : les publier
+       ferait exiger une sélection que la page n'a jamais présentée comme choix. */
+    if (NOT_A_VARIANT_GROUP.test(name)) continue;
+    const values = cleanTextArray((entry as { values?: unknown }).values, AYWEBS_CAPTURE_LIMITS.maxVariantGroupValues, 60)
+      .filter((value) => !/^\d{1,3}$/.test(value));
+    if (values.length < 1) continue;
+    const selected = cleanTextArray((entry as { selected?: unknown }).selected, AYWEBS_CAPTURE_LIMITS.maxVariantGroupValues, 60)
+      .filter((value) => values.some((known) => known.toLowerCase() === value.toLowerCase()));
+    /* Sans valeur affichée, il n'y a rien à vérifier — sauf valeur unique. */
+    if (!selected.length && values.length > 1) continue;
+    seen.add(key);
+    out.push({ name, values, selected: selected.slice(0, 1) });
+  }
+  return out;
+}
+
 function hostOf(raw: string): string | null {
   try {
     return new URL(raw).hostname.toLowerCase().replace(/^www\./, '');
@@ -239,6 +275,15 @@ export interface AyWebsCaptureValidation {
   corroborated: boolean;
   /** Options que le CLIENT avait choisies sur la page (libellés bruts bornés). */
   selectedVariantTexts: string[];
+  /**
+   * Groupes de variantes NOMMÉS lus sur la page (23/10/2026) :
+   * `[{ name: 'Taille', values: ['S','M','L'], selected: ['M'] }, …]`.
+   *
+   * Ils servent à MONTRER la combinaison affichée, pas à promettre un stock par
+   * combinaison : la capture prouve l'état d'achat de la page TELLE QU'ELLE EST.
+   * Le résolveur ne publie donc que la valeur sélectionnée de chaque groupe.
+   */
+  variantGroups: AyWebsCapturedVariantGroup[];
   /** Piste d'audit lisible : quels candidats ont été vus, lesquels ont gagné. */
   notes: string[];
   outcome: AyWebsCaptureOutcome;
@@ -307,7 +352,7 @@ function rejected(rejection: string, fingerprint = '', notes: string[] = []): Ay
     ok: false, rejection, scraped: null, price: 0, currency: '',
     priceVerified: false, currencyVerified: false,
     availability: 'UNKNOWN', availabilityReason: `capture_rejected:${rejection}`,
-    condition: null, fingerprint, priceSource: null, corroborated: false, selectedVariantTexts: [], notes,
+    condition: null, fingerprint, priceSource: null, corroborated: false, selectedVariantTexts: [], variantGroups: [], notes,
     outcome: { used: false, fingerprint: fingerprint || null, priceSource: null, corroborated: false, rejection },
   };
 }
@@ -543,6 +588,7 @@ export function validateAyWebsCapturedPage(
     payload.selectedVariantTexts, AYWEBS_CAPTURE_LIMITS.maxSelectedVariantTexts, 60,
   );
   const variantTexts = cleanTextArray(payload.variantTexts, AYWEBS_CAPTURE_LIMITS.maxVariantTexts, 60);
+  const variantGroups = cleanVariantGroups(payload.variantGroups);
 
   const fingerprint = fingerprintOf({
     url: pageUrl,
@@ -598,12 +644,17 @@ export function validateAyWebsCapturedPage(
     currencyVerified,
     verificationProvider: 'webview_client',
     verificationMethod: primary.source === 'json_ld' ? 'json_ld' : 'dom',
-    verificationFailureCode: corroborated ? null : 'WEBVIEW_PRICE_SINGLE_SOURCE',
+    verificationFailureCode: corroborated ? undefined : 'WEBVIEW_PRICE_SINGLE_SOURCE',
     scrapedAt: new Date(capturedAtMs).toISOString(),
   };
 
   notes.push(`price_source:${primary.source}`, corroborated ? 'corroborated' : 'single_source');
   if (variantTexts.length) notes.push(`variants_published:${variantTexts.slice(0, 8).join('|')}`);
+  /* Les groupes sont consignés un par un : on peut relire après coup ce que la
+     page proposait, sans jamais s'en servir pour promettre un stock. */
+  for (const group of variantGroups) {
+    notes.push(`variant_group:${group.name}=${group.values.slice(0, 8).join(',')}${group.selected?.length ? `#${group.selected[0]}` : ''}`);
+  }
   if (selectedVariantTexts.length) notes.push(`selection_observed:${selectedVariantTexts.join('|')}`);
 
   /* Compteurs d'exploitation : ce qui a été jugé, et comment. */
@@ -632,6 +683,7 @@ export function validateAyWebsCapturedPage(
     priceSource: primary.source,
     corroborated,
     selectedVariantTexts,
+    variantGroups,
     notes,
     outcome: {
       used: true,

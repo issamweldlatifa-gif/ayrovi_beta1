@@ -29,11 +29,11 @@
 export const AYWEBS_CAPTURE_SCRIPT_PATH = '/api/v1/aywebs/capture/script.js';
 
 export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
-  var LIMITS = { priceCandidates: 4, variantTexts: 30, selectedTexts: 5, images: 4, label: 60, text: 300 };
+  var LIMITS = { priceCandidates: 4, variantTexts: 30, selectedTexts: 5, images: 4, label: 60, text: 300, variantGroups: 4, variantValues: 20 };
   var out = {
     v: 1, url: '', canonicalUrl: null, title: null, brand: null,
     priceCandidates: [], currencyText: null, availabilityText: null,
-    addToCartText: null, conditionText: null, selectedVariantTexts: [], variantTexts: [],
+    addToCartText: null, conditionText: null, selectedVariantTexts: [], variantTexts: [], variantGroups: [],
     images: [], capturedAt: null, pageLang: null, amazon: null, diagnostics: []
   };
 
@@ -974,6 +974,106 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
           if (!optionLabel || optionLabel.length > LIMITS.label || NOT_A_CHOICE.test(optionLabel)) continue;
           pushUnique(out.variantTexts, optionLabel, LIMITS.variantTexts, LIMITS.label);
         }
+      }
+    } catch (e) {}
+  }
+
+  /* ── 7 ter. GROUPES DE VARIANTES (hors Amazon) — 23/10/2026 ───────────────
+     Les boutiques du catalogue (vague 1) n'ont pas d'adaptateur : c'est cette
+     lecture qui remplit la FEUILLE DE CHOIX. On lit des GROUPES nommés — le nom
+     vient d'un <legend>, d'un <label for>, d'un aria-label ou du name du champ —
+     et les VALEURS telles qu'affichées, plus celle qui est CHOISIE.
+
+     Bornes et refus, dans l'esprit du reste du script :
+       • 4 groupes, 20 valeurs par groupe, 60 caractères par libellé ;
+       • un <select> à une seule option n'est pas un choix (quantité, tri) ;
+       • les valeurs d'index (« 0 », « 1 ») et les libellés de navigation sont
+         écartés : un indice n'est jamais un nom d'option ;
+       • aucun clic, aucune requête : uniquement ce que la page affiche. */
+  /* Noms de groupes qui ne sont JAMAIS des variantes de produit : tri, quantité,
+     filtre, langue… Les publier ferait envoyer une valeur que la page n'affiche
+     pas comme choix, et le serveur refuserait l'ajout (« sélection non prouvée »)
+     pour une raison qui n'a rien à voir avec le produit. */
+  var NOT_A_VARIANT_GROUP = /^(sort|sort by|sortby|trier|tri|order by|orderby|quantit|quantity|qty|nombre|view|view by|affichage|filter|filtre|page|pages|lang|langue|language|devise|currency|pays|country|region|région|per page|items per page|afficher)\b/i;
+  function pushVariantGroup(name, values, selected) {
+    if (!name || !values.length) return;
+    var label = cut(name, LIMITS.label);
+    if (!label || NOT_A_CHOICE.test(label) || NOT_A_VARIANT_GROUP.test(label)) return;
+    /* Rien d'affiché comme choisi = rien de prouvé. On ne publie ni n'invente :
+       une page qui n'affiche pas la combinaison courante ne peut pas fonder une
+       vérification. Exception : une seule valeur = une donnée, pas un choix. */
+    if (!selected.length && values.length > 1) return;
+    for (var g = 0; g < out.variantGroups.length; g++) {
+      if (out.variantGroups[g].name.toLowerCase() === label.toLowerCase()) return;
+    }
+    if (out.variantGroups.length >= LIMITS.variantGroups) return;
+    out.variantGroups.push({ name: label, values: values.slice(0, LIMITS.variantValues), selected: selected.slice(0, LIMITS.variantValues) });
+    /* La valeur affichée entre dans l'ÉVIDENCE des options choisies : le serveur
+       vérifie que la combinaison demandée a bien été VUE sur la page, et les
+       boutons radio natifs n'ont pas d'aria-checked pour l'alimenter. */
+    for (var q = 0; q < selected.length && out.selectedVariantTexts.length < LIMITS.selectedTexts; q++) {
+      pushUnique(out.selectedVariantTexts, selected[q], LIMITS.selectedTexts, LIMITS.label);
+    }
+  }
+  function isIndexValue(value) { return /^\d{1,3}$/.test(String(value)); }
+  if (!IS_AMAZON) {
+    try {
+      var selects = document.querySelectorAll('select');
+      for (var sI = 0; sI < selects.length && out.variantGroups.length < LIMITS.variantGroups; sI++) {
+        var selectNode = selects[sI];
+        if (!selectNode || !selectNode.options || selectNode.options.length < 2) continue;
+        if (isInNavigation(selectNode)) continue;
+        var groupName = '';
+        try {
+          if (selectNode.id) {
+            var forLabel = document.querySelector('label[for="' + String(selectNode.id).replace(/"/g, '') + '"]');
+            groupName = text(forLabel && forLabel.textContent);
+          }
+        } catch (e) {}
+        if (!groupName) groupName = text(selectNode.getAttribute && selectNode.getAttribute('aria-label'));
+        if (!groupName) groupName = text(selectNode.getAttribute && selectNode.getAttribute('data-testid'));
+        if (!groupName) groupName = text(selectNode.getAttribute && selectNode.getAttribute('name'));
+        var values = [];
+        var chosen = [];
+        for (var oi = 0; oi < selectNode.options.length && values.length < LIMITS.variantValues; oi++) {
+          var opt = selectNode.options[oi];
+          var optLabel = text(opt.textContent);
+          if (!optLabel || optLabel.length > LIMITS.label || NOT_A_CHOICE.test(optLabel) || isIndexValue(optLabel)) continue;
+          if (values.join('|').toLowerCase().indexOf(optLabel.toLowerCase()) >= 0) continue;
+          values.push(optLabel);
+          if (opt.selected) chosen.push(optLabel);
+        }
+        if (values.length > 1) pushVariantGroup(groupName, values, chosen);
+      }
+
+      /* Groupes de boutons radio : <fieldset><legend>Couleur</legend>… */
+      var fieldsets = document.querySelectorAll('fieldset');
+      for (var fi = 0; fi < fieldsets.length && out.variantGroups.length < LIMITS.variantGroups; fi++) {
+        var fieldset = fieldsets[fi];
+        if (isInNavigation(fieldset)) continue;
+        var radios = fieldset.querySelectorAll('input[type="radio"]');
+        if (!radios || radios.length < 2) continue;
+        var legend = fieldset.querySelector('legend');
+        var fsName = text(legend && legend.textContent);
+        if (!fsName) fsName = text(radios[0].getAttribute && radios[0].getAttribute('name'));
+        var fsValues = [];
+        var fsChosen = [];
+        for (var ri = 0; ri < radios.length && fsValues.length < LIMITS.variantValues; ri++) {
+          var radio = radios[ri];
+          var radioLabel = '';
+          try {
+            if (radio.id) {
+              var radioFor = document.querySelector('label[for="' + String(radio.id).replace(/"/g, '') + '"]');
+              radioLabel = text(radioFor && radioFor.textContent);
+            }
+          } catch (e) {}
+          if (!radioLabel) radioLabel = text(radio.getAttribute && radio.getAttribute('aria-label'));
+          if (!radioLabel) radioLabel = text(radio.getAttribute && radio.getAttribute('value'));
+          if (!radioLabel || radioLabel.length > LIMITS.label || NOT_A_CHOICE.test(radioLabel)) continue;
+          fsValues.push(radioLabel);
+          if (radio.checked) fsChosen.push(radioLabel);
+        }
+        if (fsValues.length > 1) pushVariantGroup(fsName, fsValues, fsChosen);
       }
     } catch (e) {}
   }

@@ -6,7 +6,21 @@ import type {
 
 export type AyWebsStoreStatus = 'active' | 'beta' | 'planned';
 export type AyWebsBrowserMode = 'embedded' | 'external';
-export type AyWebsAdapterId = 'amazon' | 'shein' | 'temu' | 'aliexpress' | 'generic';
+export type AyWebsAdapterId = 'amazon' | 'shein' | 'temu' | 'aliexpress' | 'catalogue' | 'generic';
+
+/**
+ * Comment la page produit d'une boutique est reconnue (23/10/2026).
+ *
+ *   • `url`     — l'adaptateur reconnaît le motif d'URL de la fiche (Amazon :
+ *     `/dp/<ASIN>`, SHEIN : `-p-<id>.html`…). Le serveur décide sans lire la page.
+ *   • `capture` — la boutique n'a pas d'adaptateur dédié : c'est la CAPTURE
+ *     STRUCTURÉE du navigateur du client (JSON-LD du marchand + prix corroboré)
+ *     qui PROUVE que la page est une fiche produit. Aucune devinette d'URL.
+ *
+ * Ce champ n'ouvre aucun droit à lui seul : il dit seulement QUI a le droit de
+ * dire « ceci est une fiche produit » (voir `assertAyWebsProductPage`).
+ */
+export type AyWebsStoreRecognition = 'url' | 'capture';
 
 /**
  * Store Registry (§7) — le registre CENTRALISÉ des boutiques.
@@ -55,6 +69,11 @@ export interface AyWebsStoreDefinition {
   categories: readonly string[];
   /** Description courte de la carte (vide = la carte affiche ses catégories). */
   description?: string;
+  /**
+   * Qui prouve la fiche produit : le motif d'URL de l'adaptateur (`url`, défaut)
+   * ou la capture structurée du client (`capture`). Voir `AyWebsStoreRecognition`.
+   */
+  recognition?: AyWebsStoreRecognition;
   popular: boolean;
   phase: 1 | 2;
 }
@@ -64,7 +83,7 @@ const REVIEW_PURCHASE_CAPABILITIES: readonly AyWebsStoreCapability[] = [
   'browse', 'search', 'product', 'variants', 'availability',
 ] as const;
 
-export const AYWEBS_STORES: readonly AyWebsStoreDefinition[] = [
+const AYWEBS_CORE_STORES: readonly AyWebsStoreDefinition[] = [
   {
     id: 'amazon',
     name: 'Amazon',
@@ -155,6 +174,91 @@ export const AYWEBS_STORES: readonly AyWebsStoreDefinition[] = [
     phase: 2,
   },
 ] as const;
+
+/**
+ * VAGUE 1 — boutiques du CATALOGUE admises à la lecture cliente (23/10/2026).
+ *
+ * Elles sortent du catalogue (`aywebsStoreCatalog.ts`) et entrent au registre :
+ * même identifiant, même adresse, même logo, mêmes catégories — plus la lecture.
+ *
+ * ── CE QU'ELLES SAVENT FAIRE, ET RIEN DE PLUS ─────────────────────────────
+ *   • navigation (`browse`) et fiche produit, mais la fiche est PROUVÉE par la
+ *     capture du navigateur du client, pas par un motif d'URL : aucun adaptateur
+ *     dédié n'existe pour elles (`adapter: 'catalogue'`, `recognition: 'capture'`) ;
+ *   • prix, devise, variantes et disponibilité viennent de cette capture, passée
+ *     au crible du serveur (mêmes bornes, même corroboration qu'un domaine hors
+ *     registre) ;
+ *   • l'ACHAT reste en revue humaine : `purchase` n'est jamais déclarée.
+ *
+ * ── POURQUOI PAS LES 380 D'UN COUP ─────────────────────────────────────────
+ * Une capacité déclarée est une promesse faite à l'écran. On ouvre par vagues,
+ * avec une mesure avant/après (taux de captures acceptées par boutique) ; le
+ * reste du catalogue garde son contrat actuel : navigation seule, commande par
+ * URL. Le passage d'une boutique d'une vague à l'autre est UNE ligne.
+ */
+const CAPTURE_WAVE_1: readonly [string, string, string, string, string, readonly string[]][] = [
+  /* [id, nom affiché, pays, devise, adresse d'accueil, catégories] */
+  ['walmart', 'Walmart', 'US', 'USD', 'https://www.walmart.com', ['marketplace']],
+  ['target', 'Target', 'US', 'USD', 'https://www.target.com', ['marketplace']],
+  ['etsy', 'Etsy', 'US', 'USD', 'https://www.etsy.com', ['marketplace', 'arts']],
+  ['best-buy', 'Best Buy', 'US', 'USD', 'https://www.bestbuy.com', ['electronics']],
+  ['newegg', 'Newegg', 'US', 'USD', 'https://www.newegg.com', ['electronics']],
+  ['mediamarkt', 'MediaMarkt', 'DE', 'EUR', 'https://www.mediamarkt.com', ['electronics']],
+  ['otto', 'OTTO', 'DE', 'EUR', 'https://www.otto.de', ['marketplace']],
+  ['kaufland', 'Kaufland', 'DE', 'EUR', 'https://www.kaufland.de', ['marketplace']],
+  ['zalando', 'Zalando', 'DE', 'EUR', 'https://www.zalando.com', ['fashion']],
+  ['asos', 'ASOS', 'GB', 'GBP', 'https://www.asos.com', ['fashion']],
+  ['h-m', 'H&M', 'SE', 'EUR', 'https://www.hm.com', ['fashion', 'kids']],
+  ['cdiscount', 'Cdiscount', 'FR', 'EUR', 'https://www.cdiscount.com', ['marketplace']],
+  ['allegro', 'Allegro', 'PL', 'PLN', 'https://allegro.pl', ['marketplace']],
+] as const;
+
+/** Lecture cliente : navigation + fiche + variantes + stock ; JAMAIS l'achat. */
+const CAPTURE_READ_CAPABILITIES: readonly AyWebsStoreCapability[] = [
+  'browse', 'product', 'variants', 'availability',
+] as const;
+
+function captureStore([id, displayName, country, currency, homeUrl, categories]: (typeof CAPTURE_WAVE_1)[number]): AyWebsStoreDefinition {
+  let domain = '';
+  try { domain = new URL(homeUrl).hostname.toLowerCase().replace(/^\.?www\./, ''); } catch { domain = ''; }
+  return {
+    id,
+    name: displayName,
+    displayName,
+    domains: domain ? [domain] : [],
+    country,
+    currency,
+    logo: `/stores/${id}.png`,
+    enabled: true,
+    captureSupported: true,
+    adapter: 'catalogue',
+    status: 'beta',
+    integrationType: 'PARTIALLY_SUPPORTED',
+    capabilities: CAPTURE_READ_CAPABILITIES,
+    browserMode: 'external',
+    homeUrl,
+    searchUrlTemplate: '',
+    categories,
+    recognition: 'capture',
+    popular: false,
+    phase: 2,
+  };
+}
+
+export const AYWEBS_CAPTURE_STORES: readonly AyWebsStoreDefinition[] = CAPTURE_WAVE_1.map(captureStore);
+
+/** Registre public : le cœur (adaptateurs dédiés) + la vague 1 du catalogue. */
+export const AYWEBS_STORES: readonly AyWebsStoreDefinition[] = [...AYWEBS_CORE_STORES, ...AYWEBS_CAPTURE_STORES];
+
+/**
+ * Qui prouve la fiche produit pour cette boutique ? Défaut : le motif d'URL de
+ * l'adaptateur. Une boutique sans adaptateur dédié ne peut être prouvée que par
+ * la capture structurée du client (`capture`).
+ */
+export function ayWebsStoreRecognition(store: AyWebsStoreDefinition | null | undefined): AyWebsStoreRecognition {
+  if (!store) return 'url';
+  return store.recognition ?? (store.adapter === 'catalogue' ? 'capture' : 'url');
+}
 
 /**
  * Catégories de l'accueil AYWEBs (§6). Libellés bilingues : le client ne traduit

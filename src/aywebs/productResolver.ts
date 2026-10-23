@@ -7,6 +7,7 @@ import type { AyWebsStoreDefinition } from '../../shared/aywebsStores';
 import {
   AYWEBS_EXTERNAL_STORE,
   AYWEBS_STORES,
+  ayWebsStoreRecognition,
   detectAyWebsStore,
   findAyWebsStore,
   isAyWebsExternalStoreId,
@@ -209,10 +210,14 @@ export async function resolveAyWebsProduct(
     storeCaptureEnabled: deps.flags.storeCaptureEnabled,
   });
   const captureProvided = input.capture !== undefined && input.capture !== null;
+  /* Boutique SANS motif d'URL (vague « catalogue », 23/10/2026) : sa fiche n'est
+     prouvée que par la capture du client, donc le seuil est celui d'un domaine
+     hors registre — corroboration obligatoire, jamais un prix d'une seule source. */
+  const preliminaryStore = preliminary.storeId ? findAyWebsStore(preliminary.storeId) : null;
+  const captureRecognition = ayWebsStoreRecognition(preliminaryStore) === 'capture';
   const captureValidation = captureProvided
     ? validateAyWebsCapturedPage(input.capture, preliminary.normalizedUrl, {
-        // Domaine hors registre : seuil plus haut (corroboration obligatoire).
-        requireCorroboration: !preliminary.registered,
+        requireCorroboration: !preliminary.registered || captureRecognition,
       })
     : null;
   const captureUsed = captureValidation?.ok === true;
@@ -233,6 +238,15 @@ export async function resolveAyWebsProduct(
     : assertAyWebsProductPage(input.url, deps.scraper, {
       captureEnabled: deps.flags.captureEnabled,
       storeCaptureEnabled: deps.flags.storeCaptureEnabled,
+      /* Preuve de fiche produit apportée par la capture : elle ne sert QUE si
+         l'adaptateur n'a aucun motif d'URL (la garde le vérifie elle-même). */
+      captureProof: captureUsed
+        ? {
+          accepted: true,
+          corroborated: captureValidation?.corroborated === true,
+          title: captureValidation?.scraped?.title || '',
+        }
+        : undefined,
     });
 
   if (input.storeId) {
@@ -556,6 +570,7 @@ export async function resolveAyWebsProduct(
     evidenceHash,
     captureId,
     selection,
+    capturedVariantGroups: captureUsed ? captureValidation!.variantGroups : undefined,
   });
 
   emitAyWebsEvent(deps.db, {
@@ -785,6 +800,36 @@ function pricedScrapedProduct(product: ScrapedProduct, pricing: PriceBreakdown |
   };
 }
 
+/**
+ * GROUPES DE LA CAPTURE → GROUPES DU PRODUIT (23/10/2026).
+ *
+ * On ne publie QUE la valeur affichée sur la page (et la première si la page
+ * n'en déclare aucune) : la capture prouve un prix et un état d'achat pour la
+ * combinaison VISIBLE, pas le stock des autres. Publier les 20 tailles ferait
+ * choisir une combinaison que le serveur serait incapable de vérifier ensuite —
+ * exactement le faux choix qu'AYWEBs s'interdit.
+ *
+ * Le client garde donc la main pour changer de variante : il le fait SUR la page
+ * de la boutique, puis relit — chemin normal, vérifiable, sans devinette.
+ */
+function ayWebsGroupsFromCapture(
+  captured: Array<{ name: string; values: string[]; selected?: string[] }> | undefined,
+): Array<{ attribute: string; values: string[] }> {
+  if (!captured?.length) return [];
+  const groups: Array<{ attribute: string; values: string[] }> = [];
+  const seen = new Set<string>();
+  for (const group of captured) {
+    const attribute = String(group.name || '').trim().slice(0, 60);
+    const shown = String(group.selected?.[0] || group.values?.[0] || '').trim().slice(0, 60);
+    if (!attribute || !shown) continue;
+    const key = attribute.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    groups.push({ attribute, values: [shown] });
+  }
+  return groups;
+}
+
 function toResolvedProduct(input: {
   productId: string;
   store: AyWebsStoreDefinition;
@@ -794,11 +839,14 @@ function toResolvedProduct(input: {
   evidenceHash: string;
   captureId: string;
   selection: AyWebsVariantSelection | null;
+  /** Groupes lus par la capture cliente (boutiques sans adaptateur d'URL). */
+  capturedVariantGroups?: Array<{ name: string; values: string[]; selected?: string[] }>;
 }): AyWebsResolvedProduct {
   const { store, sourceProduct, availability, pricing, selection } = input;
   const groups = sourceProduct.variantGroups.length
     ? sourceProduct.variantGroups
-    : ayWebsVariantGroupsFromScraped(sourceProduct.scrapedProduct?.variants);
+    : ayWebsVariantGroupsFromScraped(sourceProduct.scrapedProduct?.variants)
+      .concat(ayWebsGroupsFromCapture(input.capturedVariantGroups));
   const options: AyWebsVariantOption[] = groups.length
     ? ayWebsVariantOptions(groups, sourceProduct.scrapedProduct?.colorImages || {})
     : [];

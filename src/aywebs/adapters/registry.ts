@@ -7,6 +7,7 @@ import { AmazonAdapter } from './amazon';
 import { SheinAdapter } from './shein';
 import { TemuAdapter } from './temu';
 import { AliExpressAdapter } from './aliexpress';
+import { CatalogueStoreAdapter } from './catalogue';
 
 /**
  * AYWEBs — registre des adaptateurs (§8).
@@ -19,13 +20,19 @@ import { AliExpressAdapter } from './aliexpress';
  * module reste modulaire au lieu d'accumuler des `if (store === …)`.
  */
 
-type AdapterFactory = (scraper: SmartLinkScraper) => AyWebsStoreAdapter;
+/**
+ * Une fabrique reçoit la définition de la boutique quand elle existe : un même
+ * adaptateur peut servir PLUSIEURS boutiques (cas du catalogue), et il a besoin
+ * de savoir laquelle (domaines, identifiant) pour se comporter correctement.
+ */
+type AdapterFactory = (scraper: SmartLinkScraper, store?: AyWebsStoreDefinition) => AyWebsStoreAdapter;
 
 const ADAPTER_FACTORIES: Record<AyWebsAdapterId, AdapterFactory> = {
   amazon: (scraper) => new AmazonAdapter(scraper),
   shein: (scraper) => new SheinAdapter(scraper),
   temu: (scraper) => new TemuAdapter(scraper),
   aliexpress: (scraper) => new AliExpressAdapter(scraper),
+  catalogue: (scraper, store) => new CatalogueStoreAdapter(scraper, store),
   generic: (scraper) => new GenericStoreAdapter(scraper),
 };
 
@@ -60,6 +67,12 @@ export const AYWEBS_ADAPTER_DESCRIPTORS: readonly AyWebsAdapterDescriptor[] = [
     pendingIntegration: 'Variantes parfois incomplètes : achat en revue humaine.',
   },
   {
+    id: 'catalogue', label: 'Catalogue (lecture dans le navigateur du client)', integrationType: 'PARTIALLY_SUPPORTED', purchaseMode: 'MANUAL_REVIEW',
+    reads: ['product_page_url', 'title', 'price', 'currency', 'images', 'variants', 'availability'],
+    implemented: true,
+    pendingIntegration: 'Fiche prouvée par la capture structurée du client (aucune reconnaissance d’URL) ; achat en revue humaine.',
+  },
+  {
     id: 'generic', label: 'Boutique générique', integrationType: 'URL_REQUEST', purchaseMode: 'URL_REQUEST',
     reads: ['title', 'price', 'currency', 'images'],
     implemented: true,
@@ -73,7 +86,7 @@ export function createAyWebsAdapter(store: AyWebsStoreDefinition, scraper: Smart
   if (!factory) {
     throw new AyWebsCaptureError('ADAPTER_UNAVAILABLE', 'La capture de cette boutique n’est pas encore disponible.');
   }
-  return factory(scraper);
+  return factory(scraper, store);
 }
 
 /** Adaptateur par identifiant (indépendant du registre) — utilisé par l'analyse de page. */
@@ -82,7 +95,7 @@ export function createAyWebsAdapterById(id: AyWebsAdapterId | string, scraper: S
   if (!factory) {
     throw new AyWebsCaptureError('ADAPTER_UNAVAILABLE', 'Aucun adaptateur AyWebs pour cet identifiant.');
   }
-  return factory(scraper);
+  return factory(scraper, findAyWebsStore(String(id)) ?? undefined);
 }
 
 /** Résout l'adaptateur d'une URL : registre d'abord, générique sinon. */
