@@ -358,23 +358,56 @@ export function resetAyWebsCaptureScriptCache(): void {
 export const AYWEBS_CAPTURE_MESSAGE_MAX_CHARS = 64_000;
 
 /**
+ * يرجّع **التعبير** اللي ينجّم يتغلّف في قوسين من نصّ السكريبت اللي يجي من الخادم.
+ *
+ * علاش هذي الدالة موجودة (خلل 23/10/2026، «script injecté» وما فماش جواب):
+ *
+ * السكريبت الرسمي (`src/aywebs/captureScript.ts`) ينتهي بـ `})();` — أي تعبير
+ * ES5 **متلوه فاصلة منقوطة**. كي نحطّوه كما هو بين قوسين (`(…})();)`) النتيجة
+ * `SyntaxError`، وغلطة التركيب **ما تلقّطهاش** `try/catch`: الـWebView ما ينفّذ
+ * شي، ما يبعثش حتى رسالة للجسر، والشاشة تبقى تنتظر 20 ثانية وتقول «ما رجع شي
+ * من الصفحة». الفاصلة المنقوطة في الآخر مالها معنى داخل تعبير: ننحّيوها.
+ *
+ * زادة: BOM وفراغات في الأول والآخر ما يخصّوش يدخلو في التعبير.
+ */
+export function captureScriptExpression(script: string): string {
+  return String(script ?? '')
+    .replace(/^\uFEFF/, '')
+    .trim()
+    .replace(/[\s;]+$/, '');
+}
+
+/**
  * يبني جافاسكريبت الحقن من نصّ السكريبت.
  *
  * السكريبت تعبير ES5 يرجّع نصّ JSON؛ نغلّفو باش نبعثوه للجسر، وكل غلطة
  * تولّي رسالة صريحة (`__aywebs_error`) — كي ما يجي شي، الشاشة تعرف وتقول
  * «ما نجّمناش نقراو الصفحة»، موش تبقى تستنّى للأبد.
+ *
+ * ثلاث ضمانات على الجسر نفسه:
+ *   • غياب `window.ReactNativeWebView` ما يولّيش استثناء صامت داخل `catch`؛
+ *   • نتيجة موش نصّ (سكريبت رجع `undefined`) تولّي `SCRIPT_NO_RESULT` صريحة،
+ *     موش `"undefined"` اللي يتلوّح بعدها كـ«رسالة موش JSON»؛
+ *   • `true;` في الآخر: ترضية لـiOS (نتيجة الحقن لازم تكون غير فارغة).
  */
 export function buildAyWebsCaptureInjection(script: string): string {
-  if (!script || !script.trim()) {
+  const expression = captureScriptExpression(script);
+  if (!expression) {
     throw new ApiError('malformed', 'Script de capture vide : rien à injecter');
   }
   return [
     '(function () {',
+    '  var bridge = window.ReactNativeWebView;',
+    '  function send(text) {',
+    '    try { if (bridge && bridge.postMessage) bridge.postMessage(String(text)); }',
+    '    catch (bridgeError) {}',
+    '  }',
     '  try {',
-    '    var payload = (' + script + ');',
-    "    window.ReactNativeWebView.postMessage(String(payload));",
+    '    var payload = (' + expression + ');',
+    "    if (typeof payload !== 'string' || !payload) { send(JSON.stringify({ __aywebs_error: 'SCRIPT_NO_RESULT' })); return; }",
+    '    send(payload);',
     '  } catch (error) {',
-    "    window.ReactNativeWebView.postMessage(JSON.stringify({ __aywebs_error: String((error && error.message) || error) }));",
+    "    send(JSON.stringify({ __aywebs_error: String((error && error.message) || error) }));",
     '  }',
     '})(); true;',
   ].join('\n');

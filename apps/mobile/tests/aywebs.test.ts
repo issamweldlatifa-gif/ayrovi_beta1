@@ -292,8 +292,11 @@ describe('سكريبت الكابتشر', () => {
 
   it('الحقن يغلّف السكريبت ويبعث النتيجة للجسر — وغلاف فارغ يُرفض', () => {
     const injection = buildAyWebsCaptureInjection(SCRIPT);
-    expect(injection).toContain(SCRIPT);
-    expect(injection).toContain('window.ReactNativeWebView.postMessage');
+    // Le `;` final du script n'entre pas dans l'expression : `(…();)` = SyntaxError
+    // (le WebView n'exécute rien et ne répond jamais — 23/10/2026).
+    expect(injection).toContain(SCRIPT.replace(/[\s;]+$/, ''));
+    expect(injection).not.toContain(SCRIPT + ');');
+    expect(injection).toContain('bridge.postMessage');
     expect(injection).toContain('__aywebs_error');
     expect(injection.trimEnd().endsWith('true;')).toBe(true);
     expect(() => buildAyWebsCaptureInjection('  ')).toThrow(/vide/);

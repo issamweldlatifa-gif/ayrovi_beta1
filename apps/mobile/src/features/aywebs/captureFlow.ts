@@ -195,5 +195,36 @@ export async function resolveAddToCart(input: AddToCartFlowInput): Promise<AddTo
 }
 
 
+/**
+ * Qui a demandé la lecture de la page ?
+ *   • `user`   — « Add to Cart » : le client attend une réponse, le bouton tourne ;
+ *   • `silent` — la pré-lecture automatique à l'ouverture de la fiche.
+ */
+export type ReadIntent = 'user' | 'silent';
+
+/**
+ * Faut-il lancer une nouvelle lecture dans le WebView, ou se rattacher à celle
+ * qui tourne déjà ?
+ *
+ * Constaté le 23/10/2026 (capture d'écran du client) : à 04:14:19 « lecture
+ * demandée », à 04:14:28 « script injecté » ; la page finit de charger, la
+ * pré-lecture silencieuse démarre **au même instant** et remplace la lecture du
+ * client. Résultat : « Requête interrompue » pour l'appui du client, deux
+ * scripts injectés pour rien, et un bouton qui reste en « Chargement… ».
+ *
+ * Règle : une lecture silencieuse ne remplace JAMAIS une lecture demandée par le
+ * client — elle s'y rattache (même page, même capture). Le client, lui, reste
+ * prioritaire : son appui remplace n'importe quelle lecture en cours.
+ */
+export function readDecision(
+  inFlight: { intent: ReadIntent; pageUrl: string } | null,
+  intent: ReadIntent,
+  pageUrl: string,
+): 'start' | 'join' {
+  if (!inFlight) return 'start';
+  if (intent === 'silent' && inFlight.intent === 'user' && inFlight.pageUrl === pageUrl) return 'join';
+  return 'start';
+}
+
 /** Filet de sécurité de la lecture WebView : au-delà, on rend la main (le bouton redevient normal). */
 export const AYWEBS_CAPTURE_WATCHDOG_MS = 20_000;

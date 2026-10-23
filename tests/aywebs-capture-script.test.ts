@@ -166,3 +166,30 @@ describe('script AYWEBS — règles d\'écriture', () => {
     expect(AYWEBS_CAPTURE_SCRIPT).not.toMatch(/token|secret|password|cookie|localStorage|sessionStorage/i);
   });
 });
+
+/**
+ * Contrat d'injection (23/10/2026) — le bug qui a rendu le WebView muet.
+ *
+ * L'application enveloppe ce script dans `var payload = (…);` avant de l'injecter.
+ * Le script servi se termine par `})();` : laissé tel quel, la forme injectée est
+ * `(…();)` ⇒ SyntaxError. Une erreur de syntaxe n'est PAS attrapée par le
+ * try/catch du gabarit : le WebView n'exécute rien, ne poste aucun message, et
+ * l'écran attend 20 s (« script injecté, attente du retour » puis rien).
+ *
+ * Le client retire les `;` finaux (`captureScriptExpression`). Ce test garde le
+ * contrat côté serveur : le script reste UNE expression, donc l'injection
+ * compile. Si un jour il devient une suite d'instructions, on le saura ici.
+ */
+describe('script AYWEBs — contrat d’injection dans le WebView', () => {
+  const expression = AYWEBS_CAPTURE_SCRIPT.replace(/^\uFEFF/, '').trim().replace(/[\s;]+$/, '');
+
+  it('après retrait des `;` finaux, c’est une expression compilable entre parenthèses', () => {
+    expect(expression.trimEnd().endsWith('})()')).toBe(true);
+    expect(() => new Function(`return (${expression});`)).not.toThrow();
+  });
+
+  it('la forme injectée telle quelle serait refusée : c’est bien le piège corrigé côté client', () => {
+    expect(AYWEBS_CAPTURE_SCRIPT.trimEnd().endsWith(';')).toBe(true);
+    expect(() => new Function(`return (${AYWEBS_CAPTURE_SCRIPT});`)).toThrow(SyntaxError);
+  });
+});

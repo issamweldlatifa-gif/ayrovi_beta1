@@ -44,7 +44,8 @@ import { VariantReader, type VariantReaderHandle } from '@/features/aywebs/Varia
 import { ReadingProgress } from '@/features/aywebs/ReadingProgress';
 import { waitForPageIdle } from '@/features/aywebs/captureFallback';
 import {
-  AYWEBS_CAPTURE_EMPTY_PRICE_RETRY_DELAY_MS, canReusePrefetch, AYWEBS_CAPTURE_WATCHDOG_MS, priceCandidatesOf, resolveAddToCart, shouldRetryAyWebsCaptureForPrice,
+  AYWEBS_CAPTURE_EMPTY_PRICE_RETRY_DELAY_MS, canReusePrefetch, AYWEBS_CAPTURE_WATCHDOG_MS, priceCandidatesOf, readDecision, resolveAddToCart, shouldRetryAyWebsCaptureForPrice,
+  type ReadIntent,
 } from '@/features/aywebs/captureFlow';
 import type { ReadPhase } from '@/features/aywebs/phase';
 import { useSessionId } from '@/session/session';
@@ -124,6 +125,20 @@ export default function AyWebsBrowserScreen() {
   const [loadUrl] = useState(url);
   /* الصفحة الحالية كما يصرّح بها التنقّل داخل الـWebView (تتبع الروابط). */
   const [pageUrl, setPageUrl] = useState(url);
+  /** Page courante, lisible depuis `requestCapture` (qui ne dépend d'aucun état React). */
+  const pageUrlRef = useRef(pageUrl);
+  useEffect(() => { pageUrlRef.current = pageUrl; }, [pageUrl]);
+  /**
+   * Lecture EN COURS dans le WebView (une seule à la fois). Sert à rattacher une
+   * pré-lecture silencieuse à la lecture du client au lieu de la remplacer
+   * (voir `readDecision` : le « Requête interrompue » du 23/10/2026 à 04:14:28).
+   */
+  const inFlightRead = useRef<{
+    intent: ReadIntent;
+    pageUrl: string;
+    status: 'pending' | 'done' | 'failed';
+    promise: Promise<Record<string, unknown>>;
+  } | null>(null);
   /** تصنيف الخادم للصفحة الحالية: مصدر السماح بالقراءة وبالإضافة. */
   const [pageAnalysis, setPageAnalysis] = useState<AyWebsPageAnalysis | null>(null);
   const captureAllowed = pageAnalysis
@@ -190,13 +205,24 @@ export default function AyWebsBrowserScreen() {
    * أو بغلق الشاشة (الإلغاء يمرّ عبر signal).
    */
   const requestCapture = useCallback((signal?: AbortSignal, quiet = false): Promise<Record<string, unknown>> => {
-    return new Promise<Record<string, unknown>>((resolveOuter, rejectOuter) => {
+    const intent: ReadIntent = quiet ? 'silent' : 'user';
+    const inFlight = inFlightRead.current;
+    /* Pré-lecture silencieuse pendant une lecture du client : on se rattache à elle.
+       Deux scripts injectés en même temps, c'est deux fois la même page lue et la
+       lecture du client jetée en « Requête interrompue » (constaté le 23/10/2026). */
+    if (inFlight && inFlight.status === 'pending'
+      && readDecision(inFlight, intent, pageUrlRef.current) === 'join') {
+      pushDiag('lecture silencieuse rattachée à la lecture en cours');
+      return inFlight.promise;
+    }
+    const promise = new Promise<Record<string, unknown>>((resolveOuter, rejectOuter) => {
       let settled = false;
       const finish = () => { settled = true; stopTimer(); signal?.removeEventListener('abort', onAbort); };
       const resolve = (value: Record<string, unknown>) => { if (settled) return; finish(); resolveOuter(value); };
       const reject = (error: unknown) => { if (settled) return; finish(); rejectOuter(error); };
       /* Une seule lecture à la fois dans le WebView : la nouvelle REJETTE l'ancienne.
-         Sans ça, l'appelant de l'ancienne attend pour toujours (bouton « Chargement » bloqué). */
+         Sans ça, l'appelant de l'ancienne attend pour toujours (bouton « Chargement » bloqué).
+         Une lecture silencieuse n'arrive jamais ici si un client attend (voir plus haut). */
       const previous = waiter.current;
       if (previous) {
         waiter.current = null;
@@ -232,7 +258,7 @@ export default function AyWebsBrowserScreen() {
       const inject = (script: string) => {
         if (!quiet) startWaiting('reading');
         armWatchdog();
-        pushDiag('script injecté, attente du retour');
+        pushDiag(quiet ? 'script injecté (pré-lecture), attente du retour' : 'script injecté, attente du retour');
         webRef.current?.injectJavaScript(buildAyWebsCaptureInjection(script));
       };
       /* Prix absent de la capture ⇒ relance bornée (fc3cce38 / captureFlow.ts). */
@@ -265,6 +291,16 @@ export default function AyWebsBrowserScreen() {
           reject(error);
         });
     });
+    /* Journal de la lecture en cours : `intent` décide qui remplace qui (voir `readDecision`). */
+    const entry: NonNullable<typeof inFlightRead.current> = {
+      intent, pageUrl: pageUrlRef.current, status: 'pending', promise,
+    };
+    inFlightRead.current = entry;
+    promise.then(
+      () => { if (inFlightRead.current === entry) entry.status = 'done'; },
+      () => { if (inFlightRead.current === entry) entry.status = 'failed'; },
+    );
+    return promise;
   }, []);
 
   /** Lit la page en silence, dès qu'elle est chargée et reconnue comme fiche produit. */
