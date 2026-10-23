@@ -416,9 +416,6 @@ export function AddToCartSheet({
           <AppText variant="caption" color={theme.colors.muted}>
             {added.linked ? t('aywebs.addedLinked') : t('aywebs.addedUnlinked')}
           </AppText>
-          {!added.linked && added.reason ? (
-            <KeyValue label={t('aywebs.linkReason')} value={added.reason} />
-          ) : null}
           <View style={styles.actions}>
             <Button
               label={t('aywebs.goToCart')}
