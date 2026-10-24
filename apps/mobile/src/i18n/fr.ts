@@ -234,6 +234,8 @@ export const fr = {
   'social.next': 'Suivant',
   'social.play': 'Lire',
   'social.pause': 'Pause',
+  'reel.viewItems': 'Voir les articles',
+  'reel.hideItems': 'Masquer les articles',
   'checkout.step.address': 'Adresse',
   'checkout.step.payment': 'Paiement',
   'checkout.step.confirm': 'Confirmation',

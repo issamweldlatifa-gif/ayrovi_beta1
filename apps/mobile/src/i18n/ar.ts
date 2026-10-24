@@ -234,6 +234,8 @@ export const ar = {
   'social.next': 'التالي',
   'social.play': 'تشغيل',
   'social.pause': 'إيقاف',
+  'reel.viewItems': 'شوف المنتجات',
+  'reel.hideItems': 'خبّي المنتجات',
   'checkout.step.address': 'العنوان',
   'checkout.step.payment': 'الدفع',
   'checkout.step.confirm': 'التأكيد',

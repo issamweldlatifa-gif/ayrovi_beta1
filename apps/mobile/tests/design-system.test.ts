@@ -163,6 +163,8 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
       'app/aywebs/browser.tsx', // AYWEBs : voile de chargement posé au-dessus de la page du magasin (WebView)
       'src/features/sections/PromotionCard.tsx', // badge de réduction posé sur la vignette
       'src/features/social/ReelCard.tsx', // durée posée sur la vignette vidéo
+      'src/features/shopping/LinkedProductCard.tsx', // pastille favori posée dans l'angle de la carte article
+      'src/features/reels/ReelShopTray.tsx', // tiroir « articles » qui sort PAR-DESSUS la vidéo du Reel + bouton posé sur le média (le Reel continue de tourner dessous)
       'src/features/social/StoryViewer.tsx', // zones de tape + pied, au-dessus du média
       'src/features/home/HeroCarousel.tsx', // couches de fond (le fond de chaque photo) et voile du titre (§5.4)
       'app/reels-viewer.tsx', // en-tête transparent FIXE au-dessus de la liste plein écran (Reels)

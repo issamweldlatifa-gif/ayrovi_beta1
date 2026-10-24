@@ -18,7 +18,7 @@ import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
 import { MEDIA_RATIO, VIDEO_BACKDROP, veil } from '@/design/tokens.mobile';
-import { LinkedProductCard } from '@/features/shopping/LinkedProductCard';
+import { ReelShopTray } from '@/features/reels/ReelShopTray';
 import { mediaUrl } from '@/api/client';
 import { AppImage } from '@/design/appImage';
 import { useSession } from '@/state/session';
@@ -81,88 +81,123 @@ export function ReelCard({ reel, active, counts, onOpenComments, fill }: ReelCar
     await Share.share({ message: reel.title || reel.description || 'ZAYROVI' }).catch(() => null);
   }, [reel.id, reel.title, reel.description, guestSession]);
 
+  /** Média : couverture, lecteur (un seul vivant), bouton pause. */
+  const media = (
+    <View style={fill ? styles.fillMedia : [styles.media, { backgroundColor: theme.colors.canvas }]}>
+      {reel.posterUrl ? (
+        // Couverture derrière la vidéo : elle reste visible tant que la vidéo n'a pas d'image.
+        <AppImage uri={mediaUrl(reel.posterUrl)} style={StyleSheet.absoluteFill} contentFit="cover" decorative />
+      ) : null}
+      {active && player ? (
+        <VideoView player={player} style={StyleSheet.absoluteFill} contentFit="cover" nativeControls={false} />
+      ) : reel.posterUrl ? null : (
+        <View style={[StyleSheet.absoluteFill, styles.poster]}>
+          <Ionicons name="play-circle-outline" size={44} color={muted} accessibilityElementsHidden />
+        </View>
+      )}
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={paused ? t('social.play') : t('social.pause')}
+        onPress={() => setPaused((value) => !value)}
+        style={StyleSheet.absoluteFill}
+      />
+
+      {!fill && reel.durationSeconds > 0 ? (
+        <View style={styles.duration}>
+          <AppText variant="caption" color={theme.colors.onMedia}>{`0:${String(reel.durationSeconds % 60).padStart(2, '0')}`}</AppText>
+        </View>
+      ) : null}
+    </View>
+  );
+
+  /**
+   * Corps de la carte (légende, actions, état de connexion).
+   *
+   * En plein écran il est POSITIONNÉ au-dessus du tiroir : quand les articles
+   * sortent, la légende et les actions montent avec eux au lieu de passer
+   * dessous. `bottom` est calculé par le tiroir — une seule géométrie.
+   */
+  const body = (bottom?: number) => (
+    <View style={[fill ? styles.fillBody : styles.body, fill && bottom !== undefined ? { bottom } : null]}>
+      {reel.title ? <AppText variant="label" weight="bold" color={ink} numberOfLines={1}>{reel.title}</AppText> : null}
+      {reel.description ? (
+        <AppText variant="caption" color={muted} numberOfLines={2}>{reel.description}</AppText>
+      ) : null}
+
+      <View style={styles.actions}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={liked ? t('social.liked') : t('social.like')}
+          accessibilityState={{ disabled: !signedIn }}
+          disabled={!signedIn}
+          onPress={toggleLike}
+          style={[styles.action, { opacity: signedIn ? 1 : 0.45 }]}
+        >
+          <Ionicons name={liked ? 'heart' : 'heart-outline'} size={20} color={liked ? (fill ? theme.colors.accentOnMedia : theme.colors.accentText) : muted} accessibilityElementsHidden />
+          <AppText variant="caption" color={muted}>{String(counts?.likes ?? reel.likes)}</AppText>
+        </Pressable>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('social.comments')}
+          onPress={() => onOpenComments(reel)}
+          style={styles.action}
+        >
+          <Ionicons name="chatbubble-outline" size={20} color={muted} accessibilityElementsHidden />
+          <AppText variant="caption" color={muted}>{String(counts?.comments ?? 0)}</AppText>
+        </Pressable>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('social.share')}
+          onPress={share}
+          style={styles.action}
+        >
+          <Ionicons name="share-social-outline" size={20} color={muted} accessibilityElementsHidden />
+          <AppText variant="caption" color={muted}>{String(counts?.shares ?? 0)}</AppText>
+        </Pressable>
+
+        {counts && counts.views > 0 ? (
+          <AppText variant="caption" color={muted}>{t('social.views', { value: String(counts.views) })}</AppText>
+        ) : null}
+      </View>
+
+      {!signedIn ? (
+        <AppText variant="caption" color={muted}>{t('social.needAccount')}</AppText>
+      ) : null}
+    </View>
+  );
+
   return (
     <View style={fill
       ? [styles.card, styles.fillCard, { width: fill.width, height: fill.height }]
       : [styles.card, { backgroundColor: theme.colors.surface, borderRadius: theme.radius.card }]}>
-      <View style={fill ? styles.fillMedia : [styles.media, { backgroundColor: theme.colors.canvas }]}>
-        {reel.posterUrl ? (
-          // Couverture derrière la vidéo : elle reste visible tant que la vidéo n'a pas d'image.
-          <AppImage uri={mediaUrl(reel.posterUrl)} style={StyleSheet.absoluteFill} contentFit="cover" decorative />
-        ) : null}
-        {active && player ? (
-          <VideoView player={player} style={StyleSheet.absoluteFill} contentFit="cover" nativeControls={false} />
-        ) : reel.posterUrl ? null : (
-          <View style={[StyleSheet.absoluteFill, styles.poster]}>
-            <Ionicons name="play-circle-outline" size={44} color={muted} accessibilityElementsHidden />
-          </View>
-        )}
-
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={paused ? t('social.play') : t('social.pause')}
-          onPress={() => setPaused((value) => !value)}
-          style={StyleSheet.absoluteFill}
-        />
-
-        {!fill && reel.durationSeconds > 0 ? (
-          <View style={styles.duration}>
-            <AppText variant="caption" color={theme.colors.onMedia}>{`0:${String(reel.durationSeconds % 60).padStart(2, '0')}`}</AppText>
-          </View>
-        ) : null}
-      </View>
-
-      <View style={fill ? styles.fillBody : styles.body}>
-        {reel.product ? (
-          <LinkedProductCard product={reel.product} variant={fill ? 'overlay' : 'row'} testID={`reel-product-${reel.id}`} />
-        ) : null}
-        {reel.title ? <AppText variant="label" weight="bold" color={ink} numberOfLines={1}>{reel.title}</AppText> : null}
-        {reel.description ? (
-          <AppText variant="caption" color={muted} numberOfLines={2}>{reel.description}</AppText>
-        ) : null}
-
-        <View style={styles.actions}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={liked ? t('social.liked') : t('social.like')}
-            accessibilityState={{ disabled: !signedIn }}
-            disabled={!signedIn}
-            onPress={toggleLike}
-            style={[styles.action, { opacity: signedIn ? 1 : 0.45 }]}
+      {media}
+      {fill ? (
+        // Plein écran : tiroir par-dessus la vidéo. Le lecteur n'est pas démonté,
+        // donc ouvrir les articles ne met PAS le Reel en pause.
+        <ReelShopTray
+          reel={reel}
+          mode="overlay"
+          surface={theme.colors.canvas}
+          onMedia={theme.colors.onMedia}
+        >
+          {({ bottom }) => body(bottom)}
+        </ReelShopTray>
+      ) : (
+        <>
+          {body()}
+          <ReelShopTray
+            reel={reel}
+            mode="inline"
+            surface={theme.colors.canvas}
+            onMedia={theme.colors.onMedia}
           >
-            <Ionicons name={liked ? 'heart' : 'heart-outline'} size={20} color={liked ? (fill ? theme.colors.accentOnMedia : theme.colors.accentText) : muted} accessibilityElementsHidden />
-            <AppText variant="caption" color={muted}>{String(counts?.likes ?? reel.likes)}</AppText>
-          </Pressable>
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('social.comments')}
-            onPress={() => onOpenComments(reel)}
-            style={styles.action}
-          >
-            <Ionicons name="chatbubble-outline" size={20} color={muted} accessibilityElementsHidden />
-            <AppText variant="caption" color={muted}>{String(counts?.comments ?? 0)}</AppText>
-          </Pressable>
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('social.share')}
-            onPress={share}
-            style={styles.action}
-          >
-            <Ionicons name="share-social-outline" size={20} color={muted} accessibilityElementsHidden />
-            <AppText variant="caption" color={muted}>{String(counts?.shares ?? 0)}</AppText>
-          </Pressable>
-
-          {counts && counts.views > 0 ? (
-            <AppText variant="caption" color={muted}>{t('social.views', { value: String(counts.views) })}</AppText>
-          ) : null}
-        </View>
-
-        {!signedIn ? (
-          <AppText variant="caption" color={muted}>{t('social.needAccount')}</AppText>
-        ) : null}
-      </View>
+            {() => null}
+          </ReelShopTray>
+        </>
+      )}
     </View>
   );
 }
@@ -172,7 +207,7 @@ const styles = StyleSheet.create({
   media: { width: '100%', aspectRatio: MEDIA_RATIO.reel, justifyContent: 'flex-end' },
   fillCard: { marginBottom: 0, borderRadius: 0, backgroundColor: VIDEO_BACKDROP },
   fillMedia: { position: 'absolute', top: 0, bottom: 0, start: 0, end: 0, backgroundColor: VIDEO_BACKDROP },
-  fillBody: { position: 'absolute', start: 0, end: 0, bottom: 0, padding: 16, paddingBottom: 32, gap: 6 },
+  fillBody: { position: 'absolute', start: 0, end: 0, bottom: 0, padding: 16, paddingBottom: 20, gap: 6 },
   poster: { alignItems: 'center', justifyContent: 'center' },
   duration: { position: 'absolute', top: 10, start: 10, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, backgroundColor: veil(0.55) },
   body: { padding: 12, gap: 4 },

@@ -42,6 +42,12 @@ export interface Reel {
   likes: number;
   /** Carte produit (null = pas de carte). */
   product: LinkedProduct | null;
+  /**
+   * Articles du tiroir (0..n). Aujourd'hui le serveur renvoie 0 ou 1 ; le jour où
+   * un Reel en portera plusieurs, l'écran n'aura rien à changer. `undefined` =
+   * réponse ancienne : on retombe sur `product`.
+   */
+  products?: LinkedProduct[];
   /** Image de couverture (vide = pas de couverture). */
   posterUrl: string;
 }
@@ -93,6 +99,18 @@ const bool = (value: unknown): boolean => value === true || value === 1 || value
 const record = (value: unknown): Record<string, unknown> =>
   value !== null && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
 
+/**
+ * Liste des articles d'un contenu. `products` absent (réponse ancienne) ⇒ on
+ * retombe sur le produit unique. Un tableau fourni mais vide reste vide : le
+ * serveur a dit « aucun article », on ne le contredit pas.
+ */
+function parseLinkedProducts(value: unknown, fallback: LinkedProduct | null): LinkedProduct[] {
+  if (!Array.isArray(value)) return fallback ? [fallback] : [];
+  const list = value.map(parseLinkedProduct).filter((entry): entry is LinkedProduct => entry !== null);
+  const seen = new Set<string>();
+  return list.filter((entry) => (seen.has(entry.id) ? false : (seen.add(entry.id), true)));
+}
+
 function rowsOf(payload: unknown): Record<string, unknown>[] {
   const body = record(payload);
   const list = Array.isArray(body.data) ? body.data : Array.isArray(payload) ? payload : [];
@@ -118,6 +136,7 @@ export async function fetchReels(options: RequestOptions = {}): Promise<Reel[]> 
       views: num(entry.views),
       likes: num(entry.likes),
       product: parseLinkedProduct(entry.product),
+      products: parseLinkedProducts(entry.products, parseLinkedProduct(entry.product)),
     }];
   });
 }

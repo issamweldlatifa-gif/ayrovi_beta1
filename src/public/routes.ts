@@ -52,6 +52,10 @@ function withLinkedProduct(row: Record<string, any>) {
     if (!key.startsWith('lp_')) out[key] = value;
   }
   out.product = linkedProductFromJoin(row);
+  /* Liste prête pour le tiroir du Reel : aujourd'hui 0 ou 1 produit (une seule
+     colonne `product_id`). Le jour où un contenu portera plusieurs produits, seule
+     cette ligne changera — le client lit déjà une liste. */
+  out.products = out.product ? [out.product] : [];
   return out;
 }
 
