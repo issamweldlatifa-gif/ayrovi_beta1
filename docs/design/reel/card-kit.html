@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="fr" dir="ltr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AYROVI — Aperçu carte article dans la fiche produit (back-office)</title>
+<link rel="stylesheet" href="assets/card.css" />
+<style>
+@font-face{font-family:"Zalando Sans";src:url("../../../client/public/fonts/editorial/zalando-sans.woff2") format("woff2");font-weight:200 900;font-display:swap}
+@font-face{font-family:"Noto Sans Arabic";src:url("../../../client/public/fonts/editorial/noto-sans-arabic.woff2") format("woff2");font-weight:100 900;font-display:swap}
+
+*{box-sizing:border-box}
+body{
+  margin:0;padding:26px 22px 60px;background:#F2F2F2;color:#0A0A0A;
+  font-family:"Zalando Sans","Helvetica Neue",Arial,sans-serif;font-size:14px;
+}
+a{color:#571EF6}
+.head{max-width:1180px;margin:0 auto 20px}
+.head .tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#571EF6;margin-bottom:6px}
+.head h1{margin:0 0 6px;font-size:20px;letter-spacing:-.01em}
+.head p{margin:0;color:#555;font-size:13px;line-height:1.55;max-width:78ch}
+.head p b{color:#0A0A0A}
+
+.layout{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:minmax(320px,1fr) minmax(420px,520px);gap:22px;align-items:start}
+@media (max-width:980px){.layout{grid-template-columns:1fr}}
+
+.panel{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.panel > header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.panel > header h2{margin:0;font-size:13px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:#333}
+.panel > header .hint{font-size:11.5px;color:#777}
+.panel .body{padding:14px 16px 18px}
+
+/* formulaire : imite la vraie fiche produit du back-office */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field.full{grid-column:1/-1}
+.field label{font-size:11.5px;font-weight:700;color:#444}
+.field label .req{color:#A52D2D}
+.field input,.field select,.field textarea{
+  font:inherit;font-size:13px;padding:8px 10px;border:1px solid #D9D9D9;border-radius:8px;background:#fff;color:#0A0A0A;width:100%;
+}
+.field input:focus,.field select:focus{outline:2px solid #571EF6;outline-offset:1px;border-color:#571EF6}
+.field .h{font-size:11px;color:#888;line-height:1.4}
+fieldset{border:0;margin:16px 0 0;padding:0}
+legend{font-size:11.5px;font-weight:700;color:#444;margin-bottom:8px;padding:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:inherit;font-size:12px;font-weight:600;padding:6px 10px;border-radius:999px;border:1px solid #D9D9D9;background:#fff;cursor:pointer}
+.chip[aria-pressed="true"]{background:#0A0A0A;color:#fff;border-color:#0A0A0A}
+.chip.danger[aria-pressed="true"]{background:#A52D2D;border-color:#A52D2D;color:#fff}
+
+/* aperçu */
+.stage{display:flex;flex-direction:column;gap:14px}
+.frame{
+  background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;
+}
+.frame .cap{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:10px}
+.frame .cap b{font-size:12px}
+.frame .cap span{font-size:11px;color:#777}
+.tray-demo{
+  position:relative;width:390px;max-width:100%;height:214px;background:#fff;
+  border-radius:18px 18px 12px 12px;border:1px solid #EFEFEF;padding:26px 0 10px;
+  overflow:hidden;
+}
+.tray-demo .grab{position:absolute;top:8px;left:0;right:0;display:flex;justify-content:center}
+.tray-demo .grab i{width:36px;height:4px;border-radius:999px;background:rgba(0,0,0,.18)}
+.tray-demo .row{display:flex;gap:10px;padding:0 14px;overflow:hidden}
+.zoom2{transform:scale(1.4);transform-origin:top left;height:calc(var(--card-h)*1.4 + 14px);width:calc(var(--card-w)*1.4)}
+.zoomwrap{overflow:hidden}
+
+.onmedia{
+  position:relative;width:390px;max-width:100%;height:250px;border-radius:14px;overflow:hidden;background:#111;
+}
+.onmedia img{width:100%;height:100%;object-fit:cover;display:block;opacity:.92}
+.onmedia .row{position:absolute;left:0;right:0;bottom:12px;display:flex;gap:10px;padding:0 14px}
+
+/* contrat / dimensions */
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid #EFEFEF;vertical-align:top}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#777;font-weight:700}
+td code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;background:#F6F6F6;padding:1px 4px;border-radius:4px}
+
+.verdict{display:flex;flex-direction:column;gap:7px}
+.verdict div{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;line-height:1.45}
+.verdict .dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex:none}
+.dot.ok{background:#236044}.dot.hidden{background:#666}.dot.block{background:#A52D2D}
+.verdict b{font-weight:700}
+.muted{color:#777}
+footer.note{max-width:1180px;margin:22px auto 0;font-size:12px;color:#666;line-height:1.6}
+footer.note b{color:#333}
+</style>
+</head>
+<body>
+
+<div class="head">
+  <span class="tag">Back-office · fiche produit · 24/10/2026</span>
+  <h1>La même carte, en aperçu pendant qu'on remplit le produit</h1>
+  <p>
+    Composant unique : <code>docs/design/reel/assets/card.css</code>. La maquette Reel et cet
+    aperçu lisent <b>le même fichier</b> — si la carte mesure 336 × 158 dans le reel, elle mesure
+    336 × 158 ici, sans recopie. Quand un champ manque, la partie correspondante
+    <b>disparaît</b> ; elle n'est jamais remplie d'une valeur inventée.
+  </p>
+</div>
+
+<div class="layout">
+
+  <!-- ───────────── formulaire ───────────── -->
+  <section class="panel" aria-label="Champs du produit">
+    <header>
+      <h2>Fiche produit</h2>
+      <span class="hint">champs réels du back-office</span>
+    </header>
+    <div class="body">
+
+      <div class="grid2">
+        <div class="field full">
+          <label for="f-brand">Marque</label>
+          <input id="f-brand" value="Bershka" />
+          <span class="h">sans marque ⇒ le nom du produit remonte d'un cran</span>
+        </div>
+        <div class="field full">
+          <label for="f-name">Nom <span class="req">*</span></label>
+          <input id="f-name" value="Pantalon large taille haute" />
+        </div>
+        <div class="field">
+          <label for="f-price">Prix de vente</label>
+          <input id="f-price" type="number" min="0" step="0.01" value="149" />
+          <span class="h">0 ou vide ⇒ aucun prix affiché</span>
+        </div>
+        <div class="field">
+          <label for="f-currency">Devise</label>
+          <select id="f-currency"><option>TND</option><option>EUR</option><option>USD</option></select>
+        </div>
+        <div class="field">
+          <label for="f-stock">Disponibilité</label>
+          <select id="f-stock">
+            <option value="AVAILABLE">Disponible</option>
+            <option value="OUT_OF_STOCK">Épuisé</option>
+            <option value="UNKNOWN">Non vérifié</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-image">Image principale</label>
+          <select id="f-image">
+            <option value="assets/p-trousers.jpg">p-trousers.jpg</option>
+            <option value="assets/p-jacket.jpg">p-jacket.jpg</option>
+            <option value="assets/p-jumpsuit.jpg">p-jumpsuit.jpg</option>
+            <option value="assets/p-knit.jpg">p-knit.jpg</option>
+            <option value="">— aucune —</option>
+          </select>
+        </div>
+      </div>
+
+      <fieldset>
+        <legend>États à essayer (comme en recette)</legend>
+        <div class="chips" id="states">
+          <button class="chip" data-state="complete" aria-pressed="true">Complet</button>
+          <button class="chip" data-state="no-image">Sans image</button>
+          <button class="chip" data-state="no-price">Sans prix</button>
+          <button class="chip" data-state="no-brand">Sans marque</button>
+          <button class="chip" data-state="oos">Épuisé</button>
+          <button class="chip" data-state="long">Titre très long</button>
+          <button class="chip" data-state="rtl">Arabe (RTL)</button>
+          <button class="chip" data-state="skeleton">Chargement</button>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Ce que la carte sait faire aujourd'hui</legend>
+        <div class="verdict" id="verdict"></div>
+      </fieldset>
+
+    </div>
+  </section>
+
+  <!-- ───────────── aperçus ───────────── -->
+  <div class="stage">
+
+    <div class="frame">
+      <div class="cap"><b>Aperçu 1:1 — dans le tiroir du Reel</b><span>390 px · carte 336 × 158</span></div>
+      <div class="tray-demo" id="trayDemo">
+        <div class="grab"><i></i></div>
+        <div class="row" id="row1"><!-- carte injectée --></div>
+      </div>
+      <p class="muted" style="font-size:11.5px;margin:10px 0 0">
+        Exactement l'écran de la maquette Reel : même largeur utile, même hauteur de tiroir (214 px).
+      </p>
+    </div>
+
+    <div class="frame">
+      <div class="cap"><b>Posée sur le média</b><span>même composant, fond vidéo</span></div>
+      <div class="onmedia">
+        <img src="assets/reel-poster.jpg" alt="" />
+        <div class="row" id="row2"></div>
+      </div>
+    </div>
+
+    <div class="frame">
+      <div class="cap"><b>Zoom ×1,4 — pour vérifier les cotes</b><span>aucune règle réécrite</span></div>
+      <div class="zoomwrap"><div class="zoom2" id="row3"></div></div>
+    </div>
+
+    <div class="frame">
+      <div class="cap"><b>Contrat de la carte</b><span>ce qui s'affiche / ce qui s'effface</span></div>
+      <table>
+        <thead><tr><th>Donnée</th><th>Source serveur</th><th>Si absente</th></tr></thead>
+        <tbody>
+          <tr><td>Marque</td><td><code>products.brand_name</code></td><td>masquée (le nom remonte)</td></tr>
+          <tr><td>Nom</td><td><code>products.name</code></td><td>la carte n'est pas rendue</td></tr>
+          <tr><td>Prix TND</td><td><code>products.final_price</code></td><td>pas de prix (jamais « — »)</td></tr>
+          <tr><td>Photo</td><td><code>catalogue_media</code> (primaire)</td><td>fond studio vide</td></tr>
+          <tr><td>Disponibilité</td><td><code>products.stock_status</code></td><td>rien d'affirmé</td></tr>
+          <tr><td>Favori</td><td>compte client (hors produit)</td><td>cœur vide, jamais grisé</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<footer class="note">
+  <b>Ce que ce fichier n'est pas :</b> il n'écrit rien en base et n'appelle aucun endpoint.
+  Il montre la carte telle qu'elle doit sortir du back-office, à la taille du réel, pour trancher
+  maintenant plutôt que dans l'APK.<br />
+  <b>Où elle doit vivre dans le code :</b> la fiche produit est
+  <code>client/src/admin/CataloguePages.tsx</code> (Catalogue), pas <code>src/crm/</code> —
+  le CRM de ce dépôt gère les tiers et les tickets. L'aperçu s'ajoute à côté du formulaire,
+  alimenté par le brouillon (<code>draft</code>) avant enregistrement.
+  La carte côté application est <code>apps/mobile/src/features/shopping/LinkedProductCard.tsx</code> ;
+  elle garde son rôle (ouvrir <code>/product/[id]</code>) et prend les cotes de <code>card.css</code>.
+</footer>
+
+<script>
+const PRODUCT = {
+  brand:'Bershka',
+  name:'Pantalon large taille haute',
+  price:149,
+  currency:'TND',
+  image:'assets/p-trousers.jpg',
+  stock:'AVAILABLE',
+};
+const state = { mode:'complete', rtl:false };
+
+const HEART = '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7.2-4.5-7.2-9.4A4.1 4.1 0 0 1 12 7.9a4.1 4.1 0 0 1 7.2 2.7C19.2 15.5 12 20 12 20z"/></svg>';
+
+/** Rendu : UNE fonction, appelée par les trois aperçus. Pas de variante visuelle. */
+function cardHTML(p) {
+  const noBrand = !p.brand;
+  const noPrice = !(p.price > 0);
+  const noImage = !p.image;
+  const oos = p.stock === 'OUT_OF_STOCK';
+  const skeleton = state.mode === 'skeleton';
+  return `
+    <button class="ay-card${skeleton ? ' ay-card--skeleton' : ''}"
+      data-no-brand="${noBrand}" data-no-price="${noPrice}" data-no-image="${noImage}" data-oos="${oos}"
+      aria-label="${(p.brand ? p.brand + ' — ' : '') + p.name}">
+      <span class="ay-card__shot">${noImage ? '' : `<img src="${p.image}" alt="">`}</span>
+      <span class="ay-card__body">
+        <span class="ay-card__brand">${p.brand || ''}</span>
+        <span class="ay-card__title">${p.name}</span>
+        <span class="ay-card__price">${noPrice ? '' : `${p.price.toFixed(2)} ${p.currency}`}</span>
+      </span>
+      <span class="ay-card__fav" role="button" tabindex="0" aria-pressed="false" aria-label="Ajouter aux favoris">${HEART}</span>
+    </button>`;
+}
+
+function render() {
+  const p = { ...PRODUCT };
+  if (state.mode === 'long') p.name = 'Pantalon large taille haute coupe fluide en viscose mélangée — édition limitée automne-hiver';
+  if (state.mode === 'no-brand') p.brand = '';
+  if (state.mode === 'no-price') p.price = 0;
+  if (state.mode === 'no-image') p.image = '';
+  if (state.mode === 'oos') p.stock = 'OUT_OF_STOCK';
+
+  const html = cardHTML(p);
+  document.getElementById('row1').innerHTML = html;
+  document.getElementById('row2').innerHTML = html;
+  document.getElementById('row3').innerHTML = html;
+  document.querySelectorAll('.ay-card').forEach((c) => c.setAttribute('dir', state.rtl ? 'rtl' : 'ltr'));
+  updateVerdict(p);
+}
+
+function updateVerdict(p) {
+  const rows = [];
+  rows.push(p.name ? ['ok','Nom','affiché'] : ['block','Nom','manquant ⇒ carte non rendue']);
+  rows.push(p.brand ? ['ok','Marque','affichée'] : ['hidden','Marque','masquée']);
+  rows.push(p.price > 0 ? ['ok','Prix',`${p.price.toFixed(2)} ${p.currency}`] : ['hidden','Prix','masqué (aucun montant inventé)']);
+  rows.push(p.image ? ['ok','Photo','affichée, contain'] : ['hidden','Photo','fond studio vide']);
+  rows.push(p.stock === 'OUT_OF_STOCK' ? ['hidden','Disponibilité','« épuisé » en gris, carte cliquable']
+        : ['ok','Disponibilité', p.stock === 'UNKNOWN' ? 'non vérifié (rien affirmé)' : 'disponible']);
+  document.getElementById('verdict').innerHTML = rows.map(([kind, label, text]) =>
+    `<div><span class="dot ${kind}"></span><span><b>${label}</b> — ${text}</span></div>`).join('');
+}
+
+/* ── formulaire → aperçu (live, avant enregistrement) ── */
+const bind = (id, key, cast) => {
+  const el = document.getElementById(id);
+  el.addEventListener('input', () => { PRODUCT[key] = cast ? cast(el.value) : el.value; clearModes(); render(); });
+  el.addEventListener('change', () => { PRODUCT[key] = cast ? cast(el.value) : el.value; clearModes(); render(); });
+};
+bind('f-brand','brand');
+bind('f-name','name');
+bind('f-price','price', (v) => Number(v) || 0);
+bind('f-currency','currency');
+bind('f-stock','stock');
+bind('f-image','image');
+
+function clearModes() {
+  state.mode = 'complete'; state.rtl = false;
+  document.querySelectorAll('.chip').forEach((c) => c.setAttribute('aria-pressed', String(c.dataset.state === 'complete')));
+}
+
+document.getElementById('states').addEventListener('click', (e) => {
+  const chip = e.target.closest('.chip'); if (!chip) return;
+  const next = chip.dataset.state;
+  document.querySelectorAll('.chip').forEach((c) => c.setAttribute('aria-pressed', 'false'));
+  chip.setAttribute('aria-pressed', 'true');
+  if (next === 'rtl') { state.rtl = true; state.mode = 'complete'; }
+  else { state.mode = next; state.rtl = false; }
+  render();
+});
+
+render();
+</script>
+</body>
+</html>

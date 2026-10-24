@@ -90,18 +90,31 @@ describe('Product Integration — admin', () => {
     expect(host.textContent).toContain('89.00 TND');
   });
 
+  /** La recherche renvoie une liste, la relecture par identifiant renvoie l'objet. */
+  const mockCatalogue = (product: any) => apiMock.adminApi.mockImplementation((url: string) =>
+    String(url).startsWith('/catalogue/products/')
+      ? Promise.resolve({ success: true, data: product })
+      : Promise.resolve({ success: true, data: [product] }));
+
   it('choisir un produit n’écrit que le mode et l’identifiant, puis affiche l’aperçu', async () => {
     vi.useFakeTimers();
-    apiMock.adminApi.mockResolvedValue({ success: true, data: [sellable] });
+    mockCatalogue(sellable);
     await mount({ content_mode: 'normal', product_id: '' });
     await act(async () => buttonByText('Produit du catalogue')!.click());
     await type('pant');
     await act(async () => { vi.advanceTimersByTime(300); });
     const option = Array.from(host.querySelectorAll('button')).find((b) => b.textContent?.includes('Pantalon taille haute'))!;
     await act(async () => option.click());
+    await act(async () => { await Promise.resolve(); });
     expect(lastValue).toEqual({ content_mode: 'shoppable', product_id: 'p_ok' });
     expect(host.textContent).toContain('Aperçu sur le téléphone');
-    expect(host.textContent).toContain('Découvrir');
+    // Module retenu (24/10/2026) : la carte entière est pressable, pas de bouton séparé.
+    expect(host.textContent).not.toContain('Découvrir');
+    const card = host.querySelector('[data-article-card]') as HTMLButtonElement;
+    expect(card).not.toBeNull();
+    expect(card.getAttribute('aria-label')).toContain('Pantalon taille haute');
+    expect(card.style.height).toBe('158px');
+    expect(card.style.maxWidth).toBe('336px');
   });
 
   it('Créer un produit temporaire : pas de recherche catalogue, création publiée puis association par identifiant', async () => {
@@ -151,6 +164,21 @@ describe('Product Integration — admin', () => {
     await act(async () => { await Promise.resolve(); await Promise.resolve(); });
     expect(host.textContent).toContain('Le produit lié est introuvable');
     expect(host.querySelector('img')).toBeNull();
+  });
+
+  it('aperçu : la carte entière est l’action — l’appui annonce l’ouverture de la fiche', async () => {
+    vi.useFakeTimers();
+    mockCatalogue(sellable);
+    await mount({ content_mode: 'normal', product_id: '' });
+    await act(async () => buttonByText('Produit du catalogue')!.click());
+    await type('pant');
+    await act(async () => { vi.advanceTimersByTime(300); });
+    const option = Array.from(host.querySelectorAll('button')).find((b) => b.textContent?.includes('Pantalon taille haute'))!;
+    await act(async () => option.click());
+    expect(host.textContent).toContain('La carte entière est l’action');
+    const card = host.querySelector('[data-article-card]') as HTMLButtonElement;
+    await act(async () => card.click());
+    expect(host.textContent).toContain('la fiche produit s’ouvre dans l’application');
   });
 
   it('aperçu d’une story sans produit : indique qu’aucune carte ne sera affichée', async () => {

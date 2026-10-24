@@ -1,7 +1,7 @@
 /**
- * Carte « produit lié » (Reel, Publication, Story) — rendu et navigation.
- *  • nom, prix (avec la devise renvoyée par le serveur) et bouton « Découvrir » ;
- *  • « Découvrir » ouvre la page produit DE L'APPLICATION (/product/[id]) ;
+ * Carte « article » (Reel, Publication, Story) — rendu et navigation.
+ *  • la carte ENTIÈRE est pressable : plus de bouton « Découvrir » (décision 24/10/2026) ;
+ *  • l'appui ouvre la page produit DE L'APPLICATION (/product/[id]) ;
  *  • produit indisponible : libellé visible, carte toujours utilisable ;
  *  • un produit incomplet ou sans prix n'est jamais affiché (parseLinkedProduct ⇒ null).
  */
@@ -39,23 +39,31 @@ beforeEach(() => {
 });
 
 describe('LinkedProductCard', () => {
-  it('affiche le nom, le prix avec sa devise et le bouton Découvrir', () => {
+  it('affiche le nom et le prix, et ne rend AUCUN bouton séparé', () => {
     render(wrap(<LinkedProductCard product={product()} />));
     expect(screen.getByText('Pantalon taille haute')).toBeTruthy();
     expect(screen.getByText('89.00 TND')).toBeTruthy();
-    expect(screen.getByText('Découvrir')).toBeTruthy();
+    // La carte est l'action : un second bouton volerait la place du titre.
+    expect(screen.queryByText('Découvrir')).toBeNull();
   });
 
-  it('Découvrir ouvre la page produit interne, jamais un lien externe', () => {
+  it('la carte entière est pressable (rôle bouton, libellé lisible)', () => {
     render(wrap(<LinkedProductCard product={product()} />));
-    fireEvent.press(screen.getByTestId('linked-product-cta-prod_1'));
+    const card = screen.getByTestId('linked-product-prod_1');
+    expect(card.props.accessibilityRole).toBe('button');
+    expect(String(card.props.accessibilityLabel)).toContain('Pantalon taille haute');
+  });
+
+  it('l’appui sur la carte ouvre la page produit interne, jamais un lien externe', () => {
+    render(wrap(<LinkedProductCard product={product()} />));
+    fireEvent.press(screen.getByTestId('linked-product-prod_1'));
     expect(router.push).toHaveBeenCalledWith({ pathname: '/product/[id]', params: { id: 'prod_1' } });
   });
 
-  it('onOpen remplace la navigation par défaut (ex. story : même chemin que le CTA)', () => {
+  it('onOpen remplace la navigation par défaut (ex. story : même chemin que la carte)', () => {
     const onOpen = jest.fn();
     render(wrap(<LinkedProductCard product={product()} onOpen={onOpen} />));
-    fireEvent.press(screen.getByTestId('linked-product-cta-prod_1'));
+    fireEvent.press(screen.getByTestId('linked-product-prod_1'));
     expect(onOpen).toHaveBeenCalledWith(expect.objectContaining({ id: 'prod_1' }));
     expect(router.push).not.toHaveBeenCalled();
   });
@@ -63,7 +71,7 @@ describe('LinkedProductCard', () => {
   it('produit en rupture : libellé « indisponible », carte toujours cliquable', () => {
     render(wrap(<LinkedProductCard product={product({ available: false, stockStatus: 'OUT_OF_STOCK' })} />));
     expect(screen.getByText('Actuellement indisponible')).toBeTruthy();
-    fireEvent.press(screen.getByTestId('linked-product-cta-prod_1'));
+    fireEvent.press(screen.getByTestId('linked-product-prod_1'));
     expect(router.push).toHaveBeenCalledTimes(1);
   });
 

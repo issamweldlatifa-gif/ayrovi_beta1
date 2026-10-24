@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="fr" dir="ltr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AYROVI — MOCKUP Reel (prototype interactif) · 24/10/2026</title>
+<link rel="stylesheet" href="assets/card.css" />
+<style>
+/* ─────────────────────────────────────────────────────────────────────────────
+   AYROVI — Maquette RÉEL (Reel) — prototype interactif, isolé.
+   Ce fichier ne touche à aucun code de l'application : c'est un terrain d'essai
+   pour la mécanique demandée (View items / Hide items, vidéo qui continue de
+   tourner, cartes en carrousel, aucune sortie de l'écran).
+   Couleurs = identité officielle (client/src/design/editorial/identity.json).
+   Aucun orange (interdit par tests/brand-colors.test.ts).
+   ───────────────────────────────────────────────────────────────────────────── */
+
+@font-face {
+  font-family: "Zalando Sans";
+  src: url("../../../client/public/fonts/editorial/zalando-sans.woff2") format("woff2");
+  font-weight: 200 900; font-display: swap;
+}
+@font-face {
+  font-family: "Noto Sans Arabic";
+  src: url("../../../client/public/fonts/editorial/noto-sans-arabic.woff2") format("woff2");
+  font-weight: 100 900; font-display: swap;
+}
+
+:root {
+  --canvas:#FFFFFF; --ink:#0A0A0A; --muted:#666666; --line:#E5E5E5;
+  --studio:#F5F5F5; --action:#571EF6; --on-action:#FFFFFF;
+  --desk:#F2F2F2;
+  --font-latin:"Zalando Sans","Helvetica Neue",Arial,sans-serif;
+  --font-ar:"Noto Sans Arabic","Zalando Sans","Helvetica Neue",Arial,sans-serif;
+  /* ── mesures du prototype (voir SPEC) ── */
+  --phone-w:390px; --phone-h:844px;
+  --rail-x:16px; --back:40px;
+  --tray-h:214px;          /* hauteur du tiroir ouvert */
+  --card-gap:10px;
+  --pill-h:44px; --pill-w:176px;
+}
+* { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body { height:100%; }
+body {
+  margin:0; padding:28px 24px 56px; background:var(--desk); color:var(--ink);
+  font-family:var(--font-latin); display:flex; flex-direction:column; align-items:center; gap:20px;
+}
+body[data-lang="ar"] { font-family:var(--font-ar); }
+
+/* ───────────── en-tête (hors téléphone : ne fait pas partie du mockup) ───────────── */
+.head { width:min(100%,760px); }
+.head h1 { font-size:19px; margin:0 0 4px; font-weight:700; letter-spacing:-.01em; }
+.head p { margin:0; font-size:13px; color:#555; line-height:1.5; max-width:70ch; }
+.head .tag {
+  display:inline-block; font-size:11px; font-weight:700; letter-spacing:.06em;
+  text-transform:uppercase; color:var(--action); margin-bottom:6px;
+}
+.controls {
+  display:flex; flex-wrap:wrap; gap:8px; margin-top:14px;
+}
+.controls button {
+  font:inherit; font-size:12px; font-weight:700; padding:8px 12px; border-radius:999px;
+  border:1px solid var(--line); background:#fff; color:var(--ink); cursor:pointer;
+}
+.controls button[aria-pressed="true"] { background:var(--ink); color:#fff; border-color:var(--ink); }
+.controls .sep { width:1px; background:var(--line); margin:2px 4px; }
+
+/* ───────────── le téléphone ───────────── */
+.stage { display:flex; flex-wrap:wrap; gap:28px; align-items:flex-start; justify-content:center; }
+figure { margin:0; }
+figcaption { font-size:12px; color:#666; margin-top:10px; max-width:390px; line-height:1.5; }
+figcaption b { color:var(--ink); }
+
+.phone {
+  position:relative; width:var(--phone-w); height:var(--phone-h);
+  background:#000; border-radius:34px; overflow:hidden;
+  box-shadow:0 24px 60px rgba(0,0,0,.28), 0 0 0 9px #111, 0 0 0 10px #2a2a2a;
+  isolation:isolate;
+}
+
+/* média : l'image tient le rôle de la vidéo */
+.media { position:absolute; inset:0; overflow:hidden; background:#111; }
+.media img {
+  width:100%; height:100%; object-fit:cover; display:block;
+  animation:kenburns 26s ease-in-out infinite alternate;
+}
+.media[data-playing="false"] img { animation-play-state:paused; }
+@keyframes kenburns { from { transform:scale(1.04) translateY(0); } to { transform:scale(1.14) translateY(-1.5%); } }
+
+/* dégradés de lisibilité (haut pour les boutons, bas pour auteur + tiroir) */
+.scrim-top, .scrim-bottom { position:absolute; left:0; right:0; pointer-events:none; }
+.scrim-top { top:0; height:170px; background:linear-gradient(to bottom, rgba(0,0,0,.38), rgba(0,0,0,0)); }
+.scrim-bottom { bottom:0; height:210px; background:linear-gradient(to top, rgba(0,0,0,.42), rgba(0,0,0,0)); transition:opacity .28s ease; }
+.phone[data-open="true"] .scrim-bottom { opacity:.7; }
+
+/* ───────────── barre haute : retour seul ───────────── */
+.topbar {
+  position:absolute; top:0; left:0; right:0; height:calc(44px + 10px);
+  padding:10px 12px 0; display:flex; align-items:center; z-index:6;
+}
+.icon-btn {
+  display:flex; align-items:center; justify-content:center; border:0; cursor:pointer;
+  background:rgba(0,0,0,.34); color:#fff; backdrop-filter:blur(6px);
+  -webkit-backdrop-filter:blur(6px); border-radius:50%;
+}
+.icon-btn:active { transform:scale(.94); }
+.back { width:var(--back); height:var(--back); }
+svg { display:block; }
+
+/* ───────────── rail de droite ───────────── */
+.rail {
+  position:absolute; right:var(--rail-x); bottom:calc(var(--tray-h) + 210px);
+  display:flex; flex-direction:column; align-items:center; gap:20px; z-index:5;
+  transition:bottom .28s cubic-bezier(.22,.61,.36,1);
+}
+.rail button {
+  width:34px; height:34px; border:0; background:transparent; color:#fff; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; filter:drop-shadow(0 1px 3px rgba(0,0,0,.35));
+}
+.rail .more { height:24px; }
+
+/* ───────────── auteur + suivi ───────────── */
+.author {
+  position:absolute; left:14px; bottom:calc(var(--tray-h) + 130px); z-index:6;
+  display:flex; align-items:center; gap:9px; color:#fff;
+  transition:bottom .28s cubic-bezier(.22,.61,.36,1);
+  text-shadow:0 1px 4px rgba(0,0,0,.4);
+}
+.avatar {
+  width:32px; height:32px; border-radius:50%; overflow:hidden; flex:none;
+  background:#333 url("assets/reel-poster.jpg") 42% 18% / 240% no-repeat;
+  box-shadow:0 0 0 1.5px rgba(255,255,255,.7);
+}
+.author .name { font-size:14px; font-weight:600; letter-spacing:-.01em; }
+.author .dot { opacity:.75; margin:0 5px; }
+.author .follow { font-weight:700; font-size:14px; background:none; border:0; color:#fff; font-family:inherit; cursor:pointer; padding:0; }
+.author .follow[data-followed="true"] { opacity:.85; font-weight:600; }
+
+/* ───────────── le bouton unique View items / Hide items ───────────── */
+.toggle {
+  position:absolute; left:14px; bottom:calc(var(--tray-h) + 52px); z-index:7;
+  height:var(--pill-h); min-width:var(--pill-w); padding:0 17px;
+  display:inline-flex; align-items:center; justify-content:space-between; gap:10px;
+  background:#000; color:#fff; border:0; border-radius:999px; cursor:pointer;
+  font-family:inherit; font-size:16px; font-weight:700; letter-spacing:-.01em;
+  transition:bottom .28s cubic-bezier(.22,.61,.36,1), transform .12s ease;
+  box-shadow:0 6px 18px rgba(0,0,0,.28);
+}
+.toggle:active { transform:scale(.98); }
+.toggle .chev { transition:transform .3s cubic-bezier(.22,.61,.36,1); }
+.phone[data-open="true"] .toggle .chev { transform:rotate(180deg); }
+
+/* le tiroir ne bouge pas quand on ferme : ce sont les éléments au-dessus qui
+   remontent. Ici tout est piloté par --tray-h via [data-open]. */
+
+/* ───────────── tiroir des articles ───────────── */
+.tray {
+  position:absolute; left:0; right:0; bottom:0; z-index:8;
+  height:var(--tray-h);
+  background:linear-gradient(to bottom, rgba(255,255,255,0) 0, rgba(255,255,255,.0) 0);
+  transform:translateY(100%);
+  transition:transform .34s cubic-bezier(.22,.61,.36,1);
+  touch-action:pan-x;
+}
+.phone[data-open="true"] .tray { transform:translateY(0); }
+/* le fond blanc arrondi commence sous la zone de préhension */
+.tray::before {
+  content:""; position:absolute; left:0; right:0; top:26px; bottom:0;
+  background:var(--canvas); border-radius:18px 18px 0 0;
+  box-shadow:0 -8px 30px rgba(0,0,0,.16);
+}
+.grab {
+  position:absolute; left:0; right:0; top:0; height:26px; z-index:2;
+  display:flex; align-items:center; justify-content:center; cursor:grab;
+}
+.grab span { width:36px; height:4px; border-radius:999px; background:rgba(0,0,0,.22); }
+
+.cards {
+  position:absolute; left:0; right:0; top:30px; bottom:10px; z-index:2;
+  display:flex; gap:var(--card-gap); padding:0 14px;
+  overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory;
+  scrollbar-width:none;
+}
+.cards::-webkit-scrollbar { display:none; }
+
+/* carte : voir assets/card.css (source unique, partagée avec l'aperçu back-office) */
+
+/* pastille « état » discrète quand la feuille est fermée, pour rappeler qu'il y a des articles */
+.count {
+  position:fixed; /* dans le téléphone : absolute via .phone */ 
+}
+
+/* ───────────── pause / muet / états ───────────── */
+.pause-glyph {
+  position:absolute; left:50%; top:44%; transform:translate(-50%,-50%) scale(.9);
+  width:66px; height:66px; border-radius:50%; background:rgba(0,0,0,.34);
+  backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center;
+  color:#fff; opacity:0; pointer-events:none; transition:opacity .18s ease, transform .18s ease; z-index:4;
+}
+.media[data-playing="false"] ~ .pause-glyph { opacity:1; transform:translate(-50%,-50%) scale(1); }
+
+.toast {
+  position:absolute; left:50%; bottom:calc(var(--tray-h) + 120px); transform:translate(-50%,8px);
+  background:rgba(10,10,10,.92); color:#fff; font-size:12.5px; line-height:1.4;
+  padding:10px 14px; border-radius:12px; max-width:300px; text-align:center;
+  opacity:0; pointer-events:none; transition:opacity .2s ease, transform .2s ease; z-index:20;
+}
+.toast[data-show="true"] { opacity:1; transform:translate(-50%,0); }
+
+/* ───────────── mode cotes (spécification) ───────────── */
+.spec { position:absolute; inset:0; z-index:30; pointer-events:none; display:none; }
+.spec[data-on="true"] { display:block; }
+.spec .band { position:absolute; left:0; right:0; background:rgba(87,30,246,.10); border-block:1px dashed rgba(87,30,246,.75); }
+.spec .band span, .spec .lbl {
+  position:absolute; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:10px;
+  background:var(--action); color:#fff; padding:2px 5px; border-radius:3px; white-space:nowrap;
+}
+.spec .band span { top:2px; left:6px; }
+.spec .vline { position:absolute; top:0; bottom:0; border-left:1px dashed rgba(87,30,246,.75); }
+.spec .hl { position:absolute; border:1px dashed rgba(87,30,246,.9); }
+.spec .lbl { background:#241046; }
+
+/* RTL : la maquette se retourne, les mesures non (elles restent physiques) */
+.phone[data-rtl="true"] { direction:rtl; }
+.phone[data-rtl="true"] .topbar { flex-direction:row-reverse; }
+.phone[data-rtl="true"] .rail { right:auto; left:var(--rail-x); }
+.phone[data-rtl="true"] .author { left:auto; right:14px; }
+.phone[data-rtl="true"] .toggle { left:auto; right:14px; }
+.phone[data-rtl="true"] .price { direction:ltr; }
+
+.note { font-size:11.5px; color:#777; max-width:390px; line-height:1.55; margin-top:10px; }
+.note b { color:#444; }
+</style>
+</head>
+<body data-lang="fr">
+
+<div class="head">
+  <span class="tag">Mockup · Reel · 24/10/2026</span>
+  <h1>REEL — prototype interactif (isolé)</h1>
+  <p>
+    Une seule mécanique, six états : <b>View items → Hide items</b> sans quitter la vidéo,
+    carrousel de cartes qui garde le média en lecture, et retour au même reel.
+    Aucun fichier de l'application n'est modifié ici.
+  </p>
+  <div class="controls" role="group" aria-label="Contrôles de la maquette">
+    <button id="btn-fr" aria-pressed="true">Français</button>
+    <button id="btn-ar" aria-pressed="false">العربية (RTL)</button>
+    <span class="sep"></span>
+    <button id="btn-speс" aria-pressed="false">Cotes (spec)</button>
+    <button id="btn-reset">Réinitialiser</button>
+    <a class="controls-link" href="card-kit.html" style="font-size:12px;font-weight:700;padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--ink);text-decoration:none">Aperçu de la carte dans le back-office →</a>
+  </div>
+</div>
+
+<div class="stage">
+  <figure>
+    <div class="phone" id="phone" data-open="true" data-rtl="false">
+      <!-- média -->
+      <div class="media" id="media" data-playing="true">
+        <img src="assets/reel-poster.jpg" alt="Vidéo : essayage d'un pantalon large noir" />
+      </div>
+      <div class="scrim-top"></div>
+      <div class="scrim-bottom"></div>
+
+      <!-- barre haute -->
+      <div class="topbar">
+        <button class="icon-btn back" id="back" aria-label="Retour">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+      </div>
+
+      <!-- rail -->
+      <div class="rail">
+        <button id="share" aria-label="Partager ce reel">
+          <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="M8.3 10.7l7.4-4.3M8.3 13.3l7.4 4.3"/></svg>
+        </button>
+        <button id="mute" aria-label="Couper le son" aria-pressed="false">
+          <svg id="mute-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 9.5h3.2L12 5.8v12.4L7.2 14.5H4z" fill="currentColor" stroke="none"/>
+            <path id="mute-x1" d="M16.2 9.4l4.3 5.2M20.5 9.4l-4.3 5.2" stroke-width="1.8"/>
+          </svg>
+        </button>
+        <button class="more" id="more" aria-label="Plus d'options">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>
+        </button>
+      </div>
+
+      <!-- auteur -->
+      <div class="author">
+        <div class="avatar" aria-hidden="true"></div>
+        <span class="name">tinasomnia</span>
+        <span class="dot" aria-hidden="true">·</span>
+        <button class="follow" id="follow" data-followed="false">Suivre</button>
+      </div>
+
+      <!-- bouton unique -->
+      <button class="toggle" id="toggle" aria-expanded="true" aria-controls="tray">
+        <span id="toggle-label">Masquer les articles</span>
+        <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+
+      <!-- tiroir -->
+      <section class="tray" id="tray" aria-label="Articles du reel">
+        <div class="grab" id="grab" aria-hidden="true"><span></span></div>
+        <div class="cards" id="cards"><!-- cartes injectées --></div>
+      </section>
+
+      <!-- pause -->
+      <div class="pause-glyph" aria-hidden="true">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+      </div>
+
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+      <!-- cotes -->
+      <div class="spec" id="spec" data-on="false" aria-hidden="true"></div>
+    </div>
+    <figcaption>
+      <b>Comment essayer :</b> touche le bouton noir (ou fais glisser le tiroir), touche la vidéo
+      pour mettre en pause, laisse le lecteur ouvert pendant que tu fais défiler les cartes.
+      Le bouton retour referme d'abord le tiroir — il ne quitte jamais le reel.
+    </figcaption>
+    <p class="note">
+      <b>Ce qui est simulé :</b> l'image tient lieu de vidéo (zoom lent = lecture). Le reste
+      — états, transitions, mesures, RTL — est la mécanique réelle à implémenter.
+    </p>
+  </figure>
+</div>
+
+<script>
+/* ─────────────────────────────────────────────────────────────────────────────
+   Données : ce que le SERVEUR fournit déjà (product_id → produit lu à la volée).
+   Aucun prix n'est inventé côté app : ici ce sont des valeurs de maquette.
+   ───────────────────────────────────────────────────────────────────────────── */
+const PRODUCTS = [
+  { brand:'Bershka',     title:'Pantalon large taille haute',        price:'149,00 TND', img:'assets/p-trousers.jpg' },
+  { brand:'Stradivarius',title:'Veste en simili cuir — gris',        price:'189,00 TND', img:'assets/p-jacket.jpg'   },
+  { brand:'Bershka',     title:'Combinaison maille sans manches',    price:'129,00 TND', img:'assets/p-jumpsuit.jpg' },
+  { brand:'Mango',       title:'Gilet en maille bouclée — écru',     price:'159,00 TND', img:'assets/p-knit.jpg'     },
+];
+
+const HEART = '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7.2-4.5-7.2-9.4A4.1 4.1 0 0 1 12 7.9a4.1 4.1 0 0 1 7.2 2.7C19.2 15.5 12 20 12 20z"/></svg>';
+const HEART_FILL = '<svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor"><path d="M12 20s-7.2-4.5-7.2-9.4A4.1 4.1 0 0 1 12 7.9a4.1 4.1 0 0 1 7.2 2.7C19.2 15.5 12 20 12 20z"/></svg>';
+
+const phone  = document.getElementById('phone');
+const toggle = document.getElementById('toggle');
+const label  = document.getElementById('toggle-label');
+const tray   = document.getElementById('tray');
+const cards  = document.getElementById('cards');
+const toastEl= document.getElementById('toast');
+
+const I18N = {
+  fr: { open:'Masquer les articles', closed:'Voir les articles', follow:'Suivre', followed:'Suivi',
+        back:'Retour', share:'Partager ce reel', mute:'Couper le son', unmute:'Rétablir le son',
+        more:"Plus d'options", fav:'Ajouter aux favoris', unfav:'Retirer des favoris' },
+  ar: { open:'خبّي المنتجات', closed:'شوف المنتجات', follow:'متابعة', followed:'تتابع',
+        back:'رجوع', share:'شارك الريل', mute:'اسكت الصوت', unmute:'رجّع الصوت',
+        more:'خيارات أخرى', fav:'زيد للمفضّلة', unfav:'نحّي من المفضّلة' },
+};
+let lang = 'fr';
+const t = (k) => I18N[lang][k];
+
+/* ── construire les cartes ── */
+PRODUCTS.forEach((p, i) => {
+  const el = document.createElement('button');
+  el.className = 'ay-card';
+  el.setAttribute('data-index', String(i));
+  el.setAttribute('aria-label', `${p.brand} — ${p.title} — ${p.price}`);
+  el.innerHTML = `
+    <span class="ay-card__shot"><img src="${p.img}" alt=""></span>
+    <span class="ay-card__body">
+      <span class="ay-card__brand">${p.brand}</span>
+      <span class="ay-card__title">${p.title}</span>
+      <span class="ay-card__price">${p.price}</span>
+    </span>
+    <span class="ay-card__fav" role="button" tabindex="0" aria-pressed="false" aria-label="${t('fav')}">${HEART}</span>
+  `;
+  el.addEventListener('click', (ev) => {
+    const fav = ev.target.closest('.ay-card__fav');
+    if (fav) {
+      ev.stopPropagation();
+      const on = fav.getAttribute('aria-pressed') === 'true';
+      fav.setAttribute('aria-pressed', String(!on));
+      fav.innerHTML = on ? HEART : HEART_FILL;
+      fav.setAttribute('aria-label', on ? t('fav') : t('unfav'));
+      return;
+    }
+    /* ⚠️ La GRANDE FICHE n'est pas dans ce lot : on ne fait pas semblant. */
+    showToast('Grande fiche produit = maquette suivante (hors de ce lot).');
+  });
+  cards.appendChild(el);
+});
+
+/* ── états ── */
+function setOpen(next) {
+  phone.dataset.open = String(next);
+  toggle.setAttribute('aria-expanded', String(next));
+  label.textContent = next ? t('open') : t('closed');
+}
+toggle.addEventListener('click', () => setOpen(phone.dataset.open !== 'true'));
+
+/* glisser le tiroir pour fermer/ouvrir */
+let dragStart = null, dragged = 0;
+const startDrag = (y) => { dragStart = y; dragged = 0; tray.style.transition = 'none'; };
+const moveDrag  = (y) => {
+  if (dragStart === null) return;
+  dragged = y - dragStart;
+  const base = phone.dataset.open === 'true' ? 0 : TRAY_H();
+  const shift = Math.max(0, Math.min(TRAY_H(), base + dragged));
+  tray.style.transform = `translateY(${shift}px)`;
+};
+const endDrag = () => {
+  if (dragStart === null) return;
+  tray.style.transition = '';
+  tray.style.transform = '';
+  if (phone.dataset.open === 'true' && dragged > 70) setOpen(false);
+  else if (phone.dataset.open !== 'true' && dragged < -70) setOpen(true);
+  dragStart = null; dragged = 0;
+};
+function TRAY_H() { return tray.getBoundingClientRect().height; }
+tray.addEventListener('pointerdown', (e) => { if (e.target.closest('.ay-card')) return; startDrag(e.clientY); tray.setPointerCapture(e.pointerId); });
+tray.addEventListener('pointermove', (e) => moveDrag(e.clientY));
+tray.addEventListener('pointerup', endDrag);
+tray.addEventListener('pointercancel', endDrag);
+
+/* ── lecture / pause ── */
+const media = document.getElementById('media');
+const togglePlay = () => {
+  const playing = media.dataset.playing !== 'false';
+  media.dataset.playing = String(!playing);
+};
+document.querySelector('.media').addEventListener('click', togglePlay);
+
+/* ── son ── */
+document.getElementById('mute').addEventListener('click', (e) => {
+  const btn = e.currentTarget;
+  const on = btn.getAttribute('aria-pressed') === 'true';
+  btn.setAttribute('aria-pressed', String(!on));
+  document.getElementById('mute-x1').style.opacity = on ? '1' : '0';
+  btn.setAttribute('aria-label', on ? t('mute') : t('unmute'));
+});
+
+/* ── suivre ── */
+document.getElementById('follow').addEventListener('click', (e) => {
+  const btn = e.currentTarget;
+  const followed = btn.dataset.followed === 'true';
+  btn.dataset.followed = String(!followed);
+  btn.textContent = followed ? t('follow') : t('followed');
+});
+
+/* ── retour : referme d'abord le tiroir, ne quitte jamais le reel ── */
+document.getElementById('back').addEventListener('click', () => {
+  if (phone.dataset.open === 'true') { setOpen(false); return; }
+  showToast('Retour au flux (le reel reste à sa position).');
+});
+
+/* ── divers ── */
+document.getElementById('share').addEventListener('click', () => showToast('Lien profond du reel copié.'));
+document.getElementById('more').addEventListener('click', () => showToast('Menu du reel.'));
+document.getElementById('grabbing');
+
+let toastTimer;
+function showToast(msg) {
+  toastEl.textContent = msg;
+  toastEl.dataset.show = 'true';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { toastEl.dataset.show = 'false'; }, 2400);
+}
+
+/* ── langue / RTL ── */
+function setLang(next) {
+  lang = next;
+  const rtl = next === 'ar';
+  document.body.dataset.lang = next;
+  phone.dataset.rtl = String(rtl);
+  document.getElementById('btn-fr').setAttribute('aria-pressed', String(!rtl));
+  document.getElementById('btn-ar').setAttribute('aria-pressed', String(rtl));
+  label.textContent = phone.dataset.open === 'true' ? t('open') : t('closed');
+  document.getElementById('follow').textContent = document.getElementById('follow').dataset.followed === 'true' ? t('followed') : t('follow');
+  document.querySelectorAll('.ay-card__fav').forEach((fav) => {
+    fav.setAttribute('aria-label', fav.getAttribute('aria-pressed') === 'true' ? t('unfav') : t('fav'));
+  });
+}
+document.getElementById('btn-fr').addEventListener('click', () => setLang('fr'));
+document.getElementById('btn-ar').addEventListener('click', () => setLang('ar'));
+
+/* ── cotes ── */
+const spec = document.getElementById('spec');
+function buildSpec() {
+  const H = 844, W = 390, trayH = 214;
+  spec.innerHTML = `
+    <div class="band" style="top:0;height:54px"><span>topbar 54 (44 + safe)</span></div>
+    <div class="hl" style="top:10px;left:12px;width:40px;height:40px"></div>
+    <div class="lbl" style="top:52px;left:12px">back 40 · r=50%</div>
+
+    <div class="hl" style="bottom:${trayH + 52}px;left:14px;width:176px;height:44px"></div>
+    <div class="lbl" style="bottom:${trayH + 100}px;left:14px">pill 176 × 44 · r=999</div>
+
+    <div class="band" style="bottom:0;height:${trayH}px"></div>
+    <div class="lbl" style="bottom:${trayH + 4}px;left:14px">tiroir ${trayH} (25,4 % de 844)</div>
+
+    <div class="hl" style="bottom:26px;left:14px;width:336px;height:158px"></div>
+    <div class="lbl" style="bottom:30px;left:14px">carte 336 × 158 · r=16</div>
+    <div class="hl" style="bottom:44px;left:24px;width:118px;height:118px"></div>
+    <div class="lbl" style="bottom:166px;left:24px">photo 118 · contain</div>
+
+    <div class="vline" style="left:${W - 16 - 34}px"></div>
+    <div class="lbl" style="top:56%;left:${W - 16 - 96}px">rail 34 · x=16</div>
+
+    <div class="lbl" style="bottom:${trayH + 128}px;left:14px">auteur : avatar 32 · 14/600</div>
+  `;
+}
+buildSpec();
+document.getElementById('btn-speс').addEventListener('click', (e) => {
+  const on = spec.dataset.on === 'true';
+  spec.dataset.on = String(!on);
+  e.currentTarget.setAttribute('aria-pressed', String(!on));
+});
+
+/* ── réinitialiser ── */
+document.getElementById('btn-reset').addEventListener('click', () => {
+  setOpen(true); setLang('fr');
+  media.dataset.playing = 'true';
+  spec.dataset.on = 'false';
+  document.getElementById('btn-speс').setAttribute('aria-pressed', 'false');
+  cards.scrollTo({ left: 0, behavior: 'smooth' });
+  document.getElementById('follow').dataset.followed = 'false';
+  document.getElementById('follow').textContent = t('follow');
+});
+
+/* ── clavie : espace = pause, échap = fermer ── */
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+  if (e.code === 'Escape') { setOpen(false); }
+});
+</script>
+</body>
+</html>

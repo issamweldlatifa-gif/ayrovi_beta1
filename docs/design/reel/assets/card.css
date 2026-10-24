@@ -1,0 +1,95 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   AYROVI — CARTE « article » (horizontale, petite)  ·  source UNIQUE
+   Utilisée PARTOUT : maquette Reel (index.html), aperçu back-office (card-kit.html).
+   Si un chiffre change ici, les deux changent — c'est le but.
+   Couleurs : client/src/design/editorial/identity.json (aucun orange).
+   ───────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --canvas:#FFFFFF; --ink:#0A0A0A; --muted:#666666; --line:#E5E5E5;
+  --studio:#F5F5F5; --action:#571EF6; --on-action:#FFFFFF;
+
+  /* ── mesures canoniques de la carte (viewport de référence : 390 px) ── */
+  --card-w:336px;      /* 390 − 2×14 de marge + 4 de débordement volontaire */
+  --card-h:158px;
+  --card-r:16px;
+  --card-pad:10px;
+  --card-gap:10px;
+  --thumb:118px;       /* photo carrée, coincée dans la hauteur utile */
+  --thumb-r:11px;
+  --brand:15px;
+  --title:13px;
+  --price:14px;
+  --fav:30px;
+}
+
+/* Le composant. Aucune taille en dur à l'intérieur : il hérite des variables,
+   donc le back-office peut le rendre à 1:1 ou en zoom sans le réécrire. */
+.ay-card {
+  position:relative;
+  width:var(--card-w); height:var(--card-h);
+  flex:0 0 var(--card-w);
+  display:flex; align-items:center; gap:12px;
+  padding:var(--card-pad);
+  background:var(--canvas); color:var(--ink);
+  border:1px solid var(--line); border-radius:var(--card-r);
+  font-family:inherit; text-align:start; cursor:pointer;
+  transition:transform .12s ease, border-color .15s ease;
+}
+.ay-card:active { transform:scale(.985); border-color:#d4d4d4; }
+.ay-card:focus-visible { outline:2px solid var(--action); outline-offset:2px; }
+
+.ay-card__shot {
+  width:var(--thumb); height:var(--thumb); flex:none;
+  border-radius:var(--thumb-r); background:var(--studio); overflow:hidden;
+  display:flex; align-items:center; justify-content:center;
+}
+/* `contain` : on ne coupe jamais le produit. Fond studio assumé. */
+.ay-card__shot img { width:100%; height:100%; object-fit:contain; display:block; }
+
+.ay-card__body {
+  align-self:stretch; padding-top:2px; min-width:0;
+  display:flex; flex-direction:column; gap:3px;
+}
+.ay-card__brand { font-size:var(--brand); font-weight:700; letter-spacing:-.01em; line-height:1.15; }
+.ay-card__title {
+  font-size:var(--title); font-weight:400; line-height:1.3; color:var(--ink);
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+}
+.ay-card__price {
+  margin-top:auto; padding-bottom:2px; padding-inline-end:24px;
+  font-size:var(--price); font-weight:600; font-variant-numeric:tabular-nums;
+}
+.ay-card__fav {
+  position:absolute; top:var(--card-pad); inset-inline-end:var(--card-pad);
+  width:var(--fav); height:var(--fav); border:0; border-radius:50%;
+  background:transparent; color:var(--ink); cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+}
+.ay-card__fav[aria-pressed="true"] { color:var(--action); }
+.ay-card__fav svg { pointer-events:none; }
+
+/* ── états : ce qui DISPARAÎT quand la donnée manque (on n'invente rien) ── */
+.ay-card[data-no-brand] .ay-card__brand { display:none; }
+.ay-card[data-no-title] .ay-card__title { display:none; }
+.ay-card[data-no-price] .ay-card__price { display:none; }
+.ay-card[data-no-image] .ay-card__shot { background:var(--studio); }
+.ay-card[data-no-image] .ay-card__shot img { display:none; }
+.ay-card[data-oos] .ay-card__price { color:var(--muted); }
+.ay-card[data-oos] .ay-card__title::after {
+  content:" · épuisé"; color:var(--muted); font-weight:400;
+}
+.ay-card--skeleton { pointer-events:none; }
+.ay-card--skeleton .ay-card__shot,
+.ay-card--skeleton .ay-card__brand,
+.ay-card--skeleton .ay-card__title,
+.ay-card--skeleton .ay-card__price { background:#F2F2F2; color:transparent; border-radius:6px; }
+.ay-card--skeleton .ay-card__shot { background:#F2F2F2; }
+.ay-card--skeleton .ay-card__brand { width:70%; height:14px; }
+.ay-card--skeleton .ay-card__title { width:92%; height:26px; }
+.ay-card--skeleton .ay-card__price { width:56%; height:14px; }
+
+/* RTL : seuls les côtés s'inversent, jamais les nombres */
+[dir="rtl"] .ay-card { text-align:right; }
+[dir="rtl"] .ay-card__body { align-items:flex-end; }
+[dir="rtl"] .ay-card__price { direction:ltr; }

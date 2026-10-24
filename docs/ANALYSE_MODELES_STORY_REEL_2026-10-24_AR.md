@@ -227,3 +227,22 @@
 **الإصلاح المقترح (صغير):** `ProductCardPreview` تتعوّض بالكومبوننت المشترك
 `card.css` بقياس 1:1 — نفس الملف اللي يقراه الموكاب. الفائدة: تبديل واحد في الـCSS
 يظهر في الثلاثة، والمعاينة تولّي وعداً صادقاً.
+
+---
+
+## 10) القرار النهائي (24/10) — المودول الثالث: **الكارطة كاملة تتضغط**
+
+اختيار المالك: لا زر «Découvrir». الكارطة روحها هي الفعل. تطبيق:
+
+| الملف | التغيير |
+|---|---|
+| `shared/articleCard.ts` | **جديد** — الكوت القانونية + `articleCardVisibility()` (قاعدة «المعلومة الغايبة تختفي») |
+| `apps/mobile/src/design/articleCard.ts` | **جديد** — نفس الأرقام لـReact Native (Metro ما يقراش `shared/`) |
+| `apps/mobile/src/features/shopping/LinkedProductCard.tsx` | إعادة كتابة: `Pressable` كامل، بلا زر، صورة `contain`، سعر السيرفر، قلب اختياري (كان ما فماش معالج مفضّلة، ما يظهرش) |
+| `client/src/admin/ProductIntegration.tsx` | `ProductCardPreview` يولّي بنفس الكوت (كان `44×44 cover` + زر) ويقرا من `shared/articleCard` |
+| `tests/article-card-contract.test.ts` | **جديد** — يقارن `card.css` × `shared` × الموبايل، ويمنع رجوع الزر |
+| `apps/mobile/tests/ui/linkedProduct.ui.test.tsx` | مضبوط على العقد الجديد (9) |
+| `tests/admin-product-integration-ui.test.tsx` | +اختبار «الكارطة كاملة هي الفعل» (9) |
+
+النتيجة: المعاينة في الـCRM ما عادتش تكذب — نفس المقاسات اللي في التطبيق، ونفس قاعدة
+البيانات. والاختبار يمنع أن ترجع النسخ تتفرّق مرّة أخرى.

@@ -244,6 +244,8 @@ export const fr = {
   'home.tab.magazine': 'Magazine',
   'shopping.discover': 'Découvrir',
   'shopping.unavailable': 'Actuellement indisponible',
+  'shopping.favouriteAdd': 'Ajouter aux favoris',
+  'shopping.favouriteRemove': 'Retirer des favoris',
   'home.reelsShop.open': 'Ouvrir le reel',
   'home.reelsShop.label': 'Reels, Shop',
   'home.featured.label': 'À la une',

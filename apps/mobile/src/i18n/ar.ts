@@ -244,6 +244,8 @@ export const ar = {
   'home.tab.magazine': 'المجلة',
   'shopping.discover': 'اكتشف',
   'shopping.unavailable': 'غير متوفر حالياً',
+  'shopping.favouriteAdd': 'زيد للمفضّلة',
+  'shopping.favouriteRemove': 'نحّي من المفضّلة',
   'home.reelsShop.open': 'افتح الريل',
   'home.reelsShop.label': 'Reels، Shop',
   'home.featured.label': 'الأهم',

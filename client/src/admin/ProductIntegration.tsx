@@ -14,6 +14,7 @@
 import { useEffect, useState } from 'react';
 import { adminApi } from './api';
 import { Button, Field } from './components';
+import { ARTICLE_CARD } from '../../../shared/articleCard';
 
 export type ShoppableKind = 'reel' | 'publication' | 'story';
 
@@ -33,6 +34,8 @@ interface CatalogueProduct {
   currency: string | null;
   stock_status: string | null;
   product_code: string | null;
+  /** Marque dénormalisée du catalogue — absente : la ligne n'est pas rendue. */
+  brand_name?: string | null;
   /** `CONTENT` pour un produit temporaire. */
   visibility?: string;
 }
@@ -265,32 +268,98 @@ export function ProductIntegration({ kind, value, onChange }: {
 
 /**
  * Aperçu de la carte telle qu'elle s'affichera sur le téléphone.
- * Sans produit vendable, l'aperçu l'indique : rien ne sera affiché.
+ *
+ * Décision du 24/10/2026 : **module retenu = la carte entière est pressable**,
+ * sans bouton d’action séparé. Cet aperçu ne réinvente rien : il reprend les cotes
+ * canoniques (`shared/articleCard.ts`, elles-mêmes contrôlées contre la maquette
+ * `docs/design/reel/assets/card.css`) et la même règle de données que
+ * l'application — une information absente disparaît.
  */
 export function ProductCardPreview({ kind, product }: { kind: ShoppableKind; product: CatalogueProduct | null }) {
+  const [pressed, setPressed] = useState(false);
   const dark = kind !== 'publication';
-  const frame = dark ? { background: 'var(--ayrovi-ink-deep)', color: 'var(--ayrovi-white)' } : { background: 'var(--ayrovi-white)', color: 'var(--ayrovi-ink-deep)', border: '1px solid var(--bo-line)' };
-  const card = product ? (
-    <div style={{ display: 'flex', gap: 10, alignItems: 'center', padding: 8, borderRadius: 12, background: dark ? 'var(--ayrovi-white)' : 'var(--bo-sunken)', color: 'var(--ayrovi-ink-deep)' }}>
-      {product.image ? <img src={product.image} alt="" style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 8 }} /> : <div style={{ width: 44, height: 44, borderRadius: 8, background: 'var(--bo-line)' }} />}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 700, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.name}</div>
-        <div style={{ fontSize: 12 }}>{priceLabel(product)}</div>
+  const frame: React.CSSProperties = dark
+    ? { background: 'var(--ayrovi-ink-deep)', color: 'var(--ayrovi-white)' }
+    : { background: 'var(--ayrovi-white)', color: 'var(--ayrovi-ink-deep)', border: '1px solid var(--bo-line)' };
+
+  if (!product) {
+    return (
+      <div>
+        <small style={{ opacity: 0.75 }}>Aperçu sur le téléphone</small>
+        <div style={{ ...frame, marginTop: 6, borderRadius: 16, padding: 12, maxWidth: 360 }}>
+          <div style={{ fontSize: 12, opacity: 0.8, textAlign: 'center', padding: 8 }}>
+            Aucun produit : aucune carte ne sera affichée.
+          </div>
+        </div>
       </div>
-      <span style={{ padding: '6px 12px', borderRadius: 999, border: '1px solid var(--ayrovi-ink-deep)', fontSize: 12, fontWeight: 700 }}>Découvrir</span>
-    </div>
-  ) : (
-    <div style={{ fontSize: 12, opacity: 0.8, textAlign: 'center', padding: 8 }}>Aucun produit : aucune carte ne sera affichée.</div>
-  );
+    );
+  }
+
+  const price = Number.isFinite(Number(product.final_price)) && Number(product.final_price) > 0
+    ? `${Number(product.final_price).toFixed(2)} ${product.currency || 'TND'}`
+    : null;
+  const brand = product.brand_name?.trim() ? product.brand_name.trim() : null;
+  const unavailable = product.stock_status === 'OUT_OF_STOCK';
+  const label = [brand, product.name, price].filter(Boolean).join(' — ');
+
   return (
     <div>
       <small style={{ opacity: 0.75 }}>Aperçu sur le téléphone</small>
-      <div style={{ ...frame, marginTop: 6, borderRadius: 16, padding: 12, maxWidth: 260, display: 'grid', gap: 8 }}>
+      <div style={{ ...frame, marginTop: 6, borderRadius: 16, padding: 12, maxWidth: 360, display: 'grid', gap: 8 }}>
         {kind === 'reel' ? <div style={{ height: 90, borderRadius: 10, background: 'var(--ayrovi-text-secondary)' }} /> : null}
         {kind === 'story' ? <div style={{ height: 4, borderRadius: 2, background: 'var(--ayrovi-text-secondary)' }} /> : null}
         {kind === 'publication' ? <div style={{ height: 70, borderRadius: 10, background: 'var(--bo-sunken)' }} /> : null}
-        {card}
+
+        <button
+          type="button"
+          aria-label={label}
+          data-article-card=""
+          onClick={() => setPressed(true)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: ARTICLE_CARD.gap,
+            width: '100%', maxWidth: ARTICLE_CARD.width, height: ARTICLE_CARD.height,
+            padding: ARTICLE_CARD.padding, boxSizing: 'border-box',
+            background: 'var(--ayrovi-white)', color: 'var(--ayrovi-ink-deep)',
+            border: '1px solid var(--bo-line)', borderRadius: ARTICLE_CARD.radius,
+            textAlign: 'start', cursor: 'pointer', font: 'inherit',
+          }}
+        >
+          <span
+            aria-hidden="true"
+            style={{
+              width: ARTICLE_CARD.thumb, height: ARTICLE_CARD.thumb, flex: '0 0 auto',
+              borderRadius: ARTICLE_CARD.thumbRadius, background: 'var(--bo-sunken)',
+              overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            {product.image ? (
+              <img src={product.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            ) : null}
+          </span>
+          <span style={{ flex: 1, minWidth: 0, alignSelf: 'stretch', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingTop: 2 }}>
+            <span>
+              {brand ? (
+                <span style={{ display: 'block', fontSize: ARTICLE_CARD.brandSize, fontWeight: 700, letterSpacing: '-.01em' }}>{brand}</span>
+              ) : null}
+              <span style={{
+                display: '-webkit-box', WebkitLineClamp: ARTICLE_CARD.titleLines, WebkitBoxOrient: 'vertical',
+                overflow: 'hidden', fontSize: ARTICLE_CARD.titleSize, lineHeight: 1.3, fontWeight: 400,
+              }}>{product.name}</span>
+            </span>
+            <span style={{ display: 'grid', gap: 2 }}>
+              {price ? <span style={{ fontSize: ARTICLE_CARD.priceSize, fontWeight: 600 }}>{price}</span> : null}
+              {unavailable ? <span style={{ fontSize: 12, opacity: 0.7 }}>Actuellement indisponible</span> : null}
+            </span>
+          </span>
+        </button>
+
+        <small style={{ opacity: 0.75 }}>
+          {pressed
+            ? 'Appui : la fiche produit s’ouvre dans l’application (/product/[id]).'
+            : 'La carte entière est l’action : aucun bouton séparé.'}
+        </small>
       </div>
     </div>
   );
 }
+
