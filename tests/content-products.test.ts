@@ -30,6 +30,7 @@ const linked = (contentId: string, productId: string, over: Record<string, any> 
   content_id: contentId,
   lp_id: productId,
   lp_name: `Article ${productId}`,
+  lp_brand_name: 'Marque',
   lp_image: `/media/${productId}.jpg`,
   lp_status: 'ACTIVE',
   lp_final_price: 89,
@@ -122,6 +123,7 @@ describe('mergePublicProducts — ce que le tiroir affiche', () => {
     expect(card).toEqual({
       id: 'p1',
       name: 'Article p1',
+      brand: 'Marque',
       image: '/media/p1.jpg',
       price: 89,
       currency: 'TND',

@@ -8,6 +8,8 @@
 export interface LinkedProduct {
   id: string;
   name: string;
+  /** Marque du catalogue. Absente/vide = inconnue : la ligne disparaît. */
+  brand?: string;
   image: string;
   price: number;
   currency: string;
@@ -32,6 +34,7 @@ export function parseLinkedProduct(value: unknown): LinkedProduct | null {
   return {
     id,
     name,
+    brand: str(entry.brand),
     image: str(entry.image),
     price,
     currency: str(entry.currency) || 'TND',

@@ -19,6 +19,7 @@ import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
 import { MEDIA_RATIO, VIDEO_BACKDROP, veil } from '@/design/tokens.mobile';
 import { ReelShopTray } from '@/features/reels/ReelShopTray';
+import { useProductFavorites } from '@/features/reels/useProductFavorites';
 import { mediaUrl } from '@/api/client';
 import { AppImage } from '@/design/appImage';
 import { useSession } from '@/state/session';
@@ -50,6 +51,10 @@ export function ReelCard({ reel, active, counts, onOpenComments, fill }: ReelCar
 
   const [liked, setLiked] = useState(false);
   const [paused, setPaused] = useState(false);
+  // الصوت مطفي افتراضياً (قاعدة البطاقة) — والزرّ يقلبها.
+  const [soundOn, setSoundOn] = useState(false);
+  // مفضّلة المنتوج: القلب على الكارطة، بلا حساب ما فمّاش قلب.
+  const favourites = useProductFavorites(fill ? signedIn : false);
 
   // `null` ⇒ لا مشغّل: البطاقة البعيدة ما تكلّفش الجهاز ولا الشبكة.
   const player = useVideoPlayer(active ? { uri: mediaUrl(reel.videoUrl) } : null, (instance) => {
@@ -63,6 +68,11 @@ export function ReelCard({ reel, active, counts, onOpenComments, fill }: ReelCar
     if (paused || !active) player.pause();
     else player.play();
   }, [player, paused, active]);
+
+  useEffect(() => {
+    if (!player) return;
+    player.muted = !soundOn;
+  }, [player, soundOn]);
 
   const toggleLike = useCallback(async () => {
     if (!signedIn) return;
@@ -125,6 +135,9 @@ export function ReelCard({ reel, active, counts, onOpenComments, fill }: ReelCar
         <AppText variant="caption" color={muted} numberOfLines={2}>{reel.description}</AppText>
       ) : null}
 
+      {/* En plein écran, partage/son/commentaire vivent dans le rail posé sur la
+          vidéo (accroché à la pastille) : pas de doublon ici. */}
+      {!fill ? (
       <View style={styles.actions}>
         <Pressable
           accessibilityRole="button"
@@ -162,6 +175,7 @@ export function ReelCard({ reel, active, counts, onOpenComments, fill }: ReelCar
           <AppText variant="caption" color={muted}>{t('social.views', { value: String(counts.views) })}</AppText>
         ) : null}
       </View>
+      ) : null}
 
       {!signedIn ? (
         <AppText variant="caption" color={muted}>{t('social.needAccount')}</AppText>
@@ -182,6 +196,13 @@ export function ReelCard({ reel, active, counts, onOpenComments, fill }: ReelCar
           mode="overlay"
           surface={theme.colors.canvas}
           onMedia={theme.colors.onMedia}
+          rail={{
+            muted: !soundOn,
+            onToggleMute: () => setSoundOn((value) => !value),
+            onShare: share,
+            onComment: () => onOpenComments(reel),
+          }}
+          favourites={favourites}
         >
           {({ bottom }) => body(bottom)}
         </ReelShopTray>

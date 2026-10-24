@@ -10,17 +10,17 @@
   --studio:#F5F5F5; --action:#571EF6; --on-action:#FFFFFF;
 
   /* ── mesures canoniques de la carte (viewport de référence : 390 px) ── */
-  --card-w:336px;      /* 390 − 2×16 de marge ⇒ 22 px de débordement volontaire (invite à faire défiler) */
-  --card-h:158px;
-  --card-r:16px;
-  --card-pad:10px;
-  --card-gap:10px;
-  --thumb:118px;       /* photo carrée, coincée dans la hauteur utile */
-  --thumb-r:11px;
-  --brand:15px;
-  --title:13px;
-  --price:14px;
-  --fav:30px;
+  --card-w:300px;      /* 390 − 2×12 de marge + 12 d'écart : la carte suivante affleure */
+  --card-h:137px;
+  --card-r:10px;
+  --card-pad:0px;      /* la photo touche le bord : aucun rembourrage */
+  --card-gap:12px;
+  --thumb:90px;        /* bande photo : 30 % de la largeur, pleine hauteur */
+  --thumb-r:0px;
+  --brand:13px;
+  --title:12px;
+  --price:12px;
+  --fav:21px;
 }
 
 /* Le composant. Aucune taille en dur à l'intérieur : il hérite des variables,
@@ -29,20 +29,20 @@
   position:relative;
   width:var(--card-w); height:var(--card-h);
   flex:0 0 var(--card-w);
-  display:flex; align-items:center; gap:12px;
+  display:flex; align-items:stretch; gap:var(--card-gap);
   padding:var(--card-pad);
   background:var(--canvas); color:var(--ink);
-  border:1px solid var(--line); border-radius:var(--card-r);
+  border:0; border-radius:var(--card-r); overflow:hidden;
   /* le tiroir colle la carte au bord de son padding : même valeur côté RN (16) */
   scroll-snap-align:start;
   font-family:inherit; text-align:start; cursor:pointer;
   transition:transform .12s ease, border-color .15s ease;
 }
-.ay-card:active { transform:scale(.985); border-color:#d4d4d4; }
+.ay-card:active { transform:scale(.985); }
 .ay-card:focus-visible { outline:2px solid var(--action); outline-offset:2px; }
 
 .ay-card__shot {
-  width:var(--thumb); height:var(--thumb); flex:none;
+  width:var(--thumb); height:auto; align-self:stretch; flex:none;
   border-radius:var(--thumb-r); background:var(--studio); overflow:hidden;
   display:flex; align-items:center; justify-content:center;
 }

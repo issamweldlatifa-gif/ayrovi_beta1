@@ -15,6 +15,7 @@ const apiMock = vi.hoisted(() => ({ adminApi: vi.fn() }));
 vi.mock('../client/src/admin/api', () => apiMock);
 
 import { ProductIntegration, type ProductLinkValue } from '../client/src/admin/ProductIntegration';
+import { ARTICLE_CARD } from '../shared/articleCard';
 
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -114,8 +115,9 @@ describe('Product Integration — admin', () => {
     const card = host.querySelector('[data-article-card]') as HTMLButtonElement;
     expect(card).not.toBeNull();
     expect(card.getAttribute('aria-label')).toContain('Pantalon taille haute');
-    expect(card.style.height).toBe('158px');
-    expect(card.style.maxWidth).toBe('336px');
+    // Les cotes viennent du contrat partagé : on ne les réécrit pas ici.
+    expect(card.style.height).toBe(`${ARTICLE_CARD.height}px`);
+    expect(card.style.maxWidth).toBe(`${ARTICLE_CARD.width}px`);
   });
 
   it('Créer un produit temporaire : pas de recherche catalogue, création publiée puis association par identifiant', async () => {

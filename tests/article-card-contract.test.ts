@@ -61,10 +61,27 @@ describe('carte article — cotes canoniques', () => {
     }
   });
 
-  it('la photo est carrée et tient dans la hauteur utile de la carte', () => {
-    expect(SHARED.thumb).toBeLessThanOrEqual(SHARED.height - 2 * SHARED.padding);
-    // `contain` dans la maquette : on ne rogne jamais le produit pour remplir le carré.
+  it('la photo est une bande rectangulaire pleine hauteur (30 % de la largeur)', () => {
+    expect(SHARED.padding).toBe(0);
+    expect(SHARED.thumb).toBe(Math.round(SHARED.width * 0.3));
+    expect(SHARED.thumbRadius).toBe(0);
+    // `contain` dans la maquette : on ne rogne jamais le produit pour remplir la bande.
     expect(css).toContain('object-fit:contain');
+  });
+
+  it('aucune bordure, aucun ombre portée : la carte flotte sur la vidéo', () => {
+    expect(css).not.toMatch(/border:\s*1px solid/);
+    expect(css).not.toMatch(/box-shadow/);
+    expect(mobileCard).not.toMatch(/borderWidth/);
+    expect(mobileCard).not.toMatch(/shadow(Color|Offset|Opacity|Radius)/);
+  });
+
+  it('les proportions sont celles du modèle mesuré (663×303 px ⇒ 0.457)', () => {
+    const ratio = SHARED.height / SHARED.width;
+    expect(Math.abs(ratio - 663 / 303 / (663 / 303))).toBeLessThan(1); // garde-fou
+    expect(Math.abs(ratio - 303 / 663)).toBeLessThan(0.005);
+    // Le rayon suit la même proportion (20 px sur 663 ⇒ 3 %).
+    expect(Math.abs(SHARED.radius / SHARED.width - 20 / 663)).toBeLessThan(0.005);
   });
 });
 

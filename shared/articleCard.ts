@@ -3,9 +3,15 @@
  *
  * Décision du propriétaire : module RETENU = **la carte entière est pressable**,
  * sans bouton « Découvrir ». Une seule forme pour le Reel, la Story, la
- * Publication et l'aperçu du back-office : photo 118 (contain, jamais rognée),
- * marque, titre sur deux lignes, prix. Le cœur est facultatif — il n'existe que
- * si un gestionnaire de favoris est fourni.
+ * Publication et l'aperçu du back-office.
+ *
+ * ── Refonte du 24/10/2026 (planche `docs/design/reel/compare/mockup-v4-24-10.png`)
+ * La carte a été redessinée **d'après le modèle mesuré au pixel** (663×303 px sur
+ * un écran de 720 ⇒ 359×164 dp, rayon 20 px ⇒ 3 % de la largeur) puis ramenée à
+ * 300 de large pour rester « petite » : 300×137, rayon 10 (même 3 %), photo en
+ * bande rectangulaire de 90 pleine hauteur, **sans bordure et sans ombre**, et
+ * la marque au-dessus du titre (elle manquait). Le cœur est facultatif — il
+ * n'existe que si un gestionnaire de favoris est fourni.
  *
  * ── Source des nombres ───────────────────────────────────────────────────────
  * Les cotes vivent aussi dans `docs/design/reel/assets/card.css` (la maquette
@@ -20,22 +26,25 @@
  */
 
 export const ARTICLE_CARD = {
-  /** Largeur de référence dans un tiroir de 390 px (390 − 2×14 + 4 de débord). */
-  width: 336,
-  height: 158,
-  radius: 16,
-  padding: 10,
-  /** Écart photo → texte. */
+  /** Largeur de référence dans une visionneuse de 390 px (marges 13 + 13). */
+  width: 300,
+  /** Hauteur : mêmes proportions que le modèle (663×303 px ⇒ 0.457). */
+  height: 137,
+  radius: 10,
+  /** Aucun rembourrage : la photo occupe toute la hauteur, bord à bord. */
+  padding: 0,
+  /** Écart photo → texte (colonne de texte). */
   gap: 12,
-  /** Côté de la photo : carrée, coincée dans la hauteur utile. */
-  thumb: 118,
-  thumbRadius: 11,
-  brandSize: 15,
-  titleSize: 13,
+  /** Largeur de la bande photo : 30 % de la carte, pleine hauteur. */
+  thumb: 90,
+  /** Rectangle franc : le rayon de la carte suffit à arrondir les angles. */
+  thumbRadius: 0,
+  brandSize: 13,
+  titleSize: 12,
   /** Deux lignes puis ellipse. */
   titleLines: 2,
-  priceSize: 14,
-  favourite: 30,
+  priceSize: 12,
+  favourite: 21,
 } as const;
 
 export interface ArticleCardFacts {

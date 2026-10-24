@@ -17,16 +17,35 @@
  * rien). Un produit indisponible reste dans la liste : sa carte dira son état.
  */
 
-/** Cotes du tiroir, partagées par la visionneuse plein écran et la liste. */
+/**
+ * Cotes du tiroir (refonte du 24/10/2026 — planche `mockup-v4-24-10.png`).
+ *
+ * Le tiroir n'est plus une feuille blanche qui monte du bas : **les cartes
+ * flottent** sur la vidéo, avec une marge de 13 de chaque côté et 17 sous elles,
+ * donc le Reel reste visible tout autour. Fermé, il ne reste que la pastille.
+ */
 export const REEL_TRAY = {
-  /** Hauteur du tiroir ouvert, hors zone sûre (maquette : 214 px sur 844). */
-  height: 214,
-  pillHeight: 44,
+  /** Course du tiroir fermé : la hauteur d'une carte + le vide sous elle. */
+  height: 153,
+  /** Vide entre le bas de la carte et le bas de l'écran (zone sûre en plus). */
+  cardBottom: 16,
+  /** Marge latérale d'une carte (la suivante affleure après `cardGap`). */
+  padding: 12,
+  /** Écart entre deux cartes. */
+  cardGap: 12,
+  /** Hauteur de la pastille (cible tactile confortable, modèle : 51). */
+  pillHeight: 51,
   pillMinWidth: 176,
-  /** Poignée de préhension, en haut du tiroir. */
-  grab: 26,
-  cardGap: 10,
-  padding: 16,
+  /** Écart entre le haut d'une carte et le bas de la pastille. */
+  pillGap: 16,
+  /** Pastille fermée : distance au bas de l'écran. */
+  pillClosedBottom: 24,
+  /** Rail d'actions : écart vertical entre deux icônes. */
+  railGap: 56,
+  /** Centre du rail depuis le bord droit. */
+  railInset: 30,
+  /** Côté de la cible tactile d'une icône du rail. */
+  railHit: 44,
 } as const;
 
 export interface TrayProductRef {
@@ -82,6 +101,28 @@ export function reelTrayOffset(open: boolean, height = REEL_TRAY.height, insetBo
   return open ? 0 : height + insetBottom;
 }
 
+/** Bas de la pastille : au-dessus des cartes ouvertes, près du bord fermée. */
+export function reelTrayPillBottom(open: boolean, insetBottom = 0): number {
+  return open
+    ? insetBottom + REEL_TRAY.cardBottom + (REEL_TRAY.height - REEL_TRAY.cardBottom) + REEL_TRAY.pillGap
+    : insetBottom + REEL_TRAY.pillClosedBottom;
+}
+
+/**
+ * Bas du rail d'actions. Il est **accroché à la pastille** : quand on escamote
+ * les cartes, la pastille descend et les icônes descendent avec elle (demande
+ * explicite du propriétaire : « الأزرار تهبط مع الزرّ »).
+ */
+export function reelTrayRailBottom(
+  open: boolean,
+  index: number,
+  insetBottom = 0,
+): number {
+  const pill = reelTrayPillBottom(open, insetBottom);
+  const centre = pill + REEL_TRAY.pillHeight / 2;
+  return centre - REEL_TRAY.railHit / 2 + index * REEL_TRAY.railGap;
+}
+
 /**
  * Décalage des éléments posés AU-DESSUS du tiroir (bouton, auteur, légende).
  * Ils montent quand le tiroir sort, redescendent quand il rentre — aucun saut.
@@ -89,9 +130,10 @@ export function reelTrayOffset(open: boolean, height = REEL_TRAY.height, insetBo
 export function reelTrayContentBottom(
   open: boolean,
   kind: 'pill' | 'caption',
-  height = REEL_TRAY.height,
+  _height = REEL_TRAY.height,
   insetBottom = 0,
 ): number {
-  const lift = open ? height + (kind === 'pill' ? 10 : 64) : (kind === 'pill' ? 16 : 88);
-  return insetBottom + lift;
+  if (kind === 'pill') return reelTrayPillBottom(open, insetBottom);
+  // La légende se pose juste au-dessus de la pastille, sans jamais la toucher.
+  return reelTrayPillBottom(open, insetBottom) + REEL_TRAY.pillHeight + 14;
 }

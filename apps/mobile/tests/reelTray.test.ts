@@ -17,7 +17,9 @@ import {
   reelTrayIsAvailable,
   reelTrayLabelKey,
   reelTrayOffset,
+  reelTrayPillBottom,
   reelTrayProducts,
+  reelTrayRailBottom,
 } from '../src/features/reels/reelTray';
 
 const product = (id: string) => ({ id, name: id });
@@ -91,5 +93,28 @@ describe('reelTray — géométrie', () => {
   it('les cotes du tiroir tiennent dans les 844 px de référence (≤ 30 %)', () => {
     expect(REEL_TRAY.height).toBeLessThanOrEqual(Math.round(844 * 0.3));
     expect(REEL_TRAY.pillHeight).toBeGreaterThanOrEqual(44); // cible tactile
+  });
+
+  it('la carte ne touche ni le bord ni le bas : 12 de marge, 16 sous elle', () => {
+    expect(REEL_TRAY.padding).toBe(12);
+    expect(REEL_TRAY.cardBottom).toBe(16);
+    expect(REEL_TRAY.cardGap).toBe(12);
+    // Course fermée = hauteur de carte + le vide sous elle (elle sort de l'écran).
+    expect(REEL_TRAY.height).toBe(137 + REEL_TRAY.cardBottom);
+  });
+
+  it('le rail est accroché à la pastille : il descend avec elle', () => {
+    const inset = 16;
+    // L'icône du bas (commentaire) est centrée sur la pastille ouverte.
+    const pillOpen = reelTrayPillBottom(true, inset);
+    const railOpen = reelTrayRailBottom(true, 0, inset);
+    expect(railOpen + REEL_TRAY.railHit / 2).toBeCloseTo(pillOpen + REEL_TRAY.pillHeight / 2, 5);
+    // Les icônes montent de 56 px l'une après l'autre.
+    expect(reelTrayRailBottom(true, 1, inset) - railOpen).toBe(REEL_TRAY.railGap);
+    expect(reelTrayRailBottom(true, 2, inset) - railOpen).toBe(2 * REEL_TRAY.railGap);
+    // Fermé : pastille et rail descendent ensemble, du même écart.
+    const railClosed = reelTrayRailBottom(false, 0, inset);
+    expect(railClosed).toBeLessThan(railOpen);
+    expect(railOpen - railClosed).toBeCloseTo(pillOpen - reelTrayPillBottom(false, inset), 5);
   });
 });

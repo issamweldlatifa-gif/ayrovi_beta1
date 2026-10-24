@@ -242,6 +242,8 @@ export const ar = {
   'social.next': 'التالي',
   'social.play': 'تشغيل',
   'social.pause': 'إيقاف',
+  'social.mute': 'كتم الصوت',
+  'social.unmute': 'تشغيل الصوت',
   'reel.viewItems': 'شوف المنتجات',
   'reel.hideItems': 'خبّي المنتجات',
   'checkout.step.address': 'العنوان',

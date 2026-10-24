@@ -242,6 +242,8 @@ export const fr = {
   'social.next': 'Suivant',
   'social.play': 'Lire',
   'social.pause': 'Pause',
+  'social.mute': 'Couper le son',
+  'social.unmute': 'Activer le son',
   'reel.viewItems': 'Voir les articles',
   'reel.hideItems': 'Masquer les articles',
   'checkout.step.address': 'Adresse',
