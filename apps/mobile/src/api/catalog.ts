@@ -12,6 +12,46 @@
 import { apiGet } from './client';
 import type { RequestOptions } from './client';
 
+/**
+ * ورقة المنتوج الكبيرة — réponse **واحدة** من `GET /api/public/products/:id`
+ * (24/10/2026): الصور، الاختيارات (مقاس/لون)، توفّر كل اختيار، والمخزون.
+ *
+ * الخادم هو اللي يحسب `available` و`purchasable`؛ التطبيق يقرا برك. والحقل
+ * `stock` في المتغيّر ينجّم يكون `null` («ما نعرفوش») — و`null` **موش صفر**:
+ * صفر معناها «وفى»، وهاكة إفادة ما عندناش دليل عليها.
+ */
+export type SheetStockStatus = 'IN_STOCK' | 'LOW' | 'OUT_OF_STOCK' | 'UNKNOWN';
+
+export interface SheetVariant {
+  id: string;
+  sku: string;
+  size: string;
+  color: string;
+  available: boolean;
+  stock: number | null;
+  reason: 'INACTIVE' | 'OUT_OF_STOCK' | null;
+}
+
+export interface SheetDimensionValue {
+  value: string;
+  available: boolean;
+  stock: number | null;
+}
+
+export interface SheetDimension {
+  key: 'size' | 'color';
+  label: string;
+  values: SheetDimensionValue[];
+}
+
+export interface ProductSheet {
+  images: string[];
+  dimensions: SheetDimension[];
+  variants: SheetVariant[];
+  stock: { tracked: boolean; quantity: number | null; status: SheetStockStatus };
+  purchasable: boolean;
+}
+
 /** سطر منتوج كما يقدّمه الخادم (`GET /api/public/products`). */
 export interface CatalogProduct {
   id: string;
@@ -35,6 +75,8 @@ export interface CatalogProduct {
   expressAvailable: boolean;
   stockStatus: string;
   arrivalIds: string[];
+  /** تفاصيل الورقة الكبيرة — `null` في لائحة المنتوجات (الخادم ما يبعتهاش في اللائحة). */
+  sheet: ProductSheet | null;
 }
 
 /**
@@ -67,6 +109,58 @@ export interface CatalogArrival {
 }
 
 const text = (value: unknown): string => (typeof value === 'string' ? value : '');
+const numOrNull = (value: unknown): number | null =>
+  typeof value === 'number' && Number.isFinite(value) ? value : null;
+const obj = (value: unknown): Record<string, unknown> => (value && typeof value === 'object' ? value as Record<string, unknown> : {});
+const arr = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
+
+function parseSheet(payload: unknown): ProductSheet | null {
+  if (!payload || typeof payload !== 'object') return null;
+  const row = obj(payload);
+  const stock = obj(row.stock);
+  const status = text(stock.status).toUpperCase();
+  const dimensions: SheetDimension[] = [];
+  for (const entry of arr(row.dimensions)) {
+    const dimension = obj(entry);
+    const key = dimension.key === 'size' || dimension.key === 'color' ? dimension.key : null;
+    if (!key) continue;
+    const values: SheetDimensionValue[] = [];
+    for (const candidate of arr(dimension.values)) {
+      const value = obj(candidate);
+      const label = text(value.value);
+      if (!label) continue;
+      values.push({ value: label, available: value.available === true, stock: numOrNull(value.stock) });
+    }
+    if (values.length > 0) dimensions.push({ key, label: text(dimension.label) || key, values });
+  }
+  const variants: SheetVariant[] = [];
+  for (const entry of arr(row.variants)) {
+    const variant = obj(entry);
+    const id = text(variant.id);
+    if (!id) continue;
+    const reason = variant.reason === 'INACTIVE' || variant.reason === 'OUT_OF_STOCK' ? variant.reason : null;
+    variants.push({
+      id,
+      sku: text(variant.sku),
+      size: text(variant.size),
+      color: text(variant.color),
+      available: variant.available === true,
+      stock: numOrNull(variant.stock),
+      reason,
+    });
+  }
+  return {
+    images: list(row.images),
+    dimensions,
+    variants,
+    stock: {
+      tracked: stock.tracked === true,
+      quantity: numOrNull(stock.quantity),
+      status: status === 'IN_STOCK' || status === 'LOW' || status === 'OUT_OF_STOCK' ? status : 'UNKNOWN',
+    },
+    purchasable: row.purchasable === true,
+  };
+}
 const num = (value: unknown): number => (typeof value === 'number' && Number.isFinite(value) ? value : 0);
 const list = (value: unknown): string[] =>
   Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === 'string') : [];
@@ -97,6 +191,7 @@ function parseProduct(payload: unknown): CatalogProduct | null {
     expressAvailable: row.expressAvailable === true,
     stockStatus: text(row.stockStatus),
     arrivalIds: list(row.arrivalIds),
+    sheet: parseSheet(row.sheet),
   };
 }
 

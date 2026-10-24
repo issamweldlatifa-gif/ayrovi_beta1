@@ -19,7 +19,7 @@ vi.mock('../src/api/client', () => ({
   apiGet: (...args: unknown[]) => apiGet(...(args as [])),
 }));
 
-const { fetchCatalogProducts, normalizeStockStatus } = await import('../src/api/catalog');
+const { fetchCatalogProduct, fetchCatalogProducts, normalizeStockStatus } = await import('../src/api/catalog');
 
 const PRODUCT = {
   id: 'product_1',
@@ -110,8 +110,47 @@ describe('صفحة المنتوج — قرار موثّق', () => {
     // بلا `x-session-id` الخادم يرد 400 على `/api/cart/catalog` — نفس المعرّف اللي تقرا بيه السلّة.
     const source = screen();
     expect(source).toContain("import { useSessionId } from '@/session/session';");
-    expect(source).toContain('addCatalogToCart({ productId: String(id), sessionId })');
-    expect(source).toContain('disabled={addToCart.isSuccess || !sessionId}');
+    expect(source).toContain('addCatalogToCart({');
+    expect(source).toContain('productId: String(id)');
+    expect(source).toContain('sessionId,');
+    expect(source).toContain('disabled={addToCart.isSuccess || !sessionId || !canOrder}');
+  });
+
+  it('الاختيار (مقاس/لون) يتبعث مع السلّة — الطلب يوصف الحاجة اللي تORDERات', async () => {
+    // 24/10/2026: الورقة الكبيرة تعرض اختيارات الخادم، والاختيار المختار يمرّ
+    // في `requestedSize` / `requestedColor` (المسار يقبلهم من قبل). بلاه، السطر
+    // في السلّة يقول «منتوج» بلا مقاس — والمخزن يبيع حاجة أخرى.
+    const source = screen();
+    expect(source).toContain('requestedSize: size || undefined');
+    expect(source).toContain('requestedColor: color || undefined');
+    expect(source).toContain('variantChoiceState');
+  });
+
+  it('الورقة الكبيرة تقرا ردّاً واحداً: صور + اختيارات + مخزون', async () => {
+    // الخادم يحسب `available` و`purchasable`؛ التطبيق ما يعاودش يحسبهم.
+    apiGet.mockResolvedValue({
+      data: {
+        ...PRODUCT,
+        sheet: {
+          images: ['/media/1.jpg', '/media/2.jpg'],
+          dimensions: [{ key: 'size', label: 'Taille', values: [{ value: 'M', available: true, stock: 2 }, { value: 'L', available: false, stock: 0 }] }],
+          variants: [{ id: 'v1', sku: 'S1', size: 'M', color: '', available: true, stock: 2, reason: null }, { id: 'v2', sku: 'S2', size: 'L', color: '', available: false, stock: 0, reason: 'OUT_OF_STOCK' }],
+          stock: { tracked: true, quantity: 2, status: 'LOW' },
+          purchasable: true,
+        },
+      },
+    });
+    const product = await fetchCatalogProduct('product_1');
+    expect(product?.sheet?.images).toEqual(['/media/1.jpg', '/media/2.jpg']);
+    expect(product?.sheet?.dimensions[0].values.map((entry) => [entry.value, entry.available])).toEqual([['M', true], ['L', false]]);
+    expect(product?.sheet?.stock).toEqual({ tracked: true, quantity: 2, status: 'LOW' });
+    expect(product?.sheet?.purchasable).toBe(true);
+  });
+
+  it('بلا ورقة (لائحة المنتوجات) ⇒ `sheet: null`، والقاعدة القديمة تبقى', async () => {
+    apiGet.mockResolvedValue({ data: [PRODUCT] });
+    const rows = await fetchCatalogProducts({});
+    expect(rows[0]?.sheet).toBeNull();
   });
 
   it('الزر **ما يبانش** كان ما فمّاش سعر أو كان نافد (موّش زر يفشل)', () => {

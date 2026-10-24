@@ -22,6 +22,8 @@ import { UnsafeUrlError } from '../services/safeUrl';
 import { pruneDiskCache } from '../services/diskCache';
 import { LINKED_PRODUCT_JOIN_SELECT, linkedProductFromJoin } from '../services/shoppableContent';
 import { publicProductsByContent, type ContentKind } from '../services/contentProducts';
+import { buildProductSheet } from '../services/productSheet';
+import { listVariants } from '../catalogue/variants';
 
 function parseJson(value: string, fallback: any = []) {
   try { return JSON.parse(value); } catch { return fallback; }
@@ -524,13 +526,25 @@ export function createPublicRouter(db: QatafoDatabase): Router {
    * Catalogue : produit ACTIVE. Temporaire : ACTIVE ET lié à un contenu publié et daté.
    * Le reste (brouillon, archivé, contenu non publié) répond 404, comme un id inconnu.
    */
+  /**
+   * La grande fiche lit **une seule** réponse : galerie, choix (taille/couleur),
+   * disponibilité par choix et état du stock, calculés par `productSheet.ts`.
+   * Sans ça, l'écran devrait enchaîner trois appels (produit, variantes, stock)
+   * et composer lui-même une disponibilité — donc la décider.
+   */
   router.get('/products/:id', (req, res) => {
     const now = new Date().toISOString();
     const row = db.get<any>(`SELECT p.*,GROUP_CONCAT(pa.arrival_id) arrival_ids FROM products p
       LEFT JOIN product_arrivals pa ON pa.product_id=p.id WHERE p.id=? AND ${availableProductSql('p')} GROUP BY p.id`,
     req.params.id, ...availableProductParams(now));
     if (!row) return res.status(404).json({ success: false, error: 'Produit introuvable.' });
-    res.json({ success: true, data: mapProduct(row) });
+    const sheet = buildProductSheet(
+      row,
+      listVariants(db, row.id),
+      db.all<any>(`SELECT variant_id, quantity, reorder_point FROM inventory_stock_items
+        WHERE product_id=? AND status='ACTIVE'`, row.id),
+    );
+    res.json({ success: true, data: { ...mapProduct(row), sheet } });
   });
 
   router.get('/promotions', (_req, res) => {

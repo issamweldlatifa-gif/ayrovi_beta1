@@ -74,13 +74,15 @@ export function ReelShopTray({ reel, mode, surface, onMedia, children }: ReelSho
         { opacity: pressed ? 0.86 : 1 },
       ]}
     >
-      <AppText variant="label" weight="bold" color={overlay ? theme.colors.canvas : theme.colors.ink}>
+      {/* Sur la vidéo : l'encre du bouton et la couleur prévue pour le média,
+          pour rester lisible quelle que soit l'image dessous. */}
+      <AppText variant="label" weight="bold" color={overlay ? onMedia : theme.colors.ink}>
         {t(reelTrayLabelKey(open))}
       </AppText>
       <Ionicons
         name={open ? 'chevron-up' : 'chevron-down'}
         size={18}
-        color={overlay ? theme.colors.canvas : theme.colors.ink}
+        color={overlay ? onMedia : theme.colors.ink}
         accessibilityElementsHidden
       />
     </Pressable>

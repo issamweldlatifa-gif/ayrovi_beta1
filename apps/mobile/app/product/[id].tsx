@@ -13,8 +13,8 @@
  * ثانٍ في الخادم، ونشر سعرين مختلفين لنفس المنتوج هو بالضبط الكذبة المطبوعة
  * اللي مانعملهاش. مسلك الشراء الكامل = Q5.
  */
-import { useCallback } from 'react';
-import { Linking, ScrollView, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -29,6 +29,7 @@ import { addCatalogFavorite, fetchFavorites } from '@/api/account';
 import { addCatalogToCart } from '@/api/cart';
 import { isApiError } from '@/api/errors';
 import { fetchCatalogProduct, fetchCatalogProducts, normalizeStockStatus } from '@/api/catalog';
+import { dimensionValueUsable, variantChoiceState } from '@/features/shopping/variantChoice';
 import { useSession } from '@/state/session';
 import { useSessionId } from '@/session/session';
 
@@ -41,6 +42,14 @@ export default function ProductScreen() {
   const signedIn = session.status === 'signedIn';
   // معرّف جلسة الزائر: إلزامي على `/api/cart/catalog` (بلاه 400). `''` = مازال ما تحضّرش.
   const sessionId = useSessionId();
+  /**
+   * المقاس واللون اللي اختارهم المستعمل — يتبعثوا مع السلّة
+   * (`requestedSize` / `requestedColor`)، وهاكة السطر في السلّة يوصف الحاجة
+   * اللي تORDERات فعلاً. وينتبدّلو كي يتبدّل المنتوج (مسار جديد = اختيار جديد).
+   */
+  const [size, setSize] = useState('');
+  const [color, setColor] = useState('');
+  useEffect(() => { setSize(''); setColor(''); }, [id]);
   const queryClient = useQueryClient();
 
   const products = useQuery({
@@ -75,7 +84,12 @@ export default function ProductScreen() {
    * `final_price` المنشور ⇒ **سعر واحد**، هو سعر المتجر، `VERIFIED`.
    */
   const addToCart = useMutation({
-    mutationFn: () => addCatalogToCart({ productId: String(id), sessionId }),
+    mutationFn: () => addCatalogToCart({
+      productId: String(id),
+      sessionId,
+      requestedSize: size || undefined,
+      requestedColor: color || undefined,
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cart'] });
     },
@@ -118,7 +132,16 @@ export default function ProductScreen() {
     );
   }
 
-  const images = [product.image, ...product.additionalImages].filter(Boolean);
+  /**
+   * الورقة الكبيرة (`sheet`) — ردّ واحد من الخادم فيه الصور والاختيارات
+   * والمخزون. `null` معناها «جينا من اللائحة» (اللائحة ما تحملش الورقة):
+   * وقتها نرجعو للقاعدة القديمة بدل ما نمنعو زر يخدم.
+   */
+  const sheet = product.sheet;
+  const images = sheet && sheet.images.length > 0
+    ? sheet.images
+    : [product.image, ...product.additionalImages].filter(Boolean);
+  const choice = variantChoiceState(sheet, { size, color });
 
   /**
    * هل «زيد للسلّة» ينجّم ينجح؟
@@ -127,8 +150,19 @@ export default function ProductScreen() {
    * يرفض الحالتين (`NO_PRICE` · `OUT_OF_STOCK`)، فإظهار زر يفشل هو بالضبط
    * «الزر الميّت» الممنوع.
    */
-  const outOfStock = normalizeStockStatus(product.stockStatus) === 'OUT_OF_STOCK';
-  const canOrder = product.finalPrice > 0 && !outOfStock;
+  const outOfStock = normalizeStockStatus(product.stockStatus) === 'OUT_OF_STOCK'
+    || sheet?.stock.status === 'OUT_OF_STOCK';
+  /** الخادم يحسم `purchasable` (سعر + حالة + مخزون)؛ بلا ورقة، القاعدة القديمة. */
+  const purchasable = sheet ? sheet.purchasable : product.finalPrice > 0 && !outOfStock;
+  /** واختيار ناقص = طلب ناقص: الزر ما يخدمش حتى يكمل الاختيار. */
+  const canOrder = purchasable && choice.ready;
+  const stockLine = sheet?.stock.tracked && sheet.stock.quantity !== null
+    ? sheet.stock.status === 'OUT_OF_STOCK'
+      ? t('catalog.stock.out_of_stock')
+      : sheet.stock.status === 'LOW'
+        ? t('catalog.stock.left', { count: sheet.stock.quantity })
+        : t('catalog.stock.in_stock')
+    : null;
 
   return (
     <SubScreen
@@ -161,6 +195,53 @@ export default function ProductScreen() {
         </View>
       )}
 
+      {sheet && sheet.dimensions.length > 0 ? (
+        <Card title={t('catalog.chooseTitle')}>
+          {sheet.dimensions.map((dimension) => (
+            <View key={dimension.key} style={styles.dimension}>
+              <AppText variant="caption" color={theme.colors.muted}>
+                {t(dimension.key === 'size' ? 'catalog.size' : 'catalog.color')}
+              </AppText>
+              <View style={styles.choices}>
+                {dimension.values.map((value) => {
+                  const selected = (dimension.key === 'size' ? size : color) === value.value;
+                  const usable = dimensionValueUsable(value);
+                  return (
+                    <Pressable
+                      key={value.value}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected, disabled: !usable }}
+                      accessibilityLabel={usable ? value.value : `${value.value} — ${t('catalog.variant.unavailable')}`}
+                      disabled={!usable}
+                      onPress={() => (dimension.key === 'size' ? setSize(value.value) : setColor(value.value))}
+                      style={[
+                        styles.choice,
+                        {
+                          borderColor: selected ? theme.colors.ink : theme.colors.line,
+                          backgroundColor: theme.colors.surface,
+                          opacity: usable ? 1 : 0.45,
+                        },
+                      ]}
+                    >
+                      <AppText variant="caption" weight={selected ? 'bold' : 'regular'}>{value.value}</AppText>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+          ))}
+          {choice.missing === 'size' ? (
+            <AppText variant="caption" color={theme.colors.muted}>{t('catalog.chooseSize')}</AppText>
+          ) : null}
+          {choice.missing === 'color' ? (
+            <AppText variant="caption" color={theme.colors.muted}>{t('catalog.chooseColor')}</AppText>
+          ) : null}
+          {!choice.missing && choice.matched && !choice.available ? (
+            <AppText variant="caption" color={theme.status.danger.fg}>{t('catalog.variant.unavailable')}</AppText>
+          ) : null}
+        </Card>
+      ) : null}
+
       <Card title={t('catalog.priceDetail')}>
         <KeyValue
           label={t('catalog.sourcePrice')}
@@ -173,6 +254,7 @@ export default function ProductScreen() {
           label={t('catalog.totalTnd')}
           value={product.finalPrice > 0 ? `${product.finalPrice.toFixed(2)} TND` : t('catalog.noPrice')}
         />
+        {stockLine ? <KeyValue label={t('catalog.availability')} value={stockLine} /> : null}
         {product.expressAvailable ? (
           <AppText variant="caption" color={theme.status.info.fg}>{t('catalog.express')}</AppText>
         ) : null}
@@ -192,13 +274,13 @@ export default function ProductScreen() {
       ) : null}
 
       <View style={styles.actions}>
-        {canOrder ? (
+        {purchasable ? (
           <Button
             label={addToCart.isSuccess ? t('catalog.added') : t('catalog.addToCart')}
             tone="main"
             onPress={() => addToCart.mutate()}
             busy={addToCart.isPending}
-            disabled={addToCart.isSuccess || !sessionId}
+            disabled={addToCart.isSuccess || !sessionId || !canOrder}
             testID="product-add-to-cart"
           />
         ) : outOfStock ? (
@@ -240,4 +322,8 @@ const styles = StyleSheet.create({
   image: { width: 320, height: 280 },
   imageEmpty: { alignItems: 'center', justifyContent: 'center' },
   actions: { gap: 10, marginTop: 8 },
+  // اختيار المقاس/اللون: شبكة بسيطة داخل البطاقة، بلا `absolute` وبلا قياسات جديدة.
+  dimension: { gap: 8, marginBottom: 8 },
+  choices: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  choice: { minWidth: 48, alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderWidth: StyleSheet.hairlineWidth, borderRadius: 12 },
 });

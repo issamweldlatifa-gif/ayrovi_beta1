@@ -303,3 +303,29 @@
 **اللي ما زال مفتوح:** لازمة مراجعة بصرية على الآلة (المستودع هنا ما ينجّمش يبني
 `better-sqlite3`)، و`apps/mobile` ما تحتاجش حتى تبديل — `parseLinkedProducts` تقرا
 اللّيستة من قبل.
+
+## 13) البطاقة الكبيرة — من الرسم إلى العقد (24/10)
+
+**الوضع قبل:** شاشة المنتوج تاخذ صورة وحدة + `additionalImages` خام + `stockStatus`
+عام. ما تنجّمش تعرض غاليري كامل، ولا تطفّي مقاس نافد، ولا تقول «ما بقى كان 2».
+
+**اللي تزوّد:** `GET /api/public/products/:id` ولّى يرجّع `sheet` واحد:
+
+| الحقل | منين | شنوّة يعني |
+|---|---|---|
+| `images` | `products` | الرئيسية أوّلاً، بلا تكرار، 12 كأقصى حد |
+| `dimensions` | `catalogue_variants` | كل مقاس/لون معلن، مع `available` و`stock` مجموعين |
+| `variants` | `catalogue_variants` + المخزون | كل وحدة قابلة للبيع + **علاش** موش متوفّرة (`INACTIVE` / `OUT_OF_STOCK`) |
+| `stock` | `inventory_stock_items` | `tracked` / `quantity` / `status` |
+| `purchasable` | المجموع | يخدم زر الشراء ولا لا |
+
+**اللي ما نصنعوهش:** متغيّر بلا سطر مخزون ⇒ `stock: null` (موش صفر)، متغيّر
+مسحوب يبقى في اللّيستة ويتطفّى بالسبب، منتوج بلا متغيّرات ما يفتحش سيلكتور،
+و`purchasable` يرجع `false` كي ينقص السعر ولا الحالة ولا المخزون.
+
+**في التطبيق:** `app/product/[id].tsx` ولّى يقرا الردّ هذا: غاليري، سيلكتور
+مقاس/لون (النافد ما يتنقرش ويقول «موش متوفّر»)، سطر توفّر صادق، والاختيار
+يمشي مع السلّة (`requestedSize` / `requestedColor`). القرار الصافي في
+`apps/mobile/src/features/shopping/variantChoice.ts` ومختبَر (7).
+
+**تستات:** `tests/product-sheet.test.ts` (23) و`apps/mobile/tests/catalog.test.ts` (+3).
