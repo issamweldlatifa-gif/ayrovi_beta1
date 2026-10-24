@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>مقترح الريل — عرض الصور</title>
+<style>
+  :root{--ink:#0A0A0A;--muted:#6B6B6B;--line:#E5E5E5;--action:#571EF6;--desk:#F2F2F2}
+  *{box-sizing:border-box}
+  body{margin:0;padding:24px 16px 80px;background:var(--desk);color:var(--ink);
+       font-family:"Zalando Sans","Noto Sans Arabic",system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
+  .wrap{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+  h1{font-size:26px;margin:0}
+  p{margin:0;color:var(--muted);font-size:15px;line-height:1.7}
+  .card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:14px}
+  .card h2{font-size:18px;margin:0 0 10px}
+  img{width:100%;height:auto;display:block;border-radius:12px}
+  a.btn{display:inline-block;margin-top:10px;font-size:14px;color:#fff;background:var(--action);
+        text-decoration:none;padding:10px 16px;border-radius:999px;font-weight:700}
+  .hint{font-size:13px;color:var(--muted)}
+  .note{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;font-size:14px;line-height:1.9}
+  code{font-family:ui-monospace,Menlo,monospace;font-size:13px;background:#F5F5F5;padding:2px 6px;border-radius:6px;direction:ltr;display:inline-block}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div>
+    <h1>الريل — الصور</h1>
+    <p>اضغط على الصورة باش تفتحها بالحجم الكامل، ولا حمّلها بالزرّ اللي تحتها.</p>
+  </div>
+
+  <div class="card">
+    <h2>1 · المقترح (مفتوح / مسكّر)</h2>
+    <a href="proposition-24-10.png" target="_blank" rel="noopener">
+      <img src="proposition-24-10.png" alt="مقترح الريل: تيري محلول وتيري مسكّر مع الزرّ" />
+    </a>
+    <a class="btn" href="proposition-24-10.png" target="_blank" rel="noopener" download>افتح الصورة بالحجم الكامل</a>
+    <p class="hint" style="margin-top:10px">كارطة 331×151 · صورة 99 بكامل الارتفاع · ماركة ← عنوان ← سعر · قلب · زرّ 52 (أبيض مسكّر، أسود محلول)</p>
+  </div>
+
+  <div class="card">
+    <h2>2 · اللي عندنا توّا (الخطأ)</h2>
+    <a href="notre-app-24-10.jpg" target="_blank" rel="noopener">
+      <img src="notre-app-24-10.jpg" alt="تطبيقنا الحالي: فراغ كبير داخل البطاقة، بلا ماركة، بلا قلب" />
+    </a>
+    <a class="btn" href="notre-app-24-10.jpg" target="_blank" rel="noopener" download>افتح الصورة بالحجم الكامل</a>
+  </div>
+
+  <div class="note">
+    <b>ملاحظة تقنية:</b> لوحة الأجوبة في المحادثة ما تعرضش الصور — لازم تتحلّ في تبويب جديد.
+    لذلك الصور موجودة في هذا الرابط (Live Preview) وفي المستودع:
+    <code>docs/design/reel/compare/proposition-24-10.png</code>
+  </div>
+</div>
+</body>
+</html>
