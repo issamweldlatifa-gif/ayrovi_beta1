@@ -21,6 +21,12 @@ export type ShoppableKind = 'reel' | 'publication' | 'story';
 export interface ProductLinkValue {
   content_mode: 'normal' | 'shoppable';
   product_id: string;
+  /**
+   * Articles du tiroir, dans l'ordre d'affichage (lot F1, 24/10/2026).
+   * Facultatif : un contenu enregistré sans liste garde son comportement d'avant
+   * (un seul `product_id`). `product_id` reste le PREMIER article.
+   */
+  product_ids?: string[];
 }
 
 export const EMPTY_PRODUCT_LINK: ProductLinkValue = { content_mode: 'normal', product_id: '' };
@@ -66,6 +72,10 @@ export function ProductIntegration({ kind, value, onChange }: {
   const [selectedMissing, setSelectedMissing] = useState(false);
   const [changing, setChanging] = useState(false);
   const [source, setSource] = useState<Source>(value.content_mode === 'shoppable' ? 'catalogue' : 'none');
+  const [linked, setLinked] = useState<CatalogueProduct[]>([]);
+  const [addQuery, setAddQuery] = useState('');
+  const [addResults, setAddResults] = useState<CatalogueProduct[]>([]);
+  const [linkedBusy, setLinkedBusy] = useState(false);
   const [creating, setCreating] = useState({ name: '', image: '', price: '', currency: 'TND' });
   const [createBusy, setCreateBusy] = useState(false);
   const [createError, setCreateError] = useState('');
@@ -84,6 +94,64 @@ export function ProductIntegration({ kind, value, onChange }: {
       .catch(() => { if (alive) setSelectedMissing(true); });
     return () => { alive = false; };
   }, [value.content_mode, value.product_id]);
+
+  /**
+   * Liste des articles : on lit chaque carte dans le CATALOGUE (nom, image, prix),
+   * jamais depuis le contenu. Un produit supprimé est simplement écarté — il ne
+   * bloque pas l'enregistrement du reste, et l'admin le voit disparaître.
+   */
+  useEffect(() => {
+    const ids = value.product_ids ?? [];
+    if (value.content_mode !== 'shoppable' || ids.length === 0) { setLinked([]); return undefined; }
+    let alive = true;
+    setLinkedBusy(true);
+    Promise.all(ids.map((id) => adminApi<any>(`/catalogue/products/${encodeURIComponent(id)}`)
+      .then((r) => r?.data ?? null)
+      .catch(() => null)))
+      .then((rows) => { if (alive) setLinked(rows.filter(Boolean) as CatalogueProduct[]); })
+      .finally(() => { if (alive) setLinkedBusy(false); });
+    return () => { alive = false; };
+  }, [value.content_mode, (value.product_ids ?? []).join(',')]);
+
+  /** Ajoute un article à la liste (sans doublon) et met `product_id` en tête. */
+  const addToLinked = (product: CatalogueProduct) => {
+    const ids = value.product_ids ?? (value.product_id ? [value.product_id] : []);
+    if (ids.includes(product.id)) return;
+    const next = [...ids, product.id];
+    onChange({ content_mode: 'shoppable', product_id: next[0], product_ids: next });
+  };
+
+  /** Retire un article. Retirer le premier promeut le suivant — la liste reste ordonnée. */
+  const removeFromLinked = (productId: string) => {
+    const ids = (value.product_ids ?? []).filter((id) => id !== productId);
+    onChange({
+      content_mode: ids.length > 0 ? 'shoppable' : value.content_mode,
+      product_id: ids[0] ?? '',
+      product_ids: ids,
+    });
+  };
+
+  const moveLinked = (productId: string, delta: number) => {
+    const ids = [...(value.product_ids ?? [])];
+    const index = ids.indexOf(productId);
+    const target = index + delta;
+    if (index < 0 || target < 0 || target >= ids.length) return;
+    [ids[index], ids[target]] = [ids[target], ids[index]];
+    onChange({ content_mode: 'shoppable', product_id: ids[0], product_ids: ids });
+  };
+
+  /** Recherche « ajouter un article » : même filtre que le produit principal. */
+  useEffect(() => {
+    const term = addQuery.trim();
+    if (value.content_mode !== 'shoppable' || term.length < 2) { setAddResults([]); return undefined; }
+    const timer = window.setTimeout(() => {
+      const params = new URLSearchParams({ search: term, status: 'ACTIVE', page_size: '6' });
+      adminApi<any>(`/catalogue/products?${params.toString()}`)
+        .then((r) => setAddResults((r?.data || []).filter(isSellable)))
+        .catch(() => setAddResults([]));
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [addQuery, value.content_mode]);
 
   // Recherche avec un léger délai : une requête par pause de frappe.
   // Seul le catalogue est cherché ici ; les produits temporaires ne s'y trouvent pas.
@@ -113,12 +181,13 @@ export function ProductIntegration({ kind, value, onChange }: {
   const pick = (product: CatalogueProduct) => {
     setSelected(product); setSelectedMissing(false); setQuery(''); setResults([]); setChanging(false);
     setSource(product.visibility === 'CONTENT' ? 'temporary' : 'catalogue');
-    onChange({ content_mode: 'shoppable', product_id: product.id });
+    const existing = (value.product_ids ?? []).filter((id) => id !== product.id);
+    onChange({ content_mode: 'shoppable', product_id: product.id, product_ids: [product.id, ...existing] });
   };
 
   const unlink = () => {
     setSelected(null); setChanging(false);
-    onChange({ content_mode: value.content_mode, product_id: '' });
+    onChange({ content_mode: value.content_mode, product_id: '', product_ids: [] });
   };
 
   // Création rapide d'un produit temporaire, publié et associé en une étape. Un brouillon
@@ -255,6 +324,60 @@ export function ProductIntegration({ kind, value, onChange }: {
                 <div>
                   <Button busy={createBusy} disabled={!canCreate} onClick={() => void createTemporary()}>Publier et associer</Button>
                 </div>
+              </div>
+            ) : null}
+
+            {hasLink ? (
+              <div style={{ display: 'grid', gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
+                  <strong style={{ fontSize: 13 }}>Articles du tiroir ({linked.length || 1})</strong>
+                  <small style={{ opacity: 0.75 }}>L’ordre ici = l’ordre à l’écran</small>
+                </div>
+                <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 6 }}>
+                  {(linked.length > 0 ? linked : selected ? [selected] : []).map((product, index, list) => (
+                    <li
+                      key={product.id}
+                      style={{ display: 'flex', gap: 10, alignItems: 'center', border: '1px solid var(--bo-line)', borderRadius: 10, padding: 8 }}
+                    >
+                      <span style={{ fontSize: 11, opacity: 0.6, width: 14 }}>{index + 1}</span>
+                      {product.image ? <img src={product.image} alt="" style={{ width: 36, height: 36, objectFit: 'contain', borderRadius: 6, background: 'var(--bo-sunken)' }} /> : null}
+                      <span style={{ flex: 1, minWidth: 0 }}>
+                        <strong style={{ fontSize: 13 }}>{product.name}</strong>
+                        <span style={{ display: 'block', fontSize: 12, opacity: 0.8 }}>{priceLabel(product)}</span>
+                      </span>
+                      <Button variant="ghost" disabled={index === 0} onClick={() => moveLinked(product.id, -1)} aria-label={`Monter ${product.name}`}>↑</Button>
+                      <Button variant="ghost" disabled={index === list.length - 1} onClick={() => moveLinked(product.id, 1)} aria-label={`Descendre ${product.name}`}>↓</Button>
+                      <Button variant="ghost" onClick={() => removeFromLinked(product.id)} aria-label={`Retirer ${product.name}`}>Retirer</Button>
+                    </li>
+                  ))}
+                </ul>
+                {linkedBusy ? <small>Chargement des articles…</small> : null}
+
+                <input
+                  aria-label="Ajouter un article au tiroir"
+                  placeholder="Ajouter un article (nom, SKU ou référence)"
+                  value={addQuery}
+                  onChange={(e) => setAddQuery(e.target.value)}
+                />
+                {addResults.length > 0 ? (
+                  <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 6 }}>
+                    {addResults.map((product) => (
+                      <li key={product.id}>
+                        <button
+                          type="button"
+                          onClick={() => { addToLinked(product); setAddQuery(''); setAddResults([]); }}
+                          style={{ width: '100%', display: 'flex', gap: 10, alignItems: 'center', textAlign: 'start', padding: 8, border: '1px solid var(--bo-line)', borderRadius: 10, background: 'var(--ayrovi-white)', cursor: 'pointer' }}
+                        >
+                          {product.image ? <img src={product.image} alt="" style={{ width: 32, height: 32, objectFit: 'contain', borderRadius: 6, background: 'var(--bo-sunken)' }} /> : null}
+                          <span style={{ flex: 1 }}>
+                            <strong style={{ fontSize: 13 }}>{product.name}</strong>
+                            <span style={{ display: 'block', fontSize: 12, opacity: 0.8 }}>{priceLabel(product)}</span>
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
               </div>
             ) : null}
 

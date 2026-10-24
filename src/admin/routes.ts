@@ -11,6 +11,12 @@ import { storeHeroImage } from '../services/heroImageStore';
 import { parsePublicHttpUrl } from '../services/safeUrl';
 import { HERO_DESTINATION_TYPES, heroDestinationConfig, isValidExternalUrl } from '../../shared/heroDestinations';
 import { normalizeMediaLink, type MediaLinkKind } from '../../shared/mediaLinks';
+import {
+  invalidLinkedProducts,
+  normalizeContentProductIds,
+  setContentProducts,
+  syncContentProductsFromLegacy,
+} from '../services/contentProducts';
 import { isHexColor, refreshHeroSlidePalette } from '../services/heroPalette';
 import {
   DEFAULT_FEATURED_SETTINGS, normalizeFeaturedInput, resolveFeaturedPublication, type FeaturedSettings,
@@ -353,6 +359,28 @@ function validateResourceDates(resource: string, payload: Record<string, any>, e
 /** Lecture du produit dans le catalogue existant (source unique). */
 function catalogueProductSnapshot(db: QatafoDatabase, productId: string): ProductSnapshot | null {
   return db.get<any>('SELECT id,name,image,status,final_price,stock_status FROM products WHERE id=?', productId) ?? null;
+}
+
+/**
+ * Articles supplémentaires d'un contenu (lot F1). La liste est FACULTATIVE : sans
+ * elle, le comportement d'avant est conservé (un seul `product_id`). Si elle est
+ * fournie, chaque produit doit être vendable — on refuse la liste entière plutôt
+ * que d'en publier une moitié sans le dire.
+ */
+function productIdsOrReject(res: Response, db: QatafoDatabase, raw: unknown): string[] | null {
+  if (raw === undefined) return [];
+  const ids = normalizeContentProductIds(raw);
+  const invalid = invalidLinkedProducts(db, ids);
+  if (invalid.length > 0) {
+    res.status(400).json({
+      success: false,
+      code: 'PRODUCT_INVALID',
+      error: 'Un des articles choisis n’est pas vendable (inactif, archivé, sans prix ou introuvable).',
+      invalid,
+    });
+    return null;
+  }
+  return ids;
 }
 
 /** Lien média saisi (Stories, Reels, Publications) : renvoie le lien normalisé, ou répond 400 et renvoie null. */
@@ -1316,7 +1344,12 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     if (!title || !imageUrl || !db.get('SELECT id FROM story_publishers WHERE id=?', channelId)) {
       return res.status(400).json({ success: false, error: 'Titre, image et canal obligatoires.' });
     }
-    const shoppable = decideShoppable(req.body?.content_mode, req.body?.product_id, (pid) => catalogueProductSnapshot(db, pid));
+    const extraProducts = productIdsOrReject(res, db, req.body?.product_ids);
+    if (extraProducts === null) return;
+    // Tiroir à plusieurs articles : pas de « produit principal » à choisir en plus.
+    // Le premier article de la liste fait foi pour `product_id` (compatibilité).
+    const primaryProductId = String(req.body?.product_id ?? '').trim() || extraProducts[0] || '';
+    const shoppable = decideShoppable(req.body?.content_mode, primaryProductId, (pid) => catalogueProductSnapshot(db, pid));
     if (shoppable.ok === false) return res.status(400).json({ success: false, code: shoppable.code, error: shoppable.error });
     const now = new Date().toISOString();
     const id = `publication_${randomUUID()}`;
@@ -1324,6 +1357,8 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
       id, title, String(req.body?.subtitle || '').slice(0, 150), channelId, imageUrl, String(req.body?.remark || ''),
       req.body?.publish_at ? String(req.body.publish_at) : now, ['brouillon','publie','archive'].includes(req.body?.status) ? req.body.status : 'brouillon',
       shoppable.mode, shoppable.productId, now, now);
+    if (extraProducts.length > 0) setContentProducts(db, 'publication', id, extraProducts, now);
+    else syncContentProductsFromLegacy(db, 'publication', id, shoppable.mode, shoppable.productId);
     audit(db, req, 'CREATE', 'SOCIAL_PUBLICATIONS', id, null, db.get<any>('SELECT * FROM publications WHERE id=?', id));
     res.status(201).json({ success: true, data: { id } });
   });
@@ -1332,7 +1367,12 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     if (!row) return res.status(404).json({ success: false, error: 'Publication introuvable.' });
     const imageUrl = req.body?.image_url !== undefined ? linkOrReject(res, req.body.image_url, 'image') : row.image_url;
     if (imageUrl === null) return;
-    const shoppable = decideShoppable(req.body?.content_mode ?? row.content_mode, req.body?.product_id !== undefined ? req.body.product_id : row.product_id,
+    const extraProducts = productIdsOrReject(res, db, req.body?.product_ids);
+    if (extraProducts === null) return;
+    const primaryProductId = String(req.body?.product_id ?? '').trim()
+      || extraProducts[0]
+      || (req.body?.product_id === undefined ? row.product_id : '');
+    const shoppable = decideShoppable(req.body?.content_mode ?? row.content_mode, primaryProductId,
       (pid) => catalogueProductSnapshot(db, pid));
     if (shoppable.ok === false) return res.status(400).json({ success: false, code: shoppable.code, error: shoppable.error });
     db.run(`UPDATE publications SET title=?, subtitle=?, image_url=?, remark=?, publish_at=?, status=?, content_mode=?, product_id=?, updated_at=? WHERE id=?`,
@@ -1341,6 +1381,8 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
       req.body?.publish_at ? String(req.body.publish_at) : row.publish_at,
       ['brouillon','publie','archive'].includes(req.body?.status) ? req.body.status : row.status,
       shoppable.mode, shoppable.productId, new Date().toISOString(), req.params.id);
+    if (req.body?.product_ids !== undefined) setContentProducts(db, 'publication', req.params.id, extraProducts);
+    else syncContentProductsFromLegacy(db, 'publication', req.params.id, shoppable.mode, shoppable.productId);
     audit(db, req, 'UPDATE', 'SOCIAL_PUBLICATIONS', req.params.id, row, db.get<any>('SELECT * FROM publications WHERE id=?', req.params.id));
     res.json({ success: true });
   });
@@ -1362,7 +1404,10 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     if (!title || !videoUrl || !db.get('SELECT id FROM story_publishers WHERE id=?', channelId)) {
       return res.status(400).json({ success: false, error: 'Titre, vidéo et canal obligatoires.' });
     }
-    const shoppable = decideShoppable(req.body?.content_mode, req.body?.product_id, (pid) => catalogueProductSnapshot(db, pid));
+    const extraProducts = productIdsOrReject(res, db, req.body?.product_ids);
+    if (extraProducts === null) return;
+    const primaryProductId = String(req.body?.product_id ?? '').trim() || extraProducts[0] || '';
+    const shoppable = decideShoppable(req.body?.content_mode, primaryProductId, (pid) => catalogueProductSnapshot(db, pid));
     if (shoppable.ok === false) return res.status(400).json({ success: false, code: shoppable.code, error: shoppable.error });
     const now = new Date().toISOString();
     const id = `reel_${randomUUID()}`;
@@ -1371,6 +1416,8 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
       Number.isFinite(Number(req.body?.duration_seconds)) ? Math.max(0, Math.round(Number(req.body.duration_seconds))) : 0,
       req.body?.publish_at ? String(req.body.publish_at) : now, ['brouillon','publie','archive'].includes(req.body?.status) ? req.body.status : 'brouillon',
       shoppable.mode, shoppable.productId, now, now);
+    if (extraProducts.length > 0) setContentProducts(db, 'reel', id, extraProducts, now);
+    else syncContentProductsFromLegacy(db, 'reel', id, shoppable.mode, shoppable.productId);
     audit(db, req, 'CREATE', 'SOCIAL_REELS', id, null, db.get<any>('SELECT * FROM reels WHERE id=?', id));
     res.status(201).json({ success: true, data: { id } });
   });
@@ -1381,7 +1428,12 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     if (videoUrl === null) return;
     const posterUrl = req.body?.poster_url !== undefined ? linkOrReject(res, req.body.poster_url, 'image') : row.poster_url;
     if (posterUrl === null) return;
-    const shoppable = decideShoppable(req.body?.content_mode ?? row.content_mode, req.body?.product_id !== undefined ? req.body.product_id : row.product_id,
+    const extraProducts = productIdsOrReject(res, db, req.body?.product_ids);
+    if (extraProducts === null) return;
+    const primaryProductId = String(req.body?.product_id ?? '').trim()
+      || extraProducts[0]
+      || (req.body?.product_id === undefined ? row.product_id : '');
+    const shoppable = decideShoppable(req.body?.content_mode ?? row.content_mode, primaryProductId,
       (pid) => catalogueProductSnapshot(db, pid));
     if (shoppable.ok === false) return res.status(400).json({ success: false, code: shoppable.code, error: shoppable.error });
     db.run(`UPDATE reels SET title=?, description=?, video_url=?, poster_url=?, duration_seconds=?, publish_at=?, status=?, content_mode=?, product_id=?, updated_at=? WHERE id=?`,
@@ -1392,6 +1444,8 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
       req.body?.publish_at ? String(req.body.publish_at) : row.publish_at,
       ['brouillon','publie','archive'].includes(req.body?.status) ? req.body.status : row.status,
       shoppable.mode, shoppable.productId, new Date().toISOString(), req.params.id);
+    if (req.body?.product_ids !== undefined) setContentProducts(db, 'reel', req.params.id, extraProducts);
+    else syncContentProductsFromLegacy(db, 'reel', req.params.id, shoppable.mode, shoppable.productId);
     audit(db, req, 'UPDATE', 'SOCIAL_REELS', req.params.id, row, db.get<any>('SELECT * FROM reels WHERE id=?', req.params.id));
     res.json({ success: true });
   });

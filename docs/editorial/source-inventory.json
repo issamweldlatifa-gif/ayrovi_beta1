@@ -9790,8 +9790,8 @@
     {
       "file": "client/src/admin/ProductIntegration.tsx",
       "domain": "admin",
-      "sha256": "a8c11fc9a01dfe6320671e102195da3e8de444965a68fc52271747f51ec56382",
-      "lines": 366,
+      "sha256": "add6aa4177ecd39ce568e84ec038baf74b518644f988145a76cc1254d40da3f4",
+      "lines": 489,
       "imports": [
         "react",
         "./api",
@@ -9806,7 +9806,7 @@
       "controls": [
         {
           "tag": "Field",
-          "line": 155,
+          "line": 224,
           "className": null,
           "type": null,
           "role": null,
@@ -9816,7 +9816,7 @@
         },
         {
           "tag": "Button",
-          "line": 158,
+          "line": 227,
           "className": null,
           "type": null,
           "role": null,
@@ -9826,7 +9826,7 @@
         },
         {
           "tag": "Button",
-          "line": 159,
+          "line": 228,
           "className": null,
           "type": null,
           "role": null,
@@ -9836,7 +9836,7 @@
         },
         {
           "tag": "Button",
-          "line": 160,
+          "line": 229,
           "className": null,
           "type": null,
           "role": null,
@@ -9846,7 +9846,7 @@
         },
         {
           "tag": "Button",
-          "line": 176,
+          "line": 245,
           "className": null,
           "type": null,
           "role": null,
@@ -9856,7 +9856,7 @@
         },
         {
           "tag": "Button",
-          "line": 177,
+          "line": 246,
           "className": null,
           "type": null,
           "role": null,
@@ -9866,7 +9866,7 @@
         },
         {
           "tag": "Button",
-          "line": 184,
+          "line": 253,
           "className": null,
           "type": null,
           "role": null,
@@ -9876,7 +9876,7 @@
         },
         {
           "tag": "input",
-          "line": 190,
+          "line": 259,
           "className": null,
           "type": null,
           "role": null,
@@ -9886,7 +9886,7 @@
         },
         {
           "tag": "button",
-          "line": 202,
+          "line": 271,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -9896,7 +9896,7 @@
         },
         {
           "tag": "input",
-          "line": 227,
+          "line": 296,
           "className": null,
           "type": null,
           "role": null,
@@ -9906,7 +9906,7 @@
         },
         {
           "tag": "input",
-          "line": 233,
+          "line": 302,
           "className": null,
           "type": null,
           "role": null,
@@ -9916,7 +9916,7 @@
         },
         {
           "tag": "input",
-          "line": 240,
+          "line": 309,
           "className": null,
           "type": "\"number\"",
           "role": null,
@@ -9926,7 +9926,7 @@
         },
         {
           "tag": "input",
-          "line": 247,
+          "line": 316,
           "className": null,
           "type": null,
           "role": null,
@@ -9936,7 +9936,7 @@
         },
         {
           "tag": "Button",
-          "line": 256,
+          "line": 325,
           "className": null,
           "type": null,
           "role": null,
@@ -9945,8 +9945,58 @@
           "disabled": "{!canCreate}"
         },
         {
+          "tag": "Button",
+          "line": 348,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": "{`Monter ${product.name}`}",
+          "onClick": "{() => moveLinked(product.id, -1)}",
+          "disabled": "{index === 0}"
+        },
+        {
+          "tag": "Button",
+          "line": 349,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": "{`Descendre ${product.name}`}",
+          "onClick": "{() => moveLinked(product.id, 1)}",
+          "disabled": "{index === list.length - 1}"
+        },
+        {
+          "tag": "Button",
+          "line": 350,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": "{`Retirer ${product.name}`}",
+          "onClick": "{() => removeFromLinked(product.id)}",
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 356,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": "\"Ajouter un article au tiroir\"",
+          "onClick": null,
+          "disabled": null
+        },
+        {
           "tag": "button",
-          "line": 313,
+          "line": 366,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => { addToLinked(product); setAddQuery(''); setAddResults([]); }}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 436,
           "className": null,
           "type": "\"button\"",
           "role": null,

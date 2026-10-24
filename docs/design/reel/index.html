@@ -177,8 +177,9 @@ svg { display:block; }
 
 .cards {
   position:absolute; left:0; right:0; top:30px; bottom:10px; z-index:2;
-  display:flex; gap:var(--card-gap); padding:0 14px;
+  display:flex; gap:var(--card-gap); padding:0 16px;
   overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory;
+  scroll-padding-inline:16px;
   scrollbar-width:none;
 }
 .cards::-webkit-scrollbar { display:none; }
@@ -499,8 +500,8 @@ function buildSpec() {
     <div class="band" style="bottom:0;height:${trayH}px"></div>
     <div class="lbl" style="bottom:${trayH + 4}px;left:14px">tiroir ${trayH} (25,4 % de 844)</div>
 
-    <div class="hl" style="bottom:26px;left:14px;width:336px;height:158px"></div>
-    <div class="lbl" style="bottom:30px;left:14px">carte 336 × 158 · r=16</div>
+    <div class="hl" style="bottom:26px;left:16px;width:336px;height:158px"></div>
+    <div class="lbl" style="bottom:30px;left:16px">carte 336 × 158 · r=16 · marge 16</div>
     <div class="hl" style="bottom:44px;left:24px;width:118px;height:118px"></div>
     <div class="lbl" style="bottom:166px;left:24px">photo 118 · contain</div>
 

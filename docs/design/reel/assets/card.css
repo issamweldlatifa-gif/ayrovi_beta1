@@ -10,7 +10,7 @@
   --studio:#F5F5F5; --action:#571EF6; --on-action:#FFFFFF;
 
   /* ── mesures canoniques de la carte (viewport de référence : 390 px) ── */
-  --card-w:336px;      /* 390 − 2×14 de marge + 4 de débordement volontaire */
+  --card-w:336px;      /* 390 − 2×16 de marge ⇒ 22 px de débordement volontaire (invite à faire défiler) */
   --card-h:158px;
   --card-r:16px;
   --card-pad:10px;
@@ -33,6 +33,8 @@
   padding:var(--card-pad);
   background:var(--canvas); color:var(--ink);
   border:1px solid var(--line); border-radius:var(--card-r);
+  /* le tiroir colle la carte au bord de son padding : même valeur côté RN (16) */
+  scroll-snap-align:start;
   font-family:inherit; text-align:start; cursor:pointer;
   transition:transform .12s ease, border-color .15s ease;
 }

@@ -21,6 +21,7 @@ import { DEFAULT_FEATURED_SETTINGS, resolveFeaturedPublication, type FeaturedSet
 import { UnsafeUrlError } from '../services/safeUrl';
 import { pruneDiskCache } from '../services/diskCache';
 import { LINKED_PRODUCT_JOIN_SELECT, linkedProductFromJoin } from '../services/shoppableContent';
+import { publicProductsByContent, type ContentKind } from '../services/contentProducts';
 
 function parseJson(value: string, fallback: any = []) {
   try { return JSON.parse(value); } catch { return fallback; }
@@ -52,11 +53,26 @@ function withLinkedProduct(row: Record<string, any>) {
     if (!key.startsWith('lp_')) out[key] = value;
   }
   out.product = linkedProductFromJoin(row);
-  /* Liste prête pour le tiroir du Reel : aujourd'hui 0 ou 1 produit (une seule
-     colonne `product_id`). Le jour où un contenu portera plusieurs produits, seule
-     cette ligne changera — le client lit déjà une liste. */
+  /* Liste (0..n) : remplie plus bas par `attachContentProducts`, qui lit la table
+     de liaison. Un contenu sans ligne retombe sur son `product_id` historique. */
   out.products = out.product ? [out.product] : [];
   return out;
+}
+
+/**
+ * Attache la liste complète des articles d'un lot de contenus (lot F1).
+ * Une seule requête pour tout le lot. Le `product` singulier reste renvoyé pour
+ * les clients déjà déployés : aucune rupture, on ajoute.
+ */
+function attachContentProducts(db: QatafoDatabase, kind: ContentKind, rows: Array<Record<string, any>>) {
+  const map = publicProductsByContent(db, kind, rows as any);
+  for (const row of rows) {
+    const list = map.get(String(row.id)) ?? [];
+    row.products = list;
+    if (list.length === 0) row.product = null;
+    else if (!row.product) row.product = list[0];
+  }
+  return rows;
 }
 
 function mapProduct(row: any) {
@@ -535,6 +551,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       // Story shoppable dont le produit n'est plus vendable : on coupe le lien, pour que le CTA
       // existant (qui suit product_id) n'ouvre jamais une page produit morte.
       .map((story) => (story.content_mode === 'shoppable' && !story.product ? { ...story, product_id: null } : story));
+    attachContentProducts(db, 'story', rows);
     res.json({ success: true, data: rows, serverTime: now });
   });
 
@@ -616,6 +633,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     const rows = db.all<any>(`SELECT pub.id,pub.title,pub.subtitle,pub.channel_id,pub.image_url,pub.publish_at,pub.content_mode,${LINKED_PRODUCT_JOIN_SELECT}
       FROM publications pub LEFT JOIN products p ON p.id=pub.product_id
       WHERE pub.status='publie' AND pub.publish_at<=? ORDER BY pub.publish_at DESC`, now).map(withLinkedProduct);
+    attachContentProducts(db, 'publication', rows);
     res.json({ success: true, data: rows });
   });
 
@@ -626,6 +644,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=r.id AND i.type='like') likes,${LINKED_PRODUCT_JOIN_SELECT}
       FROM reels r LEFT JOIN products p ON p.id=r.product_id
       WHERE r.status='publie' AND r.publish_at<=? ORDER BY r.publish_at DESC`, now).map(withLinkedProduct);
+    attachContentProducts(db, 'reel', rows);
     res.json({ success: true, data: rows });
   });
 

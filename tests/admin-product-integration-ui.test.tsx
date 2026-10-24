@@ -106,7 +106,8 @@ describe('Product Integration — admin', () => {
     const option = Array.from(host.querySelectorAll('button')).find((b) => b.textContent?.includes('Pantalon taille haute'))!;
     await act(async () => option.click());
     await act(async () => { await Promise.resolve(); });
-    expect(lastValue).toEqual({ content_mode: 'shoppable', product_id: 'p_ok' });
+    // Lot F1 (24/10/2026) : la valeur porte aussi le tiroir, dans l'ordre choisi.
+    expect(lastValue).toEqual({ content_mode: 'shoppable', product_id: 'p_ok', product_ids: ['p_ok'] });
     expect(host.textContent).toContain('Aperçu sur le téléphone');
     // Module retenu (24/10/2026) : la carte entière est pressable, pas de bouton séparé.
     expect(host.textContent).not.toContain('Découvrir');
@@ -136,7 +137,7 @@ describe('Product Integration — admin', () => {
     expect(apiMock.adminApi).toHaveBeenCalledWith('/catalogue/content-products', expect.objectContaining({ method: 'POST' }));
     const body = JSON.parse(apiMock.adminApi.mock.calls[0][1].body);
     expect(body).toMatchObject({ name: 'Veste temporaire', original_price: 80, status: 'ACTIVE' });
-    expect(lastValue).toEqual({ content_mode: 'shoppable', product_id: 'prod_temp_new' });
+    expect(lastValue).toEqual({ content_mode: 'shoppable', product_id: 'prod_temp_new', product_ids: ['prod_temp_new'] });
   });
 
   it('un produit temporaire lié se signale comme tel, et « Aucun produit » délie sans recherche', async () => {
@@ -155,7 +156,53 @@ describe('Product Integration — admin', () => {
     await act(async () => { await Promise.resolve(); });
     expect(host.textContent).toContain('réf. REF-42');
     await act(async () => buttonByText('Délier')!.click());
-    expect(lastValue).toEqual({ content_mode: 'shoppable', product_id: '' });
+    // « Délier » vide AUSSI le tiroir : sinon d'anciennes lignes continueraient de s'afficher.
+    expect(lastValue).toEqual({ content_mode: 'shoppable', product_id: '', product_ids: [] });
+  });
+
+  it('tiroir à plusieurs articles : ajout, ordre (l’ordre ici = l’ordre à l’écran) et retrait', async () => {
+    vi.useFakeTimers();
+    const second = { ...sellable, id: 'p_two', name: 'Robe longue', product_code: 'REF-43' };
+    const third = { ...sellable, id: 'p_three', name: 'Foulard soie', product_code: 'REF-44' };
+    apiMock.adminApi.mockImplementation((url: string) => {
+      const path = String(url);
+      if (path.startsWith('/catalogue/products?')) return Promise.resolve({ success: true, data: [second] });
+      const id = path.split('/catalogue/products/')[1];
+      return Promise.resolve({ success: true, data: [sellable, second, third].find((p) => p.id === id) ?? sellable });
+    });
+
+    await mount({ content_mode: 'shoppable', product_id: 'p_ok', product_ids: ['p_ok'] });
+    await act(async () => { await Promise.resolve(); });
+    expect(host.textContent).toContain('Articles du tiroir (1)');
+
+    // Ajout au tiroir sans toucher au produit principal (il reste le premier).
+    await act(async () => buttonByText('Produit du catalogue')!.click());
+    const add = host.querySelector<HTMLInputElement>('input[aria-label="Ajouter un article au tiroir"]')!;
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+    await act(async () => {
+      setter.call(add, 'robe');
+      add.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await act(async () => { vi.advanceTimersByTime(300); });
+    const option = Array.from(host.querySelectorAll('button')).find((b) => b.textContent?.includes('Robe longue'))!;
+    await act(async () => option.click());
+    expect(lastValue).toEqual({ content_mode: 'shoppable', product_id: 'p_ok', product_ids: ['p_ok', 'p_two'] });
+
+    // Monter / descendre change l'ordre, et le premier article redevient `product_id`.
+    await act(async () => { await Promise.resolve(); });
+    await act(async () => (host.querySelector('button[aria-label="Monter Robe longue"]') as HTMLButtonElement).click());
+    expect(lastValue).toEqual({ content_mode: 'shoppable', product_id: 'p_two', product_ids: ['p_two', 'p_ok'] });
+    await act(async () => { await Promise.resolve(); });
+    await act(async () => (host.querySelector('button[aria-label="Descendre Robe longue"]') as HTMLButtonElement).click());
+    expect(lastValue).toEqual({ content_mode: 'shoppable', product_id: 'p_ok', product_ids: ['p_ok', 'p_two'] });
+
+    // Retirer un article garde les autres ; retirer le dernier vide la liste (aucune carte fantôme).
+    await act(async () => { await Promise.resolve(); });
+    await act(async () => (host.querySelector('button[aria-label="Retirer Robe longue"]') as HTMLButtonElement).click());
+    expect(lastValue).toEqual({ content_mode: 'shoppable', product_id: 'p_ok', product_ids: ['p_ok'] });
+    await act(async () => { await Promise.resolve(); });
+    await act(async () => (host.querySelector('button[aria-label="Retirer Pantalon taille haute"]') as HTMLButtonElement).click());
+    expect(lastValue).toEqual({ content_mode: 'shoppable', product_id: '', product_ids: [] });
   });
 
   it('produit introuvable (supprimé) : message clair, pas de carte cassée', async () => {

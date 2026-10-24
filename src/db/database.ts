@@ -1467,6 +1467,21 @@ export class QatafoDatabase {
         updated_at TEXT NOT NULL
       );
 
+      -- Articles d'un Reel / Publication / Story (lot F1, 24/10/2026).
+      -- ADDITIF : la colonne product_id reste la verite de l'existant ; cette table porte la
+      -- LISTE ordonnée des articles d'un même contenu (tiroir à plusieurs cartes).
+      -- Aucune copie de nom/prix/image : seulement l'identifiant du produit.
+      CREATE TABLE IF NOT EXISTS content_products (
+        content_kind TEXT NOT NULL CHECK(content_kind IN ('reel','publication','story')),
+        content_id TEXT NOT NULL,
+        product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        PRIMARY KEY (content_kind, content_id, product_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_content_products_content ON content_products(content_kind, content_id, sort_order);
+      CREATE INDEX IF NOT EXISTS idx_content_products_product ON content_products(product_id);
+
       CREATE TABLE IF NOT EXISTS story_interactions(
         id TEXT PRIMARY KEY,
         target_id TEXT NOT NULL,
