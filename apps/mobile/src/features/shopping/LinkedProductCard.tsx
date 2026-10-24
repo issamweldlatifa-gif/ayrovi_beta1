@@ -10,7 +10,9 @@
  *     collée aux bords**, seul le rayon extérieur arrondit les angles ;
  *   • **la marque est revenue** (elle manquait : le serveur public ne la
  *     transmettait pas) ;
- *   • les cotes ont été ramenées à 300×137 (rayon 10) pour rester « petite ».
+ *   • les cotes sont celles du modèle : 362×165 à 390 dp, rayon 11 ;
+ *   • **la carte prend la largeur de l'écran** moins 28 (12 de marge, 7 d'écart,
+ *     9 d'amorce) : 332 dp sur un écran de 360, comme le modèle mesuré.
  *
  * **La carte entière est pressable.** Il n'y a pas de bouton « Découvrir » : dans
  * une barre posée sur la vidéo, un bouton à côté d'une photo volait la place du
@@ -28,7 +30,7 @@
  *
  * La navigation reste interne : `/product/[id]`, jamais un site marchand.
  */
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
@@ -37,7 +39,7 @@ import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
 import { mediaUrl } from '@/api/client';
-import { ARTICLE_CARD } from '@/design/articleCard';
+import { ARTICLE_CARD, articleCardSize } from '@/design/articleCard';
 import type { LinkedProduct } from '@/api/linkedProduct';
 
 export interface LinkedProductCardProps {
@@ -56,6 +58,9 @@ export function LinkedProductCard({
 }: LinkedProductCardProps) {
   const theme = useTheme();
   const t = useT();
+  const { width: viewport } = useWindowDimensions();
+  // Cotes du modèle pour CET écran : 332×151 sur 360 dp, 362×165 sur 390 dp.
+  const size = articleCardSize(viewport);
   const overlay = variant === 'overlay';
   const id = product.id;
 
@@ -81,12 +86,14 @@ export function LinkedProductCard({
         {
           backgroundColor: theme.colors.canvas,
           borderRadius: ARTICLE_CARD.radius,
+          width: size.width,
+          height: size.height,
           opacity: pressed ? 0.92 : 1,
         },
       ]}
     >
       {/* Bande photo : rectangle franc, pleine hauteur, découpé par le rayon de la carte. */}
-      <View style={[styles.shot, { backgroundColor: theme.colors.shimmer }]}>
+      <View style={[styles.shot, { width: size.thumb, backgroundColor: theme.colors.shimmer }]}>
         {product.image ? (
           <AppImage
             uri={mediaUrl(product.image)}
@@ -140,11 +147,9 @@ export function LinkedProductCard({
 
 const styles = StyleSheet.create({
   card: {
-    width: ARTICLE_CARD.width,
-    // Un écran de 320 px moins ses marges ne doit pas être dépassé : la carte se
-    // rétrécit, elle ne pousse pas la page sur le côté.
+    // La largeur et la hauteur viennent de `articleCardSize(écran)` : aucune cote
+    // figée ne peut plus faire flotter la carte au milieu d'une bande vide.
     maxWidth: '100%',
-    height: ARTICLE_CARD.height,
     flexDirection: 'row',
     alignItems: 'stretch',
     // `overflow:hidden` EST l'arrondi de la photo : aucun rembourrage, aucun trait.
@@ -152,27 +157,27 @@ const styles = StyleSheet.create({
   },
   overlay: { marginBottom: 0 },
   shot: {
-    width: ARTICLE_CARD.thumb,
     alignSelf: 'stretch',
     overflow: 'hidden',
     flexShrink: 0,
   },
+  // Cotes du modèle (capture 720 px) : marque à 13 du haut, puis 17, puis 14.
   body: {
     flex: 1,
     minWidth: 0,
-    paddingTop: 16,
+    paddingTop: 12,
     paddingStart: ARTICLE_CARD.gap,
     paddingEnd: 32,
-    gap: 6,
+    gap: 4,
   },
-  brand: { fontSize: ARTICLE_CARD.brandSize, letterSpacing: -0.1 },
-  title: { fontSize: ARTICLE_CARD.titleSize },
-  price: { fontSize: ARTICLE_CARD.priceSize, fontVariant: ['tabular-nums'] },
+  brand: { fontSize: ARTICLE_CARD.brandSize, lineHeight: 18, letterSpacing: -0.1 },
+  title: { fontSize: ARTICLE_CARD.titleSize, lineHeight: 18 },
+  price: { fontSize: ARTICLE_CARD.priceSize, lineHeight: 19, marginTop: 2, fontVariant: ['tabular-nums'] },
   note: { fontSize: ARTICLE_CARD.priceSize },
   fav: {
     position: 'absolute',
-    top: 8,
-    end: 6,
+    top: 6,
+    end: 4,
     width: 32,
     height: 32,
     alignItems: 'center',

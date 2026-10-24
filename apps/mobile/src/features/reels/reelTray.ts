@@ -21,18 +21,21 @@
  * Cotes du tiroir (refonte du 24/10/2026 — planche `mockup-v4-24-10.png`).
  *
  * Le tiroir n'est plus une feuille blanche qui monte du bas : **les cartes
- * flottent** sur la vidéo, avec une marge de 13 de chaque côté et 17 sous elles,
+ * flottent** sur la vidéo, avec une marge de 12 de chaque côté et 16 sous elles,
  * donc le Reel reste visible tout autour. Fermé, il ne reste que la pastille.
+ *
+ * La hauteur du tiroir **n'est plus une constante** : elle suit la carte, qui
+ * prend la largeur de l'écran (correction du soir : notre carte était plus
+ * petite que celle du modèle). `reelTrayHeight(hauteurCarte)` en est la seule
+ * source ; chaque fonction ci-dessous reçoit cette hauteur.
  */
 export const REEL_TRAY = {
-  /** Course du tiroir fermé : la hauteur d'une carte + le vide sous elle. */
-  height: 153,
   /** Vide entre le bas de la carte et le bas de l'écran (zone sûre en plus). */
   cardBottom: 16,
-  /** Marge latérale d'une carte (la suivante affleure après `cardGap`). */
+  /** Marge latérale d'une carte : 24 px sur le modèle (12 dp). */
   padding: 12,
-  /** Écart entre deux cartes. */
-  cardGap: 12,
+  /** Écart entre deux cartes : 13 px sur le modèle. */
+  cardGap: 7,
   /** Hauteur de la pastille (cible tactile confortable, modèle : 51). */
   pillHeight: 51,
   pillMinWidth: 176,
@@ -96,15 +99,23 @@ export function reelTrayLabelKey(open: boolean): 'reel.hideItems' | 'reel.viewIt
   return open ? 'reel.hideItems' : 'reel.viewItems';
 }
 
+/** Hauteur du tiroir pour une carte donnée : la carte + le vide sous elle. */
+export function reelTrayHeight(cardHeight: number): number {
+  return cardHeight + REEL_TRAY.cardBottom;
+}
+
 /** Position verticale du tiroir fermé/ouvert — une seule source pour les deux rendus. */
-export function reelTrayOffset(open: boolean, height = REEL_TRAY.height, insetBottom = 0): number {
+export function reelTrayOffset(open: boolean, height = reelTrayHeight(165), insetBottom = 0): number {
   return open ? 0 : height + insetBottom;
 }
 
-/** Bas de la pastille : au-dessus des cartes ouvertes, près du bord fermée. */
-export function reelTrayPillBottom(open: boolean, insetBottom = 0): number {
+/**
+ * Bas de la pastille : au-dessus des cartes ouvertes, près du bord fermée.
+ * `trayHeight` = `reelTrayHeight(hauteurCarte)`, sans l'inset (il est ajouté ici).
+ */
+export function reelTrayPillBottom(open: boolean, insetBottom = 0, trayHeight = reelTrayHeight(165)): number {
   return open
-    ? insetBottom + REEL_TRAY.cardBottom + (REEL_TRAY.height - REEL_TRAY.cardBottom) + REEL_TRAY.pillGap
+    ? insetBottom + trayHeight + REEL_TRAY.pillGap
     : insetBottom + REEL_TRAY.pillClosedBottom;
 }
 
@@ -117,8 +128,9 @@ export function reelTrayRailBottom(
   open: boolean,
   index: number,
   insetBottom = 0,
+  trayHeight = reelTrayHeight(165),
 ): number {
-  const pill = reelTrayPillBottom(open, insetBottom);
+  const pill = reelTrayPillBottom(open, insetBottom, trayHeight);
   const centre = pill + REEL_TRAY.pillHeight / 2;
   return centre - REEL_TRAY.railHit / 2 + index * REEL_TRAY.railGap;
 }
@@ -130,10 +142,10 @@ export function reelTrayRailBottom(
 export function reelTrayContentBottom(
   open: boolean,
   kind: 'pill' | 'caption',
-  _height = REEL_TRAY.height,
+  trayHeight = reelTrayHeight(165),
   insetBottom = 0,
 ): number {
-  if (kind === 'pill') return reelTrayPillBottom(open, insetBottom);
+  if (kind === 'pill') return reelTrayPillBottom(open, insetBottom, trayHeight);
   // La légende se pose juste au-dessus de la pastille, sans jamais la toucher.
-  return reelTrayPillBottom(open, insetBottom) + REEL_TRAY.pillHeight + 14;
+  return reelTrayPillBottom(open, insetBottom, trayHeight) + REEL_TRAY.pillHeight + 14;
 }

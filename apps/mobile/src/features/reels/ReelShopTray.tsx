@@ -4,9 +4,9 @@
  * Planche de référence : `docs/design/reel/compare/mockup-v4-24-10.png`.
  *
  * ── Ce qui a changé, et pourquoi ────────────────────────────────────────────
- *  • **Plus de feuille blanche.** Les cartes flottent sur la vidéo avec 13 de
- *    marge de chaque côté et 17 sous elles : le Reel reste visible tout autour,
- *    la carte ne touche ni le bord ni sa voisine (12 d'écart).
+ *  • **Plus de feuille blanche.** La carte affleure à 12 du bord et laisse voir
+ *    9 de la suivante, avec 16 de vide sous elle : le Reel reste visible tout
+ *    autour. Cotes mesurées sur le modèle (664×303 px sur un écran de 720).
  *  • **Plus de poignée de tiroir** ni de coins arrondis de feuille : il n'y a
  *    plus de feuille.
  *  • **Le rail d'actions est ici**, parce qu'il est accroché à la pastille :
@@ -20,22 +20,25 @@
  * pas la position de lecture.
  *
  * Un seul bouton : « Voir les articles » ⇄ « Masquer les articles » (voir
- * `reelTray.ts`). Aucun article ⇒ aucun bouton.
+ * `reelTray.ts`). Aucun article ⇒ aucune pastille — mais le **rail d'actions**
+ * (commentaire · son · partage · cœur) reste affiché : un Reel sans article est
+ * toujours un Reel qu'on aime, qu'on commente et qu'on partage.
  */
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
-import { ARTICLE_CARD } from '@/design/articleCard';
+import { articleCardSize } from '@/design/articleCard';
 import { LinkedProductCard } from '@/features/shopping/LinkedProductCard';
 import type { LinkedProduct } from '@/api/linkedProduct';
 import {
   REEL_TRAY,
   reelTrayContentBottom,
+  reelTrayHeight,
   reelTrayDefaultOpen,
   reelTrayLabelKey,
   reelTrayOffset,
@@ -51,6 +54,11 @@ export interface ReelTrayRail {
   onToggleMute: () => void;
   onShare: () => void;
   onComment: () => void;
+  /** Cœur du Reel — visible même sans article (avant le 24/10 il n'existait pas en plein écran). */
+  liked: boolean;
+  /** Faux pour un invité : le cœur reste affiché mais inerte (règle « l'aimé exige un compte »). */
+  canLike: boolean;
+  onLike: () => void;
 }
 
 /** Favoris : fournis seulement si l'écran sait les gérer ; sinon aucun cœur. */
@@ -80,12 +88,17 @@ export function ReelShopTray({
   const insets = useSafeAreaInsets();
   const products = reelTrayProducts(reel);
   const [open, setOpen] = useState(() => reelTrayDefaultOpen(reel));
+  // La carte prend la largeur de l'écran : le tiroir suit sa hauteur, pas une
+  // constante. Sur 360 dp la carte fait 332×151 (cotes du modèle), sur 390 dp
+  // 362×165 — la pastille et le rail se recalculent avec elle.
+  const { width: viewport } = useWindowDimensions();
+  const card = articleCardSize(viewport);
 
   const overlay = mode === 'overlay';
   const insetBottom = overlay ? insets.bottom : 0;
-  const trayHeight = REEL_TRAY.height + insetBottom;
-  const pillBottom = reelTrayPillBottom(open, insetBottom);
-  const captionBottom = reelTrayContentBottom(open, 'caption', REEL_TRAY.height, insetBottom);
+  const trayHeight = reelTrayHeight(card.height);
+  const pillBottom = reelTrayPillBottom(open, insetBottom, trayHeight);
+  const captionBottom = reelTrayContentBottom(open, 'caption', trayHeight, insetBottom);
 
   const pill = products.length > 0 ? (
     <Pressable
@@ -123,34 +136,47 @@ export function ReelShopTray({
    * partage — de bas en haut, comme le modèle. Chaque icône est accrochée à la
    * pastille : elle descend avec elle quand on range les articles.
    */
-  const railView = overlay && rail && products.length > 0 ? (
+  const railView = overlay && rail ? (
     <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
       {[
-        { key: 'comment', icon: 'chatbubble-outline', label: t('social.comments'), onPress: rail.onComment },
+        { key: 'comment', icon: 'chatbubble-outline', label: t('social.comments'), onPress: rail.onComment, dim: false },
         {
           key: 'sound',
           icon: rail.muted ? 'volume-mute' : 'volume-high',
           label: t(rail.muted ? 'social.unmute' : 'social.mute'),
           onPress: rail.onToggleMute,
+          dim: false,
         },
-        { key: 'share', icon: 'share-social-outline', label: t('social.share'), onPress: rail.onShare },
+        { key: 'share', icon: 'share-social-outline', label: t('social.share'), onPress: rail.onShare, dim: false },
+        {
+          key: 'like',
+          icon: rail.liked ? 'heart' : 'heart-outline',
+          label: rail.liked ? t('social.liked') : t('social.like'),
+          onPress: rail.onLike,
+          dim: !rail.canLike,
+        },
       ].map((action, index) => (
         <Pressable
           key={action.key}
           testID={`reel-rail-${action.key}-${reel.id}`}
           accessibilityRole="button"
           accessibilityLabel={action.label}
+          accessibilityState={{ disabled: action.dim, selected: action.key === 'like' ? rail.liked : undefined }}
+          disabled={action.dim}
           onPress={action.onPress}
           hitSlop={4}
           style={({ pressed }) => [
             styles.railButton,
-            { bottom: reelTrayRailBottom(open, index, insetBottom), opacity: pressed ? 0.7 : 1 },
+            {
+              bottom: reelTrayRailBottom(open, index, insetBottom, trayHeight),
+              opacity: action.dim ? 0.45 : pressed ? 0.7 : 1,
+            },
           ]}
         >
           <Ionicons
             name={action.icon as keyof typeof Ionicons.glyphMap}
             size={23}
-            color={onMedia}
+            color={action.key === 'like' && rail.liked ? theme.colors.accentOnMedia : onMedia}
             accessibilityElementsHidden
           />
         </Pressable>
@@ -165,9 +191,9 @@ export function ReelShopTray({
         overlay ? styles.trayOverlay : styles.trayInline,
         overlay
           ? {
-              height: trayHeight,
+              height: trayHeight + insetBottom,
               paddingBottom: insetBottom,
-              transform: [{ translateY: reelTrayOffset(open, REEL_TRAY.height, insetBottom) }],
+              transform: [{ translateY: reelTrayOffset(open, trayHeight, insetBottom) }],
             }
           : null,
       ]}
@@ -178,7 +204,7 @@ export function ReelShopTray({
         testID={`reel-tray-scroll-${reel.id}`}
         horizontal
         showsHorizontalScrollIndicator={false}
-        snapToInterval={ARTICLE_CARD.width + REEL_TRAY.cardGap}
+        snapToInterval={card.width + REEL_TRAY.cardGap}
         decelerationRate="fast"
         contentContainerStyle={styles.row}
       >

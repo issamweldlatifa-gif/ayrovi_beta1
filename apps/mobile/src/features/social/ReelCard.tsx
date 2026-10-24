@@ -201,6 +201,9 @@ export function ReelCard({ reel, active, counts, onOpenComments, fill }: ReelCar
             onToggleMute: () => setSoundOn((value) => !value),
             onShare: share,
             onComment: () => onOpenComments(reel),
+            liked,
+            canLike: signedIn,
+            onLike: toggleLike,
           }}
           favourites={favourites}
         >
@@ -228,7 +231,9 @@ const styles = StyleSheet.create({
   media: { width: '100%', aspectRatio: MEDIA_RATIO.reel, justifyContent: 'flex-end' },
   fillCard: { marginBottom: 0, borderRadius: 0, backgroundColor: VIDEO_BACKDROP },
   fillMedia: { position: 'absolute', top: 0, bottom: 0, start: 0, end: 0, backgroundColor: VIDEO_BACKDROP },
-  fillBody: { position: 'absolute', start: 0, end: 0, bottom: 0, padding: 16, paddingBottom: 20, gap: 6 },
+  // `paddingEnd` réserve la colonne du rail (44 de cible + 8 de marge) : la légende
+  // ne passe jamais sous les icônes, comme sur la planche `mockup-v4-24-10.png`.
+  fillBody: { position: 'absolute', start: 0, end: 0, bottom: 0, padding: 16, paddingEnd: 64, paddingBottom: 20, gap: 6 },
   poster: { alignItems: 'center', justifyContent: 'center' },
   duration: { position: 'absolute', top: 10, start: 10, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, backgroundColor: veil(0.55) },
   body: { padding: 12, gap: 4 },

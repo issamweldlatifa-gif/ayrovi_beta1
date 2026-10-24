@@ -10,25 +10,25 @@
   --studio:#F5F5F5; --action:#571EF6; --on-action:#FFFFFF;
 
   /* ── mesures canoniques de la carte (viewport de référence : 390 px) ── */
-  --card-w:300px;      /* 390 − 2×12 de marge + 12 d'écart : la carte suivante affleure */
-  --card-h:137px;
-  --card-r:10px;
+  --card-w:362px;      /* 390 − 12 de marge − 9 d'amorce − 7 d'écart (cotes du modèle) */
+  --card-h:165px;      /* 362 × 303/664 : la proportion du modèle, au pixel */
+  --card-r:11px;
   --card-pad:0px;      /* la photo touche le bord : aucun rembourrage */
-  --card-gap:12px;
-  --thumb:90px;        /* bande photo : 30 % de la largeur, pleine hauteur */
+  --card-gap:8px;
+  --thumb:109px;       /* bande photo : 30 % de la largeur, pleine hauteur */
   --thumb-r:0px;
-  --brand:13px;
-  --title:12px;
-  --price:12px;
-  --fav:21px;
+  --brand:14px;
+  --title:13px;
+  --price:14px;
+  --fav:22px;
 }
 
 /* Le composant. Aucune taille en dur à l'intérieur : il hérite des variables,
    donc le back-office peut le rendre à 1:1 ou en zoom sans le réécrire. */
 .ay-card {
   position:relative;
-  width:var(--card-w); height:var(--card-h);
-  flex:0 0 var(--card-w);
+  width:min(var(--card-w), calc(100vw - 28px)); height:var(--card-h);
+  flex:0 0 min(var(--card-w), calc(100vw - 28px));
   display:flex; align-items:stretch; gap:var(--card-gap);
   padding:var(--card-pad);
   background:var(--canvas); color:var(--ink);

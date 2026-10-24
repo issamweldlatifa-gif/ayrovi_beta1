@@ -76,12 +76,50 @@ describe('carte article — cotes canoniques', () => {
     expect(mobileCard).not.toMatch(/shadow(Color|Offset|Opacity|Radius)/);
   });
 
+  it('les cotes canoniques sont celles du modèle mesuré, pas une invention', () => {
+    // Modèle : 664×303 px sur un écran de 720 (360 dp). À 390 dp la carte vaut
+    // 362 (écran − 12 de marge − 9 d'amorce − 7 d'écart).
+    expect(SHARED.width).toBe(362);
+    expect(SHARED.height).toBe(165);
+    expect(SHARED.thumb).toBe(109);
+  });
+
   it('les proportions sont celles du modèle mesuré (663×303 px ⇒ 0.457)', () => {
     const ratio = SHARED.height / SHARED.width;
     expect(Math.abs(ratio - 663 / 303 / (663 / 303))).toBeLessThan(1); // garde-fou
     expect(Math.abs(ratio - 303 / 663)).toBeLessThan(0.005);
     // Le rayon suit la même proportion (20 px sur 663 ⇒ 3 %).
     expect(Math.abs(SHARED.radius / SHARED.width - 20 / 663)).toBeLessThan(0.005);
+  });
+});
+
+describe('carte article — taille fluide (correction du 24/10/2026, le soir)', () => {
+  /**
+   * Le défaut signalé sur l'appareil : une carte de 300 dp au milieu d'un écran
+   * de 360, là où le modèle en fait 332 et va d'un bord à l'autre. Ces tests
+   * fixent la taille **mesurée** pour que la dérive ne revienne pas.
+   */
+  it('sur un écran de 360 dp, on retrouve la mesure du modèle au pixel', async () => {
+    const { articleCardSize } = await import('../shared/articleCard');
+    // 24 px de marge + 664 px de carte + 13 d'écart + 19 d'amorce = 720 px.
+    expect(articleCardSize(360)).toEqual({ width: 332, height: 151, thumb: 100 });
+  });
+
+  it('à 390 dp, exactement les cotes canoniques', async () => {
+    const { articleCardSize } = await import('../shared/articleCard');
+    expect(articleCardSize(390)).toEqual({ width: 362, height: 165, thumb: 109 });
+  });
+
+  it('bornes : petit téléphone et tablette ne déforment pas la carte', async () => {
+    const { articleCardSize, ARTICLE_CARD } = await import('../shared/articleCard');
+    expect(articleCardSize(260).width).toBe(240); // jamais moins de 240
+    expect(articleCardSize(1024).width).toBe(ARTICLE_CARD.maxWidth); // jamais plus de 420
+  });
+
+  it('le rendu natif calcule la largeur au lieu de la figer', () => {
+    expect(mobileTokens).toContain('export function articleCardSize');
+    expect(mobileCard).toContain('articleCardSize(viewport)');
+    expect(mobileCard).not.toMatch(/width:\s*ARTICLE_CARD\.width/);
   });
 });
 

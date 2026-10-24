@@ -7,11 +7,18 @@
  *
  * ── Refonte du 24/10/2026 (planche `docs/design/reel/compare/mockup-v4-24-10.png`)
  * La carte a été redessinée **d'après le modèle mesuré au pixel** (663×303 px sur
- * un écran de 720 ⇒ 359×164 dp, rayon 20 px ⇒ 3 % de la largeur) puis ramenée à
- * 300 de large pour rester « petite » : 300×137, rayon 10 (même 3 %), photo en
- * bande rectangulaire de 90 pleine hauteur, **sans bordure et sans ombre**, et
- * la marque au-dessus du titre (elle manquait). Le cœur est facultatif — il
- * n'existe que si un gestionnaire de favoris est fourni.
+ * un écran de 720 ⇒ 359×164 dp), **sans bordure et sans ombre**, avec la marque
+ * au-dessus du titre. Le cœur est facultatif — il n'existe que si un
+ * gestionnaire de favoris est fourni.
+ *
+ * ── Correction du 24/10/2026 (soir) — la carte était TROP PETITE
+ * Comparaison appareil ↔ modèle : 300×137 contre 664×303 px sur un écran de
+ * 720 (332×151,5 dp). Sur un écran de 360 dp, notre carte mesurait 300 dp au
+ * lieu de 332 : 10 % de moins, et surtout elle flottait avec 90 dp de vide à
+ * droite au lieu d'aller d'un bord à l'autre. La carte n'a donc plus de largeur
+ * figée : `articleCardSize(largeurEcran)` la fait **affleurer à 12 dp du bord et
+ * montrer 9 dp de la suivante** — exactement les cotes du modèle. À 360 dp on
+ * retrouve au pixel les 332×151,5 du modèle (voir `articleCardSize`).
  *
  * ── Source des nombres ───────────────────────────────────────────────────────
  * Les cotes vivent aussi dans `docs/design/reel/assets/card.css` (la maquette
@@ -26,26 +33,60 @@
  */
 
 export const ARTICLE_CARD = {
-  /** Largeur de référence dans une visionneuse de 390 px (marges 13 + 13). */
-  width: 300,
-  /** Hauteur : mêmes proportions que le modèle (663×303 px ⇒ 0.457). */
-  height: 137,
-  radius: 10,
+  /** Largeur canonique à 390 dp : 390 − 12 (marge) − 9 (amorce) − 7 (écart). */
+  width: 362,
+  /** Hauteur : proportions exactes du modèle (664×303 px ⇒ 0.4563). */
+  height: 165,
+  radius: 11,
   /** Aucun rembourrage : la photo occupe toute la hauteur, bord à bord. */
   padding: 0,
-  /** Écart photo → texte (colonne de texte). */
-  gap: 12,
-  /** Largeur de la bande photo : 30 % de la carte, pleine hauteur. */
-  thumb: 90,
+  /** Écart photo → texte : 17 px sur le modèle (≈ 8,5 dp), ramené à l'échelle 8. */
+  gap: 8,
+  /** Largeur de la bande photo : 200 px sur 664 ⇒ 30 %, pleine hauteur. */
+  thumb: 109,
   /** Rectangle franc : le rayon de la carte suffit à arrondir les angles. */
   thumbRadius: 0,
-  brandSize: 13,
-  titleSize: 12,
+  brandSize: 14,
+  titleSize: 13,
   /** Deux lignes puis ellipse. */
   titleLines: 2,
-  priceSize: 12,
-  favourite: 21,
+  priceSize: 14,
+  favourite: 22,
+  /** Marge au bord de l'écran : 24 px sur le modèle (12 dp). */
+  inset: 12,
+  /** Amorce de la carte suivante, au bord opposé (19 px sur le modèle). */
+  preview: 9,
+  /** Écart entre deux cartes (13 px sur le modèle). */
+  cardGap: 7,
+  /** Plafond : sur tablette la carte ne s'étire pas en bannière. */
+  maxWidth: 420,
 } as const;
+
+/**
+ * Largeur de la carte pour un écran donné.
+ *
+ * Le modèle (application de référence, capture 720 px) : 24 px de marge, une
+ * carte de 664 px, 13 px d'écart, puis 19 px de la carte suivante. En dp cela
+ * donne 12 + carte + 7 + 9 = largeur de l'écran ⇒ carte = écran − 28.
+ * Sur un écran de 360 dp : 332 dp — la mesure du modèle, au pixel près.
+ *
+ * Bornes : jamais moins de 240 (petit téléphone), jamais plus de `maxWidth`.
+ */
+export function articleCardWidth(viewportWidth: number): number {
+  const raw = Math.round(viewportWidth - ARTICLE_CARD.inset - ARTICLE_CARD.preview - ARTICLE_CARD.cardGap);
+  return Math.max(240, Math.min(ARTICLE_CARD.maxWidth, raw));
+}
+
+/** Cotes dérivées : hauteur et bande photo gardent les proportions du modèle. */
+export function articleCardSize(viewportWidth: number): { width: number; height: number; thumb: number } {
+  const width = articleCardWidth(viewportWidth);
+  const scale = width / ARTICLE_CARD.width;
+  return {
+    width,
+    height: Math.round(ARTICLE_CARD.height * scale),
+    thumb: Math.round(ARTICLE_CARD.thumb * scale),
+  };
+}
 
 export interface ArticleCardFacts {
   name?: string | null;
