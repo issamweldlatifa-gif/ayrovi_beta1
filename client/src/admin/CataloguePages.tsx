@@ -446,7 +446,14 @@ const ProductDetail: React.FC<{ product: any; can: (resource: string, action: st
           <Field label="Texte alternatif" error={byField.alt_text}><input value={mediaDraft.alt_text} onChange={(event) => setMediaDraft({ ...mediaDraft, alt_text: event.target.value })} /></Field>
           <Field label="Variante liée" error={byField.variant_id}><Select value={mediaDraft.variant_id} onChange={(event) => setMediaDraft({ ...mediaDraft, variant_id: event.target.value })} options={[{ value: '', label: 'produit entier' }, ...rows0(product.variants).map((row: any) => ({ value: row.id, label: row.sku }))]} /></Field>
           <Field label="Ordre" error={byField.sort_order}><input type="number" min={0} max={999} value={mediaDraft.sort_order} onChange={(event) => setMediaDraft({ ...mediaDraft, sort_order: event.target.value })} /></Field>
-          <Field label="Image" full><ImageUploader value={mediaDraft.url} onChange={(value) => setMediaDraft({ ...mediaDraft, url: value })} label="Téléverser (publié)" /></Field>
+          <Field label={mediaDraft.media_type === 'VIDEO' ? 'Vidéo' : 'Image'} full>
+            <ImageUploader
+              value={mediaDraft.url}
+              onChange={(value) => setMediaDraft({ ...mediaDraft, url: value })}
+              media={mediaDraft.media_type === 'VIDEO' ? 'video' : 'image'}
+              label={mediaDraft.media_type === 'VIDEO' ? 'Téléverser une vidéo (10 Mo max)' : 'Téléverser une image (4 Mo max)'}
+            />
+          </Field>
           <Button type="submit" busy={busy}>Attacher le média</Button>
         </Form>
       )}

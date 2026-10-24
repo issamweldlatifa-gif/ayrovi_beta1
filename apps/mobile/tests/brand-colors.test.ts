@@ -436,7 +436,9 @@ describe('violet au minimum : le violet plein est réservé à l’action princi
       'app/aywebs/browser.tsx': 1,         // ajouter au panier, sur la page de la boutique (AYWEBs)
       'app/checkout.tsx': 1,               // valider la commande
       'app/forgot.tsx': 1,                 // envoyer le lien de réinitialisation
-      'app/product/[id].tsx': 1,           // ajouter au panier
+      // `app/product/[id].tsx` a QUITTÉ la liste le 24/10/2026 : le propriétaire
+      // a choisi un CTA **noir** sur la grande fiche (tone="solid"). Le violet
+      // reste réservé au panier, au paiement, à la connexion et à AYWEBs.
       'app/sign-in.tsx': 6,                // une validation par étape de connexion
       'src/features/lens/LensProductView.tsx': 2, // ajouter au panier · voir le panier
       'src/features/lens/ocerex/OcerexFlow.tsx': 1, // confirmer la commande OCEREX

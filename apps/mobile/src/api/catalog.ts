@@ -46,6 +46,8 @@ export interface SheetDimension {
 
 export interface ProductSheet {
   images: string[];
+  /** Vidéos du produit (`catalogue_media` VIDEO). Absent/vide = aucune vidéo. */
+  videos?: string[];
   dimensions: SheetDimension[];
   variants: SheetVariant[];
   stock: { tracked: boolean; quantity: number | null; status: SheetStockStatus };
@@ -77,6 +79,23 @@ export interface CatalogProduct {
   arrivalIds: string[];
   /** تفاصيل الورقة الكبيرة — `null` في لائحة المنتوجات (الخادم ما يبعتهاش في اللائحة). */
   sheet: ProductSheet | null;
+  /** جذر شجرة الأقسام (العائلة): « ملابس نساء »، « إلكترونيك »… `null` = بلا قسم. */
+  family: CatalogFamily | null;
+  /** الخصائص المعلنة في CRM — المرتّبة، وبلا قيم فارغة. */
+  attributes: CatalogAttribute[];
+}
+
+export interface CatalogFamily {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+export interface CatalogAttribute {
+  key: string;
+  label: string;
+  type: string;
+  value: string;
 }
 
 /**
@@ -151,6 +170,7 @@ function parseSheet(payload: unknown): ProductSheet | null {
   }
   return {
     images: list(row.images),
+    videos: list(row.videos),
     dimensions,
     variants,
     stock: {
@@ -192,7 +212,35 @@ function parseProduct(payload: unknown): CatalogProduct | null {
     stockStatus: text(row.stockStatus),
     arrivalIds: list(row.arrivalIds),
     sheet: parseSheet(row.sheet),
+    family: parseFamily(row.family),
+    attributes: parseAttributes(row.attributes),
   };
+}
+
+/** Famille = racine de l'arbre, décidée par la donnée du CRM (jamais en dur). */
+function parseFamily(payload: unknown): CatalogFamily | null {
+  if (!payload || typeof payload !== 'object') return null;
+  const row = obj(payload);
+  const id = text(row.id);
+  const name = text(row.name);
+  if (!id || !name) return null;
+  return { id, name, slug: text(row.slug) };
+}
+
+/**
+ * Attributs déclarés : un attribut sans valeur **disparaît** (aucun « — »).
+ * Le libellé vient du CRM ; s'il manque, la clé reste lisible.
+ */
+function parseAttributes(payload: unknown): CatalogAttribute[] {
+  const out: CatalogAttribute[] = [];
+  for (const entry of arr(payload)) {
+    const row = obj(entry);
+    const key = text(row.key);
+    const value = text(row.value).trim();
+    if (!key || !value) continue;
+    out.push({ key, label: text(row.label) || key, type: text(row.type) || 'TEXT', value });
+  }
+  return out;
 }
 
 function parseArrival(payload: unknown): CatalogArrival | null {

@@ -22,8 +22,10 @@ import { UnsafeUrlError } from '../services/safeUrl';
 import { pruneDiskCache } from '../services/diskCache';
 import { LINKED_PRODUCT_JOIN_SELECT, linkedProductFromJoin } from '../services/shoppableContent';
 import { publicProductsByContent, type ContentKind } from '../services/contentProducts';
-import { buildProductSheet } from '../services/productSheet';
+import { buildProductSheet, MAX_SHEET_IMAGES } from '../services/productSheet';
 import { listVariants } from '../catalogue/variants';
+import { listMedia } from '../catalogue/media';
+import { getCategory } from '../catalogue/categories';
 
 function parseJson(value: string, fallback: any = []) {
   try { return JSON.parse(value); } catch { return fallback; }
@@ -75,6 +77,23 @@ function attachContentProducts(db: QatafoDatabase, kind: ContentKind, rows: Arra
     else if (!row.product) row.product = list[0];
   }
   return rows;
+}
+
+/**
+ * Racine de l'arbre : la famille d'un produit, lue dans la donnée.
+ * Boucle bornée (10 niveaux) : un cycle en base ne peut pas figer la requête.
+ */
+function rootCategoryOf(db: QatafoDatabase, categoryId: string | null): { id: string; name: string; slug: string } | null {
+  let current = categoryId;
+  let last: { id: string; name: string; slug: string } | null = null;
+  for (let depth = 0; current && depth < 10; depth += 1) {
+    const category = getCategory(db, current);
+    if (!category) break;
+    last = { id: category.id, name: category.name, slug: category.slug };
+    if (!category.parent_id) break;
+    current = category.parent_id;
+  }
+  return last;
 }
 
 function mapProduct(row: any) {
@@ -544,7 +563,50 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       db.all<any>(`SELECT variant_id, quantity, reorder_point FROM inventory_stock_items
         WHERE product_id=? AND status='ACTIVE'`, row.id),
     );
-    res.json({ success: true, data: { ...mapProduct(row), sheet } });
+
+    /**
+     * ── Media du catalogue (24/10/2026) ─────────────────────────────────────
+     * Avant : la fiche ne recevait que `products.image` (le miroir de la photo
+     * principale) et `additional_images`. Les autres photos et **la vidéo**
+     * vivaient dans `catalogue_media` et n'arrivaient jamais jusqu'à
+     * l'application : on pouvait téléverser dix images et une vidéo depuis le
+     * CRM, la fiche n'en montrait qu'une. Les médias passent maintenant en
+     * premier (la principale d'abord, `listMedia` trie), puis les colonnes
+     * historiques complètent sans doublon.
+     */
+    const media = listMedia(db, row.id);
+    const images = [...new Set([
+      ...media.filter((item) => item.media_type === 'IMAGE').map((item) => item.url),
+      ...sheet.images,
+    ])].slice(0, MAX_SHEET_IMAGES);
+    /** Vidéos de la fiche : une liste, même vide. Le client n'invente rien. */
+    const videos = media.filter((item) => item.media_type === 'VIDEO').map((item) => item.url);
+
+    /**
+     * Attributs déclarés du produit (libellé + type + valeur), dans l'ordre du
+     * CRM. Seuls les attributs **actifs** sortent, et seuls ceux qui ont une
+     * valeur : un attribut vide n'a rien à dire à l'écran (règle : la donnée
+     * absente disparaît).
+     */
+    const attributes = db.all<any>(
+      `SELECT a.attribute_key AS key, a.label, a.data_type AS type, a.sort_order AS sortOrder, v.value_text AS value
+         FROM catalogue_attribute_values v
+         JOIN catalogue_attributes a ON a.attribute_key = v.attribute_key
+        WHERE v.product_id=? AND v.variant_id IS NULL AND a.status='ACTIVE'
+        ORDER BY a.sort_order, a.label`,
+      row.id,
+    )
+      .map((item) => ({ key: String(item.key), label: String(item.label ?? item.key), type: String(item.type ?? 'TEXT'), value: String(item.value ?? '').trim() }))
+      .filter((item) => item.value.length > 0);
+
+    /**
+     * Famille = **racine de l'arbre des catégories**, pas une liste en dur :
+     * « جاكيتات ← ملابس نساء » donne `ملابس نساء`. C'est la donnée du CRM qui
+     * décide, jamais un nom écrit dans le code (exigence du propriétaire).
+     */
+    const family = rootCategoryOf(db, row.category_id ? String(row.category_id) : null);
+
+    res.json({ success: true, data: { ...mapProduct(row), family, attributes, sheet: { ...sheet, images, videos } } });
   });
 
   router.get('/promotions', (_req, res) => {
