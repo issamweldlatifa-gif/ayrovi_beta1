@@ -34,7 +34,7 @@ export function parseLinkedProduct(value: unknown): LinkedProduct | null {
   return {
     id,
     name,
-    brand: str(entry.brand),
+    brand: str(entry.brand).trim(),
     image: str(entry.image),
     price,
     currency: str(entry.currency) || 'TND',

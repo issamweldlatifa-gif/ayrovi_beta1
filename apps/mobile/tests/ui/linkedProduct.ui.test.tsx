@@ -96,8 +96,11 @@ describe('parseLinkedProduct — ce que l’application accepte', () => {
   });
 
   it('produit complet ⇒ objet typé, devise par défaut TND, disponible par défaut', () => {
+    // La marque fait partie de la carte (elle s'affiche au-dessus du titre) :
+    // inconnue, elle vaut '' — et la ligne disparaîtra côté rendu.
     expect(parseLinkedProduct({ id: 'p', name: 'X', price: '12.5', image: '/i.jpg' })).toEqual({
-      id: 'p', name: 'X', image: '/i.jpg', price: 12.5, currency: 'TND', stockStatus: 'AVAILABLE', available: true,
+      id: 'p', name: 'X', brand: '', image: '/i.jpg', price: 12.5, currency: 'TND', stockStatus: 'AVAILABLE', available: true,
     });
+    expect(parseLinkedProduct({ id: 'p', name: 'X', price: 12.5, brand: ' Stradivarius ' })?.brand).toBe('Stradivarius');
   });
 });
