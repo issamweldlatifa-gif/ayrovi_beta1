@@ -27,6 +27,8 @@ export interface CatalogueAttributeRow {
   data_type: string;
   applies_to: string;
   options: string[];
+  /** Slugs des familles concernées. `[]` = toutes. */
+  families: string[];
   status: string;
   sort_order: number;
 }
@@ -50,10 +52,15 @@ function mapAttribute(row: Record<string, unknown>): CatalogueAttributeRow {
     const parsed = JSON.parse(String(row.options ?? '[]'));
     if (Array.isArray(parsed)) options = parsed.map((entry) => String(entry)).slice(0, 100);
   } catch { options = []; }
+  let families: string[] = [];
+  try {
+    const parsed = JSON.parse(String(row.families ?? '[]'));
+    if (Array.isArray(parsed)) families = parsed.map((entry) => String(entry)).filter((entry) => /^[a-z][a-z0-9-]{0,39}$/.test(entry));
+  } catch { families = []; }
   return {
     id: String(row.id), attribute_key: String(row.attribute_key), label: String(row.label),
     data_type: String(row.data_type ?? 'TEXT'), applies_to: String(row.applies_to ?? 'variant'),
-    options, status: String(row.status ?? 'ACTIVE'), sort_order: Number(row.sort_order ?? 100),
+    options, families, status: String(row.status ?? 'ACTIVE'), sort_order: Number(row.sort_order ?? 100),
   };
 }
 
@@ -193,11 +200,18 @@ export function createAttribute(db: QatafoDatabase, rawInput: unknown, actor: Ca
   if (dataType === 'SELECT' && options.length < 1) {
     return { ok: false, code: CATALOGUE_ERRORS.VALIDATION, message: 'Un attribut SELECT doit déclarer au moins une option.', details: [{ field: 'options', reason: 'REQUIRED' }] };
   }
+  /**
+   * Portée par famille : des slugs de racines d'arbre (« femme », « chaussures »).
+   * Vide = l'attribut vaut pour toutes les familles (comportement d'avant).
+   */
+  const families = Array.isArray(input.families)
+    ? [...new Set(input.families.map((entry) => String(entry).trim().toLowerCase()).filter((entry) => /^[a-z][a-z0-9-]{0,39}$/.test(entry)))].slice(0, 20)
+    : [];
   const sort = Number.isFinite(Number(input.sort_order)) ? Math.min(9999, Math.max(0, Math.trunc(Number(input.sort_order)))) : 100;
   const now = new Date().toISOString();
   const id = `attr_${randomUUID()}`;
-  db.run(`INSERT INTO catalogue_attributes (id,attribute_key,label,data_type,applies_to,options,status,sort_order,created_at,updated_at)
-    VALUES (?,?,?,?,?,?,'ACTIVE',?,?,?)`, id, normalized, label.value, dataType, appliesTo, JSON.stringify(options), sort, now, now);
+  db.run(`INSERT INTO catalogue_attributes (id,attribute_key,label,data_type,applies_to,options,families,status,sort_order,created_at,updated_at)
+    VALUES (?,?,?,?,?,?,?,'ACTIVE',?,?,?)`, id, normalized, label.value, dataType, appliesTo, JSON.stringify(options), JSON.stringify(families), sort, now, now);
   const created = mapAttribute(db.get<Record<string, unknown>>('SELECT * FROM catalogue_attributes WHERE id=?', id)!);
   auditCatalogue(db, {
     actor, action: 'CREATE', resourceType: 'product_attribute', resourceId: id,

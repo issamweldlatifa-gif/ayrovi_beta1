@@ -159,7 +159,34 @@ export const CatalogueProductsPage: React.FC<{ scope?: 'catalogue' | 'content' }
   const rows = rowsOf(list.data);
   const pagination = list.data?.pagination || { page: 1, total: rows.length, totalPages: 1 };
   const writable = can('product', 'create') || can('product', 'update');
-  const productAttributes = useMemo(() => rows0(declared.data).filter((entry) => entry.applies_to === 'product'), [declared.data]);
+  /**
+   * Famille du produit = la RACINE de son arbre de catégories (« جاكيتات » →
+   * « ملابس نساء »). C'est la donnée du CRM qui décide : aucun nom n'est écrit
+   * ici. Sans catégorie choisie, on montre tout (on ne cache jamais un champ
+   * par ignorance).
+   */
+  const familySlug = useMemo(() => {
+    const byId = new Map<string, any>(rows0(categories.data).map((row: any) => [String(row.id), row]));
+    let current = byId.get(String(draft.category_id || ''));
+    let root: any = null;
+    for (let depth = 0; current && depth < 12; depth += 1) {
+      root = current;
+      if (!current.parent_id) break;
+      current = byId.get(String(current.parent_id));
+    }
+    return String(root?.slug ?? '');
+  }, [categories.data, draft.category_id]);
+
+  /**
+   * Champs affichés = attributs `product` qui visent cette famille (ou toutes).
+   * Un attribut d'électronique ne s'affiche donc jamais sur une robe.
+   */
+  const productAttributes = useMemo(
+    () => rows0(declared.data).filter((entry) => entry.applies_to === 'product'
+      && (!Array.isArray(entry.families) || entry.families.length === 0
+        || !familySlug || entry.families.includes(familySlug))),
+    [declared.data, familySlug],
+  );
 
   const openCreate = () => {
     setDraft(emptyDraft); setAttributes({}); setFormError(''); setByField({}); setEditor({ mode: 'create' });
@@ -320,6 +347,24 @@ export const CatalogueProductsPage: React.FC<{ scope?: 'catalogue' | 'content' }
         <Field label="Image principale" full hint="Publique uniquement: un document privé est refusé par la politique média.">
           <ImageUploader value={draft.image} onChange={(value) => setDraft({ ...draft, image: value })} />
         </Field>
+        {rows0(declared.data).length === 0 && can('product_attribute', 'create') && (
+          <p className="admin-block-small">
+            Aucun attribut déclaré.{' '}
+            <Button
+              variant="ghost"
+              onClick={async () => {
+                try {
+                  const report = await adminApi<any>('/catalogue/attributes/seed', { method: 'POST', body: JSON.stringify({}) });
+                  const data = report?.data ?? {};
+                  setToast({ message: `Matrice installée : ${Number(data.inserted ?? 0)} attribut(s) ajouté(s), ${Number(data.skipped ?? 0)} déjà présent(s).`, tone: 'success' });
+                  declared.reload();
+                } catch (e: any) { setToast({ message: e?.message || 'Installation refusée.', tone: 'error' }); }
+              }}
+            >
+              Installer la matrice d’attributs
+            </Button>
+          </p>
+        )}
         {productAttributes.length > 0 && (
           <div className="admin-form-row">
             {productAttributes.map((attribute: any) => (

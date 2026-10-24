@@ -186,6 +186,8 @@ export interface CatalogueAttributeInput {
   target?: unknown;
   sort_order?: unknown;
   options?: unknown;
+  /** Slugs de familles (racines d'arbre) où l'attribut a du sens. Vide = toutes. */
+  families?: unknown;
   status?: unknown;
 }
 

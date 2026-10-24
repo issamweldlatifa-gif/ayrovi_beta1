@@ -133,6 +133,11 @@ export function ensureCatalogueSchema(db: QatafoDatabase): CatalogueIndexReport 
     if (hasColumn(db, 'products', column)) continue;
     db.run(`ALTER TABLE products ADD COLUMN ${column} ${ddl}`);
   }
+  // Portée d'un attribut : les slugs des familles (racines d'arbre) où il a du
+  // sens. `[]` = partout (rétrocompatible : aucun attribut existant ne change).
+  if (!hasColumn(db, 'catalogue_attributes', 'families')) {
+    db.run("ALTER TABLE catalogue_attributes ADD COLUMN families TEXT NOT NULL DEFAULT '[]'");
+  }
   for (const [column, ddl] of BRAND_COLUMN_ADDITIONS) {
     if (hasColumn(db, 'brands', column)) continue;
     db.run(`ALTER TABLE brands ADD COLUMN ${column} ${ddl}`);

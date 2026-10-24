@@ -14,6 +14,7 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { INTERNATIONAL_CATEGORIES, type SeedNode } from '../src/catalogue/seedCategories';
+import { ATTRIBUTE_MATRIX } from '../src/catalogue/seedAttributes';
 
 const at = (rel: string) => readFileSync(resolve(process.cwd(), rel), 'utf8');
 
@@ -46,6 +47,31 @@ describe('catégories internationales — l’arbre', () => {
       expect(entry.node.name.trim(), entry.node.slug).not.toBe('');
       expect(entry.depth).toBeLessThanOrEqual(1); // familles → rayons, pas plus
     }
+  });
+
+  it('la matrice d’attributs ne vise que des familles qui existent', () => {
+    const families = new Set(INTERNATIONAL_CATEGORIES.map((node) => node.slug));
+    for (const attribute of ATTRIBUTE_MATRIX) {
+      for (const family of attribute.families) expect(families.has(family), `${attribute.key} → ${family}`).toBe(true);
+    }
+  });
+
+  it('la matrice est propre : clés uniques, SELECT avec options, libellés non vides', () => {
+    const keys = ATTRIBUTE_MATRIX.map((attribute) => attribute.key);
+    expect(new Set(keys).size).toBe(keys.length);
+    for (const attribute of ATTRIBUTE_MATRIX) {
+      expect(attribute.label.trim(), attribute.key).not.toBe('');
+      expect(attribute.families.length, attribute.key).toBeGreaterThan(0);
+      if (attribute.dataType === 'SELECT') expect((attribute.options ?? []).length, attribute.key).toBeGreaterThan(0);
+    }
+    // Les deux attributs « capacitaires » demandés par le propriétaire.
+    expect(keys).toContain('memory_storage');
+    expect(keys).toContain('power_capacity');
+  });
+
+  it('la matrice s’installe par une route explicite, jamais au démarrage', () => {
+    const routes = at('src/catalogue/routes.ts');
+    expect(routes).toContain("router.post('/attributes/seed'");
   });
 
   it('l’arbre est une donnée : il ne dépend d’aucun nom écrit dans l’écran', () => {
