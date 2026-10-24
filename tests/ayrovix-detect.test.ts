@@ -3,7 +3,16 @@ import path from 'node:path';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import request from 'supertest';
 import sharp from 'sharp';
-import { app } from '../src/server';
+import express from 'express';
+import { createAyrovixRouter } from '../src/ayrovix/routes';
+import { SmartLinkScraper } from '../src/scraper/scraper';
+import type { QatafoDatabase } from '../src/db/database';
+
+/* La route /detect ne touche pas la base. Un routeur isolé évite d'initialiser
+   le serveur global (et better-sqlite3) pour tester le contrat de découverte. */
+const app = express();
+app.use(express.json());
+app.use('/api/ayrovix', createAyrovixRouter({} as QatafoDatabase, new SmartLinkScraper()));
 
 /**
  * Z Lens mobile — `/api/ayrovix/detect` : ce que la photo fait RESSEMBLER.
@@ -61,18 +70,21 @@ function stubSerpApiVisual(visual: unknown, options: { fail?: 'timeout' } = {}) 
 
 const VISUAL_MATCHES = [
   {
-    title: 'Sweat à capuche jaune Adidas — 39.90 EUR',
-    link: 'https://shop.test/sweat-jaune',
-    thumbnail: 'https://cdn.test/sweat.jpg',
-    source: 'Shop Test',
-    price: { extracted_value: 39.9, currency: 'EUR' },
+    title: 'Baskets blanches Nike',
+    link: 'https://www.zalando.fr/baskets-homme-AB1234.html',
+    thumbnail: 'https://cdn.example.com/baskets.jpg',
+    source: 'Zalando',
   },
   {
-    title: 'Baskets blanches Nike',
-    link: 'https://shop.test/baskets-blanches',
-    thumbnail: 'https://cdn.test/baskets.jpg',
-    source: 'Shop Test',
+    title: 'Sweat à capuche jaune Adidas — 39.90 EUR',
+    link: 'https://www.amazon.com/dp/B0ABC12345?th=1&psc=1&utm_source=lens',
+    thumbnail: 'https://cdn.example.com/sweat.jpg',
+    source: 'Amazon',
+    price: { extracted_value: 39.9, currency: 'EUR' },
   },
+  { title: 'Publication sneakers', link: 'https://www.instagram.com/p/ABC123/', thumbnail: 'https://cdn.example.com/social.jpg' },
+  { title: 'Recherche Nike', link: 'https://www.amazon.com/s?k=nike', thumbnail: 'https://cdn.example.com/search.jpg' },
+  { title: 'Collection homme', link: 'https://www.zalando.fr/collections/homme/', thumbnail: 'https://cdn.example.com/category.jpg' },
 ];
 
 describe('Z Lens — correspondances visuelles (/api/ayrovix/detect)', () => {
@@ -107,7 +119,7 @@ describe('Z Lens — correspondances visuelles (/api/ayrovix/detect)', () => {
     }
   });
 
-  test('renvoie les correspondances visuelles (nom, vignette, lien, marchand) — aucun prix, aucune boîte', async () => {
+  test('ne renvoie que les fiches PRODUCT admises — aucun prix, aucune boîte, aucune lecture marchande', async () => {
     const previous = process.env.SERPAPI_KEY;
     process.env.SERPAPI_KEY = 'test-serpapi-detect';
     const fetchMock = stubSerpApiVisual(VISUAL_MATCHES);
@@ -123,14 +135,28 @@ describe('Z Lens — correspondances visuelles (/api/ayrovix/detect)', () => {
       // SerpApi ne rend pas de boîtes : le cadre reste manuel.
       expect(products).toEqual([]);
       expect(matches).toEqual([
-        { name: 'Sweat à capuche jaune Adidas', image: 'https://cdn.test/sweat.jpg', url: 'https://shop.test/sweat-jaune', source: 'Shop Test' },
-        { name: 'Baskets blanches Nike', image: 'https://cdn.test/baskets.jpg', url: 'https://shop.test/baskets-blanches', source: 'Shop Test' },
+        {
+          name: 'Baskets blanches Nike', image: 'https://cdn.example.com/baskets.jpg',
+          url: 'https://www.zalando.fr/baskets-homme-AB1234.html', source: 'Zalando',
+        },
+        {
+          name: 'Sweat à capuche jaune Adidas', image: 'https://cdn.example.com/sweat.jpg',
+          url: 'https://www.amazon.com/dp/B0ABC12345?th=1&psc=1', source: 'Amazon',
+        },
       ]);
-      // Jamais de prix : il vient de la page marchande, pas de la photo.
+      expect(response.body.data.discovery).toEqual({ mode: 'PRODUCT_LINK_ADMISSION', merchantPagesRead: 0 });
+      expect(response.body.data.excluded.count).toBe(3);
+      expect(response.body.data.excluded.reasons).toMatchObject({
+        SOCIAL_RESULT_NOT_PURCHASABLE: 1,
+        AYWEBS_SEARCH: 1,
+        NON_PRODUCT_CATEGORY: 1,
+      });
+      // Jamais de prix : il vient de la page marchande ouverte, pas de la photo.
       expect(JSON.stringify(matches)).not.toMatch(/price|39\.9/);
-      // Un seul fournisseur : SerpApi. Jamais Anthropic.
+      // Seul SerpApi est contacté. Aucun lien de résultat n'est aspiré en lot.
       const urls = fetchMock.mock.calls.map(([url]) => String(url));
-      expect(urls.some((url) => url.includes('serpapi.com'))).toBe(true);
+      expect(urls.length).toBeGreaterThan(0);
+      expect(urls.every((url) => url.includes('serpapi.com'))).toBe(true);
       expect(urls.some((url) => url.includes('anthropic.com'))).toBe(false);
     } finally {
       restoreEnv('SERPAPI_KEY', previous);

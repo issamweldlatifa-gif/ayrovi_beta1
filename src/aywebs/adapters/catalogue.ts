@@ -60,7 +60,25 @@ export class CatalogueStoreAdapter extends BaseStoreAdapter {
    * l'adaptateur : l'écran, le panier et les preuves parlent de la boutique.
    */
   classifyPage(url: string | URL): AyWebsPageClassification {
-    const classification = super.classifyPage(url);
+    let classification = super.classifyPage(url);
+    /* Un slug de fiche peut contenir « baskets », « cart » ou « order » sans
+       être un tunnel de commande (cas courant : baskets-homme chez Zalando).
+       Les gardes LOGIN/CAPTCHA restent prioritaires ; pour le seul faux indice
+       CHECKOUT, le motif de fiche déclaré par le registre tranche. */
+    if (classification.pageType === 'CHECKOUT') {
+      try {
+        const parsed = typeof url === 'string' ? new URL(url) : url;
+        if (this.canHandle(parsed) && this.isProductPage(parsed)) {
+          classification = {
+            pageType: 'PRODUCT',
+            storeId: (this.store?.id ?? null) as AyWebsPageClassification['storeId'],
+            isProductPage: true,
+            reason: 'motif_fiche_produit_marchand',
+            customerActionRequired: 'NONE',
+          };
+        }
+      } catch { /* L'adaptateur de base a déjà classé l'URL invalide. */ }
+    }
     const storeId = classification.storeId ? this.store?.id ?? null : null;
     return { ...classification, storeId: storeId as AyWebsPageClassification['storeId'] };
   }

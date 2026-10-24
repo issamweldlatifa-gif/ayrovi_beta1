@@ -26,6 +26,22 @@ describe('Lens — parsing (contrat du site)', () => {
     expect(parsed.priceTnd).toBeNull();
   });
 
+  it('conserve le statut du lien PRODUCT sans le confondre avec une preuve de prix', () => {
+    const parsed = parseCandidate({
+      ...candidate,
+      productPageType: 'PRODUCT',
+      productLinkStatus: 'VERIFIED',
+      productLinkVerification: 'PROVIDER_PRODUCT_EVIDENCE_AND_REGISTERED_PRODUCT_URL',
+      discoveryDataStatus: 'TITLE_IMAGE',
+      priceVerificationStatus: 'PENDING_MANUAL',
+    });
+    expect(parsed.productPageType).toBe('PRODUCT');
+    expect(parsed.productLinkStatus).toBe('VERIFIED');
+    expect(parsed.discoveryDataStatus).toBe('TITLE_IMAGE');
+    expect(parsed.priceVerificationStatus).toBe('PENDING_MANUAL');
+    expect(parsed.availability).toBe('unknown');
+  });
+
   it('lit sans perte le prix barré, la promo et les preuves de source', () => {
     const parsed = parseCandidate({
       ...candidate,

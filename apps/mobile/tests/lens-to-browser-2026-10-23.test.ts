@@ -16,6 +16,7 @@ import { describe, expect, it } from 'vitest';
 
 import { lensOpenDecision } from '@/features/lens/lensOpen';
 import { productEntryTarget } from '@/features/aywebs/storeEntry';
+import { parseCandidate } from '@/api/lens';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const read = (relative: string) => readFileSync(path.join(here, '..', relative), 'utf8');
@@ -31,6 +32,18 @@ describe('lensOpenDecision — vente externe = navigateur, vente interne = fiche
     expect(decision.target.params.storeName).toBe('Zalando');
     /* Aucun droit de capture promis AVANT le verdict du serveur. */
     expect(decision.target.params.capture).toBe('0');
+  });
+
+  it('le DTO PRODUCT parsé garde l’URL et ses identifiants de variante jusqu’à AYWEBS', () => {
+    const url = 'https://www.temu.com/goods.html?goods_id=123456789&sku_id=98765';
+    const card = parseCandidate({
+      id: 'lens-product', kind: 'external', title: 'Produit', source: 'TEMU', sourceUrl: url,
+      productPageType: 'PRODUCT', productLinkStatus: 'VERIFIED', priceVerificationStatus: 'PENDING_MANUAL',
+    });
+    const decision = lensOpenDecision(card);
+    expect(decision.screen).toBe('browser');
+    if (decision.screen === 'browser') expect(decision.target.params.url).toBe(url);
+    expect(card.priceVerificationStatus).toBe('PENDING_MANUAL');
   });
 
   it('une carte du catalogue ZAYROVI garde la fiche interne', () => {

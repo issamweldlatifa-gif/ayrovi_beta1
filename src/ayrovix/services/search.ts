@@ -1,7 +1,7 @@
 import type { QatafoDatabase } from '../../db/database';
 import type { AyrovixCandidate, AyrovixIdentification } from '../types';
 import { estimateWithDb } from './currency';
-import { filterDisplayableCandidates, filterWithFallback, harvestForScrape, hasValidProductUrl, withDisplayRating } from './candidatePolicy';
+import { filterDisplayableCandidates, filterWithFallback, hasValidProductUrl, withDisplayRating } from './candidatePolicy';
 import { getAyroviAiCore } from '../../ai-core/core';
 import { isAiFeatureEnabled } from '../../ai-core/config';
 import { readLimitedText } from '../../services/safeUrl';
@@ -401,7 +401,9 @@ export async function searchCandidates(
   query: string,
   visualCandidates: AyrovixCandidate[] = [],
 ): Promise<AyrovixCandidate[]> {
-  const catalog = catalogSearch(db, identification, query);
+  // Une recherche visuelle avec des correspondances ne mélange ni catalogue
+  // interne ni recherche texte : seuls ces liens passent ensuite à l'admission.
+  const catalog = visualCandidates.length ? [] : catalogSearch(db, identification, query);
   const deadline = Date.now() + searchBudgetMs();
   // A real visual match is more useful than another text-only web search.
   const external = visualCandidates.length
@@ -418,11 +420,9 @@ export async function searchCandidates(
     };
   });
   const pool = [...catalog, ...rescored].filter((candidate) => candidate.match >= 20);
-  // Lens : chaque marchand reste une carte. groupOffers collapsait Zalando FR/DE/UK
-  // en une fiche — d'où une grille pauvre. Le texte web garde le regroupement.
-  if (visualCandidates.length) {
-    return harvestForScrape(pool, 32);
-  }
+  // Lens : l'admission PRODUCT partagée filtre et déduplique ensuite par URL.
+  // Aucun « harvest » de liens à scraper et aucun regroupement par ressemblance.
+  if (visualCandidates.length) return pool;
   return filterWithFallback(groupOffers(pool), 8);
 }
 

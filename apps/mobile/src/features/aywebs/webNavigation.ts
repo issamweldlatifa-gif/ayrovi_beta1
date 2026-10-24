@@ -22,3 +22,30 @@ export function decideWebNavigation(url: string): WebNavigationDecision {
   if (url === 'about:blank') return 'allow';
   return isWebPageUrl(url) ? 'allow' : 'block';
 }
+
+function documentIdentity(raw: string): string | null {
+  try {
+    const url = new URL(String(raw || '').trim());
+    if (!isWebPageUrl(url.toString())) return null;
+    url.hash = '';
+    url.hostname = url.hostname.toLowerCase();
+    url.pathname = url.pathname.length > 1 ? url.pathname.replace(/\/+$/, '') : url.pathname;
+    url.searchParams.sort();
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Une capture appartient-elle au document actuellement affiché ? Le fragment et
+ * l'ordre des paramètres ne changent pas le document ; le chemin et TOUTES les
+ * valeurs de paramètres restent significatifs. Une capture sans URL, ou venant
+ * d'un autre produit, est refusée au lieu d'ouvrir une feuille mélangée.
+ */
+export function captureMatchesPageUrl(captureUrl: unknown, pageUrl: unknown): boolean {
+  if (typeof captureUrl !== 'string' || typeof pageUrl !== 'string') return false;
+  const capture = documentIdentity(captureUrl);
+  const page = documentIdentity(pageUrl);
+  return Boolean(capture && page && capture === page);
+}

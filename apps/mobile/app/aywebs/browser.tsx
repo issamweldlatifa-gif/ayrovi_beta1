@@ -21,7 +21,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { WebView as RNWebView, type WebViewMessageEvent, type WebViewProps } from 'react-native-webview';
-import { decideWebNavigation, isWebPageUrl } from '@/features/aywebs/webNavigation';
+import { captureMatchesPageUrl, decideWebNavigation, isWebPageUrl } from '@/features/aywebs/webNavigation';
 
 import { AppText, Button, Card, KeyValue } from '@/design/ui';
 import { useTheme } from '@/design/theme';
@@ -133,45 +133,52 @@ export default function AyWebsBrowserScreen() {
   } | null>(null);
   /** تصنيف الخادم للصفحة الحالية: مصدر السماح بالقراءة وبالإضافة. */
   const [pageAnalysis, setPageAnalysis] = useState<AyWebsPageAnalysis | null>(null);
-  const captureAllowed = pageAnalysis
-    ? (pageAnalysis.captureAllowed || pageAnalysis.externalCaptureAllowed)
+  /* Une réponse d'analyse n'a droit de piloter QUE son URL. Pendant une
+     navigation, l'ancienne fiche ne peut donc ni autoriser une injection sur la
+     nouvelle page ni laisser son bouton actif une fraction de seconde. */
+  const currentPageAnalysis = pageAnalysis
+    && captureMatchesPageUrl(pageAnalysis.url, pageUrl)
+    ? pageAnalysis
+    : null;
+  const captureAllowed = currentPageAnalysis
+    ? (currentPageAnalysis.captureAllowed || currentPageAnalysis.externalCaptureAllowed)
     : captureAllowedParam;
   /**
-   * Page qu'on a le DROIT d'essayer de lire (23/10/2026) :
-   *   • fiche reconnue par l'URL (Amazon, SHEIN…) : `productPage === true` ;
-   *   • boutique du catalogue (`productRecognition === 'capture'`) : aucune
-   *     reconnaissance d'URL n'existe, c'est la capture qui prouve la fiche ;
-   *   • boutique du catalogue avec motif déclaré (`'pattern'`) : le motif n'est
-   *     qu'un INDICE — il ne fixe pas de prix, donc le bouton reste actif même
-   *     quand la page courante n'y répond pas.
-   *     Dans les deux cas c'est le SERVEUR qui accepte ou refuse (prix corroboré
-   *     + titre), avec un message explicite en cas de refus.
+   * Le SERVEUR décide page par page :
+   * `product_page` = lecture automatique possible ; `on_demand` = seulement
+   * après appui ; `never` = aucune injection. Sans analyse de l'URL courante,
+   * on ne lit rien et on ne devine pas depuis la page précédente.
    */
-  const browserRead = pageAnalysis?.productRecognition === 'capture'
-    || pageAnalysis?.productRecognition === 'pattern';
-  /**
-   * Le SERVEUR dit si cette page peut être lue (23/10/2026) :
-   *   • `product_page` — motif de fiche vérifié : lecture permise, y compris la
-   *     pré-lecture silencieuse ;
-   *   • `on_demand`    — aucune reconnaissance d'URL possible : on ne lit QUE si
-   *     le client appuie (jamais de script tout seul) ;
-   *   • `never`        — la boutique a un motif, la page n'y répond pas : accueil,
-   *     rayon, recherche. Rien n'est injecté, et l'écran le dit.
-   * Avant, `capturePage` était vrai pour TOUTE page d'une boutique du catalogue :
-   * le lecteur partait sur « Zalando is available in Austria » sans un appui.
-   */
-  const injection = pageAnalysis?.captureInjection;
-  const capturePage = injection
-    ? injection !== 'never'
-    : productPage === true || (browserRead && captureAllowed);
-  /** Pré-lecture silencieuse : SEULEMENT là où le serveur a reconnu une fiche. */
-  const autoPrefetchAllowed = pageAnalysis
-    ? pageAnalysis.captureInjection === 'product_page'
-    : productPage === true;
+  const injection = currentPageAnalysis?.captureInjection;
+  const capturePage = injection ? injection !== 'never' : false;
+  const autoPrefetchAllowed = currentPageAnalysis?.captureInjection === 'product_page';
   /** الورقة: المنتوج + الكابتشر اللي بعثناه (باش الإضافة ما تعاودش تقرا التاجر). */
   const [sheet, setSheet] = useState<{
     product: AyWebsResolvedProduct; options: AyWebsVariantOption[]; capture?: unknown; quoteToken?: string; local: boolean;
   } | null>(null);
+
+  /* Changer de document annule le travail de l'ancien : pré-lecture, appui Add,
+     promesse partagée et feuille ouverte. Aucun résultat du produit A ne peut
+     ainsi compléter le produit B après une navigation ou une redirection. */
+  const previousPageUrl = useRef(pageUrl);
+  useEffect(() => {
+    if (previousPageUrl.current === pageUrl) return;
+    previousPageUrl.current = pageUrl;
+    const reading = prefetch.current;
+    prefetch.current = null;
+    reading?.controller.abort();
+    const addition = addController.current;
+    addController.current = null;
+    addition?.abort();
+    inFlightRead.current = null;
+    setPrefetchReading(false);
+    setBusy(false);
+    setSheet(null);
+    setOutcome(null);
+    setPageAnalysis(null);
+    setProductPage(null);
+    setNote('');
+  }, [pageUrl]);
 
   /**
    * لا نعرض مراحل القراءة ولا عدّادها (23/10/2026): المستعمل ما يهمّوش كيفاش
@@ -192,7 +199,7 @@ export default function AyWebsBrowserScreen() {
     let alive = true;
     analyzeAyWebsPage(pageUrl, { sessionId })
       .then((analysis) => {
-        if (!alive) return;
+        if (!alive || !captureMatchesPageUrl(analysis.url, pageUrlRef.current)) return;
         setPageAnalysis(analysis);
         setProductPage(analysis.isProductPage);
       })
@@ -429,16 +436,30 @@ export default function AyWebsBrowserScreen() {
   }, [captureAllowed, capturePage, endWaiting, fail, locale, requestCapture, sessionId, startWaiting, storeId, pageUrl, t]);
 
   const onMessage = useCallback((event: WebViewMessageEvent) => {
-    stopTimer();
     const pending = waiter.current;
-    waiter.current = null;
     const parsed = parseAyWebsCaptureMessage(event.nativeEvent.data);
     if (!parsed.ok) {
+      stopTimer();
+      waiter.current = null;
       setBusy(false);
       setNote(`${t('aywebs.captureFailed')} — ${parsed.reason}`);
       pending?.reject(new ApiError('malformed', `Capture refusée : ${parsed.reason}`));
       return;
     }
+    /* Le pont peut livrer une réponse déjà partie avant une redirection. Même
+       si une nouvelle lecture attend, elle ne doit JAMAIS recevoir cette
+       ancienne capture : on rejette et le client pourra relire la page courante. */
+    const captureUrl = (parsed.capture as { url?: unknown }).url;
+    if (!captureMatchesPageUrl(captureUrl, pageUrlRef.current)) {
+      stopTimer();
+      waiter.current = null;
+      setBusy(false);
+      setNote(t('aywebs.captureFailed'));
+      pending?.reject(new ApiError('aborted', 'Capture ignorée : la page affichée a changé.'));
+      return;
+    }
+    stopTimer();
+    waiter.current = null;
     setBusy(false);
     pending?.resolve(parsed.capture);
   }, [t]);
@@ -534,6 +555,9 @@ export default function AyWebsBrowserScreen() {
           pageLoadingRef.current = state.loading === true;
           setPageReady(state.loading !== true);
           if (!state.url) return;
+          /* Référence synchrone : une capture déjà dans le pont ne peut plus
+             être rattachée à l'ancien document pendant le prochain rendu. */
+          pageUrlRef.current = state.url;
           setPageUrl(state.url);
           setNav({ canGoBack: state.canGoBack, canGoForward: state.canGoForward, title: state.title ?? '' });
         }}
@@ -614,7 +638,7 @@ export default function AyWebsBrowserScreen() {
             block
             onPress={() => router.push({
               pathname: '/aywebs/request',
-              params: { url: pageUrl, title: nav.title || '', storeId: pageAnalysis?.storeId || storeId },
+              params: { url: pageUrl, title: nav.title || '', storeId: currentPageAnalysis?.storeId || storeId },
             })}
             testID="aywebs-store-request"
           />
@@ -644,7 +668,7 @@ export default function AyWebsBrowserScreen() {
           visible={cartOpen}
           onClose={() => setCartOpen(false)}
           sessionId={sessionId}
-          storeId={pageAnalysis?.storeId || storeId}
+          storeId={currentPageAnalysis?.storeId || storeId}
         />
       ) : null}
       <StoreFavoriteSheet

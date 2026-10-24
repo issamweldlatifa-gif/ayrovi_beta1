@@ -7,8 +7,8 @@ import { buildSearchQuery, AyrovixUnavailableError, fallbackIdentification } fro
 import { catalogSearch, externalProductSearch, groupOffers, scoreCandidate, searchCandidates } from './services/search';
 import { LENS_LIVE_SEARCH_COUNTRIES, SerpApiVisualError, serpApiVisualReady, serpApiVisualSearch } from './services/visualSearch';
 import { recognizeImage } from './services/lensEngine';
-import { enrichCandidatesLiveStock, filterPurchasable, purchaseBlocker, refreshLiveStock } from './services/lensLiveStock';
-import { deduplicateCandidates } from './services/candidateDedup';
+import { refreshLiveStock } from './services/lensLiveStock';
+import { admitLensProductCandidates } from './services/productLinkAdmission';
 import { estimateWithDb } from './services/currency';
 import { extractProductFromUrl, ExtractionFailedError, InvalidUrlError, sanitizeProductUrl } from './services/product';
 import { markAyrovixChosen, recordAyrovixEvent } from './events';
@@ -18,7 +18,7 @@ import type { AyrovixCandidate, AyrovixChannel, AyrovixIdentification, AyrovixPr
 import { InvalidImageError, normalizeUploadedImage } from '../services/imageValidation';
 import { createAyrovixPriceToken, type AyrovixQuoteStatus } from './priceQuote';
 import { listAyrovixHistory, recordAyrovixHistory, type AyrovixHistoryInput } from './history';
-import { filterLenientCandidates, filterWithFallback, isConfirmedOutOfStockCandidate, withDisplayRating } from './services/candidatePolicy';
+import { filterWithFallback, withDisplayRating } from './services/candidatePolicy';
 import { startTrace, mark, endTrace } from './services/lensPerformanceTrace';
 import { armLensDeadline, lensAnalyzeDeadlineMs } from './services/lensDeadline';
 import { warmIsolation } from '../services/imageIsolation';
@@ -138,31 +138,17 @@ function stripPriceLikeText(value: unknown): string {
     .trim();
 }
 /**
- * SerpApi discovery card: keep the title, image and merchant URL visible while
- * Bright Data reads the page. A SerpApi snippet is NOT a current merchant price
- * or stock proof, so hide it until the merchant page supplies it.
+ * Carte de DÉCOUVERTE Lens : titre, image, boutique et URL PRODUCT vérifiée.
+ * Aucun prix/stock de snippet n'est présenté comme un fait marchand. La page
+ * n'est pas lue ici : AYWEBS la lira uniquement après l'ouverture par le client.
  */
 function safeVisualDiscoveryCandidate(candidate: AyrovixCandidate): AyrovixCandidate {
   if (candidate.kind === 'catalog') return candidate;
   const cleanTitle = stripPriceLikeText(candidate.title);
-  const hasPagePrice = Boolean(candidate.sourceRead)
-    && candidate.priceOrigin === 'merchant'
-    && candidate.priceVerificationStatus === 'VERIFIED'
-    && Number.isFinite(candidate.price)
-    && Number(candidate.price) > 0
-    && Boolean(candidate.currency);
-  const safeCopy: AyrovixCandidate = {
+  const hasImage = Boolean(candidate.image || (candidate.images || []).length);
+  return {
     ...candidate,
     title: cleanTitle.length >= 4 ? cleanTitle : 'Produit repéré',
-    // applyLiveStock replaces an index snippet with the merchant description (or null).
-    // Remove embedded amounts even from page copy so the structured verified price is
-    // the only price claim shown by Lens.
-    description: candidate.sourceRead ? (stripPriceLikeText(candidate.description) || null) : null,
-  };
-  if (hasPagePrice) return safeCopy;
-  return {
-    ...safeCopy,
-    // The card needs only title/image/link when the page price is not verified.
     description: null,
     details: [],
     sourceCondition: null,
@@ -173,11 +159,12 @@ function safeVisualDiscoveryCandidate(candidate: AyrovixCandidate): AyrovixCandi
     originalPrice: null,
     originalPriceTnd: null,
     promo: null,
-    priceOrigin: null,
+    priceOrigin: undefined,
     priceVerificationStatus: 'PENDING_MANUAL',
     priceToken: null,
-    // `in_stock` / `out_of_stock` in a visual-search snippet is not live proof.
-    ...(candidate.sourceRead ? {} : { availability: 'unknown' as const }),
+    availability: 'unknown',
+    sourceRead: null,
+    discoveryDataStatus: hasImage ? 'TITLE_IMAGE' : 'TITLE_ONLY',
   };
 }
 
@@ -347,13 +334,13 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       /*
        * UN SEUL CHEMIN (décision produit du 02/10/2026, confirmée le 17/10/2026).
        *
-       *   photo → SerpApi (liens) → pages marchandes (vérité) → calculateur,
-       *   promo, isolation → compréhension produit → écran adapté.
+       *   photo → SerpApi (liens) → admission PRODUCT → petites cartes →
+       *   choix du client → page ouverte dans AYWEBS → capture et calculateur.
        *
        * Tout ce qui DEVINAIT a été retiré de ce chemin : prix lu sur l'image,
        * OCR, requête IA « optimisée », re-scoring IA de pertinence, recherche
-       * web textuelle. SerpApi ne sert qu'à trouver les pages ; ce qui s'affiche
-       * vient des pages.
+       * web textuelle et scraping groupé. SerpApi fournit des indices de
+       * découverte ; seule la page choisie peut ensuite prouver prix et stock.
        *
        * SERPAPI EST L'ENTRÉE — ET LA SEULE (17/10/2026). La vision IA n'est
        * PLUS un dernier recours de la recherche : quand SerpApi ne rend aucun
@@ -438,103 +425,40 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       const effectiveQuery = buildSearchQuery(identification);
       emit('progress', { step: 'searching' });
       const tSearch = Date.now();
-      // Avec des liens SerpApi, `searchCandidates` n'appelle AUCUNE recherche web :
-      // il note, convertit (calculateur ZAYROVI) et regroupe les offres, puis
-      // ajoute le catalogue ZAYROVI (données réelles elles aussi).
-      const rawCandidates = (visualCandidates.length > 0 || identification.confidence >= 0.35) && effectiveQuery
+      // Lens reste un recherche VISUELLE : sans correspondance SerpApi, aucun
+      // fallback texte/IA ne fabrique une autre liste de produits. Avec des
+      // correspondances, `searchCandidates` ne lance aucune seconde recherche.
+      const rawCandidates = visualCandidates.length > 0
         ? await searchCandidates(db, identification, effectiveQuery, visualCandidates)
         : [];
       mark(trace, 'searchCandidatesMs', Date.now() - tSearch);
 
-      const tDedup = Date.now();
-      const candidates = deduplicateCandidates(rawCandidates);
-      mark(trace, 'dedupMs', Date.now() - tDedup);
-
       /*
-       * SerpApi matches are useful BEFORE merchant scraping completes: publish
-       * title + thumbnail + link as soon as they arrive. Never pass its price
-       * snippet/stock hint through as live merchant proof; the card is clearly
-       * marked « price not published » until the page is read.
+       * NOUVELLE ADMISSION LENS — aucune lecture de page avant le choix du
+       * client. Seules les URL PRODUCT corroborées deviennent des cartes ;
+       * CATEGORY/SEARCH/HOME/ARTICLE/SOCIAL/UNKNOWN sont comptées puis exclues.
+       * Le scraper sert ici UNIQUEMENT à réutiliser les adaptateurs AYWEBS,
+       * jamais à visiter les résultats.
        */
-      const discoveryCandidates = filterLenientCandidates(candidates, 24)
-        .filter((candidate) => !isConfirmedOutOfStockCandidate(candidate))
-        .map(safeVisualDiscoveryCandidate);
-      if (stream && !cancelled) {
-        for (const candidate of discoveryCandidates) {
-          emit('card', tokenizedCandidate(candidate));
-        }
-      }
-
-      /*
-       * VÉRITÉ MARCHANDE — Bright Data lit les liens SerpApi en parallèle :
-       * prix du jour, disponibilité, tailles, photos, description. La fiche
-       * visuelle reste affichée si Bright Data ne peut pas lire la page, mais
-       * son prix reste masqué.
-       */
-      const tLiveStock = Date.now();
-      let readyCount = 0;
-      emit('progress', { step: 'reading', done: 0, total: candidates.length });
-      const { candidates: liveCandidates, report: liveStock } = await enrichCandidatesLiveStock(candidates, {
-        fetcher: (url) => scraper.scrapeParsedPage(url).then((result) => result.data),
-        reprice: (price, currency) => {
-          const estimate = estimateWithDb(db, price, currency);
-          return estimate ? { priceTnd: estimate.priceTnd, promo: estimate.promo } : null;
-        },
-        onReady: (candidate) => {
-          readyCount += 1;
-          // Le client a fermé la connexion : plus rien à émettre, et la lecture
-          // des pages suivantes ne sert plus personne.
-          if (cancelled) return;
-          emit('progress', { step: 'reading', done: readyCount, total: candidates.length });
-          // Peut remplacer la carte de découverte déjà émise par SerpApi :
-          // le client met à jour le même lien avec les faits de la page.
-          emit('card', tokenizedCandidate(safeVisualDiscoveryCandidate(candidate)));
-        },
-      });
-      mark(trace, 'liveStockMs', Date.now() - tLiveStock);
-      mark(trace, 'liveStockFetched', liveStock.fetched);
-      mark(trace, 'liveStockCacheHits', liveStock.cacheHits);
-      mark(trace, 'liveStockApplied', liveStock.applied);
-      // Annulé en cours de route : on s'arrête ici (pas de fiche en base, pas
-      // de cache pollutionné, pas de travail inutile).
-      if (cancelled) { endTrace(trace); return; }
-      /*
-       * ACHETABILITÉ ≠ DÉCOUVERTE VISUELLE.
-       * Les fiches avec prix + stock prouvés restent les premières cartes.
-       * Les autres matches SerpApi restent visibles (titre, image, lien), mais
-       * sans prix SerpApi/non vérifié et sans action d'achat. Une rupture
-       * confirmée reste cachée.
-       */
-      const purchasable = filterPurchasable(liveCandidates);
-      mark(trace, 'purchasableKept', purchasable.report.kept);
-      mark(trace, 'purchasableBlocked', purchasable.report.excluded);
-      const purchasableUrls = new Set(purchasable.candidates.map((candidate) => candidate.sourceUrl));
-      const visualFallback = filterLenientCandidates(liveCandidates, 24)
-        .filter((candidate) => !isConfirmedOutOfStockCandidate(candidate))
-        .filter((candidate) => !purchasableUrls.has(candidate.sourceUrl));
-      const excludedReasons: Record<string, number> = { ...purchasable.report.reasons };
-      for (const candidate of visualFallback) {
-        const blocker = purchaseBlocker(candidate);
-        if (!blocker) continue;
-        const remaining = Math.max(0, (excludedReasons[blocker] || 0) - 1);
-        if (remaining) excludedReasons[blocker] = remaining;
-        else delete excludedReasons[blocker];
-      }
-      const excludedCount = Object.values(excludedReasons).reduce((sum, count) => sum + count, 0);
-      mark(trace, 'visualFallbackKept', visualFallback.length);
+      const tAdmission = Date.now();
+      const admission = admitLensProductCandidates(rawCandidates, scraper, 24);
+      const candidates = admission.candidates;
+      const excludedReasons = admission.excluded.reasons;
+      const excludedCount = admission.excluded.count;
+      mark(trace, 'linkAdmissionMs', Date.now() - tAdmission);
+      mark(trace, 'productLinksAccepted', candidates.length);
       mark(trace, 'excludedCount', excludedCount);
       mark(trace, 'excludedReasons', excludedReasons);
-      if (visualFallback.length || excludedCount) {
-        console.info(`[AYROVIX analyze-image] ${visualFallback.length} match(s) SerpApi conservé(s) sans prix non vérifié ; ${excludedCount} fiche(s) masquée(s) : ${JSON.stringify(excludedReasons)}`);
+      if (cancelled) { endTrace(trace); return; }
+      if (excludedCount) {
+        console.info(`[AYROVIX analyze-image] ${candidates.length} lien(s) PRODUCT admis ; ${excludedCount} résultat(s) écarté(s) : ${JSON.stringify(excludedReasons)}`);
       }
+
       const title = [identification.brand, identification.model].filter(Boolean).join(' ')
         || identification.description
         || 'Produit détecté par AYROVIX';
       const query = effectiveQuery;
-      const securedCandidates = [
-        ...purchasable.candidates.map(safeVisualDiscoveryCandidate),
-        ...visualFallback.map(safeVisualDiscoveryCandidate),
-      ].slice(0, 24).map(tokenizedCandidate);
+      const securedCandidates = candidates.map(safeVisualDiscoveryCandidate).map(tokenizedCandidate);
       // Chauffe le cache d'isolation/redimensionnement pendant que le client lit la grille.
       const candidateMedia = [...securedCandidates.map((item) => item.image), ...securedCandidates.flatMap((item) => item.images || [])];
       warmIsolation(candidateMedia, 8);
@@ -569,7 +493,10 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
         eventId,
         // Plus aucun prix ne vient de l'image (02/10/2026) : le champ reste pour le contrat client.
         detectedPrice: null,
-        liveStock: { fetched: liveStock.fetched, cacheHits: liveStock.cacheHits, applied: liveStock.applied, budget: liveStock.budget },
+        discovery: { mode: 'PRODUCT_LINK_ADMISSION', merchantPagesRead: 0 },
+        // Champ historique conservé pour les clients existants : zéro lecture,
+        // car l'ancien enrichissement groupé a été supprimé de ce chemin.
+        liveStock: { fetched: 0, cacheHits: 0, applied: 0, budget: 0 },
         excluded: { count: excludedCount, reasons: excludedReasons },
       };
       if (!isTest) {
@@ -580,8 +507,8 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       mark(trace, 'totalBackendMs', Date.now() - tStart);
       endTrace(trace);
       if (stream) {
-        // Final cards replace the initial SerpApi-only cards by sourceUrl,
-        // attaching Bright Data facts/prices where a page was successfully read.
+        // Une seule version de chaque carte : le lien PRODUCT admis. Aucune
+        // seconde carte « enrichie » n'arrive après un scraping en arrière-plan.
         for (const candidate of securedCandidates) {
           emit('card', candidate);
         }
@@ -648,18 +575,23 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
         .jpeg({ quality: 82, mozjpeg: true })
         .toBuffer({ resolveWithObject: true });
       const matches = await serpApiVisualSearch(small.data, 12, { countries: LENS_LIVE_SEARCH_COUNTRIES });
+      // Le mode Live emprunte le MÊME filtre que l'analyse complète : aucune
+      // correspondance sociale/recherche/inconnue ne peut ouvrir AYWEBS.
+      const admission = admitLensProductCandidates(matches, scraper, 12);
       res.setHeader('Cache-Control', 'no-store');
       return res.json({
         success: true,
         data: {
           // SerpApi ne rend pas d'itinéraires (boîtes) : pas de cadre automatique.
           products: [],
-          matches: matches.map((match) => ({
+          matches: admission.candidates.map((match) => ({
             name: stripPriceLikeText(match.title) || 'Produit repéré',
             image: match.image,
             url: match.sourceUrl,
             source: match.source,
           })),
+          discovery: { mode: 'PRODUCT_LINK_ADMISSION', merchantPagesRead: 0 },
+          excluded: admission.excluded,
           width: normalized.width,
           height: normalized.height,
         },
@@ -923,9 +855,10 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
 
   /*
    * STOCK FRAIS À LA DEMANDE (01/10/2026) — le bouton « vérifier le stock » de la
-   * carte produit. Contrairement à la grille (budget + cache + échéance), cette
-   * lecture ne sert JAMAIS le cache : c'est la preuve fraîche qu'une commande
-   * attend. Elle alimente aussi le contrat de variantes, seul document qui
+   * carte produit. La grille ne déclenche plus aucune lecture : cet endpoint
+   * explicite est le seul appel, et ne sert JAMAIS un ancien cache de grille.
+   * C'est la preuve fraîche qu'une commande attend. Elle alimente aussi le
+   * contrat de variantes, seul document qui
    * autorise « ajouter au panier » (le navigateur ne peut pas l'affirmer).
    */
   router.post('/live-stock', async (req: Request, res: Response) => {

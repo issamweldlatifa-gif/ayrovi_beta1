@@ -67,6 +67,11 @@ export interface AyrovixCandidate {
   sizes: string[];
   source: string;
   sourceUrl: string;
+  /** Admission Lens : type et preuve du LIEN, jamais une preuve de prix/stock. */
+  productPageType?: 'PRODUCT';
+  productLinkStatus?: 'VERIFIED';
+  productLinkVerification?: 'PROVIDER_PRODUCT_EVIDENCE_AND_REGISTERED_PRODUCT_URL';
+  discoveryDataStatus?: 'TITLE_IMAGE_PRICE' | 'TITLE_IMAGE' | 'TITLE_PRICE' | 'TITLE_ONLY';
   image: string;
   images?: string[];
   /** Jeu d'images PAR COULEUR (24/09/2026) — le swatch change toute la galerie. */

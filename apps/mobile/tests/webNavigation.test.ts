@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { decideWebNavigation, isWebPageUrl } from '@/features/aywebs/webNavigation';
+import { captureMatchesPageUrl, decideWebNavigation, isWebPageUrl } from '@/features/aywebs/webNavigation';
 
 describe('AYWEBs WebView navigation', () => {
   it('يبقي صفحات الويب داخل التطبيق', () => {
@@ -25,5 +25,28 @@ describe('AYWEBs WebView navigation', () => {
     expect(isWebPageUrl('https://exa mple.com')).toBe(false);
     expect(isWebPageUrl('ftp://host/file')).toBe(false);
     expect(isWebPageUrl('not a url')).toBe(false);
+  });
+
+  it('capture et page doivent désigner le même document, sans pénaliser hash ou ordre des paramètres', () => {
+    expect(captureMatchesPageUrl(
+      'https://www.amazon.com/dp/B0ABC12345?th=1&psc=1#reviews',
+      'https://www.amazon.com/dp/B0ABC12345?psc=1&th=1',
+    )).toBe(true);
+    expect(captureMatchesPageUrl(
+      'https://www.amazon.com/dp/B0ABC12345/',
+      'https://www.amazon.com/dp/B0ABC12345',
+    )).toBe(true);
+  });
+
+  it('une capture venant d’un autre produit ou d’une autre variante est refusée', () => {
+    expect(captureMatchesPageUrl(
+      'https://www.amazon.com/dp/B0ABC12346',
+      'https://www.amazon.com/dp/B0ABC12345',
+    )).toBe(false);
+    expect(captureMatchesPageUrl(
+      'https://www.amazon.com/dp/B0ABC12345?th=2',
+      'https://www.amazon.com/dp/B0ABC12345?th=1',
+    )).toBe(false);
+    expect(captureMatchesPageUrl('', 'https://www.amazon.com/dp/B0ABC12345')).toBe(false);
   });
 });

@@ -69,7 +69,7 @@ async function responseJson(response: Response, maxBytes = 2_000_000): Promise<a
 }
 
 function serpApiKey(): string | null {
-  // Alias accepté : SERPAPI_KEY (nom canonique) ou SERPAPI_API_KEY (utilisé par productEnrichment / variantAvailability).
+  // Alias accepté : SERPAPI_KEY (nom canonique) ou SERPAPI_API_KEY (déploiements existants).
   return process.env.SERPAPI_KEY?.trim() || process.env.SERPAPI_API_KEY?.trim() || null;
 }
 
@@ -147,11 +147,9 @@ function toCandidates(payload: any, limit: number): AyrovixCandidate[] {
   const rows = Array.isArray(payload?.visual_matches) ? payload.visual_matches
     : Array.isArray(payload?.exact_matches) ? payload.exact_matches
       : [];
-  const priced = collectCandidates(rows, limit, true);
-  const all = collectCandidates(rows, Math.max(limit, 40), false);
-  const seen = new Set(priced.map((item) => item.sourceUrl));
-  const extra = all.filter((item) => !seen.has(item.sourceUrl));
-  return [...priced, ...extra].slice(0, limit);
+  /* Le prix SerpApi n'est pas une preuve marchande et ne doit donc ni servir
+     de filtre ni déplacer un résultat devant une meilleure correspondance. */
+  return collectCandidates(rows, limit);
 }
 
 /** Merge country-specific Lens results by URL and interleave markets so France cannot crowd all others out. */
@@ -190,7 +188,7 @@ function mergeCountryCandidates(groups: AyrovixCandidate[][], limit: number): Ay
   return [...byUrl.values()];
 }
 
-function collectCandidates(rows: any[], limit: number, strict: boolean): AyrovixCandidate[] {
+function collectCandidates(rows: any[], limit: number): AyrovixCandidate[] {
   const seen = new Set<string>();
   const results: AyrovixCandidate[] = [];
   for (const row of rows) {
@@ -200,9 +198,6 @@ function collectCandidates(rows: any[], limit: number, strict: boolean): Ayrovix
     seen.add(sourceUrl);
     const extractedPrice = Number(row?.price?.extracted_value ?? row?.extracted_price);
     const currency = normalizeCurrency(row?.price?.currency ?? row?.currency);
-    if (strict) {
-      if (!Number.isFinite(extractedPrice) || extractedPrice <= 0 || !currency) continue;
-    }
     const merchantRating = Number(row?.rating ?? row?.product_rating);
     const ratingCount = Number(row?.reviews ?? row?.reviews_count);
     const rawImages = [

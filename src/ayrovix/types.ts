@@ -78,6 +78,11 @@ export interface AyrovixCandidate {
   sizes: string[];
   source: string;         // ex. "Collection ZAYROVI", "SHEIN", "Amazon"
   sourceUrl: string;      // page produit (ou page interne)
+  /** Admission Lens : type et preuve du LIEN, jamais une preuve de prix/stock. */
+  productPageType?: 'PRODUCT';
+  productLinkStatus?: 'VERIFIED';
+  productLinkVerification?: 'PROVIDER_PRODUCT_EVIDENCE_AND_REGISTERED_PRODUCT_URL';
+  discoveryDataStatus?: 'TITLE_IMAGE_PRICE' | 'TITLE_IMAGE' | 'TITLE_PRICE' | 'TITLE_ONLY';
   image: string;
   images?: string[];      // miniatures de repli si la source bloque l'image principale
   price: number | null;   // prix source (null si inconnu — jamais deviné)
