@@ -18,6 +18,7 @@ import {
   Button, ConfirmDialog, DataTable, Field, Filters, Form, ImageUploader, Modal,
   PageHeader, Pagination, Search, Select, StatusBadge, Toast,
 } from './components';
+import { ProductCardPreview } from './ProductIntegration';
 
 
 type ToastValue = { message: string; tone: 'success' | 'error' } | null;
@@ -352,7 +353,7 @@ export const CatalogueProductsPage: React.FC<{ scope?: 'catalogue' | 'content' }
 const rows0 = (value: any): any[] => (Array.isArray(value) ? value : []);
 
 const ProductDetail: React.FC<{ product: any; can: (resource: string, action: string) => boolean; onChanged: () => void; onToast: (value: ToastValue) => void }> = ({ product, can, onChanged, onToast }) => {
-  const [tab, setTab] = useState<'variants' | 'media'>('variants');
+  const [tab, setTab] = useState<'variants' | 'media' | 'apercu'>('variants');
   const [variantDraft, setVariantDraft] = useState({ sku: '', barcode: '', size: '', color: '', status: 'ACTIVE', position: '100' });
   const [mediaDraft, setMediaDraft] = useState({ media_type: 'IMAGE', url: '', alt_text: '', sort_order: '0', variant_id: '' });
   const [busy, setBusy] = useState(false);
@@ -388,6 +389,7 @@ const ProductDetail: React.FC<{ product: any; can: (resource: string, action: st
     <div className="admin-tabs">
       <button type="button" className={tab === 'variants' ? 'is-active' : ''} onClick={() => setTab('variants')}>Variantes & SKU ({rows0(product.variants).length})</button>
       <button type="button" className={tab === 'media' ? 'is-active' : ''} onClick={() => setTab('media')}>Médias ({rows0(product.media).length})</button>
+      <button type="button" className={tab === 'apercu' ? 'is-active' : ''} onClick={() => setTab('apercu')}>Aperçu</button>
     </div>
     {error && <p className="admin-field-error">{error}</p>}
 
@@ -421,6 +423,24 @@ const ProductDetail: React.FC<{ product: any; can: (resource: string, action: st
       <p className="admin-block-small">Les valeurs d’attribut d’une variante se lisent ici et s’écrivent par l’API (<code>attributes</code> dans la charge utile de la variante) —
         l’éditeur d’attributs par variante arrive avec l’écran de saisie de stock, pour ne pas saisir deux fois la même chose.</p>
     </>}
+
+    {/* Aperçu : la carte telle que l'application la dessine (mêmes cotes que
+        `shared/articleCard.ts`, contrôlées par un test). Aucune donnée inventée :
+        sans image ou sans prix, la carte le montre. */}
+    {tab === 'apercu' && (
+      <ProductCardPreview
+        kind="publication"
+        product={{
+          id: product.id,
+          name: product.name || '',
+          image: rows0(product.media).find((row: any) => row.media_type === 'IMAGE')?.url || product.image || '',
+          brand: product.brand?.name || product.brand_name || '',
+          price: Number(product.final_price || 0),
+          currency: product.currency || 'TND',
+          stock_status: product.stock_status,
+        } as any}
+      />
+    )}
 
     {tab === 'media' && <>
       <DataTable
@@ -500,6 +520,26 @@ export const CatalogueCategoriesPage: React.FC = () => {
       setToast({ message: 'Catégorie enregistrée.', tone: 'success' });
     } catch (e: any) { const parsed = fieldErrors(e); setFormError(parsed.message); setByField(parsed.byField); } finally { setBusy(false); }
   };
+  /**
+   * Installe l'arbre international (données) : 9 familles et leurs rayons.
+   * Idempotent — les catégories déjà présentes ne sont ni renommées ni déplacées.
+   * Action EXPLICITE : rien n'est créé au démarrage.
+   */
+  const seedInternational = async () => {
+    setBusy(true);
+    try {
+      const report = await adminApi<any>('/catalogue/categories/seed', { method: 'POST', body: JSON.stringify({}) });
+      const data = report?.data ?? {};
+      tree.reload();
+      setToast({
+        message: `Arbre international installé : ${Number(data.inserted ?? 0)} ajoutée(s), ${Number(data.skipped ?? 0)} déjà présente(s)${Number((data.failed || []).length) ? `, ${Number((data.failed || []).length)} refus` : ''}.`,
+        tone: 'success',
+      });
+    } catch (e: any) {
+      setToast({ message: e?.message || 'Installation refusée.', tone: 'error' });
+    } finally { setBusy(false); }
+  };
+
   const archive = async () => {
     if (!archiveFor) return;
     setBusy(true);
@@ -516,7 +556,12 @@ export const CatalogueCategoriesPage: React.FC = () => {
     <CatalogueHeader
       title="Catégories"
       description="Hiérarchie libre: « Homme », « Femme », « Enfant » sont des lignes de cette table, pas du code. Profondeur, ordre et statut sont des données."
-      action={can('category', 'create') ? <Button onClick={() => openCreate()}>Nouvelle catégorie</Button> : null}
+      action={can('category', 'create') ? (
+        <div className="admin-row-actions">
+          <Button variant="secondary" busy={busy} onClick={() => void seedInternational()}>Installer l’arbre international</Button>
+          <Button onClick={() => openCreate()}>Nouvelle catégorie</Button>
+        </div>
+      ) : null}
     />
     <section className="admin-list-card">
       <div className="admin-list-toolbar">

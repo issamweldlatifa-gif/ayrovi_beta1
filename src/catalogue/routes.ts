@@ -29,6 +29,7 @@ import { archiveCategory, categoryTree, createCategory, getCategory, listCategor
 import { BRAND_CATEGORIES, createBrand, getBrand, listBrands, updateBrand } from './brands';
 import { addMedia, listMedia, makeMediaPrimary, removeMedia } from './media';
 import { createAttribute, listAttributes, readAttributes } from './attributes';
+import { seedInternationalCategories } from './seedCategories';
 import { catalogueContext } from './audit';
 import {
   CATALOGUE_ERRORS, CATALOGUE_RESOURCES, MEDIA_TYPES, PRODUCT_STATUSES, VARIANT_STATUSES, CATALOGUE_STATUSES,
@@ -273,6 +274,15 @@ export function createCatalogueRouter(db: QatafoDatabase): Router {
     const result = createCategory(db, req.body, { actor: actorOf(req), context: catalogueContext(db, req) });
     if (!result.ok) return answer(res, result);
     res.status(201).json({ success: true, data: result.value });
+  });
+
+  /**
+   * Installe l'arbre international (données) — action EXPLICITE du back-office,
+   * jamais au démarrage. Idempotent : ce qui existe n'est ni renommé ni déplacé.
+   */
+  router.post('/categories/seed', ...requireCatalogue(db, 'create', 'category'), (req: CatalogueRequest, res) => {
+    const report = seedInternationalCategories(db, { actor: actorOf(req), context: catalogueContext(db, req) });
+    res.status(201).json({ success: true, data: report });
   });
 
   router.put('/categories/:id', ...requireCatalogue(db, 'update', 'category'), (req: CatalogueRequest, res) => {
