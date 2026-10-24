@@ -119,6 +119,66 @@ export function specRows(attributes: CatalogAttribute[] | null | undefined): Spe
   return out;
 }
 
+/**
+ * Sections d'affichage, dans l'ordre du CRM. Le nom vient de la DONNÉE
+ * (`catalogue_attributes.section`) : une famille peut donc ajouter sa propre
+ * section sans qu'on touche à l'écran.
+ */
+export const ATTRIBUTE_SECTION_ORDER = ['identite', 'matiere', 'mesures', 'technique', 'beaute', 'pratique'] as const;
+
+export type AttributeSectionKey =
+  | 'product.section.identite'
+  | 'product.section.matiere'
+  | 'product.section.mesures'
+  | 'product.section.technique'
+  | 'product.section.beaute'
+  | 'product.section.pratique'
+  | 'product.specs';
+
+/** Clé i18n d'une section ; une section inconnue (ou vide) tombe dans « الخصائص ». */
+export function sectionLabelKey(section: string): AttributeSectionKey {
+  switch (String(section ?? '').trim()) {
+    case 'identite': return 'product.section.identite';
+    case 'matiere': return 'product.section.matiere';
+    case 'mesures': return 'product.section.mesures';
+    case 'technique': return 'product.section.technique';
+    case 'beaute': return 'product.section.beaute';
+    case 'pratique': return 'product.section.pratique';
+    default: return 'product.specs';
+  }
+}
+
+export interface SpecGroup {
+  /** Slug de la section (`matiere`, `mesures`…) ou `specs` pour le fourre-tout. */
+  section: string;
+  rows: SpecRow[];
+}
+
+/**
+ * Regroupe les attributs par section, dans l'ordre convenu, et **jette les
+ * sections vides**. L'ordre d'un groupe est celui du CRM (`sortOrder`), pas un
+ * ordre alphabétique : deux attributs voisins à l'écran restent voisins.
+ */
+export function specGroups(attributes: CatalogAttribute[] | null | undefined): SpecGroup[] {
+  const known = new Set<string>(ATTRIBUTE_SECTION_ORDER);
+  const bySection = new Map<string, SpecRow[]>();
+  for (const attribute of attributes ?? []) {
+    const value = String(attribute?.value ?? '').trim();
+    const key = String(attribute?.key ?? '').trim();
+    if (!value || !key) continue;
+    const raw = String(attribute?.section ?? '').trim();
+    const section = known.has(raw) ? raw : 'specs';
+    const rows = bySection.get(section) ?? [];
+    if (rows.some((row) => row.key === key)) continue;
+    rows.push({ key, label: String(attribute?.label ?? '').trim() || key, value });
+    bySection.set(section, rows);
+  }
+  const order = [...ATTRIBUTE_SECTION_ORDER, 'specs'];
+  return order
+    .filter((section) => (bySection.get(section) ?? []).length > 0)
+    .map((section) => ({ section, rows: bySection.get(section)! }));
+}
+
 /** Ce que la fiche a réellement à montrer — une section vide n'existe pas. */
 export interface FicheSections {
   specs: boolean;

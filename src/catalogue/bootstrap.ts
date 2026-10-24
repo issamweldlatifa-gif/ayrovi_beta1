@@ -138,6 +138,12 @@ export function ensureCatalogueSchema(db: QatafoDatabase): CatalogueIndexReport 
   if (!hasColumn(db, 'catalogue_attributes', 'families')) {
     db.run("ALTER TABLE catalogue_attributes ADD COLUMN families TEXT NOT NULL DEFAULT '[]'");
   }
+  // Section d'affichage (« matiere », « mesures », « technique »…) : c'est la
+  // DONNÉE qui décide dans quel accordéon la fiche classe un attribut. `''` =
+  // section fourre-tout, comme avant — aucune ligne existante n'est déplacée.
+  if (!hasColumn(db, 'catalogue_attributes', 'section')) {
+    db.run("ALTER TABLE catalogue_attributes ADD COLUMN section TEXT NOT NULL DEFAULT ''");
+  }
   for (const [column, ddl] of BRAND_COLUMN_ADDITIONS) {
     if (hasColumn(db, 'brands', column)) continue;
     db.run(`ALTER TABLE brands ADD COLUMN ${column} ${ddl}`);

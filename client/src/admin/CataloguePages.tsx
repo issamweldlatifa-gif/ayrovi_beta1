@@ -147,6 +147,14 @@ export const CatalogueProductsPage: React.FC<{ scope?: 'catalogue' | 'content' }
   const [detail, setDetail] = useState<any | null>(null);
   const [archiveFor, setArchiveFor] = useState<any | null>(null);
   const [reason, setReason] = useState('');
+  /**
+   * Gestion des attributs DANS l'écran produit : c'est la même donnée que la
+   * fiche lit, donc c'est ici qu'on la déclare (une seule porte d'entrée CRM).
+   */
+  const [attributesOpen, setAttributesOpen] = useState(false);
+  const [attributeDraft, setAttributeDraft] = useState({ attribute_key: '', label: '', data_type: 'TEXT', options: '', families: [] as string[], section: 'matiere', sort_order: '100' });
+  const [attributeError, setAttributeError] = useState('');
+  const [attributeBusy, setAttributeBusy] = useState(false);
 
   const categories = useCatalogue<any[]>(() => adminApi<any>('/catalogue/categories').then((r) => rowsOf(r)), []);
   const brands = useCatalogue<any[]>(() => adminApi<any>('/catalogue/brands?pageSize=100').then((r) => rowsOf(r)), []);
@@ -264,7 +272,12 @@ export const CatalogueProductsPage: React.FC<{ scope?: 'catalogue' | 'content' }
       description={isContent
         ? 'Produits créés pour un Reel, une Story ou une Publication. Ils n’apparaissent ni dans le catalogue, ni dans la recherche. Ils ne sont visibles qu’à travers un contenu publié.'
         : 'Le produit canonique du catalogue: une ligne, un code PRD-, un slug, ses variantes/SKU, ses médias et ses attributs. Rien n’est dupliqué pour le site ni pour le CRM.'}
-      action={can('product', 'create') ? <Button onClick={openCreate}>{isContent ? 'Nouveau produit temporaire' : 'Nouveau produit'}</Button> : null}
+      action={(
+        <div className="admin-row-actions">
+          <Button variant="secondary" onClick={() => setAttributesOpen(true)}>Champs & attributs</Button>
+          {can('product', 'create') ? <Button onClick={openCreate}>{isContent ? 'Nouveau produit temporaire' : 'Nouveau produit'}</Button> : null}
+        </div>
+      )}
     />
     <section className="admin-list-card">
       <div className="admin-list-toolbar">
@@ -379,6 +392,101 @@ export const CatalogueProductsPage: React.FC<{ scope?: 'catalogue' | 'content' }
       </Form>
     </Modal>
 
+
+    {/* ── Champs & attributs : ce que la fiche affichera, déclaré une fois ── */}
+    <Modal wide open={attributesOpen} title="Champs & attributs" onClose={() => setAttributesOpen(false)}
+      footer={<Button variant="secondary" onClick={() => setAttributesOpen(false)}>Fermer</Button>}
+    >
+      <p className="admin-block-small">
+        Un attribut n’apparaît que sur les familles qu’il vise. Famille = racine de l’arbre des catégories,
+        donc une famille ajoutée dans « Catégories » fonctionne ici sans code.
+      </p>
+      <div className="admin-row-actions" style={{ marginBottom: 10 }}>
+        <Button
+          variant="secondary"
+          busy={attributeBusy}
+          onClick={async () => {
+            setAttributeBusy(true); setAttributeError('');
+            try {
+              const report = await adminApi<any>('/catalogue/attributes/seed', { method: 'POST', body: JSON.stringify({}) });
+              const data = report?.data ?? {};
+              setToast({ message: `Matrice installée : ${Number(data.inserted ?? 0)} ajoutée(s), ${Number(data.skipped ?? 0)} déjà présente(s).`, tone: 'success' });
+              declared.reload();
+            } catch (e: any) { setAttributeError(e?.message || 'Installation refusée.'); } finally { setAttributeBusy(false); }
+          }}
+        >
+          Installer la matrice (21 attributs)
+        </Button>
+      </div>
+      <DataTable
+        rows={rows0(declared.data)}
+        columns={[
+          { key: 'label', label: 'Champ', render: (row: any) => <strong>{row.label}<small className="admin-block-small"><code>{row.attribute_key}</code></small></strong> },
+          { key: 'data_type', label: 'Type' },
+          { key: 'section', label: 'Section', render: (row: any) => row.section || '—' },
+          { key: 'families', label: 'Familles', render: (row: any) => (Array.isArray(row.families) && row.families.length > 0 ? row.families.join(' · ') : <em>toutes</em>) },
+          { key: 'options', label: 'Options', render: (row: any) => (Array.isArray(row.options) && row.options.length > 0 ? row.options.join(' / ') : '—') },
+        ]}
+      />
+      {can('product_attribute', 'create') && (
+        <Form onSubmit={async (event) => {
+          event.preventDefault(); setAttributeBusy(true); setAttributeError('');
+          try {
+            await adminApi('/catalogue/attributes', {
+              method: 'POST',
+              body: JSON.stringify({
+                attribute_key: attributeDraft.attribute_key,
+                label: attributeDraft.label,
+                data_type: attributeDraft.data_type,
+                target: 'product',
+                section: attributeDraft.section,
+                options: attributeDraft.options.split(',').map((value) => value.trim()).filter(Boolean),
+                families: attributeDraft.families,
+                sort_order: Number(attributeDraft.sort_order || 100),
+              }),
+            });
+            setAttributeDraft({ attribute_key: '', label: '', data_type: 'TEXT', options: '', families: [], section: 'matiere', sort_order: '100' });
+            declared.reload();
+            setToast({ message: 'Attribut déclaré.', tone: 'success' });
+          } catch (e: any) { setAttributeError(e?.message || 'Déclaration refusée.'); } finally { setAttributeBusy(false); }
+        }}>
+          {attributeError && <p className="admin-field-error">{attributeError}</p>}
+          <div className="admin-form-row">
+            <Field label="Clé" required hint="minuscules, chiffres et _"><input value={attributeDraft.attribute_key} onChange={(event) => setAttributeDraft({ ...attributeDraft, attribute_key: event.target.value })} required /></Field>
+            <Field label="Libellé" required><input value={attributeDraft.label} onChange={(event) => setAttributeDraft({ ...attributeDraft, label: event.target.value })} required /></Field>
+            <Field label="Type"><Select value={attributeDraft.data_type} onChange={(event) => setAttributeDraft({ ...attributeDraft, data_type: event.target.value })} options={options(['TEXT', 'NUMBER', 'BOOLEAN', 'SELECT'])} /></Field>
+          </div>
+          <div className="admin-form-row">
+            <Field label="Section" hint="décide de l’accordéon dans la fiche">
+              <Select value={attributeDraft.section} onChange={(event) => setAttributeDraft({ ...attributeDraft, section: event.target.value })} options={options(['identite', 'matiere', 'mesures', 'technique', 'beaute', 'pratique'])} />
+            </Field>
+            <Field label="Options (SELECT)" hint="séparées par des virgules"><input value={attributeDraft.options} onChange={(event) => setAttributeDraft({ ...attributeDraft, options: event.target.value })} /></Field>
+            <Field label="Ordre"><input type="number" min={0} max={9999} value={attributeDraft.sort_order} onChange={(event) => setAttributeDraft({ ...attributeDraft, sort_order: event.target.value })} /></Field>
+          </div>
+          <Field label="Familles" full hint="Aucune cochée = toutes les familles. Les familles sont les racines de l’arbre des catégories.">
+            <div className="admin-row-actions">
+              {rows0(categories.data).filter((row: any) => !row.parent_id).map((row: any) => (
+                <label key={row.id} className="admin-check">
+                  <input
+                    type="checkbox"
+                    checked={attributeDraft.families.includes(row.slug)}
+                    onChange={(event) => setAttributeDraft({
+                      ...attributeDraft,
+                      families: event.target.checked
+                        ? [...attributeDraft.families, row.slug]
+                        : attributeDraft.families.filter((slug) => slug !== row.slug),
+                    })}
+                  /> {row.name}
+                </label>
+              ))}
+            </div>
+          </Field>
+          <div className="admin-modal-actions">
+            <Button type="submit" busy={attributeBusy}>Déclarer l’attribut</Button>
+          </div>
+        </Form>
+      )}
+    </Modal>
     <Modal wide open={Boolean(detail)} title={detail ? `Fiche — ${detail.name}` : 'Fiche'} onClose={() => setDetail(null)}>
       {detail && <ProductDetail product={detail} can={can} onChanged={() => { openDetail({ id: detail.id }); list.reload(); }} onToast={setToast} />}
     </Modal>

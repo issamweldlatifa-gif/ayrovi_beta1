@@ -19,6 +19,8 @@ import { resolve } from 'node:path';
 import {
   FICHE,
   ficheSections,
+  sectionLabelKey,
+  specGroups,
   galleryItems,
   headerIsSolid,
   headerProgress,
@@ -52,18 +54,18 @@ describe('fiche — mécanique de la planche', () => {
 describe('fiche — la donnée absente disparaît', () => {
   it('un attribut sans valeur ne produit aucune ligne', () => {
     const rows = specRows([
-      { key: 'material', label: 'Matière', type: 'TEXT', value: 'Coton' },
-      { key: 'care', label: 'Entretien', type: 'TEXT', value: '   ' },
-      { key: 'origin', label: 'Origine', type: 'TEXT', value: '' },
-      { key: 'washing', label: 'Lavage', type: 'TEXT', value: '30°' },
+      { key: 'material', label: 'Matière', type: 'TEXT', section: '', value: 'Coton' },
+      { key: 'care', label: 'Entretien', type: 'TEXT', section: '', value: '   ' },
+      { key: 'origin', label: 'Origine', type: 'TEXT', section: '', value: '' },
+      { key: 'washing', label: 'Lavage', type: 'TEXT', section: '', value: '30°' },
     ]);
     expect(rows.map((row) => row.key)).toEqual(['material', 'washing']);
   });
 
   it('deux attributs qui partagent un libellé restent deux faits distincts', () => {
     const rows = specRows([
-      { key: 'a', label: 'Taille', type: 'TEXT', value: 'M' },
-      { key: 'b', label: 'Taille', type: 'TEXT', value: 'L' },
+      { key: 'a', label: 'Taille', type: 'TEXT', section: '', value: 'M' },
+      { key: 'b', label: 'Taille', type: 'TEXT', section: '', value: 'L' },
     ]);
     expect(rows).toHaveLength(2);
     expect(rows.map((row) => row.value)).toEqual(['M', 'L']);
@@ -72,8 +74,38 @@ describe('fiche — la donnée absente disparaît', () => {
   it('les sections vides n’existent pas', () => {
     expect(ficheSections({ attributes: [], description: '  ', hasPrice: false }))
       .toEqual({ specs: false, description: false, priceDetail: false });
-    expect(ficheSections({ attributes: [{ key: 'a', label: 'A', type: 'TEXT', value: '1' }], description: 'x', hasPrice: true }))
+    expect(ficheSections({ attributes: [{ key: 'a', label: 'A', type: 'TEXT', section: '', value: '1' }], description: 'x', hasPrice: true }))
       .toEqual({ specs: true, description: true, priceDetail: true });
+  });
+});
+
+describe('fiche — sections décidées par le CRM', () => {
+  const a = (key: string, section: string, value: string) => ({ key, label: key, type: 'TEXT', section, value });
+
+  it('regroupe par section, dans l’ordre convenu, et jette les sections vides', () => {
+    const groups = specGroups([
+      a('memory_storage', 'technique', '256 Go'),
+      a('material', 'matiere', 'Coton'),
+      a('warranty', 'pratique', '12 mois'),
+      a('care', 'matiere', ''),
+    ]);
+    expect(groups.map((group) => group.section)).toEqual(['matiere', 'technique', 'pratique']);
+    expect(groups[0].rows.map((row) => row.key)).toEqual(['material']);
+  });
+
+  it('une section inconnue ne disparaît pas : elle tombe dans « Caractéristiques »', () => {
+    const groups = specGroups([a('unknown_key', 'section_inventee', 'valeur'), a('niche', '', 'x')]);
+    expect(groups).toEqual([{ section: 'specs', rows: [
+      { key: 'unknown_key', label: 'unknown_key', value: 'valeur' },
+      { key: 'niche', label: 'niche', value: 'x' },
+    ] }]);
+  });
+
+  it('chaque section a un libellé traduit, et l’inconnu retombe sur « الخصائص »', () => {
+    expect(sectionLabelKey('matiere')).toBe('product.section.matiere');
+    expect(sectionLabelKey('technique')).toBe('product.section.technique');
+    expect(sectionLabelKey('')).toBe('product.specs');
+    expect(sectionLabelKey('autre')).toBe('product.specs');
   });
 });
 

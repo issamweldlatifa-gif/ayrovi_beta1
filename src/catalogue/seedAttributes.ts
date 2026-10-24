@@ -26,39 +26,41 @@ export interface AttributeSeed {
   options?: string[];
   /** Slugs de familles (racines). Vide = toutes. */
   families: string[];
+  /** Section d'affichage de la fiche. */
+  section: string;
   sortOrder: number;
 }
 
 /** Les 21 attributs de la matrice, dans l'ordre des sections de la planche. */
 export const ATTRIBUTE_MATRIX: AttributeSeed[] = [
   // ── الخامة والعناية (ملابس · أحذية) ──
-  { key: 'material', label: 'الخامة', dataType: 'TEXT', target: 'product', families: ['femme', 'homme', 'enfants', 'chaussures', 'maison'], sortOrder: 10 },
-  { key: 'composition', label: 'التركيبة', dataType: 'TEXT', target: 'product', families: ['femme', 'homme', 'enfants'], sortOrder: 11 },
-  { key: 'care', label: 'العناية', dataType: 'TEXT', target: 'product', families: ['femme', 'homme', 'enfants'], sortOrder: 12 },
-  { key: 'size_chart', label: 'جدول القياسات', dataType: 'TEXT', target: 'product', families: ['femme', 'homme', 'enfants', 'chaussures', 'essentiels'], sortOrder: 13 },
+  { key: 'material', label: 'الخامة', dataType: 'TEXT', target: 'product', families: ['femme', 'homme', 'enfants', 'chaussures', 'maison'], section: 'matiere', sortOrder: 10 },
+  { key: 'composition', label: 'التركيبة', dataType: 'TEXT', target: 'product', families: ['femme', 'homme', 'enfants'], section: 'matiere', sortOrder: 11 },
+  { key: 'care', label: 'العناية', dataType: 'TEXT', target: 'product', families: ['femme', 'homme', 'enfants'], section: 'matiere', sortOrder: 12 },
+  { key: 'size_chart', label: 'جدول القياسات', dataType: 'TEXT', target: 'product', families: ['femme', 'homme', 'enfants', 'chaussures', 'essentiels'], section: 'matiere', sortOrder: 13 },
   // ── المقاس والقيس ──
-  { key: 'heel_height', label: 'ارتفاع الكعب (سم)', dataType: 'NUMBER', target: 'product', families: ['chaussures'], sortOrder: 20 },
-  { key: 'shoe_width', label: 'عرض القدم', dataType: 'SELECT', target: 'product', options: ['ضيّق', 'عادي', 'عريض'], families: ['chaussures'], sortOrder: 21 },
+  { key: 'heel_height', label: 'ارتفاع الكعب (سم)', dataType: 'NUMBER', target: 'product', families: ['chaussures'], section: 'mesures', sortOrder: 20 },
+  { key: 'shoe_width', label: 'عرض القدم', dataType: 'SELECT', target: 'product', options: ['ضيّق', 'عادي', 'عريض'], families: ['chaussures'], section: 'mesures', sortOrder: 21 },
   // ── الخواص التقنية ──
-  { key: 'memory_storage', label: 'الذاكرة', dataType: 'SELECT', target: 'product', options: ['64 Go', '128 Go', '256 Go', '512 Go', '1 To'], families: ['electronique'], sortOrder: 30 },
-  { key: 'display', label: 'الشاشة', dataType: 'TEXT', target: 'product', families: ['electronique'], sortOrder: 31 },
-  { key: 'processor', label: 'المعالج', dataType: 'TEXT', target: 'product', families: ['electronique'], sortOrder: 32 },
-  { key: 'battery', label: 'البطّارية', dataType: 'TEXT', target: 'product', families: ['electronique'], sortOrder: 33 },
-  { key: 'network_os', label: 'الشبكة والنظام', dataType: 'TEXT', target: 'product', families: ['electronique'], sortOrder: 34 },
-  { key: 'power_capacity', label: 'القدرة', dataType: 'SELECT', target: 'product', options: ['500 W', '800 W', '1200 W', '2000 W'], families: ['maison'], sortOrder: 40 },
+  { key: 'memory_storage', label: 'الذاكرة', dataType: 'SELECT', target: 'product', options: ['64 Go', '128 Go', '256 Go', '512 Go', '1 To'], families: ['electronique'], section: 'technique', sortOrder: 30 },
+  { key: 'display', label: 'الشاشة', dataType: 'TEXT', target: 'product', families: ['electronique'], section: 'technique', sortOrder: 31 },
+  { key: 'processor', label: 'المعالج', dataType: 'TEXT', target: 'product', families: ['electronique'], section: 'technique', sortOrder: 32 },
+  { key: 'battery', label: 'البطّارية', dataType: 'TEXT', target: 'product', families: ['electronique'], section: 'technique', sortOrder: 33 },
+  { key: 'network_os', label: 'الشبكة والنظام', dataType: 'TEXT', target: 'product', families: ['electronique'], section: 'technique', sortOrder: 34 },
+  { key: 'power_capacity', label: 'القدرة', dataType: 'SELECT', target: 'product', options: ['500 W', '800 W', '1200 W', '2000 W'], families: ['maison'], section: 'pratique', sortOrder: 40 },
   // ── المنزل ──
-  { key: 'dimensions', label: 'الأبعاد', dataType: 'TEXT', target: 'product', families: ['maison'], sortOrder: 41 },
-  { key: 'assembly', label: 'التركيب', dataType: 'SELECT', target: 'product', options: ['جاهز', 'يتطلّب تركيباً'], families: ['maison'], sortOrder: 42 },
-  { key: 'style', label: 'الستايل', dataType: 'TEXT', target: 'product', families: ['femme', 'homme', 'maison'], sortOrder: 43 },
+  { key: 'dimensions', label: 'الأبعاد', dataType: 'TEXT', target: 'product', families: ['maison'], section: 'pratique', sortOrder: 41 },
+  { key: 'assembly', label: 'التركيب', dataType: 'SELECT', target: 'product', options: ['جاهز', 'يتطلّب تركيباً'], families: ['maison'], section: 'pratique', sortOrder: 42 },
+  { key: 'style', label: 'الستايل', dataType: 'TEXT', target: 'product', families: ['femme', 'homme', 'maison'], section: 'identite', sortOrder: 43 },
   // ── الجمال والعناية ──
-  { key: 'ingredients', label: 'المكوّنات', dataType: 'TEXT', target: 'product', families: ['beaute'], sortOrder: 50 },
-  { key: 'skin_type', label: 'نوع البشرة', dataType: 'SELECT', target: 'product', options: ['دهنية', 'جافة', 'مختلطة', 'حسّاسة'], families: ['beaute'], sortOrder: 51 },
-  { key: 'pao', label: 'PAO (شهر بعد الفتح)', dataType: 'TEXT', target: 'product', families: ['beaute'], sortOrder: 52 },
-  { key: 'free_from', label: 'خالي من', dataType: 'TEXT', target: 'product', families: ['beaute'], sortOrder: 53 },
+  { key: 'ingredients', label: 'المكوّنات', dataType: 'TEXT', target: 'product', families: ['beaute'], section: 'beaute', sortOrder: 50 },
+  { key: 'skin_type', label: 'نوع البشرة', dataType: 'SELECT', target: 'product', options: ['دهنية', 'جافة', 'مختلطة', 'حسّاسة'], families: ['beaute'], section: 'beaute', sortOrder: 51 },
+  { key: 'pao', label: 'PAO (شهر بعد الفتح)', dataType: 'TEXT', target: 'product', families: ['beaute'], section: 'beaute', sortOrder: 52 },
+  { key: 'free_from', label: 'خالي من', dataType: 'TEXT', target: 'product', families: ['beaute'], section: 'beaute', sortOrder: 53 },
   // ── المستلزمات ──
-  { key: 'package_size', label: 'العدد في العلبة', dataType: 'SELECT', target: 'product', options: ['1', '3', '6'], families: ['essentiels'], sortOrder: 60 },
+  { key: 'package_size', label: 'العدد في العلبة', dataType: 'SELECT', target: 'product', options: ['1', '3', '6'], families: ['essentiels'], section: 'pratique', sortOrder: 60 },
   // ── الضمان ──
-  { key: 'warranty', label: 'الضمان', dataType: 'TEXT', target: 'product', families: ['electronique', 'maison'], sortOrder: 70 },
+  { key: 'warranty', label: 'الضمان', dataType: 'TEXT', target: 'product', families: ['electronique', 'maison'], section: 'pratique', sortOrder: 70 },
 ];
 
 export interface AttributeSeedReport {
@@ -92,6 +94,7 @@ export function seedAttributeMatrix(db: QatafoDatabase, options: AttributeSeedOp
       target: entry.target,
       options: entry.options ?? [],
       families: entry.families,
+      section: entry.section,
       sort_order: entry.sortOrder,
     }, options.actor);
     if (!created.ok) { failed.push({ key: entry.key, code: String(created.code) }); continue; }

@@ -95,6 +95,8 @@ export interface CatalogAttribute {
   key: string;
   label: string;
   type: string;
+  /** Section d'affichage décidée par le CRM (« matiere », « mesures »…). */
+  section: string;
   value: string;
 }
 
@@ -238,7 +240,7 @@ function parseAttributes(payload: unknown): CatalogAttribute[] {
     const key = text(row.key);
     const value = text(row.value).trim();
     if (!key || !value) continue;
-    out.push({ key, label: text(row.label) || key, type: text(row.type) || 'TEXT', value });
+    out.push({ key, label: text(row.label) || key, type: text(row.type) || 'TEXT', section: text(row.section), value });
   }
   return out;
 }

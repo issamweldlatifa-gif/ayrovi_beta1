@@ -188,6 +188,8 @@ export interface CatalogueAttributeInput {
   options?: unknown;
   /** Slugs de familles (racines d'arbre) où l'attribut a du sens. Vide = toutes. */
   families?: unknown;
+  /** Section d'affichage de la fiche (« matiere », « mesures »…). */
+  section?: unknown;
   status?: unknown;
 }
 

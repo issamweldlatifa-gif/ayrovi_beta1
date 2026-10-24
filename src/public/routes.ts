@@ -589,14 +589,20 @@ export function createPublicRouter(db: QatafoDatabase): Router {
      * absente disparaît).
      */
     const attributes = db.all<any>(
-      `SELECT a.attribute_key AS key, a.label, a.data_type AS type, a.sort_order AS sortOrder, v.value_text AS value
+      `SELECT a.attribute_key AS key, a.label, a.data_type AS type, a.section, a.sort_order AS sortOrder, v.value_text AS value
          FROM catalogue_attribute_values v
          JOIN catalogue_attributes a ON a.attribute_key = v.attribute_key
         WHERE v.product_id=? AND v.variant_id IS NULL AND a.status='ACTIVE'
         ORDER BY a.sort_order, a.label`,
       row.id,
     )
-      .map((item) => ({ key: String(item.key), label: String(item.label ?? item.key), type: String(item.type ?? 'TEXT'), value: String(item.value ?? '').trim() }))
+      .map((item) => ({
+        key: String(item.key),
+        label: String(item.label ?? item.key),
+        type: String(item.type ?? 'TEXT'),
+        section: String(item.section ?? ''),
+        value: String(item.value ?? '').trim(),
+      }))
       .filter((item) => item.value.length > 0);
 
     /**

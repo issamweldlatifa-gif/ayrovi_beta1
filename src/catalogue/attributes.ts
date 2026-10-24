@@ -29,6 +29,8 @@ export interface CatalogueAttributeRow {
   options: string[];
   /** Slugs des familles concernées. `[]` = toutes. */
   families: string[];
+  /** Section d'affichage (« matiere », « mesures »…). `''` = non classé. */
+  section: string;
   status: string;
   sort_order: number;
 }
@@ -60,7 +62,8 @@ function mapAttribute(row: Record<string, unknown>): CatalogueAttributeRow {
   return {
     id: String(row.id), attribute_key: String(row.attribute_key), label: String(row.label),
     data_type: String(row.data_type ?? 'TEXT'), applies_to: String(row.applies_to ?? 'variant'),
-    options, families, status: String(row.status ?? 'ACTIVE'), sort_order: Number(row.sort_order ?? 100),
+    options, families, section: String(row.section ?? ''),
+    status: String(row.status ?? 'ACTIVE'), sort_order: Number(row.sort_order ?? 100),
   };
 }
 
@@ -207,11 +210,13 @@ export function createAttribute(db: QatafoDatabase, rawInput: unknown, actor: Ca
   const families = Array.isArray(input.families)
     ? [...new Set(input.families.map((entry) => String(entry).trim().toLowerCase()).filter((entry) => /^[a-z][a-z0-9-]{0,39}$/.test(entry)))].slice(0, 20)
     : [];
+  const rawSection = String((input as Record<string, unknown>).section ?? '').trim().toLowerCase();
+  const section = /^[a-z][a-z0-9_]{0,39}$/.test(rawSection) ? rawSection : '';
   const sort = Number.isFinite(Number(input.sort_order)) ? Math.min(9999, Math.max(0, Math.trunc(Number(input.sort_order)))) : 100;
   const now = new Date().toISOString();
   const id = `attr_${randomUUID()}`;
-  db.run(`INSERT INTO catalogue_attributes (id,attribute_key,label,data_type,applies_to,options,families,status,sort_order,created_at,updated_at)
-    VALUES (?,?,?,?,?,?,?,'ACTIVE',?,?,?)`, id, normalized, label.value, dataType, appliesTo, JSON.stringify(options), JSON.stringify(families), sort, now, now);
+  db.run(`INSERT INTO catalogue_attributes (id,attribute_key,label,data_type,applies_to,options,families,section,status,sort_order,created_at,updated_at)
+    VALUES (?,?,?,?,?,?,?,?,'ACTIVE',?,?,?)`, id, normalized, label.value, dataType, appliesTo, JSON.stringify(options), JSON.stringify(families), section, sort, now, now);
   const created = mapAttribute(db.get<Record<string, unknown>>('SELECT * FROM catalogue_attributes WHERE id=?', id)!);
   auditCatalogue(db, {
     actor, action: 'CREATE', resourceType: 'product_attribute', resourceId: id,

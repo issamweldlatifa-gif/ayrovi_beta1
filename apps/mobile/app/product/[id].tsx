@@ -46,9 +46,10 @@ import {
   FICHE,
   ficheSections,
   galleryItems,
+  sectionLabelKey,
   sheetOffset,
   sizeChoices,
-  specRows,
+  specGroups,
 } from '@/features/product/fiche';
 import { useSession } from '@/state/session';
 import { useSessionId } from '@/session/session';
@@ -181,7 +182,8 @@ export default function ProductScreen() {
         : t('catalog.stock.in_stock')
     : null;
 
-  const specs = specRows(product.attributes);
+  /** Attributs regroupés par section du CRM ; les sections vides n'existent pas. */
+  const groups = specGroups(product.attributes);
   const sections = ficheSections({ attributes: product.attributes, description: product.description, hasPrice: product.finalPrice > 0 });
   const chosen = [size, color].filter(Boolean).join(' · ');
 
@@ -248,16 +250,23 @@ export default function ProductScreen() {
           ) : null}
 
           {/* 3. الأقسام: بلا محتوى ⇒ بلا قسم. */}
-          {sections.specs ? (
-            <Accordion title={t('product.specs')} defaultOpen>
+          {product.family || product.brandName || product.category ? (
+            <Accordion title={t('product.section.identite')} defaultOpen>
               <View style={styles.specs}>
                 {product.family ? <KeyValue label={t('product.family')} value={product.family.name} /> : null}
                 {product.brandName ? <KeyValue label={t('catalog.brand')} value={product.brandName} /> : null}
                 {product.category ? <KeyValue label={t('catalog.category')} value={product.category} /> : null}
-                {specs.map((row) => <KeyValue key={row.key} label={row.label} value={row.value} />)}
               </View>
             </Accordion>
           ) : null}
+
+          {groups.map((group) => (
+            <Accordion key={group.section} title={t(sectionLabelKey(group.section))}>
+              <View style={styles.specs}>
+                {group.rows.map((row) => <KeyValue key={row.key} label={row.label} value={row.value} />)}
+              </View>
+            </Accordion>
+          ))}
 
           {sections.description ? (
             <Accordion title={t('product.description')}>
