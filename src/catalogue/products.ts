@@ -31,7 +31,7 @@ import { applyAttributes, validateAttributes } from './attributes';
 const PRODUCT_SELECT = `
   SELECT p.id, p.name, p.slug, p.product_code, p.description, p.image, p.additional_images,
          p.brand_id, p.brand_name, p.category, p.category_id, p.status, p.product_type,
-         p.source_url, p.source_platform, p.original_price, p.currency, p.final_price,
+         p.source_url, p.source_platform, p.original_price, p.currency, p.final_price, p.compare_at_price,
          p.stock_status, p.express_available, p.created_at, p.updated_at, p.created_by, p.updated_by, p.visibility
     FROM products p`;
 
@@ -71,6 +71,7 @@ function parseRow(row: Record<string, unknown> | undefined): CatalogueProductRow
     source_platform: String(row.source_platform ?? 'OTHER'),
     final_price: row.final_price === null || row.final_price === undefined ? null : Number(row.final_price),
     original_price: row.original_price === null || row.original_price === undefined ? null : Number(row.original_price),
+    compare_at_price: row.compare_at_price === null || row.compare_at_price === undefined ? null : Number(row.compare_at_price),
     currency: row.currency ? String(row.currency) : null,
     stock_status: row.stock_status ? String(row.stock_status) : null,
     express_available: row.express_available === null || row.express_available === undefined ? null : Number(row.express_available),
@@ -206,6 +207,12 @@ function validateProductPayload(
     const price = moneyOf(input.original_price, 'original_price');
     if (!price.ok) return propagate(price);
     payload.original_price = price.value ?? 0;
+  }
+  if (input.compare_at_price !== undefined) {
+    // `null`/'' efface le prix barré (geste explicite), un montant le pose.
+    const compare = moneyOf(input.compare_at_price, 'compare_at_price');
+    if (!compare.ok) return propagate(compare);
+    payload.compare_at_price = compare.value;
   }
   if (input.product_type !== undefined) {
     const type = requiredText(input.product_type, 'product_type', 2, 40);

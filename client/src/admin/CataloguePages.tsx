@@ -95,11 +95,13 @@ interface Draft {
   status: string; product_type: string; image: string; source_url: string; source_platform: string;
   currency: string; stock_status: string; express_available: string;
   original_price: string;
+  /** Prix barré : donnée marketing saisie ici, affichée telle quelle sur la fiche. */
+  compare_at_price: string;
 }
 const emptyDraft: Draft = {
   name: '', slug: '', description: '', brand_id: '', category_id: '', status: 'DRAFT',
   product_type: 'STANDARD', image: '', source_url: '', source_platform: 'OTHER', currency: 'TND',
-  stock_status: '', express_available: 'false', original_price: '',
+  stock_status: '', express_available: 'false', original_price: '', compare_at_price: '',
 };
 
 /** Usage d'un produit temporaire : où il est utilisé, et s'il est visible aujourd'hui. */
@@ -210,6 +212,7 @@ export const CatalogueProductsPage: React.FC<{ scope?: 'catalogue' | 'content' }
         source_platform: full.source_platform || 'OTHER', currency: full.currency || 'TND',
         stock_status: full.stock_status || '', express_available: Number(full.express_available) === 1 ? 'true' : 'false',
         original_price: full.original_price === null || full.original_price === undefined ? '' : String(full.original_price),
+        compare_at_price: full.compare_at_price === null || full.compare_at_price === undefined ? '' : String(full.compare_at_price),
       });
       setAttributes(full.attributes || {});
       setFormError(''); setByField({}); setEditor({ mode: 'edit', id: full.id });
@@ -227,6 +230,8 @@ export const CatalogueProductsPage: React.FC<{ scope?: 'catalogue' | 'content' }
       currency: draft.currency, stock_status: emptyToNull(draft.stock_status),
       express_available: draft.express_available === 'true',
       attributes,
+      // `null` explicite = effacer le prix barré (geste, pas oubli).
+      compare_at_price: draft.compare_at_price.trim() === '' ? null : Number(draft.compare_at_price),
       ...(isContent ? { original_price: draft.original_price.trim() === '' ? null : Number(draft.original_price) } : {}),
     };
     try {

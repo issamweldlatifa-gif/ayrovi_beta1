@@ -107,6 +107,9 @@ const PRODUCT_COLUMN_ADDITIONS: Array<[string, string]> = [
   ['product_code', 'TEXT'],
   ['slug', 'TEXT'],
   ['category_id', 'TEXT'],
+  // Prix barré : une DONNÉE saisie par le propriétaire. Absent = aucun prix
+  // barré sur la fiche (on n'invente jamais une remise).
+  ['compare_at_price', 'REAL'],
   ['product_type', "TEXT NOT NULL DEFAULT 'STANDARD'"],
   ['created_by', 'TEXT'],
   ['updated_by', 'TEXT'],

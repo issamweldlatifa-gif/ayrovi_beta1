@@ -106,6 +106,8 @@ export interface CatalogueProductInput {
   source_url?: unknown;
   source_platform?: unknown;
   original_price?: unknown;
+  /** Prix barré, saisi à la main (optionnel). `''`/null l'efface. */
+  compare_at_price?: unknown;
   currency?: unknown;
   stock_status?: unknown;
   express_available?: unknown;
@@ -129,6 +131,7 @@ export interface CatalogueProductRow {
   source_platform: string;
   final_price: number | null;
   original_price: number | null;
+  compare_at_price: number | null;
   currency: string | null;
   stock_status: string | null;
   express_available: number | null;

@@ -74,6 +74,13 @@ export interface CatalogProduct {
   serviceFee: number;
   /** السعر النهائي بالدينار — **الخادم** هو من يحسبو. */
   finalPrice: number;
+  /**
+   * Prix barré saisi par le propriétaire dans le CRM (`null` = pas de prix barré).
+   * L'application ne calcule jamais de remise : elle affiche le barré **et** le
+   * pourcentage uniquement si le serveur en fournit un, et seulement s'il est
+   * strictement supérieur au prix affiché.
+   */
+  compareAtPrice: number | null;
   expressAvailable: boolean;
   stockStatus: string;
   arrivalIds: string[];
@@ -210,6 +217,7 @@ function parseProduct(payload: unknown): CatalogProduct | null {
     shippingFee: num(row.shippingFee),
     serviceFee: num(row.serviceFee),
     finalPrice: num(row.finalPrice),
+    compareAtPrice: row.compareAtPrice === null || row.compareAtPrice === undefined ? null : num(row.compareAtPrice),
     expressAvailable: row.expressAvailable === true,
     stockStatus: text(row.stockStatus),
     arrivalIds: list(row.arrivalIds),

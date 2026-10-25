@@ -11,7 +11,9 @@
  *
  * الشكل أصلي (React Native) — المرجع الموقع هو **الخاصية**، موش التصميم.
  */
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
@@ -19,6 +21,8 @@ import { AppImage } from '@/design/appImage';
 import { useT, type Translate } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import { normalizeStockStatus, type CatalogProduct } from '@/api/catalog';
+import { addCatalogToCart } from '@/api/cart';
+import { useSessionId } from '@/session/session';
 
 export interface ProductCardProps {
   product: CatalogProduct;
@@ -29,6 +33,12 @@ export interface ProductCardProps {
   hasCombinations?: boolean;
   /** Promotion donnée par le serveur (jamais déduite ici) : repère « Promo ». */
   promo?: boolean;
+  /**
+   * Bouton « mettre au panier » sur la carte (exigence du 25/10 : « le bouton
+   * panier n'existait pas »). `true` par défaut ; les aperçus CRM le coupent
+   * pour ne pas créer de panier depuis une prévisualisation.
+   */
+  withCart?: boolean;
 }
 
 /** نصّ المخزون: كل الحالات المعروفة، والباقي «غير مؤكّد» موش فراغ. */
@@ -45,9 +55,19 @@ function stockLabel(status: string, t: Translate): { text: string; tone: 'ok' | 
   }
 }
 
-export function ProductCard({ product, onOpen, style, hasCombinations = false, promo = false }: ProductCardProps) {
+export function ProductCard({ product, onOpen, style, hasCombinations = false, promo = false, withCart = true }: ProductCardProps) {
   const theme = useTheme();
   const t = useT();
+  const sessionId = useSessionId();
+  const queryClient = useQueryClient();
+  /**
+   * Le MÊME add-to-cart que la fiche : `/api/cart/catalog`, prix serveur, jamais
+   * un prix recomposé ici. Le panier de l'onglet est invalidé après succès.
+   */
+  const cart = useMutation({
+    mutationFn: () => addCatalogToCart({ productId: product.id, sessionId }),
+    onSuccess: () => { void queryClient.invalidateQueries({ queryKey: ['cart'] }); },
+  });
   const stock = stockLabel(product.stockStatus, t);
   const hasPrice = product.finalPrice > 0;
 
@@ -102,6 +122,23 @@ export function ProductCard({ product, onOpen, style, hasCombinations = false, p
           {stock.text}
         </AppText>
       </View>
+
+      {withCart && hasPrice ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('catalog.addToCart')}
+          accessibilityState={{ disabled: cart.isPending }}
+          disabled={cart.isPending}
+          testID={`product-card-cart-${product.id}`}
+          onPress={(event) => { event.stopPropagation?.(); cart.mutate(); }}
+          style={[styles.cartButton, { backgroundColor: theme.colors.ink, borderRadius: theme.radius.control }]}
+        >
+          <Ionicons name={cart.isSuccess ? 'checkmark' : 'bag-add-outline'} size={16} color={theme.colors.canvas} accessibilityElementsHidden />
+          <AppText variant="caption" weight="bold" color={theme.colors.canvas} numberOfLines={1}>
+            {cart.isSuccess ? t('catalog.added') : t('catalog.addToCart')}
+          </AppText>
+        </Pressable>
+      ) : null}
     </Pressable>
   );
 }
@@ -124,5 +161,6 @@ const styles = StyleSheet.create({
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginBottom: 6 },
   chip: { paddingHorizontal: 8, paddingVertical: 4, borderWidth: StyleSheet.hairlineWidth, alignSelf: 'flex-start' },
   name: { marginTop: 2, minHeight: 34 },
+  cartButton: { marginTop: 8, paddingVertical: 8, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
   footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6, gap: 6 },
 });

@@ -109,6 +109,9 @@ function mapProduct(row: any) {
     sourceUrl: row.source_url,
     sourcePlatform: row.source_platform,
     originalPrice: Number(row.original_price),
+    // Prix barré : `null` quand le propriétaire n'en a pas saisi — l'app n'affiche
+    // alors rien, elle ne fabrique pas de remise.
+    compareAtPrice: row.compare_at_price === null || row.compare_at_price === undefined ? null : Number(row.compare_at_price),
     currency: row.currency,
     convertedPrice: Number(row.converted_price),
     customsFee: Number(row.customs_fee),
