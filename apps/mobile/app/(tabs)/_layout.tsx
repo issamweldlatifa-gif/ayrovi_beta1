@@ -3,10 +3,12 @@
  *
  * L’accueil se atteint par le LOGO de l’en-tête, le panier par son icône, les
  * notifications par la cloche. `index` (l’accueil) et `cart` restent des routes
- * — le tiroir et l’en-tête pointent dessus — mais sont retirées de la barre
- * avec `href: null`. Un onglet masqué n’est pas un onglet supprimé : les
- * liens existants continuent de fonctionner, ce qui évite de casser l’existant
- * pour un changement de navigation.
+ * — le tiroir et l’en-tête pointent dessus — mais n’ont pas de bouton dans la
+ * barre. SDK 58 : `href: null` les rendrait `hidden` et le routeur
+ * redirigerait alors leur focus vers le premier onglet visible ; on utilise
+ * donc `NO_TAB_BUTTON` (bouton nul, encombrement nul, route toujours
+ * ouvrable). Une route sans bouton n’est pas une route supprimée : les liens
+ * existants continuent de fonctionner, ce qui évite de casser l’existant.
  *
  * ── Transparence ───────────────────────────────────────────────────────────
  * Consigne : « شريط شفاف ». Le fond est transparent et la barre reste dans le
@@ -42,10 +44,28 @@ const ICONS: Record<string, { active: IoniconName; inactive: IoniconName }> = {
  * la première route du groupe, donc celle qui s'ouvre au lancement et celle que
  * `backBehavior="initialRoute"` rejoint. Sans lui, le routeur retombait sur la
  * première route déclarée (`aywebs`) et l'accueil disparaissait de l'ouverture.
- * `index` reste masqué de la barre (`href: null`) mais redevient l'ancre.
  */
 export const unstable_settings = {
   anchor: 'index',
+};
+
+/**
+ * Route OUVRABLE mais SANS BOUTON dans la barre (accueil `index`, panier
+ * `cart`) — contrat d'affichage historique : la barre ne montre que AYWEBs et
+ * Profil, alors que le logo, le tiroir et l'icône panier continuent d'ouvrir
+ * ces écrans.
+ *
+ * Pourquoi pas `href: null` : en SDK 58, `href: null` pose `hidden: true`
+ * (TabsClient.processScreens) et `useVisibleTabsWithRedirect` remplace toute
+ * route masquée qui reçoit le focus par la PREMIÈRE route visible (`aywebs`)
+ * — l'accueil et le panier devenaient inaccessibles. La route reste donc
+ * déclarée et visible pour le routeur (pas de `hidden`, pas de redirection),
+ * mais son bouton ne rend rien et son encombrement est nul : aucun onglet
+ * fantôme, la barre ne garde que les deux vrais boutons.
+ */
+export const NO_TAB_BUTTON = {
+  tabBarButton: () => null,
+  tabBarItemStyle: { display: 'none' as const },
 };
 
 export default function TabsLayout() {
@@ -122,19 +142,18 @@ export default function TabsLayout() {
       <Tabs.Screen name="aywebs" options={{ title: t('tabs.aywebs') }} />
       <Tabs.Screen name="account" options={{ title: t('tabs.account') }} />
 
-      {/* Route conservée, retirée de la barre : l’accueil s’atteint par le logo. */}
-      <Tabs.Screen name="index" options={{ href: null }} />
+      {/* Accueil : ouvrable (logo, tiroir, lien « / ») mais sans bouton dans la
+          barre — NO_TAB_BUTTON, pas `href: null` (qui déclencherait la
+          redirection SDK 58 vers le premier onglet visible). */}
+      <Tabs.Screen name="index" options={{ ...NO_TAB_BUTTON, title: t('tabs.home') }} />
       {/**
-       * Onglet MASQUÉ (`href: null`) mais DÉCLARÉ : la route existe, l'en-tête
-       * et le tiroir pointent dessus. Le test de copie l'exige avec raison —
-       * « un onglet masqué n'est pas un onglet supprimé ».
-       *
-       * Le titre est donc fourni, alors même qu'aucune barre ne l'affiche :
-       * sans cette référence, la clé `tabs.cart` devient un texte mort et le
-       * contrat de copie échoue. On ne retire pas un libellé pour le plaisir
-       * de faire passer un test — on garde la route vivante.
+       * Panier : déclaré et OUVRABLE (icône panier de l'en-tête, ponts
+       * d'ajout AYWEBs, liens profonds /cart et /panier) mais sans bouton dans
+       * la barre — NO_TAB_BUTTON plutôt que `href: null`, qui le rendrait
+       * `hidden` et donc redirigé vers le premier onglet visible en SDK 58.
+       * Le titre garde la clé `tabs.cart` référencée par le contrat de copie.
        */}
-      <Tabs.Screen name="cart" options={{ href: null, title: t('tabs.cart') }} />
+      <Tabs.Screen name="cart" options={{ ...NO_TAB_BUTTON, title: t('tabs.cart') }} />
     </Tabs>
   );
 }
