@@ -143,6 +143,29 @@ export function frost(opacity: number): string {
   return alpha(BRAND.white, opacity);
 }
 
+/**
+ * Palette de la GRANDE FICHE (maquette `mockup-complet-25-10.png`, 25/10/2026).
+ *
+ * Ces cinq valeurs sont mesurées sur la maquette du propriétaire. Elles vivent
+ * ici — et pas dans l'écran — parce que ce sont des COULEURS : la règle du Design
+ * System est qu'aucune couleur ne s'écrit en dur dans un composant.
+ *
+ * `recommendation` n'est pas une sixième couleur de marque : c'est le violet de
+ * l'identité posé à 7 % sur le blanc. Le jour où la marque change, la dalle suit.
+ */
+export const FICHE_COLORS = {
+  /** Dalle lavande de la recommandation de taille (#EEECF7 sur la maquette). */
+  recommendation: mix(BRAND.white, BRAND.violet, 0.07),
+  /** Points de galerie inactifs (#B2B2B2). */
+  dotIdle: '#B2B2B2',
+  /** Filet sous le nom du produit (#AAAAAA) — plus présent qu'un filet de section. */
+  nameUnderline: '#AAAAAA',
+  /** Poignée de la feuille de taille (#D1D1D1). */
+  sheetGrab: '#D1D1D1',
+  /** Fond de la bande photo du plein écran (#EFEFEF) : la photo est en `contain`. */
+  viewerStage: '#EFEFEF',
+} as const;
+
 export const REEL_TILE = {
   widthFraction: 0.66,
 } as const;

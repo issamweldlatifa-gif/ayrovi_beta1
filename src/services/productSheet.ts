@@ -66,6 +66,14 @@ export interface SheetVariant {
   sku: string;
   size: string;
   color: string;
+  /**
+   * Photos rattachées À CETTE VARIANTE dans le CRM (`catalogue_media.variant_id`),
+   * dans l'ordre décidé par le catalogue. C'est ce qui permet à la fiche de montrer
+   * une vignette par couleur **sans deviner** : pas de média pour la variante ⇒
+   * liste vide, et l'écran se rabat sur le nom de la couleur, jamais sur une photo
+   * empruntée à une autre couleur.
+   */
+  images: string[];
   /** Le client peut-il commander CETTE variante ? (actif + stock connu non nul) */
   available: boolean;
   /** Quantité connue, ou `null` quand aucune ligne de stock n'existe. */
@@ -86,6 +94,13 @@ export interface SheetDimension {
   key: 'size' | 'color';
   label: string;
   values: SheetDimensionValue[];
+}
+
+/** Ligne de `catalogue_media` utile à la fiche (les autres colonnes ne servent pas). */
+export interface SheetMediaInput {
+  url?: string | null;
+  media_type?: string | null;
+  variant_id?: string | null;
 }
 
 export interface SheetStock {
@@ -183,6 +198,29 @@ function sumStock(rows: SheetStockInput[]): { byVariant: Map<string, VariantStoc
 }
 
 /**
+ * Photos PAR VARIANTE (couleur), dans l'ordre du CRM.
+ *
+ * Une image sans `variant_id` appartient au produit, pas à une couleur : elle
+ * reste dans la galerie générale et n'est **jamais** attribuée à une variante au
+ * hasard. Les doublons d'une même variante sortent, et `MAX_SHEET_IMAGES` borne.
+ */
+export function variantImages(media: SheetMediaInput[] = []): Map<string, string[]> {
+  const out = new Map<string, string[]>();
+  for (const row of media) {
+    const variantId = text(row.variant_id);
+    const url = text(row.url);
+    if (!variantId || !url) continue;
+    if (text(row.media_type || 'IMAGE').toUpperCase() !== 'IMAGE') continue;
+    const list = out.get(variantId) ?? [];
+    if (list.includes(url)) continue;
+    if (list.length >= MAX_SHEET_IMAGES) continue;
+    list.push(url);
+    out.set(variantId, list);
+  }
+  return out;
+}
+
+/**
  * La fiche complète. `variants` est la liste décidée par le catalogue ; une
  * variante inactive reste dans la réponse (grisée), pour que l'écran puisse dire
  * « cette taille n'est plus vendue » au lieu de la faire disparaître sans mot.
@@ -191,9 +229,11 @@ export function buildProductSheet(
   product: SheetProductInput,
   variants: SheetVariantInput[] = [],
   stockRows: SheetStockInput[] = [],
+  media: SheetMediaInput[] = [],
 ): ProductSheet {
   const published = publishedStockStatus(product.stock_status);
   const { byVariant, total } = sumStock(stockRows);
+  const imagesByVariant = variantImages(media);
 
   const ordered = [...variants].sort((a, b) => Number(a.sort_order ?? 100) - Number(b.sort_order ?? 100));
   const sheetVariants: SheetVariant[] = ordered.map((variant) => {
@@ -207,6 +247,7 @@ export function buildProductSheet(
       sku: text(variant.sku),
       size: text(variant.size),
       color: text(variant.color),
+      images: imagesByVariant.get(variant.id) ?? [],
       available,
       stock,
       reason,

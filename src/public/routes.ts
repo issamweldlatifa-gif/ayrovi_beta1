@@ -132,7 +132,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
   const commerceConfig = () => {
     const pricing = db.getPricingRules();
     const settings = db.all<any>(`SELECT setting_key,setting_value,value_type FROM settings WHERE setting_key IN
-      ('delivery_delay','governorates','payment_methods','deposit_percent','deposit_review_delay','unavailable_refund_policy','company_legal_name','company_name','bank_rib','poste_account','flouci_number','card_discount_percent','facebook_url','instagram_url','tiktok_url','whatsapp_url','site_theme','interface_config','footer_about')`);
+      ('delivery_delay','return_window_days','governorates','payment_methods','deposit_percent','deposit_review_delay','unavailable_refund_policy','company_legal_name','company_name','bank_rib','poste_account','flouci_number','card_discount_percent','facebook_url','instagram_url','tiktok_url','whatsapp_url','site_theme','interface_config','footer_about')`);
     const facts: Record<string, any> = {};
     for (const row of settings) facts[row.setting_key] = row.value_type === 'JSON' ? parseJson(row.setting_value) : row.setting_value;
     return {
@@ -161,6 +161,17 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       // que le serveur refusait ensuite — une commande perdue à la dernière étape.
       paymentMethods: resolveAcceptedPaymentMethods(facts.payment_methods),
       deliveryDelay: String(facts.delivery_delay || ''),
+      /**
+       * Fenêtre de RETOUR, en jours après la livraison, réglée dans le CRM
+       * (`Paramètres → delivery → return_window_days`). La fiche du produit ne
+       * doit pas l'écrire en dur : elle affiche ce que le serveur publie, et la
+       * ligne disparaît si le réglage est absent ou illisible.
+       */
+      returns: {
+        days: Number.isFinite(Number(facts.return_window_days)) && Number(facts.return_window_days) > 0
+          ? Math.floor(Number(facts.return_window_days))
+          : null,
+      },
       capabilities: { cardGateway: cardGatewayAvailable() },
       // Feature flags — LIVE multi-product vision. مفعّل افتراضيًا؛ عطّله بـ AYROVIX_LENS_LIVE_ENABLED=false
       features: {
@@ -560,11 +571,18 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       LEFT JOIN product_arrivals pa ON pa.product_id=p.id WHERE p.id=? AND ${availableProductSql('p')} GROUP BY p.id`,
     req.params.id, ...availableProductParams(now));
     if (!row) return res.status(404).json({ success: false, error: 'Produit introuvable.' });
+    /**
+     * Les médias sont lus AVANT la feuille : chaque variante (couleur) porte ses
+     * propres photos (`catalogue_media.variant_id`). Sans ça, l'écran ne pouvait
+     * pas montrer « la photo du gris » et « la photo du rouge » sans les deviner.
+     */
+    const media = listMedia(db, row.id);
     const sheet = buildProductSheet(
       row,
       listVariants(db, row.id),
       db.all<any>(`SELECT variant_id, quantity, reorder_point FROM inventory_stock_items
         WHERE product_id=? AND status='ACTIVE'`, row.id),
+      media,
     );
 
     /**
@@ -577,7 +595,6 @@ export function createPublicRouter(db: QatafoDatabase): Router {
      * premier (la principale d'abord, `listMedia` trie), puis les colonnes
      * historiques complètent sans doublon.
      */
-    const media = listMedia(db, row.id);
     const images = [...new Set([
       ...media.filter((item) => item.media_type === 'IMAGE').map((item) => item.url),
       ...sheet.images,

@@ -20,6 +20,7 @@ import {
   publishedStockStatus,
   readImageList,
   selectionAvailable,
+  variantImages,
   type SheetProductInput,
   type SheetStockInput,
   type SheetVariantInput,
@@ -193,5 +194,45 @@ describe('choix du client', () => {
   test('une combinaison épuisée ou inexistante est refusée', () => {
     expect(selectionAvailable(sheet, { size: 'L', color: 'Noir' })).toBeNull();
     expect(selectionAvailable(sheet, { size: 'XXL' })).toBeNull();
+  });
+});
+
+describe('photos par variante (fiche du 25/10/2026)', () => {
+  const media = [
+    { url: '/media/gris-1.jpg', media_type: 'IMAGE', variant_id: 'v1' },
+    { url: '/media/gris-2.jpg', media_type: 'IMAGE', variant_id: 'v1' },
+    { url: '/media/rouge.jpg', media_type: 'IMAGE', variant_id: 'v2' },
+    { url: '/media/produit.jpg', media_type: 'IMAGE', variant_id: null },
+    { url: '/media/clip.mp4', media_type: 'VIDEO', variant_id: 'v1' },
+    { url: '/media/gris-1.jpg', media_type: 'IMAGE', variant_id: 'v1' },
+  ];
+
+  test('chaque variante ne porte QUE ses propres photos, dans l’ordre du CRM', () => {
+    const sheet = buildProductSheet(
+      product(),
+      [variant({ id: 'v1', size: 'M', color: 'Gris' }), variant({ id: 'v2', size: 'M', color: 'Rouge' })],
+      [],
+      media,
+    );
+    expect(sheet.variants.map((entry) => [entry.color, entry.images])).toEqual([
+      ['Gris', ['/media/gris-1.jpg', '/media/gris-2.jpg']],
+      ['Rouge', ['/media/rouge.jpg']],
+    ]);
+  });
+
+  test('une photo sans variante n’est JAMAIS attribuée à une couleur', () => {
+    const map = variantImages([{ url: '/media/produit.jpg', media_type: 'IMAGE', variant_id: null }]);
+    expect(map.size).toBe(0);
+    const sheet = buildProductSheet(product(), [variant({ id: 'v9', color: 'Bleu' })], [], []);
+    expect(sheet.variants[0].images).toEqual([]);
+  });
+
+  test('les vidéos et les doublons ne deviennent pas des vignettes de couleur', () => {
+    expect(variantImages(media).get('v1')).toEqual(['/media/gris-1.jpg', '/media/gris-2.jpg']);
+  });
+
+  test('sans média du tout, la fiche reste valide', () => {
+    const sheet = buildProductSheet(product(), [variant()], [], []);
+    expect(sheet.variants[0].images).toEqual([]);
   });
 });

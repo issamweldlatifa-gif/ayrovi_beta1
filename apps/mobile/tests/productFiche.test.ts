@@ -1,13 +1,17 @@
 /**
- * Grande fiche — règles et contrat (24/10/2026).
+ * Grande fiche — règles et contrat (réécrit le 25/10/2026).
  *
- * Ce que ces tests protègent :
- *  • la mécanique de la planche : photo fixe de 430, feuille qui la recouvre de
- *    16, en-tête transparent qui bascule (seuil calculé, pas deviné) ;
+ * Ce que ces tests protègent, dans l'ordre de la maquette
+ * `docs/design/cardproduit/mockup-complet-25-10.png` :
+ *  • les cotes (photo 581, ligne « Taille » 49, bande grise 9, barre 71) ;
  *  • la règle « une donnée absente disparaît » : attribut vide, description
- *    vide ou prix absent ⇒ la ligne / la section n'existe pas ;
- *  • la galerie : photos d'abord, puis la vidéo, sans doublon ;
- *  • la feuille de taille garde l'ordre du serveur et n'invente pas de tailles.
+ *    vide, couleur non déclarée, taille unique ⇒ pas de bloc, pas de feuille ;
+ *  • **aucun prix barré, aucune remise, aucune pastille de pourcentage** ;
+ *  • la galerie (photos puis vidéo), la feuille de taille (ordre du serveur,
+ *    « Dernier article » seulement quand le stock vaut 1) ;
+ *  • les vignettes de couleur : la photo vient du média de la variante, jamais
+ *    d'une autre couleur ;
+ *  • la livraison : la date est calculée depuis le délai du CRM, jamais écrite.
  *
  * Le rendu (React Native) n'est pas monté : la mécanique et les décisions sont
  * pures, donc lisibles ici — même méthode que `reelTray.test.ts`.
@@ -18,36 +22,58 @@ import { resolve } from 'node:path';
 
 import {
   FICHE,
+  addBusinessDays,
+  colorTiles,
+  deliveryWindow,
   ficheSections,
-  sectionLabelKey,
-  specGroups,
+  formatDay,
   galleryItems,
+  hasSizeChoice,
   headerIsSolid,
   headerProgress,
+  sectionIcon,
+  sectionLabelKey,
   selectionReady,
-  sheetOffset,
+  singleDimensionValue,
+  singleSize,
   sizeChoices,
+  sizeRows,
+  specGroups,
   specRows,
 } from '../src/features/product/fiche';
 
+/** Le code, sans ses commentaires : une phrase citée dans une explication n'est
+ *  pas une couleur ni une ligne d'écran. */
+const code = (rel: string) => readFileSync(resolve(__dirname, '..', rel), 'utf8')
+  .replace(/\/\*[\s\S]*?\*\//g, '')
+  .replace(/\/\/[^\n]*/g, '');
+
+/** Le fichier entier, commentaires compris (pour vérifier ce qui est MONTÉ). */
 const src = (rel: string) => readFileSync(resolve(__dirname, '..', rel), 'utf8');
 
-describe('fiche — mécanique de la planche', () => {
-  it('photo 430 (décision du propriétaire), feuille qui la recouvre de 16', () => {
-    expect(FICHE.imageHeight).toBe(430);
-    expect(FICHE.overlap).toBe(16);
-    expect(sheetOffset()).toBe(430 - 16);
+describe('fiche — cotes de la maquette (720 × 1600 px ⇒ ÷ 2 en dp)', () => {
+  it('la photo mesure 581 dp (1162 px) et la barre d’achat 71 dp (142 px)', () => {
+    expect(FICHE.imageHeight).toBe(581);
+    expect(FICHE.barHeight).toBe(71);
+    expect(FICHE.rowHeight).toBe(49);
+    expect(FICHE.band).toBe(9);
   });
 
-  it('l’en-tête bascule quand la feuille atteint son bas — pas avant', () => {
-    const seuil = FICHE.imageHeight - FICHE.headerHeight - FICHE.overlap;
+  it('l’en-tête bascule quand la photo a quitté le haut de l’écran — pas avant', () => {
+    const seuil = FICHE.imageHeight - FICHE.headerHeight;
     expect(headerIsSolid(seuil - 1)).toBe(false);
     expect(headerIsSolid(seuil)).toBe(true);
     expect(headerIsSolid(seuil + 200)).toBe(true);
-    // Le dégradé couvre les 40 px qui précèdent : aucun saut d'un pixel à l'autre.
+    // Le dégradé couvre les 40 dp qui précèdent : aucun saut d'un pixel à l'autre.
     expect(headerProgress(seuil - 40)).toBe(0);
     expect(headerProgress(seuil)).toBe(1);
     expect(headerProgress(seuil - 20)).toBeCloseTo(0.5, 5);
+  });
+
+  it('les 12 tailles de la maquette tiennent sur un écran de 800 dp', () => {
+    // 430 px de début + 12 × 96 px = 1582 px, soit 791 dp : le dernier numéro est visible.
+    const debut = 215; // (430 px)
+    expect(debut + 12 * FICHE.sizeRowHeight).toBeLessThanOrEqual(791);
   });
 });
 
@@ -101,11 +127,13 @@ describe('fiche — sections décidées par le CRM', () => {
     ] }]);
   });
 
-  it('chaque section a un libellé traduit, et l’inconnu retombe sur « الخصائص »', () => {
+  it('chaque section a un libellé TRADUIT et une icône de la famille officielle', () => {
     expect(sectionLabelKey('matiere')).toBe('product.section.matiere');
-    expect(sectionLabelKey('technique')).toBe('product.section.technique');
     expect(sectionLabelKey('')).toBe('product.specs');
-    expect(sectionLabelKey('autre')).toBe('product.specs');
+    // Ionicons : la seule famille d'icônes du projet — aucun pictogramme rapporté.
+    for (const section of ['identite', 'matiere', 'mesures', 'technique', 'beaute', 'pratique', 'inconnue']) {
+      expect(sectionIcon(section)).toMatch(/-outline$/);
+    }
   });
 });
 
@@ -138,6 +166,27 @@ describe('fiche — feuille de taille', () => {
     expect(sizeChoices([{ key: 'color', values: [{ value: 'Noir', available: true, stock: 1 }] }])).toEqual([]);
   });
 
+  it('« Dernier article » n’est annoncé que si le stock vaut exactement 1', () => {
+    const rows = sizeRows([
+      { value: '40', available: true, stock: 1 },
+      { value: '41', available: true, stock: 4 },
+      { value: '42', available: true, stock: null },
+      { value: '43', available: false, stock: 0 },
+    ]);
+    expect(rows.map((row) => row.state)).toEqual(['last', null, null, null]);
+  });
+
+  it('une seule taille ⇒ ligne informative, pas de feuille', () => {
+    const unique = [{ value: 'M', available: true, stock: 2 }];
+    expect(singleSize(unique)).toBe('M');
+    expect(hasSizeChoice(unique)).toBe(false);
+    expect(hasSizeChoice([...unique, { value: 'L', available: true, stock: 1 }])).toBe(true);
+    expect(singleDimensionValue([{ key: 'size', label: 'Taille', values: unique }], 'size')).toBe('M');
+    expect(singleDimensionValue([{ key: 'size', label: 'Taille', values: [
+      { value: 'M', available: true, stock: 1 }, { value: 'L', available: true, stock: 1 },
+    ] }], 'size')).toBe('');
+  });
+
   it('le CTA n’est armé que si le choix est complet', () => {
     expect(selectionReady(true, false, '', '')).toBe(false);
     expect(selectionReady(true, false, 'M', '')).toBe(true);
@@ -146,17 +195,82 @@ describe('fiche — feuille de taille', () => {
   });
 });
 
-describe('fiche — contrat d’écran', () => {
-  it('l’écran monte les pièces de la planche, pas des cartes empilées', () => {
-    const screen = src('app/product/[id].tsx');
-    for (const piece of ['FicheHeader', 'FicheMedia', 'GalleryViewer', 'SizeSheet', 'BuyBar', 'Accordion']) {
-      expect(screen, piece).toContain(piece);
-    }
-    expect(screen).toContain('sheetOffset()');
-    expect(screen).toContain('Animated.ScrollView');
+describe('fiche — vignettes de couleur', () => {
+  const dimension = {
+    key: 'color' as const,
+    label: 'Couleur',
+    values: [
+      { value: 'Gris', available: true, stock: 4 },
+      { value: 'Rouge', available: false, stock: 0 },
+    ],
+  };
+
+  it('la photo d’une couleur vient de SES variantes, jamais d’une autre', () => {
+    const tiles = colorTiles({
+      dimensions: [dimension],
+      variants: [
+        { id: 'v1', sku: 'A', size: '40', color: 'Gris', images: ['/media/gris.jpg'], available: true, stock: 4, reason: null },
+        { id: 'v2', sku: 'B', size: '40', color: 'Rouge', images: [], available: false, stock: 0, reason: 'OUT_OF_STOCK' },
+      ],
+    });
+    expect(tiles).toEqual([
+      { color: 'Gris', available: true, image: '/media/gris.jpg' },
+      { color: 'Rouge', available: false, image: null },
+    ]);
   });
 
-  it('le CTA est NOIR (décision 24/10) et la fiche ne calcule aucun prix', () => {
+  it('aucun choix de couleur (0 ou 1 valeur) ⇒ aucun bloc Couleur', () => {
+    expect(colorTiles({ dimensions: [dimension], variants: [] })).toHaveLength(2);
+    expect(colorTiles({ dimensions: [{ ...dimension, values: [dimension.values[0]] }], variants: [] })).toEqual([]);
+    expect(colorTiles(null)).toEqual([]);
+  });
+});
+
+describe('fiche — livraison et retours lus dans le CRM', () => {
+  const now = new Date('2026-10-25T10:00:00.000Z'); // un dimanche
+
+  it('« 5 à 8 jours ouvrés » donne la fenêtre de la maquette (30 octobre - 04 novembre)', () => {
+    expect(deliveryWindow('5 à 8 jours ouvrés', now, 'fr')).toEqual({ from: '30 octobre', to: '4 novembre' });
+  });
+
+  it('les jours ouvrés sautent le week-end, et une seule valeur donne un seul jour', () => {
+    expect(addBusinessDays(now, 1).getDay()).toBe(1); // lundi
+    expect(addBusinessDays(now, 5).getDay()).toBe(5); // vendredi
+    expect(deliveryWindow('3 jours', now, 'fr')).toEqual({ from: '28 octobre', to: '28 octobre' });
+  });
+
+  it('sans nombre dans le réglage, aucune date n’est inventée', () => {
+    expect(deliveryWindow('', now, 'fr')).toBeNull();
+    expect(deliveryWindow(null, now, 'fr')).toBeNull();
+    expect(deliveryWindow('bientôt', now, 'fr')).toBeNull();
+  });
+
+  it('la date se lit dans la langue de l’application', () => {
+    expect(formatDay(now, 'fr')).toBe('25 octobre');
+    expect(formatDay(now, 'ar')).toBe('25 أكتوبر');
+  });
+});
+
+describe('fiche — contrat d’écran', () => {
+  it('l’écran monte les pièces de la maquette, dans son ordre', () => {
+    const screen = src('app/product/[id].tsx');
+    for (const piece of ['FicheHeader', 'FichePhoto', 'FicheIdentity', 'ChoiceRow', 'ColorStrip', 'SectionRow', 'InfoRow', 'BuyBar', 'GalleryViewer', 'SizeSheet']) {
+      expect(screen, piece).toContain(piece);
+    }
+    expect(screen).toContain('Animated.ScrollView');
+    expect(screen).toContain('deliveryWindow');
+  });
+
+  it('aucun « prix conseillé », aucun prix barré, aucune remise', () => {
+    for (const rel of ['app/product/[id].tsx', 'src/features/product/ProductFiche.tsx', 'src/features/product/fiche.ts']) {
+      const source = code(rel);
+      expect(source, rel).not.toContain('compareAtPrice');
+      expect(source, rel).not.toContain('Prix conseillé');
+      expect(source, rel).not.toMatch(/remise|discount|pourcentage/i);
+    }
+  });
+
+  it('le CTA est NOIR (décision du propriétaire) et la fiche ne calcule aucun prix', () => {
     const parts = src('src/features/product/ProductFiche.tsx');
     expect(parts).toMatch(/tone="solid"/);
     expect(parts).not.toMatch(/tone="main"/);

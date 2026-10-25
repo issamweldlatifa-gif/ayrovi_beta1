@@ -121,8 +121,10 @@ describe('صفحة المنتوج — قرار موثّق', () => {
     // في `requestedSize` / `requestedColor` (المسار يقبلهم من قبل). بلاه، السطر
     // في السلّة يقول «منتوج» بلا مقاس — والمخزن يبيع حاجة أخرى.
     const source = screen();
-    expect(source).toContain('requestedSize: size || undefined');
-    expect(source).toContain('requestedColor: color || undefined');
+    expect(source).toContain('requestedSize: selection.size || undefined');
+    expect(source).toContain('requestedColor: selection.color || undefined');
+    // L'écran envoie EXACTEMENT le choix affiché (taille unique comprise).
+    expect(source).toContain('mutate({ size: chosenSize, color: chosenColor })');
     expect(source).toContain('variantChoiceState');
   });
 
@@ -160,10 +162,14 @@ describe('صفحة المنتوج — قرار موثّق', () => {
     expect(screen()).toContain('outOfStock');
   });
 
-  it('وفيها الإجراءان اللي ينجّمو يتنفّذو: التاجر + المفضلة', () => {
+  it('وفيها الإجراءات اللي ينجّمو يتنفّذو فعلاً: المشاركة + السلّة', () => {
+    // 25/10/2026 — الموكاب الجديد: ما عادش فماش سطر «افتح عند التاجر» ولا زرّ
+    // المفضلة في الفيش. اللي بقى هوما إجراءات حقيقية: Partager، والسلّة في
+    // الهيدر، والزرّ الأسود في البارّة.
     const source = screen();
-    expect(source).toContain('catalog.openSource');
-    expect(source).toContain('addCatalogFavorite');
+    expect(source).toContain("t('product.share')");
+    expect(source).toContain("router.push('/cart')");
+    expect(source).not.toContain('addCatalogFavorite');
   });
 });
 

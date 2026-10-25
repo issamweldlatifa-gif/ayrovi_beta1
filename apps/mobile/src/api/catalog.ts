@@ -27,6 +27,12 @@ export interface SheetVariant {
   sku: string;
   size: string;
   color: string;
+  /**
+   * Photos de CETTE variante (couleur) dans le CRM. `undefined` = le serveur ne
+   * les publie pas encore ; vide = aucune photo rattachée à cette couleur. Dans
+   * les deux cas l'écran n'emprunte **jamais** la photo d'une autre couleur.
+   */
+  images?: string[];
   available: boolean;
   stock: number | null;
   reason: 'INACTIVE' | 'OUT_OF_STOCK' | null;
@@ -172,6 +178,7 @@ function parseSheet(payload: unknown): ProductSheet | null {
       sku: text(variant.sku),
       size: text(variant.size),
       color: text(variant.color),
+      images: list(variant.images),
       available: variant.available === true,
       stock: numOrNull(variant.stock),
       reason,

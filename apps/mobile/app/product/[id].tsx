@@ -1,67 +1,83 @@
 /**
- * صفحة المنتوج — **الورقة الكبيرة** (إعادة بناء 24/10/2026).
+ * صفحة المنتوج — **الفيش الكاملة** (إعادة بناء 25/10/2026، الموكاب
+ * `docs/design/cardproduit/mockup-complet-25-10.png`).
  *
  * القاعدة الذهبية ما تبدّلتش: **كل رقم يبان هو رقم الخادم**. التطبيق ما يجمّعش
  * أتعاب، ولا يحوّل عملة، ولا «يقدّر» سعراً.
  *
- * ── شنوّة تبدّل (الموكاب: `docs/design/bigcard/mockup-sticky-24-10.png`) ─────
- *   • **الصورة ثابتة (430)**: ما تتحرّكش، والورقة البيضاء هي اللي تطلع فوقها؛
- *   • **en-tête** شفّاف فوق الصورة، يولّي أبيض كي توصلو الورقة (بلا قفزة)؛
- *   • **galerie** كاملة: تصاور + فيديو، بضغطة تتحلّ في فل سكرين (عدّاد + سحب)؛
- *   • **feuille المقاس** عوض الـchips اللي تدفع الصفحة؛
- *   • **أقسام قابلة للفتح** (الخصائص · الوصف · تفصيل السعر) — قسم بلا محتوى ما
- *     يظهرش أصلاً؛
- *   • **بارّة شراء ثابتة** بزرّ **أسود** (قرار المالك، 24/10).
+ * ── شنوّة في الشاشة (بالترتيب، كيما الموكاب) ────────────────────────────────
+ *  1. الصورة + النقاط (ضغطة ⇒ فولسكرين)؛
+ *  2. الاسم مسطّر على قد الكلمة + الثمن في الاتجاه الآخر + الوصف (سطرين)؛
+ *  3. خطّ رقيق، ثمّ سطر **Taille** (بسهم يفتح ورقة المقاسات)؛
+ *  4. شريط رمادي سميك، ثمّ **Couleur** + صور الألوان؛
+ *  5. أقسام من الـCRM (Caractéristiques · Matière · Taille & coupe…) — قسم بلا
+ *     محتوى ما يظهرش؛
+ *  6. **Livraison rapide** (التاريخ محسوب من مدّة التوصيل في الـCRM) و
+ *     **Retours gratuits** (عدد الأيام من الـCRM) و**Partager**؛
+ *  7. بارّة ثابتة: الثمن على اليسار والزرّ **أسود** على اليمين.
+ *
+ * ── شنوّة ما فماش (قرار المالك) ────────────────────────────────────────────
+ *  • **ما فماش «Prix conseillé»**، ما فماش ثمن مشطوب، ما فماش نسبة تخفيض؛
+ *  • ما فماش عدّاد حملة في البارّة.
  *
  * والصدق في الزرّ: ما يخدمش كي يكون السعر غايب، ولا المنتوج نافد، ولا الاختيار
  * ناقص — الخادم يرفض الثلاثة، فما نعرضوش زرّ يعرف مسبقاً أنه بش يفشل.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Linking, Pressable, StyleSheet, View } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { Animated, Share, StyleSheet, View } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import Ionicons from '@expo/vector-icons/Ionicons';
 
-import { AppText, KeyValue } from '@/design/ui';
+import { KeyValue } from '@/design/ui';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { SubScreen } from '@/design/subScreen';
 import { goBack } from '@/design/navigation';
 import { useTheme } from '@/design/theme';
-import { useT } from '@/i18n';
-import { addCatalogFavorite, fetchFavorites } from '@/api/account';
+import { useI18n } from '@/i18n';
 import { addCatalogToCart } from '@/api/cart';
 import { isApiError } from '@/api/errors';
+import { fetchCommercePolicy } from '@/api/checkout';
 import { fetchCatalogProduct, fetchCatalogProducts, normalizeStockStatus } from '@/api/catalog';
 import { variantChoiceState } from '@/features/shopping/variantChoice';
 import {
-  Accordion,
   BuyBar,
+  ChoiceRow,
+  ColorStrip,
   FicheHeader,
-  FicheMedia,
+  FicheIdentity,
+  FichePhoto,
   GalleryViewer,
+  GrayBand,
+  Hairline,
+  InfoRow,
+  SectionRow,
   SizeSheet,
 } from '@/features/product/ProductFiche';
 import {
   FICHE,
-  ficheSections,
+  colorTiles,
+  deliveryWindow,
   galleryItems,
+  hasSizeChoice,
+  sectionIcon,
   sectionLabelKey,
-  sheetOffset,
+  singleDimensionValue,
+  singleSize,
   sizeChoices,
+  sizeRows,
   specGroups,
+  type ColorTile,
 } from '@/features/product/fiche';
-import { useSession } from '@/state/session';
 import { useSessionId } from '@/session/session';
 
 export default function ProductScreen() {
   const theme = useTheme();
-  const t = useT();
+  const { t, locale } = useI18n();
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const session = useSession();
-  const signedIn = session.status === 'signedIn';
   const sessionId = useSessionId();
+  const queryClient = useQueryClient();
 
   /**
    * المقاس واللون اللي اختارهم المستعمل — يتبعثوا مع السلّة
@@ -69,24 +85,18 @@ export default function ProductScreen() {
    */
   const [size, setSize] = useState('');
   const [color, setColor] = useState('');
-  useEffect(() => { setSize(''); setColor(''); }, [id]);
-  const queryClient = useQueryClient();
-
-  /** Galerie plein écran + feuille de taille : état d'écran, pas de la donnée. */
+  /** الصورة المعروضة: تتبدّل كي يختار couleur عندها صورة (ميديا المتغيّر). */
+  const [photo, setPhoto] = useState(0);
   const [viewer, setViewer] = useState<number | null>(null);
   const [sizeSheet, setSizeSheet] = useState(false);
   const scrollY = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => { setSize(''); setColor(''); setPhoto(0); }, [id]);
 
   const products = useQuery({
     queryKey: ['catalog', 'products', 'all'],
     queryFn: ({ signal }) => fetchCatalogProducts({ signal, limit: 50 }),
     staleTime: 120_000,
-  });
-
-  const favorites = useQuery({
-    queryKey: ['account', 'favorites'],
-    queryFn: ({ signal }) => fetchFavorites({ signal }),
-    enabled: signedIn,
   });
 
   // La fiche se lit par identifiant : un produit lié à un contenu n'est pas forcément
@@ -98,36 +108,34 @@ export default function ProductScreen() {
     staleTime: 120_000,
     retry: false,
   });
-  const product = byId.data ?? (products.data ?? []).find((entry) => entry.id === id) ?? null;
-  const isFavorite = (favorites.data ?? []).some((entry) => entry.productId === id);
 
   /**
-   * «زيد للسلّة» — `/api/cart/catalog` يستعمل `final_price` المنشور ⇒ سعر واحد.
+   * Conditions commerciales (délai de livraison, fenêtre de retour) : elles
+   * viennent du CRM, jamais d'un nombre écrit dans l'écran.
+   */
+  const policy = useQuery({
+    queryKey: ['commerce', 'policy'],
+    queryFn: ({ signal }) => fetchCommercePolicy({ signal }),
+    staleTime: 300_000,
+    retry: false,
+  });
+
+  const product = byId.data ?? (products.data ?? []).find((entry) => entry.id === id) ?? null;
+
+  /**
+   * « زيد للسلّة » — `/api/cart/catalog` يستعمل `final_price` المنشور ⇒ سعر واحد.
    */
   const addToCart = useMutation({
-    mutationFn: () => addCatalogToCart({
+    mutationFn: (selection: { size: string; color: string }) => addCatalogToCart({
       productId: String(id),
       sessionId,
-      requestedSize: size || undefined,
-      requestedColor: color || undefined,
+      requestedSize: selection.size || undefined,
+      requestedColor: selection.color || undefined,
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cart'] });
     },
   });
-
-  const favorite = useMutation({
-    mutationFn: () => addCatalogFavorite(String(id)),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['account', 'favorites'] });
-      queryClient.invalidateQueries({ queryKey: ['account'] });
-    },
-  });
-
-  const openSource = useCallback(() => {
-    if (!product?.sourceUrl) return;
-    Linking.openURL(product.sourceUrl).catch(() => null);
-  }, [product?.sourceUrl]);
 
   if (!product && products.isPending && byId.isPending) {
     return (
@@ -162,10 +170,23 @@ export default function ProductScreen() {
     ? sheet.images
     : [product.image, ...product.additionalImages].filter(Boolean);
   const items = galleryItems(images, sheet?.videos ?? []);
-  const choice = variantChoiceState(sheet, { size, color });
 
   const sizes = sizeChoices(sheet?.dimensions);
-  const colors = sheet?.dimensions.find((dimension) => dimension.key === 'color')?.values ?? [];
+  const rows = sizeRows(sizes);
+  const tiles = colorTiles(sheet);
+  /** مقاس واحد معلن ⇒ سطر معلوماتي، بلا ورقة وبلا اختيار. */
+  const onlySize = singleSize(sizes);
+  const chooseSize = hasSizeChoice(sizes);
+
+  /**
+   * الاختيار المفروض: قيمة وحيدة في الـCRM ما تسألش عليها — والموديل يعرض
+   * الصورة الأولى، فالصورة الأولى واللون الأول هوما اللي معروضين فعلاً.
+   */
+  const chosenSize = size || singleDimensionValue(sheet?.dimensions, 'size');
+  const chosenColor = color
+    || (tiles.length > 0 ? tiles[0]?.color ?? '' : singleDimensionValue(sheet?.dimensions, 'color'));
+
+  const choice = variantChoiceState(sheet, { size: chosenSize, color: chosenColor });
 
   const outOfStock = normalizeStockStatus(product.stockStatus) === 'OUT_OF_STOCK'
     || sheet?.stock.status === 'OUT_OF_STOCK';
@@ -173,168 +194,117 @@ export default function ProductScreen() {
   const purchasable = sheet ? sheet.purchasable : product.finalPrice > 0 && !outOfStock;
   /** واختيار ناقص = طلب ناقص: الزر ما يخدمش حتى يكمل الاختيار. */
   const canOrder = purchasable && choice.ready;
-  const priceLabel = product.finalPrice > 0 ? `${product.finalPrice.toFixed(2)} TND` : t('catalog.noPrice');
-  const stockLine = sheet?.stock.tracked && sheet.stock.quantity !== null
-    ? sheet.stock.status === 'OUT_OF_STOCK'
-      ? t('catalog.stock.out_of_stock')
-      : sheet.stock.status === 'LOW'
-        ? t('catalog.stock.left', { count: sheet.stock.quantity })
-        : t('catalog.stock.in_stock')
-    : null;
+  const hasPrice = product.finalPrice > 0;
+  const priceLabel = hasPrice ? `${product.finalPrice.toFixed(2)} TND` : '';
 
-  /** Attributs regroupés par section du CRM ; les sections vides n'existent pas. */
+  /** Caractéristiques : une section par famille du CRM ; les vides n'existent pas. */
   const groups = specGroups(product.attributes);
-  const sections = ficheSections({ attributes: product.attributes, description: product.description, hasPrice: product.finalPrice > 0 });
-  const chosen = [size, color].filter(Boolean).join(' · ');
+
+  /** Livraison : la date est calculée à partir du délai publié par le CRM. */
+  const deliveryDates = policy.data ? deliveryWindow(policy.data.deliveryDelay, new Date(), locale) : null;
+  const deliveryLines = deliveryDates ? [`${deliveryDates.from} - ${deliveryDates.to}`] : [];
+  const returnLines = policy.data?.returnsDays
+    ? [t('product.returnsWindow', { days: policy.data.returnsDays })]
+    : [];
+
+  const share = useCallback(() => {
+    Share.share({ message: hasPrice ? `${product.name} — ${priceLabel}` : product.name }).catch(() => null);
+  }, [hasPrice, priceLabel, product.name]);
+
+  const pickColor = (tile: ColorTile) => {
+    setColor(tile.color);
+    if (tile.image) {
+      const position = items.findIndex((item) => item.url === tile.image);
+      if (position >= 0) setPhoto(position);
+    }
+  };
 
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.canvas }]}>
-      {/* 1. الصورة ثابتة تحت كل شيء: الورقة هي اللي تطلع فوقها. */}
-      <FicheMedia items={items} onOpen={setViewer} topInset={insets.top} />
-
       <Animated.ScrollView
         testID="product-fiche-scroll"
         scrollEventThrottle={16}
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: false })}
-        contentContainerStyle={{ paddingBottom: FICHE.ctaHeight + insets.bottom + 28 }}
+        contentContainerStyle={{ paddingBottom: FICHE.ctaHeight + insets.bottom }}
         showsVerticalScrollIndicator={false}
       >
-        {/* الفراغ اللي يخلّي الصورة تبان قبل ما تطلع الورقة. */}
-        <View style={{ height: sheetOffset() + insets.top }} />
+        {/* 1. الصورة + النقاط */}
+        <FichePhoto items={items} index={photo} onOpen={setViewer} />
 
-        <View
-          style={[
-            styles.sheet,
-            { backgroundColor: theme.colors.canvas, paddingHorizontal: FICHE.gutter },
-          ]}
-        >
-          {product.brandName ? (
-            <AppText variant="caption" color={theme.colors.muted}>{product.brandName}</AppText>
-          ) : null}
-          <AppText variant="title" weight="bold" numberOfLines={3}>{product.name}</AppText>
-          <AppText variant="label" weight="bold">{priceLabel}</AppText>
-          {stockLine ? (
-            <AppText variant="caption" color={theme.colors.muted}>{stockLine}</AppText>
-          ) : null}
+        {/* 2. الاسم مسطّر + الثمن + الوصف */}
+        <FicheIdentity name={product.name} price={hasPrice ? priceLabel : null} description={product.description} />
 
-          {/* 2. الاختيار: صفّ واحد يفتح feuille بدل شبكة تدفع الصفحة. */}
-          {sizes.length > 0 || colors.length > 1 ? (
-            <Pressable
-              testID="product-size-row"
-              accessibilityRole="button"
-              accessibilityLabel={t('catalog.chooseTitle')}
-              onPress={() => setSizeSheet(true)}
-              style={[styles.choiceRow, { borderColor: theme.colors.line }]}
-            >
-              <AppText variant="caption" color={theme.colors.muted}>{t('catalog.chooseTitle')}</AppText>
-              <View style={styles.choiceValue}>
-                <AppText variant="body" weight="bold" numberOfLines={1}>
-                  {chosen || t('catalog.chooseSize')}
-                </AppText>
-                <Ionicons name={theme.isRTL ? 'chevron-back' : 'chevron-forward'} size={18} color={theme.colors.ink} accessibilityElementsHidden />
-              </View>
-            </Pressable>
-          ) : null}
+        {/* 3. خطّ رقيق ثمّ سطر Taille */}
+        <View style={styles.rule} />
+        <Hairline />
+        <ChoiceRow
+          icon="resize-outline"
+          label={t('catalog.size')}
+          value={onlySize ? t('product.singleSize') : chosenSize || undefined}
+          chevron={chooseSize}
+          onPress={chooseSize ? () => setSizeSheet(true) : undefined}
+          testID="product-size-row"
+        />
+        <GrayBand />
 
-          {choice.missing === 'size' && sizes.length > 0 ? (
-            <AppText variant="caption" color={theme.colors.muted}>{t('catalog.chooseSize')}</AppText>
-          ) : null}
-          {choice.missing === 'color' && colors.length > 1 ? (
-            <AppText variant="caption" color={theme.colors.muted}>{t('catalog.chooseColor')}</AppText>
-          ) : null}
-          {!choice.missing && choice.matched && !choice.available ? (
-            <AppText variant="caption" color={theme.status.danger.fg}>{t('catalog.variant.unavailable')}</AppText>
-          ) : null}
-          {outOfStock ? (
-            <AppText variant="caption" color={theme.status.danger.fg}>{t('catalog.stock.out_of_stock')}</AppText>
-          ) : null}
+        {/* 4. Couleur + صور الألوان (الصورة تجي من ميديا المتغيّر) */}
+        {tiles.length > 0 ? (
+          <>
+            <View style={styles.colorBlock}>
+              <ChoiceRow icon="color-palette-outline" label={t('catalog.color')} value={chosenColor} />
+              <ColorStrip tiles={tiles} selected={chosenColor} onSelect={pickColor} />
+            </View>
+            <GrayBand />
+          </>
+        ) : null}
 
-          {/* 3. الأقسام: بلا محتوى ⇒ بلا قسم. */}
-          {product.family || product.brandName || product.category ? (
-            <Accordion title={t('product.section.identite')} defaultOpen>
-              <View style={styles.specs}>
-                {product.family ? <KeyValue label={t('product.family')} value={product.family.name} /> : null}
-                {product.brandName ? <KeyValue label={t('catalog.brand')} value={product.brandName} /> : null}
-                {product.category ? <KeyValue label={t('catalog.category')} value={product.category} /> : null}
-              </View>
-            </Accordion>
-          ) : null}
+        {/* 5. أقسام الـCRM */}
+        {groups.length > 0 ? (
+          <>
+            {groups.map((group) => (
+              <SectionRow key={group.section} icon={sectionIcon(group.section)} title={t(sectionLabelKey(group.section))}>
+                <View style={styles.specs}>
+                  {group.rows.map((row) => <KeyValue key={row.key} label={row.label} value={row.value} />)}
+                </View>
+              </SectionRow>
+            ))}
+            <GrayBand />
+          </>
+        ) : null}
 
-          {groups.map((group) => (
-            <Accordion key={group.section} title={t(sectionLabelKey(group.section))}>
-              <View style={styles.specs}>
-                {group.rows.map((row) => <KeyValue key={row.key} label={row.label} value={row.value} />)}
-              </View>
-            </Accordion>
-          ))}
-
-          {sections.description ? (
-            <Accordion title={t('product.description')}>
-              <AppText variant="body">{product.description}</AppText>
-            </Accordion>
-          ) : null}
-
-          {sections.priceDetail ? (
-            <Accordion title={t('catalog.priceDetail')}>
-              <KeyValue
-                label={t('catalog.sourcePrice')}
-                value={product.originalPrice > 0 ? `${product.originalPrice} ${product.currency}`.trim() : t('catalog.noPrice')}
-              />
-              <KeyValue label={t('catalog.customs')} value={`${product.customsFee.toFixed(2)} TND`} />
-              <KeyValue label={t('catalog.shipping')} value={`${product.shippingFee.toFixed(2)} TND`} />
-              <KeyValue label={t('catalog.service')} value={`${product.serviceFee.toFixed(2)} TND`} />
-              <KeyValue label={t('catalog.totalTnd')} value={priceLabel} />
-              {stockLine ? <KeyValue label={t('catalog.availability')} value={stockLine} /> : null}
-              {product.expressAvailable ? (
-                <AppText variant="caption" color={theme.status.info.fg}>{t('catalog.express')}</AppText>
-              ) : null}
-            </Accordion>
-          ) : null}
-
-          {/* 4. الإجراءات الثانوية: كل واحدة تنجّم تتنفّذ فعلاً. */}
-          <View style={styles.secondary}>
-            {product.sourceUrl ? (
-              <Pressable accessibilityRole="button" accessibilityLabel={t('catalog.openSource')} onPress={openSource} style={styles.linkRow}>
-                <AppText variant="caption">{t('catalog.openSource')}</AppText>
-                <Ionicons name="open-outline" size={18} color={theme.colors.ink} accessibilityElementsHidden />
-              </Pressable>
-            ) : null}
-            {signedIn ? (
-              <Pressable
-                testID="product-favorite"
-                accessibilityRole="button"
-                accessibilityState={{ selected: isFavorite, disabled: isFavorite || favorite.isPending }}
-                accessibilityLabel={isFavorite ? t('catalog.favorited') : t('catalog.favorite')}
-                disabled={isFavorite || favorite.isPending}
-                onPress={() => favorite.mutate()}
-                style={styles.linkRow}
-              >
-                <AppText variant="caption">{isFavorite ? t('catalog.favorited') : t('catalog.favorite')}</AppText>
-                <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={18} color={theme.colors.ink} accessibilityElementsHidden />
-              </Pressable>
-            ) : null}
-          </View>
-
-          {favorite.isError ? (
-            <AppText accessibilityRole="alert" variant="caption" color={theme.status.danger.fg}>{t('catalog.retry')}</AppText>
-          ) : null}
-          {addToCart.isError ? (
-            <AppText accessibilityRole="alert" variant="caption" color={theme.status.danger.fg}>
-              {isApiError(addToCart.error) && addToCart.error.code ? addToCart.error.code : t('catalog.retry')}
-            </AppText>
-          ) : null}
-        </View>
+        {/* 6. التوصيل والإرجاع والمشاركة */}
+        <InfoRow
+          icon="car-outline"
+          title={t('product.fastDelivery')}
+          titleColor={theme.status.success.fg}
+          lines={deliveryLines}
+        />
+        {returnLines.length > 0 ? (
+          <InfoRow icon="arrow-undo-outline" title={t('product.freeReturns')} lines={returnLines} />
+        ) : null}
+        <GrayBand />
+        <InfoRow icon="share-social-outline" title={t('product.share')} onPress={share} testID="product-share" />
+        <Hairline />
       </Animated.ScrollView>
 
-      <FicheHeader title={product.name} onBack={() => goBack('/')} scrollY={scrollY} topInset={insets.top} />
+      <FicheHeader
+        title={product.name}
+        onBack={() => goBack('/')}
+        onCart={() => router.push('/cart')}
+        scrollY={scrollY}
+        topInset={insets.top}
+      />
 
-      {purchasable ? (
+      {purchasable && hasPrice ? (
         <BuyBar
           price={priceLabel}
           label={addToCart.isSuccess ? t('catalog.added') : t('catalog.addToCart')}
           busy={addToCart.isPending}
           disabled={addToCart.isSuccess || !sessionId || !canOrder}
-          onPress={() => addToCart.mutate()}
+          onPress={() => addToCart.mutate({ size: chosenSize, color: chosenColor })}
+          error={addToCart.isError
+            ? (isApiError(addToCart.error) && addToCart.error.code ? addToCart.error.code : t('catalog.retry'))
+            : null}
           testID="product-add-to-cart"
         />
       ) : null}
@@ -343,12 +313,9 @@ export default function ProductScreen() {
       <SizeSheet
         visible={sizeSheet}
         onClose={() => setSizeSheet(false)}
-        choices={sizes}
-        selected={size}
-        onSelect={setSize}
-        colorChoices={colors}
-        color={color}
-        onColor={setColor}
+        rows={rows}
+        selected={chosenSize}
+        onSelect={(value) => { setSize(value); setSizeSheet(false); }}
       />
     </View>
   );
@@ -356,21 +323,7 @@ export default function ProductScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  sheet: {
-    borderTopLeftRadius: FICHE.sheetRadius,
-    borderTopRightRadius: FICHE.sheetRadius,
-    paddingTop: 20,
-    gap: 8,
-  },
-  choiceRow: {
-    marginTop: 8,
-    paddingVertical: 12,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    gap: 6,
-  },
-  choiceValue: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  rule: { height: FICHE.ruleGap },
+  colorBlock: { paddingTop: FICHE.blockTop, paddingBottom: FICHE.blockBottom },
   specs: { gap: 8 },
-  secondary: { marginTop: 8, gap: 12 },
-  linkRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8 },
 });
