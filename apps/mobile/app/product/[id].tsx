@@ -24,7 +24,7 @@
  * ناقص — الخادم يرفض الثلاثة، فما نعرضوش زرّ يعرف مسبقاً أنه بش يفشل.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Share, StyleSheet, View } from 'react-native';
+import { Animated, Pressable, Share, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -44,8 +44,8 @@ import {
   ChoiceRow,
   ColorStrip,
   FicheHeader,
+  FichePhotoLayer,
   FicheIdentity,
-  FichePhoto,
   GalleryViewer,
   GrayBand,
   Hairline,
@@ -234,6 +234,9 @@ export default function ProductScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.canvas }]}>
+      {/* 1. الصورة ثابتة (ما تتحرّكش): الورقة البيضاء هي اللي تطلع فوقها */}
+      <FichePhotoLayer items={items} index={photo} />
+
       <Animated.ScrollView
         testID="product-fiche-scroll"
         scrollEventThrottle={16}
@@ -241,10 +244,18 @@ export default function ProductScreen() {
         contentContainerStyle={{ paddingBottom: FICHE.ctaHeight + insets.bottom }}
         showsVerticalScrollIndicator={false}
       >
-        {/* 1. الصورة + النقاط */}
-        <FichePhoto items={items} index={photo} onOpen={setViewer} />
+        {/* النافذة الشفافة: من هنا تبان الصورة الثابتة، والضغطة تفتح الفولسكرين */}
+        <Pressable
+          testID="product-photo-window"
+          accessibilityRole="button"
+          accessibilityLabel={t('product.openGallery')}
+          onPress={() => setViewer(photo)}
+          style={styles.photoWindow}
+        />
 
-        {/* 2. الاسم مسطّر + الثمن + الوصف */}
+        {/* 2. الورقة: fond opaque, angles droits (cotes de la maquette) */}
+        <View style={[styles.sheet, { backgroundColor: theme.colors.canvas }]}>
+        {/* الاسم مسطّر + الثمن + الوصف */}
         <FicheIdentity name={product.name} price={hasPrice ? priceLabel : null} description={product.description} />
 
         {/* 3. خطّ رقيق ثمّ سطر Taille */}
@@ -302,6 +313,7 @@ export default function ProductScreen() {
         <GrayBand />
         <InfoRow icon="share-social-outline" title={t('product.share')} onPress={share} testID="product-share" />
         <Hairline />
+        </View>
       </Animated.ScrollView>
 
       <FicheHeader
@@ -340,6 +352,10 @@ export default function ProductScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  /** Fenêtre de la photo : transparente, elle laisse voir la couche épinglée. */
+  photoWindow: { height: FICHE.imageHeight },
+  /** La feuille qui monte : opaque (elle doit cacher la photo) et sans coin arrondi. */
+  sheet: { overflow: 'hidden' },
   rule: { height: FICHE.ruleGap },
   colorBlock: { paddingTop: FICHE.blockTop, paddingBottom: FICHE.blockBottom },
   specs: { gap: 8 },

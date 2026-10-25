@@ -299,4 +299,52 @@ describe('fiche — contrat d’écran', () => {
     expect(screen).toContain('sheet?.videos');
     expect(screen).toContain('galleryItems(images');
   });
+
+  /**
+   * LA MÉCANIQUE DE LA PLANCHE `docs/design/bigcard/mockup-sticky-24-10.png` :
+   * « الصورة ثابتة والورقة تتحرك » — la photo ne défile pas, la feuille blanche
+   * monte par-dessus, l'en-tête passe de transparent à blanc quand elle arrive,
+   * et la barre d'achat ne bouge jamais.
+   */
+  it('la photo est ÉPINGLÉE et la feuille glisse par-dessus', () => {
+    const fiche = src('src/features/product/ProductFiche.tsx');
+    // Une couche fixe en haut de l'écran, de la hauteur exacte de la photo.
+    expect(fiche).toContain('pinnedPhoto: { position: \'absolute\', top: 0, start: 0, end: 0, height: FICHE.imageHeight }');
+    expect(fiche).toContain('export function FichePhotoLayer');
+    // La couche est inerte au toucher : l'appui passe à la fenêtre de la feuille.
+    expect(fiche).toContain('pointerEvents="none"');
+
+    const screen = src('app/product/[id].tsx');
+    // La photo n'est PLUS dans le flux du défilement…
+    expect(screen).toContain('<FichePhotoLayer');
+    expect(screen).not.toMatch(/<FichePhoto\s/);
+    // …la feuille réserve la fenêtre de la photo, puis monte par-dessus.
+    expect(screen).toContain('photoWindow: { height: FICHE.imageHeight }');
+    expect(screen).toContain('styles.photoWindow');
+    expect(screen).toContain('product-photo-window');
+  });
+
+  it('l’en-tête devient blanc exactement quand la feuille atteint le haut', () => {
+    // Le seuil est la hauteur de photo MOINS la hauteur d'en-tête : au-delà, la
+    // feuille est sous l'en-tête, il n'y a plus de photo derrière lui.
+    expect(headerIsSolid(FICHE.imageHeight - FICHE.headerHeight - 1)).toBe(false);
+    expect(headerIsSolid(FICHE.imageHeight - FICHE.headerHeight)).toBe(true);
+    // La fenêtre de photo est plus haute que l'en-tête, sinon il n'y aurait
+    // jamais de photo derrière un en-tête transparent.
+    expect(FICHE.imageHeight).toBeGreaterThan(FICHE.headerHeight);
+    const fiche = src('src/features/product/ProductFiche.tsx');
+    expect(fiche).toContain('borderBottomWidth: FICHE.headerRule');
+    expect(fiche).toContain('opacity: solid');
+  });
+
+  it('la barre d’achat est FIXE (elle ne défile pas)', () => {
+    const fiche = src('src/features/product/ProductFiche.tsx');
+    expect(fiche).toContain('buyBar: { position: \'absolute\', start: 0, end: 0, bottom: 0 }');
+    const screen = src('app/product/[id].tsx');
+    // Elle est rendue HORS du ScrollView (après sa fermeture).
+    const afterScroll = screen.slice(screen.indexOf('</Animated.ScrollView>'));
+    expect(afterScroll).toContain('<BuyBar');
+    // Et la page réserve sa hauteur en bas du contenu.
+    expect(screen).toContain('paddingBottom: FICHE.ctaHeight + insets.bottom');
+  });
 });

@@ -121,6 +121,33 @@ export function FicheHeader({
   );
 }
 
+/* ── 1 bis. La photo ÉPINGLÉE derrière la feuille qui monte ──────────────────
+ *
+ * Planche `docs/design/bigcard/mockup-sticky-24-10.png` : « الصورة ثابتة والورقة
+ * تتحرك ». La photo ne défile donc PAS : elle est posée dans une couche fixe en
+ * haut de l'écran, et la feuille blanche monte par-dessus au défilement.
+ *
+ * Deux conséquences volontaires :
+ *  • la couche est `pointerEvents="none"` (et masquée aux lecteurs d'écran) :
+ *    l'appui qui ouvre le plein écran se fait dans la FENÊTRE de la feuille, pas
+ *    ici — sinon deux zones tactiles se superposeraient pour le même geste ;
+ *  • les points de galerie restent dans la photo : ils disparaissent sous la
+ *    feuille en même temps qu'elle, comme sur la planche.
+ */
+export function FichePhotoLayer({ items, index }: { items: GalleryItem[]; index: number }) {
+  return (
+    <View
+      style={styles.pinnedPhoto}
+      pointerEvents="none"
+      accessible={false}
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    >
+      <FichePhoto items={items} index={index} onOpen={() => {}} />
+    </View>
+  );
+}
+
 /* ── 2. Photo (écran 1) : une photo, des points, un appui = plein écran ────── */
 
 export function FichePhoto({
@@ -687,6 +714,8 @@ export function GalleryViewer({
 
 const styles = StyleSheet.create({
   header: { position: 'absolute', top: 0, start: 0, end: 0 },
+  /* La couche épinglée : la photo ne bouge pas, la feuille glisse dessus. */
+  pinnedPhoto: { position: 'absolute', top: 0, start: 0, end: 0, height: FICHE.imageHeight },
   headerRow: { flex: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 2 },
   headerButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { flex: 1, textAlign: 'center', fontSize: FICHE.headerTitle },
