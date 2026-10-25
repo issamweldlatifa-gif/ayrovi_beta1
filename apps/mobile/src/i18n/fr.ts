@@ -627,6 +627,7 @@ export const fr = {
   'lens.resultsCountMany': '{count} résultats',
   'lens.emptyTitle': 'Aucun résultat assez proche',
   'lens.empty': 'Essayez une photo plus nette, rapprochez le produit ou changez d’angle.',
+  'lens.openUnavailable': 'Aucune page marchande n’est disponible pour ce résultat.',
   'lens.retake': 'Reprendre une photo',
   'lens.sheet.adjust': 'Ajuster la hauteur des résultats',
   'lens.sheet.expand': 'Agrandir les résultats',

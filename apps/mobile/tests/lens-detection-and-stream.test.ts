@@ -44,8 +44,10 @@ describe('Z Lens — la reconnaissance visuelle parle, la recherche progresse', 
   it('une correspondance n’affiche JAMAIS de prix : le prix vient de la page', () => {
     expect(matches).not.toContain('price');
     expect(matches).not.toContain('priceTnd');
-    // Ouvrir une correspondance = lire la page marchande.
-    expect(lens).toContain('analyzeUrl(candidate.sourceUrl');
+    // Ouvrir une correspondance = ouvrir la page marchande DANS le navigateur
+    // AYWEBs (règle unique), jamais une autre fiche : le prix y est lu par capture.
+    expect(lens).toContain('const decision = lensOpenDecision(candidate);');
+    expect(lens).toContain("router.push(decision.target)");
   });
 
   it('le mode Live dit ce qu’il a trouvé, et le dit toujours', () => {

@@ -51,7 +51,6 @@ import { LensProgressLine, lensProgressLabel } from '@/features/lens/LensProgres
 import { LensOverviewCard } from '@/features/lens/LensOverviewCard';
 import { LensSearchBar } from '@/features/lens/LensSearchBar';
 import { OcerexFlow } from '@/features/lens/ocerex/OcerexFlow';
-import { LensProductView } from '@/features/lens/LensProductView';
 import { lensOpenDecision } from '@/features/lens/lensOpen';
 import { LensHelpView } from '@/features/lens/LensHelpView';
 import { LensHistoryView } from '@/features/lens/LensHistoryView';
@@ -60,7 +59,6 @@ import { LensMenu, type LensMenuItem } from '@/features/lens/LensMenu';
 import { LensLiveOverlay } from '@/features/lens/LensLiveOverlay';
 import { LensSelectionView, type SelectionCommit } from '@/features/lens/LensSelectionView';
 import { LENS_COLORS } from '@/features/lens/lensPalette';
-import { mergeLensProduct } from '@/features/lens/productEnrichment';
 import { shrinkImage } from '@/features/lens/lensImage';
 import { FULL_BOX, isFullFrame, padBox, selectionKey, toRoi } from '@/features/lens/lensSelection';
 import { initialMotion, isSteady, nextMotion, shouldDetect, type MotionState } from '@/features/lens/lensLive';
@@ -87,7 +85,6 @@ type Stage =
   | { kind: 'idle' }
   | BusyStage
   | ResultsStage
-  | { kind: 'product'; candidate: LensCandidate; back: ResultsStage; enriching: boolean }
   | { kind: 'error'; error: unknown };
 type SearchJob = (signal: AbortSignal) => Promise<void>;
 type InfoPanel = 'help' | 'history' | 'rules';
@@ -883,38 +880,13 @@ export default function LensScreen() {
    * marchande est lue (prix, stock, tailles). Un retour ou un autre produit
    * annule la lecture.
    */
-  const openProduct = useCallback((candidate: LensCandidate, source: ResultsStage) => {
-    void markChosen(source.eventId);
-    enrichmentRef.current?.abort();
-    const controller = new AbortController();
-    enrichmentRef.current = controller;
-    setStage({ kind: 'product', candidate, back: source, enriching: true });
-
-    void analyzeUrl(candidate.sourceUrl, 'url', false, controller.signal)
-      .then((result) => {
-        if (controller.signal.aborted || !mountedRef.current) return;
-        setStage((current) => current.kind === 'product' && current.candidate.sourceUrl === candidate.sourceUrl
-          ? {
-              ...current,
-              candidate: result.fallback ? current.candidate : mergeLensProduct(current.candidate, result.product),
-              enriching: false,
-            }
-          : current);
-      })
-      .catch(() => {
-        if (controller.signal.aborted || !mountedRef.current) return;
-        setStage((current) => current.kind === 'product' && current.candidate.sourceUrl === candidate.sourceUrl
-          ? { ...current, enriching: false }
-          : current);
-      })
-      .finally(() => {
-        if (enrichmentRef.current === controller) enrichmentRef.current = null;
-      });
-  }, []);
-
+  /**
+   * RÈGLE UNIQUE : toute carte résultat — quelle que soit l'entrée (texte, lien,
+   * image, photo, QR) et quel que soit son `kind` — ouvre le navigateur AYWEBs à
+   * l'adresse marchande. Aucune carte n'emmène vers une autre fiche interne. Une
+   * carte sans lien marchand ouvrable affiche un message honnête et ne navigue pas.
+   */
   const onOpen = useCallback((candidate: LensCandidate) => {
-    // Pendant la recherche, une fiche déjà lue est COMPLÈTE (prix lu sur la
-    // page marchande) : elle s'ouvre. Le retour ramène la grille partielle.
     const source: ResultsStage | null = stage.kind === 'results'
       ? stage
       : stage.kind === 'busy'
@@ -922,33 +894,18 @@ export default function LensScreen() {
         : null;
     if (!source || !isOpenableSourceUrl(candidate.sourceUrl)) return;
 
-    /*
-     * VENTE EXTERNE = NAVIGATEUR INTÉGRÉ (23/10/2026, décision du propriétaire).
-     *
-     * La petite carte porte déjà l'adresse marchande : l'appui ouvre CETTE page
-     * dans le navigateur AYWEBs, le client choisit couleur/taille sur le site,
-     * et « Add to Cart » relit la page (capture) avant d'ajouter. On ne passe
-     * plus par la grande fiche : elle relisait la page pour la réafficher, ce
-     * qui n'ajoutait rien au choix — et elle cachait le vrai prix de la page.
-     *
-     * La fiche reste pour la vente INTERNE (catalogue ZAYROVI) : là, c'est
-     * notre propre stock et notre propre page qui font foi.
-     */
     const decision = lensOpenDecision(candidate);
     if (decision.screen === 'browser') {
       void markChosen(source.eventId);
       router.push(decision.target);
       return;
     }
-    // URL refusée par le navigateur (schéma inattendu) : repli honnête sur la
-    // fiche, qui relit la page côté serveur au lieu de deviner.
-    openProduct(candidate, source);
-  }, [openProduct, stage]);
+    showTip('lens.openUnavailable');
+  }, [showTip, stage]);
 
   /**
-   * Live : ouvrir la page d'une CORRESPONDANCE visuelle. SerpApi a trouvé des
-   * pages qui ressemblent à la photo ; on lit la page pour le prix — jamais
-   * de prix deviné à partir de la photo.
+   * Live : ouvrir la page d'une CORRESPONDANCE visuelle. Même règle unique : le
+   * navigateur AYWEBs, jamais une autre fiche ; sans lien ouvrable, rien ne bouge.
    */
   const onOpenLiveMatch = useCallback((match: LensVisualMatch) => {
     if (!isOpenableSourceUrl(match.url)) return;
@@ -968,15 +925,13 @@ export default function LensScreen() {
     } catch {
       return;
     }
-    /* Correspondance visuelle : c'est une page marchande externe, donc le
-       navigateur intégré — jamais la fiche. */
     const decision = lensOpenDecision(candidate);
     if (decision.screen === 'browser') {
       router.push(decision.target);
       return;
     }
-    openProduct(candidate, { kind: 'results', candidates: [candidate], eventId: '', excluded: 0 });
-  }, [openProduct]);
+    showTip('lens.openUnavailable');
+  }, [showTip]);
 
   const onFavorite = useCallback(async (candidate: LensCandidate) => {
     const key = candidate.sourceUrl;
@@ -1065,23 +1020,6 @@ export default function LensScreen() {
       </View>
     </Modal>
   );
-
-  if (stage.kind === 'product') {
-    return (
-      <LensProductView
-        candidate={stage.candidate}
-        enriching={stage.enriching}
-        onBack={() => {
-          enrichmentRef.current?.abort();
-          enrichmentRef.current = null;
-          setStage(stage.back);
-        }}
-        favorite={favorited[stage.candidate.sourceUrl] === true}
-        favoriteNote={favoriteNote}
-        onFavorite={onFavorite}
-      />
-    );
-  }
 
   if (ocerexOpen) {
     return (

@@ -1,9 +1,11 @@
 /**
- * Lens → navigateur AYWEBs (23/10/2026, décision du propriétaire).
+ * Lens → navigateur AYWEBs (règle unique, durcie le 25/10/2026).
  *
- * Ce que le client a dit, mot pour mot : la petite carte porte déjà le lien du
- * marchand ; l'appui doit ouvrir **cette page dans le navigateur intégré**, pas
- * une grande fiche. La grande fiche reste pour la vente INTERNE (catalogue).
+ * Ce que le client a imposé : QUELLE QUE SOIT l'entrée (texte, lien, image,
+ * photo, QR), toute carte résultat ouvre la page marchande DANS le navigateur
+ * intégré AYWEBs. Il est interdit qu'une carte emmène vers une autre fiche
+ * interne : la décision ne peut plus jamais valoir `product`. Une carte sans
+ * lien marchand ouvrable est `blocked` (aucune navigation, message honnête).
  *
  * Ce fichier verrouille la décision (fonction pure) et le fait que l'écran
  * l'applique — un test de texte, parce que la route est choisie dans un
@@ -21,7 +23,7 @@ import { parseCandidate } from '@/api/lens';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const read = (relative: string) => readFileSync(path.join(here, '..', relative), 'utf8');
 
-describe('lensOpenDecision — vente externe = navigateur, vente interne = fiche', () => {
+describe('lensOpenDecision — toute carte ouvre AYWEBs, jamais une autre fiche', () => {
   it('une carte externe ouvre la page marchande dans le navigateur, à l’adresse exacte', () => {
     const url = 'https://www.zalando.fr/baskets-homme-12345678.html';
     const decision = lensOpenDecision({ kind: 'external', sourceUrl: url, source: 'Zalando' });
@@ -46,17 +48,34 @@ describe('lensOpenDecision — vente externe = navigateur, vente interne = fiche
     expect(card.priceVerificationStatus).toBe('PENDING_MANUAL');
   });
 
-  it('une carte du catalogue ZAYROVI garde la fiche interne', () => {
-    expect(lensOpenDecision({ kind: 'catalog', sourceUrl: 'https://ayrovi.tn/p/123', source: 'Collection ZAYROVI' })
-      .screen).toBe('product');
+  it('une carte CATALOGUE pourvue d’un lien marchand ouvre aussi le navigateur (plus de fiche interne)', () => {
+    const url = 'https://www.shein.com/Robe-ete-p-1234567.html';
+    const decision = lensOpenDecision({ kind: 'catalog', sourceUrl: url, source: 'SHEIN' });
+    expect(decision.screen).toBe('browser');
+    if (decision.screen === 'browser') expect(decision.target.params.url).toBe(url);
   });
 
-  it('une adresse que le navigateur refuserait retombe sur la fiche (jamais un écran cassé)', () => {
-    expect(lensOpenDecision({ kind: 'external', sourceUrl: 'http://exemple.tn/p/1', source: 'Boutique' }).screen)
-      .toBe('product');
-    expect(lensOpenDecision({ kind: 'external', sourceUrl: 'javascript:alert(1)', source: 'Boutique' }).screen)
-      .toBe('product');
-    expect(lensOpenDecision({ kind: 'external', sourceUrl: '', source: 'Boutique' }).screen).toBe('product');
+  it('la décision ne peut plus jamais renvoyer vers une fiche interne', () => {
+    const cases = [
+      { kind: 'catalog' as const, sourceUrl: 'https://amazon.fr/dp/B0ABC', source: 'Amazon' },
+      { kind: 'external' as const, sourceUrl: 'https://amazon.fr/dp/B0ABC', source: 'Amazon' },
+    ];
+    for (const candidate of cases) {
+      expect(lensOpenDecision(candidate).screen).not.toBe('product');
+    }
+  });
+
+  it('une adresse que le navigateur refuserait est bloquée, jamais renvoyée vers un autre écran', () => {
+    const blocked = [
+      { kind: 'external' as const, sourceUrl: 'http://exemple.tn/p/1', source: 'Boutique' },
+      { kind: 'external' as const, sourceUrl: 'javascript:alert(1)', source: 'Boutique' },
+      { kind: 'catalog' as const, sourceUrl: '', source: 'Collection ZAYROVI' },
+    ];
+    for (const candidate of blocked) {
+      const decision = lensOpenDecision(candidate);
+      expect(decision.screen).toBe('blocked');
+      if (decision.screen === 'blocked') expect(decision.reason).toBe('NO_MERCHANT_URL');
+    }
   });
 });
 
@@ -82,7 +101,7 @@ describe('productEntryTarget — entrée produit du navigateur', () => {
   });
 });
 
-describe('l’écran Lens applique la décision', () => {
+describe('l’écran Lens applique la règle unique', () => {
   const lens = read('app/lens.tsx');
 
   it('la carte passe par lensOpenDecision et pousse le navigateur', () => {
@@ -92,5 +111,14 @@ describe('l’écran Lens applique la décision', () => {
 
   it('les correspondances visuelles suivent la même règle', () => {
     expect(lens).toContain('const decision = lensOpenDecision(candidate);');
+  });
+
+  it('aucune carte ne route plus vers la grande fiche interne', () => {
+    expect(lens).not.toContain("setStage({ kind: 'product'");
+    expect(lens).not.toContain('LensProductView');
+  });
+
+  it('un lien non ouvrable affiche un message honnête au lieu de naviguer', () => {
+    expect(lens).toContain("showTip('lens.openUnavailable')");
   });
 });

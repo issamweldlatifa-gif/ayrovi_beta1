@@ -627,6 +627,7 @@ export const ar = {
   'lens.resultsCountMany': '{count} نتائج',
   'lens.emptyTitle': 'ما لقيناش نتيجة قريبة كفاية',
   'lens.empty': 'جرّب صورة أوضح، قرّب المنتوج ولا بدّل زاوية التصوير.',
+  'lens.openUnavailable': 'ما ثماش صفحة تاجر متاحة لهالنتيجة.',
   'lens.retake': 'عاود صوّر',
   'lens.sheet.adjust': 'بدّل علوّ النتائج',
   'lens.sheet.expand': 'كبّر النتائج',
