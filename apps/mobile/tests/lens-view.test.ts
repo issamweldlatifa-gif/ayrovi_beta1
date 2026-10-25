@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { LensCandidate } from '../src/api/lens';
-import { availabilityKey, isOpenableSourceUrl, pricePresentation, priceView, uniqueCandidates } from '../src/features/lens/lensView';
+import { availabilityKey, isOpenableSourceUrl, openableCandidates, pricePresentation, priceView, uniqueCandidates } from '../src/features/lens/lensView';
 
 const base: LensCandidate = {
   id: '1', kind: 'external', title: 't', promo: null, description: null, brand: null, model: null,
@@ -74,5 +74,30 @@ describe('Lens — vue', () => {
     expect(isOpenableSourceUrl('https://x.example')).toBe(true);
     expect(isOpenableSourceUrl('javascript:alert(1)')).toBe(false);
     expect(isOpenableSourceUrl('pas une url')).toBe(false);
+  });
+
+  describe('openableCandidates — toute carte affichée doit ouvrir AYWEBS', () => {
+    it('conserve les fiches https (catalogue comme externe) dans l’ordre', () => {
+      const list = openableCandidates([
+        { ...base, id: 'a', kind: 'external', sourceUrl: 'https://www.amazon.fr/dp/B01' },
+        { ...base, id: 'b', kind: 'catalog', sourceUrl: 'https://www.shein.com/robe-p-1.html' },
+      ]);
+      expect(list.map((c) => c.id)).toEqual(['a', 'b']);
+    });
+
+    it('écarte les liens http, schémas étranges, vides et non-URL (aucune carte morte)', () => {
+      const list = openableCandidates([
+        { ...base, id: 'ok', sourceUrl: 'https://a.example/1' },
+        { ...base, id: 'http', sourceUrl: 'http://a.example/1' },
+        { ...base, id: 'js', sourceUrl: 'javascript:alert(1)' },
+        { ...base, id: 'empty', sourceUrl: '' },
+        { ...base, id: 'text', sourceUrl: 'pas une url' },
+      ]);
+      expect(list.map((c) => c.id)).toEqual(['ok']);
+    });
+
+    it('une liste entièrement non ouvrable devient vide (l’écran montre l’état vide, pas de fausse carte)', () => {
+      expect(openableCandidates([{ ...base, sourceUrl: '' }])).toEqual([]);
+    });
   });
 });

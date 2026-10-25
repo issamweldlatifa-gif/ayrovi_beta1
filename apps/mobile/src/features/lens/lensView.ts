@@ -8,6 +8,7 @@
  */
 import type { LensAvailability, LensCandidate } from '@/api/lens';
 import type { CartLineQuote } from '@/api/pricing';
+import { isBrowserOpenableUrl } from '@/features/aywebs/storeEntry';
 
 export type LensPriceView =
   | { kind: 'tnd'; amount: number }
@@ -93,6 +94,16 @@ export function uniqueCandidates(candidates: readonly LensCandidate[]): LensCand
     out.push(candidate);
   }
   return out;
+}
+
+/**
+ * يحتفظ فقط بالبطاقات التي تفتح فعلًا متصفح AYWEBS (رابط تاجر HTTPS صالح).
+ * قاعدة صارمة: أي بطاقة تُعرض يجب أن تقود إلى AYWEBS، ولا بطاقة ميّتة. البطاقة
+ * بلا رابط تاجر أو برابط غير صالح (http، مخطط غريب، فارغ) تُحذف من النتائج لا
+ * أن تُعرض معطّلة — فيُصار إلى حالة «لا نتائج» الصادقة إن حُذف الكل.
+ */
+export function openableCandidates(candidates: readonly LensCandidate[]): LensCandidate[] {
+  return candidates.filter((candidate) => isBrowserOpenableUrl(candidate.sourceUrl));
 }
 
 /** الرابط يجب أن يكون http(s) قبل فتحه. */

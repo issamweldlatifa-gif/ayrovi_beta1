@@ -44,7 +44,8 @@ import {
   type LensSearchResult,
 } from '@/api/lens';
 import { analyzeImageStream, type LensStreamProgress } from '@/api/lensStream';
-import { isOpenableSourceUrl, uniqueCandidates } from '@/features/lens/lensView';
+import { isOpenableSourceUrl, openableCandidates, uniqueCandidates } from '@/features/lens/lensView';
+import { isBrowserOpenableUrl } from '@/features/aywebs/storeEntry';
 import { LensResultsGrid } from '@/features/lens/LensResultsGrid';
 import { LensSearchSkeleton } from '@/features/lens/LensSearchSkeleton';
 import { LensProgressLine, lensProgressLabel } from '@/features/lens/LensProgressLine';
@@ -394,7 +395,8 @@ export default function LensScreen() {
     /** Le résultat n'écrase que l'attente : l'utilisateur a pu ouvrir une fiche entre-temps. */
     onlyIfBusy = false,
   ) => {
-    const candidates = uniqueCandidates(result.candidates);
+    // قاعدة صارمة: لا تُعرض إلا بطاقات لها رابط تاجر يفتح AYWEBS — لا بطاقة ميّتة.
+    const candidates = openableCandidates(uniqueCandidates(result.candidates));
     const next: ResultsStage = {
       kind: 'results', candidates, eventId: result.eventId,
       excluded: 'excluded' in result ? (result.excluded ?? 0) : 0,
@@ -482,6 +484,8 @@ export default function LensScreen() {
           },
           onCard: (candidate) => {
             if (signal.aborted) return;
+            // بطاقة بلا رابط AYWEBS صالح لا تُعرض أصلًا (نفس قاعدة showSearch).
+            if (!isBrowserOpenableUrl(candidate.sourceUrl)) return;
             setStage((current) => {
               if (current.kind !== 'busy') return current;
               const index = current.cards.findIndex((item) => item.sourceUrl === candidate.sourceUrl);

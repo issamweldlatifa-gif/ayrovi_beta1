@@ -121,4 +121,11 @@ describe('l’écran Lens applique la règle unique', () => {
   it('un lien non ouvrable affiche un message honnête au lieu de naviguer', () => {
     expect(lens).toContain("showTip('lens.openUnavailable')");
   });
+
+  it('aucune carte morte n’est rendue : le filtre est appliqué aux résultats et au flux', () => {
+    // Résultats finaux (texte, lien, QR, image, photo) : seules les cartes ouvrables.
+    expect(lens).toContain('openableCandidates(uniqueCandidates(result.candidates))');
+    // Cartes arrivant en flux pendant la recherche photo : même garde avant rendu.
+    expect(lens).toContain('if (!isBrowserOpenableUrl(candidate.sourceUrl)) return;');
+  });
 });

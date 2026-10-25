@@ -80,3 +80,14 @@ export function productEntryTarget(rawUrl: string, storeName = ''): ProductEntry
     params: { url, storeName: String(storeName ?? '').trim().slice(0, 80), capture: '0' },
   };
 }
+
+/**
+ * Source unique de vérité « ce lien ouvre-t-il le navigateur AYWEBS ? ».
+ * Exactement le critère de `productEntryTarget` (URL publique HTTPS valide),
+ * exposé comme prédicat pour filtrer les cartes avant de les afficher : une
+ * carte non ouvrable ne doit jamais être rendue, puisque toute carte Lens doit
+ * mener au navigateur AYWEBS et nulle part ailleurs.
+ */
+export function isBrowserOpenableUrl(rawUrl: string): boolean {
+  return productEntryTarget(rawUrl) !== null;
+}

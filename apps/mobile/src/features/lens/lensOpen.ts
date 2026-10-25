@@ -12,7 +12,7 @@
  * autre fiche interne : il est interdit qu'une carte emmène l'utilisateur ailleurs
  * que dans AYWEBS.
  */
-import { productEntryTarget, type ProductEntryTarget } from '@/features/aywebs/storeEntry';
+import { isBrowserOpenableUrl, productEntryTarget, type ProductEntryTarget } from '@/features/aywebs/storeEntry';
 
 export interface LensOpenableCandidate {
   kind: 'catalog' | 'external';
@@ -27,6 +27,8 @@ export type LensOpenDecision =
   | { screen: 'blocked'; reason: LensOpenBlockReason };
 
 export function lensOpenDecision(candidate: LensOpenableCandidate): LensOpenDecision {
+  if (!isBrowserOpenableUrl(candidate.sourceUrl)) return { screen: 'blocked', reason: 'NO_MERCHANT_URL' };
+  // Le prédicat vient de garantir l'ouvrabilité : productEntryTarget renvoie une cible.
   const target = productEntryTarget(candidate.sourceUrl, candidate.source);
   if (!target) return { screen: 'blocked', reason: 'NO_MERCHANT_URL' };
   return { screen: 'browser', target };
