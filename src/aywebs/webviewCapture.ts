@@ -42,7 +42,7 @@ import {
   type AyWebsCapturedVariantGroup,
   type AyWebsCapturedVariantValue,
 } from '../../shared/aywebsCapture';
-import type { AyWebsAvailabilityState } from '../../shared/aywebsTypes';
+import type { AyWebsAvailabilityState, AyWebsErrorCode } from '../../shared/aywebsTypes';
 
 /**
  * Ordre de fiabilité des sources de prix : la donnée machine du marchand d'abord,
@@ -329,8 +329,12 @@ function cleanVariantGroups(raw: unknown): AyWebsCapturedVariantGroup[] {
     if (values.length < 1) continue;
     const selected = cleanTextArray((entry as { selected?: unknown }).selected, AYWEBS_CAPTURE_LIMITS.maxVariantGroupValues, 60)
       .filter((value) => values.some((known) => known.toLowerCase() === value.toLowerCase()));
-    /* Sans valeur affichée, il n'y a rien à vérifier — sauf valeur unique. */
-    if (!selected.length && values.length > 1) continue;
+    /* On conserve le groupe même sans sélection prouvée : ses `values` sont les
+       choix que la page publie, donc ceux que la feuille mobile doit proposer
+       (un picker Zalando en <input checkbox> dans un <label> n'expose parfois
+       aucun aria-checked). L'honnêteté de la preuve est ailleurs — `selected`
+       reste vide et aucune `option` d'état/prix n'est fabriquée, donc une
+       combinaison non observée ne peut jamais être tenue pour vérifiée. */
     /* États/prix PAR VALEUR (23/10/2026). Une valeur inconnue n'est jamais
        ajoutée ; un état `null` reste `null` (la page n'a rien dit). */
     const options: AyWebsCapturedVariantValue[] = [];
@@ -1027,4 +1031,42 @@ export function webviewCaptureDivergence(
     return { diverged: true, reason: 'AVAILABILITY_DIVERGED', deltaPercent };
   }
   return { diverged: false, reason: null, deltaPercent };
+}
+
+/**
+ * Traduction d'un motif de refus de capture WebView vers le code d'erreur
+ * metier AYWEBS qui porte la meme signification pour le client.
+ *
+ * Une capture refusee n'est PAS bloquante quand la boutique sait se lire cote
+ * serveur (un adaptateur dedie reprend la main). En revanche, pour une boutique
+ * "catalogue" (aucune lecture serveur possible — CatalogueStoreAdapter), ce
+ * code devient la SEULE reponse honnete : il nomme ce que la capture n'a pas su
+ * prouver au lieu d'un generique "ouvrez la fiche" qui cache la vraie cause
+ * (prix non corrobore, capture perimee, rupture…).
+ */
+export function ayWebsCaptureRejectionErrorCode(rejection: string | null | undefined): AyWebsErrorCode {
+  switch (rejection) {
+    case 'OUT_OF_STOCK':
+      return 'OUT_OF_STOCK';
+    case 'NO_PRICE_TEXT':
+    case 'PRICE_REJECTED':
+      return 'PRICE_UNAVAILABLE';
+    case 'PRICE_NOT_CORROBORATED':
+    case 'AMBIGUOUS_PRICE':
+    case 'BUYBOX_ASIN_MISMATCH':
+      return 'PRICE_AMBIGUOUS';
+    case 'NOT_A_PRODUCT_PAGE':
+      return 'PRODUCT_PAGE_REQUIRED';
+    case 'VARIANT_NOT_PROVEN':
+      return 'VARIANT_UNKNOWN';
+    case 'STALE_CAPTURE':
+    case 'FUTURE_CAPTURE':
+    case 'URL_HOST_MISMATCH':
+    case 'CANONICAL_HOST_MISMATCH':
+    case 'BAD_VERSION':
+    case 'NOT_AN_OBJECT':
+    case 'TOO_LARGE':
+    default:
+      return 'CAPTURE_INCOMPLETE';
+  }
 }

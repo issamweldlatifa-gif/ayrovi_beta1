@@ -23,7 +23,8 @@ import { useTheme } from '@/design/theme';
 import { AppImage } from '@/design/appImage';
 import { useI18n, useT } from '@/i18n';
 import { mediaUrl } from '@/api/client';
-import { isApiError, userMessage } from '@/api/errors';
+import { isApiError } from '@/api/errors';
+import { addErrorMessage } from '@/features/aywebs/addError';
 import {
   AYWEBS_SOURCE_VERIFICATION_REQUIRED, acceptAyWebsCartPriceChange, bridgeAyWebsCartToAyrovi,
   fetchAyWebsCart, removeAyWebsCartItem, updateAyWebsCartItem, verifyAyWebsCart,
@@ -52,7 +53,7 @@ export default function AyWebsCartScreen() {
   });
 
   const onNote = useCallback((error: unknown) => {
-    setNote(isApiError(error) ? userMessage(error)[locale] : t('aywebs.captureFailed'));
+    setNote(addErrorMessage(error, locale, t));
   }, [locale, t]);
 
   const adopt = useCallback((next: { cart: unknown }) => {

@@ -26,7 +26,7 @@ import type { TranslationKey } from '@/i18n/keys';
 import { fetchAyWebsCart } from '@/api/aywebs';
 import { fetchAyroviCart } from '@/api/cart';
 import { addExternalFavorite } from '@/api/account';
-import { userMessage } from '@/api/errors';
+import { addErrorMessage } from '@/features/aywebs/addError';
 import { useSession } from '@/state/session';
 import {
   STORE_CART_SEGMENTS, storeCartSections, type StoreCartSegment,
@@ -106,7 +106,7 @@ export function StoreCartSheet({ visible, onClose, sessionId, storeId }: StoreCa
         {active.isLoading ? <ActivityIndicator color={theme.colors.action} /> : null}
         {active.isError ? (
           <AppText accessibilityRole="alert" variant="label" color={theme.status.danger.fg}>
-            {userMessage(active.error)[locale]}
+            {addErrorMessage(active.error, locale, t)}
           </AppText>
         ) : null}
         {!active.isLoading && !active.isError && sections.length === 0 ? (
@@ -239,7 +239,7 @@ export function StoreFavoriteSheet({ visible, onClose, sourceUrl, title, saved }
         )}
         {add.isError ? (
           <AppText accessibilityRole="alert" variant="label" color={theme.status.danger.fg}>
-            {userMessage(add.error)[locale]}
+            {addErrorMessage(add.error, locale, t)}
           </AppText>
         ) : null}
         {signedIn ? (

@@ -1358,14 +1358,26 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     if (/disabled|unavailable|out[-_ ]?of[-_ ]?stock|sold[-_ ]?out|rupture|epuise/i.test(descriptor + ' ' + String(dataState))) return false;
     return null;
   }
+  /* Doublon EXACT (casse ignoree). Un test en sous-chaine (indexOf sur un
+     join) supprimait a tort une valeur reelle : « S » etait jugee duplicate de
+     « XS », donc une taille valide disparaissait de la feuille. */
+  function ciExactContains(list, candidate) {
+    var needle = String(candidate === null || candidate === undefined ? '' : candidate).toLowerCase();
+    for (var ci = 0; ci < list.length; ci++) {
+      if (String(list[ci]).toLowerCase() === needle) return true;
+    }
+    return false;
+  }
   function pushVariantGroup(name, values, selected, options) {
     if (!name || !values.length) return;
     var label = cut(name, LIMITS.label);
     if (!label || NOT_A_CHOICE.test(label) || NOT_A_VARIANT_GROUP.test(label)) return;
-    /* Rien d'affiché comme choisi = rien de prouvé. On ne publie ni n'invente :
-       une page qui n'affiche pas la combinaison courante ne peut pas fonder une
-       vérification. Exception : une seule valeur = une donnée, pas un choix. */
-    if (!selected.length && values.length > 1) return;
+    /* On publie TOUJOURS les choix que la page presente (au moins 2 valeurs
+       distinctes), meme sans selection reperee : sans eux, la feuille mobile
+       n'offrait aucune taille/couleur (cas Zalando, choix en input checkbox dans
+       un label). L'integrite ne depend pas de cette presence : selected reste
+       vide quand rien n'est prouve, donc aucune combinaison courante n'est
+       affirmee a tort. Le serveur ne tire une preuve que des options/selected. */
     for (var g = 0; g < out.variantGroups.length; g++) {
       if (out.variantGroups[g].name.toLowerCase() === label.toLowerCase()) return;
     }
@@ -1438,7 +1450,7 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
           var opt = selectNode.options[oi];
           var optLabel = text(opt.textContent);
           if (!optLabel || optLabel.length > LIMITS.label || NOT_A_CHOICE.test(optLabel) || isIndexValue(optLabel)) continue;
-          if (values.join('|').toLowerCase().indexOf(optLabel.toLowerCase()) >= 0) continue;
+          if (ciExactContains(values, optLabel)) continue;
           values.push(optLabel);
           if (opt.selected) chosen.push(optLabel);
           valueOptions.push({
@@ -1512,8 +1524,17 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
         for (var gh = 0; gh < groupHosts.length && out.variantGroups.length < LIMITS.variantGroups && gh < 12; gh++) {
           var host = groupHosts[gh];
           if (!host || isInNavigation(host)) continue;
+          /* Le libelle humain du groupe peut etre un titre dans le conteneur
+             (Zalando : h3 « Taille » dans form.size-selector). On le lit avant de
+             retomber sur la classe technique, qui produirait « size selector ». */
+          var hostHeading = '';
+          try {
+            var headingEl = host.querySelector ? host.querySelector('h1,h2,h3,h4,h5,h6,legend') : null;
+            if (headingEl && !isInNavigation(headingEl)) hostHeading = text(headingEl.textContent);
+          } catch (e) { hostHeading = ''; }
           var hostDescriptor = text(host.getAttribute && (host.getAttribute('aria-label') || host.getAttribute('data-testid')))
             || text(String(host.id || '').replace(/[-_]+/g, ' '))
+            || hostHeading
             || text(String(host.className || '').replace(/[-_]+/g, ' '));
           if (!hostDescriptor || hostDescriptor.length > LIMITS.label) continue;
           if (NOT_A_CHOICE.test(hostDescriptor) || NOT_A_VARIANT_GROUP.test(hostDescriptor)) continue;
@@ -1529,13 +1550,29 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
               || text(valueNode.getAttribute && valueNode.getAttribute('title'))
               || text(valueNode.textContent);
             if (!valueLabel || valueLabel.length > 40 || NOT_A_CHOICE.test(valueLabel) || isIndexValue(valueLabel)) continue;
-            if (hostValues.join('|').toLowerCase().indexOf(valueLabel.toLowerCase()) >= 0) continue;
+            if (ciExactContains(hostValues, valueLabel)) continue;
             var checked = String(valueNode.getAttribute && (valueNode.getAttribute('aria-checked') || valueNode.getAttribute('aria-selected')) || '').toLowerCase();
             var classText = String(valueNode.className || '');
-            var isChosen = checked === 'true' || /(^|\s)(selected|active|checked|is-selected)(\s|$)/i.test(classText);
+            /* Certaines boutiques (Zalando size-checkbox) portent l'etat sur un
+               input radio/checkbox ENFANT du label/li cliquable, sans aria ni
+               classe selected sur le conteneur. On lit alors l'entree cochee
+               elle-meme, sans rien inventer (un input sans checked reste non
+               selectionne). */
+            var inputChecked = false;
+            try {
+              if (valueNode.tagName === 'INPUT') {
+                inputChecked = valueNode.checked === true;
+              } else if (valueNode.querySelector) {
+                var checkedInput = valueNode.querySelector('input:checked');
+                inputChecked = !!(checkedInput && checkedInput.checked === true);
+              }
+            } catch (e) { inputChecked = false; }
+            var isChosen = checked === 'true'
+              || /(^|\s)(selected|active|checked|is-selected)(\s|$)/i.test(classText)
+              || inputChecked;
             var valuePrice = priceOnValue(valueNode);
             var cleanLabel = labelWithoutPrice(valueLabel, valuePrice) || valueLabel;
-            if (hostValues.join('|').toLowerCase().indexOf(cleanLabel.toLowerCase()) >= 0) continue;
+            if (ciExactContains(hostValues, cleanLabel)) continue;
             hostValues.push(cleanLabel);
             if (isChosen) hostChosen.push(cleanLabel);
             hostOptions.push({
