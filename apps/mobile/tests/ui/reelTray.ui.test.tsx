@@ -60,14 +60,14 @@ function wrap(node: React.ReactNode) {
   );
 }
 
-const renderCard = (over: Partial<Reel> = {}, fill?: { width: number; height: number }) =>
+const renderCard = async (over: Partial<Reel> = {}, fill?: { width: number; height: number }) =>
   render(wrap(
     <ReelCard reel={reel(over)} active counts={undefined} onOpenComments={jest.fn()} fill={fill} />,
   ));
 
 describe('Reel — tiroir des articles', () => {
-  it('un seul bouton, ouvert par défaut, qui annonce son état', () => {
-    renderCard();
+  it('un seul bouton, ouvert par défaut, qui annonce son état', async () => {
+    await renderCard();
     const toggle = screen.getByTestId('reel-tray-toggle-r1');
     expect(toggle.props.accessibilityState).toMatchObject({ expanded: true });
     expect(toggle.props.accessibilityLabel).toBe('Masquer les articles');
@@ -75,10 +75,10 @@ describe('Reel — tiroir des articles', () => {
     expect(screen.getByText('Pantalon large')).toBeTruthy();
   });
 
-  it('bascule vers « Voir les articles » et masque le tiroir sans quitter l’écran', () => {
+  it('bascule vers « Voir les articles » et masque le tiroir sans quitter l’écran', async () => {
     // Plein écran : le tiroir reste monté (il glisse), donc on peut vérifier son état.
-    renderCard({}, { width: 390, height: 844 });
-    fireEvent.press(screen.getByTestId('reel-tray-toggle-r1'));
+    await renderCard({}, { width: 390, height: 844 });
+    await fireEvent.press(screen.getByTestId('reel-tray-toggle-r1'));
     const toggle = screen.getByTestId('reel-tray-toggle-r1');
     expect(toggle.props.accessibilityLabel).toBe('Voir les articles');
     expect(toggle.props.accessibilityState).toMatchObject({ expanded: false });
@@ -89,20 +89,20 @@ describe('Reel — tiroir des articles', () => {
     expect(screen.queryByTestId('reel-tray-r1')).toBeNull();
 
     // Re-presser ramène l'état ouvert : le bouton est le seul chemin.
-    fireEvent.press(toggle);
+    await fireEvent.press(toggle);
     expect(screen.getByTestId('reel-tray-toggle-r1').props.accessibilityState).toMatchObject({ expanded: true });
     expect(router.push).not.toHaveBeenCalled();
   });
 
-  it('fermé, le tiroir n’est plus rendu du tout dans la liste (rien de caché)', () => {
-    renderCard();
+  it('fermé, le tiroir n’est plus rendu du tout dans la liste (rien de caché)', async () => {
+    await renderCard();
     expect(screen.getByTestId('reel-tray-r1')).toBeTruthy();
-    fireEvent.press(screen.getByTestId('reel-tray-toggle-r1'));
+    await fireEvent.press(screen.getByTestId('reel-tray-toggle-r1'));
     expect(screen.queryByTestId('reel-tray-r1')).toBeNull();
   });
 
-  it('les articles sont un carrousel horizontal, une carte par produit', () => {
-    renderCard({
+  it('les articles sont un carrousel horizontal, une carte par produit', async () => {
+    await renderCard({
       product: product('p1', 'Pantalon large'),
       products: [product('p1', 'Pantalon large'), product('p2', 'Veste simili cuir')],
     });
@@ -112,8 +112,8 @@ describe('Reel — tiroir des articles', () => {
     expect(screen.getByTestId('reel-product-r1-p2')).toBeTruthy();
   });
 
-  it('sans produit : aucun bouton, aucun tiroir', () => {
-    renderCard({ product: null, products: [] });
+  it('sans produit : aucun bouton, aucun tiroir', async () => {
+    await renderCard({ product: null, products: [] });
     expect(screen.queryByTestId('reel-tray-toggle-r1')).toBeNull();
     expect(screen.queryByTestId('reel-tray-r1')).toBeNull();
   });

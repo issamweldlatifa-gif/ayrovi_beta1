@@ -74,12 +74,12 @@ export default function OrdersScreen() {
             <LoadingBlock />
           ) : query.isError ? (
             <ErrorBlock error={query.error} onRetry={retry} />
-          ) : null
+          ) : undefined
         }
         ListEmptyComponent={
           !query.isLoading && !query.isError ? (
             <EmptyBlock><AppText variant="body" align="center">{t('orders.empty')}</AppText></EmptyBlock>
-          ) : null
+          ) : undefined
         }
         renderItem={({ item: order }) => (
           // Toute la carte ouvre le détail : c'est le geste attendu, et il est

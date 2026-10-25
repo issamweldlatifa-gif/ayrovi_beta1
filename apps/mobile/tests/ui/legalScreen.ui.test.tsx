@@ -33,7 +33,7 @@ jest.mock('../../src/state/prefs', () => {
 });
 
 async function renderLegal(docId: 'terms' | 'privacy') {
-  const view = render(
+  const view = await render(
     <PrefsProvider>
       <I18nProvider>
         <ThemeProvider>
@@ -47,7 +47,7 @@ async function renderLegal(docId: 'terms' | 'privacy') {
 }
 
 describe('pages légales dans l’application', () => {
-  afterEach(() => {
+  afterEach(async () => {
     (globalThis as any).__testLocale = undefined;
     jest.clearAllMocks();
   });
@@ -60,14 +60,14 @@ describe('pages légales dans l’application', () => {
 
   it('le bouton retour revient à l’écran précédent, sans navigateur', async () => {
     await renderLegal('terms');
-    fireEvent.press(screen.getByRole('button', { name: 'Retour' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Retour' }));
     expect(router.back).toHaveBeenCalledTimes(1);
   });
 
   it('sans écran précédent (ouverture directe), le retour ramène au compte', async () => {
     (router.canGoBack as jest.Mock).mockReturnValueOnce(false);
     await renderLegal('privacy');
-    fireEvent.press(screen.getByRole('button', { name: 'Retour' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Retour' }));
     expect(router.replace).toHaveBeenCalledWith('/(tabs)/account');
   });
 

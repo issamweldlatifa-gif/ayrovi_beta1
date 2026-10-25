@@ -56,9 +56,9 @@ jest.mock('@/api/aywebs', () => {
   };
 });
 
-function renderTab() {
+async function renderTab() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
+  return await render(
     <QueryClientProvider client={client}>
       <SafeAreaProvider initialMetrics={{ frame: { x: 0, y: 0, width: 390, height: 844 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } }}>
         <PrefsProvider>
@@ -77,7 +77,7 @@ function renderTab() {
 
 describe('onglet AYWEBs — page Stores', () => {
   it('affiche la page Stores (cartes des boutiques) à la place du collage de lien', async () => {
-    renderTab();
+    await renderTab();
     await waitFor(() => expect(screen.getByTestId('aywebs-store-store-0')).toBeTruthy(), { timeout: 5000 });
     expect(screen.getByText('Stores')).toBeTruthy();
     expect(screen.queryByTestId('aywebs-analyze')).toBeNull();
@@ -85,7 +85,7 @@ describe('onglet AYWEBs — page Stores', () => {
   });
 
   it('n\'affiche pas la carte panier dans l\'onglet', async () => {
-    renderTab();
+    await renderTab();
     await waitFor(() => expect(screen.getByTestId('aywebs-store-store-0')).toBeTruthy(), { timeout: 5000 });
     expect(screen.queryByTestId('aywebs-open-cart')).toBeNull();
     expect(screen.queryByText('Panier d’achat')).toBeNull();

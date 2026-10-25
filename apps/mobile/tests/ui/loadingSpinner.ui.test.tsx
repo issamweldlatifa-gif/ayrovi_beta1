@@ -16,15 +16,15 @@ const wrap = (node: ReactNode) => (
   <PrefsProvider><I18nProvider><ThemeProvider>{node}</ThemeProvider></I18nProvider></PrefsProvider>
 );
 
-afterEach(() => {
+afterEach(async () => {
   jest.restoreAllMocks();
 });
 
 describe('LoadingSpinner', () => {
-  it('lance la rotation en boucle quand les animations ne sont pas réduites', () => {
+  it('lance la rotation en boucle quand les animations ne sont pas réduites', async () => {
     jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);
     const loop = jest.spyOn(Animated, 'loop');
-    render(wrap(<LoadingSpinner testID="spin" />));
+    await render(wrap(<LoadingSpinner testID="spin" />));
     expect(screen.getByTestId('spin', { includeHiddenElements: true })).toBeTruthy();
     expect(loop).toHaveBeenCalled();
   });

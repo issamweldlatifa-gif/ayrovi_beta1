@@ -18,7 +18,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   Pressable, StyleSheet, View,
-  type LayoutChangeEvent, type ScrollView,
+  type LayoutChangeEvent, type ScrollViewInstance,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -82,7 +82,7 @@ export default function CheckoutScreen() {
   const [result, setResult] = useState<CheckoutResult | null>(null);
 
   /* ── مسلك الطلب: المرحلة تُقرا من **التمرير**، موش من عدّاد ────────────── */
-  const scrollRef = useRef<ScrollView | null>(null);
+  const scrollRef = useRef<ScrollViewInstance | null>(null);
   const offsets = useRef<Record<string, number>>({});
   const [activeStep, setActiveStep] = useState(0);
 

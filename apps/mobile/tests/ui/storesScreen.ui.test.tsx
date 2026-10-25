@@ -67,9 +67,9 @@ jest.mock('@/api/aywebs', () => {
   };
 });
 
-function renderScreen() {
+async function renderScreen() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
+  return await render(
     <QueryClientProvider client={client}>
       <SafeAreaProvider initialMetrics={{ frame: { x: 0, y: 0, width: 390, height: 844 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } }}>
         <PrefsProvider>
@@ -85,22 +85,22 @@ function renderScreen() {
 }
 
 describe('écran Magasins — catalogue complet', () => {
-  beforeEach(() => mockPush.mockClear());
+  beforeEach(async () => mockPush.mockClear());
 
   it('se monte avec les 380 boutiques sans erreur', async () => {
-    renderScreen();
+    await renderScreen();
     await waitFor(() => expect(screen.getByTestId('aywebs-store-store-0')).toBeTruthy(), { timeout: 5000 });
     expect(screen.getByTestId('aywebs-store-store-379')).toBeTruthy();
   });
 
   it('affiche le lien « Visiter le site » sur les cartes (y compris catalogue)', async () => {
-    renderScreen();
+    await renderScreen();
     await waitFor(() => expect(screen.getByTestId('aywebs-store-visit-store-1')).toBeTruthy(), { timeout: 5000 });
   });
 
   it('une erreur de rendu affiche le bloc d\'erreur avec « Réessayer » au lieu de fermer l\'app', async () => {
     const retry = jest.fn();
-    render(
+    await render(
       <PrefsProvider>
         <ThemeProvider>
           <I18nProvider>
@@ -110,21 +110,21 @@ describe('écran Magasins — catalogue complet', () => {
       </PrefsProvider>,
     );
     expect(screen.getByText(/erreur inattendue/i)).toBeTruthy();
-    fireEvent.press(screen.getByRole('button'));
+    await fireEvent.press(screen.getByRole('button'));
     expect(retry).toHaveBeenCalledTimes(1);
   });
 
   it('toucher une boutique du catalogue l\'ouvre dans le navigateur intégré (barre AYWEBs)', async () => {
-    renderScreen();
+    await renderScreen();
     await waitFor(() => expect(screen.getByTestId('aywebs-store-store-1')).toBeTruthy(), { timeout: 5000 });
-    await act(async () => { fireEvent.press(screen.getByTestId('aywebs-store-store-1')); });
+    await act(async () => { await fireEvent.press(screen.getByTestId('aywebs-store-store-1')); });
     expect(mockPush).toHaveBeenCalledWith(expect.objectContaining({ pathname: '/aywebs/browser' }));
   });
 
   it('ouvre la liste complète sans erreur', async () => {
-    renderScreen();
+    await renderScreen();
     await waitFor(() => expect(screen.getByTestId('aywebs-store-store-0')).toBeTruthy(), { timeout: 5000 });
-    await act(async () => { fireEvent.press(screen.getByTestId('aywebs-stores-list')); });
+    await act(async () => { await fireEvent.press(screen.getByTestId('aywebs-stores-list')); });
     expect(screen.getByTestId('aywebs-store-store-379')).toBeTruthy();
   });
 });

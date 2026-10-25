@@ -93,10 +93,16 @@ function wrap(node: React.ReactNode) {
   );
 }
 
+/**
+ * Nom de l'hôte natif d'expo-image sous Test Renderer (RNTL 14 ne rend que des
+ * éléments hôtes : les composants composites n'apparaissent plus dans l'arbre).
+ */
+const EXPO_IMAGE_HOST = 'ViewManagerAdapter_ExpoImage';
+
 /** Flou demandé aux images de la galerie (`expo-image` le reçoit en prop). */
 function blurOfGallery(): number[] {
-  const { Image: ExpoImage } = require('expo-image');
-  return screen.UNSAFE_getAllByType(ExpoImage).map((node: Record<string, any>) => node.props.blurRadius ?? 0);
+  return screen.root!.queryAll((node) => node.type === EXPO_IMAGE_HOST)
+    .map((node: Record<string, any>) => node.props.blurRadius ?? 0);
 }
 
 /** Opacité réelle d'une couche animée (valeur interne lue hors animation). */
@@ -112,13 +118,13 @@ function readOpacity(node: Record<string, any>): number {
 }
 
 describe('fiche produit Lens native', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     mockPush.mockClear();
     (addExternalToCart as jest.Mock).mockClear();
   });
 
   it('auto-sélectionne Standard et masque les contrôles à choix unique', async () => {
-    render(wrap(<LensProductView candidate={candidate()} onBack={() => {}} />));
+    await render(wrap(<LensProductView candidate={candidate()} onBack={() => {}} />));
 
     expect(await screen.findByTestId('lens-product-view')).toBeOnTheScreen();
     expect(screen.queryByTestId('lens-option-selector')).toBeNull();
@@ -128,13 +134,13 @@ describe('fiche produit Lens native', () => {
   });
 
   it('affiche les identités marchandes scrapées dans Caractéristiques (fiche Zalando)', async () => {
-    render(wrap(<LensProductView
+    await render(wrap(<LensProductView
       candidate={candidate({ sku: 'LV040BM333', gtin: '6CA22S0GI-C11' })}
       onBack={() => {}}
     />));
 
     expect(await screen.findByTestId('lens-product-view')).toBeOnTheScreen();
-    fireEvent.press(screen.getByTestId('lens-accordion-characteristics'));
+    await fireEvent.press(screen.getByTestId('lens-accordion-characteristics'));
     expect(screen.getByText('Référence du modèle')).toBeOnTheScreen();
     expect(screen.getByText('LV040BM333')).toBeOnTheScreen();
     expect(screen.getByText('Code-barres')).toBeOnTheScreen();
@@ -146,14 +152,14 @@ describe('fiche produit Lens native', () => {
       sku: 'LV040BM333',
       details: [{ key: 'productNumber', label: 'Référence du modèle', value: 'LV040BM333', section: 'details' }],
     });
-    render(wrap(<LensProductView candidate={withMerchantRef} onBack={() => {}} />));
+    await render(wrap(<LensProductView candidate={withMerchantRef} onBack={() => {}} />));
     expect(await screen.findByTestId('lens-product-view')).toBeOnTheScreen();
-    fireEvent.press(screen.getByTestId('lens-accordion-characteristics'));
+    await fireEvent.press(screen.getByTestId('lens-accordion-characteristics'));
     expect(screen.getAllByText('LV040BM333')).toHaveLength(1);
   });
 
   it('affiche les signaux de fiche publiés par le marchand (Zalando)', async () => {
-    render(wrap(<LensProductView candidate={candidate({
+    await render(wrap(<LensProductView candidate={candidate({
       sizeAdvice: 'Nous vous recommandons de choisir une taille au-dessus de celle habituelle.',
       modelInfo: 'Notre mannequin (190 cm) porte une taille XL',
       manufacturingInfo: 'Turquie',
@@ -170,13 +176,13 @@ describe('fiche produit Lens native', () => {
     expect(screen.getByText('1j4h22m')).toBeOnTheScreen();
     expect(screen.getByTestId('lens-merchant-delivery')).toBeOnTheScreen();
     expect(screen.getByText('23 octobre-29 octobre')).toBeOnTheScreen();
-    fireEvent.press(screen.getByTestId('lens-accordion-characteristics'));
+    await fireEvent.press(screen.getByTestId('lens-accordion-characteristics'));
     expect(screen.getByText('Informations sur la fabrication')).toBeOnTheScreen();
     expect(screen.getByText('Turquie')).toBeOnTheScreen();
   });
 
   it('ouvre une section Dimensions et une ligne de retours quand la fiche les publie', async () => {
-    render(wrap(<LensProductView candidate={candidate({
+    await render(wrap(<LensProductView candidate={candidate({
       dimensionsInfo: '30 x 20 x 10 cm',
       returnsPolicy: 'Retours gratuits',
     })} onBack={() => {}} />));
@@ -184,19 +190,19 @@ describe('fiche produit Lens native', () => {
     expect(await screen.findByTestId('lens-product-view')).toBeOnTheScreen();
     expect(screen.getByTestId('lens-merchant-returns')).toBeOnTheScreen();
     expect(screen.getByText('Retours gratuits')).toBeOnTheScreen();
-    fireEvent.press(screen.getByTestId('lens-accordion-dimensions'));
+    await fireEvent.press(screen.getByTestId('lens-accordion-dimensions'));
     expect(screen.getByText('30 x 20 x 10 cm')).toBeOnTheScreen();
   });
 
   it('n’ouvre aucune section Dimensions sans mesure publiée', async () => {
-    render(wrap(<LensProductView candidate={candidate()} onBack={() => {}} />));
+    await render(wrap(<LensProductView candidate={candidate()} onBack={() => {}} />));
     expect(await screen.findByTestId('lens-product-view')).toBeOnTheScreen();
     expect(screen.queryByTestId('lens-accordion-dimensions')).toBeNull();
     expect(screen.queryByTestId('lens-merchant-returns')).toBeNull();
   });
 
   it('n’affiche aucun signal quand la page marchande n’en publie pas', async () => {
-    render(wrap(<LensProductView candidate={candidate()} onBack={() => {}} />));
+    await render(wrap(<LensProductView candidate={candidate()} onBack={() => {}} />));
     expect(await screen.findByTestId('lens-product-view')).toBeOnTheScreen();
     expect(screen.queryByTestId('lens-model-info')).toBeNull();
     expect(screen.queryByTestId('lens-size-advice')).toBeNull();
@@ -205,7 +211,7 @@ describe('fiche produit Lens native', () => {
   });
 
   it('ne traduit jamais un signal marchand en équivalence de taille chiffrée', async () => {
-    render(wrap(<LensProductView candidate={candidate({
+    await render(wrap(<LensProductView candidate={candidate({
       sizeAdvice: 'Nous vous recommandons de choisir une taille au-dessus de celle habituelle.',
       modelInfo: 'Notre mannequin (190 cm) porte une taille XL',
     })} onBack={() => {}} />));
@@ -218,7 +224,7 @@ describe('fiche produit Lens native', () => {
   });
 
   it('n’invente aucune identité quand la source n’en publie pas', async () => {
-    render(wrap(<LensProductView candidate={candidate()} onBack={() => {}} />));
+    await render(wrap(<LensProductView candidate={candidate()} onBack={() => {}} />));
     expect(await screen.findByTestId('lens-product-view')).toBeOnTheScreen();
     expect(screen.queryByTestId('lens-accordion-characteristics')).toBeNull();
     expect(screen.queryByText('Référence du modèle')).toBeNull();
@@ -226,7 +232,7 @@ describe('fiche produit Lens native', () => {
   });
 
   it('pose un en-tête transparent sur la photo : icônes blanches, aucune pastille', async () => {
-    render(wrap(<LensProductView candidate={candidate()} onBack={() => {}} />));
+    await render(wrap(<LensProductView candidate={candidate()} onBack={() => {}} />));
     expect(await screen.findByTestId('lens-product-view')).toBeOnTheScreen();
 
     // Retour et panier sont posés à même la photo : l'encre (noire) est à 0.
@@ -241,14 +247,14 @@ describe('fiche produit Lens native', () => {
   });
 
   it('transforme l’en-tête en bande pleine et voile la photo quand la fiche monte', async () => {
-    render(wrap(<LensProductView candidate={candidate()} onBack={() => {}} />));
+    await render(wrap(<LensProductView candidate={candidate()} onBack={() => {}} />));
     expect(await screen.findByTestId('lens-product-view')).toBeOnTheScreen();
 
     const drawer = screen.getByTestId('lens-product-drawer');
     // Second cran atteint (et dépassé) : la fiche recouvre la photo, l'en-tête
     // est plein. Les interpolations sont bornées, donc une valeur large suffit.
     await act(async () => {
-      fireEvent.scroll(drawer, { nativeEvent: { contentOffset: { y: 600, x: 0 }, layoutMeasurement: { width: 390, height: 844 }, contentSize: { width: 390, height: 1600 } } });
+      await fireEvent.scroll(drawer, { nativeEvent: { contentOffset: { y: 600, x: 0 }, layoutMeasurement: { width: 390, height: 844 }, contentSize: { width: 390, height: 1600 } } });
     });
 
     expect(readOpacity(screen.getByTestId('lens-header-back-ink'))).toBeCloseTo(1, 5);
@@ -259,7 +265,7 @@ describe('fiche produit Lens native', () => {
   });
 
   it('présente les caractéristiques en grille : intitulé au-dessus, valeur dessous', async () => {
-    render(wrap(<LensProductView
+    await render(wrap(<LensProductView
       candidate={candidate({
         details: [
           { key: 'length', label: 'Longueur', value: 'longueur standard', section: 'details' },
@@ -270,7 +276,7 @@ describe('fiche produit Lens native', () => {
       onBack={() => {}}
     />));
     expect(await screen.findByTestId('lens-product-view')).toBeOnTheScreen();
-    fireEvent.press(screen.getByTestId('lens-accordion-characteristics'));
+    await fireEvent.press(screen.getByTestId('lens-accordion-characteristics'));
 
     // Grille Zalando : deux cellules par rangée, libellé puis valeur en dessous.
     expect(screen.getByTestId('lens-fact-grid')).toBeOnTheScreen();
@@ -285,14 +291,14 @@ describe('fiche produit Lens native', () => {
   });
 
   it('ouvre un guide des tailles qui n’invente aucune équivalence', async () => {
-    render(wrap(<LensProductView
+    await render(wrap(<LensProductView
       candidate={candidate({ sizes: ['40', '41', '42'], colors: ['Noir'] })}
       onBack={() => {}}
     />));
     expect(await screen.findByTestId('lens-product-view')).toBeOnTheScreen();
     expect(screen.queryByTestId('lens-size-guide-sheet')).toBeNull();
 
-    fireEvent.press(await screen.findByTestId('lens-open-size-guide'));
+    await fireEvent.press(await screen.findByTestId('lens-open-size-guide'));
     const sheet = await screen.findByTestId('lens-size-guide-sheet');
     expect(sheet).toBeOnTheScreen();
     // Les tailles affichées sont celles du marchand, une par une, sans conversion inventée.
@@ -301,32 +307,36 @@ describe('fiche produit Lens native', () => {
     expect(screen.getByText('42')).toBeOnTheScreen();
     // La méthode générale est annoncée comme telle (aucune donnée inventée).
     expect(screen.getByText(/Méthode générale/)).toBeOnTheScreen();
-    fireEvent.press(screen.getByTestId('lens-size-guide-close'));
+    await fireEvent.press(screen.getByTestId('lens-size-guide-close'));
     await waitFor(() => expect(screen.queryByTestId('lens-size-guide-sheet')).toBeNull());
   });
 
   it('montre le cercle d’attente tant que la photo n’existe pas, puis s’efface', async () => {
-    render(wrap(<LensProductView candidate={candidate()} onBack={() => {}} />));
+    await render(wrap(<LensProductView candidate={candidate()} onBack={() => {}} />));
     expect(await screen.findByTestId('lens-product-view')).toBeOnTheScreen();
     // Pas de rectangle muet : l'attente est le cercle en pointillés ZAYROVI.
     expect(screen.getByTestId('lens-hero-waiting')).toBeOnTheScreen();
 
-    const images = screen.UNSAFE_getAllByType(require('expo-image').Image);
-    await act(async () => { images[0].props.onLoad?.(); });
+    const images = screen.root!.queryAll((node) => node.type === EXPO_IMAGE_HOST);
+    // expo-image 58 lit `event.nativeEvent` (avec alerte de dépréciation) : un
+    // appel à nu leverait une TypeError, on passe donc un événement minimal.
+    await act(async () => {
+      images[0].props.onLoad?.({ nativeEvent: { source: { width: 1, height: 1, uri: 'test' } } });
+    });
     await waitFor(() => expect(screen.queryByTestId('lens-hero-waiting')).toBeNull());
   });
 
   it('ouvre la photo en plein écran sur une pression, et la referme au bouton', async () => {
-    render(wrap(<LensProductView candidate={candidate({ images: ['https://images.example/third.jpg'] })} onBack={() => {}} />));
+    await render(wrap(<LensProductView candidate={candidate({ images: ['https://images.example/third.jpg'] })} onBack={() => {}} />));
     expect(await screen.findByTestId('lens-product-view')).toBeOnTheScreen();
     expect(screen.queryByTestId('lens-gallery-viewer')).toBeNull();
 
-    fireEvent.press(screen.getByTestId('lens-gallery-zoom-image'));
+    await fireEvent.press(screen.getByTestId('lens-gallery-zoom-image'));
     // La pression simple laisse la fenêtre du double geste avant d'ouvrir.
     await act(async () => { await new Promise((resolve) => setTimeout(resolve, 380)); });
     expect(await screen.findByTestId('lens-gallery-viewer')).toBeOnTheScreen();
 
-    fireEvent.press(screen.getByTestId('lens-gallery-viewer-close'));
+    await fireEvent.press(screen.getByTestId('lens-gallery-viewer-close'));
     await waitFor(() => expect(screen.queryByTestId('lens-gallery-viewer')).toBeNull());
   });
 
@@ -345,14 +355,14 @@ describe('fiche produit Lens native', () => {
         option({ id: 'blue-l', label: 'Bleu · L', color: 'Bleu', size: 'L', price: 32, currency: 'EUR', priceTnd: 108, priceToken: 'signed-blue-l' }),
       ],
     });
-    render(wrap(<LensProductView candidate={product} onBack={() => {}} />));
+    await render(wrap(<LensProductView candidate={product} onBack={() => {}} />));
 
     const red = await screen.findByTestId('lens-color-0');
-    fireEvent.press(red);
+    await fireEvent.press(red);
     await waitFor(() => expect(screen.getByTestId('lens-color-0').props.accessibilityState.selected).toBe(true));
 
-    fireEvent.press(screen.getByTestId('lens-option-selector'));
-    fireEvent.press(await screen.findByText('M'));
+    await fireEvent.press(screen.getByTestId('lens-option-selector'));
+    await fireEvent.press(await screen.findByText('M'));
     expect(await screen.findByText('99.00 TND')).toBeOnTheScreen();
 
     const heroMedia = screen.getByTestId('lens-product-image-media', { includeHiddenElements: true });
@@ -368,9 +378,9 @@ describe('fiche produit Lens native', () => {
         option({ id: 'l', label: 'L', size: 'L', color: 'Noir', price: 26, currency: 'EUR', priceTnd: 88, priceToken: 'signed-l' }),
       ],
     });
-    render(wrap(<LensProductView candidate={product} onBack={() => {}} />));
+    await render(wrap(<LensProductView candidate={product} onBack={() => {}} />));
 
-    fireEvent.press(await screen.findByTestId('lens-add-to-cart'));
+    await fireEvent.press(await screen.findByTestId('lens-add-to-cart'));
     expect(await screen.findByTestId('lens-option-0')).toBeDisabled();
     expect(screen.getByTestId('lens-option-1')).toBeEnabled();
   });
@@ -384,10 +394,10 @@ describe('fiche produit Lens native', () => {
         option({ id: 'blue-m', label: 'Bleu · M', size: 'M', color: 'Bleu', price: 25, currency: 'EUR', priceTnd: 85, priceToken: 'signed-blue-m' }),
       ],
     });
-    render(wrap(<LensProductView candidate={product} onBack={() => {}} />));
+    await render(wrap(<LensProductView candidate={product} onBack={() => {}} />));
 
-    fireEvent.press(await screen.findByTestId('lens-color-0'));
-    fireEvent.press(screen.getByTestId('lens-add-to-cart'));
+    await fireEvent.press(await screen.findByTestId('lens-color-0'));
+    await fireEvent.press(screen.getByTestId('lens-add-to-cart'));
     expect(await screen.findByTestId('lens-option-0')).toBeDisabled();
     expect(screen.getByTestId('lens-option-1')).toBeEnabled();
   });
@@ -401,11 +411,11 @@ describe('fiche produit Lens native', () => {
         option({ id: 'l', label: 'L', size: 'L', color: 'Noir', price: 26, currency: 'EUR', priceTnd: 88, priceToken: 'signed-l' }),
       ],
     });
-    render(wrap(<LensProductView candidate={product} onBack={() => {}} />));
+    await render(wrap(<LensProductView candidate={product} onBack={() => {}} />));
 
-    fireEvent.press(await screen.findByTestId('lens-add-to-cart'));
-    fireEvent.press(await screen.findByText('M'));
-    fireEvent.press(screen.getByTestId('lens-add-to-cart'));
+    await fireEvent.press(await screen.findByTestId('lens-add-to-cart'));
+    await fireEvent.press(await screen.findByText('M'));
+    await fireEvent.press(screen.getByTestId('lens-add-to-cart'));
 
     expect(await screen.findByText('Article ajouté au panier')).toBeOnTheScreen();
     expect(addExternalToCart).toHaveBeenCalledTimes(1);
@@ -414,7 +424,7 @@ describe('fiche produit Lens native', () => {
   });
 
   it('rend la grande galerie directement pincable et double-touchable', async () => {
-    render(wrap(<LensProductView candidate={candidate()} onBack={() => {}} />));
+    await render(wrap(<LensProductView candidate={candidate()} onBack={() => {}} />));
 
     const zoomTarget = await screen.findByTestId('lens-gallery-zoom-image');
     expect(zoomTarget.props.accessibilityHint).toBe('Pincez ou touchez deux fois pour zoomer');
@@ -423,7 +433,7 @@ describe('fiche produit Lens native', () => {
   });
 
   it('expose deux crans natifs et une poignée pour lever rapidement la fiche', async () => {
-    render(wrap(<LensProductView candidate={candidate()} onBack={() => {}} />));
+    await render(wrap(<LensProductView candidate={candidate()} onBack={() => {}} />));
 
     const drawer = await screen.findByTestId('lens-product-drawer');
     expect(drawer.props.snapToOffsets).toHaveLength(2);
@@ -434,12 +444,12 @@ describe('fiche produit Lens native', () => {
   });
 
   it('garde la description enrichie fermée puis la révèle à la demande', async () => {
-    render(wrap(<LensProductView candidate={candidate()} onBack={() => {}} />));
+    await render(wrap(<LensProductView candidate={candidate()} onBack={() => {}} />));
 
     const description = await screen.findByTestId('lens-accordion-description');
     expect(description.props.accessibilityState.expanded).toBe(false);
     expect(screen.queryByText('Un sac léger et solide.')).toBeNull();
-    fireEvent.press(description);
+    await fireEvent.press(description);
     expect(await screen.findByText('Un sac léger et solide.')).toBeOnTheScreen();
     expect(screen.getByTestId('lens-accordion-description').props.accessibilityState.expanded).toBe(true);
   });

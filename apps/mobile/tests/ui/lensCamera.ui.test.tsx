@@ -94,7 +94,7 @@ const MATCHES = {
 const EMPTY_RESULT = { candidates: [], eventId: 'evt', excluded: { count: 0, reasons: {} } };
 
 describe('caméra Lens directe', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     mockTakePicture.mockClear();
     mockAnalyzeImage.mockReset();
     mockDetect.mockReset();
@@ -106,12 +106,12 @@ describe('caméra Lens directe', () => {
     let resolveSearch!: (value: typeof EMPTY_RESULT) => void;
     mockAnalyzeImage.mockReturnValue(new Promise((resolve) => { resolveSearch = resolve; }));
 
-    render(wrap(<LensScreen />));
+    await render(wrap(<LensScreen />));
 
     expect(await screen.findByTestId('lens-camera-experience')).toBeTruthy();
     const capture = await screen.findByTestId('lens-capture');
     await waitFor(() => expect(capture.props.accessibilityState.disabled).toBe(false));
-    fireEvent.press(capture);
+    await fireEvent.press(capture);
 
     expect(await screen.findByTestId('lens-search-skeleton')).toBeTruthy();
     expect(screen.getByTestId('lens-captured-preview')).toBeTruthy();
@@ -123,7 +123,7 @@ describe('caméra Lens directe', () => {
     expect(mockDetect).not.toHaveBeenCalled();
 
     const signal = mockAnalyzeImage.mock.calls[0][1].signal as AbortSignal;
-    fireEvent.press(screen.getByTestId('lens-search-cancel'));
+    await fireEvent.press(screen.getByTestId('lens-search-cancel'));
     await waitFor(() => expect(screen.getByTestId('lens-camera-experience')).toBeTruthy());
     expect(signal.aborted).toBe(true);
 
@@ -136,10 +136,10 @@ describe('caméra Lens directe', () => {
     mockDetect.mockResolvedValue(MATCHES);
     mockAnalyzeImage.mockResolvedValue(EMPTY_RESULT);
 
-    render(wrap(<LensScreen />));
+    await render(wrap(<LensScreen />));
     const capture = await screen.findByTestId('lens-capture');
     await waitFor(() => expect(capture.props.accessibilityState.disabled).toBe(false));
-    fireEvent.press(capture);
+    await fireEvent.press(capture);
 
     // SerpApi ne rend pas de boîtes : le cadre part sur TOUTE la photo.
     await waitFor(() => expect(mockAnalyzeImage).toHaveBeenCalledTimes(1));
@@ -153,10 +153,10 @@ describe('caméra Lens directe', () => {
     let resolveSearch!: (value: typeof EMPTY_RESULT) => void;
     mockAnalyzeImage.mockReturnValue(new Promise((resolve) => { resolveSearch = resolve; }));
 
-    render(wrap(<LensScreen />));
+    await render(wrap(<LensScreen />));
     const capture = await screen.findByTestId('lens-capture');
     await waitFor(() => expect(capture.props.accessibilityState.disabled).toBe(false));
-    fireEvent.press(capture);
+    await fireEvent.press(capture);
 
     // Pendant la recherche : 8 points autour du cadre + le trait de balayage.
     expect(await screen.findByTestId('lens-search-ring')).toBeTruthy();
@@ -173,18 +173,18 @@ describe('caméra Lens directe', () => {
   });
 
   it('barre des modes sous les boutons, menu ⋮ et Produits interdits', async () => {
-    render(wrap(<LensScreen />));
+    await render(wrap(<LensScreen />));
     expect(await screen.findByTestId('lens-capture')).toBeTruthy();
     expect(screen.getByText('Z Lens')).toBeTruthy();
     for (const label of ['Live', 'QR code', 'Lien', 'Mot clé']) expect(screen.getByText(label)).toBeTruthy();
 
-    fireEvent.press(screen.getByTestId('lens-open-menu'));
+    await fireEvent.press(screen.getByTestId('lens-open-menu'));
     expect(await screen.findByTestId('lens-menu')).toBeTruthy();
-    fireEvent.press(screen.getByTestId('lens-menu-rules'));
+    await fireEvent.press(screen.getByTestId('lens-menu-rules'));
     expect(await screen.findByTestId('lens-rules')).toBeTruthy();
     expect(screen.getByText('Ne photographiez pas et ne soumettez pas les visages de personnes.')).toBeTruthy();
 
-    fireEvent.press(screen.getByTestId('lens-mode-link'));
+    await fireEvent.press(screen.getByTestId('lens-mode-link'));
     expect(await screen.findByTestId('lens-link-search')).toBeTruthy();
     expect(screen.queryByTestId('lens-capture')).toBeNull();
   });

@@ -39,7 +39,7 @@ export function useDeepLinkRouting(enabled: boolean): void {
       pending.current = null;
       open(held);
     }
-    void Linking.getInitialURL().then((url) => open(url)).catch(() => null);
+    void Linking.getInitialURL().then((url) => open(url ?? null)).catch(() => null);
     const subscription = Linking.addEventListener('url', (event) => {
       if (enabled) open(event.url);
       else pending.current = event.url;

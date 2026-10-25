@@ -34,68 +34,68 @@ const product = (over: Partial<LinkedProduct> = {}): LinkedProduct => ({
   stockStatus: 'AVAILABLE', available: true, ...over,
 });
 
-beforeEach(() => {
+beforeEach(async () => {
   (router.push as jest.Mock).mockClear();
 });
 
 describe('LinkedProductCard', () => {
-  it('affiche le nom et le prix, et ne rend AUCUN bouton séparé', () => {
-    render(wrap(<LinkedProductCard product={product()} />));
+  it('affiche le nom et le prix, et ne rend AUCUN bouton séparé', async () => {
+    await render(wrap(<LinkedProductCard product={product()} />));
     expect(screen.getByText('Pantalon taille haute')).toBeTruthy();
     expect(screen.getByText('89.00 TND')).toBeTruthy();
     // La carte est l'action : un second bouton volerait la place du titre.
     expect(screen.queryByText('Découvrir')).toBeNull();
   });
 
-  it('la carte entière est pressable (rôle bouton, libellé lisible)', () => {
-    render(wrap(<LinkedProductCard product={product()} />));
+  it('la carte entière est pressable (rôle bouton, libellé lisible)', async () => {
+    await render(wrap(<LinkedProductCard product={product()} />));
     const card = screen.getByTestId('linked-product-prod_1');
     expect(card.props.accessibilityRole).toBe('button');
     expect(String(card.props.accessibilityLabel)).toContain('Pantalon taille haute');
   });
 
-  it('l’appui sur la carte ouvre la page produit interne, jamais un lien externe', () => {
-    render(wrap(<LinkedProductCard product={product()} />));
-    fireEvent.press(screen.getByTestId('linked-product-prod_1'));
+  it('l’appui sur la carte ouvre la page produit interne, jamais un lien externe', async () => {
+    await render(wrap(<LinkedProductCard product={product()} />));
+    await fireEvent.press(screen.getByTestId('linked-product-prod_1'));
     expect(router.push).toHaveBeenCalledWith({ pathname: '/product/[id]', params: { id: 'prod_1' } });
   });
 
-  it('onOpen remplace la navigation par défaut (ex. story : même chemin que la carte)', () => {
+  it('onOpen remplace la navigation par défaut (ex. story : même chemin que la carte)', async () => {
     const onOpen = jest.fn();
-    render(wrap(<LinkedProductCard product={product()} onOpen={onOpen} />));
-    fireEvent.press(screen.getByTestId('linked-product-prod_1'));
+    await render(wrap(<LinkedProductCard product={product()} onOpen={onOpen} />));
+    await fireEvent.press(screen.getByTestId('linked-product-prod_1'));
     expect(onOpen).toHaveBeenCalledWith(expect.objectContaining({ id: 'prod_1' }));
     expect(router.push).not.toHaveBeenCalled();
   });
 
-  it('produit en rupture : libellé « indisponible », carte toujours cliquable', () => {
-    render(wrap(<LinkedProductCard product={product({ available: false, stockStatus: 'OUT_OF_STOCK' })} />));
+  it('produit en rupture : libellé « indisponible », carte toujours cliquable', async () => {
+    await render(wrap(<LinkedProductCard product={product({ available: false, stockStatus: 'OUT_OF_STOCK' })} />));
     expect(screen.getByText('Actuellement indisponible')).toBeTruthy();
-    fireEvent.press(screen.getByTestId('linked-product-prod_1'));
+    await fireEvent.press(screen.getByTestId('linked-product-prod_1'));
     expect(router.push).toHaveBeenCalledTimes(1);
   });
 
-  it('variante overlay (Reels plein écran) rend la même carte', () => {
-    render(wrap(<LinkedProductCard product={product()} variant="overlay" testID="reel-card-product" />));
+  it('variante overlay (Reels plein écran) rend la même carte', async () => {
+    await render(wrap(<LinkedProductCard product={product()} variant="overlay" testID="reel-card-product" />));
     expect(screen.getByTestId('reel-card-product')).toBeTruthy();
     expect(screen.getByText('89.00 TND')).toBeTruthy();
   });
 });
 
 describe('parseLinkedProduct — ce que l’application accepte', () => {
-  it('sans produit ou réponse vide ⇒ null (aucune carte)', () => {
+  it('sans produit ou réponse vide ⇒ null (aucune carte)', async () => {
     expect(parseLinkedProduct(null)).toBeNull();
     expect(parseLinkedProduct(undefined)).toBeNull();
     expect(parseLinkedProduct('texte')).toBeNull();
   });
 
-  it('prix nul ou nom manquant ⇒ null (jamais de carte cassée)', () => {
+  it('prix nul ou nom manquant ⇒ null (jamais de carte cassée)', async () => {
     expect(parseLinkedProduct({ id: 'p', name: 'X', price: 0 })).toBeNull();
     expect(parseLinkedProduct({ id: 'p', name: '', price: 10 })).toBeNull();
     expect(parseLinkedProduct({ id: '', name: 'X', price: 10 })).toBeNull();
   });
 
-  it('produit complet ⇒ objet typé, devise par défaut TND, disponible par défaut', () => {
+  it('produit complet ⇒ objet typé, devise par défaut TND, disponible par défaut', async () => {
     // La marque fait partie de la carte (elle s'affiche au-dessus du titre) :
     // inconnue, elle vaut '' — et la ligne disparaîtra côté rendu.
     expect(parseLinkedProduct({ id: 'p', name: 'X', price: '12.5', image: '/i.jpg' })).toEqual({

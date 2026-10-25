@@ -42,7 +42,7 @@ const shown = {
 };
 
 async function renderSection() {
-  const view = render(
+  const view = await render(
     <PrefsProvider>
       <I18nProvider>
         <ThemeProvider>
@@ -56,7 +56,7 @@ async function renderSection() {
 }
 
 describe('FeaturedPublication', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks();
     mockFeatured.data = shown;
     mockFeatured.isPending = false;
@@ -73,7 +73,7 @@ describe('FeaturedPublication', () => {
 
   it('« Découvrir » ouvre la page Publications de l’application', async () => {
     await renderSection();
-    fireEvent.press(screen.getByTestId('home-featured-cta'));
+    await fireEvent.press(screen.getByTestId('home-featured-cta'));
     expect(router.push).toHaveBeenCalledWith('/publications');
   });
 

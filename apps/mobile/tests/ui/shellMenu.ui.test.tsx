@@ -23,7 +23,7 @@ jest.mock('../../src/state/session', () => ({
 }));
 
 async function renderHeader() {
-  const view = render(
+  const view = await render(
     <PrefsProvider>
       <I18nProvider>
         <ThemeProvider>
@@ -37,21 +37,21 @@ async function renderHeader() {
 }
 
 describe('icône compte et menu', () => {
-  afterEach(() => {
+  afterEach(async () => {
     (globalThis as any).__testStatus = undefined;
     jest.clearAllMocks();
   });
 
   it('non connecté : la cloche ouvre directement la connexion', async () => {
     await renderHeader();
-    fireEvent.press(screen.getByRole('button', { name: 'Notifications' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Notifications' }));
     expect(router.push).toHaveBeenCalledWith('/sign-in');
   });
 
   it('connecté : la cloche ouvre directement les notifications', async () => {
     (globalThis as any).__testStatus = 'signedIn';
     await renderHeader();
-    fireEvent.press(screen.getByRole('button', { name: 'Notifications' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Notifications' }));
     expect(router.push).toHaveBeenCalledWith('/account/notifications');
   });
 
@@ -64,7 +64,7 @@ describe('icône compte et menu', () => {
 
   it('le menu contient la langue et le thème, avec leurs choix', async () => {
     await renderHeader();
-    fireEvent.press(screen.getByRole('button', { name: 'Menu' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Menu' }));
     expect(screen.getByText('Langue')).toBeTruthy();
     expect(screen.getByText('Thème')).toBeTruthy();
     expect(screen.getByText('Français')).toBeTruthy();

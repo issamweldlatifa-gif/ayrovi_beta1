@@ -67,7 +67,7 @@ const SETTINGS = {
 };
 
 async function renderCarousel(settings = SETTINGS, slides = SLIDES) {
-  const view = render(
+  const view = await render(
     <PrefsProvider>
       <I18nProvider>
         <ThemeProvider>
@@ -94,22 +94,22 @@ function currentCard(): number {
 const list = () => screen.getByTestId('hero-carousel-list');
 
 /** Déclenche la mesure réelle de la section (comme le moteur de mise en page). */
-function measureSection(width: number) {
-  act(() => {
-    fireEvent(screen.getByTestId('hero-carousel'), 'layout', {
+async function measureSection(width: number) {
+  await act(async () => {
+    await fireEvent(screen.getByTestId('hero-carousel'), 'layout', {
       nativeEvent: { layout: { x: 0, y: 0, width, height: 400 } },
     });
   });
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   jest.useFakeTimers();
   jest.clearAllMocks();
   // jest-expo ne fournit pas un état d'application réel : on le fixe à « actif ».
   (AppState as unknown as { currentState: string }).currentState = 'active';
 });
 
-afterEach(() => {
+afterEach(async () => {
   jest.useRealTimers();
 });
 
@@ -117,22 +117,22 @@ describe('autoplay', () => {
   it('avance au fil de l’intervalle', async () => {
     await renderCarousel();
     expect(currentCard()).toBe(1);
-    act(() => { jest.advanceTimersByTime(INTERVAL_MS); });
+    await act(() => { jest.advanceTimersByTime(INTERVAL_MS); });
     expect(currentCard()).toBe(2);
   });
 
   it('reprend après un glissement relâché SANS élan (pause non bloquée)', async () => {
     await renderCarousel();
-    fireEvent(list(), 'scrollBeginDrag');
+    await fireEvent(list(), 'scrollBeginDrag');
     // Pendant le toucher : aucune avance.
-    act(() => { jest.advanceTimersByTime(INTERVAL_MS * 2); });
+    await act(() => { jest.advanceTimersByTime(INTERVAL_MS * 2); });
     expect(currentCard()).toBe(1);
 
     // Relâché sans vitesse : RN n'envoie pas onMomentumScrollEnd.
-    fireEvent(list(), 'scrollEndDrag', {
+    await fireEvent(list(), 'scrollEndDrag', {
       nativeEvent: { velocity: { x: 0, y: 0 }, contentOffset: { x: 0, y: 0 } },
     });
-    act(() => { jest.advanceTimersByTime(INTERVAL_MS); });
+    await act(() => { jest.advanceTimersByTime(INTERVAL_MS); });
     expect(currentCard()).toBe(2);
   });
 
@@ -140,16 +140,16 @@ describe('autoplay', () => {
     await renderCarousel();
     // Un tick à la fois, comme sur l'appareil (un rendu entre deux tics).
     for (let i = 0; i < 5; i += 1) {
-      act(() => { jest.advanceTimersByTime(INTERVAL_MS); });
+      await act(() => { jest.advanceTimersByTime(INTERVAL_MS); });
     }
     expect(currentCard()).toBe(3);
-    act(() => { jest.advanceTimersByTime(INTERVAL_MS * 3); });
+    await act(() => { jest.advanceTimersByTime(INTERVAL_MS * 3); });
     expect(currentCard()).toBe(3);
   });
 
   it('désactivé dans les réglages : aucune avance', async () => {
     await renderCarousel({ ...SETTINGS, autoplay: false });
-    act(() => { jest.advanceTimersByTime(INTERVAL_MS * 3); });
+    await act(() => { jest.advanceTimersByTime(INTERVAL_MS * 3); });
     expect(currentCard()).toBe(1);
   });
 });
@@ -157,7 +157,7 @@ describe('autoplay', () => {
 describe('défilement manuel', () => {
   it('l’index suit l’offset à la fin de l’élan (carte alignée sur la marge)', async () => {
     await renderCarousel({ ...SETTINGS, autoplay: false });
-    fireEvent(list(), 'momentumScrollEnd', {
+    await fireEvent(list(), 'momentumScrollEnd', {
       nativeEvent: { contentOffset: { x: stride, y: 0 } },
     });
     expect(currentCard()).toBe(2);
@@ -165,7 +165,7 @@ describe('défilement manuel', () => {
 
   it('un offset hors plage est borné à la dernière carte', async () => {
     await renderCarousel({ ...SETTINGS, autoplay: false });
-    fireEvent(list(), 'momentumScrollEnd', {
+    await fireEvent(list(), 'momentumScrollEnd', {
       nativeEvent: { contentOffset: { x: stride * 10, y: 0 } },
     });
     expect(currentCard()).toBe(3);
@@ -177,13 +177,13 @@ describe('CTA', () => {
     await renderCarousel({ ...SETTINGS, autoplay: false });
     const cta = screen.getByTestId('hero-card-a-cta');
     expect(cta.props.accessibilityRole).toBe('button');
-    fireEvent.press(cta);
+    await fireEvent.press(cta);
     expect(router.push).toHaveBeenCalledWith('/shop/a');
   });
 
   it('la carte reste cliquable indépendamment du CTA', async () => {
     await renderCarousel({ ...SETTINGS, autoplay: false });
-    fireEvent.press(screen.getByTestId('hero-card-a'));
+    await fireEvent.press(screen.getByTestId('hero-card-a'));
     expect(router.push).toHaveBeenCalledWith('/shop/a');
   });
 });
@@ -191,7 +191,7 @@ describe('CTA', () => {
 describe('géométrie et fond', () => {
   it('la 1re carte commence à la marge de page (gutter, comme le header) : retrait issu de la largeur MESURÉE', async () => {
     await renderCarousel();
-    measureSection(360);
+    await measureSection(360);
     const { sideInset } = carouselGeometry(360, GUTTER);
     expect(sideInset).toBe(GUTTER);
     const padding = StyleSheet.flatten(list().props.contentContainerStyle).paddingHorizontal;
@@ -200,7 +200,7 @@ describe('géométrie et fond', () => {
 
   it('getItemLayout inclut le retrait : scrollToIndex vise la carte, pas un décalage', async () => {
     await renderCarousel();
-    measureSection(360);
+    await measureSection(360);
     const { sideInset, stride: measuredStride } = carouselGeometry(360, GUTTER);
     const layout = list().props.getItemLayout(null, 1);
     expect(layout.offset).toBe(sideInset + measuredStride);
@@ -253,7 +253,7 @@ describe('une seule carte', () => {
     expect(typeof background).toBe('string');
     expect(screen.getByTestId('hero-carousel-backdrop-0', { includeHiddenElements: true })).toBeTruthy();
     // pas d'autoplay possible : rien à faire défiler
-    act(() => { jest.advanceTimersByTime(INTERVAL_MS * 3); });
+    await act(() => { jest.advanceTimersByTime(INTERVAL_MS * 3); });
     expect(currentCard()).toBe(1);
   });
 });

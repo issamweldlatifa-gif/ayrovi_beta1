@@ -9,7 +9,7 @@
  * et qu'il n'y a rien derrière. Un écran empilé ne doit pas renvoyer au compte.
  */
 import type { ReactNode, RefObject } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, View, type NativeScrollEvent, type NativeSyntheticEvent, type ScrollViewInstance } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppText } from '@/design/ui';
@@ -34,7 +34,7 @@ export function SubScreen({
    * Référence au `ScrollView` — pour qu'un écran puisse **piloter** le
    * défilement (aller à une étape) au lieu de le subir.
    */
-  scrollRef?: RefObject<ScrollView | null>;
+  scrollRef?: RefObject<ScrollViewInstance | null>;
   onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
   /**
    * En-tête collant (ex. indicateur d'étapes). Reste visible pendant le

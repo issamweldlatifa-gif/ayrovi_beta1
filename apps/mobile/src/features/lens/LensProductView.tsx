@@ -8,6 +8,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Vibration, View, useWindowDimensions,
+  type ScrollViewInstance,
   type NativeScrollEvent, type NativeSyntheticEvent,
 } from 'react-native';
 import { router } from 'expo-router';
@@ -602,7 +603,7 @@ export function LensProductView({
   const orderRequestRef = useRef(0);
   const mountedRef = useRef(true);
   const lastChoiceRef = useRef<'size' | 'color'>('size');
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
   const optionsY = useRef(0);
   const scrollY = useRef(new Animated.Value(0)).current;
 

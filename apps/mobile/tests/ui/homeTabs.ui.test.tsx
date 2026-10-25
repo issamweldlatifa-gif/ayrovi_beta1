@@ -16,7 +16,7 @@ jest.mock('expo-router', () => ({
 }));
 
 async function renderTabs() {
-  const view = render(
+  const view = await render(
     <PrefsProvider>
       <I18nProvider>
         <ThemeProvider>
@@ -31,21 +31,26 @@ async function renderTabs() {
 }
 
 describe('HomeTabs', () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(async () => jest.clearAllMocks());
 
   it('affiche trois onglets texte, sans icône', async () => {
     await renderTabs();
     const tabs = screen.getAllByRole('tab');
     expect(tabs).toHaveLength(3);
-    // Texte seul : aucune icône Ionicons rendue dans la rangée.
-    expect(screen.UNSAFE_queryAllByType(require('@expo/vector-icons/Ionicons').default)).toHaveLength(0);
+    // Texte seul : aucune icône Ionicons rendue dans la rangée. RNTL 14 ne rend
+    // que des hôtes : un glyphe Ionicons serait un Text dont le style porte la
+    // police de l'icône — on vérifie donc les styles des hôtes Text.
+    const iconGlyphs = screen.root!.queryAll(
+      (node: any) => node.type === 'Text' && JSON.stringify(node.props.style ?? {}).includes('Ionicons'),
+    );
+    expect(iconGlyphs).toHaveLength(0);
   });
 
   it('chaque onglet ouvre une route de l’application (pas une URL de site)', async () => {
     await renderTabs();
-    fireEvent.press(screen.getByRole('tab', { name: 'Nouveautés' }));
-    fireEvent.press(screen.getByRole('tab', { name: 'Promotions' }));
-    fireEvent.press(screen.getByRole('tab', { name: 'Magazine' }));
+    await fireEvent.press(screen.getByRole('tab', { name: 'Nouveautés' }));
+    await fireEvent.press(screen.getByRole('tab', { name: 'Promotions' }));
+    await fireEvent.press(screen.getByRole('tab', { name: 'Magazine' }));
     expect(router.push).toHaveBeenNthCalledWith(1, '/catalog');
     expect(router.push).toHaveBeenNthCalledWith(2, '/promotions');
     expect(router.push).toHaveBeenNthCalledWith(3, '/publications');

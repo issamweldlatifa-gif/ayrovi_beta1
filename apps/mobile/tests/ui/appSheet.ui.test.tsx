@@ -32,8 +32,8 @@ function Providers({ children }: { children: React.ReactNode }) {
 }
 
 describe('AppSheet', () => {
-  it('يُرسم مفتوحاً بمحتواه دون خطأ', () => {
-    render(
+  it('يُرسم مفتوحاً بمحتواه دون خطأ', async () => {
+    await render(
       <Providers>
         <AppSheet open onDismiss={() => undefined} header={<SheetHeader title="عنوان" onClose={() => undefined} />}>
           <Text>محتوى الدرج</Text>
@@ -43,9 +43,9 @@ describe('AppSheet', () => {
     expect(screen.getByText('محتوى الدرج')).toBeTruthy();
   });
 
-  it('زر الإغلاق في الرأس يطلب الإغلاق', () => {
+  it('زر الإغلاق في الرأس يطلب الإغلاق', async () => {
     const onDismiss = jest.fn();
-    render(
+    await render(
       <Providers>
         <AppSheet open onDismiss={onDismiss} header={<SheetHeader title="عنوان" onClose={onDismiss} />}>
           <Text>محتوى</Text>
@@ -53,7 +53,7 @@ describe('AppSheet', () => {
       </Providers>,
     );
     const buttons = screen.getAllByRole('button');
-    fireEvent.press(buttons[buttons.length - 1]);
+    await fireEvent.press(buttons[buttons.length - 1]);
     expect(onDismiss).toHaveBeenCalled();
   });
 });
@@ -72,8 +72,8 @@ function firstPointerEvents(node: unknown): string | undefined {
 }
 
 describe('AppSheet fermé ne bloque pas la page dessous', () => {
-  it('fermé : la racine ne reçoit plus de toucher (sinon le voile couvre la page)', () => {
-    const { toJSON, rerender } = render(
+  it('fermé : la racine ne reçoit plus de toucher (sinon le voile couvre la page)', async () => {
+    const { toJSON, rerender } = await render(
       <Providers>
         <AppSheet open={false} onDismiss={() => undefined}>
           <Text>contenu</Text>
@@ -82,7 +82,7 @@ describe('AppSheet fermé ne bloque pas la page dessous', () => {
     );
     expect(firstPointerEvents(toJSON())).toBe('none');
 
-    rerender(
+    await rerender(
       <Providers>
         <AppSheet open onDismiss={() => undefined}>
           <Text>contenu</Text>

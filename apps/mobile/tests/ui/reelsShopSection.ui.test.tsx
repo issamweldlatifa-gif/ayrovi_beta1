@@ -41,21 +41,21 @@ const reel = (id: string, title = '') => ({
   durationSeconds: 12, publishAt: '2026-10-01T00:00:00Z', views: 0, likes: 0,
 });
 
-beforeEach(() => {
+beforeEach(async () => {
   (router.push as jest.Mock).mockClear();
   mockReels.data = undefined;
 });
 
 describe('section Reels • Shop (accueil)', () => {
-  it('ne rend rien sans Reel publié', () => {
+  it('ne rend rien sans Reel publié', async () => {
     mockReels.data = [];
-    render(wrap(<ReelsShopSection />));
+    await render(wrap(<ReelsShopSection />));
     expect(screen.queryByTestId('home-reels-shop')).toBeNull();
   });
 
-  it('une vignette par Reel, au ratio 9:16', () => {
+  it('une vignette par Reel, au ratio 9:16', async () => {
     mockReels.data = [reel('r1', 'Nouveauté'), reel('r2')];
-    render(wrap(<ReelsShopSection />));
+    await render(wrap(<ReelsShopSection />));
     expect(screen.getByTestId('home-reels-shop')).toBeTruthy();
     const tile = screen.getByTestId('home-reel-tile-r1');
     const style = StyleSheet.flatten(tile.props.style);
@@ -63,26 +63,33 @@ describe('section Reels • Shop (accueil)', () => {
     expect(screen.getByTestId('home-reel-tile-r2')).toBeTruthy();
   });
 
-  it('affiche la couverture du Reel sur la vignette quand elle existe', () => {
+  it('affiche la couverture du Reel sur la vignette quand elle existe', async () => {
     mockReels.data = [{ ...reel('r1'), posterUrl: '/uploads/cover-r1.jpg' }, reel('r2')];
-    render(wrap(<ReelsShopSection />));
+    await render(wrap(<ReelsShopSection />));
     const withPoster = screen.getByTestId('home-reel-tile-r1');
     const without = screen.getByTestId('home-reel-tile-r2');
-    expect(withPoster.findAll((n: any) => n.props?.source?.uri?.includes('cover-r1.jpg')).length).toBeGreaterThan(0);
-    expect(without.findAll((n: any) => n.props?.source?.uri?.includes('cover-'))).toHaveLength(0);
+    // Test Renderer expose expo-image en hôte `ViewManagerAdapter_ExpoImage`
+    // dont la prop `source` est un tableau de sources.
+    const sourceUris = (node: any): string[] => {
+      const source = node.props?.source;
+      if (!source) return [];
+      return (Array.isArray(source) ? source : [source]).map((entry: any) => entry?.uri).filter(Boolean);
+    };
+    expect(withPoster.queryAll((n: any) => sourceUris(n).some((uri) => uri.includes('cover-r1.jpg'))).length).toBeGreaterThan(0);
+    expect(without.queryAll((n: any) => sourceUris(n).some((uri) => uri.includes('cover-')))).toHaveLength(0);
   });
 
-  it('toucher une vignette ouvre la visionneuse à ce Reel', () => {
+  it('toucher une vignette ouvre la visionneuse à ce Reel', async () => {
     mockReels.data = [reel('r1'), reel('r2')];
-    render(wrap(<ReelsShopSection />));
-    fireEvent.press(screen.getByTestId('home-reel-tile-r2'));
+    await render(wrap(<ReelsShopSection />));
+    await fireEvent.press(screen.getByTestId('home-reel-tile-r2'));
     expect(router.push).toHaveBeenCalledWith({ pathname: '/reels-viewer', params: { id: 'r2' } });
   });
 });
 
 describe('logo Reels • Shop', () => {
-  it('affiche « Reels » et « Shop » avec le libellé d’accessibilité de la marque', () => {
-    render(wrap(<ReelsShopMark />));
+  it('affiche « Reels » et « Shop » avec le libellé d’accessibilité de la marque', async () => {
+    await render(wrap(<ReelsShopMark />));
     expect(screen.getByText('Reels')).toBeTruthy();
     expect(screen.getByText('Shop')).toBeTruthy();
     expect(screen.getByLabelText('Reels, Shop')).toBeTruthy();

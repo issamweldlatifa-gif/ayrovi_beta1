@@ -26,9 +26,9 @@ function ThemeProbe({ onTheme }: { onTheme: (t: ReturnType<typeof useTheme>) => 
 }
 
 describe('système de boutons', () => {
-  it('le bouton principal et le contour sont en pastille (radius.cta)', () => {
+  it('le bouton principal et le contour sont en pastille (radius.cta)', async () => {
     let theme: ReturnType<typeof useTheme> | null = null;
-    render(wrap(<><ThemeProbe onTheme={(t) => { theme = t; }} /><Button label="Découvrir" onPress={() => {}} tone="quiet" /></>));
+    await render(wrap(<><ThemeProbe onTheme={(t) => { theme = t; }} /><Button label="Découvrir" onPress={() => {}} tone="quiet" /></>));
     const btn = screen.getByRole('button', { name: 'Découvrir' });
     const style = Array.isArray(btn.props.style) ? Object.assign({}, ...btn.props.style.map((s: unknown) => (typeof s === 'function' ? {} : s))) : btn.props.style;
     expect(theme).not.toBeNull();
@@ -37,8 +37,8 @@ describe('système de boutons', () => {
     expect(style.borderColor).toBe(theme!.colors.ink);
   });
 
-  it('le bouton plein reste sans contour visible', () => {
-    render(wrap(<Button label="Continuer" onPress={() => {}} />));
+  it('le bouton plein reste sans contour visible', async () => {
+    await render(wrap(<Button label="Continuer" onPress={() => {}} />));
     const btn = screen.getByRole('button', { name: 'Continuer' });
     const flat = Array.isArray(btn.props.style) ? Object.assign({}, ...btn.props.style.map((s: unknown) => (typeof s === 'function' ? {} : s))) : btn.props.style;
     expect(flat.borderRadius).toBeGreaterThan(100);
@@ -46,9 +46,9 @@ describe('système de boutons', () => {
 });
 
 describe('couleurs de l’identité (violet · blanc · noir)', () => {
-  it('l’action principale (tone="main") est violet plein, libellé blanc', () => {
+  it('l’action principale (tone="main") est violet plein, libellé blanc', async () => {
     let theme: ReturnType<typeof useTheme> | null = null;
-    render(wrap(<><ThemeProbe onTheme={(t) => { theme = t; }} /><Button label="Commander" tone="main" onPress={() => {}} /></>));
+    await render(wrap(<><ThemeProbe onTheme={(t) => { theme = t; }} /><Button label="Commander" tone="main" onPress={() => {}} /></>));
     const btn = StyleSheet.flatten(screen.getByRole('button', { name: 'Commander' }).props.style);
     expect(theme!.colors.action).toBe('#571EF6');
     expect(btn.backgroundColor).toBe(theme!.colors.action);
@@ -56,9 +56,9 @@ describe('couleurs de l’identité (violet · blanc · noir)', () => {
     expect(StyleSheet.flatten(screen.getByText('Commander').props.style).color).toBe('#FFFFFF');
   });
 
-  it('le bouton par défaut est plein encre (le violet reste rare), libellé blanc', () => {
+  it('le bouton par défaut est plein encre (le violet reste rare), libellé blanc', async () => {
     let theme: ReturnType<typeof useTheme> | null = null;
-    render(wrap(<><ThemeProbe onTheme={(t) => { theme = t; }} /><Button label="Découvrir" onPress={() => {}} /></>));
+    await render(wrap(<><ThemeProbe onTheme={(t) => { theme = t; }} /><Button label="Découvrir" onPress={() => {}} /></>));
     const btn = StyleSheet.flatten(screen.getByRole('button', { name: 'Découvrir' }).props.style);
     expect(btn.backgroundColor).toBe(theme!.colors.ink);
     expect(btn.backgroundColor).toBe('#0A0A0A');
@@ -66,41 +66,41 @@ describe('couleurs de l’identité (violet · blanc · noir)', () => {
     expect(StyleSheet.flatten(screen.getByText('Découvrir').props.style).color).toBe('#FFFFFF');
   });
 
-  it('le bouton secondaire est blanc, contour et libellé noirs', () => {
+  it('le bouton secondaire est blanc, contour et libellé noirs', async () => {
     let theme: ReturnType<typeof useTheme> | null = null;
-    render(wrap(<><ThemeProbe onTheme={(t) => { theme = t; }} /><Button label="Retour" tone="quiet" onPress={() => {}} /></>));
+    await render(wrap(<><ThemeProbe onTheme={(t) => { theme = t; }} /><Button label="Retour" tone="quiet" onPress={() => {}} /></>));
     const btn = StyleSheet.flatten(screen.getByRole('button', { name: 'Retour' }).props.style);
     expect(btn.backgroundColor).toBe(theme!.colors.canvas);
     expect(btn.borderColor).toBe('#0A0A0A');
     expect(StyleSheet.flatten(screen.getByText('Retour').props.style).color).toBe('#0A0A0A');
   });
 
-  it('le bouton désactivé garde sa couleur et baisse son opacité', () => {
-    render(wrap(<Button label="Payer" tone="main" onPress={() => {}} disabled />));
+  it('le bouton désactivé garde sa couleur et baisse son opacité', async () => {
+    await render(wrap(<Button label="Payer" tone="main" onPress={() => {}} disabled />));
     const btn = StyleSheet.flatten(screen.getByRole('button', { name: 'Payer' }).props.style);
     expect(btn.backgroundColor).toBe('#571EF6');
     expect(btn.opacity).toBe(0.5);
   });
 
-  it('le champ est blanc, contour gris au repos, contour violet épaissi au focus', () => {
+  it('le champ est blanc, contour gris au repos, contour violet épaissi au focus', async () => {
     let theme: ReturnType<typeof useTheme> | null = null;
-    render(wrap(<><ThemeProbe onTheme={(t) => { theme = t; }} /><Field accessibilityLabel="Nom" value="" onChangeText={() => {}} /></>));
+    await render(wrap(<><ThemeProbe onTheme={(t) => { theme = t; }} /><Field accessibilityLabel="Nom" value="" onChangeText={() => {}} /></>));
     const idle = StyleSheet.flatten(screen.getByLabelText('Nom').props.style);
     expect(idle.backgroundColor).toBe('#FFFFFF');
     expect(idle.borderColor).toBe(theme!.colors.lineControl);
-    fireEvent(screen.getByLabelText('Nom'), 'focus');
+    await fireEvent(screen.getByLabelText('Nom'), 'focus');
     const focused = StyleSheet.flatten(screen.getByLabelText('Nom').props.style);
     expect(focused.borderColor).toBe('#571EF6');
     expect(focused.borderWidth).toBe(FIELD_FOCUS_WIDTH);
     // La taille extérieure ne bouge pas : le contour épaissi est pris sur le padding.
     expect(focused.paddingHorizontal + focused.borderWidth).toBeCloseTo(idle.paddingHorizontal + idle.borderWidth, 5);
-    fireEvent(screen.getByLabelText('Nom'), 'blur');
+    await fireEvent(screen.getByLabelText('Nom'), 'blur');
     expect(StyleSheet.flatten(screen.getByLabelText('Nom').props.style).borderColor).toBe(theme!.colors.lineControl);
   });
 
-  it('un champ non modifiable prend le fond « désactivé »', () => {
+  it('un champ non modifiable prend le fond « désactivé »', async () => {
     let theme: ReturnType<typeof useTheme> | null = null;
-    render(wrap(<><ThemeProbe onTheme={(t) => { theme = t; }} /><Field accessibilityLabel="Code" value="1234" editable={false} /></>));
+    await render(wrap(<><ThemeProbe onTheme={(t) => { theme = t; }} /><Field accessibilityLabel="Code" value="1234" editable={false} /></>));
     const style = StyleSheet.flatten(screen.getByLabelText('Code').props.style);
     expect(style.backgroundColor).toBe(theme!.colors.disabled);
     expect(style.color).toBe(theme!.colors.muted);
@@ -108,8 +108,8 @@ describe('couleurs de l’identité (violet · blanc · noir)', () => {
 });
 
 describe('sélecteur segmenté (v4.2.0)', () => {
-  it('le segment choisi : fond violet clair, libellé noir en gras, filet violet ; les autres restent neutres', () => {
-    render(wrap(
+  it('le segment choisi : fond violet clair, libellé noir en gras, filet violet ; les autres restent neutres', async () => {
+    await render(wrap(
       <Segmented
         options={[{ value: 'shop', label: 'Boutique' }, { value: 'arrival', label: 'Arrivage' }]}
         value="shop"
@@ -133,9 +133,9 @@ describe('sélecteur segmenté (v4.2.0)', () => {
 });
 
 describe('filet de section', () => {
-  it('rend un filet fin à la couleur de trait du thème', () => {
+  it('rend un filet fin à la couleur de trait du thème', async () => {
     let theme: ReturnType<typeof useTheme> | null = null;
-    render(wrap(<><ThemeProbe onTheme={(t) => { theme = t; }} /><SectionRule /></>));
+    await render(wrap(<><ThemeProbe onTheme={(t) => { theme = t; }} /><SectionRule /></>));
     const rule = screen.getByTestId('section-rule');
     expect(rule.props.style.height).toBe(SECTION_RULE_WIDTH);
     expect(rule.props.style.backgroundColor).toBe(theme!.colors.line);

@@ -48,9 +48,9 @@ jest.mock('@/api/aywebs', () => {
   };
 });
 
-function renderBrowser() {
+async function renderBrowser() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
+  return await render(
     <QueryClientProvider client={client}>
       <SafeAreaProvider initialMetrics={{ frame: { x: 0, y: 0, width: 390, height: 844 }, insets: { top: 24, left: 0, right: 0, bottom: 16 } }}>
         <PrefsProvider>
@@ -68,15 +68,15 @@ function renderBrowser() {
 }
 
 describe('page boutique — barre AYWEBs du bas', () => {
-  beforeEach(() => mockBack.mockClear());
+  beforeEach(async () => mockBack.mockClear());
 
-  it('la page s\'affiche avec la WebView', () => {
-    renderBrowser();
+  it('la page s\'affiche avec la WebView', async () => {
+    await renderBrowser();
     expect(screen.getByTestId('webview')).toBeTruthy();
   });
 
-  it('la barre du bas est affichée : retour, avant, panier, favoris, Add to Cart', () => {
-    renderBrowser();
+  it('la barre du bas est affichée : retour, avant, panier, favoris, Add to Cart', async () => {
+    await renderBrowser();
     expect(screen.getByTestId('aywebs-store-back')).toBeTruthy();
     expect(screen.getByTestId('aywebs-store-forward')).toBeTruthy();
     expect(screen.getByTestId('aywebs-store-cart')).toBeTruthy();
@@ -84,10 +84,10 @@ describe('page boutique — barre AYWEBs du bas', () => {
     expect(screen.getByTestId('aywebs-store-add-to-cart')).toBeTruthy();
   });
 
-  it('le bouton fermer de l\'en-tête revient à l\'écran précédent', () => {
-    renderBrowser();
+  it('le bouton fermer de l\'en-tête revient à l\'écran précédent', async () => {
+    await renderBrowser();
     // Le premier « Fermer » est celui de l'en-tête (les tiroirs fermés en portent aussi un).
-    fireEvent.press(screen.getAllByLabelText('Fermer')[0]);
+    await fireEvent.press(screen.getAllByLabelText('Fermer')[0]);
     expect(mockBack).toHaveBeenCalled();
   });
 });

@@ -54,8 +54,10 @@ export default function TabsLayout() {
        * Accueil = racine de toutes les barres. Le retour (bouton Android ou
        * flèche) depuis un onglet ramène à l'accueil, pas au dernier onglet
        * visité : sans cela, le retour pouvait ramener à un onglet précédent.
+       * SDK 58 : expo-router n'expose plus `initialRouteName` sur <Tabs> —
+       * la route `index` du groupe est l'initial par convention, et
+       * `backBehavior="initialRoute"` s'y réfère donc toujours.
        */
-      initialRouteName="index"
       backBehavior="initialRoute"
       screenOptions={({ route }) => ({
         headerShown: false,
@@ -98,7 +100,8 @@ export default function TabsLayout() {
         },
         tabBarIcon: ({ focused, color, size }) => {
           const pair = ICONS[route.name] ?? ICONS.account;
-          return <Ionicons name={focused ? pair.active : pair.inactive} size={size ?? 24} color={color} />;
+          const iconColor = typeof color === 'string' ? color : theme.colors.muted;
+          return <Ionicons name={focused ? pair.active : pair.inactive} size={size ?? 24} color={iconColor} />;
         },
       })}
     >

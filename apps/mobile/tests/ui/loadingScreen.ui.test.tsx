@@ -11,7 +11,7 @@ import { ThemeProvider } from '../../src/design/theme';
 import { I18nProvider } from '../../src/i18n';
 import { PrefsProvider } from '../../src/state/prefs';
 
-function wrap(node: React.ReactNode) {
+async function wrap(node: React.ReactNode) {
   return render(
     <PrefsProvider>
       <I18nProvider>
@@ -24,13 +24,13 @@ function wrap(node: React.ReactNode) {
 describe('écran de chargement ZAYROVI', () => {
   it('se peint comme une barre de progression puis libère l’image native', async () => {
     const onShown = jest.fn();
-    wrap(<LoadingScreen onShown={onShown} />);
+    await wrap(<LoadingScreen onShown={onShown} />);
     await act(async () => {});
     expect(screen.getByTestId('loading-screen').props.accessibilityRole).toBe('progressbar');
     expect(onShown).toHaveBeenCalled();
   });
 
-  it('l’arc part de midi et couvre environ 70° de l’anneau', () => {
+  it('l’arc part de midi et couvre environ 70° de l’anneau', async () => {
     const c = RING.size / 2;
     const r = c - RING.arc / 2;
     const d = arcPath(c, r, RING.arcDegrees);
@@ -43,7 +43,7 @@ describe('écran de chargement ZAYROVI', () => {
 
 describe('marque ZAYROVI', () => {
   it('affiche le nom à côté du Z', async () => {
-    wrap(<BrandMark size={30} />);
+    await wrap(<BrandMark size={30} />);
     await act(async () => {});
     expect(screen.getByText('ZAYROVI')).toBeTruthy();
     expect(screen.queryByText('AYROVI')).toBeNull();

@@ -115,7 +115,7 @@ describe('écran produit — aucun plantage au montage', () => {
   const mount = async () => {
     const ProductScreen = require('../../app/product/[id]').default;
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    const view = render(
+    const view = await render(
       <PrefsProvider>
         <I18nProvider>
           <ThemeProvider>

@@ -12,7 +12,8 @@
  */
 import { useCallback, useRef, useState } from 'react';
 import { goBack } from '@/design/navigation';
-import { FlatList, Pressable, StatusBar, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { FlatList, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -76,7 +77,9 @@ export default function ReelsViewerScreen() {
       />
 
       {/* Barre d'état claire et translucide : les icônes (heure, réseau, batterie) restent lisibles sur la vidéo. */}
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      {/* SDK 58 : edge-to-edge obligatoire, le statut est translucide par défaut —
+          seul le style des icônes se pilote encore (translucent/backgroundColor retirés). */}
+      <StatusBar style="light" />
 
       {/* Dégradé discret sous la barre d'état et l'en-tête : lisibilité sans bandeau opaque. */}
       <LinearGradient

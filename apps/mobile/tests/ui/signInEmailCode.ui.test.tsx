@@ -15,10 +15,10 @@ import SignInScreen from '../../app/sign-in';
 import { ThemeProvider } from '../../src/design/theme';
 import { I18nProvider } from '../../src/i18n';
 import { PrefsProvider } from '../../src/state/prefs';
-import { LoadingSpinner } from '../../src/design/LoadingSpinner';
 
 // Premier rendu à froid (chargement de l'arbre et des modules natifs simulés) : marge large.
 jest.setTimeout(20000);
+
 
 const mockSession: Record<string, any> = {};
 
@@ -126,7 +126,7 @@ let client: QueryClient | null = null;
 
 async function renderScreen() {
   client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-  const view = render(
+  const view = await render(
     <QueryClientProvider client={client}>
       <PrefsProvider>
         <I18nProvider>
@@ -142,28 +142,28 @@ async function renderScreen() {
   return view;
 }
 
-afterEach(() => {
+afterEach(async () => {
   client?.clear();
   client = null;
 });
 
-beforeEach(() => {
+beforeEach(async () => {
   resetSession();
 });
 
 describe('connexion par code e-mail, dans l’application', () => {
   it('la page s’ouvre sur l’adresse e-mail ; le bouton reste grisé tant qu’elle est invalide', async () => {
     await renderScreen();
-    fireEvent.changeText(screen.getByLabelText('Adresse e-mail'), 'pas-une-adresse');
+    await fireEvent.changeText(screen.getByLabelText('Adresse e-mail'), 'pas-une-adresse');
     expect(screen.getByTestId('auth-email-code-send')).toBeDisabled();
-    await act(async () => { fireEvent.press(screen.getByTestId('auth-email-code-send')); });
+    await act(async () => { await fireEvent.press(screen.getByTestId('auth-email-code-send')); });
     expect(mockSession.requestEmailCode).not.toHaveBeenCalled();
   });
 
   it('demande le code pour l’adresse saisie, puis affiche l’étape « code » sur la même page', async () => {
     await renderScreen();
-    fireEvent.changeText(screen.getByLabelText('Adresse e-mail'), '  Ahmed@Example.tn ');
-    await act(async () => { fireEvent.press(screen.getByTestId('auth-email-code-send')); });
+    await fireEvent.changeText(screen.getByLabelText('Adresse e-mail'), '  Ahmed@Example.tn ');
+    await act(async () => { await fireEvent.press(screen.getByTestId('auth-email-code-send')); });
     expect(mockSession.requestEmailCode).toHaveBeenCalledWith('  Ahmed@Example.tn ', 'fr');
     await waitFor(() => expect(screen.getByTestId('auth-email-code-verify')).toBeTruthy());
     expect(screen.getByText('Saisissez le code de vérification envoyé à ah***@ex***.tn.')).toBeTruthy();
@@ -175,8 +175,8 @@ describe('connexion par code e-mail, dans l’application', () => {
       emailChallenge: { challengeId: 'ecode_x', maskedEmail: 'ah***@ex***.tn', expiresInSeconds: 600, developmentCode: '' },
     });
     await renderScreen();
-    fireEvent.changeText(screen.getByLabelText('Code reçu par e-mail'), '482913');
-    await act(async () => { fireEvent.press(screen.getByTestId('auth-email-code-verify')); });
+    await fireEvent.changeText(screen.getByLabelText('Code reçu par e-mail'), '482913');
+    await act(async () => { await fireEvent.press(screen.getByTestId('auth-email-code-verify')); });
     expect(mockSession.confirmEmailCode).toHaveBeenCalledWith('482913');
     const { openProviderSession } = jest.requireMock('../../src/features/auth/browser');
     expect(openProviderSession).not.toHaveBeenCalled();
@@ -193,14 +193,14 @@ describe('connexion par code e-mail, dans l’application', () => {
   it('le mot de passe n’est pas le chemin par défaut, mais reste accessible en option', async () => {
     await renderScreen();
     expect(screen.queryByLabelText('Mot de passe')).toBeNull();
-    fireEvent.press(screen.getByTestId('auth-start-password'));
+    await fireEvent.press(screen.getByTestId('auth-start-password'));
     expect(screen.getByLabelText('Mot de passe')).toBeTruthy();
     expect(screen.getByTestId('auth-email-submit')).toBeTruthy();
   });
 
   it('le téléphone est une option sous « OU » : Tunisie, numéro, code SMS', async () => {
     await renderScreen();
-    fireEvent.press(screen.getByTestId('auth-start-phone'));
+    await fireEvent.press(screen.getByTestId('auth-start-phone'));
     expect(screen.getByLabelText('Pays/Région')).toBeTruthy();
     expect(screen.getByLabelText('Numéro tunisien')).toBeTruthy();
     expect(screen.getByTestId('auth-send-code')).toBeTruthy();
@@ -219,7 +219,7 @@ describe('Google natif : sélecteur dans l’application', () => {
   const { googleNativeLogin } = jest.requireMock('../../src/api/providers');
   const { openProviderSession } = jest.requireMock('../../src/features/auth/browser');
 
-  beforeEach(() => {
+  beforeEach(async () => {
     process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID = GOOGLE_ID;
     jest.clearAllMocks();
     resetSession({
@@ -227,7 +227,7 @@ describe('Google natif : sélecteur dans l’application', () => {
     });
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     delete process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
   });
 
@@ -235,7 +235,7 @@ describe('Google natif : sélecteur dans l’application', () => {
     GoogleSignin.signIn.mockResolvedValue({ type: 'success', data: { idToken: 'aaa.bbb.ccc' } });
     googleNativeLogin.mockResolvedValue({ sessionToken: 'tok', account: { id: 'a1' } });
     await renderScreen();
-    await act(async () => { fireEvent.press(screen.getByTestId('auth-provider-google')); });
+    await act(async () => { await fireEvent.press(screen.getByTestId('auth-provider-google')); });
     expect(GoogleSignin.configure).toHaveBeenCalledWith(expect.objectContaining({ webClientId: GOOGLE_ID }));
     expect(googleNativeLogin).toHaveBeenCalledWith('aaa.bbb.ccc');
     expect(mockSession.adoptSession).toHaveBeenCalledWith({ sessionToken: 'tok', account: { id: 'a1' } });
@@ -245,7 +245,7 @@ describe('Google natif : sélecteur dans l’application', () => {
   it('fermer le sélecteur ne montre aucune erreur et n’appelle pas le serveur', async () => {
     GoogleSignin.signIn.mockResolvedValue({ type: 'cancelled' });
     await renderScreen();
-    await act(async () => { fireEvent.press(screen.getByTestId('auth-provider-google')); });
+    await act(async () => { await fireEvent.press(screen.getByTestId('auth-provider-google')); });
     expect(googleNativeLogin).not.toHaveBeenCalled();
     expect(mockSession.adoptSession).not.toHaveBeenCalled();
     expect(screen.queryByRole('alert')).toBeNull();
@@ -254,7 +254,7 @@ describe('Google natif : sélecteur dans l’application', () => {
   it('sans identifiant Web dans l’application, le message dit la configuration (pas un faux succès)', async () => {
     delete process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
     await renderScreen();
-    await act(async () => { fireEvent.press(screen.getByTestId('auth-provider-google')); });
+    await act(async () => { await fireEvent.press(screen.getByTestId('auth-provider-google')); });
     expect(GoogleSignin.signIn).not.toHaveBeenCalled();
     expect(googleNativeLogin).not.toHaveBeenCalled();
     // Le message nomme la panne ET le code technique à donner au support.
@@ -263,15 +263,15 @@ describe('Google natif : sélecteur dans l’application', () => {
 });
 
 describe('liens légaux : pages dans l’application', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks();
     resetSession();
   });
 
   it('Conditions et Confidentialité ouvrent une page de l’application, jamais le navigateur', async () => {
     await renderScreen();
-    fireEvent.press(screen.getByTestId('auth-legal-terms'));
-    fireEvent.press(screen.getByTestId('auth-legal-privacy'));
+    await fireEvent.press(screen.getByTestId('auth-legal-terms'));
+    await fireEvent.press(screen.getByTestId('auth-legal-privacy'));
     expect(router.push).toHaveBeenNthCalledWith(1, '/legal/terms');
     expect(router.push).toHaveBeenNthCalledWith(2, '/legal/privacy');
     const { openProviderSession } = jest.requireMock('../../src/features/auth/browser');
@@ -280,7 +280,7 @@ describe('liens légaux : pages dans l’application', () => {
 });
 
 describe('Google natif : aucune attente « navigateur »', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID = 'test-web-client.apps.googleusercontent.com';
     jest.clearAllMocks();
     resetSession({
@@ -288,17 +288,23 @@ describe('Google natif : aucune attente « navigateur »', () => {
     });
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     delete process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
   });
 
   it('pendant le sélecteur Google, aucun texte « terminer dans le navigateur » ni « annuler l’attente »', async () => {
     const { GoogleSignin } = jest.requireMock('@react-native-google-signin/google-signin');
-    GoogleSignin.signIn.mockReturnValue(new Promise(() => {})); // sélecteur ouvert, pas encore de réponse
     await renderScreen();
-    await act(async () => { fireEvent.press(screen.getByTestId('auth-provider-google')); });
-    expect(screen.queryByText(/navigateur/)).toBeNull();
-    expect(screen.queryByText('Annuler l’attente')).toBeNull();
+    // RNTL 14 / React 19 : `act` ATTEND la promesse du gestionnaire de presse. Un
+    // sélecteur qui ne répond jamais ferait donc attendre le test indéfiniment. On
+    // place les assertions de l'état transitoire dans la micro-tâche du sélecteur,
+    // AVANT de répondre « annulation », puis on laisse la pression se terminer.
+    GoogleSignin.signIn.mockImplementationOnce(() => Promise.resolve().then(() => {
+      expect(screen.queryByText(/navigateur/)).toBeNull();
+      expect(screen.queryByText('Annuler l’attente')).toBeNull();
+      return { type: 'cancelled' };
+    }));
+    await fireEvent.press(screen.getByTestId('auth-provider-google'));
   });
 });
 
@@ -313,7 +319,7 @@ describe('Compte mémorisé et attente dans le bouton', () => {
     useRememberedAccount.mockReturnValue({ account, ready: true, remember });
   };
 
-  beforeEach(() => {
+  beforeEach(async () => {
     process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID = GOOGLE_ID;
     jest.clearAllMocks();
     resetSession({
@@ -321,7 +327,7 @@ describe('Compte mémorisé et attente dans le bouton', () => {
     });
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     delete process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
     remembered(null);
   });
@@ -346,7 +352,7 @@ describe('Compte mémorisé et attente dans le bouton', () => {
   it('« Se connecter autrement » révèle le formulaire complet', async () => {
     remembered({ provider: 'google', email: 'essam@gmail.com', name: 'Essam' });
     await renderScreen();
-    await act(async () => { fireEvent.press(screen.getByTestId('auth-remembered-other')); });
+    await act(async () => { await fireEvent.press(screen.getByTestId('auth-remembered-other')); });
     expect(screen.getByTestId('auth-email-code-send')).toBeTruthy();
     expect(screen.queryByTestId('auth-remembered-account')).toBeNull();
   });
@@ -356,7 +362,7 @@ describe('Compte mémorisé et attente dans le bouton', () => {
     GoogleSignin.signInSilently.mockResolvedValue({ type: 'success', data: { idToken: 'x.y.z', user: { email: 'essam@gmail.com', name: 'Essam' } } });
     googleNativeLogin.mockResolvedValue({ sessionToken: 'tok', account: { id: 'a1' } });
     await renderScreen();
-    await act(async () => { fireEvent.press(screen.getByTestId('auth-remembered-account')); });
+    await act(async () => { await fireEvent.press(screen.getByTestId('auth-remembered-account')); });
     expect(GoogleSignin.signInSilently).toHaveBeenCalled();
     expect(GoogleSignin.signIn).not.toHaveBeenCalled();
     expect(googleNativeLogin).toHaveBeenCalledWith('x.y.z');
@@ -368,7 +374,7 @@ describe('Compte mémorisé et attente dans le bouton', () => {
     GoogleSignin.signInSilently.mockResolvedValue({ type: 'noSavedCredentialFound', data: null });
     GoogleSignin.signIn.mockResolvedValue({ type: 'cancelled' });
     await renderScreen();
-    await act(async () => { fireEvent.press(screen.getByTestId('auth-remembered-account')); });
+    await act(async () => { await fireEvent.press(screen.getByTestId('auth-remembered-account')); });
     expect(GoogleSignin.signInSilently).toHaveBeenCalled();
     expect(GoogleSignin.signIn).toHaveBeenCalled();
     expect(googleNativeLogin).not.toHaveBeenCalled();
@@ -376,16 +382,22 @@ describe('Compte mémorisé et attente dans le bouton', () => {
 
   it('pendant l’attente Google, le bouton Google affiche un indicateur DANS le bouton', async () => {
     remembered(null);
-    GoogleSignin.signIn.mockReturnValue(new Promise(() => {}));
     await renderScreen();
     const googleButton = () => screen.getByTestId('auth-provider-google');
     expect(within(googleButton()).queryByTestId('auth-provider-google-busy', { includeHiddenElements: true })).toBeNull();
-    await act(async () => { fireEvent.press(googleButton()); });
-    // Le cercle d'attente est DANS le bouton Google (à la place du logo), et lui seul attend.
-    expect(googleButton().props.accessibilityState.busy).toBe(true);
-    expect(within(googleButton()).UNSAFE_getByType(LoadingSpinner)).toBeTruthy();
-    expect(within(googleButton()).getByTestId('auth-provider-google-busy', { includeHiddenElements: true })).toBeTruthy();
-    expect(screen.getByTestId('auth-email-code-send').props.accessibilityState.busy).toBeFalsy();
+    // État transitoire vérifié pendant que le sélecteur est « ouvert » (voir le
+    // commentaire du test précédent sur act/React 19), puis l'utilisateur annule.
+    GoogleSignin.signIn.mockImplementationOnce(() => Promise.resolve().then(() => {
+      // Le cercle d'attente est DANS le bouton Google (à la place du logo), et lui seul attend.
+      expect(googleButton().props.accessibilityState.busy).toBe(true);
+      // Un seul hôte du cercle d'attente (LoadingSpinner) dans le bouton :
+      // RNTL 14 ne rend que des éléments hôtes, on l'identifie par son testID.
+      expect(googleButton().queryAll((node: any) => node.props?.testID === 'auth-provider-google-busy')).toHaveLength(1);
+      expect(within(googleButton()).getByTestId('auth-provider-google-busy', { includeHiddenElements: true })).toBeTruthy();
+      expect(screen.getByTestId('auth-email-code-send').props.accessibilityState.busy).toBeFalsy();
+      return { type: 'cancelled' };
+    }));
+    await fireEvent.press(googleButton());
   });
 });
 
