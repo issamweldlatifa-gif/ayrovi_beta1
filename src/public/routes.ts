@@ -1,4 +1,5 @@
 import { availableProductParams, availableProductSql } from '../catalogue/contentProducts';
+import { readFicheLabels } from '../catalogue/products';
 import { brandAccentColor, enforceBrandIdentity, enforceLegacyTheme } from '../../shared/identityPolicy';
 import { publicNavDestination } from '../../shared/publicNavigation';
 import { createHash, randomUUID } from 'node:crypto';
@@ -98,6 +99,12 @@ function rootCategoryOf(db: QatafoDatabase, categoryId: string | null): { id: st
 
 function mapProduct(row: any) {
   return {
+    /**
+     * LIBELLÉS DE LA FICHE (25/10/2026) : les noms que le CRM a donnés aux blocs
+     * (« Taille » → « Pointure », sections propres au produit). Un libellé absent
+     * n'est pas publié : l'application retombe sur le sien, elle n'invente rien.
+     */
+    ficheLabels: readFicheLabels(row.fiche_labels),
     id: row.id,
     name: row.name,
     description: row.description,

@@ -1,19 +1,24 @@
 /**
- * GRANDE FICHE — pièces d'interface (réécrites le 25/10/2026).
+ * GRANDE FICHE — les 4 écrans de la maquette (25/10/2026).
  *
  * Maquette de référence : `docs/design/cardproduit/mockup-complet-25-10.png`
- * (4 écrans) — les cotes sont dans `./fiche.ts`, mesurées en dp (pixels ÷ 2).
+ * (720 × 1600 px = 360 × 800 dp). Toutes les cotes sont dans `./fiche.ts`, en dp
+ * (pixels ÷ 2) : **la géométrie ne se discute pas ici**, elle se lit là-bas.
  *
- * Typographie et icônes : **uniquement les ressources officielles du projet** —
- * Zalando Sans / Noto Sans Arabic (`theme.font(...)`) et Ionicons embarqué. Aucune
- * police ni aucun pictogramme rapporté.
+ * Les quatre écrans, dans l'ordre de ce fichier :
+ *  1. `FichePhoto` + `FicheIdentity` + `ChoiceRow` — photo, nom souligné à la
+ *     largeur du mot, prix, description, ligne « Taille » ;
+ *  2. `ColorStrip` + `SectionRow` + `InfoRow` — Couleur et ses vignettes, les
+ *     accordéons des sections du CRM, livraison, retours, partager ;
+ *  3. `SizeSheet` — la feuille qui monte à 22 dp du haut, sans coin arrondi ;
+ *  4. `GalleryViewer` — blanc, croix, photo contenue, points.
  *
  * Ce que ces pièces NE font PAS, volontairement :
  *  • aucun prix calculé ici — la fiche affiche `finalPrice` du serveur ;
  *  • **aucun prix barré, aucune remise, aucune pastille de pourcentage** ;
  *  • aucune section vide, aucun « — » : une donnée absente disparaît ;
- *  • aucun bouton qui ne peut pas aboutir (le CTA reste désactivé tant que le
- *    choix de taille n'est pas complet).
+ *  • aucun libellé écrit en dur : le nom des blocs vient du CRM quand il en
+ *    donne un (`ficheLabels`), sinon de la traduction de l'application.
  */
 import { type ComponentProps, type ReactNode, useEffect, useMemo, useState } from 'react';
 import {
@@ -30,15 +35,19 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useVideoPlayer, VideoView } from 'expo-video';
 
-import { AppText, Button } from '@/design/ui';
+import { AppText } from '@/design/ui';
+import { LoadingSpinner } from '@/design/LoadingSpinner';
 import { useTheme } from '@/design/theme';
 import { AppImage } from '@/design/appImage';
 import { useT } from '@/i18n';
 import { mediaUrl } from '@/api/client';
-import { FICHE_COLORS, veil } from '@/design/tokens.mobile';
+import { FICHE_COLORS } from '@/design/tokens.mobile';
 import { FICHE, type ColorTile, type GalleryItem, type SizeRow } from './fiche';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
+
+/** Colonne des icônes : la boîte de 24 dp commence à 17 dp (maquette : 46 px). */
+const ICON_BOX = FICHE.rowIcon;
 
 /* ── 1. En-tête : transparent sur la photo, plein dès qu'elle est sortie ───── */
 
@@ -70,8 +79,8 @@ export function FicheHeader({
           {
             backgroundColor: theme.colors.canvas,
             opacity: solid,
-            borderBottomWidth: StyleSheet.hairlineWidth,
-            borderBottomColor: theme.colors.line,
+            borderBottomWidth: FICHE.headerRule,
+            borderBottomColor: FICHE_COLORS.hair,
           },
         ]}
       />
@@ -93,7 +102,7 @@ export function FicheHeader({
 
         <Animated.Text
           numberOfLines={1}
-          style={[styles.headerTitle, { color: theme.colors.ink, opacity: solid, fontFamily: theme.font('bold') }]}
+          style={[styles.headerTitle, { color: theme.colors.ink, opacity: solid, fontFamily: theme.font('regular') }]}
         >
           {title}
         </Animated.Text>
@@ -105,7 +114,7 @@ export function FicheHeader({
           hitSlop={8}
           style={styles.headerButton}
         >
-          <Ionicons name="bag-handle-outline" size={24} color={theme.colors.ink} accessibilityElementsHidden />
+          <Ionicons name="bag-handle-outline" size={26} color={theme.colors.ink} accessibilityElementsHidden />
         </Pressable>
       </View>
     </View>
@@ -126,6 +135,7 @@ export function FichePhoto({
   const t = useT();
   const current = items[index] ?? items[0];
   const count = items.length;
+  const active = Math.max(0, Math.min(index, count - 1));
 
   return (
     <View style={[styles.photo, { backgroundColor: theme.colors.surface }]}>
@@ -133,7 +143,7 @@ export function FichePhoto({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t('product.openGallery')}
-          onPress={() => onOpen(Math.max(0, index))}
+          onPress={() => onOpen(active)}
           style={StyleSheet.absoluteFill}
         >
           {current.kind === 'video' ? (
@@ -145,7 +155,7 @@ export function FichePhoto({
               uri={mediaUrl(current.url)}
               style={StyleSheet.absoluteFill}
               contentFit="cover"
-              accessibilityLabel={t('product.photo', { index: String(index + 1), total: String(count) })}
+              accessibilityLabel={t('product.photo', { index: String(active + 1), total: String(count) })}
               decorative
             />
           )}
@@ -159,7 +169,7 @@ export function FichePhoto({
       {count > 1 ? (
         <View pointerEvents="none" style={styles.dots}>
           {items.map((item, position) => {
-            const size = position === Math.max(0, index) ? FICHE.dot : FICHE.dotIdle;
+            const size = position === active ? FICHE.dot : FICHE.dotIdle;
             return (
               <View key={`${item.url}-${position}`} style={styles.dotSlot}>
                 <View
@@ -167,7 +177,7 @@ export function FichePhoto({
                     width: size,
                     height: size,
                     borderRadius: size / 2,
-                    backgroundColor: position === Math.max(0, index) ? theme.colors.ink : FICHE_COLORS.dotIdle,
+                    backgroundColor: position === active ? theme.colors.ink : FICHE_COLORS.dotIdle,
                   }}
                 />
               </View>
@@ -205,7 +215,7 @@ export function FicheIdentity({
       {description ? (
         <AppText
           numberOfLines={2}
-          style={[styles.description, { color: theme.colors.muted, fontFamily: theme.font('regular') }]}
+          style={[styles.description, { color: FICHE_COLORS.muted, fontFamily: theme.font('regular') }]}
         >
           {description}
         </AppText>
@@ -231,16 +241,24 @@ export function ChoiceRow({
 
   const content = (
     <>
-      <Ionicons name={icon} size={FICHE.rowIcon} color={theme.colors.ink} accessibilityElementsHidden />
+      <View style={styles.rowIcon}>
+        <Ionicons name={icon} size={ICON_BOX} color={theme.colors.ink} accessibilityElementsHidden />
+      </View>
       <View style={styles.rowText}>
-        <AppText style={[styles.rowLabel, { color: theme.colors.ink, fontFamily: theme.font('bold') }]}>{label}</AppText>
+        <AppText numberOfLines={1} style={[styles.rowLabel, { color: theme.colors.ink, fontFamily: theme.font('bold') }]}>
+          {label}
+        </AppText>
         {value ? (
           <AppText numberOfLines={1} style={[styles.rowValue, { color: theme.colors.ink, fontFamily: theme.font('regular') }]}>
             {value}
           </AppText>
         ) : null}
       </View>
-      {chevron ? <Ionicons name="chevron-down" size={FICHE.chevronSize + 5} color={theme.colors.ink} accessibilityElementsHidden /> : null}
+      {chevron ? (
+        <View style={styles.chevron}>
+          <Ionicons name="chevron-down" size={FICHE.chevronSize} color={theme.colors.ink} accessibilityElementsHidden />
+        </View>
+      ) : null}
     </>
   );
 
@@ -290,11 +308,11 @@ export function ColorStrip({
                 decorative
               />
             ) : (
-              <View style={[styles.tilePlain, { borderColor: theme.colors.line }]}>
+              <View style={[styles.tilePlain, { borderColor: FICHE_COLORS.hair }]}>
                 <AppText numberOfLines={2} style={[styles.tilePlainText, { color: theme.colors.ink }]}>{tile.color}</AppText>
               </View>
             )}
-            <View style={[styles.tileRule, { backgroundColor: active ? theme.colors.accent : theme.colors.canvas }]} />
+            <View style={[styles.tileRule, { backgroundColor: active ? FICHE_COLORS.accent : theme.colors.canvas }]} />
             <AppText
               numberOfLines={1}
               style={[styles.tileLabel, { color: theme.colors.ink, fontFamily: active ? theme.font('bold') : theme.font('regular') }]}
@@ -308,7 +326,7 @@ export function ColorStrip({
   );
 }
 
-/* ── 6. Ligne de section pliable (Caractéristiques · Matière · …) ──────────── */
+/* ── 6. Accordéon : une section d'attributs du CRM (48 dp par ligne fermée) ── */
 
 export function SectionRow({
   icon, title, children, defaultOpen = false,
@@ -329,14 +347,20 @@ export function SectionRow({
         onPress={() => setOpen((value) => !value)}
         style={styles.row}
       >
-        <Ionicons name={icon} size={FICHE.rowIcon} color={theme.colors.ink} accessibilityElementsHidden />
-        <View style={styles.rowText}>
-          <AppText style={[styles.rowLabel, { color: theme.colors.ink, fontFamily: theme.font('bold') }]}>{title}</AppText>
+        <View style={styles.rowIcon}>
+          <Ionicons name={icon} size={ICON_BOX} color={theme.colors.ink} accessibilityElementsHidden />
         </View>
-        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={FICHE.chevronSize + 5} color={theme.colors.ink} accessibilityElementsHidden />
+        <View style={styles.rowText}>
+          <AppText numberOfLines={1} style={[styles.rowLabel, { color: theme.colors.ink, fontFamily: theme.font('bold') }]}>
+            {title}
+          </AppText>
+        </View>
+        <View style={styles.chevron}>
+          <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={FICHE.chevronSize} color={theme.colors.ink} accessibilityElementsHidden />
+        </View>
       </Pressable>
       {open ? <View style={styles.sectionBody}>{children}</View> : null}
-      <View style={[styles.hairline, { backgroundColor: theme.colors.line }]} />
+      <View style={[styles.hairline, { backgroundColor: FICHE_COLORS.hair }]} />
     </View>
   );
 }
@@ -356,15 +380,17 @@ export function InfoRow({
   const theme = useTheme();
   const content = (
     <>
-      <Ionicons name={icon} size={FICHE.rowIcon} color={theme.colors.ink} accessibilityElementsHidden />
-      <View style={styles.rowText}>
+      <View style={[styles.rowIcon, styles.infoIcon]}>
+        <Ionicons name={icon} size={ICON_BOX} color={theme.colors.ink} accessibilityElementsHidden />
+      </View>
+      <View style={styles.infoText}>
         <AppText style={[styles.infoTitle, { color: titleColor ?? theme.colors.ink, fontFamily: theme.font('bold') }]}>
           {title}
         </AppText>
         {(lines ?? []).map((line, position) => (
           <AppText
             key={`${line}-${position}`}
-            style={[styles.infoLine, { color: theme.colors.muted, fontFamily: theme.font('regular') }]}
+            style={[styles.infoLine, { color: FICHE_COLORS.muted, fontFamily: theme.font('regular') }]}
           >
             {line}
           </AppText>
@@ -381,16 +407,29 @@ export function InfoRow({
   );
 }
 
+/** Ligne « libellé — valeur » d'un accordéon (Caractéristiques, Matière…). */
+export function SpecLine({ label, value }: { label: string; value: string }) {
+  const theme = useTheme();
+  return (
+    <View style={[styles.specLine, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
+      <AppText numberOfLines={1} style={[styles.specLabel, { color: FICHE_COLORS.muted, fontFamily: theme.font('regular') }]}>
+        {label}
+      </AppText>
+      <AppText style={[styles.specValue, { color: theme.colors.ink, fontFamily: theme.font('regular') }]}>
+        {value}
+      </AppText>
+    </View>
+  );
+}
+
 /** Bande grise pleine largeur — le séparateur « plus gros que les autres lignes ». */
 export function GrayBand() {
-  const theme = useTheme();
-  return <View style={[styles.band, { backgroundColor: theme.colors.line }]} />;
+  return <View style={[styles.band, { backgroundColor: FICHE_COLORS.hair }]} />;
 }
 
 /** Filet fin pleine largeur. */
 export function Hairline() {
-  const theme = useTheme();
-  return <View style={[styles.hairline, { backgroundColor: theme.colors.line }]} />;
+  return <View style={[styles.hairline, { backgroundColor: FICHE_COLORS.hair }]} />;
 }
 
 /* ── 8. Barre d'achat FIXE (prix à gauche, bouton noir à droite) ───────────── */
@@ -409,8 +448,10 @@ export function BuyBar({
 }) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const blocked = disabled || busy;
   return (
     <View
+      testID="product-buy-bar"
       style={[
         styles.buyBar,
         {
@@ -428,9 +469,34 @@ export function BuyBar({
         <View style={styles.buyPrice}>
           <AppText style={[styles.buyPriceText, { color: theme.colors.ink, fontFamily: theme.font('bold') }]}>{price}</AppText>
         </View>
-        <View style={styles.buyButtonBox}>
-          <Button label={label} tone="solid" block onPress={onPress} busy={busy} disabled={disabled} testID={testID} />
-        </View>
+        {/*
+          Bouton du CTA : 207 × 48 dp, rayon 24 dp, **noir** (maquette). Ce n'est pas
+          le `Button` du Design System (pastille à rayon plein) : la cote est gelée,
+          donc la forme vient de `FICHE`, la couleur de l'encre du thème.
+        */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={label}
+          accessibilityState={{ disabled: blocked, busy }}
+          disabled={blocked}
+          onPress={onPress}
+          testID={testID}
+          style={({ pressed }) => [
+            styles.buyButton,
+            {
+              backgroundColor: pressed ? theme.colors.secondary : theme.colors.ink,
+              opacity: disabled ? 0.5 : 1,
+            },
+          ]}
+        >
+          {busy
+            ? <LoadingSpinner size="sm" color={theme.colors.canvas} testID={testID ? `${testID}-busy` : undefined} />
+            : (
+              <AppText style={[styles.buyButtonLabel, { color: theme.colors.canvas, fontFamily: theme.font('bold') }]}>
+                {label}
+              </AppText>
+            )}
+        </Pressable>
       </View>
     </View>
   );
@@ -468,40 +534,47 @@ export function SizeSheet({
 
           {/* Recommandation : la dalle lavande de la maquette. */}
           <View style={[styles.sheetPanel, { backgroundColor: FICHE_COLORS.recommendation }]}>
-            <Ionicons name="resize-outline" size={FICHE.rowIcon} color={theme.colors.ink} accessibilityElementsHidden />
+            <View style={styles.sheetPanelIcon}>
+              <Ionicons name="resize-outline" size={ICON_BOX} color={theme.colors.ink} accessibilityElementsHidden />
+            </View>
             <AppText style={[styles.sheetPanelText, { color: theme.colors.ink, fontFamily: theme.font('regular') }]}>
               {t('product.sizeRecommendation')}
             </AppText>
           </View>
 
-          <View style={styles.sheetColumns}>
-            <AppText style={[styles.sheetColumn, { color: theme.colors.ink, fontFamily: theme.font('semibold') }]}>
-              {t('catalog.size').toUpperCase()}
-            </AppText>
-          </View>
+          <AppText style={[styles.sheetColumn, { color: theme.colors.ink, fontFamily: theme.font('semibold') }]}>
+            {t('catalog.size').toUpperCase()}
+          </AppText>
 
           {rows.length > 0 ? (
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.sheetRows}>
               {rows.map((row) => {
                 const active = selected === row.value;
-                const color = row.available ? theme.colors.ink : theme.colors.muted;
+                const color = row.available ? theme.colors.ink : FICHE_COLORS.struck;
                 return (
                   <Pressable
                     key={row.value}
                     accessibilityRole="button"
                     accessibilityLabel={row.available
-                      ? (row.state ? `${row.value} — ${t('product.sizeLast')}` : row.value)
+                      ? (row.state === 'last' ? `${row.value} — ${t('product.sizeLast')}` : row.value)
                       : `${row.value} — ${t('catalog.variant.unavailable')}`}
                     accessibilityState={{ selected: active, disabled: !row.available }}
                     disabled={!row.available}
                     onPress={() => onSelect(row.value)}
-                    style={styles.sheetRow}
+                    style={[styles.sheetRow, { borderBottomColor: FICHE_COLORS.hair }]}
                   >
-                    <AppText style={[styles.sheetRowValue, { color, fontFamily: theme.font('regular'), textDecorationLine: row.available ? 'none' : 'line-through' }]}>
+                    <AppText
+                      style={[styles.sheetRowValue, {
+                        color,
+                        fontFamily: theme.font('regular'),
+                        textDecorationLine: row.available ? 'none' : 'line-through',
+                        textDecorationColor: FICHE_COLORS.struck,
+                      }]}
+                    >
                       {row.value}
                     </AppText>
                     {row.state === 'last' ? (
-                      <AppText style={[styles.sheetRowState, { color: theme.colors.accent, fontFamily: theme.font('regular') }]}>
+                      <AppText style={[styles.sheetRowState, { color: FICHE_COLORS.accent, fontFamily: theme.font('regular') }]}>
                         {t('product.sizeLast')}
                       </AppText>
                     ) : null}
@@ -510,7 +583,7 @@ export function SizeSheet({
               })}
             </ScrollView>
           ) : (
-            <AppText style={[styles.sheetEmpty, { color: theme.colors.muted }]}>{t('product.sizeSheetEmpty')}</AppText>
+            <AppText style={[styles.sheetEmpty, { color: FICHE_COLORS.muted }]}>{t('product.sizeSheetEmpty')}</AppText>
           )}
         </View>
       </View>
@@ -550,18 +623,8 @@ export function GalleryViewer({
 
   return (
     <Modal visible={index !== null} animationType="fade" onRequestClose={onClose} statusBarTranslucent>
-      <View style={[styles.viewer, { backgroundColor: theme.colors.canvas, paddingTop: insets.top }]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('common.close')}
-          onPress={onClose}
-          hitSlop={8}
-          style={styles.viewerClose}
-        >
-          <Ionicons name="close" size={FICHE.viewerCloseSize} color={theme.colors.ink} accessibilityElementsHidden />
-        </Pressable>
-
-        <View style={[styles.viewerStage, { backgroundColor: FICHE_COLORS.viewerStage }]}>
+      <View style={[styles.viewer, { backgroundColor: theme.colors.canvas }]}>
+        <View style={[styles.viewerStage, { backgroundColor: FICHE_COLORS.viewerStage, marginTop: FICHE.viewerTop + insets.top }]}>
           <FlatList
             data={items}
             keyExtractor={(item) => item.url}
@@ -578,7 +641,7 @@ export function GalleryViewer({
                 ) : (
                   <AppImage
                     uri={mediaUrl(item.url)}
-                    style={StyleSheet.absoluteFill}
+                    style={[StyleSheet.absoluteFill, styles.viewerImage]}
                     contentFit="contain"
                     accessibilityLabel={t('product.photo', { index: String(position + 1), total: String(items.length) })}
                     decorative={false}
@@ -605,6 +668,16 @@ export function GalleryViewer({
             </View>
           ))}
         </View>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('common.close')}
+          onPress={onClose}
+          hitSlop={8}
+          style={[styles.viewerClose, { top: insets.top + FICHE.viewerCloseTop }]}
+        >
+          <Ionicons name="close" size={FICHE.viewerCloseSize} color={theme.colors.ink} accessibilityElementsHidden />
+        </Pressable>
       </View>
     </Modal>
   );
@@ -613,12 +686,7 @@ export function GalleryViewer({
 /* ── Styles : toutes les cotes viennent de `FICHE` ─────────────────────────── */
 
 const styles = StyleSheet.create({
-  header: {
-    position: 'absolute',
-    top: 0,
-    start: 0,
-    end: 0,
-  },
+  header: { position: 'absolute', top: 0, start: 0, end: 0 },
   headerRow: { flex: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 2 },
   headerButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { flex: 1, textAlign: 'center', fontSize: FICHE.headerTitle },
@@ -631,100 +699,128 @@ const styles = StyleSheet.create({
   identity: { paddingHorizontal: FICHE.gutter, paddingTop: FICHE.nameTop },
   identityTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
   nameBox: { flexShrink: 1, borderBottomWidth: FICHE.underlineWidth, paddingBottom: FICHE.underlineGap, marginEnd: 12 },
-  name: { fontSize: FICHE.nameSize, lineHeight: FICHE.nameSize + 4 },
-  price: { fontSize: FICHE.priceSize, lineHeight: FICHE.nameSize + 4, marginStart: 8 },
+  name: { fontSize: FICHE.nameSize, lineHeight: FICHE.nameLine },
+  price: { fontSize: FICHE.priceSize, lineHeight: FICHE.nameLine, marginStart: 8 },
   description: { fontSize: FICHE.descriptionSize, lineHeight: FICHE.descriptionLine, marginTop: FICHE.descriptionGap },
 
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
     minHeight: FICHE.rowHeight,
     paddingStart: FICHE.rowIconStart,
     paddingEnd: FICHE.chevronEnd,
   },
-  rowText: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: FICHE.colorValueGap },
+  rowIcon: { width: ICON_BOX, alignItems: 'flex-start' },
+  rowText: { flex: 1, marginStart: FICHE.rowLabelStart - FICHE.rowIconStart - ICON_BOX },
   rowLabel: { fontSize: FICHE.rowLabel },
-  rowValue: { flexShrink: 1, fontSize: FICHE.rowLabel },
+  rowValue: { fontSize: FICHE.rowLabel },
+  chevron: { width: FICHE.chevronSize, alignItems: 'flex-end' },
 
   tiles: { flexDirection: 'row', gap: FICHE.tileGap, paddingStart: FICHE.gutter, paddingTop: FICHE.tileTop },
   tile: { width: FICHE.tileWidth },
   tileImage: { width: FICHE.tileWidth, height: FICHE.tileHeight },
-  tilePlain: { width: FICHE.tileWidth, height: FICHE.tileHeight, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
+  tilePlain: {
+    width: FICHE.tileWidth, height: FICHE.tileHeight, borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6,
+  },
   tilePlainText: { fontSize: FICHE.tileLabel, textAlign: 'center' },
-  tileRule: { height: FICHE.tileRule, marginTop: FICHE.tileRuleGap },
+  tileRule: { height: FICHE.tileRule },
   tileLabel: { fontSize: FICHE.tileLabel, marginTop: FICHE.tileLabelGap },
 
   sectionBody: { paddingStart: FICHE.rowLabelStart, paddingEnd: FICHE.gutter, paddingBottom: 16, gap: 8 },
-  hairline: { height: StyleSheet.hairlineWidth },
+  specLine: { alignItems: 'baseline', gap: 8 },
+  specLabel: { fontSize: FICHE.infoBody },
+  specValue: { flex: 1, fontSize: FICHE.infoBody },
+  hairline: { height: FICHE.hairline },
 
   infoRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
     paddingStart: FICHE.rowIconStart,
     paddingEnd: FICHE.gutter,
     paddingTop: FICHE.infoTop,
   },
+  infoIcon: { paddingTop: 2 },
+  infoText: { flex: 1, marginStart: FICHE.rowLabelStart - FICHE.rowIconStart - ICON_BOX },
   infoTitle: { fontSize: FICHE.infoTitle, lineHeight: FICHE.infoLine },
   infoLine: { fontSize: FICHE.infoBody, lineHeight: FICHE.infoLine },
 
   band: { height: FICHE.band },
 
-  buyBar: {
-    position: 'absolute',
-    start: 0,
-    end: 0,
-    bottom: 0,
-  },
+  buyBar: { position: 'absolute', start: 0, end: 0, bottom: 0 },
   buyRow: {
     height: FICHE.barHeight,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingStart: FICHE.gutter,
     paddingEnd: 8,
   },
   buyError: { paddingStart: FICHE.gutter, paddingEnd: FICHE.gutter, paddingTop: 4 },
-  buyPrice: { width: FICHE.barPriceWidth, justifyContent: 'center' },
+  buyPrice: { flex: 1, justifyContent: 'center' },
   buyPriceText: { fontSize: FICHE.barPrice },
-  buyButtonBox: { width: FICHE.barButtonWidth, height: FICHE.barButtonHeight, justifyContent: 'center' },
+  buyButton: {
+    width: FICHE.barButtonWidth,
+    height: FICHE.barButtonHeight,
+    borderRadius: FICHE.barButtonRadius,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buyButtonLabel: { fontSize: FICHE.barPrice },
 
   sheetRoot: { flex: 1 },
-  sheetScrim: { backgroundColor: veil(0.35) },
+  sheetScrim: { backgroundColor: FICHE_COLORS.scrim },
   sheet: { flex: 1 },
-  sheetGrab: { alignSelf: 'center', width: FICHE.grabWidth, height: FICHE.grabHeight, borderRadius: FICHE.grabHeight / 2, marginTop: FICHE.grabTop },
-  sheetTitle: { fontSize: FICHE.sheetTitle, paddingHorizontal: FICHE.gutter, marginTop: FICHE.sheetTitleTop },
+  sheetGrab: {
+    alignSelf: 'center', width: FICHE.grabWidth, height: FICHE.grabHeight,
+    borderRadius: FICHE.grabHeight / 2, marginTop: FICHE.grabTop,
+  },
+  sheetTitle: {
+    fontSize: FICHE.sheetTitle, lineHeight: FICHE.sheetTitleLine,
+    paddingHorizontal: FICHE.gutter, marginTop: FICHE.sheetTitleTop,
+  },
   sheetPanel: {
     marginHorizontal: FICHE.panelGutter,
     marginTop: FICHE.panelTop,
     height: FICHE.panelHeight,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
     paddingStart: FICHE.panelIconStart,
     paddingEnd: FICHE.panelGutter,
   },
-  sheetPanelText: { flex: 1, fontSize: FICHE.panelText, lineHeight: FICHE.panelLine },
-  sheetColumns: { flexDirection: 'row', paddingStart: FICHE.rowStateEnd, paddingTop: FICHE.columnsTop },
-  sheetColumn: { fontSize: FICHE.columnHeader, letterSpacing: 1 },
+  sheetPanelIcon: { width: ICON_BOX, alignItems: 'flex-start' },
+  sheetPanelText: {
+    flex: 1,
+    fontSize: FICHE.panelText,
+    lineHeight: FICHE.panelLine,
+    marginStart: FICHE.panelTextStart - FICHE.panelIconStart - ICON_BOX,
+  },
+  sheetColumn: {
+    fontSize: FICHE.columnHeader, letterSpacing: 1,
+    paddingStart: FICHE.rowStateEnd, paddingTop: FICHE.columnsTop,
+  },
   sheetRows: { paddingTop: FICHE.rowsTop },
   sheetRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     height: FICHE.sizeRowHeight,
     paddingStart: FICHE.rowStateEnd,
     paddingEnd: FICHE.rowStateEnd,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingTop: 2,
+    borderBottomWidth: FICHE.hairline,
   },
   sheetRowValue: { fontSize: FICHE.rowSize },
-  sheetRowState: { fontSize: FICHE.rowState },
+  sheetRowState: { fontSize: FICHE.rowState, marginTop: FICHE.rowStateTop },
   sheetEmpty: { fontSize: FICHE.panelText, paddingHorizontal: FICHE.gutter, marginTop: FICHE.panelTop },
 
   viewer: { flex: 1 },
-  viewerClose: { position: 'absolute', top: FICHE.viewerCloseTop, start: FICHE.viewerCloseStart, width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  viewerStage: { flex: 1, marginTop: FICHE.viewerTop },
+  viewerStage: { flex: 1 },
+  viewerImage: { margin: 12 },
   viewerDotsSpacer: { height: FICHE.viewerStageBottom },
   viewerDots: { flexDirection: 'row', justifyContent: 'center' },
   viewerDotSlot: { width: FICHE.viewerDotPitch, alignItems: 'center' },
+  viewerClose: {
+    position: 'absolute', start: FICHE.viewerCloseStart,
+    width: 44, height: 44, alignItems: 'center', justifyContent: 'center',
+  },
 });

@@ -119,12 +119,22 @@ describe('fiche — sections décidées par le CRM', () => {
     expect(groups[0].rows.map((row) => row.key)).toEqual(['material']);
   });
 
-  it('une section inconnue ne disparaît pas : elle tombe dans « Caractéristiques »', () => {
-    const groups = specGroups([a('unknown_key', 'section_inventee', 'valeur'), a('niche', '', 'x')]);
-    expect(groups).toEqual([{ section: 'specs', rows: [
-      { key: 'unknown_key', label: 'unknown_key', value: 'valeur' },
-      { key: 'niche', label: 'niche', value: 'x' },
-    ] }]);
+  it('une section inventée dans le CRM garde son propre bloc, et son nom vient du CRM', () => {
+    // Le propriétaire peut créer une section (« matiere_bio ») : elle ne fond pas
+    // dans un fourre-tout, sinon son nom n arriverait jamais à l écran.
+    const groups = specGroups(
+      [a('unknown_key', 'section_inventee', 'valeur'), a('niche', '', 'x')],
+      { section_inventee: 'Matière recyclée' },
+    );
+    expect(groups).toEqual([
+      { section: 'section_inventee', title: 'Matière recyclée', rows: [{ key: 'unknown_key', label: 'unknown_key', value: 'valeur' }] },
+      { section: 'specs', title: null, rows: [{ key: 'niche', label: 'niche', value: 'x' }] },
+    ]);
+  });
+
+  it('sans nom dans le CRM, la section retombe sur la traduction de l application', () => {
+    const groups = specGroups([a('material', 'matiere', 'coton')]);
+    expect(groups[0]).toMatchObject({ section: 'matiere', title: null });
   });
 
   it('chaque section a un libellé TRADUIT et une icône de la famille officielle', () => {
@@ -272,7 +282,11 @@ describe('fiche — contrat d’écran', () => {
 
   it('le CTA est NOIR (décision du propriétaire) et la fiche ne calcule aucun prix', () => {
     const parts = src('src/features/product/ProductFiche.tsx');
-    expect(parts).toMatch(/tone="solid"/);
+    // Le bouton du CTA est dessiné dans la fiche (rayon 24 dp, cote de la
+    // maquette) mais sa COULEUR est celle de l encre : noir, jamais le violet
+    // d action (`action`).
+    expect(parts).toContain('backgroundColor: pressed ? theme.colors.secondary : theme.colors.ink');
+    expect(parts).not.toMatch(/theme\.colors\.action\b/);
     expect(parts).not.toMatch(/tone="main"/);
     const screen = src('app/product/[id].tsx');
     // Le total est celui du serveur, jamais une somme locale.

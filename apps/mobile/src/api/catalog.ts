@@ -96,6 +96,22 @@ export interface CatalogProduct {
   family: CatalogFamily | null;
   /** الخصائص المعلنة في CRM — المرتّبة، وبلا قيم فارغة. */
   attributes: CatalogAttribute[];
+  /**
+   * أسماء الكتل كما كتبها مالك المتجر في CRM: « Taille » تولّي « Pointure »،
+   * « Contenance »، « Volume »… ومقطع جديد ياخذ اسمه من هنا. اللي ما عندوش
+   * اسم في CRM يرجع لاسم التطبيق — ما نختارعوش اسم.
+   */
+  ficheLabels: FicheLabels;
+}
+
+/** تسميات الورقة (بيانات CRM، ماهياش كود). */
+export interface FicheLabels {
+  /** اسم بُعد المقاس (`catalog.size` افتراضيًا). */
+  size?: string;
+  /** اسم بُعد اللون (`catalog.color` افتراضيًا). */
+  color?: string;
+  /** اسم كل مقطع، بالمفتاح (`matiere`, `mesures`, أو مقطع جديد). */
+  sections?: Record<string, string>;
 }
 
 export interface CatalogFamily {
@@ -231,7 +247,33 @@ function parseProduct(payload: unknown): CatalogProduct | null {
     sheet: parseSheet(row.sheet),
     family: parseFamily(row.family),
     attributes: parseAttributes(row.attributes),
+    ficheLabels: parseFicheLabels(row.ficheLabels),
   };
+}
+
+/**
+ * تسميات الورقة من الخادم: نصّ قصير فقط، بلا html وبلا أرقام مخترعة.
+ * التسمية الفارغة ما تتسجّلش — يعني التطبيق يرجع لاسمو.
+ */
+function parseFicheLabels(payload: unknown): FicheLabels {
+  const out: FicheLabels = {};
+  if (!payload || typeof payload !== 'object') return out;
+  const row = obj(payload);
+  const size = text(row.size).trim();
+  const color = text(row.color).trim();
+  if (size) out.size = size;
+  if (color) out.color = color;
+  const sections: Record<string, string> = {};
+  const source = row.sections;
+  if (source && typeof source === 'object' && !Array.isArray(source)) {
+    for (const [slug, label] of Object.entries(source as Record<string, unknown>)) {
+      const key = String(slug).trim();
+      const value = text(label).trim();
+      if (key && value) sections[key] = value;
+    }
+  }
+  if (Object.keys(sections).length > 0) out.sections = sections;
+  return out;
 }
 
 /** Famille = racine de l'arbre, décidée par la donnée du CRM (jamais en dur). */

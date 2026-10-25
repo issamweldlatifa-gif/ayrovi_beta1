@@ -195,7 +195,6 @@ export const fr = {
   'product.sizeSheetEmpty': 'Aucune taille déclarée pour ce produit.',
   'product.sizeRecommendation': 'Nous vous recommandons de choisir la taille habituelle.',
   'product.sizeLast': 'Dernier article',
-  'product.singleSize': 'Disponible en taille unique',
   'product.fastDelivery': 'Livraison rapide',
   'product.freeReturns': 'Retours gratuits',
   'product.returnsWindow': 'pendant {days} jours à compter de la date de livraison',

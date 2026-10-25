@@ -29,7 +29,6 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { KeyValue } from '@/design/ui';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { SubScreen } from '@/design/subScreen';
 import { goBack } from '@/design/navigation';
@@ -53,6 +52,7 @@ import {
   InfoRow,
   SectionRow,
   SizeSheet,
+  SpecLine,
 } from '@/features/product/ProductFiche';
 import {
   FICHE,
@@ -60,6 +60,7 @@ import {
   deliveryWindow,
   galleryItems,
   hasSizeChoice,
+  pickLabel,
   sectionIcon,
   sectionLabelKey,
   singleDimensionValue,
@@ -99,7 +100,7 @@ export default function ProductScreen() {
     staleTime: 120_000,
   });
 
-  // La fiche se lit par identifiant : un produit lié à un contenu n'est pas forcément
+  // La fiche se lit par identifiant : un produit lié à un contenu peut ne pas être
   // dans les 50 premiers de la liste. La liste reste en secours.
   const byId = useQuery({
     queryKey: ['catalog', 'product', id],
@@ -197,8 +198,20 @@ export default function ProductScreen() {
   const hasPrice = product.finalPrice > 0;
   const priceLabel = hasPrice ? `${product.finalPrice.toFixed(2)} TND` : '';
 
-  /** Caractéristiques : une section par famille du CRM ; les vides n'existent pas. */
-  const groups = specGroups(product.attributes);
+  /**
+   * NOMS DES BLOCS — la donnée du CRM en premier.
+   *
+   * `ficheLabels` vient du serveur (`products.fiche_labels`) : le proprietaire a
+   * pu ecrire « Pointure », « Contenance », « Volume » a la place de « Taille »,
+   * et nommer ses propres sections. Sans libelle du CRM, on retombe sur la
+   * traduction de l application — jamais sur un nom choisi ici.
+   */
+  const ficheLabels = product.ficheLabels;
+  const sizeLabel = pickLabel(ficheLabels?.size, t('catalog.size'));
+  const colorLabel = pickLabel(ficheLabels?.color, t('catalog.color'));
+
+  /** Sections : une par famille du CRM, dans l'ordre du CRM ; les vides n'existent pas. */
+  const groups = specGroups(product.attributes, ficheLabels?.sections ?? null);
 
   /** Livraison : la date est calculée à partir du délai publié par le CRM. */
   const deliveryDates = policy.data ? deliveryWindow(policy.data.deliveryDelay, new Date(), locale) : null;
@@ -239,8 +252,8 @@ export default function ProductScreen() {
         <Hairline />
         <ChoiceRow
           icon="resize-outline"
-          label={t('catalog.size')}
-          value={onlySize ? t('product.singleSize') : chosenSize || undefined}
+          label={sizeLabel}
+          value={onlySize || chosenSize || undefined}
           chevron={chooseSize}
           onPress={chooseSize ? () => setSizeSheet(true) : undefined}
           testID="product-size-row"
@@ -251,7 +264,7 @@ export default function ProductScreen() {
         {tiles.length > 0 ? (
           <>
             <View style={styles.colorBlock}>
-              <ChoiceRow icon="color-palette-outline" label={t('catalog.color')} value={chosenColor} />
+              <ChoiceRow icon="color-palette-outline" label={colorLabel} value={chosenColor} />
               <ColorStrip tiles={tiles} selected={chosenColor} onSelect={pickColor} />
             </View>
             <GrayBand />
@@ -262,9 +275,13 @@ export default function ProductScreen() {
         {groups.length > 0 ? (
           <>
             {groups.map((group) => (
-              <SectionRow key={group.section} icon={sectionIcon(group.section)} title={t(sectionLabelKey(group.section))}>
+              <SectionRow
+                key={group.section}
+                icon={sectionIcon(group.section)}
+                title={group.title || t(sectionLabelKey(group.section))}
+              >
                 <View style={styles.specs}>
-                  {group.rows.map((row) => <KeyValue key={row.key} label={row.label} value={row.value} />)}
+                  {group.rows.map((row) => <SpecLine key={row.key} label={row.label} value={row.value} />)}
                 </View>
               </SectionRow>
             ))}

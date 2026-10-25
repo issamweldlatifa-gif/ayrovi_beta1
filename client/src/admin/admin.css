@@ -1370,3 +1370,119 @@ html[data-theme='dark'] .admin-table th { color: var(--admin-text-soft); }
   .admin-order-kpis { grid-template-columns: repeat(2, 1fr); }
   .admin-pipeline li { min-width: 72px; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ÉDITEUR DE LA FICHE PRODUIT (25/10/2026)
+   Saisie à gauche, aperçu à droite. Toutes les COTES de l'aperçu viennent de
+   `ficheGeometry.ts` (copie verrouillée des cotes de l'application) et sont
+   posées en style en ligne : ce fichier ne porte que les couleurs et la mise
+   en page du back-office.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.fiche-editor { display: block; }
+.fiche-editor__bar {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; gap: 16px;
+  padding: 14px 0; margin-bottom: 18px;
+  border-bottom: 1px solid var(--admin-line);
+  background: var(--admin-surface-page);
+}
+.fiche-editor__title { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.fiche-editor__title span { font-size: 9px; letter-spacing: .2em; font-weight: 900; color: var(--admin-ink-muted); }
+.fiche-editor__title strong { font-size: 21px; letter-spacing: -.03em; color: var(--admin-ink-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fiche-editor__actions { display: flex; align-items: center; gap: 10px; }
+.fiche-editor__status {
+  padding: 5px 10px; font-size: 10px; font-weight: 900; letter-spacing: .12em;
+  border: 1px solid var(--admin-line); color: var(--admin-ink);
+}
+.fiche-editor__status.is-active { border-color: var(--admin-tone-rgba-34-197-94-35); color: var(--admin-ink-strong); }
+.fiche-editor__status.is-archived { color: var(--admin-danger-text); }
+.fiche-editor__error { margin: 0 0 14px; }
+.fiche-editor__grid { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 26px; align-items: start; }
+.fiche-editor__form { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.fiche-editor__block { padding: 18px 20px 20px; border: 1px solid var(--admin-line); background: var(--admin-surface-card); }
+.fiche-editor__block-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.fiche-editor__block-head h2 { margin: 0; font-size: 15px; letter-spacing: -.01em; }
+.fiche-editor__lock {
+  padding: 4px 9px; font-size: 9px; font-weight: 900; letter-spacing: .14em;
+  border: 1px solid var(--admin-line); color: var(--admin-ink-muted);
+}
+.fiche-locks { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; margin: 10px 0 0; padding: 0; list-style: none; }
+.fiche-locks li { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 8px 10px; background: var(--admin-surface-sunken); }
+.fiche-locks span { font-size: 11px; color: var(--admin-ink-muted); }
+.fiche-locks strong { font-size: 12px; color: var(--admin-ink-strong); }
+.fiche-hints { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.fiche-hints button {
+  padding: 4px 9px; font-size: 11px; cursor: pointer;
+  border: 1px solid var(--admin-line); background: var(--admin-surface-card); color: var(--admin-ink);
+}
+.fiche-hints button.is-on { border-color: var(--admin-ink-strong); background: var(--admin-ink-strong); color: var(--admin-on-dark); }
+.fiche-section { margin-top: 12px; border: 1px solid var(--admin-line); }
+.fiche-section__head { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--admin-line); background: var(--admin-surface-sunken); }
+.fiche-section__title { flex: 1; border: 0; background: transparent; font-size: 13px; font-weight: 800; color: var(--admin-ink-strong); }
+.fiche-section__title:focus { outline: 1px solid var(--admin-ink-strong); }
+.fiche-section__head code { font-size: 10px; color: var(--admin-ink-muted); }
+.fiche-section__rows { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; padding: 12px; }
+.fiche-section__rows label { display: flex; flex-direction: column; gap: 4px; }
+.fiche-section__rows span { font-size: 11px; color: var(--admin-ink-muted); }
+.fiche-section__rows input { padding: 8px 10px; border: 1px solid var(--admin-line); background: var(--admin-surface-card); color: var(--admin-ink); font-size: 13px; }
+
+.fiche-editor__preview { position: sticky; top: 96px; display: flex; flex-direction: column; gap: 10px; }
+.fiche-editor__preview-head { display: flex; flex-direction: column; gap: 2px; }
+.fiche-editor__preview-head h2 { margin: 0; font-size: 13px; }
+.fiche-editor__preview-head span { font-size: 10px; color: var(--admin-ink-muted); letter-spacing: .04em; }
+.fiche-editor__phone-wrap { max-height: calc(100dvh - 190px); overflow: auto; border: 1px solid var(--admin-line); background: var(--fiche-paper); }
+
+/* ── L'écran de l'application, à l'échelle 1:1 (360 dp) ─────────────────── */
+.fiche-phone { background: var(--fiche-paper); color: var(--fiche-ink); font-family: inherit; overflow: hidden; }
+.fiche-phone__photo { position: relative; width: 100%; background: var(--fiche-stage); }
+.fiche-phone__photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.fiche-phone__photo-empty { position: absolute; inset: 0; display: grid; place-items: center; font-size: 13px; color: var(--fiche-muted); }
+.fiche-phone__dots { position: absolute; left: 0; right: 0; display: flex; justify-content: center; align-items: center; }
+.fiche-phone__dots i { display: block; border-radius: 50%; background: var(--fiche-dot); }
+.fiche-phone__dots i.is-on { background: var(--fiche-ink); }
+.fiche-phone__identity-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.fiche-phone__name { flex: 0 1 auto; border-bottom-style: solid; border-bottom-color: var(--fiche-underline); color: var(--fiche-ink); line-height: 1.18; }
+.fiche-phone__price { flex: 0 0 auto; font-weight: 700; color: var(--fiche-ink); line-height: 1.18; }
+.fiche-phone__description { margin: 0; color: var(--fiche-muted); }
+.fiche-phone__hair { width: 100%; background: var(--fiche-hair); }
+.fiche-phone__band { width: 100%; background: var(--fiche-hair); }
+.fiche-phone__row { display: flex; align-items: center; }
+.fiche-phone__row-icon { display: inline-flex; justify-content: flex-start; color: var(--fiche-ink); font-size: 16px; }
+.fiche-phone__row-text { display: flex; align-items: baseline; gap: 7px; flex: 1; min-width: 0; }
+.fiche-phone__row-text b { color: var(--fiche-ink); }
+.fiche-phone__row-text span { color: var(--fiche-ink); }
+.fiche-phone__chevron { width: 10px; height: 10px; border-right: 1.5px solid var(--fiche-ink); border-bottom: 1.5px solid var(--fiche-ink); transform: rotate(45deg); margin-bottom: 4px; }
+.fiche-phone__tiles { display: flex; }
+.fiche-phone__tile { background: var(--fiche-stage); overflow: hidden; }
+.fiche-phone__tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.fiche-phone__tile-label { display: block; color: var(--fiche-ink); }
+.fiche-phone__info { display: flex; align-items: flex-start; }
+.fiche-phone__info b { color: var(--fiche-ink); }
+.fiche-phone__info b.is-success { color: var(--fiche-green); }
+.fiche-phone__info p { margin: 0; color: var(--fiche-muted); }
+.fiche-phone__bar { display: flex; align-items: center; justify-content: space-between; background: var(--fiche-paper); }
+.fiche-phone__bar > span:first-child { font-weight: 700; color: var(--fiche-ink); }
+.fiche-phone__cta { display: inline-flex; align-items: center; justify-content: center; background: var(--fiche-ink); color: var(--fiche-paper); font-weight: 700; }
+
+@media (max-width: 1180px) {
+  .fiche-editor__grid { grid-template-columns: minmax(0, 1fr); }
+  .fiche-editor__preview { position: static; }
+  .fiche-editor__phone-wrap { max-height: none; }
+}
+
+/* Pastille d'une couleur sans photo (bande de vignettes) : le nom, jamais la
+   photo d'une autre couleur. */
+.fiche-phone__tile-empty {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; height: 100%;
+  font-size: 11px; font-weight: 600; line-height: 1;
+  color: var(--fiche-muted);
+  text-transform: uppercase;
+  background: var(--fiche-lavender);
+}
+
+/* Remplissages rapides de tailles : de simples raccourcis, pas un réglage. */
+.fiche-hints em {
+  font-style: normal; font-size: 11px; color: var(--admin-ink-muted);
+}

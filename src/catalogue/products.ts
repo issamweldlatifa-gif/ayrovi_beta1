@@ -24,7 +24,7 @@ import {
   propagate, type Check,allowedStatuses, asObject, boolFlag, explicitSlug, isIdentifier, malformedId, mediaUrlOf,
   moneyOf, optionalText, requiredText, resolveSlug, slugify, statusOf, wholeNumber, fail,
 } from './validation';
-import { CATALOGUE_ERRORS, PRODUCT_STATUSES, type CatalogueProductInput, type CatalogueProductRow } from './types';
+import { CATALOGUE_ERRORS, PRODUCT_STATUSES, type CatalogueProductInput, type CatalogueProductRow, type FicheLabels } from './types';
 import { auditCatalogue, type CatalogueActor } from './audit';
 import { applyAttributes, validateAttributes } from './attributes';
 
@@ -32,8 +32,54 @@ const PRODUCT_SELECT = `
   SELECT p.id, p.name, p.slug, p.product_code, p.description, p.image, p.additional_images,
          p.brand_id, p.brand_name, p.category, p.category_id, p.status, p.product_type,
          p.source_url, p.source_platform, p.original_price, p.currency, p.final_price, p.compare_at_price,
-         p.stock_status, p.express_available, p.created_at, p.updated_at, p.created_by, p.updated_by, p.visibility
+         p.stock_status, p.express_available, p.created_at, p.updated_at, p.created_by, p.updated_by, p.visibility,
+         p.fiche_labels
     FROM products p`;
+
+/**
+ * Libellés de la fiche : lecture TOLÉRANTE d'une colonne JSON.
+ *
+ * Une colonne abîmée ou une valeur trop longue ne casse pas la fiche : on garde
+ * ce qui est lisible, et on ignore le reste. Un libellé vide n'est pas un
+ * libellé — il n'est pas renvoyé (l'écran retombe sur le sien).
+ */
+export const FICHE_LABEL_MAX = 40;
+const SECTION_SLUG = /^[a-z0-9_]{1,32}$/;
+
+export function readFicheLabels(value: unknown): FicheLabels {
+  let raw: any = value;
+  if (typeof raw === 'string') {
+    const text = raw.trim();
+    if (!text) return {};
+    try { raw = JSON.parse(text); } catch { return {}; }
+  }
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const clean = (label: unknown): string | undefined => {
+    // Seule une CHAÎNE est un libellé. Un nombre, un objet ou un booléen viennent
+    // d'une colonne abîmée : les accepter afficherait « [object Object] » sur la
+    // fiche — on préfère le libellé par défaut de l'application.
+    if (typeof label !== 'string') return undefined;
+    const text = label.replace(/\s+/g, ' ').trim().slice(0, FICHE_LABEL_MAX);
+    return text ? text : undefined;
+  };
+  const out: FicheLabels = {};
+  const size = clean(raw.size);
+  const color = clean(raw.color);
+  if (size) out.size = size;
+  if (color) out.color = color;
+  const sections: Record<string, string> = {};
+  const source = raw.sections;
+  if (source && typeof source === 'object' && !Array.isArray(source)) {
+    for (const [slug, label] of Object.entries(source as Record<string, unknown>).slice(0, 24)) {
+      const key = String(slug).trim().toLowerCase();
+      const text = clean(label);
+      if (!key || !text || !SECTION_SLUG.test(key)) continue;
+      sections[key] = text;
+    }
+  }
+  if (Object.keys(sections).length > 0) out.sections = sections;
+  return out;
+}
 
 /**
  * `CATALOG` : produit du catalogue (valeur par défaut, toutes les lignes existantes).
@@ -72,6 +118,7 @@ function parseRow(row: Record<string, unknown> | undefined): CatalogueProductRow
     final_price: row.final_price === null || row.final_price === undefined ? null : Number(row.final_price),
     original_price: row.original_price === null || row.original_price === undefined ? null : Number(row.original_price),
     compare_at_price: row.compare_at_price === null || row.compare_at_price === undefined ? null : Number(row.compare_at_price),
+    fiche_labels: readFicheLabels(row.fiche_labels),
     currency: row.currency ? String(row.currency) : null,
     stock_status: row.stock_status ? String(row.stock_status) : null,
     express_available: row.express_available === null || row.express_available === undefined ? null : Number(row.express_available),
@@ -207,6 +254,18 @@ function validateProductPayload(
     const price = moneyOf(input.original_price, 'original_price');
     if (!price.ok) return propagate(price);
     payload.original_price = price.value ?? 0;
+  }
+  if (input.final_price !== undefined) {
+    // Le PRIX DE VENTE est une donnée du propriétaire, pas une déduction : la
+    // fiche affiche exactement ce montant (la même colonne que le moteur Prix).
+    const price = moneyOf(input.final_price, 'final_price');
+    if (!price.ok) return propagate(price);
+    payload.final_price = price.value ?? 0;
+  }
+  if (input.fiche_labels !== undefined) {
+    // Libellés de la fiche : uniquement des CHAÎNES courtes (jamais de HTML, de
+    // prix ni de remise) ; un objet vide restaure les libellés par défaut.
+    payload.fiche_labels = JSON.stringify(readFicheLabels(input.fiche_labels));
   }
   if (input.compare_at_price !== undefined) {
     // `null`/'' efface le prix barré (geste explicite), un montant le pose.

@@ -348,7 +348,7 @@ const CUSTOM_RESOURCES: BackOfficeResourceDescriptor[] = [
       { key: 'name', label: 'Nom', type: 'text', required: true },
       { key: 'slug', label: 'Slug', type: 'text', hint: 'Vide = généré depuis le nom ; jamais écrasé silencieusement' },
       { key: 'description', label: 'Description', type: 'textarea' },
-      { key: 'final_price', label: 'Prix final', type: 'number', readonly: true, hint: 'Calculé par Prix & taux' },
+      { key: 'final_price', label: 'Prix final', type: 'number', hint: 'Saisi dans la fiche produit ; publié tel quel dans l’app' },
     ],
     actions: ['list', 'view', 'create', 'edit', 'delete', 'approve'],
     statusField: 'status', statuses: ['DRAFT', 'ACTIVE', 'INACTIVE', 'ARCHIVED'], statusVocabulary: 'catalogue.product',

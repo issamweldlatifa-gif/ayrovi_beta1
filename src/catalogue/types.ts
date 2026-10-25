@@ -108,10 +108,31 @@ export interface CatalogueProductInput {
   original_price?: unknown;
   /** Prix barré, saisi à la main (optionnel). `''`/null l'efface. */
   compare_at_price?: unknown;
+  /** Libellés de la fiche : { size, color, sections: { slug: label } }. */
+  fiche_labels?: unknown;
+  /**
+   * PRIX DE VENTE (TND) affiché sur la fiche — saisi par le propriétaire dans
+   * l'éditeur produit. C'est `products.final_price`, la même colonne que le
+   * moteur Prix écrit ; publiée telle quelle par `/api/public/products/:id`.
+   */
+  final_price?: unknown;
   currency?: unknown;
   stock_status?: unknown;
   express_available?: unknown;
   attributes?: unknown;
+}
+
+/**
+ * Libellés de la fiche produits — une DONNÉE du CRM, jamais du code.
+ *
+ * `size` / `color` renomment les deux dimensions (Taille → Pointure, Capacité,
+ * Volume, Size…). `sections` renomme un groupe d'attributs par son slug. Tout ce
+ * qui n'est pas nommé garde le libellé par défaut de l'application.
+ */
+export interface FicheLabels {
+  size?: string;
+  color?: string;
+  sections?: Record<string, string>;
 }
 
 export interface CatalogueProductRow {
@@ -132,6 +153,8 @@ export interface CatalogueProductRow {
   final_price: number | null;
   original_price: number | null;
   compare_at_price: number | null;
+  /** Libellés de la fiche, normalisés (`{}` quand le CRM n'a rien renommé). */
+  fiche_labels?: FicheLabels;
   currency: string | null;
   stock_status: string | null;
   express_available: number | null;

@@ -39,46 +39,50 @@ export const FICHE = {
   gutter: 16,              // 32 px : marge de tout l'écran
   nameTop: 12,             // 1186 − 1162 = 24 px sous la photo
   nameSize: 22,            // 44 px
-  priceSize: 20,           // 40 px, sur la même ligne que le nom
+  nameLine: 26,            // interligne du nom : 44 px de corps, 52 px de ligne
+  priceRight: 17,          // 34 px : le prix finit à 17 dp du bord
+  priceSize: 20,           // 40 px gras, sur la même ligne que le nom
   underlineGap: 5,         // le filet tombe 5 dp sous le texte
   underlineWidth: 2,       // 4 px
   descriptionGap: 2,       // 1256 − (1249 + 2) ≈ 2 dp
   descriptionSize: 15,     // 30 px
   descriptionLine: 17,     // 1290 − 1256 = 34 px
+  descriptionRight: 8,     // 16 px entre le texte et la colonne du prix
   ruleGap: 9,              // 1342 − 1324 = 18 px : filet fin avant « Taille »
   hairline: 1,             // 2 px
 
   /* Ligne « Taille » (et toute ligne de même facture) */
   rowHeight: 49,           // 1342 → 1440 = 98 px
   rowLabel: 18,            // 36 px
-  rowIcon: 22,             // l'icône fait 26 × 48 px
-  rowIconStart: 23,        // 46 px
+  rowIcon: 24,             // l'icône fait 26 × 48 px
+  rowIconStart: 17,        // 46 px → 23 dp : la boîte de 24 dp commence à 17
   rowLabelStart: 57,       // 114 px
-  chevronEnd: 20,          // 40 px du bord
-  chevronSize: 13,         // 26 px de large
+  chevronEnd: 12,          // la pointe est à 340 dp, la boîte finit à 348
+  chevronSize: 16,         // 26 px de large
 
   /* Bande grise : le séparateur « plus gros que les autres lignes » */
   band: 9,                 // 18 px
 
   /* En-tête (écran 2) */
-  headerHeight: 56,        // 0 → 173 px moins la zone sûre
+  headerHeight: 60,        // 0 → 173 px (zone sûre exclue)
   headerTitle: 19,         // 38 px
+  headerRule: 3,           // 173 → 179 px
 
   /* Bloc Couleur */
   blockTop: 13,            // 157 − 143.5 = 27 px
   blockBottom: 26,         // 321 → 347 : la respiration avant la bande grise
   colorLabel: 17,          // 34 px
   colorValueGap: 7,        // 14 px entre « Couleur » et sa valeur
-  tileTop: 0,              // les vignettes suivent directement la ligne « Couleur »
+  colorRowHeight: 40,      // la ligne « Couleur » avant les vignettes
+  tileTop: 7,              // 407 px : les vignettes sous la ligne
   tileWidth: 68,           // 137 px
   tileHeight: 96,          // 192 px
   tileGap: 8,              // 17 px entre deux vignettes
   tileRule: 4,             // 8 px de soulignement violet
-  tileRuleGap: 3,          // 598 → 606, puis le libellé à 612
+  tileLabelGap: 3,         // 606 → 612 px
   tileLabel: 15,           // 30 px
-  tileLabelGap: 4,         // 612 px : le libellé sous son filet
 
-  /* Accordéons (Caractéristiques · Matière · Taille & coupe …) */
+  /* Accordéons (une section d'attributs = un accordéon) */
   accordionHeight: 48,     // 710 → 806 = 96 px
   accordionLabel: 17,      // 34 px
 
@@ -91,8 +95,7 @@ export const FICHE = {
 
   /* Barre d'achat (écrans 1 et 2) */
   barHeight: 71,           // 1458 → 1600 = 142 px
-  barPriceWidth: 129,      // 145 − 16 : la colonne du prix
-  barPrice: 15,            // 30 px
+  barPrice: 15,            // 30 px gras
   barButtonWidth: 207,     // 290 → 703 px = 413 px
   barButtonHeight: 48,     // 1480 → 1575 = 95 px
   barButtonRadius: 24,     // rayon 47 px
@@ -103,9 +106,10 @@ export const FICHE = {
   grabTop: 22,             // 89 px
   grabWidth: 32,           // 328 → 391 px = 63 px
   grabHeight: 4,           // 8 px
-  sheetTitleTop: 25,       // 140 px
+  sheetTitleTop: 22,       // 140 px : 47,5 dp sous le haut de la feuille, moins la poignée
   sheetTitle: 17,          // 34 px
-  panelTop: 24,            // 181 px
+  sheetTitleLine: 20,      // interligne du titre de la feuille
+  panelTop: 0,             // 181 px : la dalle suit le titre de la feuille
   panelHeight: 66,         // 181 → 313 = 132 px
   panelGutter: 16,         // 32 px de chaque côté
   panelIconStart: 16,      // 64 px
@@ -119,7 +123,9 @@ export const FICHE = {
   sizeRowHeight: 48,       // 96 px : les 12 lignes tiennent sur un écran de 800 dp
   rowState: 15,            // 30 px
   rowStateEnd: 21,         // 677 px → 338.5 dp
+  rowStateTop: 6,          // base_y + 4 − 430 : l'état descend avec la taille
   rowStrike: 15,           // la barre du barré tombe au milieu du chiffre
+  strikeWidth: 1,          // 3 px
 
   /* Plein écran (écran 4) */
   viewerTop: 140,          // 280 px : haut de la bande photo
@@ -149,6 +155,17 @@ export function headerProgress(offsetY: number): number {
   if (!Number.isFinite(offsetY) || offsetY <= start) return 0;
   if (offsetY >= end) return 1;
   return (offsetY - start) / (end - start);
+}
+
+/**
+ * Libellé d'un bloc : ce que le CRM a écrit, sinon celui de l'application.
+ *
+ * Une chaîne vide n'est pas un libellé — elle laisse la place au texte de
+ * l'application. Le CRM ne peut donc pas « effacer » un nom par accident.
+ */
+export function pickLabel(fromCrm: string | null | undefined, fallback: string): string {
+  const text = String(fromCrm ?? '').trim();
+  return text || fallback;
 }
 
 /* ── Galerie ──────────────────────────────────────────────────────────────── */
@@ -259,32 +276,47 @@ export function sectionIcon(section: string): SectionIcon {
 export interface SpecGroup {
   /** Slug de la section (`matiere`, `mesures`…) ou `specs` pour le fourre-tout. */
   section: string;
+  /** Nom écrit par le CRM (`ficheLabels.sections[slug]`), sinon `null`. */
+  title: string | null;
   rows: SpecRow[];
 }
 
 /**
- * Regroupe les attributs par section, dans l'ordre convenu, et **jette les
- * sections vides**. L'ordre d'un groupe est celui du CRM (`sortOrder`), pas un
- * ordre alphabétique : deux attributs voisins à l'écran restent voisins.
+ * Regroupe les attributs par section, **dans l'ordre du CRM**, et jette les
+ * sections vides. Une section inventée dans le CRM (`section: "matiere_bio"`)
+ * garde son propre bloc : c'est le propriétaire qui décide du découpage, pas une
+ * liste écrite ici. L'ordre d'un groupe est celui du CRM (`sortOrder`).
  */
-export function specGroups(attributes: CatalogAttribute[] | null | undefined): SpecGroup[] {
+export function specGroups(
+  attributes: CatalogAttribute[] | null | undefined,
+  labels?: Record<string, string> | null,
+): SpecGroup[] {
   const known = new Set<string>(ATTRIBUTE_SECTION_ORDER);
   const bySection = new Map<string, SpecRow[]>();
+  const order: string[] = [];
   for (const attribute of attributes ?? []) {
     const value = String(attribute?.value ?? '').trim();
     const key = String(attribute?.key ?? '').trim();
     if (!value || !key) continue;
     const raw = String(attribute?.section ?? '').trim();
-    const section = known.has(raw) ? raw : 'specs';
+    const section = known.has(raw) || raw ? raw : 'specs';
     const rows = bySection.get(section) ?? [];
     if (rows.some((row) => row.key === key)) continue;
+    if (rows.length === 0) order.push(section);
     rows.push({ key, label: String(attribute?.label ?? '').trim() || key, value });
     bySection.set(section, rows);
   }
-  const order = [...ATTRIBUTE_SECTION_ORDER, 'specs'];
-  return order
-    .filter((section) => (bySection.get(section) ?? []).length > 0)
-    .map((section) => ({ section, rows: bySection.get(section)! }));
+  /** Les six sections connues d'abord (ordre du design), les autres ensuite. */
+  const sorted = [
+    ...ATTRIBUTE_SECTION_ORDER.filter((section) => bySection.has(section)),
+    ...order.filter((section) => !known.has(section) && section !== 'specs'),
+  ];
+  if (bySection.has('specs') && !sorted.includes('specs')) sorted.push('specs');
+  return sorted.map((section) => ({
+    section,
+    title: String(labels?.[section] ?? '').trim() || null,
+    rows: bySection.get(section)!,
+  }));
 }
 
 /** Ce que la fiche a réellement à montrer — une section vide n'existe pas. */
@@ -404,27 +436,10 @@ export function selectionReady(needsSize: boolean, needsColor: boolean, size: st
   return (!needsSize || Boolean(size)) && (!needsColor || Boolean(color));
 }
 
-/* ── Livraison et retours : lus dans le CRM, jamais écrits dans l'écran ───── */
-
-const MONTHS_FR = [
-  'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
-  'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre',
-] as const;
-
-/** Mois tunisiens (les noms en usage en Tunisie, pas une traduction littérale). */
-const MONTHS_AR = [
-  'جانفي', 'فيفري', 'مارس', 'أفريل', 'ماي', 'جوان',
-  'جويلية', 'أوت', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
-] as const;
-
-/** `30 octobre` — la date telle qu'elle s'écrit, sans dépendre d'`Intl`. */
-export function formatDay(date: Date, locale: 'fr' | 'ar'): string {
-  const months = locale === 'ar' ? MONTHS_AR : MONTHS_FR;
-  const month = months[date.getMonth()] ?? '';
-  return `${date.getDate()} ${month}`.trim();
-}
-
-/** Ajoute `count` jours ouvrés (lundi → vendredi) à une date. */
+/**
+ * Jours ouvrés : la Tunisie travaille du lundi au vendredi. Une date de
+ * livraison qui tomberait un samedi serait une promesse qu'on ne peut pas tenir.
+ */
 export function addBusinessDays(from: Date, count: number): Date {
   const date = new Date(from.getTime());
   let left = Math.max(0, Math.floor(count));
@@ -436,27 +451,43 @@ export function addBusinessDays(from: Date, count: number): Date {
   return date;
 }
 
+const MONTHS_FR = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'] as const;
+const MONTHS_AR = ['جانفي', 'فيفري', 'مارس', 'أفريل', 'ماي', 'جوان', 'جويلية', 'أوت', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'] as const;
+
+/** « 30 octobre » — deux mots, sans dépendre d'`Intl`. */
+export function formatDay(date: Date, locale: 'fr' | 'ar'): string {
+  const months = locale === 'ar' ? MONTHS_AR : MONTHS_FR;
+  return `${date.getDate()} ${months[date.getMonth()] ?? ''}`.trim();
+}
+
 /**
  * Fenêtre de livraison affichée sous « Livraison rapide ».
  *
- * Le délai vient du CRM (`delivery_delay`, par exemple « 5 à 8 jours ouvrés ») ;
- * l'écran n'ajoute que la date du jour. Aucun nombre lu ⇒ `null`, et la ligne
- * de date disparaît : on n'annonce pas une date qu'on aurait inventée.
+ * Le délai vient **du CRM** (`delivery_delay`, par exemple « 5 à 8 jours
+ * ouvrés ») ; l'écran n'ajoute que la date du jour. Aucun nombre lisible ⇒
+ * `null`, et la ligne de dates disparaît : on n'annonce pas une date inventée.
  */
 export function deliveryWindow(
   delay: string | null | undefined,
   now: Date,
   locale: 'fr' | 'ar',
 ): { from: string; to: string } | null {
-  const numbers = String(delay ?? '')
-    .match(/\d+/g)
-    ?.map((value) => Number(value))
-    .filter((value) => Number.isFinite(value) && value >= 0) ?? [];
+  const numbers = String(delay ?? '').match(/\d+/g)?.map(Number).filter((value) => Number.isFinite(value)) ?? [];
   if (numbers.length === 0) return null;
-  const min = numbers[0];
-  const max = numbers.length > 1 ? Math.max(...numbers) : min;
+  const min = Math.min(...numbers);
+  const max = Math.max(...numbers);
   return {
     from: formatDay(addBusinessDays(now, min), locale),
     to: formatDay(addBusinessDays(now, max), locale),
   };
+}
+
+/** « 30 octobre - 04 novembre » — la ligne telle qu'elle s'écrit. */
+export function deliveryLine(
+  delay: string | null | undefined,
+  now: Date,
+  locale: 'fr' | 'ar',
+): string | null {
+  const window = deliveryWindow(delay, now, locale);
+  return window ? `${window.from} - ${window.to}` : null;
 }

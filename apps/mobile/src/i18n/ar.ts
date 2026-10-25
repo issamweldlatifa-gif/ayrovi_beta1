@@ -195,7 +195,6 @@ export const ar = {
   'product.sizeSheetEmpty': 'ما فماش مقاسات معلنة لهذا المنتوج.',
   'product.sizeRecommendation': 'ننصحك تختار مقاسك المعتاد.',
   'product.sizeLast': 'آخر قطعة',
-  'product.singleSize': 'متوفّر بمقاس واحد',
   'product.fastDelivery': 'توصيل سريع',
   'product.freeReturns': 'إرجاع مجاني',
   'product.returnsWindow': 'خلال {days} يوم من تاريخ التوصيل',

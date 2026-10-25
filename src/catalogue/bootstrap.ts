@@ -116,6 +116,15 @@ const PRODUCT_COLUMN_ADDITIONS: Array<[string, string]> = [
   // CATALOG = produit du catalogue (défaut, toutes les lignes existantes) ;
   // CONTENT = produit temporaire créé depuis un Reel, une Story ou une Publication.
   ['visibility', "TEXT NOT NULL DEFAULT 'CATALOG'"],
+  /**
+   * LIBELLÉS DE LA FICHE (25/10/2026) — ce que l'écran produit écrit au-dessus
+   * des blocs : « Taille » peut devenir « Pointure », « Capacité », « Volume »…
+   * et une section du CRM peut porter son propre nom. JSON :
+   *   { "size": "Pointure", "color": "Couleur", "sections": { "matiere": "Matière" } }
+   * Colonne additive : les lignes existantes gardent `{}` et l'écran retombe sur
+   * ses libellés par défaut. Aucune valeur n'est inventée.
+   */
+  ['fiche_labels', "TEXT NOT NULL DEFAULT '{}'"],
 ];
 
 /** `brands` is already the canonical brand entity; it only lacked a URL identity. */

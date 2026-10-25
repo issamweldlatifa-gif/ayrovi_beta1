@@ -154,8 +154,18 @@ export function frost(opacity: number): string {
  * l'identité posé à 7 % sur le blanc. Le jour où la marque change, la dalle suit.
  */
 export const FICHE_COLORS = {
+  /** Encre de la fiche : le noir de marque, rien d'autre. */
+  ink: BRAND.black,
+  /** Texte secondaire (description, dates de livraison) — #808080 sur la maquette. */
+  muted: '#808080',
   /** Dalle lavande de la recommandation de taille (#EEECF7 sur la maquette). */
   recommendation: mix(BRAND.white, BRAND.violet, 0.07),
+  /** Violet de la maquette : accent des libellés d'état et du soulignement de vignette. */
+  accent: BRAND.violet,
+  /** Vert « Livraison rapide » (#008735), mesuré sur la maquette. */
+  success: '#008735',
+  /** Filet gris (#E8E8E8) : séparateurs fins, bandes, lignes d'accordéon. */
+  hair: '#E8E8E8',
   /** Points de galerie inactifs (#B2B2B2). */
   dotIdle: '#B2B2B2',
   /** Filet sous le nom du produit (#AAAAAA) — plus présent qu'un filet de section. */
@@ -164,6 +174,10 @@ export const FICHE_COLORS = {
   sheetGrab: '#D1D1D1',
   /** Fond de la bande photo du plein écran (#EFEFEF) : la photo est en `contain`. */
   viewerStage: '#EFEFEF',
+  /** Texte d'une taille épuisée (barré) : gris moyen, lisible sans crier. */
+  struck: '#969696',
+  /** Voile au-dessus de la feuille de taille (noir 35 %). */
+  scrim: veil(0.35),
 } as const;
 
 export const REEL_TILE = {
