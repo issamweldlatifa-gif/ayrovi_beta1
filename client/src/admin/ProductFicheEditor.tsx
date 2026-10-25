@@ -747,7 +747,7 @@ export const ProductFicheEditor: React.FC<{
         <aside className="fiche-editor__preview">
           <div className="fiche-editor__preview-head">
             <h2>Aperçu avant publication</h2>
-            <span>{FICHE_WIDTH} × {G.imageHeight + G.rowHeight + G.band + G.barHeight} dp · cotes gelées</span>
+            <span>{FICHE_WIDTH} dp de large · photo {G.imageHeight} dp · ligne {G.rowHeight} dp · bouton {G.barButtonWidth}×{G.barButtonHeight}</span>
           </div>
           <div className="fiche-editor__phone-wrap">
             <FicheApercu
