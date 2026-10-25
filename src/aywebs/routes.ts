@@ -21,7 +21,6 @@ import {
   type AyWebsStoreDefinition,
 } from '../../shared/aywebsStores';
 import { AYWEBS_FUNNEL_EVENTS } from '../../shared/aywebsTypes';
-import { AYWEBS_CATALOG_STORES } from '../../shared/aywebsStoreCatalog';
 import { AYWEBS_ADAPTER_DESCRIPTORS } from './adapters/registry';
 import { AyWebsCaptureError, type AyWebsSourceProduct } from './adapters/contract';
 import { AyWebsDomainError } from './errors';
@@ -255,8 +254,9 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
 
   router.get('/stores', handle((req, res) => {
     const flags = ctx.flags;
-    /* Le catalogue (boutiques non ouvertes) s'affiche aussi : enabled=false côté client. */
-    const stores = [...AYWEBS_STORES.filter((store) => store.enabled), ...AYWEBS_CATALOG_STORES].map(publicStore);
+    /* Toutes les boutiques sont au registre depuis la VAGUE 2 (25/10/2026) :
+       il n'y a plus de boutiques de catalogue fermées à ajouter en seconde liste. */
+    const stores = AYWEBS_STORES.filter((store) => store.enabled).map(publicStore);
     res.json({
       success: true,
       data: stores,
@@ -441,9 +441,9 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
            * donne, pour chaque domaine réellement capturé : captures jugées,
            * acceptées, taux, motifs de refus (bornés), sources uniques, et si la
            * page publiait des groupes de variantes.
-           *   `registre:*`  = boutique OUVERTE (adaptateur dédié ou collectif)
-           *   `catalogue:*` = boutique PRÉVUE mais fermée → demande réelle
-           *   `external`    = domaine hors catalogue
+           *   `registre:*`  = boutique du registre (toutes les vagues de capture)
+           *   `external`    = domaine hors registre
+           *   (le préfixe `catalogue:*` n'est plus émis depuis la VAGUE 2.)
            */
           store_tracking: {
             max: AYWEBS_CAPTURE_TRACKED_STORES,

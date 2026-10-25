@@ -9,8 +9,10 @@
  * Ce fichier verrouille les quatre propriétés qui rendent la mesure utilisable :
  *
  *   1. ATTRIBUTION — une capture est comptée pour la boutique du domaine :
- *      `registre:<id>` (ouverte), `catalogue:<id>` (prévue mais fermée, donc
- *      demande réelle), `external` (hors catalogue) ;
+ *      `registre:<id>` (ouverte au registre, vagues de capture comprises depuis
+ *      la VAGUE 2 du 25/10/2026), `external` (domaine inconnu) ; le préfixe
+ *      `catalogue:<id>` n'est plus émis, le catalogue de boutiques fermées
+ *      étant vide ;
  *   2. HONNÊTETÉ — une capture refusée compte UNE fois (pas deux), et son motif
  *      est conservé ;
  *   3. BORNES — le nombre de boutiques suivies et de motifs par boutique est
@@ -21,7 +23,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { AYWEBS_CAPTURE_VERSION } from '../shared/aywebsCapture';
-import { AYWEBS_CATALOG_STORES } from '../shared/aywebsStoreCatalog';
+import { AYWEBS_STORES } from '../shared/aywebsStores';
 import { AYWEBS_CAPTURE_TRACKED_STORES, ayWebsCaptureStoreKey, ayWebsWebviewCaptureStats, resetAyWebsWebviewCaptureStats, validateAyWebsCapturedPage } from '../src/aywebs/webviewCapture';
 
 const WALMART = 'https://www.walmart.com/ip/hanes-tee/123456';
@@ -56,8 +58,8 @@ describe('attribution d’une capture à sa boutique', () => {
     expect(ayWebsCaptureStoreKey('https://www.amazon.com/dp/B0GYM3V9H5')).toBe('registre:amazon');
   });
 
-  it('boutique PRÉVUE mais fermée : la demande est visible quand même', () => {
-    expect(ayWebsCaptureStoreKey(EBAY)).toBe('catalogue:ebay');
+  it('une boutique de la vague 2 est attribuée au registre, plus au catalogue', () => {
+    expect(ayWebsCaptureStoreKey(EBAY)).toBe('registre:ebay');
   });
 
   it('sous-domaine : on reconnaît le domaine enregistré', () => {
@@ -99,7 +101,7 @@ describe('compteurs de boutique', () => {
     validateAyWebsCapturedPage(capture(), WALMART, { requireCorroboration: true });
     validateAyWebsCapturedPage(capture({ url: EBAY }), EBAY, { requireCorroboration: true });
     expect(stats().by_store['registre:walmart'].accepted).toBe(1);
-    expect(stats().by_store['catalogue:ebay'].accepted).toBe(1);
+    expect(stats().by_store['registre:ebay'].accepted).toBe(1);
     expect(stats().by_store['registre:walmart'].acceptance_rate).toBe(1);
   });
 
@@ -127,9 +129,9 @@ describe('compteurs de boutique', () => {
   });
 
   it('la mémoire est bornée : au-delà du plafond, tout va dans « autres »', () => {
-    /* Cas réel : le catalogue compte ~350 boutiques fermées. On en visite 5 de
-       plus que le plafond ; au-delà, le détail s'arrête et le reste est agrégé. */
-    const visited = AYWEBS_CATALOG_STORES.slice(0, AYWEBS_CAPTURE_TRACKED_STORES + 5);
+    /* Cas réel : le registre compte 384 boutiques. On en visite 5 de plus que
+       le plafond ; au-delà, le détail s'arrête et le reste est agrégé. */
+    const visited = AYWEBS_STORES.slice(0, AYWEBS_CAPTURE_TRACKED_STORES + 5);
     for (const store of visited) {
       validateAyWebsCapturedPage(null, `https://www.${store.domains[0]}/produit/1`);
     }

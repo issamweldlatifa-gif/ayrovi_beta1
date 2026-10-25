@@ -1,22 +1,106 @@
 /**
- * BOUTIQUES DU CATALOGUE — liste de référence des magasins par catégorie.
+ * DONNÉES SOURCE DU CATALOGUE (25/10/2026) — les 380 marchands de main.pdf.
  *
- * Ces boutiques sont AFFICHÉES (accueil des magasins, recherche, catégories) mais
- * Capacité `browse` seulement : elles s'ouvrent dans le navigateur intégré (page d'accueil),
- * mais restent `enabled: false` — ni achat, ni capture, ni panier. Mode `URL_REQUEST`
- * (la commande passe par « Order with URL »). Elles ne participent ni à la détection de domaine
- * (`detectAyWebsStore`), ni aux adaptateurs, ni au panier : ce sont des entrées de
- * catalogue. Pour en ouvrir une, on la sort d'ici et on l'ajoute à `AYWEBS_STORES`
- * avec son adaptateur et son logo. Identifiants et adresses ne changent pas.
+ * Historique : ces boutiques étaient des entrées de catalogue `enabled:false`.
+ * La VAGUE 1 (13 marchands) puis la VAGUE 2 (les 367 lignes restantes, décision
+ * du 25/10/2026) les ont TOUTES promues au registre `AYWEBS_STORES`, en contrat
+ * capture-only : navigation + capture structurée, jamais d'achat automatique.
+ * Ce fichier reste la seule source de données (id, nom, URL, catégories) que
+ * le registre consomme via `buildCaptureWave2Rows` ; aucune boutique « fermée »
+ * ne subsiste et l'ancien détecteur de catalogue a été supprimé.
  *
  * Un marchand présent dans plusieurs catégories n'est écrit qu'une fois.
- * Logos : fichiers dans `client/public/stores/<id>.png` (source : main.pdf, icônes
- * des sites). Sans fichier, la lettre initiale est affichée.
+ * Logos : fichiers dans `client/public/stores/<id>.png` (source : main.pdf,
+ * icônes des sites). Sans fichier, la lettre initiale est affichée.
  */
-import type { AyWebsStoreDefinition } from './aywebsStores';
+/**
+ * Identité marchande déterministe à partir de l'URL d'accueil (25/10/2026).
+ *
+ * Règle stricte, sans devinette : le pays et la devise ne sont remplis QUE pour
+ * les extensions nationales non ambiguës (`.co.uk`, `.de`, `.com.au`…). Un
+ * domaine générique (`.com`, `.net`, `.org`, extension de marque) n'implique
+ * aucun pays — on renvoie des chaînes vides. La VRAIE devise est établie à la
+ * capture (JSON-LD / prix corroboré) et passe par le moteur de tarification ;
+ * ce métadonnée ne sert qu'à l'affichage, jamais au calcul de prix.
+ */
+const CCTLD_IDENTITY: Readonly<Record<string, { country: string; currency: string }>> = {
+  uk: { country: 'GB', currency: 'GBP' },
+  de: { country: 'DE', currency: 'EUR' },
+  fr: { country: 'FR', currency: 'EUR' },
+  nl: { country: 'NL', currency: 'EUR' },
+  it: { country: 'IT', currency: 'EUR' },
+  es: { country: 'ES', currency: 'EUR' },
+  be: { country: 'BE', currency: 'EUR' },
+  at: { country: 'AT', currency: 'EUR' },
+  ie: { country: 'IE', currency: 'EUR' },
+  pt: { country: 'PT', currency: 'EUR' },
+  fi: { country: 'FI', currency: 'EUR' },
+  gr: { country: 'GR', currency: 'EUR' },
+  au: { country: 'AU', currency: 'AUD' },
+  nz: { country: 'NZ', currency: 'NZD' },
+  jp: { country: 'JP', currency: 'JPY' },
+  ca: { country: 'CA', currency: 'CAD' },
+  ch: { country: 'CH', currency: 'CHF' },
+  se: { country: 'SE', currency: 'SEK' },
+  dk: { country: 'DK', currency: 'DKK' },
+  no: { country: 'NO', currency: 'NOK' },
+  pl: { country: 'PL', currency: 'PLN' },
+  cz: { country: 'CZ', currency: 'CZK' },
+  za: { country: 'ZA', currency: 'ZAR' },
+  br: { country: 'BR', currency: 'BRL' },
+  mx: { country: 'MX', currency: 'MXN' },
+  in: { country: 'IN', currency: 'INR' },
+  ae: { country: 'AE', currency: 'AED' },
+  sg: { country: 'SG', currency: 'SGD' },
+};
+
+/** Sous-domaines nationaux de second niveau (.co.uk, .com.au…) → clé CCTLD. */
+const SECOND_LEVEL_TO_CCTLD: Readonly<Record<string, string>> = {
+  co: 'co',
+  com: 'com',
+  net: 'net',
+};
+
+export interface AyWebsStoreIdentity {
+  country: string;
+  currency: string;
+}
+
+export function resolveStoreIdentity(homeUrl: string): AyWebsStoreIdentity {
+  let host = '';
+  try {
+    host = new URL(homeUrl).hostname.toLowerCase().replace(/^www\./, '');
+  } catch {
+    return { country: '', currency: '' };
+  }
+  const parts = host.split('.').filter(Boolean);
+  if (parts.length < 2) return { country: '', currency: '' };
+  const last = parts[parts.length - 1];
+  const secondLast = parts[parts.length - 2];
+  /* .co.uk / .com.au / .co.jp : l'identité nationale est dans la DERNIÈRE
+     étiquette, mais seulement si l'avant-dernière est un préfixe connu. */
+  if (parts.length >= 3 && SECOND_LEVEL_TO_CCTLD[secondLast]) {
+    const identity = CCTLD_IDENTITY[last];
+    if (identity) return { ...identity };
+  }
+  const identity = CCTLD_IDENTITY[last];
+  return identity ? { ...identity } : { country: '', currency: '' };
+}
+
+/** Marchands sans fichier logo dans main.pdf : la lettre initiale s'affiche. */
+export const CATALOG_WITHOUT_LOGO: ReadonlySet<string> = new Set([
+  'chain-reaction-cycles',
+  'joann',
+  'ninja-kitchen',
+  'oshkosh-b-gosh',
+]);
+
+export function catalogLogoFor(id: string): string {
+  return CATALOG_WITHOUT_LOGO.has(id) ? '' : `/stores/${id}.png`;
+}
 
 /** [id, nom affiché, adresse d'accueil, catégories] */
-const CATALOG_ROWS: ReadonlyArray<readonly [string, string, string, readonly string[]]> = [
+export const CATALOG_ROWS: ReadonlyArray<readonly [string, string, string, readonly string[]]> = [
   ["ebay", "eBay", "https://www.ebay.com", ["marketplace"]],
   ["rakuten", "Rakuten", "https://www.rakuten.co.jp", ["marketplace"]],
   ["mercado-libre", "Mercado Libre", "https://www.mercadolibre.com", ["marketplace"]],
@@ -385,65 +469,3 @@ const CATALOG_ROWS: ReadonlyArray<readonly [string, string, string, readonly str
   ["marc-jacobs", "Marc Jacobs", "https://www.marcjacobs.com", ["accessories"]],
   ["vivienne-westwood", "Vivienne Westwood", "https://www.viviennewestwood.com", ["accessories"]],
 ];
-
-/** Marchands du catalogue sans logo fourni dans main.pdf : lettre initiale affichée. */
-const WITHOUT_LOGO_FILE: ReadonlySet<string> = new Set([
-  'chain-reaction-cycles', 'joann', 'ninja-kitchen', 'oshkosh-b-gosh',
-]);
-
-function catalogStore([id, name, homeUrl, categories]: (typeof CATALOG_ROWS)[number]): AyWebsStoreDefinition {
-  let domain = '';
-  try { domain = new URL(homeUrl).hostname.toLowerCase().replace(/^www\./, ''); } catch { domain = ''; }
-  return {
-    id, name, displayName: name,
-    domains: domain ? [domain] : [],
-    country: '', currency: '', logo: WITHOUT_LOGO_FILE.has(id) ? '' : `/stores/${id}.png`,
-    enabled: false, captureSupported: false,
-    adapter: 'generic', status: 'planned', integrationType: 'URL_REQUEST',
-    capabilities: ['browse'], browserMode: 'external',
-    homeUrl, searchUrlTemplate: '',
-    categories, popular: false, phase: 2,
-  };
-}
-
-export const AYWEBS_CATALOG_STORES: readonly AyWebsStoreDefinition[] = CATALOG_ROWS.map(catalogStore);
-
-/**
- * Domaine → boutique du CATALOGUE (23/10/2026).
- *
- * Le registre ne reconnaît que les boutiques OUVERTES (`detectAyWebsStore`) :
- * une visite chez eBay n'y a pas d'identité. Or c'est exactement ce qu'il faut
- * mesurer pour décider quelle boutique ouvrir ensuite. On répond donc à une
- * question plus faible, et on le dit : « ce domaine est une boutique PRÉVUE »,
- * pas « cette boutique est reconnue ». Aucune garde ne s'appuie sur cette
- * fonction — elle ne sert qu'à l'attribution des mesures.
- */
-const CATALOG_BY_DOMAIN = new Map<string, AyWebsStoreDefinition>();
-for (const store of AYWEBS_CATALOG_STORES) {
-  for (const domain of store.domains) {
-    const key = domain.toLowerCase().replace(/^\.?www\./, '');
-    if (key && !CATALOG_BY_DOMAIN.has(key)) CATALOG_BY_DOMAIN.set(key, store);
-  }
-}
-
-export function detectAyWebsCatalogStore(rawUrl: unknown): AyWebsStoreDefinition | null {
-  if (typeof rawUrl !== 'string') return null;
-  let host = '';
-  try {
-    host = new URL(rawUrl.trim()).hostname.toLowerCase();
-  } catch {
-    return null;
-  }
-  if (!host) return null;
-  const bare = host.replace(/^\.?www\./, '');
-  const direct = CATALOG_BY_DOMAIN.get(bare);
-  if (direct) return direct;
-  /* Sous-domaine (« shop.zalando.com ») : on remonte les étiquettes, jamais au-delà
-     du domaine enregistré — pas de correspondance par suffixe approximatif. */
-  const parts = bare.split('.');
-  for (let index = 1; index < parts.length - 1; index += 1) {
-    const candidate = CATALOG_BY_DOMAIN.get(parts.slice(index).join('.'));
-    if (candidate) return candidate;
-  }
-  return null;
-}

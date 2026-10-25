@@ -43,7 +43,6 @@ import {
   type AyWebsCapturedVariantValue,
 } from '../../shared/aywebsCapture';
 import type { AyWebsAvailabilityState } from '../../shared/aywebsTypes';
-import { detectAyWebsCatalogStore } from '../../shared/aywebsStoreCatalog';
 
 /**
  * Ordre de fiabilité des sources de prix : la donnée machine du marchand d'abord,
@@ -167,19 +166,18 @@ const MAX_TRACKED_REJECTIONS = 12;
 const OTHER_STORE_KEY = 'autres';
 
 /**
- * Clé d'attribution d'une capture (23/10/2026) : boutique du REGISTRE si le
- * domaine y est (boutique ouverte), sinon boutique du CATALOGUE (prévue mais
- * fermée — savoir qu'on la visite est ce qui décide de l'ouvrir), sinon
- * `external`. Le préfixe dit toujours dans quel monde on est :
- *   `registre:walmart` · `catalogue:ebay` · `external` · `url_invalide`.
+ * Clé d'attribution d'une capture : boutique du REGISTRE si le domaine y est
+ * (depuis la VAGUE 2 du 25/10/2026, tous les marchands catalogués y sont),
+ * sinon `external`. Le préfixe dit toujours dans quel monde on est :
+ *   `registre:walmart` · `external` · `url_invalide`.
+ * (L'ancien préfixe `catalogue:<id>` n'est plus émis : le catalogue de
+ * boutiques fermées et son détecteur ont été supprimés avec la VAGUE 2.)
  */
 export function ayWebsCaptureStoreKey(requestUrl: string): string {
   try {
     const url = new URL(String(requestUrl || '').trim());
     const registered = detectAyWebsStore(url.toString());
     if (registered) return `registre:${registered.id}`;
-    const planned = detectAyWebsCatalogStore(url.toString());
-    if (planned) return `catalogue:${planned.id}`;
     return 'external';
   } catch {
     return 'url_invalide';

@@ -1,4 +1,8 @@
-import { AYWEBS_CATALOG_STORES } from './aywebsStoreCatalog';
+import {
+  CATALOG_ROWS,
+  catalogLogoFor,
+  resolveStoreIdentity,
+} from './aywebsStoreCatalog';
 import type {
   AyWebsIntegrationType,
   AyWebsStoreCapability,
@@ -244,6 +248,12 @@ interface CaptureStoreRow {
    * registre (capture externe, à la demande, comme avant).
    */
   domains?: readonly string[];
+  /**
+   * Logo explicite (défaut `/stores/<id>.png`). Une chaîne vide affiche la
+   * lettre initiale : utilisé par la VAGUE 2 pour respecter les 4 marchands
+   * sans fichier logo dans main.pdf.
+   */
+  logo?: string;
 }
 
 const CAPTURE_WAVE_1: readonly CaptureStoreRow[] = [
@@ -272,6 +282,7 @@ const CAPTURE_READ_CAPABILITIES: readonly AyWebsStoreCapability[] = [
 
 function captureStore(row: CaptureStoreRow): AyWebsStoreDefinition {
   const { id, displayName, country, currency, homeUrl, categories, productUrlPattern } = row;
+  const logo = row.logo ?? `/stores/${id}.png`;
   let domain = '';
   try { domain = new URL(homeUrl).hostname.toLowerCase().replace(/^\.?www\./, ''); } catch { domain = ''; }
   const domains = [domain, ...(row.domains || [])]
@@ -284,7 +295,7 @@ function captureStore(row: CaptureStoreRow): AyWebsStoreDefinition {
     domains,
     country,
     currency,
-    logo: `/stores/${id}.png`,
+    logo,
     enabled: true,
     captureSupported: true,
     adapter: 'catalogue',
@@ -302,9 +313,40 @@ function captureStore(row: CaptureStoreRow): AyWebsStoreDefinition {
   };
 }
 
-export const AYWEBS_CAPTURE_STORES: readonly AyWebsStoreDefinition[] = CAPTURE_WAVE_1.map(captureStore);
+/**
+ * VAGUE 2 (25/10/2026) — les 366 marchands restants du catalogue, TOUS promus
+ * en une fois (décision utilisateur), dans un contrat capture-only strict :
+ *  • aucun motif d'URL : non vérifiable hors-ligne sur autant de sites, donc
+ *    reconnaissance `capture` — seule la capture structurée du client prouve la
+ *    fiche produit, aucune URL devinée ;
+ *  • identité pays/devise remplie UNIQUEMENT pour les ccTLD non ambiguës
+ *    (`.co.uk`, `.de`, `.com.au`…), vide pour les domaines génériques (`.com`) :
+ *    jamais de devise devinée, le prix et la devise réels viennent de la
+ *    capture et passent par le moteur de tarification ;
+ *  • logos hérités du catalogue (4 marchands sans fichier → lettre initiale) ;
+ *  • capabilities de lecture seule : JAMAIS d'achat ni de suivi de commande.
+ *
+ * Source unique `CATALOG_ROWS` : pas de duplication de données, le passage
+ * d'une ligne en boutique ouverte se fait en modifiant sa construction, pas en
+ * recopiant l'entrée.
+ */
+export function buildCaptureWave2Rows(): readonly CaptureStoreRow[] {
+  return CATALOG_ROWS.map(([id, name, homeUrl, categories]) => ({
+    id,
+    displayName: name,
+    homeUrl,
+    categories,
+    ...resolveStoreIdentity(homeUrl),
+    logo: catalogLogoFor(id),
+  }));
+}
 
-/** Registre public : le cœur (adaptateurs dédiés) + la vague 1 du catalogue. */
+const CAPTURE_WAVE_2: readonly CaptureStoreRow[] = buildCaptureWave2Rows();
+
+export const AYWEBS_CAPTURE_STORES: readonly AyWebsStoreDefinition[] =
+  [...CAPTURE_WAVE_1, ...CAPTURE_WAVE_2].map(captureStore);
+
+/** Registre public : le cœur (adaptateurs dédiés) + les vagues de capture. */
 export const AYWEBS_STORES: readonly AyWebsStoreDefinition[] = [...AYWEBS_CORE_STORES, ...AYWEBS_CAPTURE_STORES];
 
 /**
@@ -486,7 +528,7 @@ export function ayWebsStoresForCategory(categoryId: string): AyWebsStoreDefiniti
  * Renvoie la liste des problèmes (vide = registre sain).
  */
 export function validateAyWebsStoreRegistry(
-  stores: readonly AyWebsStoreDefinition[] = [...AYWEBS_STORES, ...AYWEBS_CATALOG_STORES],
+  stores: readonly AyWebsStoreDefinition[] = AYWEBS_STORES,
   categories: ReadonlyArray<{ id: string }> = AYWEBS_CATEGORIES,
 ): string[] {
   const problems: string[] = [];

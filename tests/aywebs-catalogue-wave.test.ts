@@ -1,9 +1,11 @@
 /**
- * AYWEBs — VAGUE 1 DU CATALOGUE (23/10/2026).
+ * AYWEBs — VAGUES DE CAPTURE DU CATALOGUE (V1 : 23/10/2026, V2 : 25/10/2026).
  *
- * Onze à treize boutiques du catalogue (Walmart, Target, Etsy, Zalando…) passent
- * de « navigation seule » à « lecture de la fiche », SANS adaptateur dédié et
- * SANS qu'aucune d'elles puisse prétendre à l'achat.
+ * VAGUE 1 : treize boutiques (Walmart, Target, Etsy, Zalando…) passent de
+ * « navigation seule » à « lecture de la fiche », certaines avec un motif d'URL
+ * vérifié. VAGUE 2 (décision du 25/10/2026) : les 367 marchands restants sont
+ * TOUS promus en une fois, en capture-only strict — aucune URL devinée, aucune
+ * devise inventée, jamais d'achat. Le catalogue de boutiques fermées est vide.
  *
  * Ce fichier verrouille les quatre règles qui rendent cette ouverture honnête :
  *
@@ -31,7 +33,7 @@ import {
   ayWebsStoreRecognition,
   findAyWebsStore,
 } from '../shared/aywebsStores';
-import { AYWEBS_CATALOG_STORES } from '../shared/aywebsStoreCatalog';
+import { CATALOG_ROWS, resolveStoreIdentity } from '../shared/aywebsStoreCatalog';
 import { AYWEBS_CAPTURE_VERSION } from '../shared/aywebsCapture';
 import { AYWEBS_CAPTURE_SCRIPT } from '../src/aywebs/captureScript';
 import { createAyWebsAdapter } from '../src/aywebs/adapters/registry';
@@ -52,21 +54,61 @@ describe('vague 1 — identité au registre', () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it('la vague est au registre, plus dans le catalogue', () => {
-    const registryIds = new Set(AYWEBS_STORES.map((store) => store.id));
-    const catalogIds = new Set(AYWEBS_CATALOG_STORES.map((store) => store.id));
+  it('la vague 1 est au registre, une seule fois chacune', () => {
+    const counts = new Map<string, number>();
+    for (const store of AYWEBS_STORES) counts.set(store.id, (counts.get(store.id) || 0) + 1);
     for (const id of WAVE_IDS) {
-      expect(registryIds.has(id), `${id} doit être au registre`).toBe(true);
-      expect(catalogIds.has(id), `${id} ne doit plus être au catalogue`).toBe(false);
+      expect(counts.get(id), `${id} doit être au registre exactement une fois`).toBe(1);
     }
   });
 
-  it('le catalogue garde sa taille utile et son contrat : navigation seule', () => {
-    expect(AYWEBS_CATALOG_STORES.length).toBeGreaterThan(280);
-    for (const store of AYWEBS_CATALOG_STORES) {
-      expect(store.enabled).toBe(false);
-      expect(store.captureSupported).toBe(false);
-      expect(store.adapter).toBe('generic');
+  it('la source de données catalogue porte 367 lignes, toutes promues au registre', () => {
+    /* Une source de données unique : 367 lignes, toutes portées au registre
+       par buildCaptureWave2Rows — il n'existe plus de liste de boutiques
+       fermées (l'ancien AYWEBS_CATALOG_STORES a été supprimé). */
+    expect(CATALOG_ROWS.length).toBe(367);
+    const registryIds = new Set(AYWEBS_STORES.map((store) => store.id));
+    for (const [id] of CATALOG_ROWS) {
+      expect(registryIds.has(id), `${id} doit être au registre`).toBe(true);
+    }
+  });
+
+  it('vague 2 — chaque ligne du catalogue est au registre, une seule fois', () => {
+    const counts = new Map<string, number>();
+    for (const store of AYWEBS_STORES) counts.set(store.id, (counts.get(store.id) || 0) + 1);
+    for (const [id, name, homeUrl, categories] of CATALOG_ROWS) {
+      expect(counts.get(id), `${id} absent du registre`).toBe(1);
+      const store = AYWEBS_STORES.find((entry) => entry.id === id)!;
+      expect(store.displayName).toBe(name);
+      expect(store.homeUrl).toBe(homeUrl);
+      expect(store.categories).toEqual([...categories]);
+      expect(store.domains[0]).toBe(new URL(homeUrl).hostname.replace(/^www\./, ''));
+    }
+  });
+
+  it('vague 2 — contrat capture-only strict, sans achat ni motif deviné', () => {
+    const wave2Ids = new Set(CATALOG_ROWS.map(([id]) => id));
+    const wave2 = AYWEBS_STORES.filter((store) => wave2Ids.has(store.id));
+    expect(wave2).toHaveLength(CATALOG_ROWS.length);
+    for (const store of wave2) {
+      expect(store.adapter).toBe('catalogue');
+      expect(store.integrationType).toBe('PARTIALLY_SUPPORTED');
+      expect(store.status).toBe('beta');
+      expect(store.enabled).toBe(true);
+      expect(store.captureSupported).toBe(true);
+      /* Aucun motif d'URL hors-ligne : la fiche n'est prouvée que par la capture. */
+      expect(ayWebsStoreRecognition(store)).toBe('capture');
+      expect(store.productUrlPattern).toBeUndefined();
+      expect(ayWebsProductUrlPattern(store)).toBeNull();
+      /* Lecture seule : jamais la commande, jamais le suivi. */
+      expect(store.capabilities).not.toContain('purchase');
+      expect(store.capabilities).not.toContain('tracking');
+      expect(store.capabilities).toEqual(['browse', 'product', 'variants', 'availability']);
+      /* Identité : ccTLD remplie, ou vide — jamais une devise inventée. */
+      const identity = resolveStoreIdentity(store.homeUrl);
+      expect({ country: store.country, currency: store.currency }).toEqual(identity);
+      /* Logo : chemin normalisé ou chaîne vide (4 marchands sans fichier). */
+      expect(store.logo === '' || store.logo === `/stores/${store.id}.png`).toBe(true);
     }
   });
 
@@ -107,7 +149,8 @@ describe('vague 1 — identité au registre', () => {
       expect(store.domains.length).toBeGreaterThanOrEqual(1);
       expect(store.domains[0]).toBe(new URL(store.homeUrl).hostname.replace(/^www\./, ''));
       expect(new Set(store.domains).size).toBe(store.domains.length);
-      expect(store.logo).toBe(`/stores/${store.id}.png`);
+      /* La VAGUE 2 garde les 4 marchands sans logo (lettre initiale). */
+      expect(store.logo === '' || store.logo === `/stores/${store.id}.png`).toBe(true);
     }
   });
 
@@ -122,8 +165,9 @@ describe('vague 1 — identité au registre', () => {
     expect(findAyWebsStore('pas-une-boutique')).toBeNull();
   });
 
-  it('chaque boutique de la vague a son logo dans le client', () => {
+  it('chaque logo déclaré existe dans le client (le logo vide affiche une lettre)', () => {
     for (const store of AYWEBS_CAPTURE_STORES) {
+      if (!store.logo) continue;
       expect(() => readFileSync(join(__dirname, '..', 'client', 'public', store.logo))).not.toThrow();
     }
   });

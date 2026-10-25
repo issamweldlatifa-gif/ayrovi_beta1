@@ -3,7 +3,7 @@ import {
   AYWEBS_CATEGORIES, AYWEBS_STORES, ayWebsHostnameMatches, ayWebsProductUrlPattern, detectAyWebsStore,
   findAyWebsStore, validateAyWebsStoreRegistry, type AyWebsStoreDefinition,
 } from '../shared/aywebsStores';
-import { AYWEBS_CATALOG_STORES } from '../shared/aywebsStoreCatalog';
+import { CATALOG_ROWS } from '../shared/aywebsStoreCatalog';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -65,28 +65,26 @@ describe('registre des boutiques AYWEBs — contrôle avant publication', () => 
   });
 });
 
-describe('catalogue des boutiques (liste de référence, non ouvertes)', () => {
-  it('toutes les boutiques du catalogue sont désactivées, sans capacité ni adaptateur de capture', () => {
-    expect(AYWEBS_CATALOG_STORES.length).toBeGreaterThan(300);
-    for (const entry of AYWEBS_CATALOG_STORES) {
-      expect(entry.enabled).toBe(false);
-      expect(entry.capabilities).toEqual(['browse']);
-      expect(entry.captureSupported).toBe(false);
-      expect(entry.integrationType).toBe('URL_REQUEST');
+describe('vague 2 — tout le catalogue promu au registre (25/10/2026)', () => {
+  it('aucune boutique fermée ne subsiste : les 367 lignes sont au registre', () => {
+    const registryIds = new Set(AYWEBS_STORES.map((s) => s.id));
+    expect(CATALOG_ROWS).toHaveLength(367);
+    for (const [id] of CATALOG_ROWS) {
+      expect(registryIds.has(id), `${id} absent du registre`).toBe(true);
     }
   });
 
-  it('une boutique du catalogue n\'est jamais détectée par domaine (la détection ne change pas)', () => {
-    expect(detectAyWebsStore('https://www.ebay.com/itm/123')).toBeNull();
-    expect(detectAyWebsStore('https://www.zara.com/fr/')).toBeNull();
+  it('les anciens domaines du catalogue sont détectés au registre (vague 2)', () => {
+    expect(detectAyWebsStore('https://www.ebay.com/itm/123')?.id).toBe('ebay');
+    expect(detectAyWebsStore('https://www.zara.com/fr/')?.id).toBe('zara');
     expect(detectAyWebsStore('https://www.amazon.com/dp/B000000000')?.id).toBe('amazon');
   });
 
   it('un marchand présent dans plusieurs catégories reste UNE entrée avec toutes ses catégories', () => {
-    const samsung = AYWEBS_CATALOG_STORES.filter((s) => s.domains.includes('samsung.com'));
+    const samsung = AYWEBS_STORES.filter((s) => s.domains.includes('samsung.com'));
     expect(samsung).toHaveLength(1);
     expect(samsung[0].categories).toEqual(expect.arrayContaining(['electronics', 'smartphones', 'kitchen']));
-    const razer = AYWEBS_CATALOG_STORES.filter((s) => s.domains.includes('razer.com'));
+    const razer = AYWEBS_STORES.filter((s) => s.domains.includes('razer.com'));
     expect(razer).toHaveLength(1);
     expect(razer[0].categories).toEqual(expect.arrayContaining(['electronics', 'gaming']));
   });
@@ -97,8 +95,9 @@ describe('catalogue des boutiques (liste de référence, non ouvertes)', () => {
     expect(byId.shein).toBeTruthy();
     expect(byId.temu).toBeTruthy();
     expect(byId.aliexpress).toBeTruthy();
-    const catalogIds = new Set(AYWEBS_CATALOG_STORES.map((s) => s.id));
-    for (const id of Object.keys(byId)) expect(catalogIds.has(id)).toBe(false);
+    /* Chaque identifiant du registre est unique (aucune liste parallèle ne
+       peut plus répéter une boutique ouverte). */
+    expect(new Set(Object.keys(byId)).size).toBe(Object.keys(byId).length);
   });
 
   it('marketplace inclut les quatre marchés de la liste (AliExpress, Temu, Amazon)', () => {
@@ -108,10 +107,9 @@ describe('catalogue des boutiques (liste de référence, non ouvertes)', () => {
     }
   });
 
-  it('chaque catégorie a au moins une boutique (catalogue + registre)', () => {
-    const all = [...AYWEBS_STORES, ...AYWEBS_CATALOG_STORES];
+  it('chaque catégorie a au moins une boutique au registre (vague 2 incluse)', () => {
     for (const category of AYWEBS_CATEGORIES) {
-      expect(all.some((s) => s.categories.includes(category.id)), category.id).toBe(true);
+      expect(AYWEBS_STORES.some((s) => s.categories.includes(category.id)), category.id).toBe(true);
     }
   });
 
@@ -126,11 +124,13 @@ describe('catalogue des boutiques (liste de référence, non ouvertes)', () => {
   });
 });
 
-describe('logos du catalogue — fichiers présents (main.pdf)', () => {
+describe('logos des boutiques de capture — fichiers présents (main.pdf)', () => {
   const LOGO_DIR = join(__dirname, '..', 'client', 'public');
+  /* Logos hérités du catalogue par les vagues de capture. */
+  const captureStores = AYWEBS_STORES.filter((s) => s.adapter === 'catalogue');
 
   it('chaque logo déclaré existe sous client/public', () => {
-    const missing = AYWEBS_CATALOG_STORES
+    const missing = captureStores
       .filter((s) => s.logo)
       .filter((s) => !existsSync(join(LOGO_DIR, s.logo)))
       .map((s) => s.id);
@@ -138,12 +138,12 @@ describe('logos du catalogue — fichiers présents (main.pdf)', () => {
   });
 
   it('les marchands sans logo dans main.pdf gardent une chaîne vide (lettre affichée)', () => {
-    const noLogo = AYWEBS_CATALOG_STORES.filter((s) => !s.logo).map((s) => s.id).sort();
+    const noLogo = captureStores.filter((s) => !s.logo).map((s) => s.id).sort();
     expect(noLogo).toEqual(['chain-reaction-cycles', 'joann', 'ninja-kitchen', 'oshkosh-b-gosh']);
   });
 
-  it('le logo suit le modèle /stores/<id>.png', () => {
-    for (const s of AYWEBS_CATALOG_STORES.filter((x) => x.logo)) {
+  it('le logo suit le modèle /stores/<id>.png quand il est déclaré', () => {
+    for (const s of captureStores.filter((x) => x.logo)) {
       expect(s.logo).toBe(`/stores/${s.id}.png`);
     }
   });
@@ -177,7 +177,7 @@ describe('domaines des boutiques ouvertes — reconnaissance et miroirs', () => 
   });
 
   it('aucun domaine n’en éclipse un autre par suffixe (endsWith)', () => {
-    const all = [...AYWEBS_STORES, ...AYWEBS_CATALOG_STORES];
+    const all = AYWEBS_STORES;
     const shadows: string[] = [];
     for (const a of all) for (const b of all) {
       if (a.id === b.id) continue;
