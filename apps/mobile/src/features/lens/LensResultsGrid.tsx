@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
@@ -6,8 +7,10 @@ import { AppText, Button } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useT, type TranslationKey } from '@/i18n';
 import { LensResultCard } from './LensResultCard';
+import { LensFilterBar } from './LensFilterBar';
 import { LENS_COLORS } from './lensPalette';
 import { useLensSheetScroll } from './lensSheetScroll';
+import { applyLensControls, defaultControls, type LensControls } from './lensFilter';
 
 export function LensResultsGrid({
   candidates,
@@ -34,6 +37,21 @@ export function LensResultsGrid({
   // vers le bas baisse la feuille au lieu de faire défiler la liste.
   const onSheetScroll = useLensSheetScroll();
 
+  // Signature du jeu de résultats : une NOUVELLE recherche remet les contrôles à zéro,
+  // tandis que l'ouverture d'une fiche puis le retour conservent les filtres choisis.
+  const resultsSignature = useMemo(
+    () => candidates.map((candidate) => candidate.sourceUrl || candidate.id).join('|'),
+    [candidates],
+  );
+  const [controls, setControls] = useState<LensControls>(defaultControls());
+  useEffect(() => {
+    setControls(defaultControls());
+  }, [resultsSignature]);
+
+  // Filtrage + tri entièrement sur le téléphone, à partir de la donnée normalisée
+  // du serveur. Les facettes sont calculées sur le jeu complet, avant filtrage.
+  const applied = useMemo(() => applyLensControls(candidates, controls), [candidates, controls]);
+
   if (candidates.length === 0) {
     return (
       <View style={styles.empty} testID="lens-empty-results">
@@ -50,7 +68,7 @@ export function LensResultsGrid({
   return (
     <FlatList
       testID="lens-results-grid"
-      data={candidates}
+      data={applied.visible}
       style={styles.list}
       numColumns={2}
       keyExtractor={(candidate) => candidate.sourceUrl || candidate.id}
@@ -64,7 +82,7 @@ export function LensResultsGrid({
       maxToRenderPerBatch={6}
       windowSize={7}
       removeClippedSubviews
-      ListHeaderComponent={(
+      ListHeaderComponent={
         <View style={styles.header}>
           <View style={[styles.headerRow, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
             <View style={styles.headerCopy}>
@@ -86,8 +104,16 @@ export function LensResultsGrid({
           {favoriteNote ? (
             <AppText variant="caption" color={theme.status.danger.fg} accessibilityRole="alert">{t(favoriteNote)}</AppText>
           ) : null}
+          <LensFilterBar controls={controls} facets={applied.facets} visibleCount={applied.filteredCount} onChange={setControls} />
         </View>
-      )}
+      }
+      ListEmptyComponent={
+        <View style={styles.filterEmpty} testID="lens-filter-empty">
+          <Ionicons name="funnel-outline" size={theme.iconSize.lg} color={theme.colors.muted} accessibilityElementsHidden />
+          <AppText variant="body" align="center" color={theme.colors.muted}>{t('lens.filter.empty')}</AppText>
+          <Button label={t('lens.filter.reset')} tone="quiet" onPress={() => setControls(defaultControls())} />
+        </View>
+      }
       renderItem={({ item }) => (
         <View style={styles.cell}>
           <LensResultCard
@@ -113,4 +139,5 @@ const styles = StyleSheet.create({
   newSearch: { width: 48, height: 48, borderRadius: 24, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },
   empty: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, paddingHorizontal: 24, paddingVertical: 48 },
   emptyIcon: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center' },
+  filterEmpty: { alignItems: 'center', gap: 12, paddingVertical: 48, paddingHorizontal: 24 },
 });

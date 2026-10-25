@@ -501,7 +501,9 @@ export function AddToCartSheet({
                   {t('aywebs.pricePending')}
                 </AppText>
               ) : (
-                <AppText variant="title" weight="bold" color={theme.colors.muted}>
+                // Aucun prix confirmé pour l'instant : une mention neutre et
+                // compacte, jamais un chiffre inventé ni un message titré dominant.
+                <AppText variant="body" color={theme.colors.muted}>
                   {t('aywebs.priceAtAdd')}
                 </AppText>
               )}
