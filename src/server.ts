@@ -431,6 +431,25 @@ app.use('/uploads', (req, res, next) => {
   return uploadsStatic(req, res, next);
 });
 
+/**
+ * MÉDIAS DU CATALOGUE LIVRÉS AVEC LE CODE (`assets/media`, URL `/media/...`).
+ *
+ * Pourquoi un second dossier : `data/uploads` est ignoré par git (photos
+ * téléversées, jamais versionnées) et n'existe pas sur une installation neuve.
+ * Les visuels qui DOIVENT être là — le produit de test, ses trois photos — sont
+ * donc versionnés et servis ici, sans écriture possible : lecture seule, cache
+ * long, aucune remontée de chemin.
+ */
+const mediaDir = path.resolve(process.cwd(), 'assets/media');
+app.use('/media', (req, res, next) => {
+  const relative = decodeURIComponent(String(req.path || '').replace(/^\/+/, ''));
+  if (!relative || relative.includes('..') || relative.includes('\\') || relative.startsWith('.')) {
+    return res.status(403).json({ success: false, code: 'MEDIA_NOT_PUBLIC', error: 'Média introuvable.' });
+  }
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  return express.static(mediaDir, { maxAge: '1d' })(req, res, next);
+});
+
 // API Routes
 app.use('/api', (_req, res, next) => {
   res.setHeader('Cache-Control', 'no-store');

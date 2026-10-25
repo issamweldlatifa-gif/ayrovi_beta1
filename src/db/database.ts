@@ -10,6 +10,7 @@ import { quoteCartLine } from '../services/cartQuote';
 import { DEFAULT_DAY_LADDER, dayLabelFr, type PromoRule, type PromoScope } from '../services/promotions';
 import { seedArrivalStores } from '../arrival-ingestion/storeProfiles';
 import { PUBLIC_NAV_DESTINATIONS } from '../../shared/publicNavigation';
+import { seedTestProduct } from '../catalogue/seedTestProduct';
 import { ensureErpCoreSchema } from '../erp-core/bootstrap';
 import { ensureCatalogueSchema } from '../catalogue/bootstrap';
 import { ensureInventorySchema } from '../inventory/bootstrap';
@@ -348,6 +349,23 @@ export class QatafoDatabase {
     this.seedCoreData();
     this.rebrandZayroviV1();
     this.purgeDemoProductsV1();
+    this.seedTestProductV1();
+  }
+
+  /**
+   * PRODUIT DE TEST FIXE (25/10/2026) — une seule fois, et seulement si la ligne
+   * n'existe pas : cent pièces, deux couleurs, cinq tailles, trois photos, les
+   * noms de blocs de la maquette. Détail et garde-fous : `catalogue/seedTestProduct.ts`.
+   */
+  private seedTestProductV1(): void {
+    this.runOnceDataMigration('seed_test_product_v1', () => {
+      try {
+        seedTestProduct(this);
+      } catch (error: any) {
+        // Un produit de test ne doit jamais empêcher l'application de démarrer.
+        console.warn(`[database] produit de test non créé : ${String(error?.message || error)}`);
+      }
+    });
   }
 
   /**
