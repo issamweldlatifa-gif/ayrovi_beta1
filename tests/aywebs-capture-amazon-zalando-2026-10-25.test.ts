@@ -131,6 +131,56 @@ describe('Amazon — une seule lecture, et jamais une copie masquée', () => {
   });
 });
 
+describe('Amazon — les variantes d’un AUTRE article ne se mêlent pas à la fiche', () => {
+  /* Sur Amazon, les options sont publiées dans `out.amazon.options` (preuve
+     brute : libellé + ASIN + état) ; le serveur les convertit en groupes. On
+     vérifie donc la PREUVE, pas son rendu. */
+  const TWISTER_SCRIPT = `<script>{"sortedDimValuesForAllDims":{"size_name":[
+    {"dimensionValueState":"SELECTED","dimensionValueDisplayText":"XL","defaultAsin":"B0GYM3V9H5"},
+    {"dimensionValueState":"AVAILABLE","dimensionValueDisplayText":"XXL"}]}}</script>`;
+
+  type AmazonOut = {
+    amazon: { options: Array<{ value: string }>; selectedValues: string[] } | null;
+    selectedVariantTexts: string[];
+    variantGroups: Array<{ attribute: string; values: string[] }>;
+  };
+
+  it('un twister de carrousel sponsorisé, hors de la fiche, est ignoré', () => {
+    // La fiche elle-même ne publie aucune variante ; le carrousel voisin, si.
+    const html = `<!doctype html><html lang="en"><head><title>x</title></head><body>
+      <div id="dp-container"><div id="corePrice_feature_div">
+        <span class="a-price"><span class="a-offscreen">$109.00</span></span>
+      </div></div>
+      <aside data-component-type="sp-sponsored-result">
+        <div id="twister_feature_div" data-feature-name="twister">${TWISTER_SCRIPT}
+          <div id="inline-twister-row-size_name">
+            <li data-defaultasin="B0FAKEASIN"><span>XXL</span></li>
+          </div>
+        </div>
+      </aside>
+    </body></html>`;
+    const result = capture(html) as unknown as AmazonOut;
+    expect(result.amazon?.options ?? []).toEqual([]);
+    expect(result.selectedVariantTexts).toEqual([]);
+    expect(result.variantGroups).toEqual([]);
+  });
+
+  it('un twister DANS la fiche reste lu (on ne casse pas la lecture légitime)', () => {
+    const html = `<!doctype html><html lang="en"><head><title>x</title></head><body>
+      <div id="dp-container">
+        <div id="corePrice_feature_div">
+          <span class="a-price"><span class="a-offscreen">$109.00</span></span>
+        </div>
+        <div id="twister_feature_div" data-feature-name="twister">${TWISTER_SCRIPT}</div>
+      </div>
+    </body></html>`;
+    const result = capture(html) as unknown as AmazonOut;
+    const values = (result.amazon?.options ?? []).map((option) => option.value);
+    expect(values).toEqual(expect.arrayContaining(['XL', 'XXL']));
+    expect(result.selectedVariantTexts).toContain('XL');
+  });
+});
+
 /* ── Zalando ──────────────────────────────────────────────────────────────── */
 
 const ZALANDO_URL = 'https://www.zalando.fr/nike-sportswear-club-tee-t-shirt-basic-black-ni121d0a2-q11.html';

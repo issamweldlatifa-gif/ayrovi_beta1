@@ -56,8 +56,50 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # ── PORTE ──────────────────────────────────────────────────────────────────
+  # Pourquoi ce job existe (leçon du 25/10/2026) : l'APK était construit sans
+  # qu'aucun test ne garde la sortie. Une erreur d'ordre des hooks dans la fiche
+  # produit a donc été EMBARQUÉE dans une version livrée — l'application se
+  # fermait à chaque ouverture d'un produit, et rien dans la CI ne l'avait vu.
+  #
+  # Cette porte est un job SÉPARÉ et `apk` en dépend : un test rouge arrête la
+  # chaîne AVANT les 26 minutes de Gradle, et aucun APK n'est publié. Les
+  # contrôles sont exactement ceux de `mobile.yml` (typecheck, jetons, tests) —
+  # dupliqués ici parce que GitHub ne permet pas de dépendre d'un autre
+  # workflow ; la duplication est assumée et minime (quatre commandes).
+  gates:
+    name: Porte — typecheck · jetons · tests (aucun APK si rouge)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Design tokens à jour
+        run: npm run tokens:check
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Tests (logique, design system, ordre des hooks, montants)
+        run: npm test
+
+      - name: Tests composants (écrans réels, données pauvres incluses)
+        run: npm run test:ui
+
   apk:
     name: APK démo (release, signé debug)
+    needs: gates
     runs-on: ubuntu-latest
     permissions:
       # `contents: write` : le job réécrit la mesure (APK_SIZES.md) dans le

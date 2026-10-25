@@ -94,6 +94,30 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
       }
     } catch (e) {}
   }
+  /* RACINE DE LA FICHE.
+     Pourquoi : Amazon publie des blocs de variantes AILLEURS sur la page
+     (carrousels sponsorisés, « produits similaires ») qui portent les mêmes
+     identifiants (« inline-twister-row-… », « #twister… »). Lire le document entier
+     revenait à présenter les tailles d'un AUTRE article dans la feuille de
+     celui-ci — donc à laisser commander une combinaison qui n'existe pas.
+     On borne donc la lecture des blocs de variantes à la fiche elle-même. */
+  var AMAZON_PRODUCT_ROOT = null;
+  if (AMAZON_STRICT) {
+    try {
+      AMAZON_PRODUCT_ROOT = document.querySelector('#dp-container') || document.querySelector('#ppd') || document.querySelector('#dp');
+    } catch (e) { AMAZON_PRODUCT_ROOT = null; }
+  }
+  /** Requête bornée à la fiche quand elle existe ; document sinon. */
+  function amazonRootQuery(selector) {
+    var scope = AMAZON_PRODUCT_ROOT || document;
+    try { return scope.querySelectorAll(selector); } catch (e) { return []; }
+  }
+  /** Un nœud appartient-il à la fiche ? (faux si une racine existe et l'exclut) */
+  function amazonInsideProductRoot(node) {
+    if (!AMAZON_PRODUCT_ROOT) return true;
+    if (!node) return false;
+    try { return AMAZON_PRODUCT_ROOT === node || AMAZON_PRODUCT_ROOT.contains(node); } catch (e) { return false; }
+  }
   var AMAZON_EVIDENCE_LIMITS = { options: 60, variants: 40, dimensions: 6, label: 60, scripts: 80, scriptChars: 500000 };
   var AMAZON_ASIN_PATTERN = /^[A-Z0-9]{10}$/;
   function amazonValidAsin(value) {
@@ -232,6 +256,9 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     var scripts = [];
     try { scripts = document.querySelectorAll('script:not([src])'); } catch (e) { return dims; }
     for (var s = 0; s < scripts.length && s < AMAZON_EVIDENCE_LIMITS.scripts && !dims.length; s++) {
+      /* Un script DANS la fiche seulement : les blocs « sponsorisés » en
+         contiennent aussi, avec les valeurs d'un autre produit. */
+      if (!amazonInsideProductRoot(scripts[s])) continue;
       var source = scripts[s].textContent || '';
       if (!source || source.length > AMAZON_EVIDENCE_LIMITS.scriptChars) continue;
       if (source.indexOf('sortedDimValuesForAllDims') < 0) continue;
@@ -414,8 +441,9 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
         if (twisterValue.asin) pushUnique(twisterSelectedAsins, twisterValue.asin, 10, 10);
       }
     }
-    var blocks = [];
-    try { blocks = document.querySelectorAll('[id^="inline-twister-row-"], #twister [id^="variation_"], [id^="variation_"][id$="_name"], #twister [id^="inline-twister-row-"]'); } catch (e) { blocks = []; }
+    /* Borné à la fiche : un bloc de variantes d'un carrousel sponsorisé porte le
+       même identifiant et proposerait les tailles d'un autre article. */
+    var blocks = amazonRootQuery('[id^="inline-twister-row-"], #twister [id^="variation_"], [id^="variation_"][id$="_name"], #twister [id^="inline-twister-row-"]');
     /* Un bloc qui en CONTIENT un autre ne décrit pas une dimension à lui seul :
        on ne garde que les blocs les plus internes (bornés, ≤ 40 nœuds). */
     var keptBlocks = [];
