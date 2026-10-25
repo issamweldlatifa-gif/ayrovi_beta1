@@ -15,6 +15,20 @@ import {
 
 const db = new QatafoDatabase(':memory:');
 
+/**
+ * Le produit de démonstration n'existe plus dans les graines : ce test crée le sien.
+ * La policy ne doit matcher QUE de vrais produits du catalogue — d'où une ligne réelle.
+ */
+const SAMPLE_PRODUCT_ID = 'product_magazine_fixture';
+db.run(`INSERT OR REPLACE INTO products
+  (id,name,description,image,additional_images,brand_id,brand_name,category,source_url,source_platform,
+   original_price,currency,converted_price,customs_fee,shipping_fee,service_fee,final_price,express_available,stock_status,status,created_at,updated_at)
+  VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+  SAMPLE_PRODUCT_ID, 'Ensemble tendance ZAYROVI', 'Produit de test (aucune graine de démonstration).',
+  '/media/hero-femme.jpg', '[]', 'brand_shein', 'SHEIN', 'Mode', 'https://www.shein.com/', 'SHEIN',
+  21.99, 'EUR', 100, 10, 8, 3, 121, 1, 'AVAILABLE', 'ACTIVE',
+  new Date().toISOString(), new Date().toISOString());
+
 const output: MagazineAgentOutput = {
   topic: 'أناقة الكراميل في الخريف',
   angle: 'درجة الكراميل بدل البني العام',
@@ -86,7 +100,7 @@ describe('Magazine Agent persistence and product policy', () => {
     const real = findMagazineProductContext(db, 'ولّد ريلز لمنتج SHEIN Ensemble tendance ZAYROVI');
     expect(real.requested).toBe(true);
     expect(real.matched).toBe(true);
-    expect(real.products[0]?.id).toBe('product_demo_01');
+    expect(real.products[0]?.id).toBe(SAMPLE_PRODUCT_ID);
 
     const absent = findMagazineProductContext(db, 'ولّد ريلز لحذاء Nike الجديد');
     expect(absent.requested).toBe(true);

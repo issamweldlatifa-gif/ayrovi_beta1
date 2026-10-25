@@ -347,6 +347,55 @@ export class QatafoDatabase {
     this.initCrmSchema();
     this.seedCoreData();
     this.rebrandZayroviV1();
+    this.purgeDemoProductsV1();
+  }
+
+  /**
+   * Le produit de démonstration (`product_demo_01`, « Ensemble tendance ») n'existe
+   * plus : ni dans les graines (un catalogue vide reste vide), ni sur une base déjà
+   * créée. Cette migration one-shot retire la ligne et TOUTES ses attaches —
+   * arrivages, promotions, stories, news, paniers, favoris — sans toucher aux
+   * produits réels. Elle ne journalise que le nombre de lignes retirées.
+   */
+  private purgeDemoProductsV1(): void {
+    this.runOnceDataMigration('purge_demo_products_v1', () => {
+      const demoId = 'product_demo_01';
+      const exists = this.get<any>('SELECT 1 AS present FROM products WHERE id=?', demoId);
+      if (!exists) return; // rien à purger : jamais créer de ligne pour la supprimer
+      // 1. Les tables qui portent une CLÉ ÉTRANGÈRE en cascade : la ligne doit partir d'abord.
+      for (const table of [
+        'product_arrivals',
+        'promotion_products',
+        'content_products',
+        'catalogue_variants',
+        'catalogue_media',
+        'catalogue_attribute_values',
+      ]) {
+        try {
+          this.run(`DELETE FROM ${table} WHERE product_id=?`, demoId);
+        } catch {
+          /* table absente sur une base ancienne : rien à purger */
+        }
+      }
+      // 2. Les liens facultatifs : on les neutralise au lieu de supprimer le contenu.
+      try {
+        this.run("UPDATE cart_items SET external_id=NULL WHERE store='catalog' AND external_id=?", demoId);
+      } catch { /* pas de colonne externe : rien à faire */ }
+      for (const table of ['customer_favorites', 'stories', 'news_items', 'reels', 'publications', 'magazine_drafts']) {
+        try {
+          this.run(`UPDATE ${table} SET product_id=NULL WHERE product_id=?`, demoId);
+        } catch {
+          /* idem */
+        }
+      }
+      // 3. La ligne elle-même. Un échec inattendu ne doit jamais empêcher le démarrage :
+      //    on le signale, la migration reste rejouable au prochain lancement.
+      try {
+        this.run('DELETE FROM products WHERE id=?', demoId);
+      } catch (error: any) {
+        console.warn(`[database] purge du produit de démonstration impossible : ${String(error?.message || error)}`);
+      }
+    });
   }
 
   /**
@@ -378,7 +427,6 @@ export class QatafoDatabase {
         ['news_items', 'content', "id='news_arrival_08'",
           'Préparez vos liens et captures avec Lens. AYROVI centralise le calcul, l’achat et la livraison en Tunisie.',
           'Préparez vos liens et captures avec Lens. ZAYROVI centralise le calcul, l’achat et la livraison en Tunisie.'],
-        ['products', 'name', "id='product_demo_01'", 'Ensemble tendance AYROVI', 'Ensemble tendance ZAYROVI'],
         ['lens_hero_settings', 'phone_status_label', '1=1', 'AYROVI LENS', 'ZAYROVI LENS'],
         ['stories_showcase_settings', 'title', "id='global'", 'Social AYROVI', 'Social ZAYROVI'],
         ['story_publishers', 'name', "id='pub_ayrovi'", 'Ayrovi', 'Zayrovi'],
@@ -3082,21 +3130,9 @@ export class QatafoDatabase {
         'Arrivage prioritaire pour les commandes éligibles Express.','/media/hero-femme.jpg','[]','Express','ACTIVE',now,now,now);
     }
 
-    if ((this.db.prepare('SELECT COUNT(*) AS count FROM products').get() as any).count === 0) {
-      const rules = this.getPricingRules();
-      const breakdown = calculatePrice(rules, 21.99, 'EUR')!;
-      this.db.prepare(`INSERT INTO products
-        (id,name,description,image,additional_images,brand_id,brand_name,category,source_url,source_platform,
-         original_price,currency,converted_price,customs_fee,shipping_fee,service_fee,final_price,express_available,stock_status,status,created_at,updated_at)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
-          'product_demo_01','Ensemble tendance ZAYROVI','Produit de démonstration relié à l’arrivage actif.',
-          '/media/hero-femme.jpg','[]','brand_shein','SHEIN','Mode','https://www.shein.com/','SHEIN',21.99,'EUR',
-          breakdown.convertedPriceTND,breakdown.customsFeeTND,breakdown.shippingFeeTND,breakdown.serviceFeeTND,breakdown.totalTND,
-          1,'AVAILABLE','ACTIVE',now,now,
-        );
-      this.db.prepare('INSERT OR IGNORE INTO product_arrivals (product_id,arrival_id) VALUES (?,?)').run('product_demo_01','arrival_08');
-      this.db.prepare('INSERT OR IGNORE INTO product_arrivals (product_id,arrival_id) VALUES (?,?)').run('product_demo_01','arrival_express_04');
-    }
+    // Aucun produit de démonstration n'est fabriqué : un catalogue vide reste vide.
+    // Le premier produit vient du CRM (ou du seed explicite « arbre international »).
+    // `purgeDemoProductsV1()` supprime, lui, la ligne de démonstration des bases existantes.
 
     if ((this.db.prepare('SELECT COUNT(*) AS count FROM promotions').get() as any).count === 0) {
       this.db.prepare(`INSERT INTO promotions
@@ -3106,7 +3142,6 @@ export class QatafoDatabase {
           '/media/hero-enfants.jpg','PERCENTAGE',20,'2026-08-12T00:00:00.000Z','2026-08-21T23:59:59.000Z','ARRIVAGE20',500,0,'ACTIVE',now,now,
         );
       this.db.prepare('INSERT OR IGNORE INTO promotion_arrivals (promotion_id,arrival_id) VALUES (?,?)').run('promo_arrival_08','arrival_08');
-      this.db.prepare('INSERT OR IGNORE INTO promotion_products (promotion_id,product_id) VALUES (?,?)').run('promo_arrival_08','product_demo_01');
     }
 
     if ((this.db.prepare('SELECT COUNT(*) AS count FROM stories').get() as any).count === 0) {
@@ -3114,7 +3149,7 @@ export class QatafoDatabase {
         (id,media_type,media_url,title,description,cta,target_url,product_id,arrival_id,promotion_id,publish_at,expires_at,priority,status,created_at,updated_at)
         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
           'story_arrival_08','IMAGE','/media/hero-femme.jpg','Arrivage #08 ouvert','Découvrez la sélection et préparez votre commande.','Découvrir','#arrivages',
-          'product_demo_01','arrival_08','promo_arrival_08','2026-08-12T00:00:00.000Z','2026-08-21T23:59:59.000Z',100,'PUBLISHED',now,now,
+          null,'arrival_08','promo_arrival_08','2026-08-12T00:00:00.000Z','2026-08-21T23:59:59.000Z',100,'PUBLISHED',now,now,
         );
     }
 
@@ -3124,7 +3159,7 @@ export class QatafoDatabase {
         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
           'news_arrival_08','Le nouvel arrivage ZAYROVI est ouvert','Les commandes pour l’arrivage #08 sont maintenant disponibles.',
           'Préparez vos liens et captures avec Lens. ZAYROVI centralise le calcul, l’achat et la livraison en Tunisie.',
-          '/media/hero-homme.jpg','NEW_ARRIVAL','arrival_08','product_demo_01','Équipe ZAYROVI','2026-08-12T00:00:00.000Z','PUBLISHED',now,now,
+          '/media/hero-homme.jpg','NEW_ARRIVAL','arrival_08',null,'Équipe ZAYROVI','2026-08-12T00:00:00.000Z','PUBLISHED',now,now,
         );
     }
 

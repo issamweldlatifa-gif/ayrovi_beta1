@@ -646,7 +646,12 @@ describe('catalogue foundation (P2.1)', () => {
     });
 
     test('an existing database keeps its legacy rows untouched by the additions', () => {
-      const legacy = db.get<any>(`SELECT id, name, category, brand_name, product_code, slug FROM products WHERE id='product_demo_01'`);
+      // Ligne « héritée » fabriquée par le test lui-même : plus aucune graine de
+      // produit de démonstration n'existe (elle a été retirée du produit).
+      const nowLegacy = new Date().toISOString();
+      db.run(`INSERT OR REPLACE INTO products (id,name,category,brand_name,status,source_platform,currency,created_at,updated_at)
+        VALUES ('cat_legacy_row','Ligne héritée','Mode','SHEIN','ACTIVE','SHEIN','EUR',?,?)`, nowLegacy, nowLegacy);
+      const legacy = db.get<any>(`SELECT id, name, category, brand_name, product_code, slug FROM products WHERE id='cat_legacy_row'`);
       expect(legacy).toBeTruthy();
       // the new columns are NULL on pre-catalogue rows: nothing was backfilled silently
       expect(legacy.product_code ?? null).toBe(null);
@@ -661,8 +666,11 @@ describe('catalogue foundation (P2.1)', () => {
 
   describe('non-regression of what existed before P2.1', () => {
     test('the generic admin screen still writes products the same way', async () => {
-      expect(db.get<any>(`SELECT id FROM products WHERE id='product_demo_01'`)).toBeTruthy();
-      const response = await superAgent.put('/api/admin/products/product_demo_01').set('x-csrf-token', superCsrf)
+      const nowLegacy = new Date().toISOString();
+      db.run(`INSERT OR REPLACE INTO products (id,name,category,brand_name,status,source_platform,currency,created_at,updated_at)
+        VALUES ('cat_generic_row','Ligne générique','Mode','SHEIN','ACTIVE','SHEIN','EUR',?,?)`, nowLegacy, nowLegacy);
+      expect(db.get<any>(`SELECT id FROM products WHERE id='cat_generic_row'`)).toBeTruthy();
+      const response = await superAgent.put('/api/admin/products/cat_generic_row').set('x-csrf-token', superCsrf)
         .send({ description: 'Description inchangée pour la non-régression' });
       expect(response.status, JSON.stringify(response.body)).toBe(200);
       expect(response.body.data.description).toContain('non-régression');
