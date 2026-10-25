@@ -400,8 +400,6 @@ export const ProductFicheEditor: React.FC<{
       category_id: draft.category_id || null,
       status: publish ? 'ACTIVE' : draft.status,
       product_type: draft.product_type,
-      image: draft.image.trim() ? draft.image : null,
-      stock_status: draft.stock_status || null,
       express_available: draft.express_available === 'true',
       currency: 'TND',
       // Le PRIX DE VENTE affiché par la fiche : la même colonne que publie l'API.
@@ -409,10 +407,19 @@ export const ProductFicheEditor: React.FC<{
       fiche_labels: ficheLabelsPayload(sizeLabel, colorLabel, sectionLabels),
       attributes: values,
     };
+    // Une photo vide et un stock vide ne sont PAS envoyés : le serveur refuse
+    // une URL de média vide (`MEDIA_URL_INVALID`) et un statut de stock vide.
+    if (draft.image.trim()) body.image = draft.image.trim();
+    if (draft.stock_status) body.stock_status = draft.stock_status;
     // Publier une fiche sans prix, c'est publier un article qui ne peut pas
-    // entrer au panier (`NO_PRICE`) : on refuse ici, avec le bon mot.
+    // entrer au panier (`NO_PRICE`) ; sans photo, une fiche vide.
     if (publish && salePrice(draft.final_price) === null) {
       setError('Un prix de vente supérieur à 0 est requis pour publier.');
+      setSaving(false);
+      return;
+    }
+    if (publish && !draft.image.trim()) {
+      setError('Une photo est requise pour publier : la zone de 581 dp ne se remplit pas toute seule.');
       setSaving(false);
       return;
     }
@@ -594,7 +601,7 @@ export const ProductFicheEditor: React.FC<{
                   />
                 </Field>
               </div>
-              <Field label="Photo principale" full hint="La photo remplit la zone de 581 dp. Aucun réglage de taille : la cote est celle de la maquette.">
+              <Field label="Photo principale" full error={byField.image} hint="La photo remplit la zone de 581 dp. Aucun réglage de taille : la cote est celle de la maquette.">
                 <ImageUploader value={draft.image} onChange={(value) => setDraft({ ...draft, image: value })} />
               </Field>
             </section>
