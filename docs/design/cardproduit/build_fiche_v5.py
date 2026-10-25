@@ -109,6 +109,24 @@ def icon_ruler(d, x, y):
         d.line([(x + 6, yy), (x + 13, yy)], fill=INK, width=3)
 
 
+def shoe(d, x, y, size=56, color=INK, w=4):
+    """حذاء من الجانب (خطّ خارجي): نعل أفقي + كعب + فتحة الكاحل + مقدّمة."""
+    u = size / 56.0
+    def P(px, py):
+        return (x + px * u, y + py * u)
+    # النعل
+    d.line([P(2, 46), P(84, 46)], fill=color, width=int(5 * u))
+    # مقدّمة الحذاء (منزلق نحو الأمام)
+    d.line([P(84, 46), P(88, 34), P(80, 26)], fill=color, width=w, joint="curve")
+    d.arc([P(46, 12)[0], P(46, 12)[1], P(80, 34)[0], P(80, 34)[1]], 300, 360, fill=color, width=w)
+    # وجه الحذاء
+    d.line([P(62, 20), P(30, 20)], fill=color, width=w)
+    # فتحة الكاحل
+    d.arc([P(8, 8)[0], P(8, 8)[1], P(40, 34)[0], P(40, 34)[1]], 200, 350, fill=color, width=w)
+    # الكعب
+    d.line([P(8, 22), P(4, 46)], fill=color, width=w)
+
+
 def chevron_down(d, cx, cy, w=4):
     d.line([(cx - 12, cy - 6), (cx, cy + 7), (cx + 12, cy - 6)], fill=INK, width=w, joint="curve")
 
@@ -170,8 +188,24 @@ def screen(index):
     # 6. الخطّ الرقيق
     d.line([(0, RULE_Y), (W, RULE_Y + 1)], fill=RULE, width=2)
 
-    # 7. ⬜ البلاصة الفاضية: ما نحطّو فيها حتى حاجة (1140 → 1343)
-    #    (ما فماش حتى رسم هنا — هذا هو المطلوب)
+    # 7. بلوك المرجع بالضبط: لوحة لافندر 32→686 / 1140→1343
+    LAVENDER = (238, 236, 247)
+    d.rectangle([32, EMPTY_TOP, 686, EMPTY_BOTTOM], fill=LAVENDER)
+
+    # 7a. أيقونة (حذاء مقلوب) على اليسار
+    shoe(d, 64, 1186, 60)
+
+    # 7b. سؤال المقاس: سطرين
+    q_font = latin(30)
+    d.text((254, 1176), "Vous n'êtes pas sûr·e de votre", font=q_font, fill=INK)
+    d.text((254, 1212), "taille ?", font=q_font, fill=INK)
+
+    # 7c. رابط عريض مسطّر على اليمين
+    link_font = latin(28, "Bold")
+    link = "Obtenir une recommandation"
+    lw = d.textlength(link, font=link_font)
+    d.text((655 - lw, 1282), link, font=link_font, fill=INK)
+    d.line([(655 - lw, 1314), (655, 1314)], fill=INK, width=4)
 
     # 8. سطر Taille
     icon_ruler(d, PAD, TAILLE_TOP - 2)
@@ -223,11 +257,11 @@ for y, label in marks:
     pd.text((MARGIN - 34, HEAD + y - 22), label.split()[0], font=latin(17, "Bold"), fill=GUIDE)
 
 pd.text((MARGIN, 24), ar("مقارنة الابعاد"), font=arabic(38, bold=True), fill=INK)
-pd.text((MARGIN, 74), ar("على اليسار المرجع، على اليمين الموكاب الجديد، والارقام على الخطوط هي نفسها في الزوز"),
+pd.text((MARGIN, 74), ar("على اليسار المرجع، على اليمين الموكاب، والارقام على الخطوط نفسها في الزوز"),
         font=arabic(22), fill=MUTED)
 pd.rectangle([MARGIN, HEAD, MARGIN + W, HEAD + H], outline=(200, 200, 200), width=2)
 pd.rectangle([MARGIN + W + GAP, HEAD, MARGIN + W + GAP + W, HEAD + H], outline=(200, 200, 200), width=2)
 
-page.save("docs/design/cardproduit/comparaison-v5-25-10.png")
-mine.save("docs/design/cardproduit/apercu-ecran-v5-25-10.png")
+page.save("docs/design/cardproduit/comparaison-v6-25-10.png")
+mine.save("docs/design/cardproduit/apercu-ecran-v6-25-10.png")
 print("ok", page.size)
