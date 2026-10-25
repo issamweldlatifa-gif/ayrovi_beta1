@@ -27,7 +27,8 @@ import { AppText, Button, Card, KeyValue } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { useI18n } from '@/i18n';
-import { ApiError, isApiError, userMessage } from '@/api/errors';
+import { ApiError } from '@/api/errors';
+import { addErrorMessage } from '@/features/aywebs/addError';
 import { fetchFavorites } from '@/api/account';
 import { StoreCartSheet, StoreFavoriteSheet } from '@/features/aywebs/StoreSheets';
 import { canonicalSourceUrl, isPageSaved } from '@/features/aywebs/storeShopping';
@@ -348,7 +349,7 @@ export default function AyWebsBrowserScreen() {
   const fail = useCallback((error: unknown) => {
     endWaiting('failed');
     setBusy(false);
-    setNote(isApiError(error) ? userMessage(error)[locale] : t('aywebs.captureFailed'));
+    setNote(addErrorMessage(error, locale, t));
   }, [endWaiting, locale, t]);
 
   /** «اقرا هذه الصفحة»: قراءة + قرار الخادم، بلا أي إضافة. */
@@ -411,7 +412,7 @@ export default function AyWebsBrowserScreen() {
       if (controller.signal.aborted) return;
       /* Pas de feuille sans prix, devise ou devis vérifiés : la décision NOMME les champs manquants. */
       if (decision.kind === 'refused') {
-        setNote(decision.error.code === 'CAPTURE_INCOMPLETE' ? userMessage(decision.error)[locale] : t('aywebs.captureFailed'));
+        setNote(addErrorMessage(decision.error, locale, t));
         endWaiting('failed');
         return;
       }

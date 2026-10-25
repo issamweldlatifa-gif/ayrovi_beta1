@@ -50,6 +50,7 @@ import {
   shouldVerifyWebviewCaptureInBackground,
   validateAyWebsCapturedPage,
   webviewCaptureDivergence,
+  ayWebsCaptureRejectionErrorCode,
 } from './webviewCapture';
 import type { AyWebsCaptureOutcome, AyWebsCapturedVariantGroup } from '../../shared/aywebsCapture';
 import { ayWebsSelectionEvidence } from './variantEvidence';
@@ -428,6 +429,19 @@ export async function resolveAyWebsProduct(
              au repos 10 min, et les vrais produits répondaient « refuse temporairement ». */
           if (!(error instanceof AyWebsCaptureError)) recordProbeFailure(url.toString());
           if (error instanceof AyWebsCaptureError) {
+            /* Boutique « catalogue » : aucune lecture serveur n'existe pour elle
+               (CatalogueStoreAdapter.resolveProduct refuse toujours). Quand le
+               client a joint une capture REFUSÉE, le vrai motif de refus est la
+               seule réponse honnête — un générique PRODUCT_PAGE_REQUIRED ferait
+               croire à tort que l'URL n'est pas une fiche, alors que le client se
+               trouve déjà dessus. On nomme la cause (prix non corroboré, capture
+               périmée, rupture…), avec le code métier correspondant. */
+            if (error.code === 'PRODUCT_PAGE_REQUIRED' && captureProvided && !captureUsed) {
+              const preciseCode = ayWebsCaptureRejectionErrorCode(captureValidation?.rejection);
+              throw new AyWebsDomainError(preciseCode, {
+                technicalMessage: `capture_rejected:${captureValidation?.rejection || 'UNKNOWN'} (${adapter.id})`,
+              });
+            }
             throw new AyWebsDomainError(error.code === 'PRODUCT_PAGE_REQUIRED' ? 'PRODUCT_PAGE_REQUIRED' : 'STORE_MISMATCH', {
               userMessage: error.message,
               technicalMessage: `${adapter.id}: ${error.message}`,

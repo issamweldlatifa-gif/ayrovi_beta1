@@ -18,7 +18,7 @@ import { SubScreen } from '@/design/subScreen';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
-import { isApiError, userMessage } from '@/api/errors';
+import { addErrorMessage } from '@/features/aywebs/addError';
 import {
   createAyWebsStoreRequest, fetchAyWebsStoreRequests, type AyWebsStoreRequest,
 } from '@/api/aywebs';
@@ -63,7 +63,7 @@ export default function AyWebsStoreRequestScreen() {
       history.refetch();
     },
     onError: (caught) => {
-      setError(isApiError(caught) ? userMessage(caught)[locale] : t('aywebs.captureFailed'));
+      setError(addErrorMessage(caught, locale, t));
     },
   });
 

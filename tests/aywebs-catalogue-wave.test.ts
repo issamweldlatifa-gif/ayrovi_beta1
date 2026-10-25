@@ -326,7 +326,7 @@ describe('vague 1 — lecture : corroboration obligatoire', () => {
     expect(result.notes.some((note) => note.startsWith('variant_group:Taille='))).toBe(true);
   });
 
-  it('un groupe sans valeur affichée n’est pas publié (rien à vérifier)', () => {
+  it('un groupe de choix reste publié sans valeur cochée, mais ne prouve aucune combinaison', () => {
     const result = validateAyWebsCapturedPage(capture({
       variantGroups: [
         { name: 'Taille', values: ['S', 'M', 'L'], selected: [] },
@@ -337,10 +337,17 @@ describe('vague 1 — lecture : corroboration obligatoire', () => {
     }), PAGE_URL, { requireCorroboration: true });
 
     expect(result.ok).toBe(true);
-    /* « Taille » n'affiche aucune valeur courante ⇒ non publiée ; « Matière » a
-       une valeur unique ⇒ publiée ; « Tri » et « Quantité » ne sont pas des
-       variantes ⇒ jamais publiées, même choisies. */
-    expect(result.variantGroups.map((group) => group.name)).toEqual(['Matière']);
+    /* 25/10/2026 : « Taille » DOIT rester publiée pour que la feuille mobile
+       propose les tailles, même quand la page ne coche rien (picker Zalando en
+       input checkbox dans un label). En revanche selected reste vide : aucune
+       combinaison courante n'est affirmée. « Matière » (valeur unique) est
+       conservée ; « Tri » et « Quantité » ne sont pas des variantes ⇒ jamais
+       publiés, même choisis. */
+    expect(result.variantGroups.map((group) => group.name)).toEqual(['Taille', 'Matière']);
+    const taille = result.variantGroups.find((group) => group.name === 'Taille');
+    expect(taille?.values).toEqual(['S', 'M', 'L']);
+    expect(taille?.selected).toEqual([]);
+    expect(result.selectedVariantTexts).toEqual([]);
   });
 
   it('un groupe malformé n’invalide jamais un prix corroboré', () => {

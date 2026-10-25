@@ -25,9 +25,9 @@ import { AppText, Button, KeyValue } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { AppImage } from '@/design/appImage';
 import { AppSheet } from '@/design/sheet/AppSheet';
-import { useI18n, type Translate } from '@/i18n';
+import { useI18n } from '@/i18n';
 import { mediaUrl } from '@/api/client';
-import { isApiError, userMessage } from '@/api/errors';
+import { addErrorMessage } from '@/features/aywebs/addError';
 import {
   addAyWebsCartItem, fetchAyWebsVariants, resolveAyWebsProductWithCapture,
   type AyWebsAddBlockCode, type AyWebsCartItem, type AyWebsResolvedProduct,
@@ -633,28 +633,6 @@ const stateOf = (value: string | undefined): AvailabilityState => {
   if (value === 'AVAILABLE' || value === 'LOW_STOCK' || value === 'OUT_OF_STOCK') return value;
   return 'UNKNOWN';
 };
-
-/**
- * رسالة الخطأ كما يفهمها المستعمل: كود الخادم يُترجم إلى جملة واحدة واضحة،
- * موش «La demande n'a pas abouti» على كل رفض (23/10/2026).
- */
-function addErrorMessage(caught: unknown, locale: 'fr' | 'ar', t: Translate): string {
-  if (isApiError(caught)) {
-    switch (caught.code) {
-      case 'STOCK_UNKNOWN': return t('aywebs.selectionUnverified');
-      case 'OUT_OF_STOCK':
-      case 'VARIANT_UNAVAILABLE': return t('aywebs.block.VARIANT_UNAVAILABLE');
-      case 'VARIANT_UNKNOWN': return t('aywebs.block.VARIANT_UNKNOWN');
-      case 'VARIANT_REQUIRED': return t('aywebs.block.VARIANT_REQUIRED');
-      case 'PRICE_UNAVAILABLE': return t('aywebs.block.PRICE_UNAVAILABLE');
-      case 'PRICE_CHANGED': return t('aywebs.priceChanged');
-      case 'CAPTURE_INCOMPLETE': return t('aywebs.captureFailed');
-      default: break;
-    }
-    return userMessage(caught)[locale];
-  }
-  return t('aywebs.captureFailed');
-}
 
 /** Disponibilité d'une valeur dans la table des combinaisons du serveur (si elle existe). */
 function variantAvailability(
