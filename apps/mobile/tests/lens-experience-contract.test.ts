@@ -269,3 +269,14 @@ describe('Z Lens — option 3 voulue par le client (16/10/2026)', () => {
     expect(lens).toContain('selectionLimit: GALLERY_LIMIT');
   });
 });
+
+describe('Z Lens — clavier (modes texte et lien)', () => {
+  it("l'expérience caméra enveloppe l'écran d'un KeyboardAvoidingView", () => {
+    expect(lens).toContain('KeyboardAvoidingView');
+    expect(lens).toContain("testID=\"lens-camera-experience\"");
+  });
+
+  it("le comportement suit la règle de conception (padding iOS, hauteur Android)", () => {
+    expect(lens).toContain("behavior={Platform.OS === 'ios' ? 'padding' : 'height'}");
+  });
+});

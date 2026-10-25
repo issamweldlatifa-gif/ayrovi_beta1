@@ -9,6 +9,7 @@ import { LENS_LIVE_SEARCH_COUNTRIES, SerpApiVisualError, serpApiVisualReady, ser
 import { recognizeImage } from './services/lensEngine';
 import { refreshLiveStock } from './services/lensLiveStock';
 import { admitLensProductCandidates } from './services/productLinkAdmission';
+import { detectProductInImage, isReliableAutoBox } from './services/productDetect';
 import { estimateWithDb } from './services/currency';
 import { extractProductFromUrl, ExtractionFailedError, InvalidUrlError, sanitizeProductUrl } from './services/product';
 import { markAyrovixChosen, recordAyrovixEvent } from './events';
@@ -615,6 +616,46 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
         code: 'DETECTION_FAILED',
         error: 'Aucun produit n’a pu être repéré sur cette image.',
       });
+    }
+  });
+
+  /**
+   * Cadre automatique du produit (vision classique déterministe, sans clef ni
+   * tiers). Renvoie un rectangle normalisé 0..1 uniquement quand UN produit se
+   * dégage nettement ; sinon `box = null` et l'application garde le cadre manuel.
+   * Pas de SerpApi ici : quelques millisecondes de traitement sharp sur une
+   * petite image, donc un coût marginal par rapport à la recherche visuelle.
+   */
+  router.post('/detect-box', upload.single('image'), async (req: Request, res: Response) => {
+    const file = req.file;
+    if (!file?.buffer?.length) {
+      return res.status(400).json({ success: false, code: 'IMAGE_REQUIRED', error: 'Veuillez envoyer une image.' });
+    }
+    if (!ALLOWED_MIME.has(file.mimetype)) {
+      return res.status(415).json({ success: false, code: 'UNSUPPORTED_IMAGE', error: 'Format non supporté — JPEG, PNG ou WebP uniquement.' });
+    }
+    try {
+      const normalized = await normalizeUploadedImage(file.buffer, file.mimetype);
+      const detection = await detectProductInImage(normalized.buffer);
+      res.setHeader('Cache-Control', 'no-store');
+      return res.json({
+        success: true,
+        data: {
+          box: isReliableAutoBox(detection) ? detection.box : null,
+          confidence: detection.confidence,
+          coverage: detection.coverage,
+          reason: detection.reason,
+          width: normalized.width,
+          height: normalized.height,
+        },
+      });
+    } catch (error: any) {
+      if (error instanceof InvalidImageError || error?.code === 'INVALID_IMAGE') {
+        return res.status(415).json({ success: false, code: 'INVALID_IMAGE', error: error.message });
+      }
+      console.warn('[AYROVIX detect-box]', error?.message || 'unknown');
+      // Une détection qui échoue ne doit jamais bloquer la recherche : cadre manuel.
+      return res.json({ success: true, data: { box: null, confidence: 0, coverage: 0, reason: 'no_foreground' } });
     }
   });
 

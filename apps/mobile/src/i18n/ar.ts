@@ -577,6 +577,7 @@ export const ar = {
   'lens.live.matchMany': '{count} تشابهات · اضغط باش تفتح الصفحة',
   'lens.live.noMatch': 'ما لقينا حتى تشابه · قرّب للمنتوج',
   'lens.select.frame': 'المنطقة اللي نلوّجوا فيها: اسحب الزوايا ولا حرّك الإطار',
+  'lens.detected.product': 'تم اكتشاف المنتج تلقائيا',
   'lens.select.product': 'اختار {name}',
   'lens.select.photo': 'الصورة {index} من {count}',
   'lens.select.zone': 'المنطقة المختارة',

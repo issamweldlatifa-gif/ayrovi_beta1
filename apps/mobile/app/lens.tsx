@@ -18,7 +18,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
-  Animated, AppState, Keyboard, Linking, Modal, PanResponder, Pressable, ScrollView, StyleSheet, View, useWindowDimensions,
+  Animated, AppState, Keyboard, KeyboardAvoidingView, Linking, Modal, PanResponder, Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions,
   type NativeScrollEvent, type NativeSyntheticEvent, type PanResponderGestureState,
 } from 'react-native';
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
@@ -38,7 +38,8 @@ import { useT, type TranslationKey } from '@/i18n';
 import { ApiError, isApiError } from '@/api/errors';
 import { addExternalFavorite } from '@/api/account';
 import {
-  analyzeBarcode, analyzeCode, analyzeText, analyzeUrl, searchVisualMatches, markChosen, parseCandidate,
+  analyzeBarcode, analyzeCode, analyzeProductBox, analyzeText, analyzeUrl, searchVisualMatches, markChosen, parseCandidate,
+  LENS_BOX_DETECT_TIMEOUT_MS,
   type LensBox, type LensCandidate, type LensDetectedProduct, type LensHistoryItem, type LensIdentification,
   type LensVisualMatch,
   type LensSearchResult,
@@ -62,6 +63,7 @@ import { LensSelectionView, type SelectionCommit } from '@/features/lens/LensSel
 import { LENS_COLORS } from '@/features/lens/lensPalette';
 import { shrinkImage } from '@/features/lens/lensImage';
 import { FULL_BOX, isFullFrame, padBox, selectionKey, toRoi } from '@/features/lens/lensSelection';
+import { selectionFromBoxDetection } from '@/features/lens/lensAutoDetect';
 import { initialMotion, isSteady, nextMotion, shouldDetect, type MotionState } from '@/features/lens/lensLive';
 import {
   clampLensSheet, lensSheetGeometry, lensSheetOwnsPan, snapLensSheet, toggleLensSheet, type LensSheetGeometry,
@@ -502,13 +504,12 @@ export default function LensScreen() {
     void run(job);
   }, [run, showSearch]);
 
-  /** Garde le cadre manuel de la photo, puis lance la recherche SerpApi. */
-  /*
-   * PAS DE DÉTECTION SÉPARÉE (17/10/2026) : SerpApi EST l'entrée de la
-   * recherche visuelle, et la recherche le fait UNE seule fois. Un appel de
-   * détection en plus, c'est une requête SerpApi de plus pour la même photo.
-   * SerpApi ne rend pas de boîtes de toute façon : le cadre reste MANUEL
-   * (toute la photo), et ce sont les résultats qui disent ce qu'on a trouvé.
+  /**
+   * Photo prise/importée : on tente d'abord le CADRAGE AUTOMATIQUE du produit
+   * (vision classique serveur `/detect-box`, sans SerpApi ni clef). S'il isole
+   * un produit unique avec confiance, le cadre l'épouse ; sinon — échec, timeout,
+   * multi-objet, faible contraste — on retombe sur le cadre manuel plein image.
+   * La recherche visuelle reste lancée une seule fois, avec la zone (roi) choisie.
    */
   const preparePhoto = useCallback(async (photoKey: string) => {
     const photo = sessionRef.current?.photos.find((item) => item.key === photoKey);
@@ -519,14 +520,27 @@ export default function LensScreen() {
     }
     requestRef.current?.abort();
     setStage({ kind: 'busy', progress: null, identification: null, cards: [] });
+
+    let auto = selectionFromBoxDetection(null);
+    try {
+      const detection = await analyzeProductBox(
+        { uri: photo.uri, name: 'lens-detect.jpg', type: 'image/jpeg' },
+        { timeoutMs: LENS_BOX_DETECT_TIMEOUT_MS },
+      );
+      auto = selectionFromBoxDetection(detection);
+    } catch {
+      // Réseau/timeout : ne jamais bloquer la recherche — cadre manuel.
+      auto = selectionFromBoxDetection(null);
+    }
+
     const updated = patchPhoto(photoKey, {
       detection: 'done',
-      products: [],
-      selected: -1,
-      selection: FULL_BOX,
+      products: auto.products,
+      selected: auto.selected,
+      selection: auto.selection,
     });
     if (!updated) return;
-    showTip('lens.select.frame');
+    showTip(auto.auto ? 'lens.detected.product' : 'lens.select.frame');
     if (sessionRef.current?.photos[sessionRef.current.index]?.key === photoKey) searchSelection(updated);
   }, [patchPhoto, searchSelection, showTip]);
 
@@ -1181,7 +1195,13 @@ export default function LensScreen() {
     : live.status === 'empty' ? t('lens.live.noMatch')
       : live.status === 'unavailable' ? t('lens.cameraHint') : t('lens.live.scanning');
   return (
-    <View style={[styles.scene, { backgroundColor: LENS_COLORS.black }]} testID="lens-camera-experience">
+    <KeyboardAvoidingView
+      style={[styles.scene, { backgroundColor: LENS_COLORS.black }]}
+      testID="lens-camera-experience"
+      // وضعَا النص/الرابط: اللوحة السفلية مطلقة في الأسفل، فترتفع مع لوحة المفاتيح
+      // بدل أن تختفي خلفها (نفس قاعدة التصميم المعتمدة في AppScreen).
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
       <StatusBar style="light" />
       {showCamera ? (
         <CameraView
@@ -1395,7 +1415,7 @@ export default function LensScreen() {
 
       <LensMenu visible={menuOpen} top={insets.top + 54} onClose={() => setMenuOpen(false)} onPick={onMenuPick} />
       {infoModal}
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

@@ -577,6 +577,7 @@ export const fr = {
   'lens.live.matchMany': '{count} correspondances · touchez pour ouvrir la page',
   'lens.live.noMatch': 'Aucune correspondance · rapprochez-vous du produit',
   'lens.select.frame': 'Zone recherchée : étirez les coins ou déplacez le cadre',
+  'lens.detected.product': 'Produit détecté automatiquement',
   'lens.select.product': 'Choisir {name}',
   'lens.select.photo': 'Photo {index} sur {count}',
   'lens.select.zone': 'Zone choisie',

@@ -607,6 +607,49 @@ export async function searchVisualMatches(
   return parseVisualSearch(data);
 }
 
+/**
+ * Cadre automatique du produit (vision classique serveur, sans clef ni tiers).
+ * Renvoie un rectangle normalisé 0..1 quand un unique produit se dégage, sinon
+ * `box = null` : l'appelant garde alors le cadre manuel. N'échoue jamais en
+ * promesse rejetée pour un motif métier — mais peut lever une erreur réseau/timeout.
+ */
+export const LENS_BOX_DETECT_TIMEOUT_MS = 8_000;
+
+export interface LensBoxDetection {
+  box: LensBox | null;
+  confidence: number;
+  reason: string;
+}
+
+function parseBoxDetection(value: unknown): LensBoxDetection {
+  const fallback: LensBoxDetection = { box: null, confidence: 0, reason: 'no_foreground' };
+  if (!isRecord(value)) return fallback;
+  const confidence = num(value.confidence) ?? 0;
+  const reason = str(value.reason) || fallback.reason;
+  const raw = value.box;
+  if (!isRecord(raw)) return { box: null, confidence, reason };
+  const x = num(raw.x);
+  const y = num(raw.y);
+  const w = num(raw.w);
+  const h = num(raw.h);
+  if (x === null || y === null || w === null || h === null) return { box: null, confidence, reason };
+  const finite = [x, y, w, h].every((n) => Number.isFinite(n));
+  const inside = x >= 0 && y >= 0 && w > 0 && h > 0 && x + w <= 1.0001 && y + h <= 1.0001;
+  if (!finite || !inside) return { box: null, confidence, reason };
+  return { box: { x, y, w, h }, confidence, reason };
+}
+
+export async function analyzeProductBox(
+  file: { uri: string; name: string; type: string },
+  options: { signal?: AbortSignal; timeoutMs?: number } = {},
+): Promise<LensBoxDetection> {
+  const data = await apiUploadFileData<unknown>(`${LENS_BASE}/detect-box`, 'image', file, {
+    timeoutMs: options.timeoutMs ?? LENS_BOX_DETECT_TIMEOUT_MS,
+    signal: options.signal,
+  });
+  return parseBoxDetection(data);
+}
+
 export async function analyzeUrl(
   url: string,
   channel: 'url' | 'qr' = 'url',

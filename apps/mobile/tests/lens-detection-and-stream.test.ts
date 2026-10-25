@@ -14,20 +14,25 @@ const stream = read('../src/api/lensStream.ts');
 
 /**
  * Z Lens — le contrat de la recherche en flux et de la reconnaissance visuelle.
- * Règle du 17/10/2026 : SerpApi est l'ENTRÉE de la reconnaissance visuelle —
- * une photo donne des PAGES ressemblantes, pas des boîtes.
+ * Règle du 25/10/2026 : un cadrage automatique (vision classique serveur, sans
+ * SerpApi) isole d'abord le produit unique ; la recherche en flux reste lancée
+ * une seule fois avec la zone (roi) choisie, et retombe sur le cadre manuel si
+ * la détection n'est pas fiable.
  */
 describe('Z Lens — la reconnaissance visuelle parle, la recherche progresse', () => {
-  it('la photo ne déclenche PAS de détection séparée : une seule requête SerpApi', () => {
-    // La recherche (`analyzeImageStream`) fait le travail de reconnaissance ;
-    // un `/detect` en plus coûterait une requête SerpApi de plus.
+  it('la photo déclenche d’abord le cadrage automatique, puis une seule recherche en flux', () => {
+    // Le cadrage `/detect-box` ne consomme pas SerpApi : la recherche
+    // (`analyzeImageStream`) reste faite une seule fois, avec la roi choisie.
+    expect(lens).toContain('analyzeProductBox(');
+    expect(lens).toContain("name: 'lens-detect.jpg'");
     expect(lens).toContain('analyzeImageStream(');
-    expect(lens).not.toContain("name: 'lens-detect.jpg'");
     expect(lens).not.toContain('DETECTION_FAILED');
   });
 
-  it('le cadre reste manuel : pas de boîtes, pas de cible devinée', () => {
-    expect(lens).toContain('selection: FULL_BOX');
+  it('une détection non fiable retombe sur le cadre manuel plein image', () => {
+    // Le choix auto vs manuel vit dans une fonction pure testée à part ; l'écran
+    // applique son patch et ne devine jamais de boîte lui-même.
+    expect(lens).toContain('selectionFromBoxDetection(');
     expect(lens).not.toContain('biggestProductIndex(');
     expect(lens).toContain('const roi = toRoi(photo.selection)');
   });
