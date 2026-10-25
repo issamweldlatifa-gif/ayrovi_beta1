@@ -243,6 +243,7 @@ SIZES = [("40", "7", "last"), ("41", "8", "out"), ("42", "8.5", "out"), ("42.5",
          ("43", "9.5", None), ("44", "10", "out"), ("44.5", "10.5", "out"), ("45", "11", None),
          ("45.5", "11.5", "out"), ("46", "12", "out"), ("47.5", "13", "out"), ("48.5", "14", "reserved")]
 STATE = {"last": "Dernier article", "reserved": "Réserve"}
+ROW_TOP, ROW_H = 430, 96
 
 def screen_sheet():
     base = screen_top()
@@ -264,10 +265,12 @@ def screen_sheet():
     d.text((204, 348), "SUR L'ÉTIQUETTE (US)", font=lat(24, "SemiBold"), fill=INK)
 
     for i, (fr, us, state) in enumerate(SIZES):
-        top = 430 + i * 104
-        if top > H:
+        # 96px par ligne ⇒ les 12 lignes tiennent entièrement (430 + 12*96 = 1582),
+        # donc le dernier numéro (48.5 / 14) et son état sont visibles.
+        top = ROW_TOP + i * ROW_H
+        if top + ROW_H > H:
             break
-        base_y = top + 8
+        base_y = top + 4
         col = (150, 150, 150) if state == "out" else INK
         d.text((42, base_y), fr, font=lat(44), fill=col)
         d.text((204, base_y), us, font=lat(44), fill=col)
@@ -277,8 +280,8 @@ def screen_sheet():
         if state in STATE:
             label = STATE[state]
             lw = d.textlength(label, font=lat(30))
-            d.text((677 - lw, base_y + 8), label, font=lat(30), fill=VIOLET)
-        d.line([(0, top + 79), (W, top + 79)], fill=HAIR, width=2)
+            d.text((677 - lw, base_y + 4), label, font=lat(30), fill=VIOLET)
+        d.line([(0, top + ROW_H - 1), (W, top + ROW_H - 1)], fill=HAIR, width=2)
     return img
 
 # ── 4. فولسكرين ───────────────────────────────────────────────────────────
