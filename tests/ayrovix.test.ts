@@ -71,7 +71,7 @@ function restoreEnv(name: string, value: string | undefined) {
  * SerpApi — SEULE entrée de la recherche (17/10/2026). Un lien + un prix sur
  * la page marchande : c'est la page qui fait foi, jamais l'image.
  */
-function stubSerpApiVisual(title = 'Sac à main noir Zara — 49.99 EUR', link = 'https://shop.example.com/sac-noir', inStock?: boolean) {
+function stubSerpApiVisual(title = 'Sac à main noir Zara — 49.99 EUR', link = 'https://www.zalando.fr/sac-main-noir-ZA123H4KB.html', inStock?: boolean) {
   const mock = vi.fn(async (url: string) => {
     if (String(url) === 'https://serpapi.com/image') {
       return new Response(JSON.stringify({ image_id: 'image-id-sac' }), { status: 200 });
@@ -594,8 +594,8 @@ describe('AYROVIX Lens', () => {
         return new Response(JSON.stringify({
           visual_matches: [{
             title: 'Nike Air Max 95 Navy',
-            link: 'https://shop.example.com/nike-air-max-95-navy',
-            source: 'Example Shop',
+            link: 'https://www.zalando.fr/nike-air-max-95-navy-NI123B0ABCD.html',
+            source: 'Zalando',
             thumbnail: 'https://encrypted-tbn.example.com/nike-navy.jpg',
             price: { extracted_value: 129.99, currency: '€' },
           }],
@@ -604,27 +604,26 @@ describe('AYROVIX Lens', () => {
       throw new Error(`Unexpected request: ${url}`);
     });
     vi.stubGlobal('fetch', fetchMock);
-    // Le lien SerpApi est ensuite SCRAPÉ (via le vrai parseur) : la fiche n'est
-    // affichée que si la page marchande prouve prix + stock + image.
-    const merchantHtml = `<!doctype html><html><head>
-      <meta property="og:title" content="Nike Air Max 95 Navy">
-      <meta property="og:image" content="https://shop.example.com/media/nike-air-max-95-navy.jpg">
-      <script type="application/ld+json">{"@type":"Product","name":"Nike Air Max 95 Navy","image":"https://shop.example.com/media/nike-air-max-95-navy.jpg","offers":{"price":"129.99","priceCurrency":"EUR","availability":"https://schema.org/InStock"}}</script>
-    </head><body><h1>Nike Air Max 95 Navy</h1></body></html>`;
-    const scrapeSpy = vi.spyOn(scraper, 'scrapeParsedPage').mockImplementation(async (url: string) => {
-      expect(url).toBe('https://shop.example.com/nike-air-max-95-navy');
-      return { data: parseProductPageHtml(merchantHtml, url, 'generic'), verified: true, provider: 'direct', method: 'json_ld', failureCode: null };
-    });
+    // Contrat PRODUCT_LINK_ADMISSION (25/10/2026) : la page marchande n'est PAS
+    // lue pendant l'analyse. Le lien d'un magasin AYWEBS enregistré, preuve
+    // fournisseur à l'appui (titre + image), suffit à admettre la carte. Aucun
+    // scraping : aucun prix de page ne peut se glisser dans la réponse.
+    const scrapeSpy = vi.spyOn(scraper, 'scrapeParsedPage');
     try {
       const response = await request(app)
         .post('/api/ayrovix/analyze-image')
         .attach('image', PNG_1PX, { filename: 'sneakers.png', contentType: 'image/png' });
       expect(response.status).toBe(200);
-      expect(scrapeSpy).toHaveBeenCalled();
+      expect(scrapeSpy).not.toHaveBeenCalled();
+      expect(response.body.data.discovery).toEqual({ mode: 'PRODUCT_LINK_ADMISSION', merchantPagesRead: 0 });
       expect(response.body.data.candidates.length).toBeGreaterThan(0);
       expect(response.body.data.candidates[0].title).toContain('Nike Air Max 95');
-      expect(response.body.data.candidates[0].price).toBe(129.99);
-      expect(response.body.data.candidates[0].sourceRead).toBeTruthy();
+      // L'aperçu de prix SerpApi n'est jamais une preuve d'achat : la carte
+      // sort sans prix, sans jeton signé et avec une disponibilité inconnue.
+      expect(response.body.data.candidates[0].price).toBeNull();
+      expect(response.body.data.candidates[0].priceToken).toBeNull();
+      expect(response.body.data.candidates[0].availability).toBe('unknown');
+      expect(response.body.data.candidates[0].sourceRead).toBeNull();
       expect(response.body.data.excluded.count).toBe(0);
       expect(response.body.data.identification.description).toContain('Nike');
     } finally {
@@ -638,7 +637,7 @@ describe('AYROVIX Lens', () => {
     const previousSerp = process.env.SERPAPI_KEY;
     process.env.SERPAPI_KEY = 'test-serpapi-price';
     stubSerpApiVisual(undefined, undefined, false);
-    const scrapeSpy = vi.spyOn(scraper, 'scrapeParsedPage').mockRejectedValue(new Error('merchant page unavailable'));
+    const scrapeSpy = vi.spyOn(scraper, 'scrapeParsedPage');
     try {
       // Évite de réutiliser la clé du cache visuel d'un scénario précédent :
       // le contenu normalisé doit être distinct, pas seulement le nom de fichier.
@@ -655,13 +654,16 @@ describe('AYROVIX Lens', () => {
       // modèle qui aurait « deviné » le produit.
       expect(response.body.data.identification.description).toContain('Sac à main');
       expect(response.body.data.identification.description).not.toContain('49.99');
-      // Une page marchande illisible ne peut plus effacer la découverte SerpApi,
-      // mais son extrait prix/stock ne devient pas une preuve d'achat.
+      // L'admission PRODUCT n'effectue aucune lecture de page : la découverte
+      // SerpApi reste admise (lien magasin enregistré + preuve titre/image), et
+      // aucun extrait prix/stock ne devient une preuve d'achat.
+      expect(scrapeSpy).not.toHaveBeenCalled();
+      expect(response.body.data.discovery.merchantPagesRead).toBe(0);
       expect(response.body.data.candidates).toHaveLength(1);
       expect(response.body.data.candidates[0].title).not.toContain('49.99');
       expect(response.body.data.candidates[0]).toMatchObject({
         title: expect.stringContaining('Sac à main'),
-        sourceUrl: 'https://shop.example.com/sac-noir',
+        sourceUrl: 'https://www.zalando.fr/sac-main-noir-ZA123H4KB.html',
         description: null,
         price: null,
         currency: null,
@@ -680,29 +682,18 @@ describe('AYROVIX Lens', () => {
     const previousSerp = process.env.SERPAPI_KEY;
     process.env.SERPAPI_KEY = 'test-serpapi-description';
     stubSerpApiVisual(undefined, undefined, false);
-    const scrapeSpy = vi.spyOn(scraper, 'scrapeParsedPage').mockImplementation(async () => ({
-      data: {
-        title: 'Sac à main noir Zara — 49.99 EUR',
-        price: 39.99,
-        currency: 'EUR',
-        priceSource: 'context_regex',
-        description: 'Prix de lancement : 49,99 EUR, offre disponible dès maintenant.',
-        availability: 'in_stock',
-        variants: { sizes: [], colors: [], details: [] },
-        images: ['https://cdn.example.com/sac-noir.jpg'],
-      } as any,
-      verified: true,
-      provider: 'direct',
-      method: 'json_ld',
-      failureCode: null,
-    } as any));
+    // Aucune page marchande n'est lue durant l'analyse : si ce spy était appelé,
+    // le contrat d'admission PRODUCT serait rompu. Le titre SerpApi contient lui
+    // aussi un montant, qui doit être retiré avant toute exposition.
+    const scrapeSpy = vi.spyOn(scraper, 'scrapeParsedPage');
     try {
       const uniquePng = await sharp(PNG_1PX).extend({ bottom: 1, background: '#fff' }).png().toBuffer();
       const response = await request(app)
         .post('/api/ayrovix/analyze-image')
         .attach('image', uniquePng, { filename: 'sac-description.png', contentType: 'image/png' });
       expect(response.status).toBe(200);
-      expect(scrapeSpy).toHaveBeenCalled();
+      expect(scrapeSpy).not.toHaveBeenCalled();
+      expect(response.body.data.discovery).toEqual({ mode: 'PRODUCT_LINK_ADMISSION', merchantPagesRead: 0 });
       expect(response.body.data.identification.description).not.toMatch(/49[.,]99/);
       expect(response.body.data.candidates).toHaveLength(1);
       expect(response.body.data.candidates[0]).toMatchObject({

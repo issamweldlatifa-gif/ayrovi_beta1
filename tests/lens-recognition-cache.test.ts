@@ -109,11 +109,19 @@ describe('route Lens — usage du cache et mesure', () => {
     expect(engine).toContain('cached.matches\n      ? Promise.resolve(cached.matches)');
   });
 
-  it('le prix reste recalculé à chaque requête : il ne sort jamais du cache', () => {
-    const block = routes.split("router.post('/analyze-image'")[1].split("router.post('/analyze-url'")[0];
-    // Le prix est recalculé par `searchCandidates` (estimateWithDb) et par le
-    // lecteur de pages (`reprice`) à chaque requête — jamais lu depuis le cache de reconnaissance.
-    expect(block).toContain('estimateWithDb(db, price, currency)');
-    expect(block).not.toMatch(/writeLensCache\([^)]*priceTnd/);
+  it('le prix ne vient jamais du cache : découverte sans prix, recalcul frais sur demande', () => {
+    const analyzeBlock = routes.split("router.post('/analyze-image'")[1].split("router.post('/analyze-url'")[0];
+    // Contrat PRODUCT_LINK_ADMISSION : l'analyse ne lit aucune page marchande et
+    // ne calcule AUCUN prix — les cartes sortent à prix nul, en attente de
+    // vérification. Le cache de reconnaissance ne transporte donc jamais de prix.
+    expect(analyzeBlock).not.toContain('estimateWithDb');
+    expect(analyzeBlock).toContain("mode: 'PRODUCT_LINK_ADMISSION'");
+    expect(analyzeBlock).not.toMatch(/writeLensCache\([^)]*priceTnd/);
+    // Le prix reste recalculé À CHAQUE demande, mais uniquement depuis
+    // l'endpoint explicite /live-stock (bouton « vérifier le stock »), via le
+    // rappel `reprice` — jamais relu d'un cache de reconnaissance.
+    const liveStockBlock = routes.split("router.post('/live-stock'")[1];
+    expect(liveStockBlock).toContain('estimateWithDb(db, price, currency)');
+    expect(engine).not.toMatch(/writeLensCache\([^)]*priceTnd/);
   });
 });

@@ -1,6 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { parseProductPageHtml } from '../src/scraper/productPageParser';
+import {
+  LENS_ANALYZE_DEADLINE_DEFAULT_MS,
+  LENS_ANALYZE_DEADLINE_MIN_MS,
+  lensAnalyzeDeadlineMs,
+} from '../src/ayrovix/services/lensDeadline';
 
 describe('Jina désactivé — Bright Data est le fournisseur unique de rendu', () => {
   it('le scraper ne contacte plus r.jina.ai', () => {
@@ -39,7 +44,15 @@ describe('Jina désactivé — Bright Data est le fournisseur unique de rendu', 
   });
 
   it('Lens laisse assez de temps au lecteur (défaut ≥ 12 s)', () => {
-    const live = readFileSync('src/ayrovix/services/lensLiveStock.ts', 'utf8');
-    expect(live).toMatch(/DEFAULT_DEADLINE_MS = 15000/);
+    // Contrat réel après centralisation des délais dans lensDeadline.ts :
+    // 45 s par défaut, plancher dur 15 s (bornage 15–90 s) — jamais moins que
+    // les 12 s historiquement exigés. Test COMPORTEMENTAL, plus un grep source.
+    expect(LENS_ANALYZE_DEADLINE_DEFAULT_MS).toBeGreaterThanOrEqual(12_000);
+    expect(LENS_ANALYZE_DEADLINE_MIN_MS).toBeGreaterThanOrEqual(12_000);
+    expect(lensAnalyzeDeadlineMs({})).toBe(LENS_ANALYZE_DEADLINE_DEFAULT_MS);
+    // Une valeur env trop courte remonte au plancher au lieu d'être appliquée.
+    expect(lensAnalyzeDeadlineMs({ AYROVI_LENS_ANALYZE_DEADLINE_MS: '1000' })).toBe(LENS_ANALYZE_DEADLINE_MIN_MS);
+    // Une valeur env absurde ou invalide retombe sur le défaut.
+    expect(lensAnalyzeDeadlineMs({ AYROVI_LENS_ANALYZE_DEADLINE_MS: 'abc' })).toBe(LENS_ANALYZE_DEADLINE_DEFAULT_MS);
   });
 });

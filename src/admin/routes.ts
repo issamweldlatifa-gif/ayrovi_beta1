@@ -488,7 +488,15 @@ function recomputeProductPricing(db: QatafoDatabase, payload: Record<string, any
   const originalPrice = payload.original_price ?? existing?.original_price;
   const currency = payload.currency ?? existing?.currency;
   if (originalPrice === undefined || !currency) return;
-  const breakdown = calculatePrice(db.getPricingRules(), Number(originalPrice), String(currency), {
+  const numericSourcePrice = Number(originalPrice);
+  // Prix source absent, nul ou invalide : la ligne est vendue à un prix MANUEL
+  // (fiche CRM du produit fixe, lignes historiques sans prix). Le moteur de
+  // change ne sait pas la tarifer — on NE touche ni `final_price` ni les
+  // colonnes de décomposition, au lieu de rejeter la fiche. C'est la même
+  // règle que `applyLiveFxRates` et que la mise à jour des règles de tarification.
+  // Un prix source POSITIF qui échoue au calcul reste une vraie erreur (plus bas).
+  if (!Number.isFinite(numericSourcePrice) || numericSourcePrice <= 0) return;
+  const breakdown = calculatePrice(db.getPricingRules(), numericSourcePrice, String(currency), {
     express: false, title: String(payload.name || existing?.name || ''),
   });
   if (!breakdown) throw new Error('Le calcul de prix est impossible avec ces données.');
@@ -2176,12 +2184,21 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
         updated = db.getPricingRules();
         if (Object.keys(payload).length || hasCategories) {
           const products = db.all<any>('SELECT id,original_price,currency,name FROM products');
+          // Les lignes à prix source nul (ex. le produit fixe de la fiche CRM,
+          // vendu à un prix de vente MANUEL en TND) ne sont pas tarifables par
+          // le moteur de change : `calculatePrice` renvoie `null`. On les SAUTE
+          // sans écraser leur `final_price` manuel — exactement la même règle
+          // que `QatafoDatabase.applyLiveFxRates` (compteur `skipped`). Les
+          // tarifer ici renverrait une 500 et bloquerait toute mise à jour des
+          // règles ou des catégories douanières.
+          let skippedProducts = 0;
           for (const product of products) {
             const price = calculatePrice(updated, Number(product.original_price), String(product.currency), { title: String(product.name || '') });
-            if (!price) throw new Error(`Tarification impossible pour le produit ${product.id}.`);
+            if (!price) { skippedProducts += 1; continue; }
             db.run(`UPDATE products SET converted_price=?,customs_fee=?,shipping_fee=?,service_fee=?,final_price=?,updated_at=? WHERE id=?`,
               price.convertedPriceTND, price.customsFeeTND, price.shippingFeeTND, price.serviceFeeTND, price.totalTND, new Date().toISOString(), product.id);
           }
+          if (skippedProducts > 0) console.info(`[Admin pricing] ${skippedProducts} produit(s) à prix source nul conservés sans recalcul.`);
         }
       });
       const desk = { ...db.getPricingRules(), depositPercent: db.getDepositPercent() };

@@ -135,8 +135,10 @@ afterAll(cleanup);
 
   test('attributs : libellé + valeur, dans l’ordre du CRM, vides exclus', async () => {
     const response = await request(app).get(`/api/public/products/${PRODUCT}`);
+    // `section` fait partie du contrat public depuis 6bf7bb5 (sections d'attributs
+    // pilotées par le CRM) : '' quand l'attribut n'est rattaché à aucune section.
     expect(response.body.data.attributes).toEqual([
-      { key: 'test_material', label: 'الخامة', type: 'TEXT', value: 'جلد طبيعي' },
+      { key: 'test_material', label: 'الخامة', type: 'TEXT', section: '', value: 'جلد طبيعي' },
     ]);
   });
 });

@@ -55,10 +55,16 @@ describe('FX live rates service', () => {
       VALUES ('fx_prod_1','Sneakers marque X',50,'EUR',0,0,0,0,0,'2026-09-23T00:00:00.000Z','2026-09-23T00:00:00.000Z')`);
     const outcome = await refreshFxRates(db, { fetcher: async () => sampleApiPayload() });
     expect(outcome.applied).toBe(true);
-    // La base fraîche embarque une fiche démo + la nôtre : tout est re-tarifié.
+    // La base fraîche embarque aussi le produit fixe de la fiche CRM, vendu à
+    // prix MANUEL (prix source nul) : il est COMPTÉ mais sauté, jamais re-tarifié.
     const productCount = db.all<any>('SELECT id FROM products').length;
-    expect(outcome.repriced).toBe(productCount);
-    expect(outcome.repriced).toBeGreaterThanOrEqual(1);
+    expect(outcome.repriced + outcome.skipped).toBe(productCount);
+    expect(outcome.repriced).toBe(1); // seul fx_prod_1 a un prix source convertible
+    expect(outcome.skipped).toBeGreaterThanOrEqual(1);
+    // Le prix de vente manuel de la fiche (89 TND) reste intact après un refresh FX.
+    const manualRow = db.get<any>('SELECT id, final_price FROM products WHERE original_price IS NULL OR original_price <= 0 LIMIT 1');
+    expect(manualRow).toBeTruthy();
+    expect(Number(manualRow.final_price)).toBe(89);
     const after = db.getPricingRules();
     expect(after.version).toBe(before.version + 1);
     expect(after.fxSource).toBe('live');

@@ -40,6 +40,8 @@ export interface FxRefreshOutcome {
   reason?: 'disabled' | 'manual' | 'fresh' | 'invalid' | 'error';
   provider?: string;
   repriced?: number;
+  /** Produits à prix source nul (vente à prix manuel) non re-tarifés. */
+  skipped?: number;
   error?: string;
 }
 
@@ -162,15 +164,16 @@ export async function refreshFxRates(
     newValues: {
       rateEUR: snapshot.rateEUR, rateUSD: snapshot.rateUSD,
       rateGBP: snapshot.rateGBP, rateJPY: snapshot.rateJPY,
-      fxSource: 'live', provider: snapshot.provider, repriced: applied.repriced,
+      fxSource: 'live', provider: snapshot.provider, repriced: applied.repriced, skipped: applied.skipped,
     },
     context: { requestId: null, sessionId: `fx:${actor.name}`.slice(0, 80), userAgent: null, employee: null },
   });
   console.log(
     `[FX Rates] ${snapshot.provider} appliqué (EUR=${snapshot.rateEUR}, USD=${snapshot.rateUSD}, ` +
-    `GBP=${snapshot.rateGBP}, JPY=${snapshot.rateJPY}) — ${applied.repriced} produit(s) re-tarifié(s).`,
+    `GBP=${snapshot.rateGBP}, JPY=${snapshot.rateJPY}) — ${applied.repriced} produit(s) re-tarifié(s), ` +
+    `${applied.skipped} conservé(s) à prix manuel.`,
   );
-  return { applied: true, provider: snapshot.provider, repriced: applied.repriced };
+  return { applied: true, provider: snapshot.provider, repriced: applied.repriced, skipped: applied.skipped };
 }
 
 /**

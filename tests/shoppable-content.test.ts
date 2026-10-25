@@ -49,8 +49,11 @@ describe('règles pures — shoppableContent', () => {
 
   test('la carte publique est une liste blanche et disparaît si le contenu est normal', () => {
     const card = publicLinkedProduct('shoppable', product());
-    expect(Object.keys(card ?? {}).sort()).toEqual(['available', 'currency', 'id', 'image', 'name', 'price', 'stockStatus']);
-    expect(card).toMatchObject({ price: 89, currency: 'TND', available: true });
+    // `brand` fait partie du contrat depuis e6a76e2 (carte article mesurée :
+    // la marque s'affiche au-dessus du titre) — la liste blanche reste EXACTE,
+    // aucune autre clé interne ne doit fuir dans la carte publique.
+    expect(Object.keys(card ?? {}).sort()).toEqual(['available', 'brand', 'currency', 'id', 'image', 'name', 'price', 'stockStatus']);
+    expect(card).toMatchObject({ price: 89, currency: 'TND', available: true, brand: card?.brand });
     expect(publicLinkedProduct('normal', product())).toBeNull();
   });
 
