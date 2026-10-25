@@ -210,6 +210,20 @@ describe('Zalando — le prix vit sur les variantes, pas sur le groupe', () => {
     expect(parsed.availability).toBe('unknown');
   });
 
+  it('la capture DANS LE NAVIGATEUR lit aussi le ProductGroup (prix + titre)', () => {
+    /* Le script injecté chez le client ne trouvait aucun produit : Zalando
+       publie `ProductGroup`, et le lecteur ne cherchait que `Product`. Résultat :
+       la fiche s'ouvrait avec « aucun prix » dans l'application, alors que la
+       page publie 29,90 €. */
+    const result = capture(zalandoPage(''), ZALANDO_URL) as unknown as {
+      title: string;
+      priceCandidates: Array<{ text: string; source: string }>;
+    };
+    expect(result.title).toBe('T-shirt Nike Sportswear Club');
+    expect(result.priceCandidates[0]).toMatchObject({ source: 'json_ld' });
+    expect(result.priceCandidates[0].text).toContain('29.90');
+  });
+
   it('le domaine est reconnu comme Zalando, pas comme une boutique générique', () => {
     expect(detectMerchantStore(ZALANDO_URL)).toBe('zalando');
     expect(detectAyWebsStore(ZALANDO_URL)?.id).toBe('zalando');

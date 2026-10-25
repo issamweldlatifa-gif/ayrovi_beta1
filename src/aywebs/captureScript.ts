@@ -907,7 +907,10 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     var type = node['@type'];
     var types = Object.prototype.toString.call(type) === '[object Array]' ? type : [type];
     for (var t = 0; t < types.length; t++) {
-      if (String(types[t] || '').toLowerCase() === 'product') return node;
+      /* « ProductGroup » est un produit PUBLIÉ (Zalando, SHEIN, TEMU) : le refuser
+         revenait à ne rien lire du tout sur ces fiches. */
+      var nodeType = String(types[t] || '').toLowerCase();
+      if (nodeType === 'product' || nodeType === 'productgroup') return node;
     }
     var keys = ['@graph', 'mainEntity', 'itemListElement', 'item'];
     for (var k = 0; k < keys.length; k++) {
@@ -919,7 +922,30 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     if (!product) return null;
     var offers = product.offers;
     if (Object.prototype.toString.call(offers) === '[object Array]') return offers[0] || null;
-    return offers && typeof offers === 'object' ? offers : null;
+    if (offers && typeof offers === 'object') return offers;
+    /* Groupe de variantes : le prix vit sur les VARIANTES («hasVariant[].offers«).
+       On ne le prend que s'il désigne UN SEUL montant ; plusieurs prix différents
+       ⇒ aucune offre (le serveur refusera la capture, ce qui est le but). */
+    var variants = Object.prototype.toString.call(product.hasVariant) === '[object Array]'
+      ? product.hasVariant : (product.hasVariant ? [product.hasVariant] : []);
+    var collected = [];
+    var amounts = [];
+    for (var v = 0; v < variants.length && v < 120 && collected.length < 30; v++) {
+      var variant = variants[v];
+      if (!variant || typeof variant !== 'object') continue;
+      var nested = Object.prototype.toString.call(variant.offers) === '[object Array]'
+        ? variant.offers : (variant.offers ? [variant.offers] : []);
+      for (var n = 0; n < nested.length && collected.length < 30; n++) {
+        var nestedOffer = nested[n];
+        if (!nestedOffer || typeof nestedOffer !== 'object') continue;
+        if (/aggregateoffer/i.test(String(nestedOffer['@type'] || ''))) continue;
+        collected.push(nestedOffer);
+        var amount = String(nestedOffer.price === undefined || nestedOffer.price === null ? '' : nestedOffer.price);
+        if (amount && amounts.indexOf(amount) < 0) amounts.push(amount);
+      }
+    }
+    if (collected.length && amounts.length === 1) return collected[0];
+    return null;
   }
   function offerField(offer, names) {
     if (!offer) return '';
