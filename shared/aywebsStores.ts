@@ -6,7 +6,7 @@ import type {
 
 export type AyWebsStoreStatus = 'active' | 'beta' | 'planned';
 export type AyWebsBrowserMode = 'embedded' | 'external';
-export type AyWebsAdapterId = 'amazon' | 'shein' | 'temu' | 'aliexpress' | 'catalogue' | 'generic';
+export type AyWebsAdapterId = 'amazon' | 'shein' | 'temu' | 'aliexpress' | 'zalando' | 'catalogue' | 'generic';
 
 /**
  * Comment la page produit d'une boutique est reconnue (23/10/2026).
@@ -244,6 +244,12 @@ interface CaptureStoreRow {
    * registre (capture externe, à la demande, comme avant).
    */
   domains?: readonly string[];
+  /**
+   * Adaptateur dédié de la boutique, quand elle en a un (Zalando, 25/10/2026).
+   * Sans cette valeur, une boutique de la vague 1 est lue par l'adaptateur
+   * « catalogue » et reconnue par son motif d'URL seulement.
+   */
+  adapter?: AyWebsAdapterId;
 }
 
 const CAPTURE_WAVE_1: readonly CaptureStoreRow[] = [
@@ -256,7 +262,7 @@ const CAPTURE_WAVE_1: readonly CaptureStoreRow[] = [
   /* Allemagne / Europe — même règle : motif vérifié ou rien. */
   { id: 'otto', displayName: 'OTTO', country: 'DE', currency: 'EUR', homeUrl: 'https://www.otto.de', categories: ['marketplace'], productUrlPattern: '^/p/[^/]+-\\d+' },
   { id: 'kaufland', displayName: 'Kaufland', country: 'DE', currency: 'EUR', homeUrl: 'https://www.kaufland.de', categories: ['marketplace'], productUrlPattern: '^/product/\\d+' },
-  { id: 'zalando', displayName: 'Zalando', country: 'DE', currency: 'EUR', homeUrl: 'https://www.zalando.com', categories: ['fashion'], productUrlPattern: '^/[^/]*-[A-Z0-9]{6,}(?:-[A-Z0-9]{2,})?\\.html$', domains: ['zalando.de', 'zalando.fr', 'zalando.it', 'zalando.es', 'zalando.nl', 'zalando.be', 'zalando.at'] },
+  { id: 'zalando', displayName: 'Zalando', country: 'DE', currency: 'EUR', homeUrl: 'https://www.zalando.com', categories: ['fashion'], productUrlPattern: '^/[^/]*-[A-Z0-9]{6,}(?:-[A-Z0-9]{2,})?\\.html$', domains: ['zalando.de', 'zalando.fr', 'zalando.it', 'zalando.es', 'zalando.nl', 'zalando.be', 'zalando.at'], adapter: 'zalando' },
   { id: 'mediamarkt', displayName: 'MediaMarkt', country: 'DE', currency: 'EUR', homeUrl: 'https://www.mediamarkt.com', categories: ['electronics'], domains: ['mediamarkt.de', 'mediamarkt.at', 'mediamarkt.es', 'mediamarkt.it', 'mediamarkt.nl', 'mediamarkt.be', 'mediamarkt.pt', 'mediamarkt.fr'] },
   { id: 'asos', displayName: 'ASOS', country: 'GB', currency: 'GBP', homeUrl: 'https://www.asos.com', categories: ['fashion'], productUrlPattern: '^/[^/]*/prd/\\d+' },
   { id: 'h-m', displayName: 'H&M', country: 'SE', currency: 'EUR', homeUrl: 'https://www.hm.com', categories: ['fashion', 'kids'], productUrlPattern: '^/[a-z]{2}_[a-z]{2}/productpage\\.\\d+\\.html' },
@@ -287,7 +293,7 @@ function captureStore(row: CaptureStoreRow): AyWebsStoreDefinition {
     logo: `/stores/${id}.png`,
     enabled: true,
     captureSupported: true,
-    adapter: 'catalogue',
+    adapter: row.adapter || 'catalogue',
     status: 'beta',
     integrationType: 'PARTIALLY_SUPPORTED',
     capabilities: CAPTURE_READ_CAPABILITIES,
@@ -295,7 +301,10 @@ function captureStore(row: CaptureStoreRow): AyWebsStoreDefinition {
     homeUrl,
     searchUrlTemplate: '',
     categories,
-    recognition: productUrlPattern ? 'pattern' : 'capture',
+    /* Une boutique à adaptateur DÉDIÉ est reconnue par son adaptateur (`url`) :
+       le motif déclaré ne sert plus que de second filet. Les autres restent des
+       indices de navigation (`pattern`) ou de simples captures (`capture`). */
+    recognition: row.adapter && row.adapter !== 'catalogue' ? 'url' : productUrlPattern ? 'pattern' : 'capture',
     productUrlPattern,
     popular: false,
     phase: 2,
@@ -316,6 +325,7 @@ export function ayWebsStoreRecognition(store: AyWebsStoreDefinition | null | und
   if (!store) return 'url';
   if (store.recognition) return store.recognition;
   if (store.adapter === 'catalogue') return store.productUrlPattern ? 'pattern' : 'capture';
+  if (store.adapter !== 'generic') return 'url';
   return 'url';
 }
 

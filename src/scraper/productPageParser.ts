@@ -429,6 +429,36 @@ function collectJsonLdOffers(nodes: any[]): any[] {
   return offers;
 }
 
+/**
+ * MARCHANDS À FICHE NATIVE (25/10/2026) — leur JSON-LD n'est pas plat.
+ *
+ * Zalando publie un `ProductGroup` dont le PRIX et le STOCK vivent sur les
+ * variantes (`hasVariant[].offers`), jamais sur le groupe. Ne lire que
+ * `productLd.offers` revenait à déclarer « aucun prix » sur une fiche qui en
+ * affiche un : c'est exactement le symptôme « la capture ne marche pas » sur
+ * cette enseigne. Les trois autres marchands de la liste publient, eux aussi,
+ * des offres sous les variantes.
+ */
+const AYWEBS_NATIVE_STORES = new Set(['shein', 'temu', 'aliexpress', 'zalando']);
+
+/**
+ * Toutes les offres d'un produit, y compris celles de ses VARIANTES.
+ * Descente bornée (profondeur 5, 300 offres) : une page ne peut pas faire
+ * exploser la mémoire avec un JSON-LD récursif.
+ */
+function collectProductOffers(product: any, output: any[] = [], seen = new Set<any>(), depth = 0): any[] {
+  if (!product || typeof product !== 'object' || seen.has(product) || depth > 5 || output.length >= 300) return output;
+  seen.add(product);
+  const offers = Array.isArray(product.offers) ? product.offers : product.offers ? [product.offers] : [];
+  for (const offer of offers.slice(0, 30)) {
+    if (offer && typeof offer === 'object') output.push(offer);
+    if (output.length >= 300) break;
+  }
+  const variants = Array.isArray(product.hasVariant) ? product.hasVariant : product.hasVariant ? [product.hasVariant] : [];
+  for (const variant of variants.slice(0, 120)) collectProductOffers(variant, output, seen, depth + 1);
+  return output;
+}
+
 function saleFromOffers(offers: any[]): { price: number; currency: string } {
   const priced = offers.map((offer) => ({
     price: parsePrice(offer?.price ?? offer?.lowPrice),
@@ -606,6 +636,77 @@ function variantsFromProduct(product: any): ProductVariantDetail[] {
   }).slice(0, 120);
 }
 
+/**
+ * Variantes décrites par le JSON-LD lui-même (`hasVariant[]` : `size`, `color`,
+ * `sku`, `offers`). Zalando, SHEIN et TEMU publient leur sélection ici et non
+ * dans un état embarqué : sans cette lecture, la feuille n'avait ni taille ni
+ * couleur alors que la page les déclare.
+ *
+ * Rien n'est déduit : un attribut absent reste absent, un stock contradictoire
+ * reste `null`, un prix multiple (plusieurs offres différentes) reste `null`.
+ */
+function variantsFromJsonLd(nodes: any[]): ProductVariantDetail[] {
+  const products = nodes.filter(isProductNode);
+  const withVariants = products.filter((node) => Array.isArray(node?.hasVariant));
+  const variants = products.filter((node) => node?.isVariantOf || node?.productGroupID || node?.size || node?.color
+    || node?.additionalProperty || (node?.sku && withVariants.length));
+  const details: ProductVariantDetail[] = [];
+  for (const product of variants.slice(0, 120)) {
+    const attributes: Record<string, string> = {};
+    const readValue = (raw: any): string => cleanLabel(
+      raw && typeof raw === 'object' ? raw.name ?? raw.value ?? raw['@value'] ?? '' : raw,
+    );
+    const directAttributes: Array<[string, unknown]> = [
+      ['size', product.size], ['color', product.color], ['model', product.model],
+      ['style', product.style], ['material', product.material], ['pattern', product.pattern],
+      ['capacity', product.capacity], ['format', product.format], ['width', product.width],
+    ];
+    for (const [key, raw] of directAttributes) {
+      const value = readValue(raw);
+      if (value) attributes[key] = value;
+    }
+    const properties = Array.isArray(product.additionalProperty) ? product.additionalProperty
+      : product.additionalProperty ? [product.additionalProperty] : [];
+    for (const property of properties.slice(0, 20)) {
+      const key = variantAttributeKey(property?.name || property?.propertyID);
+      const value = readValue(property?.value);
+      if (key && value && !['__proto__', 'prototype', 'constructor'].includes(key)) attributes[key] = value;
+    }
+    if (!Object.keys(attributes).length) continue;
+
+    const rawOffers = Array.isArray(product.offers) ? product.offers : product.offers ? [product.offers] : [];
+    const offerRows = rawOffers.flatMap((offer: any) => {
+      if (String(offer?.['@type'] || '').toLowerCase().includes('aggregateoffer')) return [];
+      const availability = String(offer?.availability || '').toLowerCase();
+      const stock = /(?:^|\/)instock$/.test(availability) ? true
+        : /(?:^|\/)outofstock$/.test(availability) ? false : null;
+      return [{ price: parsePrice(offer?.price), stock }];
+    });
+    const prices = [...new Set<number>(offerRows.map((offer) => Number(offer.price)).filter((price) => price > 0))];
+    const stocks = [...new Set<boolean>(
+      offerRows.map((offer) => offer.stock).filter((stock): stock is boolean => stock !== null),
+    )];
+    const label = readValue(product.name) || Object.values(attributes).join(' · ');
+    details.push({
+      id: cleanLabel(product.sku || product.productID || product.mpn) || null,
+      label,
+      size: attributes.size || null,
+      color: attributes.color || null,
+      attributes,
+      available: true,
+      stock: stocks.length === 1 && offerRows.length > 0 && offerRows.every((offer) => offer.stock !== null) ? stocks[0] : null,
+      price: prices.length === 1 ? prices[0] : null,
+    });
+  }
+  const seen = new Set<string>();
+  return details.filter((detail) => {
+    const key = `${JSON.stringify(detail.attributes)}|${detail.price || ''}`.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function collectNamedStrings(root: any, matcher: RegExp, output: string[], depth = 0, seen = new Set<any>()): void {
   if (!root || typeof root !== 'object' || depth > 5 || seen.has(root) || output.length >= 40) return;
   seen.add(root);
@@ -691,6 +792,82 @@ function availabilityFrom(productLd: any, embeddedProduct: any): ParsedProductPa
   if (!schemaStock) return variantStock;
   if (variantStock !== 'unknown' && (variantStock === 'out_of_stock') !== (schemaStock === 'out_of_stock')) return 'unknown';
   return schemaStock; // In particular, keep an explicit limited-stock report.
+}
+
+/**
+ * État de stock ÉCRIT sur la page marchande (« Nur wenige verfügbar »,
+ * « Plus que 2 en stock », « Sold out »), pour les marchands dont la fiche est
+ * lue nativement. Le texte est la donnée ; on ne le traduit pas en promesse :
+ * plusieurs états contradictoires ⇒ `unknown`.
+ */
+/**
+ * Les offres structurées se CONTREDISENT-elles ? (« S en stock, M épuisé »).
+ * Une fiche qui publie deux états différents ne permet aucune promesse : on ne
+ * remplace pas ce doute par le message du DOM, qui ne décrit qu'une variante.
+ */
+function hasConflictingPublishedAvailability(offers: any[]): boolean {
+  const known = new Set<string>();
+  let unreported = false;
+  for (const offer of offers) {
+    const raw = typeof offer?.availability === 'string' ? offer.availability.trim() : '';
+    const match = /^(?:https?:\/\/schema\.org\/)?(InStock|OutOfStock|LimitedAvailability)$/i.exec(raw);
+    if (!match) unreported = true;
+    else known.add(match[1].toLowerCase());
+  }
+  return known.size > 1 || (known.size > 0 && unreported);
+}
+
+const STORE_AVAILABILITY_SELECTORS: Partial<Record<string, readonly string[]>> = {
+  shein: ['[data-testid*="availability" i]', '[data-testid*="stock" i]', '[class*="product-intro__stock" i]', '[class*="stock-status" i]', '[class*="sold-out" i]'],
+  temu: ['[data-testid*="availability" i]', '[data-testid*="sold-out" i]', '[class*="goods-status" i]', '[class*="stock-status" i]', '[class*="sold-out" i]'],
+  aliexpress: ['[data-testid*="availability" i]', '[data-pl*="quantity" i]', '[class*="product-quantity" i]', '[class*="stock-status" i]', '[class*="sold-out" i]'],
+  zalando: ['[data-testid*="availability" i]', '[data-testid*="stock" i]', '[class*="availability-message" i]', '[class*="product-status" i]', '[class*="sold-out" i]'],
+};
+
+function availabilityFromMerchantDom(document: Document, storeType: string): ParsedProductPage['availability'] {
+  const selectors = STORE_AVAILABILITY_SELECTORS[storeType] || [];
+  const statuses = new Set<ParsedProductPage['availability']>();
+  for (const selector of selectors) {
+    let nodes: Element[] = [];
+    try { nodes = Array.from(document.querySelectorAll(selector)).slice(0, 12); } catch { continue; }
+    for (const node of nodes) {
+      let excluded = false;
+      let parent: Element | null = node;
+      for (let depth = 0; parent && depth < 7; depth += 1, parent = parent.parentElement) {
+        const descriptor = `${parent.id || ''} ${typeof parent.className === 'string' ? parent.className : ''}`;
+        if (/sponsor|advert|recommend|related|carousel|cross.?sell|upsell/i.test(descriptor)
+          || parent.hasAttribute('hidden') || parent.getAttribute('aria-hidden') === 'true') {
+          excluded = true;
+          break;
+        }
+      }
+      if (excluded) continue;
+      const raw = [
+        node.getAttribute('data-availability'), node.getAttribute('data-stock-status'),
+        node.getAttribute('aria-label'), node.getAttribute('title'), node.textContent,
+      ].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim().slice(0, 300);
+      if (!raw) continue;
+      if (/outofstock|out\s*of\s*stock|sold\s*out|unavailable|currently\s+unavailable|ausverkauft|nicht\s+verfügbar|rupture|épuis|indisponible/i.test(raw)) statuses.add('out_of_stock');
+      else if (/limitedavailability|limited\s*stock|low\s*stock|only\s+\d+\s+left|nur\s+noch\s+\d+|nur\s+wenige\s+verfügbar|plus\s+que\s*\d+/i.test(raw)) statuses.add('limited');
+      else if (/instock|in\s*stock|available|lieferbar|verfügbar|en\s+stock|disponible/i.test(raw)) statuses.add('in_stock');
+    }
+    if (statuses.size > 1) return 'unknown';
+  }
+  return statuses.size === 1 ? [...statuses][0] : 'unknown';
+}
+
+/** Deux sources d'état de stock : elles doivent être d'accord, sinon `unknown`. */
+function combineMerchantAvailability(
+  structured: ParsedProductPage['availability'],
+  dom: ParsedProductPage['availability'],
+): ParsedProductPage['availability'] {
+  if (structured === 'unknown') return dom;
+  if (dom === 'unknown' || structured === dom) return structured;
+  /* « LimitedAvailability » n'est pas un désaccord avec « InStock » : c'est la
+     même chose, dite plus précisément. On garde la version la plus prudente
+     (jamais une promesse plus large que ce que la page publie). */
+  if ((structured === 'limited' && dom === 'in_stock') || (dom === 'limited' && structured === 'in_stock')) return 'limited';
+  return 'unknown';
 }
 
 function amazonAvailability(
@@ -919,8 +1096,13 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
     const reviewCountFinal = reviewCount ?? normalizeReviewCount(markerReview);
 
     const ldOffers = collectJsonLdOffers(jsonLd);
-    const offers = ldOffers[0] || (Array.isArray(productLd?.offers) ? productLd.offers[0] : productLd?.offers);
-    const ldSale = saleFromOffers(ldOffers);
+    /* Marchands à fiche native : le prix et le stock vivent sur les VARIANTES
+       (`hasVariant[].offers`). On descend l'arbre, et c'est cette liste qui fait
+       foi pour le prix, la devise et la disponibilité. */
+    const nestedOffers = AYWEBS_NATIVE_STORES.has(String(storeType)) ? collectProductOffers(productLd) : [];
+    const offerPool = nestedOffers.length ? nestedOffers : ldOffers;
+    const offers = offerPool[0] || (Array.isArray(productLd?.offers) ? productLd.offers[0] : productLd?.offers);
+    const ldSale = saleFromOffers(offerPool);
     const selectorPrice = storeType === 'amazon'
       ? text('.apexPriceToPay .a-offscreen, #corePriceDisplay_desktop_feature_div .a-price:not(.a-text-price) .a-offscreen, #priceblock_dealprice, #newBuyBoxPrice')
       : storeType === 'shein'
@@ -930,6 +1112,17 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
     // pas voir un prix éclaté en spans `a-price-whole`/`a-price-fraction`.
     const amazonPriceText = amazon?.price.current || '';
     const details = variantsFromProduct(embeddedProduct);
+    /* Variantes déclarées par le JSON-LD (`hasVariant[]`) — la seule source de
+       taille/couleur chez Zalando. Une variante déjà connue n'est pas dupliquée. */
+    if (AYWEBS_NATIVE_STORES.has(String(storeType))) {
+      const seenJsonLd = new Set(details.map((detail) => `${detail.size || ''}|${detail.color || ''}|${detail.price || ''}`));
+      for (const detail of variantsFromJsonLd(jsonLd)) {
+        const key = `${detail.size || ''}|${detail.color || ''}|${detail.price || ''}`;
+        if (seenJsonLd.has(key)) continue;
+        seenJsonLd.add(key);
+        details.push(detail);
+      }
+    }
     if (amazon?.variants.details.length) {
       const seen = new Set(details.map((detail) => `${detail.size || ''}|${detail.color || ''}|${detail.label}`));
       for (const detail of amazon.variants.details) {
@@ -1161,7 +1354,7 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
       originalPrice,
       images,
       colorImages,
-      externalId: String(productLd?.sku || productLd?.productID || embeddedProduct?.id || embeddedProduct?.sku || ''),
+      externalId: String(productLd?.sku || productLd?.productID || productLd?.productGroupID || embeddedProduct?.id || embeddedProduct?.sku || ''),
       /* Phase 2.5 — les champs étendus sortent TELLS QUELS (ou absents). */
       gtin: gtin || undefined,
       sku: skuFinal || undefined,
@@ -1175,7 +1368,12 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
       // Quand la page ne dit RIEN, on garde la valeur calculée ailleurs : `null`
       // n'écrase jamais une information, il signifie « non publié ».
       amazon?.availability
-        || availabilityFrom({ ...productLd, offers: (ldOffers.length ? ldOffers : productLd?.offers) }, embeddedProduct),
+        || combineMerchantAvailability(
+          availabilityFrom({ ...productLd, offers: (offerPool.length ? offerPool : productLd?.offers) }, embeddedProduct),
+          AYWEBS_NATIVE_STORES.has(String(storeType)) && !hasConflictingPublishedAvailability(offerPool)
+            ? availabilityFromMerchantDom(document, String(storeType))
+            : 'unknown',
+        ),
       document.body?.textContent || '',
       storeType,
     ),

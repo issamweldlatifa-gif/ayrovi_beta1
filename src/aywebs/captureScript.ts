@@ -634,7 +634,7 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     if (!element) return true;
     if (isInNavigation(element)) return true;
     var node = element;
-    for (var hops = 0; node && hops < 8; hops++) {
+    for (var hops = 0; node && hops < 10; hops++) {
       if (isStruckNode(node)) return true;
       var descriptor = String((node.id || '') + ' ' + (node.className || '')).toLowerCase();
       if (/sponsored|sp-sponsored|carousel|nav-assist|similar|recommendation|adplace|a-text-price|deal-badge|apex_desktop_right/.test(descriptor)) return true;
@@ -644,12 +644,22 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
          dans la colonne d'achat. Ces prix ne sont pas le prix vendu : sans ce
          filtre, deux montants distincts font abstenir le lecteur sur une fiche saine. */
       if (/attach|protection|warranty|insurance|popover|a-modal|upsell|add-?on|cross-?sell/.test(descriptor)) return true;
+      /* Amazon garde une COPIE responsive du prix dans le DOM (desktop/mobile).
+         Lire le seul style inline ne suffit pas : la copie peut être masquée par
+         une règle CSS ou un media query. On interroge donc le style CALCULÉ —
+         mesuré le 06/10/2026 : deux prix dans la même page, l'un invisible. */
+      if (node.nodeType === 1 && node.getAttribute) {
+        if (node.getAttribute('aria-hidden') === 'true') return true;
+        if (node.hasAttribute && node.hasAttribute('hidden')) return true;
+        var inlineStyle = String(node.getAttribute('style') || '');
+        if (/display:\s*none|visibility:\s*(?:hidden|collapse)/i.test(inlineStyle)) return true;
+        try {
+          var view = document.defaultView;
+          var computed = view && typeof view.getComputedStyle === 'function' ? view.getComputedStyle(node) : null;
+          if (computed && (computed.display === 'none' || computed.visibility === 'hidden' || computed.visibility === 'collapse')) return true;
+        } catch (e) {}
+      }
       node = node.parentNode;
-    }
-    if (element.getAttribute) {
-      if (element.getAttribute('aria-hidden') === 'true') return true;
-      var style = String(element.getAttribute('style') || '');
-      if (/display:\s*none|visibility:\s*hidden/i.test(style)) return true;
     }
     return false;
   }
@@ -697,7 +707,12 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     if (!element) return '';
     var offscreen = '';
     try { var off = element.querySelector('.a-offscreen'); offscreen = text(off && off.textContent); } catch (e) {}
-    if (offscreen && HAS_DIGIT.test(offscreen)) return offscreen;
+    if (offscreen && HAS_DIGIT.test(offscreen)) {
+      /* Le libellé caché peut contenir une remise (« $179.98 with 10 percent
+         savings ») ou deux montants : on n'en garde un que s'il est UNIQUE. */
+      var offscreenAmount = amazonSingleAmount(offscreen) || amazonAccessibilityAmount(offscreen);
+      if (offscreenAmount) return offscreenAmount;
+    }
     var whole = '';
     var fraction = '';
     var symbol = '';
@@ -714,10 +729,48 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
       /* Pas de spans : l'étiquette d'accessibilité d'Amazon porte le prix en
          clair (« $109.00 ») — c'est une LECTURE, pas une reconstruction. */
       var ownText = text(element.textContent);
-      if (ownText && HAS_DIGIT.test(ownText) && CURRENCY_HINT.test(ownText) && ownText.length <= LIMITS.text) return ownText;
+      if (ownText && HAS_DIGIT.test(ownText) && ownText.length <= LIMITS.text) {
+        return amazonSingleAmount(ownText) || amazonAccessibilityAmount(ownText);
+      }
       return '';
     }
     return symbol + whole + (fraction ? '.' + fraction : '');
+  }
+  /** Le PREMIER montant d'un texte, avec sa devise si elle est écrite. */
+  function amazonFindAmount(raw) {
+    return String(raw || '').match(/(?:[$\u20ac\u00a3\u00a5\uffe5]\s*)?\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{1,2})?(?:\s*[$\u20ac\u00a3\u00a5\uffe5]|\s*(?:EUR|USD|GBP|JPY|TND))?/i);
+  }
+  /** UN SEUL montant dans le texte, sinon rien : « $29.99 - $38.99 » n'est pas un prix. */
+  function amazonSingleAmount(value) {
+    var raw = text(value);
+    if (!raw || !CURRENCY_HINT.test(raw)) return '';
+    var match = amazonFindAmount(raw);
+    if (!match || !CURRENCY_HINT.test(match[0])) return '';
+    var rest = raw.slice(0, match.index) + raw.slice(match.index + match[0].length);
+    if (HAS_DIGIT.test(rest)) return '';
+    return text(match[0]);
+  }
+  /**
+   * Étiquette d'accessibilité Amazon : elle porte le prix en clair, et le mobile
+   * y ajoute parfois un pourcentage (« $179.98 with 10 percent savings »).
+   *
+   * Règle : SEUL un suffixe de remise explicite est retiré. Tout autre nombre
+   * dans l'étiquette la fait REJETER — une étiquette ambiguë n'est jamais un
+   * prix. Et une étiquette ne publie jamais un prix toute seule : elle ne sert
+   * qu'à corroborer le prix visible de la zone d'achat.
+   */
+  function amazonAccessibilityAmount(value) {
+    var raw = text(value);
+    if (!raw || !CURRENCY_HINT.test(raw)) return '';
+    var plain = amazonSingleAmount(raw);
+    if (plain) return plain;
+    var match = amazonFindAmount(raw);
+    if (!match || !CURRENCY_HINT.test(match[0])) return '';
+    var prefix = raw.slice(0, match.index);
+    var suffix = raw.slice(match.index + match[0].length);
+    if (HAS_DIGIT.test(prefix)) return '';
+    if (!/^\s*(?:with\s+)?\d{1,3}(?:[.,]\d+)?\s*(?:%|percent)\s+(?:savings|off|discount)\s*$/i.test(suffix)) return '';
+    return text(match[0]);
   }
   /** Texte manifestement inutilisable : le MÊME motif écrit deux fois
       (« $6.99$6.99 », mesuré sur mobile le 06/10/2026). Le verdict complet
@@ -1034,7 +1087,12 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
           var el = nodes[n];
           if (amazonNodes.indexOf(el) >= 0) continue;
           if (amazonBlocked(el)) continue;
-          var value = amazonPriceText(el);
+          var elSource = amazonReadingSource(el);
+          /* L'étiquette d'accessibilité est une CHAÎNE écrite par la page : elle
+             peut contenir une remise. Elle n'est jamais publiée seule — sans un
+             prix VISIBLE dans la zone d'achat, il n'y a pas de prix (une étiquette
+             peut décrire un prix absent de l'écran). */
+          var value = elSource === 'a11y_label' ? amazonAccessibilityAmount(text(el.textContent)) : amazonPriceText(el);
           if (!value || !HAS_DIGIT.test(value) || !CURRENCY_HINT.test(value)) continue;
           if (value.length > LIMITS.text) continue;
           /* Le montant lu par le span peut encore être un texte collé
@@ -1078,7 +1136,14 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
       if (buyboxMismatch) diag('price:buybox_asin_mismatch');
       /* Plusieurs montants distincts dans la zone d'achat : abstention, motif explicite pour le serveur. */
       if (amazonDistinctCount > 1) diag('price:ambiguous_buybox:' + amazonDistinctCount);
-      if (amazonDistinctCount === 1 && !buyboxMismatch) {
+      var visibleReading = false;
+      for (var vr = 0; vr < amazonSources.length; vr++) {
+        if (amazonSources[vr] !== 'a11y_label') { visibleReading = true; break; }
+      }
+      if (!visibleReading) {
+        if (amazonReadings.length) diag('price:a11y_label_alone');
+      }
+      if (amazonDistinctCount === 1 && !buyboxMismatch && visibleReading) {
         var publishedFamilies = {};
         for (var fr = 0; fr < amazonReadings.length && out.priceCandidates.length < LIMITS.priceCandidates; fr++) {
           var family = amazonSources[fr] || 'dom';

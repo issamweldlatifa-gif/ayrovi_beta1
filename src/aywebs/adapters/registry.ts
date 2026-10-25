@@ -7,6 +7,7 @@ import { AmazonAdapter } from './amazon';
 import { SheinAdapter } from './shein';
 import { TemuAdapter } from './temu';
 import { AliExpressAdapter } from './aliexpress';
+import { ZalandoAdapter } from './zalando';
 import { CatalogueStoreAdapter } from './catalogue';
 
 /**
@@ -32,6 +33,7 @@ const ADAPTER_FACTORIES: Record<AyWebsAdapterId, AdapterFactory> = {
   shein: (scraper) => new SheinAdapter(scraper),
   temu: (scraper) => new TemuAdapter(scraper),
   aliexpress: (scraper) => new AliExpressAdapter(scraper),
+  zalando: (scraper) => new ZalandoAdapter(scraper),
   catalogue: (scraper, store) => new CatalogueStoreAdapter(scraper, store),
   generic: (scraper) => new GenericStoreAdapter(scraper),
 };
@@ -65,6 +67,14 @@ export const AYWEBS_ADAPTER_DESCRIPTORS: readonly AyWebsAdapterDescriptor[] = [
     reads: ['product_page_url', 'title', 'price', 'currency', 'images', 'variants', 'availability'],
     implemented: true,
     pendingIntegration: 'Variantes parfois incomplètes : achat en revue humaine.',
+  },
+  {
+    id: 'zalando', label: 'Zalando', integrationType: 'PARTIALLY_SUPPORTED', purchaseMode: 'MANUAL_REVIEW',
+    reads: ['product_page_url', 'title', 'price', 'currency', 'images', 'variants', 'availability'],
+    implemented: true,
+    /* Zalando publie son prix et son stock sur les VARIANTES (`hasVariant[].offers`) ;
+       la lecture descend dans ces offres. Aucun achat automatisé. */
+    pendingIntegration: 'Prix et stock lus dans les offres des variantes ; achat marchand en revue humaine.',
   },
   {
     id: 'catalogue', label: 'Catalogue (lecture dans le navigateur du client)', integrationType: 'PARTIALLY_SUPPORTED', purchaseMode: 'MANUAL_REVIEW',
