@@ -124,6 +124,23 @@ export default function ProductScreen() {
   const product = byId.data ?? (products.data ?? []).find((entry) => entry.id === id) ?? null;
 
   /**
+   * ⚠️ RÈGLE DES HOOKS — TOUS LES HOOKS AVANT LE PREMIER `return`.
+   *
+   * `Partager` utilisait `useCallback` APRÈS les retours « chargement / erreur /
+   * vide ». Au premier rendu (pas encore de produit) le composant appelait 40
+   * hooks, au rendu suivant 41 : React lève « Rendered more hooks than during
+   * the previous render » et, en production, FERME l'application. C'est le
+   * plantage constaté en ouvrant une carte produit. Le partage ne dépend donc
+   * plus que de valeurs sûres, calculées ici.
+   */
+  const shareName = product?.name ?? '';
+  const sharePrice = product && product.finalPrice > 0 ? `${product.finalPrice.toFixed(2)} TND` : '';
+  const share = useCallback(() => {
+    if (!shareName) return;
+    Share.share({ message: sharePrice ? `${shareName} — ${sharePrice}` : shareName }).catch(() => null);
+  }, [shareName, sharePrice]);
+
+  /**
    * « زيد للسلّة » — `/api/cart/catalog` يستعمل `final_price` المنشور ⇒ سعر واحد.
    */
   const addToCart = useMutation({
@@ -219,10 +236,6 @@ export default function ProductScreen() {
   const returnLines = policy.data?.returnsDays
     ? [t('product.returnsWindow', { days: policy.data.returnsDays })]
     : [];
-
-  const share = useCallback(() => {
-    Share.share({ message: hasPrice ? `${product.name} — ${priceLabel}` : product.name }).catch(() => null);
-  }, [hasPrice, priceLabel, product.name]);
 
   const pickColor = (tile: ColorTile) => {
     setColor(tile.color);
