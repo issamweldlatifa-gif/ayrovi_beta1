@@ -35,6 +35,7 @@ import { bridgeAyWebsCartToAyrovi, fetchAyWebsCart } from '@/api/aywebs';
 import { pendingAyWebsLines, pendingAyWebsUnits } from '@/features/aywebs/storeShopping';
 import { useSessionId } from '@/session/session';
 import { earliestCartDeadline, formatCartCountdown, remainingMs, serverClockOffset } from '@/features/lens/lensCartStatus';
+import { formatAmount, formatMoney } from '@/format/money';
 
 const MAX_QUANTITY = 99;
 
@@ -186,11 +187,11 @@ export default function AyroviCartScreen() {
         />
         <KeyValue
           label={t('cart.lineTotal')}
-          value={line.lineTotalTND != null ? `${line.lineTotalTND.toFixed(2)} TND` : t('cart.noLineTotal')}
+          value={line.lineTotalTND != null ? `${formatMoney(line.lineTotalTND)}` : t('cart.noLineTotal')}
         />
         {line.discountTND ? (
           <AppText variant="caption" color={theme.colors.muted}>
-            {t('cart.promo', { percent: line.promoLabel, amount: line.discountTND.toFixed(2) })}
+            {t('cart.promo', { percent: line.promoLabel, amount: formatAmount(line.discountTND) })}
           </AppText>
         ) : null}
         <KeyValue label={t('cart.availability')} value={availabilityLabel(line.availability)} />
@@ -272,9 +273,9 @@ export default function AyroviCartScreen() {
         ) : (
           <>
             <KeyValue label={t('cart.units')} value={String(cart.units)} />
-            <KeyValue label={t('cart.subtotalProducts')} value={`${cart.productSubtotalTND.toFixed(2)} TND`} />
-            <KeyValue label={t('cart.delivery')} value={`${cart.deliveryTND.toFixed(2)} TND`} />
-            <KeyValue label={t('cart.total')} value={`${cart.totalTND.toFixed(2)} TND`} />
+            <KeyValue label={t('cart.subtotalProducts')} value={`${formatMoney(cart.productSubtotalTND)}`} />
+            <KeyValue label={t('cart.delivery')} value={`${formatMoney(cart.deliveryTND)}`} />
+            <KeyValue label={t('cart.total')} value={`${formatMoney(cart.totalTND)}`} />
             {quoteDeadline ? (
               <View
                 style={[
@@ -327,7 +328,7 @@ export default function AyroviCartScreen() {
               key={item.id}
               label={item.title}
               value={item.lineTotalTnd != null
-                ? `${item.quantity} · ${item.lineTotalTnd.toFixed(2)} TND`
+                ? `${item.quantity} · ${formatMoney(item.lineTotalTnd)}`
                 : `${item.quantity} · ${item.unitPrice ?? '?'} ${item.currency}`}
             />
           ))}

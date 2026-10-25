@@ -5,6 +5,8 @@
  * est vendable ; sinon la valeur est `null` et l'application n'affiche AUCUNE carte.
  * Le prix et le stock sont ceux du catalogue au moment de la requête.
  */
+import { CURRENCY } from '@/format/money';
+
 export interface LinkedProduct {
   id: string;
   name: string;
@@ -37,7 +39,7 @@ export function parseLinkedProduct(value: unknown): LinkedProduct | null {
     brand: str(entry.brand).trim(),
     image: str(entry.image),
     price,
-    currency: str(entry.currency) || 'TND',
+    currency: str(entry.currency) || CURRENCY,
     stockStatus: str(entry.stockStatus) || 'AVAILABLE',
     available: entry.available !== false,
   };

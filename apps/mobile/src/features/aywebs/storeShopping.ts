@@ -13,6 +13,7 @@
 import type { AyWebsCart, AyWebsCartItem } from '@/api/aywebs';
 import type { AyroviCart, AyroviCartLine } from '@/api/cart';
 import type { Favorite } from '@/api/account';
+import { formatMoney } from '@/format/money';
 
 export type StoreCartSegment = 'thisStore' | 'allStores' | 'ayrovi';
 
@@ -46,7 +47,7 @@ function awRow(item: AyWebsCartItem): CartRow {
     quantity: item.quantity,
     variant: item.variantLabel,
     priceText: item.lineTotalTnd !== null && item.lineTotalTnd !== undefined
-      ? `${item.lineTotalTnd.toFixed(2)} TND`
+      ? `${formatMoney(item.lineTotalTnd)}`
       : sourcePriceText(item.unitPrice, item.currency),
   };
 }
@@ -58,7 +59,7 @@ function ayroviRow(line: AyroviCartLine): CartRow {
     quantity: line.quantity,
     variant: line.variant,
     priceText: line.lineTotalTND !== null && line.lineTotalTND !== undefined
-      ? `${line.lineTotalTND.toFixed(2)} TND`
+      ? `${formatMoney(line.lineTotalTND)}`
       : sourcePriceText(line.sourcePrice, line.sourceCurrency),
   };
 }

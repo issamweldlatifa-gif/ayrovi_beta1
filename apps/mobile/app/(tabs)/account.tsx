@@ -23,6 +23,7 @@ import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
 import { fetchOverview, type AccountOverview, type RecentOrder } from '@/api/account';
 import { useSession } from '@/state/session';
+import { formatAmount, formatMoney } from '@/format/money';
 
 /** Ligne compacte d'une commande récente (les détails vivent dans /orders). */
 function OrderRow({ order }: { order: RecentOrder }) {
@@ -35,7 +36,7 @@ function OrderRow({ order }: { order: RecentOrder }) {
         <AppText variant="caption" color={theme.status.info.fg}>{order.status}</AppText>
       </View>
       <AppText variant="caption" color={theme.colors.muted}>
-        {t('orders.items', { count: order.itemCount })} · {t('orders.total')} {order.totalTnd.toFixed(2)} DT
+        {t('orders.items', { count: order.itemCount })} · {t('orders.total')} {formatMoney(order.totalTnd)}
       </AppText>
       {order.createdAt ? (
         <AppText variant="caption" color={theme.colors.muted}>{order.createdAt.slice(0, 10)}</AppText>
@@ -102,7 +103,7 @@ function SignedIn({ overview, pending }: { overview: AccountOverview | null; pen
           <KeyValue label={t('account.stats.favorites')} value={String(overview.counts.favorites)} />
           <KeyValue label={t('account.stats.addresses')} value={String(overview.counts.addresses)} />
           <KeyValue label={t('account.stats.cart')} value={String(overview.counts.cartItems)} />
-          <KeyValue label={t('account.stats.spent')} value={overview.totalSpent.toFixed(2)} />
+          <KeyValue label={t('account.stats.spent')} value={formatAmount(overview.totalSpent)} />
         </Card>
       ) : null}
 

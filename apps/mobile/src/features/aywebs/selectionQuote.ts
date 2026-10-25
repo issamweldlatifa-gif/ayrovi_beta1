@@ -15,6 +15,7 @@
  *     et le bouton dira ce qu'il faut faire au lieu de promettre.
  */
 import type { AyWebsVariantQuote } from '@/api/aywebs';
+import { formatAmount } from '@/format/money';
 
 export type AvailabilityState = 'AVAILABLE' | 'LOW_STOCK' | 'OUT_OF_STOCK' | 'UNKNOWN';
 
@@ -97,7 +98,7 @@ export function selectionQuote(input: SelectionQuoteInput): SelectionQuote {
   if (!known.length) return empty;
 
   const prices = known.filter((entry) => entry.totalTnd != null);
-  const amounts = new Set(prices.map((entry) => `${(entry.totalTnd as number).toFixed(2)}`));
+  const amounts = new Set(prices.map((entry) => formatAmount(entry.totalTnd as number)));
   const unitTnd = amounts.size === 1 ? prices[0]!.totalTnd : null;
 
   const merchant = known.filter((entry) => entry.sourcePrice != null);

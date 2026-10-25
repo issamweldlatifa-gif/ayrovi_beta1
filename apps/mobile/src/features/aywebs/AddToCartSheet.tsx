@@ -43,6 +43,7 @@ import {
 import { choiceGroupKind, choiceGroupKey } from '@/features/aywebs/choiceGroup';
 import { ChoiceField, type ChoiceOption } from '@/features/aywebs/ChoiceField';
 import { quantityLimit, selectionQuote, type AvailabilityState } from '@/features/aywebs/selectionQuote';
+import { formatAmount, formatMoney } from '@/format/money';
 
 export interface AddToCartSheetProps {
   visible: boolean;
@@ -67,12 +68,12 @@ export interface AddToCartSheetProps {
 const moneyText = (price: number | null | undefined, currency: string | null | undefined): string => {
   if (!(typeof price === 'number' && price > 0)) return '';
   const iso = String(currency || '').trim();
-  return iso ? `${price.toFixed(2)} ${iso}` : price.toFixed(2);
+  return iso ? `${formatAmount(price)} ${iso}` : formatAmount(price);
 };
 
 /** Montant en dinars, tel que le serveur l'a calculé. */
 const tndText = (value: number | null | undefined): string =>
-  (typeof value === 'number' && Number.isFinite(value) && value > 0 ? `${value.toFixed(2)} TND` : '');
+  (typeof value === 'number' && Number.isFinite(value) && value > 0 ? `${formatMoney(value)}` : '');
 
 /** Ce que la feuille sait du choix courant, à partir du devis serveur. */
 interface PageQuote {

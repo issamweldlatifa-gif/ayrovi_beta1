@@ -22,6 +22,7 @@ import { fetchOrders } from '@/api/account';
 import { statusText } from '@/api/labels';
 import { mediaUrl } from '@/api/client';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { formatMoney } from '@/format/money';
 
 export default function OrdersScreen() {
   const theme = useTheme();
@@ -100,7 +101,7 @@ export default function OrdersScreen() {
                 </AppText>
               </View>
               <AppText variant="caption" color={theme.colors.muted}>
-                {t('orders.items', { count: order.itemCount })} · {order.totalTnd.toFixed(2)} DT
+                {t('orders.items', { count: order.itemCount })} · {formatMoney(order.totalTnd)}
               </AppText>
               <AppText variant="caption" color={theme.colors.muted}>
                 {t('orders.payment')} : {statusText('payment', order.paymentStatus, t)}

@@ -49,6 +49,7 @@ import {
 } from '@/features/aywebs/captureFlow';
 import { useSessionId } from '@/session/session';
 import { useSession } from '@/state/session';
+import { formatMoney } from '@/format/money';
 
 /** كي الصفحة ما تبعثش شي: مانبقاوش نستنّوا بلا نهاية. */
 
@@ -513,7 +514,7 @@ export default function AyWebsBrowserScreen() {
         <Card title={t('aywebs.serverVerdict')} hint={outcome.product.storeName || undefined}>
           <KeyValue label={t('aywebs.productTitle')} value={outcome.product.title} />
           {outcome.product.ayroviPricing?.totalTnd != null ? (
-            <KeyValue label={t('aywebs.totalTnd')} value={`${outcome.product.ayroviPricing.totalTnd.toFixed(2)} TND`} />
+            <KeyValue label={t('aywebs.totalTnd')} value={`${formatMoney(outcome.product.ayroviPricing.totalTnd)}`} />
           ) : null}
           <KeyValue
             label={t('aywebs.sourcePrice')}

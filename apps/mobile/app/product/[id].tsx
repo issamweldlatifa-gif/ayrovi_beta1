@@ -71,6 +71,13 @@ import {
   type ColorTile,
 } from '@/features/product/fiche';
 import { useSessionId } from '@/session/session';
+import { formatMoney } from '@/format/money';
+
+/**
+ * Une fiche produit qui lève ne doit JAMAIS fermer l'application : expo-router
+ * affiche ce repli à la place de l'écran, et l'utilisateur peut revenir.
+ */
+export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
 
 export default function ProductScreen() {
   const theme = useTheme();
@@ -134,7 +141,7 @@ export default function ProductScreen() {
    * plus que de valeurs sûres, calculées ici.
    */
   const shareName = product?.name ?? '';
-  const sharePrice = product && product.finalPrice > 0 ? `${product.finalPrice.toFixed(2)} TND` : '';
+  const sharePrice = product && product.finalPrice > 0 ? `${formatMoney(product.finalPrice)}` : '';
   const share = useCallback(() => {
     if (!shareName) return;
     Share.share({ message: sharePrice ? `${shareName} — ${sharePrice}` : shareName }).catch(() => null);
@@ -213,7 +220,7 @@ export default function ProductScreen() {
   /** واختيار ناقص = طلب ناقص: الزر ما يخدمش حتى يكمل الاختيار. */
   const canOrder = purchasable && choice.ready;
   const hasPrice = product.finalPrice > 0;
-  const priceLabel = hasPrice ? `${product.finalPrice.toFixed(2)} TND` : '';
+  const priceLabel = hasPrice ? `${formatMoney(product.finalPrice)}` : '';
 
   /**
    * NOMS DES BLOCS — la donnée du CRM en premier.

@@ -28,6 +28,7 @@ import { usePushNotifications } from '@/features/notifications/usePush';
 import { useSessionId } from '@/session/session';
 import { LoadingScreen } from '@/design/LoadingScreen';
 import { NetworkBanner } from '@/design/NetworkBanner';
+import { AppErrorBoundary, RouteErrorBoundary } from '@/design/AppErrorBoundary';
 
 SplashScreen.preventAutoHideAsync().catch(() => {
   // Déjà masqué (rechargement à chaud) : sans effet, ne bloque pas le rendu.
@@ -44,6 +45,12 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+/**
+ * Filet de sécurité d'expo-router : si une route lève pendant son rendu, elle
+ * est remplacée par ce repli au lieu de fermer l'application.
+ */
+export { RouteErrorBoundary as ErrorBoundary };
 
 function Navigation() {
   const theme = useTheme();
@@ -115,7 +122,9 @@ export default function RootLayout() {
             <ThemeProvider>
               <QueryClientProvider client={queryClient}>
                 <SessionProvider>
-                  <Navigation />
+                  <AppErrorBoundary resetKey="root">
+                    <Navigation />
+                  </AppErrorBoundary>
                 </SessionProvider>
               </QueryClientProvider>
             </ThemeProvider>

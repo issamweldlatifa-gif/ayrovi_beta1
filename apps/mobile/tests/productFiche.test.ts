@@ -289,8 +289,10 @@ describe('fiche — contrat d’écran', () => {
     expect(parts).not.toMatch(/theme\.colors\.action\b/);
     expect(parts).not.toMatch(/tone="main"/);
     const screen = src('app/product/[id].tsx');
-    // Le total est celui du serveur, jamais une somme locale.
-    expect(screen).toContain('product.finalPrice.toFixed(2)');
+    // Le total est celui du serveur, jamais une somme locale — et il s'écrit
+    // par le module de format unique (devise comprise), pas par un `toFixed`
+    // recopié dans l'écran.
+    expect(screen).toContain('formatMoney(product.finalPrice)');
     expect(screen).not.toMatch(/finalPrice\s*\+|customsFee\s*\+/);
   });
 

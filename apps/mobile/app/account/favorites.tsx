@@ -17,6 +17,7 @@ import { fetchFavorites, removeFavorite } from '@/api/account';
 import { mediaUrl } from '@/api/client';
 import { userMessage } from '@/api/errors';
 import { SubScreen } from '@/design/subScreen';
+import { formatMoney } from '@/format/money';
 
 export default function FavoritesScreen() {
   const theme = useTheme();
@@ -64,7 +65,7 @@ export default function FavoritesScreen() {
               <AppText variant="label" weight="bold">{favorite.title}</AppText>
               {favorite.priceTnd !== null ? (
                 <AppText variant="caption" color={theme.colors.muted}>
-                  {t('favorites.price')} {favorite.priceTnd.toFixed(2)} DT
+                  {t('favorites.price')} {formatMoney(favorite.priceTnd)}
                 </AppText>
               ) : null}
               {favorite.sourceUrl ? (

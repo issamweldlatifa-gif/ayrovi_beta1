@@ -30,6 +30,7 @@ import {
   type AyWebsBridgeOutcome, type AyWebsCartItem,
 } from '@/api/aywebs';
 import { useSessionId } from '@/session/session';
+import { CURRENCY, formatAmount, formatMoney } from '@/format/money';
 
 const MAX_QUANTITY = 99;
 
@@ -147,7 +148,7 @@ export default function AyWebsCartScreen() {
         value={item.unitPrice != null ? `${item.unitPrice} ${item.currency}`.trim() : t('aywebs.noPrice')}
       />
       {item.lineTotalTnd != null ? (
-        <KeyValue label={t('aywebs.totalTnd')} value={`${item.lineTotalTnd.toFixed(2)} TND`} />
+        <KeyValue label={t('aywebs.totalTnd')} value={`${formatMoney(item.lineTotalTnd)}`} />
       ) : null}
       <KeyValue
         label={t('aywebs.availability')}
@@ -202,7 +203,7 @@ export default function AyWebsCartScreen() {
             {cart.totals.productSubtotalTnd != null ? (
               <KeyValue
                 label={t('aywebs.cartSubtotal')}
-                value={`${cart.totals.productSubtotalTnd.toFixed(2)} ${cart.totals.currency || 'TND'}`}
+                value={`${formatAmount(cart.totals.productSubtotalTnd)} ${cart.totals.currency || CURRENCY}`}
               />
             ) : null}
             <KeyValue label={t('aywebs.cartBlockers')} value={String(cart.totals.blockedItems)} />
@@ -268,7 +269,7 @@ export default function AyWebsCartScreen() {
           {group.subtotalTnd != null ? (
             <KeyValue
               label={t('aywebs.cartSubtotal')}
-              value={`${group.subtotalTnd.toFixed(2)} ${cart.totals.currency || 'TND'}`}
+              value={`${formatAmount(group.subtotalTnd)} ${cart.totals.currency || CURRENCY}`}
             />
           ) : null}
           {group.items.map(lineBlock)}

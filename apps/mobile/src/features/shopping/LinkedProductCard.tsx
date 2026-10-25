@@ -41,6 +41,7 @@ import { useT } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import { ARTICLE_CARD, articleCardSize } from '@/design/articleCard';
 import type { LinkedProduct } from '@/api/linkedProduct';
+import { formatAmount } from '@/format/money';
 
 export interface LinkedProductCardProps {
   product: LinkedProduct;
@@ -69,7 +70,7 @@ export function LinkedProductCard({
     else router.push({ pathname: '/product/[id]', params: { id } });
   };
 
-  const price = `${product.price.toFixed(2)} ${product.currency}`;
+  const price = `${formatAmount(product.price)} ${product.currency}`;
   const brand = (product.brand || '').trim();
   const label = [brand, product.name, price].filter(Boolean).join(' — ');
 

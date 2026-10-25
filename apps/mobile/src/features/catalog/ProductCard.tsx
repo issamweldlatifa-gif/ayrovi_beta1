@@ -23,6 +23,7 @@ import { mediaUrl } from '@/api/client';
 import { normalizeStockStatus, type CatalogProduct } from '@/api/catalog';
 import { addCatalogToCart } from '@/api/cart';
 import { useSessionId } from '@/session/session';
+import { formatMoney } from '@/format/money';
 
 export interface ProductCardProps {
   product: CatalogProduct;
@@ -74,7 +75,7 @@ export function ProductCard({ product, onOpen, style, hasCombinations = false, p
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${product.name}${hasPrice ? ` — ${product.finalPrice.toFixed(2)} TND` : ''}`}
+      accessibilityLabel={`${product.name}${hasPrice ? ` — ${formatMoney(product.finalPrice)}` : ''}`}
       onPress={() => onOpen(product)}
       style={[styles.card, { borderColor: theme.colors.line, borderRadius: theme.radius.card }, style]}
     >
@@ -110,7 +111,7 @@ export function ProductCard({ product, onOpen, style, hasCombinations = false, p
       <View style={styles.footer}>
         {hasPrice ? (
           <AppText variant="label" weight="bold" color={theme.colors.ink}>
-            {product.finalPrice.toFixed(2)} TND
+            {formatMoney(product.finalPrice)}
           </AppText>
         ) : (
           <AppText variant="caption" color={theme.colors.muted}>{t('catalog.noPrice')}</AppText>

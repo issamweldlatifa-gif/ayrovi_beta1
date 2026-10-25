@@ -11,6 +11,7 @@
  */
 import { apiGet } from './client';
 import type { RequestOptions } from './client';
+import { CURRENCY } from '@/format/money';
 
 /**
  * ورقة المنتوج الكبيرة — réponse **واحدة** من `GET /api/public/products/:id`
@@ -234,7 +235,7 @@ function parseProduct(payload: unknown): CatalogProduct | null {
     sourceUrl: text(row.sourceUrl),
     sourcePlatform: text(row.sourcePlatform),
     originalPrice: num(row.originalPrice),
-    currency: text(row.currency) || 'TND',
+    currency: text(row.currency) || CURRENCY,
     convertedPrice: num(row.convertedPrice),
     customsFee: num(row.customsFee),
     shippingFee: num(row.shippingFee),

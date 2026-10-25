@@ -41,11 +41,20 @@ export function LoadingBlock({ labelKey }: { labelKey?: TranslationKey }) {
 }
 
 export function ErrorBlock({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
+  /**
+   * ⚠️ Règle des hooks : les deux hooks sont appelés AVANT le branchement.
+   *
+   * Ils étaient sous le `return` hors-ligne : une erreur qui passait de
+   * « pas de réseau » à « erreur serveur » (ou l'inverse, après un « réessayer »)
+   * changeait le nombre de hooks d'un rendu à l'autre → React lève, et en
+   * production l'application se ferme. Voir `tests/hooks-order.test.ts`.
+   */
+  const theme = useTheme();
+  const { locale } = useI18n();
+
   // Une erreur réseau N'EST PAS une erreur serveur : elle a son propre état,
   // avec son propre libellé, au lieu d'un message générique trompeur.
   if (isOfflineError(error)) return <OfflineBlock onRetry={onRetry} />;
-  const theme = useTheme();
-  const { locale } = useI18n();
   const message = userMessage(error);
   return (
     <View

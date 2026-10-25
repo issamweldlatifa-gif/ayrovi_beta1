@@ -96,7 +96,7 @@ export const fr = {
   'account.stats.favorites': 'Favoris',
   'account.stats.addresses': 'Adresses',
   'account.stats.cart': 'Articles au panier',
-  'account.stats.spent': 'Total dépensé (DT)',
+  'account.stats.spent': 'Total dépensé (TND)',
   'account.recentOrders': 'Dernières commandes',
   'account.allOrders': 'Toutes mes commandes',
   'account.phone.verified': 'Téléphone vérifié',

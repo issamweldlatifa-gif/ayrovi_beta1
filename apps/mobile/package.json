@@ -61,6 +61,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@babel/parser": "^7.29.9",
     "@react-native/jest-preset": "^0.86.3",
     "@testing-library/react-native": "^13.3.3",
     "@types/jest": "^29.5.14",
