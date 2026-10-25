@@ -35,6 +35,19 @@ const ICONS: Record<string, { active: IoniconName; inactive: IoniconName }> = {
   account: { active: 'person', inactive: 'person-outline' },
 };
 
+/**
+ * SDK 58 : `initialRouteName` n'est plus une prop de `<Tabs>` (erreur de type
+ * explicite). Le remplacement officiel est `unstable_settings.anchor` : il dit
+ * au routeur que l'écran D'ACCUEIL (`index` — Hero, sections, Reels, Lens) est
+ * la première route du groupe, donc celle qui s'ouvre au lancement et celle que
+ * `backBehavior="initialRoute"` rejoint. Sans lui, le routeur retombait sur la
+ * première route déclarée (`aywebs`) et l'accueil disparaissait de l'ouverture.
+ * `index` reste masqué de la barre (`href: null`) mais redevient l'ancre.
+ */
+export const unstable_settings = {
+  anchor: 'index',
+};
+
 export default function TabsLayout() {
   const theme = useTheme();
   const t = useT();
@@ -54,9 +67,9 @@ export default function TabsLayout() {
        * Accueil = racine de toutes les barres. Le retour (bouton Android ou
        * flèche) depuis un onglet ramène à l'accueil, pas au dernier onglet
        * visité : sans cela, le retour pouvait ramener à un onglet précédent.
-       * SDK 58 : expo-router n'expose plus `initialRouteName` sur <Tabs> —
-       * la route `index` du groupe est l'initial par convention, et
-       * `backBehavior="initialRoute"` s'y réfère donc toujours.
+       * SDK 58 : expo-router n'expose plus `initialRouteName` sur <Tabs>.
+       * L'ancre est posée par `unstable_settings.anchor = 'index'` ci-dessus ;
+       * `backBehavior="initialRoute"` rejoint alors cette ancre (l'accueil).
        */
       backBehavior="initialRoute"
       screenOptions={({ route }) => ({
