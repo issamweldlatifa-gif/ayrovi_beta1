@@ -241,12 +241,13 @@ export interface ButtonProps {
   busy?: boolean;
   disabled?: boolean;
   /**
-   * `main`  : l'action principale de l'écran (ajout au panier, caisse,
-   *           paiement, connexion) — la SEULE en violet plein.
-   * `solid` : bouton plein encre (défaut) — toutes les autres actions.
-   * `quiet` : bouton secondaire à contour.
+   * `main`     : action principale de marque (violet).
+   * `commerce` : CTA d'achat AYWEBs (jaune, texte encre), uniquement dans
+   *              l'expérience boutique demandée.
+   * `solid`    : bouton plein encre (défaut).
+   * `quiet`    : bouton secondaire à contour.
    */
-  tone?: 'main' | 'solid' | 'quiet';
+  tone?: 'main' | 'commerce' | 'solid' | 'quiet';
   /**
    * Pleine largeur du conteneur (Q8). Sans cette option, un bouton ne se
    * dimensionnait qu'à son texte : deux boutons côte à côte sortaient avec
@@ -265,13 +266,13 @@ export interface ButtonProps {
 export const BUTTON_OUTLINE_WIDTH = 2;
 
 /**
- * Trois rôles — le violet est RARE (charte v4.2.0, repère global ≈ 3 %) :
- *   • `main`  : VIOLET plein (`action`, #571EF6), libellé blanc (7,19:1),
- *     violet plus profond quand on appuie (`actionHover`). Réservé à l'action
- *     principale : ajouter au panier, passer à la caisse, payer, se connecter.
- *   • `solid` : défaut — fond encre (`ink`), libellé `canvas` (noir/blanc,
- *     inversés en mode sombre), `secondary` quand on appuie.
- *   • `quiet` : bouton secondaire — fond `canvas`, contour et libellé `ink`.
+ * Quatre rôles — le violet reste rare hors exception AYWEBs :
+ *   • `main`     : VIOLET plein (`action`, #571EF6), réservé aux actions principales
+ *                  de marque hors expérience boutique AYWEBs.
+ *   • `commerce` : jaune #FFD60A, texte encre, CTA d'achat isolé à AYWEBs.
+ *   • `solid`    : défaut — fond encre (`ink`), libellé `canvas` (noir/blanc,
+ *                  inversés en mode sombre), `secondary` quand on appuie.
+ *   • `quiet`    : bouton secondaire — fond `canvas`, contour et libellé `ink`.
  * Désactivé : même forme, opacité réduite. Occupé : le cercle d'attente prend
  * la place du pictogramme de tête, dans la couleur du libellé.
  */
@@ -280,7 +281,10 @@ export function Button({ label, onPress, busy = false, disabled = false, tone = 
   const blocked = busy || disabled;
   const quiet = tone === 'quiet';
   const main = tone === 'main';
-  const labelColor = quiet ? theme.colors.ink : main ? theme.colors.onAction : theme.colors.canvas;
+  const commerce = tone === 'commerce';
+  const commerceYellow = '#FFD60A';
+  const commercePressed = '#E6C200';
+  const labelColor = commerce ? '#0A0A0A' : quiet ? theme.colors.ink : main ? theme.colors.onAction : theme.colors.canvas;
   // Attente visible DANS le bouton : le cercle en pointillés remplace le
   // pictogramme de tête (ex. le logo Google), jamais posé à côté du libellé.
   const lead = busy
@@ -306,10 +310,12 @@ export function Button({ label, onPress, busy = false, disabled = false, tone = 
           borderWidth: quiet ? BUTTON_OUTLINE_WIDTH : StyleSheet.hairlineWidth,
           backgroundColor: quiet
             ? theme.colors.canvas
-            : main
-              ? (pressed ? theme.colors.actionHover : theme.colors.action)
-              : (pressed ? theme.colors.secondary : theme.colors.ink),
-          borderColor: quiet ? theme.colors.ink : main ? theme.colors.action : theme.colors.ink,
+            : commerce
+              ? (pressed ? commercePressed : commerceYellow)
+              : main
+                ? (pressed ? theme.colors.actionHover : theme.colors.action)
+                : (pressed ? theme.colors.secondary : theme.colors.ink),
+          borderColor: quiet ? theme.colors.ink : commerce ? commerceYellow : main ? theme.colors.action : theme.colors.ink,
           opacity: disabled && !busy ? 0.5 : pressed && quiet ? 0.85 : 1,
         },
       ]}

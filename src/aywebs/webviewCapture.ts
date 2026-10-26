@@ -83,9 +83,9 @@ interface AyWebsSymbolCurrencyRule {
 }
 
 const AYWEBS_SYMBOL_CURRENCIES: readonly AyWebsSymbolCurrencyRule[] = [
-  { iso: 'EUR', pattern: /€/, stores: ['amazon', 'shein', 'temu', 'aliexpress'] },
+  { iso: 'EUR', pattern: /€/, stores: ['amazon', 'shein', 'temu', 'aliexpress', 'primark'] },
   /* E£ (livre égyptienne) porte le même signe : amazon.eg est exclu. */
-  { iso: 'GBP', pattern: /£/, stores: ['amazon', 'shein', 'temu', 'aliexpress'], hostsExcluded: ['amazon.eg'] },
+  { iso: 'GBP', pattern: /£/, stores: ['amazon', 'shein', 'temu', 'aliexpress', 'primark'], hostsExcluded: ['amazon.eg'] },
   /* ¥ = JPY sur amazon.co.jp, mais CNY ailleurs : réservé à Amazon. */
   { iso: 'JPY', pattern: /[¥￥]/, stores: ['amazon'] },
   { iso: 'TND', pattern: /د\.ت/, stores: ['amazon', 'shein', 'temu', 'aliexpress'] },
@@ -93,7 +93,7 @@ const AYWEBS_SYMBOL_CURRENCIES: readonly AyWebsSymbolCurrencyRule[] = [
   {
     iso: 'USD',
     pattern: /\$|US\s?\$/,
-    stores: ['amazon', 'shein', 'temu', 'aliexpress'],
+    stores: ['amazon', 'shein', 'temu', 'aliexpress', 'sephora'],
     hostsExcluded: ['amazon.ca', 'amazon.com.au', 'amazon.sg', 'amazon.com.mx', 'amazon.com.br'],
   },
   /* Devises locales des domaines Amazon non-USD (19/10/2026). Chaque règle ne vaut

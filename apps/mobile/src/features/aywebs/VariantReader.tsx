@@ -36,7 +36,7 @@ interface Pending {
   timer: ReturnType<typeof setTimeout> | null;
 }
 
-export const VariantReader = forwardRef<VariantReaderHandle, object>(function VariantReader(_props, ref) {
+export const VariantReader = forwardRef<VariantReaderHandle, { storeId?: string }>(function VariantReader({ storeId }, ref) {
   const [request, setRequest] = useState<{ url: string; n: number } | null>(null);
   const pending = useRef<Pending | null>(null);
   const webRef = useRef<ReaderHandle>(null);
@@ -76,14 +76,14 @@ export const VariantReader = forwardRef<VariantReaderHandle, object>(function Va
   const onLoadEnd = useCallback(() => {
     loading.current = false;
     if (!pending.current) return;
-    fetchAyWebsCaptureScript()
+    fetchAyWebsCaptureScript({ storeId })
       .then(async (script) => {
         await waitForPageIdle(() => loading.current);
         if (!pending.current) return;
         webRef.current?.injectJavaScript(buildAyWebsCaptureInjection(script));
       })
       .catch((error: unknown) => settle(false, error));
-  }, [settle]);
+  }, [settle, storeId]);
 
   const onMessage = useCallback((event: WebViewMessageEvent) => {
     if (!pending.current) return;

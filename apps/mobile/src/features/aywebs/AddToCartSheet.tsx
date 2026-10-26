@@ -8,11 +8,11 @@
  *   • **الثمن بالدينار يجي من الخادم**، من ثمن الصفحة أو من ثمن القيمة المنشورة
  *     تحت اللون/المقاس. التطبيق ما يحسبش ثمن، وما يخمّنش: قيمة ما نشرتش ثمنها
  *     تبقى بلا ثمن بالدينار، ونكتب «الثمن وقت الإضافة».
- *   • **قراءة واحدة عند الفتح** (كابتشر الصفحة اللي فتحت الورقة) تجيب: ثمن
- *     التركيبة المعروضة، وثمن كل قيمة، وحالة كل قيمة. تبديل اللون/المقاس ما
- *     يعاودش يقرا ولا يرجع للخادم.
- *   • **الضغط على Add** هو القراءة الوحيدة: إذا الكابتشر ما يغطّيش الاختيار،
- *     تتقرا صفحة الاختيار مرّة واحدة (إذا عندها عنوان)، والخادم هو اللي يحكم.
+ *   • القراءة عند الفتح تجيب الكابتشر وثمن التركيبة المعروضة وثمن القيم المنشورة.
+ *     إذا تركيبة اللون/المقاس المختارة ما عندهاش تسعيرة ثابتة، نطلب تسعيرها
+ *     من الخادم انطلاقاً من نفس الكابتشر؛ والردود القديمة ما تبدّلش اختيار أحدث.
+ *   • **الضغط على Add** يثبت الاختيار والتوفّر نهائياً: إذا الكابتشر ما تغطيش
+ *     الاختيار، تتقرا صفحة الاختيار مرّة واحدة (إذا عندها عنوان)، والخادم يحكم.
  *   • ما نكدبوش على المستعمل في التوفّر: قيمة ما نشرتش حالتها تبقى «غير معروفة»،
  *     والزرّ يقول شنوّة لازم يصير — موش «La demande n'a pas abouti».
  */
@@ -42,6 +42,7 @@ import {
 } from '@/features/aywebs/localProduct';
 import { choiceGroupKind, choiceGroupKey } from '@/features/aywebs/choiceGroup';
 import { ChoiceField, type ChoiceOption } from '@/features/aywebs/ChoiceField';
+import { VariantOptionChips } from '@/features/aywebs/VariantOptionChips';
 import { quantityLimit, selectionQuote, type AvailabilityState } from '@/features/aywebs/selectionQuote';
 import { lacksServerQuote, preferServerQuote, quoteReadPlan } from '@/features/aywebs/priceFallback';
 import { ayWebsSameAttribute as sameAttribute } from '@/features/aywebs/attributeKeys';
@@ -77,6 +78,16 @@ const moneyText = (price: number | null | undefined, currency: string | null | u
 /** Montant en dinars, tel que le serveur l'a calculé. */
 const tndText = (value: number | null | undefined): string =>
   (typeof value === 'number' && Number.isFinite(value) && value > 0 ? `${formatMoney(value)}` : '');
+
+/** Stable identity for one exact selection; used to discard stale quote replies. */
+function selectionKeyOf(selection: Record<string, string>): string {
+  return Object.entries(selection)
+    .filter(([, value]) => String(value ?? '').trim())
+    .map(([key, value]) => [key.trim().toLowerCase(), String(value).trim().toLowerCase()] as const)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, value]) => `${key}=${value}`)
+    .join('&');
+}
 
 /** Ce que la feuille sait du choix courant, à partir du devis serveur. */
 interface PageQuote {
@@ -115,6 +126,9 @@ export function AddToCartSheet({
   /** الحقل المفتوح — واحد برك في كل وقت (الورقة تبقى قصيرة). */
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const requestId = useRef('');
+  /** Exact-option quote request; old replies must not overwrite a newer choice. */
+  const selectionQuoteRequest = useRef(0);
+  const lastSelectionQuoteKey = useRef('');
   const alive = useRef(true);
   useEffect(() => () => { alive.current = false; }, []);
 
@@ -143,9 +157,9 @@ export function AddToCartSheet({
   );
 
   /**
-   * النداء الوحيد اللي يجي مع فتح الورقة: كابتشر الصفحة + الاختيار المعروض.
-   * يرجّع ثمن التركيبة المعروضة **بالدينار**، وثمن كل قيمة، وحالة كل قيمة.
-   * ما يعاودش يتسمّى عند تبديل اللون: النتائج تتخزّن هنا.
+   * قراءة الفتح: كابتشر الصفحة + الاختيار المعروض؛ ترجع ثمن التركيبة بالدينار
+   * وثمن القيم وحالتها. إذا تركيبة مختارة لاحقاً ما عندهاش دفي ثابت، effect
+   * منفصل يطلب دفيها من الخادم ويرفض الردود القديمة.
    */
   const loadQuote = useCallback(async (captureToUse: unknown, picked: Record<string, string>) => {
     if (!sessionId || !captureToUse) return;
@@ -273,6 +287,9 @@ export function AddToCartSheet({
     setFetchedGroups(null);
     setServerGroups([]);
     setPageQuote(null);
+    setQuoting(false);
+    lastSelectionQuoteKey.current = '';
+    selectionQuoteRequest.current += 1;
     setOpenGroup(null);
     if (local && capture) void loadQuote(capture, initial);
     // القصد: إعادة الضبط عند **كل فتح** فقط.
@@ -340,6 +357,72 @@ export function AddToCartSheet({
     })),
     selection,
   }), [pageQuote, selection, variantOptions]);
+
+  /**
+   * Changing a color/size/type can select a different merchant SKU and price.
+   * Per-value quotes cannot prove every cross-product combination, so when the
+   * current evidence has no TND quote, ask the server to price THIS exact choice
+   * from the already captured page. No client-side currency/price calculation.
+   */
+  useEffect(() => {
+    const key = selectionKeyOf(selection);
+    if (!visible || !local || !capture || !pageQuote || !sessionId || !groups.length) return;
+    if (!selectionComplete || !key) {
+      setQuoting(false);
+      return;
+    }
+    if (quote.unitTnd != null) {
+      lastSelectionQuoteKey.current = '';
+      setQuoting(false);
+      return;
+    }
+    if (lastSelectionQuoteKey.current === key) return;
+    lastSelectionQuoteKey.current = key;
+    const requestNumber = ++selectionQuoteRequest.current;
+    const picked = { ...selection };
+    setQuoting(true);
+    const timer = setTimeout(() => {
+      void resolveAyWebsProductWithCapture(product.sourceUrl, {
+        sessionId,
+        storeId: product.storeId || undefined,
+        capture,
+        variant: picked,
+        refresh: false,
+      }).then((read) => {
+        if (!alive.current || selectionQuoteRequest.current !== requestNumber) return;
+        const totalTnd = read.product.ayroviPricing?.totalTnd ?? null;
+        if (totalTnd != null && Number.isFinite(totalTnd) && totalTnd > 0) {
+          setPageQuote({
+            selection: picked,
+            unitTnd: totalTnd,
+            availability: stateOf(read.product.availability.state),
+            stock: read.product.availability.quantityHint ?? null,
+            sourcePrice: read.product.price,
+            sourceCurrency: read.product.currency,
+            quotes: read.product.variantQuotes,
+            details: read.product.variantDetails,
+            quoteToken: read.quoteToken,
+          });
+          setDiagnostic('');
+        } else {
+          setDiagnostic(read.priceRejection ? `price:${read.priceRejection}` : 'quote:selection_unavailable');
+        }
+      }).catch((error: unknown) => {
+        if (!alive.current || selectionQuoteRequest.current !== requestNumber) return;
+        const code = error && typeof error === 'object' && 'code' in error
+          ? String((error as { code?: unknown }).code || 'failed')
+          : 'failed';
+        setDiagnostic(`quote:${code}`);
+      }).finally(() => {
+        if (alive.current && selectionQuoteRequest.current === requestNumber) setQuoting(false);
+      });
+    }, 100);
+    return () => {
+      clearTimeout(timer);
+      if (selectionQuoteRequest.current === requestNumber) selectionQuoteRequest.current += 1;
+    };
+  }, [capture, groups.length, local, pageQuote, product.sourceUrl, product.storeId, quote.unitTnd,
+    selection, selectionComplete, sessionId, visible]);
 
   /**
    * سقف الكمية: اللي تنشرو الصفحة هو السقف — منتوج فيه 5 ما نخلّيوش 20.
@@ -444,10 +527,10 @@ export function AddToCartSheet({
   }, [t]);
 
   /**
-   * «Add to Cart» = **القراءة الوحيدة**. المستعمل يبدّل اللون والمقاس كيف ما
-   * يحبّ بلا ما نطلب من الخادم شي؛ الضغط هو اللي يحلّ الاختيار عند الخادم من
-   * نفس الكابتشر، وإذا الكابتشر ما يغطّيش الاختيار تتقرا صفحة الاختيار مرّة
-   * واحدة (كي عندها عنوان). والخادم هو اللي يسجّل السطر ويثبّت الثمن.
+   * «Add to Cart» = التحقق النهائي. تسعير تركيبة بلا دفي موثوق قد يصير قبلها
+   * من نفس الكابتشر؛ الضغط يثبت الاختيار والتوفّر عند الخادم، وإذا الكابتشر ما
+   * تغطيش الاختيار تتقرا صفحة الاختيار مرّة واحدة (كي عندها عنوان). الخادم
+   * يسجّل السطر ويثبت الثمن النهائي.
    */
   const confirm = useCallback(async () => {
     if (!sessionId || !requestId.current || busy) return;
@@ -636,6 +719,27 @@ export function AddToCartSheet({
     <AppSheet
       open={visible}
       onDismiss={onClose}
+      presentation="bottom"
+      footer={added ? undefined : (
+        <View style={styles.stickyFooter}>
+          <View style={styles.stickyPrice}>
+            <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.quantity')}: {quantity}</AppText>
+            <AppText variant="title" weight="bold">
+              {quote.unitTnd != null ? (quantity > 1 ? totalLine : sourceLine) : quoting ? t('aywebs.pricePending') : t('aywebs.priceAtAdd')}
+            </AppText>
+          </View>
+          <Button
+            label={busy ? t('aywebs.adding') : t('aywebs.addToCart')}
+            tone="commerce"
+            leading={<Ionicons name="bag-add-outline" size={20} color="#0A0A0A" />}
+            onPress={confirm}
+            busy={busy}
+            disabled={Boolean(blockedCode) || !sessionId}
+            block
+            testID="aywebs-sheet-add"
+          />
+        </View>
+      )}
       header={(
         <View style={styles.header}>
           <View style={styles.headerSide} />
@@ -646,7 +750,8 @@ export function AddToCartSheet({
         </View>
       )}
     >
-      <View style={styles.productRow}>
+      <View style={[styles.productCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.line, borderRadius: theme.radius.card }]}>
+        <View style={styles.productRow}>
         {imageUri ? (
           <AppImage
             uri={mediaUrl(imageUri)}
@@ -659,11 +764,7 @@ export function AddToCartSheet({
         )}
         <View style={styles.productText}>
           <AppText variant="body" weight="semibold" numberOfLines={3}>{title}</AppText>
-          {added ? (
-            <AppText variant="caption" color={theme.colors.muted}>
-              {added.item.variantLabel || ''}
-            </AppText>
-          ) : (
+          {added ? null : (
             <>
               {/* الثمن اللي يهمّ المستعمل: بالدينار، محسوب في الخادم. */}
               {/* الرقم الكبير بالدينار برك. المبلغ بالدولار/الأورو يمشي سطر صغير
@@ -690,7 +791,21 @@ export function AddToCartSheet({
             </>
           )}
         </View>
+        </View>
       </View>
+
+      {added ? (
+        <View style={[styles.successBanner, { backgroundColor: theme.status.success.soft, borderColor: theme.status.success.border }]}>
+          <View style={[styles.successIcon, { backgroundColor: theme.status.success.fg }]}>
+            <Ionicons name="checkmark" size={22} color="#FFFFFF" />
+          </View>
+          <View style={styles.successCopy}>
+            {added.item.variantLabel ? (
+              <AppText variant="caption" color={theme.colors.muted}>{added.item.variantLabel}</AppText>
+            ) : null}
+          </View>
+        </View>
+      ) : null}
 
       {added ? (
         <>
@@ -710,15 +825,30 @@ export function AddToCartSheet({
           <View style={styles.actions}>
             <Button
               label={t('aywebs.goToCart')}
+              tone="commerce"
+              leading={<Ionicons name="cart-outline" size={19} color="#0A0A0A" />}
+              style={{ flex: 1 }}
               /* Un seul panier visible pour le client : le panier principal. */
               onPress={() => { onClose(); router.push('/cart'); }}
             />
-            <Button label={t('aywebs.continueShopping')} tone="quiet" onPress={onClose} />
+            <Button label={t('aywebs.continueShopping')} tone="quiet" style={{ flex: 1 }} onPress={onClose} />
           </View>
         </>
       ) : (
         <>
-          {fields.map((field) => (
+          {fields.map((field) => field.kind === 'color' || field.kind === 'size' ? (
+            <VariantOptionChips
+              key={field.key}
+              kind={field.kind}
+              label={field.label}
+              value={selection[field.key] ?? ''}
+              options={field.values}
+              onSelect={(value) => {
+                setSelection((current) => ({ ...current, [field.key]: value }));
+                setError('');
+              }}
+            />
+          ) : (
             <ChoiceField
               key={field.key}
               label={field.label}
@@ -793,14 +923,6 @@ export function AddToCartSheet({
             <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.diagnosticLine', { code: diagnostic })}</AppText>
           ) : null}
 
-          <Button
-            label={busy ? t('aywebs.adding') : t('aywebs.addToCart')}
-            onPress={confirm}
-            busy={busy}
-            disabled={Boolean(blockedCode) || !sessionId}
-            block
-            testID="aywebs-sheet-add"
-          />
         </>
       )}
     </AppSheet>
@@ -836,16 +958,22 @@ function variantAvailability(
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingBottom: 8 },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingBottom: 4 },
   headerSide: { width: 44, alignItems: 'flex-end' },
   headerTitle: { flex: 1, textAlign: 'center' },
   close: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  productRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
-  thumb: { width: 92, height: 112 },
+  productCard: { flexDirection: 'row', alignItems: 'center', padding: 12, borderWidth: StyleSheet.hairlineWidth },
+  productRow: { flex: 1, flexDirection: 'row', gap: 12, alignItems: 'center' },
+  thumb: { width: 88, height: 100 },
   productText: { flex: 1, gap: 4 },
+  successBanner: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 16, padding: 14 },
+  successIcon: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
+  successCopy: { flex: 1, gap: 2 },
   quantityRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   stepper: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   stepperButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   totalRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  stickyFooter: { gap: 8 },
+  stickyPrice: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   actions: { flexDirection: 'row', gap: 8, marginTop: 8 },
 });

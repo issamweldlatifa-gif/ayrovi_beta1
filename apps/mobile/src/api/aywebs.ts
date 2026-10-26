@@ -373,28 +373,32 @@ export const AYWEBS_CAPTURE_SCRIPT_PATH = '/api/v1/aywebs/capture/script.js';
 
 /** نفس المهلة متاع `Cache-Control: public, max-age=300` متاع الخادم. */
 const CAPTURE_SCRIPT_TTL_MS = 5 * 60_000;
-let captureScriptCache: { text: string; fetchedAt: number } | null = null;
+const captureScriptCache = new Map<string, { text: string; fetchedAt: number }>();
 
 /**
- * يقرا سكريبت الكابتشر من الخادم (يُحقن في صفحة المتجر داخل WebView).
- *
- * السكريبت **يجي من الخادم**، موش مدمج في التطبيق: كي يتبدّل sélecteur في
- * متجر، التصليح يخرج كتحديث خادم بلا نسخة تطبيق جديدة. مخزّن 5 دقائق (نفس
- * مهلة الـ cache متاع الخادم) باش ما نطلبوهش مع كل صفحة.
+ * Fetch one store's independently versioned reader bundle. Caches are separated
+ * by store, so a Zalando script can never be reused for Amazon, and vice versa.
+ * Omitting storeId preserves compatibility with old app builds and callers.
  */
-export async function fetchAyWebsCaptureScript(options: RequestOptions = {}): Promise<string> {
+export async function fetchAyWebsCaptureScript(
+  options: RequestOptions & { storeId?: string } = {},
+): Promise<string> {
+  const storeId = String(options.storeId || '').trim().toLowerCase();
+  const cached = captureScriptCache.get(storeId);
   const now = Date.now();
-  if (captureScriptCache && now - captureScriptCache.fetchedAt < CAPTURE_SCRIPT_TTL_MS) {
-    return captureScriptCache.text;
-  }
-  const text = await apiGetText(AYWEBS_CAPTURE_SCRIPT_PATH, options);
-  captureScriptCache = { text, fetchedAt: Date.now() };
+  if (cached && now - cached.fetchedAt < CAPTURE_SCRIPT_TTL_MS) return cached.text;
+  const { storeId: _storeId, ...requestOptions } = options;
+  const path = storeId
+    ? `${AYWEBS_CAPTURE_SCRIPT_PATH}?store_id=${encodeURIComponent(storeId)}`
+    : AYWEBS_CAPTURE_SCRIPT_PATH;
+  const text = await apiGetText(path, requestOptions);
+  captureScriptCache.set(storeId, { text, fetchedAt: Date.now() });
   return text;
 }
 
 /** للاختبارات: تُفرّغ الذاكرة. */
 export function resetAyWebsCaptureScriptCache(): void {
-  captureScriptCache = null;
+  captureScriptCache.clear();
 }
 
 /**

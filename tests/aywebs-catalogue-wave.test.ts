@@ -73,11 +73,17 @@ describe('vague 1 — identité au registre', () => {
   it('chaque boutique déclare QUI prouve sa fiche : motif ou capture', () => {
     for (const store of AYWEBS_CAPTURE_STORES) {
       const recognition = ayWebsStoreRecognition(store);
-      /* Zalando (25/10/2026) : adaptateur dédié ⇒ sa fiche est prouvée par
-         l'adaptateur lui-même (`url`), plus fin que le motif déclaré. */
+      /* Zalando a un motif URL vérifié. Sephora/Primark ont un adapter dédié,
+         mais restent en capture jusqu'à mesurer un motif de fiche fiable. */
       if (store.id === 'zalando') {
         expect(recognition).toBe('url');
         expect(ayWebsProductUrlPattern(store), 'le motif reste un second filet').not.toBeNull();
+        continue;
+      }
+      if (store.id === 'sephora' || store.id === 'primark') {
+        expect(recognition).toBe('capture');
+        expect(store.adapter).toBe(store.id);
+        expect(store.productUrlPattern).toBeUndefined();
         continue;
       }
       expect(['pattern', 'capture']).toContain(recognition);
@@ -98,14 +104,16 @@ describe('vague 1 — identité au registre', () => {
   });
 
   it('toutes les boutiques de la vague sont au même contrat, sans achat', () => {
-    /* Zalando fait exception ASSUMÉE (25/10/2026) : elle a désormais un
-       adaptateur dédié, parce que son prix vit sur les variantes (`hasVariant`)
-       et que sa fiche se reconnaît à son SKU. Tout le reste du contrat (bêta,
-       lecture seule, aucun achat) lui reste identique — vérifié ci-dessous. */
+    /* Trois entrées ont maintenant des readers/adapters dédiés : Zalando garde
+       son SKU URL vérifié ; Sephora/Primark attendent encore des fixtures réelles
+       et restent en capture-only. Les autres gardent l'adapter catalogue. */
     for (const store of AYWEBS_CAPTURE_STORES) {
       if (store.id === 'zalando') {
         expect(store.adapter).toBe('zalando');
         expect(ayWebsStoreRecognition(store)).toBe('url');
+      } else if (store.id === 'sephora' || store.id === 'primark') {
+        expect(store.adapter).toBe(store.id);
+        expect(ayWebsStoreRecognition(store)).toBe('capture');
       } else {
         expect(store.adapter).toBe('catalogue');
       }

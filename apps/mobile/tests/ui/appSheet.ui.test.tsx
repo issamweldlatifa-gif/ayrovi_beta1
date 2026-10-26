@@ -43,6 +43,23 @@ describe('AppSheet', () => {
     expect(screen.getByText('محتوى الدرج')).toBeTruthy();
   });
 
+  it('bottom presentation keeps its pinned footer visible beside scrollable content', () => {
+    render(
+      <Providers>
+        <AppSheet
+          open
+          presentation="bottom"
+          onDismiss={() => undefined}
+          footer={<Text>إضافة للسلة</Text>}
+        >
+          <Text>خيارات المنتج</Text>
+        </AppSheet>
+      </Providers>,
+    );
+    expect(screen.getByText('خيارات المنتج')).toBeTruthy();
+    expect(screen.getByText('إضافة للسلة')).toBeTruthy();
+  });
+
   it('زر الإغلاق في الرأس يطلب الإغلاق', () => {
     const onDismiss = jest.fn();
     render(

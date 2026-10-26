@@ -8,6 +8,8 @@ import { SheinAdapter } from './shein';
 import { TemuAdapter } from './temu';
 import { AliExpressAdapter } from './aliexpress';
 import { ZalandoAdapter } from './zalando';
+import { SephoraAdapter } from './sephora';
+import { PrimarkAdapter } from './primark';
 import { CatalogueStoreAdapter } from './catalogue';
 
 /**
@@ -34,6 +36,8 @@ const ADAPTER_FACTORIES: Record<AyWebsAdapterId, AdapterFactory> = {
   temu: (scraper) => new TemuAdapter(scraper),
   aliexpress: (scraper) => new AliExpressAdapter(scraper),
   zalando: (scraper) => new ZalandoAdapter(scraper),
+  sephora: (scraper) => new SephoraAdapter(scraper),
+  primark: (scraper) => new PrimarkAdapter(scraper),
   catalogue: (scraper, store) => new CatalogueStoreAdapter(scraper, store),
   generic: (scraper) => new GenericStoreAdapter(scraper),
 };
@@ -75,6 +79,18 @@ export const AYWEBS_ADAPTER_DESCRIPTORS: readonly AyWebsAdapterDescriptor[] = [
     /* Zalando publie son prix et son stock sur les VARIANTES (`hasVariant[].offers`) ;
        la lecture descend dans ces offres. Aucun achat automatisé. */
     pendingIntegration: 'Prix et stock lus dans les offres des variantes ; achat marchand en revue humaine.',
+  },
+  {
+    id: 'sephora', label: 'Sephora', integrationType: 'PARTIALLY_SUPPORTED', purchaseMode: 'MANUAL_REVIEW',
+    reads: ['product_page_url', 'title', 'price', 'currency', 'images', 'variants', 'availability'],
+    implemented: true,
+    pendingIntegration: 'Lecteur structuré WebView seulement ; sélecteurs DOM en attente de fixtures réelles.',
+  },
+  {
+    id: 'primark', label: 'Primark', integrationType: 'PARTIALLY_SUPPORTED', purchaseMode: 'MANUAL_REVIEW',
+    reads: ['product_page_url', 'title', 'price', 'currency', 'images', 'variants', 'availability'],
+    implemented: true,
+    pendingIntegration: 'Lecteur structuré WebView seulement ; région/devise non inférées ; achat en revue humaine.',
   },
   {
     id: 'catalogue', label: 'Catalogue (lecture dans le navigateur du client)', integrationType: 'PARTIALLY_SUPPORTED', purchaseMode: 'MANUAL_REVIEW',

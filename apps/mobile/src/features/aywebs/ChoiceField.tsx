@@ -53,7 +53,7 @@ export function ChoiceField({
         style={[
           styles.control,
           {
-            borderColor: open ? theme.colors.action : theme.colors.line,
+            borderColor: open ? '#FFD60A' : theme.colors.line,
             borderRadius: theme.radius.control,
             minHeight: theme.geometry.minTarget + 8,
           },
@@ -122,7 +122,7 @@ export function ChoiceField({
                 {unavailable ? (
                   <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.notAvailable')}</AppText>
                 ) : active ? (
-                  <Ionicons name="checkmark" size={theme.iconSize.md} color={theme.colors.action} />
+                  <Ionicons name="checkmark" size={theme.iconSize.md} color={theme.mode === 'dark' ? '#FFD60A' : '#9A7B00'} />
                 ) : null}
               </Pressable>
             );

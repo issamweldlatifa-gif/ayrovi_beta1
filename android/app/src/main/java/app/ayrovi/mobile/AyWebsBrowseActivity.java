@@ -127,6 +127,8 @@ public class AyWebsBrowseActivity extends Activity {
   private WebView webView;
   /** Lecteur de page (script serveur) — vide tant qu'il n'a pas été récupéré. */
   private volatile String captureScript = "";
+  /** Store profile used by `captureScript`; empty means the legacy default. */
+  private volatile String captureScriptStoreId = "";
   private TextView urlText;
   private Button addButton;
   private Button cartButton;
@@ -573,17 +575,55 @@ public class AyWebsBrowseActivity extends Activity {
    * et le serveur retombe sur sa propre lecture (ou sur « Order with URL »).
    */
   private void ensureCaptureScript(final Runnable next) {
-    if (!captureScript.isEmpty()) { runOnUiThread(next); return; }
+    final String storeId = captureStoreIdForUrl(currentUrl);
+    final String cacheKey = storeId == null ? "" : storeId;
+    if (!captureScript.isEmpty() && cacheKey.equals(captureScriptStoreId)) {
+      runOnUiThread(next);
+      return;
+    }
+    // Never run another merchant's cached bundle if this profile fetch fails.
+    captureScript = "";
     if (apiOrigin.isEmpty()) { runOnUiThread(next); return; }
     executor.execute(() -> {
       try {
-        String script = getText(apiOrigin + CAPTURE_SCRIPT_PATH);
-        if (script != null && !script.trim().isEmpty()) captureScript = script;
+        String path = CAPTURE_SCRIPT_PATH + (storeId == null ? "" : "?store_id=" + storeId);
+        String script = getText(apiOrigin + path);
+        if (script != null && !script.trim().isEmpty()) {
+          captureScript = script;
+          captureScriptStoreId = cacheKey;
+        }
       } catch (Exception ignored) {
         /* sans lecteur : chemin historique (URL seule), jamais un faux succès */
       }
       runOnUiThread(next);
     });
+  }
+
+  /** Only map domains explicitly registered for the four dedicated readers. */
+  private static String captureStoreIdForUrl(String value) {
+    if (value == null || value.isEmpty()) return null;
+    String host = Uri.parse(value).getHost();
+    if (host == null) return null;
+    host = host.toLowerCase(java.util.Locale.ROOT);
+    if (matchesAnyDomain(host, new String[] {
+      "amazon.com", "amazon.fr", "amazon.co.uk", "amazon.de", "amazon.it", "amazon.es",
+      "amazon.co.jp", "amazon.ca", "amazon.com.au", "amazon.nl", "amazon.se", "amazon.pl",
+      "amazon.com.tr", "amazon.ae", "amazon.sa", "amazon.in", "amazon.sg", "amazon.com.mx",
+      "amazon.com.br", "amazon.eg", "amazon.be"
+    })) return "amazon";
+    if (matchesAnyDomain(host, new String[] {
+      "zalando.com", "zalando.de", "zalando.fr", "zalando.it", "zalando.es", "zalando.nl", "zalando.be", "zalando.at"
+    })) return "zalando";
+    if (matchesAnyDomain(host, new String[] {"sephora.com"})) return "sephora";
+    if (matchesAnyDomain(host, new String[] {"primark.com"})) return "primark";
+    return null;
+  }
+
+  private static boolean matchesAnyDomain(String host, String[] domains) {
+    for (String domain : domains) {
+      if (host.equals(domain) || host.endsWith("." + domain)) return true;
+    }
+    return false;
   }
 
   /**

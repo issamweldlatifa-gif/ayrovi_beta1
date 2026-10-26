@@ -25,16 +25,23 @@
  *     partie décimale dans deux spans séparés : « 6 » + « 99 »).
  */
 
+import { findAyWebsStore } from '../../shared/aywebsStores';
+import { ayWebsCaptureReader } from './captureReaders/registry';
+
 /** Chemin de service du script (le client le récupère une fois puis le rejoue). */
 export const AYWEBS_CAPTURE_SCRIPT_PATH = '/api/v1/aywebs/capture/script.js';
 
 export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
   var LIMITS = { priceCandidates: 4, variantTexts: 30, selectedTexts: 5, images: 4, label: 60, text: 300, variantGroups: 4, variantValues: 20 };
+  var READER_PROFILE = null;
+  try { READER_PROFILE = window.__AYWEBS_CAPTURE_READER__ || null; } catch (e) { READER_PROFILE = null; }
   var out = {
     v: 1, url: '', canonicalUrl: null, title: null, brand: null,
     priceCandidates: [], currencyText: null, availabilityText: null,
     addToCartText: null, conditionText: null, selectedVariantTexts: [], variantTexts: [], variantGroups: [],
-    images: [], capturedAt: null, pageLang: null, amazon: null, diagnostics: []
+    images: [], capturedAt: null, pageLang: null, amazon: null,
+    reader: READER_PROFILE ? { id: READER_PROFILE.storeId || null, version: READER_PROFILE.version || 0 } : null,
+    diagnostics: []
   };
 
   /* Diagnostic BORNÉ : code court (ex. « price:buybox_asin_mismatch »), jamais de texte de page. */
@@ -1326,7 +1333,7 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
           }
         } catch (e) {}
       }
-    } else if (IS_SHEIN || IS_TEMU) {
+    } else if (IS_SHEIN || IS_TEMU || (READER_PROFILE && READER_PROFILE.priceMode === 'named_containers')) {
     /* SHEIN / TEMU : conteneurs NOMMÉS seulement, et UNANIMITÉ exigée. La
        lecture générique est volontairement sautée ici : sur ces deux pages, les
        carrousels de recommandation publient des dizaines de prix. */
@@ -1338,6 +1345,11 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     } else {
       diag('price:no_named_container');
     }
+    } else if (READER_PROFILE && READER_PROFILE.priceMode === 'structured_only') {
+    /* Le lecteur de ce marchand n'a pas encore de sélecteurs DOM vérifiés.
+       JSON-LD / meta / microdata ont déjà été lus plus haut ; ici on s'abstient
+       plutôt que de ramasser un prix de carte recommandée. */
+    if (!out.priceCandidates.length) diag('price:structured_only_no_candidate');
     } else if (!IS_AMAZON) {
     /* Hors Amazon seulement : sur amazon.* la lecture générique ramasserait des prix de publicité. Le PANIER D'ACHAT d'abord : les sélecteurs de bloc d'achat des grandes
        plateformes (Amazon, Shopify, WooCommerce) désignent le prix VENDU, pas
@@ -2305,3 +2317,40 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
   if (!out.capturedAt) out.capturedAt = new Date().toISOString();
   try { return JSON.stringify(out); } catch (e) { return '{}'; }
 })();`;
+
+/**
+ * Build the independently versioned script served for a registered store.
+ * The extraction core and trust boundaries stay shared; a reader profile is
+ * scoped to that store's domains and selects its own price-reading policy.
+ * Calling without a store keeps the legacy bundle for old app builds.
+ */
+export function buildAyWebsCaptureScript(storeId?: string | null): string {
+  const reader = ayWebsCaptureReader(storeId);
+  if (!reader) return AYWEBS_CAPTURE_SCRIPT;
+  const store = findAyWebsStore(reader.storeId);
+  if (!store) return AYWEBS_CAPTURE_SCRIPT;
+  const profile = JSON.stringify({
+    storeId: reader.storeId,
+    version: reader.version,
+    priceMode: reader.priceMode,
+    domains: store.domains,
+  });
+  const coreExpression = AYWEBS_CAPTURE_SCRIPT.trim().replace(/[\s;]+$/, '');
+  return [
+    '(function () {',
+    '  var w = window;',
+    '  var key = "__AYWEBS_CAPTURE_READER__";',
+    '  var previous = w[key];',
+    '  var requested = ' + profile + ';',
+    '  var host = String((w.location && w.location.hostname) || "").toLowerCase().replace(/^www\\./, "");',
+    '  var matches = false;',
+    '  for (var i = 0; i < requested.domains.length; i++) {',
+    '    var domain = String(requested.domains[i] || "").toLowerCase();',
+    '    if (host === domain || host.slice(-(domain.length + 1)) === "." + domain) { matches = true; break; }',
+    '  }',
+    '  w[key] = matches ? requested : null;',
+    '  try { return (' + coreExpression + '); }',
+    '  finally { if (previous === undefined) { try { delete w[key]; } catch (e) { w[key] = null; } } else { w[key] = previous; } }',
+    '})()',
+  ].join('\n');
+}

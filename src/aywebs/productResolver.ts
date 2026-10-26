@@ -466,8 +466,19 @@ export async function resolveAyWebsProduct(
   }
   // Le client peut joindre des métadonnées de contexte (ex. `condition`) : elles
   // n'identifient pas la variante et ne doivent jamais la faire « disparaître ».
+  /* Une capture WebView peut publier des groupes sans les incorporer au
+     `ScrapedProduct` (le lecteur n'invente pas de variantes serveur). Il faut
+     néanmoins utiliser leurs NOMS pour aligner le choix envoyé par le client :
+     sinon `variant` tombe en métadonnée, le devis et le jeton restent attachés
+     au produit générique au lieu de la couleur/taille choisie. */
+  const capturedSelectionGroups = captureUsed
+    ? ayWebsGroupsFromCapture(captureValidation!.variantGroups)
+    : [];
+  const groupsForSelection = sourceProduct.variantGroups.length
+    ? sourceProduct.variantGroups
+    : capturedSelectionGroups;
   const { matching: matchingAttributes, metadata: variantMetadata } = ayWebsSplitVariantSelection(
-    { variantGroups: sourceProduct.variantGroups, variants: sourceProduct.variants },
+    { variantGroups: groupsForSelection, variants: sourceProduct.variants },
     input.selectedVariant || null,
   );
   let availability = await adapter.checkAvailability(sourceProduct, matchingAttributes);

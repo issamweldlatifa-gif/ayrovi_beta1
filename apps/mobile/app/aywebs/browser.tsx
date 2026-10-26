@@ -133,6 +133,8 @@ export default function AyWebsBrowserScreen() {
   /** Page courante, lisible depuis `requestCapture` (qui ne dépend d'aucun état React). */
   const pageUrlRef = useRef(pageUrl);
   useEffect(() => { pageUrlRef.current = pageUrl; }, [pageUrl]);
+  /** Script de capture propre au marchand analysé (lu par `requestCapture`, callback stable). */
+  const captureStoreIdRef = useRef('');
   /**
    * Lecture EN COURS dans le WebView (une seule à la fois). Sert à rattacher une
    * pré-lecture silencieuse à la lecture du client au lieu de la remplacer
@@ -177,6 +179,7 @@ export default function AyWebsBrowserScreen() {
   useEffect(() => {
     if (previousPageUrl.current === pageUrl) return;
     previousPageUrl.current = pageUrl;
+    captureStoreIdRef.current = '';
     const reading = prefetch.current;
     prefetch.current = null;
     reading?.controller.abort();
@@ -212,12 +215,14 @@ export default function AyWebsBrowserScreen() {
     analyzeAyWebsPage(pageUrl, { sessionId })
       .then((analysis) => {
         if (!alive || !captureMatchesPageUrl(analysis.url, pageUrlRef.current)) return;
+        captureStoreIdRef.current = analysis.storeId;
         setPageAnalysis(analysis);
         setProductPage(analysis.isProductPage);
       })
       .catch(() => {
         if (!alive) return;
         // ما نعرفوش: الزرّ يبقى معطّلاً والسبب يظهر — موش نفعّلوه بالتخمين.
+        captureStoreIdRef.current = '';
         setPageAnalysis(null);
         setProductPage(null);
       });
@@ -295,7 +300,7 @@ export default function AyWebsBrowserScreen() {
         resolve(capture);
       };
       waiter.current = { resolve: onCaptured, reject };
-      fetchAyWebsCaptureScript()
+      fetchAyWebsCaptureScript({ storeId: captureStoreIdRef.current })
         /* الصفحة لازم تكمّل تحميلها قبل القراءة (Amazon يعطي DOM ناقص ⇒ NO_PRICE_TEXT).
            مرّة واحدة لكل صفحة: موقع SHEIN/TEMU (تطبيق mono-page) يحافظ على طلب
            مفتوح، فـ`onNavigationStateChange` يبقى "يحمّل" — الانتظار في كل قراءة
@@ -610,6 +615,17 @@ export default function AyWebsBrowserScreen() {
             une erreur réelle s'écrit en clair (23/10/2026). */}
         {note ? <AppText variant="caption" color={theme.status.danger.fg}>{note}</AppText> : null}
 
+        <Button
+          label={busy ? t('aywebs.loading') : t('aywebs.addToCart')}
+          tone="commerce"
+          leading={<Ionicons name="bag-add-outline" size={20} color="#0A0A0A" />}
+          block
+          onPress={addToCart}
+          busy={busy}
+          disabled={!addEnabled}
+          testID="aywebs-store-add-to-cart"
+        />
+
         <View style={[styles.toolbar, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
           <ToolIcon
             name={theme.isRTL ? 'chevron-forward' : 'chevron-back'}
@@ -639,17 +655,6 @@ export default function AyWebsBrowserScreen() {
             onPress={() => setFavOpen(true)}
             testID="aywebs-store-fav"
           />
-          <View style={styles.addBox}>
-            <Button
-              label={busy ? t('aywebs.loading') : t('aywebs.addToCart')}
-              tone="main"
-              block
-              onPress={addToCart}
-              busy={busy}
-              disabled={!addEnabled}
-              testID="aywebs-store-add-to-cart"
-            />
-          </View>
         </View>
 
         {/*
@@ -689,7 +694,7 @@ export default function AyWebsBrowserScreen() {
         />
       ) : null}
 
-      <VariantReader ref={variantReader} />
+      <VariantReader ref={variantReader} storeId={sheet?.product.storeId || currentPageAnalysis?.storeId || undefined} />
 
       {sessionId ? (
         <StoreCartSheet
@@ -733,7 +738,7 @@ function ToolIcon({ name, label, onPress, disabled = false, active = false, test
         { minWidth: 36, minHeight: theme.geometry.minTarget, opacity: disabled ? 0.35 : pressed ? 0.7 : 1 },
       ]}
     >
-      <Ionicons name={name} size={22} color={active ? theme.colors.accentText : theme.colors.ink} accessibilityElementsHidden />
+      <Ionicons name={name} size={22} color={active ? (theme.mode === 'dark' ? '#FFD60A' : '#9A7B00') : theme.colors.ink} accessibilityElementsHidden />
     </Pressable>
   );
 }
@@ -743,9 +748,8 @@ const styles = StyleSheet.create({
   header: { alignItems: 'center', gap: 4, paddingHorizontal: 8 },
   titleBox: { flex: 1, paddingHorizontal: 4 },
   web: { flex: 1, marginTop: 8 },
-  toolbar: { alignItems: 'center', gap: 2 },
+  toolbar: { alignItems: 'center', justifyContent: 'space-around', gap: 2, paddingTop: 4 },
   toolIcon: { alignItems: 'center', justifyContent: 'center' },
-  addBox: { flex: 1, marginStart: 4 },
   loading: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
-  footer: { borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingTop: 8, gap: 6 },
+  footer: { borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingTop: 10, gap: 6 },
 });

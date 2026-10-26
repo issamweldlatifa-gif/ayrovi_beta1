@@ -711,4 +711,23 @@ describe('AYWEBs 2.1 — le script est servi par le serveur (pas de version d’
     expect(response.text).toContain('priceCandidates');
     expect(response.text).not.toMatch(/token|secret|password/i);
   });
+
+  it('GET /capture/script.js?store_id=... sert le bundle/version du marchand', async () => {
+    const h = harness();
+    const app = express();
+    app.use(express.json());
+    app.use((req, _res, next) => { (req as any).requestId = 'capture-reader-request'; next(); });
+    app.use('/api/v1/aywebs', createAyWebsRouter(h.db, h.scraper as any));
+
+    const sephora = await request(app).get('/api/v1/aywebs/capture/script.js?store_id=sephora');
+    expect(sephora.status).toBe(200);
+    expect(sephora.headers['x-aywebs-capture-reader']).toBe('sephora');
+    expect(sephora.headers['x-aywebs-capture-reader-version']).toBe('1');
+    expect(sephora.text).toContain('"priceMode":"structured_only"');
+
+    const primark = await request(app).get('/api/v1/aywebs/capture/script.js?store_id=primark');
+    expect(primark.headers['x-aywebs-capture-reader']).toBe('primark');
+    expect(primark.text).toContain('"priceMode":"structured_only"');
+    expect(primark.text).not.toBe(sephora.text);
+  });
 });

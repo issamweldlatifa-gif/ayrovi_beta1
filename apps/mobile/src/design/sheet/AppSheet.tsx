@@ -43,10 +43,16 @@ export interface AppSheetProps {
   onDismiss: () => void;
   onClosed?: () => void;
   header?: ReactNode;
+  /** Optional pinned action area below the scrollable content. */
+  footer?: ReactNode;
+  /** Product-purchase sheets may sit over the page instead of covering it fully. */
+  presentation?: 'full' | 'bottom';
   children: ReactNode;
 }
 
-export function AppSheet({ open, onDismiss, onClosed, header, children }: AppSheetProps) {
+export function AppSheet({
+  open, onDismiss, onClosed, header, footer, presentation = 'full', children,
+}: AppSheetProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
@@ -58,7 +64,10 @@ export function AppSheet({ open, onDismiss, onClosed, header, children }: AppShe
    * نافذة الجهاز، حتى لا يُترك فراغ أو يُقطع جزء.
    */
   const [measuredHeight, setMeasuredHeight] = useState(windowHeight);
-  const sheetHeight = Math.max(1, measuredHeight);
+  const sheetHeight = Math.max(1, presentation === 'bottom'
+    ? Math.min(measuredHeight, Math.round(windowHeight * 0.9))
+    : measuredHeight);
+  const topInset = presentation === 'bottom' ? 8 : insets.top + 8;
 
   /** الموضع: 0 مفتوح، sheetHeight مغلق. يبدأ مغلقاً ثم يُفتح عند الظهور. */
   const translate = useRef(new Animated.Value(sheetHeight)).current;
@@ -169,10 +178,13 @@ export function AppSheet({ open, onDismiss, onClosed, header, children }: AppShe
       <Animated.View
         {...panResponder.panHandlers}
         style={[
-          styles.panel,
+          presentation === 'bottom' ? styles.bottomPanel : styles.panel,
           {
-            paddingTop: insets.top + 8,
+            height: presentation === 'bottom' ? sheetHeight : undefined,
+            paddingTop: topInset,
             backgroundColor: theme.colors.canvas,
+            borderTopLeftRadius: presentation === 'bottom' ? 24 : 0,
+            borderTopRightRadius: presentation === 'bottom' ? 24 : 0,
             transform: [{ translateY: translate }],
           },
         ]}
@@ -180,13 +192,19 @@ export function AppSheet({ open, onDismiss, onClosed, header, children }: AppShe
         <View style={[styles.handle, { backgroundColor: theme.colors.line }]} />
         {header}
         <ScrollView
+          style={styles.scroll}
           onScroll={onScroll}
           scrollEventThrottle={16}
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 24 }]}
+          contentContainerStyle={[styles.body, { paddingBottom: footer ? 16 : insets.bottom + 24 }]}
         >
           {children}
         </ScrollView>
+        {footer ? (
+          <View style={[styles.footer, { backgroundColor: theme.colors.canvas, borderTopColor: theme.colors.line, paddingBottom: insets.bottom + 12 }]}>
+            {footer}
+          </View>
+        ) : null}
       </Animated.View>
     </View>
   );
@@ -196,6 +214,9 @@ const styles = StyleSheet.create({
   panel: {
     position: 'absolute', left: 0, right: 0, top: 0, bottom: 0,
   },
+  bottomPanel: { position: 'absolute', left: 0, right: 0, bottom: 0, overflow: 'hidden' },
   handle: { alignSelf: 'center', width: 44, height: 4, borderRadius: 2, marginBottom: 6 },
+  scroll: { flex: 1 },
   body: { padding: 16, gap: 12 },
+  footer: { paddingHorizontal: 16, paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth },
 });

@@ -422,7 +422,7 @@ describe('violet au minimum : le violet plein est réservé à l’action princi
   it('le bouton par défaut n’est plus violet : `main` est une décision explicite', () => {
     const ui = read('src/design/ui.tsx');
     expect(ui).toMatch(/tone = 'solid'/);
-    expect(ui).toMatch(/tone\?: 'main' \| 'solid' \| 'quiet'/);
+    expect(ui).toMatch(/tone\?: 'main' \| 'commerce' \| 'solid' \| 'quiet'/);
   });
 
   it('seules les actions d’achat et de connexion portent tone="main"', () => {
@@ -433,16 +433,24 @@ describe('violet au minimum : le violet plein est réservé à l’action princi
     }
     expect(counts).toEqual({
       'app/(tabs)/cart.tsx': 1,            // passer à la caisse
-      'app/aywebs/browser.tsx': 1,         // ajouter au panier, sur la page de la boutique (AYWEBs)
       'app/checkout.tsx': 1,               // valider la commande
       'app/forgot.tsx': 1,                 // envoyer le lien de réinitialisation
       // `app/product/[id].tsx` a QUITTÉ la liste le 24/10/2026 : le propriétaire
       // a choisi un CTA **noir** sur la grande fiche (tone="solid"). Le violet
-      // reste réservé au panier, au paiement, à la connexion et à AYWEBs.
+      // reste réservé au panier, au paiement et à la connexion ; AYWEBs a son CTA jaune.
       'app/sign-in.tsx': 6,                // une validation par étape de connexion
       'src/features/lens/LensProductView.tsx': 2, // ajouter au panier · voir le panier
       'src/features/lens/ocerex/OcerexFlow.tsx': 1, // confirmer la commande OCEREX
     });
+  });
+
+  it('AYWEBs uses its approved yellow purchase CTA and selection accents only', () => {
+    const browser = read('app/aywebs/browser.tsx');
+    const sheet = read('src/features/aywebs/AddToCartSheet.tsx');
+    const choices = read('src/features/aywebs/ChoiceField.tsx');
+    expect(browser).toContain('tone="commerce"');
+    expect(sheet).toContain('tone="commerce"');
+    expect(choices).toContain("'#FFD60A'");
   });
 
   it('choix sélectionnés : violet clair + contour violet + texte noir (plus de pastille violette pleine)', () => {

@@ -6,7 +6,7 @@ import type {
 
 export type AyWebsStoreStatus = 'active' | 'beta' | 'planned';
 export type AyWebsBrowserMode = 'embedded' | 'external';
-export type AyWebsAdapterId = 'amazon' | 'shein' | 'temu' | 'aliexpress' | 'zalando' | 'catalogue' | 'generic';
+export type AyWebsAdapterId = 'amazon' | 'shein' | 'temu' | 'aliexpress' | 'zalando' | 'sephora' | 'primark' | 'catalogue' | 'generic';
 
 /**
  * Comment la page produit d'une boutique est reconnue (23/10/2026).
@@ -245,11 +245,14 @@ interface CaptureStoreRow {
    */
   domains?: readonly string[];
   /**
-   * Adaptateur dédié de la boutique, quand elle en a un (Zalando, 25/10/2026).
-   * Sans cette valeur, une boutique de la vague 1 est lue par l'adaptateur
-   * « catalogue » et reconnue par son motif d'URL seulement.
+   * Adaptateur dédié de la boutique, quand elle en a un. Sans cette valeur,
+   * une boutique de la vague 1 utilise l'adaptateur « catalogue ». Une entrée
+   * dédiée peut tout de même déclarer `recognition: 'capture'` tant que son
+   * motif URL n'a pas été mesuré.
    */
   adapter?: AyWebsAdapterId;
+  /** Reconnaissance volontairement explicite pour les nouveaux lecteurs. */
+  recognition?: AyWebsStoreRecognition;
 }
 
 const CAPTURE_WAVE_1: readonly CaptureStoreRow[] = [
@@ -266,6 +269,11 @@ const CAPTURE_WAVE_1: readonly CaptureStoreRow[] = [
   { id: 'mediamarkt', displayName: 'MediaMarkt', country: 'DE', currency: 'EUR', homeUrl: 'https://www.mediamarkt.com', categories: ['electronics'], domains: ['mediamarkt.de', 'mediamarkt.at', 'mediamarkt.es', 'mediamarkt.it', 'mediamarkt.nl', 'mediamarkt.be', 'mediamarkt.pt', 'mediamarkt.fr'] },
   { id: 'asos', displayName: 'ASOS', country: 'GB', currency: 'GBP', homeUrl: 'https://www.asos.com', categories: ['fashion'], productUrlPattern: '^/[^/]*/prd/\\d+' },
   { id: 'h-m', displayName: 'H&M', country: 'SE', currency: 'EUR', homeUrl: 'https://www.hm.com', categories: ['fashion', 'kids'], productUrlPattern: '^/[a-z]{2}_[a-z]{2}/productpage\\.\\d+\\.html' },
+  /* Deux nouveaux lecteurs versionnés séparément. Sephora est limité au domaine
+     US en USD ; Primark reste région/currency-neutral tant que la page n'a pas
+     publié une devise explicite. Aucun motif d'URL non vérifié : capture à la demande. */
+  { id: 'sephora', displayName: 'Sephora', country: 'US', currency: 'USD', homeUrl: 'https://www.sephora.com', categories: ['beauty', 'perfumes'], adapter: 'sephora', recognition: 'capture' },
+  { id: 'primark', displayName: 'Primark', country: '', currency: '', homeUrl: 'https://www.primark.com', categories: ['fashion'], adapter: 'primark', recognition: 'capture' },
   /* France / Pologne — motif non vérifiable de façon fiable : capture seule. */
   { id: 'cdiscount', displayName: 'Cdiscount', country: 'FR', currency: 'EUR', homeUrl: 'https://www.cdiscount.com', categories: ['marketplace'] },
   { id: 'allegro', displayName: 'Allegro', country: 'PL', currency: 'PLN', homeUrl: 'https://allegro.pl', categories: ['marketplace'], productUrlPattern: '^/oferta/[^/]+-\\d+' },
@@ -301,10 +309,12 @@ function captureStore(row: CaptureStoreRow): AyWebsStoreDefinition {
     homeUrl,
     searchUrlTemplate: '',
     categories,
-    /* Une boutique à adaptateur DÉDIÉ est reconnue par son adaptateur (`url`) :
-       le motif déclaré ne sert plus que de second filet. Les autres restent des
-       indices de navigation (`pattern`) ou de simples captures (`capture`). */
-    recognition: row.adapter && row.adapter !== 'catalogue' ? 'url' : productUrlPattern ? 'pattern' : 'capture',
+    /* Un adaptateur dédié choisit sa reconnaissance explicitement quand son
+       motif est connu ; sans motif vérifié, `capture` reste la seule preuve.
+       Les adaptateurs catalogue gardent `pattern` ou `capture` selon les données. */
+    recognition: row.recognition ?? (row.adapter && row.adapter !== 'catalogue' && productUrlPattern
+      ? 'url'
+      : productUrlPattern ? 'pattern' : 'capture'),
     productUrlPattern,
     popular: false,
     phase: 2,

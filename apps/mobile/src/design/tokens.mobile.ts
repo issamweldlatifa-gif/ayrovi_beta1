@@ -332,8 +332,9 @@ export const duration = {
  *
  * Règle qui tranche la plupart des hésitations : « est-ce que je SIGNALE un
  * succès, une erreur ou un avertissement ? » — oui ⇒ palette de statut ; non ⇒
- * structure (noir/gris) ou marque (violet). Un bouton « Ajouter au panier »
- * n'est pas un statut : il est violet. « التوفّر غير مؤكّد » est un statut : jaune.
+ * structure (noir/gris) ou marque (violet). Les CTA sont normalement de marque ;
+ * AYWEBs possède une exception de commerce à jaune, isolée à son navigateur et à
+ * sa feuille d'options. « التوفّر غير مؤكّد » reste un statut : jaune.
  *
  * ── Valeurs MESURÉES, pas choisies au goût ───────────────────────────────────
  * Chaque `fg` a été vérifié au ratio WCAG sur les deux fonds qu'il rencontre

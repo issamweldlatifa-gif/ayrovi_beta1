@@ -1,8 +1,8 @@
 /**
  * Système de boutons, champs et filets de section.
  * - Les boutons sont en pastille (radius.cta) ; le mode « quiet » a un contour encre épais.
- * - Identité 15/10/2026, v4.2.0 (violet au minimum) : seule l'ACTION PRINCIPALE (`tone="main"` :
- *   ajouter au panier, caisse, paiement, connexion) est VIOLETTE (#571EF6) + libellé blanc ; le
+ * - Marque : `tone="main"` garde le CTA violet hors AYWEBs ; `tone="commerce"` est la variante
+ *   jaune, limitée aux actions d'achat AYWEBs ; le bouton par défaut reste plein ENCRE ; le
  *   bouton par défaut est plein ENCRE ; le secondaire est blanc + noir ; champ blanc, contour
  *   gris, contour violet au focus. Le sélecteur segmenté choisi : violet clair + filet violet.
  * - Le filet entre sections est présent sur l'accueil et utilise la couleur de trait du thème.
@@ -35,6 +35,14 @@ describe('système de boutons', () => {
     expect(style.borderRadius).toBe(theme!.radius.cta);
     expect(style.borderWidth).toBe(BUTTON_OUTLINE_WIDTH);
     expect(style.borderColor).toBe(theme!.colors.ink);
+  });
+
+  it('le CTA commerce est jaune, avec un libellé encre lisible', () => {
+    render(wrap(<Button label="Ajouter au panier" onPress={() => {}} tone="commerce" />));
+    const btn = StyleSheet.flatten(screen.getByRole('button', { name: 'Ajouter au panier' }).props.style);
+    expect(btn.backgroundColor).toBe('#FFD60A');
+    expect(btn.borderColor).toBe('#FFD60A');
+    expect(StyleSheet.flatten(screen.getByText('Ajouter au panier').props.style).color).toBe('#0A0A0A');
   });
 
   it('le bouton plein reste sans contour visible', () => {

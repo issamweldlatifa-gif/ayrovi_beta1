@@ -299,6 +299,20 @@ describe('سكريبت الكابتشر', () => {
     expect(url).toBe(`${API_BASE_URL}/api/v1/aywebs/capture/script.js`);
   });
 
+  it('يحافظ على cache مستقل لكل متجر ويرسل store_id للخادم', async () => {
+    const spy = stubFetch(() => new Response(SCRIPT, { status: 200 }));
+    const amazon = await fetchAyWebsCaptureScript({ storeId: 'amazon' });
+    const zalando = await fetchAyWebsCaptureScript({ storeId: 'zalando' });
+    const amazonCached = await fetchAyWebsCaptureScript({ storeId: 'amazon' });
+    expect(amazon).toBe(SCRIPT);
+    expect(zalando).toBe(SCRIPT);
+    expect(amazonCached).toBe(SCRIPT);
+    expect(spy).toHaveBeenCalledTimes(2);
+    const urls = spy.mock.calls.map((call) => String(call[0]));
+    expect(urls).toContain(`${API_BASE_URL}/api/v1/aywebs/capture/script.js?store_id=amazon`);
+    expect(urls).toContain(`${API_BASE_URL}/api/v1/aywebs/capture/script.js?store_id=zalando`);
+  });
+
   it('جسم فارغ = خطأ صريح، موش سكريبت صامت', async () => {
     stubFetch(() => new Response('   ', { status: 200 }));
     await expect(fetchAyWebsCaptureScript()).rejects.toMatchObject({ kind: 'malformed' });

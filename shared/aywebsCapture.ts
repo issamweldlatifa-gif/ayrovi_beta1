@@ -147,6 +147,8 @@ export interface AyWebsCapturedPage {
   v: number;
   /** Codes courts du lecteur (ex. « price:buybox », « title:visible ») — jamais de texte de page. */
   diagnostics?: string[];
+  /** Identité/version du lecteur livré par le serveur — diagnostic seulement, jamais une preuve métier. */
+  reader?: { id: string | null; version: number } | null;
   /**
    * Amazon : variantes et option choisie (évidence structurée, sans texte libre).
    * Les index numériques ne deviennent jamais des noms d'option : le lecteur les résout
