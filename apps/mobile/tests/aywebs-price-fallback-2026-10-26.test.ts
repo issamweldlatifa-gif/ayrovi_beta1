@@ -45,7 +45,7 @@ function product(overrides: Partial<AyWebsResolvedProduct> = {}): AyWebsResolved
     purchaseMode: 'BROWSER',
     integrationType: 'CAPTURE',
     ayroviPricing: null,
-    variantGroups: [{ attribute: 'Taille', values: ['35.5', '36'], selected: ['35.5'] }],
+    variantGroups: [{ attribute: 'Taille', values: ['35.5', '36'] }],
     variantDetails: [],
     variantQuotes: [],
     fromCache: false,
