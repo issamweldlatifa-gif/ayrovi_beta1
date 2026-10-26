@@ -16,6 +16,7 @@
  */
 import type { AyWebsVariantQuote } from '@/api/aywebs';
 import { formatAmount } from '@/format/money';
+import { ayWebsSameAttribute as sameAttribute } from '@/features/aywebs/attributeKeys';
 
 export type AvailabilityState = 'AVAILABLE' | 'LOW_STOCK' | 'OUT_OF_STOCK' | 'UNKNOWN';
 
@@ -91,9 +92,13 @@ export function selectionQuote(input: SelectionQuoteInput): SelectionQuote {
       fromValue: false,
     };
   }
-  /* 2. Sinon : uniquement ce que la page publie pour CHAQUE valeur choisie. */
+  /* 2. Sinon : uniquement ce que la page publie pour CHAQUE valeur choisie.
+     Le NOM du groupe peut différer d'un côté à l'autre (« Taille » publié par la
+     capture, « size » publié par la lecture serveur) : c'est la MÊME dimension,
+     et sans cette reconnaissance le devis par taille restait invisible dans la
+     feuille alors que le serveur l'avait calculé (26/10/2026). */
   const entries = chosen.map(([group, value]) => input.quotes.find((quote) =>
-    normalize(quote.group) === normalize(group) && normalize(quote.value) === normalize(value)) ?? null);
+    sameAttribute(quote.group, group) && normalize(quote.value) === normalize(value)) ?? null);
   const known = entries.filter((entry): entry is AyWebsVariantQuote => entry != null);
   if (!known.length) return empty;
 
