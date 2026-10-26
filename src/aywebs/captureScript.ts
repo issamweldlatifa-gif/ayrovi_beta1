@@ -1496,10 +1496,14 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     if (!name || !values.length) return;
     var label = cut(name, LIMITS.label);
     if (!label || NOT_A_CHOICE.test(label) || NOT_A_VARIANT_GROUP.test(label)) return;
+    /* Options TELLES QUE LUES, avant tout crible : la fusion avec le JSON-LD se
+       fait après la boucle DOM et a besoin des valeurs que le DOM a nommées sans
+       rien publier (une pointure désactivée n'a ni prix ni état). */
+    DOM_OPTIONS[label.toLowerCase()] = (options || []).slice();
     /* Le DOM nomme les valeurs et dit laquelle est cochée ; le JSON-LD apporte ce
-       que le DOM ne publie pas (prix / état par taille). On fusionne les deux
-       POUR CHAQUE VALEUR, jamais d'un groupe à l'autre. */
-    if (!IS_AMAZON) options = mergeVariantOptions(options, ldOptionsFor(label));
+       que le DOM ne publie pas (prix / état par taille). La fusion se fait APRÈS
+       la boucle DOM (voir plus bas) : la couleur affichée, qui décide quelles
+       variantes prouvent quelque chose, n'est connue qu'à ce moment-là. */
     /* On publie TOUJOURS les choix que la page presente (au moins 2 valeurs
        distinctes), meme sans selection reperee : sans eux, la feuille mobile
        n'offrait aucune taille/couleur (cas Zalando, choix en input checkbox dans
@@ -1586,47 +1590,189 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     if (/instock|limitedavailability|onlineonly|instoreonly|backorder|preorder|madeorder/.test(raw)) return true;
     return null;
   }
-  function groupsFromJsonLdGroup(product) {
-    var groups = [];
-    if (!product || typeof product !== 'object') return groups;
+  /** Toutes les variantes publiées, TELLES QUELLES (aucun choix encore). */
+  function ldRows(product) {
+    var rows = [];
+    if (!product || typeof product !== 'object') return rows;
     var variants = Object.prototype.toString.call(product.hasVariant) === '[object Array]'
       ? product.hasVariant : (product.hasVariant ? [product.hasVariant] : []);
-    if (!variants.length) return groups;
+    for (var v = 0; v < variants.length && v < 120; v++) {
+      var variant = variants[v];
+      if (!variant || typeof variant !== 'object') continue;
+      var offer = ldOfferOf(variant);
+      var priceText = offer ? offerField(offer, ['price', 'lowPrice']) : '';
+      var currencyText = offer ? offerField(offer, ['priceCurrency', 'currency']) : '';
+      var stockNumber = offer ? Number(offerField(offer, ['inventoryLevel'])) : NaN;
+      var url = variant.url || variant['@id'] || (offer && offer.url) || '';
+      if (url && typeof url === 'object') url = url.url || url['@id'] || '';
+      rows.push({
+        size: cut(variant.size, LIMITS.label),
+        color: cut(variant.color, LIMITS.label),
+        amount: priceText && HAS_DIGIT.test(priceText) ? cut(priceText, 40) : '',
+        currency: String(currencyText || '').trim().toUpperCase().slice(0, 8),
+        available: offer ? ldAvailability(offer) : null,
+        stock: isFinite(stockNumber) && stockNumber > 0 && stockNumber <= 999 ? Math.floor(stockNumber) : null,
+        url: String(url || ''),
+      });
+    }
+    return rows;
+  }
+  function ldNormUrl(value) {
+    var url = String(value || '').trim().toLowerCase();
+    if (!url) return '';
+    var mark = url.search(/[?#]/);
+    if (mark >= 0) url = url.slice(0, mark);
+    if (url.slice(-1) === '/') url = url.slice(0, -1);
+    return url;
+  }
+  function ldPageHref() {
+    try { return ldNormUrl(location.href); } catch (e) { return ''; }
+  }
+  /**
+   * COULEUR DE LA PAGE — la seule dimension qui, sur un "ProductGroup", sépare
+   * des variantes de PRIX différents. Sans elle, prendre la première variante de
+   * chaque taille MÉLANGE deux couleurs : fiche affichée à 139.99 EUR dont la
+   * pointure 35.5 était annoncée 149.95 (mesuré le 26/10/2026 sur deux fiches
+   * Zalando, dont une seule fonctionnait). Trois preuves, dans cet ordre, et
+   * jamais une supposition :
+   *   1. la pastille couleur réellement cochée dans le DOM ;
+   *   2. la variante dont l'URL EST la page ouverte ;
+   *   3. la couleur écrite dans le nom publié du produit (JSON-LD / titre).
+   */
+  function ldPageColor(rows) {
+    try {
+      for (var g = 0; g < out.variantGroups.length; g++) {
+        var groupName = String(out.variantGroups[g].name || '');
+        if (!/colour|color|couleur|farbe|colore|kleur|لون/i.test(groupName)) continue;
+        var chosen = out.variantGroups[g].selected || [];
+        if (chosen.length) return String(chosen[0]);
+      }
+    } catch (e) {}
+    var href = ldPageHref();
+    if (href) {
+      for (var r = 0; r < rows.length; r++) {
+        if (rows[r].color && ldNormUrl(rows[r].url) === href) return rows[r].color;
+      }
+    }
+    var name = String((jsonLd && jsonLd.name) || out.title || '').toLowerCase();
+    var best = '';
+    if (name) {
+      for (var i = 0; i < rows.length; i++) {
+        var color = String(rows[i].color || '');
+        if (color.length < 3 || name.indexOf(color.toLowerCase()) < 0) continue;
+        if (color.length > best.length) best = color;
+      }
+    }
+    return best;
+  }
+  /**
+   * Ce que TOUTES les variantes d'une même valeur disent. Un désaccord = aucun
+   * fait : deux montants (ou un "en stock" et un "épuisé") pour la même taille
+   * signifient que la valeur décrit plusieurs articles — on ne choisit pas à la
+   * place du marchand et on ne publie ni prix ni état.
+   */
+  function ldConsensus(rows) {
+    var fact = { available: null, price: null, stock: null, conflict: false };
+    if (!rows || !rows.length) return fact;
+    var amounts = [];
+    var currencies = [];
+    var states = [];
+    var stocks = [];
+    for (var i = 0; i < rows.length; i++) {
+      var row = rows[i];
+      if (row.amount) pushUnique(amounts, row.amount, 8, 40);
+      if (row.amount && row.currency) pushUnique(currencies, row.currency, 4, 8);
+      if (row.available === true || row.available === false) states.push(row.available);
+      if (typeof row.stock === 'number' && row.stock > 0) stocks.push(row.stock);
+    }
+    if (amounts.length === 1) fact.price = amounts[0] + (currencies.length === 1 ? ' ' + currencies[0] : '');
+    else if (amounts.length > 1) fact.conflict = true;
+    if (states.length) {
+      var allTrue = true;
+      var allFalse = true;
+      for (var s = 0; s < states.length; s++) {
+        if (states[s] !== true) allTrue = false;
+        if (states[s] !== false) allFalse = false;
+      }
+      fact.available = allTrue ? true : (allFalse ? false : null);
+      if (!allTrue && !allFalse) fact.conflict = true;
+    }
+    if (stocks.length) {
+      var lowest = stocks[0];
+      for (var k = 1; k < stocks.length; k++) if (stocks[k] < lowest) lowest = stocks[k];
+      fact.stock = lowest;
+    }
+    if (fact.conflict) { fact.price = null; fact.stock = null; }
+    return fact;
+  }
+  /**
+   * Le groupe publie-t-il plusieurs couleurs ? Si la couleur de la page n'est pas
+   * prouvable ET que plusieurs couleurs coexistent, aucun fait ne peut être
+   * attribué à cette fiche : on publie les valeurs (le DOM nomme les choix) mais
+   * NI prix NI état — jamais le prix d'une autre couleur.
+   */
+  function ldColorsMany(rows) {
+    var colors = [];
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i].color) pushUnique(colors, rows[i].color, 12, 60);
+    }
+    return colors.length > 1;
+  }
+  /** Groupes (taille / couleur) construits sur les seules variantes RETENUES. */
+  function groupsFromRows(rows, withFacts) {
+    var groups = [];
     var dimensions = [{ key: 'size', name: 'Taille' }, { key: 'color', name: 'Couleur' }];
     for (var d = 0; d < dimensions.length; d++) {
       var values = [];
+      var buckets = {};
+      for (var r = 0; r < rows.length && values.length < LIMITS.variantValues; r++) {
+        var value = String(rows[r][dimensions[d].key] || '').trim();
+        if (!value || NOT_A_CHOICE.test(value) || ACTION_NOT_A_VALUE.test(value)) continue;
+        var key = value.toLowerCase();
+        if (!buckets[key]) { buckets[key] = []; values.push(value); }
+        buckets[key].push(rows[r]);
+      }
       var options = [];
-      for (var v = 0; v < variants.length && v < 120 && values.length < LIMITS.variantValues; v++) {
-        var variant = variants[v];
-        if (!variant || typeof variant !== 'object') continue;
-        var value = cut(variant[dimensions[d].key], LIMITS.label);
-        if (!value || NOT_A_CHOICE.test(value) || ACTION_NOT_A_VALUE.test(value) || ciExactContains(values, value)) continue;
-        var offer = ldOfferOf(variant);
-        var priceText = offer ? offerField(offer, ['price', 'lowPrice']) : '';
-        var currencyText = offer ? offerField(offer, ['priceCurrency', 'currency']) : '';
-        var price = priceText && HAS_DIGIT.test(priceText) ? cut(priceText + ' ' + currencyText, LIMITS.label) : '';
-        var available = offer ? ldAvailability(offer) : null;
-        var stockNumber = offer ? Number(offerField(offer, ['inventoryLevel'])) : NaN;
-        var stock = isFinite(stockNumber) && stockNumber > 0 && stockNumber <= 999 ? Math.floor(stockNumber) : null;
-        values.push(value);
-        /* Rien de publié pour cette valeur (ni état, ni prix, ni stock) = pas de
-           ligne d'option : un état « inconnu » n'est pas un fait. */
-        if (available === null && !price && stock === null) continue;
-        options.push({ value: value, available: available, price: price || null, priceFrom: false, stock: stock });
+      for (var v = 0; withFacts && v < values.length; v++) {
+        var fact = ldConsensus(buckets[values[v].toLowerCase()] || []);
+        if (fact.available === null && !fact.price && fact.stock === null) continue;
+        options.push({ value: values[v], available: fact.available, price: fact.price, priceFrom: false, stock: fact.stock });
       }
       if (values.length > 1) groups.push({ name: dimensions[d].name, values: values, selected: [], options: options });
     }
     return groups;
   }
-  /* Index par nom de groupe : les options du JSON-LD enrichissent le groupe DOM
-     du même nom (qui, lui, porte la valeur réellement cochée par le client). */
+  /**
+   * Variantes retenues : celles de la couleur AFFICHÉE. Les variantes des autres
+   * couleurs du même "ProductGroup" ne prouvent rien sur cette fiche — c'est
+   * exactement ce qui affichait 149.95 EUR sur une pointure d'une fiche à 139.99.
+   */
+  function ldScopedRows(product) {
+    var rows = ldRows(product);
+    var pageColor = ldPageColor(rows);
+    if (!pageColor) return { rows: rows, withFacts: !ldColorsMany(rows) };
+    var scoped = [];
+    for (var i = 0; i < rows.length; i++) {
+      var color = String(rows[i].color || '');
+      if (color && color.toLowerCase() !== pageColor.toLowerCase()) continue;
+      scoped.push(rows[i]);
+    }
+    return { rows: scoped.length ? scoped : rows, withFacts: true };
+  }
+  /* Index construit APRÈS la boucle DOM : la couleur cochée n'est connue qu'à ce
+     moment-là. Les options servent de preuve PAR VALEUR ; "selected" reste vide
+     (un "ProductGroup" ne dit pas quelle variante est affichée). */
   var LD_GROUPS = [];
   var LD_OPTIONS = {};
-  if (!IS_AMAZON && jsonLd) {
+  var DOM_OPTIONS = {};
+  function ldBuild() {
+    if (!jsonLd || IS_AMAZON) return;
     try {
-      LD_GROUPS = groupsFromJsonLdGroup(jsonLd);
-      for (var ldi = 0; ldi < LD_GROUPS.length; ldi++) {
-        LD_OPTIONS[LD_GROUPS[ldi].name.toLowerCase()] = LD_GROUPS[ldi].options;
+      var scoped = ldScopedRows(jsonLd);
+      LD_GROUPS = groupsFromRows(scoped.rows, scoped.withFacts);
+      LD_OPTIONS = {};
+      for (var i = 0; i < LD_GROUPS.length; i++) {
+        LD_OPTIONS[LD_GROUPS[i].name.toLowerCase()] = LD_GROUPS[i].options;
       }
     } catch (e) { LD_GROUPS = []; LD_OPTIONS = {}; }
   }
@@ -1878,8 +2024,39 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     /* ── 7 ter-2. Ce que seul le JSON-LD publie (26/10/2026) ────────────────
        Aucun conteneur DOM nommé n'a donné ce groupe (feuille sans tailles) : on
        publie alors le groupe du "ProductGroup", avec le prix et l'état PAR
-       VALEUR. Rien n'est inventé : ces champs sont ceux du marchand. */
+       VALEUR, RESTREINT à la couleur affichée. Rien n'est inventé : ces champs
+       sont ceux du marchand, et un désaccord entre variantes n'est pas publié. */
     try {
+      ldBuild();
+      /* 1. Ce que le JSON-LD ajoute aux groupes déjà lus dans le DOM (prix et
+         état PAR VALEUR, jamais d'un groupe à l'autre). */
+      for (var gm = 0; gm < out.variantGroups.length; gm++) {
+        var groupKey = String(out.variantGroups[gm].name || '').toLowerCase();
+        var domRows = DOM_OPTIONS[groupKey] || out.variantGroups[gm].options || [];
+        var mergedOptions = mergeVariantOptions(domRows, ldOptionsFor(out.variantGroups[gm].name));
+        if (mergedOptions.length) out.variantGroups[gm].options = mergedOptions;
+      }
+      /* 1 bis. Prix de la PAGE quand le "ProductGroup" n'en publie aucun
+         global (couleurs contradictoires ⇒ "firstOffer" rend null) : les
+         variantes de la couleur AFFICHÉE portent le montant ET la devise. Une
+         fiche dont le DOM écrit «139,99» sans symbole passait pour non vérifiée
+         (donc aucun devis en dinars) alors que l'offre du marchand dit
+         «139.99 EUR». Ajouté SEULEMENT si la couleur est prouvée et que toutes
+         ses variantes s'accordent sur un seul montant. */
+      try {
+        var ldPriceRows = ldScopedRows(jsonLd);
+        if (ldPriceRows.withFacts && ldPriceRows.rows.length) {
+          var ldPagePrice = ldConsensus(ldPriceRows.rows).price;
+          if (ldPagePrice) {
+            var priceKnown = false;
+            for (var cp = 0; cp < out.priceCandidates.length; cp++) {
+              if (String(out.priceCandidates[cp].text || '').toLowerCase() === ldPagePrice.toLowerCase()) { priceKnown = true; break; }
+            }
+            if (!priceKnown) out.priceCandidates.unshift({ text: cut(ldPagePrice, LIMITS.text), source: 'json_ld' });
+          }
+        }
+      } catch (e) {}
+      /* 2. Ce qu'aucun conteneur DOM n'a donné (feuille sans tailles). */
       for (var ldp = 0; ldp < LD_GROUPS.length && out.variantGroups.length < LIMITS.variantGroups; ldp++) {
         if (ldGroupAlreadyCovered(LD_GROUPS[ldp].name)) continue;
         pushVariantGroup(LD_GROUPS[ldp].name, LD_GROUPS[ldp].values, LD_GROUPS[ldp].selected, LD_GROUPS[ldp].options);
