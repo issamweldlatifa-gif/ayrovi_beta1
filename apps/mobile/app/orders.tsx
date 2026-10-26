@@ -24,6 +24,14 @@ import { mediaUrl } from '@/api/client';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatMoney } from '@/format/money';
 
+/**
+ * Filet de sécurité de l'écran : si le rendu de la liste des commandes lève, expo-router
+ * affiche le repli (arabe + français, bouton « عاود ») à la place de l'écran —
+ * l'application reste ouverte, l'utilisateur peut revenir. Voir
+ * `src/design/AppErrorBoundary.tsx` et la cause du 25/10/2026 (ordre des hooks).
+ */
+export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
+
 export default function OrdersScreen() {
   const theme = useTheme();
   const { gutter } = useResponsive();

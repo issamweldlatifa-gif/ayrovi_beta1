@@ -43,6 +43,14 @@ import { useSessionId } from '@/session/session';
 import { useSession } from '@/state/session';
 import { formatMoney } from '@/format/money';
 
+/**
+ * Filet de sécurité de l'écran : si le rendu de la commande lève, expo-router
+ * affiche le repli (arabe + français, bouton « عاود ») à la place de l'écran —
+ * l'application reste ouverte, l'utilisateur peut revenir. Voir
+ * `src/design/AppErrorBoundary.tsx` et la cause du 25/10/2026 (ordre des hooks).
+ */
+export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
+
 export default function CheckoutScreen() {
   const theme = useTheme();
   const { t, locale } = useI18n();

@@ -300,6 +300,14 @@ function errorCopyKey(error: unknown): { title: TranslationKey; body: Translatio
 
 const IDLE_LIVE: LiveView = { status: 'scanning', products: [], matches: [], selected: -1, photo: null };
 
+/**
+ * Filet de sécurité de l'écran : si le rendu de Z Lens (caméra) lève, expo-router
+ * affiche le repli (arabe + français, bouton « عاود ») à la place de l'écran —
+ * l'application reste ouverte, l'utilisateur peut revenir. Voir
+ * `src/design/AppErrorBoundary.tsx` et la cause du 25/10/2026 (ordre des hooks).
+ */
+export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
+
 export default function LensScreen() {
   const theme = useTheme();
   const t = useT();

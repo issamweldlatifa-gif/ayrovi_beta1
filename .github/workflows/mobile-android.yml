@@ -303,6 +303,39 @@ jobs:
           # CI se perdent, les artefacts expirent au bout de 30 jours. La
           # publier la rend vérifiable par un simple `git pull` — pour nous
           # comme pour la personne qui relit.
+          # PROFIL DU POIDS — d'où viennent les ~125 Mo ?
+          #
+          # Décider d'alléger un APK sans mesurer ce qu'il contient, c'est
+          # supprimer au hasard (une police ici, une image là) en espérant
+          # tomber juste. On publie donc la RÉPARTITION par famille de
+          # fichiers, calculée depuis l'APK lui-même : `lib/<abi>/` (deux
+          # architectures = deux fois les bibliothèques natives), `assets/`
+          # (bundle JS, polices, images embarquées), `classes*.dex`, `res/`.
+          #
+          # `unzip -l` ne demande aucune signature : lecture seule, à froid.
+          profile_apk() {
+            local apk="$1"
+            unzip -l "$apk" | awk '
+              NR > 3 && $1 ~ /^[0-9]+$/ {
+                path = $4
+                bytes = $1
+                family = "autre"
+                if (path ~ /^lib\/arm64-v8a\//) family = "lib/arm64-v8a"
+                else if (path ~ /^lib\/armeabi-v7a\//) family = "lib/armeabi-v7a"
+                else if (path ~ /^lib\//) family = "lib/autre"
+                else if (path ~ /^assets\//) family = "assets/"
+                else if (path ~ /^res\//) family = "res/"
+                else if (path ~ /^classes[0-9]*\.dex$/) family = "classes.dex"
+                else if (path ~ /^META-INF\//) family = "META-INF/"
+                total[family] += bytes
+                sum += bytes
+              }
+              END {
+                for (f in total) printf "%s\t%d\n", f, total[f]
+                printf "TOTAL\t%d\n", sum
+              }' | sort -t "$(printf '\t')" -k2 -rn
+          }
+
           REPORT="${{ github.workspace }}/apps/mobile/APK_SIZES.md"
           {
             echo "# Tailles d'APK — mesurées"
@@ -317,6 +350,18 @@ jobs:
             echo "|---|---|"
             for apk in "${APKS[@]}"; do
               echo "| $(basename "$apk") | $(du -h "$apk" | cut -f1) |"
+            done
+            for apk in "${APKS[@]}"; do
+              echo
+              echo "## Profil du poids — $(basename "$apk")"
+              echo
+              echo "| famille | poids |"
+              echo "|---|---|"
+              profile_apk "$apk" | while IFS=$'\t' read -r family bytes; do
+                [ -z "$family" ] && continue
+                human=$(awk -v b="$bytes" 'BEGIN { printf "%.1f Mo", b/1048576 }')
+                echo "| $family | $human |"
+              done
             done
           } > "$REPORT"
           echo "--- rapport écrit : $REPORT ---"
