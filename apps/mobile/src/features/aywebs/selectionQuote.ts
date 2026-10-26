@@ -45,6 +45,19 @@ const sameSelection = (a: Record<string, string>, b: Record<string, string>): bo
   return left.every(([key, value]) => normalize(b[key]) === normalize(value));
 };
 
+/**
+ * Ligne de la TABLE DES COMBINAISONS du serveur (`variant_details`) — la même
+ * source que les cartes de variantes du WEB. `totalTnd` est calculé par le
+ * serveur pour CETTE combinaison : le client ne fait que la retrouver.
+ */
+export interface QuoteCombination {
+  attributes: Record<string, string>;
+  totalTnd: number | null;
+  quotedPrice?: number | null;
+  quotedCurrency?: string;
+  availability?: string;
+}
+
 export interface SelectionQuoteInput {
   /** Devis de la fiche (combinaison affichée par la page). */
   page: {
@@ -57,7 +70,40 @@ export interface SelectionQuoteInput {
   } | null;
   /** Devis publiés par le serveur pour chaque valeur. */
   quotes: readonly AyWebsVariantQuote[];
+  /**
+   * Combinaisons publiées par le serveur (lecture serveur / `variant_details`).
+   * Le web affiche SES cartes de variantes avec ce prix-là ; sans cette source,
+   * l'application retombait sur « Prix en dinars calculé à l'ajout. » pour la
+   * même fiche et le même choix (Zalando, 26/10/2026).
+   */
+  combinations?: readonly QuoteCombination[];
   selection: Record<string, string>;
+}
+
+/** La combinaison EXACTE choisie, si le serveur en publie une. */
+function exactCombination(
+  combinations: readonly QuoteCombination[] | undefined,
+  selection: Record<string, string>,
+): QuoteCombination | null {
+  if (!combinations || !combinations.length) return null;
+  const wanted = Object.entries(selection).filter(([, value]) => String(value).trim());
+  if (!wanted.length) return null;
+  for (const combination of combinations) {
+    const attributes = combination.attributes || {};
+    const keys = Object.keys(attributes).filter((key) => String(attributes[key]).trim());
+    if (keys.length !== wanted.length) continue;
+    const matches = wanted.every(([key, value]) => {
+      const sameKey = keys.find((candidate) => candidate === key) ?? keys.find((candidate) => sameAttribute(candidate, key));
+      return Boolean(sameKey) && normalize(attributes[sameKey as string]) === normalize(value);
+    });
+    if (matches) return combination;
+  }
+  return null;
+}
+
+/** État publié par le serveur → état d'affichage (jamais une promotion). */
+function stateOf(value: string | undefined): AvailabilityState {
+  return value === 'AVAILABLE' || value === 'LOW_STOCK' || value === 'OUT_OF_STOCK' ? value : 'UNKNOWN';
 }
 
 /** Ce qu'on peut afficher pour ce choix — et rien de plus. */
@@ -100,11 +146,30 @@ export function selectionQuote(input: SelectionQuoteInput): SelectionQuote {
   const entries = chosen.map(([group, value]) => input.quotes.find((quote) =>
     sameAttribute(quote.group, group) && normalize(quote.value) === normalize(value)) ?? null);
   const known = entries.filter((entry): entry is AyWebsVariantQuote => entry != null);
-  if (!known.length) return empty;
+  /* 3. Aucun devis par valeur : la combinaison exacte publiée par le SERVEUR
+     (`variant_details`) — c'est ce que le web affiche sur ses cartes. */
+  const combination = exactCombination(input.combinations, selection);
+  if (!known.length) {
+    if (!combination || combination.totalTnd == null) return empty;
+    return {
+      unitTnd: combination.totalTnd,
+      sourcePrice: combination.quotedPrice ?? null,
+      sourceCurrency: combination.quotedPrice != null ? (combination.quotedCurrency || '') : '',
+      priceFrom: false,
+      availability: stateOf(combination.availability),
+      stock: null,
+      fromValue: false,
+    };
+  }
 
   const prices = known.filter((entry) => entry.totalTnd != null);
   const amounts = new Set(prices.map((entry) => formatAmount(entry.totalTnd as number)));
-  const unitTnd = amounts.size === 1 ? prices[0]!.totalTnd : null;
+  /* Devis par valeur seulement si TOUTES les dimensions choisies sont
+     couvertes : un prix de taille ne prouve pas le prix d'une couleur manquante. */
+  const completeValueEvidence = known.length === chosen.length;
+  const unitTnd = completeValueEvidence && amounts.size === 1
+    ? prices[0]!.totalTnd
+    : (combination?.totalTnd ?? null);
 
   const merchant = known.filter((entry) => entry.sourcePrice != null);
   const currency = merchant[0]?.currency || '';

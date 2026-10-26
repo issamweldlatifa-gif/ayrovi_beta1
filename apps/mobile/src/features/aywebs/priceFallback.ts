@@ -64,6 +64,55 @@ export function serverReadDecision(input: {
 }
 
 /**
+ * PLAN DE LECTURE DU DEVIS (26/10/2026) — parité avec le web, défaut Zalando.
+ *
+ * ── Le fait constaté sur les captures d'écran du client ────────────────────
+ * La MÊME fiche Zalando (Nike Revolution 8, 64,95 EUR) affichait sur le WEB
+ * « 64,95 EUR ≈ 411.69 DT » et, dans l'APPLICATION, « Prix en dinars calculé à
+ * l'ajout. » + « Pas de devis serveur en dinars ». Le web n'a pourtant qu'UNE
+ * manière de demander : `POST /product/resolve` avec l'URL — **sans capture, sans
+ * variante, sans relecture forcée**. L'application, elle, demandait la capture
+ * ET la variante choisie ; or quand une capture est jointe et qu'une variante
+ * est demandée, le serveur exige une PREUVE DE PRIX PAR VALEUR
+ * (`variant_price_not_published` ⇒ `PRICE_UNAVAILABLE`) alors que la page, elle,
+ * publie bien son prix. C'est un chemin que le web n'emprunte jamais.
+ *
+ * ── La règle ──────────────────────────────────────────────────────────────
+ * On essaie, dans l'ordre, et on s'arrête dès qu'un devis en dinars existe :
+ *   1. capture + variante  — le plus précis (devis de la valeur choisie) ;
+ *   2. capture seule       — le devis de la PAGE et les devis par valeur, sans
+ *                            la porte « prix de la variante » ;
+ *   3. la requête du WEB   — ni capture ni variante : la lecture que le web
+ *                            reçoit pour la même fiche (servie du cache comme
+ *                            lui). Aucune relecture forcée : `refresh` est
+ *                            l'intention d'ADD, pas d'AFFICHAGE.
+ * Aucun prix n'est calculé ici : on choisit seulement QUELLE lecture demander.
+ */
+export interface QuoteAttempt {
+  /** Joindre la capture lue dans le navigateur du client. */
+  capture: boolean;
+  /** Demander le devis de la valeur choisie (exige une preuve par valeur). */
+  withVariant: boolean;
+  /** Relecture marchande forcée — réservée à l'intention « Add ». */
+  refresh: boolean;
+}
+
+export function quoteReadPlan(input: {
+  hasCapture: boolean;
+  hasSelection: boolean;
+}): QuoteAttempt[] {
+  const attempts: QuoteAttempt[] = [];
+  if (input.hasCapture) {
+    if (input.hasSelection) attempts.push({ capture: true, withVariant: true, refresh: false });
+    attempts.push({ capture: true, withVariant: false, refresh: false });
+  }
+  // La requête du web, telle quelle : c'est la référence quand l'application
+  // n'affiche pas le prix que le web affiche.
+  attempts.push({ capture: false, withVariant: false, refresh: false });
+  return attempts;
+}
+
+/**
  * Combine la résolution « capture » et la résolution « serveur ».
  *
  * Le prix, la devise, la disponibilité et le devis viennent du serveur Quand il
@@ -77,11 +126,19 @@ export function preferServerQuote(
 ): AyWebsResolvedProduct {
   if (!fromServer) return fromCapture;
   if (lacksServerQuote(fromServer) && lacksServerQuote(fromCapture)) {
-    /* Aucun des deux n'a de devis : on garde la capture, mais une disponibilité
-       prouvée par le serveur reste préférable à « inconnue ». */
-    return fromCapture.availability.state === 'UNKNOWN' && fromServer.availability.state !== 'UNKNOWN'
-      ? { ...fromCapture, availability: fromServer.availability, variantQuotes: fromServer.variantQuotes.length ? fromServer.variantQuotes : fromCapture.variantQuotes }
-      : fromCapture;
+    /* Aucun des deux n'a de devis de page : on garde les faits de la capture,
+       mais on récupère du serveur les combinaisons (variant_details) et devis
+       par valeur qu'il a pu lire. Sans cette fusion, l'essai final « comme le
+       web » était bien fait mais ses cartes de variantes se perdaient ici. */
+    return {
+      ...fromCapture,
+      availability: fromCapture.availability.state === 'UNKNOWN' && fromServer.availability.state !== 'UNKNOWN'
+        ? fromServer.availability
+        : fromCapture.availability,
+      variantGroups: fromCapture.variantGroups.length ? fromCapture.variantGroups : fromServer.variantGroups,
+      variantDetails: fromServer.variantDetails.length ? fromServer.variantDetails : fromCapture.variantDetails,
+      variantQuotes: fromServer.variantQuotes.length ? fromServer.variantQuotes : fromCapture.variantQuotes,
+    };
   }
   if (lacksServerQuote(fromServer)) return fromCapture;
   const groups = fromCapture.variantGroups.length ? fromCapture.variantGroups : fromServer.variantGroups;

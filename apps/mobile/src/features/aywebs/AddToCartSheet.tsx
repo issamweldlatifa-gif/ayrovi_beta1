@@ -43,7 +43,7 @@ import {
 import { choiceGroupKind, choiceGroupKey } from '@/features/aywebs/choiceGroup';
 import { ChoiceField, type ChoiceOption } from '@/features/aywebs/ChoiceField';
 import { quantityLimit, selectionQuote, type AvailabilityState } from '@/features/aywebs/selectionQuote';
-import { lacksServerQuote, preferServerQuote, serverReadDecision } from '@/features/aywebs/priceFallback';
+import { lacksServerQuote, preferServerQuote, quoteReadPlan } from '@/features/aywebs/priceFallback';
 import { ayWebsSameAttribute as sameAttribute } from '@/features/aywebs/attributeKeys';
 import { alignSelection, mergeVariantGroups, missingAttributes } from '@/features/aywebs/groupMerge';
 import { formatAmount, formatMoney } from '@/format/money';
@@ -87,6 +87,9 @@ interface PageQuote {
   sourcePrice: number | null;
   sourceCurrency: string;
   quotes: AyWebsVariantQuote[];
+  /** Combinaisons publiées par la LECTURE SERVEUR (`variant_details`) — même
+      source que les cartes du web ; `total_tnd` محسوب في الخادم. */
+  details: AyWebsVariantOption[];
   quoteToken: string;
 }
 
@@ -148,70 +151,99 @@ export function AddToCartSheet({
     if (!sessionId || !captureToUse) return;
     setQuoting(true);
     try {
-      /* 1. Jugement sur la capture : c'est la page telle que le client la voit. */
-      let fromCapture: AyWebsResolvedProduct | null = null;
+      /* Devis en dinars : on suit le PLAN (`quoteReadPlan`) — capture + variante,
+         puis capture seule, puis la requête EXACTE du web. On s'arrête dès qu'un
+         devis existe. Avant, une seule relecture forcée AVEC la variante était
+         tentée : sur Zalando elle ne rendait aucun devis, et l'application
+         affichait « Prix en dinars calculé à l'ajout. » là où le web écrivait
+         « ≈ 411.69 DT » pour la même fiche (26/10/2026). */
+      const plan = quoteReadPlan({
+        hasCapture: Boolean(captureToUse),
+        hasSelection: Object.keys(picked).length > 0,
+      });
+      let productForQuote: AyWebsResolvedProduct | null = null;
+      let pageSelection: Record<string, string> = {};
       let quoteTokenForQuote = '';
-      let diagnosticText = '';
-      try {
-        const first = await resolveAyWebsProductWithCapture(product.sourceUrl, {
-          sessionId,
-          storeId: product.storeId || undefined,
-          capture: captureToUse,
-          refresh: false,
-          variant: Object.keys(picked).length ? picked : null,
-        });
-        if (!alive.current) return;
-        fromCapture = first.product;
-        quoteTokenForQuote = first.quoteToken;
-        diagnosticText = [
-          first.capture?.rejection ? `capture:${first.capture.rejection}` : '',
-          first.priceRejection ? `price:${first.priceRejection}` : '',
-        ].filter(Boolean).join(' · ');
-      } catch {
-        /* La capture a été REFUSÉE (prix non corroboré, page incomplète…) ou
-           l'appel a échoué : ce n'est pas une raison pour laisser la feuille
-           sans prix — on passe à la lecture serveur, comme le web. */
-        fromCapture = null;
-        diagnosticText = 'capture:rejected';
-      }
-      /* 2. Aucun devis depuis la capture ⇒ le SERVEUR relit la page (c'est ce
-         que fait le web pour la même fiche). Une seule fois. */
-      let productForQuote = fromCapture;
-      const decision = serverReadDecision({ product: fromCapture, sessionId });
-      if (decision.read) {
+      const diagnostics: string[] = [];
+      for (const attempt of plan) {
         try {
-          const reread = await resolveAyWebsProductWithCapture(product.sourceUrl, {
+          const read = await resolveAyWebsProductWithCapture(product.sourceUrl, {
             sessionId,
             storeId: product.storeId || undefined,
-            refresh: true,
-            variant: Object.keys(picked).length ? picked : null,
+            ...(attempt.capture ? { capture: captureToUse } : {}),
+            ...(attempt.withVariant && Object.keys(picked).length ? { variant: picked } : {}),
+            refresh: attempt.refresh,
           });
           if (!alive.current) return;
-          productForQuote = fromCapture ? preferServerQuote(fromCapture, reread.product) : reread.product;
-          if (!lacksServerQuote(reread.product)) quoteTokenForQuote = reread.quoteToken;
-          diagnosticText = [
-            diagnosticText,
-            reread.capture?.rejection ? `capture:${reread.capture.rejection}` : '',
-            reread.priceRejection ? `price:${reread.priceRejection}` : '',
-          ].filter(Boolean).join(' · ');
-        } catch {
-          /* Relecture impossible : on garde ce qu'on a. */
+          diagnostics.push(
+            read.capture?.rejection ? `capture:${read.capture.rejection}` : '',
+            read.priceRejection ? `price:${read.priceRejection}` : '',
+          );
+          /* Le premier résultat avec un devis gagne ; sinon on garde le plus
+             informatif (celui qui a un prix marchand) pour l'affichage. */
+          /* Fusionner CHAQUE résultat, même quand aucun devis de page n'existe :
+             le serveur peut apporter `variant_details` (combinaison exacte), ce
+             que l'application utilisera avant d'abandonner. */
+          productForQuote = productForQuote ? preferServerQuote(productForQuote, read.product) : read.product;
+          /* Une capture décrit la combinaison affichée (et un resolve avec
+             variante décrit explicitement celle demandée). La requête du web
+             sans capture/variante décrit juste le produit — son prix de page
+             ne doit PAS être attribué à un autre choix. `variant_details`
+             pourra tout de même fournir le prix exact de la combinaison. */
+          pageSelection = attempt.capture || attempt.withVariant ? { ...picked } : {};
+          if (!lacksServerQuote(read.product)) {
+            quoteTokenForQuote = read.quoteToken;
+            break;
+          }
+        } catch (error) {
+          /* Un refus n'arrête pas le plan : l'essai suivant est justement la
+             lecture que le web reçoit. Garder le code métier (pas seulement
+             «rejected») pour que le diagnostic téléphone dise la vraie cause. */
+          const code = error && typeof error === 'object' && 'code' in error
+            ? String((error as { code?: unknown }).code || 'failed')
+            : 'failed';
+          diagnostics.push(`${attempt.capture ? 'capture' : 'server'}:${code}`);
         }
       }
-      setDiagnostic(diagnosticText);
       if (!productForQuote) {
+        diagnostics.push('quote:unavailable');
+        setDiagnostic(diagnostics.filter(Boolean).filter((value, index, all) => all.indexOf(value) === index).join(' · '));
         setPageQuote(null);
         return;
       }
+      const pickedQuote = selectionQuote({
+        page: productForQuote.ayroviPricing?.totalTnd != null
+          ? {
+            selection: pageSelection,
+            unitTnd: productForQuote.ayroviPricing.totalTnd,
+            availability: stateOf(productForQuote.availability.state),
+            stock: productForQuote.availability.quantityHint ?? null,
+            sourcePrice: productForQuote.price,
+            sourceCurrency: productForQuote.currency,
+          }
+          : null,
+        quotes: productForQuote.variantQuotes,
+        combinations: productForQuote.variantDetails.map((option) => ({
+          attributes: option.attributes,
+          totalTnd: option.totalTnd,
+          quotedPrice: option.quotedPrice,
+          quotedCurrency: option.quotedCurrency,
+          availability: option.availability,
+        })),
+        selection: picked,
+      });
+      if (pickedQuote.unitTnd == null) diagnostics.push('quote:unavailable');
+      setDiagnostic(diagnostics.filter(Boolean).filter((value, index, all) => all.indexOf(value) === index).join(' · '));
       setServerGroups(productForQuote.variantGroups || []);
       setPageQuote({
-        selection: picked,
+        selection: pageSelection,
         unitTnd: productForQuote.ayroviPricing?.totalTnd ?? null,
         availability: stateOf(productForQuote.availability.state),
         stock: productForQuote.availability.quantityHint ?? null,
         sourcePrice: productForQuote.price,
         sourceCurrency: productForQuote.currency,
         quotes: productForQuote.variantQuotes,
+        details: productForQuote.variantDetails,
         quoteToken: quoteTokenForQuote,
       });
     } catch {
@@ -298,8 +330,16 @@ export function AddToCartSheet({
       }
       : null,
     quotes: pageQuote?.quotes ?? [],
+    /* la table des combinaisons du serveur — celle que le web affiche */
+    combinations: (pageQuote?.details?.length ? pageQuote.details : variantOptions).map((option) => ({
+      attributes: option.attributes,
+      totalTnd: option.totalTnd,
+      quotedPrice: option.quotedPrice,
+      quotedCurrency: option.quotedCurrency,
+      availability: option.availability,
+    })),
     selection,
-  }), [pageQuote, selection]);
+  }), [pageQuote, selection, variantOptions]);
 
   /**
    * سقف الكمية: اللي تنشرو الصفحة هو السقف — منتوج فيه 5 ما نخلّيوش 20.
@@ -747,7 +787,9 @@ export function AddToCartSheet({
           {error ? (
             <AppText variant="caption" color={theme.status.danger.fg} accessibilityRole="alert">{error}</AppText>
           ) : null}
-          {diagnostic && (error || (!sourceLine && !quoting)) ? (
+          {/* Le diagnostic s'affiche aussi quand le DEVIS MANQUE : « pas de prix
+              en dinars » sans motif obligeait le support à deviner (26/10/2026). */}
+          {diagnostic && (error || !sourceLine || quote.unitTnd == null) && !quoting ? (
             <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.diagnosticLine', { code: diagnostic })}</AppText>
           ) : null}
 

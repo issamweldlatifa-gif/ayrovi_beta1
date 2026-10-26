@@ -121,6 +121,21 @@ describe('la relecture ne casse rien : elle AJOUTE le devis, elle ne remplace pa
     expect(merged.price).toBe(capture.price);
   });
 
+  it('sans devis de page, les combinaisons serveur restent disponibles pour le choix exact', () => {
+    const capture = product();
+    const server = product({
+      variantDetails: [{
+        sourceVariantId: 'size-36', attributes: { taille: '36' }, label: '36',
+        price: 64.95, currency: 'EUR', quotedPrice: 64.95, quotedCurrency: 'EUR',
+        priceSource: 'VARIANT', availability: 'AVAILABLE', availabilityReason: '', image: '', totalTnd: 411.69,
+      }],
+    });
+    const merged = preferServerQuote(capture, server);
+    expect(merged.ayroviPricing).toBeNull();
+    expect(merged.variantDetails).toEqual(server.variantDetails);
+    expect(merged.variantGroups).toEqual(capture.variantGroups);
+  });
+
   it('sans réponse serveur, la capture est rendue telle quelle', () => {
     const capture = product();
     expect(preferServerQuote(capture, null)).toBe(capture);
