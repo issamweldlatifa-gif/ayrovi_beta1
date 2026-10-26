@@ -45,7 +45,7 @@ import { captureIsProductCard } from '@/features/aywebs/pageKind';
 import { VariantReader, type VariantReaderHandle } from '@/features/aywebs/VariantReader';
 import { waitForPageIdle } from '@/features/aywebs/captureFallback';
 import {
-  AYWEBS_CAPTURE_EMPTY_PRICE_RETRY_DELAY_MS, canReusePrefetch, AYWEBS_CAPTURE_WATCHDOG_MS, priceCandidatesOf, readDecision, resolveAddToCart, shouldRetryAyWebsCaptureForPrice,
+  AYWEBS_CAPTURE_WATCHDOG_MS, AYWEBS_PREFETCH_BUDGET_MS, canReusePrefetch, priceCandidatesOf, priceRetryDelayMs, readDecision, resolveAddToCart, shouldRetryAyWebsCaptureForPrice,
   type ReadIntent,
 } from '@/features/aywebs/captureFlow';
 import { useSessionId } from '@/session/session';
@@ -98,6 +98,8 @@ export default function AyWebsBrowserScreen() {
   const waiter = useRef<{ resolve: (capture: Record<string, unknown>) => void; reject: (error: unknown) => void } | null>(null);
   /** Vrai pendant que la page charge (mis à jour par onNavigationStateChange). */
   const pageLoadingRef = useRef(false);
+  /** Page pour laquelle on a déjà attendu la fin du chargement (une seule fois par page). */
+  const idleWaitedUrl = useRef<string | null>(null);
   /* Lecture faite À L'OUVERTURE de la page (20/10/2026) : « Add to Cart » la trouve prête. */
   const prefetch = useRef<{
     url: string;
@@ -109,13 +111,13 @@ export default function AyWebsBrowserScreen() {
   const [pageReady, setPageReady] = useState(false);
   /** Nombre de relances de capture faute de prix, et dernier script chargé. */
   const captureRetries = useRef(0);
+  /** Minuteur du budget de pré-lecture (voir AYWEBS_PREFETCH_BUDGET_MS). */
+  const prefetchBudget = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** Contrôleur de l'appui « Add » en cours : un nouvel appui, ou la sortie de l'écran, l'annule. */
   const addController = useRef<AbortController | null>(null);
   const lastScript = useRef<string | null>(null);
 
   const [busy, setBusy] = useState(false);
-  /* Lecture à l'ouverture en cours : le bouton « Add » tourne jusqu'à la fin, puis revient à son état normal. */
-  const [prefetchReading, setPrefetchReading] = useState(false);
   /** Barre du bas : précédent / suivant (dans le magasin), titre de la page, volets. */
   const [nav, setNav] = useState({ canGoBack: false, canGoForward: false, title: '' });
   const [cartOpen, setCartOpen] = useState(false);
@@ -182,7 +184,6 @@ export default function AyWebsBrowserScreen() {
     addController.current = null;
     addition?.abort();
     inFlightRead.current = null;
-    setPrefetchReading(false);
     setBusy(false);
     setSheet(null);
     setOutcome(null);
@@ -288,16 +289,22 @@ export default function AyWebsBrowserScreen() {
           captureRetries.current += 1;
           waiter.current = { resolve: onCaptured, reject };
           stopTimer();
-          setTimeout(() => inject(script), AYWEBS_CAPTURE_EMPTY_PRICE_RETRY_DELAY_MS);
+          setTimeout(() => inject(script), priceRetryDelayMs(captureRetries.current - 1));
           return;
         }
         resolve(capture);
       };
       waiter.current = { resolve: onCaptured, reject };
       fetchAyWebsCaptureScript()
-        // الصفحة لازم تكمّل تحميلها قبل القراءة (Amazon يعطي DOM ناقص ⇒ NO_PRICE_TEXT).
+        /* الصفحة لازم تكمّل تحميلها قبل القراءة (Amazon يعطي DOM ناقص ⇒ NO_PRICE_TEXT).
+           مرّة واحدة لكل صفحة: موقع SHEIN/TEMU (تطبيق mono-page) يحافظ على طلب
+           مفتوح، فـ`onNavigationStateChange` يبقى "يحمّل" — الانتظار في كل قراءة
+           كان يعني 8 ثوانٍ إضافية مضروبة في عدد المحاولات. */
         .then(async (script) => {
-          await waitForPageIdle(() => pageLoadingRef.current);
+          if (idleWaitedUrl.current !== pageUrlRef.current) {
+            idleWaitedUrl.current = pageUrlRef.current;
+            await waitForPageIdle(() => pageLoadingRef.current);
+          }
           return script;
         })
         .then((script) => {
@@ -336,18 +343,23 @@ export default function AyWebsBrowserScreen() {
     entry.promise = requestCapture(controller.signal, true).then(
       (capture) => {
         entry.status = 'ok'; entry.at = Date.now();
-        if (prefetch.current === entry) setPrefetchReading(false);
         return capture;
       },
       (error: unknown) => {
         entry.status = 'failed';
-        if (prefetch.current === entry) setPrefetchReading(false);
         throw error;
       },
     );
     entry.promise.catch(() => undefined);
     prefetch.current = entry;
-    setPrefetchReading(true);
+    /* سقف زمني: القراءة الصامتة ما تقعدش تحبس الشاشة. بعد الميزانية تتسجّل
+       "فاشلة"، يعني الضغط على «Add» يعاود يقرا الصفحة بدل ما يستنّى وعد قديم. */
+    if (prefetchBudget.current) clearTimeout(prefetchBudget.current);
+    prefetchBudget.current = setTimeout(() => {
+      prefetchBudget.current = null;
+      if (prefetch.current !== entry || entry.status !== 'reading') return;
+      entry.status = 'failed';
+    }, AYWEBS_PREFETCH_BUDGET_MS);
   }, [requestCapture]);
 
   useEffect(() => {
@@ -476,7 +488,12 @@ export default function AyWebsBrowserScreen() {
   }, [t]);
 
   const verdict = outcome?.capture ?? null;
-  const addEnabled = capturePage && !busy && !prefetchReading && Boolean(sessionId);
+  /* La pré-lecture silencieuse est un ACCÉLÉRATEUR : elle ne désactive jamais
+     « Add to Cart ». La garder dans `addEnabled` laissait le bouton en
+     « Chargement… » et inerte pendant toute la lecture — sur une fiche SHEIN /
+     TEMU (application mono-page) c'était l'écran entier qui semblait planté.
+     Un appui pendant la pré-lecture la remplace (voir `readDecision`). */
+  const addEnabled = capturePage && !busy && Boolean(sessionId);
 
   /* Favoris : seulement pour une page produit. La liste sert à afficher le cœur plein. */
   const { status: accountStatus } = useSession();
@@ -624,11 +641,11 @@ export default function AyWebsBrowserScreen() {
           />
           <View style={styles.addBox}>
             <Button
-              label={busy || prefetchReading ? t('aywebs.loading') : t('aywebs.addToCart')}
+              label={busy ? t('aywebs.loading') : t('aywebs.addToCart')}
               tone="main"
               block
               onPress={addToCart}
-              busy={busy || prefetchReading}
+              busy={busy}
               disabled={!addEnabled}
               testID="aywebs-store-add-to-cart"
             />

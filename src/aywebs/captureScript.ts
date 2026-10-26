@@ -94,6 +94,79 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
       }
     } catch (e) {}
   }
+  /* ── LECTEUR SHEIN / TEMU (26/10/2026) ────────────────────────────────────
+     Ces deux marchands rendent une application mono-page : le prix demandé au
+     panier arrive dans un conteneur dont le nom est STABLE («product-intro__
+     head-price», «price-now», «sale-price»…), à côté du prix BARRÉ (retail).
+     Le lecteur générique les ignorait : il ne connaît que «.product-price» ou
+     «[data-price]». Résultat mesuré côté client : capture reçue, AUCUN prix
+     candidat ⇒ feuille sans prix, et le bouton restait en lecture.
+
+     Ici on lit UNIQUEMENT des conteneurs nommés, on retire le prix barré, et on
+     n'écrit un candidat que si TOUTES les lectures donnent le MÊME montant. Un
+     désaccord ne devient jamais un prix : il devient un diagnostic. La lecture
+     générique est SAUTÉE pour ces deux marchands (elle ramène les prix des
+     articles recommandés). */
+  var IS_SHEIN = /(^|\.)shein\.(com|co\.uk)$/.test(host);
+  var IS_TEMU = /(^|\.)temu\.com$/.test(host);
+  var STRUCK = 'del, s, strike, [class*="original" i], [class*="retail" i], [class*="crossed" i], [class*="line-through" i], [class*="strike" i], [class*="market" i], [class*="old-price" i], [class*="list-price" i]';
+  /* Conteneurs liés au BLOC PRODUIT, jamais « tout ce qui contient price » : une
+     classe « sale-price » existe aussi sur les cartes de recommandation, et un
+     prix de recommandation publié comme prix vendu serait pire que pas de prix. */
+  var PRICE_SCOPES = [
+    '.product-intro__head-price',
+    '[class*="product-intro" i] [class*="price" i]',
+    '[class*="goods-detail" i] [class*="price" i]',
+    '[data-testid*="product-price" i]',
+    '[data-testid*="price" i]'
+  ];
+  /* Texte d'un conteneur SANS ses prix barrés (le barré n'est pas le prix vendu). */
+  function scopeText(element) {
+    if (!element) return '';
+    var clone = null;
+    try { clone = element.cloneNode(true); } catch (e) { return text(element.textContent); }
+    try {
+      var struck = clone.querySelectorAll(STRUCK);
+      for (var i = 0; i < struck.length; i++) {
+        if (struck[i] && struck[i].parentNode) struck[i].parentNode.removeChild(struck[i]);
+      }
+    } catch (e) {}
+    return text(clone.textContent);
+  }
+  /* Un nœud BARRÉ (lui-même ou l'un de ses trois parents) n'est pas un prix vendu. */
+  var STRUCK_HINT = /original|retail|crossed|line-through|strike|market|old-price|list-price/i;
+  function struckNode(node) {
+    var current = node;
+    for (var hop = 0; current && current.nodeType === 1 && hop < 4; hop++) {
+      var tag = String(current.tagName || '').toLowerCase();
+      if (tag === 'del' || tag === 's' || tag === 'strike') return true;
+      if (STRUCK_HINT.test(String(current.className || ''))) return true;
+      current = current.parentNode;
+    }
+    return false;
+  }
+  function amountCount(value) {
+    var hits = String(value || '').match(/[0-9]+(?:[.,][0-9]{1,2})?/g);
+    return hits ? hits.length : 0;
+  }
+  /* Montants distincts lus dans les conteneurs nommés (jamais plus de 6 nœuds). */
+  function storeScopedPrices() {
+    var readings = [];
+    for (var s = 0; s < PRICE_SCOPES.length; s++) {
+      var nodes = [];
+      try { nodes = document.querySelectorAll(PRICE_SCOPES[s]); } catch (e) { continue; }
+      for (var n = 0; n < nodes.length && n < 4; n++) {
+        if (struckNode(nodes[n])) continue;
+        var value = scopeText(nodes[n]);
+        if (!value || value.length > 80) continue;
+        if (!HAS_DIGIT.test(value) || !CURRENCY_HINT.test(value)) continue;
+        if (amountCount(value) !== 1) continue; /* vente + barré collés : on ne tranche pas */
+        if (readings.indexOf(value) < 0) readings.push(value);
+      }
+      if (readings.length > 4) break;
+    }
+    return readings;
+  }
   /* RACINE DE LA FICHE.
      Pourquoi : Amazon publie des blocs de variantes AILLEURS sur la page
      (carrousels sponsorisés, « produits similaires ») qui portent les mêmes
@@ -1253,6 +1326,18 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
           }
         } catch (e) {}
       }
+    } else if (IS_SHEIN || IS_TEMU) {
+    /* SHEIN / TEMU : conteneurs NOMMÉS seulement, et UNANIMITÉ exigée. La
+       lecture générique est volontairement sautée ici : sur ces deux pages, les
+       carrousels de recommandation publient des dizaines de prix. */
+    var scoped = storeScopedPrices();
+    if (scoped.length === 1) {
+      out.priceCandidates.push({ text: cut(scoped[0], LIMITS.text), source: 'dom' });
+    } else if (scoped.length > 1) {
+      diag('price:ambiguous_scope');
+    } else {
+      diag('price:no_named_container');
+    }
     } else if (!IS_AMAZON) {
     /* Hors Amazon seulement : sur amazon.* la lecture générique ramasserait des prix de publicité. Le PANIER D'ACHAT d'abord : les sélecteurs de bloc d'achat des grandes
        plateformes (Amazon, Shopify, WooCommerce) désignent le prix VENDU, pas

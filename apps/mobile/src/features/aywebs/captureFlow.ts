@@ -14,6 +14,34 @@ import { resolveWithCaptureFallback } from '@/features/aywebs/captureFallback';
 export const AYWEBS_CAPTURE_EMPTY_PRICE_RETRIES = 2;
 export const AYWEBS_CAPTURE_EMPTY_PRICE_RETRY_DELAY_MS = 450;
 
+/**
+ * Délais de relance quand la capture revient SANS prix (26/10/2026).
+ *
+ * Le délai fixe de 450 ms supposait un prix qui arrive juste après le DOM
+ * initial. Sur les fiches rendues par une APPLICATION MONO-PAGE (SHEIN, TEMU),
+ * le prix arrive après l'hydratation : trois relances à 450 ms retombaient
+ * toutes dans la même fenêtre vide, et le bouton restait en « Chargement… »
+ * pour rien. On attend donc de plus en plus (borné, total ≈ 3,2 s) — et on
+ * s'arrête de toute façon au nombre de relances prévu.
+ */
+export const AYWEBS_CAPTURE_PRICE_RETRY_DELAYS_MS = [450, 1200, 1600] as const;
+
+/** Délai de la relance n° `retryCount` (0 = première relance). */
+export function priceRetryDelayMs(retryCount: number): number {
+  const schedule = AYWEBS_CAPTURE_PRICE_RETRY_DELAYS_MS;
+  if (!Number.isInteger(retryCount) || retryCount < 0) return AYWEBS_CAPTURE_EMPTY_PRICE_RETRY_DELAY_MS;
+  return schedule[Math.min(retryCount, schedule.length - 1)];
+}
+
+/**
+ * Budget de la PRÉ-LECTURE silencieuse (à l'ouverture d'une fiche).
+ *
+ * Elle ne doit jamais tenir l'écran : c'est un accélérateur, pas une condition.
+ * Au-delà de ce budget, l'écran cesse d'afficher « Chargement… » et le client
+ * peut appuyer — l'appui relit la page s'il le faut.
+ */
+export const AYWEBS_PREFETCH_BUDGET_MS = 12_000;
+
 export interface AyWebsPriceCandidate {
   text: string;
 }
