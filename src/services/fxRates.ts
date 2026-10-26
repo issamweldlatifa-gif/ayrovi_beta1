@@ -40,6 +40,8 @@ export interface FxRefreshOutcome {
   reason?: 'disabled' | 'manual' | 'fresh' | 'invalid' | 'error';
   provider?: string;
   repriced?: number;
+  /** Produits sans prix source (prix saisi en dinars) : rien à re-tarifer. */
+  skipped?: number;
   error?: string;
 }
 
@@ -170,7 +172,7 @@ export async function refreshFxRates(
     `[FX Rates] ${snapshot.provider} appliqué (EUR=${snapshot.rateEUR}, USD=${snapshot.rateUSD}, ` +
     `GBP=${snapshot.rateGBP}, JPY=${snapshot.rateJPY}) — ${applied.repriced} produit(s) re-tarifié(s).`,
   );
-  return { applied: true, provider: snapshot.provider, repriced: applied.repriced };
+  return { applied: true, provider: snapshot.provider, repriced: applied.repriced, skipped: applied.skipped };
 }
 
 /**

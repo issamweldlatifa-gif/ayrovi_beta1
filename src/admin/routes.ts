@@ -484,10 +484,29 @@ function withRelations(db: QatafoDatabase, resource: string, row: any) {
   return result;
 }
 
+/**
+ * Un produit n'a un prix à recalculer que s'il porte un **prix source** dans une
+ * devise d'achat (`original_price > 0` + devise). Un produit dont le prix est
+ * saisi directement en dinars — le cas du produit de test : `original_price = 0`,
+ * `final_price` = prix de vente — n'a rien à recalculer.
+ *
+ * Cette distinction n'est pas cosmétique : sans elle, UNE ligne à prix source nul
+ * suffisait à faire échouer toute la mise à jour du desk tarifaire (500) et toute
+ * modification de fiche (400 sur une simple description). Un produit sans prix
+ * source est **sauté**, jamais fatal — et il reste vendable au prix saisi.
+ */
+function repriceable(product: { original_price?: unknown; currency?: unknown }): boolean {
+  const price = Number(product?.original_price);
+  return Number.isFinite(price) && price > 0 && Boolean(String(product?.currency || '').trim());
+}
+
 function recomputeProductPricing(db: QatafoDatabase, payload: Record<string, any>, existing?: any) {
   const originalPrice = payload.original_price ?? existing?.original_price;
   const currency = payload.currency ?? existing?.currency;
   if (originalPrice === undefined || !currency) return;
+  // Prix source absent (null / vide / 0) : pas de recalcul, la fiche se met à jour
+  // normalement et les colonnes de prix restent celles du CRM.
+  if (!repriceable({ original_price: originalPrice, currency })) return;
   const breakdown = calculatePrice(db.getPricingRules(), Number(originalPrice), String(currency), {
     express: false, title: String(payload.name || existing?.name || ''),
   });
@@ -2177,6 +2196,8 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
         if (Object.keys(payload).length || hasCategories) {
           const products = db.all<any>('SELECT id,original_price,currency,name FROM products');
           for (const product of products) {
+            // Produit à prix saisi en dinars : rien à re-tarifer (voir `repriceable`).
+            if (!repriceable(product)) continue;
             const price = calculatePrice(updated, Number(product.original_price), String(product.currency), { title: String(product.name || '') });
             if (!price) throw new Error(`Tarification impossible pour le produit ${product.id}.`);
             db.run(`UPDATE products SET converted_price=?,customs_fee=?,shipping_fee=?,service_fee=?,final_price=?,updated_at=? WHERE id=?`,

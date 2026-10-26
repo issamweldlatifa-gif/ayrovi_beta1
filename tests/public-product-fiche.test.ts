@@ -135,8 +135,11 @@ afterAll(cleanup);
 
   test('attributs : libellé + valeur, dans l’ordre du CRM, vides exclus', async () => {
     const response = await request(app).get(`/api/public/products/${PRODUCT}`);
+    // `section` est publiée avec l'attribut : la fiche mobile range les champs
+    // dans les accordéons écrits par le CRM (`fiche.ts`). Sans elle, l'écran
+    // devrait deviner le rangement — exactement ce que le propriétaire refuse.
     expect(response.body.data.attributes).toEqual([
-      { key: 'test_material', label: 'الخامة', type: 'TEXT', value: 'جلد طبيعي' },
+      { key: 'test_material', label: 'الخامة', type: 'TEXT', section: '', value: 'جلد طبيعي' },
     ]);
   });
 });

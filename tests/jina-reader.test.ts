@@ -1,4 +1,7 @@
 import { readFileSync } from 'node:fs';
+import {
+  LENS_ANALYZE_DEADLINE_DEFAULT_MS, LENS_ANALYZE_DEADLINE_MIN_MS, lensAnalyzeDeadlineMs,
+} from '../src/ayrovix/services/lensDeadline';
 import { describe, expect, it } from 'vitest';
 import { parseProductPageHtml } from '../src/scraper/productPageParser';
 
@@ -39,7 +42,16 @@ describe('Jina désactivé — Bright Data est le fournisseur unique de rendu', 
   });
 
   it('Lens laisse assez de temps au lecteur (défaut ≥ 12 s)', () => {
-    const live = readFileSync('src/ayrovix/services/lensLiveStock.ts', 'utf8');
-    expect(live).toMatch(/DEFAULT_DEADLINE_MS = 15000/);
+    // La garantie a DÉMÉNAGÉ : le délai vit désormais dans `lensDeadline.ts`
+    // (défaut 45 s, plancher 15 s) et non plus dans `lensLiveStock.ts` — c'était
+    // un test de grep sur un fichier, il ne vérifiait plus rien. On interroge
+    // maintenant la valeur réellement armée, sans lire de source.
+    expect(LENS_ANALYZE_DEADLINE_DEFAULT_MS).toBeGreaterThanOrEqual(12_000);
+    expect(LENS_ANALYZE_DEADLINE_MIN_MS).toBeGreaterThanOrEqual(12_000);
+    const armed = lensAnalyzeDeadlineMs({} as NodeJS.ProcessEnv);
+    expect(armed).toBe(LENS_ANALYZE_DEADLINE_DEFAULT_MS);
+    // Un plancher trop bas rendrait le lecteur marchand inutilisable : la valeur
+    // demandée par l'exploitant ne peut pas descendre sous 15 s.
+    expect(lensAnalyzeDeadlineMs({ AYROVI_LENS_ANALYZE_DEADLINE_MS: '1000' } as any)).toBeGreaterThanOrEqual(12_000);
   });
 });

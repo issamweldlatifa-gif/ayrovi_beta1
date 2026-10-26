@@ -137,3 +137,24 @@ typecheck (root + mobile)  →  vitest (mobile 909)  →  jest UI (130)
 | variantات منتوج آخر ما تتخلّطش | twister مقيّد بـ`#dp-container` (اختبارين) |
 | **بوابة APK** | `mobile-android.yml`: `gates` ⇒ `apk` (`needs`) — لا APK إذا الأحمر |
 | السلّة بالداتا الناقصة | `tests/ui/cartScreen.ui.test.tsx` (3 حالات) |
+| filet sur 7 شاشات | panier / commande / commandes / détail / Lens / compte / catalogue — `RouteErrorBoundary` |
+| **قياس حقيقي للاختبارات** | 3136 اختبار: **3119 ناجح، 0 فاشل**، 17 متجاوز (قبل: «248 فاشل» وهمي) |
+
+### 7.1 الحقيقة على «248 فاشل» — كانت بيئة، ماشي كود
+
+`npm ci --ignore-scripts` ما يكمّرش `better-sqlite3`، و248 اختبار في 135 ملف طاحو
+بـ«Could not locate the bindings file». الدليل: بعد `npx node-gyp rebuild --release
+--nodedir=/usr/local` ولا العدد **0**. وحارس جديد `tests/environment-native-sqlite.test.ts`
+يسمّي العلّة مرّة واحدة بدل 248 مرّة.
+
+### 7.2 سبع علل حقيقية كانت مخبّية وراء ذاك الضجيج (كلّها مصلّحة)
+
+| العلّة | السبب | الإصلاح |
+|---|---|---|
+| `PUT /admin/pricing` ⇒ 500 | منتوج بلا سعر مصدر (`original_price = 0`) كان يوقّف كل الـdesk | `repriceable()`: يتخطّاه، ما يفشّلش الجميع |
+| تعديل الوصف ⇒ 400 | نفس السبب في `recomputeProductPricing` | التخطّي بدل الرمّي |
+| FX: `repriced = 2` | توقّع قديم قبل منتوج الـtest بالدينار | الاختبار يقيس المصدر والتخطّي صراحةً |
+| `shoppable`: 8 مفاتيح بدل 7 | `brand` تنضاف للماكيط، الحارس ما تحدّثش | الحارس يوثّق `brand` |
+| الفيشة: `section` | الـCRM يولّد الأقسام، الحارس كان قديم | الحارس يوثّق `section` |
+| Lens: 3 اختبارات | عقد قديم (scraping أثناء الاكتشاف)؛ العقد الحالي `PRODUCT_LINK_ADMISSION` | الاختبارات تتبع العقد الحالي وتزيد: «ما تقراش ⇒ ما تدّعيش سعر» |
+| `typecheck` أحمر | `db.get<any>` على `db: any` (TS2347) | نوع صريح — `npm run typecheck` نظيف |

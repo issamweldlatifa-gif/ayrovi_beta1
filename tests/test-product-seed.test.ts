@@ -92,7 +92,9 @@ describe.skipIf(!sqliteAvailable)('produit de test — ce que l’écran reçoit
     const { seedTestProduct } = await import('../src/catalogue/seedTestProduct');
     db.run("UPDATE products SET name='Baskets route homme — édition' WHERE id='product_test_baskets'");
     expect(seedTestProduct(db)).toBe(false);
-    const row = db.get<any>('SELECT name FROM products WHERE id=?', 'product_test_baskets');
+    // `db` est importé dynamiquement (donc typé `any`) : un `db.get<any>` y est
+    // refusé par TypeScript (TS2347) et faisait échouer `npm run typecheck`.
+    const row: { name: string } = db.get('SELECT name FROM products WHERE id=?', 'product_test_baskets');
     expect(row.name).toBe('Baskets route homme — édition');
     db.run("UPDATE products SET name='Baskets route homme' WHERE id='product_test_baskets'");
   });

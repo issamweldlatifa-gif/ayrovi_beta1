@@ -111,9 +111,20 @@ describe('route Lens — usage du cache et mesure', () => {
 
   it('le prix reste recalculé à chaque requête : il ne sort jamais du cache', () => {
     const block = routes.split("router.post('/analyze-image'")[1].split("router.post('/analyze-url'")[0];
-    // Le prix est recalculé par `searchCandidates` (estimateWithDb) et par le
-    // lecteur de pages (`reprice`) à chaque requête — jamais lu depuis le cache de reconnaissance.
-    expect(block).toContain('estimateWithDb(db, price, currency)');
-    expect(block).not.toMatch(/writeLensCache\([^)]*priceTnd/);
+    /*
+     * La recette du prix a changé de place (réécriture `PRODUCT_LINK_ADMISSION`,
+     * 25/10/2026) : `estimateWithDb` sert désormais la relecture marchande
+     * `/live-stock`, et l'analyse rend des cartes SANS prix tant qu'il n'est pas
+     * vérifié. Ce qui doit rester vrai — et qu'on vérifie ici — c'est qu'aucun
+     * montant n'est jamais ÉCRIT dans le cache de reconnaissance : un prix en
+     * cache serait servi à toutes les requêtes suivantes, donc figé.
+     */
+    expect(routes).toContain('estimateWithDb(db, price, currency)');
+    expect(routes).not.toMatch(/writeLensCache\([^)]*price/i);
+    expect(routes).not.toMatch(/priceTnd[^\n]*writeLensCache/i);
+    // L'analyse n'écrit RIEN elle-même : le cache est écrit par le moteur, avec
+    // l'identification et les correspondances seulement.
+    expect(block).not.toMatch(/writeLensCache/);
+    expect(engine).not.toMatch(/writeLensCache\([^)]*price/i);
   });
 });
