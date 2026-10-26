@@ -25,6 +25,7 @@ import { captureMatchesPageUrl, decideWebNavigation, isWebPageUrl } from '@/feat
 
 import { AppText, Button, Card, KeyValue } from '@/design/ui';
 import { useTheme } from '@/design/theme';
+import { COMMERCE } from '@/design/tokens.mobile';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { useI18n } from '@/i18n';
 import { ApiError } from '@/api/errors';
@@ -618,7 +619,7 @@ export default function AyWebsBrowserScreen() {
         <Button
           label={busy ? t('aywebs.loading') : t('aywebs.addToCart')}
           tone="commerce"
-          leading={<Ionicons name="bag-add-outline" size={20} color="#0A0A0A" />}
+          leading={<Ionicons name="bag-add-outline" size={20} color={COMMERCE.onAction} />}
           block
           onPress={addToCart}
           busy={busy}
@@ -738,7 +739,7 @@ function ToolIcon({ name, label, onPress, disabled = false, active = false, test
         { minWidth: 36, minHeight: theme.geometry.minTarget, opacity: disabled ? 0.35 : pressed ? 0.7 : 1 },
       ]}
     >
-      <Ionicons name={name} size={22} color={active ? (theme.mode === 'dark' ? '#FFD60A' : '#9A7B00') : theme.colors.ink} accessibilityElementsHidden />
+      <Ionicons name={name} size={22} color={active ? theme.status.warning.fg : theme.colors.ink} accessibilityElementsHidden />
     </Pressable>
   );
 }

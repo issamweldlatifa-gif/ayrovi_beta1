@@ -26,7 +26,7 @@ vi.mock('react-native', () => ({ Platform: { OS: 'android' } }));
 
 import { BRAND, BRAND_SHARE, COLORS, NEUTRALS } from '../src/design/tokens.generated';
 import {
-  GOOGLE_BRAND, LENS_COLORS, STATUS, derivedColors, frost, veil,
+  COMMERCE, GOOGLE_BRAND, LENS_COLORS, STATUS, derivedColors, frost, veil,
 } from '../src/design/tokens.mobile';
 
 const ROOT = path.resolve(__dirname, '..');
@@ -340,7 +340,7 @@ describe('plus d’orange dans l’application', () => {
   it('aucune couleur orangée dans les jetons (palette, statuts, Lens, attente, dérivées)', () => {
     const palette = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/design/brand.json'), 'utf8'));
     const all = [
-      ...hexesIn(palette), ...hexesIn(COLORS), ...hexesIn(STATUS), ...hexesIn(LENS_COLORS),
+      ...hexesIn(palette), ...hexesIn(COLORS), ...hexesIn(STATUS), ...hexesIn(LENS_COLORS), ...hexesIn(COMMERCE),
       ...hexesIn(derivedColors(COLORS.light)), ...hexesIn(derivedColors(COLORS.dark)),
     ];
     expect(all.length).toBeGreaterThan(40);

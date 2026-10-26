@@ -13,7 +13,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, webDirection, type FontWeightName, type TextRole } from './theme';
 import { actionDirectionFor, responsiveMetricsFor, rowDirectionFor } from './layoutLogic';
-import { veil } from './tokens.mobile';
+import { COMMERCE, veil } from './tokens.mobile';
 import { LoadingSpinner } from './LoadingSpinner';
 import { useT } from '@/i18n';
 
@@ -282,9 +282,9 @@ export function Button({ label, onPress, busy = false, disabled = false, tone = 
   const quiet = tone === 'quiet';
   const main = tone === 'main';
   const commerce = tone === 'commerce';
-  const commerceYellow = '#FFD60A';
-  const commercePressed = '#E6C200';
-  const labelColor = commerce ? '#0A0A0A' : quiet ? theme.colors.ink : main ? theme.colors.onAction : theme.colors.canvas;
+  const commerceYellow = COMMERCE.action;
+  const commercePressed = COMMERCE.actionPressed;
+  const labelColor = commerce ? COMMERCE.onAction : quiet ? theme.colors.ink : main ? theme.colors.onAction : theme.colors.canvas;
   // Attente visible DANS le bouton : le cercle en pointillés remplace le
   // pictogramme de tête (ex. le logo Google), jamais posé à côté du libellé.
   const lead = busy

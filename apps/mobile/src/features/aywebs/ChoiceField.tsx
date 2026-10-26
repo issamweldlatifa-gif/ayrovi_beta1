@@ -13,6 +13,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
+import { COMMERCE } from '@/design/tokens.mobile';
 
 export interface ChoiceOption {
   /** القيمة كما نشرتها الصفحة — تُرسل للخادم كما هي. */
@@ -55,7 +56,7 @@ export function ChoiceField({
         style={[
           styles.control,
           {
-            borderColor: open ? '#FFD60A' : theme.colors.line,
+            borderColor: open ? COMMERCE.action : theme.colors.line,
             borderRadius: theme.radius.control,
             minHeight: theme.geometry.minTarget + 8,
           },
@@ -124,7 +125,7 @@ export function ChoiceField({
                 {unavailable ? (
                   <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.notAvailable')}</AppText>
                 ) : active ? (
-                  <Ionicons name="checkmark" size={theme.iconSize.md} color={theme.mode === 'dark' ? '#FFD60A' : '#9A7B00'} />
+                  <Ionicons name="checkmark" size={theme.iconSize.md} color={theme.status.warning.fg} />
                 ) : null}
               </Pressable>
             );

@@ -65,6 +65,13 @@ export const SPACE_EXTENDED = [2, 6, 10, 20, 40] as const;
 /** Échelle complète : identité + compléments, triée. */
 export const SPACE_ALL: readonly number[] = [...SPACE, ...SPACE_EXTENDED].sort((a, b) => a - b);
 
+/** CTA d'achat propre à AYWEBs — jaune fixe, isolé des actions de marque globales. */
+export const COMMERCE = {
+  action: '#FFD60A',
+  actionPressed: '#E6C200',
+  onAction: BRAND.black,
+} as const;
+
 /* ── Ratios des médias (un seul endroit : pas de nombre en dur dans les écrans) ─ */
 
 /**
