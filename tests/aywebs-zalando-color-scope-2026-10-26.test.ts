@@ -178,6 +178,20 @@ describe('Zalando — le prix d’une couleur ne fuit jamais sur une autre', () 
     expect(verdict.currencyVerified).toBe(true);
   });
 
+  it('la devise vient des offres de la couleur affichée quand le DOM n’en écrit aucune', () => {
+    /* «139,99» sans « € » : la seule devise publiée est celle de l'offre du
+       marchand. Elle est STRUCTURELLE (`priceCurrency`), pas déduite. */
+    const html = page({ items: variants() }).replace('<span>139,99 €</span>', '<span>139,99</span>');
+    const capture = run(html);
+    expect(String(capture.currencyText)).toBe('EUR');
+    const verdict = validateAyWebsCapturedPage(capture, PAGE_URL, {
+      requireCorroboration: false,
+      requireProductPage: true,
+    });
+    expect(verdict.currency).toBe('EUR');
+    expect(verdict.currencyVerified).toBe(true);
+  });
+
   it('le serveur ne peut plus prouver un prix pris sur l’autre couleur', () => {
     const capture = run(page({ items: variants() }));
     const groups = (capture.variantGroups as never[]) ?? [];

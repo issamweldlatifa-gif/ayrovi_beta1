@@ -822,6 +822,7 @@ export const fr = {
   'aywebs.fav.login': "Connectez-vous pour enregistrer",
   'aywebs.pickTitle': "Sélectionnez votre article",
   'aywebs.pricePending': "Calcul du prix…",
+  'aywebs.diagnosticLine': "Détail technique : {code}",
   'aywebs.priceAtAdd': "Prix en dinars calculé à l’ajout.",
   'aywebs.merchantPriceLine': "Prix boutique : {price}",
   'aywebs.availUnknown': "Stock vérifié au moment de l’ajout.",

@@ -43,6 +43,7 @@ import {
 import { choiceGroupKind, choiceGroupKey } from '@/features/aywebs/choiceGroup';
 import { ChoiceField, type ChoiceOption } from '@/features/aywebs/ChoiceField';
 import { quantityLimit, selectionQuote, type AvailabilityState } from '@/features/aywebs/selectionQuote';
+import { lacksServerQuote, preferServerQuote, serverReadDecision } from '@/features/aywebs/priceFallback';
 import { formatAmount, formatMoney } from '@/format/money';
 
 export interface AddToCartSheetProps {
@@ -97,6 +98,8 @@ export function AddToCartSheet({
   const [quantity, setQuantity] = useState(1);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  /** رموز تشخيص قصيرة (رفض الكابتشر، رفض الثمن) — تظهر كان كي فمّة رفض. */
+  const [diagnostic, setDiagnostic] = useState('');
   const [added, setAdded] = useState<{ item: AyWebsCartItem; linked: boolean; reason: string } | null>(null);
   const [fetched, setFetched] = useState<AyWebsVariantOption[]>([]);
   const [fetchedGroups, setFetchedGroups] = useState<AyWebsVariantGroup[] | null>(null);
@@ -138,7 +141,7 @@ export function AddToCartSheet({
     if (!sessionId || !captureToUse) return;
     setQuoting(true);
     try {
-      const resolved = await resolveAyWebsProductWithCapture(product.sourceUrl, {
+      let resolved = await resolveAyWebsProductWithCapture(product.sourceUrl, {
         sessionId,
         storeId: product.storeId || undefined,
         capture: captureToUse,
@@ -146,15 +149,38 @@ export function AddToCartSheet({
         variant: Object.keys(picked).length ? picked : null,
       });
       if (!alive.current) return;
+      /* La capture ne donne aucun devis (devise non prouvée, prix absent de la
+         page…) ⇒ le serveur RELIT la page, comme le fait le WEB pour la même
+         fiche. Sans ce repli, la feuille restait sur « Prix en dinars calculé à
+         l'ajout. » alors que le site affichait le devis (26/10/2026). */
+      let productForQuote = resolved.product;
+      let quoteTokenForQuote = resolved.quoteToken;
+      const decision = serverReadDecision({ product: resolved.product, sessionId });
+      if (decision.read) {
+        try {
+          const reread = await resolveAyWebsProductWithCapture(product.sourceUrl, {
+            sessionId,
+            storeId: product.storeId || undefined,
+            refresh: true,
+            variant: Object.keys(picked).length ? picked : null,
+          });
+          if (!alive.current) return;
+          productForQuote = preferServerQuote(resolved.product, reread.product);
+          if (!lacksServerQuote(reread.product)) quoteTokenForQuote = reread.quoteToken;
+        } catch {
+          /* Relecture impossible : on garde la capture, et la feuille dit ce qui
+             manque au lieu de promettre un prix. */
+        }
+      }
       setPageQuote({
         selection: picked,
-        unitTnd: resolved.product.ayroviPricing?.totalTnd ?? null,
-        availability: stateOf(resolved.product.availability.state),
-        stock: resolved.product.availability.quantityHint ?? null,
-        sourcePrice: resolved.product.price,
-        sourceCurrency: resolved.product.currency,
-        quotes: resolved.product.variantQuotes,
-        quoteToken: resolved.quoteToken,
+        unitTnd: productForQuote.ayroviPricing?.totalTnd ?? null,
+        availability: stateOf(productForQuote.availability.state),
+        stock: productForQuote.availability.quantityHint ?? null,
+        sourcePrice: productForQuote.price,
+        sourceCurrency: productForQuote.currency,
+        quotes: productForQuote.variantQuotes,
+        quoteToken: quoteTokenForQuote,
       });
     } catch {
       /* أفضل جهد: بلا خادم، الورقة تعرض ثمن الصفحة وتقول إن الدينار يجي وقت الإضافة. */
@@ -176,6 +202,7 @@ export function AddToCartSheet({
     setSelection(initial);
     setQuantity(1);
     setError('');
+    setDiagnostic('');
     setAdded(null);
     setBusy(false);
     setFetched([]);
@@ -410,6 +437,35 @@ export function AddToCartSheet({
         }
       }
 
+      /* تشخيص: علاش الخادم ما قدرش ينشر الثمن؟ الرموز تجي منو (رفض الكابتشر،
+         رفض الثمن) — تتكتب في الورقة باش المشكل يتشخّص من التيليفون. */
+      setDiagnostic([
+        resolved.capture?.rejection ? `capture:${resolved.capture.rejection}` : '',
+        resolved.priceRejection ? `price:${resolved.priceRejection}` : '',
+      ].filter(Boolean).join(' · '));
+
+      /* 2 bis. بلا دفي بالدينار من الكابتشر ⇒ الخادم يعاود يقرا الصفحة (كيما
+         الويب). هذا هو الفرق اللي كان يخلّي لون يخدم ولون لا: نفس الفيشة،
+         كابتشر ما فيهاش ثمن مُثبَّت. */
+      if (lacksServerQuote(resolved.product)) {
+        try {
+          const reread = await resolveAyWebsProductWithCapture(target, {
+            sessionId,
+            storeId: product.storeId || undefined,
+            refresh: true,
+            variant,
+          });
+          if (!alive.current) return;
+          resolved = { ...resolved, product: preferServerQuote(resolved.product, reread.product) };
+          if (!lacksServerQuote(reread.product)) {
+            captureToUse = null;
+            resolved.quoteToken = reread.quoteToken;
+          }
+        } catch {
+          /* نكمّلو بالحكم الأخير: الخادم يقول كلمتو في الإضافة. */
+        }
+      }
+
       /* 3. ما نطلبوش من الخادم إضافة يعرف أنّه باش يرفضها: السبب يتكتب للمستعمل. */
       if (resolved.product.availability.state === 'UNKNOWN') {
         setError(t('aywebs.selectionUnverified'));
@@ -613,6 +669,9 @@ export function AddToCartSheet({
           ) : null}
           {error ? (
             <AppText variant="caption" color={theme.status.danger.fg} accessibilityRole="alert">{error}</AppText>
+          ) : null}
+          {error && diagnostic ? (
+            <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.diagnosticLine', { code: diagnostic })}</AppText>
           ) : null}
 
           <Button

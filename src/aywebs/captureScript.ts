@@ -1672,7 +1672,7 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
    * place du marchand et on ne publie ni prix ni état.
    */
   function ldConsensus(rows) {
-    var fact = { available: null, price: null, stock: null, conflict: false };
+    var fact = { available: null, price: null, currency: '', stock: null, conflict: false };
     if (!rows || !rows.length) return fact;
     var amounts = [];
     var currencies = [];
@@ -1685,6 +1685,7 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
       if (row.available === true || row.available === false) states.push(row.available);
       if (typeof row.stock === 'number' && row.stock > 0) stocks.push(row.stock);
     }
+    if (currencies.length === 1) fact.currency = currencies[0];
     if (amounts.length === 1) fact.price = amounts[0] + (currencies.length === 1 ? ' ' + currencies[0] : '');
     else if (amounts.length > 1) fact.conflict = true;
     if (states.length) {
@@ -2046,7 +2047,13 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
       try {
         var ldPriceRows = ldScopedRows(jsonLd);
         if (ldPriceRows.withFacts && ldPriceRows.rows.length) {
-          var ldPagePrice = ldConsensus(ldPriceRows.rows).price;
+          var ldFact = ldConsensus(ldPriceRows.rows);
+          var ldPagePrice = ldFact.price;
+          /* Devise publiée par les offres de CETTE couleur : c'est une donnée
+             STRUCTURELLE du marchand ("priceCurrency"), pas une déduction. Sans
+             elle, une page qui écrit «139,99» sans symbole laissait la devise
+             non prouvée ⇒ aucun devis en dinars. */
+          if (!out.currencyText && ldFact.currency) out.currencyText = cut(ldFact.currency, LIMITS.label);
           if (ldPagePrice) {
             var priceKnown = false;
             for (var cp = 0; cp < out.priceCandidates.length; cp++) {

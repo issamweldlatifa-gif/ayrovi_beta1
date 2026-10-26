@@ -822,6 +822,7 @@ export const ar = {
   'aywebs.fav.login': "سجّل الدخول باش تحفظ في المفضلة",
   'aywebs.pickTitle': "اختر ما تريد",
   'aywebs.pricePending': "الثمن يتحسب…",
+  'aywebs.diagnosticLine': "تفصيل تقني: {code}",
   'aywebs.priceAtAdd': "الثمن بالدينار يتحسب وقت الإضافة.",
   'aywebs.merchantPriceLine': "سعر المتجر: {price}",
   'aywebs.availUnknown': "المخزون يتأكّد وقت الإضافة.",
