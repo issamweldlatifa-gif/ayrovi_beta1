@@ -310,7 +310,7 @@ function cleanImageUrls(raw: unknown): string[] {
  * Une entrée mal formée est écartée en silence ; elle ne fait jamais échouer la
  * capture, car un groupe absent n'invalide pas un prix corroboré.
  */
-const NOT_A_VARIANT_GROUP = /^(sort|sort by|sortby|trier|tri|order by|orderby|quantit|quantity|qty|nombre|view|view by|affichage|filter|filtre|page|pages|lang|langue|language|devise|currency|pays|country|region|région|per page|items per page|afficher)\b/i;
+const NOT_A_VARIANT_GROUP = /^(sort|sort by|sortby|trier|tri|order by|orderby|quantit\w*|quantity|qty|nombre|view|view by|affichage|filter|filtre|page|pages|lang|langue|language|devise|currency|pays|country|region|région|per page|items per page|afficher)\b/i;
 
 function cleanVariantGroups(raw: unknown): AyWebsCapturedVariantGroup[] {
   if (!Array.isArray(raw)) return [];
@@ -326,8 +326,14 @@ function cleanVariantGroups(raw: unknown): AyWebsCapturedVariantGroup[] {
     /* Tri, quantité, filtre, langue… ne sont pas des variantes : les publier
        ferait exiger une sélection que la page n'a jamais présentée comme choix. */
     if (NOT_A_VARIANT_GROUP.test(name)) continue;
+    /* Un nombre seul est un INDEX de pagination… sauf dans un groupe de TAILLE :
+       une pointure « 36 » (ou une taille enfant « 8 ») est un choix publié, pas
+       un indice. Mesuré le 26/10/2026 : toutes les pointures entières étaient
+       écartées, la feuille Zalando ne proposait que « 35.5 », « 51.5 »… et le
+       client ne pouvait pas choisir sa taille. */
+    const sizeGroup = /(size|taille|talla|taglia|gr(ö|oe)(ß|ss)e|misura|maat|размер|مقاس|قياس)/i.test(name);
     const values = cleanTextArray((entry as { values?: unknown }).values, AYWEBS_CAPTURE_LIMITS.maxVariantGroupValues, 60)
-      .filter((value) => !/^\d{1,3}$/.test(value));
+      .filter((value) => sizeGroup || !/^\d{1,3}$/.test(value));
     if (values.length < 1) continue;
     const selected = cleanTextArray((entry as { selected?: unknown }).selected, AYWEBS_CAPTURE_LIMITS.maxVariantGroupValues, 60)
       .filter((value) => values.some((known) => known.toLowerCase() === value.toLowerCase()));

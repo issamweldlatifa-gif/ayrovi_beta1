@@ -1334,6 +1334,11 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
      et « Search Amazon » comme options de produit. Un libellé de barre de
      recherche n'est pas un choix de produit. */
   var NOT_A_CHOICE = /^(select|choose|choisir|sélectionner|please|اختر|--)|search|department|store name|catégorie|category/i;
+  /* Actions et liens d'aide : ce ne sont PAS des valeurs de variante. Mesuré le
+     26/10/2026 sur une fiche Zalando : le lien « Taille & coupe » et le bouton
+     « Ajouter au panier » se retrouvaient dans la liste des TAILLES, et la
+     feuille du client affichait « Taille : Taille & coupe ». */
+  var ACTION_NOT_A_VALUE = /^(?:add|ajouter|acheter|buy|commander|checkout|panier|cart|sac|bag|wishlist|favoris|partager|share|guide|voir|see|learn|en\s+savoir\s+plus|taille\s*(?:&|et|\+)\s*coupe|size\s*(?:&|and|\+)\s*fit|size\s*guide|guide\s*des\s*tailles)\b/i;
 
   try {
     var selected = document.querySelectorAll('select option:checked, [role="option"][aria-selected="true"], [aria-checked="true"]');
@@ -1431,7 +1436,7 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
      filtre, langue… Les publier ferait envoyer une valeur que la page n'affiche
      pas comme choix, et le serveur refuserait l'ajout (« sélection non prouvée »)
      pour une raison qui n'a rien à voir avec le produit. */
-  var NOT_A_VARIANT_GROUP = /^(sort|sort by|sortby|trier|tri|order by|orderby|quantit|quantity|qty|nombre|view|view by|affichage|filter|filtre|page|pages|lang|langue|language|devise|currency|pays|country|region|région|per page|items per page|afficher)\b/i;
+  var NOT_A_VARIANT_GROUP = /^(sort|sort by|sortby|trier|tri|order by|orderby|quantit\w*|quantity|qty|nombre|view|view by|affichage|filter|filtre|page|pages|lang|langue|language|devise|currency|pays|country|region|région|per page|items per page|afficher)\b/i;
   /**
    * Prix écrit SUR une valeur (« 88,00 € », « 12,95 € TVA incluse »).
    *
@@ -1491,6 +1496,10 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     if (!name || !values.length) return;
     var label = cut(name, LIMITS.label);
     if (!label || NOT_A_CHOICE.test(label) || NOT_A_VARIANT_GROUP.test(label)) return;
+    /* Le DOM nomme les valeurs et dit laquelle est cochée ; le JSON-LD apporte ce
+       que le DOM ne publie pas (prix / état par taille). On fusionne les deux
+       POUR CHAQUE VALEUR, jamais d'un groupe à l'autre. */
+    if (!IS_AMAZON) options = mergeVariantOptions(options, ldOptionsFor(label));
     /* On publie TOUJOURS les choix que la page presente (au moins 2 valeurs
        distinctes), meme sans selection reperee : sans eux, la feuille mobile
        n'offrait aucune taille/couleur (cas Zalando, choix en input checkbox dans
@@ -1545,6 +1554,142 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     }
   }
   function isIndexValue(value) { return /^\d{1,3}$/.test(String(value)); }
+
+  /* ── 7 ter-0. CE QUE LE JSON-LD PUBLIE POUR CHAQUE VALEUR (26/10/2026) ────
+     Zalando (et les "ProductGroup" en général) ne publient NI prix NI état par
+     taille dans le DOM : tout est dans "hasVariant[].offers" (prix, devise,
+     availability). Sans cette lecture, le client choisissait une taille que le
+     serveur ne pouvait prouver ni en prix ni en stock ⇒ "PRICE_UNAVAILABLE"
+     (« Pas de devis serveur en dinars »), et l'ajout était impossible alors que
+     la page publiait tout.
+
+     On ne devine rien : "size" / "color" et "offers.*" sont des champs NORME.
+     Les options servent de preuve PAR VALEUR ; "selected" reste vide (un
+     "ProductGroup" ne dit pas quelle variante est affichée). */
+  function ldOfferOf(variant) {
+    if (!variant || typeof variant !== 'object') return null;
+    var offers = variant.offers;
+    var list = Object.prototype.toString.call(offers) === '[object Array]' ? offers : (offers ? [offers] : []);
+    for (var i = 0; i < list.length && i < 4; i++) {
+      var offer = list[i];
+      if (!offer || typeof offer !== 'object') continue;
+      if (/aggregateoffer/i.test(String(offer['@type'] || ''))) continue;
+      return offer;
+    }
+    return null;
+  }
+  /** "availability" schema.org ⇒ true (en stock) / false (épuisé) / null (rien). */
+  function ldAvailability(offer) {
+    var raw = String(offerField(offer, ['availability']) || '').toLowerCase();
+    if (!raw) return null;
+    if (/outofstock|soldout|out_of_stock|discontinued/.test(raw)) return false;
+    if (/instock|limitedavailability|onlineonly|instoreonly|backorder|preorder|madeorder/.test(raw)) return true;
+    return null;
+  }
+  function groupsFromJsonLdGroup(product) {
+    var groups = [];
+    if (!product || typeof product !== 'object') return groups;
+    var variants = Object.prototype.toString.call(product.hasVariant) === '[object Array]'
+      ? product.hasVariant : (product.hasVariant ? [product.hasVariant] : []);
+    if (!variants.length) return groups;
+    var dimensions = [{ key: 'size', name: 'Taille' }, { key: 'color', name: 'Couleur' }];
+    for (var d = 0; d < dimensions.length; d++) {
+      var values = [];
+      var options = [];
+      for (var v = 0; v < variants.length && v < 120 && values.length < LIMITS.variantValues; v++) {
+        var variant = variants[v];
+        if (!variant || typeof variant !== 'object') continue;
+        var value = cut(variant[dimensions[d].key], LIMITS.label);
+        if (!value || NOT_A_CHOICE.test(value) || ACTION_NOT_A_VALUE.test(value) || ciExactContains(values, value)) continue;
+        var offer = ldOfferOf(variant);
+        var priceText = offer ? offerField(offer, ['price', 'lowPrice']) : '';
+        var currencyText = offer ? offerField(offer, ['priceCurrency', 'currency']) : '';
+        var price = priceText && HAS_DIGIT.test(priceText) ? cut(priceText + ' ' + currencyText, LIMITS.label) : '';
+        var available = offer ? ldAvailability(offer) : null;
+        var stockNumber = offer ? Number(offerField(offer, ['inventoryLevel'])) : NaN;
+        var stock = isFinite(stockNumber) && stockNumber > 0 && stockNumber <= 999 ? Math.floor(stockNumber) : null;
+        values.push(value);
+        /* Rien de publié pour cette valeur (ni état, ni prix, ni stock) = pas de
+           ligne d'option : un état « inconnu » n'est pas un fait. */
+        if (available === null && !price && stock === null) continue;
+        options.push({ value: value, available: available, price: price || null, priceFrom: false, stock: stock });
+      }
+      if (values.length > 1) groups.push({ name: dimensions[d].name, values: values, selected: [], options: options });
+    }
+    return groups;
+  }
+  /* Index par nom de groupe : les options du JSON-LD enrichissent le groupe DOM
+     du même nom (qui, lui, porte la valeur réellement cochée par le client). */
+  var LD_GROUPS = [];
+  var LD_OPTIONS = {};
+  if (!IS_AMAZON && jsonLd) {
+    try {
+      LD_GROUPS = groupsFromJsonLdGroup(jsonLd);
+      for (var ldi = 0; ldi < LD_GROUPS.length; ldi++) {
+        LD_OPTIONS[LD_GROUPS[ldi].name.toLowerCase()] = LD_GROUPS[ldi].options;
+      }
+    } catch (e) { LD_GROUPS = []; LD_OPTIONS = {}; }
+  }
+  /** Options publiées pour cette valeur par le JSON-LD (jamais pour une autre). */
+  function ldOptionsFor(name) {
+    var key = String(name || '').toLowerCase();
+    var rows = LD_OPTIONS[key];
+    /* Le groupe DOM peut porter son nom dans la langue de la page (« Größe ») :
+       on retombe alors sur la dimension, jamais sur un autre attribut. */
+    if (!rows && /size|taille|talla|taglia|gr(ö|oe)(ß|ss)e|misura|maat|размер|مقاس|قياس/i.test(key)) rows = LD_OPTIONS['taille'];
+    if (!rows && /colour|color|couleur|farbe|colore|kleur|لون/i.test(key)) rows = LD_OPTIONS['couleur'];
+    return Object.prototype.toString.call(rows) === '[object Array]' ? rows : [];
+  }
+  /**
+   * Fusionne, POUR UNE MÊME VALEUR, ce que dit le DOM et ce que dit le JSON-LD.
+   *   • le NÉGATIF gagne : une valeur désactivée dans le DOM reste indisponible
+   *     même si une offre dit « InStock » (la page a le dernier mot) ;
+   *   • le prix vient du JSON-LD quand il existe (le DOM n'en publie pas par
+   *     taille chez Zalando) ;
+   *   • une ligne sans aucun fait (ni état, ni prix, ni stock) n'est pas publiée.
+   */
+  function mergeVariantOptions(domOptions, ldOptions) {
+    var rows = Object.prototype.toString.call(domOptions) === '[object Array]' ? domOptions : [];
+    var published = Object.prototype.toString.call(ldOptions) === '[object Array]' ? ldOptions : [];
+    var out2 = [];
+    var i;
+    for (i = 0; i < rows.length; i++) {
+      var row = rows[i];
+      if (!row || !row.value) continue;
+      var extra = null;
+      for (var l = 0; l < published.length; l++) {
+        if (String(published[l].value).toLowerCase() === String(row.value).toLowerCase()) { extra = published[l]; break; }
+      }
+      var available = row.available === false || (extra && extra.available === false)
+        ? false
+        : (extra && extra.available === true) ? true
+          : (row.available === true ? true : null);
+      var price = (extra && extra.price) || row.price || null;
+      var stock = (extra && typeof extra.stock === 'number' && extra.stock > 0) ? extra.stock
+        : (typeof row.stock === 'number' && row.stock > 0 ? row.stock : null);
+      if (available === null && !price && stock === null) continue;
+      out2.push({
+        value: row.value,
+        available: available,
+        price: price,
+        priceFrom: (extra && extra.priceFrom === true) || row.priceFrom === true,
+        stock: stock,
+      });
+    }
+    return out2;
+  }
+  function ldGroupAlreadyCovered(name) {
+    var key = String(name || '').toLowerCase();
+    var size = /size|taille|talla|taglia|gr(ö|oe)(ß|ss)e|misura|maat|размер|مقاس|قياس/i.test(key);
+    var color = /colour|color|couleur|farbe|colore|kleur|لون/i.test(key);
+    for (var gi = 0; gi < out.variantGroups.length; gi++) {
+      var known = String(out.variantGroups[gi].name || '').toLowerCase();
+      if (size && /size|taille|talla|taglia|gr(ö|oe)(ß|ss)e|misura|maat|размер|مقاس|قياس/i.test(known)) return true;
+      if (color && /colour|color|couleur|farbe|colore|kleur|لون/i.test(known)) return true;
+    }
+    return false;
+  }
+
   if (!IS_AMAZON) {
     try {
       var selects = document.querySelectorAll('select');
@@ -1565,10 +1710,15 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
         var values = [];
         var chosen = [];
         var valueOptions = [];
+        /* Un NOMBRE dans un <select> n'est une taille que si le groupe en est un
+           (pointures 36–46) : ailleurs c'est une quantité ou un index. */
+        var selectIsSize = /size|taille|talla|taglia|gr(ö|oe)(ß|ss)e|misura|maat|размер|مقاس|قياس/i.test(groupName);
         for (var oi = 0; oi < selectNode.options.length && values.length < LIMITS.variantValues; oi++) {
           var opt = selectNode.options[oi];
           var optLabel = text(opt.textContent);
-          if (!optLabel || optLabel.length > LIMITS.label || NOT_A_CHOICE.test(optLabel) || isIndexValue(optLabel)) continue;
+          if (!optLabel || optLabel.length > LIMITS.label || NOT_A_CHOICE.test(optLabel)) continue;
+          if (ACTION_NOT_A_VALUE.test(optLabel)) continue;
+          if (!selectIsSize && isIndexValue(optLabel)) continue;
           if (ciExactContains(values, optLabel)) continue;
           values.push(optLabel);
           if (opt.selected) chosen.push(optLabel);
@@ -1658,7 +1808,9 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
           if (!hostDescriptor || hostDescriptor.length > LIMITS.label) continue;
           if (NOT_A_CHOICE.test(hostDescriptor) || NOT_A_VARIANT_GROUP.test(hostDescriptor)) continue;
           var valueNodes = [];
-          try { valueNodes = host.querySelectorAll('[role="radio"], [role="option"], button, li, label, a'); } catch (e) { valueNodes = []; }
+          /* Pas de "a" : un LIEN n'est pas un choix. Il amenait « Taille & coupe »
+             (guide des tailles Zalando) dans la liste des tailles. */
+          try { valueNodes = host.querySelectorAll('[role="radio"], [role="option"], button, li, label'); } catch (e) { valueNodes = []; }
           var hostValues = [];
           var hostChosen = [];
           var hostOptions = [];
@@ -1668,7 +1820,23 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
             var valueLabel = text(valueNode.getAttribute && valueNode.getAttribute('aria-label'))
               || text(valueNode.getAttribute && valueNode.getAttribute('title'))
               || text(valueNode.textContent);
-            if (!valueLabel || valueLabel.length > 40 || NOT_A_CHOICE.test(valueLabel) || isIndexValue(valueLabel)) continue;
+            if (!valueLabel || valueLabel.length > 40 || NOT_A_CHOICE.test(valueLabel)) continue;
+            /* Actions (panier, guide, partage) : jamais une valeur. */
+            if (ACTION_NOT_A_VALUE.test(valueLabel)) continue;
+            var valueButtonType = valueNode.tagName === 'BUTTON'
+              ? String(valueNode.getAttribute && valueNode.getAttribute('type') || '').toLowerCase()
+              : '';
+            if (valueButtonType === 'submit') continue;
+            /* Un NOMBRE SEUL est un index de pagination — SAUF quand il est porté
+               par un vrai contrôle de choix : la pointure « 36 » est une taille
+               publiée, pas un indice (mesuré 26/10/2026 : toutes les pointures
+               entières disparaissaient de la feuille Zalando). */
+            var isChoiceControl = false;
+            try {
+              isChoiceControl = valueNode.tagName === 'INPUT'
+                || Boolean(valueNode.querySelector && valueNode.querySelector('input, select'));
+            } catch (e) { isChoiceControl = false; }
+            if (!isChoiceControl && isIndexValue(valueLabel)) continue;
             if (ciExactContains(hostValues, valueLabel)) continue;
             var checked = String(valueNode.getAttribute && (valueNode.getAttribute('aria-checked') || valueNode.getAttribute('aria-selected')) || '').toLowerCase();
             var classText = String(valueNode.className || '');
@@ -1705,6 +1873,17 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
           if (hostValues.length > 1) pushVariantGroup(hostDescriptor, hostValues, hostChosen, hostOptions);
         }
       } catch (e) {}
+    } catch (e) {}
+
+    /* ── 7 ter-2. Ce que seul le JSON-LD publie (26/10/2026) ────────────────
+       Aucun conteneur DOM nommé n'a donné ce groupe (feuille sans tailles) : on
+       publie alors le groupe du "ProductGroup", avec le prix et l'état PAR
+       VALEUR. Rien n'est inventé : ces champs sont ceux du marchand. */
+    try {
+      for (var ldp = 0; ldp < LD_GROUPS.length && out.variantGroups.length < LIMITS.variantGroups; ldp++) {
+        if (ldGroupAlreadyCovered(LD_GROUPS[ldp].name)) continue;
+        pushVariantGroup(LD_GROUPS[ldp].name, LD_GROUPS[ldp].values, LD_GROUPS[ldp].selected, LD_GROUPS[ldp].options);
+      }
     } catch (e) {}
   }
 
