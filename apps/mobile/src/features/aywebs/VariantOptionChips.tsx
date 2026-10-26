@@ -52,11 +52,6 @@ export function VariantOptionChips({
                     <Ionicons name="image-outline" size={20} color={theme.colors.muted} />
                   </View>
                 )}
-                {active ? (
-                  <View style={styles.selectedMark}>
-                    <Ionicons name="checkmark" size={13} color={COMMERCE.onAction} />
-                  </View>
-                ) : null}
               </View>
               <AppText variant="caption" numberOfLines={1} color={disabled ? theme.colors.muted : theme.colors.ink}>
                 {option.value}
@@ -98,6 +93,5 @@ const styles = StyleSheet.create({
   imageRing: { position: 'relative', width: 58, height: 58, borderWidth: 2, borderRadius: 30, padding: 2, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   productImage: { width: 50, height: 50, borderRadius: 25 },
   imagePlaceholder: { width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center' },
-  selectedMark: { position: 'absolute', right: 2, bottom: 2, width: 19, height: 19, borderRadius: 10, backgroundColor: COMMERCE.action, alignItems: 'center', justifyContent: 'center' },
   sizeOption: { minWidth: 48, minHeight: 44, borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center', gap: 1 },
 });

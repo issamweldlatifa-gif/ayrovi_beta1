@@ -450,7 +450,8 @@ describe('violet au minimum : le violet plein est réservé à l’action princi
     const choices = read('src/features/aywebs/ChoiceField.tsx');
     expect(browser).toContain('tone="commerce"');
     expect(sheet).toContain('tone="commerce"');
-    expect(choices).toContain("'#FFD60A'");
+    expect(choices).toContain('COMMERCE.action');
+    expect(COMMERCE.action).toBe('#FFD60A');
   });
 
   it('choix sélectionnés : violet clair + contour violet + texte noir (plus de pastille violette pleine)', () => {
