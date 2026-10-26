@@ -43,6 +43,7 @@ import {
 import { choiceGroupKind, choiceGroupKey } from '@/features/aywebs/choiceGroup';
 import { ChoiceField, type ChoiceOption } from '@/features/aywebs/ChoiceField';
 import { VariantOptionChips } from '@/features/aywebs/VariantOptionChips';
+import { imageForSelectedColor } from '@/features/aywebs/variantImage';
 import { quantityLimit, selectionQuote, type AvailabilityState } from '@/features/aywebs/selectionQuote';
 import { lacksServerQuote, preferServerQuote, quoteReadPlan } from '@/features/aywebs/priceFallback';
 import { ayWebsSameAttribute as sameAttribute } from '@/features/aywebs/attributeKeys';
@@ -483,12 +484,15 @@ export function AddToCartSheet({
          (« size » vs « Taille ») : on compare la DIMENSION, pas la chaîne. */
       const serverQuote = pageQuote?.quotes.find((entry) => sameAttribute(entry.group, groupName)
         && entry.value.trim().toLowerCase() === value.trim().toLowerCase());
+      const optionImage = variantOptions.find((option) => Object.entries(option.attributes).some(([attribute, optionValue]) =>
+        sameAttribute(attribute, groupName) && optionValue.trim().toLowerCase() === value.trim().toLowerCase()))?.image;
       const availability = variantAvailability(groupName, value, selection, variantOptions);
       const unavailable = published?.state === 'OUT_OF_STOCK'
         || serverQuote?.availability === 'OUT_OF_STOCK'
         || availability === 'OUT_OF_STOCK';
       return {
         value,
+        image: optionImage || undefined,
         price: serverQuote?.totalTnd != null ? tndText(serverQuote.totalTnd) : (published?.price || undefined),
         priceFrom: published?.priceFrom === true || serverQuote?.priceFrom === true,
         unavailable,
@@ -701,7 +705,10 @@ export function AddToCartSheet({
   const sourceLine = tndText(quote.unitTnd);
   const totalLine = quote.unitTnd != null ? tndText(quote.unitTnd * quantity) : '';
   const title = added?.item.title || product.title;
-  const imageUri = added?.item.images[0] || product.images[0] || '';
+  const selectedColorImage = imageForSelectedColor(fields, selection);
+  /* الصورة الرئيسية تتبع لون المنتج المختار داخل نفس الورقة؛ fallback للصورة
+     الأصلية فقط إذا التاجر ما نشرش صورة مرتبطة باللون. */
+  const imageUri = selectedColorImage || added?.item.images[0] || product.images[0] || '';
 
   const closeButton = (
     <Pressable

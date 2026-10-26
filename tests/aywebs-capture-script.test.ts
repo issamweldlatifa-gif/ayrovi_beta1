@@ -150,6 +150,19 @@ describe('script AYWEBS — un nombre n\'est jamais un nom d\'option', () => {
     expect(variant ? variant.dimensions : []).toEqual([]);
   });
 
+  it('associe à chaque option couleur la photo produit réellement publiée sur son swatch', () => {
+    const capture = run(page(`<div id="twister"><div id="variation_color_name"><ul>
+      <li class="swatchSelect" data-asin="B0ASIN0007" title="Bleu"><img alt="Bleu" data-old-hires="https://images.amazon.com/blue-product.jpg" src="https://images.amazon.com/blue-thumb.jpg"></li>
+      <li class="swatchAvailable" data-asin="B0ASIN0008" title="Noir"><img alt="Noir" src="https://images.amazon.com/black-product.jpg"></li>
+    </ul></div></div>`)) as {
+      amazon: { options: Array<{ value: string; image?: string }> };
+    };
+    expect(capture.amazon.options.find((option) => option.value === 'Bleu')?.image)
+      .toBe('https://images.amazon.com/blue-product.jpg');
+    expect(capture.amazon.options.find((option) => option.value === 'Noir')?.image)
+      .toBe('https://images.amazon.com/black-product.jpg');
+  });
+
   it('un data-value purement numérique (index de swatch) n\'est jamais un nom d\'option', () => {
     const capture = run(page(`<div id="twister"><div id="variation_size_name"><ul>
       <li data-value="0" data-asin="B0ASIN0005"><span>Rouge</span></li>

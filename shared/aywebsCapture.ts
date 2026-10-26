@@ -132,6 +132,8 @@ export interface AyWebsAmazonEvidence {
     priceFrom?: boolean;
     /** Stock annoncé sur la carte (« Only 6 left in stock »). */
     stock?: number | null;
+    /** Photo HTTP(S) de cette option, si la page la publie sur sa carte. */
+    image?: string | null;
     source?: string;
   }>;
   variants?: Array<{

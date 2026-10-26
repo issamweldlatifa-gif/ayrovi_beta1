@@ -570,7 +570,12 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
         /* Ancien tracé : le swatch CHOISI porte data-dp-url vide = la fiche ouverte elle-même. */
         if (selected && !optionAsin && AMAZON_ASIN && item.hasAttribute && item.hasAttribute('data-dp-url')) optionAsin = AMAZON_ASIN;
         var state = amazonNodeAvailability(item);
-        var addedOption = amazonAddOption(result, dimension, label, optionAsin, selected, state, 'twister_dom');
+        var optionImage = '';
+        try {
+          var optionImageNode = item.querySelector('img');
+          if (optionImageNode) optionImage = String(optionImageNode.getAttribute('data-old-hires') || optionImageNode.getAttribute('data-a-hires') || optionImageNode.currentSrc || optionImageNode.getAttribute('src') || optionImageNode.getAttribute('data-src') || '');
+        } catch (e) {}
+        var addedOption = amazonAddOption(result, dimension, label, optionAsin, selected, state, 'twister_dom', optionImage);
         /* Prix et stock AFFICHÉS SUR LA CARTE de ce choix. Ce sont des faits de
            la page, pas un devis : le serveur recalcule (et le prix d'une carte
            n'est jamais présenté comme le total en dinars). */
@@ -705,19 +710,22 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
   /* Retourne l'option (nouvelle, ou déjà connue) : l'appelant peut y attacher le
      prix et le stock lus sur la carte, même si la valeur venait des données du
      twister. NULL quand la borne d'options est atteinte. */
-  function amazonAddOption(result, dimension, value, asin, selected, state, source) {
+  function amazonAddOption(result, dimension, value, asin, selected, state, source, image) {
+    var imageUrl = typeof image === 'string' && /^https?:\/\//i.test(image) ? cut(image, 600) : null;
     var key = dimension + '|' + value.toLowerCase() + '|' + (asin || '');
     for (var i = 0; i < result.options.length; i++) {
       var existing = result.options[i];
       if ((existing.dimension + '|' + existing.value.toLowerCase() + '|' + (existing.asin || '')) === key) {
         if (selected && !existing.selected) existing.selected = true;
         if (state !== 'unknown' && existing.availabilityEvidence === 'unknown') existing.availabilityEvidence = state;
+        if (!existing.image && imageUrl) existing.image = imageUrl;
         return existing;
       }
     }
     var added = null;
     if (result.options.length < AMAZON_EVIDENCE_LIMITS.options) {
       added = { dimension: cut(dimension, 40), value: cut(value, AMAZON_EVIDENCE_LIMITS.label), asin: asin || null, selected: !!selected, availabilityEvidence: state, source: source };
+      if (imageUrl) added.image = imageUrl;
       result.options.push(added);
     }
     if (asin) amazonMergeVariant(result, asin, [{ name: dimension, value: value }], source);

@@ -27,6 +27,8 @@ export interface LocalVariant {
   priceFrom?: boolean;
   /** Stock annoncé sur la carte ; `null` quand la page n'en publie pas. */
   stock: number | null;
+  /** Photo de l'option, uniquement si le lecteur a extrait une URL HTTP(S) explicite. */
+  image?: string;
 }
 
 /**
@@ -59,8 +61,8 @@ export function localVariantsFromCapture(capture: Json): LocalVariant[] {
      Le second index existe parce que beaucoup de cartes de twister n'exposent PAS
      d'ASIN pour les valeurs non choisies — sans lui, le prix de la couleur
      affichée était perdu et la feuille disait « le prix dépend de l'option ». */
-  const cardByAsin = new Map<string, { price: string; priceFrom: boolean; stock: number | null }>();
-  const cardByValue = new Map<string, { price: string; priceFrom: boolean; stock: number | null }>();
+  const cardByAsin = new Map<string, { price: string; priceFrom: boolean; stock: number | null; image: string }>();
+  const cardByValue = new Map<string, { price: string; priceFrom: boolean; stock: number | null; image: string }>();
   const stateByValue = new Map<string, LocalVariant['availability']>();
   if (amazon && Array.isArray(amazon.options)) {
     for (const option of amazon.options) {
@@ -70,28 +72,33 @@ export function localVariantsFromCapture(capture: Json): LocalVariant[] {
       const key = dimension && value ? `${dimension}=${value.toLowerCase()}` : '';
       const asin = text(option.asin).toUpperCase();
       const price = text(option.price);
+      const rawImage = text(option.image);
+      const image = /^https?:\/\//i.test(rawImage) ? rawImage.slice(0, 600) : '';
       const info = {
         price,
         priceFrom: option.priceFrom === true,
         stock: Number.isFinite(Number(option.stock)) && Number(option.stock) > 0 ? Math.floor(Number(option.stock)) : null,
+        image,
       };
-      if (key && (info.price || info.stock != null)) {
+      if (key && (info.price || info.stock != null || info.image)) {
         const known = cardByValue.get(key);
         cardByValue.set(key, {
           price: known?.price || info.price,
           priceFrom: info.priceFrom,
           stock: known?.stock ?? info.stock,
+          image: known?.image || info.image,
         });
       }
       const evidence = text(option.availabilityEvidence).toLowerCase();
       if (key && VALUE_AVAILABILITY[evidence]) stateByValue.set(key, VALUE_AVAILABILITY[evidence]);
       if (ASIN.test(asin)) {
-        if (info.price || info.stock != null) {
+        if (info.price || info.stock != null || info.image) {
           const known = cardByAsin.get(asin);
           cardByAsin.set(asin, {
             price: known?.price || info.price,
             priceFrom: info.priceFrom,
             stock: known?.stock ?? info.stock,
+            image: known?.image || info.image,
           });
         }
         if (VALUE_AVAILABILITY[evidence]) stateByValue.set(`asin=${asin}`, VALUE_AVAILABILITY[evidence]);
@@ -120,6 +127,10 @@ export function localVariantsFromCapture(capture: Json): LocalVariant[] {
     if (!dedupe || seen.has(dedupe)) return;
     seen.add(dedupe);
     const card = cardFor(asin, attributes);
+    const colorEntry = Object.entries(attributes).find(([name]) => /(color|colour|couleur|farbe|colore)/i.test(name));
+    const colorCard = colorEntry
+      ? cardByValue.get(`${colorEntry[0].toLowerCase()}=${colorEntry[1].toLowerCase()}`)
+      : null;
     out.push({
       asin,
       attributes,
@@ -127,6 +138,7 @@ export function localVariantsFromCapture(capture: Json): LocalVariant[] {
       cardPrice: card?.price ?? '',
       priceFrom: card?.priceFrom ?? false,
       stock: card?.stock ?? null,
+      ...(colorCard?.image ? { image: colorCard.image } : {}),
     });
   };
 
@@ -577,7 +589,7 @@ export function optionsFromVariants(variants: LocalVariant[]): AyWebsVariantOpti
     priceSource: 'UNKNOWN',
     availability: variant.availability,
     availabilityReason: '',
-    image: '',
+    image: variant.image || '',
     totalTnd: null,
   }));
 }

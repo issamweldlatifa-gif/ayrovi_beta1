@@ -18,11 +18,12 @@ describe('AYWEBs product variant controls', () => {
         kind="color"
         label="Couleur"
         value="Noir"
-        options={[{ value: 'Noir' }, { value: 'Rose', unavailable: true }]}
+        options={[{ value: 'Noir', image: 'https://images.example/noir-product.jpg' }, { value: 'Rose', unavailable: true }]}
         onSelect={onSelect}
       />,
     ));
     expect(screen.getByRole('button', { name: 'Couleur: Noir' }).props.accessibilityState.selected).toBe(true);
+    expect(screen.getByTestId('aywebs-color-image-0')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Couleur: Rose' }).props.accessibilityState.disabled).toBe(true);
     fireEvent.press(screen.getByRole('button', { name: 'Couleur: Noir' }));
     expect(onSelect).toHaveBeenCalledWith('Noir');

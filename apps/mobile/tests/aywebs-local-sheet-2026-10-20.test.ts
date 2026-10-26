@@ -55,6 +55,23 @@ describe('variantes depuis la capture', () => {
     ]);
   });
 
+  it('conserve la photo publiée pour chaque valeur couleur jusque dans les options de la feuille', () => {
+    const withColorPhotos = {
+      ...CAPTURE,
+      amazon: {
+        ...CAPTURE.amazon,
+        options: CAPTURE.amazon.options.map((option) => option.value === 'Noir'
+          ? { ...option, image: 'https://images.amazon.com/noir.jpg' }
+          : option),
+      },
+    };
+    const variants = localVariantsFromCapture(withColorPhotos);
+    const noir = variants.find((variant) => variant.attributes.color === 'Noir');
+    expect(noir?.image).toBe('https://images.amazon.com/noir.jpg');
+    expect(optionsFromVariants(variants).find((option) => option.attributes.color === 'Noir')?.image)
+      .toBe('https://images.amazon.com/noir.jpg');
+  });
+
   it('options : ASIN comme sourceVariantId, sans prix local', () => {
     const options = optionsFromVariants(localVariantsFromCapture(CAPTURE));
     expect(options[0].sourceVariantId).toBe('B0SIZEMM01');

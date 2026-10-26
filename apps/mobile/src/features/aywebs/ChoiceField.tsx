@@ -19,6 +19,8 @@ export interface ChoiceOption {
   value: string;
   /** نصّ الثمن المنشور لهذه القيمة (« 12,95 € »)، إن وُجد. */
   price?: string;
+  /** صورة تاجر لهذه القيمة، لا swatch مرسوم أو لون مخمّن. */
+  image?: string;
   priceFrom?: boolean;
   unavailable?: boolean;
   available?: boolean;
