@@ -473,6 +473,15 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
         if (!label) {
           try { var imageLabel = item.querySelector('img[alt]'); label = text(imageLabel && imageLabel.getAttribute('alt')); } catch (e) {}
         }
+        /* Le libellé d'une carte est écrit DANS un enfant (« a-button-text ») :
+           prendre tout le texte du <li> ramenait « X-Small $99.00 Sold out »
+           comme NOM de taille. */
+        if (!label) {
+          try {
+            var labelNode = item.querySelector('.a-button-text, .swatch-title-text, .a-size-base, .a-color-base');
+            if (labelNode) label = text(labelNode.textContent);
+          } catch (e) {}
+        }
         if (!label) label = text(item.textContent);
         label = text(label.replace(/^click to select\s*/i, ''));
         if (!label || label.length > AMAZON_EVIDENCE_LIMITS.label || NOT_A_CHOICE.test(label)) continue;
@@ -1557,6 +1566,65 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
       pushUnique(out.selectedVariantTexts, selected[q], LIMITS.selectedTexts, LIMITS.label);
     }
   }
+  /* ── 7 quater. GROUPES DE VARIANTES AMAZON (26/10/2026) ───────────────────
+     Le bloc 7 ter est sauté sur Amazon (le DOM y est plein de prix de
+     publicité), donc "variantGroups" restait VIDE : le serveur ne pouvait
+     publier aucun devis PAR VALEUR, et changer de couleur ou de taille dans la
+     feuille affichait « Prix en dinars calculé à l'ajout. » — alors que la
+     combinaison affichée par la page, elle, avait son devis.
+
+     Ici on ne relit PAS le DOM : on traduit en groupes ce que le lecteur
+     Amazon a déjà établi pour chaque valeur (ASIN, état publié, prix de la
+     carte, stock annoncé). Rien n'est ajouté : une valeur sans fait publié
+     reste listée comme valeur, sans ligne d'option, et deux prix différents
+     pour la même valeur ne publient aucun prix (on ne choisit pas). */
+  function amazonVariantGroups(evidence) {
+    var groups = [];
+    if (!evidence || Object.prototype.toString.call(evidence.options) !== '[object Array]') return groups;
+    for (var i = 0; i < evidence.options.length; i++) {
+      var option = evidence.options[i];
+      if (!option || !option.value) continue;
+      var name = cut(option.dimension, LIMITS.label);
+      if (!name || NOT_A_CHOICE.test(name) || NOT_A_VARIANT_GROUP.test(name)) continue;
+      var group = null;
+      for (var g = 0; g < groups.length; g++) {
+        if (groups[g].name.toLowerCase() === name.toLowerCase()) { group = groups[g]; break; }
+      }
+      if (!group) {
+        if (groups.length >= LIMITS.variantGroups) continue;
+        group = { name: name, values: [], selected: [], options: [] };
+        groups.push(group);
+      }
+      var value = cut(option.value, LIMITS.label);
+      if (!value || value.length > LIMITS.label) continue;
+      if (!ciExactContains(group.values, value) && group.values.length < LIMITS.variantValues) group.values.push(value);
+      if (option.selected && !ciExactContains(group.selected, value)) group.selected.push(value);
+      var state = option.availabilityEvidence === 'available' ? true
+        : option.availabilityEvidence === 'unavailable' ? false : null;
+      var price = option.price ? cut(option.price, LIMITS.label) : '';
+      var stock = typeof option.stock === 'number' && option.stock > 0 && option.stock <= 999 ? option.stock : null;
+      if (state === null && !price && stock === null) continue;
+      var row = null;
+      for (var r = 0; r < group.options.length; r++) {
+        if (String(group.options[r].value).toLowerCase() === value.toLowerCase()) { row = group.options[r]; break; }
+      }
+      if (!row) {
+        if (group.options.length >= LIMITS.variantValues) continue;
+        row = { value: value, available: null, price: null, priceFrom: false, stock: null };
+        group.options.push(row);
+      }
+      /* Le NÉGATIF gagne : une valeur déclarée indisponible le reste. */
+      if (state === false) row.available = false;
+      else if (state === true && row.available !== false) row.available = true;
+      if (price) {
+        if (!row.price) row.price = price;
+        else if (row.price !== price) row.price = null;
+      }
+      if (option.priceFrom === true && row.price) row.priceFrom = true;
+      if (stock !== null && (row.stock === null || stock < row.stock)) row.stock = stock;
+    }
+    return groups;
+  }
   function isIndexValue(value) { return /^\d{1,3}$/.test(String(value)); }
 
   /* ── 7 ter-0. CE QUE LE JSON-LD PUBLIE POUR CHAQUE VALEUR (26/10/2026) ────
@@ -2130,6 +2198,15 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
        demandée à l'ajout a bien été VUE sur la page. Une fiche rendue sans le DOM
        du twister n'en publiait aucune — l'ajout était refusé « stock non
        confirmé » alors que la page affichait la couleur et la taille choisies. */
+    /* Groupes PAR VALEUR (prix de la carte, état, stock) : sans eux, le serveur
+       ne peut publier aucun devis par taille/couleur et la feuille reste sur
+       « Prix en dinars calculé à l'ajout. » dès qu'on change de valeur. */
+    try {
+      var amazonGroups = amazonVariantGroups(out.amazon);
+      for (var ag = 0; ag < amazonGroups.length; ag++) {
+        pushVariantGroup(amazonGroups[ag].name, amazonGroups[ag].values, amazonGroups[ag].selected, amazonGroups[ag].options);
+      }
+    } catch (e) {}
     if (out.amazon && out.amazon.selectedValues) {
       for (var sv = 0; sv < out.amazon.selectedValues.length && out.selectedVariantTexts.length < LIMITS.selectedTexts; sv++) {
         pushUnique(out.selectedVariantTexts, out.amazon.selectedValues[sv], LIMITS.selectedTexts, LIMITS.label);
