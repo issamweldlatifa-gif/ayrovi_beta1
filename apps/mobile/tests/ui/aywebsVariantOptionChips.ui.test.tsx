@@ -23,7 +23,7 @@ describe('AYWEBs product variant controls', () => {
       />,
     ));
     expect(screen.getByRole('button', { name: 'Couleur: Noir' }).props.accessibilityState.selected).toBe(true);
-    expect(screen.getByTestId('aywebs-color-image-0')).toBeTruthy();
+    expect(screen.UNSAFE_getByType(require('expo-image').Image).props.testID).toBe('aywebs-color-image-0');
     expect(screen.getByRole('button', { name: 'Couleur: Rose' }).props.accessibilityState.disabled).toBe(true);
     fireEvent.press(screen.getByRole('button', { name: 'Couleur: Noir' }));
     expect(onSelect).toHaveBeenCalledWith('Noir');
