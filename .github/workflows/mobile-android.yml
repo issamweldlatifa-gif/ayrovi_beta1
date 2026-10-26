@@ -315,14 +315,21 @@ jobs:
           # `unzip -l` ne demande aucune signature : lecture seule, à froid.
           profile_apk() {
             local apk="$1"
+            # PIÈGE MESURÉ (26/10/2026) : `unzip -l` termine par une ligne de
+            # synthèse (« 12345678   143 files ») dont la PREMIÈRE colonne est un
+            # nombre. Filtrer sur `$1` la comptait donc comme une entrée : elle
+            # s'ajoutait à « autre » et le TOTAL doublait (278,4 Mo annoncés pour
+            # un APK de 125 M). Le seul discriminant sûr est la colonne heure
+            # (`HH:MM`) — une entrée en a toujours une, la synthèse jamais.
+            # Les ABI sont nommées d'après le chemin (`lib/<abi>/…`) au lieu
+            # d'une liste écrite à la main : `lib/x86_64` existait sans qu'on le
+            # voie, caché dans « lib/autre ».
             unzip -l "$apk" | awk '
-              NR > 3 && $1 ~ /^[0-9]+$/ {
+              NR > 3 && NF >= 4 && $3 ~ /^[0-9][0-9]:[0-9][0-9]$/ {
                 path = $4
                 bytes = $1
                 family = "autre"
-                if (path ~ /^lib\/arm64-v8a\//) family = "lib/arm64-v8a"
-                else if (path ~ /^lib\/armeabi-v7a\//) family = "lib/armeabi-v7a"
-                else if (path ~ /^lib\//) family = "lib/autre"
+                if (path ~ /^lib\/[^/]+\//) { split(path, parts, "/"); family = "lib/" parts[2] }
                 else if (path ~ /^assets\//) family = "assets/"
                 else if (path ~ /^res\//) family = "res/"
                 else if (path ~ /^classes[0-9]*\.dex$/) family = "classes.dex"
@@ -354,6 +361,10 @@ jobs:
             for apk in "${APKS[@]}"; do
               echo
               echo "## Profil du poids — $(basename "$apk")"
+              echo
+              echo "> Somme des entrées **décompressées**. La ligne « fichier » ci-dessus"
+              echo "> donne le poids du ZIP : c'est lui qu'on télécharge, l'autre dit où partir"
+              echo "> pour l'alléger."
               echo
               echo "| famille | poids |"
               echo "|---|---|"
