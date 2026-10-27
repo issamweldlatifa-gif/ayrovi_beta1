@@ -349,13 +349,22 @@ export function AyWebsHomeContent({ catalog }: { catalog: StoresCatalogQuery }) 
             ]}
           >
             <View style={[styles.allStoresLabel, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-              <Ionicons name="grid-outline" size={18} color={theme.colors.ink} accessibilityElementsHidden />
+              {/* Le repère de la section est le VIOLET de la marque, comme le
+                  mot-symbole : c'est `theme.colors.accent` (#571EF6), la même
+                  valeur — pas une teinte choisie à part (27/10/2026). */}
+              <Ionicons name="grid-outline" size={18} color={theme.colors.accent} accessibilityElementsHidden />
               <AppText variant="label" weight="bold">{t('aywebs.home.allStores')}</AppText>
             </View>
-            <View style={[styles.allStoresCount, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-              <AppText variant="caption" color={theme.colors.muted}>{stores.length}</AppText>
-              <Ionicons name={storeListLabel} size={16} color={theme.colors.muted} accessibilityElementsHidden />
-            </View>
+            {/* Pas de compteur : il affichait « 0 » quand le catalogue n'avait
+                pas encore répondu, et un chiffre qui ment vaut moins que pas de
+                chiffre (décision du 27/10/2026). La flèche suffit à dire
+                « ça ouvre une liste ». */}
+            <Ionicons
+              name={storeListLabel}
+              size={18}
+              color={theme.colors.muted}
+              accessibilityElementsHidden
+            />
           </Pressable>
         ) : null}
       </View>
@@ -630,5 +639,4 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   allStoresLabel: { alignItems: 'center', gap: 8, flexShrink: 1 },
-  allStoresCount: { alignItems: 'center', gap: 6 },
 });

@@ -476,7 +476,8 @@ def render_home() -> Image.Image:
     rounded(d, (M, y, W / SCALE - M, y + 48), R["md"], fill=SURFACE, outline=LINE, width=1)
     icon_grid(d, M + 24, y + 24, VIOLET, 20)
     text(d, (M + 48, y + 24), "Toutes les boutiques", 14, "bold", INK, anchor="lm")
-    text(d, (W / SCALE - M - 32, y + 24), "390", 12, "regular", MUTED, anchor="rm")
+    # Plus de compteur (27/10/2026) : il affichait « 0 » avant la réponse du
+    # catalogue. L'icône de gauche est au VIOLET de la marque, comme le wordmark.
     icon_chevron(d, W / SCALE - M - 20, y + 24, MUTED, 18)
 
     # recadrage sur le contenu réel (+ marge basse)
@@ -554,7 +555,6 @@ def render_boutiques() -> Image.Image:
 
     # Toutes les boutiques
     text(d, (M, y), "Toutes les boutiques", 28, "bold", INK, anchor="ls")
-    text(d, (W / SCALE - M, y - 2), "390", 13, "regular", MUTED, anchor="rs")
     y += S[3] + 4
 
     stride = card_w * 4 / 3 + 8 + 18 + 22 + 17 + 20 + S[5]

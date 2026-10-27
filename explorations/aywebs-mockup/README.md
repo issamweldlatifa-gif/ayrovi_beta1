@@ -338,3 +338,19 @@ Deux reproches sur la capture du téléphone :
 Fichiers : `apps/mobile/assets/aywebs/brands/*.png` (3:4, transparent) et
 `brands-dark/*.png` (mêmes dessins en blanc). Reproche évité au passage : la
 boutique de démonstration d'un logo n'existe plus — chaque carte porte le sien.
+
+
+## Barre « Toutes les boutiques » — 27/10/2026
+
+Deux mots du client sur la capture : « لازم يكون نفس لون نتاعنا بنفسجي » et
+« الجزء هذا نحيها ». La barre portait un compteur (`0` tant que le catalogue
+n'avait pas répondu) et une icône de grille en noir.
+
+- **Le repère passe au violet de la marque** — `theme.colors.accent`, la MÊME
+  valeur que le mot-symbole (`#571EF6`, vérifié pixel par pixel sur
+  `aywebs-wordmark-violet.png` : 13 443 pixels opaques, tous `#571EF6`).
+  Aucune nouvelle teinte, aucun `#571EF6` écrit en dur dans l'écran.
+- **Le compteur disparaît.** Un chiffre qui affiche « 0 » avant la réponse du
+  catalogue vaut moins que pas de chiffre ; la flèche dit déjà « ça ouvre une
+  liste ». Les deux titres « Toutes les boutiques » de l'écran Boutiques
+  perdent leur compte pour la même raison.

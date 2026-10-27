@@ -117,7 +117,11 @@ describe('onglet AYWEBs — accueil en trois sections', () => {
     // 3 — boutiques : quatre cartes + l'entrée vers la liste complète
     expect(screen.getByTestId('aywebs-home-section-stores')).toBeTruthy();
     expect(screen.getByTestId('aywebs-home-all-stores')).toBeTruthy();
-    expect(screen.getByText('4')).toBeTruthy();
+    /* Plus de compteur dans la barre (27/10/2026) : il affichait « 0 » tant que
+       le catalogue n'avait pas répondu. On vérifie donc qu'aucun chiffre ne
+       s'y trouve — et jamais « 0 » à côté du libellé. */
+    expect(screen.queryByText('0')).toBeNull();
+    expect(screen.queryByText('4')).toBeNull();
 
     // Les anciennes pièces ont quitté la page : trois sections, rien d'autre.
     expect(screen.queryByTestId('aywebs-home-resume')).toBeNull();
