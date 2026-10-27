@@ -2,6 +2,7 @@
 // Sert de filet de sécurité contre les plantages au montage : une erreur de rendu
 // dans la grille, une carte ou le lien « Visiter le site » fait échouer ce test.
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -10,6 +11,7 @@ import StoresScreen, { ErrorBoundary } from '../../app/aywebs/stores';
 import { ThemeProvider } from '@/design/theme';
 import { I18nProvider } from '@/i18n';
 import { PrefsProvider } from '@/state/prefs';
+import { MEDIA_RATIO } from '@/design/tokens.mobile';
 
 const mockPush = jest.fn();
 
@@ -86,6 +88,20 @@ function renderScreen() {
 
 describe('écran Magasins — catalogue complet', () => {
   beforeEach(() => mockPush.mockClear());
+
+  it('les boutiques sont des grandes cartes 3:4 et le logo est contenu, jamais rogné', async () => {
+    renderScreen();
+    await waitFor(() => expect(screen.getByTestId('aywebs-store-media-store-0')).toBeTruthy(), { timeout: 5000 });
+
+    const media = StyleSheet.flatten(screen.getByTestId('aywebs-store-media-store-0').props.style);
+    expect(media.aspectRatio).toBe(MEDIA_RATIO.storeCard);
+    expect(media.width).toBe('100%');
+    expect(media.padding).toBe(24);
+
+    // `contain` = le logo entier, quelle que soit sa forme (pas de `cover`).
+    const logo = screen.getByTestId('aywebs-store-logo-store-0');
+    expect(logo.props.contentFit).toBe('contain');
+  });
 
   it('se monte avec les 380 boutiques sans erreur', async () => {
     renderScreen();

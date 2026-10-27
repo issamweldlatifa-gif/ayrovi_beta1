@@ -10,6 +10,7 @@ import AyWebsScreen from '../../app/(tabs)/aywebs';
 import { ThemeProvider } from '@/design/theme';
 import { I18nProvider } from '@/i18n';
 import { PrefsProvider } from '@/state/prefs';
+import { MEDIA_RATIO } from '@/design/tokens.mobile';
 
 jest.mock('expo-router', () => {
   const React = jest.requireActual('react');
@@ -120,8 +121,10 @@ describe('onglet AYWEBs — accueil en trois sections', () => {
 
     const media = screen.getByTestId('aywebs-home-store-media-store-0');
     const mediaStyle = StyleSheet.flatten(media.props.style);
-    expect(mediaStyle.aspectRatio).toBe(1);
+    expect(mediaStyle.aspectRatio).toBe(MEDIA_RATIO.storeCard);
     expect(mediaStyle.width).toBe('100%');
+    // 24 pt de réserve : le logo ne touche jamais le bord, donc jamais rogné.
+    expect(mediaStyle.padding).toBe(24);
 
     const category = screen.getByTestId('aywebs-home-category-marketplace');
     expect(StyleSheet.flatten(category.props.style).width).toBe('48%');

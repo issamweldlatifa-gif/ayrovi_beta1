@@ -27,6 +27,7 @@ import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 import { AppText, Button } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { rowDirectionFor } from '@/design/layoutLogic';
+import { MEDIA_RATIO } from '@/design/tokens.mobile';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { AppImage } from '@/design/appImage';
 import { useI18n } from '@/i18n';
@@ -326,6 +327,19 @@ function ActionTile({ label, icon, active, onPress, testID }: {
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
+/**
+ * Grande carte boutique — le gabarit de la référence (Zalando, 27/10/2026) :
+ * un visuel 3:4 qui occupe la carte, puis le nom, la description et le domaine.
+ *
+ * ── Le logo n'est JAMAIS rogné ─────────────────────────────────────────────
+ * `contentFit="contain"` + une réserve de 24 pt sur les quatre côtés : le logo
+ * garde ses proportions et ne touche jamais le bord, qu'il soit un mot-symbole
+ * large ou un carré. `cover` couperait le nom de la marque — inacceptable dans
+ * un annuaire de boutiques, et c'est précisément le défaut signalé.
+ *
+ * Le cœur est posé SUR le visuel, dans une pastille : il reste lisible quelle
+ * que soit la couleur du logo derrière.
+ */
 function StoreCard({ store, subtitle, enabled, saved, onOpen, onToggle }: {
   store: AyWebsStore;
   subtitle: string;
@@ -351,43 +365,56 @@ function StoreCard({ store, subtitle, enabled, saved, onOpen, onToggle }: {
       testID={`aywebs-store-${store.id}`}
       style={({ pressed }) => [
         styles.card,
-        {
-          backgroundColor: theme.colors.surface,
-          borderColor: theme.colors.line,
-          borderRadius: theme.radius.card,
-          opacity: enabled ? (pressed ? 0.85 : 1) : 0.6,
-        },
+        { opacity: enabled ? (pressed ? 0.85 : 1) : 0.6 },
       ]}
     >
-      <View style={[styles.logoBox, { borderBottomColor: theme.colors.line }]}>
+      <View
+        style={[
+          styles.cardMedia,
+          {
+            backgroundColor: theme.colors.shimmer,
+            borderRadius: theme.radius.card,
+          },
+        ]}
+        testID={`aywebs-store-media-${store.id}`}
+      >
         {logo ? (
-          <AppImage uri={logo} style={styles.logo} contentFit="contain" accessibilityLabel={name} />
+          <AppImage
+            uri={logo}
+            style={styles.cardLogo}
+            contentFit="contain"
+            accessibilityLabel={name}
+            testID={`aywebs-store-logo-${store.id}`}
+          />
         ) : (
-          <AppText variant="title" weight="bold" color={theme.colors.muted}>{name.slice(0, 1)}</AppText>
+          <AppText variant="display" weight="bold" color={theme.colors.muted}>{name.slice(0, 1)}</AppText>
         )}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={saved ? t('aywebs.stores.unsave') : t('aywebs.stores.save')}
+          accessibilityState={{ selected: saved }}
+          onPress={onToggle}
+          hitSlop={8}
+          testID={`aywebs-store-save-${store.id}`}
+          style={[
+            styles.heart,
+            theme.isRTL ? { left: 8 } : { right: 8 },
+            { backgroundColor: theme.colors.canvas },
+          ]}
+        >
+          <Ionicons
+            name={saved ? 'heart' : 'heart-outline'}
+            size={18}
+            color={saved ? theme.colors.accentText : theme.colors.ink}
+            accessibilityElementsHidden
+          />
+        </Pressable>
       </View>
+
       <View style={styles.cardBody}>
-        <View style={[styles.nameRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-          <AppText variant="label" weight="bold" numberOfLines={2} style={styles.name}>{name}</AppText>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={saved ? t('aywebs.stores.unsave') : t('aywebs.stores.save')}
-            accessibilityState={{ selected: saved }}
-            onPress={onToggle}
-            hitSlop={8}
-            testID={`aywebs-store-save-${store.id}`}
-            style={[styles.heart, { backgroundColor: theme.colors.canvas }]}
-          >
-            <Ionicons
-              name={saved ? 'heart' : 'heart-outline'}
-              size={18}
-              color={saved ? theme.colors.accentText : theme.colors.muted}
-              accessibilityElementsHidden
-            />
-          </Pressable>
-        </View>
+        <AppText variant="label" weight="bold" numberOfLines={2}>{name}</AppText>
         {subtitle ? (
-          <AppText variant="caption" color={theme.colors.muted} numberOfLines={3}>{subtitle}</AppText>
+          <AppText variant="body" numberOfLines={3}>{subtitle}</AppText>
         ) : null}
         {domain ? (
           <AppText variant="caption" color={theme.colors.muted} numberOfLines={1}>{domain}</AppText>
@@ -436,20 +463,22 @@ const styles = StyleSheet.create({
   section: { gap: 12 },
   gridRow: { flexDirection: 'row', alignItems: 'stretch' },
   gridPad: { flex: 1 },
-  card: { flex: 1, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
-  logoBox: {
-    aspectRatio: 2,
+  card: { flex: 1, gap: 8 },
+  /** Réserve de 24 pt : le logo ne touche jamais le bord (aucune coupe). */
+  cardMedia: {
+    width: '100%',
+    aspectRatio: MEDIA_RATIO.storeCard,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    padding: 24,
+    overflow: 'hidden',
   },
-  logo: { width: '100%', height: '100%' },
-  cardBody: { padding: 12, gap: 6 },
+  cardLogo: { width: '100%', height: '100%' },
+  cardBody: { gap: 4 },
   visit: { alignItems: 'center', alignSelf: 'flex-start', gap: 6, minHeight: 36, paddingVertical: 4 },
-  nameRow: { alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  name: { flex: 1 },
   heart: {
+    position: 'absolute',
+    top: 8,
     width: 36,
     height: 36,
     borderRadius: 18,

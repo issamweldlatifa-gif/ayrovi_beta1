@@ -32,6 +32,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppText, Button } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { rowDirectionFor } from '@/design/layoutLogic';
+import { MEDIA_RATIO } from '@/design/tokens.mobile';
 import { AppImage } from '@/design/appImage';
 import { mediaUrl } from '@/api/client';
 import { useI18n } from '@/i18n';
@@ -80,12 +81,6 @@ function categoryArt(category: AyWebsCategory): { source?: number; icon: IconNam
   return match
     ? { source: CATEGORY_ART[match[0]], icon: match[2] }
     : { icon: CATEGORY_FALLBACK_ICON };
-}
-
-/** Première catégorie réelle d'une boutique → son visuel de carte. */
-function storeArt(store: AyWebsStore, categories: AyWebsCategory[]): { source?: number; icon: IconName } {
-  const category = categories.find((entry) => store.categories.includes(entry.id));
-  return category ? categoryArt(category) : { icon: CATEGORY_FALLBACK_ICON };
 }
 
 function storeTarget(store: AyWebsStore) {
@@ -409,7 +404,6 @@ function StoreTile({ store, categories, saved, onOpen, onToggle }: {
   const name = storeDisplayName(store);
   const tagline = storeSubtitle(store, categories, locale === 'ar' ? 'ar' : 'fr');
   const logo = mediaUrl(store.logo);
-  const artwork = storeArt(store, categories);
   const sessionId = useSessionId();
   const enabled = Boolean(storeTarget(store) && sessionId);
   return (
@@ -421,25 +415,16 @@ function StoreTile({ store, categories, saved, onOpen, onToggle }: {
         ]}
         testID={`aywebs-home-store-media-${store.id}`}
       >
-        {artwork.source ? (
+        {logo ? (
           <AppImage
-            localSource={artwork.source}
-            contentFit="cover"
-            decorative
+            uri={logo}
+            contentFit="contain"
+            accessibilityLabel={name}
             style={styles.imageFill}
+            testID={`aywebs-home-store-logo-${store.id}`}
           />
-        ) : logo ? (
-          <View style={styles.tileLogoWrap}>
-            <AppImage
-              uri={logo}
-              contentFit="contain"
-              accessibilityLabel={name}
-              style={styles.tileLogo}
-              testID={`aywebs-home-store-logo-${store.id}`}
-            />
-          </View>
         ) : (
-          <AppText variant="title" weight="bold" color={theme.colors.muted}>{name.slice(0, 1)}</AppText>
+          <AppText variant="display" weight="bold" color={theme.colors.muted}>{name.slice(0, 1)}</AppText>
         )}
 
         <Pressable
@@ -499,7 +484,16 @@ const styles = StyleSheet.create({
   sectionTitleText: { flexShrink: 1 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: GRID_GAP },
   tile: { width: HALF, gap: 8 },
-  tileMedia: { width: '100%', aspectRatio: 1, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  // Gabarit commun avec la page Boutiques (MEDIA_RATIO.storeCard) : une même
+  // boutique garde la même silhouette partout. 24 pt de réserve : aucun logo rogné.
+  tileMedia: {
+    width: '100%',
+    aspectRatio: MEDIA_RATIO.storeCard,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
   imageFill: { width: '100%', height: '100%' },
   tileHeart: {
     position: 'absolute',
@@ -510,8 +504,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  tileLogoWrap: { width: '70%', height: '55%', alignItems: 'center', justifyContent: 'center' },
-  tileLogo: { width: '100%', height: '100%' },
   sponsorLabel: { alignItems: 'center', gap: 4 },
   sponsorArt: { width: '100%', aspectRatio: 16 / 9 },
   sponsorTitle: { marginTop: 4 },

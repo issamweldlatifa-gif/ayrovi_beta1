@@ -167,7 +167,7 @@ Les trois sections de l'accueil sont **implémentées** dans l'application :
 | --- | --- | --- |
 | Accueil (3 sections) | `apps/mobile/src/features/aywebs/AyWebsHomeContent.tsx` | ✅ livré |
 | En-tête (mot-symbole + cœur + panier) | `apps/mobile/src/features/shell/AppHeader.tsx` | ✅ livré |
-| Boutiques (`/aywebs/stores`) | `apps/mobile/src/features/aywebs/StoresContent.tsx` | ⏳ écran existant (grille avec logos) — pas encore passé aux grandes cartes photo |
+| Boutiques (`/aywebs/stores`) | `apps/mobile/src/features/aywebs/StoresContent.tsx` | ✅ livré — grandes cartes 3:4, **logo entier** (`contain` + 24 pt de réserve) |
 | Recherche produits | — | ⏳ n'existe pas encore dans l'app |
 
 Ce que le code emprunte, sans exception :
@@ -176,7 +176,8 @@ Ce que le code emprunte, sans exception :
 | --- | --- |
 | Titres de section | `theme.text('lead')` — 18 pt, graisse `bold` |
 | Libellés de carte | `theme.text('label')` — 14 pt, `bold`, **sous** l'image |
-| Carte | `width: 48 %`, `aspectRatio: 1`, `theme.radius.card` (16) |
+| Carte catégorie | `width: 48 %`, `aspectRatio: 1`, `theme.radius.card` (16) |
+| Carte boutique | `width: 48 %`, `aspectRatio: MEDIA_RATIO.storeCard` (3:4), logo `contain`, réserve 24 |
 | Espacement | `theme.space` — 32 entre sections, 12 dans une grille |
 | Recherche | pastille 48 pt, `borderRadius: 999`, filet `theme.colors.line` |
 | Cœur sur la carte | pastille 36 pt `theme.colors.surface` — même motif que `LinkedProductCard` |
@@ -185,3 +186,18 @@ Ce que le code emprunte, sans exception :
 | Couleurs | `theme.colors` uniquement — aucun hexadécimal dans l'écran |
 
 Vérifications passées : `tsc --noEmit`, `vitest run` (1 001 tests), `jest` (142 tests UI).
+
+### Le logo d'une boutique n'est jamais rogné
+
+Règle tenue à un seul endroit (`MEDIA_RATIO.storeCard` + styles de carte) :
+
+  • le visuel de la carte est une **plaque** `theme.colors.shimmer`, pas une photo
+    détournée : une boutique n'a pas de photo de produit, elle a un logo ;
+  • le logo est posé en `contentFit="contain"` avec **24 pt de réserve** sur les
+    quatre côtés — il garde ses proportions, ne touche jamais le bord ;
+  • le cœur est une pastille posée sur la plaque, donc lisible sur tout logo ;
+  • même gabarit sur l'accueil (§3) et sur la page Boutiques : une boutique ne
+    change pas de silhouette d'un écran à l'autre.
+
+Vérifié par `tests/ui/storesScreen.ui.test.tsx` (ratio, réserve, `contentFit`)
+et `tests/ui/aywebsTab.ui.test.tsx` (même gabarit côté accueil).

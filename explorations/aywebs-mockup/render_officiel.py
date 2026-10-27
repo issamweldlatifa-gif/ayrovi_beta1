@@ -266,6 +266,65 @@ def icon_info(d: ImageDraw.ImageDraw, cx: float, cy: float, color=MUTED, size: i
 
 
 # ─── Écran : accueil (3 sections) ───────────────────────────────────────────
+
+# ─── Cartes boutiques : le logo ENTIER, jamais rogné ───────────────────────
+# Ce que la référence Zalando (27/10/2026) montre : une grande carte 3:4, le
+# visuel dedans, le libellé SOUS la carte. Chez nous le visuel d'une boutique
+# est son logo : il est donc posé en `contain`, avec 24 pt de réserve — il
+# garde ses proportions et ne touche jamais le bord.
+
+STORE_CATALOG = [
+    ("Amazon", "Électronique · High-tech", "amazon.tn"),
+    ("Zalando", "Mode · Chaussures", "zalando.tn"),
+    ("SHEIN", "Mode femme", "shein.com"),
+    ("TEMU", "Maison · Cuisine", "temu.com"),
+    ("Stradivarius", "Mode femme", "stradivarius.com"),
+    ("Nike", "Sport · Chaussures", "nike.com"),
+]
+
+
+def fit(value: str, size: int, weight: str, max_w: float) -> str:
+    """Coupe un texte TROP long avec une ellipse — jamais un libellé de carte."""
+    if text_width(value, size, weight) <= max_w:
+        return value
+    cut = value
+    while cut and text_width(cut + "…", size, weight) > max_w:
+        cut = cut[:-1]
+    return cut.rstrip() + "…"
+
+
+def draw_store_logo(d, box, label: str) -> None:
+    """Wordmark centré, réduit jusqu'à tenir dans la réserve : aucune coupe."""
+    x0, y0, x1, y1 = box
+    size = 32
+    while size > 11 and (text_width(label, size, "bold") > (x1 - x0) or size * 1.3 > (y1 - y0)):
+        size -= 1
+    text(d, ((x0 + x1) / 2, (y0 + y1) / 2), label, size, "bold", INK, anchor="mm")
+
+
+def draw_store_card(canvas, d, x, y, w, name, subtitle=None, domain=None,
+                    subtitle_size=15, saved=False, show_visit=False) -> float:
+    """Carte boutique 3:4 + libellés dessous. Retourne la hauteur occupée."""
+    h = w * 4 / 3
+    rounded(d, (x, y, x + w, y + h), R["lg"], fill=SHIMMER)
+    draw_store_logo(d, (x + 24, y + 24, x + w - 24, y + h - 24), name)
+    draw_heart_button(d, x + w - 26, y + 26, active=saved)
+
+    ty = y + h + S[2]
+    text(d, (x, ty), fit(name, 14, "bold", w), 14, "bold", INK)
+    ty += 18
+    if subtitle:
+        text(d, (x, ty), fit(subtitle, subtitle_size, "regular", w), subtitle_size, "regular", INK)
+        ty += subtitle_size + 7
+    if domain:
+        text(d, (x, ty), fit(domain, 12, "regular", w), 12, "regular", MUTED)
+        ty += 17
+    if show_visit:
+        text(d, (x, ty), "Visiter ↗", 12, "bold", VIOLET)
+        ty += 20
+    return ty - y
+
+
 def render_home() -> Image.Image:
     canvas = Image.new("RGBA", (W, 4200), SURFACE)
     d = ImageDraw.Draw(canvas)
@@ -337,7 +396,7 @@ def render_home() -> Image.Image:
     rounded(d, (M, y, W / SCALE - M, y + 46), R["full"], fill=SURFACE, outline=INK, width=1.6)
     text(d, (W / (2 * SCALE), y + 23), "Voir la sélection", 15, "bold", INK, anchor="mm")
 
-    # ── SECTION 3 · Boutiques
+    # ── SECTION 3 · Boutiques (cartes-logo 3:4, comme la page Boutiques)
     y += 46 + S[6]
     d.line([px(M), px(y), px(W / SCALE - M), px(y)], fill=LINE, width=px(1))
     y += S[5]
@@ -345,22 +404,15 @@ def render_home() -> Image.Image:
     icon_chevron(d, W / SCALE - M - 10, y - 8, INK, 22)
     y += S[3] + 4
 
-    stores = [
-        ("Amazon", "hero-tech.jpg"),
-        ("Zalando", "hero-mode-femme.jpg"),
-        ("SHEIN", "hero-mode-homme.jpg"),
-        ("Nike", "hero-sport.jpg"),
-    ]
-    for index, (label, photo) in enumerate(stores):
+    stride = card_w * 4 / 3 + 8 + 18 + 19 + 18
+    for index, (name, subtitle, _domain) in enumerate(STORE_CATALOG[:4]):
         row, col = divmod(index, 2)
         x0 = M + col * (card_w + S[3])
-        h = card_h * 0.82
-        y0 = y + row * (h + S[5] + 26)
-        soft_shadow(canvas, (x0, y0, x0 + card_w, y0 + h), R["lg"])
-        paste_cover(canvas, os.path.join(ASSETS, "hero", photo), (x0, y0, x0 + card_w, y0 + h), R["lg"])
-        text(d, (x0, y0 + h + 10), label, 14, "bold", INK)
+        y0 = y + row * stride
+        draw_store_card(canvas, d, x0, y0, card_w, name,
+                        subtitle=subtitle.split(" · ")[0], subtitle_size=12)
 
-    y += 2 * (card_h * 0.82 + S[5] + 26) + S[3]
+    y += 2 * stride + S[4]
     rounded(d, (M, y, W / SCALE - M, y + 48), R["md"], fill=SURFACE, outline=LINE, width=1)
     icon_grid(d, M + 24, y + 24, VIOLET, 20)
     text(d, (M + 48, y + 24), "Toutes les boutiques", 14, "bold", INK, anchor="lm")
@@ -376,7 +428,7 @@ def render_home() -> Image.Image:
 STORES = ["Amazon", "SHEIN", "Zalando", "TEMU", "Stradivarius", "Nike"]
 
 
-SCREEN_H = 844 * SCALE
+SCREEN_H = 844 * SCALE  # écran fixe : la recherche
 
 
 STORE_PHOTO = {
@@ -406,7 +458,8 @@ def draw_heart_button(d, cx, cy, active=False, size=36):
 
 
 def render_boutiques() -> Image.Image:
-    canvas = Image.new("RGBA", (W, SCREEN_H), SURFACE)
+    """Page Boutiques : le gabarit de la référence — grandes cartes 3:4, logos entiers."""
+    canvas = Image.new("RGBA", (W, 2600), SURFACE)
     d = ImageDraw.Draw(canvas)
     M = S[4]
 
@@ -427,33 +480,32 @@ def render_boutiques() -> Image.Image:
     text(d, (M + 48, 128), "Rechercher une boutique", 15, "regular", MUTED, anchor="lm")
     d.line([px(M), px(168), px(W / SCALE - M), px(168)], fill=LINE, width=px(1))
 
-    # Favoris
+    card_w = (W / SCALE - 2 * M - S[3]) / 2
+
+    # Favoris : deux cartes, cœur plein
     y = 196
     text(d, (M, y), "Favoris", 20, "bold", INK, anchor="ls")
     y += S[3] + 4
-    card_w = (W / SCALE - 2 * M - S[3]) / 2
-    card_h = card_w * 0.78
-    for index, name in enumerate(STORES[:2]):
+    for index, (name, subtitle, domain) in enumerate(STORE_CATALOG[:2]):
         x0 = M + index * (card_w + S[3])
-        soft_shadow(canvas, (x0, y, x0 + card_w, y + card_h), R["lg"])
-        paste_cover(canvas, store_photo(name), (x0, y, x0 + card_w, y + card_h), R["lg"])
-        draw_heart_button(d, x0 + card_w - 26, y + 26, active=True)
-        text(d, (x0, y + card_h + 10), name, 14, "bold", INK)
+        draw_store_card(canvas, d, x0, y, card_w, name, subtitle, domain,
+                        saved=True, show_visit=True)
+    y += card_w * 4 / 3 + 8 + 18 + 22 + 17 + 20 + S[5]
 
     # Toutes les boutiques
-    y += card_h + 40 + S[4]
     text(d, (M, y), "Toutes les boutiques", 20, "bold", INK, anchor="ls")
     text(d, (W / SCALE - M, y - 2), "364", 13, "regular", MUTED, anchor="rs")
     y += S[3] + 4
 
-    for index, name in enumerate(STORES[2:]):
+    stride = card_w * 4 / 3 + 8 + 18 + 22 + 17 + 20 + S[5]
+    for index, (name, subtitle, domain) in enumerate(STORE_CATALOG[2:]):
         row, col = divmod(index, 2)
         x0 = M + col * (card_w + S[3])
-        y0 = y + row * (card_h + S[5] + 26)
-        paste_cover(canvas, store_photo(name), (x0, y0, x0 + card_w, y0 + card_h), R["lg"])
-        text(d, (x0, y0 + card_h + 10), name, 14, "bold", INK)
+        y0 = y + row * stride
+        draw_store_card(canvas, d, x0, y0, card_w, name, subtitle, domain, show_visit=True)
 
-    return canvas
+    bottom = min(canvas.height, px(y + 2 * stride + S[5]))
+    return canvas.crop((0, 0, canvas.width, bottom))
 
 
 # ─── Écran : recherche active ──────────────────────────────────────────────

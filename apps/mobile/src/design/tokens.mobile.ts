@@ -84,6 +84,13 @@ export const MEDIA_RATIO = {
   square: 1,
   /** Reels verticaux : 9:16 (comme la vidéo plein écran). */
   reel: 9 / 16,
+  /**
+   * Carte de boutique : 3:4, le gabarit des grandes cartes d'un annuaire
+   * (référence : la grille de chèques cadeaux de Zalando, 27/10/2026).
+   * Le visuel garde cette forme sur l'accueil ET sur la page Boutiques : une
+   * même boutique ne change pas de silhouette d'un écran à l'autre.
+   */
+  storeCard: 3 / 4,
 } as const;
 
 /**
