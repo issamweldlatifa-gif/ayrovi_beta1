@@ -34,6 +34,7 @@ import { mediaUrl } from '@/api/client';
 import { fetchAyWebsStoreCatalog, type AyWebsCategory, type AyWebsStore } from '@/api/aywebs';
 import { useSessionId } from '@/session/session';
 import { storeEntryTarget } from '@/features/aywebs/storeEntry';
+import { rememberAyWebsVisit } from '@/features/aywebs/lastVisitedStore';
 import { useSavedStoreIds } from '@/features/aywebs/savedStores';
 import {
   categoryEntries, categoryLabel, chunkRows, filterStoresByQuery, normalizeSearchText,
@@ -86,7 +87,13 @@ export function StoresContent({ catalog }: { catalog: StoresCatalogQuery }) {
 
   const openStore = (store: AyWebsStore) => {
     const target = storeEntryTarget(store);
-    if (target && sessionId) router.push(target);
+    if (!target || !sessionId) return;
+    void rememberAyWebsVisit({
+      storeId: target.params.storeId,
+      storeName: target.params.storeName,
+      url: target.params.url,
+    });
+    router.push(target);
   };
 
   const renderCard = (store: AyWebsStore) => {

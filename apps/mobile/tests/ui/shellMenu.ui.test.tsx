@@ -22,12 +22,12 @@ jest.mock('../../src/state/session', () => ({
   useSession: () => ({ status: (globalThis as any).__testStatus ?? 'signedOut' }),
 }));
 
-async function renderHeader() {
+async function renderHeader(props: { brand?: 'zayrovi' | 'aywebs'; showNotifications?: boolean } = {}) {
   const view = render(
     <PrefsProvider>
       <I18nProvider>
         <ThemeProvider>
-          <AppHeader scrolled={false} />
+          <AppHeader scrolled={false} {...props} />
         </ThemeProvider>
       </I18nProvider>
     </PrefsProvider>,
@@ -60,6 +60,14 @@ describe('icône compte et menu', () => {
     expect(screen.queryByRole('button', { name: 'Mon compte' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Menu' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Panier ZAYROVI' })).toBeTruthy();
+  });
+
+  it('AYWEBs remplace le wordmark global et garde uniquement son accès panier dans les actions', async () => {
+    await renderHeader({ brand: 'aywebs', showNotifications: false });
+    expect(screen.getByText('AYWEBs')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Notifications' })).toBeNull();
+    fireEvent.press(screen.getByRole('button', { name: 'Panier ZAYROVI' }));
+    expect(router.push).toHaveBeenCalledWith('/(tabs)/cart');
   });
 
   it('le menu contient la langue et le thème, avec leurs choix', async () => {

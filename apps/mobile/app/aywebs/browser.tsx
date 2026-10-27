@@ -2,8 +2,8 @@
  * AYWEBs — P3، الشريحتان 2 و3: صفحة المتجر داخل WebView + الكابتشر + «Add to Cart».
  *
  * الرحلة: الصفحة الحقيقية للمتجر تبان كاملة (بلا شريط عنوان ولا زر قراءة).
- * الشريط العلوي: الرجوع، اسم المتجر، والإغلاق. الشريط السفلي: زر «Add to Cart» فقط،
- * مع سطر حالة صغير وقت القراءة.
+ * الشريط العلوي: الرجوع، اسم المتجر، وأيقونة السلة. الشريط السفلي يبقي زر
+ * «Add to Cart» فقط، مع سطر حالة صغير وقت القراءة؛ ما عادش فيه شريط متصفح أو CTA إضافي.
  *
  *  • «Add to Cart» — يقرا الصفحة (كابتشر + قراءة من الخادم بالتوازي)، ثم **ورقة
  *    الاختيار فوق هذه الصفحة**، ثم إضافة حقيقية في سلّة AYWEBs على الخادم. المستعمل
@@ -13,11 +13,10 @@
  * شرط تفعيل «Add to Cart» هو نفسه في العقد: **الخادم** صنّف الصفحة كصفحة
  * منتوج. قبل التصنيف الزرّ معطّل والسبب مكتوب — زر ما ينجمش ينجح ما يتفعّلش.
  */
-import { useCallback, useEffect, useRef, useState, type ComponentProps, type ComponentType, type Ref } from 'react';
+import { useCallback, useEffect, useRef, useState, type ComponentType, type Ref } from 'react';
 import { goBack } from '@/design/navigation';
-import { Pressable, StyleSheet, View } from 'react-native';
-import { useQuery } from '@tanstack/react-query';
-import { router, useLocalSearchParams } from 'expo-router';
+import { BackHandler, Pressable, StyleSheet, View } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { WebView as RNWebView, type WebViewMessageEvent, type WebViewProps } from 'react-native-webview';
@@ -30,9 +29,8 @@ import { rowDirectionFor } from '@/design/layoutLogic';
 import { useI18n } from '@/i18n';
 import { ApiError } from '@/api/errors';
 import { addErrorMessage } from '@/features/aywebs/addError';
-import { fetchFavorites } from '@/api/account';
-import { StoreCartSheet, StoreFavoriteSheet } from '@/features/aywebs/StoreSheets';
-import { canonicalSourceUrl, isPageSaved } from '@/features/aywebs/storeShopping';
+import { StoreCartSheet } from '@/features/aywebs/StoreSheets';
+import { rememberAyWebsVisit } from '@/features/aywebs/lastVisitedStore';
 import {
   analyzeAyWebsPage, buildAyWebsCaptureInjection, fetchAyWebsCaptureScript,
   parseAyWebsCaptureMessage, resolveAyWebsProductWithCapture,
@@ -50,7 +48,6 @@ import {
   type ReadIntent,
 } from '@/features/aywebs/captureFlow';
 import { useSessionId } from '@/session/session';
-import { useSession } from '@/state/session';
 import { formatMoney } from '@/format/money';
 
 /** كي الصفحة ما تبعثش شي: مانبقاوش نستنّوا بلا نهاية. */
@@ -60,7 +57,7 @@ import { formatMoney } from '@/format/money';
  * و`WebViewProps & undefined` = `never`، فتفسير JSX يرفض كل خاصية. الإصلاح محلي:
  * المكوّن + مرجع فيه `injectJavaScript` (اللي موجود فعلاً في وقت التنفيذ).
  */
-type WebViewHandle = { injectJavaScript: (script: string) => void; goBack: () => void; goForward: () => void };
+type WebViewHandle = { injectJavaScript: (script: string) => void; goBack: () => void };
 const WebView = RNWebView as unknown as ComponentType<
   WebViewProps & { ref?: Ref<WebViewHandle> }
 >;
@@ -119,20 +116,18 @@ export default function AyWebsBrowserScreen() {
   const lastScript = useRef<string | null>(null);
 
   const [busy, setBusy] = useState(false);
-  /** Barre du bas : précédent / suivant (dans le magasin), titre de la page, volets. */
-  const [nav, setNav] = useState({ canGoBack: false, canGoForward: false, title: '' });
+  /** Android back first follows merchant WebView history when it exists. */
+  const [webCanGoBack, setWebCanGoBack] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
-  const [favOpen, setFavOpen] = useState(false);
   const [note, setNote] = useState('');
   const [outcome, setOutcome] = useState<AyWebsResolveOutcome | null>(null);
-  /** تصنيف الخادم للصفحة: `null` = مازال، و`false` = موش صفحة منتوج. */
-  const [productPage, setProductPage] = useState<boolean | null>(null);
   /* العنوان المحمَّل في الـWebView: ثابت — شريط العنوان ما بقاش فوق. */
   const [loadUrl] = useState(url);
   /* الصفحة الحالية كما يصرّح بها التنقّل داخل الـWebView (تتبع الروابط). */
   const [pageUrl, setPageUrl] = useState(url);
   /** Page courante, lisible depuis `requestCapture` (qui ne dépend d'aucun état React). */
   const pageUrlRef = useRef(pageUrl);
+  const lastRecordedVisit = useRef('');
   useEffect(() => { pageUrlRef.current = pageUrl; }, [pageUrl]);
   /** Script de capture propre au marchand analysé (lu par `requestCapture`, callback stable). */
   const captureStoreIdRef = useRef('');
@@ -156,6 +151,18 @@ export default function AyWebsBrowserScreen() {
     && captureMatchesPageUrl(pageAnalysis.url, pageUrl)
     ? pageAnalysis
     : null;
+  /** Persist the real last page locally; invalid/non-web URLs are ignored. */
+  useEffect(() => {
+    if (!isWebPageUrl(pageUrl)) return;
+    let host: string;
+    try { host = new URL(pageUrl).hostname.replace(/^www[.]/i, ''); } catch { return; }
+    const visitStoreId = currentPageAnalysis?.storeId || storeId || host;
+    const visitStoreName = currentPageAnalysis?.storeName || storeName || host;
+    const key = `${visitStoreId}|${pageUrl}`;
+    if (lastRecordedVisit.current === key) return;
+    lastRecordedVisit.current = key;
+    void rememberAyWebsVisit({ storeId: visitStoreId, storeName: visitStoreName, url: pageUrl });
+  }, [currentPageAnalysis?.storeId, currentPageAnalysis?.storeName, pageUrl, storeId, storeName]);
   const captureAllowed = currentPageAnalysis
     ? (currentPageAnalysis.captureAllowed || currentPageAnalysis.externalCaptureAllowed)
     : captureAllowedParam;
@@ -192,7 +199,6 @@ export default function AyWebsBrowserScreen() {
     setSheet(null);
     setOutcome(null);
     setPageAnalysis(null);
-    setProductPage(null);
     setNote('');
   }, [pageUrl]);
 
@@ -204,6 +210,18 @@ export default function AyWebsBrowserScreen() {
   const startWaiting = useCallback((_first?: string) => undefined, []);
   const endWaiting = useCallback((_last?: string) => undefined, []);
   useEffect(() => () => { addController.current?.abort(); }, []);
+
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      // Close app-owned overlays first, then follow merchant history if available.
+      if (cartOpen) { setCartOpen(false); return true; }
+      if (sheet) { setSheet(null); return true; }
+      if (!webCanGoBack) return false;
+      webRef.current?.goBack();
+      return true;
+    });
+    return () => subscription.remove();
+  }, [cartOpen, sheet, webCanGoBack]);
 
   const stopTimer = () => {
     if (timer.current) { clearTimeout(timer.current); timer.current = null; }
@@ -218,14 +236,12 @@ export default function AyWebsBrowserScreen() {
         if (!alive || !captureMatchesPageUrl(analysis.url, pageUrlRef.current)) return;
         captureStoreIdRef.current = analysis.storeId;
         setPageAnalysis(analysis);
-        setProductPage(analysis.isProductPage);
       })
       .catch(() => {
         if (!alive) return;
         // ما نعرفوش: الزرّ يبقى معطّلاً والسبب يظهر — موش نفعّلوه بالتخمين.
         captureStoreIdRef.current = '';
         setPageAnalysis(null);
-        setProductPage(null);
       });
     return () => { alive = false; };
   }, [sessionId, pageUrl]);
@@ -501,19 +517,6 @@ export default function AyWebsBrowserScreen() {
      Un appui pendant la pré-lecture la remplace (voir `readDecision`). */
   const addEnabled = capturePage && !busy && Boolean(sessionId);
 
-  /* Favoris : seulement pour une page produit. La liste sert à afficher le cœur plein. */
-  const { status: accountStatus } = useSession();
-  const favorites = useQuery({
-    queryKey: ['account', 'favorites'],
-    queryFn: ({ signal }) => fetchFavorites({ signal }),
-    enabled: capturePage && accountStatus === 'signedIn',
-    retry: false,
-  });
-  const saved = isPageSaved(favorites.data ?? [], pageUrl);
-  const outcomeMatchesPage = Boolean(outcome && pageUrl
-    && canonicalSourceUrl(outcome.product.sourceUrl) === canonicalSourceUrl(pageUrl));
-  const favoriteTitle = (outcomeMatchesPage ? outcome?.product.title : '') || nav.title || storeName;
-
   return (
     <View style={[styles.screen, { backgroundColor: theme.colors.canvas, paddingTop: insets.top + theme.space[2] }]}>
       <View style={[styles.header, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
@@ -521,6 +524,7 @@ export default function AyWebsBrowserScreen() {
           accessibilityRole="button"
           accessibilityLabel={t('common.back')}
           onPress={() => goBack('/(tabs)/aywebs')}
+          testID="aywebs-store-header-back"
           style={{ minHeight: theme.geometry.minTarget, minWidth: theme.geometry.minTarget, justifyContent: 'center' }}
         >
           <Ionicons
@@ -535,11 +539,12 @@ export default function AyWebsBrowserScreen() {
         </View>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={t('common.close')}
-          onPress={() => goBack('/(tabs)/aywebs')}
+          accessibilityLabel={t('aywebs.bar.cart')}
+          onPress={() => setCartOpen(true)}
+          testID="aywebs-store-header-cart"
           style={{ minHeight: theme.geometry.minTarget, minWidth: theme.geometry.minTarget, justifyContent: 'center', alignItems: 'center' }}
         >
-          <Ionicons name="close" size={24} color={theme.colors.ink} accessibilityElementsHidden />
+          <Ionicons name="cart-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
         </Pressable>
       </View>
 
@@ -588,12 +593,12 @@ export default function AyWebsBrowserScreen() {
         onNavigationStateChange={(state) => {
           pageLoadingRef.current = state.loading === true;
           setPageReady(state.loading !== true);
+          setWebCanGoBack(state.canGoBack);
           if (!state.url) return;
           /* Référence synchrone : une capture déjà dans le pont ne peut plus
              être rattachée à l'ancien document pendant le prochain rendu. */
           pageUrlRef.current = state.url;
           setPageUrl(state.url);
-          setNav({ canGoBack: state.canGoBack, canGoForward: state.canGoForward, title: state.title ?? '' });
         }}
         onMessage={onMessage}
         onError={() => setNote(t('aywebs.captureFailed'))}
@@ -627,56 +632,6 @@ export default function AyWebsBrowserScreen() {
           testID="aywebs-store-add-to-cart"
         />
 
-        <View style={[styles.toolbar, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-          <ToolIcon
-            name={theme.isRTL ? 'chevron-forward' : 'chevron-back'}
-            label={t('aywebs.nav.back')}
-            disabled={!nav.canGoBack}
-            onPress={() => webRef.current?.goBack()}
-            testID="aywebs-store-back"
-          />
-          <ToolIcon
-            name={theme.isRTL ? 'chevron-back' : 'chevron-forward'}
-            label={t('aywebs.nav.forward')}
-            disabled={!nav.canGoForward}
-            onPress={() => webRef.current?.goForward()}
-            testID="aywebs-store-forward"
-          />
-          <ToolIcon
-            name="bag-outline"
-            label={t('aywebs.bar.cart')}
-            onPress={() => setCartOpen(true)}
-            testID="aywebs-store-cart"
-          />
-          <ToolIcon
-            name={saved ? 'heart' : 'heart-outline'}
-            label={t('aywebs.bar.favorites')}
-            disabled={!capturePage}
-            active={saved}
-            onPress={() => setFavOpen(true)}
-            testID="aywebs-store-fav"
-          />
-        </View>
-
-        {/*
-         * Page que le serveur n'a pas reconnue comme fiche produit (accueil,
-         * catégorie, boutique hors registre) : l'ajout automatique n'a pas de
-         * preuve, donc on ne le propose pas. Le client garde une issue :
-         * une demande d'achat relue par un humain, avec la page sous les yeux.
-         * Sans cela, il resterait dans un cul-de-sac (23/10/2026).
-         */}
-        {productPage === false && pageOk ? (
-          <Button
-            label={t('aywebs.requestPurchase')}
-            tone="quiet"
-            block
-            onPress={() => router.push({
-              pathname: '/aywebs/request',
-              params: { url: pageUrl, title: nav.title || '', storeId: currentPageAnalysis?.storeId || storeId },
-            })}
-            testID="aywebs-store-request"
-          />
-        ) : null}
       </View>
 
       {sheet ? (
@@ -705,42 +660,7 @@ export default function AyWebsBrowserScreen() {
           storeId={currentPageAnalysis?.storeId || storeId}
         />
       ) : null}
-      <StoreFavoriteSheet
-        visible={favOpen}
-        onClose={() => setFavOpen(false)}
-        sourceUrl={pageUrl}
-        title={favoriteTitle}
-        saved={saved}
-      />
     </View>
-  );
-}
-
-/** Icône de la barre du bas : cible tactile complète, grisée quand l'action n'est pas possible. */
-function ToolIcon({ name, label, onPress, disabled = false, active = false, testID }: {
-  name: ComponentProps<typeof Ionicons>['name'];
-  label: string;
-  onPress: () => void;
-  disabled?: boolean;
-  active?: boolean;
-  testID?: string;
-}) {
-  const theme = useTheme();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ disabled }}
-      disabled={disabled}
-      onPress={onPress}
-      testID={testID}
-      style={({ pressed }) => [
-        styles.toolIcon,
-        { minWidth: 36, minHeight: theme.geometry.minTarget, opacity: disabled ? 0.35 : pressed ? 0.7 : 1 },
-      ]}
-    >
-      <Ionicons name={name} size={22} color={active ? theme.status.warning.fg : theme.colors.ink} accessibilityElementsHidden />
-    </Pressable>
   );
 }
 
@@ -749,8 +669,6 @@ const styles = StyleSheet.create({
   header: { alignItems: 'center', gap: 4, paddingHorizontal: 8 },
   titleBox: { flex: 1, paddingHorizontal: 4 },
   web: { flex: 1, marginTop: 8 },
-  toolbar: { alignItems: 'center', justifyContent: 'space-around', gap: 2, paddingTop: 4 },
-  toolIcon: { alignItems: 'center', justifyContent: 'center' },
   loading: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   footer: { borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingTop: 10, gap: 6 },
 });

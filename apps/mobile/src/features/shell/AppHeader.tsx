@@ -53,11 +53,14 @@ function HeaderIcon({
 }
 
 export function AppHeader({
-  scrolled, heroBackground = null,
+  scrolled, heroBackground = null, brand = 'zayrovi', showNotifications = true,
 }: {
   scrolled: boolean;
   /** Fond de la carte Hero active : repris par le header tant qu'il est au sommet. */
   heroBackground?: string | null;
+  /** Identité du contexte : AYWEBs garde son propre libellé sans dupliquer le chrome. */
+  brand?: 'zayrovi' | 'aywebs';
+  showNotifications?: boolean;
 }) {
   const theme = useTheme();
   const t = useT();
@@ -121,20 +124,28 @@ export function AppHeader({
             accessibilityLabel={t('nav.home')}
             style={({ pressed }) => [styles.logo, { opacity: pressed ? 0.6 : 1 }]}
           >
-            <BrandMark size={30} nameColor={onHero ? iconColor : undefined} />
+            {brand === 'aywebs' ? (
+              <AppText variant="title" weight="bold" color={onHero ? iconColor : theme.colors.accentText}>
+                AYWEBs
+              </AppText>
+            ) : (
+              <BrandMark size={30} nameColor={onHero ? iconColor : undefined} />
+            )}
           </Pressable>
         </View>
 
         {/* Groupe de droite : notifications (ouvre directement la liste), panier. */}
         <View style={[styles.actions, { flexDirection: row }]}>
+          {showNotifications ? (
+            <HeaderIcon
+              name="notifications-outline"
+              label={t('account.menu.notifications')}
+              onPress={() => go(notificationsHref)}
+              color={iconColor}
+            />
+          ) : null}
           <HeaderIcon
-            name="notifications-outline"
-            label={t('account.menu.notifications')}
-            onPress={() => go(notificationsHref)}
-            color={iconColor}
-          />
-          <HeaderIcon
-            name="bag-outline"
+            name={brand === 'aywebs' ? 'cart-outline' : 'bag-outline'}
             label={t('cart.title')}
             onPress={() => go('/(tabs)/cart')}
             color={iconColor}

@@ -1,5 +1,5 @@
-// Page boutique (ouverte depuis une carte Stores) : la barre AYWEBs du bas est affichée
-// et ses boutons répondent. WebView simulée (module natif absent en test).
+// AYWEBs merchant browser: fixed Add to Cart action, with cart at the top.
+// The native WebView and store-cart sheet are mocked for deterministic UI tests.
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -34,8 +34,17 @@ jest.mock('react-native-webview', () => {
   return { WebView, __esModule: true, default: WebView };
 });
 
+jest.mock('@/features/aywebs/StoreSheets', () => {
+  const React = jest.requireActual('react');
+  const { View: RNView } = jest.requireActual('react-native');
+  return {
+    StoreCartSheet: ({ visible }: { visible: boolean }) => (
+      visible ? React.createElement(RNView, { testID: 'aywebs-store-cart-sheet' }) : null
+    ),
+  };
+});
+
 jest.mock('@/session/session', () => ({ useSessionId: () => 'mob_1234567890123456' }));
-jest.mock('@/state/session', () => ({ useSession: () => ({ status: 'signedOut' }) }));
 jest.mock('@/api/aywebs', () => {
   const actual = jest.requireActual('@/api/aywebs');
   return {
@@ -67,27 +76,35 @@ function renderBrowser() {
   );
 }
 
-describe('page boutique — barre AYWEBs du bas', () => {
+describe('page boutique — actions intégrées AYWEBs', () => {
   beforeEach(() => mockBack.mockClear());
 
-  it('la page s\'affiche avec la WebView', () => {
+  it('affiche la WebView et conserve le bouton jaune Add to Cart', () => {
     renderBrowser();
     expect(screen.getByTestId('webview')).toBeTruthy();
-  });
-
-  it('la barre du bas est affichée : retour, avant, panier, favoris, Add to Cart', () => {
-    renderBrowser();
-    expect(screen.getByTestId('aywebs-store-back')).toBeTruthy();
-    expect(screen.getByTestId('aywebs-store-forward')).toBeTruthy();
-    expect(screen.getByTestId('aywebs-store-cart')).toBeTruthy();
-    expect(screen.getByTestId('aywebs-store-fav')).toBeTruthy();
     expect(screen.getByTestId('aywebs-store-add-to-cart')).toBeTruthy();
   });
 
-  it('le bouton fermer de l\'en-tête revient à l\'écran précédent', () => {
+  it('retire la barre du bas et la demande de revue humaine', () => {
     renderBrowser();
-    // Le premier « Fermer » est celui de l'en-tête (les tiroirs fermés en portent aussi un).
-    fireEvent.press(screen.getAllByLabelText('Fermer')[0]);
+    expect(screen.queryByTestId('aywebs-store-back')).toBeNull();
+    expect(screen.queryByTestId('aywebs-store-forward')).toBeNull();
+    expect(screen.queryByTestId('aywebs-store-cart')).toBeNull();
+    expect(screen.queryByTestId('aywebs-store-fav')).toBeNull();
+    expect(screen.queryByTestId('aywebs-store-request')).toBeNull();
+    expect(screen.queryByText('Demander cet achat (revue humaine)')).toBeNull();
+  });
+
+  it('remplace le X par une icône panier qui ouvre le tiroir existant', () => {
+    renderBrowser();
+    fireEvent.press(screen.getByTestId('aywebs-store-header-cart'));
+    expect(screen.getByTestId('aywebs-store-cart-sheet')).toBeTruthy();
+    expect(screen.queryByLabelText('Fermer')).toBeNull();
+  });
+
+  it('la flèche de l’en-tête revient à l’écran précédent', () => {
+    renderBrowser();
+    fireEvent.press(screen.getByTestId('aywebs-store-header-back'));
     expect(mockBack).toHaveBeenCalled();
   });
 });

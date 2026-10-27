@@ -10,12 +10,16 @@ import { ThemeProvider } from '@/design/theme';
 import { I18nProvider } from '@/i18n';
 import { PrefsProvider } from '@/state/prefs';
 
-jest.mock('expo-router', () => ({
-  router: { push: jest.fn(), back: jest.fn(), replace: jest.fn() },
-  useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }),
-  useLocalSearchParams: () => ({}),
-  Stack: { Screen: () => null },
-}));
+jest.mock('expo-router', () => {
+  const React = jest.requireActual('react');
+  return {
+    router: { push: jest.fn(), back: jest.fn(), replace: jest.fn() },
+    useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }),
+    useLocalSearchParams: () => ({}),
+    useFocusEffect: (effect: () => void | (() => void)) => React.useEffect(effect, [effect]),
+    Stack: { Screen: () => null },
+  };
+});
 jest.mock('@/session/session', () => ({ useSessionId: () => 'mob_1234567890123456' }));
 jest.mock('@/features/shell/AppHeader', () => ({
   AppHeader: () => null,
@@ -75,18 +79,23 @@ function renderTab() {
   );
 }
 
-describe('onglet AYWEBs — page Stores', () => {
-  it('affiche la page Stores (cartes des boutiques) à la place du collage de lien', async () => {
+describe('onglet AYWEBs — accueil', () => {
+  it('affiche la recherche, les catégories, la reprise, les magasins et le visuel de campagne', async () => {
     renderTab();
-    await waitFor(() => expect(screen.getByTestId('aywebs-store-store-0')).toBeTruthy(), { timeout: 5000 });
-    expect(screen.getByText('Stores')).toBeTruthy();
+    await waitFor(() => expect(screen.getByTestId('aywebs-home-store-card-store-0')).toBeTruthy(), { timeout: 5000 });
+    expect(screen.getByTestId('aywebs-home-content')).toBeTruthy();
+    expect(screen.getByTestId('aywebs-home-search')).toBeTruthy();
+    expect(screen.getByTestId('aywebs-home-category-marketplace')).toBeTruthy();
+    expect(screen.getByTestId('aywebs-home-resume')).toBeTruthy();
+    expect(screen.getByTestId('aywebs-home-store-card-store-0')).toBeTruthy();
+    expect(screen.getByTestId('aywebs-home-promo')).toBeTruthy();
     expect(screen.queryByTestId('aywebs-analyze')).toBeNull();
     expect(screen.queryByTestId('aywebs-resolve')).toBeNull();
   });
 
-  it('n\'affiche pas la carte panier dans l\'onglet', async () => {
+  it('does not add a separate cart card to the home body', async () => {
     renderTab();
-    await waitFor(() => expect(screen.getByTestId('aywebs-store-store-0')).toBeTruthy(), { timeout: 5000 });
+    await waitFor(() => expect(screen.getByTestId('aywebs-home-content')).toBeTruthy(), { timeout: 5000 });
     expect(screen.queryByTestId('aywebs-open-cart')).toBeNull();
     expect(screen.queryByText('Panier d’achat')).toBeNull();
   });

@@ -759,16 +759,16 @@ export function AddToCartSheet({
       )}
     >
       <View style={[styles.productCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.line, borderRadius: theme.radius.card }]}>
-        <View style={styles.productRow}>
         {imageUri ? (
           <AppImage
             uri={mediaUrl(imageUri)}
-            style={[styles.thumb, { borderRadius: theme.radius.control }]}
+            style={[styles.productHero, { borderRadius: theme.radius.control }]}
             contentFit="cover"
             accessibilityLabel={title}
+            testID="aywebs-sheet-product-image"
           />
         ) : (
-          <View style={[styles.thumb, { borderRadius: theme.radius.control, borderColor: theme.colors.line, borderWidth: 1 }]} />
+          <View style={[styles.productHero, { borderRadius: theme.radius.control, borderColor: theme.colors.line, borderWidth: 1 }]} />
         )}
         <View style={styles.productText}>
           <AppText variant="body" weight="semibold" numberOfLines={3}>{title}</AppText>
@@ -798,7 +798,6 @@ export function AddToCartSheet({
               ) : null}
             </>
           )}
-        </View>
         </View>
       </View>
 
@@ -970,9 +969,8 @@ const styles = StyleSheet.create({
   headerSide: { width: 44, alignItems: 'flex-end' },
   headerTitle: { flex: 1, textAlign: 'center' },
   close: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  productCard: { flexDirection: 'row', alignItems: 'center', padding: 12, borderWidth: StyleSheet.hairlineWidth },
-  productRow: { flex: 1, flexDirection: 'row', gap: 12, alignItems: 'center' },
-  thumb: { width: 88, height: 100 },
+  productCard: { padding: 12, gap: 12, borderWidth: StyleSheet.hairlineWidth },
+  productHero: { width: '100%', aspectRatio: 1.2 },
   productText: { flex: 1, gap: 4 },
   successBanner: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 16, padding: 16 },
   successIcon: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
