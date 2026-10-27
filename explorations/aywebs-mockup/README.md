@@ -311,3 +311,30 @@ Ce qui a été fait, dans cet ordre :
 Résultat : **33 boutiques au registre + 357 au catalogue = 390**.
 `officiel-06-logos-boutiques.png` montre les dix-neuf cartes, gabarit réel
 (3:4, logo entier, 24 pt de réserve, libellé sous la carte).
+
+
+## Suite du 27/10/2026 — les six photos et le logo « à la taille de la carte »
+
+Deux reproches sur la capture du téléphone :
+
+1. **« عمّر بطاقات هاذم كاتيڨوري بصور هاذي »** — la section affichait les six
+   premières catégories du serveur (Marketplace, Mode, Chaussures, High-tech,
+   Smartphones, Jeux vidéo) ; trois d'entre elles n'avaient pas de photo et
+   montraient une icône d'étiquette. Elle suit désormais l'ORDRE ÉDITORIAL de la
+   référence : Beauté et parfum · Meubles · Sports et loisirs · Casques et
+   écouteurs · Activités de plein air · Animalerie. Les six photos sont
+   embarquées, donc plus de squelette ni de clignotement au chargement.
+   `audio` et `outdoor` sont devenues de vraies catégories (18 et 16 boutiques)
+   pour que ces deux tuiles ne soient pas des portes ouvertes sur du vide.
+2. **« صورة الشعار قد البطاقة بالظبط، بلا مسحات »** — les logos reposaient sur
+   une réserve de 24 pt, et les fichiers avaient un fond blanc : d'où la bande
+   grise (logos détourés) ou blanche (Amazon, SHEIN) autour de chaque marque.
+   Les fichiers sont redessinés **en 3:4, exactement le rapport de la carte** ;
+   la réserve disparaît ; `contentFit="cover"` fait toucher les quatre bords.
+   TEMU et AliExpress gardent leur aplat de marque (orange, rouge).
+   La ligne de description d'une boutique est limitée à **deux** catégories :
+   elle passait sur trois lignes et décalait la carte voisine.
+
+Fichiers : `apps/mobile/assets/aywebs/brands/*.png` (3:4, transparent) et
+`brands-dark/*.png` (mêmes dessins en blanc). Reproche évité au passage : la
+boutique de démonstration d'un logo n'existe plus — chaque carte porte le sien.
