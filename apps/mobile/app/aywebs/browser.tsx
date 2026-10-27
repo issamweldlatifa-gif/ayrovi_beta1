@@ -721,7 +721,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   header: { alignItems: 'center', gap: 4, paddingHorizontal: 8 },
   cartIconWrap: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center', position: 'relative' },
-  cartBadge: { position: 'absolute', top: -3, minWidth: 18, height: 18, paddingHorizontal: 3, borderRadius: 9, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  cartBadge: { position: 'absolute', top: -3, minWidth: 18, height: 18, paddingHorizontal: 4, borderRadius: 9, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
   cartBadgeLTR: { right: -5 },
   cartBadgeRTL: { left: -5 },
   titleBox: { flex: 1, paddingHorizontal: 4 },

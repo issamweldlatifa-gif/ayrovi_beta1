@@ -52,22 +52,17 @@ export function VariantOptionChips({
                     <Ionicons name="image-outline" size={20} color={theme.colors.muted} />
                   </View>
                 )}
+              </View>
+              <View style={[styles.colorTitle, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
+                <AppText style={styles.colorLabel} variant="caption" numberOfLines={1} color={disabled ? theme.colors.muted : theme.colors.ink}>
+                  {option.value}
+                </AppText>
                 {active ? (
-                  <View
-                    testID={`aywebs-variant-selected-${index}`}
-                    style={[
-                      styles.selectedMark,
-                      { backgroundColor: COMMERCE.action, borderColor: theme.colors.surface },
-                      theme.isRTL ? styles.selectedMarkRTL : styles.selectedMarkLTR,
-                    ]}
-                  >
-                    <Ionicons name="checkmark" size={12} color={COMMERCE.onAction} />
+                  <View testID={`aywebs-variant-selected-${index}`} style={styles.selectedIcon}>
+                    <Ionicons name="checkmark-circle" size={theme.iconSize.sm} color={COMMERCE.actionPressed} />
                   </View>
                 ) : null}
               </View>
-              <AppText variant="caption" numberOfLines={1} color={disabled ? theme.colors.muted : theme.colors.ink}>
-                {option.value}
-              </AppText>
               {option.price ? <AppText variant="caption" color={theme.colors.muted}>{option.price}</AppText> : null}
             </Pressable>
           ) : (
@@ -112,12 +107,12 @@ const styles = StyleSheet.create({
   group: { gap: 8 },
   options: { flexWrap: 'wrap', alignItems: 'flex-start', gap: 10 },
   colorOption: { minWidth: 62, maxWidth: 90, minHeight: 82, alignItems: 'center', justifyContent: 'center', gap: 2 },
-  imageRing: { position: 'relative', width: 58, height: 58, borderWidth: 2, borderRadius: 30, padding: 2, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  imageRing: { width: 58, height: 58, borderWidth: 2, borderRadius: 30, padding: 2, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   productImage: { width: 50, height: 50, borderRadius: 25 },
   imagePlaceholder: { width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center' },
-  selectedMark: { position: 'absolute', top: 2, width: 18, height: 18, borderRadius: 9, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  selectedMarkLTR: { right: 2 },
-  selectedMarkRTL: { left: 2 },
+  colorTitle: { maxWidth: '100%', alignItems: 'center', justifyContent: 'center', gap: 2 },
+  colorLabel: { flexShrink: 1 },
+  selectedIcon: { alignItems: 'center', justifyContent: 'center' },
   sizeTitle: { alignItems: 'center', justifyContent: 'center', gap: 4 },
   sizeOption: { minWidth: 48, minHeight: 44, borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center', gap: 1 },
 });

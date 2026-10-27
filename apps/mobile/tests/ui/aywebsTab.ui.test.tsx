@@ -90,7 +90,7 @@ describe('onglet AYWEBs — accueil', () => {
     const storeCard = screen.getByTestId('aywebs-home-store-card-store-0');
     expect(storeCard).toBeTruthy();
     expect(StyleSheet.flatten(storeCard.props.style).width).toBeLessThanOrEqual(280);
-    expect(StyleSheet.flatten(screen.getByTestId('aywebs-home-store-media-store-0').props.style).width).toBe('100%');
+    expect(StyleSheet.flatten(screen.getByTestId('aywebs-home-store-media-store-0').props.style).flex).toBe(1);
     expect(screen.queryByTestId('aywebs-home-promo')).toBeNull();
     expect(screen.queryByTestId('aywebs-analyze')).toBeNull();
     expect(screen.queryByTestId('aywebs-resolve')).toBeNull();

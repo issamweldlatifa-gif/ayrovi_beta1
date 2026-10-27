@@ -354,7 +354,7 @@ function HomeStoreCard({ store, categories, width, sessionId, saved, onOpen, onT
       ]}
       testID={`aywebs-home-store-card-${store.id}`}
     >
-      <View style={[styles.storeCardTop, { backgroundColor: theme.colors.shimmer }]}>
+      <View style={[styles.storeCardTop, { backgroundColor: theme.colors.shimmer, flexDirection: rowDirectionFor(theme.isRTL) }]}>
         <View style={styles.storeLogoWrap} testID={`aywebs-home-store-media-${store.id}`}>
           {logo ? (
             <AppImage
@@ -376,7 +376,7 @@ function HomeStoreCard({ store, categories, width, sessionId, saved, onOpen, onT
           hitSlop={8}
           style={[
             styles.storeHeart,
-            { backgroundColor: theme.colors.surface, ...(theme.isRTL ? { left: 8 } : { right: 8 }) },
+            { backgroundColor: theme.colors.surface },
           ]}
           testID={`aywebs-home-store-save-${store.id}`}
         >
@@ -443,9 +443,9 @@ const styles = StyleSheet.create({
   viewAll: { minHeight: 36, flexDirection: 'row', alignItems: 'center', gap: 2 },
   storeRail: { gap: 12, paddingEnd: 4 },
   storeCard: { borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
-  storeCardTop: { height: 112, alignItems: 'stretch', justifyContent: 'center', padding: 8, position: 'relative' },
-  storeLogoWrap: { flex: 1, width: '100%', alignItems: 'center', justifyContent: 'center' },
+  storeCardTop: { height: 112, flexDirection: 'row', alignItems: 'stretch', justifyContent: 'center', gap: 8, padding: 8 },
+  storeLogoWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   storeLogo: { width: '100%', height: '100%' },
-  storeHeart: { position: 'absolute', top: 8, width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  storeHeart: { width: 36, height: 36, alignSelf: 'center', borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   storeCardBody: { minHeight: 60, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 8 },
 });
