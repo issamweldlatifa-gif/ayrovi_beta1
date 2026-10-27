@@ -70,12 +70,17 @@ export function storeSubtitle(
   store: AyWebsStore,
   categories: readonly AyWebsCategory[],
   locale: StoresLocale,
+  max = 2,
 ): string {
   if (store.description) return store.description;
   const labels = store.categories
     .map((id) => categories.find((category) => category.id === id))
     .filter((category): category is AyWebsCategory => Boolean(category))
-    .map((category) => categoryLabel(category, locale));
+    .map((category) => categoryLabel(category, locale))
+    /* Deux au plus : au-delà, la ligne passait sur trois lignes et décalait la
+       carte voisine (constaté le 27/10/2026). Aucun libellé n'est coupé — on
+       choisit lesquels montrer, jamais comment les tronquer. */
+    .slice(0, Math.max(1, max));
   return labels.join(' · ');
 }
 

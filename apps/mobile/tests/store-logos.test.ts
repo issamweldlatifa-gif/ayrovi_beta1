@@ -11,6 +11,7 @@ import { existsSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import { AYWEBS_STORES } from '../../../shared/aywebsStores';
+import { AYWEBS_CATALOG_STORES } from '../../../shared/aywebsStoreCatalog';
 import {
   STORE_LOGO_IDS,
   normaliseStoreKey,
@@ -67,15 +68,24 @@ describe('logos officiels des boutiques', () => {
     expect(normaliseStoreKey('  CHANEL  ')).toBe('chanel');
   });
 
-  it('chaque marque du registre a sa ligne, sa catégorie et aucune preuve inventée', () => {
+  it('chaque marque a sa ligne au CATALOGUE — affichée, jamais promue', () => {
+    /* ── Pourquoi le catalogue et pas le registre ────────────────────────────
+       `AYWEBS_STORES` ne contient que des boutiques OUVERTES (capture de fiche,
+       panier). Y faire entrer zara.com ou nike.com aurait changé le comportement
+       du serveur — reconnaissance de domaine, capture acceptée — alors qu'aucun
+       motif de fiche n'a été mesuré pour ces marques. Le client demandait un
+       logo par boutique, pas l'ouverture de quatorze boutiques : elles restent
+       donc des entrées de catalogue, avec leur logo. */
     for (const id of BRAND_WAVE_IDS) {
-      const store = AYWEBS_STORES.find((entry) => entry.id === id);
-      expect(store, `${id} manque au registre`).toBeTruthy();
+      const store = AYWEBS_CATALOG_STORES.find((entry) => entry.id === id);
+      expect(store, `${id} manque au catalogue`).toBeTruthy();
       expect(store?.categories.length).toBeGreaterThan(0);
-      expect(store?.recognition).toBe('capture');
+      expect(store?.enabled).toBe(false);
+      expect(store?.adapter).toBe('generic');
       expect(store?.productUrlPattern ?? '').toBe('');
-      expect(store?.currency).toBe('');
-      expect(store?.enabled).toBe(true);
+      // Une boutique ne doit JAMAIS exister aux deux endroits : la liste
+      // publique est la concaténation des deux tableaux.
+      expect(AYWEBS_STORES.some((entry) => entry.id === id)).toBe(false);
     }
   });
 });

@@ -15,9 +15,11 @@ describe('registre des boutiques AYWEBs — contrôle avant publication', () => 
     expect(validateAyWebsStoreRegistry()).toEqual([]);
   });
 
-  it('la liste des catégories correspond au tableau validé (30, identifiants uniques)', () => {
-    expect(AYWEBS_CATEGORIES).toHaveLength(30);
-    expect(new Set(AYWEBS_CATEGORIES.map((c) => c.id)).size).toBe(30);
+  it('la liste des catégories correspond au tableau validé (32, identifiants uniques)', () => {
+    // 30 jusqu'au 27/10/2026, puis `audio` (Casques et écouteurs) et `outdoor`
+    // (Activités de plein air), nées avec la section catégories de la référence.
+    expect(AYWEBS_CATEGORIES).toHaveLength(32);
+    expect(new Set(AYWEBS_CATEGORIES.map((c) => c.id)).size).toBe(32);
   });
 
   it('une boutique multi-catégories reste UNE seule entrée', () => {
@@ -119,7 +121,7 @@ describe('catalogue des boutiques (liste de référence, non ouvertes)', () => {
     const ar = Object.fromEntries(AYWEBS_CATEGORIES.map((c) => [c.id, c.labelAr]));
     expect(ar.marketplace).toBe('متاجر متنوعة');
     expect(ar.smartphones).toBe('الهواتف والإكسسوارات');
-    expect(ar.beauty).toBe('الجمال والتجميل');
+    expect(ar.beauty).toBe('الجمال والعطور');
     expect(ar.toys).toBe('الألعاب والأطفال');
     expect(ar.garden).toBe('الحديقة والخارج');
     expect(ar.health).toBe('العناية الشخصية');

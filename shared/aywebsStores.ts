@@ -1,4 +1,5 @@
 import { AYWEBS_CATALOG_STORES } from './aywebsStoreCatalog';
+import { withExtraCategories } from './aywebsCategoryExtras';
 import type {
   AyWebsIntegrationType,
   AyWebsStoreCapability,
@@ -279,43 +280,6 @@ const CAPTURE_WAVE_1: readonly CaptureStoreRow[] = [
   { id: 'allegro', displayName: 'Allegro', country: 'PL', currency: 'PLN', homeUrl: 'https://allegro.pl', categories: ['marketplace'], productUrlPattern: '^/oferta/[^/]+-\\d+' },
 ];
 
-/**
- * VAGUE « MARQUES » — 27/10/2026.
- *
- * Le client a envoyé les logos OFFICIELS de dix-neuf marchands et demandé
- * « un logo par boutique ». Cinq d'entre eux étaient déjà au registre
- * (Amazon, SHEIN, TEMU, AliExpress, Sephora) ; les quatorze autres n'avaient
- * AUCUNE ligne — un logo sans boutique n'aurait nulle part où s'afficher.
- * Cette vague les ajoute comme les autres : même structure, mêmes garanties.
- *
- * Ce qu'on ne s'autorise PAS ici :
- *   • aucun `productUrlPattern` inventé. Les motifs de fiche de ces sites
- *     changent (et certains ne publient la fiche qu'en JavaScript) : sans
- *     mesure, la seule preuve admise est la CAPTURE du client
- *     (`recognition: 'capture'`), jamais une devinette d'URL ;
- *   • aucune devise déclarée. Comme Primark, ces boutiques servent la devise
- *     du pays du client : annoncer « EUR » publierait un prix libellé dans la
- *     mauvaise monnaie. `currency: ''` = devise lue sur la page, jamais supposée ;
- *   • aucun `popular`. L'accueil garde ses quatre grandes cartes ; les marques
- *     apparaissent dans « Toutes les boutiques » et dans les catégories.
- */
-const BRAND_WAVE: readonly CaptureStoreRow[] = [
-  { id: 'nike', displayName: 'Nike', country: '', currency: '', homeUrl: 'https://www.nike.com', categories: ['sports', 'shoes'], recognition: 'capture' },
-  { id: 'adidas', displayName: 'adidas', country: '', currency: '', homeUrl: 'https://www.adidas.com', categories: ['sports', 'shoes'], recognition: 'capture' },
-  { id: 'puma', displayName: 'PUMA', country: '', currency: '', homeUrl: 'https://www.puma.com', categories: ['sports', 'shoes'], recognition: 'capture' },
-  { id: 'new-balance', displayName: 'New Balance', country: '', currency: '', homeUrl: 'https://www.newbalance.com', categories: ['shoes', 'sports'], recognition: 'capture' },
-  { id: 'asics', displayName: 'ASICS', country: '', currency: '', homeUrl: 'https://www.asics.com', categories: ['sports', 'shoes'], recognition: 'capture' },
-  { id: 'converse', displayName: 'Converse', country: '', currency: '', homeUrl: 'https://www.converse.com', categories: ['shoes', 'fashion'], recognition: 'capture' },
-  { id: 'vans', displayName: 'Vans', country: '', currency: '', homeUrl: 'https://www.vans.com', categories: ['shoes', 'fashion'], recognition: 'capture' },
-  { id: 'champion', displayName: 'Champion', country: '', currency: '', homeUrl: 'https://www.champion.com', categories: ['fashion'], recognition: 'capture' },
-  { id: 'under-armour', displayName: 'Under Armour', country: '', currency: '', homeUrl: 'https://www.underarmour.com', categories: ['sports'], recognition: 'capture' },
-  { id: 'the-north-face', displayName: 'The North Face', country: '', currency: '', homeUrl: 'https://www.thenorthface.com', categories: ['sports', 'fashion'], recognition: 'capture' },
-  { id: 'calvin-klein', displayName: 'Calvin Klein', country: '', currency: '', homeUrl: 'https://www.calvinklein.com', categories: ['fashion', 'perfumes'], recognition: 'capture' },
-  { id: 'chanel', displayName: 'CHANEL', country: '', currency: '', homeUrl: 'https://www.chanel.com', categories: ['luxury', 'perfumes'], recognition: 'capture' },
-  { id: 'louis-vuitton', displayName: 'Louis Vuitton', country: '', currency: '', homeUrl: 'https://www.louisvuitton.com', categories: ['luxury', 'bags'], recognition: 'capture' },
-  { id: 'zara', displayName: 'ZARA', country: '', currency: '', homeUrl: 'https://www.zara.com', categories: ['fashion'], recognition: 'capture' },
-];
-
 /** Lecture cliente : navigation + fiche + variantes + stock ; JAMAIS l'achat. */
 const CAPTURE_READ_CAPABILITIES: readonly AyWebsStoreCapability[] = [
   'browse', 'product', 'variants', 'availability',
@@ -358,10 +322,11 @@ function captureStore(row: CaptureStoreRow): AyWebsStoreDefinition {
   };
 }
 
-export const AYWEBS_CAPTURE_STORES: readonly AyWebsStoreDefinition[] = [...CAPTURE_WAVE_1, ...BRAND_WAVE].map(captureStore);
+export const AYWEBS_CAPTURE_STORES: readonly AyWebsStoreDefinition[] = CAPTURE_WAVE_1.map(captureStore);
 
-/** Registre public : le cœur (adaptateurs dédiés) + vague 1 du catalogue + vague marques. */
-export const AYWEBS_STORES: readonly AyWebsStoreDefinition[] = [...AYWEBS_CORE_STORES, ...AYWEBS_CAPTURE_STORES];
+/** Registre public : le cœur (adaptateurs dédiés) + la vague 1 du catalogue. */
+export const AYWEBS_STORES: readonly AyWebsStoreDefinition[] =
+  [...AYWEBS_CORE_STORES, ...AYWEBS_CAPTURE_STORES].map(withExtraCategories);
 
 /**
  * Qui prouve la fiche produit pour cette boutique ? Défaut : le motif d'URL de
@@ -410,11 +375,19 @@ export const AYWEBS_CATEGORIES: ReadonlyArray<{ id: string; labelFr: string; lab
   { id: 'electronics', labelFr: 'High-tech', labelAr: 'الإلكترونيات' },
   { id: 'smartphones', labelFr: 'Smartphones & accessoires', labelAr: 'الهواتف والإكسسوارات' },
   { id: 'gaming', labelFr: 'Jeux vidéo', labelAr: 'الألعاب الإلكترونية' },
-  { id: 'beauty', labelFr: 'Beauté & cosmétiques', labelAr: 'الجمال والتجميل' },
+  { id: 'beauty', labelFr: 'Beauté et parfum', labelAr: 'الجمال والعطور' },
   { id: 'perfumes', labelFr: 'Parfums', labelAr: 'العطور' },
-  { id: 'home', labelFr: 'Maison & mobilier', labelAr: 'المنزل والأثاث' },
+  { id: 'home', labelFr: 'Meubles', labelAr: 'الأثاث' },
+  /**
+   * Deux catégories nées avec la section catégories de la référence
+   * (27/10/2026) : « Casques et écouteurs » et « Activités de plein air ».
+   * Elles sont de vraies catégories — des boutiques les déclarent (voir
+   * `aywebsCategoryExtras.ts`) — et non des tuiles décoratives.
+   */
+  { id: 'audio', labelFr: 'Casques et écouteurs', labelAr: 'السماعات والهيدفون' },
+  { id: 'outdoor', labelFr: 'Activités de plein air', labelAr: 'أنشطة في الهواء الطلق' },
   { id: 'kitchen', labelFr: 'Cuisine & électroménager', labelAr: 'المطبخ والأجهزة المنزلية' },
-  { id: 'sports', labelFr: 'Sport & plein air', labelAr: 'الرياضة والأنشطة الخارجية' },
+  { id: 'sports', labelFr: 'Sports et loisirs', labelAr: 'الرياضة والأنشطة' },
   { id: 'luxury', labelFr: 'Luxe & griffes', labelAr: 'الماركات الفاخرة' },
   { id: 'toys', labelFr: 'Jouets & bébé', labelAr: 'الألعاب والأطفال' },
   { id: 'books', labelFr: 'Livres & médias', labelAr: 'الكتب والوسائط' },

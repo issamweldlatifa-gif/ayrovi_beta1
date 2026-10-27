@@ -96,16 +96,18 @@ describe('logos officiels dans les cartes de boutique', () => {
 
     const media = screen.getByTestId('aywebs-store-media-nike');
     const style = StyleSheet.flatten(media.props.style);
-    // Les 24 pt de réserve : le mot-symbole ne touche jamais le bord.
-    expect(style.padding).toBe(24);
+    /* Plus de réserve (27/10/2026) : la carte-logo est dessinée en 3:4 comme la
+       plaque, elle la remplit bord à bord — ni bande grise, ni bande blanche. */
+    expect(style.padding).toBeUndefined();
     // Le logo est un PNG TRANSPARENT : il ne réclame aucune plaque à lui,
     // donc la carte garde exactement le fond d'une carte sans logo.
     const sansLogo = StyleSheet.flatten(screen.getByTestId('aywebs-store-media-store-99').props.style);
     expect(style.backgroundColor).toBe(sansLogo.backgroundColor);
 
     const logo = screen.getByTestId('aywebs-store-logo-nike');
-    // `contain` : les proportions du logo sont gardées, aucune coupe.
-    expect(logo.props.contentFit).toBe('contain');
+    // `cover` sur une carte-logo au même rapport : le dessin touche les bords
+    // sans être coupé, puisque le fichier et la plaque font tous deux 3:4.
+    expect(logo.props.contentFit).toBe('cover');
     expect(logo.props.source).toBeTruthy();
   });
 

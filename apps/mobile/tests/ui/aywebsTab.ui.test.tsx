@@ -29,8 +29,14 @@ jest.mock('@/features/shell/AppHeader', () => ({
 
 const mockCategories: AyWebsCategory[] = [
   { id: 'marketplace', labelFr: 'Marketplace', labelAr: 'Marketplace' },
-  // Catégorie avec un visuel embarqué : sert à vérifier la plaque paysage.
+  // Les six catégories de la section 1 (référence du 27/10/2026) : le serveur
+  // publie leur libellé, l'ordre et les photos viennent de l'application.
   { id: 'beauty', labelFr: 'Beauté et parfum', labelAr: 'الجمال والعطور' },
+  { id: 'home', labelFr: 'Meubles', labelAr: 'الأثاث' },
+  { id: 'sports', labelFr: 'Sports et loisirs', labelAr: 'الرياضة والأنشطة' },
+  { id: 'audio', labelFr: 'Casques et écouteurs', labelAr: 'السماعات والهيدفون' },
+  { id: 'outdoor', labelFr: 'Activités de plein air', labelAr: 'أنشطة في الهواء الطلق' },
+  { id: 'pets', labelFr: 'Animalerie', labelAr: 'مستلزمات الحيوانات' },
 ];
 const mockStores: AyWebsStore[] = Array.from({ length: 4 }, (_, i) => ({
   id: `store-${i}`,
@@ -93,9 +99,15 @@ describe('onglet AYWEBs — accueil en trois sections', () => {
     expect(screen.getByTestId('aywebs-home-content')).toBeTruthy();
     expect(screen.getByTestId('aywebs-home-search')).toBeTruthy();
 
-    // 1 — catégories
+    // 1 — catégories : les SIX tuiles de la référence, avec leur photo.
     expect(screen.getByTestId('aywebs-home-section-categories')).toBeTruthy();
-    expect(screen.getByTestId('aywebs-home-category-marketplace')).toBeTruthy();
+    for (const id of ['beauty', 'home', 'sports', 'audio', 'outdoor', 'pets']) {
+      expect(screen.getByTestId(`aywebs-home-category-${id}`)).toBeTruthy();
+      expect(screen.getByTestId(`aywebs-home-category-image-${id}`)).toBeTruthy();
+    }
+    // Une catégorie hors référence n'a pas de tuile : la section n'est plus un
+    // tri « six premières du serveur » mais un ordre éditorial fixe.
+    expect(screen.queryByTestId('aywebs-home-category-marketplace')).toBeNull();
 
     // 2 — sponsorisé : visuel, titre et bouton contour
     expect(screen.getByTestId('aywebs-home-section-sponsor')).toBeTruthy();
@@ -125,10 +137,14 @@ describe('onglet AYWEBs — accueil en trois sections', () => {
     const mediaStyle = StyleSheet.flatten(media.props.style);
     expect(mediaStyle.aspectRatio).toBe(MEDIA_RATIO.storeCard);
     expect(mediaStyle.width).toBe('100%');
-    // 24 pt de réserve : le logo ne touche jamais le bord, donc jamais rogné.
-    expect(mediaStyle.padding).toBe(24);
+    /* ── Corrigé le 27/10/2026 ───────────────────────────────────────────────
+       Décision du client sur la capture de son téléphone : le logo doit faire
+       EXACTEMENT la taille de la carte, « بلا مسحات رمادية ولا بيضاء ». La
+       réserve de 24 pt — et la bande blanche des cartes-logo — disparaissent.
+       Les logos embarqués sont désormais dessinés en 3:4, comme la plaque. */
+    expect(mediaStyle.padding).toBeUndefined();
 
-    const category = screen.getByTestId('aywebs-home-category-marketplace');
+    const category = screen.getByTestId('aywebs-home-category-beauty');
     expect(StyleSheet.flatten(category.props.style).width).toBe('48%');
 
     // Carte de CATÉGORIE : paysage 2,72:1 (référence du 27/10/2026), et pas de
@@ -143,7 +159,7 @@ describe('onglet AYWEBs — accueil en trois sections', () => {
 
   it('la section catégories ne promet pas d’écran qui n’existe pas', async () => {
     renderTab();
-    await waitFor(() => expect(screen.getByTestId('aywebs-home-category-marketplace')).toBeTruthy(), { timeout: 5000 });
+    await waitFor(() => expect(screen.getByTestId('aywebs-home-category-beauty')).toBeTruthy(), { timeout: 5000 });
 
     // Titre seul, sans chevron tant que l'écran des catégories n'est pas livré.
     const titres = screen.getAllByTestId('aywebs-section-title');

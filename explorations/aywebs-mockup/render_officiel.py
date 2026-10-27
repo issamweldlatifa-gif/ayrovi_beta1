@@ -313,6 +313,21 @@ def draw_store_logo(d, box, label: str) -> None:
     text(d, ((x0 + x1) / 2, (y0 + y1) / 2), label, size, "bold", INK, anchor="mm")
 
 
+def paste_cover_rounded(canvas: Image.Image, path: str, box, radius: float) -> None:
+    """Colle une image qui REMPLIT la boîte, coins arrondis (style `cover`)."""
+    x0, y0, x1, y1 = [px(v) for v in box]
+    w, h = max(1, x1 - x0), max(1, y1 - y0)
+    image = Image.open(path).convert("RGBA")
+    ratio = max(w / image.width, h / image.height)
+    image = image.resize((max(1, int(round(image.width * ratio))), max(1, int(round(image.height * ratio)))), Image.LANCZOS)
+    left = (image.width - w) // 2
+    top = (image.height - h) // 2
+    image = image.crop((left, top, left + w, top + h))
+    mask = Image.new("L", (w, h), 0)
+    ImageDraw.Draw(mask).rounded_rectangle([0, 0, w - 1, h - 1], radius=px(radius), fill=255)
+    canvas.paste(image, (x0, y0), Image.composite(mask, Image.new("L", (w, h), 0), image.getchannel("A")))
+
+
 def draw_brand_logo(canvas, d, box, slug: str) -> bool:
     """Logo officiel dans la réserve — PNG TRANSPARENT, donc sur la plaque du système.
 
@@ -326,6 +341,15 @@ def draw_brand_logo(canvas, d, box, slug: str) -> bool:
     return True
 
 
+def draw_brand_card(canvas, d, x, y, w, h, slug: str) -> bool:
+    """La carte ENTIÈRE est le logo : fichier 3:4, collé bord à bord."""
+    path = os.path.join(LOGOS, f"{slug}.png")
+    if not os.path.exists(path):
+        return False
+    paste_cover_rounded(canvas, path, (x, y, x + w, y + h), R["lg"])
+    return True
+
+
 def draw_store_card(canvas, d, x, y, w, name, subtitle=None, domain=None,
                     subtitle_size=15, saved=False, show_visit=False, slug=None) -> float:
     """Carte boutique 3:4 + libellés dessous. Retourne la hauteur occupée.
@@ -334,8 +358,10 @@ def draw_store_card(canvas, d, x, y, w, name, subtitle=None, domain=None,
     fond transparent, donc aucun cadre ne se dessine autour d'eux.
     """
     h = w * 4 / 3
+    # La plaque du design system est TOUJOURS posée : les cartes-logo sont
+    # transparentes, elles se posent dessus sans laisser de bande.
     rounded(d, (x, y, x + w, y + h), R["lg"], fill=SHIMMER)
-    if not (slug and draw_brand_logo(canvas, d, (x + 24, y + 24, x + w - 24, y + h - 24), slug)):
+    if not (slug and draw_brand_card(canvas, d, x, y, w, h, slug)):
         draw_store_logo(d, (x + 24, y + 24, x + w - 24, y + h - 24), name)
     draw_heart_button(d, x + w - 26, y + 26, active=saved)
 
@@ -821,7 +847,7 @@ def render_logo_wall() -> Image.Image:
         x0 = M + col * (card_w + gap)
         y0 = head + row * (card_h + 44)
         rounded(d, (x0, y0, x0 + card_w, y0 + card_h), R["lg"], fill=SHIMMER)
-        if not draw_brand_logo(canvas, d, (x0 + 20, y0 + 20, x0 + card_w - 20, y0 + card_h - 20), slug):
+        if not draw_brand_card(canvas, d, x0, y0, card_w, card_h, slug):
             draw_store_logo(d, (x0 + 20, y0 + 20, x0 + card_w - 20, y0 + card_h - 20), name)
         text(d, (x0, y0 + card_h + 18), fit(name, 13, "bold", card_w), 13, "bold", INK)
     return canvas

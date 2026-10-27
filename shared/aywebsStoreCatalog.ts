@@ -10,17 +10,21 @@
  * avec son adaptateur et son logo. Identifiants et adresses ne changent pas.
  *
  * ── 27/10/2026 ────────────────────────────────────────────────────────────
- * Huit marques (ZARA, Nike, adidas, PUMA, New Balance, ASICS, Converse, Vans)
- * sont SORTIES d'ici : le client a envoyé leurs logos officiels et elles sont
- * passées au registre (`AYWEBS_STORES`, vague « marques »), avec leur propre
- * entrée. Une boutique promue ne doit jamais rester aux deux endroits : la
- * liste publique est la concaténation des deux tableaux, donc une ligne en
- * double aurait affiché la même boutique deux fois.
+ * Le client a envoyé les logos officiels de dix-neuf marchands. Six d'entre eux
+ * n'avaient AUCUNE ligne (Champion, Under Armour, The North Face, Calvin Klein,
+ * CHANEL, Louis Vuitton) : ils entrent ici, en CATALOGUE, pas au registre.
+ *
+ * Pourquoi pas au registre : `AYWEBS_STORES` ne contient que des boutiques
+ * OUVERTES (capture de fiche, panier). Y mettre zara.com ou nike.com aurait
+ * changé le comportement du serveur — reconnaissance de domaine, capture
+ * acceptée — sans qu'aucune preuve de fiche n'ait été mesurée pour ces marques.
+ * Une entrée de catalogue s'affiche avec son logo, sans rien promettre de plus.
  *
  * Un marchand présent dans plusieurs catégories n'est écrit qu'une fois.
  * Logos : fichiers dans `client/public/stores/<id>.png` (source : main.pdf, icônes
  * des sites). Sans fichier, la lettre initiale est affichée.
  */
+import { withExtraCategories } from './aywebsCategoryExtras';
 import type { AyWebsStoreDefinition } from './aywebsStores';
 
 /** [id, nom affiché, adresse d'accueil, catégories] */
@@ -30,6 +34,7 @@ const CATALOG_ROWS: ReadonlyArray<readonly [string, string, string, readonly str
   ["mercado-libre", "Mercado Libre", "https://www.mercadolibre.com", ["marketplace"]],
   ["mercari-japan", "Mercari Japan", "https://jp.mercari.com", ["marketplace"]],
   ["shopee", "Shopee", "https://shopee.com", ["marketplace"]],
+  ["zara", "ZARA", "https://www.zara.com", ["fashion", "kids"]],
   ["uniqlo", "UNIQLO", "https://www.uniqlo.com", ["fashion"]],
   ["mango", "Mango", "https://shop.mango.com", ["fashion"]],
   ["boohoo", "Boohoo", "https://www.boohoo.com", ["fashion"]],
@@ -49,11 +54,18 @@ const CATALOG_ROWS: ReadonlyArray<readonly [string, string, string, readonly str
   ["reiss", "Reiss", "https://www.reiss.com", ["fashion"]],
   ["river-island", "River Island", "https://www.riverisland.com", ["fashion"]],
   ["new-look", "New Look", "https://www.newlook.com", ["fashion"]],
+  ["nike", "Nike", "https://www.nike.com", ["shoes"]],
+  ["adidas", "adidas", "https://www.adidas.com", ["shoes"]],
   ["foot-locker", "Foot Locker", "https://www.footlocker.com", ["shoes"]],
   ["jd-sports", "JD Sports", "https://www.jdsports.com", ["shoes"]],
+  ["new-balance", "New Balance", "https://www.newbalance.com", ["shoes"]],
+  ["asics", "ASICS", "https://www.asics.com", ["shoes"]],
+  ["puma", "PUMA", "https://www.puma.com", ["shoes"]],
   ["zappos", "Zappos", "https://www.zappos.com", ["shoes"]],
   ["skechers", "Skechers", "https://www.skechers.com", ["shoes"]],
   ["crocs", "Crocs", "https://www.crocs.com", ["shoes"]],
+  ["converse", "Converse", "https://www.converse.com", ["shoes"]],
+  ["vans", "Vans", "https://www.vans.com", ["shoes"]],
   ["footasylum", "Footasylum", "https://www.footasylum.com", ["shoes"]],
   ["office-shoes", "Office Shoes", "https://www.office.co.uk", ["shoes"]],
   ["deichmann", "Deichmann", "https://www.deichmann.com", ["shoes"]],
@@ -189,6 +201,12 @@ const CATALOG_ROWS: ReadonlyArray<readonly [string, string, string, readonly str
   ["mytheresa", "Mytheresa", "https://www.mytheresa.com", ["luxury"]],
   ["ssense", "SSENSE", "https://www.ssense.com", ["luxury"]],
   ["luisaviaroma", "LUISAVIAROMA", "https://www.luisaviaroma.com", ["luxury"]],
+  ["champion", "Champion", "https://www.champion.com", ["fashion", "sports"]],
+  ["under-armour", "Under Armour", "https://www.underarmour.com", ["sports"]],
+  ["the-north-face", "The North Face", "https://www.thenorthface.com", ["sports"]],
+  ["calvin-klein", "Calvin Klein", "https://www.calvinklein.com", ["fashion"]],
+  ["chanel", "CHANEL", "https://www.chanel.com", ["luxury", "beauty"]],
+  ["louis-vuitton", "Louis Vuitton", "https://www.louisvuitton.com", ["luxury", "bags"]],
   ["24s", "24S", "https://www.24s.com", ["luxury"]],
   ["yoox", "YOOX", "https://www.yoox.com", ["luxury"]],
   ["matches", "Matches", "https://www.matchesfashion.com", ["luxury"]],
@@ -404,7 +422,8 @@ function catalogStore([id, name, homeUrl, categories]: (typeof CATALOG_ROWS)[num
   };
 }
 
-export const AYWEBS_CATALOG_STORES: readonly AyWebsStoreDefinition[] = CATALOG_ROWS.map(catalogStore);
+export const AYWEBS_CATALOG_STORES: readonly AyWebsStoreDefinition[] =
+  CATALOG_ROWS.map(catalogStore).map(withExtraCategories);
 
 /**
  * Domaine → boutique du CATALOGUE (23/10/2026).

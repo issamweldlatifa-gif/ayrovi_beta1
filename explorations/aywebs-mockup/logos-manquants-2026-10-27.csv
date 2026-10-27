@@ -1,7 +1,7 @@
 id,nom,source,categories,adresse,statut,en_ligne
-best-buy,Best Buy,registre,High-tech,https://www.bestbuy.com,beta,oui
-mediamarkt,MediaMarkt,registre,High-tech,https://www.mediamarkt.com,beta,oui
-newegg,Newegg,registre,High-tech,https://www.newegg.com,beta,oui
+best-buy,Best Buy,registre,High-tech|Casques et écouteurs,https://www.bestbuy.com,beta,oui
+mediamarkt,MediaMarkt,registre,High-tech|Casques et écouteurs,https://www.mediamarkt.com,beta,oui
+newegg,Newegg,registre,High-tech|Casques et écouteurs,https://www.newegg.com,beta,oui
 asos,ASOS,registre,Mode,https://www.asos.com,beta,oui
 h-m,H&M,registre,Mode|Vêtements enfants,https://www.hm.com,beta,oui
 primark,Primark,registre,Mode,https://www.primark.com,beta,oui
@@ -57,25 +57,25 @@ rimowa,Rimowa,catalogue,Sacs & bagages,https://www.rimowa.com,planned,non
 samsonite,Samsonite,catalogue,Sacs & bagages|Accessoires de voyage,https://www.samsonite.com,planned,non
 tory-burch,Tory Burch,catalogue,Sacs & bagages,https://www.toryburch.com,planned,non
 tumi,Tumi,catalogue,Sacs & bagages,https://www.tumi.com,planned,non
-beauty-bay,Beauty Bay,catalogue,Beauté & cosmétiques,https://www.beautybay.com,planned,non
-boots,Boots,catalogue,Beauté & cosmétiques|Santé & hygiène,https://www.boots.com,planned,non
-charlotte-tilbury,Charlotte Tilbury,catalogue,Beauté & cosmétiques,https://www.charlottetilbury.com,planned,non
-cult-beauty,Cult Beauty,catalogue,Beauté & cosmétiques,https://www.cultbeauty.com,planned,non
-dermstore,Dermstore,catalogue,Beauté & cosmétiques,https://www.dermstore.com,planned,non
-douglas,Douglas,catalogue,Beauté & cosmétiques|Parfums,https://www.douglas.de,planned,non
-feelunique,Feelunique,catalogue,Beauté & cosmétiques,https://www.feelunique.com,planned,non
-kiko-milano,KIKO Milano,catalogue,Beauté & cosmétiques,https://www.kikocosmetics.com,planned,non
-lookfantastic,LOOKFANTASTIC,catalogue,Beauté & cosmétiques,https://www.lookfantastic.com,planned,non
-lush,Lush,catalogue,Beauté & cosmétiques,https://www.lush.com,planned,non
-mac-cosmetics,MAC Cosmetics,catalogue,Beauté & cosmétiques,https://www.maccosmetics.com,planned,non
-notino,Notino,catalogue,Beauté & cosmétiques|Parfums,https://www.notino.com,planned,non
-nyx-professional-makeup,NYX Professional Makeup,catalogue,Beauté & cosmétiques,https://www.nyxcosmetics.com,planned,non
-olive-young-global,Olive Young Global,catalogue,Beauté & cosmétiques,https://global.oliveyoung.com,planned,non
-space-nk,Space NK,catalogue,Beauté & cosmétiques,https://www.spacenk.com,planned,non
-stylevana,Stylevana,catalogue,Beauté & cosmétiques,https://www.stylevana.com,planned,non
-the-body-shop,The Body Shop,catalogue,Beauté & cosmétiques,https://www.thebodyshop.com,planned,non
-ulta-beauty,Ulta Beauty,catalogue,Beauté & cosmétiques,https://www.ulta.com,planned,non
-yesstyle,YesStyle,catalogue,Beauté & cosmétiques,https://www.yesstyle.com,planned,non
+beauty-bay,Beauty Bay,catalogue,Beauté et parfum,https://www.beautybay.com,planned,non
+boots,Boots,catalogue,Beauté et parfum|Santé & hygiène,https://www.boots.com,planned,non
+charlotte-tilbury,Charlotte Tilbury,catalogue,Beauté et parfum,https://www.charlottetilbury.com,planned,non
+cult-beauty,Cult Beauty,catalogue,Beauté et parfum,https://www.cultbeauty.com,planned,non
+dermstore,Dermstore,catalogue,Beauté et parfum,https://www.dermstore.com,planned,non
+douglas,Douglas,catalogue,Beauté et parfum|Parfums,https://www.douglas.de,planned,non
+feelunique,Feelunique,catalogue,Beauté et parfum,https://www.feelunique.com,planned,non
+kiko-milano,KIKO Milano,catalogue,Beauté et parfum,https://www.kikocosmetics.com,planned,non
+lookfantastic,LOOKFANTASTIC,catalogue,Beauté et parfum,https://www.lookfantastic.com,planned,non
+lush,Lush,catalogue,Beauté et parfum,https://www.lush.com,planned,non
+mac-cosmetics,MAC Cosmetics,catalogue,Beauté et parfum,https://www.maccosmetics.com,planned,non
+notino,Notino,catalogue,Beauté et parfum|Parfums,https://www.notino.com,planned,non
+nyx-professional-makeup,NYX Professional Makeup,catalogue,Beauté et parfum,https://www.nyxcosmetics.com,planned,non
+olive-young-global,Olive Young Global,catalogue,Beauté et parfum,https://global.oliveyoung.com,planned,non
+space-nk,Space NK,catalogue,Beauté et parfum,https://www.spacenk.com,planned,non
+stylevana,Stylevana,catalogue,Beauté et parfum,https://www.stylevana.com,planned,non
+the-body-shop,The Body Shop,catalogue,Beauté et parfum,https://www.thebodyshop.com,planned,non
+ulta-beauty,Ulta Beauty,catalogue,Beauté et parfum,https://www.ulta.com,planned,non
+yesstyle,YesStyle,catalogue,Beauté et parfum,https://www.yesstyle.com,planned,non
 brooklinen,Brooklinen,catalogue,Literie & matelas,https://www.brooklinen.com,planned,non
 casper,Casper,catalogue,Literie & matelas,https://casper.com,planned,non
 emma-sleep,Emma Sleep,catalogue,Literie & matelas,https://www.emma-sleep.com,planned,non
@@ -98,25 +98,25 @@ thalia,Thalia,catalogue,Livres & médias,https://www.thalia.de,planned,non
 waterstones,Waterstones,catalogue,Livres & médias,https://www.waterstones.com,planned,non
 acer,Acer,catalogue,High-tech,https://www.acer.com,planned,non
 ao-com,AO.com,catalogue,High-tech,https://ao.com,planned,non
-apple,Apple,catalogue,High-tech|Smartphones & accessoires,https://www.apple.com,planned,non
+apple,Apple,catalogue,High-tech|Smartphones & accessoires|Casques et écouteurs,https://www.apple.com,planned,non
 asus,ASUS,catalogue,High-tech,https://www.asus.com,planned,non
 b-h-photo-video,B&H Photo Video,catalogue,High-tech|Photo & caméras,https://www.bhphotovideo.com,planned,non
 back-market,Back Market,catalogue,High-tech,https://www.backmarket.com,planned,non
-coolblue,Coolblue,catalogue,High-tech,https://www.coolblue.nl,planned,non
-currys,Currys,catalogue,High-tech,https://www.currys.co.uk,planned,non
-darty,Darty,catalogue,High-tech,https://www.darty.com,planned,non
+coolblue,Coolblue,catalogue,High-tech|Casques et écouteurs,https://www.coolblue.nl,planned,non
+currys,Currys,catalogue,High-tech|Casques et écouteurs,https://www.currys.co.uk,planned,non
+darty,Darty,catalogue,High-tech|Casques et écouteurs,https://www.darty.com,planned,non
 dell,Dell,catalogue,High-tech,https://www.dell.com,planned,non
-fnac,Fnac,catalogue,High-tech,https://www.fnac.com,planned,non
+fnac,Fnac,catalogue,High-tech|Casques et écouteurs,https://www.fnac.com,planned,non
 framework,Framework,catalogue,High-tech,https://frame.work,planned,non
 hp,HP,catalogue,High-tech,https://www.hp.com,planned,non
-ldlc,LDLC,catalogue,High-tech,https://www.ldlc.com,planned,non
+ldlc,LDLC,catalogue,High-tech|Casques et écouteurs,https://www.ldlc.com,planned,non
 lenovo,Lenovo,catalogue,High-tech,https://www.lenovo.com,planned,non
-logitech,Logitech,catalogue,High-tech,https://www.logitech.com,planned,non
+logitech,Logitech,catalogue,High-tech|Casques et écouteurs,https://www.logitech.com,planned,non
 microsoft-store,Microsoft Store,catalogue,High-tech,https://www.microsoft.com/store,planned,non
-razer,Razer,catalogue,High-tech|Jeux vidéo,https://www.razer.com,planned,non
-samsung,Samsung,catalogue,High-tech|Smartphones & accessoires|Cuisine & électroménager,https://www.samsung.com,planned,non
-saturn,Saturn,catalogue,High-tech,https://www.saturn.de,planned,non
-sony,Sony,catalogue,High-tech,https://www.sony.com,planned,non
+razer,Razer,catalogue,High-tech|Jeux vidéo|Casques et écouteurs,https://www.razer.com,planned,non
+samsung,Samsung,catalogue,High-tech|Smartphones & accessoires|Cuisine & électroménager|Casques et écouteurs,https://www.samsung.com,planned,non
+saturn,Saturn,catalogue,High-tech|Casques et écouteurs,https://www.saturn.de,planned,non
+sony,Sony,catalogue,High-tech|Casques et écouteurs,https://www.sony.com,planned,non
 abercrombie-fitch,Abercrombie & Fitch,catalogue,Mode,https://www.abercrombie.com,planned,non
 about-you,ABOUT YOU,catalogue,Mode,https://www.aboutyou.com,planned,non
 american-eagle,American Eagle,catalogue,Mode,https://www.ae.com,planned,non
@@ -137,18 +137,18 @@ uniqlo,UNIQLO,catalogue,Mode,https://www.uniqlo.com,planned,non
 urban-outfitters,Urban Outfitters,catalogue,Mode,https://www.urbanoutfitters.com,planned,non
 weekday,Weekday,catalogue,Mode,https://www.weekday.com,planned,non
 cdkeys,CDKeys,catalogue,Jeux vidéo,https://www.cdkeys.com,planned,non
-corsair,Corsair,catalogue,Jeux vidéo,https://www.corsair.com,planned,non
+corsair,Corsair,catalogue,Jeux vidéo|Casques et écouteurs,https://www.corsair.com,planned,non
 fanatical,Fanatical,catalogue,Jeux vidéo,https://www.fanatical.com,planned,non
 game,GAME,catalogue,Jeux vidéo,https://www.game.co.uk,planned,non
 gamestop,GameStop,catalogue,Jeux vidéo,https://www.gamestop.com,planned,non
 green-man-gaming,Green Man Gaming,catalogue,Jeux vidéo,https://www.greenmangaming.com,planned,non
 humble-bundle,Humble Bundle,catalogue,Jeux vidéo,https://www.humblebundle.com,planned,non
-hyperx,HyperX,catalogue,Jeux vidéo,https://hyperx.com,planned,non
+hyperx,HyperX,catalogue,Jeux vidéo|Casques et écouteurs,https://hyperx.com,planned,non
 nintendo-store,Nintendo Store,catalogue,Jeux vidéo,https://www.nintendo.com,planned,non
 playstation-direct,PlayStation Direct,catalogue,Jeux vidéo,https://direct.playstation.com,planned,non
 secretlab,Secretlab,catalogue,Jeux vidéo,https://secretlab.co,planned,non
 steam,Steam,catalogue,Jeux vidéo,https://store.steampowered.com,planned,non
-steelseries,SteelSeries,catalogue,Jeux vidéo,https://steelseries.com,planned,non
+steelseries,SteelSeries,catalogue,Jeux vidéo|Casques et écouteurs,https://steelseries.com,planned,non
 xbox,Xbox,catalogue,Jeux vidéo,https://www.xbox.com,planned,non
 burpee,Burpee,catalogue,Jardin & extérieur,https://www.burpee.com,planned,non
 crocus,Crocus,catalogue,Jardin & extérieur,https://www.crocus.co.uk,planned,non
@@ -182,26 +182,26 @@ mankind,Mankind,catalogue,Santé & hygiène,https://www.mankind.co.uk,planned,no
 superdrug,Superdrug,catalogue,Santé & hygiène,https://www.superdrug.com,planned,non
 vitacost,Vitacost,catalogue,Santé & hygiène,https://www.vitacost.com,planned,non
 walgreens,Walgreens,catalogue,Santé & hygiène,https://www.walgreens.com,planned,non
-article,Article,catalogue,Maison & mobilier,https://www.article.com,planned,non
-cb2,CB2,catalogue,Maison & mobilier,https://www.cb2.com,planned,non
-conforama,Conforama,catalogue,Maison & mobilier,https://www.conforama.fr,planned,non
-crate-barrel,Crate & Barrel,catalogue,Maison & mobilier,https://www.crateandbarrel.com,planned,non
-dunelm,Dunelm,catalogue,Maison & mobilier,https://www.dunelm.com,planned,non
-ferm-living,Ferm Living,catalogue,Maison & mobilier,https://fermliving.com,planned,non
-habitat,Habitat,catalogue,Maison & mobilier,https://www.habitat.co.uk,planned,non
-hay,HAY,catalogue,Maison & mobilier,https://hay.com,planned,non
-home-depot,Home Depot,catalogue,Maison & mobilier,https://www.homedepot.com,planned,non
-ikea,IKEA,catalogue,Maison & mobilier,https://www.ikea.com,planned,non
-jysk,JYSK,catalogue,Maison & mobilier,https://jysk.com,planned,non
-leroy-merlin,Leroy Merlin,catalogue,Maison & mobilier,https://www.leroymerlin.com,planned,non
-lowe-s,Lowe's,catalogue,Maison & mobilier,https://www.lowes.com,planned,non
-maisons-du-monde,Maisons du Monde,catalogue,Maison & mobilier,https://www.maisonsdumonde.com,planned,non
-muji,Muji,catalogue,Maison & mobilier,https://www.muji.com,planned,non
-pottery-barn,Pottery Barn,catalogue,Maison & mobilier,https://www.potterybarn.com,planned,non
-rh,RH,catalogue,Maison & mobilier,https://rh.com,planned,non
-the-range,The Range,catalogue,Maison & mobilier,https://www.therange.co.uk,planned,non
-wayfair,Wayfair,catalogue,Maison & mobilier,https://www.wayfair.com,planned,non
-westwing,Westwing,catalogue,Maison & mobilier,https://www.westwing.com,planned,non
+article,Article,catalogue,Meubles,https://www.article.com,planned,non
+cb2,CB2,catalogue,Meubles,https://www.cb2.com,planned,non
+conforama,Conforama,catalogue,Meubles,https://www.conforama.fr,planned,non
+crate-barrel,Crate & Barrel,catalogue,Meubles,https://www.crateandbarrel.com,planned,non
+dunelm,Dunelm,catalogue,Meubles,https://www.dunelm.com,planned,non
+ferm-living,Ferm Living,catalogue,Meubles,https://fermliving.com,planned,non
+habitat,Habitat,catalogue,Meubles,https://www.habitat.co.uk,planned,non
+hay,HAY,catalogue,Meubles,https://hay.com,planned,non
+home-depot,Home Depot,catalogue,Meubles,https://www.homedepot.com,planned,non
+ikea,IKEA,catalogue,Meubles,https://www.ikea.com,planned,non
+jysk,JYSK,catalogue,Meubles,https://jysk.com,planned,non
+leroy-merlin,Leroy Merlin,catalogue,Meubles,https://www.leroymerlin.com,planned,non
+lowe-s,Lowe's,catalogue,Meubles,https://www.lowes.com,planned,non
+maisons-du-monde,Maisons du Monde,catalogue,Meubles,https://www.maisonsdumonde.com,planned,non
+muji,Muji,catalogue,Meubles,https://www.muji.com,planned,non
+pottery-barn,Pottery Barn,catalogue,Meubles,https://www.potterybarn.com,planned,non
+rh,RH,catalogue,Meubles,https://rh.com,planned,non
+the-range,The Range,catalogue,Meubles,https://www.therange.co.uk,planned,non
+wayfair,Wayfair,catalogue,Meubles,https://www.wayfair.com,planned,non
+westwing,Westwing,catalogue,Meubles,https://www.westwing.com,planned,non
 blue-nile,Blue Nile,catalogue,Bijoux & montres,https://www.bluenile.com,planned,non
 bulgari,Bulgari,catalogue,Bijoux & montres,https://www.bulgari.com,planned,non
 cartier,Cartier,catalogue,Bijoux & montres,https://www.cartier.com,planned,non
@@ -319,21 +319,21 @@ otterbox,OtterBox,catalogue,Smartphones & accessoires,https://www.otterbox.com,p
 spigen,Spigen,catalogue,Smartphones & accessoires,https://www.spigen.com,planned,non
 ugreen,Ugreen,catalogue,Smartphones & accessoires,https://www.ugreen.com,planned,non
 xiaomi,Xiaomi,catalogue,Smartphones & accessoires,https://www.mi.com,planned,non
-backcountry,Backcountry,catalogue,Sport & plein air,https://www.backcountry.com,planned,non
-bass-pro-shops,Bass Pro Shops,catalogue,Sport & plein air,https://www.basspro.com,planned,non
-cabela-s,Cabela's,catalogue,Sport & plein air,https://www.cabelas.com,planned,non
-chain-reaction-cycles,Chain Reaction Cycles,catalogue,Sport & plein air,https://www.chainreactioncycles.com,planned,non
-decathlon,Decathlon,catalogue,Sport & plein air,https://www.decathlon.com,planned,non
-garmin,Garmin,catalogue,Sport & plein air,https://www.garmin.com,planned,non
-pro-direct-sport,Pro:Direct Sport,catalogue,Sport & plein air,https://www.prodirectsport.com,planned,non
-rei,REI,catalogue,Sport & plein air,https://www.rei.com,planned,non
-running-warehouse,Running Warehouse,catalogue,Sport & plein air,https://www.runningwarehouse.com,planned,non
-snowleader,Snowleader,catalogue,Sport & plein air,https://www.snowleader.com,planned,non
-sports-direct,Sports Direct,catalogue,Sport & plein air,https://www.sportsdirect.com,planned,non
-tennis-warehouse,Tennis Warehouse,catalogue,Sport & plein air,https://www.tennis-warehouse.com,planned,non
-tradeinn,Tradeinn,catalogue,Sport & plein air,https://www.tradeinn.com,planned,non
-trek-bikes,Trek Bikes,catalogue,Sport & plein air,https://www.trekbikes.com,planned,non
-wiggle,Wiggle,catalogue,Sport & plein air,https://www.wiggle.com,planned,non
+backcountry,Backcountry,catalogue,Sports et loisirs|Activités de plein air,https://www.backcountry.com,planned,non
+bass-pro-shops,Bass Pro Shops,catalogue,Sports et loisirs|Activités de plein air,https://www.basspro.com,planned,non
+cabela-s,Cabela's,catalogue,Sports et loisirs|Activités de plein air,https://www.cabelas.com,planned,non
+chain-reaction-cycles,Chain Reaction Cycles,catalogue,Sports et loisirs|Activités de plein air,https://www.chainreactioncycles.com,planned,non
+decathlon,Decathlon,catalogue,Sports et loisirs|Activités de plein air,https://www.decathlon.com,planned,non
+garmin,Garmin,catalogue,Sports et loisirs|Activités de plein air,https://www.garmin.com,planned,non
+pro-direct-sport,Pro:Direct Sport,catalogue,Sports et loisirs,https://www.prodirectsport.com,planned,non
+rei,REI,catalogue,Sports et loisirs|Activités de plein air,https://www.rei.com,planned,non
+running-warehouse,Running Warehouse,catalogue,Sports et loisirs,https://www.runningwarehouse.com,planned,non
+snowleader,Snowleader,catalogue,Sports et loisirs|Activités de plein air,https://www.snowleader.com,planned,non
+sports-direct,Sports Direct,catalogue,Sports et loisirs|Activités de plein air,https://www.sportsdirect.com,planned,non
+tennis-warehouse,Tennis Warehouse,catalogue,Sports et loisirs,https://www.tennis-warehouse.com,planned,non
+tradeinn,Tradeinn,catalogue,Sports et loisirs,https://www.tradeinn.com,planned,non
+trek-bikes,Trek Bikes,catalogue,Sports et loisirs|Activités de plein air,https://www.trekbikes.com,planned,non
+wiggle,Wiggle,catalogue,Sports et loisirs|Activités de plein air,https://www.wiggle.com,planned,non
 b-q,B&Q,catalogue,Outils & bricolage|Jardin & extérieur,https://www.diy.com,planned,non
 bosch-professional,Bosch Professional,catalogue,Outils & bricolage,https://www.bosch-professional.com,planned,non
 dewalt,DeWalt,catalogue,Outils & bricolage,https://www.dewalt.com,planned,non
@@ -363,10 +363,10 @@ smyths-toys,Smyths Toys,catalogue,Jouets & bébé,https://www.smythstoys.com,pla
 the-children-s-place,The Children's Place,catalogue,Jouets & bébé|Vêtements enfants,https://www.childrensplace.com,planned,non
 the-entertainer,The Entertainer,catalogue,Jouets & bébé,https://www.thetoyshop.com,planned,non
 toys-r-us,"Toys""R""Us",catalogue,Jouets & bébé,https://www.toysrus.com,planned,non
-eagle-creek,Eagle Creek,catalogue,Accessoires de voyage,https://www.eaglecreek.com,planned,non
+eagle-creek,Eagle Creek,catalogue,Accessoires de voyage|Activités de plein air,https://www.eaglecreek.com,planned,non
 go-travel,Go Travel,catalogue,Accessoires de voyage,https://www.gotravelproducts.com,planned,non
-osprey,Osprey,catalogue,Accessoires de voyage,https://www.osprey.com,planned,non
-peak-design,Peak Design,catalogue,Accessoires de voyage,https://www.peakdesign.com,planned,non
-sea-to-summit,Sea to Summit,catalogue,Accessoires de voyage,https://seatosummit.com,planned,non
+osprey,Osprey,catalogue,Accessoires de voyage|Activités de plein air,https://www.osprey.com,planned,non
+peak-design,Peak Design,catalogue,Accessoires de voyage|Activités de plein air,https://www.peakdesign.com,planned,non
+sea-to-summit,Sea to Summit,catalogue,Accessoires de voyage|Activités de plein air,https://seatosummit.com,planned,non
 travelpro,Travelpro,catalogue,Accessoires de voyage,https://travelpro.com,planned,non
 trtl-travel,Trtl Travel,catalogue,Accessoires de voyage,https://trtltravel.com,planned,non

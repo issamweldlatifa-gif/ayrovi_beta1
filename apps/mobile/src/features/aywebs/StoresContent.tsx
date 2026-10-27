@@ -391,7 +391,9 @@ function StoreCard({ store, subtitle, enabled, saved, onOpen, onToggle }: {
             localSource={brand?.source}
             onError={() => setRemoteFailed(true)}
             style={styles.cardLogo}
-            contentFit="contain"
+            /* Même règle qu'à l'accueil : la carte-logo 3:4 remplit la plaque
+               bord à bord ; un fichier serveur garde ses proportions. */
+            contentFit={brand ? 'cover' : 'contain'}
             accessibilityLabel={name}
             testID={`aywebs-store-logo-${store.id}`}
           />
@@ -479,7 +481,6 @@ const styles = StyleSheet.create({
     aspectRatio: MEDIA_RATIO.storeCard,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
     overflow: 'hidden',
   },
   cardLogo: { width: '100%', height: '100%' },

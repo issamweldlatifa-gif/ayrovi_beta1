@@ -292,16 +292,18 @@ Ce qui a été fait, dans cet ordre :
    au plus. Version `brands-dark/` pour le thème sombre : mêmes traits en blanc.
    Quatre marques gardent leurs couleurs (TEMU, AliExpress, Amazon, Champion) et
    ne sont pas inversées.
-2. **Quatorze boutiques ajoutées au registre** (`BRAND_WAVE` dans
-   `shared/aywebsStores.ts`) : Nike, adidas, PUMA, New Balance, ASICS, Converse,
-   Vans, Champion, Under Armour, The North Face, Calvin Klein, CHANEL,
-   Louis Vuitton, ZARA. Mêmes règles que la vague 1 : **aucun motif d'URL
-   inventé** (`recognition: 'capture'`), **aucune devise déclarée**.
-3. **Huit doublons supprimés du catalogue** : ZARA, Nike, adidas, PUMA, New
-   Balance, ASICS, Converse et Vans y figuraient déjà. La liste publique est la
-   concaténation registre + catalogue — les laisser aux deux endroits aurait
-   affiché la même boutique deux fois.
-4. **Câblage dans l'app** : `storeLogoSources(store, mode)` (ids + alias de
+2. **Six boutiques créées au CATALOGUE**, celles qui n'existaient nulle part :
+   Champion, Under Armour, The North Face, Calvin Klein, CHANEL, Louis Vuitton.
+   Les huit autres (ZARA, Nike, adidas, PUMA, New Balance, ASICS, Converse,
+   Vans) étaient déjà au catalogue : rien à créer.
+   **Pourquoi pas au registre** : `AYWEBS_STORES` ne contient que des boutiques
+   OUVERTES (capture de fiche, panier). Y faire entrer zara.com aurait changé le
+   comportement du serveur — reconnaissance de domaine, capture acceptée — alors
+   qu'aucun motif de fiche n'a été mesuré pour ces marques, et que le client
+   demandait un logo, pas l'ouverture de quatorze boutiques. Le test
+   `aywebs-store-registry` l'a d'ailleurs signalé : `detectAyWebsStore('zara.com')`
+   ne doit pas répondre.
+3. **Câblage dans l'app** : `storeLogoSources(store, mode)` (ids + alias de
    libellés, jamais l'ordre d'affichage) alimente la carte d'accueil et la carte
    de la liste. Un logo serveur introuvable affiche désormais l'initiale, plus
    un cadre d'image cassée.

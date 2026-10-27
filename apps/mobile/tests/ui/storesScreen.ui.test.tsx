@@ -89,16 +89,23 @@ function renderScreen() {
 describe('écran Magasins — catalogue complet', () => {
   beforeEach(() => mockPush.mockClear());
 
-  it('les boutiques sont des grandes cartes 3:4 et le logo est contenu, jamais rogné', async () => {
+  it('les boutiques sont des grandes cartes 3:4 remplies par le logo, sans réserve', async () => {
     renderScreen();
     await waitFor(() => expect(screen.getByTestId('aywebs-store-media-store-0')).toBeTruthy(), { timeout: 5000 });
 
     const media = StyleSheet.flatten(screen.getByTestId('aywebs-store-media-store-0').props.style);
     expect(media.aspectRatio).toBe(MEDIA_RATIO.storeCard);
     expect(media.width).toBe('100%');
-    expect(media.padding).toBe(24);
 
-    // `contain` = le logo entier, quelle que soit sa forme (pas de `cover`).
+    /* ── Corrigé le 27/10/2026 ───────────────────────────────────────────────
+       Le client a tranché sur la capture : « صورة الشعار قد البطاقة بالظبط،
+       بلا مسحات رمادية ولا بيضاء ». La réserve de 24 pt laissait justement
+       une bande autour du logo. Les cartes-logo embarquées font 3:4 comme la
+       plaque, donc `cover` les fait toucher les bords. Un logo serveur d'un
+       autre format garde `contain` : ces boutiques-là (380 ici) n'ont pas de
+       carte-logo, et les rogner serait pire que la bande. */
+    expect(media.padding).toBeUndefined();
+
     const logo = screen.getByTestId('aywebs-store-logo-store-0');
     expect(logo.props.contentFit).toBe('contain');
   });

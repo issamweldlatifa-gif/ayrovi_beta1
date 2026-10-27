@@ -42,11 +42,12 @@ import { storeEntryTarget } from '@/features/aywebs/storeEntry';
 import { useSavedStoreIds } from '@/features/aywebs/savedStores';
 import { rememberAyWebsVisit } from '@/features/aywebs/lastVisitedStore';
 import {
-  categoryEntries, categoryLabel, filterStoresByQuery,
+  categoryLabel, filterStoresByQuery,
   storeDisplayName, storeSubtitle, storesInCategory,
 } from '@/features/aywebs/storesCatalog';
 import type { StoresCatalogQuery } from '@/features/aywebs/StoresContent';
 import { storeLogoSources } from '@/features/aywebs/storeLogos';
+import { EDITORIAL_CATEGORIES, editorialCategory } from '@/features/aywebs/editorialCategories';
 
 /**
  * Photos de catégories embarquées (art statique de l'application).
@@ -73,10 +74,42 @@ const CATEGORY_ART = {
 const SPONSOR_ART = require('../../../assets/aywebs/campaign-fetes.jpg');
 
 type CategoryArtKey = keyof typeof CATEGORY_ART;
+
+/**
+ * Photo de chaque catégorie de la section 1, par IDENTIFIANT.
+ *
+ * La reconnaissance par mots-clés plus bas sert de filet pour les catégories
+ * que le client publierait un jour ; les six tuiles de l'accueil, elles, sont
+ * nommées ici, sans deviner : « audio » ne doit jamais tomber sur le visuel de
+ * la maison parce qu'un libellé arabe contient un mot proche.
+ */
+const EDITORIAL_ART: Readonly<Record<string, CategoryArtKey>> = {
+  beauty: 'beauty',
+  home: 'home',
+  sports: 'sports',
+  audio: 'audio',
+  outdoor: 'outdoor',
+  pets: 'pets',
+};
 type IconName = keyof typeof Ionicons.glyphMap;
 const CATEGORY_FALLBACK_ICON: IconName = 'pricetag-outline';
 
+/** Repli quand une photo ne peut pas s'afficher : une icône, jamais un trou. */
+const CATEGORY_ICON: Readonly<Record<CategoryArtKey, IconName>> = {
+  electronics: 'phone-portrait-outline',
+  fashion: 'shirt-outline',
+  beauty: 'sparkles-outline',
+  audio: 'headset-outline',
+  shoes: 'footsteps-outline',
+  home: 'home-outline',
+  sports: 'barbell-outline',
+  outdoor: 'trail-sign-outline',
+  pets: 'paw-outline',
+};
+
 function categoryArt(category: AyWebsCategory): { source?: number; icon: IconName } {
+  const named = EDITORIAL_ART[category.id];
+  if (named) return { source: CATEGORY_ART[named], icon: CATEGORY_ICON[named] };
   const key = `${category.id} ${category.labelFr} ${category.labelAr}`
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -120,10 +153,16 @@ export function AyWebsHomeContent({ catalog }: { catalog: StoresCatalogQuery }) 
   const stores = catalog.data?.stores ?? [];
   const categories = catalog.data?.categories ?? [];
 
-  const categoryTiles = useMemo(() => {
-    const entries = categoryEntries(stores, categories).filter((entry) => entry.count > 0);
-    return (entries.length ? entries : categoryEntries(stores, categories)).slice(0, 6);
-  }, [categories, stores]);
+  /**
+   * Les six catégories de la section 1 — ORDRE ÉDITORIAL, pas un tri par
+   * nombre de boutiques (décision du 27/10/2026, capture de référence + six
+   * photos). Le libellé vient du serveur quand il le publie ; sinon du repli
+   * local, jamais de l'identifiant technique.
+   */
+  const categoryTiles = useMemo(
+    () => EDITORIAL_CATEGORIES.map((entry) => editorialCategory(entry, categories, lang)),
+    [categories, lang],
+  );
 
   const matchingStores = useMemo(() => filterStoresByQuery(stores, search), [search, stores]);
   const selectedCategory = categories.find((category) => category.id === selectedCategoryId) ?? null;
@@ -210,28 +249,19 @@ export function AyWebsHomeContent({ catalog }: { catalog: StoresCatalogQuery }) 
             title={t('aywebs.home.categories')}
             accessibilityLabel={t('aywebs.home.categories')}
           />
-          {catalog.isPending ? (
-            <View style={styles.grid}>
-              {Array.from({ length: 6 }, (_, index) => (
-                <View key={index} style={styles.tile}>
-                  <View style={[styles.categoryMedia, { backgroundColor: theme.colors.shimmer, borderRadius: theme.radius.md }]} />
-                </View>
-              ))}
-            </View>
-          ) : catalog.isError ? (
-            <AppText variant="caption" color={theme.status.danger.fg}>{t('aywebs.stores.loadFailed')}</AppText>
-          ) : (
-            <View style={styles.grid}>
-              {categoryTiles.map(({ category }) => (
-                <CategoryTile
-                  key={category.id}
-                  category={category}
-                  selected={selectedCategoryId === category.id}
-                  onPress={() => toggleCategory(category.id)}
-                />
-              ))}
-            </View>
-          )}
+          {/* Les six photos sont EMBARQUÉES : la section n'attend pas le réseau,
+              et elle affiche donc toujours les mêmes six cartes, dans le même
+              ordre. Un squelette ici ne servirait qu'à faire clignoter l'écran. */}
+          <View style={styles.grid}>
+            {categoryTiles.map((category) => (
+              <CategoryTile
+                key={category.id}
+                category={category}
+                selected={selectedCategoryId === category.id}
+                onPress={() => toggleCategory(category.id)}
+              />
+            ))}
+          </View>
         </View>
       ) : null}
 
@@ -478,7 +508,10 @@ function StoreTile({ store, categories, saved, onOpen, onToggle }: {
             uri={logo}
             localSource={brand?.source}
             onError={() => setRemoteFailed(true)}
-            contentFit="contain"
+            /* Les cartes-logo sont dessinées en 3:4 exactement comme la plaque :
+               `cover` les fait toucher les quatre bords, sans bande grise ni
+               blanche. Un logo serveur d'un autre format reste en `contain`. */
+            contentFit={brand ? 'cover' : 'contain'}
             accessibilityLabel={name}
             style={styles.imageFill}
             testID={`aywebs-home-store-logo-${store.id}`}
@@ -573,7 +606,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
   },
   imageFill: { width: '100%', height: '100%' },
   tileHeart: {

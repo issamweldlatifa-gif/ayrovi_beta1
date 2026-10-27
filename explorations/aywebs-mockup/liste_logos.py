@@ -75,6 +75,12 @@ def main() -> int:
     by_id = {row['id']: row for row in rows}
     registry = [row for row in rows if row['source'] == 'registre']
     catalog = [row for row in rows if row['source'] == 'catalogue']
+    # Les boutiques AVEC logo ne figurent pas au CSV mais comptent dans la
+    # colonne « Boutiques » : cinq sont au registre (Amazon, SHEIN, TEMU,
+    # AliExpress, Sephora), les quatorze autres au catalogue.
+    LOGOS_IN_REGISTRY, LOGOS_IN_CATALOG = 5, 14
+    registry_total = len(registry) + LOGOS_IN_REGISTRY
+    catalog_total = len(catalog) + LOGOS_IN_CATALOG
 
     # Regroupement par catégorie PRINCIPALE (la première déclarée) : une
     # boutique n'apparaît qu'une fois, même si elle en couvre plusieurs.
@@ -94,9 +100,9 @@ def main() -> int:
     add('')
     add('| | Boutiques | Sans logo | Ce que ça change à l\'écran |')
     add('| --- | --- | --- | --- |')
-    add(f'| **Registre** (`AYWEBS_STORES`) | 33 | **{len(registry)}** | Boutiques **ouvertes** : capture, panier, visite. '
+    add(f'| **Registre** (`AYWEBS_STORES`) | {registry_total} | **{len(registry)}** | Boutiques **ouvertes** : capture, panier, visite. '
         'Leur carte affiche l\'initiale du nom. |')
-    add(f'| **Catalogue** (`AYWEBS_CATALOG_STORES`) | 357 | **{len(catalog)}** | Boutiques **affichées** mais non capturables. '
+    add(f'| **Catalogue** (`AYWEBS_CATALOG_STORES`) | {catalog_total} | **{len(catalog)}** | Boutiques **affichées** mais non capturables. '
         'Leur carte affiche aussi l\'initiale. |')
     add('')
     add('> Ce que voit le client aujourd\'hui quand un logo manque : **la première lettre du nom**, '

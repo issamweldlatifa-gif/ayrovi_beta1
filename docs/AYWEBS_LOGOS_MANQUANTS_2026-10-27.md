@@ -4,8 +4,8 @@
 
 | | Boutiques | Sans logo | Ce que ça change à l'écran |
 | --- | --- | --- | --- |
-| **Registre** (`AYWEBS_STORES`) | 33 | **14** | Boutiques **ouvertes** : capture, panier, visite. Leur carte affiche l'initiale du nom. |
-| **Catalogue** (`AYWEBS_CATALOG_STORES`) | 357 | **357** | Boutiques **affichées** mais non capturables. Leur carte affiche aussi l'initiale. |
+| **Registre** (`AYWEBS_STORES`) | 19 | **14** | Boutiques **ouvertes** : capture, panier, visite. Leur carte affiche l'initiale du nom. |
+| **Catalogue** (`AYWEBS_CATALOG_STORES`) | 371 | **357** | Boutiques **affichées** mais non capturables. Leur carte affiche aussi l'initiale. |
 
 > Ce que voit le client aujourd'hui quand un logo manque : **la première lettre du nom**, sur la plaque grise du design system — jamais un cadre d'image cassée. Dès qu'un fichier arrive, la carte prend le logo sans autre changement.
 
@@ -19,13 +19,13 @@ Ce sont les seules qui **s'ouvrent vraiment** (bouton « Visiter », capture de 
 | --- | --- | --- | --- |
 | **Allegro** | `allegro.png` | Marketplace | https://allegro.pl |
 | **ASOS** | `asos.png` | Mode | https://www.asos.com |
-| **Best Buy** | `best-buy.png` | High-tech | https://www.bestbuy.com |
+| **Best Buy** | `best-buy.png` | High-tech · Casques et écouteurs | https://www.bestbuy.com |
 | **Cdiscount** | `cdiscount.png` | Marketplace | https://www.cdiscount.com |
 | **Etsy** | `etsy.png` | Marketplace · Arts & loisirs créatifs | https://www.etsy.com |
 | **H&M** | `h-m.png` | Mode · Vêtements enfants | https://www.hm.com |
 | **Kaufland** | `kaufland.png` | Marketplace | https://www.kaufland.de |
-| **MediaMarkt** | `mediamarkt.png` | High-tech | https://www.mediamarkt.com |
-| **Newegg** | `newegg.png` | High-tech | https://www.newegg.com |
+| **MediaMarkt** | `mediamarkt.png` | High-tech · Casques et écouteurs | https://www.mediamarkt.com |
+| **Newegg** | `newegg.png` | High-tech · Casques et écouteurs | https://www.newegg.com |
 | **OTTO** | `otto.png` | Marketplace | https://www.otto.de |
 | **Primark** | `primark.png` | Mode | https://www.primark.com |
 | **Target** | `target.png` | Marketplace | https://www.target.com |
@@ -148,7 +148,7 @@ Une boutique = une ligne, rangée sous sa **catégorie principale** (elle peut e
 - RockAuto — `rockauto.png`
 - Tire Rack — `tire-rack.png`
 
-### Beauté & cosmétiques — 19
+### Beauté et parfum — 19
 
 - Beauty Bay — `beauty-bay.png`
 - Boots — `boots.png`
@@ -356,7 +356,15 @@ Une boutique = une ligne, rangée sous sa **catégorie principale** (elle peut e
 - SSENSE — `ssense.png`
 - YOOX — `yoox.png`
 
-### Maison & mobilier — 20
+### Marketplace — 5
+
+- eBay — `ebay.png`
+- Mercado Libre — `mercado-libre.png`
+- Mercari Japan — `mercari-japan.png`
+- Rakuten — `rakuten.png`
+- Shopee — `shopee.png`
+
+### Meubles — 20
 
 - Article — `article.png`
 - CB2 — `cb2.png`
@@ -378,14 +386,6 @@ Une boutique = une ligne, rangée sous sa **catégorie principale** (elle peut e
 - The Range — `the-range.png`
 - Wayfair — `wayfair.png`
 - Westwing — `westwing.png`
-
-### Marketplace — 5
-
-- eBay — `ebay.png`
-- Mercado Libre — `mercado-libre.png`
-- Mercari Japan — `mercari-japan.png`
-- Rakuten — `rakuten.png`
-- Shopee — `shopee.png`
 
 ### Mode — 19
 
@@ -488,7 +488,7 @@ Une boutique = une ligne, rangée sous sa **catégorie principale** (elle peut e
 - Ugreen — `ugreen.png`
 - Xiaomi — `xiaomi.png`
 
-### Sport & plein air — 15
+### Sports et loisirs — 15
 
 - Backcountry — `backcountry.png`
 - Bass Pro Shops — `bass-pro-shops.png`
