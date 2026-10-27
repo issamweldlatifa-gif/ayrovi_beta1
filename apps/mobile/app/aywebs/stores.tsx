@@ -14,7 +14,10 @@ export default function StoresScreen() {
   const catalog = useStoresCatalogQuery();
   return (
     <SubScreen
-      title={t('aywebs.stores.title')}
+      /* « All Stores » (28/10/2026) : la page ne montre plus que le catalogue
+         complet — le titre doit dire ce qu'on voit, pas un menu de deux
+         entrées qui n'existe plus. */
+      title={t('aywebs.stores.all')}
       fallback="/(tabs)/aywebs"
       onRefresh={() => catalog.refetch()}
       refreshing={catalog.isFetching && !catalog.isPending}

@@ -144,10 +144,15 @@ describe('écran Magasins — catalogue complet', () => {
     expect(mockPush).toHaveBeenCalledWith(expect.objectContaining({ pathname: '/aywebs/browser' }));
   });
 
-  it('ouvre la liste complète sans erreur', async () => {
+  it('la page EST la liste complète : aucune tuile intermédiaire à traverser', async () => {
+    /* 28/10/2026 — « زر رجوع، عنوان All Stores، شريط بحث، بركة ». Les deux
+       tuiles (Browse by Category / Store List) et le bloc Saved Stores ont été
+       retirés : la totalité du catalogue s'affiche directement. */
     renderScreen();
     await waitFor(() => expect(screen.getByTestId('aywebs-store-store-0')).toBeTruthy(), { timeout: 5000 });
-    await act(async () => { fireEvent.press(screen.getByTestId('aywebs-stores-list')); });
     expect(screen.getByTestId('aywebs-store-store-379')).toBeTruthy();
+    expect(screen.queryByTestId('aywebs-stores-list')).toBeNull();
+    expect(screen.queryByTestId('aywebs-stores-browse')).toBeNull();
+    expect(screen.queryByText('Saved Stores')).toBeNull();
   });
 });

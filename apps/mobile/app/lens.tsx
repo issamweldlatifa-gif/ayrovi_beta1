@@ -18,7 +18,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
-  Animated, AppState, Keyboard, Linking, Modal, PanResponder, Pressable, ScrollView, StyleSheet, View, useWindowDimensions,
+  Animated, AppState, Keyboard, Linking, Modal, PanResponder, Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions,
   type NativeScrollEvent, type NativeSyntheticEvent, type PanResponderGestureState,
 } from 'react-native';
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
@@ -53,6 +53,7 @@ import { LensSearchBar } from '@/features/lens/LensSearchBar';
 import { OcerexFlow } from '@/features/lens/ocerex/OcerexFlow';
 import { LensProductView } from '@/features/lens/LensProductView';
 import { lensOpenDecision } from '@/features/lens/lensOpen';
+import { useKeyboardInset } from '@/design/useKeyboardInset';
 import { LensHelpView } from '@/features/lens/LensHelpView';
 import { LensHistoryView } from '@/features/lens/LensHistoryView';
 import { LensRulesView } from '@/features/lens/LensRulesView';
@@ -312,6 +313,15 @@ export default function LensScreen() {
   const theme = useTheme();
   const t = useT();
   const insets = useSafeAreaInsets();
+  /**
+   * Clavier (28/10/2026) : en mode « mots-clés » ou « adresse », le champ vit
+   * dans le panneau du bas — sans ce décalage, le clavier le recouvrait et on
+   * tapait à l'aveugle. Déclaré ICI, avec les autres hooks : les deux vues
+   * (résultats / viseur) sont rendues par le même composant, un hook après un
+   * `return` changerait le nombre de hooks entre deux rendus.
+   * iOS seulement — Android réduit déjà la fenêtre (voir `useKeyboardInset`).
+   */
+  const keyboardInset = useKeyboardInset(Platform.OS === 'ios');
   const { width, height } = useWindowDimensions();
   const focused = useIsFocused();
   const [permission, requestPermission] = useCameraPermissions();
@@ -1353,7 +1363,7 @@ export default function LensScreen() {
             TRANSPARENT : la caméra plein écran reste visible derrière les boutons, comme
             Google Lens ; seuls les boutons et la barre portent un voile translucide. */}
         <View
-          style={[styles.panel, { paddingBottom: insets.bottom + 12 }]}
+          style={[styles.panel, { paddingBottom: insets.bottom + 12, bottom: keyboardInset }]}
           onLayout={(event) => setPanelHeight(Math.round(event.nativeEvent.layout.height))}
           testID="lens-panel"
         >

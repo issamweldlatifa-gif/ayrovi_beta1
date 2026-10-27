@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
@@ -6,7 +7,9 @@ import { AppText, Button } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useT, type TranslationKey } from '@/i18n';
 import { LensResultCard } from './LensResultCard';
+import { LensFilterBar } from './LensFilterBar';
 import { LENS_COLORS } from './lensPalette';
+import { applyLensFilters, DEFAULT_FILTERS, presentMerchants, type LensFilters } from './lensRanking';
 import { useLensSheetScroll } from './lensSheetScroll';
 
 export function LensResultsGrid({
@@ -33,6 +36,17 @@ export function LensResultsGrid({
   // Position de défilement remontée à la feuille : tout en haut, un glissement
   // vers le bas baisse la feuille au lieu de faire défiler la liste.
   const onSheetScroll = useLensSheetScroll();
+  /**
+   * Filtres (28/10/2026) : l'état vit ICI, pas dans l'écran. Une nouvelle
+   * recherche remonte une grille neuve (clé différente en amont), donc les
+   * filtres repartent de zéro avec les nouveaux résultats — c'est voulu.
+   */
+  const [filters, setFilters] = useState<LensFilters>(DEFAULT_FILTERS);
+
+  const shown = useMemo(() => applyLensFilters(candidates, filters), [candidates, filters]);
+  const merchants = useMemo(() => presentMerchants(candidates).slice(0, 6), [candidates]);
+  const filteredOut = shown.length !== candidates.length;
+  const hasExternal = candidates.some((candidate) => candidate.kind !== 'catalog');
 
   if (candidates.length === 0) {
     return (
@@ -50,7 +64,7 @@ export function LensResultsGrid({
   return (
     <FlatList
       testID="lens-results-grid"
-      data={candidates}
+      data={shown}
       style={styles.list}
       numColumns={2}
       keyExtractor={(candidate) => candidate.sourceUrl || candidate.id}
@@ -86,6 +100,31 @@ export function LensResultsGrid({
           {favoriteNote ? (
             <AppText variant="caption" color={theme.status.danger.fg} accessibilityRole="alert">{t(favoriteNote)}</AppText>
           ) : null}
+          {/* Ce que fait l'appui : la page du marchand s'ouvre dans AYWEBs.
+              Dit UNE fois, en haut — pas une étiquette sur chaque carte. */}
+          {hasExternal ? (
+            <AppText variant="caption" color={theme.colors.muted} testID="lens-open-hint">
+              {t('lens.openInAywebs')}
+            </AppText>
+          ) : null}
+          <LensFilterBar
+            filters={filters}
+            onChange={setFilters}
+            merchants={merchants}
+            shown={shown.length}
+            total={candidates.length}
+          />
+          {shown.length === 0 ? (
+            <View style={styles.filteredEmpty} testID="lens-filters-empty">
+              <AppText color={theme.colors.muted} align="center">{t('lens.filters.empty')}</AppText>
+              <Button
+                label={t('lens.filters.reset')}
+                tone="quiet"
+                onPress={() => setFilters(DEFAULT_FILTERS)}
+                block
+              />
+            </View>
+          ) : null}
         </View>
       )}
       renderItem={({ item }) => (
@@ -98,6 +137,11 @@ export function LensResultsGrid({
           />
         </View>
       )}
+      ListFooterComponent={filteredOut && shown.length > 0 ? (
+        <AppText variant="caption" color={theme.colors.muted} align="center" style={styles.footer} testID="lens-filters-active">
+          {t('lens.resultsCountMany', { count: shown.length })} / {candidates.length}
+        </AppText>
+      ) : null}
     />
   );
 }
@@ -111,6 +155,8 @@ const styles = StyleSheet.create({
   headerRow: { alignItems: 'center', gap: 12 },
   headerCopy: { flex: 1, gap: 2 },
   newSearch: { width: 48, height: 48, borderRadius: 24, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },
+  filteredEmpty: { gap: 8, paddingVertical: 24, paddingHorizontal: 16 },
+  footer: { paddingVertical: 8 },
   empty: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, paddingHorizontal: 24, paddingVertical: 48 },
   emptyIcon: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center' },
 });

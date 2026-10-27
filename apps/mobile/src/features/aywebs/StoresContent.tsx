@@ -1,24 +1,20 @@
 /**
- * AYWEBs — contenu de la page Stores : recherche, « Browse by Category », « Store List »,
- * boutiques enregistrées et toutes les boutiques.
+ * AYWEBs — page « Toutes les boutiques ».
  *
- * Partagé par l'onglet AYWEBs et la page `/aywebs/stores` : une seule implémentation.
- * La requête du catalogue vit ici aussi (même clé de cache partout). Pas de marges
- * horizontales ici : le cadre qui l'accueille (onglet ou page) les fournit.
+ * ── Décision du client (28/10/2026) ─────────────────────────────────────────
+ * « وقت ندخلو لصفحة متاجر، الأفضل: زر رجوع، عنوان All Stores، شريط بحث — بركة.
+ *   المربّعات وكتيبة أخرى نحيها. »
+ *
+ * Autrement dit : **retour + titre + recherche + la liste**, rien d'autre. Les
+ * deux tuiles (« Browse by Category », « Store List ») et le bloc « Saved
+ * Stores » ont été RETIRÉS — pas déplacés. Le cœur reste sur chaque carte
+ * (les boutiques enregistrées restent enregistrées, et se retrouvent par la
+ * recherche), mais la page n'ouvre plus de section pour les annoncer.
+ *
+ * La recherche porte sur le NOM et le domaine de la boutique, côté appareil,
+ * sur le catalogue du serveur : aucune boutique codée en dur ici.
  */
-/**
- * AYWEBs — page Stores.
- *
- *  • Recherche de MAGASINS (nom partiel, sans casse) sur les données du serveur.
- *    Distincte de la recherche de produits : elle ne touche ni au panier ni à la lecture.
- *  • « Browse by Category » : liste des catégories, puis les boutiques de la catégorie choisie.
- *  • « Store List » : toutes les boutiques du registre.
- *  • Saved Stores : les boutiques enregistrées par le cœur, gardées sur l'appareil.
- *
- * Rien n'est codé en dur ici : une boutique ou une catégorie ajoutée au serveur
- * apparaît automatiquement. Les textes marqués « figés » sont ceux du cahier des charges.
- */
-import { useState, type ComponentProps, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Linking, Pressable, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
@@ -39,16 +35,10 @@ import { storeEntryTarget } from '@/features/aywebs/storeEntry';
 import { rememberAyWebsVisit } from '@/features/aywebs/lastVisitedStore';
 import { useSavedStoreIds } from '@/features/aywebs/savedStores';
 import {
-  categoryEntries, categoryLabel, chunkRows, filterStoresByQuery, normalizeSearchText,
-  savedStoresInOrder, storeDisplayName, storeDomain, storeSubtitle, storesInCategory, storeVisitUrl,
+  chunkRows, filterStoresByQuery, normalizeSearchText,
+  storeDisplayName, storeDomain, storeSubtitle, storeVisitUrl,
   type StoresLocale,
 } from '@/features/aywebs/storesCatalog';
-
-type StoresView =
-  | { kind: 'home' }
-  | { kind: 'categories' }
-  | { kind: 'category'; id: string }
-  | { kind: 'list' };
 
 const GRID_GAP = 12;
 const TWO_COLUMNS_MAX_WIDTH = 600;
@@ -78,14 +68,10 @@ export function StoresContent({ catalog }: { catalog: StoresCatalogQuery }) {
   const categories = catalog.data?.categories ?? [];
 
   const [query, setQuery] = useState('');
-  const [view, setView] = useState<StoresView>({ kind: 'home' });
   const searching = normalizeSearchText(query).length > 0;
-
-  /** Effacer la recherche revient à la liste complète (Saved + All). */
-  const changeQuery = (text: string) => {
-    setQuery(text);
-    if (!text) setView({ kind: 'home' });
-  };
+  /** La page n'a qu'une liste : effacer la recherche ramène à tout le catalogue. */
+  const changeQuery = (text: string) => setQuery(text);
+  const found = searching ? filterStoresByQuery(stores, query) : stores;
 
   const openStore = (store: AyWebsStore) => {
     const target = storeEntryTarget(store);
@@ -125,33 +111,15 @@ export function StoresContent({ catalog }: { catalog: StoresCatalogQuery }) {
     </View>
   ));
 
-  const back = (label: string, to: StoresView) => (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      onPress={() => setView(to)}
-      style={[styles.backRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}
-    >
-      <Ionicons
-        name={theme.isRTL ? 'chevron-forward' : 'chevron-back'}
-        size={theme.iconSize.md}
-        color={theme.colors.ink}
-        accessibilityElementsHidden
-      />
-      <AppText variant="label" weight="bold">{label}</AppText>
-    </Pressable>
-  );
-
   let body: ReactNode;
   if (catalog.isPending) {
     body = <LoadingBlock labelKey="loading.stores" />;
   } else if (catalog.isError) {
     body = <ErrorBlock error={catalog.error} onRetry={() => catalog.refetch()} />;
+  } else if (found.length > 0) {
+    body = <View style={styles.section} testID="aywebs-stores-grid">{renderGrid(found)}</View>;
   } else if (searching) {
-    const found = filterStoresByQuery(stores, query);
-    body = found.length > 0 ? (
-      <View style={styles.section}>{renderGrid(found)}</View>
-    ) : (
+    body = (
       <View style={styles.section}>
         <EmptyBlock>
           <AppText variant="body" align="center">{t('aywebs.stores.noneFound')}</AppText>
@@ -159,84 +127,11 @@ export function StoresContent({ catalog }: { catalog: StoresCatalogQuery }) {
         <Button label={t('aywebs.stores.clear')} tone="quiet" block onPress={() => changeQuery('')} />
       </View>
     );
-  } else if (view.kind === 'categories') {
-    body = (
-      <View style={styles.section}>
-        {back(t('aywebs.stores.back'), { kind: 'home' })}
-        <AppText variant="lead" weight="bold">{t('aywebs.stores.categoriesTitle')}</AppText>
-        {categoryEntries(stores, categories).map(({ category, count }) => (
-          <Pressable
-            key={category.id}
-            accessibilityRole="button"
-            accessibilityLabel={categoryLabel(category, storesLocale)}
-            onPress={() => setView({ kind: 'category', id: category.id })}
-            testID={`aywebs-stores-category-${category.id}`}
-            style={({ pressed }) => [
-              styles.categoryRow,
-              {
-                flexDirection: rowDirectionFor(theme.isRTL),
-                backgroundColor: theme.colors.surface,
-                borderColor: theme.colors.line,
-                borderRadius: theme.radius.card,
-                opacity: pressed ? theme.opacity.dimmed : 1,
-              },
-            ]}
-          >
-            <View style={styles.categoryText}>
-              <AppText variant="label" weight="bold">{categoryLabel(category, storesLocale)}</AppText>
-              <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.stores.count', { count })}</AppText>
-            </View>
-            <Ionicons
-              name={theme.isRTL ? 'chevron-back' : 'chevron-forward'}
-              size={theme.iconSize.md}
-              color={theme.colors.muted}
-              accessibilityElementsHidden
-            />
-          </Pressable>
-        ))}
-      </View>
-    );
-  } else if (view.kind === 'category') {
-    const category = categories.find((candidate) => candidate.id === view.id);
-    const list = storesInCategory(stores, view.id);
-    body = (
-      <View style={styles.section}>
-        {back(t('aywebs.stores.back'), { kind: 'categories' })}
-        <AppText variant="lead" weight="bold">
-          {category ? categoryLabel(category, storesLocale) : view.id}
-        </AppText>
-        {list.length > 0 ? renderGrid(list) : (
-          <EmptyBlock><AppText variant="body" align="center">{t('aywebs.stores.noStores')}</AppText></EmptyBlock>
-        )}
-      </View>
-    );
-  } else if (view.kind === 'list') {
-    body = (
-      <View style={styles.section}>
-        {back(t('aywebs.stores.back'), { kind: 'home' })}
-        <AppText variant="lead" weight="bold">{t('aywebs.stores.list')}</AppText>
-        {stores.length > 0 ? renderGrid(stores) : (
-          <EmptyBlock><AppText variant="body" align="center">{t('aywebs.stores.noStores')}</AppText></EmptyBlock>
-        )}
-      </View>
-    );
   } else {
-    const savedStores = savedStoresInOrder(stores, saved.ids);
     body = (
-      <>
-        <View style={styles.section}>
-          <AppText variant="lead" weight="bold">{t('aywebs.stores.saved')}</AppText>
-          {savedStores.length > 0 ? renderGrid(savedStores) : (
-            <AppText variant="body" color={theme.colors.muted}>{t('aywebs.stores.savedEmpty')}</AppText>
-          )}
-        </View>
-        <View style={styles.section}>
-          <AppText variant="lead" weight="bold">{t('aywebs.stores.all')}</AppText>
-          {stores.length > 0 ? renderGrid(stores) : (
-            <EmptyBlock><AppText variant="body" align="center">{t('aywebs.stores.noStores')}</AppText></EmptyBlock>
-          )}
-        </View>
-      </>
+      <EmptyBlock>
+        <AppText variant="body" align="center">{t('aywebs.stores.noStores')}</AppText>
+      </EmptyBlock>
     );
   }
 
@@ -269,22 +164,6 @@ export function StoresContent({ catalog }: { catalog: StoresCatalogQuery }) {
           ) : null}
         </View>
 
-        <View style={[styles.actions, { flexDirection: rowDirectionFor(theme.isRTL), gap: GRID_GAP }]}>
-          <ActionTile
-            label={t('aywebs.stores.browse')}
-            icon="list-outline"
-            active={view.kind === 'categories' || view.kind === 'category'}
-            onPress={() => { setQuery(''); setView({ kind: 'categories' }); }}
-            testID="aywebs-stores-browse"
-          />
-          <ActionTile
-            label={t('aywebs.stores.list')}
-            icon="storefront-outline"
-            active={view.kind === 'list'}
-            onPress={() => { setQuery(''); setView({ kind: 'list' }); }}
-            testID="aywebs-stores-list"
-          />
-        </View>
       </View>
 
       <View style={styles.body}>
@@ -293,40 +172,6 @@ export function StoresContent({ catalog }: { catalog: StoresCatalogQuery }) {
     </>
   );
 }
-
-function ActionTile({ label, icon, active, onPress, testID }: {
-  label: string;
-  icon: IconName;
-  active: boolean;
-  onPress: () => void;
-  testID?: string;
-}) {
-  const theme = useTheme();
-  const tint = active ? theme.colors.action : theme.colors.ink;
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ selected: active }}
-      onPress={onPress}
-      testID={testID}
-      style={({ pressed }) => [
-        styles.tile,
-        {
-          borderColor: tint,
-          backgroundColor: theme.colors.surface,
-          borderRadius: theme.radius.card,
-          opacity: pressed ? theme.opacity.dimmed : 1,
-        },
-      ]}
-    >
-      <Ionicons name={icon} size={theme.iconSize.md} color={tint} accessibilityElementsHidden />
-      <AppText variant="label" weight="bold" color={tint} align="center">{label}</AppText>
-    </Pressable>
-  );
-}
-
-type IconName = ComponentProps<typeof Ionicons>['name'];
 
 /**
  * Grande carte boutique — le gabarit de la référence (Zalando, 27/10/2026) :
@@ -459,17 +304,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   searchInput: { flex: 1, minHeight: 44 },
-  actions: { alignItems: 'stretch' },
-  tile: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    borderWidth: 1,
-    paddingVertical: 16,
-    paddingHorizontal: 12,
-    minHeight: 96,
-  },
   body: { gap: 24, paddingTop: 24, paddingBottom: 24 },
   section: { gap: 12 },
   gridRow: { flexDirection: 'row', alignItems: 'stretch' },

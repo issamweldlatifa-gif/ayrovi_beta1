@@ -29,15 +29,21 @@ export interface AppTextProps {
   style?: StyleProp<RNTextStyle>;
   /** Rôle lu par les lecteurs d'écran — `alert` pour un message d'échec. */
   accessibilityRole?: TextProps['accessibilityRole'];
+  /** Lu automatiquement quand le texte change (compteur de résultats filtrés). */
+  accessibilityLiveRegion?: TextProps['accessibilityLiveRegion'];
+  testID?: string;
 }
 
 export function AppText({
   children, variant = 'body', weight, color, align = 'auto', numberOfLines, style, accessibilityRole,
+  testID, accessibilityLiveRegion,
 }: AppTextProps) {
   const theme = useTheme();
   return (
     <Text
       accessibilityRole={accessibilityRole}
+      accessibilityLiveRegion={accessibilityLiveRegion}
+      testID={testID}
       numberOfLines={numberOfLines}
       style={[
         theme.text(variant, weight),

@@ -769,9 +769,29 @@ export function AddToCartSheet({
       header={(
         <View style={[styles.header, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
           <View style={styles.headerSide} />
-          <AppText variant="lead" weight="bold" align="center" style={styles.headerTitle} numberOfLines={1}>
-            {added ? t('aywebs.added') : t('aywebs.pickTitle')}
-          </AppText>
+          {/* Signature AYWEBs (28/10/2026) : le mot-symbole OFFICIEL, en violet
+              de marque, au-dessus du titre. C'est lui qui dit au client qu'il
+              est dans AYWEBs et pas sur la page du marchand — la feuille
+              s'ouvre PAR-DESSUS la boutique, sans autre repère. */}
+          <View style={styles.headerCenter}>
+            <AppImage
+              /* Violet de marque en clair ; blanc en sombre, sinon #571EF6 sur
+                 la surface #0A0A0A de la feuille ne se lit pas. */
+              localSource={
+                theme.mode === 'dark'
+                  ? require('../../../assets/aywebs/aywebs-wordmark-white.png')
+                  : require('../../../assets/aywebs/aywebs-wordmark-violet.png')
+              }
+              contentFit="contain"
+              decorative
+              background={null}
+              style={styles.headerWordmark}
+              testID="aywebs-sheet-wordmark"
+            />
+            <AppText variant="label" weight="bold" align="center" style={styles.headerTitle} numberOfLines={1}>
+              {added ? t('aywebs.added') : t('aywebs.pickTitle')}
+            </AppText>
+          </View>
           <View style={styles.headerSide}>{closeButton}</View>
         </View>
       )}
@@ -997,7 +1017,11 @@ function variantAvailability(
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingBottom: 4 },
   headerSide: { width: 44, alignItems: 'flex-end' },
-  headerTitle: { flex: 1, textAlign: 'center' },
+  headerCenter: { flex: 1, alignItems: 'center', gap: 2 },
+  /* 90 × 24 : le ratio exact du fichier (551 × 147 ≈ 3.75), donc aucune
+     déformation. « حجمو متوسط » (28/10) : 40 pt de large était illisible. */
+  headerWordmark: { width: 90, height: 24 },
+  headerTitle: { textAlign: 'center' },
   close: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   productCard: { flexDirection: 'row', alignItems: 'center', padding: 12, gap: 12, borderWidth: StyleSheet.hairlineWidth },
   productHero: { width: 88, height: 88, borderRadius: RADIUS.md },

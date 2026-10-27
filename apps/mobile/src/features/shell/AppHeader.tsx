@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
     justifyContent: 'center',
   },
-  aywebsWordmark: { width: 132, height: 36 },
+  aywebsWordmark: { width: 150, height: 40 },
   actions: {
     alignItems: 'center',
     gap: 2,
