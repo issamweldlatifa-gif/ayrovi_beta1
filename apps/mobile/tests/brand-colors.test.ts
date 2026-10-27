@@ -349,8 +349,18 @@ describe('plus d’orange dans l’application', () => {
 
   it('aucune couleur orangée écrite dans le code (seule exception : le logo Google, imposé par Google)', () => {
     const allowed = new Set(Object.values(GOOGLE_BRAND).map(upper));
+    /**
+     * DONNÉES, pas palette : `optionColour.ts` traduit le nom de couleur d'un
+     * article publié par le marchand (« Brown », « Orange », « Gold ») en
+     * pastille, quand aucune photo n'existe. Un jean marron reste marron ; ces
+     * teintes ne peignent jamais un bouton, un fond, un statut ou un texte —
+     * l'orange de MARQUE reste banni, et ce fichier n'est importé que par les
+     * pastilles de variante.
+     */
+    const dataColourModules = new Set(['src/features/aywebs/optionColour.ts']);
     const offenders: string[] = [];
     for (const rel of [...sources('app'), ...sources('src')]) {
+      if (dataColourModules.has(rel)) continue;
       const text = code(rel);
       for (const match of text.matchAll(HEX)) {
         const value = upper(match[0]);

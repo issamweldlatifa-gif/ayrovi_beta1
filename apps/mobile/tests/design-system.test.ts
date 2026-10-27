@@ -83,9 +83,16 @@ const SPACING_PROPS =
 
 describe('Design System — aucune valeur en dur là où un jeton existe', () => {
   it('aucune couleur littérale hors des fichiers de jetons', () => {
+    /**
+     * Modules de DONNÉES, pas de design : `optionColour.ts` traduit un nom de
+     * couleur publié par le marchand (« Royal Blue ») en pastille, quand aucune
+     * photo de produit n'existe. Ces teintes ne peignent jamais un bouton, un
+     * fond ou un texte — le design system reste la seule source pour l'UI.
+     */
+    const DATA_COLOUR_MODULES = new Set(['src/features/aywebs/optionColour.ts']);
     const offenders: string[] = [];
     for (const rel of FILES) {
-      if (TOKEN_FILES.has(rel)) continue;
+      if (TOKEN_FILES.has(rel) || DATA_COLOUR_MODULES.has(rel)) continue;
       const text = code(rel);
       for (const match of text.matchAll(/#[0-9a-fA-F]{3,8}\b/g)) {
         const line = text.slice(0, match.index).split('\n').length;
@@ -166,6 +173,7 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
       'src/features/shopping/LinkedProductCard.tsx', // pastille favori posée dans l'angle de la carte article
       'src/features/aywebs/AyWebsHomeContent.tsx', // cœur posé dans l'angle de la grande carte boutique (même motif que la carte article)
       'src/features/aywebs/StoresContent.tsx', // cœur posé SUR le visuel 3:4 de la carte boutique (pastille qui reste lisible sur tout logo)
+      'src/features/aywebs/VariantOptionChips.tsx', // coche posée SUR la pastille de couleur (elle ne doit pas décaler le libellé)
       'src/features/reels/ReelShopTray.tsx', // tiroir « articles » qui sort PAR-DESSUS la vidéo du Reel + bouton posé sur le média (le Reel continue de tourner dessous)
       'src/features/social/StoryViewer.tsx', // zones de tape + pied, au-dessus du média
       'src/features/home/HeroCarousel.tsx', // couches de fond (le fond de chaque photo) et voile du titre (§5.4)

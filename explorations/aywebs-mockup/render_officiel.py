@@ -571,17 +571,203 @@ def render_search() -> Image.Image:
     return canvas
 
 
+# ─── Écran : feuille « Sélectionnez votre article » (état corrigé) ─────────
+# Corrigé le 27/10/2026 : le prix manquant ne s'écrit plus en 28 pt sur trois
+# lignes, la coche ne pousse plus le libellé, et une couleur sans photo reste
+# une pastille COLORÉE — jamais une icône « image cassée ».
+
+SWATCH = {
+    "Black": (0x0A, 0x0A, 0x0A),
+    "Royal Blue": (0x2A, 0x4F, 0xD7),
+    "Dark Gray": (0x5A, 0x5A, 0x5A),
+    "Gray": (0x9E, 0x9E, 0x9E),
+    "Bud Green": (0x7F, 0xBF, 0x6A),
+    "Drak Khaki": (0x8C, 0x84, 0x46),
+    "White": (0xFF, 0xFF, 0xFF),
+    "Camo Green": (0x6E, 0x73, 0x50),
+}
+
+
+def icon_close(d, cx, cy, color=INK, size=20):
+    half = size / 2
+    w = max(1, px(1.9))
+    for dx, dy in ((1, 1), (1, -1)):
+        d.line([px(cx - half * dx), px(cy - half * dy), px(cx + half * dx), px(cy + half * dy)], fill=color, width=w)
+
+
+def icon_check(d, cx, cy, color=INK, size=14):
+    w = max(1, px(2))
+    d.line([px(cx - size * 0.30), px(cy + size * 0.02), px(cx - size * 0.05), px(cy + size * 0.28)], fill=color, width=w)
+    d.line([px(cx - size * 0.05), px(cy + size * 0.28), px(cx + size * 0.32), px(cy - size * 0.26)], fill=color, width=w)
+
+
+def icon_bag_add(d, cx, cy, color=INK, size=22):
+    w = max(1, px(1.9))
+    d.rounded_rectangle([px(cx - size * 0.34), px(cy - size * 0.16), px(cx + size * 0.34), px(cy + size * 0.40)],
+                        radius=px(3), outline=color, width=w)
+    d.arc([px(cx - size * 0.18), px(cy - size * 0.46), px(cx + size * 0.18), px(cy - size * 0.02)],
+          180, 360, fill=color, width=w)
+    d.line([px(cx), px(cy + 0.02), px(cx), px(cy + 0.24)], fill=color, width=w)
+    d.line([px(cx - 0.11 * size), px(cy + 0.13 * size), px(cx + 0.11 * size), px(cy + 0.13 * size)], fill=color, width=w)
+
+
+def sheet_backdrop(canvas, d) -> None:
+    """Le haut de la page marchande, voilé, sous la feuille."""
+    d.rectangle([px(0), px(0), px(W / SCALE), px(844)], fill=(0x8E, 0x8E, 0x8E))
+    status_bar(d)
+    icon_chevron(d, S[4] + 10, 64, SURFACE, 22, "left")
+    text(d, (S[4] + 40, 64), "Amazon", 22, "bold", SURFACE, anchor="lm")
+    icon_cart(d, W / SCALE - S[4] - 22, 64, SURFACE, 24)
+
+
+def sheet_frame(canvas, d, top: float, title: str) -> None:
+    """Feuille basse : poignée, titre centré, croix."""
+    d.rounded_rectangle([px(0), px(top), px(W / SCALE), px(844 + 40)], radius=px(24), fill=SURFACE)
+    rounded(d, (W / (2 * SCALE) - 20, top + 8, W / (2 * SCALE) + 20, top + 12), 2, fill=LINE)
+    text(d, (W / (2 * SCALE), top + 44), title, 18, "bold", INK, anchor="mm")
+    icon_close(d, W / SCALE - S[4] - 10, top + 44, INK, 18)
+
+
+def product_card(canvas, d, y: float, show_price: bool) -> float:
+    """Carte produit : vignette + titre + prix (ou ligne discrète)."""
+    x0, x1 = S[4], W / SCALE - S[4]
+    box = (x0, y, x1, y + 132)
+    rounded(d, box, R["lg"], fill=SURFACE, outline=LINE, width=1)
+    thumb = (x0 + 12, y + 14, x0 + 100, y + 102)
+    paste_cover(canvas, os.path.join(ASSETS, "hero", "hero-mode-homme.jpg"), thumb, R["md"])
+    tx = thumb[2] + 12
+    text(d, (tx, y + 16), "Amazon.com: FOGFIRE", 15, "semibold", INK)
+    text(d, (tx, y + 38), "Mens Joggers with Zipper", 15, "semibold", INK)
+    text(d, (tx, y + 60), "Pockets Lightweight Sw…", 15, "semibold", INK)
+    if show_price:
+        text(d, (tx, y + 84), "133.71 TND", 18, "bold", INK)
+        text(d, (tx, y + 112), "Prix boutique : 17.99 USD", 12, "regular", MUTED)
+    return y + 132 + 8
+
+
+def render_options() -> Image.Image:
+    canvas = Image.new("RGBA", (W, int(844 * SCALE)), SURFACE)
+    d = ImageDraw.Draw(canvas)
+    top = 96
+    sheet_backdrop(canvas, d)
+    sheet_frame(canvas, d, top, "Sélectionnez votre article")
+
+    y = product_card(canvas, d, top + 80, show_price=True)
+
+    # ── Couleur : deux rangées de quatre, libellés SOUS la pastille
+    text(d, (S[4], y + 8), "Couleur", 14, "bold", INK)
+    y += 32
+    ring, gap = 56, 12
+    names = list(SWATCH.items())[:8]
+    col_w = (W / SCALE - 2 * S[4] - 3 * gap) / 4
+    for index, (name, colour) in enumerate(names):
+        col, row = index % 4, index // 4
+        cx = S[4] + col * (col_w + gap) + col_w / 2
+        cy = y + row * 104 + ring / 2
+        active = index == 0
+        d.ellipse([px(cx - ring / 2 - 2), px(cy - ring / 2 - 2), px(cx + ring / 2 + 2), px(cy + ring / 2 + 2)],
+                  outline=COMMERCE if active else LINE, width=px(2))
+        d.ellipse([px(cx - ring / 2 + 4), px(cy - ring / 2 + 4), px(cx + ring / 2 - 4), px(cy + ring / 2 - 4)],
+                  fill=colour, outline=LINE if name in ("White",) else None, width=px(1))
+        if active:
+            bx, by = cx + ring / 2 - 2, cy + ring / 2 - 2
+            d.ellipse([px(bx - 10), px(by - 10), px(bx + 10), px(by + 10)], fill=SURFACE, outline=LINE, width=px(1))
+            icon_check(d, bx, by, INK, 12)
+        for line_index, line in enumerate(name.split()):
+            text(d, (cx, y + row * 104 + ring + 14 + line_index * 15), line, 12, "regular", INK, anchor="mm")
+    y += 2 * 104 + 4
+
+    # ── Taille : pilules, coche dans la pilule
+    text(d, (S[4], y), "Taille", 14, "bold", INK)
+    y += 26
+    chip_x = S[4]
+    for index, size in enumerate(["S", "M", "L", "XL", "XXL"]):
+        label = size
+        width = text_width(label, 14, "bold") + 34
+        active = index == 0
+        rounded(d, (chip_x, y, chip_x + width, y + 44), R["md"],
+                fill=(0xFE, 0xF8, 0xCC) if active else SURFACE,
+                outline=COMMERCE if active else LINE, width=1.5)
+        text(d, (chip_x + width / 2 - (6 if active else 0), y + 22), label, 14, "bold" if active else "regular", INK, anchor="mm")
+        if active:
+            icon_check(d, chip_x + width - 16, y + 22, INK, 12)
+        chip_x += width + 8
+    y += 44 + 24
+
+    # ── Quantité
+    text(d, (S[4], y + 22), "Quantité", 16, "semibold", INK, anchor="lm")
+    minus = W / SCALE - S[4] - 140
+    rounded(d, (minus, y, minus + 44, y + 44), R["md"], outline=LINE, width=1)
+    text(d, (minus + 22, y + 22), "−", 18, "regular", INK, anchor="mm")
+    text(d, (minus + 82, y + 22), "1", 16, "bold", INK, anchor="mm")
+    rounded(d, (minus + 96, y, minus + 140, y + 44), R["md"], outline=LINE, width=1)
+    text(d, (minus + 118, y + 22), "+", 18, "regular", INK, anchor="mm")
+
+    # ── Pied : un prix lisible, jamais une phrase en 28 pt
+    foot = 844 - 96
+    d.line([px(0), px(foot), px(W / SCALE), px(foot)], fill=LINE, width=px(1))
+    text(d, (S[4], foot + 20), "1 × 133.71 TND", 12, "regular", MUTED, anchor="lm")
+    text(d, (W / SCALE - S[4], foot + 20), "133.71 TND", 26, "bold", INK, anchor="rm")
+    rounded(d, (S[4], foot + 40, W / SCALE - S[4], foot + 40 + 52), R["full"], fill=COMMERCE)
+    icon_bag_add(d, S[4] + 92, foot + 66, INK, 20)
+    text(d, (W / (2 * SCALE) + 10, foot + 66), "Add to Cart", 16, "bold", INK, anchor="mm")
+    return canvas
+
+
+def render_success() -> Image.Image:
+    canvas = Image.new("RGBA", (W, int(844 * SCALE)), SURFACE)
+    d = ImageDraw.Draw(canvas)
+    top = 130
+    sheet_backdrop(canvas, d)
+    sheet_frame(canvas, d, top, "Article ajouté")
+
+    y = product_card(canvas, d, top + 80, show_price=False) + 8
+
+    # ── Bandeau de succès : il DIT ce qui s'est passé
+    banner = (S[4], y, W / SCALE - S[4], y + 72)
+    rounded(d, banner, R["lg"], fill=(0xE7, 0xF4, 0xEC), outline=(0x9F, 0xC9, 0xB4), width=1)
+    d.ellipse([px(banner[0] + 14), px(y + 16), px(banner[0] + 54), px(y + 56)], fill=(0x23, 0x60, 0x44))
+    icon_check(d, banner[0] + 34, y + 36, SURFACE, 18)
+    text(d, (banner[0] + 68, y + 26), "Ajouté au panier", 14, "bold", INK)
+    text(d, (banner[0] + 68, y + 48), "Black · M · Quantité 1", 12, "regular", MUTED)
+    y += 72 + 20
+
+    for label, value in [("Quantité", "1"), ("Prix boutique", "17.99 USD"), ("Prix en dinars", "133.71 TND")]:
+        text(d, (S[4], y), label, 14, "regular", MUTED, anchor="lm")
+        text(d, (W / SCALE - S[4], y), value, 14, "bold", INK, anchor="rm")
+        d.line([px(S[4]), px(y + 20), px(W / SCALE - S[4]), px(y + 20)], fill=LINE, width=px(1))
+        y += 36
+
+    text(d, (S[4], y + 4), "Déjà dans le panier ZAYROVI : la même ligne,", 12, "regular", MUTED)
+    text(d, (S[4], y + 22), "sans double comptage.", 12, "regular", MUTED)
+    y += 56
+
+    half = (W / SCALE - 2 * S[4] - 10) / 2
+    rounded(d, (S[4], y, S[4] + half, y + 52), R["full"], fill=COMMERCE)
+    icon_cart(d, S[4] + 52, y + 26, INK, 18)
+    text(d, (S[4] + half / 2 + 10, y + 26), "Panier", 15, "bold", INK, anchor="mm")
+    rounded(d, (S[4] + half + 10, y, W / SCALE - S[4], y + 52), R["full"], outline=INK, width=1.6)
+    text(d, (S[4] + half + 10 + half / 2, y + 26), "Continuer les achats", 14, "bold", INK, anchor="mm")
+    return canvas
+
+
 def main() -> None:
     os.makedirs(OUT, exist_ok=True)
     home = render_home()
     boutique = render_boutiques()
     search = render_search()
+    options = render_options()
+    success = render_success()
     home.convert("RGB").save(os.path.join(OUT, "officiel-01-accueil.png"), optimize=True)
     boutique.convert("RGB").save(os.path.join(OUT, "officiel-02-boutiques.png"), optimize=True)
     search.convert("RGB").save(os.path.join(OUT, "officiel-03-recherche.png"), optimize=True)
+    options.convert("RGB").save(os.path.join(OUT, "officiel-04-options.png"), optimize=True)
+    success.convert("RGB").save(os.path.join(OUT, "officiel-05-ajout.png"), optimize=True)
     print("✓ officiel-01-accueil.png")
     print("✓ officiel-02-boutiques.png")
     print("✓ officiel-03-recherche.png")
+    print("✓ officiel-04-options.png")
+    print("✓ officiel-05-ajout.png")
 
 
 if __name__ == "__main__":

@@ -47,4 +47,51 @@ describe('AYWEBs product variant controls', () => {
     fireEvent.press(screen.getByRole('button', { name: 'Taille: S' }));
     expect(onSelect).toHaveBeenCalledWith('S');
   });
+
+  it('une couleur sans photo reste une COULEUR, jamais une icône cassée', () => {
+    render(wrap(
+      <VariantOptionChips
+        kind="color"
+        label="Couleur"
+        value=""
+        options={[
+          { value: 'Black' },
+          { value: 'Royal Blue' },
+          { value: 'Default' },
+          { value: 'White' },
+        ]}
+        onSelect={() => undefined}
+      />,
+    ));
+    // « Black » et « Royal Blue » : pastille teintée (donnée), pas d'image.
+    expect(screen.getByTestId('aywebs-color-swatch-0')).toBeTruthy();
+    expect(screen.getByTestId('aywebs-color-swatch-1')).toBeTruthy();
+    // Une valeur qui n'est pas une couleur garde une pastille NEUTRE.
+    expect(screen.getByTestId('aywebs-color-swatch-2')).toBeTruthy();
+    // Toutes les pastilles ont la même taille : les libellés restent alignés.
+    const sizes = [0, 1, 2, 3].map((index) => {
+      const style = require('react-native').StyleSheet.flatten(
+        screen.getByTestId(`aywebs-color-swatch-${index}`).props.style,
+      );
+      return style.width;
+    });
+    expect(new Set(sizes).size).toBe(1);
+  });
+
+  it('la coche du choix est posée sur la pastille, hors du libellé', () => {
+    render(wrap(
+      <VariantOptionChips
+        kind="color"
+        label="Couleur"
+        value="Black"
+        options={[{ value: 'Black' }, { value: 'White' }]}
+        onSelect={() => undefined}
+      />,
+    ));
+    const badge = screen.getByTestId('aywebs-variant-selected-0');
+    const style = require('react-native').StyleSheet.flatten(badge.props.style);
+    expect(style.position).toBe('absolute');
+    // Le libellé lui-même ne contient pas la coche : il reste centré et entier.
+    expect(screen.getByRole('button', { name: 'Couleur: Black' }).props.accessibilityState.selected).toBe(true);
+  });
 });

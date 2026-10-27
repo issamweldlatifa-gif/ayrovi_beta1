@@ -26,6 +26,7 @@ import { useTheme } from '@/design/theme';
 import { COMMERCE } from '@/design/tokens.mobile';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { AppImage } from '@/design/appImage';
+import { LoadingSpinner } from '@/design/LoadingSpinner';
 import { AppSheet } from '@/design/sheet/AppSheet';
 import { useI18n } from '@/i18n';
 import { mediaUrl } from '@/api/client';
@@ -366,10 +367,18 @@ export function AddToCartSheet({
    * Per-value quotes cannot prove every cross-product combination, so when the
    * current evidence has no TND quote, ask the server to price THIS exact choice
    * from the already captured page. No client-side currency/price calculation.
+   *
+   * ── Corrigé le 27/10/2026 ────────────────────────────────────────────────
+   * La re-demande n'était faite que pour les feuilles `local` (ouvertes depuis
+   * le navigateur du client). Une feuille ouverte depuis la lecture serveur
+   * restait donc figée sur « Prix en dinars calculé à l'ajout. » dès qu'on
+   * changeait de couleur ou de taille — le prix ne revenait jamais. Le
+   * serveur accepte la requête EXACTE du web (URL + variante, sans capture) :
+   * on l'utilise ici, avec la même protection contre les réponses périmées.
    */
   useEffect(() => {
     const key = selectionKeyOf(selection);
-    if (!visible || !local || !capture || !pageQuote || !sessionId || !groups.length) return;
+    if (!visible || !pageQuote || !sessionId || !groups.length) return;
     if (!selectionComplete || !key) {
       setQuoting(false);
       return;
@@ -388,7 +397,9 @@ export function AddToCartSheet({
       void resolveAyWebsProductWithCapture(product.sourceUrl, {
         sessionId,
         storeId: product.storeId || undefined,
-        capture,
+        /* La capture n'est jointe que si elle décrit cette page ; sinon on
+           emprunte le chemin du web, que le serveur sait relire. */
+        ...(local && capture ? { capture } : {}),
         variant: picked,
         refresh: false,
       }).then((read) => {
@@ -732,10 +743,16 @@ export function AddToCartSheet({
       footer={added ? undefined : (
         <View style={styles.stickyFooter}>
           <View style={[styles.stickyPrice, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-            <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.quantity')}: {quantity}</AppText>
-            <AppText variant="title" weight="bold">
-              {quote.unitTnd != null ? (quantity > 1 ? totalLine : sourceLine) : quoting ? t('aywebs.pricePending') : t('aywebs.priceAtAdd')}
+            <AppText variant="caption" color={theme.colors.muted}>
+              {quantity} × {sourceLine || t('aywebs.priceAtAddShort')}
             </AppText>
+            {quote.unitTnd != null ? (
+              <AppText variant="title" weight="bold">{quantity > 1 ? totalLine : sourceLine}</AppText>
+            ) : (
+              <AppText variant="caption" color={theme.colors.muted}>
+                {quoting ? t('aywebs.pricePending') : t('aywebs.priceAtAddShort')}
+              </AppText>
+            )}
           </View>
           <Button
             label={busy ? t('aywebs.adding') : t('aywebs.addToCart')}
@@ -763,6 +780,7 @@ export function AddToCartSheet({
         {imageUri ? (
           <AppImage
             uri={mediaUrl(imageUri)}
+            fallbackUris={[mediaUrl(product.images[0] || '')]}
             style={[styles.productHero, { borderRadius: theme.radius.control }]}
             contentFit="cover"
             accessibilityLabel={title}
@@ -781,14 +799,15 @@ export function AddToCartSheet({
               {/* الرقم الكبير بالدينار برك. المبلغ بالدولار/الأورو يمشي سطر صغير
                   تحت كدليل على ثمن المتجر — ماعادش يتقرا كثمن نهائي (23/10). */}
               {sourceLine ? (
-                <AppText variant="title" weight="bold">{sourceLine}</AppText>
+                <AppText variant="lead" weight="bold">{sourceLine}</AppText>
               ) : quoting ? (
-                <AppText variant="title" weight="bold" color={theme.colors.muted}>
-                  {t('aywebs.pricePending')}
-                </AppText>
+                <View style={[styles.pendingRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+                  <LoadingSpinner size="sm" color={theme.colors.muted} testID="aywebs-sheet-price-pending" />
+                  <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.pricePending')}</AppText>
+                </View>
               ) : (
-                <AppText variant="title" weight="bold" color={theme.colors.muted}>
-                  {t('aywebs.priceAtAdd')}
+                <AppText variant="caption" color={theme.colors.muted}>
+                  {t('aywebs.priceAtAddShort')}
                 </AppText>
               )}
               {merchantLine ? (
@@ -805,14 +824,22 @@ export function AddToCartSheet({
       </View>
 
       {added ? (
-        <View style={[styles.successBanner, { flexDirection: rowDirectionFor(theme.isRTL), backgroundColor: theme.status.success.soft, borderColor: theme.status.success.border }]}>
+        <View
+          testID="aywebs-sheet-success"
+          accessibilityLiveRegion="polite"
+          style={[styles.successBanner, { flexDirection: rowDirectionFor(theme.isRTL), backgroundColor: theme.status.success.soft, borderColor: theme.status.success.border }]}
+        >
           <View style={[styles.successIcon, { backgroundColor: theme.status.success.fg }]}>
             <Ionicons name="checkmark" size={22} color={theme.colors.canvas} />
           </View>
           <View style={styles.successCopy}>
-            {added.item.variantLabel ? (
-              <AppText variant="caption" color={theme.colors.muted}>{added.item.variantLabel}</AppText>
-            ) : null}
+            {/* Un bandeau vert VIDE ne dit rien : on écrit le fait, puis la
+                variante et la quantité réellement enregistrées par le serveur. */}
+            <AppText variant="label" weight="bold">{t('aywebs.addedBanner')}</AppText>
+            <AppText variant="caption" color={theme.colors.muted}>
+              {[added.item.variantLabel, `${t('aywebs.quantity')} ${added.item.quantity}`]
+                .filter(Boolean).join(' · ')}
+            </AppText>
           </View>
         </View>
       ) : null}
@@ -975,6 +1002,7 @@ const styles = StyleSheet.create({
   productCard: { flexDirection: 'row', alignItems: 'center', padding: 12, gap: 12, borderWidth: StyleSheet.hairlineWidth },
   productHero: { width: 88, height: 88, borderRadius: 12 },
   productText: { flex: 1, gap: 4 },
+  pendingRow: { alignItems: 'center', gap: 8 },
   successBanner: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 16, padding: 16 },
   successIcon: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
   successCopy: { flex: 1, gap: 2 },

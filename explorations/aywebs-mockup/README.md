@@ -201,3 +201,23 @@ Règle tenue à un seul endroit (`MEDIA_RATIO.storeCard` + styles de carte) :
 
 Vérifié par `tests/ui/storesScreen.ui.test.tsx` (ratio, réserve, `contentFit`)
 et `tests/ui/aywebsTab.ui.test.tsx` (même gabarit côté accueil).
+
+---
+
+## 27/10/2026 — feuilles « Sélectionnez votre article » et « Article ajouté »
+
+Deux écrans de plus dans la planche (`officiel-04-options.png`,
+`officiel-05-ajout.png`, réunis dans `officiel-sheets.png`) et, surtout, cinq
+défauts corrigés dans le code — pas seulement dans l'image.
+
+| Défaut constaté (captures du client) | Cause | Correction |
+| --- | --- | --- |
+| « Prix en dinars calculé à l'ajout. » en 28 pt sur trois lignes, qui passait sous le pied de la feuille | la phrase entière était rendue avec `variant="title"` | prix en `lead` dans la carte, **une ligne discrète** (`aywebs.priceAtAddShort`) dans le pied ; la phrase longue est supprimée des dictionnaires |
+| Le prix ne revenait jamais après un changement de couleur/taille (« la feuille reste en calcul prix ») | la re-demande de devis était réservée aux feuilles `local` | la re-demande s'applique aussi aux feuilles serveur (requête exacte du web, sans capture), avec la même protection contre les réponses périmées |
+| Pastilles de couleur = cadre gris + icône « image cassée », 17 fois | on n'affichait que l'image du marchand, sans repli | chaîne de replis : photo de la couleur → **couleur nommée** (`optionColour.ts`) → pastille neutre avec l'initiale |
+| Le libellé se décalait quand la valeur était choisie (« Black ✓ ») | la coche était dans la ligne du texte | coche **posée sur la pastille** ; libellé sur largeur fixe, centré, deux lignes |
+| Bandeau vert vide dans « Article ajouté » | aucun texte n'était rendu | « Ajouté au panier » + variante + quantité, `accessibilityLiveRegion` |
+
+Ce qui n'a **pas** changé : le prix en dinars vient toujours du serveur (aucun
+calcul local), et l'ajout reste refusé quand le serveur ne peut pas publier de
+devis — l'écran le dit maintenant sans hurler.

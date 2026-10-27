@@ -48,12 +48,18 @@ export interface AppImageProps {
    * 0 = nette. La valeur est choisie par l'appelant, jamais devinée ici.
    */
   blurRadius?: number;
+  /**
+   * Appelé UNE fois quand l'image a définitivement échoué (après tous les
+   * replis). Sert aux pastilles de variante : plutôt qu'un cadre cassé, elles
+   * affichent la couleur de l'article.
+   */
+  onError?: () => void;
   testID?: string;
 }
 
 export function AppImage({
   uri, fallbackUri, fallbackUris = [], localSource, contentFit = 'cover', style,
-  accessibilityLabel, decorative = false, blurRadius = 0, onSettled, testID,
+  accessibilityLabel, decorative = false, blurRadius = 0, onSettled, onError, testID,
 }: AppImageProps) {
   const theme = useTheme();
   const t = useT();
@@ -78,6 +84,7 @@ export function AppImage({
       return;
     }
     setFailed(true);
+    onError?.();
     onSettled?.();
   };
 
