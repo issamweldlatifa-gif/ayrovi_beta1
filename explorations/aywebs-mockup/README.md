@@ -221,3 +221,26 @@ défauts corrigés dans le code — pas seulement dans l'image.
 Ce qui n'a **pas** changé : le prix en dinars vient toujours du serveur (aucun
 calcul local), et l'ajout reste refusé quand le serveur ne peut pas publier de
 devis — l'écran le dit maintenant sans hurler.
+
+## Comparatif de tailles (`comparer.py`)
+
+Le client a demandé une comparaison chiffrée entre la grille **actuelle** et la
+grille de sa **référence**. `comparer.py` la dessine à l'échelle 1:1 sur 390 pt
+et cote tout :
+
+| | A. aujourd'hui | B. réserve retirée | C. référence client |
+| --- | --- | --- | --- |
+| Colonnes | 2 | 2 | 3 |
+| Carte | 176 × 176 | 176 × 176 | 119 × 136 |
+| Photo dans la carte | 128 pt · 61 % | 172 pt · 100 % | 117 pt · 100 % |
+| Boutiques par rangée | 2 | 2 | 3 |
+| Visibles d'un coup | 4 | 4 | 9 |
+
+Mesures de C, prises sur l'image fournie (1024 px) puis ramenées à 390 pt :
+marge **37 px → 14,1 pt**, gouttière **19 px → 7,2 pt**, tuile **305 × 347 px
+→ 116 × 132 pt** (ratio 0,879 ≈ **7:8**). Le code ne peut pas poser 7,2 : il
+utilise marge 12 et gouttière 8, d'où 116,7 pt au lieu de 116,2 — un demi-point.
+
+```bash
+python3 explorations/aywebs-mockup/comparer.py   # → img/comparatif-tailles.png
+```

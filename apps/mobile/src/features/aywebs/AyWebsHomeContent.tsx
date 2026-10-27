@@ -410,7 +410,7 @@ function StoreTile({ store, categories, saved, onOpen, onToggle }: {
     <View style={styles.tile} testID={`aywebs-home-store-card-${store.id}`}>
       <View
         style={[
-          styles.tileMedia,
+          styles.storeMedia,
           { backgroundColor: theme.colors.shimmer, borderRadius: theme.radius.card },
         ]}
         testID={`aywebs-home-store-media-${store.id}`}
@@ -484,9 +484,22 @@ const styles = StyleSheet.create({
   sectionTitleText: { flexShrink: 1 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: GRID_GAP },
   tile: { width: HALF, gap: 8 },
-  // Gabarit commun avec la page Boutiques (MEDIA_RATIO.storeCard) : une même
-  // boutique garde la même silhouette partout. 24 pt de réserve : aucun logo rogné.
+  /**
+   * Deux plaques différentes, et c'est volontaire :
+   *  • `tileMedia` (CATÉGORIE) montre une PHOTO : elle remplit la plaque bord à
+   *    bord. Y mettre une réserve laissait une photo de 128 pt au milieu d'un
+   *    cadre de 176 — un cadre gris autour de rien (constaté le 27/10/2026).
+   *  • `storeMedia` (BOUTIQUE) montre un LOGO : 24 pt de réserve, sinon un
+   *    mot-symbole large touche le bord. Le logo reste en `contain`.
+   */
   tileMedia: {
+    width: '100%',
+    aspectRatio: MEDIA_RATIO.square,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  storeMedia: {
     width: '100%',
     aspectRatio: MEDIA_RATIO.storeCard,
     overflow: 'hidden',
