@@ -1,0 +1,372 @@
+id,nom,source,categories,adresse,statut,en_ligne
+best-buy,Best Buy,registre,High-tech,https://www.bestbuy.com,beta,oui
+mediamarkt,MediaMarkt,registre,High-tech,https://www.mediamarkt.com,beta,oui
+newegg,Newegg,registre,High-tech,https://www.newegg.com,beta,oui
+asos,ASOS,registre,Mode,https://www.asos.com,beta,oui
+h-m,H&M,registre,Mode|Vêtements enfants,https://www.hm.com,beta,oui
+primark,Primark,registre,Mode,https://www.primark.com,beta,oui
+zalando,Zalando,registre,Mode,https://www.zalando.com,beta,oui
+allegro,Allegro,registre,Marketplace,https://allegro.pl,beta,oui
+cdiscount,Cdiscount,registre,Marketplace,https://www.cdiscount.com,beta,oui
+etsy,Etsy,registre,Marketplace|Arts & loisirs créatifs,https://www.etsy.com,beta,oui
+kaufland,Kaufland,registre,Marketplace,https://www.kaufland.de,beta,oui
+otto,OTTO,registre,Marketplace,https://www.otto.de,beta,oui
+target,Target,registre,Marketplace,https://www.target.com,beta,oui
+walmart,Walmart,registre,Marketplace,https://www.walmart.com,beta,oui
+accessorize,Accessorize,catalogue,Accessoires,https://www.accessorize.com,planned,non
+aldo,Aldo,catalogue,Accessoires,https://www.aldoshoes.com,planned,non
+charles-keith,Charles & Keith,catalogue,Accessoires,https://www.charleskeith.com,planned,non
+claire-s,Claire's,catalogue,Accessoires,https://www.claires.com,planned,non
+fossil,Fossil,catalogue,Accessoires,https://www.fossil.com,planned,non
+kate-spade,Kate Spade,catalogue,Accessoires,https://www.katespade.com,planned,non
+lovisa,Lovisa,catalogue,Accessoires,https://www.lovisa.com,planned,non
+marc-jacobs,Marc Jacobs,catalogue,Accessoires,https://www.marcjacobs.com,planned,non
+parfois,Parfois,catalogue,Accessoires,https://www.parfois.com,planned,non
+vivienne-westwood,Vivienne Westwood,catalogue,Accessoires,https://www.viviennewestwood.com,planned,non
+blick-art-materials,Blick Art Materials,catalogue,Arts & loisirs créatifs,https://www.dickblick.com,planned,non
+craftelier,Craftelier,catalogue,Arts & loisirs créatifs,https://craftelier.com,planned,non
+cricut,Cricut,catalogue,Arts & loisirs créatifs,https://cricut.com,planned,non
+hobby-lobby,Hobby Lobby,catalogue,Arts & loisirs créatifs,https://www.hobbylobby.com,planned,non
+hobbycraft,Hobbycraft,catalogue,Arts & loisirs créatifs,https://www.hobbycraft.co.uk,planned,non
+jackson-s-art,Jackson's Art,catalogue,Arts & loisirs créatifs,https://www.jacksonsart.com,planned,non
+joann,JOANN,catalogue,Arts & loisirs créatifs,https://www.joann.com,planned,non
+michaels,Michaels,catalogue,Arts & loisirs créatifs,https://www.michaels.com,planned,non
+the-works,The Works,catalogue,Arts & loisirs créatifs,https://www.theworks.co.uk,planned,non
+advance-auto-parts,Advance Auto Parts,catalogue,Automobile,https://shop.advanceautoparts.com,planned,non
+autodoc,AUTODOC,catalogue,Automobile,https://www.autodoc.co.uk,planned,non
+autozone,AutoZone,catalogue,Automobile,https://www.autozone.com,planned,non
+carparts-com,CarParts.com,catalogue,Automobile,https://www.carparts.com,planned,non
+euro-car-parts,Euro Car Parts,catalogue,Automobile,https://www.eurocarparts.com,planned,non
+fcp-euro,FCP Euro,catalogue,Automobile,https://www.fcpeuro.com,planned,non
+halfords,Halfords,catalogue,Automobile,https://www.halfords.com,planned,non
+mister-auto,Mister-Auto,catalogue,Automobile,https://www.mister-auto.com,planned,non
+oscaro,Oscaro,catalogue,Automobile,https://www.oscaro.com,planned,non
+partsgeek,PartsGeek,catalogue,Automobile,https://www.partsgeek.com,planned,non
+pelican-parts,Pelican Parts,catalogue,Automobile,https://www.pelicanparts.com,planned,non
+rockauto,RockAuto,catalogue,Automobile,https://www.rockauto.com,planned,non
+tire-rack,Tire Rack,catalogue,Automobile,https://www.tirerack.com,planned,non
+away,Away,catalogue,Sacs & bagages,https://www.awaytravel.com,planned,non
+bellroy,Bellroy,catalogue,Sacs & bagages,https://bellroy.com,planned,non
+coach,Coach,catalogue,Sacs & bagages,https://www.coach.com,planned,non
+eastpak,Eastpak,catalogue,Sacs & bagages,https://www.eastpak.com,planned,non
+fj-llr-ven,Fjällräven,catalogue,Sacs & bagages,https://www.fjallraven.com,planned,non
+herschel-supply,Herschel Supply,catalogue,Sacs & bagages,https://herschel.com,planned,non
+longchamp,Longchamp,catalogue,Sacs & bagages,https://www.longchamp.com,planned,non
+michael-kors,Michael Kors,catalogue,Sacs & bagages,https://www.michaelkors.com,planned,non
+rimowa,Rimowa,catalogue,Sacs & bagages,https://www.rimowa.com,planned,non
+samsonite,Samsonite,catalogue,Sacs & bagages|Accessoires de voyage,https://www.samsonite.com,planned,non
+tory-burch,Tory Burch,catalogue,Sacs & bagages,https://www.toryburch.com,planned,non
+tumi,Tumi,catalogue,Sacs & bagages,https://www.tumi.com,planned,non
+beauty-bay,Beauty Bay,catalogue,Beauté & cosmétiques,https://www.beautybay.com,planned,non
+boots,Boots,catalogue,Beauté & cosmétiques|Santé & hygiène,https://www.boots.com,planned,non
+charlotte-tilbury,Charlotte Tilbury,catalogue,Beauté & cosmétiques,https://www.charlottetilbury.com,planned,non
+cult-beauty,Cult Beauty,catalogue,Beauté & cosmétiques,https://www.cultbeauty.com,planned,non
+dermstore,Dermstore,catalogue,Beauté & cosmétiques,https://www.dermstore.com,planned,non
+douglas,Douglas,catalogue,Beauté & cosmétiques|Parfums,https://www.douglas.de,planned,non
+feelunique,Feelunique,catalogue,Beauté & cosmétiques,https://www.feelunique.com,planned,non
+kiko-milano,KIKO Milano,catalogue,Beauté & cosmétiques,https://www.kikocosmetics.com,planned,non
+lookfantastic,LOOKFANTASTIC,catalogue,Beauté & cosmétiques,https://www.lookfantastic.com,planned,non
+lush,Lush,catalogue,Beauté & cosmétiques,https://www.lush.com,planned,non
+mac-cosmetics,MAC Cosmetics,catalogue,Beauté & cosmétiques,https://www.maccosmetics.com,planned,non
+notino,Notino,catalogue,Beauté & cosmétiques|Parfums,https://www.notino.com,planned,non
+nyx-professional-makeup,NYX Professional Makeup,catalogue,Beauté & cosmétiques,https://www.nyxcosmetics.com,planned,non
+olive-young-global,Olive Young Global,catalogue,Beauté & cosmétiques,https://global.oliveyoung.com,planned,non
+space-nk,Space NK,catalogue,Beauté & cosmétiques,https://www.spacenk.com,planned,non
+stylevana,Stylevana,catalogue,Beauté & cosmétiques,https://www.stylevana.com,planned,non
+the-body-shop,The Body Shop,catalogue,Beauté & cosmétiques,https://www.thebodyshop.com,planned,non
+ulta-beauty,Ulta Beauty,catalogue,Beauté & cosmétiques,https://www.ulta.com,planned,non
+yesstyle,YesStyle,catalogue,Beauté & cosmétiques,https://www.yesstyle.com,planned,non
+brooklinen,Brooklinen,catalogue,Literie & matelas,https://www.brooklinen.com,planned,non
+casper,Casper,catalogue,Literie & matelas,https://casper.com,planned,non
+emma-sleep,Emma Sleep,catalogue,Literie & matelas,https://www.emma-sleep.com,planned,non
+parachute,Parachute,catalogue,Literie & matelas,https://www.parachutehome.com,planned,non
+saatva,Saatva,catalogue,Literie & matelas,https://www.saatva.com,planned,non
+simba-sleep,Simba Sleep,catalogue,Literie & matelas,https://simbasleep.com,planned,non
+tempur-pedic,Tempur-Pedic,catalogue,Literie & matelas,https://www.tempurpedic.com,planned,non
+the-white-company,The White Company,catalogue,Literie & matelas,https://www.thewhitecompany.com,planned,non
+abebooks,AbeBooks,catalogue,Livres & médias,https://www.abebooks.com,planned,non
+barnes-noble,Barnes & Noble,catalogue,Livres & médias,https://www.barnesandnoble.com,planned,non
+better-world-books,Better World Books,catalogue,Livres & médias,https://www.betterworldbooks.com,planned,non
+blackwell-s,Blackwell's,catalogue,Livres & médias,https://blackwells.co.uk,planned,non
+books-a-million,Books-A-Million,catalogue,Livres & médias,https://www.booksamillion.com,planned,non
+bookshop-org,Bookshop.org,catalogue,Livres & médias,https://bookshop.org,planned,non
+discogs,Discogs,catalogue,Livres & médias,https://www.discogs.com,planned,non
+kinokuniya,Kinokuniya,catalogue,Livres & médias,https://www.kinokuniya.com,planned,non
+powell-s-books,Powell's Books,catalogue,Livres & médias,https://www.powells.com,planned,non
+rarewaves,Rarewaves,catalogue,Livres & médias,https://www.rarewaves.com,planned,non
+thalia,Thalia,catalogue,Livres & médias,https://www.thalia.de,planned,non
+waterstones,Waterstones,catalogue,Livres & médias,https://www.waterstones.com,planned,non
+acer,Acer,catalogue,High-tech,https://www.acer.com,planned,non
+ao-com,AO.com,catalogue,High-tech,https://ao.com,planned,non
+apple,Apple,catalogue,High-tech|Smartphones & accessoires,https://www.apple.com,planned,non
+asus,ASUS,catalogue,High-tech,https://www.asus.com,planned,non
+b-h-photo-video,B&H Photo Video,catalogue,High-tech|Photo & caméras,https://www.bhphotovideo.com,planned,non
+back-market,Back Market,catalogue,High-tech,https://www.backmarket.com,planned,non
+coolblue,Coolblue,catalogue,High-tech,https://www.coolblue.nl,planned,non
+currys,Currys,catalogue,High-tech,https://www.currys.co.uk,planned,non
+darty,Darty,catalogue,High-tech,https://www.darty.com,planned,non
+dell,Dell,catalogue,High-tech,https://www.dell.com,planned,non
+fnac,Fnac,catalogue,High-tech,https://www.fnac.com,planned,non
+framework,Framework,catalogue,High-tech,https://frame.work,planned,non
+hp,HP,catalogue,High-tech,https://www.hp.com,planned,non
+ldlc,LDLC,catalogue,High-tech,https://www.ldlc.com,planned,non
+lenovo,Lenovo,catalogue,High-tech,https://www.lenovo.com,planned,non
+logitech,Logitech,catalogue,High-tech,https://www.logitech.com,planned,non
+microsoft-store,Microsoft Store,catalogue,High-tech,https://www.microsoft.com/store,planned,non
+razer,Razer,catalogue,High-tech|Jeux vidéo,https://www.razer.com,planned,non
+samsung,Samsung,catalogue,High-tech|Smartphones & accessoires|Cuisine & électroménager,https://www.samsung.com,planned,non
+saturn,Saturn,catalogue,High-tech,https://www.saturn.de,planned,non
+sony,Sony,catalogue,High-tech,https://www.sony.com,planned,non
+abercrombie-fitch,Abercrombie & Fitch,catalogue,Mode,https://www.abercrombie.com,planned,non
+about-you,ABOUT YOU,catalogue,Mode,https://www.aboutyou.com,planned,non
+american-eagle,American Eagle,catalogue,Mode,https://www.ae.com,planned,non
+arket,Arket,catalogue,Mode,https://www.arket.com,planned,non
+bershka,Bershka,catalogue,Mode,https://www.bershka.com,planned,non
+boohoo,Boohoo,catalogue,Mode,https://www.boohoo.com,planned,non
+c-a,C&A,catalogue,Mode,https://www.c-and-a.com,planned,non
+cos,COS,catalogue,Mode,https://www.cos.com,planned,non
+mango,Mango,catalogue,Mode,https://shop.mango.com,planned,non
+massimo-dutti,Massimo Dutti,catalogue,Mode,https://www.massimodutti.com,planned,non
+new-look,New Look,catalogue,Mode,https://www.newlook.com,planned,non
+next,NEXT,catalogue,Mode|Vêtements enfants,https://www.next.co.uk,planned,non
+pull-bear,Pull&Bear,catalogue,Mode,https://www.pullandbear.com,planned,non
+reiss,Reiss,catalogue,Mode,https://www.reiss.com,planned,non
+river-island,River Island,catalogue,Mode,https://www.riverisland.com,planned,non
+stradivarius,Stradivarius,catalogue,Mode,https://www.stradivarius.com,planned,non
+uniqlo,UNIQLO,catalogue,Mode,https://www.uniqlo.com,planned,non
+urban-outfitters,Urban Outfitters,catalogue,Mode,https://www.urbanoutfitters.com,planned,non
+weekday,Weekday,catalogue,Mode,https://www.weekday.com,planned,non
+cdkeys,CDKeys,catalogue,Jeux vidéo,https://www.cdkeys.com,planned,non
+corsair,Corsair,catalogue,Jeux vidéo,https://www.corsair.com,planned,non
+fanatical,Fanatical,catalogue,Jeux vidéo,https://www.fanatical.com,planned,non
+game,GAME,catalogue,Jeux vidéo,https://www.game.co.uk,planned,non
+gamestop,GameStop,catalogue,Jeux vidéo,https://www.gamestop.com,planned,non
+green-man-gaming,Green Man Gaming,catalogue,Jeux vidéo,https://www.greenmangaming.com,planned,non
+humble-bundle,Humble Bundle,catalogue,Jeux vidéo,https://www.humblebundle.com,planned,non
+hyperx,HyperX,catalogue,Jeux vidéo,https://hyperx.com,planned,non
+nintendo-store,Nintendo Store,catalogue,Jeux vidéo,https://www.nintendo.com,planned,non
+playstation-direct,PlayStation Direct,catalogue,Jeux vidéo,https://direct.playstation.com,planned,non
+secretlab,Secretlab,catalogue,Jeux vidéo,https://secretlab.co,planned,non
+steam,Steam,catalogue,Jeux vidéo,https://store.steampowered.com,planned,non
+steelseries,SteelSeries,catalogue,Jeux vidéo,https://steelseries.com,planned,non
+xbox,Xbox,catalogue,Jeux vidéo,https://www.xbox.com,planned,non
+burpee,Burpee,catalogue,Jardin & extérieur,https://www.burpee.com,planned,non
+crocus,Crocus,catalogue,Jardin & extérieur,https://www.crocus.co.uk,planned,non
+dobbies,Dobbies,catalogue,Jardin & extérieur,https://www.dobbies.com,planned,non
+garden-trading,Garden Trading,catalogue,Jardin & extérieur,https://www.gardentrading.co.uk,planned,non
+gardena,Gardena,catalogue,Jardin & extérieur,https://www.gardena.com,planned,non
+gardener-s-supply-company,Gardener's Supply Company,catalogue,Jardin & extérieur,https://www.gardeners.com,planned,non
+greenhouse-megastore,Greenhouse Megastore,catalogue,Jardin & extérieur,https://www.greenhousemegastore.com,planned,non
+hayneedle,Hayneedle,catalogue,Jardin & extérieur,https://www.hayneedle.com,planned,non
+thompson-morgan,Thompson & Morgan,catalogue,Jardin & extérieur,https://www.thompson-morgan.com,planned,non
+albert-heijn,Albert Heijn,catalogue,Épicerie & supermarchés,https://www.ah.nl,planned,non
+aldi-uk,Aldi UK,catalogue,Épicerie & supermarchés,https://www.aldi.co.uk,planned,non
+carrefour-france,Carrefour France,catalogue,Épicerie & supermarchés,https://www.carrefour.fr,planned,non
+coles,Coles,catalogue,Épicerie & supermarchés,https://www.coles.com.au,planned,non
+e-leclerc,E.Leclerc,catalogue,Épicerie & supermarchés,https://www.e.leclerc,planned,non
+ica,ICA,catalogue,Épicerie & supermarchés,https://www.ica.se,planned,non
+kroger,Kroger,catalogue,Épicerie & supermarchés,https://www.kroger.com,planned,non
+lidl-uk,Lidl UK,catalogue,Épicerie & supermarchés,https://www.lidl.co.uk,planned,non
+ocado,Ocado,catalogue,Épicerie & supermarchés,https://www.ocado.com,planned,non
+rewe,REWE,catalogue,Épicerie & supermarchés,https://www.rewe.de,planned,non
+sainsbury-s,Sainsbury's,catalogue,Épicerie & supermarchés,https://www.sainsburys.co.uk,planned,non
+tesco,Tesco,catalogue,Épicerie & supermarchés,https://www.tesco.com,planned,non
+waitrose,Waitrose,catalogue,Épicerie & supermarchés,https://www.waitrose.com,planned,non
+woolworths-australia,Woolworths Australia,catalogue,Épicerie & supermarchés,https://www.woolworths.com.au,planned,non
+chemist-warehouse,Chemist Warehouse,catalogue,Santé & hygiène,https://www.chemistwarehouse.com.au,planned,non
+cvs,CVS,catalogue,Santé & hygiène,https://www.cvs.com,planned,non
+gnc,GNC,catalogue,Santé & hygiène,https://www.gnc.com,planned,non
+holland-barrett,Holland & Barrett,catalogue,Santé & hygiène,https://www.hollandandbarrett.com,planned,non
+iherb,iHerb,catalogue,Santé & hygiène,https://www.iherb.com,planned,non
+mankind,Mankind,catalogue,Santé & hygiène,https://www.mankind.co.uk,planned,non
+superdrug,Superdrug,catalogue,Santé & hygiène,https://www.superdrug.com,planned,non
+vitacost,Vitacost,catalogue,Santé & hygiène,https://www.vitacost.com,planned,non
+walgreens,Walgreens,catalogue,Santé & hygiène,https://www.walgreens.com,planned,non
+article,Article,catalogue,Maison & mobilier,https://www.article.com,planned,non
+cb2,CB2,catalogue,Maison & mobilier,https://www.cb2.com,planned,non
+conforama,Conforama,catalogue,Maison & mobilier,https://www.conforama.fr,planned,non
+crate-barrel,Crate & Barrel,catalogue,Maison & mobilier,https://www.crateandbarrel.com,planned,non
+dunelm,Dunelm,catalogue,Maison & mobilier,https://www.dunelm.com,planned,non
+ferm-living,Ferm Living,catalogue,Maison & mobilier,https://fermliving.com,planned,non
+habitat,Habitat,catalogue,Maison & mobilier,https://www.habitat.co.uk,planned,non
+hay,HAY,catalogue,Maison & mobilier,https://hay.com,planned,non
+home-depot,Home Depot,catalogue,Maison & mobilier,https://www.homedepot.com,planned,non
+ikea,IKEA,catalogue,Maison & mobilier,https://www.ikea.com,planned,non
+jysk,JYSK,catalogue,Maison & mobilier,https://jysk.com,planned,non
+leroy-merlin,Leroy Merlin,catalogue,Maison & mobilier,https://www.leroymerlin.com,planned,non
+lowe-s,Lowe's,catalogue,Maison & mobilier,https://www.lowes.com,planned,non
+maisons-du-monde,Maisons du Monde,catalogue,Maison & mobilier,https://www.maisonsdumonde.com,planned,non
+muji,Muji,catalogue,Maison & mobilier,https://www.muji.com,planned,non
+pottery-barn,Pottery Barn,catalogue,Maison & mobilier,https://www.potterybarn.com,planned,non
+rh,RH,catalogue,Maison & mobilier,https://rh.com,planned,non
+the-range,The Range,catalogue,Maison & mobilier,https://www.therange.co.uk,planned,non
+wayfair,Wayfair,catalogue,Maison & mobilier,https://www.wayfair.com,planned,non
+westwing,Westwing,catalogue,Maison & mobilier,https://www.westwing.com,planned,non
+blue-nile,Blue Nile,catalogue,Bijoux & montres,https://www.bluenile.com,planned,non
+bulgari,Bulgari,catalogue,Bijoux & montres,https://www.bulgari.com,planned,non
+cartier,Cartier,catalogue,Bijoux & montres,https://www.cartier.com,planned,non
+chrono24,Chrono24,catalogue,Bijoux & montres,https://www.chrono24.com,planned,non
+citizen,Citizen,catalogue,Bijoux & montres,https://www.citizenwatch.com,planned,non
+james-allen,James Allen,catalogue,Bijoux & montres,https://www.jamesallen.com,planned,non
+longines,Longines,catalogue,Bijoux & montres,https://www.longines.com,planned,non
+omega,OMEGA,catalogue,Bijoux & montres,https://www.omegawatches.com,planned,non
+pandora,Pandora,catalogue,Bijoux & montres,https://us.pandora.net,planned,non
+seiko,Seiko,catalogue,Bijoux & montres,https://www.seikowatches.com,planned,non
+swarovski,Swarovski,catalogue,Bijoux & montres,https://www.swarovski.com,planned,non
+tiffany-co,Tiffany & Co.,catalogue,Bijoux & montres,https://www.tiffany.com,planned,non
+watches-of-switzerland,Watches of Switzerland,catalogue,Bijoux & montres,https://www.watches-of-switzerland.co.uk,planned,non
+watchshop,WatchShop,catalogue,Bijoux & montres,https://www.watchshop.com,planned,non
+gap-kids,Gap Kids,catalogue,Vêtements enfants,https://www.gap.com,planned,non
+oshkosh-b-gosh,OshKosh B'gosh,catalogue,Vêtements enfants,https://www.oshkosh.com,planned,non
+petit-bateau,Petit Bateau,catalogue,Vêtements enfants,https://www.petit-bateau.com,planned,non
+polarn-o-pyret,Polarn O. Pyret,catalogue,Vêtements enfants,https://www.polarnopyret.com,planned,non
+vertbaudet,Vertbaudet,catalogue,Vêtements enfants,https://www.vertbaudet.com,planned,non
+bosch,Bosch,catalogue,Cuisine & électroménager,https://www.bosch-home.com,planned,non
+breville,Breville,catalogue,Cuisine & électroménager,https://www.breville.com,planned,non
+de-longhi,De'Longhi,catalogue,Cuisine & électroménager,https://www.delonghi.com,planned,non
+dyson,Dyson,catalogue,Cuisine & électroménager,https://www.dyson.com,planned,non
+electrolux,Electrolux,catalogue,Cuisine & électroménager,https://www.electrolux.com,planned,non
+kitchenaid,KitchenAid,catalogue,Cuisine & électroménager,https://www.kitchenaid.com,planned,non
+lg,LG,catalogue,Cuisine & électroménager,https://www.lg.com,planned,non
+miele,Miele,catalogue,Cuisine & électroménager,https://www.miele.com,planned,non
+ninja-kitchen,Ninja Kitchen,catalogue,Cuisine & électroménager,https://www.ninjakitchen.com,planned,non
+our-place,Our Place,catalogue,Cuisine & électroménager,https://fromourplace.com,planned,non
+shark,Shark,catalogue,Cuisine & électroménager,https://www.sharkclean.com,planned,non
+siemens-home,Siemens Home,catalogue,Cuisine & électroménager,https://www.siemens-home.bsh-group.com,planned,non
+smeg,Smeg,catalogue,Cuisine & électroménager,https://www.smeg.com,planned,non
+whirlpool,Whirlpool,catalogue,Cuisine & électroménager,https://www.whirlpool.com,planned,non
+24s,24S,catalogue,Luxe & griffes,https://www.24s.com,planned,non
+bergdorf-goodman,Bergdorf Goodman,catalogue,Luxe & griffes,https://www.bergdorfgoodman.com,planned,non
+farfetch,Farfetch,catalogue,Luxe & griffes,https://www.farfetch.com,planned,non
+luisaviaroma,LUISAVIAROMA,catalogue,Luxe & griffes,https://www.luisaviaroma.com,planned,non
+matches,Matches,catalogue,Luxe & griffes,https://www.matchesfashion.com,planned,non
+moda-operandi,Moda Operandi,catalogue,Luxe & griffes,https://www.modaoperandi.com,planned,non
+mr-porter,MR PORTER,catalogue,Luxe & griffes,https://www.mrporter.com,planned,non
+mytheresa,Mytheresa,catalogue,Luxe & griffes,https://www.mytheresa.com,planned,non
+neiman-marcus,Neiman Marcus,catalogue,Luxe & griffes,https://www.neimanmarcus.com,planned,non
+net-a-porter,NET-A-PORTER,catalogue,Luxe & griffes,https://www.net-a-porter.com,planned,non
+saks-fifth-avenue,Saks Fifth Avenue,catalogue,Luxe & griffes,https://www.saksfifthavenue.com,planned,non
+ssense,SSENSE,catalogue,Luxe & griffes,https://www.ssense.com,planned,non
+yoox,YOOX,catalogue,Luxe & griffes,https://www.yoox.com,planned,non
+ebay,eBay,catalogue,Marketplace,https://www.ebay.com,planned,non
+mercado-libre,Mercado Libre,catalogue,Marketplace,https://www.mercadolibre.com,planned,non
+mercari-japan,Mercari Japan,catalogue,Marketplace,https://jp.mercari.com,planned,non
+rakuten,Rakuten,catalogue,Marketplace,https://www.rakuten.co.jp,planned,non
+shopee,Shopee,catalogue,Marketplace,https://shopee.com,planned,non
+andertons,Andertons,catalogue,Instruments de musique,https://www.andertons.co.uk,planned,non
+bax-music,Bax Music,catalogue,Instruments de musique,https://www.bax-shop.com,planned,non
+fender,Fender,catalogue,Instruments de musique,https://www.fender.com,planned,non
+gear4music,Gear4music,catalogue,Instruments de musique,https://www.gear4music.com,planned,non
+gibson,Gibson,catalogue,Instruments de musique,https://www.gibson.com,planned,non
+guitar-center,Guitar Center,catalogue,Instruments de musique,https://www.guitarcenter.com,planned,non
+musician-s-friend,Musician's Friend,catalogue,Instruments de musique,https://www.musiciansfriend.com,planned,non
+reverb,Reverb,catalogue,Instruments de musique,https://reverb.com,planned,non
+sweetwater,Sweetwater,catalogue,Instruments de musique,https://www.sweetwater.com,planned,non
+thomann,Thomann,catalogue,Instruments de musique,https://www.thomann.de,planned,non
+moo,Moo,catalogue,Bureau & papeterie,https://www.moo.com,planned,non
+office-depot,Office Depot,catalogue,Bureau & papeterie,https://www.officedepot.com,planned,non
+officeworks,Officeworks,catalogue,Bureau & papeterie,https://www.officeworks.com.au,planned,non
+ryman,Ryman,catalogue,Bureau & papeterie,https://www.ryman.co.uk,planned,non
+staples,Staples,catalogue,Bureau & papeterie,https://www.staples.com,planned,non
+viking-direct,Viking Direct,catalogue,Bureau & papeterie,https://www.viking-direct.co.uk,planned,non
+vistaprint,Vistaprint,catalogue,Bureau & papeterie,https://www.vistaprint.com,planned,non
+whsmith,WHSmith,catalogue,Bureau & papeterie,https://www.whsmith.co.uk,planned,non
+fragrancenet,FragranceNet,catalogue,Parfums,https://www.fragrancenet.com,planned,non
+fragrancex,FragranceX,catalogue,Parfums,https://www.fragrancex.com,planned,non
+harrods-beauty,Harrods Beauty,catalogue,Parfums|Luxe & griffes,https://www.harrods.com,planned,non
+jomashop,Jomashop,catalogue,Parfums|Bijoux & montres,https://www.jomashop.com,planned,non
+perfume-s-club,Perfume's Club,catalogue,Parfums,https://www.perfumesclub.com,planned,non
+perfume-com,Perfume.com,catalogue,Parfums,https://www.perfume.com,planned,non
+the-perfume-shop,The Perfume Shop,catalogue,Parfums,https://www.theperfumeshop.com,planned,non
+barkshop,BarkShop,catalogue,Animalerie,https://www.barkshop.com,planned,non
+bitiba,Bitiba,catalogue,Animalerie,https://www.bitiba.com,planned,non
+chewy,Chewy,catalogue,Animalerie,https://www.chewy.com,planned,non
+fressnapf,Fressnapf,catalogue,Animalerie,https://www.fressnapf.com,planned,non
+miscota,Miscota,catalogue,Animalerie,https://www.miscota.com,planned,non
+pet-valu,Pet Valu,catalogue,Animalerie,https://www.petvalu.ca,planned,non
+petco,Petco,catalogue,Animalerie,https://www.petco.com,planned,non
+pets-at-home,Pets at Home,catalogue,Animalerie,https://www.petsathome.com,planned,non
+petsmart,PetSmart,catalogue,Animalerie,https://www.petsmart.com,planned,non
+zooplus,Zooplus,catalogue,Animalerie,https://www.zooplus.com,planned,non
+adorama,Adorama,catalogue,Photo & caméras,https://www.adorama.com,planned,non
+cameraworld,CameraWorld,catalogue,Photo & caméras,https://www.cameraworld.co.uk,planned,non
+focus-camera,Focus Camera,catalogue,Photo & caméras,https://www.focuscamera.com,planned,non
+keh-camera,KEH Camera,catalogue,Photo & caméras,https://www.keh.com,planned,non
+mpb,MPB,catalogue,Photo & caméras,https://www.mpb.com,planned,non
+park-cameras,Park Cameras,catalogue,Photo & caméras,https://www.parkcameras.com,planned,non
+wex-photo-video,Wex Photo Video,catalogue,Photo & caméras,https://www.wexphotovideo.com,planned,non
+clarks,Clarks,catalogue,Chaussures & sneakers,https://www.clarks.com,planned,non
+crocs,Crocs,catalogue,Chaussures & sneakers,https://www.crocs.com,planned,non
+deichmann,Deichmann,catalogue,Chaussures & sneakers,https://www.deichmann.com,planned,non
+dr-martens,Dr. Martens,catalogue,Chaussures & sneakers,https://www.drmartens.com,planned,non
+foot-locker,Foot Locker,catalogue,Chaussures & sneakers,https://www.footlocker.com,planned,non
+footasylum,Footasylum,catalogue,Chaussures & sneakers,https://www.footasylum.com,planned,non
+jd-sports,JD Sports,catalogue,Chaussures & sneakers,https://www.jdsports.com,planned,non
+office-shoes,Office Shoes,catalogue,Chaussures & sneakers,https://www.office.co.uk,planned,non
+skechers,Skechers,catalogue,Chaussures & sneakers,https://www.skechers.com,planned,non
+timberland,Timberland,catalogue,Chaussures & sneakers,https://www.timberland.com,planned,non
+ugg,UGG,catalogue,Chaussures & sneakers,https://www.ugg.com,planned,non
+zappos,Zappos,catalogue,Chaussures & sneakers,https://www.zappos.com,planned,non
+anker,Anker,catalogue,Smartphones & accessoires,https://www.anker.com,planned,non
+belkin,Belkin,catalogue,Smartphones & accessoires,https://www.belkin.com,planned,non
+esr,ESR,catalogue,Smartphones & accessoires,https://www.esrtech.com,planned,non
+fairphone,Fairphone,catalogue,Smartphones & accessoires,https://www.fairphone.com,planned,non
+google-store,Google Store,catalogue,Smartphones & accessoires,https://store.google.com,planned,non
+motorola,Motorola,catalogue,Smartphones & accessoires,https://www.motorola.com,planned,non
+nothing,Nothing,catalogue,Smartphones & accessoires,https://nothing.tech,planned,non
+oneplus,OnePlus,catalogue,Smartphones & accessoires,https://www.oneplus.com,planned,non
+otterbox,OtterBox,catalogue,Smartphones & accessoires,https://www.otterbox.com,planned,non
+spigen,Spigen,catalogue,Smartphones & accessoires,https://www.spigen.com,planned,non
+ugreen,Ugreen,catalogue,Smartphones & accessoires,https://www.ugreen.com,planned,non
+xiaomi,Xiaomi,catalogue,Smartphones & accessoires,https://www.mi.com,planned,non
+backcountry,Backcountry,catalogue,Sport & plein air,https://www.backcountry.com,planned,non
+bass-pro-shops,Bass Pro Shops,catalogue,Sport & plein air,https://www.basspro.com,planned,non
+cabela-s,Cabela's,catalogue,Sport & plein air,https://www.cabelas.com,planned,non
+chain-reaction-cycles,Chain Reaction Cycles,catalogue,Sport & plein air,https://www.chainreactioncycles.com,planned,non
+decathlon,Decathlon,catalogue,Sport & plein air,https://www.decathlon.com,planned,non
+garmin,Garmin,catalogue,Sport & plein air,https://www.garmin.com,planned,non
+pro-direct-sport,Pro:Direct Sport,catalogue,Sport & plein air,https://www.prodirectsport.com,planned,non
+rei,REI,catalogue,Sport & plein air,https://www.rei.com,planned,non
+running-warehouse,Running Warehouse,catalogue,Sport & plein air,https://www.runningwarehouse.com,planned,non
+snowleader,Snowleader,catalogue,Sport & plein air,https://www.snowleader.com,planned,non
+sports-direct,Sports Direct,catalogue,Sport & plein air,https://www.sportsdirect.com,planned,non
+tennis-warehouse,Tennis Warehouse,catalogue,Sport & plein air,https://www.tennis-warehouse.com,planned,non
+tradeinn,Tradeinn,catalogue,Sport & plein air,https://www.tradeinn.com,planned,non
+trek-bikes,Trek Bikes,catalogue,Sport & plein air,https://www.trekbikes.com,planned,non
+wiggle,Wiggle,catalogue,Sport & plein air,https://www.wiggle.com,planned,non
+b-q,B&Q,catalogue,Outils & bricolage|Jardin & extérieur,https://www.diy.com,planned,non
+bosch-professional,Bosch Professional,catalogue,Outils & bricolage,https://www.bosch-professional.com,planned,non
+dewalt,DeWalt,catalogue,Outils & bricolage,https://www.dewalt.com,planned,non
+farnell,Farnell,catalogue,Outils & bricolage,https://www.farnell.com,planned,non
+grainger,Grainger,catalogue,Outils & bricolage,https://www.grainger.com,planned,non
+harbor-freight,Harbor Freight,catalogue,Outils & bricolage,https://www.harborfreight.com,planned,non
+makita,Makita,catalogue,Outils & bricolage,https://www.makitatools.com,planned,non
+manomano,ManoMano,catalogue,Outils & bricolage,https://www.manomano.com,planned,non
+mcmaster-carr,McMaster-Carr,catalogue,Outils & bricolage,https://www.mcmaster.com,planned,non
+milwaukee-tool,Milwaukee Tool,catalogue,Outils & bricolage,https://www.milwaukeetool.com,planned,non
+rs-components,RS Components,catalogue,Outils & bricolage,https://www.rs-online.com,planned,non
+screwfix,Screwfix,catalogue,Outils & bricolage,https://www.screwfix.com,planned,non
+toolstation,Toolstation,catalogue,Outils & bricolage,https://www.toolstation.com,planned,non
+wickes,Wickes,catalogue,Outils & bricolage,https://www.wickes.co.uk,planned,non
+babylist,Babylist,catalogue,Jouets & bébé,https://www.babylist.com,planned,non
+babyshop,Babyshop,catalogue,Jouets & bébé,https://www.babyshop.com,planned,non
+build-a-bear,Build-A-Bear,catalogue,Jouets & bébé,https://www.buildabear.com,planned,non
+carter-s,Carter's,catalogue,Jouets & bébé|Vêtements enfants,https://www.carters.com,planned,non
+hamleys,Hamleys,catalogue,Jouets & bébé,https://www.hamleys.com,planned,non
+hasbro,Hasbro,catalogue,Jouets & bébé,https://shop.hasbro.com,planned,non
+jellycat,Jellycat,catalogue,Jouets & bébé,https://www.jellycat.com,planned,non
+jojo-maman-b-b,JoJo Maman Bébé,catalogue,Jouets & bébé,https://www.jojomamanbebe.co.uk,planned,non
+lego,LEGO,catalogue,Jouets & bébé,https://www.lego.com,planned,non
+mattel,Mattel,catalogue,Jouets & bébé,https://shop.mattel.com,planned,non
+mothercare,Mothercare,catalogue,Jouets & bébé,https://www.mothercare.com,planned,non
+smyths-toys,Smyths Toys,catalogue,Jouets & bébé,https://www.smythstoys.com,planned,non
+the-children-s-place,The Children's Place,catalogue,Jouets & bébé|Vêtements enfants,https://www.childrensplace.com,planned,non
+the-entertainer,The Entertainer,catalogue,Jouets & bébé,https://www.thetoyshop.com,planned,non
+toys-r-us,"Toys""R""Us",catalogue,Jouets & bébé,https://www.toysrus.com,planned,non
+eagle-creek,Eagle Creek,catalogue,Accessoires de voyage,https://www.eaglecreek.com,planned,non
+go-travel,Go Travel,catalogue,Accessoires de voyage,https://www.gotravelproducts.com,planned,non
+osprey,Osprey,catalogue,Accessoires de voyage,https://www.osprey.com,planned,non
+peak-design,Peak Design,catalogue,Accessoires de voyage,https://www.peakdesign.com,planned,non
+sea-to-summit,Sea to Summit,catalogue,Accessoires de voyage,https://seatosummit.com,planned,non
+travelpro,Travelpro,catalogue,Accessoires de voyage,https://travelpro.com,planned,non
+trtl-travel,Trtl Travel,catalogue,Accessoires de voyage,https://trtltravel.com,planned,non
