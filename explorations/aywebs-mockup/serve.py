@@ -4,6 +4,10 @@ Sert le dépôt en local et ouvre directement le laboratoire AYWEBs.
 
     python3 explorations/aywebs-mockup/serve.py [port]
 
+Deux adresses :
+    /        → la maquette LIVRÉE (fichier unique, autonome)
+    /source  → la SOURCE, avec ses chemins relatifs (pratique pour itérer)
+
 Pourquoi un script et pas `python3 -m http.server` : la maquette référence les
 vraies photos et les vraies polices de l'app (`../apps/mobile/assets/...`), donc
 la racine à servir doit être la racine du dépôt — et `http.server` afficherait un
@@ -18,6 +22,7 @@ import sys
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 LAB = "/explorations/AYWEBS_HOME_LAB.html"
+SOURCE = "/explorations/aywebs-mockup/lab.source.html"
 PORT = int(sys.argv[1] if len(sys.argv) > 1 else os.environ.get("PORT", 8080))
 
 
@@ -26,6 +31,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         super().__init__(*args, directory=ROOT, **kwargs)
 
     def do_GET(self):  # noqa: N802 (nom imposé par la bibliothèque)
+        if self.path in ("/source", "/source/"):
+            self.send_response(302)
+            self.send_header("Location", SOURCE)
+            self.end_headers()
+            return
         if self.path in ("/", "/index.html"):
             self.send_response(302)
             self.send_header("Location", LAB)
