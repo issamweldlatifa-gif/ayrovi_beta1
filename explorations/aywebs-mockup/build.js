@@ -85,7 +85,9 @@ function staticScreens(html) {
   if (!scripts.length) throw new Error('Aucun script dans la source');
   const code = scripts[scripts.length - 1][1];
 
-  const nodes = ['A', 'B', 'C'].map((name) => ({ dataset: { screen: name }, innerHTML: '' }));
+  const anchors = [...html.matchAll(/<!--SCREEN:([A-Z]+)-->/g)].map((match) => match[1]);
+  if (!anchors.length) throw new Error('Aucune ancre <!--SCREEN:*--> dans la source');
+  const nodes = anchors.map((name) => ({ dataset: { screen: name }, innerHTML: '' }));
   const document = {
     documentElement: { dataset: {}, lang: 'fr', dir: 'ltr' },
     querySelectorAll: (selector) => (selector === '.screen' ? nodes : []),
@@ -94,13 +96,15 @@ function staticScreens(html) {
   vm.runInNewContext(code, { document, console, Object, Array, String, Number, Boolean, Math, JSON });
 
   const filled = nodes.filter((node) => node.innerHTML.trim().length > 0);
-  if (filled.length !== 3) throw new Error(`Rendu statique incomplet : ${filled.length}/3 écrans`);
+  if (filled.length !== nodes.length) {
+    throw new Error(`Rendu statique incomplet : ${filled.length}/${nodes.length} écrans`);
+  }
   return Object.fromEntries(nodes.map((node) => [node.dataset.screen, node.innerHTML]));
 }
 
 function main() {
   let built = fs.readFileSync(SOURCE, 'utf8');
-  if (!built.includes('<!--SCREEN:A-->')) throw new Error('Ancres <!--SCREEN:*--> absentes de la source');
+  if (!/<!--SCREEN:[A-Z]+-->/.test(built)) throw new Error('Ancres <!--SCREEN:*--> absentes de la source');
   if (!built.includes('/* @@PHOTOS@@ */')) throw new Error('Marqueur /* @@PHOTOS@@ */ absent de la source');
 
   let encoded = 0;

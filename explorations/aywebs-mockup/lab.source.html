@@ -51,7 +51,7 @@ html,body{margin:0}
 body{background:var(--canvas);color:var(--ink);font:14px/1.5 var(--font);-webkit-font-smoothing:antialiased}
 
 /* ─── Chrome du laboratoire ─────────────────────────────────────────────── */
-.lab{max-width:1360px;margin:0 auto;padding:26px 22px 10px}
+.lab{max-width:1800px;margin:0 auto;padding:26px 22px 10px}
 .lab h1{margin:0;font-size:21px;letter-spacing:-.02em}
 .lab h1 span{color:var(--violet)}
 .lab .sub{margin:6px 0 0;color:var(--muted);font-size:12.5px;max-width:70ch}
@@ -66,8 +66,8 @@ body{background:var(--canvas);color:var(--ink);font:14px/1.5 var(--font);-webkit
 .fixes b{color:var(--violet);font-weight:700}
 
 /* ─── Colonnes ──────────────────────────────────────────────────────────── */
-.board{max-width:1360px;margin:0 auto;padding:22px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:26px}
-@media (max-width:1240px){.board{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.board{max-width:1800px;margin:0 auto;padding:22px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:26px}
+@media (max-width:1500px){.board{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:860px){.board{grid-template-columns:minmax(0,1fr)}}
 
 .dir-head{min-height:132px}
@@ -244,7 +244,91 @@ html[dir="rtl"] .chev-r{transform:scaleX(-1)}
 .tab.is-on{color:var(--violet)}
 
 /* ─── Note de bas de page ───────────────────────────────────────────────── */
-.notes{max-width:1360px;margin:8px auto 40px;padding:0 22px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.notes{max-width:1800px;margin:8px auto 40px;padding:0 22px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+
+/* ═══ D · FLUX VIVANT — l'accueil comme surface de décision ═════════════ */
+.dark{--ink:#F5F5F7;--ink-2:#C9C9CF;--muted:#8E8E96;--line:#2A2A30;--line-2:#3A3A42;--surface:#141418;--shimmer:#1F1F25}
+.screen--dark{background:#0C0C10}
+.dark .iconbtn{color:#F5F5F7}
+.dark .tabbar{background:#141418;border-top:1px solid #2A2A30}
+.dark .tab.is-on{color:#C5B2F4}
+.dark .link{color:#A9A9B2}
+
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:var(--r-full);
+  font:700 11px var(--font);letter-spacing:.02em;white-space:nowrap}
+.pill--info{background:rgba(146,109,249,.16);color:#C9B4FF}
+.pill--ok{background:rgba(82,196,138,.14);color:#8DE0B0}
+.pill--warn{background:rgba(255,214,10,.14);color:#FFD60A}
+
+/* recherche + pouls du marché */
+.liveTop{display:flex;flex-direction:column;gap:10px}
+.search--dark{background:#1A1A20;border-color:#2A2A30;box-shadow:none;color:#8E8E96}
+.search--dark .ph{color:#8E8E96}
+.search--dark .ic{color:#C5B2F4}
+.marketPulse{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--muted)}
+.marketPulse b{color:#F5F5F7;font-weight:700}
+.marketPulse .dot{width:6px;height:6px;border-radius:50%;background:#8DE0B0;box-shadow:0 0 0 3px rgba(141,224,176,.16)}
+
+/* relance : la raison de revenir */
+.relance{border-radius:var(--r-lg);padding:14px;background:linear-gradient(150deg,#241B4A,#191325 70%);
+  border:1px solid #3A2E6B;display:flex;flex-direction:column;gap:10px}
+.relance .top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.relance h4{margin:0;font-size:13.5px;font-weight:700;color:#F5F5F7}
+.relance .row{display:flex;align-items:center;gap:10px}
+.relance .row .txt{flex:1;min-width:0}
+.relance .row b{display:block;font-size:13px;color:#F5F5F7;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.relance .row small{display:block;font-size:11px;color:#A9A9B2;margin-top:2px}
+.relance .thumb{width:44px;height:44px;border-radius:10px;background:#2A2A30;display:grid;place-items:center;flex:none;overflow:hidden;padding:5px}
+.relance .thumb .logo{font-size:9px}
+.relance .delta{font:700 12.5px var(--font);color:#8DE0B0}
+.relance .cta{display:flex;align-items:center;justify-content:center;gap:6px;height:38px;border-radius:var(--r-md);
+  background:#F5F5F7;color:#0A0A0A;font:700 12.5px var(--font);border:0;cursor:pointer}
+
+/* rail de tickets */
+.railLive{display:flex;gap:10px;overflow-x:auto;margin-inline:-16px;padding:2px 16px 6px;scrollbar-width:none}
+.railLive::-webkit-scrollbar{display:none}
+.tileLive{flex:none;width:186px;border-radius:var(--r-lg);border:1px solid var(--line);background:var(--surface);overflow:hidden}
+.tileLive .head{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:8px 10px;border-bottom:1px solid var(--line)}
+.tileLive .head .logo{font-size:11px;color:#F5F5F7}
+.tileLive .body{padding:10px}
+.tileLive .title{font-size:12.5px;font-weight:600;color:#F5F5F7;line-height:1.3;height:2.6em;overflow:hidden;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.tileLive .keys{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.tileLive .key{font-size:10.5px;padding:2px 7px;border-radius:var(--r-full);background:#22222A;color:#A9A9B2}
+.tileLive .foot{display:flex;align-items:flex-end;justify-content:space-between;gap:6px;margin-top:10px}
+.tileLive .price{font:700 15px var(--font);color:#F5F5F7}
+.tileLive .price small{display:block;font:500 10px var(--font);color:var(--muted);margin-top:2px}
+
+/* garde-fous + approbation */
+.guard{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:var(--r-lg);border:1px solid var(--line);background:var(--surface)}
+.guard .line{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-2)}
+.guard .line .ic{width:16px;height:16px;color:#8DE0B0;flex:none}
+.guard .line b{color:#F5F5F7;font-weight:600}
+.approval{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:var(--r-lg);
+  border:1px solid #3A2E6B;background:#191325}
+.approval .txt{flex:1;min-width:0}
+.approval b{display:block;font-size:13px;color:#F5F5F7}
+.approval small{display:block;font-size:11px;color:#A9A9B2;margin-top:3px}
+.approval button{height:34px;padding:0 12px;border-radius:var(--r-full);border:0;font:700 12px var(--font);cursor:pointer}
+.approval .yes{background:#F5F5F7;color:#0A0A0A}
+.approval .no{background:transparent;color:#A9A9B2;border:1px solid #3A3A42}
+
+/* radar */
+.radar{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.radar button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 4px;border-radius:var(--r-md);
+  border:1px solid var(--line);background:var(--surface);color:#F5F5F7;font:600 10.5px var(--font);cursor:pointer;text-align:center}
+.radar .ic{width:20px;height:20px;color:#C5B2F4}
+
+/* pied de page : le manifeste */
+.manifest{position:relative;border-radius:var(--r-lg);overflow:hidden;border:1px solid #3A2E6B;
+  background:linear-gradient(160deg,#2A1E5C,#101018 65%);padding:16px;display:flex;flex-direction:column;gap:8px}
+.manifest .badge{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:var(--r-full);
+  background:rgba(197,178,244,.14);color:#C5B2F4;font:700 10px var(--font);letter-spacing:.08em}
+.manifest h4{margin:2px 0 0;font-size:15px;color:#F5F5F7;line-height:1.3}
+.manifest p{margin:0;font-size:11.5px;color:#A9A9B2;line-height:1.55}
+.manifest .chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:2px}
+.manifest .chips span{font-size:10px;padding:3px 8px;border-radius:var(--r-full);background:#1E1E26;color:#C5B2F4}
+
 @media (max-width:860px){.notes{grid-template-columns:1fr}}
 .note{background:var(--chrome);border:1px solid var(--line);border-radius:var(--r-lg);padding:16px 18px}
 .note h4{margin:0 0 8px;font-size:13px;letter-spacing:.02em;text-transform:uppercase;color:var(--muted)}
@@ -256,9 +340,13 @@ html[dir="rtl"] .chev-r{transform:scaleX(-1)}
 <body>
 
 <div class="lab">
-  <h1>AYWEBs · accueil — trois directions, <span>un seul contenu</span></h1>
-  <p class="sub">Maquette HTML statique (aucun code de l'app n'est importé). Mêmes jetons, mêmes photos, même wordmark que le build.
-  Les trois colonnes corrigent les trois défauts P0 relevés sur la capture du 27/10 — ce qui change, c'est la mise en scène.</p>
+  <h1>AYWEBs · accueil — <span>quatre directions</span>, du plus sage au plus ambitieux</h1>
+  <p class="sub">
+    A, B et C répondent à la même question : <i>comment ranger un annuaire de boutiques</i>. Ils corrigent les défauts de la
+    capture du 27/10 et changent seulement la mise en scène.<br>
+    <b>D change la question</b> : l'accueil devient une surface de décision — ce que le prix cache, ce qui a réellement bougé,
+    et l'achat qui attend ton accord. C'est la seule colonne qui raconte une technologie, pas une mise en page.
+  </p>
 
   <div class="controls">
     <div class="seg" role="group" aria-label="Langue">
@@ -277,6 +365,7 @@ html[dir="rtl"] .chev-r{transform:scaleX(-1)}
     <span><b>2</b> une icône par famille (plus 23 fois la même étiquette)</span>
     <span><b>3</b> « Maison » ne prend plus la photo du casque</span>
     <span><b>5</b> 5 familles sur 6 en photo (comptage réel des boutiques)</span>
+    <span><b>D</b> prix vérifié · preuve gardée · achat approuvé</span>
     <span><b>4</b> texte du champ à 5,7:1 (avant 3,8:1)</span>
   </div>
 </div>
@@ -310,6 +399,21 @@ html[dir="rtl"] .chev-r{transform:scaleX(-1)}
       <div class="lose">On perd : de la hauteur d'écran, et le violet pèse sur les photos.</div>
     </div>
     <div class="phone"><div class="screen" data-screen="B"><!--SCREEN:B--></div></div>
+  </section>
+
+  <section>
+    <div class="dir-head">
+      <span class="tag">Direction D</span>
+      <h2>Flux vivant — la surface de décision</h2>
+      <p>Ce n'est plus un annuaire de boutiques : on ouvre l'app pour savoir <b>où en est mon argent</b>. Relance de prix, produits trouvés avec chaque garde-fou chiffré, et une approbation d'achat — le client reste décideur.</p>
+      <ul>
+        <li>« Baisses de prix » : ce qui a <b>réellement</b> changé (relu côté marchand)</li>
+        <li>Chaque prix vient avec douane, TVA, fret, change — rien de caché</li>
+        <li>« On achète pour toi » : un oui explicite, jamais un débit surprise</li>
+      </ul>
+      <div class="lose">Le coût : beaucoup d'états à alimenter. Les briques existent côté serveur (veille prix, preuves, devis par variante) ; il faut les brancher.</div>
+    </div>
+    <div class="phone"><div class="screen screen--dark dark" data-screen="D"><!--SCREEN:D--></div></div>
   </section>
 
   <section>
@@ -349,6 +453,24 @@ html[dir="rtl"] .chev-r{transform:scaleX(-1)}
     <p>Les logos de boutiques sont des <b>placeholders typographiques</b> : dans l'app ils viennent de l'API (<code>mediaUrl(store.logo)</code>) et sont rendus par <code>AppImage</code> en <code>contain</code>.</p>
   </div>
   <div class="note">
+    <h4>Direction D — ce qui tourne déjà sous le capot</h4>
+    <p>• <b>Veille prix</b> — <code>src/ayrovix/services/priceWatch.ts</code> : 50 surveillances par compte, relecture toutes les 6 h
+    <i>chez le marchand</i>, notification à la baisse réelle. <b>Aucune API mobile</b> ne l'expose encore.</p>
+    <p>• <b>Preuves</b> — <code>src/aywebs/evidence.ts</code> : empreinte de ce qui a été lu (prix, devise, variante, disponibilité, date).</p>
+    <p>• <b>Devis par variante</b> — <code>src/aywebs/variantQuotes.ts</code> : un prix en dinars par couleur / taille, calculé serveur.</p>
+    <p>• <b>Garde-fous chiffrés</b> — <code>src/services/pricing.ts</code> : douane par catégorie, TVA, fret au poids, marge de change 3 %.</p>
+    <p>• <b>Change du jour</b> — <code>src/services/fxRates.ts</code> : taux live avec bandes de sanité, repli stable en cas de panne.</p>
+    <p>• <b>Checkout modulaire</b> — <code>src/aywebs/checkoutFees.ts</code> : payable = somme des lignes, vérifié par assertion.</p>
+  </div>
+  <div class="note">
+    <h4>Ce que D demanderait vraiment</h4>
+    <p>1. Exposer la veille prix en API mobile (<code>/api/v1/aywebs/watch</code>) + la liste des baisses.</p>
+    <p>2. Une table « trouvé pour toi » : produit résolu + preuve + devis, rangé par fraîcheur.</p>
+    <p>3. Un contrat d'approbation explicite : rien ne part sans un « oui » horodaté.</p>
+    <p>4. Le détail des frais au-dessus du prix, pas derrière une feuille.</p>
+    <p>Trois briques existent déjà côté serveur, deux sont des contrats à écrire. Aucune n'est une image.</p>
+  </div>
+  <div class="note">
     <h4>Comment s'en servir</h4>
     <p>Bascule <b>FR/AR</b> pour voir le RTL (les chevrons se retournent, les libellés arabes sont plus longs : c'est le test des ellipses).</p>
     <p>Bascule <b>sans dernière visite</b> : la carte de reprise doit <i>disparaître</i>, pas afficher un message vide — c'est le défaut actuel.</p>
@@ -371,6 +493,7 @@ html[dir="rtl"] .chev-r{transform:scaleX(-1)}
   <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3.4l1.9 4.9 4.9 1.9-4.9 1.9-1.9 4.9-1.9-4.9L5.2 10.2l4.9-1.9L12 3.4z"/><path d="M18.2 16.2l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8.8-2z"/></symbol>
   <symbol id="i-head" viewBox="0 0 24 24"><path d="M4.4 14v-2.2a7.6 7.6 0 0 1 15.2 0V14"/><rect x="2.8" y="13.4" width="4" height="6.2" rx="1.8"/><rect x="17.2" y="13.4" width="4" height="6.2" rx="1.8"/></symbol>
   <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 10.4 12 3.6l8 6.8V20H4v-9.6z"/><path d="M9.8 20v-5.4h4.4V20"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.6"/><path d="M8.2 12.3l2.6 2.6 5-5.2"/></symbol>
   <symbol id="i-kitchen" viewBox="0 0 24 24"><path d="M4.6 10.8h11.2v5.4a3.4 3.4 0 0 1-3.4 3.4H8a3.4 3.4 0 0 1-3.4-3.4v-5.4z"/><path d="M4.6 10.8 5.8 4.6h8.8l1.2 6.2"/><path d="M15.8 12.6h2.4a1.9 1.9 0 0 1 0 3.8h-2.4"/><path d="M8.4 3.2V1.8M11.8 3.2V1.8"/></symbol>
   <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/></symbol>
   <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.4" r="3.6"/><path d="M5.4 20a6.6 6.6 0 0 1 13.2 0"/></symbol>
@@ -417,6 +540,16 @@ const STORES = [
   { name: 'Stradivarius', logo: 'STRADIVARIUS', cls: 'lg-stradi', sub: ['fashion'] },
 ];
 
+/** Flux « vivant » (direction D) — données de démonstration, toutes réelles dans l'app. */
+const MATCHES = [
+  { logo: 'AMZ', cls: 'lg-amazon', title: 'Sneakers cuir blanc — 42', keys: ['Taille 42', 'Blanc'],
+    price: '289,400', sub: 'chez Amazon · 2 tailles' },
+  { logo: 'SHE', cls: 'lg-shein', title: 'Robe midi plissée', keys: ['M', 'Noir'],
+    price: '97,800', sub: 'chez SHEIN · 4 tailles' },
+  { logo: 'TEM', cls: 'lg-temu', title: 'Sac à dos 20 L', keys: ['Gris'],
+    price: '64,200', sub: 'chez TEMU · 2 coloris' },
+];
+
 const I18N = {
   fr: {
     search: 'Rechercher une boutique',
@@ -441,6 +574,31 @@ const I18N = {
     'cat.beauty': 'Beauté',
     'cat.home': 'Maison',
     'cat.kitchen': 'Cuisine & électroménager',
+    watch: 'Baisses de prix',
+    watchSub: 'Deux articles que tu suis ont baissé',
+    watchCta: 'Voir le nouveau prix',
+    since: 'Depuis 6 h',
+    live: 'Recherche produit',
+    livePh: 'Colle un lien — on te donne le prix en dinars',
+    pulse: 'Prix vérifiés il y a 3 min · taux du jour',
+    matches: 'Trouvé pour toi',
+    guards: 'Ce que le prix cache',
+    guard1: 'Douane + TVA calculées, pas estimées',
+    guard2: 'Fret au poids réel, pas au forfait',
+    guard3: 'Taux de change du jour, marge 3 % visible',
+    approve: 'On achète pour toi',
+    approveSub: 'Ta confirmation avant chaque achat',
+    approveYes: 'Confirmer',
+    approveNo: 'Modifier',
+    radar: 'Ton radar',
+    radar1: 'En cours',
+    radar2: 'En attente',
+    radar3: 'Baisses',
+    radar4: 'Tout',
+    manifestBadge: 'NOTRE PROMESSE',
+    manifestTitle: 'On ne se contente pas du minimum.',
+    manifestBody: "Prix tounsi vérifié, marchandise suivie, achat confirmé par toi. Ce n'est pas un comparateur — c'est ton agent d'achat.",
+    manifestChips: ['Prix vérifié', 'Preuve gardée', 'Achat accompagné'],
   },
   ar: {
     search: 'ابحث عن متجر',
@@ -465,6 +623,31 @@ const I18N = {
     'cat.beauty': 'الجمال والتجميل',
     'cat.home': 'المنزل والأثاث',
     'cat.kitchen': 'المطبخ والأجهزة المنزلية',
+    watch: 'تخفيضات الأسعار',
+    watchSub: 'زوز منتجات تراقبهم نزل سومهم',
+    watchCta: 'شوف السوم الجديد',
+    since: 'من 6 سوايع',
+    live: 'قلّب على منتج',
+    livePh: 'الصق رابط — نعطيك السوم بالدينار',
+    pulse: 'الأسعار متأكّدة من 3 دقايق · سومة اليوم',
+    matches: 'لقيناهولك',
+    guards: 'اللي السوم يخبّيه',
+    guard1: 'الديوانة والـTVA محسوبة، ماشي مقدّرة',
+    guard2: 'الفريت بالوزن الحقيقي، ماشي بالتقريب',
+    guard3: 'سومة الصرف لليوم، هامش 3% ظاهر',
+    approve: 'إحنا نشريولك',
+    approveSub: 'موافقتك قبل كل عملية شراء',
+    approveYes: 'أكّد',
+    approveNo: 'بدّل',
+    radar: 'الرادار متاعك',
+    radar1: 'جاري',
+    radar2: 'في الانتظار',
+    radar3: 'تخفيضات',
+    radar4: 'الكل',
+    manifestBadge: 'وعدنا',
+    manifestTitle: 'ما نكتفيوش بالقليل.',
+    manifestBody: 'سوم تونسي متأكّد، سلعة متابعة، وشراء تونّس فيه إنت. ماشي مقارن أسعار — هذا وكيل شراء متاعك.',
+    manifestChips: ['سوم متأكّد', 'الدليل محفوظ', 'شراء مرافق'],
   },
 };
 
@@ -628,7 +811,89 @@ const screenC = () => `${statusbar()}
   </div>
   ${tabbar()}`;
 
-const SCREENS = { A: screenA, B: screenB, C: screenC };
+/* ── D · Flux vivant ───────────────────────────────────────────────────── */
+const tileLive = (match) => `
+  <article class="tileLive">
+    <div class="head">
+      <span class="logo ${match.cls}">${match.logo}</span>
+      <span class="pill pill--ok">${t('matches')}</span>
+    </div>
+    <div class="body">
+      <div class="title">${match.title}</div>
+      <div class="keys">${match.keys.map((key) => `<span class="key">${key}</span>`).join('')}</div>
+      <div class="foot">
+        <span class="price">${match.price} <small>TND</small></span>
+        ${icon('chev', 'chev-r')}
+      </div>
+    </div>
+  </article>`;
+
+const screenD = () => `${statusbar()}
+  <header class="appbar">
+    <img class="wm" src="${WORDMARK}" alt="AYWEBs">
+    <button type="button" class="iconbtn" aria-label="${t('cart')}">${icon('cart')}</button>
+  </header>
+  <div class="page">
+    <div class="liveTop">
+      <div class="search search--dark">${icon('search')}<span class="ph">${t('livePh')}</span></div>
+      <div class="marketPulse"><span class="dot"></span>${t('pulse')} · <b>3,387 TND/€</b></div>
+    </div>
+
+    <section class="relance">
+      <div class="top">
+        <h4>${t('watch')}</h4>
+        <span class="pill pill--info">${t('since')}</span>
+      </div>
+      <div class="row">
+        <span class="thumb"><span class="logo lg-amazon">AMZ</span></span>
+        <span class="txt">
+          <b>Sneakers cuir blanc · 42</b>
+          <small>${t('watchSub')}</small>
+        </span>
+        <span class="delta">−12 %</span>
+      </div>
+      <button type="button" class="cta">${t('watchCta')} ${icon('chev', 'chev-r')}</button>
+    </section>
+
+    <section>
+      <div class="sechead"><h3>${t('matches')}</h3><a class="link" href="#">${t('viewAll')}${icon('chev', 'chev-r')}</a></div>
+      <div class="railLive">${MATCHES.map(tileLive).join('')}</div>
+    </section>
+
+    <section class="guard">
+      <div class="sechead"><h3 style="font-size:14px">${t('guards')}</h3></div>
+      <div class="line">${icon('check')}<span><b>Douane + TVA</b> — ${t('guard1')}</span></div>
+      <div class="line">${icon('check')}<span><b>Fret</b> — ${t('guard2')}</span></div>
+      <div class="line">${icon('check')}<span><b>Change</b> — ${t('guard3')}</span></div>
+    </section>
+
+    <section class="approval">
+      <span class="pill pill--warn">${t('approve')}</span>
+      <span class="txt"><b>${t('approve')}</b><small>${t('approveSub')}</small></span>
+      <button type="button" class="yes">${t('approveYes')}</button>
+      <button type="button" class="no">${t('approveNo')}</button>
+    </section>
+
+    <section>
+      <div class="sechead"><h3>${t('radar')}</h3></div>
+      <div class="radar">
+        <button type="button">${icon('clock')}${t('radar1')}</button>
+        <button type="button">${icon('bag')}${t('radar2')}</button>
+        <button type="button">${icon('spark')}${t('radar3')}</button>
+        <button type="button">${icon('grid')}${t('radar4')}</button>
+      </div>
+    </section>
+
+    <section class="manifest">
+      <span class="badge">${icon('spark')}${t('manifestBadge')}</span>
+      <h4>${t('manifestTitle')}</h4>
+      <p>${t('manifestBody')}</p>
+      <div class="chips">${I18N[lang].manifestChips.map((chip) => `<span>${chip}</span>`).join('')}</div>
+    </section>
+  </div>
+  ${tabbar()}`;
+
+const SCREENS = { A: screenA, B: screenB, C: screenC, D: screenD };
 
 /* ── Rendu + interactions ─────────────────────────────────────────────── */
 function render() {

@@ -1,4 +1,24 @@
-# Maquette AYWEBs — accueil (3 directions)
+# Maquette AYWEBs — accueil (4 directions)
+
+> **D · Flux vivant** est la seule direction qui ne parle pas de mise en page :
+> elle montre la **technologie** — veille prix, preuves, frais détaillés,
+> approbation d'achat. A, B et C restent des rangements du même annuaire.
+
+## Les quatre directions
+
+| | Question posée | Statut des briques |
+| --- | --- | --- |
+| **A · Épuré** | ranger sans refondre | prêt (UI seule) |
+| **B · Marque** | assumer le violet | prêt (UI seule) |
+| **C · Éditorial** | montrer plus sans scroller | prêt (UI seule) |
+| **D · Flux vivant** | **décider** : quoi acheter, à quel prix réel | 3 briques serveur existent, 2 contrats à écrire |
+
+Direction D s'appuie, dans le dépôt, sur : `src/ayrovix/services/priceWatch.ts`
+(veille prix, 6 h, 50 par compte — **aucune API mobile**), `src/aywebs/evidence.ts`
+(empreintes de lecture), `src/aywebs/variantQuotes.ts` (devis par valeur),
+`src/services/pricing.ts` (douane, TVA, fret, marge de change),
+`src/services/fxRates.ts` (taux live + bandes de sanité),
+`src/aywebs/checkoutFees.ts` (payable = somme des lignes, par assertion).
 
 Laboratoire de **design**, pas du code applicatif : rien ici n'est importé par
 l'app. Il sert à trancher une direction avant d'écrire du React Native.
