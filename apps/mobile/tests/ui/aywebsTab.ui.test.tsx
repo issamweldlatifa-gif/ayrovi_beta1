@@ -29,6 +29,8 @@ jest.mock('@/features/shell/AppHeader', () => ({
 
 const mockCategories: AyWebsCategory[] = [
   { id: 'marketplace', labelFr: 'Marketplace', labelAr: 'Marketplace' },
+  // Catégorie avec un visuel embarqué : sert à vérifier la plaque paysage.
+  { id: 'beauty', labelFr: 'Beauté et parfum', labelAr: 'الجمال والعطور' },
 ];
 const mockStores: AyWebsStore[] = Array.from({ length: 4 }, (_, i) => ({
   id: `store-${i}`,
@@ -49,7 +51,7 @@ const mockStores: AyWebsStore[] = Array.from({ length: 4 }, (_, i) => ({
   logo: '',
   purchaseMode: '',
   popular: false,
-  categories: ['marketplace'],
+  categories: i === 0 ? ['marketplace', 'beauty'] : ['marketplace'],
   description: '',
 }));
 
@@ -128,6 +130,27 @@ describe('onglet AYWEBs — accueil en trois sections', () => {
 
     const category = screen.getByTestId('aywebs-home-category-marketplace');
     expect(StyleSheet.flatten(category.props.style).width).toBe('48%');
+
+    // Carte de CATÉGORIE : paysage 2,72:1 (référence du 27/10/2026), et pas de
+    // réserve — c'est une PHOTO, elle remplit la tuile bord à bord. Une réserve
+    // de 24 pt ici ramenait le cadre gris corrigé le 27/10/2026.
+    const categoryMedia = screen.getByTestId('aywebs-home-category-media-beauty');
+    const categoryMediaStyle = StyleSheet.flatten(categoryMedia.props.style);
+    expect(categoryMediaStyle.aspectRatio).toBe(MEDIA_RATIO.categoryCard);
+    expect(categoryMediaStyle.padding).toBeUndefined();
+    expect(screen.getByTestId('aywebs-home-category-image-beauty')).toBeTruthy();
+  });
+
+  it('la section catégories ne promet pas d’écran qui n’existe pas', async () => {
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId('aywebs-home-category-marketplace')).toBeTruthy(), { timeout: 5000 });
+
+    // Titre seul, sans chevron tant que l'écran des catégories n'est pas livré.
+    const titres = screen.getAllByTestId('aywebs-section-title');
+    expect(titres.length).toBeGreaterThan(0);
+    // Le titre de la section catégories est un View, pas un bouton.
+    expect(screen.queryByRole('button', { name: 'Explorer les catégories' })).toBeNull();
+    expect(screen.getByText('Explorer les catégories')).toBeTruthy();
   });
 
   it('« Toutes les boutiques » mène à la liste complète', async () => {

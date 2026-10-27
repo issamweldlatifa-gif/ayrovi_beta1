@@ -47,6 +47,12 @@ export interface AppImageProps {
    * voile » quand la fiche produit monte dessus (référence Zalando, 17/10/2026).
    * 0 = nette. La valeur est choisie par l'appelant, jamais devinée ici.
    */
+  /**
+   * Teinte de la plaque sous l'image, pendant le chargement. `null` = aucune
+   * plaque : indispensable pour une image à FOND TRANSPARENT (le mot-symbole),
+   * sinon le gris du cadre se voit autour du logo (constaté le 27/10/2026).
+   */
+  background?: string | null;
   blurRadius?: number;
   /**
    * Appelé UNE fois quand l'image a définitivement échoué (après tous les
@@ -59,7 +65,7 @@ export interface AppImageProps {
 
 export function AppImage({
   uri, fallbackUri, fallbackUris = [], localSource, contentFit = 'cover', style,
-  accessibilityLabel, decorative = false, blurRadius = 0, onSettled, onError, testID,
+  accessibilityLabel, decorative = false, background, blurRadius = 0, onSettled, onError, testID,
 }: AppImageProps) {
   const theme = useTheme();
   const t = useT();
@@ -120,7 +126,7 @@ export function AppImage({
       onLoad={() => onSettled?.()}
       accessibilityElementsHidden={decorative}
       accessibilityLabel={decorative ? undefined : accessibilityLabel}
-      style={[{ backgroundColor: theme.colors.line }, style]}
+      style={[{ backgroundColor: background === null ? 'transparent' : (background ?? theme.colors.line) }, style]}
     />
   );
 }

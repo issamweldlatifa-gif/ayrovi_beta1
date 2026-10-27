@@ -776,7 +776,7 @@ export const fr = {
   'aywebs.avail.UNKNOWN': "Non confirmée",
   'aywebs.stores.title': 'Stores',
   'aywebs.home.search': 'Rechercher une boutique',
-  'aywebs.home.categories': 'Explorer par catégorie',
+  'aywebs.home.categories': 'Explorer les catégories',
   'aywebs.home.searchResults': 'Résultats des boutiques',
   'aywebs.home.exploreStores': 'Explorer les boutiques',
   'aywebs.home.allStores': 'Toutes les boutiques',

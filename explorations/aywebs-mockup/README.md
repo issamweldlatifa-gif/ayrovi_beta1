@@ -244,3 +244,37 @@ utilise marge 12 et gouttière 8, d'où 116,7 pt au lieu de 116,2 — un demi-po
 ```bash
 python3 explorations/aywebs-mockup/comparer.py   # → img/comparatif-tailles.png
 ```
+
+## Section catégories — la référence du 27/10/2026 (`render_officiel.py`)
+
+Le client a envoyé sa capture d'écran avec six photos : la section devait être
+reproduite, tuile par tuile, et **sans point d'entrée** (« خلها مغير مدخل لين
+نظمولها مدخل »).
+
+Mesures prises sur la capture (720 × 606 px, ramenées à 390 pt) :
+
+| Élément | Capture | Code |
+| --- | --- | --- |
+| Tuile | 324 × 119 px → ratio **2,72** | `MEDIA_RATIO.categoryCard = 324/119` |
+| Gouttière | 15 px → 8,1 pt | 12 pt (grille existante) |
+| Marge | 30 px → 16,3 pt | `screenPadding` |
+| Titre de section | 561 px de long → **28 pt** bold | `variant="title"` (28) |
+| Libellé sous la tuile | 254 px → **16 pt** régulier | `variant="body"` (16), 1 ligne si ça tient |
+
+Trois décisions qui découlent de la référence :
+
+1. **Pas de chevron** : `SectionTitle.onPress` est optionnel ; sans handler, le
+   titre est un `View` (pas un bouton), donc rien ne promet un écran absent.
+2. **Pas de réserve** : la tuile catégorie est une **photo**, elle remplit la
+   plaque bord à bord. Les 24 pt de réserve restent réservés aux **logos** de
+   boutiques (`storeMedia`), sinon un mot-symbole large est rogné.
+3. **Libellé sous la tuile, en 16 pt régulier** : c'est un libellé, pas un
+   titre — et il passe à la ligne plutôt que d'être coupé.
+
+Les six visuels de la référence sont embarqués (`assets/aywebs/cat-*.jpg`) :
+beauté, maison, sports, audio, plein air, animalerie. Sport, plein air et
+animalerie n'ont pas encore de boutiques côté serveur : la tuile n'apparaît que
+si le serveur publie la catégorie.
+
+Le mot-symbole AYWEBs est passé en `aywebs-wordmark-violet.png` (`#571EF6`) sur
+plaque **transparente** — plus de fond gris derrière le logo.

@@ -776,7 +776,7 @@ export const ar = {
   'aywebs.avail.UNKNOWN': "ما تأكّدناش",
   'aywebs.stores.title': 'Stores',
   'aywebs.home.search': 'ابحث عن متجر',
-  'aywebs.home.categories': 'استكشف حسب الفئة',
+  'aywebs.home.categories': 'استكشف الأقسام',
   'aywebs.home.searchResults': 'نتائج المتاجر',
   'aywebs.home.exploreStores': 'استكشف المتاجر',
   'aywebs.home.allStores': 'كل المتاجر',

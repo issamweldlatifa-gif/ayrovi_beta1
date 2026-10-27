@@ -232,10 +232,13 @@ def badge(draw, cx, cy, value: str, color=VIOLET):
 CATEGORY_PHOTO = {
     "electronics": "category-electronics.jpg",
     "fashion": "category-fashion.jpg",
-    "home": "category-home.jpg",
+    "home": "cat-home.jpg",            # photo réelle fournie (meubles)
     "shoes": "category-shoes.jpg",
-    "beauty": "category-beauty.jpg",
-    "kitchen": "category-audio.jpg",   # aucune photo « cuisine » fournie : visuel audio
+    "beauty": "cat-beauty.jpg",        # photo réelle fournie (beauté et parfum)
+    "kitchen": "cat-audio.jpg",        # photo réelle fournie (casques et écouteurs)
+    "sports": "cat-sports.jpg",        # fournie — catégorie pas encore au catalogue
+    "outdoor": "cat-outdoor.jpg",
+    "pets": "cat-pets.jpg",
 }
 
 
@@ -350,30 +353,35 @@ def render_home() -> Image.Image:
     icon_search(d, W / SCALE - M - 24, search_y + 24, INK, 20)
     d.line([px(M), px(search_y + 64), px(W / SCALE - M), px(search_y + 64)], fill=LINE, width=px(1))
 
-    # ── SECTION 1 · Catégories
+    # ── SECTION 1 · Catégories — la section EXACTE de la référence du
+    # 27/10/2026 : tuile paysage 324:119, photo bord à bord, libellé SOUS la
+    # tuile, deux colonnes, AUCUN chevron (pas d'écran dédié ⇒ aucune promesse).
     y = search_y + 92
-    text(d, (M, y), "Explorer par catégorie", 22, "bold", INK, anchor="ls")
-    icon_chevron(d, W / SCALE - M - 10, y - 8, INK, 22)
+    text(d, (M, y), "Explorer les catégories", 28, "bold", INK, anchor="ls")
     y += S[3] + 4
 
     card_w = (W / SCALE - 2 * M - S[3]) / 2
-    card_h = card_w
-    cats: Iterable[tuple[str, str]] = [
-        ("electronics", "High-tech"), ("fashion", "Mode"),
-        ("shoes", "Chaussures"), ("home", "Maison"),
-        ("beauty", "Beauté"), ("kitchen", "Audio"),
+    card_h = card_w / 2.72
+    cats: Iterable[tuple[str, str, str]] = [
+        ("cat-beauty.jpg", "Beauté et parfum"),
+        ("cat-home.jpg", "Meubles"),
+        ("cat-sports.jpg", "Sports et loisirs"),
+        ("cat-audio.jpg", "Casques et écouteurs"),
+        ("cat-outdoor.jpg", "Activités de plein air"),
+        ("cat-pets.jpg", "Animalerie"),
     ]
-    for index, (key, label) in enumerate(cats):
+    for index, (photo, label) in enumerate(cats):
         row, col = divmod(index, 2)
         x0 = M + col * (card_w + S[3])
-        y0 = y + row * (card_h + S[5] + 26)
-        soft_shadow(canvas, (x0, y0, x0 + card_w, y0 + card_h), R["lg"])
-        paste_cover(canvas, os.path.join(ASSETS, "aywebs", CATEGORY_PHOTO[key]),
-                    (x0, y0, x0 + card_w, y0 + card_h), R["lg"])
-        text(d, (x0, y0 + card_h + 10), label, 14, "bold", INK)
+        y0 = y + row * (card_h + 40)
+        paste_cover(canvas, os.path.join(ASSETS, "aywebs", photo),
+                    (x0, y0, x0 + card_w, y0 + card_h), R["md"])
+        text(d, (x0, y0 + card_h + 10), label, 16, "regular", INK)
+
+    y += 3 * (card_h + 40) - 8
 
     # ── séparateur + SECTION 2 · Sponsorisé
-    y_section2 = y + 3 * (card_h + S[5] + 26) + S[4]
+    y_section2 = y + S[4] + S[4]
     d.line([px(M), px(y_section2), px(W / SCALE - M), px(y_section2)], fill=LINE, width=px(1))
     y = y_section2 + S[4]
     text(d, (M, y), "Sponsorisé", 13, "regular", MUTED)
@@ -400,7 +408,7 @@ def render_home() -> Image.Image:
     y += 46 + S[6]
     d.line([px(M), px(y), px(W / SCALE - M), px(y)], fill=LINE, width=px(1))
     y += S[5]
-    text(d, (M, y), "Explorer les boutiques", 22, "bold", INK, anchor="ls")
+    text(d, (M, y), "Explorer les boutiques", 28, "bold", INK, anchor="ls")
     icon_chevron(d, W / SCALE - M - 10, y - 8, INK, 22)
     y += S[3] + 4
 
@@ -484,7 +492,7 @@ def render_boutiques() -> Image.Image:
 
     # Favoris : deux cartes, cœur plein
     y = 196
-    text(d, (M, y), "Favoris", 20, "bold", INK, anchor="ls")
+    text(d, (M, y), "Favoris", 28, "bold", INK, anchor="ls")
     y += S[3] + 4
     for index, (name, subtitle, domain) in enumerate(STORE_CATALOG[:2]):
         x0 = M + index * (card_w + S[3])
@@ -493,7 +501,7 @@ def render_boutiques() -> Image.Image:
     y += card_w * 4 / 3 + 8 + 18 + 22 + 17 + 20 + S[5]
 
     # Toutes les boutiques
-    text(d, (M, y), "Toutes les boutiques", 20, "bold", INK, anchor="ls")
+    text(d, (M, y), "Toutes les boutiques", 28, "bold", INK, anchor="ls")
     text(d, (W / SCALE - M, y - 2), "364", 13, "regular", MUTED, anchor="rs")
     y += S[3] + 4
 

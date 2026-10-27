@@ -129,10 +129,19 @@ export function AppHeader({
             style={({ pressed }) => [styles.logo, { opacity: pressed ? 0.6 : 1 }]}
           >
             {brand === 'aywebs' ? (
+              /* Mot-symbole OFFICIEL, reteinté aux couleurs de la marque et posé
+                 sur fond transparent : aucune plaque grise autour du logo.
+                 • thème clair : violet #571EF6 (la marque) ;
+                 • thème sombre : blanc — le violet sur #0A0A0A ne se lit pas. */
               <AppImage
-                localSource={require('../../../assets/aywebs/aywebs-wordmark.png')}
+                localSource={
+                  theme.mode === 'dark'
+                    ? require('../../../assets/aywebs/aywebs-wordmark-white.png')
+                    : require('../../../assets/aywebs/aywebs-wordmark-violet.png')
+                }
                 contentFit="contain"
                 decorative
+                background={null}
                 style={styles.aywebsWordmark}
               />
             ) : (

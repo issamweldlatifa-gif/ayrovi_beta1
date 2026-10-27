@@ -85,6 +85,13 @@ export const MEDIA_RATIO = {
   /** Reels verticaux : 9:16 (comme la vidéo plein écran). */
   reel: 9 / 16,
   /**
+   * Carte de CATÉGORIE : paysage 2,72:1 — la forme de la référence fournie le
+   * 27/10/2026 (tuile 324 × 119 px sur une capture de 720 px de large, soit
+   * 176 × 65 pt sur un écran de 390). La photo occupe toute la tuile, le
+   * libellé vit SOUS la tuile.
+   */
+  categoryCard: 324 / 119,
+  /**
    * Carte de boutique : 3:4, le gabarit des grandes cartes d'un annuaire
    * (référence : la grille de chèques cadeaux de Zalando, 27/10/2026).
    * Le visuel garde cette forme sur l'accueil ET sur la page Boutiques : une

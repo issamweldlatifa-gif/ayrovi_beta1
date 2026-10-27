@@ -47,14 +47,25 @@ import {
 } from '@/features/aywebs/storesCatalog';
 import type { StoresCatalogQuery } from '@/features/aywebs/StoresContent';
 
-/** Photos de catégories embarquées (art statique de l'application). */
+/**
+ * Photos de catégories embarquées (art statique de l'application).
+ *
+ * Vignettes du studio pour la mode, la chaussure et le high-tech ; **photos
+ * réelles** fournies par le client le 27/10/2026 pour beauté, maison, audio —
+ * et pour trois familles que le catalogue ne publie pas encore (sport, plein
+ * air, animalerie) : leurs visuels sont prêts, la tuile n'apparaît que si le
+ * serveur publie la catégorie correspondante.
+ */
 const CATEGORY_ART = {
   electronics: require('../../../assets/aywebs/category-electronics.jpg'),
   fashion: require('../../../assets/aywebs/category-fashion.jpg'),
-  beauty: require('../../../assets/aywebs/category-beauty.jpg'),
-  audio: require('../../../assets/aywebs/category-audio.jpg'),
+  beauty: require('../../../assets/aywebs/cat-beauty.jpg'),
+  audio: require('../../../assets/aywebs/cat-audio.jpg'),
   shoes: require('../../../assets/aywebs/category-shoes.jpg'),
-  home: require('../../../assets/aywebs/category-home.jpg'),
+  home: require('../../../assets/aywebs/cat-home.jpg'),
+  sports: require('../../../assets/aywebs/cat-sports.jpg'),
+  outdoor: require('../../../assets/aywebs/cat-outdoor.jpg'),
+  pets: require('../../../assets/aywebs/cat-pets.jpg'),
 } as const;
 
 /** Visuel éditorial du bloc « Sponsorisé » (art statique, sans marque tierce). */
@@ -69,13 +80,18 @@ function categoryArt(category: AyWebsCategory): { source?: number; icon: IconNam
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase();
+  /* L'ordre compte : la première famille reconnue gagne. « Sports et loisirs »
+     n'est pas « chaussures », et « Animalerie » ne tombe dans aucune autre. */
   const matches: Array<[CategoryArtKey, RegExp, IconName]> = [
+    ['pets', /animal|animaux|pet\b|pets|حيوان|حيوانات/, 'paw-outline'],
+    ['sports', /sport|fitness|loisir|gym|رياض|رياضة/, 'barbell-outline'],
+    ['outdoor', /outdoor|plein.?air|randonn|nature|camping|خارج|هواء/, 'trail-sign-outline'],
     ['electronics', /electr|tech|informat|الكترون|إلكترون/, 'phone-portrait-outline'],
     ['fashion', /fashion|mode|vetement|clothing|ملابس|موض/, 'shirt-outline'],
-    ['beauty', /beaut|cosmet|soin|جمال|تجميل/, 'sparkles-outline'],
-    ['audio', /audio|sound|son|headphone|صوت|سماعات/, 'headset-outline'],
+    ['beauty', /beaut|cosmet|soin|parfum|جمال|تجميل|عطر/, 'sparkles-outline'],
+    ['audio', /audio|sound|son|headphone|casque|ecouteur|صوت|سماعات/, 'headset-outline'],
     ['shoes', /shoe|chauss|footwear|حذاء|احذي|أحذي/, 'footsteps-outline'],
-    ['home', /home|maison|deco|furniture|منزل|ديكور/, 'home-outline'],
+    ['home', /home|maison|meuble|deco|furniture|منزل|ديكور|أثاث/, 'home-outline'],
   ];
   const match = matches.find(([, pattern]) => pattern.test(key));
   return match
@@ -188,16 +204,16 @@ export function AyWebsHomeContent({ catalog }: { catalog: StoresCatalogQuery }) 
       {/* ── 1. Explorer par catégorie ─────────────────────────────────────── */}
       {!searching ? (
         <View style={styles.section} testID="aywebs-home-section-categories">
+          {/* Pas de point d'entrée tant que l'écran des catégories n'existe pas. */}
           <SectionTitle
             title={t('aywebs.home.categories')}
             accessibilityLabel={t('aywebs.home.categories')}
-            onPress={openAllStores}
           />
           {catalog.isPending ? (
             <View style={styles.grid}>
               {Array.from({ length: 6 }, (_, index) => (
                 <View key={index} style={styles.tile}>
-                  <View style={[styles.tileMedia, { backgroundColor: theme.colors.shimmer, borderRadius: theme.radius.card }]} />
+                  <View style={[styles.categoryMedia, { backgroundColor: theme.colors.shimmer, borderRadius: theme.radius.md }]} />
                 </View>
               ))}
             </View>
@@ -316,13 +332,43 @@ export function AyWebsHomeContent({ catalog }: { catalog: StoresCatalogQuery }) 
   );
 }
 
-/** Titre de section : échelle `lead` (18) en gras + chevron — la forme de l'accueil. */
+/**
+ * Titre de section : échelle `title` (28) en gras — la taille mesurée sur la
+ * référence du client (titre 561 px pour une tuile de 324 px ⇒ 310 pt à
+ * l'échelle de l'application, soit exactement 28 dans Zalando Sans Bold).
+ *
+ * Le chevron n'apparaît QUE si la section mène quelque part (`onPress`).
+ * « Explorer les catégories » n'a pas encore d'écran dédié : elle s'affiche
+ * donc sans entrée, plutôt qu'avec une flèche qui ne mène nulle part — une
+ * promesse non tenue se paie plus cher qu'une entrée manquante.
+ */
 function SectionTitle({ title, accessibilityLabel, onPress }: {
   title: string;
   accessibilityLabel: string;
-  onPress: () => void;
+  /** Absent = section sans point d'entrée (titre seul). */
+  onPress?: () => void;
 }) {
   const theme = useTheme();
+  const content = (
+    <>
+      <AppText variant="title" weight="bold" style={styles.sectionTitleText}>{title}</AppText>
+      {onPress ? (
+        <Ionicons
+          name={theme.isRTL ? 'chevron-back' : 'chevron-forward'}
+          size={20}
+          color={theme.colors.ink}
+          accessibilityElementsHidden
+        />
+      ) : null}
+    </>
+  );
+  if (!onPress) {
+    return (
+      <View style={[styles.sectionTitle, { flexDirection: rowDirectionFor(theme.isRTL) }]} testID="aywebs-section-title">
+        {content}
+      </View>
+    );
+  }
   return (
     <Pressable
       accessibilityRole="button"
@@ -332,19 +378,17 @@ function SectionTitle({ title, accessibilityLabel, onPress }: {
         styles.sectionTitle,
         { flexDirection: rowDirectionFor(theme.isRTL), opacity: pressed ? 0.7 : 1 },
       ]}
+      testID="aywebs-section-title"
     >
-      <AppText variant="lead" weight="bold" style={styles.sectionTitleText}>{title}</AppText>
-      <Ionicons
-        name={theme.isRTL ? 'chevron-back' : 'chevron-forward'}
-        size={20}
-        color={theme.colors.ink}
-        accessibilityElementsHidden
-      />
+      {content}
     </Pressable>
   );
 }
 
-/** Carte de catégorie : carré, photo pleine, libellé SOUS la carte. */
+/**
+ * Carte de catégorie : PAYSAGE (ratio `categoryCard`), photo bord à bord,
+ * libellé SOUS la carte — la forme de la référence du 27/10/2026.
+ */
 function CategoryTile({ category, selected, onPress }: {
   category: AyWebsCategory;
   selected: boolean;
@@ -364,11 +408,12 @@ function CategoryTile({ category, selected, onPress }: {
       style={({ pressed }) => [styles.tile, { opacity: pressed ? 0.86 : 1 }]}
     >
       <View
+        testID={`aywebs-home-category-media-${category.id}`}
         style={[
-          styles.tileMedia,
+          styles.categoryMedia,
           {
             backgroundColor: theme.colors.shimmer,
-            borderRadius: theme.radius.card,
+            borderRadius: theme.radius.md,
             borderColor: selected ? theme.colors.accent : 'transparent',
             borderWidth: selected ? 2 : 0,
           },
@@ -386,7 +431,9 @@ function CategoryTile({ category, selected, onPress }: {
           <Ionicons name={artwork.icon} size={32} color={theme.colors.muted} accessibilityElementsHidden />
         )}
       </View>
-      <AppText variant="label" weight="bold">{label}</AppText>
+      {/* 16 pt régulier, comme la référence : un libellé, pas un titre. Pas de
+          `numberOfLines` — un nom long passe à la ligne plutôt que d'être coupé. */}
+      <AppText variant="body">{label}</AppText>
     </Pressable>
   );
 }
@@ -495,6 +542,14 @@ const styles = StyleSheet.create({
   tileMedia: {
     width: '100%',
     aspectRatio: MEDIA_RATIO.square,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  /** Carte de catégorie : paysage 2,72:1 (référence du 27/10/2026). */
+  categoryMedia: {
+    width: '100%',
+    aspectRatio: MEDIA_RATIO.categoryCard,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
