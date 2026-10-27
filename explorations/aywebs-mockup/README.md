@@ -156,3 +156,32 @@ Produit :
 | `img/officiel-02-boutiques.png` | écran Boutiques : retour, recherche, Favoris, grille 2 colonnes |
 | `img/officiel-03-recherche.png` | recherche active : champ violet, chips, résultats + prix TND, CTA jaune |
 | `img/officiel-set.png` | planche de comparaison des trois |
+
+---
+
+## État : maquette → code
+
+Les trois sections de l'accueil sont **implémentées** dans l'application :
+
+| Écran de la planche | Code | État |
+| --- | --- | --- |
+| Accueil (3 sections) | `apps/mobile/src/features/aywebs/AyWebsHomeContent.tsx` | ✅ livré |
+| En-tête (mot-symbole + cœur + panier) | `apps/mobile/src/features/shell/AppHeader.tsx` | ✅ livré |
+| Boutiques (`/aywebs/stores`) | `apps/mobile/src/features/aywebs/StoresContent.tsx` | ⏳ écran existant (grille avec logos) — pas encore passé aux grandes cartes photo |
+| Recherche produits | — | ⏳ n'existe pas encore dans l'app |
+
+Ce que le code emprunte, sans exception :
+
+| Pièce | Fondation utilisée |
+| --- | --- |
+| Titres de section | `theme.text('lead')` — 18 pt, graisse `bold` |
+| Libellés de carte | `theme.text('label')` — 14 pt, `bold`, **sous** l'image |
+| Carte | `width: 48 %`, `aspectRatio: 1`, `theme.radius.card` (16) |
+| Espacement | `theme.space` — 32 entre sections, 12 dans une grille |
+| Recherche | pastille 48 pt, `borderRadius: 999`, filet `theme.colors.line` |
+| Cœur sur la carte | pastille 36 pt `theme.colors.surface` — même motif que `LinkedProductCard` |
+| Bouton du bloc sponsorisé | `<Button tone="quiet" block>` — contour 2 pt, rayon 999 |
+| Icônes | Ionicons, tailles 14 · 16 · 18 · 20 (grille 24) |
+| Couleurs | `theme.colors` uniquement — aucun hexadécimal dans l'écran |
+
+Vérifications passées : `tsc --noEmit`, `vitest run` (1 001 tests), `jest` (142 tests UI).

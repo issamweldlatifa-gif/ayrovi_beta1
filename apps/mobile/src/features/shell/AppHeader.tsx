@@ -151,6 +151,16 @@ export function AppHeader({
               color={iconColor}
             />
           ) : null}
+          {/* AYWEBs : le cœur ouvre les favoris — l'en-tête ne porte que
+              ces deux actions avec le panier (ni cloche, ni menu). */}
+          {brand === 'aywebs' ? (
+            <HeaderIcon
+              name="heart-outline"
+              label={t('account.menu.favorites')}
+              onPress={() => go('/account/favorites')}
+              color={iconColor}
+            />
+          ) : null}
           <HeaderIcon
             name={brand === 'aywebs' ? 'cart-outline' : 'bag-outline'}
             label={t('cart.title')}

@@ -164,6 +164,7 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
       'src/features/sections/PromotionCard.tsx', // badge de réduction posé sur la vignette
       'src/features/social/ReelCard.tsx', // durée posée sur la vignette vidéo
       'src/features/shopping/LinkedProductCard.tsx', // pastille favori posée dans l'angle de la carte article
+      'src/features/aywebs/AyWebsHomeContent.tsx', // cœur posé dans l'angle de la grande carte boutique (même motif que la carte article)
       'src/features/reels/ReelShopTray.tsx', // tiroir « articles » qui sort PAR-DESSUS la vidéo du Reel + bouton posé sur le média (le Reel continue de tourner dessous)
       'src/features/social/StoryViewer.tsx', // zones de tape + pied, au-dessus du média
       'src/features/home/HeroCarousel.tsx', // couches de fond (le fond de chaque photo) et voile du titre (§5.4)

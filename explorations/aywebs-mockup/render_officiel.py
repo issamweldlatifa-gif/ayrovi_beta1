@@ -325,17 +325,17 @@ def render_home() -> Image.Image:
                 (M, y, W / SCALE - M, y + 176), R["lg"])
     y += 176 + S[3]
 
-    text(d, (M, y), "Tommy Hilfiger à New York", 26, "bold", INK)
+    text(d, (M, y), "Le dressing des fêtes,", 26, "bold", INK)
     y += 34
-    text(d, (M, y), "pour les fêtes", 26, "bold", INK)
+    text(d, (M, y), "repéré pour vous", 26, "bold", INK)
     y += 40
-    text(d, (M, y), "Quand ce séjour dont vous rêviez devient", 15, "regular", INK_2)
+    text(d, (M, y), "Une sélection mode et maison à retrouver", 15, "regular", INK_2)
     y += 22
-    text(d, (M, y), "enfin réalité.", 15, "regular", INK_2)
+    text(d, (M, y), "dans les boutiques AYWEBs.", 15, "regular", INK_2)
     y += S[4] + 8
 
     rounded(d, (M, y, W / SCALE - M, y + 46), R["full"], fill=SURFACE, outline=INK, width=1.6)
-    text(d, (W / (2 * SCALE), y + 23), "Voir la collection", 15, "bold", INK, anchor="mm")
+    text(d, (W / (2 * SCALE), y + 23), "Voir la sélection", 15, "bold", INK, anchor="mm")
 
     # ── SECTION 3 · Boutiques
     y += 46 + S[6]

@@ -1,8 +1,9 @@
-// Onglet AYWEBs : il ouvre la page Stores seule (ni collage de lien, ni carte panier).
-import { render, screen, waitFor } from '@testing-library/react-native';
+// Onglet AYWEBs : trois sections, dans l'ordre — catégories, sponsorisé, boutiques.
+import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StyleSheet, View } from 'react-native';
+import { router } from 'expo-router';
 
 import type { AyWebsCategory, AyWebsStore } from '@/api/aywebs';
 import AyWebsScreen from '../../app/(tabs)/aywebs';
@@ -79,21 +80,58 @@ function renderTab() {
   );
 }
 
-describe('onglet AYWEBs — accueil', () => {
-  it('affiche la recherche, les catégories, la reprise et les magasins sans footer promotionnel', async () => {
+describe('onglet AYWEBs — accueil en trois sections', () => {
+  afterEach(() => { jest.clearAllMocks(); });
+
+  it('affiche les catégories, le bloc sponsorisé et les boutiques — sans reprise ni footer promotionnel', async () => {
     renderTab();
     await waitFor(() => expect(screen.getByTestId('aywebs-home-store-card-store-0')).toBeTruthy(), { timeout: 5000 });
+
     expect(screen.getByTestId('aywebs-home-content')).toBeTruthy();
     expect(screen.getByTestId('aywebs-home-search')).toBeTruthy();
+
+    // 1 — catégories
+    expect(screen.getByTestId('aywebs-home-section-categories')).toBeTruthy();
     expect(screen.getByTestId('aywebs-home-category-marketplace')).toBeTruthy();
-    expect(screen.getByTestId('aywebs-home-resume')).toBeTruthy();
-    const storeCard = screen.getByTestId('aywebs-home-store-card-store-0');
-    expect(storeCard).toBeTruthy();
-    expect(StyleSheet.flatten(storeCard.props.style).width).toBeLessThanOrEqual(280);
-    expect(StyleSheet.flatten(screen.getByTestId('aywebs-home-store-media-store-0').props.style).flex).toBe(1);
+
+    // 2 — sponsorisé : visuel, titre et bouton contour
+    expect(screen.getByTestId('aywebs-home-section-sponsor')).toBeTruthy();
+    expect(screen.getByTestId('aywebs-home-sponsor-art')).toBeTruthy();
+    expect(screen.getByTestId('aywebs-home-sponsor-cta')).toBeTruthy();
+
+    // 3 — boutiques : quatre cartes + l'entrée vers la liste complète
+    expect(screen.getByTestId('aywebs-home-section-stores')).toBeTruthy();
+    expect(screen.getByTestId('aywebs-home-all-stores')).toBeTruthy();
+    expect(screen.getByText('4')).toBeTruthy();
+
+    // Les anciennes pièces ont quitté la page : trois sections, rien d'autre.
+    expect(screen.queryByTestId('aywebs-home-resume')).toBeNull();
     expect(screen.queryByTestId('aywebs-home-promo')).toBeNull();
     expect(screen.queryByTestId('aywebs-analyze')).toBeNull();
     expect(screen.queryByTestId('aywebs-resolve')).toBeNull();
+  });
+
+  it('les cartes sont grandes et carrées, en deux colonnes', async () => {
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId('aywebs-home-store-card-store-0')).toBeTruthy(), { timeout: 5000 });
+
+    const card = screen.getByTestId('aywebs-home-store-card-store-0');
+    expect(StyleSheet.flatten(card.props.style).width).toBe('48%');
+
+    const media = screen.getByTestId('aywebs-home-store-media-store-0');
+    const mediaStyle = StyleSheet.flatten(media.props.style);
+    expect(mediaStyle.aspectRatio).toBe(1);
+    expect(mediaStyle.width).toBe('100%');
+
+    const category = screen.getByTestId('aywebs-home-category-marketplace');
+    expect(StyleSheet.flatten(category.props.style).width).toBe('48%');
+  });
+
+  it('« Toutes les boutiques » mène à la liste complète', async () => {
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId('aywebs-home-all-stores')).toBeTruthy(), { timeout: 5000 });
+    fireEvent.press(screen.getByTestId('aywebs-home-all-stores'));
+    expect(router.push).toHaveBeenCalledWith('/aywebs/stores');
   });
 
   it('does not add a separate cart card to the home body', async () => {

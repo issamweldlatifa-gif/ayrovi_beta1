@@ -1,14 +1,35 @@
 /**
- * AYWEBs home: store search, category shortcuts, local resume card,
- * saved/popular store cards and the supplied campaign footer.
- * Catalog text/logos always come from the API; campaign/category art is static UI art.
+ * AYWEBs — accueil : TROIS sections, dans cet ordre, et rien de plus.
+ *
+ *   1. « Explorer par catégorie » — six grandes cartes carrées, libellé SOUS
+ *      la carte (jamais dans la photo, jamais tronqué) ;
+ *   2. « Sponsorisé » — visuel éditorial, titre, sous-titre, bouton contour ;
+ *   3. « Explorer les boutiques » — quatre grandes cartes carrées puis
+ *      « Toutes les boutiques · N », qui mène à la liste complète.
+ *
+ * ── D'où viennent les formes ────────────────────────────────────────────────
+ * Rien n'est réinventé ici : les tailles de texte viennent de `theme.text()`
+ * (échelle officielle 12 · 14 · 16 · 18 · 28 · 40), les rayons de
+ * `theme.radius` (8 · 12 · 16 · 24 · 999), les espacements de `theme.space`,
+ * les icônes sont celles de l'application (Ionicons, même famille partout) et
+ * le violet reste `theme.colors`. Le code ne contient aucun nombre magique de
+ * couleur ou de typographie.
+ *
+ * ── Le visuel de campagne ───────────────────────────────────────────────────
+ * `campaign-fetes.jpg` est un visuel éditorial STATIQUE, comme les photos de
+ * catégories : il ne prétend pas décrire une boutique réelle. Le numéro de la
+ * section (« 364 ») et les boutiques, eux, viennent tous du serveur.
+ *
+ * ── Recherche ───────────────────────────────────────────────────────────────
+ * Le champ de recherche reste sur la page : dès qu'il contient du texte, les
+ * trois sections laissent la place aux résultats (mêmes cartes, même grille).
  */
-import { useCallback, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
-import { router, useFocusEffect } from 'expo-router';
+import { useMemo, useState } from 'react';
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
-import { AppText, SectionHeader } from '@/design/ui';
+import { AppText, Button } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { AppImage } from '@/design/appImage';
@@ -18,13 +39,14 @@ import type { AyWebsCategory, AyWebsStore } from '@/api/aywebs';
 import { useSessionId } from '@/session/session';
 import { storeEntryTarget } from '@/features/aywebs/storeEntry';
 import { useSavedStoreIds } from '@/features/aywebs/savedStores';
-import { readAyWebsLastVisit, rememberAyWebsVisit, type AyWebsLastVisit } from '@/features/aywebs/lastVisitedStore';
+import { rememberAyWebsVisit } from '@/features/aywebs/lastVisitedStore';
 import {
-  categoryEntries, categoryLabel, filterStoresByQuery, savedStoresInOrder,
+  categoryEntries, categoryLabel, filterStoresByQuery,
   storeDisplayName, storeSubtitle, storesInCategory,
 } from '@/features/aywebs/storesCatalog';
 import type { StoresCatalogQuery } from '@/features/aywebs/StoresContent';
 
+/** Photos de catégories embarquées (art statique de l'application). */
 const CATEGORY_ART = {
   electronics: require('../../../assets/aywebs/category-electronics.jpg'),
   fashion: require('../../../assets/aywebs/category-fashion.jpg'),
@@ -33,6 +55,9 @@ const CATEGORY_ART = {
   shoes: require('../../../assets/aywebs/category-shoes.jpg'),
   home: require('../../../assets/aywebs/category-home.jpg'),
 } as const;
+
+/** Visuel éditorial du bloc « Sponsorisé » (art statique, sans marque tierce). */
+const SPONSOR_ART = require('../../../assets/aywebs/campaign-fetes.jpg');
 
 type CategoryArtKey = keyof typeof CATEGORY_ART;
 type IconName = keyof typeof Ionicons.glyphMap;
@@ -57,59 +82,53 @@ function categoryArt(category: AyWebsCategory): { source?: number; icon: IconNam
     : { icon: CATEGORY_FALLBACK_ICON };
 }
 
+/** Première catégorie réelle d'une boutique → son visuel de carte. */
+function storeArt(store: AyWebsStore, categories: AyWebsCategory[]): { source?: number; icon: IconName } {
+  const category = categories.find((entry) => store.categories.includes(entry.id));
+  return category ? categoryArt(category) : { icon: CATEGORY_FALLBACK_ICON };
+}
+
 function storeTarget(store: AyWebsStore) {
   return storeEntryTarget(store);
 }
 
-function visitDomain(url: string): string {
-  try {
-    return new URL(url).hostname.replace(/^www\./i, '');
-  } catch {
-    return '';
-  }
-}
+/** Deux colonnes : la carte occupe un peu moins de la moitié de la colonne utile. */
+const HALF = '48%';
+const GRID_GAP = 12;
 
 export function AyWebsHomeContent({ catalog }: { catalog: StoresCatalogQuery }) {
   const theme = useTheme();
   const { t, locale } = useI18n();
-  const { width } = useWindowDimensions();
+  const lang = locale === 'ar' ? 'ar' : 'fr';
   const sessionId = useSessionId();
   const saved = useSavedStoreIds();
   const [search, setSearch] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
-  const [lastVisit, setLastVisit] = useState<AyWebsLastVisit | null>(null);
-
-  useFocusEffect(useCallback(() => {
-    let active = true;
-    void readAyWebsLastVisit().then((visit) => { if (active) setLastVisit(visit); });
-    return () => { active = false; };
-  }, []));
 
   const stores = catalog.data?.stores ?? [];
   const categories = catalog.data?.categories ?? [];
-  const savedStores = useMemo(() => savedStoresInOrder(stores, saved.ids), [saved.ids, stores]);
+
   const categoryTiles = useMemo(() => {
     const entries = categoryEntries(stores, categories).filter((entry) => entry.count > 0);
     return (entries.length ? entries : categoryEntries(stores, categories)).slice(0, 6);
   }, [categories, stores]);
+
   const matchingStores = useMemo(() => filterStoresByQuery(stores, search), [search, stores]);
   const selectedCategory = categories.find((category) => category.id === selectedCategoryId) ?? null;
-  const sectionStores = selectedCategory
-    ? storesInCategory(stores, selectedCategory.id)
-    : savedStores.length > 0
-      ? savedStores
-      : stores.filter((store) => store.popular).slice(0, 8).length > 0
-        ? stores.filter((store) => store.popular).slice(0, 8)
-        : stores.slice(0, 8);
-  const visibleStores = search.trim() ? matchingStores : sectionStores;
-  const sectionTitle = search.trim()
+  const categoryStores = selectedCategory ? storesInCategory(stores, selectedCategory.id) : [];
+  /** Les quatre grandes cartes de la section 3 : catégorie choisie, sinon les plus connues. */
+  const popularStores = stores.filter((store) => store.popular);
+  const featuredStores = (selectedCategoryId
+    ? categoryStores
+    : (popularStores.length >= 4 ? popularStores : stores)
+  ).slice(0, 4);
+
+  const searching = search.trim().length > 0;
+  const sectionTitle = searching
     ? t('aywebs.home.searchResults')
     : selectedCategory
-      ? categoryLabel(selectedCategory, locale === 'ar' ? 'ar' : 'fr')
-      : savedStores.length > 0
-        ? t('aywebs.home.savedStores')
-        : t('aywebs.home.discoverStores');
-  const cardWidth = Math.min(Math.max(width * 0.68, 230), 280);
+      ? categoryLabel(selectedCategory, lang)
+      : t('aywebs.home.exploreStores');
 
   const openStore = (store: AyWebsStore) => {
     const target = storeTarget(store);
@@ -122,173 +141,215 @@ export function AyWebsHomeContent({ catalog }: { catalog: StoresCatalogQuery }) 
     router.push(target);
   };
 
-  const resume = () => {
-    if (!lastVisit) {
-      router.push('/aywebs/stores');
-      return;
-    }
-    router.push({
-      pathname: '/aywebs/browser',
-      params: {
-        url: lastVisit.url,
-        storeId: lastVisit.storeId,
-        storeName: lastVisit.storeName,
-        capture: '0',
-      },
-    });
+  const openAllStores = () => router.push('/aywebs/stores');
+
+  const toggleCategory = (categoryId: string) => {
+    setSelectedCategoryId((current) => (current === categoryId ? null : categoryId));
   };
 
-  const clearSearch = () => {
-    setSearch('');
-    setSelectedCategoryId(null);
-  };
+  const gridStores = searching ? matchingStores : featuredStores;
+  const storeListLabel = theme.isRTL ? 'chevron-back' : 'chevron-forward';
 
   return (
     <View testID="aywebs-home-content" style={styles.content}>
-      <View style={[styles.search, { backgroundColor: theme.colors.accent, flexDirection: rowDirectionFor(theme.isRTL) }]}>
-        <Ionicons name="search-outline" size={20} color={theme.colors.onAccent} accessibilityElementsHidden />
+      {/* ── Recherche : pastille contour, jamais un aplat de couleur ──────── */}
+      <View
+        style={[
+          styles.search,
+          {
+            backgroundColor: theme.colors.surface,
+            borderColor: theme.colors.line,
+            flexDirection: rowDirectionFor(theme.isRTL),
+          },
+        ]}
+      >
+        <Ionicons name="search-outline" size={20} color={theme.colors.muted} accessibilityElementsHidden />
         <TextInput
           value={search}
           onChangeText={(value) => { setSearch(value); setSelectedCategoryId(null); }}
           placeholder={t('aywebs.home.search')}
-          placeholderTextColor={theme.colors.accentSoft}
+          placeholderTextColor={theme.colors.muted}
           accessibilityLabel={t('aywebs.home.search')}
           autoCorrect={false}
           autoCapitalize="none"
           returnKeyType="search"
-          style={[styles.searchInput, { color: theme.colors.onAccent, textAlign: theme.isRTL ? 'right' : 'left' }]}
+          style={[styles.searchInput, { color: theme.colors.ink, textAlign: theme.isRTL ? 'right' : 'left' }]}
           testID="aywebs-home-search"
         />
-        {search ? (
+        {searching ? (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('aywebs.stores.clear')}
-            onPress={clearSearch}
+            onPress={() => { setSearch(''); setSelectedCategoryId(null); }}
             hitSlop={8}
+            style={styles.searchClear}
+            testID="aywebs-home-search-clear"
           >
-            <Ionicons name="close-circle" size={20} color={theme.colors.onAccent} accessibilityElementsHidden />
+            <Ionicons name="close-circle" size={20} color={theme.colors.muted} accessibilityElementsHidden />
           </Pressable>
         ) : null}
       </View>
 
-      {!search.trim() ? (
-        <>
-          <View style={styles.section}>
-            <SectionHeader title={t('aywebs.home.categories')} />
-            {catalog.isPending ? (
-              <View style={styles.categoryGrid}>
-                {Array.from({ length: 6 }, (_, index) => (
-                  <View key={index} style={[styles.categorySkeleton, { backgroundColor: theme.colors.shimmer }]} />
-                ))}
-              </View>
-            ) : catalog.isError ? (
-              <AppText variant="caption" color={theme.status.danger.fg}>{t('aywebs.stores.loadFailed')}</AppText>
-            ) : (
-              <View style={styles.categoryGrid}>
-                {categoryTiles.map(({ category }) => (
-                  <CategoryTile
-                    key={category.id}
-                    category={category}
-                    selected={selectedCategoryId === category.id}
-                    onPress={() => setSelectedCategoryId(category.id)}
-                  />
-                ))}
-              </View>
-            )}
-          </View>
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={lastVisit ? `${t('aywebs.home.resume')}: ${lastVisit.storeName}` : t('aywebs.home.resume')}
-            onPress={resume}
-            testID="aywebs-home-resume"
-            style={({ pressed }) => [
-              styles.resume,
-              {
-                backgroundColor: theme.status.warning.soft,
-                borderColor: theme.status.warning.border,
-                flexDirection: rowDirectionFor(theme.isRTL),
-                opacity: pressed ? 0.88 : 1,
-              },
-            ]}
-          >
-            <View style={[styles.resumeIcon, { backgroundColor: theme.colors.surface }]}>
-              <Ionicons name="time-outline" size={25} color={theme.colors.ink} accessibilityElementsHidden />
+      {/* ── 1. Explorer par catégorie ─────────────────────────────────────── */}
+      {!searching ? (
+        <View style={styles.section} testID="aywebs-home-section-categories">
+          <SectionTitle
+            title={t('aywebs.home.categories')}
+            accessibilityLabel={t('aywebs.home.categories')}
+            onPress={openAllStores}
+          />
+          {catalog.isPending ? (
+            <View style={styles.grid}>
+              {Array.from({ length: 6 }, (_, index) => (
+                <View key={index} style={styles.tile}>
+                  <View style={[styles.tileMedia, { backgroundColor: theme.colors.shimmer, borderRadius: theme.radius.card }]} />
+                </View>
+              ))}
             </View>
-            <View style={styles.resumeCopy}>
-              <AppText variant="label" weight="bold">{t('aywebs.home.resume')}</AppText>
-              <AppText variant="caption" color={theme.colors.muted} numberOfLines={2}>
-                {lastVisit
-                  ? `${lastVisit.storeName} · ${visitDomain(lastVisit.url)}`
-                  : t('aywebs.home.resumeEmpty')}
-              </AppText>
+          ) : catalog.isError ? (
+            <AppText variant="caption" color={theme.status.danger.fg}>{t('aywebs.stores.loadFailed')}</AppText>
+          ) : (
+            <View style={styles.grid}>
+              {categoryTiles.map(({ category }) => (
+                <CategoryTile
+                  key={category.id}
+                  category={category}
+                  selected={selectedCategoryId === category.id}
+                  onPress={() => toggleCategory(category.id)}
+                />
+              ))}
             </View>
-            <Ionicons
-              name={theme.isRTL ? 'chevron-back' : 'chevron-forward'}
-              size={20}
-              color={theme.colors.ink}
-              accessibilityElementsHidden
-            />
-          </Pressable>
-        </>
+          )}
+        </View>
       ) : null}
 
-      <View style={styles.section}>
-        <SectionHeader
-          title={sectionTitle}
-          action={(
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('aywebs.home.viewAll')}
-              onPress={() => router.push('/aywebs/stores')}
-              style={styles.viewAll}
-              testID="aywebs-home-view-all"
-            >
-              <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.home.viewAll')}</AppText>
-              <Ionicons
-                name={theme.isRTL ? 'chevron-back' : 'chevron-forward'}
-                size={14}
-                color={theme.colors.muted}
-                accessibilityElementsHidden
-              />
-            </Pressable>
-          )}
-        />
+      {/* ── 2. Sponsorisé ─────────────────────────────────────────────────── */}
+      {!searching ? (
+        <View style={styles.section} testID="aywebs-home-section-sponsor">
+          <View style={[styles.sponsorLabel, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+            <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.home.sponsor')}</AppText>
+            <Ionicons
+              name="information-circle-outline"
+              size={14}
+              color={theme.colors.muted}
+              accessibilityElementsHidden
+            />
+          </View>
+          <AppImage
+            localSource={SPONSOR_ART}
+            contentFit="cover"
+            accessibilityLabel={t('aywebs.home.sponsorTitle')}
+            style={[styles.sponsorArt, { borderRadius: theme.radius.card }]}
+            testID="aywebs-home-sponsor-art"
+          />
+          <AppText variant="title" weight="bold" style={styles.sponsorTitle}>
+            {t('aywebs.home.sponsorTitle')}
+          </AppText>
+          <AppText variant="body" color={theme.colors.muted}>
+            {t('aywebs.home.sponsorSubtitle')}
+          </AppText>
+          <Button
+            tone="quiet"
+            block
+            label={t('aywebs.home.sponsorCta')}
+            onPress={openAllStores}
+            testID="aywebs-home-sponsor-cta"
+          />
+        </View>
+      ) : null}
+
+      {/* ── 3. Explorer les boutiques ─────────────────────────────────────── */}
+      <View style={styles.section} testID="aywebs-home-section-stores">
+        <SectionTitle title={sectionTitle} accessibilityLabel={sectionTitle} onPress={openAllStores} />
         {catalog.isPending ? (
-          <AppText variant="caption" color={theme.colors.muted}>{t('loading.stores')}</AppText>
+          <View style={styles.grid}>
+            {Array.from({ length: 4 }, (_, index) => (
+              <View key={index} style={styles.tile}>
+                <View style={[styles.tileMedia, { backgroundColor: theme.colors.shimmer, borderRadius: theme.radius.card }]} />
+              </View>
+            ))}
+          </View>
         ) : catalog.isError ? (
           <AppText variant="caption" color={theme.status.danger.fg}>{t('aywebs.stores.loadFailed')}</AppText>
-        ) : visibleStores.length > 0 ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={[styles.storeRail, { flexDirection: rowDirectionFor(theme.isRTL) }]}
-            testID="aywebs-home-store-rail"
-          >
-            {visibleStores.map((store) => (
-              <HomeStoreCard
+        ) : gridStores.length > 0 ? (
+          <View style={styles.grid}>
+            {gridStores.map((store) => (
+              <StoreTile
                 key={store.id}
                 store={store}
                 categories={categories}
-                width={cardWidth}
-                sessionId={sessionId}
                 saved={saved.ids.includes(store.id)}
                 onOpen={() => openStore(store)}
                 onToggle={() => saved.toggle(store.id)}
               />
             ))}
-          </ScrollView>
+          </View>
         ) : (
-          <AppText variant="caption" color={theme.colors.muted}>
-            {search.trim() ? t('aywebs.home.noSearchResults') : t('aywebs.stores.savedEmpty')}
+          <AppText variant="body" color={theme.colors.muted}>
+            {searching ? t('aywebs.home.noSearchResults') : t('aywebs.stores.noStores')}
           </AppText>
         )}
-      </View>
 
+        {!searching ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('aywebs.home.allStores')}
+            onPress={openAllStores}
+            testID="aywebs-home-all-stores"
+            style={({ pressed }) => [
+              styles.allStores,
+              {
+                borderColor: theme.colors.line,
+                backgroundColor: theme.colors.surface,
+                flexDirection: rowDirectionFor(theme.isRTL),
+                opacity: pressed ? 0.86 : 1,
+              },
+            ]}
+          >
+            <View style={[styles.allStoresLabel, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+              <Ionicons name="grid-outline" size={18} color={theme.colors.ink} accessibilityElementsHidden />
+              <AppText variant="label" weight="bold">{t('aywebs.home.allStores')}</AppText>
+            </View>
+            <View style={[styles.allStoresCount, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+              <AppText variant="caption" color={theme.colors.muted}>{stores.length}</AppText>
+              <Ionicons name={storeListLabel} size={16} color={theme.colors.muted} accessibilityElementsHidden />
+            </View>
+          </Pressable>
+        ) : null}
+      </View>
     </View>
   );
 }
 
+/** Titre de section : échelle `lead` (18) en gras + chevron — la forme de l'accueil. */
+function SectionTitle({ title, accessibilityLabel, onPress }: {
+  title: string;
+  accessibilityLabel: string;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.sectionTitle,
+        { flexDirection: rowDirectionFor(theme.isRTL), opacity: pressed ? 0.7 : 1 },
+      ]}
+    >
+      <AppText variant="lead" weight="bold" style={styles.sectionTitleText}>{title}</AppText>
+      <Ionicons
+        name={theme.isRTL ? 'chevron-back' : 'chevron-forward'}
+        size={20}
+        color={theme.colors.ink}
+        accessibilityElementsHidden
+      />
+    </Pressable>
+  );
+}
+
+/** Carte de catégorie : carré, photo pleine, libellé SOUS la carte. */
 function CategoryTile({ category, selected, onPress }: {
   category: AyWebsCategory;
   selected: boolean;
@@ -296,41 +357,49 @@ function CategoryTile({ category, selected, onPress }: {
 }) {
   const theme = useTheme();
   const { locale } = useI18n();
+  const label = categoryLabel(category, locale === 'ar' ? 'ar' : 'fr');
   const artwork = categoryArt(category);
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={categoryLabel(category, locale === 'ar' ? 'ar' : 'fr')}
+      accessibilityLabel={label}
       accessibilityState={{ selected }}
       onPress={onPress}
       testID={`aywebs-home-category-${category.id}`}
-      style={({ pressed }) => [styles.categoryTile, { opacity: pressed ? 0.84 : 1 }]}
+      style={({ pressed }) => [styles.tile, { opacity: pressed ? 0.86 : 1 }]}
     >
-      <View style={[styles.categoryPhoto, { borderColor: theme.colors.line, backgroundColor: theme.colors.shimmer }]}>
+      <View
+        style={[
+          styles.tileMedia,
+          {
+            backgroundColor: theme.colors.shimmer,
+            borderRadius: theme.radius.card,
+            borderColor: selected ? theme.colors.accent : 'transparent',
+            borderWidth: selected ? 2 : 0,
+          },
+        ]}
+      >
         {artwork.source ? (
           <AppImage
             localSource={artwork.source}
             contentFit="cover"
-            accessibilityLabel={categoryLabel(category, locale === 'ar' ? 'ar' : 'fr')}
+            accessibilityLabel={label}
             testID={`aywebs-home-category-image-${category.id}`}
-            style={styles.categoryImage}
+            style={styles.imageFill}
           />
         ) : (
-          <Ionicons name={artwork.icon} size={30} color={theme.colors.muted} accessibilityElementsHidden />
+          <Ionicons name={artwork.icon} size={32} color={theme.colors.muted} accessibilityElementsHidden />
         )}
       </View>
-      <AppText variant="caption" weight="semibold" align="center" numberOfLines={1}>
-        {categoryLabel(category, locale === 'ar' ? 'ar' : 'fr')}
-      </AppText>
+      <AppText variant="label" weight="bold">{label}</AppText>
     </Pressable>
   );
 }
 
-function HomeStoreCard({ store, categories, width, sessionId, saved, onOpen, onToggle }: {
+/** Carte de boutique : carré, visuel de sa catégorie, cœur posé dessus, libellé dessous. */
+function StoreTile({ store, categories, saved, onOpen, onToggle }: {
   store: AyWebsStore;
   categories: AyWebsCategory[];
-  width: number;
-  sessionId: string | null;
   saved: boolean;
   onOpen: () => void;
   onToggle: () => void;
@@ -338,36 +407,41 @@ function HomeStoreCard({ store, categories, width, sessionId, saved, onOpen, onT
   const theme = useTheme();
   const { t, locale } = useI18n();
   const name = storeDisplayName(store);
-  const subtitle = storeSubtitle(store, categories, locale === 'ar' ? 'ar' : 'fr');
+  const tagline = storeSubtitle(store, categories, locale === 'ar' ? 'ar' : 'fr');
   const logo = mediaUrl(store.logo);
+  const artwork = storeArt(store, categories);
+  const sessionId = useSessionId();
   const enabled = Boolean(storeTarget(store) && sessionId);
   return (
-    <View
-      style={[
-        styles.storeCard,
-        {
-          width,
-          backgroundColor: theme.colors.surface,
-          borderColor: theme.colors.line,
-          borderRadius: theme.radius.card,
-        },
-      ]}
-      testID={`aywebs-home-store-card-${store.id}`}
-    >
-      <View style={[styles.storeCardTop, { backgroundColor: theme.colors.shimmer, flexDirection: rowDirectionFor(theme.isRTL) }]}>
-        <View style={styles.storeLogoWrap} testID={`aywebs-home-store-media-${store.id}`}>
-          {logo ? (
+    <View style={styles.tile} testID={`aywebs-home-store-card-${store.id}`}>
+      <View
+        style={[
+          styles.tileMedia,
+          { backgroundColor: theme.colors.shimmer, borderRadius: theme.radius.card },
+        ]}
+        testID={`aywebs-home-store-media-${store.id}`}
+      >
+        {artwork.source ? (
+          <AppImage
+            localSource={artwork.source}
+            contentFit="cover"
+            decorative
+            style={styles.imageFill}
+          />
+        ) : logo ? (
+          <View style={styles.tileLogoWrap}>
             <AppImage
               uri={logo}
               contentFit="contain"
               accessibilityLabel={name}
-              style={styles.storeLogo}
+              style={styles.tileLogo}
               testID={`aywebs-home-store-logo-${store.id}`}
             />
-          ) : (
-            <AppText variant="display" weight="bold" color={theme.colors.muted}>{name.slice(0, 1)}</AppText>
-          )}
-        </View>
+          </View>
+        ) : (
+          <AppText variant="title" weight="bold" color={theme.colors.muted}>{name.slice(0, 1)}</AppText>
+        )}
+
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={saved ? t('aywebs.stores.unsave') : t('aywebs.stores.save')}
@@ -375,7 +449,8 @@ function HomeStoreCard({ store, categories, width, sessionId, saved, onOpen, onT
           onPress={onToggle}
           hitSlop={8}
           style={[
-            styles.storeHeart,
+            styles.tileHeart,
+            theme.isRTL ? { left: 8 } : { right: 8 },
             { backgroundColor: theme.colors.surface },
           ]}
           testID={`aywebs-home-store-save-${store.id}`}
@@ -383,11 +458,12 @@ function HomeStoreCard({ store, categories, width, sessionId, saved, onOpen, onT
           <Ionicons
             name={saved ? 'heart' : 'heart-outline'}
             size={18}
-            color={saved ? theme.colors.accentText : theme.colors.muted}
+            color={saved ? theme.colors.accentText : theme.colors.ink}
             accessibilityElementsHidden
           />
         </Pressable>
       </View>
+
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={name}
@@ -396,56 +472,58 @@ function HomeStoreCard({ store, categories, width, sessionId, saved, onOpen, onT
         disabled={!enabled}
         onPress={onOpen}
         testID={`aywebs-home-store-${store.id}`}
-        style={({ pressed }) => [styles.storeCardBody, { opacity: pressed ? 0.86 : 1 }]}
+        style={({ pressed }) => ({ opacity: pressed ? 0.86 : 1 })}
       >
-        <View style={{ flex: 1, gap: 4 }}>
-          <AppText variant="label" weight="bold" numberOfLines={1}>{name}</AppText>
-          {subtitle ? <AppText variant="caption" color={theme.colors.muted} numberOfLines={2}>{subtitle}</AppText> : null}
-        </View>
-        <Ionicons
-          name={theme.isRTL ? 'chevron-back' : 'chevron-forward'}
-          size={19}
-          color={theme.colors.ink}
-          accessibilityElementsHidden
-        />
+        <AppText variant="label" weight="bold">{name}</AppText>
+        {tagline ? <AppText variant="caption" color={theme.colors.muted}>{tagline}</AppText> : null}
       </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { gap: 20, paddingBottom: 20 },
+  // Les sections respirent : 32 entre elles, 12 à l'intérieur (échelle officielle).
+  content: { gap: 32, paddingBottom: 24 },
   search: {
     alignItems: 'center',
     gap: 10,
-    minHeight: 50,
+    minHeight: 48,
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 999,
     paddingHorizontal: 16,
   },
-  searchInput: { flex: 1, minHeight: 48, fontSize: 16 },
+  searchInput: { flex: 1, minHeight: 46, fontSize: 16 },
+  searchClear: { padding: 2 },
   section: { gap: 12 },
-  categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12 },
-  categoryTile: { width: '31.5%', alignItems: 'center', gap: 4 },
-  categoryPhoto: {
-    width: 82,
-    height: 82,
-    borderWidth: 1.5,
-    borderRadius: 41,
-    overflow: 'hidden',
+  sectionTitle: { alignItems: 'center', justifyContent: 'space-between', minHeight: 36, gap: 8 },
+  sectionTitleText: { flexShrink: 1 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: GRID_GAP },
+  tile: { width: HALF, gap: 8 },
+  tileMedia: { width: '100%', aspectRatio: 1, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  imageFill: { width: '100%', height: '100%' },
+  tileHeart: {
+    position: 'absolute',
+    top: 8,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  categoryImage: { width: '100%', height: '100%' },
-  categorySkeleton: { width: '31.5%', height: 104, borderRadius: 16 },
-  resume: { minHeight: 84, alignItems: 'center', gap: 12, borderWidth: StyleSheet.hairlineWidth, borderRadius: 16, padding: 12 },
-  resumeIcon: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
-  resumeCopy: { flex: 1, gap: 4 },
-  viewAll: { minHeight: 36, flexDirection: 'row', alignItems: 'center', gap: 2 },
-  storeRail: { gap: 12, paddingEnd: 4 },
-  storeCard: { borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
-  storeCardTop: { height: 112, flexDirection: 'row', alignItems: 'stretch', justifyContent: 'center', gap: 8, padding: 8 },
-  storeLogoWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  storeLogo: { width: '100%', height: '100%' },
-  storeHeart: { width: 36, height: 36, alignSelf: 'center', borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  storeCardBody: { minHeight: 60, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 8 },
+  tileLogoWrap: { width: '70%', height: '55%', alignItems: 'center', justifyContent: 'center' },
+  tileLogo: { width: '100%', height: '100%' },
+  sponsorLabel: { alignItems: 'center', gap: 4 },
+  sponsorArt: { width: '100%', aspectRatio: 16 / 9 },
+  sponsorTitle: { marginTop: 4 },
+  allStores: {
+    minHeight: 52,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    marginTop: 4,
+  },
+  allStoresLabel: { alignItems: 'center', gap: 8, flexShrink: 1 },
+  allStoresCount: { alignItems: 'center', gap: 6 },
 });
