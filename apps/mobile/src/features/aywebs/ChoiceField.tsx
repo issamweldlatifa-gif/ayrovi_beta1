@@ -14,6 +14,7 @@ import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
 import { COMMERCE } from '@/design/tokens.mobile';
+import { rowDirectionFor } from '@/design/layoutLogic';
 
 export interface ChoiceOption {
   /** القيمة كما نشرتها الصفحة — تُرسل للخادم كما هي. */
@@ -56,6 +57,7 @@ export function ChoiceField({
         style={[
           styles.control,
           {
+            flexDirection: rowDirectionFor(theme.isRTL),
             borderColor: open ? COMMERCE.action : theme.colors.line,
             borderRadius: theme.radius.control,
             minHeight: theme.geometry.minTarget + 8,
@@ -89,7 +91,7 @@ export function ChoiceField({
         <View
           style={[
             styles.options,
-            { borderColor: theme.colors.line, borderRadius: theme.radius.control, marginTop: 4 },
+            { borderColor: theme.colors.line, borderRadius: theme.radius.control, marginTop: 4, backgroundColor: theme.colors.surface },
           ]}
         >
           {options.map((option, index) => {
@@ -106,7 +108,11 @@ export function ChoiceField({
                 style={[
                   styles.option,
                   index > 0 ? { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.colors.line } : null,
-                  { minHeight: theme.geometry.minTarget },
+                  {
+                    minHeight: theme.geometry.minTarget,
+                    flexDirection: rowDirectionFor(theme.isRTL),
+                    backgroundColor: active ? theme.status.warning.soft : theme.colors.surface,
+                  },
                 ]}
               >
                 <AppText
@@ -125,7 +131,7 @@ export function ChoiceField({
                 {unavailable ? (
                   <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.notAvailable')}</AppText>
                 ) : active ? (
-                  <Ionicons name="checkmark" size={theme.iconSize.md} color={theme.status.warning.fg} />
+                  <Ionicons name="checkmark-circle" size={theme.iconSize.md} color={theme.status.success.fg} />
                 ) : null}
               </Pressable>
             );

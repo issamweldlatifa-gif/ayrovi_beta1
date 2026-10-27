@@ -1,6 +1,6 @@
-// AYWEBs merchant browser: fixed Add to Cart action, with cart at the top.
-// The native WebView and store-cart sheet are mocked for deterministic UI tests.
-import { fireEvent, render, screen } from '@testing-library/react-native';
+// AYWEBs merchant browser: fixed option-selection action, with a live store cart count.
+// The native WebView and server-backed sheets are mocked for deterministic UI tests.
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { View } from 'react-native';
@@ -44,6 +44,26 @@ jest.mock('@/features/aywebs/StoreSheets', () => {
   };
 });
 
+jest.mock('@/features/aywebs/AddToCartSheet', () => {
+  const React = jest.requireActual('react');
+  const { Pressable, Text } = jest.requireActual('react-native');
+  const addedCart = {
+    hasCart: true,
+    items: [{ storeId: 'amazon', quantity: 2 }, { storeId: 'amazon', quantity: 1 }],
+    groups: [],
+    totals: { units: 3, productSubtotalTnd: null, currency: 'TND', blockedItems: 0, checkoutReady: false, unlinkedUnits: 3 },
+    blockers: [],
+  };
+  return {
+    AddToCartSheet: ({ visible, onAdded }: { visible: boolean; onAdded: (item: unknown, cart: unknown) => void }) => (
+      visible ? React.createElement(Pressable, {
+        testID: 'aywebs-sheet-confirm-add',
+        onPress: () => onAdded({ id: 'added-item' }, addedCart),
+      }, React.createElement(Text, null, 'Confirm add')) : null
+    ),
+  };
+});
+
 jest.mock('@/session/session', () => ({ useSessionId: () => 'mob_1234567890123456' }));
 jest.mock('@/api/aywebs', () => {
   const actual = jest.requireActual('@/api/aywebs');
@@ -52,7 +72,30 @@ jest.mock('@/api/aywebs', () => {
     analyzeAyWebsPage: jest.fn(async () => ({
       url: 'https://www.amazon.com/', storeId: 'amazon', storeName: 'Amazon', registered: true,
       browseAllowed: true, captureAllowed: false, externalCaptureAllowed: false, isProductPage: false,
-      fallback: '',
+      captureInjection: 'on_demand', fallback: '',
+    })),
+    fetchAyWebsCart: jest.fn(async () => ({
+      hasCart: false, items: [], groups: [],
+      totals: { units: 0, productSubtotalTnd: null, currency: 'TND', blockedItems: 0, checkoutReady: false, unlinkedUnits: 0 },
+      blockers: [],
+    })),
+  };
+});
+
+jest.mock('@/features/aywebs/captureFlow', () => {
+  const actual = jest.requireActual('@/features/aywebs/captureFlow');
+  return {
+    ...actual,
+    resolveAddToCart: jest.fn(async () => ({
+      decision: { kind: 'sheet' },
+      outcome: {
+        product: {
+          storeId: 'amazon', storeName: 'Amazon', title: 'Test product',
+          price: 12, currency: 'EUR', sourceUrl: 'https://www.amazon.com/dp/test',
+        },
+        capture: null, priceRejection: null, missing: [], quoteToken: 'test-quote',
+      },
+      capture: undefined,
     })),
   };
 });
@@ -79,10 +122,25 @@ function renderBrowser() {
 describe('page boutique — actions intégrées AYWEBs', () => {
   beforeEach(() => mockBack.mockClear());
 
-  it('affiche la WebView et conserve le bouton jaune Add to Cart', () => {
+  it('affiche la WebView et le bouton jaune de sélection des options', () => {
     renderBrowser();
     expect(screen.getByTestId('webview')).toBeTruthy();
-    expect(screen.getByTestId('aywebs-store-add-to-cart')).toBeTruthy();
+    expect(screen.getByText('Choisir les options')).toBeTruthy();
+  });
+
+  it('met le compteur à jour dès l’ajout et confirme en vert', async () => {
+    renderBrowser();
+    const button = await screen.findByTestId('aywebs-store-add-to-cart');
+    await waitFor(() => expect(button.props.accessibilityState?.disabled).toBe(false));
+    fireEvent.press(button);
+
+    fireEvent.press(await screen.findByTestId('aywebs-sheet-confirm-add'));
+    await waitFor(() => {
+      const badge = screen.getByTestId('aywebs-store-header-cart-count');
+      expect(within(badge).getByText('3')).toBeTruthy();
+    });
+    expect(screen.getByTestId('aywebs-store-header-cart').props.accessibilityLabel).toBe('Panier (3)');
+    expect(screen.getByText('Article ajouté')).toBeTruthy();
   });
 
   it('retire la barre du bas et la demande de revue humaine', () => {

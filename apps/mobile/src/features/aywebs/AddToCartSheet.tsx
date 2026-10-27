@@ -24,6 +24,7 @@ import { router } from 'expo-router';
 import { AppText, Button, KeyValue } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { COMMERCE } from '@/design/tokens.mobile';
+import { rowDirectionFor } from '@/design/layoutLogic';
 import { AppImage } from '@/design/appImage';
 import { AppSheet } from '@/design/sheet/AppSheet';
 import { useI18n } from '@/i18n';
@@ -31,7 +32,7 @@ import { mediaUrl } from '@/api/client';
 import { addErrorMessage } from '@/features/aywebs/addError';
 import {
   addAyWebsCartItem, fetchAyWebsVariants, resolveAyWebsProductWithCapture,
-  type AyWebsAddBlockCode, type AyWebsCartItem, type AyWebsResolvedProduct,
+  type AyWebsAddBlockCode, type AyWebsCart, type AyWebsCartItem, type AyWebsResolvedProduct,
   type AyWebsVariantGroup, type AyWebsVariantOption, type AyWebsVariantQuote,
 } from '@/api/aywebs';
 import { newAyWebsRequestId } from '@/features/aywebs/requestId';
@@ -66,8 +67,8 @@ export interface AddToCartSheetProps {
   /** ورقة من القراءة المحلية (بلا نداء للخادم عند الفتح). */
   local?: boolean;
   onClose: () => void;
-  /** للسطر الجديد (يتستعمل في شاشة المتجر باش تحدّث الأثر). */
-  onAdded?: (item: AyWebsCartItem) => void;
+  /** السطر والسلّة المحدّثة من الخادم لمزامنة العداد والأثر البصري في الشاشة الأم. */
+  onAdded?: (item: AyWebsCartItem, cart: AyWebsCart) => void;
 }
 
 /** Devise affichée pour le montant marchand (celle de la page, jamais supposée). */
@@ -564,7 +565,7 @@ export function AddToCartSheet({
         }, { sessionId });
         if (!alive.current) return;
         setAdded({ item: fast.item, linked: fast.ayrovi?.linked === true, reason: fast.ayrovi?.reason || '' });
-        onAdded?.(fast.item);
+        onAdded?.(fast.item, fast.cart);
         return;
       }
 
@@ -693,7 +694,7 @@ export function AddToCartSheet({
         linked: outcome.ayrovi?.linked === true,
         reason: outcome.ayrovi?.reason || '',
       });
-      onAdded?.(outcome.item);
+      onAdded?.(outcome.item, outcome.cart);
     } catch (caught) {
       if (!alive.current) return;
       setError(addErrorMessage(caught, locale, t));
@@ -730,7 +731,7 @@ export function AddToCartSheet({
       presentation="bottom"
       footer={added ? undefined : (
         <View style={styles.stickyFooter}>
-          <View style={styles.stickyPrice}>
+          <View style={[styles.stickyPrice, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
             <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.quantity')}: {quantity}</AppText>
             <AppText variant="title" weight="bold">
               {quote.unitTnd != null ? (quantity > 1 ? totalLine : sourceLine) : quoting ? t('aywebs.pricePending') : t('aywebs.priceAtAdd')}
@@ -749,7 +750,7 @@ export function AddToCartSheet({
         </View>
       )}
       header={(
-        <View style={styles.header}>
+        <View style={[styles.header, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
           <View style={styles.headerSide} />
           <AppText variant="lead" weight="bold" align="center" style={styles.headerTitle} numberOfLines={1}>
             {added ? t('aywebs.added') : t('aywebs.pickTitle')}
@@ -758,7 +759,7 @@ export function AddToCartSheet({
         </View>
       )}
     >
-      <View style={[styles.productCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.line, borderRadius: theme.radius.card }]}>
+      <View style={[styles.productCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.line, borderRadius: theme.radius.card, flexDirection: rowDirectionFor(theme.isRTL) }]}>
         {imageUri ? (
           <AppImage
             uri={mediaUrl(imageUri)}
@@ -768,7 +769,9 @@ export function AddToCartSheet({
             testID="aywebs-sheet-product-image"
           />
         ) : (
-          <View style={[styles.productHero, { borderRadius: theme.radius.control, borderColor: theme.colors.line, borderWidth: 1 }]} />
+          <View style={[styles.productHero, { borderRadius: theme.radius.control, borderColor: theme.colors.line, borderWidth: 1, backgroundColor: theme.colors.disabled, alignItems: 'center', justifyContent: 'center' }]}>
+            <Ionicons name="image-outline" size={theme.iconSize.lg} color={theme.colors.muted} />
+          </View>
         )}
         <View style={styles.productText}>
           <AppText variant="body" weight="semibold" numberOfLines={3}>{title}</AppText>
@@ -802,7 +805,7 @@ export function AddToCartSheet({
       </View>
 
       {added ? (
-        <View style={[styles.successBanner, { backgroundColor: theme.status.success.soft, borderColor: theme.status.success.border }]}>
+        <View style={[styles.successBanner, { flexDirection: rowDirectionFor(theme.isRTL), backgroundColor: theme.status.success.soft, borderColor: theme.status.success.border }]}>
           <View style={[styles.successIcon, { backgroundColor: theme.status.success.fg }]}>
             <Ionicons name="checkmark" size={22} color={theme.colors.canvas} />
           </View>
@@ -829,7 +832,7 @@ export function AddToCartSheet({
           <AppText variant="caption" color={theme.colors.muted}>
             {added.linked ? t('aywebs.addedLinked') : t('aywebs.addedUnlinked')}
           </AppText>
-          <View style={styles.actions}>
+          <View style={[styles.actions, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
             <Button
               label={t('aywebs.goToCart')}
               tone="commerce"
@@ -873,7 +876,7 @@ export function AddToCartSheet({
             />
           ))}
 
-          <View style={styles.quantityRow}>
+          <View style={[styles.quantityRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
             <AppText variant="body" weight="semibold">{t('aywebs.quantity')}</AppText>
             <View style={styles.stepper}>
               <Pressable
@@ -881,7 +884,7 @@ export function AddToCartSheet({
                 accessibilityLabel={t('aywebs.quantityLess')}
                 disabled={quantity <= 1 || busy}
                 onPress={() => setQuantity((value) => Math.max(1, value - 1))}
-                style={styles.stepperButton}
+                style={[styles.stepperButton, { borderColor: theme.colors.line, backgroundColor: theme.colors.surface, borderRadius: theme.radius.control, borderWidth: 1, minWidth: theme.geometry.minTarget, minHeight: theme.geometry.minTarget }]}
                 testID="aywebs-quantity-less"
               >
                 <Ionicons name="remove" size={theme.iconSize.md} color={quantity <= 1 ? theme.colors.muted : theme.colors.ink} />
@@ -892,7 +895,7 @@ export function AddToCartSheet({
                 accessibilityLabel={t('aywebs.quantityMore')}
                 disabled={quantity >= maxQuantity || busy}
                 onPress={() => setQuantity((value) => Math.min(maxQuantity, value + 1))}
-                style={styles.stepperButton}
+                style={[styles.stepperButton, { borderColor: theme.colors.line, backgroundColor: theme.colors.surface, borderRadius: theme.radius.control, borderWidth: 1, minWidth: theme.geometry.minTarget, minHeight: theme.geometry.minTarget }]}
                 testID="aywebs-quantity-more"
               >
                 <Ionicons name="add" size={theme.iconSize.md} color={quantity >= maxQuantity ? theme.colors.muted : theme.colors.ink} />
@@ -901,7 +904,7 @@ export function AddToCartSheet({
           </View>
 
           {quote.unitTnd != null && quantity > 1 ? (
-            <View style={styles.totalRow}>
+            <View style={[styles.totalRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
               <AppText variant="body" weight="semibold">{t('aywebs.estimatedTotal')}</AppText>
               <AppText variant="body" weight="bold">{totalLine}</AppText>
             </View>
@@ -969,8 +972,8 @@ const styles = StyleSheet.create({
   headerSide: { width: 44, alignItems: 'flex-end' },
   headerTitle: { flex: 1, textAlign: 'center' },
   close: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  productCard: { padding: 12, gap: 12, borderWidth: StyleSheet.hairlineWidth },
-  productHero: { width: '100%', aspectRatio: 1.2 },
+  productCard: { flexDirection: 'row', alignItems: 'center', padding: 12, gap: 12, borderWidth: StyleSheet.hairlineWidth },
+  productHero: { width: 88, height: 88, borderRadius: 12 },
   productText: { flex: 1, gap: 4 },
   successBanner: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 16, padding: 16 },
   successIcon: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },

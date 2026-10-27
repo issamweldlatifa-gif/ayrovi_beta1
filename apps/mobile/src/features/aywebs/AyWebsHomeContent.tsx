@@ -37,7 +37,6 @@ const CATEGORY_ART = {
 type CategoryArtKey = keyof typeof CATEGORY_ART;
 type IconName = keyof typeof Ionicons.glyphMap;
 const CATEGORY_FALLBACK_ICON: IconName = 'pricetag-outline';
-const PROMO_ASPECT_RATIO = 1;
 
 function categoryArt(category: AyWebsCategory): { source?: number; icon: IconName } {
   const key = `${category.id} ${category.labelFr} ${category.labelAr}`
@@ -110,7 +109,7 @@ export function AyWebsHomeContent({ catalog }: { catalog: StoresCatalogQuery }) 
       : savedStores.length > 0
         ? t('aywebs.home.savedStores')
         : t('aywebs.home.discoverStores');
-  const cardWidth = Math.min(Math.max(width * 0.76, 260), 330);
+  const cardWidth = Math.min(Math.max(width * 0.68, 230), 280);
 
   const openStore = (store: AyWebsStore) => {
     const target = storeTarget(store);
@@ -286,15 +285,6 @@ export function AyWebsHomeContent({ catalog }: { catalog: StoresCatalogQuery }) 
         )}
       </View>
 
-      {!search.trim() ? (
-        <AppImage
-          localSource={require('../../../assets/aywebs/promo-footer.png')}
-          contentFit="contain"
-          accessibilityLabel={t('aywebs.home.promoAlt')}
-          style={styles.promo}
-          testID="aywebs-home-promo"
-        />
-      ) : null}
     </View>
   );
 }
@@ -364,10 +354,16 @@ function HomeStoreCard({ store, categories, width, sessionId, saved, onOpen, onT
       ]}
       testID={`aywebs-home-store-card-${store.id}`}
     >
-      <View style={[styles.storeCardTop, { backgroundColor: theme.colors.shimmer, flexDirection: rowDirectionFor(theme.isRTL) }]}>
-        <View style={styles.storeLogoWrap}>
+      <View style={[styles.storeCardTop, { backgroundColor: theme.colors.shimmer }]}>
+        <View style={styles.storeLogoWrap} testID={`aywebs-home-store-media-${store.id}`}>
           {logo ? (
-            <AppImage uri={logo} contentFit="contain" accessibilityLabel={name} style={styles.storeLogo} />
+            <AppImage
+              uri={logo}
+              contentFit="contain"
+              accessibilityLabel={name}
+              style={styles.storeLogo}
+              testID={`aywebs-home-store-logo-${store.id}`}
+            />
           ) : (
             <AppText variant="display" weight="bold" color={theme.colors.muted}>{name.slice(0, 1)}</AppText>
           )}
@@ -378,7 +374,10 @@ function HomeStoreCard({ store, categories, width, sessionId, saved, onOpen, onT
           accessibilityState={{ selected: saved }}
           onPress={onToggle}
           hitSlop={8}
-          style={[styles.storeHeart, { backgroundColor: theme.colors.surface }]}
+          style={[
+            styles.storeHeart,
+            { backgroundColor: theme.colors.surface, ...(theme.isRTL ? { left: 8 } : { right: 8 }) },
+          ]}
           testID={`aywebs-home-store-save-${store.id}`}
         >
           <Ionicons
@@ -444,10 +443,9 @@ const styles = StyleSheet.create({
   viewAll: { minHeight: 36, flexDirection: 'row', alignItems: 'center', gap: 2 },
   storeRail: { gap: 12, paddingEnd: 4 },
   storeCard: { borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
-  storeCardTop: { minHeight: 126, alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: 12 },
-  storeLogoWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  storeLogo: { width: 190, height: 78 },
-  storeHeart: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  storeCardBody: { minHeight: 70, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 10 },
-  promo: { width: '100%', aspectRatio: PROMO_ASPECT_RATIO },
+  storeCardTop: { height: 112, alignItems: 'stretch', justifyContent: 'center', padding: 8, position: 'relative' },
+  storeLogoWrap: { flex: 1, width: '100%', alignItems: 'center', justifyContent: 'center' },
+  storeLogo: { width: '100%', height: '100%' },
+  storeHeart: { position: 'absolute', top: 8, width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  storeCardBody: { minHeight: 60, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 8 },
 });

@@ -13,10 +13,11 @@
  * شرط تفعيل «Add to Cart» هو نفسه في العقد: **الخادم** صنّف الصفحة كصفحة
  * منتوج. قبل التصنيف الزرّ معطّل والسبب مكتوب — زر ما ينجمش ينجح ما يتفعّلش.
  */
-import { useCallback, useEffect, useRef, useState, type ComponentType, type Ref } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType, type Ref } from 'react';
 import { goBack } from '@/design/navigation';
 import { BackHandler, Pressable, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { WebView as RNWebView, type WebViewMessageEvent, type WebViewProps } from 'react-native-webview';
@@ -32,9 +33,9 @@ import { addErrorMessage } from '@/features/aywebs/addError';
 import { StoreCartSheet } from '@/features/aywebs/StoreSheets';
 import { rememberAyWebsVisit } from '@/features/aywebs/lastVisitedStore';
 import {
-  analyzeAyWebsPage, buildAyWebsCaptureInjection, fetchAyWebsCaptureScript,
+  analyzeAyWebsPage, buildAyWebsCaptureInjection, fetchAyWebsCart, fetchAyWebsCaptureScript,
   parseAyWebsCaptureMessage, resolveAyWebsProductWithCapture,
-  type AyWebsPageAnalysis, type AyWebsResolveOutcome, type AyWebsResolvedProduct, type AyWebsVariantOption,
+  type AyWebsCart, type AyWebsCartItem, type AyWebsPageAnalysis, type AyWebsResolveOutcome, type AyWebsResolvedProduct, type AyWebsVariantOption,
 } from '@/api/aywebs';
 import { AddToCartSheet } from '@/features/aywebs/AddToCartSheet';
 import {
@@ -78,6 +79,23 @@ export default function AyWebsBrowserScreen() {
   const insets = useSafeAreaInsets();
   const { t, locale } = useI18n();
   const sessionId = useSessionId();
+  const queryClient = useQueryClient();
+  const cartQueryKey = useMemo(() => ['store-sheet', 'aywebs-cart', sessionId] as const, [sessionId]);
+  const [cartAddedAt, setCartAddedAt] = useState(0);
+
+  useEffect(() => {
+    if (!cartAddedAt) return undefined;
+    const timerId = setTimeout(() => setCartAddedAt(0), 2400);
+    return () => clearTimeout(timerId);
+  }, [cartAddedAt]);
+
+  const storeCart = useQuery({
+    queryKey: cartQueryKey,
+    queryFn: ({ signal }) => fetchAyWebsCart({ sessionId, signal }),
+    enabled: Boolean(sessionId),
+    retry: false,
+    staleTime: 20_000,
+  });
 
   const params = useLocalSearchParams<{ url?: string; storeId?: string; storeName?: string; capture?: string }>();
   const url = String(params.url ?? '');
@@ -151,6 +169,18 @@ export default function AyWebsBrowserScreen() {
     && captureMatchesPageUrl(pageAnalysis.url, pageUrl)
     ? pageAnalysis
     : null;
+  const currentStoreId = currentPageAnalysis?.storeId || (pageUrl === url ? storeId : '');
+  const cartUnits = useMemo(() => (storeCart.data?.items ?? [])
+    .filter((item) => item.storeId === currentStoreId)
+    .reduce((total, item) => total + item.quantity, 0), [currentStoreId, storeCart.data?.items]);
+  const cartAccessibilityLabel = cartUnits > 0
+    ? t('aywebs.bar.cartCount', { count: cartUnits })
+    : t('aywebs.bar.cart');
+  const handleCartAdded = useCallback((_item: AyWebsCartItem, cart: AyWebsCart) => {
+    void queryClient.cancelQueries({ queryKey: cartQueryKey, exact: true });
+    queryClient.setQueryData(cartQueryKey, cart);
+    setCartAddedAt(Date.now());
+  }, [cartQueryKey, queryClient]);
   /** Persist the real last page locally; invalid/non-web URLs are ignored. */
   useEffect(() => {
     if (!isWebPageUrl(pageUrl)) return;
@@ -539,12 +569,28 @@ export default function AyWebsBrowserScreen() {
         </View>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={t('aywebs.bar.cart')}
+          accessibilityLabel={cartAccessibilityLabel}
           onPress={() => setCartOpen(true)}
           testID="aywebs-store-header-cart"
           style={{ minHeight: theme.geometry.minTarget, minWidth: theme.geometry.minTarget, justifyContent: 'center', alignItems: 'center' }}
         >
-          <Ionicons name="cart-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
+          <View style={styles.cartIconWrap}>
+            <Ionicons name="cart-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
+            {cartUnits > 0 ? (
+              <View
+                testID="aywebs-store-header-cart-count"
+                style={[
+                  styles.cartBadge,
+                  { backgroundColor: theme.status.success.fg, borderColor: theme.colors.canvas },
+                  theme.isRTL ? styles.cartBadgeRTL : styles.cartBadgeLTR,
+                ]}
+              >
+                <AppText variant="caption" weight="bold" color={theme.colors.canvas}>
+                  {cartUnits > 99 ? '99+' : String(cartUnits)}
+                </AppText>
+              </View>
+            ) : null}
+          </View>
         </Pressable>
       </View>
 
@@ -622,9 +668,15 @@ export default function AyWebsBrowserScreen() {
         {note ? <AppText variant="caption" color={theme.status.danger.fg}>{note}</AppText> : null}
 
         <Button
-          label={busy ? t('aywebs.loading') : t('aywebs.addToCart')}
+          label={busy ? t('aywebs.loading') : cartAddedAt ? t('aywebs.added') : t('aywebs.selectOptions')}
           tone="commerce"
-          leading={<Ionicons name="bag-add-outline" size={20} color={COMMERCE.onAction} />}
+          leading={(
+            <Ionicons
+              name={cartAddedAt ? 'checkmark-circle' : 'options-outline'}
+              size={20}
+              color={cartAddedAt ? theme.status.success.fg : COMMERCE.onAction}
+            />
+          )}
           block
           onPress={addToCart}
           busy={busy}
@@ -647,6 +699,7 @@ export default function AyWebsBrowserScreen() {
             ? variantReader.current.read(url)
             : Promise.reject(new ApiError('device', 'Lecteur de variante indisponible.')))}
           onClose={() => setSheet(null)}
+          onAdded={handleCartAdded}
         />
       ) : null}
 
@@ -657,7 +710,7 @@ export default function AyWebsBrowserScreen() {
           visible={cartOpen}
           onClose={() => setCartOpen(false)}
           sessionId={sessionId}
-          storeId={currentPageAnalysis?.storeId || storeId}
+          storeId={currentStoreId}
         />
       ) : null}
     </View>
@@ -667,6 +720,10 @@ export default function AyWebsBrowserScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   header: { alignItems: 'center', gap: 4, paddingHorizontal: 8 },
+  cartIconWrap: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  cartBadge: { position: 'absolute', top: -3, minWidth: 18, height: 18, paddingHorizontal: 3, borderRadius: 9, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  cartBadgeLTR: { right: -5 },
+  cartBadgeRTL: { left: -5 },
   titleBox: { flex: 1, paddingHorizontal: 4 },
   web: { flex: 1, marginTop: 8 },
   loading: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },

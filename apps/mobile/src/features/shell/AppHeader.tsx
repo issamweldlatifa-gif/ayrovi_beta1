@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { BrandMark } from '@/design/BrandMark';
+import { AppImage } from '@/design/appImage';
 import { AppText, Drawer, DrawerItem, Segmented } from '@/design/ui';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { usePrefs, type Locale, type ThemeMode } from '@/state/prefs';
@@ -110,24 +111,30 @@ export function AppHeader({
         // défilement du contenu qui passe en dessous.
         pointerEvents="box-none"
       >
-        {/* Groupe de gauche : menu, puis logo (le logo ramène à l’accueil). */}
+        {/* ZAYROVI keeps its menu beside the brand; AYWEBs uses the supplied standalone wordmark. */}
         <View style={[styles.actions, { flexDirection: row }]}>
-          <HeaderIcon
-            name="menu-outline"
-            label={t('nav.menu')}
-            onPress={() => { setMenuOpen(true); }}
-            color={iconColor}
-          />
+          {brand === 'aywebs' ? null : (
+            <HeaderIcon
+              name="menu-outline"
+              label={t('nav.menu')}
+              onPress={() => { setMenuOpen(true); }}
+              color={iconColor}
+            />
+          )}
           <Pressable
             onPress={() => go('/')}
             accessibilityRole="button"
             accessibilityLabel={t('nav.home')}
+            testID={brand === 'aywebs' ? 'aywebs-header-wordmark' : undefined}
             style={({ pressed }) => [styles.logo, { opacity: pressed ? 0.6 : 1 }]}
           >
             {brand === 'aywebs' ? (
-              <AppText variant="title" weight="bold" color={onHero ? iconColor : theme.colors.accentText}>
-                AYWEBs
-              </AppText>
+              <AppImage
+                localSource={require('../../../assets/aywebs/aywebs-wordmark.png')}
+                contentFit="contain"
+                decorative
+                style={styles.aywebsWordmark}
+              />
             ) : (
               <BrandMark size={30} nameColor={onHero ? iconColor : undefined} />
             )}
@@ -213,6 +220,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
     justifyContent: 'center',
   },
+  aywebsWordmark: { width: 132, height: 36 },
   actions: {
     alignItems: 'center',
     gap: 2,

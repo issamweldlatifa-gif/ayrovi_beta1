@@ -62,9 +62,11 @@ describe('icône compte et menu', () => {
     expect(screen.getByRole('button', { name: 'Panier ZAYROVI' })).toBeTruthy();
   });
 
-  it('AYWEBs remplace le wordmark global et garde uniquement son accès panier dans les actions', async () => {
+  it('AYWEBs uses its supplied wordmark, hides the neighboring menu, and keeps the cart action', async () => {
     await renderHeader({ brand: 'aywebs', showNotifications: false });
-    expect(screen.getByText('AYWEBs')).toBeTruthy();
+    expect(screen.getByTestId('aywebs-header-wordmark')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Menu' })).toBeNull();
+    expect(screen.queryByText('AYWEBs')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Notifications' })).toBeNull();
     fireEvent.press(screen.getByRole('button', { name: 'Panier ZAYROVI' }));
     expect(router.push).toHaveBeenCalledWith('/(tabs)/cart');

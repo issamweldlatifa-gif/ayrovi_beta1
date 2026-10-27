@@ -23,6 +23,7 @@ describe('AYWEBs product variant controls', () => {
       />,
     ));
     expect(screen.getByRole('button', { name: 'Couleur: Noir' }).props.accessibilityState.selected).toBe(true);
+    expect(screen.getByTestId('aywebs-variant-selected-0')).toBeTruthy();
     expect(screen.UNSAFE_getByType(require('expo-image').Image).props.testID).toBe('aywebs-color-image-0');
     expect(screen.getByRole('button', { name: 'Couleur: Rose' }).props.accessibilityState.disabled).toBe(true);
     fireEvent.press(screen.getByRole('button', { name: 'Couleur: Noir' }));
@@ -41,6 +42,7 @@ describe('AYWEBs product variant controls', () => {
       />,
     ));
     expect(screen.getByRole('button', { name: 'Taille: M' }).props.accessibilityState.selected).toBe(true);
+    expect(screen.getByTestId('aywebs-variant-selected-1')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Taille: L' }).props.accessibilityState.disabled).toBe(true);
     fireEvent.press(screen.getByRole('button', { name: 'Taille: S' }));
     expect(onSelect).toHaveBeenCalledWith('S');

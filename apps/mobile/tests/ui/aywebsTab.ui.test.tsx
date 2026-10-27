@@ -2,7 +2,7 @@
 import { render, screen, waitFor } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import type { AyWebsCategory, AyWebsStore } from '@/api/aywebs';
 import AyWebsScreen from '../../app/(tabs)/aywebs';
@@ -80,15 +80,18 @@ function renderTab() {
 }
 
 describe('onglet AYWEBs — accueil', () => {
-  it('affiche la recherche, les catégories, la reprise, les magasins et le visuel de campagne', async () => {
+  it('affiche la recherche, les catégories, la reprise et les magasins sans footer promotionnel', async () => {
     renderTab();
     await waitFor(() => expect(screen.getByTestId('aywebs-home-store-card-store-0')).toBeTruthy(), { timeout: 5000 });
     expect(screen.getByTestId('aywebs-home-content')).toBeTruthy();
     expect(screen.getByTestId('aywebs-home-search')).toBeTruthy();
     expect(screen.getByTestId('aywebs-home-category-marketplace')).toBeTruthy();
     expect(screen.getByTestId('aywebs-home-resume')).toBeTruthy();
-    expect(screen.getByTestId('aywebs-home-store-card-store-0')).toBeTruthy();
-    expect(screen.getByTestId('aywebs-home-promo')).toBeTruthy();
+    const storeCard = screen.getByTestId('aywebs-home-store-card-store-0');
+    expect(storeCard).toBeTruthy();
+    expect(StyleSheet.flatten(storeCard.props.style).width).toBeLessThanOrEqual(280);
+    expect(StyleSheet.flatten(screen.getByTestId('aywebs-home-store-media-store-0').props.style).width).toBe('100%');
+    expect(screen.queryByTestId('aywebs-home-promo')).toBeNull();
     expect(screen.queryByTestId('aywebs-analyze')).toBeNull();
     expect(screen.queryByTestId('aywebs-resolve')).toBeNull();
   });
