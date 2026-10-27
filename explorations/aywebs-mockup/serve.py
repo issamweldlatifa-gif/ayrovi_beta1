@@ -4,9 +4,11 @@ Sert le dépôt en local et ouvre directement le laboratoire AYWEBs.
 
     python3 explorations/aywebs-mockup/serve.py [port]
 
-Deux adresses :
-    /        → la maquette LIVRÉE (fichier unique, autonome)
-    /source  → la SOURCE, avec ses chemins relatifs (pratique pour itérer)
+Adresses :
+    /             → laboratoire A/B/C/D (fichier unique, autonome)
+    /officiel     → laboratoire « officiel » : 3 variantes + écran Boutiques
+    /source       → source du labo A/B/C/D (chemins relatifs, pour itérer)
+    /source-off   → source du labo officiel
 
 Pourquoi un script et pas `python3 -m http.server` : la maquette référence les
 vraies photos et les vraies polices de l'app (`../apps/mobile/assets/...`), donc
@@ -22,7 +24,9 @@ import sys
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 LAB = "/explorations/AYWEBS_HOME_LAB.html"
+OFFICIEL = "/explorations/AYWEBS_OFFICIEL_LAB.html"
 SOURCE = "/explorations/aywebs-mockup/lab.source.html"
+SOURCE_OFF = "/explorations/aywebs-mockup/officiel.source.html"
 PORT = int(sys.argv[1] if len(sys.argv) > 1 else os.environ.get("PORT", 8080))
 
 
@@ -31,6 +35,16 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         super().__init__(*args, directory=ROOT, **kwargs)
 
     def do_GET(self):  # noqa: N802 (nom imposé par la bibliothèque)
+        if self.path in ("/officiel", "/officiel/"):
+            self.send_response(302)
+            self.send_header("Location", OFFICIEL)
+            self.end_headers()
+            return
+        if self.path in ("/source-off", "/source-off/"):
+            self.send_response(302)
+            self.send_header("Location", SOURCE_OFF)
+            self.end_headers()
+            return
         if self.path in ("/source", "/source/"):
             self.send_response(302)
             self.send_header("Location", SOURCE)
@@ -55,7 +69,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 def main():
     http.server.ThreadingHTTPServer.allow_reuse_address = True
     server = http.server.ThreadingHTTPServer(("0.0.0.0", PORT), functools.partial(Handler))
-    print(f"AYWEBs mockup → http://localhost:{PORT}{LAB}", flush=True)
+    print(f"AYWEBs mockups → http://localhost:{PORT}/officiel", flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

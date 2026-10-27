@@ -1,4 +1,46 @@
-# Maquette AYWEBs — accueil (4 directions)
+# Maquettes AYWEBs
+
+Deux laboratoires, une seule chaîne de build.
+
+| Fichier livré | Contenu | Source |
+| --- | --- | --- |
+| `explorations/AYWEBS_OFFICIEL_LAB.html` | **commande Issam** : wordmark violet + panier, recherche de boutiques, Catégories, Historique, Explorer, écran Boutiques — 3 variantes | `officiel.source.html` |
+| `explorations/AYWEBS_HOME_LAB.html` | exploration A/B/C/D (épuré, marque, éditorial, flux vivant) | `lab.source.html` |
+
+```bash
+node explorations/aywebs-mockup/build.js --source officiel.source.html \
+                                          --out explorations/AYWEBS_OFFICIEL_LAB.html
+node explorations/aywebs-mockup/build.js      # labo A/B/C/D
+python3 explorations/aywebs-mockup/serve.py   # http://localhost:8080/officiel
+```
+
+## Labo « officiel » — la commande, section par section
+
+1. **En-tête** 64 pt : wordmark AYWEBs **en violet officiel** (#571EF6) + icône panier avec pastille.
+2. **Recherche de boutiques** 48 pt, rayon 12 — un seul champ, il ne cherche que des boutiques.
+3. **Catégories** : titre 18/700 + « Tout voir » ; tuiles **116 pt** (écran 414), libellé 12/1,25 **sur deux lignes** — aucun texte coupé.
+4. **Historique** : barre 56 pt avec la **dernière recherche** et son visuel devant, puis deux pastilles.
+5. **Explorer les boutiques** : rail de **7 enseignes** en cartes 100 pt + ligne « Toutes les boutiques » (364).
+6. **Écran Boutiques** : retour, recherche, **Favoris**, puis toutes les enseignes — **mêmes cartes**.
+
+Les trois variantes ne diffèrent que sur le bloc Catégories : grille 3×2, rail, ou deux colonnes 174 pt.
+
+## Jetons utilisés (aucune valeur inventée)
+
+| | |
+| --- | --- |
+| Couleurs | `brand.json` : #571EF6 · #0A0A0A · #333 · #666 · #E5E5E5 · #FFF · #F2F2F2 |
+| CTA d'achat | `COMMERCE.action` #FFD60A |
+| Types | `tokens.generated` : 40 · 28 · 18 · 16 · 14 · 12 |
+| Espacement | identité + `SPACE_EXTENDED` : 4 · 8 · 12 · 16 · 24 · 32 |
+| Rayons | `RADIUS` : 4 · 8 · 12 · 16 · 24 · 999 |
+| Icônes | `ICON_SIZE` : 14 · 18 · 24 · 32 |
+| Chrome | `CHROME` : en-tête 64 · barre 56 |
+| Polices | Zalando Sans · Noto Sans Arabic (sous-ensemblées dans le fichier livré) |
+
+---
+
+# Labo A/B/C/D (exploration précédente)
 
 > **D · Flux vivant** est la seule direction qui ne parle pas de mise en page :
 > elle montre la **technologie** — veille prix, preuves, frais détaillés,

@@ -36,10 +36,28 @@ const path = require('node:path');
 const vm = require('node:vm');
 const { execFileSync } = require('node:child_process');
 
-const HERE = __dirname;
-const ROOT = path.resolve(HERE, '..', '..');
-const SOURCE = path.join(HERE, 'lab.source.html');
-const OUTPUT = path.join(ROOT, 'explorations', 'AYWEBS_HOME_LAB.html');
+const ROOT = path.resolve(__dirname, '..', '..');
+
+/**
+ * Deux laboratoires, même chaîne :
+ *
+ *   node build.js                                    → AYWEBS_HOME_LAB.html   (A/B/C/D)
+ *   node build.js --source officiel.source.html \
+ *                 --out ../AYWEBS_OFFICIEL_LAB.html  → laboratoire « officiel »
+ *
+ * `--source` est résolu depuis le dossier des maquettes, `--out` depuis la
+ * racine du dépôt : les deux laboratoires vivent côte à côte dans
+ * `explorations/`, les sources restent regroupées ici.
+ */
+const args = process.argv.slice(2);
+const argValue = (flag, fallback) => {
+  const index = args.indexOf(flag);
+  return index >= 0 && args[index + 1] ? args[index + 1] : fallback;
+};
+
+const SOURCE = path.resolve(__dirname, argValue('--source', 'lab.source.html'));
+const OUTPUT = path.resolve(ROOT, argValue('--out', 'explorations/AYWEBS_HOME_LAB.html'));
+const HERE = path.dirname(SOURCE);
 const TEMP = path.join(HERE, '.build-tmp');
 
 const PHOTO_DIR = '../../apps/mobile/assets/aywebs/';
@@ -85,7 +103,7 @@ function staticScreens(html) {
   if (!scripts.length) throw new Error('Aucun script dans la source');
   const code = scripts[scripts.length - 1][1];
 
-  const anchors = [...html.matchAll(/<!--SCREEN:([A-Z]+)-->/g)].map((match) => match[1]);
+  const anchors = [...html.matchAll(/<!--SCREEN:([A-Z0-9]+)-->/g)].map((match) => match[1]);
   if (!anchors.length) throw new Error('Aucune ancre <!--SCREEN:*--> dans la source');
   const nodes = anchors.map((name) => ({ dataset: { screen: name }, innerHTML: '' }));
   const document = {
@@ -104,7 +122,7 @@ function staticScreens(html) {
 
 function main() {
   let built = fs.readFileSync(SOURCE, 'utf8');
-  if (!/<!--SCREEN:[A-Z]+-->/.test(built)) throw new Error('Ancres <!--SCREEN:*--> absentes de la source');
+  if (!/<!--SCREEN:[A-Z0-9]+-->/.test(built)) throw new Error('Ancres <!--SCREEN:*--> absentes de la source');
   if (!built.includes('/* @@PHOTOS@@ */')) throw new Error('Marqueur /* @@PHOTOS@@ */ absent de la source');
 
   let encoded = 0;
