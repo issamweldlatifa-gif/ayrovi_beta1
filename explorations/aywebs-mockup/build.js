@@ -164,8 +164,8 @@ function main() {
     '<body>',
     `<body>
 <noscript><p style="margin:0;padding:10px 22px;background:#FFF4CE;color:#0A0A0A;font:600 12.5px system-ui">
-  JavaScript est désactivé : les trois écrans ci-dessous s'affichent quand même (rendu statique).
-  Seuls les boutons FR/AR et la sélection de catégorie ont besoin du script.
+  JavaScript est désactivé : les écrans ci-dessous s'affichent quand même (rendu statique).
+  Seuls la langue, la recherche, les filtres et le panier ont besoin du script.
 </p></noscript>`,
   );
 
