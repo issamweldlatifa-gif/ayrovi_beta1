@@ -124,3 +124,35 @@ viennent de l'API (`mediaUrl(store.logo)`), rendus par `AppImage` en `contain`.
   disparaître (aujourd'hui elle affiche un message vide).
 - **Clic sur une catégorie** — état sélectionné, identique dans les trois
   directions.
+
+---
+
+# Mocakup « officiel » rendu en CODE (27/10/2026)
+
+`render_officiel.py` dessine la maquette avec les vraies fondations du dépôt —
+une image générée invente ses tailles ; ce script ne le peut pas.
+
+| Élément | Source réelle |
+| --- | --- |
+| Polices | `apps/mobile/assets/fonts/ZalandoSans-{Regular,SemiBold,Bold}.ttf` |
+| Couleurs | `brand.json` : #571EF6 · #0A0A0A · #333 · #666 · #E5E5E5 · #FFF · #F2F2F2 |
+| CTA d'achat | `COMMERCE.action` #FFD60A (`tokens.mobile.ts`) |
+| Échelle de types | 12 · 13 · 14 · 15 · 16 · 22 · 26 |
+| Espacement | 4 · 8 · 12 · 16 · 24 · 32 · 48 |
+| Rayons | 8 · 12 · 16 · 24 · 999 |
+| Icônes | tracés de l'app, trait 1,9 (panier, cœur, loupe, chevron, grille, horloge…) |
+| Logo | `aywebs-wordmark-violet.png` — le wordmark de l'app, reteinté #571EF6 |
+| Photos | `assets/aywebs/category-*.jpg` et `assets/hero/*.jpg` de l'app |
+
+```bash
+python3 explorations/aywebs-mockup/render_officiel.py     # nécessite Pillow
+```
+
+Produit :
+
+| Fichier | Contenu |
+| --- | --- |
+| `img/officiel-01-accueil.png` | page longue : en-tête + recherche, **Catégories 2×3**, **Sponsorisé**, **Boutiques 2×2**, entrée liste |
+| `img/officiel-02-boutiques.png` | écran Boutiques : retour, recherche, Favoris, grille 2 colonnes |
+| `img/officiel-03-recherche.png` | recherche active : champ violet, chips, résultats + prix TND, CTA jaune |
+| `img/officiel-set.png` | planche de comparaison des trois |
