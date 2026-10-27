@@ -30,6 +30,7 @@ import { rowDirectionFor } from '@/design/layoutLogic';
 import { MEDIA_RATIO } from '@/design/tokens.mobile';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { AppImage } from '@/design/appImage';
+import { storeLogoSources } from '@/features/aywebs/storeLogos';
 import { useI18n } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import { fetchAyWebsStoreCatalog, type AyWebsCategory, type AyWebsStore } from '@/api/aywebs';
@@ -352,6 +353,12 @@ function StoreCard({ store, subtitle, enabled, saved, onOpen, onToggle }: {
   const { t } = useI18n();
   const name = storeDisplayName(store);
   const logo = mediaUrl(store.logo);
+  /* Même règle que l'accueil : le logo officiel embarqué gagne. Il est
+     transparent, donc la plaque reste celle du design system. */
+  const brand = storeLogoSources(store, theme.mode);
+  /* Même repli qu'à l'accueil : un logo serveur introuvable affiche l'initiale,
+     jamais un cadre cassé. */
+  const [remoteFailed, setRemoteFailed] = useState(false);
   const domain = storeDomain(store);
   const visitUrl = storeVisitUrl(store);
   return (
@@ -372,15 +379,17 @@ function StoreCard({ store, subtitle, enabled, saved, onOpen, onToggle }: {
         style={[
           styles.cardMedia,
           {
-            backgroundColor: theme.colors.shimmer,
+            backgroundColor: brand?.plate ?? theme.colors.shimmer,
             borderRadius: theme.radius.card,
           },
         ]}
         testID={`aywebs-store-media-${store.id}`}
       >
-        {logo ? (
+        {(brand || logo) && !remoteFailed ? (
           <AppImage
             uri={logo}
+            localSource={brand?.source}
+            onError={() => setRemoteFailed(true)}
             style={styles.cardLogo}
             contentFit="contain"
             accessibilityLabel={name}

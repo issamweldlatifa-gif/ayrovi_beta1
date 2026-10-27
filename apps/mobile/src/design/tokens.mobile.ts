@@ -165,6 +165,20 @@ export function frost(opacity: number): string {
 }
 
 /**
+ * Plaque derrière les logos de boutiques — 27/10/2026.
+ *
+ * Les logos officiels envoyés par le client sont des JPEG : la version claire a
+ * un fond BLANC, la version sombre un fond NOIR (même dessin, inversé). La
+ * plaque doit donc être exactement cette couleur, sinon une bande de cadre
+ * apparaît autour d'un logo en `contain`. Ce sont des couleurs d'identité, donc
+ * des jetons — jamais des littéraux dans un écran.
+ */
+export const LOGO_PLATE = {
+  light: BRAND.white,
+  dark: BRAND.black,
+} as const;
+
+/**
  * Palette de la GRANDE FICHE (maquette `mockup-complet-25-10.png`, 25/10/2026).
  *
  * Ces cinq valeurs sont mesurées sur la maquette du propriétaire. Elles vivent

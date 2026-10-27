@@ -276,13 +276,21 @@ def icon_info(d: ImageDraw.ImageDraw, cx: float, cy: float, color=MUTED, size: i
 # est son logo : il est donc posé en `contain`, avec 24 pt de réserve — il
 # garde ses proportions et ne touche jamais le bord.
 
+# Logos OFFICIELS envoyés par le client le 27/10/2026, embarqués dans l'app :
+# apps/mobile/assets/aywebs/brands/<slug>.jpg. Un logo = une boutique.
+LOGOS = os.path.join(ASSETS, "aywebs", "brands")
+
 STORE_CATALOG = [
-    ("Amazon", "Électronique · High-tech", "amazon.tn"),
-    ("Zalando", "Mode · Chaussures", "zalando.tn"),
-    ("SHEIN", "Mode femme", "shein.com"),
-    ("TEMU", "Maison · Cuisine", "temu.com"),
-    ("Stradivarius", "Mode femme", "stradivarius.com"),
-    ("Nike", "Sport · Chaussures", "nike.com"),
+    ("Amazon", "Électronique · High-tech", "amazon.tn", "amazon"),
+    ("SHEIN", "Mode femme", "shein.com", "shein"),
+    ("TEMU", "Maison · Cuisine", "temu.com", "temu"),
+    ("AliExpress", "Marketplace", "aliexpress.com", "aliexpress"),
+    ("Nike", "Sport · Chaussures", "nike.com", "nike"),
+    ("ZARA", "Mode femme", "zara.com", "zara"),
+    ("adidas", "Sport · Chaussures", "adidas.com", "adidas"),
+    ("Sephora", "Beauté · Parfums", "sephora.com", "sephora"),
+    ("PUMA", "Sport · Chaussures", "puma.com", "puma"),
+    ("CHANEL", "Luxe · Parfums", "chanel.com", "chanel"),
 ]
 
 
@@ -305,12 +313,30 @@ def draw_store_logo(d, box, label: str) -> None:
     text(d, ((x0 + x1) / 2, (y0 + y1) / 2), label, size, "bold", INK, anchor="mm")
 
 
+def draw_brand_logo(canvas, d, box, slug: str) -> bool:
+    """Logo officiel dans la réserve — PNG TRANSPARENT, donc sur la plaque du système.
+
+    `contain` : le mot-symbole entier, jamais rogné. Retourne False si le
+    fichier manque — l'appelant retombe alors sur le mot-symbole typographique.
+    """
+    path = os.path.join(LOGOS, f"{slug}.png")
+    if not os.path.exists(path):
+        return False
+    paste_contain(canvas, path, box)
+    return True
+
+
 def draw_store_card(canvas, d, x, y, w, name, subtitle=None, domain=None,
-                    subtitle_size=15, saved=False, show_visit=False) -> float:
-    """Carte boutique 3:4 + libellés dessous. Retourne la hauteur occupée."""
+                    subtitle_size=15, saved=False, show_visit=False, slug=None) -> float:
+    """Carte boutique 3:4 + libellés dessous. Retourne la hauteur occupée.
+
+    La plaque reste celle du design system : les logos sont livrés en PNG à
+    fond transparent, donc aucun cadre ne se dessine autour d'eux.
+    """
     h = w * 4 / 3
     rounded(d, (x, y, x + w, y + h), R["lg"], fill=SHIMMER)
-    draw_store_logo(d, (x + 24, y + 24, x + w - 24, y + h - 24), name)
+    if not (slug and draw_brand_logo(canvas, d, (x + 24, y + 24, x + w - 24, y + h - 24), slug)):
+        draw_store_logo(d, (x + 24, y + 24, x + w - 24, y + h - 24), name)
     draw_heart_button(d, x + w - 26, y + 26, active=saved)
 
     ty = y + h + S[2]
@@ -413,18 +439,18 @@ def render_home() -> Image.Image:
     y += S[3] + 4
 
     stride = card_w * 4 / 3 + 8 + 18 + 19 + 18
-    for index, (name, subtitle, _domain) in enumerate(STORE_CATALOG[:4]):
+    for index, (name, subtitle, _domain, slug) in enumerate(STORE_CATALOG[:4]):
         row, col = divmod(index, 2)
         x0 = M + col * (card_w + S[3])
         y0 = y + row * stride
         draw_store_card(canvas, d, x0, y0, card_w, name,
-                        subtitle=subtitle.split(" · ")[0], subtitle_size=12)
+                        subtitle=subtitle.split(" · ")[0], subtitle_size=12, slug=slug)
 
     y += 2 * stride + S[4]
     rounded(d, (M, y, W / SCALE - M, y + 48), R["md"], fill=SURFACE, outline=LINE, width=1)
     icon_grid(d, M + 24, y + 24, VIOLET, 20)
     text(d, (M + 48, y + 24), "Toutes les boutiques", 14, "bold", INK, anchor="lm")
-    text(d, (W / SCALE - M - 32, y + 24), "364", 12, "regular", MUTED, anchor="rm")
+    text(d, (W / SCALE - M - 32, y + 24), "390", 12, "regular", MUTED, anchor="rm")
     icon_chevron(d, W / SCALE - M - 20, y + 24, MUTED, 18)
 
     # recadrage sur le contenu réel (+ marge basse)
@@ -494,23 +520,24 @@ def render_boutiques() -> Image.Image:
     y = 196
     text(d, (M, y), "Favoris", 28, "bold", INK, anchor="ls")
     y += S[3] + 4
-    for index, (name, subtitle, domain) in enumerate(STORE_CATALOG[:2]):
+    for index, (name, subtitle, domain, slug) in enumerate(STORE_CATALOG[4:6]):
         x0 = M + index * (card_w + S[3])
         draw_store_card(canvas, d, x0, y, card_w, name, subtitle, domain,
-                        saved=True, show_visit=True)
-    y += card_w * 4 / 3 + 8 + 18 + 22 + 17 + 20 + S[5]
+                        saved=True, show_visit=True, slug=slug)
+    y += card_w * 4 / 3 + 8 + 18 + 22 + 17 + 20 + S[5] + 8
 
     # Toutes les boutiques
     text(d, (M, y), "Toutes les boutiques", 28, "bold", INK, anchor="ls")
-    text(d, (W / SCALE - M, y - 2), "364", 13, "regular", MUTED, anchor="rs")
+    text(d, (W / SCALE - M, y - 2), "390", 13, "regular", MUTED, anchor="rs")
     y += S[3] + 4
 
     stride = card_w * 4 / 3 + 8 + 18 + 22 + 17 + 20 + S[5]
-    for index, (name, subtitle, domain) in enumerate(STORE_CATALOG[2:]):
+    for index, (name, subtitle, domain, slug) in enumerate(STORE_CATALOG[6:10]):
         row, col = divmod(index, 2)
         x0 = M + col * (card_w + S[3])
         y0 = y + row * stride
-        draw_store_card(canvas, d, x0, y0, card_w, name, subtitle, domain, show_visit=True)
+        draw_store_card(canvas, d, x0, y0, card_w, name, subtitle, domain,
+                        show_visit=True, slug=slug)
 
     bottom = min(canvas.height, px(y + 2 * stride + S[5]))
     return canvas.crop((0, 0, canvas.width, bottom))
@@ -759,6 +786,46 @@ def render_success() -> Image.Image:
     return canvas
 
 
+
+# ─── Planche : les dix-neuf logos, chacun dans SA boutique ─────────────────
+# Une carte par boutique, exactement le gabarit de la grille (3:4, logo en
+# `contain` avec 24 pt de réserve, libellé SOUS la carte). Sert de preuve
+# visuelle : aucun logo n'est rogné, aucun n'est posé sur la mauvaise boutique.
+LOGO_WALL = [
+    ("Amazon", "amazon"), ("SHEIN", "shein"), ("TEMU", "temu"), ("AliExpress", "aliexpress"),
+    ("Nike", "nike"), ("adidas", "adidas"), ("PUMA", "puma"), ("New Balance", "new-balance"),
+    ("ASICS", "asics"), ("Converse", "converse"), ("Vans", "vans"), ("Champion", "champion"),
+    ("Under Armour", "under-armour"), ("The North Face", "the-north-face"),
+    ("Calvin Klein", "calvin-klein"), ("CHANEL", "chanel"), ("Louis Vuitton", "louis-vuitton"),
+    ("ZARA", "zara"), ("Sephora", "sephora"),
+]
+
+
+def render_logo_wall() -> Image.Image:
+    cols = 3
+    gap = S[3]
+    M = S[4]
+    card_w = (W / SCALE - 2 * M - (cols - 1) * gap) / cols
+    card_h = card_w * 4 / 3
+    rows = (len(LOGO_WALL) + cols - 1) // cols
+    head = 44 + 52
+    canvas = Image.new("RGBA", (W, px(head + rows * (card_h + 44) + M)), SURFACE)
+    d = ImageDraw.Draw(canvas)
+
+    text(d, (M, 44 + 16), fit("Les logos officiels, un par boutique", 20, "bold", W / SCALE - 2 * M),
+         20, "bold", INK, anchor="ls")
+    text(d, (M, 44 + 42), "19 marques · PNG transparent · logo entier, jamais rogné", 12, "regular", MUTED, anchor="ls")
+
+    for index, (name, slug) in enumerate(LOGO_WALL):
+        row, col = divmod(index, cols)
+        x0 = M + col * (card_w + gap)
+        y0 = head + row * (card_h + 44)
+        rounded(d, (x0, y0, x0 + card_w, y0 + card_h), R["lg"], fill=SHIMMER)
+        if not draw_brand_logo(canvas, d, (x0 + 20, y0 + 20, x0 + card_w - 20, y0 + card_h - 20), slug):
+            draw_store_logo(d, (x0 + 20, y0 + 20, x0 + card_w - 20, y0 + card_h - 20), name)
+        text(d, (x0, y0 + card_h + 18), fit(name, 13, "bold", card_w), 13, "bold", INK)
+    return canvas
+
 def main() -> None:
     os.makedirs(OUT, exist_ok=True)
     home = render_home()
@@ -766,16 +833,19 @@ def main() -> None:
     search = render_search()
     options = render_options()
     success = render_success()
+    logos = render_logo_wall()
     home.convert("RGB").save(os.path.join(OUT, "officiel-01-accueil.png"), optimize=True)
     boutique.convert("RGB").save(os.path.join(OUT, "officiel-02-boutiques.png"), optimize=True)
     search.convert("RGB").save(os.path.join(OUT, "officiel-03-recherche.png"), optimize=True)
     options.convert("RGB").save(os.path.join(OUT, "officiel-04-options.png"), optimize=True)
     success.convert("RGB").save(os.path.join(OUT, "officiel-05-ajout.png"), optimize=True)
+    logos.convert("RGB").save(os.path.join(OUT, "officiel-06-logos-boutiques.png"), optimize=True)
     print("✓ officiel-01-accueil.png")
     print("✓ officiel-02-boutiques.png")
     print("✓ officiel-03-recherche.png")
     print("✓ officiel-04-options.png")
     print("✓ officiel-05-ajout.png")
+    print("✓ officiel-06-logos-boutiques.png")
 
 
 if __name__ == "__main__":

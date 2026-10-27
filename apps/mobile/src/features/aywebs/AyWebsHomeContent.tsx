@@ -46,6 +46,7 @@ import {
   storeDisplayName, storeSubtitle, storesInCategory,
 } from '@/features/aywebs/storesCatalog';
 import type { StoresCatalogQuery } from '@/features/aywebs/StoresContent';
+import { storeLogoSources } from '@/features/aywebs/storeLogos';
 
 /**
  * Photos de catégories embarquées (art statique de l'application).
@@ -451,6 +452,13 @@ function StoreTile({ store, categories, saved, onOpen, onToggle }: {
   const name = storeDisplayName(store);
   const tagline = storeSubtitle(store, categories, locale === 'ar' ? 'ar' : 'fr');
   const logo = mediaUrl(store.logo);
+  /* Logo OFFICIEL embarqué (27/10/2026) : il passe avant le fichier serveur,
+     qui n'a jamais été servi. PNG transparent → il se pose sur la plaque du
+     design system ; seule une marque en couleur impose sa plaque. */
+  const brand = storeLogoSources(store, theme.mode);
+  /* Le fichier `/stores/<id>.png` du serveur n'existe pas encore : s'il échoue,
+     on montre l'initiale plutôt qu'un cadre d'image cassée. */
+  const [remoteFailed, setRemoteFailed] = useState(false);
   const sessionId = useSessionId();
   const enabled = Boolean(storeTarget(store) && sessionId);
   return (
@@ -458,13 +466,18 @@ function StoreTile({ store, categories, saved, onOpen, onToggle }: {
       <View
         style={[
           styles.storeMedia,
-          { backgroundColor: theme.colors.shimmer, borderRadius: theme.radius.card },
+          {
+            backgroundColor: brand?.plate ?? theme.colors.shimmer,
+            borderRadius: theme.radius.card,
+          },
         ]}
         testID={`aywebs-home-store-media-${store.id}`}
       >
-        {logo ? (
+        {(brand || logo) && !remoteFailed ? (
           <AppImage
             uri={logo}
+            localSource={brand?.source}
+            onError={() => setRemoteFailed(true)}
             contentFit="contain"
             accessibilityLabel={name}
             style={styles.imageFill}

@@ -278,3 +278,34 @@ si le serveur publie la catégorie.
 
 Le mot-symbole AYWEBs est passé en `aywebs-wordmark-violet.png` (`#571EF6`) sur
 plaque **transparente** — plus de fond gris derrière le logo.
+
+## Logos officiels — 27/10/2026 (`officiel-06-logos-boutiques.png`)
+
+Le client a envoyé les logos officiels de dix-neuf marchands : « حط كل شعار
+في متجر نتاعو ». Cinq étaient déjà des boutiques (Amazon, SHEIN, TEMU,
+AliExpress, Sephora) ; les quatorze autres n'existaient pas au registre.
+
+Ce qui a été fait, dans cet ordre :
+
+1. **Un fichier par marque**, `apps/mobile/assets/aywebs/brands/<id>.png` —
+   fond détouré en transparence, contenu rogné à 6 % de marge, 400 px de côté
+   au plus. Version `brands-dark/` pour le thème sombre : mêmes traits en blanc.
+   Quatre marques gardent leurs couleurs (TEMU, AliExpress, Amazon, Champion) et
+   ne sont pas inversées.
+2. **Quatorze boutiques ajoutées au registre** (`BRAND_WAVE` dans
+   `shared/aywebsStores.ts`) : Nike, adidas, PUMA, New Balance, ASICS, Converse,
+   Vans, Champion, Under Armour, The North Face, Calvin Klein, CHANEL,
+   Louis Vuitton, ZARA. Mêmes règles que la vague 1 : **aucun motif d'URL
+   inventé** (`recognition: 'capture'`), **aucune devise déclarée**.
+3. **Huit doublons supprimés du catalogue** : ZARA, Nike, adidas, PUMA, New
+   Balance, ASICS, Converse et Vans y figuraient déjà. La liste publique est la
+   concaténation registre + catalogue — les laisser aux deux endroits aurait
+   affiché la même boutique deux fois.
+4. **Câblage dans l'app** : `storeLogoSources(store, mode)` (ids + alias de
+   libellés, jamais l'ordre d'affichage) alimente la carte d'accueil et la carte
+   de la liste. Un logo serveur introuvable affiche désormais l'initiale, plus
+   un cadre d'image cassée.
+
+Résultat : **33 boutiques au registre + 357 au catalogue = 390**.
+`officiel-06-logos-boutiques.png` montre les dix-neuf cartes, gabarit réel
+(3:4, logo entier, 24 pt de réserve, libellé sous la carte).
