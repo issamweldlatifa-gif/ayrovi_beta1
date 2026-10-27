@@ -27,7 +27,7 @@ import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SPACE, TYPE_SCALE } from './tokens.generated';
-import { RADIUS } from './tokens.mobile';
+import { ICON_SIZE, RADIUS } from './tokens.mobile';
 
 /** Palette de secours : mode clair, toujours lisible, jamais dépendante d'un état. */
 const SAFE = COLORS.light;
@@ -90,7 +90,7 @@ export function ErrorFallback({ error, onRetry }: { error: unknown; onRetry?: ()
   const detail = error instanceof Error ? error.message : String(error ?? '');
   return (
     <View style={styles.screen} accessibilityRole="alert">
-      <Ionicons name="alert-circle-outline" size={32} color={SAFE.muted} />
+      <Ionicons name="alert-circle-outline" size={ICON_SIZE.lg} color={SAFE.muted} />
       <Text style={styles.title}>صار خطأ في العرض</Text>
       <Text style={styles.titleFr}>Une erreur d’affichage</Text>
       <Text style={styles.body}>

@@ -13,6 +13,7 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import { Button, BUTTON_OUTLINE_WIDTH, Field, FIELD_FOCUS_WIDTH, Segmented } from '@/design/ui';
 import { SectionRule, SECTION_RULE_WIDTH } from '@/design/SectionRule';
 import { ThemeProvider, useTheme } from '@/design/theme';
+import { OPACITY } from '@/design/tokens.mobile';
 import { I18nProvider } from '@/i18n';
 import { PrefsProvider } from '@/state/prefs';
 
@@ -87,7 +88,10 @@ describe('couleurs de l’identité (violet · blanc · noir)', () => {
     render(wrap(<Button label="Payer" tone="main" onPress={() => {}} disabled />));
     const btn = StyleSheet.flatten(screen.getByRole('button', { name: 'Payer' }).props.style);
     expect(btn.backgroundColor).toBe('#571EF6');
-    expect(btn.opacity).toBe(0.5);
+    // 27/10/2026 : l'opacité d'un élément désactivé vient de `OPACITY.disabled`
+    // (0.4) et non plus d'un 0.5 posé dans le bouton — le stepper du panier,
+    // l'option de variante et le bouton disaient trois choses différentes.
+    expect(btn.opacity).toBe(OPACITY.disabled);
   });
 
   it('le champ est blanc, contour gris au repos, contour violet épaissi au focus', () => {

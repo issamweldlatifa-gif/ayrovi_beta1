@@ -36,6 +36,7 @@ import { pendingAyWebsLines, pendingAyWebsUnits } from '@/features/aywebs/storeS
 import { useSessionId } from '@/session/session';
 import { earliestCartDeadline, formatCartCountdown, remainingMs, serverClockOffset } from '@/features/lens/lensCartStatus';
 import { formatAmount, formatMoney } from '@/format/money';
+import { RADIUS } from '@/design/tokens.mobile';
 
 const MAX_QUANTITY = 99;
 
@@ -223,7 +224,7 @@ export default function AyroviCartScreen() {
               borderRadius: theme.radius.control,
               minHeight: theme.geometry.minTarget,
               minWidth: theme.geometry.minTarget,
-              opacity: busy || line.quantity <= 1 ? 0.4 : 1,
+              opacity: busy || line.quantity <= 1 ? theme.opacity.disabled : 1,
             }]}
           >
             <AppText variant="title">−</AppText>
@@ -240,7 +241,7 @@ export default function AyroviCartScreen() {
               borderRadius: theme.radius.control,
               minHeight: theme.geometry.minTarget,
               minWidth: theme.geometry.minTarget,
-              opacity: busy || line.quantity >= MAX_QUANTITY ? 0.4 : 1,
+              opacity: busy || line.quantity >= MAX_QUANTITY ? theme.opacity.disabled : 1,
             }]}
           >
             <AppText variant="title">+</AppText>
@@ -364,5 +365,5 @@ const styles = StyleSheet.create({
   image: { width: '100%', height: 140 },
   quantityRow: { alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' },
   step: { borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  quoteTimer: { minHeight: 42, borderRadius: 12, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center' },
+  quoteTimer: { minHeight: 42, borderRadius: RADIUS.md, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center' },
 });

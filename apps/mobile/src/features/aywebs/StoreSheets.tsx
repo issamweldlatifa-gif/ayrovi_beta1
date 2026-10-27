@@ -10,6 +10,7 @@
  *    Les favoris exigent un compte : hors connexion, la ligne mène à la connexion.
  *    Le serveur reçoit l'adresse et le titre ; le prix n'est pas envoyé d'ici.
  */
+import { RADIUS } from '@/design/tokens.mobile';
 import { useState, type ComponentProps } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -174,7 +175,7 @@ function SheetRow({ label, icon, onPress, disabled = false, busy = false, active
           flexDirection: rowDirectionFor(theme.isRTL),
           minHeight: theme.geometry.minTarget + 12,
           borderBottomColor: theme.colors.divider,
-          opacity: disabled ? 0.5 : pressed ? 0.7 : 1,
+          opacity: disabled ? theme.opacity.disabled : pressed ? theme.opacity.subtle : 1,
         },
       ]}
     >
@@ -184,7 +185,7 @@ function SheetRow({ label, icon, onPress, disabled = false, busy = false, active
       ) : (
         <Ionicons
           name={icon}
-          size={22}
+          size={theme.iconSize.md}
           color={active ? theme.colors.accentText : theme.colors.ink}
           accessibilityElementsHidden
         />
@@ -258,7 +259,7 @@ export function StoreFavoriteSheet({ visible, onClose, sourceUrl, title, saved }
 const styles = StyleSheet.create({
   body: { padding: 20, gap: 12 },
   segments: { flexWrap: 'wrap', gap: 8 },
-  segment: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 16, justifyContent: 'center' },
+  segment: { borderWidth: 1, borderRadius: RADIUS.full, paddingHorizontal: 16, justifyContent: 'center' },
   cartRow: { alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 },
   rowText: { flex: 1, gap: 2 },
   row: { alignItems: 'center', gap: 12, borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 4 },

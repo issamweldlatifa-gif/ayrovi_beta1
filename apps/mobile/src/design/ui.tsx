@@ -316,7 +316,7 @@ export function Button({ label, onPress, busy = false, disabled = false, tone = 
                 ? (pressed ? theme.colors.actionHover : theme.colors.action)
                 : (pressed ? theme.colors.secondary : theme.colors.ink),
           borderColor: quiet ? theme.colors.ink : commerce ? commerceYellow : main ? theme.colors.action : theme.colors.ink,
-          opacity: disabled && !busy ? 0.5 : pressed && quiet ? 0.85 : 1,
+          opacity: disabled && !busy ? theme.opacity.disabled : pressed && quiet ? theme.opacity.dimmed : 1,
         },
       ]}
     >
@@ -392,14 +392,14 @@ export function LinkRow({ label, value, onPress, icon, tone = 'default', testID 
           flexDirection: rowDirectionFor(theme.isRTL),
           minHeight: theme.geometry.minTarget,
           borderTopColor: theme.colors.line,
-          opacity: pressed ? 0.7 : 1,
+          opacity: pressed ? theme.opacity.subtle : 1,
         },
       ]}
     >
       {icon ? (
         <Ionicons
           name={icon as keyof typeof Ionicons.glyphMap}
-          size={20}
+          size={theme.iconSize.sm}
           color={tone === 'danger' ? theme.status.danger.fg : theme.colors.ink}
           accessibilityElementsHidden
         />
@@ -410,7 +410,7 @@ export function LinkRow({ label, value, onPress, icon, tone = 'default', testID 
       {value ? <AppText variant="caption" color={theme.colors.muted}>{value}</AppText> : null}
       <Ionicons
         name={theme.isRTL ? 'chevron-back' : 'chevron-forward'}
-        size={18}
+        size={theme.iconSize.sm}
         color={theme.colors.muted}
         accessibilityElementsHidden
       />
@@ -663,13 +663,13 @@ export function DrawerItem({
           minHeight: theme.geometry.minTarget,
           backgroundColor: active ? theme.colors.surface : 'transparent',
           borderRadius: theme.radius.control,
-          opacity: pressed ? 0.7 : 1,
+          opacity: pressed ? theme.opacity.subtle : 1,
         },
       ]}
     >
       <Ionicons
         name={icon}
-        size={22}
+        size={theme.iconSize.md}
         color={active ? theme.colors.accentText : theme.colors.ink}
         accessibilityElementsHidden
       />
@@ -679,7 +679,7 @@ export function DrawerItem({
       </View>
       <Ionicons
         name={theme.isRTL ? 'chevron-back' : 'chevron-forward'}
-        size={18}
+        size={theme.iconSize.sm}
         color={theme.colors.muted}
         accessibilityElementsHidden
       />

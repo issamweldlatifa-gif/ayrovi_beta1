@@ -575,6 +575,20 @@ export type DerivedColors = ReturnType<typeof derivedColors>;
 /**
  * `GEOMETRY.iconGrid` (24) est la grille de dessin, pas la taille de rendu.
  * Une échelle de rendu nommée évite les `size={17}` qu'on retrouve éparpillés.
+ *
+ * ── Rôles (audit du 27/10/2026) ─────────────────────────────────────────────
+ * L'inventaire complet de l'application (121 icônes) n'utilisait que 19 valeurs
+ * distinctes, dont 11 hors échelle : 11, 12, 13, 16, 17, 19, 20, 21, 22, 23, 26,
+ * 30, 36, 44, 64. Chaque cran a désormais UN rôle, et un seul :
+ *   • `xs` 14 — l'icône vit DANS une ligne de texte (étoile de note, infobulle,
+ *              coche de puce) ; elle suit le corps `caption`/`label` ;
+ *   • `sm` 18 — l'icône vit DANS un contrôle (champ de recherche, chevron de
+ *              ligne, croix de champ, icône de bouton) ;
+ *   • `md` 24 — l'icône EST l'action (retour, croix d'en-tête, panier, cœur,
+ *              menu, onglet) : la grille de dessin de l'identité ;
+ *   • `lg` 32 — l'icône porte un état vide ou une action forte dans une pastille ;
+ *   • `xl` 40 — l'icône remplace une image (vignette, avatar) ;
+ *   • `xxl` 64 — giciel de substitution plein écran (viseur caméra indisponible).
  */
 export const ICON_SIZE = {
   xs: 14,
@@ -582,15 +596,31 @@ export const ICON_SIZE = {
   md: GEOMETRY.iconGrid, // 24
   lg: 32,
   xl: 40,
+  xxl: 64,
 } as const;
 
 /* ── Opacité (§2) ─────────────────────────────────────────────────────────── */
 
 export const OPACITY = {
-  /** Élément désactivé. */
+  /** Élément désactivé (bouton, ligne, action indisponible). */
   disabled: 0.4,
-  /** Texte secondaire sur fond contrasté. */
+  /**
+   * Retour tactile d'un élément pressé — bouton, ligne, icône, tuile.
+   *
+   * Audit du 27/10/2026 : le MÊME geste s'affichait avec SEPT valeurs
+   * différentes (0.55, 0.6, 0.64, 0.7, 0.85, 0.86, 0.92). Un appui est un
+   * appui : une seule valeur, celle-ci.
+   */
   subtle: 0.64,
+  /**
+   * Atténuation d'une GRANDE surface : photo pressée, carte média, anneau de
+   * détection réduit. Le 0.64 d'un bouton y paraîtrait un trou noir.
+   */
+  dimmed: 0.86,
+  /** Option proposée mais indisponible (barrée) — plus discrète que `disabled`. */
+  unavailable: 0.36,
+  /** État « favori » posé sur une image : la couleur porte seule le signal. */
+  favorite: 0.75,
   /** Squelette de chargement. */
   skeleton: 0.12,
   /** Voile sur image (légende, dégradé). */

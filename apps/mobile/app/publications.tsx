@@ -111,7 +111,7 @@ export default function PublicationsScreen() {
                   >
                     <Ionicons
                       name={liked[item.id] ? 'heart' : 'heart-outline'}
-                      size={20}
+                      size={theme.iconSize.sm}
                       color={liked[item.id] ? theme.colors.accentText : theme.colors.muted}
                     />
                     <AppText variant="caption" color={theme.colors.muted}>{String(countsFor?.likes ?? 0)}</AppText>
@@ -123,7 +123,7 @@ export default function PublicationsScreen() {
                     onPress={() => setCommentsFor(item)}
                     style={styles.action}
                   >
-                    <Ionicons name="chatbubble-outline" size={20} color={theme.colors.muted} />
+                    <Ionicons name="chatbubble-outline" size={theme.iconSize.sm} color={theme.colors.muted} />
                     <AppText variant="caption" color={theme.colors.muted}>{String(countsFor?.comments ?? 0)}</AppText>
                   </Pressable>
                 </View>

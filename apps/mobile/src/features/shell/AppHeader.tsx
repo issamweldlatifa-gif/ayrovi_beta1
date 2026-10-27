@@ -43,12 +43,12 @@ function HeaderIcon({
         {
           width: theme.geometry.minTarget,
           height: theme.geometry.minTarget,
-          opacity: pressed ? 0.55 : 1,
+          opacity: pressed ? theme.opacity.subtle : 1,
         },
       ]}
       hitSlop={8}
     >
-      <Ionicons name={name} size={22} color={color} />
+      <Ionicons name={name} size={theme.iconSize.md} color={color} />
     </Pressable>
   );
 }
@@ -126,7 +126,7 @@ export function AppHeader({
             accessibilityRole="button"
             accessibilityLabel={t('nav.home')}
             testID={brand === 'aywebs' ? 'aywebs-header-wordmark' : undefined}
-            style={({ pressed }) => [styles.logo, { opacity: pressed ? 0.6 : 1 }]}
+            style={({ pressed }) => [styles.logo, { opacity: pressed ? theme.opacity.subtle : 1 }]}
           >
             {brand === 'aywebs' ? (
               /* Mot-symbole OFFICIEL, reteinté aux couleurs de la marque et posé
@@ -191,7 +191,7 @@ export function AppHeader({
         {/* Réglages d'affichage : langue et thème, dans le menu (plus sur la page compte). */}
         <View style={[styles.prefs, { borderTopColor: theme.colors.line }]}>
           <View style={[styles.prefHead, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-            <Ionicons name="language-outline" size={20} color={theme.colors.ink} accessibilityElementsHidden />
+            <Ionicons name="language-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
             <AppText variant="label" weight="bold">{t('common.language')}</AppText>
           </View>
           <Segmented<Locale>
@@ -203,7 +203,7 @@ export function AppHeader({
             ]}
           />
           <View style={[styles.prefHead, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-            <Ionicons name="contrast-outline" size={20} color={theme.colors.ink} accessibilityElementsHidden />
+            <Ionicons name="contrast-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
             <AppText variant="label" weight="bold">{t('common.theme')}</AppText>
           </View>
           <Segmented<ThemeMode>

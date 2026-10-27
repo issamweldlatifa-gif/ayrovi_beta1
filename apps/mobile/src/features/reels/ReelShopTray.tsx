@@ -24,6 +24,7 @@
  * (commentaire · son · partage · cœur) reste affiché : un Reel sans article est
  * toujours un Reel qu'on aime, qu'on commente et qu'on partage.
  */
+import { RADIUS } from '@/design/tokens.mobile';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -116,7 +117,7 @@ export function ReelShopTray({
               { bottom: pillBottom, backgroundColor: open ? theme.colors.ink : surface },
             ]
           : [styles.pillInline, { borderColor: theme.colors.line }],
-        { opacity: pressed ? 0.86 : 1 },
+        { opacity: pressed ? theme.opacity.dimmed : 1 },
       ]}
     >
       <AppText variant="label" weight="bold" color={!overlay || open ? onMedia : theme.colors.ink}>
@@ -124,7 +125,7 @@ export function ReelShopTray({
       </AppText>
       <Ionicons
         name={open ? 'chevron-up' : 'chevron-down'}
-        size={19}
+        size={theme.iconSize.sm}
         color={!overlay || open ? onMedia : theme.colors.ink}
         accessibilityElementsHidden
       />
@@ -169,13 +170,13 @@ export function ReelShopTray({
             styles.railButton,
             {
               bottom: reelTrayRailBottom(open, index, insetBottom, trayHeight),
-              opacity: action.dim ? 0.45 : pressed ? 0.7 : 1,
+              opacity: action.dim ? theme.opacity.disabled : pressed ? theme.opacity.subtle : 1,
             },
           ]}
         >
           <Ionicons
             name={action.icon as keyof typeof Ionicons.glyphMap}
-            size={23}
+            size={theme.iconSize.md}
             color={action.key === 'like' && rail.liked ? theme.colors.accentOnMedia : onMedia}
             accessibilityElementsHidden
           />
@@ -248,7 +249,7 @@ const styles = StyleSheet.create({
     height: REEL_TRAY.pillHeight,
     minWidth: REEL_TRAY.pillMinWidth,
     paddingHorizontal: 24,
-    borderRadius: 999,
+    borderRadius: RADIUS.full,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

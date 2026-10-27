@@ -87,12 +87,12 @@ export function LegalScreen({ docId }: { docId: LegalDocId }) {
           hitSlop={8}
           style={({ pressed }) => [
             styles.back,
-            { width: theme.geometry.minTarget, height: theme.geometry.minTarget, opacity: pressed ? 0.6 : 1 },
+            { width: theme.geometry.minTarget, height: theme.geometry.minTarget, opacity: pressed ? theme.opacity.subtle : 1 },
           ]}
         >
           <Ionicons
             name={theme.isRTL ? 'arrow-forward' : 'arrow-back'}
-            size={24}
+            size={theme.iconSize.md}
             color={theme.colors.ink}
             accessibilityElementsHidden
           />

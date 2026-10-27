@@ -559,7 +559,7 @@ export default function AyWebsBrowserScreen() {
         >
           <Ionicons
             name={theme.isRTL ? 'chevron-forward' : 'chevron-back'}
-            size={26}
+            size={theme.iconSize.md}
             color={theme.colors.ink}
             accessibilityElementsHidden
           />
@@ -673,7 +673,7 @@ export default function AyWebsBrowserScreen() {
           leading={(
             <Ionicons
               name={cartAddedAt ? 'checkmark-circle' : 'options-outline'}
-              size={20}
+              size={theme.iconSize.sm}
               color={cartAddedAt ? theme.status.success.fg : COMMERCE.onAction}
             />
           )}

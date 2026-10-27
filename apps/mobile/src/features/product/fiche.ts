@@ -135,7 +135,7 @@ export const FICHE = {
   viewerDotPitch: 12,      // 24 px
   viewerCloseTop: 27,      // 82 px
   viewerCloseStart: 5,     // 37 px
-  viewerCloseSize: 32,     // 69 − 37 = 32 px (la croix)
+  // La croix de la visionneuse ne porte plus de cote : elle suit `theme.iconSize.md`.
 
   /** La barre d'achat, zone sûre comprise — la page réserve cette hauteur. */
   ctaHeight: 71,

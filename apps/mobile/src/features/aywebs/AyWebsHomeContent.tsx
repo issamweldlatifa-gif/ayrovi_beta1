@@ -32,7 +32,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppText, Button } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { rowDirectionFor } from '@/design/layoutLogic';
-import { MEDIA_RATIO } from '@/design/tokens.mobile';
+import { MEDIA_RATIO, RADIUS } from '@/design/tokens.mobile';
 import { AppImage } from '@/design/appImage';
 import { mediaUrl } from '@/api/client';
 import { useI18n } from '@/i18n';
@@ -214,7 +214,7 @@ export function AyWebsHomeContent({ catalog }: { catalog: StoresCatalogQuery }) 
           },
         ]}
       >
-        <Ionicons name="search-outline" size={20} color={theme.colors.muted} accessibilityElementsHidden />
+        <Ionicons name="search-outline" size={theme.iconSize.sm} color={theme.colors.muted} accessibilityElementsHidden />
         <TextInput
           value={search}
           onChangeText={(value) => { setSearch(value); setSelectedCategoryId(null); }}
@@ -224,7 +224,7 @@ export function AyWebsHomeContent({ catalog }: { catalog: StoresCatalogQuery }) 
           autoCorrect={false}
           autoCapitalize="none"
           returnKeyType="search"
-          style={[styles.searchInput, { color: theme.colors.ink, textAlign: theme.isRTL ? 'right' : 'left' }]}
+          style={[styles.searchInput, theme.text('body'), { color: theme.colors.ink, textAlign: theme.isRTL ? 'right' : 'left' }]}
           testID="aywebs-home-search"
         />
         {searching ? (
@@ -236,7 +236,7 @@ export function AyWebsHomeContent({ catalog }: { catalog: StoresCatalogQuery }) 
             style={styles.searchClear}
             testID="aywebs-home-search-clear"
           >
-            <Ionicons name="close-circle" size={20} color={theme.colors.muted} accessibilityElementsHidden />
+            <Ionicons name="close-circle" size={theme.iconSize.sm} color={theme.colors.muted} accessibilityElementsHidden />
           </Pressable>
         ) : null}
       </View>
@@ -272,7 +272,7 @@ export function AyWebsHomeContent({ catalog }: { catalog: StoresCatalogQuery }) 
             <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.home.sponsor')}</AppText>
             <Ionicons
               name="information-circle-outline"
-              size={14}
+              size={theme.iconSize.xs}
               color={theme.colors.muted}
               accessibilityElementsHidden
             />
@@ -344,7 +344,7 @@ export function AyWebsHomeContent({ catalog }: { catalog: StoresCatalogQuery }) 
                 borderColor: theme.colors.line,
                 backgroundColor: theme.colors.surface,
                 flexDirection: rowDirectionFor(theme.isRTL),
-                opacity: pressed ? 0.86 : 1,
+                opacity: pressed ? theme.opacity.dimmed : 1,
               },
             ]}
           >
@@ -352,7 +352,7 @@ export function AyWebsHomeContent({ catalog }: { catalog: StoresCatalogQuery }) 
               {/* Le repère de la section est le VIOLET de la marque, comme le
                   mot-symbole : c'est `theme.colors.accent` (#571EF6), la même
                   valeur — pas une teinte choisie à part (27/10/2026). */}
-              <Ionicons name="grid-outline" size={18} color={theme.colors.accent} accessibilityElementsHidden />
+              <Ionicons name="grid-outline" size={theme.iconSize.sm} color={theme.colors.accent} accessibilityElementsHidden />
               <AppText variant="label" weight="bold">{t('aywebs.home.allStores')}</AppText>
             </View>
             {/* Pas de compteur : il affichait « 0 » quand le catalogue n'avait
@@ -361,7 +361,7 @@ export function AyWebsHomeContent({ catalog }: { catalog: StoresCatalogQuery }) 
                 « ça ouvre une liste ». */}
             <Ionicons
               name={storeListLabel}
-              size={18}
+              size={theme.iconSize.sm}
               color={theme.colors.muted}
               accessibilityElementsHidden
             />
@@ -395,7 +395,7 @@ function SectionTitle({ title, accessibilityLabel, onPress }: {
       {onPress ? (
         <Ionicons
           name={theme.isRTL ? 'chevron-back' : 'chevron-forward'}
-          size={20}
+          size={theme.iconSize.sm}
           color={theme.colors.ink}
           accessibilityElementsHidden
         />
@@ -416,7 +416,7 @@ function SectionTitle({ title, accessibilityLabel, onPress }: {
       onPress={onPress}
       style={({ pressed }) => [
         styles.sectionTitle,
-        { flexDirection: rowDirectionFor(theme.isRTL), opacity: pressed ? 0.7 : 1 },
+        { flexDirection: rowDirectionFor(theme.isRTL), opacity: pressed ? theme.opacity.subtle : 1 },
       ]}
       testID="aywebs-section-title"
     >
@@ -445,7 +445,7 @@ function CategoryTile({ category, selected, onPress }: {
       accessibilityState={{ selected }}
       onPress={onPress}
       testID={`aywebs-home-category-${category.id}`}
-      style={({ pressed }) => [styles.tile, { opacity: pressed ? 0.86 : 1 }]}
+      style={({ pressed }) => [styles.tile, { opacity: pressed ? theme.opacity.dimmed : 1 }]}
     >
       <View
         testID={`aywebs-home-category-media-${category.id}`}
@@ -468,7 +468,7 @@ function CategoryTile({ category, selected, onPress }: {
             style={styles.imageFill}
           />
         ) : (
-          <Ionicons name={artwork.icon} size={32} color={theme.colors.muted} accessibilityElementsHidden />
+          <Ionicons name={artwork.icon} size={theme.iconSize.lg} color={theme.colors.muted} accessibilityElementsHidden />
         )}
       </View>
       {/* 16 pt régulier, comme la référence : un libellé, pas un titre. Pas de
@@ -544,7 +544,7 @@ function StoreTile({ store, categories, saved, onOpen, onToggle }: {
         >
           <Ionicons
             name={saved ? 'heart' : 'heart-outline'}
-            size={18}
+            size={theme.iconSize.sm}
             color={saved ? theme.colors.accentText : theme.colors.ink}
             accessibilityElementsHidden
           />
@@ -559,7 +559,7 @@ function StoreTile({ store, categories, saved, onOpen, onToggle }: {
         disabled={!enabled}
         onPress={onOpen}
         testID={`aywebs-home-store-${store.id}`}
-        style={({ pressed }) => ({ opacity: pressed ? 0.86 : 1 })}
+        style={({ pressed }) => ({ opacity: pressed ? theme.opacity.dimmed : 1 })}
       >
         <AppText variant="label" weight="bold">{name}</AppText>
         {tagline ? <AppText variant="caption" color={theme.colors.muted}>{tagline}</AppText> : null}
@@ -576,10 +576,10 @@ const styles = StyleSheet.create({
     gap: 10,
     minHeight: 48,
     borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 999,
+    borderRadius: RADIUS.full,
     paddingHorizontal: 16,
   },
-  searchInput: { flex: 1, minHeight: 46, fontSize: 16 },
+  searchInput: { flex: 1, minHeight: 46 },
   searchClear: { padding: 2 },
   section: { gap: 12 },
   sectionTitle: { alignItems: 'center', justifyContent: 'space-between', minHeight: 36, gap: 8 },
@@ -622,7 +622,7 @@ const styles = StyleSheet.create({
     top: 8,
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: RADIUS.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -634,7 +634,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 999,
+    borderRadius: RADIUS.full,
     paddingHorizontal: 16,
     marginTop: 4,
   },

@@ -29,9 +29,9 @@ export function SheetHeader({ title, subtitle, onClose }: SheetHeaderProps) {
         accessibilityLabel={t('sheet.close')}
         onPress={onClose}
         hitSlop={8}
-        style={({ pressed }) => [styles.close, { opacity: pressed ? 0.6 : 1 }]}
+        style={({ pressed }) => [styles.close, { opacity: pressed ? theme.opacity.subtle : 1 }]}
       >
-        <Ionicons name="close" size={24} color={theme.colors.ink} />
+        <Ionicons name="close" size={theme.iconSize.md} color={theme.colors.ink} />
       </Pressable>
     </View>
   );

@@ -94,7 +94,7 @@ export function FicheHeader({
         >
           <Ionicons
             name={theme.isRTL ? 'chevron-forward' : 'chevron-back'}
-            size={26}
+            size={theme.iconSize.md}
             color={theme.colors.ink}
             accessibilityElementsHidden
           />
@@ -114,7 +114,7 @@ export function FicheHeader({
           hitSlop={8}
           style={styles.headerButton}
         >
-          <Ionicons name="bag-handle-outline" size={26} color={theme.colors.ink} accessibilityElementsHidden />
+          <Ionicons name="bag-handle-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
         </Pressable>
       </View>
     </View>
@@ -175,7 +175,7 @@ export function FichePhoto({
         >
           {current.kind === 'video' ? (
             <View style={[StyleSheet.absoluteFill, styles.photoEmpty]}>
-              <Ionicons name="play" size={36} color={theme.colors.ink} accessibilityElementsHidden />
+              <Ionicons name="play" size={theme.iconSize.lg} color={theme.colors.ink} accessibilityElementsHidden />
             </View>
           ) : (
             <AppImage
@@ -512,7 +512,7 @@ export function BuyBar({
             styles.buyButton,
             {
               backgroundColor: pressed ? theme.colors.secondary : theme.colors.ink,
-              opacity: disabled ? 0.5 : 1,
+              opacity: disabled ? theme.opacity.disabled : 1,
             },
           ]}
         >
@@ -703,7 +703,7 @@ export function GalleryViewer({
           hitSlop={8}
           style={[styles.viewerClose, { top: insets.top + FICHE.viewerCloseTop }]}
         >
-          <Ionicons name="close" size={FICHE.viewerCloseSize} color={theme.colors.ink} accessibilityElementsHidden />
+          <Ionicons name="close" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
         </Pressable>
       </View>
     </Modal>
@@ -824,7 +824,7 @@ const styles = StyleSheet.create({
     marginStart: FICHE.panelTextStart - FICHE.panelIconStart - ICON_BOX,
   },
   sheetColumn: {
-    fontSize: FICHE.columnHeader, letterSpacing: 1,
+    fontSize: FICHE.columnHeader,
     paddingStart: FICHE.rowStateEnd, paddingTop: FICHE.columnsTop,
   },
   sheetRows: { paddingTop: FICHE.rowsTop },

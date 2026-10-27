@@ -17,6 +17,7 @@ import { useT } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import { newsCategoryText } from '@/api/labels';
 import { useNews } from '@/api/hooks';
+import { RADIUS } from '@/design/tokens.mobile';
 
 function longDate(iso: string): string {
   const date = new Date(iso);
@@ -107,7 +108,7 @@ export default function NewsDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  hero: { width: '100%', aspectRatio: 16 / 9, marginBottom: 12, borderRadius: 12 },
+  hero: { width: '100%', aspectRatio: 16 / 9, marginBottom: 12, borderRadius: RADIUS.md },
   actions: { gap: 10, marginTop: 12 },
   spacer: { height: 24 },
 });

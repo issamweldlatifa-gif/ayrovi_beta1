@@ -13,6 +13,7 @@
  * Les couches de fond (une par carte, empilées) et le voile du titre sont les
  * seules superpositions `absolute` de ce fichier.
  */
+import { RADIUS } from '@/design/tokens.mobile';
 import {
   memo, useCallback, useEffect, useMemo, useRef, useState,
 } from 'react';
@@ -384,7 +385,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 999,
+    borderRadius: RADIUS.full,
     overflow: 'hidden',
   },
 });

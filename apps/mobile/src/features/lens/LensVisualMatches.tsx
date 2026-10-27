@@ -16,6 +16,7 @@ import { AppText } from '@/design/ui';
 import { useT } from '@/i18n';
 import type { LensVisualMatch } from '@/api/lens';
 import { LENS_COLORS } from './lensPalette';
+import { OPACITY, RADIUS } from '@/design/tokens.mobile';
 
 export function LensVisualMatches({
   matches,
@@ -63,9 +64,9 @@ const styles = StyleSheet.create({
     width: 104,
     gap: 4,
     padding: 6,
-    borderRadius: 12,
+    borderRadius: RADIUS.md,
     backgroundColor: LENS_COLORS.cameraControl,
   },
-  image: { width: 92, height: 64, borderRadius: 8, backgroundColor: LENS_COLORS.black },
-  pressed: { opacity: 0.7 },
+  image: { width: 92, height: 64, borderRadius: RADIUS.sm, backgroundColor: LENS_COLORS.black },
+  pressed: { opacity: OPACITY.subtle },
 });

@@ -89,7 +89,7 @@ export function LinkedProductCard({
           borderRadius: ARTICLE_CARD.radius,
           width: size.width,
           height: size.height,
-          opacity: pressed ? 0.92 : 1,
+          opacity: pressed ? theme.opacity.dimmed : 1,
         },
       ]}
     >
@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
     paddingEnd: 32,
     gap: 4,
   },
-  brand: { fontSize: ARTICLE_CARD.brandSize, lineHeight: 18, letterSpacing: -0.1 },
+  brand: { fontSize: ARTICLE_CARD.brandSize, lineHeight: 18 },
   title: { fontSize: ARTICLE_CARD.titleSize, lineHeight: 18 },
   price: { fontSize: ARTICLE_CARD.priceSize, lineHeight: 19, marginTop: 2, fontVariant: ['tabular-nums'] },
   note: { fontSize: ARTICLE_CARD.priceSize },

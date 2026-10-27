@@ -30,6 +30,7 @@ import {
   afterAnalyze, errorCopy, isHttpUrl, type OcerexStep,
 } from './ocerexFlow';
 import { formatAmount, formatMoney } from '@/format/money';
+import { RADIUS } from '@/design/tokens.mobile';
 
 const HIT_SLOP = { top: 12, bottom: 12, left: 12, right: 12 } as const;
 
@@ -204,7 +205,7 @@ export function OcerexFlow({ onClose }: { onClose: () => void }) {
   return (
     <View style={styles.wrap}>
       <View style={styles.header}>
-        <Ionicons name="camera-outline" size={24} color={theme.colors.ink} />
+        <Ionicons name="camera-outline" size={theme.iconSize.md} color={theme.colors.ink} />
         <AppText>{t('ocerex.title')}</AppText>
         <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel={t('sheet.close')} hitSlop={HIT_SLOP} testID="ocerex-close">
           <AppText variant="caption" color={theme.colors.muted}>{t('sheet.close')}</AppText>
@@ -408,6 +409,6 @@ function formatReference(extraction: OcerexExtraction): string {
 const styles = StyleSheet.create({
   wrap: { gap: 12 },
   header: { flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'space-between', minHeight: 44 },
-  camera: { width: '100%', aspectRatio: 3 / 4, borderRadius: 12, overflow: 'hidden' },
+  camera: { width: '100%', aspectRatio: 3 / 4, borderRadius: RADIUS.md, overflow: 'hidden' },
   keyRow: { gap: 2 },
 });

@@ -73,6 +73,18 @@ function code(rel: string): string {
   return raw.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
 }
 
+/**
+ * Palette de glyphes d'Ionicons, lue dans le paquet installé. C'est la seule
+ * source qui dise « ceci est un nom d'icône » sans heuristique fragile.
+ */
+const GLYPHS: Set<string> = (() => {
+  const file = path.join(
+    ROOT,
+    'node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/glyphmaps/Ionicons.json',
+  );
+  return new Set(Object.keys(JSON.parse(fs.readFileSync(file, 'utf8')) as Record<string, number>));
+})();
+
 /** Échelle d'espacement admise : celle de l'identité, complétée (et mesurée). */
 const SPACE_SCALE = new Set<number>([0, 1, 4, 8, 12, 16, 24, 32, 48, 64, 96, ...SPACE_EXTENDED]);
 
@@ -457,5 +469,320 @@ describe('Design System — cohérence des jetons', () => {
     const sorted = [...SPACE_EXTENDED].sort((a, b) => a - b);
     expect([...SPACE_EXTENDED]).toEqual(sorted);
     expect(new Set(SPACE_EXTENDED).size).toBe(SPACE_EXTENDED.length);
+  });
+});
+
+/**
+ * ── Audit du 27/10/2026 : ce que le verrou ne voyait pas ─────────────────────
+ *
+ * Le verrou d'origine contrôlait les COULEURS et l'ESPACEMENT. Il laissait
+ * passer quatre familles entières de valeurs, et c'est exactement là que la
+ * dérive s'était installée :
+ *
+ *   • 9 tailles de texte littérales (11, 15, 16, 17, 19) dont quatre hors
+ *     échelle — la fiche produit écrivait sa marque en 19 pt et son titre en
+ *     17 pt, la carte de résultat sa marque en 15 pt : trois hiérarchies
+ *     différentes pour le même couple marque/titre ;
+ *   • 46 rayons littéraux (2, 3, 4, 8, 9, 10, 12, 14, 16, 18, 19, 21, 24, 26,
+ *     28, 34, 36, 999) alors que `RADIUS` existe de xs à full ;
+ *   • 9 interlignes et 4 interlettrages littéraux, tous contraires au ratio de
+ *     l'identité (1.4 corps / 1.18 titre) et au `letterSpacing: 0em` ;
+ *   • 68 tailles d'icônes sur 19 valeurs distinctes (11 → 64) et des glyphes
+ *     pleins employés comme des icônes de contenu (`search`, `add`, `remove`).
+ *
+ * Ce bloc ferme les quatre portes, avec une seule tolérance GÉOMÉTRIQUE
+ * vérifiable : un `borderRadius` numérique n'est accepté que s'il vaut la
+ * moitié d'une cote déclarée dans le MÊME bloc de style (cercle parfait,
+ * poignée de feuille). Ce n'est pas une exception de confort : c'est une
+ * relation qu'on peut recalculer, donc une règle et non une dérogation.
+ */
+describe('Design System — typographie, rayons, icônes (audit 27/10/2026)', () => {
+  /**
+   * Une graisse n'est pas un nombre : chaque graisse est une FAMILLE .ttf
+   * embarquée (`FONTS.latin.semibold`, etc.). Un `fontWeight: '600'` est
+   * ignoré en silence par Android et n'a aucun effet sur iOS avec des
+   * fichiers séparés. Interdit hors du thème, qui pose `'normal'` exprès.
+   */
+  it('aucune graisse numérique : chaque graisse est une famille', () => {
+    /**
+     * `theme.tsx` est la DÉFINITION du texte : c'est lui qui pose
+     * `fontWeight: 'normal'` pour neutraliser la graisse synthétique du
+     * système (les vraies graisses sont des familles). Ce n'est pas une
+     * infraction — c'est la règle elle-même, écrite une fois.
+     */
+    const offenders: string[] = [];
+    for (const rel of FILES) {
+      if (TOKEN_FILES.has(rel) || rel === 'src/design/theme.tsx') continue;
+      const text = code(rel);
+      for (const match of text.matchAll(/fontWeight:/g)) {
+        const line = text.slice(0, match.index).split('\n').length;
+        offenders.push(`${rel}:${line}`);
+      }
+    }
+    expect(offenders, 'Utiliser `theme.text(variant, weight)` : la graisse choisit la famille (§3).').toEqual([]);
+  });
+
+  /** Toute taille de texte vient de `TYPE_SCALE` via `theme.text()` / `<AppText variant>`. */
+  it('aucune taille de texte littérale', () => {
+    const offenders: string[] = [];
+    for (const rel of FILES) {
+      if (TOKEN_FILES.has(rel)) continue;
+      const text = code(rel);
+      for (const match of text.matchAll(/fontSize:\s*-?\d+(?:\.\d+)?/g)) {
+        const line = text.slice(0, match.index).split('\n').length;
+        offenders.push(`${rel}:${line} → ${match[0]}`);
+      }
+    }
+    expect(
+      offenders,
+      'Échelle admise : 12 caption · 14 label · 16 body · 18 lead · 28 title · 40 display. ' +
+        'Passer par `<AppText variant>` (ou `theme.text(variant)`).',
+    ).toEqual([]);
+  });
+
+  /**
+   * Interligne : le ratio de l'identité, pas une valeur posée au cas par cas
+   * (1.4 corps / 1.18 titre ; 1.55 / 1.42 en arabe). C'est le seul endroit où
+   * une cote de maquette reste littérale : la carte « article » est comparée
+   * à `shared/articleCard.ts` ET à la maquette CSS par
+   * `article-card-contract.test.ts` — ses trois interlignes font partie du
+   * contrat, on ne les rejoue pas ici.
+   */
+  it('aucun interligne littéral (hors carte article, figée par contrat)', () => {
+    const PINNED = new Set(['src/features/shopping/LinkedProductCard.tsx']);
+    const offenders: string[] = [];
+    for (const rel of FILES) {
+      if (TOKEN_FILES.has(rel) || PINNED.has(rel)) continue;
+      const text = code(rel);
+      for (const match of text.matchAll(/lineHeight:\s*-?\d+(?:\.\d+)?/g)) {
+        const line = text.slice(0, match.index).split('\n').length;
+        offenders.push(`${rel}:${line} → ${match[0]}`);
+      }
+    }
+    expect(offenders, 'L’interligne vient de `theme.text()` : ratio 1.4 (corps) / 1.18 (titre) (§3).').toEqual([]);
+  });
+
+  /**
+   * Interlettrage : `TYPOGRAPHY.letterSpacing` vaut `0em` dans l'identité.
+   * Les quatre valeurs trouvées (1, 1, 2, -0.1) étaient des signatures
+   * typographiques inventées écran par écran — le mot-symbole, lui, est une
+   * IMAGE, il n'a pas besoin d'être « resserré ».
+   */
+  it('aucun interlettrage local : l’identité impose 0em', () => {
+    const offenders: string[] = [];
+    for (const rel of FILES) {
+      if (TOKEN_FILES.has(rel)) continue;
+      const text = code(rel);
+      for (const match of text.matchAll(/letterSpacing:/g)) {
+        const line = text.slice(0, match.index).split('\n').length;
+        offenders.push(`${rel}:${line}`);
+      }
+    }
+    expect(offenders, '`TYPOGRAPHY.letterSpacing = 0em` : retirer l’interlettrage local.').toEqual([]);
+  });
+
+  /**
+   * Rayon : soit un jeton (`theme.radius.*` / `RADIUS.*`), soit une relation
+   * GÉOMÉTRIQUE recalculable — un cercle ou une poignée, c'est-à-dire un
+   * rayon égal à la moitié d'une cote écrite dans le même bloc.
+   */
+  it('aucun rayon littéral hors cercle parfait / poignée', () => {
+    const offenders: string[] = [];
+    for (const rel of FILES) {
+      if (TOKEN_FILES.has(rel)) continue;
+      const text = code(rel);
+      // Blocs `{ … }` équilibrés, avec leur étendue, pour retrouver le bloc
+      // le PLUS PROCHE d'un `borderRadius` donné.
+      const spans: Array<{ start: number; end: number }> = [];
+      const stack: number[] = [];
+      for (let i = 0; i < text.length; i += 1) {
+        if (text[i] === '{') stack.push(i);
+        else if (text[i] === '}' && stack.length) {
+          spans.push({ start: stack.pop() as number, end: i });
+        }
+      }
+      for (const match of text.matchAll(/borderRadius:\s*(\d+(?:\.\d+)?)/g)) {
+        const radius = Number(match[1]);
+        if (radius === 0) continue; // carte pleine largeur : aucun rayon, c'est voulu
+        const index = match.index ?? 0;
+        const enclosing = spans
+          .filter((span) => span.start < index && span.end > index)
+          .sort((a, b) => (a.end - a.start) - (b.end - b.start))[0];
+        const body = enclosing ? text.slice(enclosing.start, enclosing.end) : '';
+        const dims = [
+          ...Array.from(body.matchAll(/(?:minWidth|width):\s*(\d+(?:\.\d+)?)/g), (m) => Number(m[1])),
+          ...Array.from(body.matchAll(/height:\s*(\d+(?:\.\d+)?)/g), (m) => Number(m[1])),
+        ];
+        const isHalfOfADimension = dims.some((dim) => Math.abs(dim - radius * 2) <= 1);
+        if (isHalfOfADimension) continue;
+        const line = text.slice(0, index).split('\n').length;
+        offenders.push(`${rel}:${line} → ${match[0]}`);
+      }
+    }
+    expect(
+      offenders,
+      'Échelle admise : xs 4 · sm 8 · md 12 · lg 16 · xl 24 · full 999 (`theme.radius` / `RADIUS`). ' +
+        'Un rayon numérique n’est toléré que s’il vaut la moitié d’une cote du même bloc.',
+    ).toEqual([]);
+  });
+
+  /**
+   * Taille d'icône : `theme.iconSize` / `ICON_SIZE`, jamais un nombre. Un seul
+   * cran par rôle (14 dans le texte, 18 dans un contrôle, 24 pour l'action,
+   * 32 pour un état vide, 40 à la place d'une image, 64 en giciel plein écran).
+   */
+  it('aucune taille d’icône littérale', () => {
+    const offenders: string[] = [];
+    for (const rel of FILES) {
+      const text = code(rel);
+      for (const tag of text.matchAll(/<Ionicons[\s\S]{0,500}?\/>/g)) {
+        const match = /size=\{(\d+)\}|size="(\d+)"/.exec(tag[0]);
+        if (!match) continue;
+        const line = text.slice(0, tag.index).split('\n').length;
+        offenders.push(`${rel}:${line} → size=${match[1] ?? match[2]}`);
+      }
+    }
+    expect(offenders, 'Utiliser `size={theme.iconSize.<cran>}` (§10).').toEqual([]);
+  });
+
+  /**
+   * Opacité : un état, une valeur. Le MÊME appui s'affichait avec sept valeurs
+   * (0.55 → 0.92) et le même « désactivé » avec quatre (0.4 → 0.6) selon
+   * l'écran. Les états vivent dans `OPACITY`, pas dans la feuille de style.
+   */
+  it('aucune opacité d’état littérale', () => {
+    const offenders: string[] = [];
+    for (const rel of FILES) {
+      if (TOKEN_FILES.has(rel)) continue;
+      const text = code(rel);
+      // `opacity: 0` / `opacity: 1` restent libres : ce sont les bornes, pas un état.
+      for (const match of text.matchAll(/opacity:\s*(?:[\w.[\]]+\s*\?\s*)?(\d*\.\d+)/g)) {
+        const line = text.slice(0, match.index).split('\n').length;
+        offenders.push(`${rel}:${line} → ${match[0]}`);
+      }
+    }
+    expect(
+      offenders,
+      'Utiliser `theme.opacity.disabled | subtle (appui) | dimmed (grande surface) | ' +
+        'unavailable | favorite` — `OPACITY` dans tokens.mobile.ts.',
+    ).toEqual([]);
+  });
+
+  /**
+   * Famille de glyphes : Ionicons fournit une variante `-outline` pour chaque
+   * icône de CONTENU, et une variante pleine pour les ÉTATS. Mélanger les deux
+   * donne une interface dont certaines icônes pèsent deux fois plus que leurs
+   * voisines — c'est ce qu'on voyait avec `search` (plein) à côté de
+   * `camera-outline` (trait).
+   *
+   * Les glyphes de la liste ci-dessous n'ont PAS de variante de trait utile :
+   * une coche, une croix, une étoile de note, un chevron directionnel, un
+   * triangle de lecture, un cœur actif, une torche allumée sont des ÉTATS.
+   */
+  it('les icônes de contenu sont en variante -outline', () => {
+    const STATE_GLYPHS = new Set([
+      // Affordances sans variante de trait pertinente
+      'close', 'close-circle',
+      // États sélectionné / validé / coché
+      'checkmark', 'checkmark-circle', 'checkbox', 'square-outline',
+      // États de lecture / favori / torche
+      'play', 'play-circle', 'heart', 'flash', 'flash-off',
+      // Notes
+      'star',
+      // Glyphes directionnels : le dessin est identique quelle que soit la variante
+      'chevron-up', 'chevron-down', 'chevron-back', 'chevron-forward',
+      'arrow-back', 'arrow-forward',
+    ]);
+    const offenders: string[] = [];
+    for (const rel of FILES) {
+      const text = code(rel);
+      for (const tag of text.matchAll(/<Ionicons[\s\S]{0,500}?\/>/g)) {
+        const nameProp = /\bname=(\{[\s\S]*?\}|"[^"]*")/.exec(tag[0]);
+        if (!nameProp) continue;
+        /**
+         * On ne devine pas ce qui est un nom d'icône : on le LIT dans la
+         * palette de glyphes d'Ionicons. Sans cela, `locale === 'ar'` ou
+         * `mode === 'link'` passeraient pour des icônes et le test crierait
+         * sur du code parfaitement correct.
+         */
+        // Ce qui suit un `===` n'est pas une icône mais la valeur comparée
+        // (`mode === 'link' ? 'link-outline' : …`).
+        const expression = nameProp[1].replace(/[\w.[\]]+\s*[!=]==?\s*'[^']*'/g, '');
+        const quoted = Array.from(expression.matchAll(/'([a-z0-9-]+)'|"([a-z0-9-]+)"/g), (m) => m[1] ?? m[2])
+          .filter((name) => GLYPHS.has(name));
+        for (const name of quoted) {
+          if (name.endsWith('-outline') || STATE_GLYPHS.has(name)) continue;
+          const line = text.slice(0, tag.index).split('\n').length;
+          offenders.push(`${rel}:${line} → ${name}`);
+        }
+      }
+    }
+    expect(offenders, 'Une icône de contenu se dessine en trait : `name="<icône>-outline"` (§10).').toEqual([]);
+  });
+});
+
+/**
+ * Dernière exception, et la seule : la FICHE PRODUIT.
+ *
+ * Ses cotes typographiques viennent d'une maquette dessinée en 720 × 1600 px
+ * (`fiche.ts`, tout est divisé par deux) et validée par le client le 25/10/2026.
+ * On y trouve donc des corps qui n'existent pas dans `TYPE_SCALE` (15, 17, 19,
+ * 20, 22) et des interlignes serrés (17 pour 15) — un choix de maquette, pas
+ * une dérive d'écran.
+ *
+ * On ne les « corrige » pas : on les GÈLE. Le test ci-dessous transforme cette
+ * exception en contrat — impossible d'ajouter une sixième taille à la fiche
+ * sans passer par ici, et donc sans décider. Toute NOUVELLE cote, elle, est
+ * refusée par les verrous ci-dessus.
+ */
+describe('Design System — les cotes de la fiche produit sont gelées', () => {
+  const FICHE_SRC = fs.readFileSync(path.join(ROOT, 'src/features/product/fiche.ts'), 'utf8');
+  const numeric = (key: string): number => {
+    const match = new RegExp(`\\b${key}:\\s*(\\d+)`).exec(FICHE_SRC);
+    if (!match) throw new Error(`Cote \`${key}\` introuvable dans fiche.ts`);
+    return Number(match[1]);
+  };
+
+  it('les corps de texte de la fiche sont ceux de la maquette validée', () => {
+    expect({
+      nameSize: numeric('nameSize'),
+      priceSize: numeric('priceSize'),
+      descriptionSize: numeric('descriptionSize'),
+      rowLabel: numeric('rowLabel'),
+      tileLabel: numeric('tileLabel'),
+      infoTitle: numeric('infoTitle'),
+      infoBody: numeric('infoBody'),
+      barPrice: numeric('barPrice'),
+      sheetTitle: numeric('sheetTitle'),
+      panelText: numeric('panelText'),
+      columnHeader: numeric('columnHeader'),
+      rowSize: numeric('rowSize'),
+      rowState: numeric('rowState'),
+      headerTitle: numeric('headerTitle'),
+    }).toEqual({
+      nameSize: 22,
+      priceSize: 20,
+      descriptionSize: 15,
+      rowLabel: 18,
+      tileLabel: 15,
+      infoTitle: 16,
+      infoBody: 15,
+      barPrice: 15,
+      sheetTitle: 17,
+      panelText: 15,
+      columnHeader: 12,
+      rowSize: 22,
+      rowState: 15,
+      headerTitle: 19,
+    });
+  });
+
+  it('les interlignes de la fiche sont ceux de la maquette validée', () => {
+    expect({
+      nameLine: numeric('nameLine'),
+      descriptionLine: numeric('descriptionLine'),
+      infoLine: numeric('infoLine'),
+      sheetTitleLine: numeric('sheetTitleLine'),
+    }).toEqual({ nameLine: 26, descriptionLine: 17, infoLine: 18, sheetTitleLine: 20 });
   });
 });

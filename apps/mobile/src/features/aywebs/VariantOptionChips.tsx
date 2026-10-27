@@ -25,7 +25,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { mediaUrl } from '@/api/client';
 import { AppImage } from '@/design/appImage';
-import { COMMERCE } from '@/design/tokens.mobile';
+import { COMMERCE, RADIUS } from '@/design/tokens.mobile';
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import type { ChoiceOption } from '@/features/aywebs/ChoiceField';
@@ -93,7 +93,7 @@ function Option({ kind, label, option, index, active, onSelect }: {
             <View
               style={[
                 styles.imageRing,
-                { borderColor: active ? COMMERCE.action : theme.colors.line, opacity: disabled ? 0.45 : 1 },
+                { borderColor: active ? COMMERCE.action : theme.colors.line, opacity: disabled ? theme.opacity.disabled : 1 },
               ]}
             >
               <Swatch
@@ -122,7 +122,7 @@ function Option({ kind, label, option, index, active, onSelect }: {
             {
               borderColor: active ? COMMERCE.action : theme.colors.line,
               backgroundColor: active ? theme.status.warning.soft : theme.colors.surface,
-              opacity: disabled ? 0.45 : 1,
+              opacity: disabled ? theme.opacity.disabled : 1,
             },
           ]}
         >
@@ -131,7 +131,7 @@ function Option({ kind, label, option, index, active, onSelect }: {
             <Ionicons
               testID={`aywebs-variant-selected-${index}`}
               name="checkmark"
-              size={14}
+              size={theme.iconSize.xs}
               color={theme.colors.ink}
             />
           ) : null}
@@ -205,7 +205,7 @@ function SelectedBadge({ index }: { index: number }) {
       testID={`aywebs-variant-selected-${index}`}
       style={[styles.selectedBadge, { backgroundColor: theme.colors.canvas, borderColor: theme.colors.line }]}
     >
-      <Ionicons name="checkmark" size={11} color={theme.colors.ink} />
+      <Ionicons name="checkmark" size={theme.iconSize.xs} color={theme.colors.ink} />
     </View>
   );
 }
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
     bottom: -2,
     width: 20,
     height: 20,
-    borderRadius: 10,
+    borderRadius: RADIUS.full,
     borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
     minWidth: 52,
     minHeight: 44,
     borderWidth: 1.5,
-    borderRadius: 12,
+    borderRadius: RADIUS.md,
     paddingHorizontal: 16,
     alignItems: 'center',
     justifyContent: 'center',

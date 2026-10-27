@@ -23,7 +23,7 @@ import { router } from 'expo-router';
 
 import { AppText, Button, KeyValue } from '@/design/ui';
 import { useTheme } from '@/design/theme';
-import { COMMERCE } from '@/design/tokens.mobile';
+import { COMMERCE, RADIUS } from '@/design/tokens.mobile';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { AppImage } from '@/design/appImage';
 import { LoadingSpinner } from '@/design/LoadingSpinner';
@@ -757,7 +757,7 @@ export function AddToCartSheet({
           <Button
             label={busy ? t('aywebs.adding') : t('aywebs.addToCart')}
             tone="commerce"
-            leading={<Ionicons name="bag-add-outline" size={20} color={COMMERCE.onAction} />}
+            leading={<Ionicons name="bag-add-outline" size={theme.iconSize.sm} color={COMMERCE.onAction} />}
             onPress={confirm}
             busy={busy}
             disabled={Boolean(blockedCode) || !sessionId}
@@ -830,7 +830,7 @@ export function AddToCartSheet({
           style={[styles.successBanner, { flexDirection: rowDirectionFor(theme.isRTL), backgroundColor: theme.status.success.soft, borderColor: theme.status.success.border }]}
         >
           <View style={[styles.successIcon, { backgroundColor: theme.status.success.fg }]}>
-            <Ionicons name="checkmark" size={22} color={theme.colors.canvas} />
+            <Ionicons name="checkmark" size={theme.iconSize.md} color={theme.colors.canvas} />
           </View>
           <View style={styles.successCopy}>
             {/* Un bandeau vert VIDE ne dit rien : on écrit le fait, puis la
@@ -863,7 +863,7 @@ export function AddToCartSheet({
             <Button
               label={t('aywebs.goToCart')}
               tone="commerce"
-              leading={<Ionicons name="cart-outline" size={19} color={COMMERCE.onAction} />}
+              leading={<Ionicons name="cart-outline" size={theme.iconSize.sm} color={COMMERCE.onAction} />}
               style={{ flex: 1 }}
               /* Un seul panier visible pour le client : le panier principal. */
               onPress={() => { onClose(); router.push('/cart'); }}
@@ -914,7 +914,7 @@ export function AddToCartSheet({
                 style={[styles.stepperButton, { borderColor: theme.colors.line, backgroundColor: theme.colors.surface, borderRadius: theme.radius.control, borderWidth: 1, minWidth: theme.geometry.minTarget, minHeight: theme.geometry.minTarget }]}
                 testID="aywebs-quantity-less"
               >
-                <Ionicons name="remove" size={theme.iconSize.md} color={quantity <= 1 ? theme.colors.muted : theme.colors.ink} />
+                <Ionicons name="remove-outline" size={theme.iconSize.md} color={quantity <= 1 ? theme.colors.muted : theme.colors.ink} />
               </Pressable>
               <AppText variant="lead" weight="bold">{String(quantity)}</AppText>
               <Pressable
@@ -925,7 +925,7 @@ export function AddToCartSheet({
                 style={[styles.stepperButton, { borderColor: theme.colors.line, backgroundColor: theme.colors.surface, borderRadius: theme.radius.control, borderWidth: 1, minWidth: theme.geometry.minTarget, minHeight: theme.geometry.minTarget }]}
                 testID="aywebs-quantity-more"
               >
-                <Ionicons name="add" size={theme.iconSize.md} color={quantity >= maxQuantity ? theme.colors.muted : theme.colors.ink} />
+                <Ionicons name="add-outline" size={theme.iconSize.md} color={quantity >= maxQuantity ? theme.colors.muted : theme.colors.ink} />
               </Pressable>
             </View>
           </View>
@@ -1000,10 +1000,10 @@ const styles = StyleSheet.create({
   headerTitle: { flex: 1, textAlign: 'center' },
   close: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   productCard: { flexDirection: 'row', alignItems: 'center', padding: 12, gap: 12, borderWidth: StyleSheet.hairlineWidth },
-  productHero: { width: 88, height: 88, borderRadius: 12 },
+  productHero: { width: 88, height: 88, borderRadius: RADIUS.md },
   productText: { flex: 1, gap: 4 },
   pendingRow: { alignItems: 'center', gap: 8 },
-  successBanner: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 16, padding: 16 },
+  successBanner: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: RADIUS.lg, padding: 16 },
   successIcon: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
   successCopy: { flex: 1, gap: 2 },
   quantityRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },

@@ -27,7 +27,7 @@ import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 import { AppText, Button } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { rowDirectionFor } from '@/design/layoutLogic';
-import { MEDIA_RATIO } from '@/design/tokens.mobile';
+import { MEDIA_RATIO, RADIUS } from '@/design/tokens.mobile';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { AppImage } from '@/design/appImage';
 import { storeLogoSources } from '@/features/aywebs/storeLogos';
@@ -134,7 +134,7 @@ export function StoresContent({ catalog }: { catalog: StoresCatalogQuery }) {
     >
       <Ionicons
         name={theme.isRTL ? 'chevron-forward' : 'chevron-back'}
-        size={20}
+        size={theme.iconSize.md}
         color={theme.colors.ink}
         accessibilityElementsHidden
       />
@@ -178,7 +178,7 @@ export function StoresContent({ catalog }: { catalog: StoresCatalogQuery }) {
                 backgroundColor: theme.colors.surface,
                 borderColor: theme.colors.line,
                 borderRadius: theme.radius.card,
-                opacity: pressed ? 0.85 : 1,
+                opacity: pressed ? theme.opacity.dimmed : 1,
               },
             ]}
           >
@@ -188,7 +188,7 @@ export function StoresContent({ catalog }: { catalog: StoresCatalogQuery }) {
             </View>
             <Ionicons
               name={theme.isRTL ? 'chevron-back' : 'chevron-forward'}
-              size={20}
+              size={theme.iconSize.md}
               color={theme.colors.muted}
               accessibilityElementsHidden
             />
@@ -244,7 +244,7 @@ export function StoresContent({ catalog }: { catalog: StoresCatalogQuery }) {
     <>
       <View style={styles.controls}>
         <View style={[styles.search, { flexDirection: rowDirectionFor(theme.isRTL), borderColor: theme.colors.ink, backgroundColor: theme.colors.surface }]}>
-          <Ionicons name="search-outline" size={20} color={theme.colors.muted} accessibilityElementsHidden />
+          <Ionicons name="search-outline" size={theme.iconSize.sm} color={theme.colors.muted} accessibilityElementsHidden />
           <TextInput
             value={query}
             onChangeText={changeQuery}
@@ -254,7 +254,7 @@ export function StoresContent({ catalog }: { catalog: StoresCatalogQuery }) {
             autoCorrect={false}
             autoCapitalize="none"
             returnKeyType="search"
-            style={[styles.searchInput, { color: theme.colors.ink, textAlign: theme.isRTL ? 'right' : 'left' }]}
+            style={[styles.searchInput, theme.text('body'), { color: theme.colors.ink, textAlign: theme.isRTL ? 'right' : 'left' }]}
             testID="aywebs-stores-search"
           />
           {query ? (
@@ -264,7 +264,7 @@ export function StoresContent({ catalog }: { catalog: StoresCatalogQuery }) {
               onPress={() => changeQuery('')}
               hitSlop={8}
             >
-              <Ionicons name="close-circle" size={20} color={theme.colors.muted} accessibilityElementsHidden />
+              <Ionicons name="close-circle" size={theme.iconSize.sm} color={theme.colors.muted} accessibilityElementsHidden />
             </Pressable>
           ) : null}
         </View>
@@ -316,11 +316,11 @@ function ActionTile({ label, icon, active, onPress, testID }: {
           borderColor: tint,
           backgroundColor: theme.colors.surface,
           borderRadius: theme.radius.card,
-          opacity: pressed ? 0.85 : 1,
+          opacity: pressed ? theme.opacity.dimmed : 1,
         },
       ]}
     >
-      <Ionicons name={icon} size={24} color={tint} accessibilityElementsHidden />
+      <Ionicons name={icon} size={theme.iconSize.md} color={tint} accessibilityElementsHidden />
       <AppText variant="label" weight="bold" color={tint} align="center">{label}</AppText>
     </Pressable>
   );
@@ -372,7 +372,7 @@ function StoreCard({ store, subtitle, enabled, saved, onOpen, onToggle }: {
       testID={`aywebs-store-${store.id}`}
       style={({ pressed }) => [
         styles.card,
-        { opacity: enabled ? (pressed ? 0.85 : 1) : 0.6 },
+        { opacity: enabled ? (pressed ? theme.opacity.dimmed : 1) : theme.opacity.disabled },
       ]}
     >
       <View
@@ -415,7 +415,7 @@ function StoreCard({ store, subtitle, enabled, saved, onOpen, onToggle }: {
         >
           <Ionicons
             name={saved ? 'heart' : 'heart-outline'}
-            size={18}
+            size={theme.iconSize.sm}
             color={saved ? theme.colors.accentText : theme.colors.ink}
             accessibilityElementsHidden
           />
@@ -439,7 +439,7 @@ function StoreCard({ store, subtitle, enabled, saved, onOpen, onToggle }: {
             testID={`aywebs-store-visit-${store.id}`}
             style={[styles.visit, { flexDirection: rowDirectionFor(theme.isRTL) }]}
           >
-            <Ionicons name="open-outline" size={16} color={theme.colors.accentText} accessibilityElementsHidden />
+            <Ionicons name="open-outline" size={theme.iconSize.xs} color={theme.colors.accentText} accessibilityElementsHidden />
             <AppText variant="caption" weight="bold" color={theme.colors.accentText}>{t('aywebs.stores.visit')}</AppText>
           </Pressable>
         ) : null}
@@ -455,10 +455,10 @@ const styles = StyleSheet.create({
     gap: 8,
     minHeight: 48,
     borderWidth: 1,
-    borderRadius: 999,
+    borderRadius: RADIUS.full,
     paddingHorizontal: 16,
   },
-  searchInput: { flex: 1, minHeight: 44, fontSize: 16 },
+  searchInput: { flex: 1, minHeight: 44 },
   actions: { alignItems: 'stretch' },
   tile: {
     flex: 1,
@@ -491,7 +491,7 @@ const styles = StyleSheet.create({
     top: 8,
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: RADIUS.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -33,7 +33,7 @@ import { AppText, Button, Field } from '@/design/ui';
 import { SubScreen } from '@/design/subScreen';
 import { goBack } from '@/design/navigation';
 import { useTheme } from '@/design/theme';
-import { frost, veil } from '@/design/tokens.mobile';
+import { RADIUS, frost, veil } from '@/design/tokens.mobile';
 import { useT, type TranslationKey } from '@/i18n';
 import { ApiError, isApiError } from '@/api/errors';
 import { addExternalFavorite } from '@/api/account';
@@ -1140,7 +1140,7 @@ export default function LensScreen() {
           // Fond de « viseur » toujours sombre : l'en-tête et les contrôles posés dessus sont
           // blancs. `ink` devenait BLANC en mode sombre (titre blanc sur blanc).
           <View style={[styles.preview, styles.previewFallback, { backgroundColor: LENS_COLORS.black }]}>
-            <Ionicons name="scan-outline" size={64} color={LENS_COLORS.white} accessibilityElementsHidden />
+            <Ionicons name="scan-outline" size={theme.iconSize.xxl} color={LENS_COLORS.white} accessibilityElementsHidden />
           </View>
         )}
         {session && multi ? (
@@ -1170,7 +1170,7 @@ export default function LensScreen() {
         ) : null}
         <View style={[styles.resultTop, { paddingTop: insets.top + 6, flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
           <Pressable onPress={reset} accessibilityRole="button" accessibilityLabel={t('common.back')} style={styles.overlayButton} hitSlop={HIT_SLOP}>
-            <Ionicons name={theme.isRTL ? 'arrow-forward' : 'arrow-back'} size={theme.iconSize.lg} color={LENS_COLORS.white} style={styles.crisp} accessibilityElementsHidden />
+            <Ionicons name={theme.isRTL ? 'arrow-forward' : 'arrow-back'} size={theme.iconSize.md} color={LENS_COLORS.white} style={styles.crisp} accessibilityElementsHidden />
           </Pressable>
           {/* Barre flottante : elle remplace le titre quand une photo est
               analysée — la photo, son cadre et l'étape restent visibles. */}
@@ -1297,7 +1297,7 @@ export default function LensScreen() {
         <View style={[styles.cameraTop, { paddingTop: insets.top + 6, flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
           <View style={[styles.headerSide, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
             <Pressable onPress={() => goBack('/')} accessibilityRole="button" accessibilityLabel={t('common.back')} style={styles.overlayButton} hitSlop={HIT_SLOP}>
-              <Ionicons name={theme.isRTL ? 'arrow-forward' : 'arrow-back'} size={theme.iconSize.lg} color={LENS_COLORS.white} style={styles.crisp} accessibilityElementsHidden />
+              <Ionicons name={theme.isRTL ? 'arrow-forward' : 'arrow-back'} size={theme.iconSize.md} color={LENS_COLORS.white} style={styles.crisp} accessibilityElementsHidden />
             </Pressable>
             {cameraMode && cameraAllowed ? (
               <Pressable onPress={() => setTorch((value) => !value)} accessibilityRole="button" accessibilityLabel={t('lens.flash')} style={styles.overlayButton} hitSlop={HIT_SLOP} testID="lens-torch">
@@ -1309,7 +1309,7 @@ export default function LensScreen() {
           <AppText variant="title" weight="semibold" color={LENS_COLORS.white} align="center" style={styles.cameraTitle}>{t('lens.title')}</AppText>
           <View style={[styles.headerSide, { flexDirection: theme.isRTL ? 'row' : 'row-reverse' }]}>
             <Pressable onPress={() => setMenuOpen(true)} accessibilityRole="button" accessibilityLabel={t('lens.menu.open')} style={styles.overlayButton} hitSlop={HIT_SLOP} testID="lens-open-menu">
-              <Ionicons name="ellipsis-vertical" size={theme.iconSize.md} color={LENS_COLORS.white} style={styles.crisp} accessibilityElementsHidden />
+              <Ionicons name="ellipsis-vertical-outline" size={theme.iconSize.md} color={LENS_COLORS.white} style={styles.crisp} accessibilityElementsHidden />
             </Pressable>
           </View>
         </View>
@@ -1375,7 +1375,7 @@ export default function LensScreen() {
                 style={[styles.shutterOuter, { opacity: cameraReady ? 1 : 0.5 }]}
               >
                 <View style={styles.shutterInner}>
-                  <Ionicons name="search" size={theme.iconSize.lg} color={LENS_COLORS.black} accessibilityElementsHidden />
+                  <Ionicons name="search-outline" size={theme.iconSize.lg} color={LENS_COLORS.black} accessibilityElementsHidden />
                 </View>
               </Pressable>
               <Pressable onPress={() => setOcerexOpen(true)} accessibilityRole="button" accessibilityLabel={t('ocerex.open')} style={styles.side} testID="lens-open-ocerex">
@@ -1489,7 +1489,7 @@ const styles = StyleSheet.create({
   cornerBL: { bottom: 0, left: 0, borderBottomWidth: 3, borderLeftWidth: 3, borderBottomLeftRadius: 52 },
   cornerBR: { bottom: 0, right: 0, borderBottomWidth: 3, borderRightWidth: 3, borderBottomRightRadius: 52 },
   livePill: {
-    position: 'absolute', alignSelf: 'center', maxWidth: '92%', minHeight: 32, borderRadius: 16,
+    position: 'absolute', alignSelf: 'center', maxWidth: '92%', minHeight: 32, borderRadius: RADIUS.lg,
     paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 8,
   },
   livePillDot: { width: 8, height: 8, borderRadius: 4 },
@@ -1517,13 +1517,13 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   codeHint: {
-    alignItems: 'flex-start', gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 18,
+    alignItems: 'flex-start', gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderRadius: RADIUS.lg,
     backgroundColor: LENS_COLORS.cameraControl,
   },
   codeHintCopy: { flex: 1, gap: 4 },
   // Barre posée sur la caméra : voile sombre translucide (la caméra se devine derrière).
-  modePicker: { minHeight: 64, borderRadius: 28, padding: 4, backgroundColor: LENS_COLORS.cameraControl },
-  mode: { flex: 1, minHeight: 56, borderRadius: 24, alignItems: 'center', justifyContent: 'center', gap: 2, paddingHorizontal: 4 },
+  modePicker: { minHeight: 64, borderRadius: RADIUS.full, padding: 4, backgroundColor: LENS_COLORS.cameraControl },
+  mode: { flex: 1, minHeight: 56, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center', gap: 2, paddingHorizontal: 4 },
   // Mode choisi = état actif : pastille violet clair, libellé noir (10,4:1).
   modeActive: { backgroundColor: LENS_COLORS.activeSoft },
   permissionCenter: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
@@ -1535,8 +1535,8 @@ const styles = StyleSheet.create({
   previewFallback: { alignItems: 'center', justifyContent: 'center' },
   thumbs: { position: 'absolute', left: 12, right: 12, alignItems: 'center', gap: 8, zIndex: 2 },
   thumb: { width: 48, height: 48, borderWidth: 2, overflow: 'hidden' },
-  thumbCount: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
-  tip: { position: 'absolute', alignSelf: 'center', maxWidth: '88%', borderRadius: 18, paddingHorizontal: 16, paddingVertical: 8, zIndex: 3 },
+  thumbCount: { borderRadius: RADIUS.md, paddingHorizontal: 10, paddingVertical: 4 },
+  tip: { position: 'absolute', alignSelf: 'center', maxWidth: '88%', borderRadius: RADIUS.lg, paddingHorizontal: 16, paddingVertical: 8, zIndex: 3 },
   resultTop: { position: 'absolute', top: 0, left: 8, right: 8, alignItems: 'center', zIndex: 3 },
   resultTitle: { flex: 1, textShadowColor: veil(0.5), textShadowRadius: 2, textShadowOffset: { width: 0, height: 1 } },
   // Au-dessus de tout le reste (en-tête, aide, vignettes) : plein écran, elle les couvre.

@@ -18,7 +18,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppText, Button } from '@/design/ui';
 import { AppImage } from '@/design/appImage';
 import { LoadingSpinner } from '@/design/LoadingSpinner';
-import { frost, veil } from '@/design/tokens.mobile';
+import { RADIUS, frost, veil } from '@/design/tokens.mobile';
 import { SPACE } from '@/design/tokens.generated';
 import { useTheme } from '@/design/theme';
 import { useT, type TranslationKey } from '@/i18n';
@@ -134,7 +134,7 @@ function OptionSelector({
                       {
                         borderTopColor: theme.colors.line,
                         flexDirection: theme.isRTL ? 'row-reverse' : 'row',
-                        opacity: unavailable ? 0.36 : pressed ? theme.opacity.subtle : 1,
+                        opacity: unavailable ? theme.opacity.unavailable : pressed ? theme.opacity.subtle : 1,
                       },
                     ]}
                   >
@@ -219,7 +219,7 @@ function ColorSelector({
                   // Pastille de couleur sur BLANC (17/10/2026) : le gris teintait
                   // la vignette et faussait la lecture de la couleur réelle.
                   backgroundColor: theme.colors.surface,
-                  opacity: unavailable ? 0.35 : 1,
+                  opacity: unavailable ? theme.opacity.unavailable : 1,
                 },
               ]}
             >
@@ -476,15 +476,15 @@ function FactAccordion({
         accessibilityState={{ expanded: open }}
         style={({ pressed }) => [
           styles.accordionHeader,
-          { flexDirection: theme.isRTL ? 'row-reverse' : 'row', opacity: pressed ? 0.64 : 1 },
+          { flexDirection: theme.isRTL ? 'row-reverse' : 'row', opacity: pressed ? theme.opacity.subtle : 1 },
         ]}
         testID={testID}
       >
         <View style={[styles.accordionHeading, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
-          <Ionicons name={icon} size={20} color={theme.colors.ink} accessibilityElementsHidden />
-          <AppText weight="semibold" style={styles.accordionTitle}>{title}</AppText>
+          <Ionicons name={icon} size={theme.iconSize.sm} color={theme.colors.ink} accessibilityElementsHidden />
+          <AppText variant="body" weight="semibold">{title}</AppText>
         </View>
-        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={20} color={theme.colors.ink} accessibilityElementsHidden />
+        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={theme.iconSize.sm} color={theme.colors.ink} accessibilityElementsHidden />
       </Pressable>
       {open ? (
         <View style={[styles.accordionBody, { borderTopColor: theme.colors.line }]}>
@@ -928,13 +928,13 @@ export function LensProductView({
           style={({ pressed }) => [styles.headerIconButton, { opacity: pressed ? theme.opacity.subtle : 1 }]}
           testID="lens-header-back"
         >
-          <Ionicons name={theme.isRTL ? 'arrow-forward' : 'arrow-back'} size={23} color={LENS_COLORS.white} style={styles.crispIcon} accessibilityElementsHidden />
+          <Ionicons name={theme.isRTL ? 'arrow-forward' : 'arrow-back'} size={theme.iconSize.md} color={LENS_COLORS.white} style={styles.crispIcon} accessibilityElementsHidden />
           <Animated.View
             pointerEvents="none"
             style={[styles.headerIconInk, { opacity: chromeOpacity }]}
             testID="lens-header-back-ink"
           >
-            <Ionicons name={theme.isRTL ? 'arrow-forward' : 'arrow-back'} size={23} color={LENS_COLORS.black} accessibilityElementsHidden />
+            <Ionicons name={theme.isRTL ? 'arrow-forward' : 'arrow-back'} size={theme.iconSize.md} color={LENS_COLORS.black} accessibilityElementsHidden />
           </Animated.View>
         </Pressable>
         <Animated.View pointerEvents="none" style={[styles.collapsedTitle, { opacity: chromeOpacity }]}>
@@ -954,7 +954,7 @@ export function LensProductView({
           ]}
           testID="lens-header-cart"
         >
-          <Ionicons name="bag-handle-outline" size={19} color={LENS_COLORS.white} style={styles.crispIcon} accessibilityElementsHidden />
+          <Ionicons name="bag-handle-outline" size={theme.iconSize.md} color={LENS_COLORS.white} style={styles.crispIcon} accessibilityElementsHidden />
           <AppText weight="bold" style={styles.cartCountWhite}>{cartUnits}</AppText>
           {deadline ? (
             <AppText variant="caption" weight="bold" style={styles.cartCountdownWhite}>
@@ -967,7 +967,7 @@ export function LensProductView({
             style={[styles.headerIconInk, styles.cartRow, { opacity: chromeOpacity, flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}
             testID="lens-header-cart-ink"
           >
-            <Ionicons name="bag-handle-outline" size={19} color={LENS_COLORS.black} accessibilityElementsHidden />
+            <Ionicons name="bag-handle-outline" size={theme.iconSize.md} color={LENS_COLORS.black} accessibilityElementsHidden />
             <AppText weight="bold" style={styles.cartCount}>{cartUnits}</AppText>
             {deadline ? (
               <AppText variant="caption" weight="bold" style={{ color: countdownExpired ? LENS_COLORS.sale : LENS_COLORS.black }}>
@@ -1042,10 +1042,10 @@ export function LensProductView({
               style={({ pressed }) => [
                 styles.favorite,
                 theme.isRTL ? styles.favoriteRTL : styles.favoriteLTR,
-                { top: insets.top + 66, opacity: favorite ? 0.72 : pressed ? theme.opacity.subtle : 1 },
+                { top: insets.top + 66, opacity: favorite ? theme.opacity.favorite : pressed ? theme.opacity.subtle : 1 },
               ]}
             >
-              <Ionicons name={favorite ? 'heart' : 'heart-outline'} size={22} color={favorite ? LENS_COLORS.active : LENS_COLORS.white} style={styles.crispIcon} accessibilityElementsHidden />
+              <Ionicons name={favorite ? 'heart' : 'heart-outline'} size={theme.iconSize.md} color={favorite ? LENS_COLORS.active : LENS_COLORS.white} style={styles.crispIcon} accessibilityElementsHidden />
             </Pressable>
           ) : null}
           {candidate.promo ? (
@@ -1090,11 +1090,11 @@ export function LensProductView({
               <AppText variant="caption" color={theme.colors.muted}>{candidate.modelInfo}</AppText>
             </View>
           ) : null}
-          {candidate.brand ? <AppText weight="bold" style={styles.brand}>{candidate.brand}</AppText> : null}
-          <AppText weight={candidate.brand ? 'regular' : 'bold'} style={styles.productTitle}>{candidate.title}</AppText>
+          {candidate.brand ? <AppText variant="label" weight="bold" style={styles.brand}>{candidate.brand}</AppText> : null}
+          <AppText variant="lead" weight={candidate.brand ? 'regular' : 'bold'} style={styles.productTitle}>{candidate.title}</AppText>
           {candidate.ratingKind === 'merchant' && candidate.rating != null ? (
             <View style={[styles.ratingRow, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
-              <Ionicons name="star" size={17} color={theme.colors.ink} accessibilityElementsHidden />
+              <Ionicons name="star" size={theme.iconSize.xs} color={theme.colors.ink} accessibilityElementsHidden />
               <AppText weight="bold">{candidate.rating.toFixed(1)}</AppText>
               {candidate.ratingCount ? <AppText variant="caption" color={theme.colors.muted}>{`(${candidate.ratingCount})`}</AppText> : null}
             </View>
@@ -1104,7 +1104,7 @@ export function LensProductView({
               mais en blanc (jamais de pastille grise). */}
           {candidate.sizeAdvice ? (
             <View style={[styles.adviceBox, { borderColor: theme.colors.line }]} testID="lens-size-advice">
-              <Ionicons name="information-circle-outline" size={16} color={theme.colors.ink} accessibilityElementsHidden />
+              <Ionicons name="information-circle-outline" size={theme.iconSize.xs} color={theme.colors.ink} accessibilityElementsHidden />
               <AppText variant="caption" style={styles.adviceText}>{candidate.sizeAdvice}</AppText>
             </View>
           ) : null}
@@ -1157,7 +1157,7 @@ export function LensProductView({
                   style={({ pressed }) => [styles.sizeGuideLink, { opacity: pressed ? theme.opacity.subtle : 1, flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}
                   testID="lens-open-size-guide"
                 >
-                  <Ionicons name="help-circle-outline" size={16} color={theme.colors.ink} style={styles.sizeGuideIcon} accessibilityElementsHidden />
+                  <Ionicons name="help-circle-outline" size={theme.iconSize.xs} color={theme.colors.ink} style={styles.sizeGuideIcon} accessibilityElementsHidden />
                   <AppText variant="caption" weight="bold" style={styles.sizeGuideText}>{t('lens.product.sizeGuide')}</AppText>
                 </Pressable>
               ) : null}
@@ -1281,7 +1281,7 @@ export function LensProductView({
             },
           ]}>
             <View style={[styles.confirmationIcon, { borderColor: theme.colors.line }]}>
-              <Ionicons name="checkmark" size={26} color={theme.status.success.fg} accessibilityElementsHidden />
+              <Ionicons name="checkmark" size={theme.iconSize.lg} color={theme.status.success.fg} accessibilityElementsHidden />
             </View>
             <AppText variant="title" weight="bold" align="center" accessibilityRole="header">
               {t('lens.cart.addedTitle')}
@@ -1289,7 +1289,7 @@ export function LensProductView({
             <AppText color={theme.colors.muted} align="center">{t('lens.cart.addedBody')}</AppText>
             {deadline ? (
               <View style={[styles.confirmationTimer, { borderColor: theme.colors.line }]}>
-                <Ionicons name="time-outline" size={19} color={theme.colors.ink} accessibilityElementsHidden />
+                <Ionicons name="time-outline" size={theme.iconSize.sm} color={theme.colors.ink} accessibilityElementsHidden />
                 <AppText weight="bold" style={{ color: theme.colors.ink }}>
                   {countdownExpired ? t('lens.cart.expired') : t('lens.cart.validFor', { time: countdown })}
                 </AppText>
@@ -1365,16 +1365,15 @@ const styles = StyleSheet.create({
   productSheetHandle: { height: 34, marginHorizontal: -SPACE[3], alignItems: 'center', justifyContent: 'center' },
   sheetHandle: { width: 44, height: 5, borderRadius: 3, alignSelf: 'center' },
   // Pas de couleur fixe : la fiche suit le thème (`ink`), lisible en clair comme en sombre.
-  brand: { fontSize: 19, lineHeight: 24, marginTop: 2 },
-  productTitle: { fontSize: 17, lineHeight: 23, marginBottom: 4 },
+  brand: { marginTop: 2 },
+  productTitle: { marginBottom: 4 },
   ratingRow: { alignItems: 'center', gap: 6, minHeight: 24 },
   adviceBox: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 8,
     borderWidth: StyleSheet.hairlineWidth, padding: 12, marginTop: 4,
   },
-  adviceText: { flex: 1, lineHeight: 19 },
+  adviceText: { flex: 1 },
   merchantLine: { alignItems: 'center', gap: 6, minHeight: 24, marginTop: 2 },
-  merchantValue: { fontWeight: '600' },
   // Résumé du choix : du TEXTE sur blanc, plus une pastille grise (17/10/2026).
   choiceSummary: { alignSelf: 'flex-start', paddingVertical: 2 },
   optionsArea: { gap: 12, marginTop: 4 },
@@ -1395,9 +1394,8 @@ const styles = StyleSheet.create({
   accordion: { borderTopWidth: StyleSheet.hairlineWidth },
   accordionHeader: { minHeight: 60, alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   accordionHeading: { flex: 1, alignItems: 'center', gap: 12 },
-  accordionTitle: { fontSize: 16 },
   accordionBody: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 8, paddingBottom: 16 },
-  description: { fontSize: 15, lineHeight: 23, paddingVertical: 8 },
+  description: { paddingVertical: 8 },
   factGrid: { marginTop: 4 },
   factGridRow: { borderTopWidth: StyleSheet.hairlineWidth, gap: 16, paddingVertical: 12 },
   // Une cellule = intitulé au-dessus, valeur en dessous (jamais côte à côte).
@@ -1414,7 +1412,7 @@ const styles = StyleSheet.create({
   confirmationBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: veil(0.46) },
   confirmationSheet: { paddingHorizontal: 24, paddingTop: 24, gap: 12, alignItems: 'center' },
   confirmationIcon: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', borderWidth: StyleSheet.hairlineWidth },
-  confirmationTimer: { minHeight: 44, alignSelf: 'stretch', borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 12, borderWidth: StyleSheet.hairlineWidth },
+  confirmationTimer: { minHeight: 44, alignSelf: 'stretch', borderRadius: RADIUS.md, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 12, borderWidth: StyleSheet.hairlineWidth },
   continueShopping: { minHeight: 44, alignSelf: 'stretch', justifyContent: 'center' },
   zoomViewport: { overflow: 'hidden' },
   zoomContent: { flex: 1 },

@@ -52,7 +52,7 @@ export function BrandMark({ size = 36, withName = true, nameSize, nameColor }: B
           variant="label"
           weight="bold"
           color={color}
-          style={{ fontSize: nameSize ?? Math.round(size * 0.5), letterSpacing: 1 }}
+          style={{ fontSize: nameSize ?? Math.round(size * 0.5) }}
         >
           ZAYROVI
         </AppText>

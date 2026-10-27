@@ -69,7 +69,7 @@ export function LensSearchRing({ width, height }: { width: number; height: numbe
           style={[styles.dot, {
             left: point.x - DOT / 2,
             top: point.y - DOT / 2,
-            opacity: reduced ? 0.85 : beats[index].interpolate({ inputRange: [0, 1], outputRange: [0.26, 1] }),
+            opacity: reduced ? theme.opacity.dimmed : beats[index].interpolate({ inputRange: [0, 1], outputRange: [0.26, 1] }),
             transform: [{ scale: reduced ? 1 : beats[index].interpolate({ inputRange: [0, 1], outputRange: [0.72, 1.2] }) }],
           }]}
           testID={`lens-search-dot-${index}`}

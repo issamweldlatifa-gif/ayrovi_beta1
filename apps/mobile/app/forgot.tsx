@@ -103,7 +103,7 @@ export default function ForgotPasswordScreen() {
           onPress={() => goBack('/(tabs)/account')}
           style={[styles.close, { minHeight: theme.geometry.minTarget, minWidth: theme.geometry.minTarget }]}
         >
-          <Ionicons name={locale === 'ar' ? 'arrow-forward' : 'arrow-back'} size={26} color={theme.colors.ink} />
+          <Ionicons name={locale === 'ar' ? 'arrow-forward' : 'arrow-back'} size={theme.iconSize.md} color={theme.colors.ink} />
         </Pressable>
 
         <AppText variant="title">{t('auth.forgot.title')}</AppText>

@@ -101,13 +101,10 @@ export default function TabsLayout() {
             borderTopWidth: 0, overflow: 'hidden',
           } : null),
         },
-        tabBarLabelStyle: {
-          ...theme.text('caption', 'bold'),
-          fontSize: 11,
-        },
+        tabBarLabelStyle: { ...theme.text('caption', 'bold') },
         tabBarIcon: ({ focused, color, size }) => {
           const pair = ICONS[route.name] ?? ICONS.account;
-          return <Ionicons name={focused ? pair.active : pair.inactive} size={size ?? 24} color={color} />;
+          return <Ionicons name={focused ? pair.active : pair.inactive} size={size ?? theme.iconSize.md} color={color} />;
         },
       })}
     >

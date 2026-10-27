@@ -60,7 +60,7 @@ function SignedIn({ overview, pending }: { overview: AccountOverview | null; pen
         hint={verified ? undefined : t('account.unverified')}
       >
         <View style={[styles.identity, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-          <Ionicons name="person-circle-outline" size={44} color={theme.colors.muted} accessibilityElementsHidden />
+          <Ionicons name="person-circle-outline" size={theme.iconSize.xl} color={theme.colors.muted} accessibilityElementsHidden />
           <View style={styles.identityText}>
             <AppText variant="lead" weight="bold">{shown?.displayName || '—'}</AppText>
             <AppText variant="caption" color={theme.colors.muted}>{shown?.email || shown?.phone || ''}</AppText>

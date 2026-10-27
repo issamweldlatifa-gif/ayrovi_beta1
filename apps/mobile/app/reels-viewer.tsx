@@ -106,7 +106,7 @@ export default function ReelsViewerScreen() {
           hitSlop={8}
           style={styles.back}
         >
-          <Ionicons name={theme.isRTL ? 'chevron-forward' : 'chevron-back'} size={30} color={theme.colors.onMedia} accessibilityElementsHidden />
+          <Ionicons name={theme.isRTL ? 'chevron-forward' : 'chevron-back'} size={theme.iconSize.md} color={theme.colors.onMedia} accessibilityElementsHidden />
         </Pressable>
       </View>
 

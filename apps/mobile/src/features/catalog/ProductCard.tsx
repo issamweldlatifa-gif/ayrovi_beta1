@@ -134,7 +134,7 @@ export function ProductCard({ product, onOpen, style, hasCombinations = false, p
           onPress={(event) => { event.stopPropagation?.(); cart.mutate(); }}
           style={[styles.cartButton, { backgroundColor: theme.colors.ink, borderRadius: theme.radius.control }]}
         >
-          <Ionicons name={cart.isSuccess ? 'checkmark' : 'bag-add-outline'} size={16} color={theme.colors.canvas} accessibilityElementsHidden />
+          <Ionicons name={cart.isSuccess ? 'checkmark' : 'bag-add-outline'} size={theme.iconSize.sm} color={theme.colors.canvas} accessibilityElementsHidden />
           <AppText variant="caption" weight="bold" color={theme.colors.canvas} numberOfLines={1}>
             {cart.isSuccess ? t('catalog.added') : t('catalog.addToCart')}
           </AppText>
