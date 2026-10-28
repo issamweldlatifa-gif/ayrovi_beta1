@@ -10,6 +10,7 @@
 import type { AyWebsResolveOutcome, AyWebsResolvedProduct } from '@/api/aywebs';
 import { ApiError } from '@/api/errors';
 import { resolveWithCaptureFallback } from '@/features/aywebs/captureFallback';
+import { captureMatchesPageUrl } from '@/features/aywebs/webNavigation';
 
 export const AYWEBS_CAPTURE_EMPTY_PRICE_RETRIES = 2;
 export const AYWEBS_CAPTURE_EMPTY_PRICE_RETRY_DELAY_MS = 450;
@@ -135,7 +136,7 @@ export interface PrefetchEntry {
  * Sinon (absente, en échec, périmée, autre page) : on relit au moment du clic.
  */
 export function canReusePrefetch(entry: PrefetchEntry | null, pageUrl: string, now: number): boolean {
-  if (!entry || entry.url !== pageUrl) return false;
+  if (!entry || (entry.url !== pageUrl && !captureMatchesPageUrl(entry.url, pageUrl))) return false;
   if (entry.status === 'reading') return true;
   return entry.status === 'ok' && now - entry.at < AYWEBS_PREFETCH_MAX_AGE_MS;
 }
@@ -205,7 +206,7 @@ export async function resolveAddToCart(input: AddToCartFlowInput): Promise<AddTo
         ? await withBudget(input.readCapture(), input.budgetMs)
         : await input.readCapture();
     } catch (error) {
-      if (input.signal?.aborted || (error instanceof ApiError && error.isAborted)) throw error;
+      if (input.signal ? input.signal.aborted : (error instanceof ApiError && error.isAborted)) throw error;
       captured = undefined;
     }
     if (input.signal?.aborted) throw new ApiError('aborted', 'Requête interrompue.');
@@ -250,7 +251,8 @@ export function readDecision(
   pageUrl: string,
 ): 'start' | 'join' {
   if (!inFlight) return 'start';
-  if (intent === 'silent' && inFlight.intent === 'user' && inFlight.pageUrl === pageUrl) return 'join';
+  const sameDocument = inFlight.pageUrl === pageUrl || captureMatchesPageUrl(inFlight.pageUrl, pageUrl);
+  if (intent === 'silent' && inFlight.intent === 'user' && sameDocument) return 'join';
   return 'start';
 }
 

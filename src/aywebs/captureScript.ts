@@ -172,6 +172,8 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     '[data-pl="product-price"] [class*="price--current" i]',
     '[data-pl="product-price"] [class*="currentPrice" i]',
     '.product-price-current',
+    '[class*="pdp-comp-price-current" i]',
+    '[class*="price-banner--current" i]',
     '.uniform-banner-box-price',
     '[class*="pdp-info" i] [class*="price--current" i]',
     '[class*="price-default--current" i]',
@@ -290,8 +292,15 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
       if (mainReadings.length > 0) return mainReadings;
     }
     if (IS_ALIEXPRESS) {
-      var aeReadings = collectScopedReadings(AE_MAIN_PRICE_SCOPES);
-      if (aeReadings.length > 0) return aeReadings;
+      /* Sur AliExpress mobile/desktop, le bloc principal « data-pl="product-price" »
+         coexiste parfois avec une bannière secondaire (« Offre de bienvenue » /
+         barre collante) : dès que le premier sélecteur prioritaire livre un montant
+         unique, on ne descend pas dans les sélecteurs de repli moins précis. */
+      for (var aeS = 0; aeS < AE_MAIN_PRICE_SCOPES.length; aeS++) {
+        var tierReadings = collectScopedReadings([AE_MAIN_PRICE_SCOPES[aeS]]);
+        if (tierReadings.length === 1) return tierReadings;
+        if (tierReadings.length > 1) return tierReadings;
+      }
     }
     return collectScopedReadings(PRICE_SCOPES);
   }
@@ -717,6 +726,10 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     }
     return null;
   }
+  function aeUnwrapFields(comp) {
+    if (comp && typeof comp === 'object' && comp.fields && typeof comp.fields === 'object') return comp.fields;
+    return comp;
+  }
   function aeParseRawObject(raw) {
     if (!raw || typeof raw !== 'object') return null;
     var root = raw;
@@ -730,11 +743,11 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     }
     if (root.fields && typeof root.fields === 'object') root = root.fields;
 
-    var infoComp = root.productInfoComponent || root.pageModule || root.titleModule || aeFindComponent(root, [/^productInfo/i, /^title_/i, /^header_/i], 2) || {};
-    var priceComp = root.priceComponent || root.priceModule || aeFindComponent(root, [/^priceComponent$/i, /^priceModule$/i, /^price_/i], 2) || {};
-    var skuComp = root.skuComponent || root.skuModule || root.skuInfo || aeFindComponent(root, [/^skuComponent$/i, /^skuModule$/i, /^sku_/i, /^skuInfo$/i], 2) || {};
-    var invComp = root.inventoryComponent || root.quantityModule || aeFindComponent(root, [/^inventory/i, /^quantity_/i], 2) || {};
-    var imgComp = root.imageComponent || root.imageModule || root.imageView || aeFindComponent(root, [/^imageComponent$/i, /^imageModule$/i, /^imageView/i], 2) || {};
+    var infoComp = aeUnwrapFields(root.productInfoComponent || root.pageModule || root.titleModule || aeFindComponent(root, [/^(?:productInfo|headerInfo|title_|header_)/i], 2)) || {};
+    var priceComp = aeUnwrapFields(root.priceComponent || root.priceModule || aeFindComponent(root, [/^(?:priceComponent|priceModule|price_)/i], 2)) || {};
+    var skuComp = aeUnwrapFields(root.skuComponent || root.skuModule || root.skuInfo || aeFindComponent(root, [/^(?:skuComponent|skuModule|sku_|skuInfo)/i], 2)) || {};
+    var invComp = aeUnwrapFields(root.inventoryComponent || root.quantityModule || aeFindComponent(root, [/^(?:inventory|quantity_)/i], 2)) || {};
+    var imgComp = aeUnwrapFields(root.imageComponent || root.imageModule || root.imageView || aeFindComponent(root, [/^(?:imageComponent|imageModule|imageView)/i], 2)) || {};
 
     var rawItemId = text(
       infoComp.id || infoComp.productId || infoComp.itemId
@@ -816,8 +829,8 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
       }
     }
 
-    /* Propriétés de variantes (productSKUPropertyList / skuProperties / props) */
-    var rawProps = skuComp.productSKUPropertyList || skuComp.skuProperties || skuComp.props || (root.sku && (root.sku.props || root.sku.skuProperties)) || [];
+    /* Propriétés de variantes (productSKUPropertyList / skuProperties / propertyList / props) */
+    var rawProps = skuComp.productSKUPropertyList || skuComp.skuProperties || skuComp.propertyList || skuComp.props || (root.sku && (root.sku.props || root.sku.skuProperties || root.sku.propertyList)) || [];
     var properties = [];
     var propNameById = {};
     var valInfoByPair = {};
@@ -1906,7 +1919,40 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     return '';
   }
 
-  try { out.url = cut(location && location.href, 600); } catch (e) { out.url = ''; }
+  function cleanCaptureUrl(rawHref) {
+    var href = text(rawHref);
+    if (!href) return '';
+    if (href.length <= 500 && !IS_ALIEXPRESS) return cut(href, 600);
+    /* Les URL AliExpress/SPA dépassent souvent 800–1400 caractères à cause de
+       « pdp_npi », « pdp_ext_f », « utparam-url », « spm »… Une troncature brute à 600
+       coupait au milieu d'un encodage « % » et perdait « sku_id » ou rendait l'URL
+       différente de celle du WebView. On retire uniquement le bruit de suivi. */
+    try {
+      var hashPos = href.indexOf('#');
+      var noHash = hashPos >= 0 ? href.slice(0, hashPos) : href;
+      var qPos = noHash.indexOf('?');
+      if (qPos < 0) return cut(noHash, 600);
+      var basePart = noHash.slice(0, qPos);
+      var queryPart = noHash.slice(qPos + 1);
+      var dropKey = /^(?:utm_[^=]*|spm|scm|scm_id|scm-url|pvid|pdp_npi|pdp_ext_f|utparam-url|algo_pvid|algo_exp_id|curpageloguid|gatewayadapt|gps-id|btsid|ws_ab_test|_t|aff_fcid|aff_fsk|aff_platform|sk|aff_trace_key|terminal_id|afsmartredirect|sourcetype|channel|_randl_shipto|_evo_buckets|fbclid|gclid|srsltid)$/i;
+      var parts = queryPart.split('&');
+      var kept = [];
+      for (var qp = 0; qp < parts.length; qp++) {
+        var seg = parts[qp];
+        if (!seg) continue;
+        var eqIdx = seg.indexOf('=');
+        var kName = eqIdx >= 0 ? seg.slice(0, eqIdx) : seg;
+        if (dropKey.test(kName)) continue;
+        kept.push(seg);
+      }
+      var rebuilt = kept.length ? (basePart + '?' + kept.join('&')) : basePart;
+      return cut(rebuilt, 600);
+    } catch (e) {
+      return cut(href, 600);
+    }
+  }
+
+  try { out.url = cleanCaptureUrl(location && location.href); } catch (e) { out.url = ''; }
   try { out.capturedAt = new Date().toISOString(); } catch (e) { out.capturedAt = null; }
   try { out.pageLang = cut(document.documentElement && document.documentElement.getAttribute('lang'), 20) || null; } catch (e) {}
 
@@ -2305,7 +2351,7 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
         }
       } catch (e) {}
     }
-    if (IS_ALIEXPRESS && scoped.length <= 1) {
+    if (IS_ALIEXPRESS) {
       try {
         aeEnsureState();
         if (ALIEXPRESS_STATE) {
@@ -4137,7 +4183,24 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
   if (out.priceCandidates.length > LIMITS.priceCandidates) out.priceCandidates = out.priceCandidates.slice(0, LIMITS.priceCandidates);
   if (!out.title) out.title = null;
   if (!out.capturedAt) out.capturedAt = new Date().toISOString();
-  try { return JSON.stringify(out); } catch (e) { return '{}'; }
+  try {
+    var serializedOut = JSON.stringify(out);
+    /* Garde-fou contre « TOO_LARGE » (64 Ko octets / caractères) sur les fiches
+       AliExpress aux libellés multilingues denses : on réduit progressivement la
+       matrice « out.aliexpress.skus » en préservant le SKU actif en tête. */
+    if (out.aliexpress && out.aliexpress.skus && out.aliexpress.skus.length > 0) {
+      var byteCount = function (str) {
+        try { return encodeURIComponent(str).replace(/%[0-9A-F]{2}/g, 'x').length; }
+        catch (e) { return str.length * 2; }
+      };
+      while (out.aliexpress.skus.length > 0 && (serializedOut.length > 56000 || byteCount(serializedOut) > 56000)) {
+        var nextLen = Math.floor(out.aliexpress.skus.length * 0.7);
+        out.aliexpress.skus = out.aliexpress.skus.slice(0, nextLen);
+        serializedOut = JSON.stringify(out);
+      }
+    }
+    return serializedOut;
+  } catch (e) { return '{}'; }
 })();`;
 
 /**

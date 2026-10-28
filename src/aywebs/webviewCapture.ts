@@ -410,7 +410,12 @@ function cleanVariantGroups(raw: unknown): AyWebsCapturedVariantGroup[] {
 
 function hostOf(raw: string): string | null {
   try {
-    return new URL(raw).hostname.toLowerCase().replace(/^www\./, '');
+    const clean = new URL(raw).hostname.toLowerCase().replace(/^www\./, '');
+    /* AliExpress redirige librement entre sous-domaines régionaux/mobiles
+       (`www.`, `fr.`, `m.`, `ar.`, `a.aliexpress.com`) pour la même fiche. */
+    const aeRoot = /(?:^|\.)(aliexpress\.(?:com|us|ru))$/.exec(clean);
+    if (aeRoot) return aeRoot[1];
+    return clean;
   } catch {
     return null;
   }

@@ -575,4 +575,39 @@ describe('AYWEBs — AliExpress v2 : activation, capture avancée, matrice SKU e
       .expect(201);
     expect(unshippableRes.body.data.availability.state).toBe('OUT_OF_STOCK');
   });
+
+  it('Redirection mobile inter-sous-domaines (www. -> m./fr.aliexpress.com) et URL > 800 caractères : acceptée sans URL_HOST_MISMATCH', async () => {
+    const { app } = createHarness();
+    const requestUrl = 'https://www.aliexpress.com/item/1005008888888888.html';
+    const redirectedMobileUrl =
+      'https://m.aliexpress.com/item/1005008888888888.html?spm=a2g0o.detail.0.0.123456'
+      + '&pdp_npi=4%40dis%21EUR%2149.90%2124.90%21' + 'x'.repeat(650)
+      + '&sku_id=12000039000001';
+
+    const html = buildAliExpressCometPage({
+      itemId: '1005008888888888',
+      currency: 'EUR',
+      selectedColor: 'Noir',
+      selectedPlug: 'EU Plug',
+    });
+    const captured = runAliExpressCapture(html, redirectedMobileUrl);
+    expect(String(captured.url)).toContain('sku_id=12000039000001');
+    expect(String(captured.url).length).toBeLessThan(200);
+
+    const validation = validateAyWebsCapturedPage(captured, requestUrl);
+    expect(validation.ok).toBe(true);
+    expect(validation.rejection).toBeNull();
+
+    const res = await request(app)
+      .post('/api/v1/aywebs/product/resolve')
+      .set('X-Session-Id', SESSION_ID)
+      .send({
+        url: requestUrl,
+        store_id: 'aliexpress',
+        capture: captured,
+      })
+      .expect(201);
+    expect(res.body.capture.used).toBe(true);
+    expect(res.body.data.ayrovi_pricing?.total_tnd).toBeGreaterThan(0);
+  });
 });

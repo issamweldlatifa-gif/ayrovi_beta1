@@ -14,12 +14,12 @@ import { StyleSheet, View } from 'react-native';
 import { WebView as RNWebView, type WebViewMessageEvent, type WebViewProps } from 'react-native-webview';
 
 import {
-  buildAyWebsCaptureInjection, fetchAyWebsCaptureScript, parseAyWebsCaptureMessage,
+  buildAyWebsCaptureInjection, fetchAyWebsCaptureScript, isAyWebsBridgeMessage, parseAyWebsCaptureMessage,
 } from '@/api/aywebs';
 import { ApiError } from '@/api/errors';
 import { AYWEBS_CAPTURE_WATCHDOG_MS } from '@/features/aywebs/captureFlow';
 import { waitForPageIdle } from '@/features/aywebs/captureFallback';
-import { decideWebNavigation } from '@/features/aywebs/webNavigation';
+import { decideWebNavigation, isFatalMainPageLoadError } from '@/features/aywebs/webNavigation';
 
 /* Même contournement de typage que l'écran du magasin (react-native-webview 13.17). */
 type ReaderHandle = { injectJavaScript: (script: string) => void };
@@ -87,6 +87,7 @@ export const VariantReader = forwardRef<VariantReaderHandle, { storeId?: string 
 
   const onMessage = useCallback((event: WebViewMessageEvent) => {
     if (!pending.current) return;
+    if (!isAyWebsBridgeMessage(event.nativeEvent.data)) return;
     const parsed = parseAyWebsCaptureMessage(event.nativeEvent.data);
     if (!parsed.ok) {
       settle(false, new ApiError('malformed', `Capture refusée : ${parsed.reason}`));
@@ -110,7 +111,10 @@ export const VariantReader = forwardRef<VariantReaderHandle, { storeId?: string 
           onLoadStart={() => { loading.current = true; }}
           onLoadEnd={onLoadEnd}
           onMessage={onMessage}
-          onError={() => settle(false, new ApiError('network', 'La page de la variante est injoignable.'))}
+          onError={(event) => {
+            if (!isFatalMainPageLoadError(event.nativeEvent, request.url)) return;
+            settle(false, new ApiError('network', 'La page de la variante est injoignable.'));
+          }}
         />
       ) : null}
     </View>

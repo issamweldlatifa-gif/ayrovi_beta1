@@ -468,6 +468,27 @@ export type AyWebsCaptureMessage =
   | { ok: false; reason: 'EMPTY' | 'TOO_LARGE' | 'NOT_JSON' | 'NOT_OBJECT' | 'SCRIPT_ERROR' };
 
 /**
+ * يميّز رسائل جسر الكابتشر متاعنا عن ضجيج سكريبتات التاجر (`WindVane`, `AEHybrid`,
+ * `aplus` على AliExpress/SHEIN) اللي تبعث نصوصاً أو كائنات JSON خاصة بها عبر
+ * `window.ReactNativeWebView.postMessage` فتُسقط القراءة الجارية خطأً.
+ */
+export function isAyWebsBridgeMessage(raw: unknown): boolean {
+  if (typeof raw !== 'string') return false;
+  const text = raw.trim();
+  if (!text.startsWith('{')) return false;
+  if (text.length > AYWEBS_CAPTURE_MESSAGE_MAX_CHARS) {
+    return /^\{\s*"(?:v|__aywebs_error)"\s*:/.test(text);
+  }
+  try {
+    const parsed: unknown = JSON.parse(text);
+    if (!isRecord(parsed)) return false;
+    return typeof parsed.__aywebs_error === 'string' || typeof parsed.v === 'number';
+  } catch {
+    return /^\{\s*"(?:v|__aywebs_error)"\s*:/.test(text);
+  }
+}
+
+/**
  * يقرا رسالة الجسر. ما نحكموش على المحتوى — الخادم هو الحاكم — غير نتأكّدو
  * أنها كائن JSON في حدود المعقول، ونفرّقو غلطة السكريبت عن غلطة الشكل.
  */

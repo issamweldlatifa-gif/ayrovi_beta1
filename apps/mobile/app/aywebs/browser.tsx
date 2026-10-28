@@ -21,7 +21,9 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { WebView as RNWebView, type WebViewMessageEvent, type WebViewProps } from 'react-native-webview';
-import { captureMatchesPageUrl, decideWebNavigation, isWebPageUrl } from '@/features/aywebs/webNavigation';
+import {
+  captureMatchesPageUrl, decideWebNavigation, isFatalMainPageLoadError, isSilentAppDeepLink, isWebPageUrl,
+} from '@/features/aywebs/webNavigation';
 
 import { AppText, Button, Card, KeyValue } from '@/design/ui';
 import { useTheme } from '@/design/theme';
@@ -34,7 +36,7 @@ import { StoreCartSheet } from '@/features/aywebs/StoreSheets';
 import { rememberAyWebsVisit } from '@/features/aywebs/lastVisitedStore';
 import {
   analyzeAyWebsPage, buildAyWebsCaptureInjection, fetchAyWebsCart, fetchAyWebsCaptureScript,
-  parseAyWebsCaptureMessage, resolveAyWebsProductWithCapture,
+  isAyWebsBridgeMessage, parseAyWebsCaptureMessage, resolveAyWebsProductWithCapture,
   type AyWebsCart, type AyWebsCartItem, type AyWebsPageAnalysis, type AyWebsResolveOutcome, type AyWebsResolvedProduct, type AyWebsVariantOption,
 } from '@/api/aywebs';
 import { AddToCartSheet } from '@/features/aywebs/AddToCartSheet';
@@ -119,7 +121,12 @@ export default function AyWebsBrowserScreen() {
   const variantReader = useRef<VariantReaderHandle>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** الوعد الجاري لقراءة الصفحة: يتفتح بالحقن ويتسدّ بالرسالة (ولا بالمهلة). */
-  const waiter = useRef<{ resolve: (capture: Record<string, unknown>) => void; reject: (error: unknown) => void } | null>(null);
+  const waiter = useRef<{
+    resolve: (capture: Record<string, unknown>) => void;
+    reject: (error: unknown) => void;
+    quiet: boolean;
+    requestedUrl: string;
+  } | null>(null);
   /** Vrai pendant que la page charge (mis à jour par onNavigationStateChange). */
   const pageLoadingRef = useRef(false);
   /** Page pour laquelle on a déjà attendu la fin du chargement (une seule fois par page). */
@@ -239,7 +246,12 @@ export default function AyWebsBrowserScreen() {
   const previousPageUrl = useRef(pageUrl);
   useEffect(() => {
     if (previousPageUrl.current === pageUrl) return;
+    /* Les SPA comme AliExpress réécrivent souvent les paramètres de suivi (`spm`,
+       `pdp_npi`, `_t`) ou le sous-domaine mobile sur la MÊME fiche produit : ne
+       pas avorter l'appui en cours ni vider l'analyse pour une mutation interne. */
+    const sameDocument = captureMatchesPageUrl(previousPageUrl.current, pageUrl);
     previousPageUrl.current = pageUrl;
+    if (sameDocument) return;
     captureStoreIdRef.current = '';
     const reading = prefetch.current;
     prefetch.current = null;
@@ -283,6 +295,7 @@ export default function AyWebsBrowserScreen() {
   /** تصنيف الصفحة — شرط تفعيل «Add to Cart» (لا تخمين من الرابط). */
   useEffect(() => {
     if (!sessionId || !pageUrl || !isWebPageUrl(pageUrl)) return;
+    if (pageAnalysis && captureMatchesPageUrl(pageAnalysis.url, pageUrl)) return;
     let alive = true;
     analyzeAyWebsPage(pageUrl, { sessionId })
       .then((analysis) => {
@@ -297,7 +310,7 @@ export default function AyWebsBrowserScreen() {
         setPageAnalysis(null);
       });
     return () => { alive = false; };
-  }, [sessionId, pageUrl]);
+  }, [pageAnalysis, sessionId, pageUrl]);
 
   /**
    * يطلب قراءة الصفحة ويرجّع الوعد: يتفتح بالحقن، ويتسدّ بالرسالة اللي تجي من
@@ -358,25 +371,26 @@ export default function AyWebsBrowserScreen() {
         webRef.current?.injectJavaScript(buildAyWebsCaptureInjection(script));
       };
       /* Prix absent de la capture ⇒ relance bornée (fc3cce38 / captureFlow.ts). */
+      const requestedUrl = pageUrlRef.current;
       const onCaptured = (capture: Record<string, unknown>) => {
         const script = lastScript.current;
         if (script && shouldRetryAyWebsCaptureForPrice(priceCandidatesOf(capture), captureRetries.current)) {
           captureRetries.current += 1;
-          waiter.current = { resolve: onCaptured, reject };
+          waiter.current = { resolve: onCaptured, reject, quiet, requestedUrl: pageUrlRef.current || requestedUrl };
           stopTimer();
           setTimeout(() => inject(script), priceRetryDelayMs(captureRetries.current - 1));
           return;
         }
         resolve(capture);
       };
-      waiter.current = { resolve: onCaptured, reject };
+      waiter.current = { resolve: onCaptured, reject, quiet, requestedUrl };
       fetchAyWebsCaptureScript({ storeId: captureStoreIdRef.current })
         /* الصفحة لازم تكمّل تحميلها قبل القراءة (Amazon يعطي DOM ناقص ⇒ NO_PRICE_TEXT).
            مرّة واحدة لكل صفحة: موقع SHEIN/TEMU (تطبيق mono-page) يحافظ على طلب
            مفتوح، فـ`onNavigationStateChange` يبقى "يحمّل" — الانتظار في كل قراءة
            كان يعني 8 ثوانٍ إضافية مضروبة في عدد المحاولات. */
         .then(async (script) => {
-          if (idleWaitedUrl.current !== pageUrlRef.current) {
+          if (!idleWaitedUrl.current || !captureMatchesPageUrl(idleWaitedUrl.current, pageUrlRef.current)) {
             idleWaitedUrl.current = pageUrlRef.current;
             await waitForPageIdle(() => pageLoadingRef.current);
           }
@@ -388,7 +402,7 @@ export default function AyWebsBrowserScreen() {
           inject(script);
         })
         .catch((error) => {
-          waiter.current = null;
+          if (waiter.current?.reject === reject) waiter.current = null;
           if (!quiet) setBusy(false);
           reject(error);
         });
@@ -408,7 +422,7 @@ export default function AyWebsBrowserScreen() {
   /** Lit la page en silence, dès qu'elle est chargée et reconnue comme fiche produit. */
   const startPrefetch = useCallback((url: string) => {
     const current = prefetch.current;
-    if (current && current.url === url && current.status !== 'failed') return;
+    if (current && (current.url === url || captureMatchesPageUrl(current.url, url)) && current.status !== 'failed') return;
     current?.controller.abort();
     const controller = new AbortController();
     const entry: NonNullable<typeof prefetch.current> = {
@@ -460,11 +474,32 @@ export default function AyWebsBrowserScreen() {
     const controller = new AbortController();
     addController.current = controller;
     const isCurrent = () => addController.current === controller;
+    const activePageUrl = pageUrlRef.current || pageUrl;
+    const readPageCapture = async (): Promise<Record<string, unknown>> => {
+      const entry = prefetch.current;
+      if (entry && canReusePrefetch(entry, pageUrlRef.current || activePageUrl, Date.now())) {
+        setBusy(true);
+        setNote('');
+        try {
+          return await entry.promise;
+        } catch {
+          prefetch.current = null;
+          if (controller.signal.aborted) throw new ApiError('aborted', 'Requête interrompue.');
+        }
+      }
+      try {
+        return await requestCapture(controller.signal);
+      } catch (error) {
+        if (!controller.signal.aborted && error instanceof ApiError && error.isAborted) {
+          return await requestCapture(controller.signal);
+        }
+        throw error;
+      }
+    };
     try {
       /* Lecture locale : la feuille s'ouvre dès que la capture est prête — aucun appel au serveur à l'appui. */
       if (captureAllowed) {
-        const entry = prefetch.current;
-        const captured = await (canReusePrefetch(entry, pageUrl, Date.now()) && entry ? entry.promise : requestCapture(controller.signal));
+        const captured = await readPageCapture();
         if (controller.signal.aborted) return;
         /* Une capture n'est pas une fiche : accueil / rayon / bannière n'ouvrent
            pas de feuille. Le serveur applique LA MÊME règle de son côté. */
@@ -473,9 +508,10 @@ export default function AyWebsBrowserScreen() {
           endWaiting('failed');
           return;
         }
+        const liveUrl = pageUrlRef.current || activePageUrl;
         const variants = localVariantsFromCapture(captured);
         const localProduct: AyWebsResolvedProduct = {
-          ...productFromCapture(captured, pageUrl, currentStoreId, currentStoreName),
+          ...productFromCapture(captured, liveUrl, currentStoreId, currentStoreName),
           /* Les groupes viennent de la TABLE DES VARIANTES, et à défaut des
              groupes NOMMÉS lus sur la page (23/10/2026) : une fiche Zalando
              avait sinon une feuille sans couleur ni taille. */
@@ -492,14 +528,10 @@ export default function AyWebsBrowserScreen() {
       /* Pas de délai : la page est lue dans le navigateur du client jusqu'au bout. Le bouton reste
          en chargement ; si la lecture échoue, on explique ce qui manque (sans lecture serveur de repli). */
       const { decision, outcome: result, capture } = await resolveAddToCart({
-        readCapture: captureAllowed ? () => {
-          const entry = prefetch.current;
-          if (entry && canReusePrefetch(entry, pageUrl, Date.now())) return entry.promise;
-          return requestCapture(controller.signal);
-        } : undefined,
+        readCapture: captureAllowed ? readPageCapture : undefined,
         waitForCapture: true,
         // refresh : une intention Add ne sert jamais une lecture mémorisée (19/10/2026).
-        resolve: (captured) => resolveAyWebsProductWithCapture(pageUrl, {
+        resolve: (captured) => resolveAyWebsProductWithCapture(pageUrlRef.current || activePageUrl, {
           sessionId, storeId: currentStoreId || undefined, capture: captured, refresh: true, signal: controller.signal,
         }),
         signal: controller.signal,
@@ -534,26 +566,36 @@ export default function AyWebsBrowserScreen() {
   }, [captureAllowed, capturePage, currentStoreId, currentStoreName, endWaiting, fail, locale, requestCapture, sessionId, startWaiting, pageUrl, t]);
 
   const onMessage = useCallback((event: WebViewMessageEvent) => {
+    /* Les pages marchandes (AliExpress WindVane/AEHybrid/aplus, SHEIN…) envoient
+       souvent leurs propres messages au pont `ReactNativeWebView` : on les ignore
+       sans toucher au lecteur en cours ni afficher « Lecture de la page impossible ». */
+    if (!isAyWebsBridgeMessage(event.nativeEvent.data)) return;
     const pending = waiter.current;
     const parsed = parseAyWebsCaptureMessage(event.nativeEvent.data);
     if (!parsed.ok) {
       stopTimer();
       waiter.current = null;
       setBusy(false);
-      setNote(`${t('aywebs.captureFailed')} — ${parsed.reason}`);
+      if (!pending?.quiet) setNote(`${t('aywebs.captureFailed')} — ${parsed.reason}`);
       pending?.reject(new ApiError('malformed', `Capture refusée : ${parsed.reason}`));
       return;
     }
-    /* Le pont peut livrer une réponse déjà partie avant une redirection. Même
-       si une nouvelle lecture attend, elle ne doit JAMAIS recevoir cette
-       ancienne capture : on rejette et le client pourra relire la page courante. */
+    /* Le pont peut livrer une réponse déjà partie avant une redirection. Si la
+       lecture en attente vise déjà la nouvelle page, on ignore simplement ce
+       message tardif de l'ancien document sans tuer la lecture en cours. */
     const captureUrl = (parsed.capture as { url?: unknown }).url;
     if (!captureMatchesPageUrl(captureUrl, pageUrlRef.current)) {
+      if (pending && captureMatchesPageUrl(pending.requestedUrl, pageUrlRef.current)
+        && !captureMatchesPageUrl(captureUrl, pending.requestedUrl)) {
+        return;
+      }
       stopTimer();
       waiter.current = null;
       setBusy(false);
-      setNote(t('aywebs.captureFailed'));
-      pending?.reject(new ApiError('aborted', 'Capture ignorée : la page affichée a changé.'));
+      pending?.reject(new ApiError('http', 'Capture périmée : la page affichée a changé.', {
+        status: 422,
+        code: 'CAPTURE_INCOMPLETE',
+      }));
       return;
     }
     stopTimer();
@@ -655,7 +697,7 @@ export default function AyWebsBrowserScreen() {
         originWhitelist={['*']}
         onShouldStartLoadWithRequest={(request: { url: string }) => {
           if (decideWebNavigation(request.url) === 'allow') return true;
-          setNote(t('aywebs.blockedScheme'));
+          if (!isSilentAppDeepLink(request.url)) setNote(t('aywebs.blockedScheme'));
           return false;
         }}
         javaScriptEnabled
@@ -665,13 +707,23 @@ export default function AyWebsBrowserScreen() {
           setPageReady(state.loading !== true);
           setWebCanGoBack(state.canGoBack);
           if (!state.url) return;
+          /* N'accepter dans l'état de page que les vraies adresses HTTP(S) : une
+             tentative avortée vers `aliexpress://` ne doit jamais écraser `pageUrl`. */
+          if (!isWebPageUrl(state.url)) return;
           /* Référence synchrone : une capture déjà dans le pont ne peut plus
              être rattachée à l'ancien document pendant le prochain rendu. */
           pageUrlRef.current = state.url;
           setPageUrl(state.url);
         }}
+        onLoadEnd={() => {
+          const failedLabel = t('aywebs.captureFailed');
+          setNote((current) => (current === failedLabel ? '' : current));
+        }}
         onMessage={onMessage}
-        onError={() => setNote(t('aywebs.captureFailed'))}
+        onError={(event) => {
+          if (!isFatalMainPageLoadError(event.nativeEvent, pageUrlRef.current)) return;
+          setNote(t('aywebs.captureFailed'));
+        }}
         startInLoadingState
         renderLoading={() => (
           <View style={[styles.loading, { backgroundColor: theme.colors.canvas }]}>
