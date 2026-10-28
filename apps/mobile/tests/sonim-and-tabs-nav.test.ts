@@ -1,15 +1,16 @@
 /**
- * Verrou de la barre de navigation transparente à 5 onglets et de Sonim.
+ * Verrou de la barre de navigation transparente à 5 onglets (style Zalando) et de Sonim.
  *
  * Garantit :
  *   1. l'ordre exact `index` · `lens` · `aywebs` · `sonim` · `account` (+ `cart` masqué) ;
- *   2. le style flottant transparent à angles arrondis (`TAB_BAR_GLASS`, `theme.radius.xl`) ;
- *   3. l'intégrité des pictogrammes RGBA `tab-lens-icon.png` et `tab-sonim-icon.png` ;
+ *   2. le style flottant haute transparence à coins arrondis compacts (`TAB_BAR_GLASS`,
+ *      `theme.radius.md`, `tabBarBackground`, `theme.elevation.none` sans ombre interne Android) ;
+ *   3. les icônes vectorielles officielles intégrées (`TabNavIcons`, `react-native-svg`)
+ *      de taille égale (`24 × 24` pt) et le médaillon `AYWEBs` `24 × 24` sans fond gris (`background={null}`) ;
  *   4. la normalisation des outils Sonim (`get_order_status`, `calculate_price`,
  *      `search_products`, `escalate_to_human`) et des pièces jointes multimodales.
  */
-import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -24,19 +25,10 @@ import {
 
 const ROOT = path.resolve(__dirname, '..');
 
-function readPngHeader(filePath: string) {
-  const buf = readFileSync(filePath);
-  const sig = buf.subarray(0, 8).toString('hex');
-  expect(sig).toBe('89504e470d0a1a0a');
-  const width = buf.readUInt32BE(16);
-  const height = buf.readUInt32BE(20);
-  const colorType = buf[25];
-  const sha256 = createHash('sha256').update(buf).digest('hex');
-  return { width, height, colorType, size: buf.length, sha256 };
-}
-
-describe('barre du bas transparente à angles arrondis (5 onglets)', () => {
+describe('barre du bas transparente à coins arrondis compacts (5 onglets — style Zalando)', () => {
   const layout = readFileSync(path.join(ROOT, 'app/(tabs)/_layout.tsx'), 'utf8');
+  const navIcons = readFileSync(path.join(ROOT, 'src/design/TabNavIcons.tsx'), 'utf8');
+  const tokensMobile = readFileSync(path.join(ROOT, 'src/design/tokens.mobile.ts'), 'utf8');
 
   it('respecte l’ordre exact Accueil · Lens · AYWEBs · Sonim · Profil (+ cart masqué)', () => {
     const names = Array.from(layout.matchAll(/<Tabs\.Screen[\s\S]*?\bname="([^"]+)"/g), (m) => m[1]);
@@ -44,23 +36,49 @@ describe('barre du bas transparente à angles arrondis (5 onglets)', () => {
     expect(layout).toMatch(/name="cart"\s+options=\{\{\s*href:\s*null/);
   });
 
-  it('applique la capsule flottante transparente à angles arrondis', () => {
+  it('applique des coins arrondis réduits (radius.md = 12pt) et une haute transparence type Zalando sans élévation Android', () => {
     expect(layout).toContain('TAB_BAR_GLASS[theme.mode]');
     expect(layout).toContain("position: 'absolute'");
-    expect(layout).toContain('borderRadius: theme.radius.xl');
+    expect(layout).toContain('borderRadius: theme.radius.md');
+    expect(layout).not.toContain('borderRadius: theme.radius.xl');
+    expect(layout).toContain('tabBarBackground:');
     expect(layout).toContain('backgroundColor: glass.background');
+    expect(layout).toContain("backgroundColor: 'transparent'");
+    expect(layout).toContain('...theme.elevation.none');
+    expect(layout).not.toContain('...theme.elevation.medium');
+
+    // Transparence accrue (alpha <= 0.65 en clair et en sombre, style Zalando)
+    const block = /export const TAB_BAR_GLASS = \{([\s\S]*?)\} as const;/.exec(tokensMobile)?.[1] ?? '';
+    const bgAlphas = Array.from(block.matchAll(/background:\s*alpha\(BRAND\.\w+,\s*([\d.]+)\)/g), (m) =>
+      Number(m[1]),
+    );
+    expect(bgAlphas).toHaveLength(2);
+    for (const a of bgAlphas) {
+      expect(a).toBeLessThanOrEqual(0.65);
+    }
   });
 
-  it('embarque deux icônes RGBA 256×256 distinctes pour Lens et Sonim', () => {
-    const lensIcon = readPngHeader(path.join(ROOT, 'assets/tab-lens-icon.png'));
-    const sonimIcon = readPngHeader(path.join(ROOT, 'assets/tab-sonim-icon.png'));
-    expect(lensIcon.width).toBe(256);
-    expect(lensIcon.height).toBe(256);
-    expect(lensIcon.colorType).toBe(6); // RGBA
-    expect(sonimIcon.width).toBe(256);
-    expect(sonimIcon.height).toBe(256);
-    expect(sonimIcon.colorType).toBe(6); // RGBA
-    expect(lensIcon.sha256).not.toBe(sonimIcon.sha256);
+  it('utilise uniquement des icônes vectorielles intégrées de taille égale (24×24) et supprime toute plaque grise', () => {
+    expect(navIcons).toContain("from 'react-native-svg'");
+    expect(navIcons).toContain('export function TabHomeIcon');
+    expect(navIcons).toContain('export function TabLensIcon');
+    expect(navIcons).toContain('export function TabSonimIcon');
+    expect(navIcons).toContain('export function TabProfileIcon');
+
+    // Toutes les icônes vectorielles <Svg> partagent exactement viewBox="0 0 24 24"
+    const viewBoxes = Array.from(navIcons.matchAll(/<Svg[\s\S]*?viewBox="([^"]+)"/g), (m) => m[1]);
+    expect(viewBoxes).toEqual(['0 0 24 24', '0 0 24 24', '0 0 24 24', '0 0 24 24']);
+
+    expect(layout).toContain('<TabHomeIcon size={theme.iconSize.md}');
+    expect(layout).toContain('<TabLensIcon size={theme.iconSize.md}');
+    expect(layout).toContain('<TabSonimIcon size={theme.iconSize.md}');
+    expect(layout).toContain('<TabProfileIcon size={theme.iconSize.md}');
+    expect(layout).toContain('const AYWEB_TAB_LOGO = { width: 24, height: 24 }');
+    expect(layout).toContain('background={null}');
+
+    // Les anciens PNG matriciels d'onglets ne doivent plus exister.
+    expect(existsSync(path.join(ROOT, 'assets/tab-lens-icon.png'))).toBe(false);
+    expect(existsSync(path.join(ROOT, 'assets/tab-sonim-icon.png'))).toBe(false);
   });
 });
 

@@ -231,17 +231,18 @@ export const AYWEBS_WORDMARK_TINT = {
 } as const;
 
 /**
- * Barre d'onglets flottante transparente à angles arrondis : verre dépoli
- * translucide + filet discret dérivés des couleurs officielles de la marque.
+ * Barre d'onglets flottante à coins arrondis compacts (inspiration Zalando) :
+ * verre translucide haute clarté + filet discret dérivés des couleurs de marque,
+ * sans élévation Android pour éviter tout cône d'ombre interne dans le verre.
  */
 export const TAB_BAR_GLASS = {
   light: {
-    background: alpha(BRAND.white, 0.84),
-    border: alpha(BRAND.black, 0.1),
+    background: alpha(BRAND.white, 0.58),
+    border: alpha(BRAND.black, 0.08),
   },
   dark: {
-    background: alpha(BRAND.black, 0.8),
-    border: alpha(BRAND.white, 0.14),
+    background: alpha(BRAND.black, 0.58),
+    border: alpha(BRAND.white, 0.12),
   },
 } as const;
 

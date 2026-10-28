@@ -38,6 +38,7 @@ import { AppImage } from '@/design/appImage';
 import { headerSolidFor } from '@/design/chromeLogic';
 import { useResponsive } from '@/design/layout';
 import { rowDirectionFor } from '@/design/layoutLogic';
+import { TabSonimIcon } from '@/design/TabNavIcons';
 import { useTheme } from '@/design/theme';
 import { AppText } from '@/design/ui';
 import { useKeyboardInset } from '@/design/useKeyboardInset';
@@ -52,8 +53,6 @@ import {
   type SonimChatMessage,
 } from './sonimModel';
 import { SonimToolCards } from './SonimToolCards';
-
-const SONIM_MARK = require('../../../assets/tab-sonim-icon.png');
 
 type PickedAttachment = AssistantAttachment & { previewUri: string };
 
@@ -173,7 +172,7 @@ export function SonimScreen() {
   const rowDir = rowDirectionFor(theme.isRTL);
   const topInset = insets.top + theme.chrome.header;
   const floatingTabClearance =
-    theme.chrome.tabBar + theme.space[0] + Math.max(insets.bottom, theme.space[1]) + theme.space[1];
+    theme.chrome.tabBar - theme.space[0] + Math.max(insets.bottom, theme.space[1]) + theme.space[1];
 
   const scrollToEnd = useCallback((animated = true) => {
     requestAnimationFrame(() => {
@@ -398,13 +397,7 @@ export function SonimScreen() {
         {messages.length > 0 ? (
           <View style={[styles.topBar, { flexDirection: rowDir }]}>
             <View style={[styles.brandBadge, { flexDirection: rowDir }]}>
-              <AppImage
-                localSource={SONIM_MARK}
-                style={styles.brandBadgeIcon}
-                contentFit="contain"
-                tintColor={theme.colors.ink}
-                decorative
-              />
+              <TabSonimIcon size={theme.iconSize.sm} color={theme.colors.ink} focused />
               <AppText variant="label" weight="bold">
                 {t('tabs.sonim')}
               </AppText>
@@ -462,13 +455,7 @@ export function SonimScreen() {
                 },
               ]}
             >
-              <AppImage
-                localSource={SONIM_MARK}
-                style={styles.heroMark}
-                contentFit="contain"
-                tintColor={theme.colors.ink}
-                decorative
-              />
+              <TabSonimIcon size={theme.iconSize.lg} color={theme.colors.ink} focused />
             </View>
 
             <AppText variant="title" weight="semibold" align="center">
@@ -582,13 +569,7 @@ export function SonimScreen() {
                     ]}
                   >
                     <View style={[styles.assistantHead, { flexDirection: rowDir }]}>
-                      <AppImage
-                        localSource={SONIM_MARK}
-                        style={styles.assistantAvatar}
-                        contentFit="contain"
-                        tintColor={theme.colors.ink}
-                        decorative
-                      />
+                      <TabSonimIcon size={theme.iconSize.xs} color={theme.colors.ink} focused />
                       <AppText variant="caption" weight="bold">
                         {t('tabs.sonim')}
                       </AppText>
@@ -817,7 +798,6 @@ const styles = StyleSheet.create({
   scrollContent: { paddingBottom: 16, gap: 16 },
   topBar: { alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   brandBadge: { alignItems: 'center', gap: 8 },
-  brandBadgeIcon: { width: 22, height: 22 },
   resetButton: {
     borderWidth: 1,
     paddingHorizontal: 12,
@@ -835,7 +815,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 4,
   },
-  heroMark: { width: 34, height: 34 },
   welcomeBody: { maxWidth: 340 },
   actionsGrid: { width: '100%', gap: 10, marginTop: 12 },
   actionCard: { borderWidth: 1, padding: 12, gap: 4 },
@@ -856,7 +835,6 @@ const styles = StyleSheet.create({
   assistantRow: { width: '100%' },
   assistantBubble: { borderWidth: 1, padding: 12, gap: 8 },
   assistantHead: { alignItems: 'center', gap: 6 },
-  assistantAvatar: { width: 18, height: 18 },
   statusRow: { alignItems: 'center', gap: 8, paddingVertical: 4 },
   errorBox: { borderWidth: 1, padding: 10 },
   messageActions: { paddingTop: 4 },
